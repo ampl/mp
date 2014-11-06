@@ -70,45 +70,44 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(SetFunction(0, "foo", 0, mp::func::NUMERIC), "function");
   EXPECT_DISPATCH(AddSuffix(0, 0, "foo"), "suffix");
   EXPECT_DISPATCH(MakeNumericConstant(0),
-               "numeric constant in nonlinear expression");
+                  "numeric constant in nonlinear expression");
   EXPECT_DISPATCH(MakeVariable(0), "variable in nonlinear expression");
   EXPECT_DISPATCH(MakeUnary(mp::expr::ABS, TestExpr()), "abs");
   EXPECT_DISPATCH(MakeBinary(mp::expr::ADD, TestExpr(), TestExpr()), "+");
   EXPECT_DISPATCH(MakeIf(TestExpr(), TestExpr(), TestExpr()), "if expression");
   EXPECT_DISPATCH(BeginPLTerm(0), "piecewise-linear term");
   EXPECT_DISPATCH(EndPLTerm(TestProblemBuilder::PLTermHandler(), TestExpr()),
-               "piecewise-linear term");
+                  "piecewise-linear term");
   EXPECT_DISPATCH(BeginCall(0, 0), "function call");
   EXPECT_DISPATCH(EndCall(TestProblemBuilder::CallArgHandler()),
                   "function call");
   EXPECT_DISPATCH(BeginVarArg(mp::expr::MIN, 0), "min");
   EXPECT_DISPATCH(EndVarArg(TestProblemBuilder::NumericArgHandler()),
-               "vararg expression");
+                  "vararg expression");
   EXPECT_DISPATCH(BeginSum(0), "sum");
   EXPECT_DISPATCH(EndSum(TestProblemBuilder::NumericArgHandler()), "sum");
   EXPECT_DISPATCH(BeginCount(0), "count expression");
   EXPECT_DISPATCH(EndCount(TestProblemBuilder::LogicalArgHandler()),
-               "count expression");
+                  "count expression");
   EXPECT_DISPATCH(BeginNumberOf(0, TestExpr()), "numberof expression");
   EXPECT_DISPATCH(EndNumberOf(TestProblemBuilder::NumericArgHandler()),
-               "numberof expression");
+                  "numberof expression");
   EXPECT_DISPATCH(MakeLogicalConstant(true), "logical constant");
   EXPECT_DISPATCH(MakeNot(TestExpr()), "logical not");
   EXPECT_DISPATCH(MakeBinaryLogical(mp::expr::OR, TestExpr(), TestExpr()),
-               "||");
-  EXPECT_DISPATCH(MakeRelational(mp::expr::LT, TestExpr(), TestExpr()),
-               "<");
+                  "||");
+  EXPECT_DISPATCH(MakeRelational(mp::expr::LT, TestExpr(), TestExpr()), "<");
   EXPECT_DISPATCH(MakeLogicalCount(mp::expr::ATLEAST, TestExpr(), TestExpr()),
-               "atleast");
+                  "atleast");
   EXPECT_DISPATCH(MakeImplication(TestExpr(), TestExpr(), TestExpr()),
-               "implication expression");
+                  "implication expression");
   EXPECT_DISPATCH(BeginIteratedLogical(mp::expr::EXISTS, 0),
-               "exists");
+                  "exists");
   EXPECT_DISPATCH(EndIteratedLogical(TestProblemBuilder::LogicalArgHandler()),
-               "iterated logical expression");
-  EXPECT_DISPATCH(BeginAllDiff(0), "alldiff expression");
-  EXPECT_DISPATCH(EndAllDiff(TestProblemBuilder::AllDiffArgHandler()),
-               "alldiff expression");
+                  "iterated logical expression");
+  EXPECT_DISPATCH(BeginPairwise(mp::expr::ALLDIFF, 0), "alldiff expression");
+  EXPECT_DISPATCH(EndPairwise(TestProblemBuilder::PairwiseArgHandler()),
+                  "alldiff expression");
   EXPECT_DISPATCH(MakeStringLiteral("test"), "string literal");
 }
 

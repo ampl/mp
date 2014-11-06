@@ -448,15 +448,15 @@ class NLHandler {
     return LogicalExpr();
   }
 
-  typedef ArgHandler AllDiffArgHandler;
+  typedef ArgHandler PairwiseArgHandler;
 
-  // Receives notification of the beginning of an alldiff expression.
-  AllDiffArgHandler BeginAllDiff(int num_args) {
-    MP_UNUSED(num_args);
-    return AllDiffArgHandler();
+  // Receives notification of the beginning of a pairwise expression.
+  PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
+    MP_UNUSED2(kind, num_args);
+    return PairwiseArgHandler();
   }
-  // Receives notification of the end of an alldiff expression.
-  LogicalExpr EndAllDiff(AllDiffArgHandler handler) {
+  // Receives notification of the end of a pairwise expression.
+  LogicalExpr EndPairwise(PairwiseArgHandler handler) {
     MP_UNUSED(handler);
     return LogicalExpr();
   }
@@ -793,15 +793,15 @@ class ProblemBuilderToNLAdapter {
     return builder_.EndIteratedLogical(handler);
   }
 
-  typedef typename ProblemBuilder::AllDiffArgHandler AllDiffArgHandler;
+  typedef typename ProblemBuilder::PairwiseArgHandler PairwiseArgHandler;
 
-  // Receives notification of the beginning of an alldiff expression.
-  AllDiffArgHandler BeginAllDiff(int num_args) {
-    return builder_.BeginAllDiff(num_args);
+  // Receives notification of the beginning of a pairwise expression.
+  PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
+    return builder_.BeginPairwise(kind, num_args);
   }
-  // Receives notification of the end of an alldiff expression.
-  LogicalExpr EndAllDiff(AllDiffArgHandler handler) {
-    return builder_.EndAllDiff(handler);
+  // Receives notification of the end of a pairwise expression.
+  LogicalExpr EndPairwise(PairwiseArgHandler handler) {
+    return builder_.EndPairwise(handler);
   }
 
   // Receives notification of a string literal.
@@ -1458,11 +1458,12 @@ typename Handler::LogicalExpr
     ReadArgs<LogicalExprReader>(num_args, args);
     return handler_.EndIteratedLogical(args);
   }
-  case expr::ALLDIFF: {
+  case expr::FIRST_PAIRWISE: {
     int num_args = ReadNumArgs(1);
-    typename Handler::AllDiffArgHandler args = handler_.BeginAllDiff(num_args);
+    typename Handler::PairwiseArgHandler args =
+        handler_.BeginPairwise(kind, num_args);
     ReadArgs<NumericExprReader>(num_args, args);
-    return handler_.EndAllDiff(args);
+    return handler_.EndPairwise(args);
   }
   default:
     reader_.ReportError("expected logical expression opcode");

@@ -320,14 +320,14 @@ class ProblemBuilder {
     return LogicalExpr();
   }
 
-  typedef ArgHandler AllDiffArgHandler;
+  typedef ArgHandler PairwiseArgHandler;
 
-  AllDiffArgHandler BeginAllDiff(int num_args) {
-    MP_UNUSED(num_args);
+  PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
+    MP_UNUSED2(kind, num_args);
     MP_DISPATCH(ReportUnhandledConstruct("alldiff expression"));
-    return AllDiffArgHandler();
+    return PairwiseArgHandler();
   }
-  LogicalExpr EndAllDiff(AllDiffArgHandler handler) {
+  LogicalExpr EndPairwise(PairwiseArgHandler handler) {
     MP_UNUSED(handler);
     MP_DISPATCH(ReportUnhandledConstruct("alldiff expression"));
     return LogicalExpr();

@@ -82,7 +82,7 @@ typedef TestArgHandler<0> TestNumericArgHandler;
 typedef TestArgHandler<1> TestVarArgHandler;
 typedef TestArgHandler<2> TestNumberOfArgHandler;
 typedef TestArgHandler<3, TestLogicalExpr> TestLogicalArgHandler;
-typedef TestArgHandler<4> TestAllDiffArgHandler;
+typedef TestArgHandler<4> TestPairwiseArgHandler;
 
 struct TestCallArgHandler {
   void AddArg(TestNumericExpr) {}
@@ -220,10 +220,11 @@ class MockProblemBuilder {
                LogicalArgHandler (mp::expr::Kind kind, int num_args));
   MOCK_METHOD1(EndIteratedLogical, LogicalExpr (LogicalArgHandler handler));
 
-  typedef TestAllDiffArgHandler AllDiffArgHandler;
+  typedef TestPairwiseArgHandler PairwiseArgHandler;
 
-  MOCK_METHOD1(BeginAllDiff, AllDiffArgHandler (int num_args));
-  MOCK_METHOD1(EndAllDiff, LogicalExpr (AllDiffArgHandler handler));
+  MOCK_METHOD2(BeginPairwise,
+               PairwiseArgHandler (mp::expr::Kind kind, int num_args));
+  MOCK_METHOD1(EndPairwise, LogicalExpr (PairwiseArgHandler handler));
 
   MOCK_METHOD1(MakeStringLiteral, Expr (fmt::StringRef value));
 };

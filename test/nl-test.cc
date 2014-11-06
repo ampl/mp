@@ -691,10 +691,10 @@ class TestNLHandler {
     return MakeVarArg(h.name_, h.args_);
   }
 
-  typedef ArgHandler AllDiffArgHandler;
+  typedef ArgHandler PairwiseArgHandler;
 
-  ArgHandler BeginAllDiff(int) { return ArgHandler("alldiff"); }
-  std::string EndAllDiff(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
+  ArgHandler BeginPairwise(expr::Kind, int) { return ArgHandler("alldiff"); }
+  std::string EndPairwise(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
   std::string OnStringLiteral(fmt::StringRef value) {
     return fmt::format("'{}'", std::string(value.c_str(), value.size()));
@@ -893,12 +893,14 @@ struct TestNLHandler2 {
     return TestLogicalExpr();
   }
 
-  struct AllDiffArgHandler {
+  struct PairwiseArgHandler {
     void AddArg(NumericExpr) {}
   };
 
-  AllDiffArgHandler BeginAllDiff(int) { return AllDiffArgHandler(); }
-  TestLogicalExpr EndAllDiff(AllDiffArgHandler) { return TestLogicalExpr(); }
+  PairwiseArgHandler BeginPairwise(expr::Kind, int) {
+    return PairwiseArgHandler();
+  }
+  TestLogicalExpr EndPairwise(PairwiseArgHandler) { return TestLogicalExpr(); }
 
   TestExpr OnStringLiteral(fmt::StringRef) { return TestExpr(); }
 };
@@ -1370,10 +1372,10 @@ TEST(NLProblemBuilderTest, Forward) {
   EXPECT_FORWARD_RET(EndIteratedLogical, EndIteratedLogical,
                      (TestLogicalArgHandler(ID)), TestLogicalExpr(ID2));
 
-  EXPECT_FORWARD_RET(BeginAllDiff, BeginAllDiff, (33),
-                     TestAllDiffArgHandler(ID));
-  EXPECT_FORWARD_RET(EndAllDiff, EndAllDiff,
-                     (TestAllDiffArgHandler(ID)), TestLogicalExpr(ID2));
+  EXPECT_FORWARD_RET(BeginPairwise, BeginPairwise, (mp::expr::ALLDIFF, 33),
+                     TestPairwiseArgHandler(ID));
+  EXPECT_FORWARD_RET(EndPairwise, EndPairwise,
+                     (TestPairwiseArgHandler(ID)), TestLogicalExpr(ID2));
 
   EXPECT_FORWARD_RET(OnStringLiteral, MakeStringLiteral, (str), TestExpr(ID));
 }

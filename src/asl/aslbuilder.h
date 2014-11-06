@@ -564,13 +564,13 @@ class ASLBuilder {
   IteratedLogicalExpr MakeIteratedLogical(
       expr::Kind kind, ArrayRef<LogicalExpr> args);
 
-  typedef NumericArgHandler AllDiffArgHandler;
+  typedef NumericArgHandler PairwiseArgHandler;
 
-  AllDiffArgHandler BeginAllDiff(int num_args) {
+  PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
     return NumericArgHandler(
-          MakeIterated(expr::ALLDIFF, ArrayRef<NumericExpr>(0, num_args)));
+          MakeIterated(kind, ArrayRef<NumericExpr>(0, num_args)));
   }
-  PairwiseExpr EndAllDiff(AllDiffArgHandler handler) {
+  PairwiseExpr EndPairwise(PairwiseArgHandler handler) {
     return Expr::Create<PairwiseExpr>(handler.expr_);
   }
 

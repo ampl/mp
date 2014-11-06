@@ -373,10 +373,10 @@ class NLSolverTest : public ::testing::Test {
 
   static LogicalExpr MakeAllDiff(ProblemBuilder &pb, int start_var_index = 1) {
     int num_args = 3;
-    auto args = pb.BeginAllDiff(num_args);
+    auto args = pb.BeginPairwise(mp::expr::ALLDIFF, num_args);
     for (int i = 0; i < num_args; ++i)
       args.AddArg(pb.MakeVariable(i + start_var_index));
-    return pb.EndAllDiff(args);
+    return pb.EndPairwise(args);
   }
 };
 
