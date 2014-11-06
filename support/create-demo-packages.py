@@ -86,8 +86,11 @@ def extract_amplcml(amplcml, ampl_demo_dir, extra_paths = None):
       writefile(amplcml.open(name), outname)
 
 # Prepare a demo package for a UNIX-like system.
-def prepare_unix_package(amplcml, ampl_demo_dir, system):
+def prepare_unix_package(amplcml, ampl_demo_dir, kestrel, system):
   os.mkdir(ampl_demo_dir)
+  kestrel.extractall(ampl_demo_dir)
+  os.rename(os.path.join(ampl_demo_dir, 'README'),
+            os.path.join(ampl_demo_dir, 'README.kestrel'))
   extract_amplcml(amplcml, ampl_demo_dir, extra_paths)
 
   # Download ampl and solvers.
@@ -163,14 +166,20 @@ if __name__ == '__main__':
     os.mkdir(package_dir)
     amplcml = zipfile.ZipFile(retrieve_cached(amplcml_url))
     ampl_demo_dir = os.path.join(package_dir, 'ampl-demo')
+    # Download kestrel.
+    kestrel_tar = tarfile.open(
+      retrieve_cached('http://ampl.com/dl/neos/kestrel.tar.gz'), 'r:gz')
     for system in ['linux32', 'linux64', 'macosx', 'mswin']:
       # Prepare the command-line demo package.
       if system != 'mswin':
         archive_format = 'gztar'
-        prepare_unix_package(amplcml, ampl_demo_dir, system)
+        prepare_unix_package(amplcml, ampl_demo_dir, kestrel_tar, system)
       else:
         archive_format = 'zip'
         extract_amplcml(amplcml, ampl_demo_dir)
+        url = 'http://ampl.com/dl/neos/kestrel.zip'
+        with zipfile.ZipFile(retrieve_cached(url)) as f:
+          f.extractall(ampl_demo_dir)
       basename = 'ampl-demo-' + system
       package(basename, archive_format, package_dir)
 
