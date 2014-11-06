@@ -243,7 +243,7 @@ public:
     return VisitIf(e);
   }
 
-  ls::LSExpression VisitAllDiff(AllDiffExpr e);
+  ls::LSExpression VisitAllDiff(PairwiseExpr e);
 
   ls::LSExpression VisitLogicalConstant(LogicalConstant c) {
     ls::lsint value = c.value();

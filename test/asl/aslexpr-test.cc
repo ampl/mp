@@ -52,7 +52,7 @@ using mp::LogicalCountExpr;
 using mp::BinaryLogicalExpr;
 using mp::ImplicationExpr;
 using mp::IteratedLogicalExpr;
-using mp::AllDiffExpr;
+using mp::PairwiseExpr;
 using mp::StringLiteral;
 using mp::ExprVisitor;
 using mp::MakeArrayRef;
@@ -398,7 +398,8 @@ const OpInfo OP_INFO[] = {
   {ex::OR,             "exists",                ex::FIRST_ITERATED_LOGICAL},
   {ex::IMPLICATION,    "==>",                   ex::IMPLICATION},
   {ex::IFF,            "<==>",                  ex::FIRST_BINARY_LOGICAL},
-  {ex::ALLDIFF,        "alldiff",               ex::ALLDIFF},
+  {ex::ALLDIFF,        "alldiff",               ex::FIRST_PAIRWISE},
+  {ex::NOT_ALLDIFF,    "!alldiff",              ex::FIRST_PAIRWISE},
   {ex::POW_CONST_EXP,  "^",                     ex::FIRST_BINARY},
   {ex::POW2,           "^2",                    ex::FIRST_UNARY},
   {ex::POW_CONST_BASE, "^",                     ex::FIRST_BINARY},
@@ -452,7 +453,7 @@ std::size_t CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
 }
 
 TEST_F(ExprTest, Expr) {
-  EXPECT_EQ(66, CheckExpr<Expr>(ex::FIRST_EXPR, ex::LAST_EXPR, ex::UNKNOWN));
+  EXPECT_EQ(67, CheckExpr<Expr>(ex::FIRST_EXPR, ex::LAST_EXPR, ex::UNKNOWN));
   TestAssertInCreate<Expr>(7);
   TestAssertInCreate<Expr>(sizeof(OP_INFO) / sizeof(*OP_INFO) - 1);
   TestAssertInCreate<Expr>(777);
@@ -592,8 +593,7 @@ TEST_F(ExprTest, NumericExpr) {
 }
 
 TEST_F(ExprTest, LogicalExpr) {
-  EXPECT_EQ(21,
-      CheckExpr<LogicalExpr>(ex::FIRST_LOGICAL, ex::LAST_LOGICAL));
+  EXPECT_EQ(22, CheckExpr<LogicalExpr>(ex::FIRST_LOGICAL, ex::LAST_LOGICAL));
 }
 
 TEST_F(ExprTest, NumericConstant) {
@@ -856,14 +856,14 @@ TEST_F(ExprTest, IteratedLogicalExpr) {
         fmt::format("invalid iterated logical expression kind {}", ex::MINUS));
 }
 
-TEST_F(ExprTest, AllDiffExpr) {
-  EXPECT_EQ(1, CheckExpr<AllDiffExpr>(ex::ALLDIFF));
+TEST_F(ExprTest, PairwiseExpr) {
+  EXPECT_EQ(2, CheckExpr<PairwiseExpr>(ex::FIRST_PAIRWISE));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
-  AllDiffExpr expr = builder.MakeAllDiff(args);
+  PairwiseExpr expr = builder.MakeAllDiff(args);
   EXPECT_EQ(NUM_ARGS, expr.num_args());
   int index = 0;
-  for (AllDiffExpr::iterator
+  for (PairwiseExpr::iterator
        i = expr.begin(), end = expr.end(); i != end; ++i, ++index) {
     EXPECT_EQ(args[index], *i);
     EXPECT_EQ(args[index], expr[index]);
@@ -963,7 +963,8 @@ struct FullTestVisitor : ExprVisitor<FullTestVisitor, TestResult, TestLResult> {
   TestLResult VisitExists(IteratedLogicalExpr e) { return MakeResult(e); }
   TestLResult VisitImplication(ImplicationExpr e) { return MakeResult(e); }
   TestLResult VisitIff(BinaryLogicalExpr e) { return MakeResult(e); }
-  TestLResult VisitAllDiff(AllDiffExpr e) { return MakeResult(e); }
+  TestLResult VisitAllDiff(PairwiseExpr e) { return MakeResult(e); }
+  TestLResult VisitNotAllDiff(PairwiseExpr e) { return MakeResult(e); }
   TestLResult VisitLogicalConstant(LogicalConstant e) { return MakeResult(e); }
 };
 
@@ -1342,7 +1343,7 @@ TEST_F(ExprTest, WriteIteratedLogicalExpr) {
              MakeConst(1), MakeConst(0)));
 }
 
-TEST_F(ExprTest, WriteAllDiffExpr) {
+TEST_F(ExprTest, WritePairwiseExpr) {
   NumericExpr args[] = {MakeConst(42), MakeConst(43), MakeConst(44)};
   CHECK_WRITE("if alldiff(42, 43, 44) then 1",
       MakeIf(builder.MakeAllDiff(args), MakeConst(1), MakeConst(0)));
@@ -1685,7 +1686,7 @@ TEST_F(ExprTest, ImplicationExprPrecedence) {
                        l0, MakeBinaryLogical(ex::IFF, l1, l0), l1), n1, n0));
 }
 
-TEST_F(ExprTest, AllDiffExprPrecedence) {
+TEST_F(ExprTest, PairwiseExprPrecedence) {
   NumericConstant n0 = MakeConst(0), n1 = MakeConst(1);
   NumericExpr args[] = {
     MakeBinary(ex::ADD, n0, n1), MakeBinary(ex::ADD, n0, n1)

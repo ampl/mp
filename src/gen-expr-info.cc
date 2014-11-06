@@ -47,13 +47,13 @@ struct ExprInfo {
   EXPR_(name, name, opcode, precedence, str)
 
 const ExprInfo info[] = {
-  EXPR(VARIABLE,        81, PRIMARY,        "variable"),
+  EXPR(VARIABLE, 82, PRIMARY, "variable"),
 
   // Unary expressions.
 #define UNARY(name, opcode, precedence, str) \
   EXPR_(name, FIRST_UNARY, opcode, precedence, str)
   UNARY(MINUS, 16, UNARY,          "unary -"),
-  UNARY(POW2,  76, EXPONENTIATION, "^2"),
+  UNARY(POW2,  77, EXPONENTIATION, "^2"),
   UNARY(FLOOR, 13, CALL,           "floor"),
   UNARY(CEIL,  14, CALL,           "ceil"),
   UNARY(ABS,   15, CALL,           "abs"),
@@ -85,8 +85,8 @@ const ExprInfo info[] = {
   BINARY(INT_DIV,        55, MULTIPLICATIVE, "div"),
   BINARY(MOD,             4, MULTIPLICATIVE, "mod"),
   BINARY(POW,             5, EXPONENTIATION, "^"),
-  BINARY(POW_CONST_BASE, 77, EXPONENTIATION, "^"),
-  BINARY(POW_CONST_EXP,  75, EXPONENTIATION, "^"),
+  BINARY(POW_CONST_BASE, 78, EXPONENTIATION, "^"),
+  BINARY(POW_CONST_EXP,  76, EXPONENTIATION, "^"),
   BINARY(ATAN2,          48, CALL,           "atan2"),
   BINARY(PRECISION,      56, CALL,           "precision"),
   BINARY(ROUND,          57, CALL,           "round"),
@@ -95,17 +95,16 @@ const ExprInfo info[] = {
   EXPR(IF,     35, CONDITIONAL,  "if"),
   EXPR(IFSYM,  65, CONDITIONAL,  "symbolic if"),
   EXPR(PLTERM, 64, CALL,         "piecewise-linear term"),
-  EXPR(CALL,   78, CALL,         "function call"),
+  EXPR(CALL,   79, CALL,         "function call"),
 
   EXPR_(MIN, FIRST_VARARG, 11, CALL, "min"),
   EXPR_(MAX, FIRST_VARARG, 12, CALL, "max"),
-
   EXPR(SUM,          54, ITERATIVE, "sum"),
-  EXPR(COUNT,        59, CALL,      "count"),
   EXPR(NUMBEROF,     60, CALL,      "numberof"),
   EXPR(NUMBEROF_SYM, 61, CALL,      "symbolic numberof"),
+  EXPR(COUNT,        59, CALL,      "count"),
 
-  EXPR(CONSTANT, 79, PRIMARY, "constant"),
+  EXPR(CONSTANT, 80, PRIMARY, "constant"),
 
   EXPR(NOT, 34, NOT, "!"),
 
@@ -139,8 +138,10 @@ const ExprInfo info[] = {
   EXPR_(FORALL, FIRST_ITERATED_LOGICAL, 70, CALL, "forall"),
   EXPR_(EXISTS, FIRST_ITERATED_LOGICAL, 71, CALL, "exists"),
 
-  EXPR(ALLDIFF, 74, CALL,    "alldiff"),
-  EXPR(STRING,  80, PRIMARY, "string")
+  EXPR_(ALLDIFF,     FIRST_PAIRWISE, 74, CALL, "alldiff"),
+  EXPR_(NOT_ALLDIFF, FIRST_PAIRWISE, 75, CALL, "!alldiff"),
+
+  EXPR(STRING, 81, PRIMARY, "string")
 };
 
 struct OpCodeLess {

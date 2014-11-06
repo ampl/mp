@@ -570,12 +570,12 @@ class ASLBuilder {
     return NumericArgHandler(
           MakeIterated(expr::ALLDIFF, ArrayRef<NumericExpr>(0, num_args)));
   }
-  AllDiffExpr EndAllDiff(AllDiffArgHandler handler) {
-    return Expr::Create<AllDiffExpr>(handler.expr_);
+  PairwiseExpr EndAllDiff(AllDiffArgHandler handler) {
+    return Expr::Create<PairwiseExpr>(handler.expr_);
   }
 
-  AllDiffExpr MakeAllDiff(ArrayRef<NumericExpr> args) {
-    return MakeIterated<AllDiffExpr>(expr::ALLDIFF, args);
+  PairwiseExpr MakeAllDiff(ArrayRef<NumericExpr> args) {
+    return MakeIterated<PairwiseExpr>(expr::ALLDIFF, args);
   }
 
   // Constructs a StringLiteral object.

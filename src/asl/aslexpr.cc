@@ -138,7 +138,7 @@ class ExprWriter : public mp::ExprVisitor<ExprWriter, void, void> {
   void VisitLogicalCount(mp::LogicalCountExpr e);
   void VisitIteratedLogical(mp::IteratedLogicalExpr e);
   void VisitImplication(mp::ImplicationExpr e);
-  void VisitAllDiff(mp::AllDiffExpr e) { WriteFunc(e); }
+  void VisitAllDiff(mp::PairwiseExpr e) { WriteFunc(e); }
   void VisitLogicalConstant(mp::LogicalConstant c) { writer_ << c.value(); }
 };
 
@@ -404,7 +404,7 @@ class ExprEqual : public mp::ExprVisitor<ExprEqual, bool> {
     return VisitVarArg(e);
   }
 
-  bool VisitAllDiff(mp::AllDiffExpr e) { return VisitVarArg(e); }
+  bool VisitAllDiff(mp::PairwiseExpr e) { return VisitVarArg(e); }
 };
 }  // namespace
 
@@ -492,7 +492,7 @@ class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
     return VisitVarArg(e);
   }
 
-  size_t VisitAllDiff(mp::AllDiffExpr e) { return VisitVarArg(e); }
+  size_t VisitAllDiff(mp::PairwiseExpr e) { return VisitVarArg(e); }
 
   size_t VisitStringLiteral(mp::StringLiteral s) {
     size_t hash = Hash(s);

@@ -314,7 +314,7 @@ class NLToConcertConverter : public Converter {
 
   IloConstraint VisitImplication(ImplicationExpr e);
 
-  IloConstraint VisitAllDiff(AllDiffExpr e);
+  IloConstraint VisitAllDiff(PairwiseExpr e);
 
   // Combines 'numberof' operators into IloDistribute constraints
   // which are much more useful to the solution procedure.

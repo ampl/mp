@@ -202,7 +202,7 @@ void NLToJaCoPConverter::ConvertExpr(
 }
 
 void NLToJaCoPConverter::ConvertLogicalCon(LogicalExpr e) {
-  AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
+  PairwiseExpr alldiff = Cast<PairwiseExpr>(e);
   if (!alldiff) {
     Impose(Visit(e));
     return;
@@ -345,11 +345,11 @@ jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
       Visit(e.true_expr()), Visit(e.false_expr()));
 }
 
-jobject NLToJaCoPConverter::VisitAllDiff(AllDiffExpr e) {
+jobject NLToJaCoPConverter::VisitAllDiff(PairwiseExpr e) {
   int n = e.num_args();
   std::vector<jobject> args(n);
   int index = 0;
-  for (AllDiffExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+  for (PairwiseExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
     args[index++] = Visit(*i);
   if (!and_array_ctor_) {
     and_class_.Init(env_);

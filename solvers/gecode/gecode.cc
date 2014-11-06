@@ -382,7 +382,7 @@ void NLToGecodeConverter::Convert(const Problem &p) {
   int num_logical_cons = p.num_logical_cons();
   for (int i = 0; i < num_logical_cons; ++i) {
     LogicalExpr e = p.logical_con_expr(i);
-    AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
+    PairwiseExpr alldiff = Cast<PairwiseExpr>(e);
     ICLSetter icl_setter(icl_, GetICL(p.num_cons() + i));
     if (!alldiff) {
       rel(problem_, Visit(e), icl_);
@@ -473,11 +473,11 @@ BoolExpr NLToGecodeConverter::VisitImplication(ImplicationExpr e) {
         (!condition && Visit(e.false_expr()));
 }
 
-BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr e) {
+BoolExpr NLToGecodeConverter::VisitAllDiff(PairwiseExpr e) {
   int n = e.num_args();
   std::vector<LinExpr> args(n);
   int index = 0;
-  for (AllDiffExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+  for (PairwiseExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
     args[index++] = Visit(*i);
   Gecode::BoolVarArgs and_args(n * (n - 1) / 2);
   index = 0;

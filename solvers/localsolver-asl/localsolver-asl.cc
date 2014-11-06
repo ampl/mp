@@ -153,7 +153,7 @@ LocalSolver::LocalSolver()
       &LocalSolver::GetTimeLimit, &LocalSolver::SetTimeLimit);
 }
 
-ls::LSExpression NLToLocalSolverConverter::VisitAllDiff(AllDiffExpr e) {
+ls::LSExpression NLToLocalSolverConverter::VisitAllDiff(PairwiseExpr e) {
   ls::LSExpression result = model_.createExpression(ls::O_And);
   int num_args = e.num_args();
   std::vector<ls::LSExpression > args(num_args);

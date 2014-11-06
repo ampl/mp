@@ -369,7 +369,7 @@ class NLToJaCoPConverter : public ExprConverter<NLToJaCoPConverter, jobject> {
     return eq_con_class_.NewObject(env_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  jobject VisitAllDiff(AllDiffExpr e);
+  jobject VisitAllDiff(PairwiseExpr e);
 
   jobject VisitLogicalConstant(LogicalConstant c) {
     if (!one_var_)

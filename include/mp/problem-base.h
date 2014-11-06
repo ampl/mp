@@ -160,15 +160,19 @@ enum Kind {
   EXISTS,
   LAST_ITERATED_LOGICAL = EXISTS,
 
-  ALLDIFF,
-  LAST_LOGICAL = ALLDIFF,
+  // Pairwise expressions.
+  FIRST_PAIRWISE,
+  ALLDIFF = FIRST_PAIRWISE,
+  NOT_ALLDIFF,
+  LAST_PAIRWISE = NOT_ALLDIFF,
+  LAST_LOGICAL = LAST_PAIRWISE,
 
   STRING,
   LAST_EXPR = STRING
 };
 
 // Maximum opcode index.
-enum { MAX_OPCODE = 81 };
+enum { MAX_OPCODE = 82 };
 
 class OpCodeInfo {
  private:

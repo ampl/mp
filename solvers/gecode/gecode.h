@@ -255,7 +255,7 @@ class NLToGecodeConverter :
     return Visit(e.lhs()) == Visit(e.rhs());
   }
 
-  BoolExpr VisitAllDiff(AllDiffExpr e);
+  BoolExpr VisitAllDiff(PairwiseExpr e);
 
   BoolExpr VisitLogicalConstant(LogicalConstant c) {
     bool value = c.value();

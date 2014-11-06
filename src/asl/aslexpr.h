@@ -690,10 +690,10 @@ MP_SPECIALIZE_IS(ImplicationExpr, IMPLICATION)
 typedef BasicIteratedExpr<LogicalExpr> IteratedLogicalExpr;
 MP_SPECIALIZE_IS_RANGE(IteratedLogicalExpr, ITERATED_LOGICAL)
 
-// An alldiff expression.
+// A pairwise expression.
 // Example: alldiff{i in I} x[i], where I is a set and x is a variable.
-typedef BasicIteratedExpr<LogicalExpr, NumericExpr> AllDiffExpr;
-MP_SPECIALIZE_IS(AllDiffExpr, ALLDIFF)
+typedef BasicIteratedExpr<LogicalExpr, NumericExpr> PairwiseExpr;
+MP_SPECIALIZE_IS_RANGE(PairwiseExpr, PAIRWISE)
 
 class StringLiteral : public Expr {
  public:
@@ -1080,7 +1080,11 @@ class ExprVisitor {
     return MP_DISPATCH(VisitIteratedLogical(e));
   }
 
-  LResult VisitAllDiff(AllDiffExpr e) {
+  LResult VisitAllDiff(PairwiseExpr e) {
+    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitNotAllDiff(PairwiseExpr e) {
     return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 };
@@ -1229,7 +1233,9 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
   case expr::IFF:
     return MP_DISPATCH(VisitIff(Expr::Create<BinaryLogicalExpr>(e)));
   case expr::ALLDIFF:
-    return MP_DISPATCH(VisitAllDiff(Expr::Create<AllDiffExpr>(e)));
+    return MP_DISPATCH(VisitAllDiff(Expr::Create<PairwiseExpr>(e)));
+  case expr::NOT_ALLDIFF:
+    return MP_DISPATCH(VisitNotAllDiff(Expr::Create<PairwiseExpr>(e)));
   case expr::CONSTANT:
     return MP_DISPATCH(VisitLogicalConstant(
         Expr::Create<LogicalConstant>(e)));
