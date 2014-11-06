@@ -210,37 +210,6 @@ TEST(ExprTest, Function) {
   EXPECT_TRUE(f == 0);
 }
 
-TEST(ExprTest, CallExpr) {
-  mp::CallExpr e;
-  EXPECT_TRUE(e == 0);
-  (void)mp::NumericExpr(e);
-  ExprFactory factory;
-  mp::Function f = factory.AddFunction("foo");
-  enum {NUM_ARGS = 3};
-  ExprFactory::CallExprBuilder builder = factory.BeginCall(f, NUM_ARGS);
-  mp::Expr args[NUM_ARGS] = {
-    factory.MakeNumericConstant(11),
-    factory.MakeVariable(0),
-    factory.MakeNumericConstant(22)
-  };
-  for (int i = 0; i < NUM_ARGS; ++i)
-    builder.AddArg(args[i]);
-  e = factory.EndCall(builder);
-  EXPECT_EQ(expr::CALL, e.kind());
-  EXPECT_EQ(3, e.num_args());
-  mp::CallExpr::iterator it = e.begin();
-  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
-    EXPECT_EQ(args[i], e.arg(i));
-    EXPECT_EQ(args[i], *it);
-  }
-  EXPECT_EQ(e.end(), it);
-  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
-  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
-  EXPECT_ASSERT(factory.BeginCall(f, -1), "invalid number of arguments");
-  factory.BeginCall(f, 0);
-  EXPECT_ASSERT(factory.BeginCall(mp::Function(), 0), "invalid function");
-}
-
 // Iterated expressions share the same builder so it is enough to test
 // CallExprBuilder.
 
@@ -297,69 +266,6 @@ TEST(ExprTest, ExprIterator) {
   EXPECT_EQ(args[2], *i);
 }
 
-TEST(ExprTest, VarArgExpr) {
-  mp::VarArgExpr e;
-  EXPECT_TRUE(e == 0);
-  (void)mp::NumericExpr(e);
-  ExprFactory factory;
-  enum {NUM_ARGS = 3};
-  ExprFactory::VarArgExprBuilder builder =
-      factory.BeginVarArg(expr::MAX, NUM_ARGS);
-  mp::NumericExpr args[NUM_ARGS] = {
-    factory.MakeNumericConstant(11),
-    factory.MakeVariable(0),
-    factory.MakeNumericConstant(22)
-  };
-  for (int i = 0; i < NUM_ARGS; ++i)
-    builder.AddArg(args[i]);
-  e = factory.EndVarArg(builder);
-  EXPECT_EQ(expr::MAX, e.kind());
-  EXPECT_EQ(3, e.num_args());
-  mp::VarArgExpr::iterator it = e.begin();
-  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
-    mp::NumericExpr arg = e.arg(i);
-    EXPECT_EQ(args[i], arg);
-    EXPECT_EQ(args[i], *it);
-  }
-  EXPECT_EQ(e.end(), it);
-  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
-  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
-  EXPECT_ASSERT(factory.BeginVarArg(expr::MAX, -1),
-                "invalid number of arguments");
-  factory.BeginVarArg(expr::MIN, 0);
-  EXPECT_ASSERT(factory.BeginVarArg(expr::SUM, 1), "invalid expression kind");
-}
-
-TEST(ExprTest, SumExpr) {
-  mp::SumExpr e;
-  EXPECT_TRUE(e == 0);
-  (void)mp::NumericExpr(e);
-  ExprFactory factory;
-  enum {NUM_ARGS = 3};
-  ExprFactory::SumExprBuilder builder = factory.BeginSum(NUM_ARGS);
-  mp::NumericExpr args[NUM_ARGS] = {
-    factory.MakeNumericConstant(11),
-    factory.MakeVariable(0),
-    factory.MakeNumericConstant(22)
-  };
-  for (int i = 0; i < NUM_ARGS; ++i)
-    builder.AddArg(args[i]);
-  e = factory.EndSum(builder);
-  EXPECT_EQ(expr::SUM, e.kind());
-  EXPECT_EQ(3, e.num_args());
-  mp::SumExpr::iterator it = e.begin();
-  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
-    mp::NumericExpr arg = e.arg(i);
-    EXPECT_EQ(args[i], arg);
-    EXPECT_EQ(args[i], *it);
-  }
-  EXPECT_EQ(e.end(), it);
-  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
-  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
-  EXPECT_ASSERT(factory.BeginSum(-1), "invalid number of arguments");
-  factory.BeginSum(0);
-}
-
 TEST(ExprTest, CountExpr) {
   mp::CountExpr e;
   EXPECT_TRUE(e == 0);
@@ -387,40 +293,6 @@ TEST(ExprTest, CountExpr) {
   EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
   EXPECT_ASSERT(factory.BeginCount(-1), "invalid number of arguments");
   factory.BeginCount(0);
-}
-
-TEST(ExprTest, NumberOfExpr) {
-  mp::NumberOfExpr e;
-  EXPECT_TRUE(e == 0);
-  (void)mp::NumericExpr(e);
-  ExprFactory factory;
-  enum {NUM_ARGS = 3};
-  mp::NumericExpr args[NUM_ARGS] = {
-    factory.MakeNumericConstant(11),
-    factory.MakeVariable(0),
-    factory.MakeNumericConstant(22)
-  };
-  ExprFactory::NumberOfExprBuilder builder =
-      factory.BeginNumberOf(NUM_ARGS, args[0]);
-  for (int i = 1; i < NUM_ARGS; ++i)
-    builder.AddArg(args[i]);
-  e = factory.EndNumberOf(builder);
-  EXPECT_EQ(expr::NUMBEROF, e.kind());
-  EXPECT_EQ(3, e.num_args());
-  mp::NumberOfExpr::iterator it = e.begin();
-  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
-    mp::NumericExpr arg = e.arg(i);
-    EXPECT_EQ(args[i], arg);
-    EXPECT_EQ(args[i], *it);
-  }
-  EXPECT_EQ(e.end(), it);
-  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
-  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
-  EXPECT_ASSERT(factory.BeginNumberOf(0, args[0]),
-      "invalid number of arguments");
-  EXPECT_ASSERT(factory.BeginNumberOf(1, mp::NumericExpr()),
-      "invalid argument");
-  factory.BeginNumberOf(1, args[1]);
 }
 
 TEST(ExprTest, LogicalConstant) {
@@ -562,10 +434,68 @@ TEST(ExprTest, IteratedLogicalExpr) {
   factory.BeginIteratedLogical(expr::EXISTS, 0);
 }
 
-TEST(ExprTest, AllDiffExpr) {
-  mp::AllDiffExpr e;
+template <typename ExprInfo>
+class IteratedExprTest : public ::testing::Test {
+ public:
+  ExprInfo info_;
+};
+
+template <typename ExprType, expr::Kind K,
+          typename BaseType = mp::NumericExpr, int MIN_ARGS = 0>
+struct ExprInfo {
+  typedef BaseType Base;
+  typedef ExprType Expr;
+  typedef mp::NumericExpr Arg;
+  static expr::Kind kind() { return K; }
+  static int min_args() { return MIN_ARGS; }
+};
+
+struct CallInfo : ExprInfo<mp::CallExpr, expr::CALL> {
+  typedef mp::Expr Arg;
+  typedef ExprFactory::CallExprBuilder Builder;
+  Builder BeginBuild(ExprFactory &f, int n) {
+    return f.BeginCall(f.AddFunction("foo"), n);
+  }
+  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndCall(b); }
+};
+
+struct VarArgInfo : ExprInfo<mp::VarArgExpr, expr::MAX> {
+  typedef ExprFactory::VarArgExprBuilder Builder;
+  Builder BeginBuild(ExprFactory &f, int n) {
+    return f.BeginVarArg(expr::MAX, n);
+  }
+  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndVarArg(b); }
+};
+
+struct SumInfo : ExprInfo<mp::SumExpr, expr::SUM> {
+  typedef ExprFactory::SumExprBuilder Builder;
+  Builder BeginBuild(ExprFactory &f, int n) { return f.BeginSum(n); }
+  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndSum(b); }
+};
+
+struct NumberOfInfo :
+    ExprInfo<mp::NumberOfExpr, expr::NUMBEROF, mp::NumericExpr, 1> {
+  typedef ExprFactory::NumberOfExprBuilder Builder;
+  Builder BeginBuild(ExprFactory &f, int n) {
+    return f.BeginNumberOf(n, f.MakeNumericConstant(11));
+  }
+  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndNumberOf(b); }
+};
+
+struct AllDiffInfo : ExprInfo<mp::AllDiffExpr, expr::ALLDIFF, mp::LogicalExpr> {
+  typedef ExprFactory::AllDiffExprBuilder Builder;
+  Builder BeginBuild(ExprFactory &f, int n) { return f.BeginAllDiff(n); }
+  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndAllDiff(b); }
+};
+
+typedef ::testing::Types<
+  CallInfo, VarArgInfo, SumInfo, NumberOfInfo, AllDiffInfo> IteratedExprTypes;
+TYPED_TEST_CASE(IteratedExprTest, IteratedExprTypes);
+
+TYPED_TEST(IteratedExprTest, Test) {
+  typename TypeParam::Expr e;
   EXPECT_TRUE(e == 0);
-  (void)mp::LogicalExpr(e);
+  (void)typename TypeParam::Base(e);
   ExprFactory factory;
   enum {NUM_ARGS = 3};
   mp::NumericExpr args[NUM_ARGS] = {
@@ -573,23 +503,41 @@ TEST(ExprTest, AllDiffExpr) {
     factory.MakeVariable(0),
     factory.MakeNumericConstant(22)
   };
-  ExprFactory::AllDiffExprBuilder builder = factory.BeginAllDiff(NUM_ARGS);
-  for (int i = 0; i < NUM_ARGS; ++i)
+  auto info = this->info_;
+  typename TypeParam::Builder builder = info.BeginBuild(factory, NUM_ARGS);
+  for (int i = info.min_args(); i < NUM_ARGS; ++i)
     builder.AddArg(args[i]);
-  e = factory.EndAllDiff(builder);
-  EXPECT_EQ(expr::ALLDIFF, e.kind());
+  e = info.EndBuild(factory, builder);
+  EXPECT_EQ(info.kind(), e.kind());
   EXPECT_EQ(3, e.num_args());
-  mp::AllDiffExpr::iterator it = e.begin();
+  typename TypeParam::Expr::iterator it = e.begin();
   for (int i = 0; i < NUM_ARGS; ++i, ++it) {
-    mp::NumericExpr arg = e.arg(i);
+    typename TypeParam::Arg arg = e.arg(i);
     EXPECT_EQ(args[i], arg);
     EXPECT_EQ(args[i], *it);
   }
   EXPECT_EQ(e.end(), it);
   EXPECT_ASSERT(e.arg(-1), "index out of bounds");
   EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
-  EXPECT_ASSERT(factory.BeginAllDiff(-1), "invalid number of arguments");
-  factory.BeginAllDiff(0);
+  EXPECT_ASSERT(info.BeginBuild(factory, info.min_args() - 1),
+                "invalid number of arguments");
+  info.BeginBuild(factory, info.min_args());
+}
+
+TEST(ExprFactoryTest, InvalidCallExprFunction) {
+  ExprFactory factory;
+  EXPECT_ASSERT(factory.BeginCall(mp::Function(), 0), "invalid function");
+}
+
+TEST(ExprTest, InvalidVarArgKind) {
+  ExprFactory factory;
+  EXPECT_ASSERT(factory.BeginVarArg(expr::SUM, 1), "invalid expression kind");
+}
+
+TEST(ExprFactoryTest, InvalidNumberOfArg) {
+  ExprFactory factory;
+  EXPECT_ASSERT(factory.BeginNumberOf(1, mp::NumericExpr()),
+      "invalid argument");
 }
 
 // TODO: test logical expressions
