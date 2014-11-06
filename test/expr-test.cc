@@ -48,16 +48,19 @@ TEST(ExprTest, Expr) {
 TEST(ExprTest, NumericExpr) {
   mp::NumericExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::Expr(e);
 }
 
 TEST(ExprTest, LogicalExpr) {
   mp::LogicalExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::Expr(e);
 }
 
 TEST(ExprTest, NumericConstant) {
   mp::NumericConstant e;
   EXPECT_TRUE(e == 0);
+  (void)mp::NumericExpr(e);
   ExprFactory factory;
   e = factory.MakeNumericConstant(1.23);
   EXPECT_EQ(expr::CONSTANT, e.kind());
@@ -68,6 +71,7 @@ TEST(ExprTest, NumericConstant) {
 TEST(ExprTest, Variable) {
   mp::Variable e;
   EXPECT_TRUE(e == 0);
+  (void)mp::NumericExpr(e);
   ExprFactory factory;
   e = factory.MakeVariable(42);
   EXPECT_EQ(expr::VARIABLE, e.kind());
@@ -78,6 +82,7 @@ TEST(ExprTest, Variable) {
 TEST(ExprTest, UnaryExpr) {
   mp::UnaryExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::NumericExpr(e);
   ExprFactory factory;
   auto arg = factory.MakeNumericConstant(42);
   e = factory.MakeUnary(expr::ABS, arg);
@@ -92,6 +97,7 @@ TEST(ExprTest, UnaryExpr) {
 TEST(ExprTest, BinaryExpr) {
   mp::BinaryExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::NumericExpr(e);
   ExprFactory factory;
   auto lhs = factory.MakeNumericConstant(42);
   auto rhs = factory.MakeVariable(0);
@@ -111,6 +117,7 @@ TEST(ExprTest, BinaryExpr) {
 TEST(ExprTest, IfExpr) {
   mp::IfExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::NumericExpr(e);
   ExprFactory factory;
   auto condition = factory.MakeLogicalConstant(true);
   auto true_expr = factory.MakeNumericConstant(42);
@@ -131,6 +138,7 @@ TEST(ExprTest, IfExpr) {
 TEST(ExprTest, PLTerm) {
   mp::PLTerm e;
   EXPECT_TRUE(e == 0);
+  (void)mp::NumericExpr(e);
   ExprFactory factory;
   ExprFactory::PLTermBuilder builder = factory.BeginPLTerm(2);
   builder.AddSlope(11);
@@ -205,6 +213,7 @@ TEST(ExprTest, Function) {
 TEST(ExprTest, CallExpr) {
   mp::CallExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::NumericExpr(e);
   ExprFactory factory;
   mp::Function f = factory.AddFunction("foo");
   enum {NUM_ARGS = 3};
@@ -291,6 +300,7 @@ TEST(ExprTest, ExprIterator) {
 TEST(ExprTest, VarArgExpr) {
   mp::VarArgExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::NumericExpr(e);
   ExprFactory factory;
   enum {NUM_ARGS = 3};
   ExprFactory::VarArgExprBuilder builder =
@@ -314,15 +324,16 @@ TEST(ExprTest, VarArgExpr) {
   EXPECT_EQ(e.end(), it);
   EXPECT_ASSERT(e.arg(-1), "index out of bounds");
   EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
-  EXPECT_ASSERT(factory.BeginVarArg(expr::MAX, 0),
+  EXPECT_ASSERT(factory.BeginVarArg(expr::MAX, -1),
                 "invalid number of arguments");
-  factory.BeginVarArg(expr::MIN, 1);
+  factory.BeginVarArg(expr::MIN, 0);
   EXPECT_ASSERT(factory.BeginVarArg(expr::SUM, 1), "invalid expression kind");
 }
 
 TEST(ExprTest, SumExpr) {
   mp::SumExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::NumericExpr(e);
   ExprFactory factory;
   enum {NUM_ARGS = 3};
   ExprFactory::SumExprBuilder builder = factory.BeginSum(NUM_ARGS);
@@ -352,6 +363,7 @@ TEST(ExprTest, SumExpr) {
 TEST(ExprTest, CountExpr) {
   mp::CountExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::NumericExpr(e);
   ExprFactory factory;
   enum {NUM_ARGS = 2};
   ExprFactory::CountExprBuilder builder = factory.BeginCount(NUM_ARGS);
@@ -380,6 +392,7 @@ TEST(ExprTest, CountExpr) {
 TEST(ExprTest, NumberOfExpr) {
   mp::NumberOfExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::NumericExpr(e);
   ExprFactory factory;
   enum {NUM_ARGS = 3};
   mp::NumericExpr args[NUM_ARGS] = {
@@ -413,6 +426,7 @@ TEST(ExprTest, NumberOfExpr) {
 TEST(ExprTest, LogicalConstant) {
   mp::LogicalConstant e;
   EXPECT_TRUE(e == 0);
+  (void)mp::LogicalExpr(e);
   ExprFactory factory;
   e = factory.MakeLogicalConstant(false);
   EXPECT_EQ(expr::CONSTANT, e.kind());
@@ -424,6 +438,7 @@ TEST(ExprTest, LogicalConstant) {
 TEST(ExprTest, NotExpr) {
   mp::NotExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::LogicalExpr(e);
   ExprFactory factory;
   auto arg = factory.MakeLogicalConstant(false);
   e = factory.MakeNot(arg);
@@ -436,6 +451,7 @@ TEST(ExprTest, NotExpr) {
 TEST(ExprTest, BinaryLogicalExpr) {
   mp::BinaryLogicalExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::LogicalExpr(e);
   ExprFactory factory;
   auto lhs = factory.MakeLogicalConstant(true);
   auto rhs = factory.MakeLogicalConstant(false);
@@ -455,6 +471,7 @@ TEST(ExprTest, BinaryLogicalExpr) {
 TEST(ExprTest, RelationalExpr) {
   mp::RelationalExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::LogicalExpr(e);
   ExprFactory factory;
   auto lhs = factory.MakeNumericConstant(42);
   auto rhs = factory.MakeVariable(0);
@@ -474,6 +491,7 @@ TEST(ExprTest, RelationalExpr) {
 TEST(ExprTest, LogicalCountExpr) {
   mp::LogicalCountExpr e;
   EXPECT_TRUE(e == 0);
+  (void)mp::LogicalExpr(e);
   ExprFactory factory;
   auto lhs = factory.MakeNumericConstant(42);
   auto rhs = factory.EndCount(factory.BeginCount(0));
@@ -488,6 +506,60 @@ TEST(ExprTest, LogicalCountExpr) {
                 "invalid argument");
   EXPECT_ASSERT(factory.MakeLogicalCount(expr::ATMOST, lhs, mp::CountExpr()),
                 "invalid argument");
+}
+
+TEST(ExprTest, ImplicationExpr) {
+  mp::ImplicationExpr e;
+  (void)mp::LogicalExpr(e);
+  EXPECT_TRUE(e == 0);
+  ExprFactory factory;
+  auto condition = factory.MakeLogicalConstant(true);
+  auto true_expr = factory.MakeLogicalConstant(false);
+  auto false_expr = factory.MakeLogicalConstant(true);
+  e = factory.MakeImplication(condition, true_expr, false_expr);
+  EXPECT_TRUE(e != 0);
+  EXPECT_EQ(expr::IMPLICATION, e.kind());
+  EXPECT_EQ(condition, e.condition());
+  EXPECT_EQ(true_expr, e.true_expr());
+  EXPECT_EQ(false_expr, e.false_expr());
+  EXPECT_ASSERT(factory.MakeImplication(
+                  mp::LogicalExpr(), true_expr, false_expr),
+                "invalid argument");
+  EXPECT_ASSERT(factory.MakeImplication(
+                  condition, mp::LogicalExpr(), false_expr),
+                "invalid argument");
+  factory.MakeImplication(condition, true_expr, mp::LogicalExpr());
+}
+
+TEST(ExprTest, IteratedLogicalExpr) {
+  mp::IteratedLogicalExpr e;
+  EXPECT_TRUE(e == 0);
+  (void)mp::LogicalExpr(e);
+  ExprFactory factory;
+  enum {NUM_ARGS = 2};
+  ExprFactory::IteratedLogicalExprBuilder builder =
+      factory.BeginIteratedLogical(expr::EXISTS, NUM_ARGS);
+  mp::LogicalExpr args[NUM_ARGS] = {
+    factory.MakeLogicalConstant(true),
+    factory.MakeLogicalConstant(false)
+  };
+  for (int i = 0; i < NUM_ARGS; ++i)
+    builder.AddArg(args[i]);
+  e = factory.EndIteratedLogical(builder);
+  EXPECT_EQ(expr::EXISTS, e.kind());
+  EXPECT_EQ(2, e.num_args());
+  mp::CountExpr::iterator it = e.begin();
+  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
+    mp::LogicalExpr arg = e.arg(i);
+    EXPECT_EQ(args[i], arg);
+    EXPECT_EQ(args[i], *it);
+  }
+  EXPECT_EQ(e.end(), it);
+  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
+  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
+  EXPECT_ASSERT(factory.BeginIteratedLogical(expr::EXISTS, -1),
+                "invalid number of arguments");
+  factory.BeginIteratedLogical(expr::EXISTS, 0);
 }
 
 // TODO: test logical expressions

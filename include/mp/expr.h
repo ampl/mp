@@ -255,7 +255,7 @@ class BasicBinaryExpr : public Base {
 typedef BasicBinaryExpr<NumericExpr> BinaryExpr;
 MP_SPECIALIZE_IS_RANGE(BinaryExpr, BINARY)
 
-template <typename Base>
+template <typename Base, expr::Kind K>
 class BasicIfExpr : public Base {
  private:
   struct Impl : Expr::Impl {
@@ -266,6 +266,8 @@ class BasicIfExpr : public Base {
   MP_EXPR;
 
  public:
+  static const expr::Kind KIND = K;
+
   LogicalExpr condition() const {
     return Expr::Create<LogicalExpr>(impl()->condition);
   }
@@ -276,7 +278,7 @@ class BasicIfExpr : public Base {
 
 // An if-then-else expression.
 // Example: if x != 0 then y else z, where x, y and z are variables.
-typedef BasicIfExpr<NumericExpr> IfExpr;
+typedef BasicIfExpr<NumericExpr, expr::IF> IfExpr;
 MP_SPECIALIZE_IS(IfExpr, IF)
 
 // A piecewise-linear term.
@@ -382,8 +384,8 @@ class CallExpr : public NumericExpr {
 
 MP_SPECIALIZE_IS(CallExpr, CALL)
 
-template <expr::Kind KIND, typename ArgType = NumericExpr>
-class BasicIteratedExpr : public NumericExpr {
+template <expr::Kind KIND, typename Base = NumericExpr, typename ArgType = Base>
+class BasicIteratedExpr : public Base {
  private:
   struct Impl : Expr::Impl {
     int num_args;
@@ -400,11 +402,11 @@ class BasicIteratedExpr : public NumericExpr {
   // Returns an argument with the specified index.
   Arg arg(int index) {
     MP_ASSERT(index >= 0 && index < num_args(), "index out of bounds");
-    return Create<Arg>(impl()->args[index]);
+    return Expr::Create<Arg>(impl()->args[index]);
   }
 
   // An argument iterator.
-  typedef BasicIterator<Arg> iterator;
+  typedef Expr::BasicIterator<Arg> iterator;
 
   iterator begin() const { return iterator(impl()->args); }
   iterator end() const { return iterator(impl()->args + num_args()); }
@@ -423,7 +425,7 @@ MP_SPECIALIZE_IS(SumExpr, SUM)
 
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
-typedef BasicIteratedExpr<expr::COUNT, mp::LogicalExpr> CountExpr;
+typedef BasicIteratedExpr<expr::COUNT, NumericExpr, LogicalExpr> CountExpr;
 MP_SPECIALIZE_IS(CountExpr, COUNT)
 
 // A numberof expression.
@@ -483,7 +485,18 @@ class LogicalCountExpr : public LogicalExpr {
 
 MP_SPECIALIZE_IS_RANGE(LogicalCountExpr, LOGICAL_COUNT)
 
-// TODO: logical expressions: implication, iterated logical, alldiff
+// An implication expression.
+// Example: a ==> b else c, where a, b and c are logical expressions.
+typedef BasicIfExpr<LogicalExpr, expr::IMPLICATION> ImplicationExpr;
+MP_SPECIALIZE_IS(ImplicationExpr, IMPLICATION)
+
+// An iterated logical expression.
+// Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
+typedef BasicIteratedExpr<
+  expr::FIRST_ITERATED_LOGICAL, LogicalExpr> IteratedLogicalExpr;
+MP_SPECIALIZE_IS_RANGE(IteratedLogicalExpr, ITERATED_LOGICAL)
+
+// TODO: expressions: alldiff and string literal
 
 class ExprFactory {
  private:
@@ -515,7 +528,6 @@ class ExprFactory {
     return Expr::Create<ExprType>(impl);
   }
 
-
   template <typename ExprType, typename LHS, typename RHS>
   ExprType MakeBinary(expr::Kind kind, LHS lhs, RHS rhs) {
     MP_ASSERT(internal::Is<ExprType>(kind), "invalid expression kind");
@@ -523,6 +535,18 @@ class ExprFactory {
     typename ExprType::Impl *impl = Allocate<typename ExprType::Impl>(kind);
     impl->lhs = lhs.impl_;
     impl->rhs = rhs.impl_;
+    return Expr::Create<ExprType>(impl);
+  }
+
+  template <typename ExprType, typename Arg>
+  ExprType MakeIf(LogicalExpr condition, Arg true_expr, Arg false_expr) {
+    // false_expr can be null.
+    MP_ASSERT(condition != 0 && true_expr != 0, "invalid argument");
+    typename ExprType::Impl *impl =
+        Allocate<typename ExprType::Impl>(ExprType::KIND);
+    impl->condition = condition.impl_;
+    impl->true_expr = true_expr.impl_;
+    impl->false_expr = false_expr.impl_;
     return Expr::Create<ExprType>(impl);
   }
 
@@ -548,8 +572,8 @@ class ExprFactory {
 
   template <typename ExprType>
   IteratedExprBuilder<ExprType> BeginIteratedExpr(
-        expr::Kind kind, int num_args, int min_args) {
-    MP_ASSERT(num_args >= min_args, "invalid number of arguments");
+        expr::Kind kind, int num_args) {
+    MP_ASSERT(num_args >= 0, "invalid number of arguments");
     typename ExprType::Impl *impl = Allocate<typename ExprType::Impl>(
           kind, sizeof(Expr::Impl*) * (num_args - 1));
     impl->num_args = num_args;
@@ -608,13 +632,7 @@ class ExprFactory {
   // Makes an if expression.
   IfExpr MakeIf(LogicalExpr condition,
                 NumericExpr true_expr, NumericExpr false_expr) {
-    // false_expr can be null.
-    MP_ASSERT(condition != 0 && true_expr != 0, "invalid argument");
-    IfExpr::Impl *impl = Allocate<IfExpr::Impl>(expr::IF);
-    impl->condition = condition.impl_;
-    impl->true_expr = true_expr.impl_;
-    impl->false_expr = false_expr.impl_;
-    return Expr::Create<IfExpr>(impl);
+    return MakeIf<IfExpr>(condition, true_expr, false_expr);
   }
 
   // A piecewise-linear term builder.
@@ -671,8 +689,7 @@ class ExprFactory {
   // Begins building a call expression.
   CallExprBuilder BeginCall(Function func, int num_args) {
     MP_ASSERT(func != 0, "invalid function");
-    CallExprBuilder builder =
-        BeginIteratedExpr<CallExpr>(expr::CALL, num_args, 0);
+    CallExprBuilder builder = BeginIteratedExpr<CallExpr>(expr::CALL, num_args);
     builder.impl_->func = func.impl_;
     return builder;
   }
@@ -687,7 +704,7 @@ class ExprFactory {
   // Begins building a variable argument expression.
   VarArgExprBuilder BeginVarArg(expr::Kind kind, int num_args) {
     MP_ASSERT(internal::Is<VarArgExpr>(kind), "invalid expression kind");
-    return BeginIteratedExpr<VarArgExpr>(kind, num_args, 1);
+    return BeginIteratedExpr<VarArgExpr>(kind, num_args);
   }
 
   // Ends building a variable argument expression.
@@ -699,7 +716,7 @@ class ExprFactory {
 
   // Begins building a sum expression.
   SumExprBuilder BeginSum(int num_args) {
-    return BeginIteratedExpr<SumExpr>(expr::SUM, num_args, 0);
+    return BeginIteratedExpr<SumExpr>(expr::SUM, num_args);
   }
 
   // Ends building a sum expression.
@@ -711,7 +728,7 @@ class ExprFactory {
 
   // Begins building a count expression.
   CountExprBuilder BeginCount(int num_args) {
-    return BeginIteratedExpr<CountExpr>(expr::COUNT, num_args, 0);
+    return BeginIteratedExpr<CountExpr>(expr::COUNT, num_args);
   }
 
   // Ends building a count expression.
@@ -723,8 +740,9 @@ class ExprFactory {
 
   // Begins building a numberof expression.
   NumberOfExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
+    MP_ASSERT(num_args >= 1, "invalid number of arguments");
     NumberOfExprBuilder builder =
-        BeginIteratedExpr<NumberOfExpr>(expr::NUMBEROF, num_args, 1);
+        BeginIteratedExpr<NumberOfExpr>(expr::NUMBEROF, num_args);
     builder.AddArg(arg0);
     return builder;
   }
@@ -763,6 +781,25 @@ class ExprFactory {
   LogicalCountExpr MakeLogicalCount(
         expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
     return MakeBinary<LogicalCountExpr>(kind, lhs, rhs);
+  }
+
+  // Makes an implication expression.
+  ImplicationExpr MakeImplication(LogicalExpr condition, LogicalExpr true_expr,
+                                  LogicalExpr false_expr) {
+    return MakeIf<ImplicationExpr>(condition, true_expr, false_expr);
+  }
+
+  typedef IteratedExprBuilder<IteratedLogicalExpr> IteratedLogicalExprBuilder;
+
+  // Begins building a sum expression.
+  IteratedLogicalExprBuilder BeginIteratedLogical(
+        expr::Kind kind, int num_args) {
+    return BeginIteratedExpr<IteratedLogicalExpr>(kind, num_args);
+  }
+
+  // Ends building a sum expression.
+  IteratedLogicalExpr EndIteratedLogical(IteratedLogicalExprBuilder builder) {
+    return EndIteratedExpr<IteratedLogicalExpr>(builder);
   }
 };
 }  // namespace mp
