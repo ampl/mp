@@ -99,16 +99,21 @@ enum Kind {
   PLTERM,
   CALL,
 
-  // Variable argument expressions.
-  FIRST_VARARG,
+  // Iterated expressions.
+  // The term "iterated" in the context of operators and expressions comes
+  // from the article "AMPL: A Mathematical Programming Language" and is
+  // used to denote operators indexed over sets.
+  FIRST_ITERATED,
+  FIRST_VARARG = FIRST_ITERATED,
   MIN = FIRST_VARARG,
   MAX,
   LAST_VARARG = MAX,
-
   SUM,
-  COUNT,
   NUMBEROF,
+  LAST_ITERATED = NUMBEROF,
+
   NUMBEROF_SYM,
+  COUNT,
   LAST_NUMERIC,
 
   // CONSTANT belongs both to numeric and logical expressions therefore
@@ -149,6 +154,7 @@ enum Kind {
 
   IMPLICATION,
 
+  // Iterated logical expressions.
   FIRST_ITERATED_LOGICAL,
   FORALL = FIRST_ITERATED_LOGICAL,
   EXISTS,

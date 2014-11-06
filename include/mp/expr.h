@@ -24,6 +24,7 @@
 #define MP_EXPR_H_
 
 #include <cassert>
+#include <deque>
 #include <memory>
 #include <vector>
 
@@ -384,7 +385,7 @@ class CallExpr : public NumericExpr {
 
 MP_SPECIALIZE_IS(CallExpr, CALL)
 
-template <expr::Kind KIND, typename Base = NumericExpr, typename ArgType = Base>
+template <typename Base = NumericExpr, typename ArgType = Base>
 class BasicIteratedExpr : public Base {
  private:
   struct Impl : Expr::Impl {
@@ -412,27 +413,19 @@ class BasicIteratedExpr : public Base {
   iterator end() const { return iterator(impl()->args + num_args()); }
 };
 
-// A numeric expression with a variable number of arguments.
-// The min and max functions always have at least one argument.
-// Example: min{i in I} x[i], where I is a set and x is a variable.
-typedef BasicIteratedExpr<expr::FIRST_VARARG> VarArgExpr;
-MP_SPECIALIZE_IS_RANGE(VarArgExpr, VARARG)
-
-// A sum expression.
-// Example: sum{i in I} x[i], where I is a set and x is a variable.
-typedef BasicIteratedExpr<expr::SUM> SumExpr;
-MP_SPECIALIZE_IS(SumExpr, SUM)
+// A numeric iterated expression such as min, max, sum or numberof.
+// Examples:
+//   min{i in I} x[i],
+//   sum{i in I} x[i],
+//   numberof 42 in ({i in I} x[i]),
+//   where I is a set and x is a variable.
+typedef BasicIteratedExpr<> IteratedExpr;
+MP_SPECIALIZE_IS_RANGE(IteratedExpr, ITERATED)
 
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
-typedef BasicIteratedExpr<expr::COUNT, NumericExpr, LogicalExpr> CountExpr;
+typedef BasicIteratedExpr<NumericExpr, LogicalExpr> CountExpr;
 MP_SPECIALIZE_IS(CountExpr, COUNT)
-
-// A numberof expression.
-// Example: numberof 42 in ({i in I} x[i]),
-// where I is a set and x is a variable.
-typedef BasicIteratedExpr<expr::NUMBEROF> NumberOfExpr;
-MP_SPECIALIZE_IS(NumberOfExpr, NUMBEROF)
 
 // A logical constant.
 // Examples: 0, 1
@@ -492,32 +485,43 @@ MP_SPECIALIZE_IS(ImplicationExpr, IMPLICATION)
 
 // An iterated logical expression.
 // Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
-typedef BasicIteratedExpr<
-  expr::FIRST_ITERATED_LOGICAL, LogicalExpr> IteratedLogicalExpr;
+typedef BasicIteratedExpr<LogicalExpr> IteratedLogicalExpr;
 MP_SPECIALIZE_IS_RANGE(IteratedLogicalExpr, ITERATED_LOGICAL)
 
 // An alldiff expression.
 // Example: alldiff{i in I} x[i], where I is a set and x is a variable.
-typedef BasicIteratedExpr<expr::ALLDIFF, LogicalExpr, NumericExpr> AllDiffExpr;
+typedef BasicIteratedExpr<LogicalExpr, NumericExpr> AllDiffExpr;
 MP_SPECIALIZE_IS(AllDiffExpr, ALLDIFF)
 
-// TODO: string literal
+class StringLiteral : public Expr {
+ private:
+  struct Impl : Expr::Impl {
+    char value[1];
+  };
+  MP_EXPR;
+
+ public:
+  const char *value() const { return impl()->value; }
+};
+
+MP_SPECIALIZE_IS(StringLiteral, STRING)
+
 
 class ExprFactory {
  private:
-  std::vector<Function::Impl*> funcs_;
+  std::deque<Function::Impl> funcs_;
   std::vector<Expr::Impl*> exprs_;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(ExprFactory);
 
-  // Allocates memory for an object of type Impl which is a subclass
-  // of ExprImpl.
+  // Allocates memory for an object of type ExprType::Impl.
   // extra_bytes: extra bytes to allocate at the end.
-  template <typename Impl>
-  Impl *Allocate(expr::Kind kind, int extra_bytes = 0) {
+  template <typename ExprType>
+  typename ExprType::Impl *Allocate(expr::Kind kind, int extra_bytes = 0) {
     // Call push_back first to make sure that the impl pointer doesn't leak
     // if push_back throws an exception.
     exprs_.push_back(0);
+    typedef typename ExprType::Impl Impl;
     Impl *impl = reinterpret_cast<Impl*>(
           ::operator new(sizeof(Impl) + extra_bytes));
     impl->kind_ = kind;
@@ -528,7 +532,7 @@ class ExprFactory {
   template <typename ExprType, typename Arg>
   ExprType MakeUnary(expr::Kind kind, Arg arg) {
     MP_ASSERT(arg != 0, "invalid argument");
-    typename ExprType::Impl *impl = Allocate<typename  ExprType::Impl>(kind);
+    typename ExprType::Impl *impl = Allocate<ExprType>(kind);
     impl->arg = arg.impl_;
     return Expr::Create<ExprType>(impl);
   }
@@ -537,7 +541,7 @@ class ExprFactory {
   ExprType MakeBinary(expr::Kind kind, LHS lhs, RHS rhs) {
     MP_ASSERT(internal::Is<ExprType>(kind), "invalid expression kind");
     MP_ASSERT(lhs != 0 && rhs != 0, "invalid argument");
-    typename ExprType::Impl *impl = Allocate<typename ExprType::Impl>(kind);
+    typename ExprType::Impl *impl = Allocate<ExprType>(kind);
     impl->lhs = lhs.impl_;
     impl->rhs = rhs.impl_;
     return Expr::Create<ExprType>(impl);
@@ -547,8 +551,7 @@ class ExprFactory {
   ExprType MakeIf(LogicalExpr condition, Arg true_expr, Arg false_expr) {
     // false_expr can be null.
     MP_ASSERT(condition != 0 && true_expr != 0, "invalid argument");
-    typename ExprType::Impl *impl =
-        Allocate<typename ExprType::Impl>(ExprType::KIND);
+    typename ExprType::Impl *impl = Allocate<ExprType>(ExprType::KIND);
     impl->condition = condition.impl_;
     impl->true_expr = true_expr.impl_;
     impl->false_expr = false_expr.impl_;
@@ -557,14 +560,14 @@ class ExprFactory {
 
   // A variable argument expression builder.
   template <typename ExprType>
-  class IteratedExprBuilder {
+  class BasicIteratedExprBuilder {
    private:
     typename ExprType::Impl *impl_;
     int arg_index_;
 
     friend class ExprFactory;
 
-    explicit IteratedExprBuilder(typename ExprType::Impl *impl)
+    explicit BasicIteratedExprBuilder(typename ExprType::Impl *impl)
       : impl_(impl), arg_index_(0) {}
 
    public:
@@ -576,17 +579,17 @@ class ExprFactory {
   };
 
   template <typename ExprType>
-  IteratedExprBuilder<ExprType> BeginIteratedExpr(
+  BasicIteratedExprBuilder<ExprType> BeginIterated(
         expr::Kind kind, int num_args) {
     MP_ASSERT(num_args >= 0, "invalid number of arguments");
-    typename ExprType::Impl *impl = Allocate<typename ExprType::Impl>(
-          kind, sizeof(Expr::Impl*) * (num_args - 1));
+    typename ExprType::Impl *impl =
+        Allocate<ExprType>(kind, sizeof(Expr::Impl*) * (num_args - 1));
     impl->num_args = num_args;
-    return IteratedExprBuilder<ExprType>(impl);
+    return BasicIteratedExprBuilder<ExprType>(impl);
   }
 
   template <typename ExprType>
-  ExprType EndIteratedExpr(IteratedExprBuilder<ExprType> builder) {
+  ExprType EndIterated(BasicIteratedExprBuilder<ExprType> builder) {
     typename ExprType::Impl *impl = builder.impl_;
     // Check that all arguments provided.
     MP_ASSERT(builder.arg_index_ == impl->num_args, "too few arguments");
@@ -600,25 +603,20 @@ class ExprFactory {
   }
 
   Function AddFunction(const char *) {
-    // Call push_back first to make sure that the impl pointer doesn't leak
-    // if push_back throws an exception.
-    funcs_.push_back(0);
-    Function::Impl *impl = new Function::Impl();
-    funcs_.back() = impl;
-    return Function(impl);
+    funcs_.push_back(Function::Impl());
+    return Function(&funcs_.back());
   }
 
   // Makes a numeric constant.
   NumericConstant MakeNumericConstant(double value) {
-    NumericConstant::Impl *impl =
-        Allocate<NumericConstant::Impl>(expr::CONSTANT);
+    NumericConstant::Impl *impl = Allocate<NumericConstant>(expr::CONSTANT);
     impl->value = value;
     return Expr::Create<NumericConstant>(impl);
   }
 
   // Makes a variable reference.
   Variable MakeVariable(int index) {
-    Variable::Impl *impl = Allocate<Variable::Impl>(expr::VARIABLE);
+    Variable::Impl *impl = Allocate<Variable>(expr::VARIABLE);
     impl->index = index;
     return Expr::Create<Variable>(impl);
   }
@@ -670,7 +668,7 @@ class ExprFactory {
   // Begins building a piecewise-linear term.
   PLTermBuilder BeginPLTerm(int num_breakpoints) {
     MP_ASSERT(num_breakpoints > 0, "invalid number of breakpoints");
-    PLTerm::Impl *impl = Allocate<PLTerm::Impl>(
+    PLTerm::Impl *impl = Allocate<PLTerm>(
           expr::PLTERM, sizeof(double) * num_breakpoints * 2);
     impl->num_breakpoints = num_breakpoints;
     return PLTermBuilder(impl);
@@ -689,78 +687,64 @@ class ExprFactory {
     return Expr::Create<PLTerm>(impl);
   }
 
-  typedef IteratedExprBuilder<CallExpr> CallExprBuilder;
+  typedef BasicIteratedExprBuilder<CallExpr> CallExprBuilder;
 
   // Begins building a call expression.
   CallExprBuilder BeginCall(Function func, int num_args) {
     MP_ASSERT(func != 0, "invalid function");
-    CallExprBuilder builder = BeginIteratedExpr<CallExpr>(expr::CALL, num_args);
+    CallExprBuilder builder = BeginIterated<CallExpr>(expr::CALL, num_args);
     builder.impl_->func = func.impl_;
     return builder;
   }
 
   // Ends building a call expression.
   CallExpr EndCall(CallExprBuilder builder) {
-    return EndIteratedExpr<CallExpr>(builder);
+    return EndIterated<CallExpr>(builder);
   }
 
-  typedef IteratedExprBuilder<VarArgExpr> VarArgExprBuilder;
+  typedef BasicIteratedExprBuilder<IteratedExpr> IteratedExprBuilder;
 
-  // Begins building a variable argument expression.
-  VarArgExprBuilder BeginVarArg(expr::Kind kind, int num_args) {
-    MP_ASSERT(internal::Is<VarArgExpr>(kind), "invalid expression kind");
-    return BeginIteratedExpr<VarArgExpr>(kind, num_args);
+  // Begins building an iterated expression.
+  IteratedExprBuilder BeginIterated(expr::Kind kind, int num_args) {
+    MP_ASSERT(internal::Is<IteratedExpr>(kind), "invalid expression kind");
+    return BeginIterated<IteratedExpr>(kind, num_args);
   }
 
-  // Ends building a variable argument expression.
-  VarArgExpr EndVarArg(VarArgExprBuilder builder) {
-    return EndIteratedExpr<VarArgExpr>(builder);
+  // Ends building an iterated expression.
+  IteratedExpr EndIterated(IteratedExprBuilder builder) {
+    return EndIterated<IteratedExpr>(builder);
   }
-
-  typedef IteratedExprBuilder<SumExpr> SumExprBuilder;
-
-  // Begins building a sum expression.
-  SumExprBuilder BeginSum(int num_args) {
-    return BeginIteratedExpr<SumExpr>(expr::SUM, num_args);
-  }
-
-  // Ends building a sum expression.
-  SumExpr EndSum(SumExprBuilder builder) {
-    return EndIteratedExpr<SumExpr>(builder);
-  }
-
-  typedef IteratedExprBuilder<CountExpr> CountExprBuilder;
-
-  // Begins building a count expression.
-  CountExprBuilder BeginCount(int num_args) {
-    return BeginIteratedExpr<CountExpr>(expr::COUNT, num_args);
-  }
-
-  // Ends building a count expression.
-  CountExpr EndCount(CountExprBuilder builder) {
-    return EndIteratedExpr<CountExpr>(builder);
-  }
-
-  typedef IteratedExprBuilder<NumberOfExpr> NumberOfExprBuilder;
 
   // Begins building a numberof expression.
-  NumberOfExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
+  IteratedExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
     MP_ASSERT(num_args >= 1, "invalid number of arguments");
-    NumberOfExprBuilder builder =
-        BeginIteratedExpr<NumberOfExpr>(expr::NUMBEROF, num_args);
+    IteratedExprBuilder builder =
+        BeginIterated<IteratedExpr>(expr::NUMBEROF, num_args);
     builder.AddArg(arg0);
     return builder;
   }
 
   // Ends building a numberof expression.
-  NumberOfExpr EndNumberOf(NumberOfExprBuilder builder) {
-    return EndIteratedExpr<NumberOfExpr>(builder);
+  IteratedExpr EndNumberOf(IteratedExprBuilder builder) {
+    return EndIterated(builder);
+  }
+
+  typedef BasicIteratedExprBuilder<CountExpr> CountExprBuilder;
+
+  // Begins building a count expression.
+  CountExprBuilder BeginCount(int num_args) {
+    return BeginIterated<CountExpr>(expr::COUNT, num_args);
+  }
+
+  // Ends building a count expression.
+  CountExpr EndCount(CountExprBuilder builder) {
+    return EndIterated<CountExpr>(builder);
   }
 
   // Makes a logical constant.
   LogicalConstant MakeLogicalConstant(bool value) {
     LogicalConstant::Impl *impl =
-        Allocate<LogicalConstant::Impl>(expr::CONSTANT);
+        Allocate<LogicalConstant>(expr::CONSTANT);
     impl->value = value;
     return Expr::Create<LogicalConstant>(impl);
   }
@@ -794,29 +778,43 @@ class ExprFactory {
     return MakeIf<ImplicationExpr>(condition, true_expr, false_expr);
   }
 
-  typedef IteratedExprBuilder<IteratedLogicalExpr> IteratedLogicalExprBuilder;
+  typedef BasicIteratedExprBuilder<IteratedLogicalExpr>
+      IteratedLogicalExprBuilder;
 
   // Begins building an iterated logical expression.
   IteratedLogicalExprBuilder BeginIteratedLogical(
         expr::Kind kind, int num_args) {
-    return BeginIteratedExpr<IteratedLogicalExpr>(kind, num_args);
+    MP_ASSERT(internal::Is<IteratedLogicalExpr>(kind),
+              "invalid expression kind");
+    return BeginIterated<IteratedLogicalExpr>(kind, num_args);
   }
 
   // Ends building an iterated logical expression.
   IteratedLogicalExpr EndIteratedLogical(IteratedLogicalExprBuilder builder) {
-    return EndIteratedExpr<IteratedLogicalExpr>(builder);
+    return EndIterated<IteratedLogicalExpr>(builder);
   }
 
-  typedef IteratedExprBuilder<AllDiffExpr> AllDiffExprBuilder;
+  typedef BasicIteratedExprBuilder<AllDiffExpr> AllDiffExprBuilder;
 
   // Begins building an alldiff expression.
   AllDiffExprBuilder BeginAllDiff(int num_args) {
-    return BeginIteratedExpr<AllDiffExpr>(expr::ALLDIFF, num_args);
+    return BeginIterated<AllDiffExpr>(expr::ALLDIFF, num_args);
   }
 
   // Ends building an alldiff expression.
   AllDiffExpr EndAllDiff(AllDiffExprBuilder builder) {
-    return EndIteratedExpr<AllDiffExpr>(builder);
+    return EndIterated<AllDiffExpr>(builder);
+  }
+
+  // Makes a string literal.
+  StringLiteral MakeStringLiteral(fmt::StringRef value) {
+    // StringLiteral::Impl already has space for terminating null char so
+    // we need to allocate extra size chars only.
+    StringLiteral::Impl *impl =
+        Allocate<StringLiteral>(expr::STRING, value.size());
+    const char *s = value.c_str();
+    std::copy(s, s + value.size(), impl->value);
+    return Expr::Create<StringLiteral>(impl);
   }
 };
 }  // namespace mp

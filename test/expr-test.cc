@@ -266,35 +266,6 @@ TEST(ExprTest, ExprIterator) {
   EXPECT_EQ(args[2], *i);
 }
 
-TEST(ExprTest, CountExpr) {
-  mp::CountExpr e;
-  EXPECT_TRUE(e == 0);
-  (void)mp::NumericExpr(e);
-  ExprFactory factory;
-  enum {NUM_ARGS = 2};
-  ExprFactory::CountExprBuilder builder = factory.BeginCount(NUM_ARGS);
-  mp::LogicalExpr args[NUM_ARGS] = {
-    factory.MakeLogicalConstant(true),
-    factory.MakeLogicalConstant(false)
-  };
-  for (int i = 0; i < NUM_ARGS; ++i)
-    builder.AddArg(args[i]);
-  e = factory.EndCount(builder);
-  EXPECT_EQ(expr::COUNT, e.kind());
-  EXPECT_EQ(2, e.num_args());
-  mp::CountExpr::iterator it = e.begin();
-  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
-    mp::LogicalExpr arg = e.arg(i);
-    EXPECT_EQ(args[i], arg);
-    EXPECT_EQ(args[i], *it);
-  }
-  EXPECT_EQ(e.end(), it);
-  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
-  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
-  EXPECT_ASSERT(factory.BeginCount(-1), "invalid number of arguments");
-  factory.BeginCount(0);
-}
-
 TEST(ExprTest, LogicalConstant) {
   mp::LogicalConstant e;
   EXPECT_TRUE(e == 0);
@@ -403,37 +374,6 @@ TEST(ExprTest, ImplicationExpr) {
   factory.MakeImplication(condition, true_expr, mp::LogicalExpr());
 }
 
-TEST(ExprTest, IteratedLogicalExpr) {
-  mp::IteratedLogicalExpr e;
-  EXPECT_TRUE(e == 0);
-  (void)mp::LogicalExpr(e);
-  ExprFactory factory;
-  enum {NUM_ARGS = 2};
-  ExprFactory::IteratedLogicalExprBuilder builder =
-      factory.BeginIteratedLogical(expr::EXISTS, NUM_ARGS);
-  mp::LogicalExpr args[NUM_ARGS] = {
-    factory.MakeLogicalConstant(true),
-    factory.MakeLogicalConstant(false)
-  };
-  for (int i = 0; i < NUM_ARGS; ++i)
-    builder.AddArg(args[i]);
-  e = factory.EndIteratedLogical(builder);
-  EXPECT_EQ(expr::EXISTS, e.kind());
-  EXPECT_EQ(2, e.num_args());
-  mp::IteratedLogicalExpr::iterator it = e.begin();
-  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
-    mp::LogicalExpr arg = e.arg(i);
-    EXPECT_EQ(args[i], arg);
-    EXPECT_EQ(args[i], *it);
-  }
-  EXPECT_EQ(e.end(), it);
-  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
-  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
-  EXPECT_ASSERT(factory.BeginIteratedLogical(expr::EXISTS, -1),
-                "invalid number of arguments");
-  factory.BeginIteratedLogical(expr::EXISTS, 0);
-}
-
 template <typename ExprInfo>
 class IteratedExprTest : public ::testing::Test {
  public:
@@ -441,13 +381,13 @@ class IteratedExprTest : public ::testing::Test {
 };
 
 template <typename ExprType, expr::Kind K,
-          typename BaseType = mp::NumericExpr, int MIN_ARGS = 0>
+          typename BaseType = mp::NumericExpr>
 struct ExprInfo {
   typedef BaseType Base;
   typedef ExprType Expr;
   typedef mp::NumericExpr Arg;
   static expr::Kind kind() { return K; }
-  static int min_args() { return MIN_ARGS; }
+  static int min_args() { return 0; }
 };
 
 struct CallInfo : ExprInfo<mp::CallExpr, expr::CALL> {
@@ -459,27 +399,29 @@ struct CallInfo : ExprInfo<mp::CallExpr, expr::CALL> {
   Expr EndBuild(ExprFactory &f, Builder b) { return f.EndCall(b); }
 };
 
-struct VarArgInfo : ExprInfo<mp::VarArgExpr, expr::MAX> {
-  typedef ExprFactory::VarArgExprBuilder Builder;
+struct IteratedInfo : ExprInfo<mp::IteratedExpr, expr::SUM> {
+  typedef ExprFactory::IteratedExprBuilder Builder;
   Builder BeginBuild(ExprFactory &f, int n) {
-    return f.BeginVarArg(expr::MAX, n);
+    return f.BeginIterated(expr::SUM, n);
   }
-  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndVarArg(b); }
+  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndIterated(b); }
 };
 
-struct SumInfo : ExprInfo<mp::SumExpr, expr::SUM> {
-  typedef ExprFactory::SumExprBuilder Builder;
-  Builder BeginBuild(ExprFactory &f, int n) { return f.BeginSum(n); }
-  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndSum(b); }
+struct CountInfo : ExprInfo<mp::CountExpr, expr::COUNT> {
+  typedef mp::LogicalExpr Arg;
+  typedef ExprFactory::CountExprBuilder Builder;
+  Builder BeginBuild(ExprFactory &f, int n) { return f.BeginCount(n); }
+  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndCount(b); }
 };
 
-struct NumberOfInfo :
-    ExprInfo<mp::NumberOfExpr, expr::NUMBEROF, mp::NumericExpr, 1> {
-  typedef ExprFactory::NumberOfExprBuilder Builder;
+struct IteratedLogicalInfo :
+    ExprInfo<mp::IteratedLogicalExpr, expr::EXISTS, mp::LogicalExpr> {
+  typedef mp::LogicalExpr Arg;
+  typedef ExprFactory::IteratedLogicalExprBuilder Builder;
   Builder BeginBuild(ExprFactory &f, int n) {
-    return f.BeginNumberOf(n, f.MakeNumericConstant(11));
+    return f.BeginIteratedLogical(expr::EXISTS, n);
   }
-  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndNumberOf(b); }
+  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndIteratedLogical(b); }
 };
 
 struct AllDiffInfo : ExprInfo<mp::AllDiffExpr, expr::ALLDIFF, mp::LogicalExpr> {
@@ -488,9 +430,31 @@ struct AllDiffInfo : ExprInfo<mp::AllDiffExpr, expr::ALLDIFF, mp::LogicalExpr> {
   Expr EndBuild(ExprFactory &f, Builder b) { return f.EndAllDiff(b); }
 };
 
-typedef ::testing::Types<
-  CallInfo, VarArgInfo, SumInfo, NumberOfInfo, AllDiffInfo> IteratedExprTypes;
+typedef ::testing::Types<CallInfo, IteratedInfo, CountInfo,
+                         IteratedLogicalInfo, AllDiffInfo> IteratedExprTypes;
 TYPED_TEST_CASE(IteratedExprTest, IteratedExprTypes);
+
+template <typename ExprType>
+struct TestArgs {
+  mp::NumericExpr args[3];
+  explicit TestArgs(ExprFactory &f) {
+    args[0] = f.MakeNumericConstant(11);
+    args[1] = f.MakeVariable(0);
+    args[2] = f.MakeNumericConstant(22);
+  }
+  mp::NumericExpr operator[](int i) const { return args[i]; }
+};
+
+template <>
+struct TestArgs<mp::LogicalExpr> {
+  mp::LogicalExpr args[3];
+  explicit TestArgs(ExprFactory &f) {
+    args[0] = f.MakeLogicalConstant(false);
+    args[1] = f.MakeLogicalConstant(true);
+    args[2] = f.MakeLogicalConstant(false);
+  }
+  mp::LogicalExpr operator[](int i) const { return args[i]; }
+};
 
 TYPED_TEST(IteratedExprTest, Test) {
   typename TypeParam::Expr e;
@@ -498,11 +462,7 @@ TYPED_TEST(IteratedExprTest, Test) {
   (void)typename TypeParam::Base(e);
   ExprFactory factory;
   enum {NUM_ARGS = 3};
-  mp::NumericExpr args[NUM_ARGS] = {
-    factory.MakeNumericConstant(11),
-    factory.MakeVariable(0),
-    factory.MakeNumericConstant(22)
-  };
+  TestArgs<typename TypeParam::Arg> args(factory);
   auto info = this->info_;
   typename TypeParam::Builder builder = info.BeginBuild(factory, NUM_ARGS);
   for (int i = info.min_args(); i < NUM_ARGS; ++i)
@@ -529,15 +489,22 @@ TEST(ExprFactoryTest, InvalidCallExprFunction) {
   EXPECT_ASSERT(factory.BeginCall(mp::Function(), 0), "invalid function");
 }
 
-TEST(ExprTest, InvalidVarArgKind) {
+TEST(ExprFactoryTest, InvalidIteratedExprKind) {
   ExprFactory factory;
-  EXPECT_ASSERT(factory.BeginVarArg(expr::SUM, 1), "invalid expression kind");
+  EXPECT_ASSERT(factory.BeginIterated(expr::COUNT, 1),
+                "invalid expression kind");
 }
 
-TEST(ExprFactoryTest, InvalidNumberOfArg) {
+TEST(ExprFactoryTest, InvalidNumberOfExprArg) {
   ExprFactory factory;
   EXPECT_ASSERT(factory.BeginNumberOf(1, mp::NumericExpr()),
       "invalid argument");
 }
 
-// TODO: test logical expressions
+TEST(ExprFactoryTest, InvalidIteratedLogicalExprKind) {
+  ExprFactory factory;
+  EXPECT_ASSERT(factory.BeginIteratedLogical(expr::ALLDIFF, 1),
+                "invalid expression kind");
+}
+
+// TODO: test string literal
