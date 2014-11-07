@@ -373,11 +373,11 @@ class NLToJaCoPConverter : public ExprConverter<NLToJaCoPConverter, jobject> {
   }
 
   jobject VisitAllDiff(PairwiseExpr e) {
-    Convert(and_class_, and_array_ctor_, ne_class_, e);
+    return Convert(and_class_, and_array_ctor_, ne_class_, e);
   }
 
   jobject VisitNotAllDiff(PairwiseExpr e) {
-    Convert(or_class_, or_array_ctor_, eq_class_, e);
+    return Convert(or_class_, or_array_ctor_, eq_class_, e);
   }
 
   jobject VisitLogicalConstant(LogicalConstant c) {
