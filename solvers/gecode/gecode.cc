@@ -382,12 +382,12 @@ void NLToGecodeConverter::Convert(const Problem &p) {
   int num_logical_cons = p.num_logical_cons();
   for (int i = 0; i < num_logical_cons; ++i) {
     LogicalExpr e = p.logical_con_expr(i);
-    PairwiseExpr alldiff = Cast<PairwiseExpr>(e);
     ICLSetter icl_setter(icl_, GetICL(p.num_cons() + i));
-    if (!alldiff) {
+    if (e.kind() != expr::ALLDIFF) {
       rel(problem_, Visit(e), icl_);
       continue;
     }
+    PairwiseExpr alldiff = Cast<PairwiseExpr>(e);
     int num_args = alldiff.num_args();
     IntVarArgs args(num_args);
     for (int i = 0; i < num_args; ++i) {
@@ -474,19 +474,23 @@ BoolExpr NLToGecodeConverter::VisitImplication(ImplicationExpr e) {
 }
 
 BoolExpr NLToGecodeConverter::VisitAllDiff(PairwiseExpr e) {
+  bool negate = e.kind() == expr::NOT_ALLDIFF;
   int n = e.num_args();
   std::vector<LinExpr> args(n);
   int index = 0;
   for (PairwiseExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
     args[index++] = Visit(*i);
-  Gecode::BoolVarArgs and_args(n * (n - 1) / 2);
+  Gecode::BoolVarArgs logical_args(n * (n - 1) / 2);
   index = 0;
   for (int i = 0; i < n; ++i) {
-    for (int j = i + 1; j < n; ++j)
-      and_args[index++] = Gecode::expr(problem_, args[i] != args[j], icl_);
+    for (int j = i + 1; j < n; ++j) {
+      Gecode::BoolExpr expr = negate ? args[i] == args[j] : args[i] != args[j];
+      logical_args[index++] = Gecode::expr(problem_, expr, icl_);
+    }
   }
   Gecode::BoolVar var(problem_, 0, 1);
-  rel(problem_, Gecode::BOT_AND, and_args, var, icl_);
+  rel(problem_, negate ? Gecode::BOT_OR : Gecode::BOT_AND,
+      logical_args, var, icl_);
   return var;
 }
 

@@ -75,6 +75,22 @@ class NLToConcertConverter : public Converter {
 
   bool ConvertGlobalConstraint(CallExpr expr, IloConstraint &con);
 
+  // Converts a pairwise expression (alldiff or !alldiff).
+  template <typename Constraint, bool negate>
+  IloConstraint Convert(PairwiseExpr e) {
+    int n = e.num_args();
+    std::vector<IloExpr> args(n);
+    int index = 0;
+    for (PairwiseExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+      args[index++] = Visit(*i);
+    Constraint alldiff(env_);
+    for (int i = 0; i < n; ++i) {
+      for (int j = i + 1; j < n; ++j)
+        alldiff.add(negate ? args[i] == args[j] : args[i] != args[j]);
+    }
+    return alldiff;
+  }
+
  public:
   // Flags.
   enum {
@@ -314,7 +330,13 @@ class NLToConcertConverter : public Converter {
 
   IloConstraint VisitImplication(ImplicationExpr e);
 
-  IloConstraint VisitAllDiff(PairwiseExpr e);
+  IloConstraint VisitAllDiff(PairwiseExpr e) {
+    return Convert<IloAnd, false>(e);
+  }
+
+  IloConstraint VisitNotAllDiff(PairwiseExpr e) {
+    return Convert<IloOr, true>(e);
+  }
 
   // Combines 'numberof' operators into IloDistribute constraints
   // which are much more useful to the solution procedure.

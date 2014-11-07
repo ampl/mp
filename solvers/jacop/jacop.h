@@ -207,6 +207,9 @@ class NLToJaCoPConverter : public ExprConverter<NLToJaCoPConverter, jobject> {
   void ConvertExpr(LinearExpr<Term> linear,
       NumericExpr nonlinear, jobject result_var);
 
+  jobject Convert(ClassBase &logop_class, jmethodID &logop_ctor,
+                  ClassBase &eq_class, PairwiseExpr e);
+
  public:
   explicit NLToJaCoPConverter();
 
@@ -369,7 +372,13 @@ class NLToJaCoPConverter : public ExprConverter<NLToJaCoPConverter, jobject> {
     return eq_con_class_.NewObject(env_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  jobject VisitAllDiff(PairwiseExpr e);
+  jobject VisitAllDiff(PairwiseExpr e) {
+    Convert(and_class_, and_array_ctor_, ne_class_, e);
+  }
+
+  jobject VisitNotAllDiff(PairwiseExpr e) {
+    Convert(or_class_, or_array_ctor_, eq_class_, e);
+  }
 
   jobject VisitLogicalConstant(LogicalConstant c) {
     if (!one_var_)

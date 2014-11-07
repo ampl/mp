@@ -310,14 +310,17 @@ class LSProblemBuilder :
   LogicalExpr EndIteratedLogical(ArgHandler handler) { return handler.expr(); }
 
   struct PairwiseArgHandler {
+    expr::Kind kind;
     std::vector<ls::LSExpression> args;
 
-    explicit PairwiseArgHandler(int num_args) { args.reserve(num_args); }
+    PairwiseArgHandler(expr::Kind k, int num_args) : kind(k) {
+      args.reserve(num_args);
+    }
     void AddArg(ls::LSExpression arg) { args.push_back(arg); }
   };
 
   PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
-    return PairwiseArgHandler(num_args);
+    return PairwiseArgHandler(kind, num_args);
   }
 
   ls::LSExpression EndPairwise(PairwiseArgHandler handler);

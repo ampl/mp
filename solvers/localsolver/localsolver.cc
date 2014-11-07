@@ -348,10 +348,15 @@ LSProblemBuilder::ArgHandler LSProblemBuilder::BeginIteratedLogical(
 
 ls::LSExpression LSProblemBuilder::EndPairwise(PairwiseArgHandler handler) {
   std::vector<ls::LSExpression> &args = handler.args;
-  ls::LSExpression alldiff = model_.createExpression(ls::O_And);
+  ls::LSOperator logical_op = ls::O_And, comparison_op = ls::O_Neq;
+  if (handler.kind == expr::NOT_ALLDIFF) {
+    logical_op = ls::O_Or;
+    comparison_op = ls::O_Eq;
+  }
+  ls::LSExpression alldiff = model_.createExpression(logical_op);
   for (std::size_t i = 0, n = args.size(); i < n; ++i) {
     for (std::size_t j = i + 1; j < n; ++j)
-      alldiff.addOperand(MakeBinary(ls::O_Neq, args[i], args[j]));
+      alldiff.addOperand(MakeBinary(comparison_op, args[i], args[j]));
   }
   return alldiff;
 }

@@ -202,11 +202,11 @@ void NLToJaCoPConverter::ConvertExpr(
 }
 
 void NLToJaCoPConverter::ConvertLogicalCon(LogicalExpr e) {
-  PairwiseExpr alldiff = Cast<PairwiseExpr>(e);
-  if (!alldiff) {
+  if (e.kind() != expr::ALLDIFF) {
     Impose(Visit(e));
     return;
   }
+  PairwiseExpr alldiff = Cast<PairwiseExpr>(e);
   int num_args = alldiff.num_args();
   jobjectArray args = CreateVarArray(num_args);
   for (int i = 0; i < num_args; ++i) {
@@ -219,6 +219,35 @@ void NLToJaCoPConverter::ConvertLogicalCon(LogicalExpr e) {
     env_.SetObjectArrayElement(args, i, result_var);
   }
   Impose(alldiff_class_.NewObject(env_, args));
+}
+
+jobject NLToJaCoPConverter::Convert(
+    ClassBase &logop_class, jmethodID &logop_ctor,
+    ClassBase &eq_class, PairwiseExpr e) {
+  if (!logop_ctor) {
+    logop_class.Init(env_);
+    logop_ctor = env_.GetMethod(logop_class.get(),
+        "<init>", "([Lorg/jacop/constraints/PrimitiveConstraint;)V");
+  }
+  int n = e.num_args();
+  std::vector<jobject> args(n);
+  int index = 0;
+  for (PairwiseExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    args[index++] = Visit(*i);
+  if (!constraint_class_) {
+    constraint_class_ = env_.FindClass(
+        "org/jacop/constraints/PrimitiveConstraint");
+  }
+  jobjectArray and_args = env_.NewObjectArray(
+        n * (n - 1) / 2, constraint_class_, 0);
+  index = 0;
+  for (int i = 0; i < n; ++i) {
+    for (int j = i + 1; j < n; ++j) {
+      env_.SetObjectArrayElement(
+            and_args, index++, eq_class.NewObject(env_, args[i], args[j]));
+    }
+  }
+  return env_.NewObject(logop_class.get(), logop_ctor, and_args);
 }
 
 NLToJaCoPConverter::NLToJaCoPConverter()
@@ -343,33 +372,6 @@ jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
   jobject condition = Visit(e.condition());
   return if_else_class_.NewObject(env_, condition,
       Visit(e.true_expr()), Visit(e.false_expr()));
-}
-
-jobject NLToJaCoPConverter::VisitAllDiff(PairwiseExpr e) {
-  int n = e.num_args();
-  std::vector<jobject> args(n);
-  int index = 0;
-  for (PairwiseExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    args[index++] = Visit(*i);
-  if (!and_array_ctor_) {
-    and_class_.Init(env_);
-    and_array_ctor_ = env_.GetMethod(and_class_.get(),
-        "<init>", "([Lorg/jacop/constraints/PrimitiveConstraint;)V");
-  }
-  if (!constraint_class_) {
-    constraint_class_ = env_.FindClass(
-        "org/jacop/constraints/PrimitiveConstraint");
-  }
-  jobjectArray and_args = env_.NewObjectArray(
-        n * (n - 1) / 2, constraint_class_, 0);
-  index = 0;
-  for (int i = 0; i < n; ++i) {
-    for (int j = i + 1; j < n; ++j) {
-      env_.SetObjectArrayElement(and_args, index++,
-                                 ne_class_.NewObject(env_, args[i], args[j]));
-    }
-  }
-  return env_.NewObject(and_class_.get(), and_array_ctor_, and_args);
 }
 
 void JaCoPSolver::SetOutputFrequency(const SolverOption &opt, double value) {

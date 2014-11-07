@@ -215,20 +215,6 @@ IloConstraint NLToConcertConverter::VisitImplication(ImplicationExpr e) {
       IloIfThen(env_, !condition, Visit(e.false_expr()));
 }
 
-IloConstraint NLToConcertConverter::VisitAllDiff(PairwiseExpr e) {
-  int n = e.num_args();
-  std::vector<IloExpr> args(n);
-  int index = 0;
-  for (PairwiseExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    args[index++] = Visit(*i);
-  IloAnd alldiff(env_);
-  for (int i = 0; i < n; ++i) {
-    for (int j = i + 1; j < n; ++j)
-      alldiff.add(args[i] != args[j]);
-  }
-  return alldiff;
-}
-
 void NLToConcertConverter::FinishBuildingNumberOf() {
   for (IlogNumberOfMap::iterator
       i = numberofs_.begin(), end = numberofs_.end(); i != end; ++i) {
@@ -353,7 +339,8 @@ void NLToConcertConverter::Convert(const Problem &p) {
           if (call && ConvertGlobalConstraint(call, cons[i]))
             continue;
         }
-      } else if (PairwiseExpr alldiff = Cast<PairwiseExpr>(expr)) {
+      } else if (expr.kind() == mp::expr::ALLDIFF) {
+        PairwiseExpr alldiff = Cast<PairwiseExpr>(expr);
         // IloAllDiff is a global constraint that cannot be used
         // as a subexpression (the Concert API allows this, but
         // IloAlgorithm::extract throws CannotExtractException).

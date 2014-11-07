@@ -371,9 +371,10 @@ class NLSolverTest : public ::testing::Test {
     return pb.EndCount(args);
   }
 
-  static LogicalExpr MakeAllDiff(ProblemBuilder &pb, int start_var_index = 1) {
+  static LogicalExpr MakeAllDiff(ProblemBuilder &pb, int start_var_index = 1,
+                                 mp::expr::Kind kind = mp::expr::ALLDIFF) {
     int num_args = 3;
-    auto args = pb.BeginPairwise(mp::expr::ALLDIFF, num_args);
+    auto args = pb.BeginPairwise(kind, num_args);
     for (int i = 0; i < num_args; ++i)
       args.AddArg(pb.MakeVariable(i + start_var_index));
     return pb.EndPairwise(args);
@@ -1132,6 +1133,17 @@ TEST_F(NLSolverTest, AllDiff) {
   EXPECT_TRUE(Solve(alldiff, 2, 1, 3).has_value());
   EXPECT_FALSE(Solve(alldiff, 1, 2, 1).has_value());
   EXPECT_FALSE(Solve(alldiff, 1, 1, 1).has_value());
+}
+
+TEST_F(NLSolverTest, NotAllDiff) {
+  struct AllDiffFactory : LogicalExprFactory {
+    LogicalExpr Create(ProblemBuilder &pb) const {
+      return MakeAllDiff(pb, 1, mp::expr::NOT_ALLDIFF);
+    }
+  } factory;
+  EXPECT_FALSE(Solve(factory, 2, 1, 3).has_value());
+  EXPECT_TRUE(Solve(factory, 1, 2, 1).has_value());
+  EXPECT_TRUE(Solve(factory, 1, 1, 1).has_value());
 }
 
 TEST_F(NLSolverTest, NestedAllDiff) {
