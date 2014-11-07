@@ -680,8 +680,7 @@ class TestNLHandler {
 
   std::string OnImplication(std::string condition,
                             std::string true_expr, std::string false_expr) {
-    return fmt::format("{} ==> {} else {}",
-                       condition, true_expr, false_expr);
+    return fmt::format("{} ==> {} else {}", condition, true_expr, false_expr);
   }
 
   ArgHandler BeginIteratedLogical(expr::Kind kind, int) {
@@ -693,7 +692,9 @@ class TestNLHandler {
 
   typedef ArgHandler PairwiseArgHandler;
 
-  ArgHandler BeginPairwise(expr::Kind, int) { return ArgHandler("alldiff"); }
+  ArgHandler BeginPairwise(expr::Kind kind, int) {
+    return ArgHandler(kind == expr::ALLDIFF ? "alldiff" : "!alldiff");
+  }
   std::string EndPairwise(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
   std::string OnStringLiteral(fmt::StringRef value) {
@@ -1097,7 +1098,7 @@ TEST(NLTest, ReadIteratedLogicalExpr) {
 
 TEST(NLTest, ReadAllDiffExpr) {
   EXPECT_READ("l0: alldiff(v4, 5, v1);", "L0\no74\n3\nv4\nn5\nv1\n");
-  EXPECT_READ("l0: alldiff(v4);", "L0\no74\n1\nv4\n");
+  EXPECT_READ("l0: !alldiff(v4);", "L0\no75\n1\nv4\n");
   EXPECT_READ_ERROR("L0\no74\n0\n", "(input):19:1: too few arguments");
 }
 
