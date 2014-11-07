@@ -346,7 +346,7 @@ LSProblemBuilder::ArgHandler LSProblemBuilder::BeginIteratedLogical(
   return ArgHandler(model_.createExpression(op));
 }
 
-ls::LSExpression LSProblemBuilder::EndAllDiff(AllDiffArgHandler handler) {
+ls::LSExpression LSProblemBuilder::EndPairwise(PairwiseArgHandler handler) {
   std::vector<ls::LSExpression> &args = handler.args;
   ls::LSExpression alldiff = model_.createExpression(ls::O_And);
   for (std::size_t i = 0, n = args.size(); i < n; ++i) {

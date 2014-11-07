@@ -309,18 +309,18 @@ class LSProblemBuilder :
   ArgHandler BeginIteratedLogical(expr::Kind kind, int num_args);
   LogicalExpr EndIteratedLogical(ArgHandler handler) { return handler.expr(); }
 
-  struct AllDiffArgHandler {
+  struct PairwiseArgHandler {
     std::vector<ls::LSExpression> args;
 
-    explicit AllDiffArgHandler(int num_args) { args.reserve(num_args); }
+    explicit PairwiseArgHandler(int num_args) { args.reserve(num_args); }
     void AddArg(ls::LSExpression arg) { args.push_back(arg); }
   };
 
-  AllDiffArgHandler BeginAllDiff(int num_args) {
-    return AllDiffArgHandler(num_args);
+  PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
+    return PairwiseArgHandler(num_args);
   }
 
-  ls::LSExpression EndAllDiff(AllDiffArgHandler handler);
+  ls::LSExpression EndPairwise(PairwiseArgHandler handler);
 };
 
 class LocalSolver : public SolverImpl<LSProblemBuilder> {
