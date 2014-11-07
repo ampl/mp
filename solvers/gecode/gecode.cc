@@ -584,7 +584,7 @@ void GecodeSolver::Output(fmt::StringRef format, const fmt::ArgList &args) {
 }
 
 GecodeSolver::GecodeSolver()
-: ASLSolver("gecode", "gecode " GECODE_VERSION, 20131015, MULTIPLE_SOL),
+: ASLSolver("gecode", "gecode " GECODE_VERSION, 20141107, MULTIPLE_SOL),
   output_(false), output_frequency_(1), output_count_(0), solve_code_(-1),
   icl_(Gecode::ICL_DEF),
   var_branching_(IntVarBranch::SEL_SIZE_MIN),
