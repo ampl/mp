@@ -506,7 +506,6 @@ class StringLiteral : public Expr {
 
 MP_SPECIALIZE_IS(StringLiteral, STRING)
 
-
 class ExprFactory {
  private:
   std::deque<Function::Impl> funcs_;
