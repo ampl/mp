@@ -37,7 +37,8 @@
 
 namespace mp {
 
-class ExprFactory;
+template <typename Alloc>
+class BasicExprFactory;
 
 namespace internal {
 // Returns true if the non-null expression e is of type ExprType.
@@ -74,7 +75,8 @@ class Expr {
     // Only ExprFactory should be able to set Impl::kind_.
     expr::Kind kind_;
 
-    friend class ExprFactory;
+    template <typename Alloc>
+    friend class BasicExprFactory;
 
    public:
     expr::Kind kind() const { return kind_; }
@@ -115,7 +117,8 @@ class Expr {
     return expr;
   }
 
-  friend class ExprFactory;
+  template <typename Alloc>
+  friend class BasicExprFactory;
 
   // An expression iterator.
   template <typename ExprType>
@@ -167,7 +170,8 @@ class Expr {
 
 #define MP_EXPR \
   const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); } \
-  friend class ExprFactory
+  template <typename Alloc> \
+  friend class BasicExprFactory
 
 MP_SPECIALIZE_IS_RANGE(Expr, EXPR)
 
@@ -333,7 +337,9 @@ class Function {
   explicit Function(const Impl *impl) : impl_(impl) {}
 
   friend class CallExpr;
-  friend class ExprFactory;
+
+  template <typename Alloc>
+  friend class BasicExprFactory;
 
  public:
   // Constructs a Function object representing a null reference to a
@@ -506,12 +512,21 @@ class StringLiteral : public Expr {
 
 MP_SPECIALIZE_IS(StringLiteral, STRING)
 
-class ExprFactory {
+// An expression factory.
+// Alloc: a memory allocator.
+// Allocator requirements:
+// 1. The allocate function should return a pointer suitably aligned to hold
+//    an object of any fundamental alignment like ::operator new(std::size_t)
+//    does.
+// 2. The deallocate function should be able to handle 0 passed as the
+//    second argument.
+template <typename Alloc>
+class BasicExprFactory : private Alloc {
  private:
   std::deque<Function::Impl> funcs_;
-  std::vector<Expr::Impl*> exprs_;
+  std::vector<const Expr::Impl*> exprs_;
 
-  FMT_DISALLOW_COPY_AND_ASSIGN(ExprFactory);
+  FMT_DISALLOW_COPY_AND_ASSIGN(BasicExprFactory);
 
   // Allocates memory for an object of type ExprType::Impl.
   // extra_bytes: extra bytes to allocate at the end.
@@ -522,7 +537,7 @@ class ExprFactory {
     exprs_.push_back(0);
     typedef typename ExprType::Impl Impl;
     Impl *impl = reinterpret_cast<Impl*>(
-          ::operator new(sizeof(Impl) + extra_bytes));
+          this->allocate(sizeof(Impl) + extra_bytes));
     impl->kind_ = kind;
     exprs_.back() = impl;
     return impl;
@@ -564,7 +579,7 @@ class ExprFactory {
     typename ExprType::Impl *impl_;
     int arg_index_;
 
-    friend class ExprFactory;
+    friend class BasicExprFactory;
 
     explicit BasicIteratedExprBuilder(typename ExprType::Impl *impl)
       : impl_(impl), arg_index_(0) {}
@@ -596,9 +611,13 @@ class ExprFactory {
   }
 
  public:
-  ExprFactory() {}
-  ~ExprFactory() {
-    // TODO: delete expressions
+  explicit BasicExprFactory(Alloc alloc = Alloc()) : Alloc(alloc) {}
+
+  ~BasicExprFactory() {
+    for (std::vector<const Expr::Impl*>::const_iterator
+         i = exprs_.begin(), end = exprs_.end(); i != end; ++i) {
+      this->deallocate(const_cast<char*>(reinterpret_cast<const char*>(*i)), 0);
+    }
   }
 
   Function AddFunction(const char *) {
@@ -644,7 +663,7 @@ class ExprFactory {
     int slope_index_;
     int breakpoint_index_;
 
-    friend class ExprFactory;
+    friend class BasicExprFactory;
 
     explicit PLTermBuilder(PLTerm::Impl *impl)
       : impl_(impl), slope_index_(0), breakpoint_index_(0) {}
@@ -816,6 +835,8 @@ class ExprFactory {
     return Expr::Create<StringLiteral>(impl);
   }
 };
+
+typedef BasicExprFactory< std::allocator<char> > ExprFactory;
 }  // namespace mp
 
 #endif  // MP_EXPR_H_

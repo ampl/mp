@@ -21,6 +21,11 @@
  */
 
 #include <stdexcept>
+#include "gtest-extra.h"
+#include "mock-allocator.h"
+
+using ::testing::_;
+using ::testing::Return;
 
 class AssertionFailure : public std::logic_error {
  public:
@@ -31,7 +36,6 @@ class AssertionFailure : public std::logic_error {
   if (!(condition)) throw AssertionFailure(message);
 
 #include "mp/expr.h"
-#include "gtest-extra.h"
 
 using mp::ExprFactory;
 namespace expr = mp::expr;
@@ -519,4 +523,12 @@ TEST(ExprFactoryTest, InvalidIteratedLogicalExprKind) {
                 "invalid expression kind");
 }
 
-// TODO: test deallocation
+TEST(ExprFactoryTest, MemoryAllocation) {
+  typedef AllocatorRef< MockAllocator<char> > Allocator;
+  MockAllocator<char> alloc;
+  mp::BasicExprFactory<Allocator> f((Allocator(&alloc)));
+  char buffer[100];
+  EXPECT_CALL(alloc, allocate(_)).WillOnce(Return(buffer));
+  f.MakeNumericConstant(42);
+  EXPECT_CALL(alloc, deallocate(buffer, _));
+}
