@@ -49,7 +49,7 @@ class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void, void> {
   // constraint with one element per scenario.
   std::vector<double> rhs_;
 
-  friend class ExprVisitor<SSDExtractor, void, void>;
+  friend class asl::ExprVisitor<SSDExtractor, void, void>;
 
   void VisitMult(asl::BinaryExpr e) {
     asl::NumericConstant coef = asl::Cast<asl::NumericConstant>(e.lhs());
