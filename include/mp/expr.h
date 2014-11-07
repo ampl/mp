@@ -74,7 +74,7 @@ class Expr {
     // Only ExprFactory should be able to set Impl::kind_.
     expr::Kind kind_;
 
-    friend class mp::ExprFactory;
+    friend class ExprFactory;
 
    public:
     expr::Kind kind() const { return kind_; }
