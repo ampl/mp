@@ -34,7 +34,7 @@
 namespace mp {
 
 // Expression visitor that extracts SSD constraints.
-class SSDExtractor : public ExprVisitor<SSDExtractor, void, void> {
+class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void, void> {
  private:
   // A matrix of variable coefficients in the SSD constraint with one
   // row per scenario and one column per variable. The matrix is stored in
@@ -51,20 +51,20 @@ class SSDExtractor : public ExprVisitor<SSDExtractor, void, void> {
 
   friend class ExprVisitor<SSDExtractor, void, void>;
 
-  void VisitMult(BinaryExpr e) {
-    NumericConstant coef = Cast<NumericConstant>(e.lhs());
-    Variable var = Cast<Variable>(e.rhs());
+  void VisitMult(asl::BinaryExpr e) {
+    asl::NumericConstant coef = asl::Cast<asl::NumericConstant>(e.lhs());
+    asl::Variable var = asl::Cast<asl::Variable>(e.rhs());
     if (!coef || !var)
-      throw UnsupportedExprError::CreateFromExprString("nonlinear *");
+      throw asl::UnsupportedExprError::CreateFromExprString("nonlinear *");
     coefs_[con_index_ * num_vars_ + var.index()] = sign_ * coef.value();
   }
 
-  void VisitSum(SumExpr e) {
-    for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+  void VisitSum(asl::SumExpr e) {
+    for (asl::SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
       Visit(*i);
   }
 
-  void VisitNumericConstant(NumericConstant n) {
+  void VisitNumericConstant(asl::NumericConstant n) {
     rhs_[con_index_] -= sign_ * n.value();
   }
 
@@ -73,12 +73,12 @@ class SSDExtractor : public ExprVisitor<SSDExtractor, void, void> {
   : coefs_(num_scenarios * num_vars), num_vars_(num_vars),
     con_index_(0), sign_(0), rhs_(num_scenarios) {}
 
-  void Extract(CallExpr call) {
+  void Extract(asl::CallExpr call) {
     assert(call.num_args() == 2);
     sign_ = 1;
-    Visit(Cast<NumericExpr>(call[0]));
+    Visit(asl::Cast<asl::NumericExpr>(call[0]));
     sign_ = -1;
-    Visit(Cast<NumericExpr>(call[1]));
+    Visit(asl::Cast<asl::NumericExpr>(call[1]));
     ++con_index_;
   }
 

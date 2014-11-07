@@ -197,12 +197,14 @@ const char *str(expr::Kind kind);
 class Expr;
 
 namespace internal {
+
+int precedence(expr::Kind kind);
+
 // Expression information.
 class ExprInfo {
  private:
   static const ExprInfo INFO[];
 
-  friend class mp::Expr;
   friend int expr::opcode(expr::Kind kind);
   friend const char *expr::str(expr::Kind kind);
 
@@ -210,6 +212,11 @@ class ExprInfo {
   int opcode;
   int precedence;
   const char *str;
+
+  friend int precedence(expr::Kind kind) {
+    assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
+    return internal::ExprInfo::INFO[kind].precedence;
+  }
 };
 }
 

@@ -28,12 +28,13 @@
 
 using std::size_t;
 
-using mp::Cast;
-using mp::Expr;
-using mp::NumericConstant;
-using mp::NumericExpr;
-using mp::LogicalExpr;
+using mp::asl::Cast;
+using mp::asl::Expr;
+using mp::asl::NumericConstant;
+using mp::asl::NumericExpr;
+using mp::asl::LogicalExpr;
 namespace prec = mp::prec;
+namespace asl = mp::asl;
 
 namespace {
 
@@ -41,12 +42,12 @@ namespace {
 // to fmt::Writer. It takes into account precedence and associativity
 // of operators avoiding unnecessary parentheses except for potentially
 // confusing cases such as "!x = y" which is written as "!(x = y) instead.
-class ExprWriter : public mp::ExprVisitor<ExprWriter, void, void> {
+class ExprWriter : public asl::ExprVisitor<ExprWriter, void, void> {
  private:
   fmt::Writer &writer_;
   int precedence_;
 
-  typedef mp::ExprVisitor<ExprWriter, void, void> ExprVisitor;
+  typedef asl::ExprVisitor<ExprWriter, void, void> ExprVisitor;
 
   // Writes an argument list surrounded by parentheses.
   template <typename Iter>
@@ -91,55 +92,55 @@ class ExprWriter : public mp::ExprVisitor<ExprWriter, void, void> {
     ExprVisitor::Visit(e);
   }
 
-  void Visit(mp::LogicalExpr e, int precedence = -1) {
+  void Visit(LogicalExpr e, int precedence = -1) {
     Parenthesizer p(*this, e, precedence);
     ExprVisitor::Visit(e);
   }
 
-  void VisitUnary(mp::UnaryExpr e) {
+  void VisitUnary(asl::UnaryExpr e) {
     writer_ << e.opstr() << '(';
     Visit(e.arg(), prec::UNKNOWN);
     writer_ << ')';
   }
 
-  void VisitUnaryMinus(mp::UnaryExpr e) {
+  void VisitUnaryMinus(asl::UnaryExpr e) {
     writer_ << '-';
     Visit(e.arg());
   }
 
-  void VisitPow2(mp::UnaryExpr e) {
+  void VisitPow2(asl::UnaryExpr e) {
     Visit(e.arg(), prec::EXPONENTIATION + 1);
     writer_ << " ^ 2";
   }
 
-  void VisitBinary(mp::BinaryExpr e) { WriteBinary(e); }
-  void VisitBinaryFunc(mp::BinaryExpr e);
-  void VisitVarArg(mp::VarArgExpr e) { WriteFunc(e); }
-  void VisitIf(mp::IfExpr e);
-  void VisitSum(mp::SumExpr e);
-  void VisitCount(mp::CountExpr e) { WriteFunc(e); }
-  void VisitNumberOf(mp::NumberOfExpr e);
-  void VisitPiecewiseLinear(mp::PiecewiseLinearExpr e);
-  void VisitCall(mp::CallExpr e);
+  void VisitBinary(asl::BinaryExpr e) { WriteBinary(e); }
+  void VisitBinaryFunc(asl::BinaryExpr e);
+  void VisitVarArg(asl::VarArgExpr e) { WriteFunc(e); }
+  void VisitIf(asl::IfExpr e);
+  void VisitSum(asl::SumExpr e);
+  void VisitCount(asl::CountExpr e) { WriteFunc(e); }
+  void VisitNumberOf(asl::NumberOfExpr e);
+  void VisitPiecewiseLinear(asl::PiecewiseLinearExpr e);
+  void VisitCall(asl::CallExpr e);
   void VisitNumericConstant(NumericConstant c) { writer_ << c.value(); }
-  void VisitVariable(mp::Variable v) { writer_ << 'x' << (v.index() + 1); }
+  void VisitVariable(asl::Variable v) { writer_ << 'x' << (v.index() + 1); }
 
-  void VisitNot(mp::NotExpr e) {
+  void VisitNot(asl::NotExpr e) {
      writer_ << '!';
      // Use a precedence higher then relational to print expressions
      // as "!(x = y)" instead of "!x = y".
-     mp::LogicalExpr arg = e.arg();
+     LogicalExpr arg = e.arg();
      Visit(arg,
          arg.precedence() == prec::RELATIONAL ? prec::RELATIONAL + 1 : -1);
   }
 
-  void VisitBinaryLogical(mp::BinaryLogicalExpr e) { WriteBinary(e); }
-  void VisitRelational(mp::RelationalExpr e) { WriteBinary(e); }
-  void VisitLogicalCount(mp::LogicalCountExpr e);
-  void VisitIteratedLogical(mp::IteratedLogicalExpr e);
-  void VisitImplication(mp::ImplicationExpr e);
-  void VisitAllDiff(mp::PairwiseExpr e) { WriteFunc(e); }
-  void VisitLogicalConstant(mp::LogicalConstant c) { writer_ << c.value(); }
+  void VisitBinaryLogical(asl::BinaryLogicalExpr e) { WriteBinary(e); }
+  void VisitRelational(asl::RelationalExpr e) { WriteBinary(e); }
+  void VisitLogicalCount(asl::LogicalCountExpr e);
+  void VisitIteratedLogical(asl::IteratedLogicalExpr e);
+  void VisitImplication(asl::ImplicationExpr e);
+  void VisitAllDiff(asl::PairwiseExpr e) { WriteFunc(e); }
+  void VisitLogicalConstant(asl::LogicalConstant c) { writer_ << c.value(); }
 };
 
 ExprWriter::Parenthesizer::Parenthesizer(ExprWriter &w, Expr e, int precedence)
@@ -189,7 +190,7 @@ void ExprWriter::WriteCallArg(Expr arg) {
   }
   assert(arg.kind() == mp::expr::STRING);
   writer_ << "'";
-  const char *s = Cast<mp::StringLiteral>(arg).value();
+  const char *s = Cast<asl::StringLiteral>(arg).value();
   for ( ; *s; ++s) {
     char c = *s;
     switch (c) {
@@ -207,7 +208,7 @@ void ExprWriter::WriteCallArg(Expr arg) {
   writer_ << "'";
 }
 
-void ExprWriter::VisitBinaryFunc(mp::BinaryExpr e) {
+void ExprWriter::VisitBinaryFunc(asl::BinaryExpr e) {
   writer_ << e.opstr() << '(';
   Visit(e.lhs(), prec::UNKNOWN);
   writer_ << ", ";
@@ -215,7 +216,7 @@ void ExprWriter::VisitBinaryFunc(mp::BinaryExpr e) {
   writer_ << ')';
 }
 
-void ExprWriter::VisitIf(mp::IfExpr e) {
+void ExprWriter::VisitIf(asl::IfExpr e) {
   writer_ << "if ";
   Visit(e.condition(), prec::UNKNOWN);
   writer_ << " then ";
@@ -228,9 +229,9 @@ void ExprWriter::VisitIf(mp::IfExpr e) {
   }
 }
 
-void ExprWriter::VisitSum(mp::SumExpr e) {
+void ExprWriter::VisitSum(asl::SumExpr e) {
   writer_ << "/* sum */ (";
-  mp::SumExpr::iterator i = e.begin(), end = e.end();
+  asl::SumExpr::iterator i = e.begin(), end = e.end();
   if (i != end) {
     Visit(*i);
     for (++i; i != end; ++i) {
@@ -241,15 +242,15 @@ void ExprWriter::VisitSum(mp::SumExpr e) {
   writer_ << ')';
 }
 
-void ExprWriter::VisitNumberOf(mp::NumberOfExpr e) {
+void ExprWriter::VisitNumberOf(asl::NumberOfExpr e) {
   writer_ << "numberof ";
-  mp::NumberOfExpr::iterator i = e.begin();
+  asl::NumberOfExpr::iterator i = e.begin();
   Visit(*i++, prec::UNKNOWN);
   writer_ << " in ";
   WriteArgs(i, e.end());
 }
 
-void ExprWriter::VisitPiecewiseLinear(mp::PiecewiseLinearExpr e) {
+void ExprWriter::VisitPiecewiseLinear(asl::PiecewiseLinearExpr e) {
   writer_ << "<<" << e.breakpoint(0);
   for (int i = 1, n = e.num_breakpoints(); i < n; ++i)
     writer_ << ", " << e.breakpoint(i);
@@ -259,7 +260,7 @@ void ExprWriter::VisitPiecewiseLinear(mp::PiecewiseLinearExpr e) {
   writer_ << ">> " << "x" << (e.var_index() + 1);
 }
 
-void ExprWriter::VisitCall(mp::CallExpr e) {
+void ExprWriter::VisitCall(asl::CallExpr e) {
   writer_ << e.function().name() << '(';
   int num_args = e.num_args();
   if (num_args > 0) {
@@ -272,14 +273,14 @@ void ExprWriter::VisitCall(mp::CallExpr e) {
   writer_ << ')';
 }
 
-void ExprWriter::VisitLogicalCount(mp::LogicalCountExpr e) {
+void ExprWriter::VisitLogicalCount(asl::LogicalCountExpr e) {
   writer_ << e.opstr() << ' ';
   Visit(e.lhs());
   writer_ << ' ';
   WriteArgs(e.rhs());
 }
 
-void ExprWriter::VisitIteratedLogical(mp::IteratedLogicalExpr e) {
+void ExprWriter::VisitIteratedLogical(asl::IteratedLogicalExpr e) {
   // There is no way to produce an AMPL forall/exists expression because
   // its indexing is not available any more. So we write a count expression
   // instead with a comment about the original expression.
@@ -293,12 +294,12 @@ void ExprWriter::VisitIteratedLogical(mp::IteratedLogicalExpr e) {
   WriteArgs(e, op, precedence);
 }
 
-void ExprWriter::VisitImplication(mp::ImplicationExpr e) {
+void ExprWriter::VisitImplication(asl::ImplicationExpr e) {
   Visit(e.condition());
   writer_ << " ==> ";
   Visit(e.true_expr(), prec::IMPLICATION + 1);
-  mp::LogicalExpr false_expr = e.false_expr();
-  mp::LogicalConstant c = Cast<mp::LogicalConstant>(false_expr);
+  LogicalExpr false_expr = e.false_expr();
+  asl::LogicalConstant c = Cast<asl::LogicalConstant>(false_expr);
   if (!c || c.value() != 0) {
     writer_ << " else ";
     Visit(false_expr);
@@ -306,7 +307,7 @@ void ExprWriter::VisitImplication(mp::ImplicationExpr e) {
 }
 
 // Compares expressions for equality.
-class ExprEqual : public mp::ExprVisitor<ExprEqual, bool> {
+class ExprEqual : public asl::ExprVisitor<ExprEqual, bool> {
  private:
   Expr expr_;
 
@@ -316,8 +317,8 @@ class ExprEqual : public mp::ExprVisitor<ExprEqual, bool> {
   template <typename T>
   bool VisitNumericConstant(T c) { return Cast<T>(expr_).value() == c.value(); }
 
-  bool VisitVariable(mp::Variable v) {
-    return Cast<mp::Variable>(expr_).index() == v.index();
+  bool VisitVariable(asl::Variable v) {
+    return Cast<asl::Variable>(expr_).index() == v.index();
   }
 
   template <typename E>
@@ -339,8 +340,8 @@ class ExprEqual : public mp::ExprVisitor<ExprEqual, bool> {
            Equal(if_expr.false_expr(), e.false_expr());
   }
 
-  bool VisitPiecewiseLinear(mp::PiecewiseLinearExpr e) {
-    mp::PiecewiseLinearExpr pl = Cast<mp::PiecewiseLinearExpr>(expr_);
+  bool VisitPiecewiseLinear(asl::PiecewiseLinearExpr e) {
+    asl::PiecewiseLinearExpr pl = Cast<asl::PiecewiseLinearExpr>(expr_);
     int num_breakpoints = pl.num_breakpoints();
     if (num_breakpoints != e.num_breakpoints())
       return false;
@@ -352,8 +353,8 @@ class ExprEqual : public mp::ExprVisitor<ExprEqual, bool> {
            pl.var_index() == e.var_index();
   }
 
-  bool VisitCall(mp::CallExpr e) {
-    mp::CallExpr call = Cast<mp::CallExpr>(expr_);
+  bool VisitCall(asl::CallExpr e) {
+    asl::CallExpr call = Cast<asl::CallExpr>(expr_);
     int num_args = call.num_args();
     if (call.function() != e.function() || num_args != e.num_args())
       return false;
@@ -365,8 +366,8 @@ class ExprEqual : public mp::ExprVisitor<ExprEqual, bool> {
         if (!Equal(num_arg, Cast<NumericExpr>(other_arg)))
           return false;
       } else if (std::strcmp(
-              Cast<mp::StringLiteral>(arg).value(),
-              Cast<mp::StringLiteral>(other_arg).value()) != 0)
+              Cast<asl::StringLiteral>(arg).value(),
+              Cast<asl::StringLiteral>(other_arg).value()) != 0)
         return false;
     }
     return true;
@@ -384,37 +385,37 @@ class ExprEqual : public mp::ExprVisitor<ExprEqual, bool> {
     return j == jend;
   }
 
-  bool VisitSum(mp::SumExpr e) { return VisitVarArg(e); }
-  bool VisitCount(mp::CountExpr e) { return VisitVarArg(e); }
-  bool VisitNumberOf(mp::NumberOfExpr e) { return VisitVarArg(e); }
+  bool VisitSum(asl::SumExpr e) { return VisitVarArg(e); }
+  bool VisitCount(asl::CountExpr e) { return VisitVarArg(e); }
+  bool VisitNumberOf(asl::NumberOfExpr e) { return VisitVarArg(e); }
 
-  bool VisitLogicalConstant(mp::LogicalConstant c) {
+  bool VisitLogicalConstant(asl::LogicalConstant c) {
     return VisitNumericConstant(c);
   }
 
-  bool VisitNot(mp::NotExpr e) { return VisitUnary(e); }
+  bool VisitNot(asl::NotExpr e) { return VisitUnary(e); }
 
-  bool VisitBinaryLogical(mp::BinaryLogicalExpr e) { return VisitBinary(e); }
-  bool VisitRelational(mp::RelationalExpr e) { return VisitBinary(e); }
-  bool VisitLogicalCount(mp::LogicalCountExpr e) { return VisitBinary(e); }
+  bool VisitBinaryLogical(asl::BinaryLogicalExpr e) { return VisitBinary(e); }
+  bool VisitRelational(asl::RelationalExpr e) { return VisitBinary(e); }
+  bool VisitLogicalCount(asl::LogicalCountExpr e) { return VisitBinary(e); }
 
-  bool VisitImplication(mp::ImplicationExpr e) { return VisitIf(e); }
+  bool VisitImplication(asl::ImplicationExpr e) { return VisitIf(e); }
 
-  bool VisitIteratedLogical(mp::IteratedLogicalExpr e) {
+  bool VisitIteratedLogical(asl::IteratedLogicalExpr e) {
     return VisitVarArg(e);
   }
 
-  bool VisitAllDiff(mp::PairwiseExpr e) { return VisitVarArg(e); }
+  bool VisitAllDiff(asl::PairwiseExpr e) { return VisitVarArg(e); }
 };
 }  // namespace
 
 #ifdef MP_USE_UNORDERED_MAP
 
-using mp::internal::HashCombine;
+using asl::internal::HashCombine;
 
 namespace {
 // Computes a hash value for an expression.
-class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
+class ExprHasher : public asl::ExprVisitor<ExprHasher, size_t> {
  private:
   static size_t Hash(Expr e) {
     return HashCombine<int>(0, e.kind());
@@ -427,9 +428,9 @@ class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
 
  public:
   size_t VisitNumericConstant(NumericConstant c) { return Hash(c, c.value()); }
-  size_t VisitVariable(mp::Variable v) { return Hash(v, v.index()); }
+  size_t VisitVariable(asl::Variable v) { return Hash(v, v.index()); }
 
-  size_t VisitUnary(mp::UnaryExpr e) { return Hash(e, e.arg()); }
+  size_t VisitUnary(asl::UnaryExpr e) { return Hash(e, e.arg()); }
 
   template <typename E>
   size_t VisitBinary(E e) { return HashCombine(Hash(e, e.lhs()), e.rhs()); }
@@ -440,7 +441,7 @@ class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
     return HashCombine(HashCombine(hash, e.true_expr()), e.false_expr());
   }
 
-  size_t VisitPiecewiseLinear(mp::PiecewiseLinearExpr e) {
+  size_t VisitPiecewiseLinear(asl::PiecewiseLinearExpr e) {
     size_t hash = Hash(e);
     int num_breakpoints = e.num_breakpoints();
     for (int i = 0; i < num_breakpoints; ++i) {
@@ -451,7 +452,7 @@ class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
     return HashCombine(hash, e.var_index());
   }
 
-  size_t VisitCall(mp::CallExpr e) {
+  size_t VisitCall(asl::CallExpr e) {
     // Function name is hashed as a pointer. This works because the function
     // object is the same for all calls to the same function.
     size_t hash = Hash(e, e.function().name());
@@ -468,33 +469,33 @@ class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
     return hash;
   }
 
-  size_t VisitSum(mp::SumExpr e) { return VisitVarArg(e); }
-  size_t VisitCount(mp::CountExpr e) { return VisitVarArg(e); }
-  size_t VisitNumberOf(mp::NumberOfExpr e) { return VisitVarArg(e); }
+  size_t VisitSum(asl::SumExpr e) { return VisitVarArg(e); }
+  size_t VisitCount(asl::CountExpr e) { return VisitVarArg(e); }
+  size_t VisitNumberOf(asl::NumberOfExpr e) { return VisitVarArg(e); }
 
-  size_t VisitLogicalConstant(mp::LogicalConstant c) {
+  size_t VisitLogicalConstant(asl::LogicalConstant c) {
     return Hash(c, c.value());
   }
 
-  size_t VisitNot(mp::NotExpr e) { return Hash(e, e.arg()); }
+  size_t VisitNot(asl::NotExpr e) { return Hash(e, e.arg()); }
 
-  size_t VisitBinaryLogical(mp::BinaryLogicalExpr e) { return VisitBinary(e); }
-  size_t VisitRelational(mp::RelationalExpr e) { return VisitBinary(e); }
+  size_t VisitBinaryLogical(asl::BinaryLogicalExpr e) { return VisitBinary(e); }
+  size_t VisitRelational(asl::RelationalExpr e) { return VisitBinary(e); }
 
-  size_t VisitLogicalCount(mp::LogicalCountExpr e) {
+  size_t VisitLogicalCount(asl::LogicalCountExpr e) {
     NumericExpr rhs = e.rhs();
     return HashCombine(Hash(e, e.lhs()), rhs);
   }
 
-  size_t VisitImplication(mp::ImplicationExpr e) { return VisitIf(e); }
+  size_t VisitImplication(asl::ImplicationExpr e) { return VisitIf(e); }
 
-  size_t VisitIteratedLogical(mp::IteratedLogicalExpr e) {
+  size_t VisitIteratedLogical(asl::IteratedLogicalExpr e) {
     return VisitVarArg(e);
   }
 
-  size_t VisitAllDiff(mp::PairwiseExpr e) { return VisitVarArg(e); }
+  size_t VisitAllDiff(asl::PairwiseExpr e) { return VisitVarArg(e); }
 
-  size_t VisitStringLiteral(mp::StringLiteral s) {
+  size_t VisitStringLiteral(asl::StringLiteral s) {
     size_t hash = Hash(s);
     for (const char *value = s.value(); *value; ++value)
       hash = HashCombine(hash, *value);
@@ -514,7 +515,7 @@ size_t std::hash<Expr>::operator()(Expr expr) const {
   ExprHasher hasher;
   NumericExpr n = Cast<NumericExpr>(expr);
   return n ? hasher.Visit(n) :
-             hasher.VisitStringLiteral(Cast<mp::StringLiteral>(expr));
+             hasher.VisitStringLiteral(Cast<asl::StringLiteral>(expr));
 }
 
 size_t std::hash<NumericExpr>::operator()(NumericExpr expr) const {
@@ -538,6 +539,7 @@ size_t std::hash<LogicalExpr>::operator()(LogicalExpr expr) const {
 #endif
 
 namespace mp {
+namespace asl {
 
 const de VarArgExpr::END = de();
 
@@ -607,4 +609,5 @@ void WriteExpr<LinearObjExpr>(
 template
 void WriteExpr<LinearConExpr>(
     fmt::Writer &w, LinearConExpr linear, NumericExpr nonlinear);
+}
 }

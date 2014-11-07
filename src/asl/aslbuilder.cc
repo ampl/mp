@@ -65,6 +65,7 @@ double MissingFunc(arglist *al) {
 }  // namespace
 
 namespace mp {
+namespace asl {
 namespace internal {
 
 const double ASLBuilder::DVALUE[] = {
@@ -766,4 +767,5 @@ StringLiteral ASLBuilder::MakeStringLiteral(fmt::StringRef value) {
   return Expr::Create<StringLiteral>(reinterpret_cast< ::expr*>(result));
 }
 }
+}  // namespace asl
 }  // namespace mp

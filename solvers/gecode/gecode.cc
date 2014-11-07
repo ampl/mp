@@ -35,6 +35,8 @@ using Gecode::IntVarBranch;
 using Gecode::Reify;
 namespace Search = Gecode::Search;
 
+using namespace mp::asl;
+
 namespace {
 
 const mp::OptionValueInfo INT_CON_LEVELS[] = {
@@ -392,7 +394,7 @@ void NLToGecodeConverter::Convert(const Problem &p) {
     IntVarArgs args(num_args);
     for (int i = 0; i < num_args; ++i) {
       NumericExpr arg(alldiff[i]);
-      if (Variable var = mp::Cast<Variable>(arg))
+      if (Variable var = Cast<Variable>(arg))
         args[i] = vars[var.index()];
       else
         args[i] = Gecode::expr(problem_, Visit(arg), icl_);

@@ -35,7 +35,7 @@ extern "C" {
 
 mp::ASLSolver::ASLSolver(
     fmt::StringRef name, fmt::StringRef long_name, long date, int flags)
-  : SolverImpl<internal::ASLBuilder>(name, long_name, date, flags) {
+  : SolverImpl<asl::internal::ASLBuilder>(name, long_name, date, flags) {
 }
 
 void mp::ASLSolver::RegisterSuffixes(ASL *asl) {

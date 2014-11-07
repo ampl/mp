@@ -7,17 +7,17 @@ struct CreateVar {
 };
 
 int main() {
-  mp::internal::ASLBuilder b;
+  mp::asl::internal::ASLBuilder b;
   int num_exprs = 10000;
   mp::ProblemInfo pi = mp::ProblemInfo();
   pi.num_vars = num_exprs;
   pi.num_objs = 1;
   b.SetInfo(pi);
-  mp::NumberOfMap<int, CreateVar> map((CreateVar()));
-  mp::NumericConstant n = b.MakeNumericConstant(0);
-  std::vector<mp::NumberOfExpr> exprs(num_exprs);
+  mp::asl::NumberOfMap<int, CreateVar> map((CreateVar()));
+  mp::asl::NumericConstant n = b.MakeNumericConstant(0);
+  std::vector<mp::asl::NumberOfExpr> exprs(num_exprs);
   for (int i = 0; i < num_exprs; ++i) {
-    mp::NumericExpr args[] = {n, b.MakeVariable(i)};
+    mp::asl::NumericExpr args[] = {n, b.MakeVariable(i)};
     exprs[i] = b.MakeNumberOf(args);
   }
   mp::steady_clock::time_point start = mp::steady_clock::now();

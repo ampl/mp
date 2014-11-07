@@ -43,7 +43,7 @@
 extern "C" int mkstemps(char *pattern, int suffix_len);
 #endif
 
-using mp::internal::ASLBuilder;
+using mp::asl::internal::ASLBuilder;
 
 namespace {
 
@@ -265,7 +265,7 @@ void Problem::AddVar(double lb, double ub, var::Type type) {
   ++num_vars;
 }
 
-void Problem::AddObj(obj::Type type, NumericExpr expr) {
+void Problem::AddObj(obj::Type type, asl::NumericExpr expr) {
   int &num_objs = asl_->i.n_obj_;
   ASL_fg *fg = asl_->i.ASLtype == ASL_read_fg ?
         reinterpret_cast<ASL_fg*>(asl_) : 0;
@@ -286,7 +286,7 @@ void Problem::AddObj(obj::Type type, NumericExpr expr) {
   ++asl_->i.nlo_;
 }
 
-void Problem::AddCon(LogicalExpr expr) {
+void Problem::AddCon(asl::LogicalExpr expr) {
   if (asl_->i.ASLtype != ASL_read_fg)
     throw Error("problem doesn't support logical constraints");
   ASL_fg *fg = reinterpret_cast<ASL_fg*>(asl_);
@@ -316,10 +316,10 @@ void Problem::Read(fmt::StringRef stub, unsigned flags) {
 
   asl_->p.want_derivs_ = 0;
   asl_->i.want_xpi0_ = (flags & READ_INITIAL_VALUES) != 0;
-  internal::ASLBuilder builder(reinterpret_cast<ASL*>(asl_));
+  asl::internal::ASLBuilder builder(reinterpret_cast<ASL*>(asl_));
   builder.set_flags(ASL_allow_CLP | ASL_sep_U_arrays |
                     ASL_allow_missing_funcs |
-                    internal::ASL_STANDARD_OPCODES | flags);
+                    asl::internal::ASL_STANDARD_OPCODES | flags);
   builder.set_stub(name.c_str());
   ASLHandler handler(builder, ASLHandler::NEED_ALL_OBJS);
   ReadNLFile(name.c_str(), handler);

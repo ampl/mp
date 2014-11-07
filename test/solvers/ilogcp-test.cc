@@ -48,11 +48,13 @@ enum {FEATURES = ~feature::TRIGONOMETRIC & ~feature::INITIAL_VALUES};
 #include "nl-solver-test.h"
 
 using mp::Expr;
-using mp::NumericExpr;
 using mp::IlogCPSolver;
 using mp::InvalidOptionValue;
 using mp::OptionError;
 using mp::Problem;
+
+namespace asl = mp::asl;
+using asl::NumericExpr;
 
 namespace var = mp::var;
 namespace obj = mp::obj;
@@ -180,7 +182,7 @@ TEST_F(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
 // in_relation constraint tests
 
 // Makes a problem for testing in_relation constraint.
-void MakeInRelationProblem(mp::internal::ASLBuilder &pb) {
+void MakeInRelationProblem(asl::internal::ASLBuilder &pb) {
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_cons = 1;
   info.num_objs = info.num_logical_cons = info.num_funcs = 1;
@@ -210,7 +212,7 @@ TEST_F(FunctionTest, NestedInRelationNotSupported) {
       return pb.MakeBinary(mp::expr::ADD, pb.EndCall(args), one);
     }
   } factory;
-  EXPECT_THROW_MSG(Eval(factory), mp::UnsupportedExprError,
+  EXPECT_THROW_MSG(Eval(factory), asl::UnsupportedExprError,
       "unsupported: nested 'in_relation'");
 }
 
@@ -223,7 +225,7 @@ TEST_F(FunctionTest, TooFewArgsToInRelationConstraint) {
   EXPECT_THROW_MSG(Solve(pb), mp::Error, "in_relation: too few arguments");
 }
 
-void MakeInRelationProblem2(mp::internal::ASLBuilder &pb, int num_const_args) {
+void MakeInRelationProblem2(asl::internal::ASLBuilder &pb, int num_const_args) {
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_cons = 2;
   info.num_objs = info.num_logical_cons = info.num_funcs = 1;
@@ -287,12 +289,12 @@ struct EnumValue {
   IloCP::ParameterValues value;
 };
 
-class IlogCPTest : public ::testing::Test, public mp::internal::ASLBuilder {
+class IlogCPTest : public ::testing::Test, public asl::internal::ASLBuilder {
  protected:
   IlogCPSolver s;
 
   IlogCPTest() {
-    set_flags(mp::internal::ASL_STANDARD_OPCODES);
+    set_flags(asl::internal::ASL_STANDARD_OPCODES);
     mp::ProblemInfo info = mp::ProblemInfo();
     info.num_vars = 3;
     info.num_objs = 1;
@@ -310,7 +312,7 @@ class IlogCPTest : public ::testing::Test, public mp::internal::ASLBuilder {
 
   int CountIloDistribute();
 
-  mp::NumericConstant MakeConst(double value) {
+  asl::NumericConstant MakeConst(double value) {
     return MakeNumericConstant(value);
   }
 
@@ -510,7 +512,7 @@ TEST_F(IlogCPTest, OptimizerOption) {
   s.Solve(p, sh);
   EXPECT_EQ(0, p.solve_code());
   s.SetStrOption("optimizer", "cplex");
-  EXPECT_THROW(s.Solve(p, sh), mp::UnsupportedExprError);
+  EXPECT_THROW(s.Solve(p, sh), asl::UnsupportedExprError);
   s.SetStrOption("optimizer", "auto");
   s.Solve(p, sh);
   EXPECT_EQ(0, p.solve_code());

@@ -28,7 +28,7 @@
 
 namespace mp {
 
-class ASLSolver : public SolverImpl<internal::ASLBuilder> {
+class ASLSolver : public SolverImpl<asl::internal::ASLBuilder> {
  private:
   void RegisterSuffixes(ASL *asl);
 
@@ -65,7 +65,7 @@ class ASLSolver : public SolverImpl<internal::ASLBuilder> {
   // Solves a problem and report solutions via the solution handler.
   void Solve(Problem &problem, SolutionHandler &sh);
 
-  void Solve(internal::ASLBuilder &builder, SolutionHandler &sh) {
+  void Solve(asl::internal::ASLBuilder &builder, SolutionHandler &sh) {
     Problem problem(builder.GetProblem());
     Solve(problem, sh);
   }

@@ -32,8 +32,9 @@
 struct Static;
 
 namespace mp {
-
 struct NLHeader;
+
+namespace asl {
 
 namespace internal {
 
@@ -174,11 +175,11 @@ class ASLBuilder {
   void Init(ASL *asl);
 
  public:
-  typedef mp::Expr Expr;
-  typedef mp::NumericExpr NumericExpr;
-  typedef mp::LogicalExpr LogicalExpr;
-  typedef mp::Variable Variable;
-  typedef mp::CountExpr CountExpr;
+  typedef asl::Expr Expr;
+  typedef asl::NumericExpr NumericExpr;
+  typedef asl::LogicalExpr LogicalExpr;
+  typedef asl::Variable Variable;
+  typedef asl::CountExpr CountExpr;
 
   explicit ASLBuilder(ASL *asl = 0) { Init(asl); }
   explicit ASLBuilder(Problem::Proxy proxy) {
@@ -583,6 +584,7 @@ class ASLBuilder {
   StringLiteral MakeStringLiteral(fmt::StringRef value);
 };
 }
+}  // namespace asl
 }  // namespace mp
 
 #endif  // MP_ASLBUILDER_H_

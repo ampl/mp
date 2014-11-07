@@ -28,6 +28,8 @@
 # define putenv _putenv
 #endif
 
+using namespace mp::asl;
+
 namespace {
 
 struct ValueScenario {

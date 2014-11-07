@@ -72,7 +72,7 @@ class GecodeProblem: public Gecode::Space {
 
 // Converter of constraint programming problems from NL to Gecode format.
 class NLToGecodeConverter :
-  public ExprConverter<NLToGecodeConverter, LinExpr, Gecode::BoolExpr> {
+  public asl::ExprConverter<NLToGecodeConverter, LinExpr, Gecode::BoolExpr> {
  private:
   GecodeProblem problem_;
   Gecode::IntConLevel icl_;
@@ -89,18 +89,18 @@ class NLToGecodeConverter :
     return int_value;
   }
 
-  BoolExpr Convert(Gecode::BoolOpType op, IteratedLogicalExpr e);
+  BoolExpr Convert(Gecode::BoolOpType op, asl::IteratedLogicalExpr e);
 
   typedef void (*VarArgFunc)(
       Gecode::Home, const Gecode::IntVarArgs &,
       Gecode::IntVar, Gecode::IntConLevel);
 
-  LinExpr Convert(VarArgExpr e, VarArgFunc f);
+  LinExpr Convert(asl::VarArgExpr e, VarArgFunc f);
 
-  static void RequireZeroRHS(BinaryExpr e, const std::string &func_name);
+  static void RequireZeroRHS(asl::BinaryExpr e, const std::string &func_name);
 
   template<typename Term>
-  LinExpr ConvertExpr(LinearExpr<Term> linear, NumericExpr nonlinear);
+  LinExpr ConvertExpr(asl::LinearExpr<Term> linear, asl::NumericExpr nonlinear);
 
   Gecode::IntConLevel GetICL(int con_index) const;
 
@@ -121,144 +121,144 @@ class NLToGecodeConverter :
   // * log, log10, exp, pow
   // * sqrt other than floor(sqrt())
 
-  LinExpr VisitPlus(BinaryExpr e) {
+  LinExpr VisitPlus(asl::BinaryExpr e) {
     return Visit(e.lhs()) + Visit(e.rhs());
   }
 
-  LinExpr VisitMinus(BinaryExpr e) {
+  LinExpr VisitMinus(asl::BinaryExpr e) {
     return Visit(e.lhs()) - Visit(e.rhs());
   }
 
-  LinExpr VisitMult(BinaryExpr e) {
+  LinExpr VisitMult(asl::BinaryExpr e) {
     return Visit(e.lhs()) * Visit(e.rhs());
   }
 
-  LinExpr VisitRem(BinaryExpr e) {
+  LinExpr VisitRem(asl::BinaryExpr e) {
     return Visit(e.lhs()) % Visit(e.rhs());
   }
 
-  LinExpr VisitNumericLess(BinaryExpr e) {
+  LinExpr VisitNumericLess(asl::BinaryExpr e) {
     return max(Visit(e.lhs()) - Visit(e.rhs()), 0);
   }
 
-  LinExpr VisitMin(VarArgExpr e) {
+  LinExpr VisitMin(asl::VarArgExpr e) {
     return Convert(e, Gecode::min);
   }
 
-  LinExpr VisitMax(VarArgExpr e) {
+  LinExpr VisitMax(asl::VarArgExpr e) {
     return Convert(e, Gecode::max);
   }
 
-  LinExpr VisitFloor(UnaryExpr e);
+  LinExpr VisitFloor(asl::UnaryExpr e);
 
-  LinExpr VisitCeil(UnaryExpr e) {
+  LinExpr VisitCeil(asl::UnaryExpr e) {
     // ceil does nothing because Gecode supports only integer expressions.
     return Visit(e.arg());
   }
 
-  LinExpr VisitAbs(UnaryExpr e) {
+  LinExpr VisitAbs(asl::UnaryExpr e) {
     return abs(Visit(e.arg()));
   }
 
-  LinExpr VisitUnaryMinus(UnaryExpr e) {
+  LinExpr VisitUnaryMinus(asl::UnaryExpr e) {
     return -Visit(e.arg());
   }
 
-  LinExpr VisitIf(IfExpr e);
+  LinExpr VisitIf(asl::IfExpr e);
 
-  LinExpr VisitSum(SumExpr e);
+  LinExpr VisitSum(asl::SumExpr e);
 
-  LinExpr VisitIntDiv(BinaryExpr e) {
+  LinExpr VisitIntDiv(asl::BinaryExpr e) {
     return Visit(e.lhs()) / Visit(e.rhs());
   }
 
-  LinExpr VisitRound(BinaryExpr e) {
+  LinExpr VisitRound(asl::BinaryExpr e) {
     // round does nothing because Gecode supports only integer expressions.
     RequireZeroRHS(e, "round");
     return Visit(e.lhs());
   }
 
-  LinExpr VisitTrunc(BinaryExpr e) {
+  LinExpr VisitTrunc(asl::BinaryExpr e) {
     // trunc does nothing because Gecode supports only integer expressions.
     RequireZeroRHS(e, "trunc");
     return Visit(e.lhs());
   }
 
-  LinExpr VisitCount(CountExpr e);
+  LinExpr VisitCount(asl::CountExpr e);
 
-  LinExpr VisitNumberOf(NumberOfExpr e);
+  LinExpr VisitNumberOf(asl::NumberOfExpr e);
 
-  LinExpr VisitPowConstExp(BinaryExpr e) {
+  LinExpr VisitPowConstExp(asl::BinaryExpr e) {
     return Gecode::pow(Visit(e.lhs()),
-        CastToInt(Cast<NumericConstant>(e.rhs()).value()));
+        CastToInt(asl::Cast<asl::NumericConstant>(e.rhs()).value()));
   }
 
-  LinExpr VisitPow2(UnaryExpr e) {
+  LinExpr VisitPow2(asl::UnaryExpr e) {
     return sqr(Visit(e.arg()));
   }
 
-  LinExpr VisitNumericConstant(NumericConstant c) {
+  LinExpr VisitNumericConstant(asl::NumericConstant c) {
     return CastToInt(c.value());
   }
 
-  LinExpr VisitVariable(Variable v) {
+  LinExpr VisitVariable(asl::Variable v) {
     return problem_.vars()[v.index()];
   }
 
-  BoolExpr VisitOr(BinaryLogicalExpr e) {
+  BoolExpr VisitOr(asl::BinaryLogicalExpr e) {
     return Visit(e.lhs()) || Visit(e.rhs());
   }
 
-  BoolExpr VisitAnd(BinaryLogicalExpr e) {
+  BoolExpr VisitAnd(asl::BinaryLogicalExpr e) {
     return Visit(e.lhs()) && Visit(e.rhs());
   }
 
-  BoolExpr VisitLess(RelationalExpr e) {
+  BoolExpr VisitLess(asl::RelationalExpr e) {
     return Visit(e.lhs()) < Visit(e.rhs());
   }
 
-  BoolExpr VisitLessEqual(RelationalExpr e) {
+  BoolExpr VisitLessEqual(asl::RelationalExpr e) {
     return Visit(e.lhs()) <= Visit(e.rhs());
   }
 
-  BoolExpr VisitEqual(RelationalExpr e) {
+  BoolExpr VisitEqual(asl::RelationalExpr e) {
     return Visit(e.lhs()) == Visit(e.rhs());
   }
 
-  BoolExpr VisitGreaterEqual(RelationalExpr e) {
+  BoolExpr VisitGreaterEqual(asl::RelationalExpr e) {
     return Visit(e.lhs()) >= Visit(e.rhs());
   }
 
-  BoolExpr VisitGreater(RelationalExpr e) {
+  BoolExpr VisitGreater(asl::RelationalExpr e) {
     return Visit(e.lhs()) > Visit(e.rhs());
   }
 
-  BoolExpr VisitNotEqual(RelationalExpr e) {
+  BoolExpr VisitNotEqual(asl::RelationalExpr e) {
     return Visit(e.lhs()) != Visit(e.rhs());
   }
 
-  BoolExpr VisitNot(NotExpr e) {
+  BoolExpr VisitNot(asl::NotExpr e) {
     return !Visit(e.arg());
   }
 
-  BoolExpr VisitForAll(IteratedLogicalExpr e) {
+  BoolExpr VisitForAll(asl::IteratedLogicalExpr e) {
     return Convert(Gecode::BOT_AND, e);
   }
 
-  BoolExpr VisitExists(IteratedLogicalExpr e) {
+  BoolExpr VisitExists(asl::IteratedLogicalExpr e) {
     return Convert(Gecode::BOT_OR, e);
   }
 
-  BoolExpr VisitImplication(ImplicationExpr e);
+  BoolExpr VisitImplication(asl::ImplicationExpr e);
 
-  BoolExpr VisitIff(BinaryLogicalExpr e) {
+  BoolExpr VisitIff(asl::BinaryLogicalExpr e) {
     return Visit(e.lhs()) == Visit(e.rhs());
   }
 
-  BoolExpr VisitAllDiff(PairwiseExpr e);
-  BoolExpr VisitNotAllDiff(PairwiseExpr e) { return VisitAllDiff(e); }
+  BoolExpr VisitAllDiff(asl::PairwiseExpr e);
+  BoolExpr VisitNotAllDiff(asl::PairwiseExpr e) { return VisitAllDiff(e); }
 
-  BoolExpr VisitLogicalConstant(LogicalConstant c) {
+  BoolExpr VisitLogicalConstant(asl::LogicalConstant c) {
     bool value = c.value();
     return Gecode::BoolVar(problem_, value, value);
   }

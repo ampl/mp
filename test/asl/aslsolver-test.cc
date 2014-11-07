@@ -32,7 +32,7 @@ struct TestSolver : mp::ASLSolver {
 
 TEST(ASLSolverTest, RegisterSuffixes) {
   TestSolver s;
-  mp::internal::ASLBuilder builder(s.GetProblemBuilder(""));
+  mp::asl::internal::ASLBuilder builder(s.GetProblemBuilder(""));
   mp::Problem p(builder.GetProblem());
   EXPECT_TRUE(p.suffixes(mp::suf::VAR).Find("answer"));
 }

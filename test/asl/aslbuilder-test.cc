@@ -29,13 +29,14 @@
 
 #include <climits>
 
-using mp::NLHeader;
-using mp::Function;
-using mp::LogicalExpr;
-using mp::NumericExpr;
-using mp::MakeArrayRef;
-using mp::internal::ASLBuilder;
+namespace asl = mp::asl;
 namespace func = mp::func;
+using mp::NLHeader;
+using asl::Function;
+using asl::LogicalExpr;
+using asl::NumericExpr;
+using mp::MakeArrayRef;
+using asl::internal::ASLBuilder;
 
 bool operator==(const cde &lhs, const cde &rhs) {
   return lhs.e == rhs.e && lhs.d == rhs.d && lhs.zaplen == rhs.zaplen;
@@ -656,10 +657,10 @@ TEST(ASLBuilderTest, ASLBuilderAdjFcn) {
 }
 
 #define CHECK_THROW_ASL_ERROR(code, expected_error_code, expected_message) { \
-  mp::internal::ASLError error(0, ""); \
+  asl::internal::ASLError error(0, ""); \
   try { \
     code; \
-  } catch (const mp::internal::ASLError &e) { \
+  } catch (const asl::internal::ASLError &e) { \
     error = e; \
   } \
   EXPECT_EQ(expected_error_code, error.error_code()); \
@@ -772,7 +773,7 @@ class TestASLBuilder : public ASLBuilder {
     header.num_algebraic_cons = NUM_CONS;
     header.num_logical_cons = NUM_LOGICAL_CONS;
     int flags =
-        mp::internal::ASL_STANDARD_OPCODES | ASL_allow_CLP | extra_flags;
+        asl::internal::ASL_STANDARD_OPCODES | ASL_allow_CLP | extra_flags;
     set_flags(flags);
     SetInfo(header);
   }
@@ -954,7 +955,7 @@ TEST(ASLBuilderTest, SizeOverflow) {
   NLHeader header = MakeHeader();
   header.num_funcs = 1;
   builder.set_flags(
-        mp::internal::ASL_STANDARD_OPCODES | ASL_allow_missing_funcs);
+        asl::internal::ASL_STANDARD_OPCODES | ASL_allow_missing_funcs);
   builder.SetInfo(header);
   NumericExpr args[] = {builder.MakeNumericConstant(0)};
 
@@ -962,9 +963,9 @@ TEST(ASLBuilderTest, SizeOverflow) {
   std::size_t max_size = INT_MAX + 1u;
   Function f = builder.AddFunction("f", TestFunc, -1);
   EXPECT_THROW(builder.MakeCall(
-                 f, MakeArrayRef<mp::Expr>(args, num_args)), OverflowError);
+                 f, MakeArrayRef<asl::Expr>(args, num_args)), OverflowError);
   EXPECT_THROW(builder.MakeCall(
-                 f, MakeArrayRef<mp::Expr>(args, max_size)), OverflowError);
+                 f, MakeArrayRef<asl::Expr>(args, max_size)), OverflowError);
 
   num_args = (INT_MAX - sizeof(expr*)) / sizeof(de) + 1;
   EXPECT_THROW(builder.MakeVarArg(

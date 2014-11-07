@@ -25,6 +25,8 @@
 
 #include <iterator>
 
+using namespace mp::asl;
+
 namespace {
 
 // Casts value to intptr_t.

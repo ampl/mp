@@ -33,7 +33,8 @@
 #endif
 
 using mp::Error;
-using mp::NumericExpr;
+
+using namespace mp::asl;
 
 namespace {
 
@@ -45,8 +46,8 @@ inline T ConvertTo(double value) {
   return int_value;
 }
 
-NumericExpr GetArg(mp::CallExpr e, int index) {
-  NumericExpr result = mp::Cast<NumericExpr>(e[index]);
+NumericExpr GetArg(CallExpr e, int index) {
+  NumericExpr result = Cast<NumericExpr>(e[index]);
   if (!result) {
     throw Error("{}: argument {} is not numeric",
         e.function().name(), index + 1);
@@ -54,9 +55,9 @@ NumericExpr GetArg(mp::CallExpr e, int index) {
   return result;
 }
 
-void RequireNonzeroConstRHS(mp::BinaryExpr e, const std::string &func_name) {
+void RequireNonzeroConstRHS(BinaryExpr e, const std::string &func_name) {
   if (!IsZero(e.rhs())) {
-    throw mp::UnsupportedExprError::CreateFromExprString(
+    throw UnsupportedExprError::CreateFromExprString(
         func_name + " with nonzero second parameter");
   }
 }

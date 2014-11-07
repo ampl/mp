@@ -27,6 +27,8 @@
 #include <cstdio>
 #include <set>
 
+using namespace mp::asl;
+
 namespace {
 
 template <typename Map>

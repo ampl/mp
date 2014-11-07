@@ -151,25 +151,31 @@ extern "C" {
 #include "mp/problem-base.h"
 
 namespace mp {
+
+class Problem;
+
+namespace asl {
 class Expr;
 class NumericExpr;
 class LogicalExpr;
+}
 }
 
 #ifdef MP_USE_UNORDERED_MAP
 namespace std {
 template <>
-struct hash<mp::NumericExpr> {
-  std::size_t operator()(mp::NumericExpr e) const;
+struct hash<mp::asl::NumericExpr> {
+  std::size_t operator()(mp::asl::NumericExpr e) const;
 };
 template <>
-struct hash<mp::LogicalExpr> {
-  std::size_t operator()(mp::LogicalExpr e) const;
+struct hash<mp::asl::LogicalExpr> {
+  std::size_t operator()(mp::asl::LogicalExpr e) const;
 };
 }
 #endif
 
 namespace mp {
+namespace asl {
 
 namespace internal {
 
@@ -214,7 +220,7 @@ class Expr {
   friend class ExprConverter;
 
   friend class internal::ASLBuilder;
-  friend class Problem;
+  friend class mp::Problem;
 
   template <typename ExprT>
   static ExprT Create(Expr e) {
@@ -309,15 +315,9 @@ class Expr {
   // string. Expressions with different opcodes can have identical
   // strings. For example, OPPOW, OP1POW and OPCPOW all use the
   // same operator "^".
-  const char *opstr() const {
-    assert(kind() >= expr::FIRST_EXPR && kind() <= expr::LAST_EXPR);
-    return internal::ExprInfo::INFO[kind()].str;
-  }
+  const char *opstr() const { return str(kind()); }
 
-  int precedence() const {
-    assert(kind() >= expr::FIRST_EXPR && kind() <= expr::LAST_EXPR);
-    return internal::ExprInfo::INFO[kind()].precedence;
-  }
+  int precedence() const { return mp::internal::precedence(kind()); }
 
   bool operator==(Expr other) const { return expr_ == other.expr_; }
   bool operator!=(Expr other) const { return expr_ != other.expr_; }
@@ -1312,7 +1312,7 @@ class LinearExpr {
  private:
   Term first_term_;
 
-  friend class Problem;
+  friend class mp::Problem;
 
   explicit LinearExpr(typename Term::Grad *first_term)
   : first_term_(Term(first_term)) {}
@@ -1463,6 +1463,7 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
   values.insert(i, typename ValueMap::value_type(value, var));
   return var;
 }
+}  // namespace asl
 }  // namespace mp
 
 #endif  // MP_ASLEXPR_H_

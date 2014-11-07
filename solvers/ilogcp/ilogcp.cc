@@ -44,6 +44,8 @@
 using std::strcmp;
 using std::vector;
 
+namespace asl = mp::asl;
+
 #ifndef ILOGCP_NO_VERS
 static char xxxvers[] = "ilogcp_options\0\n"
   "AMPL/IBM ILOG CP Optimizer Driver Version " qYYYYMMDD "\n";
@@ -214,8 +216,8 @@ void GetSolution(IloCP cp, IloNumVarArray vars, vector<double> &solution) {
 bool HasNonlinearObj(const mp::Problem &p) {
   if (p.num_objs() == 0)
     return false;
-  mp::NumericExpr expr = p.nonlinear_obj_expr(0);
-  return expr && !mp::Cast<mp::NumericConstant>(expr);
+  asl::NumericExpr expr = p.nonlinear_obj_expr(0);
+  return expr && !asl::Cast<asl::NumericConstant>(expr);
 }
 
 std::string ConvertSolutionStatus(
@@ -765,7 +767,7 @@ void IlogCPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     const IloExtractableArray &extractables = e.getExtractables();
     if (extractables.getSize() == 0)
       throw;
-    throw UnsupportedExprError::CreateFromExprString(
+    throw asl::UnsupportedExprError::CreateFromExprString(
         fmt::format("{}", extractables[0]));
   }
 

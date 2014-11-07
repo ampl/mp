@@ -29,41 +29,41 @@
 #include "asl/aslbuilder.h"
 #include "asl/aslproblem.h"
 
-using mp::Function;
-using mp::Cast;
-using mp::Expr;
-using mp::NumericExpr;
-using mp::LogicalExpr;
-using mp::UnaryExpr;
-using mp::BinaryExpr;
-using mp::VarArgExpr;
-using mp::SumExpr;
-using mp::CountExpr;
-using mp::IfExpr;
-using mp::PiecewiseLinearExpr;
-using mp::NumericConstant;
-using mp::Variable;
-using mp::NumberOfExpr;
-using mp::CallExpr;
-using mp::LogicalConstant;
-using mp::RelationalExpr;
-using mp::NotExpr;
-using mp::LogicalCountExpr;
-using mp::BinaryLogicalExpr;
-using mp::ImplicationExpr;
-using mp::IteratedLogicalExpr;
-using mp::PairwiseExpr;
-using mp::StringLiteral;
-using mp::ExprVisitor;
-using mp::MakeArrayRef;
-
-using mp::LinearTerm;
-using mp::LinearExpr;
+namespace asl = mp::asl;
+using asl::Function;
+using asl::Cast;
+using asl::Expr;
+using asl::NumericExpr;
+using asl::LogicalExpr;
+using asl::UnaryExpr;
+using asl::BinaryExpr;
+using asl::VarArgExpr;
+using asl::SumExpr;
+using asl::CountExpr;
+using asl::IfExpr;
+using asl::PiecewiseLinearExpr;
+using asl::NumericConstant;
+using asl::Variable;
+using asl::NumberOfExpr;
+using asl::CallExpr;
+using asl::LogicalConstant;
+using asl::RelationalExpr;
+using asl::NotExpr;
+using asl::LogicalCountExpr;
+using asl::BinaryLogicalExpr;
+using asl::ImplicationExpr;
+using asl::IteratedLogicalExpr;
+using asl::PairwiseExpr;
+using asl::StringLiteral;
+using asl::ExprVisitor;
+using asl::UnsupportedExprError;
+using asl::InvalidNumericExprError;
+using asl::InvalidLogicalExprError;
+using asl::LinearTerm;
+using asl::LinearExpr;
 
 using mp::Error;
-using mp::UnsupportedExprError;
-using mp::InvalidNumericExprError;
-using mp::InvalidLogicalExprError;
+using mp::MakeArrayRef;
 namespace ex = mp::expr;
 namespace func = mp::func;
 
@@ -94,6 +94,7 @@ double TestFunc(arglist *) { return 0; }
 }  // namespace
 
 namespace mp {
+namespace asl {
 #ifndef NDEBUG
 namespace internal {
 template <>
@@ -104,7 +105,7 @@ bool Is<TestExpr>(ex::Kind kind) {
 #endif
 
 template <>
-class LinearExpr< LinearTerm<TestGrad> > {
+class LinearExpr< asl::LinearTerm<TestGrad> > {
  private:
   TestGrad grad_;
 
@@ -112,7 +113,8 @@ class LinearExpr< LinearTerm<TestGrad> > {
   LinearExpr(const TestGrad &g) : grad_(g) {}
   LinearTerm<TestGrad> get() { return LinearTerm<TestGrad>(&grad_); }
 };
-}
+}  // namespace asl
+}  // namespace mp
 
 template <typename ExprT>
 ExprT MakeExpr(expr *e) { return TestExpr::MakeExpr<ExprT>(e); }
@@ -170,7 +172,7 @@ void TestExpr::TestArrayIterator() {
 
 class ExprTest : public ::testing::Test {
  protected:
-  mp::internal::ASLBuilder builder;
+  asl::internal::ASLBuilder builder;
   NumericExpr n1, n2;
   LogicalConstant l0, l1;
 
@@ -220,7 +222,7 @@ public:
     info.num_vars = NUM_VARS;
     info.num_objs = 1;
     info.num_funcs = 2;
-    int flags = mp::internal::ASL_STANDARD_OPCODES | ASL_allow_missing_funcs;
+    int flags = asl::internal::ASL_STANDARD_OPCODES | ASL_allow_missing_funcs;
     builder.SetInfo(info);
     builder.set_flags(flags);
     n1 = builder.MakeNumericConstant(1);
@@ -438,7 +440,7 @@ std::size_t CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
     bool is_this_kind = info.kind >= start && info.kind <= end;
     if (info.kind != ex::UNKNOWN) {
       Expr e(::MakeExpr(&raw));
-      EXPECT_EQ(is_this_kind, mp::internal::Is<ExprT>(e));
+      EXPECT_EQ(is_this_kind, asl::internal::Is<ExprT>(e));
       bool cast_result = Cast<ExprT>(e);
       EXPECT_EQ(is_this_kind, cast_result);
     }
@@ -598,14 +600,14 @@ TEST_F(ExprTest, LogicalExpr) {
 
 TEST_F(ExprTest, NumericConstant) {
   EXPECT_EQ(1, CheckExpr<NumericConstant>(ex::CONSTANT));
-  mp::NumericConstant expr = builder.MakeNumericConstant(42);
+  asl::NumericConstant expr = builder.MakeNumericConstant(42);
   EXPECT_EQ(ex::CONSTANT, expr.kind());
   EXPECT_EQ(42, expr.value());
 }
 
 TEST_F(ExprTest, Variable) {
   EXPECT_EQ(1, CheckExpr<Variable>(ex::VARIABLE));
-  mp::Variable var = builder.MakeVariable(0);
+  asl::Variable var = builder.MakeVariable(0);
   EXPECT_EQ(ex::VARIABLE, var.kind());
   EXPECT_EQ(0, var.index());
   var = builder.MakeVariable(9);
@@ -624,7 +626,7 @@ TEST_F(ExprTest, UnaryExpr) {
   std::size_t num_kinds = sizeof(kinds) / sizeof(*kinds);
   EXPECT_EQ(num_kinds, CheckExpr<UnaryExpr>(ex::FIRST_UNARY));
   for (std::size_t i = 0; i < num_kinds; ++i) {
-    mp::UnaryExpr expr = builder.MakeUnary(kinds[i], n1);
+    asl::UnaryExpr expr = builder.MakeUnary(kinds[i], n1);
     EXPECT_EQ(kinds[i], expr.kind());
     EXPECT_EQ(n1, expr.arg());
   }
@@ -646,7 +648,7 @@ TEST_F(ExprTest, BinaryExpr) {
   std::size_t num_kinds = sizeof(kinds) / sizeof(*kinds);
   EXPECT_EQ(num_kinds, CheckExpr<BinaryExpr>(ex::FIRST_BINARY));
   for (std::size_t i = 0; i < num_kinds; ++i) {
-    mp::BinaryExpr expr = builder.MakeBinary(kinds[i], n1, n2);
+    asl::BinaryExpr expr = builder.MakeBinary(kinds[i], n1, n2);
     EXPECT_BINARY(expr, kinds[i], n1, n2);
   }
   EXPECT_THROW_MSG(builder.MakeBinary(ex::MINUS, n1, n2), Error,
@@ -655,7 +657,7 @@ TEST_F(ExprTest, BinaryExpr) {
 
 TEST_F(ExprTest, IfExpr) {
   EXPECT_EQ(1, CheckExpr<IfExpr>(ex::IF));
-  mp::IfExpr expr = builder.MakeIf(l1, n1, n2);
+  asl::IfExpr expr = builder.MakeIf(l1, n1, n2);
   EXPECT_EQ(ex::IF, expr.kind());
   EXPECT_EQ(l1, expr.condition());
   EXPECT_EQ(n1, expr.true_expr());
@@ -667,8 +669,8 @@ TEST_F(ExprTest, PiecewiseLinearExpr) {
   enum { NUM_BREAKPOINTS = 2 };
   double breakpoints[NUM_BREAKPOINTS] = { 11, 22 };
   double slopes[NUM_BREAKPOINTS + 1] = {33, 44, 55};
-  mp::Variable var = builder.MakeVariable(2);
-  mp::PiecewiseLinearExpr expr = builder.MakePiecewiseLinear(
+  asl::Variable var = builder.MakeVariable(2);
+  asl::PiecewiseLinearExpr expr = builder.MakePiecewiseLinear(
       NUM_BREAKPOINTS, breakpoints, slopes, var);
   EXPECT_EQ(ex::PLTERM, expr.kind());
   EXPECT_EQ(NUM_BREAKPOINTS, expr.num_breakpoints());
@@ -732,10 +734,10 @@ TEST_F(ExprTest, SumExpr) {
   EXPECT_EQ(1, CheckExpr<SumExpr>(ex::SUM));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
-  mp::SumExpr expr = builder.MakeSum(args);
+  asl::SumExpr expr = builder.MakeSum(args);
   EXPECT_EQ(ex::SUM, expr.kind());
   int arg_index = 0;
-  for (mp::SumExpr::iterator
+  for (asl::SumExpr::iterator
       i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
     EXPECT_EQ(args[arg_index], *i);
   }
@@ -745,10 +747,10 @@ TEST_F(ExprTest, CountExpr) {
   EXPECT_EQ(1, CheckExpr<CountExpr>(ex::COUNT));
   enum {NUM_ARGS = 2};
   LogicalExpr args[NUM_ARGS] = {l1, l0};
-  mp::CountExpr expr = builder.MakeCount(args);
+  asl::CountExpr expr = builder.MakeCount(args);
   EXPECT_EQ(ex::COUNT, expr.kind());
   int arg_index = 0;
-  for (mp::CountExpr::iterator
+  for (asl::CountExpr::iterator
       i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
     EXPECT_EQ(args[arg_index], *i);
   }
@@ -758,7 +760,7 @@ TEST_F(ExprTest, NumberOfExpr) {
   EXPECT_EQ(1, CheckExpr<NumberOfExpr>(ex::NUMBEROF));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
-  mp::NumberOfExpr expr = builder.MakeNumberOf(args);
+  asl::NumberOfExpr expr = builder.MakeNumberOf(args);
   EXPECT_EQ(ex::NUMBEROF, expr.kind());
   EXPECT_EQ(NUM_ARGS, expr.num_args());
   for (int i = 0; i < NUM_ARGS; ++i)
@@ -771,7 +773,7 @@ TEST_F(ExprTest, NumberOfExpr) {
 
 TEST_F(ExprTest, LogicalConstant) {
   EXPECT_EQ(1, CheckExpr<LogicalConstant>(ex::CONSTANT));
-  mp::LogicalConstant expr = builder.MakeLogicalConstant(true);
+  asl::LogicalConstant expr = builder.MakeLogicalConstant(true);
   EXPECT_EQ(ex::CONSTANT, expr.kind());
   EXPECT_TRUE(expr.value());
   EXPECT_FALSE(builder.MakeLogicalConstant(false).value());
@@ -779,7 +781,7 @@ TEST_F(ExprTest, LogicalConstant) {
 
 TEST_F(ExprTest, NotExpr) {
   EXPECT_EQ(1, CheckExpr<NotExpr>(ex::NOT));
-  mp::NotExpr expr = builder.MakeNot(l1);
+  asl::NotExpr expr = builder.MakeNot(l1);
   EXPECT_EQ(ex::NOT, expr.kind());
   EXPECT_EQ(l1, expr.arg());
 }
@@ -789,7 +791,7 @@ TEST_F(ExprTest, BinaryLogicalExpr) {
   std::size_t num_kinds = sizeof(kinds) / sizeof(*kinds);
   EXPECT_EQ(num_kinds, CheckExpr<BinaryLogicalExpr>(ex::FIRST_BINARY_LOGICAL));
   for (size_t i = 0; i < num_kinds; ++i) {
-    mp::BinaryLogicalExpr expr =
+    asl::BinaryLogicalExpr expr =
         builder.MakeBinaryLogical(kinds[i], l1, l0);
     EXPECT_BINARY(expr, kinds[i], l1, l0);
   }
@@ -802,7 +804,7 @@ TEST_F(ExprTest, RelationalExpr) {
   std::size_t num_kinds = sizeof(kinds) / sizeof(*kinds);
   EXPECT_EQ(num_kinds, CheckExpr<RelationalExpr>(ex::FIRST_RELATIONAL));
   for (size_t i = 0; i < num_kinds; ++i) {
-    mp::RelationalExpr expr = builder.MakeRelational(kinds[i], n1, n2);
+    asl::RelationalExpr expr = builder.MakeRelational(kinds[i], n1, n2);
     EXPECT_BINARY(expr, kinds[i], n1, n2);
   }
   EXPECT_THROW_MSG(builder.MakeRelational(ex::MINUS, n1, n2), Error,
@@ -816,9 +818,9 @@ TEST_F(ExprTest, LogicalCountExpr) {
   };
   std::size_t num_kinds = sizeof(kinds) / sizeof(*kinds);
   EXPECT_EQ(num_kinds, CheckExpr<LogicalCountExpr>(ex::FIRST_LOGICAL_COUNT));
-  mp::CountExpr count = builder.MakeCount(MakeArrayRef(&l1, 1));
+  asl::CountExpr count = builder.MakeCount(MakeArrayRef(&l1, 1));
   for (size_t i = 0; i < num_kinds; ++i) {
-    mp::LogicalCountExpr expr =
+    asl::LogicalCountExpr expr =
         builder.MakeLogicalCount(kinds[i], n1, count);
     EXPECT_BINARY(expr, kinds[i], n1, count);
   }
@@ -829,7 +831,7 @@ TEST_F(ExprTest, LogicalCountExpr) {
 TEST_F(ExprTest, ImplicationExpr) {
   EXPECT_EQ(1, CheckExpr<ImplicationExpr>(ex::IMPLICATION));
   LogicalExpr condition = builder.MakeLogicalConstant(true);
-  mp::ImplicationExpr expr = builder.MakeImplication(condition, l0, l1);
+  asl::ImplicationExpr expr = builder.MakeImplication(condition, l0, l1);
   EXPECT_EQ(ex::IMPLICATION, expr.kind());
   EXPECT_EQ(condition, expr.condition());
   EXPECT_EQ(l0, expr.true_expr());
@@ -1032,7 +1034,7 @@ TEST_F(ExprTest, ExprVisitorInvalidExpr) {
 #endif
 }
 
-struct TestConverter : mp::ExprConverter<TestConverter, void, TestLResult> {
+struct TestConverter : asl::ExprConverter<TestConverter, void, TestLResult> {
   TestLResult VisitLess(RelationalExpr e) { return MakeResult(e); }
   TestLResult VisitLessEqual(RelationalExpr e) { return MakeResult(e); }
   TestLResult VisitEqual(RelationalExpr e) { return MakeResult(e); }
@@ -1112,7 +1114,7 @@ struct CreateVar {
 };
 
 TEST_F(ExprTest, NumberOfMap) {
-  mp::NumberOfMap<Var, CreateVar> map((CreateVar()));
+  asl::NumberOfMap<Var, CreateVar> map((CreateVar()));
   EXPECT_TRUE(map.begin() == map.end());
   NumericExpr args1[] = {MakeConst(11), MakeVariable(0)};
   NumberOfExpr e1 = builder.MakeNumberOf(args1);
@@ -1122,7 +1124,7 @@ TEST_F(ExprTest, NumberOfMap) {
   map.Add(22, e2);
   NumericExpr args3[] = {MakeConst(33), MakeVariable(0)};
   map.Add(33, builder.MakeNumberOf(args3));
-  mp::NumberOfMap<Var, CreateVar>::iterator i = map.begin();
+  asl::NumberOfMap<Var, CreateVar>::iterator i = map.begin();
   EXPECT_EQ(e1, i->expr);
   EXPECT_EQ(2u, i->values.size());
   EXPECT_EQ(1, i->values.find(11)->second.index);
@@ -1148,7 +1150,7 @@ static ::testing::AssertionResult CheckWrite(
     const char *, const char *expr_str,
     const std::string &expected_output, NumericExpr expr) {
   fmt::MemoryWriter w;
-  WriteExpr(w, mp::LinearObjExpr(), expr);
+  WriteExpr(w, asl::LinearObjExpr(), expr);
   std::string actual_output = w.str();
   if (expected_output == actual_output)
     return ::testing::AssertionSuccess();
@@ -1229,7 +1231,7 @@ TEST_F(ExprTest, WritePiecewiseLinearExpr) {
 }
 
 TEST_F(ExprTest, WriteCallExpr) {
-  mp::Function f = builder.AddFunction("foo", TestFunc, -1);
+  asl::Function f = builder.AddFunction("foo", TestFunc, -1);
   Expr args[] = {
       MakeConst(3),
       MakeBinary(ex::ADD, MakeVariable(0), MakeConst(5)),
@@ -1308,7 +1310,7 @@ TEST_F(ExprTest, WriteLogicalCountExpr) {
   LogicalExpr args[] = {
     MakeRelational(ex::EQ, MakeVariable(0), MakeConst(0)), l1, l0
   };
-  mp::CountExpr count = builder.MakeCount(args);
+  asl::CountExpr count = builder.MakeCount(args);
   CHECK_WRITE("if atleast 42 (x1 = 0, 1, 0) then 1",
       MakeIf(MakeLogicalCount(ex::ATLEAST, value, count), n1, n0));
   CHECK_WRITE("if atmost 42 (x1 = 0, 1, 0) then 1",
@@ -1351,7 +1353,7 @@ TEST_F(ExprTest, WritePairwiseExpr) {
 
 TEST_F(ExprTest, WriteStringLiteral) {
   Expr args[] = {builder.MakeStringLiteral("abc")};
-  mp::Function f = builder.AddFunction("f", TestFunc, 1, func::SYMBOLIC);
+  asl::Function f = builder.AddFunction("f", TestFunc, 1, func::SYMBOLIC);
   CHECK_WRITE("f('abc')", builder.MakeCall(f, args));
   args[0] = builder.MakeStringLiteral("ab'c");
   CHECK_WRITE("f('ab''c')", builder.MakeCall(f, args));
@@ -1697,7 +1699,7 @@ TEST_F(ExprTest, PairwiseExprPrecedence) {
 
 #ifdef MP_USE_UNORDERED_MAP
 
-using mp::internal::HashCombine;
+using asl::internal::HashCombine;
 
 TEST_F(ExprTest, HashNumericConstant) {
   size_t hash = HashCombine<int>(0, ex::CONSTANT);
@@ -1712,7 +1714,7 @@ TEST_F(ExprTest, HashVariable) {
 }
 
 template <typename Base>
-void CheckHash(mp::BasicUnaryExpr<Base> e) {
+void CheckHash(asl::BasicUnaryExpr<Base> e) {
   size_t hash = HashCombine<int>(0, e.kind());
   hash = HashCombine<Base>(hash, e.arg());
   EXPECT_EQ(hash, std::hash<Base>()(e));
@@ -1731,8 +1733,8 @@ void CheckHashBinary(Expr e) {
 }
 
 template <typename Base, typename Arg>
-void CheckHash(mp::BasicBinaryExpr<Base, Arg> e) {
-  CheckHashBinary<mp::BasicBinaryExpr<Base, Arg>, Base, Arg>(e);
+void CheckHash(asl::BasicBinaryExpr<Base, Arg> e) {
+  CheckHashBinary<asl::BasicBinaryExpr<Base, Arg>, Base, Arg>(e);
 }
 
 TEST_F(ExprTest, HashBinaryExpr) {
@@ -1740,7 +1742,7 @@ TEST_F(ExprTest, HashBinaryExpr) {
 }
 
 template <typename Base>
-void CheckHash(mp::BasicIfExpr<Base> e) {
+void CheckHash(asl::BasicIfExpr<Base> e) {
   size_t hash = HashCombine<int>(0, e.kind());
   hash = HashCombine<LogicalExpr>(hash, e.condition());
   hash = HashCombine<Base>(hash, e.true_expr());
@@ -1789,8 +1791,8 @@ size_t CheckHash(Expr e) {
 }
 
 template <typename BaseT, typename ArgT, int ID>
-void CheckHash(mp::BasicIteratedExpr<BaseT, ArgT, ID> e) {
-  CheckHash<mp::BasicIteratedExpr<BaseT, ArgT, ID>, ArgT, BaseT>(e);
+void CheckHash(asl::BasicIteratedExpr<BaseT, ArgT, ID> e) {
+  CheckHash<asl::BasicIteratedExpr<BaseT, ArgT, ID>, ArgT, BaseT>(e);
 }
 
 TEST_F(ExprTest, HashNumericVarArgExpr) {
@@ -1859,9 +1861,9 @@ namespace std {
 template <>
 struct hash<TestString> {
   std::size_t operator()(TestString ts) const {
-    size_t hash = mp::internal::HashCombine<int>(0, ex::STRING);
+    size_t hash = asl::internal::HashCombine<int>(0, ex::STRING);
     for (const char *s = ts.str; *s; ++s)
-      hash = mp::internal::HashCombine(hash, *s);
+      hash = asl::internal::HashCombine(hash, *s);
     return hash;
   }
 };
@@ -1883,12 +1885,12 @@ TEST_F(ExprTest, HashNumberOfArgs) {
   size_t hash = HashCombine<NumericExpr>(0, MakeVariable(11));
   hash = HashCombine<NumericExpr>(hash, MakeConst(22));
   NumericExpr args[] = {MakeConst(42), MakeVariable(11), MakeConst(22)};
-  EXPECT_EQ(hash, mp::internal::HashNumberOfArgs()(
+  EXPECT_EQ(hash, asl::internal::HashNumberOfArgs()(
               builder.MakeNumberOf(args)));
 }
 
 TEST_F(ExprTest, EqualNumberOfArgs) {
-  using mp::internal::EqualNumberOfArgs;
+  using asl::internal::EqualNumberOfArgs;
   NumericExpr args1[] = {MakeConst(0), MakeVariable(11), MakeConst(22)};
   NumericExpr args2[] = {MakeConst(1), MakeVariable(11), MakeConst(22)};
   EXPECT_TRUE(EqualNumberOfArgs()(
@@ -1908,7 +1910,7 @@ struct TestNumberOf {
 };
 
 TEST_F(ExprTest, MatchNumberOfArgs) {
-  using mp::internal::MatchNumberOfArgs;
+  using asl::internal::MatchNumberOfArgs;
   NumericExpr args1[] = {MakeConst(1), MakeVariable(11), MakeConst(22)};
   NumericExpr args2[] = {MakeConst(0), MakeVariable(11), MakeConst(22)};
   EXPECT_TRUE(MatchNumberOfArgs<TestNumberOf>(

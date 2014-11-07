@@ -27,10 +27,12 @@
 #include "../util.h"
 #include "stderr-redirect.h"
 
+namespace asl = mp::asl;
+using asl::LinearConExpr;
+using asl::LinearObjExpr;
+
 using mp::var::CONTINUOUS;
 using mp::var::INTEGER;
-using mp::LinearConExpr;
-using mp::LinearObjExpr;
 using mp::Problem;
 using mp::ProblemChanges;
 using mp::Solution;
@@ -475,7 +477,7 @@ TEST(ProblemTest, AddVar) {
   EXPECT_THROW(p.AddVar(0, 0), mp::Error);
 }
 
-class TestASLBuilder : public mp::internal::ASLBuilder {
+class TestASLBuilder : public asl::internal::ASLBuilder {
  private:
   static mp::ProblemInfo MakeProblemInfo() {
     mp::ProblemInfo info = mp::ProblemInfo();
@@ -485,7 +487,7 @@ class TestASLBuilder : public mp::internal::ASLBuilder {
 
  public:
   explicit TestASLBuilder(mp::ProblemInfo info = MakeProblemInfo()) {
-    set_flags(mp::internal::ASL_STANDARD_OPCODES);
+    set_flags(asl::internal::ASL_STANDARD_OPCODES);
     SetInfo(info);
   }
 };
@@ -495,7 +497,7 @@ TEST(ProblemTest, AddCon) {
   p.AddVar(0, 0);
   EXPECT_EQ(0, p.num_logical_cons());
   TestASLBuilder builder;
-  mp::LogicalExpr expr = builder.MakeRelational(
+  asl::LogicalExpr expr = builder.MakeRelational(
         mp::expr::EQ, builder.MakeVariable(0), builder.MakeNumericConstant(0));
   p.AddCon(expr);
   EXPECT_EQ(0, p.num_cons());
@@ -511,7 +513,7 @@ TEST(ProblemTest, AddObj) {
   p.AddVar(0, 0);
   EXPECT_EQ(0, p.num_objs());
   TestASLBuilder builder;
-  mp::NumericExpr expr = builder.MakeBinary(
+  asl::NumericExpr expr = builder.MakeBinary(
         mp::expr::ADD, builder.MakeVariable(0), builder.MakeNumericConstant(1));
   p.AddObj(obj::MAX, expr);
   EXPECT_EQ(1, p.num_objs());
@@ -596,7 +598,7 @@ TEST_P(SuffixTest, VisitValues) {
   TestASLBuilder builder(info);
   builder.set_flags(ASL_keep_all_suffixes);
   int kind = GetParam();
-  mp::internal::ASLBuilder::SuffixHandler handler =
+  asl::internal::ASLBuilder::SuffixHandler handler =
       builder.AddSuffix(kind, 3, "foo");
   handler.SetValue(0, 11);
   if (kind != mp::suf::PROBLEM) {

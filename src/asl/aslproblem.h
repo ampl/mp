@@ -34,8 +34,10 @@ namespace mp {
 template <typename SuffixPtr>
 class SuffixData;
 
+namespace asl {
 namespace internal {
 class ASLBuilder;
+}
 }
 
 // A solution of an optimization problem.
@@ -197,7 +199,7 @@ class SuffixView {
   int kind_;
 
   friend class Problem;
-  friend class internal::ASLBuilder;
+  friend class asl::internal::ASLBuilder;
 
   SuffixView(ASL *asl, int kind) : asl_(asl), kind_(kind) {}
 
@@ -274,7 +276,7 @@ class Problem {
     array = new_array;
   }
 
-  friend class internal::ASLBuilder;
+  friend class asl::internal::ASLBuilder;
   friend class ASLSolver;
 
   // Frees all the arrays that were allocated by modifications to the problem.
@@ -292,7 +294,7 @@ class Problem {
 
     friend class Problem;
     friend class ASLSolver;
-    friend class internal::ASLBuilder;
+    friend class asl::internal::ASLBuilder;
 
     void Free() {
       if (asl_)
@@ -415,15 +417,15 @@ class Problem {
   }
 
   // Returns the linear part of an objective expression.
-  LinearObjExpr linear_obj_expr(int obj_index) const {
+  asl::LinearObjExpr linear_obj_expr(int obj_index) const {
     assert(obj_index >= 0 && obj_index < num_objs());
-    return LinearObjExpr(asl_->i.Ograd_[obj_index]);
+    return asl::LinearObjExpr(asl_->i.Ograd_[obj_index]);
   }
 
   // Returns the linear part of a constraint expression.
-  LinearConExpr linear_con_expr(int con_index) const {
+  asl::LinearConExpr linear_con_expr(int con_index) const {
     assert(con_index >= 0 && con_index < num_cons() && asl_->i.Cgrad_);
-    return LinearConExpr(asl_->i.Cgrad_[con_index]);
+    return asl::LinearConExpr(asl_->i.Cgrad_[con_index]);
   }
 
   template <typename ExprT>
@@ -432,26 +434,26 @@ class Problem {
     assert(index >= 0 && index < size);
     if (asl_->i.ASLtype != ASL_read_fg)
       return ExprT();
-    return Expr::Create<ExprT>(
+    return asl::Expr::Create<ExprT>(
           (reinterpret_cast<ASL_fg*>(asl_)->I.*ptr)[index].e);
   }
-  NumericExpr GetExpr(cde *Edag1info::*ptr, int index, int size) const {
-    return GetExpr<NumericExpr>(ptr, index, size);
+  asl::NumericExpr GetExpr(cde *Edag1info::*ptr, int index, int size) const {
+    return GetExpr<asl::NumericExpr>(ptr, index, size);
   }
 
   // Returns the nonlinear part of an objective expression.
-  NumericExpr nonlinear_obj_expr(int obj_index) const {
+  asl::NumericExpr nonlinear_obj_expr(int obj_index) const {
     return GetExpr(&Edag1info::obj_de_, obj_index, num_objs());
   }
 
   // Returns the nonlinear part of a constraint expression.
-  NumericExpr nonlinear_con_expr(int con_index) const {
+  asl::NumericExpr nonlinear_con_expr(int con_index) const {
     return GetExpr(&Edag1info::con_de_, con_index, num_cons());
   }
 
   // Returns a logical constraint expression.
-  LogicalExpr logical_con_expr(int lcon_index) const {
-    return GetExpr<LogicalExpr>(
+  asl::LogicalExpr logical_con_expr(int lcon_index) const {
+    return GetExpr<asl::LogicalExpr>(
           &Edag1info::lcon_de_, lcon_index, num_logical_cons());
   }
 
@@ -518,10 +520,10 @@ class Problem {
   void AddVar(double lb, double ub, var::Type type = var::CONTINUOUS);
 
   // Adds an objective.
-  void AddObj(obj::Type type, NumericExpr expr);
+  void AddObj(obj::Type type, asl::NumericExpr expr);
 
   // Adds a logical constraint.
-  void AddCon(LogicalExpr expr);
+  void AddCon(asl::LogicalExpr expr);
 
   // Flags for the Read method.
   enum { READ_INITIAL_VALUES = 1 };

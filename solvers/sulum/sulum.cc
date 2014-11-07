@@ -26,6 +26,8 @@
 
 #include <limits>
 
+using namespace mp::asl;
+
 namespace {
 template <typename Param>
 struct OptionInfo {

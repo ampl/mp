@@ -26,6 +26,8 @@
 #include "mp/clock.h"
 #include "asl/aslproblem.h"
 
+using namespace mp::asl;
+
 namespace {
 // Returns the value of an expression.
 inline double GetValue(localsolver::LSExpression e) {
