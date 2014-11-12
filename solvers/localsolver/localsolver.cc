@@ -498,10 +498,52 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   phase.setIterationLimit(iterlimit_);
   interrupter()->SetHandler(StopSolver, &solver);
 
+  struct Callback {
+    ls::LocalSolver &solver;
+    ls::LSExpression obj;
+
+    // The best objective value found so far, multiplied by obj_sign.
+    double adjusted_obj_value;
+    int obj_sign;
+    int seconds_passed;
+    int seconds_to_best_obj;
+    fmt::LongLong iters_to_best_obj;
+
+    explicit Callback(ls::LocalSolver &s)
+      : solver(s), adjusted_obj_value(std::numeric_limits<double>::infinity()),
+        seconds_passed(0), seconds_to_best_obj(0), iters_to_best_obj(0) {
+      obj_sign = s.getModel().getObjectiveDirection(0) == ls::OD_Minimize ?
+            1 : -1;
+      obj = solver.getModel().getObjective(0);
+    }
+
+    static void Call(ls::LSCallbackType, void *data) {
+      static_cast<Callback*>(data)->Call();
+    }
+
+    void Call() {
+      // TODO: output header
+      ++seconds_passed;
+      double obj_value = obj.isDouble() ? obj.getDoubleValue() : obj.getValue();
+      ls::LSStatistics stats = solver.getStatistics();
+      fmt::LongLong num_iters = stats.getNbIterations();
+      fmt::print("{} {} {}\n", obj_value, num_iters, stats.getNbMoves());
+      if (obj_sign * obj_value < adjusted_obj_value) {
+        seconds_to_best_obj = seconds_passed;
+        iters_to_best_obj = num_iters;
+        adjusted_obj_value = obj_sign * obj_value;
+      }
+    }
+  } callback(solver);
+  solver.addCallback(ls::CT_Ticked, &Callback::Call, &callback);
+
   double setup_time = GetTimeAndReset(time);
 
   // Solve the problem.
   DoSolve(solver);
+
+  fmt::print("Best solution found at {} second(s) and {} iteration(s)\n",
+             callback.seconds_to_best_obj, callback.iters_to_best_obj);
 
   // Convert solution status.
   int solve_code = sol::UNKNOWN;
@@ -557,7 +599,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
 
   ls::LSStatistics stats = solver.getStatistics();
   if (stats.getRunningTime() >= options_[TIMELIMIT])
-    w.write("Stopped at time limit of {} seconds\n", options_[TIMELIMIT]);
+    w.write("Stopped at time limit of {} second(s)\n", options_[TIMELIMIT]);
   w.write("{}", stats.toString());
   sh.HandleSolution(solve_code, w.c_str(),
                     solution.empty() ? 0 : solution.data(), 0, obj_val);
