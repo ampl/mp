@@ -35,7 +35,7 @@
 
 enum { MAX_ERROR_MESSAGE_SIZE = 100 };
 
-static const char *const DERIVS_NOT_PROVIDED = "'derivatives are not provided";
+static const char *const DERIVS_NOT_PROVIDED = "derivatives are not provided";
 
 /* Computes (x / fabs(x)) * y. Returns 0 if y is 0. */
 static double mul_by_sign(double x, double y) {
@@ -43,22 +43,41 @@ static double mul_by_sign(double x, double y) {
 }
 
 /* Formats the error message and stores it in al->Errmsg. */
+static void format_error(
+    arglist *al, const char *format, va_list args, char prefix) {
+  size_t size = MAX_ERROR_MESSAGE_SIZE + (prefix ? 1 : 0);
+  char *message = al->Errmsg = al->AE->Tempmem(al->TMI, size);
+  if (prefix)
+    *message++ = prefix;
+  al->AE->VsnprintF(message, MAX_ERROR_MESSAGE_SIZE, format, args);
+}
+
+/* Formats the error message and stores it in al->Errmsg. */
 static void error(arglist *al, const char *format, ...) {
   va_list args;
-  al->Errmsg = al->AE->Tempmem(al->TMI, MAX_ERROR_MESSAGE_SIZE);
   va_start(args, format);
-  al->AE->VsnprintF(al->Errmsg, MAX_ERROR_MESSAGE_SIZE, format, args);
+  format_error(al, format, args, 0);
+  va_end(args);
+}
+
+/* Formats the derivative error message and stores it in al->Errmsg. */
+static void deriv_error(arglist *al, const char *format, ...) {
+  va_list args;
+  va_start(args, format);
+  format_error(al, format, args, '\'');
   va_end(args);
 }
 
 /* Checks if the argument is within the bounds for derivative computation. */
 static int check_deriv_arg(arglist *al, int arg, int min, int max) {
   if (arg < min) {
-    error(al, "can't compute derivative: argument 'n' too small, n = %d", arg);
+    deriv_error(al, "can't compute derivative: argument 'n' too small, n = %d",
+                arg);
     return 0;
   }
   if (arg > max) {
-    error(al, "can't compute derivative: argument 'n' too large, n = %d", arg);
+    deriv_error(al, "can't compute derivative: argument 'n' too large, n = %d",
+                arg);
     return 0;
   }
   return 1;
@@ -66,22 +85,25 @@ static int check_deriv_arg(arglist *al, int arg, int min, int max) {
 
 /* Reports a function evaluation error printing the specified suffix
  * after the function name. */
-static void eval_error_with_suffix(arglist *al, const char *suffix) {
+static void format_eval_error(arglist *al, char prefix, const char *suffix) {
   int n = 0, i = 0;
-  al->Errmsg = al->AE->Tempmem(al->TMI, MAX_ERROR_MESSAGE_SIZE);
-  n += al->AE->SnprintF(al->Errmsg, MAX_ERROR_MESSAGE_SIZE,
+  size_t size = MAX_ERROR_MESSAGE_SIZE + (prefix ? 1 : 0);
+  char *message = al->Errmsg = al->AE->Tempmem(al->TMI, size);
+  if (prefix)
+    *message++ = prefix;
+  n += al->AE->SnprintF(message, MAX_ERROR_MESSAGE_SIZE,
       "can't evaluate %s%s(", al->funcinfo, suffix);
   for (i = 0; i < al->n - 1; ++i) {
-    n += al->AE->SnprintF(al->Errmsg + n, MAX_ERROR_MESSAGE_SIZE - n,
+    n += al->AE->SnprintF(message + n, MAX_ERROR_MESSAGE_SIZE - n,
         "%g, ", al->ra[i]);
   }
-  al->AE->SnprintF(al->Errmsg + n, MAX_ERROR_MESSAGE_SIZE - n,
+  al->AE->SnprintF(message + n, MAX_ERROR_MESSAGE_SIZE - n,
       "%g)", al->ra[al->n - 1]);
 }
 
 /* Reports a function evaluation error. */
 static void eval_error(arglist *al) {
-  eval_error_with_suffix(al, "");
+  format_eval_error(al, 0, "");
 }
 
 static int check_args(arglist *al) {
@@ -110,14 +132,14 @@ static double check_result(arglist *al, double result) {
   if (al->derivs) {
     for (i = 0; i < al->n; ++i) {
       if (gsl_isnan(al->derivs[i])) {
-        eval_error_with_suffix(al, "'");
+        format_eval_error(al, '\'', "'");
         return 0;
       }
     }
     if (al->hes) {
       for (i = 0, n = al->n * (al->n + 1) / 2; i < n; ++i) {
         if (gsl_isnan(al->hes[i])) {
-          eval_error_with_suffix(al, "''");
+          format_eval_error(al, '"', "''");
           return 0;
         }
       }
@@ -139,7 +161,7 @@ static int check_const_arg(arglist *al, unsigned index, const char *name) {
   if (al->dig && al->dig[index])
     return 1;
   /* Derivative information is requested, so the argument is not constant. */
-  error(al, "argument '%s' is not constant", name);
+  deriv_error(al, "argument '%s' is not constant", name);
   return 0;
 }
 
@@ -179,7 +201,7 @@ static int check_zero_func_args(arglist *al, unsigned s_index) {
   }
   if (al->derivs) {
     if (check_const_arg(al, s_index, "s"))
-      error(al, DERIVS_NOT_PROVIDED);
+      deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return 1;
@@ -231,7 +253,7 @@ static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
     if (!check_args(al)) \
       return 0; \
     if (al->derivs) { \
-      error(al, DERIVS_NOT_PROVIDED); \
+      deriv_error(al, DERIVS_NOT_PROVIDED); \
       return 0; \
     } \
     return check_result(al, func(args)); \
@@ -243,7 +265,7 @@ static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
     if (!check_args(al)) \
       return 0; \
     if (al->derivs) { \
-      error(al, DERIVS_NOT_PROVIDED); \
+      deriv_error(al, DERIVS_NOT_PROVIDED); \
       return 0; \
     } \
     CHECK_CALL(value, func##_e(args, &result)); \
@@ -1200,7 +1222,7 @@ static double amplgsl_sf_hydrogenicR(arglist *al) {
   if (!check_int_arg(al, 0, "n") || !check_int_arg(al, 1, "l"))
     return 0;
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   CHECK_CALL(value, gsl_sf_hydrogenicR_e(
@@ -1211,7 +1233,7 @@ static double amplgsl_sf_hydrogenicR(arglist *al) {
 static double amplgsl_sf_coulomb_CL(arglist *al) {
   gsl_sf_result result = {0, 0};
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   if (gsl_sf_coulomb_CL_e(al->ra[0], al->ra[1], &result)) {
@@ -1950,7 +1972,7 @@ static double amplgsl_sf_gegenpoly_n(arglist *al) {
   if (!check_int_arg(al, 0, "n"))
     return 0;
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al, gsl_sf_gegenpoly_n(n, lambda, x));
@@ -2005,7 +2027,7 @@ static double amplgsl_sf_hyperg_U_int(arglist *al) {
     return 0;
   }
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   CHECK_CALL(value, gsl_sf_hyperg_U_int_e(
@@ -2074,7 +2096,7 @@ static double amplgsl_sf_laguerre_n(arglist *al) {
   if (!check_args(al) || !check_int_arg(al, 0, "n"))
     return 0;
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al,
@@ -2214,7 +2236,7 @@ static double amplgsl_sf_legendre_Plm(arglist *al) {
   if (!check_int_arg(al, 0, "l") || !check_int_arg(al, 1, "m"))
     return 0;
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al,
@@ -2225,7 +2247,7 @@ static double amplgsl_sf_legendre_sphPlm(arglist *al) {
   if (!check_int_arg(al, 0, "l") || !check_int_arg(al, 1, "m"))
     return 0;
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al,
@@ -2242,7 +2264,7 @@ static double amplgsl_sf_conicalP_sph_reg(arglist *al) {
   if (!check_int_arg(al, 0, "m"))
     return 0;
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   CHECK_CALL(value, gsl_sf_conicalP_sph_reg_e(
@@ -2255,7 +2277,7 @@ static double amplgsl_sf_conicalP_cyl_reg(arglist *al) {
   if (!check_int_arg(al, 0, "m"))
     return 0;
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   CHECK_CALL(value, gsl_sf_conicalP_cyl_reg_e(
@@ -2271,7 +2293,7 @@ static double amplgsl_sf_legendre_H3d(arglist *al) {
   if (!check_int_arg(al, 0, "l"))
     return 0;
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   CHECK_CALL(value, gsl_sf_legendre_H3d_e(
@@ -2329,7 +2351,7 @@ static double amplgsl_sf_mathieu_a(arglist *al) {
   n = (int)al->ra[0];
   q = al->ra[1];
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al,
@@ -2345,7 +2367,7 @@ static double amplgsl_sf_mathieu_b(arglist *al) {
   n = (int)al->ra[0];
   q = al->ra[1];
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al,
@@ -2362,7 +2384,7 @@ static double amplgsl_sf_mathieu_ce(arglist *al) {
   q = al->ra[1];
   x = al->ra[2];
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al,
@@ -2379,7 +2401,7 @@ static double amplgsl_sf_mathieu_se(arglist *al) {
   q = al->ra[1];
   x = al->ra[2];
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al,
@@ -2397,7 +2419,7 @@ static double amplgsl_sf_mathieu_Mc(arglist *al) {
   q = al->ra[2];
   x = al->ra[3];
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al,
@@ -2415,7 +2437,7 @@ static double amplgsl_sf_mathieu_Ms(arglist *al) {
   q = al->ra[2];
   x = al->ra[3];
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al,
@@ -2874,7 +2896,7 @@ WRAP(gsl_cdf_gumbel2_Qinv, ARGS3)
       } \
     } \
     if (al->derivs) { \
-      error(al, DERIVS_NOT_PROVIDED); \
+      deriv_error(al, DERIVS_NOT_PROVIDED); \
       return 0; \
     } \
     return check_result(al, func((unsigned)args)); \
@@ -2894,7 +2916,7 @@ static double amplgsl_ran_binomial(arglist *al) {
   if (!check_args(al) || !check_uint_arg(al, 1, "n"))
     return 0;
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al,
@@ -2918,7 +2940,7 @@ static double amplgsl_ran_pascal(arglist *al) {
   if (!check_args(al) || !check_uint_arg(al, 1, "n"))
     return 0;
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al, gsl_ran_pascal(rng, al->ra[0], (unsigned)al->ra[1]));
@@ -2939,7 +2961,7 @@ static double amplgsl_ran_hypergeometric(arglist *al) {
     return 0;
   }
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
+    deriv_error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al, gsl_ran_hypergeometric(rng,

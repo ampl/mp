@@ -85,11 +85,21 @@ class Error {
   const char* c_str() const { return str_.c_str(); }
 };
 
-FunctionInfo::Result EvalError(
-    const Function &f, const Tuple &args, const char *suffix = "") {
+FunctionInfo::Result EvalError(const Function &f, const Tuple &args,
+                               char prefix = 0, const char *suffix = "") {
   std::ostringstream os;
+  if (prefix)
+    os << prefix;
   os << "can't evaluate " << f.name() << suffix << args;
   return FunctionInfo::Result(os.str().c_str());
+}
+
+FunctionInfo::Result DerivError(const Function &f, const Tuple &args) {
+  return EvalError(f, args, '\'', "'");
+}
+
+FunctionInfo::Result HesError(const Function &f, const Tuple &args) {
+  return EvalError(f, args, '"', "''");
 }
 
 Error NotIntError(const string &arg_name, double value = 0.5) {
@@ -326,7 +336,7 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
     if (deriv_result.error())
       EXPECT_ERROR(deriv_result.error(), r);
     else
-      EXPECT_ERROR(EvalError(af, args, "'").error(), r);
+      EXPECT_ERROR(DerivError(af, args).error(), r);
   } else {
     EXPECT_TRUE(r.error() != 0);
   }
@@ -390,7 +400,7 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
       else if (deriv_result.error())
         EXPECT_ERROR(deriv_result.error(), r);
       else
-        EXPECT_ERROR(EvalError(f, args, "''").error(), r);
+        EXPECT_ERROR(HesError(f, args).error(), r);
     }
   }
 }
@@ -406,11 +416,11 @@ void GSLTest::TestFuncND(const Function &af, FuncND f, double test_x) {
   BitSet use_deriv("01");
   string arg_name(af.GetArgName(0));
   EXPECT_ERROR(
-      ("can't compute derivative: argument '" + arg_name + "' too small, " +
+      ("'can't compute derivative: argument '" + arg_name + "' too small, " +
       arg_name + " = -2147483648").c_str(),
       af(MakeArgs(INT_MIN, test_x), DERIVS, use_deriv));
   EXPECT_ERROR(
-      ("can't compute derivative: argument '" + arg_name + "' too large, " +
+      ("'can't compute derivative: argument '" + arg_name + "' too large, " +
       arg_name + " = 2147483647").c_str(),
       af(MakeArgs(INT_MAX, test_x), DERIVS, use_deriv));
   if (!af(MakeArgs(INT_MIN + 1, test_x)).error()) {
@@ -423,11 +433,11 @@ void GSLTest::TestFuncND(const Function &af, FuncND f, double test_x) {
   }
 
   EXPECT_ERROR(
-      ("can't compute derivative: argument '" + arg_name + "' too small, " +
+      ("'can't compute derivative: argument '" + arg_name + "' too small, " +
       arg_name + " = -2147483647").c_str(),
       af(MakeArgs(INT_MIN + 1, test_x), HES, use_deriv));
   EXPECT_ERROR(
-      ("can't compute derivative: argument '" + arg_name + "' too large, " +
+      ("'can't compute derivative: argument '" + arg_name + "' too large, " +
       arg_name + " = 2147483646").c_str(),
       af(MakeArgs(INT_MAX - 1, test_x), HES, use_deriv));
   if (!af(MakeArgs(INT_MIN + 2, test_x)).error()) {
@@ -450,7 +460,7 @@ bool CheckArg(const Function &f,
   std::ostringstream os;
   BitSet use_deriv(args.size(), false);
   use_deriv[arg_index] = true;
-  os << "argument '" << f.GetArgName(arg_index) << "' is not constant";
+  os << "'argument '" << f.GetArgName(arg_index) << "' is not constant";
   EXPECT_STREQ(os.str().c_str(), f(args, DERIVS, use_deriv).error());
   return true;
 }
@@ -662,12 +672,12 @@ struct BesselFractionalOrderInfo : FunctionInfo {
       unsigned arg_index, const Tuple &args) const {
     // Partial derivative with respect to nu is not provided.
     if (arg_index == 0)
-      return Result("argument 'nu' is not constant");
+      return Result("'argument 'nu' is not constant");
     // Computing gsl_sf_bessel_*nu'(nu, x) requires
     // gsl_sf_bessel_*nu(nu - 1, x) which doesn't work when the
     // first argument is non-negative, so nu should be >= 1.
     if (args[0].number() < 1)
-      return EvalError(f, args, "'");
+      return DerivError(f, args);
     return Result();
   }
 
@@ -676,7 +686,7 @@ struct BesselFractionalOrderInfo : FunctionInfo {
     // Computing gsl_sf_bessel_*nu''(nu, x) requires
     // gsl_sf_bessel_*nu(nu - 2, x) which doesn't work when the
     // first argument is non-negative, so nu should be >= 2.
-    return args[0].number() < 2 ? EvalError(f, args, "''") : Result();
+    return args[0].number() < 2 ? HesError(f, args) : Result();
   }
 };
 
@@ -729,7 +739,7 @@ TEST_F(GSLTest, Coupling3j) {
   EXPECT_ERROR(NotIntError("two_ma"), f(MakeArgs(0, 0, 0, 0.5, 0, 0)));
   EXPECT_ERROR(NotIntError("two_mb"), f(MakeArgs(0, 0, 0, 0, 0.5, 0)));
   EXPECT_ERROR(NotIntError("two_mc"), f(MakeArgs(0, 0, 0, 0, 0, 0.5)));
-  const char *error = "argument 'two_ja' is not constant";
+  const char *error = "'argument 'two_ja' is not constant";
   EXPECT_ERROR(error, f(args, DERIVS));
   EXPECT_ERROR(error, f(args, HES));
 }
@@ -747,7 +757,7 @@ TEST_F(GSLTest, Coupling6j) {
   EXPECT_ERROR(NotIntError("two_jd"), f(MakeArgs(0, 0, 0, 0.5, 0, 0)));
   EXPECT_ERROR(NotIntError("two_je"), f(MakeArgs(0, 0, 0, 0, 0.5, 0)));
   EXPECT_ERROR(NotIntError("two_jf"), f(MakeArgs(0, 0, 0, 0, 0, 0.5)));
-  const char *error = "argument 'two_ja' is not constant";
+  const char *error = "'argument 'two_ja' is not constant";
   EXPECT_ERROR(error, f(args, DERIVS));
   EXPECT_ERROR(error, f(args, HES));
 }
@@ -768,7 +778,7 @@ TEST_F(GSLTest, Coupling9j) {
   EXPECT_ERROR(NotIntError("two_jg"), f(MakeArgs(0, 0, 0, 0, 0, 0, 0.5, 0, 0)));
   EXPECT_ERROR(NotIntError("two_jh"), f(MakeArgs(0, 0, 0, 0, 0, 0, 0, 0.5, 0)));
   EXPECT_ERROR(NotIntError("two_ji"), f(MakeArgs(0, 0, 0, 0, 0, 0, 0, 0, 0.5)));
-  const char *error = "argument 'two_ja' is not constant";
+  const char *error = "'argument 'two_ja' is not constant";
   EXPECT_ERROR(error, f(args, DERIVS));
   EXPECT_ERROR(error, f(args, HES));
 }
@@ -847,7 +857,7 @@ TEST_F(GSLTest, FermiDirac) {
 struct LnGammaInfo : FunctionInfo {
   Result GetDerivative(const Function &af, unsigned , const Tuple &args) const {
     double x = args[0].number();
-    return x == -1 || x == -2 ? EvalError(af, args, "'") : Result();
+    return x == -1 || x == -2 ? DerivError(af, args) : Result();
   }
 };
 
@@ -874,9 +884,9 @@ struct GammaIncInfo : FunctionInfo {
       const Function &af, unsigned arg_index, const Tuple &args) const {
     // Partial derivative with respect to a is not provided.
     if (arg_index == 0)
-      return Result("argument 'a' is not constant");
+      return Result("'argument 'a' is not constant");
     if (args[1].number() == 0)
-      return EvalError(af, args, "'");
+      return DerivError(af, args);
     return Result();
   }
 };
@@ -889,10 +899,10 @@ TEST_F(GSLTest, GammaInc) {
 
 struct BetaInfo : FunctionInfo {
   Result GetDerivative(
-      const Function &af, unsigned arg_index, const Tuple &args) const {
+      const Function &f, unsigned arg_index, const Tuple &args) const {
     if (gsl_isnan(gsl_sf_psi(args[0].number() + args[1].number())) ||
         args[arg_index].number() == 0) {
-      return EvalError(af, args, "'");
+      return DerivError(f, args);
     }
     return Result();
   }
@@ -922,7 +932,7 @@ class NoDerivArg : public FunctionInfo {
   Result GetDerivative(
       const Function &f, unsigned arg_index, const Tuple &) const {
     // Partial derivative with respect to the first argument is not provided.
-    string error(string("argument '") + f.GetArgName(arg_index_) +
+    string error(string("'argument '") + f.GetArgName(arg_index_) +
         "' is not constant");
     return Result(arg_index == arg_index_ ? error.c_str() : "");
   }
@@ -930,7 +940,7 @@ class NoDerivArg : public FunctionInfo {
 
 struct Hyperg1F1Info : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned, const Tuple &args) const {
-    return args[1].number() <= 0 ? EvalError(f, args, "'") : Result();
+    return args[1].number() <= 0 ? DerivError(f, args) : Result();
   }
 };
 
@@ -956,14 +966,14 @@ TEST_F(GSLTest, Laguerre) {
 
 struct LambertW0Info : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned, const Tuple &args) const {
-    return args[0].number() < -1 / M_E ? EvalError(f, args, "'") : Result();
+    return args[0].number() < -1 / M_E ? DerivError(f, args) : Result();
   }
 };
 
 struct LambertWm1Info : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned, const Tuple &args) const {
     double x = args[0].number();
-    return x < -1 / M_E || x == 0 ? EvalError(f, args, "'") : Result();
+    return x < -1 / M_E || x == 0 ? DerivError(f, args) : Result();
   }
 };
 
@@ -1024,19 +1034,19 @@ TEST_F(GSLTest, Power) {
 struct DigammaInfo : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
     double x = args[0].number();
-    return x < 0 && ceil(x) == x ? EvalError(f, args, "'") : Result();
+    return x < 0 && ceil(x) == x ? DerivError(f, args) : Result();
   }
   Result GetSecondDerivative(
       const Function &f, unsigned , unsigned , const Tuple &args) const {
     // gsl_sf_psi_n doesn't support negative x.
-    return args[0].number() < 0 ? EvalError(f, args, "''") : Result();
+    return args[0].number() < 0 ? HesError(f, args) : Result();
   }
 };
 
 struct TrigammaInfo : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
     // gsl_sf_psi_n doesn't support negative x.
-    return args[0].number() < 0 ? EvalError(f, args, "'") : Result();
+    return args[0].number() < 0 ? DerivError(f, args) : Result();
   }
 };
 
@@ -1045,13 +1055,13 @@ struct PolygammaInfo : FunctionInfo {
       const Function &f, unsigned , const Tuple &args) const {
     double x = args[1].number();
     if (args[0].number() == 0)
-      return x < 0 && ceil(x) == x ? EvalError(f, args, "'") : Result();
-    return x < 0 ? EvalError(f, args, "'") : Result();
+      return x < 0 && ceil(x) == x ? DerivError(f, args) : Result();
+    return x < 0 ? DerivError(f, args) : Result();
   }
   Result GetSecondDerivative(const Function &f,
       unsigned , unsigned , const Tuple &args) const {
     // gsl_sf_psi_n doesn't support negative x.
-    return args[1].number() < 0 ? EvalError(f, args, "''") : Result();
+    return args[1].number() < 0 ? HesError(f, args) : Result();
   }
 };
 
@@ -1098,7 +1108,7 @@ TEST_F(GSLTest, Gaussian) {
   struct GaussianPInfo : FunctionInfo {
     Result GetDerivative(
         const Function &f,unsigned , const Tuple &args) const {
-      return args[1].number() == 0 ? EvalError(f, args, "'") : Result();
+      return args[1].number() == 0 ? DerivError(f, args) : Result();
     }
   };
   TEST_FUNC2(gsl_cdf_gaussian_P, GaussianPInfo());
@@ -1140,7 +1150,7 @@ TEST_F(GSLTest, GaussianTail) {
 struct ExponentialInfo : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
     return args[0].number() >= 0 && args[1].number() == 0 ?
-        EvalError(f, args, "'") : Result();
+        DerivError(f, args) : Result();
   }
 };
 
