@@ -35,7 +35,7 @@
 
 enum { MAX_ERROR_MESSAGE_SIZE = 100 };
 
-static const char *const DERIVS_NOT_PROVIDED = "derivatives are not provided";
+static const char *const DERIVS_NOT_PROVIDED = "'derivatives are not provided";
 
 /* Computes (x / fabs(x)) * y. Returns 0 if y is 0. */
 static double mul_by_sign(double x, double y) {
