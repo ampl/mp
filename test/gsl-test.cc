@@ -110,7 +110,7 @@ struct NoDeriv : FunctionInfo {
   explicit NoDeriv(const char *arg_names = "") : FunctionInfo(arg_names) {}
 
   Result GetDerivative(const Function &, unsigned, const Tuple &) const {
-    return Result("derivatives are not provided");
+    return Result("'derivatives are not provided");
   }
 };
 
