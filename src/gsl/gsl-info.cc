@@ -34,7 +34,7 @@ static FILE *out;
 
 #define UNUSED(x) (void)(x)
 
-static const int LIBDATE = 20140124;
+static const int LIBDATE = 20141124;
 
 /* See AddFunc in funcadd.h */
 static void declare_func(const char *name, rfunc f,
