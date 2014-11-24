@@ -136,6 +136,7 @@ a = \
 	mip_pri.c \
 	misc.c \
 	mpec_adj.c \
+	mqpcheckv.c \
 	mypow.c \
 	names.c \
 	nl_obj.c \
@@ -222,6 +223,7 @@ nqpcheck.o nqpcheckZ.o: nlp.h r_qp.hd $(Aslh)
 printf.o punknown.o sscanf.o: stdio1.h
 dtoa1.o: dtoa.c arith.h stdio1.h
 nl_obj.o nqpcheck.o nqpcheckZ.o obj_adj.o: obj_adj.h
+mqpcheckv.o: mqpcheckv.c avltree.h nlp.h obj_adj.h r_qp.hd
 
 # Use CFLAGS in compiling arithchk.c in case something in CFLAGS affects
 # the number of bits in integral data types.  (It's probably best not to
@@ -378,6 +380,7 @@ xs0 = \
 	misc.c \
 	mpec_adj.c \
 	mpec_adj0.c \
+	mqpcheckv.c \
 	mypow.c \
 	names.c \
 	nl_obj.c \

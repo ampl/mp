@@ -1,5 +1,4 @@
-20141106
-  asl.h:  move Stderr declaration below #ifdef __cplusplus lines.
-This only matters when compiling in C++ mode and does not matter
-to some compilers, such as g++, but does matter for at least one
-of the Microsoft compilers.  No change to asldate.c.
+20141111
+  repwhere.c:  fix a glitch that could cause an error message of
+the form "Error in function %s ... %s" rather than the intended
+error message in which %s was replaced by something helpful.

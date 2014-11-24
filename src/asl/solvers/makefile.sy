@@ -87,6 +87,7 @@ a = \
 	mip_pri.obj \
 	misc.obj \
 	mpec_adj.obj \
+	mqpcheckv.obj \
 	mypow.obj \
 	names.obj \
 	nl_obj.obj \
@@ -169,6 +170,7 @@ pfghread.obj: jacpdim.h asl_pfgh.h opnos.hd r_opn0.hd dvalue.hd\
 nqpcheck.obj nqpcheckZ.obj: nlp.h r_qp.hd $(Aslh)
 printf.obj punknown.obj sscanf.obj: stdio1.h
 dtoa1.obj: dtoa.c arith.h stdio1.h
+mqpcheckv.obj: mqpcheckv.c avltree.h nlp.h obj_adj.h r_qp.hd
 
 # Use CFLAGS in compiling arithchk.c in case something in CFLAGS affects
 # the number of bits in integral data types.  (It's probably best not to

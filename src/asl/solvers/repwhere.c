@@ -186,7 +186,7 @@ derrprint2(ASL *asl, DerrRecord *R)
  static void
 derrprintf(ASL *asl, DerrRecord *R)
 {
-	fprintf(Stderr, "%s", R->fmt, R->who, R->u.s);
+	fprintf(Stderr, R->fmt, R->who, R->u.s);
 	}
 
  typedef struct DerrMblock DerrMblock;

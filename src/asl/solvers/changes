@@ -2382,3 +2382,56 @@ error message text.
 This only matters when compiling in C++ mode and does not matter
 to some compilers, such as g++, but does matter for at least one
 of the Microsoft compilers.  No change to asldate.c.
+
+20141111
+  repwhere.c, rops.c, rops2.c:  fix a glitch that could cause an error
+message of the form "Error in function %s ...  %s" rather than the
+intended error message in which %s was replaced by something helpful.
+
+20141121
+  psinfo.h, pfghread.c, pfg_read.c:  adjust hashing to work faster
+on large instances.
+  q_hd.hd: new #define OPPLTERM to be used in updated Gurobi driver.
+  fg_read.c fgh_read.c, pfg_read.c, pfghread.c, asl.h, rops.c, rops2.c:
+new field "z" in struct plterm to simplify f_OPPLTERM().  (Should be
+invisible except for slightly faster operation of f_OPPLTERM().)
+  New source file mpqcheckv.c and new type QPinfo in asl.h provide
+routines
+
+	ssize_t mqpcheckv_ASL(ASL*, int co, QPinfo **QPIp, void **vp);
+	void mqpcheckv_free_ASL(ASL*, void **vp);
+
+which (via #define in asl.h and with asl in scope) can be invoked as
+
+	ssize_t mqpcheckv(int co, QPinfo **QPIp, void **vp);
+	mpqcheckv_free(void **vp);
+
+mqpcheckv() works similarly to mqpcheck(), but may be more efficient
+when called several times with different values of co.  With variables
+	int co; QPinfo *qpi; void *v = 0;
+in scope, before calling mqpcheckv(co, &qpi, &v) or mqpcheckv(co, 0, &v)
+the first time, one sets v to 0 (i.e., NULL); mqpcheckv sets v to a
+value containing temporary arrays useful in subsequent calls on
+mpqcheckv.  After all desired calls on mqpcheckv, one calls
+mqpcheckv_free(&v) to dispose of the temporary arrays; upon return from
+mqpcheckv_free(&v), v = 0 again.  If the QPIp argument to mqpcheckv()
+is not NULL, i.e., one invokes mqpcheckv(co, &qpi, &v), qpi is set to
+NULL when mqpcheckv() returns a value <= 0 and otherwise to a QPinfo
+structure declared in asl.h:
+
+   typedef struct
+  QPinfo {
+    int nc;         /* number of nonempty columns */
+    int nz;         /* number of nonzeros */
+    int *colno;     /* column numbers of nonempty columns */
+    size_t *colbeg; /* nonzeros for column colno[i]: */
+    int *rowno;     /* (rowno[j], delsq[j]) for */
+    real *delsq;    /* colbeg[i] <= j < colbeg[i+1], except that */
+                    /* values in colno, colbeg, and rowno are */
+                    /* incremented by Fortran */
+    } QPinfo;
+
+After using the qpi returned by mqpcheckv(co, &qpi, &v), one invokes
+free(qpi) to dispose of qpi.
+  nqpcheck.c: minor update; should be invisible.
+  makefile* files: updated for mqpcheckv.c.

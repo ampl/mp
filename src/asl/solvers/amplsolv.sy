@@ -45,6 +45,7 @@
 +mip_pri.obj &
 +misc.obj &
 +mpec_adj.obj &
++mqpcheckv.obj &
 +mypow.obj &
 +names.obj &
 +nl_obj.obj &

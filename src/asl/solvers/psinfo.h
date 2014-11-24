@@ -103,6 +103,7 @@ range {
 				/* Set to least variable (1st = 0) in this */
 				/* range at the end of psedread. */
 	int	lastgroupno;	/* groupno at last use of this term */
+	unsigned int chksum;	/* for hashing */
 	psb_elem *refs;		/* constraints and objectives with this range */
 	int	*ui;		/* unit vectors defining this range */
 				/* (for n >= nv) */

@@ -209,6 +209,7 @@ linpart {
  struct
 plterm {
 	int	n;	/* number of slopes */
+	int	z;	/* bs[z] == slope at 0 */
 	real	bs[1];	/* slope 1, bkpt 1, slope 2, bkpt 2, ..., slope n */
 	};
 
@@ -929,6 +930,16 @@ enum ASL_writer_error_codes {
 #define Sig_ret_type void
 #endif
 
+ typedef struct
+QPinfo {
+	int nc;	/* number of nonempty columns */
+	int nz;	/* number of nonzeros */
+	int *colno;	/* column numbers of nonempty columns */
+	size_t *colbeg;	/* nonzeros for column colno[i]: (rowno[j], delsq[j]) */
+	int *rowno;	/* for colbeg[i] <= j < colbeg[i+1], except that values */
+	real *delsq;	/* in colno, colbeg, and rowno are incremented by Fortran */
+	} QPinfo;
+
  extern ASL *ASL_alloc(int);
  extern void ASL_free(ASL**);
  extern long ASLdate_ASL;
@@ -1031,6 +1042,8 @@ enum ASL_writer_error_codes {
  extern void mpec_auxvars_ASL(ASL*, real *c, real *x);
  extern fint mqpcheck_ASL(ASL*, int co, fint **rowqp, fint **colqp, real **delsqp);
  extern ssize_t mqpcheckZ_ASL(ASL*, int co, fint **rowqp, size_t **colqp, real **delsqp);
+ extern ssize_t mqpcheckv_ASL(ASL*, int co, QPinfo **QPIp, void **vp);
+ extern void mqpcheckv_free_ASL(ASL*, void **vp);
  extern void *mymalloc(size_t);
  extern real mypow(real,real);
  extern void *myralloc(void *, size_t);
@@ -1126,6 +1139,8 @@ enum ASL_writer_error_codes {
 #define lcon_name(n) lcon_name_ASL((ASL*)asl,n)
 #define mip_pri(a,b,c,d) mip_pri_ASL((ASL*)asl,a,b,c,d)
 #define mqpcheck(a,b,c,d) mqpcheck_ASL((ASL*)asl,a,b,c,d)
+#define mqpcheckv(a,b,c) mqpcheckv_ASL((ASL*)asl,a,b,c)
+#define mqpcheckv_free(a) mqpcheckv_free_ASL((ASL*)asl,a)
 #define nl_obj(n) nl_obj_ASL((ASL*)asl,n)
 #define nqpcheck(a,b,c,d) nqpcheck_ASL((ASL*)asl,a,b,c,d)
 #define obj_name(n) obj_name_ASL((ASL*)asl,n)

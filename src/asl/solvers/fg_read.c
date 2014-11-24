@@ -538,6 +538,14 @@ eread(EdRead *R, int deriv)
 				*b++ = r;
 				}
 				while(--j > 0);
+			if (b[-2] <= 0.)
+				p->z = 2*i - 2;
+			else {
+				b = p->bs + 1;
+				while(*b <= 0.)
+					b += 2;
+				p->z = (b - p->bs) - 1;
+				}
 			rv = (expr *)mem(sizeof(expr));
 			rv->op = f_OPPLTERM;
 			rv->L.p = p;

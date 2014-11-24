@@ -938,37 +938,32 @@ f_OPSUMLIST(expr *e A_ASL)
  real
 f_OPPLTERM(expr *e A_ASL)
 {
-	plterm *p = e->L.p;
+	int n, z;
+	plterm *p;
+	real *bs;
 	real r, t;
-	int n = p->n;
-	real *bs = p->bs;
 	MTNot_Used(asl);
 
+	p = e->L.p;
+	n = p->n;
+	z = p->z;
+	bs = p->bs + z;
+	z >>= 1;
 	r = ((expr_v *)e->R.e)->v;
 	if (r >= 0) {
-		/* should use binary search for large n */
-		while(bs[1] <= 0.) {
-			bs += 2;
-			if (--n <= 1)
-				return r*(e->dL = *bs);
-			}
-		if (r <= bs[1])
+		n -= z;
+		if (n <= 1 || r <= bs[1])
 			return r*(e->dL = *bs);
 		for(t = bs[0]*bs[1]; --n > 1 && r > bs[3]; bs += 2)
 			t += (bs[3]-bs[1])*bs[2];
 		return t + (r-bs[1])*(e->dL = bs[2]);
 		}
-	bs += 2*(n-1);
-	while(bs[-1] >= 0.) {
-		bs -= 2;
-		if (--n <= 1)
-			return r*(e->dL = *bs);
+	if (z <= 0)
+		return r*(e->dL = bs[0]);
+	for(t = bs[0]*bs[-1]; --z > 0 && r < bs[-3]; bs -= 2) {
+		t += bs[-2]*(bs[-3] - bs[-1]);
 		}
-	if (r >= bs[-1])
-		return r*(e->dL = *bs);
-	for(t = bs[0]*bs[-1]; --n > 1 && r < bs[-3]; bs -= 2)
-		t += (bs[-3]-bs[-1])*bs[-2];
-	return t + (r-bs[-1])*(e->dL = bs[-2]);
+	return t + (r - bs[-1])*(e->dL = bs[-2]);
 	}
 
  char *
@@ -1003,7 +998,6 @@ f_OPFUNCALL(expr *e A_ASL)
 	const char *s;
 	expr_f *f = (expr_f *)e;
 	func_info *fi = f->fi;
-	int jv;
 	real rv;
 
 	for(ap = f->ap, ape = f->ape; ap < ape; ap++) {
@@ -1020,7 +1014,6 @@ f_OPFUNCALL(expr *e A_ASL)
 	al->Errmsg = 0;
 	rv = (*fi->funcp)(al);
 	errno_set(0);
-	jv = 0; /* silence bogus "not-initialized" warning */
 	if ((s = al->Errmsg))
 		fintrouble_ASL(asl, fi, s, &T);
 	for(T1 = T.u.prev; T1; T1 = T1prev) {
