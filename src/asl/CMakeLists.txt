@@ -146,7 +146,9 @@ add_mp_library(asl-core OBJECT ${ASL_CORE_SOURCES}
 
 # Suppress warnings.
 if (MSVC)
-  target_compile_options(asl-core PRIVATE /wd4244 /wd4267)
+  foreach (suffix "" "-dynrt")
+    target_compile_options(asl-core${suffix} PRIVATE /wd4244 /wd4267)
+  endforeach ()
 else ()
   add_c_compiler_flags(asl-core -Wno-unused-result -Wno-parentheses)
 endif ()
