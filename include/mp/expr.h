@@ -112,7 +112,7 @@ class Expr {
 
   template <typename ExprType>
   friend ExprType internal::Cast(Expr e) {
-    assert(Is<ExprType>(e.kind()));
+    MP_ASSERT(Is<ExprType>(e.kind()), "invalid cast");
     ExprType expr;
     expr.impl_ = e.impl_;
     return expr;

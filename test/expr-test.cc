@@ -503,6 +503,16 @@ TEST(ExprTest, StringLiteral) {
   EXPECT_EQ(std::string(STR, sizeof(STR)), std::string(e.value(), sizeof(STR)));
 }
 
+TEST(ExprTest, InternalCast) {
+  ExprFactory factory;
+  mp::Expr e = factory.MakeNumericConstant(42);
+  using mp::internal::Cast;
+  Cast<mp::NumericExpr>(e);
+  mp::NumericConstant n = Cast<mp::NumericConstant>(e);
+  EXPECT_EQ(42, n.value());
+  EXPECT_ASSERT(Cast<mp::UnaryExpr>(e), "invalid cast");
+}
+
 TEST(ExprFactoryTest, InvalidCallExprFunction) {
   ExprFactory factory;
   EXPECT_ASSERT(factory.BeginCall(mp::Function(), 0), "invalid function");
@@ -536,4 +546,4 @@ TEST(ExprFactoryTest, MemoryAllocation) {
   EXPECT_CALL(alloc, deallocate(buffer, _));
 }
 
-// TODO: test internal::Cast & ExprTypes
+// TODO: test ExprTypes
