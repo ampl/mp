@@ -106,7 +106,7 @@ class ExprWriter :
     writer_ << ')';
   }
 
-  void VisitUnaryMinus(asl::UnaryExpr e) {
+  void VisitMinus(asl::UnaryExpr e) {
     writer_ << '-';
     Visit(e.arg());
   }

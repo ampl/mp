@@ -263,7 +263,7 @@ NLToJaCoPConverter::NLToJaCoPConverter()
       domain_class, env_.GetStaticFieldID(domain_class, "MaxInt", "I"));
 }
 
-jobject NLToJaCoPConverter::VisitPlus(BinaryExpr e) {
+jobject NLToJaCoPConverter::VisitAdd(BinaryExpr e) {
   NumericExpr lhs = e.lhs(), rhs = e.rhs();
   if (NumericConstant c = Cast<NumericConstant>(lhs))
     return CreateCon(plus_const_class_, Visit(e.rhs()), CastToInt(c.value()));
@@ -272,7 +272,7 @@ jobject NLToJaCoPConverter::VisitPlus(BinaryExpr e) {
   return CreateCon(plus_class_, Visit(lhs), Visit(rhs));
 }
 
-jobject NLToJaCoPConverter::VisitNumericLess(BinaryExpr e) {
+jobject NLToJaCoPConverter::VisitLess(BinaryExpr e) {
   jobjectArray args = CreateVarArray(2);
   env_.SetObjectArrayElement(args, 0,
       CreateMinus(Visit(e.lhs()), Visit(e.rhs())));

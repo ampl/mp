@@ -80,7 +80,7 @@ public:
   // * piecewise linear
   // TODO
 
-  ls::LSExpression VisitUnaryMinus(asl::UnaryExpr e) {
+  ls::LSExpression VisitMinus(asl::UnaryExpr e) {
     return model_.createExpression(ls::O_Sub, MakeConst(0), Visit(e.arg()));
   }
   ls::LSExpression VisitPow2(asl::UnaryExpr e) {
@@ -115,19 +115,19 @@ public:
     return ConvertUnary(ls::O_Cos, e);
   }
 
-  ls::LSExpression VisitPlus(asl::BinaryExpr e) {
+  ls::LSExpression VisitAdd(asl::BinaryExpr e) {
     return ConvertBinary(ls::O_Sum, e);
   }
-  ls::LSExpression VisitMinus(asl::BinaryExpr e) {
+  ls::LSExpression VisitSub(asl::BinaryExpr e) {
     return ConvertBinary(ls::O_Sub, e);
   }
-  ls::LSExpression VisitMult(asl::BinaryExpr e) {
+  ls::LSExpression VisitMul(asl::BinaryExpr e) {
     return ConvertBinary(ls::O_Prod, e);
   }
   ls::LSExpression VisitDiv(asl::BinaryExpr e) {
     return ConvertBinary(ls::O_Div, e);
   }
-  ls::LSExpression VisitRem(asl::BinaryExpr e) {
+  ls::LSExpression VisitMod(asl::BinaryExpr e) {
     return ConvertBinary(ls::O_Mod, e);
   }
   ls::LSExpression VisitPow(asl::BinaryExpr e) {
@@ -141,12 +141,12 @@ public:
     return model_.createExpression(ls::O_Pow,
         asl::Cast<asl::NumericConstant>(e.rhs()).value(), Visit(e.lhs()));
   }
-  ls::LSExpression VisitNumericLess(asl::BinaryExpr e) {
+  ls::LSExpression VisitLess(asl::BinaryExpr e) {
     return model_.createExpression(ls::O_Max,
         ConvertBinary(ls::O_Sub, e), MakeConst(0));
   }
   ls::LSExpression VisitIntDiv(asl::BinaryExpr e) {
-    ls::LSExpression rem = VisitRem(e);
+    ls::LSExpression rem = VisitMod(e);
     return model_.createExpression(ls::O_Div,
         model_.createExpression(ls::O_Sub, rem.getOperand(0), rem),
         rem.getOperand(1));
@@ -208,27 +208,27 @@ public:
     return ConvertBinary(ls::O_Eq, e);
   }
 
-  ls::LSExpression VisitLess(asl::RelationalExpr e) {
+  ls::LSExpression VisitLT(asl::RelationalExpr e) {
     return ConvertBinary(ls::O_Lt, e);
   }
 
-  ls::LSExpression VisitLessEqual(asl::RelationalExpr e) {
+  ls::LSExpression VisitLE(asl::RelationalExpr e) {
     return ConvertBinary(ls::O_Leq, e);
   }
 
-  ls::LSExpression VisitEqual(asl::RelationalExpr e) {
+  ls::LSExpression VisitEQ(asl::RelationalExpr e) {
     return ConvertBinary(ls::O_Eq, e);
   }
 
-  ls::LSExpression VisitGreaterEqual(asl::RelationalExpr e) {
+  ls::LSExpression VisitGE(asl::RelationalExpr e) {
     return ConvertBinary(ls::O_Geq, e);
   }
 
-  ls::LSExpression VisitGreater(asl::RelationalExpr e) {
+  ls::LSExpression VisitGT(asl::RelationalExpr e) {
     return ConvertBinary(ls::O_Gt, e);
   }
 
-  ls::LSExpression VisitNotEqual(asl::RelationalExpr e) {
+  ls::LSExpression VisitNE(asl::RelationalExpr e) {
     return ConvertBinary(ls::O_Neq, e);
   }
 

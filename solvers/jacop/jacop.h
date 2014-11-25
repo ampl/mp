@@ -233,17 +233,17 @@ class NLToJaCoPConverter :
   // * trigonometric & hyperbolic functions
   // * log, log10, exp, sqrt
 
-  jobject VisitPlus(asl::BinaryExpr e);
+  jobject VisitAdd(asl::BinaryExpr e);
 
-  jobject VisitMinus(asl::BinaryExpr e) {
+  jobject VisitSub(asl::BinaryExpr e) {
     return CreateMinus(Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  jobject VisitMult(asl::BinaryExpr e) {
+  jobject VisitMul(asl::BinaryExpr e) {
     return CreateCon(mul_class_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  jobject VisitRem(asl::BinaryExpr e) {
+  jobject VisitMod(asl::BinaryExpr e) {
     return CreateCon(mod_class_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
@@ -251,7 +251,7 @@ class NLToJaCoPConverter :
     return CreateCon(exp_class_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  jobject VisitNumericLess(asl::BinaryExpr e);
+  jobject VisitLess(asl::BinaryExpr e);
 
   jobject VisitMin(asl::VarArgExpr e) {
     return Convert(e, min_class_);
@@ -259,6 +259,14 @@ class NLToJaCoPConverter :
 
   jobject VisitMax(asl::VarArgExpr e) {
     return Convert(e, max_class_);
+  }
+
+  jobject VisitMinus(asl::UnaryExpr e) {
+    return CreateCon(mul_const_class_, Visit(e.arg()), -1);
+  }
+
+  jobject VisitAbs(asl::UnaryExpr e) {
+    return CreateCon(abs_class_, Visit(e.arg()));
   }
 
   jobject VisitFloor(asl::UnaryExpr e) {
@@ -269,14 +277,6 @@ class NLToJaCoPConverter :
   jobject VisitCeil(asl::UnaryExpr e) {
     // ceil does nothing because JaCoP supports only integer expressions.
     return Visit(e.arg());
-  }
-
-  jobject VisitAbs(asl::UnaryExpr e) {
-    return CreateCon(abs_class_, Visit(e.arg()));
-  }
-
-  jobject VisitUnaryMinus(asl::UnaryExpr e) {
-    return CreateCon(mul_const_class_, Visit(e.arg()), -1);
   }
 
   jobject VisitIf(asl::IfExpr e);
@@ -332,27 +332,27 @@ class NLToJaCoPConverter :
     return Convert(e, and_class_);
   }
 
-  jobject VisitLess(asl::RelationalExpr e) {
+  jobject VisitLT(asl::RelationalExpr e) {
     return Convert(e, lt_class_);
   }
 
-  jobject VisitLessEqual(asl::RelationalExpr e) {
+  jobject VisitLE(asl::RelationalExpr e) {
     return Convert(e, le_class_);
   }
 
-  jobject VisitEqual(asl::RelationalExpr e) {
+  jobject VisitEQ(asl::RelationalExpr e) {
     return Convert(e, eq_class_);
   }
 
-  jobject VisitGreaterEqual(asl::RelationalExpr e) {
+  jobject VisitGE(asl::RelationalExpr e) {
     return Convert(e, ge_class_);
   }
 
-  jobject VisitGreater(asl::RelationalExpr e) {
+  jobject VisitGT(asl::RelationalExpr e) {
     return Convert(e, gt_class_);
   }
 
-  jobject VisitNotEqual(asl::RelationalExpr e) {
+  jobject VisitNE(asl::RelationalExpr e) {
     return Convert(e, ne_class_);
   }
 

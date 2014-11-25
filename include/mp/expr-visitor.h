@@ -74,7 +74,7 @@ class InvalidLogicalExprError : public Error {
 // Example:
 //  class MyExprVisitor : public ExprVisitor<MyExprVisitor, double, void> {
 //   public:
-//    double VisitPlus(BinaryExpr e) { return Visit(e.lhs()) + Visit(e.rhs()); }
+//    double VisitAdd(BinaryExpr e) { return Visit(e.lhs()) + Visit(e.rhs()); }
 //    double VisitConstant(NumericConstant n) { return n.value(); }
 //  };
 //
@@ -138,9 +138,7 @@ class ExprVisitor {
     return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
-  // TODO: rearrange as in problem-base.h and use the same naming
-
-  Result VisitUnaryMinus(UnaryExpr e) {
+  Result VisitMinus(UnaryExpr e) {
     return MP_DISPATCH(VisitUnary(e));
   }
 
@@ -229,19 +227,19 @@ class ExprVisitor {
     return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
-  Result VisitPlus(BinaryExpr e) {
+  Result VisitAdd(BinaryExpr e) {
     return MP_DISPATCH(VisitBinary(e));
   }
 
-  Result VisitMinus(BinaryExpr e) {
+  Result VisitSub(BinaryExpr e) {
     return MP_DISPATCH(VisitBinary(e));
   }
 
-  Result VisitNumericLess(BinaryExpr e) {
+  Result VisitLess(BinaryExpr e) {
     return MP_DISPATCH(VisitBinary(e));
   }
 
-  Result VisitMult(BinaryExpr e) {
+  Result VisitMul(BinaryExpr e) {
     return MP_DISPATCH(VisitBinary(e));
   }
 
@@ -253,7 +251,7 @@ class ExprVisitor {
     return MP_DISPATCH(VisitBinary(e));
   }
 
-  Result VisitRem(BinaryExpr e) {
+  Result VisitMod(BinaryExpr e) {
     return MP_DISPATCH(VisitBinary(e));
   }
 
@@ -354,27 +352,27 @@ class ExprVisitor {
     return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitLess(RelationalExpr e) {
+  LResult VisitLT(RelationalExpr e) {
     return MP_DISPATCH(VisitRelational(e));
   }
 
-  LResult VisitLessEqual(RelationalExpr e) {
+  LResult VisitLE(RelationalExpr e) {
     return MP_DISPATCH(VisitRelational(e));
   }
 
-  LResult VisitEqual(RelationalExpr e) {
+  LResult VisitEQ(RelationalExpr e) {
     return MP_DISPATCH(VisitRelational(e));
   }
 
-  LResult VisitGreaterEqual(RelationalExpr e) {
+  LResult VisitGE(RelationalExpr e) {
     return MP_DISPATCH(VisitRelational(e));
   }
 
-  LResult VisitGreater(RelationalExpr e) {
+  LResult VisitGT(RelationalExpr e) {
     return MP_DISPATCH(VisitRelational(e));
   }
 
-  LResult VisitNotEqual(RelationalExpr e) {
+  LResult VisitNE(RelationalExpr e) {
     return MP_DISPATCH(VisitRelational(e));
   }
 
@@ -433,98 +431,104 @@ class ExprVisitor {
 
 template <typename Impl, typename Result, typename LResult, typename ExprTypes>
 Result ExprVisitor<Impl, Result, LResult, ExprTypes>::Visit(NumericExpr e) {
-  // All expressions except OPNUMBEROFs, OPIFSYM are supported.
+  // All expressions except OPNUMBEROFs and OPIFSYM are supported.
   switch (e.kind()) {
-  case expr::ADD:
-    return MP_DISPATCH(VisitPlus(internal::Cast<BinaryExpr>(e)));
-  case expr::SUB:
-    return MP_DISPATCH(VisitMinus(internal::Cast<BinaryExpr>(e)));
-  case expr::MUL:
-    return MP_DISPATCH(VisitMult(internal::Cast<BinaryExpr>(e)));
-  case expr::DIV:
-    return MP_DISPATCH(VisitDiv(internal::Cast<BinaryExpr>(e)));
-  case expr::MOD:
-    return MP_DISPATCH(VisitRem(internal::Cast<BinaryExpr>(e)));
-  case expr::POW:
-    return MP_DISPATCH(VisitPow(internal::Cast<BinaryExpr>(e)));
-  case expr::LESS:
-    return MP_DISPATCH(VisitNumericLess(internal::Cast<BinaryExpr>(e)));
-  case expr::MIN:
-    return MP_DISPATCH(VisitMin(internal::Cast<VarArgExpr>(e)));
-  case expr::MAX:
-    return MP_DISPATCH(VisitMax(internal::Cast<VarArgExpr>(e)));
+  case expr::CONSTANT:
+    return MP_DISPATCH(VisitNumericConstant(
+                         internal::Cast<NumericConstant>(e)));
+  case expr::VARIABLE:
+    return MP_DISPATCH(VisitVariable(internal::Cast<Variable>(e)));
+
+  // Unary expressions.
+  case expr::MINUS:
+    return MP_DISPATCH(VisitMinus(internal::Cast<UnaryExpr>(e)));
+  case expr::ABS:
+    return MP_DISPATCH(VisitAbs(internal::Cast<UnaryExpr>(e)));
   case expr::FLOOR:
     return MP_DISPATCH(VisitFloor(internal::Cast<UnaryExpr>(e)));
   case expr::CEIL:
     return MP_DISPATCH(VisitCeil(internal::Cast<UnaryExpr>(e)));
-  case expr::ABS:
-    return MP_DISPATCH(VisitAbs(internal::Cast<UnaryExpr>(e)));
-  case expr::MINUS:
-    return MP_DISPATCH(VisitUnaryMinus(internal::Cast<UnaryExpr>(e)));
-  case expr::IF:
-    return MP_DISPATCH(VisitIf(internal::Cast<IfExpr>(e)));
-  case expr::TANH:
-    return MP_DISPATCH(VisitTanh(internal::Cast<UnaryExpr>(e)));
-  case expr::TAN:
-    return MP_DISPATCH(VisitTan(internal::Cast<UnaryExpr>(e)));
   case expr::SQRT:
     return MP_DISPATCH(VisitSqrt(internal::Cast<UnaryExpr>(e)));
-  case expr::SINH:
-    return MP_DISPATCH(VisitSinh(internal::Cast<UnaryExpr>(e)));
-  case expr::SIN:
-    return MP_DISPATCH(VisitSin(internal::Cast<UnaryExpr>(e)));
-  case expr::LOG10:
-    return MP_DISPATCH(VisitLog10(internal::Cast<UnaryExpr>(e)));
-  case expr::LOG:
-    return MP_DISPATCH(VisitLog(internal::Cast<UnaryExpr>(e)));
+  case expr::POW2:
+    return MP_DISPATCH(VisitPow2(internal::Cast<UnaryExpr>(e)));
   case expr::EXP:
     return MP_DISPATCH(VisitExp(internal::Cast<UnaryExpr>(e)));
-  case expr::COSH:
-    return MP_DISPATCH(VisitCosh(internal::Cast<UnaryExpr>(e)));
+  case expr::LOG:
+    return MP_DISPATCH(VisitLog(internal::Cast<UnaryExpr>(e)));
+  case expr::LOG10:
+    return MP_DISPATCH(VisitLog10(internal::Cast<UnaryExpr>(e)));
+  case expr::SIN:
+    return MP_DISPATCH(VisitSin(internal::Cast<UnaryExpr>(e)));
+  case expr::SINH:
+    return MP_DISPATCH(VisitSinh(internal::Cast<UnaryExpr>(e)));
   case expr::COS:
     return MP_DISPATCH(VisitCos(internal::Cast<UnaryExpr>(e)));
-  case expr::ATANH:
-    return MP_DISPATCH(VisitAtanh(internal::Cast<UnaryExpr>(e)));
-  case expr::ATAN2:
-    return MP_DISPATCH(VisitAtan2(internal::Cast<BinaryExpr>(e)));
-  case expr::ATAN:
-    return MP_DISPATCH(VisitAtan(internal::Cast<UnaryExpr>(e)));
-  case expr::ASINH:
-    return MP_DISPATCH(VisitAsinh(internal::Cast<UnaryExpr>(e)));
+  case expr::COSH:
+    return MP_DISPATCH(VisitCosh(internal::Cast<UnaryExpr>(e)));
+  case expr::TAN:
+    return MP_DISPATCH(VisitTan(internal::Cast<UnaryExpr>(e)));
+  case expr::TANH:
+    return MP_DISPATCH(VisitTanh(internal::Cast<UnaryExpr>(e)));
   case expr::ASIN:
     return MP_DISPATCH(VisitAsin(internal::Cast<UnaryExpr>(e)));
-  case expr::ACOSH:
-    return MP_DISPATCH(VisitAcosh(internal::Cast<UnaryExpr>(e)));
+  case expr::ASINH:
+    return MP_DISPATCH(VisitAsinh(internal::Cast<UnaryExpr>(e)));
   case expr::ACOS:
     return MP_DISPATCH(VisitAcos(internal::Cast<UnaryExpr>(e)));
-  case expr::SUM:
-    return MP_DISPATCH(VisitSum(internal::Cast<SumExpr>(e)));
+  case expr::ACOSH:
+    return MP_DISPATCH(VisitAcosh(internal::Cast<UnaryExpr>(e)));
+  case expr::ATAN:
+    return MP_DISPATCH(VisitAtan(internal::Cast<UnaryExpr>(e)));
+  case expr::ATANH:
+    return MP_DISPATCH(VisitAtanh(internal::Cast<UnaryExpr>(e)));
+
+  // Binary expressions.
+  case expr::ADD:
+    return MP_DISPATCH(VisitAdd(internal::Cast<BinaryExpr>(e)));
+  case expr::SUB:
+    return MP_DISPATCH(VisitSub(internal::Cast<BinaryExpr>(e)));
+  case expr::LESS:
+    return MP_DISPATCH(VisitLess(internal::Cast<BinaryExpr>(e)));
+  case expr::MUL:
+    return MP_DISPATCH(VisitMul(internal::Cast<BinaryExpr>(e)));
+  case expr::DIV:
+    return MP_DISPATCH(VisitDiv(internal::Cast<BinaryExpr>(e)));
   case expr::INT_DIV:
     return MP_DISPATCH(VisitIntDiv(internal::Cast<BinaryExpr>(e)));
+  case expr::MOD:
+    return MP_DISPATCH(VisitMod(internal::Cast<BinaryExpr>(e)));
+  case expr::POW:
+    return MP_DISPATCH(VisitPow(internal::Cast<BinaryExpr>(e)));
+  case expr::POW_CONST_BASE:
+    return MP_DISPATCH(VisitPowConstBase(internal::Cast<BinaryExpr>(e)));
+  case expr::POW_CONST_EXP:
+    return MP_DISPATCH(VisitPowConstExp(internal::Cast<BinaryExpr>(e)));
+  case expr::ATAN2:
+    return MP_DISPATCH(VisitAtan2(internal::Cast<BinaryExpr>(e)));
   case expr::PRECISION:
     return MP_DISPATCH(VisitPrecision(internal::Cast<BinaryExpr>(e)));
   case expr::ROUND:
     return MP_DISPATCH(VisitRound(internal::Cast<BinaryExpr>(e)));
   case expr::TRUNC:
     return MP_DISPATCH(VisitTrunc(internal::Cast<BinaryExpr>(e)));
-  case expr::COUNT:
-    return MP_DISPATCH(VisitCount(internal::Cast<CountExpr>(e)));
-  case expr::NUMBEROF:
-    return MP_DISPATCH(VisitNumberOf(internal::Cast<NumberOfExpr>(e)));
+
+  case expr::IF:
+    return MP_DISPATCH(VisitIf(internal::Cast<IfExpr>(e)));
   case expr::PLTERM:
     return MP_DISPATCH(VisitPiecewiseLinear(internal::Cast<PLTerm>(e)));
-  case expr::POW_CONST_EXP:
-    return MP_DISPATCH(VisitPowConstExp(internal::Cast<BinaryExpr>(e)));
-  case expr::POW2:
-    return MP_DISPATCH(VisitPow2(internal::Cast<UnaryExpr>(e)));
-  case expr::POW_CONST_BASE:
-    return MP_DISPATCH(VisitPowConstBase(internal::Cast<BinaryExpr>(e)));
   case expr::CALL:
     return MP_DISPATCH(VisitCall(internal::Cast<CallExpr>(e)));
-  case expr::CONSTANT:
-    return MP_DISPATCH(VisitNumericConstant(internal::Cast<NumericConstant>(e)));
-  case expr::VARIABLE:
-    return MP_DISPATCH(VisitVariable(internal::Cast<Variable>(e)));
+  case expr::MIN:
+    return MP_DISPATCH(VisitMin(internal::Cast<VarArgExpr>(e)));
+  case expr::MAX:
+    return MP_DISPATCH(VisitMax(internal::Cast<VarArgExpr>(e)));
+  case expr::SUM:
+    return MP_DISPATCH(VisitSum(internal::Cast<SumExpr>(e)));
+  case expr::NUMBEROF:
+    return MP_DISPATCH(VisitNumberOf(internal::Cast<NumberOfExpr>(e)));
+  case expr::COUNT:
+    return MP_DISPATCH(VisitCount(internal::Cast<CountExpr>(e)));
   default:
     // Normally this branch shouldn't be executed.
     return MP_DISPATCH(VisitInvalidNumericExpr(e));
@@ -534,24 +538,29 @@ Result ExprVisitor<Impl, Result, LResult, ExprTypes>::Visit(NumericExpr e) {
 template <typename Impl, typename Result, typename LResult, typename ExprTypes>
 LResult ExprVisitor<Impl, Result, LResult, ExprTypes>::Visit(LogicalExpr e) {
   switch (e.kind()) {
+  case expr::CONSTANT:
+    return MP_DISPATCH(VisitLogicalConstant(
+                         internal::Cast<LogicalConstant>(e)));
+  case expr::NOT:
+    return MP_DISPATCH(VisitNot(internal::Cast<NotExpr>(e)));
   case expr::OR:
     return MP_DISPATCH(VisitOr(internal::Cast<BinaryLogicalExpr>(e)));
   case expr::AND:
     return MP_DISPATCH(VisitAnd(internal::Cast<BinaryLogicalExpr>(e)));
+  case expr::IFF:
+    return MP_DISPATCH(VisitIff(internal::Cast<BinaryLogicalExpr>(e)));
   case expr::LT:
-    return MP_DISPATCH(VisitLess(internal::Cast<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitLT(internal::Cast<RelationalExpr>(e)));
   case expr::LE:
-    return MP_DISPATCH(VisitLessEqual(internal::Cast<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitLE(internal::Cast<RelationalExpr>(e)));
   case expr::EQ:
-    return MP_DISPATCH(VisitEqual(internal::Cast<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitEQ(internal::Cast<RelationalExpr>(e)));
   case expr::GE:
-    return MP_DISPATCH(VisitGreaterEqual(internal::Cast<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitGE(internal::Cast<RelationalExpr>(e)));
   case expr::GT:
-    return MP_DISPATCH(VisitGreater(internal::Cast<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitGT(internal::Cast<RelationalExpr>(e)));
   case expr::NE:
-    return MP_DISPATCH(VisitNotEqual(internal::Cast<RelationalExpr>(e)));
-  case expr::NOT:
-    return MP_DISPATCH(VisitNot(internal::Cast<NotExpr>(e)));
+    return MP_DISPATCH(VisitNE(internal::Cast<RelationalExpr>(e)));
   case expr::ATLEAST:
     return MP_DISPATCH(VisitAtLeast(internal::Cast<LogicalCountExpr>(e)));
   case expr::ATMOST:
@@ -564,20 +573,16 @@ LResult ExprVisitor<Impl, Result, LResult, ExprTypes>::Visit(LogicalExpr e) {
     return MP_DISPATCH(VisitNotAtMost(internal::Cast<LogicalCountExpr>(e)));
   case expr::NOT_EXACTLY:
     return MP_DISPATCH(VisitNotExactly(internal::Cast<LogicalCountExpr>(e)));
+  case expr::IMPLICATION:
+    return MP_DISPATCH(VisitImplication(internal::Cast<ImplicationExpr>(e)));
   case expr::FORALL:
     return MP_DISPATCH(VisitForAll(internal::Cast<IteratedLogicalExpr>(e)));
   case expr::EXISTS:
     return MP_DISPATCH(VisitExists(internal::Cast<IteratedLogicalExpr>(e)));
-  case expr::IMPLICATION:
-    return MP_DISPATCH(VisitImplication(internal::Cast<ImplicationExpr>(e)));
-  case expr::IFF:
-    return MP_DISPATCH(VisitIff(internal::Cast<BinaryLogicalExpr>(e)));
   case expr::ALLDIFF:
     return MP_DISPATCH(VisitAllDiff(internal::Cast<PairwiseExpr>(e)));
   case expr::NOT_ALLDIFF:
     return MP_DISPATCH(VisitNotAllDiff(internal::Cast<PairwiseExpr>(e)));
-  case expr::CONSTANT:
-    return MP_DISPATCH(VisitLogicalConstant(internal::Cast<LogicalConstant>(e)));
   default:
     // Normally this branch shouldn't be executed.
     return MP_DISPATCH(VisitInvalidLogicalExpr(e));

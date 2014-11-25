@@ -81,22 +81,22 @@ class ExprConverter : public ExprVisitor<Impl, Result, LResult> {
 
  public:
   LResult VisitAtLeast(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitLessEqual(Convert(e, expr::LE)));
+    return MP_DISPATCH(VisitLE(Convert(e, expr::LE)));
   }
   LResult VisitAtMost(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitGreaterEqual(Convert(e, expr::GE)));
+    return MP_DISPATCH(VisitGE(Convert(e, expr::GE)));
   }
   LResult VisitExactly(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitEqual(Convert(e, expr::EQ)));
+    return MP_DISPATCH(VisitEQ(Convert(e, expr::EQ)));
   }
   LResult VisitNotAtLeast(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitGreater(Convert(e, expr::GT)));
+    return MP_DISPATCH(VisitGT(Convert(e, expr::GT)));
   }
   LResult VisitNotAtMost(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitLess(Convert(e, expr::LT)));
+    return MP_DISPATCH(VisitLT(Convert(e, expr::LT)));
   }
   LResult VisitNotExactly(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitNotEqual(Convert(e, expr::NE)));
+    return MP_DISPATCH(VisitNE(Convert(e, expr::NE)));
   }
 };
 }  // namespace asl

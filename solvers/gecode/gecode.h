@@ -122,23 +122,23 @@ class NLToGecodeConverter :
   // * log, log10, exp, pow
   // * sqrt other than floor(sqrt())
 
-  LinExpr VisitPlus(asl::BinaryExpr e) {
+  LinExpr VisitAdd(asl::BinaryExpr e) {
     return Visit(e.lhs()) + Visit(e.rhs());
   }
 
-  LinExpr VisitMinus(asl::BinaryExpr e) {
+  LinExpr VisitSub(asl::BinaryExpr e) {
     return Visit(e.lhs()) - Visit(e.rhs());
   }
 
-  LinExpr VisitMult(asl::BinaryExpr e) {
+  LinExpr VisitMul(asl::BinaryExpr e) {
     return Visit(e.lhs()) * Visit(e.rhs());
   }
 
-  LinExpr VisitRem(asl::BinaryExpr e) {
+  LinExpr VisitMod(asl::BinaryExpr e) {
     return Visit(e.lhs()) % Visit(e.rhs());
   }
 
-  LinExpr VisitNumericLess(asl::BinaryExpr e) {
+  LinExpr VisitLess(asl::BinaryExpr e) {
     return max(Visit(e.lhs()) - Visit(e.rhs()), 0);
   }
 
@@ -150,19 +150,19 @@ class NLToGecodeConverter :
     return Convert(e, Gecode::max);
   }
 
-  LinExpr VisitFloor(asl::UnaryExpr e);
-
-  LinExpr VisitCeil(asl::UnaryExpr e) {
-    // ceil does nothing because Gecode supports only integer expressions.
-    return Visit(e.arg());
+  LinExpr VisitSub(asl::UnaryExpr e) {
+    return -Visit(e.arg());
   }
 
   LinExpr VisitAbs(asl::UnaryExpr e) {
     return abs(Visit(e.arg()));
   }
 
-  LinExpr VisitUnaryMinus(asl::UnaryExpr e) {
-    return -Visit(e.arg());
+  LinExpr VisitFloor(asl::UnaryExpr e);
+
+  LinExpr VisitCeil(asl::UnaryExpr e) {
+    // ceil does nothing because Gecode supports only integer expressions.
+    return Visit(e.arg());
   }
 
   LinExpr VisitIf(asl::IfExpr e);
@@ -214,27 +214,27 @@ class NLToGecodeConverter :
     return Visit(e.lhs()) && Visit(e.rhs());
   }
 
-  BoolExpr VisitLess(asl::RelationalExpr e) {
+  BoolExpr VisitLT(asl::RelationalExpr e) {
     return Visit(e.lhs()) < Visit(e.rhs());
   }
 
-  BoolExpr VisitLessEqual(asl::RelationalExpr e) {
+  BoolExpr VisitLE(asl::RelationalExpr e) {
     return Visit(e.lhs()) <= Visit(e.rhs());
   }
 
-  BoolExpr VisitEqual(asl::RelationalExpr e) {
+  BoolExpr VisitEQ(asl::RelationalExpr e) {
     return Visit(e.lhs()) == Visit(e.rhs());
   }
 
-  BoolExpr VisitGreaterEqual(asl::RelationalExpr e) {
+  BoolExpr VisitGE(asl::RelationalExpr e) {
     return Visit(e.lhs()) >= Visit(e.rhs());
   }
 
-  BoolExpr VisitGreater(asl::RelationalExpr e) {
+  BoolExpr VisitGT(asl::RelationalExpr e) {
     return Visit(e.lhs()) > Visit(e.rhs());
   }
 
-  BoolExpr VisitNotEqual(asl::RelationalExpr e) {
+  BoolExpr VisitNE(asl::RelationalExpr e) {
     return Visit(e.lhs()) != Visit(e.rhs());
   }
 

@@ -900,19 +900,19 @@ TestLResult MakeResult(LogicalExpr e) {
 
 // Use different classes for Result and LResult to check that it is possible.
 struct FullTestVisitor : ExprVisitor<FullTestVisitor, TestResult, TestLResult> {
-  TestResult VisitPlus(BinaryExpr e) { return MakeResult(e); }
-  TestResult VisitMinus(BinaryExpr e) { return MakeResult(e); }
-  TestResult VisitMult(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitAdd(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitSub(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitMul(BinaryExpr e) { return MakeResult(e); }
   TestResult VisitDiv(BinaryExpr e) { return MakeResult(e); }
-  TestResult VisitRem(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitMod(BinaryExpr e) { return MakeResult(e); }
   TestResult VisitPow(BinaryExpr e) { return MakeResult(e); }
-  TestResult VisitNumericLess(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitLess(BinaryExpr e) { return MakeResult(e); }
   TestResult VisitMin(VarArgExpr e) { return MakeResult(e); }
   TestResult VisitMax(VarArgExpr e) { return MakeResult(e); }
   TestResult VisitFloor(UnaryExpr e) { return MakeResult(e); }
   TestResult VisitCeil(UnaryExpr e) { return MakeResult(e); }
   TestResult VisitAbs(UnaryExpr e) { return MakeResult(e); }
-  TestResult VisitUnaryMinus(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitMinus(UnaryExpr e) { return MakeResult(e); }
   TestResult VisitIf(IfExpr e) { return MakeResult(e); }
   TestResult VisitTanh(UnaryExpr e) { return MakeResult(e); }
   TestResult VisitTan(UnaryExpr e) { return MakeResult(e); }
@@ -949,12 +949,12 @@ struct FullTestVisitor : ExprVisitor<FullTestVisitor, TestResult, TestLResult> {
   TestResult VisitVariable(Variable e) { return MakeResult(e); }
   TestLResult VisitOr(BinaryLogicalExpr e) { return MakeResult(e); }
   TestLResult VisitAnd(BinaryLogicalExpr e) { return MakeResult(e); }
-  TestLResult VisitLess(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitLessEqual(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitEqual(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitGreaterEqual(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitGreater(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitNotEqual(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitLT(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitLE(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitEQ(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitGE(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitGT(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitNE(RelationalExpr e) { return MakeResult(e); }
   TestLResult VisitNot(NotExpr e) { return MakeResult(e); }
   TestLResult VisitAtLeast(LogicalCountExpr e) { return MakeResult(e); }
   TestLResult VisitAtMost(LogicalCountExpr e) { return MakeResult(e); }
@@ -1036,12 +1036,12 @@ TEST_F(ExprTest, ExprVisitorInvalidExpr) {
 }
 
 struct TestConverter : asl::ExprConverter<TestConverter, void, TestLResult> {
-  TestLResult VisitLess(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitLessEqual(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitEqual(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitGreaterEqual(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitGreater(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitNotEqual(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitLT(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitLE(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitEQ(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitGE(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitGT(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitNE(RelationalExpr e) { return MakeResult(e); }
 };
 
 void CheckConversion(ex::Kind from_kind, ex::Kind to_kind) {

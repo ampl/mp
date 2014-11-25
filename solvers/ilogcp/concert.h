@@ -118,15 +118,15 @@ class NLToConcertConverter : public Converter {
     return Converter::Visit(e);
   }
 
-  IloExpr VisitPlus(asl::BinaryExpr e) {
+  IloExpr VisitAdd(asl::BinaryExpr e) {
     return Visit(e.lhs()) + Visit(e.rhs());
   }
 
-  IloExpr VisitMinus(asl::BinaryExpr e) {
+  IloExpr VisitSub(asl::BinaryExpr e) {
     return Visit(e.lhs()) - Visit(e.rhs());
   }
 
-  IloExpr VisitMult(asl::BinaryExpr e) {
+  IloExpr VisitMul(asl::BinaryExpr e) {
     return Visit(e.lhs()) * Visit(e.rhs());
   }
 
@@ -134,7 +134,7 @@ class NLToConcertConverter : public Converter {
     return Visit(e.lhs()) / Visit(e.rhs());
   }
 
-  IloExpr VisitRem(asl::BinaryExpr e) {
+  IloExpr VisitMod(asl::BinaryExpr e) {
     IloNumExpr lhs(Visit(e.lhs())), rhs(Visit(e.rhs()));
     return lhs - IloTrunc(lhs / rhs) * rhs;
   }
@@ -143,7 +143,7 @@ class NLToConcertConverter : public Converter {
     return IloPower(Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  IloExpr VisitNumericLess(asl::BinaryExpr e) {
+  IloExpr VisitLess(asl::BinaryExpr e) {
     return IloMax(Visit(e.lhs()) - Visit(e.rhs()), 0.0);
   }
 
@@ -155,20 +155,20 @@ class NLToConcertConverter : public Converter {
     return IloMax(ConvertArgs(e));
   }
 
-  IloExpr VisitFloor(asl::UnaryExpr e) {
-    return IloFloor(Visit(e.arg()));
-  }
-
-  IloExpr VisitCeil(asl::UnaryExpr e) {
-    return IloCeil(Visit(e.arg()));
+  IloExpr VisitMinus(asl::UnaryExpr e) {
+    return -Visit(e.arg());
   }
 
   IloExpr VisitAbs(asl::UnaryExpr e) {
     return IloAbs(Visit(e.arg()));
   }
 
-  IloExpr VisitUnaryMinus(asl::UnaryExpr e) {
-    return -Visit(e.arg());
+  IloExpr VisitFloor(asl::UnaryExpr e) {
+    return IloFloor(Visit(e.arg()));
+  }
+
+  IloExpr VisitCeil(asl::UnaryExpr e) {
+    return IloCeil(Visit(e.arg()));
   }
 
   IloExpr VisitIf(asl::IfExpr e);
@@ -289,27 +289,27 @@ class NLToConcertConverter : public Converter {
     return IloNumVar(env_, 1, 1) == c.value();
   }
 
-  IloConstraint VisitLess(asl::RelationalExpr e) {
+  IloConstraint VisitLT(asl::RelationalExpr e) {
     return Visit(e.lhs()) < Visit(e.rhs());
   }
 
-  IloConstraint VisitLessEqual(asl::RelationalExpr e) {
+  IloConstraint VisitLE(asl::RelationalExpr e) {
     return Visit(e.lhs()) <= Visit(e.rhs());
   }
 
-  IloConstraint VisitEqual(asl::RelationalExpr e) {
+  IloConstraint VisitEQ(asl::RelationalExpr e) {
     return Visit(e.lhs()) == Visit(e.rhs());
   }
 
-  IloConstraint VisitGreaterEqual(asl::RelationalExpr e) {
+  IloConstraint VisitGE(asl::RelationalExpr e) {
     return Visit(e.lhs()) >= Visit(e.rhs());
   }
 
-  IloConstraint VisitGreater(asl::RelationalExpr e) {
+  IloConstraint VisitGT(asl::RelationalExpr e) {
     return Visit(e.lhs()) > Visit(e.rhs());
   }
 
-  IloConstraint VisitNotEqual(asl::RelationalExpr e) {
+  IloConstraint VisitNE(asl::RelationalExpr e) {
     return Visit(e.lhs()) != Visit(e.rhs());
   }
 

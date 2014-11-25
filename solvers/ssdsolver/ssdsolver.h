@@ -51,7 +51,7 @@ class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void, void> {
 
   friend class mp::ExprVisitor<SSDExtractor, void, void, asl::ExprTypes>;
 
-  void VisitMult(asl::BinaryExpr e) {
+  void VisitMul(asl::BinaryExpr e) {
     asl::NumericConstant coef = asl::Cast<asl::NumericConstant>(e.lhs());
     asl::Variable var = asl::Cast<asl::Variable>(e.rhs());
     if (!coef || !var)
