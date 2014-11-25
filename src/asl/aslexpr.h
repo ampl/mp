@@ -178,6 +178,9 @@ namespace mp {
 
 namespace internal {
 // Casts expression to type ExprType.
+// If assertions are enabled, it generates an assertion failure when
+// e is not of runtime type ExprType. Otherwise no runtime check is
+// performed.
 template <typename ExprType>
 ExprType Cast(asl::Expr e);
 }
