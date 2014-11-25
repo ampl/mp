@@ -150,7 +150,7 @@ class ASLBuilder {
         num_constants_(0), num_symbolic_args_(0), num_ifsyms_(0) {}
 
     void DoAddArg(Expr arg) {
-      expr_->args[arg_index_] = arg.expr_;
+      expr_->args[arg_index_] = arg.impl_;
       ++arg_index_;
     }
 
@@ -419,7 +419,7 @@ class ASLBuilder {
 
   PLTermHandler BeginPLTerm(int num_breakpoints);
   PiecewiseLinearExpr EndPLTerm(PLTermHandler h, NumericExpr var) {
-    h.expr_->R.e = var.expr_;
+    h.expr_->R.e = var.impl_;
     return Expr::Create<PiecewiseLinearExpr>(h.expr_);
   }
 
@@ -457,7 +457,7 @@ class ASLBuilder {
     ArgHandler(::expr *e) : expr_(e), arg_index_(0) {}
 
    public:
-    void AddArg(Arg arg) { expr_->L.ep[arg_index_++] = arg.expr_; }
+    void AddArg(Arg arg) { expr_->L.ep[arg_index_++] = arg.impl_; }
   };
 
   typedef ArgHandler<LogicalExpr> LogicalArgHandler;
@@ -473,7 +473,7 @@ class ASLBuilder {
     VarArgHandler(expr_va *e) : expr_(e), arg_index_(0) {}
 
    public:
-    void AddArg(NumericExpr arg) { expr_->L.d[arg_index_++].e = arg.expr_; }
+    void AddArg(NumericExpr arg) { expr_->L.d[arg_index_++].e = arg.impl_; }
   };
 
   VarArgHandler BeginVarArg(expr::Kind kind, int num_args);

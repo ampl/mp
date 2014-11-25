@@ -73,7 +73,7 @@ class ExprConverter : public ExprVisitor<Impl, Result, LResult> {
   std::vector< ::expr> exprs_;
 
   RelationalExpr Convert(LogicalCountExpr e, expr::Kind kind) {
-    exprs_.push_back(*e.expr_);
+    exprs_.push_back(*e.impl_);
     ::expr *result = &exprs_.back();
     result->op = reinterpret_cast<efunc*>(opcode(kind));
     return Expr::Create<RelationalExpr>(result);

@@ -139,7 +139,7 @@ void ASLBuilder::SetObjOrCon(
   ::expr *e = Allocate< ::expr>();
   int opcode = expr::opcode(kind);
   e->op = reinterpret_cast<efunc*>(opcode);
-  e->L.e = arg.expr_;
+  e->L.e = arg.impl_;
   e->a = asl_->i.n_var_ + asl_->i.nsufext[suf::VAR];
   e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
   return e;
@@ -149,8 +149,8 @@ void ASLBuilder::SetObjOrCon(
   ::expr *e = Allocate< ::expr>();
   int opcode = expr::opcode(kind);
   e->op = reinterpret_cast<efunc*>(opcode);
-  e->L.e = lhs.expr_;
-  e->R.e = rhs.expr_;
+  e->L.e = lhs.impl_;
+  e->R.e = rhs.impl_;
   e->a = asl_->i.n_var_ + asl_->i.nsufext[suf::VAR];
   e->dL = 1;
   e->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
@@ -161,9 +161,9 @@ void ASLBuilder::SetObjOrCon(
     expr::Kind kind, LogicalExpr condition, Expr true_expr, Expr false_expr) {
   expr_if *e = Allocate<expr_if>();
   e->op = r_ops_[opcode(kind)];
-  e->e = condition.expr_;
-  e->T = true_expr.expr_;
-  e->F = false_expr.expr_;
+  e->e = condition.impl_;
+  e->T = true_expr.impl_;
+  e->F = false_expr.impl_;
   return reinterpret_cast< ::expr*>(e);
 }
 
@@ -178,7 +178,7 @@ void ASLBuilder::SetObjOrCon(
   if (args.data()) {
     ::expr **arg_ptrs = e->L.ep;
     for (int i = 0; i < num_args; ++i)
-      arg_ptrs[i] = args[i].expr_;
+      arg_ptrs[i] = args[i].impl_;
   }
   return e;
 }
@@ -526,7 +526,7 @@ ASLBuilder::LinearObjBuilder
   if (!expr)
     expr = MakeNumericConstant(0);
   SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
-              asl_->i.o_cexp1st_, expr.expr_, asl_->i.zao_);
+              asl_->i.o_cexp1st_, expr.impl_, asl_->i.zao_);
   return LinearObjBuilder(this, asl_->i.Ograd_ + index);
 }
 
@@ -538,7 +538,7 @@ ASLBuilder::LinearConBuilder
   if (!expr)
     expr = MakeNumericConstant(0);
   SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.con_de_,
-              asl_->i.c_cexp1st_, expr.expr_, asl_->i.zac_);
+              asl_->i.c_cexp1st_, expr.impl_, asl_->i.zac_);
   return LinearConBuilder(this, index);
 }
 
@@ -546,7 +546,7 @@ void ASLBuilder::AddCon(LogicalExpr expr) {
   int index = lcon_index_++;
   assert(0 <= index && index < asl_->i.n_lcon_);
   SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.lcon_de_,
-              0, expr.expr_, 0);
+              0, expr.impl_, 0);
 }
 
 ASLBuilder::LinearExprBuilder ASLBuilder::BeginCommonExpr(int num_terms) {
@@ -680,7 +680,7 @@ Variable ASLBuilder::MakeVariable(int var_index) {
 UnaryExpr ASLBuilder::MakeUnary(expr::Kind kind, NumericExpr arg) {
   CheckKind<UnaryExpr>(kind, "unary");
   UnaryExpr expr = MakeUnary<UnaryExpr>(kind, arg);
-  expr.expr_->dL = DVALUE[opcode(kind)];  // for UMINUS, FLOOR, CEIL
+  expr.impl_->dL = DVALUE[opcode(kind)];  // for UMINUS, FLOOR, CEIL
   return expr;
 }
 

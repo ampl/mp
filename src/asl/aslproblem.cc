@@ -277,7 +277,7 @@ void Problem::AddObj(obj::Type type, asl::NumericExpr expr) {
     Grow(asl_->i.Ograd_, num_objs, obj_capacity_);
   }
   cde e = cde();
-  e.e = expr.expr_;
+  e.e = expr.impl_;
   if (fg)
     fg->I.obj_de_[num_objs] = e;
   asl_->i.objtype_[num_objs] = type;
@@ -296,7 +296,7 @@ void Problem::AddCon(asl::LogicalExpr expr) {
     Grow(fg->I.lcon_de_, num_logical_cons, logical_con_capacity_);
   }
   cde e = cde();
-  e.e = expr.expr_;
+  e.e = expr.impl_;
   fg->I.lcon_de_[num_logical_cons] = e;
   ++num_logical_cons;
 }
