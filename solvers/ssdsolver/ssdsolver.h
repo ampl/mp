@@ -49,7 +49,10 @@ class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void, void> {
   // constraint with one element per scenario.
   std::vector<double> rhs_;
 
-  friend class mp::ExprVisitor<SSDExtractor, void, void, asl::ExprTypes>;
+ public:
+  SSDExtractor(unsigned num_scenarios, unsigned num_vars)
+  : coefs_(num_scenarios * num_vars), num_vars_(num_vars),
+    con_index_(0), sign_(0), rhs_(num_scenarios) {}
 
   void VisitMul(asl::BinaryExpr e) {
     asl::NumericConstant coef = asl::Cast<asl::NumericConstant>(e.lhs());
@@ -67,11 +70,6 @@ class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void, void> {
   void VisitNumericConstant(asl::NumericConstant n) {
     rhs_[con_index_] -= sign_ * n.value();
   }
-
- public:
-  SSDExtractor(unsigned num_scenarios, unsigned num_vars)
-  : coefs_(num_scenarios * num_vars), num_vars_(num_vars),
-    con_index_(0), sign_(0), rhs_(num_scenarios) {}
 
   void Extract(asl::CallExpr call) {
     assert(call.num_args() == 2);
