@@ -428,14 +428,17 @@ struct IteratedLogicalInfo :
   Expr EndBuild(ExprFactory &f, Builder b) { return f.EndIteratedLogical(b); }
 };
 
-struct AllDiffInfo : ExprInfo<mp::AllDiffExpr, expr::ALLDIFF, mp::LogicalExpr> {
-  typedef ExprFactory::AllDiffExprBuilder Builder;
-  Builder BeginBuild(ExprFactory &f, int n) { return f.BeginAllDiff(n); }
-  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndAllDiff(b); }
+struct PairwiseInfo :
+    ExprInfo<mp::PairwiseExpr, expr::ALLDIFF, mp::LogicalExpr> {
+  typedef ExprFactory::PairwiseExprBuilder Builder;
+  Builder BeginBuild(ExprFactory &f, int n) {
+    return f.BeginPairwise(expr::ALLDIFF, n);
+  }
+  Expr EndBuild(ExprFactory &f, Builder b) { return f.EndPairwise(b); }
 };
 
 typedef ::testing::Types<CallInfo, IteratedInfo, CountInfo,
-                         IteratedLogicalInfo, AllDiffInfo> IteratedExprTypes;
+                         IteratedLogicalInfo, PairwiseInfo> IteratedExprTypes;
 TYPED_TEST_CASE(IteratedExprTest, IteratedExprTypes);
 
 template <typename ExprType>
@@ -532,3 +535,5 @@ TEST(ExprFactoryTest, MemoryAllocation) {
   f.MakeNumericConstant(42);
   EXPECT_CALL(alloc, deallocate(buffer, _));
 }
+
+// TODO: test internal::Cast & ExprTypes

@@ -27,6 +27,7 @@
 
 #include "mp/nl.h"
 #include "asl/aslbuilder.h"
+#include "asl/aslexpr-visitor.h"
 #include "asl/aslproblem.h"
 
 namespace asl = mp::asl;
@@ -56,13 +57,13 @@ using asl::IteratedLogicalExpr;
 using asl::PairwiseExpr;
 using asl::StringLiteral;
 using asl::ExprVisitor;
-using asl::UnsupportedExprError;
-using asl::InvalidNumericExprError;
-using asl::InvalidLogicalExprError;
 using asl::LinearTerm;
 using asl::LinearExpr;
 
 using mp::Error;
+using mp::UnsupportedExprError;
+using mp::InvalidNumericExprError;
+using mp::InvalidLogicalExprError;
 using mp::MakeArrayRef;
 namespace ex = mp::expr;
 namespace func = mp::func;

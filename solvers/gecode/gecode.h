@@ -38,6 +38,7 @@
 #endif
 
 #include "mp/clock.h"
+#include "asl/aslexpr-visitor.h"
 #include "asl/aslproblem.h"
 #include "asl/aslsolver.h"
 

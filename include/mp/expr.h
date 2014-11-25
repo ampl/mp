@@ -44,6 +44,10 @@ namespace internal {
 // Returns true if the non-null expression e is of type ExprType.
 template <typename ExprType>
 bool Is(expr::Kind k);
+
+// Casts expression to type ExprType.
+template <typename ExprType>
+ExprType Cast(Expr e);
 }
 
 // Specialize Is<Expr> for the class ExprType corresponding to a single
@@ -102,6 +106,14 @@ class Expr {
 
     const ExprType *operator->() const { return &expr_; }
   };
+
+  template <typename ExprType>
+  friend ExprType internal::Cast(Expr e) {
+    assert(Is<ExprType>(e.kind()));
+    ExprType expr;
+    expr.impl_ = e.impl_;
+    return expr;
+  }
 
  protected:
   // Returns a pointer to the implementation.
@@ -494,10 +506,10 @@ MP_SPECIALIZE_IS(ImplicationExpr, IMPLICATION)
 typedef BasicIteratedExpr<LogicalExpr> IteratedLogicalExpr;
 MP_SPECIALIZE_IS_RANGE(IteratedLogicalExpr, ITERATED_LOGICAL)
 
-// An alldiff expression.
+// A pairwise expression (alldiff or !alldiff).
 // Example: alldiff{i in I} x[i], where I is a set and x is a variable.
-typedef BasicIteratedExpr<LogicalExpr, NumericExpr> AllDiffExpr;
-MP_SPECIALIZE_IS(AllDiffExpr, ALLDIFF)
+typedef BasicIteratedExpr<LogicalExpr, NumericExpr> PairwiseExpr;
+MP_SPECIALIZE_IS_RANGE(PairwiseExpr, PAIRWISE)
 
 class StringLiteral : public Expr {
  private:
@@ -812,16 +824,16 @@ class BasicExprFactory : private Alloc {
     return EndIterated<IteratedLogicalExpr>(builder);
   }
 
-  typedef BasicIteratedExprBuilder<AllDiffExpr> AllDiffExprBuilder;
+  typedef BasicIteratedExprBuilder<PairwiseExpr> PairwiseExprBuilder;
 
-  // Begins building an alldiff expression.
-  AllDiffExprBuilder BeginAllDiff(int num_args) {
-    return BeginIterated<AllDiffExpr>(expr::ALLDIFF, num_args);
+  // Begins building a pairwise expression.
+  PairwiseExprBuilder BeginPairwise(expr::Kind kind, int num_args) {
+    return BeginIterated<PairwiseExpr>(kind, num_args);
   }
 
-  // Ends building an alldiff expression.
-  AllDiffExpr EndAllDiff(AllDiffExprBuilder builder) {
-    return EndIterated<AllDiffExpr>(builder);
+  // Ends building a pairwise expression.
+  PairwiseExpr EndPairwise(PairwiseExprBuilder builder) {
+    return EndIterated<PairwiseExpr>(builder);
   }
 
   // Makes a string literal.
@@ -837,6 +849,31 @@ class BasicExprFactory : private Alloc {
 };
 
 typedef BasicExprFactory< std::allocator<char> > ExprFactory;
+
+// Expression types.
+struct ExprTypes {
+  typedef mp::NumericExpr NumericExpr;
+  typedef mp::LogicalExpr LogicalExpr;
+  typedef mp::NumericConstant NumericConstant;
+  typedef mp::Variable Variable;
+  typedef mp::UnaryExpr UnaryExpr;
+  typedef mp::BinaryExpr BinaryExpr;
+  typedef mp::IfExpr IfExpr;
+  typedef mp::PLTerm PLTerm;
+  typedef mp::CallExpr CallExpr;
+  typedef mp::IteratedExpr VarArgExpr;
+  typedef mp::IteratedExpr SumExpr;
+  typedef mp::IteratedExpr NumberOfExpr;
+  typedef mp::CountExpr CountExpr;
+  typedef mp::LogicalConstant LogicalConstant;
+  typedef mp::NotExpr NotExpr;
+  typedef mp::BinaryLogicalExpr BinaryLogicalExpr;
+  typedef mp::RelationalExpr RelationalExpr;
+  typedef mp::LogicalCountExpr LogicalCountExpr;
+  typedef mp::ImplicationExpr ImplicationExpr;
+  typedef mp::IteratedLogicalExpr IteratedLogicalExpr;
+  typedef mp::PairwiseExpr PairwiseExpr;
+};
 }  // namespace mp
 
 #endif  // MP_EXPR_H_

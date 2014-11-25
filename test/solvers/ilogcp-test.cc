@@ -39,6 +39,7 @@
 #include <string>
 
 #include "ilogcp/ilogcp.h"
+#include "mp/expr-visitor.h"
 #include "mp/nl.h"
 #include "feature.h"
 
@@ -212,7 +213,7 @@ TEST_F(FunctionTest, NestedInRelationNotSupported) {
       return pb.MakeBinary(mp::expr::ADD, pb.EndCall(args), one);
     }
   } factory;
-  EXPECT_THROW_MSG(Eval(factory), asl::UnsupportedExprError,
+  EXPECT_THROW_MSG(Eval(factory), mp::UnsupportedExprError,
       "unsupported: nested 'in_relation'");
 }
 
@@ -512,7 +513,7 @@ TEST_F(IlogCPTest, OptimizerOption) {
   s.Solve(p, sh);
   EXPECT_EQ(0, p.solve_code());
   s.SetStrOption("optimizer", "cplex");
-  EXPECT_THROW(s.Solve(p, sh), asl::UnsupportedExprError);
+  EXPECT_THROW(s.Solve(p, sh), mp::UnsupportedExprError);
   s.SetStrOption("optimizer", "auto");
   s.Solve(p, sh);
   EXPECT_EQ(0, p.solve_code());

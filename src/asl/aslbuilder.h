@@ -438,10 +438,10 @@ class ASLBuilder {
     int num_args = SafeInt<int>(args.size()).value();
     CallArgHandler handler = DoBeginCall(f, num_args);
     for (int i = 0; i < num_args; ++i) {
-      if (NumericExpr num = Cast<NumericExpr>(args[i]))
+      if (NumericExpr num = asl::Cast<NumericExpr>(args[i]))
         handler.AddArg(num);
       else
-        handler.AddArg(Cast<StringLiteral>(args[i]));
+        handler.AddArg(asl::Cast<StringLiteral>(args[i]));
     }
     return EndCall(handler);
   }

@@ -767,7 +767,7 @@ void IlogCPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     const IloExtractableArray &extractables = e.getExtractables();
     if (extractables.getSize() == 0)
       throw;
-    throw asl::UnsupportedExprError::CreateFromExprString(
+    throw mp::UnsupportedExprError::CreateFromExprString(
         fmt::format("{}", extractables[0]));
   }
 

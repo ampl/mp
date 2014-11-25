@@ -57,7 +57,7 @@ NumericExpr GetArg(CallExpr e, int index) {
 
 void RequireNonzeroConstRHS(BinaryExpr e, const std::string &func_name) {
   if (!IsZero(e.rhs())) {
-    throw UnsupportedExprError::CreateFromExprString(
+    throw mp::UnsupportedExprError::CreateFromExprString(
         func_name + " with nonzero second parameter");
   }
 }

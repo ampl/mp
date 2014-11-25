@@ -34,7 +34,7 @@
 #include <memory>
 
 #include "mp/solver.h"
-#include "asl/aslexpr.h"
+#include "asl/aslexpr-visitor.h"
 
 namespace mp {
 

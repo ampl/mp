@@ -26,7 +26,7 @@
 
 #include <vector>
 
-#include "asl/aslexpr.h"
+#include "asl/aslexpr-visitor.h"
 #include "asl/aslsolver.h"
 
 #define SSDSOLVER_VERSION 20130226
@@ -49,13 +49,13 @@ class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void, void> {
   // constraint with one element per scenario.
   std::vector<double> rhs_;
 
-  friend class asl::ExprVisitor<SSDExtractor, void, void>;
+  friend class mp::ExprVisitor<SSDExtractor, void, void, asl::ExprTypes>;
 
   void VisitMult(asl::BinaryExpr e) {
     asl::NumericConstant coef = asl::Cast<asl::NumericConstant>(e.lhs());
     asl::Variable var = asl::Cast<asl::Variable>(e.rhs());
     if (!coef || !var)
-      throw asl::UnsupportedExprError::CreateFromExprString("nonlinear *");
+      throw UnsupportedExprError::CreateFromExprString("nonlinear *");
     coefs_[con_index_ * num_vars_ + var.index()] = sign_ * coef.value();
   }
 

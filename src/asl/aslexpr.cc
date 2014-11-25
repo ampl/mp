@@ -23,6 +23,8 @@
 #include "aslexpr.h"
 #include "precedence.h"
 
+#include "asl/aslexpr-visitor.h"
+
 #include <cstdio>
 #include <cstring>
 
@@ -42,12 +44,13 @@ namespace {
 // to fmt::Writer. It takes into account precedence and associativity
 // of operators avoiding unnecessary parentheses except for potentially
 // confusing cases such as "!x = y" which is written as "!(x = y) instead.
-class ExprWriter : public asl::ExprVisitor<ExprWriter, void, void> {
+class ExprWriter :
+    public mp::ExprVisitor<ExprWriter, void, void, asl::ExprTypes> {
  private:
   fmt::Writer &writer_;
   int precedence_;
 
-  typedef asl::ExprVisitor<ExprWriter, void, void> ExprVisitor;
+  typedef mp::ExprVisitor<ExprWriter, void, void, asl::ExprTypes> ExprVisitor;
 
   // Writes an argument list surrounded by parentheses.
   template <typename Iter>
@@ -307,7 +310,8 @@ void ExprWriter::VisitImplication(asl::ImplicationExpr e) {
 }
 
 // Compares expressions for equality.
-class ExprEqual : public asl::ExprVisitor<ExprEqual, bool> {
+class ExprEqual :
+    public mp::ExprVisitor<ExprEqual, bool, bool, asl::ExprTypes> {
  private:
   Expr expr_;
 
@@ -415,7 +419,8 @@ using asl::internal::HashCombine;
 
 namespace {
 // Computes a hash value for an expression.
-class ExprHasher : public asl::ExprVisitor<ExprHasher, size_t> {
+class ExprHasher :
+    public mp::ExprVisitor<ExprHasher, size_t, size_t, asl::ExprTypes> {
  private:
   static size_t Hash(Expr e) {
     return HashCombine<int>(0, e.kind());

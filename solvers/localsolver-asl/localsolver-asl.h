@@ -25,7 +25,7 @@
 
 #include <localsolver.h>
 #include "asl/aslsolver.h"
-#include "asl/aslexpr.h"
+#include "asl/aslexpr-visitor.h"
 
 namespace mp {
 
