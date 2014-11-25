@@ -227,7 +227,7 @@ class Expr {
   friend class mp::Problem;
 
   template <typename ExprType>
-  friend ExprType mp::internal::Cast(Expr e) {
+  friend ExprType mp::internal::Cast(asl::Expr e) {
     assert(asl::internal::Is<ExprType>(e.kind()));
     ExprType expr;
     expr.expr_ = e.expr_;
