@@ -155,7 +155,7 @@ if (HAVE_FPIC_FLAG)
   add_definitions(${FPIC_FLAG})
 endif ()
 
-set(MP_DATE 20140617)
+set(MP_DATE 20141121)
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
 function (add_mp_library name)
