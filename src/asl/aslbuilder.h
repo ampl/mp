@@ -344,7 +344,13 @@ class ASLBuilder {
    private:
     int *int_values_;
     double *dbl_values_;
+
+#ifndef NDEBUG
     int num_items_;
+    void set_num_items(int num_items) { num_items_ = num_items; }
+#else
+    void set_num_items(int num_items) { MP_UNUSED(num_items); }
+#endif
 
     void SetIntValue(int index, int value) {
       assert(0 <= index && index < num_items_);
@@ -357,9 +363,13 @@ class ASLBuilder {
 
    public:
     explicit SuffixHandler(int *values = 0, int num_items = 0)
-      : int_values_(values), dbl_values_(0), num_items_(num_items) {}
-    explicit SuffixHandler(double *values, int num_items)
-      : int_values_(0), dbl_values_(values), num_items_(num_items) {}
+      : int_values_(values), dbl_values_(0) {
+      set_num_items(num_items);
+    }
+    SuffixHandler(double *values, int num_items)
+      : int_values_(0), dbl_values_(values) {
+      set_num_items(num_items);
+    }
 
     void SetValue(int index, int value) {
       if (int_values_)
