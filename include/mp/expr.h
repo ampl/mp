@@ -849,7 +849,10 @@ class BasicExprFactory : private Alloc {
     StringLiteral::Impl *impl =
         Allocate<StringLiteral>(expr::STRING, value.size());
     const char *s = value.c_str();
-    std::copy(s, s + value.size(), impl->value);
+    // Pass a pointer instead of the array impl->value to std::copy
+    // to avoid assertion failure in MSVC due to a bogus range check.
+    char *dest = impl->value;
+    std::copy(s, s + value.size(), dest);
     return Expr::Create<StringLiteral>(impl);
   }
 };
