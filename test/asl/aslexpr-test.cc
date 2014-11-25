@@ -456,7 +456,7 @@ std::size_t CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
 }
 
 TEST_F(ExprTest, Expr) {
-  EXPECT_EQ(67, CheckExpr<Expr>(ex::FIRST_EXPR, ex::LAST_EXPR, ex::UNKNOWN));
+  EXPECT_EQ(67u, CheckExpr<Expr>(ex::FIRST_EXPR, ex::LAST_EXPR, ex::UNKNOWN));
   TestAssertInCreate<Expr>(7);
   TestAssertInCreate<Expr>(sizeof(OP_INFO) / sizeof(*OP_INFO) - 1);
   TestAssertInCreate<Expr>(777);
