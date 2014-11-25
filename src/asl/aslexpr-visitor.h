@@ -23,7 +23,7 @@
 #ifndef MP_ASL_ASLEXPR_VISITOR_H_
 #define MP_ASL_ASLEXPR_VISITOR_H_
 
-#include "mp/expr-visitor.h"
+#include "mp/basic-expr-visitor.h"
 #include "asl/aslexpr.h"
 
 namespace mp {

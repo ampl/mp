@@ -59,6 +59,7 @@ struct ExprTypes {
 }  // namespace internal
 
 // An expression visitor.
+//
 // To use ExprVisitor define a subclass that implements some or all of the
 // Visit* methods with the same signatures as the methods in ExprVisitor,
 // for example, VisitDiv(BinaryExpr).
