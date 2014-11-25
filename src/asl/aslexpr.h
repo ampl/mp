@@ -227,12 +227,7 @@ class Expr {
   friend class mp::Problem;
 
   template <typename ExprType>
-  friend ExprType mp::internal::Cast(asl::Expr e) {
-    assert(asl::internal::Is<ExprType>(e.kind()));
-    ExprType expr;
-    expr.expr_ = e.expr_;
-    return expr;
-  }
+  friend ExprType mp::internal::Cast(asl::Expr e);
 
   // Constructs an Expr object representing a reference to an AMPL
   // expression e. Only a minimal check is performed when assertions are
@@ -896,5 +891,13 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
 }
 }  // namespace asl
 }  // namespace mp
+
+template <typename ExprType>
+ExprType mp::internal::Cast(asl::Expr e) {
+  assert(asl::internal::Is<ExprType>(e.kind()));
+  ExprType expr;
+  expr.expr_ = e.expr_;
+  return expr;
+}
 
 #endif  // MP_ASLEXPR_H_
