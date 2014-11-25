@@ -245,8 +245,13 @@ class Expr {
   // Creates an expression object from a raw expr pointer.
   // For safety reason expression classes don't provide constructors
   // taking raw pointers and this method should be used instead.
-  template <typename ExprT>
-  static ExprT Create(::expr *e) { return mp::internal::Cast<ExprT>(Expr(e)); }
+  template <typename ExprType>
+  static ExprType Create(::expr *e) {
+    assert(!e || asl::internal::Is<ExprType>(Expr(e).kind()));
+    ExprType expr;
+    expr.expr_ = e;
+    return expr;
+  }
 
   // An expression proxy used for implementing operator-> in iterators.
   template <typename ExprT>
