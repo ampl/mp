@@ -111,12 +111,7 @@ class Expr {
   };
 
   template <typename ExprType>
-  friend ExprType internal::Cast(Expr e) {
-    MP_ASSERT(Is<ExprType>(e.kind()), "invalid cast");
-    ExprType expr;
-    expr.impl_ = e.impl_;
-    return expr;
-  }
+  friend ExprType internal::Cast(Expr e);
 
  protected:
   // Returns a pointer to the implementation.
@@ -182,6 +177,14 @@ class Expr {
   //   }
   operator SafeBool() const { return impl_ != 0 ? &Expr::True : 0; }
 };
+
+template <typename ExprType>
+ExprType internal::Cast(Expr e) {
+  MP_ASSERT(Is<ExprType>(e.kind()), "invalid cast");
+  ExprType expr;
+  expr.impl_ = e.impl_;
+  return expr;
+}
 
 #define MP_EXPR \
   const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); } \
