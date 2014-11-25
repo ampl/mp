@@ -150,7 +150,7 @@ class NLToGecodeConverter :
     return Convert(e, Gecode::max);
   }
 
-  LinExpr VisitSub(asl::UnaryExpr e) {
+  LinExpr VisitMinus(asl::UnaryExpr e) {
     return -Visit(e.arg());
   }
 
