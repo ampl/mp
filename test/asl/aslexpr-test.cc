@@ -591,23 +591,23 @@ TEST_F(ExprTest, EqualCountExpr) {
 }
 
 TEST_F(ExprTest, NumericExpr) {
-  EXPECT_EQ(45,
+  EXPECT_EQ(45u,
       CheckExpr<NumericExpr>(ex::FIRST_NUMERIC, ex::LAST_NUMERIC, ex::NOT));
 }
 
 TEST_F(ExprTest, LogicalExpr) {
-  EXPECT_EQ(22, CheckExpr<LogicalExpr>(ex::FIRST_LOGICAL, ex::LAST_LOGICAL));
+  EXPECT_EQ(22u, CheckExpr<LogicalExpr>(ex::FIRST_LOGICAL, ex::LAST_LOGICAL));
 }
 
 TEST_F(ExprTest, NumericConstant) {
-  EXPECT_EQ(1, CheckExpr<NumericConstant>(ex::CONSTANT));
+  EXPECT_EQ(1u, CheckExpr<NumericConstant>(ex::CONSTANT));
   asl::NumericConstant expr = builder.MakeNumericConstant(42);
   EXPECT_EQ(ex::CONSTANT, expr.kind());
   EXPECT_EQ(42, expr.value());
 }
 
 TEST_F(ExprTest, Variable) {
-  EXPECT_EQ(1, CheckExpr<Variable>(ex::VARIABLE));
+  EXPECT_EQ(1u, CheckExpr<Variable>(ex::VARIABLE));
   asl::Variable var = builder.MakeVariable(0);
   EXPECT_EQ(ex::VARIABLE, var.kind());
   EXPECT_EQ(0, var.index());
@@ -657,7 +657,7 @@ TEST_F(ExprTest, BinaryExpr) {
 }
 
 TEST_F(ExprTest, IfExpr) {
-  EXPECT_EQ(1, CheckExpr<IfExpr>(ex::IF));
+  EXPECT_EQ(1u, CheckExpr<IfExpr>(ex::IF));
   asl::IfExpr expr = builder.MakeIf(l1, n1, n2);
   EXPECT_EQ(ex::IF, expr.kind());
   EXPECT_EQ(l1, expr.condition());
@@ -666,7 +666,8 @@ TEST_F(ExprTest, IfExpr) {
 }
 
 TEST_F(ExprTest, PiecewiseLinearExpr) {
-  EXPECT_EQ(1, CheckExpr<PiecewiseLinearExpr>(ex::PLTERM, ex::PLTERM, ex::ADD));
+  EXPECT_EQ(1u,
+            CheckExpr<PiecewiseLinearExpr>(ex::PLTERM, ex::PLTERM, ex::ADD));
   enum { NUM_BREAKPOINTS = 2 };
   double breakpoints[NUM_BREAKPOINTS] = { 11, 22 };
   double slopes[NUM_BREAKPOINTS + 1] = {33, 44, 55};
@@ -690,7 +691,7 @@ TEST_F(ExprTest, PiecewiseLinearExpr) {
 }
 
 TEST_F(ExprTest, CallExpr) {
-  EXPECT_EQ(1, CheckExpr<CallExpr>(ex::CALL));
+  EXPECT_EQ(1u, CheckExpr<CallExpr>(ex::CALL));
   enum {NUM_ARGS = 3};
   Function f = builder.AddFunction("foo", TestFunc, NUM_ARGS, func::SYMBOLIC);
   const Expr args[NUM_ARGS] = {n1, n2, builder.MakeStringLiteral("abc")};
@@ -732,7 +733,7 @@ TEST_F(ExprTest, VarArgExpr) {
 }
 
 TEST_F(ExprTest, SumExpr) {
-  EXPECT_EQ(1, CheckExpr<SumExpr>(ex::SUM));
+  EXPECT_EQ(1u, CheckExpr<SumExpr>(ex::SUM));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
   asl::SumExpr expr = builder.MakeSum(args);
@@ -745,7 +746,7 @@ TEST_F(ExprTest, SumExpr) {
 }
 
 TEST_F(ExprTest, CountExpr) {
-  EXPECT_EQ(1, CheckExpr<CountExpr>(ex::COUNT));
+  EXPECT_EQ(1u, CheckExpr<CountExpr>(ex::COUNT));
   enum {NUM_ARGS = 2};
   LogicalExpr args[NUM_ARGS] = {l1, l0};
   asl::CountExpr expr = builder.MakeCount(args);
@@ -758,7 +759,7 @@ TEST_F(ExprTest, CountExpr) {
 }
 
 TEST_F(ExprTest, NumberOfExpr) {
-  EXPECT_EQ(1, CheckExpr<NumberOfExpr>(ex::NUMBEROF));
+  EXPECT_EQ(1u, CheckExpr<NumberOfExpr>(ex::NUMBEROF));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
   asl::NumberOfExpr expr = builder.MakeNumberOf(args);
@@ -773,7 +774,7 @@ TEST_F(ExprTest, NumberOfExpr) {
 }
 
 TEST_F(ExprTest, LogicalConstant) {
-  EXPECT_EQ(1, CheckExpr<LogicalConstant>(ex::CONSTANT));
+  EXPECT_EQ(1u, CheckExpr<LogicalConstant>(ex::CONSTANT));
   asl::LogicalConstant expr = builder.MakeLogicalConstant(true);
   EXPECT_EQ(ex::CONSTANT, expr.kind());
   EXPECT_TRUE(expr.value());
@@ -781,7 +782,7 @@ TEST_F(ExprTest, LogicalConstant) {
 }
 
 TEST_F(ExprTest, NotExpr) {
-  EXPECT_EQ(1, CheckExpr<NotExpr>(ex::NOT));
+  EXPECT_EQ(1u, CheckExpr<NotExpr>(ex::NOT));
   asl::NotExpr expr = builder.MakeNot(l1);
   EXPECT_EQ(ex::NOT, expr.kind());
   EXPECT_EQ(l1, expr.arg());
@@ -830,7 +831,7 @@ TEST_F(ExprTest, LogicalCountExpr) {
 }
 
 TEST_F(ExprTest, ImplicationExpr) {
-  EXPECT_EQ(1, CheckExpr<ImplicationExpr>(ex::IMPLICATION));
+  EXPECT_EQ(1u, CheckExpr<ImplicationExpr>(ex::IMPLICATION));
   LogicalExpr condition = builder.MakeLogicalConstant(true);
   asl::ImplicationExpr expr = builder.MakeImplication(condition, l0, l1);
   EXPECT_EQ(ex::IMPLICATION, expr.kind());
@@ -860,7 +861,7 @@ TEST_F(ExprTest, IteratedLogicalExpr) {
 }
 
 TEST_F(ExprTest, PairwiseExpr) {
-  EXPECT_EQ(2, CheckExpr<PairwiseExpr>(ex::FIRST_PAIRWISE));
+  EXPECT_EQ(2u, CheckExpr<PairwiseExpr>(ex::FIRST_PAIRWISE));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
   PairwiseExpr expr = builder.MakeAllDiff(args);
@@ -875,7 +876,7 @@ TEST_F(ExprTest, PairwiseExpr) {
 }
 
 TEST_F(ExprTest, StringLiteral) {
-  EXPECT_EQ(1, CheckExpr<StringLiteral>(ex::STRING));
+  EXPECT_EQ(1u, CheckExpr<StringLiteral>(ex::STRING));
   StringLiteral e = builder.MakeStringLiteral("abc");
   EXPECT_STREQ("abc", e.value());
 }
