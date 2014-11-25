@@ -45,7 +45,10 @@ namespace internal {
 template <typename ExprType>
 bool Is(expr::Kind k);
 
-// Casts expression to type ExprType.
+// Casts an expression to type ExprType which must be a subclass of Expr.
+// If assertions are enabled, it generates an assertion failure when
+// e is not of runtime type ExprType. Otherwise no runtime check is
+// performed.
 template <typename ExprType>
 ExprType Cast(Expr e);
 }

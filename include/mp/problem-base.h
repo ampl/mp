@@ -171,7 +171,7 @@ enum Kind {
   LAST_EXPR = STRING
 };
 
-// Maximum opcode index.
+// Maximum opcode.
 enum { MAX_OPCODE = 82 };
 
 class OpCodeInfo {
