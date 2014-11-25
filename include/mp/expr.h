@@ -858,31 +858,6 @@ class BasicExprFactory : private Alloc {
 };
 
 typedef BasicExprFactory< std::allocator<char> > ExprFactory;
-
-// Expression types.
-struct ExprTypes {
-  typedef mp::NumericExpr NumericExpr;
-  typedef mp::LogicalExpr LogicalExpr;
-  typedef mp::NumericConstant NumericConstant;
-  typedef mp::Variable Variable;
-  typedef mp::UnaryExpr UnaryExpr;
-  typedef mp::BinaryExpr BinaryExpr;
-  typedef mp::IfExpr IfExpr;
-  typedef mp::PLTerm PLTerm;
-  typedef mp::CallExpr CallExpr;
-  typedef mp::IteratedExpr VarArgExpr;
-  typedef mp::IteratedExpr SumExpr;
-  typedef mp::IteratedExpr NumberOfExpr;
-  typedef mp::CountExpr CountExpr;
-  typedef mp::LogicalConstant LogicalConstant;
-  typedef mp::NotExpr NotExpr;
-  typedef mp::BinaryLogicalExpr BinaryLogicalExpr;
-  typedef mp::RelationalExpr RelationalExpr;
-  typedef mp::LogicalCountExpr LogicalCountExpr;
-  typedef mp::ImplicationExpr ImplicationExpr;
-  typedef mp::IteratedLogicalExpr IteratedLogicalExpr;
-  typedef mp::PairwiseExpr PairwiseExpr;
-};
 }  // namespace mp
 
 #endif  // MP_EXPR_H_

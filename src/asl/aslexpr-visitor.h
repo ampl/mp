@@ -23,11 +23,12 @@
 #ifndef MP_ASL_ASLEXPR_VISITOR_H_
 #define MP_ASL_ASLEXPR_VISITOR_H_
 
-#include "asl/aslexpr.h"
 #include "mp/expr-visitor.h"
+#include "asl/aslexpr.h"
 
 namespace mp {
 namespace asl {
+namespace internal {
 // ASL expression types.
 struct ExprTypes {
   typedef mp::asl::NumericExpr NumericExpr;
@@ -51,12 +52,16 @@ struct ExprTypes {
   typedef mp::asl::ImplicationExpr ImplicationExpr;
   typedef mp::asl::IteratedLogicalExpr IteratedLogicalExpr;
   typedef mp::asl::PairwiseExpr PairwiseExpr;
+
+  template <typename ExprType>
+  static ExprType Cast(Expr e) { return mp::internal::Cast<ExprType>(e); }
 };
+}  // namespace internal
 
 // ASL expression visitor.
 template <typename Impl, typename Result, typename LResult = Result>
 class ExprVisitor :
-    public mp::ExprVisitor<Impl, Result, LResult, mp::asl::ExprTypes> {};
+    public BasicExprVisitor<Impl, Result, LResult, internal::ExprTypes> {};
 
 // Returns true iff e is a zero constant.
 inline bool IsZero(NumericExpr e) {

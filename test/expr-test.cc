@@ -513,44 +513,6 @@ TEST(ExprTest, InternalCast) {
   EXPECT_ASSERT(Cast<mp::UnaryExpr>(e), "invalid cast");
 }
 
-// IsSame<T, U>::VALUE is true iff T and U are the same type.
-template <typename T, typename U>
-struct IsSame {
-  static const bool VALUE = false;
-};
-
-template <typename T>
-struct IsSame<T, T> {
-  static const bool VALUE = true;
-};
-
-// Checks if ExprTypes::T is a typedef of mp::T.
-#define CHECK_EXPR_TYPE(T) EXPECT_TRUE((IsSame<mp::ExprTypes::T, mp::T>::VALUE))
-
-TEST(ExprTest, ExprTypes) {
-  CHECK_EXPR_TYPE(NumericExpr);
-  CHECK_EXPR_TYPE(LogicalExpr);
-  CHECK_EXPR_TYPE(NumericConstant);
-  CHECK_EXPR_TYPE(Variable);
-  CHECK_EXPR_TYPE(UnaryExpr);
-  CHECK_EXPR_TYPE(BinaryExpr);
-  CHECK_EXPR_TYPE(IfExpr);
-  CHECK_EXPR_TYPE(PLTerm);
-  CHECK_EXPR_TYPE(CallExpr);
-  EXPECT_TRUE((IsSame<mp::ExprTypes::VarArgExpr, mp::IteratedExpr>::VALUE));
-  EXPECT_TRUE((IsSame<mp::ExprTypes::SumExpr, mp::IteratedExpr>::VALUE));
-  EXPECT_TRUE((IsSame<mp::ExprTypes::NumberOfExpr, mp::IteratedExpr>::VALUE));
-  CHECK_EXPR_TYPE(CountExpr);
-  CHECK_EXPR_TYPE(LogicalConstant);
-  CHECK_EXPR_TYPE(NotExpr);
-  CHECK_EXPR_TYPE(BinaryLogicalExpr);
-  CHECK_EXPR_TYPE(RelationalExpr);
-  CHECK_EXPR_TYPE(LogicalCountExpr);
-  CHECK_EXPR_TYPE(ImplicationExpr);
-  CHECK_EXPR_TYPE(IteratedLogicalExpr);
-  CHECK_EXPR_TYPE(PairwiseExpr);
-}
-
 TEST(ExprFactoryTest, InvalidCallExprFunction) {
   ExprFactory factory;
   EXPECT_ASSERT(factory.BeginCall(mp::Function(), 0), "invalid function");

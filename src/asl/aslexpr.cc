@@ -44,13 +44,12 @@ namespace {
 // to fmt::Writer. It takes into account precedence and associativity
 // of operators avoiding unnecessary parentheses except for potentially
 // confusing cases such as "!x = y" which is written as "!(x = y) instead.
-class ExprWriter :
-    public mp::ExprVisitor<ExprWriter, void, void, asl::ExprTypes> {
+class ExprWriter : public mp::asl::ExprVisitor<ExprWriter, void, void> {
  private:
   fmt::Writer &writer_;
   int precedence_;
 
-  typedef mp::ExprVisitor<ExprWriter, void, void, asl::ExprTypes> ExprVisitor;
+  typedef mp::asl::ExprVisitor<ExprWriter, void, void> ExprVisitor;
 
   // Writes an argument list surrounded by parentheses.
   template <typename Iter>
@@ -310,8 +309,7 @@ void ExprWriter::VisitImplication(asl::ImplicationExpr e) {
 }
 
 // Compares expressions for equality.
-class ExprEqual :
-    public mp::ExprVisitor<ExprEqual, bool, bool, asl::ExprTypes> {
+class ExprEqual : public mp::asl::ExprVisitor<ExprEqual, bool, bool> {
  private:
   Expr expr_;
 
@@ -419,8 +417,7 @@ using asl::internal::HashCombine;
 
 namespace {
 // Computes a hash value for an expression.
-class ExprHasher :
-    public mp::ExprVisitor<ExprHasher, size_t, size_t, asl::ExprTypes> {
+class ExprHasher : public mp::asl::ExprVisitor<ExprHasher, size_t, size_t> {
  private:
   static size_t Hash(Expr e) {
     return HashCombine<int>(0, e.kind());
