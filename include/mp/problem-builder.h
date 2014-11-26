@@ -29,8 +29,8 @@
 #include <set>
 #include <vector>
 
+#include "mp/common.h"
 #include "mp/error.h"
-#include "mp/problem-base.h"
 #include "mp/suffix.h"
 
 namespace mp {

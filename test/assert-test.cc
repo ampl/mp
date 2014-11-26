@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "mp/expr.h"
+#include "mp/common.h"
 #include "gtest/gtest.h"
 
 TEST(AssertTest, Fail) {

@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
+#include "mp/common.h"
 #include "mp/solver.h"
-#include "mp/problem-base.h"
 
 #include <cctype>
 #include <cstdarg>

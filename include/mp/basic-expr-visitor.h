@@ -23,8 +23,8 @@
 #ifndef MP_BASIC_EXPR_VISITOR_H_
 #define MP_BASIC_EXPR_VISITOR_H_
 
+#include "mp/common.h"
 #include "mp/error.h"
-#include "mp/problem-base.h"
 
 namespace mp {
 

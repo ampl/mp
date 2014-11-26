@@ -23,8 +23,8 @@
 #include <algorithm>
 #include <vector>
 
+#include "mp/common.h"
 #include "mp/posix.h"
-#include "mp/problem-base.h"
 #include "precedence.h"
 
 namespace expr = mp::expr;

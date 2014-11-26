@@ -41,9 +41,9 @@
 #ifndef MP_NL_H_
 #define MP_NL_H_
 
+#include "mp/common.h"
 #include "mp/error.h"
 #include "mp/os.h"
-#include "mp/problem-base.h"
 
 #include <algorithm>
 #include <cctype>

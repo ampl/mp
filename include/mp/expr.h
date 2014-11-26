@@ -28,8 +28,8 @@
 #include <memory>
 #include <vector>
 
+#include "mp/common.h"
 #include "mp/format.h"
-#include "mp/problem-base.h"
 
 #ifndef MP_ASSERT
 # define MP_ASSERT(condition, message) assert((condition) && message)

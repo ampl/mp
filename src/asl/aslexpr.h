@@ -147,8 +147,8 @@ extern "C" {
 # undef write_sol
 #endif  // ASL_PRESERVE_DEFINES
 
+#include "mp/common.h"
 #include "mp/error.h"
-#include "mp/problem-base.h"
 
 namespace mp {
 

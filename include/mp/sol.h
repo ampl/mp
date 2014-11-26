@@ -30,8 +30,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "mp/common.h"
 #include "mp/posix.h"
-#include "mp/problem-base.h"
 
 namespace mp {
 
