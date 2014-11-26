@@ -92,11 +92,11 @@ class BasicExprVisitor {
   LResult Visit(LogicalExpr e);
 
   Result VisitUnhandledNumericExpr(NumericExpr e) {
-    throw UnsupportedExprError::CreateFromExprString(e.opstr());
+    throw UnsupportedExprError::CreateFromExprString(str(e.kind()));
   }
 
   LResult VisitUnhandledLogicalExpr(LogicalExpr e) {
-    throw UnsupportedExprError::CreateFromExprString(e.opstr());
+    throw UnsupportedExprError::CreateFromExprString(str(e.kind()));
   }
 
   Result VisitInvalidNumericExpr(NumericExpr e) {

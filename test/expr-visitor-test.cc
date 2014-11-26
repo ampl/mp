@@ -193,12 +193,21 @@ TEST_F(ExprVisitorTest, VisitVariable) {
   visitor_.Visit(base);
 }
 
+// A visitor for testing VisitUnary.
+struct MockUnaryVisitor :
+    mp::ExprVisitor<MockUnaryVisitor, TestResult, TestLResult> {
+  MOCK_METHOD1(VisitUnary, TestResult (UnaryExpr e));
+};
+
 #define TEST_UNARY(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
     auto e = factory_.MakeUnary(mp::expr::KIND, var_); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::NumericExpr base = e; \
     visitor_.Visit(base); \
+    ::testing::StrictMock<MockUnaryVisitor> unary_visitor; \
+    EXPECT_CALL(unary_visitor, VisitUnary(e)); \
+    unary_visitor.Visit(base); \
   }
 
 TEST_UNARY(MINUS, Minus)
@@ -223,12 +232,21 @@ TEST_UNARY(ACOSH, Acosh)
 TEST_UNARY(ATAN, Atan)
 TEST_UNARY(ATANH, Atanh)
 
+// A visitor for testing VisitUnary.
+struct MockBinaryVisitor :
+    mp::ExprVisitor<MockBinaryVisitor, TestResult, TestLResult> {
+  MOCK_METHOD1(VisitBinary, TestResult (BinaryExpr e));
+};
+
 #define TEST_BINARY(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
     auto e = factory_.MakeBinary(mp::expr::KIND, var_, var_); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::NumericExpr base = e; \
     visitor_.Visit(base); \
+    ::testing::StrictMock<MockBinaryVisitor> binary_visitor; \
+    EXPECT_CALL(binary_visitor, VisitBinary(e)); \
+    binary_visitor.Visit(base); \
   }
 
 TEST_BINARY(ADD, Add)
@@ -383,7 +401,8 @@ TEST_ITERATED_LOGICAL(FORALL, ForAll)
 TEST_PAIRWISE(ALLDIFF, AllDiff)
 TEST_PAIRWISE(NOT_ALLDIFF, NotAllDiff)
 
-// TODO: test propagation to more general handlers
+// TODO: test VisitBinaryFunc, VisitVarArg, VisitBinaryLogical,
+//            VisitRelational, VisitLogicalCount, VisitIteratedLogical
 
 /*
 struct TestVisitor : ExprVisitor<TestVisitor, TestResult, TestLResult> {
