@@ -36,17 +36,17 @@
 namespace mp {
 
 // A minimal implementation of the ProblemBuilder concept.
-template <typename Impl, typename ExprT>
+template <typename Impl, typename ExprType>
 class ProblemBuilder {
  private:
   SuffixManager suffixes_;
 
   struct ArgHandler {
-    void AddArg(ExprT arg) { MP_UNUSED(arg); }
+    void AddArg(ExprType arg) { MP_UNUSED(arg); }
   };
 
  public:
-  typedef ExprT Expr;
+  typedef ExprType Expr;
   typedef Expr NumericExpr;
   typedef Expr LogicalExpr;
   typedef Expr CountExpr;

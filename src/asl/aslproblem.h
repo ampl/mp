@@ -428,13 +428,13 @@ class Problem {
     return asl::LinearConExpr(asl_->i.Cgrad_[con_index]);
   }
 
-  template <typename ExprT>
-  ExprT GetExpr(cde *Edag1info::*ptr, int index, int size) const {
+  template <typename ExprType>
+  ExprType GetExpr(cde *Edag1info::*ptr, int index, int size) const {
     MP_UNUSED(size);
     assert(index >= 0 && index < size);
     if (asl_->i.ASLtype != ASL_read_fg)
-      return ExprT();
-    return asl::Expr::Create<ExprT>(
+      return ExprType();
+    return asl::Expr::Create<ExprType>(
           (reinterpret_cast<ASL_fg*>(asl_)->I.*ptr)[index].e);
   }
   asl::NumericExpr GetExpr(cde *Edag1info::*ptr, int index, int size) const {

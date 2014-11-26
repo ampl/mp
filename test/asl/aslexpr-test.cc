@@ -81,8 +81,8 @@ class TestExpr : public Expr {
   static void TestProxy();
   static void TestArrayIterator();
 
-  template <typename ExprT>
-  static ExprT MakeExpr(expr *e) { return Expr::Create<ExprT>(e); }
+  template <typename ExprType>
+  static ExprType MakeExpr(expr *e) { return Expr::Create<ExprType>(e); }
 };
 
 struct TestGrad {
@@ -117,8 +117,8 @@ class LinearExpr< asl::LinearTerm<TestGrad> > {
 }  // namespace asl
 }  // namespace mp
 
-template <typename ExprT>
-ExprT MakeExpr(expr *e) { return TestExpr::MakeExpr<ExprT>(e); }
+template <typename ExprType>
+ExprType MakeExpr(expr *e) { return TestExpr::MakeExpr<ExprType>(e); }
 
 Expr MakeExpr(expr *e) { return TestExpr::MakeExpr<Expr>(e); }
 
@@ -414,23 +414,23 @@ const OpInfo OP_INFO[] = {
   {777,                "unknown",               ex::UNKNOWN}
 };
 
-template <typename ExprT>
+template <typename ExprType>
 void TestAssertInCreate(int opcode) {
   expr e = RawExpr(opcode);
-  EXPECT_DEBUG_DEATH(MakeExpr<ExprT>(&e), "Assertion") << opcode;  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(MakeExpr<ExprType>(&e), "Assertion") << opcode;  // NOLINT(*)
 }
 
-template <typename ExprT>
+template <typename ExprType>
 std::size_t CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
     ex::Kind bad_kind = ex::PLTERM) {
   if (end == ex::UNKNOWN)
     end = start;
   {
     // Check default ctor.
-    ExprT e;
+    ExprType e;
     EXPECT_FALSE(e);
   }
-  TestAssertInCreate<ExprT>(opcode(bad_kind));
+  TestAssertInCreate<ExprType>(opcode(bad_kind));
   std::size_t expr_count = 0;
   int size = sizeof(OP_INFO) / sizeof(*OP_INFO);
   for (int i = 0; i < size; ++i) {
@@ -441,12 +441,12 @@ std::size_t CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
     bool is_this_kind = info.kind >= start && info.kind <= end;
     if (info.kind != ex::UNKNOWN) {
       Expr e(::MakeExpr(&raw));
-      EXPECT_EQ(is_this_kind, asl::internal::Is<ExprT>(e));
-      bool cast_result = Cast<ExprT>(e);
+      EXPECT_EQ(is_this_kind, asl::internal::Is<ExprType>(e));
+      bool cast_result = Cast<ExprType>(e);
       EXPECT_EQ(is_this_kind, cast_result);
     }
     if (!is_this_kind) continue;
-    ExprT e(MakeExpr<ExprT>(&raw));
+    ExprType e(MakeExpr<ExprType>(&raw));
     EXPECT_EQ(opcode, ex::opcode(e.kind()));
     EXPECT_STREQ(opstr, e.opstr());
     ++expr_count;

@@ -191,25 +191,25 @@ namespace internal {
 
 class ASLBuilder;
 
-// Returns true if the non-null expression e is of type ExprT.
-template <typename ExprT>
+// Returns true if the non-null expression e is of type ExprType.
+template <typename ExprType>
 bool Is(expr::Kind k);
 }
 
-// Specialize Is<ExprT> for the class ExprClass corresponding to a single
+// Specialize Is<ExprType> for the class ExprClass corresponding to a single
 // expression kind.
-#define MP_SPECIALIZE_IS(ExprT, expr_kind) \
+#define MP_SPECIALIZE_IS(ExprType, expr_kind) \
 namespace internal { \
 template <> \
-inline bool Is<ExprT>(expr::Kind k) { return k == expr::expr_kind; } \
+inline bool Is<ExprType>(expr::Kind k) { return k == expr::expr_kind; } \
 }
 
-// Specialize Is<ExprT> for the class ExprClass corresponding to a range
+// Specialize Is<ExprType> for the class ExprClass corresponding to a range
 // of expression kinds [start, end].
-#define MP_SPECIALIZE_IS_RANGE(ExprT, expr_kind) \
+#define MP_SPECIALIZE_IS_RANGE(ExprType, expr_kind) \
 namespace internal { \
 template <> \
-inline bool Is<ExprT>(expr::Kind k) { \
+inline bool Is<ExprType>(expr::Kind k) { \
   return k >= expr::FIRST_##expr_kind && k <= expr::LAST_##expr_kind; \
 } \
 }
@@ -256,31 +256,31 @@ class Expr {
   }
 
   // An expression proxy used for implementing operator-> in iterators.
-  template <typename ExprT>
+  template <typename ExprType>
   class Proxy {
    private:
-    ExprT impl_;
+    ExprType impl_;
 
    public:
-    explicit Proxy(Impl *e) : impl_(Create<ExprT>(e)) {}
+    explicit Proxy(Impl *e) : impl_(Create<ExprType>(e)) {}
 
-    const ExprT *operator->() const { return &impl_; }
+    const ExprType *operator->() const { return &impl_; }
   };
 
   // An expression array iterator.
-  template <typename ExprT>
+  template <typename ExprType>
   class ArrayIterator :
-    public std::iterator<std::forward_iterator_tag, ExprT> {
+    public std::iterator<std::forward_iterator_tag, ExprType> {
    private:
     Impl *const *ptr_;
 
    public:
     explicit ArrayIterator(Impl *const *p = 0) : ptr_(p) {}
 
-    ExprT operator*() const { return Create<ExprT>(*ptr_); }
+    ExprType operator*() const { return Create<ExprType>(*ptr_); }
 
-    Proxy<ExprT> operator->() const {
-      return Proxy<ExprT>(*ptr_);
+    Proxy<ExprType> operator->() const {
+      return Proxy<ExprType>(*ptr_);
     }
 
     ArrayIterator &operator++() {
@@ -331,20 +331,21 @@ class Expr {
   bool operator==(Expr other) const { return impl_ == other.impl_; }
   bool operator!=(Expr other) const { return impl_ != other.impl_; }
 
-  template <typename ExprT>
-  friend ExprT Cast(Expr e);
+  template <typename ExprType>
+  friend ExprType Cast(Expr e);
 };
 
 namespace internal {
-template <typename ExprT>
-inline bool Is(Expr e) { return Is<ExprT>(e.kind()); }
+template <typename ExprType>
+inline bool Is(Expr e) { return Is<ExprType>(e.kind()); }
 }
 
-// Casts an expression to type ExprT. Returns a null expression if the cast
+// Casts an expression to type ExprType. Returns a null expression if the cast
 // is not possible.
-template <typename ExprT>
-ExprT Cast(Expr e) {
-  return internal::Is<ExprT>(e) ? mp::internal::Cast<ExprT>(e) : ExprT();
+template <typename ExprType>
+ExprType Cast(Expr e) {
+  return internal::Is<ExprType>(e) ?
+        mp::internal::Cast<ExprType>(e) : ExprType();
 }
 
 MP_SPECIALIZE_IS_RANGE(Expr, EXPR)

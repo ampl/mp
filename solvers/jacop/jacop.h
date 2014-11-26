@@ -191,8 +191,8 @@ class NLToJaCoPConverter :
   }
 
   // Converts a binary logical expression to a JaCoP constraint of class cls.
-  template <typename ExprT>
-  jobject Convert(ExprT e, ClassBase &cls) {
+  template <typename ExprType>
+  jobject Convert(ExprType e, ClassBase &cls) {
     return cls.NewObject(env_, Visit(e.lhs()), Visit(e.rhs()));
   }
 

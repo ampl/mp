@@ -155,13 +155,13 @@ struct NLHeader : ProblemInfo {
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 
 // An .nl handler that ignores all input.
-template <typename ExprT>
+template <typename ExprType>
 class NLHandler {
  protected:
   ~NLHandler() {}
 
  public:
-  typedef ExprT Expr;
+  typedef ExprType Expr;
   typedef Expr NumericExpr;
   typedef Expr LogicalExpr;
   typedef Expr CountExpr;

@@ -86,9 +86,9 @@ class ASLBuilder {
     }
   }
 
-  template <typename ExprT>
+  template <typename ExprType>
   static void CheckKind(expr::Kind kind, const char *expr_name) {
-    if (!internal::Is<ExprT>(kind))
+    if (!internal::Is<ExprType>(kind))
       throw Error("invalid {} expression kind {}", expr_name, kind);
   }
 
@@ -112,17 +112,17 @@ class ASLBuilder {
 
   ::expr *DoMakeUnary(expr::Kind kind, Expr arg);
 
-  template <typename ExprT>
-  ExprT MakeUnary(expr::Kind kind, Expr arg) {
-    return Expr::Create<ExprT>(DoMakeUnary(kind, arg));
+  template <typename ExprType>
+  ExprType MakeUnary(expr::Kind kind, Expr arg) {
+    return Expr::Create<ExprType>(DoMakeUnary(kind, arg));
   }
 
   ::expr *DoMakeBinary(expr::Kind kind, Expr lhs, Expr rhs);
 
-  template <typename ExprT>
-  ExprT MakeBinary(expr::Kind kind, Expr lhs, Expr rhs, const char *name) {
-    CheckKind<ExprT>(kind, name);
-    return Expr::Create<ExprT>(DoMakeBinary(kind, lhs, rhs));
+  template <typename ExprType>
+  ExprType MakeBinary(expr::Kind kind, Expr lhs, Expr rhs, const char *name) {
+    CheckKind<ExprType>(kind, name);
+    return Expr::Create<ExprType>(DoMakeBinary(kind, lhs, rhs));
   }
 
   ::expr *MakeIf(expr::Kind kind,
