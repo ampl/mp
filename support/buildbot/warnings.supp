@@ -6,5 +6,6 @@
 .*/(iloexpressioni|cp).h: C4244: 'argument' : conversion from 'IloInt' to 'IloNum'
 .*concert.lib: LNK4099: PDB 'concert.pdb' was not found.*
 .*: could not create compact unwind
+.*/printf.c: ignoring return value of 'strtod', declared with attribute warn_unused_result
 
 .*: [0-9]+ warning(s)? generated
