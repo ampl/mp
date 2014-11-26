@@ -60,7 +60,7 @@ class SafeInt {
   SafeInt(T value) : value_(value) {}
 
   template <typename U>
-  explicit SafeInt(U value) : value_(value) {
+  explicit SafeInt(U value) : value_(static_cast<T>(value)) {
     if (fmt::internal::is_negative(value)) {
       fmt::LongLong signed_value = value, min = std::numeric_limits<T>::min();
       if (signed_value < min)
