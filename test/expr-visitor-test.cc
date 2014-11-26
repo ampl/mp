@@ -21,6 +21,7 @@
  */
 
 #include "gmock/gmock.h"
+#include "mock-allocator.h"
 #include "test-assert.h"
 #include "mp/expr-visitor.h"
 
@@ -480,8 +481,15 @@ TEST_PAIRWISE(NOT_ALLDIFF, NotAllDiff)
 
 TEST_F(ExprVisitorTest, InvalidNumericExpr) {
   // Corrupt expression kind and try to visit it.
-  auto e = factory_.MakeNumericConstant(42);
-  **reinterpret_cast<mp::expr::Kind**>(&e) = mp::expr::UNKNOWN;
+  using ::testing::_;
+  typedef AllocatorRef< MockAllocator<char> > Allocator;
+  MockAllocator<char> alloc;
+  mp::BasicExprFactory<Allocator> f((Allocator(&alloc)));
+  char buffer[100];
+  EXPECT_CALL(alloc, allocate(_)).WillOnce(::testing::Return(buffer));
+  auto e = f.MakeNumericConstant(42);
+  EXPECT_CALL(alloc, deallocate(buffer, _));
+  std::fill(buffer, buffer + 100, 0);
   EXPECT_ASSERT(visitor_.Visit(e), "invalid numeric expression");
 }
 
