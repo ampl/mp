@@ -479,21 +479,29 @@ TEST_ITERATED_LOGICAL(FORALL, ForAll)
 TEST_PAIRWISE(ALLDIFF, AllDiff)
 TEST_PAIRWISE(NOT_ALLDIFF, NotAllDiff)
 
-TEST_F(ExprVisitorTest, InvalidNumericExpr) {
-  // Corrupt expression kind and try to visit it.
+TEST_F(ExprVisitorTest, InvalidExpr) {
   using ::testing::_;
-  typedef AllocatorRef< MockAllocator<char> > Allocator;
-  MockAllocator<char> alloc;
-  mp::BasicExprFactory<Allocator> f((Allocator(&alloc)));
+  typedef AllocatorRef< ::testing::NiceMock<MockAllocator<char> > > Allocator;
+  ::testing::NiceMock< MockAllocator<char> > alloc;
   char buffer[100];
+  mp::BasicExprFactory<Allocator> f((Allocator(&alloc)));
+
+  // Corrupt a numeric expression and check if visiting it results in
+  // assertion failure.
   EXPECT_CALL(alloc, allocate(_)).WillOnce(::testing::Return(buffer));
-  auto e = f.MakeNumericConstant(42);
-  EXPECT_CALL(alloc, deallocate(buffer, _));
-  std::fill(buffer, buffer + 100, 0);
-  EXPECT_ASSERT(visitor_.Visit(e), "invalid numeric expression");
+  auto e1 = f.MakeNumericConstant(0);
+  std::fill(buffer, buffer + sizeof(buffer), 0);
+  EXPECT_ASSERT(visitor_.Visit(e1), "invalid numeric expression");
+
+  // Corrupt a logical expression and check if visiting it results in
+  // assertion failure.
+  EXPECT_CALL(alloc, allocate(_)).WillOnce(::testing::Return(buffer));
+  auto e2 = f.MakeLogicalConstant(false);
+  std::fill(buffer, buffer + sizeof(buffer), 0);
+  EXPECT_ASSERT(visitor_.Visit(e2), "invalid logical expression");
 }
 
-// TODO: test handling of invalid expressions
+// TODO: test unhandled expressions
 
 /*
 struct TestVisitor : ExprVisitor<TestVisitor, TestResult, TestLResult> {
@@ -531,17 +539,4 @@ TEST_F(ExprTest, ExprVisitorUnhandledThrows) {
   EXPECT_THROW(NullVisitor().Visit(MakeConst(0)), UnsupportedExprError);
   EXPECT_THROW(NullVisitor().Visit(l0), UnsupportedExprError);
 }
-
-TEST_F(ExprTest, ExprVisitorInvalidExpr) {
-  expr raw = RawExpr(opcode(ex::CONSTANT));
-  NumericExpr ne(::MakeExpr<NumericExpr>(&raw));
-  LogicalExpr le(::MakeExpr<LogicalExpr>(&raw));
-  raw.op = reinterpret_cast<efunc*>(-1);
-#ifndef NDEBUG
-  EXPECT_DEBUG_DEATH(NullVisitor().Visit(ne), "Assertion");
-  EXPECT_DEBUG_DEATH(NullVisitor().Visit(le), "Assertion");
-#endif
-}
 */
-
-// TODO
