@@ -151,8 +151,8 @@ struct MockVisitor : mp::ExprVisitor<MockVisitor, TestResult, TestLResult> {
   MOCK_METHOD1(VisitNotExactly, TestLResult (LogicalCountExpr e));
 
   MOCK_METHOD1(VisitImplication, TestLResult (ImplicationExpr e));
-  MOCK_METHOD1(VisitForAll, TestLResult (IteratedLogicalExpr e));
   MOCK_METHOD1(VisitExists, TestLResult (IteratedLogicalExpr e));
+  MOCK_METHOD1(VisitForAll, TestLResult (IteratedLogicalExpr e));
   MOCK_METHOD1(VisitAllDiff, TestLResult (PairwiseExpr e));
   MOCK_METHOD1(VisitNotAllDiff, TestLResult (PairwiseExpr e));
 };
@@ -162,10 +162,20 @@ class ExprVisitorTest : public ::testing::Test {
   mp::ExprFactory factory_;
   ::testing::StrictMock<MockVisitor> visitor_;
   mp::Variable var_;
+  mp::LogicalConstant false_;
 
   ExprVisitorTest() {
     ::testing::DefaultValue<TestResult>::Set(TestResult(Dummy()));
+    ::testing::DefaultValue<TestLResult>::Set(TestLResult(Dummy()));
     var_ = factory_.MakeVariable(0);
+    false_ = factory_.MakeLogicalConstant(false);
+  }
+
+  // Makes a test count expression.
+  mp::CountExpr MakeCount() {
+    auto builder = factory_.BeginCount(1);
+    builder.AddArg(false_);
+    return factory_.EndCount(builder);
   }
 };
 
@@ -237,7 +247,7 @@ TEST_BINARY(ROUND, Round)
 TEST_BINARY(TRUNC, Trunc)
 
 TEST_F(ExprVisitorTest, VisitIf) {
-  auto e = factory_.MakeIf(factory_.MakeLogicalConstant(true), var_, var_);
+  auto e = factory_.MakeIf(false_, var_, var_);
   EXPECT_CALL(visitor_, VisitIf(e));
   mp::NumericExpr base = e;
   visitor_.Visit(base);
@@ -278,15 +288,102 @@ TEST_ITERATED(SUM, Sum)
 TEST_ITERATED(NUMBEROF, NumberOf)
 
 TEST_F(ExprVisitorTest, VisitCount) {
-  auto builder = factory_.BeginCount(1);
-  builder.AddArg(factory_.MakeLogicalConstant(true));
-  auto e = factory_.EndCount(builder);
+  auto e = MakeCount();
   EXPECT_CALL(visitor_, VisitCount(e));
   mp::NumericExpr base = e;
   visitor_.Visit(base);
 }
 
-// TODO: test logical expressions
+TEST_F(ExprVisitorTest, VisitLogicalConstant) {
+  auto e = factory_.MakeLogicalConstant(true);
+  EXPECT_CALL(visitor_, VisitLogicalConstant(e));
+  mp::LogicalExpr base = e;
+  visitor_.Visit(base);
+}
+
+TEST_F(ExprVisitorTest, VisitNot) {
+  auto e = factory_.MakeNot(false_);
+  EXPECT_CALL(visitor_, VisitNot(e));
+  mp::LogicalExpr base = e;
+  visitor_.Visit(base);
+}
+
+#define TEST_BINARY_LOGICAL(KIND, name) \
+  TEST_F(ExprVisitorTest, Visit##name) { \
+    auto e = factory_.MakeBinaryLogical(mp::expr::KIND, false_, false_); \
+    EXPECT_CALL(visitor_, Visit##name(e)); \
+    mp::LogicalExpr base = e; \
+    visitor_.Visit(base); \
+  }
+
+TEST_BINARY_LOGICAL(OR, Or)
+TEST_BINARY_LOGICAL(AND, And)
+TEST_BINARY_LOGICAL(IFF, Iff)
+
+#define TEST_RELATIONAL(name) \
+  TEST_F(ExprVisitorTest, Visit##name) { \
+    auto e = factory_.MakeRelational(mp::expr::name, var_, var_); \
+    EXPECT_CALL(visitor_, Visit##name(e)); \
+    mp::LogicalExpr base = e; \
+    visitor_.Visit(base); \
+  }
+
+TEST_RELATIONAL(LT)
+TEST_RELATIONAL(LE)
+TEST_RELATIONAL(EQ)
+TEST_RELATIONAL(GE)
+TEST_RELATIONAL(GT)
+TEST_RELATIONAL(NE)
+
+#define TEST_LOGICAL_COUNT(KIND, name) \
+  TEST_F(ExprVisitorTest, Visit##name) { \
+    auto e = factory_.MakeLogicalCount(mp::expr::KIND, var_, MakeCount()); \
+    EXPECT_CALL(visitor_, Visit##name(e)); \
+    mp::LogicalExpr base = e; \
+    visitor_.Visit(base); \
+  }
+
+TEST_LOGICAL_COUNT(ATLEAST, AtLeast)
+TEST_LOGICAL_COUNT(ATMOST, AtMost)
+TEST_LOGICAL_COUNT(EXACTLY, Exactly)
+TEST_LOGICAL_COUNT(NOT_ATLEAST, NotAtLeast)
+TEST_LOGICAL_COUNT(NOT_ATMOST, NotAtMost)
+TEST_LOGICAL_COUNT(NOT_EXACTLY, NotExactly)
+
+TEST_F(ExprVisitorTest, VisitImplication) {
+  auto e = factory_.MakeImplication(false_, false_, false_);
+  EXPECT_CALL(visitor_, VisitImplication(e));
+  mp::LogicalExpr base = e;
+  visitor_.Visit(base);
+}
+
+#define TEST_ITERATED_LOGICAL(KIND, name) \
+  TEST_F(ExprVisitorTest, Visit##name) { \
+    auto builder = factory_.BeginIteratedLogical(mp::expr::KIND, 1); \
+    builder.AddArg(false_); \
+    auto e = factory_.EndIteratedLogical(builder); \
+    EXPECT_CALL(visitor_, Visit##name(e)); \
+    mp::LogicalExpr base = e; \
+    visitor_.Visit(base); \
+  }
+
+TEST_ITERATED_LOGICAL(EXISTS, Exists)
+TEST_ITERATED_LOGICAL(FORALL, ForAll)
+
+#define TEST_PAIRWISE(KIND, name) \
+  TEST_F(ExprVisitorTest, Visit##name) { \
+    auto builder = factory_.BeginPairwise(mp::expr::KIND, 1); \
+    builder.AddArg(var_); \
+    auto e = factory_.EndPairwise(builder); \
+    EXPECT_CALL(visitor_, Visit##name(e)); \
+    mp::LogicalExpr base = e; \
+    visitor_.Visit(base); \
+  }
+
+TEST_PAIRWISE(ALLDIFF, AllDiff)
+TEST_PAIRWISE(NOT_ALLDIFF, NotAllDiff)
+
+// TODO: test propagation to more general handlers
 
 /*
 struct TestVisitor : ExprVisitor<TestVisitor, TestResult, TestLResult> {

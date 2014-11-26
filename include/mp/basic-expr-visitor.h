@@ -557,10 +557,10 @@ LResult BasicExprVisitor<Impl, Result, LResult, ET>::Visit(LogicalExpr e) {
     return MP_DISPATCH(VisitNotExactly(ET::template Cast<LogicalCountExpr>(e)));
   case expr::IMPLICATION:
     return MP_DISPATCH(VisitImplication(ET::template Cast<ImplicationExpr>(e)));
-  case expr::FORALL:
-    return MP_DISPATCH(VisitForAll(ET::template Cast<IteratedLogicalExpr>(e)));
   case expr::EXISTS:
     return MP_DISPATCH(VisitExists(ET::template Cast<IteratedLogicalExpr>(e)));
+  case expr::FORALL:
+    return MP_DISPATCH(VisitForAll(ET::template Cast<IteratedLogicalExpr>(e)));
   case expr::ALLDIFF:
     return MP_DISPATCH(VisitAllDiff(ET::template Cast<PairwiseExpr>(e)));
   case expr::NOT_ALLDIFF:
