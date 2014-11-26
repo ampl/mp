@@ -31,11 +31,9 @@
 #include "mp/common.h"
 #include "mp/format.h"
 
-#ifndef MP_ASSERT
-# define MP_ASSERT(condition, message) assert((condition) && message)
-#endif
-
 namespace mp {
+
+class Expr;
 
 template <typename Alloc>
 class BasicExprFactory;

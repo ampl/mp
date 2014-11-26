@@ -61,9 +61,6 @@ using asl::LinearTerm;
 using asl::LinearExpr;
 
 using mp::Error;
-using mp::UnsupportedExprError;
-using mp::InvalidNumericExprError;
-using mp::InvalidLogicalExprError;
 using mp::MakeArrayRef;
 namespace ex = mp::expr;
 namespace func = mp::func;

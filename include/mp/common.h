@@ -1,5 +1,5 @@
 /*
- Base types and functions related to an optimization problem
+ Common definitions
 
  Copyright (C) 2014 AMPL Optimization Inc
 
@@ -33,9 +33,11 @@
 #define MP_UNUSED2(x, y) MP_UNUSED(x); MP_UNUSED(y)
 #define MP_UNUSED3(x, y, z) MP_UNUSED2(x, y); MP_UNUSED(z)
 
-namespace mp {
+#ifndef MP_ASSERT
+# define MP_ASSERT(condition, message) assert((condition) && message)
+#endif
 
-class Expr;
+namespace mp {
 
 namespace expr {
 
@@ -194,8 +196,6 @@ inline const OpCodeInfo &GetOpCodeInfo(int opcode) {
 int opcode(expr::Kind kind);
 const char *str(expr::Kind kind);
 }  // namespace expr
-
-class Expr;
 
 namespace internal {
 

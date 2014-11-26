@@ -23,26 +23,14 @@
 #include <stdexcept>
 #include "gtest-extra.h"
 #include "mock-allocator.h"
+#include "test-assert.h"
+#include "mp/expr.h"
 
 using ::testing::_;
 using ::testing::Return;
 
-class AssertionFailure : public std::logic_error {
- public:
-  explicit AssertionFailure(const char *message) : std::logic_error(message) {}
-};
-
-#define MP_ASSERT(condition, message) \
-  if (!(condition)) throw AssertionFailure(message);
-
-#include "mp/expr.h"
-
 using mp::ExprFactory;
 namespace expr = mp::expr;
-
-// Expects an assertion failure.
-#define EXPECT_ASSERT(stmt, message) \
-  EXPECT_THROW_MSG(stmt, AssertionFailure, message)
 
 TEST(ExprTest, Expr) {
   mp::Expr e;

@@ -21,6 +21,7 @@
  */
 
 #include "gmock/gmock.h"
+#include "test-assert.h"
 #include "mp/expr-visitor.h"
 
 using ::testing::StrictMock;
@@ -476,6 +477,13 @@ TEST_ITERATED_LOGICAL(FORALL, ForAll)
 
 TEST_PAIRWISE(ALLDIFF, AllDiff)
 TEST_PAIRWISE(NOT_ALLDIFF, NotAllDiff)
+
+TEST_F(ExprVisitorTest, InvalidNumericExpr) {
+  // Corrupt expression kind and try to visit it.
+  auto e = factory_.MakeNumericConstant(42);
+  **reinterpret_cast<mp::expr::Kind**>(&e) = mp::expr::UNKNOWN;
+  EXPECT_ASSERT(visitor_.Visit(e), "invalid numeric expression");
+}
 
 // TODO: test handling of invalid expressions
 

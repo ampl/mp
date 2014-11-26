@@ -40,24 +40,6 @@ class UnsupportedExprError : public UnsupportedError {
   }
 };
 
-// An exception that is thrown when an invalid numeric expression
-// is encountered.
-class InvalidNumericExprError : public Error {
- public:
-  template <typename NumericExpr>
-  explicit InvalidNumericExprError(NumericExpr e) :
-    Error("invalid numeric expression: {}", e.kind()) {}
-};
-
-// An exception that is thrown when an invalid logical or constraint
-// expression is encountered.
-class InvalidLogicalExprError : public Error {
- public:
-  template <typename LogicalExpr>
-  explicit InvalidLogicalExprError(LogicalExpr e) :
-    Error("invalid logical expression: {}", e.kind()) {}
-};
-
 // A basic expression visitor that can be used with different expression
 // hierarchies described by ExprTypes.
 //
@@ -98,14 +80,6 @@ class BasicExprVisitor {
 
   LResult VisitUnhandledLogicalExpr(LogicalExpr e) {
     throw UnsupportedExprError::CreateFromExprString(str(e.kind()));
-  }
-
-  Result VisitInvalidNumericExpr(NumericExpr e) {
-    throw InvalidNumericExprError(e);
-  }
-
-  LResult VisitInvalidLogicalExpr(LogicalExpr e) {
-    throw InvalidLogicalExprError(e);
   }
 
   Result VisitNumericConstant(NumericConstant c) {
@@ -303,7 +277,7 @@ class BasicExprVisitor {
     return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
-  Result VisitSymbolicNumberOf(SymbolicNumberOfExpr e) {
+  Result VisitNumberOfSym(SymbolicNumberOfExpr e) {
     return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
@@ -420,6 +394,9 @@ template <typename Impl, typename Result, typename LResult, typename ET>
 Result BasicExprVisitor<Impl, Result, LResult, ET>::Visit(NumericExpr e) {
   // All expressions except OPNUMBEROFs and OPIFSYM are supported.
   switch (e.kind()) {
+  default:
+    MP_ASSERT(false, "invalid numeric expression");
+    // Fall through.
   case expr::CONSTANT:
     return MP_DISPATCH(VisitNumericConstant(
                          ET::template Cast<NumericConstant>(e)));
@@ -514,17 +491,20 @@ Result BasicExprVisitor<Impl, Result, LResult, ET>::Visit(NumericExpr e) {
     return MP_DISPATCH(VisitSum(ET::template Cast<SumExpr>(e)));
   case expr::NUMBEROF:
     return MP_DISPATCH(VisitNumberOf(ET::template Cast<NumberOfExpr>(e)));
+  case expr::NUMBEROF_SYM:
+    return MP_DISPATCH(VisitNumberOfSym(
+                         ET::template Cast<SymbolicNumberOfExpr>(e)));
   case expr::COUNT:
     return MP_DISPATCH(VisitCount(ET::template Cast<CountExpr>(e)));
-  default:
-    // Normally this branch shouldn't be executed.
-    return MP_DISPATCH(VisitInvalidNumericExpr(e));
   }
 }
 
 template <typename Impl, typename Result, typename LResult, typename ET>
 LResult BasicExprVisitor<Impl, Result, LResult, ET>::Visit(LogicalExpr e) {
   switch (e.kind()) {
+  default:
+    MP_ASSERT(false, "invalid logical expression");
+    // Fall through.
   case expr::CONSTANT:
     return MP_DISPATCH(VisitLogicalConstant(
                          ET::template Cast<LogicalConstant>(e)));
@@ -570,9 +550,6 @@ LResult BasicExprVisitor<Impl, Result, LResult, ET>::Visit(LogicalExpr e) {
     return MP_DISPATCH(VisitAllDiff(ET::template Cast<PairwiseExpr>(e)));
   case expr::NOT_ALLDIFF:
     return MP_DISPATCH(VisitNotAllDiff(ET::template Cast<PairwiseExpr>(e)));
-  default:
-    // Normally this branch shouldn't be executed.
-    return MP_DISPATCH(VisitInvalidLogicalExpr(e));
   }
 }
 }  // namespace mp
