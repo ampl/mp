@@ -23,6 +23,8 @@
 #include "gmock/gmock.h"
 #include "mp/expr-visitor.h"
 
+using ::testing::StrictMock;
+
 // IsSame<T, U>::VALUE is true iff T and U are the same type.
 template <typename T, typename U>
 struct IsSame {
@@ -160,7 +162,7 @@ struct MockVisitor : mp::ExprVisitor<MockVisitor, TestResult, TestLResult> {
 class ExprVisitorTest : public ::testing::Test {
  protected:
   mp::ExprFactory factory_;
-  ::testing::StrictMock<MockVisitor> visitor_;
+  StrictMock<MockVisitor> visitor_;
   mp::Variable var_;
   mp::LogicalConstant false_;
 
@@ -176,6 +178,13 @@ class ExprVisitorTest : public ::testing::Test {
     auto builder = factory_.BeginCount(1);
     builder.AddArg(false_);
     return factory_.EndCount(builder);
+  }
+
+  // Makes a test iterated expression.
+  mp::IteratedExpr MakeIterated(mp::expr::Kind kind) {
+    auto builder = factory_.BeginIterated(kind, 1);
+    builder.AddArg(var_);
+    return factory_.EndIterated(builder);
   }
 };
 
@@ -205,7 +214,7 @@ struct MockUnaryVisitor :
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::NumericExpr base = e; \
     visitor_.Visit(base); \
-    ::testing::StrictMock<MockUnaryVisitor> unary_visitor; \
+    StrictMock<MockUnaryVisitor> unary_visitor; \
     EXPECT_CALL(unary_visitor, VisitUnary(e)); \
     unary_visitor.Visit(base); \
   }
@@ -232,7 +241,7 @@ TEST_UNARY(ACOSH, Acosh)
 TEST_UNARY(ATAN, Atan)
 TEST_UNARY(ATANH, Atanh)
 
-// A visitor for testing VisitUnary.
+// A visitor for testing VisitBinary.
 struct MockBinaryVisitor :
     mp::ExprVisitor<MockBinaryVisitor, TestResult, TestLResult> {
   MOCK_METHOD1(VisitBinary, TestResult (BinaryExpr e));
@@ -244,7 +253,7 @@ struct MockBinaryVisitor :
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::NumericExpr base = e; \
     visitor_.Visit(base); \
-    ::testing::StrictMock<MockBinaryVisitor> binary_visitor; \
+    StrictMock<MockBinaryVisitor> binary_visitor; \
     EXPECT_CALL(binary_visitor, VisitBinary(e)); \
     binary_visitor.Visit(base); \
   }
@@ -259,10 +268,27 @@ TEST_BINARY(MOD, Mod)
 TEST_BINARY(POW, Pow)
 TEST_BINARY(POW_CONST_BASE, PowConstBase)
 TEST_BINARY(POW_CONST_EXP, PowConstExp)
-TEST_BINARY(ATAN2, Atan2)
-TEST_BINARY(PRECISION, Precision)
-TEST_BINARY(ROUND, Round)
-TEST_BINARY(TRUNC, Trunc)
+
+// A visitor for testing VisitBinaryFunc.
+struct MockBinaryFuncVisitor :
+    mp::ExprVisitor<MockBinaryFuncVisitor, TestResult, TestLResult> {
+  MOCK_METHOD1(VisitBinaryFunc, TestResult (BinaryExpr e));
+};
+
+#define TEST_BINARY_FUNC(KIND, name) \
+  TEST_BINARY(KIND, name) \
+  TEST_F(ExprVisitorTest, Visit##name##Func) { \
+    auto e = factory_.MakeBinary(mp::expr::KIND, var_, var_); \
+    mp::NumericExpr base = e; \
+    StrictMock<MockBinaryFuncVisitor> binary_visitor; \
+    EXPECT_CALL(binary_visitor, VisitBinaryFunc(e)); \
+    binary_visitor.Visit(base); \
+  }
+
+TEST_BINARY_FUNC(ATAN2, Atan2)
+TEST_BINARY_FUNC(PRECISION, Precision)
+TEST_BINARY_FUNC(ROUND, Round)
+TEST_BINARY_FUNC(TRUNC, Trunc)
 
 TEST_F(ExprVisitorTest, VisitIf) {
   auto e = factory_.MakeIf(false_, var_, var_);
@@ -290,18 +316,32 @@ TEST_F(ExprVisitorTest, VisitCall) {
   visitor_.Visit(base);
 }
 
+// A visitor for testing VisitVarArg.
+struct MockVarArgVisitor :
+    mp::ExprVisitor<MockVarArgVisitor, TestResult, TestLResult> {
+  MOCK_METHOD1(VisitVarArg, TestResult (VarArgExpr e));
+};
+
 #define TEST_ITERATED(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
-    auto builder = factory_.BeginIterated(mp::expr::KIND, 1); \
-    builder.AddArg(var_); \
-    auto e = factory_.EndIterated(builder); \
+    auto e = MakeIterated(mp::expr::KIND); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::NumericExpr base = e; \
     visitor_.Visit(base); \
   }
 
-TEST_ITERATED(MIN, Min)
-TEST_ITERATED(MAX, Max)
+#define TEST_VARARG(KIND, name) \
+  TEST_ITERATED(KIND, name) \
+  TEST_F(ExprVisitorTest, VisitVarArg##name) { \
+    auto e = MakeIterated(mp::expr::KIND); \
+    StrictMock<MockVarArgVisitor> vararg_visitor; \
+    EXPECT_CALL(vararg_visitor, VisitVarArg(e)); \
+    mp::NumericExpr base = e; \
+    vararg_visitor.Visit(base); \
+  }
+
+TEST_VARARG(MIN, Min)
+TEST_VARARG(MAX, Max)
 TEST_ITERATED(SUM, Sum)
 TEST_ITERATED(NUMBEROF, NumberOf)
 
@@ -326,17 +366,32 @@ TEST_F(ExprVisitorTest, VisitNot) {
   visitor_.Visit(base);
 }
 
+// A visitor for testing VisitBinaryLogical.
+struct MockBinaryLogicalVisitor :
+    mp::ExprVisitor<MockBinaryLogicalVisitor, TestResult, TestLResult> {
+  MOCK_METHOD1(VisitBinaryLogical, TestLResult (BinaryLogicalExpr e));
+};
+
 #define TEST_BINARY_LOGICAL(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
     auto e = factory_.MakeBinaryLogical(mp::expr::KIND, false_, false_); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::LogicalExpr base = e; \
     visitor_.Visit(base); \
+    StrictMock<MockBinaryLogicalVisitor> binary_visitor; \
+    EXPECT_CALL(binary_visitor, VisitBinaryLogical(e)); \
+    binary_visitor.Visit(base); \
   }
 
 TEST_BINARY_LOGICAL(OR, Or)
 TEST_BINARY_LOGICAL(AND, And)
 TEST_BINARY_LOGICAL(IFF, Iff)
+
+// A visitor for testing VisitRelational.
+struct MockRelationalVisitor :
+    mp::ExprVisitor<MockRelationalVisitor, TestResult, TestLResult> {
+  MOCK_METHOD1(VisitRelational, TestLResult (RelationalExpr e));
+};
 
 #define TEST_RELATIONAL(name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
@@ -344,6 +399,9 @@ TEST_BINARY_LOGICAL(IFF, Iff)
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::LogicalExpr base = e; \
     visitor_.Visit(base); \
+    StrictMock<MockRelationalVisitor> rel_visitor; \
+    EXPECT_CALL(rel_visitor, VisitRelational(e)); \
+    rel_visitor.Visit(base); \
   }
 
 TEST_RELATIONAL(LT)
@@ -353,12 +411,21 @@ TEST_RELATIONAL(GE)
 TEST_RELATIONAL(GT)
 TEST_RELATIONAL(NE)
 
+// A visitor for testing VisitLogicalCount.
+struct MockLogicalCountVisitor :
+    mp::ExprVisitor<MockLogicalCountVisitor, TestResult, TestLResult> {
+  MOCK_METHOD1(VisitLogicalCount, TestLResult (LogicalCountExpr e));
+};
+
 #define TEST_LOGICAL_COUNT(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
     auto e = factory_.MakeLogicalCount(mp::expr::KIND, var_, MakeCount()); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::LogicalExpr base = e; \
     visitor_.Visit(base); \
+    StrictMock<MockLogicalCountVisitor> count_visitor; \
+    EXPECT_CALL(count_visitor, VisitLogicalCount(e)); \
+    count_visitor.Visit(base); \
   }
 
 TEST_LOGICAL_COUNT(ATLEAST, AtLeast)
@@ -375,6 +442,12 @@ TEST_F(ExprVisitorTest, VisitImplication) {
   visitor_.Visit(base);
 }
 
+// A visitor for testing VisitIteratedLogical.
+struct MockIteratedLogicalVisitor :
+    mp::ExprVisitor<MockIteratedLogicalVisitor, TestResult, TestLResult> {
+  MOCK_METHOD1(VisitIteratedLogical, TestLResult (IteratedLogicalExpr e));
+};
+
 #define TEST_ITERATED_LOGICAL(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
     auto builder = factory_.BeginIteratedLogical(mp::expr::KIND, 1); \
@@ -383,6 +456,9 @@ TEST_F(ExprVisitorTest, VisitImplication) {
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::LogicalExpr base = e; \
     visitor_.Visit(base); \
+    StrictMock<MockIteratedLogicalVisitor> iter_visitor; \
+    EXPECT_CALL(iter_visitor, VisitIteratedLogical(e)); \
+    iter_visitor.Visit(base); \
   }
 
 TEST_ITERATED_LOGICAL(EXISTS, Exists)
@@ -401,8 +477,7 @@ TEST_ITERATED_LOGICAL(FORALL, ForAll)
 TEST_PAIRWISE(ALLDIFF, AllDiff)
 TEST_PAIRWISE(NOT_ALLDIFF, NotAllDiff)
 
-// TODO: test VisitBinaryFunc, VisitVarArg, VisitBinaryLogical,
-//            VisitRelational, VisitLogicalCount, VisitIteratedLogical
+// TODO: test handling of invalid expressions
 
 /*
 struct TestVisitor : ExprVisitor<TestVisitor, TestResult, TestLResult> {
