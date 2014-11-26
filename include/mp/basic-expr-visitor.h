@@ -79,6 +79,7 @@ class BasicExprVisitor {
   typedef typename ExprTypes::SumExpr SumExpr;
   typedef typename ExprTypes::CountExpr CountExpr;
   typedef typename ExprTypes::NumberOfExpr NumberOfExpr;
+  typedef typename ExprTypes::SymbolicNumberOfExpr SymbolicNumberOfExpr;
   typedef typename ExprTypes::LogicalConstant LogicalConstant;
   typedef typename ExprTypes::NotExpr NotExpr;
   typedef typename ExprTypes::BinaryLogicalExpr BinaryLogicalExpr;
@@ -299,6 +300,10 @@ class BasicExprVisitor {
   }
 
   Result VisitNumberOf(NumberOfExpr e) {
+    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitSymbolicNumberOf(SymbolicNumberOfExpr e) {
     return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 

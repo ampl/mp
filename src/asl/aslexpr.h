@@ -648,6 +648,12 @@ MP_SPECIALIZE_IS(CountExpr, COUNT)
 typedef BasicIteratedExpr<NumericExpr, NumericExpr, 1> NumberOfExpr;
 MP_SPECIALIZE_IS(NumberOfExpr, NUMBEROF)
 
+// A symbolic numberof expression.
+// Example: numberof (if x then 'a' else 'b') in ('a', 'b', 'c'),
+// where x is a variable.
+typedef BasicIteratedExpr<NumericExpr, Expr> SymbolicNumberOfExpr;
+MP_SPECIALIZE_IS(SymbolicNumberOfExpr, NUMBEROF_SYM)
+
 // A logical constant.
 // Examples: 0, 1
 class LogicalConstant : public LogicalExpr {

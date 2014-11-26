@@ -95,7 +95,6 @@ enum Kind {
   LAST_BINARY = TRUNC,
 
   IF,
-  IFSYM,
   PLTERM,
   CALL,
 
@@ -167,8 +166,10 @@ enum Kind {
   LAST_PAIRWISE = NOT_ALLDIFF,
   LAST_LOGICAL = LAST_PAIRWISE,
 
+  // String expressions.
   STRING,
-  LAST_EXPR = STRING
+  IFSYM,
+  LAST_EXPR = IFSYM
 };
 
 // Maximum opcode.

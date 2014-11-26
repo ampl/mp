@@ -93,7 +93,6 @@ const ExprInfo info[] = {
   BINARY(TRUNC,          58, CALL,           "trunc"),
 
   EXPR(IF,     35, CONDITIONAL,  "if"),
-  EXPR(IFSYM,  65, CONDITIONAL,  "symbolic if"),
   EXPR(PLTERM, 64, CALL,         "piecewise-linear term"),
   EXPR(CALL,   79, CALL,         "function call"),
 
@@ -141,7 +140,8 @@ const ExprInfo info[] = {
   EXPR_(ALLDIFF,     FIRST_PAIRWISE, 74, CALL, "alldiff"),
   EXPR_(NOT_ALLDIFF, FIRST_PAIRWISE, 75, CALL, "!alldiff"),
 
-  EXPR(STRING, 81, PRIMARY, "string")
+  EXPR(STRING, 81, PRIMARY,     "string"),
+  EXPR(IFSYM,  65, CONDITIONAL, "symbolic if")
 };
 
 struct OpCodeLess {

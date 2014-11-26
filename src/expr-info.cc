@@ -128,7 +128,6 @@ const mp::internal::ExprInfo mp::internal::ExprInfo::INFO[] = {
   {57, prec::CALL, "round"},
   {58, prec::CALL, "trunc"},
   {35, prec::CONDITIONAL, "if"},
-  {65, prec::CONDITIONAL, "symbolic if"},
   {64, prec::CALL, "piecewise-linear term"},
   {79, prec::CALL, "function call"},
   {11, prec::CALL, "min"},
@@ -159,5 +158,6 @@ const mp::internal::ExprInfo mp::internal::ExprInfo::INFO[] = {
   {70, prec::CALL, "forall"},
   {74, prec::CALL, "alldiff"},
   {75, prec::CALL, "!alldiff"},
-  {81, prec::PRIMARY, "string"}
+  {81, prec::PRIMARY, "string"},
+  {65, prec::CONDITIONAL, "symbolic if"}
 };

@@ -43,6 +43,7 @@ struct ExprTypes {
   typedef mp::asl::VarArgExpr VarArgExpr;
   typedef mp::asl::SumExpr SumExpr;
   typedef mp::asl::NumberOfExpr NumberOfExpr;
+  typedef mp::asl::SymbolicNumberOfExpr SymbolicNumberOfExpr;
   typedef mp::asl::CountExpr CountExpr;
   typedef mp::asl::LogicalConstant LogicalConstant;
   typedef mp::asl::NotExpr NotExpr;

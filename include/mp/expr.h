@@ -446,6 +446,12 @@ class BasicIteratedExpr : public Base {
 typedef BasicIteratedExpr<> IteratedExpr;
 MP_SPECIALIZE_IS_RANGE(IteratedExpr, ITERATED)
 
+// A symbolic numberof expression.
+// Example: numberof (if x then 'a' else 'b') in ('a', 'b', 'c'),
+// where x is a variable.
+typedef BasicIteratedExpr<NumericExpr, Expr> SymbolicNumberOfExpr;
+MP_SPECIALIZE_IS(SymbolicNumberOfExpr, NUMBEROF_SYM)
+
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
 typedef BasicIteratedExpr<NumericExpr, LogicalExpr> CountExpr;
