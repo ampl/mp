@@ -155,8 +155,8 @@ const mp::internal::ExprInfo mp::internal::ExprInfo::INFO[] = {
   {68, prec::CALL, "!atmost"},
   {69, prec::CALL, "!exactly"},
   {72, prec::IMPLICATION, "==>"},
-  {70, prec::CALL, "forall"},
   {71, prec::CALL, "exists"},
+  {70, prec::CALL, "forall"},
   {74, prec::CALL, "alldiff"},
   {75, prec::CALL, "!alldiff"},
   {81, prec::PRIMARY, "string"}

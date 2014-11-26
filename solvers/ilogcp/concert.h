@@ -273,7 +273,7 @@ class NLToConcertConverter : public Converter {
                       e.lhs()).value(), Visit(e.rhs()));
   }
 
-  IloExpr VisitPiecewiseLinear(asl::PiecewiseLinearExpr e);
+  IloExpr VisitPLTerm(asl::PiecewiseLinearExpr e);
 
   IloExpr VisitCall(asl::CallExpr e);
 

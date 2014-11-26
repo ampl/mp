@@ -122,7 +122,7 @@ class ExprWriter : public mp::asl::ExprVisitor<ExprWriter, void, void> {
   void VisitSum(asl::SumExpr e);
   void VisitCount(asl::CountExpr e) { WriteFunc(e); }
   void VisitNumberOf(asl::NumberOfExpr e);
-  void VisitPiecewiseLinear(asl::PiecewiseLinearExpr e);
+  void VisitPLTerm(asl::PiecewiseLinearExpr e);
   void VisitCall(asl::CallExpr e);
   void VisitNumericConstant(NumericConstant c) { writer_ << c.value(); }
   void VisitVariable(asl::Variable v) { writer_ << 'x' << (v.index() + 1); }
@@ -252,7 +252,7 @@ void ExprWriter::VisitNumberOf(asl::NumberOfExpr e) {
   WriteArgs(i, e.end());
 }
 
-void ExprWriter::VisitPiecewiseLinear(asl::PiecewiseLinearExpr e) {
+void ExprWriter::VisitPLTerm(asl::PiecewiseLinearExpr e) {
   writer_ << "<<" << e.breakpoint(0);
   for (int i = 1, n = e.num_breakpoints(); i < n; ++i)
     writer_ << ", " << e.breakpoint(i);
@@ -342,7 +342,7 @@ class ExprEqual : public mp::asl::ExprVisitor<ExprEqual, bool, bool> {
            Equal(if_expr.false_expr(), e.false_expr());
   }
 
-  bool VisitPiecewiseLinear(asl::PiecewiseLinearExpr e) {
+  bool VisitPLTerm(asl::PiecewiseLinearExpr e) {
     asl::PiecewiseLinearExpr pl = Cast<asl::PiecewiseLinearExpr>(expr_);
     int num_breakpoints = pl.num_breakpoints();
     if (num_breakpoints != e.num_breakpoints())
@@ -443,7 +443,7 @@ class ExprHasher : public mp::asl::ExprVisitor<ExprHasher, size_t, size_t> {
     return HashCombine(HashCombine(hash, e.true_expr()), e.false_expr());
   }
 
-  size_t VisitPiecewiseLinear(asl::PiecewiseLinearExpr e) {
+  size_t VisitPLTerm(asl::PiecewiseLinearExpr e) {
     size_t hash = Hash(e);
     int num_breakpoints = e.num_breakpoints();
     for (int i = 0; i < num_breakpoints; ++i) {

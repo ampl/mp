@@ -142,7 +142,7 @@ IloExpr NLToConcertConverter::VisitNumberOf(NumberOfExpr e) {
   return sum;
 }
 
-IloExpr NLToConcertConverter::VisitPiecewiseLinear(PiecewiseLinearExpr e) {
+IloExpr NLToConcertConverter::VisitPLTerm(PiecewiseLinearExpr e) {
   IloNumArray slopes(env_), breakpoints(env_);
   int num_breakpoints = e.num_breakpoints();
   for (int i = 0; i < num_breakpoints; ++i) {

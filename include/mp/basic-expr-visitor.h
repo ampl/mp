@@ -274,7 +274,7 @@ class BasicExprVisitor {
     return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
-  Result VisitPiecewiseLinear(PLTerm e) {
+  Result VisitPLTerm(PLTerm e) {
     return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
@@ -394,11 +394,11 @@ class BasicExprVisitor {
     return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitForAll(IteratedLogicalExpr e) {
+  LResult VisitExists(IteratedLogicalExpr e) {
     return MP_DISPATCH(VisitIteratedLogical(e));
   }
 
-  LResult VisitExists(IteratedLogicalExpr e) {
+  LResult VisitForAll(IteratedLogicalExpr e) {
     return MP_DISPATCH(VisitIteratedLogical(e));
   }
 
@@ -498,7 +498,7 @@ Result BasicExprVisitor<Impl, Result, LResult, ET>::Visit(NumericExpr e) {
   case expr::IF:
     return MP_DISPATCH(VisitIf(ET::template Cast<IfExpr>(e)));
   case expr::PLTERM:
-    return MP_DISPATCH(VisitPiecewiseLinear(ET::template Cast<PLTerm>(e)));
+    return MP_DISPATCH(VisitPLTerm(ET::template Cast<PLTerm>(e)));
   case expr::CALL:
     return MP_DISPATCH(VisitCall(ET::template Cast<CallExpr>(e)));
   case expr::MIN:
