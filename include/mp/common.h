@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef MP_PROBLEM_BASE_H_
-#define MP_PROBLEM_BASE_H_
+#ifndef MP_COMMON_H_
+#define MP_COMMON_H_
 
 #include <cassert>
 #include <cstddef>  // for std::size_t
@@ -444,4 +444,4 @@ struct ProblemInfo {
 };
 }  // namespace mp
 
-#endif  // MP_PROBLEM_BASE_H_
+#endif  // MP_COMMON_H_
