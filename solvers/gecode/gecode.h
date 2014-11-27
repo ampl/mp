@@ -83,10 +83,8 @@ class NLToGecodeConverter :
 
   static int CastToInt(double value) {
     int int_value = static_cast<int>(value);
-    if (int_value != value) {
-      throw UnsupportedError(
-          fmt::format("value {} can't be represented as int", value));
-    }
+    if (int_value != value)
+      throw Error("value {} can't be represented as int", value);
     return int_value;
   }
 
@@ -98,7 +96,7 @@ class NLToGecodeConverter :
 
   LinExpr Convert(asl::VarArgExpr e, VarArgFunc f);
 
-  static void RequireZeroRHS(asl::BinaryExpr e, const std::string &func_name);
+  static void RequireZeroRHS(asl::BinaryExpr e, fmt::StringRef func_name);
 
   template<typename Term>
   LinExpr ConvertExpr(asl::LinearExpr<Term> linear, asl::NumericExpr nonlinear);

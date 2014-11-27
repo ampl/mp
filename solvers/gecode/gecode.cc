@@ -284,11 +284,9 @@ LinExpr NLToGecodeConverter::Convert(VarArgExpr e, VarArgFunc f) {
 }
 
 void NLToGecodeConverter::RequireZeroRHS(
-    BinaryExpr e, const std::string &func_name) {
-  if (!IsZero(e.rhs())) {
-    throw UnsupportedExprError::CreateFromExprString(
-        func_name + " with nonzero second parameter");
-  }
+    BinaryExpr e, fmt::StringRef func_name) {
+  if (!IsZero(e.rhs()))
+    throw MakeUnsupportedError("{} with nonzero second parameter", func_name);
 }
 
 template <typename Term>

@@ -135,10 +135,8 @@ namespace mp {
 
 jint NLToJaCoPConverter::CastToInt(double value) const {
   jint int_value = static_cast<jint>(value);
-  if (int_value != value) {
-    throw UnsupportedError(
-        fmt::format("value {} can't be represented as int", value));
-  }
+  if (int_value != value)
+    throw Error("value {} can't be represented as int", value);
   if (int_value < min_int_ || int_value > max_int_)
     throw Error("value {} is out of bounds", value);
   return int_value;
@@ -164,10 +162,8 @@ jobject NLToJaCoPConverter::Convert(
 
 void NLToJaCoPConverter::RequireZeroRHS(
     BinaryExpr e, const std::string &func_name) {
-  if (!IsZero(e.rhs())) {
-    throw UnsupportedExprError::CreateFromExprString(
-        func_name + " with nonzero second parameter");
-  }
+  if (!IsZero(e.rhs()))
+    throw MakeUnsupportedError("{} with nonzero second parameter", func_name);
 }
 
 template <typename Term>
@@ -356,10 +352,8 @@ jobject NLToJaCoPConverter::VisitCount(CountExpr e) {
 jobject NLToJaCoPConverter::VisitNumberOf(NumberOfExpr e) {
   // JaCoP only supports count constraints with constant value.
   NumericConstant num = Cast<NumericConstant>(e[0]);
-  if (!num) {
-    throw UnsupportedExprError::CreateFromExprString(
-        "numberof with variable value");
-  }
+  if (!num)
+    throw MakeUnsupportedError("numberof with variable value");
   jobject result_var = CreateVar();
   int num_args = e.num_args();
   jobjectArray args = CreateVarArray(num_args - 1);

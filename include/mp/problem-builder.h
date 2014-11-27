@@ -58,7 +58,7 @@ class ProblemBuilder {
   SuffixSet &suffixes(int kind) { return suffixes_.get(kind); }
 
   static void ReportUnhandledConstruct(fmt::StringRef name) {
-    throw UnsupportedError(fmt::format("unsupported: {}", name));
+    throw MakeUnsupportedError(name);
   }
 
   void SetInfo(const ProblemInfo &) {}

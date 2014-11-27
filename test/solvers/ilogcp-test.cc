@@ -213,7 +213,7 @@ TEST_F(FunctionTest, NestedInRelationNotSupported) {
       return pb.MakeBinary(mp::expr::ADD, pb.EndCall(args), one);
     }
   } factory;
-  EXPECT_THROW_MSG(Eval(factory), mp::UnsupportedExprError,
+  EXPECT_THROW_MSG(Eval(factory), mp::UnsupportedError,
       "unsupported: nested 'in_relation'");
 }
 
@@ -513,7 +513,7 @@ TEST_F(IlogCPTest, OptimizerOption) {
   s.Solve(p, sh);
   EXPECT_EQ(0, p.solve_code());
   s.SetStrOption("optimizer", "cplex");
-  EXPECT_THROW(s.Solve(p, sh), mp::UnsupportedExprError);
+  EXPECT_THROW(s.Solve(p, sh), mp::UnsupportedError);
   s.SetStrOption("optimizer", "auto");
   s.Solve(p, sh);
   EXPECT_EQ(0, p.solve_code());

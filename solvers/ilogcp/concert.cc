@@ -55,13 +55,13 @@ NumericExpr GetArg(CallExpr e, int index) {
   return result;
 }
 
-void RequireNonzeroConstRHS(BinaryExpr e, const std::string &func_name) {
+void RequireNonzeroConstRHS(BinaryExpr e, fmt::StringRef func_name) {
   if (!IsZero(e.rhs())) {
-    throw mp::UnsupportedExprError::CreateFromExprString(
-        func_name + " with nonzero second parameter");
+    throw mp::MakeUnsupportedError(
+          "{} with nonzero second parameter", func_name);
   }
 }
-}
+}  // namespace
 
 namespace mp {
 
@@ -187,9 +187,8 @@ IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
       elements[i] = Cast<NumericConstant>(e[i]).value();
     return IloElement(elements, index_var);
   } else if (std::strcmp(function_name, "in_relation") == 0)
-    throw UnsupportedExprError::CreateFromExprString("nested 'in_relation'");
-  throw UnsupportedError(
-      fmt::format("unsupported function: {}", function_name));
+    throw MakeUnsupportedError("nested 'in_relation'");
+  throw UnsupportedError("unsupported function: {}", function_name);
 }
 
 IloConstraint NLToConcertConverter::VisitExists(IteratedLogicalExpr e) {

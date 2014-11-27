@@ -29,10 +29,16 @@ namespace mp {
 
 // A general error.
 class Error : public fmt::internal::RuntimeError {
- private:
-  void init(fmt::StringRef format_str, const fmt::ArgList &args) {
+ protected:
+  Error() {}
+
+  void SetMessage(fmt::StringRef message) {
     std::runtime_error &base = *this;
-    base = std::runtime_error(fmt::format(format_str, args));
+    base = std::runtime_error(message.c_str());
+  }
+
+  void init(fmt::StringRef format_str, fmt::ArgList args) {
+    SetMessage(fmt::format(format_str, args));
   }
 
  public:
@@ -43,8 +49,16 @@ class Error : public fmt::internal::RuntimeError {
 // The operation is not supported by the object.
 class UnsupportedError : public Error {
  public:
-  explicit UnsupportedError(fmt::StringRef message) : Error(message) {}
+  UnsupportedError(fmt::StringRef message) { SetMessage(message); }
+  FMT_VARIADIC_(char, , UnsupportedError, init, fmt::StringRef)
 };
+
+// Makes UnsupportedError with prefix "unsupported: ".
+inline UnsupportedError MakeUnsupportedError(
+    fmt::StringRef format_str, fmt::ArgList args) {
+  return UnsupportedError("unsupported:" + fmt::format(format_str, args));
+}
+FMT_VARIADIC(UnsupportedError, MakeUnsupportedError, fmt::StringRef)
 }  // namespace mp
 
 #endif  // MP_ERROR_H_

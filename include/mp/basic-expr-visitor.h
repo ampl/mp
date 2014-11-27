@@ -35,11 +35,6 @@ namespace mp {
 // http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
 template <typename Impl, typename Result, typename LResult, typename ExprTypes>
 class BasicExprVisitor {
- private:
-  UnsupportedError MakeUnsupportedError(expr::Kind kind) {
-    return UnsupportedError(fmt::format("unsupported: {}", str(kind)));
-  }
-
  public:
   typedef typename ExprTypes::NumericExpr NumericExpr;
   typedef typename ExprTypes::LogicalExpr LogicalExpr;
@@ -68,11 +63,11 @@ class BasicExprVisitor {
   LResult Visit(LogicalExpr e);
 
   Result VisitUnhandledNumericExpr(NumericExpr e) {
-    throw MakeUnsupportedError(e.kind());
+    throw MakeUnsupportedError(str(e.kind()));
   }
 
   LResult VisitUnhandledLogicalExpr(LogicalExpr e) {
-    throw MakeUnsupportedError(e.kind());
+    throw MakeUnsupportedError(str(e.kind()));
   }
 
   Result VisitNumericConstant(NumericConstant c) {
