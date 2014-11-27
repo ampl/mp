@@ -49,14 +49,13 @@ class Error : public fmt::internal::RuntimeError {
 // The operation is not supported by the object.
 class UnsupportedError : public Error {
  public:
-  UnsupportedError(fmt::StringRef message) { SetMessage(message); }
   FMT_VARIADIC_(char, , UnsupportedError, init, fmt::StringRef)
 };
 
 // Makes UnsupportedError with prefix "unsupported: ".
 inline UnsupportedError MakeUnsupportedError(
     fmt::StringRef format_str, fmt::ArgList args) {
-  return UnsupportedError("unsupported:" + fmt::format(format_str, args));
+  return UnsupportedError("unsupported: {}", fmt::format(format_str, args));
 }
 FMT_VARIADIC(UnsupportedError, MakeUnsupportedError, fmt::StringRef)
 }  // namespace mp
