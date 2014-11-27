@@ -71,6 +71,7 @@ TEST(ExprTypesTest, Typedefs) {
 // to make sure they are not called accidentally.
 struct Dummy {};
 
+// Use different classes for Result and LResult to make sure that it works.
 struct TestResult {
   TestResult(Dummy) {}
 };
@@ -78,7 +79,9 @@ struct TestLResult {
   TestLResult(Dummy) {}
 };
 
-// Use different classes for Result and LResult to make sure that it works.
+// An expression visitor that doesn't handle anything.
+struct NullVisitor : mp::ExprVisitor<NullVisitor, TestResult, TestLResult> {};
+
 struct MockVisitor : mp::ExprVisitor<MockVisitor, TestResult, TestLResult> {
   MOCK_METHOD1(VisitNumericConstant, TestResult (NumericConstant e));
   MOCK_METHOD1(VisitVariable, TestResult (Variable e));
@@ -190,11 +193,17 @@ class ExprVisitorTest : public ::testing::Test {
   }
 };
 
+// Tests that UnsupportedError is thrown if expr is unhandled.
+#define TEST_UNHANDLED(expr) \
+  EXPECT_THROW_MSG(NullVisitor().Visit(expr), mp::UnsupportedError, \
+                   fmt::format("unsupported: {}", str(expr.kind())));
+
 TEST_F(ExprVisitorTest, VisitNumericConstant) {
   auto e = factory_.MakeNumericConstant(42);
   EXPECT_CALL(visitor_, VisitNumericConstant(e));
   mp::NumericExpr base = e;
   visitor_.Visit(base);
+  TEST_UNHANDLED(base);
 }
 
 TEST_F(ExprVisitorTest, VisitVariable) {
@@ -202,6 +211,7 @@ TEST_F(ExprVisitorTest, VisitVariable) {
   EXPECT_CALL(visitor_, VisitVariable(e));
   mp::NumericExpr base = e;
   visitor_.Visit(base);
+  TEST_UNHANDLED(base);
 }
 
 // A visitor for testing VisitUnary.
@@ -219,6 +229,7 @@ struct MockUnaryVisitor :
     StrictMock<MockUnaryVisitor> unary_visitor; \
     EXPECT_CALL(unary_visitor, VisitUnary(e)); \
     unary_visitor.Visit(base); \
+    TEST_UNHANDLED(base); \
   }
 
 TEST_UNARY(MINUS, Minus)
@@ -258,6 +269,7 @@ struct MockBinaryVisitor :
     StrictMock<MockBinaryVisitor> binary_visitor; \
     EXPECT_CALL(binary_visitor, VisitBinary(e)); \
     binary_visitor.Visit(base); \
+    TEST_UNHANDLED(base); \
   }
 
 TEST_BINARY(ADD, Add)
@@ -297,6 +309,7 @@ TEST_F(ExprVisitorTest, VisitIf) {
   EXPECT_CALL(visitor_, VisitIf(e));
   mp::NumericExpr base = e;
   visitor_.Visit(base);
+  TEST_UNHANDLED(base);
 }
 
 TEST_F(ExprVisitorTest, VisitPLTerm) {
@@ -308,6 +321,7 @@ TEST_F(ExprVisitorTest, VisitPLTerm) {
   EXPECT_CALL(visitor_, VisitPLTerm(e));
   mp::NumericExpr base = e;
   visitor_.Visit(base);
+  TEST_UNHANDLED(base);
 }
 
 TEST_F(ExprVisitorTest, VisitCall) {
@@ -316,6 +330,7 @@ TEST_F(ExprVisitorTest, VisitCall) {
   EXPECT_CALL(visitor_, VisitCall(e));
   mp::NumericExpr base = e;
   visitor_.Visit(base);
+  TEST_UNHANDLED(base);
 }
 
 // A visitor for testing VisitVarArg.
@@ -330,6 +345,7 @@ struct MockVarArgVisitor :
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::NumericExpr base = e; \
     visitor_.Visit(base); \
+    TEST_UNHANDLED(base); \
   }
 
 #define TEST_VARARG(KIND, name) \
@@ -352,6 +368,7 @@ TEST_F(ExprVisitorTest, VisitCount) {
   EXPECT_CALL(visitor_, VisitCount(e));
   mp::NumericExpr base = e;
   visitor_.Visit(base);
+  TEST_UNHANDLED(base);
 }
 
 TEST_F(ExprVisitorTest, VisitLogicalConstant) {
@@ -359,6 +376,7 @@ TEST_F(ExprVisitorTest, VisitLogicalConstant) {
   EXPECT_CALL(visitor_, VisitLogicalConstant(e));
   mp::LogicalExpr base = e;
   visitor_.Visit(base);
+  TEST_UNHANDLED(base);
 }
 
 TEST_F(ExprVisitorTest, VisitNot) {
@@ -366,6 +384,7 @@ TEST_F(ExprVisitorTest, VisitNot) {
   EXPECT_CALL(visitor_, VisitNot(e));
   mp::LogicalExpr base = e;
   visitor_.Visit(base);
+  TEST_UNHANDLED(base);
 }
 
 // A visitor for testing VisitBinaryLogical.
@@ -383,6 +402,7 @@ struct MockBinaryLogicalVisitor :
     StrictMock<MockBinaryLogicalVisitor> binary_visitor; \
     EXPECT_CALL(binary_visitor, VisitBinaryLogical(e)); \
     binary_visitor.Visit(base); \
+    TEST_UNHANDLED(base); \
   }
 
 TEST_BINARY_LOGICAL(OR, Or)
@@ -404,6 +424,7 @@ struct MockRelationalVisitor :
     StrictMock<MockRelationalVisitor> rel_visitor; \
     EXPECT_CALL(rel_visitor, VisitRelational(e)); \
     rel_visitor.Visit(base); \
+    TEST_UNHANDLED(base); \
   }
 
 TEST_RELATIONAL(LT)
@@ -428,6 +449,7 @@ struct MockLogicalCountVisitor :
     StrictMock<MockLogicalCountVisitor> count_visitor; \
     EXPECT_CALL(count_visitor, VisitLogicalCount(e)); \
     count_visitor.Visit(base); \
+    TEST_UNHANDLED(base); \
   }
 
 TEST_LOGICAL_COUNT(ATLEAST, AtLeast)
@@ -442,6 +464,7 @@ TEST_F(ExprVisitorTest, VisitImplication) {
   EXPECT_CALL(visitor_, VisitImplication(e));
   mp::LogicalExpr base = e;
   visitor_.Visit(base);
+  TEST_UNHANDLED(base);
 }
 
 // A visitor for testing VisitIteratedLogical.
@@ -461,6 +484,7 @@ struct MockIteratedLogicalVisitor :
     StrictMock<MockIteratedLogicalVisitor> iter_visitor; \
     EXPECT_CALL(iter_visitor, VisitIteratedLogical(e)); \
     iter_visitor.Visit(base); \
+    TEST_UNHANDLED(base); \
   }
 
 TEST_ITERATED_LOGICAL(EXISTS, Exists)
@@ -474,6 +498,7 @@ TEST_ITERATED_LOGICAL(FORALL, ForAll)
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::LogicalExpr base = e; \
     visitor_.Visit(base); \
+    TEST_UNHANDLED(base); \
   }
 
 TEST_PAIRWISE(ALLDIFF, AllDiff)

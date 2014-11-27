@@ -28,18 +28,6 @@
 
 namespace mp {
 
-// An exception that is thrown when an unsuported expression is encountered.
-class UnsupportedExprError : public UnsupportedError {
- private:
-  explicit UnsupportedExprError(fmt::StringRef message)
-    : UnsupportedError(message) {}
-
- public:
-  static UnsupportedExprError CreateFromExprString(fmt::StringRef expr) {
-    return UnsupportedExprError(std::string("unsupported: ") + expr.c_str());
-  }
-};
-
 // A basic expression visitor that can be used with different expression
 // hierarchies described by ExprTypes.
 //
@@ -47,6 +35,11 @@ class UnsupportedExprError : public UnsupportedError {
 // http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
 template <typename Impl, typename Result, typename LResult, typename ExprTypes>
 class BasicExprVisitor {
+ private:
+  UnsupportedError MakeUnsupportedError(expr::Kind kind) {
+    return UnsupportedError(fmt::format("unsupported: {}", str(kind)));
+  }
+
  public:
   typedef typename ExprTypes::NumericExpr NumericExpr;
   typedef typename ExprTypes::LogicalExpr LogicalExpr;
@@ -75,11 +68,11 @@ class BasicExprVisitor {
   LResult Visit(LogicalExpr e);
 
   Result VisitUnhandledNumericExpr(NumericExpr e) {
-    throw UnsupportedExprError::CreateFromExprString(str(e.kind()));
+    throw MakeUnsupportedError(e.kind());
   }
 
   LResult VisitUnhandledLogicalExpr(LogicalExpr e) {
-    throw UnsupportedExprError::CreateFromExprString(str(e.kind()));
+    throw MakeUnsupportedError(e.kind());
   }
 
   Result VisitNumericConstant(NumericConstant c) {
