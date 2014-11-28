@@ -1176,14 +1176,14 @@ TEST(NLTest, ReadConBounds) {
 
 TEST(NLTest, ReadLinearObjExpr) {
   EXPECT_READ("o0 2: 1.3 * v1 + 5 * v3;", "G0 2\n1 1.3\n3 5\n");
-  EXPECT_READ("o5 5: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4 + 1 * v5;",
-              "G5 5\n1 1\n2 1\n3 1\n4 1\n5 1\n");
+  EXPECT_READ("o5 4: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4;",
+              "G5 4\n1 1\n2 1\n3 1\n4 1\n");
   EXPECT_READ_ERROR("G-1", "(input):17:2: expected unsigned integer");
   EXPECT_READ_ERROR("G6", "(input):17:2: integer 6 out of bounds");
   EXPECT_READ_ERROR("G0 0", "(input):17:4: integer 0 out of bounds");
-  EXPECT_READ_ERROR("G0 7", "(input):17:4: integer 7 out of bounds");
+  EXPECT_READ_ERROR("G0 6", "(input):17:4: integer 6 out of bounds");
   EXPECT_READ_ERROR("G0 1\n-1 0\n", "(input):18:1: expected unsigned integer");
-  EXPECT_READ_ERROR("G0 1\n6 0\n", "(input):18:1: integer 6 out of bounds");
+  EXPECT_READ_ERROR("G0 1\n5 0\n", "(input):18:1: integer 5 out of bounds");
 }
 
 // Test that handler's OnLinearObjExpr is not called if NeedObj returns false.
@@ -1209,14 +1209,14 @@ TEST(NLTest, PassObj) {
 
 TEST(NLTest, ReadLinearConExpr) {
   EXPECT_READ("c0 2: 1.3 * v1 + 5 * v3;", "J0 2\n1 1.3\n3 5\n");
-  EXPECT_READ("c5 5: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4 + 1 * v5;",
-              "J5 5\n1 1\n2 1\n3 1\n4 1\n5 1\n");
+  EXPECT_READ("c5 4: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4;",
+              "J5 4\n1 1\n2 1\n3 1\n4 1\n");
   EXPECT_READ_ERROR("J-1", "(input):17:2: expected unsigned integer");
   EXPECT_READ_ERROR("J8", "(input):17:2: integer 8 out of bounds");
   EXPECT_READ_ERROR("J0 0", "(input):17:4: integer 0 out of bounds");
-  EXPECT_READ_ERROR("J0 7", "(input):17:4: integer 7 out of bounds");
+  EXPECT_READ_ERROR("J0 6", "(input):17:4: integer 6 out of bounds");
   EXPECT_READ_ERROR("J0 1\n-1 0\n", "(input):18:1: expected unsigned integer");
-  EXPECT_READ_ERROR("J0 1\n6 0\n", "(input):18:1: integer 6 out of bounds");
+  EXPECT_READ_ERROR("J0 1\n5 0\n", "(input):18:1: integer 5 out of bounds");
 }
 
 TEST(NLTest, ReadColumnSizes) {

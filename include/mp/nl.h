@@ -1049,7 +1049,7 @@ class NLReader {
   Reader &reader_;
   NLHeader &header_;
   Handler &handler_;
-  int total_num_vars_;  // Total number of variables including defined ones.
+  int num_vars_and_exprs_;  // Number of variables and common expressions.
 
   typedef typename Handler::NumericExpr NumericExpr;
   typedef typename Handler::LogicalExpr LogicalExpr;
@@ -1089,7 +1089,7 @@ class NLReader {
   }
 
   NumericExpr DoReadVariable() {
-    int index = ReadUInt(total_num_vars_);
+    int index = ReadUInt(num_vars_and_exprs_);
     reader_.ReadTillEndOfLine();
     return index < header_.num_vars ?
           handler_.OnVariable(index) :
@@ -1244,7 +1244,8 @@ class NLReader {
 
  public:
   NLReader(Reader &reader, NLHeader &header, Handler &handler)
-    : reader_(reader), header_(header), handler_(handler), total_num_vars_(0) {}
+    : reader_(reader), header_(header), handler_(handler),
+      num_vars_and_exprs_(0) {}
 
   // Algebraic constraint handler.
   struct AlgebraicConHandler : ItemHandler<CON> {
@@ -1476,7 +1477,9 @@ template <typename LinearHandler>
 void NLReader<Reader, Handler>::ReadLinearExpr() {
   LinearHandler lh(*this);
   int index = ReadUInt(lh.num_items());
-  int num_terms = ReadUInt(1, total_num_vars_ + 1u);
+  // The number of terms should be less than num_vars because common
+  // expressions are not allowed in a linear expressions.
+  int num_terms = ReadUInt(1, header_.num_vars + 1u);
   reader_.ReadTillEndOfLine();
   if (lh.NeedExpr(index))
     ReadLinearExpr(num_terms, lh.OnLinearExpr(index, num_terms));
@@ -1489,7 +1492,9 @@ template <typename LinearHandler>
 void NLReader<Reader, Handler>::ReadLinearExpr(
     int num_terms, LinearHandler linear_expr) {
   for (int i = 0; i < num_terms; ++i) {
-    int var_index = ReadUInt(total_num_vars_);
+    // Variable index should be less than num_vars because common
+    // expressions are not allowed in a linear expressions.
+    int var_index = ReadUInt(header_.num_vars);
     double coef = reader_.ReadDouble();
     reader_.ReadTillEndOfLine();
     linear_expr.AddTerm(var_index, coef);
@@ -1617,7 +1622,7 @@ template <typename Reader, typename Handler>
 void NLReader<Reader, Handler>::Read(Reader *bound_reader) {
   bool read_bounds = bound_reader == 0;
   // TextReader::ReadHeader checks that this doesn't overflow.
-  total_num_vars_ = header_.num_vars +
+  num_vars_and_exprs_ = header_.num_vars +
       header_.num_common_exprs_in_both +
       header_.num_common_exprs_in_cons +
       header_.num_common_exprs_in_objs +
@@ -1652,7 +1657,7 @@ void NLReader<Reader, Handler>::Read(Reader *bound_reader) {
     case 'V': {
       // Defined variable definition (must precede V, C, L, O segments
       // where used).
-      int expr_index = ReadUInt(header_.num_vars, total_num_vars_);
+      int expr_index = ReadUInt(header_.num_vars, num_vars_and_exprs_);
       expr_index -= header_.num_vars;
       int num_linear_terms = reader_.ReadUInt();
       int position = reader_.ReadUInt();
