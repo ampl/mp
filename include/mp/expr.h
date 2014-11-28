@@ -635,7 +635,7 @@ class BasicExprFactory : private Alloc {
  public:
   explicit BasicExprFactory(Alloc alloc = Alloc()) : Alloc(alloc) {}
 
-  ~BasicExprFactory() {
+  virtual ~BasicExprFactory() {
     for (std::vector<const Expr::Impl*>::const_iterator
          i = exprs_.begin(), end = exprs_.end(); i != end; ++i) {
       this->deallocate(const_cast<char*>(reinterpret_cast<const char*>(*i)), 0);
