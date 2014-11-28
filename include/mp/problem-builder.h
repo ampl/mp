@@ -77,7 +77,7 @@ class ProblemBuilder {
   typedef LinearExprBuilder LinearObjBuilder;
 
   // Adds an objective.
-  // Returns a handler for receiving linear terms in an objective.
+  // Returns a handler for receiving linear terms in the objective.
   LinearObjBuilder AddObj(
       obj::Type type, NumericExpr expr, int num_linear_terms) {
     MP_UNUSED3(type, expr, num_linear_terms);
@@ -88,7 +88,7 @@ class ProblemBuilder {
   typedef LinearExprBuilder LinearConBuilder;
 
   // Adds an algebraic constraint.
-  // Returns a handler for receiving linear terms in a constraint.
+  // Returns a handler for receiving linear terms in the constraint.
   LinearConBuilder AddCon(NumericExpr expr, double lb, double ub,
                           int num_linear_terms) {
     MP_UNUSED3(expr, lb, ub); MP_UNUSED(num_linear_terms);
@@ -103,17 +103,16 @@ class ProblemBuilder {
   }
 
   // Adds a common expression (defined variable).
-  // Returns a handler for receiving linear terms in a defined variable
-  // expression.
-  LinearExprBuilder BeginCommonExpr(NumericExpr expr, int position,
-                                    int num_linear_terms) {
-    MP_UNUSED3(expr, position, num_linear_terms);
+  // Returns a handler for receiving linear terms in the common expression.
+  LinearExprBuilder BeginCommonExpr(int num_linear_terms) {
+    MP_UNUSED(num_linear_terms);
     MP_DISPATCH(ReportUnhandledConstruct("common expression"));
     return LinearExprBuilder();
   }
 
-  NumericExpr EndCommonExpr(LinearExprBuilder builder) {
-    MP_UNUSED(builder);
+  NumericExpr EndCommonExpr(LinearExprBuilder builder, NumericExpr expr,
+                            int position) {
+    MP_UNUSED3(builder, expr, position);
   }
 
   // Sets a complementarity relation.

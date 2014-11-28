@@ -35,9 +35,11 @@ struct TestProblemBuilder : mp::ProblemBuilder<TestProblemBuilder, TestExpr> {
 TEST(ProblemBuilderTest, UseWithProblemBuilderToNLAdapter) {
   TestProblemBuilder builder;
   mp::ProblemBuilderToNLAdapter<TestProblemBuilder> handler(builder);
-  EXPECT_CALL(builder, ReportUnhandledConstruct(
-                "numeric constant in nonlinear expression"));
+  EXPECT_CALL(builder, ReportUnhandledConstruct(::testing::_)).
+      Times(::testing::Exactly(2));
   handler.OnNumericConstant(0);
+  auto expr_builder = handler.BeginCommonExpr(0);
+  handler.EndCommonExpr(0, expr_builder, TestExpr(), 0);
 }
 
 // Check that handling problem info doesn't throw an exception.
@@ -57,7 +59,7 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(AddObj(mp::obj::MIN, TestExpr(), 0), "objective");
   EXPECT_DISPATCH(AddCon(TestExpr(), 0, 0, 0), "algebraic constraint");
   EXPECT_DISPATCH(AddCon(TestExpr()), "logical constraint");
-  EXPECT_DISPATCH(BeginCommonExpr(TestExpr(), 0, 0), "common expression");
+  EXPECT_DISPATCH(BeginCommonExpr(0), "common expression");
   EXPECT_DISPATCH(SetComplement(0, 0, 0), "complementarity constraint");
 
   // Initial (dual) values are not reported as unhandled.
