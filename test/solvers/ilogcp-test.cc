@@ -87,12 +87,16 @@ class FunctionTest : public NLSolverTest {
     return CallFactory<IndexFactory>(num_args, factory);
   }
 
+  static double TestFunc(arglist *) { return 0; }
+
   virtual void SetInfo(ProblemBuilder &pb, mp::ProblemInfo &info) {
     info.num_funcs = 2;
     NLSolverTest::SetInfo(pb, info);
     // Create functions permitting less arguments than necessary.
     // This is done to be able to test calls with invalid arguments.
+    pb.RegisterFunction("element", TestFunc, -2);
     pb.AddFunction("element", -2, mp::func::NUMERIC);
+    pb.RegisterFunction("in_relation", TestFunc, -1);
     pb.AddFunction("in_relation", -1, mp::func::NUMERIC);
   }
 };

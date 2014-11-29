@@ -851,13 +851,13 @@ TEST_F(NLSolverTest, Call) {
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_linear_integer_vars = 1;
   info.num_objs = info.num_nl_objs = 1;
-  info.num_funcs = 1;
+  info.num_funcs = 2;
   pb.SetInfo(info);
   pb.AddVar(0, 0, mp::var::INTEGER);
   try {
     pb.AddFunction("foo", 2, mp::func::NUMERIC);
   } catch (const mp::UnsupportedError &) {
-    // SetFunction may throw UnsupportedError.
+    // AddFunction may throw UnsupportedError.
     return;
   } catch (const mp::Error &e) {
     EXPECT_STREQ("function foo not available", e.what());
