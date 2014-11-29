@@ -160,8 +160,10 @@ int main(int argc, char **argv) {
   std::size_t num_opcodes = std::max_element(
         info, info + num_exprs, OpCodeLess())->opcode + 1;
   std::vector<const ExprInfo*> opcode_info(num_opcodes);
-  for (std::size_t i = 0; i < num_exprs; ++i)
-    opcode_info[info[i].opcode] = info + i;
+  for (std::size_t i = 0; i < num_exprs; ++i) {
+    if (info[i].opcode != -1)
+      opcode_info[info[i].opcode] = info + i;
+  }
 
   // Print a table that maps opcodes to expression kinds.
   fmt::BufferedFile f(argv[1], "w");
