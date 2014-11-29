@@ -32,124 +32,122 @@ using ::testing::Return;
 using mp::ExprFactory;
 namespace expr = mp::expr;
 
-TEST(ExprTest, Expr) {
+class ExprTest : public ::testing::Test {
+ protected:
+  ExprFactory factory_;
+};
+
+TEST_F(ExprTest, Expr) {
   mp::Expr e;
   EXPECT_TRUE(e == 0);
 }
 
-TEST(ExprTest, NumericExpr) {
+TEST_F(ExprTest, NumericExpr) {
   mp::NumericExpr e;
   EXPECT_TRUE(e == 0);
   (void)mp::Expr(e);
 }
 
-TEST(ExprTest, LogicalExpr) {
+TEST_F(ExprTest, LogicalExpr) {
   mp::LogicalExpr e;
   EXPECT_TRUE(e == 0);
   (void)mp::Expr(e);
 }
 
-TEST(ExprTest, NumericConstant) {
+TEST_F(ExprTest, NumericConstant) {
   mp::NumericConstant e;
   EXPECT_TRUE(e == 0);
   (void)mp::NumericExpr(e);
-  ExprFactory factory;
-  e = factory.MakeNumericConstant(1.23);
+  e = factory_.MakeNumericConstant(1.23);
   EXPECT_EQ(expr::CONSTANT, e.kind());
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(1.23, e.value());
 }
 
-TEST(ExprTest, Variable) {
+TEST_F(ExprTest, Variable) {
   mp::Variable e;
   EXPECT_TRUE(e == 0);
   (void)mp::NumericExpr(e);
-  ExprFactory factory;
-  e = factory.MakeVariable(42);
+  e = factory_.MakeVariable(42);
   EXPECT_EQ(expr::VARIABLE, e.kind());
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(42, e.index());
 }
 
-TEST(ExprTest, CommonExpr) {
+TEST_F(ExprTest, CommonExpr) {
   mp::CommonExpr e;
   EXPECT_TRUE(e == 0);
   (void)mp::NumericExpr(e);
-  ExprFactory factory;
-  e = factory.MakeCommonExpr(42);
+  e = factory_.MakeCommonExpr(42);
   EXPECT_EQ(expr::COMMON_EXPR, e.kind());
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(42, e.index());
 }
 
-TEST(ExprTest, UnaryExpr) {
+TEST_F(ExprTest, UnaryExpr) {
   mp::UnaryExpr e;
   EXPECT_TRUE(e == 0);
   (void)mp::NumericExpr(e);
-  ExprFactory factory;
-  auto arg = factory.MakeNumericConstant(42);
-  e = factory.MakeUnary(expr::ABS, arg);
+  auto arg = factory_.MakeNumericConstant(42);
+  e = factory_.MakeUnary(expr::ABS, arg);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::ABS, e.kind());
   EXPECT_EQ(arg, e.arg());
-  EXPECT_ASSERT(factory.MakeUnary(expr::ADD, arg), "invalid expression kind");
-  EXPECT_ASSERT(factory.MakeUnary(expr::ABS, mp::NumericExpr()),
+  EXPECT_ASSERT(factory_.MakeUnary(expr::ADD, arg), "invalid expression kind");
+  EXPECT_ASSERT(factory_.MakeUnary(expr::ABS, mp::NumericExpr()),
                 "invalid argument");
 }
 
-TEST(ExprTest, BinaryExpr) {
+TEST_F(ExprTest, BinaryExpr) {
   mp::BinaryExpr e;
   EXPECT_TRUE(e == 0);
   (void)mp::NumericExpr(e);
-  ExprFactory factory;
-  auto lhs = factory.MakeNumericConstant(42);
-  auto rhs = factory.MakeVariable(0);
-  e = factory.MakeBinary(expr::MUL, lhs, rhs);
+  auto lhs = factory_.MakeNumericConstant(42);
+  auto rhs = factory_.MakeVariable(0);
+  e = factory_.MakeBinary(expr::MUL, lhs, rhs);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::MUL, e.kind());
   EXPECT_EQ(lhs, e.lhs());
   EXPECT_EQ(rhs, e.rhs());
-  EXPECT_ASSERT(factory.MakeBinary(expr::IF, lhs, rhs),
+  EXPECT_ASSERT(factory_.MakeBinary(expr::IF, lhs, rhs),
                 "invalid expression kind");
-  EXPECT_ASSERT(factory.MakeBinary(expr::MUL, mp::NumericExpr(), rhs),
+  EXPECT_ASSERT(factory_.MakeBinary(expr::MUL, mp::NumericExpr(), rhs),
                 "invalid argument");
-  EXPECT_ASSERT(factory.MakeBinary(expr::MUL, lhs, mp::NumericExpr()),
+  EXPECT_ASSERT(factory_.MakeBinary(expr::MUL, lhs, mp::NumericExpr()),
                 "invalid argument");
 }
 
-TEST(ExprTest, IfExpr) {
+TEST_F(ExprTest, IfExpr) {
   mp::IfExpr e;
   EXPECT_TRUE(e == 0);
   (void)mp::NumericExpr(e);
-  ExprFactory factory;
-  auto condition = factory.MakeLogicalConstant(true);
-  auto true_expr = factory.MakeNumericConstant(42);
-  auto false_expr = factory.MakeVariable(0);
-  e = factory.MakeIf(condition, true_expr, false_expr);
+  auto condition = factory_.MakeLogicalConstant(true);
+  auto true_expr = factory_.MakeNumericConstant(42);
+  auto false_expr = factory_.MakeVariable(0);
+  e = factory_.MakeIf(condition, true_expr, false_expr);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::IF, e.kind());
   EXPECT_EQ(condition, e.condition());
   EXPECT_EQ(true_expr, e.true_expr());
   EXPECT_EQ(false_expr, e.false_expr());
-  EXPECT_ASSERT(factory.MakeIf(mp::LogicalExpr(), true_expr, false_expr),
+  EXPECT_ASSERT(factory_.MakeIf(mp::LogicalExpr(), true_expr, false_expr),
                 "invalid argument");
-  EXPECT_ASSERT(factory.MakeIf(condition, mp::NumericExpr(), false_expr),
+  EXPECT_ASSERT(factory_.MakeIf(condition, mp::NumericExpr(), false_expr),
                 "invalid argument");
-  factory.MakeIf(condition, true_expr, mp::NumericExpr());
+  factory_.MakeIf(condition, true_expr, mp::NumericExpr());
 }
 
-TEST(ExprTest, PLTerm) {
+TEST_F(ExprTest, PLTerm) {
   mp::PLTerm e;
   EXPECT_TRUE(e == 0);
   (void)mp::NumericExpr(e);
-  ExprFactory factory;
-  ExprFactory::PLTermBuilder builder = factory.BeginPLTerm(2);
+  ExprFactory::PLTermBuilder builder = factory_.BeginPLTerm(2);
   builder.AddSlope(11);
   builder.AddBreakpoint(111);
   builder.AddSlope(22);
   builder.AddBreakpoint(222);
   builder.AddSlope(33);
-  e = factory.EndPLTerm(builder, factory.MakeVariable(42));
+  e = factory_.EndPLTerm(builder, factory_.MakeVariable(42));
   EXPECT_EQ(expr::PLTERM, e.kind());
   EXPECT_EQ(2, e.num_breakpoints());
   EXPECT_EQ(3, e.num_slopes());
@@ -163,97 +161,99 @@ TEST(ExprTest, PLTerm) {
   EXPECT_ASSERT(e.breakpoint(-1), "index out of bounds");
   EXPECT_ASSERT(e.breakpoint(2), "index out of bounds");
   EXPECT_EQ(42, e.var_index());
-  EXPECT_ASSERT(factory.BeginPLTerm(0), "invalid number of breakpoints");
+  EXPECT_ASSERT(factory_.BeginPLTerm(0), "invalid number of breakpoints");
 }
 
-TEST(ExprTest, TooManyBreakpoints) {
-  ExprFactory factory;
-  auto builder = factory.BeginPLTerm(1);
+TEST_F(ExprTest, TooManyBreakpoints) {
+  auto builder = factory_.BeginPLTerm(1);
   builder.AddBreakpoint(0);
   EXPECT_ASSERT(builder.AddBreakpoint(1), "too many breakpoints");
 }
 
-TEST(ExprTest, TooManySlopes) {
-  ExprFactory factory;
-  auto builder = factory.BeginPLTerm(1);
+TEST_F(ExprTest, TooManySlopes) {
+  auto builder = factory_.BeginPLTerm(1);
   builder.AddSlope(0);
   builder.AddSlope(1);
   EXPECT_ASSERT(builder.AddSlope(2), "too many slopes");
 }
 
-TEST(ExprTest, InvalidPLTermArgument) {
-  ExprFactory factory;
-  auto builder = factory.BeginPLTerm(1);
+TEST_F(ExprTest, InvalidPLTermArgument) {
+  auto builder = factory_.BeginPLTerm(1);
   builder.AddSlope(0);
   builder.AddBreakpoint(0);
   builder.AddSlope(1);
-  EXPECT_ASSERT(factory.EndPLTerm(builder, mp::Variable()), "invalid argument");
+  EXPECT_ASSERT(factory_.EndPLTerm(builder, mp::Variable()), "invalid argument");
 }
 
-TEST(ExprTest, TooFewBreakpoints) {
-  ExprFactory factory;
-  auto builder = factory.BeginPLTerm(1);
+TEST_F(ExprTest, TooFewBreakpoints) {
+  auto builder = factory_.BeginPLTerm(1);
   builder.AddSlope(0);
   builder.AddSlope(1);
-  EXPECT_ASSERT(factory.EndPLTerm(builder, factory.MakeVariable(0)),
+  EXPECT_ASSERT(factory_.EndPLTerm(builder, factory_.MakeVariable(0)),
                 "too few breakpoints");
 }
 
-TEST(ExprTest, TooFewSlopes) {
-  ExprFactory factory;
-  auto builder = factory.BeginPLTerm(1);
+TEST_F(ExprTest, TooFewSlopes) {
+  auto builder = factory_.BeginPLTerm(1);
   builder.AddBreakpoint(0);
   builder.AddSlope(0);
-  EXPECT_ASSERT(factory.EndPLTerm(builder, factory.MakeVariable(0)),
+  EXPECT_ASSERT(factory_.EndPLTerm(builder, factory_.MakeVariable(0)),
                 "too few slopes");
 }
 
-TEST(ExprTest, Function) {
+TEST_F(ExprTest, Function) {
   mp::Function f;
   EXPECT_TRUE(f == 0);
 }
 
-// Iterated expressions share the same builder so it is enough to test
-// CallExprBuilder.
+TEST_F(ExprTest, AddFunction) {
+  mp::Function f = factory_.AddFunction("foo", 42, mp::func::SYMBOLIC);
+  EXPECT_STREQ("foo", f.name());
+  EXPECT_EQ(42, f.num_args());
+  EXPECT_EQ(mp::func::SYMBOLIC, f.type());
+  f = factory_.AddFunction("bar", 0, mp::func::NUMERIC);
+  EXPECT_STREQ("bar", f.name());
+  EXPECT_EQ(0, f.num_args());
+  EXPECT_EQ(mp::func::NUMERIC, f.type());
+}
 
-TEST(ExprTest, TooManyCallArgs) {
-  ExprFactory factory;
-  mp::Function f = factory.AddFunction("foo");
-  auto builder = factory.BeginCall(f, 1);
-  auto arg = factory.MakeNumericConstant(0);
+// Iterated expressions share the same builder so it is enough to test
+// one, CallExprBuilder.
+
+TEST_F(ExprTest, TooManyCallArgs) {
+  mp::Function f = factory_.AddFunction("foo", 1);
+  auto builder = factory_.BeginCall(f, 1);
+  auto arg = factory_.MakeNumericConstant(0);
   builder.AddArg(arg);
   EXPECT_ASSERT(builder.AddArg(arg), "too many arguments");
 }
 
-TEST(ExprTest, InvalidCallArg) {
-  ExprFactory factory;
-  mp::Function f = factory.AddFunction("foo");
-  auto builder = factory.BeginCall(f, 1);
+TEST_F(ExprTest, InvalidCallArg) {
+  mp::Function f = factory_.AddFunction("foo", 1);
+  auto builder = factory_.BeginCall(f, 1);
   EXPECT_ASSERT(builder.AddArg(mp::NumericExpr()), "invalid argument");
 }
 
-TEST(ExprTest, TooFewCallArgs) {
-  ExprFactory factory;
-  mp::Function f = factory.AddFunction("foo");
-  auto builder = factory.BeginCall(f, 1);
-  EXPECT_ASSERT(factory.EndCall(builder), "too few arguments");
+TEST_F(ExprTest, TooFewCallArgs) {
+  mp::Function f = factory_.AddFunction("foo", 1);
+  auto builder = factory_.BeginCall(f, 1);
+  EXPECT_ASSERT(factory_.EndCall(builder), "too few arguments");
 }
 
 // Expression iterators share the same implementation so it is enough to
 // test CallExpr::iterator.
-TEST(ExprTest, ExprIterator) {
-  ExprFactory factory;
-  mp::Function f = factory.AddFunction("foo");
+TEST_F(ExprTest, ExprIterator) {
   enum {NUM_ARGS = 3};
-  ExprFactory::CallExprBuilder builder = factory.BeginCall(f, NUM_ARGS);
+  mp::Function f = factory_.AddFunction("foo", NUM_ARGS);
+  ExprFactory::CallExprBuilder builder = factory_.BeginCall(f, NUM_ARGS);
   mp::Expr args[NUM_ARGS] = {
-    factory.MakeNumericConstant(11),
-    factory.MakeVariable(0),
-    factory.MakeNumericConstant(22)
+    factory_.MakeNumericConstant(11),
+    factory_.MakeVariable(0),
+    factory_.MakeNumericConstant(22)
   };
   for (int i = 0; i < NUM_ARGS; ++i)
     builder.AddArg(args[i]);
-  auto e = factory.EndCall(builder);
+  auto e = factory_.EndCall(builder);
   mp::CallExpr::iterator i = e.begin();
   EXPECT_EQ(args[0], *i);
   EXPECT_EQ(expr::CONSTANT, i->kind());
@@ -269,112 +269,106 @@ TEST(ExprTest, ExprIterator) {
   EXPECT_EQ(args[2], *i);
 }
 
-TEST(ExprTest, LogicalConstant) {
+TEST_F(ExprTest, LogicalConstant) {
   mp::LogicalConstant e;
   EXPECT_TRUE(e == 0);
   (void)mp::LogicalExpr(e);
-  ExprFactory factory;
-  e = factory.MakeLogicalConstant(false);
+  e = factory_.MakeLogicalConstant(false);
   EXPECT_EQ(expr::CONSTANT, e.kind());
   EXPECT_TRUE(e != 0);
   EXPECT_FALSE(e.value());
-  EXPECT_TRUE(factory.MakeLogicalConstant(true).value());
+  EXPECT_TRUE(factory_.MakeLogicalConstant(true).value());
 }
 
-TEST(ExprTest, NotExpr) {
+TEST_F(ExprTest, NotExpr) {
   mp::NotExpr e;
   EXPECT_TRUE(e == 0);
   (void)mp::LogicalExpr(e);
-  ExprFactory factory;
-  auto arg = factory.MakeLogicalConstant(false);
-  e = factory.MakeNot(arg);
+  auto arg = factory_.MakeLogicalConstant(false);
+  e = factory_.MakeNot(arg);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::NOT, e.kind());
   EXPECT_EQ(arg, e.arg());
-  EXPECT_ASSERT(factory.MakeNot(mp::LogicalExpr()), "invalid argument");
+  EXPECT_ASSERT(factory_.MakeNot(mp::LogicalExpr()), "invalid argument");
 }
 
-TEST(ExprTest, BinaryLogicalExpr) {
+TEST_F(ExprTest, BinaryLogicalExpr) {
   mp::BinaryLogicalExpr e;
   EXPECT_TRUE(e == 0);
   (void)mp::LogicalExpr(e);
-  ExprFactory factory;
-  auto lhs = factory.MakeLogicalConstant(true);
-  auto rhs = factory.MakeLogicalConstant(false);
-  e = factory.MakeBinaryLogical(expr::AND, lhs, rhs);
+  auto lhs = factory_.MakeLogicalConstant(true);
+  auto rhs = factory_.MakeLogicalConstant(false);
+  e = factory_.MakeBinaryLogical(expr::AND, lhs, rhs);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::AND, e.kind());
   EXPECT_EQ(lhs, e.lhs());
   EXPECT_EQ(rhs, e.rhs());
-  EXPECT_ASSERT(factory.MakeBinaryLogical(expr::LT, lhs, rhs),
+  EXPECT_ASSERT(factory_.MakeBinaryLogical(expr::LT, lhs, rhs),
                 "invalid expression kind");
-  EXPECT_ASSERT(factory.MakeBinaryLogical(expr::AND, mp::LogicalExpr(), rhs),
+  EXPECT_ASSERT(factory_.MakeBinaryLogical(expr::AND, mp::LogicalExpr(), rhs),
                 "invalid argument");
-  EXPECT_ASSERT(factory.MakeBinaryLogical(expr::AND, lhs, mp::LogicalExpr()),
+  EXPECT_ASSERT(factory_.MakeBinaryLogical(expr::AND, lhs, mp::LogicalExpr()),
                 "invalid argument");
 }
 
-TEST(ExprTest, RelationalExpr) {
+TEST_F(ExprTest, RelationalExpr) {
   mp::RelationalExpr e;
   EXPECT_TRUE(e == 0);
   (void)mp::LogicalExpr(e);
-  ExprFactory factory;
-  auto lhs = factory.MakeNumericConstant(42);
-  auto rhs = factory.MakeVariable(0);
-  e = factory.MakeRelational(expr::EQ, lhs, rhs);
+  auto lhs = factory_.MakeNumericConstant(42);
+  auto rhs = factory_.MakeVariable(0);
+  e = factory_.MakeRelational(expr::EQ, lhs, rhs);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::EQ, e.kind());
   EXPECT_EQ(lhs, e.lhs());
   EXPECT_EQ(rhs, e.rhs());
-  EXPECT_ASSERT(factory.MakeRelational(expr::ATLEAST, lhs, rhs),
+  EXPECT_ASSERT(factory_.MakeRelational(expr::ATLEAST, lhs, rhs),
                 "invalid expression kind");
-  EXPECT_ASSERT(factory.MakeRelational(expr::EQ, mp::NumericExpr(), rhs),
+  EXPECT_ASSERT(factory_.MakeRelational(expr::EQ, mp::NumericExpr(), rhs),
                 "invalid argument");
-  EXPECT_ASSERT(factory.MakeRelational(expr::EQ, lhs, mp::NumericExpr()),
+  EXPECT_ASSERT(factory_.MakeRelational(expr::EQ, lhs, mp::NumericExpr()),
                 "invalid argument");
 }
 
-TEST(ExprTest, LogicalCountExpr) {
+TEST_F(ExprTest, LogicalCountExpr) {
   mp::LogicalCountExpr e;
   EXPECT_TRUE(e == 0);
   (void)mp::LogicalExpr(e);
-  ExprFactory factory;
-  auto lhs = factory.MakeNumericConstant(42);
-  auto rhs = factory.EndCount(factory.BeginCount(0));
-  e = factory.MakeLogicalCount(expr::ATMOST, lhs, rhs);
+  auto lhs = factory_.MakeNumericConstant(42);
+  auto rhs = factory_.EndCount(factory_.BeginCount(0));
+  e = factory_.MakeLogicalCount(expr::ATMOST, lhs, rhs);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::ATMOST, e.kind());
   EXPECT_EQ(lhs, e.lhs());
   EXPECT_EQ(rhs, e.rhs());
-  EXPECT_ASSERT(factory.MakeLogicalCount(expr::IMPLICATION, lhs, rhs),
+  EXPECT_ASSERT(factory_.MakeLogicalCount(expr::IMPLICATION, lhs, rhs),
                 "invalid expression kind");
-  EXPECT_ASSERT(factory.MakeLogicalCount(expr::ATMOST, mp::NumericExpr(), rhs),
+  EXPECT_ASSERT(factory_.MakeLogicalCount(expr::ATMOST, mp::NumericExpr(), rhs),
                 "invalid argument");
-  EXPECT_ASSERT(factory.MakeLogicalCount(expr::ATMOST, lhs, mp::CountExpr()),
+  EXPECT_ASSERT(factory_.MakeLogicalCount(expr::ATMOST, lhs, mp::CountExpr()),
                 "invalid argument");
 }
 
-TEST(ExprTest, ImplicationExpr) {
+TEST_F(ExprTest, ImplicationExpr) {
   mp::ImplicationExpr e;
   (void)mp::LogicalExpr(e);
   EXPECT_TRUE(e == 0);
-  ExprFactory factory;
-  auto condition = factory.MakeLogicalConstant(true);
-  auto true_expr = factory.MakeLogicalConstant(false);
-  auto false_expr = factory.MakeLogicalConstant(true);
-  e = factory.MakeImplication(condition, true_expr, false_expr);
+  auto condition = factory_.MakeLogicalConstant(true);
+  auto true_expr = factory_.MakeLogicalConstant(false);
+  auto false_expr = factory_.MakeLogicalConstant(true);
+  e = factory_.MakeImplication(condition, true_expr, false_expr);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::IMPLICATION, e.kind());
   EXPECT_EQ(condition, e.condition());
   EXPECT_EQ(true_expr, e.true_expr());
   EXPECT_EQ(false_expr, e.false_expr());
-  EXPECT_ASSERT(factory.MakeImplication(
+  EXPECT_ASSERT(factory_.MakeImplication(
                   mp::LogicalExpr(), true_expr, false_expr),
                 "invalid argument");
-  EXPECT_ASSERT(factory.MakeImplication(
+  EXPECT_ASSERT(factory_.MakeImplication(
                   condition, mp::LogicalExpr(), false_expr),
                 "invalid argument");
-  factory.MakeImplication(condition, true_expr, mp::LogicalExpr());
+  factory_.MakeImplication(condition, true_expr, mp::LogicalExpr());
 }
 
 template <typename ExprInfo>
@@ -397,7 +391,7 @@ struct CallInfo : ExprInfo<mp::CallExpr, expr::CALL> {
   typedef mp::Expr Arg;
   typedef ExprFactory::CallExprBuilder Builder;
   Builder BeginBuild(ExprFactory &f, int n) {
-    return f.BeginCall(f.AddFunction("foo"), n);
+    return f.BeginCall(f.AddFunction("foo", n), n);
   }
   Expr EndBuild(ExprFactory &f, Builder b) { return f.EndCall(b); }
 };
@@ -490,21 +484,19 @@ TYPED_TEST(IteratedExprTest, Test) {
   info.BeginBuild(factory, info.min_args());
 }
 
-TEST(ExprTest, StringLiteral) {
+TEST_F(ExprTest, StringLiteral) {
   mp::StringLiteral e;
   EXPECT_TRUE(e == 0);
   (void)mp::Expr(e);
-  ExprFactory factory;
   const char STR[] = "abc\0def";
-  e = factory.MakeStringLiteral(fmt::StringRef(STR, sizeof(STR)));
+  e = factory_.MakeStringLiteral(fmt::StringRef(STR, sizeof(STR)));
   EXPECT_EQ(expr::STRING, e.kind());
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(std::string(STR, sizeof(STR)), std::string(e.value(), sizeof(STR)));
 }
 
-TEST(ExprTest, InternalCast) {
-  ExprFactory factory;
-  mp::Expr e = factory.MakeNumericConstant(42);
+TEST_F(ExprTest, InternalCast) {
+  mp::Expr e = factory_.MakeNumericConstant(42);
   using mp::internal::Cast;
   Cast<mp::NumericExpr>(e);
   mp::NumericConstant n = Cast<mp::NumericConstant>(e);
@@ -512,35 +504,41 @@ TEST(ExprTest, InternalCast) {
   EXPECT_ASSERT(Cast<mp::UnaryExpr>(e), "invalid cast");
 }
 
-TEST(ExprFactoryTest, InvalidCallExprFunction) {
-  ExprFactory factory;
-  EXPECT_ASSERT(factory.BeginCall(mp::Function(), 0), "invalid function");
+TEST_F(ExprTest, InvalidCallExprFunction) {
+  EXPECT_ASSERT(factory_.BeginCall(mp::Function(), 0), "invalid function");
 }
 
-TEST(ExprFactoryTest, InvalidIteratedExprKind) {
-  ExprFactory factory;
-  EXPECT_ASSERT(factory.BeginIterated(expr::COUNT, 1),
+TEST_F(ExprTest, InvalidIteratedExprKind) {
+  EXPECT_ASSERT(factory_.BeginIterated(expr::COUNT, 1),
                 "invalid expression kind");
 }
 
-TEST(ExprFactoryTest, InvalidNumberOfExprArg) {
-  ExprFactory factory;
-  EXPECT_ASSERT(factory.BeginNumberOf(1, mp::NumericExpr()),
+TEST_F(ExprTest, InvalidNumberOfExprArg) {
+  EXPECT_ASSERT(factory_.BeginNumberOf(1, mp::NumericExpr()),
       "invalid argument");
 }
 
-TEST(ExprFactoryTest, InvalidIteratedLogicalExprKind) {
-  ExprFactory factory;
-  EXPECT_ASSERT(factory.BeginIteratedLogical(expr::ALLDIFF, 1),
+TEST_F(ExprTest, InvalidIteratedLogicalExprKind) {
+  EXPECT_ASSERT(factory_.BeginIteratedLogical(expr::ALLDIFF, 1),
                 "invalid expression kind");
 }
 
-TEST(ExprFactoryTest, MemoryAllocation) {
+TEST(ExprFactoryTest, ExprMemoryAllocation) {
   typedef AllocatorRef< MockAllocator<char> > Allocator;
   MockAllocator<char> alloc;
   mp::BasicExprFactory<Allocator> f((Allocator(&alloc)));
   char buffer[100];
   EXPECT_CALL(alloc, allocate(_)).WillOnce(Return(buffer));
   f.MakeNumericConstant(42);
+  EXPECT_CALL(alloc, deallocate(buffer, _));
+}
+
+TEST(ExprFactoryTest, FuncMemoryAllocation) {
+  typedef AllocatorRef< MockAllocator<char> > Allocator;
+  MockAllocator<char> alloc;
+  mp::BasicExprFactory<Allocator> f((Allocator(&alloc)));
+  char buffer[100];
+  EXPECT_CALL(alloc, allocate(_)).WillOnce(Return(buffer));
+  f.AddFunction("f", 0);
   EXPECT_CALL(alloc, deallocate(buffer, _));
 }

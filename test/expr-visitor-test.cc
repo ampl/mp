@@ -347,7 +347,7 @@ TEST_F(ExprVisitorTest, VisitPLTerm) {
 }
 
 TEST_F(ExprVisitorTest, VisitCall) {
-  auto builder = factory_.BeginCall(factory_.AddFunction("f"), 0);
+  auto builder = factory_.BeginCall(factory_.AddFunction("f", 0), 0);
   auto e = factory_.EndCall(builder);
   EXPECT_CALL(visitor_, VisitCall(e));
   mp::NumericExpr base = e;

@@ -24,7 +24,6 @@
 #define MP_EXPR_H_
 
 #include <cassert>
-#include <deque>
 #include <memory>
 #include <vector>
 
@@ -51,7 +50,7 @@ template <typename ExprType>
 ExprType Cast(Expr e);
 }
 
-// Specialize Is<Expr> for the class ExprType corresponding to a single
+// Specialize internal::Is for the class ExprType corresponding to a single
 // expression kind.
 #define MP_SPECIALIZE_IS(ExprType, expr_kind) \
 namespace internal { \
@@ -59,7 +58,7 @@ template <> \
 inline bool Is<ExprType>(expr::Kind k) { return k == expr::expr_kind; } \
 }
 
-// Specialize Is<Expr> for the class ExprType corresponding to a range
+// Specialize internal::Is for the class ExprType corresponding to a range
 // of expression kinds [start, end].
 #define MP_SPECIALIZE_IS_RANGE(ExprType, expr_kind) \
 namespace internal { \
@@ -349,7 +348,11 @@ MP_SPECIALIZE_IS(PLTerm, PLTERM)
 // A reference to a function.
 class Function {
  private:
-  struct Impl {};
+  struct Impl {
+    func::Type type;
+    int num_args;
+    char name[1];
+  };
 
   const Impl *impl_;
 
@@ -380,6 +383,15 @@ class Function {
   //     // Do something if f is not null.
   //   }
   operator SafeBool() const { return impl_ != 0 ? &Function::True : 0; }
+
+  // Returns the name of this function.
+  const char *name() const { return impl_->name; }
+
+  // Returns the number of arguments.
+  int num_args() const { return impl_->num_args; }
+
+  // Returns the type of this function.
+  func::Type type() const { return impl_->type; }
 };
 
 // A function call expression.
@@ -554,8 +566,8 @@ MP_SPECIALIZE_IS(StringLiteral, STRING)
 template <typename Alloc>
 class BasicExprFactory : private Alloc {
  private:
-  std::deque<Function::Impl> funcs_;
   std::vector<const Expr::Impl*> exprs_;
+  std::vector<const Function::Impl*> funcs_;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(BasicExprFactory);
 
@@ -573,6 +585,9 @@ class BasicExprFactory : private Alloc {
     exprs_.back() = impl;
     return impl;
   }
+
+  template <typename T>
+  void Deallocate(const std::vector<T> &data);
 
   // Makes a reference expression.
   template <typename ExprType>
@@ -649,20 +664,24 @@ class BasicExprFactory : private Alloc {
     return Expr::Create<ExprType>(impl);
   }
 
+  static void Copy(fmt::StringRef src, char *dst) {
+    const char *s = src.c_str();
+    std::size_t size = src.size();
+    std::copy(s, s + size, dst);
+    dst[size] = 0;
+  }
+
  public:
   explicit BasicExprFactory(Alloc alloc = Alloc()) : Alloc(alloc) {}
 
   virtual ~BasicExprFactory() {
-    for (std::vector<const Expr::Impl*>::const_iterator
-         i = exprs_.begin(), end = exprs_.end(); i != end; ++i) {
-      this->deallocate(const_cast<char*>(reinterpret_cast<const char*>(*i)), 0);
-    }
+    Deallocate(exprs_);
+    Deallocate(funcs_);
   }
 
-  Function AddFunction(const char *) {
-    funcs_.push_back(Function::Impl());
-    return Function(&funcs_.back());
-  }
+  // Adds a function.
+  Function AddFunction(fmt::StringRef name, int num_args,
+                       func::Type type = func::NUMERIC);
 
   // Makes a numeric constant.
   NumericConstant MakeNumericConstant(double value) {
@@ -872,14 +891,37 @@ class BasicExprFactory : private Alloc {
     // we need to allocate extra size chars only.
     StringLiteral::Impl *impl =
         Allocate<StringLiteral>(expr::STRING, value.size());
-    const char *s = value.c_str();
-    // Pass a pointer instead of the array impl->value to std::copy
-    // to avoid assertion failure in MSVC due to a bogus range check.
-    char *dest = impl->value;
-    std::copy(s, s + value.size(), dest);
+    Copy(value, impl->value);
     return Expr::Create<StringLiteral>(impl);
   }
 };
+
+template <typename Alloc>
+template <typename T>
+void BasicExprFactory<Alloc>::Deallocate(const std::vector<T> &data) {
+  for (typename std::vector<T>::const_iterator
+       i = data.begin(), end = data.end(); i != end; ++i) {
+    this->deallocate(const_cast<char*>(reinterpret_cast<const char*>(*i)), 0);
+  }
+}
+
+template <typename Alloc>
+Function BasicExprFactory<Alloc>::AddFunction(
+    fmt::StringRef name, int num_args, func::Type type) {
+  // Call push_back first to make sure that the impl pointer doesn't leak
+  // if push_back throws an exception.
+  funcs_.push_back(0);
+  // Function::Impl already has space for terminating null char so
+  // we need to allocate extra size chars only.
+  typedef Function::Impl Impl;
+  Impl *impl = reinterpret_cast<Impl*>(
+        this->allocate(sizeof(Impl) + name.size()));
+  impl->type = type;
+  impl->num_args = num_args;
+  Copy(name, impl->name);
+  funcs_.back() = impl;
+  return Function(impl);
+}
 
 typedef BasicExprFactory< std::allocator<char> > ExprFactory;
 }  // namespace mp
