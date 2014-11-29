@@ -73,7 +73,7 @@ class FunctionTest : public NLSolverTest {
       : num_args_(num_args), factory_(factory) {}
 
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginCall(0, num_args_);
+      auto args = pb.BeginCall(pb.FindFunction("element"), num_args_);
       for (int i = 1; i < num_args_; ++i)
         args.AddArg(pb.MakeNumericConstant(11 * i));
       args.AddArg(factory_(pb));
@@ -92,8 +92,8 @@ class FunctionTest : public NLSolverTest {
     NLSolverTest::SetInfo(pb, info);
     // Create functions permitting less arguments than necessary.
     // This is done to be able to test calls with invalid arguments.
-    pb.SetFunction(0, "element", -2, mp::func::NUMERIC);
-    pb.SetFunction(1, "in_relation", -1, mp::func::NUMERIC);
+    pb.AddFunction("element", -2, mp::func::NUMERIC);
+    pb.AddFunction("in_relation", -1, mp::func::NUMERIC);
   }
 };
 
@@ -121,7 +121,7 @@ TEST_F(FunctionTest, ElementAtConstantIndex) {
 TEST_F(FunctionTest, ElementExprAtConstantIndex) {
   struct Factory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginCall(0, 3);
+      auto args = pb.BeginCall(pb.FindFunction("element"), 3);
       args.AddArg(x);
       args.AddArg(pb.MakeNumericConstant(22));
       args.AddArg(pb.MakeNumericConstant(0));
@@ -134,7 +134,7 @@ TEST_F(FunctionTest, ElementExprAtConstantIndex) {
 TEST_F(FunctionTest, ElementExprPlusConstantAtConstantIndex) {
   struct Factory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginCall(0, 3);
+      auto args = pb.BeginCall(pb.FindFunction("element"), 3);
       args.AddArg(pb.MakeNumericConstant(11));
       args.AddArg(pb.MakeBinary(mp::expr::ADD, x, pb.MakeNumericConstant(2)));
       args.AddArg(pb.MakeNumericConstant(1));
@@ -156,7 +156,7 @@ TEST_F(FunctionTest, ElementConstantAtVariableIndex) {
 TEST_F(FunctionTest, ElementExprAtVariableIndex) {
   struct Factory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginCall(0, 3);
+      auto args = pb.BeginCall(pb.FindFunction("element"), 3);
       args.AddArg(x);
       args.AddArg(pb.MakeNumericConstant(22));
       args.AddArg(y);
@@ -169,7 +169,7 @@ TEST_F(FunctionTest, ElementExprAtVariableIndex) {
 TEST_F(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
   struct Factory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginCall(0, 3);
+      auto args = pb.BeginCall(pb.FindFunction("element"), 3);
       args.AddArg(pb.MakeNumericConstant(11));
       args.AddArg(pb.MakeBinary(mp::expr::ADD, x, pb.MakeNumericConstant(2)));
       args.AddArg(y);
@@ -183,20 +183,21 @@ TEST_F(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
 // in_relation constraint tests
 
 // Makes a problem for testing in_relation constraint.
-void MakeInRelationProblem(asl::internal::ASLBuilder &pb) {
+asl::Function MakeInRelationProblem(asl::internal::ASLBuilder &pb) {
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_cons = 1;
   info.num_objs = info.num_logical_cons = info.num_funcs = 1;
   pb.SetInfo(info);
-  pb.SetFunction(0, "in_relation", -1, mp::func::NUMERIC);
+  auto in_relation = pb.AddFunction("in_relation", -1, mp::func::NUMERIC);
   pb.AddVar(0, 100, var::INTEGER);
   pb.AddObj(obj::MIN, NumericExpr(), 0).AddTerm(0, 1);
+  return in_relation;
 }
 
 TEST_F(FunctionTest, InRelationConstraint) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
-  MakeInRelationProblem(pb);
-  auto args = pb.BeginCall(0, 2);
+  auto in_relation = MakeInRelationProblem(pb);
+  auto args = pb.BeginCall(in_relation, 2);
   args.AddArg(pb.MakeVariable(0));
   args.AddArg(pb.MakeNumericConstant(42));
   pb.AddCon(pb.MakeRelational(
@@ -207,7 +208,7 @@ TEST_F(FunctionTest, InRelationConstraint) {
 TEST_F(FunctionTest, NestedInRelationNotSupported) {
   struct Factory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginCall(1, 2);
+      auto args = pb.BeginCall(pb.FindFunction("in_relation"), 2);
       args.AddArg(x);
       args.AddArg(pb.MakeNumericConstant(42));
       return pb.MakeBinary(mp::expr::ADD, pb.EndCall(args), one);
@@ -219,8 +220,8 @@ TEST_F(FunctionTest, NestedInRelationNotSupported) {
 
 TEST_F(FunctionTest, TooFewArgsToInRelationConstraint) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
-  MakeInRelationProblem(pb);
-  auto args = pb.BeginCall(0, 0);
+  auto in_relation = MakeInRelationProblem(pb);
+  auto args = pb.BeginCall(in_relation, 0);
   pb.AddCon(pb.MakeRelational(
               mp::expr::NE, pb.EndCall(args), pb.MakeNumericConstant(0)));
   EXPECT_THROW_MSG(Solve(pb), mp::Error, "in_relation: too few arguments");
@@ -231,13 +232,13 @@ void MakeInRelationProblem2(asl::internal::ASLBuilder &pb, int num_const_args) {
   info.num_vars = info.num_nl_integer_vars_in_cons = 2;
   info.num_objs = info.num_logical_cons = info.num_funcs = 1;
   pb.SetInfo(info);
-  pb.SetFunction(0, "in_relation", -1, mp::func::NUMERIC);
+  auto in_relation = pb.AddFunction("in_relation", -1, mp::func::NUMERIC);
   pb.AddVar(0, 100, var::INTEGER);
   pb.AddVar(0, 100, var::INTEGER);
   auto obj = pb.AddObj(obj::MIN, NumericExpr(), 2);
   obj.AddTerm(0, 1);
   obj.AddTerm(1, 1);
-  auto args = pb.BeginCall(0, num_const_args + 2);
+  auto args = pb.BeginCall(in_relation, num_const_args + 2);
   args.AddArg(pb.MakeVariable(0));
   args.AddArg(pb.MakeVariable(1));
   for (int i = 1; i <= num_const_args; ++i)
@@ -261,8 +262,8 @@ TEST_F(FunctionTest, InRelationTuple) {
 
 TEST_F(FunctionTest, InRelationEmptySet) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
-  MakeInRelationProblem(pb);
-  auto args = pb.BeginCall(0, 1);
+  auto in_relation = MakeInRelationProblem(pb);
+  auto args = pb.BeginCall(in_relation, 1);
   args.AddArg(pb.MakeVariable(0));
   pb.AddCon(pb.MakeRelational(
               mp::expr::NE, pb.EndCall(args), pb.MakeNumericConstant(0)));
@@ -271,8 +272,8 @@ TEST_F(FunctionTest, InRelationEmptySet) {
 
 TEST_F(FunctionTest, InRelationNonConstantSetElement) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
-  MakeInRelationProblem(pb);
-  auto args = pb.BeginCall(0, 3);
+  auto in_relation = MakeInRelationProblem(pb);
+  auto args = pb.BeginCall(in_relation, 3);
   args.AddArg(pb.MakeVariable(0));
   args.AddArg(pb.MakeNumericConstant(0));
   args.AddArg(pb.MakeVariable(0));

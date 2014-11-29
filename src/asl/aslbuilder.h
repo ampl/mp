@@ -342,6 +342,10 @@ class ASLBuilder {
   Function AddFunction(fmt::StringRef name, int num_args,
                        func::Type type = func::NUMERIC);
 
+  Function FindFunction(fmt::StringRef name) const {
+    return Function(func_lookup_ASL(asl_, name.c_str(), 0));
+  }
+
   class SuffixHandler {
    private:
     int *int_values_;
