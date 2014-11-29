@@ -495,13 +495,12 @@ class TestNLHandler {
     WriteSep() << "l" << index << ": " << expr << ";";
   }
 
-  LinearExprHandler BeginCommonExpr(int num_terms) {
-    WriteSep().write("e{}: ", num_terms);
+  LinearExprHandler BeginCommonExpr(int index, int num_terms) {
+    WriteSep().write("e{} {}: ", index, num_terms);
     return LinearExprHandler(log, false);
   }
-  void EndCommonExpr(int index, LinearExprHandler,
-                     std::string expr, int position) {
-    log.write(" + {} {}/{};", expr, index, position);
+  void EndCommonExpr(LinearExprHandler, std::string expr, int position) {
+    log.write(" + {} {};", expr, position);
   }
 
   void OnInitialValue(int var_index, double value) {
@@ -778,11 +777,11 @@ struct TestNLHandler2 {
     void AddTerm(int, double) {}
   };
 
-  LinearExprHandler BeginCommonExpr(int) {
+  LinearExprHandler BeginCommonExpr(int, int) {
     return LinearExprHandler();
   }
 
-  void EndCommonExpr(int, LinearExprHandler, TestNumericExpr, int) {}
+  void EndCommonExpr(LinearExprHandler, TestNumericExpr, int) {}
 
   struct ColumnSizeHandler {
     void Add(int) {}
@@ -1257,8 +1256,8 @@ TEST(NLTest, ReadFunction) {
 }
 
 TEST(NLTest, ReadCommonExpr) {
-  EXPECT_READ("e0:  + b2(v0, 42) 0/1;", "V5 0 1\no2\nv0\nn42\n");
-  EXPECT_READ("e2: 2 * v1 + 3 * v0 + 0 0/1;", "V5 2 1\n1 2.0\n0 3\nn0\n");
+  EXPECT_READ("e0 0:  + b2(v0, 42) 1;", "V5 0 1\no2\nv0\nn42\n");
+  EXPECT_READ("e0 2: 2 * v1 + 3 * v0 + 0 1;", "V5 2 1\n1 2.0\n0 3\nn0\n");
   EXPECT_READ_ERROR("V4 0 1\nv0\n", "(input):17:2: integer 4 out of bounds");
   EXPECT_READ_ERROR("V6 0 1\nv0\n", "(input):17:2: integer 6 out of bounds");
 }
@@ -1315,6 +1314,7 @@ TEST(NLProblemBuilderTest, Forward) {
   EXPECT_FORWARD_RET(OnNumericConstant, MakeNumericConstant,
                      (2.2), TestNumericExpr(ID));
   EXPECT_FORWARD_RET(OnVariable, MakeVariable, (33), TestVariable(ID));
+  EXPECT_FORWARD_RET(OnCommonExprRef, MakeCommonExpr, (33), TestVariable(ID));
   EXPECT_FORWARD_RET(OnUnary, MakeUnary, (expr::ABS, TestNumericExpr(ID)),
                      TestNumericExpr(ID2));
   EXPECT_FORWARD_RET(OnBinary, MakeBinary,
@@ -1481,13 +1481,10 @@ TEST(NLProblemBuilderTest, OnCommonExpr) {
   adapter.OnHeader(header);
   auto expr_builder = TestLinearExprBuilder(ID);
   EXPECT_CALL(builder, BeginCommonExpr(11)).WillOnce(Return(expr_builder));
-  adapter.BeginCommonExpr(11);
+  adapter.BeginCommonExpr(0, 11);
   auto expr = TestNumericExpr(ID);
-  auto result = TestNumericExpr(ID2);
-  EXPECT_CALL(builder, EndCommonExpr(expr_builder, expr, 22)).
-      WillOnce(Return(result));
-  adapter.EndCommonExpr(0, expr_builder, expr, 22);
-  EXPECT_EQ(result, adapter.OnCommonExprRef(0));
+  EXPECT_CALL(builder, EndCommonExpr(expr_builder, expr, 22));
+  adapter.EndCommonExpr(expr_builder, expr, 22);
 }
 
 TEST(NLTest, ErrorOnNonexistentNLFile) {

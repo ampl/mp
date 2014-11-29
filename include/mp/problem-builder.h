@@ -110,8 +110,8 @@ class ProblemBuilder {
     return LinearExprBuilder();
   }
 
-  NumericExpr EndCommonExpr(LinearExprBuilder builder, NumericExpr expr,
-                            int position) {
+  void EndCommonExpr(LinearExprBuilder builder,
+                     NumericExpr expr, int position) {
     MP_UNUSED3(builder, expr, position);
   }
 

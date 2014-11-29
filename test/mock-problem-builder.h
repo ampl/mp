@@ -142,8 +142,8 @@ class MockProblemBuilder {
   typedef TestLinearExprBuilder LinearExprBuilder;
 
   MOCK_METHOD1(BeginCommonExpr, LinearExprBuilder (int num_linear_terms));
-  MOCK_METHOD3(EndCommonExpr, NumericExpr (LinearExprBuilder builder,
-                                           NumericExpr expr, int position));
+  MOCK_METHOD3(EndCommonExpr, void (LinearExprBuilder builder,
+                                    NumericExpr expr, int position));
 
   MOCK_METHOD3(SetComplement, void (int con_index, int var_index, int flags));
 
@@ -169,6 +169,7 @@ class MockProblemBuilder {
 
   MOCK_METHOD1(MakeNumericConstant, NumericExpr (double value));
   MOCK_METHOD1(MakeVariable, Variable (int var_index));
+  MOCK_METHOD1(MakeCommonExpr, NumericExpr (int index));
   MOCK_METHOD2(MakeUnary, NumericExpr (mp::expr::Kind kind, NumericExpr arg));
   MOCK_METHOD3(MakeBinary,
                NumericExpr (mp::expr::Kind kind,

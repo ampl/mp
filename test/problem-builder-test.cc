@@ -38,8 +38,8 @@ TEST(ProblemBuilderTest, UseWithProblemBuilderToNLAdapter) {
   EXPECT_CALL(builder, ReportUnhandledConstruct(::testing::_)).
       Times(::testing::Exactly(2));
   handler.OnNumericConstant(0);
-  auto expr_builder = handler.BeginCommonExpr(0);
-  handler.EndCommonExpr(0, expr_builder, TestExpr(), 0);
+  auto expr_builder = handler.BeginCommonExpr(0, 0);
+  handler.EndCommonExpr(expr_builder, TestExpr(), 0);
 }
 
 // Check that handling problem info doesn't throw an exception.

@@ -52,6 +52,7 @@ class LSProblemBuilder :
   int num_cons_;
 
   std::vector<ls::LSExpression> vars_;
+  std::vector<ls::LSExpression> common_exprs_;
   std::vector<double> initial_values_;
 
   typedef ProblemBuilder<LSProblemBuilder, ls::LSExpression> Base;
@@ -186,14 +187,13 @@ class LSProblemBuilder :
           num_terms != 0 ? model_.createExpression(ls::O_Sum) : expr);
   }
 
-  ls::LSExpression EndCommonExpr(
-      LinearExprBuilder builder, ls::LSExpression expr, int ) {
+  void EndCommonExpr(LinearExprBuilder builder, ls::LSExpression expr, int) {
     ls::LSExpression result = builder.expr();
     if (result == ls::LSExpression())
-      return expr;
+      result = expr;
     if (expr != ls::LSExpression())
       result.addOperand(expr);
-    return result;
+    common_exprs_.push_back(result);
   }
 
   void SetInitialValue(int var_index, double value) {
@@ -216,6 +216,10 @@ class LSProblemBuilder :
   ls::LSExpression MakeVariable(int var_index) {
     CheckBounds(var_index, vars_.size());
     return vars_[var_index];
+  }
+
+  ls::LSExpression MakeCommonExpr(int index) {
+    return common_exprs_[index];
   }
 
   ls::LSExpression MakeUnary(expr::Kind kind, ls::LSExpression arg);

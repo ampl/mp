@@ -399,6 +399,9 @@ class ASLBuilder {
   }
 
   Variable MakeVariable(int var_index);
+  Variable MakeCommonExpr(int index) {
+    return MakeVariable(index);
+  }
 
   UnaryExpr MakeUnary(expr::Kind kind, NumericExpr arg);
 

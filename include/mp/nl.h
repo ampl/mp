@@ -198,14 +198,14 @@ class NLHandler {
   };
 
   // Receives notification of a common expression (defined variable).
-  LinearExprHandler BeginCommonExpr(int num_linear_terms) {
-    MP_UNUSED(num_linear_terms);
+  LinearExprHandler BeginCommonExpr(int index, int num_linear_terms) {
+    MP_UNUSED2(index, num_linear_terms);
     return LinearExprHandler();
   }
 
-  void EndCommonExpr(int index, LinearExprHandler handler,
+  void EndCommonExpr(LinearExprHandler handler,
                      NumericExpr expr, int position) {
-    MP_UNUSED3(index, handler, expr); MP_UNUSED(position);
+    MP_UNUSED3(handler, expr, position);
   }
 
   // Receives notification of a complementarity relation.
@@ -501,9 +501,6 @@ class ProblemBuilderToNLAdapter {
   };
   std::vector<ConInfo> cons_;
 
-  // Common expressions
-  std::vector<NumericExpr> exprs_;
-
  protected:
   void set_obj_index(int index) { obj_index_ = index; }
 
@@ -531,7 +528,6 @@ class ProblemBuilderToNLAdapter {
     num_continuous_vars_ = h.num_continuous_vars();
     objs_.resize(h.num_objs);
     cons_.resize(h.num_algebraic_cons);
-    exprs_.resize(h.num_common_exprs());
 
     // Update the number of objectives if necessary.
     int num_objs = 0;
@@ -603,13 +599,13 @@ class ProblemBuilderToNLAdapter {
   typedef typename ProblemBuilder::LinearExprBuilder LinearExprHandler;
 
   // Receives notification of a commmon expression (defined variable).
-  LinearExprHandler BeginCommonExpr(int num_linear_terms) {
+  LinearExprHandler BeginCommonExpr(int index, int num_linear_terms) {
+    MP_UNUSED(index);
     return builder_.BeginCommonExpr(num_linear_terms);
   }
-  void EndCommonExpr(int index, LinearExprHandler handler,
+  void EndCommonExpr(LinearExprHandler handler,
                      NumericExpr expr, int position) {
-    assert(0 <= index && static_cast<unsigned>(index) < exprs_.size());
-    exprs_[index] = builder_.EndCommonExpr(handler, expr, position);
+    builder_.EndCommonExpr(handler, expr, position);
   }
 
   // Receives notification of variable bounds.
@@ -673,9 +669,8 @@ class ProblemBuilderToNLAdapter {
   }
 
   // Receives notification of a common expression (defined variable) reference.
-  NumericExpr OnCommonExprRef(int index) {
-    assert(0 <= index && static_cast<unsigned>(index) < exprs_.size());
-    return exprs_[index];
+  NumericExpr OnCommonExprRef(int expr_index) {
+    return builder_.MakeCommonExpr(expr_index);
   }
 
   // Receives notification of a unary expression.
@@ -1663,11 +1658,11 @@ void NLReader<Reader, Handler>::Read(Reader *bound_reader) {
       int position = reader_.ReadUInt();
       reader_.ReadTillEndOfLine();
       typename Handler::LinearExprHandler
-          expr_handler(handler_.BeginCommonExpr(num_linear_terms));
+          expr_handler(handler_.BeginCommonExpr(expr_index, num_linear_terms));
       if (num_linear_terms != 0)
         ReadLinearExpr(num_linear_terms, expr_handler);
       handler_.EndCommonExpr(
-            expr_index, expr_handler, ReadNumericExpr(), position);
+            expr_handler, ReadNumericExpr(), position);
       break;
     }
     case 'F': {
