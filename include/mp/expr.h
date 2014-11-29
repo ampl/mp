@@ -215,9 +215,9 @@ class NumericConstant : public NumericExpr {
 
 MP_SPECIALIZE_IS(NumericConstant, CONSTANT)
 
-// A reference to a variable.
-// Example: x
-class Variable : public NumericExpr {
+// A reference expression.
+template <expr::Kind K>
+class ReferenceExpr : public NumericExpr {
  private:
   struct Impl : Expr::Impl {
     int index;
@@ -225,11 +225,20 @@ class Variable : public NumericExpr {
   MP_EXPR;
 
  public:
-  // Returns the index of the referenced variable.
+  static const expr::Kind KIND = K;
+
+  // Returns the index of the referenced object.
   int index() const { return impl()->index; }
 };
 
+// A reference to a variable.
+// Example: x
+typedef ReferenceExpr<expr::VARIABLE> Variable;
 MP_SPECIALIZE_IS(Variable, VARIABLE)
+
+// A reference to a common expression.
+typedef ReferenceExpr<expr::COMMON_EXPR> CommonExpr;
+MP_SPECIALIZE_IS(CommonExpr, COMMON_EXPR)
 
 // A unary expression.
 // Base: base expression class.
@@ -565,6 +574,14 @@ class BasicExprFactory : private Alloc {
     return impl;
   }
 
+  // Makes a reference expression.
+  template <typename ExprType>
+  ExprType MakeReference(int index) {
+    typename ExprType::Impl *impl = Allocate<ExprType>(ExprType::KIND);
+    impl->index = index;
+    return Expr::Create<ExprType>(impl);
+  }
+
   template <typename ExprType, typename Arg>
   ExprType MakeUnary(expr::Kind kind, Arg arg) {
     MP_ASSERT(arg != 0, "invalid argument");
@@ -656,9 +673,12 @@ class BasicExprFactory : private Alloc {
 
   // Makes a variable reference.
   Variable MakeVariable(int index) {
-    Variable::Impl *impl = Allocate<Variable>(expr::VARIABLE);
-    impl->index = index;
-    return Expr::Create<Variable>(impl);
+    return MakeReference<Variable>(index);
+  }
+
+  // Makes a common expression reference.
+  CommonExpr MakeCommonExpr(int index) {
+    return MakeReference<CommonExpr>(index);
   }
 
   // Makes a unary expression.

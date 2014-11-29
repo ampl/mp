@@ -92,6 +92,7 @@ const mp::expr::OpCodeInfo mp::expr::OpCodeInfo::INFO[] = {
 const mp::internal::ExprInfo mp::internal::ExprInfo::INFO[] = {
   {-1, prec::UNKNOWN, "unknown"},
   {82, prec::PRIMARY, "variable"},
+  {-1, prec::PRIMARY, "common expression"},
   {16, prec::UNARY, "unary -"},
   {15, prec::CALL, "abs"},
   {13, prec::CALL, "floor"},

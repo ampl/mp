@@ -47,7 +47,8 @@ struct ExprInfo {
   EXPR_(name, name, opcode, precedence, str)
 
 const ExprInfo info[] = {
-  EXPR(VARIABLE, 82, PRIMARY, "variable"),
+  EXPR(VARIABLE,    82, PRIMARY, "variable"),
+  EXPR(COMMON_EXPR, -1, PRIMARY, "common expression"),
 
   // Unary expressions.
 #define UNARY(name, opcode, precedence, str) \

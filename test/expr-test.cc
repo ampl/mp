@@ -71,6 +71,17 @@ TEST(ExprTest, Variable) {
   EXPECT_EQ(42, e.index());
 }
 
+TEST(ExprTest, CommonExpr) {
+  mp::CommonExpr e;
+  EXPECT_TRUE(e == 0);
+  (void)mp::NumericExpr(e);
+  ExprFactory factory;
+  e = factory.MakeCommonExpr(42);
+  EXPECT_EQ(expr::COMMON_EXPR, e.kind());
+  EXPECT_TRUE(e != 0);
+  EXPECT_EQ(42, e.index());
+}
+
 TEST(ExprTest, UnaryExpr) {
   mp::UnaryExpr e;
   EXPECT_TRUE(e == 0);

@@ -52,6 +52,7 @@ enum Kind {
   // [FIRST_NUMERIC, LAST_NUMERIC].
   FIRST_NUMERIC = FIRST_EXPR,
   VARIABLE = FIRST_NUMERIC,
+  COMMON_EXPR,
 
   // Unary expressions.
   FIRST_UNARY,
