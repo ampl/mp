@@ -474,6 +474,7 @@ class NLHandler {
 template <typename ProblemBuilder>
 class ProblemBuilderToNLAdapter {
  public:
+  typedef typename ProblemBuilder::Function Function;
   typedef typename ProblemBuilder::Expr Expr;
   typedef typename ProblemBuilder::NumericExpr NumericExpr;
   typedef typename ProblemBuilder::LogicalExpr LogicalExpr;
@@ -501,6 +502,8 @@ class ProblemBuilderToNLAdapter {
   };
   std::vector<ConInfo> cons_;
 
+  std::vector<Function> funcs_;
+
  protected:
   void set_obj_index(int index) { obj_index_ = index; }
 
@@ -513,6 +516,8 @@ class ProblemBuilderToNLAdapter {
     // Pass all objectives to the builder.
     NEED_ALL_OBJS = -2
   };
+
+  // TODO: check for permuted indices in segments
 
   // Index of the objective to pass to the builder, SKIP_ALL_OBJS to
   // skip all objectives, NEED_ALL_OBJS to pass all objectives.
@@ -528,6 +533,7 @@ class ProblemBuilderToNLAdapter {
     num_continuous_vars_ = h.num_continuous_vars();
     objs_.resize(h.num_objs);
     cons_.resize(h.num_algebraic_cons);
+    funcs_.resize(h.num_funcs);
 
     // Update the number of objectives if necessary.
     int num_objs = 0;
@@ -642,7 +648,7 @@ class ProblemBuilderToNLAdapter {
   // Receives notification of a function.
   void OnFunction(int index, fmt::StringRef name,
                   int num_args, func::Type type) {
-    builder_.SetFunction(index, name, num_args, type);
+    funcs_[index] = builder_.AddFunction(name, num_args, type);
   }
 
   typedef typename ProblemBuilder::SuffixHandler SuffixHandler;
@@ -702,7 +708,7 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of the beginning of a call expression.
   CallArgHandler BeginCall(int func_index, int num_args) {
-    return builder_.BeginCall(func_index, num_args);
+    return builder_.BeginCall(funcs_[func_index], num_args);
   }
   // Receives notification of the end of a call expression.
   NumericExpr EndCall(CallArgHandler handler) {

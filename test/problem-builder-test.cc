@@ -69,7 +69,7 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   builder.SetInitialDualValue(0, 0);
 
   EXPECT_DISPATCH(GetColumnSizeHandler(), "Jacobian column size");
-  EXPECT_DISPATCH(SetFunction(0, "foo", 0, mp::func::NUMERIC), "function");
+  EXPECT_DISPATCH(AddFunction("foo", 0, mp::func::NUMERIC), "function");
   EXPECT_DISPATCH(AddSuffix(0, 0, "foo"), "suffix");
   EXPECT_DISPATCH(MakeNumericConstant(0),
                   "numeric constant in nonlinear expression");
@@ -80,7 +80,8 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(BeginPLTerm(0), "piecewise-linear term");
   EXPECT_DISPATCH(EndPLTerm(TestProblemBuilder::PLTermHandler(), TestExpr()),
                   "piecewise-linear term");
-  EXPECT_DISPATCH(BeginCall(0, 0), "function call");
+  EXPECT_DISPATCH(BeginCall(TestProblemBuilder::Function(), 0),
+                  "function call");
   EXPECT_DISPATCH(EndCall(TestProblemBuilder::CallArgHandler()),
                   "function call");
   EXPECT_DISPATCH(BeginVarArg(mp::expr::MIN, 0), "min");

@@ -214,6 +214,7 @@ void ASLBuilder::Init(ASL *asl) {
   obj_index_ = 0;
   con_index_ = 0;
   lcon_index_ = 0;
+  func_index_ = 0;
   expr_index_ = 0;
 }
 
@@ -598,8 +599,9 @@ Function ASLBuilder::AddFunction(
   return Function(fi);
 }
 
-Function ASLBuilder::SetFunction(
-    int index, fmt::StringRef name, int num_args, func::Type type) {
+Function ASLBuilder::AddFunction(
+    fmt::StringRef name, int num_args, func::Type type) {
+  int index = func_index_++;
   assert(index >= 0 && index < asl_->i.nfunc_);
   // Make sure the name is null-terminated for C API.
   fmt::MemoryWriter cname;

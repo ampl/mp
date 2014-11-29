@@ -39,6 +39,10 @@ enum IDType { NULL_ID = 0, ID = 42, ID2, ID3, ID4 };
  private: \
   IDType id_
 
+struct TestFunction {
+  DEFINE_ID(TestFunction);
+};
+
 template <int I>
 struct BasicTestExpr {
   DEFINE_ID(BasicTestExpr);
@@ -99,6 +103,7 @@ struct TestPLTermHandler {
 // A mock problem builder.
 class MockProblemBuilder {
  public:
+  typedef TestFunction Function;
   typedef TestExpr Expr;
   typedef TestNumericExpr NumericExpr;
   typedef TestLogicalExpr LogicalExpr;
@@ -154,8 +159,8 @@ class MockProblemBuilder {
 
   MOCK_METHOD0(GetColumnSizeHandler, ColumnSizeHandler ());
 
-  MOCK_METHOD4(SetFunction, void (int index, fmt::StringRef name,
-                                  int num_args, mp::func::Type type));
+  MOCK_METHOD3(AddFunction, Function (fmt::StringRef name,
+                                      int num_args, mp::func::Type type));
 
   typedef TestSuffixHandler SuffixHandler;
 
@@ -184,7 +189,7 @@ class MockProblemBuilder {
   MOCK_METHOD1(BeginPLTerm, PLTermHandler (int num_breakpoints));
   MOCK_METHOD2(EndPLTerm, NumericExpr (PLTermHandler handler, NumericExpr arg));
 
-  MOCK_METHOD2(BeginCall, CallArgHandler (int func_index, int num_args));
+  MOCK_METHOD2(BeginCall, CallArgHandler (Function func, int num_args));
   MOCK_METHOD1(EndCall, NumericExpr (CallArgHandler handler));
 
   MOCK_METHOD2(BeginVarArg, VarArgHandler (mp::expr::Kind kind, int num_args));

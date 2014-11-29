@@ -140,11 +140,13 @@ class ProblemBuilder {
     return ColumnSizeHandler();
   }
 
-  // Sets a function at the given index.
-  void SetFunction(int index, fmt::StringRef name,
-                   int num_args, func::Type type) {
-    MP_UNUSED3(index, name, num_args); MP_UNUSED(type);
+  struct Function {};
+
+  // Adds a function.
+  Function AddFunction(fmt::StringRef name, int num_args, func::Type type) {
+    MP_UNUSED3(name, num_args, type);
     MP_DISPATCH(ReportUnhandledConstruct("function"));
+    return Function();
   }
 
   struct SuffixHandler {
@@ -213,8 +215,8 @@ class ProblemBuilder {
     return NumericExpr();
   }
 
-  CallArgHandler BeginCall(int func_index, int num_args) {
-    MP_UNUSED2(func_index, num_args);
+  CallArgHandler BeginCall(Function func, int num_args) {
+    MP_UNUSED2(func, num_args);
     MP_DISPATCH(ReportUnhandledConstruct("function call"));
     return CallArgHandler();
   }

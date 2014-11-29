@@ -855,7 +855,7 @@ TEST_F(NLSolverTest, Call) {
   pb.SetInfo(info);
   pb.AddVar(0, 0, mp::var::INTEGER);
   try {
-    pb.SetFunction(0, "foo", 2, mp::func::NUMERIC);
+    pb.AddFunction("foo", 2, mp::func::NUMERIC);
   } catch (const mp::UnsupportedError &) {
     // SetFunction may throw UnsupportedError.
     return;
@@ -864,8 +864,8 @@ TEST_F(NLSolverTest, Call) {
     return;
   }
   EXPECT_THROW({
-      pb.SetFunction(0, "foo", 2, mp::func::NUMERIC);
-      auto call = pb.BeginCall(0, 2);
+      ProblemBuilder::Function f = pb.AddFunction("foo", 2, mp::func::NUMERIC);
+      auto call = pb.BeginCall(f, 2);
       pb.AddObj(mp::obj::MIN, pb.EndCall(call), 0);
       Solve(pb);
   }, mp::UnsupportedError);

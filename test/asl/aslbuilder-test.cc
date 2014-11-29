@@ -859,7 +859,7 @@ TEST(ASLBuilderTest, AddLogicalConIndexOutOfRange) {
 }
 #endif
 
-TEST(ASLBuilderTest, AddFunction) {
+TEST(ASLBuilderTest, RegisterFunction) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
   char info = 0;
@@ -867,7 +867,7 @@ TEST(ASLBuilderTest, AddFunction) {
   Function f = builder.AddFunction("foo", TestFunc, 11, func::SYMBOLIC, &info);
   EXPECT_EQ(11, f.num_args());
   EXPECT_STREQ("foo", f.name());
-  builder.SetFunction(0, "foo", 11);
+  builder.AddFunction("foo", 11);
   func_info *fi = asl->i.funcs_[0];
   EXPECT_TRUE(TestFunc == fi->funcp);
   EXPECT_EQ(func::SYMBOLIC, fi->ftype);
@@ -876,18 +876,18 @@ TEST(ASLBuilderTest, AddFunction) {
   const func_info *funcs[] = {fi};
   CheckFunctionList(asl, funcs);
   builder.AddFunction("bar", TestFunc, 0);
-  builder.SetFunction(0, "bar", 0);
+  builder.AddFunction("bar", 0);
   const func_info *funcs2[] = {fi, asl->i.funcs_[0]};
   CheckFunctionList(asl, funcs2);
   EXPECT_NE(Function(), builder.AddFunction("f1", TestFunc, 0, func::NUMERIC));
 }
 
-TEST(ASLBuilderTest, SetFunction) {
+TEST(ASLBuilderTest, AddFunction) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
   builder.AddFunction("foo", TestFunc, 3, func::SYMBOLIC);
   EXPECT_EQ(0, asl->i.funcs_[1]);
-  Function f = builder.SetFunction(1, "foo", 3, func::SYMBOLIC);
+  Function f = builder.AddFunction("foo", 3, func::SYMBOLIC);
   EXPECT_STREQ("foo", f.name());
   EXPECT_EQ(3, f.num_args());
   EXPECT_STREQ("foo", asl->i.funcs_[1]->name);
@@ -895,50 +895,37 @@ TEST(ASLBuilderTest, SetFunction) {
   EXPECT_EQ(1, asl->i.funcs_[1]->ftype);
 }
 
-TEST(ASLBuilderTest, SetFunctionSameIndex) {
-  ASLPtr asl;
-  TestASLBuilder builder(asl);
-  builder.AddFunction("f", TestFunc, 0);
-  builder.AddFunction("g", TestFunc, 0);
-  EXPECT_EQ(0, asl->i.funcs_[0]);
-  builder.SetFunction(0, "f", 0);
-  EXPECT_STREQ("f", asl->i.funcs_[0]->name);
-  builder.SetFunction(0, "g", 0);
-  EXPECT_STREQ("g", asl->i.funcs_[0]->name);
-}
-
 #ifndef NDEBUG
-TEST(ASLBuilderTest, SetFunctionIndexOutOfRange) {
+TEST(ASLBuilderTest, AddFunctionIndexOutOfRange) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
-  builder.AddFunction("foo", TestFunc, 3);
-  EXPECT_DEBUG_DEATH(builder.SetFunction(-1, "f", 0), "Assertion");
-  EXPECT_DEBUG_DEATH(
-        builder.SetFunction(TestASLBuilder::NUM_FUNCS, "foo", 3), "Assertion");
+  for (int i = 0; i < TestASLBuilder::NUM_FUNCS; ++i)
+    builder.AddFunction("foo", TestFunc, 3);
+  EXPECT_DEBUG_DEATH(builder.AddFunction("foo", 3), "Assertion");
 }
 #endif
 
-TEST(ASLBuilderTest, SetFunctionMatchNumArgs) {
+TEST(ASLBuilderTest, AddFunctionMatchNumArgs) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
   builder.AddFunction("f", TestFunc, 3);
-  CHECK_THROW_ASL_ERROR(builder.SetFunction(0, "f", 2),
+  CHECK_THROW_ASL_ERROR(builder.AddFunction("f", 2),
     ASL_readerr_argerr, "function f: disagreement of nargs: 3 and 2");
   builder.AddFunction("g", TestFunc, -3);
-  builder.SetFunction(0, "g", 0);
-  builder.SetFunction(0, "f", -4);
-  CHECK_THROW_ASL_ERROR(builder.SetFunction(0, "f", -5),
+  builder.AddFunction("g", 0);
+  builder.AddFunction("f", -4);
+  CHECK_THROW_ASL_ERROR(builder.AddFunction("f", -5),
     ASL_readerr_argerr, "function f: disagreement of nargs: 3 and -5");
 }
 
 TEST(ASLBuilderTest, SetMissingFunction) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
-  CHECK_THROW_ASL_ERROR(builder.SetFunction(0, "f", 0),
+  CHECK_THROW_ASL_ERROR(builder.AddFunction("f", 0),
     ASL_readerr_unavail, "function f not available");
   ASLPtr asl2;
   TestASLBuilder builder2(asl2, MakeHeader(1), ASL_allow_missing_funcs);
-  builder2.SetFunction(0, "f", 0);
+  builder2.AddFunction("f", 0);
   EXPECT_STREQ("f", asl2->i.funcs_[0]->name);
   arglist al = arglist();
   asl2->i.funcs_[0]->funcp(&al);

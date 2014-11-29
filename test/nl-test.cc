@@ -1307,8 +1307,6 @@ TEST(NLProblemBuilderTest, Forward) {
   // are compared as pointers and string literals they point to may not
   // be merged.
   fmt::StringRef str("foo");
-  EXPECT_FORWARD(OnFunction, SetFunction, (77, str, 88, mp::func::SYMBOLIC));
-
   EXPECT_FORWARD_RET(OnSuffix, AddSuffix, (99, 11, str), TestSuffixHandler(ID));
 
   EXPECT_FORWARD_RET(OnNumericConstant, MakeNumericConstant,
@@ -1328,10 +1326,6 @@ TEST(NLProblemBuilderTest, Forward) {
   EXPECT_FORWARD_RET(EndPLTerm, EndPLTerm,
                      (TestPLTermHandler(ID), TestVariable(ID2)),
                      TestNumericExpr(ID3));
-
-  EXPECT_FORWARD_RET(BeginCall, BeginCall, (55, 66), TestCallArgHandler(ID));
-  EXPECT_FORWARD_RET(EndCall, EndCall, (TestCallArgHandler(ID)),
-                     TestNumericExpr(ID2));
 
   EXPECT_FORWARD_RET(BeginVarArg, BeginVarArg, (expr::MAX, 77),
                      TestVarArgHandler(ID));
@@ -1485,6 +1479,26 @@ TEST(NLProblemBuilderTest, OnCommonExpr) {
   auto expr = TestNumericExpr(ID);
   EXPECT_CALL(builder, EndCommonExpr(expr_builder, expr, 22));
   adapter.EndCommonExpr(expr_builder, expr, 22);
+}
+
+TEST(NLProblemBuilderTest, OnFunction) {
+  StrictMock<MockProblemBuilder> builder;
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  auto header = mp::NLHeader();
+  header.num_funcs = 1;
+  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  adapter.OnHeader(header);
+  auto func = TestFunction(ID);
+  fmt::StringRef name("f");
+  EXPECT_CALL(builder, AddFunction(name, 11, mp::func::SYMBOLIC)).
+      WillOnce(Return(func));
+  adapter.OnFunction(0, name, 11, mp::func::SYMBOLIC);
+  auto arg_handler = TestCallArgHandler(ID);
+  EXPECT_CALL(builder, BeginCall(func, 11)).WillOnce(Return(arg_handler));
+  adapter.BeginCall(0, 11);
+  EXPECT_CALL(builder, EndCall(arg_handler)).
+      WillOnce(Return(TestNumericExpr(ID)));
+  adapter.EndCall(arg_handler);
 }
 
 TEST(NLTest, ErrorOnNonexistentNLFile) {

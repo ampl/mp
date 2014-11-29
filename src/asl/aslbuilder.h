@@ -69,6 +69,7 @@ class ASLBuilder {
   int obj_index_;
   int con_index_;
   int lcon_index_;
+  int func_index_;
   int expr_index_;
 
   // "Static" data for the functions in fg_read.
@@ -175,6 +176,7 @@ class ASLBuilder {
   void Init(ASL *asl);
 
  public:
+  typedef asl::Function Function;
   typedef asl::Expr Expr;
   typedef asl::NumericExpr NumericExpr;
   typedef asl::LogicalExpr LogicalExpr;
@@ -334,10 +336,10 @@ class ASLBuilder {
   Function AddFunction(const char *name, ufunc f, int num_args,
                        func::Type type = func::NUMERIC, void *info = 0);
 
-  // Sets a function at the given index.
+  // Adds a function.
   // If the function with the specified name doesn't exist and the flag
   // ASL_allow_missing_funcs is not set, SetFunction throws ASLError.
-  Function SetFunction(int index, fmt::StringRef name, int num_args,
+  Function AddFunction(fmt::StringRef name, int num_args,
                        func::Type type = func::NUMERIC);
 
   class SuffixHandler {
@@ -439,10 +441,9 @@ class ASLBuilder {
   PiecewiseLinearExpr MakePiecewiseLinear(int num_breakpoints,
       const double *breakpoints, const double *slopes, Variable var);
 
-  CallArgHandler BeginCall(int func_index, int num_args) {
-    Function f(asl_->i.funcs_[func_index]);
+  CallArgHandler BeginCall(Function f, int num_args) {
     if (!f)
-      throw Error("function {} undefined", func_index);
+      throw Error("undefined function");
     return DoBeginCall(f, num_args);
   }
   CallExpr EndCall(CallArgHandler h);
