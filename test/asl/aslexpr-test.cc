@@ -690,7 +690,8 @@ TEST_F(ExprTest, PiecewiseLinearExpr) {
 TEST_F(ExprTest, CallExpr) {
   EXPECT_EQ(1u, CheckExpr<CallExpr>(ex::CALL));
   enum {NUM_ARGS = 3};
-  Function f = builder.AddFunction("foo", TestFunc, NUM_ARGS, func::SYMBOLIC);
+  Function f = builder.RegisterFunction(
+        "foo", TestFunc, NUM_ARGS, func::SYMBOLIC);
   const Expr args[NUM_ARGS] = {n1, n2, builder.MakeStringLiteral("abc")};
   CallExpr expr = builder.MakeCall(f, args);
   EXPECT_EQ(ex::CALL, expr.kind());
@@ -1084,7 +1085,7 @@ TEST_F(ExprTest, WritePiecewiseLinearExpr) {
 }
 
 TEST_F(ExprTest, WriteCallExpr) {
-  asl::Function f = builder.AddFunction("foo", TestFunc, -1);
+  asl::Function f = builder.RegisterFunction("foo", TestFunc, -1);
   Expr args[] = {
       MakeConst(3),
       MakeBinary(ex::ADD, MakeVariable(0), MakeConst(5)),
@@ -1206,7 +1207,7 @@ TEST_F(ExprTest, WritePairwiseExpr) {
 
 TEST_F(ExprTest, WriteStringLiteral) {
   Expr args[] = {builder.MakeStringLiteral("abc")};
-  asl::Function f = builder.AddFunction("f", TestFunc, 1, func::SYMBOLIC);
+  asl::Function f = builder.RegisterFunction("f", TestFunc, 1, func::SYMBOLIC);
   CHECK_WRITE("f('abc')", builder.MakeCall(f, args));
   args[0] = builder.MakeStringLiteral("ab'c");
   CHECK_WRITE("f('ab''c')", builder.MakeCall(f, args));
@@ -1335,7 +1336,7 @@ TEST_F(ExprTest, PiecewiseLinearExprPrecedence) {
 
 TEST_F(ExprTest, CallExprPrecedence) {
   auto x1 = MakeVariable(0), x2 = MakeVariable(1);
-  auto f = builder.AddFunction("foo", TestFunc, -1);
+  auto f = builder.RegisterFunction("foo", TestFunc, -1);
   Expr args[] = {
       builder.MakeCall(f, MakeArrayRef<Expr>(0, 0)),
       MakeBinary(ex::ADD, x1, MakeConst(5)),
@@ -1626,7 +1627,7 @@ TEST_F(ExprTest, HashPiecewiseLinearExpr) {
 TEST_F(ExprTest, HashCallExpr) {
   Variable var = MakeVariable(9);
   Expr args[2] = {n1, var};
-  Function f = builder.AddFunction("foo", TestFunc, 2, func::SYMBOLIC);
+  Function f = builder.RegisterFunction("foo", TestFunc, 2, func::SYMBOLIC);
   size_t hash = HashCombine<int>(0, ex::CALL);
   hash = HashCombine(hash, f.name());
   hash = HashCombine<NumericExpr>(hash, n1);
@@ -1726,7 +1727,7 @@ TEST_F(ExprTest, HashStringLiteral) {
   // String literal can only occur as a function argument, so test
   // it as a part of a call expression.
   Expr args[] = {builder.MakeStringLiteral("test")};
-  Function f = builder.AddFunction("foo", TestFunc, 1, func::SYMBOLIC);
+  Function f = builder.RegisterFunction("foo", TestFunc, 1, func::SYMBOLIC);
   size_t hash = HashCombine<int>(0, ex::CALL);
   hash = HashCombine(hash, f.name());
   TestString ts = {"test"};

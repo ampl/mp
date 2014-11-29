@@ -333,8 +333,8 @@ class ASLBuilder {
     // TODO
   }
 
-  Function AddFunction(const char *name, ufunc f, int num_args,
-                       func::Type type = func::NUMERIC, void *info = 0);
+  Function RegisterFunction(const char *name, ufunc f, int num_args,
+                            func::Type type = func::NUMERIC, void *info = 0);
 
   // Adds a function.
   // If the function with the specified name doesn't exist and the flag

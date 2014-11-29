@@ -581,7 +581,7 @@ ASLBuilder::ColumnSizeHandler ASLBuilder::GetColumnSizeHandler() {
   return ColumnSizeHandler(info.A_colstarts_ + 1);
 }
 
-Function ASLBuilder::AddFunction(
+Function ASLBuilder::RegisterFunction(
     const char *name, ufunc f, int num_args, func::Type type, void *info) {
   func_info *fi = func_lookup(asl_, name, 1);
   if (fi) {

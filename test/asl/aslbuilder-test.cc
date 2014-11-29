@@ -764,7 +764,7 @@ TEST(ASLBuilderTest, ASLBuilderAllowCLP) {
 
 class TestASLBuilder : public ASLBuilder {
  public:
-  enum {NUM_FUNCS = 2, NUM_OBJS = 3, NUM_CONS = 4, NUM_LOGICAL_CONS = 5};
+  enum {NUM_FUNCS = 4, NUM_OBJS = 3, NUM_CONS = 4, NUM_LOGICAL_CONS = 5};
   explicit TestASLBuilder(
       ASLPtr &asl, NLHeader header = MakeHeader(1), int extra_flags = 0)
   : ASLBuilder(asl.get()) {
@@ -864,7 +864,8 @@ TEST(ASLBuilderTest, RegisterFunction) {
   TestASLBuilder builder(asl);
   char info = 0;
   EXPECT_EQ(0, asl->i.funcsfirst_);
-  Function f = builder.AddFunction("foo", TestFunc, 11, func::SYMBOLIC, &info);
+  Function f = builder.RegisterFunction(
+        "foo", TestFunc, 11, func::SYMBOLIC, &info);
   EXPECT_EQ(11, f.num_args());
   EXPECT_STREQ("foo", f.name());
   builder.AddFunction("foo", 11);
@@ -875,32 +876,34 @@ TEST(ASLBuilderTest, RegisterFunction) {
   EXPECT_EQ(&info, fi->funcinfo);
   const func_info *funcs[] = {fi};
   CheckFunctionList(asl, funcs);
-  builder.AddFunction("bar", TestFunc, 0);
+  builder.RegisterFunction("bar", TestFunc, 0);
   builder.AddFunction("bar", 0);
-  const func_info *funcs2[] = {fi, asl->i.funcs_[0]};
+  const func_info *funcs2[] = {fi, asl->i.funcs_[1]};
   CheckFunctionList(asl, funcs2);
-  EXPECT_NE(Function(), builder.AddFunction("f1", TestFunc, 0, func::NUMERIC));
+  EXPECT_NE(Function(),
+            builder.RegisterFunction("f1", TestFunc, 0, func::NUMERIC));
 }
 
 TEST(ASLBuilderTest, AddFunction) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
-  builder.AddFunction("foo", TestFunc, 3, func::SYMBOLIC);
-  EXPECT_EQ(0, asl->i.funcs_[1]);
+  builder.RegisterFunction("foo", TestFunc, 3, func::SYMBOLIC);
+  EXPECT_EQ(0, asl->i.funcs_[0]);
   Function f = builder.AddFunction("foo", 3, func::SYMBOLIC);
   EXPECT_STREQ("foo", f.name());
   EXPECT_EQ(3, f.num_args());
-  EXPECT_STREQ("foo", asl->i.funcs_[1]->name);
-  EXPECT_EQ(3, asl->i.funcs_[1]->nargs);
-  EXPECT_EQ(1, asl->i.funcs_[1]->ftype);
+  EXPECT_STREQ("foo", asl->i.funcs_[0]->name);
+  EXPECT_EQ(3, asl->i.funcs_[0]->nargs);
+  EXPECT_EQ(1, asl->i.funcs_[0]->ftype);
 }
 
 #ifndef NDEBUG
 TEST(ASLBuilderTest, AddFunctionIndexOutOfRange) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
+  builder.RegisterFunction("foo", TestFunc, 3);
   for (int i = 0; i < TestASLBuilder::NUM_FUNCS; ++i)
-    builder.AddFunction("foo", TestFunc, 3);
+    builder.AddFunction("foo", 3);
   EXPECT_DEBUG_DEATH(builder.AddFunction("foo", 3), "Assertion");
 }
 #endif
@@ -908,10 +911,10 @@ TEST(ASLBuilderTest, AddFunctionIndexOutOfRange) {
 TEST(ASLBuilderTest, AddFunctionMatchNumArgs) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
-  builder.AddFunction("f", TestFunc, 3);
+  builder.RegisterFunction("f", TestFunc, 3);
   CHECK_THROW_ASL_ERROR(builder.AddFunction("f", 2),
     ASL_readerr_argerr, "function f: disagreement of nargs: 3 and 2");
-  builder.AddFunction("g", TestFunc, -3);
+  builder.RegisterFunction("g", TestFunc, -3);
   builder.AddFunction("g", 0);
   builder.AddFunction("f", -4);
   CHECK_THROW_ASL_ERROR(builder.AddFunction("f", -5),
@@ -948,7 +951,7 @@ TEST(ASLBuilderTest, SizeOverflow) {
 
   std::size_t num_args = (INT_MAX - sizeof(expr_f)) / sizeof(expr*) + 2;
   std::size_t max_size = INT_MAX + 1u;
-  Function f = builder.AddFunction("f", TestFunc, -1);
+  Function f = builder.RegisterFunction("f", TestFunc, -1);
   EXPECT_THROW(builder.MakeCall(
                  f, MakeArrayRef<asl::Expr>(args, num_args)), OverflowError);
   EXPECT_THROW(builder.MakeCall(
