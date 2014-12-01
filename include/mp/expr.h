@@ -664,6 +664,9 @@ class BasicExprFactory : private Alloc {
     return Expr::Create<ExprType>(impl);
   }
 
+  // Copies a string.
+  // src: Reference to a source string that may not be null-terminated
+  //      (.nl reader can generate such strings)
   static void Copy(fmt::StringRef src, char *dst) {
     const char *s = src.c_str();
     std::size_t size = src.size();
@@ -680,6 +683,7 @@ class BasicExprFactory : private Alloc {
   }
 
   // Adds a function.
+  // name: Function name that may not be null-terminated.
   Function AddFunction(fmt::StringRef name, int num_args,
                        func::Type type = func::NUMERIC);
 
