@@ -39,8 +39,6 @@ namespace mp {
 template <typename Impl, typename ExprType>
 class ProblemBuilder {
  private:
-  SuffixManager suffixes_;
-
   struct ArgHandler {
     void AddArg(ExprType arg) { MP_UNUSED(arg); }
   };
@@ -52,10 +50,12 @@ class ProblemBuilder {
   typedef Expr CountExpr;
   typedef Expr Variable;
 
-  typedef Suffix *SuffixPtr;
+  typedef mp::Suffix *SuffixPtr;
   typedef mp::SuffixSet SuffixSet;
 
-  SuffixSet &suffixes(int kind) { return suffixes_.get(kind); }
+  SuffixSet &suffixes(int) {
+    throw MakeUnsupportedError("suffix");
+  }
 
   static void ReportUnhandledConstruct(fmt::StringRef name) {
     throw MakeUnsupportedError(name);

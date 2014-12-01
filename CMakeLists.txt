@@ -240,11 +240,11 @@ endif ()
 
 add_prefix(MP_HEADERS include/mp/
   arrayref.h basic-expr-visitor.h clock.h common.h error.h expr.h
-  expr-visitor.h nl.h option.h os.h problem-builder.h rstparser.h safeint.h
-  sol.h solver.h suffix.h)
+  expr-visitor.h nl.h option.h os.h problem.h problem-builder.h rstparser.h
+  safeint.h sol.h solver.h suffix.h)
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
-  clock.cc nl.cc option.cc os.cc precedence.h rstparser.cc sol.cc
+  clock.cc nl.cc option.cc os.cc precedence.h problem.cc rstparser.cc sol.cc
   solver.cc solver-c.h)
 
 add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}

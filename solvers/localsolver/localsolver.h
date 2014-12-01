@@ -125,7 +125,7 @@ class LSProblemBuilder :
   // The return value may be different from the one returned by
   // model_.getNbConstraints() because two LocalSolver constaints are
   // added for a single range constraint.
-  int num_cons() const { return num_cons_; }
+  int num_algebraic_cons() const { return num_cons_; }
 
   ls::LSExpression *vars() { return &vars_[0]; }
 

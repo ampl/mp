@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "mp/problem-builder.h"
+#include "mp/problem.h"
 
 #define FMT_USE_FILE_DESCRIPTORS 1
 #include "gtest-extra.h"
@@ -1044,10 +1044,7 @@ struct SolCountingSolver : mp::Solver {
   explicit SolCountingSolver(bool multiple_sol)
   : mp::Solver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
 
-  struct ProblemBuilder : mp::ProblemBuilder<ProblemBuilder, int> {
-    int num_vars() const { return 0; }
-    int num_cons() const { return 0; }
-  };
+  typedef mp::Problem ProblemBuilder;
 
   void Solve(SolutionHandler &sh) {
     for (int i = 0; i < NUM_SOLUTIONS; ++i)
@@ -1241,7 +1238,7 @@ TEST(SolutionWriterTest, WriteSolution) {
   const double values[] = {11, 22, 33};
   const double dual_values[] = {44, 55};
   EXPECT_CALL(problem_builder, num_vars()).WillOnce(Return(3));
-  EXPECT_CALL(problem_builder, num_cons()).WillOnce(Return(2));
+  EXPECT_CALL(problem_builder, num_algebraic_cons()).WillOnce(Return(2));
   EXPECT_CALL(writer.sol_writer(), Write(StringRefEq("test.sol"),
                                          MatchSolution(values, dual_values)));
   writer.HandleSolution(0, "test message", values, dual_values, 42);
@@ -1309,7 +1306,7 @@ TEST(SolutionWriterTest, WriteFeasibleSolutions) {
     EXPECT_CALL(sol_writer, Write(StringRefEq(filename), _));
     writer.HandleFeasibleSolution("", 0, 0, 0);
   }
-  problem_builder.suffixes(mp::suf::PROBLEM).Add("nsol");
+  problem_builder.AddSuffix("nsol", mp::suf::PROBLEM, 0);
   EXPECT_CALL(sol_writer, Write(_, MatchNSol(nsol)));
   writer.HandleSolution(0, "", 0, 0, 0);
 }

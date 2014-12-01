@@ -25,11 +25,22 @@
 #ifndef MP_SUFFIX_H_
 #define MP_SUFFIX_H_
 
+#include <cstddef>  // for std::size_t
+#include <cstring>
+#include <set>
+#include <string>
+#include <vector>
+
+#include "mp/format.h"
+
 namespace mp {
 
 template <typename SuffixPtr>
 class SuffixData;
 
+// A suffix.
+// Suffixes are arbitrary metadata that can be attached to variables,
+// objectives, constraints and problems.
 class Suffix {
  private:
   std::string name_;
@@ -37,19 +48,21 @@ class Suffix {
   int *values_;
   std::size_t size_;
 
-  friend class SuffixData<Suffix*>;
-
   void set_data(int *values, std::size_t size) {
     size_ = size;
     values_ = values;
   }
 
- public:
-  explicit Suffix(const std::string &name, int kind = 0)
-    : name_(name), kind_(kind), values_(0), size_(0) {}
+  friend class SuffixData<Suffix*>;
 
+ public:
+  Suffix(fmt::StringRef name, int kind)
+    : name_(name.c_str(), name.size()), kind_(kind), values_(0), size_(0) {}
+
+  // Returns the suffix name.
   const char *name() const { return name_.c_str(); }
 
+  // Returns the suffix kind.
   int kind() const { return kind_; }
 
   int value(std::size_t index) const {
@@ -105,36 +118,29 @@ class SuffixData {
   }
 };
 
+// A set of suffixes.
 class SuffixSet {
  private:
-  int kind_;
-
-  struct SuffixLess {
+  struct SuffixNameLess {
     bool operator()(const Suffix &lhs, const Suffix &rhs) const {
       return std::strcmp(lhs.name(), rhs.name()) < 0;
     }
   };
 
-  typedef std::set<Suffix, SuffixLess> Set;
+  typedef std::set<Suffix, SuffixNameLess> Set;
   Set set_;
 
- public:
-  explicit SuffixSet(int kind = 0) : kind_(kind) {
-    assert(0 <= kind && kind <= suf::NUM_KINDS);
-  }
+  friend class Problem;
 
+ public:
   // Finds a suffix with specified name.
-  Suffix *Find(const char *name) {
-    Set::iterator i = set_.find(Suffix(name));
+  Suffix *Find(fmt::StringRef name) {
+    Set::iterator i = set_.find(Suffix(name, 0));
     return const_cast<Suffix*>(i != set_.end() ? &*i : 0);
   }
-  const Suffix *Find(const char *name) const {
-    Set::const_iterator i = set_.find(Suffix(name));
+  const Suffix *Find(fmt::StringRef name) const {
+    Set::const_iterator i = set_.find(Suffix(name, 0));
     return i != set_.end() ? &*i : 0;
-  }
-
-  Suffix &Add(const char *name) {
-    return const_cast<Suffix&>(*set_.insert(Suffix(name, kind_)).first);
   }
 
   typedef Set::const_iterator iterator;
@@ -142,25 +148,6 @@ class SuffixSet {
   iterator begin() const { return set_.begin(); }
   iterator end() const { return set_.end(); }
 };
-
-class SuffixManager {
- private:
-  SuffixSet suffixes_[suf::NUM_KINDS];
-
- public:
-  SuffixManager() {
-    for (int kind = 0; kind < suf::NUM_KINDS; ++kind)
-      suffixes_[kind] = SuffixSet(kind);
-  }
-
-  SuffixSet &get(int kind) {
-    assert(kind < suf::NUM_KINDS);
-    return suffixes_[kind];
-  }
-};
-
-// TODO: test suffixes
-
 }  // namespace mp
 
 #endif  // MP_SUFFIX_H_

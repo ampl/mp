@@ -1004,7 +1004,8 @@ void SolutionWriter<Solver, Writer>::HandleFeasibleSolution(
   SolutionAdapter<ProblemBuilder> sol(
         sol::UNSOLVED, 0, message.c_str(), ArrayRef<int>(0, 0),
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
-        MakeArrayRef(dual_values, dual_values ? builder_.num_cons() : 0));
+        MakeArrayRef(dual_values,
+                     dual_values ? builder_.num_algebraic_cons() : 0));
   fmt::MemoryWriter filename;
   filename << solution_stub << num_solutions_ << ".sol";
   this->Write(filename.c_str(), sol);
@@ -1024,7 +1025,8 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
   SolutionAdapter<ProblemBuilder> sol(
         status, &builder_, message.c_str(), options_,
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
-        MakeArrayRef(dual_values, dual_values ? builder_.num_cons() : 0));
+        MakeArrayRef(dual_values,
+                     dual_values ? builder_.num_algebraic_cons() : 0));
   this->Write(filename_, sol);
 }
 
