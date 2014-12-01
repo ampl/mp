@@ -1287,7 +1287,7 @@ TEST(SolutionWriterTest, CountSolutions) {
   int nsol = 5;
   for (int i = 0; i < nsol; ++i)
     writer.HandleFeasibleSolution("", 0, 0, 0);
-  problem_builder.suffixes(mp::suf::PROBLEM).Add("nsol");
+  problem_builder.AddSuffix("nsol", mp::suf::PROBLEM, 0);
   EXPECT_CALL(writer.sol_writer(), Write(_, MatchNSol(nsol)));
   writer.HandleSolution(0, "", 0, 0, 0);
 }

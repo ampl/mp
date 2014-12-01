@@ -540,7 +540,7 @@ class TestNLHandler {
     }
   };
 
-  SuffixHandler OnSuffix(int kind, int num_values, fmt::StringRef name) {
+  SuffixHandler OnSuffix(fmt::StringRef name, int kind, int num_values) {
     WriteSep().write("suffix {}:{}:{}:", name, kind, num_values);
     return SuffixHandler(log);
   }
@@ -800,7 +800,7 @@ struct TestNLHandler2 {
   struct SuffixHandler {
     void SetValue(int, double) {}
   };
-  SuffixHandler OnSuffix(int, int, fmt::StringRef) { return SuffixHandler(); }
+  SuffixHandler OnSuffix(fmt::StringRef, int, int) { return SuffixHandler(); }
 
   TestNumericExpr OnNumericConstant(double) { return TestNumericExpr(); }
   TestVariable OnVariable(int) { return TestVariable(); }
@@ -1307,7 +1307,7 @@ TEST(NLProblemBuilderTest, Forward) {
   // are compared as pointers and string literals they point to may not
   // be merged.
   fmt::StringRef str("foo");
-  EXPECT_FORWARD_RET(OnSuffix, AddSuffix, (99, 11, str), TestSuffixHandler(ID));
+  EXPECT_FORWARD_RET(OnSuffix, AddSuffix, (str, 99, 11), TestSuffixHandler(ID));
 
   EXPECT_FORWARD_RET(OnNumericConstant, MakeNumericConstant,
                      (2.2), TestNumericExpr(ID));

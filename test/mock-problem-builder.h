@@ -165,7 +165,7 @@ class MockProblemBuilder {
   typedef TestSuffixHandler SuffixHandler;
 
   MOCK_METHOD3(AddSuffix,
-               SuffixHandler (int kind, int num_values, fmt::StringRef name));
+               SuffixHandler (fmt::StringRef name, int kind, int num_values));
 
   typedef TestNumericArgHandler NumericArgHandler;
   typedef TestLogicalArgHandler LogicalArgHandler;

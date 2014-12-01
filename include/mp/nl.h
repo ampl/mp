@@ -276,8 +276,8 @@ class NLHandler {
   };
 
   // Receives notification of a suffix.
-  SuffixHandler OnSuffix(int kind, int num_values, fmt::StringRef name) {
-    MP_UNUSED3(kind, num_values, name);
+  SuffixHandler OnSuffix(fmt::StringRef name, int kind, int num_values) {
+    MP_UNUSED3(name, kind, num_values);
     return SuffixHandler();
   }
 
@@ -654,8 +654,8 @@ class ProblemBuilderToNLAdapter {
   typedef typename ProblemBuilder::SuffixHandler SuffixHandler;
 
   // Receives notification of a suffix.
-  SuffixHandler OnSuffix(int kind, int num_values, fmt::StringRef name) {
-    return builder_.AddSuffix(kind, num_values, name);
+  SuffixHandler OnSuffix(fmt::StringRef name, int kind, int num_values) {
+    return builder_.AddSuffix(name, kind, num_values);
   }
 
   typedef typename ProblemBuilder::NumericArgHandler NumericArgHandler;
@@ -1608,7 +1608,7 @@ void NLReader<Reader, Handler>::ReadSuffix(int kind) {
   reader_.ReadTillEndOfLine();
   bool is_float = (kind & suf::FLOAT) != 0;
   typename Handler::SuffixHandler
-      suffix_handler = handler_.OnSuffix(kind, num_values, name);
+      suffix_handler = handler_.OnSuffix(name, kind, num_values);
   for (int i = 0; i < num_values; ++i) {
     int index = ReadUInt(num_items);
     if (is_float)

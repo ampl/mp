@@ -155,7 +155,7 @@ class ProblemBuilder {
   };
 
   // Adds a suffix.
-  SuffixHandler AddSuffix(int kind, int num_values, fmt::StringRef name) {
+  SuffixHandler AddSuffix(fmt::StringRef name, int kind, int num_values) {
     MP_UNUSED3(kind, num_values, name);
     MP_DISPATCH(ReportUnhandledConstruct("suffix"));
     return SuffixHandler();

@@ -392,7 +392,7 @@ class ASLBuilder {
     }
   };
 
-  SuffixHandler AddSuffix(int kind, int num_values, fmt::StringRef name);
+  SuffixHandler AddSuffix(fmt::StringRef name, int kind, int num_values);
 
   // The Make* methods construct expression objects. These objects are
   // local to the currently built ASL problem and shouldn't be used with

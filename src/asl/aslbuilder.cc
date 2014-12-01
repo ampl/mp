@@ -635,7 +635,7 @@ Function ASLBuilder::AddFunction(
 }
 
 ASLBuilder::SuffixHandler ASLBuilder::AddSuffix(
-    int kind, int num_values, fmt::StringRef name) {
+    fmt::StringRef name, int kind, int num_values) {
   bool readall = (flags_ & ASL_keep_all_suffixes) != 0;
   int item_type = kind & suf::MASK;
   SufDesc *d = 0;
