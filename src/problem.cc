@@ -74,7 +74,7 @@ void Problem::SetComplement(int con_index, int var_index, int flags) {
 
 Problem::SuffixHandler Problem::AddSuffix(fmt::StringRef name, int kind, int) {
   int type = kind & suf::MASK;
-  SuffixSet::Set &set = suffixes_[type].set_;
+  SuffixSet::Set &set = suffixes(type).set_;
   Suffix &suffix = const_cast<Suffix&>(*set.insert(Suffix(name, kind)).first);
   std::size_t size = 0;
   switch (type) {

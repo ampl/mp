@@ -33,7 +33,7 @@
 namespace mp {
 
 // An optimization problem.
-class Problem : public ExprFactory {
+class Problem : public ExprFactory, public SuffixManager {
  private:
   // A variable.
   struct Var {
@@ -127,8 +127,6 @@ class Problem : public ExprFactory {
   std::vector<double> initial_dual_values_;
 
   std::vector<Function> funcs_;
-
-  mp::SuffixSet suffixes_[suf::NUM_KINDS];
 
   static std::size_t max_index() {
     return static_cast<std::size_t>(std::numeric_limits<int>::max());
@@ -230,12 +228,6 @@ class Problem : public ExprFactory {
 
   typedef Suffix *SuffixPtr;
   typedef mp::SuffixSet SuffixSet;
-
-  // Returns a set of suffixes.
-  SuffixSet &suffixes(int kind) {
-    assert(kind < suf::NUM_KINDS);
-    return suffixes_[kind];
-  }
 
   class SuffixHandler {
    private:

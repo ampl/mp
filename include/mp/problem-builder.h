@@ -37,7 +37,7 @@ namespace mp {
 
 // A minimal implementation of the ProblemBuilder concept.
 template <typename Impl, typename ExprType>
-class ProblemBuilder {
+class ProblemBuilder : public SuffixManager {
  private:
   struct ArgHandler {
     void AddArg(ExprType arg) { MP_UNUSED(arg); }
@@ -49,13 +49,6 @@ class ProblemBuilder {
   typedef Expr LogicalExpr;
   typedef Expr CountExpr;
   typedef Expr Variable;
-
-  typedef mp::Suffix *SuffixPtr;
-  typedef mp::SuffixSet SuffixSet;
-
-  SuffixSet &suffixes(int) {
-    throw MakeUnsupportedError("suffix");
-  }
 
   static void ReportUnhandledConstruct(fmt::StringRef name) {
     throw MakeUnsupportedError(name);

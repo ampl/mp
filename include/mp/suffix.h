@@ -30,6 +30,7 @@
 #include <set>
 #include <string>
 
+#include "mp/common.h"
 #include "mp/format.h"
 
 namespace mp {
@@ -128,6 +129,24 @@ class SuffixSet {
   iterator begin() const { return set_.begin(); }
   iterator end() const { return set_.end(); }
 };
+
+class SuffixManager {
+ private:
+  mp::SuffixSet suffixes_[suf::NUM_KINDS];
+
+ public:
+  virtual ~SuffixManager() {}
+
+  typedef mp::Suffix *SuffixPtr;
+  typedef mp::SuffixSet SuffixSet;
+
+  // Returns a set of suffixes.
+  SuffixSet &suffixes(int kind) {
+    assert(kind < suf::NUM_KINDS);
+    return suffixes_[kind];
+  }
+};
+
 }  // namespace mp
 
 #endif  // MP_SUFFIX_H_
