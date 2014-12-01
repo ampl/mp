@@ -72,6 +72,29 @@ void Problem::SetComplement(int con_index, int var_index, int flags) {
   con.ub = (flags & comp::INF_UB) != 0 ?  inf : 0;
 }
 
+Problem::SuffixHandler Problem::AddSuffix(fmt::StringRef name, int kind, int) {
+  int type = kind & suf::MASK;
+  SuffixSet::Set &set = suffixes_[type].set_;
+  Suffix &suffix = const_cast<Suffix&>(*set.insert(Suffix(name, kind)).first);
+  std::size_t size = 0;
+  switch (type) {
+  case suf::VAR:
+    size = vars_.capacity();
+    break;
+  case suf::CON:
+    size = algebraic_cons_.capacity();
+    break;
+  case suf::OBJ:
+    size = linear_objs_.capacity();
+    break;
+  case suf::PROBLEM:
+    size = 1;
+    break;
+  }
+  suffix.InitValues(size);
+  return SuffixHandler(&suffix);
+}
+
 void Problem::SetInfo(const ProblemInfo &info) {
   vars_.reserve(info.num_vars);
   var_types_.reserve(info.num_vars);

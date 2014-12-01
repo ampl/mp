@@ -196,6 +196,7 @@ class Problem : public ExprFactory {
   // Sets a complementarity relation.
   void SetComplement(int con_index, int var_index, int flags);
 
+  // Sets the initial value for a variable.
   void SetInitialValue(int var_index, double value) {
     MP_ASSERT(0 <= var_index && var_index <= num_vars(), "invalid index");
     if (initial_values_.size() <= var_index) {
@@ -205,6 +206,7 @@ class Problem : public ExprFactory {
     initial_values_[var_index] = value;
   }
 
+  // Sets the initial value for a dual variable.
   void SetInitialDualValue(int con_index, double value) {
     MP_ASSERT(0 <= con_index && con_index <= num_algebraic_cons(),
               "invalid index");
@@ -229,29 +231,33 @@ class Problem : public ExprFactory {
   typedef Suffix *SuffixPtr;
   typedef mp::SuffixSet SuffixSet;
 
+  // Returns a set of suffixes.
   SuffixSet &suffixes(int kind) {
     assert(kind < suf::NUM_KINDS);
     return suffixes_[kind];
   }
 
-  struct SuffixHandler {
+  class SuffixHandler {
+   private:
+    Suffix *suffix_;
+
+   public:
+    explicit SuffixHandler(Suffix *s) : suffix_(s) {}
+
+    // Sets an integer suffix value.
     void SetValue(int index, int value) {
-      // TODO
+      suffix_->set_value(index, value);
     }
+
+    // Sets a double suffix value.
     void SetValue(int index, double value) {
-      // TODO
+      suffix_->set_value(index, value);
     }
   };
 
   // Adds a suffix.
   // name: Suffix name that may not be null-terminated.
-  SuffixHandler AddSuffix(fmt::StringRef name, int kind, int num_values) {
-    SuffixSet::Set &set = suffixes_[kind & suf::MASK].set_;
-    set.insert(Suffix(name, kind));
-    // TODO: add suffix
-    //return const_cast<Suffix&>(*set.insert(Suffix(name, kind)).first);
-    return SuffixHandler();
-  }
+  SuffixHandler AddSuffix(fmt::StringRef name, int kind, int num_values);
 
   // Sets problem information and reserves memory for problem components.
   void SetInfo(const ProblemInfo &info);
