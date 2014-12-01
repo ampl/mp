@@ -53,11 +53,6 @@ class Suffix {
     size_ = size;
   }
 
-  void set_data(int *values, int size) {
-    size_ = size;
-    values_ = values;
-  }
-
  public:
   Suffix(fmt::StringRef name, int kind)
     : name_(name.c_str(), name.size()), kind_(kind), values_(0), size_(0) {}
