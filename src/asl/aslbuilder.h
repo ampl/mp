@@ -137,7 +137,7 @@ class ASLBuilder {
 
  public:
   int num_vars() const { return asl_->i.n_var_; }
-  int num_cons() const { return asl_->i.n_con_; }
+  int num_algebraic_cons() const { return asl_->i.n_con_; }
 
   class CallArgHandler {
    private:
