@@ -1016,11 +1016,9 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
     int status, fmt::StringRef message, const double *values,
     const double *dual_values, double) {
   typedef typename ProblemBuilder::SuffixPtr SuffixPtr;
-  SuffixData<SuffixPtr> data;
   if (solver_.need_multiple_solutions()) {
     SuffixPtr nsol_suffix = builder_.suffixes(suf::PROBLEM).Find("nsol");
-    data.Attach(nsol_suffix, 1);
-    data.set_value(0, num_solutions_);
+    nsol_suffix->set_value(0, num_solutions_);
   }
   SolutionAdapter<ProblemBuilder> sol(
         status, &builder_, message.c_str(), options_,

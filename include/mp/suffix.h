@@ -29,14 +29,10 @@
 #include <cstring>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "mp/format.h"
 
 namespace mp {
-
-template <typename SuffixPtr>
-class SuffixData;
 
 // A suffix.
 // Suffixes are arbitrary metadata that can be attached to variables,
@@ -46,18 +42,27 @@ class Suffix {
   std::string name_;
   int kind_;
   int *values_;
-  std::size_t size_;
+  int size_;
 
-  void set_data(int *values, std::size_t size) {
+  friend class Problem;
+
+  void InitValues(int size) {
+    assert(!values_);
+    values_ = new int[size];
+    size_ = size;
+  }
+
+  void set_data(int *values, int size) {
     size_ = size;
     values_ = values;
   }
 
-  friend class SuffixData<Suffix*>;
-
  public:
   Suffix(fmt::StringRef name, int kind)
     : name_(name.c_str(), name.size()), kind_(kind), values_(0), size_(0) {}
+  ~Suffix() {
+    delete [] values_;
+  }
 
   // Returns the suffix name.
   const char *name() const { return name_.c_str(); }
@@ -65,9 +70,19 @@ class Suffix {
   // Returns the suffix kind.
   int kind() const { return kind_; }
 
-  int value(std::size_t index) const {
-    assert(index <= size_);
+  int value(int index) const {
+    assert(index < size_);
     return values_[index];
+  }
+
+  void set_value(int index, int value) {
+    assert(index < size_);
+    values_[index] = value;
+  }
+
+  void set_value(int index, double value) {
+    assert(index < size_);
+    // TODO: set double value
   }
 
   // Iterates over nonzero suffix values and sends them to the visitor.
@@ -81,43 +96,6 @@ class Suffix {
   }
 };
 
-// Suffix data.
-// For compatibility with ASL, suffix data is stored separately.
-// This class is used to control the lifetime of the data and
-// automatically detach it from the suffix once it is destroyed.
-template <typename SuffixPtr>
-class SuffixData {
- private:
-  SuffixPtr suffix_;
-  std::vector<int> values_;
-
-  FMT_DISALLOW_COPY_AND_ASSIGN(SuffixData);
-
- public:
-  SuffixData() : suffix_() {}
-  ~SuffixData() {
-    if (suffix_)
-      suffix_->set_data(0, 0);
-  }
-
-  // Attaches data to a suffix.
-  void Attach(SuffixPtr suffix, std::size_t num_values) {
-    suffix_ = suffix;
-    values_.resize(num_values);
-    suffix->set_data(&values_[0], values_.size());
-  }
-
-  int value(std::size_t index) const {
-    assert(index <= values_.size());
-    return values_[index];
-  }
-
-  void set_value(std::size_t index, int value) {
-    assert(index <= values_.size());
-    values_[index] = value;
-  }
-};
-
 // A set of suffixes.
 class SuffixSet {
  private:
@@ -127,6 +105,8 @@ class SuffixSet {
     }
   };
 
+  // Suffixes are stored in a set which is not efficient, but it doesn't
+  // matter because the number of suffixes is normally small.
   typedef std::set<Suffix, SuffixNameLess> Set;
   Set set_;
 
