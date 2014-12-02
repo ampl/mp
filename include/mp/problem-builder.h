@@ -43,6 +43,11 @@ class ProblemBuilder : public SuffixManager {
     void AddArg(ExprType arg) { MP_UNUSED(arg); }
   };
 
+  template <typename T>
+  struct SuffixHandler {
+    void SetValue(int index, T value) { MP_UNUSED2(index, value); }
+  };
+
  public:
   typedef ExprType Expr;
   typedef Expr NumericExpr;
@@ -142,16 +147,22 @@ class ProblemBuilder : public SuffixManager {
     return Function();
   }
 
-  struct SuffixHandler {
-    void SetValue(int index, int value) { MP_UNUSED2(index, value); }
-    void SetValue(int index, double value) { MP_UNUSED2(index, value); }
-  };
+  typedef SuffixHandler<int> IntSuffixHandler;
 
   // Adds a suffix.
-  SuffixHandler AddSuffix(fmt::StringRef name, int kind, int num_values) {
+  IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int num_values) {
     MP_UNUSED3(kind, num_values, name);
-    MP_DISPATCH(ReportUnhandledConstruct("suffix"));
-    return SuffixHandler();
+    MP_DISPATCH(ReportUnhandledConstruct("integer suffix"));
+    return IntSuffixHandler();
+  }
+
+  typedef SuffixHandler<double> DblSuffixHandler;
+
+  // Adds a suffix.
+  DblSuffixHandler AddDblSuffix(fmt::StringRef name, int kind, int num_values) {
+    MP_UNUSED3(kind, num_values, name);
+    MP_DISPATCH(ReportUnhandledConstruct("double suffix"));
+    return DblSuffixHandler();
   }
 
   typedef ArgHandler NumericArgHandler;

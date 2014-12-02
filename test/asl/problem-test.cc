@@ -549,8 +549,8 @@ TEST_P(SuffixTest, FindSuffix) {
   TestASLBuilder builder;
   builder.set_flags(ASL_keep_all_suffixes);
   int kind = GetParam();
-  builder.AddSuffix("foo", kind, 1);
-  builder.AddSuffix("bar", kind, 2);
+  builder.AddIntSuffix("foo", kind, 1);
+  builder.AddDblSuffix("bar", kind, 2);
   Problem p(builder.GetProblem());
   mp::ASLSuffixPtr suffix = p.suffixes(kind).Find("foo");
   EXPECT_TRUE(suffix);
@@ -568,8 +568,8 @@ TEST_P(SuffixTest, SuffixView) {
   TestASLBuilder builder;
   builder.set_flags(ASL_keep_all_suffixes);
   int kind = GetParam();
-  builder.AddSuffix("foo", kind, 1);
-  builder.AddSuffix("bar", kind, 2);
+  builder.AddIntSuffix("foo", kind, 1);
+  builder.AddDblSuffix("bar", kind, 2);
   Problem p(builder.GetProblem());
   mp::SuffixView view = p.suffixes(kind);
   mp::SuffixView::iterator it = view.begin();
@@ -598,8 +598,8 @@ TEST_P(SuffixTest, VisitValues) {
   TestASLBuilder builder(info);
   builder.set_flags(ASL_keep_all_suffixes);
   int kind = GetParam();
-  asl::internal::ASLBuilder::SuffixHandler handler =
-      builder.AddSuffix("foo", kind, 3);
+  asl::internal::ASLBuilder::IntSuffixHandler handler =
+      builder.AddIntSuffix("foo", kind, 3);
   handler.SetValue(0, 11);
   if (kind != mp::suf::PROBLEM) {
     handler.SetValue(1, 22);

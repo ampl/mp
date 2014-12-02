@@ -270,15 +270,24 @@ class NLHandler {
     MP_UNUSED3(index, name, num_args); MP_UNUSED(type);
   }
 
-  struct SuffixHandler {
+  struct IntSuffixHandler {
     void SetValue(int index, int value) { MP_UNUSED2(index, value); }
+  };
+
+  // Receives notification of an integer suffix.
+  IntSuffixHandler OnIntSuffix(fmt::StringRef name, int kind, int num_values) {
+    MP_UNUSED3(name, kind, num_values);
+    return IntSuffixHandler();
+  }
+
+  struct DblSuffixHandler {
     void SetValue(int index, double value) { MP_UNUSED2(index, value); }
   };
 
-  // Receives notification of a suffix.
-  SuffixHandler OnSuffix(fmt::StringRef name, int kind, int num_values) {
+  // Receives notification of a double suffix.
+  DblSuffixHandler OnDblSuffix(fmt::StringRef name, int kind, int num_values) {
     MP_UNUSED3(name, kind, num_values);
-    return SuffixHandler();
+    return DblSuffixHandler();
   }
 
   struct ArgHandler {
@@ -651,11 +660,18 @@ class ProblemBuilderToNLAdapter {
     funcs_[index] = builder_.AddFunction(name, num_args, type);
   }
 
-  typedef typename ProblemBuilder::SuffixHandler SuffixHandler;
+  typedef typename ProblemBuilder::IntSuffixHandler IntSuffixHandler;
 
-  // Receives notification of a suffix.
-  SuffixHandler OnSuffix(fmt::StringRef name, int kind, int num_values) {
-    return builder_.AddSuffix(name, kind, num_values);
+  // Receives notification of an integer suffix.
+  IntSuffixHandler OnIntSuffix(fmt::StringRef name, int kind, int num_values) {
+    return builder_.AddIntSuffix(name, kind, num_values);
+  }
+
+  typedef typename ProblemBuilder::DblSuffixHandler DblSuffixHandler;
+
+  // Receives notification of a double suffix.
+  DblSuffixHandler OnDblSuffix(fmt::StringRef name, int kind, int num_values) {
+    return builder_.AddDblSuffix(name, kind, num_values);
   }
 
   typedef typename ProblemBuilder::NumericArgHandler NumericArgHandler;
@@ -1240,7 +1256,25 @@ class NLReader {
   template <typename ValueHandler>
   void ReadInitialValues();
 
-  template <typename SuffixHandler>
+  struct IntReader {
+    double operator()(Reader &r) const { return r.template ReadInt<int>(); }
+  };
+
+  struct DoubleReader {
+    double operator()(Reader &r) const { return r.ReadDouble(); }
+  };
+
+  template <typename ValueReader, typename SuffixHandler>
+  void ReadSuffixValues(int num_values, int num_items, SuffixHandler &handler) {
+    ValueReader read;
+    for (int i = 0; i < num_values; ++i) {
+      int index = ReadUInt(num_items);
+      handler.SetValue(index, read(reader_));
+      reader_.ReadTillEndOfLine();
+    }
+  }
+
+  template <typename ItemInfo>
   void ReadSuffix(int kind);
 
  public:
@@ -1599,23 +1633,20 @@ void NLReader<Reader, Handler>::ReadInitialValues() {
 }
 
 template <typename Reader, typename Handler>
-template <typename SuffixHandler>
+template <typename ItemInfo>
 void NLReader<Reader, Handler>::ReadSuffix(int kind) {
-  SuffixHandler sh(*this);
-  int num_items = sh.num_items();
+  int num_items = ItemInfo(*this).num_items();
   int num_values = ReadUInt(1, num_items + 1);
   fmt::StringRef name = reader_.ReadName();
   reader_.ReadTillEndOfLine();
-  bool is_float = (kind & suf::FLOAT) != 0;
-  typename Handler::SuffixHandler
-      suffix_handler = handler_.OnSuffix(name, kind, num_values);
-  for (int i = 0; i < num_values; ++i) {
-    int index = ReadUInt(num_items);
-    if (is_float)
-      suffix_handler.SetValue(index, reader_.ReadDouble());
-    else
-      suffix_handler.SetValue(index, reader_.template ReadInt<int>());
-    reader_.ReadTillEndOfLine();
+  if ((kind & suf::FLOAT) != 0) {
+    typename Handler::DblSuffixHandler
+        suffix_handler = handler_.OnDblSuffix(name, kind, num_values);
+    ReadSuffixValues<DoubleReader>(num_values, num_items, suffix_handler);
+  } else {
+    typename Handler::IntSuffixHandler
+        suffix_handler = handler_.OnIntSuffix(name, kind, num_values);
+    ReadSuffixValues<IntReader>(num_values, num_items, suffix_handler);
   }
 }
 

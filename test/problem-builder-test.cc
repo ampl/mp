@@ -70,7 +70,8 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
 
   EXPECT_DISPATCH(GetColumnSizeHandler(), "Jacobian column size");
   EXPECT_DISPATCH(AddFunction("foo", 0, mp::func::NUMERIC), "function");
-  EXPECT_DISPATCH(AddSuffix("foo", 0, 0), "suffix");
+  EXPECT_DISPATCH(AddIntSuffix("foo", 0, 0), "integer suffix");
+  EXPECT_DISPATCH(AddDblSuffix("foo", 0, 0), "double suffix");
   EXPECT_DISPATCH(MakeNumericConstant(0),
                   "numeric constant in nonlinear expression");
   EXPECT_DISPATCH(MakeVariable(0), "variable in nonlinear expression");

@@ -70,6 +70,7 @@ struct TestColumnSizeHandler {
   DEFINE_ID(TestColumnSizeHandler);
 };
 
+template <int I>
 struct TestSuffixHandler {
   void SetValue(int, int) {}
   void SetValue(int, double) {}
@@ -162,10 +163,18 @@ class MockProblemBuilder {
   MOCK_METHOD3(AddFunction, Function (fmt::StringRef name,
                                       int num_args, mp::func::Type type));
 
-  typedef TestSuffixHandler SuffixHandler;
+  typedef TestSuffixHandler<0> IntSuffixHandler;
 
-  MOCK_METHOD3(AddSuffix,
-               SuffixHandler (fmt::StringRef name, int kind, int num_values));
+  MOCK_METHOD3(AddIntSuffix,
+               IntSuffixHandler (fmt::StringRef name,
+                                 int kind, int num_values));
+
+  typedef TestSuffixHandler<1> DblSuffixHandler;
+
+  MOCK_METHOD3(AddDblSuffix,
+               DblSuffixHandler (fmt::StringRef name,
+                                 int kind, int num_values));
+
 
   typedef TestNumericArgHandler NumericArgHandler;
   typedef TestLogicalArgHandler LogicalArgHandler;

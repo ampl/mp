@@ -27,7 +27,6 @@
 #include "opcode.hd"
 
 #include <algorithm>
-#include <cstring>
 
 // Include fg_read.c to access static functions defined there.
 #define fg_read_ASL fg_read2_ASL
@@ -75,18 +74,6 @@ const double ASLBuilder::DVALUE[] = {
 template <typename T>
 inline T *ASLBuilder::ZapAllocate(std::size_t size) {
   return reinterpret_cast<T*>(M1zapalloc_ASL(&asl_->i, size));
-}
-
-template <typename T>
-T *ASLBuilder::AllocateSuffixValues(
-    T *&values, int num_values, int nx, int nx1) {
-  if (!values)
-    values = Allocate<T>(nx1 * sizeof(T));
-  if (num_values < nx)
-    std::memset(values, 0, nx * sizeof(T));
-  if (nx < nx1)
-    std::memset(values + nx, 0, (nx1 - nx) * sizeof(T));
-  return values;
 }
 
 void ASLBuilder::SetObjOrCon(
@@ -634,7 +621,7 @@ Function ASLBuilder::AddFunction(
   return Function(fi);
 }
 
-ASLBuilder::SuffixHandler ASLBuilder::AddSuffix(
+ASLBuilder::SuffixInfo ASLBuilder::AddSuffix(
     fmt::StringRef name, int kind, int num_values) {
   bool readall = (flags_ & ASL_keep_all_suffixes) != 0;
   int item_type = kind & suf::MASK;
@@ -651,25 +638,23 @@ ASLBuilder::SuffixHandler ASLBuilder::AddSuffix(
   } else {
     for (d = asl_->i.suffixes[item_type]; ; d = d->next) {
       if (!d)
-        return SuffixHandler();  // Skip this suffix table.
+        return SuffixInfo();  // Skip this suffix table.
       if (item_type == (d->kind & suf::MASK) &&
           !strncmp(name.c_str(), d->sufname, name.size()) &&
           !d->sufname[name.size()])
         if ((d->kind & suf::OUTONLY) != 0)
-          return SuffixHandler();
+          return SuffixInfo();
         break;
     }
   }
   int nx = (&asl_->i.n_var_)[item_type];
   int nx1 = nx + d->nextra + asl_->i.nsufext[item_type];
   d->kind |= suf::INPUT;
-  if ((d->kind & suf::FLOAT) != 0) {
+  if ((d->kind & suf::FLOAT) != 0)
     d->u.i = 0;
-    return SuffixHandler(
-          AllocateSuffixValues(d->u.r, num_values, nx, nx1), nx1);
-  }
-  d->u.r = 0;
-  return SuffixHandler(AllocateSuffixValues(d->u.i, num_values, nx, nx1), nx1);
+  else
+    d->u.r = 0;
+  return SuffixInfo(d, nx, nx1);
 }
 
 Variable ASLBuilder::MakeVariable(int var_index) {

@@ -23,6 +23,8 @@
 #ifndef MP_ASLBUILDER_H_
 #define MP_ASLBUILDER_H_
 
+#include <cstring>
+
 #include "mp/arrayref.h"
 #include "mp/format.h"
 #include "mp/safeint.h"
@@ -104,7 +106,48 @@ class ASLBuilder {
   T *ZapAllocate(std::size_t size);
 
   template <typename T>
-  T *AllocateSuffixValues(T *&values, int num_values, int nx, int nx1);
+  class SuffixHandler {
+   private:
+    T *values_;
+
+#ifndef NDEBUG
+    int num_items_;
+    void set_num_items(int num_items) { num_items_ = num_items; }
+#else
+    void set_num_items(int num_items) { MP_UNUSED(num_items); }
+#endif
+
+   public:
+    explicit SuffixHandler(T *values = 0, int num_items = 0) : values_(values) {
+      set_num_items(num_items);
+    }
+
+    void SetValue(int index, T value) {
+      assert(0 <= index && index < num_items_);
+      if (values_)
+        values_[index] = value;
+    }
+  };
+
+  struct SuffixInfo {
+    SufDesc *desc;
+    int nx;
+    int nx1;
+    SuffixInfo() : desc(0), nx(0), nx1(0) {}
+    SuffixInfo(SufDesc *d, int nx, int nx1) : desc(d), nx(nx), nx1(nx1) {}
+  };
+
+  SuffixInfo AddSuffix(fmt::StringRef name, int kind, int num_values);
+
+  template <typename T>
+  void AllocateSuffixValues(T *&values, int num_values, int nx, int nx1) {
+    if (!values)
+      values = Allocate<T>(nx1 * sizeof(T));
+    if (num_values < nx)
+      std::memset(values, 0, nx * sizeof(T));
+    if (nx < nx1)
+      std::memset(values + nx, 0, (nx1 - nx) * sizeof(T));
+  }
 
   // Sets objective or constraint expression; adapted from co_read.
   void SetObjOrCon(int index, cde *d, int *cexp1_end, ::expr *e, int **z);
@@ -346,53 +389,23 @@ class ASLBuilder {
     return Function(func_lookup_ASL(asl_, name.c_str(), 0));
   }
 
-  class SuffixHandler {
-   private:
-    int *int_values_;
-    double *dbl_values_;
+  typedef SuffixHandler<int> IntSuffixHandler;
 
-#ifndef NDEBUG
-    int num_items_;
-    void set_num_items(int num_items) { num_items_ = num_items; }
-#else
-    void set_num_items(int num_items) { MP_UNUSED(num_items); }
-#endif
+  IntSuffixHandler AddIntSuffix(
+      fmt::StringRef name, int kind, int num_values) {
+    SuffixInfo info = AddSuffix(name, kind, num_values);
+    AllocateSuffixValues(info.desc->u.i, num_values, info.nx, info.nx1);
+    return IntSuffixHandler(info.desc->u.i, info.nx1);
+  }
 
-    void SetIntValue(int index, int value) {
-      assert(0 <= index && index < num_items_);
-      int_values_[index] = value;
-    }
-    void SetDblValue(int index, double value) {
-      assert(0 <= index && index < num_items_);
-      dbl_values_[index] = value;
-    }
+  typedef SuffixHandler<double> DblSuffixHandler;
 
-   public:
-    explicit SuffixHandler(int *values = 0, int num_items = 0)
-      : int_values_(values), dbl_values_(0) {
-      set_num_items(num_items);
-    }
-    SuffixHandler(double *values, int num_items)
-      : int_values_(0), dbl_values_(values) {
-      set_num_items(num_items);
-    }
-
-    void SetValue(int index, int value) {
-      if (int_values_)
-        SetIntValue(index, value);
-      else if (dbl_values_)
-        SetDblValue(index, value);
-    }
-
-    void SetValue(int index, double value) {
-      if (int_values_)
-        SetIntValue(index, static_cast<int>(value + 0.5));
-      else if (dbl_values_)
-        SetDblValue(index, value);
-    }
-  };
-
-  SuffixHandler AddSuffix(fmt::StringRef name, int kind, int num_values);
+  DblSuffixHandler AddDblSuffix(
+      fmt::StringRef name, int kind, int num_values) {
+    SuffixInfo info = AddSuffix(name, kind, num_values);
+    AllocateSuffixValues(info.desc->u.r, num_values, info.nx, info.nx1);
+    return DblSuffixHandler(info.desc->u.r, info.nx1);
+  }
 
   // The Make* methods construct expression objects. These objects are
   // local to the currently built ASL problem and shouldn't be used with

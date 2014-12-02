@@ -517,6 +517,7 @@ class TestNLHandler {
                      std::string(name.c_str(), name.size()), num_args, type);
   }
 
+  template <typename T>
   class SuffixHandler {
    private:
     fmt::Writer &log_;
@@ -526,23 +527,26 @@ class TestNLHandler {
     explicit SuffixHandler(fmt::Writer &log) : log_(log), first_(true) {}
     ~SuffixHandler() { log_ << ';'; }
 
-    void SetValue(int index, int value) {
+    void SetValue(int index, T value) {
       if (!first_)
         log_ << ',';
       first_ = false;
       log_.write(" i{} = {}", index, value);
     }
-    void SetValue(int index, double value) {
-      if (!first_)
-        log_ << ',';
-      first_ = false;
-      log_.write(" d{} = {}", index, value);
-    }
   };
 
-  SuffixHandler OnSuffix(fmt::StringRef name, int kind, int num_values) {
+  typedef SuffixHandler<int> IntSuffixHandler;
+
+  IntSuffixHandler OnIntSuffix(fmt::StringRef name, int kind, int num_values) {
     WriteSep().write("suffix {}:{}:{}:", name, kind, num_values);
-    return SuffixHandler(log);
+    return IntSuffixHandler(log);
+  }
+
+  typedef SuffixHandler<double> DblSuffixHandler;
+
+  DblSuffixHandler OnDblSuffix(fmt::StringRef name, int kind, int num_values) {
+    WriteSep().write("suffix {}:{}:{}:", name, kind, num_values);
+    return DblSuffixHandler(log);
   }
 
   std::string OnNumericConstant(double value) {
@@ -797,10 +801,22 @@ struct TestNLHandler2 {
 
   void OnFunction(int, fmt::StringRef, int, mp::func::Type) {}
 
+  template <typename T>
   struct SuffixHandler {
-    void SetValue(int, double) {}
+    void SetValue(int, T) {}
   };
-  SuffixHandler OnSuffix(fmt::StringRef, int, int) { return SuffixHandler(); }
+
+  typedef SuffixHandler<int> IntSuffixHandler;
+
+  IntSuffixHandler OnIntSuffix(fmt::StringRef, int, int) {
+    return IntSuffixHandler();
+  }
+
+  typedef SuffixHandler<double> DblSuffixHandler;
+
+  DblSuffixHandler OnDblSuffix(fmt::StringRef, int, int) {
+    return DblSuffixHandler();
+  }
 
   TestNumericExpr OnNumericConstant(double) { return TestNumericExpr(); }
   TestVariable OnVariable(int) { return TestVariable(); }
@@ -1307,7 +1323,10 @@ TEST(NLProblemBuilderTest, Forward) {
   // are compared as pointers and string literals they point to may not
   // be merged.
   fmt::StringRef str("foo");
-  EXPECT_FORWARD_RET(OnSuffix, AddSuffix, (str, 99, 11), TestSuffixHandler(ID));
+  EXPECT_FORWARD_RET(OnIntSuffix, AddIntSuffix, (str, 99, 11),
+                     TestSuffixHandler<0>(ID));
+  EXPECT_FORWARD_RET(OnDblSuffix, AddDblSuffix, (str, 99, 11),
+                     TestSuffixHandler<1>(ID));
 
   EXPECT_FORWARD_RET(OnNumericConstant, MakeNumericConstant,
                      (2.2), TestNumericExpr(ID));
