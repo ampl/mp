@@ -25,7 +25,7 @@
 using mp::Problem;
 
 Problem::LinearObjBuilder Problem::AddObj(
-    obj::Type type, NumericExpr expr, int num_linear_terms) {
+    mp::obj::Type type, mp::NumericExpr expr, int num_linear_terms) {
   MP_ASSERT(linear_objs_.size() < max_index(), "too many objectives");
   obj_types_.push_back(type != obj::MIN);
   linear_objs_.push_back(LinearExpr());
@@ -42,7 +42,7 @@ Problem::LinearObjBuilder Problem::AddObj(
 }
 
 Problem::LinearConBuilder Problem::AddCon(
-    NumericExpr expr, double lb, double ub, int num_linear_terms) {
+    mp::NumericExpr expr, double lb, double ub, int num_linear_terms) {
   MP_ASSERT(algebraic_cons_.size() < max_index(),
             "too many algebraic constraints");
   algebraic_cons_.push_back(AlgebraicCon(lb, ub));
@@ -95,7 +95,7 @@ Problem::SuffixHandler Problem::AddSuffix(fmt::StringRef name, int kind, int) {
   return SuffixHandler(&suffix);
 }
 
-void Problem::SetInfo(const ProblemInfo &info) {
+void Problem::SetInfo(const mp::ProblemInfo &info) {
   vars_.reserve(info.num_vars);
   var_types_.reserve(info.num_vars);
   obj_types_.reserve(info.num_objs);
