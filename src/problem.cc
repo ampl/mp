@@ -26,6 +26,9 @@ using mp::Problem;
 
 int Problem::GetSuffixSize(int suffix_type) {
   switch (suffix_type) {
+  default:
+    MP_ASSERT(false, "invalid suffix type");
+    // Fall through.
   case suf::VAR:
     return vars_.capacity();
   case suf::CON:
@@ -39,7 +42,7 @@ int Problem::GetSuffixSize(int suffix_type) {
 
 Problem::LinearObjBuilder Problem::AddObj(
     mp::obj::Type type, mp::NumericExpr expr, int num_linear_terms) {
-  MP_ASSERT(linear_objs_.size() < max_index(), "too many objectives");
+  MP_ASSERT(linear_objs_.size() < MP_MAX_INDEX, "too many objectives");
   obj_types_.push_back(type != obj::MIN);
   linear_objs_.push_back(LinearExpr());
   LinearExpr &linear_expr = linear_objs_.back();
@@ -56,7 +59,7 @@ Problem::LinearObjBuilder Problem::AddObj(
 
 Problem::LinearConBuilder Problem::AddCon(
     mp::NumericExpr expr, double lb, double ub, int num_linear_terms) {
-  MP_ASSERT(algebraic_cons_.size() < max_index(),
+  MP_ASSERT(algebraic_cons_.size() < MP_MAX_INDEX,
             "too many algebraic constraints");
   algebraic_cons_.push_back(AlgebraicCon(lb, ub));
   AlgebraicCon &con = algebraic_cons_.back();
@@ -87,7 +90,7 @@ void Problem::SetComplement(int con_index, int var_index, int flags) {
 
 void Problem::SetInfo(const mp::ProblemInfo &info) {
   vars_.reserve(info.num_vars);
-  var_types_.reserve(info.num_vars);
+  var_int_.reserve(info.num_vars);
   obj_types_.reserve(info.num_objs);
   linear_objs_.reserve(info.num_objs);
   if (info.num_nl_objs != 0)

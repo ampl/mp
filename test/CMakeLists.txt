@@ -83,6 +83,7 @@ add_mp_test(expr-test expr-test.cc mock-allocator.h test-assert.h)
 add_mp_test(expr-visitor-test expr-visitor-test.cc test-assert.h)
 add_mp_test(nl-test nl-test.cc mock-problem-builder.h)
 add_mp_test(option-test option-test.cc)
+add_mp_test(problem-test problem-test.cc)
 
 add_mp_test(solver-test
   solver-test.cc mock-problem-builder.h solution-handler.h)

@@ -30,6 +30,11 @@
 #include "mp/expr.h"
 #include "mp/suffix.h"
 
+// Maximum index of a variable, objective or constraint.
+#ifndef MP_MAX_INDEX
+# define MP_MAX_INDEX static_cast<std::size_t>(std::numeric_limits<int>::max())
+#endif
+
 namespace mp {
 
 // An optimization problem.
@@ -43,8 +48,8 @@ class Problem : public ExprFactory, public SuffixManager {
   };
   std::vector<Var> vars_;
 
-  // Packed variable types.
-  std::vector<bool> var_types_;
+  // Packed variable integrality information.
+  std::vector<bool> var_int_;
 
   class LinearExpr {
    private:
@@ -128,8 +133,8 @@ class Problem : public ExprFactory, public SuffixManager {
 
   std::vector<Function> funcs_;
 
-  static std::size_t max_index() {
-    return static_cast<std::size_t>(std::numeric_limits<int>::max());
+  void CheckVarIndex(int index) const {
+    MP_ASSERT(0 <= index && index < num_vars(), "invalid index");
   }
 
   template <typename T>
@@ -174,11 +179,29 @@ class Problem : public ExprFactory, public SuffixManager {
     return static_cast<int>(logical_cons_.size());
   }
 
+  // Returns the lower bound for the variable.
+  double var_lb(int var_index) const {
+    CheckVarIndex(var_index);
+    return vars_[var_index].lb;
+  }
+
+  // Returns the upper bound for the variable.
+  double var_ub(int var_index) const {
+    CheckVarIndex(var_index);
+    return vars_[var_index].ub;
+  }
+
+  // Returns the upper bound for the variable.
+  var::Type var_type(int var_index) const {
+    CheckVarIndex(var_index);
+    return var_int_[var_index] ? var::INTEGER : var::CONTINUOUS;
+  }
+
   // Adds a variable.
   void AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
-    MP_ASSERT(vars_.size() < max_index(), "too many variables");
+    MP_ASSERT(vars_.size() < MP_MAX_INDEX, "too many variables");
     vars_.push_back(Var(lb, ub));
-    var_types_.push_back(type != var::CONTINUOUS);
+    var_int_.push_back(type != var::CONTINUOUS);
   }
 
   typedef LinearExprBuilder LinearObjBuilder;
@@ -197,7 +220,7 @@ class Problem : public ExprFactory, public SuffixManager {
 
   // Adds a logical constraint.
   void AddCon(LogicalExpr expr) {
-    MP_ASSERT(logical_cons_.size() < max_index(),
+    MP_ASSERT(logical_cons_.size() < MP_MAX_INDEX,
               "too many logical constraints");
     logical_cons_.push_back(expr);
   }
@@ -221,8 +244,8 @@ class Problem : public ExprFactory, public SuffixManager {
 
   // Sets the initial value for a variable.
   void SetInitialValue(int var_index, double value) {
-    MP_ASSERT(0 <= var_index && var_index <= num_vars(), "invalid index");
-    if (initial_values_.size() <= var_index) {
+    CheckVarIndex(var_index);
+    if (initial_values_.size() <= static_cast<unsigned>(var_index)) {
       initial_values_.reserve(vars_.capacity());
       initial_values_.resize(num_vars());
     }
@@ -233,7 +256,7 @@ class Problem : public ExprFactory, public SuffixManager {
   void SetInitialDualValue(int con_index, double value) {
     MP_ASSERT(0 <= con_index && con_index <= num_algebraic_cons(),
               "invalid index");
-    if (initial_dual_values_.size() <= con_index) {
+    if (initial_dual_values_.size() <= static_cast<unsigned>(con_index)) {
       initial_dual_values_.reserve(algebraic_cons_.capacity());
       initial_dual_values_.resize(num_algebraic_cons());
     }
