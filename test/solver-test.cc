@@ -92,7 +92,7 @@ class TestSolver : public mp::Solver {
   }
 
   bool ParseOptions(char **argv,
-      unsigned flags = Solver::NO_OPTION_ECHO, const Problem *p = 0) {
+      unsigned flags = Solver::NO_OPTION_ECHO, const mp::ASLProblem *p = 0) {
     return Solver::ParseOptions(argv, flags, p);
   }
 
@@ -593,7 +593,7 @@ struct TestSolverWithOptions : Solver {
   }
 
   bool ParseOptions(char **argv,
-      unsigned flags = Solver::NO_OPTION_ECHO, const Problem *p = 0) {
+      unsigned flags = Solver::NO_OPTION_ECHO, const mp::ASLProblem *p = 0) {
     return Solver::ParseOptions(argv, flags, p);
   }
 

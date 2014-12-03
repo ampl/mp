@@ -105,7 +105,7 @@ void Solution::Read(fmt::StringRef stub, int num_vars, int num_cons) {
   solve_code_ = asl.p.solve_code_;
 }
 
-void Problem::Free() {
+void ASLProblem::Free() {
   if (var_capacity_) {
     delete [] asl_->i.LUv_;
     delete [] asl_->i.Uvx_;
@@ -135,23 +135,23 @@ void Problem::Free() {
   }
 }
 
-Problem::Problem()
+ASLProblem::ASLProblem()
 : asl_(ASL_alloc(ASL_read_fg)), var_capacity_(0), obj_capacity_(0),
   logical_con_capacity_(0), var_types_(0) {
 }
 
-Problem::Problem(Proxy proxy)
+ASLProblem::ASLProblem(Proxy proxy)
 : asl_(proxy.asl_), var_capacity_(0), obj_capacity_(0),
   logical_con_capacity_(0), var_types_(0) {
   proxy.asl_ = 0;
 }
 
-Problem::~Problem() {
+ASLProblem::~ASLProblem() {
   Free();
   ASL_free(reinterpret_cast<ASL**>(&asl_));
 }
 
-fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
+fmt::Writer &operator<<(fmt::Writer &w, const ASLProblem &p) {
   // Write variables.
   int num_vars = p.num_vars();
   for (int i = 0; i < num_vars; ++i) {
@@ -236,7 +236,7 @@ ASLSuffixPtr SuffixView::Find(const char *name, unsigned flags) const {
   return ASLSuffixPtr();
 }
 
-void Problem::AddVar(double lb, double ub, var::Type type) {
+void ASLProblem::AddVar(double lb, double ub, var::Type type) {
   int &num_vars = asl_->i.n_var_;
   if (num_vars >= var_capacity_) {
     IncreaseCapacity(num_vars, var_capacity_);
@@ -248,7 +248,7 @@ void Problem::AddVar(double lb, double ub, var::Type type) {
   if (type != var::CONTINUOUS) {
     // Allocate var_types_ if this is the first integer variable added
     // after continuous.
-    int num_integer_vars = Problem::num_integer_vars();
+    int num_integer_vars = ASLProblem::num_integer_vars();
     if (!var_types_ && num_vars != num_integer_vars) {
       var_types_ = new var::Type[var_capacity_];
       std::fill_n(fmt::internal::make_ptr(var_types_, var_capacity_),
@@ -265,7 +265,7 @@ void Problem::AddVar(double lb, double ub, var::Type type) {
   ++num_vars;
 }
 
-void Problem::AddObj(obj::Type type, asl::NumericExpr expr) {
+void ASLProblem::AddObj(obj::Type type, asl::NumericExpr expr) {
   int &num_objs = asl_->i.n_obj_;
   ASL_fg *fg = asl_->i.ASLtype == ASL_read_fg ?
         reinterpret_cast<ASL_fg*>(asl_) : 0;
@@ -286,7 +286,7 @@ void Problem::AddObj(obj::Type type, asl::NumericExpr expr) {
   ++asl_->i.nlo_;
 }
 
-void Problem::AddCon(asl::LogicalExpr expr) {
+void ASLProblem::AddCon(asl::LogicalExpr expr) {
   if (asl_->i.ASLtype != ASL_read_fg)
     throw Error("problem doesn't support logical constraints");
   ASL_fg *fg = reinterpret_cast<ASL_fg*>(asl_);
@@ -301,7 +301,7 @@ void Problem::AddCon(asl::LogicalExpr expr) {
   ++num_logical_cons;
 }
 
-void Problem::Read(fmt::StringRef stub, unsigned flags) {
+void ASLProblem::Read(fmt::StringRef stub, unsigned flags) {
   Free();
 
   // Add the .nl extension if necessary.
@@ -326,7 +326,7 @@ void Problem::Read(fmt::StringRef stub, unsigned flags) {
   asl_->i.flags = handler.flags();
 }
 
-void Problem::WriteNL(fmt::StringRef stub, ProblemChanges *pc, unsigned flags) {
+void ASLProblem::WriteNL(fmt::StringRef stub, ProblemChanges *pc, unsigned flags) {
   int nfunc = asl_->i.nfunc_;
   if ((flags & IGNORE_FUNCTIONS) != 0)
     asl_->i.nfunc_ = 0;
@@ -337,7 +337,7 @@ void Problem::WriteNL(fmt::StringRef stub, ProblemChanges *pc, unsigned flags) {
     throw Error("Error writing .nl file");
 }
 
-void Problem::Solve(fmt::StringRef solver_name,
+void ASLProblem::Solve(fmt::StringRef solver_name,
     Solution &sol, ProblemChanges *pc, unsigned flags) {
   TempFiles temp;
   WriteNL(temp.stub(), pc, flags);

@@ -33,7 +33,7 @@ using asl::LinearObjExpr;
 
 using mp::var::CONTINUOUS;
 using mp::var::INTEGER;
-using mp::Problem;
+using mp::ASLProblem;
 using mp::ProblemChanges;
 using mp::Solution;
 
@@ -187,7 +187,7 @@ TEST(SolutionTest, Swap) {
 }
 
 TEST(ProblemTest, EmptyProblem) {
-  Problem p;
+  ASLProblem p;
   EXPECT_EQ(0, p.num_vars());
   EXPECT_EQ(0, p.num_objs());
   EXPECT_EQ(0, p.num_cons());
@@ -200,7 +200,7 @@ TEST(ProblemTest, EmptyProblem) {
 }
 
 TEST(ProblemTest, ProblemAccessors) {
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/test");
   EXPECT_EQ(5, p.num_vars());
   EXPECT_EQ(19, p.num_objs());
@@ -267,7 +267,7 @@ TEST(ProblemTest, ProblemAccessors) {
 }
 
 TEST(ProblemTest, VarType) {
-  Problem p;
+  ASLProblem p;
   p.AddVar(0, 0, CONTINUOUS);
   p.AddVar(0, 0, INTEGER);
   p.AddVar(0, 0, INTEGER);
@@ -278,7 +278,7 @@ TEST(ProblemTest, VarType) {
 
 #ifndef NDEBUG
 TEST(ProblemTest, BoundChecks) {
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/test");
 
   EXPECT_DEATH(p.var_type(-1), "Assertion");
@@ -318,7 +318,7 @@ TEST(ProblemTest, BoundChecks) {
 static const std::string SOLVER_PATH = GetExecutableDir() + "/ilogcp";
 
 TEST(ProblemTest, Solve) {
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/simple");
   Solution s;
   p.Solve(SOLVER_PATH, s);
@@ -330,7 +330,7 @@ TEST(ProblemTest, Solve) {
 }
 
 TEST(ProblemChangesTest, AddVarAndSolve) {
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/simple");
   Solution s;
   ProblemChanges changes(p);
@@ -351,7 +351,7 @@ TEST(ProblemChangesTest, AddVarAndSolve) {
 }
 
 TEST(ProblemChangesTest, AddConAndSolve) {
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/simple");
   Solution s;
   ProblemChanges changes(p);
@@ -373,7 +373,7 @@ TEST(ProblemChangesTest, AddConAndSolve) {
 }
 
 TEST(ProblemChangesTest, AddObjAndSolve) {
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/noobj");
   Solution s;
   ProblemChanges changes(p);
@@ -394,7 +394,7 @@ TEST(ProblemChangesTest, AddObjAndSolve) {
 }
 
 TEST(ProblemChangesTest, CopyConstructorCon) {
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/simple");
 
   ProblemChanges changes(p);
@@ -419,7 +419,7 @@ TEST(ProblemChangesTest, CopyConstructorCon) {
 TEST(ProblemTest, SolveIgnoreFunctions) {
   char amplfunc[] = "AMPLFUNC=../../solvers/ssdsolver/ssd.dll";
   putenv(amplfunc);
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/ssd");
   Solution s;
   p.Solve(SOLVER_PATH, s, 0, Problem::IGNORE_FUNCTIONS);
@@ -428,14 +428,14 @@ TEST(ProblemTest, SolveIgnoreFunctions) {
 #endif
 
 TEST(ProblemTest, SolveWithUnknownSolver) {
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/simple");
   Solution s;
   EXPECT_THROW(p.Solve("unknownsolver", s), mp::Error);
 }
 
 TEST(ProblemTest, Write) {
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/simple");
   fmt::MemoryWriter writer;
   writer << p;
@@ -447,7 +447,7 @@ TEST(ProblemTest, Write) {
 }
 
 TEST(ProblemTest, WriteVarBounds) {
-  Problem p;
+  ASLProblem p;
   p.AddVar(42, 42);
   fmt::MemoryWriter writer;
   writer << p;
@@ -455,7 +455,7 @@ TEST(ProblemTest, WriteVarBounds) {
 }
 
 TEST(ProblemTest, AddVar) {
-  Problem p;
+  ASLProblem p;
   EXPECT_EQ(0, p.num_vars());
   p.AddVar(111, 222);
   EXPECT_EQ(1, p.num_vars());
@@ -493,7 +493,7 @@ class TestASLBuilder : public asl::internal::ASLBuilder {
 };
 
 TEST(ProblemTest, AddCon) {
-  Problem p;
+  ASLProblem p;
   p.AddVar(0, 0);
   EXPECT_EQ(0, p.num_logical_cons());
   TestASLBuilder builder;
@@ -509,7 +509,7 @@ TEST(ProblemTest, AddCon) {
 }
 
 TEST(ProblemTest, AddObj) {
-  Problem p;
+  ASLProblem p;
   p.AddVar(0, 0);
   EXPECT_EQ(0, p.num_objs());
   TestASLBuilder builder;
@@ -525,7 +525,7 @@ TEST(ProblemTest, AddObj) {
 }
 
 TEST(ProblemTest, ReadFunctionWithoutLibrary) {
-  Problem p;
+  ASLProblem p;
   // It shouldn't be an error to have a function without an implementation
   // (provided by a function library) because some functions are not evaluated
   // but translated into the solver representation.
@@ -539,7 +539,7 @@ TEST(ProblemTest, Proxy) {
   info.num_objs = 1;
   TestASLBuilder builder(info);
   builder.MakeVariable(0);
-  Problem p(builder.GetProblem());
+  ASLProblem p(builder.GetProblem());
   EXPECT_EQ(info.num_vars, p.num_vars());
 }
 
@@ -551,7 +551,7 @@ TEST_P(SuffixTest, FindSuffix) {
   int kind = GetParam();
   builder.AddIntSuffix("foo", kind, 1);
   builder.AddDblSuffix("bar", kind, 2);
-  Problem p(builder.GetProblem());
+  ASLProblem p(builder.GetProblem());
   mp::ASLSuffixPtr suffix = p.suffixes(kind).Find("foo");
   EXPECT_TRUE(suffix);
   EXPECT_STREQ("foo", suffix->name());
@@ -570,7 +570,7 @@ TEST_P(SuffixTest, SuffixView) {
   int kind = GetParam();
   builder.AddIntSuffix("foo", kind, 1);
   builder.AddDblSuffix("bar", kind, 2);
-  Problem p(builder.GetProblem());
+  ASLProblem p(builder.GetProblem());
   mp::SuffixView view = p.suffixes(kind);
   mp::SuffixView::iterator it = view.begin();
   ASSERT_NE(it, view.end());
@@ -583,7 +583,7 @@ TEST_P(SuffixTest, SuffixView) {
 }
 
 TEST_P(SuffixTest, EmptySuffixView) {
-  Problem p;
+  ASLProblem p;
   mp::SuffixView view = p.suffixes(GetParam());
   EXPECT_EQ(view.begin(), view.end());
 }
@@ -605,7 +605,7 @@ TEST_P(SuffixTest, VisitValues) {
     handler.SetValue(1, 22);
     handler.SetValue(2, 33);
   }
-  Problem p(builder.GetProblem());
+  ASLProblem p(builder.GetProblem());
   testing::StrictMock<MockValueVisitor> visitor;
   mp::ASLSuffixPtr suffix = p.suffixes(kind).Find("foo");
   testing::InSequence dummy;

@@ -136,7 +136,7 @@ class ASLSuffixPtr {
 
   mutable Proxy proxy_;
 
-  friend class Problem;
+  friend class ASLProblem;
   friend class SuffixView;
 
   ASLSuffixPtr(ASL *asl, SufDesc *s) : proxy_(asl, s) {}
@@ -191,14 +191,14 @@ void ASLSuffixPtr::Proxy::VisitValues(Visitor &visitor) const {
 // Unlike a real collection, a view doesn't own elements, but only provides
 // access to them, like an iterator. In fact, the view can be considered as
 // a pair of iterators. Therefore a SuffixView object should only be used
-// while the Problem object containing suffixes is alive and hasn't been
+// while the ASLProblem object containing suffixes is alive and hasn't been
 // modified since the view was obtained.
 class SuffixView {
  private:
   ASL *asl_;
   int kind_;
 
-  friend class Problem;
+  friend class ASLProblem;
   friend class asl::internal::ASLBuilder;
 
   SuffixView(ASL *asl, int kind) : asl_(asl), kind_(kind) {}
@@ -247,7 +247,7 @@ class SuffixView {
 class ProblemChanges;
 
 // An optimization problem.
-class Problem {
+class ASLProblem {
  private:
   ASL *asl_;
   int var_capacity_;
@@ -258,7 +258,7 @@ class Problem {
   // integer and binary variables.
   var::Type *var_types_;
 
-  FMT_DISALLOW_COPY_AND_ASSIGN(Problem);
+  FMT_DISALLOW_COPY_AND_ASSIGN(ASLProblem);
 
   static void IncreaseCapacity(int size, int &capacity) {
     if (capacity == 0 && size != 0)
@@ -292,7 +292,7 @@ class Problem {
 
     Proxy(ASL *asl, unsigned flags = 0) : asl_(asl), flags_(flags) {}
 
-    friend class Problem;
+    friend class ASLProblem;
     friend class ASLSolver;
     friend class asl::internal::ASLBuilder;
 
@@ -328,10 +328,10 @@ class Problem {
   }
 
  public:
-  Problem();
-  Problem(Proxy proxy);
+  ASLProblem();
+  ASLProblem(Proxy proxy);
 
-  ~Problem();
+  ~ASLProblem();
 
   const char *name() const { return asl_->i.filename_; }
 
@@ -540,12 +540,12 @@ class Problem {
 };
 
 // Writes the linear part of the problem in the AMPL format.
-fmt::Writer &operator<<(fmt::Writer &w, const Problem &p);
+fmt::Writer &operator<<(fmt::Writer &w, const ASLProblem &p);
 
 // Changes (additions) to an optimization problem.
 class ProblemChanges {
  private:
-  const Problem *problem_;
+  const ASLProblem *problem_;
   std::vector<double> var_lb_;
   std::vector<double> var_ub_;
   std::vector<double> con_lb_;
@@ -557,12 +557,12 @@ class ProblemChanges {
   std::vector<char> obj_types_;
   NewVCO vco_;
 
-  friend class Problem;
+  friend class ASLProblem;
 
   NewVCO *vco();
 
  public:
-  explicit ProblemChanges(const Problem &p) : problem_(&p), vco_() {}
+  explicit ProblemChanges(const ASLProblem &p) : problem_(&p), vco_() {}
 
   ProblemChanges(const ProblemChanges &other);
   ProblemChanges &operator=(const ProblemChanges &rhs);

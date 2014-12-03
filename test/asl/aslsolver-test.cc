@@ -27,12 +27,12 @@ struct TestSolver : mp::ASLSolver {
   TestSolver() : ASLSolver("testsolver") {
     AddSuffix("answer", 0, mp::suf::VAR | mp::suf::OUTONLY, 0);
   }
-  void DoSolve(mp::Problem &, mp::SolutionHandler &) {}
+  void DoSolve(mp::ASLProblem &, mp::SolutionHandler &) {}
 };
 
 TEST(ASLSolverTest, RegisterSuffixes) {
   TestSolver s;
   mp::asl::internal::ASLBuilder builder(s.GetProblemBuilder(""));
-  mp::Problem p(builder.GetProblem());
+  mp::ASLProblem p(builder.GetProblem());
   EXPECT_TRUE(p.suffixes(mp::suf::VAR).Find("answer"));
 }

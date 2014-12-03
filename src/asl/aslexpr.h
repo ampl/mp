@@ -152,7 +152,7 @@ extern "C" {
 
 namespace mp {
 
-class Problem;
+class ASLProblem;
 
 namespace asl {
 class Expr;
@@ -229,7 +229,7 @@ class Expr {
   friend class ExprConverter;
 
   friend class internal::ASLBuilder;
-  friend class mp::Problem;
+  friend class mp::ASLProblem;
 
   template <typename ExprType>
   friend ExprType mp::internal::Cast(asl::Expr e);
@@ -755,7 +755,7 @@ class LinearExpr {
  private:
   Term first_term_;
 
-  friend class mp::Problem;
+  friend class mp::ASLProblem;
 
   explicit LinearExpr(typename Term::Grad *first_term)
   : first_term_(Term(first_term)) {}

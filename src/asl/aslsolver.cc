@@ -53,8 +53,8 @@ void mp::ASLSolver::RegisterSuffixes(ASL *asl) {
     suf_declare_ASL(asl, &suffix_decls[0], static_cast<int>(num_suffixes));
 }
 
-mp::Problem::Proxy mp::ASLSolver::GetProblemBuilder(fmt::StringRef stub) {
-  Problem::Proxy proxy(ASL_alloc(ASL_read_fg), read_flags_);
+mp::ASLProblem::Proxy mp::ASLSolver::GetProblemBuilder(fmt::StringRef stub) {
+  ASLProblem::Proxy proxy(ASL_alloc(ASL_read_fg), read_flags_);
   std::size_t stub_len = stub.size();
   Edaginfo &info = proxy.asl_->i;
   info.filename_ = reinterpret_cast<char*>(M1alloc_ASL(&info, stub_len + 5));
@@ -65,7 +65,7 @@ mp::Problem::Proxy mp::ASLSolver::GetProblemBuilder(fmt::StringRef stub) {
   return proxy;
 }
 
-void mp::ASLSolver::Solve(Problem &p, SolutionHandler &sh) {
+void mp::ASLSolver::Solve(ASLProblem &p, SolutionHandler &sh) {
   RegisterSuffixes(p.asl_);
   ASLSolutionHandler asl_sol_handler(sh, p);
   DoSolve(p, asl_sol_handler);

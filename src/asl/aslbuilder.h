@@ -227,7 +227,7 @@ class ASLBuilder {
   typedef asl::CountExpr CountExpr;
 
   explicit ASLBuilder(ASL *asl = 0) { Init(asl); }
-  explicit ASLBuilder(Problem::Proxy proxy) {
+  explicit ASLBuilder(ASLProblem::Proxy proxy) {
     Init(proxy.asl_);
     proxy.asl_ = 0;
     own_asl_ = true;
@@ -237,12 +237,12 @@ class ASLBuilder {
 
   // Returns a built problem via proxy. No builder methods other than
   // the destructor should be called after calling this method.
-  Problem::Proxy GetProblem() {
+  ASLProblem::Proxy GetProblem() {
     if (!own_asl_)
       throw Error("ASL problem is not transferable");
     ASL *asl = asl_;
     own_asl_ = false;
-    return Problem::Proxy(asl);
+    return ASLProblem::Proxy(asl);
   }
 
   typedef ASLSuffixPtr SuffixPtr;

@@ -600,7 +600,7 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
   }
 }
 
-bool Solver::ParseOptions(char **argv, unsigned flags, const Problem *) {
+bool Solver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) {
   has_errors_ = false;
   bool_options_ &= ~SHOW_VERSION;
   if (const char *s = std::getenv((name_ + "_options").c_str()))

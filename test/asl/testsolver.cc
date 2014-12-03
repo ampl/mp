@@ -31,7 +31,7 @@ namespace mp {
 
 class TestSolver : public ASLSolver {
  protected:
-  void DoSolve(Problem &, SolutionHandler &) {}
+  void DoSolve(ASLProblem &, SolutionHandler &) {}
 
   std::string GetOption(const SolverOption &) const { return ""; }
   void SetOption(const SolverOption &, fmt::StringRef ) {

@@ -24,7 +24,7 @@
 #include "test-assert.h"
 
 // Define MP_MAX_PROBLEM_ITEMS to a small value before including problem.h
-// to test index overflow checks.
+// to test size overflow checks.
 #define MP_MAX_PROBLEM_ITEMS 100
 
 #include "mp/problem.h"
@@ -46,6 +46,16 @@ TEST(ProblemTest, AddVar) {
   EXPECT_EQ(33, var.lb());
   EXPECT_EQ(44, var.ub());
   EXPECT_EQ(mp::var::INTEGER, var.type());
+}
+
+TEST(ProblemTest, CompareVars) {
+  Problem p;
+  p.AddVar(0, 0);
+  p.AddVar(0, 0);
+  EXPECT_TRUE(p.var(0) == p.var(0));
+  EXPECT_TRUE(p.var(0) != p.var(1));
+  EXPECT_FALSE(p.var(0) != p.var(0));
+  EXPECT_FALSE(p.var(0) == p.var(1));
 }
 
 TEST(ProblemTest, InvalidVarIndex) {
@@ -98,9 +108,16 @@ TEST(ProblemTest, AddObj) {
   Problem p;
   EXPECT_EQ(0, p.num_objs());
 
-  p.AddObj(mp::obj::MAX, mp::NumericExpr());
+  p.AddObj(mp::obj::MIN);
   EXPECT_EQ(1, p.num_objs());
   Problem::Objective obj = p.obj(0);
+  EXPECT_EQ(mp::obj::MIN, obj.type());
+  EXPECT_TRUE(!obj.nonlinear_expr());
+  EXPECT_EQ(0, obj.linear_expr().num_terms());
+
+  p.AddObj(mp::obj::MAX, mp::NumericExpr());
+  EXPECT_EQ(2, p.num_objs());
+  obj = p.obj(1);
   EXPECT_EQ(mp::obj::MAX, obj.type());
   EXPECT_TRUE(!obj.nonlinear_expr());
   EXPECT_EQ(0, obj.linear_expr().num_terms());
@@ -109,12 +126,83 @@ TEST(ProblemTest, AddObj) {
   Problem::LinearObjBuilder builder = p.AddObj(mp::obj::MIN, nl_expr);
   builder.AddTerm(0, 1.1);
   builder.AddTerm(3, 2.2);
-  EXPECT_EQ(2, p.num_objs());
-  obj = p.obj(1);
+  EXPECT_EQ(3, p.num_objs());
+  obj = p.obj(2);
   EXPECT_EQ(mp::obj::MIN, obj.type());
   EXPECT_EQ(nl_expr, obj.nonlinear_expr());
-  EXPECT_EQ(2, obj.linear_expr().num_terms());
-  // TODO: check terms
+  const mp::LinearExpr &expr = obj.linear_expr();
+  EXPECT_EQ(2, expr.num_terms());
+  mp::LinearExpr::iterator i = expr.begin();
+  EXPECT_EQ(0, i->var_index());
+  EXPECT_EQ(1.1, i->coef());
+  ++i;
+  EXPECT_EQ(3, i->var_index());
+  EXPECT_EQ(2.2, i->coef());
+  EXPECT_EQ(expr.end(), ++i);
+}
+
+TEST(ProblemTest, CompareObjs) {
+  Problem p;
+  p.AddObj(mp::obj::MIN);
+  p.AddObj(mp::obj::MAX);
+  EXPECT_TRUE(p.obj(0) == p.obj(0));
+  EXPECT_TRUE(p.obj(0) != p.obj(1));
+  EXPECT_FALSE(p.obj(0) != p.obj(0));
+  EXPECT_FALSE(p.obj(0) == p.obj(1));
+}
+
+TEST(ProblemTest, InvalidObjIndex) {
+  Problem p;
+  const int num_objs = 3;
+  for (int i = 0; i < num_objs; ++i)
+    p.AddObj(mp::obj::MIN);
+  EXPECT_ASSERT(p.obj(-1), "invalid index");
+  EXPECT_ASSERT(p.obj(num_objs), "invalid index");
+}
+
+TEST(ProblemTest, MaxObjs) {
+  Problem p;
+  for (int i = 0; i < MP_MAX_PROBLEM_ITEMS; ++i)
+    p.AddObj(mp::obj::MIN);
+  EXPECT_EQ(MP_MAX_PROBLEM_ITEMS, p.num_objs());
+  EXPECT_ASSERT(p.AddObj(mp::obj::MIN), "too many objectives");
+}
+
+TEST(ProblemTest, Objs) {
+  Problem p;
+  p.AddObj(mp::obj::MAX);
+  p.AddObj(mp::obj::MIN);
+  Problem::ObjList objs = p.objs();
+  Problem::ObjList::iterator i = objs.begin();
+  // Test dereference.
+  EXPECT_EQ(p.obj(0), *i);
+  // Test the arrow operator.
+  EXPECT_EQ(mp::obj::MAX, i->type());
+  // Test postincrement.
+  Problem::ObjList::iterator j = i++;
+  EXPECT_EQ(p.obj(0), *j);
+  EXPECT_EQ(p.obj(1), *i);
+  EXPECT_TRUE(i != j);
+  // Test preincrement.
+  i = ++j;
+  EXPECT_EQ(p.obj(1), *j);
+  EXPECT_EQ(p.obj(1), *i);
+  EXPECT_TRUE(i == j);
+  // Test end.
+  EXPECT_NE(i, objs.end());
+  EXPECT_EQ(++i, objs.end());
+  // Test invalid access.
+  EXPECT_ASSERT(i->type(), "invalid access");
+  EXPECT_ASSERT(*i, "invalid access");
+}
+
+TEST(ProblemTest, SetInfo) {
+  Problem p;
+  auto info = mp::ProblemInfo();
+  info.num_vars = 1;
+  p.SetInfo(info);
+  p.AddVar(0, 0);
+  // TODO: test that there is no reallocation
 }
 
 // TODO: check the default definition of MP_MAX_PROBLEM_ITEMS

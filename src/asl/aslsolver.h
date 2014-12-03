@@ -35,10 +35,10 @@ class ASLSolver : public SolverImpl<asl::internal::ASLBuilder> {
  class ASLSolutionHandler : public SolutionHandler {
   private:
    SolutionHandler &handler_;
-   Problem &problem_;
+   ASLProblem &problem_;
 
   public:
-   ASLSolutionHandler(SolutionHandler &h, Problem &p)
+   ASLSolutionHandler(SolutionHandler &h, ASLProblem &p)
      : handler_(h), problem_(p) {}
 
    void HandleFeasibleSolution(fmt::StringRef message,
@@ -54,19 +54,19 @@ class ASLSolver : public SolverImpl<asl::internal::ASLBuilder> {
  };
 
  protected:
-  virtual void DoSolve(Problem &p, SolutionHandler &sh) = 0;
+  virtual void DoSolve(ASLProblem &p, SolutionHandler &sh) = 0;
 
  public:
   ASLSolver(fmt::StringRef name, fmt::StringRef long_name = 0,
             long date = 0, int flags = 0);
 
-  Problem::Proxy GetProblemBuilder(fmt::StringRef stub);
+  ASLProblem::Proxy GetProblemBuilder(fmt::StringRef stub);
 
   // Solves a problem and report solutions via the solution handler.
-  void Solve(Problem &problem, SolutionHandler &sh);
+  void Solve(ASLProblem &problem, SolutionHandler &sh);
 
   void Solve(asl::internal::ASLBuilder &builder, SolutionHandler &sh) {
-    Problem problem(builder.GetProblem());
+    ASLProblem problem(builder.GetProblem());
     Solve(problem, sh);
   }
 };

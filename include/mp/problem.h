@@ -38,8 +38,43 @@
 
 namespace mp {
 
+class LinearExpr {
+ private:
+  class Term {
+   private:
+    int var_index_;
+    double coef_;
+
+    friend class LinearExpr;
+
+    Term(int var_index, double coef) : var_index_(var_index), coef_(coef) {}
+
+   public:
+    int var_index() const { return var_index_; }
+    double coef() const { return coef_; }
+  };
+  std::vector<Term> terms_;
+
+ public:
+  int num_terms() const { return static_cast<int>(terms_.size()); }
+
+  typedef std::vector<Term>::const_iterator iterator;
+
+  iterator begin() const { return terms_.begin(); }
+  iterator end() const { return terms_.end(); }
+
+  void AddTerm(int var_index, double coef) {
+    terms_.push_back(Term(var_index, coef));
+  }
+
+  void Reserve(int num_terms) {
+    terms_.reserve(num_terms);
+  }
+};
+
 // An optimization problem.
-class Problem : public ExprFactory, public SuffixManager {
+template <typename Alloc>
+class BasicProblem : public ExprFactory, public SuffixManager {
  private:
   // A variable.
   struct Var {
@@ -52,29 +87,6 @@ class Problem : public ExprFactory, public SuffixManager {
   // Packed variable type information.
   // is_var_int_[i] specifies whether variable i is integer.
   std::vector<bool> is_var_int_;
-
-  class LinearExpr {
-   private:
-    struct Term {
-      int var_index;
-      double coef;
-      Term(int var_index, double coef) : var_index(var_index), coef(coef) {}
-    };
-    std::vector<Term> terms_;
-
-   public:
-    int num_terms() const { return static_cast<int>(terms_.size()); }
-
-    // TODO: iterator
-
-    void AddTerm(int var_index, double coef) {
-      terms_.push_back(Term(var_index, coef));
-    }
-
-    void Reserve(int num_terms) {
-      terms_.reserve(num_terms);
-    }
-  };
 
   class LinearExprBuilder {
    private:
@@ -99,17 +111,17 @@ class Problem : public ExprFactory, public SuffixManager {
   // The array can be empty if the problem is linear.
   std::vector<NumericExpr> nonlinear_objs_;
 
-  // An algebraic constraint.
-  struct AlgebraicCon {
+  // Algebraic constraint information.
+  struct AlgebraicConInfo {
     // Linear part of an algebraic constraint expression.
     // Nonlinear parts are stored in nonlinear_cons_ to avoid overhead
     // for linear problems.
     LinearExpr linear_expr;
     double lb;
     double ub;
-    AlgebraicCon(double lb, double ub) : lb(lb), ub(ub) {}
+    AlgebraicConInfo(double lb, double ub) : lb(lb), ub(ub) {}
   };
-  std::vector<AlgebraicCon> algebraic_cons_;
+  std::vector<AlgebraicConInfo> algebraic_cons_;
 
   // Information about complementarity conditions.
   // compl_vars_[i] > 0 means constraint i complements variable
@@ -152,20 +164,20 @@ class Problem : public ExprFactory, public SuffixManager {
   template <typename T>
   class List {
    private:
-    const Problem *problem_;
+    const BasicProblem *problem_;
 
-    friend class Problem;
+    friend class BasicProblem;
 
-    explicit List(const Problem *p) : problem_(p) {}
+    explicit List(const BasicProblem *p) : problem_(p) {}
 
    public:
-    class iterator : std::iterator<std::forward_iterator_tag, T>{
+    class iterator : std::iterator<std::forward_iterator_tag, T> {
      private:
       T item_;
 
-      friend class Problem::List<T>;
+      friend class List<T>;
 
-      iterator(const Problem *p, int index) : item_(p, index) {}
+      iterator(const BasicProblem *p, int index) : item_(p, index) {}
 
      public:
       const T *operator->() const {
@@ -235,6 +247,14 @@ class Problem : public ExprFactory, public SuffixManager {
     return SuffixHandler<T>(&suffix);
   }
 
+  struct ProblemItem {
+    const BasicProblem *problem_;
+    int index_;
+
+    ProblemItem(const BasicProblem *p, int index)
+      : problem_(p), index_(index) {}
+  };
+
  public:
   // Returns the number of variables.
   int num_vars() const { return static_cast<int>(vars_.size()); }
@@ -253,39 +273,37 @@ class Problem : public ExprFactory, public SuffixManager {
   }
 
   // An optimization variable.
-  class Variable {
+  class Variable : private ProblemItem {
    private:
-    const Problem *problem_;
-    int index_;
+    friend class BasicProblem;
 
-    friend class Problem;
+    Variable(const BasicProblem *p, int index) : ProblemItem(p, index) {}
 
-    Variable(const Problem *p, int index) : problem_(p), index_(index) {}
-
-    static int num_items(const Problem &p) {
+    static int num_items(const BasicProblem &p) {
       return p.num_vars();
     }
 
    public:
-    // Returns the lower bound of the variable.
+    // Returns the lower bound on the variable.
     double lb() const {
-      return problem_->vars_[index_].lb;
+      return this->problem_->vars_[this->index_].lb;
     }
 
-    // Returns the upper bound of the variable.
+    // Returns the upper bound on the variable.
     double ub() const {
-      return problem_->vars_[index_].ub;
+      return this->problem_->vars_[this->index_].ub;
     }
 
     // Returns the type of the variable.
     var::Type type() const {
-      return problem_->is_var_int_[index_] ? var::INTEGER : var::CONTINUOUS;
+      return this->problem_->is_var_int_[this->index_] ?
+          var::INTEGER : var::CONTINUOUS;
     }
 
     bool operator==(Variable other) const {
-      MP_ASSERT(problem_ == other.problem_,
+      MP_ASSERT(this->problem_ == other.problem_,
                 "comparing variables from different problems");
-      return index_ == other.index_;
+      return this->index_ == other.index_;
     }
     bool operator!=(Variable other) const {
       return !(*this == other);
@@ -300,7 +318,7 @@ class Problem : public ExprFactory, public SuffixManager {
   //   for (auto var: problem.vars()) {
   //     ...
   //   }
-  VarList vars() const { return List<Variable>(this); }
+  VarList vars() const { return VarList(this); }
 
   // Returns the variable at the specified index.
   Variable var(int index) const {
@@ -316,39 +334,52 @@ class Problem : public ExprFactory, public SuffixManager {
   }
 
   // An objective.
-  class Objective {
+  class Objective : private ProblemItem {
    private:
-    const Problem *problem_;
-    int index_;
+    friend class BasicProblem;
 
-    friend class Problem;
+    Objective(const BasicProblem *p, int index) : ProblemItem(p, index) {}
 
-    Objective(const Problem *p, int index) : problem_(p), index_(index) {}
+    static int num_items(const BasicProblem &p) {
+      return p.num_objs();
+    }
 
    public:
     // Returns the type of the objective.
     obj::Type type() const {
-      return problem_->is_obj_max_[index_] ? obj::MAX : obj::MIN;
+      return this->problem_->is_obj_max_[this->index_] ? obj::MAX : obj::MIN;
     }
 
     // Returns the linear part of an objective expression.
     const LinearExpr &linear_expr() const {
-      return problem_->linear_objs_[index_];
+      return this->problem_->linear_objs_[this->index_];
     }
 
     // Returns the nonlinear part of an objective expression.
     NumericExpr nonlinear_expr() const {
-      return problem_->nonlinear_objs_.empty() ?
-            NumericExpr() : problem_->nonlinear_objs_[index_];
+      return this->problem_->nonlinear_objs_.empty() ?
+            NumericExpr() : this->problem_->nonlinear_objs_[this->index_];
+    }
+
+    bool operator==(Objective other) const {
+      MP_ASSERT(this->problem_ == other.problem_,
+                "comparing objectives from different problems");
+      return this->index_ == other.index_;
+    }
+    bool operator!=(Objective other) const {
+      return !(*this == other);
     }
   };
+
+  // A list of objectives.
+  typedef List<Objective> ObjList;
 
   // Returns the list of problem objectives.
   // It can be used to iterate over all objectives in a problem:
   //   for (auto obj: problem.objs()) {
   //     ...
   //   }
-  List<Objective> objs() const { return List<Objective>(this); }
+  ObjList objs() const { return ObjList(this); }
 
   // Returns the objective at the specified index.
   Objective obj(int index) const {
@@ -362,6 +393,49 @@ class Problem : public ExprFactory, public SuffixManager {
   // Returns a handler for receiving linear terms in the objective.
   LinearObjBuilder AddObj(obj::Type type, NumericExpr expr,
                           int num_linear_terms = 0);
+
+  LinearObjBuilder AddObj(obj::Type type, int num_linear_terms = 0) {
+    return AddObj(type, NumericExpr(), num_linear_terms);
+  }
+
+  // An algebraic constraint.
+  class AlgebraicCon : private ProblemItem {
+   private:
+    friend class BasicProblem;
+
+    AlgebraicCon(const BasicProblem *p, int index) : ProblemItem(p, index) {}
+
+   public:
+    // Returns the lower bound on the constraint.
+    double lb() const {
+      return this->problem_->algebraic_cons_[this->index_].lb;
+    }
+
+    // Returns the upper bound on the constraint.
+    double ub() const {
+      return this->problem_->algebraic_cons_[this->index_].ub;
+    }
+
+    // Returns the linear part of a constraint expression.
+    const LinearExpr &linear_expr() const {
+      return this->problem_->algebraic_cons_[this->index_].linear_expr;
+    }
+
+    // Returns the nonlinear part of a constraint expression.
+    NumericExpr nonlinear_expr() const {
+      return this->problem_->nonlinear_cons_.empty() ?
+            NumericExpr() : this->problem_->nonlinear_cons_[this->index_];
+    }
+
+    bool operator==(AlgebraicCon other) const {
+      MP_ASSERT(this->problem_ == other.problem_,
+                "comparing constraints from different problems");
+      return this->index_ == other.index_;
+    }
+    bool operator!=(AlgebraicCon other) const {
+      return !(*this == other);
+    }
+  };
 
   typedef LinearExprBuilder LinearConBuilder;
 
@@ -445,9 +519,100 @@ class Problem : public ExprFactory, public SuffixManager {
     return AddSuffix<double>(name, kind);
   }
 
-  // Sets problem information and reserves memory for problem components.
+  // Sets problem information and reserves memory for problem elements.
   void SetInfo(const ProblemInfo &info);
 };
+
+template <typename Alloc>
+int BasicProblem<Alloc>::GetSuffixSize(int suffix_type) {
+  switch (suffix_type) {
+  default:
+    MP_ASSERT(false, "invalid suffix type");
+    // Fall through.
+  case suf::VAR:
+    return vars_.capacity();
+  case suf::CON:
+    return algebraic_cons_.capacity();
+  case suf::OBJ:
+    return linear_objs_.capacity();
+  case suf::PROBLEM:
+    return 1;
+  }
+}
+
+template <typename Alloc>
+typename BasicProblem<Alloc>::LinearObjBuilder BasicProblem<Alloc>::AddObj(
+    obj::Type type, NumericExpr expr, int num_linear_terms) {
+  MP_ASSERT(linear_objs_.size() < MP_MAX_PROBLEM_ITEMS, "too many objectives");
+  is_obj_max_.push_back(type != obj::MIN);
+  linear_objs_.push_back(LinearExpr());
+  LinearExpr &linear_expr = linear_objs_.back();
+  linear_expr.Reserve(num_linear_terms);
+  if (expr) {
+    if (nonlinear_objs_.empty()) {
+      nonlinear_objs_.reserve(linear_objs_.capacity());
+      nonlinear_objs_.resize(linear_objs_.size() - 1);
+    }
+    nonlinear_objs_.push_back(expr);
+  }
+  return LinearObjBuilder(&linear_expr);
+}
+
+template <typename Alloc>
+typename BasicProblem<Alloc>::LinearConBuilder BasicProblem<Alloc>::AddCon(
+    NumericExpr expr, double lb, double ub, int num_linear_terms) {
+  MP_ASSERT(algebraic_cons_.size() < MP_MAX_PROBLEM_ITEMS,
+            "too many algebraic constraints");
+  algebraic_cons_.push_back(AlgebraicConInfo(lb, ub));
+  AlgebraicConInfo &con = algebraic_cons_.back();
+  con.linear_expr.Reserve(num_linear_terms);
+  if (expr) {
+    if (nonlinear_cons_.empty()) {
+      nonlinear_cons_.reserve(algebraic_cons_.capacity());
+      nonlinear_cons_.resize(algebraic_cons_.size() - 1);
+    }
+    nonlinear_cons_.push_back(expr);
+  }
+  return LinearConBuilder(&con.linear_expr);
+}
+
+template <typename Alloc>
+void BasicProblem<Alloc>::SetComplement(
+    int con_index, int var_index, int flags) {
+  MP_ASSERT(0 <= con_index && con_index <= num_algebraic_cons(),
+            "invalid index");
+  if (compl_vars_.size() <= con_index) {
+    compl_vars_.reserve(algebraic_cons_.capacity());
+    compl_vars_.resize(algebraic_cons_.size());
+  }
+  compl_vars_[con_index] = var_index + 1u;
+  double inf = std::numeric_limits<double>::infinity();
+  AlgebraicConInfo &con = algebraic_cons_[con_index];
+  con.lb = (flags & comp::INF_LB) != 0 ? -inf : 0;
+  con.ub = (flags & comp::INF_UB) != 0 ?  inf : 0;
+}
+
+template <typename Alloc>
+void BasicProblem<Alloc>::SetInfo(const ProblemInfo &info) {
+  vars_.reserve(info.num_vars);
+  is_var_int_.reserve(info.num_vars);
+  is_obj_max_.reserve(info.num_objs);
+  linear_objs_.reserve(info.num_objs);
+  if (info.num_nl_objs != 0)
+    nonlinear_objs_.reserve(info.num_objs);
+  algebraic_cons_.reserve(info.num_algebraic_cons);
+  if (info.num_compl_conds != 0)
+    compl_vars_.reserve(info.num_algebraic_cons);
+  if (info.num_nl_cons != 0)
+    nonlinear_cons_.reserve(info.num_algebraic_cons);
+  logical_cons_.reserve(info.num_logical_cons);
+  int num_common_exprs = info.num_common_exprs();
+  linear_exprs_.reserve(num_common_exprs);
+  nonlinear_exprs_.reserve(num_common_exprs);
+  funcs_.reserve(info.num_funcs);
+}
+
+typedef BasicProblem< std::allocator<char> > Problem;
 }  // namespace mp
 
 #endif  // MP_PROBLEM_H_

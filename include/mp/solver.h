@@ -50,7 +50,7 @@
 
 namespace mp {
 
-class Problem;
+class ASLProblem;
 class Solver;
 
 // Information about a possible option value.
@@ -824,7 +824,7 @@ class Solver : private ErrorHandler,
   // false otherwise. It accepts a pointer to the problem because some
   // options may depend on problem features.
   virtual bool ParseOptions(
-      char **argv, unsigned flags = 0, const Problem *p = 0);
+      char **argv, unsigned flags = 0, const ASLProblem *p = 0);
 
   // Returns the value of an integer option.
   // Throws OptionError if there is no such option or it has a different type.

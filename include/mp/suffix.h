@@ -35,6 +35,9 @@
 
 namespace mp {
 
+template <typename Alloc>
+class BasicProblem;
+
 // A suffix.
 // Suffixes are arbitrary metadata that can be attached to variables,
 // objectives, constraints and problems.
@@ -45,7 +48,8 @@ class Suffix {
   int *values_;
   int size_;
 
-  friend class Problem;
+  template <typename Alloc>
+  friend class BasicProblem;
 
   void InitValues(int size) {
     assert(!values_);
@@ -106,7 +110,8 @@ class SuffixSet {
   typedef std::set<Suffix, SuffixNameLess> Set;
   Set set_;
 
-  friend class Problem;
+  template <typename Alloc>
+  friend class BasicProblem;
 
  public:
   // Finds a suffix with specified name.
