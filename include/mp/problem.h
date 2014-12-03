@@ -132,6 +132,31 @@ class Problem : public ExprFactory, public SuffixManager {
     return static_cast<std::size_t>(std::numeric_limits<int>::max());
   }
 
+  template <typename T>
+  class SuffixHandler {
+   private:
+    Suffix *suffix_;
+
+   public:
+    explicit SuffixHandler(Suffix *s) : suffix_(s) {}
+
+    // Sets the suffix value.
+    void SetValue(int index, T value) {
+      suffix_->set_value(index, value);
+    }
+  };
+
+  int GetSuffixSize(int suffix_type);
+
+  template <typename T>
+  SuffixHandler<T> AddSuffix(fmt::StringRef name, int kind) {
+    int type = kind & suf::MASK;
+    SuffixSet::Set &set = suffixes(type).set_;
+    Suffix &suffix = const_cast<Suffix&>(*set.insert(Suffix(name, kind)).first);
+    suffix.InitValues(GetSuffixSize(type));
+    return SuffixHandler<T>(&suffix);
+  }
+
  public:
   // Returns the number of variables.
   int num_vars() const { return static_cast<int>(vars_.size()); }
@@ -229,27 +254,21 @@ class Problem : public ExprFactory, public SuffixManager {
   typedef Suffix *SuffixPtr;
   typedef mp::SuffixSet SuffixSet;
 
-  class SuffixHandler {
-   private:
-    Suffix *suffix_;
+  typedef SuffixHandler<int> IntSuffixHandler;
 
-   public:
-    explicit SuffixHandler(Suffix *s) : suffix_(s) {}
-
-    // Sets an integer suffix value.
-    void SetValue(int index, int value) {
-      suffix_->set_value(index, value);
-    }
-
-    // Sets a double suffix value.
-    void SetValue(int index, double value) {
-      suffix_->set_value(index, value);
-    }
-  };
-
-  // Adds a suffix.
+  // Adds an integer suffix.
   // name: Suffix name that may not be null-terminated.
-  SuffixHandler AddSuffix(fmt::StringRef name, int kind, int num_values);
+  IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int) {
+    return AddSuffix<int>(name, kind);
+  }
+
+  typedef SuffixHandler<double> DblSuffixHandler;
+
+  // Adds an double suffix.
+  // name: Suffix name that may not be null-terminated.
+  DblSuffixHandler AddDblSuffix(fmt::StringRef name, int kind, int) {
+    return AddSuffix<double>(name, kind);
+  }
 
   // Sets problem information and reserves memory for problem components.
   void SetInfo(const ProblemInfo &info);

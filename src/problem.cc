@@ -24,6 +24,19 @@
 
 using mp::Problem;
 
+int Problem::GetSuffixSize(int suffix_type) {
+  switch (suffix_type) {
+  case suf::VAR:
+    return vars_.capacity();
+  case suf::CON:
+    return algebraic_cons_.capacity();
+  case suf::OBJ:
+    return linear_objs_.capacity();
+  case suf::PROBLEM:
+    return 1;
+  }
+}
+
 Problem::LinearObjBuilder Problem::AddObj(
     mp::obj::Type type, mp::NumericExpr expr, int num_linear_terms) {
   MP_ASSERT(linear_objs_.size() < max_index(), "too many objectives");
@@ -70,29 +83,6 @@ void Problem::SetComplement(int con_index, int var_index, int flags) {
   AlgebraicCon &con = algebraic_cons_[con_index];
   con.lb = (flags & comp::INF_LB) != 0 ? -inf : 0;
   con.ub = (flags & comp::INF_UB) != 0 ?  inf : 0;
-}
-
-Problem::SuffixHandler Problem::AddSuffix(fmt::StringRef name, int kind, int) {
-  int type = kind & suf::MASK;
-  SuffixSet::Set &set = suffixes(type).set_;
-  Suffix &suffix = const_cast<Suffix&>(*set.insert(Suffix(name, kind)).first);
-  std::size_t size = 0;
-  switch (type) {
-  case suf::VAR:
-    size = vars_.capacity();
-    break;
-  case suf::CON:
-    size = algebraic_cons_.capacity();
-    break;
-  case suf::OBJ:
-    size = linear_objs_.capacity();
-    break;
-  case suf::PROBLEM:
-    size = 1;
-    break;
-  }
-  suffix.InitValues(size);
-  return SuffixHandler(&suffix);
 }
 
 void Problem::SetInfo(const mp::ProblemInfo &info) {
