@@ -6,7 +6,7 @@ add_mp_test(aslbuilder-test aslbuilder-test.cc LIBS asl)
 add_executable(numberofmap-speed-test numberofmap-speed-test.cc)
 target_link_libraries(numberofmap-speed-test asl)
 
-add_mp_test(problem-test problem-test.cc stderr-redirect.h LIBS asl)
+add_mp_test(aslproblem-test aslproblem-test.cc stderr-redirect.h LIBS asl)
 add_mp_test(aslsolver-test aslsolver-test.cc LIBS asl)
 
 add_library(ampltestsolver SHARED
