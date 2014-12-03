@@ -1284,7 +1284,7 @@ TEST(SolutionWriterTest, CountSolutions) {
   int nsol = 5;
   for (int i = 0; i < nsol; ++i)
     writer.HandleFeasibleSolution("", 0, 0, 0);
-  problem_builder.AddSuffix("nsol", mp::suf::PROBLEM, 0);
+  problem_builder.AddIntSuffix("nsol", mp::suf::PROBLEM, 0);
   EXPECT_CALL(writer.sol_writer(), Write(_, MatchNSol(nsol)));
   writer.HandleSolution(0, "", 0, 0, 0);
 }
@@ -1306,7 +1306,7 @@ TEST(SolutionWriterTest, WriteFeasibleSolutions) {
     EXPECT_CALL(sol_writer, Write(StringRefEq(filename), _));
     writer.HandleFeasibleSolution("", 0, 0, 0);
   }
-  problem_builder.AddSuffix("nsol", mp::suf::PROBLEM, 0);
+  problem_builder.AddIntSuffix("nsol", mp::suf::PROBLEM, 0);
   EXPECT_CALL(sol_writer, Write(_, MatchNSol(nsol)));
   writer.HandleSolution(0, "", 0, 0, 0);
 }
