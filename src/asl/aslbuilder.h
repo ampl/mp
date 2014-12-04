@@ -338,7 +338,7 @@ class ASLBuilder {
   LinearObjBuilder AddObj(obj::Type type, NumericExpr expr, int);
 
   // Adds an algebraic constraint.
-  LinearConBuilder AddCon(NumericExpr expr, double lb, double ub, int);
+  LinearConBuilder AddCon(double lb, double ub, NumericExpr expr, int);
 
   // Adds a logical constraint.
   void AddCon(LogicalExpr expr);

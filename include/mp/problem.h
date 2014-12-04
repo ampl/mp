@@ -441,8 +441,12 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Adds an algebraic constraint.
   // Returns a handler for receiving linear terms in the constraint.
-  LinearConBuilder AddCon(NumericExpr expr, double lb, double ub,
+  LinearConBuilder AddCon(double lb, double ub, NumericExpr expr,
                           int num_linear_terms = 0);
+
+  LinearConBuilder AddCon(double lb, double ub, int num_linear_terms = 0) {
+    return AddCon(lb, ub, NumericExpr(), num_linear_terms);
+  }
 
   // Adds a logical constraint.
   void AddCon(LogicalExpr expr) {
@@ -560,7 +564,7 @@ typename BasicProblem<Alloc>::LinearObjBuilder BasicProblem<Alloc>::AddObj(
 
 template <typename Alloc>
 typename BasicProblem<Alloc>::LinearConBuilder BasicProblem<Alloc>::AddCon(
-    NumericExpr expr, double lb, double ub, int num_linear_terms) {
+    double lb, double ub, NumericExpr expr, int num_linear_terms) {
   MP_ASSERT(algebraic_cons_.size() < MP_MAX_PROBLEM_ITEMS,
             "too many algebraic constraints");
   algebraic_cons_.push_back(AlgebraicConInfo(lb, ub));

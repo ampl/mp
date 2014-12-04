@@ -57,7 +57,7 @@ TEST(ProblemBuilderTest, SetInfo) {
 TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(AddVar(0, 0, mp::var::INTEGER), "variable");
   EXPECT_DISPATCH(AddObj(mp::obj::MIN, TestExpr(), 0), "objective");
-  EXPECT_DISPATCH(AddCon(TestExpr(), 0, 0, 0), "algebraic constraint");
+  EXPECT_DISPATCH(AddCon(0, 0, TestExpr(), 0), "algebraic constraint");
   EXPECT_DISPATCH(AddCon(TestExpr()), "logical constraint");
   EXPECT_DISPATCH(BeginCommonExpr(0), "common expression");
   EXPECT_DISPATCH(SetComplement(0, 0, 0), "complementarity constraint");

@@ -1473,7 +1473,7 @@ TEST(NLProblemBuilderTest, OnCon) {
   adapter.OnAlgebraicCon(0, expr);
   adapter.OnConBounds(0, 11, 22);
   auto con_builder = TestLinearConBuilder(ID);
-  EXPECT_CALL(builder, AddCon(expr, 11, 22, 33)).WillOnce(Return(con_builder));
+  EXPECT_CALL(builder, AddCon(11, 22, expr, 33)).WillOnce(Return(con_builder));
   EXPECT_EQ(con_builder, adapter.OnLinearConExpr(0, 33));
 }
 

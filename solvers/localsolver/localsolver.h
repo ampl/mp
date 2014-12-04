@@ -173,7 +173,7 @@ class LSProblemBuilder :
   typedef LinearExprBuilder LinearConBuilder;
 
   // Adds an algebraic constraint.
-  LinearConBuilder AddCon(ls::LSExpression expr, double lb, double ub, int);
+  LinearConBuilder AddCon(double lb, double ub, ls::LSExpression expr, int);
 
   // Adds a logical constraint.
   void AddCon(ls::LSExpression expr) {

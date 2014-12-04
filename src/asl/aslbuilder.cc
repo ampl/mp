@@ -519,7 +519,7 @@ ASLBuilder::LinearObjBuilder
 }
 
 ASLBuilder::LinearConBuilder
-    ASLBuilder::AddCon(NumericExpr expr, double lb, double ub, int) {
+    ASLBuilder::AddCon(double lb, double ub, NumericExpr expr, int) {
   int index = con_index_++;
   assert(0 <= index && index < asl_->i.n_con_);
   SetBounds(asl_->i.LUrhs_, asl_->i.Urhsx_, index, lb, ub);

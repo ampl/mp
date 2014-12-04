@@ -87,7 +87,7 @@ class ProblemBuilder : public SuffixManager {
 
   // Adds an algebraic constraint.
   // Returns a handler for receiving linear terms in the constraint.
-  LinearConBuilder AddCon(NumericExpr expr, double lb, double ub,
+  LinearConBuilder AddCon(double lb, double ub, NumericExpr expr,
                           int num_linear_terms) {
     MP_UNUSED3(expr, lb, ub); MP_UNUSED(num_linear_terms);
     MP_DISPATCH(ReportUnhandledConstruct("algebraic constraint"));

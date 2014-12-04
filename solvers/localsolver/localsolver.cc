@@ -110,7 +110,7 @@ LSProblemBuilder::LinearObjBuilder
 }
 
 LSProblemBuilder::LinearConBuilder
-    LSProblemBuilder::AddCon(ls::LSExpression expr, double lb, double ub, int) {
+    LSProblemBuilder::AddCon(double lb, double ub, ls::LSExpression expr, int) {
   ++num_cons_;
   double inf = std::numeric_limits<double>::infinity();
   ls::LSExpression sum = model_.createExpression(ls::O_Sum);

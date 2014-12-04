@@ -140,7 +140,7 @@ class MockProblemBuilder {
 
   typedef TestLinearConBuilder LinearConBuilder;
 
-  MOCK_METHOD4(AddCon, LinearConBuilder (NumericExpr expr, double lb, double ub,
+  MOCK_METHOD4(AddCon, LinearConBuilder (double lb, double ub, NumericExpr expr,
                                          int num_linear_terms));
 
   MOCK_METHOD1(AddCon, void (LogicalExpr expr));

@@ -421,7 +421,7 @@ EvalResult NLSolverTest::Eval(
   cols.Add(1);
   for (int i = 1; i < info.num_vars - 1; ++i)
     cols.Add(0);
-  auto con_builder = pb.AddCon(factory(pb), 0, 0, 0);
+  auto con_builder = pb.AddCon(0, 0, factory(pb), 0);
   con_builder.AddTerm(0, -1);
   return Solve(pb);
 }
@@ -482,8 +482,8 @@ void MakeTSP(ProblemBuilder &pb) {
   // Add objective and constraints.
   auto obj = pb.AddObj(mp::obj::MIN, NumericExpr(), n * n);
   for (int i = 0; i < n; ++i) {
-    auto in_con = pb.AddCon(NumericExpr(), 1, 1, n);   // exactly one incoming
-    auto out_con = pb.AddCon(NumericExpr(), 1, 1, n);  // exactly one outgoing
+    auto in_con = pb.AddCon(1, 1, NumericExpr(), n);   // exactly one incoming
+    auto out_con = pb.AddCon(1, 1, NumericExpr(), n);  // exactly one outgoing
     for (int j = 0; j < n; ++j) {
       // Distance is arbitrarily chosen to be i + j + 1.
       obj.AddTerm(i * n + j, i * j + 1);
@@ -1177,7 +1177,7 @@ TEST_F(NLSolverTest, FeasibleSolveCode) {
   info.num_vars = info.num_linear_integer_vars = info.num_algebraic_cons = 1;
   pb.SetInfo(info);
   pb.AddVar(0, 0, mp::var::INTEGER);
-  pb.AddCon(NumericExpr(), 0, 1, 1).AddTerm(0, 1);
+  pb.AddCon(0, 1, NumericExpr(), 1).AddTerm(0, 1);
   EXPECT_EQ(mp::sol::SOLVED, Solve(pb).solve_code());
 }
 
@@ -1187,7 +1187,7 @@ TEST_F(NLSolverTest, InfeasibleSolveCode) {
   info.num_vars = info.num_linear_integer_vars = info.num_algebraic_cons = 1;
   pb.SetInfo(info);
   pb.AddVar(0, 0, mp::var::INTEGER);
-  pb.AddCon(NumericExpr(), 1, 1, 1).AddTerm(0, 1);
+  pb.AddCon(1, 1, NumericExpr(), 1).AddTerm(0, 1);
   EXPECT_EQ(mp::sol::INFEASIBLE, Solve(pb).solve_code());
 }
 

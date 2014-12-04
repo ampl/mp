@@ -608,7 +608,7 @@ class ProblemBuilderToNLAdapter {
   // Receives notification of the linear part of a constraint expression.
   LinearConHandler OnLinearConExpr(int con_index, int num_linear_terms) {
     const ConInfo &con = cons_[con_index];
-    return builder_.AddCon(con.expr, con.lb, con.ub, num_linear_terms);
+    return builder_.AddCon(con.lb, con.ub, con.expr, num_linear_terms);
   }
 
   typedef typename ProblemBuilder::LinearExprBuilder LinearExprHandler;
