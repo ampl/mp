@@ -68,7 +68,7 @@ class NLToLocalSolverConverter :
 public:
   NLToLocalSolverConverter(ls::LSModel &model) : model_(model) {}
 
-  void Convert(const Problem &p);
+  void Convert(const ASLProblem &p);
 
   ls::LSExpression const *vars() const { return &vars_[0]; }
 
@@ -268,7 +268,7 @@ class LocalSolver : public ASLSolver {
   }
 
  protected:
-  void DoSolve(Problem &p, SolutionHandler &sh);
+  void DoSolve(ASLProblem &p, SolutionHandler &sh);
 
  public:
   LocalSolver();

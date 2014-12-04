@@ -124,16 +124,16 @@ class SMPSWriter : public ASLSolver {
   std::vector<Scenario> scenarios;
 
   void SplitConRHSIntoScenarios(
-      const Problem &p, std::vector<CoreConInfo> &core_cons);
+      const ASLProblem &p, std::vector<CoreConInfo> &core_cons);
 
   void SplitVarBoundsIntoScenarios(
-      const Problem &p, std::vector<CoreVarInfo> &core_vars);
+      const ASLProblem &p, std::vector<CoreVarInfo> &core_vars);
 
-  void WriteColumns(FileWriter &writer, const Problem &p, int num_stages,
+  void WriteColumns(FileWriter &writer, const ASLProblem &p, int num_stages,
       int num_core_cons, const std::vector<double> &core_obj_coefs);
 
  protected:
-  void DoSolve(Problem &p, SolutionHandler &sh);
+  void DoSolve(ASLProblem &p, SolutionHandler &sh);
 
  public:
   SMPSWriter();

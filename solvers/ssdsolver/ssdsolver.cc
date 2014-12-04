@@ -49,7 +49,7 @@ namespace mp {
 SSDSolver::SSDSolver() : ASLSolver("ssdsolver", 0, SSDSOLVER_VERSION),
   output_(false), scaled_(false), abs_tolerance_(1e-5), solver_name_("cplex") {
   set_version("SSD Solver");
-  set_read_flags(Problem::READ_INITIAL_VALUES);
+  set_read_flags(ASLProblem::READ_INITIAL_VALUES);
   AddIntOption("outlev", "0 or 1 (default 0):  Whether to print solution log.",
       &SSDSolver::GetBoolOption, &SSDSolver::SetBoolOption, &output_);
   AddIntOption("scaled", "0 or 1 (default 0):  Whether to use a scaled model.",
@@ -60,7 +60,7 @@ SSDSolver::SSDSolver() : ASLSolver("ssdsolver", 0, SSDSOLVER_VERSION),
       &SSDSolver::GetSolverName, &SSDSolver::SetSolverName);
 }
 
-void SSDSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+void SSDSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   Function ssd_uniform;
   int num_scenarios = p.num_logical_cons();
   int num_vars = p.num_vars();
@@ -177,7 +177,7 @@ void SSDSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     cut_coefs[dominance_var] = -scaling;
     pc.AddCon(&cut_coefs[0], ref_tails[max_rel_violation_scen], Infinity);
 
-    p.Solve(solver_name_, sol, &pc, Problem::IGNORE_FUNCTIONS);
+    p.Solve(solver_name_, sol, &pc, ASLProblem::IGNORE_FUNCTIONS);
     if (sol.status() != sol::SOLVED) break;
     dominance_ub = sol.value(dominance_var);
     const double *values = sol.values();

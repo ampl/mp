@@ -36,7 +36,7 @@ enum {FEATURES = 0};
 using std::string;
 using Gecode::IntVarBranch;
 using mp::InvalidOptionValue;
-using mp::Problem;
+using mp::ASLProblem;
 
 // ----------------------------------------------------------------------------
 // Solver tests
@@ -261,7 +261,7 @@ TEST_F(NLSolverTest, RestartScaleOption) {
 TEST_F(NLSolverTest, OutLevOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/objconstint.nl");
   mp::BasicSolutionHandler sh;
   solver_.Solve(p, sh);
@@ -285,7 +285,7 @@ TEST_F(NLSolverTest, OutLevOption) {
 TEST_F(NLSolverTest, OutFreqOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/party1.nl");
   solver_.SetIntOption("outlev", 1);
   solver_.SetDblOption("timelimit", 0.125);

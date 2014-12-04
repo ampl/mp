@@ -61,7 +61,7 @@ ls::LSExpression NLToLocalSolverConverter::ConvertExpr(
   return result;
 }
 
-void NLToLocalSolverConverter::Convert(const Problem &p) {
+void NLToLocalSolverConverter::Convert(const ASLProblem &p) {
   int num_vars = p.num_vars();
   vars_.resize(num_vars);
 
@@ -168,7 +168,7 @@ ls::LSExpression NLToLocalSolverConverter::VisitAllDiff(PairwiseExpr e) {
   return result;
 }
 
-void LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+void LocalSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   // Set up an optimization problem in LocalSolver.

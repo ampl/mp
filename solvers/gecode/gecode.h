@@ -107,7 +107,7 @@ class NLToGecodeConverter :
   NLToGecodeConverter(int num_vars, Gecode::IntConLevel icl)
   : problem_(num_vars, icl), icl_(icl) {}
 
-  void Convert(const Problem &p);
+  void Convert(const ASLProblem &p);
 
   GecodeProblem &problem() { return problem_; }
 
@@ -355,11 +355,11 @@ class GecodeSolver : public ASLSolver {
 #endif
 
   template<template<template<typename> class, typename> class Meta>
-  ProblemPtr Search(Problem &p, GecodeProblem &gecode_problem,
+  ProblemPtr Search(ASLProblem &p, GecodeProblem &gecode_problem,
                     Gecode::Search::Statistics &stats, SolutionHandler &sh);
 
  protected:
-  void DoSolve(Problem &p, SolutionHandler &sh);
+  void DoSolve(ASLProblem &p, SolutionHandler &sh);
 
  public:
   GecodeSolver();

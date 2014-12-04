@@ -154,7 +154,7 @@ SulumSolver::~SulumSolver() {
   SlmFreeEnv(&env_);
 }
 
-void SulumSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+void SulumSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0 ||
@@ -187,7 +187,7 @@ void SulumSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     con_bound_keys[i] = GetBoundKey(p.con_lb(i), p.con_ub(i));
 
   // Convert constraint matrix.
-  Problem::ColMatrix matrix = p.col_matrix();
+  ASLProblem::ColMatrix matrix = p.col_matrix();
   std::vector<int> col_starts;
   col_starts.reserve(num_vars + 1);
   col_starts.assign(matrix.col_starts(), matrix.col_starts() + num_vars);

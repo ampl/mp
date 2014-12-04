@@ -213,7 +213,7 @@ void GetSolution(IloCP cp, IloNumVarArray vars, vector<double> &solution) {
   }
 }
 
-bool HasNonlinearObj(const mp::Problem &p) {
+bool HasNonlinearObj(const mp::ASLProblem &p) {
   if (p.num_objs() == 0)
     return false;
   asl::NumericExpr expr = p.nonlinear_obj_expr(0);
@@ -595,7 +595,7 @@ void IlogCPSolver::SetCPLEXIntOption(
 }
 
 void IlogCPSolver::SolveWithCP(
-    Problem &p, const NLToConcertConverter &converter,
+    ASLProblem &p, const NLToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
   IloNumVarArray vars = converter.vars();
   IloIntVarArray priority_vars(env_);
@@ -687,7 +687,7 @@ void IlogCPSolver::SolveWithCP(
 }
 
 void IlogCPSolver::SolveWithCPLEX(
-    Problem &p, const NLToConcertConverter &converter,
+    ASLProblem &p, const NLToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
   IloCplex::Aborter aborter(env_);
   cplex_.use(aborter);
@@ -736,7 +736,7 @@ void IlogCPSolver::SolveWithCPLEX(
       dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
 }
 
-void IlogCPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+void IlogCPSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   Stats stats = Stats();
   stats.time = steady_clock::now();
 

@@ -57,7 +57,7 @@ std::string ExtractScenario(std::string &name, bool require_scenario = true) {
   return index;
 }
 
-double GetConRHSAndType(const mp::Problem &p, int con_index, char &type) {
+double GetConRHSAndType(const mp::ASLProblem &p, int con_index, char &type) {
   double lb = p.con_lb(con_index), ub = p.con_ub(con_index);
   if (lb <= negInfinity) {
     type = ub >= Infinity ? 'N' : 'L';
@@ -96,7 +96,7 @@ SMPSWriter::SMPSWriter() : ASLSolver("smpswriter", "SMPSWriter", 20130709) {
 }
 
 void SMPSWriter::SplitConRHSIntoScenarios(
-    const Problem &p, std::vector<CoreConInfo> &core_cons) {
+    const ASLProblem &p, std::vector<CoreConInfo> &core_cons) {
   int num_cons = p.num_cons();
   for (int i = 0; i < num_cons; ++i) {
     CoreConInfo &info = core_cons[con_info[i].core_index];
@@ -123,7 +123,7 @@ void SMPSWriter::SplitConRHSIntoScenarios(
 }
 
 void SMPSWriter::SplitVarBoundsIntoScenarios(
-    const Problem &p, std::vector<CoreVarInfo> &core_vars) {
+    const ASLProblem &p, std::vector<CoreVarInfo> &core_vars) {
   int num_vars = p.num_vars();
   for (int i = 0; i < num_vars; ++i) {
     int scenario_index = var_info[i].scenario_index;
@@ -148,7 +148,7 @@ void SMPSWriter::SplitVarBoundsIntoScenarios(
 }
 
 void SMPSWriter::WriteColumns(
-    FileWriter &writer, const Problem &p, int num_stages,
+    FileWriter &writer, const ASLProblem &p, int num_stages,
     int num_core_cons, const std::vector<double> &core_obj_coefs) {
   writer.Write("COLUMNS\n");
   std::vector<double> core_coefs(num_core_cons);
@@ -164,7 +164,7 @@ void SMPSWriter::WriteColumns(
           std::max(stage_suffix->int_value(i) - 1, 0) : 0;
       if (var_stage != stage) continue;
       int core_var_index = var_info[i].core_index;
-      Problem::ColMatrix matrix = p.col_matrix();
+      ASLProblem::ColMatrix matrix = p.col_matrix();
       if (var_info[i].scenario_index == 0) {
         // Clear the core_coefs vector.
         for (std::vector<int>::const_iterator j = nonzero_coef_indices.begin(),
@@ -229,7 +229,7 @@ void SMPSWriter::WriteColumns(
     writer.Write("    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);
 }
 
-void SMPSWriter::DoSolve(Problem &p, SolutionHandler &) {
+void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
   if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0)
     throw Error("SMPS writer doesn't support nonlinear problems");
 
@@ -282,7 +282,7 @@ void SMPSWriter::DoSolve(Problem &p, SolutionHandler &) {
 
     // Compute stage of each constraint as a maximum of stages of
     // variables in it.
-    Problem::ColMatrix matrix = p.col_matrix();
+    ASLProblem::ColMatrix matrix = p.col_matrix();
     std::vector<int> con_stages(num_cons);
     std::map<std::string, int> stage1_cons;
     for (int j = 0; j < num_vars; ++j) {

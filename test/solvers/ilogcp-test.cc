@@ -52,7 +52,7 @@ using mp::Expr;
 using mp::IlogCPSolver;
 using mp::InvalidOptionValue;
 using mp::OptionError;
-using mp::Problem;
+using mp::ASLProblem;
 
 namespace asl = mp::asl;
 using asl::NumericExpr;
@@ -307,7 +307,7 @@ class IlogCPTest : public ::testing::Test, public asl::internal::ASLBuilder {
     SetInfo(info);
   }
 
-  EvalResult Solve(mp::Problem &p) {
+  EvalResult Solve(mp::ASLProblem &p) {
     TestSolutionHandler sh(1);
     s.Solve(p, sh);
     const double *sol = sh.primal();
@@ -416,7 +416,7 @@ TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
 
 TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
   s.use_numberof();
-  Problem p;
+  ASLProblem p;
   p.AddVar(0, 0, var::INTEGER);
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
@@ -428,7 +428,7 @@ TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   s.use_numberof();
-  Problem p;
+  ASLProblem p;
   p.AddVar(0, 0, var::INTEGER);
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
@@ -441,7 +441,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
   s.use_numberof();
-  Problem p;
+  ASLProblem p;
   p.AddVar(0, 0, var::INTEGER);
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
@@ -455,7 +455,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   s.use_numberof();
-  Problem p;
+  ASLProblem p;
   p.AddVar(0, 0, var::INTEGER);
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
@@ -468,7 +468,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
 }
 
 TEST_F(IlogCPTest, DefaultSolutionLimit) {
-  Problem p;
+  ASLProblem p;
   p.AddVar(1, 3, var::INTEGER);
   p.AddVar(1, 3, var::INTEGER);
   p.AddVar(1, 3, var::INTEGER);
@@ -496,7 +496,7 @@ TEST_F(IlogCPTest, DefaultSolutionLimit) {
 }
 
 TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
-  Problem p;
+  ASLProblem p;
   p.AddVar(0, 1);
   p.AddObj(mp::obj::MIN, MakeVariable(0));
   mp::BasicSolutionHandler sh;
@@ -508,7 +508,7 @@ TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
 
 TEST_F(IlogCPTest, OptimizerOption) {
   EXPECT_EQ("auto", s.GetStrOption("optimizer"));
-  Problem p;
+  ASLProblem p;
   p.AddVar(1, 2, var::INTEGER);
   p.AddVar(1, 2, var::INTEGER);
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1)};
@@ -525,7 +525,7 @@ TEST_F(IlogCPTest, OptimizerOption) {
 }
 
 TEST_F(IlogCPTest, UseCplexForLinearProblem) {
-  Problem p;
+  ASLProblem p;
   p.AddVar(1, 2);
   p.AddObj(obj::MIN, MakeConst(42));
   mp::BasicSolutionHandler sh;

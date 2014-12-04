@@ -38,7 +38,7 @@ class SulumSolver : public ASLSolver {
   class DblSulumOption;
 
  protected:
-  void DoSolve(Problem &p, SolutionHandler &sh);
+  void DoSolve(ASLProblem &p, SolutionHandler &sh);
 
  public:
   SulumSolver();

@@ -35,7 +35,7 @@ enum {FEATURES = feature::POW};
 
 using std::string;
 using mp::InvalidOptionValue;
-using mp::Problem;
+using mp::ASLProblem;
 
 // ----------------------------------------------------------------------------
 // Option tests
@@ -143,7 +143,7 @@ TEST_F(NLSolverTest, VarSelectOption) {
 TEST_F(NLSolverTest, OutLevOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/objconstint.nl");
   mp::BasicSolutionHandler sh;
   solver_.Solve(p, sh);
@@ -167,7 +167,7 @@ TEST_F(NLSolverTest, OutLevOption) {
 TEST_F(NLSolverTest, OutFreqOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
-  Problem p;
+  ASLProblem p;
   p.Read(MP_TEST_DATA_DIR "/party1.nl");
   solver_.SetIntOption("outlev", 1);
   solver_.SetIntOption("timelimit", 1);

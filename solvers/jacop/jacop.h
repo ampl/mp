@@ -218,7 +218,7 @@ class NLToJaCoPConverter :
   // Converts a logical constraint.
   void ConvertLogicalCon(asl::LogicalExpr e);
 
-  void Convert(const Problem &p);
+  void Convert(const ASLProblem &p);
 
   jobject store() const { return store_; }
   jobjectArray var_array() const { return var_array_; }
@@ -469,7 +469,7 @@ class JaCoPSolver : public ASLSolver {
    private:
     JaCoPSolver &solver_;
     SolutionHandler &sol_handler_;
-    Problem &problem_;
+    ASLProblem &problem_;
     const jobject *vars_;
     jobject obj_var_;
     bool multiple_sol_;
@@ -481,7 +481,7 @@ class JaCoPSolver : public ASLSolver {
 
    public:
     SolutionRelay(JaCoPSolver &s, SolutionHandler &sh,
-        Problem &p, const jobject *vars, jobject obj_var)
+        ASLProblem &p, const jobject *vars, jobject obj_var)
     : solver_(s), sol_handler_(sh), problem_(p), vars_(vars), obj_var_(obj_var),
       multiple_sol_(s.need_multiple_solutions()), num_solutions_(0) {
       if (multiple_sol_) {
@@ -498,7 +498,7 @@ class JaCoPSolver : public ASLSolver {
   };
 
  protected:
-  void DoSolve(Problem &p, SolutionHandler &sh);
+  void DoSolve(ASLProblem &p, SolutionHandler &sh);
 
   void HandleUnknownOption(const char *name);
 

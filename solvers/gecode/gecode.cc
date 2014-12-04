@@ -321,7 +321,7 @@ Gecode::IntConLevel NLToGecodeConverter::GetICL(int con_index) const {
   return static_cast<Gecode::IntConLevel>(value);
 }
 
-void NLToGecodeConverter::Convert(const Problem &p) {
+void NLToGecodeConverter::Convert(const ASLProblem &p) {
   if (p.num_continuous_vars() != 0)
     throw Error("Gecode doesn't support continuous variables");
 
@@ -720,7 +720,7 @@ void GetSolution(GecodeProblem &gecode_problem, std::vector<double> &solution) {
 
 template<template<template<typename> class, typename> class Meta>
 GecodeSolver::ProblemPtr GecodeSolver::Search(
-    Problem &p, GecodeProblem &problem,
+    ASLProblem &p, GecodeProblem &problem,
     Search::Statistics &stats, SolutionHandler &sh) {
   ProblemPtr final_problem;
   unsigned solution_limit = solution_limit_;
@@ -761,7 +761,7 @@ GecodeSolver::ProblemPtr GecodeSolver::Search(
   return final_problem;
 }
 
-void GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+void GecodeSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   SetStatus(-1, "");

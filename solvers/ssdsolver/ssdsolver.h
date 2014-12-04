@@ -111,7 +111,7 @@ class SSDSolver : public ASLSolver {
   }
 
  protected:
-  void DoSolve(Problem &p, SolutionHandler &sh);
+  void DoSolve(ASLProblem &p, SolutionHandler &sh);
 
  public:
   SSDSolver();

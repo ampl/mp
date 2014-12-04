@@ -277,7 +277,7 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
   return true;
 }
 
-void NLToConcertConverter::Convert(const Problem &p) {
+void NLToConcertConverter::Convert(const ASLProblem &p) {
   int num_continuous_vars = p.num_continuous_vars();
 
   // Set up optimization problem using the Concert API.

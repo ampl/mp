@@ -276,7 +276,7 @@ jobject NLToJaCoPConverter::VisitLess(BinaryExpr e) {
   return CreateCon(max_class_, args);
 }
 
-void NLToJaCoPConverter::Convert(const Problem &p) {
+void NLToJaCoPConverter::Convert(const ASLProblem &p) {
   if (p.num_continuous_vars() != 0)
     throw Error("JaCoP doesn't support continuous variables");
 
@@ -535,7 +535,7 @@ JNIEXPORT jboolean JNICALL JaCoPSolver::Stop(JNIEnv *, jobject, jlong data) {
   return JNI_FALSE;
 }
 
-void JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+void JaCoPSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   std::vector<const char*> jvm_options(jvm_options_.size() + 2);
