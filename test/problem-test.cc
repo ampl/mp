@@ -31,20 +31,31 @@
 
 using mp::Problem;
 
+#define EXPECT_LINEAR_EXPR(expr, indices, coefs) { \
+  int num_terms = sizeof(indices) / sizeof(int); \
+  EXPECT_EQ(num_terms, expr.num_terms()); \
+  mp::LinearExpr::iterator it = expr.begin(); \
+  for (int i = 0; i < num_terms; ++i, ++it) { \
+    EXPECT_EQ(indices[i], it->var_index()); \
+    EXPECT_EQ(coefs[i], it->coef()); \
+  } \
+  EXPECT_EQ(expr.end(),it); \
+}
+
 TEST(ProblemTest, AddVar) {
   Problem p;
   EXPECT_EQ(0, p.num_vars());
-  p.AddVar(11, 22);
+  p.AddVar(1.1, 2.2);
   EXPECT_EQ(1, p.num_vars());
   Problem::Variable var = p.var(0);
-  EXPECT_EQ(11, var.lb());
-  EXPECT_EQ(22, var.ub());
+  EXPECT_EQ(1.1, var.lb());
+  EXPECT_EQ(2.2, var.ub());
   EXPECT_EQ(mp::var::CONTINUOUS, var.type());
-  p.AddVar(33, 44, mp::var::INTEGER);
+  p.AddVar(3.3, 4.4, mp::var::INTEGER);
   EXPECT_EQ(2, p.num_vars());
   var = p.var(1);
-  EXPECT_EQ(33, var.lb());
-  EXPECT_EQ(44, var.ub());
+  EXPECT_EQ(3.3, var.lb());
+  EXPECT_EQ(4.4, var.ub());
   EXPECT_EQ(mp::var::INTEGER, var.type());
 }
 
@@ -129,22 +140,15 @@ TEST(ProblemTest, AddObj) {
   EXPECT_EQ(3, p.num_objs());
   obj = p.obj(2);
   EXPECT_EQ(mp::obj::MIN, obj.type());
-  EXPECT_EQ(nl_expr, obj.nonlinear_expr());
-  const mp::LinearExpr &expr = obj.linear_expr();
-  EXPECT_EQ(2, expr.num_terms());
-  mp::LinearExpr::iterator i = expr.begin();
-  EXPECT_EQ(0, i->var_index());
-  EXPECT_EQ(1.1, i->coef());
-  ++i;
-  EXPECT_EQ(3, i->var_index());
-  EXPECT_EQ(2.2, i->coef());
-  EXPECT_EQ(expr.end(), ++i);
+  const int indices[] = {0, 3};
+  const double coefs[] = {1.1, 2.2};
+  EXPECT_LINEAR_EXPR(obj.linear_expr(), indices, coefs);
 }
 
 TEST(ProblemTest, CompareObjs) {
   Problem p;
   p.AddObj(mp::obj::MIN);
-  p.AddObj(mp::obj::MAX);
+  p.AddObj(mp::obj::MIN);
   EXPECT_TRUE(p.obj(0) == p.obj(0));
   EXPECT_TRUE(p.obj(0) != p.obj(1));
   EXPECT_FALSE(p.obj(0) != p.obj(0));
@@ -193,6 +197,95 @@ TEST(ProblemTest, Objs) {
   EXPECT_EQ(++i, objs.end());
   // Test invalid access.
   EXPECT_ASSERT(i->type(), "invalid access");
+  EXPECT_ASSERT(*i, "invalid access");
+}
+
+TEST(ProblemTest, AddAlgebraicCon) {
+  Problem p;
+  EXPECT_EQ(0, p.num_algebraic_cons());
+
+  p.AddCon(1.1, 2.2);
+  EXPECT_EQ(1, p.num_algebraic_cons());
+  Problem::AlgebraicCon con = p.algebraic_con(0);
+  EXPECT_EQ(1.1, con.lb());
+  EXPECT_EQ(2.2, con.ub());
+  EXPECT_TRUE(!con.nonlinear_expr());
+  EXPECT_EQ(0, con.linear_expr().num_terms());
+
+  p.AddCon(3.3, 4.4, mp::NumericExpr());
+  EXPECT_EQ(2, p.num_algebraic_cons());
+  con = p.algebraic_con(1);
+  EXPECT_EQ(3.3, con.lb());
+  EXPECT_EQ(4.4, con.ub());
+  EXPECT_TRUE(!con.nonlinear_expr());
+  EXPECT_EQ(0, con.linear_expr().num_terms());
+
+  auto nl_expr = p.MakeNumericConstant(42);
+  Problem::LinearObjBuilder builder = p.AddCon(5.5, 6.6, nl_expr);
+  builder.AddTerm(0, 1.1);
+  builder.AddTerm(3, 2.2);
+  EXPECT_EQ(3, p.num_algebraic_cons());
+  con = p.algebraic_con(2);
+  EXPECT_EQ(5.5, con.lb());
+  EXPECT_EQ(6.6, con.ub());
+  EXPECT_EQ(nl_expr, con.nonlinear_expr());
+  const int indices[] = {0, 3};
+  const double coefs[] = {1.1, 2.2};
+  EXPECT_LINEAR_EXPR(con.linear_expr(), indices, coefs);
+}
+
+TEST(ProblemTest, CompareCons) {
+  Problem p;
+  p.AddCon(1, 2);
+  p.AddCon(1, 2);
+  EXPECT_TRUE(p.algebraic_con(0) == p.algebraic_con(0));
+  EXPECT_TRUE(p.algebraic_con(0) != p.algebraic_con(1));
+  EXPECT_FALSE(p.algebraic_con(0) != p.algebraic_con(0));
+  EXPECT_FALSE(p.algebraic_con(0) == p.algebraic_con(1));
+}
+
+TEST(ProblemTest, InvalidConIndex) {
+  Problem p;
+  const int num_cons = 3;
+  for (int i = 0; i < num_cons; ++i)
+    p.AddCon(1, 2);
+  EXPECT_ASSERT(p.algebraic_con(-1), "invalid index");
+  EXPECT_ASSERT(p.algebraic_con(num_cons), "invalid index");
+}
+
+TEST(ProblemTest, MaxCons) {
+  Problem p;
+  for (int i = 0; i < MP_MAX_PROBLEM_ITEMS; ++i)
+    p.AddCon(1, 2);
+  EXPECT_EQ(MP_MAX_PROBLEM_ITEMS, p.num_algebraic_cons());
+  EXPECT_ASSERT(p.AddCon(1, 2), "too many algebraic constraints");
+}
+
+TEST(ProblemTest, Cons) {
+  Problem p;
+  p.AddCon(1, 2);
+  p.AddCon(3, 4);
+  Problem::AlgebraicConList cons = p.algebraic_cons();
+  Problem::AlgebraicConList::iterator i = cons.begin();
+  // Test dereference.
+  EXPECT_EQ(p.algebraic_con(0), *i);
+  // Test the arrow operator.
+  EXPECT_EQ(1, i->lb());
+  // Test postincrement.
+  Problem::AlgebraicConList::iterator j = i++;
+  EXPECT_EQ(p.algebraic_con(0), *j);
+  EXPECT_EQ(p.algebraic_con(1), *i);
+  EXPECT_TRUE(i != j);
+  // Test preincrement.
+  i = ++j;
+  EXPECT_EQ(p.algebraic_con(1), *j);
+  EXPECT_EQ(p.algebraic_con(1), *i);
+  EXPECT_TRUE(i == j);
+  // Test end.
+  EXPECT_NE(i, cons.end());
+  EXPECT_EQ(++i, cons.end());
+  // Test invalid access.
+  EXPECT_ASSERT(i->lb(), "invalid access");
   EXPECT_ASSERT(*i, "invalid access");
 }
 

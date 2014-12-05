@@ -150,14 +150,9 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   std::vector<Function> funcs_;
 
-  // Checks if the variable index is in the range [0, num_vars()).
-  void CheckVarIndex(int index) const {
-    MP_ASSERT(0 <= index && index < num_vars(), "invalid index");
-  }
-
-  // Checks if the objective index is in the range [0, num_objs()).
-  void CheckObjIndex(int index) const {
-    MP_ASSERT(0 <= index && index < num_objs(), "invalid index");
+  // Checks if index is in the range [0, size).
+  void CheckIndex(int index, int size) const {
+    MP_ASSERT(0 <= index && index < size, "invalid index");
   }
 
   // A list of problem elements.
@@ -322,7 +317,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Returns the variable at the specified index.
   Variable var(int index) const {
-    CheckVarIndex(index);
+    CheckIndex(index, num_vars());
     return Variable(this, index);
   }
 
@@ -383,7 +378,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Returns the objective at the specified index.
   Objective obj(int index) const {
-    CheckObjIndex(index);
+    CheckIndex(index, num_objs());
     return Objective(this, index);
   }
 
@@ -404,6 +399,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     friend class BasicProblem;
 
     AlgebraicCon(const BasicProblem *p, int index) : ProblemItem(p, index) {}
+
+    static int num_items(const BasicProblem &p) {
+      return p.num_algebraic_cons();
+    }
 
    public:
     // Returns the lower bound on the constraint.
@@ -436,6 +435,22 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       return !(*this == other);
     }
   };
+
+  // A list of algebraic constraints.
+  typedef List<AlgebraicCon> AlgebraicConList;
+
+  // Returns the list of algebraic constraints.
+  // It can be used to iterate over all algebraic constraints in a problem:
+  //   for (auto con: problem.algebraic_cons()) {
+  //     ...
+  //   }
+  AlgebraicConList algebraic_cons() const { return AlgebraicConList(this); }
+
+  // Returns the algebraic constraint at the specified index.
+  AlgebraicCon algebraic_con(int index) const {
+    CheckIndex(index, num_algebraic_cons());
+    return AlgebraicCon(this, index);
+  }
 
   typedef LinearExprBuilder LinearConBuilder;
 
@@ -474,7 +489,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Sets the initial value for a variable.
   void SetInitialValue(int var_index, double value) {
-    CheckVarIndex(var_index);
+    CheckIndex(var_index, num_vars());
     if (initial_values_.size() <= static_cast<unsigned>(var_index)) {
       initial_values_.reserve(vars_.capacity());
       initial_values_.resize(num_vars());
