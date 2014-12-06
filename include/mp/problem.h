@@ -88,18 +88,6 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   // is_var_int_[i] specifies whether variable i is integer.
   std::vector<bool> is_var_int_;
 
-  class LinearExprBuilder {
-   private:
-    LinearExpr *expr_;
-
-   public:
-    explicit LinearExprBuilder(LinearExpr *expr) : expr_(expr) {}
-
-    void AddTerm(int var_index, double coef) {
-      expr_->AddTerm(var_index, coef);
-    }
-  };
-
   // Packed objective type information.
   // is_obj_max_[i] specifies whether objective i is maximization.
   std::vector<bool> is_obj_max_;
@@ -352,8 +340,8 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
     // Returns the nonlinear part of an objective expression.
     NumericExpr nonlinear_expr() const {
-      return this->problem_->nonlinear_objs_.empty() ?
-            NumericExpr() : this->problem_->nonlinear_objs_[this->index_];
+      return this->index_ < this->problem_->nonlinear_objs_.size() ?
+            this->problem_->nonlinear_objs_[this->index_] : NumericExpr();
     }
 
     bool operator==(Objective other) const {
@@ -382,10 +370,22 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     return Objective(this, index);
   }
 
+  class LinearExprBuilder {
+   private:
+    LinearExpr *expr_;
+
+   public:
+    explicit LinearExprBuilder(LinearExpr *expr) : expr_(expr) {}
+
+    void AddTerm(int var_index, double coef) {
+      expr_->AddTerm(var_index, coef);
+    }
+  };
+
   typedef LinearExprBuilder LinearObjBuilder;
 
   // Adds an objective.
-  // Returns a handler for receiving linear terms in the objective.
+  // Returns a builder for the linear part of an objective expression.
   LinearObjBuilder AddObj(obj::Type type, NumericExpr expr,
                           int num_linear_terms = 0);
 
@@ -423,8 +423,8 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
     // Returns the nonlinear part of a constraint expression.
     NumericExpr nonlinear_expr() const {
-      return this->problem_->nonlinear_cons_.empty() ?
-            NumericExpr() : this->problem_->nonlinear_cons_[this->index_];
+      return this->index_ < this->problem_->nonlinear_cons_.size() ?
+            this->problem_->nonlinear_cons_[this->index_] : NumericExpr();
     }
 
     bool operator==(AlgebraicCon other) const {
@@ -456,7 +456,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   typedef LinearExprBuilder LinearConBuilder;
 
   // Adds an algebraic constraint.
-  // Returns a handler for receiving linear terms in the constraint.
+  // Returns a builder for the linear part of a constraint expression.
   LinearConBuilder AddCon(double lb, double ub, NumericExpr expr,
                           int num_linear_terms = 0);
 
@@ -515,7 +515,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
   // Begins building a common expression (defined variable).
-  // Returns a handler for receiving linear terms in the common expression.
+  // Returns a builder for the linear part of a common expression.
   LinearExprBuilder BeginCommonExpr(int num_linear_terms) {
     linear_exprs_.push_back(LinearExpr());
     LinearExpr &linear = linear_exprs_.back();

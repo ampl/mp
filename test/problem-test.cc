@@ -145,6 +145,15 @@ TEST(ProblemTest, AddObj) {
   EXPECT_LINEAR_EXPR(obj.linear_expr(), indices, coefs);
 }
 
+// Test adding linear after nonlinear objective and then accessing
+// the nonlinear part of the linear objective.
+TEST(ProblemTest, IncompleteNonlinearObj) {
+  Problem p;
+  p.AddObj(mp::obj::MIN, p.MakeNumericConstant(42));
+  p.AddObj(mp::obj::MIN);
+  EXPECT_EQ(mp::NumericExpr(), p.obj(1).nonlinear_expr());
+}
+
 TEST(ProblemTest, CompareObjs) {
   Problem p;
   p.AddObj(mp::obj::MIN);
@@ -232,6 +241,15 @@ TEST(ProblemTest, AddAlgebraicCon) {
   const int indices[] = {0, 3};
   const double coefs[] = {1.1, 2.2};
   EXPECT_LINEAR_EXPR(con.linear_expr(), indices, coefs);
+}
+
+// Test adding linear after nonlinear constraint and then accessing
+// the nonlinear part of the linear constraint.
+TEST(ProblemTest, IncompleteNonlinearCon) {
+  Problem p;
+  p.AddCon(0, 1, p.MakeNumericConstant(42));
+  p.AddCon(0, 1);
+  EXPECT_EQ(mp::NumericExpr(), p.algebraic_con(1).nonlinear_expr());
 }
 
 TEST(ProblemTest, CompareAlgebraicCons) {
