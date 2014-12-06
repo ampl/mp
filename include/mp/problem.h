@@ -394,6 +394,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
   // An algebraic constraint.
+  // This is a constraint of the form lb <= expr <= ub.
   class AlgebraicCon : private ProblemItem {
    private:
     friend class BasicProblem;
@@ -461,6 +462,49 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   LinearConBuilder AddCon(double lb, double ub, int num_linear_terms = 0) {
     return AddCon(lb, ub, NumericExpr(), num_linear_terms);
+  }
+
+  // A logical constraint.
+  class LogicalCon : private ProblemItem {
+   private:
+    friend class BasicProblem;
+
+    LogicalCon(const BasicProblem *p, int index) : ProblemItem(p, index) {}
+
+    static int num_items(const BasicProblem &p) {
+      return p.num_logical_cons();
+    }
+
+   public:
+    // Returns the constraint expression.
+    LogicalExpr expr() const {
+      return this->problem_->logical_cons_[this->index_];
+    }
+
+    bool operator==(LogicalCon other) const {
+      MP_ASSERT(this->problem_ == other.problem_,
+                "comparing constraints from different problems");
+      return this->index_ == other.index_;
+    }
+    bool operator!=(LogicalCon other) const {
+      return !(*this == other);
+    }
+  };
+
+  // A list of logical constraints.
+  typedef List<LogicalCon> LogicalConList;
+
+  // Returns the list of logical constraints.
+  // It can be used to iterate over all logical constraints in a problem:
+  //   for (auto con: problem.logical_cons()) {
+  //     ...
+  //   }
+  LogicalConList logical_cons() const { return LogicalConList(this); }
+
+  // Returns the logical constraint at the specified index.
+  LogicalCon logical_con(int index) const {
+    CheckIndex(index, num_logical_cons());
+    return LogicalCon(this, index);
   }
 
   // Adds a logical constraint.

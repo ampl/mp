@@ -234,7 +234,7 @@ TEST(ProblemTest, AddAlgebraicCon) {
   EXPECT_LINEAR_EXPR(con.linear_expr(), indices, coefs);
 }
 
-TEST(ProblemTest, CompareCons) {
+TEST(ProblemTest, CompareAlgebraicCons) {
   Problem p;
   p.AddCon(1, 2);
   p.AddCon(1, 2);
@@ -244,7 +244,7 @@ TEST(ProblemTest, CompareCons) {
   EXPECT_FALSE(p.algebraic_con(0) == p.algebraic_con(1));
 }
 
-TEST(ProblemTest, InvalidConIndex) {
+TEST(ProblemTest, InvalidAlgebraicConIndex) {
   Problem p;
   const int num_cons = 3;
   for (int i = 0; i < num_cons; ++i)
@@ -253,7 +253,7 @@ TEST(ProblemTest, InvalidConIndex) {
   EXPECT_ASSERT(p.algebraic_con(num_cons), "invalid index");
 }
 
-TEST(ProblemTest, MaxCons) {
+TEST(ProblemTest, MaxAlgebraicCons) {
   Problem p;
   for (int i = 0; i < MP_MAX_PROBLEM_ITEMS; ++i)
     p.AddCon(1, 2);
@@ -261,7 +261,7 @@ TEST(ProblemTest, MaxCons) {
   EXPECT_ASSERT(p.AddCon(1, 2), "too many algebraic constraints");
 }
 
-TEST(ProblemTest, Cons) {
+TEST(ProblemTest, AlgebraicCons) {
   Problem p;
   p.AddCon(1, 2);
   p.AddCon(3, 4);
@@ -286,6 +286,80 @@ TEST(ProblemTest, Cons) {
   EXPECT_EQ(++i, cons.end());
   // Test invalid access.
   EXPECT_ASSERT(i->lb(), "invalid access");
+  EXPECT_ASSERT(*i, "invalid access");
+}
+
+TEST(ProblemTest, AddLogicalCon) {
+  Problem p;
+  EXPECT_EQ(0, p.num_logical_cons());
+
+  mp::LogicalExpr expr = p.MakeLogicalConstant(true);
+  p.AddCon(expr);
+  EXPECT_EQ(1, p.num_logical_cons());
+  Problem::LogicalCon con = p.logical_con(0);
+  EXPECT_EQ(expr, con.expr());
+
+  mp::LogicalExpr expr2 = p.MakeNot(expr);
+  p.AddCon(expr2);
+  EXPECT_EQ(2, p.num_logical_cons());
+  con = p.logical_con(1);
+  EXPECT_EQ(expr2, con.expr());
+}
+
+TEST(ProblemTest, CompareLogicalCons) {
+  Problem p;
+  p.AddCon(p.MakeLogicalConstant(true));
+  p.AddCon(p.MakeLogicalConstant(true));
+  EXPECT_TRUE(p.logical_con(0) == p.logical_con(0));
+  EXPECT_TRUE(p.logical_con(0) != p.logical_con(1));
+  EXPECT_FALSE(p.logical_con(0) != p.logical_con(0));
+  EXPECT_FALSE(p.logical_con(0) == p.logical_con(1));
+}
+
+TEST(ProblemTest, InvalidLogicalConIndex) {
+  Problem p;
+  const int num_cons = 3;
+  for (int i = 0; i < num_cons; ++i)
+    p.AddCon(p.MakeLogicalConstant(true));
+  EXPECT_ASSERT(p.logical_con(-1), "invalid index");
+  EXPECT_ASSERT(p.logical_con(num_cons), "invalid index");
+}
+
+TEST(ProblemTest, MaxLogicalCons) {
+  Problem p;
+  for (int i = 0; i < MP_MAX_PROBLEM_ITEMS; ++i)
+    p.AddCon(p.MakeLogicalConstant(true));
+  EXPECT_EQ(MP_MAX_PROBLEM_ITEMS, p.num_logical_cons());
+  EXPECT_ASSERT(p.AddCon(p.MakeLogicalConstant(true)),
+                "too many logical constraints");
+}
+
+TEST(ProblemTest, LogicalCons) {
+  Problem p;
+  mp::LogicalExpr expr = p.MakeLogicalConstant(false);
+  p.AddCon(expr);
+  p.AddCon(p.MakeLogicalConstant(true));
+  Problem::LogicalConList cons = p.logical_cons();
+  Problem::LogicalConList::iterator i = cons.begin();
+  // Test dereference.
+  EXPECT_EQ(p.logical_con(0), *i);
+  // Test the arrow operator.
+  EXPECT_EQ(expr, i->expr());
+  // Test postincrement.
+  Problem::LogicalConList::iterator j = i++;
+  EXPECT_EQ(p.logical_con(0), *j);
+  EXPECT_EQ(p.logical_con(1), *i);
+  EXPECT_TRUE(i != j);
+  // Test preincrement.
+  i = ++j;
+  EXPECT_EQ(p.logical_con(1), *j);
+  EXPECT_EQ(p.logical_con(1), *i);
+  EXPECT_TRUE(i == j);
+  // Test end.
+  EXPECT_NE(i, cons.end());
+  EXPECT_EQ(++i, cons.end());
+  // Test invalid access.
+  EXPECT_ASSERT(i->expr(), "invalid access");
   EXPECT_ASSERT(*i, "invalid access");
 }
 
