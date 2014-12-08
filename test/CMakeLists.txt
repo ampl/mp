@@ -65,6 +65,10 @@ add_mp_test(function-test function-test.cc LIBS function)
 if (TARGET amplgsl)
   include_directories(${GSL_BINARY_DIR})
   add_mp_test(gsl-test gsl-test.cc LIBS function gsl gslcblas)
+  if (MSVC)
+    # Fix error C1128: number of sections exceeded object file format limit.
+    set_target_properties(gsl-test PROPERTIES LINK_FLAGS "/bigobj")
+  endif ()
 endif ()
 
 add_mp_test(cp-test cp-test.cc LIBS function)
