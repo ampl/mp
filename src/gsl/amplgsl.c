@@ -202,7 +202,6 @@ static int check_zero_func_args(arglist *al, unsigned s_index) {
   if (al->derivs) {
     if (check_const_arg(al, s_index, "s"))
       deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return 1;
 }
@@ -254,7 +253,6 @@ static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
       return 0; \
     if (al->derivs) { \
       deriv_error(al, DERIVS_NOT_PROVIDED); \
-      return 0; \
     } \
     return check_result(al, func(args)); \
   }
@@ -266,7 +264,6 @@ static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
       return 0; \
     if (al->derivs) { \
       deriv_error(al, DERIVS_NOT_PROVIDED); \
-      return 0; \
     } \
     CHECK_CALL(value, func##_e(args, &result)); \
     return check_result(al, value); \
@@ -1223,7 +1220,6 @@ static double amplgsl_sf_hydrogenicR(arglist *al) {
     return 0;
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   CHECK_CALL(value, gsl_sf_hydrogenicR_e(
       (int)al->ra[0], (int)al->ra[1], al->ra[2], al->ra[3], &result))
@@ -1234,7 +1230,6 @@ static double amplgsl_sf_coulomb_CL(arglist *al) {
   gsl_sf_result result = {0, 0};
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   if (gsl_sf_coulomb_CL_e(al->ra[0], al->ra[1], &result)) {
     eval_error(al);
@@ -1973,7 +1968,6 @@ static double amplgsl_sf_gegenpoly_n(arglist *al) {
     return 0;
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al, gsl_sf_gegenpoly_n(n, lambda, x));
 }
@@ -2028,7 +2022,6 @@ static double amplgsl_sf_hyperg_U_int(arglist *al) {
   }
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   CHECK_CALL(value, gsl_sf_hyperg_U_int_e(
     (int)al->ra[0], (int)al->ra[1], al->ra[2], &result));
@@ -2097,7 +2090,6 @@ static double amplgsl_sf_laguerre_n(arglist *al) {
     return 0;
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al,
       gsl_sf_laguerre_n((int)al->ra[0], al->ra[1], al->ra[2]));
@@ -2237,7 +2229,6 @@ static double amplgsl_sf_legendre_Plm(arglist *al) {
     return 0;
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al,
       gsl_sf_legendre_Plm((int)al->ra[0], (int)al->ra[1], al->ra[2]));
@@ -2248,7 +2239,6 @@ static double amplgsl_sf_legendre_sphPlm(arglist *al) {
     return 0;
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al,
       gsl_sf_legendre_sphPlm((int)al->ra[0], (int)al->ra[1], al->ra[2]));
@@ -2265,7 +2255,6 @@ static double amplgsl_sf_conicalP_sph_reg(arglist *al) {
     return 0;
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   CHECK_CALL(value, gsl_sf_conicalP_sph_reg_e(
     (int)al->ra[0], al->ra[1], al->ra[2], &result));
@@ -2278,7 +2267,6 @@ static double amplgsl_sf_conicalP_cyl_reg(arglist *al) {
     return 0;
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   CHECK_CALL(value, gsl_sf_conicalP_cyl_reg_e(
       (int)al->ra[0], al->ra[1], al->ra[2], &result));
@@ -2294,7 +2282,6 @@ static double amplgsl_sf_legendre_H3d(arglist *al) {
     return 0;
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   CHECK_CALL(value, gsl_sf_legendre_H3d_e(
       (int)al->ra[0], al->ra[1], al->ra[2], &result));
@@ -2352,7 +2339,6 @@ static double amplgsl_sf_mathieu_a(arglist *al) {
   q = al->ra[1];
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al,
       gsl_sf_mathieu_a(n, q, &result) ? GSL_NAN : result.val);
@@ -2368,7 +2354,6 @@ static double amplgsl_sf_mathieu_b(arglist *al) {
   q = al->ra[1];
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al,
       gsl_sf_mathieu_b(n, q, &result) ? GSL_NAN : result.val);
@@ -2385,7 +2370,6 @@ static double amplgsl_sf_mathieu_ce(arglist *al) {
   x = al->ra[2];
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al,
       gsl_sf_mathieu_ce(n, q, x, &result) ? GSL_NAN : result.val);
@@ -2402,7 +2386,6 @@ static double amplgsl_sf_mathieu_se(arglist *al) {
   x = al->ra[2];
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al,
       gsl_sf_mathieu_se(n, q, x, &result) ? GSL_NAN : result.val);
@@ -2420,7 +2403,6 @@ static double amplgsl_sf_mathieu_Mc(arglist *al) {
   x = al->ra[3];
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al,
       gsl_sf_mathieu_Mc(j, n, q, x, &result) ? GSL_NAN : result.val);
@@ -2438,7 +2420,6 @@ static double amplgsl_sf_mathieu_Ms(arglist *al) {
   x = al->ra[3];
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al,
       gsl_sf_mathieu_Ms(j, n, q, x, &result) ? GSL_NAN : result.val);
@@ -2897,7 +2878,6 @@ WRAP(gsl_cdf_gumbel2_Qinv, ARGS3)
     } \
     if (al->derivs) { \
       deriv_error(al, DERIVS_NOT_PROVIDED); \
-      return 0; \
     } \
     return check_result(al, func((unsigned)args)); \
   }
@@ -2917,7 +2897,6 @@ static double amplgsl_ran_binomial(arglist *al) {
     return 0;
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al,
       gsl_ran_binomial(rng, al->ra[0], (unsigned)al->ra[1]));
@@ -2941,7 +2920,6 @@ static double amplgsl_ran_pascal(arglist *al) {
     return 0;
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al, gsl_ran_pascal(rng, al->ra[0], (unsigned)al->ra[1]));
 }
@@ -2962,7 +2940,6 @@ static double amplgsl_ran_hypergeometric(arglist *al) {
   }
   if (al->derivs) {
     deriv_error(al, DERIVS_NOT_PROVIDED);
-    return 0;
   }
   return check_result(al, gsl_ran_hypergeometric(rng,
       (unsigned)al->ra[0], (unsigned)al->ra[1], (unsigned)al->ra[2]));
