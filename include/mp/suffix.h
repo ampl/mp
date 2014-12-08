@@ -82,7 +82,7 @@ class Suffix {
 
   void set_value(int index, double value) {
     assert(index < size_);
-    // TODO: set double value
+    MP_UNUSED2(index, value); // TODO: set double value
   }
 
   // Iterates over nonzero suffix values and sends them to the visitor.
