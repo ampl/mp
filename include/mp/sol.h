@@ -71,13 +71,17 @@ void WriteSuffixes(fmt::BufferedFile &file, const SuffixMap *suffixes) {
     return;
   for (typename SuffixMap::iterator
        i = suffixes->begin(), e = suffixes->end(); i != e; ++i) {
-    const char *name = i->name();
-    namespace suf = mp::suf;
+    if ((i->kind() & suf::OUTPUT) == 0)
+      continue;
     SuffixValueCounter counter;
     i->VisitValues(counter);
+    int num_values = counter.num_values();
+    if (num_values == 0)
+      continue;
+    const char *name = i->name();
     file.print("suffix {} {} {} {} {}\n{}\n",
                i->kind() & (suf::MASK | suf::FLOAT | suf::IODECL),
-               counter.num_values(), std::strlen(name) + 1, 0, 0, name);
+               num_values, std::strlen(name) + 1, 0, 0, name);
     // TODO: write table
     SuffixValueWriter writer(file);
     i->VisitValues(writer);

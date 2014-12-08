@@ -485,7 +485,7 @@ Solver::Solver(
       "0 or 1 (default 0): Whether to display timings for the run.\n")));
 
   if ((flags & MULTIPLE_SOL) != 0) {
-    AddSuffix("nsol", 0, suf::PROBLEM | suf::OUTONLY);
+    AddSuffix("nsol", 0, suf::PROBLEM | suf::OUTPUT | suf::OUTONLY);
 
     AddOption(OptionPtr(new BoolOption(count_solutions_, "countsolutions",
         "0 or 1 (default 0): Whether to count the number of solutions "
