@@ -216,11 +216,12 @@ class GSLTest : public ::testing::Test {
 
   template <typename F>
   bool CheckDerivative(F f, const Function &af,
-      unsigned arg_index, const Tuple &args, double value);
+                       unsigned arg_index, const Tuple &args);
 
   static const unsigned NO_ARG = ~0u;
 
-  void CheckSecondDerivatives(const Function &f,
+  template <typename F>
+  void CheckSecondDerivatives(F f, const Function &af,
       const Tuple &args, unsigned skip_arg = NO_ARG);
 
   // Tests a function taking an integer and a double parameter.
@@ -298,7 +299,7 @@ bool GSLTest::CheckDerivative(
 // args: point at which the derivative is computed
 template <typename F>
 bool GSLTest::CheckDerivative(F f, const Function &af,
-    unsigned arg_index, const Tuple &args, double value) {
+                              unsigned arg_index, const Tuple &args) {
   std::ostringstream os;
   os << "Checking d/dx" << arg_index << " " << af.name() << " at " << args;
   SCOPED_TRACE(os.str());
@@ -331,6 +332,8 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
     }
   }
 
+  // Call f and af equal number of times to keep RNGs in sync.
+  double value = f(x);
   Function::Result r = af(args, DERIVS, use_deriv);
   if (!gsl_isnan(value)) {
     if (deriv_result.error())
@@ -348,12 +351,13 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
 // partial derivatives.
 // args: point at which the derivatives are computed
 // skip_arg: index of an argument with respect to which not to differentiate
-void GSLTest::CheckSecondDerivatives(const Function &f,
+template <typename F>
+void GSLTest::CheckSecondDerivatives(F f, const Function &af,
     const Tuple &args, unsigned skip_arg) {
   unsigned num_args = static_cast<unsigned>(args.size());
   if (skip_arg == NO_ARG) {
     for (unsigned i = 0; i < num_args; ++i) {
-      if (f.GetDerivative(i, args).error()) {
+      if (af.GetDerivative(i, args).error()) {
         skip_arg = i;
         break;
       }
@@ -367,15 +371,17 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
       use_deriv[i] = true;
       use_deriv[j] = true;
       double error = 0;
-      FunctionInfo::Result deriv_result = f.GetSecondDerivative(i, j, args);
+      FunctionInfo::Result deriv_result = af.GetSecondDerivative(i, j, args);
       double d = GSL_NAN;
-      bool no_first_deriv = f(args, DERIVS, use_deriv).error() != 0;
+      // Call f and af equal number of times to keep RNGs in sync.
+      f(args);
+      bool no_first_deriv = af(args, DERIVS, use_deriv).error() != 0;
       if (!deriv_result.error() && !no_first_deriv) {
-        d = Diff(DerivativeBinder(f, j, i, args), args[i].number(), &error);
+        d = Diff(DerivativeBinder(af, j, i, args), args[i].number(), &error);
         double overridden_deriv = deriv_result.value();
         if (!gsl_isnan(overridden_deriv) && overridden_deriv != d) {
           std::cout << "Overriding d/dx" << i << " d/dx" << j << " "
-            << f.name() << " at " << args << ", computed = " << d
+            << af.name() << " at " << args << ", computed = " << d
             << ", overridden = " << overridden_deriv << std::endl;
           d = overridden_deriv;
         }
@@ -383,24 +389,26 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
           unsigned ii = i, jj = j;
           if (ii > jj) std::swap(ii, jj);
           unsigned hes_index = ii * (2 * num_args - ii - 1) / 2 + jj;
-          double actual_deriv = f(args, HES, use_deriv).hes(hes_index);
+          double actual_deriv = af(args, HES, use_deriv).hes(hes_index);
           if (!CheckDerivative(actual_deriv, d, error)) {
             std::cout << "Absolute tolerance of "
               << ConvertErrorToTolerance(error)
               << " not reached for d/dx" << i << " d/dx" << j << " "
-              << f.name() << " at " << args << ", computed = " << d
+              << af.name() << " at " << args << ", computed = " << d
               << ", actual = " << actual_deriv << std::endl;
           }
           continue;
         }
       }
-      Function::Result r = f(args, HES, use_deriv);
+      // Call f and af equal number of times to keep RNGs in sync.
+      f(args);
+      Function::Result r = af(args, HES, use_deriv);
       if (no_first_deriv)
         EXPECT_TRUE(r.error() != 0);
       else if (deriv_result.error())
         EXPECT_ERROR(deriv_result.error(), r);
       else
-        EXPECT_ERROR(HesError(f, args).error(), r);
+        EXPECT_ERROR(HesError(af, args).error(), r);
     }
   }
 }
@@ -453,15 +461,17 @@ void GSLTest::TestFuncND(const Function &af, FuncND f, double test_x) {
 // Checks that the error is returned when trying to get a derivative
 // with respect to an integer argument.
 // Returns true if the argument is integer, false otherwise.
-bool CheckArg(const Function &f,
-    const Tuple &args, Type arg_type, unsigned arg_index) {
-  if (arg_type == fun::DOUBLE)
+template <typename F>
+bool CheckArg(F f, const Function &af, const Tuple &args, unsigned arg_index) {
+  if (f.GetArgType(arg_index) == fun::DOUBLE)
     return false;
   std::ostringstream os;
   BitSet use_deriv(args.size(), false);
   use_deriv[arg_index] = true;
-  os << "'argument '" << f.GetArgName(arg_index) << "' is not constant";
-  EXPECT_STREQ(os.str().c_str(), f(args, DERIVS, use_deriv).error());
+  os << "'argument '" << af.GetArgName(arg_index) << "' is not constant";
+  // Call f and af equal number of times to keep RNGs in sync.
+  f(args);
+  EXPECT_STREQ(os.str().c_str(), af(args, DERIVS, use_deriv).error());
   return true;
 }
 
@@ -503,13 +513,18 @@ void GSLTest::TestFunc(
   }
   if (af.SkipPoint(args))
     return;
-  double value = f(args);
-  CheckFunction(value, af, args);
+  CheckFunction(f(args), af, args);
   for (unsigned i = 0; i < num_args; ++i) {
-    if (!CheckArg(af, args, f.GetArgType(i), i))
-      CheckDerivative(BindAllButOne(f, args, i), af, i, args, value);
+    // Call f and af equal number of times to keep RNGs in sync.
+    BitSet use_deriv(num_args, false);
+    Function::Result result = af(args, DERIVS, use_deriv);
+    use_deriv[i] = true;
+    if (gsl_isnan(f(args)))
+      EXPECT_ERROR(EvalError(af, args).error(), result);
+    else if (!CheckArg(f, af, args, i))
+      CheckDerivative(BindAllButOne(f, args, i), af, i, args);
   }
-  CheckSecondDerivatives(af, args);
+  CheckSecondDerivatives(f, af, args);
 }
 
 template <typename F>
@@ -903,6 +918,19 @@ struct BetaInfo : FunctionInfo {
     if (gsl_isnan(gsl_sf_psi(args[0].number() + args[1].number())) ||
         args[arg_index].number() == 0) {
       return DerivError(f, args);
+    }
+    return Result();
+  }
+};
+
+struct BetaIncInfo : FunctionInfo {
+  Result GetDerivative(
+      const Function &, unsigned arg_index, const Tuple &) const {
+    if (arg_index == 0 || arg_index == 1) {
+      return Result(
+            fmt::format(
+              "derivative with respect to argument '{}' is not provided",
+              arg_index == 0 ? 'a' : 'b'));
     }
     return Result();
   }
