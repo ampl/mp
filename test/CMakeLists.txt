@@ -67,7 +67,7 @@ if (TARGET amplgsl)
   add_mp_test(gsl-test gsl-test.cc LIBS function gsl gslcblas)
   if (MSVC)
     # Fix error C1128: number of sections exceeded object file format limit.
-    set_target_properties(gsl-test PROPERTIES LINK_FLAGS "/bigobj")
+    target_compile_options(gsl-test PRIVATE "/bigobj")
   endif ()
 endif ()
 
