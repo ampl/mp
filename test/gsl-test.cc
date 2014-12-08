@@ -923,19 +923,6 @@ struct BetaInfo : FunctionInfo {
   }
 };
 
-struct BetaIncInfo : FunctionInfo {
-  Result GetDerivative(
-      const Function &, unsigned arg_index, const Tuple &) const {
-    if (arg_index == 0 || arg_index == 1) {
-      return Result(
-            fmt::format(
-              "derivative with respect to argument '{}' is not provided",
-              arg_index == 0 ? 'a' : 'b'));
-    }
-    return Result();
-  }
-};
-
 TEST_F(GSLTest, Beta) {
   TEST_EFUNC2(gsl_sf_beta, BetaInfo());
   TEST_EFUNC(gsl_sf_lnbeta);
