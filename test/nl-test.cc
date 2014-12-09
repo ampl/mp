@@ -1341,27 +1341,27 @@ TEST(NLProblemBuilderTest, Forward) {
                      (TestLogicalExpr(ID), TestNumericExpr(ID2),
                       TestNumericExpr(ID3)), TestNumericExpr(ID4));
 
-  EXPECT_FORWARD_RET(BeginPLTerm, BeginPLTerm, (44), TestPLTermHandler(ID));
+  EXPECT_FORWARD_RET(BeginPLTerm, BeginPLTerm, (44), TestPLTermBuilder(ID));
   EXPECT_FORWARD_RET(EndPLTerm, EndPLTerm,
-                     (TestPLTermHandler(ID), TestVariable(ID2)),
+                     (TestPLTermBuilder(ID), TestVariable(ID2)),
                      TestNumericExpr(ID3));
 
   EXPECT_FORWARD_RET(BeginVarArg, BeginVarArg, (expr::MAX, 77),
-                     TestVarArgHandler(ID));
-  EXPECT_FORWARD_RET(EndVarArg, EndVarArg, (TestVarArgHandler(ID)),
+                     TestVarArgExprBuilder(ID));
+  EXPECT_FORWARD_RET(EndVarArg, EndVarArg, (TestVarArgExprBuilder(ID)),
                      TestNumericExpr(ID2));
 
-  EXPECT_FORWARD_RET(BeginSum, BeginSum, (88), TestNumericArgHandler(ID));
-  EXPECT_FORWARD_RET(EndSum, EndSum, (TestNumericArgHandler(ID)),
+  EXPECT_FORWARD_RET(BeginSum, BeginSum, (88), TestNumericExprBuilder(ID));
+  EXPECT_FORWARD_RET(EndSum, EndSum, (TestNumericExprBuilder(ID)),
                      TestNumericExpr(ID2));
 
-  EXPECT_FORWARD_RET(BeginCount, BeginCount, (99), TestLogicalArgHandler(ID));
-  EXPECT_FORWARD_RET(EndCount, EndCount, (TestLogicalArgHandler(ID)),
+  EXPECT_FORWARD_RET(BeginCount, BeginCount, (99), TestLogicalExprBuilder(ID));
+  EXPECT_FORWARD_RET(EndCount, EndCount, (TestLogicalExprBuilder(ID)),
                      TestCountExpr(ID2));
 
   EXPECT_FORWARD_RET(BeginNumberOf, BeginNumberOf, (TestNumericExpr(ID), 11),
-                     TestNumberOfArgHandler(ID2));
-  EXPECT_FORWARD_RET(EndNumberOf, EndNumberOf, (TestNumberOfArgHandler(ID)),
+                     TestNumberOfExprBuilder(ID2));
+  EXPECT_FORWARD_RET(EndNumberOf, EndNumberOf, (TestNumberOfExprBuilder(ID)),
                      TestNumericExpr(ID2));
 
   EXPECT_FORWARD_RET(OnLogicalConstant, MakeLogicalConstant, (true),
@@ -1382,14 +1382,14 @@ TEST(NLProblemBuilderTest, Forward) {
                       TestLogicalExpr(ID3)), TestLogicalExpr(ID4));
 
   EXPECT_FORWARD_RET(BeginIteratedLogical, BeginIteratedLogical,
-                     (expr::EXISTS, 22), TestLogicalArgHandler(ID));
+                     (expr::EXISTS, 22), TestLogicalExprBuilder(ID));
   EXPECT_FORWARD_RET(EndIteratedLogical, EndIteratedLogical,
-                     (TestLogicalArgHandler(ID)), TestLogicalExpr(ID2));
+                     (TestLogicalExprBuilder(ID)), TestLogicalExpr(ID2));
 
   EXPECT_FORWARD_RET(BeginPairwise, BeginPairwise, (mp::expr::ALLDIFF, 33),
-                     TestPairwiseArgHandler(ID));
+                     TestPairwiseExprBuilder(ID));
   EXPECT_FORWARD_RET(EndPairwise, EndPairwise,
-                     (TestPairwiseArgHandler(ID)), TestLogicalExpr(ID2));
+                     (TestPairwiseExprBuilder(ID)), TestLogicalExpr(ID2));
 
   EXPECT_FORWARD_RET(OnStringLiteral, MakeStringLiteral, (str), TestExpr(ID));
 }
@@ -1512,12 +1512,12 @@ TEST(NLProblemBuilderTest, OnFunction) {
   EXPECT_CALL(builder, AddFunction(name, 11, mp::func::SYMBOLIC)).
       WillOnce(Return(func));
   adapter.OnFunction(0, name, 11, mp::func::SYMBOLIC);
-  auto arg_handler = TestCallArgHandler(ID);
-  EXPECT_CALL(builder, BeginCall(func, 11)).WillOnce(Return(arg_handler));
+  auto call_builder = TestCallExprBuilder(ID);
+  EXPECT_CALL(builder, BeginCall(func, 11)).WillOnce(Return(call_builder));
   adapter.BeginCall(0, 11);
-  EXPECT_CALL(builder, EndCall(arg_handler)).
+  EXPECT_CALL(builder, EndCall(call_builder)).
       WillOnce(Return(TestNumericExpr(ID)));
-  adapter.EndCall(arg_handler);
+  adapter.EndCall(call_builder);
 }
 
 TEST(NLTest, ErrorOnNonexistentNLFile) {

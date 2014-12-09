@@ -249,14 +249,14 @@ ls::LSExpression LSProblemBuilder::MakeBinary(
   return MakeBinary(op, lhs, rhs);
 }
 
-LSProblemBuilder::ArgHandler LSProblemBuilder::BeginVarArg(
+LSProblemBuilder::ExprBuilder LSProblemBuilder::BeginVarArg(
     expr::Kind kind, int num_args) {
   ls::LSOperator op = ls::O_Min;
   if (kind == expr::MAX)
     op = ls::O_Max;
   else if (kind != expr::MIN)
     Base::BeginVarArg(kind, num_args);
-  return ArgHandler(model_.createExpression(op));
+  return ExprBuilder(model_.createExpression(op));
 }
 
 ls::LSExpression LSProblemBuilder::MakeBinaryLogical(
@@ -336,20 +336,20 @@ ls::LSExpression LSProblemBuilder::MakeLogicalCount(
   return MakeBinary(op, lhs, rhs);
 }
 
-LSProblemBuilder::ArgHandler LSProblemBuilder::BeginIteratedLogical(
+LSProblemBuilder::ExprBuilder LSProblemBuilder::BeginIteratedLogical(
     expr::Kind kind, int num_args) {
   ls::LSOperator op = ls::O_Or;
   if (kind == expr::FORALL)
     op = ls::O_And;
   else if (kind != expr::EXISTS)
     Base::BeginIteratedLogical(kind, num_args);
-  return ArgHandler(model_.createExpression(op));
+  return ExprBuilder(model_.createExpression(op));
 }
 
-ls::LSExpression LSProblemBuilder::EndPairwise(PairwiseArgHandler handler) {
-  std::vector<ls::LSExpression> &args = handler.args;
+ls::LSExpression LSProblemBuilder::EndPairwise(PairwiseExprBuilder builder) {
+  std::vector<ls::LSExpression> &args = builder.args;
   ls::LSOperator logical_op = ls::O_And, comparison_op = ls::O_Neq;
-  if (handler.kind == expr::NOT_ALLDIFF) {
+  if (builder.kind == expr::NOT_ALLDIFF) {
     logical_op = ls::O_Or;
     comparison_op = ls::O_Eq;
   }

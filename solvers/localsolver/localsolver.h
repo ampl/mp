@@ -235,41 +235,43 @@ class LSProblemBuilder :
 
   // LocalSolver doesn't support piecewise-liner terms and arbitrary functions.
 
-  class ArgHandler {
+  class ExprBuilder {
    private:
     ls::LSExpression expr_;
 
    public:
-    explicit ArgHandler(ls::LSExpression expr) : expr_(expr) {}
+    explicit ExprBuilder(ls::LSExpression expr) : expr_(expr) {}
 
     ls::LSExpression expr() const { return expr_; }
 
     void AddArg(ls::LSExpression arg) { expr_.addOperand(arg); }
   };
 
-  typedef ArgHandler NumericArgHandler;
-  typedef ArgHandler LogicalArgHandler;
-  typedef ArgHandler VarArgHandler;
+  typedef ExprBuilder NumericExprBuilder;
+  typedef ExprBuilder LogicalExprBuilder;
+  typedef ExprBuilder VarArgExprBuilder;
 
-  VarArgHandler BeginVarArg(expr::Kind kind, int num_args);
-  ls::LSExpression EndVarArg(VarArgHandler handler) { return handler.expr(); }
-
-  ArgHandler BeginSum(int) {
-    return ArgHandler(model_.createExpression(ls::O_Sum));
+  VarArgExprBuilder BeginVarArg(expr::Kind kind, int num_args);
+  ls::LSExpression EndVarArg(VarArgExprBuilder builder) {
+    return builder.expr();
   }
-  ls::LSExpression EndSum(ArgHandler handler) { return handler.expr(); }
 
-  ArgHandler BeginCount(int num_args) { return BeginSum(num_args); }
-  NumericExpr EndCount(ArgHandler handler) { return EndSum(handler); }
+  ExprBuilder BeginSum(int) {
+    return ExprBuilder(model_.createExpression(ls::O_Sum));
+  }
+  ls::LSExpression EndSum(ExprBuilder builder) { return builder.expr(); }
 
-  class NumberOfArgHandler {
+  ExprBuilder BeginCount(int num_args) { return BeginSum(num_args); }
+  NumericExpr EndCount(ExprBuilder builder) { return EndSum(builder); }
+
+  class NumberOfExprBuilder {
    private:
     ls::LSModel model_;
     ls::LSExpression numberof_;
     ls::LSExpression value_;
 
    public:
-    NumberOfArgHandler(ls::LSModel model, ls::LSExpression value)
+    NumberOfExprBuilder(ls::LSModel model, ls::LSExpression value)
       : model_(model), numberof_(model.createExpression(ls::O_Sum)),
         value_(value) {}
 
@@ -280,11 +282,11 @@ class LSProblemBuilder :
     }
   };
 
-  NumberOfArgHandler BeginNumberOf(ls::LSExpression value, int) {
-    return NumberOfArgHandler(model_, value);
+  NumberOfExprBuilder BeginNumberOf(ls::LSExpression value, int) {
+    return NumberOfExprBuilder(model_, value);
   }
-  ls::LSExpression EndNumberOf(NumberOfArgHandler handler) {
-    return handler.numberof();
+  ls::LSExpression EndNumberOf(NumberOfExprBuilder builder) {
+    return builder.numberof();
   }
 
   ls::LSExpression MakeLogicalConstant(bool value) {
@@ -310,24 +312,24 @@ class LSProblemBuilder :
     return MakeIf(condition, true_expr, false_expr);
   }
 
-  ArgHandler BeginIteratedLogical(expr::Kind kind, int num_args);
-  LogicalExpr EndIteratedLogical(ArgHandler handler) { return handler.expr(); }
+  ExprBuilder BeginIteratedLogical(expr::Kind kind, int num_args);
+  LogicalExpr EndIteratedLogical(ExprBuilder builder) { return builder.expr(); }
 
-  struct PairwiseArgHandler {
+  struct PairwiseExprBuilder {
     expr::Kind kind;
     std::vector<ls::LSExpression> args;
 
-    PairwiseArgHandler(expr::Kind k, int num_args) : kind(k) {
+    PairwiseExprBuilder(expr::Kind k, int num_args) : kind(k) {
       args.reserve(num_args);
     }
     void AddArg(ls::LSExpression arg) { args.push_back(arg); }
   };
 
-  PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
-    return PairwiseArgHandler(kind, num_args);
+  PairwiseExprBuilder BeginPairwise(expr::Kind kind, int num_args) {
+    return PairwiseExprBuilder(kind, num_args);
   }
 
-  ls::LSExpression EndPairwise(PairwiseArgHandler handler);
+  ls::LSExpression EndPairwise(PairwiseExprBuilder builder);
 };
 
 class LocalSolver : public SolverImpl<LSProblemBuilder> {

@@ -674,11 +674,11 @@ class ProblemBuilderToNLAdapter {
     return builder_.AddDblSuffix(name, kind, num_values);
   }
 
-  typedef typename ProblemBuilder::NumericArgHandler NumericArgHandler;
-  typedef typename ProblemBuilder::LogicalArgHandler LogicalArgHandler;
-  typedef typename ProblemBuilder::VarArgHandler VarArgHandler;
-  typedef typename ProblemBuilder::CallArgHandler CallArgHandler;
-  typedef typename ProblemBuilder::NumberOfArgHandler NumberOfArgHandler;
+  typedef typename ProblemBuilder::NumericExprBuilder NumericArgHandler;
+  typedef typename ProblemBuilder::LogicalExprBuilder LogicalArgHandler;
+  typedef typename ProblemBuilder::VarArgExprBuilder VarArgHandler;
+  typedef typename ProblemBuilder::CallExprBuilder CallArgHandler;
+  typedef typename ProblemBuilder::NumberOfExprBuilder NumberOfArgHandler;
 
   // Receives notification of a numeric constant in a nonlinear expression.
   NumericExpr OnNumericConstant(double value) {
@@ -711,7 +711,7 @@ class ProblemBuilderToNLAdapter {
     return builder_.MakeIf(condition, true_expr, false_expr);
   }
 
-  typedef typename ProblemBuilder::PLTermHandler PLTermHandler;
+  typedef typename ProblemBuilder::PLTermBuilder PLTermHandler;
 
   // Receives notification of the beginning of a piecewise-linear term.
   PLTermHandler BeginPLTerm(int num_breakpoints) {
@@ -810,7 +810,7 @@ class ProblemBuilderToNLAdapter {
     return builder_.EndIteratedLogical(handler);
   }
 
-  typedef typename ProblemBuilder::PairwiseArgHandler PairwiseArgHandler;
+  typedef typename ProblemBuilder::PairwiseExprBuilder PairwiseArgHandler;
 
   // Receives notification of the beginning of a pairwise expression.
   PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {

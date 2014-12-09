@@ -78,27 +78,27 @@ struct TestSuffixHandler {
 };
 
 template <int I, typename Arg = TestNumericExpr>
-struct TestArgHandler {
+struct TestExprBuilder {
   void AddArg(Arg) {}
-  DEFINE_ID(TestArgHandler);
+  DEFINE_ID(TestExprBuilder);
 };
 
-typedef TestArgHandler<0> TestNumericArgHandler;
-typedef TestArgHandler<1> TestVarArgHandler;
-typedef TestArgHandler<2> TestNumberOfArgHandler;
-typedef TestArgHandler<3, TestLogicalExpr> TestLogicalArgHandler;
-typedef TestArgHandler<4> TestPairwiseArgHandler;
+typedef TestExprBuilder<0> TestNumericExprBuilder;
+typedef TestExprBuilder<1> TestVarArgExprBuilder;
+typedef TestExprBuilder<2> TestNumberOfExprBuilder;
+typedef TestExprBuilder<3, TestLogicalExpr> TestLogicalExprBuilder;
+typedef TestExprBuilder<4> TestPairwiseExprBuilder;
 
-struct TestCallArgHandler {
+struct TestCallExprBuilder {
   void AddArg(TestNumericExpr) {}
   void AddArg(TestExpr) {}
-  DEFINE_ID(TestCallArgHandler);
+  DEFINE_ID(TestCallExprBuilder);
 };
 
-struct TestPLTermHandler {
+struct TestPLTermBuilder {
   void AddSlope(double) {}
   void AddBreakpoint(double) {}
-  DEFINE_ID(TestPLTermHandler);
+  DEFINE_ID(TestPLTermBuilder);
 };
 
 // A mock problem builder.
@@ -176,10 +176,10 @@ class MockProblemBuilder {
                                  int kind, int num_values));
 
 
-  typedef TestNumericArgHandler NumericArgHandler;
-  typedef TestLogicalArgHandler LogicalArgHandler;
-  typedef TestVarArgHandler VarArgHandler;
-  typedef TestCallArgHandler CallArgHandler;
+  typedef TestNumericExprBuilder NumericExprBuilder;
+  typedef TestLogicalExprBuilder LogicalExprBuilder;
+  typedef TestVarArgExprBuilder VarArgExprBuilder;
+  typedef TestCallExprBuilder CallExprBuilder;
 
   MOCK_METHOD1(MakeNumericConstant, NumericExpr (double value));
   MOCK_METHOD1(MakeVariable, Variable (int var_index));
@@ -193,28 +193,29 @@ class MockProblemBuilder {
                NumericExpr (LogicalExpr condition,
                             NumericExpr true_expr, NumericExpr false_expr));
 
-  typedef TestPLTermHandler PLTermHandler;
+  typedef TestPLTermBuilder PLTermBuilder;
 
-  MOCK_METHOD1(BeginPLTerm, PLTermHandler (int num_breakpoints));
-  MOCK_METHOD2(EndPLTerm, NumericExpr (PLTermHandler handler, NumericExpr arg));
+  MOCK_METHOD1(BeginPLTerm, PLTermBuilder (int num_breakpoints));
+  MOCK_METHOD2(EndPLTerm, NumericExpr (PLTermBuilder builder, NumericExpr arg));
 
-  MOCK_METHOD2(BeginCall, CallArgHandler (Function func, int num_args));
-  MOCK_METHOD1(EndCall, NumericExpr (CallArgHandler handler));
+  MOCK_METHOD2(BeginCall, CallExprBuilder (Function func, int num_args));
+  MOCK_METHOD1(EndCall, NumericExpr (CallExprBuilder builder));
 
-  MOCK_METHOD2(BeginVarArg, VarArgHandler (mp::expr::Kind kind, int num_args));
-  MOCK_METHOD1(EndVarArg, NumericExpr (VarArgHandler handler));
+  MOCK_METHOD2(BeginVarArg,
+               VarArgExprBuilder (mp::expr::Kind kind, int num_args));
+  MOCK_METHOD1(EndVarArg, NumericExpr (VarArgExprBuilder builder));
 
-  MOCK_METHOD1(BeginSum, NumericArgHandler (int num_args));
-  MOCK_METHOD1(EndSum, NumericExpr (NumericArgHandler handler));
+  MOCK_METHOD1(BeginSum, NumericExprBuilder (int num_args));
+  MOCK_METHOD1(EndSum, NumericExpr (NumericExprBuilder builder));
 
-  MOCK_METHOD1(BeginCount, LogicalArgHandler (int num_args));
-  MOCK_METHOD1(EndCount, CountExpr (LogicalArgHandler handler));
+  MOCK_METHOD1(BeginCount, LogicalExprBuilder (int num_args));
+  MOCK_METHOD1(EndCount, CountExpr (LogicalExprBuilder builder));
 
-  typedef TestNumberOfArgHandler NumberOfArgHandler;
+  typedef TestNumberOfExprBuilder NumberOfExprBuilder;
 
   MOCK_METHOD2(BeginNumberOf,
-               NumberOfArgHandler (NumericExpr value, int num_args));
-  MOCK_METHOD1(EndNumberOf, NumericExpr (NumberOfArgHandler handler));
+               NumberOfExprBuilder (NumericExpr value, int num_args));
+  MOCK_METHOD1(EndNumberOf, NumericExpr (NumberOfExprBuilder builder));
 
   MOCK_METHOD1(MakeLogicalConstant, LogicalExpr (bool value));
   MOCK_METHOD1(MakeNot, LogicalExpr (LogicalExpr arg));
@@ -232,14 +233,14 @@ class MockProblemBuilder {
                             LogicalExpr true_expr, LogicalExpr false_expr));
 
   MOCK_METHOD2(BeginIteratedLogical,
-               LogicalArgHandler (mp::expr::Kind kind, int num_args));
-  MOCK_METHOD1(EndIteratedLogical, LogicalExpr (LogicalArgHandler handler));
+               LogicalExprBuilder (mp::expr::Kind kind, int num_args));
+  MOCK_METHOD1(EndIteratedLogical, LogicalExpr (LogicalExprBuilder builder));
 
-  typedef TestPairwiseArgHandler PairwiseArgHandler;
+  typedef TestPairwiseExprBuilder PairwiseExprBuilder;
 
   MOCK_METHOD2(BeginPairwise,
-               PairwiseArgHandler (mp::expr::Kind kind, int num_args));
-  MOCK_METHOD1(EndPairwise, LogicalExpr (PairwiseArgHandler handler));
+               PairwiseExprBuilder (mp::expr::Kind kind, int num_args));
+  MOCK_METHOD1(EndPairwise, LogicalExpr (PairwiseExprBuilder builder));
 
   MOCK_METHOD1(MakeStringLiteral, Expr (fmt::StringRef value));
 };

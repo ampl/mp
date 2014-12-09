@@ -170,7 +170,7 @@ void ASLBuilder::SetObjOrCon(
   return e;
 }
 
-ASLBuilder::CallArgHandler ASLBuilder::DoBeginCall(Function f, int num_args) {
+ASLBuilder::CallExprBuilder ASLBuilder::DoBeginCall(Function f, int num_args) {
   int num_func_args = f.num_args();
   if ((num_func_args >= 0 && num_args != num_func_args) ||
       (num_func_args < 0 && num_args < -(num_func_args + 1))) {
@@ -180,7 +180,7 @@ ASLBuilder::CallArgHandler ASLBuilder::DoBeginCall(Function f, int num_args) {
         sizeof(expr_f) + SafeInt<int>(num_args - 1) * sizeof(::expr*));
   result->op = r_ops_[OPFUNCALL];
   result->fi = f.fi_;
-  return CallArgHandler(result, num_args);
+  return CallExprBuilder(result, num_args);
 }
 
 void ASLBuilder::Init(ASL *asl) {
@@ -671,7 +671,7 @@ UnaryExpr ASLBuilder::MakeUnary(expr::Kind kind, NumericExpr arg) {
   return expr;
 }
 
-ASLBuilder::PLTermHandler ASLBuilder::BeginPLTerm(int num_breakpoints) {
+ASLBuilder::PLTermBuilder ASLBuilder::BeginPLTerm(int num_breakpoints) {
   assert(num_breakpoints >= 1);
   ++asl_->i.plterms_;
   plterm *term = Allocate<plterm>(
@@ -680,43 +680,43 @@ ASLBuilder::PLTermHandler ASLBuilder::BeginPLTerm(int num_breakpoints) {
   ::expr *result = Allocate< ::expr>();
   result->op = r_ops_[OPPLTERM];
   result->L.p = term;
-  return PLTermHandler(result);
+  return PLTermBuilder(result);
 }
 
 PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(
     int num_breakpoints, const double *breakpoints,
     const double *slopes, Variable var) {
-  PLTermHandler handler = BeginPLTerm(num_breakpoints);
+  PLTermBuilder builder = BeginPLTerm(num_breakpoints);
   for (int i = 0; i < num_breakpoints; ++i) {
-    handler.AddSlope(slopes[i]);
-    handler.AddBreakpoint(breakpoints[i]);
+    builder.AddSlope(slopes[i]);
+    builder.AddBreakpoint(breakpoints[i]);
   }
-  handler.AddSlope(slopes[num_breakpoints]);
-  return EndPLTerm(handler, var);
+  builder.AddSlope(slopes[num_breakpoints]);
+  return EndPLTerm(builder, var);
 }
 
-CallExpr ASLBuilder::EndCall(CallArgHandler h) {
-  int num_symbolic_args = h.num_symbolic_args_ + h.num_ifsyms_;
-  const func_info *info = h.expr_->fi;
+CallExpr ASLBuilder::EndCall(CallExprBuilder b) {
+  int num_symbolic_args = b.num_symbolic_args_ + b.num_ifsyms_;
+  const func_info *info = b.expr_->fi;
   if (num_symbolic_args != 0 && (info->ftype & func::SYMBOLIC) == 0)
     throw Error("function {}: symbolic arguments not allowed", info->name);
-  int num_numeric_args = h.num_args_ - num_symbolic_args;
+  int num_numeric_args = b.num_args_ - num_symbolic_args;
   int kd = 0;
   double *ra = Allocate<double>(
       sizeof(arglist) +
-      SafeInt<int>(h.num_constants_ + h.num_ifsyms_) * sizeof(argpair) +
+      SafeInt<int>(b.num_constants_ + b.num_ifsyms_) * sizeof(argpair) +
       SafeInt<int>(num_numeric_args + kd) * sizeof(double) +
       SafeInt<int>(num_symbolic_args) * sizeof(char*) +
-      SafeInt<int>(h.num_args_) * sizeof(int));
-  double *b = ra + kd;
-  arglist *al = h.expr_->al = reinterpret_cast<arglist*>(b + num_numeric_args);
-  al->n = h.num_args_;
+      SafeInt<int>(b.num_args_) * sizeof(int));
+  double *rb = ra + kd;
+  arglist *al = b.expr_->al = reinterpret_cast<arglist*>(rb + num_numeric_args);
+  al->n = b.num_args_;
   al->ra = ra;
   al->funcinfo = info->funcinfo;
-  return Expr::Create<CallExpr>(reinterpret_cast< ::expr*>(h.expr_));
+  return Expr::Create<CallExpr>(reinterpret_cast< ::expr*>(b.expr_));
 }
 
-ASLBuilder::VarArgHandler
+ASLBuilder::VarArgExprBuilder
     ASLBuilder::BeginVarArg(expr::Kind kind, int num_args) {
   CheckKind<VarArgExpr>(kind, "vararg");
   expr_va *result = Allocate<expr_va>();
@@ -724,15 +724,15 @@ ASLBuilder::VarArgHandler
   de *d = result->L.d = Allocate<de>(
         SafeInt<int>(num_args) * sizeof(de) + sizeof(::expr*));
   d[num_args].e = 0;
-  return VarArgHandler(result);
+  return VarArgExprBuilder(result);
 }
 
 VarArgExpr ASLBuilder::MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args) {
   int num_args = SafeInt<int>(args.size()).value();
-  VarArgHandler handler(BeginVarArg(kind, num_args));
+  VarArgExprBuilder builder(BeginVarArg(kind, num_args));
   for (int i = 0; i < num_args; ++i)
-    handler.AddArg(args[i]);
-  return EndVarArg(handler);
+    builder.AddArg(args[i]);
+  return EndVarArg(builder);
 }
 
 IteratedLogicalExpr ASLBuilder::MakeIteratedLogical(

@@ -182,14 +182,14 @@ class ASLBuilder {
   int num_vars() const { return asl_->i.n_var_; }
   int num_algebraic_cons() const { return asl_->i.n_con_; }
 
-  class CallArgHandler {
+  class CallExprBuilder {
    private:
     expr_f *expr_;
     int arg_index_, num_args_, num_constants_, num_symbolic_args_, num_ifsyms_;
 
     friend class ASLBuilder;
 
-    explicit CallArgHandler(expr_f *expr, int num_args)
+    explicit CallExprBuilder(expr_f *expr, int num_args)
       : expr_(expr), arg_index_(0), num_args_(num_args),
         num_constants_(0), num_symbolic_args_(0), num_ifsyms_(0) {}
 
@@ -214,7 +214,7 @@ class ASLBuilder {
   };
 
  private:
-  CallArgHandler DoBeginCall(Function f, int num_args);
+  CallExprBuilder DoBeginCall(Function f, int num_args);
 
   void Init(ASL *asl);
 
@@ -434,14 +434,14 @@ class ASLBuilder {
         MakeIf(expr::IF, condition, true_expr, false_expr));
   }
 
-  class PLTermHandler {
+  class PLTermBuilder {
    private:
     ::expr *expr_;
     double *data_;
 
     friend class ASLBuilder;
 
-    explicit PLTermHandler(::expr *e) : expr_(e), data_(e->L.p->bs) {}
+    explicit PLTermBuilder(::expr *e) : expr_(e), data_(e->L.p->bs) {}
 
    public:
 
@@ -449,106 +449,106 @@ class ASLBuilder {
     void AddBreakpoint(double breakpoint) { *data_++ = breakpoint; }
   };
 
-  PLTermHandler BeginPLTerm(int num_breakpoints);
-  PiecewiseLinearExpr EndPLTerm(PLTermHandler h, NumericExpr var) {
-    h.expr_->R.e = var.impl_;
-    return Expr::Create<PiecewiseLinearExpr>(h.expr_);
+  PLTermBuilder BeginPLTerm(int num_breakpoints);
+  PiecewiseLinearExpr EndPLTerm(PLTermBuilder b, NumericExpr var) {
+    b.expr_->R.e = var.impl_;
+    return Expr::Create<PiecewiseLinearExpr>(b.expr_);
   }
 
   PiecewiseLinearExpr MakePiecewiseLinear(int num_breakpoints,
       const double *breakpoints, const double *slopes, Variable var);
 
-  CallArgHandler BeginCall(Function f, int num_args) {
+  CallExprBuilder BeginCall(Function f, int num_args) {
     if (!f)
       throw Error("undefined function");
     return DoBeginCall(f, num_args);
   }
-  CallExpr EndCall(CallArgHandler h);
+  CallExpr EndCall(CallExprBuilder b);
 
   CallExpr MakeCall(Function f, ArrayRef<Expr> args) {
     int num_args = SafeInt<int>(args.size()).value();
-    CallArgHandler handler = DoBeginCall(f, num_args);
+    CallExprBuilder builder = DoBeginCall(f, num_args);
     for (int i = 0; i < num_args; ++i) {
       if (NumericExpr num = asl::Cast<NumericExpr>(args[i]))
-        handler.AddArg(num);
+        builder.AddArg(num);
       else
-        handler.AddArg(asl::Cast<StringLiteral>(args[i]));
+        builder.AddArg(asl::Cast<StringLiteral>(args[i]));
     }
-    return EndCall(handler);
+    return EndCall(builder);
   }
 
   template <typename Arg>
-  class ArgHandler {
+  class ExprBuilder {
    private:
     ::expr *expr_;
     int arg_index_;
 
     friend class ASLBuilder;
 
-    ArgHandler(::expr *e) : expr_(e), arg_index_(0) {}
+    ExprBuilder(::expr *e) : expr_(e), arg_index_(0) {}
 
    public:
     void AddArg(Arg arg) { expr_->L.ep[arg_index_++] = arg.impl_; }
   };
 
-  typedef ArgHandler<LogicalExpr> LogicalArgHandler;
-  typedef ArgHandler<NumericExpr> NumericArgHandler;
+  typedef ExprBuilder<NumericExpr> NumericExprBuilder;
+  typedef ExprBuilder<LogicalExpr> LogicalExprBuilder;
 
-  class VarArgHandler {
+  class VarArgExprBuilder {
    private:
     expr_va *expr_;
     int arg_index_;
 
     friend class ASLBuilder;
 
-    VarArgHandler(expr_va *e) : expr_(e), arg_index_(0) {}
+    VarArgExprBuilder(expr_va *e) : expr_(e), arg_index_(0) {}
 
    public:
     void AddArg(NumericExpr arg) { expr_->L.d[arg_index_++].e = arg.impl_; }
   };
 
-  VarArgHandler BeginVarArg(expr::Kind kind, int num_args);
+  VarArgExprBuilder BeginVarArg(expr::Kind kind, int num_args);
 
-  VarArgExpr EndVarArg(VarArgHandler handler) {
-    return Expr::Create<VarArgExpr>(reinterpret_cast< ::expr*>(handler.expr_));
+  VarArgExpr EndVarArg(VarArgExprBuilder builder) {
+    return Expr::Create<VarArgExpr>(reinterpret_cast< ::expr*>(builder.expr_));
   }
 
   VarArgExpr MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args);
 
-  NumericArgHandler BeginSum(int num_args) {
-    return NumericArgHandler(
+  NumericExprBuilder BeginSum(int num_args) {
+    return NumericExprBuilder(
           MakeIterated(expr::SUM, ArrayRef<NumericExpr>(0, num_args)));
   }
-  SumExpr EndSum(NumericArgHandler handler) {
-    return Expr::Create<SumExpr>(handler.expr_);
+  SumExpr EndSum(NumericExprBuilder builder) {
+    return Expr::Create<SumExpr>(builder.expr_);
   }
 
   SumExpr MakeSum(ArrayRef<NumericExpr> args) {
     return MakeIterated<SumExpr>(expr::SUM, args);
   }
 
-  LogicalArgHandler BeginCount(int num_args) {
-    return LogicalArgHandler(
+  LogicalExprBuilder BeginCount(int num_args) {
+    return LogicalExprBuilder(
           MakeIterated(expr::COUNT, ArrayRef<LogicalExpr>(0, num_args)));
   }
-  CountExpr EndCount(LogicalArgHandler handler) {
-    return Expr::Create<CountExpr>(handler.expr_);
+  CountExpr EndCount(LogicalExprBuilder builder) {
+    return Expr::Create<CountExpr>(builder.expr_);
   }
 
   CountExpr MakeCount(ArrayRef<LogicalExpr> args) {
     return MakeIterated<CountExpr>(expr::COUNT, args);
   }
 
-  typedef NumericArgHandler NumberOfArgHandler;
+  typedef NumericExprBuilder NumberOfExprBuilder;
 
-  NumberOfArgHandler BeginNumberOf(NumericExpr value, int num_args) {
-    NumericArgHandler handler(
+  NumericExprBuilder BeginNumberOf(NumericExpr value, int num_args) {
+    NumericExprBuilder builder(
           MakeIterated(expr::NUMBEROF, ArrayRef<NumericExpr>(0, num_args + 1)));
-    handler.AddArg(value);
-    return handler;
+    builder.AddArg(value);
+    return builder;
   }
-  NumberOfExpr EndNumberOf(NumberOfArgHandler handler) {
-    return Expr::Create<NumberOfExpr>(handler.expr_);
+  NumberOfExpr EndNumberOf(NumberOfExprBuilder builder) {
+    return Expr::Create<NumberOfExpr>(builder.expr_);
   }
 
   NumberOfExpr MakeNumberOf(ArrayRef<NumericExpr> args) {
@@ -585,25 +585,25 @@ class ASLBuilder {
         MakeIf(expr::IMPLICATION, condition, true_expr, false_expr));
   }
 
-  LogicalArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
-    return LogicalArgHandler(
+  LogicalExprBuilder BeginIteratedLogical(expr::Kind kind, int num_args) {
+    return LogicalExprBuilder(
           MakeIterated(kind, ArrayRef<LogicalExpr>(0, num_args)));
   }
-  IteratedLogicalExpr EndIteratedLogical(LogicalArgHandler handler) {
-    return Expr::Create<IteratedLogicalExpr>(handler.expr_);
+  IteratedLogicalExpr EndIteratedLogical(LogicalExprBuilder builder) {
+    return Expr::Create<IteratedLogicalExpr>(builder.expr_);
   }
 
   IteratedLogicalExpr MakeIteratedLogical(
       expr::Kind kind, ArrayRef<LogicalExpr> args);
 
-  typedef NumericArgHandler PairwiseArgHandler;
+  typedef NumericExprBuilder PairwiseExprBuilder;
 
-  PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
-    return NumericArgHandler(
+  PairwiseExprBuilder BeginPairwise(expr::Kind kind, int num_args) {
+    return PairwiseExprBuilder(
           MakeIterated(kind, ArrayRef<NumericExpr>(0, num_args)));
   }
-  PairwiseExpr EndPairwise(PairwiseArgHandler handler) {
-    return Expr::Create<PairwiseExpr>(handler.expr_);
+  PairwiseExpr EndPairwise(PairwiseExprBuilder builder) {
+    return Expr::Create<PairwiseExpr>(builder.expr_);
   }
 
   PairwiseExpr MakeAllDiff(ArrayRef<NumericExpr> args) {
