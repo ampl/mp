@@ -5,7 +5,6 @@ CPLEXSTUDIODIR = /opt/ibm/ILOG/CPLEX_Studio124
 CONCERTDIR     = $(CPLEXSTUDIODIR)/concert
 CPLEXDIR       = $(CPLEXSTUDIODIR)/cplex
 CPOPTIMIZERDIR = $(CPLEXSTUDIODIR)/cpoptimizer
-AMPLDIR        = ../..
 
 CONCERT_INC=$(CONCERTDIR)/include
 CONCERT_LIB=$(CONCERTDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
@@ -13,8 +12,8 @@ CPLEX_INC=$(CPLEXDIR)/include
 CPLEX_LIB=$(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 CPOPTIMIZER_INC=$(CPOPTIMIZERDIR)/include
 CPOPTIMIZER_LIB=$(CPOPTIMIZERDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
-AMPL_INC=$(AMPLDIR)
-AMPL_LIB=$(AMPLDIR)/solvers/amplsolver.a
+ASL_DIR=src/asl/solvers
+ASL_LIB=$(ASL_DIR)/amplsolver.a
 LIBS=-lnsl -lm -ldl -lpthread
 
 #DEBUG= -w -xO2 -xtarget=ultra -xarch=v8plus -DNDEBUG
@@ -22,20 +21,73 @@ DEBUG = -g
 MTFLAGS = -DILCUSEMT
 #LDMTFLAGS = -mt
 
+ASL_DATE    = 20141121
+ASL_SYSINFO = Linux x86_64
+
 # Comment out if using pre-C++11 compiler/standard library.
 CXX11_FLAGS = -std=c++11 -DMP_USE_UNORDERED_MAP
 
 CXX_FLAGS = $(DEBUG) -I$(CONCERT_INC) -I$(CPLEX_INC) -I$(CPOPTIMIZER_INC) \
-            -I$(AMPL_INC) -I${AMPL_INC}/solvers $(MTFLAGS) -DIL_STD ${CXX11_FLAGS}
+            -Iinclude -Isolvers -Isrc -I$(ASL_DIR) -I.. $(MTFLAGS) -DIL_STD \
+            $(CXX11_FLAGS) -DMP_DATE=$(ASL_DATE) '-DMP_SYSINFO="$(ASL_SYSINFO)"'
 LD_FLAGS  = -L$(CPOPTIMIZER_LIB) -lcp -L$(CPLEX_LIB) -lilocplex -lcplex \
-            -L$(CONCERT_LIB) -lconcert $(LDMTFLAGS) $(AMPL_LIB) $(LIBS)
+            -L$(CONCERT_LIB) -lconcert $(LDMTFLAGS) $(ASL_LIB) $(LIBS)
 
-BINARIES = ilogcp.o ilogcp_main.o concert.o util-all.o
+BINARIES = concert.o ilogcp.o main.o \
+           clock.o expr-info.o format.o nl.o option.o os.o posix.o \
+           rstparser.o sol.o solver.o \
+           aslbuilder.o aslexpr.o aslproblem.o aslsolver.o
 
 ilogcp: $(BINARIES)
 	$(CXX) -o $@ $(BINARIES) $(LD_FLAGS)
 
-%.o: %.cc
+concert.o: solvers/ilogcp/concert.cc
 	$(CXX) $(CXX_FLAGS) -c $<
-util-all.o: ../util/util-all.cc
+
+ilogcp.o: solvers/ilogcp/ilogcp.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+main.o: solvers/ilogcp/main.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+clock.o: src/clock.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+expr-info.o: src/expr-info.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+format.o: src/format.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+nl.o: src/nl.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+option.o: src/option.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+os.o: src/os.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+posix.o: src/posix.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+rstparser.o: src/rstparser.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+sol.o: src/sol.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+solver.o: src/solver.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+aslbuilder.o: src/asl/aslbuilder.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+aslexpr.o: src/asl/aslexpr.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+aslproblem.o: src/asl/aslproblem.cc
+	$(CXX) $(CXX_FLAGS) -c $<
+
+aslsolver.o: src/asl/aslsolver.cc
 	$(CXX) $(CXX_FLAGS) -c $<
