@@ -349,6 +349,7 @@ class NLHandler {
     return PLTermHandler();
   }
   // Receives notification of the end of a piecewise-linear term.
+  // arg: argument that should be either a variable or a common expression.
   NumericExpr EndPLTerm(PLTermHandler handler, NumericExpr arg) {
     MP_UNUSED2(handler, arg);
     return NumericExpr();

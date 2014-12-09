@@ -147,7 +147,8 @@ TEST_F(ExprTest, PLTerm) {
   builder.AddSlope(22);
   builder.AddBreakpoint(222);
   builder.AddSlope(33);
-  e = factory_.EndPLTerm(builder, factory_.MakeVariable(42));
+  auto var = factory_.MakeVariable(42);
+  e = factory_.EndPLTerm(builder, var);
   EXPECT_EQ(expr::PLTERM, e.kind());
   EXPECT_EQ(2, e.num_breakpoints());
   EXPECT_EQ(3, e.num_slopes());
@@ -160,8 +161,15 @@ TEST_F(ExprTest, PLTerm) {
   EXPECT_EQ(222, e.breakpoint(1));
   EXPECT_ASSERT(e.breakpoint(-1), "index out of bounds");
   EXPECT_ASSERT(e.breakpoint(2), "index out of bounds");
-  EXPECT_EQ(42, e.var_index());
+  EXPECT_EQ(var, e.arg());
   EXPECT_ASSERT(factory_.BeginPLTerm(0), "invalid number of breakpoints");
+  builder = factory_.BeginPLTerm(1);
+  builder.AddSlope(0);
+  builder.AddBreakpoint(0);
+  builder.AddSlope(1);
+  auto arg = factory_.MakeCommonExpr(0);
+  e = factory_.EndPLTerm(builder, arg);
+  EXPECT_EQ(arg, e.arg());
 }
 
 TEST_F(ExprTest, TooManyBreakpoints) {
@@ -177,12 +185,22 @@ TEST_F(ExprTest, TooManySlopes) {
   EXPECT_ASSERT(builder.AddSlope(2), "too many slopes");
 }
 
+TEST_F(ExprTest, NullPLTermArgument) {
+  auto builder = factory_.BeginPLTerm(1);
+  builder.AddSlope(0);
+  builder.AddBreakpoint(0);
+  builder.AddSlope(1);
+  EXPECT_ASSERT(factory_.EndPLTerm(builder, mp::Variable()),
+                "invalid argument");
+}
+
 TEST_F(ExprTest, InvalidPLTermArgument) {
   auto builder = factory_.BeginPLTerm(1);
   builder.AddSlope(0);
   builder.AddBreakpoint(0);
   builder.AddSlope(1);
-  EXPECT_ASSERT(factory_.EndPLTerm(builder, mp::Variable()), "invalid argument");
+  EXPECT_ASSERT(factory_.EndPLTerm(builder, factory_.MakeNumericConstant(0)),
+                "invalid argument");
 }
 
 TEST_F(ExprTest, TooFewBreakpoints) {

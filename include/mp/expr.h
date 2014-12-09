@@ -316,7 +316,7 @@ class PLTerm : public NumericExpr {
  private:
   struct Impl : Expr::Impl {
     int num_breakpoints;
-    int var_index;
+    const Expr::Impl *arg;
     double data[1];
   };
   MP_EXPR;
@@ -340,7 +340,8 @@ class PLTerm : public NumericExpr {
     return impl()->data[2 * index];
   }
 
-  int var_index() const { return impl()->var_index; }
+  // Returns the argument (variable or common expression).
+  NumericExpr arg() const { return Expr::Create<NumericExpr>(impl()->arg); }
 };
 
 MP_SPECIALIZE_IS(PLTerm, PLTERM)
@@ -758,15 +759,18 @@ class BasicExprFactory : private Alloc {
   }
 
   // Ends building a piecewise-linear term.
-  PLTerm EndPLTerm(PLTermBuilder builder, Variable var) {
+  // arg: argument that should be either a variable or a common expression.
+  PLTerm EndPLTerm(PLTermBuilder builder, NumericExpr arg) {
     PLTerm::Impl *impl = builder.impl_;
     // Check that all slopes and breakpoints provided.
     MP_ASSERT(builder.slope_index_ == impl->num_breakpoints + 1,
               "too few slopes");
     MP_ASSERT(builder.breakpoint_index_ == impl->num_breakpoints,
               "too few breakpoints");
-    MP_ASSERT(var != 0, "invalid argument");
-    impl->var_index = var.index();
+    MP_ASSERT(arg != 0 && (internal::Is<Variable>(arg.kind()) ||
+                           internal::Is<CommonExpr>(arg.kind())),
+              "invalid argument");
+    impl->arg = arg.impl_;
     return Expr::Create<PLTerm>(impl);
   }
 
