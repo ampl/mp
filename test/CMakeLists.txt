@@ -1,5 +1,10 @@
 include_directories(../thirdparty)
 
+if (MSVC)
+  # Fix error C1128: number of sections exceeded object file format limit.
+  add_compile_options(/bigobj)
+endif ()
+
 add_test(cmake-test
   ${CMAKE_COMMAND} -DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/init-test.cmake)
@@ -65,10 +70,6 @@ add_mp_test(function-test function-test.cc LIBS function)
 if (TARGET amplgsl)
   include_directories(${GSL_BINARY_DIR})
   add_mp_test(gsl-test gsl-test.cc LIBS function gsl gslcblas)
-  if (MSVC)
-    # Fix error C1128: number of sections exceeded object file format limit.
-    target_compile_options(gsl-test PRIVATE "/bigobj")
-  endif ()
 endif ()
 
 add_mp_test(cp-test cp-test.cc LIBS function)
