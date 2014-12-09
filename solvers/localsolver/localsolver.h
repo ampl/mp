@@ -278,7 +278,7 @@ class LSProblemBuilder :
     }
   };
 
-  NumberOfExprBuilder BeginNumberOf(ls::LSExpression value, int) {
+  NumberOfExprBuilder BeginNumberOf(int, ls::LSExpression value) {
     return NumberOfExprBuilder(model_, value);
   }
   ls::LSExpression EndNumberOf(NumberOfExprBuilder builder) {

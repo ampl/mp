@@ -218,7 +218,7 @@ class MockProblemBuilder {
   typedef TestNumberOfExprBuilder NumberOfExprBuilder;
 
   MOCK_METHOD2(BeginNumberOf,
-               NumberOfExprBuilder (NumericExpr value, int num_args));
+               NumberOfExprBuilder (int num_args, NumericExpr arg0));
   MOCK_METHOD1(EndNumberOf, NumericExpr (NumberOfExprBuilder builder));
 
   MOCK_METHOD1(MakeLogicalConstant, LogicalExpr (bool value));

@@ -915,7 +915,7 @@ TEST_F(NLSolverTest, NumberOf) {
     explicit NumberOfFactory(int num_args) : num_args_(num_args) {}
     NumericExpr Create(ProblemBuilder &pb) const {
       auto value = pb.MakeNumericConstant(42);
-      auto args = pb.BeginNumberOf(value, num_args_);
+      auto args = pb.BeginNumberOf(num_args_, value);
       for (int i = 1; i <= num_args_; ++i)
         args.AddArg(pb.MakeVariable(i));
       return pb.EndNumberOf(args);

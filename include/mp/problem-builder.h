@@ -264,8 +264,8 @@ class ProblemBuilder : public SuffixManager {
     return NumericExpr();
   }
 
-  NumberOfExprBuilder BeginNumberOf(int num_args, NumericExpr value) {
-    MP_UNUSED2(num_args, value);
+  NumberOfExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
+    MP_UNUSED2(num_args, arg0);
     MP_DISPATCH(ReportUnhandledConstruct("numberof expression"));
     return NumberOfExprBuilder();
   }

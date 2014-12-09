@@ -552,17 +552,6 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     initial_dual_values_[con_index] = value;
   }
 
-  struct ColumnSizeHandler {
-    void Add(int) {
-      // Ignore column sizes as the constraints are stored row-wise.
-    }
-  };
-
-  // Returns a handler that receives column sizes in Jacobian.
-  ColumnSizeHandler GetColumnSizeHandler() {
-    return ColumnSizeHandler();
-  }
-
   typedef Suffix *SuffixPtr;
   typedef mp::SuffixSet SuffixSet;
 

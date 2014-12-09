@@ -542,10 +542,10 @@ class ASLBuilder {
 
   typedef NumericExprBuilder NumberOfExprBuilder;
 
-  NumericExprBuilder BeginNumberOf(NumericExpr value, int num_args) {
+  NumericExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
     NumericExprBuilder builder(
           MakeIterated(expr::NUMBEROF, ArrayRef<NumericExpr>(0, num_args + 1)));
-    builder.AddArg(value);
+    builder.AddArg(arg0);
     return builder;
   }
   NumberOfExpr EndNumberOf(NumberOfExprBuilder builder) {

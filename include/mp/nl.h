@@ -400,9 +400,9 @@ class NLHandler {
   }
 
   // Receives notification of the beginning of a numberof expression.
-  NumberOfArgHandler BeginNumberOf(NumericExpr value, int num_args) {
-    MP_UNUSED2(value, num_args);
-    return NumericArgHandler();
+  NumberOfArgHandler BeginNumberOf(int num_args, NumericExpr arg0) {
+    MP_UNUSED2(num_args, arg0);
+    return NumberOfArgHandler();
   }
   // Receives notification of the end of a numberof expression.
   NumericExpr EndNumberOf(NumberOfArgHandler handler) {
@@ -754,8 +754,8 @@ class ProblemBuilderToNLAdapter {
   typedef typename ProblemBuilder::NumberOfExprBuilder NumberOfArgHandler;
 
   // Receives notification of the beginning of a numberof expression.
-  NumberOfArgHandler BeginNumberOf(NumericExpr value, int num_args) {
-    return builder_.BeginNumberOf(value, num_args);
+  NumberOfArgHandler BeginNumberOf(int num_args, NumericExpr arg0) {
+    return builder_.BeginNumberOf(num_args, arg0);
   }
   // Receives notification of the end of a numberof expression.
   NumericExpr EndNumberOf(NumberOfArgHandler handler) {
@@ -1441,7 +1441,7 @@ typename Handler::NumericExpr
     int num_args = ReadNumArgs(1);
     reader_.ReadTillEndOfLine();
     typename Handler::NumberOfArgHandler args =
-        handler_.BeginNumberOf(ReadNumericExpr(), num_args);
+        handler_.BeginNumberOf(num_args, ReadNumericExpr());
     DoReadArgs<NumericExprReader>(num_args - 1, args);
     return handler_.EndNumberOf(args);
   }
