@@ -91,7 +91,7 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(BeginSum(0), "sum");
   EXPECT_DISPATCH(EndSum(TestProblemBuilder::NumericExprBuilder()), "sum");
   EXPECT_DISPATCH(BeginCount(0), "count expression");
-  EXPECT_DISPATCH(EndCount(TestProblemBuilder::LogicalExprBuilder()),
+  EXPECT_DISPATCH(EndCount(TestProblemBuilder::IteratedLogicalExprBuilder()),
                   "count expression");
   EXPECT_DISPATCH(BeginNumberOf(0, TestExpr()), "numberof expression");
   EXPECT_DISPATCH(EndNumberOf(TestProblemBuilder::NumberOfExprBuilder()),
@@ -107,7 +107,8 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
                   "implication expression");
   EXPECT_DISPATCH(BeginIteratedLogical(mp::expr::EXISTS, 0),
                   "exists");
-  EXPECT_DISPATCH(EndIteratedLogical(TestProblemBuilder::LogicalExprBuilder()),
+  EXPECT_DISPATCH(EndIteratedLogical(
+                    TestProblemBuilder::IteratedLogicalExprBuilder()),
                   "iterated logical expression");
   EXPECT_DISPATCH(BeginPairwise(mp::expr::ALLDIFF, 0), "alldiff expression");
   EXPECT_DISPATCH(EndPairwise(TestProblemBuilder::PairwiseExprBuilder()),

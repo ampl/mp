@@ -637,7 +637,6 @@ class TestNLHandler {
   };
 
   typedef ArgHandler NumericArgHandler;
-  typedef ArgHandler LogicalArgHandler;
 
   typedef ArgHandler VarArgHandler;
 
@@ -651,15 +650,17 @@ class TestNLHandler {
   ArgHandler BeginSum(int) { return ArgHandler("sum"); }
   std::string EndSum(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
-  ArgHandler BeginCount(int) { return ArgHandler("count"); }
-  std::string EndCount(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
-
   typedef ArgHandler NumberOfArgHandler;
 
   ArgHandler BeginNumberOf(std::string value, int) {
     return ArgHandler("numberof " + value + " in ");
   }
   std::string EndNumberOf(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
+
+  typedef ArgHandler CountArgHandler;
+
+  ArgHandler BeginCount(int) { return ArgHandler("count"); }
+  std::string EndCount(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
   std::string OnLogicalConstant(bool value) {
     return fmt::format("l{}", value);
@@ -685,6 +686,8 @@ class TestNLHandler {
                             std::string true_expr, std::string false_expr) {
     return fmt::format("{} ==> {} else {}", condition, true_expr, false_expr);
   }
+
+  typedef ArgHandler LogicalArgHandler;
 
   ArgHandler BeginIteratedLogical(expr::Kind kind, int) {
     return ArgHandler(fmt::format("il{}", opcode(kind)));
@@ -855,10 +858,6 @@ struct TestNLHandler2 {
     void AddArg(NumericExpr) {}
   };
 
-  struct LogicalArgHandler {
-    void AddArg(LogicalExpr) {}
-  };
-
   struct VarArgHandler {
     void AddArg(NumericExpr) {}
   };
@@ -869,9 +868,6 @@ struct TestNLHandler2 {
   NumericArgHandler BeginSum(int) { return NumericArgHandler(); }
   TestNumericExpr EndSum(NumericArgHandler) { return TestNumericExpr(); }
 
-  LogicalArgHandler BeginCount(int) { return LogicalArgHandler(); }
-  TestCountExpr EndCount(LogicalArgHandler) { return TestCountExpr(); }
-
   struct NumberOfArgHandler {
     void AddArg(NumericExpr) {}
   };
@@ -880,6 +876,13 @@ struct TestNLHandler2 {
     return NumberOfArgHandler();
   }
   TestNumericExpr EndNumberOf(NumberOfArgHandler) { return TestNumericExpr(); }
+
+  struct CountArgHandler {
+    void AddArg(LogicalExpr) {}
+  };
+
+  CountArgHandler BeginCount(int) { return CountArgHandler(); }
+  TestCountExpr EndCount(CountArgHandler) { return TestCountExpr(); }
 
   TestLogicalExpr OnLogicalConstant(bool) { return TestLogicalExpr(); }
   TestLogicalExpr OnNot(TestLogicalExpr) { return TestLogicalExpr(); }
@@ -901,6 +904,10 @@ struct TestNLHandler2 {
       TestLogicalExpr, TestLogicalExpr, TestLogicalExpr) {
     return TestLogicalExpr();
   }
+
+  struct LogicalArgHandler {
+    void AddArg(LogicalExpr) {}
+  };
 
   LogicalArgHandler BeginIteratedLogical(expr::Kind, int) {
     return LogicalArgHandler();
@@ -1355,8 +1362,8 @@ TEST(NLProblemBuilderTest, Forward) {
   EXPECT_FORWARD_RET(EndSum, EndSum, (TestNumericExprBuilder(ID)),
                      TestNumericExpr(ID2));
 
-  EXPECT_FORWARD_RET(BeginCount, BeginCount, (99), TestLogicalExprBuilder(ID));
-  EXPECT_FORWARD_RET(EndCount, EndCount, (TestLogicalExprBuilder(ID)),
+  EXPECT_FORWARD_RET(BeginCount, BeginCount, (99), TestCountExprBuilder(ID));
+  EXPECT_FORWARD_RET(EndCount, EndCount, (TestCountExprBuilder(ID)),
                      TestCountExpr(ID2));
 
   EXPECT_FORWARD_RET(BeginNumberOf, BeginNumberOf, (TestNumericExpr(ID), 11),
@@ -1382,9 +1389,10 @@ TEST(NLProblemBuilderTest, Forward) {
                       TestLogicalExpr(ID3)), TestLogicalExpr(ID4));
 
   EXPECT_FORWARD_RET(BeginIteratedLogical, BeginIteratedLogical,
-                     (expr::EXISTS, 22), TestLogicalExprBuilder(ID));
+                     (expr::EXISTS, 22), TestIteratedLogicalExprBuilder(ID));
   EXPECT_FORWARD_RET(EndIteratedLogical, EndIteratedLogical,
-                     (TestLogicalExprBuilder(ID)), TestLogicalExpr(ID2));
+                     (TestIteratedLogicalExprBuilder(ID)),
+                     TestLogicalExpr(ID2));
 
   EXPECT_FORWARD_RET(BeginPairwise, BeginPairwise, (mp::expr::ALLDIFF, 33),
                      TestPairwiseExprBuilder(ID));

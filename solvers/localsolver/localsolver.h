@@ -248,7 +248,6 @@ class LSProblemBuilder :
   };
 
   typedef ExprBuilder NumericExprBuilder;
-  typedef ExprBuilder LogicalExprBuilder;
   typedef ExprBuilder VarArgExprBuilder;
 
   VarArgExprBuilder BeginVarArg(expr::Kind kind, int num_args);
@@ -260,9 +259,6 @@ class LSProblemBuilder :
     return ExprBuilder(model_.createExpression(ls::O_Sum));
   }
   ls::LSExpression EndSum(ExprBuilder builder) { return builder.expr(); }
-
-  ExprBuilder BeginCount(int num_args) { return BeginSum(num_args); }
-  NumericExpr EndCount(ExprBuilder builder) { return EndSum(builder); }
 
   class NumberOfExprBuilder {
    private:
@@ -289,6 +285,11 @@ class LSProblemBuilder :
     return builder.numberof();
   }
 
+  typedef ExprBuilder CountExprBuilder;
+
+  ExprBuilder BeginCount(int num_args) { return BeginSum(num_args); }
+  NumericExpr EndCount(ExprBuilder builder) { return EndSum(builder); }
+
   ls::LSExpression MakeLogicalConstant(bool value) {
     return model_.createConstant(AsLSInt(value));
   }
@@ -311,6 +312,8 @@ class LSProblemBuilder :
       ls::LSExpression false_expr) {
     return MakeIf(condition, true_expr, false_expr);
   }
+
+  typedef ExprBuilder IteratedLogicalExprBuilder;
 
   ExprBuilder BeginIteratedLogical(expr::Kind kind, int num_args);
   LogicalExpr EndIteratedLogical(ExprBuilder builder) { return builder.expr(); }

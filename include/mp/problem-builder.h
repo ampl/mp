@@ -166,10 +166,11 @@ class ProblemBuilder : public SuffixManager {
   }
 
   typedef ExprBuilder NumericExprBuilder;
-  typedef ExprBuilder LogicalExprBuilder;
   typedef ExprBuilder VarArgExprBuilder;
   typedef ExprBuilder CallExprBuilder;
   typedef ExprBuilder NumberOfExprBuilder;
+  typedef ExprBuilder CountExprBuilder;
+  typedef ExprBuilder IteratedLogicalExprBuilder;
 
   NumericExpr MakeNumericConstant(double value) {
     MP_UNUSED(value);
@@ -252,12 +253,12 @@ class ProblemBuilder : public SuffixManager {
     return NumericExpr();
   }
 
-  LogicalExprBuilder BeginCount(int num_args) {
+  CountExprBuilder BeginCount(int num_args) {
     MP_UNUSED(num_args);
     MP_DISPATCH(ReportUnhandledConstruct("count expression"));
-    return LogicalExprBuilder();
+    return CountExprBuilder();
   }
-  NumericExpr EndCount(LogicalExprBuilder builder) {
+  NumericExpr EndCount(CountExprBuilder builder) {
     MP_UNUSED(builder);
     MP_DISPATCH(ReportUnhandledConstruct("count expression"));
     return NumericExpr();
@@ -314,12 +315,13 @@ class ProblemBuilder : public SuffixManager {
     return LogicalExpr();
   }
 
-  LogicalExprBuilder BeginIteratedLogical(expr::Kind kind, int num_args) {
+  IteratedLogicalExprBuilder BeginIteratedLogical(
+      expr::Kind kind, int num_args) {
     MP_UNUSED2(kind, num_args);
     MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
-    return LogicalExprBuilder();
+    return IteratedLogicalExprBuilder();
   }
-  LogicalExpr EndIteratedLogical(LogicalExprBuilder builder) {
+  LogicalExpr EndIteratedLogical(IteratedLogicalExprBuilder builder) {
     MP_UNUSED(builder);
     MP_DISPATCH(ReportUnhandledConstruct("iterated logical expression"));
     return LogicalExpr();

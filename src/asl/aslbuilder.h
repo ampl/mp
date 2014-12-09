@@ -492,7 +492,6 @@ class ASLBuilder {
   };
 
   typedef ExprBuilder<NumericExpr> NumericExprBuilder;
-  typedef ExprBuilder<LogicalExpr> LogicalExprBuilder;
 
   class VarArgExprBuilder {
    private:
@@ -527,11 +526,13 @@ class ASLBuilder {
     return MakeIterated<SumExpr>(expr::SUM, args);
   }
 
-  LogicalExprBuilder BeginCount(int num_args) {
-    return LogicalExprBuilder(
+  typedef ExprBuilder<LogicalExpr> CountExprBuilder;
+
+  CountExprBuilder BeginCount(int num_args) {
+    return CountExprBuilder(
           MakeIterated(expr::COUNT, ArrayRef<LogicalExpr>(0, num_args)));
   }
-  CountExpr EndCount(LogicalExprBuilder builder) {
+  CountExpr EndCount(CountExprBuilder builder) {
     return Expr::Create<CountExpr>(builder.expr_);
   }
 
@@ -585,11 +586,14 @@ class ASLBuilder {
         MakeIf(expr::IMPLICATION, condition, true_expr, false_expr));
   }
 
-  LogicalExprBuilder BeginIteratedLogical(expr::Kind kind, int num_args) {
-    return LogicalExprBuilder(
+  typedef ExprBuilder<LogicalExpr> IteratedLogicalExprBuilder;
+
+  IteratedLogicalExprBuilder BeginIteratedLogical(
+      expr::Kind kind, int num_args) {
+    return IteratedLogicalExprBuilder(
           MakeIterated(kind, ArrayRef<LogicalExpr>(0, num_args)));
   }
-  IteratedLogicalExpr EndIteratedLogical(LogicalExprBuilder builder) {
+  IteratedLogicalExpr EndIteratedLogical(IteratedLogicalExprBuilder builder) {
     return Expr::Create<IteratedLogicalExpr>(builder.expr_);
   }
 

@@ -295,10 +295,11 @@ class NLHandler {
   };
 
   typedef ArgHandler NumericArgHandler;
-  typedef ArgHandler LogicalArgHandler;
   typedef ArgHandler VarArgHandler;
   typedef ArgHandler CallArgHandler;
   typedef ArgHandler NumberOfArgHandler;
+  typedef ArgHandler CountArgHandler;
+  typedef ArgHandler LogicalArgHandler;
 
   // Receives notification of a numeric constant in a nonlinear expression.
   NumericExpr OnNumericConstant(double value) {
@@ -675,10 +676,6 @@ class ProblemBuilderToNLAdapter {
   }
 
   typedef typename ProblemBuilder::NumericExprBuilder NumericArgHandler;
-  typedef typename ProblemBuilder::LogicalExprBuilder LogicalArgHandler;
-  typedef typename ProblemBuilder::VarArgExprBuilder VarArgHandler;
-  typedef typename ProblemBuilder::CallExprBuilder CallArgHandler;
-  typedef typename ProblemBuilder::NumberOfExprBuilder NumberOfArgHandler;
 
   // Receives notification of a numeric constant in a nonlinear expression.
   NumericExpr OnNumericConstant(double value) {
@@ -722,6 +719,8 @@ class ProblemBuilderToNLAdapter {
     return builder_.EndPLTerm(handler, arg);
   }
 
+  typedef typename ProblemBuilder::CallExprBuilder CallArgHandler;
+
   // Receives notification of the beginning of a call expression.
   CallArgHandler BeginCall(int func_index, int num_args) {
     return builder_.BeginCall(funcs_[func_index], num_args);
@@ -730,6 +729,8 @@ class ProblemBuilderToNLAdapter {
   NumericExpr EndCall(CallArgHandler handler) {
     return builder_.EndCall(handler);
   }
+
+  typedef typename ProblemBuilder::VarArgExprBuilder VarArgHandler;
 
   // Receives notification of the beginning of a vararg expression (min or max).
   VarArgHandler BeginVarArg(expr::Kind kind, int num_args) {
@@ -749,14 +750,7 @@ class ProblemBuilderToNLAdapter {
     return builder_.EndSum(handler);
   }
 
-  // Receives notification of the beginning of a count expression.
-  LogicalArgHandler BeginCount(int num_args) {
-    return builder_.BeginCount(num_args);
-  }
-  // Receives notification of the end of a count expression.
-  CountExpr EndCount(LogicalArgHandler handler) {
-    return builder_.EndCount(handler);
-  }
+  typedef typename ProblemBuilder::NumberOfExprBuilder NumberOfArgHandler;
 
   // Receives notification of the beginning of a numberof expression.
   NumberOfArgHandler BeginNumberOf(NumericExpr value, int num_args) {
@@ -765,6 +759,17 @@ class ProblemBuilderToNLAdapter {
   // Receives notification of the end of a numberof expression.
   NumericExpr EndNumberOf(NumberOfArgHandler handler) {
     return builder_.EndNumberOf(handler);
+  }
+
+  typedef typename ProblemBuilder::CountExprBuilder CountArgHandler;
+
+  // Receives notification of the beginning of a count expression.
+  CountArgHandler BeginCount(int num_args) {
+    return builder_.BeginCount(num_args);
+  }
+  // Receives notification of the end of a count expression.
+  CountExpr EndCount(CountArgHandler handler) {
+    return builder_.EndCount(handler);
   }
 
   // Receives notification of a logical constant.
@@ -800,6 +805,8 @@ class ProblemBuilderToNLAdapter {
       LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
     return builder_.MakeImplication(condition, true_expr, false_expr);
   }
+
+  typedef typename ProblemBuilder::IteratedLogicalExprBuilder LogicalArgHandler;
 
   // Receives notification of the beginning of an iterated logical expression.
   LogicalArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
@@ -1142,7 +1149,7 @@ class NLReader {
 
   typename Handler::CountExpr ReadCountExpr() {
     int num_args = ReadNumArgs(1);
-    typename Handler::LogicalArgHandler args = handler_.BeginCount(num_args);
+    typename Handler::CountArgHandler args = handler_.BeginCount(num_args);
     ReadArgs<LogicalExprReader>(num_args, args);
     return handler_.EndCount(args);
   }
