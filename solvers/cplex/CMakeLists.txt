@@ -2,24 +2,28 @@
 
 find_package(CPLEX)
 if (CPLEX_FOUND)
-  include_directories(.. ${CPLEX_INCLUDE_DIRS}/ilcplex)
+  add_library(amplcplex OBJECT cplex.c
+    ${PROJECT_SOURCE_DIR}/src/asl/solvers/funcadd0.c)
+  target_include_directories(amplcplex PRIVATE
+    $<TARGET_PROPERTY:asl,INCLUDE_DIRECTORIES> ${CPLEX_INCLUDE_DIR}/ilcplex)
+
   if (CMAKE_COMPILER_IS_GNUCC)
     include(CheckCCompilerFlag)
     check_c_compiler_flag(-Wno-unused-result HAVE_WNO_UNUSED_RESULT)
     if (HAVE_WNO_UNUSED_RESULT)
-      add_definitions(-Wno-unused-result)
+      target_compile_options(amplcplex PRIVATE -Wno-unused-result)
     endif ()
-    add_definitions(-Wno-deprecated-declarations -Wno-long-long
-                    -Wno-sign-compare -Wno-uninitialized -Wno-unused-parameter
-                    -Wno-missing-field-initializers)
+    target_compile_options(amplcplex PRIVATE
+      -Wno-deprecated-declarations -Wno-long-long -Wno-sign-compare
+      -Wno-uninitialized -Wno-unused-parameter -Wno-missing-field-initializers)
   elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_definitions(-Wno-self-assign -Wno-sign-compare
-                    -Wno-sometimes-uninitialized -Wno-string-plus-int
-                    -Wno-unused-parameter -Wno-missing-field-initializers)
+    target_compile_options(amplcplex PRIVATE
+      -Wno-self-assign -Wno-sign-compare -Wno-sometimes-uninitialized
+      -Wno-string-plus-int -Wno-unused-parameter -Wno-missing-field-initializers)
   elseif (MSVC)
-    add_definitions(/wd4244 /wd4267 /wd4996)
+    target_compile_options(amplcplex PRIVATE /wd4244 /wd4267 /wd4996)
   endif ()
-  add_executable(cplex cplex.c ${PROJECT_SOURCE_DIR}/src/asl/solvers/funcadd0.c)
+
+  add_executable(cplex $<TARGET_OBJECTS:amplcplex>)
   target_link_libraries(cplex cplex-library asl)
-  target_include_directories(cplex PRIVATE ${CPLEX_INCLUDE_DIR}/ilcplex)
 endif ()
