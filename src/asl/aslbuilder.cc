@@ -560,8 +560,10 @@ ASLBuilder::ColumnSizeHandler ASLBuilder::GetColumnSizeHandler() {
   // TODO: support A_colstartsZ_
   Edaginfo &info = asl_->i;
   int size = std::max(info.n_var0, info.n_var_) + 1;
-  info.A_colstarts_ =
-      reinterpret_cast<int*>(M1alloc_ASL(&info, size * sizeof(int)));
+  if (!info.A_colstarts_) {
+    info.A_colstarts_ =
+        reinterpret_cast<int*>(M1alloc_ASL(&info, size * sizeof(int)));
+  }
   // Set first two elements to zero because colstarts[1], ... will be
   // incremented in LinearConHandler.
   info.A_colstarts_[0] = info.A_colstarts_[1] = 0;
