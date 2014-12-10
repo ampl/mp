@@ -484,6 +484,8 @@ class PiecewiseLinearExpr : public NumericExpr {
 
 MP_SPECIALIZE_IS(PiecewiseLinearExpr, PLTERM)
 
+class CallExpr;
+
 class Function {
  private:
   func_info *fi_;
