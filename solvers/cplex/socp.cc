@@ -97,23 +97,40 @@ void SOCPConverter::Run(const char *stub) {
   mp::ProblemInfo info = mp::ProblemInfo();
   info.num_vars = problem_.num_vars();
   info.num_objs = problem_.num_objs();
-  //info.num_algebraic_cons = problem.num_algebraic_cons();
-  info.num_obj_nonzeros = info.num_vars;
+  info.num_algebraic_cons = problem_.num_algebraic_cons();
+  for (int i = 0, n = problem_.num_objs(); i < n; ++i)
+    info.num_obj_nonzeros += problem_.obj(i).linear_expr().num_terms();
   // TODO: convert all problem info
   builder_.SetInfo(info);
   builder_.set_stub(stub);
 }
 
 void SOCPConverter::ConvertToASL() {
+  // Convert variables.
   int num_vars = problem_.num_vars();
   for (int i = 0; i < num_vars; ++i) {
     mp::Problem::Variable var = problem_.var(i);
     builder_.AddVar(var.lb(), var.ub(), var.type());
   }
-  ASLBuilder::LinearObjBuilder obj =
-      builder_.AddObj(mp::obj::MIN, mp::asl::NumericExpr(), 1);
-  for (int i = 0; i < num_vars; ++i)
-    obj.AddTerm(i, 1);
+
+  // Convert objectives.
+  for (int i = 0, n = problem_.num_objs(); i < n; ++i) {
+    mp::Problem::Objective obj = problem_.obj(i);
+    mp::LinearExpr expr = obj.linear_expr();
+    ASLBuilder::LinearObjBuilder obj_builder =
+        builder_.AddObj(mp::obj::MIN, mp::asl::NumericExpr(), expr.num_terms());
+    for (mp::LinearExpr::iterator i = expr.begin(), e = expr.end(); i != e; ++i)
+      obj_builder.AddTerm(i->var_index(), i->coef());
+    // TODO: handle nonlinear part of objective expression
+  }
+
+  // Convert constraints.
+  for (int i = 0, n = problem_.num_algebraic_cons(); i < n; ++i) {
+    mp::Problem::AlgebraicCon con = problem_.algebraic_con(i);
+    builder_.AddCon(con.lb(), con.ub(), mp::asl::NumericExpr(), 0);
+    // TODO: handle nonlinear part of constraint expression
+  }
+
   ASLBuilder::ColumnSizeHandler cols = builder_.GetColumnSizeHandler();
   for (int i = 1; i < num_vars; ++i)
     cols.Add(0);
