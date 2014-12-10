@@ -29,4 +29,13 @@ endfunction ()
 find_package(CPLEX)
 if (CPLEX_FOUND)
   add_cplex_solver(cplex)
+
+  # Version of CPLEX with SOCP transformations.
+  add_library(socp STATIC socp.cc)
+  target_link_libraries(socp asl)
+  add_cplex_solver(cplex-socp)
+  target_compile_definitions(cplex-socp PRIVATE
+    jac0dim_ASL=socp_jac0dim write_sol_ASL=socp_write_sol
+    qp_read_ASL=socp_qp_read)
+  target_link_libraries(cplex-socp socp)
 endif ()

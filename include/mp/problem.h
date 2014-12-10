@@ -528,8 +528,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     nonlinear_exprs_.push_back(expr);
   }
 
-  // Sets a complementarity relation.
+  // Sets a complementarity condition.
   void SetComplement(int con_index, int var_index, int flags);
+
+  // Returns true if the problem has complementarity conditions.
+  bool HasComplementarity() const {
+    return !compl_vars_.empty();
+  }
 
   // Sets the initial value for a variable.
   void SetInitialValue(int var_index, double value) {
