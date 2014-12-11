@@ -20,6 +20,8 @@
  Author: Victor Zverovich
  */
 
+#include <memory>
+
 #include "mp/expr-visitor.h"
 #include "mp/nl.h"
 #include "mp/problem.h"
@@ -236,14 +238,20 @@ void SOCPConverter::ConvertToASL() {
   builder_.EndBuild();
 }
 
+#ifdef MP_USE_UNIQUE_PTR
+typedef std::unique_ptr<SOCPConverter> ConverterPtr;
+#else
+typedef std::auto_ptr<SOCPConverter> ConverterPtr;
+#endif
+
 extern "C" void *socp_jac0dim(ASL *asl, const char *stub, ftnlen) {
-  SOCPConverter *converter = new SOCPConverter(asl); // TODO: smart pointer
+  ConverterPtr converter(new SOCPConverter(asl));
   converter->Run(stub);
-  return converter;
+  return converter.release();
 }
 
 extern "C" int socp_qp_read(ASL *, void *converter_ptr, int) {
-  SOCPConverter *converter = static_cast<SOCPConverter*>(converter_ptr);
+  ConverterPtr converter(static_cast<SOCPConverter*>(converter_ptr));
   converter->ConvertToASL();
   return 0;
 }
