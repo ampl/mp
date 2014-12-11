@@ -70,12 +70,6 @@ class ExprConverter :
     return builder_.MakeBinary(e.kind(), Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  asl::NumericExpr VisitPow(mp::BinaryExpr e) {
-    mp::NumericConstant rhs = mp::Cast<mp::NumericConstant>(e.rhs());
-    mp::expr::Kind kind = rhs && rhs.value() == 2 ? mp::expr::POW2 : e.kind();
-    return builder_.MakeUnary(kind, Visit(e.lhs()));
-  }
-
   asl::NumericExpr VisitSum(mp::IteratedExpr e) {
     ASLBuilder::NumericExprBuilder sum = builder_.BeginSum(e.num_args());
     for (mp::IteratedExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
@@ -85,7 +79,51 @@ class ExprConverter :
 
   // TODO: convert all expresion kinds
 };
-}  // namespace
+
+template <typename Impl>
+class ExprDetector : public mp::ExprVisitor<Impl, bool> {
+ public:
+  bool VisitUnhandledNumericExpr(mp::NumericExpr) { return false; }
+  bool VisitUnhandledLogicalExpr(mp::LogicalExpr) { return false; }
+};
+
+// Detects an affine expression.
+class AffineExprDetector : public ExprDetector<AffineExprDetector> {
+ public:
+  bool VisitNumericConstant(mp::NumericConstant) { return true; }
+  bool VisitVariable(mp::Variable) { return true; }
+  bool VisitAdd(mp::BinaryExpr e) { return Visit(e.lhs()) && Visit(e.rhs()); }
+
+  // TODO
+};
+
+// Detects a sum of squares.
+class SumOfSquaredsDetector : public ExprDetector<SumOfSquaredsDetector> {
+ public:
+  bool VisitPow2(mp::UnaryExpr e) {
+    return AffineExprDetector().Visit(e.arg());
+  }
+
+  bool VisitAdd(mp::BinaryExpr e) {
+    return Visit(e.lhs()) && Visit(e.rhs());
+  }
+
+  // TODO
+};
+
+// Detects a sum of norms.
+class SumOfNormsDetector : public ExprDetector<SumOfNormsDetector> {
+ public:
+  bool VisitSqrt(mp::UnaryExpr e) {
+    return SumOfSquaredsDetector().Visit(e.arg());
+  }
+
+  bool VisitAdd(mp::BinaryExpr e) {
+    return Visit(e.lhs()) && Visit(e.rhs());
+  }
+
+  // TODO
+};
 
 // Adapts Problem interface for use with .nl reader.
 class ProblemBuilder : public Problem {
@@ -125,11 +163,17 @@ class ProblemBuilder : public Problem {
   ColumnSizeHandler GetColumnSizeHandler() {
     return ColumnSizeHandler();
   }
-};
 
-// Detects if a problem is convertible to an SOCP.
-class SOCPDetector {
- // TODO
+  NumericExpr MakeBinary(mp::expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+    // Translate a POW expression with right-hand side of 2
+    // to a POW2 expression.
+    if (kind == mp::expr::POW) {
+      mp::NumericConstant c = mp::Cast<mp::NumericConstant>(rhs);
+      if (c && c.value() == 2)
+        return MakeUnary(mp::expr::POW2, lhs);
+    }
+    return Problem::MakeBinary(kind, lhs, rhs);
+  }
 };
 
 class SOCPConverter {
@@ -162,6 +206,10 @@ void SOCPConverter::Run(const char *stub) {
     // TODO
     // 1. check if the problem can be converted to SOCP
     // 2. convert to SOCP
+    if (mp::NumericExpr obj_expr = problem_.obj(0).nonlinear_expr()) {
+      SumOfNormsDetector detector;
+      fmt::print("sumofnorms: {}\n", detector.Visit(obj_expr));
+    }
   }
   mp::ProblemInfo info = mp::ProblemInfo();
   info.num_vars = problem_.num_vars();
@@ -243,6 +291,7 @@ typedef std::unique_ptr<SOCPConverter> ConverterPtr;
 #else
 typedef std::auto_ptr<SOCPConverter> ConverterPtr;
 #endif
+}  // namespace
 
 extern "C" void *socp_jac0dim(ASL *asl, const char *stub, ftnlen) {
   ConverterPtr converter(new SOCPConverter(asl));
