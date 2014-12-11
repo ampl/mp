@@ -34,9 +34,71 @@ using asl::internal::ASLBuilder;
 
 using mp::Problem;
 
+namespace mp {
+
+// Returns true if e is a positive constant.
+inline bool IsPosConstant(NumericExpr e) {
+  NumericConstant n = Cast<NumericConstant>(e);
+  return n && n.value() > 0;
+}
+
+// A detector of special forms of expressions.
+template <typename Impl>
+class ExprDetector : public ExprVisitor<Impl, bool> {
+ public:
+  bool VisitUnhandledNumericExpr(NumericExpr) { return false; }
+  bool VisitUnhandledLogicalExpr(LogicalExpr) { return false; }
+};
+
+// A detector of sums of expressions possibly multipled by positive constants.
+template <typename Impl>
+class WeightedSumDetector : public ExprDetector<Impl> {
+ public:
+  bool VisitAdd(BinaryExpr e) {
+    return this->Visit(e.lhs()) && this->Visit(e.rhs());
+  }
+
+  bool VisitMul(BinaryExpr e) {
+    return ((IsPosConstant(e.lhs()) && this->Visit(e.rhs())) ||
+            (this->Visit(e.lhs()) && IsPosConstant(e.rhs())));
+  }
+
+  bool VisitSum(IteratedExpr e) {
+    for (IteratedExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
+      if (!this->Visit(*i))
+        return false;
+    }
+    return true;
+  }
+};
+
+// A detector of affine expressions.
+class AffineExprDetector : public WeightedSumDetector<AffineExprDetector> {
+ public:
+  bool VisitNumericConstant(NumericConstant) { return true; }
+  bool VisitVariable(Variable) { return true; }
+};
+
+// A detector of sums of squares of affine expressions.
+class SumOfSquaresDetector : public WeightedSumDetector<SumOfSquaresDetector> {
+ public:
+  bool VisitPow2(UnaryExpr e) {
+    return AffineExprDetector().Visit(e.arg());
+  }
+};
+
+// A detector of sums of norms.
+class SumOfNormsDetector : public WeightedSumDetector<SumOfNormsDetector> {
+ public:
+  bool VisitSqrt(UnaryExpr e) {
+    return SumOfSquaresDetector().Visit(e.arg());
+  }
+};
+}  // namespace mp
+
 namespace {
 
-// Converts a linear expression.
+// Converts a linear expression into the ASL form.
 // expr: an expression to convert
 // builder: a builder for converted expression
 template <typename LinearExprBuilder>
@@ -45,14 +107,15 @@ void ConvertLinearExpr(mp::LinearExpr expr, LinearExprBuilder builder) {
     builder.AddTerm(i->var_index(), i->coef());
 }
 
-// A nonlinear expression converter.
-class ExprConverter :
-    public mp::ExprVisitor<ExprConverter, asl::NumericExpr, asl::LogicalExpr> {
+// Converts a nonlinear expression into the ASL form.
+class MPToASLExprConverter :
+    public mp::ExprVisitor<MPToASLExprConverter,
+                           asl::NumericExpr, asl::LogicalExpr> {
  private:
   ASLBuilder &builder_;
 
  public:
-  explicit ExprConverter(ASLBuilder &b) : builder_(b) {}
+  explicit MPToASLExprConverter(ASLBuilder &b) : builder_(b) {}
 
   asl::NumericExpr VisitNumericConstant(mp::NumericConstant c) {
     return builder_.MakeNumericConstant(c.value());
@@ -80,46 +143,31 @@ class ExprConverter :
   // TODO: convert all expresion kinds
 };
 
-template <typename Impl>
-class ExprDetector : public mp::ExprVisitor<Impl, bool> {
- public:
-  bool VisitUnhandledNumericExpr(mp::NumericExpr) { return false; }
-  bool VisitUnhandledLogicalExpr(mp::LogicalExpr) { return false; }
-};
+// Converts a sum of norms into the SOCP form.
+class SumOfNormsConverter : public mp::ExprVisitor<SumOfNormsConverter, void> {
+ private:
+  Problem &problem_;
+  Problem::Objective obj_;
+  double coef_;
 
-// Detects an affine expression.
-class AffineExprDetector : public ExprDetector<AffineExprDetector> {
  public:
-  bool VisitNumericConstant(mp::NumericConstant) { return true; }
-  bool VisitVariable(mp::Variable) { return true; }
-  bool VisitAdd(mp::BinaryExpr e) { return Visit(e.lhs()) && Visit(e.rhs()); }
+  SumOfNormsConverter(Problem &p, Problem::Objective obj)
+    : problem_(p), obj_(obj), coef_(1) {}
 
-  // TODO
-};
-
-// Detects a sum of squares.
-class SumOfSquaresDetector : public ExprDetector<SumOfSquaresDetector> {
- public:
-  bool VisitPow2(mp::UnaryExpr e) {
-    return AffineExprDetector().Visit(e.arg());
+  void VisitSqrt(mp::UnaryExpr e) {
+    double inf = std::numeric_limits<double>::infinity();
+    int var_index = problem_.num_vars();
+    problem_.AddVar(0, inf);
+    //obj_.linear_expr().AddTerm(var_index, coef_);
+    mp::Variable y = problem_.MakeVariable(var_index);
+    problem_.AddCon(-inf, 0, problem_.MakeUnary(
+                      mp::expr::MINUS, problem_.MakeUnary(mp::expr::POW2, y)));
+    // y ^ 2 >= e.arg()
   }
 
-  bool VisitAdd(mp::BinaryExpr e) {
-    return Visit(e.lhs()) && Visit(e.rhs());
-  }
-
-  // TODO
-};
-
-// Detects a sum of norms.
-class SumOfNormsDetector : public ExprDetector<SumOfNormsDetector> {
- public:
-  bool VisitSqrt(mp::UnaryExpr e) {
-    return SumOfSquaresDetector().Visit(e.arg());
-  }
-
-  bool VisitAdd(mp::BinaryExpr e) {
-    return Visit(e.lhs()) && Visit(e.rhs());
+  void VisitAdd(mp::BinaryExpr e) {
+    Visit(e.lhs());
+    Visit(e.rhs());
   }
 
   // TODO
@@ -164,7 +212,8 @@ class ProblemBuilder : public Problem {
     return ColumnSizeHandler();
   }
 
-  NumericExpr MakeBinary(mp::expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+  NumericExpr MakeBinary(
+      mp::expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     // Translate a POW expression with right-hand side of 2
     // to a POW2 expression.
     if (kind == mp::expr::POW) {
@@ -184,7 +233,7 @@ class SOCPConverter {
 
   // Converts a nonlinear expression to ASL format.
   asl::NumericExpr Convert(mp::NumericExpr expr) {
-    ExprConverter converter(builder_);
+    MPToASLExprConverter converter(builder_);
     return expr ? converter.Visit(expr) : asl::NumericExpr();
   }
 
@@ -204,8 +253,12 @@ void SOCPConverter::Run(const char *stub) {
   ReadNLFile(fmt::format("{}.nl", stub), adapter);
   if (!problem_.HasComplementarity()) {
     // TODO: check if all the constraints can be converted to SOCP form
-    if (mp::NumericExpr obj_expr = problem_.obj(0).nonlinear_expr()) {
-      if (SumOfNormsDetector().Visit(obj_expr)) {
+    Problem::Objective obj = problem_.obj(0);
+    mp::NumericExpr obj_expr = obj.nonlinear_expr();
+    if (obj.type() == mp::obj::MIN && obj_expr) {
+      if (mp::SumOfNormsDetector().Visit(obj_expr)) {
+        //obj.set_nonlinear_expr(mp::NumericExpr());
+        SumOfNormsConverter(problem_, obj).Visit(obj_expr);
         // TODO: convert to SOCP
       }
     }
@@ -222,11 +275,11 @@ void SOCPConverter::Run(const char *stub) {
 
   // Get algebraic constraint information.
   col_sizes_.resize(info.num_vars);
-  double infinity = std::numeric_limits<double>::infinity();
+  double inf = std::numeric_limits<double>::infinity();
   Problem::AlgebraicConList cons = problem_.algebraic_cons();
   for (Problem::AlgebraicConList::iterator
        i = cons.begin(), end = cons.end(); i != end; ++i) {
-    if (-infinity < i->lb() && i->ub() < infinity)
+    if (-inf < i->lb() && i->ub() < inf)
       ++info.num_ranges;
     if (i->nonlinear_expr())
       ++info.num_nl_cons;
@@ -273,7 +326,7 @@ void SOCPConverter::ConvertToASL() {
   }
 
   // Convert logical constraints.
-  ExprConverter converter(builder_);
+  MPToASLExprConverter converter(builder_);
   Problem::LogicalConList logical_cons = problem_.logical_cons();
   for (Problem::LogicalConList::iterator
        i = logical_cons.begin(), end = logical_cons.end(); i != end; ++i) {
