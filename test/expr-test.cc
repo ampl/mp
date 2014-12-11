@@ -515,11 +515,18 @@ TEST_F(ExprTest, StringLiteral) {
 
 TEST_F(ExprTest, InternalCast) {
   mp::Expr e = factory_.MakeNumericConstant(42);
-  using mp::internal::Cast;
-  Cast<mp::NumericExpr>(e);
-  mp::NumericConstant n = Cast<mp::NumericConstant>(e);
+  mp::internal::Cast<mp::NumericExpr>(e);
+  mp::NumericConstant n = mp::internal::Cast<mp::NumericConstant>(e);
   EXPECT_EQ(42, n.value());
-  EXPECT_ASSERT(Cast<mp::UnaryExpr>(e), "invalid cast");
+  EXPECT_ASSERT(mp::internal::Cast<mp::UnaryExpr>(e), "invalid cast");
+}
+
+TEST_F(ExprTest, Cast) {
+  mp::Expr e = factory_.MakeNumericConstant(42);
+  EXPECT_EQ(e, mp::Cast<mp::NumericExpr>(e));
+  mp::NumericConstant n = mp::Cast<mp::NumericConstant>(e);
+  EXPECT_EQ(42, n.value());
+  EXPECT_EQ(mp::UnaryExpr(), mp::Cast<mp::UnaryExpr>(e));
 }
 
 TEST_F(ExprTest, InvalidCallExprFunction) {

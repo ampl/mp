@@ -176,11 +176,19 @@ class Expr {
 };
 
 template <typename ExprType>
-ExprType internal::Cast(Expr e) {
+inline ExprType internal::Cast(Expr e) {
   MP_ASSERT(Is<ExprType>(e.kind()), "invalid cast");
   ExprType expr;
   expr.impl_ = e.impl_;
   return expr;
+}
+
+// Casts an expression to type ExprType which must be a subclass of Expr.
+// Returns a null expression if e is not of runtime type ExprType.
+template <typename ExprType>
+inline ExprType Cast(Expr e) {
+  return internal::Is<ExprType>(e.kind()) ?
+        internal::Cast<ExprType>(e) : ExprType();
 }
 
 #define MP_EXPR \
