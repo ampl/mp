@@ -98,7 +98,7 @@ class AffineExprDetector : public ExprDetector<AffineExprDetector> {
 };
 
 // Detects a sum of squares.
-class SumOfSquaredsDetector : public ExprDetector<SumOfSquaredsDetector> {
+class SumOfSquaresDetector : public ExprDetector<SumOfSquaresDetector> {
  public:
   bool VisitPow2(mp::UnaryExpr e) {
     return AffineExprDetector().Visit(e.arg());
@@ -115,7 +115,7 @@ class SumOfSquaredsDetector : public ExprDetector<SumOfSquaredsDetector> {
 class SumOfNormsDetector : public ExprDetector<SumOfNormsDetector> {
  public:
   bool VisitSqrt(mp::UnaryExpr e) {
-    return SumOfSquaredsDetector().Visit(e.arg());
+    return SumOfSquaresDetector().Visit(e.arg());
   }
 
   bool VisitAdd(mp::BinaryExpr e) {
@@ -203,12 +203,11 @@ void SOCPConverter::Run(const char *stub) {
   mp::ProblemBuilderToNLAdapter<ProblemBuilder> adapter(problem_);
   ReadNLFile(fmt::format("{}.nl", stub), adapter);
   if (!problem_.HasComplementarity()) {
-    // TODO
-    // 1. check if the problem can be converted to SOCP
-    // 2. convert to SOCP
+    // TODO: check if all the constraints can be converted to SOCP form
     if (mp::NumericExpr obj_expr = problem_.obj(0).nonlinear_expr()) {
-      SumOfNormsDetector detector;
-      fmt::print("sumofnorms: {}\n", detector.Visit(obj_expr));
+      if (SumOfNormsDetector().Visit(obj_expr)) {
+        // TODO: convert to SOCP
+      }
     }
   }
   mp::ProblemInfo info = mp::ProblemInfo();
