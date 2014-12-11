@@ -194,8 +194,13 @@ TEST(LocalSolverTest, VerbosityOption) {
   }
 
   // Test that value is passed to LocalSolver.
+  solver.SetStrOption("verbosity", "detailed");
+  EXPECT_EQ(10, GetOption(solver, IntOption(&LSParam::getVerbosity)));
+
+  // Normal verbosity triggers custom output and the LocalSolver output
+  // is disabled (verbosity = 0).
   solver.SetStrOption("verbosity", "normal");
-  EXPECT_EQ(1, GetOption(solver, IntOption(&LSParam::getVerbosity)));
+  EXPECT_EQ(0, GetOption(solver, IntOption(&LSParam::getVerbosity)));
 
   EXPECT_THROW(solver.SetDblOption("verbosity", 1.2), mp::OptionError);
   EXPECT_THROW(solver.SetStrOption("verbosity", "oops"),
