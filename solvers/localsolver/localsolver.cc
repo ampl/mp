@@ -28,9 +28,11 @@
 
 namespace {
 
+enum { NORMAL_VERBOSITY = 1 };
+
 const mp::OptionValueInfo VERBOSITIES[] = {
-  {"quiet", "All the traces are disabled (default).", 0},
-  {"normal", "Normal verbosity.", 1},
+  {"quiet",  "All the traces are disabled (default).", 0},
+  {"normal", "Normal verbosity.", NORMAL_VERBOSITY},
   {"detailed",
    "Detailed verbosity. Displays extended statistics on the model.", 10}
 };
@@ -484,12 +486,15 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
     }
   }
 
+  int verbosity = options_[VERBOSITY];
+  bool custom_output = verbosity == NORMAL_VERBOSITY;
+
   // Set options. LS requires this to be done after the model is closed.
   ls::LSParam param = solver.getParam();
   param.setSeed(options_[SEED]);
   param.setNbThreads(options_[THREADS]);
   param.setAnnealingLevel(options_[ANNEALING_LEVEL]);
-  param.setVerbosity(options_[VERBOSITY]);
+  param.setVerbosity(custom_output ? 0 : verbosity);
   param.setTimeBetweenDisplays(options_[TIME_BETWEEN_DISPLAYS]);
   if (!logfile_.empty())
     param.setLogFile(logfile_);
@@ -499,8 +504,11 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   interrupter()->SetHandler(StopSolver, &solver);
 
   struct Callback {
-    ls::LocalSolver &solver;
+    LocalSolver &solver;
+    ls::LocalSolver &ls_solver;
     ls::LSExpression obj;
+    bool custom_output;
+    bool print_header;
 
     // The best objective value found so far, multiplied by obj_sign.
     double adjusted_obj_value;
@@ -509,12 +517,14 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
     int seconds_to_best_obj;
     fmt::LongLong iters_to_best_obj;
 
-    explicit Callback(ls::LocalSolver &s)
-      : solver(s), adjusted_obj_value(std::numeric_limits<double>::infinity()),
+    Callback(LocalSolver &s, ls::LocalSolver &ls_solver, bool custom_output)
+      : solver(s), ls_solver(ls_solver),
+        custom_output(custom_output), print_header(true),
+        adjusted_obj_value(std::numeric_limits<double>::infinity()),
         seconds_passed(0), seconds_to_best_obj(0), iters_to_best_obj(0) {
-      obj_sign = s.getModel().getObjectiveDirection(0) == ls::OD_Minimize ?
-            1 : -1;
-      obj = solver.getModel().getObjective(0);
+      ls::LSModel model = ls_solver.getModel();
+      obj_sign = model.getObjectiveDirection(0) == ls::OD_Minimize ? 1 : -1;
+      obj = model.getObjective(0);
     }
 
     static void Call(ls::LSCallbackType, void *data) {
@@ -522,19 +532,31 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
     }
 
     void Call() {
-      // TODO: output header
       ++seconds_passed;
       double obj_value = obj.isDouble() ? obj.getDoubleValue() : obj.getValue();
-      ls::LSStatistics stats = solver.getStatistics();
-      fmt::LongLong num_iters = stats.getNbIterations();
-      fmt::print("{} {} {}\n", obj_value, num_iters, stats.getNbMoves());
+      ls::LSStatistics stats = ls_solver.getStatistics();
+      if (custom_output) {
+        if (print_header) {
+          print_header = false;
+          solver.Print(
+                "\n"
+                "                    |                Moves               |\n"
+                "    Time       Iter |    Total  Infeas  Accepted  Improv |"
+                "    Obj\n");
+        }
+        solver.Print("{:7}s {:10} {:10}  {:5.1f}%  {:5.1f}%{:10}   {:6}\n",
+                     seconds_passed, stats.getNbIterations(),
+                     stats.getNbMoves(), stats.getPercentInfeasibleMoves(),
+                     stats.getPercentAcceptedMoves(),
+                     stats.getNbImprovingMoves(), obj_value);
+      }
       if (obj_sign * obj_value < adjusted_obj_value) {
         seconds_to_best_obj = seconds_passed;
-        iters_to_best_obj = num_iters;
+        iters_to_best_obj = stats.getNbIterations();
         adjusted_obj_value = obj_sign * obj_value;
       }
     }
-  } callback(solver);
+  } callback(*this, solver, custom_output);
   solver.addCallback(ls::CT_Ticked, &Callback::Call, &callback);
 
   double setup_time = GetTimeAndReset(time);
@@ -542,8 +564,8 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   // Solve the problem.
   DoSolve(solver);
 
-  fmt::print("Best solution found at {} second(s) and {} iteration(s)\n",
-             callback.seconds_to_best_obj, callback.iters_to_best_obj);
+  Print("\nBest solution found at {} second(s) and {} iteration(s)\n",
+        callback.seconds_to_best_obj, callback.iters_to_best_obj);
 
   // Convert solution status.
   int solve_code = sol::UNKNOWN;
