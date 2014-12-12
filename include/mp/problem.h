@@ -143,6 +143,12 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     MP_ASSERT(0 <= index && index < size, "invalid index");
   }
 
+  void SetNonlinearObjExpr(int obj_index, NumericExpr expr) {
+    if (nonlinear_objs_.size() <= obj_index)
+      nonlinear_objs_.resize(obj_index + 1);
+    nonlinear_objs_[obj_index] = expr;
+  }
+
   // A list of problem elements.
   template <typename T>
   class List {
@@ -230,12 +236,61 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     return SuffixHandler<T>(&suffix);
   }
 
-  struct ProblemItem {
-    const BasicProblem *problem_;
+  template <typename ProblemType>
+  struct BasicProblemItem {
+    ProblemType *problem_;
     int index_;
 
-    ProblemItem(const BasicProblem *p, int index)
+    typedef ProblemType Problem;
+
+    BasicProblemItem(ProblemType *p, int index)
       : problem_(p), index_(index) {}
+  };
+
+  typedef BasicProblemItem<const BasicProblem> ProblemItem;
+  typedef BasicProblemItem<BasicProblem> MutProblemItem;
+
+  // An objective.
+  template <typename Item>
+  class BasicObjective : private Item {
+   private:
+    friend class BasicProblem;
+    friend class MutObjective;
+
+    BasicObjective(typename Item::Problem *p, int index) : Item(p, index) {}
+
+    static int num_items(const BasicProblem &p) {
+      return p.num_objs();
+    }
+
+   public:
+    // Returns the type of the objective.
+    obj::Type type() const {
+      return this->problem_->is_obj_max_[this->index_] ? obj::MAX : obj::MIN;
+    }
+
+    // Returns the linear part of the objective expression.
+    const LinearExpr &linear_expr() const {
+      return this->problem_->linear_objs_[this->index_];
+    }
+
+    // Returns the nonlinear part of the objective expression.
+    NumericExpr nonlinear_expr() const {
+      return this->index_ < this->problem_->nonlinear_objs_.size() ?
+            this->problem_->nonlinear_objs_[this->index_] : NumericExpr();
+    }
+
+    template <typename OtherItem>
+    bool operator==(BasicObjective<OtherItem> other) const {
+      MP_ASSERT(this->problem_ == other.problem_,
+                "comparing objectives from different problems");
+      return this->index_ == other.index_;
+    }
+
+    template <typename OtherItem>
+    bool operator!=(BasicObjective<OtherItem> other) const {
+      return !(*this == other);
+    }
   };
 
  public:
@@ -317,40 +372,29 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
   // An objective.
-  class Objective : private ProblemItem {
+  typedef BasicObjective<ProblemItem> Objective;
+
+  // A mutable objective.
+  class MutObjective : public BasicObjective<MutProblemItem> {
    private:
     friend class BasicProblem;
 
-    Objective(const BasicProblem *p, int index) : ProblemItem(p, index) {}
-
-    static int num_items(const BasicProblem &p) {
-      return p.num_objs();
-    }
+    MutObjective(BasicProblem *p, int index)
+      : BasicObjective<MutProblemItem>(p, index) {}
 
    public:
-    // Returns the type of the objective.
-    obj::Type type() const {
-      return this->problem_->is_obj_max_[this->index_] ? obj::MAX : obj::MIN;
+    operator Objective() const {
+      return Objective(this->problem_, this->index_);
     }
 
-    // Returns the linear part of an objective expression.
-    const LinearExpr &linear_expr() const {
+    // Returns the linear part of the objective expression.
+    LinearExpr &linear_expr() const {
       return this->problem_->linear_objs_[this->index_];
     }
 
-    // Returns the nonlinear part of an objective expression.
-    NumericExpr nonlinear_expr() const {
-      return this->index_ < this->problem_->nonlinear_objs_.size() ?
-            this->problem_->nonlinear_objs_[this->index_] : NumericExpr();
-    }
-
-    bool operator==(Objective other) const {
-      MP_ASSERT(this->problem_ == other.problem_,
-                "comparing objectives from different problems");
-      return this->index_ == other.index_;
-    }
-    bool operator!=(Objective other) const {
-      return !(*this == other);
+    // Sets the nonlinear part of the objective expression.
+    void set_nonlinear_expr(NumericExpr expr) const {
+      this->problem_->SetNonlinearObjExpr(this->index_, expr);
     }
   };
 
@@ -368,6 +412,12 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   Objective obj(int index) const {
     CheckIndex(index, num_objs());
     return Objective(this, index);
+  }
+
+  // Returns the mutable objective at the specified index.
+  MutObjective obj(int index) {
+    CheckIndex(index, num_objs());
+    return MutObjective(this, index);
   }
 
   class LinearExprBuilder {
@@ -605,13 +655,8 @@ typename BasicProblem<Alloc>::LinearObjBuilder BasicProblem<Alloc>::AddObj(
   linear_objs_.push_back(LinearExpr());
   LinearExpr &linear_expr = linear_objs_.back();
   linear_expr.Reserve(num_linear_terms);
-  if (expr) {
-    if (nonlinear_objs_.empty()) {
-      nonlinear_objs_.reserve(linear_objs_.capacity());
-      nonlinear_objs_.resize(linear_objs_.size() - 1);
-    }
-    nonlinear_objs_.push_back(expr);
-  }
+  if (expr)
+    SetNonlinearObjExpr(linear_objs_.size() - 1, expr);
   return LinearObjBuilder(&linear_expr);
 }
 
