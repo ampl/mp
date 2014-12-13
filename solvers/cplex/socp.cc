@@ -73,6 +73,7 @@ class WeightedSumDetector : public ExprDetector<Impl> {
 };
 
 // A detector of affine expressions.
+// TODO: allow multiplication by any constant, not only positive
 class AffineExprDetector : public WeightedSumDetector<AffineExprDetector> {
  public:
   bool VisitNumericConstant(NumericConstant) { return true; }
@@ -81,17 +82,126 @@ class AffineExprDetector : public WeightedSumDetector<AffineExprDetector> {
 
 // A detector of sums of squares of affine expressions.
 class SumOfSquaresDetector : public WeightedSumDetector<SumOfSquaresDetector> {
+ private:
+  // The number of quadratic terms.
+  int num_terms_;
+
  public:
+  SumOfSquaresDetector() : num_terms_(0) {}
+
+  int num_terms() const { return num_terms_; }
+
   bool VisitPow2(UnaryExpr e) {
+    ++num_terms_;
     return AffineExprDetector().Visit(e.arg());
   }
 };
 
 // A detector of sums of norms.
 class SumOfNormsDetector : public WeightedSumDetector<SumOfNormsDetector> {
+ private:
+  // The number of quadratic terms in each sqrt expression.
+  std::vector<int> num_terms_;
+
  public:
+  const int *num_terms() const { return &num_terms_[0]; }
+
   bool VisitSqrt(UnaryExpr e) {
-    return SumOfSquaresDetector().Visit(e.arg());
+    SumOfSquaresDetector detector;
+    if (!detector.Visit(e.arg()))
+      return false;
+    num_terms_.push_back(detector.num_terms());
+    return true;
+  }
+};
+
+template <typename Impl>
+class SumConverter : public ExprVisitor<Impl, void> {
+ private:
+  Problem &problem_;
+  double coef_;
+
+ public:
+  explicit SumConverter(Problem &p) : problem_(p), coef_(1) {}
+
+  double coef() const { return coef_; }
+  Problem &problem() { return problem_; }
+
+  void VisitAdd(BinaryExpr e) {
+    this->Visit(e.lhs());
+    this->Visit(e.rhs());
+  }
+
+  // TODO: handle SUM and MUL
+};
+
+class AffineExprConverter : public SumConverter<AffineExprConverter> {
+ private:
+  Problem::LinearConBuilder &builder_;
+  double constant_;
+
+ public:
+  explicit AffineExprConverter(Problem &p, Problem::LinearConBuilder &b)
+    : SumConverter<AffineExprConverter>(p), builder_(b) {}
+
+  void VisitNumericConstant(NumericConstant n) {
+    constant_ += coef() * n.value();
+  }
+
+  void VisitVariable(Variable v) {
+    builder_.AddTerm(v.index(), coef());
+  }
+
+  // TODO
+};
+
+class SumOfSquaresConverter : public SumConverter<SumOfSquaresConverter> {
+ private:
+  Problem::IteratedExprBuilder &sum_;
+
+ public:
+  explicit SumOfSquaresConverter(Problem &p, Problem::IteratedExprBuilder &sum)
+  : SumConverter<SumOfSquaresConverter>(p), sum_(sum) {}
+
+  void VisitPow2(UnaryExpr e) {
+    Problem &p = problem();
+    double inf = std::numeric_limits<double>::infinity();
+    Problem::Variable var = p.AddVar(-inf, inf);
+    NumericExpr term = p.MakeUnary(expr::POW2, p.MakeVariable(var.index()));
+    if (coef() != 1)
+      term = p.MakeBinary(expr::MUL, p.MakeNumericConstant(coef()), term);
+    sum_.AddArg(term);
+    Problem::LinearConBuilder con = p.AddCon(0, 0);
+    //AffineExprConverter(p, con).Visit(e.arg());
+    //con.AddTerm(var.index(), -1);
+  }
+};
+
+// Converts a sum of norms into the SOCP form.
+class SumOfNormsConverter : public SumConverter<SumOfNormsConverter> {
+ private:
+  Problem::MutObjective obj_;
+  const int *num_terms_;
+  int term_index_;
+
+ public:
+  SumOfNormsConverter(
+      Problem &p, Problem::MutObjective obj, const int *num_terms)
+    : SumConverter<SumOfNormsConverter>(p), obj_(obj),
+      num_terms_(num_terms), term_index_(0) {}
+
+  void VisitSqrt(UnaryExpr e) {
+    Problem &p = problem();
+    double inf = std::numeric_limits<double>::infinity();
+    Problem::Variable var = p.AddVar(0, inf);
+    obj_.linear_expr().AddTerm(var.index(), coef());
+    Problem::IteratedExprBuilder sum =
+        p.BeginIterated(expr::SUM, num_terms_[term_index_++] + 1);
+    SumOfSquaresConverter(p, sum).Visit(e.arg());
+    UnaryExpr term = p.MakeUnary(
+          expr::MINUS, p.MakeUnary(expr::POW2, p.MakeVariable(var.index())));
+    sum.AddArg(term);
+    p.AddCon(-inf, 0, p.EndIterated(sum));
   }
 };
 }  // namespace mp
@@ -141,36 +251,6 @@ class MPToASLExprConverter :
   }
 
   // TODO: convert all expresion kinds
-};
-
-// Converts a sum of norms into the SOCP form.
-class SumOfNormsConverter : public mp::ExprVisitor<SumOfNormsConverter, void> {
- private:
-  Problem &problem_;
-  Problem::Objective obj_;
-  double coef_;
-
- public:
-  SumOfNormsConverter(Problem &p, Problem::Objective obj)
-    : problem_(p), obj_(obj), coef_(1) {}
-
-  void VisitSqrt(mp::UnaryExpr e) {
-    double inf = std::numeric_limits<double>::infinity();
-    int var_index = problem_.num_vars();
-    problem_.AddVar(0, inf);
-    //obj_.linear_expr().AddTerm(var_index, coef_);
-    mp::Variable y = problem_.MakeVariable(var_index);
-    problem_.AddCon(-inf, 0, problem_.MakeUnary(
-                      mp::expr::MINUS, problem_.MakeUnary(mp::expr::POW2, y)));
-    // y ^ 2 >= e.arg()
-  }
-
-  void VisitAdd(mp::BinaryExpr e) {
-    Visit(e.lhs());
-    Visit(e.rhs());
-  }
-
-  // TODO
 };
 
 // Adapts Problem interface for use with .nl reader.
@@ -253,12 +333,14 @@ void SOCPConverter::Run(const char *stub) {
   ReadNLFile(fmt::format("{}.nl", stub), adapter);
   if (!problem_.HasComplementarity()) {
     // TODO: check if all the constraints can be converted to SOCP form
-    Problem::Objective obj = problem_.obj(0);
+    Problem::MutObjective obj = problem_.obj(0);
     mp::NumericExpr obj_expr = obj.nonlinear_expr();
     if (obj.type() == mp::obj::MIN && obj_expr) {
-      if (mp::SumOfNormsDetector().Visit(obj_expr)) {
-        //obj.set_nonlinear_expr(mp::NumericExpr());
-        SumOfNormsConverter(problem_, obj).Visit(obj_expr);
+      mp::SumOfNormsDetector detector;
+      if (detector.Visit(obj_expr)) {
+        obj.set_nonlinear_expr(mp::NumericExpr());
+        mp::SumOfNormsConverter(
+              problem_, obj, detector.num_terms()).Visit(obj_expr);
         // TODO: convert to SOCP
       }
     }
