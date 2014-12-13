@@ -322,6 +322,9 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
 
    public:
+    // Returns the index of the variable.
+    int index() { return this->index_; }
+
     // Returns the lower bound on the variable.
     double lb() const {
       return this->problem_->vars_[this->index_].lb;
@@ -365,10 +368,12 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
   // Adds a variable.
-  void AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
-    MP_ASSERT(vars_.size() < MP_MAX_PROBLEM_ITEMS, "too many variables");
+  Variable AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
+    int index = vars_.size();
+    MP_ASSERT(index < MP_MAX_PROBLEM_ITEMS, "too many variables");
     vars_.push_back(Var(lb, ub));
     is_var_int_.push_back(type != var::CONTINUOUS);
+    return Variable(this, index);
   }
 
   // An objective.
