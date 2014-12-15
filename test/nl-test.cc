@@ -553,7 +553,7 @@ class TestNLHandler {
     return fmt::format("{}", value);
   }
 
-  std::string OnVariable(int index) {
+  std::string OnVariableRef(int index) {
     return fmt::format("v{}", index);
   }
 
@@ -822,7 +822,7 @@ struct TestNLHandler2 {
   }
 
   TestNumericExpr OnNumericConstant(double) { return TestNumericExpr(); }
-  TestVariable OnVariable(int) { return TestVariable(); }
+  TestVariable OnVariableRef(int) { return TestVariable(); }
   TestNumericExpr OnCommonExprRef(int) { return TestNumericExpr(); }
   TestNumericExpr OnUnary(expr::Kind, TestNumericExpr) {
     return TestNumericExpr();
@@ -1337,7 +1337,7 @@ TEST(NLProblemBuilderTest, Forward) {
 
   EXPECT_FORWARD_RET(OnNumericConstant, MakeNumericConstant,
                      (2.2), TestNumericExpr(ID));
-  EXPECT_FORWARD_RET(OnVariable, MakeVariable, (33), TestVariable(ID));
+  EXPECT_FORWARD_RET(OnVariableRef, MakeVariable, (33), TestVariable(ID));
   EXPECT_FORWARD_RET(OnCommonExprRef, MakeCommonExpr, (33), TestVariable(ID));
   EXPECT_FORWARD_RET(OnUnary, MakeUnary, (expr::ABS, TestNumericExpr(ID)),
                      TestNumericExpr(ID2));

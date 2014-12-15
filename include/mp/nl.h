@@ -307,8 +307,8 @@ class NLHandler {
     return NumericExpr();
   }
 
-  // Receives notification of a variable in a nonlinear expression.
-  Variable OnVariable(int var_index) {
+  // Receives notification of a variable reference.
+  Variable OnVariableRef(int var_index) {
     MP_UNUSED(var_index);
     return Variable();
   }
@@ -684,7 +684,7 @@ class ProblemBuilderToNLAdapter {
   }
 
   // Receives notification of a variable in a nonlinear expression.
-  Variable OnVariable(int var_index) {
+  Variable OnVariableRef(int var_index) {
     return builder_.MakeVariable(var_index);
   }
 
@@ -1117,7 +1117,7 @@ class NLReader {
     int index = ReadUInt(num_vars_and_exprs_);
     reader_.ReadTillEndOfLine();
     return index < header_.num_vars ?
-          handler_.OnVariable(index) :
+          handler_.OnVariableRef(index) :
           handler_.OnCommonExprRef(index - header_.num_vars);
   }
 
