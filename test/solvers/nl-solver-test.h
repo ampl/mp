@@ -94,7 +94,7 @@ class NLSolverTest : public ::testing::Test {
   typedef Solver::ProblemBuilder ProblemBuilder;
   typedef ProblemBuilder::NumericExpr NumericExpr;
   typedef ProblemBuilder::LogicalExpr LogicalExpr;
-  typedef ProblemBuilder::Variable Variable;
+  typedef ProblemBuilder::Reference Reference;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(NLSolverTest);
 
@@ -113,7 +113,7 @@ class NLSolverTest : public ::testing::Test {
 
   class ExprFactory {
    protected:
-    mutable Variable x, y, z;
+    mutable Reference x, y, z;
     mutable NumericExpr one;
 
     void Init(ProblemBuilder &pb) const {

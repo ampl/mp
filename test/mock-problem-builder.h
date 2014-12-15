@@ -52,7 +52,7 @@ typedef BasicTestExpr<0> TestExpr;
 typedef BasicTestExpr<1> TestNumericExpr;
 typedef BasicTestExpr<2> TestLogicalExpr;
 
-struct TestVariable : TestNumericExpr { DEFINE_ID(TestVariable); };
+struct TestReference : TestNumericExpr { DEFINE_ID(TestReference); };
 struct TestCountExpr : TestNumericExpr { DEFINE_ID(TestCountExpr); };
 
 template <int I>
@@ -110,7 +110,7 @@ class MockProblemBuilder {
   typedef TestNumericExpr NumericExpr;
   typedef TestLogicalExpr LogicalExpr;
   typedef TestCountExpr CountExpr;
-  typedef TestVariable Variable;
+  typedef TestReference Reference;
 
   MockProblemBuilder() {}
 
@@ -180,8 +180,8 @@ class MockProblemBuilder {
   typedef TestNumericExprBuilder NumericExprBuilder;
 
   MOCK_METHOD1(MakeNumericConstant, NumericExpr (double value));
-  MOCK_METHOD1(MakeVariable, Variable (int var_index));
-  MOCK_METHOD1(MakeCommonExpr, NumericExpr (int index));
+  MOCK_METHOD1(MakeVariable, Reference (int var_index));
+  MOCK_METHOD1(MakeCommonExpr, Reference (int index));
   MOCK_METHOD2(MakeUnary, NumericExpr (mp::expr::Kind kind, NumericExpr arg));
   MOCK_METHOD3(MakeBinary,
                NumericExpr (mp::expr::Kind kind,

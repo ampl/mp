@@ -265,7 +265,7 @@ class ProblemBuilder : public Problem {
   typedef mp::NumericExpr NumericExpr;
   typedef mp::LogicalExpr LogicalExpr;
   typedef mp::CountExpr CountExpr;
-  typedef mp::Reference Variable;
+  typedef mp::Reference Reference;
 
   typedef IteratedExprBuilder NumericExprBuilder;
   typedef IteratedExprBuilder VarArgExprBuilder;

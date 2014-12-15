@@ -185,21 +185,12 @@ TEST_F(ExprTest, TooManySlopes) {
   EXPECT_ASSERT(builder.AddSlope(2), "too many slopes");
 }
 
-TEST_F(ExprTest, NullPLTermArgument) {
-  auto builder = factory_.BeginPLTerm(1);
-  builder.AddSlope(0);
-  builder.AddBreakpoint(0);
-  builder.AddSlope(1);
-  EXPECT_ASSERT(factory_.EndPLTerm(builder, mp::Reference()),
-                "invalid argument");
-}
-
 TEST_F(ExprTest, InvalidPLTermArgument) {
   auto builder = factory_.BeginPLTerm(1);
   builder.AddSlope(0);
   builder.AddBreakpoint(0);
   builder.AddSlope(1);
-  EXPECT_ASSERT(factory_.EndPLTerm(builder, factory_.MakeNumericConstant(0)),
+  EXPECT_ASSERT(factory_.EndPLTerm(builder, mp::Reference()),
                 "invalid argument");
 }
 

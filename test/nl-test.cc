@@ -417,7 +417,7 @@ class TestNLHandler {
   typedef std::string NumericExpr;
   typedef std::string LogicalExpr;
   typedef std::string CountExpr;
-  typedef std::string Variable;
+  typedef std::string Reference;
 
   void OnHeader(const NLHeader &) { log.clear(); }
 
@@ -752,7 +752,7 @@ TEST(NLTest, WriteBinaryHeader) {
 struct TestNLHandler2 {
   typedef struct TestExpr {} Expr;
   typedef struct TestNumericExpr : TestExpr {} NumericExpr;
-  typedef struct TestVariable : TestNumericExpr {} Variable;
+  typedef struct TestReference : TestNumericExpr {} Reference;
   typedef struct TestCountExpr : TestNumericExpr {} CountExpr;
   typedef struct TestLogicalExpr : TestExpr {} LogicalExpr;
 
@@ -822,8 +822,8 @@ struct TestNLHandler2 {
   }
 
   TestNumericExpr OnNumericConstant(double) { return TestNumericExpr(); }
-  TestVariable OnVariableRef(int) { return TestVariable(); }
-  TestNumericExpr OnCommonExprRef(int) { return TestNumericExpr(); }
+  TestReference OnVariableRef(int) { return TestReference(); }
+  TestReference OnCommonExprRef(int) { return TestReference(); }
   TestNumericExpr OnUnary(expr::Kind, TestNumericExpr) {
     return TestNumericExpr();
   }
@@ -1337,8 +1337,8 @@ TEST(NLProblemBuilderTest, Forward) {
 
   EXPECT_FORWARD_RET(OnNumericConstant, MakeNumericConstant,
                      (2.2), TestNumericExpr(ID));
-  EXPECT_FORWARD_RET(OnVariableRef, MakeVariable, (33), TestVariable(ID));
-  EXPECT_FORWARD_RET(OnCommonExprRef, MakeCommonExpr, (33), TestVariable(ID));
+  EXPECT_FORWARD_RET(OnVariableRef, MakeVariable, (33), TestReference(ID));
+  EXPECT_FORWARD_RET(OnCommonExprRef, MakeCommonExpr, (33), TestReference(ID));
   EXPECT_FORWARD_RET(OnUnary, MakeUnary, (expr::ABS, TestNumericExpr(ID)),
                      TestNumericExpr(ID2));
   EXPECT_FORWARD_RET(OnBinary, MakeBinary,
@@ -1350,7 +1350,7 @@ TEST(NLProblemBuilderTest, Forward) {
 
   EXPECT_FORWARD_RET(BeginPLTerm, BeginPLTerm, (44), TestPLTermBuilder(ID));
   EXPECT_FORWARD_RET(EndPLTerm, EndPLTerm,
-                     (TestPLTermBuilder(ID), TestVariable(ID2)),
+                     (TestPLTermBuilder(ID), TestReference(ID2)),
                      TestNumericExpr(ID3));
 
   EXPECT_FORWARD_RET(BeginVarArg, BeginVarArg, (expr::MAX, 77),

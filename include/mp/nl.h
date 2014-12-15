@@ -165,7 +165,7 @@ class NLHandler {
   typedef Expr NumericExpr;
   typedef Expr LogicalExpr;
   typedef Expr CountExpr;
-  typedef Expr Variable;
+  typedef Expr Reference;
 
   // Receives notification of an .nl header.
   void OnHeader(const NLHeader &h) { MP_UNUSED(h); }
@@ -308,15 +308,15 @@ class NLHandler {
   }
 
   // Receives notification of a variable reference.
-  Variable OnVariableRef(int var_index) {
+  Reference OnVariableRef(int var_index) {
     MP_UNUSED(var_index);
-    return Variable();
+    return Reference();
   }
 
   // Receives notification of a common expression (defined variable) reference.
-  NumericExpr OnCommonExprRef(int index) {
+  Reference OnCommonExprRef(int index) {
     MP_UNUSED(index);
-    return NumericExpr();
+    return Reference();
   }
 
   // Receives notification of a unary expression.
@@ -349,8 +349,8 @@ class NLHandler {
     return PLTermHandler();
   }
   // Receives notification of the end of a piecewise-linear term.
-  // arg: argument that should be either a variable or a common expression.
-  NumericExpr EndPLTerm(PLTermHandler handler, NumericExpr arg) {
+  // arg: argument that is a variable or a common expression reference.
+  NumericExpr EndPLTerm(PLTermHandler handler, Reference arg) {
     MP_UNUSED2(handler, arg);
     return NumericExpr();
   }
@@ -490,7 +490,7 @@ class ProblemBuilderToNLAdapter {
   typedef typename ProblemBuilder::NumericExpr NumericExpr;
   typedef typename ProblemBuilder::LogicalExpr LogicalExpr;
   typedef typename ProblemBuilder::CountExpr CountExpr;
-  typedef typename ProblemBuilder::Variable Variable;
+  typedef typename ProblemBuilder::Reference Reference;
 
  private:
   ProblemBuilder &builder_;
@@ -684,12 +684,12 @@ class ProblemBuilderToNLAdapter {
   }
 
   // Receives notification of a variable in a nonlinear expression.
-  Variable OnVariableRef(int var_index) {
+  Reference OnVariableRef(int var_index) {
     return builder_.MakeVariable(var_index);
   }
 
   // Receives notification of a common expression (defined variable) reference.
-  NumericExpr OnCommonExprRef(int expr_index) {
+  Reference OnCommonExprRef(int expr_index) {
     return builder_.MakeCommonExpr(expr_index);
   }
 
@@ -716,7 +716,7 @@ class ProblemBuilderToNLAdapter {
     return builder_.BeginPLTerm(num_breakpoints);
   }
   // Receives notification of the end of a piecewise-linear term.
-  NumericExpr EndPLTerm(PLTermHandler handler, NumericExpr arg) {
+  NumericExpr EndPLTerm(PLTermHandler handler, Reference arg) {
     return builder_.EndPLTerm(handler, arg);
   }
 
@@ -1078,7 +1078,7 @@ class NLReader {
 
   typedef typename Handler::NumericExpr NumericExpr;
   typedef typename Handler::LogicalExpr LogicalExpr;
-  typedef typename Handler::Variable Variable;
+  typedef typename Handler::Reference Reference;
 
   double ReadConstant(char code);
   double ReadConstant() { return ReadConstant(reader_.ReadChar()); }
@@ -1113,7 +1113,8 @@ class NLReader {
     return num_args;
   }
 
-  NumericExpr DoReadVariable() {
+  // Reads a variable or a common expression reference.
+  Reference DoReadReference() {
     int index = ReadUInt(num_vars_and_exprs_);
     reader_.ReadTillEndOfLine();
     return index < header_.num_vars ?
@@ -1121,10 +1122,11 @@ class NLReader {
           handler_.OnCommonExprRef(index - header_.num_vars);
   }
 
-  NumericExpr ReadVariable() {
+  // Reads a variable or a common expression reference.
+  Reference ReadReference() {
     if (reader_.ReadChar() != 'v')
       reader_.ReportError("expected variable");
-    return DoReadVariable();
+    return DoReadReference();
   }
 
   template <typename ExprReader, typename ArgHandler>
@@ -1384,7 +1386,7 @@ typename Handler::NumericExpr
   case 'o':
     return ReadNumericExpr(ReadOpCode());
   case 'v':
-    return DoReadVariable();
+    return DoReadReference();
   default:
     reader_.ReportError("expected expression");
   }
@@ -1421,7 +1423,7 @@ typename Handler::NumericExpr
       pl_handler.AddBreakpoint(ReadConstant());
     }
     pl_handler.AddSlope(ReadConstant());
-    return handler_.EndPLTerm(pl_handler, ReadVariable());
+    return handler_.EndPLTerm(pl_handler, ReadReference());
   }
   case expr::FIRST_VARARG: {
     int num_args = ReadNumArgs(1);

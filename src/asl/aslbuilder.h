@@ -223,7 +223,7 @@ class ASLBuilder {
   typedef asl::Expr Expr;
   typedef asl::NumericExpr NumericExpr;
   typedef asl::LogicalExpr LogicalExpr;
-  typedef asl::Variable Variable;
+  typedef asl::Variable Reference;
   typedef asl::CountExpr CountExpr;
 
   explicit ASLBuilder(ASL *asl = 0) { Init(asl); }

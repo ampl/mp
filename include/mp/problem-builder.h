@@ -53,7 +53,7 @@ class ProblemBuilder : public SuffixManager {
   typedef Expr NumericExpr;
   typedef Expr LogicalExpr;
   typedef Expr CountExpr;
-  typedef Expr Variable;
+  typedef Expr Reference;
 
   static void ReportUnhandledConstruct(fmt::StringRef name) {
     throw MakeUnsupportedError(name);
@@ -179,10 +179,10 @@ class ProblemBuilder : public SuffixManager {
     return NumericExpr();
   }
 
-  Variable MakeVariable(int var_index) {
+  Reference MakeVariable(int var_index) {
     MP_UNUSED(var_index);
     MP_DISPATCH(ReportUnhandledConstruct("variable in nonlinear expression"));
-    return Variable();
+    return Reference();
   }
 
   NumericExpr MakeUnary(expr::Kind kind, NumericExpr arg) {
@@ -214,8 +214,8 @@ class ProblemBuilder : public SuffixManager {
     MP_DISPATCH(ReportUnhandledConstruct("piecewise-linear term"));
     return PLTermBuilder();
   }
-  NumericExpr EndPLTerm(PLTermBuilder builder, Variable var) {
-    MP_UNUSED2(builder, var);
+  NumericExpr EndPLTerm(PLTermBuilder builder, Reference arg) {
+    MP_UNUSED2(builder, arg);
     MP_DISPATCH(ReportUnhandledConstruct("piecewise-linear term"));
     return NumericExpr();
   }
