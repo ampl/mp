@@ -327,6 +327,20 @@ class ASLProblem {
     return ubs ? ubs[index] : lbs[index * 2 + 1];
   }
 
+  template <typename ProblemType>
+  struct BasicProblemItem {
+    ProblemType *problem_;
+    int index_;
+
+    typedef ProblemType Problem;
+
+    BasicProblemItem(ProblemType *p, int index)
+      : problem_(p), index_(index) {}
+  };
+
+  typedef BasicProblemItem<const ASLProblem> ProblemItem;
+  typedef BasicProblemItem<ASLProblem> MutProblemItem;
+
  public:
   ASLProblem();
   ASLProblem(Proxy proxy);
@@ -375,21 +389,62 @@ class ASLProblem {
     return var_index < num_continuous_vars() ? var::CONTINUOUS : var::INTEGER;
   }
 
+  // An optimization variable.
+  class Variable : private ProblemItem {
+   private:
+    friend class ASLProblem;
+
+    Variable(const ASLProblem *p, int index) : ProblemItem(p, index) {}
+
+    static int num_items(const ASLProblem &p) {
+      return p.num_vars();
+    }
+
+   public:
+    // Returns the index of the variable.
+    int index() { return index_; }
+
+    // Returns the lower bound on the variable.
+    double lb() const {
+      return problem_->asl_->i.LUv_[
+          problem_->asl_->i.Uvx_ ? index_ : (index_ * 2)];
+    }
+
+    // Returns the upper bound on the variable.
+    double ub() const {
+      return problem_->asl_->i.Uvx_ ?
+            problem_->asl_->i.Uvx_[index_] :
+            problem_->asl_->i.LUv_[index_ * 2 + 1];
+    }
+
+    // Returns the type of the variable.
+    var::Type type() const {
+      if (problem_->var_types_)
+        return problem_->var_types_[index_];
+      return index_ < problem_->num_continuous_vars() ?
+            var::CONTINUOUS : var::INTEGER;
+    }
+
+    bool operator==(Variable other) const {
+      MP_ASSERT(problem_ == other.problem_,
+                "comparing variables from different problems");
+      return index_ == other.index_;
+    }
+    bool operator!=(Variable other) const {
+      return !(*this == other);
+    }
+  };
+
+  Variable var(int index) const {
+    MP_ASSERT(0 <= index && index < num_vars(), "invalid index");
+    return Variable(this, index);
+  }
+
   // Returns the lower bounds for the variables.
   const double *var_lb() const { return asl_->i.LUv_; }
 
-  // Returns the lower bound for the variable.
-  double var_lb(int var_index) const {
-    return lb(var_index, num_vars(), asl_->i.LUv_, asl_->i.Uvx_);
-  }
-
   // Returns the upper bounds for the variables.
   const double *var_ub() const { return asl_->i.Uvx_; }
-
-  // Returns the upper bound for the variable.
-  double var_ub(int var_index) const {
-    return ub(var_index, num_vars(), asl_->i.LUv_, asl_->i.Uvx_);
-  }
 
   // Returns the initial values for the variables.
   const double *initial_values() const { return asl_->i.X0_; }

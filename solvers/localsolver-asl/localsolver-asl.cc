@@ -68,9 +68,8 @@ void NLToLocalSolverConverter::Convert(const ASLProblem &p) {
   // Convert continuous variables.
   int num_continuous_vars = p.num_continuous_vars();
   for (int j = 0; j < num_continuous_vars; ++j) {
-    ls::LSExpression var =
-        model_.createExpression(ls::O_Float, p.var_lb(j), p.var_ub(j));
-    vars_[j] = var;
+    ASLProblem::Variable var = p.var(j);
+    vars_[j] = model_.createExpression(ls::O_Float, var.lb(), var.ub());
   }
 
   // Convert discrete variables.

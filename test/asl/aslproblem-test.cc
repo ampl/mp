@@ -217,10 +217,10 @@ TEST(ProblemTest, ProblemAccessors) {
   EXPECT_EQ(INTEGER, p.var_type(3));
   EXPECT_EQ(INTEGER, p.var_type(4));
 
-  EXPECT_EQ(11, p.var_lb(0));
-  EXPECT_EQ(15, p.var_lb(p.num_vars() - 1));
-  EXPECT_EQ(21, p.var_ub(0));
-  EXPECT_EQ(25, p.var_ub(p.num_vars() - 1));
+  EXPECT_EQ(11, p.var(0).lb());
+  EXPECT_EQ(15, p.var(p.num_vars() - 1).lb());
+  EXPECT_EQ(21, p.var(0).ub());
+  EXPECT_EQ(25, p.var(p.num_vars() - 1).ub());
 
   EXPECT_EQ(101, p.con_lb(0));
   EXPECT_EQ(113, p.con_lb(p.num_cons() - 1));
@@ -284,10 +284,8 @@ TEST(ProblemTest, BoundChecks) {
   EXPECT_DEATH(p.var_type(-1), "Assertion");
   EXPECT_DEATH(p.var_type(p.num_vars()), "Assertion");
 
-  EXPECT_DEATH(p.var_lb(-1), "Assertion");
-  EXPECT_DEATH(p.var_lb(p.num_vars()), "Assertion");
-  EXPECT_DEATH(p.var_ub(-1), "Assertion");
-  EXPECT_DEATH(p.var_ub(p.num_vars()), "Assertion");
+  EXPECT_DEATH(p.var(-1), "Assertion");
+  EXPECT_DEATH(p.var(p.num_vars()), "Assertion");
 
   EXPECT_DEATH(p.con_lb(-1), "Assertion");
   EXPECT_DEATH(p.con_lb(p.num_cons()), "Assertion");
@@ -462,16 +460,16 @@ TEST(ProblemTest, AddVar) {
   EXPECT_EQ(0, p.num_integer_vars());
   EXPECT_EQ(1, p.num_continuous_vars());
   EXPECT_EQ(CONTINUOUS, p.var_type(0));
-  EXPECT_EQ(111, p.var_lb(0));
-  EXPECT_EQ(222, p.var_ub(0));
+  EXPECT_EQ(111, p.var(0).lb());
+  EXPECT_EQ(222, p.var(0).ub());
 
   p.AddVar(333, 444, INTEGER);
   EXPECT_EQ(2, p.num_vars());
   EXPECT_EQ(1, p.num_integer_vars());
   EXPECT_EQ(1, p.num_continuous_vars());
   EXPECT_EQ(INTEGER, p.var_type(1));
-  EXPECT_EQ(333, p.var_lb(1));
-  EXPECT_EQ(444, p.var_ub(1));
+  EXPECT_EQ(333, p.var(1).lb());
+  EXPECT_EQ(444, p.var(1).ub());
 
   p.Read(MP_TEST_DATA_DIR "/simple");
   EXPECT_THROW(p.AddVar(0, 0), mp::Error);

@@ -130,8 +130,9 @@ void SMPSWriter::SplitVarBoundsIntoScenarios(
     if (scenario_index != 0)
       continue;
     CoreVarInfo &info = core_vars[var_info[i].core_index];
-    info.lb = p.var_lb(i);
-    info.ub = p.var_ub(i);
+    ASLProblem::Variable var = p.var(i);
+    info.lb = var.lb();
+    info.ub = var.ub();
   }
   for (int i = 0; i < num_vars; ++i) {
     int scenario_index = var_info[i].scenario_index;
@@ -139,7 +140,8 @@ void SMPSWriter::SplitVarBoundsIntoScenarios(
       continue;
     int core_var_index = var_info[i].core_index;
     const CoreVarInfo &info = core_vars[core_var_index];
-    double lb = p.var_lb(i), ub = p.var_ub(i);
+    ASLProblem::Variable var = p.var(i);
+    double lb = var.lb(), ub = var.ub();
     if (lb != info.lb)
       scenarios[scenario_index].AddLB(core_var_index, lb);
     if (ub != info.ub)

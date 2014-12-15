@@ -290,12 +290,13 @@ void NLToJaCoPConverter::Convert(const ASLProblem &p) {
   var_array_ = CreateVarArray(num_vars);
   vars_.resize(num_vars);
   for (int j = 0; j < num_vars; ++j) {
-    double lb = p.var_lb(j), ub = p.var_ub(j);
-    jobject var = var_class_.NewObject(env_, store_,
+    ASLProblem::Variable var = p.var(j);
+    double lb = var.lb(), ub = var.ub();
+    jobject jvar = var_class_.NewObject(env_, store_,
         lb <= negInfinity ? min_int_ : CastToInt(lb),
         ub >= Infinity ? max_int_ : CastToInt(ub));
-    vars_[j] = var;
-    env_.SetObjectArrayElement(var_array_, j, var);
+    vars_[j] = jvar;
+    env_.SetObjectArrayElement(var_array_, j, jvar);
   }
 
   if (p.num_objs() > 0) {

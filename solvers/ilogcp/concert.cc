@@ -279,15 +279,14 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
 }
 
 void NLToConcertConverter::Convert(const ASLProblem &p) {
-  int num_continuous_vars = p.num_continuous_vars();
-
   // Set up optimization problem using the Concert API.
   int num_vars = p.num_vars();
   vars_.setSize(num_vars);
-  for (int j = 0; j < num_continuous_vars; j++)
-    vars_[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOFLOAT);
-  for (int j = num_continuous_vars; j < num_vars; j++)
-    vars_[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOINT);
+  for (int j = 0; j < num_vars; ++j) {
+    ASLProblem::Variable var = p.var(j);
+    vars_[j] = IloNumVar(env_, var.lb(), var.ub(),
+                         var.type() == mp::var::CONTINUOUS ? ILOFLOAT : ILOINT);
+  }
 
   if (int num_objs = p.num_objs()) {
     obj::Type main_obj_type = p.obj_type(0);

@@ -327,7 +327,8 @@ void NLToGecodeConverter::Convert(const ASLProblem &p) {
 
   IntVarArray &vars = problem_.vars();
   for (int j = 0, n = p.num_vars(); j < n; ++j) {
-    double lb = p.var_lb(j), ub = p.var_ub(j);
+    ASLProblem::Variable var = p.var(j);
+    double lb = var.lb(), ub = var.ub();
     vars[j] = IntVar(problem_,
         lb <= negInfinity ? Gecode::Int::Limits::min : CastToInt(lb),
         ub >= Infinity ? Gecode::Int::Limits::max : CastToInt(ub));

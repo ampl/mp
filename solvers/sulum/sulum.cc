@@ -165,8 +165,10 @@ void SulumSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   // Convert variables.
   int num_vars = p.num_vars();
   std::vector<SlmBoundKey> var_bound_keys(num_vars);
-  for (int i = 0; i < num_vars; ++i)
-    var_bound_keys[i] = GetBoundKey(p.var_lb(i), p.var_ub(i));
+  for (int i = 0; i < num_vars; ++i) {
+    ASLProblem::Variable var = p.var(i);
+    var_bound_keys[i] = GetBoundKey(var.lb(), var.ub());
+  }
 
   std::vector<double> obj_coefs(num_vars);
   if (p.num_objs() > 0) {
@@ -201,7 +203,8 @@ void SulumSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   if (int num_int_vars = p.num_integer_vars()) {
     std::vector<SlmVarType> var_types(num_int_vars, SlmVarTypeInt);
     for (int i = p.num_continuous_vars(), j = 0; i < num_vars; ++i, ++j) {
-      if (p.var_lb(i) == 0 && p.var_ub(i) == 1)
+      ASLProblem::Variable var = p.var(i);
+      if (var.lb() == 0 && var.ub() == 1)
         var_types[j] = SlmVarTypeBin;
     }
     SlmSetTypeVarsFromTo(model_,
