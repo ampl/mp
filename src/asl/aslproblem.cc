@@ -34,6 +34,7 @@
 #include "mp/nl.h"
 #include "mp/os.h"
 #include "aslbuilder.h"
+#include "expr-writer.h"
 
 #ifdef _WIN32
 # define close _close
@@ -149,48 +150,6 @@ ASLProblem::ASLProblem(Proxy proxy)
 ASLProblem::~ASLProblem() {
   Free();
   ASL_free(reinterpret_cast<ASL**>(&asl_));
-}
-
-fmt::Writer &operator<<(fmt::Writer &w, const ASLProblem &p) {
-  // Write variables.
-  int num_vars = p.num_vars();
-  for (int i = 0; i < num_vars; ++i) {
-    w << "var x" << (i + 1);
-    double lb = p.var_lb(i), ub = p.var_ub(i);
-    if (lb == ub) {
-      w << " = " << lb;
-    } else {
-      if (lb != -Infinity)
-        w << " >= " << lb;
-      if (ub != Infinity)
-        w << " <= " << ub;
-    }
-    w << ";\n";
-  }
-
-  // Write objectives.
-  for (int i = 0, n = p.num_objs(); i < n; ++i) {
-    w << (p.obj_type(i) == obj::MIN ? "minimize" : "maximize") << " o: ";
-    WriteExpr(w, p.linear_obj_expr(i), p.nonlinear_obj_expr(i));
-    w << ";\n";
-  }
-
-  // Write constraints.
-  for (int i = 0, n = p.num_cons(); i < n; ++i) {
-    w << "s.t. c" << (i + 1) << ": ";
-    double lb = p.con_lb(i), ub = p.con_ub(i);
-    if (lb != ub && lb != -Infinity && ub != Infinity)
-      w << lb << " <= ";
-    WriteExpr(w, p.linear_con_expr(i), p.nonlinear_con_expr(i));
-    if (lb == ub)
-      w << " = " << lb;
-    else if (ub != Infinity)
-      w << " <= " << ub;
-    else if (lb != -Infinity)
-      w << " >= " << lb;
-    w << ";\n";
-  }
-  return w;
 }
 
 // A manager of temporary files.
@@ -456,5 +415,9 @@ ProblemChanges &ProblemChanges::operator=(const ProblemChanges &rhs) {
     }
   }
   return *this;
+}
+
+fmt::Writer &operator<<(fmt::Writer &w, const ASLProblem &p) {
+  Write(w, p);
 }
 }

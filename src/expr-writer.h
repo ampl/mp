@@ -322,8 +322,52 @@ void ExprWriter<ExprTypes>::VisitImplication(ImplicationExpr e) {
     Visit(false_expr);
   }
 }
-}  // namespace mp
 
-// TODO: test
+// Writes a problem in AMPL format.
+template <typename Problem>
+void Write(fmt::Writer &w, const Problem &p) {
+  // Write variables.
+  double inf = std::numeric_limits<double>::infinity();
+  int num_vars = p.num_vars();
+  for (int i = 0; i < num_vars; ++i) {
+    typename Problem::Variable var = p.var(i);
+    w << "var x" << (i + 1);
+    double lb = var.lb(), ub = var.ub();
+    if (lb == ub) {
+      w << " = " << lb;
+    } else {
+      if (lb != -inf)
+        w << " >= " << lb;
+      if (ub != inf)
+        w << " <= " << ub;
+    }
+    w << ";\n";
+  }
+
+  // Write objectives.
+  for (int i = 0, n = p.num_objs(); i < n; ++i) {
+    typename Problem::Objective obj = p.obj(i);
+    w << (obj.type() == mp::obj::MIN ? "minimize" : "maximize") << " o: ";
+    WriteExpr(w, obj.linear_expr(), obj.nonlinear_expr());
+    w << ";\n";
+  }
+
+  // Write constraints.
+  for (int i = 0, n = p.num_cons(); i < n; ++i) {
+    w << "s.t. c" << (i + 1) << ": ";
+    double lb = p.con_lb(i), ub = p.con_ub(i);
+    if (lb != ub && lb != -inf && ub != inf)
+      w << lb << " <= ";
+    WriteExpr(w, p.linear_con_expr(i), p.nonlinear_con_expr(i));
+    if (lb == ub)
+      w << " = " << lb;
+    else if (ub != inf)
+      w << " <= " << ub;
+    else if (lb != -inf)
+      w << " >= " << lb;
+    w << ";\n";
+  }
+}
+}  // namespace mp
 
 #endif  // MP_EXPR_WRITER_H_
