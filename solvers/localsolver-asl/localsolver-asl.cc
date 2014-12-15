@@ -89,9 +89,10 @@ void NLToLocalSolverConverter::Convert(const ASLProblem &p) {
 
   // Convert constraints.
   for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
+    ASLProblem::AlgebraicCon con = p.algebraic_con(i);
     ls::LSExpression expr =
-        ConvertExpr(p.linear_con_expr(i), p.nonlinear_con_expr(i));
-    double lb = p.con_lb(i), ub = p.con_ub(i);
+        ConvertExpr(con.linear_expr(), con.nonlinear_expr());
+    double lb = con.lb(), ub = con.ub();
     if (lb <= negInfinity) {
       expr = model_.createExpression(ls::O_Leq, expr, ub);
     } else if (ub >= Infinity) {

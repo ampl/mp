@@ -309,11 +309,12 @@ void NLToJaCoPConverter::Convert(const ASLProblem &p) {
 
   // Convert algebraic constraints.
   for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
-    double lb = p.con_lb(i), ub = p.con_ub(i);
+    ASLProblem::AlgebraicCon con = p.algebraic_con(i);
+    double lb = con.lb(), ub = con.ub();
     jint int_lb = lb <= negInfinity ? min_int_ : CastToInt(lb);
     jint int_ub = ub >= Infinity ? max_int_ : CastToInt(ub);
     jobject result_var = var_class_.NewObject(env_, store_, int_lb, int_ub);
-    ConvertExpr(p.linear_con_expr(i), p.nonlinear_con_expr(i), result_var);
+    ConvertExpr(con.linear_expr(), con.nonlinear_expr(), result_var);
   }
 
   // Convert logical constraints.

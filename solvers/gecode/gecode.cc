@@ -359,9 +359,10 @@ void NLToGecodeConverter::Convert(const ASLProblem &p) {
 
   // Convert algebraic constraints.
   for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
+    ASLProblem::AlgebraicCon con = p.algebraic_con(i);
     LinExpr con_expr(
-        ConvertExpr(p.linear_con_expr(i), p.nonlinear_con_expr(i)));
-    double lb = p.con_lb(i), ub = p.con_ub(i);
+        ConvertExpr(con.linear_expr(), con.nonlinear_expr()));
+    double lb = con.lb(), ub = con.ub();
     ICLSetter icl_setter(icl_, GetICL(i));
     if (lb <= negInfinity) {
       rel(problem_, con_expr <= CastToInt(ub), icl_);

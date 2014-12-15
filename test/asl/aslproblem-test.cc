@@ -190,7 +190,7 @@ TEST(ProblemTest, EmptyProblem) {
   ASLProblem p;
   EXPECT_EQ(0, p.num_vars());
   EXPECT_EQ(0, p.num_objs());
-  EXPECT_EQ(0, p.num_cons());
+  EXPECT_EQ(0, p.num_algebraic_cons());
   EXPECT_EQ(0, p.num_integer_vars());
   EXPECT_EQ(0, p.num_continuous_vars());
   EXPECT_EQ(0, p.num_nonlinear_objs());
@@ -204,7 +204,7 @@ TEST(ProblemTest, ProblemAccessors) {
   p.Read(MP_TEST_DATA_DIR "/test");
   EXPECT_EQ(5, p.num_vars());
   EXPECT_EQ(19, p.num_objs());
-  EXPECT_EQ(13, p.num_cons());
+  EXPECT_EQ(13, p.num_algebraic_cons());
   EXPECT_EQ(2, p.num_integer_vars());
   EXPECT_EQ(3, p.num_continuous_vars());
   EXPECT_EQ(17, p.num_nonlinear_objs());
@@ -222,10 +222,10 @@ TEST(ProblemTest, ProblemAccessors) {
   EXPECT_EQ(21, p.var(0).ub());
   EXPECT_EQ(25, p.var(p.num_vars() - 1).ub());
 
-  EXPECT_EQ(101, p.con_lb(0));
-  EXPECT_EQ(113, p.con_lb(p.num_cons() - 1));
-  EXPECT_EQ(201, p.con_ub(0));
-  EXPECT_EQ(213, p.con_ub(p.num_cons() - 1));
+  EXPECT_EQ(101, p.algebraic_con(0).lb());
+  EXPECT_EQ(113, p.algebraic_con(p.num_algebraic_cons() - 1).lb());
+  EXPECT_EQ(201, p.algebraic_con(0).ub());
+  EXPECT_EQ(213, p.algebraic_con(p.num_algebraic_cons() - 1).ub());
 
   EXPECT_EQ(obj::MIN, p.obj(0).type());
   EXPECT_EQ(obj::MAX, p.obj(p.num_objs() - 1).type());
@@ -241,11 +241,11 @@ TEST(ProblemTest, ProblemAccessors) {
   }
 
   {
-    LinearConExpr expr = p.linear_con_expr(0);
+    LinearConExpr expr = p.algebraic_con(0).linear_expr();
     EXPECT_EQ(61, expr.begin()->coef());
     EXPECT_EQ(0, expr.begin()->var_index());
     EXPECT_EQ(5, std::distance(expr.begin(), expr.end()));
-    expr = p.linear_con_expr(p.num_cons() - 1);
+    expr = p.algebraic_con(p.num_algebraic_cons() - 1).linear_expr();
     EXPECT_EQ(82, expr.begin()->coef());
     EXPECT_EQ(2, expr.begin()->var_index());
   }
@@ -254,9 +254,9 @@ TEST(ProblemTest, ProblemAccessors) {
   EXPECT_EQ(mp::expr::COS,
             p.obj(p.num_nonlinear_objs() - 1).nonlinear_expr().kind());
 
-  EXPECT_EQ(mp::expr::LOG, p.nonlinear_con_expr(0).kind());
-  EXPECT_EQ(mp::expr::EXP,
-            p.nonlinear_con_expr(p.num_nonlinear_cons() - 1).kind());
+  EXPECT_EQ(mp::expr::LOG, p.algebraic_con(0).nonlinear_expr().kind());
+  EXPECT_EQ(mp::expr::EXP, p.algebraic_con(
+              p.num_nonlinear_cons() - 1).nonlinear_expr().kind());
 
   EXPECT_EQ(mp::expr::NE, p.logical_con_expr(0).kind());
   EXPECT_EQ(mp::expr::AND, p.logical_con_expr(p.num_logical_cons() - 1).kind());
@@ -287,19 +287,11 @@ TEST(ProblemTest, BoundChecks) {
   EXPECT_DEATH(p.var(-1), "Assertion");
   EXPECT_DEATH(p.var(p.num_vars()), "Assertion");
 
-  EXPECT_DEATH(p.con_lb(-1), "Assertion");
-  EXPECT_DEATH(p.con_lb(p.num_cons()), "Assertion");
-  EXPECT_DEATH(p.con_ub(-1), "Assertion");
-  EXPECT_DEATH(p.con_ub(p.num_cons()), "Assertion");
-
   EXPECT_DEATH(p.obj(-1), "Assertion");
   EXPECT_DEATH(p.obj(p.num_objs()), "Assertion");
 
-  EXPECT_DEATH(p.linear_con_expr(-1), "Assertion");
-  EXPECT_DEATH(p.linear_con_expr(p.num_cons()), "Assertion");
-
-  EXPECT_DEATH(p.nonlinear_con_expr(-1), "Assertion");
-  EXPECT_DEATH(p.nonlinear_con_expr(p.num_cons()), "Assertion");
+  EXPECT_DEATH(p.algebraic_con(-1), "Assertion");
+  EXPECT_DEATH(p.algebraic_con(p.num_algebraic_cons()), "Assertion");
 
   EXPECT_DEATH(p.logical_con_expr(-1), "Assertion");
   EXPECT_DEATH(p.logical_con_expr(p.num_logical_cons()), "Assertion");
@@ -492,7 +484,7 @@ TEST(ProblemTest, AddCon) {
   asl::LogicalExpr expr = builder.MakeRelational(
         mp::expr::EQ, builder.MakeVariable(0), builder.MakeNumericConstant(0));
   p.AddCon(expr);
-  EXPECT_EQ(0, p.num_cons());
+  EXPECT_EQ(0, p.num_algebraic_cons());
   EXPECT_EQ(1, p.num_logical_cons());
   EXPECT_EQ(expr, p.logical_con_expr(0));
 

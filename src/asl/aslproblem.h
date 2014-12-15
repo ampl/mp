@@ -455,19 +455,10 @@ class ASLProblem {
   // Returns the lower bounds for the constraints.
   const double *con_lb() const { return asl_->i.LUrhs_; }
 
-  // Returns the lower bound for the constraint.
-  double con_lb(int con_index) const {
-    return lb(con_index, num_algebraic_cons(), asl_->i.LUrhs_, asl_->i.Urhsx_);
-  }
-
   // Returns the upper bounds for the constraints.
   const double *con_ub() const { return asl_->i.Urhsx_; }
 
-  // Returns the upper bound for the constraint.
-  double con_ub(int con_index) const {
-    return ub(con_index, num_algebraic_cons(), asl_->i.LUrhs_, asl_->i.Urhsx_);
-  }
-
+  // An objective.
   class Objective : private ProblemItem {
    private:
     friend class ASLProblem;
@@ -514,11 +505,59 @@ class ASLProblem {
     return Objective(this, index);
   }
 
-  // Returns the linear part of a constraint expression.
-  asl::LinearConExpr linear_con_expr(int con_index) const {
-    assert(con_index >= 0 && con_index < num_algebraic_cons() &&
-           asl_->i.Cgrad_);
-    return asl::LinearConExpr(asl_->i.Cgrad_[con_index]);
+  // An algebraic constraint.
+  class AlgebraicCon : private ProblemItem {
+   private:
+    friend class ASLProblem;
+
+    AlgebraicCon(const ASLProblem *p, int index) : ProblemItem(p, index) {}
+
+    static int num_items(const ASLProblem &p) {
+      return p.num_objs();
+    }
+
+   public:
+    // Returns the lower bound on the constraint.
+    double lb() const {
+      return problem_->asl_->i.LUrhs_[
+          problem_->asl_->i.Urhsx_ ? index_ : (index_ * 2)];
+    }
+
+    // Returns the upper bound on the constraint.
+    double ub() const {
+      return problem_->asl_->i.Urhsx_ ?
+            problem_->asl_->i.Urhsx_[index_] :
+            problem_->asl_->i.LUrhs_[index_ * 2 + 1];
+    }
+
+    // Returns the linear part of the constraint expression.
+    asl::LinearConExpr linear_expr() const {
+      return asl::LinearConExpr(problem_->asl_->i.Cgrad_[index_]);
+    }
+
+    // Returns the nonlinear part of the constraint expression.
+    asl::NumericExpr nonlinear_expr() const {
+      if (problem_->asl_->i.ASLtype != ASL_read_fg)
+        return asl::NumericExpr();
+      return asl::Expr::Create<asl::NumericExpr>(
+            reinterpret_cast<ASL_fg*>(problem_->asl_)->I.con_de_[index_].e);
+    }
+
+    bool operator==(AlgebraicCon other) const {
+      MP_ASSERT(problem_ == other.problem_,
+                "comparing constraint from different problems");
+      return index_ == other.index_;
+    }
+
+    bool operator!=(AlgebraicCon other) const {
+      return !(*this == other);
+    }
+  };
+
+  // Returns the algebraic constraint at the specified index.
+  AlgebraicCon algebraic_con(int index) const {
+    MP_ASSERT(0 <= index && index < num_algebraic_cons(), "invalid index");
+    return AlgebraicCon(this, index);
   }
 
   template <typename ExprType>
@@ -532,11 +571,6 @@ class ASLProblem {
   }
   asl::NumericExpr GetExpr(cde *Edag1info::*ptr, int index, int size) const {
     return GetExpr<asl::NumericExpr>(ptr, index, size);
-  }
-
-  // Returns the nonlinear part of a constraint expression.
-  asl::NumericExpr nonlinear_con_expr(int con_index) const {
-    return GetExpr(&Edag1info::con_de_, con_index, num_algebraic_cons());
   }
 
   // Returns a logical constraint expression.

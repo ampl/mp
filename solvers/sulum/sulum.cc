@@ -186,8 +186,10 @@ void SulumSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   // Convert constraints.
   int num_cons = p.num_algebraic_cons();
   std::vector<SlmBoundKey> con_bound_keys(num_cons);
-  for (int i = 0; i < num_cons; ++i)
-    con_bound_keys[i] = GetBoundKey(p.con_lb(i), p.con_ub(i));
+  for (int i = 0; i < num_cons; ++i) {
+    ASLProblem::AlgebraicCon con = p.algebraic_con(i);
+    con_bound_keys[i] = GetBoundKey(con.lb(), con.ub());
+  }
 
   // Convert constraint matrix.
   ASLProblem::ColMatrix matrix = p.col_matrix();

@@ -316,14 +316,15 @@ void NLToConcertConverter::Convert(const ASLProblem &p) {
     cons_.setSize(n_cons);
     for (int i = 0; i < n_cons; ++i) {
       IloExpr expr(env_);
-      LinearConExpr linear = p.linear_con_expr(i);
+      ASLProblem::AlgebraicCon con = p.algebraic_con(i);
+      LinearConExpr linear = con.linear_expr();
       for (LinearConExpr::iterator
           j = linear.begin(), end = linear.end(); j != end; ++j) {
         expr += j->coef() * vars_[j->var_index()];
       }
       if (i < p.num_nonlinear_cons())
-        expr += Visit(p.nonlinear_con_expr(i));
-      cons_[i] = (p.con_lb(i) <= expr <= p.con_ub(i));
+        expr += Visit(con.nonlinear_expr());
+      cons_[i] = (con.lb() <= expr <= con.ub());
     }
     model_.add(cons_);
   }

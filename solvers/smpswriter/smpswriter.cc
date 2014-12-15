@@ -58,7 +58,8 @@ std::string ExtractScenario(std::string &name, bool require_scenario = true) {
 }
 
 double GetConRHSAndType(const mp::ASLProblem &p, int con_index, char &type) {
-  double lb = p.con_lb(con_index), ub = p.con_ub(con_index);
+  mp::ASLProblem::AlgebraicCon con = p.algebraic_con(con_index);
+  double lb = con.lb(), ub = con.ub();
   if (lb <= negInfinity) {
     type = ub >= Infinity ? 'N' : 'L';
     return ub;

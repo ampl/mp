@@ -364,8 +364,8 @@ void Write(fmt::Writer &w, const Problem &p) {
   double inf = std::numeric_limits<double>::infinity();
   int num_vars = p.num_vars();
   for (int i = 0; i < num_vars; ++i) {
-    typename Problem::Variable var = p.var(i);
     w << "var x" << (i + 1);
+    typename Problem::Variable var = p.var(i);
     double lb = var.lb(), ub = var.ub();
     if (lb == ub) {
       w << " = " << lb;
@@ -390,11 +390,12 @@ void Write(fmt::Writer &w, const Problem &p) {
   // Write algebraic constraints.
   for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
     w << "s.t. c" << (i + 1) << ": ";
-    double lb = p.con_lb(i), ub = p.con_ub(i);
+    typename Problem::AlgebraicCon con = p.algebraic_con(i);
+    double lb = con.lb(), ub = con.ub();
     if (lb != ub && lb != -inf && ub != inf)
       w << lb << " <= ";
     WriteExpr<typename Problem::ExprTypes>(
-          w, p.linear_con_expr(i), p.nonlinear_con_expr(i));
+          w, con.linear_expr(), con.nonlinear_expr());
     if (lb == ub)
       w << " = " << lb;
     else if (ub != inf)
