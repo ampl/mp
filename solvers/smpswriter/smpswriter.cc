@@ -393,7 +393,7 @@ void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
     std::vector<double> core_obj_coefs(num_core_vars);
     std::vector<double> sum_core_obj_coefs;
     if (p.num_objs() != 0) {
-      LinearObjExpr obj_expr = p.linear_obj_expr(0);
+      LinearObjExpr obj_expr = p.obj(0).linear_expr();
       int reference_var_index = 0;
       int core_reference_var_index = 0;
       if (probabilities.size() != 1) {

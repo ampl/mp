@@ -335,8 +335,9 @@ void NLToGecodeConverter::Convert(const ASLProblem &p) {
   }
 
   if (p.num_objs() > 0) {
-    problem_.SetObj(p.obj_type(0),
-        ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0)));
+    ASLProblem::Objective obj = p.obj(0);
+    problem_.SetObj(obj.type(),
+                    ConvertExpr(obj.linear_expr(), obj.nonlinear_expr()));
   }
 
   icl_suffix_ = p.suffixes(suf::CON).Find("icl");

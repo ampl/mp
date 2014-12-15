@@ -289,20 +289,21 @@ void NLToConcertConverter::Convert(const ASLProblem &p) {
   }
 
   if (int num_objs = p.num_objs()) {
-    obj::Type main_obj_type = p.obj_type(0);
+    obj::Type main_obj_type = p.obj(0).type();
     IloNumExprArray objs(env_);
     for (int i = 0; i < num_objs; ++i) {
-      NumericExpr expr(p.nonlinear_obj_expr(i));
-      NumericConstant constant(Cast<NumericConstant>(expr));
+      ASLProblem::Objective obj = p.obj(i);
+      NumericExpr expr = obj.nonlinear_expr();
+      NumericConstant constant = Cast<NumericConstant>(expr);
       IloExpr ilo_expr(env_, constant ? constant.value() : 0);
       if (p.num_nonlinear_objs() > 0 && !constant)
         ilo_expr += Visit(expr);
-      LinearObjExpr linear = p.linear_obj_expr(i);
+      LinearObjExpr linear = obj.linear_expr();
       for (LinearObjExpr::iterator
           j = linear.begin(), end = linear.end(); j != end; ++j) {
         ilo_expr += j->coef() * vars_[j->var_index()];
       }
-      objs.add(p.obj_type(i) == main_obj_type ? ilo_expr : -ilo_expr);
+      objs.add(obj.type() == main_obj_type ? ilo_expr : -ilo_expr);
     }
     IloObjective::Sense sense = main_obj_type == obj::MIN ?
         IloObjective::Minimize : IloObjective::Maximize;

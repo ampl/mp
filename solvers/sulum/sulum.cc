@@ -173,9 +173,10 @@ void SulumSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   std::vector<double> obj_coefs(num_vars);
   if (p.num_objs() > 0) {
     // Convert objective.
+    ASLProblem::Objective obj = p.obj(0);
     Check(SlmSetIntParam(model_, SlmPrmIntObjSense,
-        p.obj_type(0) == obj::MIN ? SlmObjSenseMin : SlmObjSenseMax));
-    LinearObjExpr expr = p.linear_obj_expr(0);
+        obj.type() == obj::MIN ? SlmObjSenseMin : SlmObjSenseMax));
+    LinearObjExpr expr = obj.linear_expr();
     for (LinearObjExpr::iterator
         i = expr.begin(), end = expr.end(); i != end; ++i) {
       obj_coefs[i->var_index()] = i->coef();

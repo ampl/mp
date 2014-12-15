@@ -227,15 +227,15 @@ TEST(ProblemTest, ProblemAccessors) {
   EXPECT_EQ(201, p.con_ub(0));
   EXPECT_EQ(213, p.con_ub(p.num_cons() - 1));
 
-  EXPECT_EQ(obj::MIN, p.obj_type(0));
-  EXPECT_EQ(obj::MAX, p.obj_type(p.num_objs() - 1));
+  EXPECT_EQ(obj::MIN, p.obj(0).type());
+  EXPECT_EQ(obj::MAX, p.obj(p.num_objs() - 1).type());
 
   {
-    LinearObjExpr expr = p.linear_obj_expr(0);
+    LinearObjExpr expr = p.obj(0).linear_expr();
     EXPECT_EQ(31, expr.begin()->coef());
     EXPECT_EQ(0, expr.begin()->var_index());
     EXPECT_EQ(5, std::distance(expr.begin(), expr.end()));
-    expr = p.linear_obj_expr(p.num_objs() - 1);
+    expr = p.obj(p.num_objs() - 1).linear_expr();
     EXPECT_EQ(52, expr.begin()->coef());
     EXPECT_EQ(3, expr.begin()->var_index());
   }
@@ -250,9 +250,9 @@ TEST(ProblemTest, ProblemAccessors) {
     EXPECT_EQ(2, expr.begin()->var_index());
   }
 
-  EXPECT_EQ(mp::expr::SIN, p.nonlinear_obj_expr(0).kind());
+  EXPECT_EQ(mp::expr::SIN, p.obj(0).nonlinear_expr().kind());
   EXPECT_EQ(mp::expr::COS,
-            p.nonlinear_obj_expr(p.num_nonlinear_objs() - 1).kind());
+            p.obj(p.num_nonlinear_objs() - 1).nonlinear_expr().kind());
 
   EXPECT_EQ(mp::expr::LOG, p.nonlinear_con_expr(0).kind());
   EXPECT_EQ(mp::expr::EXP,
@@ -292,17 +292,11 @@ TEST(ProblemTest, BoundChecks) {
   EXPECT_DEATH(p.con_ub(-1), "Assertion");
   EXPECT_DEATH(p.con_ub(p.num_cons()), "Assertion");
 
-  EXPECT_DEATH(p.obj_type(-1), "Assertion");
-  EXPECT_DEATH(p.obj_type(p.num_objs()), "Assertion");
-
-  EXPECT_DEATH(p.linear_obj_expr(-1), "Assertion");
-  EXPECT_DEATH(p.linear_obj_expr(p.num_objs()), "Assertion");
+  EXPECT_DEATH(p.obj(-1), "Assertion");
+  EXPECT_DEATH(p.obj(p.num_objs()), "Assertion");
 
   EXPECT_DEATH(p.linear_con_expr(-1), "Assertion");
   EXPECT_DEATH(p.linear_con_expr(p.num_cons()), "Assertion");
-
-  EXPECT_DEATH(p.nonlinear_obj_expr(-1), "Assertion");
-  EXPECT_DEATH(p.nonlinear_obj_expr(p.num_objs()), "Assertion");
 
   EXPECT_DEATH(p.nonlinear_con_expr(-1), "Assertion");
   EXPECT_DEATH(p.nonlinear_con_expr(p.num_cons()), "Assertion");
@@ -515,8 +509,8 @@ TEST(ProblemTest, AddObj) {
         mp::expr::ADD, builder.MakeVariable(0), builder.MakeNumericConstant(1));
   p.AddObj(obj::MAX, expr);
   EXPECT_EQ(1, p.num_objs());
-  EXPECT_EQ(obj::MAX, p.obj_type(0));
-  EXPECT_EQ(expr, p.nonlinear_obj_expr(0));
+  EXPECT_EQ(obj::MAX, p.obj(0).type());
+  EXPECT_EQ(expr, p.obj(0).nonlinear_expr());
 
   p.Read(MP_TEST_DATA_DIR "/simple");
   EXPECT_THROW(p.AddObj(obj::MAX, expr), mp::Error);

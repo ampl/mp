@@ -216,7 +216,7 @@ void GetSolution(IloCP cp, IloNumVarArray vars, vector<double> &solution) {
 bool HasNonlinearObj(const mp::ASLProblem &p) {
   if (p.num_objs() == 0)
     return false;
-  asl::NumericExpr expr = p.nonlinear_obj_expr(0);
+  asl::NumericExpr expr = p.obj(0).nonlinear_expr();
   return expr && !asl::Cast<asl::NumericConstant>(expr);
 }
 

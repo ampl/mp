@@ -435,6 +435,7 @@ class ASLProblem {
     }
   };
 
+  // Returns the variable at the specified index.
   Variable var(int index) const {
     MP_ASSERT(0 <= index && index < num_vars(), "invalid index");
     return Variable(this, index);
@@ -465,16 +466,50 @@ class ASLProblem {
     return ub(con_index, num_cons(), asl_->i.LUrhs_, asl_->i.Urhsx_);
   }
 
-  // Returns the objective type.
-  obj::Type obj_type(int obj_index) const {
-    assert(obj_index >= 0 && obj_index < num_objs());
-    return static_cast<obj::Type>(asl_->i.objtype_[obj_index]);
-  }
+  class Objective : private ProblemItem {
+   private:
+    friend class ASLProblem;
 
-  // Returns the linear part of an objective expression.
-  asl::LinearObjExpr linear_obj_expr(int obj_index) const {
-    assert(obj_index >= 0 && obj_index < num_objs());
-    return asl::LinearObjExpr(asl_->i.Ograd_[obj_index]);
+    Objective(const ASLProblem *p, int index) : ProblemItem(p, index) {}
+
+    static int num_items(const ASLProblem &p) {
+      return p.num_objs();
+    }
+
+   public:
+    // Returns the type of the objective.
+    obj::Type type() const {
+      return static_cast<obj::Type>(problem_->asl_->i.objtype_[index_]);
+    }
+
+    // Returns the linear part of the objective expression.
+    asl::LinearObjExpr linear_expr() const {
+      return asl::LinearObjExpr(problem_->asl_->i.Ograd_[index_]);
+    }
+
+    // Returns the nonlinear part of the objective expression.
+    asl::NumericExpr nonlinear_expr() const {
+      if (problem_->asl_->i.ASLtype != ASL_read_fg)
+        return asl::NumericExpr();
+      return asl::Expr::Create<asl::NumericExpr>(
+            reinterpret_cast<ASL_fg*>(problem_->asl_)->I.obj_de_[index_].e);
+    }
+
+    bool operator==(Objective other) const {
+      MP_ASSERT(problem_ == other.problem_,
+                "comparing objectives from different problems");
+      return index_ == other.index_;
+    }
+
+    bool operator!=(Objective other) const {
+      return !(*this == other);
+    }
+  };
+
+  // Returns the objective at the specified index.
+  Objective obj(int index) const {
+    MP_ASSERT(0 <= index && index < num_objs(), "invalid index");
+    return Objective(this, index);
   }
 
   // Returns the linear part of a constraint expression.
@@ -494,11 +529,6 @@ class ASLProblem {
   }
   asl::NumericExpr GetExpr(cde *Edag1info::*ptr, int index, int size) const {
     return GetExpr<asl::NumericExpr>(ptr, index, size);
-  }
-
-  // Returns the nonlinear part of an objective expression.
-  asl::NumericExpr nonlinear_obj_expr(int obj_index) const {
-    return GetExpr(&Edag1info::obj_de_, obj_index, num_objs());
   }
 
   // Returns the nonlinear part of a constraint expression.
