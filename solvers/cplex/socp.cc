@@ -173,7 +173,7 @@ class SumOfSquaresConverter : public SumConverter<SumOfSquaresConverter> {
     sum_.AddArg(term);
     Problem::LinearConBuilder con = p.AddCon(0, 0);
     //AffineExprConverter(p, con).Visit(e.arg());
-    //con.AddTerm(var.index(), -1);
+    con.AddTerm(var.index(), -1);
   }
 };
 
@@ -317,6 +317,14 @@ class SOCPConverter {
     return expr ? converter.Visit(expr) : asl::NumericExpr();
   }
 
+  // Convertes an algebraic constraint to ASL format.
+  void Convert(Problem::AlgebraicCon con) {
+    mp::LinearExpr expr = con.linear_expr();
+    ASLBuilder::LinearConBuilder con_builder = builder_.AddCon(
+          con.lb(), con.ub(), Convert(con.nonlinear_expr()), expr.num_terms());
+    ConvertLinearExpr(expr, con_builder);
+  }
+
   typedef Problem::ObjList ObjList;
 
  public:
@@ -345,6 +353,7 @@ void SOCPConverter::Run(const char *stub) {
       }
     }
   }
+
   mp::ProblemInfo info = mp::ProblemInfo();
   info.num_vars = problem_.num_vars();
   info.num_algebraic_cons = problem_.num_algebraic_cons();
@@ -397,14 +406,19 @@ void SOCPConverter::ConvertToASL() {
   for (int i = 0; i < num_vars - 1; ++i)
     cols.Add(col_sizes_[i]);
 
-  // Convert algebraic constraints.
+  // Convert nonlinear algebraic constraints first as required by ASL.
   Problem::AlgebraicConList algebraic_cons = problem_.algebraic_cons();
   for (Problem::AlgebraicConList::iterator
        i = algebraic_cons.begin(), end = algebraic_cons.end(); i != end; ++i) {
-    mp::LinearExpr expr = i->linear_expr();
-    ASLBuilder::LinearConBuilder con_builder = builder_.AddCon(
-          i->lb(), i->ub(), Convert(i->nonlinear_expr()), expr.num_terms());
-    ConvertLinearExpr(expr, con_builder);
+    if (i->nonlinear_expr())
+      Convert(*i);
+  }
+
+  // Convert linear algebraic constraints.
+  for (Problem::AlgebraicConList::iterator
+       i = algebraic_cons.begin(), end = algebraic_cons.end(); i != end; ++i) {
+    if (!i->nonlinear_expr())
+      Convert(*i);
   }
 
   // Convert logical constraints.
