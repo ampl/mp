@@ -163,19 +163,21 @@ class SumOfSquaresConverter : public SumConverter<SumOfSquaresConverter> {
   explicit SumOfSquaresConverter(Problem &p, Problem::IteratedExprBuilder &sum)
   : SumConverter<SumOfSquaresConverter>(p), sum_(sum) {}
 
-  void VisitPow2(UnaryExpr e) {
-    Problem &p = problem();
-    double inf = std::numeric_limits<double>::infinity();
-    Problem::Variable var = p.AddVar(-inf, inf);
-    NumericExpr term = p.MakeUnary(expr::POW2, p.MakeVariable(var.index()));
-    if (coef() != 1)
-      term = p.MakeBinary(expr::MUL, p.MakeNumericConstant(coef()), term);
-    sum_.AddArg(term);
-    Problem::LinearConBuilder con = p.AddCon(0, 0);
-    //AffineExprConverter(p, con).Visit(e.arg());
-    con.AddTerm(var.index(), -1);
-  }
+  void VisitPow2(UnaryExpr e);
 };
+
+void SumOfSquaresConverter::VisitPow2(UnaryExpr e) {
+  Problem &p = problem();
+  double inf = std::numeric_limits<double>::infinity();
+  Problem::Variable var = p.AddVar(-inf, inf);
+  NumericExpr term = p.MakeUnary(expr::POW2, p.MakeVariable(var.index()));
+  if (coef() != 1)
+    term = p.MakeBinary(expr::MUL, p.MakeNumericConstant(coef()), term);
+  sum_.AddArg(term);
+  Problem::LinearConBuilder con = p.AddCon(0, 0);
+  AffineExprConverter(p, con).Visit(e.arg());
+  con.AddTerm(var.index(), -1);
+}
 
 // Converts a sum of norms into the SOCP form.
 class SumOfNormsConverter : public SumConverter<SumOfNormsConverter> {
@@ -190,20 +192,22 @@ class SumOfNormsConverter : public SumConverter<SumOfNormsConverter> {
     : SumConverter<SumOfNormsConverter>(p), obj_(obj),
       num_terms_(num_terms), term_index_(0) {}
 
-  void VisitSqrt(UnaryExpr e) {
-    Problem &p = problem();
-    double inf = std::numeric_limits<double>::infinity();
-    Problem::Variable var = p.AddVar(0, inf);
-    obj_.linear_expr().AddTerm(var.index(), coef());
-    Problem::IteratedExprBuilder sum =
-        p.BeginIterated(expr::SUM, num_terms_[term_index_++] + 1);
-    SumOfSquaresConverter(p, sum).Visit(e.arg());
-    UnaryExpr term = p.MakeUnary(
-          expr::MINUS, p.MakeUnary(expr::POW2, p.MakeVariable(var.index())));
-    sum.AddArg(term);
-    p.AddCon(-inf, 0, p.EndIterated(sum));
-  }
+  void VisitSqrt(UnaryExpr e);
 };
+
+void SumOfNormsConverter::VisitSqrt(UnaryExpr e) {
+  Problem &p = problem();
+  double inf = std::numeric_limits<double>::infinity();
+  Problem::Variable var = p.AddVar(0, inf);
+  obj_.linear_expr().AddTerm(var.index(), coef());
+  Problem::IteratedExprBuilder sum =
+      p.BeginIterated(expr::SUM, num_terms_[term_index_++] + 1);
+  SumOfSquaresConverter(p, sum).Visit(e.arg());
+  UnaryExpr term = p.MakeUnary(
+        expr::MINUS, p.MakeUnary(expr::POW2, p.MakeVariable(var.index())));
+  sum.AddArg(term);
+  p.AddCon(-inf, 0, p.EndIterated(sum));
+}
 }  // namespace mp
 
 namespace {
