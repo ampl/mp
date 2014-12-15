@@ -326,7 +326,8 @@ void ASLProblem::Read(fmt::StringRef stub, unsigned flags) {
   asl_->i.flags = handler.flags();
 }
 
-void ASLProblem::WriteNL(fmt::StringRef stub, ProblemChanges *pc, unsigned flags) {
+void ASLProblem::WriteNL(
+    fmt::StringRef stub, ProblemChanges *pc, unsigned flags) {
   int nfunc = asl_->i.nfunc_;
   if ((flags & IGNORE_FUNCTIONS) != 0)
     asl_->i.nfunc_ = 0;
