@@ -57,8 +57,17 @@ struct ExprTypes {
   typedef mp::asl::PairwiseExpr PairwiseExpr;
   typedef mp::asl::StringLiteral StringLiteral;
 
+  // Checked cast. See mp::Cast.
   template <typename ExprType>
-  static ExprType Cast(Expr e) { return mp::internal::Cast<ExprType>(e); }
+  static ExprType Cast(Expr e) {
+    return mp::asl::Cast<ExprType>(e);
+  }
+
+  // Unchecked cast. See mp::internal::Cast.
+  template <typename ExprType>
+  static ExprType UncheckedCast(Expr e) {
+    return mp::internal::Cast<ExprType>(e);
+  }
 };
 }  // namespace internal
 

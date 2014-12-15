@@ -318,97 +318,96 @@ TEST_F(ExprTest, SafeBool) {
 
 struct OpInfo {
   int code;
-  const char *str;
   ex::Kind kind;
 };
 
 const OpInfo OP_INFO[] = {
-  {-1,                 "unknown",               ex::UNKNOWN},
-  {ex::ADD,            "+",                     ex::FIRST_BINARY},
-  {ex::SUB,            "-",                     ex::FIRST_BINARY},
-  {ex::MUL,            "*",                     ex::FIRST_BINARY},
-  {ex::DIV,            "/",                     ex::FIRST_BINARY},
-  {ex::MOD,            "mod",                   ex::FIRST_BINARY},
-  {ex::POW,            "^",                     ex::FIRST_BINARY},
-  {ex::LESS,           "less",                  ex::FIRST_BINARY},
-  { 7,                 "unknown",               ex::UNKNOWN},
-  { 8,                 "unknown",               ex::UNKNOWN},
-  { 9,                 "unknown",               ex::UNKNOWN},
-  {10,                 "unknown",               ex::UNKNOWN},
-  {ex::MIN,            "min",                   ex::FIRST_VARARG},
-  {ex::MAX,            "max",                   ex::FIRST_VARARG},
-  {ex::FLOOR,          "floor",                 ex::FIRST_UNARY},
-  {ex::CEIL,           "ceil",                  ex::FIRST_UNARY},
-  {ex::ABS,            "abs",                   ex::FIRST_UNARY},
-  {ex::MINUS,          "unary -",               ex::FIRST_UNARY},
-  {17,                 "unknown",               ex::UNKNOWN},
-  {18,                 "unknown",               ex::UNKNOWN},
-  {19,                 "unknown",               ex::UNKNOWN},
-  {ex::OR,             "||",                    ex::FIRST_BINARY_LOGICAL},
-  {ex::AND,            "&&",                    ex::FIRST_BINARY_LOGICAL},
-  {ex::LT,             "<",                     ex::FIRST_RELATIONAL},
-  {ex::LE,             "<=",                    ex::FIRST_RELATIONAL},
-  {ex::EQ,             "=",                     ex::FIRST_RELATIONAL},
-  {25,                 "unknown",               ex::UNKNOWN},
-  {26,                 "unknown",               ex::UNKNOWN},
-  {27,                 "unknown",               ex::UNKNOWN},
-  {ex::GE,             ">=",                    ex::FIRST_RELATIONAL},
-  {ex::GT,             ">",                     ex::FIRST_RELATIONAL},
-  {ex::NE,             "!=",                    ex::FIRST_RELATIONAL},
-  {31,                 "unknown",               ex::UNKNOWN},
-  {32,                 "unknown",               ex::UNKNOWN},
-  {33,                 "unknown",               ex::UNKNOWN},
-  {ex::NOT,            "!",                     ex::NOT},
-  {ex::IF,             "if",                    ex::IF},
-  {36,                 "unknown",               ex::UNKNOWN},
-  {ex::TANH,           "tanh",                  ex::FIRST_UNARY},
-  {ex::TAN,            "tan",                   ex::FIRST_UNARY},
-  {ex::SQRT,           "sqrt",                  ex::FIRST_UNARY},
-  {ex::SINH,           "sinh",                  ex::FIRST_UNARY},
-  {ex::SIN,            "sin",                   ex::FIRST_UNARY},
-  {ex::LOG10,          "log10",                 ex::FIRST_UNARY},
-  {ex::LOG,            "log",                   ex::FIRST_UNARY},
-  {ex::EXP,            "exp",                   ex::FIRST_UNARY},
-  {ex::COSH,           "cosh",                  ex::FIRST_UNARY},
-  {ex::COS,            "cos",                   ex::FIRST_UNARY},
-  {ex::ATANH,          "atanh",                 ex::FIRST_UNARY},
-  {ex::ATAN2,          "atan2",                 ex::FIRST_BINARY},
-  {ex::ATAN,           "atan",                  ex::FIRST_UNARY},
-  {ex::ASINH,          "asinh",                 ex::FIRST_UNARY},
-  {ex::ASIN,           "asin",                  ex::FIRST_UNARY},
-  {ex::ACOSH,          "acosh",                 ex::FIRST_UNARY},
-  {ex::ACOS,           "acos",                  ex::FIRST_UNARY},
-  {ex::SUM,            "sum",                   ex::SUM},
-  {ex::INT_DIV,        "div",                   ex::FIRST_BINARY},
-  {ex::PRECISION,      "precision",             ex::FIRST_BINARY},
-  {ex::ROUND,          "round",                 ex::FIRST_BINARY},
-  {ex::TRUNC,          "trunc",                 ex::FIRST_BINARY},
-  {ex::COUNT,          "count",                 ex::COUNT},
-  {ex::NUMBEROF,       "numberof",              ex::NUMBEROF},
-  {ex::NUMBEROF_SYM,   "string numberof",       ex::UNKNOWN},
-  {ex::ATLEAST,        "atleast",               ex::FIRST_LOGICAL_COUNT},
-  {ex::ATMOST,         "atmost",                ex::FIRST_LOGICAL_COUNT},
-  {ex::PLTERM,         "piecewise-linear term", ex::PLTERM},
-  {ex::IFSYM,          "string if-then-else",   ex::UNKNOWN},
-  {ex::EXACTLY,        "exactly",               ex::FIRST_LOGICAL_COUNT},
-  {ex::NOT_ATLEAST,    "!atleast",              ex::FIRST_LOGICAL_COUNT},
-  {ex::NOT_ATMOST,     "!atmost",               ex::FIRST_LOGICAL_COUNT},
-  {ex::NOT_EXACTLY,    "!exactly",              ex::FIRST_LOGICAL_COUNT},
-  {ex::AND,            "forall",                ex::FIRST_ITERATED_LOGICAL},
-  {ex::OR,             "exists",                ex::FIRST_ITERATED_LOGICAL},
-  {ex::IMPLICATION,    "==>",                   ex::IMPLICATION},
-  {ex::IFF,            "<==>",                  ex::FIRST_BINARY_LOGICAL},
-  {ex::ALLDIFF,        "alldiff",               ex::FIRST_PAIRWISE},
-  {ex::NOT_ALLDIFF,    "!alldiff",              ex::FIRST_PAIRWISE},
-  {ex::POW_CONST_EXP,  "^",                     ex::FIRST_BINARY},
-  {ex::POW2,           "^2",                    ex::FIRST_UNARY},
-  {ex::POW_CONST_BASE, "^",                     ex::FIRST_BINARY},
-  {ex::CALL,           "function call",         ex::CALL},
-  {ex::CONSTANT,       "constant",              ex::CONSTANT},
-  {ex::STRING,         "string",                ex::STRING},
-  {ex::VARIABLE,       "variable",              ex::VARIABLE},
-  {ex::LAST_EXPR + 1,  "unknown",               ex::UNKNOWN},
-  {777,                "unknown",               ex::UNKNOWN}
+  {-1,                 ex::UNKNOWN},
+  {ex::ADD,            ex::FIRST_BINARY},
+  {ex::SUB,            ex::FIRST_BINARY},
+  {ex::MUL,            ex::FIRST_BINARY},
+  {ex::DIV,            ex::FIRST_BINARY},
+  {ex::MOD,            ex::FIRST_BINARY},
+  {ex::POW,            ex::FIRST_BINARY},
+  {ex::LESS,           ex::FIRST_BINARY},
+  { 7,                 ex::UNKNOWN},
+  { 8,                 ex::UNKNOWN},
+  { 9,                 ex::UNKNOWN},
+  {10,                 ex::UNKNOWN},
+  {ex::MIN,            ex::FIRST_VARARG},
+  {ex::MAX,            ex::FIRST_VARARG},
+  {ex::FLOOR,          ex::FIRST_UNARY},
+  {ex::CEIL,           ex::FIRST_UNARY},
+  {ex::ABS,            ex::FIRST_UNARY},
+  {ex::MINUS,          ex::FIRST_UNARY},
+  {17,                 ex::UNKNOWN},
+  {18,                 ex::UNKNOWN},
+  {19,                 ex::UNKNOWN},
+  {ex::OR,             ex::FIRST_BINARY_LOGICAL},
+  {ex::AND,            ex::FIRST_BINARY_LOGICAL},
+  {ex::LT,             ex::FIRST_RELATIONAL},
+  {ex::LE,             ex::FIRST_RELATIONAL},
+  {ex::EQ,             ex::FIRST_RELATIONAL},
+  {25,                 ex::UNKNOWN},
+  {26,                 ex::UNKNOWN},
+  {27,                 ex::UNKNOWN},
+  {ex::GE,             ex::FIRST_RELATIONAL},
+  {ex::GT,             ex::FIRST_RELATIONAL},
+  {ex::NE,             ex::FIRST_RELATIONAL},
+  {31,                 ex::UNKNOWN},
+  {32,                 ex::UNKNOWN},
+  {33,                 ex::UNKNOWN},
+  {ex::NOT,            ex::NOT},
+  {ex::IF,             ex::IF},
+  {36,                 ex::UNKNOWN},
+  {ex::TANH,           ex::FIRST_UNARY},
+  {ex::TAN,            ex::FIRST_UNARY},
+  {ex::SQRT,           ex::FIRST_UNARY},
+  {ex::SINH,           ex::FIRST_UNARY},
+  {ex::SIN,            ex::FIRST_UNARY},
+  {ex::LOG10,          ex::FIRST_UNARY},
+  {ex::LOG,            ex::FIRST_UNARY},
+  {ex::EXP,            ex::FIRST_UNARY},
+  {ex::COSH,           ex::FIRST_UNARY},
+  {ex::COS,            ex::FIRST_UNARY},
+  {ex::ATANH,          ex::FIRST_UNARY},
+  {ex::ATAN2,          ex::FIRST_BINARY},
+  {ex::ATAN,           ex::FIRST_UNARY},
+  {ex::ASINH,          ex::FIRST_UNARY},
+  {ex::ASIN,           ex::FIRST_UNARY},
+  {ex::ACOSH,          ex::FIRST_UNARY},
+  {ex::ACOS,           ex::FIRST_UNARY},
+  {ex::SUM,            ex::SUM},
+  {ex::INT_DIV,        ex::FIRST_BINARY},
+  {ex::PRECISION,      ex::FIRST_BINARY},
+  {ex::ROUND,          ex::FIRST_BINARY},
+  {ex::TRUNC,          ex::FIRST_BINARY},
+  {ex::COUNT,          ex::COUNT},
+  {ex::NUMBEROF,       ex::NUMBEROF},
+  {ex::NUMBEROF_SYM,   ex::UNKNOWN},
+  {ex::ATLEAST,        ex::FIRST_LOGICAL_COUNT},
+  {ex::ATMOST,         ex::FIRST_LOGICAL_COUNT},
+  {ex::PLTERM,         ex::PLTERM},
+  {ex::IFSYM,          ex::UNKNOWN},
+  {ex::EXACTLY,        ex::FIRST_LOGICAL_COUNT},
+  {ex::NOT_ATLEAST,    ex::FIRST_LOGICAL_COUNT},
+  {ex::NOT_ATMOST,     ex::FIRST_LOGICAL_COUNT},
+  {ex::NOT_EXACTLY,    ex::FIRST_LOGICAL_COUNT},
+  {ex::AND,            ex::FIRST_ITERATED_LOGICAL},
+  {ex::OR,             ex::FIRST_ITERATED_LOGICAL},
+  {ex::IMPLICATION,    ex::IMPLICATION},
+  {ex::IFF,            ex::FIRST_BINARY_LOGICAL},
+  {ex::ALLDIFF,        ex::FIRST_PAIRWISE},
+  {ex::NOT_ALLDIFF,    ex::FIRST_PAIRWISE},
+  {ex::POW_CONST_EXP,  ex::FIRST_BINARY},
+  {ex::POW2,           ex::FIRST_UNARY},
+  {ex::POW_CONST_BASE, ex::FIRST_BINARY},
+  {ex::CALL,           ex::CALL},
+  {ex::CONSTANT,       ex::CONSTANT},
+  {ex::STRING,         ex::STRING},
+  {ex::VARIABLE,       ex::VARIABLE},
+  {ex::LAST_EXPR + 1,  ex::UNKNOWN},
+  {777,                ex::UNKNOWN}
 };
 
 template <typename ExprType>
@@ -997,558 +996,6 @@ TEST_F(ExprTest, IsZero) {
   EXPECT_FALSE(IsZero(MakeVariable(0)));
 }
 
-// Checks if WriteExpr produces the expected output for expr.
-static ::testing::AssertionResult CheckWrite(
-    const char *, const char *expr_str,
-    const std::string &expected_output, NumericExpr expr) {
-  fmt::MemoryWriter w;
-  WriteExpr(w, asl::LinearObjExpr(), expr);
-  std::string actual_output = w.str();
-  if (expected_output == actual_output)
-    return ::testing::AssertionSuccess();
-  return ::testing::AssertionFailure()
-      << "Output of: Writer(w, LinearObjExpr(), " << expr_str << ")\n"
-      << "   Actual: " << actual_output << "\n"
-      << " Expected: " << expected_output << "\n";
-}
-
-#define CHECK_WRITE(expected_output, expr) \
-  EXPECT_PRED_FORMAT2(CheckWrite, expected_output, expr)
-
-TEST_F(ExprTest, WriteNumericConstant) {
-  CHECK_WRITE("0", MakeConst(0));
-  CHECK_WRITE("42", MakeConst(42));
-  CHECK_WRITE("12.34", MakeConst(12.34));
-}
-
-TEST_F(ExprTest, WriteVariable) {
-  CHECK_WRITE("x1", MakeVariable(0));
-  CHECK_WRITE("x3", MakeVariable(2));
-}
-
-TEST_F(ExprTest, WriteUnaryExpr) {
-  NumericExpr x1 = MakeVariable(0);
-  CHECK_WRITE("-x1", MakeUnary(ex::MINUS, x1));
-  CHECK_WRITE("x1 ^ 2", MakeUnary(ex::POW2, x1));
-  int count = 0;
-  for (int i = 0, size = sizeof(OP_INFO) / sizeof(*OP_INFO); i < size; ++i) {
-    const OpInfo &info = OP_INFO[i];
-    ex::Kind code = static_cast<ex::Kind>(info.code);
-    if (info.kind != ex::FIRST_UNARY || code == ex::MINUS || code == ex::POW2)
-      continue;
-    CHECK_WRITE(fmt::format("{}(x1)", info.str), MakeUnary(code, x1));
-    ++count;
-  }
-  EXPECT_EQ(19, count);
-}
-
-TEST_F(ExprTest, WriteBinaryExpr) {
-  Variable x1 = MakeVariable(0);
-  NumericConstant n42 = MakeConst(42);
-  CHECK_WRITE("x1 + 42", MakeBinary(ex::ADD, x1, n42));
-  CHECK_WRITE("x1 - 42", MakeBinary(ex::SUB, x1, n42));
-  CHECK_WRITE("x1 * 42", MakeBinary(ex::MUL, x1, n42));
-  CHECK_WRITE("x1 / 42", MakeBinary(ex::DIV, x1, n42));
-  CHECK_WRITE("x1 mod 42", MakeBinary(ex::MOD, x1, n42));
-  CHECK_WRITE("x1 ^ 42", MakeBinary(ex::POW, x1, n42));
-  CHECK_WRITE("x1 ^ 42", MakeBinary(ex::POW, x1, n42));
-  CHECK_WRITE("x1 ^ 42", MakeBinary(ex::POW_CONST_BASE, x1, n42));
-  CHECK_WRITE("x1 ^ 42", MakeBinary(ex::POW_CONST_EXP, x1, n42));
-  CHECK_WRITE("x1 less 42", MakeBinary(ex::LESS, x1, n42));
-  CHECK_WRITE("x1 div 42", MakeBinary(ex::INT_DIV, x1, n42));
-}
-
-TEST_F(ExprTest, WriteBinaryFunc) {
-  auto x1 = MakeVariable(0);
-  auto n42 = MakeConst(42);
-  CHECK_WRITE("atan2(x1, 42)", MakeBinary(ex::ATAN2, x1, n42));
-  CHECK_WRITE("precision(x1, 42)", MakeBinary(ex::PRECISION, x1, n42));
-  CHECK_WRITE("round(x1, 42)", MakeBinary(ex::ROUND, x1, n42));
-  CHECK_WRITE("trunc(x1, 42)", MakeBinary(ex::TRUNC, x1, n42));
-}
-
-TEST_F(ExprTest, WriteIfExpr) {
-  auto n0 = MakeConst(0), n1 = MakeConst(1);
-  CHECK_WRITE("if x1 = 0 then 1",
-      MakeIf(MakeRelational(ex::EQ, MakeVariable(0), n0), n1, n0));
-  CHECK_WRITE("if x1 = 0 then 0 else 1",
-      MakeIf(MakeRelational(ex::EQ, MakeVariable(0), n0), n0, n1));
-}
-
-TEST_F(ExprTest, WritePiecewiseLinearExpr) {
-  double breaks[] = {5, 10};
-  double slopes[] = {-1, 0, 1};
-  CHECK_WRITE("<<5, 10; -1, 0, 1>> x43",
-              builder.MakePiecewiseLinear(2, breaks, slopes, MakeVariable(42)));
-}
-
-TEST_F(ExprTest, WriteCallExpr) {
-  asl::Function f = builder.RegisterFunction("foo", TestFunc, -1);
-  Expr args[] = {
-      MakeConst(3),
-      MakeBinary(ex::ADD, MakeVariable(0), MakeConst(5)),
-      MakeConst(7),
-      MakeVariable(1)
-  };
-  CHECK_WRITE("foo()", builder.MakeCall(f, MakeArrayRef(args, 0)));
-  CHECK_WRITE("foo(3)", builder.MakeCall(f, MakeArrayRef(args, 1)));
-  CHECK_WRITE("foo(3, x1 + 5, 7)", builder.MakeCall(f, MakeArrayRef(args, 3)));
-  CHECK_WRITE("foo(3, x1 + 5, 7, x2)", builder.MakeCall(f, args));
-}
-
-TEST_F(ExprTest, WriteVarArgExpr) {
-  NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  CHECK_WRITE("min(x1, x2, 42)", builder.MakeVarArg(ex::MIN, args));
-  CHECK_WRITE("max(x1, x2, 42)", builder.MakeVarArg(ex::MAX, args));
-}
-
-TEST_F(ExprTest, WriteSumExpr) {
-  NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  CHECK_WRITE("/* sum */ (x1 + x2 + 42)", builder.MakeSum(args));
-  NumericExpr args2[] = {
-    MakeBinary(ex::ADD, MakeVariable(0), MakeVariable(1)), MakeConst(42)
-  };
-  CHECK_WRITE("/* sum */ ((x1 + x2) + 42)", builder.MakeSum(args2));
-}
-
-TEST_F(ExprTest, WriteCountExpr) {
-  LogicalExpr args[] = {
-    MakeRelational(ex::EQ, MakeVariable(0), MakeConst(0)), l1, l0
-  };
-  CHECK_WRITE("count(x1 = 0, 1, 0)", builder.MakeCount(args));
-}
-
-TEST_F(ExprTest, WriteNumberOfExpr) {
-  NumericExpr args[] = {MakeConst(42), MakeConst(43), MakeConst(44)};
-  CHECK_WRITE("numberof 42 in (43, 44)", builder.MakeNumberOf(args));
-}
-
-TEST_F(ExprTest, WriteNotExpr) {
-  auto n0 = MakeConst(0), n1 = MakeConst(1);
-  CHECK_WRITE("if !(x1 = 0) then 1",
-      MakeIf(builder.MakeNot(
-               MakeRelational(ex::EQ, MakeVariable(0), n0)), n1, n0));
-}
-
-TEST_F(ExprTest, WriteBinaryLogicalExpr) {
-  auto e1 = MakeRelational(ex::GT, MakeVariable(0), MakeConst(0));
-  auto e2 = MakeRelational(ex::LT, MakeVariable(0), MakeConst(10));
-  CHECK_WRITE("if x1 > 0 || x1 < 10 then 1",
-      MakeIf(MakeBinaryLogical(ex::OR, e1, e2), MakeConst(1), MakeConst(0)));
-  CHECK_WRITE("if x1 > 0 && x1 < 10 then 1",
-      MakeIf(MakeBinaryLogical(ex::AND, e1, e2), MakeConst(1), MakeConst(0)));
-  CHECK_WRITE("if x1 > 0 <==> x1 < 10 then 1",
-      MakeIf(MakeBinaryLogical(ex::IFF, e1, e2), MakeConst(1), MakeConst(0)));
-}
-
-TEST_F(ExprTest, WriteRelationalExpr) {
-  auto n0 = MakeConst(0), n1 = MakeConst(1);
-  CHECK_WRITE("if x1 < 0 then 1",
-      MakeIf(MakeRelational(ex::LT, MakeVariable(0), n0), n1, n0));
-  CHECK_WRITE("if x1 <= 0 then 1",
-      MakeIf(MakeRelational(ex::LE, MakeVariable(0), n0), n1, n0));
-  CHECK_WRITE("if x1 = 0 then 1",
-      MakeIf(MakeRelational(ex::EQ, MakeVariable(0), n0), n1, n0));
-  CHECK_WRITE("if x1 >= 0 then 1",
-      MakeIf(MakeRelational(ex::GE, MakeVariable(0), n0), n1, n0));
-  CHECK_WRITE("if x1 > 0 then 1",
-      MakeIf(MakeRelational(ex::GT, MakeVariable(0), n0), n1, n0));
-  CHECK_WRITE("if x1 != 0 then 1",
-      MakeIf(MakeRelational(ex::NE, MakeVariable(0), n0), n1, n0));
-}
-
-TEST_F(ExprTest, WriteLogicalCountExpr) {
-  auto n0 = MakeConst(0), n1 = MakeConst(1), value = MakeConst(42);
-  LogicalExpr args[] = {
-    MakeRelational(ex::EQ, MakeVariable(0), MakeConst(0)), l1, l0
-  };
-  asl::CountExpr count = builder.MakeCount(args);
-  CHECK_WRITE("if atleast 42 (x1 = 0, 1, 0) then 1",
-      MakeIf(MakeLogicalCount(ex::ATLEAST, value, count), n1, n0));
-  CHECK_WRITE("if atmost 42 (x1 = 0, 1, 0) then 1",
-      MakeIf(MakeLogicalCount(ex::ATMOST, value, count), n1, n0));
-  CHECK_WRITE("if exactly 42 (x1 = 0, 1, 0) then 1",
-      MakeIf(MakeLogicalCount(ex::EXACTLY, value, count), n1, n0));
-  CHECK_WRITE("if !atleast 42 (x1 = 0, 1, 0) then 1",
-      MakeIf(MakeLogicalCount(ex::NOT_ATLEAST, value, count), n1, n0));
-  CHECK_WRITE("if !atmost 42 (x1 = 0, 1, 0) then 1",
-      MakeIf(MakeLogicalCount(ex::NOT_ATMOST, value, count), n1, n0));
-  CHECK_WRITE("if !exactly 42 (x1 = 0, 1, 0) then 1",
-      MakeIf(MakeLogicalCount(ex::NOT_EXACTLY, value, count), n1, n0));
-}
-
-TEST_F(ExprTest, WriteImplicationExpr) {
-  auto e1 = MakeRelational(ex::EQ, MakeVariable(0), MakeConst(0));
-  CHECK_WRITE("if x1 = 0 ==> 1 then 1",
-      MakeIf(MakeImplication(e1, l1, l0), MakeConst(1), MakeConst(0)));
-  CHECK_WRITE("if x1 = 0 ==> 0 else 1 then 1",
-      MakeIf(MakeImplication(e1, l0, l1), MakeConst(1), MakeConst(0)));
-}
-
-TEST_F(ExprTest, WriteIteratedLogicalExpr) {
-  LogicalExpr args[] = {
-    MakeRelational(ex::EQ, MakeVariable(0), MakeConst(0)), l1, l0
-  };
-  CHECK_WRITE("if /* forall */ (x1 = 0 && 1 && 0) then 1",
-      MakeIf(builder.MakeIteratedLogical(ex::FORALL, args),
-             MakeConst(1), MakeConst(0)));
-  CHECK_WRITE("if /* exists */ (x1 = 0 || 1 || 0) then 1",
-      MakeIf(builder.MakeIteratedLogical(ex::EXISTS, args),
-             MakeConst(1), MakeConst(0)));
-}
-
-TEST_F(ExprTest, WritePairwiseExpr) {
-  NumericExpr args[] = {MakeConst(42), MakeConst(43), MakeConst(44)};
-  CHECK_WRITE("if alldiff(42, 43, 44) then 1",
-      MakeIf(builder.MakeAllDiff(args), MakeConst(1), MakeConst(0)));
-}
-
-TEST_F(ExprTest, WriteStringLiteral) {
-  Expr args[] = {builder.MakeStringLiteral("abc")};
-  asl::Function f = builder.RegisterFunction("f", TestFunc, 1, func::SYMBOLIC);
-  CHECK_WRITE("f('abc')", builder.MakeCall(f, args));
-  args[0] = builder.MakeStringLiteral("ab'c");
-  CHECK_WRITE("f('ab''c')", builder.MakeCall(f, args));
-  args[0] = builder.MakeStringLiteral("ab\nc");
-  CHECK_WRITE("f('ab\\\nc')", builder.MakeCall(f, args));
-}
-
-TEST_F(ExprTest, UnaryExprPrecedence) {
-  auto x1 = MakeVariable(0);
-  CHECK_WRITE("--x1", MakeUnary(ex::MINUS, MakeUnary(ex::MINUS, x1)));
-  CHECK_WRITE("-(x1 ^ x1)", MakeUnary(ex::MINUS, MakeBinary(ex::POW, x1, x1)));
-}
-
-TEST_F(ExprTest, UnaryFuncPrecedence) {
-  auto x1 = MakeVariable(0);
-  int count = 0;
-  for (int i = 0, size = sizeof(OP_INFO) / sizeof(*OP_INFO); i < size; ++i) {
-    const OpInfo &info = OP_INFO[i];
-    ex::Kind code = static_cast<ex::Kind>(info.code);
-    if (info.kind != ex::FIRST_UNARY || code == ex::MINUS || code == ex::POW2)
-      continue;
-    CHECK_WRITE(fmt::format("{0}({0}(x1))", info.str),
-        MakeUnary(code, MakeUnary(code, x1)));
-    CHECK_WRITE(fmt::format("{0}(x1 + x1)", info.str),
-        MakeUnary(code, MakeBinary(ex::ADD, x1, x1)));
-    ++count;
-  }
-  EXPECT_EQ(19, count);
-}
-
-TEST_F(ExprTest, Pow2Precedence) {
-  auto x1 = MakeVariable(0);
-  CHECK_WRITE("(x1 ^ 2) ^ 2", MakeUnary(ex::POW2, MakeUnary(ex::POW2, x1)));
-  CHECK_WRITE("(x1 * x1) ^ 2",
-              MakeUnary(ex::POW2, MakeBinary(ex::MUL, x1, x1)));
-}
-
-TEST_F(ExprTest, AdditiveExprPrecedence) {
-  auto x1 = MakeVariable(0), x2 = MakeVariable(1), x3 = MakeVariable(2);
-  CHECK_WRITE("x1 + x2 + x3",
-      MakeBinary(ex::ADD, MakeBinary(ex::ADD, x1, x2), x3));
-  CHECK_WRITE("x1 + x2 - x3",
-      MakeBinary(ex::SUB, MakeBinary(ex::ADD, x1, x2), x3));
-  CHECK_WRITE("x1 + x2 less x3",
-      MakeBinary(ex::LESS, MakeBinary(ex::ADD, x1, x2), x3));
-  CHECK_WRITE("x1 + (x2 + x3)",
-      MakeBinary(ex::ADD, x1, MakeBinary(ex::ADD, x2, x3)));
-  CHECK_WRITE("(x1 + x2) * x3",
-      MakeBinary(ex::MUL, MakeBinary(ex::ADD, x1, x2), x3));
-  CHECK_WRITE("if 1 then x1 else x2 + x3",
-      MakeIf(l1, x1, MakeBinary(ex::ADD, x2, x3)));
-}
-
-TEST_F(ExprTest, MultiplicativeExprPrecedence) {
-  auto x1 = MakeVariable(0), x2 = MakeVariable(1), x3 = MakeVariable(2);
-  CHECK_WRITE("x1 * x2 * x3",
-      MakeBinary(ex::MUL, MakeBinary(ex::MUL, x1, x2), x3));
-  CHECK_WRITE("x1 * x2 / x3",
-      MakeBinary(ex::DIV, MakeBinary(ex::MUL, x1, x2), x3));
-  CHECK_WRITE("x1 * x2 div x3",
-      MakeBinary(ex::INT_DIV, MakeBinary(ex::MUL, x1, x2), x3));
-  CHECK_WRITE("x1 * x2 mod x3",
-      MakeBinary(ex::MOD, MakeBinary(ex::MUL, x1, x2), x3));
-  CHECK_WRITE("x1 * (x2 * x3)",
-      MakeBinary(ex::MUL, x1, MakeBinary(ex::MUL, x2, x3)));
-  CHECK_WRITE("(x1 * x2) ^ x3",
-      MakeBinary(ex::POW, MakeBinary(ex::MUL, x1, x2), x3));
-  CHECK_WRITE("(x1 + x2) * x3",
-      MakeBinary(ex::MUL, MakeBinary(ex::ADD, x1, x2), x3));
-}
-
-TEST_F(ExprTest, ExponentiationExprPrecedence) {
-  auto x1 = MakeVariable(0), x2 = MakeVariable(1), x3 = MakeVariable(2);
-  CHECK_WRITE("x1 ^ x2 ^ x3",
-      MakeBinary(ex::POW, x1, MakeBinary(ex::POW, x2, x3)));
-  CHECK_WRITE("x1 ^ x2 ^ 3",
-      MakeBinary(ex::POW, x1, MakeBinary(ex::POW_CONST_BASE, x2,
-                                         MakeConst(3))));
-  CHECK_WRITE("x1 ^ 3 ^ x2",
-      MakeBinary(ex::POW, x1, MakeBinary(ex::POW_CONST_EXP, MakeConst(3), x2)));
-  CHECK_WRITE("(x1 ^ 2) ^ 3",
-      MakeBinary(ex::POW_CONST_BASE, MakeBinary(ex::POW_CONST_BASE, x1,
-                                                MakeConst(2)), MakeConst(3)));
-  CHECK_WRITE("-x1 ^ -x2",
-      MakeBinary(ex::POW, MakeUnary(ex::MINUS, x1), MakeUnary(ex::MINUS, x2)));
-  CHECK_WRITE("x1 ^ (x2 * x3)",
-      MakeBinary(ex::POW, x1, MakeBinary(ex::MUL, x2, x3)));
-}
-
-TEST_F(ExprTest, BinaryFuncPrecedence) {
-  auto x1 = MakeVariable(0);
-  auto e = MakeBinary(ex::ADD, x1, x1);
-  CHECK_WRITE("atan2(atan2(x1, x1), x1 + x1)",
-      MakeBinary(ex::ATAN2, MakeBinary(ex::ATAN2, x1, x1), e));
-  CHECK_WRITE("precision(precision(x1, x1), x1 + x1)",
-      MakeBinary(ex::PRECISION, MakeBinary(ex::PRECISION, x1, x1), e));
-  CHECK_WRITE("round(round(x1, x1), x1 + x1)",
-      MakeBinary(ex::ROUND, MakeBinary(ex::ROUND, x1, x1), e));
-  CHECK_WRITE("trunc(trunc(x1, x1), x1 + x1)",
-      MakeBinary(ex::TRUNC, MakeBinary(ex::TRUNC, x1, x1), e));
-}
-
-TEST_F(ExprTest, IfExprPrecedence) {
-  NumericExpr n0 = MakeConst(0), n1 = MakeConst(1), n2 = MakeConst(2);
-  LogicalExpr e = MakeBinaryLogical(ex::OR, l0, l1);
-  CHECK_WRITE("if 0 || 1 then if 0 || 1 then 1",
-      MakeIf(e, MakeIf(e, n1, n0), n0));
-  CHECK_WRITE("if 0 || 1 then if 0 || 1 then 1 else 2",
-      MakeIf(e, MakeIf(e, n1, n2), n0));
-  CHECK_WRITE("if 0 || 1 then (if 0 || 1 then 1) else 2",
-      MakeIf(e, MakeIf(e, n1, n0), n2));
-  CHECK_WRITE("if 0 || 1 then 0 else if 0 || 1 then 1 else 2",
-      MakeIf(e, n0, MakeIf(e, n1, n2)));
-  CHECK_WRITE("if !(0 || 1) then x1 + 1",
-      MakeIf(builder.MakeNot(e), MakeBinary(ex::ADD, MakeVariable(0), n1), n0));
-}
-
-TEST_F(ExprTest, PiecewiseLinearExprPrecedence) {
-  double breakpoints[] = {5, 10};
-  double slopes[] = {-1, 0, 1};
-  NumericExpr e = builder.MakePiecewiseLinear(
-        2, breakpoints, slopes, MakeVariable(42));
-  CHECK_WRITE("<<5, 10; -1, 0, 1>> x43 ^ 2",
-      MakeBinary(ex::POW, e, MakeConst(2)));
-}
-
-TEST_F(ExprTest, CallExprPrecedence) {
-  auto x1 = MakeVariable(0), x2 = MakeVariable(1);
-  auto f = builder.RegisterFunction("foo", TestFunc, -1);
-  Expr args[] = {
-      builder.MakeCall(f, MakeArrayRef<Expr>(0, 0)),
-      MakeBinary(ex::ADD, x1, MakeConst(5)),
-      MakeConst(7),
-      MakeUnary(ex::FLOOR, x2)
-  };
-  CHECK_WRITE("foo(foo(), x1 + 5, 7, floor(x2))", builder.MakeCall(f, args));
-}
-
-TEST_F(ExprTest, VarArgExprPrecedence) {
-  NumericExpr x1 = MakeVariable(0), x2 = MakeVariable(1);
-  NumericExpr e = MakeBinary(ex::ADD, x1, x2);
-  NumericExpr args[] = {e, e};
-  CHECK_WRITE("min(x1 + x2, x1 + x2)", builder.MakeVarArg(ex::MIN, args));
-  CHECK_WRITE("max(x1 + x2, x1 + x2)", builder.MakeVarArg(ex::MAX, args));
-  NumericExpr args2[] = {x1}, args3[] = {x2};
-  NumericExpr args4[] = {
-    builder.MakeVarArg(ex::MIN, args2), builder.MakeVarArg(ex::MIN, args3)
-  };
-  CHECK_WRITE("min(min(x1), min(x2))", builder.MakeVarArg(ex::MIN, args4));
-  NumericExpr args5[] = {
-    builder.MakeVarArg(ex::MAX, args2), builder.MakeVarArg(ex::MAX, args3)
-  };
-  CHECK_WRITE("max(max(x1), max(x2))", builder.MakeVarArg(ex::MAX, args5));
-}
-
-TEST_F(ExprTest, SumExprPrecedence) {
-  auto x1 = MakeVariable(0), x2 = MakeVariable(1), x3 = MakeVariable(2);
-  NumericExpr args1[] = {x2, x3};
-  NumericExpr args2[] = {x1, builder.MakeSum(args1)};
-  CHECK_WRITE("/* sum */ (x1 + /* sum */ (x2 + x3))", builder.MakeSum(args2));
-  NumericExpr args3[] = {x1, MakeBinary(ex::MUL, x2, x3)};
-  CHECK_WRITE("/* sum */ (x1 + x2 * x3)", builder.MakeSum(args3));
-  NumericExpr args4[] = {MakeBinary(ex::ADD, x1, x2), x3};
-  CHECK_WRITE("/* sum */ ((x1 + x2) + x3)", builder.MakeSum(args4));
-}
-
-TEST_F(ExprTest, CountExprPrecedence) {
-  LogicalExpr e = MakeBinaryLogical(ex::OR, l0, l1);
-  LogicalExpr args[] = {e, e};
-  CHECK_WRITE("count(0 || 1, 0 || 1)", builder.MakeCount(args));
-}
-
-TEST_F(ExprTest, NumberOfExprPrecedence) {
-  NumericExpr x1 = MakeVariable(0), x2 = MakeVariable(1);
-  NumericExpr args[] = {MakeConst(42), x1, x2};
-  NumericExpr e = builder.MakeNumberOf(args);
-  NumericExpr args2[] = {e, e, e};
-  CHECK_WRITE("numberof numberof 42 in (x1, x2) in ("
-      "numberof 42 in (x1, x2), numberof 42 in (x1, x2))",
-              builder.MakeNumberOf(args2));
-  NumericExpr e2 = MakeBinary(ex::ADD, x1, x2);
-  NumericExpr args3[] = {e2, e2, e2};
-  CHECK_WRITE("numberof x1 + x2 in (x1 + x2, x1 + x2)",
-              builder.MakeNumberOf(args3));
-}
-
-TEST_F(ExprTest, NotExprPrecedence) {
-  NumericExpr n0 = MakeConst(0), n1 = MakeConst(1), x = MakeVariable(0);
-  CHECK_WRITE("if !!(x1 = 0) then 1",
-      MakeIf(builder.MakeNot(
-               builder.MakeNot(MakeRelational(ex::EQ, x, n0))), n1, n0));
-}
-
-TEST_F(ExprTest, LogicalOrExprPrecedence) {
-  auto n0 = MakeConst(0), n1 = MakeConst(1);
-  CHECK_WRITE("if 0 || 1 || 1 then 1",
-      MakeIf(MakeBinaryLogical(ex::OR, MakeBinaryLogical(ex::OR, l0, l1), l1),
-          n1, n0));
-  CHECK_WRITE("if 0 || (1 || 1) then 1",
-      MakeIf(MakeBinaryLogical(ex::OR, l0, MakeBinaryLogical(ex::OR, l1, l1)),
-          n1, n0));
-  CHECK_WRITE("if 0 || 1 && 1 then 1",
-      MakeIf(MakeBinaryLogical(ex::OR, l0, MakeBinaryLogical(ex::AND, l1, l1)),
-          n1, n0));
-}
-
-TEST_F(ExprTest, LogicalAndExprPrecedence) {
-  auto n0 = MakeConst(0), n1 = MakeConst(1);
-  CHECK_WRITE("if 0 && 1 && 1 then 1",
-      MakeIf(MakeBinaryLogical(ex::AND, MakeBinaryLogical(ex::AND, l0, l1), l1),
-          n1, n0));
-  CHECK_WRITE("if 0 && (1 && 1) then 1",
-      MakeIf(MakeBinaryLogical(ex::AND, l0, MakeBinaryLogical(ex::AND, l1, l1)),
-          n1, n0));
-  CHECK_WRITE("if 0 <= 1 && 1 then 1",
-      MakeIf(MakeBinaryLogical(ex::AND,
-                               MakeRelational(ex::LE, n0, n1), l1), n1, n0));
-}
-
-TEST_F(ExprTest, IffExprPrecedence) {
-  auto n0 = MakeConst(0), n1 = MakeConst(1);
-  CHECK_WRITE("if 0 <==> 1 <==> 1 then 1",
-      MakeIf(MakeBinaryLogical(ex::IFF, MakeBinaryLogical(ex::IFF, l0, l1), l1),
-          n1, n0));
-  CHECK_WRITE("if 0 <==> (1 <==> 1) then 1",
-      MakeIf(MakeBinaryLogical(ex::IFF, l0, MakeBinaryLogical(ex::IFF, l1, l1)),
-          n1, n0));
-  CHECK_WRITE("if (0 <==> 1) && 1 then 1",
-      MakeIf(MakeBinaryLogical(ex::AND, MakeBinaryLogical(ex::IFF, l0, l1), l1),
-          n1, n0));
-}
-
-TEST_F(ExprTest, RelationalExprPrecedence) {
-  auto n0 = MakeConst(0), n1 = MakeConst(1);
-  auto e1 = MakeBinary(ex::ADD, MakeVariable(0), n1);
-  auto e2 = MakeBinary(ex::ADD, MakeVariable(1), n1);
-  CHECK_WRITE("if x1 + 1 < x2 + 1 then 1",
-      MakeIf(MakeRelational(ex::LT, e1, e2), n1, n0));
-  CHECK_WRITE("if x1 + 1 <= x2 + 1 then 1",
-      MakeIf(MakeRelational(ex::LE, e1, e2), n1, n0));
-  CHECK_WRITE("if x1 + 1 = x2 + 1 then 1",
-      MakeIf(MakeRelational(ex::EQ, e1, e2), n1, n0));
-  CHECK_WRITE("if x1 + 1 >= x2 + 1 then 1",
-      MakeIf(MakeRelational(ex::GE, e1, e2), n1, n0));
-  CHECK_WRITE("if x1 + 1 > x2 + 1 then 1",
-      MakeIf(MakeRelational(ex::GT, e1, e2), n1, n0));
-  CHECK_WRITE("if x1 + 1 != x2 + 1 then 1",
-      MakeIf(MakeRelational(ex::NE, e1, e2), n1, n0));
-}
-
-TEST_F(ExprTest, LogicalCountExprPrecedence) {
-  NumericExpr n0 = MakeConst(0), n1 = MakeConst(1), lhs = MakeConst(42);
-  LogicalExpr args[] = {
-    MakeRelational(ex::EQ, MakeVariable(0), MakeConst(0)), l1
-  };
-  LogicalExpr count1 =
-      builder.MakeLogicalCount(ex::ATLEAST, lhs, builder.MakeCount(args));
-  LogicalExpr args2[] = {count1, l1};
-  CountExpr count2 = builder.MakeCount(args2);
-  CHECK_WRITE("if atleast 42 (atleast 42 (x1 = 0, 1), 1) then 1",
-      MakeIf(MakeLogicalCount(ex::ATLEAST, lhs, count2), n1, n0));
-  CHECK_WRITE("if atmost 42 (atleast 42 (x1 = 0, 1), 1) then 1",
-      MakeIf(MakeLogicalCount(ex::ATMOST, lhs, count2), n1, n0));
-  CHECK_WRITE("if exactly 42 (atleast 42 (x1 = 0, 1), 1) then 1",
-      MakeIf(MakeLogicalCount(ex::EXACTLY, lhs, count2), n1, n0));
-  CHECK_WRITE("if !atleast 42 (atleast 42 (x1 = 0, 1), 1) then 1",
-      MakeIf(MakeLogicalCount(ex::NOT_ATLEAST, lhs, count2), n1, n0));
-  CHECK_WRITE("if !atmost 42 (atleast 42 (x1 = 0, 1), 1) then 1",
-      MakeIf(MakeLogicalCount(ex::NOT_ATMOST, lhs, count2), n1, n0));
-  CHECK_WRITE("if !exactly 42 (atleast 42 (x1 = 0, 1), 1) then 1",
-      MakeIf(MakeLogicalCount(ex::NOT_EXACTLY, lhs, count2), n1, n0));
-
-  args2[0] = l0;
-  CountExpr count = builder.MakeCount(args2);
-  CHECK_WRITE("if atleast 42 (0, 1) || 0 then 1",
-      MakeIf(MakeBinaryLogical(
-               ex::OR, MakeLogicalCount(ex::ATLEAST, lhs, count), l0), n1, n0));
-  CHECK_WRITE("if atmost 42 (0, 1) || 0 then 1",
-      MakeIf(MakeBinaryLogical(
-               ex::OR, MakeLogicalCount(ex::ATMOST, lhs, count), l0), n1, n0));
-  CHECK_WRITE("if exactly 42 (0, 1) || 0 then 1",
-      MakeIf(MakeBinaryLogical(
-               ex::OR, MakeLogicalCount(ex::EXACTLY, lhs, count), l0), n1, n0));
-  CHECK_WRITE("if !atleast 42 (0, 1) || 0 then 1",
-      MakeIf(MakeBinaryLogical(
-               ex::OR, MakeLogicalCount(ex::NOT_ATLEAST, lhs, count), l0),
-             n1, n0));
-  CHECK_WRITE("if !atmost 42 (0, 1) || 0 then 1",
-      MakeIf(MakeBinaryLogical(
-               ex::OR, MakeLogicalCount(ex::NOT_ATMOST, lhs, count), l0),
-             n1, n0));
-  CHECK_WRITE("if !exactly 42 (0, 1) || 0 then 1",
-      MakeIf(MakeBinaryLogical(
-               ex::OR, MakeLogicalCount(ex::NOT_EXACTLY, lhs, count), l0),
-             n1, n0));
-}
-
-TEST_F(ExprTest, IteratedLogicalExprPrecedence) {
-  auto n0 = MakeConst(0), n1 = MakeConst(1);
-  LogicalExpr args[] = {MakeBinaryLogical(ex::AND, l0, l0), l0};
-  CHECK_WRITE("if /* forall */ ((0 && 0) && 0) then 1",
-      MakeIf(builder.MakeIteratedLogical(ex::FORALL, args), n1, n0));
-  args[0] = MakeBinaryLogical(ex::OR, l0, l0);
-  CHECK_WRITE("if /* exists */ ((0 || 0) || 0) then 1",
-      MakeIf(builder.MakeIteratedLogical(ex::EXISTS, args), n1, n0));
-  args[0] = l0;
-  LogicalExpr args2[] = {builder.MakeIteratedLogical(ex::FORALL, args), l0};
-  CHECK_WRITE("if /* forall */ (/* forall */ (0 && 0) && 0) then 1",
-      MakeIf(builder.MakeIteratedLogical(ex::FORALL, args2), n1, n0));
-  args2[0] = builder.MakeIteratedLogical(ex::EXISTS, args);
-  CHECK_WRITE("if /* exists */ (/* exists */ (0 || 0) || 0) then 1",
-      MakeIf(builder.MakeIteratedLogical(ex::EXISTS, args2), n1, n0));
-}
-
-TEST_F(ExprTest, ImplicationExprPrecedence) {
-  NumericConstant n0 = MakeConst(0), n1 = MakeConst(1);
-  CHECK_WRITE("if 0 ==> 1 ==> 0 then 1",
-      MakeIf(MakeImplication(MakeImplication(l0, l1, l0), l0, l0), n1, n0));
-  CHECK_WRITE("if 0 ==> 1 ==> 0 else 1 then 1",
-      MakeIf(MakeImplication(MakeImplication(l0, l1, l0), l0, l1), n1, n0));
-  CHECK_WRITE("if 0 ==> 1 else 0 ==> 1 then 1",
-      MakeIf(MakeImplication(l0, l1, MakeImplication(l0, l1, l0)), n1, n0));
-  CHECK_WRITE("if 0 ==> (1 ==> 0) else 1 then 1",
-      MakeIf(MakeImplication(l0, MakeImplication(l1, l0, l0), l1), n1, n0));
-  CHECK_WRITE("if 0 ==> (1 ==> 0 else 1) then 1",
-      MakeIf(MakeImplication(l0, MakeImplication(l1, l0, l1), l0), n1, n0));
-  CHECK_WRITE("if 0 ==> 1 || 0 else 1 then 1",
-              MakeIf(MakeImplication(
-                       l0, MakeBinaryLogical(ex::OR, l1, l0), l1), n1, n0));
-  CHECK_WRITE("if 0 ==> (1 <==> 0) else 1 then 1",
-              MakeIf(MakeImplication(
-                       l0, MakeBinaryLogical(ex::IFF, l1, l0), l1), n1, n0));
-}
-
-TEST_F(ExprTest, PairwiseExprPrecedence) {
-  NumericConstant n0 = MakeConst(0), n1 = MakeConst(1);
-  NumericExpr args[] = {
-    MakeBinary(ex::ADD, n0, n1), MakeBinary(ex::ADD, n0, n1)
-  };
-  CHECK_WRITE("if alldiff(0 + 1, 0 + 1) then 1",
-      MakeIf(builder.MakeAllDiff(args), n1, n0));
-}
-
 #ifdef MP_USE_UNORDERED_MAP
 
 using asl::internal::HashCombine;
@@ -1606,7 +1053,7 @@ TEST_F(ExprTest, HashIfExpr) {
   CheckHash(builder.MakeIf(l0, builder.MakeVariable(2), n1));
 }
 
-TEST_F(ExprTest, HashPiecewiseLinearExpr) {
+TEST_F(ExprTest, HashPLTerm) {
   size_t hash = HashCombine<int>(0, ex::PLTERM);
   enum {NUM_BREAKPOINTS = 2};
   double breakpoints[NUM_BREAKPOINTS] = {5, 10};
@@ -1616,10 +1063,10 @@ TEST_F(ExprTest, HashPiecewiseLinearExpr) {
     hash = HashCombine(hash, breakpoints[i]);
   }
   hash = HashCombine(hash, slopes[NUM_BREAKPOINTS]);
-  hash = HashCombine(hash, 9);
+  auto var = builder.MakeVariable(9);
+  hash = HashCombine<NumericExpr>(hash, var);
   EXPECT_EQ(hash, std::hash<NumericExpr>()(
-    builder.MakePiecewiseLinear(NUM_BREAKPOINTS, breakpoints, slopes,
-                                builder.MakeVariable(9))));
+    builder.MakePiecewiseLinear(NUM_BREAKPOINTS, breakpoints, slopes, var)));
 }
 
 TEST_F(ExprTest, HashCallExpr) {

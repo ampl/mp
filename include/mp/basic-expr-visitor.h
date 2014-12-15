@@ -393,103 +393,107 @@ Result BasicExprVisitor<Impl, Result, LResult, ET>::Visit(NumericExpr e) {
     // Fall through.
   case expr::CONSTANT:
     return MP_DISPATCH(VisitNumericConstant(
-                         ET::template Cast<NumericConstant>(e)));
+                         ET::template UncheckedCast<NumericConstant>(e)));
   case expr::VARIABLE:
-    return MP_DISPATCH(VisitVariable(ET::template Cast<Variable>(e)));
+    return MP_DISPATCH(VisitVariable(ET::template UncheckedCast<Variable>(e)));
 
   // Unary expressions.
   case expr::MINUS:
-    return MP_DISPATCH(VisitMinus(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitMinus(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::ABS:
-    return MP_DISPATCH(VisitAbs(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAbs(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::FLOOR:
-    return MP_DISPATCH(VisitFloor(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitFloor(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::CEIL:
-    return MP_DISPATCH(VisitCeil(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitCeil(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::SQRT:
-    return MP_DISPATCH(VisitSqrt(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitSqrt(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::POW2:
-    return MP_DISPATCH(VisitPow2(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitPow2(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::EXP:
-    return MP_DISPATCH(VisitExp(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitExp(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::LOG:
-    return MP_DISPATCH(VisitLog(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitLog(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::LOG10:
-    return MP_DISPATCH(VisitLog10(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitLog10(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::SIN:
-    return MP_DISPATCH(VisitSin(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitSin(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::SINH:
-    return MP_DISPATCH(VisitSinh(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitSinh(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::COS:
-    return MP_DISPATCH(VisitCos(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitCos(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::COSH:
-    return MP_DISPATCH(VisitCosh(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitCosh(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::TAN:
-    return MP_DISPATCH(VisitTan(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitTan(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::TANH:
-    return MP_DISPATCH(VisitTanh(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitTanh(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::ASIN:
-    return MP_DISPATCH(VisitAsin(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAsin(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::ASINH:
-    return MP_DISPATCH(VisitAsinh(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAsinh(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::ACOS:
-    return MP_DISPATCH(VisitAcos(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAcos(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::ACOSH:
-    return MP_DISPATCH(VisitAcosh(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAcosh(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::ATAN:
-    return MP_DISPATCH(VisitAtan(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAtan(ET::template UncheckedCast<UnaryExpr>(e)));
   case expr::ATANH:
-    return MP_DISPATCH(VisitAtanh(ET::template Cast<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAtanh(ET::template UncheckedCast<UnaryExpr>(e)));
 
   // Binary expressions.
   case expr::ADD:
-    return MP_DISPATCH(VisitAdd(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitAdd(ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::SUB:
-    return MP_DISPATCH(VisitSub(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitSub(ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::LESS:
-    return MP_DISPATCH(VisitLess(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitLess(ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::MUL:
-    return MP_DISPATCH(VisitMul(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitMul(ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::DIV:
-    return MP_DISPATCH(VisitDiv(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitDiv(ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::INT_DIV:
-    return MP_DISPATCH(VisitIntDiv(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitIntDiv(ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::MOD:
-    return MP_DISPATCH(VisitMod(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitMod(ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::POW:
-    return MP_DISPATCH(VisitPow(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitPow(ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::POW_CONST_BASE:
-    return MP_DISPATCH(VisitPowConstBase(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitPowConstBase(
+                         ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::POW_CONST_EXP:
-    return MP_DISPATCH(VisitPowConstExp(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitPowConstExp(
+                         ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::ATAN2:
-    return MP_DISPATCH(VisitAtan2(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitAtan2(ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::PRECISION:
-    return MP_DISPATCH(VisitPrecision(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitPrecision(
+                         ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::ROUND:
-    return MP_DISPATCH(VisitRound(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitRound(ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::TRUNC:
-    return MP_DISPATCH(VisitTrunc(ET::template Cast<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitTrunc(ET::template UncheckedCast<BinaryExpr>(e)));
 
   case expr::IF:
-    return MP_DISPATCH(VisitIf(ET::template Cast<IfExpr>(e)));
+    return MP_DISPATCH(VisitIf(ET::template UncheckedCast<IfExpr>(e)));
   case expr::PLTERM:
-    return MP_DISPATCH(VisitPLTerm(ET::template Cast<PLTerm>(e)));
+    return MP_DISPATCH(VisitPLTerm(ET::template UncheckedCast<PLTerm>(e)));
   case expr::CALL:
-    return MP_DISPATCH(VisitCall(ET::template Cast<CallExpr>(e)));
+    return MP_DISPATCH(VisitCall(ET::template UncheckedCast<CallExpr>(e)));
   case expr::MIN:
-    return MP_DISPATCH(VisitMin(ET::template Cast<VarArgExpr>(e)));
+    return MP_DISPATCH(VisitMin(ET::template UncheckedCast<VarArgExpr>(e)));
   case expr::MAX:
-    return MP_DISPATCH(VisitMax(ET::template Cast<VarArgExpr>(e)));
+    return MP_DISPATCH(VisitMax(ET::template UncheckedCast<VarArgExpr>(e)));
   case expr::SUM:
-    return MP_DISPATCH(VisitSum(ET::template Cast<SumExpr>(e)));
+    return MP_DISPATCH(VisitSum(ET::template UncheckedCast<SumExpr>(e)));
   case expr::NUMBEROF:
-    return MP_DISPATCH(VisitNumberOf(ET::template Cast<NumberOfExpr>(e)));
+    return MP_DISPATCH(VisitNumberOf(
+                         ET::template UncheckedCast<NumberOfExpr>(e)));
   case expr::NUMBEROF_SYM:
     return MP_DISPATCH(VisitNumberOfSym(
-                         ET::template Cast<SymbolicNumberOfExpr>(e)));
+                         ET::template UncheckedCast<SymbolicNumberOfExpr>(e)));
   case expr::COUNT:
-    return MP_DISPATCH(VisitCount(ET::template Cast<CountExpr>(e)));
+    return MP_DISPATCH(VisitCount(ET::template UncheckedCast<CountExpr>(e)));
   }
 }
 
@@ -501,49 +505,63 @@ LResult BasicExprVisitor<Impl, Result, LResult, ET>::Visit(LogicalExpr e) {
     // Fall through.
   case expr::CONSTANT:
     return MP_DISPATCH(VisitLogicalConstant(
-                         ET::template Cast<LogicalConstant>(e)));
+                         ET::template UncheckedCast<LogicalConstant>(e)));
   case expr::NOT:
-    return MP_DISPATCH(VisitNot(ET::template Cast<NotExpr>(e)));
+    return MP_DISPATCH(VisitNot(ET::template UncheckedCast<NotExpr>(e)));
   case expr::OR:
-    return MP_DISPATCH(VisitOr(ET::template Cast<BinaryLogicalExpr>(e)));
+    return MP_DISPATCH(VisitOr(
+                         ET::template UncheckedCast<BinaryLogicalExpr>(e)));
   case expr::AND:
-    return MP_DISPATCH(VisitAnd(ET::template Cast<BinaryLogicalExpr>(e)));
+    return MP_DISPATCH(VisitAnd(
+                         ET::template UncheckedCast<BinaryLogicalExpr>(e)));
   case expr::IFF:
-    return MP_DISPATCH(VisitIff(ET::template Cast<BinaryLogicalExpr>(e)));
+    return MP_DISPATCH(VisitIff(
+                         ET::template UncheckedCast<BinaryLogicalExpr>(e)));
   case expr::LT:
-    return MP_DISPATCH(VisitLT(ET::template Cast<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitLT(ET::template UncheckedCast<RelationalExpr>(e)));
   case expr::LE:
-    return MP_DISPATCH(VisitLE(ET::template Cast<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitLE(ET::template UncheckedCast<RelationalExpr>(e)));
   case expr::EQ:
-    return MP_DISPATCH(VisitEQ(ET::template Cast<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitEQ(ET::template UncheckedCast<RelationalExpr>(e)));
   case expr::GE:
-    return MP_DISPATCH(VisitGE(ET::template Cast<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitGE(ET::template UncheckedCast<RelationalExpr>(e)));
   case expr::GT:
-    return MP_DISPATCH(VisitGT(ET::template Cast<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitGT(ET::template UncheckedCast<RelationalExpr>(e)));
   case expr::NE:
-    return MP_DISPATCH(VisitNE(ET::template Cast<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitNE(ET::template UncheckedCast<RelationalExpr>(e)));
   case expr::ATLEAST:
-    return MP_DISPATCH(VisitAtLeast(ET::template Cast<LogicalCountExpr>(e)));
+    return MP_DISPATCH(VisitAtLeast(
+                         ET::template UncheckedCast<LogicalCountExpr>(e)));
   case expr::ATMOST:
-    return MP_DISPATCH(VisitAtMost(ET::template Cast<LogicalCountExpr>(e)));
+    return MP_DISPATCH(VisitAtMost(
+                         ET::template UncheckedCast<LogicalCountExpr>(e)));
   case expr::EXACTLY:
-    return MP_DISPATCH(VisitExactly(ET::template Cast<LogicalCountExpr>(e)));
+    return MP_DISPATCH(VisitExactly(
+                         ET::template UncheckedCast<LogicalCountExpr>(e)));
   case expr::NOT_ATLEAST:
-    return MP_DISPATCH(VisitNotAtLeast(ET::template Cast<LogicalCountExpr>(e)));
+    return MP_DISPATCH(VisitNotAtLeast(
+                         ET::template UncheckedCast<LogicalCountExpr>(e)));
   case expr::NOT_ATMOST:
-    return MP_DISPATCH(VisitNotAtMost(ET::template Cast<LogicalCountExpr>(e)));
+    return MP_DISPATCH(VisitNotAtMost(
+                         ET::template UncheckedCast<LogicalCountExpr>(e)));
   case expr::NOT_EXACTLY:
-    return MP_DISPATCH(VisitNotExactly(ET::template Cast<LogicalCountExpr>(e)));
+    return MP_DISPATCH(VisitNotExactly(
+                         ET::template UncheckedCast<LogicalCountExpr>(e)));
   case expr::IMPLICATION:
-    return MP_DISPATCH(VisitImplication(ET::template Cast<ImplicationExpr>(e)));
+    return MP_DISPATCH(VisitImplication(
+                         ET::template UncheckedCast<ImplicationExpr>(e)));
   case expr::EXISTS:
-    return MP_DISPATCH(VisitExists(ET::template Cast<IteratedLogicalExpr>(e)));
+    return MP_DISPATCH(VisitExists(
+                         ET::template UncheckedCast<IteratedLogicalExpr>(e)));
   case expr::FORALL:
-    return MP_DISPATCH(VisitForAll(ET::template Cast<IteratedLogicalExpr>(e)));
+    return MP_DISPATCH(VisitForAll(
+                         ET::template UncheckedCast<IteratedLogicalExpr>(e)));
   case expr::ALLDIFF:
-    return MP_DISPATCH(VisitAllDiff(ET::template Cast<PairwiseExpr>(e)));
+    return MP_DISPATCH(VisitAllDiff(
+                         ET::template UncheckedCast<PairwiseExpr>(e)));
   case expr::NOT_ALLDIFF:
-    return MP_DISPATCH(VisitNotAllDiff(ET::template Cast<PairwiseExpr>(e)));
+    return MP_DISPATCH(VisitNotAllDiff(
+                         ET::template UncheckedCast<PairwiseExpr>(e)));
   }
 }
 }  // namespace mp

@@ -276,11 +276,10 @@ void ExprWriter<ExprTypes>::VisitPLTerm(PLTerm e) {
 template <typename ExprTypes>
 void ExprWriter<ExprTypes>::VisitCall(CallExpr e) {
   writer_ << e.function().name() << '(';
-  int num_args = e.num_args();
-  if (num_args > 0) {
-    typename CallExpr::iterator i = e.begin();
-    WriteCallArg(*i);
-    for (typename CallExpr::iterator end = e.end(); i != end; ++i) {
+  typename CallExpr::iterator i = e.begin(), end = e.end();
+  if (i != end) {
+    WriteCallArg(*i++);
+    for (; i != end; ++i) {
       writer_ << ", ";
       WriteCallArg(*i);
     }
