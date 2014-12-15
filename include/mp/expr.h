@@ -222,9 +222,9 @@ class NumericConstant : public NumericExpr {
 
 MP_SPECIALIZE_IS(NumericConstant, CONSTANT)
 
-// A reference expression.
-template <expr::Kind K>
-class ReferenceExpr : public NumericExpr {
+// A reference to a variable or a common expression.
+// Example: x
+class Reference : public NumericExpr {
  private:
   struct Impl : Expr::Impl {
     int index;
@@ -232,20 +232,13 @@ class ReferenceExpr : public NumericExpr {
   MP_EXPR;
 
  public:
-  static const expr::Kind KIND = K;
-
   // Returns the index of the referenced object.
   int index() const { return impl()->index; }
 };
 
 // A reference to a variable.
 // Example: x
-typedef ReferenceExpr<expr::VARIABLE> Variable;
-MP_SPECIALIZE_IS(Variable, VARIABLE)
-
-// A reference to a common expression.
-typedef ReferenceExpr<expr::COMMON_EXPR> CommonExpr;
-MP_SPECIALIZE_IS(CommonExpr, COMMON_EXPR)
+MP_SPECIALIZE_IS_RANGE(Reference, REFERENCE)
 
 // A unary expression.
 // Base: base expression class.
@@ -599,11 +592,10 @@ class BasicExprFactory : private Alloc {
   void Deallocate(const std::vector<T> &data);
 
   // Makes a reference expression.
-  template <typename ExprType>
-  ExprType MakeReference(int index) {
-    typename ExprType::Impl *impl = Allocate<ExprType>(ExprType::KIND);
+  Reference MakeReference(expr::Kind kind, int index) {
+    typename Reference::Impl *impl = Allocate<Reference>(kind);
     impl->index = index;
-    return Expr::Create<ExprType>(impl);
+    return Expr::Create<Reference>(impl);
   }
 
   template <typename ExprType, typename Arg>
@@ -704,13 +696,13 @@ class BasicExprFactory : private Alloc {
   }
 
   // Makes a variable reference.
-  Variable MakeVariable(int index) {
-    return MakeReference<Variable>(index);
+  Reference MakeVariable(int index) {
+    return MakeReference(expr::VARIABLE, index);
   }
 
   // Makes a common expression reference.
-  CommonExpr MakeCommonExpr(int index) {
-    return MakeReference<CommonExpr>(index);
+  Reference MakeCommonExpr(int index) {
+    return MakeReference(expr::COMMON_EXPR, index);
   }
 
   // Makes a unary expression.
@@ -775,9 +767,7 @@ class BasicExprFactory : private Alloc {
               "too few slopes");
     MP_ASSERT(builder.breakpoint_index_ == impl->num_breakpoints,
               "too few breakpoints");
-    MP_ASSERT(arg != 0 && (internal::Is<Variable>(arg.kind()) ||
-                           internal::Is<CommonExpr>(arg.kind())),
-              "invalid argument");
+    MP_ASSERT(arg != 0 && internal::Cast<Reference>(arg), "invalid argument");
     impl->arg = arg.impl_;
     return Expr::Create<PLTerm>(impl);
   }

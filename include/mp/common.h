@@ -51,8 +51,12 @@ enum Kind {
   // To simplify checks, numeric expression kinds are in a range
   // [FIRST_NUMERIC, LAST_NUMERIC].
   FIRST_NUMERIC = FIRST_EXPR,
-  VARIABLE = FIRST_NUMERIC,
+
+  // Reference expressions.
+  FIRST_REFERENCE = FIRST_NUMERIC,
+  VARIABLE = FIRST_REFERENCE,
   COMMON_EXPR,
+  LAST_REFERENCE = COMMON_EXPR,
 
   // Unary expressions.
   FIRST_UNARY,

@@ -65,7 +65,7 @@ TEST_F(ExprTest, NumericConstant) {
 }
 
 TEST_F(ExprTest, Variable) {
-  mp::Variable e;
+  mp::Reference e;
   EXPECT_TRUE(e == 0);
   (void)mp::NumericExpr(e);
   e = factory_.MakeVariable(42);
@@ -75,7 +75,7 @@ TEST_F(ExprTest, Variable) {
 }
 
 TEST_F(ExprTest, CommonExpr) {
-  mp::CommonExpr e;
+  mp::Reference e;
   EXPECT_TRUE(e == 0);
   (void)mp::NumericExpr(e);
   e = factory_.MakeCommonExpr(42);
@@ -190,7 +190,7 @@ TEST_F(ExprTest, NullPLTermArgument) {
   builder.AddSlope(0);
   builder.AddBreakpoint(0);
   builder.AddSlope(1);
-  EXPECT_ASSERT(factory_.EndPLTerm(builder, mp::Variable()),
+  EXPECT_ASSERT(factory_.EndPLTerm(builder, mp::Reference()),
                 "invalid argument");
 }
 

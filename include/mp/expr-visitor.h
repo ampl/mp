@@ -35,8 +35,8 @@ struct ExprTypes {
   typedef mp::NumericExpr NumericExpr;
   typedef mp::LogicalExpr LogicalExpr;
   typedef mp::NumericConstant NumericConstant;
-  typedef mp::Variable Variable;
-  typedef mp::CommonExpr CommonExpr;
+  typedef mp::Reference Variable;
+  typedef mp::Reference CommonExpr;
   typedef mp::UnaryExpr UnaryExpr;
   typedef mp::BinaryExpr BinaryExpr;
   typedef mp::IfExpr IfExpr;

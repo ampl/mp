@@ -47,7 +47,7 @@ TEST(ExprTypesTest, Typedefs) {
   CHECK_EXPR_TYPE(NumericExpr);
   CHECK_EXPR_TYPE(LogicalExpr);
   CHECK_EXPR_TYPE(NumericConstant);
-  CHECK_EXPR_TYPE(Variable);
+  EXPECT_TRUE((IsSame<ExprTypes::Variable, mp::Reference>::VALUE));
   CHECK_EXPR_TYPE(UnaryExpr);
   CHECK_EXPR_TYPE(BinaryExpr);
   CHECK_EXPR_TYPE(IfExpr);
@@ -165,7 +165,7 @@ class ExprVisitorTest : public ::testing::Test {
  protected:
   mp::ExprFactory factory_;
   StrictMock<MockVisitor> visitor_;
-  mp::Variable var_;
+  mp::Reference var_;
   mp::LogicalConstant false_;
 
   ExprVisitorTest() {
