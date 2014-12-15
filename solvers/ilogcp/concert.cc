@@ -150,7 +150,8 @@ IloExpr NLToConcertConverter::VisitPLTerm(PiecewiseLinearExpr e) {
     breakpoints.add(e.breakpoint(i));
   }
   slopes.add(e.slope(num_breakpoints));
-  return IloPiecewiseLinear(vars_[e.var_index()], breakpoints, slopes, 0, 0);
+  Variable var = Cast<Variable>(e.arg());
+  return IloPiecewiseLinear(vars_[var.index()], breakpoints, slopes, 0, 0);
 }
 
 IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
