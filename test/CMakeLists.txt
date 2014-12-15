@@ -83,6 +83,7 @@ add_mp_test(util-test util-test.cc)
 
 add_mp_test(assert-test assert-test.cc)
 add_mp_test(clock-test clock-test.cc)
+add_mp_test(common-test common-test.cc)
 add_mp_test(error-test error-test.cc)
 add_mp_test(expr-test expr-test.cc mock-allocator.h test-assert.h)
 add_mp_test(expr-visitor-test expr-visitor-test.cc test-assert.h)
