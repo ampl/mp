@@ -195,6 +195,11 @@ inline const OpCodeInfo &GetOpCodeInfo(int opcode) {
 }
 
 int opcode(expr::Kind kind);
+
+// Returns the string representation of this expression kind.
+// Expressions of different kinds can have identical strings.
+// For example, POW, POW_CONST_BASE and POW_CONST_EXP all have
+// the same representation "^".
 const char *str(expr::Kind kind);
 }  // namespace expr
 

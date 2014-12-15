@@ -31,10 +31,12 @@ namespace asl {
 namespace internal {
 // ASL expression types.
 struct ExprTypes {
+  typedef mp::asl::Expr Expr;
   typedef mp::asl::NumericExpr NumericExpr;
   typedef mp::asl::LogicalExpr LogicalExpr;
   typedef mp::asl::NumericConstant NumericConstant;
   typedef mp::asl::Variable Variable;
+  typedef mp::asl::Variable CommonExpr;
   typedef mp::asl::UnaryExpr UnaryExpr;
   typedef mp::asl::BinaryExpr BinaryExpr;
   typedef mp::asl::IfExpr IfExpr;
@@ -53,6 +55,7 @@ struct ExprTypes {
   typedef mp::asl::ImplicationExpr ImplicationExpr;
   typedef mp::asl::IteratedLogicalExpr IteratedLogicalExpr;
   typedef mp::asl::PairwiseExpr PairwiseExpr;
+  typedef mp::asl::StringLiteral StringLiteral;
 
   template <typename ExprType>
   static ExprType Cast(Expr e) { return mp::internal::Cast<ExprType>(e); }

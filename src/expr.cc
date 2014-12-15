@@ -1,5 +1,5 @@
 /*
- Operator precedence.
+ Expression classes
 
  Copyright (C) 2014 AMPL Optimization Inc
 
@@ -20,31 +20,13 @@
  Author: Victor Zverovich
  */
 
-#ifndef MP_PRECEDENCE_H_
-#define MP_PRECEDENCE_H_
+#include "mp/expr.h"
 
-namespace mp {
-namespace prec {
-enum Precedence {
-  UNKNOWN,
-  CONDITIONAL,       // if-then-else
-  IFF,               // <==>
-  IMPLICATION,       // ==> else
-  LOGICAL_OR,        // or ||
-  LOGICAL_AND,       // and &&
-  NOT,               // not !
-  RELATIONAL,        // < <= = == >= > != <>
-  PIECEWISE_LINEAR,  // a piecewise-linear expression
-  ADDITIVE,          // + - less
-  ITERATIVE,         // sum prod min max
-  MULTIPLICATIVE,    // * / div mod
-  EXPONENTIATION,    // ^
-  UNARY,             // + - (unary)
-  CALL,              // a function call including functional forms of
-                     // min and max
-  PRIMARY            // variable or constant
-};
-}
-}
+#include "mp/expr-visitor.h"
+#include "expr-writer.h"
 
-#endif  // MP_PRECEDENCE_H_
+void mp::format(fmt::BasicFormatter<char> &f, const char *, NumericExpr e) {
+  fmt::MemoryWriter writer;
+  ExprWriter<internal::ExprTypes>(writer).Visit(e);
+  f.writer() << fmt::StringRef(writer.data(), writer.size());
+}

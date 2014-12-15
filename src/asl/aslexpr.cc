@@ -21,6 +21,7 @@
  */
 
 #include "aslexpr.h"
+#include "expr-writer.h"
 #include "precedence.h"
 
 #include "asl/aslexpr-visitor.h"
@@ -39,274 +40,6 @@ namespace prec = mp::prec;
 namespace asl = mp::asl;
 
 namespace {
-
-// An expression visitor that writes AMPL expressions in a textual form
-// to fmt::Writer. It takes into account precedence and associativity
-// of operators avoiding unnecessary parentheses except for potentially
-// confusing cases such as "!x = y" which is written as "!(x = y) instead.
-class ExprWriter : public mp::asl::ExprVisitor<ExprWriter, void, void> {
- private:
-  fmt::Writer &writer_;
-  int precedence_;
-
-  typedef mp::asl::ExprVisitor<ExprWriter, void, void> ExprVisitor;
-
-  // Writes an argument list surrounded by parentheses.
-  template <typename Iter>
-  void WriteArgs(Iter begin, Iter end, const char *sep = ", ",
-      int precedence = prec::UNKNOWN);
-
-  template <typename Expr>
-  void WriteArgs(Expr e, const char *sep = ", ",
-      int precedence = prec::UNKNOWN) {
-    WriteArgs(e.begin(), e.end(), sep, precedence);
-  }
-
-  // Writes a function or an expression that has a function syntax.
-  template <typename Expr>
-  void WriteFunc(Expr e) {
-    writer_ << e.opstr();
-    WriteArgs(e);
-  }
-
-  template <typename Expr>
-  void WriteBinary(Expr e);
-
-  void WriteCallArg(Expr arg);
-
-  class Parenthesizer {
-   private:
-    ExprWriter &writer_;
-    int saved_precedence_;
-    bool write_paren_;
-
-   public:
-    Parenthesizer(ExprWriter &w, Expr e, int precedence);
-    ~Parenthesizer();
-  };
-
- public:
-  explicit ExprWriter(fmt::Writer &w)
-  : writer_(w), precedence_(prec::UNKNOWN) {}
-
-  void Visit(NumericExpr e, int precedence = -1) {
-    Parenthesizer p(*this, e, precedence);
-    ExprVisitor::Visit(e);
-  }
-
-  void Visit(LogicalExpr e, int precedence = -1) {
-    Parenthesizer p(*this, e, precedence);
-    ExprVisitor::Visit(e);
-  }
-
-  void VisitUnary(asl::UnaryExpr e) {
-    writer_ << e.opstr() << '(';
-    Visit(e.arg(), prec::UNKNOWN);
-    writer_ << ')';
-  }
-
-  void VisitMinus(asl::UnaryExpr e) {
-    writer_ << '-';
-    Visit(e.arg());
-  }
-
-  void VisitPow2(asl::UnaryExpr e) {
-    Visit(e.arg(), prec::EXPONENTIATION + 1);
-    writer_ << " ^ 2";
-  }
-
-  void VisitBinary(asl::BinaryExpr e) { WriteBinary(e); }
-  void VisitBinaryFunc(asl::BinaryExpr e);
-  void VisitVarArg(asl::VarArgExpr e) { WriteFunc(e); }
-  void VisitIf(asl::IfExpr e);
-  void VisitSum(asl::SumExpr e);
-  void VisitCount(asl::CountExpr e) { WriteFunc(e); }
-  void VisitNumberOf(asl::NumberOfExpr e);
-  void VisitPLTerm(asl::PiecewiseLinearExpr e);
-  void VisitCall(asl::CallExpr e);
-  void VisitNumericConstant(NumericConstant c) { writer_ << c.value(); }
-  void VisitVariable(asl::Variable v) { writer_ << 'x' << (v.index() + 1); }
-
-  void VisitNot(asl::NotExpr e) {
-     writer_ << '!';
-     // Use a precedence higher then relational to print expressions
-     // as "!(x = y)" instead of "!x = y".
-     LogicalExpr arg = e.arg();
-     Visit(arg,
-         arg.precedence() == prec::RELATIONAL ? prec::RELATIONAL + 1 : -1);
-  }
-
-  void VisitBinaryLogical(asl::BinaryLogicalExpr e) { WriteBinary(e); }
-  void VisitRelational(asl::RelationalExpr e) { WriteBinary(e); }
-  void VisitLogicalCount(asl::LogicalCountExpr e);
-  void VisitIteratedLogical(asl::IteratedLogicalExpr e);
-  void VisitImplication(asl::ImplicationExpr e);
-  void VisitAllDiff(asl::PairwiseExpr e) { WriteFunc(e); }
-  void VisitLogicalConstant(asl::LogicalConstant c) { writer_ << c.value(); }
-};
-
-ExprWriter::Parenthesizer::Parenthesizer(ExprWriter &w, Expr e, int precedence)
-: writer_(w), write_paren_(false) {
-  saved_precedence_ = w.precedence_;
-  if (precedence == -1)
-    precedence = w.precedence_;
-  write_paren_ = e.precedence() < precedence;
-  if (write_paren_)
-    w.writer_ << '(';
-  w.precedence_ = e.precedence();
-}
-
-ExprWriter::Parenthesizer::~Parenthesizer() {
-  writer_.precedence_ = saved_precedence_;
-  if (write_paren_)
-    writer_.writer_ << ')';
-}
-
-template <typename Iter>
-void ExprWriter::WriteArgs(
-    Iter begin, Iter end, const char *sep, int precedence) {
-  writer_ << '(';
-  if (begin != end) {
-    Visit(*begin, precedence);
-    for (++begin; begin != end; ++begin) {
-      writer_ << sep;
-      Visit(*begin, precedence);
-    }
-  }
-  writer_ << ')';
-}
-
-template <typename Expr>
-void ExprWriter::WriteBinary(Expr e) {
-  int precedence = e.precedence();
-  bool right_associative = precedence == prec::EXPONENTIATION;
-  Visit(e.lhs(), precedence + (right_associative ? 1 : 0));
-  writer_ << ' ' << e.opstr() << ' ';
-  Visit(e.rhs(), precedence + (right_associative ? 0 : 1));
-}
-
-void ExprWriter::WriteCallArg(Expr arg) {
-  if (NumericExpr e = Cast<NumericExpr>(arg)) {
-    Visit(e, prec::UNKNOWN);
-    return;
-  }
-  assert(arg.kind() == mp::expr::STRING);
-  writer_ << "'";
-  const char *s = Cast<asl::StringLiteral>(arg).value();
-  for ( ; *s; ++s) {
-    char c = *s;
-    switch (c) {
-    case '\n':
-      writer_ << '\\' << c;
-      break;
-    case '\'':
-      // Escape quote by doubling.
-      writer_ << c;
-      // Fall through.
-    default:
-      writer_ << c;
-    }
-  }
-  writer_ << "'";
-}
-
-void ExprWriter::VisitBinaryFunc(asl::BinaryExpr e) {
-  writer_ << e.opstr() << '(';
-  Visit(e.lhs(), prec::UNKNOWN);
-  writer_ << ", ";
-  Visit(e.rhs(), prec::UNKNOWN);
-  writer_ << ')';
-}
-
-void ExprWriter::VisitIf(asl::IfExpr e) {
-  writer_ << "if ";
-  Visit(e.condition(), prec::UNKNOWN);
-  writer_ << " then ";
-  NumericExpr false_expr = e.false_expr();
-  bool has_else = !IsZero(false_expr);
-  Visit(e.true_expr(), prec::CONDITIONAL + (has_else ? 1 : 0));
-  if (has_else) {
-    writer_ << " else ";
-    Visit(false_expr);
-  }
-}
-
-void ExprWriter::VisitSum(asl::SumExpr e) {
-  writer_ << "/* sum */ (";
-  asl::SumExpr::iterator i = e.begin(), end = e.end();
-  if (i != end) {
-    Visit(*i);
-    for (++i; i != end; ++i) {
-      writer_ << " + ";
-      Visit(*i);
-    }
-  }
-  writer_ << ')';
-}
-
-void ExprWriter::VisitNumberOf(asl::NumberOfExpr e) {
-  writer_ << "numberof ";
-  asl::NumberOfExpr::iterator i = e.begin();
-  Visit(*i++, prec::UNKNOWN);
-  writer_ << " in ";
-  WriteArgs(i, e.end());
-}
-
-void ExprWriter::VisitPLTerm(asl::PiecewiseLinearExpr e) {
-  writer_ << "<<" << e.breakpoint(0);
-  for (int i = 1, n = e.num_breakpoints(); i < n; ++i)
-    writer_ << ", " << e.breakpoint(i);
-  writer_ << "; " << e.slope(0);
-  for (int i = 1, n = e.num_slopes(); i < n; ++i)
-    writer_ << ", " << e.slope(i);
-  writer_ << ">> " << "x" << (e.var_index() + 1);
-}
-
-void ExprWriter::VisitCall(asl::CallExpr e) {
-  writer_ << e.function().name() << '(';
-  int num_args = e.num_args();
-  if (num_args > 0) {
-    WriteCallArg(e[0]);
-    for (int i = 1; i < num_args; ++i) {
-      writer_ << ", ";
-      WriteCallArg(e[i]);
-    }
-  }
-  writer_ << ')';
-}
-
-void ExprWriter::VisitLogicalCount(asl::LogicalCountExpr e) {
-  writer_ << e.opstr() << ' ';
-  Visit(e.lhs());
-  writer_ << ' ';
-  WriteArgs(e.rhs());
-}
-
-void ExprWriter::VisitIteratedLogical(asl::IteratedLogicalExpr e) {
-  // There is no way to produce an AMPL forall/exists expression because
-  // its indexing is not available any more. So we write a count expression
-  // instead with a comment about the original expression.
-  writer_ << "/* " << e.opstr() << " */ ";
-  int precedence = prec::LOGICAL_AND + 1;
-  const char *op = " && ";
-  if (e.kind() == mp::expr::EXISTS) {
-    precedence = prec::LOGICAL_OR + 1;
-    op = " || ";
-  }
-  WriteArgs(e, op, precedence);
-}
-
-void ExprWriter::VisitImplication(asl::ImplicationExpr e) {
-  Visit(e.condition());
-  writer_ << " ==> ";
-  Visit(e.true_expr(), prec::IMPLICATION + 1);
-  LogicalExpr false_expr = e.false_expr();
-  asl::LogicalConstant c = Cast<asl::LogicalConstant>(false_expr);
-  if (!c || c.value() != 0) {
-    writer_ << " else ";
-    Visit(false_expr);
-  }
-}
 
 // Compares expressions for equality.
 class ExprEqual : public mp::asl::ExprVisitor<ExprEqual, bool, bool> {
@@ -352,7 +85,7 @@ class ExprEqual : public mp::asl::ExprVisitor<ExprEqual, bool, bool> {
         return false;
     }
     return pl.slope(num_breakpoints) == e.slope(num_breakpoints) &&
-           pl.var_index() == e.var_index();
+           Equal(pl.arg(), e.arg());
   }
 
   bool VisitCall(asl::CallExpr e) {
@@ -451,7 +184,7 @@ class ExprHasher : public mp::asl::ExprVisitor<ExprHasher, size_t, size_t> {
       hash = HashCombine(hash, e.breakpoint(i));
     }
     hash = HashCombine(hash, e.slope(num_breakpoints));
-    return HashCombine(hash, e.var_index());
+    return HashCombine(hash, e.arg());
   }
 
   size_t VisitCall(asl::CallExpr e) {
@@ -601,7 +334,7 @@ void WriteExpr(fmt::Writer &w, LinearExpr linear, NumericExpr nonlinear) {
   }
   if (have_terms)
     w << " + ";
-  ExprWriter(w).Visit(nonlinear);
+  ExprWriter<internal::ExprTypes>(w).Visit(nonlinear);
 }
 
 template

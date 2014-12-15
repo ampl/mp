@@ -433,7 +433,6 @@ std::size_t CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
   for (int i = 0; i < size; ++i) {
     const OpInfo &info = OP_INFO[i];
     int opcode = i - 1;
-    const char *opstr = info.str;
     expr raw = RawExpr(opcode);
     bool is_this_kind = info.kind >= start && info.kind <= end;
     if (info.kind != ex::UNKNOWN) {
@@ -445,7 +444,6 @@ std::size_t CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
     if (!is_this_kind) continue;
     ExprType e(MakeExpr<ExprType>(&raw));
     EXPECT_EQ(opcode, ex::opcode(e.kind()));
-    EXPECT_STREQ(opstr, e.opstr());
     ++expr_count;
   }
   EXPECT_GT(expr_count, 0u);
@@ -679,7 +677,7 @@ TEST_F(ExprTest, PiecewiseLinearExpr) {
     EXPECT_EQ(slopes[i], expr.slope(i));
   }
   EXPECT_EQ(slopes[NUM_BREAKPOINTS], expr.slope(NUM_BREAKPOINTS));
-  EXPECT_EQ(2, expr.var_index());
+  EXPECT_EQ(var, expr.arg());
 #ifndef NDEBUG
   EXPECT_DEBUG_DEATH(
       builder.MakePiecewiseLinear(-1, breakpoints, slopes, var);,

@@ -31,10 +31,12 @@ namespace internal {
 
 // Expression types.
 struct ExprTypes {
+  typedef mp::Expr Expr;
   typedef mp::NumericExpr NumericExpr;
   typedef mp::LogicalExpr LogicalExpr;
   typedef mp::NumericConstant NumericConstant;
   typedef mp::Variable Variable;
+  typedef mp::CommonExpr CommonExpr;
   typedef mp::UnaryExpr UnaryExpr;
   typedef mp::BinaryExpr BinaryExpr;
   typedef mp::IfExpr IfExpr;
@@ -53,6 +55,7 @@ struct ExprTypes {
   typedef mp::ImplicationExpr ImplicationExpr;
   typedef mp::IteratedLogicalExpr IteratedLogicalExpr;
   typedef mp::PairwiseExpr PairwiseExpr;
+  typedef mp::StringLiteral StringLiteral;
 
   template <typename ExprType>
   static ExprType Cast(Expr e) { return mp::internal::Cast<ExprType>(e); }

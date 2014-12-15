@@ -26,6 +26,33 @@
 #include "mp/common.h"
 #include "mp/error.h"
 
+#define MP_DEFINE_EXPR_TYPES(ExprTypes) \
+  typedef typename ExprTypes::Expr Expr; \
+  typedef typename ExprTypes::NumericExpr NumericExpr; \
+  typedef typename ExprTypes::LogicalExpr LogicalExpr; \
+  typedef typename ExprTypes::NumericConstant NumericConstant; \
+  typedef typename ExprTypes::Variable Variable; \
+  typedef typename ExprTypes::CommonExpr CommonExpr; \
+  typedef typename ExprTypes::UnaryExpr UnaryExpr; \
+  typedef typename ExprTypes::BinaryExpr BinaryExpr; \
+  typedef typename ExprTypes::IfExpr IfExpr; \
+  typedef typename ExprTypes::PLTerm PLTerm; \
+  typedef typename ExprTypes::CallExpr CallExpr; \
+  typedef typename ExprTypes::VarArgExpr VarArgExpr; \
+  typedef typename ExprTypes::SumExpr SumExpr; \
+  typedef typename ExprTypes::CountExpr CountExpr; \
+  typedef typename ExprTypes::NumberOfExpr NumberOfExpr; \
+  typedef typename ExprTypes::SymbolicNumberOfExpr SymbolicNumberOfExpr; \
+  typedef typename ExprTypes::LogicalConstant LogicalConstant; \
+  typedef typename ExprTypes::NotExpr NotExpr; \
+  typedef typename ExprTypes::BinaryLogicalExpr BinaryLogicalExpr; \
+  typedef typename ExprTypes::RelationalExpr RelationalExpr; \
+  typedef typename ExprTypes::LogicalCountExpr LogicalCountExpr; \
+  typedef typename ExprTypes::ImplicationExpr ImplicationExpr; \
+  typedef typename ExprTypes::IteratedLogicalExpr IteratedLogicalExpr; \
+  typedef typename ExprTypes::PairwiseExpr PairwiseExpr; \
+  typedef typename ExprTypes::StringLiteral StringLiteral
+
 namespace mp {
 
 // A basic expression visitor that can be used with different expression
@@ -36,28 +63,7 @@ namespace mp {
 template <typename Impl, typename Result, typename LResult, typename ExprTypes>
 class BasicExprVisitor {
  public:
-  typedef typename ExprTypes::NumericExpr NumericExpr;
-  typedef typename ExprTypes::LogicalExpr LogicalExpr;
-  typedef typename ExprTypes::NumericConstant NumericConstant;
-  typedef typename ExprTypes::Variable Variable;
-  typedef typename ExprTypes::UnaryExpr UnaryExpr;
-  typedef typename ExprTypes::BinaryExpr BinaryExpr;
-  typedef typename ExprTypes::IfExpr IfExpr;
-  typedef typename ExprTypes::PLTerm PLTerm;
-  typedef typename ExprTypes::CallExpr CallExpr;
-  typedef typename ExprTypes::VarArgExpr VarArgExpr;
-  typedef typename ExprTypes::SumExpr SumExpr;
-  typedef typename ExprTypes::CountExpr CountExpr;
-  typedef typename ExprTypes::NumberOfExpr NumberOfExpr;
-  typedef typename ExprTypes::SymbolicNumberOfExpr SymbolicNumberOfExpr;
-  typedef typename ExprTypes::LogicalConstant LogicalConstant;
-  typedef typename ExprTypes::NotExpr NotExpr;
-  typedef typename ExprTypes::BinaryLogicalExpr BinaryLogicalExpr;
-  typedef typename ExprTypes::RelationalExpr RelationalExpr;
-  typedef typename ExprTypes::LogicalCountExpr LogicalCountExpr;
-  typedef typename ExprTypes::ImplicationExpr ImplicationExpr;
-  typedef typename ExprTypes::IteratedLogicalExpr IteratedLogicalExpr;
-  typedef typename ExprTypes::PairwiseExpr PairwiseExpr;
+  MP_DEFINE_EXPR_TYPES(ExprTypes);
 
   Result Visit(NumericExpr e);
   LResult Visit(LogicalExpr e);

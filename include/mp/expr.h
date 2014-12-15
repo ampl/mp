@@ -940,6 +940,14 @@ Function BasicExprFactory<Alloc>::AddFunction(
 }
 
 typedef BasicExprFactory< std::allocator<char> > ExprFactory;
+
+void format(fmt::BasicFormatter<char> &f, const char *, NumericExpr e);
+
+// Returns true iff e is a zero constant.
+inline bool IsZero(NumericExpr e) {
+  NumericConstant c = Cast<NumericConstant>(e);
+  return c && c.value() == 0;
+}
 }  // namespace mp
 
 #endif  // MP_EXPR_H_

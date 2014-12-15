@@ -320,12 +320,6 @@ class Expr {
     return expr::GetOpCodeInfo(reinterpret_cast<std::size_t>(impl_->op)).kind;
   }
 
-  // Returns the function name or operator for this expression as a
-  // string. Expressions with different opcodes can have identical
-  // strings. For example, OPPOW, OP1POW and OPCPOW all use the
-  // same operator "^".
-  const char *opstr() const { return str(kind()); }
-
   int precedence() const { return mp::internal::precedence(kind()); }
 
   bool operator==(Expr other) const { return impl_ == other.impl_; }
@@ -477,8 +471,8 @@ class PiecewiseLinearExpr : public NumericExpr {
     return impl_->L.p->bs[2 * index];
   }
 
-  int var_index() const {
-    return reinterpret_cast<expr_v*>(impl_->R.e)->a;
+  NumericExpr arg() const {
+    return Expr::Create<NumericExpr>(impl_->R.e);
   }
 };
 
