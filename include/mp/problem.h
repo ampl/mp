@@ -674,11 +674,8 @@ typename BasicProblem<Alloc>::LinearConBuilder BasicProblem<Alloc>::AddCon(
   AlgebraicConInfo &con = algebraic_cons_.back();
   con.linear_expr.Reserve(num_linear_terms);
   if (expr) {
-    if (nonlinear_cons_.empty()) {
-      nonlinear_cons_.reserve(algebraic_cons_.capacity());
-      nonlinear_cons_.resize(algebraic_cons_.size() - 1);
-    }
-    nonlinear_cons_.push_back(expr);
+    nonlinear_cons_.resize(algebraic_cons_.size());
+    nonlinear_cons_.back() = expr;
   }
   return LinearConBuilder(&con.linear_expr);
 }
