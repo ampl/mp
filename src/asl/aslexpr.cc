@@ -310,39 +310,5 @@ bool internal::EqualNumberOfArgs::operator()(
   }
   return true;
 }
-
-template <typename LinearExpr>
-void WriteExpr(fmt::Writer &w, LinearExpr linear, NumericExpr nonlinear) {
-  bool have_terms = false;
-  typedef typename LinearExpr::iterator Iterator;
-  for (Iterator i = linear.begin(), e = linear.end(); i != e; ++i) {
-    double coef = i->coef();
-    if (coef != 0) {
-      if (have_terms)
-        w << " + ";
-      else
-        have_terms = true;
-      if (coef != 1)
-        w << coef << " * ";
-      w << "x" << (i->var_index() + 1);
-    }
-  }
-  if (!nonlinear || IsZero(nonlinear)) {
-    if (!have_terms)
-      w << "0";
-    return;
-  }
-  if (have_terms)
-    w << " + ";
-  ExprWriter<internal::ExprTypes>(w).Visit(nonlinear);
-}
-
-template
-void WriteExpr<LinearObjExpr>(
-    fmt::Writer &w, LinearObjExpr linear, NumericExpr nonlinear);
-
-template
-void WriteExpr<LinearConExpr>(
-    fmt::Writer &w, LinearConExpr linear, NumericExpr nonlinear);
 }
 }

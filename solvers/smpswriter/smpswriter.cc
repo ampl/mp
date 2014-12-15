@@ -97,7 +97,7 @@ SMPSWriter::SMPSWriter() : ASLSolver("smpswriter", "SMPSWriter", 20130709) {
 
 void SMPSWriter::SplitConRHSIntoScenarios(
     const ASLProblem &p, std::vector<CoreConInfo> &core_cons) {
-  int num_cons = p.num_cons();
+  int num_cons = p.num_algebraic_cons();
   for (int i = 0; i < num_cons; ++i) {
     CoreConInfo &info = core_cons[con_info[i].core_index];
     int scenario_index = con_info[i].scenario_index;
@@ -253,7 +253,7 @@ void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
   if (num_stages > 2)
     throw Error("SMPS writer doesn't support problems with more than 2 stages");
 
-  int num_cons = p.num_cons();
+  int num_cons = p.num_algebraic_cons();
   int num_stage0_cons = num_cons;
   int num_core_vars = num_vars, num_core_cons = num_cons;
   var_info.resize(num_vars);

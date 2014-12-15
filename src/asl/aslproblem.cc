@@ -310,7 +310,7 @@ void ASLProblem::Solve(fmt::StringRef solver_name,
         "Error running solver {}, exit code = {}", solver_name, exit_code);
   }
   sol.Read(temp.stub(), num_vars() + (pc ? pc->num_vars() : 0),
-      num_cons() + (pc ? pc->num_cons() : 0));
+      num_algebraic_cons() + (pc ? pc->num_cons() : 0));
 }
 
 NewVCO *ProblemChanges::vco() {

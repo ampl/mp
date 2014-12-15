@@ -28,48 +28,6 @@
 
 namespace mp {
 namespace asl {
-namespace internal {
-// ASL expression types.
-struct ExprTypes {
-  typedef mp::asl::Expr Expr;
-  typedef mp::asl::NumericExpr NumericExpr;
-  typedef mp::asl::LogicalExpr LogicalExpr;
-  typedef mp::asl::NumericConstant NumericConstant;
-  typedef mp::asl::Variable Variable;
-  typedef mp::asl::Variable CommonExpr;
-  typedef mp::asl::UnaryExpr UnaryExpr;
-  typedef mp::asl::BinaryExpr BinaryExpr;
-  typedef mp::asl::IfExpr IfExpr;
-  typedef mp::asl::PiecewiseLinearExpr PLTerm;
-  typedef mp::asl::CallExpr CallExpr;
-  typedef mp::asl::VarArgExpr VarArgExpr;
-  typedef mp::asl::SumExpr SumExpr;
-  typedef mp::asl::NumberOfExpr NumberOfExpr;
-  typedef mp::asl::SymbolicNumberOfExpr SymbolicNumberOfExpr;
-  typedef mp::asl::CountExpr CountExpr;
-  typedef mp::asl::LogicalConstant LogicalConstant;
-  typedef mp::asl::NotExpr NotExpr;
-  typedef mp::asl::BinaryLogicalExpr BinaryLogicalExpr;
-  typedef mp::asl::RelationalExpr RelationalExpr;
-  typedef mp::asl::LogicalCountExpr LogicalCountExpr;
-  typedef mp::asl::ImplicationExpr ImplicationExpr;
-  typedef mp::asl::IteratedLogicalExpr IteratedLogicalExpr;
-  typedef mp::asl::PairwiseExpr PairwiseExpr;
-  typedef mp::asl::StringLiteral StringLiteral;
-
-  // Checked cast. See mp::Cast.
-  template <typename ExprType>
-  static ExprType Cast(Expr e) {
-    return mp::asl::Cast<ExprType>(e);
-  }
-
-  // Unchecked cast. See mp::internal::Cast.
-  template <typename ExprType>
-  static ExprType UncheckedCast(Expr e) {
-    return mp::internal::Cast<ExprType>(e);
-  }
-};
-}  // namespace internal
 
 // ASL expression visitor.
 template <typename Impl, typename Result, typename LResult = Result>

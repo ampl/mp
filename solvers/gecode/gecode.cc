@@ -357,8 +357,8 @@ void NLToGecodeConverter::Convert(const ASLProblem &p) {
     ~ICLSetter() { icl_ = saved_value_; }
   };
 
-  // Convert constraints.
-  for (int i = 0, n = p.num_cons(); i < n; ++i) {
+  // Convert algebraic constraints.
+  for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
     LinExpr con_expr(
         ConvertExpr(p.linear_con_expr(i), p.nonlinear_con_expr(i)));
     double lb = p.con_lb(i), ub = p.con_ub(i);
@@ -384,7 +384,7 @@ void NLToGecodeConverter::Convert(const ASLProblem &p) {
   int num_logical_cons = p.num_logical_cons();
   for (int i = 0; i < num_logical_cons; ++i) {
     LogicalExpr e = p.logical_con_expr(i);
-    ICLSetter icl_setter(icl_, GetICL(p.num_cons() + i));
+    ICLSetter icl_setter(icl_, GetICL(p.num_algebraic_cons() + i));
     if (e.kind() != expr::ALLDIFF) {
       rel(problem_, Visit(e), icl_);
       continue;

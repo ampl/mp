@@ -312,7 +312,7 @@ void NLToConcertConverter::Convert(const ASLProblem &p) {
         IloObjective(env_, IloStaticLex(env_, objs), sense));
   }
 
-  if (int n_cons = p.num_cons()) {
+  if (int n_cons = p.num_algebraic_cons()) {
     cons_.setSize(n_cons);
     for (int i = 0; i < n_cons; ++i) {
       IloExpr expr(env_);

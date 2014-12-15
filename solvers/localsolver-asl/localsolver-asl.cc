@@ -88,7 +88,7 @@ void NLToLocalSolverConverter::Convert(const ASLProblem &p) {
   }
 
   // Convert constraints.
-  for (int i = 0, n = p.num_cons(); i < n; ++i) {
+  for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
     ls::LSExpression expr =
         ConvertExpr(p.linear_con_expr(i), p.nonlinear_con_expr(i));
     double lb = p.con_lb(i), ub = p.con_ub(i);

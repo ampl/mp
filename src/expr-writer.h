@@ -28,6 +28,13 @@
 
 namespace mp {
 
+template <typename ExprTypes, typename NumericExpr>
+inline bool IsZero(NumericExpr expr) {
+  typedef typename ExprTypes::NumericConstant NumericConstant;
+  NumericConstant n = ExprTypes::template Cast<NumericConstant>(expr);
+  return n && n.value() == 0;
+}
+
 // An expression visitor that writes AMPL expressions in a textual form
 // to fmt::Writer. It takes into account precedence and associativity
 // of operators avoiding unnecessary parentheses except for potentially
@@ -226,7 +233,7 @@ void ExprWriter<ExprTypes>::VisitIf(IfExpr e) {
   Visit(e.condition(), prec::UNKNOWN);
   writer_ << " then ";
   NumericExpr false_expr = e.false_expr();
-  bool has_else = !IsZero(false_expr);
+  bool has_else = !IsZero<ExprTypes>(false_expr);
   Visit(e.true_expr(), prec::CONDITIONAL + (has_else ? 1 : 0));
   if (has_else) {
     writer_ << " else ";
@@ -323,6 +330,33 @@ void ExprWriter<ExprTypes>::VisitImplication(ImplicationExpr e) {
   }
 }
 
+template <typename ExprTypes, typename LinearExpr, typename NumericExpr>
+void WriteExpr(fmt::Writer &w, const LinearExpr &linear,
+               NumericExpr nonlinear) {
+  bool have_terms = false;
+  typedef typename LinearExpr::iterator Iterator;
+  for (Iterator i = linear.begin(), e = linear.end(); i != e; ++i) {
+    double coef = i->coef();
+    if (coef != 0) {
+      if (have_terms)
+        w << " + ";
+      else
+        have_terms = true;
+      if (coef != 1)
+        w << coef << " * ";
+      w << "x" << (i->var_index() + 1);
+    }
+  }
+  if (!nonlinear || IsZero<ExprTypes>(nonlinear)) {
+    if (!have_terms)
+      w << "0";
+    return;
+  }
+  if (have_terms)
+    w << " + ";
+  ExprWriter<ExprTypes>(w).Visit(nonlinear);
+}
+
 // Writes a problem in AMPL format.
 template <typename Problem>
 void Write(fmt::Writer &w, const Problem &p) {
@@ -348,17 +382,19 @@ void Write(fmt::Writer &w, const Problem &p) {
   for (int i = 0, n = p.num_objs(); i < n; ++i) {
     typename Problem::Objective obj = p.obj(i);
     w << (obj.type() == mp::obj::MIN ? "minimize" : "maximize") << " o: ";
-    WriteExpr(w, obj.linear_expr(), obj.nonlinear_expr());
+    WriteExpr<typename Problem::ExprTypes>(
+          w, obj.linear_expr(), obj.nonlinear_expr());
     w << ";\n";
   }
 
-  // Write constraints.
-  for (int i = 0, n = p.num_cons(); i < n; ++i) {
+  // Write algebraic constraints.
+  for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
     w << "s.t. c" << (i + 1) << ": ";
     double lb = p.con_lb(i), ub = p.con_ub(i);
     if (lb != ub && lb != -inf && ub != inf)
       w << lb << " <= ";
-    WriteExpr(w, p.linear_con_expr(i), p.nonlinear_con_expr(i));
+    WriteExpr<typename Problem::ExprTypes>(
+          w, p.linear_con_expr(i), p.nonlinear_con_expr(i));
     if (lb == ub)
       w << " = " << lb;
     else if (ub != inf)

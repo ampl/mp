@@ -294,6 +294,8 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   };
 
  public:
+  typedef internal::ExprTypes ExprTypes;
+
   // Returns the number of variables.
   int num_vars() const { return static_cast<int>(vars_.size()); }
 

@@ -342,6 +342,8 @@ class ASLProblem {
   typedef BasicProblemItem<ASLProblem> MutProblemItem;
 
  public:
+  typedef asl::internal::ExprTypes ExprTypes;
+
   ASLProblem();
   ASLProblem(Proxy proxy);
 
@@ -355,8 +357,8 @@ class ASLProblem {
   // Returns the number of objectives.
   int num_objs() const { return asl_->i.n_obj_; }
 
-  // Returns the number of constraints excluding logical constraints.
-  int num_cons() const { return asl_->i.n_con_; }
+  // Returns the number of algebraic constraints.
+  int num_algebraic_cons() const { return asl_->i.n_con_; }
 
   // Returns the number of integer variables including binary.
   int num_integer_vars() const {
@@ -455,7 +457,7 @@ class ASLProblem {
 
   // Returns the lower bound for the constraint.
   double con_lb(int con_index) const {
-    return lb(con_index, num_cons(), asl_->i.LUrhs_, asl_->i.Urhsx_);
+    return lb(con_index, num_algebraic_cons(), asl_->i.LUrhs_, asl_->i.Urhsx_);
   }
 
   // Returns the upper bounds for the constraints.
@@ -463,7 +465,7 @@ class ASLProblem {
 
   // Returns the upper bound for the constraint.
   double con_ub(int con_index) const {
-    return ub(con_index, num_cons(), asl_->i.LUrhs_, asl_->i.Urhsx_);
+    return ub(con_index, num_algebraic_cons(), asl_->i.LUrhs_, asl_->i.Urhsx_);
   }
 
   class Objective : private ProblemItem {
@@ -514,7 +516,8 @@ class ASLProblem {
 
   // Returns the linear part of a constraint expression.
   asl::LinearConExpr linear_con_expr(int con_index) const {
-    assert(con_index >= 0 && con_index < num_cons() && asl_->i.Cgrad_);
+    assert(con_index >= 0 && con_index < num_algebraic_cons() &&
+           asl_->i.Cgrad_);
     return asl::LinearConExpr(asl_->i.Cgrad_[con_index]);
   }
 
@@ -533,7 +536,7 @@ class ASLProblem {
 
   // Returns the nonlinear part of a constraint expression.
   asl::NumericExpr nonlinear_con_expr(int con_index) const {
-    return GetExpr(&Edag1info::con_de_, con_index, num_cons());
+    return GetExpr(&Edag1info::con_de_, con_index, num_algebraic_cons());
   }
 
   // Returns a logical constraint expression.

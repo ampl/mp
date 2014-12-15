@@ -307,8 +307,8 @@ void NLToJaCoPConverter::Convert(const ASLProblem &p) {
         result_var : CreateCon(mul_const_class_, result_var, -1);
   }
 
-  // Convert constraints.
-  for (int i = 0, n = p.num_cons(); i < n; ++i) {
+  // Convert algebraic constraints.
+  for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
     double lb = p.con_lb(i), ub = p.con_ub(i);
     jint int_lb = lb <= negInfinity ? min_int_ : CastToInt(lb);
     jint int_ub = ub >= Infinity ? max_int_ : CastToInt(ub);

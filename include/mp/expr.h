@@ -557,6 +557,50 @@ class StringLiteral : public Expr {
 
 MP_SPECIALIZE_IS(StringLiteral, STRING)
 
+namespace internal {
+
+// Expression types.
+struct ExprTypes {
+  typedef mp::Expr Expr;
+  typedef mp::NumericExpr NumericExpr;
+  typedef mp::LogicalExpr LogicalExpr;
+  typedef mp::NumericConstant NumericConstant;
+  typedef mp::Reference Variable;
+  typedef mp::Reference CommonExpr;
+  typedef mp::UnaryExpr UnaryExpr;
+  typedef mp::BinaryExpr BinaryExpr;
+  typedef mp::IfExpr IfExpr;
+  typedef mp::PLTerm PLTerm;
+  typedef mp::CallExpr CallExpr;
+  typedef mp::IteratedExpr VarArgExpr;
+  typedef mp::IteratedExpr SumExpr;
+  typedef mp::IteratedExpr NumberOfExpr;
+  typedef mp::SymbolicNumberOfExpr SymbolicNumberOfExpr;
+  typedef mp::CountExpr CountExpr;
+  typedef mp::LogicalConstant LogicalConstant;
+  typedef mp::NotExpr NotExpr;
+  typedef mp::BinaryLogicalExpr BinaryLogicalExpr;
+  typedef mp::RelationalExpr RelationalExpr;
+  typedef mp::LogicalCountExpr LogicalCountExpr;
+  typedef mp::ImplicationExpr ImplicationExpr;
+  typedef mp::IteratedLogicalExpr IteratedLogicalExpr;
+  typedef mp::PairwiseExpr PairwiseExpr;
+  typedef mp::StringLiteral StringLiteral;
+
+  // Checked cast. See mp::Cast.
+  template <typename ExprType>
+  static ExprType Cast(Expr e) {
+    return mp::Cast<ExprType>(e);
+  }
+
+  // Unchecked cast. See mp::internal::Cast.
+  template <typename ExprType>
+  static ExprType UncheckedCast(Expr e) {
+    return mp::internal::Cast<ExprType>(e);
+  }
+};
+}  // namespace internal
+
 // An expression factory.
 // Alloc: a memory allocator.
 // Allocator requirements:
