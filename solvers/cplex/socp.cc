@@ -235,8 +235,8 @@ class MPToASLExprConverter :
     return builder_.MakeNumericConstant(c.value());
   }
 
-  asl::NumericExpr VisitVariable(mp::Variable v) {
-    return builder_.MakeVariable(v.index());
+  asl::NumericExpr VisitVariable(mp::Reference e) {
+    return builder_.MakeVariable(e.index());
   }
 
   asl::NumericExpr VisitUnary(mp::UnaryExpr e) {
@@ -265,7 +265,7 @@ class ProblemBuilder : public Problem {
   typedef mp::NumericExpr NumericExpr;
   typedef mp::LogicalExpr LogicalExpr;
   typedef mp::CountExpr CountExpr;
-  typedef mp::Variable Variable;
+  typedef mp::Reference Variable;
 
   typedef IteratedExprBuilder NumericExprBuilder;
   typedef IteratedExprBuilder VarArgExprBuilder;
