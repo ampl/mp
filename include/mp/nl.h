@@ -1125,7 +1125,7 @@ class NLReader {
   // Reads a variable or a common expression reference.
   Reference ReadReference() {
     if (reader_.ReadChar() != 'v')
-      reader_.ReportError("expected variable");
+      reader_.ReportError("expected reference");
     return DoReadReference();
   }
 

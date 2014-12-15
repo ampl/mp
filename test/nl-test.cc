@@ -1045,7 +1045,7 @@ TEST(NLTest, ReadPiecewiseLinearExpr) {
   EXPECT_READ_ERROR("C0\no64\n2\nn-1\nv0\nn1\nv1\n",
     "(input):21:1: expected constant");
   EXPECT_READ_ERROR("C0\no64\n2\nn-1\nn0\nn1\nn1\n",
-    "(input):23:1: expected variable");
+    "(input):23:1: expected reference");
 }
 
 TEST(NLTest, ReadCallExpr) {
