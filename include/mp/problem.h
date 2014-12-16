@@ -293,6 +293,54 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
   };
 
+  // An algebraic constraint.
+  // This is a constraint of the form lb <= expr <= ub.
+  template <typename Item>
+  class BasicAlgebraicCon : private Item {
+   private:
+    friend class BasicProblem;
+
+    BasicAlgebraicCon(typename Item::Problem *p, int index) : Item(p, index) {}
+
+    static int num_items(const BasicProblem &p) {
+      return p.num_algebraic_cons();
+    }
+
+   public:
+    // Returns the lower bound on the constraint.
+    double lb() const {
+      return this->problem_->algebraic_cons_[this->index_].lb;
+    }
+
+    // Returns the upper bound on the constraint.
+    double ub() const {
+      return this->problem_->algebraic_cons_[this->index_].ub;
+    }
+
+    // Returns the linear part of a constraint expression.
+    const LinearExpr &linear_expr() const {
+      return this->problem_->algebraic_cons_[this->index_].linear_expr;
+    }
+
+    // Returns the nonlinear part of a constraint expression.
+    NumericExpr nonlinear_expr() const {
+      return this->index_ < this->problem_->nonlinear_cons_.size() ?
+            this->problem_->nonlinear_cons_[this->index_] : NumericExpr();
+    }
+
+    template <typename OtherItem>
+    bool operator==(BasicAlgebraicCon<OtherItem> other) const {
+      MP_ASSERT(this->problem_ == other.problem_,
+                "comparing constraints from different problems");
+      return this->index_ == other.index_;
+    }
+
+    template <typename OtherItem>
+    bool operator!=(BasicAlgebraicCon<OtherItem> other) const {
+      return !(*this == other);
+    }
+  };
+
  public:
   typedef internal::ExprTypes ExprTypes;
 
@@ -451,49 +499,41 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
   // An algebraic constraint.
-  // This is a constraint of the form lb <= expr <= ub.
-  class AlgebraicCon : private ProblemItem {
+  typedef BasicAlgebraicCon<ProblemItem> AlgebraicCon;
+
+  // A mutable algebraic constraint.
+  class MutAlgebraicCon : public BasicAlgebraicCon<MutProblemItem> {
    private:
     friend class BasicProblem;
 
-    AlgebraicCon(const BasicProblem *p, int index) : ProblemItem(p, index) {}
-
-    static int num_items(const BasicProblem &p) {
-      return p.num_algebraic_cons();
-    }
+    MutAlgebraicCon(BasicProblem *p, int index)
+      : BasicAlgebraicCon<MutProblemItem>(p, index) {}
 
    public:
-    // Returns the lower bound on the constraint.
-    double lb() const {
-      return this->problem_->algebraic_cons_[this->index_].lb;
+    operator AlgebraicCon() const {
+      return AlgebraicCon(this->problem_, this->index_);
     }
 
-    // Returns the upper bound on the constraint.
-    double ub() const {
-      return this->problem_->algebraic_cons_[this->index_].ub;
+    // Sets the lower bound on the constraint.
+    void set_lb(double lb) {
+      this->problem_->algebraic_cons_[this->index_].lb = lb;
     }
 
-    // Returns the linear part of a constraint expression.
-    const LinearExpr &linear_expr() const {
-      return this->problem_->algebraic_cons_[this->index_].linear_expr;
+    // Sets the upper bound on the constraint.
+    void set_ub(double ub) const {
+      this->problem_->algebraic_cons_[this->index_].ub = ub;
     }
 
-    // Returns the nonlinear part of a constraint expression.
-    NumericExpr nonlinear_expr() const {
-      return this->index_ < this->problem_->nonlinear_cons_.size() ?
-            this->problem_->nonlinear_cons_[this->index_] : NumericExpr();
+    // Returns the linear part of the constraint expression.
+    LinearExpr &linear_expr() const {
+      return this->problem_->linear_cons_[this->index_];
     }
 
-    bool operator==(AlgebraicCon other) const {
-      MP_ASSERT(this->problem_ == other.problem_,
-                "comparing constraints from different problems");
-      return this->index_ == other.index_;
-    }
-    bool operator!=(AlgebraicCon other) const {
-      return !(*this == other);
+    // Sets the nonlinear part of the constraint expression.
+    void set_nonlinear_expr(NumericExpr expr) const {
+      this->problem_->SetNonlinearConExpr(this->index_, expr);
     }
   };
-
   // A list of algebraic constraints.
   typedef List<AlgebraicCon> AlgebraicConList;
 
@@ -508,6 +548,12 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   AlgebraicCon algebraic_con(int index) const {
     CheckIndex(index, num_algebraic_cons());
     return AlgebraicCon(this, index);
+  }
+
+  // Returns the mutable algebraic constraint at the specified index.
+  MutAlgebraicCon algebraic_con(int index) {
+    CheckIndex(index, num_algebraic_cons());
+    return MutAlgebraicCon(this, index);
   }
 
   typedef LinearExprBuilder LinearConBuilder;

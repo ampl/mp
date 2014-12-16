@@ -142,7 +142,9 @@ class AffineExprConverter : public SumConverter<AffineExprConverter> {
 
  public:
   explicit AffineExprConverter(Problem &p, Problem::LinearConBuilder &b)
-    : SumConverter<AffineExprConverter>(p), builder_(b) {}
+    : SumConverter<AffineExprConverter>(p), builder_(b), constant_(0) {}
+
+  double constant() const { return constant_; }
 
   void VisitNumericConstant(NumericConstant n) {
     constant_ += coef() * n.value();
@@ -174,9 +176,15 @@ void SumOfSquaresConverter::VisitPow2(UnaryExpr e) {
   if (coef() != 1)
     term = p.MakeBinary(expr::MUL, p.MakeNumericConstant(coef()), term);
   sum_.AddArg(term);
-  Problem::LinearConBuilder con = p.AddCon(0, 0);
-  AffineExprConverter(p, con).Visit(e.arg());
-  con.AddTerm(var.index(), -1);
+  int con_index = p.num_algebraic_cons();
+  Problem::LinearConBuilder con_builder = p.AddCon(0, 0);
+  AffineExprConverter converter(p, con_builder);
+  converter.Visit(e.arg());
+  con_builder.AddTerm(var.index(), -1);
+  Problem::MutAlgebraicCon con = p.algebraic_con(con_index);
+  double rhs = -converter.constant();
+  con.set_lb(rhs);
+  con.set_ub(rhs);
 }
 
 // Converts a sum of norms into the SOCP form.
