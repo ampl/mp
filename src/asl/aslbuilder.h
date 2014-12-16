@@ -552,6 +552,19 @@ class ASLBuilder {
     return Expr::Create<NumberOfExpr>(builder.expr_);
   }
 
+  typedef ExprBuilder<Expr> SymbolicNumberOfExprBuilder;
+
+  SymbolicNumberOfExprBuilder BeginSymbolicNumberOf(int num_args, Expr arg0) {
+    SymbolicNumberOfExprBuilder builder(
+          MakeIterated(expr::NUMBEROF, ArrayRef<Expr>(0, num_args + 1)));
+    builder.AddArg(arg0);
+    return builder;
+  }
+  SymbolicNumberOfExpr EndSymbolicNumberOf(
+      SymbolicNumberOfExprBuilder builder) {
+    return Expr::Create<SymbolicNumberOfExpr>(builder.expr_);
+  }
+
   NumberOfExpr MakeNumberOf(ArrayRef<NumericExpr> args) {
     assert(args.size() >= 1);
     return MakeIterated<NumberOfExpr>(expr::NUMBEROF, args);

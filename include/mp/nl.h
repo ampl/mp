@@ -410,6 +410,19 @@ class NLHandler {
     return NumericExpr();
   }
 
+  typedef ArgHandler SymbolicArgHandler;
+
+  // Receives notification of the beginning of a symbolic numberof expression.
+  SymbolicArgHandler BeginSymbolicNumberOf(int num_args, Expr arg0) {
+    MP_UNUSED2(num_args, arg0);
+    return SymbolicArgHandler();
+  }
+  // Receives notification of the end of a symbolic numberof expression.
+  NumericExpr EndSymbolicNumberOf(SymbolicArgHandler handler) {
+    MP_UNUSED(handler);
+    return NumericExpr();
+  }
+
   // Receives notification of a logical constant.
   LogicalExpr OnLogicalConstant(bool value) {
     MP_UNUSED(value);
@@ -766,6 +779,18 @@ class ProblemBuilderToNLAdapter {
   // Receives notification of the end of a numberof expression.
   NumericExpr EndNumberOf(NumberOfArgHandler handler) {
     return builder_.EndNumberOf(handler);
+  }
+
+  typedef typename ProblemBuilder::SymbolicNumberOfExprBuilder
+          SymbolicArgHandler;
+
+  // Receives notification of the beginning of a symbolic numberof expression.
+  SymbolicArgHandler BeginSymbolicNumberOf(int num_args, Expr arg0) {
+    return builder_.BeginSymbolicNumberOf(num_args, arg0);
+  }
+  // Receives notification of the end of a symbolic numberof expression.
+  NumericExpr EndSymbolicNumberOf(SymbolicArgHandler handler) {
+    return builder_.EndSymbolicNumberOf(handler);
   }
 
   typedef typename ProblemBuilder::CountExprBuilder CountArgHandler;
@@ -1180,6 +1205,10 @@ class NLReader {
     typedef LogicalExpr Expr;
     Expr Read(NLReader &r) const { return r.ReadLogicalExpr(); }
   };
+  struct SymbolicExprReader {
+    typedef typename Handler::Expr Expr;
+    Expr Read(NLReader &r) const { return r.ReadSymbolicExpr(); }
+  };
 
   // A helper struct used to make sure that the arguments to a binary
   // expression are read in the correct order and avoid errors of the form:
@@ -1372,6 +1401,7 @@ typename Handler::Expr NLReader<Reader, Handler>::ReadSymbolicExpr() {
     int opcode = ReadOpCode();
     if (opcode != expr::opcode(expr::IFSYM))
       return ReadNumericExpr(opcode);
+    // Read symbolic if expression.
     LogicalExpr condition = ReadLogicalExpr();
     Expr true_expr = ReadSymbolicExpr();
     Expr false_expr = ReadSymbolicExpr();
@@ -1466,7 +1496,13 @@ typename Handler::NumericExpr
     return handler_.EndNumberOf(args);
   }
   case expr::NUMBEROF_SYM: {
-    // TODO: read symbolic numberof
+    // TODO: test
+    int num_args = ReadNumArgs(1);
+    reader_.ReadTillEndOfLine();
+    typename Handler::SymbolicArgHandler args =
+        handler_.BeginSymbolicNumberOf(num_args, ReadSymbolicExpr());
+    DoReadArgs<SymbolicExprReader>(num_args - 1, args);
+    return handler_.EndSymbolicNumberOf(args);
   }
   default:
     reader_.ReportError("expected numeric expression opcode");

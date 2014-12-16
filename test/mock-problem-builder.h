@@ -86,6 +86,7 @@ struct TestExprBuilder {
 typedef TestExprBuilder<0> TestNumericExprBuilder;
 typedef TestExprBuilder<1> TestVarArgExprBuilder;
 typedef TestExprBuilder<2> TestNumberOfExprBuilder;
+typedef TestExprBuilder<0, TestExpr> TestSymbolicNumberOfExprBuilder;
 typedef TestExprBuilder<3, TestLogicalExpr> TestCountExprBuilder;
 typedef TestExprBuilder<4, TestLogicalExpr> TestIteratedLogicalExprBuilder;
 typedef TestExprBuilder<5> TestPairwiseExprBuilder;
@@ -220,6 +221,13 @@ class MockProblemBuilder {
   MOCK_METHOD2(BeginNumberOf,
                NumberOfExprBuilder (int num_args, NumericExpr arg0));
   MOCK_METHOD1(EndNumberOf, NumericExpr (NumberOfExprBuilder builder));
+
+  typedef TestSymbolicNumberOfExprBuilder SymbolicNumberOfExprBuilder;
+
+  MOCK_METHOD2(BeginSymbolicNumberOf,
+               SymbolicNumberOfExprBuilder (int num_args, NumericExpr arg0));
+  MOCK_METHOD1(EndSymbolicNumberOf,
+               NumericExpr (SymbolicNumberOfExprBuilder builder));
 
   MOCK_METHOD1(MakeLogicalConstant, LogicalExpr (bool value));
   MOCK_METHOD1(MakeNot, LogicalExpr (LogicalExpr arg));

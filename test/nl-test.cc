@@ -657,6 +657,15 @@ class TestNLHandler {
   }
   std::string EndNumberOf(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
+  typedef ArgHandler SymbolicArgHandler;
+
+  ArgHandler BeginSymbolicNumberOf(int, std::string arg0) {
+    return ArgHandler("numberof " + arg0 + " in ");
+  }
+  std::string EndSymbolicNumberOf(ArgHandler h) {
+    return MakeVarArg(h.name_, h.args_);
+  }
+
   typedef ArgHandler CountArgHandler;
 
   ArgHandler BeginCount(int) { return ArgHandler("count"); }
@@ -881,6 +890,17 @@ struct TestNLHandler2 {
     return NumberOfArgHandler();
   }
   TestNumericExpr EndNumberOf(NumberOfArgHandler) { return TestNumericExpr(); }
+
+  struct SymbolicArgHandler {
+    void AddArg(TestExpr) {}
+  };
+
+  SymbolicArgHandler BeginSymbolicNumberOf(int, TestExpr) {
+    return SymbolicArgHandler();
+  }
+  TestNumericExpr EndSymbolicNumberOf(SymbolicArgHandler) {
+    return TestNumericExpr();
+  }
 
   struct CountArgHandler {
     void AddArg(LogicalExpr) {}

@@ -253,17 +253,6 @@ class ProblemBuilder : public SuffixManager {
     return NumericExpr();
   }
 
-  CountExprBuilder BeginCount(int num_args) {
-    MP_UNUSED(num_args);
-    MP_DISPATCH(ReportUnhandledConstruct("count expression"));
-    return CountExprBuilder();
-  }
-  NumericExpr EndCount(CountExprBuilder builder) {
-    MP_UNUSED(builder);
-    MP_DISPATCH(ReportUnhandledConstruct("count expression"));
-    return NumericExpr();
-  }
-
   NumberOfExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
     MP_UNUSED2(num_args, arg0);
     MP_DISPATCH(ReportUnhandledConstruct("numberof expression"));
@@ -272,6 +261,30 @@ class ProblemBuilder : public SuffixManager {
   NumericExpr EndNumberOf(NumberOfExprBuilder builder) {
     MP_UNUSED(builder);
     MP_DISPATCH(ReportUnhandledConstruct("numberof expression"));
+    return NumericExpr();
+  }
+
+  typedef ExprBuilder SymbolicNumberOfExprBuilder;
+
+  SymbolicNumberOfExprBuilder BeginSymbolicNumberOf(int num_args, Expr arg0) {
+    MP_UNUSED2(num_args, arg0);
+    MP_DISPATCH(ReportUnhandledConstruct("symbolic numberof expression"));
+    return SymbolicNumberOfExprBuilder();
+  }
+  NumericExpr EndSymbolicNumberOf(SymbolicNumberOfExprBuilder builder) {
+    MP_UNUSED(builder);
+    MP_DISPATCH(ReportUnhandledConstruct("symbolic numberof expression"));
+    return NumericExpr();
+  }
+
+  CountExprBuilder BeginCount(int num_args) {
+    MP_UNUSED(num_args);
+    MP_DISPATCH(ReportUnhandledConstruct("count expression"));
+    return CountExprBuilder();
+  }
+  NumericExpr EndCount(CountExprBuilder builder) {
+    MP_UNUSED(builder);
+    MP_DISPATCH(ReportUnhandledConstruct("count expression"));
     return NumericExpr();
   }
 
@@ -345,6 +358,12 @@ class ProblemBuilder : public SuffixManager {
   Expr MakeStringLiteral(fmt::StringRef value) {
     MP_UNUSED(value);
     MP_DISPATCH(ReportUnhandledConstruct("string literal"));
+    return Expr();
+  }
+
+  Expr MakeSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {
+    MP_UNUSED3(condition, true_expr, false_expr);
+    MP_DISPATCH(ReportUnhandledConstruct("symbolic if expression"));
     return Expr();
   }
 };

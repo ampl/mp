@@ -863,6 +863,24 @@ class BasicExprFactory : private Alloc {
     return EndIterated(builder);
   }
 
+  typedef BasicIteratedExprBuilder<SymbolicNumberOfExpr>
+          SymbolicNumberOfExprBuilder;
+
+  // Begins building a numberof expression.
+  SymbolicNumberOfExprBuilder BeginSymbolicNumberOf(int num_args, Expr arg0) {
+    MP_ASSERT(num_args >= 1, "invalid number of arguments");
+    SymbolicNumberOfExprBuilder builder =
+        BeginIterated<SymbolicNumberOfExpr>(expr::NUMBEROF_SYM, num_args);
+    builder.AddArg(arg0);
+    return builder;
+  }
+
+  // Ends building a numberof expression.
+  SymbolicNumberOfExpr EndSymbolicNumberOf(
+      SymbolicNumberOfExprBuilder builder) {
+    return EndIterated<SymbolicNumberOfExpr>(builder);
+  }
+
   typedef BasicIteratedExprBuilder<CountExpr> CountExprBuilder;
 
   // Begins building a count expression.
