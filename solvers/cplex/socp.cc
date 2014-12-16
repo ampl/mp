@@ -124,8 +124,8 @@ class SumConverter : public ExprVisitor<Impl, void> {
  public:
   explicit SumConverter(Problem &p) : problem_(p), coef_(1) {}
 
-  double coef() const { return coef_; }
   Problem &problem() { return problem_; }
+  double coef() const { return coef_; }
 
   void VisitAdd(BinaryExpr e) {
     this->Visit(e.lhs());
@@ -135,16 +135,24 @@ class SumConverter : public ExprVisitor<Impl, void> {
   // TODO: handle SUM and MUL
 };
 
+// Adds a variable ``x`` and a constraint ``x = <affine-expr>``.
 class AffineExprConverter : public SumConverter<AffineExprConverter> {
  private:
-  Problem::LinearConBuilder &builder_;
+  Problem::LinearConBuilder builder_;
   double constant_;
+  int var_index_;
+  int con_index_;
 
  public:
-  explicit AffineExprConverter(Problem &p, Problem::LinearConBuilder &b)
-    : SumConverter<AffineExprConverter>(p), builder_(b), constant_(0) {}
+  explicit AffineExprConverter(Problem &p)
+    : SumConverter<AffineExprConverter>(p),
+      builder_(p.AddCon(0, 0)), constant_(0),
+      var_index_(0), con_index_(p.num_algebraic_cons() - 1) {
+  }
 
-  double constant() const { return constant_; }
+  int var_index() const { return var_index_; }
+
+  void Convert(NumericExpr e);
 
   void VisitNumericConstant(NumericConstant n) {
     constant_ += coef() * n.value();
@@ -156,6 +164,21 @@ class AffineExprConverter : public SumConverter<AffineExprConverter> {
 
   // TODO
 };
+
+void AffineExprConverter::Convert(NumericExpr e) {
+  // Add a free variable ``x`` to represent the affine expression.
+  double inf = std::numeric_limits<double>::infinity();
+  var_index_ = problem().AddVar(-inf, inf).index();
+  // Build the constraint ``x = expr``.
+  builder_.AddTerm(var_index_, -1);
+  Visit(e);
+  if (constant_ != 0) {
+    // Adjust the right-hand side.
+    Problem::MutAlgebraicCon con = problem().algebraic_con(con_index_);
+    con.set_lb(-constant_);
+    con.set_ub(-constant_);
+  }
+}
 
 class SumOfSquaresConverter : public SumConverter<SumOfSquaresConverter> {
  private:
@@ -170,21 +193,14 @@ class SumOfSquaresConverter : public SumConverter<SumOfSquaresConverter> {
 
 void SumOfSquaresConverter::VisitPow2(UnaryExpr e) {
   Problem &p = problem();
-  double inf = std::numeric_limits<double>::infinity();
-  Problem::Variable var = p.AddVar(-inf, inf);
-  NumericExpr term = p.MakeUnary(expr::POW2, p.MakeVariable(var.index()));
+  AffineExprConverter converter(p);
+  converter.Convert(e.arg());
+  // Replace the term ``coef * expr ^ 2`` with ``coef * x ^ 2``.
+  NumericExpr term = p.MakeUnary(expr::POW2,
+                                 p.MakeVariable(converter.var_index()));
   if (coef() != 1)
     term = p.MakeBinary(expr::MUL, p.MakeNumericConstant(coef()), term);
   sum_.AddArg(term);
-  int con_index = p.num_algebraic_cons();
-  Problem::LinearConBuilder con_builder = p.AddCon(0, 0);
-  AffineExprConverter converter(p, con_builder);
-  converter.Visit(e.arg());
-  con_builder.AddTerm(var.index(), -1);
-  Problem::MutAlgebraicCon con = p.algebraic_con(con_index);
-  double rhs = -converter.constant();
-  con.set_lb(rhs);
-  con.set_ub(rhs);
 }
 
 // Converts a sum of norms into the SOCP form.
@@ -206,13 +222,15 @@ class SumOfNormsConverter : public SumConverter<SumOfNormsConverter> {
 void SumOfNormsConverter::VisitSqrt(UnaryExpr e) {
   Problem &p = problem();
   double inf = std::numeric_limits<double>::infinity();
-  Problem::Variable var = p.AddVar(0, inf);
-  obj_.linear_expr().AddTerm(var.index(), coef());
+  // Add a nonnegative variable ``x`` to represent ``sqrt(expr)``.
+  Problem::Variable x = p.AddVar(0, inf);
+  obj_.linear_expr().AddTerm(x.index(), coef());
+  // Add a constraint ``x ^ 2 >= expr``.
   Problem::IteratedExprBuilder sum =
       p.BeginIterated(expr::SUM, num_terms_[term_index_++] + 1);
   SumOfSquaresConverter(p, sum).Visit(e.arg());
   UnaryExpr term = p.MakeUnary(
-        expr::MINUS, p.MakeUnary(expr::POW2, p.MakeVariable(var.index())));
+        expr::MINUS, p.MakeUnary(expr::POW2, p.MakeVariable(x.index())));
   sum.AddArg(term);
   p.AddCon(-inf, 0, p.EndIterated(sum));
 }
