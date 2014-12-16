@@ -258,6 +258,9 @@ class MockProblemBuilder {
   MOCK_METHOD1(EndPairwise, LogicalExpr (PairwiseExprBuilder builder));
 
   MOCK_METHOD1(MakeStringLiteral, Expr (fmt::StringRef value));
+
+  MOCK_METHOD3(MakeSymbolicIf,
+               Expr (LogicalExpr condition, Expr true_expr, Expr false_expr));
 };
 
 #endif  // MP_MOCK_PROBLEM_BUILDER_H_

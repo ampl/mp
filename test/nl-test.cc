@@ -1449,6 +1449,10 @@ TEST(NLProblemBuilderTest, Forward) {
                      (TestPairwiseExprBuilder(ID)), TestLogicalExpr(ID2));
 
   EXPECT_FORWARD_RET(OnStringLiteral, MakeStringLiteral, (str), TestExpr(ID));
+
+  EXPECT_FORWARD_RET(OnSymbolicIf, MakeSymbolicIf,
+                     (TestLogicalExpr(ID), TestExpr(ID2), TestExpr(ID3)),
+                     TestExpr(ID4));
 }
 
 TEST(NLProblemBuilderTest, OnHeader) {
