@@ -419,5 +419,6 @@ ProblemChanges &ProblemChanges::operator=(const ProblemChanges &rhs) {
 
 fmt::Writer &operator<<(fmt::Writer &w, const ASLProblem &p) {
   Write(w, p);
+  return w;
 }
 }
