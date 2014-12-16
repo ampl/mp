@@ -12,7 +12,7 @@ CPLEX_INC=$(CPLEXDIR)/include
 CPLEX_LIB=$(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 CPOPTIMIZER_INC=$(CPOPTIMIZERDIR)/include
 CPOPTIMIZER_LIB=$(CPOPTIMIZERDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
-ASL_DIR=src/asl/solvers
+ASL_DIR=solvers
 ASL_LIB=$(ASL_DIR)/amplsolver.a
 LIBS=-lnsl -lm -ldl -lpthread
 
@@ -28,7 +28,7 @@ ASL_SYSINFO = Linux x86_64
 CXX11_FLAGS = -std=c++11 -DMP_USE_UNORDERED_MAP
 
 CXX_FLAGS = $(DEBUG) -I$(CONCERT_INC) -I$(CPLEX_INC) -I$(CPOPTIMIZER_INC) \
-            -Iinclude -Isolvers -Isrc -I$(ASL_DIR) -I.. $(MTFLAGS) -DIL_STD \
+            -Iinclude -Isolvers -Isrc -I$(ASL_DIR) -I. $(MTFLAGS) -DIL_STD \
             $(CXX11_FLAGS) -DMP_DATE=$(ASL_DATE) '-DMP_SYSINFO="$(ASL_SYSINFO)"'
 LD_FLAGS  = -L$(CPOPTIMIZER_LIB) -lcp -L$(CPLEX_LIB) -lilocplex -lcplex \
             -L$(CONCERT_LIB) -lconcert $(LDMTFLAGS) $(ASL_LIB) $(LIBS)
