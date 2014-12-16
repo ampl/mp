@@ -193,23 +193,17 @@ class ASLBuilder {
       : expr_(expr), arg_index_(0), num_args_(num_args),
         num_constants_(0), num_symbolic_args_(0), num_ifsyms_(0) {}
 
-    void DoAddArg(Expr arg) {
+   public:
+    void AddArg(Expr arg) {
       expr_->args[arg_index_] = arg.impl_;
       ++arg_index_;
-    }
-
-   public:
-    void AddArg(NumericExpr arg) {
-      DoAddArg(arg);
-      if (Is<NumericConstant>(arg))
+      if (!Is<NumericExpr>(arg))
+        ++num_symbolic_args_;
+      else if (Is<NumericConstant>(arg))
         ++num_constants_;
       // TODO
       //if (args[i].kind() == expr::IFSYM)
       //  ++num_ifsyms;
-    }
-    void AddArg(Expr arg) {
-      DoAddArg(arg);
-      ++num_symbolic_args_;
     }
   };
 
