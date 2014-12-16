@@ -1,4 +1,3 @@
-20141111
-  repwhere.c:  fix a glitch that could cause an error message of
-the form "Error in function %s ... %s" rather than the intended
-error message in which %s was replaced by something helpful.
+20141202
+  mqpcheckv.c: fix a glitch (missed zeroing of an array element) that
+somehow escaped earlier testing.

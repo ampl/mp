@@ -559,7 +559,7 @@ cterm_free(Static *S)
 {
 	dyad *d, *d1;
 	term **ct, *t;
-	int n, *zct;
+	int i, n, *zct;
 
 	if (!(n = S->nzct))
 		return;
@@ -567,7 +567,8 @@ cterm_free(Static *S)
 	S->nzct = 0;
 	ct = cterms;
 	while(n > 0) {
-		if ((t = ct[zct[--n]])) {
+		if ((t = ct[i = zct[--n]])) {
+			ct[i] = 0;
 			free_oglist(S, t->L);
 			d1 = t->Q;
 			while((d = d1)) {

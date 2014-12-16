@@ -2435,3 +2435,7 @@ After using the qpi returned by mqpcheckv(co, &qpi, &v), one invokes
 free(qpi) to dispose of qpi.
   nqpcheck.c: minor update; should be invisible.
   makefile* files: updated for mqpcheckv.c.
+
+20141202
+  mqpcheckv.c: fix a glitch (missed zeroing of an array element) that
+somehow escaped earlier testing.
