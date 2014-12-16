@@ -557,6 +557,11 @@ class StringLiteral : public Expr {
 
 MP_SPECIALIZE_IS(StringLiteral, STRING)
 
+// A symbolic if-then-else expression.
+// Example: if x != 0 then 'a' else 0, where x is a variable.
+typedef BasicIfExpr<Expr, expr::IFSYM> SymbolicIfExpr;
+MP_SPECIALIZE_IS(SymbolicIfExpr, IFSYM)
+
 namespace internal {
 
 // Expression types.

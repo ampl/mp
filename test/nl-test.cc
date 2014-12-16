@@ -706,6 +706,11 @@ class TestNLHandler {
   std::string OnStringLiteral(fmt::StringRef value) {
     return fmt::format("'{}'", std::string(value.c_str(), value.size()));
   }
+
+  std::string OnSymbolicIf(std::string condition,
+                           std::string true_expr, std::string false_expr) {
+    return OnIf(condition, true_expr, false_expr);
+  }
 };
 
 TEST(NLTest, WriteTextHeader) {
@@ -926,6 +931,10 @@ struct TestNLHandler2 {
   TestLogicalExpr EndPairwise(PairwiseArgHandler) { return TestLogicalExpr(); }
 
   TestExpr OnStringLiteral(fmt::StringRef) { return TestExpr(); }
+
+  TestExpr OnSymbolicIf(TestLogicalExpr, TestExpr, TestExpr) {
+    return TestExpr();
+  }
 };
 
 NLHeader MakeHeader() {
@@ -1138,6 +1147,17 @@ TEST(NLTest, ReadStringLiteral) {
         "(input):20:1: unexpected end of file in string");
   EXPECT_READ_ERROR("C0\nf1 1\nh3:abc", "(input):19:7: expected newline");
   EXPECT_READ_ERROR("C0\nf1 1\nh3:ab\n", "(input):20:1: expected newline");
+}
+
+TEST(NLTest, ReadSymbolicIfExpr) {
+  EXPECT_READ("c0: f1(if l1 then v1 else 'abc');",
+              "C0\nf1 1\no65\nn1\nv1\nh3:abc\n");
+  EXPECT_READ("c0: f1(if l1 then 'abc' else 42);",
+              "C0\nf1 1\no65\nn1\nh3:abc\nn42\n");
+  EXPECT_READ_ERROR("C0\nf1 1\no65\nx",
+                    "(input):20:1: expected logical expression");
+  EXPECT_READ_ERROR("C0\nf1 1\no65\nn1\nx",
+                    "(input):21:1: expected expression");
 }
 
 TEST(NLTest, ReadInvalidOpCode) {

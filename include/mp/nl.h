@@ -477,6 +477,12 @@ class NLHandler {
     MP_UNUSED(value);
     return Expr();
   }
+
+  // Receives notification of a symbolic if expression.
+  Expr OnSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {
+    MP_UNUSED3(condition, true_expr, false_expr);
+    return Expr();
+  }
 };
 
 // Adapts ProblemBuilder for use as an .nl handler.
@@ -833,6 +839,13 @@ class ProblemBuilderToNLAdapter {
   Expr OnStringLiteral(fmt::StringRef value) {
     return builder_.MakeStringLiteral(value);
   }
+
+  // Receives notification of a symbolic if expression.
+  Expr OnSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {
+    // TODO
+    //return builder_.MakeIf(condition, true_expr, false_expr);
+    return Expr();
+  }
 };
 
 namespace internal {
@@ -1076,6 +1089,7 @@ class NLReader {
   Handler &handler_;
   int num_vars_and_exprs_;  // Number of variables and common expressions.
 
+  typedef typename Handler::Expr Expr;
   typedef typename Handler::NumericExpr NumericExpr;
   typedef typename Handler::LogicalExpr LogicalExpr;
   typedef typename Handler::Reference Reference;
@@ -1181,6 +1195,9 @@ class NLReader {
     BinaryArgReader(NLReader &r)
       : lhs(ExprReader().Read(r)), rhs(ExprReader().Read(r)) {}
   };
+
+  // Reads a numeric or string expression.
+  Expr ReadSymbolicExpr();
 
   // Reads a numeric expression.
   // ignore_zero: if true, zero constants are ignored
@@ -1348,6 +1365,25 @@ double NLReader<Reader, Handler>::ReadConstant(char code) {
 }
 
 template <typename Reader, typename Handler>
+typename Handler::Expr NLReader<Reader, Handler>::ReadSymbolicExpr() {
+  char c = reader_.ReadChar();
+  switch (c) {
+  case 'h':
+    return handler_.OnStringLiteral(reader_.ReadString());
+  case 'o': {
+    int opcode = ReadOpCode();
+    if (opcode != expr::opcode(expr::IFSYM))
+      return ReadNumericExpr(opcode);
+    LogicalExpr condition = ReadLogicalExpr();
+    Expr true_expr = ReadSymbolicExpr();
+    Expr false_expr = ReadSymbolicExpr();
+    return handler_.OnSymbolicIf(condition, true_expr, false_expr);
+  }
+  }
+  return ReadNumericExpr(c, false);
+}
+
+template <typename Reader, typename Handler>
 typename Handler::NumericExpr
     NLReader<Reader, Handler>::ReadNumericExpr(char code, bool ignore_zero) {
   switch (code) {
@@ -1357,24 +1393,8 @@ typename Handler::NumericExpr
     reader_.ReadTillEndOfLine();
     typename Handler::CallArgHandler args =
         handler_.BeginCall(func_index, num_args);
-    for (int i = 0; i < num_args; ++i) {
-      char c = reader_.ReadChar();
-      switch (c) {
-      case 'h':
-        args.AddArg(handler_.OnStringLiteral(reader_.ReadString()));
-        break;
-      case 'o': {
-        int opcode = ReadOpCode();
-        if (opcode == expr::IFSYM) {
-          // TODO: read symbolic if
-        }
-        args.AddArg(ReadNumericExpr(opcode));
-        break;
-      }
-      default:
-        args.AddArg(ReadNumericExpr(c, false));
-      }
-    }
+    for (int i = 0; i < num_args; ++i)
+      args.AddArg(ReadSymbolicExpr());
     return handler_.EndCall(args);
   }
   case 'n': case 'l': case 's': {
