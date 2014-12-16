@@ -1496,7 +1496,6 @@ typename Handler::NumericExpr
     return handler_.EndNumberOf(args);
   }
   case expr::NUMBEROF_SYM: {
-    // TODO: test
     int num_args = ReadNumArgs(1);
     reader_.ReadTillEndOfLine();
     typename Handler::SymbolicArgHandler args =

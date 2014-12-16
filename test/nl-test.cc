@@ -1107,7 +1107,16 @@ TEST(NLTest, ReadCountExpr) {
 TEST(NLTest, ReadNumberOfExpr) {
   EXPECT_READ("c0: numberof v4 in (5, v1);", "C0\no60\n3\nv4\nn5\nv1\n");
   EXPECT_READ("c0: numberof v4 in ();", "C0\no60\n1\nv4\n");
-  EXPECT_READ_ERROR( "C0\no60\n0\n", "(input):19:1: too few arguments");
+  EXPECT_READ_ERROR("C0\no60\n0\n", "(input):19:1: too few arguments");
+}
+
+TEST(NLTest, ReadSymbolicNumberOfExpr) {
+  EXPECT_READ("c0: numberof 'a' in ('b', 42);",
+              "C0\no61\n3\nh1:a\nh1:b\nn42\n");
+  EXPECT_READ("c0: numberof 42 in ('b', 'c');",
+              "C0\no61\n3\nn42\nh1:b\nh1:c\n");
+  EXPECT_READ_ERROR("C0\no61\n0\n", "(input):19:1: too few arguments");
+  EXPECT_READ_ERROR("C0\no61\n1\nx", "(input):20:1: expected expression");
 }
 
 TEST(NLTest, ReadLogicalConstant) {
