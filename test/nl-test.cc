@@ -1420,6 +1420,12 @@ TEST(NLProblemBuilderTest, Forward) {
   EXPECT_FORWARD_RET(EndNumberOf, EndNumberOf, (TestNumberOfExprBuilder(ID)),
                      TestNumericExpr(ID2));
 
+  EXPECT_FORWARD_RET(BeginSymbolicNumberOf, BeginSymbolicNumberOf,
+                     (11, TestExpr(ID)), TestSymbolicNumberOfExprBuilder(ID2));
+  EXPECT_FORWARD_RET(EndSymbolicNumberOf, EndSymbolicNumberOf,
+                     (TestSymbolicNumberOfExprBuilder(ID)),
+                     TestNumericExpr(ID2));
+
   EXPECT_FORWARD_RET(OnLogicalConstant, MakeLogicalConstant, (true),
                      TestLogicalExpr(ID));
   EXPECT_FORWARD_RET(OnNot, MakeNot, (TestLogicalExpr(ID)),

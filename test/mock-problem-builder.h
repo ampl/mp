@@ -225,7 +225,7 @@ class MockProblemBuilder {
   typedef TestSymbolicNumberOfExprBuilder SymbolicNumberOfExprBuilder;
 
   MOCK_METHOD2(BeginSymbolicNumberOf,
-               SymbolicNumberOfExprBuilder (int num_args, NumericExpr arg0));
+               SymbolicNumberOfExprBuilder (int num_args, Expr arg0));
   MOCK_METHOD1(EndSymbolicNumberOf,
                NumericExpr (SymbolicNumberOfExprBuilder builder));
 
