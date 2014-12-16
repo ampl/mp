@@ -842,9 +842,7 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of a symbolic if expression.
   Expr OnSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {
-    // TODO
-    //return builder_.MakeIf(condition, true_expr, false_expr);
-    return Expr();
+    return builder_.MakeSymbolicIf(condition, true_expr, false_expr);
   }
 };
 
@@ -1898,8 +1896,7 @@ void NLFileReader<File>::Read(fmt::internal::MemoryBuffer<char, 1> &array) {
 // Reads a string containing an optimization problem in .nl format.
 // name: Name to be used when reporting errors.
 template <typename Handler>
-void ReadNLString(fmt::StringRef str, Handler &handler,
-                  fmt::StringRef name) {
+void ReadNLString(fmt::StringRef str, Handler &handler, fmt::StringRef name) {
   internal::TextReader reader(str, name);
   NLHeader header = NLHeader();
   reader.ReadHeader(header);

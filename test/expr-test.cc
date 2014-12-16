@@ -504,6 +504,27 @@ TEST_F(ExprTest, StringLiteral) {
   EXPECT_EQ(std::string(STR, sizeof(STR)), std::string(e.value(), sizeof(STR)));
 }
 
+TEST_F(ExprTest, SymbolicIfExpr) {
+  mp::SymbolicIfExpr e;
+  EXPECT_TRUE(e == 0);
+  (void)mp::Expr(e);
+  auto condition = factory_.MakeLogicalConstant(true);
+  mp::Expr true_expr = factory_.MakeStringLiteral("a");
+  mp::Expr false_expr = factory_.MakeVariable(0);
+  e = factory_.MakeSymbolicIf(condition, true_expr, false_expr);
+  EXPECT_TRUE(e != 0);
+  EXPECT_EQ(expr::IFSYM, e.kind());
+  EXPECT_EQ(condition, e.condition());
+  EXPECT_EQ(true_expr, e.true_expr());
+  EXPECT_EQ(false_expr, e.false_expr());
+  EXPECT_ASSERT(factory_.MakeSymbolicIf(mp::LogicalExpr(),
+                                        true_expr, false_expr),
+                "invalid argument");
+  EXPECT_ASSERT(factory_.MakeSymbolicIf(condition, mp::Expr(), false_expr),
+                "invalid argument");
+  factory_.MakeSymbolicIf(condition, true_expr, mp::Expr());
+}
+
 TEST_F(ExprTest, InternalCast) {
   mp::Expr e = factory_.MakeNumericConstant(42);
   mp::internal::Cast<mp::NumericExpr>(e);

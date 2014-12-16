@@ -617,6 +617,12 @@ class ASLBuilder {
   // Constructs a StringLiteral object.
   // value: string value which may not be null-terminated.
   StringLiteral MakeStringLiteral(fmt::StringRef value);
+
+  SymbolicIfExpr MakeSymbolicIf(
+      LogicalExpr condition, Expr true_expr, Expr false_expr) {
+    return Expr::Create<SymbolicIfExpr>(
+        MakeIf(expr::IFSYM, condition, true_expr, false_expr));
+  }
 };
 }
 }  // namespace asl

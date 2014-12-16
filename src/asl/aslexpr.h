@@ -716,6 +716,11 @@ class StringLiteral : public Expr {
 
 MP_SPECIALIZE_IS(StringLiteral, STRING)
 
+// A symbolic if-then-else expression.
+// Example: if x != 0 then 'a' else 0, where x is a variable.
+typedef BasicIfExpr<Expr> SymbolicIfExpr;
+MP_SPECIALIZE_IS(SymbolicIfExpr, IFSYM)
+
 // Recursively compares two expressions and returns true if they are equal.
 bool Equal(NumericExpr e1, NumericExpr e2);
 bool Equal(LogicalExpr e1, LogicalExpr e2);

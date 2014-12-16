@@ -949,6 +949,12 @@ class BasicExprFactory : private Alloc {
     Copy(value, impl->value);
     return Expr::Create<StringLiteral>(impl);
   }
+
+  // Makes a symbolic if expression.
+  SymbolicIfExpr MakeSymbolicIf(LogicalExpr condition,
+                                Expr true_expr, Expr false_expr) {
+    return MakeIf<SymbolicIfExpr>(condition, true_expr, false_expr);
+  }
 };
 
 template <typename Alloc>
