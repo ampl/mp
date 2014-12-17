@@ -6,7 +6,7 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/details.c "${DETAILS}")
 configure_file(solvers/stdio1.h0 stdio1.h COPYONLY)
 
 # Generate arith.h
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "^x86")
+if (CMAKE_CROSSCOMPILING AND CMAKE_SYSTEM_PROCESSOR MATCHES "^x86")
   include(CheckTypeSize)
   check_type_size(double DOUBLE_SIZE)
   check_type_size(long LONG_SIZE)
