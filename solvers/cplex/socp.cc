@@ -488,15 +488,17 @@ void SOCPConverter::ConvertToASL() {
 }
 }  // namespace
 
-extern "C" ASLhead ASLhead_ASL;
-
 // ASL structure with extra information for SOCP transformations.
 struct SOCP_ASL : ASL_fg {
   SOCPConverter *converter;
 };
 
+extern "C" {
+
+extern ASLhead ASLhead_ASL;
+
 // Allocate ASL with extra information for SOCP transformations.
-extern "C" ASL *socp_ASL_alloc(int type) {
+ASL *socp_ASL_alloc(int type) {
   // Set Stderr if necessary.
   if (!Stderr)
     Stderr_init_ASL();
@@ -517,8 +519,12 @@ extern "C" ASL *socp_ASL_alloc(int type) {
   asl->i.ASLtype = type;
   asl->i.n_prob = 1;
   switch (type) {
-    case ASL_read_pfg:	reinterpret_cast<ASL_pfg*>(asl)->P.merge = 1; break;
-    case ASL_read_pfgh:	reinterpret_cast<ASL_pfgh*>(asl)->P.merge = 1;
+  case ASL_read_pfg:
+    reinterpret_cast<ASL_pfg*>(asl)->P.merge = 1;
+    break;
+  case ASL_read_pfgh:
+    reinterpret_cast<ASL_pfgh*>(asl)->P.merge = 1;
+    break;
   }
   ASLhead *head = asl->p.h.next = ASLhead_ASL.next;
   asl->p.h.prev = head->prev;
@@ -526,24 +532,25 @@ extern "C" ASL *socp_ASL_alloc(int type) {
   return cur_ASL = asl;
 }
 
-extern "C" void socpASL_free(ASL **aslp) {
+void socpASL_free(ASL **aslp) {
   delete reinterpret_cast<SOCP_ASL*>(*aslp)->converter;
   ::ASL_free(aslp);
 }
 
-extern "C" void *socp_jac0dim(ASL *asl, const char *stub, ftnlen) {
+void *socp_jac0dim(ASL *asl, const char *stub, ftnlen) {
   SOCP_ASL *socp_asl = reinterpret_cast<SOCP_ASL*>(asl);
   socp_asl->converter = new SOCPConverter(asl);
   socp_asl->converter->Run(stub);
   return 0;
 }
 
-extern "C" int socp_qp_read(ASL *asl, void *, int) {
+int socp_qp_read(ASL *asl, void *, int) {
   reinterpret_cast<SOCP_ASL*>(asl)->converter->ConvertToASL();
   return 0;
 }
 
-extern "C" void socp_write_sol(
-    ASL *asl, const char *msg, double *x, double *y, Option_Info *oi) {
+void socp_write_sol(ASL *asl, const char *msg,
+                    double *x, double *y, Option_Info *oi) {
   reinterpret_cast<SOCP_ASL*>(asl)->converter->WriteSol(asl, msg, x, y, oi);
 }
+}  // extern "C"
