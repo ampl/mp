@@ -36,6 +36,6 @@ if (CPLEX_FOUND)
   add_cplex_solver(cplex-socp)
   target_compile_definitions(cplex-socp PRIVATE
     jac0dim_ASL=socp_jac0dim write_sol_ASL=socp_write_sol
-    qp_read_ASL=socp_qp_read)
+    qp_read_ASL=socp_qp_read ASL_alloc=socp_ASL_alloc)
   target_link_libraries(cplex-socp socp)
 endif ()

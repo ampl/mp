@@ -20,14 +20,18 @@
  Author: Victor Zverovich
  */
 
-#include <memory>
-
 #include "mp/expr-visitor.h"
 #include "mp/nl.h"
 #include "mp/problem.h"
+#include "asl.h"
+
+#define SKIP_NL2_DEFINES
+#include "asl_pfg.h"
+#include "asl_pfgh.h"
+#undef cde
+
 #include "asl/aslbuilder.h"
 #include "asl/aslproblem.h"
-#include "asl.h"
 
 namespace asl = mp::asl;
 using asl::internal::ASLBuilder;
@@ -341,6 +345,12 @@ class SOCPConverter {
   ASLBuilder builder_;
   std::vector<int> col_sizes_;
 
+  // The number of variables in the original problem.
+  int num_vars_;
+
+  // The number of algebraic constraints in the original problem.
+  int num_algebraic_cons_;
+
   // Converts a nonlinear expression to ASL format.
   asl::NumericExpr Convert(mp::NumericExpr expr) {
     MPToASLExprConverter converter(builder_);
@@ -358,17 +368,30 @@ class SOCPConverter {
   typedef Problem::ObjList ObjList;
 
  public:
-  explicit SOCPConverter(ASL *asl) : builder_(asl) {}
+  explicit SOCPConverter(ASL *asl)
+    : builder_(asl), num_vars_(0), num_algebraic_cons_(0) {}
 
   void Run(const char *stub);
 
   // Converts the problem into ASL format.
   void ConvertToASL();
+
+  // Writes the solution.
+  void WriteSol(ASL *asl, const char *msg, double *x, double *y,
+                Option_Info *oi) {
+    // Adjust the solution.
+    asl->i.n_var0 = num_vars_;
+    asl->i.n_con0 = num_algebraic_cons_;
+    // TODO: reorder constraints if necessary
+    write_sol_ASL(asl, msg, x, y, oi);
+  }
 };
 
 void SOCPConverter::Run(const char *stub) {
   mp::ProblemBuilderToNLAdapter<ProblemBuilder> adapter(problem_);
   ReadNLFile(fmt::format("{}.nl", stub), adapter);
+  num_vars_ = problem_.num_vars();
+  num_algebraic_cons_ = problem_.num_algebraic_cons();
   if (!problem_.HasComplementarity()) {
     // TODO: check if all the constraints can be converted to SOCP form
     Problem::MutObjective obj = problem_.obj(0);
@@ -463,28 +486,64 @@ void SOCPConverter::ConvertToASL() {
 
   builder_.EndBuild();
 }
-
-#ifdef MP_USE_UNIQUE_PTR
-typedef std::unique_ptr<SOCPConverter> ConverterPtr;
-#else
-typedef std::auto_ptr<SOCPConverter> ConverterPtr;
-#endif
 }  // namespace
 
-extern "C" void *socp_jac0dim(ASL *asl, const char *stub, ftnlen) {
-  ConverterPtr converter(new SOCPConverter(asl));
-  converter->Run(stub);
-  return converter.release();
+extern "C" ASLhead ASLhead_ASL;
+
+// ASL structure with extra information for SOCP transformations.
+struct SOCP_ASL : ASL_fg {
+  SOCPConverter *converter;
+};
+
+// Allocate ASL with extra information for SOCP transformations.
+extern "C" ASL *socp_ASL_alloc(int type) {
+  // Set Stderr if necessary.
+  if (!Stderr)
+    Stderr_init_ASL();
+  Mach_ASL();
+  if (type < 1 || type > 5)
+    return 0;
+  static int msize[5] = {
+    sizeof(SOCP_ASL),
+    sizeof(SOCP_ASL),
+    sizeof(ASL_fgh),
+    sizeof(ASL_pfg),
+    sizeof(ASL_pfgh)
+  };
+  int size = msize[type - 1];
+  ASL *asl = static_cast<ASL*>(mymalloc(size));
+  memcpy(asl, &edagpars_ASL, sizeof(Edagpars));
+  memset(&asl->i, 0, size - sizeof(Edagpars));
+  asl->i.ASLtype = type;
+  asl->i.n_prob = 1;
+  switch (type) {
+    case ASL_read_pfg:	reinterpret_cast<ASL_pfg*>(asl)->P.merge = 1; break;
+    case ASL_read_pfgh:	reinterpret_cast<ASL_pfgh*>(asl)->P.merge = 1;
+  }
+  ASLhead *head = asl->p.h.next = ASLhead_ASL.next;
+  asl->p.h.prev = head->prev;
+  head->prev = ASLhead_ASL.next = &asl->p.h;
+  return cur_ASL = asl;
 }
 
-extern "C" int socp_qp_read(ASL *, void *converter_ptr, int) {
-  ConverterPtr converter(static_cast<SOCPConverter*>(converter_ptr));
-  converter->ConvertToASL();
+extern "C" void socpASL_free(ASL **aslp) {
+  delete reinterpret_cast<SOCP_ASL*>(*aslp)->converter;
+  ::ASL_free(aslp);
+}
+
+extern "C" void *socp_jac0dim(ASL *asl, const char *stub, ftnlen) {
+  SOCP_ASL *socp_asl = reinterpret_cast<SOCP_ASL*>(asl);
+  socp_asl->converter = new SOCPConverter(asl);
+  socp_asl->converter->Run(stub);
+  return 0;
+}
+
+extern "C" int socp_qp_read(ASL *asl, void *, int) {
+  reinterpret_cast<SOCP_ASL*>(asl)->converter->ConvertToASL();
   return 0;
 }
 
 extern "C" void socp_write_sol(
     ASL *asl, const char *msg, double *x, double *y, Option_Info *oi) {
-  // TODO: convert and write solution
-  write_sol_ASL(asl, msg, x, y, oi);
+  reinterpret_cast<SOCP_ASL*>(asl)->converter->WriteSol(asl, msg, x, y, oi);
 }
