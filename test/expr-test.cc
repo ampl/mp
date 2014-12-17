@@ -550,8 +550,34 @@ TEST_F(ExprTest, InvalidIteratedExprKind) {
                 "invalid expression kind");
 }
 
+TEST_F(ExprTest, NumberOfExpr) {
+  auto arg0 = factory_.MakeVariable(0), arg1 = factory_.MakeVariable(1);
+  auto builder = factory_.BeginNumberOf(2, arg0);
+  builder.AddArg(arg1);
+  auto expr = factory_.EndNumberOf(builder);
+  EXPECT_EQ(2, expr.num_args());
+  EXPECT_EQ(arg0, expr.arg(0));
+  EXPECT_EQ(arg1, expr.arg(1));
+}
+
 TEST_F(ExprTest, InvalidNumberOfExprArg) {
   EXPECT_ASSERT(factory_.BeginNumberOf(1, mp::NumericExpr()),
+      "invalid argument");
+}
+
+TEST_F(ExprTest, SymbolicNumberOfExpr) {
+  mp::Expr arg0 = factory_.MakeStringLiteral("abc");
+  mp::Expr arg1 = factory_.MakeStringLiteral("def");
+  auto builder = factory_.BeginSymbolicNumberOf(2, arg0);
+  builder.AddArg(arg1);
+  auto expr = factory_.EndSymbolicNumberOf(builder);
+  EXPECT_EQ(2, expr.num_args());
+  EXPECT_EQ(arg0, expr.arg(0));
+  EXPECT_EQ(arg1, expr.arg(1));
+}
+
+TEST_F(ExprTest, InvalidSymbolicNumberOfExprArg) {
+  EXPECT_ASSERT(factory_.BeginSymbolicNumberOf(1, mp::Expr()),
       "invalid argument");
 }
 
