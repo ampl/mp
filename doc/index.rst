@@ -5,7 +5,6 @@ Contents
    :maxdepth: 2
 
    amplgsl/index
-   tables/index
 
 Indices and tables
 ==================
