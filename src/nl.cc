@@ -249,7 +249,7 @@ void mp::internal::TextReader::ReadHeader(NLHeader &header) {
   ReadTillEndOfLine();
 }
 
-void mp::internal::BinaryReader::ReportError(
+void mp::internal::BinaryReaderBase::ReportError(
     fmt::StringRef format_str, const fmt::ArgList &args) {
   fmt::MemoryWriter w;
   std::size_t offset = token_ - start_;
