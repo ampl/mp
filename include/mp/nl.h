@@ -1031,8 +1031,32 @@ class TextReader : public ReaderBase {
   void ReadHeader(NLHeader &header);
 };
 
-class BinaryReader : public ReaderBase {
+// Converter that doesn't change the input.
+class IdentityConverter {
+ public:
+  template <typename T>
+  T Convert(T value) { return value; }
+};
+
+// Converter that changes the input endianness.
+class EndiannessConverter {
  private:
+  void Convert(char *data, std::size_t size) {
+    std::reverse(data, data + size);
+  }
+
+ public:
+  template <typename T>
+  T Convert(T value) {
+    Convert(reinterpret_cast<char*>(&value), sizeof(T));
+    return value;
+  }
+};
+
+class BinaryReaderBase : public ReaderBase {
+ protected:
+  explicit BinaryReaderBase(const ReaderBase &base) : ReaderBase(base) {}
+
   // Reads length chars.
   const char *Read(int length) {
     if (end_ - ptr_ < length) {
@@ -1045,19 +1069,24 @@ class BinaryReader : public ReaderBase {
   }
 
  public:
-  explicit BinaryReader(const ReaderBase &base) : ReaderBase(base) {}
-
   void ReportError(fmt::StringRef format_str, const fmt::ArgList &args);
   FMT_VARIADIC(void, ReportError, fmt::StringRef)
 
   void ReadTillEndOfLine() {
     // Do nothing.
   }
+};
+
+// Binary reader.
+template <typename InputConverter = IdentityConverter>
+class BinaryReader : private InputConverter, public BinaryReaderBase {
+ public:
+  explicit BinaryReader(const ReaderBase &base) : BinaryReaderBase(base) {}
 
   template <typename Int>
   Int ReadInt() {
     token_ = ptr_;
-    return *reinterpret_cast<const Int*>(Read(sizeof(Int)));
+    return this->Convert(*reinterpret_cast<const Int*>(Read(sizeof(Int))));
   }
 
   int ReadUInt() {
@@ -1069,7 +1098,8 @@ class BinaryReader : public ReaderBase {
 
   double ReadDouble() {
     token_ = ptr_;
-    return *reinterpret_cast<const double*>(Read(sizeof(double)));
+    return this->Convert(
+          *reinterpret_cast<const double*>(Read(sizeof(double))));
   }
 
   fmt::StringRef ReadString() {
@@ -1108,7 +1138,7 @@ template <typename Reader, typename Handler>
 class NLReader {
  private:
   Reader &reader_;
-  NLHeader &header_;
+  const NLHeader &header_;
   Handler &handler_;
   int num_vars_and_exprs_;  // Number of variables and common expressions.
 
@@ -1332,7 +1362,7 @@ class NLReader {
   void ReadSuffix(int kind);
 
  public:
-  NLReader(Reader &reader, NLHeader &header, Handler &handler)
+  NLReader(Reader &reader, const NLHeader &header, Handler &handler)
     : reader_(reader), header_(header), handler_(handler),
       num_vars_and_exprs_(0) {}
 
@@ -1416,6 +1446,7 @@ typename Handler::NumericExpr
     NLReader<Reader, Handler>::ReadNumericExpr(char code, bool ignore_zero) {
   switch (code) {
   case 'f': {
+    // Read a function call.
     int func_index = ReadUInt(header_.num_funcs);
     int num_args = reader_.ReadUInt();
     reader_.ReadTillEndOfLine();
@@ -1426,6 +1457,7 @@ typename Handler::NumericExpr
     return handler_.EndCall(args);
   }
   case 'n': case 'l': case 's': {
+    // Read a numeric constant.
     double value = ReadConstant(code);
     if (ignore_zero && value == 0)
       break;  // Ignore zero constant.
@@ -1460,6 +1492,7 @@ typename Handler::NumericExpr
     return handler_.OnIf(condition, true_expr, false_expr);
   }
   case expr::PLTERM: {
+    // Read a piecewise-linear term.
     int num_slopes = reader_.ReadUInt();
     if (num_slopes <= 1)
       reader_.ReportError("too few slopes in piecewise-linear term");
@@ -1474,6 +1507,7 @@ typename Handler::NumericExpr
     return handler_.EndPLTerm(pl_handler, ReadReference());
   }
   case expr::FIRST_VARARG: {
+    // Read a vararg expression (min or max).
     int num_args = ReadNumArgs(1);
     typename Handler::VarArgHandler args = handler_.BeginVarArg(kind, num_args);
     ReadArgs<NumericExprReader>(num_args, args);
@@ -1488,6 +1522,7 @@ typename Handler::NumericExpr
   case expr::COUNT:
     return ReadCountExpr();
   case expr::NUMBEROF: {
+    // Read a numberof expression.
     int num_args = ReadNumArgs(1);
     reader_.ReadTillEndOfLine();
     typename Handler::NumberOfArgHandler args =
@@ -1496,6 +1531,7 @@ typename Handler::NumericExpr
     return handler_.EndNumberOf(args);
   }
   case expr::NUMBEROF_SYM: {
+    // Read a symbolic numberof expression.
     int num_args = ReadNumArgs(1);
     reader_.ReadTillEndOfLine();
     typename Handler::SymbolicArgHandler args =
@@ -1545,12 +1581,14 @@ typename Handler::LogicalExpr
     return handler_.OnLogicalCount(kind, lhs, ReadCountExpr());
   }
   case expr::IMPLICATION: {
+    // Read an implication (=>).
     LogicalExpr condition = ReadLogicalExpr();
     LogicalExpr true_expr = ReadLogicalExpr();
     LogicalExpr false_expr = ReadLogicalExpr();
     return handler_.OnImplication(condition, true_expr, false_expr);
   }
   case expr::FIRST_ITERATED_LOGICAL: {
+    // Read an iterated logical expression (exists or forall).
     int num_args = ReadNumArgs();
     typename Handler::LogicalArgHandler args =
         handler_.BeginIteratedLogical(kind, num_args);
@@ -1558,6 +1596,7 @@ typename Handler::LogicalExpr
     return handler_.EndIteratedLogical(args);
   }
   case expr::FIRST_PAIRWISE: {
+    // Read a pairwise expression (alldiff or !alldiff).
     int num_args = ReadNumArgs(1);
     typename Handler::PairwiseArgHandler args =
         handler_.BeginPairwise(kind, num_args);
@@ -1926,6 +1965,13 @@ void NLFileReader<File>::Read(fmt::internal::MemoryBuffer<char, 1> &array) {
     offset += file_.read(&array[offset], size_ - offset);
   array[size_] = 0;
 }
+
+template <typename InputConverter, typename Handler>
+void ReadBinary(TextReader &reader, const NLHeader &header, Handler &handler) {
+  BinaryReader<InputConverter> bin_reader(reader);
+  NLReader<BinaryReader<InputConverter>, Handler>(
+        bin_reader, header, handler).Read();
+}
 }  // namespace internal
 
 // Reads a string containing an optimization problem in .nl format.
@@ -1942,17 +1988,15 @@ void ReadNLString(fmt::StringRef str, Handler &handler, fmt::StringRef name) {
           reader, header, handler).Read();
     break;
   case NLHeader::BINARY: {
+      using internal::ReadBinary;
     arith::Kind arith_kind = arith::GetKind();
-    if (arith_kind != header.arith_kind) {
-      if (IsIEEE(arith_kind) && IsIEEE(header.arith_kind))
-        ; // TODO: use binary reader & swap bytes
-      else
-        throw ReadError(name, 0, 0, "unsupported floating-point arithmetic");
-    } else {
-      internal::BinaryReader bin_reader(reader);
-      internal::NLReader<internal::BinaryReader, Handler>(
-            bin_reader, header, handler).Read();
+    if (arith_kind == header.arith_kind) {
+      ReadBinary<internal::IdentityConverter>(reader, header, handler);
+      break;
     }
+    if (!IsIEEE(arith_kind) || !IsIEEE(header.arith_kind))
+      throw ReadError(name, 0, 0, "unsupported floating-point arithmetic");
+    ReadBinary<internal::EndiannessConverter>(reader, header, handler);
     break;
   }
   }

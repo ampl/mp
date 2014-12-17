@@ -33,6 +33,7 @@ using mp::ReadError;
 using mp::ReadNLString;
 using mp::internal::TextReader;
 using mp::internal::BinaryReader;
+using mp::internal::EndiannessConverter;
 namespace expr = mp::expr;
 
 using testing::_;
@@ -276,76 +277,100 @@ class TestReaderBase : public mp::internal::ReaderBase {
      : ReaderBase(data, name) {}
 };
 
-class TestBinaryReader : private TestReaderBase, public BinaryReader {
+template <typename Converter = mp::internal::IdentityConverter>
+class TestBinaryReader :
+    private TestReaderBase, public BinaryReader<Converter> {
  public:
   TestBinaryReader(fmt::StringRef data, fmt::StringRef name = "test")
     : TestReaderBase(data, name),
-      BinaryReader(static_cast<TestReaderBase&>(*this)) {}
+      BinaryReader<Converter>(static_cast<TestReaderBase&>(*this)) {}
 };
 
 TEST(BinaryReaderTest, ReportError) {
-  TestBinaryReader reader("x");
+  TestBinaryReader<> reader("x");
   EXPECT_THROW_MSG(reader.ReportError("a{}c", 'b'), mp::BinaryReadError,
                    "test:offset 0: abc");
+}
+
+template <typename T>
+void ChangeEndianness(T &value) {
+  char *data = reinterpret_cast<char*>(&value);
+  std::reverse(data, data + sizeof(T));
 }
 
 TEST(BinaryReaderTest, ReadInt) {
   int data[] = {11, -22};
   std::size_t size = sizeof(data);
-  TestBinaryReader reader(fmt::StringRef(reinterpret_cast<char*>(data), size));
+  fmt::StringRef str(reinterpret_cast<char*>(data), sizeof(data));
+  TestBinaryReader<> reader(str);
   EXPECT_EQ(11, reader.ReadInt<int>());
   EXPECT_EQ(-22, reader.ReadInt<int>());
   EXPECT_THROW_MSG(reader.ReadInt<int>(), mp::BinaryReadError,
                    fmt::format("test:offset {}: unexpected end of file", size));
+  ChangeEndianness(data[0]);
+  EXPECT_EQ(11, TestBinaryReader<EndiannessConverter>(str).ReadInt<int>());
 }
 
 TEST(BinaryReaderTest, ReadLong) {
   long data[] = {42};
-  std::size_t size = sizeof(data);
-  TestBinaryReader reader(fmt::StringRef(reinterpret_cast<char*>(data), size));
+  fmt::StringRef str(reinterpret_cast<char*>(data), sizeof(data));
+  TestBinaryReader<> reader(str);
   EXPECT_EQ(42, reader.ReadInt<long>());
+  ChangeEndianness(data[0]);
+  EXPECT_EQ(42, TestBinaryReader<EndiannessConverter>(str).ReadInt<long>());
 }
 
 TEST(BinaryReaderTest, ReadUInt) {
   int data[] = {11, -22};
-  std::size_t size = sizeof(data);
-  TestBinaryReader reader(fmt::StringRef(reinterpret_cast<char*>(data), size));
+  fmt::StringRef str(reinterpret_cast<char*>(data), sizeof(data));
+  TestBinaryReader<> reader(str);
   EXPECT_EQ(11, reader.ReadUInt());
   std::string message =
       fmt::format("test:offset {}: expected unsigned integer", sizeof(int));
   EXPECT_THROW_MSG(reader.ReadUInt(), mp::BinaryReadError, message);
+  ChangeEndianness(data[0]);
+  EXPECT_EQ(11, TestBinaryReader<EndiannessConverter>(str).ReadUInt());
 }
 
 TEST(BinaryReaderTest, ReadDouble) {
   double data[] = {11, -2.2};
   std::size_t size = sizeof(data);
-  TestBinaryReader reader(fmt::StringRef(reinterpret_cast<char*>(data), size));
+  fmt::StringRef str(reinterpret_cast<char*>(data), size);
+  TestBinaryReader<> reader(str);
   EXPECT_EQ(11, reader.ReadDouble());
   EXPECT_EQ(-2.2, reader.ReadDouble());
   EXPECT_THROW_MSG(reader.ReadDouble(), mp::BinaryReadError,
                    fmt::format("test:offset {}: unexpected end of file", size));
+  ChangeEndianness(data[0]);
+  EXPECT_EQ(11, TestBinaryReader<EndiannessConverter>(str).ReadDouble());
 }
 
-void TestReadString(fmt::StringRef (BinaryReader::*read)()) {
+template <typename Converter>
+void TestReadString(fmt::StringRef (BinaryReader<Converter>::*read)(),
+                    bool change_endianness = false) {
   int data[] = {3, 0, 0};
+  if (change_endianness)
+    ChangeEndianness(data[0]);
   std::strcpy(reinterpret_cast<char*>(data + 1), "abc");
   {
-    TestBinaryReader reader(
+    TestBinaryReader<Converter> reader(
           fmt::StringRef(reinterpret_cast<char*>(data), sizeof(int) + 3));
     fmt::StringRef name = (reader.*read)();
     EXPECT_EQ("abc", std::string(name.c_str(), name.size()));
   }
   {
     std::size_t size = sizeof(int) + 2;
-    TestBinaryReader reader(
+    TestBinaryReader<Converter> reader(
           fmt::StringRef(reinterpret_cast<char*>(data), size));
     std::string message =
         fmt::format("test:offset {}: unexpected end of file", size);
     EXPECT_THROW_MSG((reader.*read)(), mp::BinaryReadError, message);
   }
   data[0] = -1;
+  if (change_endianness)
+    ChangeEndianness(data[0]);
   {
-    TestBinaryReader reader(
+    TestBinaryReader<Converter> reader(
           fmt::StringRef(reinterpret_cast<char*>(data), sizeof(data)));
     EXPECT_THROW_MSG((reader.*read)(), mp::BinaryReadError,
                      "test:offset 0: expected unsigned integer");
@@ -353,11 +378,13 @@ void TestReadString(fmt::StringRef (BinaryReader::*read)()) {
 }
 
 TEST(BinaryReaderTest, ReadName) {
-  TestReadString(&BinaryReader::ReadName);
+  TestReadString(&BinaryReader<>::ReadName);
+  TestReadString(&BinaryReader<EndiannessConverter>::ReadName, true);
 }
 
 TEST(BinaryReaderTest, ReadString) {
-  TestReadString(&BinaryReader::ReadString);
+  TestReadString(&BinaryReader<>::ReadString);
+  TestReadString(&BinaryReader<EndiannessConverter>::ReadString, true);
 }
 
 TEST(NLTest, ArithKind) {
