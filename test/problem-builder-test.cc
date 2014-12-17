@@ -22,10 +22,15 @@
 
 #include "gmock/gmock.h"
 #include "gtest-extra.h"
-#include "mp/problem-builder.h"
+#include "mock-problem-builder.h"
 #include "mp/nl.h"
 
-class TestExpr {};
+using mp::NLHeader;
+namespace expr = mp::expr;
+
+using testing::Field;
+using testing::Return;
+using testing::StrictMock;
 
 struct TestProblemBuilder : mp::ProblemBuilder<TestProblemBuilder, TestExpr> {
   MOCK_METHOD1(ReportUnhandledConstruct, void (const std::string &name));
@@ -75,8 +80,8 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(MakeNumericConstant(0),
                   "numeric constant in nonlinear expression");
   EXPECT_DISPATCH(MakeVariable(0), "variable in nonlinear expression");
-  EXPECT_DISPATCH(MakeUnary(mp::expr::ABS, TestExpr()), "abs");
-  EXPECT_DISPATCH(MakeBinary(mp::expr::ADD, TestExpr(), TestExpr()), "+");
+  EXPECT_DISPATCH(MakeUnary(expr::ABS, TestExpr()), "abs");
+  EXPECT_DISPATCH(MakeBinary(expr::ADD, TestExpr(), TestExpr()), "+");
   EXPECT_DISPATCH(MakeIf(TestExpr(), TestExpr(), TestExpr()), "if expression");
   EXPECT_DISPATCH(BeginPLTerm(0), "piecewise-linear term");
   EXPECT_DISPATCH(EndPLTerm(TestProblemBuilder::PLTermBuilder(), TestExpr()),
@@ -85,7 +90,7 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
                   "function call");
   EXPECT_DISPATCH(EndCall(TestProblemBuilder::CallExprBuilder()),
                   "function call");
-  EXPECT_DISPATCH(BeginVarArg(mp::expr::MIN, 0), "min");
+  EXPECT_DISPATCH(BeginVarArg(expr::MIN, 0), "min");
   EXPECT_DISPATCH(EndVarArg(TestProblemBuilder::NumericExprBuilder()),
                   "vararg expression");
   EXPECT_DISPATCH(BeginSum(0), "sum");
@@ -98,19 +103,19 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
                   "numberof expression");
   EXPECT_DISPATCH(MakeLogicalConstant(true), "logical constant");
   EXPECT_DISPATCH(MakeNot(TestExpr()), "logical not");
-  EXPECT_DISPATCH(MakeBinaryLogical(mp::expr::OR, TestExpr(), TestExpr()),
+  EXPECT_DISPATCH(MakeBinaryLogical(expr::OR, TestExpr(), TestExpr()),
                   "||");
-  EXPECT_DISPATCH(MakeRelational(mp::expr::LT, TestExpr(), TestExpr()), "<");
-  EXPECT_DISPATCH(MakeLogicalCount(mp::expr::ATLEAST, TestExpr(), TestExpr()),
+  EXPECT_DISPATCH(MakeRelational(expr::LT, TestExpr(), TestExpr()), "<");
+  EXPECT_DISPATCH(MakeLogicalCount(expr::ATLEAST, TestExpr(), TestExpr()),
                   "atleast");
   EXPECT_DISPATCH(MakeImplication(TestExpr(), TestExpr(), TestExpr()),
                   "implication expression");
-  EXPECT_DISPATCH(BeginIteratedLogical(mp::expr::EXISTS, 0),
+  EXPECT_DISPATCH(BeginIteratedLogical(expr::EXISTS, 0),
                   "exists");
   EXPECT_DISPATCH(EndIteratedLogical(
                     TestProblemBuilder::IteratedLogicalExprBuilder()),
                   "iterated logical expression");
-  EXPECT_DISPATCH(BeginPairwise(mp::expr::ALLDIFF, 0), "alldiff expression");
+  EXPECT_DISPATCH(BeginPairwise(expr::ALLDIFF, 0), "alldiff expression");
   EXPECT_DISPATCH(EndPairwise(TestProblemBuilder::PairwiseExprBuilder()),
                   "alldiff expression");
   EXPECT_DISPATCH(MakeStringLiteral("test"), "string literal");
@@ -123,4 +128,242 @@ TEST(ProblemBuilderTest, Throw) {
   TestProblemBuilder2 builder;
   EXPECT_THROW_MSG(builder.MakeVariable(0), mp::Error,
                    "unsupported: variable in nonlinear expression");
+}
+
+// Checks if ProblemBuilderToNLAdapter forwards arguments passed to
+// adapter_func to ProblemBuilder's builder_func.
+#define EXPECT_FORWARD(adapter_func, builder_func, args) { \
+  StrictMock<MockProblemBuilder> builder; \
+  EXPECT_CALL(builder, builder_func args); \
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder); \
+  adapter.adapter_func args; \
+}
+
+// Version of EXPECT_FORWARD for methods with a return value.
+#define EXPECT_FORWARD_RET(adapter_func, builder_func, args, result) { \
+  StrictMock<MockProblemBuilder> builder; \
+  EXPECT_CALL(builder, builder_func args).WillOnce(Return(result)); \
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder); \
+  adapter.adapter_func args; \
+}
+
+TEST(NLProblemBuilderTest, Forward) {
+  EXPECT_FORWARD(OnComplement, SetComplement, (66, 77, 88));
+
+  EXPECT_FORWARD(OnInitialValue, SetInitialValue, (33, 4.4));
+  EXPECT_FORWARD(OnInitialDualValue, SetInitialDualValue, (55, 6.6));
+
+  EXPECT_FORWARD_RET(OnColumnSizes, GetColumnSizeHandler, (),
+                     TestColumnSizeHandler(ID));
+
+  // Use the same StringRef object in arguments, because StringRef objects
+  // are compared as pointers and string literals they point to may not
+  // be merged.
+  fmt::StringRef str("foo");
+  EXPECT_FORWARD_RET(OnIntSuffix, AddIntSuffix, (str, 99, 11),
+                     TestSuffixHandler<0>(ID));
+  EXPECT_FORWARD_RET(OnDblSuffix, AddDblSuffix, (str, 99, 11),
+                     TestSuffixHandler<1>(ID));
+
+  EXPECT_FORWARD_RET(OnNumericConstant, MakeNumericConstant,
+                     (2.2), TestNumericExpr(ID));
+  EXPECT_FORWARD_RET(OnVariableRef, MakeVariable, (33), TestReference(ID));
+  EXPECT_FORWARD_RET(OnCommonExprRef, MakeCommonExpr, (33), TestReference(ID));
+  EXPECT_FORWARD_RET(OnUnary, MakeUnary, (expr::ABS, TestNumericExpr(ID)),
+                     TestNumericExpr(ID2));
+  EXPECT_FORWARD_RET(OnBinary, MakeBinary,
+                     (expr::ADD, TestNumericExpr(ID), TestNumericExpr(ID2)),
+                     TestNumericExpr(ID3));
+  EXPECT_FORWARD_RET(OnIf, MakeIf,
+                     (TestLogicalExpr(ID), TestNumericExpr(ID2),
+                      TestNumericExpr(ID3)), TestNumericExpr(ID4));
+
+  EXPECT_FORWARD_RET(BeginPLTerm, BeginPLTerm, (44), TestPLTermBuilder(ID));
+  EXPECT_FORWARD_RET(EndPLTerm, EndPLTerm,
+                     (TestPLTermBuilder(ID), TestReference(ID2)),
+                     TestNumericExpr(ID3));
+
+  EXPECT_FORWARD_RET(BeginVarArg, BeginVarArg, (expr::MAX, 77),
+                     TestVarArgExprBuilder(ID));
+  EXPECT_FORWARD_RET(EndVarArg, EndVarArg, (TestVarArgExprBuilder(ID)),
+                     TestNumericExpr(ID2));
+
+  EXPECT_FORWARD_RET(BeginSum, BeginSum, (88), TestNumericExprBuilder(ID));
+  EXPECT_FORWARD_RET(EndSum, EndSum, (TestNumericExprBuilder(ID)),
+                     TestNumericExpr(ID2));
+
+  EXPECT_FORWARD_RET(BeginCount, BeginCount, (99), TestCountExprBuilder(ID));
+  EXPECT_FORWARD_RET(EndCount, EndCount, (TestCountExprBuilder(ID)),
+                     TestCountExpr(ID2));
+
+  EXPECT_FORWARD_RET(BeginNumberOf, BeginNumberOf, (11, TestNumericExpr(ID)),
+                     TestNumberOfExprBuilder(ID2));
+  EXPECT_FORWARD_RET(EndNumberOf, EndNumberOf, (TestNumberOfExprBuilder(ID)),
+                     TestNumericExpr(ID2));
+
+  EXPECT_FORWARD_RET(BeginSymbolicNumberOf, BeginSymbolicNumberOf,
+                     (11, TestExpr(ID)), TestSymbolicNumberOfExprBuilder(ID2));
+  EXPECT_FORWARD_RET(EndSymbolicNumberOf, EndSymbolicNumberOf,
+                     (TestSymbolicNumberOfExprBuilder(ID)),
+                     TestNumericExpr(ID2));
+
+  EXPECT_FORWARD_RET(OnLogicalConstant, MakeLogicalConstant, (true),
+                     TestLogicalExpr(ID));
+  EXPECT_FORWARD_RET(OnNot, MakeNot, (TestLogicalExpr(ID)),
+                     TestLogicalExpr(ID2));
+  EXPECT_FORWARD_RET(OnBinaryLogical, MakeBinaryLogical,
+                     (expr::OR, TestLogicalExpr(ID), TestLogicalExpr(ID2)),
+                     TestLogicalExpr(ID3));
+  EXPECT_FORWARD_RET(OnRelational, MakeRelational,
+                     (expr::LT, TestNumericExpr(ID), TestNumericExpr(ID2)),
+                     TestLogicalExpr(ID3));
+  EXPECT_FORWARD_RET(OnLogicalCount, MakeLogicalCount,
+                     (expr::ATLEAST, TestNumericExpr(ID), TestCountExpr(ID2)),
+                     TestLogicalExpr(ID3));
+  EXPECT_FORWARD_RET(OnImplication, MakeImplication,
+                     (TestLogicalExpr(ID), TestLogicalExpr(ID2),
+                      TestLogicalExpr(ID3)), TestLogicalExpr(ID4));
+
+  EXPECT_FORWARD_RET(BeginIteratedLogical, BeginIteratedLogical,
+                     (expr::EXISTS, 22), TestIteratedLogicalExprBuilder(ID));
+  EXPECT_FORWARD_RET(EndIteratedLogical, EndIteratedLogical,
+                     (TestIteratedLogicalExprBuilder(ID)),
+                     TestLogicalExpr(ID2));
+
+  EXPECT_FORWARD_RET(BeginPairwise, BeginPairwise, (expr::ALLDIFF, 33),
+                     TestPairwiseExprBuilder(ID));
+  EXPECT_FORWARD_RET(EndPairwise, EndPairwise,
+                     (TestPairwiseExprBuilder(ID)), TestLogicalExpr(ID2));
+
+  EXPECT_FORWARD_RET(OnStringLiteral, MakeStringLiteral, (str), TestExpr(ID));
+
+  EXPECT_FORWARD_RET(OnSymbolicIf, MakeSymbolicIf,
+                     (TestLogicalExpr(ID), TestExpr(ID2), TestExpr(ID3)),
+                     TestExpr(ID4));
+}
+
+TEST(NLProblemBuilderTest, OnHeader) {
+  StrictMock<MockProblemBuilder> builder;
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  NLHeader h;
+  EXPECT_CALL(builder, SetInfo(testing::Ref(h)));
+  adapter.OnHeader(h);
+}
+
+// Test that ProblemBuilderToNLAdapter passes 0 as the number of objectives
+// if obj_index is set to SKIP_ALL_OBJS.
+TEST(NLProblemBuilderTest, SkipAllObjs) {
+  MockProblemBuilder builder;
+  typedef mp::ProblemBuilderToNLAdapter<MockProblemBuilder> Adapter;
+  Adapter adapter(builder, Adapter::SKIP_ALL_OBJS);
+  auto header = NLHeader();
+  header.num_objs = 10;
+  EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 0)));
+  adapter.OnHeader(header);
+}
+
+// Test that ProblemBuilderToNLAdapter passes the total number of objectives
+// if obj_index is set to NEED_ALL_OBJS.
+TEST(NLProblemBuilderTest, NeedAllObjs) {
+  MockProblemBuilder builder;
+  typedef mp::ProblemBuilderToNLAdapter<MockProblemBuilder> Adapter;
+  Adapter adapter(builder, Adapter::NEED_ALL_OBJS);
+  auto header = NLHeader();
+  header.num_objs = 10;
+  EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 10)));
+  adapter.OnHeader(header);
+}
+
+// Test that ProblemBuilderToNLAdapter passes min(1, num_objs) as the
+// number of objectives by default.
+TEST(NLProblemBuilderTest, SingleObjective) {
+  MockProblemBuilder builder;
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  auto header = NLHeader();
+  header.num_objs = 10;
+  EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 1)));
+  adapter.OnHeader(header);
+  header.num_objs = 0;
+  EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 0)));
+  adapter.OnHeader(header);
+}
+
+TEST(NLProblemBuilderTest, OnVarBounds) {
+  StrictMock<MockProblemBuilder> builder;
+  EXPECT_CALL(builder, AddVar(7.7, 8.8, mp::var::INTEGER));
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  adapter.OnVarBounds(66, 7.7, 8.8);
+}
+
+TEST(NLProblemBuilderTest, OnObj) {
+  StrictMock<MockProblemBuilder> builder;
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  auto header = mp::NLHeader();
+  header.num_objs = 1;
+  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  adapter.OnHeader(header);
+  auto expr = TestNumericExpr(ID);
+  adapter.OnObj(0, mp::obj::MAX, expr);
+  auto obj_builder = TestLinearObjBuilder(ID);
+  EXPECT_CALL(builder, AddObj(mp::obj::MAX, expr, 11)).
+      WillOnce(Return(obj_builder));
+  EXPECT_EQ(obj_builder, adapter.OnLinearObjExpr(0, 11));
+}
+
+TEST(NLProblemBuilderTest, OnCon) {
+  StrictMock<MockProblemBuilder> builder;
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  auto header = mp::NLHeader();
+  header.num_algebraic_cons = 1;
+  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  adapter.OnHeader(header);
+  auto expr = TestNumericExpr(ID);
+  adapter.OnAlgebraicCon(0, expr);
+  adapter.OnConBounds(0, 11, 22);
+  auto con_builder = TestLinearConBuilder(ID);
+  EXPECT_CALL(builder, AddCon(11, 22, expr, 33)).WillOnce(Return(con_builder));
+  EXPECT_EQ(con_builder, adapter.OnLinearConExpr(0, 33));
+}
+
+TEST(NLProblemBuilderTest, OnLogicalCon) {
+  StrictMock<MockProblemBuilder> builder;
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  auto expr = TestLogicalExpr(ID);
+  EXPECT_CALL(builder, AddCon(expr));
+  adapter.OnLogicalCon(0, expr);
+}
+
+TEST(NLProblemBuilderTest, OnCommonExpr) {
+  StrictMock<MockProblemBuilder> builder;
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  auto header = mp::NLHeader();
+  header.num_common_exprs_in_cons = 1;
+  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  adapter.OnHeader(header);
+  auto expr_builder = TestLinearExprBuilder(ID);
+  EXPECT_CALL(builder, BeginCommonExpr(11)).WillOnce(Return(expr_builder));
+  adapter.BeginCommonExpr(0, 11);
+  auto expr = TestNumericExpr(ID);
+  EXPECT_CALL(builder, EndCommonExpr(expr_builder, expr, 22));
+  adapter.EndCommonExpr(expr_builder, expr, 22);
+}
+
+TEST(NLProblemBuilderTest, OnFunction) {
+  StrictMock<MockProblemBuilder> builder;
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  auto header = mp::NLHeader();
+  header.num_funcs = 1;
+  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  adapter.OnHeader(header);
+  auto func = TestFunction(ID);
+  fmt::StringRef name("f");
+  EXPECT_CALL(builder, AddFunction(name, 11, mp::func::SYMBOLIC)).
+      WillOnce(Return(func));
+  adapter.OnFunction(0, name, 11, mp::func::SYMBOLIC);
+  auto call_builder = TestCallExprBuilder(ID);
+  EXPECT_CALL(builder, BeginCall(func, 11)).WillOnce(Return(call_builder));
+  adapter.BeginCall(0, 11);
+  EXPECT_CALL(builder, EndCall(call_builder)).
+      WillOnce(Return(TestNumericExpr(ID)));
+  adapter.EndCall(call_builder);
 }
