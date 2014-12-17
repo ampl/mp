@@ -33,6 +33,7 @@
 
 #include "mp/nl.h"
 #include "mp/os.h"
+#include "mp/problem-builder.h"
 #include "aslbuilder.h"
 #include "expr-writer.h"
 

@@ -24,6 +24,7 @@
 
 #include "asl/aslbuilder.h"
 #include "mp/nl.h"
+#include "mp/problem-builder.h"
 #include "opcode.hd"
 #include "../util.h"
 

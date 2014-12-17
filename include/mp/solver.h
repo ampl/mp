@@ -45,6 +45,7 @@
 #include "mp/format.h"
 #include "mp/nl.h"
 #include "mp/option.h"
+#include "mp/problem-builder.h"
 #include "mp/sol.h"
 #include "mp/suffix.h"
 

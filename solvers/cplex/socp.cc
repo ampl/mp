@@ -23,6 +23,7 @@
 #include "mp/expr-visitor.h"
 #include "mp/nl.h"
 #include "mp/problem.h"
+#include "mp/problem-builder.h"
 #include "asl.h"
 
 #define SKIP_NL2_DEFINES
