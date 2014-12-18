@@ -981,6 +981,9 @@ class SolutionWriter : private Writer, public SolutionHandler {
   // The number of feasible solutions found.
   int num_solutions_;
 
+ protected:
+  Solver &solver() { return solver_; }
+
  public:
   SolutionWriter(fmt::StringRef stub, Solver &s, ProblemBuilder &b,
                  ArrayRef<int> options = mp::ArrayRef<int>(0, 0))
@@ -1230,11 +1233,15 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   const char *filename = option_parser_.Parse(argv);
   if (!filename) return 0;
 
-  fmt::MemoryWriter banner;
-  banner.write("{}: ", solver_.long_name());
-  std::fputs(banner.c_str(), stdout);
-  std::fflush(stdout);
-  output_handler_.has_output = false;
+  std::size_t banner_size = 0;
+  if (solver_.ampl_option()) {
+    fmt::MemoryWriter banner;
+    banner.write("{}: ", solver_.long_name());
+    std::fputs(banner.c_str(), stdout);
+    std::fflush(stdout);
+    banner_size = banner.size();
+    output_handler_.has_output = false;
+  }
   // TODO: test output
 
   // Add .nl extension if necessary.
@@ -1263,55 +1270,40 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   if (solver_.timing())
     solver_.Print("Input time = {:.6f}s\n", read_time);
 
-  // Solve the problem writing solution(s) if necessary.
-  std::auto_ptr<SolutionHandler> sol_handler;
-  std::size_t banner_size = output_handler_.has_output ? 0 : banner.size();
-  if (solver_.wantsol() != 0) {
-    class AppSolutionWriter : public SolutionWriter<Solver> {
-     private:
-      std::size_t banner_size_;
+  // Solve the problem and write solution(s) if necessary.
+  ArrayRef<int> options(handler.options(), handler.num_options());
+  class AppSolutionHandler : public SolutionWriter<Solver> {
+   private:
+    std::size_t banner_size_;
 
-     public:
-      AppSolutionWriter(fmt::StringRef stub, Solver &s,
-                        typename Solver::ProblemBuilder &b,
-                        ArrayRef<int> options, std::size_t banner_size)
-      : SolutionWriter<Solver>(stub, s, b, options),
-        banner_size_(banner_size) {}
+   public:
+    AppSolutionHandler(fmt::StringRef stub, Solver &s,
+                      typename Solver::ProblemBuilder &b,
+                      ArrayRef<int> options, std::size_t banner_size)
+    : SolutionWriter<Solver>(stub, s, b, options),
+      banner_size_(banner_size) {}
 
-      void HandleSolution(int status, fmt::StringRef message,
-                          const double *values, const double *dual_values,
-                          double obj_value) {
+    void HandleSolution(int status, fmt::StringRef message,
+                        const double *values, const double *dual_values,
+                        double obj_value) {
+      Solver &solver = this->solver();
+      if (!solver.ampl_option())
+        solver.Print("{}\n", message.c_str() + banner_size_);
+      if (!solver.wantsol())
+        return;
+      // "Erase" the banner so that it is not duplicated when printing
+      // the solver message.
+      if (solver.ampl_option() && banner_size_ != 0) {
         fmt::MemoryWriter w;
-        // "Erase" the banner so that it is not duplicated when printing
-        // the solver message.
-        w << fmt::pad("", banner_size_, '\b') << message;
-        SolutionWriter<Solver>::HandleSolution(
-              status, w.c_str(), values, dual_values, obj_value);
+        w << fmt::pad("", banner_size_, '\b');
+        solver.Print("{}", w.c_str());
       }
-    };
-    ArrayRef<int> options(handler.options(), handler.num_options());
-    sol_handler.reset(new AppSolutionWriter(
-                        filename_no_ext, solver_, builder,
-                        options, banner_size));
-  } else {
-    // The solution is not needed, so only print the solver message.
-    class SolverMessagePrinter : public NullSolutionHandler {
-     private:
-      Solver &solver_;
-      std::size_t banner_size_;
-
-     public:
-      SolverMessagePrinter(Solver &s, std::size_t banner_size)
-        : solver_(s), banner_size_(banner_size) {}
-
-      void HandleSolution(int, fmt::StringRef message,
-                          const double *, const double *, double) {
-        solver_.Print("{}\n", message.c_str() + banner_size_);
-      }
-    };
-    sol_handler.reset(new SolverMessagePrinter(solver_, banner_size));
-  }
-  solver_.Solve(builder, *sol_handler);
+      SolutionWriter<Solver>::HandleSolution(
+            status, message, values, dual_values, obj_value);
+    }
+  } sol_handler(filename_no_ext, solver_, builder, options,
+                output_handler_.has_output ? 0 : banner_size);
+  solver_.Solve(builder, sol_handler);
   return 0;
 }
 
