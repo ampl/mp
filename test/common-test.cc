@@ -123,7 +123,7 @@ const ExprInfo INFO[] = {
 
 TEST(CommonTest, Str) {
   std::size_t num_kinds = sizeof(INFO) / sizeof(*INFO);
-  EXPECT_EQ(ex::LAST_EXPR + 1, num_kinds);
+  EXPECT_EQ(ex::LAST_EXPR + 1u, num_kinds);
   for (std::size_t i = 0; i < num_kinds; ++i)
     EXPECT_STREQ(INFO[i].str, str(INFO[i].kind));
 }
