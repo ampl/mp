@@ -6,6 +6,10 @@ CPLEXSTUDIODIR = /home/dmg/etc/solvers/cplex1261
 CONCERTDIR     = $CPLEXSTUDIODIR/concert
 CPLEXDIR       = $CPLEXSTUDIODIR/cplex
 CPOPTIMIZERDIR = $CPLEXSTUDIODIR/cpoptimizer
+CPLEXLINKFLAGS = -L$CPLEXSTUDIODIR/linux64
+#CPLEXLINKFLAGS = -L$CONCERTDIR/lib/x86-64_sles10_4.1/static_pic \
+#                 -L$CPLEXDIR/lib/x86-64_sles10_4.1/static_pic \
+#                 -L$CPOPTIMIZERDIR/lib/x86-64_sles10_4.1/static_pic
 
 CONCERT_INC=$CONCERTDIR/include
 CPLEX_INC=$CPLEXDIR/include
@@ -24,7 +28,7 @@ CXX = g++ -m32
 CXX64 = g++
 CC = cc -m32
 CC64 = cc
-CXX11_FLAGS = -std=c++11 -DMP_USE_UNORDERED_MAP
+CXX11_FLAGS = -std=c++11 -DMP_USE_UNORDERED_MAP -DMP_NO_CLOCK_GETTIME
 
 CFLAGS = -I$CONCERT_INC -I$CPLEX_INC -I$CPOPTIMIZER_INC -Iinclude -Isrc -I. -DILCUSEMT -DIL_STD $CXX11_FLAGS
 L = -lstdc++ -L$CPLEXSTUDIODIR/linux32 -lcp -lilocplex -lcplex -lconcert $LDMTFLAGS $S/$ALIB $LIBS
@@ -32,7 +36,7 @@ Lg = -lstdc++ -L$CPLEXSTUDIODIR/linux32 -lcp -lilocplex -lcplex -lconcert $LDMTF
 L640 = $S64/olib
 Lb64 = $L640/libnsl.so.1 $L640/libdl.so.2 $L640/libpthread.so.0 $L640/libstdc++.so.6 $L640/libm.so.6 $L640/libgcc_s.so.1 $L640/libc.so.6 $L640/ld-linux-x86-64.so.2
 
-L64 = -L$CPLEXSTUDIODIR/linux64 -lcp -lilocplex -lcplex -lconcert $LDMTFLAGS $S64/$ALIB -lnsl -ldl -lpthread -lm
+L64 = $CPLEXLINKFLAGS -lcp -lilocplex -lcplex -lconcert $LDMTFLAGS $S64/$ALIB -lnsl -ldl -lpthread -lm
 
 all:V: b/ilogcp32 b/ilogcp64 b/ilogcp32lt b/ilogcp64lt
 
