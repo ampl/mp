@@ -10,3 +10,6 @@
 [submodule "thirdparty/gsl"]
 	path = thirdparty/gsl
 	url = https://github.com/ampl/gsl
+[submodule "thirdparty/breathe"]
+	path = thirdparty/breathe
+	url = https://github.com/michaeljones/breathe.git
