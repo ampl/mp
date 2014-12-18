@@ -277,7 +277,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
     // Returns the nonlinear part of the objective expression.
     NumericExpr nonlinear_expr() const {
-      std::size_t index = static_cast<std::size_t>(this->index_);
+      std::size_t index = this->index_;
       return index < this->problem_->nonlinear_objs_.size() ?
             this->problem_->nonlinear_objs_[index] : NumericExpr();
     }
@@ -326,8 +326,9 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
     // Returns the nonlinear part of a constraint expression.
     NumericExpr nonlinear_expr() const {
-      return this->index_ < this->problem_->nonlinear_cons_.size() ?
-            this->problem_->nonlinear_cons_[this->index_] : NumericExpr();
+      std::size_t index = this->index_;
+      return index < this->problem_->nonlinear_cons_.size() ?
+            this->problem_->nonlinear_cons_[index] : NumericExpr();
     }
 
     template <typename OtherItem>
