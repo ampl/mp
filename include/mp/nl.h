@@ -967,7 +967,7 @@ class NLReader {
   void ReadInitialValues();
 
   struct IntReader {
-    double operator()(Reader &r) const { return r.template ReadInt<int>(); }
+    int operator()(Reader &r) const { return r.template ReadInt<int>(); }
   };
 
   struct DoubleReader {
