@@ -1,0 +1,118 @@
+BUILTINS =
+NPROC = 1
+LIBFORMAT = static_pic
+
+CPLEXSTUDIODIR = /home/dmg/etc/solvers/cplex1261
+CONCERTDIR     = $CPLEXSTUDIODIR/concert
+CPLEXDIR       = $CPLEXSTUDIODIR/cplex
+CPOPTIMIZERDIR = $CPLEXSTUDIODIR/cpoptimizer
+
+CONCERT_INC=$CONCERTDIR/include
+CPLEX_INC=$CPLEXDIR/include
+CPOPTIMIZER_INC=$CPOPTIMIZERDIR/include
+
+S = ..
+S64 = ../64
+ALIB = amplsolver.a
+#LIBS = -lnsl -lm -ldl -lpthread
+L32 = /usr/local/olib32
+LIBS = $L32/libnsl.so.1 $L32/libdl.so.2 $L32/libpthread.so.0 $L32/libstdc++.so.6 $L32/libm.so.6 $L32/libgcc_s.so.1 $L32/libc.so.6 $L32/ld-linux.so.2
+
+g = -O2
+gs = -std=c++11 -DHAVE_UNORDERED_MAP
+CXX = g++ -m32
+CXX64 = g++
+CC = cc -m32
+CC64 = cc
+CXX11_FLAGS = -std=c++11 -DMP_USE_UNORDERED_MAP
+
+CFLAGS = -I$CONCERT_INC -I$CPLEX_INC -I$CPOPTIMIZER_INC -Iinclude -Isrc -I. -DILCUSEMT -DIL_STD $CXX11_FLAGS
+L = -lstdc++ -L$CPLEXSTUDIODIR/linux32 -lcp -lilocplex -lcplex -lconcert $LDMTFLAGS $S/$ALIB $LIBS
+Lg = -lstdc++ -L$CPLEXSTUDIODIR/linux32 -lcp -lilocplex -lcplex -lconcert $LDMTFLAGS $S/asg.a $LIBS
+L640 = $S64/olib
+Lb64 = $L640/libnsl.so.1 $L640/libdl.so.2 $L640/libpthread.so.0 $L640/libstdc++.so.6 $L640/libm.so.6 $L640/libgcc_s.so.1 $L640/libc.so.6 $L640/ld-linux-x86-64.so.2
+
+L64 = -L$CPLEXSTUDIODIR/linux64 -lcp -lilocplex -lcplex -lconcert $LDMTFLAGS $S64/$ALIB -lnsl -ldl -lpthread -lm
+
+all:V: b/ilogcp32 b/ilogcp64 b/ilogcp32lt b/ilogcp64lt
+
+util = \
+	src/asl/aslbuilder.cc \
+	src/asl/aslexpr.cc \
+	src/asl/aslproblem.cc \
+	src/asl/aslsolver.cc \
+	src/clock.cc \
+	src/concert.cc \
+	src/expr-info.cc \
+	src/format.cc \
+	src/main.cc \
+	src/nl.cc \
+	src/option.cc \
+	src/os.cc \
+	src/posix.cc \
+	src/rstparser.cc \
+	src/sol.cc \
+	src/solver.cc
+
+b/util32.a: $util
+	$CXX -c $g -I$S $CFLAGS $newprereq
+	o=`echo $newprereq|sed 's!src/!!g;s!asl/!!g;s/\.cc/.o/g'`
+	ar ruv $target $o
+	rm $o
+	ranlib $target
+
+b/util32g.a: $util
+	$CXX -c -g -I$S $CFLAGS $newprereq
+	o=`echo $newprereq|sed 's!src/!!g;s!asl/!!g;s/\.cc/.o/g'`
+	ar ruv $target $o
+	rm $o
+	ranlib $target
+
+b/util64.a: $util
+	$CXX64 -c $g -I$S64 $CFLAGS $newprereq
+	o=`echo $newprereq|sed 's!src/!!g;s!asl/!!g;s/\.cc/.o/g'`
+	ar ruv $target $o
+	rm $o
+	ranlib $target
+
+ilogcp_date.h: $util src/ilogcp.cc src/solver.cc ilogcpmain.c licmain1.c
+	now=`Dt -8 $util`
+	lnow=`Dt -8 $prereq`
+	echo -e "#define YYYYMMDD $now\n#define qYYYYMMDD "'"'"$now"'"' >$target
+	echo -e "#define lYYYYMMDD $lnow\n" >>$target
+
+b/%_32.o: src/%.cc ilogcp_date.h
+	$CXX -c -o $target -I$S $CFLAGS `echo $prereq | sed 's/ ilogcp_date.h//'`
+
+b/%_64.o: src/%.cc ilogcp_date.h
+	$CXX64 -c -o $target -I$S64 $CFLAGS `echo $prereq | sed 's/ ilogcp_date.h//'`
+
+b/ilogcp32: b/ilogcp_32.o b/util32.a
+	$CC -c $g -I$S ilogcpmain.c
+	$CXX -s -o $target ilogcpmain.o $prereq $L
+	rm ilogcpmain.o
+
+b/ilogcp32lt: b/ilogcp_32.o b/util32.a
+	$CC -c $g -I$S -DTime_Limited ilogcpmain.c
+	$CXX -s -o $target ilogcpmain.o $prereq $L
+	rm ilogcpmain.o
+
+b/ilogcp32ltg: src/ilogcp.cc b/util32g.a
+	$CC -c -g -I$S -DTime_Limited ilogcpmain.c
+	$CXX -g -o $target -I$S $CFLAGS ilogcpmain.o $prereq $Lg
+	rm ilogcpmain.o
+
+b/ilogcp32g: src/ilogcp.cc b/util32g.a
+	$CC -c -g -I$S ilogcpmain.c
+	$CXX -g -o $target -I$S $CFLAGS ilogcpmain.o $prereq $Lg
+	rm ilogcpmain.o
+
+b/ilogcp64: b/ilogcp_64.o b/util64.a
+	$CC64 -c $g -I$S64 ilogcpmain.c
+	$CXX64 -s -o $target ilogcpmain.o $prereq $L64
+	rm ilogcpmain.o
+
+b/ilogcp64lt: b/ilogcp_64.o b/util64.a
+	$CC64 -c $g -I$S64 -DTime_Limited ilogcpmain.c
+	$CXX64 -s -o $target ilogcpmain.o $prereq $L64
+	rm ilogcpmain.o
