@@ -125,14 +125,21 @@ if (build_cplex)
   add_subdirectory(cplex)
 endif ()
 
+# Excludes targets from the default build.
+function(exclude_from_build)
+  foreach (target ${ARGN})
+    if (TARGET ${target})
+      set_target_properties(${target} PROPERTIES
+        EXCLUDE_FROM_ALL TRUE EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+    endif ()
+  endforeach ()
+endfunction()
+
 set(GECODE_DISABLE_WARNINGS TRUE)
 set(GECODE_USE_QT FALSE)
 add_ampl_solver(gecode EXTERNAL LIBRARIES gecodeminimodel)
-if (TARGET fzn-gecode)
-  # Exclude unused Gecode targets from the build.
-  set_target_properties(
-    fzn-gecode gecodeflatzinc PROPERTIES EXCLUDE_FROM_ALL TRUE)
-endif ()
+# Exclude unused Gecode targets from the build.
+exclude_from_build(fzn-gecode gecodeflatzinc)
 
 add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
   concert.cc concert.h ilogcp.cc ilogcp.h ilogcp_date.h
