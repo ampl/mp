@@ -1483,15 +1483,6 @@ MATCHER(MatchSolutionWriter, "") {
   return dynamic_cast<mp::SolutionWriter<TestSolver>*>(&arg) != 0;
 }
 
-// Test that SolverApp::Run doesn't use the SolutionWriter by default.
-TEST_F(SolverAppTest, DontUseSolutionWriterByDefault) {
-  EXPECT_CALL(app_.reader(), DoRead(_, _));
-  TestSolver &solver = app_.solver();
-  solver.MockSolve();
-  EXPECT_CALL(solver, DoSolve(_, Not(MatchSolutionWriter())));
-  EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
-}
-
 // Test that SolverApp::Run uses SolutionWriter when wantsol() returns nonzero.
 TEST_F(SolverAppTest, UseSolutionWriter) {
   EXPECT_CALL(app_.reader(), DoRead(_, _));
