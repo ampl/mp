@@ -317,7 +317,8 @@ class Expr {
 
   // Returns the expression kind.
   expr::Kind kind() const {
-    return expr::GetOpCodeInfo(reinterpret_cast<std::size_t>(impl_->op)).kind;
+    int opcode = reinterpret_cast<std::size_t>(impl_->op);
+    return expr::GetOpCodeInfo(opcode).kind;
   }
 
   int precedence() const { return mp::internal::precedence(kind()); }
