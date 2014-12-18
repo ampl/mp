@@ -88,7 +88,7 @@ class Suffix {
   // Iterates over nonzero suffix values and sends them to the visitor.
   template <typename Visitor>
   void VisitValues(Visitor &visitor) const {
-    for (std::size_t i = 0; i < size_; ++i) {
+    for (int i = 0; i < size_; ++i) {
       int value = values_[i];
       if (value != 0)
         visitor.Visit(i, value);
