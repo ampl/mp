@@ -128,6 +128,8 @@ endif ()
 set(GECODE_DISABLE_WARNINGS TRUE)
 set(GECODE_USE_QT FALSE)
 add_ampl_solver(gecode EXTERNAL LIBRARIES gecodeminimodel)
+set_target_properties(
+  fzn-gecode gecodeflatzinc PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
   concert.cc concert.h ilogcp.cc ilogcp.h ilogcp_date.h
