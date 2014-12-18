@@ -933,10 +933,10 @@ class SolutionAdapter {
   int option(int index) const { return options_[index]; }
 
   int num_values() const { return values_.size(); }
-  int value(int index) const { return values_[index]; }
+  double value(int index) const { return values_[index]; }
 
   int num_dual_values() const { return dual_values_.size(); }
-  int dual_value(int index) const { return dual_values_[index]; }
+  double dual_value(int index) const { return dual_values_[index]; }
 
   const typename ProblemBuilder::SuffixSet *suffixes(int kind) const {
     return builder_ ? &builder_->suffixes(kind) : 0;
