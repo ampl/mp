@@ -12,6 +12,14 @@ include(init)
 
 project(MP)
 
+set(MP_VERSION 1.3.0)
+if (NOT MP_VERSION MATCHES "^([0-9]+).([0-9]+).([0-9]+)$")
+  message(FATAL_ERROR "Invalid version format ${MP_VERSION}.")
+endif ()
+set(MP_VERSION_MAJOR ${CMAKE_MATCH_1})
+set(MP_VERSION_MINOR ${CMAKE_MATCH_2})
+set(MP_VERSION_PATCH ${CMAKE_MATCH_3})
+
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # Set output directories.
@@ -252,6 +260,8 @@ add_prefix(MP_SOURCES src/
 add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
   COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"
   INCLUDE_DIRECTORIES src OBJECT_LIBRARIES format)
+set_target_properties(mp PROPERTIES
+  VERSION ${MP_VERSION} SOVERSION ${MP_VERSION_MAJOR})
 
 include(CheckCXXSourceCompiles)
 

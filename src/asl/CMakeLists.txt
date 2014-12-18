@@ -237,6 +237,8 @@ endif ()
 
 if (BUILD_SHARED_LIBS)
   add_library(asl-shared $<TARGET_OBJECTS:asl-core>)
+  set_target_properties(asl-shared PROPERTIES
+    VERSION ${MP_VERSION} SOVERSION ${MP_VERSION_MAJOR})
   set_target_properties(asl-shared PROPERTIES OUTPUT_NAME asl)
   target_link_libraries(asl-shared asl)
   install(TARGETS asl-shared DESTINATION lib RUNTIME DESTINATION bin)
