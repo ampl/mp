@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "ilogcp/concert.h"
+#include "concert.h"
 #include "asl/aslproblem.h"
 
 #include <ilconcert/ilotupleset.h>

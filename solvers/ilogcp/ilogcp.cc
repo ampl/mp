@@ -30,7 +30,7 @@
  (http://joc.journal.informs.org/content/14/4/322).
  */
 
-#include "ilogcp/ilogcp.h"
+#include "ilogcp.h"
 #include "asl/aslproblem.h"
 
 #include <cctype>

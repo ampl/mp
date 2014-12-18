@@ -20,9 +20,9 @@
  Author: Victor Zverovich
  */
 
-#include "ilogcp/ilogcp.h"
+#include "ilogcp.h"
 
-int main(int, char **argv) {
+extern "C" int main1(int, char **argv) {
   // Solver should be destroyed after any IloException is handled.
   typedef mp::SolverApp<mp::IlogCPSolver> IlogCPApp;
   std::auto_ptr<IlogCPApp> s;
