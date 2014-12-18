@@ -37,7 +37,7 @@
 #include <vector>
 
 extern "C" {
-#include "solvers/nlp.h"
+#include "nlp.h"
 }
 
 // Undefine ASL macros because they often clash with names used in solver

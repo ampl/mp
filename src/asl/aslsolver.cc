@@ -21,7 +21,7 @@
  */
 
 extern "C" {
-#include "solvers/getstub.h"
+#include "getstub.h"
 }
 
 #undef Char
