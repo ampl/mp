@@ -1261,6 +1261,7 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
 
   // Solve the problem writing solution(s) if necessary.
   std::auto_ptr<SolutionHandler> sol_handler;
+  std::size_t banner_size = output_handler_.has_output ? 0 : banner.size();
   if (solver_.wantsol() != 0) {
     class AppSolutionWriter : public SolutionWriter<Solver> {
      private:
@@ -1274,7 +1275,8 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
         banner_size_(banner_size) {}
 
       void HandleSolution(int status, fmt::StringRef message,
-            const double *values, const double *dual_values, double obj_value) {
+                          const double *values, const double *dual_values,
+                          double obj_value) {
         fmt::MemoryWriter w;
         // "Erase" the banner so that it is not duplicated when printing
         // the solver message.
@@ -1283,13 +1285,27 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
               status, w.c_str(), values, dual_values, obj_value);
       }
     };
-    std::size_t banner_size = output_handler_.has_output ? 0 : banner.size();
     ArrayRef<int> options(handler.options(), handler.num_options());
     sol_handler.reset(new AppSolutionWriter(
                         filename_no_ext, solver_, builder,
                         options, banner_size));
   } else {
-    sol_handler.reset(new NullSolutionHandler());
+    // The solution is not needed, so only print the solver message.
+    class SolverMessagePrinter : public NullSolutionHandler {
+     private:
+      Solver &solver_;
+      std::size_t banner_size_;
+
+     public:
+      SolverMessagePrinter(Solver &s, std::size_t banner_size)
+        : solver_(s), banner_size_(banner_size) {}
+
+      void HandleSolution(int, fmt::StringRef message,
+                          const double *, const double *, double) {
+        solver_.Print("{}\n", message.c_str() + banner_size_);
+      }
+    };
+    sol_handler.reset(new SolverMessagePrinter(solver_, banner_size));
   }
   solver_.Solve(builder, *sol_handler);
   return 0;
