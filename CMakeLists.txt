@@ -159,7 +159,7 @@ set(MP_DATE 20141202)
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
 function (add_mp_library name)
-  cmake_parse_arguments(add_mp_library OBJECT ""
+  cmake_parse_arguments(add_mp_library "OBJECT;STATIC" ""
     "COMPILE_DEFINITIONS;INCLUDE_DIRECTORIES;LIBRARIES;OBJECT_LIBRARIES"
     ${ARGN})
   # Get object files.
@@ -170,9 +170,11 @@ function (add_mp_library name)
     set(dynrt-objects ${dynrt-objects} $<TARGET_OBJECTS:${lib}-dynrt>)
   endforeach ()
   # Add library.
-  set(libtype STATIC)
+  set(libtype )
   if (add_mp_library_OBJECT)
     set(libtype OBJECT)
+  elseif (add_mp_library_STATIC)
+    set(libtype STATIC)
   endif ()
   add_library(${name} ${libtype}
     ${add_mp_library_UNPARSED_ARGUMENTS} ${objects})

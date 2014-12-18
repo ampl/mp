@@ -222,7 +222,7 @@ add_prefix(ASL_HEADERS solvers/
   opcode.hd r_opn.hd)
 set(ASL_SOURCES aslbuilder.cc aslsolver.cc aslexpr.cc aslproblem.cc)
 
-add_mp_library(asl
+add_mp_library(asl STATIC
   ${ASL_SOURCES} ${ASL_HEADERS} OBJECT_LIBRARIES asl-core LIBRARIES mp
   INCLUDE_DIRECTORIES solvers ${PROJECT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR})
