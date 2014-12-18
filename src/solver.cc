@@ -296,6 +296,7 @@ const char *SolverAppOptionParser::Parse(char **&argv) {
   }
   ++argv;
   if (*argv && std::strcmp(*argv, "-AMPL") == 0) {
+    solver_.set_ampl_option();
     solver_.set_wantsol(1);
     ++argv;
   }

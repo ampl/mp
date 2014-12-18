@@ -375,7 +375,7 @@ class Solver : private ErrorHandler,
   // objective, or -1 to use the first objective if there is one.
   int objno_;
 
-  enum {SHOW_VERSION = 1};
+  enum {SHOW_VERSION = 1, AMPL_OPTION = 2};
   int bool_options_;
 
   // The filename stub for returning multiple solutions.
@@ -732,6 +732,10 @@ class Solver : private ErrorHandler,
   //   8 = suppress solution message
   int wantsol() const { return wantsol_; }
   void set_wantsol(int value) { wantsol_ = value; }
+
+  // Returns true if -AMPL is specified.
+  bool ampl_option() { return (bool_options_ & AMPL_OPTION) != 0; }
+  void set_ampl_option() { bool_options_ |= AMPL_OPTION; }
 
   // Returns the index of the objective to optimize starting from 1,
   // 0 to not use objective, or -1 to use the first objective is there is one.
