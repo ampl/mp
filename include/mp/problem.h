@@ -144,7 +144,8 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
   void SetNonlinearObjExpr(int obj_index, NumericExpr expr) {
-    if (nonlinear_objs_.size() <= obj_index)
+    CheckIndex(obj_index, linear_objs_.size());
+    if (nonlinear_objs_.size() <= static_cast<std::size_t>(obj_index))
       nonlinear_objs_.resize(obj_index + 1);
     nonlinear_objs_[obj_index] = expr;
   }
