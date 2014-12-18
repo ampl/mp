@@ -139,8 +139,9 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   std::vector<Function> funcs_;
 
   // Checks if index is in the range [0, size).
-  void CheckIndex(int index, int size) const {
+  static void CheckIndex(int index, int size) {
     MP_ASSERT(0 <= index && index < size, "invalid index");
+    MP_UNUSED2(index, size);
   }
 
   void SetNonlinearObjExpr(int obj_index, NumericExpr expr) {
@@ -736,7 +737,7 @@ void BasicProblem<Alloc>::SetComplement(
     int con_index, int var_index, int flags) {
   MP_ASSERT(0 <= con_index && con_index <= num_algebraic_cons(),
             "invalid index");
-  if (compl_vars_.size() <= con_index) {
+  if (compl_vars_.size() <= static_cast<std::size_t>(con_index)) {
     compl_vars_.reserve(algebraic_cons_.capacity());
     compl_vars_.resize(algebraic_cons_.size());
   }
