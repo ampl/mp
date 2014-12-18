@@ -70,8 +70,7 @@ Building from source
 
 An included `CMake build script`__ can be used to build the MP library,
 solver interfaces and function libraries on a wide range of platforms.
-You can download CMake for free from
-http://www.cmake.org/cmake/resources/software.html.
+You can download CMake for free from http://www.cmake.org/download/.
 
 __ https://github.com/ampl/mp/blob/master/CMakeLists.txt
 
