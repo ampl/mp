@@ -1,3 +1,10 @@
+# This mkfile expects the following directory structure:
+# 64/        - directory with 64-bit ASL library (amplsolver.a)
+# solvers/   - ASL solvers directory
+#   b/       - output directory
+#   include/ - C++ API headers
+#   src/     - C++ API and ilogcp source
+
 BUILTINS =
 NPROC = 1
 LIBFORMAT = static_pic
