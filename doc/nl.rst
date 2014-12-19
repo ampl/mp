@@ -28,7 +28,7 @@ optimization:
 This section describes the C++ API of an nl reader which is
 
 * Reusable: the reader can be used to process nl files in different ways
-  not limited to a single problem representation
+  and not limited to a single problem representation
 * High performance: fast `mmap <http://en.wikipedia.org/wiki/Mmap>`_-based reader
   with `SAX <http://en.wikipedia.org/wiki/Simple_API_for_XML>`_-like API and no
   dynamic memory allocations in the common case
@@ -40,3 +40,9 @@ This section describes the C++ API of an nl reader which is
 .. doxygenfunction:: ReadNLString(fmt::StringRef, Handler &, fmt::StringRef)
 
 .. doxygenfunction:: ReadNLFile(fmt::StringRef, Handler &)
+
+.. doxygenstruct:: mp::NLHeader
+   :members:
+
+.. doxygenclass:: mp::NLHandler
+   :members:
