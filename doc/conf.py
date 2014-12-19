@@ -11,7 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys, os, re
 
 breathe_dir = '../thirdparty/breathe'
 
@@ -63,7 +63,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'AMPL'
+project = u'MP'
 copyright = u'2012 AMPL Optimization, Inc'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -71,7 +71,12 @@ copyright = u'2012 AMPL Optimization, Inc'
 # built documents.
 #
 # The short X.Y version.
-version = '20121105'
+with open('../CMakeLists.txt', 'r') as f:
+  for line in f:
+    m = re.search(r'MP_VERSION (\d+\.\d+\.\d+)', line)
+    if m:
+      version = m.group(1)
+
 # The full version, including alpha/beta/rc tags.
 release = '20121105'
 
@@ -126,10 +131,10 @@ html_theme = 'sphinxdoc'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-html_title = "AMPL Modeling Language for Mathematical Programming"
+html_title = "MP {} documentation".format(version)
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-html_short_title = "AMPL"
+html_short_title = "MP"
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
@@ -206,7 +211,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'AMPL.tex', u'AMPL Documentation',
+  ('index', 'MP.tex', u'MP Documentation',
    u'Victor Zverovich', 'manual'),
 ]
 
