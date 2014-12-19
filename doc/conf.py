@@ -17,8 +17,13 @@ breathe_dir = '../thirdparty/breathe'
 
 if os.environ.get('READTHEDOCS', None) == 'True':
   import subprocess
-  subprocess.call(['doxygen', 'Doxyfile.in'])
-  subprocess.call('extract-docs.py')
+  with open('Doxyfile.in', 'r') as f:
+    lines = f.readlines()
+  with open('Doxyfile', 'w') as f:
+    for line in lines:
+      f.write(line.replace('@DOXYGEN_INPUT_DIR@', ''))
+  subprocess.call('doxygen')
+  subprocess.call('./extract-docs.py')
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
