@@ -1,10 +1,17 @@
 # Check requirements.
 find_program(DOXYGEN doxygen)
 if (NOT DOXYGEN)
+  message(STATUS "Target doc disabled (requires doxygen)")
+  return ()
+endif ()
+find_program(SPHINX_BUILD sphinx-build)
+if (NOT SPHINX_BUILD)
+  message(STATUS "Target doc disabled (requires sphinx-build)")
   return ()
 endif ()
 check_module(breathe have_breathe EXTERNAL)
 if (NOT have_breathe)
+  message(STATUS "Target doc disabled (requires breathe module)")
   return ()
 endif ()
 
@@ -36,8 +43,10 @@ endforeach ()
 add_custom_command(OUTPUT html/index.html
   COMMAND ${DOXYGEN}
   COMMAND python ${EXTRACT_DOCS}
-  COMMAND sphinx-build
+  COMMAND ${SPHINX_BUILD}
     -D "breathe_projects.mp=${CMAKE_CURRENT_BINARY_DIR}/doxyxml"
     -b html -c ${CMAKE_CURRENT_SOURCE_DIR} . html
-  DEPENDS conf.py index.rst ../src/gsl/amplgsl.c ${doc_depends})
+  DEPENDS Doxyfile.in conf.py ${EXTRACT_DOCS} ../src/gsl/amplgsl.c ${doc_depends})
 add_custom_target(doc DEPENDS html/index.html)
+
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION doc)
