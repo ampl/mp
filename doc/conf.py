@@ -31,9 +31,11 @@ extensions = ['sphinx.ext.mathjax']
 if os.path.exists(os.path.join(breathe_dir, 'breathe')):
   extensions.append('breathe')
 
-breathe_projects = { "mp": "doxyxml" }
-breathe_default_project = "mp"
-breathe_domain_by_extension = {"h" : "cpp"}
+# Configure Breathe.
+# When building with CMake, the path to doxyxml is passed via the command line.
+breathe_projects = {'mp': 'doxyxml'}
+breathe_default_project = 'mp'
+breathe_domain_by_extension = {'h' : 'cpp'}
 
 highlight_language = 'c++'
 primary_domain = 'cpp'

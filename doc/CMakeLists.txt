@@ -8,6 +8,9 @@ if (NOT have_breathe)
   return ()
 endif ()
 
+set(DOXYGEN_INPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/)
+configure_file(Doxyfile.in Doxyfile @ONLY)
+
 # Path to the script that extracts amplgsl docs.
 set(EXTRACT_DOCS ${CMAKE_CURRENT_SOURCE_DIR}/extract-docs.py)
 
@@ -31,7 +34,10 @@ foreach (doc ${docs} index nl)
 endforeach ()
 
 add_custom_command(OUTPUT html/index.html
+  COMMAND ${DOXYGEN}
   COMMAND python ${EXTRACT_DOCS}
-  COMMAND sphinx-build -b html -c ${CMAKE_CURRENT_SOURCE_DIR} . ../html
+  COMMAND sphinx-build
+    -D "breathe_projects.mp=${CMAKE_CURRENT_BINARY_DIR}/doxyxml"
+    -b html -c ${CMAKE_CURRENT_SOURCE_DIR} . html
   DEPENDS conf.py index.rst ../src/gsl/amplgsl.c ${doc_depends})
 add_custom_target(doc DEPENDS html/index.html)
