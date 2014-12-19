@@ -85,8 +85,14 @@ class MemoryMappedFileBase {
   FMT_DISALLOW_COPY_AND_ASSIGN(MemoryMappedFileBase);
 
  protected:
-  MemoryMappedFileBase(int fd, std::size_t size);
-  ~MemoryMappedFileBase();
+  MemoryMappedFileBase() : start_(), size_(0) {}
+  ~MemoryMappedFileBase() {
+    if (start_)
+      unmap();
+  }
+
+  void map(int fd, std::size_t size);
+  void unmap();
 
  public:
   const char *start() const { return start_; }
@@ -97,8 +103,16 @@ class MemoryMappedFileBase {
 template <typename File = fmt::File>
 class MemoryMappedFile : public internal::MemoryMappedFileBase {
  public:
-  MemoryMappedFile(const File &file, std::size_t size)
-    : MemoryMappedFileBase(file.descriptor(), size) {}
+  MemoryMappedFile() {}
+  MemoryMappedFile(const File &file, std::size_t size) {
+    internal::MemoryMappedFileBase::map(file.descriptor(), size);
+  }
+
+  void map(const File &file, std::size_t size) {
+    if (start())
+      unmap();
+    internal::MemoryMappedFileBase::map(file.descriptor(), size);
+  }
 };
 
 // The default buffer size.

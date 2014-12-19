@@ -180,6 +180,41 @@ TEST(OSTest, GetExecutablePathUnicode) {
       path.substr(path.size() - ending.size()) : path);
 }
 
+TEST(MemoryMappedFileTest, DefaultCtor) {
+  MemoryMappedFile<> f;
+  EXPECT_EQ(0, f.start());
+  EXPECT_EQ(0, f.size());
+}
+
+TEST(MemoryMappedFileTest, Map) {
+  std::string filename = GetExecutableDir() + "test";
+  WriteFile(filename, "abc");
+  MemoryMappedFile<> f;
+  File file(filename, File::RDONLY);
+  f.map(file, file.size());
+  EXPECT_EQ("abc", std::string(f.start(), 3));
+  EXPECT_EQ(3, f.size());
+}
+
+TEST(MemoryMappedFileTest, DoubleMap) {
+  std::string filename1 = GetExecutableDir() + "test";
+  WriteFile(filename1, "abc");
+  const volatile char *start = 0;
+  {
+    MemoryMappedFile<> f;
+    File file1(filename1, File::RDONLY);
+    f.map(file1, file1.size());
+    std::string filename2 = GetExecutableDir() + "test";
+    WriteFile(filename2, "defg");
+    File file2(filename2, File::RDONLY);
+    f.map(file2, file2.size());
+    start = f.start();
+    EXPECT_EQ("defg", std::string(f.start(), 4));
+    EXPECT_EQ(4, f.size());
+  }
+  EXPECT_DEATH((void)*start, "");
+}
+
 TEST(MemoryMappedFileTest, MapZeroTerminated) {
   const char *content = "some content";
   std::string filename = GetExecutableDir() + "test";
