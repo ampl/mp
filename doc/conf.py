@@ -16,6 +16,7 @@ import sys, os
 breathe_dir = '../thirdparty/breathe'
 
 if os.environ.get('READTHEDOCS', None) == 'True':
+  import subprocess
   subprocess.call('doxygen')
   subprocess.call('extract-docs.py')
 
