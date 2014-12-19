@@ -12,8 +12,8 @@ An open-source library for mathematical programming.
 Features
 --------
 
-* Reusable high-performance `.nl <https://en.wikipedia.org/wiki/Nl_(format)>`_
-  reader
+* Reusable high-performance `.nl file reader
+  <http://mp.readthedocs.org/en/latest/nl.html>`_
 
 * Efficient type-safe C++ API for connecting solvers to AMPL and other systems:
   `source <https://github.com/ampl/mp/tree/master/src/asl>`_
