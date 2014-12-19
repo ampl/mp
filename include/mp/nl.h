@@ -1600,8 +1600,11 @@ void ReadBinary(TextReader &reader, const NLHeader &header, Handler &handler) {
 }
 }  // namespace internal
 
-// Reads a string containing an optimization problem in .nl format.
-// name: Name to be used when reporting errors.
+/**
+  Reads an optimization problem in the .nl format from the string *str*
+  and sends notifications of the problem components to the *handler* object.
+  The *name* argument is used as the name of the input when reporting errors.
+ */
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler, fmt::StringRef name) {
   internal::TextReader reader(str, name);
@@ -1628,7 +1631,10 @@ void ReadNLString(fmt::StringRef str, Handler &handler, fmt::StringRef name) {
   }
 }
 
-// Reads an .nl file.
+/**
+  Reads an optimization problem in the nl format from the file *filename*
+  and sends notifications of the problem components to the *handler* object.
+ */
 template <typename Handler>
 inline void ReadNLFile(fmt::StringRef filename, Handler &handler) {
   internal::NLFileReader<>().Read(filename, handler);
