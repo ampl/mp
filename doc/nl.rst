@@ -1,10 +1,10 @@
 .. cpp:namespace:: mp
 
-Nl Reader
-=========
+Support for the nl Format
+=========================
 
-Nl is a format for representing optimization problems in discrete or continuous
-variables. It is described in the technical report `Writing .nl Files
+**nl** is a format for representing optimization problems in discrete or
+continuous variables. It is described in the technical report `Writing .nl Files
 <https://cfwebprod.sandia.gov/cfdocs/CompResearch/docs/nlwrite20051130.pdf>`_.
 
 The `nl format <https://en.wikipedia.org/wiki/Nl_(format)>`_ supports a wide
@@ -37,9 +37,9 @@ This section describes the C++ API of an nl reader which is
   AMPL Solver Library
 * Reliable: extensively and continuously tested on a variety of platforms
 
-.. doxygenfunction:: ReadNLString(fmt::StringRef, Handler &, fmt::StringRef)
-
 .. doxygenfunction:: ReadNLFile(fmt::StringRef, Handler &)
+
+.. doxygenfunction:: ReadNLString(fmt::StringRef, Handler &, fmt::StringRef)
 
 .. doxygenstruct:: mp::NLHeader
    :members:

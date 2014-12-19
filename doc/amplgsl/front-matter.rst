@@ -14,7 +14,7 @@ This documentation is based on the *GNU Scientiﬁc Library* reference manual by
   University
 * Fabrice Rossi, University of Paris-Dauphine
 
-The current manual documents the AMPL bindings for GNU Scientific Library (GSL),
+The current manual documents the AMPL Bindings for GNU Scientific Library (GSL),
 a collection of numerical routines for scientific computing. It corresponds to
 release 1.15 of the library. Please report any errors in this manual to
 viz@ampl.com.

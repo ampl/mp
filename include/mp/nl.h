@@ -1,7 +1,7 @@
 /*
- .nl format support.
+ nl format support
 
- .nl is a format for representing optimization problems such as linear,
+ nl is a format for representing optimization problems such as linear,
  quadratic, nonlinear, complementarity and constraint programming problems
  in discrete or continuous variables. It is described in the technical report
  "Writing .nl Files" (http://www.cs.sandia.gov/~dmgay/nlwrite.pdf).
@@ -120,7 +120,7 @@ Kind GetKind();
 inline bool IsIEEE(arith::Kind k) {
   return k == IEEE_LITTLE_ENDIAN || k == IEEE_BIG_ENDIAN;
 }
-}
+}  // namespace arith
 
 /**
   An nl file header.
@@ -162,8 +162,11 @@ struct NLHeader : ProblemInfo {
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 
 /**
-  A basic nl handler that ignores all input. It can be used as a base
-  class for other handlers.
+  A basic nl handler that ignores all input.
+
+  NLHandler can be used as a base class for other handlers. Subclasses
+  only need to redefine methods that handle constructs they are interested
+  in and, possibly, the types used by these methods.
  */
 template <typename ExprType>
 class NLHandler {
@@ -249,20 +252,28 @@ class NLHandler {
   }
 
   /**
-    Receives notifications of terms in a linear expression.
+    A class that receives notifications of terms in the linear part
+    of a common expression.
    */
   struct LinearExprHandler {
+    /**
+      Receives notification of a term in the linear expression.
+     */
     void AddTerm(int var_index, double coef) { MP_UNUSED2(var_index, coef); }
   };
 
   /**
-    Receives notification of a common expression (defined variable).
+    Receives notification of the beginning of a common expression
+    (defined variable).
    */
   LinearExprHandler BeginCommonExpr(int index, int num_linear_terms) {
     MP_UNUSED2(index, num_linear_terms);
     return LinearExprHandler();
   }
 
+  /**
+    Receives notification of the end of a common expression.
+   */
   void EndCommonExpr(LinearExprHandler handler,
                      NumericExpr expr, int position) {
     MP_UNUSED3(handler, expr, position);
@@ -275,6 +286,10 @@ class NLHandler {
     MP_UNUSED3(con_index, var_index, flags);
   }
 
+  /**
+    A class that receives notifications of terms in the linear part
+    of an objective expression.
+   */
   typedef LinearExprHandler LinearObjHandler;
 
   /**
@@ -285,6 +300,10 @@ class NLHandler {
     return LinearObjHandler();
   }
 
+  /**
+    A class that receives notifications of terms in the linear part
+    of a constraint expression.
+   */
   typedef LinearExprHandler LinearConHandler;
 
   /**
@@ -295,14 +314,12 @@ class NLHandler {
     return LinearConHandler();
   }
 
-  typedef LinearExprHandler LinearVarHandler;
-
   /**
     Receives notification of the linear part of a common expression.
    */
-  LinearVarHandler OnLinearCommonExpr(int var_index, int num_linear_terms) {
+  LinearExprHandler OnLinearCommonExpr(int var_index, int num_linear_terms) {
     MP_UNUSED2(var_index, num_linear_terms);
-    return LinearVarHandler();
+    return LinearExprHandler();
   }
 
   /**

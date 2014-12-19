@@ -1,4 +1,4 @@
-AMPL bindings for the GNU Scientific Library
+AMPL Bindings for the GNU Scientific Library
 ============================================
 
 .. toctree::
