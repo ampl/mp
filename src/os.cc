@@ -112,17 +112,19 @@ path path::temp_directory_path() {
   return path(dir);
 }
 
-mp::internal::MemoryMappedFileBase::MemoryMappedFileBase(
-    int fd, std::size_t size)
-: start_(), size_(size) {
-  start_ = reinterpret_cast<char*>(
-      mmap(0, size_, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0));
-  if (start_ == MAP_FAILED)
+void mp::internal::MemoryMappedFileBase::map(int fd, std::size_t size) {
+  char *start = reinterpret_cast<char*>(
+      mmap(0, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0));
+  if (start == MAP_FAILED)
     throw SystemError(errno, "cannot map file");
+  start_ = start;
+  size_ = size;
 }
 
-mp::internal::MemoryMappedFileBase::~MemoryMappedFileBase() {
-  if (munmap(start_, size_) == -1)
+void mp::internal::MemoryMappedFileBase::unmap() {
+  char *start = start_;
+  start_ = 0;
+  if (munmap(start, size_) == -1)
     fmt::report_system_error(errno, "cannot unmap file");
 }
 
@@ -163,9 +165,7 @@ path mp::GetExecutablePath() {
   return path(s, s + utf8_str.size());
 }
 
-mp::internal::MemoryMappedFileBase::MemoryMappedFileBase(
-    int fd, std::size_t size)
-: start_(), size_(size) {
+void mp::internal::MemoryMappedFileBase::map(int fd, std::size_t size) {
   class Handle {
     HANDLE handle_;
     Handle(const Handle &);
@@ -181,14 +181,18 @@ mp::internal::MemoryMappedFileBase::MemoryMappedFileBase(
   Handle mapping(CreateFileMappingW(handle, 0, PAGE_READONLY, 0, 0, 0));
   if (!mapping)
     throw WindowsError(GetLastError(), "cannot create file mapping");
-  start_ = reinterpret_cast<char*>(
+  char *start = reinterpret_cast<char*>(
       MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0));
-  if (!start_)
+  if (!start)
     throw WindowsError(GetLastError(), "cannot map file");
+  start_ = start;
+  size_ = size;
 }
 
-mp::internal::MemoryMappedFileBase::~MemoryMappedFileBase() {
-  if (!UnmapViewOfFile(start_))
+void mp::internal::MemoryMappedFileBase::unmap() {
+  char *start = start_;
+  start_ = 0;
+  if (!UnmapViewOfFile(start))
     throw WindowsError(GetLastError(), "cannot unmap file");
 }
 
