@@ -187,7 +187,7 @@ TEST(MemoryMappedFileTest, DefaultCtor) {
 }
 
 TEST(MemoryMappedFileTest, Map) {
-  std::string filename = GetExecutableDir() + "test";
+  std::string filename = GetExecutableDir() + "/test";
   WriteFile(filename, "abc");
   MemoryMappedFile<> f;
   File file(filename, File::RDONLY);
@@ -197,14 +197,14 @@ TEST(MemoryMappedFileTest, Map) {
 }
 
 TEST(MemoryMappedFileTest, DoubleMap) {
-  std::string filename1 = GetExecutableDir() + "test";
+  std::string filename1 = GetExecutableDir() + "/test1";
   WriteFile(filename1, "abc");
   const volatile char *start = 0;
   {
     MemoryMappedFile<> f;
     File file1(filename1, File::RDONLY);
     f.map(file1, file1.size());
-    std::string filename2 = GetExecutableDir() + "test";
+    std::string filename2 = GetExecutableDir() + "/test2";
     WriteFile(filename2, "defg");
     File file2(filename2, File::RDONLY);
     f.map(file2, file2.size());
@@ -217,7 +217,7 @@ TEST(MemoryMappedFileTest, DoubleMap) {
 
 TEST(MemoryMappedFileTest, MapZeroTerminated) {
   const char *content = "some content";
-  std::string filename = GetExecutableDir() + "test";
+  std::string filename = GetExecutableDir() + "/test";
   WriteFile(filename, content);
   File file(filename, File::RDONLY);
   MemoryMappedFile<> f(file, file.size());
@@ -226,7 +226,7 @@ TEST(MemoryMappedFileTest, MapZeroTerminated) {
 }
 
 TEST(MemoryMappedFileTest, DtorUnmapsFile) {
-  std::string filename = GetExecutableDir() + "test";
+  std::string filename = GetExecutableDir() + "/test";
   WriteFile(filename, "abc");
   const volatile char *start = 0;
   {

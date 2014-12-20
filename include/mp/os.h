@@ -80,7 +80,7 @@ namespace internal {
 class MemoryMappedFileBase {
  private:
   char *start_;
-  unsigned long long size_;
+  std::size_t size_;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(MemoryMappedFileBase);
 
@@ -96,7 +96,7 @@ class MemoryMappedFileBase {
 
  public:
   const char *start() const { return start_; }
-  unsigned long long size() const { return size_; }
+  std::size_t size() const { return size_; }
 };
 }
 
