@@ -556,12 +556,32 @@ Solver::~Solver() {
 }
 
 bool Solver::ShowVersion() {
+#ifdef MP_DATE
   Print("{} ({})", version_, MP_SYSINFO);
   if (date_ > 0)
     Print(", driver({})", date_);
   Print(", ASL({})\n", MP_DATE);
   if (!license_info_.empty())
     Print("{}\n", license_info_);
+#else
+  // For use with ASL.
+  extern "C" {
+  char sysdetails_ASL[];
+  const char *Lic_info_ASL, *Version_Qualifier_ASL;
+  long ASLdate_ASL;
+  void Mach_ASL();
+  }
+  if (*Version_Qualifier_ASL) {
+    Mach_ASL(); // may adjust Version_Qualifier_ASL
+    Print("{}", Version_Qualifier_ASL);
+  }
+  Print("{} ({})", version_, sysdetails_ASL);
+  if (date_ > 0)
+    Print(", driver({})", date_);
+  Print(", ASL({})\n", ASLdate_ASL);
+  if (Lic_info_ASL && *Lic_info_ASL)
+    Print("{}\n", Lic_info_ASL);
+#endif
   return false;
 }
 
