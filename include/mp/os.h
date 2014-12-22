@@ -23,6 +23,7 @@
 #ifndef MP_OS_H_
 #define MP_OS_H_
 
+#include "mp/error.h"
 #include "mp/posix.h"
 
 namespace mp {
@@ -112,6 +113,15 @@ class MemoryMappedFile : public internal::MemoryMappedFileBase {
     if (start())
       unmap();
     internal::MemoryMappedFileBase::map(file.descriptor(), size);
+  }
+
+  void map(const File &file) {
+    fmt::LongLong file_size = file.size();
+    MP_ASSERT(file_size >= 0, "negative file size");
+    fmt::ULongLong unsigned_size = file_size;
+    if (unsigned_size != static_cast<std::size_t>(unsigned_size))
+      throw Error("file is too big");
+    map(file, unsigned_size);
   }
 };
 

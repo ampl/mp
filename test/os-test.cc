@@ -21,8 +21,10 @@
  */
 
 #include <gtest/gtest.h>
+#include "test-assert.h"
 #include "mp/error.h"
 #include "mp/os.h"
+#include "mock-file.h"
 #include "util.h"
 
 #include <cerrno>
@@ -191,9 +193,39 @@ TEST(MemoryMappedFileTest, Map) {
   WriteFile(filename, "abc");
   MemoryMappedFile<> f;
   File file(filename, File::RDONLY);
-  f.map(file, file.size());
+  f.map(file);
   EXPECT_EQ("abc", std::string(f.start(), 3));
   EXPECT_EQ(3, f.size());
+}
+
+TEST(MemoryMappedFileTest, MapWithSize) {
+  std::string filename = GetExecutableDir() + "/test";
+  WriteFile(filename, "abc");
+  MemoryMappedFile<> f;
+  File file(filename, File::RDONLY);
+  f.map(file, 2);
+  EXPECT_EQ("ab", std::string(f.start(), 2));
+  EXPECT_EQ(2, f.size());
+}
+
+TEST(MemoryMappedFileTest, NegativeFileSizeInMap) {
+  MockFile file;
+  MemoryMappedFile<MockFile> f;
+  EXPECT_CALL(file, size()).WillOnce(testing::Return(-1));
+  EXPECT_ASSERT(f.map(file), "negative file size");
+}
+
+TEST(MemoryMappedFileTest, FileTooBig) {
+  fmt::ULongLong max_long_long = std::numeric_limits<fmt::LongLong>::max();
+  if (max_long_long <= std::numeric_limits<std::size_t>::max()) {
+    fmt::print("Max long long is not greater than max size_t, "
+               "skipping test.\n");
+    return;
+  }
+  MockFile file;
+  MemoryMappedFile<MockFile> f;
+  EXPECT_CALL(file, size()).WillOnce(testing::Return(max_long_long));
+  EXPECT_THROW_MSG(f.map(file), mp::Error, "file is too big");
 }
 
 TEST(MemoryMappedFileTest, DoubleMap) {

@@ -81,22 +81,6 @@ add_subdirectory(tables)
 
 add_mp_test(util-test util-test.cc)
 
-add_mp_test(assert-test assert-test.cc)
-add_mp_test(clock-test clock-test.cc)
-add_mp_test(common-test common-test.cc)
-add_mp_test(error-test error-test.cc)
-add_mp_test(expr-test expr-test.cc mock-allocator.h test-assert.h)
-add_mp_test(expr-visitor-test expr-visitor-test.cc test-assert.h)
-add_mp_test(expr-writer-test expr-writer-test.cc)
-add_mp_test(nl-test nl-test.cc mock-problem-builder.h)
-add_mp_test(option-test option-test.cc)
-add_mp_test(problem-test problem-test.cc)
-
-add_mp_test(solver-test
-  solver-test.cc mock-problem-builder.h solution-handler.h)
-target_compile_definitions(solver-test
-  PRIVATE MP_SYSINFO="${MP_SYSINFO}" MP_DATE=${MP_DATE})
-
 add_executable(test-helper test-helper.cc)
 target_link_libraries(test-helper mp)
 if (MINGW)
@@ -104,8 +88,23 @@ if (MINGW)
     LINK_FLAGS "-static-libgcc -static-libstdc++")
 endif ()
 
-add_mp_test(os-test os-test.cc)
+add_mp_test(assert-test assert-test.cc)
+add_mp_test(clock-test clock-test.cc)
+add_mp_test(common-test common-test.cc)
+add_mp_test(error-test error-test.cc)
+add_mp_test(expr-test expr-test.cc mock-allocator.h test-assert.h)
+add_mp_test(expr-visitor-test expr-visitor-test.cc test-assert.h)
+add_mp_test(expr-writer-test expr-writer-test.cc)
+add_mp_test(nl-test nl-test.cc mock-file.h mock-problem-builder.h)
+add_mp_test(option-test option-test.cc)
+add_mp_test(os-test os-test.cc mock-file.h)
 add_dependencies(os-test test-helper)
+add_mp_test(problem-test problem-test.cc)
+
+add_mp_test(solver-test
+  solver-test.cc mock-problem-builder.h solution-handler.h)
+target_compile_definitions(solver-test
+  PRIVATE MP_SYSINFO="${MP_SYSINFO}" MP_DATE=${MP_DATE})
 
 find_program(LSOF lsof)
 if (LSOF)

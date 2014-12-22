@@ -26,6 +26,7 @@
 #include "mp/nl.h"
 #include "gmock/gmock.h"
 #include "gtest-extra.h"
+#include "mock-file.h"
 #include "util.h"
 
 using mp::NLHeader;
@@ -1413,17 +1414,6 @@ TEST(NLTest, ReadNLFileMultipleOfPageSize) {
   EXPECT_EQ(page_size, nl.size() + 1);
   CheckReadFile(nl + "\n");
 }
-
-struct MockFile {
-  MockFile() {}
-  MockFile(fmt::StringRef, int) {}
-  MockFile(const MockFile &) {}
-  MockFile &operator=(const MockFile &) { return *this; }
-
-  MOCK_CONST_METHOD0(descriptor, int ());
-  MOCK_CONST_METHOD0(size, fmt::LongLong ());
-  MOCK_CONST_METHOD2(read, std::size_t (void *buffer, std::size_t count));
-};
 
 struct Cancel {};
 
