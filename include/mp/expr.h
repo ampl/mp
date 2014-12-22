@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "mp/common.h"
+#include "mp/error.h"
 #include "mp/format.h"
 
 namespace mp {

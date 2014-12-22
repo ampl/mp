@@ -1,5 +1,5 @@
 /*
- Exception classes.
+ Exception classes and assertions
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -26,6 +26,10 @@
 #include "mp/format.h"
 
 namespace mp {
+
+#ifndef MP_ASSERT
+# define MP_ASSERT(condition, message) assert((condition) && message)
+#endif
 
 // A general error.
 class Error : public fmt::internal::RuntimeError {

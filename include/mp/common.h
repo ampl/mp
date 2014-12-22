@@ -33,10 +33,6 @@
 #define MP_UNUSED2(x, y) MP_UNUSED(x); MP_UNUSED(y)
 #define MP_UNUSED3(x, y, z) MP_UNUSED2(x, y); MP_UNUSED(z)
 
-#ifndef MP_ASSERT
-# define MP_ASSERT(condition, message) assert((condition) && message)
-#endif
-
 namespace mp {
 
 namespace expr {
