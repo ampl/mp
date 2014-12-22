@@ -376,7 +376,7 @@ class Solver : private ErrorHandler,
   // objective, or -1 to use the first objective if there is one.
   int objno_;
 
-  enum {SHOW_VERSION = 1, AMPL_OPTION = 2};
+  enum {SHOW_VERSION = 1, AMPL_FLAG = 2};
   int bool_options_;
 
   // The filename stub for returning multiple solutions.
@@ -724,19 +724,28 @@ class Solver : private ErrorHandler,
   // Returns the solver date in YYYYMMDD format.
   long date() const { return date_; }
 
+  // Possible values for the wantsol option (can be combined with bitwise OR).
+  enum {
+    WRITE_SOL_FILE      = 1,  // write .sol file
+    PRINT_SOLUTION      = 2,  // print primal variables to stdout
+    PRINT_DUAL_SOLUTION = 4,  // print dual variables to stdout
+    SUPPRESS_SOLVER_MSG = 8   // suppress solver message
+  };
+
   // Returns the value of the wantsol option which specifies what solution
   // information to write in a stand-alone invocation (no -AMPL on the
-  // command line).  Possible values that can be combined with bitwise OR:
-  //   1 = write .sol file
-  //   2 = primal variables to stdout
-  //   4 = dual variables to stdout
-  //   8 = suppress solution message
+  // command line).
   int wantsol() const { return wantsol_; }
   void set_wantsol(int value) { wantsol_ = value; }
 
   // Returns true if -AMPL is specified.
-  bool ampl_option() { return (bool_options_ & AMPL_OPTION) != 0; }
-  void set_ampl_option() { bool_options_ |= AMPL_OPTION; }
+  bool ampl_flag() { return (bool_options_ & AMPL_FLAG) != 0; }
+  void set_ampl_flag(bool value = true) {
+    if (value)
+      bool_options_ |= AMPL_FLAG;
+    else
+      bool_options_ &= ~AMPL_FLAG;
+  }
 
   // Returns the index of the objective to optimize starting from 1,
   // 0 to not use objective, or -1 to use the first objective is there is one.
@@ -971,7 +980,7 @@ class SolFileWriter {
 template <typename Solver, typename Writer = SolFileWriter>
 class SolutionWriter : private Writer, public SolutionHandler {
  private:
-  std::string filename_;
+  std::string stub_;
   Solver &solver_;
 
   typedef typename Solver::ProblemBuilder ProblemBuilder;
@@ -984,11 +993,13 @@ class SolutionWriter : private Writer, public SolutionHandler {
 
  protected:
   Solver &solver() { return solver_; }
+  ProblemBuilder &builder() { return builder_; }
+  const std::string &stub() const { return stub_; }
 
  public:
   SolutionWriter(fmt::StringRef stub, Solver &s, ProblemBuilder &b,
                  ArrayRef<int> options = mp::ArrayRef<int>(0, 0))
-    : filename_(stub.c_str() + std::string(".sol")), solver_(s), builder_(b),
+    : stub_(stub.c_str()), solver_(s), builder_(b),
       options_(options), num_solutions_(0) {}
 
   // Returns the .sol writer.
@@ -1034,7 +1045,7 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values,
                      dual_values ? builder_.num_algebraic_cons() : 0));
-  this->Write(filename_, sol);
+  this->Write(stub_ + ".sol", sol);
 }
 
 namespace internal {
@@ -1200,6 +1211,57 @@ class NameProvider {
 // Prints a solution to stdout.
 void PrintSolution(const double *values, int num_values, const char *name_col,
                    const char *value_col, NameProvider &np);
+
+// Solution handler for a solver application.
+template <typename Solver, typename Writer = SolFileWriter>
+class AppSolutionHandler : public SolutionWriter<Solver, Writer> {
+ private:
+  std::size_t banner_size_;
+
+ public:
+  AppSolutionHandler(fmt::StringRef stub, Solver &s,
+                    typename Solver::ProblemBuilder &b,
+                    ArrayRef<int> options, std::size_t banner_size)
+  : SolutionWriter<Solver, Writer>(stub, s, b, options),
+    banner_size_(banner_size) {}
+
+  void HandleSolution(int status, fmt::StringRef message, const double *values,
+                      const double *dual_values, double obj_value);
+};
+
+template <typename Solver, typename Writer>
+void AppSolutionHandler<Solver, Writer>::HandleSolution(
+    int status, fmt::StringRef message, const double *values,
+    const double *dual_values, double obj_value) {
+  Solver &solver = this->solver();
+  int wantsol = solver.wantsol();
+  if (solver.ampl_flag() || (wantsol & Solver::WRITE_SOL_FILE) != 0) {
+    // "Erase" the banner so that it is not duplicated when printing
+    // the solver message.
+    if (solver.ampl_flag() && banner_size_ != 0) {
+      fmt::MemoryWriter w;
+      w << fmt::pad("", banner_size_, '\b');
+      solver.Print("{}", w.c_str());
+    }
+    SolutionWriter<Solver, Writer>::HandleSolution(
+          status, message, values, dual_values, obj_value);
+  }
+  if (solver.ampl_flag())
+    return;
+  if ((wantsol & Solver::SUPPRESS_SOLVER_MSG) == 0)
+    solver.Print("{}\n", message.c_str() + banner_size_);
+  using internal::PrintSolution;
+  if ((wantsol & Solver::PRINT_SOLUTION) != 0) {
+    int num_vars = this->builder().num_vars();
+    internal::NameProvider np(this->stub() + ".col", "_svar", num_vars);
+    PrintSolution(values, num_vars, "variable", "value", np);
+  }
+  if ((wantsol & Solver::PRINT_DUAL_SOLUTION) != 0) {
+    int num_cons = this->builder().num_algebraic_cons();
+    internal::NameProvider np(this->stub() + ".row", "_scon", num_cons);
+    PrintSolution(dual_values, num_cons, "constraint", "dual value", np);
+  }
+}
 }  // namespace internal
 
 // A solver application.
@@ -1255,7 +1317,7 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   if (!filename) return 0;
 
   std::size_t banner_size = 0;
-  if (solver_.ampl_option()) {
+  if (solver_.ampl_flag()) {
     fmt::MemoryWriter banner;
     banner.write("{}: ", solver_.long_name());
     std::fputs(banner.c_str(), stdout);
@@ -1293,37 +1355,9 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
 
   // Solve the problem and write solution(s) if necessary.
   ArrayRef<int> options(handler.options(), handler.num_options());
-  class AppSolutionHandler : public SolutionWriter<Solver> {
-   private:
-    std::size_t banner_size_;
-
-   public:
-    AppSolutionHandler(fmt::StringRef stub, Solver &s,
-                      typename Solver::ProblemBuilder &b,
-                      ArrayRef<int> options, std::size_t banner_size)
-    : SolutionWriter<Solver>(stub, s, b, options),
-      banner_size_(banner_size) {}
-
-    void HandleSolution(int status, fmt::StringRef message,
-                        const double *values, const double *dual_values,
-                        double obj_value) {
-      Solver &solver = this->solver();
-      if (!solver.ampl_option())
-        solver.Print("{}\n", message.c_str() + banner_size_);
-      if (!solver.wantsol())
-        return;
-      // "Erase" the banner so that it is not duplicated when printing
-      // the solver message.
-      if (solver.ampl_option() && banner_size_ != 0) {
-        fmt::MemoryWriter w;
-        w << fmt::pad("", banner_size_, '\b');
-        solver.Print("{}", w.c_str());
-      }
-      SolutionWriter<Solver>::HandleSolution(
-            status, message, values, dual_values, obj_value);
-    }
-  } sol_handler(filename_no_ext, solver_, builder, options,
-                output_handler_.has_output ? 0 : banner_size);
+  internal::AppSolutionHandler<Solver> sol_handler(
+        filename_no_ext, solver_, builder, options,
+        output_handler_.has_output ? 0 : banner_size);
   solver_.Solve(builder, sol_handler);
   return 0;
 }

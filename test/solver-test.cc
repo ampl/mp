@@ -50,7 +50,6 @@ using testing::_;
 using testing::StrictMock;
 using testing::Not;
 using testing::Return;
-using testing::ReturnRef;
 using testing::StartsWith;
 
 typedef Solver::OptionPtr SolverOptionPtr;
@@ -1276,6 +1275,81 @@ TEST(SolutionWriterTest, WriteSolution) {
   writer.HandleSolution(0, "test message", values, dual_values, 42);
 }
 
+// Test that AppSolutionHandler::HandleSolution writes .sol file and doesn't
+// print anything if -AMPL option is specified.
+TEST(AppSolutionHandlerTest, WriteSolution) {
+  TestSolver solver;
+  StrictMockProblemBuilder problem_builder;
+  mp::internal::AppSolutionHandler<TestSolver, MockSolWriter<>>
+      handler("test", solver, problem_builder, mp::ArrayRef<int>(0, 0), 0);
+  const double values[] = {1.5, 2.5, 3.5};
+  const double dual_values[] = {4.5, 5.5};
+  solver.set_ampl_flag(true);
+  solver.set_wantsol(6);
+  EXPECT_CALL(problem_builder, num_vars()).WillOnce(Return(3));
+  EXPECT_CALL(problem_builder, num_algebraic_cons()).WillOnce(Return(2));
+  EXPECT_CALL(handler.sol_writer(), Write(StringRefEq("test.sol"),
+                                          MatchSolution(values, dual_values)));
+  EXPECT_WRITE(
+        stdout,
+        handler.HandleSolution(0, "test message", values, dual_values, 0), "");
+}
+
+// Test that AppSolutionHandler::HandleSolution doesn't write .sol file and
+// and handles wantsol option if -AMPL option is not specified.
+TEST(AppSolutionHandlerTest, PrintSolution) {
+  TestSolver solver;
+  StrictMockProblemBuilder problem_builder;
+  mp::internal::AppSolutionHandler<TestSolver, MockSolWriter<>>
+      handler("test", solver, problem_builder, mp::ArrayRef<int>(0, 0), 0);
+  const double values[] = {1.5, 2.5, 3.5};
+  const double dual_values[] = {4.5, 5.5};
+  EXPECT_CALL(problem_builder, num_vars()).WillRepeatedly(Return(3));
+  EXPECT_CALL(problem_builder, num_algebraic_cons()).WillRepeatedly(Return(2));
+
+  EXPECT_WRITE(stdout,
+               handler.HandleSolution(0, "test msg", values, dual_values, 0),
+               "test msg\n");
+
+  solver.set_wantsol(Solver::PRINT_SOLUTION);
+  EXPECT_WRITE(stdout,
+               handler.HandleSolution(0, "test msg", values, dual_values, 0),
+               "test msg\n\n"
+               "variable  value\n"
+               "_svar[1]  1.5\n"
+               "_svar[2]  2.5\n"
+               "_svar[3]  3.5\n");
+
+  solver.set_wantsol(Solver::PRINT_DUAL_SOLUTION);
+  EXPECT_WRITE(stdout,
+               handler.HandleSolution(0, "test msg", values, dual_values, 0),
+               "test msg\n\n"
+               "constraint  dual value\n"
+               "_scon[1]    4.5\n"
+               "_scon[2]    5.5\n");
+
+  solver.set_wantsol(Solver::PRINT_SOLUTION | Solver::PRINT_DUAL_SOLUTION);
+  EXPECT_WRITE(stdout,
+               handler.HandleSolution(0, "test msg", values, dual_values, 0),
+               "test msg\n\n"
+               "variable  value\n"
+               "_svar[1]  1.5\n"
+               "_svar[2]  2.5\n"
+               "_svar[3]  3.5\n\n"
+               "constraint  dual value\n"
+               "_scon[1]    4.5\n"
+               "_scon[2]    5.5\n");
+
+  solver.set_wantsol(Solver::SUPPRESS_SOLVER_MSG | Solver::PRINT_SOLUTION);
+  EXPECT_WRITE(stdout,
+               handler.HandleSolution(0, "test msg", values, dual_values, 0),
+               "\n"
+               "variable  value\n"
+               "_svar[1]  1.5\n"
+               "_svar[2]  2.5\n"
+               "_svar[3]  3.5\n");
+}
+
 // Matcher that returns true if the argument is a solution that doesn't
 // containt an nsol suffix.
 MATCHER(MatchNoNSol, "") {
@@ -1391,7 +1465,7 @@ class SolverAppTest : public ::testing::Test {
 TEST_F(SolverAppTest, ParseOptions) {
   AddOption();
   RedirectOutput();
-  EXPECT_CALL(handler_, OnOption()).WillOnce(testing::Return(true));
+  EXPECT_CALL(handler_, OnOption()).WillOnce(Return(true));
   EXPECT_EQ(0, app_.Run(Args("test", "-w")));
 }
 
@@ -1417,7 +1491,7 @@ TEST_F(SolverAppTest, IgnoreFirstArgument) {
 TEST_F(SolverAppTest, AddNLExtension) {
   AddOption();
   testing::InSequence sequence;
-  EXPECT_CALL(handler_, OnOption()).WillOnce(testing::Return(true));
+  EXPECT_CALL(handler_, OnOption()).WillOnce(Return(true));
   EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"), _));
   EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem")));
 }
@@ -1427,7 +1501,7 @@ TEST_F(SolverAppTest, AddNLExtension) {
 TEST_F(SolverAppTest, DontAddNLExtension) {
   AddOption();
   testing::InSequence sequence;
-  EXPECT_CALL(handler_, OnOption()).WillOnce(testing::Return(true));
+  EXPECT_CALL(handler_, OnOption()).WillOnce(Return(true));
   EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"), _));
   EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem.nl")));
 }
@@ -1436,7 +1510,7 @@ TEST_F(SolverAppTest, DontAddNLExtension) {
 TEST_F(SolverAppTest, ParseOptionsBeforeReadingProblem) {
   AddOption();
   testing::InSequence sequence;
-  EXPECT_CALL(handler_, OnOption()).WillOnce(testing::Return(true));
+  EXPECT_CALL(handler_, OnOption()).WillOnce(Return(true));
   EXPECT_CALL(app_.reader(), DoRead(_, _));
   EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem")));
 }
@@ -1511,17 +1585,16 @@ TEST_F(SolverAppTest, Solve) {
 }
 
 // Matcher that returns true if the argument is a solution writer.
-MATCHER(MatchSolutionWriter, "") {
-  return dynamic_cast<mp::SolutionWriter<TestSolver>*>(&arg) != 0;
+MATCHER(MatchSolutionHandler, "") {
+  return dynamic_cast<mp::internal::AppSolutionHandler<TestSolver>*>(&arg) != 0;
 }
 
-// Test that SolverApp::Run uses SolutionWriter when wantsol() returns nonzero.
-TEST_F(SolverAppTest, UseSolutionWriter) {
+// Test that SolverApp::Run uses AppSolutionHandler.
+TEST_F(SolverAppTest, UseAppSolutionHandler) {
   EXPECT_CALL(app_.reader(), DoRead(_, _));
   TestSolver &solver = app_.solver();
-  solver.set_wantsol(1);
   solver.MockSolve();
-  EXPECT_CALL(solver, DoSolve(_, MatchSolutionWriter()));
+  EXPECT_CALL(solver, DoSolve(_, MatchSolutionHandler()));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
 }
 
