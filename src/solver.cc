@@ -412,6 +412,37 @@ void SignalHandler::HandleSigInt(int sig) {
   // is called (this is implementation defined).
   std::signal(sig, HandleSigInt);
 }
+
+NameProvider::NameProvider(
+    fmt::StringRef filename, fmt::StringRef gen_name, std::size_t num_items)
+  : gen_name_(gen_name.c_str()) {
+  try {
+    fmt::File file(filename, fmt::File::RDONLY);
+    file_.map(file);
+    names_.reserve(num_items + 1);
+    const char *ptr = file_.start();
+    names_.push_back(ptr);
+    for (unsigned long long i = 0, n = file_.size(); i < n; ++i, ++ptr) {
+      if (*ptr != '\n')
+        continue;
+      if (names_.size() > num_items)
+        break;
+      names_.push_back(ptr + 1);
+    }
+  } catch (const fmt::SystemError &) {
+    // System error, ignore the file and use generated names.
+  }
+}
+
+fmt::StringRef NameProvider::name(std::size_t index) {
+  if (index + 1 < names_.size()) {
+    const char *name = names_[index];
+    return fmt::StringRef(name, names_[index + 1] - name - 1);
+  }
+  writer_.clear();
+  writer_ << gen_name_ << "[" << (index + 1) << ']';
+  return fmt::StringRef(writer_.c_str(), writer_.size());
+}
 }  // namespace internal
 
 bool Solver::OptionNameLess::operator()(

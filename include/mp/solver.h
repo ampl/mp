@@ -1179,6 +1179,23 @@ void SolverNLHandler<Solver>::OnHeader(const NLHeader &h) {
   std::copy(h.options, h.options + num_options_, options_);
   Base::OnHeader(h);
 }
+
+// A variable or constraint name provider.
+class NameProvider {
+ private:
+  std::string gen_name_;
+  MemoryMappedFile<> file_;
+  std::vector<const char *> names_;
+  fmt::MemoryWriter writer_;
+
+ public:
+  NameProvider(fmt::StringRef filename, fmt::StringRef gen_name,
+               std::size_t num_items);
+
+  // Returns the name of the item at specified index.
+  fmt::StringRef name(std::size_t index);
+};
+
 }  // namespace internal
 
 // A solver application.

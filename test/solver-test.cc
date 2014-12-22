@@ -1092,6 +1092,25 @@ TEST(SolverTest, NSolSuffix) {
   EXPECT_STREQ("nsol", i->name());
 }
 
+std::string str(fmt::StringRef s) { return std::string(s.c_str(), s.size()); }
+
+TEST(NameProviderTest, GenerateNames) {
+  int num_items = 5;
+  mp::internal::NameProvider np("", "foo", num_items);
+  for (int i = 0; i <= num_items + 1; ++i)
+    EXPECT_EQ(fmt::format("foo[{}]", i + 1), str(np.name(i)));
+}
+
+TEST(NameProviderTest, ReadNames) {
+  std::string filename = GetExecutableDir() + "test";
+  WriteFile(filename, "abc\ndef\n");
+  mp::internal::NameProvider np(filename, "bar", 5);
+  EXPECT_EQ("abc", str(np.name(0)));
+  EXPECT_EQ("def", str(np.name(1)));
+  EXPECT_EQ("bar[3]", str(np.name(2)));
+  EXPECT_EQ("bar[7]", str(np.name(6)));
+}
+
 struct OutputHandler : mp::OutputHandler {
   std::string output;
 
