@@ -443,6 +443,22 @@ fmt::StringRef NameProvider::name(std::size_t index) {
   writer_ << gen_name_ << "[" << (index + 1) << ']';
   return fmt::StringRef(writer_.c_str(), writer_.size());
 }
+
+void PrintSolution(const double *values, int num_values, const char *name_col,
+                   const char *value_col, NameProvider &np) {
+  if (!values || num_values == 0)
+    return;
+  std::size_t name_len = std::strlen(name_col);
+  std::size_t name_field_width = name_len;
+  for (int i = 0; i < num_values; ++i)
+    name_field_width = std::max(name_field_width, np.name(i).size());
+  name_field_width += 2;
+  fmt::printf("\n%-*s%s\n", name_field_width, name_col, value_col);
+  for (int i = 0; i < num_values; ++i) {
+    double value = values[i];
+    fmt::printf("%-*s%.17g\n", name_field_width, np.name(i), value ? value : 0);
+  }
+}
 }  // namespace internal
 
 bool Solver::OptionNameLess::operator()(

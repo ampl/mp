@@ -1111,6 +1111,19 @@ TEST(NameProviderTest, ReadNames) {
   EXPECT_EQ("bar[7]", str(np.name(6)));
 }
 
+TEST(SolverTest, PrintSolution) {
+  int num_values = 3;
+  const double values[] = {1.0, 2.5, 3.0};
+  mp::internal::NameProvider np("", "foo", num_values);
+  EXPECT_WRITE(
+    stdout, mp::internal::PrintSolution(values, num_values, "bar", "baz", np),
+    "\n"
+    "bar     baz\n"
+    "foo[1]  1\n"
+    "foo[2]  2.5\n"
+    "foo[3]  3\n");
+}
+
 struct OutputHandler : mp::OutputHandler {
   std::string output;
 

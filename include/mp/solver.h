@@ -1197,6 +1197,9 @@ class NameProvider {
   fmt::StringRef name(std::size_t index);
 };
 
+// Prints a solution to stdout.
+void PrintSolution(const double *values, int num_values, const char *name_col,
+                   const char *value_col, NameProvider &np);
 }  // namespace internal
 
 // A solver application.
