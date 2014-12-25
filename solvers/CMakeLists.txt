@@ -137,7 +137,8 @@ endfunction()
 
 set(GECODE_DISABLE_WARNINGS TRUE)
 set(GECODE_USE_QT FALSE)
-add_ampl_solver(gecode EXTERNAL LIBRARIES gecodeminimodel)
+add_ampl_solver(gecode EXTERNAL LIBRARIES
+  gecodeminimodel gecodesupport gecodekernel gecodeint gecodesearch)
 # Exclude unused Gecode targets from the build.
 exclude_from_build(fzn-gecode gecodeflatzinc)
 
