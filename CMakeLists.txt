@@ -189,7 +189,7 @@ function (add_mp_library name)
   target_compile_definitions(${name}
     PRIVATE ${add_mp_library_COMPILE_DEFINITIONS})
   target_include_directories(${name}
-    PUBLIC ${add_mp_library_INCLUDE_DIRECTORIES})
+    PUBLIC include ${add_mp_library_INCLUDE_DIRECTORIES})
   # Add library linked with dynamic runtime.
   if (MSVC)
     add_library(${name}-dynrt ${libtype} EXCLUDE_FROM_ALL
