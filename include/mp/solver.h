@@ -1346,7 +1346,7 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   // TODO: use name provider instead of passing filename to builder
   ProblemBuilder builder(solver_.GetProblemBuilder(filename_no_ext));
   internal::SolverNLHandler<Solver> handler(builder, solver_);
-  this->Read(nl_filename, handler);
+  this->Read(nl_filename, handler, 0);
 
   builder.EndBuild();
   double read_time = GetTimeAndReset(start);
