@@ -55,9 +55,15 @@ namespace mp {
 
 using fmt::internal::MakeUnsigned;
 
+// Flags for ReadNLFile and ReadNLString.
+enum {
+  // Read variable bounds before anything else.
+  READ_BOUNDS_FIRST
+};
+
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
-                  fmt::StringRef name = "(input)");
+                  fmt::StringRef name = "(input)", int flags = 0);
 
 // A read error with location information.
 class ReadError : public Error {
@@ -170,10 +176,9 @@ fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
  */
 template <typename ExprType>
 class NLHandler {
- protected:
-  ~NLHandler() {}
-
  public:
+  virtual ~NLHandler() {}
+
   /**
     An expression type.
    */
@@ -941,6 +946,7 @@ class NLReader {
   Reader &reader_;
   const NLHeader &header_;
   Handler &handler_;
+  int flags_;
   int num_vars_and_exprs_;  // Number of variables and common expressions.
 
   typedef typename Handler::Expr Expr;
@@ -1163,8 +1169,8 @@ class NLReader {
   void ReadSuffix(int kind);
 
  public:
-  NLReader(Reader &reader, const NLHeader &header, Handler &handler)
-    : reader_(reader), header_(header), handler_(handler),
+  NLReader(Reader &reader, const NLHeader &header, Handler &handler, int flags)
+    : reader_(reader), header_(header), handler_(handler), flags_(flags),
       num_vars_and_exprs_(0) {}
 
   // Algebraic constraint handler.
@@ -1651,7 +1657,10 @@ void NLReader<Reader, Handler>::Read(Reader *bound_reader) {
       if (read_bounds) {
         ReadBounds<VarHandler>();
         reader_.ptr();
-        return;
+        if ((flags_ & READ_BOUNDS_FIRST) != 0)
+          return;
+        read_bounds = false;
+        break;
       }
       if (!bound_reader)
         reader_.ReportError("duplicate 'b' segment");
@@ -1695,15 +1704,19 @@ void NLReader<Reader, Handler>::Read(Reader *bound_reader) {
 
 template <typename Reader, typename Handler>
 void NLReader<Reader, Handler>::Read() {
-  // Read variable bounds first because this allows more efficient
-  // problem construction.
-  VarBoundHandler<Handler> bound_handler(handler_);
-  Reader bound_reader(reader_);
-  NLReader< Reader, VarBoundHandler<Handler> >
-      reader(bound_reader, header_, bound_handler);
-  reader.Read(0);
-  // Read everything else.
-  Read(&bound_reader);
+  if ((flags_ & READ_BOUNDS_FIRST) != 0) {
+    // Read variable bounds first because this allows more efficient
+    // problem construction.
+    VarBoundHandler<Handler> bound_handler(handler_);
+    Reader bound_reader(reader_);
+    NLReader< Reader, VarBoundHandler<Handler> >
+        reader(bound_reader, header_, bound_handler, flags_);
+    reader.Read(0);
+    // Read everything else.
+    Read(&bound_reader);
+  } else {
+    Read(0);
+  }
 }
 
 // An .nl file reader.
@@ -1726,17 +1739,19 @@ class NLFileReader {
 
   // Opens and reads the file.
   template <typename Handler>
-  void Read(fmt::StringRef filename, Handler &handler) {
+  void Read(fmt::StringRef filename, Handler &handler, int flags) {
     Open(filename);
     if (size_ == rounded_size_) {
       // Don't use mmap, because the file size is a multiple of the page size
       // and therefore the mmap'ed buffer won't be zero terminated.
       fmt::internal::MemoryBuffer<char, 1> array;
       Read(array);
-      return ReadNLString(fmt::StringRef(&array[0], size_), handler, filename);
+      return ReadNLString(
+            fmt::StringRef(&array[0], size_), handler, filename, flags);
     }
     MemoryMappedFile<File> mapped_file(file_, rounded_size_);
-    ReadNLString(fmt::StringRef(mapped_file.start(), size_), handler, filename);
+    ReadNLString(
+          fmt::StringRef(mapped_file.start(), size_), handler, filename, flags);
   }
 };
 
@@ -1768,10 +1783,11 @@ void NLFileReader<File>::Read(fmt::internal::MemoryBuffer<char, 1> &array) {
 }
 
 template <typename InputConverter, typename Handler>
-void ReadBinary(TextReader &reader, const NLHeader &header, Handler &handler) {
+void ReadBinary(TextReader &reader, const NLHeader &header,
+                Handler &handler, int flags) {
   BinaryReader<InputConverter> bin_reader(reader);
   NLReader<BinaryReader<InputConverter>, Handler>(
-        bin_reader, header, handler).Read();
+        bin_reader, header, handler, flags).Read();
 }
 }  // namespace internal
 
@@ -1781,7 +1797,8 @@ void ReadBinary(TextReader &reader, const NLHeader &header, Handler &handler) {
   The *name* argument is used as the name of the input when reporting errors.
  */
 template <typename Handler>
-void ReadNLString(fmt::StringRef str, Handler &handler, fmt::StringRef name) {
+void ReadNLString(fmt::StringRef str, Handler &handler,
+                  fmt::StringRef name, int flags) {
   internal::TextReader reader(str, name);
   NLHeader header = NLHeader();
   reader.ReadHeader(header);
@@ -1789,18 +1806,18 @@ void ReadNLString(fmt::StringRef str, Handler &handler, fmt::StringRef name) {
   switch (header.format) {
   case NLHeader::TEXT:
     internal::NLReader<internal::TextReader, Handler>(
-          reader, header, handler).Read();
+          reader, header, handler, flags).Read();
     break;
   case NLHeader::BINARY: {
       using internal::ReadBinary;
     arith::Kind arith_kind = arith::GetKind();
     if (arith_kind == header.arith_kind) {
-      ReadBinary<internal::IdentityConverter>(reader, header, handler);
+      ReadBinary<internal::IdentityConverter>(reader, header, handler, flags);
       break;
     }
     if (!IsIEEE(arith_kind) || !IsIEEE(header.arith_kind))
       throw ReadError(name, 0, 0, "unsupported floating-point arithmetic");
-    ReadBinary<internal::EndiannessConverter>(reader, header, handler);
+    ReadBinary<internal::EndiannessConverter>(reader, header, handler, flags);
     break;
   }
   }
@@ -1811,8 +1828,9 @@ void ReadNLString(fmt::StringRef str, Handler &handler, fmt::StringRef name) {
   and sends notifications of the problem components to the *handler* object.
  */
 template <typename Handler>
-inline void ReadNLFile(fmt::StringRef filename, Handler &handler) {
-  internal::NLFileReader<>().Read(filename, handler);
+inline void ReadNLFile(fmt::StringRef filename,
+                       Handler &handler, int flags = 0) {
+  internal::NLFileReader<>().Read(filename, handler, flags);
 }
 }  // namespace mp
 

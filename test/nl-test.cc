@@ -1,5 +1,5 @@
 /*
- .nl reader tests.
+ nl reader tests
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -1267,7 +1267,7 @@ TEST(NLTest, ReadConBounds) {
   using mp::internal::TextReader;
   TextReader text_reader(input, "(intput");
   typedef mp::internal::NLReader<TextReader, TestNLHandler> NLReader;
-  NLReader reader(text_reader, header, handler);
+  NLReader reader(text_reader, header, handler, 0);
   reader.ReadBounds<NLReader::AlgebraicConHandler>();
   EXPECT_EQ(fmt::format("c0 complements v{} 1;", INT_MAX - 1),
             handler.log.str());
@@ -1390,7 +1390,7 @@ void CheckReadFile(std::string nl) {
   EXPECT_EQ("v0 <= 0; v1 <= 0; v2 <= 0; v3 <= 0; v4 <= 0; c0: 4.2;",
             handler.log.str());
   mp::internal::NLFileReader<> reader;
-  reader.Read(filename, handler);
+  reader.Read(filename, handler, 0);
 }
 
 TEST(NLTest, ReadNLFile) {
@@ -1425,14 +1425,14 @@ TEST(NLTest, FileTooBig) {
   if (max_size < max_long_long) {
     EXPECT_CALL(reader.file(), size()).WillOnce(Return(max_size));
     EXPECT_CALL(reader.file(), descriptor()).WillOnce(Throw(Cancel()));
-    EXPECT_THROW(reader.Read("test", handler), Cancel);
+    EXPECT_THROW(reader.Read("test", handler, 0), Cancel);
     EXPECT_CALL(reader.file(), size()).WillOnce(Return(max_size + 1));
-    EXPECT_THROW_MSG(reader.Read("test", handler),
+    EXPECT_THROW_MSG(reader.Read("test", handler, 0),
                      mp::Error, "file test is too big");
   } else {
     EXPECT_CALL(reader.file(), size()).WillOnce(Return(max_long_long));
     EXPECT_CALL(reader.file(), descriptor()).WillOnce(Throw(Cancel()));
-    EXPECT_THROW(reader.Read("test", handler), Cancel);
+    EXPECT_THROW(reader.Read("test", handler, 0), Cancel);
   }
 }
 
