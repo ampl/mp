@@ -161,8 +161,6 @@ endif ()
 add_subdirectory(jacop)
 
 add_ampl_solver(localsolver)
-add_ampl_solver(localsolver-asl
-  MODULE LocalSolver LIBRARIES localsolver-library)
 
 # Copy LocalSolver DLL to the target directory.
 if (LOCALSOLVER_DLL)
