@@ -309,17 +309,6 @@ class ProblemBuilder : public Problem {
     return EndIterated(builder);
   }
 
-  struct ColumnSizeHandler {
-    void Add(int) {
-      // Ignore column sizes as the constraints are stored row-wise.
-    }
-  };
-
-  // Returns a handler that receives column sizes in Jacobian.
-  ColumnSizeHandler GetColumnSizeHandler() {
-    return ColumnSizeHandler();
-  }
-
   NumericExpr MakeBinary(
       mp::expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     // Translate a POW expression with right-hand side of 2

@@ -129,16 +129,6 @@ class ProblemBuilder : public SuffixManager {
     // Initial dual values are ignored by default.
   }
 
-  struct ColumnSizeHandler {
-    void Add(int size) { MP_UNUSED(size); }
-  };
-
-  // Returns a handler that receives column sizes in Jacobian.
-  ColumnSizeHandler GetColumnSizeHandler() {
-    MP_DISPATCH(ReportUnhandledConstruct("Jacobian column size"));
-    return ColumnSizeHandler();
-  }
-
   struct Function {};
 
   // Adds a function.
@@ -539,11 +529,16 @@ class ProblemBuilderToNLAdapter {
     builder_.SetInitialDualValue(con_index, value);
   }
 
-  typedef typename ProblemBuilder::ColumnSizeHandler ColumnSizeHandler;
+  struct ColumnSizeHandler {
+    void Add(int) {
+      // Ignore column sizes as the constraints are stored row-wise
+      // by default.
+    }
+  };
 
   // Receives notification of Jacobian column sizes.
   ColumnSizeHandler OnColumnSizes() {
-    return builder_.GetColumnSizeHandler();
+    return ColumnSizeHandler();
   }
 
   // Receives notification of a function.

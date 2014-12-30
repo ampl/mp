@@ -65,6 +65,13 @@ class ASLHandler : public mp::ProblemBuilderToNLAdapter<ASLBuilder> {
     Base::OnHeader(h);
     flags_ = h.flags;
   }
+
+  typedef typename ASLBuilder::ColumnSizeHandler ColumnSizeHandler;
+
+  // Receives notification of Jacobian column sizes.
+  ColumnSizeHandler OnColumnSizes() {
+    return builder().GetColumnSizeHandler();
+  }
 };
 }
 

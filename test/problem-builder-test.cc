@@ -73,7 +73,6 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   builder.SetInitialValue(0, 0);
   builder.SetInitialDualValue(0, 0);
 
-  EXPECT_DISPATCH(GetColumnSizeHandler(), "Jacobian column size");
   EXPECT_DISPATCH(AddFunction("foo", 0, mp::func::NUMERIC), "function");
   EXPECT_DISPATCH(AddIntSuffix("foo", 0, 0), "integer suffix");
   EXPECT_DISPATCH(AddDblSuffix("foo", 0, 0), "double suffix");
