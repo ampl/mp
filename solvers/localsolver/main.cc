@@ -24,7 +24,7 @@
 
 int main(int, char **argv) {
   try {
-    return mp::SolverApp<mp::LocalSolver>().Run(argv);
+    return mp::SolverApp<mp::LocalSolver>().Run(argv, mp::READ_BOUNDS_FIRST);
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
   }

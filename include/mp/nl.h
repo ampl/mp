@@ -58,7 +58,7 @@ using fmt::internal::MakeUnsigned;
 // Flags for ReadNLFile and ReadNLString.
 enum {
   // Read variable bounds before anything else.
-  READ_BOUNDS_FIRST
+  READ_BOUNDS_FIRST = 1
 };
 
 template <typename Handler>

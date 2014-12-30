@@ -1305,11 +1305,11 @@ class SolverApp : private Reader {
   // from argv and environment variables, solves the problem and writes
   // solution(s).
   // argv: an array of command-line arguments terminated by a null pointer
-  int Run(char **argv);
+  int Run(char **argv, int nl_reader_flags = 0);
 };
 
 template <typename Solver, typename Reader>
-int SolverApp<Solver, Reader>::Run(char **argv) {
+int SolverApp<Solver, Reader>::Run(char **argv, int nl_reader_flags) {
   internal::SignalHandler sig_handler(solver_);
 
   // Parse command-line arguments.
@@ -1346,7 +1346,7 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   // TODO: use name provider instead of passing filename to builder
   ProblemBuilder builder(solver_.GetProblemBuilder(filename_no_ext));
   internal::SolverNLHandler<Solver> handler(builder, solver_);
-  this->Read(nl_filename, handler, 0);
+  this->Read(nl_filename, handler, nl_reader_flags);
 
   builder.EndBuild();
   double read_time = GetTimeAndReset(start);
