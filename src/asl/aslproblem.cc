@@ -45,36 +45,6 @@
 extern "C" int mkstemps(char *pattern, int suffix_len);
 #endif
 
-using mp::asl::internal::ASLBuilder;
-
-namespace {
-
-// An .nl handler that builds an ASL problem using ASLBuilder.
-class ASLHandler : public mp::ProblemBuilderToNLAdapter<ASLBuilder> {
- private:
-  int flags_;
-
-  typedef mp::ProblemBuilderToNLAdapter<ASLBuilder> Base;
-
- public:
-  explicit ASLHandler(ASLBuilder &b, int obj_index = 0) : Base(b, obj_index) {}
-
-  int flags() const { return flags_; }
-
-  void OnHeader(const mp::NLHeader &h) {
-    Base::OnHeader(h);
-    flags_ = h.flags;
-  }
-
-  typedef ASLBuilder::ColumnSizeHandler ColumnSizeHandler;
-
-  // Receives notification of Jacobian column sizes.
-  ColumnSizeHandler OnColumnSizes() {
-    return builder().GetColumnSizeHandler();
-  }
-};
-}
-
 namespace mp {
 
 Solution::Solution()
@@ -288,6 +258,7 @@ void ASLProblem::Read(fmt::StringRef stub, unsigned flags) {
                     ASL_allow_missing_funcs |
                     asl::internal::ASL_STANDARD_OPCODES | flags);
   builder.set_stub(name.c_str());
+  using asl::internal::ASLHandler;
   ASLHandler handler(builder, ASLHandler::NEED_ALL_OBJS);
   ReadNLFile(name.c_str(), handler);
   asl_->i.flags = handler.flags();

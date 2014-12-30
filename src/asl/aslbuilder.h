@@ -27,6 +27,7 @@
 
 #include "mp/arrayref.h"
 #include "mp/format.h"
+#include "mp/problem-builder.h"
 #include "mp/safeint.h"
 #include "aslexpr.h"
 #include "aslproblem.h"
@@ -629,6 +630,31 @@ class ASLBuilder {
       LogicalExpr condition, Expr true_expr, Expr false_expr) {
     return Expr::Create<SymbolicIfExpr>(
         MakeIf(expr::IFSYM, condition, true_expr, false_expr));
+  }
+};
+
+// An .nl handler that builds an ASL problem using ASLBuilder.
+class ASLHandler : public mp::ProblemBuilderToNLAdapter<ASLBuilder> {
+ private:
+  int flags_;
+
+  typedef ProblemBuilderToNLAdapter<ASLBuilder> Base;
+
+ public:
+  explicit ASLHandler(ASLBuilder &b, int obj_index = 0) : Base(b, obj_index) {}
+
+  int flags() const { return flags_; }
+
+  void OnHeader(const NLHeader &h) {
+    Base::OnHeader(h);
+    flags_ = h.flags;
+  }
+
+  typedef ASLBuilder::ColumnSizeHandler ColumnSizeHandler;
+
+  // Receives notification of Jacobian column sizes.
+  ColumnSizeHandler OnColumnSizes() {
+    return builder().GetColumnSizeHandler();
   }
 };
 }

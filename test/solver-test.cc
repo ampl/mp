@@ -85,6 +85,7 @@ class TestSolver : public mp::Solver {
   using Solver::AddSuffix;
 
   typedef StrictMockProblemBuilder ProblemBuilder;
+  typedef mp::ProblemBuilderToNLAdapter<ProblemBuilder> NLProblemBuilder;
 
   ProblemBuilder **GetProblemBuilder(fmt::StringRef) {
     return &builder;

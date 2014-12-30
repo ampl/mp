@@ -915,6 +915,7 @@ template <typename ProblemBuilderT>
 class SolverImpl : public Solver {
  public:
   typedef ProblemBuilderT ProblemBuilder;
+  typedef ProblemBuilderToNLAdapter<ProblemBuilder> NLProblemBuilder;
 
   SolverImpl(fmt::StringRef name, fmt::StringRef long_name = 0,
              long date = 0, int flags = 0)
@@ -1159,14 +1160,13 @@ class SignalHandler : public Interrupter {
 
 // An .nl handler for SolverApp.
 template <typename Solver>
-class SolverNLHandler :
-    public ProblemBuilderToNLAdapter<typename Solver::ProblemBuilder> {
+class SolverNLHandler : public Solver::NLProblemBuilder {
  private:
   Solver &solver_;
   int num_options_;
   int options_[MAX_NL_OPTIONS];
 
-  typedef ProblemBuilderToNLAdapter<typename Solver::ProblemBuilder> Base;
+  typedef typename Solver::NLProblemBuilder Base;
 
  public:
   SolverNLHandler(typename Solver::ProblemBuilder &pb, Solver &s)

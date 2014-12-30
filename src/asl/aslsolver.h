@@ -60,6 +60,8 @@ class ASLSolver : public SolverImpl<asl::internal::ASLBuilder> {
   ASLSolver(fmt::StringRef name, fmt::StringRef long_name = 0,
             long date = 0, int flags = 0);
 
+  typedef asl::internal::ASLHandler NLProblemBuilder;
+
   ASLProblem::Proxy GetProblemBuilder(fmt::StringRef stub);
 
   // Solves a problem and report solutions via the solution handler.
