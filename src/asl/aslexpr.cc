@@ -52,8 +52,8 @@ class ExprEqual : public mp::asl::ExprVisitor<ExprEqual, bool, bool> {
   template <typename T>
   bool VisitNumericConstant(T c) { return Cast<T>(expr_).value() == c.value(); }
 
-  bool VisitVariable(asl::Variable v) {
-    return Cast<asl::Variable>(expr_).index() == v.index();
+  bool VisitVariable(asl::Reference v) {
+    return Cast<asl::Reference>(expr_).index() == v.index();
   }
 
   template <typename E>
@@ -163,7 +163,7 @@ class ExprHasher : public mp::asl::ExprVisitor<ExprHasher, size_t, size_t> {
 
  public:
   size_t VisitNumericConstant(NumericConstant c) { return Hash(c, c.value()); }
-  size_t VisitVariable(asl::Variable v) { return Hash(v, v.index()); }
+  size_t VisitVariable(asl::Reference v) { return Hash(v, v.index()); }
 
   size_t VisitUnary(asl::UnaryExpr e) { return Hash(e, e.arg()); }
 

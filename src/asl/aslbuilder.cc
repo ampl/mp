@@ -551,7 +551,7 @@ NumericExpr ASLBuilder::EndCommonExpr(LinearExprBuilder builder,
   e->L = builder.get();
   assert(index >= 0 && index < static_->_max_var - asl_->i.n_var_);
   index += asl_->i.n_var_;
-  return Expr::Create<Variable>(
+  return Expr::Create<Reference>(
       reinterpret_cast< ::expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
           + index));
 }
@@ -659,9 +659,9 @@ ASLBuilder::SuffixInfo ASLBuilder::AddSuffix(
   return SuffixInfo(d, nx, nx1);
 }
 
-Variable ASLBuilder::MakeVariable(int var_index) {
+Reference ASLBuilder::MakeVariable(int var_index) {
   assert(var_index >= 0 && var_index < asl_->i.n_var_);
-  return Expr::Create<Variable>(
+  return Expr::Create<Reference>(
       reinterpret_cast< ::expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
           + var_index));
 }
@@ -687,14 +687,14 @@ ASLBuilder::PLTermBuilder ASLBuilder::BeginPLTerm(int num_breakpoints) {
 
 PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(
     int num_breakpoints, const double *breakpoints,
-    const double *slopes, Variable var) {
+    const double *slopes, Reference ref) {
   PLTermBuilder builder = BeginPLTerm(num_breakpoints);
   for (int i = 0; i < num_breakpoints; ++i) {
     builder.AddSlope(slopes[i]);
     builder.AddBreakpoint(breakpoints[i]);
   }
   builder.AddSlope(slopes[num_breakpoints]);
-  return EndPLTerm(builder, var);
+  return EndPLTerm(builder, ref);
 }
 
 CallExpr ASLBuilder::EndCall(CallExprBuilder b) {

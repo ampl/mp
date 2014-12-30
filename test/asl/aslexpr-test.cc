@@ -44,7 +44,7 @@ using asl::CountExpr;
 using asl::IfExpr;
 using asl::PiecewiseLinearExpr;
 using asl::NumericConstant;
-using asl::Variable;
+using asl::Reference;
 using asl::NumberOfExpr;
 using asl::CallExpr;
 using asl::LogicalConstant;
@@ -180,7 +180,7 @@ class ExprTest : public ::testing::Test {
     return builder.MakeNumericConstant(value);
   }
 
-  Variable MakeVariable(int index) { return builder.MakeVariable(index); }
+  Reference MakeVariable(int index) { return builder.MakeVariable(index); }
 
   UnaryExpr MakeUnary(ex::Kind kind, NumericExpr arg) {
     return builder.MakeUnary(kind, arg);
@@ -520,7 +520,7 @@ TEST_F(ExprTest, EqualIfExpr) {
 TEST_F(ExprTest, EqualPiecewiseLinear) {
   double breaks[] = {5, 10};
   double slopes[] = {-1, 0, 1};
-  Variable x = MakeVariable(0), y = MakeVariable(1);
+  Reference x = MakeVariable(0), y = MakeVariable(1);
   NumericExpr e = builder.MakePiecewiseLinear(2, breaks, slopes, x);
   EXPECT_TRUE(Equal(e, builder.MakePiecewiseLinear(2, breaks, slopes, x)));
   EXPECT_FALSE(Equal(e, builder.MakePiecewiseLinear(1, breaks, slopes, x)));
@@ -601,8 +601,8 @@ TEST_F(ExprTest, NumericConstant) {
 }
 
 TEST_F(ExprTest, Variable) {
-  EXPECT_EQ(1u, CheckExpr<Variable>(ex::VARIABLE));
-  asl::Variable var = builder.MakeVariable(0);
+  EXPECT_EQ(1u, CheckExpr<Reference>(ex::VARIABLE));
+  Reference var = builder.MakeVariable(0);
   EXPECT_EQ(ex::VARIABLE, var.kind());
   EXPECT_EQ(0, var.index());
   var = builder.MakeVariable(9);
@@ -665,7 +665,7 @@ TEST_F(ExprTest, PiecewiseLinearExpr) {
   enum { NUM_BREAKPOINTS = 2 };
   double breakpoints[NUM_BREAKPOINTS] = { 11, 22 };
   double slopes[NUM_BREAKPOINTS + 1] = {33, 44, 55};
-  asl::Variable var = builder.MakeVariable(2);
+  Reference var = builder.MakeVariable(2);
   asl::PiecewiseLinearExpr expr = builder.MakePiecewiseLinear(
       NUM_BREAKPOINTS, breakpoints, slopes, var);
   EXPECT_EQ(ex::PLTERM, expr.kind());
@@ -1070,7 +1070,7 @@ TEST_F(ExprTest, HashPLTerm) {
 }
 
 TEST_F(ExprTest, HashCallExpr) {
-  Variable var = MakeVariable(9);
+  Reference var = MakeVariable(9);
   Expr args[2] = {n1, var};
   Function f = builder.RegisterFunction("foo", TestFunc, 2, func::SYMBOLIC);
   size_t hash = HashCombine<int>(0, ex::CALL);

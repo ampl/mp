@@ -373,17 +373,17 @@ class NumericConstant : public NumericExpr {
 
 MP_SPECIALIZE_IS(NumericConstant, CONSTANT)
 
-// A reference to a variable.
+// A reference to a variable or a common expression.
 // Example: x
-class Variable : public NumericExpr {
+class Reference : public NumericExpr {
  public:
-  Variable() {}
+  Reference() {}
 
-  // Returns the index of the referenced variable.
+  // Returns the index of the referenced object.
   int index() const { return impl_->a; }
 };
 
-MP_SPECIALIZE_IS(Variable, VARIABLE)
+MP_SPECIALIZE_IS_RANGE(Reference, REFERENCE)
 
 template <typename Base>
 class BasicUnaryExpr : public Base {
@@ -812,8 +812,8 @@ struct ExprTypes {
   typedef mp::asl::NumericExpr NumericExpr;
   typedef mp::asl::LogicalExpr LogicalExpr;
   typedef mp::asl::NumericConstant NumericConstant;
-  typedef mp::asl::Variable Variable;
-  typedef mp::asl::Variable CommonExpr;
+  typedef mp::asl::Reference Variable;
+  typedef mp::asl::Reference CommonExpr;
   typedef mp::asl::UnaryExpr UnaryExpr;
   typedef mp::asl::BinaryExpr BinaryExpr;
   typedef mp::asl::IfExpr IfExpr;

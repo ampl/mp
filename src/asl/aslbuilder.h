@@ -217,7 +217,7 @@ class ASLBuilder {
   typedef asl::Expr Expr;
   typedef asl::NumericExpr NumericExpr;
   typedef asl::LogicalExpr LogicalExpr;
-  typedef asl::Variable Reference;
+  typedef asl::Reference Reference;
   typedef asl::CountExpr CountExpr;
 
   explicit ASLBuilder(ASL *asl = 0) { Init(asl); }
@@ -411,8 +411,8 @@ class ASLBuilder {
     return Expr::Create<NumericConstant>(MakeConstant(value));
   }
 
-  Variable MakeVariable(int var_index);
-  Variable MakeCommonExpr(int index) {
+  Reference MakeVariable(int var_index);
+  Reference MakeCommonExpr(int index) {
     return MakeVariable(index);
   }
 
@@ -450,7 +450,7 @@ class ASLBuilder {
   }
 
   PiecewiseLinearExpr MakePiecewiseLinear(int num_breakpoints,
-      const double *breakpoints, const double *slopes, Variable var);
+      const double *breakpoints, const double *slopes, Reference ref);
 
   CallExprBuilder BeginCall(Function f, int num_args) {
     if (!f)
