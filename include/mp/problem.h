@@ -75,6 +75,15 @@ class LinearExpr {
 // An optimization problem.
 template <typename Alloc>
 class BasicProblem : public ExprFactory, public SuffixManager {
+ public:
+  typedef mp::Function Function;
+  typedef mp::Expr Expr;
+  typedef mp::NumericExpr NumericExpr;
+  typedef mp::LogicalExpr LogicalExpr;
+  typedef mp::CountExpr CountExpr;
+  typedef mp::Reference Reference;
+  typedef internal::ExprTypes ExprTypes;
+
  private:
   // A variable.
   struct Var {
@@ -346,8 +355,6 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   };
 
  public:
-  typedef internal::ExprTypes ExprTypes;
-
   // Returns the number of variables.
   int num_vars() const { return static_cast<int>(vars_.size()); }
 

@@ -291,13 +291,6 @@ class MPToASLExprConverter :
 // Adapts Problem interface for use with .nl reader.
 class ProblemBuilder : public Problem {
  public:
-  typedef mp::Function Function;
-  typedef mp::Expr Expr;
-  typedef mp::NumericExpr NumericExpr;
-  typedef mp::LogicalExpr LogicalExpr;
-  typedef mp::CountExpr CountExpr;
-  typedef mp::Reference Reference;
-
   typedef IteratedExprBuilder NumericExprBuilder;
   typedef IteratedExprBuilder VarArgExprBuilder;
   typedef IteratedExprBuilder NumberOfExprBuilder;
