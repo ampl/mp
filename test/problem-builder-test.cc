@@ -152,8 +152,12 @@ TEST(NLProblemBuilderTest, Forward) {
   EXPECT_FORWARD(OnInitialValue, SetInitialValue, (33, 4.4));
   EXPECT_FORWARD(OnInitialDualValue, SetInitialDualValue, (55, 6.6));
 
-  EXPECT_FORWARD_RET(OnColumnSizes, GetColumnSizeHandler, (),
-                     TestColumnSizeHandler(ID));
+  {
+    // OnColumnSizes is ignored by default.
+    StrictMock<MockProblemBuilder> builder;
+    mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+    adapter.OnColumnSizes();
+  }
 
   // Use the same StringRef object in arguments, because StringRef objects
   // are compared as pointers and string literals they point to may not
