@@ -56,7 +56,7 @@ class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void, void> {
 
   void VisitMul(asl::BinaryExpr e) {
     asl::NumericConstant coef = asl::Cast<asl::NumericConstant>(e.lhs());
-    asl::Variable var = asl::Cast<asl::Variable>(e.rhs());
+    asl::Reference var = asl::Cast<asl::Reference>(e.rhs());
     if (!coef || !var)
       throw MakeUnsupportedError("nonlinear *");
     coefs_[con_index_ * num_vars_ + var.index()] = sign_ * coef.value();

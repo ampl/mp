@@ -281,7 +281,7 @@ class NLToConcertConverter : public Converter {
     return IloExpr(env_, n.value());
   }
 
-  IloExpr VisitVariable(asl::Variable v) {
+  IloExpr VisitVariable(asl::Reference v) {
     return vars_[v.index()];
   }
 

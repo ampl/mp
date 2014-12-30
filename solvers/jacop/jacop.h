@@ -320,7 +320,7 @@ class NLToJaCoPConverter :
     return CreateConst(CastToInt(c.value()));
   }
 
-  jobject VisitVariable(asl::Variable v) {
+  jobject VisitVariable(asl::Reference v) {
     return vars_[v.index()];
   }
 

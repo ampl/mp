@@ -200,7 +200,7 @@ class NLToGecodeConverter :
     return CastToInt(c.value());
   }
 
-  LinExpr VisitVariable(asl::Variable v) {
+  LinExpr VisitVariable(asl::Reference v) {
     return problem_.vars()[v.index()];
   }
 
