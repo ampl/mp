@@ -417,10 +417,6 @@ EvalResult NLSolverTest::Eval(
   pb.AddVar(var1, var1, mp::var::INTEGER);
   pb.AddVar(var2, var2, mp::var::INTEGER);
   pb.AddVar(var3, var3, mp::var::INTEGER);
-  auto cols = pb.GetColumnSizeHandler();
-  cols.Add(1);
-  for (int i = 1; i < info.num_vars - 1; ++i)
-    cols.Add(0);
   auto con_builder = pb.AddCon(0, 0, factory(pb), 0);
   con_builder.AddTerm(0, -1);
   return Solve(pb);
@@ -1165,7 +1161,6 @@ TEST_F(NLSolverTest, OptimalSolveCode) {
   info.num_vars = info.num_linear_integer_vars = info.num_objs = 1;
   info.num_obj_nonzeros = 1;
   pb.SetInfo(info);
-  pb.GetColumnSizeHandler();
   pb.AddVar(0, 0, mp::var::INTEGER);
   pb.AddObj(obj::MIN, NumericExpr(), 1).AddTerm(0, 1);
   EXPECT_EQ(mp::sol::SOLVED, Solve(pb).solve_code());

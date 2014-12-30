@@ -204,9 +204,6 @@ class LSProblemBuilder :
     initial_values_[var_index] = value;
   }
 
-  // Ignore Jacobian column sizes.
-  ColumnSizeHandler GetColumnSizeHandler() { return ColumnSizeHandler(); }
-
   ls::LSExpression MakeNumericConstant(double value) {
     ls::lsint int_value = value;
     return int_value == value ?
