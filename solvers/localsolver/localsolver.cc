@@ -251,13 +251,13 @@ ls::LSExpression LSProblemBuilder::MakeBinary(
   return MakeBinary(op, lhs, rhs);
 }
 
-LSProblemBuilder::ExprBuilder LSProblemBuilder::BeginVarArg(
+LSProblemBuilder::ExprBuilder LSProblemBuilder::BeginIterated(
     expr::Kind kind, int num_args) {
   ls::LSOperator op = ls::O_Min;
   if (kind == expr::MAX)
     op = ls::O_Max;
   else if (kind != expr::MIN)
-    Base::BeginVarArg(kind, num_args);
+    Base::BeginIterated(kind, num_args);
   return ExprBuilder(model_.createExpression(op));
 }
 

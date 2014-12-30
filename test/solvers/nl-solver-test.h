@@ -208,11 +208,11 @@ class NLSolverTest : public ::testing::Test {
     explicit VarArgFactory(mp::expr::Kind kind) : kind_(kind) {}
 
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginVarArg(kind_, 3);
+      auto args = pb.BeginIterated(kind_, 3);
       args.AddArg(x);
       args.AddArg(y);
       args.AddArg(z);
-      return pb.EndVarArg(args);
+      return pb.EndIterated(args);
     }
   };
 

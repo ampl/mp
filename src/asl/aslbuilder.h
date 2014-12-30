@@ -488,22 +488,22 @@ class ASLBuilder {
 
   typedef ExprBuilder<NumericExpr> NumericExprBuilder;
 
-  class VarArgExprBuilder {
+  class IteratedExprBuilder {
    private:
     expr_va *expr_;
     int arg_index_;
 
     friend class ASLBuilder;
 
-    VarArgExprBuilder(expr_va *e) : expr_(e), arg_index_(0) {}
+    IteratedExprBuilder(expr_va *e) : expr_(e), arg_index_(0) {}
 
    public:
     void AddArg(NumericExpr arg) { expr_->L.d[arg_index_++].e = arg.impl_; }
   };
 
-  VarArgExprBuilder BeginVarArg(expr::Kind kind, int num_args);
+  IteratedExprBuilder BeginIterated(expr::Kind kind, int num_args);
 
-  VarArgExpr EndVarArg(VarArgExprBuilder builder) {
+  VarArgExpr EndIterated(IteratedExprBuilder builder) {
     return Expr::Create<VarArgExpr>(reinterpret_cast< ::expr*>(builder.expr_));
   }
 

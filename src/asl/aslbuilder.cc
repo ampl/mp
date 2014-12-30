@@ -718,23 +718,23 @@ CallExpr ASLBuilder::EndCall(CallExprBuilder b) {
   return Expr::Create<CallExpr>(reinterpret_cast< ::expr*>(b.expr_));
 }
 
-ASLBuilder::VarArgExprBuilder
-    ASLBuilder::BeginVarArg(expr::Kind kind, int num_args) {
+ASLBuilder::IteratedExprBuilder
+    ASLBuilder::BeginIterated(expr::Kind kind, int num_args) {
   CheckKind<VarArgExpr>(kind, "vararg");
   expr_va *result = Allocate<expr_va>();
   result->op = r_ops_[opcode(kind)];
   de *d = result->L.d = Allocate<de>(
         SafeInt<int>(num_args) * sizeof(de) + sizeof(::expr*));
   d[num_args].e = 0;
-  return VarArgExprBuilder(result);
+  return IteratedExprBuilder(result);
 }
 
 VarArgExpr ASLBuilder::MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args) {
   int num_args = SafeInt<int>(args.size()).value();
-  VarArgExprBuilder builder(BeginVarArg(kind, num_args));
+  IteratedExprBuilder builder(BeginIterated(kind, num_args));
   for (int i = 0; i < num_args; ++i)
     builder.AddArg(args[i]);
-  return EndVarArg(builder);
+  return EndIterated(builder);
 }
 
 IteratedLogicalExpr ASLBuilder::MakeIteratedLogical(

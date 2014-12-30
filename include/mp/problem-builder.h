@@ -157,7 +157,7 @@ class ProblemBuilder : public SuffixManager {
   }
 
   typedef ExprBuilder NumericExprBuilder;
-  typedef ExprBuilder VarArgExprBuilder;
+  typedef ExprBuilder IteratedExprBuilder;
   typedef ExprBuilder CallExprBuilder;
   typedef ExprBuilder NumberOfExprBuilder;
   typedef ExprBuilder CountExprBuilder;
@@ -222,12 +222,12 @@ class ProblemBuilder : public SuffixManager {
     return NumericExpr();
   }
 
-  VarArgExprBuilder BeginVarArg(expr::Kind kind, int num_args) {
+  IteratedExprBuilder BeginIterated(expr::Kind kind, int num_args) {
     MP_UNUSED2(kind, num_args);
     MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
-    return VarArgExprBuilder();
+    return IteratedExprBuilder();
   }
-  NumericExpr EndVarArg(VarArgExprBuilder builder) {
+  NumericExpr EndIterated(IteratedExprBuilder builder) {
     MP_UNUSED(builder);
     MP_DISPATCH(ReportUnhandledConstruct("vararg expression"));
     return NumericExpr();
@@ -616,15 +616,15 @@ class ProblemBuilderToNLAdapter {
     return builder_.EndCall(handler);
   }
 
-  typedef typename ProblemBuilder::VarArgExprBuilder VarArgHandler;
+  typedef typename ProblemBuilder::IteratedExprBuilder VarArgHandler;
 
   // Receives notification of the beginning of a vararg expression (min or max).
   VarArgHandler BeginVarArg(expr::Kind kind, int num_args) {
-    return builder_.BeginVarArg(kind, num_args);
+    return builder_.BeginIterated(kind, num_args);
   }
   // Receives notification of the end of a vararg expression (min or max).
   NumericExpr EndVarArg(VarArgHandler handler) {
-    return builder_.EndVarArg(handler);
+    return builder_.EndIterated(handler);
   }
 
   // Receives notification of the beginning of a sum expression.

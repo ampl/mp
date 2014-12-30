@@ -89,8 +89,8 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
                   "function call");
   EXPECT_DISPATCH(EndCall(TestProblemBuilder::CallExprBuilder()),
                   "function call");
-  EXPECT_DISPATCH(BeginVarArg(expr::MIN, 0), "min");
-  EXPECT_DISPATCH(EndVarArg(TestProblemBuilder::NumericExprBuilder()),
+  EXPECT_DISPATCH(BeginIterated(expr::MIN, 0), "min");
+  EXPECT_DISPATCH(EndIterated(TestProblemBuilder::NumericExprBuilder()),
                   "vararg expression");
   EXPECT_DISPATCH(BeginSum(0), "sum");
   EXPECT_DISPATCH(EndSum(TestProblemBuilder::NumericExprBuilder()), "sum");
@@ -186,9 +186,9 @@ TEST(NLProblemBuilderTest, Forward) {
                      (TestPLTermBuilder(ID), TestReference(ID2)),
                      TestNumericExpr(ID3));
 
-  EXPECT_FORWARD_RET(BeginVarArg, BeginVarArg, (expr::MAX, 77),
-                     TestVarArgExprBuilder(ID));
-  EXPECT_FORWARD_RET(EndVarArg, EndVarArg, (TestVarArgExprBuilder(ID)),
+  EXPECT_FORWARD_RET(BeginVarArg, BeginIterated, (expr::MAX, 77),
+                     TestIteratedExprBuilder(ID));
+  EXPECT_FORWARD_RET(EndVarArg, EndIterated, (TestIteratedExprBuilder(ID)),
                      TestNumericExpr(ID2));
 
   EXPECT_FORWARD_RET(BeginSum, BeginSum, (88), TestNumericExprBuilder(ID));

@@ -1032,10 +1032,10 @@ TEST(ASLBuilderTest, BuildColumnwiseMatrix) {
   }
 }
 
-// Test that ASLBuilder can act as a handler for NLReader.
-TEST(ASLBuilderTest, NLHandler) {
+// Test that ASLHandler can act as a handler for NLReader.
+TEST(ASLBuilderTest, ASLHandler) {
   ASLBuilder builder;
-  mp::ProblemBuilderToNLAdapter<ASLBuilder> handler(builder);
+  mp::asl::internal::ASLHandler handler(builder);
   mp::ReadNLString(HeaderToStr(MakeHeader()), handler);
 }
 

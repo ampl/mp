@@ -245,10 +245,10 @@ class LSProblemBuilder :
   };
 
   typedef ExprBuilder NumericExprBuilder;
-  typedef ExprBuilder VarArgExprBuilder;
+  typedef ExprBuilder IteratedExprBuilder;
 
-  VarArgExprBuilder BeginVarArg(expr::Kind kind, int num_args);
-  ls::LSExpression EndVarArg(VarArgExprBuilder builder) {
+  ExprBuilder BeginIterated(expr::Kind kind, int num_args);
+  ls::LSExpression EndIterated(ExprBuilder builder) {
     return builder.expr();
   }
 

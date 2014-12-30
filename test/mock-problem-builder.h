@@ -84,7 +84,7 @@ struct TestExprBuilder {
 };
 
 typedef TestExprBuilder<0> TestNumericExprBuilder;
-typedef TestExprBuilder<1> TestVarArgExprBuilder;
+typedef TestExprBuilder<1> TestIteratedExprBuilder;
 typedef TestExprBuilder<2> TestNumberOfExprBuilder;
 typedef TestExprBuilder<0, TestExpr> TestSymbolicNumberOfExprBuilder;
 typedef TestExprBuilder<3, TestLogicalExpr> TestCountExprBuilder;
@@ -202,11 +202,11 @@ class MockProblemBuilder {
   MOCK_METHOD2(BeginCall, CallExprBuilder (Function func, int num_args));
   MOCK_METHOD1(EndCall, NumericExpr (CallExprBuilder builder));
 
-  typedef TestVarArgExprBuilder VarArgExprBuilder;
+  typedef TestIteratedExprBuilder IteratedExprBuilder;
 
-  MOCK_METHOD2(BeginVarArg,
-               VarArgExprBuilder (mp::expr::Kind kind, int num_args));
-  MOCK_METHOD1(EndVarArg, NumericExpr (VarArgExprBuilder builder));
+  MOCK_METHOD2(BeginIterated,
+               IteratedExprBuilder (mp::expr::Kind kind, int num_args));
+  MOCK_METHOD1(EndIterated, NumericExpr (IteratedExprBuilder builder));
 
   MOCK_METHOD1(BeginSum, NumericExprBuilder (int num_args));
   MOCK_METHOD1(EndSum, NumericExpr (NumericExprBuilder builder));
