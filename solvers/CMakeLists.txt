@@ -140,7 +140,7 @@ set(GECODE_USE_QT FALSE)
 add_ampl_solver(gecode EXTERNAL LIBRARIES
   gecodeminimodel gecodesupport gecodekernel gecodeint gecodesearch)
 # Exclude unused Gecode targets from the build.
-exclude_from_build(fzn-gecode gecodeflatzinc)
+exclude_from_build(fzn-gecode gecodeflatzinc gecode-test)
 
 add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
   concert.cc concert.h ilogcp.cc ilogcp.h ilogcp_date.h
