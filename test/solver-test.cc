@@ -1425,10 +1425,10 @@ template <typename Solver = TestSolver>
 struct MockNLReader {
   typedef mp::internal::SolverNLHandler<Solver> Handler;
 
-  MOCK_METHOD2_T(DoRead, void (fmt::StringRef filename, Handler &h));
+  MOCK_METHOD3_T(DoRead, void (fmt::StringRef filename, Handler &h, int flags));
 
-  void Read(fmt::StringRef filename, Handler &h) {
-    DoRead(filename, h);
+  void Read(fmt::StringRef filename, Handler &h, int flags) {
+    DoRead(filename, h, flags);
     EXPECT_CALL(h.builder(), EndBuild());
   }
 };
@@ -1492,7 +1492,7 @@ TEST_F(SolverAppTest, AddNLExtension) {
   AddOption();
   testing::InSequence sequence;
   EXPECT_CALL(handler_, OnOption()).WillOnce(Return(true));
-  EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"), _));
+  EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"), _, 0));
   EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem")));
 }
 
@@ -1502,7 +1502,7 @@ TEST_F(SolverAppTest, DontAddNLExtension) {
   AddOption();
   testing::InSequence sequence;
   EXPECT_CALL(handler_, OnOption()).WillOnce(Return(true));
-  EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"), _));
+  EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"), _, 0));
   EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem.nl")));
 }
 
@@ -1511,7 +1511,7 @@ TEST_F(SolverAppTest, ParseOptionsBeforeReadingProblem) {
   AddOption();
   testing::InSequence sequence;
   EXPECT_CALL(handler_, OnOption()).WillOnce(Return(true));
-  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_CALL(app_.reader(), DoRead(_, _, _));
   EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem")));
 }
 
@@ -1524,7 +1524,7 @@ MATCHER_P(MatchAdapterToBuilder, solver, "") {
 // Test that SolverApp::Run reads the problem.
 TEST_F(SolverAppTest, ReadProblem) {
   EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"),
-                                    MatchAdapterToBuilder(&app_.solver())));
+                                    MatchAdapterToBuilder(&app_.solver()), 0));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
   // Check that the default reader is NLReader.
   mp::internal::NLFileReader<> &reader = mp::SolverApp<TestSolver>().reader();
@@ -1536,35 +1536,35 @@ TEST_F(SolverAppTest, ParseSolverOptions) {
   RedirectOutput();
   Solver &solver = app_.solver();
   EXPECT_EQ(0, solver.wantsol());
-  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_CALL(app_.reader(), DoRead(_, _, _));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem", "wantsol=1")));
   EXPECT_EQ(1, solver.wantsol());
 }
 
 TEST_F(SolverAppTest, SolverOptionsEchoedByDefault) {
   RedirectOutput();
-  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_CALL(app_.reader(), DoRead(_, _, _));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem", "wantsol=1")));
   EXPECT_EQ("wantsol=1\n", output());
 }
 
 TEST_F(SolverAppTest, DisableSolverOptionEcho) {
   RedirectOutput();
-  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_CALL(app_.reader(), DoRead(_, _, _));
   EXPECT_EQ(0, app_.Run(Args("test", "-e", "testproblem", "wantsol=1")));
   EXPECT_EQ("", output());
 }
 
 TEST_F(SolverAppTest, InputTimeIsNotReportedByDefault) {
   RedirectOutput();
-  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_CALL(app_.reader(), DoRead(_, _, _));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
   EXPECT_EQ("", output());
 }
 
 TEST_F(SolverAppTest, ReportInputTime) {
   RedirectOutput();
-  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_CALL(app_.reader(), DoRead(_, _, _));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem", "timing=1")));
   EXPECT_THAT(output(), testing::MatchesRegex("timing=1\nInput time = .+s\n"));
 }
@@ -1577,7 +1577,7 @@ MATCHER_P(MatchBuilder, solver, "") {
 
 // Test that SolverApp::Run solves the problem.
 TEST_F(SolverAppTest, Solve) {
-  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_CALL(app_.reader(), DoRead(_, _, _));
   TestSolver &solver = app_.solver();
   solver.MockSolve();
   EXPECT_CALL(solver, DoSolve(MatchBuilder(&solver), _));
@@ -1591,7 +1591,7 @@ MATCHER(MatchSolutionHandler, "") {
 
 // Test that SolverApp::Run uses AppSolutionHandler.
 TEST_F(SolverAppTest, UseAppSolutionHandler) {
-  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_CALL(app_.reader(), DoRead(_, _, _));
   TestSolver &solver = app_.solver();
   solver.MockSolve();
   EXPECT_CALL(solver, DoSolve(_, MatchSolutionHandler()));
@@ -1621,24 +1621,24 @@ TEST(MultiObjTest, NeedAllObjs) {
       h.OnHeader(header);
     }
 
-    static void ExpectUseObj0(fmt::StringRef, NLReader::Handler &h) {
+    static void ExpectUseObj0(fmt::StringRef, NLReader::Handler &h, int) {
       OnHeader(h);
       EXPECT_EQ(0, h.obj_index());
     }
 
-    static void ExpectNeedAllObjs(fmt::StringRef, NLReader::Handler &h) {
+    static void ExpectNeedAllObjs(fmt::StringRef, NLReader::Handler &h, int) {
       OnHeader(h);
       EXPECT_EQ(NLReader::Handler::NEED_ALL_OBJS, h.obj_index());
     }
   };
 
   OutputRedirect redir(stdout);
-  EXPECT_CALL(app.reader(), DoRead(_, _)).
-      WillOnce(testing::Invoke(Test::ExpectUseObj0));
+  EXPECT_CALL(app.reader(), DoRead(_, _, _))
+    .WillOnce(testing::Invoke(Test::ExpectUseObj0));
   app.Run(Args("test", "testproblem"));
 
   app.solver().SetIntOption("multiobj", 1);
-  EXPECT_CALL(app.reader(), DoRead(_, _)).
+  EXPECT_CALL(app.reader(), DoRead(_, _, _)).
       WillOnce(testing::Invoke(Test::ExpectNeedAllObjs));
   app.Run(Args("test", "testproblem"));
 }
@@ -1657,7 +1657,7 @@ struct TestNLReader {
   TestNLReader() : obj_index(0) {}
 
   template <typename NLHandler>
-  void Read(fmt::StringRef, NLHandler &adapter) {
+  void Read(fmt::StringRef, NLHandler &adapter, int) {
     auto header = mp::NLHeader();
     header.num_vars = 1;
     header.num_objs = 2;
@@ -1687,7 +1687,7 @@ TEST(ObjNoTest, UseSecondObj) {
 
 struct TestNLReader2 {
   template <typename NLHandler>
-  void Read(fmt::StringRef, NLHandler &adapter) {
+  void Read(fmt::StringRef, NLHandler &adapter, int) {
     auto header = mp::NLHeader();
     header.num_vars = 1;
     header.num_objs = 2;
