@@ -656,6 +656,15 @@ class ASLHandler : public mp::ProblemBuilderToNLAdapter<ASLBuilder> {
   ColumnSizeHandler OnColumnSizes() {
     return builder().GetColumnSizeHandler();
   }
+
+  typedef ASLBuilder::NumericExprBuilder NumericArgHandler;
+
+  NumericArgHandler BeginSum(int num_args) {
+    return builder().BeginSum(num_args);
+  }
+  NumericExpr EndSum(NumericArgHandler handler) {
+    return builder().EndSum(handler);
+  }
 };
 }
 }  // namespace asl

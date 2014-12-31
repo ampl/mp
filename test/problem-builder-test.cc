@@ -191,8 +191,14 @@ TEST(NLProblemBuilderTest, Forward) {
   EXPECT_FORWARD_RET(EndVarArg, EndIterated, (TestIteratedExprBuilder(ID)),
                      TestNumericExpr(ID2));
 
-  EXPECT_FORWARD_RET(BeginSum, BeginSum, (88), TestNumericExprBuilder(ID));
-  EXPECT_FORWARD_RET(EndSum, EndSum, (TestNumericExprBuilder(ID)),
+  {
+    StrictMock<MockProblemBuilder> builder;
+    EXPECT_CALL(builder, BeginIterated(expr::SUM, 88))
+        .WillOnce(Return(TestIteratedExprBuilder(ID)));
+    mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+    adapter.BeginSum(88);
+  }
+  EXPECT_FORWARD_RET(EndSum, EndIterated, (TestIteratedExprBuilder(ID)),
                      TestNumericExpr(ID2));
 
   EXPECT_FORWARD_RET(BeginCount, BeginCount, (99), TestCountExprBuilder(ID));

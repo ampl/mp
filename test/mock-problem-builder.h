@@ -208,9 +208,6 @@ class MockProblemBuilder {
                IteratedExprBuilder (mp::expr::Kind kind, int num_args));
   MOCK_METHOD1(EndIterated, NumericExpr (IteratedExprBuilder builder));
 
-  MOCK_METHOD1(BeginSum, NumericExprBuilder (int num_args));
-  MOCK_METHOD1(EndSum, NumericExpr (NumericExprBuilder builder));
-
   typedef TestCountExprBuilder CountExprBuilder;
 
   MOCK_METHOD1(BeginCount, CountExprBuilder (int num_args));

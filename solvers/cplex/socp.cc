@@ -291,23 +291,7 @@ class MPToASLExprConverter :
 // Adapts Problem interface for use with .nl reader.
 class ProblemBuilder : public Problem {
  public:
-  typedef IteratedExprBuilder NumericExprBuilder;
-  typedef IteratedExprBuilder VarArgExprBuilder;
   typedef IteratedExprBuilder NumberOfExprBuilder;
-
-  VarArgExprBuilder BeginVarArg(mp::expr::Kind kind, int num_args) {
-    return BeginIterated(kind, num_args);
-  }
-  NumericExpr EndVarArg(VarArgExprBuilder builder) {
-    return EndIterated(builder);
-  }
-
-  NumericExprBuilder BeginSum(int num_args) {
-    return BeginIterated(mp::expr::SUM, num_args);
-  }
-  NumericExpr EndSum(NumericExprBuilder builder) {
-    return EndIterated(builder);
-  }
 
   NumericExpr MakeBinary(
       mp::expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {

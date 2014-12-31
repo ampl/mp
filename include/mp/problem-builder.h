@@ -561,8 +561,6 @@ class ProblemBuilderToNLAdapter {
     return builder_.AddDblSuffix(name, kind, num_values);
   }
 
-  typedef typename ProblemBuilder::NumericExprBuilder NumericArgHandler;
-
   // Receives notification of a numeric constant in a nonlinear expression.
   NumericExpr OnNumericConstant(double value) {
     return builder_.MakeNumericConstant(value);
@@ -627,13 +625,15 @@ class ProblemBuilderToNLAdapter {
     return builder_.EndIterated(handler);
   }
 
+  typedef typename ProblemBuilder::IteratedExprBuilder NumericArgHandler;
+
   // Receives notification of the beginning of a sum expression.
   NumericArgHandler BeginSum(int num_args) {
-    return builder_.BeginSum(num_args);
+    return builder_.BeginIterated(expr::SUM, num_args);
   }
   // Receives notification of the end of a sum expression.
   NumericExpr EndSum(NumericArgHandler handler) {
-    return builder_.EndSum(handler);
+    return builder_.EndIterated(handler);
   }
 
   typedef typename ProblemBuilder::NumberOfExprBuilder NumberOfArgHandler;
