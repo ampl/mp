@@ -850,8 +850,10 @@ class BasicExprFactory : private Alloc {
     return EndIterated<IteratedExpr>(builder);
   }
 
+  typedef IteratedExprBuilder NumberOfExprBuilder;
+
   // Begins building a numberof expression.
-  IteratedExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
+  NumberOfExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
     MP_ASSERT(num_args >= 1, "invalid number of arguments");
     IteratedExprBuilder builder =
         BeginIterated<IteratedExpr>(expr::NUMBEROF, num_args);
@@ -860,7 +862,7 @@ class BasicExprFactory : private Alloc {
   }
 
   // Ends building a numberof expression.
-  IteratedExpr EndNumberOf(IteratedExprBuilder builder) {
+  IteratedExpr EndNumberOf(NumberOfExprBuilder builder) {
     return EndIterated(builder);
   }
 

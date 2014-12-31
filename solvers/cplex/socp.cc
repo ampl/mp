@@ -288,11 +288,9 @@ class MPToASLExprConverter :
   // TODO: convert all expresion kinds
 };
 
-// Adapts Problem interface for use with .nl reader.
-class ProblemBuilder : public Problem {
+// A problem with translation of POW expressions.
+class CustomProblem : public Problem {
  public:
-  typedef IteratedExprBuilder NumberOfExprBuilder;
-
   NumericExpr MakeBinary(
       mp::expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     // Translate a POW expression with right-hand side of 2
@@ -308,7 +306,7 @@ class ProblemBuilder : public Problem {
 
 class SOCPConverter {
  private:
-  ProblemBuilder problem_;
+  CustomProblem problem_;
   ASLBuilder builder_;
   std::vector<int> col_sizes_;
 
@@ -355,7 +353,7 @@ class SOCPConverter {
 };
 
 void SOCPConverter::Run(const char *stub) {
-  mp::ProblemBuilderToNLAdapter<ProblemBuilder> adapter(problem_);
+  mp::ProblemBuilderToNLAdapter<CustomProblem> adapter(problem_);
   ReadNLFile(fmt::format("{}.nl", stub), adapter);
   num_vars_ = problem_.num_vars();
   num_algebraic_cons_ = problem_.num_algebraic_cons();
