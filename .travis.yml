@@ -6,6 +6,7 @@ env:
       PACKAGES="gfortran unixodbc-dev"
       PPAS=""
     - CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=Windows
+                  -DCMAKE_SYSTEM_PROCESSOR=x86_64
                   -DBUILD_SHARED_LIBS:BOOL=ON
                   -DCMAKE_C_COMPILER=/opt/mingw64/bin/x86_64-w64-mingw32-gcc
                   -DCMAKE_CXX_COMPILER=/opt/mingw64/bin/x86_64-w64-mingw32-g++
