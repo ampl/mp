@@ -5,6 +5,7 @@ env:
     - CMAKEFLAGS="-DBUILD=all"
       PACKAGES="gfortran unixodbc-dev"
       PPAS=""
+      TEST_SETUP=""
     - CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=Windows
                   -DCMAKE_SYSTEM_PROCESSOR=x86_64
                   -DBUILD_SHARED_LIBS:BOOL=ON
@@ -15,8 +16,9 @@ env:
                   -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY
                   -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY
                   -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER"
-      PACKAGES="mingw64-x-gcc wine1.7"
+      PACKAGES="mingw64-x-gcc"
       PPAS="tobydox/mingw ubuntu-wine/ppa"
+      TEST_SETUP="sudo apt-get install wine1.7"
 
 # Install newer version of CMake as the one that comes preinstalled on
 # travis-ci doesn't support CMakeAddFortranSubdirectory.
@@ -32,4 +34,5 @@ install:
 script:
   - cmake-2.8.12.2-Linux-i386/bin/cmake $CMAKEFLAGS .
   - make -j3
+  - $TEST_SETUP
   - ctest -V
