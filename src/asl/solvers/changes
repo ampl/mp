@@ -2439,3 +2439,17 @@ free(qpi) to dispose of qpi.
 20141202
   mqpcheckv.c: fix a glitch (missed zeroing of an array element) that
 somehow escaped earlier testing.
+
+20141223
+  mqpcheckv.c: fix a bug (possible invalid free() call) with problems
+where ASL_obj_replace_eq or ASL_obj_replace_ineq matters.
+
+20141229
+ objconst.c:  adjust objconst() to work correctly after qp_read().
+
+20150101
+ funcadd1.c: tweaks to error messages.
+
+20150107
+ funcadd.h: change line 271 from "#ifdef _WIN32" to
+"#if defined(_WIN32) && !defined(__MINGW32__)"; no change to asldate.c.

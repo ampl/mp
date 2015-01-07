@@ -614,7 +614,7 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 	expr *e;
 	expr_n *en;
 	int *cm, *colno, *qm, *rowq, *rowq0, *rowq1, *s, *vmi, *w, *z;
-	int arrays, co0, ftn, i, icol, j, ncol, ncom, nv, nz, pass;
+	int arrays, co0, ftn, i, icol, j, ncol, ncom, nv, nva, nz, pass;
 	ograd *og, *og1, *og2, **ogp;
 	real *L, *U, *delsq, *delsq0, *delsq1, objadj, t, *x;
 	size_t  *colq, *colq1, nelq;
@@ -659,7 +659,10 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 	nv = n_var;
 	ncom = ncom0 + ncom1;
 	if (!(S = *(Static**)vp)) {
-		x = (double *)Malloc(nv*(sizeof(double)
+		i = asl->i.n_var0 + asl->i.nsufext[0];
+		if ((nva = nv) < i)
+			nva = i;
+		x = (double *)Malloc(nva*(sizeof(double)
 					+sizeof(dyad*)
 					+sizeof(ograd*)
 					+sizeof(dispatch*)
@@ -667,7 +670,7 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 					+3*sizeof(int))
 					+ sizeof(Memblock)
 					+ sizeof(Static));
-		mb = (Memblock*)(x + nv);
+		mb = (Memblock*)(x + nva);
 		mb->prev = mb->next = 0;
 		S = (Static*)(mb + 1);
 		*vp = (void*)S;
@@ -676,16 +679,16 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 		s_x = x;
 		S->asl = asl;
 		s_q = q = (dyad**)(S+1);
-		S->oq = (ograd**)(q + nv);
-		S->cdisp = cdisp = (dispatch**)(S->oq + nv);
-		S->cd0 = cd0 = (dispatch*)(cdisp + nv);
-		s_z = z = (int*)(cd0 + nv);
-		s_s = s = z + nv;
-		S->w = (int*)(s + nv);
-		memset(s, 0, nv*sizeof(int));
-		memset(cdisp, 0, nv*sizeof(dispatch*));
-		memset(q, 0, nv*sizeof(dyad *));
-		memset(S->w, 0, nv*sizeof(int));
+		S->oq = (ograd**)(q + nva);
+		S->cdisp = cdisp = (dispatch**)(S->oq + nva);
+		S->cd0 = cd0 = (dispatch*)(cdisp + nva);
+		s_z = z = (int*)(cd0 + nva);
+		s_s = s = z + nva;
+		S->w = (int*)(s + nva);
+		memset(s, 0, nva*sizeof(int));
+		memset(cdisp, 0, nva*sizeof(dispatch*));
+		memset(q, 0, nva*sizeof(dyad *));
+		memset(S->w, 0, nva*sizeof(int));
 		if (ncom) {
 			cterms = (term **)Malloc(ncom*(sizeof(term*)+sizeof(int)));
 			memset(cterms, 0, ncom*sizeof(term*));

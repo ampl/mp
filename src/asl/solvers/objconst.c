@@ -65,7 +65,7 @@ objconst_ASL(ASL *asl, int n)
 		  default:
 			e = (expr_n*)(((ASL_fg*)asl)->I.obj_de_ + n)->e;
 		  }
-		if (e->op == opnum)
+		if (e->op == opnum || e->op == (efunc_n *)f_OPNUM)
 			return e->v;
 		}
 	return 0;

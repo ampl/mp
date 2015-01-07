@@ -1,3 +1,2 @@
-20141202
-  mqpcheckv.c: fix a glitch (missed zeroing of an array element) that
-somehow escaped earlier testing.
+20150101
+ funcadd1.c: tweaks to error messages.

@@ -49,6 +49,17 @@ funcadd(AmplExports *ae)
 #include "string.h"
 #include "funcadd.h"
 #include "arith.h"	/* for X64_bit_pointers */
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifndef S_IFREG /*{*/
+#ifdef __S_IFREG
+#define S_IFREG __S_IFREG
+#define S_IFDIR __S_IFDIR
+#elif defined(_S_IFREG)
+#define S_IFREG _S_IFREG
+#define S_IFDIR _S_IFDIR
+#endif
+#endif /*}*/
 #ifdef X64_bit_pointers
 static char Bits[] = "64", BitsAlt[] = "32";
 #else
@@ -100,6 +111,20 @@ extern const char *i_option_ASL;
 
 static int first = 1;
 
+ static int
+file_kind(const char *name) /* 1 == regular file, 2 ==> directory; else 0 */
+{
+	struct stat sb;
+
+	if (stat(name,&sb))
+		return 0;
+	if (sb.st_mode & S_IFDIR)
+		return 2;
+	if (sb.st_mode & S_IFREG)
+		return 1;
+	return 0;
+	}
+
 #ifdef WIN32
 
 #define SLASH '\\'
@@ -109,7 +134,6 @@ typedef HINSTANCE shl_t;
 #define find_dlsym(a,b,c) (a = (Funcadd*)GetProcAddress(b,c))
 #define dlclose(x) FreeLibrary((HMODULE)x)
 #define NO_DLERROR
-#define reg_file(x) 1
 
  static int
 Abspath(const char *s)
@@ -132,16 +156,6 @@ char afdll[] = "/amplfunc.dll";
 
 #include "unistd.h"	/* for getcwd */
 #define GetCurrentDirectory(a,b) getcwd(b,(int)(a))
-
-#include <sys/types.h>
-#include <sys/stat.h>
-
- static int
-reg_file(const char *name)
-{
-	struct stat sb;
-	return stat(name,&sb) ? 0 : S_ISREG(sb.st_mode);
-	}
 
 #ifdef __hpux
 #include "dl.h"
@@ -241,7 +255,7 @@ dl_open(AmplExports *ae, char *name, int *warned, int *pns)
 #ifdef Old_APPLE
 	NS_pair p;
 #endif
-	d = d0 = 0;
+	d = d0 = dz = 0;
 	for(s = name; *s; ++s)
 		switch(*s) {
 		 case '.':
@@ -254,7 +268,6 @@ dl_open(AmplExports *ae, char *name, int *warned, int *pns)
 			d = 0;
 		 }
 	ns = s - name;
-	dz = 0;
 	if (d
 	 && d - name > 3
 	 && d[-3] == '_') {
@@ -317,16 +330,16 @@ dl_open(AmplExports *ae, char *name, int *warned, int *pns)
 			d = dz = 0;
 			goto tryagain;
 			}
+		if (d0)
+			for(s = d0; (s[0] = s[3]); ++s);
 		if (!warned && (f = fopen(name,"rb"))) {
 			fclose(f);
-			if (reg_file(name)) {
+			if (file_kind(name) == 1) {
 				*warned = 1;
-				if (d0)
-					for(s = d0; (s[0] = s[3]); ++s);
 #ifdef NO_DLERROR
-				fprintf(Stderr, "Cannot load library %s.\n", name);
+				fprintf(Stderr, "Cannot load library \"%s\".\n", name);
 #else
-				fprintf(Stderr, "Cannot load library %s", name);
+				fprintf(Stderr, "Cannot load library \"%s\"", name);
 				cs = dlerror();
 				fprintf(Stderr, cs ? ":\n%s\n" : ".\n", cs);
 #endif
@@ -410,9 +423,15 @@ libload_ASL(AmplExports *ae, const char *s, int ns, int warn)
 	else {
  notfound:
 		rc = rcnf;
-		if (warn)
-			fprintf(Stderr, "Cannot find library %.*s\nor %.*s%s\n",
-				ns, s, ns, s, afdll);
+		if (warn) {
+			buf[nx+ns] = 0;
+			if (file_kind(buf) == 2) {
+				buf[nx+ns] = SLASH;
+				fprintf(Stderr, "Cannot find library \"%s\".\n", buf);
+				}
+			else
+				fprintf(Stderr, "Cannot find library \"%.*s\".\n", ns, s);
+			}
 		}
 	if (buf != buf0)
 		free(buf);
