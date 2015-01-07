@@ -18,7 +18,11 @@ env:
                   -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER"
       PACKAGES="mingw64-x-gcc"
       PPAS="tobydox/mingw ubuntu-wine/ppa"
-      TEST_SETUP="sudo apt-get install wine1.7"
+      TEST_SETUP='if [ -z "$(objdump -p bin/libasl.dll | grep write_sol_ASL)" ]; then
+                    echo ASL symbols not exported;
+                    exit 1;
+                  fi;
+                  sudo apt-get install wine1.7'
 
 # Install newer version of CMake as the one that comes preinstalled on
 # travis-ci doesn't support CMakeAddFortranSubdirectory.
@@ -34,5 +38,5 @@ install:
 script:
   - cmake-2.8.12.2-Linux-i386/bin/cmake $CMAKEFLAGS .
   - make -j3
-  - $TEST_SETUP
+  - eval $TEST_SETUP
   - ctest -V
