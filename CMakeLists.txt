@@ -40,6 +40,7 @@ if (BUILD)
 endif ()
 
 # Checks if the C compiler supports flag and if it does, adds it to the target.
+include(CheckCCompilerFlag)
 function (add_c_compiler_flags target)
   foreach (flag ${ARGN})
     set(check_flag ${flag})
@@ -156,12 +157,7 @@ endmacro()
 
 include_directories(include)
 
-include(CheckCCompilerFlag)
-set(FPIC_FLAG -fPIC)
-check_c_compiler_flag(${FPIC_FLAG} HAVE_FPIC_FLAG)
-if (HAVE_FPIC_FLAG)
-  add_definitions(${FPIC_FLAG})
-endif ()
+set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
 set(MP_DATE 20141202)
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
