@@ -7,8 +7,8 @@ AMPL/MP
 .. image:: https://ci.appveyor.com/api/projects/status/91jw051om9q8pwt9
   :target: https://ci.appveyor.com/project/vitaut/mp
 
-.. image:: https://readthedocs.org/projects/ampl/badge/?version=latest
-   :target: http://mp.readthedocs.org/en/latest/
+.. image:: https://readthedocs.org/projects/ampl/badge/?version=stable
+   :target: http://mp.readthedocs.org/en/stable/
    :alt: Documentation Status
 
 
