@@ -1265,7 +1265,7 @@ TEST(NLTest, ReadConBounds) {
   header.num_algebraic_cons = 1;
   std::string input = fmt::format("r\n5 1 {}\n", INT_MAX);
   using mp::internal::TextReader;
-  TextReader text_reader(input, "(intput");
+  TextReader text_reader(input, "(input");
   typedef mp::internal::NLReader<TextReader, TestNLHandler> NLReader;
   NLReader reader(text_reader, header, handler, 0);
   reader.ReadBounds<NLReader::AlgebraicConHandler>();
