@@ -47,6 +47,9 @@ class TestExpr {};
 
 class MockNLHandler : public mp::NLHandler<TestExpr> {
  public:
+  MOCK_METHOD1(OnHeader, void (const NLHeader &h));
+  MOCK_METHOD3(OnVarBounds, void (int index, double lb, double ub));
+  MOCK_METHOD3(OnObj, void (int index, mp::obj::Type type, NumericExpr expr));
   MOCK_CONST_METHOD1(NeedObj, bool (int obj_index));
   MOCK_METHOD2(OnLinearObjExpr,
                LinearObjHandler (int obj_index, int num_linear_terms));
@@ -1441,5 +1444,17 @@ struct TestNLHandler3 : mp::NLHandler<int> {};
 TEST(NLTest, NLHandler) {
   TestNLHandler3 handler;
   ReadNLString(FormatHeader(MakeHeader()) + "C0\nn4.2\n", handler);
+}
+
+TEST(NLTest, ReadBoundsFirst) {
+  MockNLHandler handler;
+  testing::InSequence dummy;
+  EXPECT_CALL(handler, OnHeader(_));
+  EXPECT_CALL(handler, OnVarBounds(0, 1, 2));
+  EXPECT_CALL(handler, OnObj(_, _, _));
+  auto header = NLHeader();
+  header.num_vars = header.num_objs = 1;
+  ReadNLString(FormatHeader(header, false) + "O0 0\no2\nv0\nv0\nb\n0 1 2\n",
+               handler, "", mp::READ_BOUNDS_FIRST);
 }
 }  // namespace
