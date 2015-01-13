@@ -129,18 +129,34 @@ inline bool IsIEEE(arith::Kind k) {
 }  // namespace arith
 
 /**
-  An NL file header.
+  \rst
+  An NL `header <http://en.wikipedia.org/wiki/Header_(computing)>`_
+  which contains information about problem dimensions, such as the number of
+  variables and constraints, and the input format.
+  \endrst
  */
 struct NLHeader : ProblemInfo {
-  // .nl file format.
-  enum Format { TEXT = 0, BINARY = 1 };
+  /**
+    Input format
+   */
+  enum Format {
+    TEXT = 0,  ///< Text format
+    BINARY = 1 ///< Binary format
+  };
   Format format;
 
+  /**
+    The number of options
+   */
   int num_options;
+
+  /**
+    Options
+   */
   int options[MAX_NL_OPTIONS];
 
   /**
-    Extra info for writing solution.
+    Extra info for writing solution
    */
   double ampl_vbtol;
 
@@ -148,12 +164,12 @@ struct NLHeader : ProblemInfo {
     Floating-point arithmetic kind used with binary format to check
     if an .nl file is written using a compatible representation of
     floating-point numbers. It is not used with text format and normally
-    set to arith::UNKNOWN there.
+    set to ``arith::UNKNOWN`` there.
    */
   arith::Kind arith_kind;
 
   /**
-    Flags: 1 = want output suffixes.
+    Flags: 1 = want output suffixes
    */
   int flags;
 
