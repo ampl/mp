@@ -1795,6 +1795,9 @@ void ReadBinary(TextReader &reader, const NLHeader &header,
   Reads an optimization problem in the NL format from the string *str*
   and sends notifications of the problem components to the *handler* object.
   The *name* argument is used as the name of the input when reporting errors.
+  Both *str* and *name* can be C strings or ``std::string`` objects.
+  *flags* can be either 0, which is the default, or ``READ_BOUNDS_FIRST`` to
+  read the variable bounds before other constructs such as nonlinear expressions.
  */
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
@@ -1826,6 +1829,9 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
 /**
   Reads an optimization problem in the NL format from the file *filename*
   and sends notifications of the problem components to the *handler* object.
+  *filename* can be a C string or an ``std::string`` object. *flags* can be
+  either 0, which is the default, or ``READ_BOUNDS_FIRST`` to read the
+  variable bounds before other constructs such as nonlinear expressions.
  */
 template <typename Handler>
 inline void ReadNLFile(fmt::StringRef filename,
