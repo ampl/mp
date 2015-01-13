@@ -7,7 +7,7 @@ Support for the NL Format
 continuous variables. It is described in the technical report `Writing .nl Files
 <https://cfwebprod.sandia.gov/cfdocs/CompResearch/docs/nlwrite20051130.pdf>`_.
 
-The `nl format <https://en.wikipedia.org/wiki/Nl_(format)>`_ supports a wide
+The `NL format <https://en.wikipedia.org/wiki/Nl_(format)>`_ supports a wide
 range of problem types including but not limited to the following areas of
 optimization:
 
