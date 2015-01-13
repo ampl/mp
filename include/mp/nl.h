@@ -1792,12 +1792,17 @@ void ReadBinary(TextReader &reader, const NLHeader &header,
 }  // namespace internal
 
 /**
+  \rst
   Reads an optimization problem in the NL format from the string *str*
   and sends notifications of the problem components to the *handler* object.
-  The *name* argument is used as the name of the input when reporting errors.
+  
   Both *str* and *name* can be C strings or ``std::string`` objects.
-  *flags* can be either 0, which is the default, or ``READ_BOUNDS_FIRST`` to
-  read the variable bounds before other constructs such as nonlinear expressions.
+  The *name* argument is used as the name of the input when reporting errors.
+  *flags* can be either 0, which is the default, to read all constructs in
+  the order they appear in the input, or ``READ_BOUNDS_FIRST`` to read
+  variable bounds after the NL header and before other constructs such as
+  nonlinear expressions.
+  \endrst
  */
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
@@ -1827,11 +1832,16 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
 }
 
 /**
+  \rst
   Reads an optimization problem in the NL format from the file *filename*
   and sends notifications of the problem components to the *handler* object.
-  *filename* can be a C string or an ``std::string`` object. *flags* can be
-  either 0, which is the default, or ``READ_BOUNDS_FIRST`` to read the
-  variable bounds before other constructs such as nonlinear expressions.
+
+  The *filename* argument can be a C string or an ``std::string`` object.
+  *flags* can be either 0, which is the default, to read all constructs in
+  the order they appear in the input, or ``READ_BOUNDS_FIRST`` to read
+  variable bounds after the NL header and before other constructs such as
+  nonlinear expressions.
+  \endrst
  */
 template <typename Handler>
 inline void ReadNLFile(fmt::StringRef filename,
