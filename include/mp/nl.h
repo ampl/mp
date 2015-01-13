@@ -1841,6 +1841,21 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
   the order they appear in the input, or ``READ_BOUNDS_FIRST`` to read
   variable bounds after the NL header and before other constructs such as
   nonlinear expressions.
+  
+  **Example**
+  ::
+    // Count the number of variable references in all nonlinear expressions.
+    struct VarCounter : mp::NLHandler<int> {
+      int num_vars;
+      VarCounter() : num_vars(0) {}
+      Reference OnVariableRef(int) {
+        ++num_vars;
+        return Reference();
+      }
+    };
+    VarCounter counter;
+    mp::ReadNLFile("test.nl", counter);
+    fmt::print("The number of variable references is {}.", counter.num_vars);
   \endrst
  */
 template <typename Handler>

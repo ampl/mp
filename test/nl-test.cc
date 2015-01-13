@@ -1457,4 +1457,23 @@ TEST(NLTest, ReadBoundsFirst) {
   ReadNLString(FormatHeader(header, false) + "O0 0\no2\nv0\nv0\nb\n0 1 2\n",
                handler, "", mp::READ_BOUNDS_FIRST);
 }
+
+// Count the number of variable references in all nonlinear expressions.
+struct VarCounter : mp::NLHandler<int> {
+  int num_vars;
+  VarCounter() : num_vars(0) {}
+  Reference OnVariableRef(int) {
+    ++num_vars;
+    return Reference();
+  }
+};
+
+TEST(NLTest, Example) {
+  WriteFile("test.nl", FormatHeader(MakeHeader()) + "O0 0\no2\nv0\nv0\n");
+  VarCounter counter;
+  mp::ReadNLFile("test.nl", counter);
+  EXPECT_WRITE(stdout, fmt::print("The number of variable references is {}.",
+                                  counter.num_vars),
+               "The number of variable references is 2.");
+}
 }  // namespace
