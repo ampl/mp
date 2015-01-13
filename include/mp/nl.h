@@ -1,7 +1,7 @@
 /*
- nl format support
+ NL format support
 
- nl is a format for representing optimization problems such as linear,
+ NL is a format for representing optimization problems such as linear,
  quadratic, nonlinear, complementarity and constraint programming problems
  in discrete or continuous variables. It is described in the technical report
  "Writing .nl Files" (http://www.cs.sandia.gov/~dmgay/nlwrite.pdf).
@@ -129,7 +129,7 @@ inline bool IsIEEE(arith::Kind k) {
 }  // namespace arith
 
 /**
-  An nl file header.
+  An NL file header.
  */
 struct NLHeader : ProblemInfo {
   // .nl file format.
@@ -168,7 +168,7 @@ struct NLHeader : ProblemInfo {
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 
 /**
-  A basic nl handler that ignores all input.
+  A basic NL handler that ignores all input.
 
   NLHandler can be used as a base class for other handlers. Subclasses
   only need to redefine methods that handle constructs they are interested
@@ -221,7 +221,7 @@ class NLHandler {
   typedef Expr Reference;
 
   /**
-    Receives notification of an nl header.
+    Receives notification of an NL header.
    */
   void OnHeader(const NLHeader &h) { MP_UNUSED(h); }
 
@@ -1792,7 +1792,7 @@ void ReadBinary(TextReader &reader, const NLHeader &header,
 }  // namespace internal
 
 /**
-  Reads an optimization problem in the nl format from the string *str*
+  Reads an optimization problem in the NL format from the string *str*
   and sends notifications of the problem components to the *handler* object.
   The *name* argument is used as the name of the input when reporting errors.
  */
@@ -1824,7 +1824,7 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
 }
 
 /**
-  Reads an optimization problem in the nl format from the file *filename*
+  Reads an optimization problem in the NL format from the file *filename*
   and sends notifications of the problem components to the *handler* object.
  */
 template <typename Handler>

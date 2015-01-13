@@ -1,9 +1,9 @@
 .. cpp:namespace:: mp
 
-Support for the nl Format
+Support for the NL Format
 =========================
 
-**nl** is a format for representing optimization problems in discrete or
+**NL** is a format for representing optimization problems in discrete or
 continuous variables. It is described in the technical report `Writing .nl Files
 <https://cfwebprod.sandia.gov/cfdocs/CompResearch/docs/nlwrite20051130.pdf>`_.
 
@@ -25,15 +25,15 @@ optimization:
   (MPECs) in discrete or continuous variables
 * `Constraint programming <http://en.wikipedia.org/wiki/Constraint_programming>`_
 
-This section describes the C++ API of an nl reader which is
+This section describes the C++ API of an NL reader which is
 
-* Reusable: the reader can be used to process nl files in different ways
+* Reusable: the reader can be used to process NL files in different ways
   and not limited to a single problem representation
 * High performance: fast `mmap <http://en.wikipedia.org/wiki/Mmap>`_-based reader
   with `SAX <http://en.wikipedia.org/wiki/Simple_API_for_XML>`_-like API and no
   dynamic memory allocations in the common case
 * Easy to use: clean, modern code base and simple API
-* Complete: supports all nl constructs including extensions implemented in
+* Complete: supports all NL constructs including extensions implemented in
   AMPL Solver Library
 * Reliable: extensively and continuously tested on a variety of platforms
 
