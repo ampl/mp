@@ -5,42 +5,8 @@ os:
   - osx
 
 env:
-  matrix:
-    - CMAKEFLAGS="-DBUILD=all"
-      PACKAGES="gfortran unixodbc-dev"
-      PPAS=""
-      TEST_SETUP=""
-    - CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=Windows
-                  -DCMAKE_SYSTEM_PROCESSOR=x86_64
-                  -DBUILD_SHARED_LIBS:BOOL=ON
-                  -DCMAKE_C_COMPILER=/opt/mingw64/bin/x86_64-w64-mingw32-gcc
-                  -DCMAKE_CXX_COMPILER=/opt/mingw64/bin/x86_64-w64-mingw32-g++
-                  -DCMAKE_RC_COMPILER=/opt/mingw64/bin/x86_64-w64-mingw32-windres
-                  -DCMAKE_FIND_ROOT_PATH=/opt/mingw64
-                  -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY
-                  -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY
-                  -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER"
-      PACKAGES="mingw64-x-gcc"
-      PPAS="tobydox/mingw ubuntu-wine/ppa"
-      TEST_SETUP='if [ -z "$(objdump -p bin/libasl.dll | grep write_sol_ASL)" ]; then
-                    echo ASL symbols not exported;
-                    exit 1;
-                  fi;
-                  sudo apt-get install wine1.7'
-
-# Install newer version of CMake as the one that comes preinstalled on
-# travis-ci doesn't support CMakeAddFortranSubdirectory.
-before_install:
-  - wget http://www.cmake.org/files/v2.8/cmake-2.8.12.2-Linux-i386.tar.gz
-
-install:
-  - tar xzf cmake-2.8.12.2-Linux-i386.tar.gz
-  - for i in $PPAS; do sudo add-apt-repository ppa:$i -y; done
-  - sudo apt-get update
-  - sudo apt-get install libc6:i386 $PACKAGES
+  - BUILD=native
+  - BUILD=cross
 
 script:
-  - cmake-2.8.12.2-Linux-i386/bin/cmake $CMAKEFLAGS .
-  - make -j3
-  - eval $TEST_SETUP
-  - ctest -V
+  - support/travis-build.py $TRAVIS_OS_NAME $BUILD
