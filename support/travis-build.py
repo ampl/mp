@@ -31,7 +31,7 @@ if build == 'cross':
 os_name = os.environ['TRAVIS_OS_NAME']
 if os_name == 'linux':
   check_call(['sudo', 'apt-get', 'update'])
-  check_call(['sudo', 'apt-get', 'install', 'libc6:i386'] + packages)
+  check_call(['sudo', 'apt-get', 'install', 'libc6:i386'] + ubuntu_packages)
   cmake_package = 'cmake-2.8.12.2-Linux-i386.tar.gz'
 else:
   cmake_package = 'cmake-2.8.12.2-Darwin-universal.tar.gz'
