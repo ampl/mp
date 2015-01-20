@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Set up a build environment on Travis.
 
-from __future__import print_function
+from __future__ import print_function
 import os, tarfile
 from bootstrap import bootstrap
 from contextlib import closing
