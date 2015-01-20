@@ -8,5 +8,10 @@ env:
   - BUILD=native
   - BUILD=cross
 
+matrix:
+  exclude:
+    - os: osx
+    - env: BUILD=cross
+
 script:
   - support/travis-build.py
