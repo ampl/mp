@@ -46,7 +46,7 @@ check_call(['make', '-j3'])
 # Install test dependencies.
 if build == 'cross':
   check_call(['sudo', 'apt-get', 'install', 'wine1.7'])
-  if check_output(['objdump', '-p', 'bin/libasl.dll']).find('write_sol_ASL') >= 0:
+  if check_output(['objdump', '-p', 'bin/libasl.dll']).find('write_sol_ASL') < 0:
     print('ASL symbols not exported')
     exit(1)
 
