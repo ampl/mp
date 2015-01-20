@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Set up a build environment on Travis.
 
-import os
+import os, tarfile
 from contextlib import closing
 from download import Downloader
 from subprocess import check_call
