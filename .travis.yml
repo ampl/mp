@@ -9,4 +9,4 @@ env:
   - BUILD=cross
 
 script:
-  - support/travis-build.py $TRAVIS_OS_NAME $BUILD
+  - support/travis-build.py
