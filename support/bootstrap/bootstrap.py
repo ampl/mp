@@ -74,25 +74,29 @@ def add_to_path(path, linkname=None, isdir=False):
   create_symlink(path, linkname)
 
 # Downloads and installs CMake.
-# filename: The name of a CMake archive,
+# package: The name of a CMake package,
 # e.g. 'cmake-2.8.12.2-Linux-i386.tar.gz'.
-def install_cmake(filename):
-  if installed('cmake'):
+def install_cmake(package, **kwargs):
+  if kwargs.get('check_installed', True) and installed('cmake'):
     return
   dir, version, minor = re.match(
-    r'(cmake-(\d+\.\d+)\.(\d+).*-[^\.]+)\..*', filename).groups()
+    r'(cmake-(\d+\.\d+)\.(\d+).*-[^\.]+)\..*', package).groups()
   # extractall overwrites existing files, so no need to prepare the
   # destination.
-  url = 'http://www.cmake.org/files/v{0}/{1}'.format(version, filename)
-  with download(url) as f:
-    iszip = filename.endswith('zip')
+  url = 'http://www.cmake.org/files/v{0}/{1}'.format(version, package)
+  install_dir = kwargs.get('install_dir', opt_dir)
+  with Downloader(kwargs.get('download_dir', '.')).download(url) as f:
+    iszip = package.endswith('zip')
     with zipfile.ZipFile(f) if iszip \
          else closing(tarfile.open(f, 'r:gz')) as archive:
-      archive.extractall(opt_dir)
-  dir = os.path.join(opt_dir, dir)
+      archive.extractall(install_dir)
+  dir = os.path.join(install_dir, dir)
   if platform.system() == 'Darwin':
     dir = glob.glob(os.path.join(dir, 'CMake*.app', 'Contents'))[0]
-  add_to_path(os.path.join(dir, 'bin', 'cmake'))
+  cmake_path = os.path.join(dir, 'bin', 'cmake')
+  if install_dir != '.':
+    add_to_path(cmake_path)
+  return cmake_path
 
 # Install f90cache.
 def install_f90cache():

@@ -2,8 +2,8 @@
 # Set up a build environment on Travis.
 
 import os, tarfile
+from bootstrap import bootstrap
 from contextlib import closing
-from download import Downloader
 from subprocess import check_call
 
 cmake_flags = ['-DBUILD=all']
@@ -37,14 +37,15 @@ os_name = os.environ['TRAVIS_OS_NAME']
 if os_name == 'linux':
   check_call(['sudo', 'apt-get', 'update'])
   check_call(['sudo', 'apt-get', 'install', 'libc6:i386'] + packages)
+  cmake_package = 'cmake-2.8.12.2-Linux-i386.tar.gz'
+else:
+  cmake_package = 'cmake-2.8.12.2-Darwin-universal.tar.gz'
 
 # Install newer version of CMake.
-with Downloader().download('http://www.cmake.org/files/v2.8/cmake-2.8.12.2-Linux-i386.tar.gz') as f:
-  with closing(tarfile.open(f, 'r:gz')) as archive:
-    archive.extractall('.')
+cmake_path = bootstrap.install_cmake(
+  cmake_package, check_installed=False, download_dir=None, install_dir='.')
 
-# TODO: download and extract cmake
-check_call(['cmake'] + cmake_flags + ['.'])
+check_call([cmake_path] + cmake_flags + ['.'])
 check_call(['make', '-j3'])
   
 '''      
