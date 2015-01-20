@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # Set up a build environment on Travis.
 
+from __future__import print_function
 import os, tarfile
 from bootstrap import bootstrap
 from contextlib import closing
-from subprocess import check_call
+from subprocess import check_call, check_output
 
 cmake_flags = ['-DBUILD=all']
 ubuntu_packages = ['gfortran', 'unixodbc-dev']
@@ -25,14 +26,8 @@ if build == 'cross':
   ubuntu_packages = ['mingw64-x-gcc']
   for ppa in ['tobydox/mingw', 'ubuntu-wine/ppa']:
     check_call(['sudo', 'add-apt-repository', 'ppa:' + ppa, '-y'])
-  '''
-      TEST_SETUP='if [ -z "$(objdump -p bin/libasl.dll | grep write_sol_ASL)" ]; then
-                    echo ASL symbols not exported;
-                    exit 1;
-                  fi;
-                  sudo apt-get install wine1.7'
-  '''
 
+# Install dependencies.
 os_name = os.environ['TRAVIS_OS_NAME']
 if os_name == 'linux':
   check_call(['sudo', 'apt-get', 'update'])
@@ -47,11 +42,13 @@ cmake_path = bootstrap.install_cmake(
 
 check_call([cmake_path] + cmake_flags + ['.'])
 check_call(['make', '-j3'])
-  
-'''      
-      TEST_SETUP=""
 
-install:
-  - eval $TEST_SETUP
-  - ctest -V
-'''
+# Install test dependencies.
+if build == 'cross':
+  check_call(['sudo', 'apt-get', 'install', 'wine1.7'])
+  check_output(['objdump', '-p', 'bin/libasl.dll']).find('write_sol_ASL') >= 0:
+    print('ASL symbols not exported')
+    exit(1)
+
+# Run tests.
+check_call(['ctest', '-V'])
