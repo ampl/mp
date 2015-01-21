@@ -15,14 +15,6 @@ def install_pkg(filename):
   print('Installing', filename)
   check_call(['installer', '-pkg', filename, '-target', '/'])
 
-# Installs a package from a .dmg file.
-def install_dmg(filename):
-  dir = tempfile.mkdtemp()
-  check_call(['hdiutil', 'attach', filename, '-mountpoint', dir])
-  install_pkg(glob.glob(dir + '/*pkg')[0])
-  check_call(['hdiutil', 'detach', dir])
-  os.rmdir(dir)
-
 # Install command-line tools for Xcode.
 if not installed('clang'):
   with download(

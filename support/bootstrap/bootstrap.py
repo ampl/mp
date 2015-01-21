@@ -190,4 +190,12 @@ def copy_optional_dependencies(platform):
       if not os.path.exists(dest):
         shutil.copytree(src, dest, symlinks=True)
 
+# Installs a package from a .dmg file.
+def install_dmg(filename):
+  dir = tempfile.mkdtemp()
+  check_call(['hdiutil', 'attach', filename, '-mountpoint', dir])
+  install_pkg(glob.glob(dir + '/*pkg')[0])
+  check_call(['hdiutil', 'detach', dir])
+  os.rmdir(dir)
+
 LOCALSOLVER_VERSION = '4_5_20140718'
