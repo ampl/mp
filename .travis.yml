@@ -1,5 +1,4 @@
-# Set language to "java" to make sure that JRE is installed.
-language: java
+language: c++
 
 os:
   - linux
@@ -15,4 +14,6 @@ matrix:
       env: BUILD=cross
 
 script:
+  - java -version
+  - exit 1
   - support/travis-build.py
