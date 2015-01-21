@@ -10,11 +10,6 @@ vagrant = bootstrap_init()
 
 install_cmake('cmake-3.0.1-Darwin64-universal.tar.gz')
 
-# Installs an OS X package.
-def install_pkg(filename):
-  print('Installing', filename)
-  check_call(['installer', '-pkg', filename, '-target', '/'])
-
 # Install command-line tools for Xcode.
 if not installed('clang'):
   with download(

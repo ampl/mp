@@ -190,6 +190,11 @@ def copy_optional_dependencies(platform):
       if not os.path.exists(dest):
         shutil.copytree(src, dest, symlinks=True)
 
+# Installs an OS X package.
+def install_pkg(filename):
+  print('Installing', filename)
+  check_call(['installer', '-pkg', filename, '-target', '/'])
+
 # Installs a package from a .dmg file.
 def install_dmg(filename):
   dir = tempfile.mkdtemp()
