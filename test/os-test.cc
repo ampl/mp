@@ -296,9 +296,9 @@ TEST(MemoryMappedFileTest, CloseFile) {
     // Running lsof with filename failed, so check the full lsof output instead.
     ExecuteShellCommand("lsof > out", false);
     std::string line;
-    std::ifstream out("out");
+    std::ifstream ifs("out");
     bool found = false;
-    while (std::getline(out, line)) {
+    while (std::getline(ifs, line)) {
       if (line.find(path) != std::string::npos) {
         if (line.find(MEM) != string::npos)
           found = true;
