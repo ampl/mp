@@ -39,7 +39,7 @@ else:
   # http://bugs.java.com/bugdatabase/view_bug.do?bug_id=7131356.
   java_url = 'http://support.apple.com/downloads/DL1572/en_US/JavaForOSX2014-001.dmg'
   with Downloader().download(java_url) as f:
-    install_dmg(f)
+    bootstrap.install_dmg(f)
   cmake_package = 'cmake-2.8.12.2-Darwin-universal.tar.gz'
 
 # Install newer version of CMake.
