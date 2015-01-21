@@ -1,4 +1,5 @@
-language: cpp
+# Set language to "java" to make sure that JRE is installed.
+language: java
 
 os:
   - linux
