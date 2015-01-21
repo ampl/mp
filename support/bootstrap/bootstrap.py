@@ -193,7 +193,7 @@ def copy_optional_dependencies(platform):
 # Installs an OS X package.
 def install_pkg(filename):
   print('Installing', filename)
-  check_call(['installer', '-pkg', filename, '-target', '/'])
+  check_call(['sudo', 'installer', '-pkg', filename, '-target', '/'])
 
 # Installs a package from a .dmg file.
 def install_dmg(filename):
