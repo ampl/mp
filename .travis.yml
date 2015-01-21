@@ -14,6 +14,4 @@ matrix:
       env: BUILD=cross
 
 script:
-  - java -version
-  - exit 1
   - support/travis-build.py
