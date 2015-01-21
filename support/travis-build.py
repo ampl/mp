@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Set up a build environment on Travis.
+# Build the project on Travis CI.
 
 from __future__ import print_function
 import os, tarfile
