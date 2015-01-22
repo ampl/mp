@@ -140,8 +140,8 @@ struct NLHeader : ProblemInfo {
     Input format
    */
   enum Format {
-    TEXT = 0,  ///< Text format
-    BINARY = 1 ///< Binary format
+    TEXT   = 0, ///< Text format
+    BINARY = 1  ///< Binary format
   };
   Format format;
 
@@ -202,18 +202,18 @@ class NLHandler {
 
   /**
     \rst
-    A numeric expression type. It is an alias to :type:`Expr` in
-    :class:`NLHandler` but subclasses may define it as a different type
-    convertible to :type:`Expr`.
+    A numeric expression type. It is an alias to :type:`Expr <mp::NLHandler::Expr>`
+    but subclasses may define it as a different type convertible to
+    :type:`Expr <mp::NLHandler::Expr>`.
     \endrst
    */
   typedef Expr NumericExpr;
 
   /**
     \rst
-    A logical expression type. It is an alias to :type:`Expr` in
-    :class:`NLHandler` but subclasses may define it as a different type
-    convertible to :type:`Expr`.
+    A logical expression type. It is an alias to :type:`Expr <mp::NLHandler::Expr>`
+    but subclasses may define it as a different type convertible to
+    :type:`Expr <mp::NLHandler::Expr>`.
     \endrst
    */
   typedef Expr LogicalExpr;
