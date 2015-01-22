@@ -40,15 +40,14 @@ Features
 * Interface to `Sulum <https://github.com/ampl/mp/tree/master/solvers/sulum>`_
   LP and MIP solver
 
+* Interfaces to COIN-OR Solvers (in the `ampl/coin <https://github.com/ampl/coin>`_ repository):
+  - Clp
+  - Cbc
+  - Ipopt
+  - Bonmin
+  - Couenne
+
 * Interfaces to other solvers via AMPL Solver Library
-
-  `COIN-OR solvers <https://github.com/ampl/coin>`_:
-
-  * Clp
-  * Cbc
-  * Ipopt
-  * Bonmin
-  * Couenne
 
 * Cross-platform build support with `CMake <http://www.cmake.org/>`_ and
   continuous integration systems. This includes third-party solvers and
