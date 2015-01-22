@@ -202,8 +202,9 @@ class NLHandler {
 
   /**
     \rst
-    A numeric expression type. It is an alias to :type:`Expr <mp::NLHandler::Expr>`
-    but subclasses may define it as a different type convertible to
+    A numeric expression type.
+    It is an alias to :type:`Expr <mp::NLHandler::Expr>` but
+    subclasses may define it as a different type convertible to
     :type:`Expr <mp::NLHandler::Expr>`.
     \endrst
    */
@@ -211,8 +212,9 @@ class NLHandler {
 
   /**
     \rst
-    A logical expression type. It is an alias to :type:`Expr <mp::NLHandler::Expr>`
-    but subclasses may define it as a different type convertible to
+    A logical expression type.
+    It is an alias to :type:`Expr <mp::NLHandler::Expr>` but
+    subclasses may define it as a different type convertible to
     :type:`Expr <mp::NLHandler::Expr>`.
     \endrst
    */
@@ -220,18 +222,20 @@ class NLHandler {
 
   /**
     \rst
-    A count expression type. It is an alias to :type:`Expr` in
-    :class:`NLHandler` but subclasses may define it as a different type
-    convertible to :type:`NumericExpr`.
+    A count expression type.
+    It is an alias to :type:`Expr <mp::NLHandler::Expr>` but
+    subclasses may define it as a different type convertible to
+    :type:`Expr <mp::NLHandler::NumericExpr>`.
     \endrst
    */
   typedef Expr CountExpr;
 
   /**
     \rst
-    A reference expression type. It is an alias to :type:`Expr` in
-    :class:`NLHandler` but subclasses may define it as a different type
-    convertible to :type:`NumericExpr`.
+    A reference expression type.
+    It is an alias to :type:`Expr <mp::NLHandler::Expr>` but
+    subclasses may define it as a different type convertible to
+    :type:`Expr <mp::NLHandler::NumericExpr>`.
     \endrst
    */
   typedef Expr Reference;
