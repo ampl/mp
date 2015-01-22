@@ -225,7 +225,7 @@ class NLHandler {
     A count expression type.
     It is an alias to :type:`Expr <mp::NLHandler::Expr>` but
     subclasses may define it as a different type convertible to
-    :type:`Expr <mp::NLHandler::NumericExpr>`.
+    :type:`NumericExpr <mp::NLHandler::NumericExpr>`.
     \endrst
    */
   typedef Expr CountExpr;
@@ -235,7 +235,7 @@ class NLHandler {
     A reference expression type.
     It is an alias to :type:`Expr <mp::NLHandler::Expr>` but
     subclasses may define it as a different type convertible to
-    :type:`Expr <mp::NLHandler::NumericExpr>`.
+    :type:`NumericExpr <mp::NLHandler::NumericExpr>`.
     \endrst
    */
   typedef Expr Reference;
