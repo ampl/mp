@@ -41,6 +41,7 @@ Features
   LP and MIP solver
 
 * Interfaces to COIN-OR Solvers (in the `ampl/coin <https://github.com/ampl/coin>`_ repository):
+
   - Clp
   - Cbc
   - Ipopt
