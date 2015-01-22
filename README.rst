@@ -42,6 +42,14 @@ Features
 
 * Interfaces to other solvers via AMPL Solver Library
 
+  `COIN-OR solvers <https://github.com/ampl/coin>`_:
+
+  * Clp
+  * Cbc
+  * Ipopt
+  * Bonmin
+  * Couenne
+
 * Cross-platform build support with `CMake <http://www.cmake.org/>`_ and
   continuous integration systems. This includes third-party solvers and
   libraries (COIN-OR solvers with CMake support are available in the
