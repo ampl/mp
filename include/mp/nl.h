@@ -115,8 +115,10 @@ enum Kind {
   UNKNOWN = 0,
 
   /**
-    Standard `IEEE-754 <http://en.wikipedia.org/wiki/IEEE_floating_point>`_
-    floating point - little endian
+    \rst
+    Standard `IEEE-754 floating point
+    <http://en.wikipedia.org/wiki/IEEE_floating_point>`_ - little endian
+    \endrst
    */
   IEEE_LITTLE_ENDIAN = 1,
 
@@ -124,8 +126,10 @@ enum Kind {
   IEEE_BIG_ENDIAN = 2,
 
   /**
+    \rst
     `IBM floating point
     <http://en.wikipedia.org/wiki/IBM_Floating_Point_Architecture>`_
+    \endrst
    */
   IBM = 3,
 
