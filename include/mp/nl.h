@@ -107,12 +107,11 @@ enum {
 };
 
 namespace arith {
-// Floating-point arithmetic kind.
+/** Floating-point arithmetic kind */
 enum Kind {
-  UNKNOWN            = 0,
-  // Standard IEEE-754 floating-point:
-  IEEE_LITTLE_ENDIAN = 1,
-  IEEE_BIG_ENDIAN    = 2,
+  UNKNOWN            = 0, ///< Unknown arithmetic
+  IEEE_LITTLE_ENDIAN = 1, ///< Standard IEEE-754 floating-point - little endian
+  IEEE_BIG_ENDIAN    = 2, ///< Standard IEEE-754 floating-point - big endian
   // Historical floating-point formats:
   IBM                = 3,
   VAX                = 4,
@@ -156,7 +155,7 @@ struct NLHeader : ProblemInfo {
   int options[MAX_NL_OPTIONS];
 
   /**
-    Extra info for writing solution
+    Extra info for writing a solution
    */
   double ampl_vbtol;
 
