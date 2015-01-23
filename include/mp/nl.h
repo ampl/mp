@@ -159,28 +159,20 @@ inline bool IsIEEE(arith::Kind k) {
   \endrst
  */
 struct NLHeader : ProblemInfo {
-  /**
-    Input format
-   */
+  /** Input format */
   enum Format {
     TEXT   = 0, ///< Text format
     BINARY = 1  ///< Binary format
   };
   Format format;
 
-  /**
-    The number of options
-   */
+  /** The number of options */
   int num_options;
 
-  /**
-    Options
-   */
+  /** Options */
   int options[MAX_NL_OPTIONS];
 
-  /**
-    Extra info for writing a solution
-   */
+  /** Extra info for writing a solution */
   double ampl_vbtol;
 
   /**
@@ -191,9 +183,7 @@ struct NLHeader : ProblemInfo {
    */
   arith::Kind arith_kind;
 
-  /**
-    Flags: 1 = want output suffixes
-   */
+  /** Flags: 1 = want output suffixes */
   int flags;
 
   NLHeader()
@@ -218,9 +208,7 @@ class NLHandler {
  public:
   virtual ~NLHandler() {}
 
-  /**
-    An expression type.
-   */
+  /** An expression type. */
   typedef ExprType Expr;
 
   /**
@@ -263,14 +251,10 @@ class NLHandler {
    */
   typedef Expr Reference;
 
-  /**
-    Receives notification of an NL header.
-   */
+  /** Receives notification of an NL header. */
   void OnHeader(const NLHeader &h) { MP_UNUSED(h); }
 
-  /**
-    Returns true if the objective with index *obj_index* should be handled.
-   */
+  /** Returns true if the objective with index *obj_index* should be handled. */
   bool NeedObj(int obj_index) const {
     MP_UNUSED(obj_index);
     return true;
@@ -292,9 +276,7 @@ class NLHandler {
     MP_UNUSED2(index, expr);
   }
 
-  /**
-    Receives notification of a logical constraint expression.
-   */
+  /** Receives notification of a logical constraint expression. */
   void OnLogicalCon(int index, LogicalExpr expr) {
     MP_UNUSED2(index, expr);
   }
@@ -319,17 +301,13 @@ class NLHandler {
     return LinearExprHandler();
   }
 
-  /**
-    Receives notification of the end of a common expression.
-   */
+  /** Receives notification of the end of a common expression. */
   void EndCommonExpr(LinearExprHandler handler,
                      NumericExpr expr, int position) {
     MP_UNUSED3(handler, expr, position);
   }
 
-  /**
-    Receives notification of a complementarity relation.
-   */
+  /** Receives notification of a complementarity relation. */
   void OnComplement(int con_index, int var_index, int flags) {
     MP_UNUSED3(con_index, var_index, flags);
   }
@@ -340,9 +318,7 @@ class NLHandler {
    */
   typedef LinearExprHandler LinearObjHandler;
 
-  /**
-    Receives notification of the linear part of an objective expression.
-   */
+  /** Receives notification of the linear part of an objective expression. */
   LinearObjHandler OnLinearObjExpr(int obj_index, int num_linear_terms) {
     MP_UNUSED2(obj_index, num_linear_terms);
     return LinearObjHandler();
@@ -354,46 +330,34 @@ class NLHandler {
    */
   typedef LinearExprHandler LinearConHandler;
 
-  /**
-    Receives notification of the linear part of a constraint expression.
-   */
+  /** Receives notification of the linear part of a constraint expression. */
   LinearConHandler OnLinearConExpr(int con_index, int num_linear_terms) {
     MP_UNUSED2(con_index, num_linear_terms);
     return LinearConHandler();
   }
 
-  /**
-    Receives notification of the linear part of a common expression.
-   */
+  /** Receives notification of the linear part of a common expression. */
   LinearExprHandler OnLinearCommonExpr(int var_index, int num_linear_terms) {
     MP_UNUSED2(var_index, num_linear_terms);
     return LinearExprHandler();
   }
 
-  /**
-    Receives notification of variable bounds.
-   */
+  /** Receives notification of variable bounds. */
   void OnVarBounds(int index, double lb, double ub) {
     MP_UNUSED3(index, lb, ub);
   }
 
-  /**
-    Receives notification of constraint bounds (ranges).
-   */
+  /** Receives notification of constraint bounds (ranges). */
   void OnConBounds(int index, double lb, double ub) {
     MP_UNUSED3(index, lb, ub);
   }
 
-  /**
-    Receives notification of the initial value for a variable.
-   */
+  /** Receives notification of the initial value for a variable. */
   void OnInitialValue(int var_index, double value) {
     MP_UNUSED2(var_index, value);
   }
 
-  /**
-    Receives notification of the initial value for a dual variable.
-   */
+  /** Receives notification of the initial value for a dual variable. */
   void OnInitialDualValue(int con_index, double value) {
     MP_UNUSED2(con_index, value);
   }
@@ -402,14 +366,10 @@ class NLHandler {
     void Add(int size) { MP_UNUSED(size); }
   };
 
-  /**
-    Receives notification of Jacobian column sizes.
-   */
+  /** Receives notification of Jacobian column sizes. */
   ColumnSizeHandler OnColumnSizes() { return ColumnSizeHandler(); }
 
-  /**
-    Receives notification of a function.
-   */
+  /** Receives notification of a function. */
   void OnFunction(int index, fmt::StringRef name,
                   int num_args, func::Type type) {
     MP_UNUSED3(index, name, num_args); MP_UNUSED(type);
@@ -419,9 +379,7 @@ class NLHandler {
     void SetValue(int index, int value) { MP_UNUSED2(index, value); }
   };
 
-  /**
-    Receives notification of an integer suffix.
-   */
+  /** Receives notification of an integer suffix. */
   IntSuffixHandler OnIntSuffix(fmt::StringRef name, int kind, int num_values) {
     MP_UNUSED3(name, kind, num_values);
     return IntSuffixHandler();
@@ -431,9 +389,7 @@ class NLHandler {
     void SetValue(int index, double value) { MP_UNUSED2(index, value); }
   };
 
-  /**
-    Receives notification of a double suffix.
-   */
+  /** Receives notification of a double suffix. */
   DblSuffixHandler OnDblSuffix(fmt::StringRef name, int kind, int num_values) {
     MP_UNUSED3(name, kind, num_values);
     return DblSuffixHandler();
@@ -450,17 +406,13 @@ class NLHandler {
   typedef ArgHandler CountArgHandler;
   typedef ArgHandler LogicalArgHandler;
 
-  /**
-    Receives notification of a numeric constant in a nonlinear expression.
-   */
+  /** Receives notification of a numeric constant in a nonlinear expression. */
   NumericExpr OnNumericConstant(double value) {
     MP_UNUSED(value);
     return NumericExpr();
   }
 
-  /**
-    Receives notification of a variable reference.
-   */
+  /** Receives notification of a variable reference. */
   Reference OnVariableRef(int var_index) {
     MP_UNUSED(var_index);
     return Reference();
@@ -474,25 +426,19 @@ class NLHandler {
     return Reference();
   }
 
-  /**
-    Receives notification of a unary expression.
-   */
+  /** Receives notification of a unary expression. */
   NumericExpr OnUnary(expr::Kind kind, NumericExpr arg) {
     MP_UNUSED2(kind, arg);
     return NumericExpr();
   }
 
-  /**
-    Receives notification of a binary expression.
-   */
+  /** Receives notification of a binary expression. */
   NumericExpr OnBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     MP_UNUSED3(kind, lhs, rhs);
     return NumericExpr();
   }
 
-  /**
-    Receives notification of an if expression.
-   */
+  /** Receives notification of an if expression. */
   NumericExpr OnIf(LogicalExpr condition,
       NumericExpr true_expr, NumericExpr false_expr) {
     MP_UNUSED3(condition, true_expr, false_expr);
@@ -504,9 +450,7 @@ class NLHandler {
     void AddBreakpoint(double breakpoint) { MP_UNUSED(breakpoint); }
   };
 
-  /**
-    Receives notification of the beginning of a piecewise-linear term.
-   */
+  /** Receives notification of the beginning of a piecewise-linear term. */
   PLTermHandler BeginPLTerm(int num_breakpoints) {
     MP_UNUSED(num_breakpoints);
     return PLTermHandler();
@@ -521,17 +465,13 @@ class NLHandler {
     return NumericExpr();
   }
 
-  /**
-    Receives notification of the beginning of a call expression.
-   */
+  /** Receives notification of the beginning of a call expression. */
   CallArgHandler BeginCall(int func_index, int num_args) {
     MP_UNUSED2(func_index, num_args);
     return CallArgHandler();
   }
 
-  /**
-    Receives notification of the end of a call expression.
-   */
+  /** Receives notification of the end of a call expression. */
   NumericExpr EndCall(CallArgHandler handler) {
     MP_UNUSED(handler);
     return NumericExpr();
@@ -545,57 +485,43 @@ class NLHandler {
     return NumericArgHandler();
   }
 
-  /**
-    Receives notification of the end of a vararg expression (min or max).
-   */
+  /** Receives notification of the end of a vararg expression (min or max). */
   NumericExpr EndVarArg(VarArgHandler handler) {
     MP_UNUSED(handler);
     return NumericExpr();
   }
 
-  /**
-    Receives notification of the beginning of a sum expression.
-   */
+  /** Receives notification of the beginning of a sum expression. */
   NumericArgHandler BeginSum(int num_args) {
     MP_UNUSED(num_args);
     return NumericArgHandler();
   }
 
-  /**
-    Receives notification of the end of a sum expression.
-   */
+  /** Receives notification of the end of a sum expression. */
   NumericExpr EndSum(NumericArgHandler handler) {
     MP_UNUSED(handler);
     return NumericExpr();
   }
 
-  /**
-    Receives notification of the beginning of a count expression.
-   */
+  /** Receives notification of the beginning of a count expression. */
   LogicalArgHandler BeginCount(int num_args) {
     MP_UNUSED(num_args);
     return LogicalArgHandler();
   }
 
-  /**
-    Receives notification of the end of a count expression.
-   */
+  /** Receives notification of the end of a count expression. */
   CountExpr EndCount(LogicalArgHandler handler) {
     MP_UNUSED(handler);
     return NumericExpr();
   }
 
-  /**
-    Receives notification of the beginning of a numberof expression.
-   */
+  /** Receives notification of the beginning of a numberof expression. */
   NumberOfArgHandler BeginNumberOf(int num_args, NumericExpr arg0) {
     MP_UNUSED2(num_args, arg0);
     return NumberOfArgHandler();
   }
 
-  /**
-    Receives notification of the end of a numberof expression.
-   */
+  /** Receives notification of the end of a numberof expression. */
   NumericExpr EndNumberOf(NumberOfArgHandler handler) {
     MP_UNUSED(handler);
     return NumericExpr();
@@ -611,58 +537,44 @@ class NLHandler {
     return SymbolicArgHandler();
   }
 
-  /**
-    Receives notification of the end of a symbolic numberof expression.
-   */
+  /** Receives notification of the end of a symbolic numberof expression. */
   NumericExpr EndSymbolicNumberOf(SymbolicArgHandler handler) {
     MP_UNUSED(handler);
     return NumericExpr();
   }
 
-  /**
-    Receives notification of a logical constant.
-   */
+  /** Receives notification of a logical constant. */
   LogicalExpr OnLogicalConstant(bool value) {
     MP_UNUSED(value);
     return LogicalExpr();
   }
 
-  /**
-    Receives notification of a logical not expression.
-   */
+  /** Receives notification of a logical not expression. */
   LogicalExpr OnNot(LogicalExpr arg) {
     MP_UNUSED(arg);
     return LogicalExpr();
   }
 
-  /**
-    Receives notification of a binary logical expression.
-   */
+  /** Receives notification of a binary logical expression. */
   LogicalExpr OnBinaryLogical(
       expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {
     MP_UNUSED3(kind, lhs, rhs);
     return LogicalExpr();
   }
 
-  /**
-    Receives notification of a relational expression.
-   */
+  /** Receives notification of a relational expression. */
   LogicalExpr OnRelational(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     MP_UNUSED3(kind, lhs, rhs);
     return LogicalExpr();
   }
 
-  /**
-    Receives notification of a logical count expression.
-   */
+  /** Receives notification of a logical count expression. */
   LogicalExpr OnLogicalCount(expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
     MP_UNUSED3(kind, lhs, rhs);
     return LogicalExpr();
   }
 
-  /**
-    Receives notification of an implication expression.
-   */
+  /** Receives notification of an implication expression. */
   LogicalExpr OnImplication(
       LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
     MP_UNUSED3(condition, true_expr, false_expr);
@@ -677,9 +589,7 @@ class NLHandler {
     return LogicalArgHandler();
   }
 
-  /**
-    Receives notification of the end of an iterated logical expression.
-   */
+  /** Receives notification of the end of an iterated logical expression. */
   LogicalExpr EndIteratedLogical(LogicalArgHandler handler) {
     MP_UNUSED(handler);
     return LogicalExpr();
@@ -687,33 +597,25 @@ class NLHandler {
 
   typedef ArgHandler PairwiseArgHandler;
 
-  /**
-    Receives notification of the beginning of a pairwise expression.
-   */
+  /** Receives notification of the beginning of a pairwise expression. */
   PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
     MP_UNUSED2(kind, num_args);
     return PairwiseArgHandler();
   }
 
-  /**
-    Receives notification of the end of a pairwise expression.
-   */
+  /** Receives notification of the end of a pairwise expression. */
   LogicalExpr EndPairwise(PairwiseArgHandler handler) {
     MP_UNUSED(handler);
     return LogicalExpr();
   }
 
-  /**
-    Receives notification of a string literal.
-   */
+  /** Receives notification of a string literal. */
   Expr OnStringLiteral(fmt::StringRef value) {
     MP_UNUSED(value);
     return Expr();
   }
 
-  /**
-    Receives notification of a symbolic if expression.
-   */
+  /** Receives notification of a symbolic if expression. */
   Expr OnSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {
     MP_UNUSED3(condition, true_expr, false_expr);
     return Expr();
