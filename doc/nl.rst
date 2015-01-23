@@ -41,6 +41,8 @@ This section describes the C++ API of an NL reader which is
 
 .. doxygenfunction:: ReadNLString(fmt::StringRef, Handler &, fmt::StringRef)
 
+.. doxygenenum:: mp::arith::Kind
+
 .. doxygenstruct:: mp::NLHeader
    :members:
 
