@@ -107,16 +107,36 @@ enum {
 };
 
 namespace arith {
+
 /** Floating-point arithmetic kind */
 enum Kind {
-  UNKNOWN            = 0, ///< Unknown arithmetic
-  IEEE_LITTLE_ENDIAN = 1, ///< Standard IEEE-754 floating-point - little endian
-  IEEE_BIG_ENDIAN    = 2, ///< Standard IEEE-754 floating-point - big endian
-  // Historical floating-point formats:
-  IBM                = 3,
-  VAX                = 4,
-  CRAY               = 5,
-  LAST               = CRAY
+
+  /** Unknown floating-point arithmetic */
+  UNKNOWN = 0,
+
+  /**
+    Standard `IEEE-754 <http://en.wikipedia.org/wiki/IEEE_floating_point>`_
+    floating point - little endian
+   */
+  IEEE_LITTLE_ENDIAN = 1,
+
+  /** Standard IEEE-754 floating point - big endian */
+  IEEE_BIG_ENDIAN = 2,
+
+  /**
+    `IBM floating point
+    <http://en.wikipedia.org/wiki/IBM_Floating_Point_Architecture>`_
+   */
+  IBM = 3,
+
+  /** VAX floating point (legacy) */
+  VAX = 4,
+
+  /** Cray floating point */
+  CRAY = 5,
+
+  /** Last floating point */
+  LAST = CRAY
 };
 
 // Returns floating-point arithmetic kind used on the current system.
