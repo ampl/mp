@@ -126,7 +126,7 @@ fpinit_ASL(Void)
 	__fpu_control &= ~_FPU_EXTENDED;	/* clear rounding precision bits */
 	__fpu_control |= _FPU_DOUBLE;		/* set the ones we want set */
 #else
-#ifdef _FPU_IEEE
+#if defined(_FPU_IEEE) && defined(_FPU_EXTENDED) && defined(_FPU_DOUBLE)
 	__fpu_control = _FPU_IEEE - _FPU_EXTENDED + _FPU_DOUBLE;
 #else
 	__fpu_control = 0x27f;
