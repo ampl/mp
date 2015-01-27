@@ -125,14 +125,18 @@ fpinit_ASL(Void)
 	_FPU_GETCW(__fpu_control);
 	__fpu_control &= ~_FPU_EXTENDED;	/* clear rounding precision bits */
 	__fpu_control |= _FPU_DOUBLE;		/* set the ones we want set */
+	_FPU_SETCW(__fpu_control);
 #else
 #if defined(_FPU_IEEE) && defined(_FPU_EXTENDED) && defined(_FPU_DOUBLE)
 	__fpu_control = _FPU_IEEE - _FPU_EXTENDED + _FPU_DOUBLE;
-#else
+	_FPU_SETCW(__fpu_control);
+#elif defined(__i386__) || defined(__x86_64__)
 	__fpu_control = 0x27f;
+	_FPU_SETCW(__fpu_control);
+#elif defined(FE_ALL_EXCEPT)
+	fedisableexcept(FE_ALL_EXCEPT);
 #endif
 #endif /* ASL_FPINIT_KEEP_TRAPBITS */
-	_FPU_SETCW(__fpu_control);
 #endif
 	}
 #endif /*} NO_fpu_control */
