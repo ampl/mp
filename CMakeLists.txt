@@ -12,7 +12,7 @@ include(init)
 
 project(MP)
 
-set(MP_VERSION 1.3.0)
+set(MP_VERSION 1.4.0)
 if (NOT MP_VERSION MATCHES "^([0-9]+).([0-9]+).([0-9]+)$")
   message(FATAL_ERROR "Invalid version format ${MP_VERSION}.")
 endif ()
