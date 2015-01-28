@@ -207,10 +207,9 @@ conpval_ASL(ASL *a, real *X, real *F, fint *nerror)
 	Jmp_buf err_jmp0;
 	cgrad *gr, **gr0;
 	expr_n *en;
-	expr_v *V;
-	int *cm, i, j, je, *ncxval, nx, useV;
+	int *cm, i, j, j1, je, kv, *ncxval, nx, *vmi;
 	ps_func *p, *p0;
-	real *cscale, f;
+	real *cscale, f, *vscale;
 
 	ASL_CHECK(a, ASL_read_pfgh, "conpval");
 	asl = (ASL_pfgh*)a;
@@ -231,8 +230,14 @@ conpval_ASL(ASL *a, real *X, real *F, fint *nerror)
 		asl->i.Cgrad0 = gr0 = asl->i.Cgrad_;
 	p0 = asl->P.cps;
 	cscale = asl->i.cscale;
-	useV = asl->i.vscale || asl->i.vmap;
-	V = var_e;
+	kv = 0;
+	vmi = 0;
+	if ((vscale = asl->i.vscale))
+		kv = 2;
+	if (asl->i.vmap) {
+		vmi = get_vminv_ASL(a);
+		++kv;
+		}
 	cm = asl->i.cmap;
 	nx = a->i.nxval;
 	ncxval = asl->i.ncxval;
@@ -255,19 +260,34 @@ conpval_ASL(ASL *a, real *X, real *F, fint *nerror)
 			en = (expr_n*)con_de[i].e;
 			f = en->v;
 			}
+		ncxval[i] = nx;
+		if (!F)
+			continue;
 		gr = gr0[i];
-		if (useV)
+		switch(kv) {
+		  case 3:
+			for(; gr; gr = gr->next) {
+				j1 = vmi[gr->varno];
+				f += X[j1] * vscale[j1] * gr->coef;
+				}
+			break;
+		  case 2:
+			for(; gr; gr = gr->next) {
+				j1 = gr->varno;
+				f += X[j1] * vscale[j1] * gr->coef;
+				}
+			break;
+		  case 1:
 			for(; gr; gr = gr->next)
-				f += V[gr->varno].v * gr->coef;
-		else
+				f += X[vmi[gr->varno]] * gr->coef;
+			break;
+		  case 0:
 			for(; gr; gr = gr->next)
 				f += X[gr->varno] * gr->coef;
-		if (F) {
-			if (cscale)
-				f *= cscale[j];
-			*F++ = f;
-			}
-		ncxval[i] = nx;
+		  }
+		if (cscale)
+			f *= cscale[j];
+		*F++ = f;
 		}
 	err_jmp = 0;
 	}
@@ -412,11 +432,10 @@ objpval_ASL(ASL *a, int i, real *X, fint *nerror)
 	ASL_pfgh *asl;
 	Jmp_buf err_jmp0;
 	expr_n *en;
-	expr_v *V;
-	int ij;
+	int ij, j1, kv, *vmi;
 	ograd *gr;
 	ps_func *p;
-	real f;
+	real f, *vscale;
 
 	NNOBJ_chk(a, i, "objpval");
 	asl = (ASL_pfgh*)a;
@@ -445,12 +464,35 @@ objpval_ASL(ASL *a, int i, real *X, fint *nerror)
 		}
 	asl->i.noxval[i] = asl->i.nxval;
 	gr = Ograd[i];
-	if (asl->i.vmap || asl->i.vscale)
-		for(V = var_e; gr; gr = gr->next)
-			f += gr->coef * V[gr->varno].v;
-	else
+	kv = 0;
+	vmi = 0;
+	if ((vscale = asl->i.vscale))
+		kv = 2;
+	if (asl->i.vmap) {
+		vmi = get_vminv_ASL(a);
+		++kv;
+		}
+	switch(kv) {
+	  case 3:
+		for(; gr; gr = gr->next) {
+			j1 = vmi[gr->varno];
+			f += X[j1] * vscale[j1] * gr->coef;
+			}
+		break;
+	  case 2:
+		for(; gr; gr = gr->next) {
+			j1 = gr->varno;
+			f += X[j1] * vscale[j1] * gr->coef;
+			}
+		break;
+	  case 1:
 		for(; gr; gr = gr->next)
-			f += gr->coef * X[gr->varno];
+			f += X[vmi[gr->varno]] * gr->coef;
+		break;
+	  case 0:
+		for(; gr; gr = gr->next)
+			f += X[gr->varno] * gr->coef;
+	  }
 	err_jmp = 0;
 	return f;
 	}
@@ -606,19 +648,42 @@ conpival_ASL(ASL *a, int i, real *X, fint *nerror)
 {
 	ASL_pfgh *asl;
 	cgrad *gr;
-	expr_v *V;
-	real f;
+	int j1, kv, *vmi;
+	real f, *vscale;
 
 	INchk(a, "conpival", i, a->i.n_con0);
 	asl = (ASL_pfgh*)a;
 	f = cpval(asl, i, X, nerror);
+	kv = 0;
+	vmi = 0;
+	if ((vscale = asl->i.vscale))
+		kv = 2;
+	if (asl->i.vmap) {
+		vmi = get_vminv_ASL(a);
+		++kv;
+		}
 	gr = asl->i.Cgrad0[i];
-	if (asl->i.vmap || asl->i.vscale)
-		for(V = var_e; gr; gr = gr->next)
-			f += V[gr->varno].v * gr->coef;
-	else
+	switch(kv) {
+	  case 3:
+		for(; gr; gr = gr->next) {
+			j1 = vmi[gr->varno];
+			f += X[j1] * vscale[j1] * gr->coef;
+			}
+		break;
+	  case 2:
+		for(; gr; gr = gr->next) {
+			j1 = gr->varno;
+			f += X[j1] * vscale[j1] * gr->coef;
+			}
+		break;
+	  case 1:
+		for(; gr; gr = gr->next)
+			f += X[vmi[gr->varno]] * gr->coef;
+		break;
+	  case 0:
 		for(; gr; gr = gr->next)
 			f += X[gr->varno] * gr->coef;
+	  }
 	return f;
 	}
 

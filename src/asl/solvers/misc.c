@@ -695,13 +695,21 @@ ASL_alloc(int k)
 		sizeof(ASL_pfg),
 		sizeof(ASL_pfgh)
 		};
+	static int first = 1;
 	ASL *a;
 	ASLhead *h;
 	int n;
 
-	if (!Stderr)
-		Stderr_init_ASL();	/* set Stderr if necessary */
-	Mach_ASL();
+	if (first) {
+		first = 0;
+		if (!Stderr)
+			Stderr_init_ASL();	/* set Stderr if necessary */
+		Mach_ASL();
+#ifdef MULTIPLE_THREADS
+		init_dtoa_locks();
+		set_max_dtoa_threads(1);
+#endif
+		}
 	if (k < 1 || k > 5)
 		return 0;
 	a = (ASL*) mymalloc(n = msize[k-1]);

@@ -27,14 +27,13 @@ THIS SOFTWARE.
  void
 con1val_ASL(ASL *a, register real *X, real *F, fint *nerror)
 {
-	cde *d, *d0;
-	expr *e1;
-	real *cscale, f;
-	int *cm, i, j, k, useV;
-	cgrad *gr, **gr0;
-	Jmp_buf err_jmp0;
 	ASL_fg *asl;
-	expr_v *V;
+	Jmp_buf err_jmp0;
+	cde *d, *d0;
+	cgrad *gr, **gr0;
+	expr *e1;
+	int *cm, i, j, j1, k, kv, *vmi;
+	real *cscale, f, *vscale;
 
 	ASL_CHECK(a, ASL_read_fg, "con1val");
 	asl = (ASL_fg *)a;
@@ -61,8 +60,14 @@ con1val_ASL(ASL *a, register real *X, real *F, fint *nerror)
 	k = n_conjac[1];
 	cscale = asl->i.cscale;
 	cm = asl->i.cmap;
-	V = var_e;
-	useV = asl->i.vscale || asl->i.vmap;
+	kv = 0;
+	vmi = 0;
+	if ((vscale = asl->i.vscale))
+		kv = 2;
+	if (asl->i.vmap) {
+		vmi = get_vminv_ASL(a);
+		++kv;
+		}
 	if (!(gr0 = asl->i.Cgrad0))
 		asl->i.Cgrad0 = gr0 = asl->i.Cgrad_;
 	for(; j < k; ++j) {
@@ -73,18 +78,33 @@ con1val_ASL(ASL *a, register real *X, real *F, fint *nerror)
 		d = d0 + i;
 		e1 = d->e;
 		f = (*e1->op)(e1 C_ASL);
+		if (!F)
+			continue;
 		gr = gr0[i];
-		if (useV)
+		switch(kv) {
+		  case 3:
+			for(; gr; gr = gr->next) {
+				j1 = vmi[gr->varno];
+				f += X[j1] * vscale[j1] * gr->coef;
+				}
+			break;
+		  case 2:
+			for(; gr; gr = gr->next) {
+				j1 = gr->varno;
+				f += X[j1] * vscale[j1] * gr->coef;
+				}
+			break;
+		  case 1:
 			for(; gr; gr = gr->next)
-				f += V[gr->varno].v * gr->coef;
-		else
+				f += X[vmi[gr->varno]] * gr->coef;
+			break;
+		  case 0:
 			for(; gr; gr = gr->next)
 				f += X[gr->varno] * gr->coef;
-		if (F) {
-			if (cscale)
-				f *= cscale[j];
-			*F++ = f;
-			}
+		  }
+		if (cscale)
+			f *= cscale[j];
+		*F++ = f;
 		}
  done:
 	err_jmp = 0;

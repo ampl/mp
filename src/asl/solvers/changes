@@ -2453,3 +2453,54 @@ where ASL_obj_replace_eq or ASL_obj_replace_ineq matters.
 20150107
  funcadd.h: change line 271 from "#ifdef _WIN32" to
 "#if defined(_WIN32) && !defined(__MINGW32__)"; no change to asldate.c.
+
+20150108
+  obj_adj.c:  fix a glitch that caused some solvers (e.g., minos and
+snopt) to fault on models with a single constraint that obj_adj()
+folds into the objective, such as
+	var x{1..2}; var t; minimize obj: t;
+	s.t. c: x[1]^2 + x[2]^2 + x[1]*x[2] - 4*x[1] - 5*x[2] <= t;
+
+20150112
+  asl.h, dtoa.c, dtoa1.c, misc.c:  changes for "ifdef MULTIPLE_THREADS".
+Now ASSUME_OPENMP implies MULTIPLE_THREADS, and when ASSUME_OPENMP is
+#defined, dtoa1.c provides suitable definitions of ACQUIRE_DTOA_LOCK
+and FREE_DTOA_LOCK, under the assumption that each thread will use a
+different ASL* value, so ACQUIRE_DTOA_LOCK(n) and FREE_DTOA_LOCK(n)
+can be ignored for n >= 2.  In this case dtoa1.c also defines
+	void init_dtoa_locks(void);
+which on some systems (e.g., MS Windows, but not Linux) needs to
+be called once before the first call on ACQUIRE_DTOA_LOCK(n).
+The updated misc.c now provides such a call in ASL_alloc().
+   When MULTIPLE_THREADS is #defined, dtoa.c defines function
+	void set_max_dtoa_threads(unsigned int n);
+and expects
+	unsigned int dtoa_get_threadno(void);
+to be available to return the current thread number.
+After set_max_dtoa_threads(n), calls on strtod and dtoa by
+threads with thread numbers < n avoid calls on ACQUIRE_DTOA_LOCK
+and FREE_DTOA_LOCK by keeping thread-specific copies of entities
+for which changes by other threads would otherwise cause trouble.
+See the updated comments in dtoa.c about MULTIPLE_THREADS.
+
+20150114
+  dtoa.c, dtoa1.c: fix a glitch (possible fault) in the updates
+of 20140112.
+
+20150122
+  jac0dim.c x2check.c xp1known.c xp2known.c conscale.c con2ival.c
+con1ival.c con2val.c conpval.c conval.c obj2val.c objval.c:
+adjustments so after varscale(...) or a problem adjustment that
+changes the number of variables, objectives and constraints that
+involve linear variables will be correctly computed by objval(),
+conval(), and conival() in the unlikely event that only some relevant
+linear variables have changed but no nonlinear variables have changed.
+This only affects some solvers (not, e.g., minos or snopt, which treat
+linear variables separately).
+  names.c: make lon_name() and obj_name() work correctly after problem
+adjustments that affect the number of constraints the solver sees.
+
+20150126
+  printf.c:  Fix a glitch with format %.0e that caused
+	printf("%.e\n", 4.7);
+to print "4e+00" rather than "5e+00".

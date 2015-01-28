@@ -42,6 +42,10 @@ xp1_check_ASL(ASL_pfg *asl, real *x)
 	ograd *og;
 	real t, *vscale, *xe;
 
+	if (x0len == 0) {
+		x0kind = 0;
+		return 0;
+		}
 	if (x0kind == ASL_first_x)
 		x0kind = 0;
 	else if (!memcmp(Lastx, x, x0len))

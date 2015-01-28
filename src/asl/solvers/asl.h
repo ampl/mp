@@ -1108,6 +1108,11 @@ QPinfo {
 #ifndef strtod	/* if not set by previous funcadd.h */
 #define strtod strtod_ASL
 #endif
+extern void ACQUIRE_DTOA_LOCK(unsigned int);
+extern void FREE_DTOA_LOCK(unsigned int);
+extern int dtoa_get_threadno(void);
+extern void init_dtoa_locks(void);
+extern void set_max_dtoa_threads(unsigned int);
 #endif
 
 #ifdef __cplusplus
@@ -1172,19 +1177,24 @@ QPinfo {
 
 #define exit mainexit_ASL
 
+#ifdef ALLOW_OPENMP
+#undef MULTIPLE_THREADS
+#define MULTIPLE_THREADS
+#endif
+
 #ifdef MULTIPLE_THREADS
 #define A_ASL , ASL *asl
 #define C_ASL , (ASL*)asl
 #define D_ASL ASL *asl;
 #define K_ASL , asl
 #ifndef MEM_LOCK
-#define MEM_LOCK 3
+#define MEM_LOCK 2
 #endif
 #ifndef MBLK_LOCK
-#define MBLK_LOCK 4
+#define MBLK_LOCK 3
 #endif
 #ifndef HESOPROD_LOCK
-#define HESOPROD_LOCK 5
+#define HESOPROD_LOCK 4
 #endif
 #else	/* MULTIPLE_THREADS */
 #define A_ASL /*nothing*/

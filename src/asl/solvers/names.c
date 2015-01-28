@@ -25,13 +25,13 @@ THIS SOFTWARE.
 #include "asl.h"
 
  static char **
-get_names(ASL *asl, const char *suf, int no, int n0, int n1, int n)
+get_names(ASL *asl, const char *suf, int no, int n0)
 {
 	FILE *f;
 	char buf[512], **nam, **ne, **rv, *s;
 	int nt;
 
-	nt = n1 + no;
+	nt = n0 + no;
 	nam = rv = (char**)mem(nt*sizeof(char*));
 	ne = nam + nt;
 	strcpy(stub_end, suf);
@@ -51,9 +51,8 @@ get_names(ASL *asl, const char *suf, int no, int n0, int n1, int n)
  static void
 get_row_names(ASL *asl)
 {
-	asl->i.connames = get_names(asl, ".row", n_obj + n_lcon,
-				asl->i.n_con0, asl->i.n_con1, n_con);
-	asl->i.lconnames = asl->i.connames + n_con;
+	asl->i.connames = get_names(asl, ".row", n_obj + n_lcon, asl->i.n_con0);
+	asl->i.lconnames = asl->i.connames + asl->i.n_con0;
 	asl->i.objnames = asl->i.lconnames + n_lcon;
 	}
 
@@ -139,8 +138,7 @@ var_name_nomap_ASL(ASL *asl, int n, int *p /* not used */)
 	if (n < 0 || n >= asl->i.n_var1)
 		return badvarname;
 	if (!asl->i.varnames)
-		asl->i.varnames = get_names(asl, ".col", 0,
-				asl->i.n_var0, asl->i.n_var1, n_var);
+		asl->i.varnames = get_names(asl, ".col", 0, asl->i.n_var0);
 	np = asl->i.varnames + n;
 	if (!(rv = *np)) {
 		*np = rv = (char*)mem(Sprintf(buf,"_svar[%d]",n+1)+1);

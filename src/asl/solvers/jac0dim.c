@@ -267,8 +267,6 @@ jac0dim_ASL(ASL *asl, const char *stub, ftnlen stub_len)
 	asl->i.n_con0 = asl->i.n_con1 = n_con;
 	if ((nlv = nlvc) < nlvo)
 		nlv = nlvo;
-	if (nlv <= 0)
-		nlv = 1;
 	x0len = nlv * sizeof(real);
 	x0kind = ASL_first_x;
 	n_conjac[0] = 0;

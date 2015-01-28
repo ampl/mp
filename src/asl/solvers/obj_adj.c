@@ -467,7 +467,7 @@ obj_adj_ASL(ASL *asl)
 	if ((a = A_vals)) {
 		nz = nzc;
 		cg = (cgrad*)M1alloc(nz*sizeof(cgrad) + nc0*sizeof(cgrad*));
-		Cgrad = cgp0 = (cgrad**)(cg + nz);
+		asl->i.Cgrad0 = Cgrad = cgp0 = (cgrad**)(cg + nz);
 		memset(cgp0, 0, nc0*sizeof(cgrad*));
 		n = nv0;
 		rn0 = A_rownos;

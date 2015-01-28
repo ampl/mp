@@ -103,7 +103,6 @@
  *	something other than "long long", #define Llong to be the name,
  *	and if "unsigned Llong" does not work as an unsigned version of
  *	Llong, #define #ULLong to be the corresponding unsigned type.
- * #define KR_headers for old-style C function headers.
  * #define Bad_float_h if your system lacks a float.h or if it does not
  *	define some or all of DBL_DIG, DBL_MAX_10_EXP, DBL_MAX_EXP,
  *	FLT_RADIX, FLT_ROUNDS, and DBL_MAX.
@@ -153,6 +152,25 @@
  *	probability of wasting memory, but would otherwise be harmless.)
  *	You must also invoke freedtoa(s) to free the value s returned by
  *	dtoa.  You may do so whether or not MULTIPLE_THREADS is #defined.
+
+ *	When MULTIPLE_THREADS is #defined, this source file provides
+ *		void set_max_dtoa_threads(unsigned int n);
+ *	and expects
+ *		unsigned int dtoa_get_threadno(void);
+ *	to be available (possibly provided by
+ *		#define dtoa_get_threadno omp_get_thread_num
+ *	if OpenMP is in use or by
+ *		#define dtoa_get_threadno pthread_self
+ *	if Pthreads is in use), to return the current thread number.
+ *	If set_max_dtoa_threads(n) was called and the current thread
+ *	number is k with k < n, then calls on ACQUIRE_DTOA_LOCK(...) and
+ *	FREE_DTOA_LOCK(...) are avoided; instead each thread with thread
+ *	number < n has a separate copy of relevant data structures.
+ *	After set_max_dtoa_threads(n), a call set_max_dtoa_threads(m)
+ *	with m <= n has has no effect, but a call with m > n is honored.
+ *	Such a call invokes REALLOC (assumed to be "realloc" if REALLOC
+ *	is not #defined) to extend the size of the relevant array.
+
  * #define NO_IEEE_Scale to disable new (Feb. 1997) logic in strtod that
  *	avoids underflows on inputs whose result does not underflow.
  *	If you #define NO_IEEE_Scale on a machine that uses IEEE-format
@@ -212,13 +230,19 @@ typedef unsigned Long ULong;
 #endif
 
 #ifdef MALLOC
-#ifdef KR_headers
-extern char *MALLOC();
-#else
 extern void *MALLOC(size_t);
-#endif
 #else
 #define MALLOC malloc
+#endif
+
+#ifdef REALLOC
+extern void *REALLOC(void*,size_t);
+#else
+#define REALLOC realloc
+#endif
+
+#ifndef FREE
+#define FREE free
 #endif
 
 #ifndef Omit_Private_Memory
@@ -289,14 +313,6 @@ static double private_mem[PRIVATE_mem], *pmem_next = private_mem;
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#ifndef CONST
-#ifdef KR_headers
-#define CONST /* blank */
-#else
-#define CONST const
-#endif
 #endif
 
 #if defined(IEEE_8087) + defined(IEEE_MC68k) + defined(VAX) + defined(IBM) != 1
@@ -470,11 +486,7 @@ extern int strtod_diglim;
 #ifdef RND_PRODQUOT
 #define rounded_product(a,b) a = rnd_prod(a, b)
 #define rounded_quotient(a,b) a = rnd_quot(a, b)
-#ifdef KR_headers
-extern double rnd_prod(), rnd_quot();
-#else
 extern double rnd_prod(double, double), rnd_quot(double, double);
-#endif
 #else
 #define rounded_product(a,b) a *= b
 #define rounded_quotient(a,b) a /= b
@@ -491,11 +503,7 @@ typedef struct BCinfo BCinfo;
  struct
 BCinfo { int dp0, dp1, dplen, dsign, e0, inexact, nd, nd0, rounding, scale, uflchk; };
 
-#ifdef KR_headers
-#define FFFFFFFF ((((unsigned long)0xffff)<<16)|(unsigned long)0xffff)
-#else
 #define FFFFFFFF 0xffffffffUL
-#endif
 
 #ifdef NO_LONG_LONG
 #undef ULLong
@@ -516,9 +524,15 @@ BCinfo { int dp0, dp1, dplen, dsign, e0, inexact, nd, nd0, rounding, scale, uflc
 #endif
 #endif /* NO_LONG_LONG */
 
-#ifndef MULTIPLE_THREADS
-#define ACQUIRE_DTOA_LOCK(n)	/*nothing*/
-#define FREE_DTOA_LOCK(n)	/*nothing*/
+#ifdef MULTIPLE_THREADS
+#define MTa , PTI
+#define MTb , &TI
+#define MTd , ThInfo **PTI
+static unsigned int maxthreads = 0;
+#else
+#define MTa /*nothing*/
+#define MTb /*nothing*/
+#define MTd /*nothing*/
 #endif
 
 #define Kmax 7
@@ -537,24 +551,77 @@ Bigint {
 	};
 
  typedef struct Bigint Bigint;
+ typedef struct
+ThInfo {
+	Bigint *Freelist[Kmax+1];
+	Bigint *P5s;
+	} ThInfo;
 
- static Bigint *freelist[Kmax+1];
+ static ThInfo TI0;
+
+#ifdef MULTIPLE_THREADS
+ static ThInfo *TI1;
+ static int TI0_used;
+
+ void
+set_max_dtoa_threads(unsigned int n)
+{
+	size_t L;
+
+	if (n > maxthreads) {
+		L = n*sizeof(ThInfo);
+		if (TI1) {
+			TI1 = (ThInfo*)REALLOC(TI1, L);
+			memset(TI1 + maxthreads, 0, (n-maxthreads)*sizeof(ThInfo));
+			}
+		else {
+			TI1 = (ThInfo*)MALLOC(L);
+			if (TI0_used) {
+				memcpy(TI1, &TI0, sizeof(ThInfo));
+				if (n > 1)
+					memset(TI1 + 1, 0, L - sizeof(ThInfo));
+				memset(&TI0, 0, sizeof(ThInfo));
+				}
+			else
+				memset(TI1, 0, L);
+			}
+		maxthreads = n;
+		}
+	}
+
+ static ThInfo*
+get_TI(void)
+{
+	unsigned int thno = dtoa_get_threadno();
+	if (thno < maxthreads)
+		return TI1 + thno;
+	if (thno == 0)
+		TI0_used = 1;
+	return &TI0;
+	}
+#define freelist TI->Freelist
+#define p5s TI->P5s
+#else
+#define freelist TI0.Freelist
+#define p5s TI0.P5s
+#endif
 
  static Bigint *
-Balloc
-#ifdef KR_headers
-	(k) int k;
-#else
-	(int k)
-#endif
+Balloc(int k MTd)
 {
 	int x;
 	Bigint *rv;
 #ifndef Omit_Private_Memory
 	unsigned int len;
 #endif
+#ifdef MULTIPLE_THREADS
+	ThInfo *TI;
 
-	ACQUIRE_DTOA_LOCK(0);
+	if (!(TI = *PTI))
+		*PTI = TI = get_TI();
+	if (TI == &TI0)
+		ACQUIRE_DTOA_LOCK(0);
+#endif
 	/* The k > Kmax case does not need ACQUIRE_DTOA_LOCK(0), */
 	/* but this case seems very unlikely. */
 	if (k <= Kmax && (rv = freelist[k]))
@@ -566,7 +633,11 @@ Balloc
 #else
 		len = (sizeof(Bigint) + (x-1)*sizeof(ULong) + sizeof(double) - 1)
 			/sizeof(double);
-		if (k <= Kmax && pmem_next - private_mem + len <= PRIVATE_mem) {
+		if (k <= Kmax && pmem_next - private_mem + len <= PRIVATE_mem
+#ifdef MULTIPLE_THREADS
+			&& TI == TI1
+#endif
+			) {
 			rv = (Bigint*)pmem_next;
 			pmem_next += len;
 			}
@@ -576,31 +647,36 @@ Balloc
 		rv->k = k;
 		rv->maxwds = x;
 		}
-	FREE_DTOA_LOCK(0);
+#ifdef MULTIPLE_THREADS
+	if (TI == &TI0)
+		FREE_DTOA_LOCK(0);
+#endif
 	rv->sign = rv->wds = 0;
 	return rv;
 	}
 
  static void
-Bfree
-#ifdef KR_headers
-	(v) Bigint *v;
-#else
-	(Bigint *v)
-#endif
+Bfree(Bigint *v MTd)
 {
+#ifdef MULTIPLE_THREADS
+	ThInfo *TI;
+#endif
 	if (v) {
 		if (v->k > Kmax)
-#ifdef FREE
 			FREE((void*)v);
-#else
-			free((void*)v);
-#endif
 		else {
-			ACQUIRE_DTOA_LOCK(0);
+#ifdef MULTIPLE_THREADS
+			if (!(TI = *PTI))
+				*PTI = TI = get_TI();
+			if (TI == &TI0)
+				ACQUIRE_DTOA_LOCK(0);
+#endif
 			v->next = freelist[v->k];
 			freelist[v->k] = v;
-			FREE_DTOA_LOCK(0);
+#ifdef MULTIPLE_THREADS
+			if (TI == &TI0)
+				FREE_DTOA_LOCK(0);
+#endif
 			}
 		}
 	}
@@ -609,12 +685,7 @@ Bfree
 y->wds*sizeof(Long) + 2*sizeof(int))
 
  static Bigint *
-multadd
-#ifdef KR_headers
-	(b, m, a) Bigint *b; int m, a;
-#else
-	(Bigint *b, int m, int a)	/* multiply by m and add a */
-#endif
+multadd(Bigint *b, int m, int a MTd)	/* multiply by m and add a */
 {
 	int i, wds;
 #ifdef ULLong
@@ -654,9 +725,9 @@ multadd
 		while(++i < wds);
 	if (carry) {
 		if (wds >= b->maxwds) {
-			b1 = Balloc(b->k+1);
+			b1 = Balloc(b->k+1 MTa);
 			Bcopy(b1, b);
-			Bfree(b);
+			Bfree(b MTa);
 			b = b1;
 			}
 		b->x[wds++] = carry;
@@ -666,12 +737,7 @@ multadd
 	}
 
  static Bigint *
-s2b
-#ifdef KR_headers
-	(s, nd0, nd, y9, dplen) CONST char *s; int nd0, nd, dplen; ULong y9;
-#else
-	(const char *s, int nd0, int nd, ULong y9, int dplen)
-#endif
+s2b(const char *s, int nd0, int nd, ULong y9, int dplen MTd)
 {
 	Bigint *b;
 	int i, k;
@@ -680,11 +746,11 @@ s2b
 	x = (nd + 8) / 9;
 	for(k = 0, y = 1; x > y; y <<= 1, k++) ;
 #ifdef Pack_32
-	b = Balloc(k);
+	b = Balloc(k MTa);
 	b->x[0] = y9;
 	b->wds = 1;
 #else
-	b = Balloc(k+1);
+	b = Balloc(k+1 MTa);
 	b->x[0] = y9 & 0xffff;
 	b->wds = (b->x[1] = y9 >> 16) ? 2 : 1;
 #endif
@@ -692,24 +758,19 @@ s2b
 	i = 9;
 	if (9 < nd0) {
 		s += 9;
-		do b = multadd(b, 10, *s++ - '0');
+		do b = multadd(b, 10, *s++ - '0' MTa);
 			while(++i < nd0);
 		s += dplen;
 		}
 	else
 		s += dplen + 9;
 	for(; i < nd; i++)
-		b = multadd(b, 10, *s++ - '0');
+		b = multadd(b, 10, *s++ - '0' MTa);
 	return b;
 	}
 
  static int
-hi0bits
-#ifdef KR_headers
-	(x) ULong x;
-#else
-	(ULong x)
-#endif
+hi0bits(ULong x)
 {
 	int k = 0;
 
@@ -738,12 +799,7 @@ hi0bits
 	}
 
  static int
-lo0bits
-#ifdef KR_headers
-	(y) ULong *y;
-#else
-	(ULong *y)
-#endif
+lo0bits(ULong *y)
 {
 	int k;
 	ULong x = *y;
@@ -786,28 +842,18 @@ lo0bits
 	}
 
  static Bigint *
-i2b
-#ifdef KR_headers
-	(i) int i;
-#else
-	(int i)
-#endif
+i2b(int i MTd)
 {
 	Bigint *b;
 
-	b = Balloc(1);
+	b = Balloc(1 MTa);
 	b->x[0] = i;
 	b->wds = 1;
 	return b;
 	}
 
  static Bigint *
-mult
-#ifdef KR_headers
-	(a, b) Bigint *a, *b;
-#else
-	(Bigint *a, Bigint *b)
-#endif
+mult(Bigint *a, Bigint *b MTd)
 {
 	Bigint *c;
 	int k, wa, wb, wc;
@@ -833,7 +879,7 @@ mult
 	wc = wa + wb;
 	if (wc > a->maxwds)
 		k++;
-	c = Balloc(k);
+	c = Balloc(k MTa);
 	for(x = c->x, xa = x + wc; x < xa; x++)
 		*x = 0;
 	xa = a->x;
@@ -911,55 +957,63 @@ mult
 	return c;
 	}
 
- static Bigint *p5s;
-
  static Bigint *
-pow5mult
-#ifdef KR_headers
-	(b, k) Bigint *b; int k;
-#else
-	(Bigint *b, int k)
-#endif
+pow5mult(Bigint *b, int k MTd)
 {
 	Bigint *b1, *p5, *p51;
+#ifdef MULTIPLE_THREADS
+	ThInfo *TI;
+#endif
 	int i;
 	static int p05[3] = { 5, 25, 125 };
 
 	if ((i = k & 3))
-		b = multadd(b, p05[i-1], 0);
+		b = multadd(b, p05[i-1], 0 MTa);
 
 	if (!(k >>= 2))
 		return b;
+#ifdef  MULTIPLE_THREADS
+	if (!(TI = *PTI))
+		*PTI = TI = get_TI();
+#endif
 	if (!(p5 = p5s)) {
 		/* first time */
 #ifdef MULTIPLE_THREADS
-		ACQUIRE_DTOA_LOCK(1);
+		if (!(TI = *PTI))
+			*PTI = TI = get_TI();
+		if (TI == &TI0)
+			ACQUIRE_DTOA_LOCK(1);
 		if (!(p5 = p5s)) {
-			p5 = p5s = i2b(625);
+			p5 = p5s = i2b(625 MTa);
 			p5->next = 0;
 			}
-		FREE_DTOA_LOCK(1);
+		if (TI == &TI0)
+			FREE_DTOA_LOCK(1);
 #else
-		p5 = p5s = i2b(625);
+		p5 = p5s = i2b(625 MTa);
 		p5->next = 0;
 #endif
 		}
 	for(;;) {
 		if (k & 1) {
-			b1 = mult(b, p5);
-			Bfree(b);
+			b1 = mult(b, p5 MTa);
+			Bfree(b MTa);
 			b = b1;
 			}
 		if (!(k >>= 1))
 			break;
 		if (!(p51 = p5->next)) {
 #ifdef MULTIPLE_THREADS
-			ACQUIRE_DTOA_LOCK(1);
+			if (!TI && !(TI = *PTI))
+				*PTI = TI = get_TI();
+			if (TI == &TI0)
+				ACQUIRE_DTOA_LOCK(1);
 			if (!(p51 = p5->next)) {
-				p51 = p5->next = mult(p5,p5);
+				p51 = p5->next = mult(p5,p5 MTa);
 				p51->next = 0;
 				}
-			FREE_DTOA_LOCK(1);
+			if (TI == &TI0)
+				FREE_DTOA_LOCK(1);
 #else
 			p51 = p5->next = mult(p5,p5);
 			p51->next = 0;
@@ -971,12 +1025,7 @@ pow5mult
 	}
 
  static Bigint *
-lshift
-#ifdef KR_headers
-	(b, k) Bigint *b; int k;
-#else
-	(Bigint *b, int k)
-#endif
+lshift(Bigint *b, int k MTd)
 {
 	int i, k1, n, n1;
 	Bigint *b1;
@@ -991,7 +1040,7 @@ lshift
 	n1 = n + b->wds + 1;
 	for(i = b->maxwds; n1 > i; i <<= 1)
 		k1++;
-	b1 = Balloc(k1);
+	b1 = Balloc(k1 MTa);
 	x1 = b1->x;
 	for(i = 0; i < n; i++)
 		*x1++ = 0;
@@ -1026,17 +1075,12 @@ lshift
 		*x1++ = *x++;
 		while(x < xe);
 	b1->wds = n1 - 1;
-	Bfree(b);
+	Bfree(b MTa);
 	return b1;
 	}
 
  static int
-cmp
-#ifdef KR_headers
-	(a, b) Bigint *a, *b;
-#else
-	(Bigint *a, Bigint *b)
-#endif
+cmp(Bigint *a, Bigint *b)
 {
 	ULong *xa, *xa0, *xb, *xb0;
 	int i, j;
@@ -1065,12 +1109,7 @@ cmp
 	}
 
  static Bigint *
-diff
-#ifdef KR_headers
-	(a, b) Bigint *a, *b;
-#else
-	(Bigint *a, Bigint *b)
-#endif
+diff(Bigint *a, Bigint *b MTd)
 {
 	Bigint *c;
 	int i, wa, wb;
@@ -1086,7 +1125,7 @@ diff
 
 	i = cmp(a,b);
 	if (!i) {
-		c = Balloc(0);
+		c = Balloc(0 MTa);
 		c->wds = 1;
 		c->x[0] = 0;
 		return c;
@@ -1099,7 +1138,7 @@ diff
 		}
 	else
 		i = 0;
-	c = Balloc(a->k);
+	c = Balloc(a->k MTa);
 	c->sign = i;
 	wa = a->wds;
 	xa = a->x;
@@ -1159,12 +1198,7 @@ diff
 	}
 
  static double
-ulp
-#ifdef KR_headers
-	(x) U *x;
-#else
-	(U *x)
-#endif
+ulp(U *x)
 {
 	Long L;
 	U u;
@@ -1201,12 +1235,7 @@ ulp
 	}
 
  static double
-b2d
-#ifdef KR_headers
-	(a, e) Bigint *a; int *e;
-#else
-	(Bigint *a, int *e)
-#endif
+b2d(Bigint *a, int *e)
 {
 	ULong *xa, *xa0, w, y, z;
 	int k;
@@ -1271,12 +1300,7 @@ b2d
 	}
 
  static Bigint *
-d2b
-#ifdef KR_headers
-	(d, e, bits) U *d; int *e, *bits;
-#else
-	(U *d, int *e, int *bits)
-#endif
+d2b(U *d, int *e, int *bits MTd)
 {
 	Bigint *b;
 	int de, k;
@@ -1294,9 +1318,9 @@ d2b
 #endif
 
 #ifdef Pack_32
-	b = Balloc(1);
+	b = Balloc(1 MTa);
 #else
-	b = Balloc(2);
+	b = Balloc(2 MTa);
 #endif
 	x = b->x;
 
@@ -1405,12 +1429,7 @@ d2b
 #undef d1
 
  static double
-ratio
-#ifdef KR_headers
-	(a, b) Bigint *a, *b;
-#else
-	(Bigint *a, Bigint *b)
-#endif
+ratio(Bigint *a, Bigint *b)
 {
 	U da, db;
 	int k, ka, kb;
@@ -1445,7 +1464,7 @@ ratio
 	return dval(&da) / dval(&db);
 	}
 
- static CONST double
+ static const double
 tens[] = {
 		1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
 		1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
@@ -1455,10 +1474,10 @@ tens[] = {
 #endif
 		};
 
- static CONST double
+ static const double
 #ifdef IEEE_Arith
 bigtens[] = { 1e16, 1e32, 1e64, 1e128, 1e256 };
-static CONST double tinytens[] = { 1e-16, 1e-32, 1e-64, 1e-128,
+static const double tinytens[] = { 1e-16, 1e-32, 1e-64, 1e-128,
 #ifdef Avoid_Underflow
 		9007199254740992.*9007199254740992.e-256
 		/* = 2^106 * 1e-256 */
@@ -1473,11 +1492,11 @@ static CONST double tinytens[] = { 1e-16, 1e-32, 1e-64, 1e-128,
 #else
 #ifdef IBM
 bigtens[] = { 1e16, 1e32, 1e64 };
-static CONST double tinytens[] = { 1e-16, 1e-32, 1e-64 };
+static const double tinytens[] = { 1e-16, 1e-32, 1e-64 };
 #define n_bigtens 3
 #else
 bigtens[] = { 1e16, 1e32 };
-static CONST double tinytens[] = { 1e-16, 1e-32 };
+static const double tinytens[] = { 1e-16, 1e-32 };
 #define n_bigtens 2
 #endif
 #endif
@@ -1549,15 +1568,10 @@ static unsigned char hexdig[256] = {
 #endif
 
  static int
-match
-#ifdef KR_headers
-	(sp, t) char **sp, *t;
-#else
-	(const char **sp, const char *t)
-#endif
+match(const char **sp, const char *t)
 {
 	int c, d;
-	CONST char *s = *sp;
+	const char *s = *sp;
 
 	while((d = *t++)) {
 		if ((c = *++s) >= 'A' && c <= 'Z')
@@ -1571,15 +1585,10 @@ match
 
 #ifndef No_Hex_NaN
  static void
-hexnan
-#ifdef KR_headers
-	(rvp, sp) U *rvp; CONST char **sp;
-#else
-	(U *rvp, const char **sp)
-#endif
+hexnan(U *rvp, const char **sp)
 {
 	ULong c, x[2];
-	CONST char *s;
+	const char *s;
 	int c1, havedig, udx0, xshift;
 
 	/**** if (!hexdig['0']) hexdig_init(); ****/
@@ -1588,11 +1597,11 @@ hexnan
 	udx0 = 1;
 	s = *sp;
 	/* allow optional initial 0x or 0X */
-	while((c = *(CONST unsigned char*)(s+1)) && c <= ' ')
+	while((c = *(const unsigned char*)(s+1)) && c <= ' ')
 		++s;
 	if (s[1] == '0' && (s[2] == 'x' || s[2] == 'X'))
 		s += 2;
-	while((c = *(CONST unsigned char*)++s)) {
+	while((c = *(const unsigned char*)++s)) {
 		if ((c1 = hexdig[c]))
 			c  = c1 & 0xf;
 		else if (c <= ' ') {
@@ -1650,11 +1659,7 @@ hexnan
 
 #if !defined(NO_HEX_FP) || defined(Honor_FLT_ROUNDS) /*{*/
  static Bigint *
-#ifdef KR_headers
-increment(b) Bigint *b;
-#else
-increment(Bigint *b)
-#endif
+increment(Bigint *b MTd)
 {
 	ULong *x, *xe;
 	Bigint *b1;
@@ -1670,9 +1675,9 @@ increment(Bigint *b)
 		} while(x < xe);
 	{
 		if (b->wds >= b->maxwds) {
-			b1 = Balloc(b->k+1);
+			b1 = Balloc(b->k+1 MTa);
 			Bcopy(b1,b);
-			Bfree(b);
+			Bfree(b MTa);
 			b = b1;
 			}
 		b->x[b->wds++] = 1;
@@ -1685,11 +1690,7 @@ increment(Bigint *b)
 #ifndef NO_HEX_FP /*{*/
 
  static void
-#ifdef KR_headers
-rshift(b, k) Bigint *b; int k;
-#else
 rshift(Bigint *b, int k)
-#endif
 {
 	ULong *x, *x1, *xe, y;
 	int n;
@@ -1718,11 +1719,7 @@ rshift(Bigint *b, int k)
 	}
 
  static ULong
-#ifdef KR_headers
-any_on(b, k) Bigint *b; int k;
-#else
 any_on(Bigint *b, int k)
-#endif
 {
 	int n, nwds;
 	ULong *x, *x0, x1, x2;
@@ -1755,15 +1752,10 @@ enum {	/* rounding values: same as FLT_ROUNDS */
 	};
 
  void
-#ifdef KR_headers
-gethex(sp, rvp, rounding, sign)
-	CONST char **sp; U *rvp; int rounding, sign;
-#else
-gethex( CONST char **sp, U *rvp, int rounding, int sign)
-#endif
+gethex( const char **sp, U *rvp, int rounding, int sign MTd)
 {
 	Bigint *b;
-	CONST unsigned char *decpt, *s0, *s, *s1;
+	const unsigned char *decpt, *s0, *s, *s1;
 	Long e, e1;
 	ULong L, lostbits, *x;
 	int big, denorm, esign, havedig, k, n, nbits, up, zret;
@@ -1795,8 +1787,8 @@ gethex( CONST char **sp, U *rvp, int rounding, int sign)
 	if (!(s0 = decimalpoint_cache)) {
 		s0 = (unsigned char*)localeconv()->decimal_point;
 		if ((decimalpoint_cache = (unsigned char*)
-				MALLOC(strlen((CONST char*)s0) + 1))) {
-			strcpy((char*)decimalpoint_cache, (CONST char*)s0);
+				MALLOC(strlen((const char*)s0) + 1))) {
+			strcpy((char*)decimalpoint_cache, (const char*)s0);
 			s0 = decimalpoint_cache;
 			}
 		}
@@ -1806,7 +1798,7 @@ gethex( CONST char **sp, U *rvp, int rounding, int sign)
 
 	/**** if (!hexdig['0']) hexdig_init(); ****/
 	havedig = 0;
-	s0 = *(CONST unsigned char **)sp + 2;
+	s0 = *(const unsigned char **)sp + 2;
 	while(s0[havedig] == '0')
 		havedig++;
 	s0 += havedig;
@@ -1905,7 +1897,7 @@ gethex( CONST char **sp, U *rvp, int rounding, int sign)
 			goto retz;
 #ifdef IEEE_Arith
  ret_tinyf:
-			Bfree(b);
+			Bfree(b MTa);
  ret_tiny:
 #ifndef NO_ERRNO
 			errno = ERANGE;
@@ -1935,7 +1927,7 @@ gethex( CONST char **sp, U *rvp, int rounding, int sign)
 	n = s1 - s0 - 1;
 	for(k = 0; n > (1 << (kshift-2)) - 1; n >>= 1)
 		k++;
-	b = Balloc(k);
+	b = Balloc(k MTa);
 	x = b->x;
 	n = 0;
 	L = 0;
@@ -1982,13 +1974,13 @@ gethex( CONST char **sp, U *rvp, int rounding, int sign)
 		}
 	else if (n < nbits) {
 		n = nbits - n;
-		b = lshift(b, n);
+		b = lshift(b, n MTa);
 		e -= n;
 		x = b->x;
 		}
 	if (e > Emax) {
  ovfl:
-		Bfree(b);
+		Bfree(b MTa);
  ovfl1:
 #ifndef NO_ERRNO
 		errno = ERANGE;
@@ -2017,7 +2009,7 @@ gethex( CONST char **sp, U *rvp, int rounding, int sign)
 					goto ret_tinyf;
 			  }
 #endif /* } IEEE_Arith */
-			Bfree(b);
+			Bfree(b MTa);
  retz:
 #ifndef NO_ERRNO
 			errno = ERANGE;
@@ -2055,7 +2047,7 @@ gethex( CONST char **sp, U *rvp, int rounding, int sign)
 		  }
 		if (up) {
 			k = b->wds;
-			b = increment(b);
+			b = increment(b MTa);
 			x = b->x;
 			if (denorm) {
 #if 0
@@ -2112,16 +2104,12 @@ gethex( CONST char **sp, U *rvp, int rounding, int sign)
 	word0(rvp) = ((b->x[1] & ~0x800000) >> 16) | ((e + 129 + 55) << 7) | (b->x[1] << 16);
 	word1(rvp) = (b->x[0] >> 16) | (b->x[0] << 16);
 #endif
-	Bfree(b);
+	Bfree(b MTa);
 	}
 #endif /*!NO_HEX_FP}*/
 
  static int
-#ifdef KR_headers
-dshift(b, p2) Bigint *b; int p2;
-#else
 dshift(Bigint *b, int p2)
-#endif
 {
 	int rv = hi0bits(b->x[b->wds-1]) - 4;
 	if (p2 > 0)
@@ -2130,12 +2118,7 @@ dshift(Bigint *b, int p2)
 	}
 
  static int
-quorem
-#ifdef KR_headers
-	(b, S) Bigint *b, *S;
-#else
-	(Bigint *b, Bigint *S)
-#endif
+quorem(Bigint *b, Bigint *S)
 {
 	int n;
 	ULong *bx, *bxe, q, *sx, *sxe;
@@ -2255,12 +2238,7 @@ quorem
 
 #if defined(Avoid_Underflow) || !defined(NO_STRTOD_BIGCOMP) /*{*/
  static double
-sulp
-#ifdef KR_headers
-	(x, bc) U *x; BCinfo *bc;
-#else
-	(U *x, BCinfo *bc)
-#endif
+sulp(U *x, BCinfo *bc)
 {
 	U u;
 	double rv;
@@ -2277,13 +2255,7 @@ sulp
 
 #ifndef NO_STRTOD_BIGCOMP
  static void
-bigcomp
-#ifdef KR_headers
-	(rv, s0, bc)
-	U *rv; CONST char *s0; BCinfo *bc;
-#else
-	(U *rv, const char *s0, BCinfo *bc)
-#endif
+bigcomp(U *rv, const char *s0, BCinfo *bc MTd)
 {
 	Bigint *b, *d;
 	int b2, bbits, d2, dd, dig, dsign, i, j, nd, nd0, p2, p5, speccase;
@@ -2296,7 +2268,7 @@ bigcomp
 #ifndef Sudden_Underflow
 	if (rv->d == 0.) {	/* special case: value near underflow-to-zero */
 				/* threshold was rounded to zero */
-		b = i2b(1);
+		b = i2b(1 MTa);
 		p2 = Emin - P + 1;
 		bbits = 1;
 #ifdef Avoid_Underflow
@@ -2317,7 +2289,7 @@ bigcomp
 		}
 	else
 #endif
-		b = d2b(rv, &p2, &bbits);
+		b = d2b(rv, &p2, &bbits MTa);
 #ifdef Avoid_Underflow
 	p2 -= bc->scale;
 #endif
@@ -2326,7 +2298,7 @@ bigcomp
 	i = P - bbits;
 	if (i > (j = P - Emin - 1 + p2)) {
 #ifdef Sudden_Underflow
-		Bfree(b);
+		Bfree(b MTa);
 		b = i2b(1);
 		p2 = Emin;
 		i = P - 1;
@@ -2343,28 +2315,28 @@ bigcomp
 #ifdef Honor_FLT_ROUNDS
 	if (bc->rounding != 1) {
 		if (i > 0)
-			b = lshift(b, i);
+			b = lshift(b, i MTa);
 		if (dsign)
-			b = increment(b);
+			b = increment(b MTa);
 		}
 	else
 #endif
 		{
-		b = lshift(b, ++i);
+		b = lshift(b, ++i MTa);
 		b->x[0] |= 1;
 		}
 #ifndef Sudden_Underflow
  have_i:
 #endif
 	p2 -= p5 + i;
-	d = i2b(1);
+	d = i2b(1 MTa);
 	/* Arrange for convenient computation of quotients:
 	 * shift left if necessary so divisor has 4 leading 0 bits.
 	 */
 	if (p5 > 0)
-		d = pow5mult(d, p5);
+		d = pow5mult(d, p5 MTa);
 	else if (p5 < 0)
-		b = pow5mult(b, -p5);
+		b = pow5mult(b, -p5 MTa);
 	if (p2 > 0) {
 		b2 = p2;
 		d2 = 0;
@@ -2375,15 +2347,15 @@ bigcomp
 		}
 	i = dshift(d, d2);
 	if ((b2 += i) > 0)
-		b = lshift(b, b2);
+		b = lshift(b, b2 MTa);
 	if ((d2 += i) > 0)
-		d = lshift(d, d2);
+		d = lshift(d, d2 MTa);
 
 	/* Now b/d = exactly half-way between the two floating-point values */
 	/* on either side of the input string.  Compute first digit of b/d. */
 
 	if (!(dig = quorem(b,d))) {
-		b = multadd(b, 10, 0);	/* very unlikely */
+		b = multadd(b, 10, 0 MTa);	/* very unlikely */
 		dig = quorem(b,d);
 		}
 
@@ -2397,7 +2369,7 @@ bigcomp
 				dd = 1;
 			goto ret;
 			}
-		b = multadd(b, 10, 0);
+		b = multadd(b, 10, 0 MTa);
 		dig = quorem(b,d);
 		}
 	for(j = bc->dp1; i++ < nd;) {
@@ -2408,14 +2380,14 @@ bigcomp
 				dd = 1;
 			goto ret;
 			}
-		b = multadd(b, 10, 0);
+		b = multadd(b, 10, 0 MTa);
 		dig = quorem(b,d);
 		}
 	if (dig > 0 || b->x[0] || b->wds > 1)
 		dd = -1;
  ret:
-	Bfree(b);
-	Bfree(d);
+	Bfree(b MTa);
+	Bfree(d MTa);
 #ifdef Honor_FLT_ROUNDS
 	if (bc->rounding != 1) {
 		if (dd < 0) {
@@ -2486,16 +2458,11 @@ retlow1:
 #endif /* NO_STRTOD_BIGCOMP */
 
  double
-strtod
-#ifdef KR_headers
-	(s00, se) CONST char *s00; char **se;
-#else
-	(const char *s00, char **se)
-#endif
+strtod(const char *s00, char **se)
 {
 	int bb2, bb5, bbe, bd2, bd5, bbbits, bs2, c, e, e1;
 	int esign, i, j, k, nd, nd0, nf, nz, nz0, nz1, sign;
-	CONST char *s, *s0, *s1;
+	const char *s, *s0, *s1;
 	double aadj, aadj1;
 	Long L;
 	U aadj2, adj, rv, rv0;
@@ -2511,6 +2478,9 @@ strtod
 #ifndef NO_STRTOD_BIGCOMP
 	int req_bigcomp = 0;
 #endif
+#ifdef MULTIPLE_THREADS
+	ThInfo *TI = 0;
+#endif
 #ifdef Honor_FLT_ROUNDS /*{*/
 #ifdef Trust_FLT_ROUNDS /*{{ only define this if FLT_ROUNDS really works! */
 	bc.rounding = Flt_Rounds;
@@ -2524,7 +2494,7 @@ strtod
 #endif /*}}*/
 #endif /*}*/
 #ifdef USE_LOCALE
-	CONST char *s2;
+	const char *s2;
 #endif
 
 	sign = nz0 = nz1 = nz = bc.dplen = bc.uflchk = 0;
@@ -2556,9 +2526,9 @@ strtod
 		  case 'x':
 		  case 'X':
 #ifdef Honor_FLT_ROUNDS
-			gethex(&s, &rv, bc.rounding, sign);
+			gethex(&s, &rv, bc.rounding, sign MTa);
 #else
-			gethex(&s, &rv, 1, sign);
+			gethex(&s, &rv, 1, sign MTb);
 #endif
 			goto ret;
 		  }
@@ -2856,11 +2826,11 @@ strtod
 #endif /*IEEE_Arith*/
  range_err:
 				if (bd0) {
-					Bfree(bb);
-					Bfree(bd);
-					Bfree(bs);
-					Bfree(bd0);
-					Bfree(delta);
+					Bfree(bb MTb);
+					Bfree(bd MTb);
+					Bfree(bs MTb);
+					Bfree(bd0 MTb);
+					Bfree(delta MTb);
 					}
 #ifndef NO_ERRNO
 				errno = ERANGE;
@@ -2978,13 +2948,13 @@ strtod
 			}
 		}
 #endif
-	bd0 = s2b(s0, nd0, nd, y, bc.dplen);
+	bd0 = s2b(s0, nd0, nd, y, bc.dplen MTb);
 
 	for(;;) {
-		bd = Balloc(bd0->k);
+		bd = Balloc(bd0->k MTb);
 		Bcopy(bd, bd0);
-		bb = d2b(&rv, &bbe, &bbbits);	/* rv = bb * 2^bbe */
-		bs = i2b(1);
+		bb = d2b(&rv, &bbe, &bbbits MTb);	/* rv = bb * 2^bbe */
+		bs = i2b(1 MTb);
 
 		if (e >= 0) {
 			bb2 = bb5 = 0;
@@ -3049,20 +3019,20 @@ strtod
 			bs2 -= i;
 			}
 		if (bb5 > 0) {
-			bs = pow5mult(bs, bb5);
-			bb1 = mult(bs, bb);
-			Bfree(bb);
+			bs = pow5mult(bs, bb5 MTb);
+			bb1 = mult(bs, bb MTb);
+			Bfree(bb MTb);
 			bb = bb1;
 			}
 		if (bb2 > 0)
-			bb = lshift(bb, bb2);
+			bb = lshift(bb, bb2 MTb);
 		if (bd5 > 0)
-			bd = pow5mult(bd, bd5);
+			bd = pow5mult(bd, bd5 MTb);
 		if (bd2 > 0)
-			bd = lshift(bd, bd2);
+			bd = lshift(bd, bd2 MTb);
 		if (bs2 > 0)
-			bs = lshift(bs, bs2);
-		delta = diff(bb, bd);
+			bs = lshift(bs, bs2 MTb);
+		delta = diff(bb, bd MTb);
 		bc.dsign = delta->sign;
 		delta->sign = 0;
 		i = cmp(delta, bs);
@@ -3205,7 +3175,7 @@ strtod
 #endif
 				break;
 				}
-			delta = lshift(delta,Log2P);
+			delta = lshift(delta,Log2P MTb);
 			if (cmp(delta, bs) > 0)
 				goto drop_down;
 			break;
@@ -3495,21 +3465,21 @@ strtod
 		}
 #endif
  cont:
-		Bfree(bb);
-		Bfree(bd);
-		Bfree(bs);
-		Bfree(delta);
+		Bfree(bb MTb);
+		Bfree(bd MTb);
+		Bfree(bs MTb);
+		Bfree(delta MTb);
 		}
-	Bfree(bb);
-	Bfree(bd);
-	Bfree(bs);
-	Bfree(bd0);
-	Bfree(delta);
+	Bfree(bb MTb);
+	Bfree(bd MTb);
+	Bfree(bs MTb);
+	Bfree(bd0 MTb);
+	Bfree(delta MTb);
 #ifndef NO_STRTOD_BIGCOMP
 	if (req_bigcomp) {
 		bd0 = 0;
 		bc.e0 += nz1;
-		bigcomp(&rv, s0, &bc);
+		bigcomp(&rv, s0, &bc MTb);
 		y = word0(&rv) & Exp_mask;
 		if (y == Exp_mask)
 			goto ovfl;
@@ -3562,11 +3532,7 @@ strtod
 #endif
 
  static char *
-#ifdef KR_headers
-rv_alloc(i) int i;
-#else
-rv_alloc(int i)
-#endif
+rv_alloc(int i MTd)
 {
 	int j, k, *r;
 
@@ -3575,7 +3541,7 @@ rv_alloc(int i)
 		sizeof(Bigint) - sizeof(ULong) - sizeof(int) + j <= i;
 		j <<= 1)
 			k++;
-	r = (int*)Balloc(k);
+	r = (int*)Balloc(k MTa);
 	*r = k;
 	return
 #ifndef MULTIPLE_THREADS
@@ -3585,15 +3551,11 @@ rv_alloc(int i)
 	}
 
  static char *
-#ifdef KR_headers
-nrv_alloc(s, rve, n) char *s, **rve; int n;
-#else
-nrv_alloc(const char *s, char **rve, int n)
-#endif
+nrv_alloc(const char *s, char **rve, int n MTd)
 {
 	char *rv, *t;
 
-	t = rv = rv_alloc(n);
+	t = rv = rv_alloc(n MTa);
 	while((*t = *s++)) t++;
 	if (rve)
 		*rve = t;
@@ -3607,15 +3569,14 @@ nrv_alloc(const char *s, char **rve, int n)
  */
 
  void
-#ifdef KR_headers
-freedtoa(s) char *s;
-#else
 freedtoa(char *s)
-#endif
 {
+#ifdef MULTIPLE_THREADS
+	ThInfo *TI = 0;
+#endif
 	Bigint *b = (Bigint *)((int *)s - 1);
 	b->maxwds = 1 << (b->k = *(int*)b);
-	Bfree(b);
+	Bfree(b MTb);
 #ifndef MULTIPLE_THREADS
 	if (s == dtoa_result)
 		dtoa_result = 0;
@@ -3657,13 +3618,7 @@ freedtoa(char *s)
  */
 
  char *
-dtoa
-#ifdef KR_headers
-	(dd, mode, ndigits, decpt, sign, rve)
-	double dd; int mode, ndigits, *decpt, *sign; char **rve;
-#else
-	(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve)
-#endif
+dtoa(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve)
 {
  /*	Arguments ndigits, decpt, sign are similar to those
 	of ecvt and fcvt; trailing zeros are suppressed from
@@ -3699,6 +3654,9 @@ dtoa
 		to hold the suppressed trailing zeros.
 	*/
 
+#ifdef MULTIPLE_THREADS
+	ThInfo *TI = 0;
+#endif
 	int bbits, b2, b5, be, dig, i, ieps, ilim, ilim0, ilim1,
 		j, j1, k, k0, k_check, leftright, m2, m5, s2, s5,
 		spec_case, try_quick;
@@ -3760,9 +3718,9 @@ dtoa
 		*decpt = 9999;
 #ifdef IEEE_Arith
 		if (!word1(&u) && !(word0(&u) & 0xfffff))
-			return nrv_alloc("Infinity", rve, 8);
+			return nrv_alloc("Infinity", rve, 8 MTb);
 #endif
-		return nrv_alloc("NaN", rve, 3);
+		return nrv_alloc("NaN", rve, 3 MTb);
 		}
 #endif
 #ifdef IBM
@@ -3770,7 +3728,7 @@ dtoa
 #endif
 	if (!dval(&u)) {
 		*decpt = 1;
-		return nrv_alloc("0", rve, 1);
+		return nrv_alloc("0", rve, 1 MTb);
 		}
 
 #ifdef SET_INEXACT
@@ -3787,7 +3745,7 @@ dtoa
 		}
 #endif
 
-	b = d2b(&u, &be, &bbits);
+	b = d2b(&u, &be, &bbits MTb);
 #ifdef Sudden_Underflow
 	i = (int)(word0(&u) >> Exp_shift1 & (Exp_mask>>Exp_shift1));
 #else
@@ -3914,7 +3872,7 @@ dtoa
 			if (i <= 0)
 				i = 1;
 		}
-	s = s0 = rv_alloc(i);
+	s = s0 = rv_alloc(i MTb);
 
 #ifdef Honor_FLT_ROUNDS
 	if (mode > 1 && Rounding != 1)
@@ -4108,7 +4066,7 @@ dtoa
 #endif
 		b2 += i;
 		s2 += i;
-		mhi = i2b(1);
+		mhi = i2b(1 MTb);
 		}
 	if (m2 > 0 && s2 > 0) {
 		i = m2 < s2 ? m2 : s2;
@@ -4119,20 +4077,20 @@ dtoa
 	if (b5 > 0) {
 		if (leftright) {
 			if (m5 > 0) {
-				mhi = pow5mult(mhi, m5);
-				b1 = mult(mhi, b);
-				Bfree(b);
+				mhi = pow5mult(mhi, m5 MTb);
+				b1 = mult(mhi, b MTb);
+				Bfree(b MTb);
 				b = b1;
 				}
 			if ((j = b5 - m5))
-				b = pow5mult(b, j);
+				b = pow5mult(b, j MTb);
 			}
 		else
-			b = pow5mult(b, b5);
+			b = pow5mult(b, b5 MTb);
 		}
-	S = i2b(1);
+	S = i2b(1 MTb);
 	if (s5 > 0)
-		S = pow5mult(S, s5);
+		S = pow5mult(S, s5 MTb);
 
 	/* Check for special case that d is a normalized power of 2. */
 
@@ -4166,20 +4124,20 @@ dtoa
 	m2 += i;
 	s2 += i;
 	if (b2 > 0)
-		b = lshift(b, b2);
+		b = lshift(b, b2 MTb);
 	if (s2 > 0)
-		S = lshift(S, s2);
+		S = lshift(S, s2 MTb);
 	if (k_check) {
 		if (cmp(b,S) < 0) {
 			k--;
-			b = multadd(b, 10, 0);	/* we botched the k estimate */
+			b = multadd(b, 10, 0 MTb);	/* we botched the k estimate */
 			if (leftright)
-				mhi = multadd(mhi, 10, 0);
+				mhi = multadd(mhi, 10, 0 MTb);
 			ilim = ilim1;
 			}
 		}
 	if (ilim <= 0 && (mode == 3 || mode == 5)) {
-		if (ilim < 0 || cmp(b,S = multadd(S,5,0)) <= 0) {
+		if (ilim < 0 || cmp(b,S = multadd(S,5,0 MTb)) <= 0) {
 			/* no digits, fcvt style */
  no_digits:
 			k = -1 - ndigits;
@@ -4192,7 +4150,7 @@ dtoa
 		}
 	if (leftright) {
 		if (m2 > 0)
-			mhi = lshift(mhi, m2);
+			mhi = lshift(mhi, m2 MTb);
 
 		/* Compute mlo -- check for special case
 		 * that d is a normalized power of 2.
@@ -4200,9 +4158,9 @@ dtoa
 
 		mlo = mhi;
 		if (spec_case) {
-			mhi = Balloc(mhi->k);
+			mhi = Balloc(mhi->k MTb);
 			Bcopy(mhi, mlo);
-			mhi = lshift(mhi, Log2P);
+			mhi = lshift(mhi, Log2P MTb);
 			}
 
 		for(i = 1;;i++) {
@@ -4211,9 +4169,9 @@ dtoa
 			 * that will round to d?
 			 */
 			j = cmp(b, mlo);
-			delta = diff(S, mhi);
+			delta = diff(S, mhi MTb);
 			j1 = delta->sign ? 1 : cmp(b, delta);
-			Bfree(delta);
+			Bfree(delta MTb);
 #ifndef ROUND_BIASED
 			if (j1 == 0 && mode != 1 && !(word1(&u) & 1)
 #ifdef Honor_FLT_ROUNDS
@@ -4251,7 +4209,7 @@ dtoa
 				  }
 #endif /*Honor_FLT_ROUNDS*/
 				if (j1 > 0) {
-					b = lshift(b, 1);
+					b = lshift(b, 1 MTb);
 					j1 = cmp(b, S);
 #ifdef ROUND_BIASED
 					if (j1 >= 0 /*)*/
@@ -4284,12 +4242,12 @@ dtoa
 			*s++ = dig;
 			if (i == ilim)
 				break;
-			b = multadd(b, 10, 0);
+			b = multadd(b, 10, 0 MTb);
 			if (mlo == mhi)
-				mlo = mhi = multadd(mhi, 10, 0);
+				mlo = mhi = multadd(mhi, 10, 0 MTb);
 			else {
-				mlo = multadd(mlo, 10, 0);
-				mhi = multadd(mhi, 10, 0);
+				mlo = multadd(mlo, 10, 0 MTb);
+				mhi = multadd(mhi, 10, 0 MTb);
 				}
 			}
 		}
@@ -4304,7 +4262,7 @@ dtoa
 				}
 			if (i >= ilim)
 				break;
-			b = multadd(b, 10, 0);
+			b = multadd(b, 10, 0 MTb);
 			}
 
 	/* Round off last digit */
@@ -4315,7 +4273,7 @@ dtoa
 	  case 2: goto roundoff;
 	  }
 #endif
-	b = lshift(b, 1);
+	b = lshift(b, 1 MTb);
 	j = cmp(b, S);
 #ifdef ROUND_BIASED
 	if (j >= 0)
@@ -4340,11 +4298,11 @@ dtoa
 		s++;
 		}
  ret:
-	Bfree(S);
+	Bfree(S MTb);
 	if (mhi) {
 		if (mlo && mlo != mhi)
-			Bfree(mlo);
-		Bfree(mhi);
+			Bfree(mlo MTb);
+		Bfree(mhi MTb);
 		}
  ret1:
 #ifdef SET_INEXACT
@@ -4358,7 +4316,7 @@ dtoa
 	else if (!oldinexact)
 		clear_inexact();
 #endif
-	Bfree(b);
+	Bfree(b MTb);
 	*s = 0;
 	*decpt = k + 1;
 	if (rve)

@@ -1,2 +1,4 @@
-20150101
- funcadd1.c: tweaks to error messages.
+20150126
+  printf.c:  Fix a glitch with format %.0e that caused
+	printf("%.e\n", 4.7);
+to print "4e+00" rather than "5e+00".

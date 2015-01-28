@@ -22,17 +22,11 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
+#ifndef No_dtoa /*{{*/
 #ifdef __cplusplus
-extern "C" {
 #include "memory.h"
 #endif
-#ifndef No_dtoa
 #include "arith.h"
-#undef Use_dtoa_
-#define Use_dtoa_
-#endif
-
-#ifdef Use_dtoa_
 #include "math.h"
 #undef  __MATH_H__
 #define __MATH_H__
@@ -41,58 +35,80 @@ extern "C" {
 			   #includes stdlib.h.  To prevent confusion, any
 			   such #include must come before the next line. */
 #define strtod strtod_ASL
-#ifdef __cplusplus
-extern "C" char *dtoa(double, int, int, int*, int*, char **);
-extern "C" double strtod(const char*, char**);
-#else
-#ifdef __STDC__
-extern char *dtoa(double, int, int, int*, int*, char **);
-extern double strtod(const char*, char**);
-#else
-extern char *dtoa();
-extern double strtod();
-#endif
-#endif /*__cplusplus*/
 #define No_leftright
-#ifndef MALLOC
+#ifdef ALLOW_OPENMP /*{*/
+#define MULTIPLE_THREADS
+#include <omp.h>
+
+/* This assumes use of separate ASL* values for each thread, so we */
+/* can ignore ACQUIRE_DTOA_LOCK(n) and FREE_DTOA_LOCK(n) for n >= 2. */
+
+#define dtoa_get_threadno omp_get_thread_num
+ static omp_lock_t Locks[2];
+
+ void
+init_dtoa_locks(void)
+{
+	int i;
+	static int need_init = 1;
+
+	if (need_init) {
+		for(i = 0; i < 2; ++i)
+			omp_init_lock(&Locks[i]);
+		need_init = 0;
+		}
+	}
+
+ void
+ACQUIRE_DTOA_LOCK(unsigned int n)
+{
+	if (n < 2)
+		omp_set_lock(&Locks[n]);
+	}
+
+ void
+FREE_DTOA_LOCK(unsigned int n)
+{
+	if (n < 2)
+		omp_unset_lock(&Locks[n]);
+	}
+#endif /*}*/
+
+#ifndef MALLOC /*{{*/
 #define MALLOC dtoamalloc
 #include "dtoa.c" /* >= 19991215 */
 
 #include "stdio1.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #ifndef Stderr
 extern FILE *Stderr;
 #endif
 
-#ifdef KR_headers
-#define Void char
- char *
-dtoamalloc(x) unsigned x;
-#else
-#define Void void
-
  void *
 dtoamalloc(size_t x)
-#endif
 {
-	Void *rv = malloc(x);
+	void *rv = malloc(x);
 	if (!rv) {
 		fprintf(Stderr, "\nmalloc failure in dtoa!\n");
 		exit(63);
 		}
 	return rv;
 	}
-#else /*MALLOC*/
+#ifdef __cplusplus
+	}
+#endif
+#else /*}{MALLOC*/
 #include "dtoa.c"
-#endif /*MALLOC*/
-#else
-#ifdef KR_headers
- extern char *ecvt(), *fcvt();
+#endif /*}}MALLOC*/
 
- char *
-dtoa(d, mode, ndigits, decpt, sign, rve)
-	double d; int mode, ndigits, *decpt, *sign; char **rve;
-#else
+#else /*}{*/
+
+#ifdef __cplusplus
+extern "C" {
+
 extern char *ecvt(double value, int ndigit, int *decpt, int *sign);
 extern char *fcvt(double value, int ndigit, int *decpt, int *sign);
 
@@ -130,6 +146,6 @@ dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve)
 #endif
 #ifdef __cplusplus
 }
-#endif
+#endif /*}}*/
 /* 20070913:  dtoa.c INFNAN_CHECK := default */
-/* 20131209:  sync with /netlib/fp */
+/* 20150114:  sync with /netlib/fp */

@@ -31,6 +31,10 @@ x2_check_ASL(ASL_fgh *asl, real *X)
 	int *vm;
 	real *Xe, *vscale;
 
+	if (x0len == 0) {
+		x0kind = 0;
+		return 0;
+		}
 	if (x0kind == ASL_first_x || memcmp(Lastx, X, x0len)) {
 		if (asl->i.Derrs)
 			deriv_errclear_ASL(&asl->i);

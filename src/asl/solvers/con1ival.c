@@ -75,19 +75,42 @@ con1ival(ASL *a, int i, real *X, fint *nerror)
 {
 	ASL_fg *asl;
 	cgrad *gr;
-	expr_v *V;
-	real f;
+	int j1, kv, *vmi;
+	real f, *vscale;
 
 	INchk(a, "con1ival", i, a->i.n_con0);
 	asl = (ASL_fg*)a;
 	f = cival(asl, i, X, nerror);
+	kv = 0;
+	vmi = 0;
+	if ((vscale = asl->i.vscale))
+		kv = 2;
+	if (asl->i.vmap) {
+		vmi = get_vminv_ASL(a);
+		++kv;
+		}
 	gr = asl->i.Cgrad0[i];
-	if (asl->i.vmap || asl->i.vscale)
-		for(V = var_e; gr; gr = gr->next)
-			f += gr->coef * V[gr->varno].v;
-	else
+	switch(kv) {
+	  case 3:
+		for(; gr; gr = gr->next) {
+			j1 = vmi[gr->varno];
+			f += X[j1] * vscale[j1] * gr->coef;
+			}
+		break;
+	  case 2:
+		for(; gr; gr = gr->next) {
+			j1 = gr->varno;
+			f += X[j1] * vscale[j1] * gr->coef;
+			}
+		break;
+	  case 1:
 		for(; gr; gr = gr->next)
-			f += gr->coef * X[gr->varno];
+			f += X[vmi[gr->varno]] * gr->coef;
+		break;
+	  case 0:
+		for(; gr; gr = gr->next)
+			f += X[gr->varno] * gr->coef;
+	  }
 	return f;
 	}
 

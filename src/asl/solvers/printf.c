@@ -849,7 +849,7 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 				x = va_arg(ap, double);
 				if (prec < 0)
 					prec = 0;
-				s = s0 = dtoa(x, prec ? 2 : 0, prec+1, &decpt,
+				s = s0 = dtoa(x, 2, prec+1, &decpt,
 					&sgn, &se);
 				if (decpt == 9999)
 					goto fmt9999;

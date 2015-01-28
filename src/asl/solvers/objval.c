@@ -31,6 +31,10 @@ x0_check_ASL(ASL_fg *asl, real *X)
 	int *vm;
 	real *vscale, *Xe;
 
+	if (x0len == 0) {
+		x0kind = 0;
+		return 0;
+		}
 	if (x0kind == ASL_first_x || memcmp(Lastx, X, x0len)) {
 		if (asl->i.Derrs)
 			deriv_errclear_ASL(&asl->i);
@@ -105,10 +109,9 @@ obj1val_ASL(ASL *a, int i, real *X, fint *nerror)
 	Jmp_buf err_jmp0;
 	cde *d;
 	expr *e1;
-	expr_v *V;
-	int ij;
+	int ij, j1, kv, *vmi;
 	ograd *gr;
-	real f;
+	real f, *vscale;
 
 	NNOBJ_chk(a, i, "obj1val");
 	asl = (ASL_fg*)a;
@@ -135,16 +138,39 @@ obj1val_ASL(ASL *a, int i, real *X, fint *nerror)
 		x0kind |= ASL_have_objcom;
 		}
 	d = obj_de + i;
-	gr = Ograd[i];
 	e1 = d->e;
 	f = (*e1->op)(e1 C_ASL);
 	asl->i.noxval[i] = asl->i.nxval;
-	if (asl->i.vmap || asl->i.vscale)
-		for(V = var_e; gr; gr = gr->next)
-			f += gr->coef * V[gr->varno].v;
-	else
+	kv = 0;
+	vmi = 0;
+	if ((vscale = asl->i.vscale))
+		kv = 2;
+	if (asl->i.vmap) {
+		vmi = get_vminv_ASL(a);
+		++kv;
+		}
+	gr = Ograd[i];
+	switch(kv) {
+	  case 3:
+		for(; gr; gr = gr->next) {
+			j1 = vmi[gr->varno];
+			f += X[j1] * vscale[j1] * gr->coef;
+			}
+		break;
+	  case 2:
+		for(; gr; gr = gr->next) {
+			j1 = gr->varno;
+			f += X[j1] * vscale[j1] * gr->coef;
+			}
+		break;
+	  case 1:
 		for(; gr; gr = gr->next)
-			f += gr->coef * X[gr->varno];
+			f += X[vmi[gr->varno]] * gr->coef;
+		break;
+	  case 0:
+		for(; gr; gr = gr->next)
+			f += X[gr->varno] * gr->coef;
+	  }
  done:
 	err_jmp = 0;
 	return f;
