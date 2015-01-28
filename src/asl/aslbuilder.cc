@@ -297,7 +297,7 @@ void ASLBuilder::InitASL(const NLHeader &h) {
 
   info.n_var0 = info.n_var1 = info.n_var_;
   info.n_con0 = info.n_con1 = info.n_con_;
-  info.x0len_ = std::max(std::max(info.nlvo_, info.nlvc_), 1) * sizeof(double);
+  info.x0len_ = std::max(info.nlvo_, info.nlvc_) * sizeof(double);
   info.x0kind_ = ASL_first_x;
   info.n_conjac_[0] = 0;
   info.n_conjac_[1] = info.n_con_;
