@@ -155,7 +155,7 @@ mp::NLHeader MakeTestHeader() {
 
   h.num_linear_net_vars = 103;
   h.num_funcs = 107;
-  h.arith_kind = mp::arith::IEEE_LITTLE_ENDIAN;
+  h.arith_kind = mp::arith::GetKind();
   h.flags = 109;
 
   h.num_linear_binary_vars = 113;
