@@ -176,10 +176,12 @@ struct NLHeader : ProblemInfo {
   double ampl_vbtol;
 
   /**
+    \rst
     Floating-point arithmetic kind used with binary format to check
     if an .nl file is written using a compatible representation of
     floating-point numbers. It is not used with text format and normally
-    set to :cpp:member`mp::arith::UNKNOWN` there.
+    set to :cpp:member:`arith::UNKNOWN` there.
+    \endrst
    */
   arith::Kind arith_kind;
 
