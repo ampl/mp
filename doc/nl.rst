@@ -41,8 +41,6 @@ This section describes the C++ API of an NL reader which is
 
 .. doxygenfunction:: ReadNLString(fmt::StringRef, Handler &, fmt::StringRef)
 
-.. doxygenenumvalue:: mp::MAX_NL_OPTIONS
-
 .. doxygenclass:: mp::NLHandler
    :members:
 
@@ -50,3 +48,7 @@ This section describes the C++ API of an NL reader which is
    :members:
 
 .. doxygenenum:: mp::arith::Kind
+
+.. doxygenenumvalue:: mp::READ_BOUNDS_FIRST
+
+.. doxygenenumvalue:: mp::MAX_NL_OPTIONS

@@ -57,7 +57,7 @@ using fmt::internal::MakeUnsigned;
 
 // Flags for ReadNLFile and ReadNLString.
 enum {
-  // Read variable bounds before anything else.
+  /** Read variable bounds before anything else. */
   READ_BOUNDS_FIRST = 1
 };
 
@@ -100,7 +100,7 @@ class BinaryReadError : public Error {
 };
 
 enum {
-  // Maximum number of options in .nl and .sol formats.
+  /** Maximum number of options in NL and SOL formats. */
   MAX_NL_OPTIONS = 9,
   VBTOL_OPTION   = 1,
   READ_VBTOL     = 3
@@ -108,38 +108,38 @@ enum {
 
 namespace arith {
 
-/** Floating-point arithmetic kind */
+/** Floating-point arithmetic kind. */
 enum Kind {
 
-  /** Unknown floating-point arithmetic */
+  /** Unknown floating-point arithmetic. */
   UNKNOWN = 0,
 
   /**
     \rst
     Standard `IEEE-754 floating point
-    <http://en.wikipedia.org/wiki/IEEE_floating_point>`_ - little endian
+    <http://en.wikipedia.org/wiki/IEEE_floating_point>`_ - little endian.
     \endrst
    */
   IEEE_LITTLE_ENDIAN = 1,
 
-  /** Standard IEEE-754 floating point - big endian */
+  /** Standard IEEE-754 floating point - big endian. */
   IEEE_BIG_ENDIAN = 2,
 
   /**
     \rst
     `IBM floating point
-    <http://en.wikipedia.org/wiki/IBM_Floating_Point_Architecture>`_
+    <http://en.wikipedia.org/wiki/IBM_Floating_Point_Architecture>`_.
     \endrst
    */
   IBM = 3,
 
-  /** VAX floating point (legacy) */
+  /** VAX floating point (legacy). */
   VAX = 4,
 
-  /** Cray floating point */
+  /** Cray floating point. */
   CRAY = 5,
 
-  /** Last floating point */
+  /** Last floating point. */
   LAST = CRAY
 };
 
@@ -179,7 +179,7 @@ struct NLHeader : ProblemInfo {
     Floating-point arithmetic kind used with binary format to check
     if an .nl file is written using a compatible representation of
     floating-point numbers. It is not used with text format and normally
-    set to ``arith::UNKNOWN`` there.
+    set to :cpp:member`mp::arith::UNKNOWN` there.
    */
   arith::Kind arith_kind;
 
@@ -1744,8 +1744,8 @@ void ReadBinary(TextReader &reader, const NLHeader &header,
   Both *str* and *name* can be C strings or ``std::string`` objects.
   The *name* argument is used as the name of the input when reporting errors.
   *flags* can be either 0, which is the default, to read all constructs in
-  the order they appear in the input, or ``READ_BOUNDS_FIRST`` to read
-  variable bounds after the NL header and before other constructs such as
+  the order they appear in the input, or :cpp:member:`mp::READ_BOUNDS_FIRST` to
+  read variable bounds after the NL header and before other constructs such as
   nonlinear expressions.
   \endrst
  */
@@ -1783,8 +1783,8 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
 
   The *filename* argument can be a C string or an ``std::string`` object.
   *flags* can be either 0, which is the default, to read all constructs in
-  the order they appear in the input, or ``READ_BOUNDS_FIRST`` to read
-  variable bounds after the NL header and before other constructs such as
+  the order they appear in the input, or :cpp:member:`mp::READ_BOUNDS_FIRST` to
+  read variable bounds after the NL header and before other constructs such as
   nonlinear expressions.
   
   **Example**
