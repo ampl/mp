@@ -1,5 +1,5 @@
 /*
- Common definitions
+ Common declarations
 
  Copyright (C) 2014 AMPL Optimization Inc
 
@@ -251,7 +251,7 @@ enum Type { CONTINUOUS, INTEGER };
 }
 
 namespace obj {
-// Objective type.
+/** Objective type. */
 enum Type { MIN = 0, MAX = 1 };
 }
 
