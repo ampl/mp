@@ -23,7 +23,7 @@ class Package:
   def getfiles(self, system, versions):
     """Get the list of files for the given system."""
     version = versions[self.version_name].split('-')[0]
-    files = self._files
+    files = list(self._files)
     if system == 'osx':
       files += self._sysfiles.get('osx', [])
     elif system.startswith('win'):
