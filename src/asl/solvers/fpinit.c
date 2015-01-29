@@ -135,6 +135,10 @@ fpinit_ASL(Void)
 	_FPU_SETCW(__fpu_control);
 #elif defined(FE_ALL_EXCEPT)
 	fedisableexcept(FE_ALL_EXCEPT);
+#else
+	!!!! How does this system work?
+	!!!! Either figure it out (and modify this text),
+	!!!! or compile fpinit.c with -DNO_fpu_control .
 #endif
 #endif /* ASL_FPINIT_KEEP_TRAPBITS */
 #endif

@@ -42,7 +42,7 @@ fg_write.c	163779ef	17452
 fgh_read.c	fd5b6040	34343
 float.h0	11d95cda	1822
 fpecatch.c	e1d8a914	1574
-fpinit.c	356fa7d	5237
+fpinit.c	1aa8e913	5592
 fpinitmt.c	1ba844c2	4928
 fpsetprec.s	1d0b2972	535
 fpsetprec64.s	987339e	488
