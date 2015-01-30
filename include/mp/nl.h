@@ -542,13 +542,13 @@ class NLHandler {
   }
 
   /** Receives notification of the beginning of a count expression. */
-  LogicalArgHandler BeginCount(int num_args) {
+  CountArgHandler BeginCount(int num_args) {
     MP_UNUSED(num_args);
-    return LogicalArgHandler();
+    return CountArgHandler();
   }
 
   /** Receives notification of the end of a count expression. */
-  CountExpr EndCount(LogicalArgHandler handler) {
+  CountExpr EndCount(CountArgHandler handler) {
     MP_UNUSED(handler);
     return NumericExpr();
   }
