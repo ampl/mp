@@ -284,7 +284,7 @@ class NLHandler {
   }
 
   /**
-    A class that receives notifications of terms in the linear part
+    A class (struct) that receives notifications of terms in the linear part
     of a common expression.
    */
   struct LinearExprHandler {
@@ -315,7 +315,7 @@ class NLHandler {
   }
 
   /**
-    A class that receives notifications of terms in the linear part
+    A class (struct) that receives notifications of terms in the linear part
     of an objective expression.
    */
   typedef LinearExprHandler LinearObjHandler;
@@ -327,7 +327,7 @@ class NLHandler {
   }
 
   /**
-    A class that receives notifications of terms in the linear part
+    A class (struct) that receives notifications of terms in the linear part
     of a constraint expression.
    */
   typedef LinearExprHandler LinearConHandler;
@@ -364,7 +364,7 @@ class NLHandler {
     MP_UNUSED2(con_index, value);
   }
 
-  /** A class that receives notifications of Jacobian column sizes. */
+  /** A class (struct) that receives notifications of Jacobian column sizes. */
   struct ColumnSizeHandler {
     void Add(int size) { MP_UNUSED(size); }
   };
@@ -381,7 +381,7 @@ class NLHandler {
     MP_UNUSED3(index, name, num_args); MP_UNUSED(type);
   }
 
-  /** A class that receives notifications of integer suffix values. */
+  /** A class (struct) that receives notifications of integer suffix values. */
   struct IntSuffixHandler {
     void SetValue(int index, int value) { MP_UNUSED2(index, value); }
   };
@@ -395,7 +395,7 @@ class NLHandler {
     return IntSuffixHandler();
   }
 
-  /** A class that receives notifications of double suffix values. */
+  /** A class (struct) that receives notifications of double suffix values. */
   struct DblSuffixHandler {
     void SetValue(int index, double value) { MP_UNUSED2(index, value); }
   };
@@ -421,24 +421,34 @@ class NLHandler {
     void AddArg(Expr arg) { MP_UNUSED(arg); }
   };
 
-  /** A class that receives notifications of numeric arguments. */
+  /** A typedef of a class that receives notifications of numeric arguments. */
   typedef ArgHandler NumericArgHandler;
 
-  /** A class that receives notifications of vararg expression arguments. */
+  /**
+    A typedef of a class that receives notifications of vararg expression
+    arguments.
+   */
   typedef ArgHandler VarArgHandler;
 
-  /** A class that receives notifications of call expression arguments. */
+  /**
+    A typedef of a class that receives notifications of call expression
+    arguments.
+   */
   typedef ArgHandler CallArgHandler;
 
   /**
-    A class that receives notifications of ``numberof`` expression arguments.
+    A typedef of a class that receives notifications of ``numberof`` expression
+    arguments.
    */
   typedef ArgHandler NumberOfArgHandler;
 
-  /** A class that receives notifications of count expression arguments. */
+  /**
+    A typedef of a class that receives notifications of count expression
+    arguments.
+   */
   typedef ArgHandler CountArgHandler;
 
-  /** A class that receives notifications of logical arguments. */
+  /** A typedef of a class that receives notifications of logical arguments. */
   typedef ArgHandler LogicalArgHandler;
 
   /** Receives notification of a numeric constant in a nonlinear expression. */
@@ -481,7 +491,7 @@ class NLHandler {
   }
 
   /**
-    A class that receives notifications of slopes and breakpoints in a
+    A class (struct) that receives notifications of slopes and breakpoints in a
     piecewise-linear term.
    */
   struct PLTermHandler {
@@ -567,8 +577,8 @@ class NLHandler {
   }
 
   /**
-    A class that receives notifications of symbolic (numeric or string)
-    arguments.
+    A typedef of a class that receives notifications of symbolic (numeric or
+    string) arguments.
    */
   typedef ArgHandler SymbolicArgHandler;
 
@@ -639,8 +649,8 @@ class NLHandler {
   }
 
   /**
-    A class that receives notifications of pairwise expression (``alldiff``,
-    ``not alldiff``) arguments.
+    A typedef of a class that receives notifications of pairwise expression
+    (``alldiff``, ``not alldiff``) arguments.
    */
   typedef ArgHandler PairwiseArgHandler;
 
