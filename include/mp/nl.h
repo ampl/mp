@@ -364,6 +364,7 @@ class NLHandler {
     MP_UNUSED2(con_index, value);
   }
 
+  /** A class that receives notifications of Jacobian column sizes. */
   struct ColumnSizeHandler {
     void Add(int size) { MP_UNUSED(size); }
   };
@@ -377,6 +378,7 @@ class NLHandler {
     MP_UNUSED3(index, name, num_args); MP_UNUSED(type);
   }
 
+  /** A class that receives notifications of integer suffix values. */
   struct IntSuffixHandler {
     void SetValue(int index, int value) { MP_UNUSED2(index, value); }
   };
@@ -387,6 +389,7 @@ class NLHandler {
     return IntSuffixHandler();
   }
 
+  /** A class that receives notifications of double suffix values. */
   struct DblSuffixHandler {
     void SetValue(int index, double value) { MP_UNUSED2(index, value); }
   };
@@ -447,6 +450,10 @@ class NLHandler {
     return NumericExpr();
   }
 
+  /**
+    A class that receives notifications of slopes and breakpoints in a
+    piecewise-linear term.
+   */
   struct PLTermHandler {
     void AddSlope(double slope) { MP_UNUSED(slope); }
     void AddBreakpoint(double breakpoint) { MP_UNUSED(breakpoint); }
