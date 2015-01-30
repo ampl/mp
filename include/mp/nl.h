@@ -161,8 +161,18 @@ inline bool IsIEEE(arith::Kind k) {
 struct NLHeader : ProblemInfo {
   /** Input format */
   enum Format {
-    TEXT   = 0, ///< Text format
-    BINARY = 1  ///< Binary format
+    /**
+      Text format. Text format is fully portable meaning that an .nl file can
+      be written on a machine of one architecture and then read on a machine
+      of a different architecture.
+     */
+    TEXT = 0,
+
+    /**
+      Binary format. Binary format is not generally portable and should
+      normally be used on a single machine.
+     */
+    BINARY = 1
   };
   Format format;
 
