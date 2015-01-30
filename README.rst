@@ -18,7 +18,9 @@ Features
 --------
 
 * Reusable high-performance `.nl file reader
-  <http://mp.readthedocs.org/en/latest/nl.html>`_
+  <http://mp.readthedocs.org/en/latest/nl.html>`_ which is up to
+  `6x faster <http://zverovich.net/slides/2015-01-11-ics/socp-reformulation.html#/14>`_
+  than the one provided by ASL
 
 * Efficient type-safe C++ API for connecting solvers to AMPL and other systems:
   `source <https://github.com/ampl/mp/tree/master/src/asl>`_
