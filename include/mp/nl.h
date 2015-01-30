@@ -372,7 +372,10 @@ class NLHandler {
   /** Receives notification of Jacobian column sizes. */
   ColumnSizeHandler OnColumnSizes() { return ColumnSizeHandler(); }
 
-  /** Receives notification of a function. */
+  /**
+    Receives notification of a function.
+    The *name* argument is a function name and it is not zero terminated.
+   */
   void OnFunction(int index, fmt::StringRef name,
                   int num_args, func::Type type) {
     MP_UNUSED3(index, name, num_args); MP_UNUSED(type);
@@ -383,7 +386,10 @@ class NLHandler {
     void SetValue(int index, int value) { MP_UNUSED2(index, value); }
   };
 
-  /** Receives notification of an integer suffix. */
+  /**
+    Receives notification of an integer suffix.
+    The *name* argument is a suffix name and it is not zero terminated.
+   */
   IntSuffixHandler OnIntSuffix(fmt::StringRef name, int kind, int num_values) {
     MP_UNUSED3(name, kind, num_values);
     return IntSuffixHandler();
@@ -394,7 +400,10 @@ class NLHandler {
     void SetValue(int index, double value) { MP_UNUSED2(index, value); }
   };
 
-  /** Receives notification of a double suffix. */
+  /**
+    Receives notification of a double suffix.
+    The *name* argument is a suffix name and it is not zero terminated.
+   */
   DblSuffixHandler OnDblSuffix(fmt::StringRef name, int kind, int num_values) {
     MP_UNUSED3(name, kind, num_values);
     return DblSuffixHandler();
@@ -618,7 +627,10 @@ class NLHandler {
     return LogicalExpr();
   }
 
-  /** Receives notification of a string literal. */
+  /**
+    Receives notification of a string literal.
+    The *value* argument is a string value and it is not zero terminated.
+   */
   Expr OnStringLiteral(fmt::StringRef value) {
     MP_UNUSED(value);
     return Expr();
