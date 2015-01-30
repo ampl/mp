@@ -156,42 +156,44 @@ inline bool IsIEEE(arith::Kind k) {
   An NL `header <http://en.wikipedia.org/wiki/Header_(computing)>`_
   which contains information about problem dimensions, such as the number of
   variables and constraints, and the input format.
+
+  Base class: :class:`mp::ProblemInfo`
   \endrst
  */
 struct NLHeader : ProblemInfo {
   /** Input/output format */
   enum Format {
     /**
-      Text format. Text format is fully portable meaning that an .nl file can
-      be written on a machine of one architecture and then read on a machine
-      of a different architecture.
+      Text format. The text format is fully portable meaning that an .nl file
+      can be written on a machine of one architecture and then read on a
+      machine of a different architecture.
      */
     TEXT = 0,
 
     /**
-      Binary format. Binary format is not generally portable and should
+      Binary format. The binary format is not generally portable and should
       normally be used on a single machine.
      */
     BINARY = 1
   };
 
-  /** Input/output format */
+  /** Input/output format. */
   Format format;
 
-  /** The number of options */
+  /** The number of options. */
   int num_options;
 
-  /** Options */
+  /** Option values. */
   int options[MAX_NL_OPTIONS];
 
-  /** Extra info for writing a solution */
+  /** Extra info for writing a solution. */
   double ampl_vbtol;
 
   /**
     \rst
     Floating-point arithmetic kind used with binary format to check
     if an .nl file is written using a compatible representation of
-    floating-point numbers. It is not used with text format and normally
+    floating-point numbers. It is not used with the text format and normally
     set to :member:`arith::UNKNOWN` there.
     \endrst
    */

@@ -316,7 +316,7 @@ enum Status {
 };
 }
 
-// Information about an optimization problem.
+/** Information about an optimization problem. */
 struct ProblemInfo {
   // Total number of variables.
   int num_vars;

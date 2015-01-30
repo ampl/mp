@@ -3,7 +3,7 @@
 Support for the NL Format
 =========================
 
-Header: :file:`nl.h`
+Header: :file:`mp/nl.h`
 
 **NL** is a format for representing optimization problems in discrete or
 continuous variables. It is described in the technical report `Writing .nl Files
