@@ -39,6 +39,7 @@ foreach (doc ${docs} common index nl)
     COMMAND ${CMAKE_COMMAND} -E copy ${src} ${dst} DEPENDS ${src})
   set(doc_depends ${doc_depends} ${dst})
 endforeach ()
+add_prefix(doc_depends ../ ${MP_HEADERS})
 
 add_custom_command(OUTPUT html/index.html
   COMMAND ${DOXYGEN}
