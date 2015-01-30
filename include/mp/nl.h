@@ -159,7 +159,7 @@ inline bool IsIEEE(arith::Kind k) {
   \endrst
  */
 struct NLHeader : ProblemInfo {
-  /** Input format */
+  /** Input/output format */
   enum Format {
     /**
       Text format. Text format is fully portable meaning that an .nl file can
@@ -174,6 +174,8 @@ struct NLHeader : ProblemInfo {
      */
     BINARY = 1
   };
+
+  /** Input/output format */
   Format format;
 
   /** The number of options */
