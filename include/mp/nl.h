@@ -566,6 +566,10 @@ class NLHandler {
     return NumericExpr();
   }
 
+  /**
+    A class that receives notifications of symbolic (numeric or string)
+    arguments.
+   */
   typedef ArgHandler SymbolicArgHandler;
 
   /**
@@ -634,6 +638,10 @@ class NLHandler {
     return LogicalExpr();
   }
 
+  /**
+    A class that receives notifications of pairwise expression (``alldiff``,
+    ``not alldiff``) arguments.
+   */
   typedef ArgHandler PairwiseArgHandler;
 
   /** Receives notification of the beginning of a pairwise expression. */
