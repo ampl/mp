@@ -180,7 +180,7 @@ struct NLHeader : ProblemInfo {
     Floating-point arithmetic kind used with binary format to check
     if an .nl file is written using a compatible representation of
     floating-point numbers. It is not used with text format and normally
-    set to :cpp:member:`arith::UNKNOWN` there.
+    set to :member:`arith::UNKNOWN` there.
     \endrst
    */
   arith::Kind arith_kind;
@@ -216,7 +216,7 @@ class NLHandler {
   /**
     \rst
     A numeric expression type.
-    It is an alias to :type:`Expr <mp::NLHandler::Expr>` but
+    It is a typedef of :type:`Expr <mp::NLHandler::Expr>` but
     subclasses may define it as a different type convertible to
     :type:`Expr <mp::NLHandler::Expr>`.
     \endrst
@@ -226,7 +226,7 @@ class NLHandler {
   /**
     \rst
     A logical expression type.
-    It is an alias to :type:`Expr <mp::NLHandler::Expr>` but
+    It is a typedef of :type:`Expr <mp::NLHandler::Expr>` but
     subclasses may define it as a different type convertible to
     :type:`Expr <mp::NLHandler::Expr>`.
     \endrst
@@ -236,7 +236,7 @@ class NLHandler {
   /**
     \rst
     A count expression type.
-    It is an alias to :type:`Expr <mp::NLHandler::Expr>` but
+    It is a typedef of :type:`Expr <mp::NLHandler::Expr>` but
     subclasses may define it as a different type convertible to
     :type:`NumericExpr <mp::NLHandler::NumericExpr>`.
     \endrst
@@ -246,7 +246,7 @@ class NLHandler {
   /**
     \rst
     A reference expression type.
-    It is an alias to :type:`Expr <mp::NLHandler::Expr>` but
+    It is a typedef of :type:`Expr <mp::NLHandler::Expr>` but
     subclasses may define it as a different type convertible to
     :type:`NumericExpr <mp::NLHandler::NumericExpr>`.
     \endrst
@@ -409,24 +409,33 @@ class NLHandler {
     return DblSuffixHandler();
   }
 
-  /** A class that receives notifications of expression arguments. */
+  /**
+    A class that receives notifications of expression arguments.
+    All argument handlers in :class:`NLHandler` are typedefs of this class,
+    but subclasses of :class:`NLHandler` may define them as different classes.
+   */
   struct ArgHandler {
     void AddArg(Expr arg) { MP_UNUSED(arg); }
   };
 
-  /**
-    \rst
-    A class that receives notifications of numeric arguments.
-    It is an alias to :class:`ArgHandler <mp::NLHandler::ArgHandler>`
-    but subclasses may define it as a different type.
-    \endrst
-   */
+  /** A class that receives notifications of numeric arguments. */
   typedef ArgHandler NumericArgHandler;
 
+  /** A class that receives notifications of vararg expression arguments. */
   typedef ArgHandler VarArgHandler;
+
+  /** A class that receives notifications of call expression arguments. */
   typedef ArgHandler CallArgHandler;
+
+  /**
+    A class that receives notifications of ``numberof`` expression arguments.
+   */
   typedef ArgHandler NumberOfArgHandler;
+
+  /** A class that receives notifications of count expression arguments. */
   typedef ArgHandler CountArgHandler;
+
+  /** A class that receives notifications of logical arguments. */
   typedef ArgHandler LogicalArgHandler;
 
   /** Receives notification of a numeric constant in a nonlinear expression. */
@@ -1774,7 +1783,7 @@ void ReadBinary(TextReader &reader, const NLHeader &header,
   Both *str* and *name* can be C strings or ``std::string`` objects.
   The *name* argument is used as the name of the input when reporting errors.
   *flags* can be either 0, which is the default, to read all constructs in
-  the order they appear in the input, or :cpp:member:`mp::READ_BOUNDS_FIRST` to
+  the order they appear in the input, or :member:`mp::READ_BOUNDS_FIRST` to
   read variable bounds after the NL header and before other constructs such as
   nonlinear expressions.
   \endrst
@@ -1813,7 +1822,7 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
 
   The *filename* argument can be a C string or an ``std::string`` object.
   *flags* can be either 0, which is the default, to read all constructs in
-  the order they appear in the input, or :cpp:member:`mp::READ_BOUNDS_FIRST` to
+  the order they appear in the input, or :member:`mp::READ_BOUNDS_FIRST` to
   read variable bounds after the NL header and before other constructs such as
   nonlinear expressions.
   
