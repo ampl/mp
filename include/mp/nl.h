@@ -208,6 +208,7 @@ fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 template <typename ExprType>
 class NLHandler {
  public:
+  /** Destroys the object. */
   virtual ~NLHandler() {}
 
   /** An expression type. */
@@ -288,9 +289,7 @@ class NLHandler {
     of a common expression.
    */
   struct LinearExprHandler {
-    /**
-      Receives notification of a term in the linear expression.
-     */
+    /** Receives notification of a term in the linear expression. */
     void AddTerm(int var_index, double coef) { MP_UNUSED2(var_index, coef); }
   };
 
@@ -315,8 +314,8 @@ class NLHandler {
   }
 
   /**
-    A class (struct) that receives notifications of terms in the linear part
-    of an objective expression.
+    A typedef of a class that receives notifications of terms in the linear
+    part of an objective expression.
    */
   typedef LinearExprHandler LinearObjHandler;
 
@@ -327,8 +326,8 @@ class NLHandler {
   }
 
   /**
-    A class (struct) that receives notifications of terms in the linear part
-    of a constraint expression.
+    A typedef of a class that receives notifications of terms in the linear
+    part of a constraint expression.
    */
   typedef LinearExprHandler LinearConHandler;
 
@@ -366,6 +365,7 @@ class NLHandler {
 
   /** A class (struct) that receives notifications of Jacobian column sizes. */
   struct ColumnSizeHandler {
+    /** Receives notification of a Jacobian column size. */
     void Add(int size) { MP_UNUSED(size); }
   };
 
@@ -383,6 +383,7 @@ class NLHandler {
 
   /** A class (struct) that receives notifications of integer suffix values. */
   struct IntSuffixHandler {
+    /** Receives notification of a suffix value. */
     void SetValue(int index, int value) { MP_UNUSED2(index, value); }
   };
 
@@ -397,6 +398,7 @@ class NLHandler {
 
   /** A class (struct) that receives notifications of double suffix values. */
   struct DblSuffixHandler {
+    /** Receives notification of a suffix value. */
     void SetValue(int index, double value) { MP_UNUSED2(index, value); }
   };
 
@@ -418,6 +420,7 @@ class NLHandler {
     \endrst
    */
   struct ArgHandler {
+    /** Receives notification of an argument. */
     void AddArg(Expr arg) { MP_UNUSED(arg); }
   };
 
@@ -495,7 +498,10 @@ class NLHandler {
     piecewise-linear term.
    */
   struct PLTermHandler {
+    /** Receives notification of a slope. */
     void AddSlope(double slope) { MP_UNUSED(slope); }
+
+    /** Receives notification of a breakpoint. */
     void AddBreakpoint(double breakpoint) { MP_UNUSED(breakpoint); }
   };
 
