@@ -36,9 +36,10 @@
 /** The mp namespace. */
 namespace mp {
 
+/** Expression information. */
 namespace expr {
 
-// Expression kinds.
+/** Expression kind. */
 enum Kind {
   // An unknown expression.
   UNKNOWN = 0,
@@ -238,11 +239,14 @@ inline const char *expr::str(expr::Kind kind) {
   return internal::ExprInfo::INFO[kind].str;
 }
 
+/** Function information. */
 namespace func {
-// Function type.
+/** Function type. */
 enum Type {
+  /** A numeric function. */
   NUMERIC  = 0,
-  SYMBOLIC = 1  // Accepts symbolic arguments.
+  /** A symbolic function - accepts numeric and string arguments. */
+  SYMBOLIC = 1
 };
 }
 
@@ -254,7 +258,10 @@ enum Type { CONTINUOUS, INTEGER };
 /** Objective information. */
 namespace obj {
 /** Objective type. */
-enum Type { MIN = 0, MAX = 1 };
+enum Type {
+  MIN = 0, /**< A minimization objective. */
+  MAX = 1  /**< A maximization objective. */
+};
 }
 
 // Complementarity namespace. It would make more sense to call it compl,
