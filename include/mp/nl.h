@@ -411,9 +411,10 @@ class NLHandler {
 
   /**
     \rst
-    A class that receives notifications of expression arguments.
-    All argument handlers in :class:`NLHandler` are typedefs of this class,
-    but subclasses of :class:`NLHandler` may define them as different classes.
+    A class (struct) that receives notifications of expression arguments.
+    All argument handlers in :class:`mp::NLHandler` are typedefs of this class,
+    but subclasses of :class:`mp::NLHandler` may define them as different
+    classes.
     \endrst
    */
   struct ArgHandler {
