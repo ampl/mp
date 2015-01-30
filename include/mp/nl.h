@@ -409,11 +409,20 @@ class NLHandler {
     return DblSuffixHandler();
   }
 
+  /** A class that receives notifications of expression arguments. */
   struct ArgHandler {
     void AddArg(Expr arg) { MP_UNUSED(arg); }
   };
 
+  /**
+    \rst
+    A class that receives notifications of numeric arguments.
+    It is an alias to :class:`ArgHandler <mp::NLHandler::ArgHandler>`
+    but subclasses may define it as a different type.
+    \endrst
+   */
   typedef ArgHandler NumericArgHandler;
+
   typedef ArgHandler VarArgHandler;
   typedef ArgHandler CallArgHandler;
   typedef ArgHandler NumberOfArgHandler;
@@ -476,7 +485,7 @@ class NLHandler {
 
   /**
     Receives notification of the end of a piecewise-linear term.
-    arg: argument that is a variable or a common expression reference.
+    *arg*: argument that is a variable or a common expression reference.
    */
   NumericExpr EndPLTerm(PLTermHandler handler, Reference arg) {
     MP_UNUSED2(handler, arg);
