@@ -410,9 +410,11 @@ class NLHandler {
   }
 
   /**
+    \rst
     A class that receives notifications of expression arguments.
     All argument handlers in :class:`NLHandler` are typedefs of this class,
     but subclasses of :class:`NLHandler` may define them as different classes.
+    \endrst
    */
   struct ArgHandler {
     void AddArg(Expr arg) { MP_UNUSED(arg); }
