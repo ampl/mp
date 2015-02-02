@@ -281,6 +281,7 @@ if (MATLAB_FOUND)
       COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR}
                     -I${solvers_dir} ${MP_MEX_OPTIONS}
       LIBRARIES ${matlab_asl})
+    install(FILES $<TARGET_PROPERTY:${name},FILENAME> DESTINATION bin)
   endforeach ()
 endif ()
 

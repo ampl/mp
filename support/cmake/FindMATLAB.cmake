@@ -51,4 +51,5 @@ function (add_mex name)
       ${sources} ${libs} -output ${filename}
     DEPENDS ${sources} ${add_mex_LIBRARIES})
   add_custom_target(${name} ALL SOURCES ${filename})
+  set_target_properties(${name} PROPERTIES FILENAME ${filename})
 endfunction ()
