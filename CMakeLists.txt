@@ -1,7 +1,7 @@
-# Use CMake 2.8.12 for target_compile_options.
+# Use CMake 3.0 for generator expressions in install(FILES).
 # It can be easily obtained and used without superuser privileges even
 # if the system has an older version of CMake installed.
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.0)
 cmake_policy(VERSION ${CMAKE_MINIMUM_REQUIRED_VERSION})
 
 # Enable @rpath support on OS X.
