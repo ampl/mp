@@ -7,7 +7,7 @@
 
 if (APPLE)
   set(MATLAB_GLOB "/Applications/MATLAB*")
-  set(MATLAB_MEX_SUFFIX mac)
+  set(MATLAB_MEX_SUFFIX maci64)
 elseif (UNIX)
   set(MATLAB_GLOB "/opt/MATLAB/*")
   set(MATLAB_MEX_SUFFIX a64)
