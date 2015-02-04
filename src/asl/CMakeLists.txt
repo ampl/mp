@@ -281,7 +281,12 @@ if (MATLAB_FOUND)
       COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR}
                     -I${solvers_dir} ${MP_MEX_OPTIONS}
       LIBRARIES ${matlab_asl})
-    install(FILES $<TARGET_PROPERTY:${name},FILENAME> DESTINATION bin)
+    if (WIN32)
+      set(mex_install_dir bin)
+    else ()
+      set(mex_install_dir lib)
+    endif ()
+    install(FILES $<TARGET_PROPERTY:${name},FILENAME> DESTINATION ${mex_install_dir})
   endforeach ()
 endif ()
 
