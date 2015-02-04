@@ -210,7 +210,17 @@ struct NLHeader : ProblemInfo {
    */
   arith::Kind arith_kind;
 
-  /** Flags: 1 = want output suffixes */
+  /** Flags. */
+  enum {
+    /** Flag that specifies whether to write output suffixes to a .sol file. */
+    WANT_OUTPUT_SUFFIXES = 1
+  };
+
+  /**
+    \rst
+    Flags. Can be either 0 or :member:`mp::NLHeader::WANT_OUTPUT_SUFFIXES`.
+    \endrst
+   */
   int flags;
 
   NLHeader()
