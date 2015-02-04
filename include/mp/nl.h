@@ -438,35 +438,70 @@ class NLHandler {
     void AddArg(Expr arg) { MP_UNUSED(arg); }
   };
 
-  /** A typedef of a class that receives notifications of numeric arguments. */
+  /**
+    \rst
+    A typedef of a class that receives notifications of :member:`numeric
+    <expr::FIRST_NUMERIC>` arguments.
+    \endrst
+   */
   typedef ArgHandler NumericArgHandler;
 
   /**
-    A typedef of a class that receives notifications of vararg expression
-    arguments.
+    \rst
+    A typedef of a class that receives notifications of :member:`vararg
+    expression <expr::FIRST_VARARG>` arguments.
+    \endrst
    */
   typedef ArgHandler VarArgHandler;
 
   /**
-    A typedef of a class that receives notifications of call expression
-    arguments.
+    \rst
+    A typedef of a class that receives notifications of :member:`call
+    expression <expr::CALL>` arguments.
+    \endrst
    */
   typedef ArgHandler CallArgHandler;
 
   /**
-    A typedef of a class that receives notifications of ``numberof`` expression
-    arguments.
+    \rst
+    A typedef of a class that receives notifications of :member:`numberof
+    expression <expr::NUMBEROF>` arguments.
+    \endrst
    */
   typedef ArgHandler NumberOfArgHandler;
 
   /**
-    A typedef of a class that receives notifications of count expression
-    arguments.
+    \rst
+    A typedef of a class that receives notifications of :member:`count
+    expression <expr::COUNT>` arguments.
+    \endrst
    */
   typedef ArgHandler CountArgHandler;
 
-  /** A typedef of a class that receives notifications of logical arguments. */
+  /**
+    \rst
+    A typedef of a class that receives notifications of :member:`logical
+    <expr::FIRST_LOGICAL>` arguments.
+    \endrst
+   */
   typedef ArgHandler LogicalArgHandler;
+
+  /**
+    \rst
+    A typedef of a class that receives notifications of :member:`pairwise
+    expression <expr::FIRST_PAIRWISE>` arguments.
+    \endrst
+   */
+  typedef ArgHandler PairwiseArgHandler;
+
+  /**
+    \rst
+    A typedef of a class that receives notifications of symbolic
+    (:member:`numeric <expr::FIRST_NUMERIC>` or :member:`string
+    <expr::STRING>`) arguments.
+    \endrst
+   */
+  typedef ArgHandler SymbolicArgHandler;
 
   /** Receives notification of a numeric constant in a nonlinear expression. */
   NumericExpr OnNumericConstant(double value) {
@@ -597,12 +632,6 @@ class NLHandler {
   }
 
   /**
-    A typedef of a class that receives notifications of symbolic (numeric or
-    string) arguments.
-   */
-  typedef ArgHandler SymbolicArgHandler;
-
-  /**
     Receives notification of the beginning of a symbolic numberof expression.
    */
   SymbolicArgHandler BeginSymbolicNumberOf(int num_args, Expr arg0) {
@@ -667,12 +696,6 @@ class NLHandler {
     MP_UNUSED(handler);
     return LogicalExpr();
   }
-
-  /**
-    A typedef of a class that receives notifications of pairwise expression
-    (``alldiff``, ``not alldiff``) arguments.
-   */
-  typedef ArgHandler PairwiseArgHandler;
 
   /** Receives notification of the beginning of a pairwise expression. */
   PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
