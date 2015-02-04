@@ -53,4 +53,4 @@ This section describes the C++ API of an NL reader which is
 
 .. doxygenenumvalue:: mp::READ_BOUNDS_FIRST
 
-.. doxygenenumvalue:: mp::MAX_NL_OPTIONS
+.. doxygenenumvalue:: mp::MAX_AMPL_OPTIONS
