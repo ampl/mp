@@ -41,10 +41,10 @@ mp::arith::Kind mp::arith::GetKind() {
 }
 
 fmt::Writer &mp::operator<<(fmt::Writer &w, const NLHeader &h) {
-  w << (h.format == NLHeader::TEXT ? 'g' : 'b') << h.num_options;
-  for (int i = 0; i < h.num_options; ++i)
-    w << ' ' << h.options[i];
-  if (h.options[VBTOL_OPTION] == READ_VBTOL)
+  w << (h.format == NLHeader::TEXT ? 'g' : 'b') << h.num_ampl_options;
+  for (int i = 0; i < h.num_ampl_options; ++i)
+    w << ' ' << h.ampl_options[i];
+  if (h.ampl_options[internal::USE_VBTOL_OPTION] == internal::READ_VBTOL)
     w << ' ' << h.ampl_vbtol;
   w << '\n';
   w.write(" {} {} {} {} {} {}\n",
@@ -160,14 +160,14 @@ void mp::internal::TextReader::ReadHeader(NLHeader &header) {
   }
 
   // Read options.
-  ReadOptionalUInt(header.num_options);
-  if (header.num_options > MAX_NL_OPTIONS)
+  ReadOptionalUInt(header.num_ampl_options);
+  if (header.num_ampl_options > MAX_AMPL_OPTIONS)
     ReportError("too many options");
-  for (int i = 0; i < header.num_options; ++i) {
-    if (!ReadOptionalInt(header.options[i]))
+  for (int i = 0; i < header.num_ampl_options; ++i) {
+    if (!ReadOptionalInt(header.ampl_options[i]))
       break;
   }
-  if (header.options[VBTOL_OPTION] == READ_VBTOL)
+  if (header.ampl_options[internal::USE_VBTOL_OPTION] == internal::READ_VBTOL)
     ReadOptionalDouble(header.ampl_vbtol);
   ReadTillEndOfLine();
 

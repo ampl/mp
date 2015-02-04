@@ -100,11 +100,16 @@ class BinaryReadError : public Error {
 };
 
 enum {
-  /** Maximum number of options in NL and SOL formats. */
-  MAX_NL_OPTIONS = 9,
-  VBTOL_OPTION   = 1,
-  READ_VBTOL     = 3
+  /** Maximum number of options reserved for AMPL use in NL and SOL formats. */
+  MAX_AMPL_OPTIONS = 9
 };
+
+namespace internal {
+enum {
+  USE_VBTOL_OPTION = 1,
+  READ_VBTOL       = 3
+};
+}
 
 namespace arith {
 
@@ -180,13 +185,19 @@ struct NLHeader : ProblemInfo {
   /** Input/output format. */
   Format format;
 
-  /** The number of options. */
-  int num_options;
+  /** The number of options reserved for AMPL use. */
+  int num_ampl_options;
 
-  /** Option values. */
-  int options[MAX_NL_OPTIONS];
+  /**
+    Values of options reserved for AMPL use. Leave the default values if not
+    using AMPL.
+   */
+  int ampl_options[MAX_AMPL_OPTIONS];
 
-  /** Extra info for writing a solution. */
+  /**
+    Extra info for writing a solution reserved for AMPL use. Leave the default
+    value if not using AMPL.
+   */
   double ampl_vbtol;
 
   /**
@@ -203,9 +214,9 @@ struct NLHeader : ProblemInfo {
   int flags;
 
   NLHeader()
-    : ProblemInfo(), format(TEXT), num_options(0), ampl_vbtol(0),
+    : ProblemInfo(), format(TEXT), num_ampl_options(0), ampl_vbtol(0),
       arith_kind(arith::UNKNOWN), flags(0) {
-    std::fill(options, options + MAX_NL_OPTIONS, 0);
+    std::fill(ampl_options, ampl_options + MAX_AMPL_OPTIONS, 0);
   }
 };
 

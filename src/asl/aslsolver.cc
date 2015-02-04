@@ -26,6 +26,7 @@ extern "C" {
 
 #undef Char
 #undef filename
+#undef ampl_options
 #undef ampl_vbtol
 #undef write_sol
 

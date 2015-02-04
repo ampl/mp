@@ -283,7 +283,7 @@ void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
   EXPECT_EQ(expected.i.cv_index_, actual.i.cv_index_);
   // Edaginfo::err_jmp_ is ignored.
   EXPECT_EQ(expected.i.err_jmp1_, actual.i.err_jmp1_);
-  for (int i = 0; i < mp::MAX_NL_OPTIONS + 1; ++i)
+  for (int i = 0; i < mp::MAX_AMPL_OPTIONS + 1; ++i)
     EXPECT_EQ(expected.i.ampl_options_[i], actual.i.ampl_options_[i]);
   EXPECT_EQ(expected.i.obj_no_, actual.i.obj_no_);
   EXPECT_EQ(expected.i.nranges_, actual.i.nranges_);
@@ -462,9 +462,9 @@ void CheckHeader(const NLHeader &h) {
 
   EXPECT_EQ(h.format, actual_header.format);
 
-  EXPECT_EQ(h.num_options, actual_header.num_options);
-  for (int i = 0; i < mp::MAX_NL_OPTIONS; ++i)
-    EXPECT_EQ(h.options[i], actual_header.options[i]);
+  EXPECT_EQ(h.num_ampl_options, actual_header.num_ampl_options);
+  for (int i = 0; i < mp::MAX_AMPL_OPTIONS; ++i)
+    EXPECT_EQ(h.ampl_options[i], actual_header.ampl_options[i]);
   EXPECT_EQ(h.ampl_vbtol, actual_header.ampl_vbtol);
 
   EXPECT_EQ(h.num_vars, actual_header.num_vars);
@@ -525,9 +525,9 @@ void CheckHeader(const NLHeader &h) {
   jac0dim_ASL(asl, stub, static_cast<int>(strlen(stub)));
   std::remove(stub);
 
-  EXPECT_EQ(asl->i.ampl_options_[0], actual_header.num_options);
-  for (int i = 0; i < mp::MAX_NL_OPTIONS; ++i)
-    EXPECT_EQ(asl->i.ampl_options_[i + 1], actual_header.options[i]);
+  EXPECT_EQ(asl->i.ampl_options_[0], actual_header.num_ampl_options);
+  for (int i = 0; i < mp::MAX_AMPL_OPTIONS; ++i)
+    EXPECT_EQ(asl->i.ampl_options_[i + 1], actual_header.ampl_options[i]);
   EXPECT_EQ(asl->i.ampl_vbtol_, actual_header.ampl_vbtol);
 
   EXPECT_EQ(asl->i.n_var_, actual_header.num_vars);

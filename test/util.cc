@@ -126,10 +126,10 @@ std::string ReplaceLine(std::string s, int line_index, const char *new_line) {
 mp::NLHeader MakeTestHeader() {
   mp::NLHeader h = mp::NLHeader();
   h.format = mp::NLHeader::TEXT;
-  h.num_options = 9;
+  h.num_ampl_options = 9;
   int options[] = {2, 3, 5, 7, 11, 13, 17, 19, 23};
-  for (int i = 0; i < h.num_options; ++i)
-    h.options[i] = options[i];
+  for (int i = 0; i < h.num_ampl_options; ++i)
+    h.ampl_options[i] = options[i];
   h.ampl_vbtol = 1.23;
 
   h.num_vars = 29;

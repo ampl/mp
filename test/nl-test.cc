@@ -169,8 +169,8 @@ TEST(TextReaderTest, InvalidFormat) {
 }
 
 TEST(TextReaderTest, InvalidNumOptions) {
-  EXPECT_EQ(0, ReadHeader(0, "ga").num_options);
-  EXPECT_EQ(0, ReadHeader(0, "g-1").num_options);
+  EXPECT_EQ(0, ReadHeader(0, "ga").num_ampl_options);
+  EXPECT_EQ(0, ReadHeader(0, "g-1").num_ampl_options);
   EXPECT_THROW_MSG(ReadHeader(0, "g10"),
       ReadError, "(input):1:2: too many options");
   EXPECT_THROW_MSG(ReadHeader(0,
@@ -185,23 +185,23 @@ void CheckReadOptions(int num_options,
   for (int i = 0; i < num_options_to_write; ++i)
     w << ' ' << options[i];
   NLHeader header = ReadHeader(0, w.c_str());
-  ASSERT_EQ(num_options, header.num_options);
+  ASSERT_EQ(num_options, header.num_ampl_options);
   int min_num_options = std::min(num_options, num_options_to_write);
   for (int i = 0; i < min_num_options; ++i)
-    EXPECT_EQ(options[i], header.options[i]);
+    EXPECT_EQ(options[i], header.ampl_options[i]);
   for (int i = min_num_options; i < num_options_to_write; ++i)
-    EXPECT_EQ(0, header.options[i]);
+    EXPECT_EQ(0, header.ampl_options[i]);
 }
 
 TEST(TextReaderTest, ReadOptions) {
-  const int options[mp::MAX_NL_OPTIONS + 1] = {
+  const int options[mp::MAX_AMPL_OPTIONS + 1] = {
       3, 5, 7, 11, 13, 17, 19, 23, 29, 31
   };
-  for (int i = 0; i < mp::MAX_NL_OPTIONS; ++i) {
-    for (int j = 0; j < mp::MAX_NL_OPTIONS + 1; ++j)
+  for (int i = 0; i < mp::MAX_AMPL_OPTIONS; ++i) {
+    for (int j = 0; j < mp::MAX_AMPL_OPTIONS + 1; ++j)
       CheckReadOptions(i, j, options);
   }
-  EXPECT_EQ(0, ReadHeader(0, "g").num_options);
+  EXPECT_EQ(0, ReadHeader(0, "g").num_ampl_options);
 }
 
 TEST(TextReaderTest, ReadAMPLVBTol) {
@@ -774,9 +774,9 @@ TEST(NLTest, WriteTextHeader) {
 TEST(NLTest, WriteBinaryHeader) {
   NLHeader header = NLHeader();
   header.format = NLHeader::BINARY;
-  header.num_options = 3;
-  for (int i = 0; i < header.num_options; ++i)
-    header.options[i] = 11 * (i + 1);
+  header.num_ampl_options = 3;
+  for (int i = 0; i < header.num_ampl_options; ++i)
+    header.ampl_options[i] = 11 * (i + 1);
   header.arith_kind = mp::arith::CRAY;
   fmt::MemoryWriter w;
   w << header;

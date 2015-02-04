@@ -33,6 +33,7 @@
 #include "fg_read.c"
 #undef asl
 #undef max
+#undef ampl_options
 
 extern "C" void bswap_ASL(void *x, size_t L);
 
@@ -236,9 +237,9 @@ void ASLBuilder::InitASL(const NLHeader &h) {
   }
   info.xscanf_ = info.binary_nl_ ? bscanf : ascanf;
 
-  info.ampl_options_[0] = h.num_options;
-  for (int i = 0; i < mp::MAX_NL_OPTIONS; ++i)
-    info.ampl_options_[i + 1] = h.options[i];
+  info.ampl_options_[0] = h.num_ampl_options;
+  for (int i = 0; i < mp::MAX_AMPL_OPTIONS; ++i)
+    info.ampl_options_[i + 1] = h.ampl_options[i];
   info.ampl_vbtol_ = h.ampl_vbtol;
 
   info.n_var_ = h.num_vars;

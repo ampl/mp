@@ -1164,7 +1164,7 @@ class SolverNLHandler : public Solver::NLProblemBuilder {
  private:
   Solver &solver_;
   int num_options_;
-  int options_[MAX_NL_OPTIONS];
+  int options_[MAX_AMPL_OPTIONS];
 
   typedef typename Solver::NLProblemBuilder Base;
 
@@ -1187,8 +1187,8 @@ void SolverNLHandler<Solver>::OnHeader(const NLHeader &h) {
     this->set_obj_index(Base::NEED_ALL_OBJS);
   else if (objno != -1)
     this->set_obj_index(objno - 1);
-  num_options_ = h.num_options;
-  std::copy(h.options, h.options + num_options_, options_);
+  num_options_ = h.num_ampl_options;
+  std::copy(h.ampl_options, h.ampl_options + num_options_, options_);
   Base::OnHeader(h);
 }
 
