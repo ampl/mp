@@ -524,33 +524,53 @@ class NLHandler {
    */
   typedef ArgHandler SymbolicArgHandler;
 
-  /** Receives notification of a numeric constant in a nonlinear expression. */
+  /**
+    \rst
+    Receives notification of a :member:`numeric constant <expr::CONSTANT>`
+    in a nonlinear expression.
+    \endrst
+   */
   NumericExpr OnNumericConstant(double value) {
     MP_UNUSED(value);
     return NumericExpr();
   }
 
-  /** Receives notification of a variable reference. */
+  /**
+    \rst
+    Receives notification of a :member:`variable reference <expr::VARIABLE>`.
+    \endrst
+   */
   Reference OnVariableRef(int var_index) {
     MP_UNUSED(var_index);
     return Reference();
   }
 
   /**
-    Receives notification of a common expression (defined variable) reference.
+    \rst
+    Receives notification of a :member:`common expression <expr::COMMON_EXPR>`
+    (defined variable) reference.
+    \endrst
    */
   Reference OnCommonExprRef(int index) {
     MP_UNUSED(index);
     return Reference();
   }
 
-  /** Receives notification of a unary expression. */
+  /**
+    \rst
+    Receives notification of a :member:`unary expression <expr::FIRST_UNARY>`.
+    \endrst
+   */
   NumericExpr OnUnary(expr::Kind kind, NumericExpr arg) {
     MP_UNUSED2(kind, arg);
     return NumericExpr();
   }
 
-  /** Receives notification of a binary expression. */
+  /**
+    \rst
+    Receives notification of a :member:`binary expression <expr::FIRST_BINARY>`.
+    \endrst
+   */
   NumericExpr OnBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     MP_UNUSED3(kind, lhs, rhs);
     return NumericExpr();
