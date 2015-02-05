@@ -616,6 +616,7 @@ class NLHandler {
     \rst
     Receives notification of the end of a :member:`piecewise-linear term
     <expr::PLTERM>`.
+
     *arg*: argument that is a variable or a common expression reference.
     \endrst
    */
@@ -639,7 +640,7 @@ class NLHandler {
     \rst
     Receives notification of the end of a :member:`call expression
     <expr::CALL>`.
-    \endrst.
+    \endrst
    */
   NumericExpr EndCall(CallArgHandler handler) {
     MP_UNUSED(handler);
