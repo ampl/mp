@@ -218,8 +218,8 @@ set(ASL_HEADERS aslbuilder.h aslsolver.h aslexpr.h aslexpr-visitor.h
   aslproblem.h ${CMAKE_CURRENT_BINARY_DIR}/arith.h
 ${CMAKE_CURRENT_BINARY_DIR}/stdio1.h)
 add_prefix(ASL_HEADERS solvers/
-  asl.h asl_pfg.h asl_pfgh.h avltree.h funcadd.h getstub.h nlp.h nlp2.h psinfo.h
-  opcode.hd r_opn.hd)
+  asl.h asl_pfg.h asl_pfgh.h avltree.h funcadd.h getstub.h jacpdim.h nlp.h
+  nlp2.h psinfo.h opcode.hd r_opn.hd)
 set(ASL_SOURCES aslbuilder.cc aslsolver.cc aslexpr.cc aslproblem.cc)
 
 add_mp_library(asl STATIC
