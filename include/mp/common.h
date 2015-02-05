@@ -39,7 +39,27 @@ namespace mp {
 /** Expression information. */
 namespace expr {
 
-/** Expression kind. */
+/**
+  \rst
+  .. _numeric-constant:
+  .. _common-expr:
+  .. _unary-expr:
+  .. _binary-expr:
+  .. _if-expr:
+  .. _plterm:
+  .. _call-expr:
+  .. _vararg-expr:
+  .. _sum-expr:
+  .. _count-expr:
+  .. _numberof-expr:
+  .. _numberof-sym-expr:
+  .. _count-expr:
+  .. _logical-expr:
+  .. _pairwise-expr:
+  .. _string-expr:
+  Expression kind.
+  \endrst
+ */
 enum Kind {
   // An unknown expression.
   UNKNOWN = 0,
@@ -48,10 +68,22 @@ enum Kind {
 
   // To simplify checks, numeric expression kinds are in a range
   // [FIRST_NUMERIC, LAST_NUMERIC].
+  /**
+    \rst
+    .. _numeric-expr:
+    Numeric expressions.
+    \endrst
+  */
   FIRST_NUMERIC = FIRST_EXPR,
 
   // Reference expressions.
   FIRST_REFERENCE = FIRST_NUMERIC,
+  /**
+    \rst
+    .. _variable:
+    Reference to a variable.
+    \endrst
+  */
   VARIABLE = FIRST_REFERENCE,
   COMMON_EXPR,
   LAST_REFERENCE = COMMON_EXPR,
