@@ -50,7 +50,6 @@ namespace expr {
   .. _call-expr:
   .. _vararg-expr:
   .. _sum-expr:
-  .. _count-expr:
   .. _numberof-expr:
   .. _numberof-sym-expr:
   .. _count-expr:
