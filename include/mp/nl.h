@@ -576,7 +576,11 @@ class NLHandler {
     return NumericExpr();
   }
 
-  /** Receives notification of an if expression. */
+  /**
+    \rst
+    Receives notification of an :member:`if expression <expr::IF>`.
+    \endrst
+   */
   NumericExpr OnIf(LogicalExpr condition,
       NumericExpr true_expr, NumericExpr false_expr) {
     MP_UNUSED3(condition, true_expr, false_expr);
@@ -584,8 +588,10 @@ class NLHandler {
   }
 
   /**
+    \rst
     A class (struct) that receives notifications of slopes and breakpoints in a
-    piecewise-linear term.
+    :member:`piecewise-linear term <expr::PLTERM>`.
+    \endrst
    */
   struct PLTermHandler {
     /** Receives notification of a slope. */
@@ -595,42 +601,60 @@ class NLHandler {
     void AddBreakpoint(double breakpoint) { MP_UNUSED(breakpoint); }
   };
 
-  /** Receives notification of the beginning of a piecewise-linear term. */
+  /**
+    \rst
+    Receives notification of the beginning of a :member:`piecewise-linear term
+    <expr::PLTERM>`.
+    \endrst
+   */
   PLTermHandler BeginPLTerm(int num_breakpoints) {
     MP_UNUSED(num_breakpoints);
     return PLTermHandler();
   }
 
   /**
-    Receives notification of the end of a piecewise-linear term.
+    \rst
+    Receives notification of the end of a :member:`piecewise-linear term
+    <expr::PLTERM>`.
     *arg*: argument that is a variable or a common expression reference.
+    \endrst
    */
   NumericExpr EndPLTerm(PLTermHandler handler, Reference arg) {
     MP_UNUSED2(handler, arg);
     return NumericExpr();
   }
 
-  /** Receives notification of the beginning of a call expression. */
+  /**
+    \rst
+    Receives notification of the beginning of a :member:`call expression
+    <expr::CALL>`.
+    \endrst
+   */
   CallArgHandler BeginCall(int func_index, int num_args) {
     MP_UNUSED2(func_index, num_args);
     return CallArgHandler();
   }
 
-  /** Receives notification of the end of a call expression. */
+  /**
+    \rst
+    Receives notification of the end of a :member:`call expression
+    <expr::CALL>`.
+    \endrst.
+   */
   NumericExpr EndCall(CallArgHandler handler) {
     MP_UNUSED(handler);
     return NumericExpr();
   }
 
   /**
-    Receives notification of the beginning of a vararg expression (min or max).
+    Receives notification of the beginning of a vararg expression.
    */
   VarArgHandler BeginVarArg(expr::Kind kind, int num_args) {
     MP_UNUSED2(kind, num_args);
     return NumericArgHandler();
   }
 
-  /** Receives notification of the end of a vararg expression (min or max). */
+  /** Receives notification of the end of a vararg expression. */
   NumericExpr EndVarArg(VarArgHandler handler) {
     MP_UNUSED(handler);
     return NumericExpr();
