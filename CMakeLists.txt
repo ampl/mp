@@ -146,6 +146,10 @@ function (add_prefix var prefix)
   set(${var} ${result} PARENT_SCOPE)
 endfunction ()
 
+set_cache(AMPL_LIBRARY_DIR bin STRING
+  "A directory to install AMPL function libraries relative to "
+  "${CMAKE_INSTALL_PREFIX}")
+
 # Adds a shared AMPL library which by convention doesn't have any prefix
 # and has a suffix ".dll" on all platforms.
 macro(add_ampl_library name)
@@ -158,7 +162,8 @@ macro(add_ampl_library name)
     # Specify RUNTIME DESTINATION and LIBRARY DESTINATION, but not
     # DESTINATION or ARCHIVE_DESTINATION because we don't want import
     # libraries installed.
-    install(TARGETS ${name} RUNTIME DESTINATION bin LIBRARY DESTINATION bin)
+    install(TARGETS ${name} RUNTIME
+      DESTINATION ${AMPL_LIBRARY_DIR} LIBRARY DESTINATION ${AMPL_LIBRARY_DIR})
   endif ()
 endmacro()
 
