@@ -1,10 +1,11 @@
-# CMake 2.8.12 can be easily obtained and used without superuser privileges even
-# if the system has an older version of CMake installed.
+# CMake 2.8.12 can be easily obtained and used without superuser privileges
+# even if the system has an older version of CMake installed.
 cmake_minimum_required(VERSION 2.8.12.2)
 
 if (CMAKE_MAJOR_VERSION LESS 3)
   # CMake 3.0 is used for generator expressions in install(FILES).
-  message(WARNING "CMake version 3.0 or newer is required to install all targets")
+  message(WARNING
+    "CMake version 3.0 or newer is required to install all targets")
 else ()
   # Enable @rpath support on OS X.
   cmake_policy(SET CMP0042 NEW)
