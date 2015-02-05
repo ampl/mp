@@ -39,6 +39,7 @@ namespace mp {
 /** Expression information. */
 namespace expr {
 
+// TODO: document expressions
 /**
   \rst
   .. _numeric-constant:
@@ -54,8 +55,16 @@ namespace expr {
   .. _numberof-sym-expr:
   .. _count-expr:
   .. _logical-expr:
+  .. _logical-constant:
+  .. _not-expr:
+  .. _binary-logical-expr:
+  .. _relational-expr:
+  .. _logical-count-expr:
+  .. _implication-expr:
+  .. _iterated-logical-expr:
   .. _pairwise-expr:
   .. _string-expr:
+  .. _symbolic-if-expr:
   Expression kind.
   \endrst
  */

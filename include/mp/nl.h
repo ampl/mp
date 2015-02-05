@@ -753,38 +753,65 @@ class NLHandler {
     return NumericExpr();
   }
 
-  /** Receives notification of a logical constant. */
+  /**
+    \rst
+    Receives notification of a :ref:`logical constant <logical-constant>`.
+    \endrst
+   */
   LogicalExpr OnLogicalConstant(bool value) {
     MP_UNUSED(value);
     return LogicalExpr();
   }
 
-  /** Receives notification of a logical not expression. */
+  /**
+    \rst
+    Receives notification of a :ref:`logical not expression <not-expr>`.
+    \endrst
+   */
   LogicalExpr OnNot(LogicalExpr arg) {
     MP_UNUSED(arg);
     return LogicalExpr();
   }
 
-  /** Receives notification of a binary logical expression. */
+  /**
+    \rst
+    Receives notification of a :ref:`binary logical expression
+    <binary-logical-expr>`.
+    \endrst
+   */
   LogicalExpr OnBinaryLogical(
       expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {
     MP_UNUSED3(kind, lhs, rhs);
     return LogicalExpr();
   }
 
-  /** Receives notification of a relational expression. */
+  /**
+    \rst
+    Receives notification of a :ref:`relational expression <relational-expr>`.
+    \endrst
+   */
   LogicalExpr OnRelational(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     MP_UNUSED3(kind, lhs, rhs);
     return LogicalExpr();
   }
 
-  /** Receives notification of a logical count expression. */
+  /**
+    \rst
+    Receives notification of a :ref:`logical count expression
+    <logical-count-expr>`.
+    \endrst
+   */
   LogicalExpr OnLogicalCount(expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
     MP_UNUSED3(kind, lhs, rhs);
     return LogicalExpr();
   }
 
-  /** Receives notification of an implication expression. */
+  /**
+    \rst
+    Receives notification of an :ref:`implication expression
+    <implication-expr>`.
+    \endrst
+   */
   LogicalExpr OnImplication(
       LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
     MP_UNUSED3(condition, true_expr, false_expr);
@@ -792,41 +819,65 @@ class NLHandler {
   }
 
   /**
-    Receives notification of the beginning of an iterated logical expression.
+    \rst
+    Receives notification of the beginning of an :ref:`iterated logical
+    expression <iterated-logical-expr>`.
+    \endrst
    */
   LogicalArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
     MP_UNUSED2(kind, num_args);
     return LogicalArgHandler();
   }
 
-  /** Receives notification of the end of an iterated logical expression. */
+  /**
+    \rst
+    Receives notification of the end of an :ref:`iterated logical expression
+    <iterated-logical-expr>`.
+    \endrst
+   */
   LogicalExpr EndIteratedLogical(LogicalArgHandler handler) {
     MP_UNUSED(handler);
     return LogicalExpr();
   }
 
-  /** Receives notification of the beginning of a pairwise expression. */
+  /**
+    \rst
+    Receives notification of the beginning of a :ref:`pairwise expression
+    <pairwise-expr>`.
+    \endrst
+   */
   PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
     MP_UNUSED2(kind, num_args);
     return PairwiseArgHandler();
   }
 
-  /** Receives notification of the end of a pairwise expression. */
+  /**
+    \rst
+    Receives notification of the end of a :ref:`pairwise expression
+    <pairwise-expr>`.
+    \endrst
+   */
   LogicalExpr EndPairwise(PairwiseArgHandler handler) {
     MP_UNUSED(handler);
     return LogicalExpr();
   }
 
   /**
-    Receives notification of a string literal.
+    \rst
+    Receives notification of a :ref:`string literal <string-expr>`.
     The *value* argument is a string value and it is not zero terminated.
+    \endrst
    */
   Expr OnStringLiteral(fmt::StringRef value) {
     MP_UNUSED(value);
     return Expr();
   }
 
-  /** Receives notification of a symbolic if expression. */
+  /**
+    \rst
+    Receives notification of a :ref:`symbolic if expression <symbolic-if-expr>`.
+    \endrst
+   */
   Expr OnSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {
     MP_UNUSED3(condition, true_expr, false_expr);
     return Expr();
