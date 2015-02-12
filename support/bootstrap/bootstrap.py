@@ -145,7 +145,7 @@ def pip_install(package, test_module=None):
   requirement_set.add_requirement(InstallRequirement.from_line(package, None))
   finder = PackageFinder(
     find_links=[], index_urls=['http://pypi.python.org/simple/'], session=session)
-  requirement_set.prepare_files(finder, bundle=False)
+  requirement_set.prepare_files(finder)
   requirement_set.install([], [])
 
 # Installs buildbot slave.
