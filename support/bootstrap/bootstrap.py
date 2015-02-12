@@ -2,7 +2,7 @@
 
 from __future__ import print_function
 import glob, os, platform, re, shutil, sys
-import tarfile, tempfile, zipfile
+import tarfile, tempfile, uuid, zipfile
 from contextlib import closing
 from subprocess import check_call, call
 
@@ -139,7 +139,8 @@ def pip_install(package, test_module=None):
   requirement_set = RequirementSet(
       build_dir=build_prefix,
       src_dir=src_prefix,
-      download_dir=None)
+      download_dir=None,
+      session=uuid.uuid1())
   requirement_set.add_requirement(InstallRequirement.from_line(package, None))
   finder = PackageFinder(
     find_links=[], index_urls=['http://pypi.python.org/simple/'])
