@@ -133,20 +133,7 @@ def pip_install(package, test_module=None):
       check_call(['python', f])
   # Install the package.
   print('Installing', package)
-  from pip.index import PackageFinder
-  from pip.req import InstallRequirement, RequirementSet
-  from pip.locations import build_prefix, src_prefix
-  session = uuid.uuid1()
-  requirement_set = RequirementSet(
-      build_dir=build_prefix,
-      src_dir=src_prefix,
-      download_dir=None,
-      session=session)
-  requirement_set.add_requirement(InstallRequirement.from_line(package, None))
-  finder = PackageFinder(
-    find_links=[], index_urls=['http://pypi.python.org/simple/'], session=session)
-  requirement_set.prepare_files(finder)
-  requirement_set.install([], [])
+  check_call(['pip', 'install', package])
 
 # Installs buildbot slave.
 def install_buildbot_slave(name, path=None, script_dir='', shell=False, **args):
