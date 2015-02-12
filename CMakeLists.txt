@@ -9,6 +9,10 @@ if (CMAKE_MAJOR_VERSION LESS 3)
 else ()
   # Enable @rpath support on OS X.
   cmake_policy(SET CMP0042 NEW)
+  if (CMAKE_MAJOR_VERSION GREATER 0)
+    # Only interpret if arguments as variables or keywords when unquoted.
+    cmake_policy(SET CMP0054 NEW)
+  endif ()
 endif ()
 
 # Set the path to CMake modules.
