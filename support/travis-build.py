@@ -2,9 +2,8 @@
 # Build the project on Travis CI.
 
 from __future__ import print_function
-import os, tarfile
+import os
 from bootstrap import bootstrap
-from contextlib import closing
 from download import Downloader
 from subprocess import check_call, check_output
 
