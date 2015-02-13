@@ -33,7 +33,10 @@
 
 namespace mp {
 
-class Expr;
+template <expr::Kind>
+class BasicExpr;
+
+typedef BasicExpr<expr::FIRST_EXPR> Expr;
 
 template <typename Alloc>
 class BasicExprFactory;
@@ -73,7 +76,7 @@ inline bool Is<ExprType>(expr::Kind k) { \
 // An Expr object represents a reference to an expression so
 // it is cheap to construct and pass by value. A type safe way to
 // process expressions of different types is by using ExprVisitor.
-class Expr {
+class ExprBase {
  protected:
   class Impl {
    private:
@@ -94,7 +97,7 @@ class Expr {
   void True() const {}
 
   // Safe bool type.
-  typedef void (Expr::*SafeBool)() const;
+  typedef void (ExprBase::*SafeBool)() const;
 
   // An expression proxy used for implementing operator-> in iterators.
   template <typename ExprType>
@@ -103,7 +106,7 @@ class Expr {
     ExprType expr_;
 
    public:
-    explicit Proxy(const Expr::Impl *e) : expr_(Create<ExprType>(e)) {}
+    explicit Proxy(const ExprBase::Impl *e) : expr_(Create<ExprType>(e)) {}
 
     const ExprType *operator->() const { return &expr_; }
   };
@@ -117,7 +120,7 @@ class Expr {
 
   // Creates an expression from an implementation.
   template <typename TargetExpr>
-  static TargetExpr Create(const Expr::Impl *impl) {
+  static TargetExpr Create(const ExprBase::Impl *impl) {
     MP_ASSERT((!impl || internal::Is<TargetExpr>(impl->kind())),
               "invalid expression kind");
     TargetExpr expr;
@@ -133,10 +136,10 @@ class Expr {
   class BasicIterator :
       public std::iterator<std::forward_iterator_tag, ExprType> {
    private:
-    const Expr::Impl *const *ptr_;
+    const ExprBase::Impl *const *ptr_;
 
    public:
-    explicit BasicIterator(const Expr::Impl *const *p = 0) : ptr_(p) {}
+    explicit BasicIterator(const ExprBase::Impl *const *p = 0) : ptr_(p) {}
 
     ExprType operator*() const { return Create<ExprType>(*ptr_); }
 
@@ -161,7 +164,7 @@ class Expr {
   // Constructs an Expr object representing a null reference to an
   // expression. The only operation permitted for such object is copying,
   // assignment and check whether it is null using operator SafeBool.
-  Expr() : impl_(0) {}
+  ExprBase() : impl_(0) {}
 
   // Returns the expression kind.
   expr::Kind kind() const { return impl_->kind(); }
@@ -173,7 +176,22 @@ class Expr {
   //   if (e) {
   //     // Do something if e is not null.
   //   }
-  operator SafeBool() const { return impl_ != 0 ? &Expr::True : 0; }
+  operator SafeBool() const { return impl_ != 0 ? &ExprBase::True : 0; }
+};
+
+template <expr::Kind KIND>
+class BasicExpr : protected ExprBase {
+  friend class ExprBase;
+
+  template <typename ExprType>
+  friend ExprType internal::Cast(Expr e);
+
+  template <typename Alloc>
+  friend class BasicExprFactory;
+
+ public:
+  using ExprBase::kind;
+  using ExprBase::operator SafeBool;
 };
 
 template <typename ExprType>
