@@ -24,7 +24,7 @@ if build == 'cross':
     '-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY',
     '-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER']
   ubuntu_packages = ['mingw64-x-gcc']
-  for ppa in ['tobydox/mingw', 'ubuntu-wine/ppa']:
+  for ppa in ['tobydox/mingw-x-precise', 'ubuntu-wine/ppa']:
     check_call(['sudo', 'add-apt-repository', 'ppa:' + ppa, '-y'])
 
 # Install dependencies.
