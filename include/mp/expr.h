@@ -490,7 +490,7 @@ class BasicIteratedExpr : public Base {
   }
 
   // An argument iterator.
-  typedef Expr::BasicIterator<Arg> iterator;
+  typedef typename Base::template BasicIterator<Arg> iterator;
 
   iterator begin() const { return iterator(impl()->args); }
   iterator end() const { return iterator(impl()->args + num_args()); }
