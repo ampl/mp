@@ -301,8 +301,8 @@ template <typename Base, typename Arg = Base>
 class BasicBinaryExpr : public Base {
  private:
   struct Impl : Base::Impl {
-    const NumericExpr::Impl *lhs;
-    const NumericExpr::Impl *rhs;
+    const typename Base::Impl *lhs;
+    const typename Base::Impl *rhs;
   };
   MP_EXPR(Base);
 
@@ -323,9 +323,9 @@ template <typename Base, expr::Kind K>
 class BasicIfExpr : public Base {
  private:
   struct Impl : Base::Impl {
-    const NumericExpr::Impl *condition;
-    const NumericExpr::Impl *true_expr;
-    const NumericExpr::Impl *false_expr;
+    const typename Base::Impl *condition;
+    const typename Base::Impl *true_expr;
+    const typename Base::Impl *false_expr;
   };
   MP_EXPR(Base);
 
@@ -473,7 +473,7 @@ class BasicIteratedExpr : public Base {
  private:
   struct Impl : Base::Impl {
     int num_args;
-    const NumericExpr::Impl *args[1];
+    const typename Base::Impl *args[1];
   };
   MP_EXPR(Base);
 
