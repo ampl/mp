@@ -33,10 +33,10 @@
 
 namespace mp {
 
-template <expr::Kind>
+template <expr::Kind, expr::Kind>
 class BasicExpr;
 
-typedef BasicExpr<expr::FIRST_EXPR> Expr;
+typedef BasicExpr<expr::FIRST_EXPR, expr::LAST_EXPR> Expr;
 
 template <typename Alloc>
 class BasicExprFactory;
@@ -101,12 +101,20 @@ class ExprBase {
   // Returns a pointer to the implementation.
   const Impl *impl() const { return impl_; }
 
- private:
-  // A member function representing the true value of SafeBool.
-  void True() const {}
+  ExprBase(const Impl *impl = 0) : impl_(impl) {}
 
-  // Safe bool type.
-  typedef void (ExprBase::*SafeBool)() const;
+  template <typename ExprType>
+  const Impl *impl(ExprType e) { return e.impl_; }
+
+  // Creates an expression from an implementation.
+  template <typename TargetExpr>
+  static TargetExpr Create(const ExprBase::Impl *impl) {
+    MP_ASSERT((!impl || internal::Is<TargetExpr>(impl->kind())),
+              "invalid expression kind");
+    TargetExpr expr;
+    expr.impl_ = impl;
+    return expr;
+  }
 
   // An expression proxy used for implementing operator-> in iterators.
   template <typename ExprType>
@@ -119,16 +127,6 @@ class ExprBase {
 
     const ExprType *operator->() const { return &expr_; }
   };
-
-  // Creates an expression from an implementation.
-  template <typename TargetExpr>
-  static TargetExpr Create(const ExprBase::Impl *impl) {
-    MP_ASSERT((!impl || internal::Is<TargetExpr>(impl->kind())),
-              "invalid expression kind");
-    TargetExpr expr;
-    expr.impl_ = impl;
-    return expr;
-  }
 
   // An expression iterator.
   template <typename ExprType>
@@ -159,12 +157,14 @@ class ExprBase {
     bool operator!=(BasicIterator other) const { return ptr_ != other.ptr_; }
   };
 
- public:
-  // Constructs an Expr object representing a null reference to an
-  // expression. The only operation permitted for such object is copying,
-  // assignment and check whether it is null using operator SafeBool.
-  ExprBase() : impl_(0) {}
+  // Safe bool type.
+  typedef void (ExprBase::*SafeBool)() const;
 
+ private:
+  // A member function representing the true value of SafeBool.
+  void True() const {}
+
+ public:
   // Returns the expression kind.
   expr::Kind kind() const { return impl_->kind(); }
 
@@ -178,7 +178,7 @@ class ExprBase {
   operator SafeBool() const { return impl_ != 0 ? &ExprBase::True : 0; }
 };
 
-template <expr::Kind KIND>
+template <expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicExpr : private ExprBase {
   friend class ExprBase;
 
@@ -195,6 +195,14 @@ class BasicExpr : private ExprBase {
   using ExprBase::BasicIterator;
 
  public:
+  // Constructs a BasicExpr object representing a null reference to an
+  // expression. The only operation permitted for such object is copying,
+  // assignment and check whether it is null using operator SafeBool.
+  BasicExpr() {}
+
+  template <expr::Kind FIRST2, expr::Kind LAST2>
+  BasicExpr(BasicExpr<FIRST2, LAST2> other) : ExprBase(impl(other)) {}
+
   using ExprBase::kind;
   using ExprBase::operator SafeBool;
 };
@@ -215,15 +223,17 @@ inline ExprType Cast(Expr e) {
         internal::Cast<ExprType>(e) : ExprType();
 }
 
-#define MP_EXPR \
-  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); } \
+#define MP_EXPR(ExprType) \
+  const Impl *impl() const { \
+    return static_cast<const Impl*>(ExprType::impl()); \
+  } \
   template <typename Alloc> \
   friend class BasicExprFactory
 
 MP_SPECIALIZE_IS_RANGE(Expr, EXPR)
 
 // A numeric expression.
-class NumericExpr : public Expr {};
+typedef BasicExpr<expr::FIRST_NUMERIC, expr::LAST_NUMERIC> NumericExpr;
 MP_SPECIALIZE_IS_RANGE(NumericExpr, NUMERIC)
 
 // A logical expression.
@@ -234,10 +244,10 @@ MP_SPECIALIZE_IS_RANGE(LogicalExpr, LOGICAL)
 // Examples: 42, -1.23e-4
 class NumericConstant : public NumericExpr {
  private:
-  struct Impl : Expr::Impl {
+  struct Impl : NumericExpr::Impl {
     double value;
   };
-  MP_EXPR;
+  MP_EXPR(NumericExpr);
 
  public:
   // Returns the value of this constant.
@@ -250,10 +260,10 @@ MP_SPECIALIZE_IS(NumericConstant, CONSTANT)
 // Example: x
 class Reference : public NumericExpr {
  private:
-  struct Impl : Expr::Impl {
+  struct Impl : NumericExpr::Impl {
     int index;
   };
-  MP_EXPR;
+  MP_EXPR(NumericExpr);
 
  public:
   // Returns the index of the referenced object.
@@ -269,14 +279,14 @@ MP_SPECIALIZE_IS_RANGE(Reference, REFERENCE)
 template <typename Base>
 class BasicUnaryExpr : public Base {
  private:
-  struct Impl : Expr::Impl {
+  struct Impl : NumericExpr::Impl {
     const Expr::Impl *arg;
   };
-  MP_EXPR;
+  MP_EXPR(Base);
 
  public:
   // Returns the argument of this expression.
-  Base arg() const { return Expr::Create<Base>(impl()->arg); }
+  Base arg() const { return Base::template Create<Base>(impl()->arg); }
 };
 
 // A unary numeric expression.
@@ -290,18 +300,18 @@ MP_SPECIALIZE_IS_RANGE(UnaryExpr, UNARY)
 template <typename Base, typename Arg = Base>
 class BasicBinaryExpr : public Base {
  private:
-  struct Impl : Expr::Impl {
+  struct Impl : Base::Impl {
     const Expr::Impl *lhs;
     const Expr::Impl *rhs;
   };
-  MP_EXPR;
+  MP_EXPR(Base);
 
  public:
   // Returns the left-hand side (the first argument) of this expression.
-  Arg lhs() const { return Expr::Create<Arg>(impl()->lhs); }
+  Arg lhs() const { return Base::template Create<Arg>(impl()->lhs); }
 
   // Returns the right-hand side (the second argument) of this expression.
-  Arg rhs() const { return Expr::Create<Arg>(impl()->rhs); }
+  Arg rhs() const { return Base::template Create<Arg>(impl()->rhs); }
 };
 
 // A binary numeric expression.
@@ -312,22 +322,26 @@ MP_SPECIALIZE_IS_RANGE(BinaryExpr, BINARY)
 template <typename Base, expr::Kind K>
 class BasicIfExpr : public Base {
  private:
-  struct Impl : Expr::Impl {
+  struct Impl : Base::Impl {
     const Expr::Impl *condition;
     const Expr::Impl *true_expr;
     const Expr::Impl *false_expr;
   };
-  MP_EXPR;
+  MP_EXPR(Base);
 
  public:
   static const expr::Kind KIND = K;
 
   LogicalExpr condition() const {
-    return Expr::Create<LogicalExpr>(impl()->condition);
+    return Base::template Create<LogicalExpr>(impl()->condition);
   }
 
-  Base true_expr() const { return Expr::Create<Base>(impl()->true_expr); }
-  Base false_expr() const { return Expr::Create<Base>(impl()->false_expr); }
+  Base true_expr() const {
+    return Base::template Create<Base>(impl()->true_expr);
+  }
+  Base false_expr() const {
+    return Base::template Create<Base>(impl()->false_expr);
+  }
 };
 
 // An if-then-else expression.
@@ -339,12 +353,12 @@ MP_SPECIALIZE_IS(IfExpr, IF)
 // Example: <<0; -1, 1>> x, where x is a variable.
 class PLTerm : public NumericExpr {
  private:
-  struct Impl : Expr::Impl {
+  struct Impl : NumericExpr::Impl {
     int num_breakpoints;
-    const Expr::Impl *arg;
+    const NumericExpr::Impl *arg;
     double data[1];
   };
-  MP_EXPR;
+  MP_EXPR(NumericExpr);
 
  public:
   // Returns the number of breakpoints in this term.
@@ -366,7 +380,7 @@ class PLTerm : public NumericExpr {
   }
 
   // Returns the argument (variable or common expression reference).
-  Reference arg() const { return Expr::Create<Reference>(impl()->arg); }
+  Reference arg() const { return NumericExpr::Create<Reference>(impl()->arg); }
 };
 
 MP_SPECIALIZE_IS(PLTerm, PLTERM)
@@ -424,12 +438,12 @@ class Function {
 // Example: f(x), where f is a function and x is a variable.
 class CallExpr : public NumericExpr {
  private:
-  struct Impl : Expr::Impl {
+  struct Impl : NumericExpr::Impl {
     const Function::Impl *func;
     int num_args;
-    const Expr::Impl *args[1];
+    const NumericExpr::Impl *args[1];
   };
-  MP_EXPR;
+  MP_EXPR(NumericExpr);
 
  public:
   Function function() const { return Function(impl()->func); }
@@ -457,11 +471,11 @@ MP_SPECIALIZE_IS(CallExpr, CALL)
 template <typename Base = NumericExpr, typename ArgType = Base>
 class BasicIteratedExpr : public Base {
  private:
-  struct Impl : Expr::Impl {
+  struct Impl : Base::Impl {
     int num_args;
     const Expr::Impl *args[1];
   };
-  MP_EXPR;
+  MP_EXPR(Base);
 
  public:
   typedef ArgType Arg;
@@ -472,7 +486,7 @@ class BasicIteratedExpr : public Base {
   // Returns an argument with the specified index.
   Arg arg(int index) {
     MP_ASSERT(index >= 0 && index < num_args(), "index out of bounds");
-    return Expr::Create<Arg>(impl()->args[index]);
+    return Base::template Create<Arg>(impl()->args[index]);
   }
 
   // An argument iterator.
@@ -509,7 +523,7 @@ class LogicalConstant : public LogicalExpr {
   struct Impl : Expr::Impl {
     bool value;
   };
-  MP_EXPR;
+  MP_EXPR(LogicalExpr);
 
  public:
   // Returns the value of this constant.
@@ -541,7 +555,7 @@ class LogicalCountExpr : public LogicalExpr {
     const Expr::Impl *lhs;
     const Expr::Impl *rhs;
   };
-  MP_EXPR;
+  MP_EXPR(LogicalExpr);
 
  public:
   // Returns the left-hand side (the first argument) of this expression.
@@ -573,7 +587,7 @@ class StringLiteral : public Expr {
   struct Impl : Expr::Impl {
     char value[1];
   };
-  MP_EXPR;
+  MP_EXPR(Expr);
 
  public:
   const char *value() const { return impl()->value; }
