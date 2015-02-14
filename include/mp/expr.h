@@ -80,7 +80,7 @@ class ExprBase {
  protected:
   // The following members are protected rather than private because they
   // have to be accessible in its subclasses, BasicExpr<E>. This doesn't
-  // violates encapsulation because this class is inherited privately and
+  // violate encapsulation because this class is inherited privately and
   // can be thought of as a part of BasicExpr<E> that doesn't depend on
   // template parameter.
 
@@ -189,7 +189,7 @@ class BasicExpr : private ExprBase {
   friend class BasicExprFactory;
 
  protected:
-  using ExprBase::Impl;
+  typedef ExprBase::Impl Impl;
   using ExprBase::impl;
   using ExprBase::Create;
   using ExprBase::BasicIterator;
