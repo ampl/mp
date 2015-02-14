@@ -279,8 +279,8 @@ MP_SPECIALIZE_IS_RANGE(Reference, REFERENCE)
 template <typename Base>
 class BasicUnaryExpr : public Base {
  private:
-  struct Impl : NumericExpr::Impl {
-    const NumericExpr::Impl *arg;
+  struct Impl : Base::Impl {
+    const typename Base::Impl *arg;
   };
   MP_EXPR(Base);
 
