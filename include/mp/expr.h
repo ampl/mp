@@ -78,6 +78,12 @@ inline bool Is<ExprType>(expr::Kind k) { \
 // process expressions of different types is by using ExprVisitor.
 class ExprBase {
  protected:
+  // The following members are protected rather than private because they
+  // have to be accessible in its subclasses, BasicExpr<E>. This doesn't
+  // violates encapsulation because this class is inherited privately and
+  // can be thought of as a part of BasicExpr<E> that doesn't depend on
+  // template parameter.
+
   class Impl {
    private:
     // Only ExprFactory should be able to set Impl::kind_.
@@ -90,9 +96,12 @@ class ExprBase {
     expr::Kind kind() const { return kind_; }
   };
 
- private:
   const Impl *impl_;
 
+  // Returns a pointer to the implementation.
+  const Impl *impl() const { return impl_; }
+
+ private:
   // A member function representing the true value of SafeBool.
   void True() const {}
 
@@ -111,13 +120,6 @@ class ExprBase {
     const ExprType *operator->() const { return &expr_; }
   };
 
-  template <typename ExprType>
-  friend ExprType internal::Cast(Expr e);
-
- protected:
-  // Returns a pointer to the implementation.
-  const Impl *impl() const { return impl_; }
-
   // Creates an expression from an implementation.
   template <typename TargetExpr>
   static TargetExpr Create(const ExprBase::Impl *impl) {
@@ -127,9 +129,6 @@ class ExprBase {
     expr.impl_ = impl;
     return expr;
   }
-
-  template <typename Alloc>
-  friend class BasicExprFactory;
 
   // An expression iterator.
   template <typename ExprType>
@@ -180,7 +179,7 @@ class ExprBase {
 };
 
 template <expr::Kind KIND>
-class BasicExpr : protected ExprBase {
+class BasicExpr : private ExprBase {
   friend class ExprBase;
 
   template <typename ExprType>
@@ -188,6 +187,12 @@ class BasicExpr : protected ExprBase {
 
   template <typename Alloc>
   friend class BasicExprFactory;
+
+ protected:
+  using ExprBase::Impl;
+  using ExprBase::impl;
+  using ExprBase::Create;
+  using ExprBase::BasicIterator;
 
  public:
   using ExprBase::kind;
