@@ -9,6 +9,10 @@
 
 // Module functions.
 
+static real *allocate(ASL *asl, int size) {
+  return static_cast<real *>(M1alloc(size * sizeof(real)));
+}
+
 ASL *asl_init(char *stub) {
   ASL *asl = ASL_alloc(ASL_read_pfgh);
   if (!asl) return NULL;
@@ -16,12 +20,12 @@ ASL *asl_init(char *stub) {
   FILE *ampl_file = jac0dim(stub, static_cast<fint>(strlen(stub)));
 
   // Allocate room to store problem data
-  if (! (asl->i.X0_    = static_cast<real *>(M1alloc(asl->i.n_var_ * sizeof(real))))) return NULL;
-  if (! (asl->i.LUv_   = static_cast<real *>(M1alloc(asl->i.n_var_ * sizeof(real))))) return NULL;
-  if (! (asl->i.Uvx_   = static_cast<real *>(M1alloc(asl->i.n_var_ * sizeof(real))))) return NULL;
-  if (! (asl->i.pi0_   = static_cast<real *>(M1alloc(asl->i.n_con_ * sizeof(real))))) return NULL;
-  if (! (asl->i.LUrhs_ = static_cast<real *>(M1alloc(asl->i.n_con_ * sizeof(real))))) return NULL;
-  if (! (asl->i.Urhsx_ = static_cast<real *>(M1alloc(asl->i.n_con_ * sizeof(real))))) return NULL;
+  if (!(asl->i.X0_    = allocate(asl, asl->i.n_var_))) return NULL;
+  if (!(asl->i.LUv_   = allocate(asl, asl->i.n_var_))) return NULL;
+  if (!(asl->i.Uvx_   = allocate(asl, asl->i.n_var_))) return NULL;
+  if (!(asl->i.pi0_   = allocate(asl, asl->i.n_con_))) return NULL;
+  if (!(asl->i.LUrhs_ = allocate(asl, asl->i.n_con_))) return NULL;
+  if (!(asl->i.Urhsx_ = allocate(asl, asl->i.n_con_))) return NULL;
 
   // Read in ASL structure
   asl->i.want_xpi0_ = 3;        // Read primal and dual estimates
@@ -154,7 +158,8 @@ size_t asl_sparse_congrad_nnz(ASL *asl, int j) {
   return nzgj;
 }
 
-void asl_sparse_congrad(ASL *asl, double *x, int j, int64_t *inds, double *vals) {
+void asl_sparse_congrad(
+    ASL *asl, double *x, int j, int64_t *inds, double *vals) {
   int congrd_mode_bkup = asl->i.congrd_mode;
   asl->i.congrd_mode = 1;  // Sparse gradient mode.
 
@@ -218,14 +223,16 @@ void asl_ghjvprod(ASL *asl, double *g, double *v, double *ghjv) {
 }
 
 // Return Hessian at (x,y) in triplet form (rows, vals, cols).
-void asl_hess(ASL *asl, double *y, double w, int64_t *rows, int64_t *cols, double *vals) {
+void asl_hess(
+    ASL *asl, double *y, double w, int64_t *rows, int64_t *cols, double *vals) {
   double ow = asl->i.objtype_[0] ? -w : w;  // Objective weight.
   asl->p.Sphes(asl, 0, vals, -1, &ow, y);
 
   // Fill in sparsity pattern.
   int k = 0;
   for (int i = 0; i < asl->i.n_var_; i++) {
-    for (int j = asl->i.sputinfo_->hcolstarts[i]; j < asl->i.sputinfo_->hcolstarts[i+1]; j++) {
+    for (int j = asl->i.sputinfo_->hcolstarts[i];
+         j < asl->i.sputinfo_->hcolstarts[i+1]; j++) {
       rows[k] = asl->i.sputinfo_->hrownos[j];
       cols[k] = i;
       k++;
