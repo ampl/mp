@@ -737,7 +737,7 @@ class BasicExprFactory : private Alloc {
     void AddArg(typename ExprType::Arg arg) {
       MP_ASSERT(arg_index_ < impl_->num_args, "too many arguments");
       MP_ASSERT(arg != 0, "invalid argument");
-      impl_->args[arg_index_++] = arg.impl_;
+      impl_->args[arg_index_++] = arg.impl();
     }
   };
 
