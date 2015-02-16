@@ -9,7 +9,7 @@
 
 // Module functions.
 
-void *asl_init(char *stub) {
+ASL *asl_init(char *stub) {
   ASL_pfgh *asl = (ASL_pfgh*)ASL_alloc(ASL_read_pfgh);
   if (!asl) return NULL;
 
@@ -27,16 +27,16 @@ void *asl_init(char *stub) {
   asl->i.want_xpi0_ = 3;        // Read primal and dual estimates
   pfgh_read(ampl_file , 0);     // pfgh_read closes the file.
 
-  return (void *)asl;
+  return reinterpret_cast<ASL*>(asl);
 }
 
-void asl_write_sol(void *asl, const char *msg, double *x, double *y) {
+void asl_write_sol(ASL *asl, const char *msg, double *x, double *y) {
   ASL *this_asl = (ASL *)asl;
   write_sol_ASL(asl, msg, x, y, 0); // Do not handle Option_Info for now.
   return;
 }
 
-void asl_finalize(void *asl) {
+void asl_finalize(ASL *asl) {
   ASL *this_asl = (ASL *)asl;
   ASL_free((ASL **)(&this_asl));
   return;
@@ -44,67 +44,67 @@ void asl_finalize(void *asl) {
 
 // Problem setup.
 
-int asl_objtype(void *asl) {
+int asl_objtype(ASL *asl) {
   return ((ASL *)asl)->i.objtype_[0];  // 0 means minimization problem.
 }
 
-int asl_nvar(void *asl) {
+int asl_nvar(ASL *asl) {
   return ((ASL *)asl)->i.n_var_;
 }
 
-int asl_ncon(void *asl) {
+int asl_ncon(ASL *asl) {
   return ((ASL *)asl)->i.n_con_;
 }
 
-int asl_nlc(void *asl) {
+int asl_nlc(ASL *asl) {
   return ((ASL *)asl)->i.nlc_;
 }
 
-int asl_nlnc(void *asl) {
+int asl_nlnc(ASL *asl) {
   return ((ASL *)asl)->i.nlnc_;
 }
 
-int asl_nnzj(void *asl) {
+int asl_nnzj(ASL *asl) {
   return ((ASL *)asl)->i.nzc_;
 }
 
-int asl_nnzh(void *asl) {
+int asl_nnzh(ASL *asl) {
   ASL *this_asl = (ASL *)asl;
   return (int)((*(this_asl->p.Sphset))(this_asl, 0, -1, 1, 1, 1));
 }
 
-int asl_islp(void *asl) {
+int asl_islp(ASL *asl) {
   ASL *this_asl = (ASL *)asl;
   return ((this_asl->i.nlo_ + this_asl->i.nlc_ + this_asl->i.nlnc_) > 0 ? 0 : 1);
 }
 
-double *asl_x0(void *asl) {
+double *asl_x0(ASL *asl) {
   return ((ASL *)asl)->i.X0_;
 }
 
-double *asl_y0(void *asl) {
+double *asl_y0(ASL *asl) {
   return ((ASL *)asl)->i.pi0_;
 }
 
-double *asl_lvar(void *asl) {
+double *asl_lvar(ASL *asl) {
   return ((ASL *)asl)->i.LUv_;
 }
 
-double *asl_uvar(void *asl) {
+double *asl_uvar(ASL *asl) {
   return ((ASL *)asl)->i.Uvx_;
 }
 
-double *asl_lcon(void *asl) {
+double *asl_lcon(ASL *asl) {
   return ((ASL *)asl)->i.LUrhs_;
 }
 
-double *asl_ucon(void *asl) {
+double *asl_ucon(ASL *asl) {
   return ((ASL *)asl)->i.Urhsx_;
 }
 
 // Objective.
 
-void asl_varscale(void *asl, double *s) {
+void asl_varscale(ASL *asl, double *s) {
   fint ne;
   int this_nvar = ((ASL *)asl)->i.n_var_;
 
@@ -113,12 +113,12 @@ void asl_varscale(void *asl, double *s) {
   return;
 }
 
-double asl_obj(void *asl, double *x) {
+double asl_obj(ASL *asl, double *x) {
   fint ne;
   return (*((ASL *)asl)->p.Objval)((ASL *)asl, 0, x, &ne);
 }
 
-void asl_grad(void *asl, double *x, double *g) {
+void asl_grad(ASL *asl, double *x, double *g) {
   fint ne;
 
   (*((ASL *)asl)->p.Objgrd)((ASL *)asl, 0, x, g, &ne);
@@ -126,7 +126,7 @@ void asl_grad(void *asl, double *x, double *g) {
 
 // Lagrangian.
 
-void asl_lagscale(void *asl, double s) {
+void asl_lagscale(ASL *asl, double s) {
   fint ne;
   lagscale_ASL((ASL *)asl, s, &ne);
   return;
@@ -134,7 +134,7 @@ void asl_lagscale(void *asl, double s) {
 
 // Constraints and Jacobian.
 
-void asl_conscale(void *asl, double *s) {
+void asl_conscale(ASL *asl, double *s) {
   fint ne;
   int this_ncon = ((ASL *)asl)->i.n_con_;
 
@@ -143,24 +143,24 @@ void asl_conscale(void *asl, double *s) {
   return;
 }
 
-void asl_cons(void *asl, double *x, double *c) {
+void asl_cons(ASL *asl, double *x, double *c) {
   fint ne;
 
   (*((ASL *)asl)->p.Conval)((ASL *)asl, x, c, &ne);
 }
 
-double asl_jcon(void *asl, double *x, int j) {
+double asl_jcon(ASL *asl, double *x, int j) {
   fint ne;
   return (*((ASL *)asl)->p.Conival)((ASL *)asl, j, x, &ne);
 }
 
-void asl_jcongrad(void *asl, double *x, double *g, int j) {
+void asl_jcongrad(ASL *asl, double *x, double *g, int j) {
   ASL *this_asl = (ASL *)asl;
   fint ne;
   (*(this_asl->p.Congrd))(this_asl, j, x, g, &ne);
 }
 
-size_t asl_sparse_congrad_nnz(void *asl, int j) {
+size_t asl_sparse_congrad_nnz(ASL *asl, int j) {
   ASL *this_asl = (ASL *)asl;
   size_t nzgj = 0;
   cgrad *cg;
@@ -169,7 +169,7 @@ size_t asl_sparse_congrad_nnz(void *asl, int j) {
   return nzgj;
 }
 
-void asl_sparse_congrad(void *asl, double *x, int j, int64_t *inds, double *vals) {
+void asl_sparse_congrad(ASL *asl, double *x, int j, int64_t *inds, double *vals) {
   ASL *this_asl = (ASL *)asl;
   cgrad *cg;
 
@@ -189,7 +189,7 @@ void asl_sparse_congrad(void *asl, double *x, int j, int64_t *inds, double *vals
 }
 
 // Evaluate Jacobian at x in triplet form (rows, vals, cols).
-void asl_jac(void *asl, double *x, int64_t *rows, int64_t *cols, double *vals) {
+void asl_jac(ASL *asl, double *x, int64_t *rows, int64_t *cols, double *vals) {
   ASL *this_asl = (ASL *)asl;
   int this_nzc = this_asl->i.nzc_, this_ncon = this_asl->i.n_con_;
 
@@ -206,7 +206,7 @@ void asl_jac(void *asl, double *x, int64_t *rows, int64_t *cols, double *vals) {
 
 // Hessian.
 
-void asl_hprod(void *asl, double *y, double *v, double *hv, double w) {
+void asl_hprod(ASL *asl, double *y, double *v, double *hv, double w) {
   ASL *this_asl = (ASL *)asl;
   double ow[1];  // Objective weight.
 
@@ -215,12 +215,12 @@ void asl_hprod(void *asl, double *y, double *v, double *hv, double w) {
   (*(this_asl->p.Hvcomp))(this_asl, hv, v, -1, ow, y); // nobj=-1 so ow takes precendence.
 }
 
-void asl_hvcompd(void *asl, double *v, double *hv, int nobj) {
+void asl_hvcompd(ASL *asl, double *v, double *hv, int nobj) {
   ASL *this_asl = (ASL *)asl;
   (*(this_asl->p.Hvcompd))(this_asl, hv, v, nobj);
 }
 
-void asl_ghjvprod(void *asl, double *g, double *v, double *ghjv) {
+void asl_ghjvprod(ASL *asl, double *g, double *v, double *ghjv) {
   ASL *this_asl = (ASL *)asl;
   int this_ncon = this_asl->i.n_con_;
   int this_nvar = this_asl->i.n_var_;
@@ -247,7 +247,7 @@ void asl_ghjvprod(void *asl, double *g, double *v, double *ghjv) {
 }
 
 // Return Hessian at (x,y) in triplet form (rows, vals, cols).
-void asl_hess(void *asl, double *y, double w, int64_t *rows, int64_t *cols, double *vals) {
+void asl_hess(ASL *asl, double *y, double w, int64_t *rows, int64_t *cols, double *vals) {
   ASL *this_asl = (ASL *)asl;
   double ow[1];  // Objective weight.
   size_t nnzh = (size_t)((*(this_asl->p.Sphset))(this_asl, 0, -1, 1, 1, 1)); // nobj=-1 so ow takes precendence.
