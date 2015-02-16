@@ -75,10 +75,6 @@ inline bool Is<ExprType>(expr::Kind k) { \
 } \
 }
 
-// An expression.
-// An Expr object represents a reference to an expression so
-// it is cheap to construct and pass by value. A type safe way to
-// process expressions of different types is by using ExprVisitor.
 class ExprBase {
  protected:
   // The following members are protected rather than private because they
@@ -104,10 +100,10 @@ class ExprBase {
   // Returns a pointer to the implementation.
   const Impl *impl() const { return impl_; }
 
-  ExprBase(const Impl *impl = 0) : impl_(impl) {}
+  ExprBase() : impl_() {}
 
   template <typename ExprType>
-  const Impl *impl(ExprType e) { return e.impl_; }
+  ExprBase(ExprType e) : impl_(e.impl_) {}
 
   // Creates an expression from an implementation.
   template <typename TargetExpr>
@@ -143,6 +139,10 @@ class ExprBase {
   operator SafeBool() const { return impl_ != 0 ? &ExprBase::True : 0; }
 };
 
+// An expression.
+// A BasicExpr object represents a reference to an expression so
+// it is cheap to construct and pass by value. A type safe way to
+// process expressions of different types is by using ExprVisitor.
 template <expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicExpr : private ExprBase {
   friend class ExprBase;
@@ -154,7 +154,7 @@ class BasicExpr : private ExprBase {
   friend class BasicExprFactory;
 
  protected:
-  typedef ExprBase::Impl Impl;
+  using ExprBase::Impl;
   using ExprBase::impl;
   using ExprBase::Create;
 
@@ -165,7 +165,7 @@ class BasicExpr : private ExprBase {
   BasicExpr() {}
 
   template <expr::Kind FIRST2, expr::Kind LAST2>
-  BasicExpr(BasicExpr<FIRST2, LAST2> other) : ExprBase(impl(other)) {}
+  BasicExpr(BasicExpr<FIRST2, LAST2> other) : ExprBase(other) {}
 
   using ExprBase::kind;
   using ExprBase::operator SafeBool;
@@ -201,7 +201,7 @@ typedef BasicExpr<expr::FIRST_NUMERIC, expr::LAST_NUMERIC> NumericExpr;
 MP_SPECIALIZE_IS_RANGE(NumericExpr, NUMERIC)
 
 // A logical expression.
-class LogicalExpr : public Expr {};
+typedef BasicExpr<expr::FIRST_LOGICAL, expr::LAST_LOGICAL> LogicalExpr;
 MP_SPECIALIZE_IS_RANGE(LogicalExpr, LOGICAL)
 
 // A numeric constant.
@@ -527,7 +527,7 @@ MP_SPECIALIZE_IS(CountExpr, COUNT)
 // Examples: 0, 1
 class LogicalConstant : public LogicalExpr {
  private:
-  struct Impl : Expr::Impl {
+  struct Impl : LogicalExpr::Impl {
     bool value;
   };
   MP_EXPR(LogicalExpr);
@@ -558,9 +558,9 @@ MP_SPECIALIZE_IS_RANGE(RelationalExpr, RELATIONAL)
 // Examples: atleast 1 (x < y, x != y), where x and y are variables.
 class LogicalCountExpr : public LogicalExpr {
  private:
-  struct Impl : Expr::Impl {
-    const Expr::Impl *lhs;
-    const Expr::Impl *rhs;
+  struct Impl : LogicalExpr::Impl {
+    const LogicalExpr::Impl *lhs;
+    const LogicalExpr::Impl *rhs;
   };
   MP_EXPR(LogicalExpr);
 
