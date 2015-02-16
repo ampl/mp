@@ -13,7 +13,7 @@ static real *allocate(ASL *asl, int size) {
   return static_cast<real *>(M1alloc(size * sizeof(real)));
 }
 
-ASL *asl_init(char *stub) {
+ASL *asl_init(const char *stub) {
   ASL *asl = ASL_alloc(ASL_read_pfgh);
   if (!asl) return NULL;
 

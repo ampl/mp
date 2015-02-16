@@ -21,7 +21,7 @@ extern "C" {
 
 typedef struct ASL ASL;
 
-ASL *asl_init(char *stub);
+ASL *asl_init(const char *stub);
 void asl_finalize(ASL *asl);
 void asl_write_sol(ASL *asl, const char *msg, double *x, double *y);
 
@@ -55,9 +55,11 @@ void    asl_hvcompd( ASL *asl, double *v, double *hv, int nobj);
 void    asl_ghjvprod(ASL *asl, double *g, double *v, double *ghjv);
 
 size_t asl_sparse_congrad_nnz(ASL *asl, int j);
-void asl_sparse_congrad(ASL *asl, double *x, int j, int64_t *inds, double *vals);
+void asl_sparse_congrad(
+    ASL *asl, double *x, int j, int64_t *inds, double *vals);
 void asl_jac( ASL *asl, double *x, int64_t *rows, int64_t *cols, double *vals);
-void asl_hess(ASL *asl, double *y, double w, int64_t *rows, int64_t *cols, double *vals);
+void asl_hess(
+    ASL *asl, double *y, double w, int64_t *rows, int64_t *cols, double *vals);
 
 #ifdef __cplusplus
 }  // extern "C"
