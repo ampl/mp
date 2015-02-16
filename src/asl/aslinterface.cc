@@ -163,7 +163,7 @@ void asl_sparse_congrad(ASL *asl, double *x, int j, int64_t *inds, double *vals)
 
   int k = 0;
   for (cgrad *cg = asl->i.Cgrad_[j]; cg; cg = cg->next)
-      inds[k++] = cg->varno + 1L;
+    inds[k++] = cg->varno;
 
   asl->i.congrd_mode = congrd_mode_bkup;  // Restore gradient mode.
 }
@@ -175,11 +175,11 @@ void asl_jac(ASL *asl, double *x, int64_t *rows, int64_t *cols, double *vals) {
   fint ne;
   asl->p.Jacval(asl, x, vals, &ne);
 
-  // Fill in sparsity pattern. Account for 1-based indexing.
+  // Fill in sparsity pattern.
   for (int j = 0; j < this_ncon; j++)
     for (cgrad *cg = asl->i.Cgrad_[j]; cg; cg = cg->next) {
-        rows[cg->goff] = j + 1L;
-        cols[cg->goff] = cg->varno + 1L;
+      rows[cg->goff] = j;
+      cols[cg->goff] = cg->varno;
     }
 }
 
@@ -222,12 +222,12 @@ void asl_hess(ASL *asl, double *y, double w, int64_t *rows, int64_t *cols, doubl
   double ow = asl->i.objtype_[0] ? -w : w;  // Objective weight.
   asl->p.Sphes(asl, 0, vals, -1, &ow, y);
 
-  // Fill in sparsity pattern. Account for 1-based indexing.
+  // Fill in sparsity pattern.
   int k = 0;
   for (int i = 0; i < asl->i.n_var_; i++) {
     for (int j = asl->i.sputinfo_->hcolstarts[i]; j < asl->i.sputinfo_->hcolstarts[i+1]; j++) {
-      rows[k] = asl->i.sputinfo_->hrownos[j] + 1;
-      cols[k] = i + 1;
+      rows[k] = asl->i.sputinfo_->hrownos[j];
+      cols[k] = i;
       k++;
     }
   }
