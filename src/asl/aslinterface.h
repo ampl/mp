@@ -5,6 +5,7 @@
 // Montreal, February 2015.
 // ===============================================================
 
+#include <stdint.h>
 #include <sys/types.h>                 // For ssize_t
 #include "asl_pfgh.h"
 
