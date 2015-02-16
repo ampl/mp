@@ -52,6 +52,9 @@ bool Is(expr::Kind k);
 // performed.
 template <typename ExprType>
 ExprType Cast(Expr e);
+
+template <typename ExprType>
+class ExprIterator;
 }
 
 // Specialize internal::Is for the class ExprType corresponding to a single
@@ -116,49 +119,11 @@ class ExprBase {
     return expr;
   }
 
-  // An expression proxy used for implementing operator-> in iterators.
-  template <typename ExprType>
-  class Proxy {
-   private:
-    ExprType expr_;
-
-   public:
-    explicit Proxy(const ExprBase::Impl *e) : expr_(Create<ExprType>(e)) {}
-
-    const ExprType *operator->() const { return &expr_; }
-  };
-
-  // An expression iterator.
-  template <typename ExprType>
-  class BasicIterator :
-      public std::iterator<std::forward_iterator_tag, ExprType> {
-   private:
-    const ExprBase::Impl *const *ptr_;
-
-   public:
-    explicit BasicIterator(const ExprBase::Impl *const *p = 0) : ptr_(p) {}
-
-    ExprType operator*() const { return Create<ExprType>(*ptr_); }
-
-    Proxy<ExprType> operator->() const { return Proxy<ExprType>(*ptr_); }
-
-    BasicIterator &operator++() {
-      ++ptr_;
-      return *this;
-    }
-
-    BasicIterator operator++(int ) {
-      BasicIterator it(*this);
-      ++ptr_;
-      return it;
-    }
-
-    bool operator==(BasicIterator other) const { return ptr_ == other.ptr_; }
-    bool operator!=(BasicIterator other) const { return ptr_ != other.ptr_; }
-  };
-
   // Safe bool type.
   typedef void (ExprBase::*SafeBool)() const;
+
+  template <typename ExprType>
+  friend class internal::ExprIterator;
 
  private:
   // A member function representing the true value of SafeBool.
@@ -192,7 +157,6 @@ class BasicExpr : private ExprBase {
   typedef ExprBase::Impl Impl;
   using ExprBase::impl;
   using ExprBase::Create;
-  using ExprBase::BasicIterator;
 
  public:
   // Constructs a BasicExpr object representing a null reference to an
@@ -434,6 +398,49 @@ class Function {
   func::Type type() const { return impl_->type; }
 };
 
+namespace internal {
+// An expression iterator.
+template <typename ExprType>
+class ExprIterator :
+    public std::iterator<std::forward_iterator_tag, ExprType> {
+ private:
+  const ExprBase::Impl *const *ptr_;
+
+  // An expression proxy used for implementing operator-> in iterators.
+  class Proxy {
+   private:
+    ExprType expr_;
+
+   public:
+    explicit Proxy(const ExprBase::Impl *e)
+      : expr_(ExprBase::Create<ExprType>(e)) {}
+
+    const ExprType *operator->() const { return &expr_; }
+  };
+
+ public:
+  explicit ExprIterator(const ExprBase::Impl *const *p = 0) : ptr_(p) {}
+
+  ExprType operator*() const { return ExprBase::Create<ExprType>(*ptr_); }
+
+  Proxy operator->() const { return Proxy(*ptr_); }
+
+  ExprIterator &operator++() {
+    ++ptr_;
+    return *this;
+  }
+
+  ExprIterator operator++(int ) {
+    ExprIterator it(*this);
+    ++ptr_;
+    return it;
+  }
+
+  bool operator==(ExprIterator other) const { return ptr_ == other.ptr_; }
+  bool operator!=(ExprIterator other) const { return ptr_ != other.ptr_; }
+};
+}  // namespace internal
+
 // A function call expression.
 // Example: f(x), where f is a function and x is a variable.
 class CallExpr : public NumericExpr {
@@ -460,7 +467,7 @@ class CallExpr : public NumericExpr {
   }
 
   // An argument iterator.
-  typedef BasicIterator<Expr> iterator;
+  typedef internal::ExprIterator<Expr> iterator;
 
   iterator begin() const { return iterator(impl()->args); }
   iterator end() const { return iterator(impl()->args + num_args()); }
@@ -490,7 +497,7 @@ class BasicIteratedExpr : public Base {
   }
 
   // An argument iterator.
-  typedef typename Base::template BasicIterator<Arg> iterator;
+  typedef internal::ExprIterator<Arg> iterator;
 
   iterator begin() const { return iterator(impl()->args); }
   iterator end() const { return iterator(impl()->args + num_args()); }
