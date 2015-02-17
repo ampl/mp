@@ -163,6 +163,7 @@ class BasicExpr : private ExprBase {
   typedef ExprBase::Impl Impl;
   using ExprBase::impl;
   using ExprBase::Create;
+  typedef BasicExpr Base;
 
  public:
   // Constructs a BasicExpr object representing a null reference to an
@@ -218,7 +219,6 @@ MP_SPECIALIZE_IS_RANGE(LogicalExpr, LOGICAL)
 // Examples: 42, -1.23e-4
 class NumericConstant : public BasicExpr<expr::NUMBER> {
  private:
-  typedef BasicExpr<expr::NUMBER> Base;
   struct Impl : Base::Impl {
     double value;
   };
@@ -236,7 +236,6 @@ MP_SPECIALIZE_IS(NumericConstant, NUMBER)
 class Reference :
   public BasicExpr<expr::FIRST_REFERENCE, expr::LAST_REFERENCE> {
  private:
-  typedef BasicExpr<expr::FIRST_REFERENCE, expr::LAST_REFERENCE> Base;
   struct Impl : Base::Impl {
     int index;
   };
@@ -335,7 +334,6 @@ MP_SPECIALIZE_IS(IfExpr, IF)
 // Example: <<0; -1, 1>> x, where x is a variable.
 class PLTerm : public BasicExpr<expr::PLTERM> {
  private:
-  typedef BasicExpr<expr::PLTERM> Base;
   struct Impl : Base::Impl {
     int num_breakpoints;
     const Base::Impl *arg;
@@ -464,7 +462,6 @@ class ExprIterator :
 // Example: f(x), where f is a function and x is a variable.
 class CallExpr : public BasicExpr<expr::CALL> {
  private:
-  typedef BasicExpr<expr::CALL> Base;
   struct Impl : Base::Impl {
     const Function::Impl *func;
     int num_args;
@@ -495,9 +492,10 @@ class CallExpr : public BasicExpr<expr::CALL> {
 
 MP_SPECIALIZE_IS(CallExpr, CALL)
 
-template <typename Base = NumericExpr, typename ArgType = Base>
-class BasicIteratedExpr : public Base {
+template <typename ArgType, expr::Kind FIRST, expr::Kind LAST = FIRST>
+class BasicIteratedExpr : public BasicExpr<FIRST, LAST> {
  private:
+  typedef BasicExpr<FIRST, LAST> Base;
   struct Impl : Base::Impl {
     int num_args;
     const typename Base::Impl *args[1];
@@ -529,28 +527,29 @@ class BasicIteratedExpr : public Base {
 //   sum{i in I} x[i],
 //   numberof 42 in ({i in I} x[i]),
 //   where I is a set and x is a variable.
-typedef BasicIteratedExpr<> IteratedExpr;
+typedef BasicIteratedExpr<
+  NumericExpr, expr::FIRST_ITERATED, expr::LAST_ITERATED> IteratedExpr;
 MP_SPECIALIZE_IS_RANGE(IteratedExpr, ITERATED)
 
 // A symbolic numberof expression.
 // Example: numberof (if x then 'a' else 'b') in ('a', 'b', 'c'),
 // where x is a variable.
-typedef BasicIteratedExpr<NumericExpr, Expr> SymbolicNumberOfExpr;
+typedef BasicIteratedExpr<Expr, expr::NUMBEROF_SYM> SymbolicNumberOfExpr;
 MP_SPECIALIZE_IS(SymbolicNumberOfExpr, NUMBEROF_SYM)
 
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
-typedef BasicIteratedExpr<NumericExpr, LogicalExpr> CountExpr;
+typedef BasicIteratedExpr<LogicalExpr, expr::COUNT> CountExpr;
 MP_SPECIALIZE_IS(CountExpr, COUNT)
 
 // A logical constant.
 // Examples: 0, 1
-class LogicalConstant : public LogicalExpr {
+class LogicalConstant : public BasicExpr<expr::BOOL> {
  private:
-  struct Impl : LogicalExpr::Impl {
+  struct Impl : Base::Impl {
     bool value;
   };
-  MP_EXPR(LogicalExpr);
+  MP_EXPR(Base);
 
  public:
   // Returns the value of this constant.
@@ -578,13 +577,14 @@ MP_SPECIALIZE_IS_RANGE(RelationalExpr, RELATIONAL)
 
 // A logical count expression.
 // Examples: atleast 1 (x < y, x != y), where x and y are variables.
-class LogicalCountExpr : public LogicalExpr {
+class LogicalCountExpr :
+  public BasicExpr<expr::FIRST_LOGICAL_COUNT, expr::LAST_LOGICAL_COUNT> {
  private:
-  struct Impl : LogicalExpr::Impl {
-    const LogicalExpr::Impl *lhs;
-    const LogicalExpr::Impl *rhs;
+  struct Impl : Base::Impl {
+    const Base::Impl *lhs;
+    const Base::Impl *rhs;
   };
-  MP_EXPR(LogicalExpr);
+  MP_EXPR(Base);
 
  public:
   // Returns the left-hand side (the first argument) of this expression.
@@ -603,20 +603,23 @@ MP_SPECIALIZE_IS(ImplicationExpr, IMPLICATION)
 
 // An iterated logical expression.
 // Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
-typedef BasicIteratedExpr<LogicalExpr> IteratedLogicalExpr;
+typedef BasicIteratedExpr<
+  LogicalExpr, expr::FIRST_ITERATED_LOGICAL, expr::LAST_ITERATED_LOGICAL>
+  IteratedLogicalExpr;
 MP_SPECIALIZE_IS_RANGE(IteratedLogicalExpr, ITERATED_LOGICAL)
 
 // A pairwise expression (alldiff or !alldiff).
 // Example: alldiff{i in I} x[i], where I is a set and x is a variable.
-typedef BasicIteratedExpr<LogicalExpr, NumericExpr> PairwiseExpr;
+typedef BasicIteratedExpr<
+  NumericExpr, expr::FIRST_PAIRWISE, expr::LAST_PAIRWISE> PairwiseExpr;
 MP_SPECIALIZE_IS_RANGE(PairwiseExpr, PAIRWISE)
 
-class StringLiteral : public Expr {
+class StringLiteral : public BasicExpr<expr::STRING> {
  private:
-  struct Impl : Expr::Impl {
+  struct Impl : Base::Impl {
     char value[1];
   };
-  MP_EXPR(Expr);
+  MP_EXPR(Base);
 
  public:
   const char *value() const { return impl()->value; }
