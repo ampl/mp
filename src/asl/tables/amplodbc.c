@@ -721,8 +721,8 @@ strcmpv(const void *a, const void *b, void *v)
 	int i, j;
 	const char *s, *t;
 	UNUSED(v);
-	s = (const char*)a;
-	t = (const char*)b;
+	s = *(const char**)a;
+	t = *(const char**)b;
 	for(;;) {
 		i = *s++;
 		j = *t++;
