@@ -44,7 +44,10 @@ class BasicExprFactory;
 namespace internal {
 // Returns true if the non-null expression e is of type ExprType.
 template <typename ExprType>
-bool Is(expr::Kind k);
+bool Is(expr::Kind k) {
+  int kind = k;
+  return ExprType::FIRST_KIND <= kind && kind <= ExprType::LAST_KIND;
+}
 
 // Casts an expression to type ExprType which must be a subclass of Expr.
 // If assertions are enabled, it generates an assertion failure when
@@ -62,24 +65,6 @@ struct enable_if {};
 template<class T>
 struct enable_if<true, T> { typedef T type; };
 }  // namespace internal
-
-// Specialize internal::Is for the class ExprType corresponding to a single
-// expression kind.
-#define MP_SPECIALIZE_IS(ExprType, expr_kind) \
-namespace internal { \
-template <> \
-inline bool Is<ExprType>(expr::Kind k) { return k == expr::expr_kind; } \
-}
-
-// Specialize internal::Is for the class ExprType corresponding to a range
-// of expression kinds [start, end].
-#define MP_SPECIALIZE_IS_RANGE(ExprType, expr_kind) \
-namespace internal { \
-template <> \
-inline bool Is<ExprType>(expr::Kind k) { \
-  return k >= expr::FIRST_##expr_kind && k <= expr::LAST_##expr_kind; \
-} \
-}
 
 class ExprBase {
  protected:
@@ -166,6 +151,8 @@ class BasicExpr : private ExprBase {
   typedef BasicExpr Base;
 
  public:
+  enum { FIRST_KIND = FIRST, LAST_KIND = LAST };
+
   // Constructs a BasicExpr object representing a null reference to an
   // expression. The only operation permitted for such object is copying,
   // assignment and check whether it is null using operator SafeBool.
@@ -205,15 +192,11 @@ inline ExprType Cast(Expr e) {
   template <typename Alloc> \
   friend class BasicExprFactory
 
-MP_SPECIALIZE_IS_RANGE(Expr, EXPR)
-
 // A numeric expression.
 typedef BasicExpr<expr::FIRST_NUMERIC, expr::LAST_NUMERIC> NumericExpr;
-MP_SPECIALIZE_IS_RANGE(NumericExpr, NUMERIC)
 
 // A logical expression.
 typedef BasicExpr<expr::FIRST_LOGICAL, expr::LAST_LOGICAL> LogicalExpr;
-MP_SPECIALIZE_IS_RANGE(LogicalExpr, LOGICAL)
 
 // A numeric constant.
 // Examples: 42, -1.23e-4
@@ -229,8 +212,6 @@ class NumericConstant : public BasicExpr<expr::NUMBER> {
   double value() const { return impl()->value; }
 };
 
-MP_SPECIALIZE_IS(NumericConstant, NUMBER)
-
 // A reference to a variable or a common expression.
 // Example: x
 class Reference :
@@ -245,10 +226,6 @@ class Reference :
   // Returns the index of the referenced object.
   int index() const { return impl()->index; }
 };
-
-// A reference to a variable.
-// Example: x
-MP_SPECIALIZE_IS_RANGE(Reference, REFERENCE)
 
 // A unary expression.
 // Base: base expression class.
@@ -270,7 +247,6 @@ class BasicUnaryExpr : public BasicExpr<FIRST, LAST> {
 // Examples: -x, sin(x), where x is a variable.
 typedef BasicUnaryExpr<
   NumericExpr, expr::FIRST_UNARY, expr::LAST_UNARY> UnaryExpr;
-MP_SPECIALIZE_IS_RANGE(UnaryExpr, UNARY)
 
 // A binary expression.
 // Base: base expression class.
@@ -297,7 +273,6 @@ class BasicBinaryExpr : public BasicExpr<FIRST, LAST> {
 // Examples: x / y, atan2(x, y), where x and y are variables.
 typedef BasicBinaryExpr<
   NumericExpr, expr::FIRST_BINARY, expr::LAST_BINARY> BinaryExpr;
-MP_SPECIALIZE_IS_RANGE(BinaryExpr, BINARY)
 
 template <typename Arg, expr::Kind K>
 class BasicIfExpr : public BasicExpr<K> {
@@ -328,7 +303,6 @@ class BasicIfExpr : public BasicExpr<K> {
 // An if-then-else expression.
 // Example: if x != 0 then y else z, where x, y and z are variables.
 typedef BasicIfExpr<NumericExpr, expr::IF> IfExpr;
-MP_SPECIALIZE_IS(IfExpr, IF)
 
 // A piecewise-linear term.
 // Example: <<0; -1, 1>> x, where x is a variable.
@@ -363,8 +337,6 @@ class PLTerm : public BasicExpr<expr::PLTERM> {
   // Returns the argument (variable or common expression reference).
   Reference arg() const { return Base::Create<Reference>(impl()->arg); }
 };
-
-MP_SPECIALIZE_IS(PLTerm, PLTERM)
 
 // A reference to a function.
 class Function {
@@ -490,8 +462,6 @@ class CallExpr : public BasicExpr<expr::CALL> {
   iterator end() const { return iterator(impl()->args + num_args()); }
 };
 
-MP_SPECIALIZE_IS(CallExpr, CALL)
-
 template <typename ArgType, expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicIteratedExpr : public BasicExpr<FIRST, LAST> {
  private:
@@ -529,18 +499,15 @@ class BasicIteratedExpr : public BasicExpr<FIRST, LAST> {
 //   where I is a set and x is a variable.
 typedef BasicIteratedExpr<
   NumericExpr, expr::FIRST_ITERATED, expr::LAST_ITERATED> IteratedExpr;
-MP_SPECIALIZE_IS_RANGE(IteratedExpr, ITERATED)
 
 // A symbolic numberof expression.
 // Example: numberof (if x then 'a' else 'b') in ('a', 'b', 'c'),
 // where x is a variable.
 typedef BasicIteratedExpr<Expr, expr::NUMBEROF_SYM> SymbolicNumberOfExpr;
-MP_SPECIALIZE_IS(SymbolicNumberOfExpr, NUMBEROF_SYM)
 
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
 typedef BasicIteratedExpr<LogicalExpr, expr::COUNT> CountExpr;
-MP_SPECIALIZE_IS(CountExpr, COUNT)
 
 // A logical constant.
 // Examples: 0, 1
@@ -556,24 +523,19 @@ class LogicalConstant : public BasicExpr<expr::BOOL> {
   bool value() const { return impl()->value; }
 };
 
-MP_SPECIALIZE_IS(LogicalConstant, BOOL)
-
 // A logical NOT expression.
 // Example: not a, where a is a logical expression.
 typedef BasicUnaryExpr<LogicalExpr, expr::NOT> NotExpr;
-MP_SPECIALIZE_IS(NotExpr, NOT)
 
 // A binary logical expression.
 // Examples: a || b, a && b, where a and b are logical expressions.
 typedef BasicBinaryExpr<LogicalExpr,
   expr::FIRST_BINARY_LOGICAL, expr::LAST_BINARY_LOGICAL> BinaryLogicalExpr;
-MP_SPECIALIZE_IS_RANGE(BinaryLogicalExpr, BINARY_LOGICAL)
 
 // A relational expression.
 // Examples: x < y, x != y, where x and y are variables.
 typedef BasicBinaryExpr<
   NumericExpr, expr::FIRST_RELATIONAL, expr::LAST_RELATIONAL> RelationalExpr;
-MP_SPECIALIZE_IS_RANGE(RelationalExpr, RELATIONAL)
 
 // A logical count expression.
 // Examples: atleast 1 (x < y, x != y), where x and y are variables.
@@ -594,25 +556,20 @@ class LogicalCountExpr :
   CountExpr rhs() const { return Create<CountExpr>(impl()->rhs); }
 };
 
-MP_SPECIALIZE_IS_RANGE(LogicalCountExpr, LOGICAL_COUNT)
-
 // An implication expression.
 // Example: a ==> b else c, where a, b and c are logical expressions.
 typedef BasicIfExpr<LogicalExpr, expr::IMPLICATION> ImplicationExpr;
-MP_SPECIALIZE_IS(ImplicationExpr, IMPLICATION)
 
 // An iterated logical expression.
 // Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
 typedef BasicIteratedExpr<
   LogicalExpr, expr::FIRST_ITERATED_LOGICAL, expr::LAST_ITERATED_LOGICAL>
   IteratedLogicalExpr;
-MP_SPECIALIZE_IS_RANGE(IteratedLogicalExpr, ITERATED_LOGICAL)
 
 // A pairwise expression (alldiff or !alldiff).
 // Example: alldiff{i in I} x[i], where I is a set and x is a variable.
 typedef BasicIteratedExpr<
   NumericExpr, expr::FIRST_PAIRWISE, expr::LAST_PAIRWISE> PairwiseExpr;
-MP_SPECIALIZE_IS_RANGE(PairwiseExpr, PAIRWISE)
 
 class StringLiteral : public BasicExpr<expr::STRING> {
  private:
@@ -625,12 +582,9 @@ class StringLiteral : public BasicExpr<expr::STRING> {
   const char *value() const { return impl()->value; }
 };
 
-MP_SPECIALIZE_IS(StringLiteral, STRING)
-
 // A symbolic if-then-else expression.
 // Example: if x != 0 then 'a' else 0, where x is a variable.
 typedef BasicIfExpr<Expr, expr::IFSYM> SymbolicIfExpr;
-MP_SPECIALIZE_IS(SymbolicIfExpr, IFSYM)
 
 namespace internal {
 

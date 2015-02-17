@@ -176,6 +176,24 @@ struct hash<mp::asl::LogicalExpr> {
 
 namespace mp {
 
+// Specialize internal::Is for the class ExprType corresponding to a single
+// expression kind.
+#define MP_SPECIALIZE_IS(ExprType, expr_kind) \
+namespace internal { \
+template <> \
+inline bool Is<ExprType>(expr::Kind k) { return k == expr::expr_kind; } \
+}
+
+// Specialize internal::Is for the class ExprType corresponding to a range
+// of expression kinds [start, end].
+#define MP_SPECIALIZE_IS_RANGE(ExprType, expr_kind) \
+namespace internal { \
+template <> \
+inline bool Is<ExprType>(expr::Kind k) { \
+  return k >= expr::FIRST_##expr_kind && k <= expr::LAST_##expr_kind; \
+} \
+}
+
 namespace internal {
 // Casts expression to type ExprType.
 // If assertions are enabled, it generates an assertion failure when
