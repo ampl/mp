@@ -57,17 +57,16 @@ inline bool Is(expr::Kind k) {
 // e is not of runtime type ExprType. Otherwise no runtime check is
 // performed.
 template <typename ExprType>
-ExprType Cast(Expr e);
+ExprType UncheckedCast(Expr e);
 
 template <typename ExprType>
 class ExprIterator;
 
-template<bool B, class T = void>
+template<bool B, typename T = void>
 struct enable_if {};
 
 template<class T>
 struct enable_if<true, T> { typedef T type; };
-}  // namespace internal
 
 class ExprBase {
  protected:
@@ -83,7 +82,7 @@ class ExprBase {
     expr::Kind kind_;
 
     template <typename Alloc>
-    friend class BasicExprFactory;
+    friend class mp::BasicExprFactory;
 
    public:
     expr::Kind kind() const { return kind_; }
@@ -132,17 +131,18 @@ class ExprBase {
   //   }
   operator SafeBool() const { return impl_ != 0 ? &ExprBase::True : 0; }
 };
+}  // namespace internal
 
 // An expression.
 // A BasicExpr object represents a reference to an expression so
 // it is cheap to construct and pass by value. A type safe way to
 // process expressions of different types is by using ExprVisitor.
 template <expr::Kind FIRST, expr::Kind LAST = FIRST>
-class BasicExpr : private ExprBase {
+class BasicExpr : private internal::ExprBase {
   friend class ExprBase;
 
   template <typename ExprType>
-  friend ExprType internal::Cast(Expr e);
+  friend ExprType internal::UncheckedCast(Expr e);
 
   template <typename Alloc>
   friend class BasicExprFactory;
@@ -173,7 +173,7 @@ class BasicExpr : private ExprBase {
 };
 
 template <typename ExprType>
-inline ExprType internal::Cast(Expr e) {
+inline ExprType internal::UncheckedCast(Expr e) {
   MP_ASSERT(Is<ExprType>(e.kind()), "invalid cast");
   ExprType expr;
   expr.impl_ = e.impl_;
@@ -185,7 +185,7 @@ inline ExprType internal::Cast(Expr e) {
 template <typename ExprType>
 inline ExprType Cast(Expr e) {
   return internal::Is<ExprType>(e.kind()) ?
-        internal::Cast<ExprType>(e) : ExprType();
+        internal::UncheckedCast<ExprType>(e) : ExprType();
 }
 
 #define MP_EXPR(ExprType) \
@@ -628,7 +628,7 @@ struct ExprTypes {
   // Unchecked cast. See mp::internal::Cast.
   template <typename ExprType>
   static ExprType UncheckedCast(Expr e) {
-    return mp::internal::Cast<ExprType>(e);
+    return mp::internal::UncheckedCast<ExprType>(e);
   }
 };
 }  // namespace internal

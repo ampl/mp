@@ -525,12 +525,12 @@ TEST_F(ExprTest, SymbolicIfExpr) {
   factory_.MakeSymbolicIf(condition, true_expr, mp::Expr());
 }
 
-TEST_F(ExprTest, InternalCast) {
+TEST_F(ExprTest, UncheckedCast) {
   mp::Expr e = factory_.MakeNumericConstant(42);
-  mp::internal::Cast<mp::NumericExpr>(e);
-  mp::NumericConstant n = mp::internal::Cast<mp::NumericConstant>(e);
+  mp::internal::UncheckedCast<mp::NumericExpr>(e);
+  mp::NumericConstant n = mp::internal::UncheckedCast<mp::NumericConstant>(e);
   EXPECT_EQ(42, n.value());
-  EXPECT_ASSERT(mp::internal::Cast<mp::UnaryExpr>(e), "invalid cast");
+  EXPECT_ASSERT(mp::internal::UncheckedCast<mp::UnaryExpr>(e), "invalid cast");
 }
 
 TEST_F(ExprTest, Cast) {
@@ -584,6 +584,15 @@ TEST_F(ExprTest, InvalidSymbolicNumberOfExprArg) {
 TEST_F(ExprTest, InvalidIteratedLogicalExprKind) {
   EXPECT_ASSERT(factory_.BeginIteratedLogical(expr::ALLDIFF, 1),
                 "invalid expression kind");
+}
+
+TEST_F(ExprTest, AssignmentFromDifferentType) {
+  auto n = factory_.MakeNumericConstant(42);
+  auto u = factory_.MakeUnary(expr::ABS, n);
+  // This shouldn't compile:
+  //mp::Expr &e = n;
+  //e = u;
+  (void)u;
 }
 
 TEST(ExprFactoryTest, ExprMemoryAllocation) {
