@@ -76,7 +76,7 @@ expr RawExpr(int opcode) {
 class TestExpr : public Expr {
  public:
   static void TestProxy();
-  static void TestArrayIterator();
+  static void TestExprIterator();
 
   template <typename ExprType>
   static ExprType MakeExpr(expr *e) { return Expr::Create<ExprType>(e); }
@@ -125,10 +125,10 @@ void TestExpr::TestProxy() {
   EXPECT_EQ(ex::DIV, p->kind());
 }
 
-void TestExpr::TestArrayIterator() {
+void TestExpr::TestExprIterator() {
   {
-    ArrayIterator<NumericExpr> i;
-    EXPECT_EQ(ArrayIterator<NumericExpr>(), i);
+    ExprIterator<NumericExpr> i;
+    EXPECT_EQ(ExprIterator<NumericExpr>(), i);
   }
   expr exprs[] = {
       RawExpr(opcode(ex::DIV)),
@@ -136,35 +136,35 @@ void TestExpr::TestArrayIterator() {
       RawExpr(opcode(ex::ATAN)),
   };
   expr *const ptrs[] = {exprs, exprs + 1, exprs + 2};
-  ArrayIterator<NumericExpr> i(ptrs);
-  EXPECT_EQ(ArrayIterator<NumericExpr>(ptrs), i);
-  EXPECT_NE(ArrayIterator<NumericExpr>(), i);
+  ExprIterator<NumericExpr> i(ptrs);
+  EXPECT_EQ(ExprIterator<NumericExpr>(ptrs), i);
+  EXPECT_NE(ExprIterator<NumericExpr>(), i);
   EXPECT_EQ(ex::DIV, (*i).kind());
   EXPECT_EQ(ex::DIV, i->kind());
 
-  ArrayIterator<NumericExpr> i2(++i);
+  ExprIterator<NumericExpr> i2(++i);
   EXPECT_EQ(i2, i);
-  EXPECT_NE(ArrayIterator<NumericExpr>(ptrs), i);
-  EXPECT_EQ(ArrayIterator<NumericExpr>(ptrs + 1), i);
+  EXPECT_NE(ExprIterator<NumericExpr>(ptrs), i);
+  EXPECT_EQ(ExprIterator<NumericExpr>(ptrs + 1), i);
   EXPECT_EQ(ex::ADD, i->kind());
 
-  ArrayIterator<NumericExpr> i3(i++);
+  ExprIterator<NumericExpr> i3(i++);
   EXPECT_NE(i3, i);
-  EXPECT_NE(ArrayIterator<NumericExpr>(ptrs + 1), i);
-  EXPECT_EQ(ArrayIterator<NumericExpr>(ptrs + 2), i);
+  EXPECT_NE(ExprIterator<NumericExpr>(ptrs + 1), i);
+  EXPECT_EQ(ExprIterator<NumericExpr>(ptrs + 2), i);
   EXPECT_EQ(ex::ADD, i3->kind());
   EXPECT_EQ(ex::ATAN, i->kind());
 
   int index = 0;
-  for (ArrayIterator<NumericExpr>
+  for (ExprIterator<NumericExpr>
       i(ptrs), e(ptrs + 3); i != e; ++i, ++index) {
     int code = static_cast<int>(reinterpret_cast<size_t>(ptrs[index]->op));
     EXPECT_EQ(code, opcode(i->kind()));
   }
   EXPECT_EQ(3, index);
   std::vector<NumericExpr> vec;
-  std::copy(ArrayIterator<NumericExpr>(ptrs),
-      ArrayIterator<NumericExpr>(ptrs + 3), std::back_inserter(vec));
+  std::copy(ExprIterator<NumericExpr>(ptrs),
+      ExprIterator<NumericExpr>(ptrs + 3), std::back_inserter(vec));
   EXPECT_EQ(ex::ADD, vec[1].kind());
 }
 
@@ -285,8 +285,8 @@ TEST_F(ExprTest, Proxy) {
   TestExpr::TestProxy();
 }
 
-TEST_F(ExprTest, ArrayIterator) {
-  TestExpr::TestArrayIterator();
+TEST_F(ExprTest, ExprIterator) {
+  TestExpr::TestExprIterator();
 }
 
 TEST_F(ExprTest, ExprCtor) {

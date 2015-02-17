@@ -287,13 +287,13 @@ class Expr {
 
   // An expression array iterator.
   template <typename ExprType>
-  class ArrayIterator :
+  class ExprIterator :
     public std::iterator<std::forward_iterator_tag, ExprType> {
    private:
     Impl *const *ptr_;
 
    public:
-    explicit ArrayIterator(Impl *const *p = 0) : ptr_(p) {}
+    explicit ExprIterator(Impl *const *p = 0) : ptr_(p) {}
 
     ExprType operator*() const { return Create<ExprType>(*ptr_); }
 
@@ -301,19 +301,19 @@ class Expr {
       return Proxy<ExprType>(*ptr_);
     }
 
-    ArrayIterator &operator++() {
+    ExprIterator &operator++() {
       ++ptr_;
       return *this;
     }
 
-    ArrayIterator operator++(int ) {
-      ArrayIterator it(*this);
+    ExprIterator operator++(int ) {
+      ExprIterator it(*this);
       ++ptr_;
       return it;
     }
 
-    bool operator==(ArrayIterator other) const { return ptr_ == other.ptr_; }
-    bool operator!=(ArrayIterator other) const { return ptr_ != other.ptr_; }
+    bool operator==(ExprIterator other) const { return ptr_ == other.ptr_; }
+    bool operator!=(ExprIterator other) const { return ptr_ != other.ptr_; }
   };
 
  public:
@@ -559,7 +559,7 @@ class CallExpr : public NumericExpr {
   }
 
   // An argument iterator.
-  typedef ArrayIterator<Expr> iterator;
+  typedef ExprIterator<Expr> iterator;
 
   iterator begin() const {
     return iterator(reinterpret_cast<expr_f*>(impl_)->args);
@@ -647,7 +647,7 @@ class BasicIteratedExpr : public BaseT {
     return Expr::Create<Arg>(this->impl_->L.ep[index]);
   }
 
-  typedef Expr::ArrayIterator<Arg> iterator;
+  typedef Expr::ExprIterator<Arg> iterator;
 
   iterator begin() const { return iterator(this->impl_->L.ep); }
   iterator end() const { return iterator(this->impl_->R.ep); }
