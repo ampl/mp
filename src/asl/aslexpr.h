@@ -212,6 +212,9 @@ class ASLBuilder;
 // Returns true if the non-null expression e is of type ExprType.
 template <typename ExprType>
 bool Is(expr::Kind k);
+
+template <typename ExprType>
+class ExprIterator;
 }
 
 // Specialize Is<ExprType> for the class ExprClass corresponding to a single
@@ -259,19 +262,11 @@ class Expr {
     assert(!impl_ || (kind() >= expr::FIRST_EXPR && kind() <= expr::LAST_EXPR));
   }
 
+  template <typename ExprType>
+  friend class internal::ExprIterator;
+
  protected:
   Impl *impl_;
-
-  // Creates an expression object from a raw expr pointer.
-  // For safety reason expression classes don't provide constructors
-  // taking raw pointers and this method should be used instead.
-  template <typename ExprType>
-  static ExprType Create(Impl *e) {
-    assert(!e || asl::internal::Is<ExprType>(Expr(e).kind()));
-    ExprType expr;
-    expr.impl_ = e;
-    return expr;
-  }
 
   // An expression proxy used for implementing operator-> in iterators.
   template <typename ExprType>
@@ -285,36 +280,16 @@ class Expr {
     const ExprType *operator->() const { return &impl_; }
   };
 
-  // An expression array iterator.
+  // Creates an expression object from a raw expr pointer.
+  // For safety reason expression classes don't provide constructors
+  // taking raw pointers and this method should be used instead.
   template <typename ExprType>
-  class ExprIterator :
-    public std::iterator<std::forward_iterator_tag, ExprType> {
-   private:
-    Impl *const *ptr_;
-
-   public:
-    explicit ExprIterator(Impl *const *p = 0) : ptr_(p) {}
-
-    ExprType operator*() const { return Create<ExprType>(*ptr_); }
-
-    Proxy<ExprType> operator->() const {
-      return Proxy<ExprType>(*ptr_);
-    }
-
-    ExprIterator &operator++() {
-      ++ptr_;
-      return *this;
-    }
-
-    ExprIterator operator++(int ) {
-      ExprIterator it(*this);
-      ++ptr_;
-      return it;
-    }
-
-    bool operator==(ExprIterator other) const { return ptr_ == other.ptr_; }
-    bool operator!=(ExprIterator other) const { return ptr_ != other.ptr_; }
-  };
+  static ExprType Create(Impl *e) {
+    assert(!e || asl::internal::Is<ExprType>(Expr(e).kind()));
+    ExprType expr;
+    expr.impl_ = e;
+    return expr;
+  }
 
  public:
   // Constructs an Expr object representing a null reference to an AMPL
@@ -541,6 +516,39 @@ class Function {
   bool operator!=(const Function &other) const { return fi_ != other.fi_; }
 };
 
+namespace internal {
+// An expression iterator.
+template <typename ExprType>
+class ExprIterator :
+  public std::iterator<std::forward_iterator_tag, ExprType> {
+ private:
+  ::expr *const *ptr_;
+
+ public:
+  explicit ExprIterator(::expr *const *p = 0) : ptr_(p) {}
+
+  ExprType operator*() const { return Expr::Create<ExprType>(*ptr_); }
+
+  Expr::Proxy<ExprType> operator->() const {
+    return Expr::Proxy<ExprType>(*ptr_);
+  }
+
+  ExprIterator &operator++() {
+    ++ptr_;
+    return *this;
+  }
+
+  ExprIterator operator++(int ) {
+    ExprIterator it(*this);
+    ++ptr_;
+    return it;
+  }
+
+  bool operator==(ExprIterator other) const { return ptr_ == other.ptr_; }
+  bool operator!=(ExprIterator other) const { return ptr_ != other.ptr_; }
+};
+}  // namespace internal
+
 // A function call expression.
 // Example: f(x), where f is a function and x is a variable.
 class CallExpr : public NumericExpr {
@@ -559,7 +567,7 @@ class CallExpr : public NumericExpr {
   }
 
   // An argument iterator.
-  typedef ExprIterator<Expr> iterator;
+  typedef internal::ExprIterator<Expr> iterator;
 
   iterator begin() const {
     return iterator(reinterpret_cast<expr_f*>(impl_)->args);
@@ -647,7 +655,7 @@ class BasicIteratedExpr : public BaseT {
     return Expr::Create<Arg>(this->impl_->L.ep[index]);
   }
 
-  typedef Expr::ExprIterator<Arg> iterator;
+  typedef internal::ExprIterator<Arg> iterator;
 
   iterator begin() const { return iterator(this->impl_->L.ep); }
   iterator end() const { return iterator(this->impl_->R.ep); }

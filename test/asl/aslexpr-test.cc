@@ -126,6 +126,7 @@ void TestExpr::TestProxy() {
 }
 
 void TestExpr::TestExprIterator() {
+  using mp::asl::internal::ExprIterator;
   {
     ExprIterator<NumericExpr> i;
     EXPECT_EQ(ExprIterator<NumericExpr>(), i);
