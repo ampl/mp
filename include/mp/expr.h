@@ -55,7 +55,13 @@ ExprType Cast(Expr e);
 
 template <typename ExprType>
 class ExprIterator;
-}
+
+template<bool B, class T = void>
+struct enable_if {};
+
+template<class T>
+struct enable_if<true, T> { typedef T type; };
+}  // namespace internal
 
 // Specialize internal::Is for the class ExprType corresponding to a single
 // expression kind.
@@ -164,10 +170,11 @@ class BasicExpr : private ExprBase {
   // assignment and check whether it is null using operator SafeBool.
   BasicExpr() {}
 
-  template <expr::Kind FIRST2, expr::Kind LAST2>
+  template <expr::Kind OTHER_FIRST, expr::Kind OTHER_LAST>
   BasicExpr(
-      BasicExpr<FIRST2, LAST2> other,
-      typename std::enable_if<FIRST <= FIRST2 && LAST2 <= LAST, int>::type = 0)
+      BasicExpr<OTHER_FIRST, OTHER_LAST> other,
+      typename internal::enable_if<
+        FIRST <= OTHER_FIRST && OTHER_LAST <= LAST, int>::type = 0)
     : ExprBase(other) {}
 
   using ExprBase::kind;
