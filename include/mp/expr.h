@@ -154,7 +154,7 @@ class BasicExpr : private ExprBase {
   friend class BasicExprFactory;
 
  protected:
-  using ExprBase::Impl;
+  typedef ExprBase::Impl Impl;
   using ExprBase::impl;
   using ExprBase::Create;
 
@@ -165,7 +165,10 @@ class BasicExpr : private ExprBase {
   BasicExpr() {}
 
   template <expr::Kind FIRST2, expr::Kind LAST2>
-  BasicExpr(BasicExpr<FIRST2, LAST2> other) : ExprBase(other) {}
+  BasicExpr(
+      BasicExpr<FIRST2, LAST2> other,
+      typename std::enable_if<FIRST <= FIRST2 && LAST2 <= LAST, int>::type = 0)
+    : ExprBase(other) {}
 
   using ExprBase::kind;
   using ExprBase::operator SafeBool;
@@ -222,12 +225,13 @@ MP_SPECIALIZE_IS(NumericConstant, CONSTANT)
 
 // A reference to a variable or a common expression.
 // Example: x
-class Reference : public NumericExpr {
+class Reference : public BasicExpr<expr::VARIABLE> {
  private:
-  struct Impl : NumericExpr::Impl {
+  typedef BasicExpr<expr::VARIABLE> Base;
+  struct Impl : Base::Impl {
     int index;
   };
-  MP_EXPR(NumericExpr);
+  MP_EXPR(Base);
 
  public:
   // Returns the index of the referenced object.
@@ -240,9 +244,10 @@ MP_SPECIALIZE_IS_RANGE(Reference, REFERENCE)
 
 // A unary expression.
 // Base: base expression class.
-template <typename Base>
-class BasicUnaryExpr : public Base {
+template <typename Arg, expr::Kind FIRST, expr::Kind LAST = FIRST>
+class BasicUnaryExpr : public BasicExpr<FIRST, LAST> {
  private:
+  typedef BasicExpr<FIRST, LAST> Base;
   struct Impl : Base::Impl {
     const typename Base::Impl *arg;
   };
@@ -250,20 +255,22 @@ class BasicUnaryExpr : public Base {
 
  public:
   // Returns the argument of this expression.
-  Base arg() const { return Base::template Create<Base>(impl()->arg); }
+  Arg arg() const { return Base::template Create<Arg>(impl()->arg); }
 };
 
 // A unary numeric expression.
 // Examples: -x, sin(x), where x is a variable.
-typedef BasicUnaryExpr<NumericExpr> UnaryExpr;
+typedef BasicUnaryExpr<
+  NumericExpr, expr::FIRST_UNARY, expr::LAST_UNARY> UnaryExpr;
 MP_SPECIALIZE_IS_RANGE(UnaryExpr, UNARY)
 
 // A binary expression.
 // Base: base expression class.
 // Arg: argument expression class.
-template <typename Base, typename Arg = Base>
-class BasicBinaryExpr : public Base {
+template <typename Arg, expr::Kind FIRST, expr::Kind LAST = FIRST>
+class BasicBinaryExpr : public BasicExpr<FIRST, LAST> {
  private:
+  typedef BasicExpr<FIRST, LAST> Base;
   struct Impl : Base::Impl {
     const typename Base::Impl *lhs;
     const typename Base::Impl *rhs;
@@ -280,12 +287,14 @@ class BasicBinaryExpr : public Base {
 
 // A binary numeric expression.
 // Examples: x / y, atan2(x, y), where x and y are variables.
-typedef BasicBinaryExpr<NumericExpr> BinaryExpr;
+typedef BasicBinaryExpr<
+  NumericExpr, expr::FIRST_BINARY, expr::LAST_BINARY> BinaryExpr;
 MP_SPECIALIZE_IS_RANGE(BinaryExpr, BINARY)
 
-template <typename Base, expr::Kind K>
-class BasicIfExpr : public Base {
+template <typename Arg, expr::Kind K>
+class BasicIfExpr : public BasicExpr<K> {
  private:
+  typedef BasicExpr<K> Base;
   struct Impl : Base::Impl {
     const typename Base::Impl *condition;
     const typename Base::Impl *true_expr;
@@ -300,11 +309,11 @@ class BasicIfExpr : public Base {
     return Base::template Create<LogicalExpr>(impl()->condition);
   }
 
-  Base true_expr() const {
-    return Base::template Create<Base>(impl()->true_expr);
+  Arg true_expr() const {
+    return Base::template Create<Arg>(impl()->true_expr);
   }
-  Base false_expr() const {
-    return Base::template Create<Base>(impl()->false_expr);
+  Arg false_expr() const {
+    return Base::template Create<Arg>(impl()->false_expr);
   }
 };
 
@@ -315,14 +324,15 @@ MP_SPECIALIZE_IS(IfExpr, IF)
 
 // A piecewise-linear term.
 // Example: <<0; -1, 1>> x, where x is a variable.
-class PLTerm : public NumericExpr {
+class PLTerm : public BasicExpr<expr::PLTERM> {
  private:
-  struct Impl : NumericExpr::Impl {
+  typedef BasicExpr<expr::PLTERM> Base;
+  struct Impl : Base::Impl {
     int num_breakpoints;
-    const NumericExpr::Impl *arg;
+    const Base::Impl *arg;
     double data[1];
   };
-  MP_EXPR(NumericExpr);
+  MP_EXPR(Base);
 
  public:
   // Returns the number of breakpoints in this term.
@@ -344,7 +354,7 @@ class PLTerm : public NumericExpr {
   }
 
   // Returns the argument (variable or common expression reference).
-  Reference arg() const { return NumericExpr::Create<Reference>(impl()->arg); }
+  Reference arg() const { return Base::Create<Reference>(impl()->arg); }
 };
 
 MP_SPECIALIZE_IS(PLTerm, PLTERM)
@@ -541,17 +551,19 @@ MP_SPECIALIZE_IS(LogicalConstant, CONSTANT)
 
 // A logical NOT expression.
 // Example: not a, where a is a logical expression.
-typedef BasicUnaryExpr<LogicalExpr> NotExpr;
+typedef BasicUnaryExpr<LogicalExpr, expr::NOT> NotExpr;
 MP_SPECIALIZE_IS(NotExpr, NOT)
 
 // A binary logical expression.
 // Examples: a || b, a && b, where a and b are logical expressions.
-typedef BasicBinaryExpr<LogicalExpr> BinaryLogicalExpr;
+typedef BasicBinaryExpr<LogicalExpr,
+  expr::FIRST_BINARY_LOGICAL, expr::LAST_BINARY_LOGICAL> BinaryLogicalExpr;
 MP_SPECIALIZE_IS_RANGE(BinaryLogicalExpr, BINARY_LOGICAL)
 
 // A relational expression.
 // Examples: x < y, x != y, where x and y are variables.
-typedef BasicBinaryExpr<LogicalExpr, NumericExpr> RelationalExpr;
+typedef BasicBinaryExpr<
+  NumericExpr, expr::FIRST_RELATIONAL, expr::LAST_RELATIONAL> RelationalExpr;
 MP_SPECIALIZE_IS_RANGE(RelationalExpr, RELATIONAL)
 
 // A logical count expression.
