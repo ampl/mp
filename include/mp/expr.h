@@ -216,12 +216,13 @@ MP_SPECIALIZE_IS_RANGE(LogicalExpr, LOGICAL)
 
 // A numeric constant.
 // Examples: 42, -1.23e-4
-class NumericConstant : public NumericExpr {
+class NumericConstant : public BasicExpr<expr::NUMBER> {
  private:
-  struct Impl : NumericExpr::Impl {
+  typedef BasicExpr<expr::NUMBER> Base;
+  struct Impl : Base::Impl {
     double value;
   };
-  MP_EXPR(NumericExpr);
+  MP_EXPR(Base);
 
  public:
   // Returns the value of this constant.
@@ -461,14 +462,15 @@ class ExprIterator :
 
 // A function call expression.
 // Example: f(x), where f is a function and x is a variable.
-class CallExpr : public NumericExpr {
+class CallExpr : public BasicExpr<expr::CALL> {
  private:
-  struct Impl : NumericExpr::Impl {
+  typedef BasicExpr<expr::CALL> Base;
+  struct Impl : Base::Impl {
     const Function::Impl *func;
     int num_args;
-    const NumericExpr::Impl *args[1];
+    const Base::Impl *args[1];
   };
-  MP_EXPR(NumericExpr);
+  MP_EXPR(Base);
 
  public:
   Function function() const { return Function(impl()->func); }
