@@ -59,7 +59,7 @@ TEST_F(ExprTest, NumericConstant) {
   EXPECT_TRUE(e == 0);
   (void)mp::NumericExpr(e);
   e = factory_.MakeNumericConstant(1.23);
-  EXPECT_EQ(expr::CONSTANT, e.kind());
+  EXPECT_EQ(expr::NUMBER, e.kind());
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(1.23, e.value());
 }
@@ -265,7 +265,7 @@ TEST_F(ExprTest, ExprIterator) {
   auto e = factory_.EndCall(builder);
   mp::CallExpr::iterator i = e.begin();
   EXPECT_EQ(args[0], *i);
-  EXPECT_EQ(expr::CONSTANT, i->kind());
+  EXPECT_EQ(expr::NUMBER, i->kind());
   EXPECT_EQ(mp::CallExpr::iterator(e.begin()), i);
   auto j = i;
   EXPECT_TRUE(i == j);
@@ -283,7 +283,7 @@ TEST_F(ExprTest, LogicalConstant) {
   EXPECT_TRUE(e == 0);
   (void)mp::LogicalExpr(e);
   e = factory_.MakeLogicalConstant(false);
-  EXPECT_EQ(expr::CONSTANT, e.kind());
+  EXPECT_EQ(expr::BOOL, e.kind());
   EXPECT_TRUE(e != 0);
   EXPECT_FALSE(e.value());
   EXPECT_TRUE(factory_.MakeLogicalConstant(true).value());

@@ -391,7 +391,7 @@ Result BasicExprVisitor<Impl, Result, LResult, ET>::Visit(NumericExpr e) {
   default:
     MP_ASSERT(false, "invalid numeric expression");
     // Fall through.
-  case expr::CONSTANT:
+  case expr::NUMBER:
     return MP_DISPATCH(VisitNumericConstant(
                          ET::template UncheckedCast<NumericConstant>(e)));
   case expr::VARIABLE:
@@ -503,7 +503,8 @@ LResult BasicExprVisitor<Impl, Result, LResult, ET>::Visit(LogicalExpr e) {
   default:
     MP_ASSERT(false, "invalid logical expression");
     // Fall through.
-  case expr::CONSTANT:
+  case expr::BOOL:
+  case expr::NUMBER:
     return MP_DISPATCH(VisitLogicalConstant(
                          ET::template UncheckedCast<LogicalConstant>(e)));
   case expr::NOT:

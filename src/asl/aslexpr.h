@@ -359,7 +359,13 @@ class LogicalExpr : public Expr {
   LogicalExpr() {}
 };
 
-MP_SPECIALIZE_IS_RANGE(LogicalExpr, LOGICAL)
+namespace internal {
+template <>
+inline bool Is<LogicalExpr>(expr::Kind k) {
+  return (k >= expr::FIRST_LOGICAL && k <= expr::LAST_LOGICAL) ||
+          k == expr::NUMBER;
+}
+}
 
 // A numeric constant.
 // Examples: 42, -1.23e-4
@@ -371,7 +377,7 @@ class NumericConstant : public NumericExpr {
   double value() const { return reinterpret_cast<expr_n*>(impl_)->v; }
 };
 
-MP_SPECIALIZE_IS(NumericConstant, CONSTANT)
+MP_SPECIALIZE_IS(NumericConstant, NUMBER)
 
 // A reference to a variable or a common expression.
 // Example: x
@@ -661,7 +667,12 @@ class LogicalConstant : public LogicalExpr {
   bool value() const { return reinterpret_cast<expr_n*>(impl_)->v != 0; }
 };
 
-MP_SPECIALIZE_IS(LogicalConstant, CONSTANT)
+namespace internal {
+template <>
+inline bool Is<LogicalConstant>(expr::Kind k) {
+  return k == expr::BOOL || k == expr::NUMBER;
+}
+}
 
 // A logical NOT expression.
 // Example: not a, where a is a logical expression.

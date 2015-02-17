@@ -34,6 +34,7 @@ struct ExprInfo {
 const ExprInfo INFO[] = {
   {ex::UNKNOWN,     "unknown"},
 
+  {ex::NUMBER,      "number"},
   {ex::VARIABLE,    "variable"},
   {ex::COMMON_EXPR, "common expression"},
 
@@ -87,8 +88,7 @@ const ExprInfo INFO[] = {
   {ex::NUMBEROF_SYM,    "symbolic numberof"},
   {ex::COUNT,           "count"},
 
-  {ex::CONSTANT,        "constant"},
-
+  {ex::BOOL,            "bool"},
   {ex::NOT,             "!"},
 
   {ex::OR,              "||"},

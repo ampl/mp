@@ -232,16 +232,16 @@ public:
 
 TEST_F(ExprTest, NumericKinds) {
   const ex::Kind kinds[] = {
+      ex::NUMBER,
+      ex::VARIABLE,
       ex::FIRST_UNARY,
       ex::FIRST_BINARY,
+      ex::IF,
       ex::FIRST_VARARG,
       ex::SUM,
       ex::COUNT,
-      ex::IF,
       ex::PLTERM,
-      ex::VARIABLE,
-      ex::NUMBEROF,
-      ex::CONSTANT
+      ex::NUMBEROF
   };
   int i = 0, n = sizeof(kinds) / sizeof(*kinds);
   EXPECT_GT(n, 0);
@@ -252,17 +252,16 @@ TEST_F(ExprTest, NumericKinds) {
     EXPECT_LE(kind, ex::LAST_NUMERIC);
     for (int j = i + 1; j < n; ++j)
       EXPECT_NE(kind, kinds[j]);  // Check if all different.
-    if (kind != ex::CONSTANT)
-      EXPECT_LT(kind, ex::FIRST_LOGICAL);
+    EXPECT_LT(kind, ex::FIRST_LOGICAL);
   }
   EXPECT_EQ(i, n);
 }
 
 TEST_F(ExprTest, LogicalKinds) {
   const ex::Kind kinds[] = {
-      ex::CONSTANT,
-      ex::FIRST_RELATIONAL,
+      ex::BOOL,
       ex::NOT,
+      ex::FIRST_RELATIONAL,
       ex::FIRST_BINARY_LOGICAL,
       ex::IMPLICATION,
       ex::FIRST_ITERATED_LOGICAL,
@@ -277,8 +276,7 @@ TEST_F(ExprTest, LogicalKinds) {
     EXPECT_LE(kind, ex::LAST_LOGICAL);
     for (int j = i + 1; j < n; ++j)
       EXPECT_NE(kind, kinds[j]);  // Check if all different.
-    if (kind != ex::CONSTANT)
-      EXPECT_GT(kind, ex::LAST_NUMERIC);
+    EXPECT_GT(kind, ex::LAST_NUMERIC);
   }
   EXPECT_EQ(i, n);
 }
@@ -403,7 +401,7 @@ const OpInfo OP_INFO[] = {
   {ex::POW2,           ex::FIRST_UNARY},
   {ex::POW_CONST_BASE, ex::FIRST_BINARY},
   {ex::CALL,           ex::CALL},
-  {ex::CONSTANT,       ex::CONSTANT},
+  {ex::NUMBER,         ex::NUMBER},
   {ex::STRING,         ex::STRING},
   {ex::VARIABLE,       ex::VARIABLE},
   {ex::LAST_EXPR + 1,  ex::UNKNOWN},
@@ -413,7 +411,8 @@ const OpInfo OP_INFO[] = {
 template <typename ExprType>
 void TestAssertInCreate(int opcode) {
   expr e = RawExpr(opcode);
-  EXPECT_DEBUG_DEATH(MakeExpr<ExprType>(&e), "Assertion") << opcode;  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(
+        MakeExpr<ExprType>(&e), "Assertion") << opcode;  // NOLINT(*)
 }
 
 template <typename ExprType>
@@ -433,7 +432,8 @@ std::size_t CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
     const OpInfo &info = OP_INFO[i];
     int opcode = i - 1;
     expr raw = RawExpr(opcode);
-    bool is_this_kind = info.kind >= start && info.kind <= end;
+    bool is_this_kind = (info.kind >= start && info.kind <= end) ||
+        (info.kind == ex::NUMBER && start == ex::FIRST_LOGICAL);
     if (info.kind != ex::UNKNOWN) {
       Expr e(::MakeExpr(&raw));
       EXPECT_EQ(is_this_kind, asl::internal::Is<ExprType>(e));
@@ -594,9 +594,9 @@ TEST_F(ExprTest, LogicalExpr) {
 }
 
 TEST_F(ExprTest, NumericConstant) {
-  EXPECT_EQ(1u, CheckExpr<NumericConstant>(ex::CONSTANT));
+  EXPECT_EQ(1u, CheckExpr<NumericConstant>(ex::NUMBER));
   asl::NumericConstant expr = builder.MakeNumericConstant(42);
-  EXPECT_EQ(ex::CONSTANT, expr.kind());
+  EXPECT_EQ(ex::NUMBER, expr.kind());
   EXPECT_EQ(42, expr.value());
 }
 
@@ -769,9 +769,9 @@ TEST_F(ExprTest, NumberOfExpr) {
 }
 
 TEST_F(ExprTest, LogicalConstant) {
-  EXPECT_EQ(1u, CheckExpr<LogicalConstant>(ex::CONSTANT));
+  EXPECT_EQ(1u, CheckExpr<LogicalConstant>(ex::BOOL));
   asl::LogicalConstant expr = builder.MakeLogicalConstant(true);
-  EXPECT_EQ(ex::CONSTANT, expr.kind());
+  EXPECT_EQ(ex::NUMBER, expr.kind());
   EXPECT_TRUE(expr.value());
   EXPECT_FALSE(builder.MakeLogicalConstant(false).value());
 }
@@ -895,7 +895,7 @@ struct TestConverter : asl::ExprConverter<TestConverter, void, TestLResult> {
 };
 
 void CheckConversion(ex::Kind from_kind, ex::Kind to_kind) {
-  expr lhs = RawExpr(opcode(ex::CONSTANT)), rhs = lhs;
+  expr lhs = RawExpr(opcode(ex::NUMBER)), rhs = lhs;
   expr raw = RawExpr(opcode(from_kind));
   raw.L.e = &lhs;
   raw.R.e = &rhs;
@@ -1001,7 +1001,7 @@ TEST_F(ExprTest, IsZero) {
 using asl::internal::HashCombine;
 
 TEST_F(ExprTest, HashNumericConstant) {
-  size_t hash = HashCombine<int>(0, ex::CONSTANT);
+  size_t hash = HashCombine<int>(0, ex::NUMBER);
   hash = HashCombine(hash, 42.0);
   EXPECT_EQ(hash, std::hash<NumericExpr>()(builder.MakeNumericConstant(42)));
 }
@@ -1114,7 +1114,7 @@ TEST_F(ExprTest, HashCountExpr) {
 }
 
 TEST_F(ExprTest, HashLogicalConstant) {
-  size_t hash = HashCombine<int>(0, ex::CONSTANT);
+  size_t hash = HashCombine<int>(0, ex::NUMBER);
   hash = HashCombine(hash, true);
   EXPECT_EQ(hash, std::hash<LogicalExpr>()(l1));
 }

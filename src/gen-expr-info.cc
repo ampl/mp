@@ -47,6 +47,7 @@ struct ExprInfo {
   EXPR_(name, name, opcode, precedence, str)
 
 const ExprInfo info[] = {
+  EXPR(NUMBER,      80, PRIMARY, "number"),
   EXPR(VARIABLE,    82, PRIMARY, "variable"),
   EXPR(COMMON_EXPR, -1, PRIMARY, "common expression"),
 
@@ -104,7 +105,7 @@ const ExprInfo info[] = {
   EXPR(NUMBEROF_SYM, 61, CALL,      "symbolic numberof"),
   EXPR(COUNT,        59, CALL,      "count"),
 
-  EXPR(CONSTANT, 80, PRIMARY, "constant"),
+  EXPR(BOOL, 80, PRIMARY, "bool"),
 
   EXPR(NOT, 34, NOT, "!"),
 
@@ -161,8 +162,9 @@ int main(int argc, char **argv) {
         info, info + num_exprs, OpCodeLess())->opcode + 1;
   std::vector<const ExprInfo*> opcode_info(num_opcodes);
   for (std::size_t i = 0; i < num_exprs; ++i) {
-    if (info[i].opcode != -1)
-      opcode_info[info[i].opcode] = info + i;
+    int opcode = info[i].opcode;
+    if (opcode != -1 && !opcode_info[opcode])
+      opcode_info[opcode] = info + i;
   }
 
   // Print a table that maps opcodes to expression kinds.

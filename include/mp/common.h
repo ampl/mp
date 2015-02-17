@@ -84,8 +84,10 @@ enum Kind {
   */
   FIRST_NUMERIC = FIRST_EXPR,
 
+  NUMBER = FIRST_NUMERIC,
+
   // Reference expressions.
-  FIRST_REFERENCE = FIRST_NUMERIC,
+  FIRST_REFERENCE,
   /**
     \rst
     .. _variable:
@@ -158,16 +160,12 @@ enum Kind {
 
   NUMBEROF_SYM,
   COUNT,
-  LAST_NUMERIC,
-
-  // CONSTANT belongs both to numeric and logical expressions therefore
-  // the [FIRST_NUMERIC, LAST_NUMERIC] and [FIRST_LOGICAL, LAST_LOGICAL]
-  // ranges overlap at CONSTANT = LAST_NUMERIC = FIRST_LOGICAL.
-  CONSTANT = LAST_NUMERIC,
+  LAST_NUMERIC = COUNT,
 
   // To simplify checks, logical expression kinds are in a range
   // [FIRST_LOGICAL, LAST_LOGICAL].
-  FIRST_LOGICAL = CONSTANT,
+  FIRST_LOGICAL,
+  BOOL = FIRST_LOGICAL,
   NOT,
 
   // Binary logical expressions.

@@ -84,13 +84,14 @@ const mp::expr::OpCodeInfo mp::expr::OpCodeInfo::INFO[] = {
   {expr::POW2, expr::FIRST_UNARY},
   {expr::POW_CONST_BASE, expr::FIRST_BINARY},
   {expr::CALL, expr::CALL},
-  {expr::CONSTANT, expr::CONSTANT},
+  {expr::NUMBER, expr::NUMBER},
   {expr::STRING, expr::STRING},
   {expr::VARIABLE, expr::VARIABLE}
 };
 
 const mp::internal::ExprInfo mp::internal::ExprInfo::INFO[] = {
   {-1, prec::UNKNOWN, "unknown"},
+  {80, prec::PRIMARY, "number"},
   {82, prec::PRIMARY, "variable"},
   {-1, prec::PRIMARY, "common expression"},
   {16, prec::UNARY, "unary -"},
@@ -137,7 +138,7 @@ const mp::internal::ExprInfo mp::internal::ExprInfo::INFO[] = {
   {60, prec::CALL, "numberof"},
   {61, prec::CALL, "symbolic numberof"},
   {59, prec::CALL, "count"},
-  {80, prec::PRIMARY, "constant"},
+  {80, prec::PRIMARY, "bool"},
   {34, prec::NOT, "!"},
   {20, prec::LOGICAL_OR, "||"},
   {21, prec::LOGICAL_AND, "&&"},

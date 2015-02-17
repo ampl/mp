@@ -228,7 +228,7 @@ class NumericConstant : public NumericExpr {
   double value() const { return impl()->value; }
 };
 
-MP_SPECIALIZE_IS(NumericConstant, CONSTANT)
+MP_SPECIALIZE_IS(NumericConstant, NUMBER)
 
 // A reference to a variable or a common expression.
 // Example: x
@@ -555,7 +555,7 @@ class LogicalConstant : public LogicalExpr {
   bool value() const { return impl()->value; }
 };
 
-MP_SPECIALIZE_IS(LogicalConstant, CONSTANT)
+MP_SPECIALIZE_IS(LogicalConstant, BOOL)
 
 // A logical NOT expression.
 // Example: not a, where a is a logical expression.
@@ -804,7 +804,7 @@ class BasicExprFactory : private Alloc {
 
   // Makes a numeric constant.
   NumericConstant MakeNumericConstant(double value) {
-    NumericConstant::Impl *impl = Allocate<NumericConstant>(expr::CONSTANT);
+    NumericConstant::Impl *impl = Allocate<NumericConstant>(expr::NUMBER);
     impl->value = value;
     return Expr::Create<NumericConstant>(impl);
   }
@@ -962,8 +962,7 @@ class BasicExprFactory : private Alloc {
 
   // Makes a logical constant.
   LogicalConstant MakeLogicalConstant(bool value) {
-    LogicalConstant::Impl *impl =
-        Allocate<LogicalConstant>(expr::CONSTANT);
+    LogicalConstant::Impl *impl = Allocate<LogicalConstant>(expr::BOOL);
     impl->value = value;
     return Expr::Create<LogicalConstant>(impl);
   }
