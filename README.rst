@@ -50,7 +50,8 @@ Features
   - Bonmin
   - Couenne
 
-* Interfaces to other solvers via AMPL Solver Library
+* Interfaces to other solvers via AMPL Solver Library:
+  `list of supported solvers <http://ampl.com/products/solvers/all-solvers-for-ampl/>`_
 
 * Cross-platform build support with `CMake <http://www.cmake.org/>`_ and
   continuous integration systems. This includes third-party solvers and
