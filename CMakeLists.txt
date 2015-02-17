@@ -10,7 +10,7 @@ else ()
   # Enable @rpath support on OS X.
   cmake_policy(SET CMP0042 NEW)
   if (CMAKE_MINOR_VERSION GREATER 0)
-    # Only interpret if arguments as variables or keywords when unquoted.
+    # Only interpret `if` arguments as variables or keywords when unquoted.
     cmake_policy(SET CMP0054 NEW)
   endif ()
 endif ()
