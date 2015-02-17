@@ -168,8 +168,8 @@ path mp::GetExecutablePath() {
 void mp::internal::MemoryMappedFileBase::map(int fd, std::size_t size) {
   class Handle {
     HANDLE handle_;
-    Handle(const Handle &);
-    void operator=(const Handle &);
+    Handle(const Handle &) {}
+    void operator=(const Handle &) {}
    public:
     explicit Handle(HANDLE h) : handle_(h) {}
     ~Handle() { CloseHandle(handle_); }
