@@ -161,11 +161,11 @@ class BasicExpr : private ExprBase {
   // assignment and check whether it is null using operator SafeBool.
   BasicExpr() {}
 
-  template <expr::Kind OTHER_FIRST, expr::Kind OTHER_LAST>
+  template <typename Expr>
   BasicExpr(
-      BasicExpr<OTHER_FIRST, OTHER_LAST> other,
+      Expr other,
       typename internal::enable_if<
-        FIRST <= OTHER_FIRST && OTHER_LAST <= LAST, int>::type = 0)
+        FIRST <= Expr::FIRST_KIND && Expr::LAST_KIND <= LAST, int>::type = 0)
     : ExprBase(other) {}
 
   using ExprBase::kind;
