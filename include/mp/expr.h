@@ -225,9 +225,10 @@ MP_SPECIALIZE_IS(NumericConstant, CONSTANT)
 
 // A reference to a variable or a common expression.
 // Example: x
-class Reference : public BasicExpr<expr::VARIABLE> {
+class Reference :
+  public BasicExpr<expr::FIRST_REFERENCE, expr::LAST_REFERENCE> {
  private:
-  typedef BasicExpr<expr::VARIABLE> Base;
+  typedef BasicExpr<expr::FIRST_REFERENCE, expr::LAST_REFERENCE> Base;
   struct Impl : Base::Impl {
     int index;
   };
