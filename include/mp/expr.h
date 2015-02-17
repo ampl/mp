@@ -44,8 +44,11 @@ class BasicExprFactory;
 namespace internal {
 // Returns true if the non-null expression e is of type ExprType.
 template <typename ExprType>
-bool Is(expr::Kind k) {
+inline bool Is(expr::Kind k) {
   int kind = k;
+  // If FIRST_KIND == LAST_KIND, then a decent optimizing compiler simplifies
+  // this to kind == ExprType::FIRST_KIND (checked with GCC 4.8.2).
+  // No need to do it ourselves.
   return ExprType::FIRST_KIND <= kind && kind <= ExprType::LAST_KIND;
 }
 
