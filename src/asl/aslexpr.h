@@ -155,7 +155,12 @@ namespace mp {
 class ASLProblem;
 
 namespace asl {
-class Expr;
+
+template <expr::Kind FIRST, expr::Kind LAST>
+class BasicExpr;
+
+typedef BasicExpr<expr::FIRST_EXPR, expr::LAST_EXPR> Expr;
+
 class NumericExpr;
 class LogicalExpr;
 }
@@ -235,11 +240,15 @@ inline bool Is<ExprType>(expr::Kind k) { \
 } \
 }
 
+template <typename Impl, typename Result, typename LResult>
+class ExprConverter;
+
 // An expression.
 // An Expr object represents a reference to an expression so
 // it is cheap to construct and pass by value. A type safe way to
 // process expressions of different types is by using ExprVisitor.
-class Expr {
+template <expr::Kind FIRST, expr::Kind LAST = FIRST>
+class BasicExpr {
  private:
   typedef ::expr Impl;
 
@@ -255,15 +264,18 @@ class Expr {
   template <typename ExprType>
   friend ExprType mp::internal::Cast(asl::Expr e);
 
-  // Constructs an Expr object from the implementation impl. Only a minimal
-  // check is performed when assertions are enabled to make sure that the
-  // opcode is within the valid range.
-  explicit Expr(Impl *impl) : impl_(impl) {
-    assert(!impl_ || (kind() >= expr::FIRST_EXPR && kind() <= expr::LAST_EXPR));
-  }
+  template <typename ExprType>
+  friend ExprType Cast(Expr e);
 
   template <typename ExprType>
   friend class internal::ExprIterator;
+
+  // Constructs an Expr object from the implementation impl. Only a minimal
+  // check is performed when assertions are enabled to make sure that the
+  // opcode is within the valid range.
+  explicit BasicExpr(Impl *impl) : impl_(impl) {
+    assert(!impl_ || (kind() >= expr::FIRST_EXPR && kind() <= expr::LAST_EXPR));
+  }
 
  protected:
   Impl *impl_;
@@ -285,7 +297,7 @@ class Expr {
   // taking raw pointers and this method should be used instead.
   template <typename ExprType>
   static ExprType Create(Impl *e) {
-    assert(!e || asl::internal::Is<ExprType>(Expr(e).kind()));
+    assert(!e || asl::internal::Is<ExprType>(BasicExpr(e).kind()));
     ExprType expr;
     expr.impl_ = e;
     return expr;
@@ -295,7 +307,7 @@ class Expr {
   // Constructs an Expr object representing a null reference to an AMPL
   // expression. The only operation permitted for such expression is
   // copying, assignment and check whether it is null using operator SafeBool.
-  Expr() : impl_() {}
+  BasicExpr() : impl_() {}
 
   // Returns a value convertible to bool that can be used in conditions but not
   // in comparisons and evaluates to "true" if this expression is not null
@@ -306,7 +318,7 @@ class Expr {
   //       // Do something if e is not null.
   //     }
   //   }
-  operator SafeBool() const { return impl_ ? &Expr::True : 0; }
+  operator SafeBool() const { return impl_ ? &BasicExpr::True : 0; }
 
   // Returns the expression kind.
   expr::Kind kind() const {
@@ -316,11 +328,8 @@ class Expr {
 
   int precedence() const { return mp::internal::precedence(kind()); }
 
-  bool operator==(Expr other) const { return impl_ == other.impl_; }
-  bool operator!=(Expr other) const { return impl_ != other.impl_; }
-
-  template <typename ExprType>
-  friend ExprType Cast(Expr e);
+  bool operator==(BasicExpr other) const { return impl_ == other.impl_; }
+  bool operator!=(BasicExpr other) const { return impl_ != other.impl_; }
 };
 
 namespace internal {
