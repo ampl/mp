@@ -430,7 +430,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Adds a variable.
   Variable AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
-    int index = vars_.size();
+    std::size_t index = vars_.size();
     MP_ASSERT(index < MP_MAX_PROBLEM_ITEMS, "too many variables");
     vars_.push_back(Var(lb, ub));
     is_var_int_.push_back(type != var::CONTINUOUS);

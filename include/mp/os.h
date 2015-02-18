@@ -119,7 +119,7 @@ class MemoryMappedFile : public internal::MemoryMappedFileBase {
     fmt::LongLong file_size = file.size();
     MP_ASSERT(file_size >= 0, "negative file size");
     fmt::ULongLong unsigned_size = file_size;
-    if (unsigned_size != static_cast<std::size_t>(unsigned_size))
+    if (unsigned_size > std::numeric_limits<std::size_t>::max())
       throw Error("file is too big");
     map(file, unsigned_size);
   }
