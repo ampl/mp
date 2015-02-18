@@ -948,7 +948,7 @@ TEST(ASLBuilderTest, SizeOverflow) {
   builder.set_flags(
         asl::internal::ASL_STANDARD_OPCODES | ASL_allow_missing_funcs);
   builder.SetInfo(header);
-  NumericExpr args[] = {builder.MakeNumericConstant(0)};
+  asl::Expr args[] = {builder.MakeNumericConstant(0)};
 
   std::size_t num_args = (INT_MAX - sizeof(expr_f)) / sizeof(expr*) + 2;
   std::size_t max_size = INT_MAX + 1u;
@@ -959,23 +959,24 @@ TEST(ASLBuilderTest, SizeOverflow) {
                  f, MakeArrayRef<asl::Expr>(args, max_size)), OverflowError);
 
   num_args = (INT_MAX - sizeof(expr*)) / sizeof(de) + 1;
+  asl::NumericExpr nargs[] = {builder.MakeNumericConstant(0)};
   EXPECT_THROW(builder.MakeVarArg(
-                 mp::expr::MIN, MakeArrayRef(args, num_args)), OverflowError);
+                 mp::expr::MIN, MakeArrayRef(nargs, num_args)), OverflowError);
   EXPECT_THROW(builder.MakeVarArg(
-                 mp::expr::MIN, MakeArrayRef(args, max_size)), OverflowError);
+                 mp::expr::MIN, MakeArrayRef(nargs, max_size)), OverflowError);
 
   num_args = (INT_MAX - sizeof(expr) + sizeof(double)) / sizeof(expr*);
-  EXPECT_THROW(builder.MakeSum(MakeArrayRef(args, num_args)), OverflowError);
-  EXPECT_THROW(builder.MakeSum(MakeArrayRef(args, max_size)), OverflowError);
+  EXPECT_THROW(builder.MakeSum(MakeArrayRef(nargs, num_args)), OverflowError);
+  EXPECT_THROW(builder.MakeSum(MakeArrayRef(nargs, max_size)), OverflowError);
 
   LogicalExpr largs[] = {builder.MakeLogicalConstant(false)};
   EXPECT_THROW(builder.MakeCount(MakeArrayRef(largs, num_args)), OverflowError);
   EXPECT_THROW(builder.MakeCount(MakeArrayRef(largs, max_size)), OverflowError);
 
   EXPECT_THROW(builder.MakeNumberOf(
-                 MakeArrayRef(args, num_args)), OverflowError);
+                 MakeArrayRef(nargs, num_args)), OverflowError);
   EXPECT_THROW(builder.MakeNumberOf(
-                 MakeArrayRef(args, max_size)), OverflowError);
+                 MakeArrayRef(nargs, max_size)), OverflowError);
 
   EXPECT_THROW(builder.MakeIteratedLogical(
                  mp::expr::EXISTS, MakeArrayRef(largs, num_args)),
@@ -985,9 +986,9 @@ TEST(ASLBuilderTest, SizeOverflow) {
                OverflowError);
 
   EXPECT_THROW(builder.MakeAllDiff(
-                 MakeArrayRef(args, num_args)), OverflowError);
+                 MakeArrayRef(nargs, num_args)), OverflowError);
   EXPECT_THROW(builder.MakeAllDiff(
-                 MakeArrayRef(args, max_size)), OverflowError);
+                 MakeArrayRef(nargs, max_size)), OverflowError);
 
   std::size_t size = INT_MAX - sizeof(expr_h) + 1;
   EXPECT_THROW(builder.MakeStringLiteral(

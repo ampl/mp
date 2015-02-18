@@ -62,12 +62,6 @@ ExprType UncheckedCast(Expr e);
 template <typename ExprType>
 class ExprIterator;
 
-template<bool B, typename T = void>
-struct enable_if {};
-
-template<class T>
-struct enable_if<true, T> { typedef T type; };
-
 class ExprBase {
  protected:
   // The following members are protected rather than private because they
@@ -139,6 +133,7 @@ class ExprBase {
 // process expressions of different types is by using ExprVisitor.
 template <expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicExpr : private internal::ExprBase {
+  // ExprBase::Create needs access to ExprBase::impl_ via private base class.
   friend class internal::ExprBase;
 
   template <typename ExprType>

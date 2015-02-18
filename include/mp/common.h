@@ -245,6 +245,12 @@ const char *str(expr::Kind kind);
 
 namespace internal {
 
+template<bool B, typename T = void>
+struct enable_if {};
+
+template<class T>
+struct enable_if<true, T> { typedef T type; };
+
 int precedence(expr::Kind kind);
 
 // Expression information.

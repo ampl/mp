@@ -174,9 +174,11 @@ class ASLBuilder {
       LogicalExpr condition, Expr true_expr, Expr false_expr);
   ::expr *MakeIterated(expr::Kind kind, ArrayRef<Expr> args);
 
-  template <typename IteratedExpr>
-  IteratedExpr MakeIterated(expr::Kind kind, ArrayRef<Expr> args) {
-    return ExprBase::Create<IteratedExpr>(MakeIterated(kind, args));
+  template <typename IteratedExpr, typename Arg>
+  IteratedExpr MakeIterated(expr::Kind kind, ArrayRef<Arg> args) {
+    ArrayRef<Expr> expr_args(
+          reinterpret_cast<const Expr*>(args.data()), args.size());
+    return ExprBase::Create<IteratedExpr>(MakeIterated(kind, expr_args));
   }
 
  public:
@@ -511,7 +513,7 @@ class ASLBuilder {
 
   NumericExprBuilder BeginSum(int num_args) {
     return NumericExprBuilder(
-          MakeIterated(expr::SUM, ArrayRef<NumericExpr>(0, num_args)));
+          MakeIterated(expr::SUM, ArrayRef<Expr>(0, num_args)));
   }
   SumExpr EndSum(NumericExprBuilder builder) {
     return ExprBase::Create<SumExpr>(builder.expr_);
@@ -539,7 +541,7 @@ class ASLBuilder {
 
   NumericExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
     NumericExprBuilder builder(
-          MakeIterated(expr::NUMBEROF, ArrayRef<NumericExpr>(0, num_args + 1)));
+          MakeIterated(expr::NUMBEROF, ArrayRef<Expr>(0, num_args + 1)));
     builder.AddArg(arg0);
     return builder;
   }
@@ -611,8 +613,7 @@ class ASLBuilder {
   typedef NumericExprBuilder PairwiseExprBuilder;
 
   PairwiseExprBuilder BeginPairwise(expr::Kind kind, int num_args) {
-    return PairwiseExprBuilder(
-          MakeIterated(kind, ArrayRef<NumericExpr>(0, num_args)));
+    return PairwiseExprBuilder(MakeIterated(kind, ArrayRef<Expr>(0, num_args)));
   }
   PairwiseExpr EndPairwise(PairwiseExprBuilder builder) {
     return ExprBase::Create<PairwiseExpr>(builder.expr_);

@@ -161,7 +161,9 @@ class BasicExpr;
 
 typedef BasicExpr<expr::FIRST_EXPR, expr::LAST_EXPR> Expr;
 
-class NumericExpr;
+// A numeric expression.
+typedef BasicExpr<expr::FIRST_NUMERIC, expr::LAST_NUMERIC> NumericExpr;
+
 class LogicalExpr;
 }
 }
@@ -205,7 +207,7 @@ namespace internal {
 // e is not of runtime type ExprType. Otherwise no runtime check is
 // performed.
 template <typename ExprType>
-ExprType Cast(asl::Expr e);
+ExprType UncheckedCast(asl::Expr e);
 }
 
 namespace asl {
@@ -268,6 +270,9 @@ class ExprBase {
 
   // Returns a pointer to the implementation.
   const Impl *impl() const { return impl_; }
+
+  template <typename ExprType>
+  ExprBase(ExprType e) : impl_(e.impl_) {}
 
   // An expression proxy used for implementing operator-> in iterators.
   template <typename ExprType>
@@ -332,7 +337,7 @@ class BasicExpr : private ExprBase {
   friend class ExprConverter;
 
   template <typename ExprType>
-  friend ExprType mp::internal::Cast(asl::Expr e);
+  friend ExprType mp::internal::UncheckedCast(asl::Expr e);
 
  protected:
   using ExprBase::impl;
@@ -340,12 +345,22 @@ class BasicExpr : private ExprBase {
   using ExprBase::Proxy;
 
  public:
+  BasicExpr() {}
+
+  template <typename Expr>
+  BasicExpr(
+      Expr other,
+      typename mp::internal::enable_if<true, int>::type = 0)
+    : ExprBase(other) {}
+
   using ExprBase::kind;
   using ExprBase::operator SafeBool;
 
-  friend bool operator==(Expr lhs, Expr rhs) { return lhs.impl_ == rhs.impl_; }
-  friend bool operator!=(Expr lhs, Expr rhs) { return lhs.impl_ != rhs.impl_; }
+  bool operator==(BasicExpr rhs) const { return impl() == rhs.impl(); }
+  bool operator!=(BasicExpr rhs) const { return impl() != rhs.impl(); }
 };
+
+MP_SPECIALIZE_IS_RANGE(Expr, EXPR)
 
 namespace internal {
 template <typename ExprType>
@@ -357,16 +372,8 @@ inline bool Is(Expr e) { return Is<ExprType>(e.kind()); }
 template <typename ExprType>
 ExprType Cast(Expr e) {
   return internal::Is<ExprType>(e) ?
-        mp::internal::Cast<ExprType>(e) : ExprType();
+        mp::internal::UncheckedCast<ExprType>(e) : ExprType();
 }
-
-MP_SPECIALIZE_IS_RANGE(Expr, EXPR)
-
-// A numeric expression.
-class NumericExpr : public Expr {
- public:
-  NumericExpr() {}
-};
 
 MP_SPECIALIZE_IS_RANGE(NumericExpr, NUMERIC)
 
@@ -414,7 +421,7 @@ class BasicUnaryExpr : public Base {
   BasicUnaryExpr() {}
 
   // Returns the argument of this expression.
-  Base arg() const { return Expr::Create<Base>(this->impl()->L.e); }
+  Base arg() const { return Base::template Create<Base>(this->impl()->L.e); }
 };
 
 // A unary numeric expression.
@@ -431,10 +438,10 @@ class BasicBinaryExpr : public Base {
   BasicBinaryExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
-  Arg lhs() const { return Expr::Create<Arg>(this->impl()->L.e); }
+  Arg lhs() const { return Base::template Create<Arg>(this->impl()->L.e); }
 
   // Returns the right-hand side (the second argument) of this expression.
-  Arg rhs() const { return Expr::Create<Arg>(this->impl()->R.e); }
+  Arg rhs() const { return Base::template Create<Arg>(this->impl()->R.e); }
 };
 
 // A binary numeric expression.
@@ -452,9 +459,12 @@ class BasicIfExpr : public Base {
  public:
   BasicIfExpr() {}
 
-  LogicalExpr condition() const { return Expr::Create<LogicalExpr>(impl()->e); }
-  Base true_expr() const { return Expr::Create<Base>(impl()->T); }
-  Base false_expr() const { return Expr::Create<Base>(impl()->F); }
+  LogicalExpr condition() const {
+    return Base::template Create<LogicalExpr>(impl()->e);
+  }
+
+  Base true_expr() const { return Base::template Create<Base>(impl()->T); }
+  Base false_expr() const { return Base::template Create<Base>(impl()->F); }
 };
 
 // An if-then-else expression.
@@ -492,7 +502,7 @@ class PiecewiseLinearExpr : public NumericExpr {
   }
 
   NumericExpr arg() const {
-    return Expr::Create<NumericExpr>(impl()->R.e);
+    return NumericExpr::Create<NumericExpr>(impl()->R.e);
   }
 };
 
@@ -670,7 +680,7 @@ class BasicIteratedExpr : public BaseT {
 
   Arg operator[](int index) const {
     assert(index >= 0 && index < num_args());
-    return Expr::Create<Arg>(this->impl()->L.ep[index]);
+    return BaseT::template Create<Arg>(this->impl()->L.ep[index]);
   }
 
   typedef internal::ExprIterator<Arg> iterator;
@@ -900,7 +910,7 @@ struct ExprTypes {
   // Unchecked cast. See mp::internal::Cast.
   template <typename ExprType>
   static ExprType UncheckedCast(Expr e) {
-    return mp::internal::Cast<ExprType>(e);
+    return mp::internal::UncheckedCast<ExprType>(e);
   }
 };
 
@@ -1010,7 +1020,7 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
 }  // namespace mp
 
 template <typename ExprType>
-ExprType mp::internal::Cast(asl::Expr e) {
+ExprType mp::internal::UncheckedCast(asl::Expr e) {
   assert(asl::internal::Is<ExprType>(e.kind()));
   ExprType expr;
   expr.impl_ = e.impl_;
