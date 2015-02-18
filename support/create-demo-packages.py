@@ -130,7 +130,7 @@ def prepare_unix_package(amplcml, ampl_demo_dir, kestrel, system):
 
   # Download ampltabl.dll.
   url = ampltabl_url + 'ampltabl.{}.tgz'.format(ampltabl_sys[system])
-  with gzip.GzipFile(retrieve_cached(url)) as f:
+  with tarfile.open(retrieve_cached(url), 'r:gz') as f:
     writefile(f, os.path.join(ampl_demo_dir, 'ampltabl.dll'))
 
 def package(basename, archive_format, package_dir):
