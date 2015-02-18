@@ -139,7 +139,7 @@ class ExprBase {
 // process expressions of different types is by using ExprVisitor.
 template <expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicExpr : private internal::ExprBase {
-  friend class ExprBase;
+  friend class internal::ExprBase;
 
   template <typename ExprType>
   friend ExprType internal::UncheckedCast(Expr e);
