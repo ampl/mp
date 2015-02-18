@@ -560,8 +560,8 @@ class ExprIterator :
 
   ExprType operator*() const { return ExprBase::Create<ExprType>(*ptr_); }
 
-  Expr::Proxy<ExprType> operator->() const {
-    return Expr::Proxy<ExprType>(*ptr_);
+  ExprBase::Proxy<ExprType> operator->() const {
+    return ExprBase::Proxy<ExprType>(*ptr_);
   }
 
   ExprIterator &operator++() {
