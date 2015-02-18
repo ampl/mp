@@ -243,26 +243,12 @@ inline bool Is<ExprType>(expr::Kind k) { \
 template <typename Impl, typename Result, typename LResult>
 class ExprConverter;
 
-// An expression.
-// An Expr object represents a reference to an expression so
-// it is cheap to construct and pass by value. A type safe way to
-// process expressions of different types is by using ExprVisitor.
-template <expr::Kind FIRST, expr::Kind LAST = FIRST>
-class BasicExpr {
+class ExprBase {
  private:
   typedef ::expr Impl;
 
   void True() const {}
-  typedef void (Expr::*SafeBool)() const;
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprConverter;
-
-  friend class internal::ASLBuilder;
-  friend class mp::ASLProblem;
-
-  template <typename ExprType>
-  friend ExprType mp::internal::Cast(asl::Expr e);
+  typedef void (ExprBase::*SafeBool)() const;
 
   template <typename ExprType>
   friend ExprType Cast(Expr e);
@@ -273,12 +259,15 @@ class BasicExpr {
   // Constructs an Expr object from the implementation impl. Only a minimal
   // check is performed when assertions are enabled to make sure that the
   // opcode is within the valid range.
-  explicit BasicExpr(Impl *impl) : impl_(impl) {
+  explicit ExprBase(Impl *impl) : impl_(impl) {
     assert(!impl_ || (kind() >= expr::FIRST_EXPR && kind() <= expr::LAST_EXPR));
   }
 
  protected:
   Impl *impl_;
+
+  // Returns a pointer to the implementation.
+  const Impl *impl() const { return impl_; }
 
   // An expression proxy used for implementing operator-> in iterators.
   template <typename ExprType>
@@ -297,7 +286,7 @@ class BasicExpr {
   // taking raw pointers and this method should be used instead.
   template <typename ExprType>
   static ExprType Create(Impl *e) {
-    assert(!e || asl::internal::Is<ExprType>(BasicExpr(e).kind()));
+    assert(!e || asl::internal::Is<ExprType>(ExprBase(e).kind()));
     ExprType expr;
     expr.impl_ = e;
     return expr;
@@ -307,7 +296,7 @@ class BasicExpr {
   // Constructs an Expr object representing a null reference to an AMPL
   // expression. The only operation permitted for such expression is
   // copying, assignment and check whether it is null using operator SafeBool.
-  BasicExpr() : impl_() {}
+  ExprBase() : impl_() {}
 
   // Returns a value convertible to bool that can be used in conditions but not
   // in comparisons and evaluates to "true" if this expression is not null
@@ -318,7 +307,7 @@ class BasicExpr {
   //       // Do something if e is not null.
   //     }
   //   }
-  operator SafeBool() const { return impl_ ? &BasicExpr::True : 0; }
+  operator SafeBool() const { return impl_ ? &ExprBase::True : 0; }
 
   // Returns the expression kind.
   expr::Kind kind() const {
@@ -327,9 +316,35 @@ class BasicExpr {
   }
 
   int precedence() const { return mp::internal::precedence(kind()); }
+};
 
-  bool operator==(BasicExpr other) const { return impl_ == other.impl_; }
-  bool operator!=(BasicExpr other) const { return impl_ != other.impl_; }
+// An expression.
+// An Expr object represents a reference to an expression so
+// it is cheap to construct and pass by value. A type safe way to
+// process expressions of different types is by using ExprVisitor.
+template <expr::Kind FIRST, expr::Kind LAST = FIRST>
+class BasicExpr : private ExprBase {
+  friend class ExprBase;
+  friend class mp::ASLProblem;
+  friend class internal::ASLBuilder;
+
+  template <typename Impl, typename Result, typename LResult>
+  friend class ExprConverter;
+
+  template <typename ExprType>
+  friend ExprType mp::internal::Cast(asl::Expr e);
+
+ protected:
+  using ExprBase::impl;
+  using ExprBase::Create;
+  using ExprBase::Proxy;
+
+ public:
+  using ExprBase::kind;
+  using ExprBase::operator SafeBool;
+
+  friend bool operator==(Expr lhs, Expr rhs) { return lhs.impl_ == rhs.impl_; }
+  friend bool operator!=(Expr lhs, Expr rhs) { return lhs.impl_ != rhs.impl_; }
 };
 
 namespace internal {
@@ -376,7 +391,7 @@ class NumericConstant : public NumericExpr {
   NumericConstant() {}
 
   // Returns the value of this number.
-  double value() const { return reinterpret_cast<expr_n*>(impl_)->v; }
+  double value() const { return reinterpret_cast<const expr_n*>(impl())->v; }
 };
 
 MP_SPECIALIZE_IS(NumericConstant, NUMBER)
@@ -388,7 +403,7 @@ class Reference : public NumericExpr {
   Reference() {}
 
   // Returns the index of the referenced object.
-  int index() const { return impl_->a; }
+  int index() const { return impl()->a; }
 };
 
 MP_SPECIALIZE_IS_RANGE(Reference, REFERENCE)
@@ -399,7 +414,7 @@ class BasicUnaryExpr : public Base {
   BasicUnaryExpr() {}
 
   // Returns the argument of this expression.
-  Base arg() const { return Expr::Create<Base>(this->impl_->L.e); }
+  Base arg() const { return Expr::Create<Base>(this->impl()->L.e); }
 };
 
 // A unary numeric expression.
@@ -416,10 +431,10 @@ class BasicBinaryExpr : public Base {
   BasicBinaryExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
-  Arg lhs() const { return Expr::Create<Arg>(this->impl_->L.e); }
+  Arg lhs() const { return Expr::Create<Arg>(this->impl()->L.e); }
 
   // Returns the right-hand side (the second argument) of this expression.
-  Arg rhs() const { return Expr::Create<Arg>(this->impl_->R.e); }
+  Arg rhs() const { return Expr::Create<Arg>(this->impl()->R.e); }
 };
 
 // A binary numeric expression.
@@ -429,21 +444,17 @@ MP_SPECIALIZE_IS_RANGE(BinaryExpr, BINARY)
 
 template <typename Base>
 class BasicIfExpr : public Base {
+ private:
+  const expr_if *impl() const {
+    return reinterpret_cast<const expr_if*>(Base::impl());
+  }
+
  public:
   BasicIfExpr() {}
 
-  LogicalExpr condition() const {
-    return Expr::Create<LogicalExpr>(
-        reinterpret_cast<expr_if*>(this->impl_)->e);
-  }
-
-  Base true_expr() const {
-    return Expr::Create<Base>(reinterpret_cast<expr_if*>(this->impl_)->T);
-  }
-
-  Base false_expr() const {
-    return Expr::Create<Base>(reinterpret_cast<expr_if*>(this->impl_)->F);
-  }
+  LogicalExpr condition() const { return Expr::Create<LogicalExpr>(impl()->e); }
+  Base true_expr() const { return Expr::Create<Base>(impl()->T); }
+  Base false_expr() const { return Expr::Create<Base>(impl()->F); }
 };
 
 // An if-then-else expression.
@@ -464,24 +475,24 @@ class PiecewiseLinearExpr : public NumericExpr {
 
   // Returns the number of slopes in this term.
   int num_slopes() const {
-    assert(impl_->L.p->n >= 1);
-    return impl_->L.p->n;
+    assert(impl()->L.p->n >= 1);
+    return impl()->L.p->n;
   }
 
   // Returns a breakpoint with the specified index.
   double breakpoint(int index) const {
     assert(index >= 0 && index < num_breakpoints());
-    return impl_->L.p->bs[2 * index + 1];
+    return impl()->L.p->bs[2 * index + 1];
   }
 
   // Returns a slope with the specified index.
   double slope(int index) const {
     assert(index >= 0 && index < num_slopes());
-    return impl_->L.p->bs[2 * index];
+    return impl()->L.p->bs[2 * index];
   }
 
   NumericExpr arg() const {
-    return Expr::Create<NumericExpr>(impl_->R.e);
+    return Expr::Create<NumericExpr>(impl()->R.e);
   }
 };
 
@@ -536,7 +547,7 @@ class ExprIterator :
  public:
   explicit ExprIterator(::expr *const *p = 0) : ptr_(p) {}
 
-  ExprType operator*() const { return Expr::Create<ExprType>(*ptr_); }
+  ExprType operator*() const { return ExprBase::Create<ExprType>(*ptr_); }
 
   Expr::Proxy<ExprType> operator->() const {
     return Expr::Proxy<ExprType>(*ptr_);
@@ -561,30 +572,28 @@ class ExprIterator :
 // A function call expression.
 // Example: f(x), where f is a function and x is a variable.
 class CallExpr : public NumericExpr {
+ private:
+  const expr_f *impl() const {
+    return reinterpret_cast<const expr_f*>(NumericExpr::impl());
+  }
+
  public:
   CallExpr() {}
 
-  Function function() const {
-    return Function(reinterpret_cast<expr_f*>(impl_)->fi);
-  }
+  Function function() const { return Function(impl()->fi); }
 
-  int num_args() const { return reinterpret_cast<expr_f*>(impl_)->al->n; }
+  int num_args() const { return impl()->al->n; }
 
   Expr operator[](int index) {
     assert(index >= 0 && index < num_args());
-    return Create<Expr>(reinterpret_cast<expr_f*>(impl_)->args[index]);
+    return Create<Expr>(impl()->args[index]);
   }
 
   // An argument iterator.
   typedef internal::ExprIterator<Expr> iterator;
 
-  iterator begin() const {
-    return iterator(reinterpret_cast<expr_f*>(impl_)->args);
-  }
-
-  iterator end() const {
-    return iterator(reinterpret_cast<expr_f*>(impl_)->args + num_args());
-  }
+  iterator begin() const { return iterator(impl()->args); }
+  iterator end() const { return iterator(impl()->args + num_args()); }
 };
 
 MP_SPECIALIZE_IS(CallExpr, CALL)
@@ -634,7 +643,7 @@ class VarArgExpr : public NumericExpr {
   };
 
   iterator begin() const {
-    return iterator(reinterpret_cast<expr_va*>(impl_)->L.d);
+    return iterator(reinterpret_cast<const expr_va*>(impl())->L.d);
   }
 
   iterator end() const {
@@ -656,18 +665,18 @@ class BasicIteratedExpr : public BaseT {
 
   // Returns the number of arguments.
   int num_args() const {
-    return static_cast<int>(this->impl_->R.ep - this->impl_->L.ep);
+    return static_cast<int>(this->impl()->R.ep - this->impl()->L.ep);
   }
 
   Arg operator[](int index) const {
     assert(index >= 0 && index < num_args());
-    return Expr::Create<Arg>(this->impl_->L.ep[index]);
+    return Expr::Create<Arg>(this->impl()->L.ep[index]);
   }
 
   typedef internal::ExprIterator<Arg> iterator;
 
-  iterator begin() const { return iterator(this->impl_->L.ep); }
-  iterator end() const { return iterator(this->impl_->R.ep); }
+  iterator begin() const { return iterator(this->impl()->L.ep); }
+  iterator end() const { return iterator(this->impl()->R.ep); }
 };
 
 // A sum expression.
@@ -699,7 +708,7 @@ class LogicalConstant : public LogicalExpr {
   LogicalConstant() {}
 
   // Returns the value of this constant.
-  bool value() const { return reinterpret_cast<expr_n*>(impl_)->v != 0; }
+  bool value() const { return reinterpret_cast<const expr_n*>(impl())->v != 0; }
 };
 
 namespace internal {
@@ -731,10 +740,10 @@ class LogicalCountExpr : public LogicalExpr {
   LogicalCountExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
-  NumericExpr lhs() const { return Create<NumericExpr>(impl_->L.e); }
+  NumericExpr lhs() const { return Create<NumericExpr>(impl()->L.e); }
 
   // Returns the right-hand side (the second argument) of this expression.
-  CountExpr rhs() const { return Create<CountExpr>(impl_->R.e); }
+  CountExpr rhs() const { return Create<CountExpr>(impl()->R.e); }
 };
 
 MP_SPECIALIZE_IS_RANGE(LogicalCountExpr, LOGICAL_COUNT)
@@ -758,7 +767,9 @@ class StringLiteral : public Expr {
  public:
   StringLiteral() {}
 
-  const char *value() const { return reinterpret_cast<expr_h*>(impl_)->sym; }
+  const char *value() const {
+    return reinterpret_cast<const expr_h*>(impl())->sym;
+  }
 };
 
 MP_SPECIALIZE_IS(StringLiteral, STRING)

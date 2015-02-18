@@ -484,7 +484,7 @@ class ASLProblem {
     asl::NumericExpr nonlinear_expr() const {
       if (problem_->asl_->i.ASLtype != ASL_read_fg)
         return asl::NumericExpr();
-      return asl::Expr::Create<asl::NumericExpr>(
+      return asl::NumericExpr::Create<asl::NumericExpr>(
             reinterpret_cast<ASL_fg*>(problem_->asl_)->I.obj_de_[index_].e);
     }
 
@@ -539,7 +539,7 @@ class ASLProblem {
     asl::NumericExpr nonlinear_expr() const {
       if (problem_->asl_->i.ASLtype != ASL_read_fg)
         return asl::NumericExpr();
-      return asl::Expr::Create<asl::NumericExpr>(
+      return asl::NumericExpr::Create<asl::NumericExpr>(
             reinterpret_cast<ASL_fg*>(problem_->asl_)->I.con_de_[index_].e);
     }
 
@@ -566,7 +566,7 @@ class ASLProblem {
     assert(index >= 0 && index < size);
     if (asl_->i.ASLtype != ASL_read_fg)
       return ExprType();
-    return asl::Expr::Create<ExprType>(
+    return asl::ExprBase::Create<ExprType>(
           (reinterpret_cast<ASL_fg*>(asl_)->I.*ptr)[index].e);
   }
   asl::NumericExpr GetExpr(cde *Edag1info::*ptr, int index, int size) const {

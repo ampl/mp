@@ -159,7 +159,7 @@ class ASLBuilder {
 
   template <typename ExprType>
   ExprType MakeUnary(expr::Kind kind, Expr arg) {
-    return Expr::Create<ExprType>(DoMakeUnary(kind, arg));
+    return ExprBase::Create<ExprType>(DoMakeUnary(kind, arg));
   }
 
   ::expr *DoMakeBinary(expr::Kind kind, Expr lhs, Expr rhs);
@@ -167,7 +167,7 @@ class ASLBuilder {
   template <typename ExprType>
   ExprType MakeBinary(expr::Kind kind, Expr lhs, Expr rhs, const char *name) {
     CheckKind<ExprType>(kind, name);
-    return Expr::Create<ExprType>(DoMakeBinary(kind, lhs, rhs));
+    return ExprBase::Create<ExprType>(DoMakeBinary(kind, lhs, rhs));
   }
 
   ::expr *MakeIf(expr::Kind kind,
@@ -176,7 +176,7 @@ class ASLBuilder {
 
   template <typename IteratedExpr>
   IteratedExpr MakeIterated(expr::Kind kind, ArrayRef<Expr> args) {
-    return Expr::Create<IteratedExpr>(MakeIterated(kind, args));
+    return ExprBase::Create<IteratedExpr>(MakeIterated(kind, args));
   }
 
  public:
@@ -409,7 +409,7 @@ class ASLBuilder {
   // expression. For this reason the methods are called Make* rather than Add*.
 
   NumericConstant MakeNumericConstant(double value) {
-    return Expr::Create<NumericConstant>(MakeConstant(value));
+    return ExprBase::Create<NumericConstant>(MakeConstant(value));
   }
 
   Reference MakeVariable(int var_index);
@@ -425,7 +425,7 @@ class ASLBuilder {
 
   IfExpr MakeIf(LogicalExpr condition,
       NumericExpr true_expr, NumericExpr false_expr) {
-    return Expr::Create<IfExpr>(
+    return ExprBase::Create<IfExpr>(
         MakeIf(expr::IF, condition, true_expr, false_expr));
   }
 
@@ -447,7 +447,7 @@ class ASLBuilder {
   PLTermBuilder BeginPLTerm(int num_breakpoints);
   PiecewiseLinearExpr EndPLTerm(PLTermBuilder b, NumericExpr var) {
     b.expr_->R.e = var.impl_;
-    return Expr::Create<PiecewiseLinearExpr>(b.expr_);
+    return ExprBase::Create<PiecewiseLinearExpr>(b.expr_);
   }
 
   PiecewiseLinearExpr MakePiecewiseLinear(int num_breakpoints,
@@ -504,7 +504,7 @@ class ASLBuilder {
   IteratedExprBuilder BeginIterated(expr::Kind kind, int num_args);
 
   VarArgExpr EndIterated(IteratedExprBuilder builder) {
-    return Expr::Create<VarArgExpr>(reinterpret_cast< ::expr*>(builder.expr_));
+    return ExprBase::Create<VarArgExpr>(reinterpret_cast< ::expr*>(builder.expr_));
   }
 
   VarArgExpr MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args);
@@ -514,7 +514,7 @@ class ASLBuilder {
           MakeIterated(expr::SUM, ArrayRef<NumericExpr>(0, num_args)));
   }
   SumExpr EndSum(NumericExprBuilder builder) {
-    return Expr::Create<SumExpr>(builder.expr_);
+    return ExprBase::Create<SumExpr>(builder.expr_);
   }
 
   SumExpr MakeSum(ArrayRef<NumericExpr> args) {
@@ -528,7 +528,7 @@ class ASLBuilder {
           MakeIterated(expr::COUNT, ArrayRef<LogicalExpr>(0, num_args)));
   }
   CountExpr EndCount(CountExprBuilder builder) {
-    return Expr::Create<CountExpr>(builder.expr_);
+    return ExprBase::Create<CountExpr>(builder.expr_);
   }
 
   CountExpr MakeCount(ArrayRef<LogicalExpr> args) {
@@ -544,7 +544,7 @@ class ASLBuilder {
     return builder;
   }
   NumberOfExpr EndNumberOf(NumberOfExprBuilder builder) {
-    return Expr::Create<NumberOfExpr>(builder.expr_);
+    return ExprBase::Create<NumberOfExpr>(builder.expr_);
   }
 
   typedef ExprBuilder<Expr> SymbolicNumberOfExprBuilder;
@@ -557,7 +557,7 @@ class ASLBuilder {
   }
   SymbolicNumberOfExpr EndSymbolicNumberOf(
       SymbolicNumberOfExprBuilder builder) {
-    return Expr::Create<SymbolicNumberOfExpr>(builder.expr_);
+    return ExprBase::Create<SymbolicNumberOfExpr>(builder.expr_);
   }
 
   NumberOfExpr MakeNumberOf(ArrayRef<NumericExpr> args) {
@@ -566,7 +566,7 @@ class ASLBuilder {
   }
 
   LogicalConstant MakeLogicalConstant(bool value) {
-    return Expr::Create<LogicalConstant>(MakeConstant(value));
+    return ExprBase::Create<LogicalConstant>(MakeConstant(value));
   }
 
   NotExpr MakeNot(LogicalExpr arg) {
@@ -590,7 +590,7 @@ class ASLBuilder {
 
   ImplicationExpr MakeImplication(
       LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
-    return Expr::Create<ImplicationExpr>(
+    return ExprBase::Create<ImplicationExpr>(
         MakeIf(expr::IMPLICATION, condition, true_expr, false_expr));
   }
 
@@ -602,7 +602,7 @@ class ASLBuilder {
           MakeIterated(kind, ArrayRef<LogicalExpr>(0, num_args)));
   }
   IteratedLogicalExpr EndIteratedLogical(IteratedLogicalExprBuilder builder) {
-    return Expr::Create<IteratedLogicalExpr>(builder.expr_);
+    return ExprBase::Create<IteratedLogicalExpr>(builder.expr_);
   }
 
   IteratedLogicalExpr MakeIteratedLogical(
@@ -615,7 +615,7 @@ class ASLBuilder {
           MakeIterated(kind, ArrayRef<NumericExpr>(0, num_args)));
   }
   PairwiseExpr EndPairwise(PairwiseExprBuilder builder) {
-    return Expr::Create<PairwiseExpr>(builder.expr_);
+    return ExprBase::Create<PairwiseExpr>(builder.expr_);
   }
 
   PairwiseExpr MakeAllDiff(ArrayRef<NumericExpr> args) {
@@ -628,7 +628,7 @@ class ASLBuilder {
 
   SymbolicIfExpr MakeSymbolicIf(
       LogicalExpr condition, Expr true_expr, Expr false_expr) {
-    return Expr::Create<SymbolicIfExpr>(
+    return ExprBase::Create<SymbolicIfExpr>(
         MakeIf(expr::IFSYM, condition, true_expr, false_expr));
   }
 };
