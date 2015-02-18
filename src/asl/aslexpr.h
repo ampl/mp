@@ -250,7 +250,6 @@ class ExprBase {
   typedef ::expr Impl;
 
   void True() const {}
-  typedef void (ExprBase::*SafeBool)() const;
 
   template <typename ExprType>
   friend ExprType Cast(Expr e);
@@ -296,6 +295,8 @@ class ExprBase {
     expr.impl_ = e;
     return expr;
   }
+
+  typedef void (ExprBase::*SafeBool)() const;
 
  public:
   // Constructs an Expr object representing a null reference to an AMPL
