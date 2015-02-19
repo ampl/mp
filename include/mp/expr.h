@@ -42,10 +42,9 @@ template <typename Alloc>
 class BasicExprFactory;
 
 namespace internal {
-// Casts an expression to type ExprType which must be a subclass of Expr.
-// If assertions are enabled, it generates an assertion failure when
-// e is not of runtime type ExprType. Otherwise no runtime check is
-// performed.
+// Casts an expression to type ExprType which must be a valid expression type.
+// If assertions are enabled, it generates an assertion failure when e is
+// not convertible to ExprType. Otherwise no runtime check is performed.
 template <typename ExprType>
 ExprType UncheckedCast(Expr e);
 
@@ -161,11 +160,15 @@ template <typename ExprType>
 inline ExprType internal::UncheckedCast(Expr e) {
   MP_ASSERT(Is<ExprType>(e.kind()), "invalid cast");
   ExprType expr;
+  // Make sure that ExprType is a subclass or an instance of BasicExpr.
+  BasicExpr<static_cast<expr::Kind>(ExprType::FIRST_KIND),
+            static_cast<expr::Kind>(ExprType::LAST_KIND)> &basic = expr;
+  (void)basic;
   expr.impl_ = e.impl_;
   return expr;
 }
 
-// Casts an expression to type ExprType which must be a subclass of Expr.
+// Casts an expression to type ExprType which must be a valid expression type.
 // Returns a null expression if e is not of runtime type ExprType.
 template <typename ExprType>
 inline ExprType Cast(Expr e) {

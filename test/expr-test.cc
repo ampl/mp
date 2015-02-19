@@ -586,13 +586,21 @@ TEST_F(ExprTest, InvalidIteratedLogicalExprKind) {
                 "invalid expression kind");
 }
 
-TEST_F(ExprTest, AssignmentFromDifferentType) {
+TEST_F(ExprTest, ConversionToExpr) {
+  // Test that NumericConstant is not convertible to Expr&. If it was
+  // convertible there would be an error because of an ambigous call.
+  // The conversion is forbidden because it compromises type safety
+  // as illustrated in the following example:
+  //   auto n = factory_.MakeNumericConstant(42);
+  //   auto u = factory_.MakeUnary(expr::ABS, n);
+  //   mp::Expr &e = n;
+  //   e = u;
+  struct Test {
+    static void f(mp::Expr) {}
+    static void f(mp::Expr &) {}
+  };
   auto n = factory_.MakeNumericConstant(42);
-  auto u = factory_.MakeUnary(expr::ABS, n);
-  // This shouldn't compile:
-  //mp::Expr &e = n;
-  //e = u;
-  (void)u;
+  Test::f(n);
 }
 
 TEST(ExprFactoryTest, ExprMemoryAllocation) {
