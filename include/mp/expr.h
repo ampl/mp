@@ -166,7 +166,7 @@ inline ExprType internal::UncheckedCast(Expr e) {
   // Make sure that ExprType is a subclass or an instance of BasicExpr.
   BasicExpr<static_cast<expr::Kind>(ExprType::FIRST_KIND),
             static_cast<expr::Kind>(ExprType::LAST_KIND)> &basic = expr;
-  (void)basic;
+  MP_UNUSED(basic);
   expr.impl_ = e.impl_;
   return expr;
 }
