@@ -429,8 +429,9 @@ MP_SPECIALIZE_IS_RANGE(UnaryExpr, UNARY)
 // A binary expression.
 // Base: base expression class.
 // Arg: argument expression class.
-template <typename Base, typename Arg = Base>
-class BasicBinaryExpr : public Base {
+template <typename Arg, expr::Kind FIRST, expr::Kind LAST = FIRST>
+class BasicBinaryExpr : public BasicExpr<FIRST, LAST> {
+  typedef BasicExpr<FIRST, LAST> Base;
  public:
   // Returns the left-hand side (the first argument) of this expression.
   Arg lhs() const { return Base::template Create<Arg>(this->impl()->L.e); }
@@ -441,7 +442,8 @@ class BasicBinaryExpr : public Base {
 
 // A binary numeric expression.
 // Examples: x / y, atan2(x, y), where x and y are variables.
-typedef BasicBinaryExpr<NumericExpr> BinaryExpr;
+typedef BasicBinaryExpr<
+  NumericExpr, expr::FIRST_BINARY, expr::LAST_BINARY> BinaryExpr;
 MP_SPECIALIZE_IS_RANGE(BinaryExpr, BINARY)
 
 template <typename Base>
@@ -718,12 +720,14 @@ MP_SPECIALIZE_IS(NotExpr, NOT)
 
 // A binary logical expression.
 // Examples: a || b, a && b, where a and b are logical expressions.
-typedef BasicBinaryExpr<LogicalExpr> BinaryLogicalExpr;
+typedef BasicBinaryExpr<LogicalExpr,
+  expr::FIRST_BINARY_LOGICAL, expr::LAST_BINARY_LOGICAL> BinaryLogicalExpr;
 MP_SPECIALIZE_IS_RANGE(BinaryLogicalExpr, BINARY_LOGICAL)
 
 // A relational expression.
 // Examples: x < y, x != y, where x and y are variables.
-typedef BasicBinaryExpr<LogicalExpr, NumericExpr> RelationalExpr;
+typedef BasicBinaryExpr<
+  NumericExpr, expr::FIRST_RELATIONAL, expr::LAST_RELATIONAL> RelationalExpr;
 MP_SPECIALIZE_IS_RANGE(RelationalExpr, RELATIONAL)
 
 // A logical count expression.

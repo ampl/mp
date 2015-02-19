@@ -1032,13 +1032,15 @@ void CheckHashBinary(Expr e) {
   EXPECT_EQ(hash, std::hash<Base>()(e));
 }
 
-template <typename Base, typename Arg>
-void CheckHash(asl::BasicBinaryExpr<Base, Arg> e) {
-  CheckHashBinary<asl::BasicBinaryExpr<Base, Arg>, Base, Arg>(e);
+template <typename Base, typename Arg,
+          mp::expr::Kind FIRST, mp::expr::Kind LAST>
+void CheckHash(asl::BasicBinaryExpr<Arg, FIRST, LAST> e) {
+  CheckHashBinary<asl::BasicBinaryExpr<Arg, FIRST, LAST>, Base, Arg>(e);
 }
 
 TEST_F(ExprTest, HashBinaryExpr) {
-  CheckHash(builder.MakeBinary(ex::ADD, builder.MakeVariable(9), n2));
+  CheckHash<NumericExpr>(
+        builder.MakeBinary(ex::ADD, builder.MakeVariable(9), n2));
 }
 
 template <typename Base>
@@ -1125,11 +1127,12 @@ TEST_F(ExprTest, HashNotExpr) {
 }
 
 TEST_F(ExprTest, HashBinaryLogicalExpr) {
-  CheckHash(builder.MakeBinaryLogical(ex::OR, l1, l0));
+  CheckHash<LogicalExpr>(builder.MakeBinaryLogical(ex::OR, l1, l0));
 }
 
 TEST_F(ExprTest, HashRelationalExpr) {
-  CheckHash(builder.MakeRelational(ex::LT, builder.MakeVariable(6), n2));
+  CheckHash<LogicalExpr>(
+        builder.MakeRelational(ex::LT, builder.MakeVariable(6), n2));
 }
 
 TEST_F(ExprTest, HashLogicalCountExpr) {
