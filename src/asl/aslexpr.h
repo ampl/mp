@@ -216,20 +216,12 @@ class ASLBuilder;
 
 template <typename ExprType>
 class ExprIterator;
-}
 
-template <typename Impl, typename Result, typename LResult>
-class ExprConverter;
-
-// TODO: make internal
 class ExprBase {
  private:
   typedef ::expr Impl;
 
   void True() const {}
-
-  template <typename ExprType>
-  friend ExprType Cast(Expr e);
 
   template <typename ExprType>
   friend class internal::ExprIterator;
@@ -300,14 +292,18 @@ class ExprBase {
 
   int precedence() const { return mp::internal::precedence(kind()); }
 };
+}  // namespace internal
+
+template <typename Impl, typename Result, typename LResult>
+class ExprConverter;
 
 // An expression.
 // An Expr object represents a reference to an expression so
 // it is cheap to construct and pass by value. A type safe way to
 // process expressions of different types is by using ExprVisitor.
 template <expr::Kind FIRST, expr::Kind LAST = FIRST>
-class BasicExpr : private ExprBase {
-  friend class ExprBase;
+class BasicExpr : private internal::ExprBase {
+  friend class internal::ExprBase;
   friend class mp::ASLProblem;
   friend class internal::ASLBuilder;
 
