@@ -198,7 +198,7 @@ class ASLBuilder {
 
    public:
     void AddArg(Expr arg) {
-      expr_->args[arg_index_] = arg.impl_;
+      expr_->args[arg_index_] = arg.impl();
       ++arg_index_;
       if (!Is<NumericExpr>(arg))
         ++num_symbolic_args_;
@@ -448,7 +448,7 @@ class ASLBuilder {
 
   PLTermBuilder BeginPLTerm(int num_breakpoints);
   PiecewiseLinearExpr EndPLTerm(PLTermBuilder b, NumericExpr var) {
-    b.expr_->R.e = var.impl_;
+    b.expr_->R.e = var.impl();
     return Expr::Create<PiecewiseLinearExpr>(b.expr_);
   }
 
@@ -485,7 +485,7 @@ class ASLBuilder {
     ExprBuilder(::expr *e) : expr_(e), arg_index_(0) {}
 
    public:
-    void AddArg(Arg arg) { expr_->L.ep[arg_index_++] = arg.impl_; }
+    void AddArg(Arg arg) { expr_->L.ep[arg_index_++] = arg.impl(); }
   };
 
   typedef ExprBuilder<NumericExpr> NumericExprBuilder;
@@ -500,7 +500,7 @@ class ASLBuilder {
     IteratedExprBuilder(expr_va *e) : expr_(e), arg_index_(0) {}
 
    public:
-    void AddArg(NumericExpr arg) { expr_->L.d[arg_index_++].e = arg.impl_; }
+    void AddArg(NumericExpr arg) { expr_->L.d[arg_index_++].e = arg.impl(); }
   };
 
   IteratedExprBuilder BeginIterated(expr::Kind kind, int num_args);

@@ -269,7 +269,7 @@ class ExprBase {
   Impl *impl_;
 
   // Returns a pointer to the implementation.
-  const Impl *impl() const { return impl_; }
+  Impl *impl() const { return impl_; }
 
   template <typename ExprType>
   ExprBase(ExprType e) : impl_(e.impl_) {}
