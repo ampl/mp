@@ -446,9 +446,11 @@ typedef BasicBinaryExpr<
   NumericExpr, expr::FIRST_BINARY, expr::LAST_BINARY> BinaryExpr;
 MP_SPECIALIZE_IS_RANGE(BinaryExpr, BINARY)
 
-template <typename Base>
-class BasicIfExpr : public Base {
+template <typename Arg, expr::Kind KIND>
+class BasicIfExpr : public BasicExpr<KIND> {
  private:
+  typedef BasicExpr<KIND> Base;
+
   const expr_if *impl() const {
     return reinterpret_cast<const expr_if*>(Base::impl());
   }
@@ -458,13 +460,13 @@ class BasicIfExpr : public Base {
     return Base::template Create<LogicalExpr>(impl()->e);
   }
 
-  Base true_expr() const { return Base::template Create<Base>(impl()->T); }
-  Base false_expr() const { return Base::template Create<Base>(impl()->F); }
+  Arg true_expr() const { return Base::template Create<Arg>(impl()->T); }
+  Arg false_expr() const { return Base::template Create<Arg>(impl()->F); }
 };
 
 // An if-then-else expression.
 // Example: if x != 0 then y else z, where x, y and z are variables.
-typedef BasicIfExpr<NumericExpr> IfExpr;
+typedef BasicIfExpr<NumericExpr, expr::IF> IfExpr;
 MP_SPECIALIZE_IS(IfExpr, IF)
 
 // A piecewise-linear expression.
@@ -732,7 +734,8 @@ MP_SPECIALIZE_IS_RANGE(RelationalExpr, RELATIONAL)
 
 // A logical count expression.
 // Examples: atleast 1 (x < y, x != y), where x and y are variables.
-class LogicalCountExpr : public LogicalExpr {
+class LogicalCountExpr :
+  public BasicExpr<expr::FIRST_LOGICAL_COUNT, expr::LAST_LOGICAL_COUNT> {
  public:
   // Returns the left-hand side (the first argument) of this expression.
   NumericExpr lhs() const { return Create<NumericExpr>(impl()->L.e); }
@@ -745,7 +748,7 @@ MP_SPECIALIZE_IS_RANGE(LogicalCountExpr, LOGICAL_COUNT)
 
 // An implication expression.
 // Example: a ==> b else c, where a, b and c are logical expressions.
-typedef BasicIfExpr<LogicalExpr> ImplicationExpr;
+typedef BasicIfExpr<LogicalExpr, expr::IMPLICATION> ImplicationExpr;
 MP_SPECIALIZE_IS(ImplicationExpr, IMPLICATION)
 
 // An iterated logical expression.
@@ -769,7 +772,7 @@ MP_SPECIALIZE_IS(StringLiteral, STRING)
 
 // A symbolic if-then-else expression.
 // Example: if x != 0 then 'a' else 0, where x is a variable.
-typedef BasicIfExpr<Expr> SymbolicIfExpr;
+typedef BasicIfExpr<Expr, expr::IFSYM> SymbolicIfExpr;
 MP_SPECIALIZE_IS(SymbolicIfExpr, IFSYM)
 
 // Recursively compares two expressions and returns true if they are equal.

@@ -1043,13 +1043,13 @@ TEST_F(ExprTest, HashBinaryExpr) {
         builder.MakeBinary(ex::ADD, builder.MakeVariable(9), n2));
 }
 
-template <typename Base>
-void CheckHash(asl::BasicIfExpr<Base> e) {
+template <typename Arg, mp::expr::Kind KIND>
+void CheckHash(asl::BasicIfExpr<Arg, KIND> e) {
   size_t hash = HashCombine<int>(0, e.kind());
   hash = HashCombine<LogicalExpr>(hash, e.condition());
-  hash = HashCombine<Base>(hash, e.true_expr());
-  hash = HashCombine<Base>(hash, e.false_expr());
-  EXPECT_EQ(hash, std::hash<Base>()(e));
+  hash = HashCombine<Arg>(hash, e.true_expr());
+  hash = HashCombine<Arg>(hash, e.false_expr());
+  EXPECT_EQ(hash, std::hash<Arg>()(e));
 }
 
 TEST_F(ExprTest, HashIfExpr) {
