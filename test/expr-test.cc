@@ -603,6 +603,12 @@ TEST_F(ExprTest, ConversionToExpr) {
   Test::f(n);
 }
 
+TEST_F(ExprTest, ArgumentDependentLookup) {
+  mp::NumericExpr e = factory_.MakeNumericConstant(42);
+  // IsZero should be found by ADL:
+  IsZero(e);
+}
+
 TEST(ExprFactoryTest, ExprMemoryAllocation) {
   typedef AllocatorRef< MockAllocator<char> > Allocator;
   MockAllocator<char> alloc;

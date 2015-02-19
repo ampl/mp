@@ -53,11 +53,11 @@ class ExprIterator;
 
 class ExprBase {
  protected:
-  // The following members are protected rather than private because they
-  // have to be accessible in its subclasses, BasicExpr<E>. This doesn't
-  // violate encapsulation because this class is inherited privately and
-  // can be thought of as a part of BasicExpr<E> that doesn't depend on
-  // template parameter.
+  // The following members are protected rather than private because
+  // they have to be accessible in its subclasses, instances of BasicExpr.
+  // This doesn't violate encapsulation because this class is inherited
+  // privately and can be thought of as a part of BasicExpr that doesn't
+  // depend on template parameters.
 
   class Impl {
    private:
@@ -120,6 +120,9 @@ class ExprBase {
 // A BasicExpr object represents a reference to an expression so
 // it is cheap to construct and pass by value. A type safe way to
 // process expressions of different types is by using ExprVisitor.
+// Although this class is not intended for use in the client code,
+// it is not placed in the internal namespace to enable argument-
+// dependent lookup.
 template <expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicExpr : private internal::ExprBase {
   // ExprBase::Create needs access to ExprBase::impl_ via private base class.
