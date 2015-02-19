@@ -23,8 +23,8 @@
 #ifndef MP_EXPR_H_
 #define MP_EXPR_H_
 
-#include <cassert>
-#include <memory>
+#include <iterator>
+#include <memory>  // for std::allocator
 #include <vector>
 
 #include "mp/common.h"
