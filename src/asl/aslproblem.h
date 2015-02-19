@@ -566,7 +566,7 @@ class ASLProblem {
     assert(index >= 0 && index < size);
     if (asl_->i.ASLtype != ASL_read_fg)
       return ExprType();
-    return asl::ExprBase::Create<ExprType>(
+    return asl::Expr::Create<ExprType>(
           (reinterpret_cast<ASL_fg*>(asl_)->I.*ptr)[index].e);
   }
   asl::NumericExpr GetExpr(cde *Edag1info::*ptr, int index, int size) const {

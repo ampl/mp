@@ -1013,11 +1013,11 @@ TEST_F(ExprTest, HashVariable) {
   EXPECT_EQ(hash, std::hash<NumericExpr>()(MakeVariable(42)));
 }
 
-template <typename Base>
-void CheckHash(asl::BasicUnaryExpr<Base> e) {
+template <typename Arg, mp::expr::Kind FIRST, mp::expr::Kind LAST>
+void CheckHash(asl::BasicUnaryExpr<Arg, FIRST, LAST> e) {
   size_t hash = HashCombine<int>(0, e.kind());
-  hash = HashCombine<Base>(hash, e.arg());
-  EXPECT_EQ(hash, std::hash<Base>()(e));
+  hash = HashCombine<Arg>(hash, e.arg());
+  EXPECT_EQ(hash, std::hash<Arg>()(e));
 }
 
 TEST_F(ExprTest, HashUnaryExpr) {

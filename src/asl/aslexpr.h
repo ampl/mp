@@ -164,7 +164,8 @@ typedef BasicExpr<expr::FIRST_EXPR, expr::LAST_EXPR> Expr;
 // A numeric expression.
 typedef BasicExpr<expr::FIRST_NUMERIC, expr::LAST_NUMERIC> NumericExpr;
 
-class LogicalExpr;
+// A logical or constraint expression.
+typedef BasicExpr<expr::FIRST_LOGICAL, expr::LAST_LOGICAL> LogicalExpr;
 }
 }
 
@@ -346,12 +347,15 @@ class BasicExpr : private ExprBase {
   using ExprBase::Proxy;
 
  public:
+  enum { FIRST_KIND = FIRST, LAST_KIND = LAST };
+
   BasicExpr() {}
 
   template <typename Expr>
   BasicExpr(
       Expr other,
-      typename mp::internal::enable_if<true, int>::type = 0)
+      typename mp::internal::enable_if<
+        FIRST <= Expr::FIRST_KIND && Expr::LAST_KIND <= LAST, int>::type = 0)
     : ExprBase(other) {}
 
   using ExprBase::kind;
@@ -378,12 +382,6 @@ ExprType Cast(Expr e) {
 
 MP_SPECIALIZE_IS_RANGE(NumericExpr, NUMERIC)
 
-// A logical or constraint expression.
-class LogicalExpr : public Expr {
- public:
-  LogicalExpr() {}
-};
-
 namespace internal {
 template <>
 inline bool Is<LogicalExpr>(expr::Kind k) {
@@ -394,10 +392,8 @@ inline bool Is<LogicalExpr>(expr::Kind k) {
 
 // A numeric constant.
 // Examples: 42, -1.23e-4
-class NumericConstant : public NumericExpr {
+class NumericConstant : public BasicExpr<expr::NUMBER> {
  public:
-  NumericConstant() {}
-
   // Returns the value of this number.
   double value() const { return reinterpret_cast<const expr_n*>(impl())->v; }
 };
@@ -406,28 +402,28 @@ MP_SPECIALIZE_IS(NumericConstant, NUMBER)
 
 // A reference to a variable or a common expression.
 // Example: x
-class Reference : public NumericExpr {
+class Reference :
+  public BasicExpr<expr::FIRST_REFERENCE, expr::LAST_REFERENCE> {
  public:
-  Reference() {}
-
   // Returns the index of the referenced object.
   int index() const { return impl()->a; }
 };
 
 MP_SPECIALIZE_IS_RANGE(Reference, REFERENCE)
 
-template <typename Base>
-class BasicUnaryExpr : public Base {
+template <typename Arg, expr::Kind FIRST, expr::Kind LAST = FIRST>
+class BasicUnaryExpr : public BasicExpr<FIRST, LAST> {
  public:
-  BasicUnaryExpr() {}
-
   // Returns the argument of this expression.
-  Base arg() const { return Base::template Create<Base>(this->impl()->L.e); }
+  Arg arg() const {
+    return BasicExpr<FIRST, LAST>::template Create<Arg>(this->impl()->L.e);
+  }
 };
 
 // A unary numeric expression.
 // Examples: -x, sin(x), where x is a variable.
-typedef BasicUnaryExpr<NumericExpr> UnaryExpr;
+typedef BasicUnaryExpr<
+  NumericExpr, expr::FIRST_UNARY, expr::LAST_UNARY> UnaryExpr;
 MP_SPECIALIZE_IS_RANGE(UnaryExpr, UNARY)
 
 // A binary expression.
@@ -436,8 +432,6 @@ MP_SPECIALIZE_IS_RANGE(UnaryExpr, UNARY)
 template <typename Base, typename Arg = Base>
 class BasicBinaryExpr : public Base {
  public:
-  BasicBinaryExpr() {}
-
   // Returns the left-hand side (the first argument) of this expression.
   Arg lhs() const { return Base::template Create<Arg>(this->impl()->L.e); }
 
@@ -458,8 +452,6 @@ class BasicIfExpr : public Base {
   }
 
  public:
-  BasicIfExpr() {}
-
   LogicalExpr condition() const {
     return Base::template Create<LogicalExpr>(impl()->e);
   }
@@ -477,8 +469,6 @@ MP_SPECIALIZE_IS(IfExpr, IF)
 // Example: <<0; -1, 1>> x, where x is a variable.
 class PiecewiseLinearExpr : public NumericExpr {
  public:
-  PiecewiseLinearExpr() {}
-
   // Returns the number of breakpoints in this term.
   int num_breakpoints() const {
     return num_slopes() - 1;
@@ -589,8 +579,6 @@ class CallExpr : public NumericExpr {
   }
 
  public:
-  CallExpr() {}
-
   Function function() const { return Function(impl()->fi); }
 
   int num_args() const { return impl()->al->n; }
@@ -617,8 +605,6 @@ class VarArgExpr : public NumericExpr {
   static const de END;
 
  public:
-  VarArgExpr() {}
-
   // An argument iterator.
   class iterator :
     public std::iterator<std::forward_iterator_tag, NumericExpr> {
@@ -672,8 +658,6 @@ class BasicIteratedExpr : public BaseT {
  public:
   typedef ArgT Arg;
 
-  BasicIteratedExpr() {}
-
   // Returns the number of arguments.
   int num_args() const {
     return static_cast<int>(this->impl()->R.ep - this->impl()->L.ep);
@@ -716,8 +700,6 @@ MP_SPECIALIZE_IS(SymbolicNumberOfExpr, NUMBEROF_SYM)
 // Examples: 0, 1
 class LogicalConstant : public LogicalExpr {
  public:
-  LogicalConstant() {}
-
   // Returns the value of this constant.
   bool value() const { return reinterpret_cast<const expr_n*>(impl())->v != 0; }
 };
@@ -731,7 +713,7 @@ inline bool Is<LogicalConstant>(expr::Kind k) {
 
 // A logical NOT expression.
 // Example: not a, where a is a logical expression.
-typedef BasicUnaryExpr<LogicalExpr> NotExpr;
+typedef BasicUnaryExpr<LogicalExpr, expr::NOT> NotExpr;
 MP_SPECIALIZE_IS(NotExpr, NOT)
 
 // A binary logical expression.
@@ -748,8 +730,6 @@ MP_SPECIALIZE_IS_RANGE(RelationalExpr, RELATIONAL)
 // Examples: atleast 1 (x < y, x != y), where x and y are variables.
 class LogicalCountExpr : public LogicalExpr {
  public:
-  LogicalCountExpr() {}
-
   // Returns the left-hand side (the first argument) of this expression.
   NumericExpr lhs() const { return Create<NumericExpr>(impl()->L.e); }
 
@@ -776,8 +756,6 @@ MP_SPECIALIZE_IS_RANGE(PairwiseExpr, PAIRWISE)
 
 class StringLiteral : public Expr {
  public:
-  StringLiteral() {}
-
   const char *value() const {
     return reinterpret_cast<const expr_h*>(impl())->sym;
   }
