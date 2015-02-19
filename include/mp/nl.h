@@ -49,7 +49,6 @@
 #include <cstdlib>
 #include <limits>
 #include <string>
-#include <vector>
 
 namespace mp {
 
