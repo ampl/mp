@@ -48,13 +48,10 @@ namespace internal {
 template <typename ExprType>
 ExprType UncheckedCast(Expr e);
 
-template <typename ExprType>
-class ExprIterator;
-
 class ExprBase {
  protected:
   // The following members are protected rather than private because
-  // they have to be accessible in its subclasses, instances of BasicExpr.
+  // they have to be accessible in subclasses, instances of BasicExpr.
   // This doesn't violate encapsulation because this class is inherited
   // privately and can be thought of as a part of BasicExpr that doesn't
   // depend on template parameters.
@@ -95,7 +92,7 @@ class ExprBase {
   typedef void (ExprBase::*SafeBool)() const;
 
   template <typename ExprType>
-  friend class internal::ExprIterator;
+  friend class ExprIterator;
 
  private:
   // A member function representing the true value of SafeBool.
