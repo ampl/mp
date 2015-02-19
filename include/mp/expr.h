@@ -333,7 +333,7 @@ class PLTerm : public BasicExpr<expr::PLTERM> {
   }
 
   // Returns the argument (variable or common expression reference).
-  Reference arg() const { return Base::Create<Reference>(impl()->arg); }
+  Reference arg() const { return Create<Reference>(impl()->arg); }
 };
 
 // A reference to a function.
