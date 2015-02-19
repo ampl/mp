@@ -246,6 +246,7 @@ inline bool Is<ExprType>(expr::Kind k) { \
 template <typename Impl, typename Result, typename LResult>
 class ExprConverter;
 
+// TODO: make internal
 class ExprBase {
  private:
   typedef ::expr Impl;
@@ -416,7 +417,7 @@ class BasicUnaryExpr : public BasicExpr<FIRST, LAST> {
  public:
   // Returns the argument of this expression.
   Arg arg() const {
-    return BasicExpr<FIRST, LAST>::template Create<Arg>(this->impl()->L.e);
+    return BasicUnaryExpr::template Create<Arg>(this->impl()->L.e);
   }
 };
 
@@ -431,13 +432,16 @@ MP_SPECIALIZE_IS_RANGE(UnaryExpr, UNARY)
 // Arg: argument expression class.
 template <typename Arg, expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicBinaryExpr : public BasicExpr<FIRST, LAST> {
-  typedef BasicExpr<FIRST, LAST> Base;
  public:
   // Returns the left-hand side (the first argument) of this expression.
-  Arg lhs() const { return Base::template Create<Arg>(this->impl()->L.e); }
+  Arg lhs() const {
+    return BasicBinaryExpr::template Create<Arg>(this->impl()->L.e);
+  }
 
   // Returns the right-hand side (the second argument) of this expression.
-  Arg rhs() const { return Base::template Create<Arg>(this->impl()->R.e); }
+  Arg rhs() const {
+    return BasicBinaryExpr::template Create<Arg>(this->impl()->R.e);
+  }
 };
 
 // A binary numeric expression.
@@ -471,7 +475,7 @@ MP_SPECIALIZE_IS(IfExpr, IF)
 
 // A piecewise-linear expression.
 // Example: <<0; -1, 1>> x, where x is a variable.
-class PiecewiseLinearExpr : public NumericExpr {
+class PiecewiseLinearExpr : public BasicExpr<expr::PLTERM> {
  public:
   // Returns the number of breakpoints in this term.
   int num_breakpoints() const {
@@ -497,7 +501,7 @@ class PiecewiseLinearExpr : public NumericExpr {
   }
 
   NumericExpr arg() const {
-    return NumericExpr::Create<NumericExpr>(impl()->R.e);
+    return Create<NumericExpr>(impl()->R.e);
   }
 };
 
@@ -576,10 +580,10 @@ class ExprIterator :
 
 // A function call expression.
 // Example: f(x), where f is a function and x is a variable.
-class CallExpr : public NumericExpr {
+class CallExpr : public BasicExpr<expr::CALL> {
  private:
   const expr_f *impl() const {
-    return reinterpret_cast<const expr_f*>(NumericExpr::impl());
+    return reinterpret_cast<const expr_f*>(BasicExpr<expr::CALL>::impl());
   }
 
  public:
@@ -604,7 +608,7 @@ MP_SPECIALIZE_IS(CallExpr, CALL)
 // A numeric expression with a variable number of arguments.
 // The min and max functions always have at least one argument.
 // Example: min{i in I} x[i], where I is a set and x is a variable.
-class VarArgExpr : public NumericExpr {
+class VarArgExpr : public BasicExpr<expr::FIRST_VARARG, expr::LAST_VARARG> {
  private:
   static const de END;
 
