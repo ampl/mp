@@ -166,8 +166,23 @@ typedef BasicExpr<expr::FIRST_NUMERIC, expr::LAST_NUMERIC> NumericExpr;
 
 // A logical or constraint expression.
 typedef BasicExpr<expr::FIRST_LOGICAL, expr::LAST_LOGICAL> LogicalExpr;
+
+class LogicalConstant;
+}  // namespace asl
+
+namespace internal {
+template <>
+inline bool Is<asl::LogicalExpr>(expr::Kind k) {
+  return (k >= expr::FIRST_LOGICAL && k <= expr::LAST_LOGICAL) ||
+          k == expr::NUMBER;
+}
+
+template <>
+inline bool Is<asl::LogicalConstant>(expr::Kind k) {
+  return k == expr::BOOL || k == expr::NUMBER;
 }
 }
+}  // namespace mp
 
 #ifdef MP_USE_UNORDERED_MAP
 namespace std {
@@ -184,24 +199,6 @@ struct hash<mp::asl::LogicalExpr> {
 
 namespace mp {
 
-// Specialize internal::Is for the class ExprType corresponding to a single
-// expression kind.
-#define MP_SPECIALIZE_IS(ExprType, expr_kind) \
-namespace internal { \
-template <> \
-inline bool Is<ExprType>(expr::Kind k) { return k == expr::expr_kind; } \
-}
-
-// Specialize internal::Is for the class ExprType corresponding to a range
-// of expression kinds [start, end].
-#define MP_SPECIALIZE_IS_RANGE(ExprType, expr_kind) \
-namespace internal { \
-template <> \
-inline bool Is<ExprType>(expr::Kind k) { \
-  return k >= expr::FIRST_##expr_kind && k <= expr::LAST_##expr_kind; \
-} \
-}
-
 namespace internal {
 // Casts expression to type ExprType.
 // If assertions are enabled, it generates an assertion failure when
@@ -217,30 +214,8 @@ namespace internal {
 
 class ASLBuilder;
 
-// Returns true if the non-null expression e is of type ExprType.
-template <typename ExprType>
-bool Is(expr::Kind k);
-
 template <typename ExprType>
 class ExprIterator;
-}
-
-// Specialize Is<ExprType> for the class ExprClass corresponding to a single
-// expression kind.
-#define MP_SPECIALIZE_IS(ExprType, expr_kind) \
-namespace internal { \
-template <> \
-inline bool Is<ExprType>(expr::Kind k) { return k == expr::expr_kind; } \
-}
-
-// Specialize Is<ExprType> for the class ExprClass corresponding to a range
-// of expression kinds [start, end].
-#define MP_SPECIALIZE_IS_RANGE(ExprType, expr_kind) \
-namespace internal { \
-template <> \
-inline bool Is<ExprType>(expr::Kind k) { \
-  return k >= expr::FIRST_##expr_kind && k <= expr::LAST_##expr_kind; \
-} \
 }
 
 template <typename Impl, typename Result, typename LResult>
@@ -292,7 +267,7 @@ class ExprBase {
   // taking raw pointers and this method should be used instead.
   template <typename ExprType>
   static ExprType Create(Impl *e) {
-    assert(!e || asl::internal::Is<ExprType>(ExprBase(e).kind()));
+    assert(!e || mp::internal::Is<ExprType>(ExprBase(e).kind()));
     ExprType expr;
     expr.impl_ = e;
     return expr;
@@ -366,29 +341,12 @@ class BasicExpr : private ExprBase {
   bool operator!=(BasicExpr rhs) const { return impl() != rhs.impl(); }
 };
 
-MP_SPECIALIZE_IS_RANGE(Expr, EXPR)
-
-namespace internal {
-template <typename ExprType>
-inline bool Is(Expr e) { return Is<ExprType>(e.kind()); }
-}
-
 // Casts an expression to type ExprType. Returns a null expression if the cast
 // is not possible.
 template <typename ExprType>
 ExprType Cast(Expr e) {
-  return internal::Is<ExprType>(e) ?
+  return mp::internal::Is<ExprType>(e.kind()) ?
         mp::internal::UncheckedCast<ExprType>(e) : ExprType();
-}
-
-MP_SPECIALIZE_IS_RANGE(NumericExpr, NUMERIC)
-
-namespace internal {
-template <>
-inline bool Is<LogicalExpr>(expr::Kind k) {
-  return (k >= expr::FIRST_LOGICAL && k <= expr::LAST_LOGICAL) ||
-          k == expr::NUMBER;
-}
 }
 
 // A numeric constant.
@@ -399,8 +357,6 @@ class NumericConstant : public BasicExpr<expr::NUMBER> {
   double value() const { return reinterpret_cast<const expr_n*>(impl())->v; }
 };
 
-MP_SPECIALIZE_IS(NumericConstant, NUMBER)
-
 // A reference to a variable or a common expression.
 // Example: x
 class Reference :
@@ -409,8 +365,6 @@ class Reference :
   // Returns the index of the referenced object.
   int index() const { return impl()->a; }
 };
-
-MP_SPECIALIZE_IS_RANGE(Reference, REFERENCE)
 
 template <typename Arg, expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicUnaryExpr : public BasicExpr<FIRST, LAST> {
@@ -425,7 +379,6 @@ class BasicUnaryExpr : public BasicExpr<FIRST, LAST> {
 // Examples: -x, sin(x), where x is a variable.
 typedef BasicUnaryExpr<
   NumericExpr, expr::FIRST_UNARY, expr::LAST_UNARY> UnaryExpr;
-MP_SPECIALIZE_IS_RANGE(UnaryExpr, UNARY)
 
 // A binary expression.
 // Base: base expression class.
@@ -448,7 +401,6 @@ class BasicBinaryExpr : public BasicExpr<FIRST, LAST> {
 // Examples: x / y, atan2(x, y), where x and y are variables.
 typedef BasicBinaryExpr<
   NumericExpr, expr::FIRST_BINARY, expr::LAST_BINARY> BinaryExpr;
-MP_SPECIALIZE_IS_RANGE(BinaryExpr, BINARY)
 
 template <typename Arg, expr::Kind KIND>
 class BasicIfExpr : public BasicExpr<KIND> {
@@ -471,7 +423,6 @@ class BasicIfExpr : public BasicExpr<KIND> {
 // An if-then-else expression.
 // Example: if x != 0 then y else z, where x, y and z are variables.
 typedef BasicIfExpr<NumericExpr, expr::IF> IfExpr;
-MP_SPECIALIZE_IS(IfExpr, IF)
 
 // A piecewise-linear expression.
 // Example: <<0; -1, 1>> x, where x is a variable.
@@ -504,8 +455,6 @@ class PiecewiseLinearExpr : public BasicExpr<expr::PLTERM> {
     return Create<NumericExpr>(impl()->R.e);
   }
 };
-
-MP_SPECIALIZE_IS(PiecewiseLinearExpr, PLTERM)
 
 class CallExpr;
 
@@ -603,8 +552,6 @@ class CallExpr : public BasicExpr<expr::CALL> {
   iterator end() const { return iterator(impl()->args + num_args()); }
 };
 
-MP_SPECIALIZE_IS(CallExpr, CALL)
-
 // A numeric expression with a variable number of arguments.
 // The min and max functions always have at least one argument.
 // Example: min{i in I} x[i], where I is a set and x is a variable.
@@ -613,6 +560,8 @@ class VarArgExpr : public BasicExpr<expr::FIRST_VARARG, expr::LAST_VARARG> {
   static const de END;
 
  public:
+  typedef NumericExpr Arg;
+
   // An argument iterator.
   class iterator :
     public std::iterator<std::forward_iterator_tag, NumericExpr> {
@@ -656,15 +605,13 @@ class VarArgExpr : public BasicExpr<expr::FIRST_VARARG, expr::LAST_VARARG> {
   }
 };
 
-MP_SPECIALIZE_IS_RANGE(VarArgExpr, VARARG)
-
 // An iterated expression.
 // ID is used to distinguish between expression types that have the same
 // base and argument type, namely SumExpr and NumberOfExpr.
-template <typename BaseT, typename ArgT = BaseT, int ID = 0>
-class BasicIteratedExpr : public BaseT {
+template <typename ArgType, expr::Kind FIRST, expr::Kind LAST = FIRST>
+class BasicIteratedExpr : public BasicExpr<FIRST, LAST> {
  public:
-  typedef ArgT Arg;
+  typedef ArgType Arg;
 
   // Returns the number of arguments.
   int num_args() const {
@@ -673,7 +620,7 @@ class BasicIteratedExpr : public BaseT {
 
   Arg operator[](int index) const {
     assert(index >= 0 && index < num_args());
-    return BaseT::template Create<Arg>(this->impl()->L.ep[index]);
+    return BasicIteratedExpr::template Create<Arg>(this->impl()->L.ep[index]);
   }
 
   typedef internal::ExprIterator<Arg> iterator;
@@ -684,57 +631,43 @@ class BasicIteratedExpr : public BaseT {
 
 // A sum expression.
 // Example: sum{i in I} x[i], where I is a set and x is a variable.
-typedef BasicIteratedExpr<NumericExpr> SumExpr;
-MP_SPECIALIZE_IS(SumExpr, SUM)
+typedef BasicIteratedExpr<NumericExpr, expr::SUM> SumExpr;
 
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
-typedef BasicIteratedExpr<NumericExpr, LogicalExpr> CountExpr;
-MP_SPECIALIZE_IS(CountExpr, COUNT)
+typedef BasicIteratedExpr<LogicalExpr, expr::COUNT> CountExpr;
 
 // A numberof expression.
 // Example: numberof 42 in ({i in I} x[i]),
 // where I is a set and x is a variable.
-typedef BasicIteratedExpr<NumericExpr, NumericExpr, 1> NumberOfExpr;
-MP_SPECIALIZE_IS(NumberOfExpr, NUMBEROF)
+typedef BasicIteratedExpr<NumericExpr, expr::NUMBEROF> NumberOfExpr;
 
 // A symbolic numberof expression.
 // Example: numberof (if x then 'a' else 'b') in ('a', 'b', 'c'),
 // where x is a variable.
-typedef BasicIteratedExpr<NumericExpr, Expr> SymbolicNumberOfExpr;
-MP_SPECIALIZE_IS(SymbolicNumberOfExpr, NUMBEROF_SYM)
+typedef BasicIteratedExpr<Expr, expr::NUMBEROF_SYM> SymbolicNumberOfExpr;
 
 // A logical constant.
 // Examples: 0, 1
-class LogicalConstant : public LogicalExpr {
+class LogicalConstant : public BasicExpr<expr::BOOL> {
  public:
   // Returns the value of this constant.
   bool value() const { return reinterpret_cast<const expr_n*>(impl())->v != 0; }
 };
 
-namespace internal {
-template <>
-inline bool Is<LogicalConstant>(expr::Kind k) {
-  return k == expr::BOOL || k == expr::NUMBER;
-}
-}
-
 // A logical NOT expression.
 // Example: not a, where a is a logical expression.
 typedef BasicUnaryExpr<LogicalExpr, expr::NOT> NotExpr;
-MP_SPECIALIZE_IS(NotExpr, NOT)
 
 // A binary logical expression.
 // Examples: a || b, a && b, where a and b are logical expressions.
 typedef BasicBinaryExpr<LogicalExpr,
   expr::FIRST_BINARY_LOGICAL, expr::LAST_BINARY_LOGICAL> BinaryLogicalExpr;
-MP_SPECIALIZE_IS_RANGE(BinaryLogicalExpr, BINARY_LOGICAL)
 
 // A relational expression.
 // Examples: x < y, x != y, where x and y are variables.
 typedef BasicBinaryExpr<
   NumericExpr, expr::FIRST_RELATIONAL, expr::LAST_RELATIONAL> RelationalExpr;
-MP_SPECIALIZE_IS_RANGE(RelationalExpr, RELATIONAL)
 
 // A logical count expression.
 // Examples: atleast 1 (x < y, x != y), where x and y are variables.
@@ -748,36 +681,31 @@ class LogicalCountExpr :
   CountExpr rhs() const { return Create<CountExpr>(impl()->R.e); }
 };
 
-MP_SPECIALIZE_IS_RANGE(LogicalCountExpr, LOGICAL_COUNT)
-
 // An implication expression.
 // Example: a ==> b else c, where a, b and c are logical expressions.
 typedef BasicIfExpr<LogicalExpr, expr::IMPLICATION> ImplicationExpr;
-MP_SPECIALIZE_IS(ImplicationExpr, IMPLICATION)
 
 // An iterated logical expression.
 // Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
-typedef BasicIteratedExpr<LogicalExpr> IteratedLogicalExpr;
-MP_SPECIALIZE_IS_RANGE(IteratedLogicalExpr, ITERATED_LOGICAL)
+typedef BasicIteratedExpr<LogicalExpr,
+  expr::FIRST_ITERATED_LOGICAL, expr::LAST_ITERATED_LOGICAL>
+  IteratedLogicalExpr;
 
 // A pairwise expression.
 // Example: alldiff{i in I} x[i], where I is a set and x is a variable.
-typedef BasicIteratedExpr<LogicalExpr, NumericExpr> PairwiseExpr;
-MP_SPECIALIZE_IS_RANGE(PairwiseExpr, PAIRWISE)
+typedef BasicIteratedExpr<
+  NumericExpr, expr::FIRST_PAIRWISE, expr::LAST_PAIRWISE> PairwiseExpr;
 
-class StringLiteral : public Expr {
+class StringLiteral : public BasicExpr<expr::STRING> {
  public:
   const char *value() const {
     return reinterpret_cast<const expr_h*>(impl())->sym;
   }
 };
 
-MP_SPECIALIZE_IS(StringLiteral, STRING)
-
 // A symbolic if-then-else expression.
 // Example: if x != 0 then 'a' else 0, where x is a variable.
 typedef BasicIfExpr<Expr, expr::IFSYM> SymbolicIfExpr;
-MP_SPECIALIZE_IS(SymbolicIfExpr, IFSYM)
 
 // Recursively compares two expressions and returns true if they are equal.
 bool Equal(NumericExpr e1, NumericExpr e2);
@@ -1011,7 +939,7 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
 
 template <typename ExprType>
 ExprType mp::internal::UncheckedCast(asl::Expr e) {
-  assert(asl::internal::Is<ExprType>(e.kind()));
+  assert(Is<ExprType>(e.kind()));
   ExprType expr;
   expr.impl_ = e.impl_;
   return expr;

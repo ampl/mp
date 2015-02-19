@@ -42,16 +42,6 @@ template <typename Alloc>
 class BasicExprFactory;
 
 namespace internal {
-// Returns true if the non-null expression e is of type ExprType.
-template <typename ExprType>
-inline bool Is(expr::Kind k) {
-  int kind = k;
-  // If FIRST_KIND == LAST_KIND, then a decent optimizing compiler simplifies
-  // this to kind == ExprType::FIRST_KIND (checked with GCC 4.8.2).
-  // No need to do it ourselves.
-  return ExprType::FIRST_KIND <= kind && kind <= ExprType::LAST_KIND;
-}
-
 // Casts an expression to type ExprType which must be a subclass of Expr.
 // If assertions are enabled, it generates an assertion failure when
 // e is not of runtime type ExprType. Otherwise no runtime check is

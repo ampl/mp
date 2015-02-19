@@ -92,7 +92,6 @@ double TestFunc(arglist *) { return 0; }
 }  // namespace
 
 namespace mp {
-namespace asl {
 #ifndef NDEBUG
 namespace internal {
 template <>
@@ -101,6 +100,8 @@ bool Is<TestExpr>(ex::Kind kind) {
 }
 }
 #endif
+
+namespace asl {
 
 template <>
 class LinearExpr< asl::LinearTerm<TestGrad> > {
@@ -173,7 +174,7 @@ class ExprTest : public ::testing::Test {
  protected:
   asl::internal::ASLBuilder builder;
   NumericExpr n1, n2;
-  LogicalConstant l0, l1;
+  LogicalExpr l0, l1;
 
   enum {NUM_VARS = 50};
 
@@ -437,7 +438,7 @@ std::size_t CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
         (info.kind == ex::NUMBER && start == ex::FIRST_LOGICAL);
     if (info.kind != ex::UNKNOWN) {
       Expr e(::MakeExpr(&raw));
-      EXPECT_EQ(is_this_kind, asl::internal::Is<ExprType>(e));
+      EXPECT_EQ(is_this_kind, Cast<ExprType>(e) != 0);
       bool cast_result = Cast<ExprType>(e);
       EXPECT_EQ(is_this_kind, cast_result);
     }
@@ -1083,18 +1084,12 @@ TEST_F(ExprTest, HashCallExpr) {
   EXPECT_EQ(hash, std::hash<NumericExpr>()(builder.MakeCall(f, args)));
 }
 
-template <typename Expr, typename Arg, typename Base>
-size_t CheckHash(Expr e) {
+template <typename Base = NumericExpr, typename Expr>
+void CheckHash(Expr e) {
   size_t hash = HashCombine<int>(0, e.kind());
   for (typename Expr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    hash = HashCombine<Arg>(hash, *i);
+    hash = HashCombine<typename Expr::Arg>(hash, *i);
   EXPECT_EQ(hash, std::hash<Base>()(e));
-  return hash;
-}
-
-template <typename BaseT, typename ArgT, int ID>
-void CheckHash(asl::BasicIteratedExpr<BaseT, ArgT, ID> e) {
-  CheckHash<asl::BasicIteratedExpr<BaseT, ArgT, ID>, ArgT, BaseT>(e);
 }
 
 TEST_F(ExprTest, HashNumericVarArgExpr) {
@@ -1105,8 +1100,7 @@ TEST_F(ExprTest, HashNumericVarArgExpr) {
     builder.MakeVariable(1),
     builder.MakeNumericConstant(42)
   };
-  CheckHash<VarArgExpr, NumericExpr, NumericExpr>(
-        builder.MakeVarArg(ex::MIN, args));
+  CheckHash(builder.MakeVarArg(ex::MIN, args));
   CheckHash(builder.MakeSum(args));
   CheckHash(builder.MakeNumberOf(args));
 }
@@ -1147,12 +1141,12 @@ TEST_F(ExprTest, HashImplicationExpr) {
 
 TEST_F(ExprTest, HashIteratedLogical) {
   LogicalExpr args[] = {l0, l1, builder.MakeLogicalConstant(false)};
-  CheckHash(builder.MakeIteratedLogical(ex::EXISTS, args));
+  CheckHash<LogicalExpr>(builder.MakeIteratedLogical(ex::EXISTS, args));
 }
 
 TEST_F(ExprTest, HashAllDiff) {
   NumericExpr args[] = {n1, n2, builder.MakeVariable(4)};
-  CheckHash(builder.MakeAllDiff(args));
+  CheckHash<LogicalExpr>(builder.MakeAllDiff(args));
 }
 
 struct TestString {

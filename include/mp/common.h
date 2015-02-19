@@ -251,6 +251,16 @@ struct enable_if {};
 template<class T>
 struct enable_if<true, T> { typedef T type; };
 
+// Returns true if ExprType is of kind k.
+template <typename ExprType>
+inline bool Is(expr::Kind k) {
+  int kind = k;
+  // If FIRST_KIND == LAST_KIND, then a decent optimizing compiler simplifies
+  // this to kind == ExprType::FIRST_KIND (checked with GCC 4.8.2).
+  // No need to do it ourselves.
+  return ExprType::FIRST_KIND <= kind && kind <= ExprType::LAST_KIND;
+}
+
 int precedence(expr::Kind kind);
 
 // Expression information.

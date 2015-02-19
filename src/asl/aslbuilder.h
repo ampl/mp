@@ -92,7 +92,7 @@ class ASLBuilder {
 
   template <typename ExprType>
   static void CheckKind(expr::Kind kind, const char *expr_name) {
-    if (!internal::Is<ExprType>(kind))
+    if (!mp::internal::Is<ExprType>(kind))
       throw Error("invalid {} expression kind {}", expr_name, kind);
   }
 
@@ -200,9 +200,9 @@ class ASLBuilder {
     void AddArg(Expr arg) {
       expr_->args[arg_index_] = arg.impl();
       ++arg_index_;
-      if (!Is<NumericExpr>(arg))
+      if (!Cast<NumericExpr>(arg))
         ++num_symbolic_args_;
-      else if (Is<NumericConstant>(arg))
+      else if (Cast<NumericConstant>(arg))
         ++num_constants_;
       // TODO
       //if (args[i].kind() == expr::IFSYM)
