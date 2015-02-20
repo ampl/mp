@@ -2508,3 +2508,29 @@ to print "4e+00" rather than "5e+00".
 20150129
   fpinit.c:  Adjustments suggested by Victor Zverovich for Linux on ARM
 and s390x systems.  No change to asldate.c.
+
+20150204
+  rops.c, rops2.c:  fix a glitch with OPREM:  the right partial should
+always be zero.
+
+20150208
+  fg_read.c, fgh_read.c, pfg_read.c, pfghread.c:  fix a bug that could
+affect solvers that call sos_add() before calling the .nl reader or
+that specify ASL_cc_simplify in the flags to the .nl reader.  Problems
+with some nonlinear defined variables might sometimes have been
+mishandled when either some nonzero .sosno or .ref suffixes or certain
+kinds of complementarity constraints appear in the problem.
+
+20150210
+  fg_read.c, fgh_read.c, pfg_read.c, pfghread.c:  recant most of the
+changes of 20150208; the "nvinc" logic had made them unnecessary.
+One change retained:  if the incoming X0 or havex0 (i.e., asl->i.X0_
+or asl->i.havex0_) are nonzero, only the first n_var components are
+zeroed initially, rather than the first
+n_var + asl->i.nsufext[ASL_Sufkind_var] components.
+
+20150216
+ con1ival.c, con2ival.c, repwhere.c: fix bugs in lconval() and in
+the objective name shwon in error messages on problems with adjustments
+due to suf_sos() or reader flags ASL_cc_simplify, ASL_obj_replace_ineq,
+or ASL_obj_replace_eq.

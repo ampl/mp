@@ -1,3 +1,7 @@
-20150129
-  fpinit.c:  Adjustments suggested by Victor Zverovich for Linux on ARM
-and s390x systems.  No change to asldate.c.
+20150210
+  fg_read.c, fgh_read.c, pfg_read.c, pfghread.c:  recant most of the
+changes of 20150208; the "nvinc" logic had made them unnecessary.
+One change retained:  if the incoming X0 or havex0 (i.e., asl->i.X0_
+or asl->i.havex0_) are nonzero, only the first n_var components are
+zeroed initially, rather than the first
+n_var + asl->i.nsufext[ASL_Sufkind_var] components.

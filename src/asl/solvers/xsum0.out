@@ -8,7 +8,7 @@ arithchk.c	91ee1e0	5988
 asl.h	94ac164	41299
 asl_pfg.h	6483336	1268
 asl_pfgh.h	49b5a53	1288
-asldate.c	1f10f696	29
+asldate.c	ef5fef0a	29
 atof.c	1fabc7d3	1747
 auxinfo.c	1a3c8690	1488
 avltree.c	10aeaa58	11346
@@ -19,8 +19,8 @@ bscanf.c	5d489dc	6288
 com2eval.c	f99c0749	15949
 comeval.c	f3f26fb1	2700
 comptry.bat	e40861e9	209
-con1ival.c	e14cab79	5193
-con2ival.c	f1249310	5207
+con1ival.c	1a155afb	5259
+con2ival.c	89ec7f7	5273
 con2val.c	e4c17fce	4987
 conadj.c	bb213ed	2040
 configure	1679ad6	1706
@@ -37,9 +37,9 @@ dvalue.hd	9606f1	1125
 dynlink.c	f185cc89	1375
 errchk.h	18e45db4	1786
 f_read.c	12b32457	1227
-fg_read.c	1845820e	36537
+fg_read.c	e45e1fa1	36537
 fg_write.c	163779ef	17452
-fgh_read.c	fd5b6040	34343
+fgh_read.c	1fdec508	34343
 float.h0	11d95cda	1822
 fpecatch.c	e1d8a914	1574
 fpinit.c	1aa8e913	5592
@@ -101,8 +101,8 @@ op_type.hd	f803bc0b	1287
 op_typeb.hd	1c1e0c07	1287
 opcode.hd	12bc8de3	1348
 opnos.hd	1a7c2f8d	78
-pfg_read.c	1dc7322b	96401
-pfghread.c	e06ca53d	1261
+pfg_read.c	a333fe5	96401
+pfghread.c	12e99ce	1261
 printf.c	e69c728e	23934
 pshvprod.c	4651242	29940
 psinfo.h	f2977d69	9957
@@ -116,10 +116,10 @@ r_opn.hd	e78c0980	412
 r_opn0.hd	1057f615	342
 r_qp.hd	ccd541f	184
 readsol.c	e06d9a6d	8267
-repwhere.c	f1da5813	10003
+repwhere.c	eb0758d	10011
 rnd_prod.s	f4996bed	1471
-rops.c	b486ded	18817
-rops2.c	e60eeaf2	19961
+rops.c	e46f9678	18787
+rops2.c	ed231a7b	19895
 sigcatch.c	e883ab2	2372
 sjac0dim.c	ff686adb	1546
 sos_add.c	fb5da0e8	23060

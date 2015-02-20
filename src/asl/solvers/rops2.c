@@ -109,10 +109,6 @@ f_OPREM(expr *e A_ASL)
 	rv = fmod(L,R);
 	if (errchk(rv))
 		introuble2("fmod",L,R,1);
-	else if (want_deriv) {
-		e->dR = (rv - L) / R;
-		e->dR2 = 0;
-		}
 	return rv;
 	}
 

@@ -1472,9 +1472,9 @@ fgh_read_ASL(ASL *a, FILE *nl, int flags)
 			memset(havepi0, 0, nc);
 		}
 	if (X0)
-		memset(X0, 0, nv0*sizeof(real));
+		memset(X0, 0, nvr*sizeof(real));
 	if (havex0)
-		memset(havex0, 0, nv0);
+		memset(havex0, 0, nvr);
 	e = var_e = (expr_v *)M1zapalloc(x);
 	var_ex = e + nv0;
 	var_ex1 = var_ex + ncom0;

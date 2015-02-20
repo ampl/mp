@@ -104,7 +104,7 @@ report_where(ASL *asl)
 	k = k1 = 0;
 	if ((i = co_index) < 0) {
 		k = 1;
-		i = n_con -i - 1;
+		i = asl->i.n_con0 -i - 1;
 		if (n_obj <= 1)
 			k1 = 1;
 		}

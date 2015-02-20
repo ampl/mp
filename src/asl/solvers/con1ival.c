@@ -40,7 +40,7 @@ cival(ASL_fg *asl, int i, real *X, fint *nerror)
 {
 	Jmp_buf err_jmp0;
 	expr *e;
-	int ij;
+	int ij, nc;
 	real f;
 
 	if (nerror && *nerror >= 0) {
@@ -64,7 +64,10 @@ cival(ASL_fg *asl, int i, real *X, fint *nerror)
 		}
 	asl->i.ncxval[i] = asl->i.nxval;
 	co_index = i;
-	e = con_de[i].e;
+	if (i >= (nc = asl->i.n_con0))
+		e = lcon_de[i-nc].e;
+	else
+		e = con_de[i].e;
 	f = (*e->op)(e C_ASL);
 	err_jmp = 0;
 	return f;

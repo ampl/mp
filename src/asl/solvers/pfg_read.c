@@ -4318,9 +4318,9 @@ pfg_read_ASL(ASL *a, FILE *nl, int flags)
 	if (flags & ASL_find_co_class)
 		x += nco;
 	if (X0)
-		memset(X0, 0, nvx*sizeof(real));
+		memset(X0, 0, nvr*sizeof(real));
 	if (havex0)
-		memset(havex0, 0, nvx);
+		memset(havex0, 0, nvr);
 	e = var_e = (expr_v *)M1zapalloc(x);
 	con_de = (cde *)(e + nv);
 	lcon_de = con_de + nc;
