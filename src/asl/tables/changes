@@ -165,3 +165,14 @@ via the tableproxy handler.  Have "tableproxy -v" show system details.
 20140525
   tableproxy.c: Read_ampl_proxy: when table reading is finished and
 TI->Errmsg is set, return DB_Error rather than DB_Done.
+
+20141003
+  tableproxy.c:  have the tableproxy program ignore SIGINT when talking
+with the tableproxy handler over a pipe (i.e., when invoked with --local).
+This prevents trouble with interactive use of AMPL when the user types
+control-C.  Thanks to Victor Zverovich for diagnosing this issue.
+
+20150217
+  amplodbc.c:  fix a glitch in strcmpv() that caused it to sort on
+string addresses rather than string values.  Thanks to
+peter.jackson@rtdmsolutions.com for pointing this out.

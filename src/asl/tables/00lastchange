@@ -1,3 +1,4 @@
-20140525
-  tableproxy.c: Read_ampl_proxy: when table reading is finished and
-TI->Errmsg is set, return DB_Error rather than DB_Done.
+20150217
+  amplodbc.c:  fix a glitch in strcmpv() that caused it to sort on
+string addresses rather than string values.  Thanks to
+peter.jackson@rtdmsolutions.com for pointing this out.
