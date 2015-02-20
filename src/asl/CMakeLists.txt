@@ -225,11 +225,11 @@ set(ASL_SOURCES
   aslbuilder.cc aslsolver.cc aslexpr.cc aslproblem.cc aslinterface.cc)
 
 set(ASL_INCLUDE_DIRS solvers ${CMAKE_CURRENT_BINARY_DIR})
-add_mp_library(asl-extra OBJECT ${ASL_SOURCES} ${ASL_HEADERS}
+add_mp_library(asl-extra OBJECT ${ASL_SOURCES}
   INCLUDE_DIRECTORIES ${ASL_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/src)
 
-add_mp_library(asl STATIC OBJECT_LIBRARIES asl-core asl-extra LIBRARIES mp
-  INCLUDE_DIRECTORIES ${ASL_INCLUDE_DIRS})
+add_mp_library(asl ${ASL_HEADERS} STATIC OBJECT_LIBRARIES asl-core asl-extra
+  LIBRARIES mp INCLUDE_DIRECTORIES ${ASL_INCLUDE_DIRS})
 
 if (NOT WIN32)
   target_link_libraries(asl m)
