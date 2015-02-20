@@ -125,11 +125,11 @@ class ExprBase {
 // dependent lookup.
 template <expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicExpr : private internal::ExprBase {
-  // ExprBase::Create needs access to ExprBase::impl_ via private base class.
-  friend class internal::ExprBase;
-
+  // internal::UnecheckCast & ExprBase::Create are friends because they need
+  // access to ExprBase::impl_ via private base class.
   template <typename ExprType>
   friend ExprType internal::UncheckedCast(Expr e);
+  friend class internal::ExprBase;
 
   template <typename Alloc>
   friend class BasicExprFactory;
