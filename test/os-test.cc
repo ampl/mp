@@ -186,7 +186,7 @@ TEST(OSTest, GetExecutablePathUnicode) {
 TEST(MemoryMappedFileTest, DefaultCtor) {
   MemoryMappedFile<> f;
   EXPECT_EQ(0, f.start());
-  EXPECT_EQ(0, f.size());
+  EXPECT_EQ(0u, f.size());
 }
 
 TEST(MemoryMappedFileTest, Map) {
@@ -364,4 +364,4 @@ TEST(MemoryMappedFileTest, InvalidFile) {
   StandardErrorHandling seh;
   EXPECT_THROW(MemoryMappedFile<>(fmt::File(), 1), fmt::SystemError);
 }
-}
+}  // namespace
