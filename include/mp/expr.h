@@ -71,6 +71,7 @@ class ExprBase {
   const Impl *impl_;
 
   // Returns a pointer to the implementation.
+  // BasicExpr exposes impl() as a protected member while impl_ becomes private.
   const Impl *impl() const { return impl_; }
 
   ExprBase() : impl_() {}
@@ -91,6 +92,8 @@ class ExprBase {
   // Safe bool type.
   typedef void (ExprBase::*SafeBool)() const;
 
+  // ExprIterator is a friend because it should have access to the
+  // Create function.
   template <typename ExprType>
   friend class ExprIterator;
 
