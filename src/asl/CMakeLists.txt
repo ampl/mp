@@ -224,10 +224,12 @@ add_prefix(ASL_HEADERS solvers/
 set(ASL_SOURCES
   aslbuilder.cc aslsolver.cc aslexpr.cc aslproblem.cc aslinterface.cc)
 
-add_mp_library(asl STATIC
-  ${ASL_SOURCES} ${ASL_HEADERS} OBJECT_LIBRARIES asl-core LIBRARIES mp
-  INCLUDE_DIRECTORIES solvers ${PROJECT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_BINARY_DIR})
+set(ASL_INCLUDE_DIRS solvers ${CMAKE_CURRENT_BINARY_DIR})
+add_mp_library(asl-extra OBJECT ${ASL_SOURCES} ${ASL_HEADERS}
+  INCLUDE_DIRECTORIES ${ASL_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/src)
+
+add_mp_library(asl STATIC OBJECT_LIBRARIES asl-core asl-extra LIBRARIES mp
+  INCLUDE_DIRECTORIES ${ASL_INCLUDE_DIRS})
 
 if (NOT WIN32)
   target_link_libraries(asl m)
@@ -238,7 +240,7 @@ if (HAVE_LIBDL)
 endif ()
 
 if (BUILD_SHARED_LIBS)
-  add_library(asl-shared $<TARGET_OBJECTS:asl-core>)
+  add_library(asl-shared $<TARGET_OBJECTS:asl-core> $<TARGET_OBJECTS:asl-extra>)
   set_target_properties(asl-shared PROPERTIES
     VERSION ${MP_VERSION} SOVERSION ${MP_VERSION_MAJOR})
   set_target_properties(asl-shared PROPERTIES OUTPUT_NAME asl)
@@ -254,7 +256,7 @@ endif ()
 include(CheckFunctionExists)
 check_function_exists(getrusage HAVE_GETRUSAGE)
 if (NOT HAVE_GETRUSAGE)
- target_compile_definitions(asl PRIVATE NO_RUSAGE)
+ target_compile_definitions(asl-extra PRIVATE NO_RUSAGE)
 endif ()
 
 include(CheckCXXSourceCompiles)
@@ -262,7 +264,7 @@ check_cxx_source_compiles("
   #include <unordered_map>
   int main() { std::unordered_map<int, int> m; }" HAVE_UNORDERED_MAP)
 if (HAVE_UNORDERED_MAP)
-  target_compile_definitions(asl PUBLIC MP_USE_UNORDERED_MAP)
+  target_compile_definitions(asl-extra PUBLIC MP_USE_UNORDERED_MAP)
 endif ()
 
 find_library(DL_LIBRARY dl)
