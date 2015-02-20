@@ -141,8 +141,7 @@ class BasicExpr : private internal::ExprBase {
   typedef BasicExpr Base;
 
  public:
-  static const expr::Kind FIRST_KIND = FIRST;
-  static const expr::Kind LAST_KIND = LAST;
+  enum { FIRST_KIND = FIRST, LAST_KIND = LAST };
 
   // Constructs a BasicExpr object representing a null reference to an
   // expression. The only operation permitted for such object is copying,
