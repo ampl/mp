@@ -220,15 +220,15 @@ set(ASL_HEADERS aslbuilder.h aslsolver.h aslexpr.h aslexpr-visitor.h
   ${CMAKE_CURRENT_BINARY_DIR}/stdio1.h)
 add_prefix(ASL_HEADERS solvers/
   asl.h asl_pfg.h asl_pfgh.h avltree.h funcadd.h getstub.h jacpdim.h nlp.h
-  nlp2.h psinfo.h opcode.hd r_opn.hd)
+  nlp2.h psinfo.h)
 set(ASL_SOURCES
   aslbuilder.cc aslsolver.cc aslexpr.cc aslproblem.cc aslinterface.cc)
 
 set(ASL_INCLUDE_DIRS solvers ${CMAKE_CURRENT_BINARY_DIR})
-add_mp_library(asl-extra OBJECT ${ASL_SOURCES}
+add_mp_library(asl-extra OBJECT ${ASL_SOURCES} ${ASL_HEADERS}
   INCLUDE_DIRECTORIES ${ASL_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/src)
 
-add_mp_library(asl ${ASL_HEADERS} STATIC OBJECT_LIBRARIES asl-core asl-extra
+add_mp_library(asl STATIC OBJECT_LIBRARIES asl-core asl-extra
   LIBRARIES mp INCLUDE_DIRECTORIES ${ASL_INCLUDE_DIRS})
 
 if (NOT WIN32)
@@ -339,5 +339,6 @@ if (WIN32)
   target_compile_definitions(tableproxy PRIVATE NO_sockaddr_in6)
 endif ()
 
-install(FILES ${ASL_HEADERS} DESTINATION include/asl)
+install(FILES ${ASL_HEADERS} solvers/opcode.hd solvers/r_opn.hd
+  DESTINATION include/asl)
 install(TARGETS asl tableproxy DESTINATION lib RUNTIME DESTINATION bin)
