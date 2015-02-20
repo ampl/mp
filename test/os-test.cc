@@ -196,7 +196,7 @@ TEST(MemoryMappedFileTest, Map) {
   File file(filename, File::RDONLY);
   f.map(file);
   EXPECT_EQ("abc", std::string(f.start(), 3));
-  EXPECT_EQ(3, f.size());
+  EXPECT_EQ(3u, f.size());
 }
 
 TEST(MemoryMappedFileTest, MapWithSize) {
@@ -206,7 +206,7 @@ TEST(MemoryMappedFileTest, MapWithSize) {
   File file(filename, File::RDONLY);
   f.map(file, 2);
   EXPECT_EQ("ab", std::string(f.start(), 2));
-  EXPECT_EQ(2, f.size());
+  EXPECT_EQ(2u, f.size());
 }
 
 TEST(MemoryMappedFileTest, NegativeFileSizeInMap) {
@@ -243,7 +243,7 @@ TEST(MemoryMappedFileTest, DoubleMap) {
     f.map(file2, file2.size());
     start = f.start();
     EXPECT_EQ("defg", std::string(f.start(), 4));
-    EXPECT_EQ(4, f.size());
+    EXPECT_EQ(4u, f.size());
   }
   EXPECT_DEATH((void)*start, "");
 }
