@@ -27,7 +27,8 @@ if (CMAKE_CROSSCOMPILING AND CMAKE_SYSTEM_PROCESSOR MATCHES "^x86")
   endif ()
   if (ARITH_INT)
     check_type_size("struct { double d\; ${ARITH_INT} L\; }[2]" STRUCT_SIZE)
-    math(EXPR DOUBLE_PLUS_INT_SIZE_X2 "2 * (${DOUBLE_SIZE} + ${ARITH_INT_SIZE})")
+    math(EXPR DOUBLE_PLUS_INT_SIZE_X2
+         "2 * (${DOUBLE_SIZE} + ${ARITH_INT_SIZE})")
     if (STRUCT_SIZE GREATER DOUBLE_PLUS_INT_SIZE_X2)
       set(ARITH_H "${ARITH_H}#define Double_Align\n")
     endif ()
@@ -216,11 +217,12 @@ endif ()
 # Public ASL headers.
 set(ASL_HEADERS aslbuilder.h aslsolver.h aslexpr.h aslexpr-visitor.h
   aslproblem.h aslinterface.h ${CMAKE_CURRENT_BINARY_DIR}/arith.h
-${CMAKE_CURRENT_BINARY_DIR}/stdio1.h)
+  ${CMAKE_CURRENT_BINARY_DIR}/stdio1.h)
 add_prefix(ASL_HEADERS solvers/
   asl.h asl_pfg.h asl_pfgh.h avltree.h funcadd.h getstub.h jacpdim.h nlp.h
   nlp2.h psinfo.h opcode.hd r_opn.hd)
-set(ASL_SOURCES aslbuilder.cc aslsolver.cc aslexpr.cc aslproblem.cc aslinterface.cc)
+set(ASL_SOURCES
+  aslbuilder.cc aslsolver.cc aslexpr.cc aslproblem.cc aslinterface.cc)
 
 add_mp_library(asl STATIC
   ${ASL_SOURCES} ${ASL_HEADERS} OBJECT_LIBRARIES asl-core LIBRARIES mp
@@ -286,7 +288,8 @@ if (MATLAB_FOUND)
     else ()
       set(mex_install_dir lib)
     endif ()
-    install(FILES $<TARGET_PROPERTY:${name},FILENAME> DESTINATION ${mex_install_dir})
+    install(FILES $<TARGET_PROPERTY:${name},FILENAME>
+      DESTINATION ${mex_install_dir})
   endforeach ()
 endif ()
 
