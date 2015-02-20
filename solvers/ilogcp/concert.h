@@ -52,7 +52,6 @@ class NLToConcertConverter : public Converter {
   IloModel model_;
   IloNumVarArray vars_;
   IloRangeArray cons_;
-  int objno_;
   unsigned flags_;
 
   class CreateVar {
