@@ -327,8 +327,8 @@ class BasicExpr : private internal::ExprBase {
   BasicExpr(
       Expr other,
       typename mp::internal::enable_if<
-        Expr::FIRST_KIND >= static_cast<expr::Kind>(FIRST) &&
-        Expr::LAST_KIND  <= static_cast<expr::Kind>(LAST), int>::type = 0)
+        static_cast<expr::Kind>(Expr::FIRST_KIND) >= FIRST &&
+        static_cast<expr::Kind>(Expr::LAST_KIND)  <= LAST, int>::type = 0)
     : ExprBase(other) {}
 
   using ExprBase::kind;
