@@ -6,13 +6,6 @@ if (CMAKE_MAJOR_VERSION LESS 3)
   # CMake 3.0 is used for generator expressions in install(FILES).
   message(WARNING
     "CMake version 3.0 or newer is required to install all targets")
-else ()
-  # Enable @rpath support on OS X.
-  cmake_policy(SET CMP0042 NEW)
-  if (CMAKE_MINOR_VERSION GREATER 0)
-    # Only interpret `if` arguments as variables or keywords when unquoted.
-    cmake_policy(SET CMP0054 NEW)
-  endif ()
 endif ()
 
 # Set the path to CMake modules.
@@ -22,6 +15,16 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MP_CMAKE_MODULE_DIR})
 include(init)
 
 project(MP)
+
+if (POLICY CMP0042)
+  # Enable @rpath support on OS X.
+  cmake_policy(SET CMP0042 NEW)
+endif ()
+
+if (POLICY CMP0054)
+  # Only interpret `if` arguments as variables or keywords when unquoted.
+  cmake_policy(SET CMP0054 NEW)
+endif ()
 
 set(MP_VERSION 1.4.0)
 if (NOT MP_VERSION MATCHES "^([0-9]+).([0-9]+).([0-9]+)$")
