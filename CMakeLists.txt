@@ -59,9 +59,6 @@ function (add_c_compiler_flags target)
       set(check_flag "-W${CMAKE_MATCH_1}")
     endif ()
     check_c_compiler_flag(${check_flag} supports_flag)
-    check_c_compiler_flag(${flag} supports_flag2)
-    message("Compiler flag ${check_flag} supported: ${supports_flag}")
-    message("Compiler flag ${flag} supported: ${supports_flag2}")
     if (supports_flag)
       target_compile_options(${target} PRIVATE ${flag})
     endif ()
@@ -133,10 +130,14 @@ else ()
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif ()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  set(MP_CLANG TRUE)
+endif ()
+
 # This is a workaround for ccache bug 8118
 # https://bugzilla.samba.org/show_bug.cgi?id=8118
 # Should be fixed in ccache version 3.2
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if (MP_CLANG)
   check_cxx_compiler_flag(-Qunused-arguments HAVE_QUNUSED_ARGUMENTS)
   if (HAVE_QUNUSED_ARGUMENTS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
