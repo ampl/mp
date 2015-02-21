@@ -498,7 +498,7 @@ TEST(SolverTest, StringOptionHelper) {
 
 TEST(SolverTest, TypedSolverOption) {
   struct TestOption : mp::TypedSolverOption<int> {
-    int value;
+    fmt::LongLong value;
     TestOption(const char *name, const char *description)
     : mp::TypedSolverOption<int>(name, description), value(0) {}
     void GetValue(fmt::LongLong &value) const { value = this->value; }
