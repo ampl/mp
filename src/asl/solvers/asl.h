@@ -69,7 +69,7 @@ typedef Long ftnlen;
 #endif
 
 #ifndef Not_Used
-#define Not_Used(x) x = x	/* silence non-use warnings */
+#define Not_Used(x) (void)x	/* silence non-use warnings */
 #endif
 
 #define Malloc(x) mymalloc((size_t)(x))

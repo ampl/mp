@@ -271,7 +271,7 @@ lcstrcmp(const char *a, const char *b)
 	for(;;) {
 		if ((c = *a++) >= 'A' && c <= 'Z')
 			c += 'a' - 'A';
-		if (d = c - *b++)
+		if ((d = c - *b++))
 			return d;
 		if (!c)
 			break;

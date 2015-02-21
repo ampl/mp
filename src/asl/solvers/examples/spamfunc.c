@@ -83,7 +83,7 @@ sizechk(const mxArray *mp, char *who, fint m)
 	int m1, n1;
 	m1 = mxGetM(mp);
 	n1 = mxGetN(mp);
-	if (m1 != m || n1 != 1 && m1) {
+	if (m1 != m || (n1 != 1 && m1)) {
 		sprintf(msgbuf,
 			"Expected %s to be %d x 1 rather than %d x %d\n",
 			who, m, m1, n1);

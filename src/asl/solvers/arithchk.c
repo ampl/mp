@@ -187,7 +187,6 @@ main(void)
 	FILE *f;
 	Akind *a = 0;
 	int Ldef = 0;
-	size_t sa, sb;
 	unsigned int nanbits[2];
 
 	fpinit_ASL();
