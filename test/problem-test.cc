@@ -48,12 +48,14 @@ TEST(ProblemTest, AddVar) {
   p.AddVar(1.1, 2.2);
   EXPECT_EQ(1, p.num_vars());
   Problem::Variable var = p.var(0);
+  EXPECT_EQ(0, var.index());
   EXPECT_EQ(1.1, var.lb());
   EXPECT_EQ(2.2, var.ub());
   EXPECT_EQ(mp::var::CONTINUOUS, var.type());
   p.AddVar(3.3, 4.4, mp::var::INTEGER);
   EXPECT_EQ(2, p.num_vars());
   var = p.var(1);
+  EXPECT_EQ(1, var.index());
   EXPECT_EQ(3.3, var.lb());
   EXPECT_EQ(4.4, var.ub());
   EXPECT_EQ(mp::var::INTEGER, var.type());
