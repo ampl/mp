@@ -4,9 +4,11 @@ if (NOT DOXYGEN)
   message(STATUS "Target doc disabled (requires doxygen)")
   return ()
 endif ()
-find_program(SPHINX_BUILD sphinx-build)
-if (NOT SPHINX_BUILD)
-  message(STATUS "Target doc disabled (requires sphinx-build)")
+# Use specific version of Sphinx which fixes local search and has
+# better C++ support.
+check_module(sphinx have_sphinx EXTERNAL)
+if (NOT have_sphinx)
+  message(STATUS "Target doc disabled (requires sphinx module)")
   return ()
 endif ()
 check_module(breathe have_breathe EXTERNAL)
@@ -44,7 +46,7 @@ add_prefix(doc_depends ../ ${MP_HEADERS})
 add_custom_command(OUTPUT html/index.html
   COMMAND ${DOXYGEN}
   COMMAND python ${EXTRACT_DOCS}
-  COMMAND ${SPHINX_BUILD}
+  COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/sphinx/sphinx-build.py
     -D "breathe_projects.mp=${CMAKE_CURRENT_BINARY_DIR}/doxyxml"
     -b html -c ${CMAKE_CURRENT_SOURCE_DIR} . html
   DEPENDS Doxyfile.in conf.py ${EXTRACT_DOCS} ../src/gsl/amplgsl.c ${doc_depends})
