@@ -42,6 +42,47 @@ using mp::Problem;
   EXPECT_EQ(expr.end(),it); \
 }
 
+TEST(ProblemTest, LinearExpr) {
+  mp::LinearExpr e;
+  EXPECT_EQ(0, e.num_terms());
+  EXPECT_GE(0, e.capacity());
+  EXPECT_EQ(e.begin(), e.end());
+  e.AddTerm(11, 2.2);
+  EXPECT_EQ(1, e.num_terms());
+  EXPECT_GE(1, e.capacity());
+  auto i = e.begin();
+  EXPECT_EQ(11, i->var_index());
+  EXPECT_EQ(2.2, i->coef());
+  e.Reserve(10);
+  EXPECT_EQ(10, e.capacity());
+}
+
+TEST(ProblemTest, LinearExprIterator) {
+  mp::LinearExpr e;
+  e.AddTerm(11, 2.2);
+  e.AddTerm(33, 4.4);
+  EXPECT_EQ(2, e.num_terms());
+  mp::LinearExpr::iterator i = e.begin();
+  // Test dereference.
+  EXPECT_EQ(11, (*i).var_index());
+  // Test the arrow operator.
+  EXPECT_EQ(11, i->var_index());
+  EXPECT_EQ(2.2, i->coef());
+  // Test postincrement.
+  mp::LinearExpr::iterator j = i++;
+  EXPECT_EQ(11, j->var_index());
+  EXPECT_EQ(33, i->var_index());
+  EXPECT_TRUE(i != j);
+  // Test preincrement.
+  i = ++j;
+  EXPECT_EQ(33, j->var_index());
+  EXPECT_EQ(33, i->var_index());
+  EXPECT_TRUE(i == j);
+  // Test end.
+  EXPECT_NE(i, e.end());
+  EXPECT_EQ(++i, e.end());
+}
+
 TEST(ProblemTest, AddVar) {
   Problem p;
   EXPECT_EQ(0, p.num_vars());
@@ -383,6 +424,14 @@ TEST(ProblemTest, LogicalCons) {
   EXPECT_ASSERT(*i, "invalid access");
 }
 
+TEST(ProblemTest, CommonExpr) {
+  Problem p;
+  Problem::LinearExprBuilder builder = p.BeginCommonExpr(2);
+  builder.AddTerm(0, 1.1);
+  builder.AddTerm(3, 2.2);
+  // TODO: test
+}
+
 TEST(ProblemTest, SetInfo) {
   Problem p;
   auto info = mp::ProblemInfo();
@@ -393,4 +442,6 @@ TEST(ProblemTest, SetInfo) {
 }
 
 // TODO: check the default definition of MP_MAX_PROBLEM_ITEMS
-// TODO: more tests
+// TODO: test BeginCommonExpr, EndCommonExpr, SetComplement, SetInitialValue,
+//            SetInitialDualValue, GetColumnSizeHandler, AddIntSuffix,
+//            AddDblSuffix
