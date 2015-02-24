@@ -442,7 +442,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     MP_ASSERT(index < MP_MAX_PROBLEM_ITEMS, "too many variables");
     vars_.push_back(Var(lb, ub));
     is_var_int_.push_back(type != var::CONTINUOUS);
-    return Variable(this, index);
+    return Variable(this, static_cast<int>(index));
   }
 
   // An objective.
@@ -705,19 +705,25 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
 template <typename Alloc>
 int BasicProblem<Alloc>::GetSuffixSize(int suffix_type) {
+  std::size_t size = 0;
   switch (suffix_type) {
   default:
     MP_ASSERT(false, "invalid suffix type");
     // Fall through.
   case suf::VAR:
-    return vars_.capacity();
+    size = vars_.capacity();
+    break;
   case suf::CON:
-    return algebraic_cons_.capacity();
+    size = algebraic_cons_.capacity();
+    break;
   case suf::OBJ:
-    return linear_objs_.capacity();
+    size = linear_objs_.capacity();
+    break;
   case suf::PROBLEM:
-    return 1;
+    size = 1;
+    break;
   }
+  return static_cast<int>(size);
 }
 
 template <typename Alloc>
@@ -729,7 +735,7 @@ typename BasicProblem<Alloc>::LinearObjBuilder BasicProblem<Alloc>::AddObj(
   LinearExpr &linear_expr = linear_objs_.back();
   linear_expr.Reserve(num_linear_terms);
   if (expr)
-    SetNonlinearObjExpr(linear_objs_.size() - 1, expr);
+    SetNonlinearObjExpr(static_cast<int>(linear_objs_.size() - 1), expr);
   return LinearObjBuilder(&linear_expr);
 }
 
@@ -742,7 +748,7 @@ typename BasicProblem<Alloc>::LinearConBuilder BasicProblem<Alloc>::AddCon(
   AlgebraicConInfo &con = algebraic_cons_.back();
   con.linear_expr.Reserve(num_linear_terms);
   if (expr)
-    SetNonlinearConExpr(algebraic_cons_.size() - 1, expr);
+    SetNonlinearConExpr(static_cast<int>(algebraic_cons_.size() - 1), expr);
   return LinearConBuilder(&con.linear_expr);
 }
 
