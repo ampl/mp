@@ -205,7 +205,7 @@ class LSProblemBuilder :
   }
 
   ls::LSExpression MakeNumericConstant(double value) {
-    ls::lsint int_value = value;
+    ls::lsint int_value = static_cast<ls::lsint>(value);
     return int_value == value ?
           model_.createConstant(int_value) : model_.createConstant(value);
   }
