@@ -279,6 +279,8 @@ class TestReaderBase : public mp::internal::ReaderBase {
  public:
    TestReaderBase(fmt::StringRef data, fmt::StringRef name)
      : ReaderBase(data, name) {}
+
+   TestReaderBase &get() { return *this; }
 };
 
 template <typename Converter = mp::internal::IdentityConverter>
@@ -286,8 +288,7 @@ class TestBinaryReader :
     private TestReaderBase, public BinaryReader<Converter> {
  public:
   TestBinaryReader(fmt::StringRef data, fmt::StringRef name = "test")
-    : TestReaderBase(data, name),
-      BinaryReader<Converter>(static_cast<TestReaderBase&>(*this)) {}
+    : TestReaderBase(data, name), BinaryReader<Converter>(get()) {}
 };
 
 TEST(BinaryReaderTest, ReportError) {
