@@ -57,6 +57,7 @@ class LinearExpr {
 
  public:
   int num_terms() const { return static_cast<int>(terms_.size()); }
+  int capacity() const { return static_cast<int>(terms_.capacity()); }
 
   typedef std::vector<Term>::const_iterator iterator;
 
@@ -158,6 +159,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     if (nonlinear_objs_.size() <= static_cast<std::size_t>(obj_index))
       nonlinear_objs_.resize(obj_index + 1);
     nonlinear_objs_[obj_index] = expr;
+  }
+
+  void SetNonlinearConExpr(int con_index, NumericExpr expr) {
+    CheckIndex(con_index, algebraic_cons_.size());
+    if (nonlinear_cons_.size() <= static_cast<std::size_t>(con_index))
+      nonlinear_cons_.resize(con_index + 1);
+    nonlinear_cons_[con_index] = expr;
   }
 
   // A list of problem elements.
@@ -537,7 +545,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
     // Returns the linear part of the constraint expression.
     LinearExpr &linear_expr() const {
-      return this->problem_->linear_cons_[this->index_];
+      return this->problem_->algebraic_cons_[this->index_].linear_expr;
     }
 
     // Sets the nonlinear part of the constraint expression.
@@ -545,6 +553,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       this->problem_->SetNonlinearConExpr(this->index_, expr);
     }
   };
+
   // A list of algebraic constraints.
   typedef List<AlgebraicCon> AlgebraicConList;
 
@@ -732,10 +741,8 @@ typename BasicProblem<Alloc>::LinearConBuilder BasicProblem<Alloc>::AddCon(
   algebraic_cons_.push_back(AlgebraicConInfo(lb, ub));
   AlgebraicConInfo &con = algebraic_cons_.back();
   con.linear_expr.Reserve(num_linear_terms);
-  if (expr) {
-    nonlinear_cons_.resize(algebraic_cons_.size());
-    nonlinear_cons_.back() = expr;
-  }
+  if (expr)
+    SetNonlinearConExpr(algebraic_cons_.size() - 1, expr);
   return LinearConBuilder(&con.linear_expr);
 }
 
