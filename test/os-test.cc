@@ -236,11 +236,11 @@ TEST(MemoryMappedFileTest, DoubleMap) {
   {
     MemoryMappedFile<> f;
     File file1(filename1, File::RDONLY);
-    f.map(file1, file1.size());
+    f.map(file1, static_cast<std::size_t>(file1.size()));
     std::string filename2 = GetExecutableDir() + "/test2";
     WriteFile(filename2, "defg");
     File file2(filename2, File::RDONLY);
-    f.map(file2, file2.size());
+    f.map(file2, static_cast<std::size_t>(file2.size()));
     start = f.start();
     EXPECT_EQ("defg", std::string(f.start(), 4));
     EXPECT_EQ(4u, f.size());
@@ -253,7 +253,7 @@ TEST(MemoryMappedFileTest, MapZeroTerminated) {
   std::string filename = GetExecutableDir() + "/test";
   WriteFile(filename, content);
   File file(filename, File::RDONLY);
-  MemoryMappedFile<> f(file, file.size());
+  MemoryMappedFile<> f(file, static_cast<std::size_t>(file.size()));
   EXPECT_STREQ(content, f.start());
   EXPECT_EQ(std::strlen(content), f.size());
 }
@@ -264,7 +264,7 @@ TEST(MemoryMappedFileTest, DtorUnmapsFile) {
   const volatile char *start = 0;
   {
     File file(filename, File::RDONLY);
-    MemoryMappedFile<> f(file, file.size());
+    MemoryMappedFile<> f(file, static_cast<std::size_t>(file.size()));
     start = f.start();
   }
   EXPECT_DEATH((void)*start, "");
@@ -325,7 +325,7 @@ TEST(MemoryMappedFileTest, CloseFile) {
   ASSERT_TRUE(GetProcessHandleCount(
       GetCurrentProcess(), &handle_count_before) != 0);
   File file("test", File::RDONLY);
-  MemoryMappedFile<> f(file, file.size());
+  MemoryMappedFile<> f(file, static_cast<std::size_t>(file.size()));
   file.close();
   DWORD handle_count_after = 0;
   ASSERT_TRUE(GetProcessHandleCount(
