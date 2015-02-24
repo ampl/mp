@@ -25,7 +25,7 @@
 #include "mp/expr-visitor.h"
 #include "expr-writer.h"
 
-void mp::format(fmt::BasicFormatter<char> &f, const char *, NumericExpr e) {
+void mp::format(fmt::BasicFormatter<char> &f, const char *&, NumericExpr e) {
   fmt::MemoryWriter writer;
   ExprWriter<internal::ExprTypes>(writer).Visit(e);
   f.writer() << fmt::StringRef(writer.data(), writer.size());
