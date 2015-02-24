@@ -367,6 +367,27 @@ TEST(ProblemTest, AlgebraicCons) {
   EXPECT_ASSERT(*i, "invalid access");
 }
 
+TEST(ProblemTest, MutAlgebraicCon) {
+  Problem p;
+  p.AddCon(0, 0);
+  Problem::MutAlgebraicCon con = p.algebraic_con(0);
+  auto expr = p.MakeNumericConstant(42);
+  con.set_nonlinear_expr(expr);
+  EXPECT_EQ(expr, con.nonlinear_expr());
+  con.linear_expr().AddTerm(11, 2.2);
+  const int indices[] = {11};
+  const double coefs[] = {2.2};
+  con.set_lb(3.3);
+  con.set_ub(4.4);
+  EXPECT_EQ(3.3, con.lb());
+  EXPECT_EQ(4.4, con.ub());
+  EXPECT_LINEAR_EXPR(con.linear_expr(), indices, coefs);
+  EXPECT_EQ(1, con.linear_expr().num_terms());
+  const Problem &cp = p;
+  Problem::AlgebraicCon ccon = cp.algebraic_con(0);
+  ccon = con;
+}
+
 TEST(ProblemTest, AddLogicalCon) {
   Problem p;
   EXPECT_EQ(0, p.num_logical_cons());
