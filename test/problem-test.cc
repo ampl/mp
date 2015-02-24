@@ -252,6 +252,23 @@ TEST(ProblemTest, Objs) {
   EXPECT_ASSERT(*i, "invalid access");
 }
 
+TEST(ProblemTest, MutObjective) {
+  Problem p;
+  p.AddObj(mp::obj::MIN);
+  Problem::MutObjective obj = p.obj(0);
+  auto expr = p.MakeNumericConstant(42);
+  obj.set_nonlinear_expr(expr);
+  EXPECT_EQ(expr, obj.nonlinear_expr());
+  obj.linear_expr().AddTerm(11, 2.2);
+  const int indices[] = {11};
+  const double coefs[] = {2.2};
+  EXPECT_LINEAR_EXPR(obj.linear_expr(), indices, coefs);
+  EXPECT_EQ(1, obj.linear_expr().num_terms());
+  const Problem &cp = p;
+  Problem::Objective cobj = cp.obj(0);
+  cobj = obj;
+}
+
 TEST(ProblemTest, AddAlgebraicCon) {
   Problem p;
   EXPECT_EQ(0, p.num_algebraic_cons());
@@ -423,25 +440,3 @@ TEST(ProblemTest, LogicalCons) {
   EXPECT_ASSERT(i->expr(), "invalid access");
   EXPECT_ASSERT(*i, "invalid access");
 }
-
-TEST(ProblemTest, CommonExpr) {
-  Problem p;
-  Problem::LinearExprBuilder builder = p.BeginCommonExpr(2);
-  builder.AddTerm(0, 1.1);
-  builder.AddTerm(3, 2.2);
-  // TODO: test
-}
-
-TEST(ProblemTest, SetInfo) {
-  Problem p;
-  auto info = mp::ProblemInfo();
-  info.num_vars = 1;
-  p.SetInfo(info);
-  p.AddVar(0, 0);
-  // TODO: test that there is no reallocation
-}
-
-// TODO: check the default definition of MP_MAX_PROBLEM_ITEMS
-// TODO: test BeginCommonExpr, EndCommonExpr, SetComplement, SetInitialValue,
-//            SetInitialDualValue, GetColumnSizeHandler, AddIntSuffix,
-//            AddDblSuffix
