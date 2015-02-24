@@ -334,10 +334,10 @@ if (WIN32)
   target_compile_definitions(tableproxy PRIVATE NO_sockaddr_in6)
 endif ()
 
-# Suppress warnings.
+# Suppress warnings in ASL and tableproxy.
 if (MSVC)
   foreach (target asl-core asl-core-dynrt tableproxy)
-    target_compile_options(asl-core${suffix} PRIVATE /wd4244 /wd4267)
+    target_compile_options(${target} PRIVATE /wd4244 /wd4267)
   endforeach ()
 else ()
   add_c_compiler_flags(asl-core -Wno-unused-result -Wno-parentheses)
