@@ -609,6 +609,11 @@ TEST_F(ExprTest, ArgumentDependentLookup) {
   IsZero(e);
 }
 
+TEST_F(ExprTest, Format) {
+  auto e = factory_.MakeUnary(expr::ABS, factory_.MakeNumericConstant(-42));
+  EXPECT_EQ("abs(-42)", fmt::format("{}", e));
+}
+
 TEST(ExprFactoryTest, ExprMemoryAllocation) {
   typedef AllocatorRef< MockAllocator<char> > Allocator;
   MockAllocator<char> alloc;

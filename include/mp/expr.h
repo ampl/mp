@@ -1024,7 +1024,14 @@ Function BasicExprFactory<Alloc>::AddFunction(
 
 typedef BasicExprFactory< std::allocator<char> > ExprFactory;
 
-void format(fmt::BasicFormatter<char> &f, const char *, NumericExpr e);
+void format(fmt::BasicFormatter<char> &f, const char *&, NumericExpr e);
+
+template <typename Expr>
+inline void format(fmt::BasicFormatter<char> &f,
+                   const char *&format_str, Expr e) {
+  NumericExpr n = e;
+  return format(f, format_str, n);
+}
 
 // Returns true iff e is a zero constant.
 inline bool IsZero(NumericExpr e) {
