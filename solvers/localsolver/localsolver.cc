@@ -43,7 +43,7 @@ inline double GetValue(localsolver::LSExpression e) {
 }
 
 inline localsolver::lsint ConvertToInt(double value) {
-  localsolver::lsint int_value = value;
+  localsolver::lsint int_value = static_cast<localsolver::lsint>(value);
   if (int_value != value)
     throw mp::Error("value {} can't be represented as int", value);
   return int_value;
@@ -478,7 +478,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   if (const double *initial_values = builder.initial_values()) {
     for (int i = 0; i < builder.num_vars(); ++i) {
       double value = initial_values[i];
-      ls::lsint int_value = value;
+      ls::lsint int_value = static_cast<ls::lsint>(value);
       if (int_value == value)
         vars[i].setValue(int_value);
       else

@@ -139,7 +139,10 @@ void IntOption::GetValue(fmt::LongLong &value) const {
 
 void IntOption::SetValue(fmt::LongLong value) {
   try {
-    cp_.setParameter(param_, value);
+    IloInt ilo_value = static_cast<fmt::LongLong>(value);
+    if (ilo_value != value)
+      throw mp::InvalidOptionValue(name(), value);
+    cp_.setParameter(param_, ilo_value);
   } catch (const IloException &) {
     throw mp::InvalidOptionValue(name(), value);
   }

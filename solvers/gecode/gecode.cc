@@ -346,8 +346,6 @@ void NLToGecodeConverter::Convert(const ASLProblem &p) {
    private:
     Gecode::IntConLevel &icl_;
     Gecode::IntConLevel saved_value_;
-    
-    FMT_DISALLOW_COPY_AND_ASSIGN(ICLSetter);
 
    public:
     ICLSetter(Gecode::IntConLevel &icl, Gecode::IntConLevel new_value) :
