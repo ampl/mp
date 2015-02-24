@@ -205,15 +205,6 @@ add_mp_library(asl-core OBJECT ${ASL_CORE_SOURCES}
   COMPILE_DEFINITIONS ${ASL_COMPILE_DEFINITIONS}
   INCLUDE_DIRECTORIES ${CMAKE_CURRENT_BINARY_DIR})
 
-# Suppress warnings.
-if (MSVC)
-  foreach (suffix "" "-dynrt")
-    target_compile_options(asl-core${suffix} PRIVATE /wd4244 /wd4267)
-  endforeach ()
-else ()
-  add_c_compiler_flags(asl-core -Wno-unused-result -Wno-parentheses)
-endif ()
-
 # Public ASL headers.
 set(ASL_HEADERS aslbuilder.h aslsolver.h aslexpr.h aslexpr-visitor.h
   aslproblem.h aslinterface.h ${CMAKE_CURRENT_BINARY_DIR}/arith.h
@@ -341,6 +332,15 @@ if (WIN32)
   target_link_libraries(ampltabl wsock32)
   target_link_libraries(tableproxy wsock32)
   target_compile_definitions(tableproxy PRIVATE NO_sockaddr_in6)
+endif ()
+
+# Suppress warnings.
+if (MSVC)
+  foreach (target asl-core asl-core-dynrt tableproxy)
+    target_compile_options(asl-core${suffix} PRIVATE /wd4244 /wd4267)
+  endforeach ()
+else ()
+  add_c_compiler_flags(asl-core -Wno-unused-result -Wno-parentheses)
 endif ()
 
 install(FILES ${ASL_HEADERS} solvers/opcode.hd solvers/r_opn.hd
