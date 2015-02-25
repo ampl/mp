@@ -30,7 +30,14 @@
 
 // Include fg_read.c to access static functions defined there.
 #define fg_read_ASL fg_read2_ASL
+#if _MSC_VER
+# pragma warning(push)
+# pragma warning(disable: 4244 4267)
+#endif
 #include "fg_read.c"
+#if _MSC_VER
+# pragma warning(pop)
+#endif
 #undef asl
 #undef max
 #undef ampl_options
