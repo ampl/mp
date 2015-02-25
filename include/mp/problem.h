@@ -149,8 +149,9 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   std::vector<Function> funcs_;
 
   // Checks if index is in the range [0, size).
-  static void CheckIndex(int index, int size) {
-    MP_ASSERT(0 <= index && index < size, "invalid index");
+  static void CheckIndex(int index, std::size_t size) {
+    MP_ASSERT(0 <= index && static_cast<std::size_t>(index) < size,
+              "invalid index");
     MP_UNUSED2(index, size);
   }
 
