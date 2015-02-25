@@ -630,13 +630,15 @@ ASLBuilder::SuffixInfo ASLBuilder::AddSuffix(
   int item_type = kind & suf::MASK;
   SufDesc *d = 0;
   if (readall) {
-    d = ZapAllocate<SufDesc>(sizeof(SufDesc) + name.size() + 1);
+    std::size_t size = name.size();
+    d = ZapAllocate<SufDesc>(sizeof(SufDesc) + size + 1);
     d->next = asl_->i.suffixes[item_type];
     asl_->i.suffixes[item_type] = d;
     asl_->i.nsuff[item_type]++;
     asl_->i.nsuffixes++;
-    std::copy(name.c_str(), name.c_str() + name.size(),
-              d->sufname = reinterpret_cast<char*>(d + 1));
+    d->sufname = reinterpret_cast<char*>(d + 1);
+    std::copy(name.c_str(), name.c_str() + size,
+              fmt::internal::make_ptr(d->sufname, size));
     d->kind = kind;
   } else {
     for (d = asl_->i.suffixes[item_type]; ; d = d->next) {
