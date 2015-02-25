@@ -106,7 +106,7 @@ struct OptionHelper<int> {
   typedef int Arg;
   static void Write(fmt::Writer &w, Arg value) { w << value; }
   static int Parse(const char *&s);
-  static int CastArg(fmt::LongLong value) { return value; }
+  static int CastArg(fmt::LongLong value) { return static_cast<int>(value); }
 };
 
 template <>
@@ -517,7 +517,8 @@ class Solver : private ErrorHandler,
 
     void GetValue(T &value) const { value = (handler_.*get_)(*this, info_); }
     void SetValue(typename internal::OptionHelper<T>::Arg value) {
-      (handler_.*set_)(*this, internal::OptionHelper<T>::CastArg(value), info_);
+      (handler_.*set_)(*this, internal::OptionHelper<AccessorT>::CastArg(value),
+                       info_);
     }
   };
 
