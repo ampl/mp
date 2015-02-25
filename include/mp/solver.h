@@ -106,7 +106,7 @@ struct OptionHelper<int> {
   typedef int Arg;
   static void Write(fmt::Writer &w, Arg value) { w << value; }
   static int Parse(const char *&s);
-  static fmt::LongLong CastArg(int value) { return value; }
+  static int CastArg(fmt::LongLong value) { return value; }
 };
 
 template <>
@@ -132,7 +132,7 @@ struct OptionHelper<std::string> {
   typedef fmt::StringRef Arg;
   static void Write(fmt::Writer &w, const std::string &s) { w << s; }
   static std::string Parse(const char *&s);
-  static const char *CastArg(const std::string &s) { return s.c_str(); }
+  static fmt::StringRef CastArg(fmt::StringRef s) { return s; }
 };
 
 inline OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
@@ -291,6 +291,10 @@ class SolverOption {
   virtual void SetValue(fmt::StringRef) {
     throw internal::OptionTypeError(name_, "string");
   }
+  void SetValue(int value) {
+    fmt::LongLong long_value = value;
+    SetValue(long_value);
+  }
 
   // Formats the option value. Throws OptionError in case of error.
   virtual void Write(fmt::Writer &w) = 0;
@@ -335,7 +339,7 @@ class TypedSolverOption : public SolverOption {
       while (*s && !std::isspace(*s));
       throw InvalidOptionValue(name(), std::string(start, s - start));
     }
-    SetValue(internal::OptionHelper<T>::CastArg(value));
+    SetValue(value);
   }
 };
 
@@ -513,7 +517,7 @@ class Solver : private ErrorHandler,
 
     void GetValue(T &value) const { value = (handler_.*get_)(*this, info_); }
     void SetValue(typename internal::OptionHelper<T>::Arg value) {
-      (handler_.*set_)(*this, value, info_);
+      (handler_.*set_)(*this, internal::OptionHelper<T>::CastArg(value), info_);
     }
   };
 

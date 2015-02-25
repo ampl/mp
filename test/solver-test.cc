@@ -486,14 +486,16 @@ TEST(SolverTest, DoubleOptionHelper) {
 }
 
 TEST(SolverTest, StringOptionHelper) {
+  using std::string;
   fmt::MemoryWriter w;
-  OptionHelper<std::string>::Write(w, "abc");
+  OptionHelper<string>::Write(w, "abc");
   EXPECT_EQ("abc", w.str());
   const char *start = "def ";
   const char *s = start;
-  EXPECT_EQ("def", OptionHelper<std::string>::Parse(s));
+  EXPECT_EQ("def", OptionHelper<string>::Parse(s));
   EXPECT_EQ(start + 3, s);
-  EXPECT_STREQ("abc", OptionHelper<std::string>::CastArg(std::string("abc")));
+  EXPECT_STREQ("abc",
+               OptionHelper<string>::CastArg(fmt::StringRef("abc")).c_str());
 }
 
 TEST(SolverTest, TypedSolverOption) {
