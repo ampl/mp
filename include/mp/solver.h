@@ -491,7 +491,8 @@ class Solver : private ErrorHandler,
 
     void GetValue(T &value) const { value = (handler_.*get_)(*this); }
     void SetValue(typename internal::OptionHelper<T>::Arg value) {
-      (handler_.*set_)(*this, value);
+      (handler_.*set_)(*this,
+                       internal::OptionHelper<AccessorT>::CastArg(value));
     }
   };
 
