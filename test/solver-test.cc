@@ -1648,7 +1648,7 @@ TEST(MultiObjTest, NeedAllObjs) {
 
 TEST(MultiObjTest, MultiObjOption) {
   EXPECT_FALSE(MultiObjTestSolver<0>().FindOption("multiobj"));
-  EXPECT_TRUE(MultiObjTestSolver<>().FindOption("multiobj"));
+  EXPECT_TRUE(MultiObjTestSolver<>().FindOption("multiobj") != 0);
 }
 
 // An NLReader for testing objno option.

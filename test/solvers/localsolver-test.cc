@@ -84,7 +84,9 @@ struct Option : public BasicOption<T> {
   typedef localsolver::LocalSolver Solver;
 
   T get(Solver &s) const { return (s.getParam().*get_)(); }
-  void set(Solver &s, T value) const { (s.getParam().*set_)(value); }
+  void set(Solver &s, T value) const {
+    (s.getParam().*set_)(mp::internal::OptionHelper<ParamT>::CastArg(value));
+  }
 };
 
 typedef Option<fmt::LongLong, int> IntOption;
