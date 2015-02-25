@@ -616,7 +616,9 @@ Function ASLBuilder::AddFunction(
     fi->ftype = type;
     fi->nargs = num_args;
     fi->funcp = 0;
-    int length = AddPadding(name.size() + 1);
+    std::size_t name_size = name.size();
+    assert(name_size < std::numeric_limits<int>::max() - 1u);
+    int length = AddPadding(static_cast<int>(name_size) + 1);
     fi->name = std::strcpy(Allocate<char>(length), cname.c_str());
   }
   if (!fi->funcp && !(fi->funcp = dynlink(cname.c_str()))) {

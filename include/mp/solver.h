@@ -1222,12 +1222,12 @@ void PrintSolution(const double *values, int num_values, const char *name_col,
 template <typename Solver, typename Writer = SolFileWriter>
 class AppSolutionHandler : public SolutionWriter<Solver, Writer> {
  private:
-  std::size_t banner_size_;
+  unsigned banner_size_;
 
  public:
   AppSolutionHandler(fmt::StringRef stub, Solver &s,
                     typename Solver::ProblemBuilder &b,
-                    ArrayRef<int> options, std::size_t banner_size)
+                    ArrayRef<int> options, unsigned banner_size)
   : SolutionWriter<Solver, Writer>(stub, s, b, options),
     banner_size_(banner_size) {}
 
@@ -1322,13 +1322,13 @@ int SolverApp<Solver, Reader>::Run(char **argv, int nl_reader_flags) {
   const char *filename = option_parser_.Parse(argv);
   if (!filename) return 0;
 
-  std::size_t banner_size = 0;
+  unsigned banner_size = 0;
   if (solver_.ampl_flag()) {
     fmt::MemoryWriter banner;
     banner.write("{}: ", solver_.long_name());
     std::fputs(banner.c_str(), stdout);
     std::fflush(stdout);
-    banner_size = banner.size();
+    banner_size = static_cast<unsigned>(banner.size());
     output_handler_.has_output = false;
   }
   // TODO: test output
