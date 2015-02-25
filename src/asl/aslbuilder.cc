@@ -754,7 +754,7 @@ StringLiteral ASLBuilder::MakeStringLiteral(fmt::StringRef value) {
   // Passing result->sym to std::copy causes an assertion failure in MSVC.
   char *dest = result->sym;
   const char *str = value.c_str();
-  std::copy(str, str + size, dest);
+  std::copy(str, str + size, fmt::internal::make_ptr(dest, size));
   result->sym[size] = 0;
   return Expr::Create<StringLiteral>(reinterpret_cast< ::expr*>(result));
 }
