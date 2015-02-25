@@ -950,13 +950,13 @@ class SolutionAdapter {
 
   const char *message() const { return message_; }
 
-  int num_options() const { return options_.size(); }
+  int num_options() const { return static_cast<int>(options_.size()); }
   int option(int index) const { return options_[index]; }
 
-  int num_values() const { return values_.size(); }
+  int num_values() const { return static_cast<int>(values_.size()); }
   double value(int index) const { return values_[index]; }
 
-  int num_dual_values() const { return dual_values_.size(); }
+  int num_dual_values() const { return static_cast<int>(dual_values_.size()); }
   double dual_value(int index) const { return dual_values_[index]; }
 
   const typename ProblemBuilder::SuffixSet *suffixes(int kind) const {
