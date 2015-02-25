@@ -739,7 +739,7 @@ class BasicExprFactory : private Alloc {
   static void Copy(fmt::StringRef src, char *dst) {
     const char *s = src.c_str();
     std::size_t size = src.size();
-    std::copy(s, s + size, dst);
+    std::copy(s, s + size, fmt::internal::make_ptr(dst, size));
     dst[size] = 0;
   }
 
