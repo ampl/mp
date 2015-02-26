@@ -407,15 +407,12 @@ TEST(NLTest, ArithKind) {
 class TestNLHandler {
  private:
   // Writes a comma-separated list.
-  template <typename List>
-  static void WriteList(fmt::Writer &w, const List &values) {
-    bool first = true;
-    for (const auto &value: values) {
-      if (!first)
+  template <typename Array>
+  static void WriteList(fmt::Writer &w, const Array &values) {
+    for (std::size_t i = 0, n = values.size(); i < n; ++i) {
+      if (i != 0)
         w << ", ";
-      else
-        first = false;
-      w << value;
+      w << values[i];
     }
   }
 
