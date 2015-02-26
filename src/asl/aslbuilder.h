@@ -98,9 +98,9 @@ class ASLBuilder {
 
   template <typename T>
   T *Allocate(SafeInt<int> size = SafeInt<int>(sizeof(T))) {
-    if (size.value() > std::numeric_limits<int>::max())
+    if (val(size) > std::numeric_limits<int>::max())
       throw std::bad_alloc();
-    return reinterpret_cast<T*>(mem_ASL(asl_, size.value()));
+    return reinterpret_cast<T*>(mem_ASL(asl_, val(size)));
   }
 
   template <typename T>
@@ -463,7 +463,7 @@ class ASLBuilder {
   CallExpr EndCall(CallExprBuilder b);
 
   CallExpr MakeCall(Function f, ArrayRef<Expr> args) {
-    int num_args = SafeInt<int>(args.size()).value();
+    int num_args = val(SafeInt<int>(args.size()));
     CallExprBuilder builder = DoBeginCall(f, num_args);
     for (int i = 0; i < num_args; ++i) {
       if (NumericExpr num = asl::Cast<NumericExpr>(args[i]))

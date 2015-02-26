@@ -42,16 +42,16 @@ TEST(SafeIntTest, SafeAbs) {
 
 TEST(SafeIntTest, Ctor) {
   SafeInt<int> n(42);
-  EXPECT_EQ(42, n.value());
+  EXPECT_EQ(42, val(n));
   EXPECT_THROW(SafeInt<int>(INT_MAX + 1u), OverflowError);
-  EXPECT_EQ(42, SafeInt<int>(42u).value());
+  EXPECT_EQ(42, val(SafeInt<int>(42u)));
 }
 
 TEST(SafeIntTest, Add) {
-  EXPECT_EQ(42, (SafeInt<int>(40) + SafeInt<int>(2)).value());
-  EXPECT_EQ(42, (SafeInt<int>(40) + 2).value());
-  EXPECT_EQ(42, (40 + SafeInt<int>(2)).value());
-  EXPECT_EQ(INT_MAX, (SafeInt<int>(INT_MAX - 1) + 1).value());
+  EXPECT_EQ(42, val(SafeInt<int>(40) + SafeInt<int>(2)));
+  EXPECT_EQ(42, val(SafeInt<int>(40) + 2));
+  EXPECT_EQ(42, val(40 + SafeInt<int>(2)));
+  EXPECT_EQ(INT_MAX, val(SafeInt<int>(INT_MAX - 1) + 1));
 }
 
 TEST(SafeIntTest, AddOverflow) {
@@ -65,11 +65,11 @@ TEST(SafeIntTest, AddOverflow) {
 }
 
 TEST(SafeIntTest, Sub) {
-  EXPECT_EQ(42, (SafeInt<int>(44) - SafeInt<int>(2)).value());
-  EXPECT_EQ(42, (SafeInt<int>(44) - 2).value());
-  EXPECT_EQ(42, (44 - SafeInt<int>(2)).value());
-  EXPECT_EQ(INT_MIN, (SafeInt<int>(INT_MIN + 1) - 1).value());
-  EXPECT_EQ(INT_MAX, (SafeInt<int>(-1) - INT_MIN).value());
+  EXPECT_EQ(42, val(SafeInt<int>(44) - SafeInt<int>(2)));
+  EXPECT_EQ(42, val(SafeInt<int>(44) - 2));
+  EXPECT_EQ(42, val(44 - SafeInt<int>(2)));
+  EXPECT_EQ(INT_MIN, val(SafeInt<int>(INT_MIN + 1) - 1));
+  EXPECT_EQ(INT_MAX, val(SafeInt<int>(-1) - INT_MIN));
 }
 
 TEST(SafeIntTest, SubOverflow) {
@@ -80,10 +80,10 @@ TEST(SafeIntTest, SubOverflow) {
 }
 
 TEST(SafeIntTest, Mul) {
-  EXPECT_EQ(42, (SafeInt<int>(6) * SafeInt<int>(7)).value());
-  EXPECT_EQ(42, (SafeInt<int>(6) * 7).value());
-  EXPECT_EQ(42, (6 * SafeInt<int>(7)).value());
-  EXPECT_EQ(INT_MAX & ~1, (SafeInt<int>(INT_MAX / 2) * 2).value());
+  EXPECT_EQ(42, val(SafeInt<int>(6) * SafeInt<int>(7)));
+  EXPECT_EQ(42, val(SafeInt<int>(6) * 7));
+  EXPECT_EQ(42, val(6 * SafeInt<int>(7)));
+  EXPECT_EQ(INT_MAX & ~1, val(SafeInt<int>(INT_MAX / 2) * 2));
 }
 
 TEST(SafeIntTest, MulOverflow) {

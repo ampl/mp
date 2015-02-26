@@ -73,12 +73,12 @@ class SafeInt {
     }
   }
   
-  T value() const { return value_; }
+  friend T val(SafeInt<T> n) { return n.value_; }
 };
 
 template <typename T>
 inline SafeInt<T> operator+(SafeInt<T> a, SafeInt<T> b) {
-  T a_value = a.value(), b_value = b.value();
+  T a_value = val(a), b_value = val(b);
   if (a_value >= 0) {
     if (b_value > std::numeric_limits<T>::max() - a_value)
       throw OverflowError();
@@ -95,7 +95,7 @@ inline SafeInt<T2> operator+(T1 a, SafeInt<T2> b) { return SafeInt<T2>(a) + b; }
 
 template <typename T>
 inline SafeInt<T> operator-(SafeInt<T> a, SafeInt<T> b) {
-  T a_value = a.value(), b_value = b.value();
+  T a_value = val(a), b_value = val(b);
   if (a_value >= 0) {
     if (b_value < a_value - std::numeric_limits<T>::max())
       throw OverflowError();
@@ -112,7 +112,7 @@ inline SafeInt<T2> operator-(T1 a, SafeInt<T2> b) { return SafeInt<T2>(a) - b; }
 
 template <typename T>
 inline SafeInt<T> operator*(SafeInt<T> a, SafeInt<T> b) {
-  T a_value = a.value(), b_value = b.value();
+  T a_value = val(a), b_value = val(b);
   if (b_value != 0 &&
       SafeAbs(a_value) > std::numeric_limits<T>::max() / SafeAbs(b_value)) {
     throw OverflowError();
@@ -125,7 +125,6 @@ inline SafeInt<T1> operator*(SafeInt<T1> a, T2 b) { return a * SafeInt<T1>(b); }
 
 template <typename T1, typename T2>
 inline SafeInt<T2> operator*(T1 a, SafeInt<T2> b) { return SafeInt<T2>(a) * b; }
-
 }  // namespace mp
 
 #endif  // MP_SAFEINT_H_

@@ -30,6 +30,7 @@
 #include "mp/common.h"
 #include "mp/error.h"
 #include "mp/format.h"
+#include "mp/safeint.h"
 
 namespace mp {
 
@@ -642,7 +643,7 @@ class BasicExprFactory : private Alloc {
   FMT_DISALLOW_COPY_AND_ASSIGN(BasicExprFactory);
 
   // Allocates memory for an object of type ExprType::Impl.
-  // extra_bytes: extra bytes to allocate at the end.
+  // extra_bytes: extra bytes to allocate at the end (can be negative).
   template <typename ExprType>
   typename ExprType::Impl *Allocate(expr::Kind kind, int extra_bytes = 0) {
     // Call push_back first to make sure that the impl pointer doesn't leak
@@ -719,8 +720,9 @@ class BasicExprFactory : private Alloc {
   BasicIteratedExprBuilder<ExprType> BeginIterated(
         expr::Kind kind, int num_args) {
     MP_ASSERT(num_args >= 0, "invalid number of arguments");
+    SafeInt<int> size = sizeof(Expr::Impl*);
     typename ExprType::Impl *impl =
-        Allocate<ExprType>(kind, sizeof(Expr::Impl*) * (num_args - 1));
+        Allocate<ExprType>(kind, val(size * (num_args - 1)));
     impl->num_args = num_args;
     return BasicIteratedExprBuilder<ExprType>(impl);
   }
@@ -820,8 +822,9 @@ class BasicExprFactory : private Alloc {
   // Begins building a piecewise-linear term.
   PLTermBuilder BeginPLTerm(int num_breakpoints) {
     MP_ASSERT(num_breakpoints > 0, "invalid number of breakpoints");
+    SafeInt<int> size = sizeof(double) * 2;
     PLTerm::Impl *impl = Allocate<PLTerm>(
-          expr::PLTERM, sizeof(double) * num_breakpoints * 2);
+          expr::PLTERM, val(size * num_breakpoints));
     impl->num_breakpoints = num_breakpoints;
     return PLTermBuilder(impl);
   }

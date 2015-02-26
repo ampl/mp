@@ -163,7 +163,7 @@ void ASLBuilder::SetObjOrCon(
 }
 
 ::expr *ASLBuilder::MakeIterated(expr::Kind kind, ArrayRef<Expr> args) {
-  int num_args = SafeInt<int>(args.size()).value();
+  int num_args = val(SafeInt<int>(args.size()));
   ::expr *e = Allocate< ::expr>(
       sizeof(::expr) - sizeof(double) +
       SafeInt<int>(num_args + 1) * sizeof(::expr*));
@@ -742,7 +742,7 @@ ASLBuilder::IteratedExprBuilder
 }
 
 VarArgExpr ASLBuilder::MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args) {
-  int num_args = SafeInt<int>(args.size()).value();
+  int num_args = val(SafeInt<int>(args.size()));
   IteratedExprBuilder builder(BeginIterated(kind, num_args));
   for (int i = 0; i < num_args; ++i)
     builder.AddArg(args[i]);
