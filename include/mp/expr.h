@@ -987,7 +987,7 @@ class BasicExprFactory : private Alloc {
     // StringLiteral::Impl already has space for terminating null char so
     // we need to allocate extra size chars only.
     StringLiteral::Impl *impl =
-        Allocate<StringLiteral>(expr::STRING, value.size());
+        Allocate<StringLiteral>(expr::STRING, val(SafeInt<int>(value.size())));
     Copy(value, impl->value);
     return Expr::Create<StringLiteral>(impl);
   }

@@ -644,4 +644,6 @@ TEST(ExprFactoryTest, IntOverflow) {
   std::size_t max_size = std::numeric_limits<std::size_t>::max();
   EXPECT_THROW(f.AddFunction(fmt::StringRef("f", max_size), 0),
                mp::OverflowError);
+  EXPECT_THROW(f.MakeStringLiteral(fmt::StringRef("s", int_max + 1)),
+               mp::OverflowError);
 }
