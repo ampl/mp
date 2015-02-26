@@ -79,7 +79,7 @@ class SafeInt {
 template <typename T>
 inline SafeInt<T> operator+(SafeInt<T> a, SafeInt<T> b) {
   T a_value = val(a), b_value = val(b);
-  if (a_value >= 0) {
+  if (!fmt::internal::is_negative(a_value)) {
     if (b_value > std::numeric_limits<T>::max() - a_value)
       throw OverflowError();
   } else if (b_value < std::numeric_limits<T>::min() - a_value)
