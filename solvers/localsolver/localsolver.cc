@@ -386,7 +386,7 @@ void LocalSolver::SetVerbosity(const SolverOption &opt, fmt::StringRef value) {
   for (mp::ValueArrayRef::iterator
       i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
     if (std::strcmp(i->value, str) == 0) {
-      options_[VERBOSITY] = i->data;
+      options_[VERBOSITY] = static_cast<int>(i->data);
       return;
     }
   }

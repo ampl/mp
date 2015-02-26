@@ -45,42 +45,42 @@ class ExprWriterTest : public ::testing::Test, protected mp::ExprFactory {
   }
 
   mp::CallExpr MakeCall(mp::Function func, mp::ArrayRef<mp::Expr> args) {
-    auto num_args = args.size();
+    auto num_args = static_cast<int>(args.size());
     auto builder = BeginCall(func, num_args);
-    for (std::size_t i = 0; i < num_args; ++i)
+    for (auto i = 0; i < num_args; ++i)
       builder.AddArg(args[i]);
     return EndCall(builder);
   }
 
   mp::IteratedExpr MakeIterated(ex::Kind kind, mp::ArrayRef<NumericExpr> args) {
-    auto num_args = args.size();
+    auto num_args = static_cast<int>(args.size());
     auto builder = BeginIterated(kind, num_args);
-    for (std::size_t i = 0; i < num_args; ++i)
+    for (auto i = 0; i < num_args; ++i)
       builder.AddArg(args[i]);
     return EndIterated(builder);
   }
 
   mp::CountExpr MakeCount(mp::ArrayRef<LogicalExpr> args) {
-    auto num_args = args.size();
+    auto num_args = static_cast<int>(args.size());
     auto builder = BeginCount(num_args);
-    for (std::size_t i = 0; i < num_args; ++i)
+    for (auto i = 0; i < num_args; ++i)
       builder.AddArg(args[i]);
     return EndCount(builder);
   }
 
   mp::PairwiseExpr MakePairwise(ex::Kind kind, mp::ArrayRef<NumericExpr> args) {
-    auto num_args = args.size();
+    auto num_args = static_cast<int>(args.size());
     auto builder = BeginPairwise(kind, num_args);
-    for (std::size_t i = 0; i < num_args; ++i)
+    for (auto i = 0; i < num_args; ++i)
       builder.AddArg(args[i]);
     return EndPairwise(builder);
   }
 
   mp::IteratedLogicalExpr MakeIteratedLogical(
       ex::Kind kind, mp::ArrayRef<LogicalExpr> args) {
-    auto num_args = args.size();
+    auto num_args = static_cast<int>(args.size());
     auto builder = BeginIteratedLogical(kind, num_args);
-    for (std::size_t i = 0; i < num_args; ++i)
+    for (auto i = 0; i < num_args; ++i)
       builder.AddArg(args[i]);
     return EndIteratedLogical(builder);
   }
