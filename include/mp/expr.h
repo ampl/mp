@@ -650,6 +650,7 @@ class BasicExprFactory : private Alloc {
     // if push_back throws an exception.
     exprs_.push_back(0);
     typedef typename ExprType::Impl Impl;
+    // The following cannot overflow.
     Impl *impl = reinterpret_cast<Impl*>(
           this->allocate(sizeof(Impl) + extra_bytes));
     impl->kind_ = kind;
@@ -1016,8 +1017,8 @@ Function BasicExprFactory<Alloc>::AddFunction(
   // Function::Impl already has space for terminating null char so
   // we need to allocate extra size chars only.
   typedef Function::Impl Impl;
-  Impl *impl = reinterpret_cast<Impl*>(
-        this->allocate(sizeof(Impl) + name.size()));
+  SafeInt<std::size_t> size = sizeof(Impl);
+  Impl *impl = reinterpret_cast<Impl*>(this->allocate(val(size + name.size())));
   impl->type = type;
   impl->num_args = num_args;
   Copy(name, impl->name);

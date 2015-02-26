@@ -633,3 +633,15 @@ TEST(ExprFactoryTest, FuncMemoryAllocation) {
   f.AddFunction("f", 0);
   EXPECT_CALL(alloc, deallocate(buffer, _));
 }
+
+TEST(ExprFactoryTest, IntOverflow) {
+  ExprFactory f;
+  int int_max = std::numeric_limits<int>::max();
+  EXPECT_THROW(f.BeginIterated(expr::SUM, int_max / sizeof(void*) + 2),
+               mp::OverflowError);
+  EXPECT_THROW(f.BeginPLTerm(int_max / (sizeof(double) * 2) + 1),
+               mp::OverflowError);
+  std::size_t max_size = std::numeric_limits<std::size_t>::max();
+  EXPECT_THROW(f.AddFunction(fmt::StringRef("f", max_size), 0),
+               mp::OverflowError);
+}
