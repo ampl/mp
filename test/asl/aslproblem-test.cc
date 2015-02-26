@@ -573,7 +573,7 @@ TEST_P(SuffixTest, EmptySuffixView) {
 }
 
 struct MockValueVisitor {
-  MOCK_METHOD2(Visit, void (int index, int value));
+  MOCK_METHOD2(Visit, void (int index, double value));
 };
 
 TEST_P(SuffixTest, VisitValues) {

@@ -235,7 +235,7 @@ struct PhaseOption : public BasicOption<fmt::LongLong> {
 
   fmt::LongLong get(Solver &s) const { return (s.getPhase(0).*get_)(); }
   void set(Solver &s, fmt::LongLong value) const {
-    (s.getPhase(0).*set_)(value);
+    (s.getPhase(0).*set_)(static_cast<T>(value));
   }
 };
 
