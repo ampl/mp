@@ -68,7 +68,8 @@
 # define FMT_UNUSED
 #endif
 
-#if FMT_USE_STATIC_ASSERT
+#if FMT_USE_STATIC_ASSERT || FMT_HAS_CPP_ATTRIBUTE(cxx_static_assert) || \
+  (FMT_GCC_VERSION >= 403 && FMT_HAS_GXX_CXX11) ||  _MSC_VER >= 1600 
 # define FMT_STATIC_ASSERT(cond, message) static_assert(cond, message)
 #else
 # define FMT_CONCAT_(a, b) FMT_CONCAT(a, b)
@@ -97,9 +98,9 @@ class ErrorCode {
   int value_;
 
  public:
-  explicit ErrorCode(int value = 0) FMT_NOEXCEPT(true) : value_(value) {}
+  explicit ErrorCode(int value = 0) FMT_NOEXCEPT : value_(value) {}
 
-  int get() const FMT_NOEXCEPT(true) { return value_; }
+  int get() const FMT_NOEXCEPT { return value_; }
 };
 
 // A buffered file.
@@ -113,10 +114,10 @@ class BufferedFile {
 
  public:
   // Constructs a BufferedFile object which doesn't represent any file.
-  BufferedFile() FMT_NOEXCEPT(true) : file_(0) {}
+  BufferedFile() FMT_NOEXCEPT : file_(0) {}
 
   // Destroys the object closing the file it represents if any.
-  ~BufferedFile() FMT_NOEXCEPT(true);
+  ~BufferedFile() FMT_NOEXCEPT;
 
 #if !FMT_USE_RVALUE_REFERENCES
   // Emulate a move constructor and a move assignment operator if rvalue
@@ -131,10 +132,10 @@ class BufferedFile {
 
 public:
   // A "move constructor" for moving from a temporary.
-  BufferedFile(Proxy p) FMT_NOEXCEPT(true) : file_(p.file) {}
+  BufferedFile(Proxy p) FMT_NOEXCEPT : file_(p.file) {}
 
   // A "move constructor" for for moving from an lvalue.
-  BufferedFile(BufferedFile &f) FMT_NOEXCEPT(true) : file_(f.file_) {
+  BufferedFile(BufferedFile &f) FMT_NOEXCEPT : file_(f.file_) {
     f.file_ = 0;
   }
 
@@ -155,7 +156,7 @@ public:
 
   // Returns a proxy object for moving from a temporary:
   //   BufferedFile file = BufferedFile(...);
-  operator Proxy() FMT_NOEXCEPT(true) {
+  operator Proxy() FMT_NOEXCEPT {
     Proxy p = {file_};
     file_ = 0;
     return p;
@@ -166,7 +167,7 @@ public:
   FMT_DISALLOW_COPY_AND_ASSIGN(BufferedFile);
 
  public:
-  BufferedFile(BufferedFile &&other) FMT_NOEXCEPT(true) : file_(other.file_) {
+  BufferedFile(BufferedFile &&other) FMT_NOEXCEPT : file_(other.file_) {
     other.file_ = 0;
   }
 
@@ -185,7 +186,7 @@ public:
   void close();
 
   // Returns the pointer to a FILE object representing this file.
-  FILE *get() const { return file_; }
+  FILE *get() const FMT_NOEXCEPT { return file_; }
 
   int fileno() const;
 
@@ -196,7 +197,7 @@ public:
 };
 
 // A file. Closed file is represented by a File object with descriptor -1.
-// Methods that are not declared with FMT_NOEXCEPT(true) may throw
+// Methods that are not declared with FMT_NOEXCEPT may throw
 // fmt::SystemError in case of failure. Note that some errors such as
 // closing the file multiple times will cause a crash on Windows rather
 // than an exception. You can get standard behavior by overriding the
@@ -217,7 +218,7 @@ class File {
   };
 
   // Constructs a File object which doesn't represent any file.
-  File() FMT_NOEXCEPT(true) : fd_(-1) {}
+  File() FMT_NOEXCEPT : fd_(-1) {}
 
   // Opens a file and constructs a File object representing this file.
   File(fmt::StringRef path, int oflag);
@@ -235,10 +236,10 @@ class File {
 
  public:
   // A "move constructor" for moving from a temporary.
-  File(Proxy p) FMT_NOEXCEPT(true) : fd_(p.fd) {}
+  File(Proxy p) FMT_NOEXCEPT : fd_(p.fd) {}
 
   // A "move constructor" for for moving from an lvalue.
-  File(File &other) FMT_NOEXCEPT(true) : fd_(other.fd_) {
+  File(File &other) FMT_NOEXCEPT : fd_(other.fd_) {
     other.fd_ = -1;
   }
 
@@ -259,7 +260,7 @@ class File {
 
   // Returns a proxy object for moving from a temporary:
   //   File file = File(...);
-  operator Proxy() FMT_NOEXCEPT(true) {
+  operator Proxy() FMT_NOEXCEPT {
     Proxy p = {fd_};
     fd_ = -1;
     return p;
@@ -270,7 +271,7 @@ class File {
   FMT_DISALLOW_COPY_AND_ASSIGN(File);
 
  public:
-  File(File &&other) FMT_NOEXCEPT(true) : fd_(other.fd_) {
+  File(File &&other) FMT_NOEXCEPT : fd_(other.fd_) {
     other.fd_ = -1;
   }
 
@@ -283,10 +284,10 @@ class File {
 #endif
 
   // Destroys the object closing the file it represents if any.
-  ~File() FMT_NOEXCEPT(true);
+  ~File() FMT_NOEXCEPT;
 
   // Returns the file descriptor.
-  int descriptor() const FMT_NOEXCEPT(true) { return fd_; }
+  int descriptor() const FMT_NOEXCEPT { return fd_; }
 
   // Closes the file.
   void close();
@@ -310,7 +311,7 @@ class File {
 
   // Makes fd be the copy of this file descriptor, closing fd first if
   // necessary.
-  void dup2(int fd, ErrorCode &ec) FMT_NOEXCEPT(true);
+  void dup2(int fd, ErrorCode &ec) FMT_NOEXCEPT;
 
   // Creates a pipe setting up read_end and write_end file objects for reading
   // and writing respectively.

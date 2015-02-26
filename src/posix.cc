@@ -25,6 +25,9 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// Disable bogus MSVC warnings.
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "mp/posix.h"
 
 #include <limits.h>
@@ -72,7 +75,7 @@ inline std::size_t convert_rwcount(std::size_t count) { return count; }
 #endif
 }
 
-fmt::BufferedFile::~BufferedFile() FMT_NOEXCEPT(true) {
+fmt::BufferedFile::~BufferedFile() FMT_NOEXCEPT {
   if (file_ && FMT_SYSTEM(fclose(file_)) != 0)
     fmt::report_system_error(errno, "cannot close file");
 }
@@ -111,7 +114,7 @@ fmt::File::File(fmt::StringRef path, int oflag) {
     throw SystemError(errno, "cannot open file {}", path);
 }
 
-fmt::File::~File() FMT_NOEXCEPT(true) {
+fmt::File::~File() FMT_NOEXCEPT {
   // Don't retry close in case of EINTR!
   // See http://linux.derkeiler.com/Mailing-Lists/Kernel/2005-09/3000.html
   if (fd_ != -1 && FMT_POSIX_CALL(close(fd_)) != 0)
@@ -131,13 +134,13 @@ void fmt::File::close() {
 
 fmt::LongLong fmt::File::size() const {
 #ifdef _WIN32
-  LARGE_INTEGER size = {};
+  LARGE_INTEGER filesize = {};
   HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(fd_));
-  if (!FMT_SYSTEM(GetFileSizeEx(handle, &size)))
+  if (!FMT_SYSTEM(GetFileSizeEx(handle, &filesize)))
     throw WindowsError(GetLastError(), "cannot get file size");
-  FMT_STATIC_ASSERT(sizeof(fmt::LongLong) >= sizeof(size.QuadPart),
+  FMT_STATIC_ASSERT(sizeof(fmt::LongLong) >= sizeof(filesize.QuadPart),
       "return type of File::size is not large enough");
-  return size.QuadPart;
+  return filesize.QuadPart;
 #else
   typedef struct stat Stat;
   Stat file_stat = Stat();
@@ -183,7 +186,7 @@ void fmt::File::dup2(int fd) {
   }
 }
 
-void fmt::File::dup2(int fd, ErrorCode &ec) FMT_NOEXCEPT(true) {
+void fmt::File::dup2(int fd, ErrorCode &ec) FMT_NOEXCEPT {
   int result = 0;
   FMT_RETRY(result, FMT_POSIX_CALL(dup2(fd_, fd)));
   if (result == -1)
@@ -225,7 +228,7 @@ fmt::BufferedFile fmt::File::fdopen(const char *mode) {
 
 long fmt::getpagesize() {
 #ifdef _WIN32
-  SYSTEM_INFO si = {};
+  SYSTEM_INFO si;
   GetSystemInfo(&si);
   return si.dwPageSize;
 #else
