@@ -236,7 +236,7 @@ class BasicStringRef {
     the size with ``std::char_traits<Char>::length``.
    */
   BasicStringRef(const Char *s)
-    : data_(s), size_(std::char_traits<Char>::length(s)) {}
+    : data_(s), size_(s != 0 ? std::char_traits<Char>::length(s) : 0) {}
 
   /**
     Constructs a string reference from an `std::string` object.
