@@ -59,7 +59,7 @@ const char OUT_OF_MEMORY_MSG[] = "out of memory";
 MP_Error out_of_memory = {OUT_OF_MEMORY_MSG, 0};
 
 // Sets the error message deleting the old one if necessary.
-void SetErrorMessage(MP_Error &e, const char *message) FMT_NOEXCEPT(true) {
+void SetErrorMessage(MP_Error &e, const char *message) FMT_NOEXCEPT {
   if (e.message && (e.flags & DELETE_MESSAGE) != 0)
     delete [] e.message;
   char *error_message = new (std::nothrow) char[std::strlen(message) + 1];
@@ -73,7 +73,7 @@ void SetErrorMessage(MP_Error &e, const char *message) FMT_NOEXCEPT(true) {
   }
 }
 
-void SetError(MP_Error **e, const char *message) FMT_NOEXCEPT(true) {
+void SetError(MP_Error **e, const char *message) FMT_NOEXCEPT {
   if (!e) return;
   MP_Error *error = new (std::nothrow) MP_Error;
   error->flags = 0;
@@ -86,7 +86,7 @@ void SetError(MP_Error **e, const char *message) FMT_NOEXCEPT(true) {
   *e = error;
 }
 
-inline void SetError(MP_Solver *s, const char *message) FMT_NOEXCEPT(true) {
+inline void SetError(MP_Solver *s, const char *message) FMT_NOEXCEPT {
   SetErrorMessage(s->last_error, message);
 }
 }
