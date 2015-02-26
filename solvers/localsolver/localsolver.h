@@ -113,7 +113,7 @@ class LSProblemBuilder :
 
   ls::LocalSolver &solver() { return solver_; }
 
-  int num_vars() const { return vars_.size(); }
+  int num_vars() const { return static_cast<int>(vars_.size()); }
 
   // Returns the number of objectives.
   // The return value may be different from the one returned by

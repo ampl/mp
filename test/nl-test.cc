@@ -407,18 +407,22 @@ TEST(NLTest, ArithKind) {
 class TestNLHandler {
  private:
   // Writes a comma-separated list.
-  template <typename T>
-  static void WriteList(fmt::Writer &w, int size, const T *values) {
-    for (int i = 0; i < size; ++i) {
-      if (i != 0) w << ", ";
-      w << values[i];
+  template <typename List>
+  static void WriteList(fmt::Writer &w, const List &values) {
+    bool first = true;
+    for (const auto &value: values) {
+      if (!first)
+        w << ", ";
+      else
+        first = false;
+      w << value;
     }
   }
 
   std::string MakeVarArg(std::string op, const std::vector<std::string> &args) {
     fmt::MemoryWriter w;
     w << op << '(';
-    WriteList(w, args.size(), args.data());
+    WriteList(w, args);
     w << ')';
     return w.str();
   }
@@ -627,9 +631,9 @@ class TestNLHandler {
   std::string EndPLTerm(PLTermHandler h, std::string var) {
     fmt::MemoryWriter w;
     w << "<<";
-    WriteList(w, h.breakpoints_.size(), h.breakpoints_.data());
+    WriteList(w, h.breakpoints_);
     w << "; ";
-    WriteList(w, h.slopes_.size(), h.slopes_.data());
+    WriteList(w, h.slopes_);
     w << ">> " << var;
     return w.str();
   }
@@ -652,7 +656,7 @@ class TestNLHandler {
   std::string EndCall(CallArgHandler h) {
     fmt::MemoryWriter w;
     w << 'f' << h.func_index_ << '(';
-    WriteList(w, h.args_.size(), h.args_.data());
+    WriteList(w, h.args_);
     w << ')';
     return w.str();
   }
