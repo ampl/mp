@@ -336,7 +336,7 @@ endif ()
 
 # Suppress warnings in ASL and tableproxy.
 if (MSVC)
-  foreach (target asl-core asl-core-dynrt ampltabl amplodbc
+  foreach (target asl-core asl-core-dynrt gjh ampltabl amplodbc
                   fullbit simpbit tableproxy)
     target_compile_options(${target}
       PRIVATE /wd4013 /wd4018 /wd4101 /wd4244 /wd4273 /wd4267 /wd4996)
