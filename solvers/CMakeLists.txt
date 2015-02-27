@@ -150,7 +150,7 @@ if (TARGET ilogcp)
   target_compile_definitions(ilogcp PRIVATE main1=main)
   if (MSVC)
     # Disable PDB generation to get rid of warnings about missing concert.pdb.
-    target_compile_options(amplilogcp PRIVATE /Z7)
+    target_compile_options(amplilogcp-static PRIVATE /Z7)
   endif ()
 endif ()
 
