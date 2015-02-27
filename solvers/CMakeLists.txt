@@ -148,12 +148,6 @@ add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
 if (TARGET ilogcp)
   target_compile_definitions(amplilogcp-static PRIVATE ILOGCP_NO_VERS)
   target_compile_definitions(ilogcp PRIVATE main1=main)
-  if (MSVC)
-    # Disable PDB generation to get rid of warnings about missing concert.pdb.
-    foreach (target ilogcp amplilogcp amplilogcp-static)
-      target_compile_options(${target} PUBLIC /Z7)
-    endforeach ()
-  endif ()
 endif ()
 
 # Copy CPLEX DLL to the target directory.
