@@ -26,7 +26,7 @@ if (build_jacop)
     add_ampl_solver(jacop jacop.cc jacop.h java.cc java.h
       INCLUDE_DIRS ${JNI_INCLUDE_DIRS} LIBRARIES ${JNI_LIBRARIES})
     if (MSVC)
-      target_link_libraries(jacop -DELAYLOAD:jvm.dll delayimp)
+      target_link_libraries(jacop PRIVATE -DELAYLOAD:jvm.dll delayimp)
     endif ()
     add_custom_command(TARGET jacop
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
