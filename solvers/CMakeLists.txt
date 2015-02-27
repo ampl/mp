@@ -152,6 +152,7 @@ if (TARGET ilogcp)
     # Disable PDB generation to get rid of warnings about missing concert.pdb.
     foreach (target ilogcp amplilogcp amplilogcp-static)
       target_compile_options(${target} PRIVATE /Z7)
+      target_link_libraries(${target} PRIVATE /Z7)
     endforeach ()
   endif ()
 endif ()
