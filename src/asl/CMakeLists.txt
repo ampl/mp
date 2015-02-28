@@ -247,7 +247,7 @@ endif ()
 include(CheckFunctionExists)
 check_function_exists(getrusage HAVE_GETRUSAGE)
 if (NOT HAVE_GETRUSAGE)
- target_compile_definitions(asl-extra PRIVATE NO_RUSAGE)
+  target_compile_definitions(asl-extra PRIVATE NO_RUSAGE)
 endif ()
 
 include(CheckCXXSourceCompiles)
@@ -256,6 +256,9 @@ check_cxx_source_compiles("
   int main() { std::unordered_map<int, int> m; }" HAVE_UNORDERED_MAP)
 if (HAVE_UNORDERED_MAP)
   target_compile_definitions(asl-extra PUBLIC MP_USE_UNORDERED_MAP)
+  if (TARGET asl-extra-dynrt)
+    target_compile_definitions(asl-extra-dynrt PUBLIC MP_USE_UNORDERED_MAP)
+  endif ()
 endif ()
 
 find_library(DL_LIBRARY dl)
