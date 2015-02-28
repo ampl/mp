@@ -380,6 +380,11 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     return static_cast<int>(logical_cons_.size());
   }
 
+  // Returns the number of common expressions.
+  int num_common_exprs() const {
+    return static_cast<int>(linear_exprs_.size());
+  }
+
   // An optimization variable.
   class Variable : private ProblemItem {
    private:
@@ -637,6 +642,35 @@ class BasicProblem : public ExprFactory, public SuffixManager {
               "too many logical constraints");
     logical_cons_.push_back(expr);
   }
+
+  // A common expression.
+  class CommonExpr : private ProblemItem {
+   private:
+    CommonExpr(const BasicProblem *p, int index) : ProblemItem(p, index) {}
+
+   public:
+    // Returns the linear part of the common expression.
+    const LinearExpr &linear_expr() const {
+      return this->problem_->linear_exprs_[this->index_];
+    }
+
+    // Returns the nonlinear part of the common expression.
+    NumericExpr nonlinear_expr() const {
+      std::size_t index = this->index_;
+      return index < this->problem_->nonlinear_exprs_.size() ?
+            this->problem_->nonlinear_exprs_[index] : NumericExpr();
+    }
+
+    bool operator==(CommonExpr other) const {
+      MP_ASSERT(this->problem_ == other.problem_,
+                "comparing expressions from different problems");
+      return this->index_ == other.index_;
+    }
+
+    bool operator!=(CommonExpr other) const {
+      return !(*this == other);
+    }
+  };
 
   // Begins building a common expression (defined variable).
   // Returns a builder for the linear part of a common expression.
