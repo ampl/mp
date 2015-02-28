@@ -30,7 +30,6 @@
 
 #include <ilconcert/ilomodel.h>
 
-#include <iostream>
 #include <memory>
 
 #include "mp/solver.h"
