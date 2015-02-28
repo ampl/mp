@@ -261,7 +261,7 @@ size_t std::hash<LogicalExpr>::operator()(LogicalExpr expr) const {
   return ExprHasher().Visit(expr);
 }
 #else
-# if defined(AMPL_NO_UNORDERED_MAP_WARNING)
+# if defined(MP_NO_UNORDERED_MAP_WARNING)
   // Do nothing.
 # elif defined(_MSC_VER)
 #  pragma message("warning: unordered_map not available, numberof may be slow")
@@ -271,7 +271,7 @@ size_t std::hash<LogicalExpr>::operator()(LogicalExpr expr) const {
 #  warning "unordered_map not available, numberof may be slow"
 #  pragma clang diagnostic pop
 # endif
-#endif
+#endif  // MP_USE_UNORDERED_MAP
 
 namespace mp {
 namespace asl {
