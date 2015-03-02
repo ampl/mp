@@ -1249,7 +1249,7 @@ TEST_F(NLSolverTest, InitialValues) {
   MakeTSP(pb);
   for (int i = 0; i < MP_TSP_SIZE; ++i) {
     for (int j = 0; j < MP_TSP_SIZE; ++j)
-      pb.SetInitialValue(i * MP_TSP_SIZE + j, i + j == MP_TSP_SIZE - 1 ? 1 : 0);
+      pb.var(i * MP_TSP_SIZE + j).set_value(i + j == MP_TSP_SIZE - 1 ? 1 : 0);
   }
   pb.EndBuild();
   TestInterrupter interrupter(solver_);
