@@ -800,8 +800,9 @@ typename BasicProblem<Alloc>::LinearConBuilder BasicProblem<Alloc>::AddCon(
 template <typename Alloc>
 void BasicProblem<Alloc>::SetComplementarity(
     int con_index, int var_index, int flags) {
-  MP_ASSERT(0 <= con_index && con_index <= num_algebraic_cons(),
+  MP_ASSERT(0 <= con_index && con_index < num_algebraic_cons(),
             "invalid index");
+  MP_ASSERT(0 <= var_index && var_index < num_vars(), "invalid index");
   if (compl_vars_.size() <= static_cast<std::size_t>(con_index)) {
     compl_vars_.reserve(algebraic_cons_.capacity());
     compl_vars_.resize(algebraic_cons_.size());
