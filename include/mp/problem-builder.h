@@ -521,7 +521,7 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of the initial value for a variable.
   void OnInitialValue(int var_index, double value) {
-    builder_.SetInitialValue(var_index, value);
+    builder_.var(var_index).set_value(value);
   }
 
   // Receives notification of the initial value for a dual variable.

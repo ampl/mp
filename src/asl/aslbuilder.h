@@ -90,6 +90,10 @@ class ASLBuilder {
     }
   }
 
+  void SetInitialValue(int, double) {
+    // TODO
+  }
+
   template <typename ExprType>
   static void CheckKind(expr::Kind kind, const char *expr_name) {
     if (!mp::internal::Is<ExprType>(kind))
@@ -265,6 +269,25 @@ class ASLBuilder {
   // Ends building the ASL object.
   void EndBuild();
 
+  class Variable {
+   private:
+    ASLBuilder *builder_;
+    int index_;
+
+    friend class ASLBuilder;
+
+    Variable(ASLBuilder *b, int index)
+      : builder_(b), index_(index) {}
+
+   public:
+    // Sets the initial value.
+    void set_value(double value) {
+      builder_->SetInitialValue(index_, value);
+    }
+  };
+
+  Variable var(int index) { return Variable(this, index); }
+
   void AddVar(double lb, double ub, var::Type) {
     // TODO: check type
     SetBounds(asl_->i.LUv_, asl_->i.Uvx_, var_index_++, lb, ub);
@@ -366,9 +389,6 @@ class ASLBuilder {
 
   ColumnSizeHandler GetColumnSizeHandler();
 
-  void SetInitialValue(int, double) {
-    // TODO
-  }
   void SetInitialDualValue(int, double) {
     // TODO
   }

@@ -169,6 +169,16 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     nonlinear_cons_[con_index] = expr;
   }
 
+  // Sets the initial value for a variable.
+  void SetInitialValue(int var_index, double value) {
+    CheckIndex(var_index, num_vars());
+    if (initial_values_.size() <= static_cast<unsigned>(var_index)) {
+      initial_values_.reserve(vars_.capacity());
+      initial_values_.resize(num_vars());
+    }
+    initial_values_[var_index] = value;
+  }
+
   // A list of problem elements.
   template <typename T>
   class List {
@@ -269,6 +279,51 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   typedef BasicProblemItem<const BasicProblem> ProblemItem;
   typedef BasicProblemItem<BasicProblem> MutProblemItem;
+
+  // An optimization variable.
+  template <typename Item>
+  class BasicVariable : private Item {
+   private:
+    friend class BasicProblem;
+
+    BasicVariable(typename Item::Problem *p, int index) : Item(p, index) {}
+
+    static int num_items(const BasicProblem &p) {
+      return p.num_vars();
+    }
+
+   public:
+    // Returns the index of the variable.
+    int index() { return this->index_; }
+
+    // Returns the lower bound on the variable.
+    double lb() const {
+      return this->problem_->vars_[this->index_].lb;
+    }
+
+    // Returns the upper bound on the variable.
+    double ub() const {
+      return this->problem_->vars_[this->index_].ub;
+    }
+
+    // Returns the type of the variable.
+    var::Type type() const {
+      return this->problem_->is_var_int_[this->index_] ?
+          var::INTEGER : var::CONTINUOUS;
+    }
+
+    template <typename OtherItem>
+    bool operator==(BasicVariable<OtherItem> other) const {
+      MP_ASSERT(this->problem_ == other.problem_,
+                "comparing variables from different problems");
+      return this->index_ == other.index_;
+    }
+
+    template <typename OtherItem>
+    bool operator!=(BasicVariable<OtherItem> other) const {
+      return !(*this == other);
+    }
+  };
 
   // An objective.
   template <typename Item>
@@ -386,43 +441,24 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
   // An optimization variable.
-  class Variable : private ProblemItem {
+  typedef BasicVariable<ProblemItem> Variable;
+
+  // A mutable variable.
+  class MutVariable : public BasicVariable<MutProblemItem> {
    private:
     friend class BasicProblem;
 
-    Variable(const BasicProblem *p, int index) : ProblemItem(p, index) {}
-
-    static int num_items(const BasicProblem &p) {
-      return p.num_vars();
-    }
+    MutVariable(BasicProblem *p, int index)
+      : BasicVariable<MutProblemItem>(p, index) {}
 
    public:
-    // Returns the index of the variable.
-    int index() { return this->index_; }
-
-    // Returns the lower bound on the variable.
-    double lb() const {
-      return this->problem_->vars_[this->index_].lb;
+    operator Variable() const {
+      return Variable(this->problem_, this->index_);
     }
 
-    // Returns the upper bound on the variable.
-    double ub() const {
-      return this->problem_->vars_[this->index_].ub;
-    }
-
-    // Returns the type of the variable.
-    var::Type type() const {
-      return this->problem_->is_var_int_[this->index_] ?
-          var::INTEGER : var::CONTINUOUS;
-    }
-
-    bool operator==(Variable other) const {
-      MP_ASSERT(this->problem_ == other.problem_,
-                "comparing variables from different problems");
-      return this->index_ == other.index_;
-    }
-    bool operator!=(Variable other) const {
-      return !(*this == other);
+    // Sets the initial value.
+    void set_value(double value) {
+      this->problem_->SetInitialValue(this->index_, value);
     }
   };
 
@@ -440,6 +476,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   Variable var(int index) const {
     CheckIndex(index, num_vars());
     return Variable(this, index);
+  }
+  MutVariable var(int index) {
+    CheckIndex(index, num_vars());
+    return MutVariable(this, index);
   }
 
   // Adds a variable.
@@ -702,16 +742,6 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   // Returns true if the problem has complementarity conditions.
   bool HasComplementarity() const {
     return !compl_vars_.empty();
-  }
-
-  // Sets the initial value for a variable.
-  void SetInitialValue(int var_index, double value) {
-    CheckIndex(var_index, num_vars());
-    if (initial_values_.size() <= static_cast<unsigned>(var_index)) {
-      initial_values_.reserve(vars_.capacity());
-      initial_values_.resize(num_vars());
-    }
-    initial_values_[var_index] = value;
   }
 
   // Sets the initial value for a dual variable.

@@ -156,7 +156,12 @@ class MockProblemBuilder {
   MOCK_METHOD3(SetComplementarity,
                void (int con_index, int var_index, int flags));
 
-  MOCK_METHOD2(SetInitialValue, void (int var_index, double value));
+  class Variable {
+   public:
+    MOCK_METHOD1(set_value, void (double));
+  };
+
+  MOCK_METHOD1(var, Variable &(int));
   MOCK_METHOD2(SetInitialDualValue, void (int con_index, double value));
 
   typedef TestColumnSizeHandler ColumnSizeHandler;

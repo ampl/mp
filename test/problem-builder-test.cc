@@ -149,15 +149,18 @@ TEST(ProblemBuilderTest, Throw) {
 TEST(NLProblemBuilderTest, Forward) {
   EXPECT_FORWARD(OnComplementarity, SetComplementarity, (66, 77, 88));
 
-  EXPECT_FORWARD(OnInitialValue, SetInitialValue, (33, 4.4));
-  EXPECT_FORWARD(OnInitialDualValue, SetInitialDualValue, (55, 6.6));
-
   {
-    // OnColumnSizes is ignored by default.
     StrictMock<MockProblemBuilder> builder;
     mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+    // OnColumnSizes is ignored by default.
     adapter.OnColumnSizes();
+    MockProblemBuilder::Variable var;
+    EXPECT_CALL(builder, var(33)).WillOnce(testing::ReturnRef(var));
+    EXPECT_CALL(var, set_value(4.4));
+    adapter.OnInitialValue(33, 4.4);
   }
+
+  EXPECT_FORWARD(OnInitialDualValue, SetInitialDualValue, (55, 6.6));
 
   // Use the same StringRef object in arguments, because StringRef objects
   // are compared as pointers and string literals they point to may not
