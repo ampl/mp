@@ -646,6 +646,8 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   // A common expression.
   class CommonExpr : private ProblemItem {
    private:
+    friend class BasicProblem;
+
     CommonExpr(const BasicProblem *p, int index) : ProblemItem(p, index) {}
 
    public:
@@ -672,9 +674,17 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
   };
 
+  // Returns the common expression at the specified index.
+  CommonExpr common_expr(int index) const {
+    CheckIndex(index, num_common_exprs());
+    return CommonExpr(this, index);
+  }
+
   // Begins building a common expression (defined variable).
   // Returns a builder for the linear part of a common expression.
   LinearExprBuilder BeginCommonExpr(int num_linear_terms) {
+    MP_ASSERT(linear_exprs_.size() < MP_MAX_PROBLEM_ITEMS,
+              "too many expressions");
     linear_exprs_.push_back(LinearExpr());
     LinearExpr &linear = linear_exprs_.back();
     linear.Reserve(num_linear_terms);

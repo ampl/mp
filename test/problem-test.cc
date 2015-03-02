@@ -461,3 +461,59 @@ TEST(ProblemTest, LogicalCons) {
   EXPECT_ASSERT(i->expr(), "invalid access");
   EXPECT_ASSERT(*i, "invalid access");
 }
+
+TEST(ProblemTest, AddCommonExpr) {
+  Problem p;
+  EXPECT_EQ(0, p.num_common_exprs());
+  Problem::LinearExprBuilder builder = p.BeginCommonExpr(2);
+  builder.AddTerm(0, 1.1);
+  builder.AddTerm(3, 2.2);
+  auto nl_expr = p.MakeNumericConstant(42);
+  p.EndCommonExpr(builder, nl_expr, 0);
+  EXPECT_EQ(1, p.num_common_exprs());
+  auto expr = p.common_expr(0);
+  const int indices[] = {0, 3};
+  const double coefs[] = {1.1, 2.2};
+  EXPECT_LINEAR_EXPR(expr.linear_expr(), indices, coefs);
+  p.EndCommonExpr(p.BeginCommonExpr(1), mp::NumericExpr(), 0);
+  EXPECT_EQ(2, p.num_common_exprs());
+  expr = p.common_expr(1);
+  EXPECT_TRUE(!expr.nonlinear_expr());
+  EXPECT_EQ(0, expr.linear_expr().num_terms());
+}
+
+// Test adding linear after nonlinear expression and then accessing
+// the nonlinear part of the linear expression.
+TEST(ProblemTest, IncompleteNonlinearCommonExpr) {
+  Problem p;
+  p.EndCommonExpr(p.BeginCommonExpr(0), p.MakeNumericConstant(42), 0);
+  p.EndCommonExpr(p.BeginCommonExpr(0), mp::NumericExpr(), 0);
+  EXPECT_EQ(mp::NumericExpr(), p.common_expr(1).nonlinear_expr());
+}
+
+TEST(ProblemTest, CompareCommonExprs) {
+  Problem p;
+  p.EndCommonExpr(p.BeginCommonExpr(0), mp::NumericExpr(), 0);
+  p.EndCommonExpr(p.BeginCommonExpr(0), mp::NumericExpr(), 0);
+  EXPECT_TRUE(p.common_expr(0) == p.common_expr(0));
+  EXPECT_TRUE(p.common_expr(0) != p.common_expr(1));
+  EXPECT_FALSE(p.common_expr(0) != p.common_expr(0));
+  EXPECT_FALSE(p.common_expr(0) == p.common_expr(1));
+}
+
+TEST(ProblemTest, InvalidCommonExprIndex) {
+  Problem p;
+  const int num_exprs = 3;
+  for (int i = 0; i < num_exprs; ++i)
+    p.EndCommonExpr(p.BeginCommonExpr(0), mp::NumericExpr(), 0);
+  EXPECT_ASSERT(p.common_expr(-1), "invalid index");
+  EXPECT_ASSERT(p.common_expr(num_exprs), "invalid index");
+}
+
+TEST(ProblemTest, MaxCommonExprs) {
+  Problem p;
+  for (int i = 0; i < MP_MAX_PROBLEM_ITEMS; ++i)
+    p.EndCommonExpr(p.BeginCommonExpr(0), mp::NumericExpr(), 0);
+  EXPECT_EQ(MP_MAX_PROBLEM_ITEMS, p.num_common_exprs());
+  EXPECT_ASSERT(p.BeginCommonExpr(0), "too many expressions");
+}
