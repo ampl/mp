@@ -341,7 +341,7 @@ class NLHandler {
   }
 
   /** Receives notification of a complementarity relation. */
-  void OnComplement(int con_index, int var_index, int flags) {
+  void OnComplementarity(int con_index, int var_index, int flags) {
     MP_UNUSED3(con_index, var_index, flags);
   }
 
@@ -1695,7 +1695,7 @@ void NLReader<Reader, Handler>::ReadBounds() {
           reader_.ReportError("integer {} out of bounds", var_index);
         --var_index;
         int mask = comp::INF_LB | comp::INF_UB;
-        handler_.OnComplement(i, var_index, flags & mask);
+        handler_.OnComplementarity(i, var_index, flags & mask);
         reader_.ReadTillEndOfLine();
         continue;
       }

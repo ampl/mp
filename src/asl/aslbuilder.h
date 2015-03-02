@@ -345,7 +345,7 @@ class ASLBuilder {
   NumericExpr EndCommonExpr(LinearExprBuilder builder,
                             NumericExpr expr, int position);
 
-  void SetComplement(int, int, int) {
+  void SetComplementarity(int, int, int) {
     // TODO
   }
 

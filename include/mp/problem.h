@@ -687,7 +687,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
   // Sets a complementarity condition.
-  void SetComplement(int con_index, int var_index, int flags);
+  void SetComplementarity(int con_index, int var_index, int flags);
 
   // Returns true if the problem has complementarity conditions.
   bool HasComplementarity() const {
@@ -788,7 +788,7 @@ typename BasicProblem<Alloc>::LinearConBuilder BasicProblem<Alloc>::AddCon(
 }
 
 template <typename Alloc>
-void BasicProblem<Alloc>::SetComplement(
+void BasicProblem<Alloc>::SetComplementarity(
     int con_index, int var_index, int flags) {
   MP_ASSERT(0 <= con_index && con_index <= num_algebraic_cons(),
             "invalid index");

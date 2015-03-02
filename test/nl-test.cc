@@ -464,7 +464,7 @@ class TestNLHandler {
     WriteBounds('c', index, lb, ub);
   }
 
-  void OnComplement(int con_index, int var_index, int flags) {
+  void OnComplementarity(int con_index, int var_index, int flags) {
     WriteSep().write("c{} complements v{} {};", con_index, var_index, flags);
   }
 
@@ -809,7 +809,7 @@ struct TestNLHandler2 {
 
   void OnVarBounds(int, double, double) {}
   void OnConBounds(int, double, double) {}
-  void OnComplement(int, int, int) {}
+  void OnComplementarity(int, int, int) {}
 
   struct LinearObjHandler {
     void AddTerm(int, double) {}

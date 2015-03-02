@@ -115,7 +115,7 @@ class ProblemBuilder : public SuffixManager {
   }
 
   // Sets a complementarity relation.
-  void SetComplement(int con_index, int var_index, int flags) {
+  void SetComplementarity(int con_index, int var_index, int flags) {
     MP_UNUSED3(con_index, var_index, flags);
     MP_DISPATCH(ReportUnhandledConstruct("complementarity constraint"));
   }
@@ -472,8 +472,8 @@ class ProblemBuilderToNLAdapter {
   }
 
   // Receives notification of a complementarity relation.
-  void OnComplement(int con_index, int var_index, int flags) {
-    builder_.SetComplement(con_index, var_index, flags);
+  void OnComplementarity(int con_index, int var_index, int flags) {
+    builder_.SetComplementarity(con_index, var_index, flags);
   }
 
   typedef typename ProblemBuilder::LinearObjBuilder LinearObjHandler;

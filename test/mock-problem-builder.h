@@ -153,7 +153,8 @@ class MockProblemBuilder {
   MOCK_METHOD3(EndCommonExpr, void (LinearExprBuilder builder,
                                     NumericExpr expr, int position));
 
-  MOCK_METHOD3(SetComplement, void (int con_index, int var_index, int flags));
+  MOCK_METHOD3(SetComplementarity,
+               void (int con_index, int var_index, int flags));
 
   MOCK_METHOD2(SetInitialValue, void (int var_index, double value));
   MOCK_METHOD2(SetInitialDualValue, void (int con_index, double value));

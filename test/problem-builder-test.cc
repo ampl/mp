@@ -65,7 +65,7 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(AddCon(0, 0, TestExpr(), 0), "algebraic constraint");
   EXPECT_DISPATCH(AddCon(TestExpr()), "logical constraint");
   EXPECT_DISPATCH(BeginCommonExpr(0), "common expression");
-  EXPECT_DISPATCH(SetComplement(0, 0, 0), "complementarity constraint");
+  EXPECT_DISPATCH(SetComplementarity(0, 0, 0), "complementarity constraint");
 
   // Initial (dual) values are not reported as unhandled.
   TestProblemBuilder builder;
@@ -147,7 +147,7 @@ TEST(ProblemBuilderTest, Throw) {
 }
 
 TEST(NLProblemBuilderTest, Forward) {
-  EXPECT_FORWARD(OnComplement, SetComplement, (66, 77, 88));
+  EXPECT_FORWARD(OnComplementarity, SetComplementarity, (66, 77, 88));
 
   EXPECT_FORWARD(OnInitialValue, SetInitialValue, (33, 4.4));
   EXPECT_FORWARD(OnInitialDualValue, SetInitialDualValue, (55, 6.6));
