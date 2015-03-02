@@ -94,6 +94,10 @@ class ASLBuilder {
     // TODO
   }
 
+  void SetInitialDualValue(int, double) {
+    // TODO
+  }
+
   template <typename ExprType>
   static void CheckKind(expr::Kind kind, const char *expr_name) {
     if (!mp::internal::Is<ExprType>(kind))
@@ -357,6 +361,25 @@ class ASLBuilder {
   // Adds and objective.
   LinearObjBuilder AddObj(obj::Type type, NumericExpr expr, int);
 
+  class AlgebraicCon {
+   private:
+    ASLBuilder *builder_;
+    int index_;
+
+    friend class ASLBuilder;
+
+    AlgebraicCon(ASLBuilder *b, int index)
+      : builder_(b), index_(index) {}
+
+   public:
+    // Sets the initial dual value.
+    void set_dual(double value) {
+      builder_->SetInitialDualValue(index_, value);
+    }
+  };
+
+  AlgebraicCon algebraic_con(int index) { return AlgebraicCon(this, index); }
+
   // Adds an algebraic constraint.
   LinearConBuilder AddCon(double lb, double ub, NumericExpr expr, int);
 
@@ -388,10 +411,6 @@ class ASLBuilder {
   };
 
   ColumnSizeHandler GetColumnSizeHandler();
-
-  void SetInitialDualValue(int, double) {
-    // TODO
-  }
 
   Function RegisterFunction(const char *name, ufunc f, int num_args,
                             func::Type type = func::NUMERIC, void *info = 0);

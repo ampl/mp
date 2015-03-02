@@ -162,6 +162,7 @@ TEST(ProblemTest, MutVariable) {
   Problem p;
   p.AddVar(0, 1);
   Problem::MutVariable var = p.var(0);
+  EXPECT_EQ(0, var.value());
   var.set_value(4.2);
   EXPECT_EQ(4.2, var.value());
   const Problem &cp = p;
@@ -382,6 +383,9 @@ TEST(ProblemTest, MutAlgebraicCon) {
   Problem p;
   p.AddCon(0, 0);
   Problem::MutAlgebraicCon con = p.algebraic_con(0);
+  EXPECT_EQ(0, con.dual());
+  con.set_dual(4.2);
+  EXPECT_EQ(4.2 , con.dual());
   auto expr = p.MakeNumericConstant(42);
   con.set_nonlinear_expr(expr);
   EXPECT_EQ(expr, con.nonlinear_expr());

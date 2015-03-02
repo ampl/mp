@@ -158,11 +158,17 @@ class MockProblemBuilder {
 
   class Variable {
    public:
-    MOCK_METHOD1(set_value, void (double));
+    MOCK_METHOD1(set_value, void (double value));
   };
 
-  MOCK_METHOD1(var, Variable &(int));
-  MOCK_METHOD2(SetInitialDualValue, void (int con_index, double value));
+  MOCK_METHOD1(var, Variable &(int var_index));
+
+  class AlgebraicCon {
+   public:
+    MOCK_METHOD1(set_dual, void (double value));
+  };
+
+  MOCK_METHOD1(algebraic_con, AlgebraicCon &(int con_index));
 
   typedef TestColumnSizeHandler ColumnSizeHandler;
 

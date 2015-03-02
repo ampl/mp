@@ -179,6 +179,17 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     initial_values_[var_index] = value;
   }
 
+  // Sets the initial value for a dual variable.
+  void SetInitialDualValue(int con_index, double value) {
+    MP_ASSERT(0 <= con_index && con_index <= num_algebraic_cons(),
+              "invalid index");
+    if (initial_dual_values_.size() <= static_cast<unsigned>(con_index)) {
+      initial_dual_values_.reserve(algebraic_cons_.capacity());
+      initial_dual_values_.resize(num_algebraic_cons());
+    }
+    initial_dual_values_[con_index] = value;
+  }
+
   // A list of problem elements.
   template <typename T>
   class List {
@@ -400,6 +411,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       return this->problem_->algebraic_cons_[this->index_].ub;
     }
 
+    // Returns the dual value.
+    double dual() const {
+      std::size_t index = this->index_;
+      return index < this->problem_->initial_dual_values_.size() ?
+            this->problem_->initial_dual_values_[index] : 0;
+    }
+
     // Returns the linear part of a constraint expression.
     const LinearExpr &linear_expr() const {
       return this->problem_->algebraic_cons_[this->index_].linear_expr;
@@ -596,6 +614,11 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       this->problem_->algebraic_cons_[this->index_].ub = ub;
     }
 
+    // Sets the initial dual value.
+    void set_dual(double value) {
+      this->problem_->SetInitialDualValue(this->index_, value);
+    }
+
     // Returns the linear part of the constraint expression.
     LinearExpr &linear_expr() const {
       return this->problem_->algebraic_cons_[this->index_].linear_expr;
@@ -749,17 +772,6 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   // Returns true if the problem has complementarity conditions.
   bool HasComplementarity() const {
     return !compl_vars_.empty();
-  }
-
-  // Sets the initial value for a dual variable.
-  void SetInitialDualValue(int con_index, double value) {
-    MP_ASSERT(0 <= con_index && con_index <= num_algebraic_cons(),
-              "invalid index");
-    if (initial_dual_values_.size() <= static_cast<unsigned>(con_index)) {
-      initial_dual_values_.reserve(algebraic_cons_.capacity());
-      initial_dual_values_.resize(num_algebraic_cons());
-    }
-    initial_dual_values_[con_index] = value;
   }
 
   typedef Suffix *SuffixPtr;

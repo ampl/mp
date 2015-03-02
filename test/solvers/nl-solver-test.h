@@ -1430,7 +1430,7 @@ TEST_F(NLSolverTest, InitialDualValue) {
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_algebraic_cons = 1;
   pb.SetInfo(info);
-  pb.SetInitialDualValue(0, 0);
+  pb.algebraic_con(0).set_dual(0);
 }
 
 #endif  // TESTS_NL_SOLVER_TEST_H_

@@ -526,7 +526,7 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of the initial value for a dual variable.
   void OnInitialDualValue(int con_index, double value) {
-    builder_.SetInitialDualValue(con_index, value);
+    builder_.algebraic_con(con_index).set_dual(value);
   }
 
   struct ColumnSizeHandler {
