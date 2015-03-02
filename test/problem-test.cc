@@ -158,6 +158,17 @@ TEST(ProblemTest, Vars) {
   EXPECT_ASSERT(*i, "invalid access");
 }
 
+TEST(ProblemTest, MutVariable) {
+  Problem p;
+  p.AddVar(0, 1);
+  Problem::MutVariable var = p.var(0);
+  var.set_value(4.2);
+  EXPECT_EQ(4.2, var.value());
+  const Problem &cp = p;
+  Problem::Variable cvar = cp.var(0);
+  cvar = var;
+}
+
 TEST(ProblemTest, AddObj) {
   Problem p;
   EXPECT_EQ(0, p.num_objs());

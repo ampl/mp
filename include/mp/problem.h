@@ -312,6 +312,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
           var::INTEGER : var::CONTINUOUS;
     }
 
+    // Returns the value of the variable.
+    double value() const {
+      std::size_t index = this->index_;
+      return index < this->problem_->initial_values_.size() ?
+            this->problem_->initial_values_[index] : 0;
+    }
+
     template <typename OtherItem>
     bool operator==(BasicVariable<OtherItem> other) const {
       MP_ASSERT(this->problem_ == other.problem_,
