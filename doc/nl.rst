@@ -1,5 +1,3 @@
-.. cpp:namespace:: mp
-
 Support for the NL Format
 =========================
 
