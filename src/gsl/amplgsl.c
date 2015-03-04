@@ -3591,7 +3591,7 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_sf_clausen(x)
    *
-   *  This routine computes the `Clausen integral`:index:
+   *  This routine computes the :index:`Clausen integral`
    *  $\operatorname{Cl_2}(x)$.
    */
   ADDFUNC(gsl_sf_clausen, 1);
@@ -3731,7 +3731,7 @@ void funcadd_ASL(AmplExports *ae)
    *
    * .. index:: Dawson function
    *
-   * The `Dawson integral`:index: is defined by
+   * The :index:`Dawson integral` is defined by
    * $\exp(-x^2) \int_0^x \exp(t^2) dt$.
    * A table of Dawson's integral can be found in Abramowitz & Stegun,
    * Table 7.5.
@@ -4004,7 +4004,7 @@ void funcadd_ASL(AmplExports *ae)
    * Error Functions
    * ===============
    *
-   * The `error function`:index: is described in Abramowitz & Stegun,
+   * The :index:`error function` is described in Abramowitz & Stegun,
    * Chapter 7.
    */
 
@@ -4197,7 +4197,7 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_sf_Si(x)
    *
-   *  This routine computes the `Sine integral`:index:
+   *  This routine computes the :index:`Sine integral`
    *
    *  .. math::
    *    \operatorname{Si}(x) = \int_0^x \sin(t)/t dt.
@@ -4207,7 +4207,7 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_sf_Ci(x)
    *
-   *  This routine computes the `Cosine integral`:index:
+   *  This routine computes the :index:`Cosine integral`
    *
    *  .. math::
    *    \operatorname{Ci}(x) = -\int_x^\infty \cos(t)/t dt \text{ for } x > 0.
@@ -4222,7 +4222,7 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_sf_atanint(x)
    *
-   *  This routine computes the `Arctangent integral`:index:, which is
+   *  This routine computes the :index:`Arctangent integral`, which is
    *  defined as
    *
    *  .. math::
@@ -4243,7 +4243,7 @@ void funcadd_ASL(AmplExports *ae)
    * Complete Fermi-Dirac Integrals
    * ------------------------------
    *
-   * The complete `Fermi-Dirac integral`:index: $F_j(x)$ is given by,
+   * The complete :index:`Fermi-Dirac integral` $F_j(x)$ is given by,
    *
    * .. math::
    *   F_j(x) := (1/\Gamma(j+1)) \int_0^\infty (t^j / (\exp(t-x) + 1)) dt
@@ -4353,7 +4353,7 @@ void funcadd_ASL(AmplExports *ae)
    * Gamma Functions
    * ---------------
    *
-   * The `Gamma function`:index: is defined by the following integral,
+   * The :index:`Gamma function` is defined by the following integral,
    *
    * .. math::
    *   \Gamma(x) = \int_0^\infty t^{x-1} \exp(-t) dt
@@ -4417,7 +4417,7 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_sf_poch(a, x)
    *
-   *  This routine computes the `Pochhammer symbol`:index:
+   *  This routine computes the :index:`Pochhammer symbol`
    *  $(a)_x = \Gamma(a + x)/\Gamma(a)$. The Pochhammer symbol is also
    *  known as the Apell symbol and sometimes written as $(a,x)$.
    *  When $a$ and $a+x$ are negative integers or zero, the limiting
@@ -4449,7 +4449,7 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_sf_gamma_inc(a, x)
    *
-   *  This routine computes the unnormalized incomplete `Gamma Function`:index:
+   *  This routine computes the unnormalized incomplete :index:`Gamma Function`
    *  $\Gamma(a,x) = \int_x^\infty t^{a-1} \exp(-t) dt$ for a real and
    *  $x \geq 0$.
    */
@@ -4487,7 +4487,7 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_sf_beta(a, b)
    *
-   *  This routine computes the `Beta Function`:index:,
+   *  This routine computes the :index:`Beta Function`,
    *  $\operatorname{B}(a,b) = \Gamma(a)\Gamma(b)/\Gamma(a+b)$
    *  subject to $a$ and $b$ not being negative integers.
    */
@@ -5137,7 +5137,7 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_sf_psi_int(n)
    *
-   *  This routine computes the `digamma function`:index: $\psi(n)$ for positive
+   *  This routine computes the :index:`digamma function` $\psi(n)$ for positive
    *  integer $n$. The digamma function is also called the Psi function.
    */
   ADDFUNC(gsl_sf_psi_int, 1);
@@ -5166,7 +5166,7 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_sf_psi_1_int(n)
    *
-   *  This routine computes the `Trigamma function`:index: $\psi'(n)$ for
+   *  This routine computes the :index:`Trigamma function` $\psi'(n)$ for
    *  positive integer $n$.
    */
   ADDFUNC(gsl_sf_psi_1_int, 1);
@@ -5201,7 +5201,7 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_sf_synchrotron_1(x)
    *
-   *  This routine computes the first `synchrotron function`:index:
+   *  This routine computes the first :index:`synchrotron function`
    *  $x \int_x^\infty K_{5/3}(t) dt$ for $x \geq 0$.
    */
   ADDFUNC(gsl_sf_synchrotron_1, 1);
@@ -5263,7 +5263,7 @@ void funcadd_ASL(AmplExports *ae)
    * Zeta Functions
    * ==============
    *
-   * The `Riemann zeta function`:index: is defined in Abramowitz & Stegun,
+   * The :index:`Riemann zeta function` is defined in Abramowitz & Stegun,
    * Section 23.2.
    *
    * .. index:: zeta function
@@ -5320,7 +5320,7 @@ void funcadd_ASL(AmplExports *ae)
    * Hurwitz Zeta Function
    * ---------------------
    *
-   * The `Hurwitz zeta function`:index: is defined by
+   * The :index:`Hurwitz zeta function` is defined by
    * $\zeta(s,q) = \sum_0^\infty (k+q)^{-s}$.
    */
 
@@ -5336,7 +5336,7 @@ void funcadd_ASL(AmplExports *ae)
    * Eta Function
    * ------------
    *
-   * The `eta function`:index: is defined by $\eta(s) = (1-2^{1-s}) \zeta(s)$.
+   * The :index:`eta function` is defined by $\eta(s) = (1-2^{1-s}) \zeta(s)$.
    */
 
   /**
@@ -5536,7 +5536,7 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_gaussian(sigma)
    *
-   *  This function returns a `Gaussian random variate`:index:, with mean
+   *  This function returns a :index:`Gaussian random variate`, with mean
    *  zero and standard deviation ``sigma``. The probability distribution
    *  for Gaussian random variates is,
    *
@@ -5706,8 +5706,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_exponential(mu)
    *
-   *  This function returns a random variate from the `exponential
-   *  distribution`:index: with mean ``mu``. The distribution is,
+   *  This function returns a random variate from the :index:`exponential
+   *  distribution` with mean ``mu``. The distribution is,
    *
    *  .. math::
    *    p(x) dx = {1 \over \mu} \exp(-x/\mu) dx
@@ -5758,8 +5758,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_laplace(a)
    *
-   *  This function returns a random variate from the `Laplace
-   *  distribution`:index: with width ``a``. The distribution is,
+   *  This function returns a random variate from the :index:`Laplace
+   *  distribution` with width ``a``. The distribution is,
    *
    *  .. math::
    *    p(x) dx = {1 \over 2 a}  \exp(-|x/a|) dx
@@ -5810,8 +5810,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_exppow(a, b)
    *
-   *  This function returns a random variate from `exponential power
-   *  distribution`:index: with scale parameter ``a`` and exponent ``b``.
+   *  This function returns a random variate from :index:`exponential power
+   *  distribution` with scale parameter ``a`` and exponent ``b``.
    *  The distribution is,
    *
    *  .. math::
@@ -5856,8 +5856,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_cauchy(a)
    *
-   *  This function returns a random variate from the `Cauchy
-   *  distribution`:index: with scale parameter ``a``. The probability
+   *  This function returns a random variate from the :index:`Cauchy
+   *  distribution` with scale parameter ``a``. The probability
    *  distribution for Cauchy random variates is,
    *
    *  .. math::
@@ -5911,8 +5911,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_rayleigh(sigma)
    *
-   *  This function returns a random variate from the `Rayleigh
-   *  distribution`:index: with scale parameter ``sigma``.
+   *  This function returns a random variate from the :index:`Rayleigh
+   *  distribution` with scale parameter ``sigma``.
    *  The distribution is,
    *
    *  .. math::
@@ -5995,8 +5995,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_landau()
    *
-   *  This function returns a random variate from the `Landau
-   *  distribution`:index:. The probability distribution for Landau random
+   *  This function returns a random variate from the :index:`Landau
+   *  distribution`. The probability distribution for Landau random
    *  variates is defined analytically by the complex integral,
    *
    *  .. math::
@@ -6029,8 +6029,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_levy(c, alpha)
    *
-   *  This function returns a random variate from the `Levy symmetric
-   *  stable distribution`:index: with scale ``c`` and exponent ``alpha``.
+   *  This function returns a random variate from the :index:`Levy symmetric
+   *  stable distribution` with scale ``c`` and exponent ``alpha``.
    *  The symmetric stable probability distribution is defined by a
    *  Fourier transform,
    *
@@ -6058,8 +6058,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_levy_skew(c, alpha, beta)
    *
-   *  This function returns a random variate from the `Levy skew stable
-   *  distribution`:index: with scale ``c``, exponent ``alpha`` and skewness
+   *  This function returns a random variate from the :index:`Levy skew stable
+   *  distribution` with scale ``c``, exponent ``alpha`` and skewness
    *  parameter ``beta``. The skewness parameter must lie in the range
    *  [-1,1]. The Levy skew stable probability distribution is defined
    *  by a Fourier transform,
@@ -6097,8 +6097,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_gamma(a, b)
    *
-   *  This function returns a random variate from the `gamma
-   *  distribution`:index:. The distribution function is,
+   *  This function returns a random variate from the :index:`gamma
+   *  distribution`. The distribution function is,
    *
    *  .. math::
    *    p(x) dx = {1 \over \Gamma(a) b^a} x^{a-1} e^{-x/b} dx
@@ -6219,8 +6219,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_lognormal(zeta, sigma)
    *
-   *  This function returns a random variate from the `lognormal
-   *  distribution`:index:. The distribution function is,
+   *  This function returns a random variate from the :index:`lognormal
+   *  distribution`. The distribution function is,
    *
    *  .. math::
    *    p(x) dx = {1 \over x \sqrt{2 \pi \sigma^2} }
@@ -6269,7 +6269,7 @@ void funcadd_ASL(AmplExports *ae)
    * The Chi-squared Distribution
    * ============================
    *
-   * The `chi-squared distribution`:index: arises in statistics. If $Y_i$
+   * The :index:`chi-squared distribution` arises in statistics. If $Y_i$
    * are $n$ independent Gaussian random variates with unit variance then the
    * sum-of-squares,
    *
@@ -6331,7 +6331,7 @@ void funcadd_ASL(AmplExports *ae)
    * The F-distribution
    * ==================
    *
-   * The `F-distribution`:index: arises in statistics. If $Y_1$ and $Y_2$
+   * The :index:`F-distribution` arises in statistics. If $Y_1$ and $Y_2$
    * are chi-squared deviates with $\nu_1$ and $\nu_2$ degrees of freedom
    * then the ratio,
    *
@@ -6397,7 +6397,7 @@ void funcadd_ASL(AmplExports *ae)
    * The t-distribution
    * ============================
    *
-   * The `t-distribution`:index: arises in statistics. If $Y_1$ has a normal
+   * The :index:`t-distribution` arises in statistics. If $Y_1$ has a normal
    * distribution and $Y_2$ has a chi-squared distribution with $\nu$
    * degrees of freedom then the ratio,
    *
@@ -6464,8 +6464,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_beta(a, b)
    *
-   *  This function returns a random variate from the `beta
-   *  distribution`:index:. The distribution function is,
+   *  This function returns a random variate from the :index:`beta
+   *  distribution`. The distribution function is,
    *
    *  .. math::
    *    p(x) dx = {\Gamma(a+b) \over \Gamma(a) \Gamma(b)}
@@ -6518,8 +6518,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_logistic(a)
    *
-   *  This function returns a random variate from the `logistic
-   *  distribution`:index:. The distribution is,
+   *  This function returns a random variate from the :index:`logistic
+   *  distribution`. The distribution is,
    *
    *  .. math::
    *    p(x) dx = { \exp(-x/a) \over a (1 + \exp(-x/a))^2 } dx
@@ -6571,8 +6571,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_pareto(a, b)
    *
-   *  This function returns a random variate from the `Pareto
-   *  distribution`:index: of order ``a``. The distribution function is,
+   *  This function returns a random variate from the :index:`Pareto
+   *  distribution` of order ``a``. The distribution function is,
    *
    *  .. math::
    *    p(x) dx = (a/b) / (x/b)^{a+1} dx
@@ -6627,8 +6627,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_weibull(a, b)
    *
-   *  This function returns a random variate from the `Weibull
-   *  distribution`:index:. The distribution function is,
+   *  This function returns a random variate from the :index:`Weibull
+   *  distribution`. The distribution function is,
    *
    *  .. math::
    *    p(x) dx = {b \over a^b} x^{b-1} \exp(-(x/a)^b) dx
@@ -6680,8 +6680,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_gumbel1(a, b)
    *
-   *  This function returns a random variate from the `Type-1 Gumbel
-   *  distribution`:index:. The Type-1 Gumbel distribution function is,
+   *  This function returns a random variate from the :index:`Type-1 Gumbel
+   *  distribution`. The Type-1 Gumbel distribution function is,
    *
    *  .. math::
    *    p(x) dx = a b \exp(-(b \exp(-ax) + ax)) dx
@@ -6733,8 +6733,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_gumbel2(a, b)
    *
-   *  This function returns a random variate from the `Type-2 Gumbel
-   *  distribution`:index:. The Type-2 Gumbel distribution function is,
+   *  This function returns a random variate from the :index:`Type-2 Gumbel
+   *  distribution`. The Type-2 Gumbel distribution function is,
    *
    *  .. math::
    *    p(x) dx = a b x^{-a-1} \exp(-b x^{-a}) dx
@@ -6792,8 +6792,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_poisson(mu)
    *
-   *  This function returns a random variate from the `Poisson
-   *  distribution`:index: with mean ``mu``. The probability distribution
+   *  This function returns a random variate from the :index:`Poisson
+   *  distribution` with mean ``mu``. The probability distribution
    *  for Poisson variates is,
    *
    *  .. math::
@@ -6865,8 +6865,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_binomial(p, n)
    *
-   *  This function returns a random integer from the `binomial
-   *  distribution`:index:, the number of successes in ``n`` independent
+   *  This function returns a random integer from the :index:`binomial
+   *  distribution`, the number of successes in ``n`` independent
    *  trials with probability ``p``. The probability distribution for
    *  binomial variates is,
    *
@@ -6881,7 +6881,7 @@ void funcadd_ASL(AmplExports *ae)
    * .. function:: gsl_ran_binomial_pdf(k, p, n)
    *
    *  This function computes the probability $p(k)$ of obtaining $k$ from
-   *  a `binomial distribution`:index: with parameters ``p`` and ``n``, using
+   *  a :index:`binomial distribution` with parameters ``p`` and ``n``, using
    *  the formula given above.
    */
   ADDFUNC(gsl_ran_binomial_pdf, 3);
@@ -6913,8 +6913,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_negative_binomial(p, n)
    *
-   *  This function returns a random integer from the `negative binomial
-   *  distribution`:index:, the number of failures occurring before ``n``
+   *  This function returns a random integer from the :index:`negative binomial
+   *  distribution`, the number of failures occurring before ``n``
    *  successes in independent trials with probability ``p`` of success.
    *  The probability distribution for negative binomial variates is,
    *
@@ -6958,8 +6958,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_pascal(p, n)
    *
-   *  This function returns a random integer from the `Pascal
-   *  distribution`:index:. The Pascal distribution is simply a negative
+   *  This function returns a random integer from the :index:`Pascal
+   *  distribution`. The Pascal distribution is simply a negative
    *  binomial distribution with an integer value of ``n``.
    *
    *  .. math::
@@ -7002,8 +7002,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_geometric(p)
    *
-   *  This function returns a random integer from the `geometric
-   *  distribution`:index:, the number of independent trials with
+   *  This function returns a random integer from the :index:`geometric
+   *  distribution`, the number of independent trials with
    *  probability ``p`` until the first success. The probability
    *  distribution for geometric variates is,
    *
@@ -7048,8 +7048,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_hypergeometric(p, n1, n2, t)
    *
-   *  This function returns a random integer from the `hypergeometric
-   *  distribution`:index:. The probability distribution for hypergeometric
+   *  This function returns a random integer from the :index:`hypergeometric
+   *  distribution`. The probability distribution for hypergeometric
    *  random variates is,
    *
    *  .. math::
@@ -7098,8 +7098,8 @@ void funcadd_ASL(AmplExports *ae)
   /**
    * .. function:: gsl_ran_logarithmic(p)
    *
-   *  This function returns a random integer from the `logarithmic
-   *  distribution`:index. The probability distribution for logarithmic
+   *  This function returns a random integer from the :index:`logarithmic
+   *  distribution`. The probability distribution for logarithmic
    *  random variates is,
    *
    *  .. math::
