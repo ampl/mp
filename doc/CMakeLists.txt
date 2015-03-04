@@ -34,7 +34,7 @@ add_prefix(amplgsl_docs amplgsl/
 # looks for source files in subdirectories of the directory containing
 # the master file (index.rst).
 set(doc_depends ${EXTRACT_DOCS})
-foreach (doc ${docs} common index nl)
+foreach (doc ${docs} common index nl ${amplgsl_docs})
   set(src ${CMAKE_CURRENT_SOURCE_DIR}/${doc}.rst)
   set(dst ${CMAKE_CURRENT_BINARY_DIR}/${doc}.rst)
   add_custom_command(OUTPUT ${dst}
