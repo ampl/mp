@@ -65,6 +65,7 @@ namespace expr {
   .. _pairwise-expr:
   .. _string-expr:
   .. _symbolic-if-expr:
+
   Expression kind.
   \endrst
  */
@@ -79,6 +80,7 @@ enum Kind {
   /**
     \rst
     .. _numeric-expr:
+
     Numeric expressions.
     \endrst
   */
@@ -91,6 +93,7 @@ enum Kind {
   /**
     \rst
     .. _variable:
+
     Reference to a variable.
     \endrst
   */
