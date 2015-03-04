@@ -1,1 +1,1 @@
-sphinx==1.3b3
+-e git+https://github.com/sphinx-doc/sphinx.git@04e3e761d7d23545aedf633fa8b395399de6255f#egg=sphinx
