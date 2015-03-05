@@ -2046,8 +2046,8 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
   read variable bounds after the NL header and before other constructs such as
   nonlinear expressions.
   
-  **Example**
-  ::
+  **Example**::
+
     // Count the number of variable references in all nonlinear expressions.
     struct VarCounter : mp::NLHandler<int> {
       int num_vars;
