@@ -192,10 +192,13 @@ class SuffixSet {
   typedef std::set<Suffix::Impl, SuffixNameLess> Set;
   Set set_;
 
+  FMT_DISALLOW_COPY_AND_ASSIGN(SuffixSet);
+
   template <typename Alloc>
   friend class BasicProblem;
 
  public:
+  SuffixSet() {}
   ~SuffixSet() {
     // Deallocate names and values.
     for (Set::iterator i = set_.begin(), e = set_.end(); i != e; ++i) {
