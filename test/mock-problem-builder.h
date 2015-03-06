@@ -122,7 +122,8 @@ class MockProblemBuilder {
       *builder = this;
   }
 
-  typedef mp::Suffix *SuffixPtr;
+  typedef mp::IntSuffix IntSuffix;
+  typedef mp::Suffix Suffix;
   typedef mp::SuffixSet SuffixSet;
 
   MOCK_METHOD1(suffixes, SuffixSet &(int));

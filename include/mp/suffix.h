@@ -26,108 +26,247 @@
 #define MP_SUFFIX_H_
 
 #include <cstddef>  // for std::size_t
-#include <cstring>
+#include <iterator>
 #include <set>
-#include <string>
+#include <string>  // for std::char_traits
 
 #include "mp/common.h"
 #include "mp/format.h"
 
 namespace mp {
 
-template <typename Alloc>
-class BasicProblem;
-
 // A suffix.
 // Suffixes are arbitrary metadata that can be attached to variables,
 // objectives, constraints and problems.
 class Suffix {
- private:
-  std::string name_;
-  int kind_;
-  int *values_;
-  int size_;
+ protected:
+  struct Impl {
+    fmt::StringRef name;
+    int kind;
+    int num_values;
+    union {
+      void *values;
+      int *int_values;
+      double *dbl_values;
+    };
 
-  template <typename Alloc>
-  friend class BasicProblem;
+    explicit Impl(fmt::StringRef name, int kind = 0, int num_values = 0)
+      : name(name), kind(kind), num_values(num_values), int_values(0) {}
+  };
 
-  void InitValues(int size) {
-    assert(!values_);
-    values_ = new int[size];
-    size_ = size;
+  template <typename SuffixType>
+  explicit Suffix(SuffixType s) : Suffix(s.impl_) {}
+
+  void value(int index, int &value) const { value = impl_->int_values[index]; }
+  void set_value(int index, int value) { impl_->int_values[index] = value; }
+
+  void value(int index, double &value) const {
+    value = impl_->dbl_values[index];
   }
+  void set_value(int index, double value) { impl_->dbl_values[index] = value; }
+
+  const Impl *impl() const { return impl_; }
+
+  explicit Suffix(const Impl *impl) : impl_(impl) {}
+
+ private:
+  const Impl *impl_;
+
+  friend class SuffixSet;
+
+  template <typename SuffixType>
+  friend SuffixType Cast(Suffix s);
+
+  // Safe bool type.
+  typedef void (Suffix::*SafeBool)() const;
+
+  // A member function representing the true value of SafeBool.
+  void True() const {}
 
  public:
-  Suffix(fmt::StringRef name, int kind)
-    : name_(name.c_str(), name.size()), kind_(kind), values_(0), size_(0) {}
-  ~Suffix() {
-    delete [] values_;
-  }
+  Suffix() : impl_() {}
 
   // Returns the suffix name.
-  const char *name() const { return name_.c_str(); }
+  const char *name() const { return impl_->name.c_str(); }
 
   // Returns the suffix kind.
-  int kind() const { return kind_; }
+  int kind() const { return impl_->kind; }
 
-  int value(int index) const {
-    assert(index < size_);
-    return values_[index];
-  }
+  int num_values() const { return impl_->num_values; }
 
-  void set_value(int index, int value) {
-    assert(index < size_);
-    values_[index] = value;
-  }
-
-  void set_value(int index, double value) {
-    assert(index < size_);
-    MP_UNUSED2(index, value); // TODO: set double value
-  }
+  // Returns a value convertible to bool that can be used in conditions but not
+  // in comparisons and evaluates to "true" if this expression is not null
+  // and "false" otherwise.
+  // Example:
+  //   if (s) {
+  //     // Do something if s is not null.
+  //   }
+  operator SafeBool() const { return impl_ != 0 ? &Suffix::True : 0; }
 
   // Iterates over nonzero suffix values and sends them to the visitor.
   template <typename Visitor>
+  void VisitValues(Visitor &visitor) const;
+};
+
+template <typename T>
+class BasicSuffix : public Suffix { // TODO: don't use public inheritance!
+ private:
+  friend class SuffixSet;
+
+  template <typename SuffixType>
+  friend SuffixType Cast(Suffix s);
+
+  explicit BasicSuffix(const Impl *impl) : Suffix(impl) {}
+  explicit BasicSuffix(Suffix other) : Suffix(other) {}
+
+ public:
+  BasicSuffix() {}
+
+  T value(int index) const {
+    assert(index < impl()->num_values);
+    T result = T();
+    Suffix::value(index, result);
+    return result;
+  }
+
+  void set_value(int index, T value) {
+    assert(index < impl()->num_values);
+    Suffix::set_value(index, value);
+  }
+
+  template <typename Visitor>
   void VisitValues(Visitor &visitor) const {
-    for (int i = 0; i < size_; ++i) {
-      int value = values_[i];
+    for (int i = 0, n = num_values(); i < n; ++i) {
+      T value = T();
+      Suffix::value(i, value);
       if (value != 0)
         visitor.Visit(i, value);
     }
   }
 };
 
+typedef BasicSuffix<int> IntSuffix;
+typedef BasicSuffix<double> DoubleSuffix;
+
+namespace internal {
+
+// Returns true if s of type SuffixType.
+template <typename >
+bool Is(Suffix s);
+
+template <>
+inline bool Is<IntSuffix>(Suffix s) { return (s.kind() & suf::FLOAT) == 0; }
+
+template <>
+inline bool Is<DoubleSuffix>(Suffix s) { return (s.kind() & suf::FLOAT) != 0; }
+}
+
+// Casts a suffix to type SuffixType which must be a valid suffix type.
+// Returns a null expression if s is not convertible to SuffixType.
+template <typename SuffixType>
+inline SuffixType Cast(Suffix s) {
+  return internal::Is<SuffixType>(s) ? SuffixType(s) : SuffixType();
+}
+
+template <typename Visitor>
+inline void Suffix::VisitValues(Visitor &visitor) const {
+  IntSuffix int_suffix = Cast<IntSuffix>(*this);
+  if (int_suffix)
+    int_suffix.VisitValues(visitor);
+  else
+    Cast<DoubleSuffix>(*this).VisitValues(visitor);
+}
+
 // A set of suffixes.
 class SuffixSet {
  private:
   struct SuffixNameLess {
-    bool operator()(const Suffix &lhs, const Suffix &rhs) const {
-      return std::strcmp(lhs.name(), rhs.name()) < 0;
+    bool operator()(const Suffix::Impl &lhs, const Suffix::Impl &rhs) const {
+      std::size_t lhs_size = lhs.name.size(), rhs_size = rhs.name.size();
+      if (lhs_size != rhs_size)
+        return lhs_size < rhs_size;
+      return std::char_traits<char>::compare(
+            lhs.name.c_str(), rhs.name.c_str(), lhs_size) < 0;
     }
   };
 
-  // Suffixes are stored in a set which is not efficient, but it doesn't
-  // matter because the number of suffixes is normally small.
-  typedef std::set<Suffix, SuffixNameLess> Set;
+  typedef std::set<Suffix::Impl, SuffixNameLess> Set;
   Set set_;
 
   template <typename Alloc>
   friend class BasicProblem;
 
  public:
-  // Finds a suffix with specified name.
-  Suffix *Find(fmt::StringRef name) {
-    Set::iterator i = set_.find(Suffix(name, 0));
-    return const_cast<Suffix*>(i != set_.end() ? &*i : 0);
-  }
-  const Suffix *Find(fmt::StringRef name) const {
-    Set::const_iterator i = set_.find(Suffix(name, 0));
-    return i != set_.end() ? &*i : 0;
+  ~SuffixSet() {
+    // Deallocate names and values.
+    for (Set::iterator i = set_.begin(), e = set_.end(); i != e; ++i) {
+      delete [] i->name.c_str();
+      delete [] i->int_values;
+    }
   }
 
-  typedef Set::const_iterator iterator;
+  template <typename T>
+  BasicSuffix<T> Add(fmt::StringRef name, int kind, int num_values) {
+    BasicSuffix<T> suffix(&*set_.insert(Suffix::Impl(name, kind)).first);
+    Suffix::Impl *impl = const_cast<Suffix::Impl*>(suffix.impl_);
+    // Set name to empty string so that it is not deleted if new throws.
+    std::size_t size = name.size();
+    impl->name = fmt::StringRef(0, 0);
+    impl->name = fmt::StringRef(new char[size + 1], size);
+    const char *s = name.c_str();
+    char *dst = const_cast<char*>(impl->name.c_str()); // TODO: avoid cast
+    std::copy(s, s + size, dst);
+    dst[size] = 0;
+    impl->num_values = num_values;
+    impl->values = new T[num_values];
+    return suffix;
+  }
 
-  iterator begin() const { return set_.begin(); }
-  iterator end() const { return set_.end(); }
+  // Finds a suffix with the specified name.
+  Suffix Find(fmt::StringRef name) const {
+    Set::iterator i = set_.find(Suffix::Impl(name));
+    return Suffix(i != set_.end() ? &*i : 0);
+  }
+
+  class iterator : public std::iterator<std::forward_iterator_tag, Suffix> {
+   private:
+    Set::const_iterator it_;
+
+    // A suffix proxy used for implementing operator->.
+    class Proxy {
+     private:
+      Suffix suffix_;
+
+     public:
+      explicit Proxy(const Suffix::Impl *impl) : suffix_(impl) {}
+
+      const Suffix *operator->() const { return &suffix_; }
+    };
+
+   public:
+    iterator(Set::const_iterator it) : it_(it) {}
+
+    Suffix operator*() const { return Suffix(&*it_); }
+
+    Proxy operator->() const { return Proxy(&*it_); }
+
+    iterator &operator++() {
+      ++it_;
+      return *this;
+    }
+
+    iterator operator++(int ) {
+      iterator it(*this);
+      ++it_;
+      return it;
+    }
+
+    bool operator==(iterator other) const { return it_ == other.it_; }
+    bool operator!=(iterator other) const { return it_ != other.it_; }
+  };
+
+  iterator begin() const { return iterator(set_.begin()); }
+  iterator end() const { return iterator(set_.end()); }
 };
 
 class SuffixManager {
@@ -137,7 +276,8 @@ class SuffixManager {
  public:
   virtual ~SuffixManager() {}
 
-  typedef mp::Suffix *SuffixPtr;
+  typedef mp::Suffix Suffix;
+  typedef mp::IntSuffix IntSuffix;
   typedef mp::SuffixSet SuffixSet;
 
   // Returns a set of suffixes.

@@ -155,7 +155,13 @@ class ASLSuffixPtr {
   Proxy *operator->() const { return &proxy_; }
 
   Proxy operator*() const { return proxy_; }
+
+  // TODO
+  void set_value(int index, int value) { this->set_value(index, value); }
 };
+
+template <typename SuffixType>
+SuffixType Cast(ASLSuffixPtr s) { return s; } // TODO
 
 template <typename T, typename Visitor>
 void ASLSuffixPtr::Proxy::VisitValues(

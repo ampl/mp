@@ -1362,8 +1362,9 @@ MATCHER(MatchNoNSol, "") {
 // Matcher that returns true if the argument is a solution that contains
 // an nsol suffix with the specified value.
 MATCHER_P(MatchNSol, nsol, "") {
-  const mp::Suffix *suffix = arg.suffixes(mp::suf::PROBLEM)->Find("nsol");
-  return suffix != 0 && suffix->value(0) == nsol;
+  mp::IntSuffix suffix = mp::Cast<mp::IntSuffix>(
+        arg.suffixes(mp::suf::PROBLEM)->Find("nsol"));
+  return suffix != 0 && suffix.value(0) == nsol;
 }
 
 // Test that SolutionWriter::HandleSolution doesn't set the nsol suffix

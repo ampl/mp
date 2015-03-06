@@ -255,14 +255,14 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   template <typename T>
   class SuffixHandler {
    private:
-    Suffix *suffix_;
+    BasicSuffix<T> suffix_;
 
    public:
-    explicit SuffixHandler(Suffix *s) : suffix_(s) {}
+    explicit SuffixHandler(BasicSuffix<T> s) : suffix_(s) {}
 
     // Sets the suffix value.
     void SetValue(int index, T value) {
-      suffix_->set_value(index, value);
+      suffix_.set_value(index, value);
     }
   };
 
@@ -271,10 +271,8 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   template <typename T>
   SuffixHandler<T> AddSuffix(fmt::StringRef name, int kind) {
     int type = kind & suf::MASK;
-    SuffixSet::Set &set = suffixes(type).set_;
-    Suffix &suffix = const_cast<Suffix&>(*set.insert(Suffix(name, kind)).first);
-    suffix.InitValues(GetSuffixSize(type));
-    return SuffixHandler<T>(&suffix);
+    return SuffixHandler<T>(
+          suffixes(type).template Add<T>(name, kind, GetSuffixSize(type)));
   }
 
   template <typename ProblemType>
@@ -770,12 +768,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   void SetComplementarity(int con_index, int var_index, int flags);
 
   // Returns true if the problem has complementarity conditions.
-  bool HasComplementarity() const {
-    return !compl_vars_.empty();
-  }
-
-  typedef Suffix *SuffixPtr;
-  typedef mp::SuffixSet SuffixSet;
+  bool HasComplementarity() const { return !compl_vars_.empty(); }
 
   typedef SuffixHandler<int> IntSuffixHandler;
 

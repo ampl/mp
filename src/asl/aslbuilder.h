@@ -146,7 +146,7 @@ class ASLBuilder {
     SuffixInfo(SufDesc *d, int nx, int nx1) : desc(d), nx(nx), nx1(nx1) {}
   };
 
-  SuffixInfo AddSuffix(fmt::StringRef name, int kind, int num_values);
+  SuffixInfo AddSuffix(fmt::StringRef name, int kind);
 
   template <typename T>
   void AllocateSuffixValues(T *&values, int num_values, int nx, int nx1) {
@@ -250,7 +250,8 @@ class ASLBuilder {
     return ASLProblem::Proxy(asl);
   }
 
-  typedef ASLSuffixPtr SuffixPtr;
+  typedef ASLSuffixPtr Suffix;
+  typedef ASLSuffixPtr IntSuffix;
   typedef SuffixView SuffixSet;
 
   SuffixView &suffixes(int kind) {
@@ -429,7 +430,7 @@ class ASLBuilder {
 
   IntSuffixHandler AddIntSuffix(
       fmt::StringRef name, int kind, int num_values) {
-    SuffixInfo info = AddSuffix(name, kind, num_values);
+    SuffixInfo info = AddSuffix(name, kind);
     AllocateSuffixValues(info.desc->u.i, num_values, info.nx, info.nx1);
     return IntSuffixHandler(info.desc->u.i, info.nx1);
   }
@@ -438,7 +439,7 @@ class ASLBuilder {
 
   DblSuffixHandler AddDblSuffix(
       fmt::StringRef name, int kind, int num_values) {
-    SuffixInfo info = AddSuffix(name, kind, num_values);
+    SuffixInfo info = AddSuffix(name, kind);
     AllocateSuffixValues(info.desc->u.r, num_values, info.nx, info.nx1);
     return DblSuffixHandler(info.desc->u.r, info.nx1);
   }
