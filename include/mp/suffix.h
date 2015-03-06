@@ -76,9 +76,6 @@ class Suffix {
 
   friend class SuffixSet;
 
-  template <typename SuffixType>
-  friend SuffixType Cast(Suffix s);
-
   // Safe bool type.
   typedef void (Suffix::*SafeBool)() const;
 
