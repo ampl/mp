@@ -214,11 +214,11 @@ class SuffixSet {
     // Set name to empty string so that it is not deleted if new throws.
     std::size_t size = name.size();
     impl->name = fmt::StringRef(0, 0);
-    impl->name = fmt::StringRef(new char[size + 1], size);
+    char *name_copy = new char[size + 1];
     const char *s = name.c_str();
-    char *dst = const_cast<char*>(impl->name.c_str()); // TODO: avoid cast
-    std::copy(s, s + size, dst);
-    dst[size] = 0;
+    std::copy(s, s + size, name_copy);
+    name_copy[size] = 0;
+    impl->name = fmt::StringRef(name_copy, size);
     impl->num_values = num_values;
     impl->values = new T[num_values];
     return suffix;
