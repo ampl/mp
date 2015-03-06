@@ -174,7 +174,7 @@ inline ExprType internal::UncheckedCast(Expr e) {
 }
 
 // Casts an expression to type ExprType which must be a valid expression type.
-// Returns a null expression if e is not of runtime type ExprType.
+// Returns a null expression if e is not convertible to ExprType.
 template <typename ExprType>
 inline ExprType Cast(Expr e) {
   return internal::Is<ExprType>(e.kind()) ?
@@ -391,7 +391,7 @@ class ExprIterator :
  private:
   const ExprBase::Impl *const *ptr_;
 
-  // An expression proxy used for implementing operator-> in iterators.
+  // An expression proxy used for implementing operator->.
   class Proxy {
    private:
     ExprType expr_;
