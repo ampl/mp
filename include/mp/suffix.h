@@ -41,6 +41,8 @@ namespace mp {
 class Suffix {
  protected:
   struct Impl {
+    // Name is stored as a StringRef rather than std::string to avoid
+    // dynamic memory allocation when using set::find.
     fmt::StringRef name;
     int kind;
     int num_values;
@@ -95,7 +97,7 @@ class Suffix {
   int num_values() const { return impl_->num_values; }
 
   // Returns a value convertible to bool that can be used in conditions but not
-  // in comparisons and evaluates to "true" if this expression is not null
+  // in comparisons and evaluates to "true" if this suffix is not null
   // and "false" otherwise.
   // Example:
   //   if (s) {
@@ -162,7 +164,7 @@ inline bool Is<DoubleSuffix>(Suffix s) { return (s.kind() & suf::FLOAT) != 0; }
 }
 
 // Casts a suffix to type SuffixType which must be a valid suffix type.
-// Returns a null expression if s is not convertible to SuffixType.
+// Returns a null suffix if s is not convertible to SuffixType.
 template <typename SuffixType>
 inline SuffixType Cast(Suffix s) {
   return internal::Is<SuffixType>(s) ? SuffixType(s) : SuffixType();
