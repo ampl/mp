@@ -11,6 +11,10 @@ cmake_flags = ['-DBUILD=all']
 ubuntu_packages = ['gfortran', 'unixodbc-dev']
 
 build = os.environ['BUILD']
+if build == 'doc':
+  # TODO: build docs
+  exit(0)
+
 if build == 'cross':
   cmake_flags = [
     '-DCMAKE_SYSTEM_NAME=Windows',

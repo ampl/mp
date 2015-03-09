@@ -2,16 +2,17 @@ language: c++
 
 os:
   - linux
-  - osx
 
 env:
   - BUILD=native
   - BUILD=cross
 
 matrix:
-  exclude:
+  include:
+    - os: linux
+      env: BUILD=doc
     - os: osx
-      env: BUILD=cross
+      env: BUILD=native
 
 script:
   - support/travis-build.py
