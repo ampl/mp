@@ -108,6 +108,14 @@ class LSProblemBuilder :
     MP_UNUSED2(index, ub);
   }
 
+  void SetInitialValue(int var_index, double value) {
+    // Store initial values because it is not possible to assign them
+    // until the model is closed.
+    if (initial_values_.empty())
+      initial_values_.resize(vars_.size());
+    initial_values_[var_index] = value;
+  }
+
  public:
   explicit LSProblemBuilder(LocalSolver &);
 
@@ -164,6 +172,26 @@ class LSProblemBuilder :
     }
   };
 
+  class Variable {
+   private:
+    LSProblemBuilder *builder_;
+    int index_;
+
+    friend class LSProblemBuilder;
+
+    Variable(LSProblemBuilder *b, int index) : builder_(b), index_(index) {}
+
+   public:
+    void set_value(double value) {
+      builder_->SetInitialValue(index_, value);
+    }
+  };
+
+  Variable var(int index) {
+    CheckBounds(index, vars_.size());
+    return Variable(this, index);
+  }
+
   void AddVar(double lb, double ub, var::Type type);
 
   typedef LinearExprBuilder LinearObjBuilder;
@@ -194,14 +222,6 @@ class LSProblemBuilder :
     if (expr != ls::LSExpression())
       result.addOperand(expr);
     common_exprs_.push_back(result);
-  }
-
-  void SetInitialValue(int var_index, double value) {
-    // Store initial values because it is not possible to assign them
-    // until the model is closed.
-    if (initial_values_.empty())
-      initial_values_.resize(vars_.size());
-    initial_values_[var_index] = value;
   }
 
   ls::LSExpression MakeNumericConstant(double value) {

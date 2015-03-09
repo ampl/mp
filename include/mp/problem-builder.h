@@ -120,13 +120,28 @@ class ProblemBuilder : public SuffixManager {
     MP_DISPATCH(ReportUnhandledConstruct("complementarity constraint"));
   }
 
-  void SetInitialValue(int var_index, double value) {
-    MP_UNUSED2(var_index, value);
-    // Initial values are ignored by default.
+  struct Variable {
+    void set_value(double value) {
+      MP_UNUSED(value);
+      // Initial values are ignored by default.
+    }
+  };
+
+  Variable var(int index) {
+    MP_UNUSED(index);
+    return Variable();
   }
-  void SetInitialDualValue(int con_index, double value) {
-    MP_UNUSED2(con_index, value);
-    // Initial dual values are ignored by default.
+
+  struct AlgebraicCon {
+    void set_dual(double value) {
+      MP_UNUSED(value);
+      // Initial dual values are ignored by default.
+    }
+  };
+
+  AlgebraicCon algebraic_con(int index) {
+    MP_UNUSED(index);
+    return AlgebraicCon();
   }
 
   struct Function {};

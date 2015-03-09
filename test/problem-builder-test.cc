@@ -70,8 +70,8 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   // Initial (dual) values are not reported as unhandled.
   TestProblemBuilder builder;
   EXPECT_CALL(builder, ReportUnhandledConstruct("")).Times(0);
-  builder.SetInitialValue(0, 0);
-  builder.SetInitialDualValue(0, 0);
+  builder.var(0).set_value(0);
+  builder.algebraic_con(0).set_dual(0);
 
   EXPECT_DISPATCH(AddFunction("foo", 0, mp::func::NUMERIC), "function");
   EXPECT_DISPATCH(AddIntSuffix("foo", 0, 0), "integer suffix");
