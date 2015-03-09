@@ -18,7 +18,7 @@ else:
 
 build = os.environ['BUILD']
 if build == 'doc':
-  check_call(['cmake', '-DBUILD=breathe,sphinx', '.'])
+  check_call([cmake_path, '-DBUILD=breathe,sphinx', '.'])
   check_call(['make', 'doc'])
   # TODO: publish docs
   exit(0)
