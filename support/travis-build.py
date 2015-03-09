@@ -7,15 +7,15 @@ from bootstrap import bootstrap
 from download import Downloader
 from subprocess import check_call, check_output
 
-cmake_flags = ['-DBUILD=all']
-ubuntu_packages = ['gfortran', 'unixodbc-dev']
-
 build = os.environ['BUILD']
 if build == 'doc':
   check_call(['cmake', '-DBUILD=breathe,sphinx', '.'])
   check_call(['make', 'doc'])
   # TODO: publish docs
   exit(0)
+
+cmake_flags = ['-DBUILD=all']
+ubuntu_packages = ['gfortran', 'unixodbc-dev']
 
 if build == 'cross':
   cmake_flags = [
@@ -38,18 +38,17 @@ os_name = os.environ['TRAVIS_OS_NAME']
 if os_name == 'linux':
   check_call(['sudo', 'apt-get', 'update'])
   check_call(['sudo', 'apt-get', 'install'] + ubuntu_packages)
-  cmake_package = 'cmake-3.1.1-Linux-x86_64.tar.gz'
+  # Install newer version of CMake.
+  cmake_path = bootstrap.install_cmake(
+    'cmake-3.1.1-Linux-x86_64.tar.gz', check_installed=False,
+    download_dir=None, install_dir='.')
 else:
   # Install Java as a workaround for bug
   # http://bugs.java.com/bugdatabase/view_bug.do?bug_id=7131356.
   java_url = 'http://support.apple.com/downloads/DL1572/en_US/JavaForOSX2014-001.dmg'
   with Downloader().download(java_url) as f:
     bootstrap.install_dmg(f)
-  cmake_package = 'cmake-3.1.1-Darwin-universal.tar.gz'
-
-# Install newer version of CMake.
-cmake_path = bootstrap.install_cmake(
-  cmake_package, check_installed=False, download_dir=None, install_dir='.')
+  cmake_path = 'cmake'
 
 check_call([cmake_path] + cmake_flags + ['.'])
 check_call(['make', '-j3'])
