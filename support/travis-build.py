@@ -5,21 +5,10 @@ from __future__ import print_function
 import fileutil, os, shutil
 from bootstrap import bootstrap
 from download import Downloader
-from subprocess import check_call, check_output
-
-# Install newer version of CMake if needed.
-os_name = os.environ['TRAVIS_OS_NAME']
-if os_name == 'linux':
-  cmake_path = bootstrap.install_cmake(
-    'cmake-3.1.1-Linux-x86_64.tar.gz', check_installed=False,
-    download_dir=None, install_dir='.')
-else:
-  cmake_path = 'cmake'
+from subprocess import call, check_call, check_output
 
 build = os.environ['BUILD']
 if build == 'doc':
-  check_call([cmake_path, '-DBUILD=breathe,sphinx', '.'])
-  check_call(['make', 'doc'])
   # Merge API docs with the database connection guides. We don't store
   # the guides in this repo to avoid polluting history with image blobs.
   repo = 'ampl.github.io'
@@ -32,7 +21,10 @@ if build == 'doc':
       shutil.copytree(src, dst)
     else:
       shutil.copyfile(src, dst)
-  # TODO: build docs and push the repo
+  # TODO: build docs
+  check_call(['git', 'add', '--all'], cwd=repo)
+  if call(["git", "diff-index", "--quiet", "HEAD"], cwd=repo):
+    check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo)
   exit(0)
 
 cmake_flags = ['-DBUILD=all']
@@ -55,15 +47,21 @@ if build == 'cross':
     check_call(['sudo', 'add-apt-repository', 'ppa:' + ppa, '-y'])
 
 # Install dependencies.
+os_name = os.environ['TRAVIS_OS_NAME']
 if os_name == 'linux':
+  # Install newer version of CMake.
   check_call(['sudo', 'apt-get', 'update'])
   check_call(['sudo', 'apt-get', 'install'] + ubuntu_packages)
+  cmake_path = bootstrap.install_cmake(
+    'cmake-3.1.1-Linux-x86_64.tar.gz', check_installed=False,
+    download_dir=None, install_dir='.')
 else:
   # Install Java as a workaround for bug
   # http://bugs.java.com/bugdatabase/view_bug.do?bug_id=7131356.
   java_url = 'http://support.apple.com/downloads/DL1572/en_US/JavaForOSX2014-001.dmg'
   with Downloader().download(java_url) as f:
     bootstrap.install_dmg(f)
+  cmake_path = 'cmake'
 
 check_call([cmake_path] + cmake_flags + ['.'])
 check_call(['make', '-j3'])
