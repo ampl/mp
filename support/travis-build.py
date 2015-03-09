@@ -12,7 +12,9 @@ ubuntu_packages = ['gfortran', 'unixodbc-dev']
 
 build = os.environ['BUILD']
 if build == 'doc':
-  # TODO: build docs
+  check_call(['cmake', '-DBUILD=breathe,sphinx', '.'])
+  check_call(['make', 'doc'])
+  # TODO: publish docs
   exit(0)
 
 if build == 'cross':
