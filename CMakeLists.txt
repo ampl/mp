@@ -1,6 +1,6 @@
-# CMake 2.8.12 can be easily obtained and used without superuser privileges
+# CMake 2.8.8 can be easily obtained and used without superuser privileges
 # even if the system has an older version of CMake installed.
-cmake_minimum_required(VERSION 2.8.12.2)
+cmake_minimum_required(VERSION 2.8.8)
 
 if (CMAKE_MAJOR_VERSION LESS 3)
   # CMake 3.0 is used for generator expressions in install(FILES).
