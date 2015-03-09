@@ -35,8 +35,8 @@ if build == 'cross':
 os_name = os.environ['TRAVIS_OS_NAME']
 if os_name == 'linux':
   check_call(['sudo', 'apt-get', 'update'])
-  check_call(['sudo', 'apt-get', 'install', 'libc6:i386'] + ubuntu_packages)
-  cmake_package = 'cmake-3.1.1-Linux-i386.tar.gz'
+  check_call(['sudo', 'apt-get', 'install'] + ubuntu_packages)
+  cmake_package = 'cmake-3.1.1-Linux-x86_64.tar.gz'
 else:
   # Install Java as a workaround for bug
   # http://bugs.java.com/bugdatabase/view_bug.do?bug_id=7131356.
