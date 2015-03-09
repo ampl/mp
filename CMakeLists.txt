@@ -1,6 +1,7 @@
-# CMake 2.8.7 can be easily obtained and used without superuser privileges
+# CMake 2.8.11 or later is required for target_compile_definitions.
+# It can be easily obtained and used without superuser privileges
 # even if the system has an older version of CMake installed.
-cmake_minimum_required(VERSION 2.8.7)
+cmake_minimum_required(VERSION 2.8.11)
 
 if (CMAKE_MAJOR_VERSION LESS 3)
   # CMake 3.0 is used for generator expressions in install(FILES).
