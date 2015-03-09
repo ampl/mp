@@ -157,7 +157,7 @@ class ASLSuffixPtr {
   Proxy operator*() const { return proxy_; }
 
   // TODO
-  void set_value(int index, int value) { this->set_value(index, value); }
+  void set_value(int index, int value) { proxy_.set_value(index, value); }
 };
 
 template <typename SuffixType>
