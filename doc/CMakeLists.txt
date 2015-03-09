@@ -33,14 +33,16 @@ add_prefix(amplgsl_docs amplgsl/
 # therefore should be placed in the binary directory, while Sphinx only
 # looks for source files in subdirectories of the directory containing
 # the master file (index.rst).
-set(doc_depends ${EXTRACT_DOCS})
-foreach (doc ${docs} common index nl ${amplgsl_docs})
-  set(src ${CMAKE_CURRENT_SOURCE_DIR}/${doc}.rst)
-  set(dst ${CMAKE_CURRENT_BINARY_DIR}/${doc}.rst)
-  add_custom_command(OUTPUT ${dst}
-    COMMAND ${CMAKE_COMMAND} -E copy ${src} ${dst} DEPENDS ${src})
-  set(doc_depends ${doc_depends} ${dst})
-endforeach ()
+if (NOT ${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
+  set(doc_depends ${EXTRACT_DOCS})
+  foreach (doc ${docs} common index nl ${amplgsl_docs})
+    set(src ${CMAKE_CURRENT_SOURCE_DIR}/${doc}.rst)
+    set(dst ${CMAKE_CURRENT_BINARY_DIR}/${doc}.rst)
+    add_custom_command(OUTPUT ${dst}
+      COMMAND ${CMAKE_COMMAND} -E copy ${src} ${dst} DEPENDS ${src})
+    set(doc_depends ${doc_depends} ${dst})
+  endforeach ()
+endif ()
 add_prefix(doc_depends ../ ${MP_HEADERS})
 
 add_custom_command(OUTPUT html/index.html
