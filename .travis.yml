@@ -6,11 +6,10 @@ os:
 env:
   - BUILD=native
   - BUILD=cross
+  - BUILD=doc
 
 matrix:
   include:
-    - os: linux
-      env: BUILD=doc
     - os: osx
       env: BUILD=native
 
