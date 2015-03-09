@@ -2,7 +2,7 @@
 # Build the project on Travis CI.
 
 from __future__ import print_function
-import os
+import fileutil, os, shutil
 from bootstrap import bootstrap
 from download import Downloader
 from subprocess import check_call, check_output
@@ -20,7 +20,19 @@ build = os.environ['BUILD']
 if build == 'doc':
   check_call([cmake_path, '-DBUILD=breathe,sphinx', '.'])
   check_call(['make', 'doc'])
-  # TODO: publish docs
+  # Merge API docs with the database connection guides. We don't store
+  # the guides in this repo to avoid polluting history with image blobs.
+  repo = 'ampl.github.io'
+  check_call(['git', 'clone', 'git@github.com:ampl/{}.git'.format(repo)])
+  for entry in os.listdir('doc'):
+    src = os.path.join('doc', entry)
+    dst = os.path.join(repo, 'src', entry)
+    if os.path.isdir(src):
+      fileutil.rmtree_if_exists(dst)
+      shutil.copytree(src, dst)
+    else:
+      shutil.copyfile(src, dst)
+  # TODO: build docs and push the repo
   exit(0)
 
 cmake_flags = ['-DBUILD=all']
