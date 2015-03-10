@@ -2,29 +2,81 @@
 # Build the project on Travis CI.
 
 from __future__ import print_function
-import fileutil, os, shutil
+import mmap, os, re, shutil, tempfile
 from bootstrap import bootstrap
 from download import Downloader
 from subprocess import call, check_call, check_output
 
+def extract_docs(output_dir):
+  "Extract the AMPLGSL documentation from the code."
+  output = None
+  dir = os.path.dirname(__file__)
+  output_dir = os.path.join(output_dir, 'amplgsl')
+  if not os.path.exists(output_dir):
+    os.mkdir(output_dir)
+  with open(os.path.join(dir, '../src/gsl/amplgsl.c'), 'r+b') as input:
+    map = mmap.mmap(input.fileno(), 0)
+    for i in re.finditer(r'/\*\*(.*?)\*/', map, re.DOTALL):
+      s = re.sub(r'\n +\* ?', r'\n', i.group(1))
+      s = re.sub(r'\$(.+?)\$', r':math:`\1`', s, flags=re.DOTALL)
+      m = re.search(r'@file (.*)', s)
+      if m:
+        filename = m.group(1)
+        if output:
+          output.close()
+        output = open(os.path.join(output_dir, filename + '.rst'), 'w')
+        s = s[:m.start()] + s[m.end():]
+      output.write(s.rstrip(' '))
+    map.close()
+
+def get_mp_version():
+  filename = os.path.join(os.path.dirname(__file__), '..', 'CMakeLists.txt')
+  with open(filename, 'r') as f:
+    for line in f:
+      m = re.search(r'MP_VERSION (\d+\.\d+\.\d+)', line)
+      if m:
+        return m.group(1)
+
 build = os.environ['BUILD']
 if build == 'doc':
-  # Merge API docs with the database connection guides. We don't store
-  # the guides in this repo to avoid polluting history with image blobs.
+  # Copy API docs and the database connection guides to the build directory.
+  # We don't store the guides in this repo to avoid polluting history with
+  # image blobs.
+  workdir = tempfile.mkdtemp()
+  build_dir = os.path.join(workdir, 'build')
   repo = 'ampl.github.io'
-  check_call(['git', 'clone', 'git@github.com:ampl/{}.git'.format(repo)])
+  check_call(['git', 'clone', 'https://github.com/ampl/{}.git'.format(repo)],
+             cwd=workdir)
+  repo_dir = os.path.join(workdir, repo)
+  shutil.copytree(os.path.join(repo_dir, 'src'), build_dir)
   for entry in os.listdir('doc'):
     src = os.path.join('doc', entry)
-    dst = os.path.join(repo, 'src', entry)
+    dst = os.path.join(build_dir, entry)
     if os.path.isdir(src):
-      fileutil.rmtree_if_exists(dst)
       shutil.copytree(src, dst)
     else:
       shutil.copyfile(src, dst)
-  # TODO: build docs
-  check_call(['git', 'add', '--all'], cwd=repo)
-  if call(["git", "diff-index", "--quiet", "HEAD"], cwd=repo):
-    check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo)
+  # Remove generated content.
+  keep = {
+    '.git', 'demo', 'models', 'src', 'ampl-book.pdf', 'nlwrite.pdf', '.nojekyll'
+  }
+  for entry in os.listdir(repo_dir):
+    if entry in keep:
+      continue
+    path = os.path.join(repo_dir, entry)
+    if os.path.isdir(path):
+      shutil.rmtree(path)
+    else:
+      os.remove(path)
+  # TODO: get breathe
+  extract_docs(build_dir)
+  check_call(['sphinx-build', '-D', 'version=' + get_mp_version(),
+              '-b', 'html', build_dir, repo_dir])
+  check_call(['git', 'add', '--all'], cwd=repo_dir)
+  if call(['git', 'diff-index', '--quiet', 'HEAD'], cwd=repo_dir):
+    check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo_dir)
+  # TODO: push changes
+  #check_call(['git', 'push', 'https://$KEY@github.com/aml/{}.git'.format(repo)], shell=True)
   exit(0)
 
 cmake_flags = ['-DBUILD=all']
