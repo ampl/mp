@@ -82,12 +82,12 @@ if build == 'doc':
   check_call(['sphinx-build', '-D', 'version=' + get_mp_version(),
               '-b', 'html', build_dir, repo_dir])
   # Push docs to GitHub pages.
+  check_call(['git', 'config', '--global', 'user.name', 'amplbot'])
   check_call(['git', 'add', '--all'], cwd=repo_dir)
   if call(['git', 'diff-index', '--quiet', 'HEAD'], cwd=repo_dir):
-    check_call(['git', 'config', 'user.name', 'amplbot'])
     check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo_dir)
     check_call(['git', 'push',
-                'https://$KEY@github.com/aml/{}.git'.format(repo)], shell=True)
+                'https://$KEY@github.com/ampl/{}.git'.format(repo)], shell=True)
   exit(0)
 
 cmake_flags = ['-DBUILD=all']
