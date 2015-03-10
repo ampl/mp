@@ -4,9 +4,15 @@ os:
   - linux
 
 env:
-  - BUILD=native
-  - BUILD=cross
-  - BUILD=doc
+  global:
+    - secure: |-
+      ZlB6lnFdbCfmKJk2FRoIh/3PvH6gCupDgNhFoCHWJhJvyoifE+lM+inyickoUVCUvnc+slyo
+      t7IhLFkgHIlIGamtA4eRBxuLRyu2nT7/qtIzri1Xf6XINZn+rt32jDxxLnTyji17IS9ywNNL
+      yIyROrVyIVaFNco73c1ka5pRW8w=
+  matrix:
+    - BUILD=native
+    - BUILD=cross
+    - BUILD=doc
 
 matrix:
   include:
