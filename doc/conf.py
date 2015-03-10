@@ -64,18 +64,14 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'MP'
-copyright = u'2012 AMPL Optimization, Inc'
+copyright = u'2015 AMPL Optimization, Inc'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-with open('../CMakeLists.txt', 'r') as f:
-  for line in f:
-    m = re.search(r'MP_VERSION (\d+\.\d+\.\d+)', line)
-    if m:
-      version = m.group(1)
+version = None
 
 # The full version, including alpha/beta/rc tags.
 release = '20121105'
