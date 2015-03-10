@@ -2,7 +2,7 @@
 # Build the project on Travis CI.
 
 from __future__ import print_function
-import mmap, os, re, shutil, tempfile
+import mmap, os, re, shutil, tempfile, zipfile
 from bootstrap import bootstrap
 from download import Downloader
 from subprocess import call, check_call, check_output
@@ -40,7 +40,7 @@ def get_mp_version():
 build = os.environ['BUILD']
 if build == 'doc':
   # Copy API docs and the database connection guides to the build directory.
-  # We don't store the guides in this repo to avoid polluting history with
+  # The guides are not stored in the mp repo to avoid polluting history with
   # image blobs.
   workdir = tempfile.mkdtemp()
   build_dir = os.path.join(workdir, 'build')
@@ -69,14 +69,24 @@ if build == 'doc':
     else:
       os.remove(path)
   # TODO: get breathe
+  # Build docs.
   extract_docs(build_dir)
-  check_call(['sphinx-build', '-D', 'version=' + get_mp_version(),
+  sphinx_commit = 'a1a80ab509fbf01aa459e0ec5a5c9b66f011ee47'
+  url = 'https://github.com/sphinx-doc/sphinx/archive/{}.zip'. \
+      format(sphinx_commit)
+  with Downloader().download(url) as f:
+    with zipfile.ZipFile(f) as zip:
+      zip.extractall(workdir)
+  sphinx_build = os.path.join(
+      workdir, 'sphinx-' + sphinx_commit, 'sphinx-build.py')
+  check_call(['python', sphinx_build, '-D', 'version=' + get_mp_version(),
               '-b', 'html', build_dir, repo_dir])
+  # Push docs to GitHub pages.
   check_call(['git', 'add', '--all'], cwd=repo_dir)
   if call(['git', 'diff-index', '--quiet', 'HEAD'], cwd=repo_dir):
     check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo_dir)
-  # TODO: push changes
-  #check_call(['git', 'push', 'https://$KEY@github.com/aml/{}.git'.format(repo)], shell=True)
+  check_call(['git', 'push',
+              'https://$KEY@github.com/aml/{}.git'.format(repo)], shell=True)
   exit(0)
 
 cmake_flags = ['-DBUILD=all']
