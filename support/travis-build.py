@@ -39,6 +39,11 @@ def get_mp_version():
 
 build = os.environ['BUILD']
 if build == 'doc':
+  # Install sphinx.
+  # TODO: install breathe
+  sphinx_commit = 'a1a80ab509fbf01aa459e0ec5a5c9b66f011ee47'
+  check_call(['sudo', 'pip', 'install',
+              'git+git://github.com/sphinx-doc/sphinx.git@' + sphinx_commit
   # Copy API docs and the database connection guides to the build directory.
   # The guides are not stored in the mp repo to avoid polluting history with
   # image blobs.
@@ -68,18 +73,9 @@ if build == 'doc':
       shutil.rmtree(path)
     else:
       os.remove(path)
-  # TODO: get breathe
   # Build docs.
   extract_docs(build_dir)
-  sphinx_commit = 'a1a80ab509fbf01aa459e0ec5a5c9b66f011ee47'
-  url = 'https://github.com/sphinx-doc/sphinx/archive/{}.zip'. \
-      format(sphinx_commit)
-  with Downloader().download(url) as f:
-    with zipfile.ZipFile(f) as zip:
-      zip.extractall(workdir)
-  sphinx_build = os.path.join(
-      workdir, 'sphinx-' + sphinx_commit, 'sphinx-build.py')
-  check_call(['python', sphinx_build, '-D', 'version=' + get_mp_version(),
+  check_call(['sphinx-build', '-D', 'version=' + get_mp_version(),
               '-b', 'html', build_dir, repo_dir])
   # Push docs to GitHub pages.
   check_call(['git', 'add', '--all'], cwd=repo_dir)
