@@ -42,9 +42,10 @@ if build == 'doc':
   # Install sphinx.
   # TODO: install breathe
   sphinx_commit = 'a1a80ab509fbf01aa459e0ec5a5c9b66f011ee47'
-  #check_call(['virtualenv', 'venv'])
-  #activate_this_file = 'venv/bin/activate_this.py'
-  #execfile(activate_this_file, dict(__file__=activate_this_file))
+  check_call(['sudo', 'apt-get', 'install', 'python-virtualenv'])
+  check_call(['virtualenv', 'venv'])
+  activate_this_file = 'venv/bin/activate_this.py'
+  execfile(activate_this_file, dict(__file__=activate_this_file))
   check_call(['pip', 'install',
               'git+git://github.com/sphinx-doc/sphinx.git@' + sphinx_commit])
   # Copy API docs and the database connection guides to the build directory.
