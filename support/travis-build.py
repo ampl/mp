@@ -43,7 +43,7 @@ if build == 'doc':
   # TODO: install breathe
   sphinx_commit = 'a1a80ab509fbf01aa459e0ec5a5c9b66f011ee47'
   check_call(['sudo', 'pip', 'install',
-              'git+git://github.com/sphinx-doc/sphinx.git@' + sphinx_commit
+              'git+git://github.com/sphinx-doc/sphinx.git@' + sphinx_commit])
   # Copy API docs and the database connection guides to the build directory.
   # The guides are not stored in the mp repo to avoid polluting history with
   # image blobs.
