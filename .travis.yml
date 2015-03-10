@@ -10,14 +10,14 @@ env:
         yot7IhLFkgHIlIGamtA4eRBxuLRyu2nT7/qtIzri1Xf6XINZn+rt32jDxxLnTyji17IS9y
         wNNLyIyROrVyIVaFNco73c1ka5pRW8w=
   matrix:
-    - BUILD=native
-    - BUILD=cross
+    #- BUILD=native
+    #- BUILD=cross
     - BUILD=doc
 
-matrix:
-  include:
-    - os: osx
-      env: BUILD=native
+#matrix:
+#  include:
+#    - os: osx
+#      env: BUILD=native
 
 script:
   - support/travis-build.py
