@@ -10,14 +10,14 @@ env:
         Pdf/rX5+65kmjONSusBheRlVlWfZ2/cXjGFFFSkNn2JLLyGWpEZ6fdvr9yQVD57TXsY9Zf
         allEyZLeSLeWFPeuhEOxq4F8YhKlQxI=
   matrix:
-    #- BUILD=native
-    #- BUILD=cross
+    - BUILD=native
+    - BUILD=cross
     - BUILD=doc
 
-#matrix:
-#  include:
-#    - os: osx
-#      env: BUILD=native
+matrix:
+  include:
+    - os: osx
+      env: BUILD=native
 
 script:
   - support/travis-build.py
