@@ -7,6 +7,7 @@ Contents
    common
    nl
    amplgsl/index
+   tables/index
 
 Indices and tables
 ==================
