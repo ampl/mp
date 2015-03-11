@@ -68,7 +68,8 @@ if build == 'doc':
       shutil.copyfile(src, dst)
   # Remove generated content.
   keep = {
-    '.git', 'demo', 'models', 'src', 'ampl-book.pdf', 'nlwrite.pdf', '.nojekyll'
+    '.git', 'demo', 'models', 'src', 'ampl-book.pdf', 'nlwrite.pdf',
+    '.gitignore', '.nojekyll'
   }
   for entry in os.listdir(repo_dir):
     if entry in keep:
