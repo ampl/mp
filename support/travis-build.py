@@ -85,7 +85,7 @@ if build == 'doc':
   check_call(['git', 'config', '--global', 'user.name', 'amplbot'])
   check_call(['git', 'config', '--global', 'user.email', 'viz@ampl.com'])
   check_call(['git', 'add', '--all'], cwd=repo_dir)
-  if call(['git', 'diff-index', '--quiet', 'HEAD'], cwd=repo_dir):
+  if call(['git', 'diff', '--quiet', 'HEAD'], cwd=repo_dir):
     check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo_dir)
     check_call(['git', 'push',
                 'https://$KEY@github.com/ampl/{}.git'.format(repo)], shell=True)
