@@ -5,7 +5,7 @@ from __future__ import print_function
 import mmap, os, re, shutil, tempfile, zipfile
 from bootstrap import bootstrap
 from download import Downloader
-from subprocess import call, check_call, check_output
+from subprocess import call, check_call, check_output, Popen, PIPE, STDOUT
 
 def extract_docs(output_dir):
   "Extract the AMPLGSL documentation from the code."
@@ -51,6 +51,7 @@ if build == 'doc':
   # Copy API docs and the database connection guides to the build directory.
   # The guides are not stored in the mp repo to avoid polluting history with
   # image blobs.
+  # TODO: remove workdir
   workdir = tempfile.mkdtemp()
   build_dir = os.path.join(workdir, 'build')
   repo = 'ampl.github.io'
@@ -85,11 +86,15 @@ if build == 'doc':
   check_call(['git', 'config', '--global', 'user.name', 'amplbot'])
   check_call(['git', 'config', '--global', 'user.email', 'viz@ampl.com'])
   check_call(['git', 'add', '--all'], cwd=repo_dir)
+  returncode = 0
   if call(['git', 'diff-index', '--quiet', 'HEAD'], cwd=repo_dir):
     check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo_dir)
-    check_call('git push https://$KEY@github.com/ampl/{}.git'.format(repo),
-               shell=True)
-  exit(0)
+    cmd = 'git push https://$KEY@github.com/ampl/{}.git master'.format(repo)
+    p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT, cwd=repo_dir)
+    # Remove URL from output because it may contain token.
+    print(re.sub(r'https:.*\.git', '<url>', p.communicate()[0]))
+    returncode = p.returncode
+  exit(returncode)
 
 cmake_flags = ['-DBUILD=all']
 ubuntu_packages = ['gfortran', 'unixodbc-dev']
