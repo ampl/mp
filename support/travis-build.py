@@ -42,25 +42,25 @@ def pip_install(package, commit):
   check_call(['pip', 'install',
               'git+git://github.com/{0}.git@{1}'.format(package, commit)])
 
-build = os.environ['BUILD']
-if build == 'doc':
-  check_call(['sudo', 'apt-get', 'install', 'python-virtualenv'])
+def build_docs(workdir, travis):
+  # Create virtualenv.
+  if travis:
+    check_call(['sudo', 'apt-get', 'install', 'python-virtualenv'])
   check_call(['virtualenv', 'venv'])
   activate_this_file = 'venv/bin/activate_this.py'
   execfile(activate_this_file, dict(__file__=activate_this_file))
   # Install Sphinx and Breathe.
   pip_install('sphinx-doc/sphinx', 'a1a80ab509fbf01aa459e0ec5a5c9b66f011ee47')
   pip_install('michaeljones/breathe', '494244f2015dc25c91adf5cca3bc61670540856b')
-  # Copy API docs and the database connection guides to the build directory.
-  # The guides are not stored in the mp repo to avoid polluting history with
-  # image blobs.
-  # TODO: remove workdir
-  workdir = tempfile.mkdtemp()
-  build_dir = os.path.join(workdir, 'build')
+  # Clone the ampl.github.io repo.
   repo = 'ampl.github.io'
   check_call(['git', 'clone', 'https://github.com/ampl/{}.git'.format(repo)],
              cwd=workdir)
   repo_dir = os.path.join(workdir, repo)
+  # Copy API docs and the database connection guides to the build directory.
+  # The guides are not stored in the mp repo to avoid polluting history with
+  # image blobs.
+  build_dir = os.path.join(workdir, 'build')
   shutil.copytree(os.path.join(repo_dir, 'src'), build_dir)
   for entry in os.listdir('doc'):
     src = os.path.join('doc', entry)
@@ -84,20 +84,54 @@ if build == 'doc':
       os.remove(path)
   # Build docs.
   extract_docs(build_dir)
+  p = Popen(['doxygen', '-'], stdin=PIPE, cwd=build_dir)
+  p.communicate(input=r'''
+      PROJECT_NAME      = MP
+      INPUT             = {0}/include/mp/common.h \
+                          {0}/include/mp/nl.h
+      EXCLUDE_SYMBOLS   = mp::internal::*
+      GENERATE_LATEX    = NO
+      GENERATE_MAN      = NO
+      GENERATE_RTF      = NO
+      GENERATE_HTML     = NO
+      GENERATE_XML      = YES
+      XML_OUTPUT        = doxyxml
+      QUIET             = YES
+      JAVADOC_AUTOBRIEF = YES
+      AUTOLINK_SUPPORT  = NO
+      ALIASES           = "rst=\verbatim embed:rst"
+      ALIASES          += "endrst=\endverbatim"
+    '''.format(os.path.abspath('.')))
+  if p.returncode != 0:
+    return p.returncode
   check_call(['sphinx-build', '-D', 'version=' + get_mp_version(),
               '-b', 'html', build_dir, repo_dir])
   # Push docs to GitHub pages.
-  check_call(['git', 'config', '--global', 'user.name', 'amplbot'])
-  check_call(['git', 'config', '--global', 'user.email', 'viz@ampl.com'])
+  if travis:
+    check_call(['git', 'config', '--global', 'user.name', 'amplbot'])
+    check_call(['git', 'config', '--global', 'user.email', 'viz@ampl.com'])
   check_call(['git', 'add', '--all'], cwd=repo_dir)
   returncode = 0
   if call(['git', 'diff-index', '--quiet', 'HEAD'], cwd=repo_dir):
     check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo_dir)
     cmd = 'git push https://$KEY@github.com/ampl/{}.git master'.format(repo)
     p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT, cwd=repo_dir)
-    # Remove URL from output because it may contain token.
+    # Remove URL from output because it may contain a token.
     print(re.sub(r'https:.*\.git', '<url>', p.communicate()[0]))
     returncode = p.returncode
+  return returncode
+
+build = os.environ['BUILD']
+if build == 'doc':
+  returncode = 1
+  travis = 'TRAVIS' in os.environ
+  workdir = tempfile.mkdtemp()
+  try:
+    returncode = build_docs(workdir, travis=travis)
+  finally:
+    # Don't remove workdir on Travis because the VM is discarded anyway.
+    if not travis:
+      shutil.rmtree(workdir)
   exit(returncode)
 
 cmake_flags = ['-DBUILD=all']
