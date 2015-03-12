@@ -13,8 +13,6 @@
 
 import sys, os, re
 
-breathe_dir = '../thirdparty/breathe'
-
 if os.environ.get('READTHEDOCS', None) == 'True':
   import subprocess
   with open('Doxyfile.in', 'r') as f:
@@ -28,7 +26,7 @@ if os.environ.get('READTHEDOCS', None) == 'True':
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.append(os.path.abspath(breathe_dir))
+#sys.path.append(os.path.abspath(somedir))
 
 # -- General configuration -----------------------------------------------------
 
@@ -37,9 +35,7 @@ sys.path.append(os.path.abspath(breathe_dir))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.mathjax']
-if os.path.exists(os.path.join(breathe_dir, 'breathe')):
-  extensions.append('breathe')
+extensions = ['breathe', 'sphinx.ext.mathjax']
 
 # Configure Breathe.
 # When building with CMake, the path to doxyxml is passed via the command line.
