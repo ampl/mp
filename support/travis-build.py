@@ -43,9 +43,10 @@ def pip_install(package, commit):
               'git+git://github.com/{0}.git@{1}'.format(package, commit)])
 
 def build_docs(workdir, travis):
-  # Create virtualenv.
+  # Install dependencies.
   if travis:
-    check_call(['sudo', 'apt-get', 'install', 'python-virtualenv'])
+    check_call(['sudo', 'apt-get', 'install', 'python-virtualenv', 'doxygen'])
+  # Create virtualenv.
   check_call(['virtualenv', 'venv'])
   activate_this_file = 'venv/bin/activate_this.py'
   execfile(activate_this_file, dict(__file__=activate_this_file))
