@@ -37,17 +37,20 @@ def get_mp_version():
       if m:
         return m.group(1)
 
+def pip_install(package, commit):
+  "Install package from GitHub using pip."
+  check_call(['pip', 'install',
+              'git+git://github.com/{0}.git@{1}'.format(package, commit)])
+
 build = os.environ['BUILD']
 if build == 'doc':
-  # Install sphinx.
-  # TODO: install breathe
-  sphinx_commit = 'a1a80ab509fbf01aa459e0ec5a5c9b66f011ee47'
   check_call(['sudo', 'apt-get', 'install', 'python-virtualenv'])
   check_call(['virtualenv', 'venv'])
   activate_this_file = 'venv/bin/activate_this.py'
   execfile(activate_this_file, dict(__file__=activate_this_file))
-  check_call(['pip', 'install',
-              'git+git://github.com/sphinx-doc/sphinx.git@' + sphinx_commit])
+  # Install Sphinx and Breathe.
+  pip_install('sphinx-doc/sphinx', 'a1a80ab509fbf01aa459e0ec5a5c9b66f011ee47')
+  pip_install('michaeljones/breathe', '494244f2015dc25c91adf5cca3bc61670540856b')
   # Copy API docs and the database connection guides to the build directory.
   # The guides are not stored in the mp repo to avoid polluting history with
   # image blobs.
