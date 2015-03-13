@@ -289,7 +289,11 @@ class NLHandler {
   /** Receives notification of an NL header. */
   void OnHeader(const NLHeader &h) { MP_UNUSED(h); }
 
-  /** Returns true if the objective with index *obj_index* should be handled. */
+  /**
+    \rst
+    Returns true if the objective with index *obj_index* should be handled.
+    \endrst
+   */
   bool NeedObj(int obj_index) const {
     MP_UNUSED(obj_index);
     return true;
@@ -422,8 +426,10 @@ class NLHandler {
   };
 
   /**
+    \rst
     Receives notification of an integer suffix.
     The *name* argument is a suffix name and it is not zero terminated.
+    \endrst
    */
   IntSuffixHandler OnIntSuffix(fmt::StringRef name, int kind, int num_values) {
     MP_UNUSED3(name, kind, num_values);
@@ -437,8 +443,10 @@ class NLHandler {
   };
 
   /**
+    \rst
     Receives notification of a double suffix.
     The *name* argument is a suffix name and it is not zero terminated.
+    \endrst
    */
   DblSuffixHandler OnDblSuffix(fmt::StringRef name, int kind, int num_values) {
     MP_UNUSED3(name, kind, num_values);
