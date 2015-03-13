@@ -204,7 +204,7 @@ struct NLHeader : ProblemInfo {
     Floating-point arithmetic kind used with binary format to check
     if an .nl file is written using a compatible representation of
     floating-point numbers. It is not used with the text format and normally
-    set to :member:`arith::UNKNOWN` there.
+    set to :member:`mp::arith::UNKNOWN` there.
     \endrst
    */
   arith::Kind arith_kind;
@@ -405,8 +405,10 @@ class NLHandler {
   ColumnSizeHandler OnColumnSizes() { return ColumnSizeHandler(); }
 
   /**
+    \rst
     Receives notification of a function.
     The *name* argument is a function name and it is not zero terminated.
+    \endrst
    */
   void OnFunction(int index, fmt::StringRef name,
                   int num_args, func::Type type) {
