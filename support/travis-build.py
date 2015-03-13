@@ -47,8 +47,9 @@ def build_docs(workdir, travis):
   if travis:
     check_call(['sudo', 'apt-get', 'install', 'python-virtualenv', 'doxygen'])
   # Create virtualenv.
-  check_call(['virtualenv', 'venv'])
-  activate_this_file = 'venv/bin/activate_this.py'
+  virtualenv_dir = os.path.join(workdir, 'virtualenv')
+  check_call(['virtualenv', virtualenv_dir])
+  activate_this_file = os.path.join(virtualenv_dir, 'bin', 'activate_this.py')
   execfile(activate_this_file, dict(__file__=activate_this_file))
   # Install Sphinx and Breathe.
   pip_install('sphinx-doc/sphinx', 'a1a80ab509fbf01aa459e0ec5a5c9b66f011ee47')
