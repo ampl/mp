@@ -9,6 +9,8 @@ AMPL/MP
 
 An open-source library for mathematical programming.
 
+Documentation: http://ampl.github.io
+
 Features
 --------
 
