@@ -39,69 +39,85 @@ namespace mp {
 /** Expression information. */
 namespace expr {
 
-// TODO: document expressions
-/**
-  \rst
-  .. _numeric-constant:
-  .. _common-expr:
-  .. _unary-expr:
-  .. _binary-expr:
-  .. _if-expr:
-  .. _plterm:
-  .. _call-expr:
-  .. _vararg-expr:
-  .. _sum-expr:
-  .. _numberof-expr:
-  .. _numberof-sym-expr:
-  .. _count-expr:
-  .. _logical-expr:
-  .. _logical-constant:
-  .. _not-expr:
-  .. _binary-logical-expr:
-  .. _relational-expr:
-  .. _logical-count-expr:
-  .. _implication-expr:
-  .. _iterated-logical-expr:
-  .. _pairwise-expr:
-  .. _string-expr:
-  .. _symbolic-if-expr:
-
-  Expression kind.
-  \endrst
- */
+/** Expression kind. */
 enum Kind {
   // An unknown expression.
   UNKNOWN = 0,
 
   FIRST_EXPR,
 
-  // To simplify checks, numeric expression kinds are in a range
+  // To simplify checks, numeric expression kinds are in the range
   // [FIRST_NUMERIC, LAST_NUMERIC].
   /**
     \rst
     .. _numeric-expr:
 
-    Numeric expressions.
+    A numeric expression.
     \endrst
   */
   FIRST_NUMERIC = FIRST_EXPR,
 
+  /**
+    \rst
+    .. _numeric-constant:
+
+    A number such as 42 or -1.23e-4
+    \endrst
+   */
   NUMBER = FIRST_NUMERIC,
 
   // Reference expressions.
   FIRST_REFERENCE,
+
   /**
     \rst
     .. _variable:
 
-    Reference to a variable.
+    A reference to a variable.
     \endrst
   */
   VARIABLE = FIRST_REFERENCE,
+
+  /**
+    \rst
+    .. _common-expr:
+
+    A reference to a common expression.
+    \endrst
+  */
   COMMON_EXPR,
+
   LAST_REFERENCE = COMMON_EXPR,
 
   // Unary expressions.
+  // TODO: document expressions
+  /**
+    \rst
+    .. _unary-expr:
+    .. _binary-expr:
+    .. _if-expr:
+    .. _plterm:
+    .. _call-expr:
+    .. _vararg-expr:
+    .. _sum-expr:
+    .. _numberof-expr:
+    .. _numberof-sym-expr:
+    .. _count-expr:
+    .. _logical-expr:
+    .. _logical-constant:
+    .. _not-expr:
+    .. _binary-logical-expr:
+    .. _relational-expr:
+    .. _logical-count-expr:
+    .. _implication-expr:
+    .. _iterated-logical-expr:
+    .. _pairwise-expr:
+    .. _string-expr:
+    .. _symbolic-if-expr:
+
+    Expression kind.
+    \endrst
+   */
   FIRST_UNARY,
   MINUS = FIRST_UNARY,
   ABS,
@@ -165,7 +181,7 @@ enum Kind {
   COUNT,
   LAST_NUMERIC = COUNT,
 
-  // To simplify checks, logical expression kinds are in a range
+  // To simplify checks, logical expression kinds are in the range
   // [FIRST_LOGICAL, LAST_LOGICAL].
   FIRST_LOGICAL,
   BOOL = FIRST_LOGICAL,
