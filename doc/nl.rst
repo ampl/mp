@@ -5,8 +5,7 @@ Header: :file:`mp/nl.h`
 
 `NL <https://en.wikipedia.org/wiki/Nl_(format)>`_ is a format for representing
 optimization problems in discrete or continuous variables. It is described in
-the technical report `Writing .nl Files
-<https://cfwebprod.sandia.gov/cfdocs/CompResearch/docs/nlwrite20051130.pdf>`_.
+the technical report `Writing .nl Files <nlwrite.pdf>`_.
 
 The NL format supports a wide range of problem types including but not limited
 to the following areas of optimization:
