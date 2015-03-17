@@ -246,11 +246,11 @@ struct PhaseOption : public BasicOption<fmt::LongLong> {
 };
 
 PhaseOption<int> timelimit(
-    "timelimit", 10, 0, INT_MAX,
+    "timelimit", 10, ls_version() >= 5 ? 0 : 1, INT_MAX,
     &LSPhase::getTimeLimit, &LSPhase::setTimeLimit, false);
 const fmt::LongLong long_long_max = std::numeric_limits<fmt::LongLong>::max();
 PhaseOption<fmt::LongLong> iterlimit(
-    "iterlimit", long_long_max, 0, INT_MAX,
+    "iterlimit", long_long_max, ls_version() >= 5 ? 0 : 1, INT_MAX,
     &LSPhase::getIterationLimit, &LSPhase::setIterationLimit);
 INSTANTIATE_TEST_CASE_P(
     Limit, OptionTest, testing::Values(&timelimit, &iterlimit));

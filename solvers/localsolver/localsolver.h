@@ -370,19 +370,21 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   std::string logfile_;
   mp::OptionValueInfo verbosities_[3];
 
-  int DoGetIntOption(const SolverOption &, Option id) const {
-    return options_[id];
+  struct OptionInfo {
+    Option opt;
+    int lb;
+    OptionInfo(Option opt, int lb) : opt(opt), lb(lb) {}
+  };
+
+  int DoGetIntOption(const SolverOption &, OptionInfo info) const {
+    return options_[info.opt];
   }
 
-  template <int LB, int UB>
-  void DoSetIntOption(const SolverOption &opt, int value, Option id) {
-    if (value < LB || value > UB)
+  template <int UB>
+  void DoSetIntOption(const SolverOption &opt, int value, OptionInfo info) {
+    if (value < info.lb || value > UB)
       throw InvalidOptionValue(opt, value);
-    options_[id] = value;
-  }
-
-  void SetNonnegativeIntOption(const SolverOption &opt, int value, Option id) {
-    return DoSetIntOption<0, INT_MAX>(opt, value, id);
+    options_[info.opt] = value;
   }
 
   std::string GetVerbosity(const SolverOption &opt) const;
@@ -395,7 +397,8 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
 
   fmt::LongLong GetIterLimit(const SolverOption &) const { return iterlimit_; }
   void SetIterLimit(const SolverOption &opt, fmt::LongLong value) {
-    if (value < 0)
+    int lb = localsolver::LSVersion::getMajorVersionNumber() < 5 ? 1 : 0;
+    if (value < lb)
       throw InvalidOptionValue(opt, value);
     iterlimit_ = value;
   }

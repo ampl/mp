@@ -426,18 +426,18 @@ LocalSolver::LocalSolver()
   AddIntOption("seed",
       "Seed of the pseudo-random number generator used by the solver. "
       "Default = 0.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::SetNonnegativeIntOption,
-      SEED);
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<INT_MAX>,
+      OptionInfo(SEED, 0));
 
   AddIntOption("threads",
       "Number of threads used to parallelize the search. Default = 2.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<1, 1024>,
-      THREADS);
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<1024>,
+      OptionInfo(THREADS, 1));
 
   AddIntOption("annealing_level",
       "Simulated annealing level. Default = 1.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<0, 9>,
-      ANNEALING_LEVEL);
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<9>,
+      OptionInfo(ANNEALING_LEVEL, 0));
 
   std::size_t num_verbosities = sizeof(VERBOSITIES) / sizeof(*VERBOSITIES);
   std::copy(VERBOSITIES, VERBOSITIES + num_verbosities, verbosities_);
@@ -453,8 +453,8 @@ LocalSolver::LocalSolver()
   AddIntOption("time_between_displays",
       "Time in seconds between two consecutive displays in console while "
       "the solver is running. Default = 1.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<1, 65535>,
-      TIME_BETWEEN_DISPLAYS);
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<65535>,
+      OptionInfo(TIME_BETWEEN_DISPLAYS, 1));
 
   AddStrOption("logfile",
       "Path of the LocalSolver log file. Default = \"\" (no log file).",
@@ -462,8 +462,8 @@ LocalSolver::LocalSolver()
 
   AddIntOption("timelimit",
       "Time limit in seconds (nonnegative integer). Default = 10.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<0, INT_MAX>,
-      TIMELIMIT);
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<INT_MAX>,
+      OptionInfo(TIMELIMIT, ls_version < 5 ? 1 : 0));
 
   AddIntOption("iterlimit",
       "Iteration limit (nonnegative integer). "
