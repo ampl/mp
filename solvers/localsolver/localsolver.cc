@@ -34,7 +34,7 @@ const mp::OptionValueInfo VERBOSITIES[] = {
   {"quiet",  "All the traces are disabled (default).", 0},
   {"normal", "Normal verbosity.", NORMAL_VERBOSITY},
   {"detailed",
-   "Detailed verbosity. Displays extended statistics on the model.", 10}
+   "Detailed verbosity. Displays extended statistics on the model.", 2}
 };
 
 // Returns the value of an expression.
@@ -378,7 +378,12 @@ void LocalSolver::SetVerbosity(const SolverOption &opt, fmt::StringRef value) {
   const char *str = value.c_str();
   long intval = std::strtol(str, &end, 0);
   if (!*end) {
-    if (intval != 0 && intval != 1 && intval != 10)
+    std::size_t i = 0, size = sizeof(VERBOSITIES) / sizeof(*VERBOSITIES);
+    for (; i < size; ++i) {
+      if (intval == verbosities_[i].data)
+        break;
+    }
+    if (i == size)
       throw InvalidOptionValue(opt, str);
     options_[VERBOSITY] = intval;
     return;
@@ -403,9 +408,9 @@ LocalSolver::LocalSolver()
   options_[TIMELIMIT] = 10;
   iterlimit_ = std::numeric_limits<fmt::LongLong>::max();
 
+  int ls_version = localsolver::LSVersion::getMajorVersionNumber();
   std::string version = fmt::format("{}.{}",
-      localsolver::LSVersion::getMajorVersionNumber(),
-      localsolver::LSVersion::getMinorVersionNumber());
+      ls_version, localsolver::LSVersion::getMinorVersionNumber());
   set_long_name("localsolver " + version);
   set_version("LocalSolver " + version);
 
@@ -434,12 +439,16 @@ LocalSolver::LocalSolver()
       &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<0, 9>,
       ANNEALING_LEVEL);
 
+  std::size_t num_verbosities = sizeof(VERBOSITIES) / sizeof(*VERBOSITIES);
+  std::copy(VERBOSITIES, VERBOSITIES + num_verbosities, verbosities_);
+  if (ls_version < 5)
+    verbosities_[num_verbosities - 1].data = 10;
   AddStrOption("verbosity",
       "Verbosity level of the solver. Possible values:\n"
       "\n"
       ".. value-table::\n"
       "\n",
-      &LocalSolver::GetVerbosity, &LocalSolver::SetVerbosity, VERBOSITIES);
+      &LocalSolver::GetVerbosity, &LocalSolver::SetVerbosity, verbosities_);
 
   AddIntOption("time_between_displays",
       "Time in seconds between two consecutive displays in console while "
@@ -452,12 +461,12 @@ LocalSolver::LocalSolver()
       &LocalSolver::GetLogFile, &LocalSolver::SetLogFile);
 
   AddIntOption("timelimit",
-      "Time limit in seconds (positive integer). Default = 10.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<1, INT_MAX>,
+      "Time limit in seconds (nonnegative integer). Default = 10.",
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<0, INT_MAX>,
       TIMELIMIT);
 
   AddIntOption("iterlimit",
-      "Iteration limit (positive integer) or 0 for no limit. "
+      "Iteration limit (nonnegative integer). "
       "Default = largest positive integer.",
       &LocalSolver::GetIterLimit, &LocalSolver::SetIterLimit);
 }

@@ -36,6 +36,8 @@ enum { FEATURES = ~feature::PLTERM };
 using localsolver::LSParam;
 using localsolver::LSPhase;
 
+int ls_version() { return localsolver::LSVersion::getMajorVersionNumber(); }
+
 // Creates a test LocalSolver model.
 void CreateTestModel(localsolver::LocalSolver &s) {
   s.getParam().setVerbosity(0);
@@ -183,7 +185,10 @@ TEST(LocalSolverTest, VerbosityOption) {
     const char *value;
     int data;
   };
-  ValueInfo value_info[] = {{"quiet", 0}, {"normal", 1}, {"detailed", 10}};
+  int detailed_verbosity = ls_version() >= 5 ? 2 : 10;
+  ValueInfo value_info[] = {
+    {"quiet", 0}, {"normal", 1}, {"detailed", detailed_verbosity}
+  };
   int index = 0;
   for (auto i = values.begin(), end = values.end(); i != end; ++i) {
     const auto &info = value_info[index++];
@@ -197,7 +202,8 @@ TEST(LocalSolverTest, VerbosityOption) {
 
   // Test that value is passed to LocalSolver.
   solver.SetStrOption("verbosity", "detailed");
-  EXPECT_EQ(10, GetOption(solver, IntOption(&LSParam::getVerbosity)));
+  EXPECT_EQ(detailed_verbosity,
+            GetOption(solver, IntOption(&LSParam::getVerbosity)));
 
   // Normal verbosity triggers custom output and the LocalSolver output
   // is disabled (verbosity = 0).
@@ -240,11 +246,11 @@ struct PhaseOption : public BasicOption<fmt::LongLong> {
 };
 
 PhaseOption<int> timelimit(
-    "timelimit", 10, 1, INT_MAX,
+    "timelimit", 10, ls_version() >= 5 ? 0 : 1, INT_MAX,
     &LSPhase::getTimeLimit, &LSPhase::setTimeLimit, false);
 const fmt::LongLong long_long_max = std::numeric_limits<fmt::LongLong>::max();
 PhaseOption<fmt::LongLong> iterlimit(
-    "iterlimit", long_long_max, 1, INT_MAX,
+    "iterlimit", long_long_max, ls_version() >= 5 ? 0 : 1, INT_MAX,
     &LSPhase::getIterationLimit, &LSPhase::setIterationLimit);
 INSTANTIATE_TEST_CASE_P(
     Limit, OptionTest, testing::Values(&timelimit, &iterlimit));

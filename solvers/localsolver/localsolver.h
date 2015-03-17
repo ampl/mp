@@ -368,6 +368,7 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   int options_[NUM_OPTIONS];
   fmt::LongLong iterlimit_;
   std::string logfile_;
+  mp::OptionValueInfo verbosities_[3];
 
   int DoGetIntOption(const SolverOption &, Option id) const {
     return options_[id];
@@ -394,7 +395,7 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
 
   fmt::LongLong GetIterLimit(const SolverOption &) const { return iterlimit_; }
   void SetIterLimit(const SolverOption &opt, fmt::LongLong value) {
-    if (value < 1)
+    if (value < 0)
       throw InvalidOptionValue(opt, value);
     iterlimit_ = value;
   }
