@@ -28,11 +28,12 @@
 
 namespace {
 
-enum { NORMAL_VERBOSITY = 1 };
+enum { TERSE_VERBOSITY = -1 };
 
 const mp::OptionValueInfo VERBOSITIES[] = {
+  {"terse",  "Terse verbosity.", TERSE_VERBOSITY},
   {"quiet",  "All the traces are disabled (default).", 0},
-  {"normal", "Normal verbosity.", NORMAL_VERBOSITY},
+  {"normal", "Normal verbosity.", 1},
   {"detailed",
    "Detailed verbosity. Displays extended statistics on the model.", 2}
 };
@@ -439,6 +440,8 @@ LocalSolver::LocalSolver()
       &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<9>,
       OptionInfo(ANNEALING_LEVEL, 0));
 
+  FMT_STATIC_ASSERT(sizeof(VERBOSITIES) == sizeof(verbosities_),
+                    "size mismatch");
   std::size_t num_verbosities = sizeof(VERBOSITIES) / sizeof(*VERBOSITIES);
   std::copy(VERBOSITIES, VERBOSITIES + num_verbosities, verbosities_);
   if (ls_version < 5)
@@ -496,7 +499,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   }
 
   int verbosity = options_[VERBOSITY];
-  bool custom_output = verbosity == NORMAL_VERBOSITY;
+  bool custom_output = verbosity == TERSE_VERBOSITY;
 
   // Set options. LS requires this to be done after the model is closed.
   ls::LSParam param = solver.getParam();

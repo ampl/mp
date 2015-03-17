@@ -180,14 +180,14 @@ TEST(LocalSolverTest, VerbosityOption) {
 
   // Test option values.
   auto values = solver.FindOption("verbosity")->values();
-  EXPECT_EQ(3, values.size());
+  EXPECT_EQ(4, values.size());
   struct ValueInfo {
     const char *value;
     int data;
   };
   int detailed_verbosity = ls_version() >= 5 ? 2 : 10;
   ValueInfo value_info[] = {
-    {"quiet", 0}, {"normal", 1}, {"detailed", detailed_verbosity}
+    {"terse", -1}, {"quiet", 0}, {"normal", 1}, {"detailed", detailed_verbosity}
   };
   int index = 0;
   for (auto i = values.begin(), end = values.end(); i != end; ++i) {
@@ -205,9 +205,9 @@ TEST(LocalSolverTest, VerbosityOption) {
   EXPECT_EQ(detailed_verbosity,
             GetOption(solver, IntOption(&LSParam::getVerbosity)));
 
-  // Normal verbosity triggers custom output and the LocalSolver output
+  // Terse verbosity triggers custom output and the LocalSolver output
   // is disabled (verbosity = 0).
-  solver.SetStrOption("verbosity", "normal");
+  solver.SetStrOption("verbosity", "terse");
   EXPECT_EQ(0, GetOption(solver, IntOption(&LSParam::getVerbosity)));
 
   EXPECT_THROW(solver.SetDblOption("verbosity", 1.2), mp::OptionError);

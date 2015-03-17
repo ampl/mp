@@ -368,7 +368,7 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   int options_[NUM_OPTIONS];
   fmt::LongLong iterlimit_;
   std::string logfile_;
-  mp::OptionValueInfo verbosities_[3];
+  mp::OptionValueInfo verbosities_[4];
 
   struct OptionInfo {
     Option opt;
