@@ -1433,4 +1433,14 @@ TEST_F(NLSolverTest, InitialDualValue) {
   pb.algebraic_con(0).set_dual(0);
 }
 
+TEST_F(NLSolverTest, ZeroUB) {
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  auto info = mp::ProblemInfo();
+  info.num_vars = info.num_objs = 1;
+  pb.SetInfo(info);
+  pb.AddVar(-std::numeric_limits<double>::infinity(), 0, var::CONTINUOUS);
+  pb.AddObj(obj::MAX, NumericExpr(), 1).AddTerm(0, 1);
+  EXPECT_EQ(0, Solve(pb).obj_value());
+}
+
 #endif  // TESTS_NL_SOLVER_TEST_H_

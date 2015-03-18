@@ -87,7 +87,7 @@ void LSProblemBuilder::AddVar(double lb, double ub, var::Type type) {
     // LocalSolver doesn't allow infinite bounds, so use min an max double
     // values instead.
     if (lb == -inf)
-      lb = std::numeric_limits<double>::min();
+      lb = -std::numeric_limits<double>::max();
     if (ub == inf)
       ub = std::numeric_limits<double>::max();
     var = model_.createExpression(ls::O_Float, lb, ub);
