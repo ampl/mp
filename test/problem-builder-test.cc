@@ -73,9 +73,11 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   builder.var(0).set_value(0);
   builder.algebraic_con(0).set_dual(0);
 
+  // Suffixes are not reported as unhandled.
+  builder.AddIntSuffix("foo", 0, 0);
+  builder.AddDblSuffix("foo", 0, 0);
+
   EXPECT_DISPATCH(AddFunction("foo", 0, mp::func::NUMERIC), "function");
-  EXPECT_DISPATCH(AddIntSuffix("foo", 0, 0), "integer suffix");
-  EXPECT_DISPATCH(AddDblSuffix("foo", 0, 0), "double suffix");
   EXPECT_DISPATCH(MakeNumericConstant(0),
                   "numeric constant in nonlinear expression");
   EXPECT_DISPATCH(MakeVariable(0), "variable in nonlinear expression");
