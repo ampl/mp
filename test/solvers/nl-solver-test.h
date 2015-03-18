@@ -1434,6 +1434,7 @@ TEST_F(NLSolverTest, InitialDualValue) {
 }
 
 TEST_F(NLSolverTest, ZeroUB) {
+  if (!HasFeature(feature::FLOAT_CONST)) return;
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_objs = 1;
