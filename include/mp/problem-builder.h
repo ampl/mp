@@ -158,7 +158,6 @@ class ProblemBuilder : public SuffixManager {
   // Adds a suffix.
   IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int num_values) {
     MP_UNUSED3(kind, num_values, name);
-    MP_DISPATCH(ReportUnhandledConstruct("integer suffix"));
     return IntSuffixHandler();
   }
 
@@ -167,7 +166,6 @@ class ProblemBuilder : public SuffixManager {
   // Adds a suffix.
   DblSuffixHandler AddDblSuffix(fmt::StringRef name, int kind, int num_values) {
     MP_UNUSED3(kind, num_values, name);
-    MP_DISPATCH(ReportUnhandledConstruct("double suffix"));
     return DblSuffixHandler();
   }
 

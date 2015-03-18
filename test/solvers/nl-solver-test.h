@@ -1444,4 +1444,10 @@ TEST_F(NLSolverTest, ZeroUB) {
   EXPECT_EQ(0, Solve(pb).obj_value());
 }
 
+TEST_F(NLSolverTest, Suffixes) {
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  pb.AddIntSuffix("test", 0, 0);
+  pb.AddDblSuffix("test", 0, 0);
+}
+
 #endif  // TESTS_NL_SOLVER_TEST_H_
