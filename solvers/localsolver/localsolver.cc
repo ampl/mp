@@ -576,9 +576,6 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   // Solve the problem.
   DoSolve(solver);
 
-  Print("\nBest solution found at {} second(s) and {} iteration(s)\n",
-        callback.seconds_to_best_obj, callback.iters_to_best_obj);
-
   // Convert solution status.
   int solve_code = sol::UNKNOWN;
   ls::LSSolutionStatus ls_status = solver.getSolution().getStatus();
@@ -630,6 +627,9 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   }
   w << "\n";
   double solution_time = GetTimeAndReset(time);
+
+  w.write("Best solution found at {} second(s) and {} iteration(s)\n",
+          callback.seconds_to_best_obj, callback.iters_to_best_obj);
 
   ls::LSStatistics stats = solver.getStatistics();
   if (stats.getRunningTime() >= options_[TIMELIMIT])
