@@ -57,7 +57,7 @@ class Suffix {
   };
 
   template <typename SuffixType>
-  explicit Suffix(SuffixType s) : Suffix(s.impl_) {}
+  explicit Suffix(SuffixType s) : impl_(s.impl_) {}
 
   void value(int index, int &value) const { value = impl_->int_values[index]; }
   void set_value(int index, int value) { impl_->int_values[index] = value; }
@@ -199,18 +199,12 @@ class SuffixSet {
 
  public:
   SuffixSet() {}
-  ~SuffixSet() {
-    // Deallocate names and values.
-    for (Set::iterator i = set_.begin(), e = set_.end(); i != e; ++i) {
-      delete [] i->name.c_str();
-      delete [] i->int_values;
-    }
-  }
+  ~SuffixSet();
 
   template <typename T>
   BasicSuffix<T> Add(fmt::StringRef name, int kind, int num_values) {
-    BasicSuffix<T> suffix(&*set_.insert(Suffix::Impl(name, kind)).first);
-    Suffix::Impl *impl = const_cast<Suffix::Impl*>(suffix.impl_);
+    Suffix::Impl *impl = const_cast<Suffix::Impl*>(
+          &*set_.insert(Suffix::Impl(name, kind)).first);
     // Set name to empty string so that it is not deleted if new throws.
     std::size_t size = name.size();
     impl->name = fmt::StringRef(0, 0);
@@ -221,7 +215,7 @@ class SuffixSet {
     impl->name = fmt::StringRef(name_copy, size);
     impl->num_values = num_values;
     impl->values = new T[num_values];
-    return suffix;
+    return BasicSuffix<T>(impl);
   }
 
   // Finds a suffix with the specified name.

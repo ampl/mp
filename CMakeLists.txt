@@ -275,7 +275,7 @@ add_prefix(MP_HEADERS include/mp/
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
   clock.cc expr.cc expr-writer.h nl.cc option.cc os.cc precedence.h
-  problem.cc rstparser.cc sol.cc solver.cc solver-c.h)
+  problem.cc rstparser.cc sol.cc solver.cc suffix.cc solver-c.h)
 
 add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
   COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"
