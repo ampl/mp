@@ -24,7 +24,7 @@
 #include "feature.h"
 
 typedef mp::LocalSolver Solver;
-enum { FEATURES = ~feature::PLTERM };
+enum { FEATURES = feature::ALL };
 
 #define MP_THREAD_INTERRUPT 1
 

@@ -250,7 +250,24 @@ class LSProblemBuilder :
     return model_.createExpression(ls::O_If, condition, true_expr, false_expr);
   }
 
-  // LocalSolver doesn't support piecewise-liner terms and arbitrary functions.
+  struct PLTermBuilder {
+    std::vector<double> slopes;
+    std::vector<double> breakpoints;
+
+    explicit PLTermBuilder(int num_breakpoints) {
+      slopes.reserve(num_breakpoints + 1);
+      breakpoints.reserve(num_breakpoints);
+    }
+
+    void AddSlope(double slope) { slopes.push_back(slope); }
+    void AddBreakpoint(double breakpoint) { breakpoints.push_back(breakpoint); }
+  };
+
+  PLTermBuilder BeginPLTerm(int num_breakpoints) {
+    return PLTermBuilder(num_breakpoints);
+  }
+  ls::LSExpression EndPLTerm(
+        const PLTermBuilder &builder, ls::LSExpression arg);
 
   class ExprBuilder {
    private:

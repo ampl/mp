@@ -25,6 +25,7 @@
 #include <cmath>
 #include <limits>
 #include "mp/clock.h"
+#include "mp/safeint.h"
 
 namespace {
 
@@ -250,6 +251,65 @@ ls::LSExpression LSProblemBuilder::MakeBinary(
     return Base::MakeBinary(kind, lhs, rhs);
   }
   return MakeBinary(op, lhs, rhs);
+}
+
+ls::LSExpression LSProblemBuilder::EndPLTerm(
+    const PLTermBuilder &builder, ls::LSExpression arg) {
+  std::size_t num_breakpoints = static_cast<int>(builder.breakpoints.size());
+  assert(builder.slopes.size() == num_breakpoints + 1);
+  // Find the starting index of nonnegative breakpoints.
+  std::size_t nonnegative_start = 0;
+  for (; nonnegative_start < num_breakpoints; ++nonnegative_start) {
+    if (builder.breakpoints[nonnegative_start] >= 0)
+      break;
+  }
+  // Process nonnegative breakpoints.
+  struct Converter {
+    double prev_x, prev_y;
+    ls::LSExpression xs, ys;
+
+    // Swaps elements i and j in array.
+    void swap(ls::LSExpression array, int i, int j) {
+      ls::LSExpression temp = array.getOperand(i);
+      array.setOperand(i, array.getOperand(j));
+      array.setOperand(j, temp);
+    }
+
+    explicit Converter(ls::LSModel model) : prev_x(0), prev_y(0) {
+      xs = model.createExpression(ls::O_Array);
+      ys = model.createExpression(ls::O_Array);
+    }
+
+    void Convert(double x, double slope) {
+      xs.addOperand(x);
+      double y = slope * (x - prev_x) + prev_y;
+      ys.addOperand(y);
+      prev_x = x;
+      prev_y = y;
+    }
+
+    // Reverse the order of points as xs must be nondecreasing.
+    void Reverse() {
+      for (int i = 0, j = xs.getNbOperands() - 1; i < j; ++i, --j) {
+        swap(xs, i, j);
+        swap(ys, i, j);
+      }
+    }
+  };
+  Converter converter(model_);
+  // Convert negative breakpoints.
+  for (int i = val(SafeInt<int>(nonnegative_start)) - 1; i >= 0; --i)
+    converter.Convert(builder.breakpoints[i], builder.slopes[i + 1]);
+  double big = 1e10;
+  converter.Convert(-big, builder.slopes[0]);
+  converter.Reverse();
+  // Convert nonnegative breakpoints.
+  for (std::size_t i = nonnegative_start; i < num_breakpoints; ++i)
+    converter.Convert(builder.breakpoints[i], builder.slopes[i]);
+  converter.Convert(big, builder.slopes[num_breakpoints]);
+  // TODO: handle infinity
+  return model_.createExpression(
+        ls::O_Piecewise, converter.xs, converter.ys, arg);
 }
 
 LSProblemBuilder::ExprBuilder LSProblemBuilder::BeginIterated(
