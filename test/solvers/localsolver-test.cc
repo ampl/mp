@@ -255,3 +255,25 @@ PhaseOption<fmt::LongLong> iterlimit(
     &LSPhase::getIterationLimit, &LSPhase::setIterationLimit);
 INSTANTIATE_TEST_CASE_P(
     Limit, OptionTest, testing::Values(&timelimit, &iterlimit));
+
+TEST(LocalSolverTest, ObjectiveBound) {
+  struct TestSolver : mp::LocalSolver {
+    localsolver::lsint bound;
+    TestSolver() : bound(0) {}
+    void DoSolve(localsolver::LocalSolver &s) {
+      bound = s.getParam().getObjectiveBound(0);
+    }
+  };
+  TestSolver solver;
+  mp::LSProblemBuilder pb(solver);
+  pb.AddVar(0, 1, var::CONTINUOUS);
+  pb.AddObj(obj::MIN, localsolver::LSExpression(), 0);
+  mp::LSProblemBuilder::IntSuffixHandler handler =
+      pb.AddIntSuffix("bound", mp::suf::OBJ, 1);
+  handler.SetValue(0, 42);
+  TestSolutionHandler sh;
+  solver.Solve(pb, sh);
+  EXPECT_EQ(42, solver.bound);
+}
+
+// TODO: test double bound
