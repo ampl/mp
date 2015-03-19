@@ -583,7 +583,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
        i = obj_bounds.begin(), e = obj_bounds.end(); i != e; ++i) {
     int index = i->index();
     if (model.getObjective(index).isDouble())
-      param.setObjectiveBound(index, i->dbl_value());
+      param.setDoubleObjectiveBound(index, i->dbl_value());
     else
       param.setObjectiveBound(index, i->int_value());
   }
