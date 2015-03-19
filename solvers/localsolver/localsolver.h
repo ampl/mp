@@ -153,9 +153,8 @@ class LSProblemBuilder :
     explicit SuffixHandler(std::vector<Bound> *bounds = 0) : bounds_(bounds) {}
 
     void SetValue(int index, T value) {
-      if (!bounds_) return;
-      Bound b = {index, value};
-      bounds_->push_back(b);
+      if (bounds_)
+        bounds_->push_back(Bound(index, value));
     }
   };
 
