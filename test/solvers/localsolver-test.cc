@@ -256,24 +256,54 @@ PhaseOption<fmt::LongLong> iterlimit(
 INSTANTIATE_TEST_CASE_P(
     Limit, OptionTest, testing::Values(&timelimit, &iterlimit));
 
-TEST(LocalSolverTest, ObjectiveBound) {
+template <typename SuffixInfo>
+class SuffixTest : public ::testing::Test{};
+
+struct IntBoundInfo {
+  typedef localsolver::lsint Type;
+
+  static var::Type type() { return var::INTEGER; }
+  static Type value() { return 42; }
+  static Type get(const localsolver::LSParam &p) {
+    return p.getObjectiveBound(0);
+  }
+  static mp::LSProblemBuilder::IntSuffixHandler AddSuffix(
+      mp::LSProblemBuilder &pb) {
+    return pb.AddIntSuffix("bound", mp::suf::OBJ, 1);
+  }
+};
+
+struct DblBoundInfo {
+  typedef double Type;
+
+  static var::Type type() { return var::CONTINUOUS; }
+  static Type value() { return 4.2; }
+  static Type get(const localsolver::LSParam &p) {
+    return p.getDoubleObjectiveBound(0);
+  }
+  static mp::LSProblemBuilder::DblSuffixHandler AddSuffix(
+      mp::LSProblemBuilder &pb) {
+    return pb.AddDblSuffix("bound", mp::suf::OBJ, 1);
+  }
+};
+
+typedef ::testing::Types<IntBoundInfo, DblBoundInfo> SuffixTestArgs;
+TYPED_TEST_CASE(SuffixTest, SuffixTestArgs);
+
+TYPED_TEST(SuffixTest, ObjBound) {
   struct TestSolver : mp::LocalSolver {
-    localsolver::lsint bound;
+    typename TypeParam::Type bound;
     TestSolver() : bound(0) {}
     void DoSolve(localsolver::LocalSolver &s) {
-      bound = s.getParam().getObjectiveBound(0);
+      bound = TypeParam::get(s.getParam());
     }
   };
   TestSolver solver;
   mp::LSProblemBuilder pb(solver);
-  pb.AddVar(0, 1, var::CONTINUOUS);
-  pb.AddObj(obj::MIN, localsolver::LSExpression(), 0);
-  mp::LSProblemBuilder::IntSuffixHandler handler =
-      pb.AddIntSuffix("bound", mp::suf::OBJ, 1);
-  handler.SetValue(0, 42);
+  pb.AddVar(0, 1, TypeParam::type());
+  pb.AddObj(obj::MIN, pb.MakeVariable(0), 0);
+  TypeParam::AddSuffix(pb).SetValue(0, TypeParam::value());
   TestSolutionHandler sh;
   solver.Solve(pb, sh);
-  EXPECT_EQ(42, solver.bound);
+  EXPECT_EQ(TypeParam::value(), solver.bound);
 }
-
-// TODO: test double bound
