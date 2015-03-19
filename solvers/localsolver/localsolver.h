@@ -44,6 +44,32 @@ inline ls::lsint AsLSInt(int value) { return value; }
 // This class provides methods for building a problem in LocalSolver format.
 class LSProblemBuilder :
     public ProblemBuilder<LSProblemBuilder, ls::LSExpression> {
+ public:
+  class Bound {
+   private:
+    int index_;
+    bool isint_;
+    union {
+      int int_value_;
+      double dbl_value_;
+    };
+
+   public:
+    Bound(int index, int value)
+      : index_(index), isint_(true), int_value_(value) {}
+    Bound(int index, double value)
+      : index_(index), isint_(false), dbl_value_(value) {}
+
+    int index() const { return index_; }
+
+    ls::lsint int_value() const {
+      return isint_ ? AsLSInt(int_value_) : static_cast<ls::lsint>(dbl_value_);
+    }
+    double dbl_value() const {
+      return isint_ ? static_cast<double>(int_value_) : dbl_value_;
+    }
+  };
+
  private:
   // LocalSolver only supports one model per solver.
   ls::LocalSolver solver_;
@@ -54,6 +80,8 @@ class LSProblemBuilder :
   std::vector<ls::LSExpression> vars_;
   std::vector<ls::LSExpression> common_exprs_;
   std::vector<double> initial_values_;
+
+  std::vector<Bound> obj_bounds_;
 
   typedef ProblemBuilder<LSProblemBuilder, ls::LSExpression> Base;
 
@@ -114,6 +142,31 @@ class LSProblemBuilder :
     if (initial_values_.empty())
       initial_values_.resize(vars_.size());
     initial_values_[var_index] = value;
+  }
+
+  template <typename T>
+  class SuffixHandler {
+   private:
+    std::vector<Bound> *bounds_;
+
+   public:
+    explicit SuffixHandler(std::vector<Bound> *bounds = 0) : bounds_(bounds) {}
+
+    void SetValue(int index, int value) {
+      if (!bounds_) return;
+      Bound b = {index, value};
+      bounds_->push_back(b);
+    }
+  };
+
+  template <typename T>
+  SuffixHandler<T> AddSuffix(fmt::StringRef name, int kind, int num_values) {
+    if (std::strncmp(name.c_str(), "bound", name.size()) != 0 ||
+        (kind & suf::MASK) != suf::OBJ) {
+      return SuffixHandler<T>();
+    }
+    obj_bounds_.reserve(num_values);
+    return SuffixHandler<T>(&obj_bounds_);
   }
 
  public:
@@ -369,6 +422,19 @@ class LSProblemBuilder :
   }
 
   ls::LSExpression EndPairwise(PairwiseExprBuilder builder);
+
+  const std::vector<Bound> &obj_bounds() const { return obj_bounds_; }
+
+  typedef SuffixHandler<int> IntSuffixHandler;
+  typedef SuffixHandler<double> DblSuffixHandler;
+
+  IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int num_values) {
+    return AddSuffix<int>(name, kind, num_values);
+  }
+
+  DblSuffixHandler AddDblSuffix(fmt::StringRef name, int kind, int num_values) {
+    return AddSuffix<double>(name, kind, num_values);
+  }
 };
 
 class LocalSolver : public SolverImpl<LSProblemBuilder> {

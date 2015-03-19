@@ -577,6 +577,17 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   phase.setIterationLimit(iterlimit_);
   interrupter()->SetHandler(StopSolver, &solver);
 
+  typedef LSProblemBuilder::Bound Bound;
+  const std::vector<Bound> &obj_bounds = builder.obj_bounds();
+  for (std::vector<Bound>::const_iterator
+       i = obj_bounds.begin(), e = obj_bounds.end(); i != e; ++i) {
+    int index = i->index();
+    if (model.getObjective(index).isDouble())
+      param.setObjectiveBound(index, i->dbl_value());
+    else
+      param.setObjectiveBound(index, i->int_value());
+  }
+
   struct Callback {
     LocalSolver &solver;
     ls::LocalSolver &ls_solver;
