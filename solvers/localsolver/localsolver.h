@@ -264,6 +264,8 @@ class LSProblemBuilder :
   };
 
   PLTermBuilder BeginPLTerm(int num_breakpoints) {
+    if (localsolver::LSVersion::getMajorVersionNumber() < 5)
+      Base::BeginPLTerm(num_breakpoints);
     return PLTermBuilder(num_breakpoints);
   }
   ls::LSExpression EndPLTerm(

@@ -24,7 +24,8 @@
 #include "feature.h"
 
 typedef mp::LocalSolver Solver;
-enum { FEATURES = feature::ALL };
+unsigned FEATURES = localsolver::LSVersion::getMajorVersionNumber() < 5 ?
+      ~feature::PLTERM : feature::ALL;
 
 #define MP_THREAD_INTERRUPT 1
 

@@ -308,8 +308,10 @@ ls::LSExpression LSProblemBuilder::EndPLTerm(
     converter.Convert(builder.breakpoints[i], builder.slopes[i]);
   converter.Convert(big, builder.slopes[num_breakpoints]);
   // TODO: handle infinity
+  // For compatibility with pre-5.0 versions:
+  ls::LSOperator piecewise = static_cast<ls::LSOperator>(ls::O_Int + 1);
   return model_.createExpression(
-        ls::O_Piecewise, converter.xs, converter.ys, arg);
+        piecewise, converter.xs, converter.ys, arg);
 }
 
 LSProblemBuilder::ExprBuilder LSProblemBuilder::BeginIterated(
