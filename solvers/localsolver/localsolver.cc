@@ -269,7 +269,7 @@ ls::LSExpression LSProblemBuilder::EndPLTerm(
     ls::LSExpression xs, ys;
 
     // Swaps elements i and j in array.
-    void swap(ls::LSExpression array, int i, int j) {
+    static void swap(ls::LSExpression array, int i, int j) {
       ls::LSExpression temp = array.getOperand(i);
       array.setOperand(i, array.getOperand(j));
       array.setOperand(j, temp);
@@ -304,6 +304,7 @@ ls::LSExpression LSProblemBuilder::EndPLTerm(
   converter.Convert(-big, builder.slopes[0]);
   converter.Reverse();
   // Convert nonnegative breakpoints.
+  converter.prev_x = converter.prev_y = 0;
   for (std::size_t i = nonnegative_start; i < num_breakpoints; ++i)
     converter.Convert(builder.breakpoints[i], builder.slopes[i]);
   converter.Convert(big, builder.slopes[num_breakpoints]);
