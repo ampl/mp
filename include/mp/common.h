@@ -61,7 +61,7 @@ enum Kind {
     \rst
     .. _numeric-constant:
 
-    A number such as 42 or -1.23e-4
+    A number such as ``42`` or ``-1.23e-4``.
     \endrst
    */
   NUMBER = FIRST_NUMERIC,
@@ -90,34 +90,14 @@ enum Kind {
   LAST_REFERENCE = COMMON_EXPR,
 
   // Unary expressions.
-  // TODO: document expressions
   /**
     \rst
     .. _unary-expr:
-    .. _binary-expr:
-    .. _if-expr:
-    .. _plterm:
-    .. _call-expr:
-    .. _vararg-expr:
-    .. _sum-expr:
-    .. _numberof-expr:
-    .. _numberof-sym-expr:
-    .. _count-expr:
-    .. _logical-expr:
-    .. _logical-constant:
-    .. _not-expr:
-    .. _binary-logical-expr:
-    .. _relational-expr:
-    .. _logical-count-expr:
-    .. _implication-expr:
-    .. _iterated-logical-expr:
-    .. _pairwise-expr:
-    .. _string-expr:
-    .. _symbolic-if-expr:
 
-    Expression kind.
+    A unary numeric expression.
+    Examples: ``-x``, ``sin(x)``, where ``x`` is a variable.
     \endrst
-   */
+  */
   FIRST_UNARY,
   MINUS = FIRST_UNARY,
   ABS,
@@ -143,6 +123,14 @@ enum Kind {
   LAST_UNARY = ATANH,
 
   // Binary expressions.
+  /**
+    \rst
+    .. _binary-expr:
+
+    A binary numeric expression.
+    Examples: ``x / y``, ``atan2(x, y)``, where ``x`` and ``y`` are variables.
+    \endrst
+  */
   FIRST_BINARY,
   ADD = FIRST_BINARY,
   SUB,
@@ -160,8 +148,35 @@ enum Kind {
   TRUNC,
   LAST_BINARY = TRUNC,
 
+  /**
+    \rst
+    .. _if-expr:
+
+    An if-then-else expression.
+    Example: ``if x != 0 then y else z``, where ``x``, ``y`` and ``z`` are
+    variables.
+    \endrst
+  */
   IF,
+
+  /**
+    \rst
+    .. _plterm:
+
+    A piecewise-linear term.
+    Example: ``<<0; -1, 1>> x``, where ``x`` is a variable.
+    \endrst
+  */
   PLTERM,
+
+  /**
+    \rst
+    .. _call-expr:
+
+    A function call expression.
+    Example: ``f(x)``, where ``f`` is a function and ``x`` is a variable.
+    \endrst
+  */
   CALL,
 
   // Iterated expressions.
@@ -169,6 +184,30 @@ enum Kind {
   // from the article "AMPL: A Mathematical Programming Language" and is
   // used to denote operators indexed over sets.
   FIRST_ITERATED,
+
+  // TODO: document expressions
+  /**
+    \rst
+    .. _vararg-expr:
+    .. _sum-expr:
+    .. _numberof-expr:
+    .. _numberof-sym-expr:
+    .. _count-expr:
+    .. _logical-expr:
+    .. _logical-constant:
+    .. _not-expr:
+    .. _binary-logical-expr:
+    .. _relational-expr:
+    .. _logical-count-expr:
+    .. _implication-expr:
+    .. _iterated-logical-expr:
+    .. _pairwise-expr:
+    .. _string-expr:
+    .. _symbolic-if-expr:
+
+    Expression kind.
+    \endrst
+   */
   FIRST_VARARG = FIRST_ITERATED,
   MIN = FIRST_VARARG,
   MAX,
