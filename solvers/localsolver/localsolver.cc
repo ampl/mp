@@ -75,8 +75,9 @@ LSProblemBuilder::HyperbolicTerms
   return terms;
 }
 
-LSProblemBuilder::LSProblemBuilder(LocalSolver &)
-  : model_(solver_.getModel()), num_objs_(0), num_cons_(0) {
+LSProblemBuilder::LSProblemBuilder(LocalSolver &s)
+  : model_(solver_.getModel()),
+    num_objs_(0), num_cons_(0), pl_bigm_(s.pl_bigm()) {
   solver_.getParam().setVerbosity(0);
 }
 
@@ -306,8 +307,7 @@ ls::LSExpression LSProblemBuilder::EndPLTerm(
     double max_abs_bp = 0;
     for (std::size_t i = 0; i < num_breakpoints; ++i)
       max_abs_bp = std::max(max_abs_bp, std::abs(builder.breakpoints[i]));
-    double pl_bigm = 1e6; // TODO: option
-    double bound = std::max(pl_bigm, 2 * max_abs_bp);
+    double bound = std::max(pl_bigm_, 2 * max_abs_bp);
     if (lb > -LS_INF) bound = std::max(bound, std::abs(lb));
     if (ub <  LS_INF) bound = std::max(bound, std::abs(ub));
     if (lb == -LS_INF) lb = -bound;
@@ -507,6 +507,7 @@ LocalSolver::LocalSolver()
   options_[TIME_BETWEEN_DISPLAYS] = 1;
   options_[TIMELIMIT] = 10;
   iterlimit_ = std::numeric_limits<fmt::LongLong>::max();
+  pl_bigm_ = 1e6;
 
   int ls_version = localsolver::LSVersion::getMajorVersionNumber();
   std::string version = fmt::format("{}.{}",
@@ -571,6 +572,10 @@ LocalSolver::LocalSolver()
       "Iteration limit (nonnegative integer). "
       "Default = largest positive integer.",
       &LocalSolver::GetIterLimit, &LocalSolver::SetIterLimit);
+
+  AddDblOption("pl_bigm",
+    "The artificial bound used for unbounded variables in piecewise-linear "
+    "terms. Default = 1e6.", &LocalSolver::GetPLBigM, &LocalSolver::SetPLBigM);
 }
 
 void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {

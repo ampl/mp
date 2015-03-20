@@ -326,13 +326,18 @@ class PLTermTest : public ::testing::Test {
 
   PLTermTest() : pb(solver) {}
 
-  localsolver::LSExpression AddPLTerm(double lb, double ub, double bp = 0) {
+  localsolver::LSExpression AddPLTerm(
+      mp::LSProblemBuilder &pb, double lb, double ub, double bp = 0) {
     pb.AddVar(lb, ub, var::CONTINUOUS);
     auto pl_builder = pb.BeginPLTerm(1);
     pl_builder.AddSlope(-1);
     pl_builder.AddBreakpoint(bp);
     pl_builder.AddSlope(1);
     return pb.EndPLTerm(pl_builder, pb.MakeVariable(0));
+  }
+
+  localsolver::LSExpression AddPLTerm(double lb, double ub, double bp = 0) {
+    return AddPLTerm(pb, lb, ub, bp);
   }
 };
 
@@ -391,4 +396,20 @@ TEST_F(PLTermTest, BoundsFromLargeBound) {
               ElementsAre(bound, 0, -bound));
   ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)),
               ElementsAre(-bound, 0, -bound));
+}
+
+TEST_F(PLTermTest, PLBigMOption) {
+  if ((FEATURES & feature::PLTERM) == 0) return;
+  if ((FEATURES & feature::PLTERM) == 0) return;
+  EXPECT_EQ(1e6, solver.GetDblOption("pl_bigm"));
+  double pl_bigm = 100;
+  solver.SetDblOption("pl_bigm", pl_bigm);
+  EXPECT_EQ(pl_bigm, solver.GetDblOption("pl_bigm"));
+  EXPECT_EQ(pl_bigm, solver.pl_bigm());
+  mp::LSProblemBuilder pb(solver);
+  auto plterm = AddPLTerm(pb, -10, std::numeric_limits<double>::infinity());
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)),
+              ElementsAre(-10, 0, pl_bigm));
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)),
+              ElementsAre(10, 0, pl_bigm));
 }

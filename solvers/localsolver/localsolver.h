@@ -76,6 +76,7 @@ class LSProblemBuilder :
   ls::LSModel model_;
   int num_objs_;
   int num_cons_;
+  double pl_bigm_;
 
   std::vector<ls::LSExpression> vars_;
   std::vector<ls::LSExpression> common_exprs_;
@@ -451,6 +452,7 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
 
   int options_[NUM_OPTIONS];
   fmt::LongLong iterlimit_;
+  double pl_bigm_;
   std::string logfile_;
   mp::OptionValueInfo verbosities_[4];
 
@@ -487,6 +489,9 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
     iterlimit_ = value;
   }
 
+  double GetPLBigM(const SolverOption &) const { return pl_bigm_; }
+  void SetPLBigM(const SolverOption &, double value) { pl_bigm_ = value; }
+
  protected:
   virtual void DoSolve(ls::LocalSolver &s) {
     s.solve();
@@ -498,6 +503,8 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   void Solve(ProblemBuilder &builder, SolutionHandler &sh);
 
   LocalSolver &GetProblemBuilder(fmt::StringRef) { return *this; }
+
+  double pl_bigm() const { return pl_bigm_; }
 };
 }  // namespace mp
 
