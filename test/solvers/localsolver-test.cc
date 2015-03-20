@@ -333,3 +333,29 @@ TEST(LocalSolverTest, PLTermBounds) {
   ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)),
               ElementsAre(1.1, 0, 22.2));
 }
+
+TEST(LocalSolverTest, PLTermBoundsBelowBreakpoints) {
+  mp::LocalSolver solver;
+  mp::LSProblemBuilder pb(solver);
+  pb.AddVar(-20, -10, var::CONTINUOUS);
+  auto pl_builder = pb.BeginPLTerm(1);
+  pl_builder.AddSlope(-1);
+  pl_builder.AddBreakpoint(0);
+  pl_builder.AddSlope(1);
+  auto plterm = pb.EndPLTerm(pl_builder, pb.MakeVariable(0));
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)), ElementsAre(-20, -10));
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)), ElementsAre(20, 10));
+}
+
+TEST(LocalSolverTest, PLTermBoundsAboveBreakpoints) {
+  mp::LocalSolver solver;
+  mp::LSProblemBuilder pb(solver);
+  pb.AddVar(10, 20, var::CONTINUOUS);
+  auto pl_builder = pb.BeginPLTerm(1);
+  pl_builder.AddSlope(-1);
+  pl_builder.AddBreakpoint(0);
+  pl_builder.AddSlope(1);
+  auto plterm = pb.EndPLTerm(pl_builder, pb.MakeVariable(0));
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)), ElementsAre(10, 20));
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)), ElementsAre(10, 20));
+}
