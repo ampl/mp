@@ -267,7 +267,7 @@ struct IntBoundInfo {
   typedef localsolver::lsint Type;
 
   static var::Type type() { return var::INTEGER; }
-  static Type value() { return 42; }
+  static int value() { return 42; }
   static Type get(const localsolver::LSParam &p) {
     return p.getObjectiveBound(0);
   }
