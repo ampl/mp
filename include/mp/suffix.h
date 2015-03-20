@@ -210,7 +210,7 @@ class SuffixSet {
     impl->name = fmt::StringRef(0, 0);
     char *name_copy = new char[size + 1];
     const char *s = name.c_str();
-    std::copy(s, s + size, name_copy);
+    std::copy(s, s + size, fmt::internal::make_ptr(name_copy, size));
     name_copy[size] = 0;
     impl->name = fmt::StringRef(name_copy, size);
     impl->num_values = num_values;
