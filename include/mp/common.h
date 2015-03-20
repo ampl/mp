@@ -185,12 +185,68 @@ enum Kind {
   // used to denote operators indexed over sets.
   FIRST_ITERATED,
 
-  // TODO: document expressions
   /**
     \rst
     .. _vararg-expr:
+
+    A varag expression (``min`` or ``max``). Example: ``min{i in I} x[i]``,
+    where ``I`` is a set and ``x`` is a variable.
+    \endrst
+  */
+  FIRST_VARARG = FIRST_ITERATED,
+  MIN = FIRST_VARARG,
+  MAX,
+  LAST_VARARG = MAX,
+
+  /**
+    \rst
     .. _sum-expr:
+
+    A sum expression. Example: ``sum{i in I} x[i]``, where ``I`` is a set and
+    ``x`` is a variable.
+    \endrst
+  */
+  SUM,
+
+  /**
+    \rst
     .. _numberof-expr:
+
+    A numberof expression. Example: ``numberof 42 in ({i in I} x[i])``,
+    where ``I`` is a set and ``x`` is a variable.
+    \endrst
+  */
+  NUMBEROF,
+  LAST_ITERATED = NUMBEROF,
+
+  /**
+    \rst
+    .. _numberof-sym-expr:
+
+    A symbolic numberof expression.
+    Example: ``numberof (if x then 'a' else 'b') in ('a', 'b', 'c')``,
+    where ``x`` is a variable.
+    \endrst
+  */
+  NUMBEROF_SYM,
+
+  /**
+    \rst
+    .. _count-expr:
+
+    A count expression.
+    Example: ``count{i in I} (x[i] >= 0)``, where ``I`` is a set and ``x``
+    is a variable.
+    \endrst
+  */
+  COUNT,
+  LAST_NUMERIC = COUNT,
+
+  // To simplify checks, logical expression kinds are in the range
+  // [FIRST_LOGICAL, LAST_LOGICAL].
+  // TODO: document logical expressions
+  /**
+    \rst
     .. _numberof-sym-expr:
     .. _count-expr:
     .. _logical-expr:
@@ -205,23 +261,9 @@ enum Kind {
     .. _string-expr:
     .. _symbolic-if-expr:
 
-    Expression kind.
+    A logical expression.
     \endrst
    */
-  FIRST_VARARG = FIRST_ITERATED,
-  MIN = FIRST_VARARG,
-  MAX,
-  LAST_VARARG = MAX,
-  SUM,
-  NUMBEROF,
-  LAST_ITERATED = NUMBEROF,
-
-  NUMBEROF_SYM,
-  COUNT,
-  LAST_NUMERIC = COUNT,
-
-  // To simplify checks, logical expression kinds are in the range
-  // [FIRST_LOGICAL, LAST_LOGICAL].
   FIRST_LOGICAL,
   BOOL = FIRST_LOGICAL,
   NOT,
