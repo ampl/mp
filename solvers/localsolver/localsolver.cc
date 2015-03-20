@@ -265,6 +265,7 @@ ls::LSExpression LSProblemBuilder::EndPLTerm(
   }
   // Process nonnegative breakpoints.
   struct Converter {
+    double lb, ub;
     double prev_x, prev_y;
     ls::LSExpression xs, ys;
 
@@ -275,15 +276,17 @@ ls::LSExpression LSProblemBuilder::EndPLTerm(
       array.setOperand(j, temp);
     }
 
-    explicit Converter(ls::LSModel model) : prev_x(0), prev_y(0) {
-      xs = model.createExpression(ls::O_Array);
-      ys = model.createExpression(ls::O_Array);
-    }
+    explicit Converter(ls::LSModel model, double lb, double ub)
+      : lb(lb), ub(ub), prev_x(0), prev_y(0),
+        xs(model.createExpression(ls::O_Array)),
+        ys(model.createExpression(ls::O_Array)) {}
 
     void Convert(double x, double slope) {
-      xs.addOperand(x);
       double y = slope * (x - prev_x) + prev_y;
-      ys.addOperand(y);
+      if (x >= lb && x <= ub) {
+        xs.addOperand(x);
+        ys.addOperand(y);
+      }
       prev_x = x;
       prev_y = y;
     }
@@ -296,19 +299,39 @@ ls::LSExpression LSProblemBuilder::EndPLTerm(
       }
     }
   };
-  Converter converter(model_);
+  double lb = arg.getOperand(0).getDoubleValue();
+  double ub = arg.getOperand(1).getDoubleValue();
+  // TODO: handle unbounded argument
+  Converter converter(model_, lb, ub);
   // Convert negative breakpoints.
-  for (int i = val(SafeInt<int>(nonnegative_start)) - 1; i >= 0; --i)
-    converter.Convert(builder.breakpoints[i], builder.slopes[i + 1]);
-  double big = 1e10;
-  converter.Convert(-big, builder.slopes[0]);
-  converter.Reverse();
+  {
+    int bp_index = val(SafeInt<int>(nonnegative_start)) - 1;
+    for (; bp_index >= 0; --bp_index) {
+      double x = builder.breakpoints[bp_index];
+      if (x < lb) break;
+      converter.Convert(x, builder.slopes[bp_index + 1]);
+    }
+    if (lb < converter.prev_x)
+      converter.Convert(lb, builder.slopes[bp_index + 1]);
+    converter.Reverse();
+  }
   // Convert nonnegative breakpoints.
-  converter.prev_x = converter.prev_y = 0;
-  for (std::size_t i = nonnegative_start; i < num_breakpoints; ++i)
-    converter.Convert(builder.breakpoints[i], builder.slopes[i]);
-  converter.Convert(big, builder.slopes[num_breakpoints]);
-  // TODO: handle infinity
+  {
+    converter.prev_x = converter.prev_y = 0;
+    std::size_t bp_index = nonnegative_start;
+    for (; bp_index < num_breakpoints; ++bp_index) {
+      double x = builder.breakpoints[bp_index];
+      if (x > ub) break;
+      converter.Convert(x, builder.slopes[bp_index]);
+    }
+    if (ub > converter.prev_x)
+      converter.Convert(ub, builder.slopes[bp_index]);
+  }
+  if (lb == ub) {
+    // LocalSolver requires at least two points.
+    converter.xs.addOperand(converter.xs.getOperand(0));
+    converter.ys.addOperand(converter.ys.getOperand(0));
+  }
   // For compatibility with pre-5.0 versions:
   ls::LSOperator piecewise = static_cast<ls::LSOperator>(ls::O_Int + 1);
   return model_.createExpression(

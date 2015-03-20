@@ -23,6 +23,10 @@
 #include "localsolver/localsolver.h"
 #include "feature.h"
 
+#include <gmock/gmock.h>
+
+using testing::ElementsAre;
+
 typedef mp::LocalSolver Solver;
 unsigned FEATURES = localsolver::LSVersion::getMajorVersionNumber() < 5 ?
       ~feature::PLTERM : feature::ALL;
@@ -306,4 +310,26 @@ TYPED_TEST(SuffixTest, ObjBound) {
   TestSolutionHandler sh;
   solver.Solve(pb, sh);
   EXPECT_EQ(TypeParam::value(), solver.bound);
+}
+
+std::vector<double> LSArrayToVector(localsolver::LSExpression array) {
+  std::vector<double> result;
+  for (int i = 0, n = array.getNbOperands(); i < n; ++i)
+    result.push_back(array.getOperand(i).getDoubleValue());
+  return result;
+}
+
+TEST(LocalSolverTest, PLTermBounds) {
+  mp::LocalSolver solver;
+  mp::LSProblemBuilder pb(solver);
+  pb.AddVar(-1.1, 22.2, var::CONTINUOUS);
+  auto pl_builder = pb.BeginPLTerm(1);
+  pl_builder.AddSlope(-1);
+  pl_builder.AddBreakpoint(0);
+  pl_builder.AddSlope(1);
+  auto plterm = pb.EndPLTerm(pl_builder, pb.MakeVariable(0));
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)),
+              ElementsAre(-1.1, 0, 22.2));
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)),
+              ElementsAre(1.1, 0, 22.2));
 }
