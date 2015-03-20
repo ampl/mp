@@ -881,7 +881,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`symbolic if expression <symbolic-if-expr>`.
+    Receives notification of a :ref:`symbolic if expression <ifsym>`.
     \endrst
    */
   Expr OnSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {

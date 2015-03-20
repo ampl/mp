@@ -54,7 +54,7 @@ enum Kind {
 
     A numeric expression.
     \endrst
-  */
+   */
   FIRST_NUMERIC = FIRST_EXPR,
 
   /**
@@ -75,7 +75,7 @@ enum Kind {
 
     A reference to a variable.
     \endrst
-  */
+   */
   VARIABLE = FIRST_REFERENCE,
 
   /**
@@ -84,7 +84,7 @@ enum Kind {
 
     A reference to a common expression.
     \endrst
-  */
+   */
   COMMON_EXPR,
 
   LAST_REFERENCE = COMMON_EXPR,
@@ -97,7 +97,7 @@ enum Kind {
     A unary numeric expression.
     Examples: ``-x``, ``sin(x)``, where ``x`` is a variable.
     \endrst
-  */
+   */
   FIRST_UNARY,
   MINUS = FIRST_UNARY,
   ABS,
@@ -130,7 +130,7 @@ enum Kind {
     A binary numeric expression.
     Examples: ``x / y``, ``atan2(x, y)``, where ``x`` and ``y`` are variables.
     \endrst
-  */
+   */
   FIRST_BINARY,
   ADD = FIRST_BINARY,
   SUB,
@@ -156,7 +156,7 @@ enum Kind {
     Example: ``if x != 0 then y else z``, where ``x``, ``y`` and ``z`` are
     variables.
     \endrst
-  */
+   */
   IF,
 
   /**
@@ -166,7 +166,7 @@ enum Kind {
     A piecewise-linear term.
     Example: ``<<0; -1, 1>> x``, where ``x`` is a variable.
     \endrst
-  */
+   */
   PLTERM,
 
   /**
@@ -176,7 +176,7 @@ enum Kind {
     A function call expression.
     Example: ``f(x)``, where ``f`` is a function and ``x`` is a variable.
     \endrst
-  */
+   */
   CALL,
 
   // Iterated expressions.
@@ -192,7 +192,7 @@ enum Kind {
     A varag expression (``min`` or ``max``). Example: ``min{i in I} x[i]``,
     where ``I`` is a set and ``x`` is a variable.
     \endrst
-  */
+   */
   FIRST_VARARG = FIRST_ITERATED,
   MIN = FIRST_VARARG,
   MAX,
@@ -205,7 +205,7 @@ enum Kind {
     A sum expression. Example: ``sum{i in I} x[i]``, where ``I`` is a set and
     ``x`` is a variable.
     \endrst
-  */
+   */
   SUM,
 
   /**
@@ -215,7 +215,7 @@ enum Kind {
     A numberof expression. Example: ``numberof 42 in ({i in I} x[i])``,
     where ``I`` is a set and ``x`` is a variable.
     \endrst
-  */
+   */
   NUMBEROF,
   LAST_ITERATED = NUMBEROF,
 
@@ -227,7 +227,7 @@ enum Kind {
     Example: ``numberof (if x then 'a' else 'b') in ('a', 'b', 'c')``,
     where ``x`` is a variable.
     \endrst
-  */
+   */
   NUMBEROF_SYM,
 
   /**
@@ -238,37 +238,50 @@ enum Kind {
     Example: ``count{i in I} (x[i] >= 0)``, where ``I`` is a set and ``x``
     is a variable.
     \endrst
-  */
+   */
   COUNT,
   LAST_NUMERIC = COUNT,
 
   // To simplify checks, logical expression kinds are in the range
   // [FIRST_LOGICAL, LAST_LOGICAL].
-  // TODO: document logical expressions
   /**
     \rst
-    .. _numberof-sym-expr:
-    .. _count-expr:
     .. _logical-expr:
-    .. _logical-constant:
-    .. _not-expr:
-    .. _binary-logical-expr:
-    .. _relational-expr:
-    .. _logical-count-expr:
-    .. _implication-expr:
-    .. _iterated-logical-expr:
-    .. _pairwise-expr:
-    .. _string-expr:
-    .. _symbolic-if-expr:
 
     A logical expression.
     \endrst
    */
   FIRST_LOGICAL,
+
+  /**
+    \rst
+    .. _bool:
+
+    A Boolean (logical) constant such as ``0`` or ``1``.
+    \endrst
+   */
   BOOL = FIRST_LOGICAL,
+
+  /**
+    \rst
+    .. _not-expr:
+
+    A logical NOT expression.
+    Example: ``not a``, where ``a`` is a logical expression.
+    \endrst
+   */
   NOT,
 
   // Binary logical expressions.
+  /**
+    \rst
+    .. _binary-logical-expr:
+
+    A binary logical expression.
+    Examples: ``a || b``, ``a && b``, where ``a`` and ``b`` are logical
+    expressions.
+    \endrst
+   */
   FIRST_BINARY_LOGICAL,
   OR = FIRST_BINARY_LOGICAL,
   AND,
@@ -276,6 +289,15 @@ enum Kind {
   LAST_BINARY_LOGICAL = IFF,
 
   // Relational expressions.
+  /**
+    \rst
+    .. _relational-expr:
+
+    A relational expression.
+    Examples: ``a < b``, ``a != b``, where ``a`` and ``b`` are numeric
+    expressions.
+    \endrst
+   */
   FIRST_RELATIONAL,
   LT = FIRST_RELATIONAL,  // <
   LE,                     // <=
@@ -285,6 +307,15 @@ enum Kind {
   NE,                     // !=
   LAST_RELATIONAL = NE,
 
+  /**
+    \rst
+    .. _logical-count-expr:
+
+    A logical count expression.
+    Examples: ``atleast 1 (a < b, a != b)``, where ``a`` and ``b`` are
+    numeric expressions.
+    \endrst
+   */
   FIRST_LOGICAL_COUNT,
   ATLEAST = FIRST_LOGICAL_COUNT,
   ATMOST,
@@ -294,15 +325,42 @@ enum Kind {
   NOT_EXACTLY,
   LAST_LOGICAL_COUNT = NOT_EXACTLY,
 
+  /**
+    \rst
+    .. _implication-expr:
+
+    An implication expression.
+    Example: ``a ==> b else c``, where ``a``, ``b`` and ``c`` are logical
+    expressions.
+    \endrst
+   */
   IMPLICATION,
 
   // Iterated logical expressions.
+  /**
+    \rst
+    .. _iterated-logical-expr:
+
+    An iterated logical expression.
+    Example: ``exists{i in I} x[i] >= 0``, where ``I`` is a set and ``x`` is a
+    variable.
+    \endrst
+   */
   FIRST_ITERATED_LOGICAL,
   EXISTS = FIRST_ITERATED_LOGICAL,
   FORALL,
   LAST_ITERATED_LOGICAL = FORALL,
 
   // Pairwise expressions.
+  /**
+    \rst
+    .. _pairwise-expr:
+
+    A pairwise expression (``alldiff`` or ``!alldiff``).
+    Example: ``alldiff{i in I} x[i]``, where ``I`` is a set and ``x`` is a
+    variable.
+    \endrst
+   */
   FIRST_PAIRWISE,
   ALLDIFF = FIRST_PAIRWISE,
   NOT_ALLDIFF,
@@ -310,8 +368,25 @@ enum Kind {
   LAST_LOGICAL = LAST_PAIRWISE,
 
   // String expressions.
+  /**
+    \rst
+    .. _string-expr:
+
+    A string such as ``"abc"``.
+    \endrst
+   */
   STRING,
+
+  /**
+    \rst
+    .. _ifsym:
+
+    A symbolic if-then-else expression.
+    Example: ``if x != 0 then 'a' else 0``, where ``x`` is a variable.
+    \endrst
+   */
   IFSYM,
+
   LAST_EXPR = IFSYM
 };
 
