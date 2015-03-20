@@ -320,6 +320,7 @@ std::vector<double> LSArrayToVector(localsolver::LSExpression array) {
 }
 
 TEST(LocalSolverTest, PLTermBounds) {
+  if ((FEATURES & feature::PLTERM) == 0) return;
   mp::LocalSolver solver;
   mp::LSProblemBuilder pb(solver);
   pb.AddVar(-1.1, 22.2, var::CONTINUOUS);
@@ -335,6 +336,7 @@ TEST(LocalSolverTest, PLTermBounds) {
 }
 
 TEST(LocalSolverTest, PLTermBoundsBelowBreakpoints) {
+  if ((FEATURES & feature::PLTERM) == 0) return;
   mp::LocalSolver solver;
   mp::LSProblemBuilder pb(solver);
   pb.AddVar(-20, -10, var::CONTINUOUS);
@@ -348,6 +350,7 @@ TEST(LocalSolverTest, PLTermBoundsBelowBreakpoints) {
 }
 
 TEST(LocalSolverTest, PLTermBoundsAboveBreakpoints) {
+  if ((FEATURES & feature::PLTERM) == 0) return;
   mp::LocalSolver solver;
   mp::LSProblemBuilder pb(solver);
   pb.AddVar(10, 20, var::CONTINUOUS);
