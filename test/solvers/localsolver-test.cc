@@ -362,3 +362,17 @@ TEST(LocalSolverTest, PLTermBoundsAboveBreakpoints) {
   ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)), ElementsAre(10, 20));
   ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)), ElementsAre(10, 20));
 }
+
+TEST(LocalSolverTest, PLTermInfiniteLB) {
+  if ((FEATURES & feature::PLTERM) == 0) return;
+  mp::LocalSolver solver;
+  mp::LSProblemBuilder pb(solver);
+  pb.AddVar(-std::numeric_limits<double>::infinity(), 10, var::CONTINUOUS);
+  auto pl_builder = pb.BeginPLTerm(1);
+  pl_builder.AddSlope(-1);
+  pl_builder.AddBreakpoint(0);
+  pl_builder.AddSlope(1);
+  auto plterm = pb.EndPLTerm(pl_builder, pb.MakeVariable(0));
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)), ElementsAre(-1e6, 0, 10));
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)), ElementsAre(1e6, 0, 10));
+}

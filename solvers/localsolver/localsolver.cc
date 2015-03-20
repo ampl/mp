@@ -59,6 +59,10 @@ bool StopSolver(void *data) {
   solver->stop();
   return true;
 }
+
+// LocalSolver doesn't allow infinite bounds for variables, so use the max
+// double value instead.
+const double LS_INF = std::numeric_limits<double>::max();
 }  // namespace
 
 namespace mp {
@@ -85,13 +89,8 @@ void LSProblemBuilder::AddVar(double lb, double ub, var::Type type) {
   ls::LSExpression &var = vars_.back();
   double inf = std::numeric_limits<double>::infinity();
   if (type == var::CONTINUOUS) {
-    // LocalSolver doesn't allow infinite bounds, so use min an max double
-    // values instead.
-    if (lb == -inf)
-      lb = -std::numeric_limits<double>::max();
-    if (ub == inf)
-      ub = std::numeric_limits<double>::max();
-    var = model_.createExpression(ls::O_Float, lb, ub);
+    var = model_.createExpression(
+          ls::O_Float, lb == -inf ? -LS_INF : lb, ub == inf ? LS_INF : ub);
   } else if (lb == 0 && ub == 1) {
     var = model_.createExpression(ls::O_Bool);
   } else {
@@ -301,7 +300,19 @@ ls::LSExpression LSProblemBuilder::EndPLTerm(
   };
   double lb = arg.getOperand(0).getDoubleValue();
   double ub = arg.getOperand(1).getDoubleValue();
-  // TODO: handle unbounded argument
+  if (lb == -LS_INF || ub == LS_INF) {
+    // If the argument is unbounded, impose bounds ourselves because
+    // LocalSolver doesn't support unbounded piecewise-linear terms.
+    double max_abs_bp = 0;
+    for (std::size_t i = 0; i < num_breakpoints; ++i)
+      max_abs_bp = std::max(max_abs_bp, std::abs(builder.breakpoints[i]));
+    double pl_bigm = 1e6; // TODO: option
+    double bound = std::max(pl_bigm, 2 * max_abs_bp);
+    if (lb > -LS_INF) bound = std::max(bound, std::abs(lb));
+    if (ub <  LS_INF) bound = std::max(bound, std::abs(ub));
+    if (lb == -LS_INF) lb = -bound;
+    if (ub ==  LS_INF) ub =  bound;
+  }
   Converter converter(model_, lb, ub);
   // Convert negative breakpoints.
   double slope = builder.slopes[nonnegative_start];
