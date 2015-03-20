@@ -161,7 +161,7 @@ inline bool IsIEEE(arith::Kind k) {
   which contains information about problem dimensions, such as the number of
   variables and constraints, and the input format.
 
-  Base class: :class:`mp::ProblemInfo`
+  Base class: `mp::ProblemInfo`
   \endrst
  */
 struct NLHeader : ProblemInfo {
@@ -204,7 +204,7 @@ struct NLHeader : ProblemInfo {
     Floating-point arithmetic kind used with binary format to check
     if an .nl file is written using a compatible representation of
     floating-point numbers. It is not used with the text format and normally
-    set to :member:`mp::arith::UNKNOWN` there.
+    set to `mp::arith::UNKNOWN` there.
     \endrst
    */
   arith::Kind arith_kind;
@@ -217,7 +217,7 @@ struct NLHeader : ProblemInfo {
 
   /**
     \rst
-    Flags. Can be either 0 or :member:`mp::NLHeader::WANT_OUTPUT_SUFFIXES`.
+    Flags. Can be either 0 or `mp::NLHeader::WANT_OUTPUT_SUFFIXES`.
     \endrst
    */
   int flags;
@@ -456,9 +456,8 @@ class NLHandler {
   /**
     \rst
     A class (struct) that receives notifications of expression arguments.
-    All argument handlers in :class:`mp::NLHandler` are typedefs of this class,
-    but subclasses of :class:`mp::NLHandler` may define them as different
-    classes.
+    All argument handlers in `mp::NLHandler` are typedefs of this class, but
+    subclasses of `mp::NLHandler` may define them as different classes.
     \endrst
    */
   struct ArgHandler {
@@ -762,7 +761,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`logical constant <logical-constant>`.
+    Receives notification of a :ref:`logical constant <bool>`.
     \endrst
    */
   LogicalExpr OnLogicalConstant(bool value) {
@@ -2013,8 +2012,8 @@ void ReadBinary(TextReader &reader, const NLHeader &header,
   Both *str* and *name* can be C strings or ``std::string`` objects.
   The *name* argument is used as the name of the input when reporting errors.
   *flags* can be either 0, which is the default, to read all constructs in
-  the order they appear in the input, or :member:`mp::READ_BOUNDS_FIRST` to
-  read variable bounds after the NL header and before other constructs such as
+  the order they appear in the input, or `mp::READ_BOUNDS_FIRST` to read
+  variable bounds after the NL header and before other constructs such as
   nonlinear expressions.
   \endrst
  */
@@ -2052,8 +2051,8 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
 
   The *filename* argument can be a C string or an ``std::string`` object.
   *flags* can be either 0, which is the default, to read all constructs in
-  the order they appear in the input, or :member:`mp::READ_BOUNDS_FIRST` to
-  read variable bounds after the NL header and before other constructs such as
+  the order they appear in the input, or `mp::READ_BOUNDS_FIRST` to read
+  variable bounds after the NL header and before other constructs such as
   nonlinear expressions.
   
   **Example**::
