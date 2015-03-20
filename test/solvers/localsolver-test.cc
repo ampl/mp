@@ -319,60 +319,76 @@ std::vector<double> LSArrayToVector(localsolver::LSExpression array) {
   return result;
 }
 
-TEST(LocalSolverTest, PLTermBounds) {
-  if ((FEATURES & feature::PLTERM) == 0) return;
+class PLTermTest : public ::testing::Test {
+ protected:
   mp::LocalSolver solver;
-  mp::LSProblemBuilder pb(solver);
-  pb.AddVar(-1.1, 22.2, var::CONTINUOUS);
-  auto pl_builder = pb.BeginPLTerm(1);
-  pl_builder.AddSlope(-1);
-  pl_builder.AddBreakpoint(0);
-  pl_builder.AddSlope(1);
-  auto plterm = pb.EndPLTerm(pl_builder, pb.MakeVariable(0));
+  mp::LSProblemBuilder pb;
+
+  PLTermTest() : pb(solver) {}
+
+  localsolver::LSExpression AddPLTerm(double lb, double ub, double bp = 0) {
+    pb.AddVar(lb, ub, var::CONTINUOUS);
+    auto pl_builder = pb.BeginPLTerm(1);
+    pl_builder.AddSlope(-1);
+    pl_builder.AddBreakpoint(bp);
+    pl_builder.AddSlope(1);
+    return pb.EndPLTerm(pl_builder, pb.MakeVariable(0));
+  }
+};
+
+TEST_F(PLTermTest, Bounds) {
+  if ((FEATURES & feature::PLTERM) == 0) return;
+  auto plterm = AddPLTerm(-1.1, 22.2);
   ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)),
               ElementsAre(-1.1, 0, 22.2));
   ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)),
               ElementsAre(1.1, 0, 22.2));
 }
 
-TEST(LocalSolverTest, PLTermBoundsBelowBreakpoints) {
+TEST_F(PLTermTest, BoundsBelowBreakpoints) {
   if ((FEATURES & feature::PLTERM) == 0) return;
-  mp::LocalSolver solver;
-  mp::LSProblemBuilder pb(solver);
-  pb.AddVar(-20, -10, var::CONTINUOUS);
-  auto pl_builder = pb.BeginPLTerm(1);
-  pl_builder.AddSlope(-1);
-  pl_builder.AddBreakpoint(0);
-  pl_builder.AddSlope(1);
-  auto plterm = pb.EndPLTerm(pl_builder, pb.MakeVariable(0));
+  auto plterm = AddPLTerm(-20, -10);
   ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)), ElementsAre(-20, -10));
   ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)), ElementsAre(20, 10));
 }
 
-TEST(LocalSolverTest, PLTermBoundsAboveBreakpoints) {
+TEST_F(PLTermTest, BoundsAboveBreakpoints) {
   if ((FEATURES & feature::PLTERM) == 0) return;
-  mp::LocalSolver solver;
-  mp::LSProblemBuilder pb(solver);
-  pb.AddVar(10, 20, var::CONTINUOUS);
-  auto pl_builder = pb.BeginPLTerm(1);
-  pl_builder.AddSlope(-1);
-  pl_builder.AddBreakpoint(0);
-  pl_builder.AddSlope(1);
-  auto plterm = pb.EndPLTerm(pl_builder, pb.MakeVariable(0));
+  auto plterm = AddPLTerm(10, 20);
   ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)), ElementsAre(10, 20));
   ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)), ElementsAre(10, 20));
 }
 
-TEST(LocalSolverTest, PLTermInfiniteLB) {
+TEST_F(PLTermTest, InfiniteLB) {
   if ((FEATURES & feature::PLTERM) == 0) return;
-  mp::LocalSolver solver;
-  mp::LSProblemBuilder pb(solver);
-  pb.AddVar(-std::numeric_limits<double>::infinity(), 10, var::CONTINUOUS);
-  auto pl_builder = pb.BeginPLTerm(1);
-  pl_builder.AddSlope(-1);
-  pl_builder.AddBreakpoint(0);
-  pl_builder.AddSlope(1);
-  auto plterm = pb.EndPLTerm(pl_builder, pb.MakeVariable(0));
+  auto plterm = AddPLTerm(-std::numeric_limits<double>::infinity(), 10);
   ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)), ElementsAre(-1e6, 0, 10));
   ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)), ElementsAre(1e6, 0, 10));
+}
+
+TEST_F(PLTermTest, InfiniteUB) {
+  if ((FEATURES & feature::PLTERM) == 0) return;
+  auto plterm = AddPLTerm(-10, std::numeric_limits<double>::infinity());
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)), ElementsAre(-10, 0, 1e6));
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)), ElementsAre(10, 0, 1e6));
+}
+
+TEST_F(PLTermTest, BoundsFromBreakpoint) {
+  if ((FEATURES & feature::PLTERM) == 0) return;
+  double bp = -1234321, inf = std::numeric_limits<double>::infinity();
+  auto plterm = AddPLTerm(-inf, inf, bp);
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)),
+              ElementsAre(2 * bp, bp, -2 * bp));
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)),
+              ElementsAre(0, bp, -2 * bp));
+}
+
+TEST_F(PLTermTest, BoundsFromLargeBound) {
+  if ((FEATURES & feature::PLTERM) == 0) return;
+  double bound = -1234321;
+  auto plterm = AddPLTerm(bound, std::numeric_limits<double>::infinity(), 0);
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(0)),
+              ElementsAre(bound, 0, -bound));
+  ASSERT_THAT(LSArrayToVector(plterm.getOperand(1)),
+              ElementsAre(-bound, 0, -bound));
 }
