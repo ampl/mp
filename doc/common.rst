@@ -10,3 +10,4 @@ Header: :file:`mp/common.h`
 .. doxygenenum:: mp::expr::Kind
 
 .. doxygenstruct:: mp::ProblemInfo
+   :members:
