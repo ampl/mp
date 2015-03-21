@@ -224,7 +224,7 @@ enum Kind {
     .. _numberof-sym-expr:
 
     A symbolic numberof expression.
-    Example: ``numberof (if x then 'a' else 'b') in ('a', 'b', 'c')``,
+    Example: ``numberof (if x != 0 then 'a' else 'b') in ('a', 'b', 'c')``,
     where ``x`` is a variable.
     \endrst
    */
@@ -547,122 +547,138 @@ enum Status {
 
 /** Information about an optimization problem. */
 struct ProblemInfo {
-  // Total number of variables.
+  /** Total number of variables. */
   int num_vars;
 
-  // Number of algebraic constraints including ranges and equality constraints.
-  // It doesn't include logical constraints.
+  /**
+    Number of algebraic constraints including ranges and equality constraints.
+    It doesn't include logical constraints.
+   */
   int num_algebraic_cons;
 
-  // Total number of objectives.
+  /** Total number of objectives. */
   int num_objs;
 
-  // Number of ranges (constraints with -Infinity < LHS < RHS < Infinity).
+  /** Number of ranges (constraints with -Infinity < LHS < RHS < Infinity). */
   int num_ranges;
 
-  // Number of equality constraints or -1 if unknown (AMPL prior to 19970627).
+  /**
+    Number of equality constraints or -1 if unknown (AMPL prior to 19970627).
+   */
   int num_eqns;
 
-  // Number of logical constraints.
+  /** Number of logical constraints. */
   int num_logical_cons;
 
+  /** Returns the number of integer variables (includes binary variable). */
   int num_integer_vars() const {
     return num_linear_binary_vars + num_linear_integer_vars +
         num_nl_integer_vars_in_both + num_nl_integer_vars_in_cons +
         num_nl_integer_vars_in_objs;
   }
 
+  /** Returns the number of continuous variables. */
   int num_continuous_vars() const { return num_vars - num_integer_vars(); }
 
   // Nonlinear and complementarity information
   // -----------------------------------------
 
-  // Total number of nonlinear constraints.
+  /** Total number of nonlinear constraints. */
   int num_nl_cons;
 
-  // Total number of nonlinear objectives.
+  /** Total number of nonlinear objectives. */
   int num_nl_objs;
 
-  // Total number of complementarity conditions.
+  /** Total number of complementarity conditions. */
   int num_compl_conds;
 
-  // Number of nonlinear complementarity conditions.
+  /** Number of nonlinear complementarity conditions. */
   int num_nl_compl_conds;
 
-  // Number of complementarities involving double inequalities
-  // (for ASL_cc_simplify).
+  /**
+    Number of complementarities involving double inequalities
+    (for ``ASL_cc_simplify``).
+   */
   int num_compl_dbl_ineqs;
 
-  // Number of complemented variables with a nonzero lower bound
-  // (for ASL_cc_simplify).
+  /**
+    Number of complemented variables with a nonzero lower bound
+    (for ASL_cc_simplify).
+   */
   int num_compl_vars_with_nz_lb;
 
   // Information about network constraints
   // -------------------------------------
 
-  // Number of nonlinear network constraints.
+  /** Number of nonlinear network constraints. */
   int num_nl_net_cons;
 
-  // Number of linear network constraints.
+  /** Number of linear network constraints. */
   int num_linear_net_cons;
 
   // Information about nonlinear variables
   // -------------------------------------
 
-  // Number of nonlinear variables in constraints including nonlinear
-  // variables in both constraints and objectives.
+  /**
+    Number of nonlinear variables in constraints including nonlinear
+    variables in both constraints and objectives.
+   */
   int num_nl_vars_in_cons;
 
-  // Number of nonlinear variables in objectives including nonlinear
-  // variables in both constraints and objectives.
+  /**
+    Number of nonlinear variables in objectives including nonlinear
+    variables in both constraints and objectives.
+   */
   int num_nl_vars_in_objs;
 
-  // Number of nonlinear variables in both constraints and objectives.
+  /** Number of nonlinear variables in both constraints and objectives. */
   int num_nl_vars_in_both;
 
   // Miscellaneous
   // -------------
 
-  // Number of linear network variables (arcs).
+  /** Number of linear network variables (arcs). */
   int num_linear_net_vars;
 
-  // Number of functions.
+  /** Number of functions. */
   int num_funcs;
 
   // Information about discrete variables
   // ------------------------------------
 
-  // Number of linear binary variables.
+  /** Number of linear binary variables. */
   int num_linear_binary_vars;
 
-  // Number of linear non-binary integer variables.
+  /** Number of linear non-binary integer variables. */
   int num_linear_integer_vars;
 
-  // Number of integer nonlinear variables in both constraints and objectives.
+  /**
+    Number of integer nonlinear variables in both constraints and objectives.
+   */
   int num_nl_integer_vars_in_both;
 
-  // Number of integer nonlinear variables just in constraints.
+  /** Number of integer nonlinear variables just in constraints. */
   int num_nl_integer_vars_in_cons;
 
-  // Number of integer nonlinear variables just in objectives.
+  /** Number of integer nonlinear variables just in objectives. */
   int num_nl_integer_vars_in_objs;
 
   // Information about nonzeros
   // --------------------------
 
-  // Number of nonzeros in constraints' Jacobian.
+  /** Number of nonzeros in constraints' Jacobian. */
   std::size_t num_con_nonzeros;
 
-  // Number of nonzeros in all objective gradients.
+  /** Number of nonzeros in all objective gradients. */
   std::size_t num_obj_nonzeros;
 
   // Information about names
   // -----------------------
 
-  // Length of longest constraint name (if stub.row exists).
+  /** Length of longest constraint name (if ``stub.row`` exists). */
   int max_con_name_len;
 
-  // Length of longest variable name (if stub.col exists).
+  /** Length of longest variable name (if ``stub.col`` exists). */
   int max_var_name_len;
 
   // Information about common expressions
@@ -672,14 +688,19 @@ struct ProblemInfo {
   int num_common_exprs_in_cons;
   int num_common_exprs_in_objs;
 
-  // Number of common expressions that only appear in a single constraint
-  // and don't appear in objectives.
+  /**
+    Number of common expressions that only appear in a single constraint
+    and don't appear in objectives.
+   */
   int num_common_exprs_in_single_cons;
 
-  // Number of common expressions that only appear in a single objective
-  // and don't appear in constraints.
+  /**
+    Number of common expressions that only appear in a single objective
+    and don't appear in constraints.
+   */
   int num_common_exprs_in_single_objs;
 
+  /** Returns the total number of common expressions. */
   int num_common_exprs() const {
     return num_common_exprs_in_both + num_common_exprs_in_cons +
         num_common_exprs_in_objs + num_common_exprs_in_single_cons +
