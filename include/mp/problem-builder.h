@@ -574,8 +574,8 @@ class ProblemBuilderToNLAdapter {
     return builder_.AddDblSuffix(name, kind, num_values);
   }
 
-  // Receives notification of a numeric constant in a nonlinear expression.
-  NumericExpr OnNumericConstant(double value) {
+  // Receives notification of a number in a nonlinear expression.
+  NumericExpr OnNumber(double value) {
     return builder_.MakeNumericConstant(value);
   }
 
@@ -683,8 +683,8 @@ class ProblemBuilderToNLAdapter {
     return builder_.EndCount(handler);
   }
 
-  // Receives notification of a logical constant.
-  LogicalExpr OnLogicalConstant(bool value) {
+  // Receives notification of a Boolean value.
+  LogicalExpr OnBool(bool value) {
     return builder_.MakeLogicalConstant(value);
   }
 
@@ -739,8 +739,8 @@ class ProblemBuilderToNLAdapter {
     return builder_.EndPairwise(handler);
   }
 
-  // Receives notification of a string literal.
-  Expr OnStringLiteral(fmt::StringRef value) {
+  // Receives notification of a string.
+  Expr OnString(fmt::StringRef value) {
     return builder_.MakeStringLiteral(value);
   }
 

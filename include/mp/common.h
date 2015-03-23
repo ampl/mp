@@ -59,7 +59,7 @@ enum Kind {
 
   /**
     \rst
-    .. _numeric-constant:
+    .. _number:
 
     A number such as ``42`` or ``-1.23e-4``.
     \endrst
@@ -370,7 +370,7 @@ enum Kind {
   // String expressions.
   /**
     \rst
-    .. _string-expr:
+    .. _string:
 
     A string such as ``"abc"``.
     \endrst

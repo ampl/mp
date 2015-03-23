@@ -531,11 +531,10 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`numeric constant <numeric-constant>`
-    in a nonlinear expression.
+    Receives notification of a :ref:`number` in a nonlinear expression.
     \endrst
    */
-  NumericExpr OnNumericConstant(double value) {
+  NumericExpr OnNumber(double value) {
     MP_UNUSED(value);
     return NumericExpr();
   }
@@ -761,10 +760,10 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`logical constant <bool>`.
+    Receives notification of a :ref:`Boolean value <bool>`.
     \endrst
    */
-  LogicalExpr OnLogicalConstant(bool value) {
+  LogicalExpr OnBool(bool value) {
     MP_UNUSED(value);
     return LogicalExpr();
   }
@@ -870,11 +869,11 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`string literal <string-expr>`.
+    Receives notification of a :ref:`string`.
     The *value* argument is a string value and it is not zero terminated.
     \endrst
    */
-  Expr OnStringLiteral(fmt::StringRef value) {
+  Expr OnString(fmt::StringRef value) {
     MP_UNUSED(value);
     return Expr();
   }
@@ -1446,7 +1445,7 @@ typename Handler::Expr NLReader<Reader, Handler>::ReadSymbolicExpr() {
   char c = reader_.ReadChar();
   switch (c) {
   case 'h':
-    return handler_.OnStringLiteral(reader_.ReadString());
+    return handler_.OnString(reader_.ReadString());
   case 'o': {
     int opcode = ReadOpCode();
     if (opcode != expr::opcode(expr::IFSYM))
@@ -1477,11 +1476,11 @@ typename Handler::NumericExpr
     return handler_.EndCall(args);
   }
   case 'n': case 'l': case 's': {
-    // Read a numeric constant.
+    // Read a number.
     double value = ReadConstant(code);
     if (ignore_zero && value == 0)
       break;  // Ignore zero constant.
-    return handler_.OnNumericConstant(value);
+    return handler_.OnNumber(value);
   }
   case 'o':
     return ReadNumericExpr(ReadOpCode());
@@ -1569,7 +1568,7 @@ template <typename Reader, typename Handler>
 typename Handler::LogicalExpr NLReader<Reader, Handler>::ReadLogicalExpr() {
   switch (char c = reader_.ReadChar()) {
   case 'n': case 'l': case 's':
-    return handler_.OnLogicalConstant(ReadConstant(c) != 0);
+    return handler_.OnBool(ReadConstant(c) != 0);
   case 'o':
     return ReadLogicalExpr(ReadOpCode());
   }

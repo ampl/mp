@@ -42,7 +42,7 @@ TEST(ProblemBuilderTest, UseWithProblemBuilderToNLAdapter) {
   mp::ProblemBuilderToNLAdapter<TestProblemBuilder> handler(builder);
   EXPECT_CALL(builder, ReportUnhandledConstruct(::testing::_)).
       Times(::testing::Exactly(2));
-  handler.OnNumericConstant(0);
+  handler.OnNumber(0);
   auto expr_builder = handler.BeginCommonExpr(0, 0);
   handler.EndCommonExpr(expr_builder, TestExpr(), 0);
 }
@@ -178,7 +178,7 @@ TEST(NLProblemBuilderTest, Forward) {
   EXPECT_FORWARD_RET(OnDblSuffix, AddDblSuffix, (str, 99, 11),
                      TestSuffixHandler<1>(ID));
 
-  EXPECT_FORWARD_RET(OnNumericConstant, MakeNumericConstant,
+  EXPECT_FORWARD_RET(OnNumber, MakeNumericConstant,
                      (2.2), TestNumericExpr(ID));
   EXPECT_FORWARD_RET(OnVariableRef, MakeVariable, (33), TestReference(ID));
   EXPECT_FORWARD_RET(OnCommonExprRef, MakeCommonExpr, (33), TestReference(ID));
@@ -226,8 +226,7 @@ TEST(NLProblemBuilderTest, Forward) {
                      (TestSymbolicNumberOfExprBuilder(ID)),
                      TestNumericExpr(ID2));
 
-  EXPECT_FORWARD_RET(OnLogicalConstant, MakeLogicalConstant, (true),
-                     TestLogicalExpr(ID));
+  EXPECT_FORWARD_RET(OnBool, MakeLogicalConstant, (true), TestLogicalExpr(ID));
   EXPECT_FORWARD_RET(OnNot, MakeNot, (TestLogicalExpr(ID)),
                      TestLogicalExpr(ID2));
   EXPECT_FORWARD_RET(OnBinaryLogical, MakeBinaryLogical,
@@ -254,7 +253,7 @@ TEST(NLProblemBuilderTest, Forward) {
   EXPECT_FORWARD_RET(EndPairwise, EndPairwise,
                      (TestPairwiseExprBuilder(ID)), TestLogicalExpr(ID2));
 
-  EXPECT_FORWARD_RET(OnStringLiteral, MakeStringLiteral, (str), TestExpr(ID));
+  EXPECT_FORWARD_RET(OnString, MakeStringLiteral, (str), TestExpr(ID));
 
   EXPECT_FORWARD_RET(OnSymbolicIf, MakeSymbolicIf,
                      (TestLogicalExpr(ID), TestExpr(ID2), TestExpr(ID3)),

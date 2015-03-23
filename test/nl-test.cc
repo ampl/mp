@@ -582,7 +582,7 @@ class TestNLHandler {
     return DblSuffixHandler(log);
   }
 
-  std::string OnNumericConstant(double value) {
+  std::string OnNumber(double value) {
     return fmt::format("{}", value);
   }
 
@@ -704,10 +704,7 @@ class TestNLHandler {
   ArgHandler BeginCount(int) { return ArgHandler("count"); }
   std::string EndCount(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
-  std::string OnLogicalConstant(bool value) {
-    return fmt::format("l{}", value);
-  }
-
+  std::string OnBool(bool value) { return fmt::format("l{}", value); }
   std::string OnNot(std::string arg) { return fmt::format("not {}", arg); }
 
   std::string OnBinaryLogical(
@@ -745,7 +742,7 @@ class TestNLHandler {
   }
   std::string EndPairwise(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
-  std::string OnStringLiteral(fmt::StringRef value) {
+  std::string OnString(fmt::StringRef value) {
     return fmt::format("'{}'", std::string(value.c_str(), value.size()));
   }
 
@@ -868,7 +865,7 @@ struct TestNLHandler2 {
     return DblSuffixHandler();
   }
 
-  TestNumericExpr OnNumericConstant(double) { return TestNumericExpr(); }
+  TestNumericExpr OnNumber(double) { return TestNumericExpr(); }
   TestReference OnVariableRef(int) { return TestReference(); }
   TestReference OnCommonExprRef(int) { return TestReference(); }
   TestNumericExpr OnUnary(expr::Kind, TestNumericExpr) {
@@ -942,7 +939,7 @@ struct TestNLHandler2 {
   CountArgHandler BeginCount(int) { return CountArgHandler(); }
   TestCountExpr EndCount(CountArgHandler) { return TestCountExpr(); }
 
-  TestLogicalExpr OnLogicalConstant(bool) { return TestLogicalExpr(); }
+  TestLogicalExpr OnBool(bool) { return TestLogicalExpr(); }
   TestLogicalExpr OnNot(TestLogicalExpr) { return TestLogicalExpr(); }
 
   TestLogicalExpr OnBinaryLogical(
@@ -983,7 +980,7 @@ struct TestNLHandler2 {
   }
   TestLogicalExpr EndPairwise(PairwiseArgHandler) { return TestLogicalExpr(); }
 
-  TestExpr OnStringLiteral(fmt::StringRef) { return TestExpr(); }
+  TestExpr OnString(fmt::StringRef) { return TestExpr(); }
 
   TestExpr OnSymbolicIf(TestLogicalExpr, TestExpr, TestExpr) {
     return TestExpr();
