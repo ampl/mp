@@ -1,12 +1,13 @@
 {% extends "!layout.html" %}
 
 {% block extrahead %}
-        <meta charset="UTF-8">
-        <meta http-equiv="refresh" content="1;url=http://ampl.github.io/">
-        <script type="text/javascript">
-            window.location.href = "http://ampl.github.io/"
-        </script>
-        <title>Page Redirection</title>
+{{ super() }}
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="1;url=http://ampl.github.io/">
+<script type="text/javascript">
+    window.location.href = "http://ampl.github.io/"
+</script>
+<title>Page Redirection</title>
 {% endblock %}
 
 {% block document %}
