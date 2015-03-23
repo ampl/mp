@@ -1,0 +1,18 @@
+{% extends "!layout.html" %}
+
+{% block extrahead %}
+        <meta charset="UTF-8">
+        <meta http-equiv="refresh" content="1;url=http://ampl.github.io/">
+        <script type="text/javascript">
+            window.location.href = "http://ampl.github.io/"
+        </script>
+        <title>Page Redirection</title>
+{% endblock %}
+
+{% block document %}
+<!-- Note: don't tell people to `click` the link, just tell them that it is a link. -->
+If you are not redirected automatically, follow the <a href='http://ampl.github.io/'>link to the AMPL/MP documentation</a>.
+{% endblock %}
+
+{% block footer %}
+{% endblock %}

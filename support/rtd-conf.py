@@ -1,1 +1,0 @@
-# Sphinx configuration for readthedocs.
