@@ -499,7 +499,7 @@ void LocalSolver::SetVerbosity(const SolverOption &opt, fmt::StringRef value) {
 }
 
 LocalSolver::LocalSolver()
-  : SolverImpl<LSProblemBuilder>("localsolver", 0, 20141107, MULTIPLE_OBJ) {
+  : SolverImpl<LSProblemBuilder>("localsolver", 0, 20150323, MULTIPLE_OBJ) {
   options_[SEED] = 0;
   options_[THREADS] = 2;
   options_[ANNEALING_LEVEL] = 1;
