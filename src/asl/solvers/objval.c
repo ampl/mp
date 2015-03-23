@@ -42,7 +42,7 @@ x0_check_ASL(ASL_fg *asl, real *X)
 		memcpy(Lastx, X, x0len);
 		asl->i.nxval++;
 		V = var_e;
-		Xe = X + n_var;
+		Xe = (real*)((char*)X + x0len);
 		vscale = asl->i.vscale;
 		if ((vm = asl->i.vmap)) {
 			if (vscale)

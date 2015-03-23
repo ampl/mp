@@ -57,7 +57,7 @@ xp1_check_ASL(ASL_pfg *asl, real *x)
 	memcpy(Lastx, x, x0len);
 	asl->i.nxval++;
 
-	xe = x + n_var;
+	xe = (real*)((char*)x + x0len);
 	v = v0 = var_e;
 	vscale = asl->i.vscale;
 	if ((vm = asl->i.vmap)) {

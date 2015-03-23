@@ -194,8 +194,11 @@ obj_adj1(ASL *asl, int no)
 		for(i = co; i < m; i = j) {
 			cm[i] = cm[j = i + 1];
 			pcg[i] = pcg[j];
-			if (Cvar)
-				Cvar[i] = Cvar[j];
+			if (Cvar) {
+				if ((k = Cvar[j]) >= cv)
+					--k;
+				Cvar[i] = k;
+				}
 			}
 		if ((pi = pi0))
 			for(i = co; i < m; ++i)

@@ -1340,7 +1340,6 @@ get_vminv_ASL(ASL *asl)
 	x = (int*)M1alloc(n*sizeof(int));
 	for(i = 0; i < n; ++i)
 		x[i] = -1;
-	n = n_var;
 	for(i = 0; i < n; ++i) {
 		if ((j = vm[i]) >= 0)
 			x[j] = i;

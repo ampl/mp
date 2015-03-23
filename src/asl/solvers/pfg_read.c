@@ -906,6 +906,7 @@ lahash(Static *S, linarg *la)
 				}
 			}
 	*lap = la;
+	la->hnext = 0;
 	if (++S->asl->P.nlttot > lthashmask) {
 		mask = lthashmask;
 		k = S->klthash;
@@ -927,6 +928,7 @@ lahash(Static *S, linarg *la)
 				*lap1 = la2;
 				}
 			}
+		del_mblk(k, q0);
 		}
 	return la;
 	}

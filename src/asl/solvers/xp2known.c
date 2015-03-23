@@ -71,7 +71,7 @@ xp_check_ASL(ASL_pfgh *asl, real *x)
 	if (asl->P.ihdcur)
 		ihd_clear_ASL(asl);
 	x0kind = asl->I.x0kind_init;
-	xe = x + n_var;
+	xe = (real*)((char*)x + x0len);
 	v = v0 = var_e;
 	vscale = asl->i.vscale;
 	if ((vm = asl->i.vmap)) {

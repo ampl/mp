@@ -1,7 +1,7 @@
-20150210
-  fg_read.c, fgh_read.c, pfg_read.c, pfghread.c:  recant most of the
-changes of 20150208; the "nvinc" logic had made them unnecessary.
-One change retained:  if the incoming X0 or havex0 (i.e., asl->i.X0_
-or asl->i.havex0_) are nonzero, only the first n_var components are
-zeroed initially, rather than the first
-n_var + asl->i.nsufext[ASL_Sufkind_var] components.
+20150318
+ misc.c, mpec_adj.c, obj_adj.c: fix a bug that bit when reader flags
+ASL_cc_simplify caused changes after flags ASL_obj_replace_ineq or
+ASL_obj_replace_eq had caused changes.
+ objval.c, x2check.c xp1known.c xp2known.c: only copy nonlinear variable
+values to expr_v structures (saving a bit of time on some problems).
+ pfg_read.c, pfghread.c:  fix a possible fault; fix a minor memory leak.
