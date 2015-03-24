@@ -136,7 +136,7 @@ class Suffix : private internal::SuffixBase {
 
   // Iterates over nonzero suffix values and sends them to the visitor.
   template <typename Visitor>
-  void VisitValues(Visitor &visitor) const;
+  void VisitValues(Visitor &v) const;
 };
 
 template <typename SuffixType>
@@ -158,6 +158,9 @@ class BasicSuffix : private internal::SuffixBase {
  public:
   BasicSuffix() {}
 
+  using SuffixBase::name;
+  using SuffixBase::kind;
+  using SuffixBase::num_values;
   using SuffixBase::operator SafeBool;
 
   T value(int index) const {
@@ -173,12 +176,10 @@ class BasicSuffix : private internal::SuffixBase {
   }
 
   template <typename Visitor>
-  void VisitValues(Visitor &visitor) const {
+  void VisitValues(Visitor &v) const {
     for (int i = 0, n = num_values(); i < n; ++i) {
-      T value = T();
-      get_value(i, value);
-      if (value != 0)
-        visitor.Visit(i, value);
+      if (T value = this->value(i))
+        v.Visit(i, value);
     }
   }
 };
@@ -207,12 +208,12 @@ inline SuffixType Cast(Suffix s) {
 }
 
 template <typename Visitor>
-inline void Suffix::VisitValues(Visitor &visitor) const {
+inline void Suffix::VisitValues(Visitor &v) const {
   IntSuffix int_suffix = Cast<IntSuffix>(*this);
   if (int_suffix)
-    int_suffix.VisitValues(visitor);
+    int_suffix.VisitValues(v);
   else
-    Cast<DoubleSuffix>(*this).VisitValues(visitor);
+    Cast<DoubleSuffix>(*this).VisitValues(v);
 }
 
 // A set of suffixes.

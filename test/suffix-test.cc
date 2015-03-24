@@ -23,20 +23,39 @@
 #include <gtest/gtest.h>
 #include "mp/suffix.h"
 
-TEST(SuffixTest, Suffix) {
+class SuffixTest : public testing::Test {
+ protected:
+  mp::SuffixSet suffixes_;
+};
+
+TEST_F(SuffixTest, Suffix) {
   mp::Suffix s;
   EXPECT_TRUE(s == 0);
-}
-
-TEST(SuffixTest, AddSuffix) {
-  mp::SuffixSet suffixes;
-  mp::Suffix s = suffixes.Add<int>("test", 11, 222);
+  s = suffixes_.Add<int>("test", 11, 222);
   EXPECT_STREQ("test", s.name());
   EXPECT_EQ(11, s.kind());
   EXPECT_EQ(222, s.num_values());
 }
 
-TEST(SuffixTest, ConversionToSuffix) {
+TEST_F(SuffixTest, IntSuffix) {
+  mp::IntSuffix s;
+  EXPECT_TRUE(s == 0);
+  s = suffixes_.Add<int>("test", 11, 222);
+  EXPECT_STREQ("test", s.name());
+  EXPECT_EQ(11, s.kind());
+  EXPECT_EQ(222, s.num_values());
+}
+
+TEST_F(SuffixTest, DoubleSuffix) {
+  mp::DoubleSuffix s;
+  EXPECT_TRUE(s == 0);
+  s = suffixes_.Add<double>("test", 11, 222);
+  EXPECT_STREQ("test", s.name());
+  EXPECT_EQ(11, s.kind());
+  EXPECT_EQ(222, s.num_values());
+}
+
+TEST_F(SuffixTest, ConversionToSuffix) {
   // Test that BasicSuffix is not convertible to Suffix&. If it was
   // convertible there would be an error because of an ambigous call.
   // The conversion is forbidden because it compromises type safety
@@ -49,8 +68,7 @@ TEST(SuffixTest, ConversionToSuffix) {
     static void f(mp::Suffix) {}
     static void f(mp::Suffix &) {}
   };
-  mp::SuffixSet suffixes;
-  auto s = suffixes.Add<int>("a", 0, 1);
+  auto s = suffixes_.Add<int>("a", 0, 1);
   Test::f(s);
 }
 
