@@ -127,7 +127,7 @@ class ExprBase {
 template <expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicExpr : private internal::ExprBase {
   // internal::UnecheckCast & ExprBase::Create are friends because they need
-  // access to ExprBase::impl_ via private base class.
+  // access to ExprBase::impl_ via a private base class.
   template <typename ExprType>
   friend ExprType internal::UncheckedCast(Expr e);
   friend class internal::ExprBase;
