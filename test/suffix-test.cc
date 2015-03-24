@@ -28,7 +28,7 @@ TEST(SuffixTest, Suffix) {
   EXPECT_TRUE(s == 0);
 }
 
-TEST(SuffixTest, SuffixSet) {
+TEST(SuffixTest, AddSuffix) {
   mp::SuffixSet suffixes;
   mp::Suffix s = suffixes.Add<int>("test", 11, 222);
   EXPECT_STREQ("test", s.name());
@@ -36,4 +36,22 @@ TEST(SuffixTest, SuffixSet) {
   EXPECT_EQ(222, s.num_values());
 }
 
-// TODO: test suffixes
+TEST(SuffixTest, ConversionToSuffix) {
+  // Test that BasicSuffix is not convertible to Suffix&. If it was
+  // convertible there would be an error because of an ambigous call.
+  // The conversion is forbidden because it compromises type safety
+  // as illustrated in the following example:
+  //   auto i = suffixes.Add<int>("a", 0, 1);
+  //   auto d = suffixes.Add<double>("b", 0, 1);
+  //   mp::Suffix &s = i;
+  //   s = d;
+  struct Test {
+    static void f(mp::Suffix) {}
+    static void f(mp::Suffix &) {}
+  };
+  mp::SuffixSet suffixes;
+  auto s = suffixes.Add<int>("a", 0, 1);
+  Test::f(s);
+}
+
+// TODO: test VisitValues, BasicSuffix, ...

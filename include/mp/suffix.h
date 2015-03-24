@@ -35,10 +35,13 @@
 
 namespace mp {
 
+template <typename T>
+class BasicSuffix;
+
 // A suffix.
 // Suffixes are metadata that can be attached to variables, objectives,
 // constraints and problems.
-class Suffix {
+class SuffixBase {
  protected:
   struct Impl {
     // Name is stored as a StringRef rather than std::string to avoid
@@ -57,7 +60,7 @@ class Suffix {
   };
 
   template <typename SuffixType>
-  explicit Suffix(SuffixType s) : impl_(s.impl_) {}
+  explicit SuffixBase(SuffixType s) : impl_(s.impl_) {}
 
   void get_value(int index, int &value) const {
     value = impl_->int_values[index];
@@ -71,15 +74,15 @@ class Suffix {
 
   const Impl *impl() const { return impl_; }
 
-  explicit Suffix(const Impl *impl) : impl_(impl) {}
+  explicit SuffixBase(const Impl *impl) : impl_(impl) {}
+
+  // Safe bool type.
+  typedef void (SuffixBase::*SafeBool)() const;
 
  private:
   const Impl *impl_;
 
   friend class SuffixSet;
-
-  // Safe bool type.
-  typedef void (Suffix::*SafeBool)() const;
 
   // A member function representing the true value of SafeBool.
   void True() const {}
@@ -88,7 +91,7 @@ class Suffix {
   // Constructs a Suffix object representing a null reference to a
   // suffix. The only operation permitted for such object is copying,
   // assignment and check whether it is null using operator SafeBool.
-  Suffix() : impl_() {}
+  SuffixBase() : impl_() {}
 
   // Returns the suffix name.
   const char *name() const { return impl_->name.c_str(); }
@@ -105,7 +108,20 @@ class Suffix {
   //   if (s) {
   //     // Do something if s is not null.
   //   }
-  operator SafeBool() const { return impl_ != 0 ? &Suffix::True : 0; }
+  operator SafeBool() const { return impl_ != 0 ? &SuffixBase::True : 0; }
+};
+
+class Suffix : public SuffixBase {
+ private:
+  friend class SuffixSet;
+
+  explicit Suffix(const Impl *impl) : SuffixBase(impl) {}
+
+ public:
+  Suffix() {}
+
+  template <typename T>
+  Suffix(BasicSuffix<T> other) : SuffixBase(other.impl()) {}
 
   // Iterates over nonzero suffix values and sends them to the visitor.
   template <typename Visitor>
@@ -113,18 +129,23 @@ class Suffix {
 };
 
 template <typename T>
-class BasicSuffix : public Suffix { // TODO: don't use public inheritance!
+class BasicSuffix : private SuffixBase {
  private:
+  // Suffix is a friend because it needs access to Suffix::impl_ via a private
+  // base class.
+  friend class Suffix;
   friend class SuffixSet;
 
   template <typename SuffixType>
   friend SuffixType Cast(Suffix s);
 
-  explicit BasicSuffix(const Impl *impl) : Suffix(impl) {}
-  explicit BasicSuffix(Suffix other) : Suffix(other) {}
+  explicit BasicSuffix(const Impl *impl) : SuffixBase(impl) {}
+  explicit BasicSuffix(Suffix other) : SuffixBase(other) {}
 
  public:
   BasicSuffix() {}
+
+  using SuffixBase::operator SafeBool;
 
   T value(int index) const {
     assert(index < impl()->num_values);
@@ -135,7 +156,7 @@ class BasicSuffix : public Suffix { // TODO: don't use public inheritance!
 
   void set_value(int index, T value) {
     assert(index < impl()->num_values);
-    Suffix::set_value(index, value);
+    SuffixBase::set_value(index, value);
   }
 
   template <typename Visitor>
