@@ -66,9 +66,18 @@ TEST_F(SuffixTest, DoubleSuffix) {
   EXPECT_STREQ("test", s.name());
   EXPECT_EQ(11, s.kind());
   EXPECT_EQ(222, s.num_values());
+}
+
+TEST_F(SuffixTest, DoubleSuffixValue) {
+  auto s = suffixes_.Add<double>("test", 11, 3);
   s.set_value(0, 4.2);
   EXPECT_EQ(4.2, s.value(0));
-  // TODO: test index checks in value() and set_value()
+  s.set_value(2, 0);
+  EXPECT_EQ(0, s.value(2));
+  EXPECT_ASSERT(s.value(-1), "index out of bounds");
+  EXPECT_ASSERT(s.value(3), "index out of bounds");
+  EXPECT_ASSERT(s.set_value(-1, 0), "index out of bounds");
+  EXPECT_ASSERT(s.set_value(3, 0), "index out of bounds");
 }
 
 struct MockIntValueVisitor {
