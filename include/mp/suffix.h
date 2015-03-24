@@ -111,8 +111,11 @@ class SuffixBase {
   operator SafeBool() const { return impl_ != 0 ? &SuffixBase::True : 0; }
 };
 
-class Suffix : public SuffixBase {
+class Suffix : private SuffixBase {
  private:
+  // SuffixBase is a friend because it needs access to SuffixBase::impl_ via
+  // a private base class.
+  friend class SuffixBase;
   friend class SuffixSet;
 
   explicit Suffix(const Impl *impl) : SuffixBase(impl) {}
@@ -121,23 +124,30 @@ class Suffix : public SuffixBase {
   Suffix() {}
 
   template <typename T>
-  Suffix(BasicSuffix<T> other) : SuffixBase(other.impl()) {}
+  Suffix(BasicSuffix<T> other) : SuffixBase(other) {}
+
+  using SuffixBase::name;
+  using SuffixBase::kind;
+  using SuffixBase::num_values;
+  using SuffixBase::operator SafeBool;
 
   // Iterates over nonzero suffix values and sends them to the visitor.
   template <typename Visitor>
   void VisitValues(Visitor &visitor) const;
 };
 
+template <typename SuffixType>
+SuffixType Cast(Suffix s);
+
 template <typename T>
 class BasicSuffix : private SuffixBase {
  private:
-  // Suffix is a friend because it needs access to Suffix::impl_ via a private
-  // base class.
-  friend class Suffix;
+  // SuffixBase is a friend because it needs access to SuffixBase::impl_ via
+  // a private base class.
+  friend class SuffixBase;
   friend class SuffixSet;
 
-  template <typename SuffixType>
-  friend SuffixType Cast(Suffix s);
+  friend BasicSuffix<T> Cast< BasicSuffix<T> >(Suffix s);
 
   explicit BasicSuffix(const Impl *impl) : SuffixBase(impl) {}
   explicit BasicSuffix(Suffix other) : SuffixBase(other) {}
