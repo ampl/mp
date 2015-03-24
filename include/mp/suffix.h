@@ -120,7 +120,7 @@ class Suffix : private internal::SuffixBase {
  private:
   // SuffixBase is a friend because it needs access to SuffixBase::impl_ via
   // a private base class.
-  friend class SuffixBase;
+  friend class internal::SuffixBase;
   friend class SuffixSet;
 
   explicit Suffix(const Impl *impl) : SuffixBase(impl) {}
@@ -149,7 +149,7 @@ class BasicSuffix : private internal::SuffixBase {
  private:
   // SuffixBase is a friend because it needs access to SuffixBase::impl_ via
   // a private base class.
-  friend class SuffixBase;
+  friend class internal::SuffixBase;
   friend class SuffixSet;
 
   friend BasicSuffix<T> Cast< BasicSuffix<T> >(Suffix s);
