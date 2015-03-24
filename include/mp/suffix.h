@@ -38,6 +38,8 @@ namespace mp {
 template <typename T>
 class BasicSuffix;
 
+class SuffixSet;
+
 namespace internal {
 
 // A suffix.
