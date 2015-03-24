@@ -26,10 +26,8 @@ can be verified `here <http://oeis.org/A030169>`_.
 Hock and Schittkowski Models
 ----------------------------
 
-The
-`hs068.mod <https://raw.github.com/vitaut/ampl/master/models/gsl/hs068.mod>`_
-and
-`hs069.mod <https://raw.github.com/vitaut/ampl/master/models/gsl/hs069.mod>`_
+The `hs068.mod <http://ampl.github.io/models/gsl/hs068.mod>`_ and
+`hs069.mod <http://ampl.github.io/models/gsl/hs069.mod>`_
 models demonstrate the use of :func:`gsl_cdf_ugaussian_P`. They are taken
 form the Robert Vanderbei's `collection of nonlinear models
 <http://orfe.princeton.edu/~rvdb/ampl/nlmodels/>`_ and adapted for AMPLGSL.
