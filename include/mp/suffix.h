@@ -59,10 +59,12 @@ class Suffix {
   template <typename SuffixType>
   explicit Suffix(SuffixType s) : impl_(s.impl_) {}
 
-  void value(int index, int &value) const { value = impl_->int_values[index]; }
+  void get_value(int index, int &value) const {
+    value = impl_->int_values[index];
+  }
   void set_value(int index, int value) { impl_->int_values[index] = value; }
 
-  void value(int index, double &value) const {
+  void get_value(int index, double &value) const {
     value = impl_->dbl_values[index];
   }
   void set_value(int index, double value) { impl_->dbl_values[index] = value; }
@@ -127,7 +129,7 @@ class BasicSuffix : public Suffix { // TODO: don't use public inheritance!
   T value(int index) const {
     assert(index < impl()->num_values);
     T result = T();
-    Suffix::value(index, result);
+    get_value(index, result);
     return result;
   }
 
@@ -140,7 +142,7 @@ class BasicSuffix : public Suffix { // TODO: don't use public inheritance!
   void VisitValues(Visitor &visitor) const {
     for (int i = 0, n = num_values(); i < n; ++i) {
       T value = T();
-      Suffix::value(i, value);
+      get_value(i, value);
       if (value != 0)
         visitor.Visit(i, value);
     }

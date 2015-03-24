@@ -34,3 +34,19 @@ mp::SuffixSet::~SuffixSet() {
       delete [] i->int_values;
   }
 }
+
+mp::Suffix::Impl *mp::SuffixSet::DoAdd(fmt::StringRef name,
+                                       int kind, int num_values) {
+  Suffix::Impl *impl = const_cast<Suffix::Impl*>(
+        &*set_.insert(Suffix::Impl(name, kind)).first);
+  // Set name to empty string so that it is not deleted if new throws.
+  std::size_t size = name.size();
+  impl->name = fmt::StringRef(0, 0);
+  char *name_copy = new char[size + 1];
+  const char *s = name.c_str();
+  std::copy(s, s + size, fmt::internal::make_ptr(name_copy, size));
+  name_copy[size] = 0;
+  impl->name = fmt::StringRef(name_copy, size);
+  impl->num_values = num_values;
+  return impl;
+}
