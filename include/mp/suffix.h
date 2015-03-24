@@ -219,8 +219,10 @@ inline void Suffix::VisitValues(Visitor &v) const {
 // A set of suffixes.
 class SuffixSet {
  private:
+  typedef internal::SuffixBase::Impl SuffixImpl;
+
   struct SuffixNameLess {
-    bool operator()(const Suffix::Impl &lhs, const Suffix::Impl &rhs) const {
+    bool operator()(const SuffixImpl &lhs, const SuffixImpl &rhs) const {
       std::size_t lhs_size = lhs.name.size(), rhs_size = rhs.name.size();
       if (lhs_size != rhs_size)
         return lhs_size < rhs_size;
@@ -229,7 +231,7 @@ class SuffixSet {
     }
   };
 
-  typedef std::set<Suffix::Impl, SuffixNameLess> Set;
+  typedef std::set<SuffixImpl, SuffixNameLess> Set;
   Set set_;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(SuffixSet);
@@ -237,7 +239,7 @@ class SuffixSet {
   template <typename Alloc>
   friend class BasicProblem;
 
-  Suffix::Impl *DoAdd(fmt::StringRef name, int kind, int num_values);
+  SuffixImpl *DoAdd(fmt::StringRef name, int kind, int num_values);
 
  public:
   SuffixSet() {}
@@ -246,14 +248,14 @@ class SuffixSet {
   template <typename T>
   BasicSuffix<T> Add(fmt::StringRef name, int kind, int num_values) {
     // TODO: check if suffix kind agrees with type
-    Suffix::Impl *impl = DoAdd(name, kind, num_values);
+    SuffixImpl *impl = DoAdd(name, kind, num_values);
     impl->values = new T[num_values];
     return BasicSuffix<T>(impl);
   }
 
   // Finds a suffix with the specified name.
   Suffix Find(fmt::StringRef name) const {
-    Set::iterator i = set_.find(Suffix::Impl(name));
+    Set::iterator i = set_.find(SuffixImpl(name));
     return Suffix(i != set_.end() ? &*i : 0);
   }
 
@@ -267,7 +269,7 @@ class SuffixSet {
       Suffix suffix_;
 
      public:
-      explicit Proxy(const Suffix::Impl *impl) : suffix_(impl) {}
+      explicit Proxy(const SuffixImpl *impl) : suffix_(impl) {}
 
       const Suffix *operator->() const { return &suffix_; }
     };

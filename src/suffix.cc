@@ -35,9 +35,9 @@ mp::SuffixSet::~SuffixSet() {
   }
 }
 
-mp::Suffix::Impl *mp::SuffixSet::DoAdd(fmt::StringRef name,
-                                       int kind, int num_values) {
-  Suffix::Impl *impl = const_cast<Suffix::Impl*>(
+mp::SuffixSet::SuffixImpl *mp::SuffixSet::DoAdd(fmt::StringRef name,
+                                                int kind, int num_values) {
+  Suffix::Impl *impl = const_cast<SuffixImpl*>(
         &*set_.insert(Suffix::Impl(name, kind)).first);
   // Set name to empty string so that it is not deleted if new throws.
   std::size_t size = name.size();
