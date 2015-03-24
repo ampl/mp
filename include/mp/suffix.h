@@ -36,8 +36,8 @@
 namespace mp {
 
 // A suffix.
-// Suffixes are arbitrary metadata that can be attached to variables,
-// objectives, constraints and problems.
+// Suffixes are metadata that can be attached to variables, objectives,
+// constraints and problems.
 class Suffix {
  protected:
   struct Impl {
@@ -83,6 +83,9 @@ class Suffix {
   void True() const {}
 
  public:
+  // Constructs a Suffix object representing a null reference to a
+  // suffix. The only operation permitted for such object is copying,
+  // assignment and check whether it is null using operator SafeBool.
   Suffix() : impl_() {}
 
   // Returns the suffix name.
@@ -149,8 +152,8 @@ typedef BasicSuffix<double> DoubleSuffix;
 
 namespace internal {
 
-// Returns true if s of type SuffixType.
-template <typename >
+// Returns true if s is of type SuffixType.
+template <typename SuffixType>
 bool Is(Suffix s);
 
 template <>
@@ -197,23 +200,16 @@ class SuffixSet {
   template <typename Alloc>
   friend class BasicProblem;
 
+  Suffix::Impl *DoAdd(fmt::StringRef name, int kind, int num_values);
+
  public:
   SuffixSet() {}
   ~SuffixSet();
 
   template <typename T>
   BasicSuffix<T> Add(fmt::StringRef name, int kind, int num_values) {
-    Suffix::Impl *impl = const_cast<Suffix::Impl*>(
-          &*set_.insert(Suffix::Impl(name, kind)).first);
-    // Set name to empty string so that it is not deleted if new throws.
-    std::size_t size = name.size();
-    impl->name = fmt::StringRef(0, 0);
-    char *name_copy = new char[size + 1];
-    const char *s = name.c_str();
-    std::copy(s, s + size, fmt::internal::make_ptr(name_copy, size));
-    name_copy[size] = 0;
-    impl->name = fmt::StringRef(name_copy, size);
-    impl->num_values = num_values;
+    // TODO: check if suffix kind agrees with type
+    Suffix::Impl *impl = DoAdd(name, kind, num_values);
     impl->values = new T[num_values];
     return BasicSuffix<T>(impl);
   }
