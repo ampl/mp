@@ -20,7 +20,8 @@
  Author: Victor Zverovich
  */
 
-#include <gtest/gtest.h>
+#include "gmock/gmock.h"
+#include "test-assert.h"
 #include "mp/suffix.h"
 
 class SuffixTest : public testing::Test {
@@ -46,6 +47,18 @@ TEST_F(SuffixTest, IntSuffix) {
   EXPECT_EQ(222, s.num_values());
 }
 
+TEST_F(SuffixTest, IntSuffixValue) {
+  auto s = suffixes_.Add<int>("test", 11, 3);
+  s.set_value(0, 42);
+  EXPECT_EQ(42, s.value(0));
+  s.set_value(2, 0);
+  EXPECT_EQ(0, s.value(2));
+  EXPECT_ASSERT(s.value(-1), "index out of bounds");
+  EXPECT_ASSERT(s.value(3), "index out of bounds");
+  EXPECT_ASSERT(s.set_value(-1, 0), "index out of bounds");
+  EXPECT_ASSERT(s.set_value(3, 0), "index out of bounds");
+}
+
 TEST_F(SuffixTest, DoubleSuffix) {
   mp::DoubleSuffix s;
   EXPECT_TRUE(s == 0);
@@ -53,6 +66,39 @@ TEST_F(SuffixTest, DoubleSuffix) {
   EXPECT_STREQ("test", s.name());
   EXPECT_EQ(11, s.kind());
   EXPECT_EQ(222, s.num_values());
+  s.set_value(0, 4.2);
+  EXPECT_EQ(4.2, s.value(0));
+  // TODO: test index checks in value() and set_value()
+}
+
+struct MockIntValueVisitor {
+  MOCK_METHOD2(Visit, void (int index, int value));
+};
+
+TEST_F(SuffixTest, VisitIntSuffixValues) {
+  mp::IntSuffix s = suffixes_.Add<int>("test", 0, 3);
+  s.set_value(0, 42);
+  s.set_value(1, 0);
+  s.set_value(2, 11);
+  MockIntValueVisitor v;
+  EXPECT_CALL(v, Visit(0, 42));
+  EXPECT_CALL(v, Visit(2, 11));
+  s.VisitValues(v);
+}
+
+struct MockDoubleValueVisitor {
+  MOCK_METHOD2(Visit, void (int index, double value));
+};
+
+TEST_F(SuffixTest, VisitDoubleSuffixValues) {
+  mp::DoubleSuffix s = suffixes_.Add<double>("test", 0, 3);
+  s.set_value(0, 4.2);
+  s.set_value(1, 0);
+  s.set_value(2, 1.1);
+  MockDoubleValueVisitor v;
+  EXPECT_CALL(v, Visit(0, 4.2));
+  EXPECT_CALL(v, Visit(2, 1.1));
+  s.VisitValues(v);
 }
 
 TEST_F(SuffixTest, ConversionToSuffix) {
@@ -72,4 +118,4 @@ TEST_F(SuffixTest, ConversionToSuffix) {
   Test::f(s);
 }
 
-// TODO: test VisitValues, BasicSuffix, ...
+// TODO: test VisitValues, Cast, SuffixSet, SuffixManager

@@ -64,7 +64,7 @@ class SuffixBase {
   };
 
   template <typename SuffixType>
-  explicit SuffixBase(SuffixType s) : impl_(s.impl_) {}
+  explicit SuffixBase(SuffixType s) : impl_(s.impl()) {}
 
   void get_value(int index, int &value) const {
     value = impl_->int_values[index];
@@ -166,14 +166,15 @@ class BasicSuffix : private internal::SuffixBase {
   using SuffixBase::operator SafeBool;
 
   T value(int index) const {
-    assert(index < impl()->num_values);
+    MP_ASSERT(index >= 0 && index < impl()->num_values, "index out of bounds");
     T result = T();
     get_value(index, result);
     return result;
   }
 
+  // TODO: move set_value to MutSuffix
   void set_value(int index, T value) {
-    assert(index < impl()->num_values);
+    MP_ASSERT(index >= 0 && index < impl()->num_values, "index out of bounds");
     SuffixBase::set_value(index, value);
   }
 
