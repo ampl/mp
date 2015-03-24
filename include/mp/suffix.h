@@ -152,7 +152,7 @@ class BasicSuffix : private internal::SuffixBase {
   friend class internal::SuffixBase;
   friend class SuffixSet;
 
-  friend BasicSuffix<T> Cast< BasicSuffix<T> >(Suffix s);
+  friend BasicSuffix Cast<BasicSuffix>(Suffix s);
 
   explicit BasicSuffix(const Impl *impl) : SuffixBase(impl) {}
   explicit BasicSuffix(Suffix other) : SuffixBase(other) {}
