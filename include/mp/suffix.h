@@ -38,6 +38,8 @@ namespace mp {
 template <typename T>
 class BasicSuffix;
 
+namespace internal {
+
 // A suffix.
 // Suffixes are metadata that can be attached to variables, objectives,
 // constraints and problems.
@@ -110,8 +112,9 @@ class SuffixBase {
   //   }
   operator SafeBool() const { return impl_ != 0 ? &SuffixBase::True : 0; }
 };
+}  // namespace internal
 
-class Suffix : private SuffixBase {
+class Suffix : private internal::SuffixBase {
  private:
   // SuffixBase is a friend because it needs access to SuffixBase::impl_ via
   // a private base class.
@@ -140,7 +143,7 @@ template <typename SuffixType>
 SuffixType Cast(Suffix s);
 
 template <typename T>
-class BasicSuffix : private SuffixBase {
+class BasicSuffix : private internal::SuffixBase {
  private:
   // SuffixBase is a friend because it needs access to SuffixBase::impl_ via
   // a private base class.
