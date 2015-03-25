@@ -42,9 +42,9 @@ template <typename T1>
 inline void Unused(const T1 &) {}
 template <typename T1, typename T2>
 inline void Unused(const T1 &, const T2 &) {}
-template <typename T1, typename T2 = int, typename T3>
+template <typename T1, typename T2, typename T3>
 inline void Unused(const T1 &, const T2 &, const T3 &) {}
-template <typename T1, typename T2 = int, typename T3, typename T4>
+template <typename T1, typename T2, typename T3, typename T4>
 inline void Unused(const T1 &, const T2 &, const T3 &, const T4 &) {}
 }
 
