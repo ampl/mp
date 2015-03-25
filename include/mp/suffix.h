@@ -86,7 +86,7 @@ class SuffixBase {
  private:
   const Impl *impl_;
 
-  friend class SuffixSet;
+  friend class mp::SuffixSet;
 
   // A member function representing the true value of SafeBool.
   void True() const {}
