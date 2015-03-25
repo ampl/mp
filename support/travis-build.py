@@ -39,7 +39,7 @@ def get_mp_version():
 
 def pip_install(package, commit):
   "Install package from GitHub using pip."
-  check_call(['pip', 'install',
+  check_call(['pip', 'install', '-q',
               'git+git://github.com/{0}.git@{1}'.format(package, commit)])
 
 def build_docs(workdir, travis):
