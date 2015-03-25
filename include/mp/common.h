@@ -38,9 +38,14 @@ namespace mp {
 
 namespace internal {
 // Suppresses warnings about unused variables.
-template <typename T1, typename T2 = int, typename T3 = int, typename T4 = int>
-inline void Unused(const T1 &, const T2 & = T2(),
-                   const T3 & = T3(), const T4 & = T4()) {}
+template <typename T1>
+inline void Unused(const T1 &) {}
+template <typename T1, typename T2>
+inline void Unused(const T1 &, const T2 &) {}
+template <typename T1, typename T2 = int, typename T3>
+inline void Unused(const T1 &, const T2 &, const T3 &) {}
+template <typename T1, typename T2 = int, typename T3, typename T4>
+inline void Unused(const T1 &, const T2 &, const T3 &, const T4 &) {}
 }
 
 /** Expression information. */
