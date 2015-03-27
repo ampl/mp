@@ -576,7 +576,8 @@ bool Solver::ShowVersion() {
     Mach_ASL(); // may adjust Version_Qualifier_ASL
     Print("{}", Version_Qualifier_ASL);
   }
-  Print("{} ({})", version_, sysdetails_ASL);
+  const char *sysdetails = sysdetails_ASL;
+  Print("{} ({})", version_, sysdetails);
   if (date_ > 0)
     Print(", driver({})", date_);
   Print(", ASL({})\n", ASLdate_ASL);
