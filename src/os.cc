@@ -26,6 +26,7 @@
 
 #include <cerrno>
 #include <cstdlib>
+#include <cstring>  // for std::strlen
 #include <algorithm>
 
 #ifndef _WIN32
