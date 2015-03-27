@@ -161,7 +161,15 @@ void RSTFormatter::EndBlock() {
 }
 
 void RSTFormatter::HandleText(const char *text, std::size_t size) {
-  Write(std::string(text, size));
+  std::string str(text, size);
+  // Replace "``" with "\"".
+  const char QUOTES[] = "``";
+  std::size_t pos = 0;
+  while ((pos = str.find(QUOTES, pos)) != std::string::npos) {
+    str.replace(pos, sizeof(QUOTES) - 1, 1, '"');
+    ++pos;
+  }
+  Write(str);
   size = writer_.size();
   if (size != 0 && writer_.data()[size - 1] != '\n')
     EndLine();
