@@ -26,4 +26,7 @@ if __name__ == '__main__':
     add_to_archive(archive, 'include/mp')
     add_to_archive(archive, 'src')
     add_to_archive(archive, 'src/asl', exclude={'CMakeLists.txt'})
-    add_to_archive(archive, os.path.join('solvers', solver), 'src')
+    solver_dir = os.path.join('solvers', solver)
+    mkfile = 'mkfile'
+    add_to_archive(archive, solver_dir, 'src', exclude={mkfile})
+    archive.write(os.path.join(mp_dir, solver_dir, mkfile), os.path.join(solver, mkfile))
