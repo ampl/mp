@@ -78,19 +78,15 @@ b/util64.a: $util
 	rm $o
 	ranlib $target
 
-localsolver_date.h: $util src/localsolver/localsolver.cc src/solver.cc localsolvermain.c licmain1.c
-	now=`Dt -8 $util`
-	lnow=`Dt -8 $prereq`
-	echo -e "#define YYYYMMDD $now\n#define qYYYYMMDD "'"'"$now"'"' >$target
-	echo -e "#define lYYYYMMDD $lnow\n" >>$target
+localsolver_src = $util src/localsolver/localsolver.cc src/solver.cc localsolvermain.c licmain1.c
 
 b/%_32.o: src/%.cc
 	mkdir -p b/localsolver
-	$CXX -c -o $target -I$S $CFLAGS `echo $prereq | sed 's/ localsolver_date.h//'`
+	$CXX -c -o $target -I$S $CFLAGS -DMP_DRIVER_DATE=`Dt -8 $localsolver_src` $prereq
 
 b/%_64.o: src/%.cc
 	mkdir -p b/localsolver
-	$CXX64 -c -o $target -I$S64 $CFLAGS `echo $prereq | sed 's/ localsolver_date.h//'`
+	$CXX64 -c -o $target -I$S64 $CFLAGS -DMP_DRIVER_DATE=`Dt -8 $localsolver_src` $prereq
 
 b/localsolver32: b/localsolver/localsolver_32.o b/util32.a
 	$CC -c $g -I$S localsolvermain.c

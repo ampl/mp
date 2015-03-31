@@ -161,6 +161,7 @@ endif ()
 add_subdirectory(jacop)
 
 add_ampl_solver(localsolver)
+target_compile_definitions(localsolver PRIVATE MP_DRIVER_DATE=20150323)
 
 # Copy LocalSolver DLL to the target directory.
 if (LOCALSOLVER_DLL)
