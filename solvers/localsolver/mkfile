@@ -1,0 +1,123 @@
+# This mkfile expects the following directory structure:
+# 64/        - directory with 64-bit ASL library (amplsolver.a)
+# solvers/   - ASL solvers directory
+#   b/       - output directory
+#   include/ - C++ API headers
+#   src/     - C++ API and localsolver source
+
+BUILTINS =
+NPROC = 1
+LIBFORMAT = static_pic
+
+LOCALSOLVERDIR  = /opt/localsolver_5_0
+LS_LINKFLAGS    = -L$LOCALSOLVERDIR/binLS_LINKFLAGS
+LOCALSOLVER_INC = $LOCALSOLVERDIR/include
+
+S = ..
+S64 = ../64
+ALIB = amplsolver.a
+#LIBS = -lnsl -lm -ldl -lpthread
+L32 = /usr/local/olib32
+LIBS = $L32/libnsl.so.1 $L32/libdl.so.2 $L32/libpthread.so.0 $L32/libstdc++.so.6 $L32/libm.so.6 $L32/libgcc_s.so.1 $L32/libc.so.6 $L32/ld-linux.so.2
+
+g = -O2
+gs = -std=c++11 -DHAVE_UNORDERED_MAP
+CXX = g++ -m32
+CXX64 = g++
+CC = cc -m32
+CC64 = cc
+CXX11_FLAGS = -std=c++11 -DMP_USE_UNORDERED_MAP -DMP_NO_CLOCK_GETTIME
+
+CFLAGS = -I$LOCALSOLVER_INC -Iinclude -Isrc -I. $CXX11_FLAGS
+L = -lstdc++ $LS_LINKFLAGS -llocalsolver $LDMTFLAGS $S/$ALIB $LIBS
+Lg = -lstdc++ $LS_LINKFLAGS -llocalsolver $LDMTFLAGS $S/asg.a $LIBS
+L640 = $S64/olib
+Lb64 = $L640/libnsl.so.1 $L640/libdl.so.2 $L640/libpthread.so.0 $L640/libstdc++.so.6 $L640/libm.so.6 $L640/libgcc_s.so.1 $L640/libc.so.6 $L640/ld-linux-x86-64.so.2
+
+L64 = $LS_LINKFLAGS -llocalsolver $LDMTFLAGS $S64/$ALIB -lnsl -ldl -lpthread -lm
+
+all:V: b/localsolver32 b/localsolver64 b/localsolver32lt b/localsolver64lt
+
+util = \
+	src/asl/aslbuilder.cc \
+	src/asl/aslexpr.cc \
+	src/asl/aslproblem.cc \
+	src/asl/aslsolver.cc \
+	src/clock.cc \
+	src/expr-info.cc \
+	src/format.cc \
+	src/nl.cc \
+	src/option.cc \
+	src/os.cc \
+	src/posix.cc \
+	src/rstparser.cc \
+	src/sol.cc \
+	src/solver.cc \
+	src/suffix.cc \
+        src/localsolver/main.cc
+
+b/util32.a: $util
+	$CXX -c $g -I$S $CFLAGS $newprereq
+	o=`echo $newprereq|sed 's![^ ]*/!!g;s!asl/!!g;s/\.cc/.o/g'`
+	echo $o
+	ar ruv $target $o
+	rm $o
+	ranlib $target
+
+b/util32g.a: $util
+	$CXX -c -g -I$S $CFLAGS $newprereq
+	o=`echo $newprereq|sed 's![^ ]*/!!g;s!asl/!!g;s/\.cc/.o/g'`
+	ar ruv $target $o
+	rm $o
+	ranlib $target
+
+b/util64.a: $util
+	$CXX64 -c $g -I$S64 $CFLAGS $newprereq
+	o=`echo $newprereq|sed 's![^ ]*/!!g;s!asl/!!g;s/\.cc/.o/g'`
+	ar ruv $target $o
+	rm $o
+	ranlib $target
+
+localsolver_date.h: $util src/localsolver/localsolver.cc src/solver.cc localsolvermain.c licmain1.c
+	now=`Dt -8 $util`
+	lnow=`Dt -8 $prereq`
+	echo -e "#define YYYYMMDD $now\n#define qYYYYMMDD "'"'"$now"'"' >$target
+	echo -e "#define lYYYYMMDD $lnow\n" >>$target
+
+b/%_32.o: src/%.cc
+	mkdir -p b/localsolver
+	$CXX -c -o $target -I$S $CFLAGS `echo $prereq | sed 's/ localsolver_date.h//'`
+
+b/%_64.o: src/%.cc
+	mkdir -p b/localsolver
+	$CXX64 -c -o $target -I$S64 $CFLAGS `echo $prereq | sed 's/ localsolver_date.h//'`
+
+b/localsolver32: b/localsolver/localsolver_32.o b/util32.a
+	$CC -c $g -I$S localsolvermain.c
+	$CXX -s -o $target localsolvermain.o $prereq $L
+	rm localsolvermain.o
+
+b/localsolver32lt: b/localsolver/localsolver_32.o b/util32.a
+	$CC -c $g -I$S -DTime_Limited localsolvermain.c
+	$CXX -s -o $target localsolvermain.o $prereq $L
+	rm localsolvermain.o
+
+b/localsolver32ltg: src/localsolver/localsolver.cc b/util32g.a
+	$CC -c -g -I$S -DTime_Limited localsolvermain.c
+	$CXX -g -o $target -I$S $CFLAGS localsolvermain.o $prereq $Lg
+	rm localsolvermain.o
+
+b/localsolver32g: src/localsolver/localsolver.cc b/util32g.a
+	$CC -c -g -I$S localsolvermain.c
+	$CXX -g -o $target -I$S $CFLAGS localsolvermain.o $prereq $Lg
+	rm localsolvermain.o
+
+b/localsolver64: b/localsolver/localsolver_64.o b/util64.a
+	$CC64 -c $g -I$S64 localsolvermain.c
+	$CXX64 -s -o $target localsolvermain.o $prereq $L64
+	rm localsolvermain.o
+
+b/localsolver64lt: b/localsolver/localsolver_64.o b/util64.a
+	$CC64 -c $g -I$S64 -DTime_Limited localsolvermain.c
+	$CXX64 -s -o $target localsolvermain.o $prereq $L64
+	rm localsolvermain.o
