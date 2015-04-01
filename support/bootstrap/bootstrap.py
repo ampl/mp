@@ -192,4 +192,4 @@ def install_dmg(filename):
   check_call(['hdiutil', 'detach', dir])
   os.rmdir(dir)
 
-LOCALSOLVER_VERSION = '4_5_20140718'
+LOCALSOLVER_VERSION = '5_0_20150119'
