@@ -22,7 +22,7 @@
 
 #include "localsolver/localsolver.h"
 
-int main(int, char **argv) {
+extern "C" int MP_RunSolver(char **argv) {
   try {
     return mp::SolverApp<mp::LocalSolver>().Run(argv, mp::READ_BOUNDS_FIRST);
   } catch (const std::exception &e) {
@@ -30,3 +30,9 @@ int main(int, char **argv) {
   }
   return 1;
 }
+
+#ifndef MP_NOMAIN
+int main(int, char **argv) {
+  return MP_RunSolver(argv);
+}
+#endif

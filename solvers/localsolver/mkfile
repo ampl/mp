@@ -28,7 +28,7 @@ CC = cc -m32
 CC64 = cc
 CXX11_FLAGS = -std=c++11 -DMP_USE_UNORDERED_MAP -DMP_NO_CLOCK_GETTIME
 
-CFLAGS = -I$LOCALSOLVER_INC -Iinclude -Isrc -I. $CXX11_FLAGS
+CFLAGS = -I$LOCALSOLVER_INC -Iinclude -Isrc -I. $CXX11_FLAGS -DMP_NOMAIN
 L = -lstdc++ $LS_LINKFLAGS -llocalsolver $LDMTFLAGS $S/$ALIB $LIBS
 Lg = -lstdc++ $LS_LINKFLAGS -llocalsolver $LDMTFLAGS $S/asg.a $LIBS
 L640 = $S64/olib
