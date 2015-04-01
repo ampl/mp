@@ -180,15 +180,18 @@ def copy_optional_dependencies(platform):
         shutil.copytree(src, dest, symlinks=True)
 
 # Installs an OS X package.
-def install_pkg(filename):
+def install_pkg(filename, allow_untrusted=False):
   print('Installing', filename)
-  check_call(['sudo', 'installer', '-pkg', filename, '-target', '/'])
+  cmd = ['sudo', 'installer', '-pkg', filename, '-target', '/']
+  if allow_untrusted:
+    cmd.append('-allowUntrusted')
+  check_call(cmd)
 
 # Installs a package from a .dmg file.
-def install_dmg(filename):
+def install_dmg(filename, allow_untrusted=False):
   dir = tempfile.mkdtemp()
   check_call(['hdiutil', 'attach', filename, '-mountpoint', dir])
-  install_pkg(glob.glob(dir + '/*pkg')[0])
+  install_pkg(glob.glob(dir + '/*pkg')[0], allow_untrusted)
   check_call(['hdiutil', 'detach', dir])
   os.rmdir(dir)
 

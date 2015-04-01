@@ -15,7 +15,7 @@ if not installed('clang'):
   with download(
       'http://devimages.apple.com/downloads/xcode/' +
       'command_line_tools_for_xcode_os_x_mountain_lion_april_2013.dmg') as f:
-    install_dmg(f)
+    install_dmg(f, True)
 
 # Install MacPorts.
 if not installed('port'):
