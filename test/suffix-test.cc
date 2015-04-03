@@ -215,17 +215,6 @@ TEST_F(SuffixTest, ConversionToSuffix) {
   MutTest::f(s);
 }
 
-TEST_F(SuffixTest, NonNulTerminatedSuffixName) {
-  EXPECT_STREQ("foo",
-               suffixes_.Add<int>(fmt::StringRef("foobar", 3), 0, 1).name());
-}
-
-TEST_F(SuffixTest, DuplicateSuffix) {
-  suffixes_.Add<int>("foo", 0, 1);
-  EXPECT_THROW_MSG(suffixes_.Add<int>(fmt::StringRef("foobar", 3), 0, 1),
-                   mp::Error, "duplicate suffix 'foo'");
-}
-
 TEST_F(SuffixTest, Is) {
   Suffix s = suffixes_.Add<int>("a", 0, 1);
   EXPECT_TRUE(mp::internal::Is<mp::IntSuffix>(s));
@@ -248,4 +237,43 @@ TEST_F(SuffixTest, SuffixKindAgreesWithType) {
             suffixes_.Add<double>("d", mp::suf::FLOAT, 1).kind());
 }
 
-// TODO: test SuffixSet, SuffixManager
+TEST(SuffixSetTest, Empty) {
+  mp::SuffixSet s;
+  EXPECT_EQ(s.begin(), s.end());
+  EXPECT_EQ(MutSuffix(), s.Find("test"));
+}
+
+TEST(SuffixSetTest, Add) {
+  mp::SuffixSet s;
+  MutSuffix suf = s.Add<int>("test", 0, 0);
+  EXPECT_EQ(suf, s.Find("test"));
+}
+
+TEST(SuffixSetTest, NonNulTerminatedSuffixName) {
+  mp::SuffixSet s;
+  EXPECT_STREQ("foo", s.Add<int>(fmt::StringRef("foobar", 3), 0, 1).name());
+}
+
+TEST(SuffixSetTest, AddDuplicateSuffix) {
+  mp::SuffixSet s;
+  s.Add<int>("foo", 0, 1);
+  EXPECT_THROW_MSG(s.Add<int>(fmt::StringRef("foobar", 3), 0, 1),
+                   mp::Error, "duplicate suffix 'foo'");
+}
+
+TEST(SuffixSetTest, Find) {
+  mp::SuffixSet s;
+  auto suf = s.Add<int>("test", 0, 0);
+  struct Test {
+    static bool ismut(Suffix) { return false; }
+    static bool ismut(MutSuffix) { return true; }
+  };
+  EXPECT_EQ(suf, s.Find("test"));
+  EXPECT_TRUE(Test::ismut(s.Find("test")));
+  const mp::SuffixSet &cs = s;
+  EXPECT_EQ(suf, cs.Find("test"));
+  EXPECT_FALSE(Test::ismut(cs.Find("test")));
+}
+
+// TODO: test deallocation
+// TODO: test SuffixSet::iterator, SuffixManager
