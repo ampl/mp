@@ -102,7 +102,7 @@ struct MockIntValueVisitor {
 };
 
 TEST_F(SuffixTest, VisitIntSuffixValues) {
-  mp::IntSuffix s = suffixes_.Add<int>("test", 0, 3);
+  mp::MutIntSuffix s = suffixes_.Add<int>("test", 0, 3);
   s.set_value(0, 42);
   s.set_value(1, 0);
   s.set_value(2, 11);
@@ -117,7 +117,7 @@ struct MockDoubleValueVisitor {
 };
 
 TEST_F(SuffixTest, VisitDoubleSuffixValues) {
-  mp::DoubleSuffix s = suffixes_.Add<double>("test", 0, 3);
+  mp::MutDoubleSuffix s = suffixes_.Add<double>("test", 0, 3);
   s.set_value(0, 4.2);
   s.set_value(1, 0);
   s.set_value(2, 1.1);
@@ -172,6 +172,11 @@ TEST_F(SuffixTest, ConversionToSuffix) {
   };
   auto s = suffixes_.Add<int>("a", 0, 1);
   Test::f(s);
+  struct MutTest {
+    static void f(mp::MutSuffix) {}
+    static void f(mp::MutSuffix &) {}
+  };
+  MutTest::f(s);
 }
 
 TEST_F(SuffixTest, NonNulTerminatedSuffixName) {
@@ -207,4 +212,4 @@ TEST_F(SuffixTest, SuffixKindAgreesWithType) {
             suffixes_.Add<double>("d", mp::suf::FLOAT, 1).kind());
 }
 
-// TODO: test SuffixSet, SuffixManager
+// TODO: test MutSuffix, SuffixSet, SuffixManager

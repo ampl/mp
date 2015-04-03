@@ -39,6 +39,9 @@ namespace mp {
 template <typename T>
 class BasicSuffix;
 
+template <typename T>
+class BasicMutSuffix;
+
 class SuffixSet;
 
 namespace internal {
@@ -123,6 +126,7 @@ class Suffix : private internal::SuffixBase {
   // a private base class.
   friend class internal::SuffixBase;
   friend class SuffixSet;
+  friend class MutSuffix;
 
   explicit Suffix(const Impl *impl) : SuffixBase(impl) {}
 
@@ -142,8 +146,24 @@ class Suffix : private internal::SuffixBase {
   void VisitValues(Visitor &v) const;
 };
 
+class MutSuffix : public Suffix {
+ private:
+  friend class SuffixSet;
+
+  explicit MutSuffix(const Impl *impl) : Suffix(impl) {}
+
+ public:
+  MutSuffix() {}
+
+  template <typename T>
+  MutSuffix(BasicMutSuffix<T> other) : Suffix(other) {}
+};
+
 template <typename SuffixType>
 SuffixType Cast(Suffix s);
+
+template <typename SuffixType>
+SuffixType Cast(MutSuffix s);
 
 template <typename T>
 class BasicSuffix : private internal::SuffixBase {
@@ -152,6 +172,7 @@ class BasicSuffix : private internal::SuffixBase {
   // a private base class.
   friend class internal::SuffixBase;
   friend class SuffixSet;
+  friend class BasicMutSuffix<T>;
 
   friend BasicSuffix Cast<BasicSuffix>(Suffix s);
 
@@ -175,12 +196,6 @@ class BasicSuffix : private internal::SuffixBase {
     return result;
   }
 
-  // TODO: move set_value to MutSuffix
-  void set_value(int index, T value) {
-    MP_ASSERT(index >= 0 && index < impl()->num_values, "index out of bounds");
-    SuffixBase::set_value(index, value);
-  }
-
   template <typename Visitor>
   void VisitValues(Visitor &v) const {
     for (int i = 0, n = num_values(); i < n; ++i) {
@@ -190,8 +205,33 @@ class BasicSuffix : private internal::SuffixBase {
   }
 };
 
+// A mutable suffix.
+template <typename T>
+class BasicMutSuffix : public BasicSuffix<T> {
+ private:
+  friend class SuffixSet;
+
+  friend BasicMutSuffix Cast<BasicMutSuffix>(MutSuffix s);
+
+  explicit BasicMutSuffix(const typename BasicSuffix<T>::Impl *impl)
+    : BasicSuffix<T>(impl) {}
+  explicit BasicMutSuffix(MutSuffix other) : BasicSuffix<T>(other) {}
+
+ public:
+  BasicMutSuffix() {}
+
+  void set_value(int index, T value) {
+    MP_ASSERT(index >= 0 &&
+              index < this->impl()->num_values, "index out of bounds");
+    BasicSuffix<T>::set_value(index, value);
+  }
+};
+
 typedef BasicSuffix<int> IntSuffix;
 typedef BasicSuffix<double> DoubleSuffix;
+
+typedef BasicMutSuffix<int> MutIntSuffix;
+typedef BasicMutSuffix<double> MutDoubleSuffix;
 
 namespace internal {
 
@@ -216,6 +256,10 @@ inline bool Is(Suffix s) {
 // Returns a null suffix if s is not convertible to SuffixType.
 template <typename SuffixType>
 inline SuffixType Cast(Suffix s) {
+  return internal::Is<SuffixType>(s) ? SuffixType(s) : SuffixType();
+}
+template <typename SuffixType>
+inline SuffixType Cast(MutSuffix s) {
   return internal::Is<SuffixType>(s) ? SuffixType(s) : SuffixType();
 }
 
@@ -259,20 +303,24 @@ class SuffixSet {
   // Adds a suffix throwing Error if another suffix with the same name is
   // in the set.
   template <typename T>
-  BasicSuffix<T> Add(fmt::StringRef name, int kind, int num_values) {
+  BasicMutSuffix<T> Add(fmt::StringRef name, int kind, int num_values) {
     MP_ASSERT((kind & suf::FLOAT) == 0 ||
               (kind & suf::FLOAT) == internal::SuffixInfo<T>::KIND,
               "invalid suffix kind");
     SuffixImpl *impl = DoAdd(
           name, kind | internal::SuffixInfo<T>::KIND, num_values);
     impl->values = new T[num_values];
-    return BasicSuffix<T>(impl);
+    return BasicMutSuffix<T>(impl);
   }
 
   // Finds a suffix with the specified name.
   Suffix Find(fmt::StringRef name) const {
     Set::iterator i = set_.find(SuffixImpl(name));
     return Suffix(i != set_.end() ? &*i : 0);
+  }
+  MutSuffix Find(fmt::StringRef name) {
+    Set::iterator i = set_.find(SuffixImpl(name));
+    return MutSuffix(i != set_.end() ? &*i : 0);
   }
 
   class iterator : public std::iterator<std::forward_iterator_tag, Suffix> {
@@ -323,8 +371,8 @@ class SuffixManager {
  public:
   virtual ~SuffixManager() {}
 
-  typedef mp::Suffix Suffix;
-  typedef mp::IntSuffix IntSuffix;
+  typedef MutSuffix Suffix;
+  typedef MutIntSuffix IntSuffix;
   typedef mp::SuffixSet SuffixSet;
 
   // Returns a set of suffixes.
