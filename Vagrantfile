@@ -30,6 +30,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
              "--nodaemon", "/var/lib/buildbot/slave"]
   end
 
+  # Linux boxes don't use provisioning. To update them, use
+  # support/bootstrap/create-lucid-image.py script.
   config.vm.define "lucid32" do |c|
     c.vm.provider "docker" do |d|
       d.image = "vitaut/ampl:lucid32"
