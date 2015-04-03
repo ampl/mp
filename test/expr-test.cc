@@ -588,7 +588,7 @@ TEST_F(ExprTest, InvalidIteratedLogicalExprKind) {
 
 TEST_F(ExprTest, ConversionToExpr) {
   // Test that NumericConstant is not convertible to Expr&. If it was
-  // convertible there would be an error because of an ambigous call.
+  // convertible there would be an error because of an ambiguous call.
   // The conversion is forbidden because it compromises type safety
   // as illustrated in the following example:
   //   auto n = factory_.MakeNumericConstant(42);
