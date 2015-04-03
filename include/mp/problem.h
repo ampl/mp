@@ -255,10 +255,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   template <typename T>
   class SuffixHandler {
    private:
-    BasicSuffix<T> suffix_;
+    BasicMutSuffix<T> suffix_;
 
    public:
-    explicit SuffixHandler(BasicSuffix<T> s) : suffix_(s) {}
+    explicit SuffixHandler(BasicMutSuffix<T> s) : suffix_(s) {}
 
     // Sets the suffix value.
     void SetValue(int index, T value) {
