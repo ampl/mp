@@ -26,6 +26,7 @@
 #include "mp/suffix.h"
 
 using mp::Suffix;
+using mp::MutSuffix;
 
 class SuffixTest : public testing::Test {
  protected:
@@ -39,6 +40,17 @@ TEST_F(SuffixTest, Suffix) {
   EXPECT_STREQ("test", s.name());
   EXPECT_EQ(11, s.kind());
   EXPECT_EQ(222, s.num_values());
+}
+
+TEST_F(SuffixTest, MutSuffix) {
+  MutSuffix s;
+  EXPECT_TRUE(s == 0);
+  s = suffixes_.Add<int>("test", 11, 222);
+  EXPECT_STREQ("test", s.name());
+  EXPECT_EQ(11, s.kind());
+  EXPECT_EQ(222, s.num_values());
+  Suffix csuf = s;
+  csuf = s;
 }
 
 template <typename T>
@@ -55,6 +67,18 @@ TEST_F(SuffixTest, IntSuffix) {
   EXPECT_EQ(11, s.kind());
   EXPECT_EQ(222, s.num_values());
   EXPECT_TRUE(IsInt<mp::IntSuffix::Type>::VALUE);
+}
+
+TEST_F(SuffixTest, MutIntSuffix) {
+  mp::MutIntSuffix s;
+  EXPECT_TRUE(s == 0);
+  s = suffixes_.Add<int>("test", 11, 222);
+  EXPECT_STREQ("test", s.name());
+  EXPECT_EQ(11, s.kind());
+  EXPECT_EQ(222, s.num_values());
+  EXPECT_TRUE(IsInt<mp::IntSuffix::Type>::VALUE);
+  MutSuffix csuf = s;
+  csuf = s;
 }
 
 TEST_F(SuffixTest, IntSuffixValue) {
@@ -83,6 +107,18 @@ TEST_F(SuffixTest, DoubleSuffix) {
   EXPECT_EQ(11 | mp::suf::FLOAT, s.kind());
   EXPECT_EQ(222, s.num_values());
   EXPECT_TRUE(IsDouble<mp::DoubleSuffix::Type>::VALUE);
+}
+
+TEST_F(SuffixTest, MutDoubleSuffix) {
+  mp::MutDoubleSuffix s;
+  EXPECT_TRUE(s == 0);
+  s = suffixes_.Add<double>("test", 11, 222);
+  EXPECT_STREQ("test", s.name());
+  EXPECT_EQ(11 | mp::suf::FLOAT, s.kind());
+  EXPECT_EQ(222, s.num_values());
+  EXPECT_TRUE(IsDouble<mp::DoubleSuffix::Type>::VALUE);
+  MutSuffix csuf = s;
+  csuf = s;
 }
 
 TEST_F(SuffixTest, DoubleSuffixValue) {
@@ -212,4 +248,4 @@ TEST_F(SuffixTest, SuffixKindAgreesWithType) {
             suffixes_.Add<double>("d", mp::suf::FLOAT, 1).kind());
 }
 
-// TODO: test MutSuffix, SuffixSet, SuffixManager
+// TODO: test SuffixSet, SuffixManager
