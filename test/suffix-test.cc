@@ -22,7 +22,10 @@
 
 #include "gmock/gmock.h"
 #include "test-assert.h"
+#include "mp/error.h"
 #include "mp/suffix.h"
+
+using mp::Suffix;
 
 class SuffixTest : public testing::Test {
  protected:
@@ -30,13 +33,19 @@ class SuffixTest : public testing::Test {
 };
 
 TEST_F(SuffixTest, Suffix) {
-  mp::Suffix s;
+  Suffix s;
   EXPECT_TRUE(s == 0);
   s = suffixes_.Add<int>("test", 11, 222);
   EXPECT_STREQ("test", s.name());
   EXPECT_EQ(11, s.kind());
   EXPECT_EQ(222, s.num_values());
 }
+
+template <typename T>
+struct IsInt { enum { VALUE = 0 }; };
+
+template <>
+struct IsInt<int> { enum { VALUE = 1 }; };
 
 TEST_F(SuffixTest, IntSuffix) {
   mp::IntSuffix s;
@@ -45,6 +54,7 @@ TEST_F(SuffixTest, IntSuffix) {
   EXPECT_STREQ("test", s.name());
   EXPECT_EQ(11, s.kind());
   EXPECT_EQ(222, s.num_values());
+  EXPECT_TRUE(IsInt<mp::IntSuffix::Type>::VALUE);
 }
 
 TEST_F(SuffixTest, IntSuffixValue) {
@@ -59,13 +69,21 @@ TEST_F(SuffixTest, IntSuffixValue) {
   EXPECT_ASSERT(s.set_value(3, 0), "index out of bounds");
 }
 
+template <typename T>
+struct IsDouble { enum { VALUE = 0 }; };
+
+template <>
+struct IsDouble<double> { enum { VALUE = 1 }; };
+
 TEST_F(SuffixTest, DoubleSuffix) {
   mp::DoubleSuffix s;
   EXPECT_TRUE(s == 0);
   s = suffixes_.Add<double>("test", 11, 222);
   EXPECT_STREQ("test", s.name());
-  EXPECT_EQ(11, s.kind());
+  EXPECT_EQ(11 | mp::suf::FLOAT, s.kind());
   EXPECT_EQ(222, s.num_values());
+  EXPECT_TRUE(IsDouble<mp::DoubleSuffix::Type>::VALUE);
+  // TODO: test that suf::FLOAT is added
 }
 
 TEST_F(SuffixTest, DoubleSuffixValue) {
@@ -110,21 +128,75 @@ TEST_F(SuffixTest, VisitDoubleSuffixValues) {
   s.VisitValues(v);
 }
 
+TEST_F(SuffixTest, VisitSuffixValues) {
+  Suffix s;
+  {
+    auto is = suffixes_.Add<int>("is", 0, 3);
+    is.set_value(0, 42);
+    is.set_value(1, 0);
+    is.set_value(2, 11);
+    s = is;
+  }
+  {
+    MockIntValueVisitor v;
+    EXPECT_CALL(v, Visit(0, 42));
+    EXPECT_CALL(v, Visit(2, 11));
+    s.VisitValues(v);
+  }
+  {
+    auto ds = suffixes_.Add<double>("ds", 0, 3);
+    ds.set_value(0, 4.2);
+    ds.set_value(1, 0);
+    ds.set_value(2, 1.1);
+    s = ds;
+  }
+  {
+    MockDoubleValueVisitor v;
+    EXPECT_CALL(v, Visit(0, 4.2));
+    EXPECT_CALL(v, Visit(2, 1.1));
+    s.VisitValues(v);
+  }
+}
+
 TEST_F(SuffixTest, ConversionToSuffix) {
   // Test that BasicSuffix is not convertible to Suffix&. If it was
-  // convertible there would be an error because of an ambigous call.
+  // convertible there would be an error because of an ambiguous call.
   // The conversion is forbidden because it compromises type safety
   // as illustrated in the following example:
   //   auto i = suffixes.Add<int>("a", 0, 1);
   //   auto d = suffixes.Add<double>("b", 0, 1);
-  //   mp::Suffix &s = i;
+  //   Suffix &s = i;
   //   s = d;
   struct Test {
-    static void f(mp::Suffix) {}
-    static void f(mp::Suffix &) {}
+    static void f(Suffix) {}
+    static void f(Suffix &) {}
   };
   auto s = suffixes_.Add<int>("a", 0, 1);
   Test::f(s);
 }
 
-// TODO: test VisitValues, Cast, SuffixSet, SuffixManager
+TEST_F(SuffixTest, NonNulTerminatedSuffixName) {
+  EXPECT_STREQ("foo",
+               suffixes_.Add<int>(fmt::StringRef("foobar", 3), 0, 1).name());
+}
+
+TEST_F(SuffixTest, DuplicateSuffix) {
+  suffixes_.Add<int>("foo", 0, 1);
+  EXPECT_THROW_MSG(suffixes_.Add<int>(fmt::StringRef("foobar", 3), 0, 1),
+                   mp::Error, "duplicate suffix 'foo'");
+}
+
+TEST_F(SuffixTest, Is) {
+  Suffix s = suffixes_.Add<int>("a", 0, 1);
+  EXPECT_TRUE(mp::internal::Is<mp::IntSuffix>(s));
+  EXPECT_FALSE(mp::internal::Is<mp::DoubleSuffix>(s));
+}
+
+TEST_F(SuffixTest, Cast) {
+  mp::IntSuffix is = suffixes_.Add<int>("a", 0, 1);
+  Suffix s = is;
+  EXPECT_EQ(is, mp::Cast<mp::IntSuffix>(s));
+  EXPECT_EQ(Suffix(), mp::Cast<mp::DoubleSuffix>(s));
+}
+
+// TODO: test SuffixSet, SuffixManager

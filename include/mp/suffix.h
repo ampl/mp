@@ -158,6 +158,8 @@ class BasicSuffix : private internal::SuffixBase {
   explicit BasicSuffix(Suffix other) : SuffixBase(other) {}
 
  public:
+  typedef T Type;
+
   BasicSuffix() {}
 
   using SuffixBase::name;
@@ -192,15 +194,21 @@ typedef BasicSuffix<double> DoubleSuffix;
 
 namespace internal {
 
+template <typename T>
+struct SuffixInfo {
+  enum { KIND = 0 };
+};
+
+template <>
+struct SuffixInfo<double> {
+  enum { KIND = suf::FLOAT };
+};
+
 // Returns true if s is of type SuffixType.
 template <typename SuffixType>
-bool Is(Suffix s);
-
-template <>
-inline bool Is<IntSuffix>(Suffix s) { return (s.kind() & suf::FLOAT) == 0; }
-
-template <>
-inline bool Is<DoubleSuffix>(Suffix s) { return (s.kind() & suf::FLOAT) != 0; }
+inline bool Is(Suffix s) {
+  return (s.kind() & suf::FLOAT) == SuffixInfo<typename SuffixType::Type>::KIND;
+}
 }
 
 // Casts a suffix to type SuffixType which must be a valid suffix type.
@@ -212,8 +220,7 @@ inline SuffixType Cast(Suffix s) {
 
 template <typename Visitor>
 inline void Suffix::VisitValues(Visitor &v) const {
-  IntSuffix int_suffix = Cast<IntSuffix>(*this);
-  if (int_suffix)
+  if (IntSuffix int_suffix = Cast<IntSuffix>(*this))
     int_suffix.VisitValues(v);
   else
     Cast<DoubleSuffix>(*this).VisitValues(v);
@@ -248,10 +255,13 @@ class SuffixSet {
   SuffixSet() {}
   ~SuffixSet();
 
+  // Adds a suffix throwing Error if another suffix with the same name is
+  // in the set.
   template <typename T>
   BasicSuffix<T> Add(fmt::StringRef name, int kind, int num_values) {
     // TODO: check if suffix kind agrees with type
-    SuffixImpl *impl = DoAdd(name, kind, num_values);
+    SuffixImpl *impl = DoAdd(
+          name, kind | internal::SuffixInfo<T>::KIND, num_values);
     impl->values = new T[num_values];
     return BasicSuffix<T>(impl);
   }

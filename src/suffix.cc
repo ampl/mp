@@ -23,6 +23,7 @@
  */
 
 #include "mp/suffix.h"
+#include "mp/error.h"
 
 mp::SuffixSet::~SuffixSet() {
   // Deallocate names and values.
@@ -37,8 +38,10 @@ mp::SuffixSet::~SuffixSet() {
 
 mp::SuffixSet::SuffixImpl *mp::SuffixSet::DoAdd(fmt::StringRef name,
                                                 int kind, int num_values) {
-  Suffix::Impl *impl = const_cast<SuffixImpl*>(
-        &*set_.insert(Suffix::Impl(name, kind)).first);
+  std::pair<Set::iterator, bool> result = set_.insert(Suffix::Impl(name, kind));
+  if (!result.second)
+    throw Error("duplicate suffix '{}'", name);
+  Suffix::Impl *impl = const_cast<SuffixImpl*>(&*result.first);
   // Set name to empty string so that it is not deleted if new throws.
   std::size_t size = name.size();
   impl->name = fmt::StringRef(0, 0);
