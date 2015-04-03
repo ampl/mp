@@ -13,6 +13,7 @@ import timer
 python_dir = r'C:\Python27'
 if os.path.exists(python_dir) and not installed('python'):
   add_to_path(python_dir + r'\python')
+  add_to_path(python_dir + r'\Scripts', None, True)
 
 install_cmake('cmake-3.0.1-win32-x86.zip')
 
@@ -77,7 +78,8 @@ if not os.path.exists(r'\Program Files\Java\jdk1.7.0_55'):
 # Install LocalSolver.
 for bits in [32, 64]:
   suffix = ' (x86)' if bits == 32 else ''
-  install_dir = r'C:\Program Files{}\localsolver_4_5'.format(suffix)
+  dirname = 'localsolver_' + re.match('(.*)_.*', LOCALSOLVER_VERSION).group(1)
+  install_dir = r'C:\Program Files{}\{}'.format(suffix, dirname)
   if os.path.exists(install_dir):
     continue
   try:
@@ -89,7 +91,7 @@ for bits in [32, 64]:
     shutil.move(os.path.join(tempdir, '$_OUTDIR'), install_dir)
   finally:
     shutil.rmtree(tempdir)
-localsolver_license_dir = r'C:\localsolver_4_5'
+localsolver_license_dir = 'C:\\' + dirname
 if not os.path.exists(localsolver_license_dir):
   os.mkdir(localsolver_license_dir)
 with open(os.path.join(localsolver_license_dir, 'license.dat'), 'w') as f:
