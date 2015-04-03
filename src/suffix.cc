@@ -23,7 +23,6 @@
  */
 
 #include "mp/suffix.h"
-#include "mp/error.h"
 
 mp::SuffixSet::~SuffixSet() {
   // Deallocate names and values.

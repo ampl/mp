@@ -31,6 +31,7 @@
 #include <string>  // for std::char_traits
 
 #include "mp/common.h"
+#include "mp/error.h"  // for MP_ASSERT
 #include "mp/format.h"
 
 namespace mp {
@@ -259,7 +260,9 @@ class SuffixSet {
   // in the set.
   template <typename T>
   BasicSuffix<T> Add(fmt::StringRef name, int kind, int num_values) {
-    // TODO: check if suffix kind agrees with type
+    MP_ASSERT((kind & suf::FLOAT) == 0 ||
+              (kind & suf::FLOAT) == internal::SuffixInfo<T>::KIND,
+              "invalid suffix kind");
     SuffixImpl *impl = DoAdd(
           name, kind | internal::SuffixInfo<T>::KIND, num_values);
     impl->values = new T[num_values];
@@ -330,7 +333,6 @@ class SuffixManager {
     return suffixes_[kind];
   }
 };
-
 }  // namespace mp
 
 #endif  // MP_SUFFIX_H_

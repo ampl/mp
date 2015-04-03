@@ -83,7 +83,6 @@ TEST_F(SuffixTest, DoubleSuffix) {
   EXPECT_EQ(11 | mp::suf::FLOAT, s.kind());
   EXPECT_EQ(222, s.num_values());
   EXPECT_TRUE(IsDouble<mp::DoubleSuffix::Type>::VALUE);
-  // TODO: test that suf::FLOAT is added
 }
 
 TEST_F(SuffixTest, DoubleSuffixValue) {
@@ -197,6 +196,15 @@ TEST_F(SuffixTest, Cast) {
   Suffix s = is;
   EXPECT_EQ(is, mp::Cast<mp::IntSuffix>(s));
   EXPECT_EQ(Suffix(), mp::Cast<mp::DoubleSuffix>(s));
+}
+
+TEST_F(SuffixTest, SuffixKindAgreesWithType) {
+  EXPECT_EQ(0, suffixes_.Add<int>("a", 0, 1).kind());
+  EXPECT_ASSERT(suffixes_.Add<int>("b", mp::suf::FLOAT, 1),
+                "invalid suffix kind");
+  EXPECT_EQ(mp::suf::FLOAT, suffixes_.Add<double>("c", 0, 1).kind());
+  EXPECT_EQ(mp::suf::FLOAT,
+            suffixes_.Add<double>("d", mp::suf::FLOAT, 1).kind());
 }
 
 // TODO: test SuffixSet, SuffixManager
