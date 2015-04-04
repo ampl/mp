@@ -275,5 +275,28 @@ TEST(SuffixSetTest, Find) {
   EXPECT_FALSE(Test::ismut(cs.Find("test")));
 }
 
+TEST(SuffixSetTest, Iterator) {
+  enum {NUM_SUFFIXES = 3};
+  mp::SuffixSet s;
+  Suffix suffixes[NUM_SUFFIXES] = {
+    s.Add<int>("a", 0, 0), s.Add<int>("b", 0, 0), s.Add<int>("c", 0, 0)
+  };
+  mp::SuffixSet::iterator i = s.begin();
+  EXPECT_EQ(suffixes[0], *i);
+  EXPECT_STREQ("a", i->name());
+  EXPECT_EQ(mp::SuffixSet::iterator(s.begin()), i);
+  auto j = i;
+  EXPECT_TRUE(i == j);
+  j = i++;
+  EXPECT_TRUE(i != j);
+  EXPECT_EQ(suffixes[0], *j);
+  EXPECT_EQ(suffixes[1], *i);
+  j = ++i;
+  EXPECT_EQ(j, i);
+  EXPECT_EQ(suffixes[2], *i);
+  ++i;
+  EXPECT_EQ(s.end(), i);
+}
+
 // TODO: test deallocation
-// TODO: test SuffixSet::iterator, SuffixManager
+// TODO: test SuffixManager
