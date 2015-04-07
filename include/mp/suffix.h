@@ -34,12 +34,6 @@
 #include "mp/error.h"  // for MP_ASSERT
 #include "mp/format.h"
 
-// Disable bogus MSVC warnings.
-#if _MSC_VER
-# pragma warning(push)
-# pragma warning(disable: 4396)
-#endif
-
 namespace mp {
 
 template <typename T>
@@ -165,11 +159,13 @@ class MutSuffix : public Suffix {
   MutSuffix(BasicMutSuffix<T> other) : Suffix(other) {}
 };
 
+// "inline" is used here instead of the definition to suppress bogus C4396
+// warnings in MSVC.
 template <typename SuffixType>
-SuffixType Cast(Suffix s);
+inline SuffixType Cast(Suffix s);
 
 template <typename SuffixType>
-SuffixType Cast(MutSuffix s);
+inline SuffixType Cast(MutSuffix s);
 
 template <typename T>
 class BasicSuffix : private internal::SuffixBase {
@@ -261,11 +257,11 @@ inline bool Is(Suffix s) {
 // Casts a suffix to type SuffixType which must be a valid suffix type.
 // Returns a null suffix if s is not convertible to SuffixType.
 template <typename SuffixType>
-inline SuffixType Cast(Suffix s) {
+SuffixType Cast(Suffix s) {
   return internal::Is<SuffixType>(s) ? SuffixType(s) : SuffixType();
 }
 template <typename SuffixType>
-inline SuffixType Cast(MutSuffix s) {
+SuffixType Cast(MutSuffix s) {
   return internal::Is<SuffixType>(s) ? SuffixType(s) : SuffixType();
 }
 
@@ -388,9 +384,5 @@ class SuffixManager {
   }
 };
 }  // namespace mp
-
-#if _MSC_VER
-# pragma warning(pop)
-#endif
 
 #endif  // MP_SUFFIX_H_
