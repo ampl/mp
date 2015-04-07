@@ -31,21 +31,13 @@
 // Suppresses warnings about unused variables.
 #define MP_UNUSED(x) (void)(x)
 #define MP_UNUSED2(x, y) MP_UNUSED(x); MP_UNUSED(y)
-#define MP_UNUSED3(x, y, z) MP_UNUSED2(x, y); MP_UNUSED(z)
 
 /** The mp namespace. */
 namespace mp {
 
 namespace internal {
 // Suppresses warnings about unused variables.
-template <typename T1>
-inline void Unused(const T1 &) {}
-template <typename T1, typename T2>
-inline void Unused(const T1 &, const T2 &) {}
-template <typename T1, typename T2, typename T3>
-inline void Unused(const T1 &, const T2 &, const T3 &) {}
-template <typename T1, typename T2, typename T3, typename T4>
-inline void Unused(const T1 &, const T2 &, const T3 &, const T4 &) {}
+inline void Unused(...) {}
 }
 
 /** Expression information. */

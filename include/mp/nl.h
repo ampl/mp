@@ -304,7 +304,7 @@ class NLHandler {
     an objective expression.
    */
   void OnObj(int index, obj::Type type, NumericExpr expr) {
-    internal::Unused(index, type, expr);
+    internal::Unused(index, type, &expr);
   }
 
   /**
@@ -312,12 +312,12 @@ class NLHandler {
     expression.
    */
   void OnAlgebraicCon(int index, NumericExpr expr) {
-    internal::Unused(index, expr);
+    internal::Unused(index, &expr);
   }
 
   /** Receives notification of a logical constraint expression. */
   void OnLogicalCon(int index, LogicalExpr expr) {
-    internal::Unused(index, expr);
+    internal::Unused(index, &expr);
   }
 
   /**
@@ -343,7 +343,7 @@ class NLHandler {
   /** Receives notification of the end of a common expression. */
   void EndCommonExpr(LinearExprHandler handler,
                      NumericExpr expr, int position) {
-    internal::Unused(handler, expr, position);
+    internal::Unused(handler, &expr, position);
   }
 
   /** Receives notification of a complementarity relation. */
@@ -464,7 +464,7 @@ class NLHandler {
    */
   struct ArgHandler {
     /** Receives notification of an argument. */
-    void AddArg(Expr arg) { internal::Unused(arg); }
+    void AddArg(Expr arg) { internal::Unused(&arg); }
   };
 
   /**
@@ -568,7 +568,7 @@ class NLHandler {
     \endrst
    */
   NumericExpr OnUnary(expr::Kind kind, NumericExpr arg) {
-    internal::Unused(kind, arg);
+    internal::Unused(kind, &arg);
     return NumericExpr();
   }
 
@@ -578,7 +578,7 @@ class NLHandler {
     \endrst
    */
   NumericExpr OnBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
-    internal::Unused(kind, lhs, rhs);
+    internal::Unused(kind, &lhs, &rhs);
     return NumericExpr();
   }
 
@@ -589,7 +589,7 @@ class NLHandler {
    */
   NumericExpr OnIf(LogicalExpr condition,
       NumericExpr true_expr, NumericExpr false_expr) {
-    internal::Unused(condition, true_expr, false_expr);
+    internal::Unused(&condition, &true_expr, &false_expr);
     return NumericExpr();
   }
 
@@ -627,7 +627,7 @@ class NLHandler {
     \endrst
    */
   NumericExpr EndPLTerm(PLTermHandler handler, Reference arg) {
-    internal::Unused(handler, arg);
+    internal::Unused(&handler, &arg);
     return NumericExpr();
   }
 
@@ -723,7 +723,7 @@ class NLHandler {
     \endrst
    */
   NumberOfArgHandler BeginNumberOf(int num_args, NumericExpr arg0) {
-    internal::Unused(num_args, arg0);
+    internal::Unused(num_args, &arg0);
     return NumberOfArgHandler();
   }
 
@@ -745,7 +745,7 @@ class NLHandler {
     \endrst
    */
   SymbolicArgHandler BeginSymbolicNumberOf(int num_args, Expr arg0) {
-    internal::Unused(num_args, arg0);
+    internal::Unused(num_args, &arg0);
     return SymbolicArgHandler();
   }
 
@@ -776,7 +776,7 @@ class NLHandler {
     \endrst
    */
   LogicalExpr OnNot(LogicalExpr arg) {
-    internal::Unused(arg);
+    internal::Unused(&arg);
     return LogicalExpr();
   }
 
@@ -788,7 +788,7 @@ class NLHandler {
    */
   LogicalExpr OnBinaryLogical(
       expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {
-    internal::Unused(kind, lhs, rhs);
+    internal::Unused(kind, &lhs, &rhs);
     return LogicalExpr();
   }
 
@@ -798,7 +798,7 @@ class NLHandler {
     \endrst
    */
   LogicalExpr OnRelational(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
-    internal::Unused(kind, lhs, rhs);
+    internal::Unused(kind, &lhs, &rhs);
     return LogicalExpr();
   }
 
@@ -809,7 +809,7 @@ class NLHandler {
     \endrst
    */
   LogicalExpr OnLogicalCount(expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
-    internal::Unused(kind, lhs, rhs);
+    internal::Unused(kind, &lhs, &rhs);
     return LogicalExpr();
   }
 
@@ -821,7 +821,7 @@ class NLHandler {
    */
   LogicalExpr OnImplication(
       LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
-    internal::Unused(condition, true_expr, false_expr);
+    internal::Unused(&condition, &true_expr, &false_expr);
     return LogicalExpr();
   }
 
@@ -886,7 +886,7 @@ class NLHandler {
     \endrst
    */
   Expr OnSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {
-    internal::Unused(condition, true_expr, false_expr);
+    internal::Unused(&condition, &true_expr, &false_expr);
     return Expr();
   }
 };

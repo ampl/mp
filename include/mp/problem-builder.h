@@ -65,12 +65,14 @@ class ProblemBuilder : public SuffixManager {
 
   // Adds a variable.
   void AddVar(double lb, double ub, var::Type type) {
-    MP_UNUSED3(lb, ub, type);
+    internal::Unused(lb, ub, type);
     MP_DISPATCH(ReportUnhandledConstruct("variable"));
   }
 
   struct LinearExprBuilder {
-    void AddTerm(int var_index, double coef) { MP_UNUSED2(var_index, coef); }
+    void AddTerm(int var_index, double coef) {
+      internal::Unused(var_index, coef);
+    }
   };
 
   typedef LinearExprBuilder LinearObjBuilder;
@@ -79,7 +81,7 @@ class ProblemBuilder : public SuffixManager {
   // Returns a builder for the linear part of the objective expression.
   LinearObjBuilder AddObj(
       obj::Type type, NumericExpr expr, int num_linear_terms) {
-    MP_UNUSED3(type, expr, num_linear_terms);
+    internal::Unused(type, expr, num_linear_terms);
     MP_DISPATCH(ReportUnhandledConstruct("objective"));
     return LinearObjBuilder();
   }
@@ -90,7 +92,7 @@ class ProblemBuilder : public SuffixManager {
   // Returns a builder for the linear part of the constraint expression.
   LinearConBuilder AddCon(double lb, double ub, NumericExpr expr,
                           int num_linear_terms) {
-    MP_UNUSED3(expr, lb, ub); MP_UNUSED(num_linear_terms);
+    internal::Unused(expr, lb, ub, num_linear_terms);
     MP_DISPATCH(ReportUnhandledConstruct("algebraic constraint"));
     return LinearConBuilder();
   }
@@ -104,43 +106,43 @@ class ProblemBuilder : public SuffixManager {
   // Adds a common expression (defined variable).
   // Returns a builder for the linear part of the common expression.
   LinearExprBuilder BeginCommonExpr(int num_linear_terms) {
-    MP_UNUSED(num_linear_terms);
+    internal::Unused(num_linear_terms);
     MP_DISPATCH(ReportUnhandledConstruct("common expression"));
     return LinearExprBuilder();
   }
 
   void EndCommonExpr(LinearExprBuilder builder,
                      NumericExpr expr, int position) {
-    MP_UNUSED3(builder, expr, position);
+    internal::Unused(&builder, &expr, &position);
   }
 
   // Sets a complementarity relation.
   void SetComplementarity(int con_index, int var_index, int flags) {
-    MP_UNUSED3(con_index, var_index, flags);
+    internal::Unused(con_index, var_index, flags);
     MP_DISPATCH(ReportUnhandledConstruct("complementarity constraint"));
   }
 
   struct Variable {
     void set_value(double value) {
-      MP_UNUSED(value);
+      internal::Unused(value);
       // Initial values are ignored by default.
     }
   };
 
   Variable var(int index) {
-    MP_UNUSED(index);
+    internal::Unused(index);
     return Variable();
   }
 
   struct AlgebraicCon {
     void set_dual(double value) {
-      MP_UNUSED(value);
+      internal::Unused(value);
       // Initial dual values are ignored by default.
     }
   };
 
   AlgebraicCon algebraic_con(int index) {
-    MP_UNUSED(index);
+    internal::Unused(index);
     return AlgebraicCon();
   }
 
@@ -148,7 +150,7 @@ class ProblemBuilder : public SuffixManager {
 
   // Adds a function.
   Function AddFunction(fmt::StringRef name, int num_args, func::Type type) {
-    MP_UNUSED3(name, num_args, type);
+    internal::Unused(name, num_args, type);
     MP_DISPATCH(ReportUnhandledConstruct("function"));
     return Function();
   }
@@ -157,7 +159,7 @@ class ProblemBuilder : public SuffixManager {
 
   // Adds a suffix.
   IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int num_values) {
-    MP_UNUSED3(kind, num_values, name);
+    internal::Unused(kind, num_values, name);
     return IntSuffixHandler();
   }
 
@@ -165,7 +167,7 @@ class ProblemBuilder : public SuffixManager {
 
   // Adds a suffix.
   DblSuffixHandler AddDblSuffix(fmt::StringRef name, int kind, int num_values) {
-    MP_UNUSED3(kind, num_values, name);
+    internal::Unused(kind, num_values, name);
     return DblSuffixHandler();
   }
 
@@ -177,33 +179,33 @@ class ProblemBuilder : public SuffixManager {
   typedef ExprBuilder IteratedLogicalExprBuilder;
 
   NumericExpr MakeNumericConstant(double value) {
-    MP_UNUSED(value);
+    internal::Unused(value);
     MP_DISPATCH(ReportUnhandledConstruct(
                   "numeric constant in nonlinear expression"));
     return NumericExpr();
   }
 
   Reference MakeVariable(int var_index) {
-    MP_UNUSED(var_index);
+    internal::Unused(var_index);
     MP_DISPATCH(ReportUnhandledConstruct("variable in nonlinear expression"));
     return Reference();
   }
 
   NumericExpr MakeUnary(expr::Kind kind, NumericExpr arg) {
-    MP_UNUSED2(kind, arg);
+    internal::Unused(kind, &arg);
     MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return NumericExpr();
   }
 
   NumericExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
-    MP_UNUSED3(kind, lhs, rhs);
+    internal::Unused(kind, &lhs, &rhs);
     MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return NumericExpr();
   }
 
   NumericExpr MakeIf(LogicalExpr condition,
       NumericExpr true_expr, NumericExpr false_expr) {
-    MP_UNUSED3(condition, true_expr, false_expr);
+    internal::Unused(condition, true_expr, false_expr);
     MP_DISPATCH(ReportUnhandledConstruct("if expression"));
     return NumericExpr();
   }
@@ -306,28 +308,28 @@ class ProblemBuilder : public SuffixManager {
 
   LogicalExpr MakeBinaryLogical(
       expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {
-    MP_UNUSED3(kind, lhs, rhs);
+    internal::Unused(kind, &lhs, &rhs);
     MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return LogicalExpr();
   }
 
   LogicalExpr MakeRelational(
       expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
-    MP_UNUSED3(kind, lhs, rhs);
+    internal::Unused(kind, &lhs, &rhs);
     MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return LogicalExpr();
   }
 
   LogicalExpr MakeLogicalCount(
       expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
-    MP_UNUSED3(kind, lhs, rhs);
+    internal::Unused(kind, &lhs, &rhs);
     MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return LogicalExpr();
   }
 
   LogicalExpr MakeImplication(
       LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
-    MP_UNUSED3(condition, true_expr, false_expr);
+    internal::Unused(condition, true_expr, false_expr);
     MP_DISPATCH(ReportUnhandledConstruct("implication expression"));
     return LogicalExpr();
   }
@@ -360,13 +362,13 @@ class ProblemBuilder : public SuffixManager {
   // Constructs a StringLiteral object.
   // value: string value which may not be null-terminated.
   Expr MakeStringLiteral(fmt::StringRef value) {
-    MP_UNUSED(value);
+    internal::Unused(value);
     MP_DISPATCH(ReportUnhandledConstruct("string literal"));
     return Expr();
   }
 
   Expr MakeSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {
-    MP_UNUSED3(condition, true_expr, false_expr);
+    internal::Unused(&condition, &true_expr, &false_expr);
     MP_DISPATCH(ReportUnhandledConstruct("symbolic if expression"));
     return Expr();
   }
