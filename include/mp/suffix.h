@@ -34,6 +34,12 @@
 #include "mp/error.h"  // for MP_ASSERT
 #include "mp/format.h"
 
+// Disable bogus MSVC warnings.
+#if _MSC_VER
+# pragma warning(push)
+# pragma warning(disable: 4396)
+#endif
+
 namespace mp {
 
 template <typename T>
@@ -382,5 +388,9 @@ class SuffixManager {
   }
 };
 }  // namespace mp
+
+#if _MSC_VER
+# pragma warning(pop)
+#endif
 
 #endif  // MP_SUFFIX_H_
