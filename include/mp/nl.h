@@ -418,7 +418,7 @@ class NLHandler {
    */
   void OnFunction(int index, fmt::StringRef name,
                   int num_args, func::Type type) {
-    internal::Unused(index, name, num_args, type);
+    internal::Unused(index, &name, num_args, type);
   }
 
   /** A class (struct) that receives notifications of integer suffix values. */
@@ -434,7 +434,7 @@ class NLHandler {
     \endrst
    */
   IntSuffixHandler OnIntSuffix(fmt::StringRef name, int kind, int num_values) {
-    internal::Unused(name, kind, num_values);
+    internal::Unused(&name, kind, num_values);
     return IntSuffixHandler();
   }
 
@@ -451,7 +451,7 @@ class NLHandler {
     \endrst
    */
   DblSuffixHandler OnDblSuffix(fmt::StringRef name, int kind, int num_values) {
-    internal::Unused(name, kind, num_values);
+    internal::Unused(&name, kind, num_values);
     return DblSuffixHandler();
   }
 
@@ -876,7 +876,7 @@ class NLHandler {
     \endrst
    */
   Expr OnString(fmt::StringRef value) {
-    internal::Unused(value);
+    internal::Unused(&value);
     return Expr();
   }
 
