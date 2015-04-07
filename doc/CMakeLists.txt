@@ -17,9 +17,6 @@ if (NOT DOXYGEN)
   return ()
 endif ()
 
-set(DOXYGEN_INPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/)
-configure_file(Doxyfile.in Doxyfile @ONLY)
-
 # Path to the script that extracts amplgsl docs.
 set(EXTRACT_DOCS ${CMAKE_CURRENT_SOURCE_DIR}/extract-docs.py)
 
@@ -51,7 +48,7 @@ add_custom_command(OUTPUT html/index.html
   COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/sphinx/sphinx-build.py
     -D "breathe_projects.mp=${CMAKE_CURRENT_BINARY_DIR}/doxyxml"
     -b html -c ${CMAKE_CURRENT_SOURCE_DIR} . html
-  DEPENDS Doxyfile.in conf.py ${EXTRACT_DOCS} ../src/gsl/amplgsl.c ${doc_depends})
+  DEPENDS conf.py ${EXTRACT_DOCS} ../src/gsl/amplgsl.c ${doc_depends})
 add_custom_target(doc DEPENDS html/index.html)
 
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION doc)
