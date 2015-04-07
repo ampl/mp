@@ -642,11 +642,11 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of the beginning of a sum expression.
   NumericArgHandler BeginSum(int num_args) {
-    return builder_.BeginIterated(expr::SUM, num_args);
+    return builder_.BeginSum(num_args);
   }
   // Receives notification of the end of a sum expression.
   NumericExpr EndSum(NumericArgHandler handler) {
-    return builder_.EndIterated(handler);
+    return builder_.EndSum(handler);
   }
 
   typedef typename ProblemBuilder::NumberOfExprBuilder NumberOfArgHandler;

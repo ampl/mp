@@ -872,6 +872,13 @@ class BasicExprFactory : private Alloc {
     return EndIterated<IteratedExpr>(builder);
   }
 
+  IteratedExprBuilder BeginSum(int num_args) {
+    return BeginIterated<IteratedExpr>(expr::SUM, num_args);
+  }
+  IteratedExpr EndSum(IteratedExprBuilder builder) {
+    return EndIterated<IteratedExpr>(builder);
+  }
+
   typedef IteratedExprBuilder NumberOfExprBuilder;
 
   // Begins building a numberof expression.
