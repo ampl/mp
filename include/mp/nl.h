@@ -287,7 +287,7 @@ class NLHandler {
   typedef Expr Reference;
 
   /** Receives notification of an NL header. */
-  void OnHeader(const NLHeader &h) { internal::Unused(h); }
+  void OnHeader(const NLHeader &h) { internal::Unused(&h); }
 
   /**
     \rst

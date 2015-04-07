@@ -81,7 +81,7 @@ class ProblemBuilder : public SuffixManager {
   // Returns a builder for the linear part of the objective expression.
   LinearObjBuilder AddObj(
       obj::Type type, NumericExpr expr, int num_linear_terms) {
-    internal::Unused(type, expr, num_linear_terms);
+    internal::Unused(type, &expr, num_linear_terms);
     MP_DISPATCH(ReportUnhandledConstruct("objective"));
     return LinearObjBuilder();
   }
@@ -92,14 +92,14 @@ class ProblemBuilder : public SuffixManager {
   // Returns a builder for the linear part of the constraint expression.
   LinearConBuilder AddCon(double lb, double ub, NumericExpr expr,
                           int num_linear_terms) {
-    internal::Unused(expr, lb, ub, num_linear_terms);
+    internal::Unused(lb, ub, &expr, num_linear_terms);
     MP_DISPATCH(ReportUnhandledConstruct("algebraic constraint"));
     return LinearConBuilder();
   }
 
   // Adds a logical constraint.
   void AddCon(LogicalExpr expr) {
-    MP_UNUSED(expr);
+    MP_UNUSED(&expr);
     MP_DISPATCH(ReportUnhandledConstruct("logical constraint"));
   }
 
@@ -150,7 +150,7 @@ class ProblemBuilder : public SuffixManager {
 
   // Adds a function.
   Function AddFunction(fmt::StringRef name, int num_args, func::Type type) {
-    internal::Unused(name, num_args, type);
+    internal::Unused(&name, num_args, type);
     MP_DISPATCH(ReportUnhandledConstruct("function"));
     return Function();
   }
@@ -159,7 +159,7 @@ class ProblemBuilder : public SuffixManager {
 
   // Adds a suffix.
   IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int num_values) {
-    internal::Unused(kind, num_values, name);
+    internal::Unused(&name, kind, num_values);
     return IntSuffixHandler();
   }
 
@@ -167,7 +167,7 @@ class ProblemBuilder : public SuffixManager {
 
   // Adds a suffix.
   DblSuffixHandler AddDblSuffix(fmt::StringRef name, int kind, int num_values) {
-    internal::Unused(kind, num_values, name);
+    internal::Unused(&name, kind, num_values);
     return DblSuffixHandler();
   }
 
@@ -205,7 +205,7 @@ class ProblemBuilder : public SuffixManager {
 
   NumericExpr MakeIf(LogicalExpr condition,
       NumericExpr true_expr, NumericExpr false_expr) {
-    internal::Unused(condition, true_expr, false_expr);
+    internal::Unused(&condition, &true_expr, &false_expr);
     MP_DISPATCH(ReportUnhandledConstruct("if expression"));
     return NumericExpr();
   }
@@ -329,7 +329,7 @@ class ProblemBuilder : public SuffixManager {
 
   LogicalExpr MakeImplication(
       LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
-    internal::Unused(condition, true_expr, false_expr);
+    internal::Unused(&condition, &true_expr, &false_expr);
     MP_DISPATCH(ReportUnhandledConstruct("implication expression"));
     return LogicalExpr();
   }
@@ -362,7 +362,7 @@ class ProblemBuilder : public SuffixManager {
   // Constructs a StringLiteral object.
   // value: string value which may not be null-terminated.
   Expr MakeStringLiteral(fmt::StringRef value) {
-    internal::Unused(value);
+    internal::Unused(&value);
     MP_DISPATCH(ReportUnhandledConstruct("string literal"));
     return Expr();
   }
