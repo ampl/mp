@@ -25,6 +25,8 @@
 #include "mp/error.h"
 #include "mp/suffix.h"
 
+using testing::Matcher;
+
 using mp::Suffix;
 using mp::MutSuffix;
 
@@ -133,8 +135,9 @@ TEST_F(SuffixTest, DoubleSuffixValue) {
   EXPECT_ASSERT(s.set_value(3, 0), "index out of bounds");
 }
 
-struct MockIntValueVisitor {
+struct MockValueVisitor {
   MOCK_METHOD2(Visit, void (int index, int value));
+  MOCK_METHOD2(Visit, void (int index, double value));
 };
 
 TEST_F(SuffixTest, VisitIntSuffixValues) {
@@ -142,24 +145,20 @@ TEST_F(SuffixTest, VisitIntSuffixValues) {
   s.set_value(0, 42);
   s.set_value(1, 0);
   s.set_value(2, 11);
-  MockIntValueVisitor v;
-  EXPECT_CALL(v, Visit(0, 42));
-  EXPECT_CALL(v, Visit(2, 11));
+  MockValueVisitor v;
+  EXPECT_CALL(v, Visit(0, Matcher<int>(42)));
+  EXPECT_CALL(v, Visit(2, Matcher<int>(11)));
   s.VisitValues(v);
 }
-
-struct MockDoubleValueVisitor {
-  MOCK_METHOD2(Visit, void (int index, double value));
-};
 
 TEST_F(SuffixTest, VisitDoubleSuffixValues) {
   mp::MutDoubleSuffix s = suffixes_.Add<double>("test", 0, 3);
   s.set_value(0, 4.2);
   s.set_value(1, 0);
   s.set_value(2, 1.1);
-  MockDoubleValueVisitor v;
-  EXPECT_CALL(v, Visit(0, 4.2));
-  EXPECT_CALL(v, Visit(2, 1.1));
+  MockValueVisitor v;
+  EXPECT_CALL(v, Visit(0, Matcher<double>(4.2)));
+  EXPECT_CALL(v, Visit(2, Matcher<double>(1.1)));
   s.VisitValues(v);
 }
 
@@ -173,9 +172,9 @@ TEST_F(SuffixTest, VisitSuffixValues) {
     s = is;
   }
   {
-    MockIntValueVisitor v;
-    EXPECT_CALL(v, Visit(0, 42));
-    EXPECT_CALL(v, Visit(2, 11));
+    MockValueVisitor v;
+    EXPECT_CALL(v, Visit(0, Matcher<int>(42)));
+    EXPECT_CALL(v, Visit(2, Matcher<int>(11)));
     s.VisitValues(v);
   }
   {
@@ -186,9 +185,9 @@ TEST_F(SuffixTest, VisitSuffixValues) {
     s = ds;
   }
   {
-    MockDoubleValueVisitor v;
-    EXPECT_CALL(v, Visit(0, 4.2));
-    EXPECT_CALL(v, Visit(2, 1.1));
+    MockValueVisitor v;
+    EXPECT_CALL(v, Visit(0, Matcher<double>(4.2)));
+    EXPECT_CALL(v, Visit(2, Matcher<double>(1.1)));
     s.VisitValues(v);
   }
 }
