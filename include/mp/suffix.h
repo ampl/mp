@@ -302,9 +302,6 @@ class BasicSuffixSet : private Alloc {
 
   FMT_DISALLOW_COPY_AND_ASSIGN(BasicSuffixSet);
 
-  template <typename OtherAlloc>
-  friend class BasicProblem; // TODO: remove or comment
-
   SuffixImpl *DoAdd(fmt::StringRef name, int kind, int num_values);
 
  public:
