@@ -41,12 +41,12 @@ template <typename Impl, typename ExprType>
 class ProblemBuilder : public SuffixManager {
  private:
   struct ExprBuilder {
-    void AddArg(ExprType arg) { MP_UNUSED(arg); }
+    void AddArg(ExprType arg) { internal::Unused(&arg); }
   };
 
   template <typename T>
   struct SuffixHandler {
-    void SetValue(int index, T value) { MP_UNUSED2(index, value); }
+    void SetValue(int index, T value) { internal::Unused(index, value); }
   };
 
  public:
@@ -99,7 +99,7 @@ class ProblemBuilder : public SuffixManager {
 
   // Adds a logical constraint.
   void AddCon(LogicalExpr expr) {
-    MP_UNUSED(&expr);
+    internal::Unused(&expr);
     MP_DISPATCH(ReportUnhandledConstruct("logical constraint"));
   }
 
@@ -211,61 +211,61 @@ class ProblemBuilder : public SuffixManager {
   }
 
   struct PLTermBuilder {
-    void AddSlope(double slope) { MP_UNUSED(slope); }
-    void AddBreakpoint(double breakpoint) { MP_UNUSED(breakpoint); }
+    void AddSlope(double slope) { internal::Unused(slope); }
+    void AddBreakpoint(double breakpoint) { internal::Unused(breakpoint); }
   };
 
   PLTermBuilder BeginPLTerm(int num_breakpoints) {
-    MP_UNUSED(num_breakpoints);
+    internal::Unused(num_breakpoints);
     MP_DISPATCH(ReportUnhandledConstruct("piecewise-linear term"));
     return PLTermBuilder();
   }
   NumericExpr EndPLTerm(PLTermBuilder builder, Reference arg) {
-    MP_UNUSED2(builder, arg);
+    internal::Unused(&builder, &arg);
     MP_DISPATCH(ReportUnhandledConstruct("piecewise-linear term"));
     return NumericExpr();
   }
 
   CallExprBuilder BeginCall(Function func, int num_args) {
-    MP_UNUSED2(func, num_args);
+    internal::Unused(&func, num_args);
     MP_DISPATCH(ReportUnhandledConstruct("function call"));
     return CallExprBuilder();
   }
   NumericExpr EndCall(CallExprBuilder builder) {
-    MP_UNUSED(builder);
+    internal::Unused(&builder);
     MP_DISPATCH(ReportUnhandledConstruct("function call"));
     return NumericExpr();
   }
 
   IteratedExprBuilder BeginIterated(expr::Kind kind, int num_args) {
-    MP_UNUSED2(kind, num_args);
+    internal::Unused(kind, num_args);
     MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return IteratedExprBuilder();
   }
   NumericExpr EndIterated(IteratedExprBuilder builder) {
-    MP_UNUSED(builder);
+    internal::Unused(&builder);
     MP_DISPATCH(ReportUnhandledConstruct("vararg expression"));
     return NumericExpr();
   }
 
   NumericExprBuilder BeginSum(int num_args) {
-    MP_UNUSED(num_args);
+    internal::Unused(num_args);
     MP_DISPATCH(ReportUnhandledConstruct("sum"));
     return NumericExprBuilder();
   }
   NumericExpr EndSum(NumericExprBuilder builder) {
-    MP_UNUSED(builder);
+    internal::Unused(&builder);
     MP_DISPATCH(ReportUnhandledConstruct("sum"));
     return NumericExpr();
   }
 
   NumberOfExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
-    MP_UNUSED2(num_args, arg0);
+    internal::Unused(num_args, &arg0);
     MP_DISPATCH(ReportUnhandledConstruct("numberof expression"));
     return NumberOfExprBuilder();
   }
   NumericExpr EndNumberOf(NumberOfExprBuilder builder) {
-    MP_UNUSED(builder);
+    internal::Unused(&builder);
     MP_DISPATCH(ReportUnhandledConstruct("numberof expression"));
     return NumericExpr();
   }
@@ -273,35 +273,35 @@ class ProblemBuilder : public SuffixManager {
   typedef ExprBuilder SymbolicNumberOfExprBuilder;
 
   SymbolicNumberOfExprBuilder BeginSymbolicNumberOf(int num_args, Expr arg0) {
-    MP_UNUSED2(num_args, arg0);
+    internal::Unused(num_args, &arg0);
     MP_DISPATCH(ReportUnhandledConstruct("symbolic numberof expression"));
     return SymbolicNumberOfExprBuilder();
   }
   NumericExpr EndSymbolicNumberOf(SymbolicNumberOfExprBuilder builder) {
-    MP_UNUSED(builder);
+    internal::Unused(&builder);
     MP_DISPATCH(ReportUnhandledConstruct("symbolic numberof expression"));
     return NumericExpr();
   }
 
   CountExprBuilder BeginCount(int num_args) {
-    MP_UNUSED(num_args);
+    internal::Unused(num_args);
     MP_DISPATCH(ReportUnhandledConstruct("count expression"));
     return CountExprBuilder();
   }
   NumericExpr EndCount(CountExprBuilder builder) {
-    MP_UNUSED(builder);
+    internal::Unused(&builder);
     MP_DISPATCH(ReportUnhandledConstruct("count expression"));
     return NumericExpr();
   }
 
   LogicalExpr MakeLogicalConstant(bool value) {
-    MP_UNUSED(value);
+    internal::Unused(value);
     MP_DISPATCH(ReportUnhandledConstruct("logical constant"));
     return LogicalExpr();
   }
 
   LogicalExpr MakeNot(LogicalExpr arg) {
-    MP_UNUSED(arg);
+    internal::Unused(&arg);
     MP_DISPATCH(ReportUnhandledConstruct("logical not"));
     return LogicalExpr();
   }
@@ -336,12 +336,12 @@ class ProblemBuilder : public SuffixManager {
 
   IteratedLogicalExprBuilder BeginIteratedLogical(
       expr::Kind kind, int num_args) {
-    MP_UNUSED2(kind, num_args);
+    internal::Unused(kind, num_args);
     MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return IteratedLogicalExprBuilder();
   }
   LogicalExpr EndIteratedLogical(IteratedLogicalExprBuilder builder) {
-    MP_UNUSED(builder);
+    internal::Unused(&builder);
     MP_DISPATCH(ReportUnhandledConstruct("iterated logical expression"));
     return LogicalExpr();
   }
@@ -349,12 +349,12 @@ class ProblemBuilder : public SuffixManager {
   typedef ExprBuilder PairwiseExprBuilder;
 
   PairwiseExprBuilder BeginPairwise(expr::Kind kind, int num_args) {
-    MP_UNUSED2(kind, num_args);
+    internal::Unused(kind, num_args);
     MP_DISPATCH(ReportUnhandledConstruct("alldiff expression"));
     return PairwiseExprBuilder();
   }
   LogicalExpr EndPairwise(PairwiseExprBuilder builder) {
-    MP_UNUSED(builder);
+    internal::Unused(&builder);
     MP_DISPATCH(ReportUnhandledConstruct("alldiff expression"));
     return LogicalExpr();
   }
@@ -512,7 +512,7 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of a commmon expression (defined variable).
   LinearExprHandler BeginCommonExpr(int index, int num_linear_terms) {
-    MP_UNUSED(index);
+    internal::Unused(index);
     return builder_.BeginCommonExpr(num_linear_terms);
   }
   void EndCommonExpr(LinearExprHandler handler,

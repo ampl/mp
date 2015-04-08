@@ -152,7 +152,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   static void CheckIndex(int index, std::size_t size) {
     MP_ASSERT(0 <= index && static_cast<std::size_t>(index) < size,
               "invalid index");
-    MP_UNUSED2(index, size);
+    internal::Unused(index, size);
   }
 
   void SetNonlinearObjExpr(int obj_index, NumericExpr expr) {

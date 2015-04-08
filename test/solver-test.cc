@@ -1532,7 +1532,7 @@ TEST_F(SolverAppTest, ReadProblem) {
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
   // Check that the default reader is NLReader.
   mp::internal::NLFileReader<> &reader = mp::SolverApp<TestSolver>().reader();
-  MP_UNUSED(reader);
+  mp::internal::Unused(&reader);
 }
 
 // Test that SolverApp::Run parses solver options.

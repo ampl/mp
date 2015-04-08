@@ -322,13 +322,13 @@ class ASLProblem {
   };
 
   static double lb(int index, int size, const double *lbs, const double *ubs) {
-    MP_UNUSED(size);
+    internal::Unused(size);
     assert(index >= 0 && index < size);
     return lbs[ubs ? index : (index * 2)];
   }
 
   static double ub(int index, int size, const double *lbs, const double *ubs) {
-    MP_UNUSED(size);
+    internal::Unused(size);
     assert(index >= 0 && index < size);
     return ubs ? ubs[index] : lbs[index * 2 + 1];
   }
@@ -568,7 +568,7 @@ class ASLProblem {
 
   template <typename ExprType>
   ExprType GetExpr(cde *Edag1info::*ptr, int index, int size) const {
-    MP_UNUSED(size);
+    internal::Unused(size);
     assert(index >= 0 && index < size);
     if (asl_->i.ASLtype != ASL_read_fg)
       return ExprType();
