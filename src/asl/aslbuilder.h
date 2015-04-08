@@ -123,7 +123,7 @@ class ASLBuilder {
     int num_items_;
     void set_num_items(int num_items) { num_items_ = num_items; }
 #else
-    void set_num_items(int num_items) { MP_UNUSED(num_items); }
+    void set_num_items(int num_items) { mp::internal::Unused(num_items); }
 #endif
 
    public:
