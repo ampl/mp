@@ -120,6 +120,12 @@ function(add_ampl_solver name)
   install(TARGETS ${name} DESTINATION bin)
 endfunction()
 
+if (NOT MSVC)
+  # Remove -pedantic because it causes warnings about long string literals
+  # when compiling the cplex driver.
+  string(REPLACE "-pedantic" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+endif ()
+
 check_module(cplex build_cplex)
 if (build_cplex)
   add_subdirectory(cplex)
