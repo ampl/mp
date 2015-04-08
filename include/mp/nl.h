@@ -1151,7 +1151,7 @@ struct NullLinearExprHandler {
   void AddTerm(int, double) {}
 };
 
-// An .nl file reader.
+// An NL reader.
 // Handler: a class implementing the ProblemHandler concept that receives
 //          notifications of problem components
 template <typename Reader, typename Handler>
@@ -1341,7 +1341,7 @@ class NLReader {
   struct ProblemHandler : ItemHandler<PROB> {
     explicit ProblemHandler(NLReader &r) : ItemHandler<PROB>(r) {}
 
-    // An .nl file always contains one problem.
+    // An NL input always contains one problem.
     int num_items() const { return 1; }
   };
 
