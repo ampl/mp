@@ -96,6 +96,11 @@ THIS SOFTWARE.
 #endif
 /* End hidden params} */
 
+/* For compatibility with CPLEX prior to V12.6.0 */
+#ifndef CPXPARAM_LPMethod
+# define CPXPARAM_LPMethod CPX_PARAM_LPMETHOD
+#endif
+
 #ifndef Sig_ret_type
 #define Sig_ret_type void
 #define SigRet /*nothing*/
