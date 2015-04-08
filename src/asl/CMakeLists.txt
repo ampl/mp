@@ -138,6 +138,7 @@ add_prefix(ASL_CORE_SOURCES solvers/
   mip_pri.c
   misc.c
   mpec_adj.c
+  mqpcheckv.c
   mypow.c
   names.c
   nl_obj.c
