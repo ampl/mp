@@ -42,13 +42,11 @@ class BasicSuffix;
 template <typename T>
 class BasicMutSuffix;
 
-class SuffixSet;
+template <typename Alloc>
+class BasicSuffixSet;
 
 namespace internal {
 
-// A suffix.
-// Suffixes are metadata that can be attached to variables, objectives,
-// constraints and problems.
 class SuffixBase {
  protected:
   struct Impl {
@@ -90,7 +88,8 @@ class SuffixBase {
  private:
   const Impl *impl_;
 
-  friend class mp::SuffixSet;
+  template <typename Alloc>
+  friend class mp::BasicSuffixSet;
 
   // A member function representing the true value of SafeBool.
   void True() const {}
@@ -120,13 +119,18 @@ class SuffixBase {
 };
 }  // namespace internal
 
+// A suffix.
+// Suffixes are data that can be attached to variables, objectives,
+// constraints and problems.
 class Suffix : private internal::SuffixBase {
  private:
   // SuffixBase is a friend because it needs access to SuffixBase::impl_ via
   // a private base class.
   friend class internal::SuffixBase;
-  friend class SuffixSet;
   friend class MutSuffix;
+
+  template <typename Alloc>
+  friend class BasicSuffixSet;
 
   explicit Suffix(const Impl *impl) : SuffixBase(impl) {}
 
@@ -148,7 +152,8 @@ class Suffix : private internal::SuffixBase {
 
 class MutSuffix : public Suffix {
  private:
-  friend class SuffixSet;
+  template <typename Alloc>
+  friend class BasicSuffixSet;
 
   explicit MutSuffix(const Impl *impl) : Suffix(impl) {}
 
@@ -173,8 +178,10 @@ class BasicSuffix : private internal::SuffixBase {
   // SuffixBase is a friend because it needs access to SuffixBase::impl_ via
   // a private base class.
   friend class internal::SuffixBase;
-  friend class SuffixSet;
   friend class BasicMutSuffix<T>;
+
+  template <typename Alloc>
+  friend class BasicSuffixSet;
 
   friend BasicSuffix Cast<BasicSuffix>(Suffix s);
 
@@ -211,7 +218,8 @@ class BasicSuffix : private internal::SuffixBase {
 template <typename T>
 class BasicMutSuffix : public BasicSuffix<T> {
  private:
-  friend class SuffixSet;
+  template <typename Alloc>
+  friend class BasicSuffixSet;
 
   friend BasicMutSuffix Cast<BasicMutSuffix>(MutSuffix s);
 
@@ -274,7 +282,8 @@ inline void Suffix::VisitValues(Visitor &v) const {
 }
 
 // A set of suffixes.
-class SuffixSet {
+template <typename Alloc>
+class BasicSuffixSet : private Alloc {
  private:
   typedef internal::SuffixBase::Impl SuffixImpl;
 
@@ -291,16 +300,16 @@ class SuffixSet {
   typedef std::set<SuffixImpl, SuffixNameLess> Set;
   Set set_;
 
-  FMT_DISALLOW_COPY_AND_ASSIGN(SuffixSet);
+  FMT_DISALLOW_COPY_AND_ASSIGN(BasicSuffixSet);
 
-  template <typename Alloc>
-  friend class BasicProblem;
+  template <typename OtherAlloc>
+  friend class BasicProblem; // TODO: remove or comment
 
   SuffixImpl *DoAdd(fmt::StringRef name, int kind, int num_values);
 
  public:
-  SuffixSet() {}
-  ~SuffixSet();
+  BasicSuffixSet() {}
+  ~BasicSuffixSet();
 
   // Adds a suffix throwing Error if another suffix with the same name is
   // in the set.
@@ -317,17 +326,18 @@ class SuffixSet {
 
   // Finds a suffix with the specified name.
   Suffix Find(fmt::StringRef name) const {
-    Set::iterator i = set_.find(SuffixImpl(name));
+    typename Set::iterator i = set_.find(SuffixImpl(name));
     return Suffix(i != set_.end() ? &*i : 0);
   }
   MutSuffix Find(fmt::StringRef name) {
-    Set::iterator i = set_.find(SuffixImpl(name));
+    typename Set::iterator i = set_.find(SuffixImpl(name));
     return MutSuffix(i != set_.end() ? &*i : 0);
   }
 
+  // A suffix iterator.
   class iterator : public std::iterator<std::forward_iterator_tag, Suffix> {
    private:
-    Set::const_iterator it_;
+    typename Set::const_iterator it_;
 
     // A suffix proxy used for implementing operator->.
     class Proxy {
@@ -341,7 +351,7 @@ class SuffixSet {
     };
 
    public:
-    iterator(Set::const_iterator it) : it_(it) {}
+    iterator(typename Set::const_iterator it) : it_(it) {}
 
     Suffix operator*() const { return Suffix(&*it_); }
 
@@ -366,6 +376,40 @@ class SuffixSet {
   iterator end() const { return iterator(set_.end()); }
 };
 
+template <typename Alloc>
+BasicSuffixSet<Alloc>::~BasicSuffixSet() {
+  // Deallocate names and values.
+  for (typename Set::iterator i = set_.begin(), e = set_.end(); i != e; ++i) {
+    delete [] i->name.c_str();
+    if ((i->kind & suf::FLOAT) != 0)
+      delete [] i->dbl_values;
+    else
+      delete [] i->int_values;
+  }
+}
+
+template <typename Alloc>
+typename BasicSuffixSet<Alloc>::SuffixImpl *BasicSuffixSet<Alloc>::DoAdd(
+    fmt::StringRef name, int kind, int num_values) {
+  std::pair<typename Set::iterator, bool> result =
+      set_.insert(Suffix::Impl(name, kind));
+  if (!result.second)
+    throw Error("duplicate suffix '{}'", name);
+  Suffix::Impl *impl = const_cast<SuffixImpl*>(&*result.first);
+  // Set name to empty string so that it is not deleted if new throws.
+  std::size_t size = name.size();
+  impl->name = fmt::StringRef(0, 0);
+  char *name_copy = new char[size + 1];
+  const char *s = name.c_str();
+  std::copy(s, s + size, fmt::internal::make_ptr(name_copy, size));
+  name_copy[size] = 0;
+  impl->name = fmt::StringRef(name_copy, size);
+  impl->num_values = num_values;
+  return impl;
+}
+
+typedef BasicSuffixSet< std::allocator<char> > SuffixSet;
+
 class SuffixManager {
  private:
   mp::SuffixSet suffixes_[suf::NUM_KINDS];
@@ -379,7 +423,7 @@ class SuffixManager {
 
   // Returns a set of suffixes.
   SuffixSet &suffixes(int kind) {
-    assert(kind < suf::NUM_KINDS);
+    assert(kind >= 0 && kind < suf::NUM_KINDS);
     return suffixes_[kind];
   }
 };
