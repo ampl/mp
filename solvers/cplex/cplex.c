@@ -45,7 +45,20 @@ THIS SOFTWARE.
 
 #define OBJ_ADJ
 
+#if CPX_APIMODEL == CPX_APIMODEL_LARGE
+#include "cplexx.h"
+#endif
 #include "cplex.h"
+
+#if CPX_VERSION < 12060000
+#undef Want_Distmipopt
+#else
+#undef filename
+#ifdef Want_Distmipopt
+#include "cplexdistmip.h"
+#endif
+#endif
+
 #define STDIO_H_included
 #include "nlp.h"
 #include "getstub.h"
@@ -57,7 +70,9 @@ THIS SOFTWARE.
 #define CPX_PARAM_WORKDIR CPX_PARAM_NODEFILEDIR
 #endif
 #ifndef CPX_PARAM_PDSWITCH
+#ifndef CPX_PARAM_QPMETHOD
 #define CPX_PARAM_PDSWITCH 1063
+#endif
 #endif
 /* End Modifications for CPLEX 7.1} */
 
@@ -76,9 +91,6 @@ THIS SOFTWARE.
 /* End Modifications for CPLEX 8} */
 
 /* {Hidden params of CPLEX 6.5.1 */
-#ifndef CPX_PARAM_OLDPRICING
-#define CPX_PARAM_OLDPRICING 1054
-#endif
 #ifndef CPX_PARAM_EPSAGG
 #define CPX_PARAM_EPSAGG 1055
 #endif
@@ -108,8 +120,43 @@ typedef void sig_func_type ANSI((int));
 #endif
 #endif
 
+#if CPX_APIMODEL == CPX_APIMODEL_LARGE
+#define ForceZ | ASL_use_Z
+	typedef size_t CStype;
+#undef nzc
+#undef A_colstarts
+#define nzc asl->i.nZc_
+#define A_colstarts asl->i.A_colstartsZ_
+#define CPXcopylpwnames(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17) CPXLcopylpwnames(a1,a2,a3,a4,a5,a6,a7,a8,(CPXLONG*)a9,a10,a11,a12,a13,a14,a15,(char const *const *)(a16),(char const *const *)(a17))
+#define CPXaddlazyconstraints(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) CPXLaddlazyconstraints(a1,a2,a3,a4,a5,a6,(CPXLONG*)a7,a8,a9,(char const *const *)(a10))
+#define CPXaddusercuts(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) CPXLaddusercuts(a1,a2,a3,a4,a5,a6,(CPXLONG*)a7,a8,a9,(char const *const *)(a10))
+#else
+	typedef int CStype;
+#define ForceZ /*nothing*/
+#endif
 
 static ASL *asl;
+ static double Times[4];
+#if CPX_VERSION >= 12050000
+ static double DTimes[4];
+ static int DTimes_failed, num_cores;
+#endif
+
+ typedef struct
+PBuf { char *s, *se; } PBuf;
+
+ static void
+Bpf(PBuf *b, const char *fmt, ...)
+{
+	va_list ap;
+
+	if (b->s < b->se) {
+		va_start(ap, fmt);
+		b->s += Vsnprintf(b->s, b->se - b->s, fmt, ap);
+		va_end(ap);
+		}
+	}
+
 
 typedef struct cpxlp cpxlp;
 
@@ -154,27 +201,35 @@ mdbl_values {
 	set_populate	= 23,
 	set_pooldual	= 24,
 	set_resolve	= 25,
-	set_cutstats	= 26
+	set_cutstats	= 26,
+	set_incompat	= 27,
+	set_objrep	= 28,
+	set_qcdual	= 29
 	};
 #ifdef CPX_PARAM_FEASOPTMODE /* >= 9.2b */
 #define Uselazy
 #endif
 
  enum { /* sf_mdbl f values */
-	set_dual_ratio = 0
+	set_dual_ratio = 0,
+	set_droptol = 1
 	};
 
  static mint_values
-mint_val[27] = {
+mint_val[30] = {
 	/* set_crossover */	{0, 2, 1},
 	/* set_dualthresh */	{-0x7fffffff, 0x7fffffff, 0},
-	/* set_netopt */	{0, 2, 1},
+	/* set_netopt */	{0, 3, 1},
 	/* set_objno */		{0, 0/*n_obj*/,	1},
 	/* set_conpri */	{0, 0x7fffffff, 1},
 	/* set_objpri */	{0, 0x7fffffff, 2},
 	/* set_prestats */	{0, 1, 0},
 	/* set_sos2 */		{0, 1, 1},
+#if CPX_VERSION >= 12050000
+	/* set_timing */	{0, 0x3f, 0},
+#else
 	/* set_timing */	{0, 3, 0},
+#endif
 	/* set_iis */		{0, 3, 0},
 	/* set_mipststat */	{0, 1, 1},
 	/* set_mipstval */	{0, 2, 1},
@@ -192,12 +247,16 @@ mint_val[27] = {
 	/* set_populate */	{0, 2, 0},
 	/* set_pooldual */	{0, 1, 0},
 	/* set_resolve */	{0, 1, 1},
-	/* set_cutstats */	{0, 1, 0}
+	/* set_cutstats */	{0, 1, 0},
+	/* set_incompat */	{0, 2, 1},
+	/* set_objrep */	{0, 3, 2},
+	/* set_qcdual */	{0, 1, 1}
 	};
 
  static mdbl_values
 mdbl_val[] = {
-	/* set_dual_ratio */	{1., 1e30, 3.}
+	/* set_dual_ratio */	{1., 1e30, 3.},
+	/* set_droptol */	{0., 1e30, 0.}
 	};
 
 #define crossover	mint_val[0].val
@@ -227,27 +286,34 @@ mdbl_val[] = {
 #define pooldual	mint_val[24].val
 #define Resolve		mint_val[25].val
 #define cutstats	mint_val[26].val
+#define Incompat	mint_val[27].val
+#define objrep		mint_val[28].val
+#define want_qcdual	mint_val[29].val
 #define dual_ratio	mdbl_val[0].val
+#define droptol		mdbl_val[1].val
 
  static int hybmethod = CPX_ALG_PRIMAL;
  static int netiters = -1;
  static CPXFILEptr Logf;
- static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20120423\n";
+ static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20150327\n";
  static char *baralgname, *endbas, *endsol, *endtree, *endvec, *logfname;
  static char *paramfile, *poolstub, *pretunefile, *pretunefileprm;
  static char *startbas, *startsol, *starttree, *startvec, *tunefile, *tunefileprm;
- static char *tunefix, *tunefixfile, *workfiledir, *wrtfname;
+ static char *tunefix, *tunefixfile, *vmconfig, *workfiledir, *wrtfname;
  static int bestnode, breaking, costsens, lpoptalg, mbas, method;
  static int nbas, netopting, objadj, objsen, relax, zap_lpcbf;
  static int aggtries, net_status, net_nodes, net_arcs;
  static double obj_adj;
  static char *algname = "";
  static real intwarn_tol = 1e-9;
+#ifdef CPXERR_QCP_SENSE
+ static real qctol1 = 1e-5, qctol2 = 1e-5, qctol3 = 1e-5;
+#endif
 
  typedef struct { char *msg; int code; int wantobj; }
 Sol_info;
  static Sol_info solinfo[] = {
-	 { "unrecoverable failure or licensing problem", 500, 0 },
+	 { "unrecoverable failure", 500, 0 },
 	 { "optimal solution", 000, 1 },
 	 { "infeasible problem", 200, 0 },			/* 2 */
 	 { "unbounded problem", 300, 0 },
@@ -345,6 +411,10 @@ dims {
 	SufDesc	*csd;
 	SufDesc *rsd;
 	char	*rtype;
+	/* for linadj and qcduals */
+	cde	*consave;
+	cde	*objsave;
+	ograd	**ogsave;
 	/* Stuff for netopt... */
 	int	*cs;
 	int	*rs;
@@ -368,7 +438,7 @@ badretfmt(int rc, char *fmt, ...)
 	int k;
 
 	va_start(ap, fmt);
-	k = vsprintf(buf, fmt, ap) + 1;
+	k = Vsnprintf(buf, sizeof(buf), fmt, ap) + 1;
 	if (rc) {
 		solve_result_num = rc;
 		memcpy(s = (char*)M1alloc(k), buf, k);
@@ -597,10 +667,11 @@ Optimize2(CPXCENVptr e, cpxlp *c)
  static int CPXPUBLIC
 Optimizebar(CPXCENVptr e, cpxlp *c)
 {
-	int rv, s;
+	int rv;
 
 	if (!(rv = CPXbaropt(e, c))) {
 #ifndef NO_DEPRECATED
+		int s;
 		if (endvec && (s = CPXvecwrite(e, c, endvec)))
 			printf("\n*** return %d from CPXvecwrite.\n", s);
 #endif
@@ -630,18 +701,18 @@ set_baropt(VOID)
 	}
 
  static int
-startcomp(ASL *asl, int n0, int m, int nextra, int *ka, int *kal, int *ia,
+startcomp(ASL *asl, int n0, int m, int nextra, CStype *ka, int *kal, int *ia,
 	double *a, double *b, double *c,
 	double **cdualp, double **cprimp, double **rdualp, double **rprimp)
 {
+	CStype i, j, k, n;
 	double *r, t, *x, *y;
-	int i, j, k;
-	int n = n0 - objadj;
 
 	/* Why can't CPXcopystart do this calculation? */
 
 	if (!X0 && !pi0)
 		return 0;
+	n = n0 - objadj;
 	if (method > 0) {
 		x = X0;
 		y = pi0;
@@ -954,13 +1025,21 @@ sf_mint(Option_Info *oi, keyword *kw, char *v)
 		return rv;
 		}
 	m->val = t;
+	switch(i) {
 #ifdef BARRIER
-	if (i == set_crossover)
+	  case set_crossover:
 		set_baropt();
+		break;
 #endif
+	  case set_netopt:
+		if (t == 3) {
+			m->val = 0;
+			CPXsetintparam(Env, CPXPARAM_LPMethod, CPX_ALG_NET);
+			}
+		break;
 #ifdef CPLEX_MIP
-	if (i == set_mipcuts) {
-		static int op[9] = {
+	  case set_mipcuts:
+		{static int op[] = {
 			CPX_PARAM_CLIQUES,
 			CPX_PARAM_COVERS,
 			CPX_PARAM_DISJCUTS,
@@ -970,19 +1049,41 @@ sf_mint(Option_Info *oi, keyword *kw, char *v)
 			CPX_PARAM_GUBCOVERS,
 			CPX_PARAM_IMPLBD,
 			CPX_PARAM_MIRCUTS
+#ifdef CPX_PARAM_ZEROHALFCUTS
+			,CPX_PARAM_ZEROHALFCUTS
+#endif
 			};
 		int f;
-		for(f = 0; f < 9; f++)
+		for(f = 0; f < sizeof(op)/sizeof(int); f++)
 			CPXsetintparam(Env, op[f], t);
 		}
+		break;
 #endif
+		}
 	return rv;
 	}
+
+#ifdef CPXERR_PARAM_INCOMPATIBLE /*{*/
+ static char *
+incompatible(Option_Info *oi, keyword *kw, char *rv, char *v)
+{
+	oi->option_echo &= ~ASL_OI_echothis;
+	if (Incompat) {
+		printf("%s \"%s%s%.*s\" as incompatible "
+			"with earlier parameter settings.\n",
+			Incompat == 1 ? "Ignoring" : "Rejecting",
+			kw->name, oi->eqsign, (int)(rv-v), v);
+		if (Incompat == 2)
+			badopt_ASL(oi);
+		}
+	return rv;
+	}
+#endif /*}*/
 
  static char *
 sf_int(Option_Info *oi, keyword *kw, char *v)
 {
-	int f, t, z[3];
+	int f, k, t, z[3];
 	char *rv;
 	const char *what = kw->name;
 
@@ -999,7 +1100,11 @@ sf_int(Option_Info *oi, keyword *kw, char *v)
 			what, v);
 		badopt_ASL(oi);
 		}
-	else if (CPXsetintparam(Env, f, t)) {
+	else if ((k = CPXsetintparam(Env, f, t))) {
+#ifdef CPXERR_PARAM_INCOMPATIBLE
+		if (k == CPXERR_PARAM_INCOMPATIBLE)
+			return incompatible(oi, kw, rv, v);
+#endif
 		z[2] = 0;
 		z[1] = 1;
 		CPXinfointparam(Env, f, z, z+1, z+2);
@@ -1069,8 +1174,9 @@ sf_dbl(Option_Info *oi, keyword *kw, char *v)
 	double t, z[3];
 	char *rv;
 	const char *what = kw->name;
-	int f = Intcast kw->info;
+	int f, k;
 
+	f = Intcast kw->info;
 	if (*v == '?' && v[1] <= ' ') {
 		CPXgetdblparam(Env, f, &t);
 		printf("%s=%g\n", what, t);
@@ -1083,7 +1189,11 @@ sf_dbl(Option_Info *oi, keyword *kw, char *v)
 			what, v);
 		badopt_ASL(oi);
 		}
-	else if (CPXsetdblparam(Env, f, t)) {
+	else if ((k = CPXsetdblparam(Env, f, t))) {
+#ifdef CPXERR_PARAM_INCOMPATIBLE
+		if (k == CPXERR_PARAM_INCOMPATIBLE)
+			return incompatible(oi, kw, rv, v);
+#endif
 		z[2] = 0;
 		z[1] = 1;
 		CPXinfodblparam(Env, f, z, z+1, z+2);
@@ -1156,12 +1266,12 @@ sf_dpar(Option_Info *oi, keyword *kw, char *v)
 	}
 
 
- static char **file_name[19] = { &endbas, &endtree, &startbas, &starttree,
+ static char **file_name[20] = { &endbas, &endtree, &startbas, &starttree,
 				&startsol, &endsol, &logfname, &wrtfname,
 				&workfiledir, &poolstub, &paramfile,
 				&pretunefile, &pretunefileprm, &tunefile,
 				&tunefileprm, &tunefix, &tunefixfile,
-				&startvec, &endvec };
+				&startvec, &endvec, &vmconfig };
 
 enum {	/* sf_char f values */
 	set_endbas	= 0,
@@ -1182,14 +1292,16 @@ enum {	/* sf_char f values */
 	set_tunefix	= 15,
 	set_tunefixfile	= 16,
 	set_startvector	= 17,
-	set_endvector	= 18
+	set_endvector	= 18,
+	set_vmconfig	= 19
 	};
 
  static char *
 sf_char(Option_Info *oi, keyword *kw, char *v)
 {
-	char *rv, *t;
-	int f, q;
+	char *rv, *s, *t;
+	const char *fmt;
+	int c, f, q;
 	size_t n;
 
 	if (!*v) {
@@ -1199,9 +1311,18 @@ sf_char(Option_Info *oi, keyword *kw, char *v)
 		}
 	f = Intcast kw->info;
 	if (*v == '?' && v[1] <= ' ') {
-		if (!(t = *file_name[f]))
+		fmt = "%s=%s\n";
+		if ((t = *file_name[f])) {
+			for(s = t; (c = *s); ++s)
+				if (c <= ' ')
+					goto qfmt;
+			}
+		else {
 			t = "";
-		printf("%s=%s\n", kw->name, t);
+ qfmt:
+			fmt = "%s=\"%s\"\n";
+			}
+		printf(fmt, kw->name, t);
 		oi->option_echo &= ~ASL_OI_echothis;
 		return v + 1;
 		}
@@ -1300,500 +1421,1825 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	}
 #endif /*}*/
 
-#define VP (Char*)
+ char undoc[] = "Not documented.";
+#ifdef CPLEX_MIP /*{*/
+ static char
+	absmipap_desc[] = "Absolute mixed-integer optimality gap tolerance\n\
+		(for difference between current best integer solution\n\
+		and optimal value of LP relaxation).  Default 0.",
+	aggcutlim_desc[] = "Bound on the number of constraints aggregated to\n\
+		generate flow-cover and mixed-integer-rounding cuts;\n\
+		default = 3.",
+#ifdef CPX_PARAM_AUXROOTTHREADS
+	auxrootthreads_desc[] = "Controls the number of threads used for auxiliary\n\
+		chores when solving the root node of a MIP problem.\n\
+		When N threads are available (possibly limited by\n\
+		\"threads\"), auxrootthreads must be less than N.\n\
+		Possible values:\n\
+		   -1 = automatic choice (default)\n\
+		    0 = none for concurrent executions\n\
+		    n < N:  use N-n threads for the root node and\n\
+		         n threads for auxiliary chores.",
+#endif
+	 bbinterval_desc[] = "For nodeselect = 2, select the best-bound node,\n\
+		rather than the best-estimate node, every\n\
+		bbinterval iterations (default 7); 0 means\n\
+		always use the best-estimate node.",
+	 bestbound_desc[] = "Single-word phrase requesting return of .bestbound\n\
+		suffix.  See the description above.",
+	 bestnode_desc[] = "Single-word phrase requesting return of .bestnode\n\
+		suffix.  See the description above.",
+	 boundstr_desc[] = "Whether to use bound strengthening in solving MIPs:\n\
+		   -1 (default) = automatic choice\n\
+		   0 = never\n\
+		   1 = always.",
+	 branch_desc[] = "Branching direction for integer variables:\n\
+		-1 = down, 0 = algorithm decides, 1 = up; default = 0.",
+	 branchdir_desc[] = "Synonym for \"branch\".",
+	 cliquecuts_desc[] = "Synonym for \"cliques\".",
+	 cliques_desc[] = "Whether to use clique cuts in solving MIPs:\n\
+		   -1 = never\n\
+		   0 = automatic choice (default)\n\
+		   1, 2, 3 = ever more aggressive generation.",
+	coeffreduce_desc[] = "Whether to use coefficient reduction when\n\
+		preprocessing MIPS:\n\
+		   0 = no\n\
+		   1 = yes (default).",
+	covercuts_desc[] = "Synonym for \"covers\".",
+	covers_desc[] = "Whether to use cover cuts in solving MIPs:\n\
+		   -1 = never\n\
+		   0 = automatic choice (default)\n\
+		   1, 2, 3 = ever more aggressive generation.",
+	cutpass_desc[] = "Number of passes permitted when generating MIP\n\
+		cutting plane:\n\
+		   -1 = none\n\
+		   0 = automatic choice (default)\n\
+		   positive = at most that many passes",
+	cutsfactor_desc[] = "Limit MIP cuts added to (cutsfactor-1)*m, where m\n\
+		is the original number of rows (after presolve).\n\
+		Default = 4.",
+#if CPX_VERSION >= 1100
+	cutstats_desc[] = "0 or 1 (default 0):  Whether the solve_message report\n\
+		the numbers and kinds of cuts used.",
+#endif
+	disjcuts_desc[] = "Whether to generate MIP disjunctive cuts:\n\
+		   -1 = no\n\
+		   0 = automatic choice (default)\n\
+		   1, 2, 3 = ever more aggressive generation.",
+#ifdef CPX_PARAM_IISIND /* version < 9.2b */
+	endtree_desc[] = "File for writing final branch & bound search tree.\n\
+		Withdrawn from CPLEX 10.",
+#endif
+	flowcuts_desc[] = "Whether to use flow cuts in solving MIPs:\n\
+		   -1 = never\n\
+		   0 = automatic choice (default)\n\
+		   1, 2 = ever more aggressive use.",
+	flowpathcuts_desc[] = "Whether to generate MIP flow-path cuts:\n\
+		   -1 = no\n\
+		   0 = automatic choice (default)\n\
+		   1, 2 = ever more aggressive generation.",
+#ifdef CPX_PARAM_FPHEUR
+	fpheur_desc[] = "Whether to use the feasibility pump heuristic on MIP\n\
+		problems:\n\
+		   -1 = no\n\
+		    0 = automatic choice (default)\n\
+		    1 = yes, focus on finding a feasible solution\n\
+		    2 = yes, focus on finding a good objective\n\
+		value at a feasible solution.",
+#endif
+#ifndef NO_CPLEX66 /* for versions prior to CPLEX 6.6 */
+	fraccand_desc[] = "Limit on number of candidate variables when\n\
+		generating Gomory cuts for MIP problems:\n\
+		default = 200.",
+	fraccuts_desc[] = "Whether to generate MIP fractional Gomory\n\
+		cuts:\n\
+		   -1 = no\n\
+		    0 = decide automatically (default)\n\
+		    1 = generate moderately\n\
+		    2 = generate aggressively.",
+	fracpass_desc[] = "Limit on number of passes to generate MIP\n\
+		fractional Gomory cuts:\n\
+		   0 = automatic choice (default)\n\
+		   positive = at most that many passes.",
+	fractionalcuts_desc[] = "Synonym for \"fracpass\".",
+#endif
+	gubcuts_desc[] = "Whether to use GUB cuts in solving MIPs:\n\
+		   -1 = never\n\
+		   0 = automatic choice (default)\n\
+		   1, 2 = ever more aggressive generation.",
+#ifdef CPX_PARAM_HEURISTIC
+	heurfreq_desc[] = "Withdrawn from CPLEX 9.0.  How often to apply\n\
+		\"node heuristics\" for MIPS:\n\
+		   -1 = never\n\
+		   0 = automatic choice (default)\n\
+		   n > 0 = every n nodes.",
+	heuristic_desc[] = "Deprecated:  withdrawn from CPLEX 9.0.\n\
+		What heuristic to use on MIPS for finding an\n\
+		initial integer solution:\n\
+		   -1 = none\n\
+		   0 = decide automatically (default)\n\
+		   1 = use a rounding heuristic at node 0.",
+#endif
+	heuristicfreq_desc[] = "Synonym for \"heurfreq\".",
+	iisfind_desc[] = "Whether to find and return an IIS (irreducible\n\
+		infeasible set of variables and constraints) if\n\
+		the problem is infeasible:\n\
+		0 = no (default)\n\
+		1 = find an IIS.\n\
+		IIS details are returned in suffix .iis, which\n\
+		assumes one of the values \"non\" for variables\n\
+		and constraints not in the IIS; \"low\" for\n\
+		variables or inequality constraint bodies whose lower\n\
+		bounds are in the IIS; \"upp\" for variables and\n\
+		inequality constraint bodies whose upper bounds are\n\
+		in the IIS; and \"fix\" for equality constraints that\n\
+		are in the IIS.",
+	impliedcuts_desc[] = "Whether to use implied cuts in solving MIPs:\n\
+		   -1 = never\n\
+		    0 = automatic choice (default)\n\
+		    1, 2 = ever more aggressive use.",
+	integrality_desc[] = "Amount by which an integer variable can differ\n\
+		from the nearest integer and still be considered\n\
+		feasible.  Default = 1e-5; must be in [1e-9, 0.5].\n\
+		(The upper bound was not enforced prior to CPLEX 11.)",
+	intwarntol_desc[] = "Do not warn about perturbations to \"integer\"\n\
+		variables to make them integers when the maximum\n\
+		perturbation is at most intwarntol (default 1e-9);\n\
+		see \"round\".",
+#ifdef CPX_PARAM_LBHEUR
+	lbheur_desc[] = "Whether to use a local branching heuristic in an\n\
+		attempt to improve new incumbents found during a\n\
+		MIP search.  (Default = 0 = no; 1 = yes.)",
+#endif
+#ifdef CPXPARAM_MIP_Cuts_LocalImplied
+	localimpliedcuts_desc[] = "Whether to generate locally valid implied bound\n\
+		cuts for MIP problems:\n\
+		   -1 ==> no\n\
+		    0 ==> automatic choice (default)\n\
+		    1 ==> yes, moderately\n\
+		    2 ==> yes, aggressively\n\
+		    3 ==> yes, very aggressively.",
+#endif
+	lowercutoff_desc[] = "For maximization problems involving integer\n\
+		variables, skip any branch whose LP relaxation's\n\
+		optimal value is less than lowercutoff.  Warning:\n\
+		if lowercutoff is too large, the problem will\n\
+		appear infeasible.  Default = -Infinity.",
+#ifdef CPX_PARAM_MCFCUTS
+	mcfcuts_desc[] = "Whether to use multi-commodity flow (MCF) cuts:\n\
+		   -1 = no\n\
+		    0 = let CPLEX decide (default)\n\
+		    1 = generate a modest number of MCS cuts\n\
+		    2 = generate MCS cuts aggressively.",
+#endif
+	mipalg_desc[] = "Algorithm used on mixed-integer subproblems\n\
+		(default 2):\n\
+		   1 = primal simplex\n\
+		   2 = dual simplex (plus primal, if dual fails)\n\
+		   3 = network alg., then dual simplex\n\
+		   4 = barrier with crossover\n\
+		The next two are not available in CPLEX versions >= 8;\n\
+		specify mipcrossover instead.\n\
+		   5 = dual to iteration limit, then barrier\n\
+		   6 = barrier without crossover.",
+	mipalgorithm_desc[] = "Synonym for \"mipalg\".",
+	mipbasis_desc[] = "Whether to compute a basis and dual variables for MIP\n\
+		problems when endbasis is not specified:\n\
+		   0 = no\n\
+		   1 = yes\n\
+		This keyword is new with driver version 20040716.\n\
+		When endbasis is specified, mipbasis=1 is assumed.\n\
+		Otherwise, when mipbasis=0 is specified for a MIP\n\
+		problem, no solver-status values for variables are\n\
+		returned to AMPL.  The default is 1 unless a quadratic\n\
+		objective or constraints are present, in which case\n\
+		the default is 0 (as finding a basis can be time\n\
+		consuming).",
+	mipcrossover_desc[] = "Crossover method used when using the barrier\n\
+		method for MIP subproblems:\n\
+		   -1 = no crossover\n\
+		    0 (default) = automatic choice\n\
+		    1 = primal\n\
+		    2 = dual.",
+	mipcuts_desc[] = "Sets all ten of cliques, covers, disjcuts,\n\
+		flowcuts, flowpathcuts, fraccuts, gubcuts,\n\
+		impliedcuts, mircuts and zerohalfcuts to the\n\
+		specified value.",
+	mipdisplay_desc[] = "Frequency of displaying branch-and-bound\n\
+		information (for optimizing integer variables):\n\
+		   0 (default) = never\n\
+		   1 = each integer feasible solution\n\
+		   2 = every \"mipinterval\" nodes\n\
+		   3 = every \"mipinterval\" nodes plus\n\
+		       information on LP relaxations\n\
+		       (as controlled by \"display\")\n\
+		   4 = same as 2, plus LP relaxation info\n\
+		   5 = same as 2, plus LP subproblem info.",
+	mipemphasis_desc[] = "Whether to emphasize seeking optimality\n\
+		(0 = default) or finding feasible solutions (1).\n\
+		For CPLEX versions >= 8, two other values are\n\
+		possible:  emphasizing optimality over\n\
+		feasibility (2) and emphasizing best bound (3).",
+	mipgap_desc[] = "Relative tolerance for optimizing integer\n\
+		variables: stop if\n\
+		   abs((best bound) - (best integer))\n\
+		       < mipgap * (1 + abs(best bound)).\n\
+		Default = 1e-4; must be between 1e-9 and 1.",
+	mipinterval_desc[] = "Frequency of node logging for mipdisplay 2 or 3.\n\
+		Default = 1.",
+#ifdef CPX_PARAM_MIPKAPPASTATS
+	mipkappa_desc[] = "Frequency of node logging for mipdisplay 2 or 3.\n\
+		Default = 1.",
+#endif
+	mipordertype_desc[] = "Synonym for \"ordertype\".",
+#ifdef CPX_PARAM_MIPSEARCH
+	mipsearch_desc[] = "Search strategy for mixed-integer problems, new\n\
+		in CPLEX 11:\n\
+		   0 = automatic choice (default)\n\
+		   1 = traditional branch and cut\n\
+		   2 = dynamic search.",
+#endif
+	mipsolutions_desc[] = "Stop branch-and-bound for integer variables\n\
+		after finding \"mipsolutions\" feasible solutions.\n\
+		Default = 2100000000.",
+	mipstart_desc[] = "Synonym for \"mipstartvalue\".",
+	mipstartalg_desc[] = "Which LP algorithm to use in solving the initial\n\
+		MIP subproblem:\n\
+		   1 = primal simplex\n\
+		   2 = dual simplex (default)\n\
+		   3 = netopt\n\
+		   4 = barrier with crossover\n\
+		The next two are not available in CPLEX versions >= 8;\n\
+		specify mipcrossover instead.\n\
+		   5 = dual simplex to iteration limit,\n\
+		       then barrier\n\
+		   6 = barrier without crossover.",
+	mipstartstatus_desc[] = "Whether to use incoming variable and constraint\n\
+		statuses if the problem has integer variables:\n\
+		   0 = no\n\
+		   1 = yes (default).",
+	mipstartvalue_desc[] = "Whether to use initial guesses in problems with\n\
+		integer variables:\n\
+		   0 = no\n\
+		   1 = yes (default)\n\
+		   2 = yes, using the deprecated CPXcopymipstart\n\
+		       function (as formerly done), rather than\n\
+		       the now preferred CPXaddmipstarts (starting\n\
+		       with driver version 20110607); this is for\n\
+		       debugging and is to be withdrawn.",
+	mipsubalg_desc[] = "Synonym for \"mipalg\".",
+#ifdef CPX_PARAM_MIPTHREADS
+	mipthreads_desc[] = "Maximum threads for the MIP algorithm\n\
+		(1 unless you have a CPLEX license for multiple\n\
+		threads).  Withdrawn from CPLEX 11.",
+#endif
+#ifdef CPX_PARAM_MIQCPSTRAT
+	miqcpstrat_desc[] = "Strategy for solving quadratically-constrained MIPs\n\
+		(MIQCP problems):\n\
+		   0 = automatic choice (default)\n\
+		   1 = solve a quadratically-constrained node\n\
+		       relaxation (QCP) at each node\n\
+		   2 = solve an LP node relaxation at each node.",
+#endif
+	mircuts_desc[] = "Whether to generate MIP rounding cuts:\n\
+		   -1 = no\n\
+		    0 = automatic choice (default)\n\
+		    1 = moderate generation\n\
+		    2 = aggressive generation.",
+	node_desc[] = "Synonym for \"nodes\".",
+	nodefile_desc[] = "Whether to save node information in a temporary file:\n\
+		   0 = no\n\
+		   1 (default) = compressed node file in memory\n\
+		   2 = node file on disk\n\
+		   3 = compressed node file on disk.",
+	nodefiledir_desc[] = "Synonym for workfiledir.  Prior to CPLEX 7.1,\n\
+		this directory is just for node information files.",
+#ifdef CPX_PARAM_NODEFILELIM
+	nodefilelim_desc[] = "Maximum size for the node file.  Default 1e75.\n\
+		Removed from CPLEX 7.1.  See workfilelim.",
+	nodefilesize_desc[] = "Synonym for \"nodefilelim\".",
+#endif
+	nodelim_desc[] = "Synonym for \"nodes\".",
+	nodes_desc[] = "Stop branch-and-bound for integer variables\n\
+		after \"nodes\" LP relaxations.  Default = 2100000000;\n\
+		nodes = 0 ==> complete processing at the root (create\n\
+		cuts, apply heuristics at root);\n\
+		1 ==> allow branching from root:  create but do not\n\
+		solve nodes.",
+	nodesel_desc[] = "Strategy for choosing next node while optimizing\n\
+		integer variables:\n\
+		   0 = depth-first search;\n\
+		   1 = breadth-first search (default);\n\
+		   2 = best-estimate search;\n\
+		   3 = alternate best-estimate search.",
+	nodeselect_desc[] = "Synonym for \"nodesel\".",
+	ordertype_desc[] = "How to generate default priorities for integer\n\
+		variables when no .priority suffix is specified:\n\
+		   0 = do not generate priorities (default)\n\
+		   1 = use decreasing costs\n\
+		   2 = use increasing bound range\n\
+		   3 = use coefficient count.",
+	plconpri_desc[] = "Priority (default 1) for SOS2 constraints for nonconvex\n\
+		piecewise-linear terms in constraints.",
+	plobjpri_desc[] = "Priority (default 2) for SOS2 constraints for nonconvex\n\
+		piecewise-linear terms in objectives.",
+#ifdef CPX_PARAM_POLISHAFTEREPAGAP
+	polishafter_absmipgap_desc[] = "Start polishing integer solutions after the\n\
+		absolute mixed-integer optimality gap is at most\n\
+		polishafter_absmipgap.  Default 0.",
+	polishafter_intsol_desc[] = "Start polishing integer solutions after the\n\
+		finding polishafter_intsol integer-feasible\n\
+		solutions.  Default 2100000000.",
+	polishafter_mipgap_desc[] = "Start polishing integer solutions after the\n\
+		relative mixed-integer optimality gap is at most\n\
+		polishafter_mipgap.  Default 0.",
+	polishafter_nodes_desc[] = "Start polishing integer solutions after the\n\
+		processing polishafter_nodes nodes.\n\
+		Default 2100000000.",
+	polishafter_time_desc[] = "Start polishing integer solutions after finding\n\
+		at least one integer feasible solution and spending\n\
+		polishafter_time CPU seconds seeking integer\n\
+		solutions.  Default 1e75.",
+#endif
+#ifdef  CPX_PARAM_POLISHAFTERDETTIME
+	polishafter_timedet_desc[] = "Start polishing integer solutions after finding\n\
+		at least one integer feasible solution and spending\n\
+		polishafter_time \"ticks\" seeking integer solutions.\n\
+		Default 1e75.",
+#endif
+#ifdef CPX_PARAM_POLISHTIME
+	polishtime_desc[] = "New in CPLEX 10.0:  seconds to spend \"polishing\"\n\
+		integer solutions.  Default 0.\n\
+		Deprecated in CPLEX 11.2 (in favor of the polishafter\n\
+		keywords above).",
+#endif
+#ifdef CPX_PARAM_POPULATELIM
+	poolagap_desc[] = "Solutions with objective worse in absolute value by\n\
+		poolgap than the best solution are not kept in the\n\
+		solution pool; see poolstub.  Default 1e75.",
+	poolcapacity_desc[] = "Number of solutions to keep in solution pool;\n\
+		see poolstub.  Default 2100000000.",
+	pooldual_desc[] = "Whether to return dual values (corresponding to fixed\n\
+		integer variables) for MIP and MIQP problems in the\n\
+		solution pool:\n\
+		   0 = no (default)\n\
+		   1 = yes (which takes extra computation)",
+	poolgap_desc[] = "Solutions  with objective worse in a relative sense by\n\
+		poolgap than the best solution are not kept in the\n\
+		solution pool; see poolstub.  Default 1e75.",
+	poolintensity_desc[] = "How hard to try adding MIP solutions to the solution\n\
+		pool.  Useful only if poolstub is specified.  Default 0\n\
+		is treated as 1 if poolstub is specified without\n\
+		populate, or 2 if populate is specified.  Larger values\n\
+		(3 or 4) cause more additions to the solution pool,\n\
+		possibly consuming considerable time; poolintensity 4\n\
+		tries to generate all MIP solutions, which could be a\n\
+		very large number.",
+	poolreplace_desc[] = "Policy for replacing solutions in the solution pool if\n\
+		more than poolcapacity solutions are generated:\n\
+		   0 = FIFO (first-in, first-out); default\n\
+		   1 = Keep best solutions\n\
+		   2 = Keep most diverse solutions.",
+	poolstub_desc[] = "Stub for solution files in the MIP solution pool.\n\
+		New in CPLEX 11 and meaningful only if some variables\n\
+		are integer or binary.  A pool of alternate MIP\n\
+		solutions is computed if poolstub is specified, and the\n\
+		solutions the remain in the solution pool (after some\n\
+		are replaced if more than poolcapacity solutions are\n\
+		found) are written to files\n\
+		  (poolstub & '1') ... (poolstub & |solution pool|),\n\
+		where |solution pool| is the number of solutions in the\n\
+		solution pool.  That is, file names are obtained by\n\
+		appending 1, 2, ... |solution pool| to poolstub.  The\n\
+		value of |solution pool| is returned in suffix npool\n\
+		on the objective and problem.",
+	populate_desc[] = "Whether to run CPLEX's \"populate\" algorithm in an\n\
+		attempt to add more solutions to the MIP solution pool.\n\
+		   0 = no; just keep solutions found during the\n\
+		       initial solve\n\
+		   1 = run \"populate\" after finding a MIP solution\n\
+		   2 = run \"populate\" instead of seeking a single\n\
+		       best solution.\n\
+		See poolstub.",
+	populatelim_desc[] = "Limit on number of solutions added to the solution pool\n\
+		by the populate algorithm.  See poolstub and populate.\n\
+		Default 20.",
+	prerelax_desc[] = "Whether to use CPLEX's presolve on the initial LP\n\
+		relaxation of a MIP:\n\
+		   -1 = automatic choice (default)\n\
+		    0 = no\n\
+		    1 = yes.",
+#endif
+	priorities_desc[] = "Whether to consider priorities for MIP branching:\n\
+		0 = no\n\
+		1 = yes (default).",
+	probe_desc[] = "Whether to do variable probing when solving MIPs\n\
+		(which sometimes dramatically affects performance,\n\
+		for better or worse):\n\
+		   -1 = no\n\
+		    0 = automatic choice (default)\n\
+		    1, 2, or 3 = ever more probing.",
+#ifdef CPX_PARAM_PROBETIME
+	probetime_desc[] = "Limit in seconds on time spent probing.\n\
+		Default = 1e75.",
+#endif
+#ifdef CPX_PARAM_PROBEDETTIME
+	probetimedet_desc[] = "Limit in \"ticks\" on time spent probing.\n\
+		Default = 1e75.",
+#endif
+#ifdef Want_Distmipopt
+	rampup_duration_desc[] = "How to ramp up distributed parallel optimization:\n\
+		   -1 = no ramp up\n\
+		    0 = automatic choice (default)\n\
+		    1 = dynamic rampup, limited by rampup_timelim and\n\
+		        rampup_walltimelim\n\
+		    2 = infinite ramp up:  concurrent MIP optimization.",
+	rampup_timelim_desc[] = "Time limit in deterministic \"ticks\" to spend on the\n\
+		\"ramp up\" phase of distributed parallel optimization.\n\
+		This only matters when rampup_duration = 0 or 1.",
+	rampup_walltimelim_desc[] = "Time limit limit in wall-clock seconds to spend on the\n\
+		\"ramp up\" phase of distributed parallel optimization.\n\
+		This only matters when rampup_duration = 0 or 1.",
+#endif
+	relax_desc[] = "Single-word phrase:  ignore integrality.",
+	relaxpresolve_desc[] = "Synonym for \"prerelax\".",
+	relobjdif_desc[] = "Synonym for \"relobjdiff\".",
+	relobjdiff_desc[] = "If the objdifference parameter is 0,\n\
+		relobjdiff times the absolute value of the objective\n\
+		value is added to (for maximizing) or subtracted\n\
+		from (for minimizing) the best (so far) feasible\n\
+		objective value while optimizing integer variables.\n\
+		Subsequent nodes will be ignored if their LP\n\
+		relaxations have optimal values worse than this\n\
+		sum.  Default = 0.  Positive values may speed\n\
+		the search -- and may cause the optimal solution\n\
+		to be missed.",
+	relpresolve_desc[] = "Synonym for \"prerelax\".",
+#ifdef CPX_PARAM_REPAIRTRIES
+	repairtries_desc[] = "How many times to try to repair in infeasible\n\
+		MIP starting guess:\n\
+		   -1 = none\n\
+		    0 = automatic choice (default)\n\
+		    > 0 = that many times.",
+#endif
+#ifdef CPX_PARAM_REPEATPRESOLVE
+	repeatpresolve_desc[] = "Whether to repeat CPLEX's presolve at MIP nodes:\n\
+		   -1 = automatic choice (default)\n\
+		    0 = no\n\
+		    1 = presolve again ignoring cuts\n\
+		    2 = presolve again considering cuts\n\
+		    3 = presolve again considering cuts and\n\
+		        allowing new root cuts.",
+#endif
+#if CPX_VERSION >= 12030000
+	reqconvex_desc[] = "Whether to require a quadratic model to be convex:\n\
+		   0 = automatic choice (default)\n\
+		   1 = require convexity\n\
+		   2 = do not require convexity; just look\n\
+		       for a local solution"
+#if CPX_VERSION >= 12060000
+			"\n\
+		   3 = globally solve if noncovex.",
+#else
+			".",
+#endif
+#endif
+	resolve_desc[] = "Whether to re-solve the problem with CPLEX's\n\
+		presolve turned off when it reports the problem\n\
+		to be infeasible or unbounded.  Re-solving may\n\
+		take extra time but should determine whether the\n\
+		problem is infeasible or unbounded.\n\
+		   0 = no\n\
+		   1 = yes (default).",
+	return_mipgap_desc[] = "Whether to return mipgap suffixes or include\n\
+		mipgap values in the solve_message:  sum of\n\n\
+		   1 = return relmipgap suffix\n\
+		   2 = return absmipgap suffix\n\
+		   4 = suppress mipgap values in solve_message\n\n\
+		The suffixes are on the objective and problem;\n\
+		returned suffix values are +Infinity if no integer-\n\
+		feasible solution has been found, in which case no\n\
+		mipgap values are reported in the solve_message.\n\
+		Default = 0.  See also bestbound and bestnode above.",
+#ifdef CPX_PARAM_RINSHEUR
+	rinsheur_desc[] = "Relaxation INduced neighborhood Search HEURistic\n\
+		for MIP problems:\n\
+		   -1 = none\n\
+		    0 = automatic choice of interval (default)\n\
+		    n (for n > 0) = every n nodes.",
+#endif
+#ifdef CPX_PARAM_HEURISTIC
+	rootheuristic_desc[] = "Withdrawn from CPLEX 9.0.  Synonym for \"heuristic\".",
+#endif
+	round_desc[] = "Whether to round integer variables to integral\n\
+		values before returning the solution, and whether\n\
+		to report that CPLEX returned noninteger values\n\
+		for integer values (default 1):  sum of\n\
+		   1 ==> round nonintegral integer variables\n\
+		   2 ==> do not modify solve_result\n\
+		   4 ==> do not modify solve_message\n\
+		   8 ==> modify solve_result and solve_message\n\
+		even if maxerr < intwarntol (default 1e-9).\n\
+		Modifications take place only if CPLEX assigned\n\
+		nonintegral values to one or more integer variables.",
+	solutionlim_desc[] = "Synonym for \"singular\".",
+	sos_desc[] = "0 or 1 (default 1):  Whether to honor declared\n\
+		suffixes .sosno and .ref describing SOS sets.\n\
+		Each distinct nonzero .sosno value designates an SOS\n\
+		set, of type 1 for positive .sosno values and of type\n\
+		2 for negative values.  The .ref suffix contains\n\
+		corresponding reference values.",
+	sos2_desc[] = "0 or 1 (default 1): Whether to tell CPLEX about SOS2\n\
+		constraints for nonconvex piecewise-linear terms.",
+#ifdef CPX_PARAM_LANDPCUTS
+	splitcuts_desc[] = "Whether to use lift-and-project cuts on MIP problems\n\
+		(new for CPLEX 12.5.1):\n\
+		   -1 = no\n\
+		    0 = automatic choice (default)\n\
+		    1 = moderate use\n\
+		    2 = aggressive use\n\
+		    3 = very aggressive use.",
+#endif
+	startalg_desc[] = "Synonym for \"mipstartalg\".",
+	startalgorithm_desc[] = "Synonym for \"mipstartalg\".",
+	startbasis_desc[] = "\"startbasis foo\" reads the initial basis\n\
+		(in BAS format) from file \"foo\".",
+	startsol_desc[] = "Synonym for \"readsol\".",
+#ifdef CPX_PARAM_IISIND /* version < 9.2b */
+	starttree_desc[] = "File for reading initial branch-and-bound search tree.",
+#endif
+	strongcand_desc[] = "Length of the candidate list for \"strong branching\"\n\
+		when solving MIPs: default 10.",
+	strongit_desc[] = "Number of simplex iterations on each variable in\n\
+		the candidate list during strong branching.\n\
+		Default = 0 = automatic choice.",
+#ifdef CPX_PARAM_STRONGTHREADLIM
+	strongthreads_desc[] = "Maximum threads during strong branching.\n\
+		Default = 1.",
+#endif
+	subalg_desc[] = "Synonym for \"mipalg\".",
+	subalgorithm_desc[] = "Synonym for \"mipalg\".",
+#ifdef CPX_PARAM_SUBMIPNODELIM
+	submipnodelim_desc[] = "Limit on nodes searched by relaxation induced\n\
+		neighborhood search (RINS) heuristic for MIP\n\
+		problems and for processing of MIP starting values.\n\
+		Default = 500.",
+#endif
+#ifdef CPX_PARAM_SYMMETRY
+	symmetry_desc[] = "Whether to break symmetry during\n\
+		    preprocessing of MIP problems:\n\
+		   -1 = automatic choice (default)\n\
+		    0 = no\n\
+		    1 = moderate effort\n\
+		    2 = more effort\n\
+		    3 = still more effort"
+#if CPX_VERSION >= 11000000
+			"\n\
+		    4 = even more effort (new in CPLEX 11)\n\
+		    5 = more effort than 4 (new in CPLEX 11).",
+#else
+		".",
+#endif
+#endif
+	treelimit_desc[] = "Synonym for \"treememory\".",
+	treememlim_desc[] = "Synonym for \"treememory\".",
+	treememory_desc[] = "Max. megabytes of memory (default 128) to use for\n\
+		branch-and-bound tree.",
+	uppercutoff_desc[] = "For minimization problems involving integer\n\
+		variables, skip any branch whose LP relaxation's\n\
+		optimal value is more than uppercutoff.  Warning:\n\
+		if uppercutoff is too small, the problem will\n\
+		appear infeasible.  Default = Infinity.",
+	varsel_desc[] = "Strategy for selecting the next branching\n\
+		variable during integer branch-and-bound:\n\
+		   -1 = branch on variable with smallest\n\
+		        integer infeasibility\n\
+		    0 = algorithm decides (default)\n\
+		    1 = branch on variable with largest\n\
+		        integer infeasibility"
+#if CPX_VERSION >= 6050000
+			"\n\
+		    2 = branch based on pseudo costs\n\
+		    3 = strong branching\n\
+		    4 = branch based on pseudo reduced costs.",
+#else
+			"\n\
+		    2 = branch based on pseudo reduced costs.",
+#endif
+	varselect_desc[] = "Synonym for \"varsel\"."
+#ifdef Want_Distmipopt
+	,vmconf_desc[] = "For distributed parallel MIP optimization, if vmconf\n\
+		starts with @, then the remainder is the name of a file\n\
+		containing a parallel MIP configuration; otherwise\n\
+		vmconf itself is a parallel MIP configureation string,\n\
+		which must be quoted if it contains white space."
+#endif
+#ifdef CPX_PARAM_ZEROHALFCUTS
+	,zerohalfcuts_desc[] = "Whether to generate zero-half cuts for MIP problems:\n\
+		   -1 = no\n\
+		    0 = automatic choice (default):  continue\n\
+		        generating until new cuts are not helpful\n\
+		    1 = generate zero-half cuts moderately\n\
+		    2 = generate zero-half cuts aggressively."
+#endif
+	;
+#endif /*}*/
 
- struct option_word {
-	char *name;
-	sfunc *sf;
-	int ival;
-	};
- typedef struct option_word option_word;
+ static char
+	advance_desc[] = "Whether to use advance basis information (initial\n\
+		primal and dual variable values and basis indicators).\n\
+		Default 1 (yes).",
+	aggfill_desc[] = "Synonym for \"agglim\".",
+	agglim_desc[] = "Variables that appear in more than agglim rows\n\
+		(default 10) will not be substituted away by the\n\
+		\"aggregate\" algorithm.",
+	aggregate_desc[] = "0 or 1 (default 1): Whether to make substitutions\n\
+		to reduce the number of rows.",
+	aggtol_desc[] = "Pivot tolerance for aggregating.  It seldom needs\n\
+		fiddling.  Default = .05; must be in [1e-10, .99].",
+	autoopt_desc[] = "Single-word phrase:  use CPLEX's automatic choice of\n\
+		optimizer (currently dualopt for LPs).",
+	autopt_desc[] = "Synonym for \"autoopt\".",
+	backtrack_desc[] = "Tolerance (> 0, default 0.9999) for when to backtrack\n\
+		during branch & bound.  Low values tend to pure\n\
+		best-bound search.  High values (> 1) tend to pure\n\
+		depth-first search.  Values less than the default\n\
+		are often good when subproblems are expensive.",
+#ifdef BARRIER
+	baralg_desc[] = "How to start the barrier algorithm:\n\
+			   0 (default) = 1 for MIP subproblems, else 3\n\
+			   1 = infeasibility-estimate start\n\
+			   2 = infeasibility-constant start\n\
+			   3 = standard start.",
+	barcorr_desc[] = "Limit on centering corrections in each iteration\n\
+		of the barrier algorithm:\n\
+			   -1 = decide automatically (default)\n\
+			   nonnegative = at most that many.",
+	bardisplay_desc[] = "Specifies how much the barrier algorithm chatters:\n\
+			   0 = no output (default)\n\
+			   1 = one line per iteration\n\
+			   2 = more output.",
+	bargrowth_desc[] = "Tolerance for detecting unbounded faces in the\n\
+		barrier algorithm: higher values make the test\n\
+		for unbounded faces harder to satisfy.\n\
+		Default = 1e12.",
+	bariterlim_desc[] = "Maximum barrier iterations allowed (default 200).",
+	barobjrange_desc[] = "Limit on the absolute objective value before the\n\
+		barrier algorithm considers the problem unbounded.\n\
+		Default = 1e20.",
+	baropt_desc[] = "Single-word phrase:  use the barrier algorithm\n\
+		(unless there are discrete variables).",
+#ifdef CPX_PARAM_BAROOC
+	baroutofcore_desc[] = "Whether the barrier solver should use disk\n\
+		(out-of-core) storage for Cholesky factors:\n\
+		    0 = no (default)\n\
+		    1 = yes.\n\
+		Withdrawn in CPLEX 10.0.",
+#endif
+	barstart_desc[] = "Barrier starting-point algorithm:\n\
+			   1 = dual is 0 (default)\n\
+			   2 = estimate dual\n\
+			   3 = average of primal estimate, 0 dual\n\
+			   4 = average of primal and dual estimates.",
+	barstartalg_desc[] = "Synonym for \"barstart\".",
+#ifdef CPX_PARAM_BARTHREADS
+	barthreads_desc[] = "Maximum threads for the barrier algorithm\n\
+		(1 unless you have a CPLEX license for multiple\n\
+		threads).  Withdrawn from CPLEX 11.",
+#endif
+#ifdef CPX_PARAM_BARVARUP
+	barvarup_desc[] = "Upper bound imposed by barrier algorithm on\n\
+		variables with infinite upper bound; used to\n\
+		prevent trouble with problems having unbounded\n\
+		optimal faces.  Default = 1e20.\n\
+		Withdrawn from CPLEX 9.0.",
+#endif
+#endif /* BARRIER */
+#ifdef BASDEBUG
+	basdebug_desc[] = "Filename for output to debug basis transmission.",
+#endif
+	basis_cond_desc[] = "Whether to show the condition number of the simplex\n\
+		basis in the solve_message and to return its value\n\
+		in the problem.basis_cond and objective.basis_cond\n\
+		suffixes.  (Default = 0 = no; 1 = yes).",
+#ifdef CPX_PARAM_BASINTERVAL
+	basisinterval_desc[] = "Number of interations between savings of current\n\
+		simplex basis to a file.  Default = 50000.\n\
+		Deprecated in 10.0, removed in 12.6.1.",
+#endif
+	clocktype_desc[] = "Kind of times CPLEX reports during the solution\n\
+		process:\n\
+		   1 = CPU time (default)\n\
+		   2 = wall clock time (total elapsed time).",
+#ifdef BARRIER
+	comptol_desc[] = "Convergence tolerance for barrier algorithm:\n\
+		the algorithm stops when the relative\n\
+		complementarity is < bartol (default 1e-8).",
+#endif
+	concurrent_desc[] = "Single-word phrase:  with CPLEX versions >= 8\n\
+		and when hardware and licensing permit, try\n\
+		several methods in parallel.",
+	concurrentopt_desc[] = "Single-word phrase:  with CPLEX versions >= 8\n\
+		and when hardware and licensing permit, try\n\
+		several methods in parallel.",
+#ifdef CPXPARAM_Conflict_Algorithm
+	conflictalg_desc[] = "Choice of algorithm used by the CPLEX's conflict\n\
+		refiner:\n\
+		   0 = automatic choice (default)\n\
+		   1 = fast\n\
+		   2 = propagate\n\
+		   3 = presolve\n\
+		   4 = IIS\n\
+		   5 = limited solve\n\
+		   6 = full solve.\n\
+		Settings 1, 2, and 3 are fast but may not discard\n\
+		many constraints; 5 and 6 work harder at this.\n\
+		Setting 4 searches for an Irreducible Infeasible\n\
+		Set of linear constraints (e.g., ignoring quadratic\n\
+		constraints).",
+#endif
+#ifdef CPX_PARAM_CONFLICTDISPLAY
+	conflictdisplay_desc[] = "What to report when the conflict finder is working:\n\
+		   0 = nothing\n\
+		   1 = summary (default)\n\
+		   2 = detailed display.",
+#endif
+	crash_desc[] = "Crash strategy (used to obtain starting basis);\n\
+		possible values = -1, 0, 1; default = 1.\n\
+		The best setting is problem-dependent and\n\
+		can only be found by experimentation.\n\
+		0 completely ignores the objective.",
+	crossover_desc[] = "Causes the barrier algorithm to be run (in the\n\
+		absence of discrete variables) and specifies\n\
+		whether to \"crossover\" to an optimal simplex\n\
+		basis afterwards:\n\
+		   0 = no crossover\n\
+		   1 = crossover with primal simplex\n\
+		       (default for baropt)\n\
+		   2 = crossover with dual simplex.",
+#ifdef WANT_DATACHECK
+	datacheck_desc[] = "debug option; gives inappropriate complaints\n\
+		about Infinity.",
+#endif
+#ifdef BARRIER
+	dense_desc[] = "Synonym for \"densecol\".",
+	densecol_desc[] = "If positive, minimum nonzeros in a column for\n\
+		the barrier algorithm to consider the column dense.\n\
+		If 0 (default), this tolerance is selected\n\
+		automatically.",
+#endif
+	dependency_desc[] = "Whether to use CPLEX's presolve dependency checker:\n\
+		   0 = no (default)\n\
+		   1 = turn on only at start of preprocessing\n\
+		   2 = turn on only at end of preprocessing\n\
+		   3 = turn on at both start and end of\n\
+		       preprocessing.",
+#ifdef CPX_PARAM_DETTILIM
+	dettimelim_desc[] = "Time limit in platform-dependent \"ticks\".\n\
+		See timing.",
+#endif
+	dgradient_desc[] = "Pricing algorithm for dual simplex (default 0):\n\
+		   0 = choose automatically\n\
+		   1 = standard dual pricing\n\
+		   2 = steepest-edge pricing\n\
+		   3 = steepest-edge pricing in slack space\n\
+		   4 = steepest-edge with unit initial norms\n\
+		   5 = devex pricing.",
+	display_desc[] = "Frequency of displaying LP progress information:\n\
+		   0 (default) = never\n\
+		   1 = each factorization\n\
+		   2 = each iteration.",
+	doperturb_desc[] = "1 means initially perturb the problem (by an\n\
+		amount governed by \"perturbation\", which is\n\
+		described below).  0 (default) means let the\n\
+		algorithm decide.  Setting doperturb to 1\n\
+		is occasionally helpful for highly degenerate\n\
+		problems.",
+	dparam_desc[] = "Used with syntax \"dparam=n=d\" (no spaces), where n\n\
+		is a decimal integer, the number of a CPLEX \"double\"\n\
+		(i.e., floating-point valued) parameter.  If d is a\n\
+		decimal floating-point value, assign d to \"double\"\n\
+		parameter n.  If d is ?, report the current value of\n\
+		\"double\" paramter n.  This facility provides a way\n\
+		to modify \"double\" parameters that have not (yet)\n\
+		been assigned a keyword.",
+#if CPX_VERSION >= 1100
+	droptol_desc[] = "If droptol > 0 is specified, linear constraint\n\
+		and objective coefficients less than droptol in\n\
+		magnitude are treated as zero.",
+#endif
+	dual_desc[] = "Single-word phrase:  solve the dual problem.",
+	dualopt_desc[] = "Single-word phrase:  use a dual simplex algorithm.",
+	dualratio_desc[] = "If neither \"primal\" nor \"dual\" was specified and\n\
+		\"dual\" is possible (e.g., no integer variables and\n\
+		no node and arc declarations), choose between\n\
+		\"primal\" and \"dual\" as follows.\n\
+		Let m = number of rows, n = number of columns;\n\
+		if m - n > dualthresh > 0 or m > dualratio*n,\n\
+		solve the dual; otherwise solve the primal.\n\
+		Defaults:  dualthresh = 0, dualratio = 3.",
+	dualthresh_desc[] = "See dualratio.",
+#ifdef CPX_PARAM_EACHCUTLIM
+	eachcutlim_desc[] = "Limit on the number of cuts of each time.\n\
+		Default = 2100000000.",
+#endif
+	endbasis_desc[] = "\"endbasis foo\" writes the final basis to\n\
+		file \"foo\" (in BAS format).",
+	endsol_desc[] = "File for writing the final solution as an XML file.",
+#if defined(BARRIER) && !defined(NO_DEPRECATED)
+	endvector_desc[] = "File for writing solution from barrier algorithm\n\
+		without crossover:  only meaningful with\n\
+		\"baropt crossover=0\".  Deprecated; use endsol instead.",
+#endif
+	feasibility_desc[] = "Amount by which basic variables can violate\n\
+		their bounds.  Default = 1e-6; possible\n\
+		values are between 1e-9 and 1e-4.",
+#ifdef CPX_PARAM_FEASOPTMODE /* >= 9.2b */
+	feasopt_desc[] = "For infeasible problems, whether to find a feasible\n\
+		point for a relaxed problem (see feasoptobj):\n\
+		   0 = no (default)\n\
+		   1 = find a feasible point\n\
+		   2 = find a \"best\" feasible point.",
+	feasoptobj_desc[] = "Objective for \"feasopt\":\n\
+		   1 = minimize sum of constraint and variable\n\
+		       bound relaxations\n\
+		   2 = minimize number of constraint and variable\n\
+		       bounds relaxed (a MIP problem, generally\n\
+		       harder than feasoptobj = 1)\n\
+		   3 = minimize sum of squares of constraint and\n\
+		       variable bound relaxations.",
+#endif
+	file_desc[] = "Synonym for \"writeprob\".",
+#ifdef CPX_PARAM_FINALFACTOR
+	finalfactor_desc[] = "Whether to factor the basis after \"uncrushing\"\n\
+		the problem at the end.\n\
+		   0 = no\n\
+		   1 = yes (default)\n\
+		Withdrawn in CPLEX 10.0.",
+#endif
+#ifdef BARRIER
+	growth_desc[] = "Synonym for \"bargrowth\".",
+#endif
+#ifdef CPXERR_PARAM_INCOMPATIBLE
+	incompat_desc[] = "How to treat parameter settings that CPLEX finds\n\
+		incompatible:\n\
+		   0 = quietly ignore incompatibilities\n\
+		   1 = report and ignore them (default)\n\
+		   2 = reject them, refusing to solve.\n\
+		For example, CPLEX regards the polishafter_* parameters\n\
+		introduced in CPLEX 11.2 as incompatible with the older\n\
+		polishtime parameter.",
+#endif
+	iparam_desc[] = "Used with syntax \"iparam=n=i\" (no spaces), where n\n\
+		is a decimal integer, the number of a CPLEX integer\n\
+		parameter.  If i is a decimal integer, assign i to\n\
+		integer parameter n.  If i is ?, report the current\n\
+		value of integer paramter n.  This facility provides\n\
+		a way to modify integer parameters that have not (yet)\n\
+		been assigned a keyword.",
+	iterations_desc[] = "Limit on total LP iterations; default 5000000.",
+	iterlim_desc[] = "Synonym for \"iterations\".",
+#ifdef Uselazy
+	lazy_desc[] = "Whether to recognize suffix .lazy on constraints\n\
+		(new for CPLEX 10): sum of\n\
+		   1 ==> treat .lazy = 1 as lazy constraint\n\
+		   2 ==> treat .lazy = 2 as user cut\n\
+		Default lazy = 3 ==> treat both.  (Suffix .lazy on\n\
+		constraints is ignored if not 0, 1, or 2 modulo 3.)",
+#endif
+	limitperturb_desc[] = "Synonym for \"perturblimit\".",
+	logfile_desc[] = "Name of file to receive all CPLEX messages.",
+	lowerobj_desc[] = "Stop minimizing when the objective value\n\
+		goes below lowerobj.  Default = -1e75.",
+	lowerobjlim_desc[] = "Synonym for \"lowerobj\".",
+	lpdisplay_desc[] = "Synonym for \"display\".",
+	lpiterlim_desc[] = "Synonym for \"iterations\".",
+	lptimelim_desc[] = "Synonym for \"time\".",
+	markowitz_desc[] = "Pivot tolerance; default = 0.01; must be between\n\
+		0.0001 and 0.99999.  Bigger values may improve\n\
+		numerical properties of the solution (and may\n\
+		take more time).",
+	maximize_desc[] = "Single-word phrase:  maximize the objective,\n\
+		regardless of model specifications.",
+#ifdef CPX_PARAM_MEMORYEMPHASIS
+	memoryemphasis_desc[] = "Whether to compress data to reduce the memory used,\n\
+		which may make some information (e.g., basis condition)\n\
+		unavailable:\n\
+		   0 = no (default)\n\
+		   1 = yes.",
+#endif
+	minimize_desc[] = "Single-word phrase:  minimize the objective,\n\
+		regardless of model specifications.",
+	nameround_desc[] = "Whether to mangle variable and constraint names\n\
+		by turning [ and ] into ( and ), respectively:\n\
+		   0 = no (default)\n\
+		   1 = yes.\n\
+		This only matters if you specify endbasis=...\n\
+		or startbasis=... or perhaps writeprob=something.lp\n\
+		and have instructed AMPL to write .row and .col files.\n\
+		(It is usually better to let AMPL's status facilities\n\
+		convey basis information.)  An alternative under Unix\n\
+		is to use the \"tr\" command to make the above changes\n\
+		if they are needed.",
+	netdisplay_desc[] = "Which objective value to show when using the\n\
+		network simplex algorithm with display > 0\n\
+		or netopt=3:\n\
+		   0 = none\n\
+		   1 = true objective\n\
+		   2 = penalized objective (default).",
+	netfeasibility_desc[] = "Feasibility tolerance for the network simplex\n\
+		algorithm.  Default = 1e-6; possible values are\n\
+		between 1e-11 and 1e-1.",
+	netfind_desc[] = "Algorithm for finding embedded networks:\n\
+		   1 = extract only the natural network (default)\n\
+		   2 = use reflection scaling\n\
+		   3 = use general scaling.",
+	netfinder_desc[] = "Synonym for \"netfind\".",
+	netiterations_desc[] = "Limit on network simplex iterations.\n\
+		Default = large (e.g., 2100000000).",
+	netopt_desc[] = "0 means never invoke the network optimizer.\n\
+		1 (default) means invoke the network optimizer\n\
+		  only if the model had node and arc declarations.\n\
+		2 means always invoke the network optimizer\n\
+		  (unless there are integer variables); the network\n\
+		  optimizer may be able to find and exploit an\n\
+		  embedded network.\n\
+		3 is similar to 2, but sets CPLEX's LPMethod\n\
+		  to CPX_ALG_NET rather than explicitly invoking\n\
+		  the network optimizer.  This might make a\n\
+		  difference if CPLEX's presolve makes relevant\n\
+		  reductions.",
+	netoptimality_desc[] = "Tolerance for optimality of reduced costs in the\n\
+		network simplex algorithm.  Default 1e-6; must be\n\
+		between 1e-11 and 1e-1.",
+	netpricing_desc[] = "How to price in the network simplex algorithm:\n\
+		   0 = automatic choice (default)\n\
+		   1 = partial pricing\n\
+		   2 = multiple partial pricing\n\
+		   3 = multiple partial pricing with sorting.",
+#ifdef CPX_PARAM_NUMERICALEMPHASIS
+	numericalemphasis_desc[] = "Whether to try to improve numerical accuracy (at a\n\
+		possible cost of time or memory):\n\
+		   0 = no (default)\n\
+		   1 = yes.",
+#endif
+	objdifference_desc[] = "Amount added to (for maximizing) or subtracted\n\
+		from (for minimizing) the best (so far) feasible\n\
+		objective value while optimizing integer variables.\n\
+		Subsequent nodes will be ignored if their LP\n\
+		relaxations have optimal values worse than this\n\
+		sum.  Default = 0.  Positive values may speed\n\
+		the search -- and may cause the optimal solution\n\
+		to be missed.",
+	objno_desc[] = "1 (default) = first objective, 2 = second, etc.;\n\
+		0 ==> no objective:  just find a feasible point.",
+	objrep_desc[] = "Whether to replace\n\
+		        minimize obj: v;\n\
+		with\n\
+		        minimize obj: f(x)\n\
+		when variable v appears linearly in exactly one\n\
+		constraint of the form\n\
+		        s.t. c: v >= f(x);\n\
+		or\n\
+		        s.t. c: v == f(x);\n\
+		Possible objrep values:\n\
+		   0 = no\n\
+		   1 = yes for v >= f(x)\n\
+		   2 = yes for v == f(x) (default)\n\
+		   3 = yes in both cases\n\
+		For maximization problems, \">= f(x)\" is changed to\n\
+		\"<= f(x)\" in the description above.  This is new\n\
+		with driver version 20130622.",
+	optimality_desc[] = "Tolerance for optimality of reduced costs.\n\
+		Default 1e-6; must be between 1e-9 and 1e-1.",
+	optimize_desc[] = "Synonym for \"primal\".",
+#ifdef BARRIER
+	ordering_desc[] = "Ordering algorithm used by the barrier algorithm\n\
+		   0 = automatic choice (default)\n\
+		   1 = approximate minimum degree\n\
+		   2 = approximate minimum fill\n\
+		   3 = nested dissection.",
+#endif
+	outlev_desc[] = "Synonym for \"display\".",
+#ifdef CPX_PARAM_PARALLELMODE
+	parallelmode_desc[] = "Parallel optimization mode:\n\
+		   -1 = opportunistic mode\n\
+		    0 = automatic: let CPLEX decide (default)\n\
+		    1 = deterministic mode.",
+#endif
+	paramfile_desc[] = "File containing param settings to import.  The file\n\
+		is read and settings in it echoed when the keyword\n\
+		is processed.",
+#if CPX_VERSION >= 1000
+	paramfileprm_desc[] = "File containing param settings in CPLEX PRM format\n\
+		to import.  The file is read without echoing settings\n\
+		in it when the keyword is processed.",
+#endif
+#ifdef CPX_PARAM_PDSWITCH
+	pdswitch_desc[] = "Whether to switch algorithms (from primal to dual\n\
+		or vice versa) when undoing perturbations or shifts\n\
+		made during the primal or dual simplex algorithm:\n\
+		   -1 = no\n\
+		    0 = automatic choice (default)\n\
+		    1 = yes\n\
+		pdswitch=1 may help if there are many cycles\n\
+		of undoing perturbations.  New in CPLEX 7.0,\n\
+		hidden in CPLEX 7.1.",
+#endif
+	perturb_desc[] = "Synonym for \"doperturb\".",
+	perturbation_desc[] = "Amount by which to perturb variable bounds\n\
+		when perturbing problems (see \"doperturb\").\n\
+		Default 1e-6; must be positive.",
+	perturbconst_desc[] = "Synonym for \"perturbation\".",
+	perturblim_desc[] = "Number of stalled simplex iterations before the\n\
+		problem is perturbed.  Default = 0 = automatic.",
+	perturblimit_desc[] = "Synonym for \"perturblim\".",
+	pgradient_desc[] = "Pricing algorithm for primal simplex (default 0):\n\
+		   -1 = reduced-cost pricing\n\
+		    0 = hybrid reduced-cost and Devex pricing\n\
+		    1 = Devex pricing\n\
+		    2 = steepest-edge pricing\n\
+		    3 = steepest-edge with slack initial norms\n\
+		    4 = full pricing.",
+#ifdef CPX_PARAM_PRECOMPRESS
+	precompress_desc[] = "New in CPLEX 7.1:  whether to compress the original\n\
+		problem after CPLEX's presolve:\n\
+		   -1 = no\n\
+		    0 = automatic choice (default)\n\
+		    1 = yes\n\
+		Withdrawn in CPLEX 10.0.",
+#endif
+	predual_desc[] = "Whether CPLEX's presolve phase should present the\n\
+		CPLEX solution algorithm with the primal (-1) or\n\
+		dual (1) problem or (default = 0) should decide\n\
+		which automatically.  Specifying \"predual=1\" often\n\
+		gives better performance than specifying just \"dual\",\n\
+		but sometimes \"dual predual=1\" is still better.",
+	prelinear_desc[] = "Whether CPLEX's presolve should do full reductions\n\
+		or only linear ones.  Default = 1 = full.",
+#ifdef CPX_PARAM_PREPASS
+	prepass_desc[] = "Limit on number of CPLEX presolve passes.\n\
+		Default = -1 = decide limit automatically.",
+#endif
+	prereduce_desc[] = "Kinds of reductions permitted during CPLEX presolve:\n\
+		   0 = none\n\
+		   1 = only primal\n\
+		   2 = only dual\n\
+		   3 = both primal and dual (default).",
+	presolve_desc[] = "0 or 1 (default 1): Whether to run CPLEX's presolve\n\
+		algorithm.",
+	presolvedual_desc[] = "Synonym for \"predual\".",
+	presolvenode_desc[] = "-1, 0, or 1 (default 0): Whether to run CPLEX's\n\
+		presolve at each node of the MIP branch-and-bound\n\
+		tree: -1 = no; 1 = yes; 0 = automatic choice.",
+	prestats_desc[] = "0 or 1 (default 0):  Whether to include summary\n\
+		statistics (if nonzero) for CPLEX's \"aggregate\" and\n\
+		\"presolve\" algorithms in the solve_message.",
+#ifdef CPX_TUNE_TILIM
+	pretunefile_desc[] = "File to which nondefault keyword settings are written\n\
+		before tuning; written whether or not tunefile or\n\
+		tunefilecpx is specified.",
+	pretunefileprm_desc[] = "File to which nondefault keyword settings are written\n\
+		in CPLEX PRM format before tuning; written whether or\n\
+		not tunefile or tunefileprm is specified.  Includes\n\
+		some display settings suppressed by pretunefile.",
+#endif
+	pricing_desc[] = "Size of pricing candidate list (for partial pricing).\n\
+		0 (default) means the algorithm decides.",
+	primal_desc[] = "Single-word phrase:  solve the primal problem.",
+	primalopt_desc[] = "Use the primal simplex algorithm.",
+#ifdef CPXERR_QCP_SENSE
+	qcdual_desc[] = "Whether to compute dual variable values for problems\n\
+		with quadratic constraints.  Default = 1 (for \"yes\").\n\
+		This may be expensive if there are many quadratic\n\
+		constraints.  Specifying qcdual=0 suppresses the\n\
+		computation.",
+#endif
+#ifdef CPX_PARAM_BARQCPEPCOMP
+	qcpconvergetol_desc[] = "Convergence tolerance on relative complementarity for\n\
+		problems with quadratic constraints.  Default = 1e-7.",
+#endif
+#ifdef CPXERR_QCP_SENSE
+	qctol1_desc[] = "Tolerance on a quadratic inequality constraint's slack.\n\
+		After CPLEX has returned a solution, dual values are\n\
+		deduced for \"active\" quadratic constraints.\n\
+		Default 1e-5; a negative value is quietly treated as 0.",
+	qctol2_desc[] = "Tolerance on the maxnorm of the gradient of an\n\
+		\"active\" quadratic constraint (see qctol1):  if the\n\
+		maxnorm is no more than qctol2, the gradient is\n\
+		considered to vanish and dual value 0 is deduced.\n\
+		Default 1e-5; a negative value is quietly treated as 0.",
+	qctol3_desc[] = "Tolerance on the reduction during QR factorization of\n\
+		the maxnorm of an \"active\" constraint's gradient\n\
+		(see qctol1) for the constraint to be considered\n\
+		independent of the other active quadratic constraints.\n\
+		Dual value 0 is deduced for dependent constraints.\n\
+		Default 1e-5; a negative value is quietly treated as 0.",
+#endif
+#ifdef CPX_PARAM_QPMETHOD
+	qpmethod_desc[] = "Choice of algorithm for a continuous quadratic\n\
+		programming problem:\n\
+		   0 = automatic choice (default)\n\
+		   1 = primal simplex\n\
+		   2 = dual simplex\n\
+		   3 = network simplex\n\
+		   4 = barrier algorithm\n\
+		   6 = concurrent optimizer.",
+#endif
+#ifdef CPX_PARAM_QTOLININD
+	qtolin_desc[] = "Whether to to linearize products of bounded variables\n\
+			in quadratic objectives:\n\
+		   -1 = automatic choice (default)\n\
+		    0 = no\n\
+		    1 = yes.",
+#endif
+	rays_desc[] = "Whether to return suffix .unbdd when the objective is\n\
+		unbounded or suffix .dunbdd when the constraints are\n\
+		infeasible:\n\
+		   0 = neither\n\
+		   1 = just .unbdd\n\
+		   2 = just .dunbdd\n\
+		   3 = both (default)\n\
+		To get .dunbdd, you may need to specify presolve=0\n\
+		in $cplex_options.",
+	readbasis_desc[] = "BAS file containing starting basis.",
+	readsol_desc[] = "File (previously written by an endsol directive) for\n\
+		reading the starting point.  This is for debugging\n\
+		and is normally not used.",
+#if defined(BARRIER) && !defined(NO_DEPRECATED)
+	readvector_desc[] = "VEC file containing starting point for barrier alg.\n\
+		Deprecated; use \"readsol\" instead.",
+#endif
+	refactor_desc[] = "LP iterations between refactorizing the basis.\n\
+		0 (default) means the algorithm decides.",
+	scale_desc[] = "How to scale the problem:\n\
+		   -1 = no scaling\n\
+		    0 (default) = equilibration\n\
+		    1 = a more aggressive scheme that sometimes helps.",
+#ifdef CPX_PARAM_RANDOMSEED
+	seed_desc[] = "Seed for random number generator used internally\n\
+		by CPLEX.  Use \"seed=?\" to see the default, which\n\
+		depends on the CPLEX release.",
+#endif
+	sensitivity_desc[] = "Whether to return sensitivity information for the\n\
+		objective (in suffixes .up for the largest value\n\
+		of a variable's cost coefficient or constraint's\n\
+		right-hand side before the optimal basis changes,\n\
+		.down for the smallest such value, and .current for\n\
+		the current cost coefficient or right-hand side):\n\
+		    0 = no (default)\n\
+		    1 = yes.",
+	siftingopt_desc[] = "Synonym for \"siftopt\".",
+	siftopt_desc[] = "Single-word phrase:  on LPs with CPLEX versions >= 8,\n\
+		solve ever larger sequences of subproblems until the\n\
+		whole LP is solved.",
+#ifdef CPX_PARAM_SIMTHREADS
+	simthreads_desc[] = "Maximum threads for the dual simplex algorithm\n\
+		(currently always 1).  Withdrawn from CPLEX 9.0.",
+#endif
+	singular_desc[] = "Maximum number of times CPLEX should try to\n\
+		repair the basis when it encounters singularities.\n\
+		Default = 10.",
+	singularlim_desc[] = "Synonym for \"singular\".",
+#ifdef CPX_PARAM_THREADS
+	threads_desc[] = "Default maximum number of threads for any of\n\
+		the parallel CPLEX optimizers (limited also\n\
+		by licensing).  Default = 1 prior to CPLEX 11,\n\
+		or 0 (use maximum threads available) starting\n\
+		with CPLEX 11.  May be overridden, prior to\n\
+		CPLEX 11, by more specific limits, such as\n\
+		barthreads or mipthreads.",
+#endif
+	time_desc[] = "Time limit in seconds; default = 1e75.",
+	timelimit_desc[] = "Synonym for \"time\".",
+	timing_desc[] = "Whether to write times in seconds or \"ticks\" to\n\
+		stdout or stderr: sum of\n\
+		    1 = write time in seconds to stdout\n\
+		    2 = write time in seconds to stderr"
+#if CPX_VERSION >= 12050000
+			"\n\
+		    4 = write time in \"ticks\" to stdout\n\
+		    8 = write time in \"ticks\" to stderr\n\
+		   16 = write number of logical cores to stdout\n\
+		   32 = write number of logical cores to stderr"
+#endif
+		".\n\
+		Default = 0.",
+	tranopt_desc[] = "Synonym for \"dualopt\".",
+#ifdef CPX_TUNE_TILIM
+	tunedisplay_desc[] = "How much to print during tuning:\n\
+		   0 = nothing\n\
+		   1 = minimal printing (default)\n\
+		   2 = show parameters being tried\n\
+		   3 = exhaustive printing.",
+	tunefile_desc[] = "Name of file for tuning results.  If specified, CPLEX\n\
+		will experiment with parameter settings that would\n\
+		make the solution faster.  This can significantly\n\
+		increase execution time of the current invocation, but\n\
+		the settings it finds might save time in future runs.",
+	tunefileprm_desc[] = "Name of file for tuning results in CPLEX PRM format.\n\
+		If specified, CPLEX will experiment with parameter\n\
+		settings as described for \"tunefile\".",
+	tunefix_desc[] = "List of keywords not to tune, enclosed in quotes\n\
+		(\" or ') or separated by commas without white space\n\
+		if more than one.",
+	tunefixfile_desc[] = "Name of file containing keywords not to tune.\n\
+		(There is no PRM format alternative.)  Merged with\n\
+		tunefix specification (if any).",
+	tunerepeat_desc[] = "How many times to perturb the problem during tuning.\n\
+		Default = 1.",
+	tunetime_desc[] = "Limit (in seconds) on tuning time; meaningful\n\
+		if < time.  Default = 10000.",
+#ifdef CPX_PARAM_TUNINGDETTILIM
+	tunetimedet_desc[] = "Limit (in \"ticks\") on tuning time; meaningful\n\
+		if < time.  Default = 1e7.",
+#endif
+#endif
+	upperobj_desc[] = "Stop maximizing when the objective value\n\
+		goes above upperobj.  Default = 1e75.",
+	upperobjlim_desc[] = "Synonym for \"upperobj\".",
+	version_desc[] = "Single-word phrase:  show the current version.",
+	wantsol_desc[] = "solution report without -AMPL: sum of\n\
+		    1 = write .sol file\n\
+		    2 = print primal variable values\n\
+		    4 = print dual variable values\n\
+		    8 = do not print solution message",
+	workfiledir_desc[] = "Directory where CPLEX creates a temporary\n\
+		subdirectory for temporary files, e.g., for\n\
+		node information and Cholesky factors.",
+#ifdef CPX_PARAM_WORKMEM
+	workfilelim_desc[] = "Maximum size in megabytes for in-core work \"files\".\n\
+		Default 128.",
+#endif
+	writebasis_desc[] = "Synonym for \"endbasis\".",
+	writeprob_desc[] = "Name of file to which the problem is written\n\
+		in a format determined by the name's suffix:\n\
+		     .sav = binary SAV file;\n\
+		     .mps = MPS file, original names;\n\
+		     .lp = LP file, original names;\n\
+		     .rmp = MPS file, generic names;\n\
+		     .rew = MPS file, generic names;\n\
+		     .rlp = LP file, generic names.\n\
+		SAV and LP formats are peculiar to CPLEX.",
+	writesol_desc[] = "Synonym for \"endsol\"."
+#if defined(BARRIER) && !defined(NO_DEPRECATED)
+	,writevector_desc[] = "Synonym for \"endvector\"."
+#endif
+#ifdef CPX_PARAM_XXXIND
+	,xxxstart_desc[] = "Whether to read .xxx files to resume an\n\
+		interrupted run of CPLEX (deprecated in 10.0,\n\
+		removed in 12.6.1):\n\
+		    0 = no (default)\n\
+		    1 = yes."
+#endif
+	;
+
+#define VP (void*)
 
  static keyword keywds[] = {	/* must be in alphabetical order */
 
 	/* Undocumented keywords start with underscore... */
 
-	{ "_aggsort",	sf_int,		VP 1061 /*CPX_PARAM_PREAGGSORT*/},
-	{ "_aggtolerance", sf_dbl,	VP 1055 /*CPX_PARAM_EPSAGG*/},
-	{ "_cancel",	sf_int,		VP 1071 /*CPX_PARAM_PRECANCEL*/},
-	{ "_clique",	sf_int,		VP 1072 /*CPX_PARAM_PRECLIQUE*/},
-	{ "_cliquetablesize", sf_dbl,	VP 2064 /*CPX_PARAM_CLIQUETABLESZ*/},
-	{ "_domination", sf_int,	VP 2038 /*CPX_PARAM_COLDOMIND*/},
-	{ "_effslack",	sf_int,		VP 1042 /*CPX_PARAM_EFFSLACKIND*/},
-	{ "_factormem",	sf_dbl,		VP 3021 /*CPX_PARAM_BARFACTMEM*/},
-	{ "_flip",	sf_int,		VP 1051 /*CPX_PARAM_FLIPIND*/},
-	{ "_hfeasibility", sf_dbl,	VP 1050 /*CPX_PARAM_EPRHS_H*/},
-	{ "_hoptimality", sf_dbl,	VP 1049 /*CPX_PARAM_EPOPT_H*/},
-	{ "_insubtree",	sf_int,		VP 2063 /*CPX_PARAM_INSUBTREE*/},
-	{ "_kernel",	sf_int,		VP 3020 /*CPX_PARAM_BARKERNEL*/},
-	{ "_knapcoeff",	sf_int,		VP 1059 /*CPX_PARAM_KNAPCOERED*/},
-	{ "_localcovers", sf_int,	VP 2061 /*CPX_PARAM_LOCALCOVERS*/},
-	{ "_logparams",	sf_int,		VP 1075 /*CPX_PARAM_LOGPARAMS*/},
-	{ "_memfact",	sf_dbl,		VP 1045 /*CPX_PARAM_PREMEMFACT*/},
-	{ "_memsave",	sf_int,		VP 1060 /*CPX_PARAM_PREMEMSAVE*/},
-	{ "_minstuck",	sf_int,		VP 3023 /*CPX_PARAM_BARMINSTUCK*/},
-	{ "_oldpricing", sf_int,	VP 1054 /*CPX_PARAM_OLDPRICING*/},
-	{ "_oldqpfactor", sf_int,	VP 3024 /*CPX_PARAM_OLDQPFACTOR*/},
-	{ "_oldratio",	sf_int,		VP 1068 /*CPX_PARAM_OLDRATIO*/},
-	{ "_orderthreads", sf_int,	VP 3022 /*CPX_PARAM_BARORDERTHREADS*/},
-	{ "_primalstart", sf_dbl,	VP 3005 /*CPX_PARAM_BARPSTART*/},
-	{ "_probe",	sf_int,		VP 1070 /*CPX_PARAM_PREPROBE*/},
-	{ "_recurseheur", sf_int,	VP 2062 /*CPX_PARAM_RECURSEHEUR*/},
+	{ "_aggsort",	sf_int,		VP 1061 /*CPX_PARAM_PREAGGSORT*/, undoc},
+	{ "_aggtolerance", sf_dbl,	VP 1055 /*CPX_PARAM_EPSAGG*/, undoc},
+	{ "_cancel",	sf_int,		VP 1071 /*CPX_PARAM_PRECANCEL*/, undoc},
+	{ "_clique",	sf_int,		VP 1072 /*CPX_PARAM_PRECLIQUE*/, undoc},
+	{ "_cliquetablesize", sf_dbl,	VP 2064 /*CPX_PARAM_CLIQUETABLESZ*/, undoc},
+	{ "_domination", sf_int,	VP 2038 /*CPX_PARAM_COLDOMIND*/, undoc},
+	{ "_effslack",	sf_int,		VP 1042 /*CPX_PARAM_EFFSLACKIND*/, undoc},
+	{ "_factormem",	sf_dbl,		VP 3021 /*CPX_PARAM_BARFACTMEM*/, undoc},
+	{ "_flip",	sf_int,		VP 1051 /*CPX_PARAM_FLIPIND*/, undoc},
+	{ "_hfeasibility", sf_dbl,	VP 1050 /*CPX_PARAM_EPRHS_H*/, undoc},
+	{ "_hoptimality", sf_dbl,	VP 1049 /*CPX_PARAM_EPOPT_H*/, undoc},
+	{ "_insubtree",	sf_int,		VP 2063 /*CPX_PARAM_INSUBTREE*/, undoc},
+	{ "_kernel",	sf_int,		VP 3020 /*CPX_PARAM_BARKERNEL*/, undoc},
+	{ "_knapcoeff",	sf_int,		VP 1059 /*CPX_PARAM_KNAPCOERED*/, undoc},
+	{ "_localcovers", sf_int,	VP 2061 /*CPX_PARAM_LOCALCOVERS*/, undoc},
+	{ "_logparams",	sf_int,		VP 1075 /*CPX_PARAM_LOGPARAMS*/, undoc},
+	{ "_memfact",	sf_dbl,		VP 1045 /*CPX_PARAM_PREMEMFACT*/, undoc},
+	{ "_memsave",	sf_int,		VP 1060 /*CPX_PARAM_PREMEMSAVE*/, undoc},
+	{ "_minstuck",	sf_int,		VP 3023 /*CPX_PARAM_BARMINSTUCK*/, undoc},
+	{ "_oldpricing", sf_int,	VP 1054 /*CPX_PARAM_OLDPRICING*/, undoc},
+	{ "_oldqpfactor", sf_int,	VP 3024 /*CPX_PARAM_OLDQPFACTOR*/, undoc},
+	{ "_oldratio",	sf_int,		VP 1068 /*CPX_PARAM_OLDRATIO*/, undoc},
+	{ "_orderthreads", sf_int,	VP 3022 /*CPX_PARAM_BARORDERTHREADS*/, undoc},
+	{ "_primalstart", sf_dbl,	VP 3005 /*CPX_PARAM_BARPSTART*/, undoc},
+	{ "_probe",	sf_int,		VP 1070 /*CPX_PARAM_PREPROBE*/, undoc},
+	{ "_recurseheur", sf_int,	VP 2062 /*CPX_PARAM_RECURSEHEUR*/, undoc},
 #ifdef CPX_PARAM_IISIND /* version < 9.2b */
-	{ "_rowsdense",	sf_int,		VP 3015 /*CPX_PARAM_BARROWSDEN*/},
+	{ "_rowsdense",	sf_int,		VP 3015 /*CPX_PARAM_BARROWSDEN*/, undoc},
 #endif
-	{ "_splitrow",	sf_int,		VP 1079 /*CPX_PARAM_PRESPLITROW*/},
-	{ "_svbound",	sf_int,		VP 1069 /*CPX_PARAM_SVBNDSTR*/},
+	{ "_splitrow",	sf_int,		VP 1079 /*CPX_PARAM_PRESPLITROW*/, undoc},
+	{ "_svbound",	sf_int,		VP 1069 /*CPX_PARAM_SVBNDSTR*/, undoc},
 
 	/* Documented keywords... */
 
 #ifdef CPLEX_MIP
-	{ "absmipgap",	sf_dbl,		VP CPX_PARAM_EPAGAP },
+	{ "absmipgap",	sf_dbl,		VP CPX_PARAM_EPAGAP, absmipap_desc },
 #endif
-	{ "advance",	sf_int1,	VP CPX_PARAM_ADVIND },
+	{ "advance",	sf_int1,	VP CPX_PARAM_ADVIND, advance_desc },
 #ifdef CPLEX_MIP
-	{ "aggcutlim",	sf_int,		VP CPX_PARAM_AGGCUTLIM },
+	{ "aggcutlim",	sf_int,		VP CPX_PARAM_AGGCUTLIM, aggcutlim_desc },
 #endif
-	{ "aggfill",	sf_int2,	VP CPX_PARAM_AGGFILL },
-	{ "agglim",	sf_int,		VP CPX_PARAM_AGGFILL },
-	{ "aggregate",	sf_int1,	VP CPX_PARAM_AGGIND },
-	{ "aggtol",	sf_dbl,		VP CPX_PARAM_EPSAGG },
-	{ "autoopt",	sf_known,	VP set_autoopt },
-	{ "autopt",	sf_known,	VP set_autoopt },
+	{ "aggfill",	sf_int2,	VP CPX_PARAM_AGGFILL, aggfill_desc },
+	{ "agglim",	sf_int,		VP CPX_PARAM_AGGFILL, agglim_desc },
+	{ "aggregate",	sf_int1,	VP CPX_PARAM_AGGIND, aggregate_desc },
+	{ "aggtol",	sf_dbl,		VP CPX_PARAM_EPSAGG, aggtol_desc },
+	{ "autoopt",	sf_known,	VP set_autoopt, autoopt_desc },
+	{ "autopt",	sf_known,	VP set_autoopt, autopt_desc },
 #ifdef CPLEX_MIP
 #ifdef CPX_PARAM_AUXROOTTHREADS
-	{ "auxrootthreads", sf_int,	VP CPX_PARAM_AUXROOTTHREADS },
+	{ "auxrootthreads", sf_int,	VP CPX_PARAM_AUXROOTTHREADS, auxrootthreads_desc },
 #endif
-	{ "backtrack",	sf_dbl,		VP CPX_PARAM_BTTOL },
+	{ "backtrack",	sf_dbl,		VP CPX_PARAM_BTTOL, backtrack_desc },
 #endif
 #ifdef BARRIER
-	{ "baralg",	sf_int,		VP CPX_PARAM_BARALG },
-	{ "barcorr",	sf_int,		VP CPX_PARAM_BARMAXCOR },
-	{ "bardisplay",	sf_int2,	VP CPX_PARAM_BARDISPLAY },
-	{ "bargrowth",	sf_dbl,		VP CPX_PARAM_BARGROWTH },
-	{ "bariterlim",	sf_int,		VP CPX_PARAM_BARITLIM },
-	{ "barobjrange", sf_dbl,	VP CPX_PARAM_BAROBJRNG },
-	{ "baropt",	sf_known,	VP set_barrier },
+	{ "baralg",	sf_int,		VP CPX_PARAM_BARALG, baralg_desc },
+	{ "barcorr",	sf_int,		VP CPX_PARAM_BARMAXCOR, barcorr_desc },
+	{ "bardisplay",	sf_int2,	VP CPX_PARAM_BARDISPLAY, bardisplay_desc },
+	{ "bargrowth",	sf_dbl,		VP CPX_PARAM_BARGROWTH, bargrowth_desc },
+	{ "bariterlim",	sf_int,		VP CPX_PARAM_BARITLIM, bariterlim_desc },
+	{ "barobjrange", sf_dbl,	VP CPX_PARAM_BAROBJRNG, barobjrange_desc },
+	{ "baropt",	sf_known,	VP set_barrier, baropt_desc },
 #ifdef CPX_PARAM_BAROOC
-	{ "baroutofcore",sf_int,	VP CPX_PARAM_BAROOC },
+	{ "baroutofcore", sf_int,	VP CPX_PARAM_BAROOC, baroutofcore_desc },
 #endif
-	{ "barstart",	sf_int,		VP CPX_PARAM_BARSTARTALG },
-	{ "barstartalg",sf_int,		VP CPX_PARAM_BARSTARTALG },
+	{ "barstart",	sf_int,		VP CPX_PARAM_BARSTARTALG, barstart_desc },
+	{ "barstartalg", sf_int,	VP CPX_PARAM_BARSTARTALG, barstartalg_desc },
 #ifdef CPX_PARAM_BARTHREADS
-	{ "barthreads",	sf_int,		VP CPX_PARAM_BARTHREADS },
+	{ "barthreads",	sf_int,		VP CPX_PARAM_BARTHREADS, barthreads_desc },
 #endif
 #ifdef CPX_PARAM_BARVARUP
-	{ "barvarup",	sf_dbl,		VP CPX_PARAM_BARVARUP },
+	{ "barvarup",	sf_dbl,		VP CPX_PARAM_BARVARUP, barvarup_desc },
 #endif
 #endif /* BARRIER */
 #ifdef BASDEBUG
-	{ "basdebug", I_val,		VP &basdebug },
+	{ "basdebug",	I_val,		VP &basdebug, basdebug_desc },
 #endif
-	{ "basis_cond",	sf_mint,	VP set_basis_cond },
-	{ "basisinterval", sf_int,	VP CPX_PARAM_BASINTERVAL },
-#ifdef CPLEX_MIP
-	{ "bbinterval",	sf_int,		VP CPX_PARAM_BBINTERVAL },
-	{ "bestbound",	sf_known,	VP set_bestbound },
-	{ "bestnode",	sf_known,	VP set_bestnode },
-	{ "boundstr",	sf_int,		VP CPX_PARAM_BNDSTRENIND },
-	{ "branch",	sf_int,		VP CPX_PARAM_BRDIR },
-	{ "branchdir",	sf_int,		VP CPX_PARAM_BRDIR },
-	{ "cliquecuts",	sf_int2,	VP CPX_PARAM_CLIQUES },
-	{ "cliques",	sf_int,		VP CPX_PARAM_CLIQUES },
+	{ "basis_cond",	sf_mint,	VP set_basis_cond, basis_cond_desc },
+#ifdef CPX_PARAM_BASINTERVAL
+	{ "basisinterval", sf_int,	VP CPX_PARAM_BASINTERVAL, basisinterval_desc },
 #endif
-	{ "clocktype",	sf_int,		VP CPX_PARAM_CLOCKTYPE },
 #ifdef CPLEX_MIP
-	{ "coeffreduce", sf_int1,	VP CPX_PARAM_COEREDIND },
+	{ "bbinterval",	sf_int,		VP CPX_PARAM_BBINTERVAL, bbinterval_desc },
+	{ "bestbound",	sf_known,	VP set_bestbound, bestbound_desc },
+	{ "bestnode",	sf_known,	VP set_bestnode, bestnode_desc },
+	{ "boundstr",	sf_int,		VP CPX_PARAM_BNDSTRENIND, boundstr_desc },
+	{ "branch",	sf_int,		VP CPX_PARAM_BRDIR, branch_desc },
+	{ "branchdir",	sf_int,		VP CPX_PARAM_BRDIR, branchdir_desc },
+	{ "cliquecuts",	sf_int2,	VP CPX_PARAM_CLIQUES, cliquecuts_desc },
+	{ "cliques",	sf_int,		VP CPX_PARAM_CLIQUES, cliques_desc },
+#endif
+	{ "clocktype",	sf_int,		VP CPX_PARAM_CLOCKTYPE, clocktype_desc },
+#ifdef CPLEX_MIP
+	{ "coeffreduce", sf_int1,	VP CPX_PARAM_COEREDIND, coeffreduce_desc },
 #endif
 #ifdef BARRIER
-	{ "comptol",	sf_dbl,		VP CPX_PARAM_BAREPCOMP },
+	{ "comptol",	sf_dbl,		VP CPX_PARAM_BAREPCOMP, comptol_desc },
 #endif
-	{ "concurrent",	sf_known,	VP set_concurrentopt },
-	{ "concurrentopt",sf_known,	VP set_concurrentopt },
+	{ "concurrent",	sf_known,	VP set_concurrentopt, concurrent_desc },
+	{ "concurrentopt", sf_known,	VP set_concurrentopt, concurrentopt_desc },
+#ifdef CPXPARAM_Conflict_Algorithm
+	{ "conflictalg", sf_int,	VP CPXPARAM_Conflict_Algorithm, conflictalg_desc },
+#endif
 #ifdef CPX_PARAM_CONFLICTDISPLAY
-	{ "conflictdisplay", sf_int,	VP CPX_PARAM_CONFLICTDISPLAY },
+	{ "conflictdisplay", sf_int,	VP CPX_PARAM_CONFLICTDISPLAY, conflictdisplay_desc },
 #endif
 #ifdef CPLEX_MIP
-	{ "covercuts",	sf_int2,	VP CPX_PARAM_COVERS },
-	{ "covers",	sf_int,		VP CPX_PARAM_COVERS },
+	{ "covercuts",	sf_int2,	VP CPX_PARAM_COVERS, covercuts_desc },
+	{ "covers",	sf_int,		VP CPX_PARAM_COVERS, covers_desc },
 #endif
-	{ "crash",	sf_int,		VP CPX_PARAM_CRAIND },
+	{ "crash",	sf_int,		VP CPX_PARAM_CRAIND, crash_desc },
 #ifdef BARRIER
-	{ "crossover",	sf_mint,	VP set_crossover },
+	{ "crossover",	sf_mint,	VP set_crossover, crossover_desc },
 #endif
 #ifdef CPLEX_MIP
-	{ "cutpass",	sf_int,		VP CPX_PARAM_CUTPASS },
-	{ "cutsfactor",	sf_dbl,		VP CPX_PARAM_CUTSFACTOR },
+	{ "cutpass",	sf_int,		VP CPX_PARAM_CUTPASS, cutpass_desc },
+	{ "cutsfactor",	sf_dbl,		VP CPX_PARAM_CUTSFACTOR, cutsfactor_desc },
 #if CPX_VERSION >= 1100
-	{ "cutstats",	sf_mint,	VP set_cutstats },
+	{ "cutstats",	sf_mint,	VP set_cutstats, cutstats_desc },
 #endif
+#endif
+#ifdef WANT_DATACHECK /* debug option; gives inappropriate complaints about Infinity */
+	{ "datacheck",	sf_int,		VP CPX_PARAM_DATACHECK, datacheck_desc },
 #endif
 #ifdef BARRIER
-	{ "dense",	sf_int2,	VP CPX_PARAM_BARCOLNZ },
-	{ "densecol",	sf_int,		VP CPX_PARAM_BARCOLNZ },
+	{ "dense",	sf_int2,	VP CPX_PARAM_BARCOLNZ, dense_desc },
+	{ "densecol",	sf_int,		VP CPX_PARAM_BARCOLNZ, densecol_desc },
 #endif
-	{ "dependency",	sf_int1,	VP CPX_PARAM_DEPIND },
-	{ "dgradient",	sf_int,		VP CPX_PARAM_DPRIIND },
+	{ "dependency",	sf_int1,	VP CPX_PARAM_DEPIND, dependency_desc },
+#ifdef CPX_PARAM_DETTILIM
+	{ "dettimelim",	sf_dpar,	VP CPX_PARAM_DETTILIM, dettimelim_desc },
+#endif
+	{ "dgradient",	sf_int,		VP CPX_PARAM_DPRIIND, dgradient_desc },
 #ifdef CPLEX_MIP
-	{ "disjcuts",	sf_int,		VP CPX_PARAM_DISJCUTS },
+	{ "disjcuts",	sf_int,		VP CPX_PARAM_DISJCUTS, disjcuts_desc },
 #endif
-	{ "display",	sf_int2,	VP CPX_PARAM_SIMDISPLAY },
-	{ "doperturb",	sf_int1,	VP CPX_PARAM_PERIND },
-	{ "dparam",	sf_dpar,	0 },
-	{ "dual",	sf_known,	VP set_dual },
-	{ "dualopt",	sf_known,	VP set_dualopt },
-	{ "dualratio",	sf_mdbl,	VP set_dual_ratio },
-	{ "dualthresh",	sf_mint,	VP set_dualthresh },
+	{ "display",	sf_int2,	VP CPX_PARAM_SIMDISPLAY, display_desc },
+	{ "doperturb",	sf_int1,	VP CPX_PARAM_PERIND, doperturb_desc },
+	{ "dparam",	sf_dpar,	0, dparam_desc },
+#if CPX_VERSION >= 1100
+	{ "droptol",	sf_mdbl,	VP set_droptol, droptol_desc },
+#endif
+	{ "dual",	sf_known,	VP set_dual, dual_desc },
+	{ "dualopt",	sf_known,	VP set_dualopt, dualopt_desc },
+	{ "dualratio",	sf_mdbl,	VP set_dual_ratio, dualratio_desc },
+	{ "dualthresh",	sf_mint,	VP set_dualthresh, dualthresh_desc },
 #ifdef CPX_PARAM_EACHCUTLIM
-	{ "eachcutlim",	sf_int,		VP CPX_PARAM_EACHCUTLIM },
+	{ "eachcutlim",	sf_int,		VP CPX_PARAM_EACHCUTLIM, eachcutlim_desc },
 #endif
-	{ "endbasis",	sf_char,	VP set_endbas },
+	{ "endbasis",	sf_char,	VP set_endbas, endbasis_desc },
+	{ "endsol",	sf_char,	VP set_endsol, endsol_desc },
 #ifdef CPLEX_MIP
 #ifdef CPX_PARAM_IISIND /* version < 9.2b */
-	{ "endtree",	sf_char,	VP set_endtree },
+	{ "endtree",	sf_char,	VP set_endtree, endtree_desc },
 #endif
 #endif
-	{ "endsol",	sf_char,	VP set_endsol },
 #if defined(BARRIER) && !defined(NO_DEPRECATED)
-	{ "endvector", 	sf_char,	VP set_endvector },
+	{ "endvector",	sf_char,	VP set_endvector, endvector_desc },
 #endif
-	{ "feasibility", sf_dbl,	VP CPX_PARAM_EPRHS },
+	{ "feasibility",	sf_dbl,		VP CPX_PARAM_EPRHS, feasibility_desc },
 #ifdef CPX_PARAM_FEASOPTMODE /* >= 9.2b */
-	{ "feasopt",	sf_mint,	VP set_feasopt },
-	{ "feasoptobj",	sf_mint,	VP set_feasoptobj },
+	{ "feasopt",	sf_mint,	VP set_feasopt, feasopt_desc },
+	{ "feasoptobj",	sf_mint,	VP set_feasoptobj, feasoptobj_desc },
 #endif
-	{ "file",	sf_char,	VP set_wrtfname },
+	{ "file",	sf_char,	VP set_wrtfname, file_desc },
 #ifdef CPX_PARAM_FINALFACTOR
-	{ "finalfactor", sf_int,	VP CPX_PARAM_FINALFACTOR },
+	{ "finalfactor", sf_int,	VP CPX_PARAM_FINALFACTOR, finalfactor_desc },
 #endif
 #ifdef CPLEX_MIP
-	{ "flowcuts",	sf_int,		VP CPX_PARAM_FLOWCOVERS },
-	{ "flowpathcuts",sf_int,	VP CPX_PARAM_FLOWPATHS },
+	{ "flowcuts",	sf_int,		VP CPX_PARAM_FLOWCOVERS, flowcuts_desc },
+	{ "flowpathcuts", sf_int,	VP CPX_PARAM_FLOWPATHS, flowpathcuts_desc },
 #ifdef CPX_PARAM_FPHEUR
-	{ "fpheur",	sf_int,		VP CPX_PARAM_FPHEUR },
+	{ "fpheur",	sf_int,		VP CPX_PARAM_FPHEUR, fpheur_desc },
 #endif
 #ifndef NO_CPLEX66 /* for versions prior to CPLEX 6.6 */
-	{ "fraccand",   sf_int,	        VP CPX_PARAM_FRACCAND },
-	{ "fraccuts",   sf_int,	        VP CPX_PARAM_FRACCUTS },
-	{ "fracpass",   sf_int,	        VP CPX_PARAM_FRACPASS },
-	{ "fractionalcuts", sf_int,	VP CPX_PARAM_FRACCUTS },
+	{ "fraccand",	sf_int,		VP CPX_PARAM_FRACCAND, fraccand_desc },
+	{ "fraccuts",	sf_int,		VP CPX_PARAM_FRACCUTS, fraccuts_desc },
+	{ "fracpass",	sf_int,		VP CPX_PARAM_FRACPASS, fracpass_desc },
+	{ "fractionalcuts",	sf_int,		VP CPX_PARAM_FRACCUTS, fractionalcuts_desc },
 #endif
 #endif
 #ifdef BARRIER
-	{ "growth",	sf_dbl,		VP CPX_PARAM_BARGROWTH }, /*== bargrowth*/
+	{ "growth",	sf_dbl,		VP CPX_PARAM_BARGROWTH, growth_desc },
 #endif
 #ifdef CPLEX_MIP
-	{ "gubcuts",	sf_int,		VP CPX_PARAM_GUBCOVERS },
-	{ "heurfreq",	sf_int,		VP CPX_PARAM_HEURFREQ },
+	{ "gubcuts",	sf_int,		VP CPX_PARAM_GUBCOVERS, gubcuts_desc },
 #ifdef CPX_PARAM_HEURISTIC
-	{ "heuristic",	sf_int,		VP CPX_PARAM_HEURISTIC },
+	{ "heurfreq",	sf_int,		VP CPX_PARAM_HEURFREQ, heurfreq_desc },
+	{ "heuristic",	sf_int,		VP CPX_PARAM_HEURISTIC, heuristic_desc },
 #endif
-	{ "heuristicfreq", sf_int,	VP CPX_PARAM_HEURFREQ },
+	{ "heuristicfreq", sf_int,	VP CPX_PARAM_HEURFREQ, heuristicfreq_desc },
 #endif
-	{ "iisfind",	sf_mint,	VP set_iis },
+	{ "iisfind",	sf_mint,	VP set_iis, iisfind_desc },
 #ifdef CPLEX_MIP
-	{ "impliedcuts", sf_int,	VP CPX_PARAM_IMPLBD },
-	{ "integrality", sf_dbl,	VP CPX_PARAM_EPINT },
-	{ "intwarntol", D_val,		VP &intwarn_tol },
+	{ "impliedcuts", sf_int,	VP CPX_PARAM_IMPLBD, impliedcuts_desc },
 #endif
-	{ "iparam",	sf_ipar,	0 },
-	{ "iterations",	sf_int,		VP CPX_PARAM_ITLIM },
-	{ "iterlim",	sf_int,		VP CPX_PARAM_ITLIM },
+#ifdef CPXERR_PARAM_INCOMPATIBLE
+	{ "incompat",	sf_mint,	VP set_incompat, incompat_desc },
+#endif
+#ifdef CPLEX_MIP
+	{ "integrality",	sf_dbl,		VP CPX_PARAM_EPINT, integrality_desc },
+	{ "intwarntol",	D_val,		VP &intwarn_tol, intwarntol_desc },
+#endif
+	{ "iparam",	sf_ipar,	0, iparam_desc },
+	{ "iterations",	sf_int,		VP CPX_PARAM_ITLIM, iterations_desc },
+	{ "iterlim",	sf_int,		VP CPX_PARAM_ITLIM, iterlim_desc },
 #ifdef Uselazy
-	{ "lazy",	sf_mint,	VP set_lazy },
+	{ "lazy",	sf_mint,	VP set_lazy, lazy_desc },
 #endif
 #ifdef CPLEX_MIP
 #ifdef CPX_PARAM_LBHEUR
-	{ "lbheur",	sf_int,		VP CPX_PARAM_LBHEUR },
+	{ "lbheur",	sf_int,		VP CPX_PARAM_LBHEUR, lbheur_desc },
 #endif
 #endif
-	{ "limitperturb",sf_int2,	VP CPX_PARAM_PERLIM },
-	{ "logfile",	sf_char,	VP set_logname },
+	{ "limitperturb", sf_int2,	VP CPX_PARAM_PERLIM, limitperturb_desc },
+#ifdef CPXPARAM_MIP_Cuts_LocalImplied
+	{ "localimpliedcuts",	sf_int,	VP CPXPARAM_MIP_Cuts_LocalImplied, localimpliedcuts_desc },
+#endif
+	{ "logfile",	sf_char,	VP set_logname, logfile_desc },
 #ifdef CPLEX_MIP
-	{ "lowercutoff", sf_dbl,	VP CPX_PARAM_CUTLO },
+	{ "lowercutoff", sf_dbl,	VP CPX_PARAM_CUTLO, lowercutoff_desc },
 #endif
-	{ "lowerobj",	sf_dbl,		VP CPX_PARAM_OBJLLIM },
-	{ "lowerobjlim", sf_dbl,	VP CPX_PARAM_OBJLLIM },
-	{ "lpdisplay",  sf_int2,	VP CPX_PARAM_SIMDISPLAY },
-	{ "lpiterlim",  sf_int2,	VP CPX_PARAM_ITLIM },
-	{ "lptimelim",	sf_dbl2,	VP CPX_PARAM_TILIM },
-	{ "markowitz",	sf_dbl,		VP CPX_PARAM_EPMRK },
-	{ "maximize",	sf_known,	VP set_max },
+	{ "lowerobj",	sf_dbl,		VP CPX_PARAM_OBJLLIM, lowerobj_desc },
+	{ "lowerobjlim", sf_dbl,	VP CPX_PARAM_OBJLLIM, lowerobjlim_desc },
+	{ "lpdisplay",	sf_int2,	VP CPX_PARAM_SIMDISPLAY, lpdisplay_desc },
+	{ "lpiterlim",	sf_int2,	VP CPX_PARAM_ITLIM, lpiterlim_desc },
+	{ "lptimelim",	sf_dbl2,	VP CPX_PARAM_TILIM, lptimelim_desc },
+	{ "markowitz",	sf_dbl,		VP CPX_PARAM_EPMRK, markowitz_desc },
+	{ "maximize",	sf_known,	VP set_max, maximize_desc },
 #ifdef CPX_PARAM_MCFCUTS
-	{ "mcfcuts",	sf_int,		VP CPX_PARAM_MCFCUTS },
+	{ "mcfcuts",	sf_int,		VP CPX_PARAM_MCFCUTS, mcfcuts_desc },
 #endif
 #ifdef CPX_PARAM_MEMORYEMPHASIS
-	{ "memoryemphasis", sf_int,	VP CPX_PARAM_MEMORYEMPHASIS },
+	{ "memoryemphasis", sf_int,	VP CPX_PARAM_MEMORYEMPHASIS, memoryemphasis_desc },
 #endif
-	{ "minimize",	sf_known,	VP set_min },
-#ifdef CPLEX_MIP
-	{ "mipalg",	sf_int,		VP CPX_PARAM_SUBALG },
-	{ "mipalgorithm", sf_int,	VP CPX_PARAM_SUBALG },
-	{ "mipbasis",	sf_mint,	VP set_mipbasis },
-	{ "mipcrossover",sf_int,	VP CPX_PARAM_BARCROSSALG },
-	{ "mipcuts",	sf_mint,	VP set_mipcuts },
-	{ "mipdisplay",	sf_int2,	VP CPX_PARAM_MIPDISPLAY },
-	{ "mipemphasis",sf_int,		VP CPX_PARAM_MIPEMPHASIS },
-	{ "mipgap",	sf_dbl,		VP CPX_PARAM_EPGAP },
-	{ "mipinterval", sf_int,	VP CPX_PARAM_MIPINTERVAL },
+	{ "minimize",	sf_known,	VP set_min, minimize_desc },
+#ifdef CPLEX_MIP /*{*/
+	{ "mipalg",	sf_int,		VP CPX_PARAM_SUBALG, mipalg_desc },
+	{ "mipalgorithm", sf_int,	VP CPX_PARAM_SUBALG, mipalgorithm_desc },
+	{ "mipbasis",	sf_mint,	VP set_mipbasis, mipbasis_desc },
+	{ "mipcrossover", sf_int,	VP CPX_PARAM_BARCROSSALG, mipcrossover_desc },
+	{ "mipcuts",	sf_mint,	VP set_mipcuts, mipcuts_desc },
+	{ "mipdisplay",	sf_int2,	VP CPX_PARAM_MIPDISPLAY, mipdisplay_desc },
+	{ "mipemphasis", sf_int,	VP CPX_PARAM_MIPEMPHASIS, mipemphasis_desc },
+	{ "mipgap",	sf_dbl,		VP CPX_PARAM_EPGAP, mipgap_desc },
+	{ "mipinterval", sf_int,	VP CPX_PARAM_MIPINTERVAL, mipinterval_desc },
 #ifdef CPX_PARAM_MIPKAPPASTATS
-	{ "mipkappa",	sf_int,		VP CPX_PARAM_MIPKAPPASTATS },
+	{ "mipkappa",	sf_int,		VP CPX_PARAM_MIPKAPPASTATS, mipkappa_desc },
 #endif
-	{ "mipordertype",sf_int2,	VP CPX_PARAM_MIPORDTYPE },
+	{ "mipordertype", sf_int2,	VP CPX_PARAM_MIPORDTYPE, mipordertype_desc },
 #ifdef CPX_PARAM_MIPSEARCH
-	{ "mipsearch",	sf_int,		VP CPX_PARAM_MIPSEARCH },
+	{ "mipsearch",	sf_int,		VP CPX_PARAM_MIPSEARCH, mipsearch_desc },
 #endif
-	{ "mipsolutions", sf_int,	VP CPX_PARAM_INTSOLLIM },
-	{ "mipstart",	sf_mint,	VP set_mipstval },
-	{ "mipstartalg", sf_int,	VP CPX_PARAM_STARTALG },
-	{ "mipstartstatus", sf_mint,	VP set_mipststat },
-	{ "mipstartvalue", sf_mint,	VP set_mipstval },
-	{ "mipsubalg",	sf_int,		VP CPX_PARAM_SUBALG },
+	{ "mipsolutions", sf_int,	VP CPX_PARAM_INTSOLLIM, mipsolutions_desc },
+	{ "mipstart",	sf_mint,	VP set_mipstval, mipstart_desc },
+	{ "mipstartalg", sf_int,	VP CPX_PARAM_STARTALG, mipstartalg_desc },
+	{ "mipstartstatus", sf_mint,	VP set_mipststat, mipstartstatus_desc },
+	{ "mipstartvalue", sf_mint,	VP set_mipstval, mipstartvalue_desc },
+	{ "mipsubalg",	sf_int,		VP CPX_PARAM_SUBALG, mipsubalg_desc },
 #ifdef CPX_PARAM_MIPTHREADS
-	{ "mipthreads",	sf_int,		VP CPX_PARAM_MIPTHREADS },
+	{ "mipthreads",	sf_int,		VP CPX_PARAM_MIPTHREADS, mipthreads_desc },
 #endif
 #ifdef CPX_PARAM_MIQCPSTRAT
-	{ "miqcpstrat",	sf_int,		VP CPX_PARAM_MIQCPSTRAT },
+	{ "miqcpstrat",	sf_int,		VP CPX_PARAM_MIQCPSTRAT, miqcpstrat_desc },
 #endif
-	{ "mircuts",	sf_int,		VP CPX_PARAM_MIRCUTS },
-#endif
-	{ "nameround",	sf_mint,	VP set_namernd },
-	{ "netdisplay",	sf_int,		VP CPX_PARAM_NETDISPLAY },
-	{ "netfeasibility", sf_dbl,	VP CPX_PARAM_NETEPRHS },
-	{ "netfind",	sf_int,		VP CPX_PARAM_NETFIND },
-	{ "netfinder",	sf_int,		VP CPX_PARAM_NETFIND },
-	{ "netiterations", sf_int,	VP CPX_PARAM_NETITLIM },
-	{ "netopt",	sf_mint,	VP set_netopt },
-	{ "netoptimality", sf_dbl,	VP CPX_PARAM_NETEPOPT },
-	{ "netpricing",	sf_int,		VP CPX_PARAM_NETPPRIIND },
+	{ "mircuts",	sf_int,		VP CPX_PARAM_MIRCUTS, mircuts_desc },
+#endif /*}*/
+	{ "nameround",	sf_mint,	VP set_namernd, nameround_desc },
+	{ "netdisplay",	sf_int,		VP CPX_PARAM_NETDISPLAY, netdisplay_desc },
+	{ "netfeasibility", sf_dbl,	VP CPX_PARAM_NETEPRHS, netfeasibility_desc },
+	{ "netfind",	sf_int,		VP CPX_PARAM_NETFIND, netfind_desc },
+	{ "netfinder",	sf_int,		VP CPX_PARAM_NETFIND, netfinder_desc },
+	{ "netiterations", sf_int,	VP CPX_PARAM_NETITLIM, netiterations_desc },
+	{ "netopt",	sf_mint,	VP set_netopt, netopt_desc },
+	{ "netoptimality", sf_dbl,	VP CPX_PARAM_NETEPOPT, netoptimality_desc },
+	{ "netpricing",	sf_int,		VP CPX_PARAM_NETPPRIIND, netpricing_desc },
 #ifdef CPLEX_MIP
-	{ "node",	sf_int2,	VP CPX_PARAM_NODELIM },
-	{ "nodefile",	sf_int,		VP CPX_PARAM_NODEFILEIND },
-	{ "nodefiledir",sf_char,	VP set_workfiledir },
+	{ "node",	sf_int2,	VP CPX_PARAM_NODELIM, node_desc },
+	{ "nodefile",	sf_int,		VP CPX_PARAM_NODEFILEIND, nodefile_desc },
+	{ "nodefiledir", sf_char,	VP set_workfiledir, nodefiledir_desc },
 #ifdef CPX_PARAM_NODEFILELIM
-	{ "nodefilelim", sf_dbl,	VP CPX_PARAM_NODEFILELIM },
-	{ "nodefilesize",sf_dbl,	VP CPX_PARAM_NODEFILELIM },
+	{ "nodefilelim", sf_dbl,	VP CPX_PARAM_NODEFILELIM, nodefilelim_desc },
+	{ "nodefilesize", sf_dbl,	VP CPX_PARAM_NODEFILELIM, nodefilesize_desc },
 #endif
-	{ "nodelim",	sf_int2,	VP CPX_PARAM_NODELIM },
-	{ "nodes",	sf_int,		VP CPX_PARAM_NODELIM },
-	{ "nodesel",	sf_int,		VP CPX_PARAM_NODESEL },
-	{ "nodeselect",	sf_int,		VP CPX_PARAM_NODESEL },
+	{ "nodelim",	sf_int2,	VP CPX_PARAM_NODELIM, nodelim_desc },
+	{ "nodes",	sf_int,		VP CPX_PARAM_NODELIM, nodes_desc },
+	{ "nodesel",	sf_int,		VP CPX_PARAM_NODESEL, nodesel_desc },
+	{ "nodeselect",	sf_int,		VP CPX_PARAM_NODESEL, nodeselect_desc },
 #endif
 #ifdef CPX_PARAM_NUMERICALEMPHASIS
-	{ "numericalemphasis",	sf_int,	VP CPX_PARAM_NUMERICALEMPHASIS },
+	{ "numericalemphasis", sf_int,	VP CPX_PARAM_NUMERICALEMPHASIS, numericalemphasis_desc },
 #endif
 #ifdef CPLEX_MIP
-	{ "objdifference", sf_dbl,	VP CPX_PARAM_OBJDIF },
+	{ "objdifference", sf_dbl,	VP CPX_PARAM_OBJDIF, objdifference_desc },
 #endif
-	{ "objno",	sf_mint,	VP set_objno },
-	{ "oldpricing",	sf_int,		VP CPX_PARAM_OLDPRICING },
-	{ "optimality",	sf_dbl,		VP CPX_PARAM_EPOPT },
-	{ "optimize",	sf_known,	VP set_primalopt },
+	{ "objno",	sf_mint,	VP set_objno, objno_desc },
+	{ "objrep",	sf_mint,	VP set_objrep, objrep_desc },
+	{ "optimality",	sf_dbl,		VP CPX_PARAM_EPOPT, optimality_desc },
+	{ "optimize",	sf_known,	VP set_primalopt, optimize_desc },
 #ifdef BARRIER
-	{ "ordering",	sf_int,		VP CPX_PARAM_BARORDER },
+	{ "ordering",	sf_int,		VP CPX_PARAM_BARORDER, ordering_desc },
 #endif
 #ifdef CPLEX_MIP
-	{ "ordertype",	sf_int,		VP CPX_PARAM_MIPORDTYPE },
+	{ "ordertype",	sf_int,		VP CPX_PARAM_MIPORDTYPE, ordertype_desc },
 #endif
-	{ "outlev",	sf_int2,	VP CPX_PARAM_SIMDISPLAY },
+	{ "outlev",	sf_int2,	VP CPX_PARAM_SIMDISPLAY, outlev_desc },
 #ifdef CPX_PARAM_PARALLELMODE
-	{ "parallelmode", sf_int,	VP CPX_PARAM_PARALLELMODE },
+	{ "parallelmode", sf_int,	VP CPX_PARAM_PARALLELMODE, parallelmode_desc },
 #endif
-	{ "paramfile",	sf_par,		VP set_paramfile },
+	{ "paramfile", sf_par,		VP set_paramfile, paramfile_desc },
 #if CPX_VERSION >= 1000
-	{ "paramfileprm", sf_parm,	VP set_paramfile },
+	{ "paramfileprm", sf_parm,	VP set_paramfile, paramfileprm_desc },
 #endif
-	{ "pdswitch",	sf_int,		VP CPX_PARAM_PDSWITCH },
-	{ "perturb",	sf_int1,	VP CPX_PARAM_PERIND },
-	{ "perturbation", sf_dbl,	VP CPX_PARAM_EPPER },
-	{ "perturbconst", sf_dbl,	VP CPX_PARAM_EPPER },
-	{ "perturblim",	sf_int,		VP CPX_PARAM_PERLIM },
-	{ "perturblimit", sf_int,	VP CPX_PARAM_PERLIM },
-	{ "pgradient",	sf_int,		VP CPX_PARAM_PPRIIND },
-#ifdef CPLEX_MIP
-	{ "plconpri",	sf_mint,	VP set_conpri },
-	{ "plobjpri",	sf_mint,	VP set_objpri },
+#ifdef CPX_PARAM_PDSWITCH
+	{ "pdswitch",	sf_int,		VP CPX_PARAM_PDSWITCH, pdswitch_desc },
+#endif
+	{ "perturb",	sf_int1,	VP CPX_PARAM_PERIND, perturb_desc },
+	{ "perturbation", sf_dbl,	VP CPX_PARAM_EPPER, perturbation_desc },
+	{ "perturbconst", sf_dbl,	VP CPX_PARAM_EPPER, perturbconst_desc },
+	{ "perturblim",	sf_int,		VP CPX_PARAM_PERLIM, perturblim_desc },
+	{ "perturblimit", sf_int,	VP CPX_PARAM_PERLIM, perturblimit_desc },
+	{ "pgradient",	sf_int,		VP CPX_PARAM_PPRIIND, pgradient_desc },
+#ifdef CPLEX_MIP /*{*/
+	{ "plconpri",	sf_mint,	VP set_conpri, plconpri_desc },
+	{ "plobjpri",	sf_mint,	VP set_objpri, plobjpri_desc },
 #ifdef CPX_PARAM_POLISHAFTEREPAGAP
-	{ "polishafter_absmipgap", sf_dbl, VP CPX_PARAM_POLISHAFTEREPAGAP },
-	{ "polishafter_intsol",	sf_int, VP CPX_PARAM_POLISHAFTERINTSOL },
-	{ "polishafter_mipgap",	sf_dbl, VP CPX_PARAM_POLISHAFTEREPGAP },
-	{ "polishafter_nodes",	sf_int, VP CPX_PARAM_POLISHAFTERNODE },
-	{ "polishafter_time",	sf_dbl, VP CPX_PARAM_POLISHAFTERTIME },
+	{ "polishafter_absmipgap", sf_dbl, VP CPX_PARAM_POLISHAFTEREPAGAP, polishafter_absmipgap_desc },
+	{ "polishafter_intsol",	sf_int,	VP CPX_PARAM_POLISHAFTERINTSOL, polishafter_intsol_desc },
+	{ "polishafter_mipgap",	sf_dbl,	VP CPX_PARAM_POLISHAFTEREPGAP, polishafter_mipgap_desc },
+	{ "polishafter_nodes", sf_int,	VP CPX_PARAM_POLISHAFTERNODE, polishafter_nodes_desc },
+	{ "polishafter_time", sf_dbl,	VP CPX_PARAM_POLISHAFTERTIME, polishafter_time_desc },
+#endif
+#ifdef  CPX_PARAM_POLISHAFTERDETTIME
+	{ "polishafter_timedet", sf_dbl, VP CPX_PARAM_POLISHAFTERDETTIME, polishafter_timedet_desc },
 #endif
 #ifdef CPX_PARAM_POLISHTIME
-	{ "polishtime",	sf_dbl,		VP CPX_PARAM_POLISHTIME },
+	{ "polishtime",	sf_dbl,		VP CPX_PARAM_POLISHTIME, polishtime_desc },
 #endif
 #ifdef CPX_PARAM_POPULATELIM
-	{ "poolagap",	sf_dbl,		VP CPX_PARAM_SOLNPOOLAGAP },
-	{ "poolcapacity", sf_int2,	VP CPX_PARAM_SOLNPOOLCAPACITY },
-	{ "pooldual",	sf_mint,	VP set_pooldual },
-	{ "poolgap",	sf_dbl,		VP CPX_PARAM_SOLNPOOLGAP },
-	{ "poolintensity", sf_int,	VP CPX_PARAM_SOLNPOOLINTENSITY },
-	{ "poolreplace", sf_int,	VP CPX_PARAM_SOLNPOOLREPLACE },
-	{ "poolstub",	sf_char,	VP set_poolstub },
-	{ "populate",	sf_mint,	VP set_populate },
-	{ "populatelim", sf_int,	VP CPX_PARAM_POPULATELIM },
+	{ "poolagap",	sf_dbl,		VP CPX_PARAM_SOLNPOOLAGAP, poolagap_desc },
+	{ "poolcapacity", sf_int2,	VP CPX_PARAM_SOLNPOOLCAPACITY, poolcapacity_desc },
+	{ "pooldual",	sf_mint,	VP set_pooldual, pooldual_desc },
+	{ "poolgap",	sf_dbl,		VP CPX_PARAM_SOLNPOOLGAP, poolgap_desc },
+	{ "poolintensity", sf_int,	VP CPX_PARAM_SOLNPOOLINTENSITY, poolintensity_desc },
+	{ "poolreplace", sf_int,	VP CPX_PARAM_SOLNPOOLREPLACE, poolreplace_desc },
+	{ "poolstub",	sf_char,	VP set_poolstub, poolstub_desc },
+	{ "populate",	sf_mint,	VP set_populate, populate_desc },
+	{ "populatelim", sf_int,	VP CPX_PARAM_POPULATELIM, populatelim_desc },
 #endif
-#endif /*CPLEX_MIP*/
+#endif /*}CPLEX_MIP*/
 #ifdef CPX_PARAM_PRECOMPRESS
-	{ "precompress", sf_int,	VP CPX_PARAM_PRECOMPRESS },
+	{ "precompress", sf_int,	VP CPX_PARAM_PRECOMPRESS, precompress_desc },
 #endif
-	{ "predual",	sf_int,		VP CPX_PARAM_PREDUAL },
-	{ "prelinear",	sf_int,		VP CPX_PARAM_PRELINEAR },
+	{ "predual",	sf_int,		VP CPX_PARAM_PREDUAL, predual_desc },
+	{ "prelinear",	sf_int,		VP CPX_PARAM_PRELINEAR, prelinear_desc },
 #ifdef CPX_PARAM_PREPASS
-	{ "prepass",	sf_int,		VP CPX_PARAM_PREPASS },
+	{ "prepass",	sf_int,		VP CPX_PARAM_PREPASS, prepass_desc },
 #endif
-	{ "prereduce",	sf_int,		VP CPX_PARAM_REDUCE },
+	{ "prereduce",	sf_int,		VP CPX_PARAM_REDUCE, prereduce_desc },
 #ifdef CPLEX_MIP
-	{ "prerelax",	sf_int1,	VP CPX_PARAM_RELAXPREIND },
+	{ "prerelax",	sf_int1,	VP CPX_PARAM_RELAXPREIND, prerelax_desc },
 #endif
-	{ "presolve",	sf_int1,	VP CPX_PARAM_PREIND },
-	{ "presolvedual",sf_int,	VP CPX_PARAM_PREDUAL },
+	{ "presolve",	sf_int1,	VP CPX_PARAM_PREIND, presolve_desc },
+	{ "presolvedual", sf_int,	VP CPX_PARAM_PREDUAL, presolvedual_desc },
 #ifdef CPLEX_MIP
-	{ "presolvenode",sf_int,	VP CPX_PARAM_PRESLVND },
+	{ "presolvenode", sf_int,	VP CPX_PARAM_PRESLVND, presolvenode_desc },
 #endif
-	{ "prestats",	sf_mint,	VP set_prestats },
+	{ "prestats",	sf_mint,	VP set_prestats, prestats_desc },
 #ifdef CPX_TUNE_TILIM
-	{ "pretunefile", sf_char,	VP set_pretunefile },
-	{ "pretunefileprm", sf_char,	VP set_pretunefileprm },
+	{ "pretunefile", sf_char,	VP set_pretunefile, pretunefile_desc },
+	{ "pretunefileprm", sf_char,	VP set_pretunefileprm, pretunefileprm_desc },
 #endif
-	{ "pricing",	sf_int,		VP CPX_PARAM_PRICELIM },
-	{ "primal",	sf_known,	VP set_primal },
-	{ "primalopt",	sf_known,	VP set_primalopt },
+	{ "pricing",	sf_int,		VP CPX_PARAM_PRICELIM, pricing_desc },
+	{ "primal",	sf_known,	VP set_primal, primal_desc },
+	{ "primalopt",	sf_known,	VP set_primalopt, primalopt_desc },
 #ifdef CPLEX_MIP
-	{ "priorities",	sf_int1,	VP CPX_PARAM_MIPORDIND },
-	{ "probe",	sf_int,		VP CPX_PARAM_PROBE },
+	{ "priorities",	sf_int1,	VP CPX_PARAM_MIPORDIND, priorities_desc },
+	{ "probe",	sf_int,		VP CPX_PARAM_PROBE, probe_desc },
 #ifdef CPX_PARAM_PROBETIME
-	{ "probetime", sf_dbl,		VP CPX_PARAM_PROBETIME },
+	{ "probetime",	sf_dbl,		VP CPX_PARAM_PROBETIME, probetime_desc },
+#endif
+#ifdef CPX_PARAM_PROBEDETTIME
+	{ "probetimedet", sf_dbl,	VP CPX_PARAM_PROBEDETTIME, probetimedet_desc },
 #endif
 #endif /*CPLEX_MIP*/
+#ifdef CPXERR_QCP_SENSE
+	{ "qcdual",	sf_mint,	VP set_qcdual, qcdual_desc },
+#endif
 #ifdef CPX_PARAM_BARQCPEPCOMP
-	{ "qcpconvergetol", sf_dbl,	VP CPX_PARAM_BARQCPEPCOMP },
+	{ "qcpconvergetol", sf_dbl,	VP CPX_PARAM_BARQCPEPCOMP, qcpconvergetol_desc },
 #endif
-	{ "rays",	sf_mint,	VP set_rays },
-	{ "readbasis",	sf_char,	VP set_startbas },
-	{ "readsol",	sf_char,	VP set_startsol },
+#ifdef CPXERR_QCP_SENSE
+	{ "qctol1",	D_val,		VP &qctol1, qctol1_desc },
+	{ "qctol2",	D_val,		VP &qctol2, qctol2_desc },
+	{ "qctol3",	D_val,		VP &qctol3, qctol3_desc },
+#endif
+#ifdef CPX_PARAM_QPMETHOD
+	{ "qpmethod",	sf_int,		VP CPX_PARAM_QPMETHOD, qpmethod_desc },
+#endif
+#ifdef CPX_PARAM_QTOLININD
+	{ "qtolin",	sf_int,		VP CPX_PARAM_QTOLININD, qtolin_desc },
+#endif
+#ifdef Want_Distmipopt
+	{ "rampup_duration", sf_int,	VP CPX_PARAM_RAMPUPDURATION, rampup_duration_desc },
+	{ "rampup_timelim", sf_dbl,	VP CPX_PARAM_RAMPUPDETTILIM, rampup_timelim_desc },
+	{ "rampup_walltimelim",	sf_dbl,	VP CPX_PARAM_RAMPUPTILIM, rampup_walltimelim_desc },
+#endif
+	{ "rays",	sf_mint,	VP set_rays, rays_desc },
+	{ "readbasis",	sf_char,	VP set_startbas, readbasis_desc },
+	{ "readsol",	sf_char,	VP set_startsol, readsol_desc },
 #if defined(BARRIER) && !defined(NO_DEPRECATED)
-	{ "readvector",	sf_char,	VP set_startvector },
+	{ "readvector",	sf_char,	VP set_startvector, readvector_desc },
 #endif
-	{ "refactor",	sf_int,		VP CPX_PARAM_REINV },
+	{ "refactor",	sf_int,		VP CPX_PARAM_REINV, refactor_desc },
 #ifdef CPLEX_MIP
-	{ "relax",	sf_known,	VP set_relax },
-	{ "relaxpresolve", sf_int,	VP CPX_PARAM_RELAXPREIND },
-	{ "relobjdif",	sf_dbl2,	VP CPX_PARAM_RELOBJDIF },
-	{ "relobjdiff",	sf_dbl,		VP CPX_PARAM_RELOBJDIF },
-	{ "relpresolve", sf_int,	VP CPX_PARAM_RELAXPREIND },
+	{ "relax",	sf_known,	VP set_relax, relax_desc },
+	{ "relaxpresolve",	sf_int,		VP CPX_PARAM_RELAXPREIND, relaxpresolve_desc },
+	{ "relobjdif",	sf_dbl2,	VP CPX_PARAM_RELOBJDIF, relobjdif_desc },
+	{ "relobjdiff",	sf_dbl,		VP CPX_PARAM_RELOBJDIF, relobjdiff_desc },
+	{ "relpresolve", sf_int,	VP CPX_PARAM_RELAXPREIND, relpresolve_desc },
 #ifdef CPX_PARAM_REPAIRTRIES
-	{ "repairtries", sf_int,	VP CPX_PARAM_REPAIRTRIES },
+	{ "repairtries", sf_int,	VP CPX_PARAM_REPAIRTRIES, repairtries_desc },
 #endif
 #ifdef CPX_PARAM_REPEATPRESOLVE
-	{ "repeatpresolve", sf_int,	VP CPX_PARAM_REPEATPRESOLVE },
+	{ "repeatpresolve", sf_int,	VP CPX_PARAM_REPEATPRESOLVE, repeatpresolve_desc },
 #endif
 #if CPX_VERSION >= 12030000
-	{ "reqconvex",	sf_int,		VP CPX_PARAM_SOLUTIONTARGET },
+	{ "reqconvex",	sf_int,		VP CPX_PARAM_SOLUTIONTARGET, reqconvex_desc },
 #endif
-	{ "resolve",	sf_mint,	VP set_resolve },
-	{ "return_mipgap", sf_mint,	VP set_retmipgap },
+	{ "resolve",	sf_mint,	VP set_resolve, resolve_desc },
+	{ "return_mipgap",	sf_mint,	VP set_retmipgap, return_mipgap_desc },
 #ifdef CPX_PARAM_RINSHEUR
-	{ "rinsheur",	sf_int,		VP CPX_PARAM_RINSHEUR },
+	{ "rinsheur",	sf_int,		VP CPX_PARAM_RINSHEUR, rinsheur_desc },
 #endif
 #ifdef CPX_PARAM_HEURISTIC
-	{ "rootheuristic", sf_int,	VP CPX_PARAM_HEURISTIC },
+	{ "rootheuristic",	sf_int,		VP CPX_PARAM_HEURISTIC, rootheuristic_desc },
 #endif
-	{ "round",	sf_mint,	VP set_round },
+	{ "round",	sf_mint,	VP set_round, round_desc },
 #endif /*CPLEX_MIP*/
-	{ "scale",	sf_int,		VP CPX_PARAM_SCAIND },
-	{ "sensitivity", sf_known,	VP set_sens },
-	{ "siftingopt",	sf_known,	VP set_siftopt },
-	{ "siftopt",	sf_known,	VP set_siftopt },
-#ifdef CPX_PARAM_SIMTHREADS
-	{ "simthreads",	sf_int,		VP CPX_PARAM_SIMTHREADS },
+	{ "scale",	sf_int,		VP CPX_PARAM_SCAIND, scale_desc },
+#ifdef CPX_PARAM_RANDOMSEED
+	{ "seed",	sf_int,		VP CPX_PARAM_RANDOMSEED, seed_desc },
 #endif
-	{ "singular",	sf_int,		VP CPX_PARAM_SINGLIM },
-	{ "singularlim", sf_int,	VP CPX_PARAM_SINGLIM },
-#ifdef CPLEX_MIP
-	{ "solutionlim", sf_int,	VP CPX_PARAM_INTSOLLIM },
-	{ "sos",	sf_mint,	VP set_sos },
-	{ "sos2",	sf_mint,	VP set_sos2 },
-	{ "startalg",	sf_int,		VP CPX_PARAM_STARTALG },
-	{ "startalgorithm", sf_int,	VP CPX_PARAM_STARTALG },
-	{ "startbasis",	sf_char,	VP set_startbas },
-	{ "startsol",	sf_char,	VP set_startsol },
+	{ "sensitivity", sf_known,	VP set_sens, sensitivity_desc },
+	{ "siftingopt",	sf_known,	VP set_siftopt, siftingopt_desc },
+	{ "siftopt",	sf_known,	VP set_siftopt, siftopt_desc },
+#ifdef CPX_PARAM_SIMTHREADS
+	{ "simthreads",	sf_int,		VP CPX_PARAM_SIMTHREADS, simthreads_desc },
+#endif
+	{ "singular",	sf_int,		VP CPX_PARAM_SINGLIM, singular_desc },
+	{ "singularlim", sf_int,	VP CPX_PARAM_SINGLIM, singularlim_desc },
+#ifdef CPLEX_MIP /*{*/
+	{ "solutionlim", sf_int,	VP CPX_PARAM_INTSOLLIM, solutionlim_desc },
+	{ "sos",	sf_mint,	VP set_sos, sos_desc },
+	{ "sos2",	sf_mint,	VP set_sos2, sos2_desc },
+#ifdef CPX_PARAM_LANDPCUTS
+	{ "splitcuts",	sf_int,		VP CPX_PARAM_LANDPCUTS, splitcuts_desc },
+#endif
+	{ "startalg",	sf_int,		VP CPX_PARAM_STARTALG, startalg_desc },
+	{ "startalgorithm",	sf_int,		VP CPX_PARAM_STARTALG, startalgorithm_desc },
+	{ "startbasis",	sf_char,	VP set_startbas, startbasis_desc },
+	{ "startsol",	sf_char,	VP set_startsol, startsol_desc },
 #ifdef CPX_PARAM_IISIND /* version < 9.2b */
-	{ "starttree",	sf_char,	VP set_starttree },
+	{ "starttree",	sf_char,	VP set_starttree, starttree_desc },
 #endif
 #if defined(BARRIER) && !defined(NO_DEPRECATED)
-	{ "startvector", sf_char,	VP set_startvector },
+	{ "startvector",	sf_char,	VP set_startvector },
 #endif
-#ifdef CPLEX_MIP
-	{ "strongcand",	sf_int,		VP CPX_PARAM_STRONGCANDLIM},
-	{ "strongit",	sf_int,		VP CPX_PARAM_STRONGITLIM},
+	{ "strongcand",	sf_int,		VP CPX_PARAM_STRONGCANDLIM, strongcand_desc },
+	{ "strongit",	sf_int,		VP CPX_PARAM_STRONGITLIM, strongit_desc },
 #ifdef CPX_PARAM_STRONGTHREADLIM
-	{ "strongthreads", sf_int,	VP CPX_PARAM_STRONGTHREADLIM},
+	{ "strongthreads", sf_int,	VP CPX_PARAM_STRONGTHREADLIM, strongthreads_desc },
 #endif
-#endif
-	{ "subalg",	sf_int,		VP CPX_PARAM_SUBALG },
-	{ "subalgorithm", sf_int,	VP CPX_PARAM_SUBALG },
-#endif
+	{ "subalg",	sf_int,		VP CPX_PARAM_SUBALG, subalg_desc },
+	{ "subalgorithm", sf_int,	VP CPX_PARAM_SUBALG, subalgorithm_desc },
 #ifdef CPX_PARAM_SUBMIPNODELIM
-	{ "submipnodelim", sf_int,	VP CPX_PARAM_SUBMIPNODELIM },
+	{ "submipnodelim", sf_int,	VP CPX_PARAM_SUBMIPNODELIM, submipnodelim_desc },
 #endif
-#ifdef CPLEX_MIP
 #ifdef CPX_PARAM_SYMMETRY
-	{ "symmetry",	sf_int,		VP CPX_PARAM_SYMMETRY },
+	{ "symmetry",	sf_int,		VP CPX_PARAM_SYMMETRY, symmetry_desc },
 #endif
-#endif
+#endif /*}*/
 #ifdef CPX_PARAM_THREADS
-	{ "threads",	sf_int,		VP CPX_PARAM_THREADS },
+	{ "threads",	sf_int,		VP CPX_PARAM_THREADS, threads_desc },
 #endif
-	{ "time",	sf_dbl,		VP CPX_PARAM_TILIM },
-	{ "timelimit",	sf_dbl,		VP CPX_PARAM_TILIM },
-	{ "timing",	sf_mint, 	VP set_timing },
-	{ "tranopt",	sf_known,	VP set_dualopt },
+	{ "time",	sf_dbl,		VP CPX_PARAM_TILIM, time_desc },
+	{ "timelimit",	sf_dbl,		VP CPX_PARAM_TILIM, timelimit_desc },
+	{ "timing",	sf_mint,	VP set_timing, timing_desc },
+	{ "tranopt",	sf_known,	VP set_dualopt, tranopt_desc },
 #ifdef CPLEX_MIP
-	{ "treelimit",	sf_dbl2,	VP CPX_PARAM_TRELIM },
-	{ "treememlim",	sf_dbl2,	VP CPX_PARAM_TRELIM },
-	{ "treememory",	sf_dbl,		VP CPX_PARAM_TRELIM },
+	{ "treelimit",	sf_dbl2,	VP CPX_PARAM_TRELIM, treelimit_desc },
+	{ "treememlim",	sf_dbl2,	VP CPX_PARAM_TRELIM, treememlim_desc },
+	{ "treememory",	sf_dbl,		VP CPX_PARAM_TRELIM, treememory_desc },
 #endif
 #ifdef CPX_TUNE_TILIM
-	{ "tunedisplay",sf_int,		VP CPX_PARAM_TUNINGDISPLAY },
-	{ "tunefile",	sf_char,	VP set_tunefile },
-	{ "tunefileprm",sf_char,	VP set_tunefileprm },
-	{ "tunefix",	sf_char,	VP set_tunefix },
-	{ "tunefixfile",sf_char,	VP set_tunefixfile },
-	{ "tunerepeat",	sf_int,		VP CPX_PARAM_TUNINGREPEAT },
-	{ "tunetime",	sf_dbl,		VP CPX_PARAM_TUNINGTILIM },
+	{ "tunedisplay", sf_int,	VP CPX_PARAM_TUNINGDISPLAY, tunedisplay_desc },
+	{ "tunefile",	sf_char,	VP set_tunefile, tunefile_desc },
+	{ "tunefileprm", sf_char,	VP set_tunefileprm, tunefileprm_desc },
+	{ "tunefix",	sf_char,	VP set_tunefix, tunefix_desc },
+	{ "tunefixfile", sf_char,	VP set_tunefixfile, tunefixfile_desc },
+	{ "tunerepeat",	sf_int,		VP CPX_PARAM_TUNINGREPEAT, tunerepeat_desc },
+	{ "tunetime",	sf_dbl,		VP CPX_PARAM_TUNINGTILIM, tunetime_desc },
+#ifdef CPX_PARAM_TUNINGDETTILIM
+	{ "tunetimedet", sf_dbl,	VP CPX_PARAM_TUNINGDETTILIM, tunetimedet_desc },
+#endif
 #endif
 #ifdef CPLEX_MIP
-	{ "uppercutoff", sf_dbl,	VP CPX_PARAM_CUTUP },
+	{ "uppercutoff", sf_dbl,	VP CPX_PARAM_CUTUP, uppercutoff_desc },
 #endif
-	{ "upperobj",	sf_dbl,		VP CPX_PARAM_OBJULIM },
-	{ "upperobjlim",sf_dbl,		VP CPX_PARAM_OBJULIM },
+	{ "upperobj",	sf_dbl,		VP CPX_PARAM_OBJULIM, upperobj_desc },
+	{ "upperobjlim", sf_dbl,	VP CPX_PARAM_OBJULIM, upperobjlim_desc },
 #ifdef CPLEX_MIP
-	{ "varsel",	sf_int,		VP CPX_PARAM_VARSEL },
-	{ "varselect",	sf_int,		VP CPX_PARAM_VARSEL },
+	{ "varsel",	sf_int,		VP CPX_PARAM_VARSEL, varsel_desc },
+	{ "varselect",	sf_int,		VP CPX_PARAM_VARSEL, varselect_desc },
 #endif
-	{ "version",	Ver_val,	0 },
-	{ "wantsol",	WS_val,		0 },
-	{ "workfiledir",sf_char,	VP set_workfiledir },
+	{ "version",	Ver_val,	0, version_desc },
+#ifdef Want_Distmipopt
+	{ "vmconf",	sf_char,	VP set_vmconfig, vmconf_desc },
+#endif
+	{ "wantsol",	WS_val,		0, wantsol_desc },
+	{ "workfiledir", sf_char,	VP set_workfiledir, workfiledir_desc },
 #ifdef CPX_PARAM_WORKMEM
-	{ "workfilelim",sf_dbl,		VP CPX_PARAM_WORKMEM },
+	{ "workfilelim", sf_dbl,		VP CPX_PARAM_WORKMEM, workfilelim_desc },
 #endif
-	{ "writebasis",	sf_char,	VP set_endbas },
-	{ "writeprob",	sf_char,	VP set_wrtfname },
-	{ "writesol",	sf_char,	VP set_endsol },
+	{ "writebasis",	sf_char,	VP set_endbas, writebasis_desc },
+	{ "writeprob",	sf_char,	VP set_wrtfname, writeprob_desc },
+	{ "writesol",	sf_char,	VP set_endsol, writesol_desc },
 #if defined(BARRIER) && !defined(NO_DEPRECATED)
-	{ "writevector", sf_char,	VP set_endvector },
+	{ "writevector", sf_char,	VP set_endvector, writevector_desc },
 #endif
-	{ "xxxstart",	sf_int,		VP CPX_PARAM_XXXIND }
+#ifdef CPX_PARAM_XXXIND
+	{ "xxxstart",	sf_int,		VP CPX_PARAM_XXXIND, xxxstart_desc },
+#endif
 #ifdef CPX_PARAM_ZEROHALFCUTS
-	,{ "zerohalfcuts", sf_int,	VP CPX_PARAM_ZEROHALFCUTS }
+	{ "zerohalfcuts", sf_int,	VP CPX_PARAM_ZEROHALFCUTS, zerohalfcuts_desc },
 #endif
 	};
 
- static Option_Info Oinfo = { "cplex", 0, "cplex_options",
-				keywds, nkeywds, 0, cplex_version,
-				0,0,0,0,0, 20120423 };
+ static Option_Info Oinfo = { "cplex", 0, "cplex_options", keywds, nkeywds, 0,
+				cplex_version, 0,0,0,0,0, 20150327, 0,0,0,0,0,0,0,
+				ASL_OI_tabexpand | ASL_OI_addnewline };
 
  static void
 badlic(int rc, int status)
@@ -1801,7 +3247,7 @@ badlic(int rc, int status)
 	char buf[4096];
 
 	if (!CPXgeterrorstring(Env, status, buf))
-		Sprintf(buf,
+		Snprintf(buf, sizeof(buf),
 		"CPLEX licensing problem: error code %d from CPXopenCPLEX.",
 			status);
 	badretfmt(rc, "%s", buf);
@@ -1811,7 +3257,7 @@ badlic(int rc, int status)
 nonlin(int n, int rc, char *what)
 {
 	if (n) {
-		badretfmt(rc, "%s contains %s.\n", filename, what);
+		badretfmt(rc, "%s contains %s.\n", asl->i.filename_, what);
 		exit(4);
 		}
 	}
@@ -2111,8 +3557,11 @@ mipinit_loop(ASL *asl, int **rp, int *np, real **xp, int j, int k)
  static void
 set_mipinit(ASL *asl, cpxlp *cpx, int nint)
 {
-	int i, k, m, m0, n1, *r, *r1;
+	int i, n1, *r, *r1;
 	real *x, *x1;
+#ifndef NO_DEPRECATED
+	int k, m, m0;
+#endif
 #if CPX_VERSION_VERSION >= 12
 	int beg[2];
 
@@ -2343,7 +3792,7 @@ get_statuses(ASL *asl, cpxlp *cpx, dims *d)
 	}
 
  static int
-qmatadj(int k, int nr, int os, int *colq, int *colqcnt, double **qmatp)
+qmatadj(int k, int nr, int os, CPXNNZ *colq, int *colqcnt, double **qmatp, char *ctype)
 {
 	double badd[3], *oqmat, osd, *qmat, t;
 	int badk[3], i, nbad = 0, nb, w, w1;
@@ -2357,7 +3806,7 @@ qmatadj(int k, int nr, int os, int *colq, int *colqcnt, double **qmatp)
 		t = 0.;
 		if (colqcnt[k]) {
 			t = oqmat[colq[k]];
-			if (t*osd < 0.) {
+			if (t*osd < 0. && (!ctype || ctype[k] == 'C')) {
 				if (nbad < 3) {
 					badd[nbad] = t;
 					badk[nbad] = k;
@@ -2367,7 +3816,10 @@ qmatadj(int k, int nr, int os, int *colq, int *colqcnt, double **qmatp)
 			}
 		qmat[k] = t;
 		}
-	free(oqmat);
+#if CPX_VERSION >= 12030000
+	if (nbad && parval(CPX_PARAM_SOLUTIONTARGET) >= 2)
+		nbad = 0;
+#endif
 	if (!nbad)
 		return 0;
 	fprintf(Stderr, "%d diagonal QP coefficients of the wrong sign:\n",
@@ -2389,28 +3841,74 @@ qmatadj(int k, int nr, int os, int *colq, int *colqcnt, double **qmatp)
 	return 1;
 	}
 
+ static int
+refcomp(const void *a, const void *b, void *c)
+{
+	double d, *x;
+
+	x = (double*)c;
+	d = x[*(int*)a] - x[*(int*)b];
+	if (d < 0.)
+		return -1;
+	if (d > 0.)
+		return 1.;
+	return 0;
+	}
+
  static void
 sos_kludge(int nsos, int *sosbeg, double *sosref)
 {
 	/* Adjust sosref if necessary to accommodate CPLEX's */
 	/* undocumented requirement that sosref values differ */
 	/* by at least 1e-10. */
-	int i, j, k;
+	int i, i0, i1, j, k, m, m1, *z, z0[16];
 	double t, t1;
+
 	for(i = j = 0; i++ < nsos; ) {
 		k = sosbeg[i];
 		t = sosref[j];
 		while(++j < k) {
 			t1 = sosref[j];
 			t += 1e-10;
-			if (t1 <= t)
+			if (t1 <= t) {
+				if (t1 < t)
+					goto trysort;
 				sosref[j] = t1 = t + 1e-10;
+				}
 			t = t1;
 			}
 		}
+	return;
+ trysort:
+	j = sosbeg[i0 = i - 1];
+	m = 0;
+	for(i = i0; i++ < nsos; j = k) {
+		k = sosbeg[i];
+		if ((m1 = k - j) > m)
+			m = m1;
+		}
+	z = z0;
+	if (m > sizeof(z0)/sizeof(z0[0]))
+		z = (int *)Malloc(m*sizeof(int));
+	for(j = sosbeg[i = i0]; i++ < nsos; j = k) {
+		k = sosbeg[i];
+		m1 = k - j;
+		for(i1 = 0; i1 < m1; ++i1)
+			z[i1] = i1 + j;
+		qsortv(z, m1, sizeof(int), refcomp, sosref);
+		t = sosref[z[0] + j];
+		for(i1 = 1; i1 < m1; ++i1, t = t1) {
+			t1 = sosref[z[i1]];
+			t += 1e-10;
+			if (t1 <= t)
+				sosref[z[i1]] = t1 = t + 1e-10;
+			}
+		}
+	if (z != z0)
+		free(z);
 	}
 
-#ifdef CPXERR_QCP_SENSE
+#ifdef CPXERR_QCP_SENSE /*{*/
 
  static void
 Surprise(ASL *asl, int n, char *who)
@@ -2421,49 +3919,59 @@ Surprise(ASL *asl, int n, char *who)
 	nonlin(1, 561, msgbuf);
 	}
 
- static Char**
-linadj(ASL *asl, int *ka, int *ia, double *a, int **kaqp, int **kalqp, int **iaqp, double **aqp,
-	int **nelqcp, int ***rowqcp, int ***colqcp, double ***qcmatp)
+ static void**
+linadj(ASL *asl, CStype *ka, int *ia, double *a, int **kaqp, int **kalqp, int **iaqp, double **aqp,
+	CPXNNZ **nelqcp, int ***rowqcp, int ***colqcp, double ***qcmatp, dims *d, void **v)
 {
 	/* Move linear parts of nqc quadratic constraints from ka, ia, a */
 	/* to kaq, kalq, iaq, aq and corresponding Cgrad pointers and return a */
 	/* pointer to the relevant allocation. */
 
+	CPXNNZ *nelqc;
+	QPinfo *qpi;
+	cde *consave;
 	cgrad **cgp, *cg, *cga, *cg0;
+	char *what;
 	double *aq, **qcmat, *x, *y;
-	fint *colqf, *cqf, *rowqf;
-	int i, i1, i2, j, k, nl, nqc, m, m0, n, nelq, nqcnl;
-	int **colqc, *iaq, *kalq, *kaq, *kaq0, *nelqc, **rowqc, *z, *z1;
-	size_t L;
+	int i, i1, i2, j, k, m, m0, m1, n, ncol, nqc;
+	int *colno, **colqc, *iaq, *kalq, *kaq, *kaq0, *rowno, **rowqc, *z, *z1;
+	size_t *colbeg, is, js, ks, ms, nelq, nl, nqcnl;
+	ssize_t nq;
 
+	m = n_con;
+	m1 = asl->i.n_con1;
 	n = n_var;
 	nqc = nlc;
 
-	j = nzc;
-	for(i = nl = 0; i < j; i++)
-		if (ia[i] < nqc)
+	js = nzc;
+	for(is = nl = 0; is < js; ++is)
+		if (ia[is] < nqc)
 			nl++;
 
-	cg = cga = (cgrad*)Malloc(nqc*(sizeof(int)+sizeof(cgrad*)) + nl*sizeof(cgrad));
-	Cgrad = cgp = (cgrad**)(cga + nl);
-	kaq0 = (int*)(cgp + nqc);
-	L = (char*)kaq0 - (char*)cga;
-	memset(kaq0, 0, nqc*sizeof(int));
-	memset(cgp, 0, nqc*sizeof(cgrad*));
+	d->consave = consave = (cde*)
+		M1alloc(m1*(sizeof(cde) + sizeof(cgrad*)) + nl*sizeof(cgrad));
+	cg = cga = (cgrad*)(consave + m1);
+	cgp = (cgrad**)(cga + nl);
+	memcpy(consave, ((ASL_fg*)asl)->I.con_de_, m1*sizeof(cde));
 
-	for(i = j = 0; i < n; i++) {
-		for(k = ka[i+1]; j < k; j++)
-			if ((i1 = ia[j]) < nqc) {
+	kaq0 = (int*)Malloc(nqc*sizeof(int));
+	memset(kaq0, 0, nqc*sizeof(int));
+	memset(cgp, 0, m*sizeof(cgrad*));
+	Cgrad = cgp;
+
+	for(js = i = 0; i < n; i++) {
+		for(ks = ka[i+1]; js < ks; js++)
+			if ((i1 = ia[js]) < nqc) {
 				kaq0[i1]++;
 				cg->varno = i;
-				cg->coef = a[j];
+				cg->coef = a[js];
 				cg->next = cgp[i1];
 				cgp[i1] = cg++;
 				}
 		}
 	x = LUrhs;
 	y = Urhsx;
-	for(i = nl = nqcnl = 0; i < nqc; i++) {
+	for(nl = nqcnl = i = 0; i < nqc; i++) {
 		if (x[i] > negInfinity && y[i] < Infinity) {
 			badretfmt(562,
 			 "Constraint %s is not convex quadratic since it is %s constraint.",
@@ -2474,56 +3982,58 @@ linadj(ASL *asl, int *ka, int *ia, double *a, int **kaqp, int **kalqp, int **iaq
 		k = nl;
 		nl += kaq0[i];
 		kaq0[i] = k;
-		j = mqpcheck(-(i+1), 0, 0, 0);
-		if (j < 0) {
-			nonlin(j == -2, 558,
-			 "a quadratic constraint involving division by 0");
-			nonlin(1, 550, "a nonquadratic nonlinear constraint");
+		nq = mqpcheckv(-(i+1), 0, v);
+		if (nq <= 0) {
+			what = con_name(i);
+			if (nq == -2)
+				badretfmt(558, "Constraint %s is a quadratic constraint "
+					"involving division by 0.", what);
+			else if (nq < 0)
+				badretfmt(550, "Constraint %s is a nonquadratic "
+						"nonlinear constraint.", what);
+			else
+				badretfmt(559, "CPLEX driver bug: no quadratic terms "
+					"in \"nonlinear\" constraint %s.", what);
+			exit(4);
 			}
-		nonlin(j == 0, 559,
-		 "CPLEX driver bug: no quadratic terms in \"nonlinear\" constraint");
-		nqcnl += j;
+		nqcnl += nq;
 		}
 
-	*aqp = aq = (double*)Realloc(cga, nl*sizeof(cgrad) + nqc*sizeof(cgrad*)
-				+ nqc*(sizeof(double*) + 2*sizeof(int*))
-				+ (3*nqc + 2*nqcnl + nl)*sizeof(int)
+	*aqp = aq = (double*)Realloc(kaq0, nqc*(sizeof(double*) + 2*sizeof(int*))
+				+ (2*(nqc + nqcnl) + nl)*sizeof(int)
+				+ nqc*sizeof(CPXNNZ)
 				+ (nl+nqcnl)*sizeof(double));
 	x = aq + nl;
-	cga = (cgrad*)(x + nqcnl);
-	Cgrad = cgp = (cgrad**)(cga + nl);
-	*qcmatp = qcmat = (double**)(cgp + nqc);
+	*qcmatp = qcmat = (double**)(x + nqcnl);
 	*rowqcp = rowqc = (int**)(qcmat + nqc);
 	*colqcp = colqc = rowqc + nqc;
-	*kaqp = kaq = (int*)(colqc + nqc);
+	*nelqcp = nelqc = (CPXNNZ*)(colqc + nqc);
+	*kaqp = kaq = (int*)(nelqc + nqc);
 	*kalqp = kalq = kaq + nqc;
-	*nelqcp = nelqc = kalq + nqc;
-	z = nelqc + nqc;
+	z = kalq + nqc;
 	*iaqp = iaq = z + 2*nqcnl;
 
-	kaq0 = (int*)((char*)aq + L);
-	if (kaq0 < kaq)
-		for(i = nqc; i-- > 0; )
-			kaq[i] = kaq0[i];
-	else
-		for(i = 0; i < nqc; i++)
-			kaq[i] = kaq0[i];
+	kaq0 = (int*)aq;
+	for(i = nqc; i > 0; ) {
+		--i;
+		kaq[i] = kaq0[i];
+		}
 
 	memset(cgp, 0, nqc*sizeof(cgrad*));
 
-	for(i = j = m = 0; j < n; j++) {
-		ka[j] = m0 = m;
+	for(ms = i = j = 0; j < n; j++) {
+		ka[j] = ms;
 		for(k = ka[j+1]; i < k; i++)
 			if ((i1 = ia[i]) < nqc) {
 				iaq[i2 = kaq[i1]++] = j;
 				aq[i2] = a[i];
 				}
 			else {
-				ia[m] = i1 - nqc;
-				a[m++] = a[i];
+				ia[ms] = i1 - nqc;
+				a[ms++] = a[i];
 				}
 		}
-	nzc = ka[n] = m;
+	nzc = ka[n] = ms;
 	for(i = nqc; --i > 0; )
 		kaq[i] = kaq[i-1];
 	kaq[0] = 0;
@@ -2541,25 +4051,26 @@ linadj(ASL *asl, int *ka, int *ia, double *a, int **kaqp, int **kalqp, int **iaq
 		cgp[i] = cg0;
 		}
 	for(i = m = 0; i < nqc; i++) {
-		nelqc[i] = nelq = mqpcheck(-(i+1), &rowqf, &colqf, &y);
+		nelqc[i] = nelq = mqpcheckv(-(i+1), &qpi, v);
 		qcmat[i] = x;
+		y = qpi->delsq;
 		for(j = 0; j < nelq; j++)
 			*x++ = 0.5*y[j];
 		rowqc[i] = z1 = z;
 		colqc[i] = z += nelq;
-		cqf = colqf;
-		i1 = *++cqf;
-		for(j = k = 0; j < nelq; j++) {
-			while (j >= i1) {
-				k++;
-				i1 = *++cqf;
+		rowno = qpi->rowno;
+		colbeg = qpi->colbeg;
+		colno = qpi->colno;
+		ncol = qpi->nc;
+		is = colbeg[0];
+		for(j = 0; j < ncol;) {
+			k = colno[j];
+			for(js = colbeg[++j]; is < js; ++is) {
+				*z1++ = rowno[is];
+				*z++ = k;
 				}
-			*z1++ = rowqf[j];
-			*z++  = k;
 			}
-		free(colqf);
-		free(rowqf);
-		free(y);
+		free(qpi);
 		kaq[i] = m0 = m;
 		for(cg = cgp[i]; cg; cg = cg->next)
 			if (cg->coef) {
@@ -2569,30 +4080,300 @@ linadj(ASL *asl, int *ka, int *ia, double *a, int **kaqp, int **kalqp, int **iaq
 		kalq[i] = m - m0;
 		}
 
-	return M1record((Char*)aq);
+	return M1record((void*)aq);
 	}
 
-#endif /*CPXERR_QCP_SENSE*/
+ static real
+vmax(real *x, size_t n)	/* returns max{i in 0..n-1} |x[i]|, assuming n >= 1 */
+{
+	real mn, mx, t, *xe;
+
+	mn = mx = *x;
+	xe = x + n;
+	while(++x < xe) {
+		if (mn > (t = *x))
+			mn = t;
+		else if (mx < t)
+			mx = t;
+		}
+	if (mx < 0.)
+		mx = -mn;
+	else if ((t = -mn) > mx)
+		mx = t;
+	return mx;
+	}
+
+ static real
+dot(real *x, real *y, size_t n)
+{
+	real rv, *xe;
+
+	xe = x + n;
+	rv = 0.;
+	while(x < xe)
+		rv += *x++ * *y++;
+	return rv;
+	}
+
+ static real
+ssq(real *x, size_t n)
+{
+	real rv, t;
+	size_t i;
+
+	rv = 0.;
+	for(i = 0; i < n; ++i) {
+		t = x[i];
+		rv += t*t;
+		}
+	return rv;
+	}
+
+ static int
+LSsol(size_t n, size_t m, real *A, real *x, real *b)
+{
+	/* Solve A*x = b in the least-squares sense, with A consisting of m */
+	/* columns of length n, stored column-wise. */
+	/* We clobber A and b. */
+
+	/* We use column pivoting and Householder transformations. */
+	/* Given vector x = (x1, x2)^T with x1 a scalar and x2 a vector, */
+	/* H = I - 2*y*y^T/y^T*y with y = (x1 + sigma*norm(x), x2)^T, sigma = +-1, */
+	/* norm(x) = sqrt(x^T*x) is a reflection (Householder transformation) */
+	/* with H*x = (-sigma*norm(x), 0)^T. */
+	/* Note that y^T*y = 2*(x^T*x + sigma*x1*norm(x)). */
+	/* For stability, sigma = sign(x1).  */
+
+	real *ai, *aj, *cmax, di, cx, *rd, *scale, t, t2, x1;
+	size_t i, j, jx, k, ni, ni1, *p, pi, pj;
+
+	rd = (real*)Malloc(m*(3*sizeof(real) + sizeof(size_t)));
+	scale = rd + m;
+	cmax = scale + m;
+	p = (size_t*)(cmax + m);
+	for(i = 0; i < m; ++i) {
+		p[i] = i;
+		cmax[i] = 1.;
+		}
+	ai = A + n*m;
+	do {
+		--i;
+		t = vmax(ai -= n, n);
+		if (t <= qctol2) {
+			x[i] = 0.;
+			p[i] = p[--m];
+			}
+		else if (t != 1.) {
+			t = 1. / t;
+			for(j = 0; j < n; ++j)
+				ai[j] *= t;
+			}
+		scale[i] = t;
+		} while(i > 0);
+	if (m == 0)
+		goto ret;
+	for(;;) {
+		if (i >= n) {
+			for(j = i; j < m; ++j)
+				x[p[j]] = 0.;
+			m = i;
+			break;
+			}
+		ni = n - i;
+		ni1 = ni - 1;
+		ai = A + i + n*p[i];
+		t = sqrt(t2 = ssq(ai, ni));
+		if ((x1 = *ai) < 0.)
+			t = -t;
+		/* now t == sigma*norm(x) */
+		di = 1. / (t2 + x1*t);
+		rd[i] = -t;
+		*ai += t;
+		t2 = 0.;
+		for(j = i + 1; j < m; ) {
+			pj = p[j];
+			aj = A + i + n*pj;
+			if ((t = dot(ai, aj, ni))) {
+				t *= di;
+				for(k = 0; k < ni; ++k)
+					aj[k] -= t*ai[k];
+				if (ni1 > 0)
+					t2 = vmax(aj+1, ni1);
+				cmax[pj] = t2;
+				if (t2 <= qctol3) {
+					x[pj] = 0.;
+					p[j] = p[--m];
+					continue;
+					}
+				}
+			++j;
+			}
+		aj = b + i;
+		if ((t = dot(ai, aj, ni))) {
+			t *= di;
+			for(k = 0; k < ni; ++k)
+				aj[k] -= t*ai[k];
+			}
+		if (++i >= m)
+			break;
+		cx = 0.;
+		jx = m;
+		for(j = i; j < m; ++j) {
+			t = cmax[p[j]];
+			if (cx < t) {
+				cx = t;
+				jx = j;
+				}
+			}
+		if (jx != i) {
+			k = p[i];
+			p[i] = p[jx];
+			p[jx] = k;
+			}
+		}
+	for(i = m; i > 0; ) {
+		pi = p[--i];
+		t = b[i] / rd[i];
+		x[pi] = scale[pi]*t;
+		ai = A + n*pi;
+		if (i > 0) {
+			for(j = 0; j < i; ++j)
+				b[j] -= t*ai[j];
+			}
+		}
+	free(rd);
+ ret:
+	return m;
+	}
+
+ static void
+qcduals(ASL *asl, cpxlp *cpx, dims *d, real *x, real *y)
+{
+	CStype *cs;
+	cde *Csave, *Osave;
+	int gmap, k, *p, *q, *qinv, *rn;
+	ograd **Ogsave;
+	real *A, *A1, *Av, *L, *U, *b, *c, *r, t, tm, tn;
+	size_t Ls, i, j, je, m, m1, m2, n, n0, n1;
+	ssize_t on;
+
+	tm = n_conjac[1] = m = nlc;
+	tn = n = n_var;
+	t = (tn*(tm+2) + tm)*sizeof(real) + tn*(3*sizeof(int));
+	Ls = (n*(m+2) + m)*sizeof(real) + n*(3*sizeof(int));
+	if (Ls != t)
+		return;
+	A = (real*)Malloc(Ls);
+	b = A + n*m;
+	r = b + n;
+	c = r + n;
+	p = (int*)(c+m);
+	q = p + n;
+	qinv = q + n;
+
+	L = LUv;
+	U = Uvx;
+	for(i = n0 = n1 = 0; i < n; ++i) {
+		if ((t = x[i]) > L[i] && t < U[i]) {
+			qinv[i] = n1;
+			q[n1++] = i;
+			}
+		else
+			qinv[i] = -1;
+		}
+	if ((gmap = n1 < n)) {
+		for(; n0 < n1 && q[n0] == n0; ++n0);
+		}
+	Csave = ((ASL_fg*)asl)->I.con_de_;
+	Osave = ((ASL_fg*)asl)->I.obj_de_;
+	((ASL_fg*)asl)->I.con_de_ = d->consave;
+	((ASL_fg*)asl)->I.obj_de_ = d->objsave;
+	qp_opify();
+	if ((on = obj_no) >= 0) {
+		Ogsave = Ograd;
+		Ograd = d->ogsave;
+		objgrd(on, x, b, 0);
+		Ograd = Ogsave;
+		if (gmap)
+			for(i = n0; i < n1; ++i)
+				b[i] = b[q[i]];
+		}
+	else
+		memset(b, 0, n*sizeof(real));
+	if ((m2 = n_con - m)) {
+		cs = A_colstarts;
+		rn = A_rownos;
+		Av = A_vals;
+		for(i = 0; i < n; ++i) {
+			if (qinv[i] >= 0) {
+				j = cs[i];
+				t = b[i];
+				for(je = cs[i+1]; j < je; ++j) {
+					k = rn[j];
+					t -= y[k]*Av[j];
+					}
+				b[i] = t;
+				}
+			}
+		for(i = m2; i-- > 0;)
+			y[i+m] = y[i];
+		}
+	conval(x, c, 0);
+	A1 = A;
+	L = LUrhs;
+	U = Urhsx;
+	if (qctol1 < 0.)
+		qctol1 = 0.;
+	for(i = m1 = 0; i < m; ++i) {
+		t = c[i];
+		if (t <= L[i] + qctol1 || t >= U[i] - qctol1) {
+			congrd(i, x, A1, 0);
+			if (gmap)
+				for(j = n0; j < n1; ++j)
+					A1[j] = A1[q[j]];
+			A1 += n1;
+			p[m1++] = i;
+			}
+		else
+			y[i] = 0.;
+		}
+	((ASL_fg*)asl)->I.con_de_ = Csave;
+	((ASL_fg*)asl)->I.obj_de_ = Osave;
+	if (m1) {
+		if (qctol2 < 0.)
+			qctol2 = 0.;
+		if (qctol3 < 0.)
+			qctol3 = 0.;
+		LSsol(n1, m1, A, r, b);
+		for(i = 0; i < m1; ++i)
+			y[p[i]] = r[i];
+		}
+	free(A);
+	}
+#endif /*CPXERR_QCP_SENSE }*/
 
 #ifdef Uselazy
  typedef struct
 LazyInfo {
+	CStype nz[2], *rowbeg[2];
 	char *sense[2], **rowname[2];
-	int *colno[2], nz[2], *rowbeg[2], rows[2];
+	int *colno[2], rows[2];
 	double *matval[2], *rhs[2];
 	} LazyInfo;
 
- Char **
-lazyadj(ASL *asl, LazyInfo *LI, int n, int nint, int *mp, double *b, char *senx,
-	int *ka, int *kal, int *ia, double *a, double *rngvec, char **rname)
+ void **
+lazyadj(ASL *asl, LazyInfo *LI, int n, int nint, int nqc, int *mp, double *b, char *senx,
+	CStype *ka, int *kal, int *ia, double *a, double *rngvec, char **rname)
 {
-	Char *rv;
+	CStype i, i2, j, j0, j1, k, m, m0, nq, nrt, nz;
+	CStype *rowbeg;
 	SufDesc *lp;
 	char *nn, *nn1, *sense, **rowname;
+	const char *s1, *s2;
 	double *matval, *rhs;
-	int i, i1, i2, j, j0, j1, k, m, m0, nrt, nz;
-	int *colno, nr[3], nt[2], *rl, *rowbeg, *z, *z0;
+	int *colno, i1, nr[3], nt[2], *rl, *z, *z0;
 	size_t Lnn, Lrl;
+	void *rv;
 
 	nr[0] = nr[1] = nr[2] = 0;
 	rv = 0;
@@ -2607,14 +4388,28 @@ lazyadj(ASL *asl, LazyInfo *LI, int n, int nint, int *mp, double *b, char *senx,
 	/* For simplicity, we treat 3 as 1 and ignore bits beyond the first two. */
 
 	m0 = n_con;
-	for(i = 0; i < m0; i++) {
+	for(i = nq = 0; i < m0; i++) {
 		if ((j = z[i] & uselazy) && j <= 2) {
+			if (i < nqc) {
+				++nq;
+				continue;
+				}
 			++nr[j = 1 - (j&1)];
 			if (senx[i] == 'R') {
 				++nr[j];
 				++nr[2];
 				}
 			}
+		}
+	if (nq) {
+		if (nq == 1)
+			s1 = s2 = "";
+		else {
+			s1 = "es";
+			s2 = "s";
+			}
+		fprintf(Stderr, "Ignoring .lazy suffix%s on %d quadratic constraint%s.\n",
+			s1, nq, s2);
 		}
 
 	/* nr[0] = number of lazy constraints */
@@ -2623,7 +4418,7 @@ lazyadj(ASL *asl, LazyInfo *LI, int n, int nint, int *mp, double *b, char *senx,
 
 	if (!(nrt = nr[0] + nr[1]))
 		goto done;
-	z0 = z;
+	z0 = z += nqc;
 	m = *mp;
 	if (m > m0) {
 		z = (int*)Malloc(m*sizeof(int));
@@ -2667,23 +4462,25 @@ lazyadj(ASL *asl, LazyInfo *LI, int n, int nint, int *mp, double *b, char *senx,
 				if (senx[i] == 'R')
 					Lnn += strlen(rname[i]) + 3;
 		}
-	matval = (double*)Malloc((nz+nrt)*(sizeof(double)+sizeof(int))
-				+ (Lrl+2)*sizeof(int) + nrt + Lnn);
-	rv = (Char*)matval;
+	matval = (double*)Malloc((nz+nrt)*sizeof(double)
+				+ nz*sizeof(int)
+				+ (nrt+2)*sizeof(CStype)
+				+ Lrl*sizeof(int) + nrt + Lnn);
+	rv = (void*)matval;
 	rhs = matval + nz;
 	if (rname) {
 		rowname = (char**)(rhs + nrt);
-		rowbeg = (int*)(rowname + nrt);
+		rowbeg = (CStype*)(rowname + nrt);
 		}
 	else {
 		rowname = 0;
-		rowbeg = (int*)(rhs + nrt);
+		rowbeg = (CStype*)(rhs + nrt);
 		}
-	colno = rowbeg + nrt + 2;
+	colno = (int*)(rowbeg + nrt + 2);
 	rl = colno + nz;
 	sense = (char*)(rl + Lrl);
 	nn = sense + nrt;
-	memset(rowbeg, 0, nrt*sizeof(int));
+	memset(rowbeg, 0, nrt*sizeof(CStype));
 	if (Lrl)
 		memset(rl, 0, Lrl*sizeof(int));
 	for(i = 0; i < n; i++) {
@@ -2747,22 +4544,22 @@ lazyadj(ASL *asl, LazyInfo *LI, int n, int nint, int *mp, double *b, char *senx,
 	LI->sense[0] = sense;
 	LI->sense[1] = sense + nr[0];
 	for(i = 0; i < m; i++) {
-		if ((j = z[i]) > 0) {
-			rhs[--j] = b[i];
-			if ((sense[j] = senx[i]) == 'R') {
-				sense[j] = 'G';
-				sense[++j] = 'L';
-				rhs[j] = b[i] + rngvec[i];
+		if ((i1 = z[i]) > 0) {
+			rhs[--i1] = b[i];
+			if ((sense[i1] = senx[i]) == 'R') {
+				sense[i1] = 'G';
+				sense[++i1] = 'L';
+				rhs[i1] = b[i] + rngvec[i];
 				if (rname) {
-					nn1 = strcpy1(rowname[j] = nn, rname[i]);
+					nn1 = strcpy1(rowname[i1] = nn, rname[i]);
 					nn = strcpy(nn1, ".u");
 					}
 				}
 			}
 		else {
-			b[j = -j] = b[i];
-			rngvec[j] = rngvec[i];
-			senx[j] = senx[i];
+			b[i1 = -i1] = b[i];
+			rngvec[i1] = rngvec[i];
+			senx[i1] = senx[i];
 			}
 		}
 
@@ -2770,10 +4567,10 @@ lazyadj(ASL *asl, LazyInfo *LI, int n, int nint, int *mp, double *b, char *senx,
 		LI->rowname[0] = rowname;
 		LI->rowname[1] = rowname + nr[0];
 		for(i = 0; i < m; i++)
-			if ((j = z[i]) > 0)
-				rowname[j-1] = rname[i];
+			if ((i1 = z[i]) > 0)
+				rowname[i1-1] = rname[i];
 			else
-				rname[-j] = rname[i];
+				rname[-i1] = rname[i];
 		}
 	else
 		LI->rowname[0] = LI->rowname[1]  = 0;
@@ -2798,19 +4595,23 @@ lazyadj(ASL *asl, LazyInfo *LI, int n, int nint, int *mp, double *b, char *senx,
  static void
 amplin(ASL *asl, cpxlp **pcpx, FILE **nl, dims *d, int *nelqp, int *nintp, char **av)
 {
-	int *ia, *ia1, *ia2, *ja, *ka, *ka1, *ka2, *kal, *kal1, *kal2;
+	CStype *ka, *ka1, *ka2, nz, nz1, nzc0, nzr;
+	int *ia, *ia1, *ia2, *ja, *kal, *kal1, *kal2, *vmi;
 	double *a, *a1, *b, *b1, *c, *c1, *l, *l1,
 		*le, *lrhs, *lx, *rngvec, *rv1, *u, *u1, *urhs, *ux;
 	double nos, os;
-	ograd *og, *og1;
-	int i, j, k, m, m0, mq, n, n0, nbv1, nextra, nint, nint1, nqc,
-		nr, nsos, nz, nz1, nzc0, nzextra, nzr;
+	ograd *og, *og1, **ogp;
+	int i, j, j0, k, k0, m, m0, mq, n, n0, nbv1, nextra, nint, nint1,
+		no, nqc, nr, nsos, nzextra;
 	char **cname, **rname, *s, *senx;
-	Char **zap[6];
-	fint nelqf;
+	void **zap[5];
+	size_t L, nelqf;
 #ifdef BARRIER
-	fint *colqf, *rowqf;
-	int havestart, nelq, *colq, *colqcnt, *rowq;
+	CPXNNZ *colq;
+	int *colno, *colqcnt;
+	int havestart, *rowq;
+	size_t *colqf;
+	ssize_t nq;
 	double *cdual, *cprim, *qmat, *rdual, *rprim;
 #undef Want_mqpcheck
 #ifdef BARRIER_FOR_QP
@@ -2820,12 +4621,16 @@ amplin(ASL *asl, cpxlp **pcpx, FILE **nl, dims *d, int *nelqp, int *nintp, char 
 #else /*!BARRIER_FOR_QP, i.e., >= 8.0*/
 #define Want_mqpcheck
 #endif
-#ifndef Want_mqpcheck
+#ifdef Want_mqpcheck
+	QPinfo *qpi;
+	void *v;
+#else
 #undef CPXERR_QCP_SENSE
 #endif
 #ifdef CPXERR_QCP_SENSE	/* CPLEX version >= 9.0 */
+	CPXNNZ *nelqc;
 	double *aq, **qcmat;
-	int **colqc, *iaq, *kaq, *kalq, *nelqc, **rowqc;
+	int **colqc, *iaq, *kaq, *kalq, **rowqc;
 #endif /*CPXERR_QCP_SENSE*/
 #endif /*BARRIER*/
 	char probname[48];
@@ -2850,6 +4655,8 @@ amplin(ASL *asl, cpxlp **pcpx, FILE **nl, dims *d, int *nelqp, int *nintp, char 
 #ifdef Uselazy
 	LazyInfo LI;
 #endif /*Uselazy*/
+	static int repmap[4] = { 0, ASL_obj_replace_ineq,  ASL_obj_replace_eq,
+				    ASL_obj_replace_ineq | ASL_obj_replace_eq };
 
 	/* change default display to 0 */
 	CPXsetintparam(Env, CPX_PARAM_SIMDISPLAY, 0);
@@ -2863,7 +4670,7 @@ amplin(ASL *asl, cpxlp **pcpx, FILE **nl, dims *d, int *nelqp, int *nintp, char 
 #endif
 	aggtries = 0;
 
-	if (!(mint_val[set_objno].U = n_obj))
+	if (!(mint_val[set_objno].U = no = n_obj))
 		objno = 0;
 	nqc = nlc;
 #ifndef CPXERR_QCP_SENSE /* if CPLEX version >= 9.0 */
@@ -2879,6 +4686,10 @@ amplin(ASL *asl, cpxlp **pcpx, FILE **nl, dims *d, int *nelqp, int *nintp, char 
 		}
 	obj_no = objno - 1;
 
+#if CPX_VERSION >= 12050000
+	if (time_flag & 0x30)
+		CPXgetnumcores(Env, &num_cores);
+#endif
 #ifndef CPX_PARAM_FEASOPTMODE /* < 9.2b */
 	if (want_iis
 #ifdef CPXERR_QCP_SENSE /* if CPLEX version >= 9.0 */
@@ -2902,12 +4713,15 @@ amplin(ASL *asl, cpxlp **pcpx, FILE **nl, dims *d, int *nelqp, int *nintp, char 
 	if (!Optimize || nqc) {	/* check nqc in case baropt was specified */
 				/* with CPLEX 12.2, at least, we cannot use */
 				/* CPXyybbaropt on problems with quadratic constraints. */
-		Optimize =
+		Optimize = CPXlpopt;
+		if (!lpoptalg)
+			lpoptalg = CPX_ALG_AUTOMATIC;
 #ifdef CPXERR_QCP_SENSE
-			   nqc | nlo ? CPXqpopt :
+		if (nqc | nlo) {
+			Optimize = CPXqpopt;
+			lpoptalg = CPX_ALG_AUTOMATIC;
+			}
 #endif
-						  CPXlpopt;
-		lpoptalg = CPX_ALG_AUTOMATIC;
 		algname = baralgname = "";
 		}
 
@@ -2923,66 +4737,102 @@ amplin(ASL *asl, cpxlp **pcpx, FILE **nl, dims *d, int *nelqp, int *nintp, char 
 	d->csd = suf_iput("sstatus", ASL_Sufkind_var, d->cstat);
 	d->rsd = suf_iput("sstatus", ASL_Sufkind_con, d->rstat);
 
-	b = LUrhs = (double *)M1alloc(2*Sizeof(double)*(m+n));
+	b = LUrhs = (double *)M1alloc(2*sizeof(double)*(m+n));
 	Urhsx = b + m;
 	LUv = Urhsx + m;
 	Uvx = LUv + n;
-	a = A_vals = (double *)Malloc(nzr*Sizeof(double)
-				+ ((fint)nzr + n + 1)*sizeof(int));
-	zap[0] = M1record((Char*)a);
-	zap[1] = zap[2] = zap[3] = zap[4] = zap[5] = 0;
-	ia = A_rownos = (int *)(a + nzr);
-	ka = A_colstarts = ia + nzr;
+	L = nzr*(sizeof(double) + sizeof(int)) + (n+1)*sizeof(CStype);
+	a = A_vals = (double *)Malloc(L);
+	zap[0] = M1record(a);
+	zap[1] = zap[2] = zap[3] = zap[4] = 0;
+	ka = A_colstarts = (CStype*)(a + nzr);
+	ia = A_rownos = (int*)(ka + n + 1);
 	nelqf = 0;
-#ifdef Want_mqpcheck
+#ifdef Want_mqpcheck /*{{*/
+	v = 0;
 	nint = nbv + niv + nlvbi + nlvci + nlvoi;
 	if (Optimize == Optimize2 || Optimize == Optimizebar || nlo || nqc
 	    || (nint && mipstval))
 		want_xpi0 = 3;
 	want_deriv = 0;
-	qp_read(*nl,ALLOW_CLP);
+	qp_read(*nl, ALLOW_CLP | repmap[objrep] ForceZ);
+	nqc = nlc;	/* may have been adjusted */
 	*nl = 0;	/* Indicate closed file -- in case we're */
 			/* subsequently interrupted. */
-	if (obj_no >= 0 && obj_no < n_obj
-	 && (nelqf = mqpcheck(obj_no, &rowqf, &colqf, &qmat))) {
-		if (nelqf < 0) {
-			nonlin(nelqf == -2, 555,
-			 "a quadratic objective involving division by 0");
-			nonlin(1, 551, "a nonlinear objective");
+	if (obj_no >= 0 && obj_no < no) {
+		if (nqc) {
+			og = og1 = Ograd[obj_no];
+			for(i = 0; og; og = og->next)
+				++i;
+			d->ogsave = (ograd**)M1alloc(
+				no*(sizeof(ograd*) + sizeof(cde)) + i*sizeof(ograd));
+			memcpy(d->ogsave, Ograd, no*sizeof(ograd*));
+			d->objsave = (cde*)(d->ogsave + no);
+			memcpy(d->objsave, ((ASL_fg*)asl)->I.obj_de_, no*sizeof(cde));
+			ogp = &d->ogsave[obj_no];
+			og = (ograd*)(d->objsave + no);
+			while(og1) {
+				og->varno = og1->varno;
+				og->coef = og1->coef;
+				*ogp = og;
+				ogp = &og->next;
+				og1 = og1->next;
+				++og;
+				}
+			*ogp = 0;
 			}
+		if (nlo && (nelqf = nq = mqpcheckv(obj_no, &qpi, &v))) {
+			if (nq < 0) {
+				nonlin(nq == -2, 555,
+				 "a quadratic objective involving division by 0");
+				nonlin(1, 551, "a nonlinear objective");
+				}
 #ifdef BARRIER_FOR_QP
-		nonlin(nint, 553,
-			"integer variables and a quadratic objective");
+			nonlin(nint, 553,
+				"integer variables and a quadratic objective");
 #endif
-		crossover = 0;
+			crossover = 0;
 #ifndef BARRIER_FOR_QP
-		if (Optimize == Optimize2)
+#if CPX_VERSION >= 12030000
+			if (nint) {
+				i = 0;
+				CPXgetintparam(Env, CPX_PARAM_SOLUTIONTARGET, &i);
+				if (i == 2) {
+					printf("Changing reqconvex from 2 to 3 for a "
+						"QP with integer variables.\n");
+					CPXsetintparam(Env, CPX_PARAM_SOLUTIONTARGET, 3);
+					}
+				}
 #endif
-			set_baropt();
-		method = 1;
+			if (Optimize == Optimize2)
+#endif
+				set_baropt();
+			method = 1;
+			}
 		}
 #ifdef BARRIER_FOR_QP
 	else
 		nonlin(nlvoi, 552, "nonlinear integer variables");
 #endif
 	if (mipbasis == -1)
-		mipbasis = nelqf == 0;
+		mipbasis = nlc && want_qcdual;
 #ifdef CPXERR_QCP_SENSE /* if CPLEX version >= 9.0 */
 
-	iaq = kaq = kalq = nelqc = 0; /* silence buggy warning */
-	colqc = rowqc = 0; /* ditto */
+	iaq = kaq = kalq = 0; /* silence buggy warning */
+	nelqc = 0;		/* ditto */
+	colqc = rowqc = 0;	/* ditto */
 	aq = 0; /* ditto */
 	qcmat = 0; /* ditto */
 	if (nqc > 0)
-		zap[4] = linadj(asl, ka, ia, a, &kaq, &kalq, &iaq, &aq,
-				&nelqc, &rowqc, &colqc, &qcmat);
+		zap[0] = linadj(asl, ka, ia, a, &kaq, &kalq, &iaq, &aq,
+				&nelqc, &rowqc, &colqc, &qcmat, d, &v);
 
 #endif /*CPXERR_QCP_SENSE*/
-#else /*Want_mqpcheck*/
+#else /*}{Want_mqpcheck*/
 	nonlin(nlvoi, 552, "nonlinear integer variables");
-	f_read(*nl, 0);
+	f_read(*nl, 0 ForceZ);
 	*nl = 0;
-#endif/*Want_mqpcheck*/
+#endif/*}}Want_mqpcheck*/
 
 	nsos = 0;
 #ifdef CPLEX_MIP
@@ -3034,8 +4884,11 @@ amplin(ASL *asl, cpxlp **pcpx, FILE **nl, dims *d, int *nelqp, int *nintp, char 
 	if (!nint)
 		niv = nbv = nbv1 = 0;
 	og = 0;
-	if (obj_no >= 0 && obj_no < n_obj) {
+	vmi = 0;
+	if (obj_no >= 0 && obj_no < no) {
 		og = Ograd[obj_no];
+		if (asl->i.vmap)
+			vmi = get_vminv_ASL(asl);
 		if (!objsen)
 			objsen = objtype[obj_no] ? -1 : 1;
 		obj_adj = objconst(obj_no);
@@ -3092,28 +4945,18 @@ amplin(ASL *asl, cpxlp **pcpx, FILE **nl, dims *d, int *nelqp, int *nintp, char 
 	nz = nzc0 + nextra;
 	if (method < 0) /* dual */ {
 		nz1 = nz += nzextra;
-		a = (double *)Malloc((nz1+2L*n+m)*sizeof(double)
-					+ (nz1+1L+n)*sizeof(int));
-		*zap[0] = (Char*)a;
+		a = (double *)Malloc((nz1+2*n+m)*sizeof(double)
+					+ nz1*sizeof(int) + (n+1)*sizeof(CStype));
+		*zap[0] = a;
 		l = a + nz1;
 		u = l + n;
 		b = u + n;
-		ia = (int *)(b + m);
-		ka = ia + nz1;
+		ka = (CStype*)(b + m);
+		ia = (int *)(ka + n + 1);
 		nr = n;
 		}
 	else {
 		m += objadj;
-#ifdef Student_Edition
-		if (n > 300 || m > 300) {
-			fflush(stdout);
-			fprintf(Stderr,
- "\nSorry, the student edition is limited to 300 variables and 300\n\
-constraints.  After adjustments to handle the constant term in\n\
-the objective, you have %d variables and %d constraints.\n", n, m);
-		exit(1);
-		}
-#endif
 		nr += objadj;
 		nz1 = nz;
 		l = LUv;
@@ -3154,8 +4997,8 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 	d->c = c = d->y + m + nlogc;
 	d->rtype = senx = (char*)(c + nr);
 
-	rngvec = (double *)Malloc(m*Sizeof(double) + nr*Sizeof(int));
-	zap[1] = M1record((Char*)rngvec);
+	rngvec = (double *)Malloc(m*sizeof(double) + nr*sizeof(int));
+	zap[1] = M1record((void*)rngvec);
 	kal = (int *)(rngvec + m);
 #ifdef CPLEX_MIP
 	if (nint1) {
@@ -3164,8 +5007,8 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 		}
 #endif
 	if (method > 0) {
-		b = (double*)Malloc(m*Sizeof(double));
-		zap[2] = M1record((Char*)b);
+		b = (double*)Malloc(m*sizeof(double));
+		zap[2] = M1record((void*)b);
 		}
 	b1 = b + m;
 	s = senx + m;
@@ -3227,8 +5070,12 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 				}
 			}
 			while(lx > LUv);
-		for(; og; og = og->next)
-			b[og->varno] = os * og->coef;
+		if (vmi)
+			for(; og; og = og->next)
+				b[vmi[og->varno]] = os * og->coef;
+		else
+			for(; og; og = og->next)
+				b[og->varno] = os * og->coef;
 		memset((char *)kal, 0, m0*sizeof(int));
 		ia1 = A_rownos;
 		ia2 = ia1 + nzc0;
@@ -3308,8 +5155,12 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 			*--rv1 = 0;
 			}
 #endif
-		for(; og; og = og->next)
-			c[og->varno] = og->coef;
+		if (vmi)
+			for(; og; og = og->next)
+				c[vmi[og->varno]] = og->coef;
+		else
+			for(; og; og = og->next)
+				c[og->varno] = og->coef;
 		i = m0;
 		while(--i >= 0) {
 			--b1;
@@ -3343,18 +5194,21 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 	 || startvec || endvec
 	 || Optimize == CPXprimopt || Optimize == CPXdualopt
 	 || Optimize == CPXlpopt || Optimize == CPXqpopt
-	 || parval(CPX_PARAM_XXXIND)) {
+#ifdef CPX_PARAM_XXXIND
+	 || parval(CPX_PARAM_XXXIND)
+#endif
+		) {
 		make_names(&cname, &rname);
-		zap[3] = M1record((Char*)cname);
+		zap[3] = M1record((void*)cname);
 		}
 	mq = m - nqc;
 #ifdef Uselazy
 	i = mq;
-	zap[5] = lazyadj(asl, &LI, n, nint, &mq, b+nqc, senx+nqc, ka, kal,
+	zap[4] = lazyadj(asl, &LI, n, nint, nqc, &mq, b+nqc, senx+nqc, ka, kal,
 				 ia, a, rngvec+nqc, rname ? rname+nqc : 0);
 	if ((j = LI.rows[0] + LI.rows[1] - (i - mq)) > 0) {
 		/* unlikely; allocate extra space... */
-		j += mq + nqc + nlogc;
+		j += n_con + mq + nqc + nlogc;
 		d->y = (double*)M1zapalloc(j*(sizeof(double) + sizeof(int)));
 		ia1 = (int*)(d->y + j);
 		memcpy(ia1, d->rstat, n_con * sizeof(int));
@@ -3370,7 +5224,7 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 	lrhs = LUrhs;
 	urhs = Urhsx;
 	for(i = 0; i < nqc; i++) {
-		j = CPXaddqconstr(Env, cpx, kalq[i], nelqc[i], b[i], senx[i],
+		j = CPXXaddqconstr(Env, cpx, kalq[i], nelqc[i], b[i], senx[i],
 			iaq+kaq[i], aq+kaq[i], rowqc[i], colqc[i], qcmat[i],
 			rname ? rname[i] : 0);
 		if (j)
@@ -3438,43 +5292,39 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 			a, b, c, &cdual, &cprim, &rdual, &rprim);
 #endif
 	if (nelqf) {
-		nelq = (int)nelqf;
-		colq = (int*)Malloc(2*sizeof(int)*nr);
-		colqcnt = colq + nr;
-		if (sizeof(fint) != sizeof(int)) {
-			/* should not happen */
-			rowq = (int*)Malloc(nelq*sizeof(int));
-			for(i = 0; i < nelq; i++)
-				rowq[i] = (int)rowqf[i];
-			free(rowqf);
+		colq = (CPXNNZ*)Malloc(L = (sizeof(int)+sizeof(CPXNNZ))*nr);
+		colqcnt = (int*)(colq + nr);
+		rowq = qpi->rowno;
+		colqf = qpi->colbeg;
+		qmat = qpi->delsq;
+		colno = qpi->colno;
+		k = qpi->nc;
+		for(i = j0 = k0 = 0; i < k; i++) {
+			j = colno[i];
+			while(j0 < j) {
+				colqcnt[j0] = 0;
+				colq[j0++] = k0;
+				}
+			colq[j] = colqf[i];
+			colqcnt[j] = (int)((k0 = colqf[i+1]) - colqf[i]);
+			j0 = j + 1;
 			}
-		else
-			rowq = (int*)rowqf;
+		while(j0 < nr) {
+			colqcnt[j0] = 0;
+			colq[j0++] = k0;
+			}
 		k = n_var;
-		for(i = 0; i < k; i++) {
-			colq[i] = (int)colqf[i];
-			colqcnt[i] = (int)(colqf[i+1] - colqf[i]);
-			}
-		for(j = colqf[k]; i < nr; i++) {
-			colq[i] = j;
-			colqcnt[i] = 0;
-			}
-		free(colqf);
 		for(i = 0; ; i++) {
 			if (i == k) {
-				i = qmatadj(k, nr, objsen, colq,
-					colqcnt, &qmat);
+				i = qmatadj(k, nr, objsen, colq, colqcnt, &qmat, ctype);
 				if (!i) {
 					for(i = k; i < nr; i++)
 						qmat[i++] = 0.;
 					i = CPXcopyqpsep(Env,cpx,qmat);
 					if (i)
-						badret("CPXcopyqpsep",
-							i,531);
+						badret("CPXcopyqpsep",i,531);
 					}
-				free(rowq);
-				free(qmat);
-				free(colq);
+				free(qpi);
 				if (i)
 					exit(1);
 				baralgname = "separable QP ";
@@ -3483,11 +5333,8 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 			if (!(j = colqcnt[i]))
 				continue;
 			if (j > 1 || rowq[colq[i]] != i) {
-				i = CPXcopyquad(Env,cpx,colq,
-					colqcnt,rowq,qmat);
-				free(rowq);
-				free(qmat);
-				free(colq);
+				i = CPXXcopyquad(Env,cpx,colq,colqcnt,rowq,qmat);
+				free(qpi);
 				if (i)
 					badret("CPXcopyquad", i, 531);
 				baralgname = "QP ";
@@ -3495,6 +5342,8 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 				}
 			}
 		}
+	if (v)
+		mqpcheckv_free(&v);
 #ifdef CPX_CON_INDICATOR
 	if (nlogc && (i = indicator_constrs_ASL(asl, cpx, add_indic, errinfo))) {
 		switch(i) {
@@ -3521,7 +5370,7 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 			badret("CPXcopystart", i, 0);
 		}
 #endif
-	for(i = 6; i > 0; )
+	for(i = 5; i > 0; )
 		if (zap[--i]) {
 			free(*zap[i]);
 			*zap[i] = 0;
@@ -3549,6 +5398,10 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 			}
 		}
 	breaking = 1;
+#if CPX_VERSION >= 1100
+	if (droptol > 0.)
+		CPXcleanup(Env, cpx, droptol);
+#endif
 	}
 
 /* The following routine was named "round", but HPUX 11 reportedly */
@@ -3890,9 +5743,9 @@ iis_put(ASL *asl, int kind, int n, int *ind, int *stat)
 	}
 #endif /*CPX_PARAM_IISIND*/
 
- static int
-retfrom(char *hbuf, int k, const char *what)
-{ return Sprintf(hbuf, "\nReturn %d from %s.", k, what); }
+ static void
+retfrom(PBuf *B, int k, const char *what)
+{ Bpf(B, "\nReturn %d from %s.", k, what); }
 
 #ifdef CPX_PARAM_FEASOPTMODE /* >= 9.2b */
  /* use conflict finder to determine IIS */
@@ -3916,12 +5769,12 @@ confiis_put(ASL *asl, int kind, int n, int *ind, int *stat)
 	return k;
 	}
 
- static int
-send_confiis_ext(ASL *asl, cpxlp *cpx, char *hbuf)
+ static void
+send_confiis_ext(ASL *asl, cpxlp *cpx, PBuf *B)
 {
 	char *grptype;
 	double *L, *U, *gp;
-	int *ci, *grpbeg, *grpind, *gs, i, i1, j, j1, k, n, nc, nv, rv, *vi;
+	int *ci, *grpbeg, *grpind, *gs, i, i1, j, j1, k, n, nc, nv, *vi;
 	static int	lbmap[4] = {0, 6, 1, 8},
 			ubmap[4] = {0, 7, 3, 8},
 			cmap[4]  = {0, 5, 4, 8};
@@ -3964,11 +5817,11 @@ send_confiis_ext(ASL *asl, cpxlp *cpx, char *hbuf)
 		grptype[j] = CPX_CON_QUADRATIC;
 		}
 	if ((i = CPXrefineconflictext(Env, cpx, n, n, gp, grpbeg, grpind, grptype))) {
-		rv = retfrom(hbuf, i, "CPXrefineconflictext");
+		retfrom(B, i, "CPXrefineconflictext");
 		goto ret;
 		}
 	if ((i = CPXgetconflictext(Env, cpx, gs, 0, n-1))) {
-		rv = retfrom(hbuf, i, "CPXgetconflictext");
+		retfrom(B, i, "CPXgetconflictext");
 		goto ret;
 		}
 	for(i = 0; i < n; i++)
@@ -3997,29 +5850,28 @@ send_confiis_ext(ASL *asl, cpxlp *cpx, char *hbuf)
 			nc++;
 	suf_iput("iis", ASL_Sufkind_var, vi);
 	suf_iput("iis", ASL_Sufkind_con, ci);
-	rv = Sprintf(hbuf, "\nReturning an IIS involving %d variables and %d constraints.",
-		nv, nc);
+	Bpf(B, "\nReturning an IIS involving %d variables and %d constraints.", nv, nc);
  ret:
 	free(gp);
-	return rv;
 	}
 
- static int
-send_confiis(ASL *asl, cpxlp *cpx, char *hbuf)
+ static void
+send_confiis(ASL *asl, cpxlp *cpx, PBuf *B)
 {
-	int cs, k, mc, mc1, nc, nc1, rv;
+	int cs, k, mc, mc1, nc, nc1;
 	int *colind, *colst, *rowind, *rowst;
 	static char *abort_reason[7] = {
 		"contradiction", "time limit", "iteration limit", "node limit",
 		"objective limit", "memory limit", "user request" };
 
-	if ((k = CPXrefineconflict(Env, cpx, &mc, &nc)))
-		return retfrom(hbuf, k, "CPXrefineconflict");
+	if ((k = CPXrefineconflict(Env, cpx, &mc, &nc))) {
+		retfrom(B, k, "CPXrefineconflict");
+		return;
+		}
 
 	k = mc + nc;
 	if (mc < 0 || nc < 0 || k == 0)
-		return Sprintf(hbuf,
-			"\nSurprise values mc = %d, nc = %d from CPXrefineconflict.",
+		Bpf(B, "\nSurprise values mc = %d, nc = %d from CPXrefineconflict.",
 			mc, nc);
 
 	colind = (int*)Malloc(2*sizeof(int)*k);
@@ -4028,68 +5880,73 @@ send_confiis(ASL *asl, cpxlp *cpx, char *hbuf)
 	rowst = rowind + mc;
 
 	if ((k = CPXgetconflict(Env, cpx, &cs, rowind, rowst, &mc1, colind, colst, &nc1))) {
-		rv = retfrom(hbuf, k, "CPXgetconflict");
+		retfrom(B, k, "CPXgetconflict");
 		goto ret;
 		}
 	if (cs == CPX_STAT_CONFLICT_FEASIBLE) {
-		rv = Sprintf(hbuf, "\nNo IIS after all: problem is feasible!");
+		Bpf(B, "\nNo IIS after all: problem is feasible!");
 		goto ret;
 		}
 	if (cs != CPX_STAT_CONFLICT_MINIMAL) {
 		if ((cs < CPX_STAT_CONFLICT_ABORT_CONTRADICTION) < 0
 		 || cs > CPX_STAT_CONFLICT_ABORT_CONTRADICTION + 6)
-			rv = Sprintf(hbuf,
-				"\nSurprise conflict status = %d from CPXgetconflict\n", cs);
+			Bpf(B, "\nSurprise conflict status = %d from CPXgetconflict\n", cs);
 		else
-			rv = Sprintf(hbuf, "\nSearch for conflicts aborted because of %s\n",
+			Bpf(B, "\nSearch for conflicts aborted because of %s\n",
 				abort_reason[cs - CPX_STAT_CONFLICT_ABORT_CONTRADICTION]);
 		goto ret;
 		}
 	if (mc1 > mc || nc1 > nc) {
-		rv = Sprintf(hbuf, "\nSurprise confnumrows = %d (should be <= %d),"
+		Bpf(B, "\nSurprise confnumrows = %d (should be <= %d),"
 				"\nconfnumcols = %d (should be <= %d) from CPXgetconflict.",
 				mc1, mc, nc1, nc);
 		goto ret;
 		}
 	nc = confiis_put(asl, ASL_Sufkind_var, nc1, colind, colst);
 	mc = confiis_put(asl, ASL_Sufkind_con, mc1, rowind, rowst);
-	return Sprintf(hbuf,
-		"\nReturning an IIS of %d variables and %d constraints.", nc, mc);
+	Bpf(B, "\nReturning an IIS of %d variables and %d constraints.", nc, mc);
 
  ret:
 	free(colind);
-	return rv;
 	}
 #endif /*CPX_PARAM_FEASOPTMODE*/
 
- static int
-send_iis(ASL *asl, cpxlp *cpx, char *hbuf)
+ static void
+send_iis(ASL *asl, cpxlp *cpx, PBuf *B)
 {
 	char *ckind;
 	int i, j, m, m1, n, n1;
 	int *ci, *cs, *ri, *rs;
 
 	if (!want_iis)
-		return 0;
+		return;
 #ifdef CPX_PARAM_FEASOPTMODE /* >= 9.2b */
-	if (nlc)
-		return send_confiis_ext(asl, cpx, hbuf);
+	if (nlc) {
+		send_confiis_ext(asl, cpx, B);
+		return;
+		}
 	if (want_iis > 2
 	|| (nbv + niv + nlvoi + nlvci + nlvbi > 0 && !relax)
-	|| (Optimize != CPXprimopt && Optimize != CPXdualopt))
-		return send_confiis(asl, cpx, hbuf);
+	|| (Optimize != CPXprimopt && Optimize != CPXdualopt)) {
+		send_confiis(asl, cpx, B);
+		return;
+		}
 #endif
 	if (nlc) {
 		printf("Ignoring iisfind request because of nonlinearities.\n");
-		return 0;
+		return;
 		}
 #ifdef CPX_PARAM_IISIND
 	CPXsetintparam(Env, CPX_PARAM_IISIND, want_iis-1);
-	if (i = CPXfindiis(Env, cpx, &m, &n))
-		return retfrom(hbuf, i, "CPXfindiis");
+	if (i = CPXfindiis(Env, cpx, &m, &n)) {
+		retfrom(B, i, "CPXfindiis");
+		return;
+		}
 #else
-	if ((i = CPXrefineconflict(Env, cpx, &m, &n)))
-		return retfrom(hbuf, i, "CPXrefineconflict");
+	if ((i = CPXrefineconflict(Env, cpx, &m, &n))) {
+		retfrom(B, i, "CPXrefineconflict");
+		return;
+		}
 #endif
 	ci = (int*)M1alloc((2*(m+n))*sizeof(int));
 	cs = ci + n;
@@ -4097,29 +5954,33 @@ send_iis(ASL *asl, cpxlp *cpx, char *hbuf)
 	rs = ri + m;
 	ckind = "";
 #ifdef CPX_PARAM_IISIND
-	if (i = CPXgetiis(Env, cpx, &j, ri, rs, &m1, ci, cs, &n1))
-		return retfrom(hbuf, i, "CPXgetiis");
+	if (i = CPXgetiis(Env, cpx, &j, ri, rs, &m1, ci, cs, &n1)) {
+		retfrom(B, i, "CPXgetiis");
+		return;
+		}
 	iis_put(asl, ASL_Sufkind_var, n, ci, cs);
 	iis_put(asl, ASL_Sufkind_con, m, ri, rs);
 	if (j != 1)
 		ckind = "partial ";
 #else
-	if ((i = CPXgetconflict(Env, cpx, &j, ri, rs, &m1, ci, cs, &n1)))
-		return retfrom(hbuf, i, "CPXgetconflict");
+	if ((i = CPXgetconflict(Env, cpx, &j, ri, rs, &m1, ci, cs, &n1))) {
+		retfrom(B, i, "CPXgetconflict");
+		return;
+		}
 	switch(j) {
 	  case CPX_STAT_CONFLICT_MINIMAL:
 		confiis_put(asl, ASL_Sufkind_var, n, ci, cs);
 		confiis_put(asl, ASL_Sufkind_con, m, ri, rs);
 		break;
 	  case CPX_STAT_CONFLICT_FEASIBLE:
-		return Sprintf(hbuf, "\nCPXgetconflict claims the problem is feasible.");
+		Bpf(B, "\nCPXgetconflict claims the problem is feasible.");
+		return;
 	  default:
-		return Sprintf(hbuf, "\nSurprise conflict status %d from CPXgetconflict.", j);
+		Bpf(B, "\nSurprise conflict status %d from CPXgetconflict.", j);
+		return;
 	  }
 #endif
-	return Sprintf(hbuf,
-		"\nReturning %siis of %d variables and %d constraints.",
-		ckind, n, m);
+	Bpf(B, "\nReturning %siis of %d variables and %d constraints.", ckind, n, m);
 	}
 
  static int
@@ -4162,11 +6023,12 @@ wantray(int dual, cpxlp **pcpx, int *itcp, int *itcip, int nelqf)
 
 #ifdef CPX_PARAM_POPULATELIM /*{*/
  static void
-poolwrite(ASL *asl, cpxlp *cpx, dims *d, int nelqf, char *hb, int *hbi, size_t hblen)
+poolwrite(ASL *asl, cpxlp *cpx, dims *d, int nelqf, PBuf *B)
 {
+	PBuf B1;
 	char buf[32], buf1[1200], *fname, *s;
 	const char *whence;
-	int i, j, k, k1, m, n, nm1, npm, nprt, nsols, oprt, rft, stat1, status;
+	int j, k, m, n, nm1, npm, nprt, nsols, oprt, rft, stat1, status;
 	int *cstat, *ocstat, *orstat, *rstat;
 	real feastol, inttol, obj, *x, *y, *y1;
 	size_t L;
@@ -4176,19 +6038,20 @@ poolwrite(ASL *asl, cpxlp *cpx, dims *d, int nelqf, char *hb, int *hbi, size_t h
 		errfmt2[] = "\nCPLEX status %d from CPXsolution "
 			"on solution pool\nmember %d (file %s).";
 
-	i = *hbi;
+	B1.s = buf1;
+	B1.se = buf1 + sizeof(buf1);
 	j = rft = 0;
 	y = 0;
 	ocstat = orstat = 0;
 	if (populate == 1) {
 		if ((k = CPXpopulate(Env, cpx))) {
-			i += snprintf(hb+i, hblen-i, "\nReturn %d from CPXpopulate.", k);
+			Bpf(B, "\nReturn %d from CPXpopulate.", k);
 			goto done;
 			}
 		}
 	nsols = CPXgetsolnpoolnumsolns(Env,cpx);
 	if (nsols <= 0) {
-		i += snprintf(hb+i, hblen-i, "\n%d solutions in solution pool.", nsols);
+		Bpf(B, "\n%d solutions in solution pool.", nsols);
 		goto done;
 		}
 	m = n_con;
@@ -4229,8 +6092,7 @@ poolwrite(ASL *asl, cpxlp *cpx, dims *d, int nelqf, char *hb, int *hbi, size_t h
 			break;
 			}
 		g_fmtop(buf, obj);
-		k1 = snprintf(buf1, sizeof(buf1),
-			"Solution pool member %d (of %d); objective %s",
+		Bpf(&B1, "Solution pool member %d (of %d); objective %s",
 			j+1, nsols, buf);
 		sprintf(fname+L, "%d.sol", j+1);
 		if ((y1 = y)) {
@@ -4242,8 +6104,7 @@ poolwrite(ASL *asl, cpxlp *cpx, dims *d, int nelqf, char *hb, int *hbi, size_t h
 			status = CPXprimopt(Env, cpx);
 			stat1 = CPXgetstat(Env, cpx);
 			if (status || stat1 != 1) {
-				snprintf(buf1+k1, sizeof(buf1)-k1, errfmt1,
-					stat1, j, fname,
+				Bpf(&B1, errfmt1, stat1, j, fname,
 					solinfo[statadjust(cpx,stat1)].msg);
 				y1 = 0;
 				}
@@ -4251,45 +6112,47 @@ poolwrite(ASL *asl, cpxlp *cpx, dims *d, int nelqf, char *hb, int *hbi, size_t h
 				y1 = 0;
 				status = CPXgetstat(Env, cpx);
 				stat1 = statadjust(cpx, status);
-				snprintf(buf1+k1, sizeof(buf1)-k1, errfmt2,
-					status, j, fname);
+				Bpf(&B1, errfmt2, status, j, fname);
 				}
 			else if (send_statuses(asl, cpx, d))
-				snprintf(buf1+k1, sizeof(buf1)-k1, "\nNo basis.");
+				Bpf(&B1, "\nNo basis.");
 			if ((k = CPXchgprobtype(Env, cpx, oprt))) {
 				whence = "CPXchgprobtype<restore>";
 				break;
 				}
 			}
+#ifdef CPXERR_QCP_SENSE
+		if (nlc && y1 && x)
+			qcduals(asl, cpx, d, x, y1);
+#endif
 		if (write_solf_ASL(asl, buf1, x, y1, 0, fname)) {
 			whence = "";
 			break;
 			}
+		B1.s = buf1;
 		}
-	i += snprintf(hb+i,hblen-i,"\nWrote %d solution%s in solution pool",
-			j, "s" + (j == 1));
+	Bpf(B, "\nWrote %d solution%s in solution pool", j, "s" + (j == 1));
 	s = L > 32 ? "\n" : " ";
 	if (j > 0)
 	  switch(j) {
 		case 1:
-			i += snprintf(hb+i,hblen-i,"\nto file %s1.sol", poolstub);
+			Bpf(B, "\nto file %s1.sol", poolstub);
 			break;
 		case 2:
-			i += snprintf(hb+i,hblen-i,"\nto files %s1.sol%sand %s2.sol",
+			Bpf(B, "\nto files %s1.sol%sand %s2.sol",
 				poolstub, s, poolstub);
 			break;
 		default:
-			i += snprintf(hb+i,hblen-i,"\nto files %s1.sol%s... %s%d.sol",
+			Bpf(B, "\nto files %s1.sol%s... %s%d.sol",
 				poolstub, s, poolstub, j);
 		}
-	i += snprintf(hb+i,hblen-i,".");
+	Bpf(B, ".");
 	if (whence) {
 		if (k)
-			i += snprintf(hb+i,hblen-i,
-				"\nSolution pool writing stopped by return %d from %s.",
+			Bpf(B, "\nSolution pool writing stopped by return %d from %s.",
 				k, whence);
 		else
-			i += snprintf(hb+i,hblen-i, "\nCould not open \"%s\"", fname);
+			Bpf(B, "\nCould not open \"%s\"", fname);
 		}
 	if (ocstat) {
 		memcpy(cstat, ocstat, n*sizeof(int));
@@ -4300,8 +6163,8 @@ poolwrite(ASL *asl, cpxlp *cpx, dims *d, int nelqf, char *hb, int *hbi, size_t h
 	if (rft) /*restore "feasibility" tolerance*/
 		CPXsetdblparam(Env, CPX_PARAM_EPRHS, feastol);
 	d->npool = j;
+	suf_iput("npool", ASL_Sufkind_obj, &d->npool);
 	suf_iput("npool", ASL_Sufkind_prob, &d->npool);
-	*hbi = i;
 	}
 
  struct
@@ -4379,18 +6242,16 @@ getparinfo(void)
 	}
 
  static void
-tunewrite(char *fname, const char *fkeywd, char *hb, int *hbi, size_t hblen)
+tunewrite(char *fname, const char *fkeywd, PBuf *B)
 {
 	Element *e, *ee;
 	FILE *f;
 	ParInfo *PI;
-	int i, n;
+	int n;
 	keyword *kw;
 
-	i = *hbi;
 	if (!(f = fopen(fname, "w"))) {
-		*hbi = i += snprintf(hb+i, hblen-i, "\nCould not open %s file \"%s\"",
-				fkeywd, fname);;
+		Bpf(B, "\nCould not open %s file \"%s\"", fkeywd, fname);;
 		solve_result_num = 565;
 		return;
 		}
@@ -4407,8 +6268,7 @@ tunewrite(char *fname, const char *fkeywd, char *hb, int *hbi, size_t hblen)
 			fprintf(f, "%s = %.g\n", kw->name, e->u.dval);
 		}
 	fclose(f);
-	*hbi = i += snprintf(hb+i, hblen-i, "\n%d settings written to %s file \"%s\"",
-			n, fkeywd, fname);
+	Bpf(B, "\n%d settings written to %s file \"%s\"", n, fkeywd, fname);
 	AVL_Tree_free(&PI->tree);
 	free(PI);
 	}
@@ -4416,10 +6276,9 @@ tunewrite(char *fname, const char *fkeywd, char *hb, int *hbi, size_t hblen)
 
 #if CPX_VERSION >= 1000 /*{*/
  static void
-tunewriteprm(char *fname, const char *fkeywd, char *hb, int *hbi, size_t hblen)
+tunewriteprm(char *fname, const char *fkeywd, PBuf *B)
 {
 	char *fmt;
-	int i = *hbi;
 
 	if (CPXwriteparam(Env, fname)) {
 		fmt = "\nError writing %s file \"%s\"";
@@ -4427,7 +6286,7 @@ tunewriteprm(char *fname, const char *fkeywd, char *hb, int *hbi, size_t hblen)
 		}
 	else
 		fmt = "\n%s file \"%s\" written";
-	*hbi = i += snprintf(hb+i, hblen-i, fmt, fkeywd, fname);
+	Bpf(B, fmt, fkeywd, fname);
 	}
 #endif /*}*/
 
@@ -4514,7 +6373,7 @@ tunefixfile_proc(Tunefix *Tf)
 	char buf[4096], *b, *b1, *be;
 
 	if (!(f = fopen(tunefixfile, "rb")))
-		badretfmt(566, "Could not open tunefixfile \"%s\"", tunefixfile);
+		badretfmt(564, "Could not open tunefixfile \"%s\"", tunefixfile);
  top:
 	while(fgets(buf, sizeof(buf), f)) {
 		b = buf;
@@ -4534,11 +6393,11 @@ tunefixfile_proc(Tunefix *Tf)
 	}
 
  static void
-tunerun(cpxlp *cpx, char *hb, int *hbi, size_t hblen)
+tunerun(cpxlp *cpx, PBuf *B)
 {
 	Element *E;
 	Tunefix TF;
-	char *what, whatbuf[64];
+	const char *what;
 	double *dblval;
 	int *intval;
 	int i, j, k, n_dbl, n_int;
@@ -4565,10 +6424,8 @@ tunerun(cpxlp *cpx, char *hb, int *hbi, size_t hblen)
 		}
 	k = CPXtuneparam(Env, cpx, n_int, TF.num0, intval, n_dbl, TF.numr, dblval,
 			0, 0, 0, &j);
-	i = *hbi;
 	if (k)
-		i += snprintf(hb + i, hblen - i,
-				"\nSurprise return %d from CPXtuneparam.", k);
+		Bpf(B, "\nSurprise return %d from CPXtuneparam.", k);
 	else {
 		switch(j) {
 		 case 0:
@@ -4581,13 +6438,12 @@ tunerun(cpxlp *cpx, char *hb, int *hbi, size_t hblen)
 			what = "time limit reached";
 			break;
 		 default:
-			what = whatbuf;
-			snprintf(whatbuf, sizeof(whatbuf),
-				"got surprise tunestat = %d", j);
+			Bpf(B, "\nTuning got surprise tunestat = %d.", j);
+			goto no_what;
 		 }
-		i += snprintf(hb + i, hblen - i, "\nTuning %s.", what);
+		Bpf(B, "\nTuning %s.", what);
 		}
-	*hbi = i;
+ no_what:
 	if (dblval) {
 		free(dblval);
 		if (TF.avi)
@@ -4599,10 +6455,67 @@ tunerun(cpxlp *cpx, char *hb, int *hbi, size_t hblen)
 	}
 #endif /*}*/
 
+#ifdef CPXPROB_MIQCP
+ static void
+fixints(ASL *asl, cpxlp *cpx, real *x)
+{
+	char *t;
+	int i, k, nint, *z, *z1;
+	real *b, *b1;
+
+	nint = nbv + niv + nlvoi + nlvci + nlvbi;
+	b = b1 = (real*)Malloc(nint*(sizeof(real) + sizeof(int) + 1));
+	z = z1 = (int*)(b + nint);
+	t = (char*)(z + nint);
+	memset(t, 'B', nint);
+	i = n_var - nbv - niv;
+	if ((k = nbv)) {
+		memcpy(b1, x + i, k*sizeof(real));
+		b1 += k;
+		while(k--)
+			*z1++ = i++;
+		}
+	if ((k = niv)) {
+		memcpy(b1, x + i, k*sizeof(real));
+		b1 += k;
+		while(k--)
+			*z1++ = i++;
+		}
+	if ((k = nlvbi)) {
+		i = nlvb - k;
+		memcpy(b1, x + i, k*sizeof(real));
+		b1 += k;
+		while(k--)
+			*z1++ = i++;
+		}
+	if ((k = nlvci)) {
+		i = nlvc - k;
+		memcpy(b1, x + i, k*sizeof(real));
+		b1 += k;
+		while(k--)
+			*z1++ = i++;
+		}
+	if ((k = nlvoi)) {
+		i = nlvo - k;
+		memcpy(b1, x + i, k*sizeof(real));
+		b1 += k;
+		while(k--)
+			*z1++ = i++;
+		}
+	i = CPXchgbds(Env, cpx, nint, z, t, b);
+	if (i)
+		fprintf(Stderr, "CPxchbds() returned %d\n", i);
+	free(b);
+	}
+#endif
+
  static void
 amplout(ASL *asl, cpxlp **pcpx, dims *d, int status, int nelqf, int nint1, int *nosp)
 {
-	char buf[32], hbuf[4096], *wb;
+	Optalg Contopt;
+	PBuf B;
+	char buf[32], hbuf[4096];
+	const char *wb, *what;
 	cpxlp *cpx, *cpx1;
 	int bitc, i, ii, itc, itci, j, m, mipstat, n, needsol, nint;
 	int nodecnt, nodelim, nos, npt, nround, opt, stat, stat0, stat1, stat10;
@@ -4618,11 +6531,12 @@ amplout(ASL *asl, cpxlp **pcpx, dims *d, int status, int nelqf, int nint1, int *
 	 ,{ "QP Hessian has diag. elements of the wrong sign", 541, 0 }
 #endif
 		};
+	static Sol_info subprob_failed = { "Failed to solve a MIP subproblem", 513, 0 };
 	static char *netmsg[] = {
 		"no network",
 		/*"an optimal network solution"*/ "",
-		"an infeasible network",
 		"an unbounded network",
+		"an infeasible network",
 		"an infeasible or unbounded network",
 		"iteration limit with a feasible network solution",
 		"iteration limit with an infeasible network solution",
@@ -4666,6 +6580,9 @@ CutInfo {
 #ifdef CPX_CUT_MCF
 		{ "multi-commodity flow",	CPX_CUT_MCF },
 #endif
+#ifdef CPX_CUT_LANDP
+		{ "split",			CPX_CUT_LANDP },
+#endif
 #if 0
 		{ "",	CPX_CUT_TIGHTEN },
 		{ "",	CPX_CUT_OBJDISJ },
@@ -4699,6 +6616,8 @@ QualityInfo {
 
 #endif /*}}*/
 
+	B.s = hbuf;
+	B.se = hbuf + sizeof(hbuf);
 	cpx = *pcpx;
 	absmipgap = obj = relmipgap = Infinity;
 	stat0 = stat10 = -1;
@@ -4725,6 +6644,15 @@ QualityInfo {
 	nos = nosp ? *nosp : 0;
 	switch (status) {
 	  case 0: break;
+	  case CPXERR_SUBPROB_SOLVE:
+		SI = &subprob_failed;
+		x = y = 0;
+		Bpf(&B, "%s: %s", Oinfo.bsname, SI->msg);
+		if ((stat0 = CPXgetsubstat(Env,cpx)) && (stat = statadjust(cpx,stat0)))
+			Bpf(&B, ": %s", solinfo[stat].msg);
+		else
+			Bpf(&B, "; CPXgetsubstat returned %d.", stat0);
+		goto have_SI1;
 	  case CPXERR_NO_MEMORY:
 		SI = solinfo1 + 2;
 		stat = -1;
@@ -4765,6 +6693,10 @@ QualityInfo {
 				break;
 			  case CPX_ALG_PRIMAL:
 				Optimize = CPXprimopt;
+				break;
+			  case CPX_ALG_MIP:
+				/* possible with reqconvex == 3 */
+				nint1 = 1;
 				break;
 #ifdef CPX_STAT_OPTIMAL	/* >= 8.0 */
 			  case CPX_ALG_SIFTING:
@@ -4872,20 +6804,53 @@ QualityInfo {
 					"Surprise return %d from CPXgetmipx\n", i);
 				x = 0;
 				}
-			if (!nlc && mipbasis) {
+			if (mipbasis) {
 				opt = CPXgetprobtype(Env, cpx);
+				Contopt = CPXprimopt;
+				what = "CPXprimopt";
+#ifdef CPXPROB_MIQCP
+				npt = CPXPROB_FIXEDMILP;
+				switch(opt) {
+				  case CPXPROB_MIQP:
+					npt = CPXPROB_FIXEDMIQP;
+					goto use_qpopt;
+				  case CPXPROB_MIQCP:
+					if (!x)
+						goto no_qcbasis;
+					npt = CPXPROB_QCP;
+ use_qpopt:
+					Contopt = CPXqpopt;
+					what = "CPXqpopt";
+					}
+#else
 				npt = nelqf ? 8 : 3;
-				if (npt != opt)
-					CPXchgprobtype(Env, cpx, npt);
+#endif
+				if (npt != opt) {
+					i = CPXchgprobtype(Env, cpx, npt);
+					if (i) {
+						fprintf(Stderr,
+						 "CPXchgprobtype(...,%d) returned %d\n",
+							npt, i);
+						goto no_qcbasis;
+						}
+					}
+#ifdef CPXPROB_MIQCP
+				if (npt == CPXPROB_QCP)
+					fixints(asl, cpx, x);
+#endif
 				if ((i = !CPXgetdblparam(Env,CPX_PARAM_EPRHS,&feastol)
 				 && !CPXgetdblparam(Env,CPX_PARAM_EPINT,&inttol)
 				 && inttol > feastol))
 					CPXsetdblparam(Env, CPX_PARAM_EPRHS, inttol);
-				status = CPXprimopt(Env, cpx);
+				status = Contopt(Env, cpx);
 				stat1 = CPXgetstat(Env, cpx);
 				if (i)	/*restore "feasibility" tolerance*/
 					CPXsetdblparam(Env, CPX_PARAM_EPRHS, feastol);
-				if (status || stat1 != 1) {
+				if (status) {
+					fprintf(Stderr, "\n%s returned %d\n", what, status);
+					y = 0;
+					}
+				else if (stat1 != 1) {
 					fprintf(Stderr,
 					"CPLEX solution status %d with fixed integers:\n\t%s\n",
 						stat1, solinfo[statadjust(cpx,stat1)].msg);
@@ -4893,9 +6858,13 @@ QualityInfo {
 					}
 				else if (x)
 					needsol = 1;
+				stat1 = 1;
 				if (endbas && !nelqf)
 					write_basis(cpx);
 				}
+			else if (!nlc)
+				y = 0;
+ no_qcbasis:
 			if (!solinfo[stat].wantobj)
 				goto have_stat;
 			if (needsol) {
@@ -4987,47 +6956,41 @@ QualityInfo {
  have_stat:
 	SI = solinfo + stat;
  have_SI:
-	i = Snprintf(hbuf, sizeof(hbuf), "%s: %s", Oinfo.bsname, SI->msg);
+	Bpf(&B, "%s: %s", Oinfo.bsname, SI->msg);
 	if (!stat)
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			": %s", failstat(stat0));
+		Bpf(&B, ": %s", failstat(stat0));
 #ifdef CPLEX_MIP
 	else if (stat == 16 || stat == 17) {
 		CPXgetintparam(Env, CPX_PARAM_NODELIM, &nodelim);
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			".\nCurrent node limit = %d", nodelim);
+		Bpf(&B, ".\nCurrent node limit = %d", nodelim);
 		}
 #endif
 	else if (!SI->wantobj)
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i, ".");
+		Bpf(&B, ".");
 	if (SI->wantobj) {
 		if (obj == Infinity)
 			CPXgetobjval(Env, cpx, &obj);
 		g_fmtop(buf, obj);
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i, "; objective %s", buf);
+		Bpf(&B, "; objective %s", buf);
 		}
+ have_SI1:
 	solve_result_num = SI->code;
 	if (nosp) {
 		if (nos < 0 || nos > 12)
 			nos = 11;
 		if (nos != 1)
-			i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-				"\nnetopt found %s.", netmsg[nos]);
+			Bpf(&B, "\nnetopt found %s.", netmsg[nos]);
 		if (net_nodes != lnc || net_arcs != nwv)
-			i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			"\nNetwork extractor found %d nodes and %d arcs.",
+			Bpf(&B, "\nNetwork extractor found %d nodes and %d arcs.",
 				net_nodes, net_arcs);
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-				"\n%d network simplex iterations.", netiters);
+		Bpf(&B, "\n%d network simplex iterations.", netiters);
 		}
 	if (nint1 && !mipstat)
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-		 "\n%d MIP simplex iterations\n%d branch-and-bound nodes",
+		Bpf(&B, "\n%d MIP simplex iterations\n%d branch-and-bound nodes",
 			ii, nodecnt);
 	if (itc > 0 || itci > 0
 	 || Optimize == CPXprimopt || Optimize == CPXdualopt) {
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			"\n%d %s%ssimplex iterations (%d in phase I)%s",
+		Bpf(&B, "\n%d %s%ssimplex iterations (%d in phase I)%s",
 				itc, nelqf ? "QP " : "", algname, itci,
 				method > 0 ? "" : " on the dual problem");
 		if (itc == 0 && itci == 0 && netiters <= 0
@@ -5038,27 +7001,22 @@ QualityInfo {
 	else if (Optimize == CPXlpopt && lpoptalg == CPX_ALG_SIFTING) {
 		itc = CPXgetsiftitcnt(Env, cpx);
 		itci = CPXgetsiftphase1cnt(Env, cpx);
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			"\n%d sifting subproblems solved (%d in phase I)", itc, itci);
+		Bpf(&B, "\n%d sifting subproblems solved (%d in phase I)", itc, itci);
 		}
 #endif
 	if (bitc > 0) {
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i, "\n%d %sbarrier iterations",
-			bitc, baralgname);
+		Bpf(&B, "\n%d %sbarrier iterations", bitc, baralgname);
 		if (cbi.nx[0] | cbi.nx[1])
-			i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-				"\n%d push, %d exchange %s crossover iterations",
+			Bpf(&B, "\n%d push, %d exchange %s crossover iterations",
 				cbi.nx[0], cbi.nx[1], cbi.xkind);
 		}
 	if (cbi.np[0] + cbi.np[1] + cbi.np[3])
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			"\nCPLEX's %spresolve eliminated totals of %d "
+		Bpf(&B, "\nCPLEX's %spresolve eliminated totals of %d "
 			"constraints and %d variables\n(perhaps repeatedly) "
 			"and made %d coefficient changes.",
 			nint1 ? "MIP " : "", cbi.np[0], cbi.np[1], cbi.np[3]);
 	if (cbi.np[2])
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			"\nCPLEX's aggregator made %d substitutions.", cbi.np[2]);
+		Bpf(&B, "\nCPLEX's aggregator made %d substitutions.", cbi.np[2]);
 #ifdef CPLEX_MIP
 	if (bestnode) {
 		bbound = bobj0;
@@ -5099,20 +7057,16 @@ QualityInfo {
 	if (ccpr) {
 		if (cl0 | cl | cov) {
 			if (cl0)
-				i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			  "\n%d of %d clique inequalities used", cl, cl0);
+				Bpf(&B, "\n%d of %d clique inequalities used", cl, cl0);
 			if (cov)
-				i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			  "\n%d cover cuts added", cov);
+				Bpf(&B, "\n%d cover cuts added", cov);
 			}
 		else
-			i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-				"\nNo clique or cover cuts used.");
+			Bpf(&B, "\nNo clique or cover cuts used.");
 		}
 #endif
 	if (absmipgap > 0. && absmipgap < Infinity && !(retmipgap & 4))
-			i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-				"\nabsmipgap = %g, relmipgap = %g",
+			Bpf(&B, "\nabsmipgap = %g, relmipgap = %g",
 				absmipgap, relmipgap);
 	if (retmipgap & 1) {
 		suf_rput("relmipgap", ASL_Sufkind_obj, &relmipgap);
@@ -5125,21 +7079,18 @@ QualityInfo {
 #endif
 	if (stat1 != 1) {
 		SI = solinfo + stat1;
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			"\nStatus recovering solution: %s", SI->msg);
+		Bpf(&B, "\nStatus recovering solution: %s", SI->msg);
 		if (!stat1)
-			i += Snprintf(hbuf+i, sizeof(hbuf)-i, ": stat = %d", stat10);
+			Bpf(&B, ": stat = %d", stat10);
 		if (solve_result_num < SI->code)
 			solve_result_num = SI->code;
 		}
 	if (aggtries > 1)
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			"\nTried aggregator %d times", aggtries);
-	if (solve_result_num >= 200 && solve_result_num < 300) {
-		i += send_iis(asl, cpx, hbuf+i);
-		}
+		Bpf(&B, "\nTried aggregator %d times", aggtries);
+	if (solve_result_num >= 200 && solve_result_num < 300)
+		send_iis(asl, cpx, &B);
 	if (send_statuses(asl, cpx, d))
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i, "\nNo basis.");
+		Bpf(&B, "\nNo basis.");
 	else if (asl->i.flags & 1 && method > 0)
 		switch(stat) {
 			/* Note: stat values have been adjusted to accord with */
@@ -5148,48 +7099,42 @@ QualityInfo {
 		  case 2: /*infeasible*/
 			if (wantray(1,&cpx,&itc,&itci,nelqf)) {
 				j = send_dray(asl,cpx,nelqf);
-				i += Snprintf(hbuf+i, sizeof(hbuf)-i, dray_msg[j]);
+				Bpf(&B, dray_msg[j]);
 				}
 			goto j_check;
 		  case 3: /*unbounded*/
 			if (wantray(0,&cpx,&itc,&itci,0))
-			  i += Snprintf(hbuf+i, sizeof(hbuf)-i, (j = send_ray(asl,cpx))
+			  Bpf(&B, (j = send_ray(asl,cpx))
 				? "\nfailed to compute variable.unbdd"
 				: "\nvariable.unbdd returned");
  j_check:
 			*pcpx = cpx;
 			if (itc) {
-				i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-				  "\n%d extra %ssimplex iterations for ray",
+				Bpf(&B, "\n%d extra %ssimplex iterations for ray",
 					itc, algname);
 				if (itci)
-				  i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-					" (%d in phase I)",itci);
+				  Bpf(&B, " (%d in phase I)",itci);
 				}
 			if (!j)
 				solve_result_num += 10;
 		  }
 	if (basis_cond) {
 		if (CPXgetdblquality(Env, cpx, &bcond, CPX_KAPPA)) {
-			i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-				"\nBasis condition is unavailable.");
+			Bpf(&B, "\nBasis condition is unavailable.");
 			bcond = 0;
 			}
 		else
-			i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-				"\nBasis condition = %g", bcond);
+			Bpf(&B, "\nBasis condition = %g", bcond);
 		if (n_obj > 0)
 			suf_rput("basis_cond", ASL_Sufkind_obj, &bcond);
 		suf_rput("basis_cond", ASL_Sufkind_prob, &bcond);
 		}
 #ifdef CPX_PARAM_MIPKAPPASTATS
 	if (haveqmet) {
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			"\n%s = %.3g", QualInfo[0].desc, qmet[0]);
+		Bpf(&B, "\n%s = %.3g", QualInfo[0].desc, qmet[0]);
 		for(j = 1; j < haveqmet; ++j)
 			if (qmet[j] > 0.)
-				i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-					"\n%s = %.3g", QualInfo[j].desc, qmet[j]);
+				Bpf(&B, "\n%s = %.3g", QualInfo[j].desc, qmet[j]);
 		}
 #endif
 	if (nround) {
@@ -5198,15 +7143,11 @@ QualityInfo {
 			nround = -nround;
 			wb = "would be ";
 			}
-		i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			"\n%d integer variables %srounded (maxerr = %g).",
+		Bpf(&B, "\n%d integer variables %srounded (maxerr = %g).",
 			nround, wb, w[0]);
-		if (w[0] > intwarn_tol && 0.5*w[0] > w[2]) {
-			i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			  "\nAssigning integrality = %.1g might help.", 0.5*w[0]);
-			i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-			  "\nCurrently integrality = %g.", w[1]);
-			}
+		if (w[0] > intwarn_tol && 0.5*w[0] > w[2])
+			Bpf(&B, "\nAssigning integrality = %.1g might help."
+			  "\nCurrently integrality = %g.", 0.5*w[0], w[1]);
 		}
 #if CPX_VERSION >= 1100
 	if (npt != opt)
@@ -5214,28 +7155,35 @@ QualityInfo {
 	if (cutstats && nint1)
 	    for(CI = Cut_Info; CI->cutname; ++CI)
 		if (!CPXgetnumcuts(Env, cpx, CI->cuttype, &j) && j > 0)
-			i += Snprintf(hbuf+i, sizeof(hbuf)-i,
-				"\n%d %s cut%s", j, CI->cutname, "s" + (j == 1));
+			Bpf(&B, "\n%d %s cut%s", j, CI->cutname, "s" + (j == 1));
 #endif
 #ifdef CPX_PARAM_POPULATELIM
 	if (Optimize == CPXmipopt && poolstub && x)
-		poolwrite(asl, cpx, d, nelqf, hbuf, &i, sizeof(hbuf));
+		poolwrite(asl, cpx, d, nelqf, &B);
 	if (pretunefile)
-		tunewrite(pretunefile, "pretunefile", hbuf, &i, sizeof(hbuf));
+		tunewrite(pretunefile, "pretunefile", &B);
 #endif
 #if CPX_VERSION >= 1000 /*{*/
 	if (pretunefileprm)
-		tunewriteprm(pretunefileprm, "pretunefileprm", hbuf, &i, sizeof(hbuf));
+		tunewriteprm(pretunefileprm, "pretunefileprm", &B);
 #ifdef CPX_TUNE_TILIM /* CPLEX 11 */
 	if (tunefile || tunefileprm) {
-		tunerun(cpx, hbuf, &i, sizeof(hbuf));
+		tunerun(cpx, &B);
 		if (tunefile)
-			tunewrite(tunefile, "tunefile", hbuf, &i, sizeof(hbuf));
+			tunewrite(tunefile, "tunefile", &B);
 		if (tunefileprm)
-			tunewriteprm(tunefileprm, "tunefileprm", hbuf, &i, sizeof(hbuf));
+			tunewriteprm(tunefileprm, "tunefileprm", &B);
 		}
 #endif
 #endif /*}*/
+#ifdef CPXERR_QCP_SENSE
+	if (nlc) {
+		if (y && x && want_qcdual && SI->wantobj)
+			qcduals(asl, cpx, d, x, y);
+		else
+			y = 0;
+		}
+#endif
 	write_sol(hbuf, x, y, &Oinfo);
 	if (Logf) {
 		CPXsetlogfile(Env, NULL);
@@ -5244,21 +7192,35 @@ QualityInfo {
 		}
 	}
 
- static double Times[4];
-
  static void
 show_times(void)
 {
 	int i;
 
 	Times[3] = xectim_();
-	for(i = 1; i <= 2; i++)
+	for(i = 1; i <= 2; ++i)
 	    if (time_flag & i) {
 		fprintf(i == 1 ? stdout : Stderr,
 		"\nTimes (seconds):\nInput =  %g\nSolve =  %g\nOutput = %g\n",
 			Times[1] - Times[0], Times[2] - Times[1],
 			Times[3] - Times[2]);
 		}
+#if CPX_VERSION >= 12050000
+	if (!DTimes_failed)
+		for(i = 4; i <= 8; i += 4)
+		    if (time_flag & i) {
+		fprintf(i == 4 ? stdout : Stderr,
+		"\nTimes (ticks):\nInput =  %g\nSolve =  %g\nOutput = %g\n",
+			DTimes[1] - DTimes[0], DTimes[2] - DTimes[1],
+			DTimes[3] - DTimes[2]);
+		}
+	if (time_flag & 0x30 && num_cores) {
+		for(i = 16; i <= 32; i += 16)
+			if (time_flag & i)
+				fprintf(i == 16 ? stdout : stderr,
+					"\n%d logical cores are available.\n", num_cores);
+		}
+#endif
 	}
 
  static void
@@ -5361,6 +7323,7 @@ suftab[] = {
 	{ "lazy", 0, ASL_Sufkind_con },
 #endif
 #ifdef CPX_PARAM_POPULATELIM
+	{ "npool", 0, ASL_Sufkind_obj | ASL_Sufkind_outonly},
 	{ "npool", 0, ASL_Sufkind_prob | ASL_Sufkind_outonly},
 #endif
 	{ "priority", 0, ASL_Sufkind_var },
@@ -5401,6 +7364,33 @@ Optimize1(CPXENVptr e,  cpxlp *c)
 	int k, rc;
 
 #ifdef CPX_PARAM_POPULATELIM
+#ifdef Want_Distmipopt
+	const char *cname;
+	char *s, *t;
+	int (CPXPUBLIC *vmconf)(CPXENVptr, const char*);
+	size_t L;
+
+	if ((s = vmconfig) && *s) {
+		if (*s == '@') {
+			++s;
+			cname = "CPXreadcopyvmconfig";
+			vmconf = CPXreadcopyvmconfig;
+			}
+		else {
+			cname = "CPXcopyvmconfig";
+			vmconf = CPXcopyvmconfig;
+			}
+		if ((k = vmconf(e,s))) {
+			solve_result_num = 580;
+			asl->i.uinfo = t = (char*)M1alloc(L = strlen(s) + 80);
+			Snprintf(t, L, "Return %d from %s(e, \"%s\").", k, cname, s);
+			longjmp(Jb,1);
+			}
+		rc = CPXdistmipopt(e, c);
+		CPXdelvmconfig(e);
+		}
+	else
+#endif
 	if (Optimize == CPXmipopt) {
 		if (populate == 2 && poolstub)
 			rc = CPXpopulate(e,c);
@@ -5440,7 +7430,8 @@ main(int argc, char **argv)
 {
 	int	nelqf, nint1, nos, *nosp, rc, status, z;
 	dims	d;
-	char	*solmsg, *stub;
+	char	*s, *solmsg, *stub;
+	const char *fmt;
 	CPXCHANNELptr cpxresults;
 	size_t L;
 	 /* static values for use with longjmp */
@@ -5496,8 +7487,12 @@ main(int argc, char **argv)
 	if (!(stub = getenv("ILOG_LICENSE_FILE")) || !*stub)
 		putenv("ILOG_LICENSE_FILE=" LICENSE_FILE);
 #endif
-	if ((Env = CPXopenCPLEX(&z)))
+	if ((Env = CPXopenCPLEX(&z))) {
+#if CPX_VERSION >= 12050000
+		DTimes_failed = CPXgetdettime(Env, &DTimes[0]);
+#endif
 		adjust_version(asl);
+		}
 #ifndef KEEP_BANNER
 	if (nos >= 0) {
 		close(2);
@@ -5534,9 +7529,14 @@ main(int argc, char **argv)
 	if (!cpx) {
 		if (solve_result_num > 0) {
  ws_now:
-			L = strlen(Oinfo.bsname) + strlen((char*)asl->i.uinfo);
-			sprintf(solmsg = (char*)M1alloc(L+3), "%s: %s",
-				Oinfo.bsname, (char*)asl->i.uinfo);
+			L = strlen(Oinfo.bsname);
+			fmt = "%s";
+			if ((s = (char*)asl->i.uinfo)) {
+				L += strlen(s);
+				fmt = "%s: %s";
+				}
+			solmsg = (char*)M1alloc(L+3);
+			sprintf(solmsg, fmt, Oinfo.bsname, s);
 			write_sol(solmsg, 0, 0, &Oinfo);
 			}
 		else {
@@ -5565,6 +7565,10 @@ main(int argc, char **argv)
 #endif
 	fflush(stdout);
 	Times[1] = xectim_();
+#if CPX_VERSION >= 12050000
+	if (!DTimes_failed)
+		DTimes_failed = CPXgetdettime(Env, &DTimes[1]);
+#endif
 	nosp = 0;
 
 	disconnectchannel(cpxresults);
@@ -5585,6 +7589,10 @@ main(int argc, char **argv)
 		}
 	status = Optimize1(Env,cpx);
 	Times[2] = xectim_();
+#if CPX_VERSION >= 12050000
+	if (!DTimes_failed)
+		DTimes_failed = CPXgetdettime(Env, &DTimes[2]);
+#endif
 	breaking = 1;	/* reset in case, e.g., amplout runs CPXprimopt */
 	if (endbas && !nint1)
 		write_basis(cpx);
@@ -5600,6 +7608,10 @@ main(int argc, char **argv)
  done:
 	if (oic)
 		signal(SIGINT, oic);
+#if CPX_VERSION >= 12050000
+	if (!DTimes_failed)
+		DTimes_failed = CPXgetdettime(Env, &DTimes[3]);
+#endif
 	if (cpx)
 		CPXfreeprob(Env, &cpx);
 	if (Env)
