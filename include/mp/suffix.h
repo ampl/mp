@@ -88,9 +88,6 @@ class SuffixBase {
  private:
   const Impl *impl_;
 
-  template <typename Alloc>
-  friend class mp::BasicSuffixSet;
-
   // A member function representing the true value of SafeBool.
   void True() const {}
 
@@ -285,7 +282,7 @@ inline void Suffix::VisitValues(Visitor &v) const {
 template <typename Alloc>
 class BasicSuffixSet : private Alloc {
  private:
-  typedef internal::SuffixBase::Impl SuffixImpl;
+  typedef Suffix::Impl SuffixImpl;
 
   struct SuffixNameLess {
     bool operator()(const SuffixImpl &lhs, const SuffixImpl &rhs) const {
