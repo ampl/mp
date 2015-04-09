@@ -21,11 +21,14 @@
  */
 
 #include "gmock/gmock.h"
+#include "mock-allocator.h"
 #include "test-assert.h"
 #include "mp/error.h"
 #include "mp/suffix.h"
 
+using testing::_;
 using testing::Matcher;
+using testing::Return;
 
 using mp::Suffix;
 using mp::MutSuffix;
@@ -297,5 +300,15 @@ TEST(SuffixSetTest, Iterator) {
   EXPECT_EQ(s.end(), i);
 }
 
-// TODO: test deallocation
+TEST(ExprFactoryTest, ValueMemoryAllocation) {
+  typedef testing::StrictMock<MockAllocator> Alloc;
+  Alloc alloc;
+  mp::BasicSuffixSet< AllocatorRef<Alloc> > s((AllocatorRef<Alloc>(&alloc)));
+  char buffer[100];
+  EXPECT_CALL(alloc, allocate(_)).WillOnce(Return(buffer));
+  s.Add<int>("test", 0, 1);
+  EXPECT_CALL(alloc, deallocate(buffer, _));
+}
+
+// TODO: test deallocation of suffix names
 // TODO: test SuffixManager

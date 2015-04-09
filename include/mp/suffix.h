@@ -301,8 +301,13 @@ class BasicSuffixSet : private Alloc {
 
   SuffixImpl *DoAdd(fmt::StringRef name, int kind, int num_values);
 
+  template <typename T>
+  void Deallocate(T *values) {
+    typename Alloc::template rebind<T>::other(*this).deallocate(values, 0);
+  }
+
  public:
-  BasicSuffixSet() {}
+  explicit BasicSuffixSet(Alloc alloc = Alloc()) : Alloc(alloc) {}
   ~BasicSuffixSet();
 
   // Adds a suffix throwing Error if another suffix with the same name is
@@ -314,7 +319,8 @@ class BasicSuffixSet : private Alloc {
               "invalid suffix kind");
     SuffixImpl *impl = DoAdd(
           name, kind | internal::SuffixInfo<T>::KIND, num_values);
-    impl->values = new T[num_values];
+    impl->values =
+        typename Alloc::template rebind<T>::other(*this).allocate(num_values);
     return BasicMutSuffix<T>(impl);
   }
 
@@ -376,9 +382,9 @@ BasicSuffixSet<Alloc>::~BasicSuffixSet() {
   for (typename Set::iterator i = set_.begin(), e = set_.end(); i != e; ++i) {
     delete [] i->name.c_str();
     if ((i->kind & suf::FLOAT) != 0)
-      delete [] i->dbl_values;
+      Deallocate(i->dbl_values);
     else
-      delete [] i->int_values;
+      Deallocate(i->int_values);
   }
 }
 
