@@ -302,6 +302,11 @@ class BasicSuffixSet : private Alloc {
   SuffixImpl *DoAdd(fmt::StringRef name, int kind, int num_values);
 
   template <typename T>
+  T *Allocate(std::size_t size) {
+    return typename Alloc::template rebind<T>::other(*this).allocate(size);
+  }
+
+  template <typename T>
   void Deallocate(T *values) {
     typename Alloc::template rebind<T>::other(*this).deallocate(values, 0);
   }
@@ -319,8 +324,7 @@ class BasicSuffixSet : private Alloc {
               "invalid suffix kind");
     SuffixImpl *impl = DoAdd(
           name, kind | internal::SuffixInfo<T>::KIND, num_values);
-    impl->values =
-        typename Alloc::template rebind<T>::other(*this).allocate(num_values);
+    impl->values = Allocate<T>(num_values);
     return BasicMutSuffix<T>(impl);
   }
 
@@ -380,7 +384,7 @@ template <typename Alloc>
 BasicSuffixSet<Alloc>::~BasicSuffixSet() {
   // Deallocate names and values.
   for (typename Set::iterator i = set_.begin(), e = set_.end(); i != e; ++i) {
-    delete [] i->name.c_str();
+    Deallocate(const_cast<char*>(i->name.c_str()));
     if ((i->kind & suf::FLOAT) != 0)
       Deallocate(i->dbl_values);
     else
@@ -399,7 +403,7 @@ typename BasicSuffixSet<Alloc>::SuffixImpl *BasicSuffixSet<Alloc>::DoAdd(
   // Set name to empty string so that it is not deleted if new throws.
   std::size_t size = name.size();
   impl->name = fmt::StringRef(0, 0);
-  char *name_copy = new char[size + 1];
+  char *name_copy = Allocate<char>(size + 1);
   const char *s = name.c_str();
   std::copy(s, s + size, fmt::internal::make_ptr(name_copy, size));
   name_copy[size] = 0;
@@ -423,7 +427,7 @@ class SuffixManager {
 
   // Returns a set of suffixes.
   SuffixSet &suffixes(int kind) {
-    assert(kind >= 0 && kind < suf::NUM_KINDS);
+    MP_ASSERT(kind >= 0 && kind < suf::NUM_KINDS, "invalid suffix kind");
     return suffixes_[kind];
   }
 };

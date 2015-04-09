@@ -20,6 +20,8 @@
  Author: Victor Zverovich
  */
 
+#include <memory>
+
 #include "gmock/gmock.h"
 #include "mock-allocator.h"
 #include "test-assert.h"
@@ -32,6 +34,8 @@ using testing::Return;
 
 using mp::Suffix;
 using mp::MutSuffix;
+
+namespace suf = mp::suf;
 
 class SuffixTest : public testing::Test {
  protected:
@@ -109,7 +113,7 @@ TEST_F(SuffixTest, DoubleSuffix) {
   EXPECT_TRUE(s == 0);
   s = suffixes_.Add<double>("test", 11, 222);
   EXPECT_STREQ("test", s.name());
-  EXPECT_EQ(11 | mp::suf::FLOAT, s.kind());
+  EXPECT_EQ(11 | suf::FLOAT, s.kind());
   EXPECT_EQ(222, s.num_values());
   EXPECT_TRUE(IsDouble<mp::DoubleSuffix::Type>::VALUE);
 }
@@ -119,7 +123,7 @@ TEST_F(SuffixTest, MutDoubleSuffix) {
   EXPECT_TRUE(s == 0);
   s = suffixes_.Add<double>("test", 11, 222);
   EXPECT_STREQ("test", s.name());
-  EXPECT_EQ(11 | mp::suf::FLOAT, s.kind());
+  EXPECT_EQ(11 | suf::FLOAT, s.kind());
   EXPECT_EQ(222, s.num_values());
   EXPECT_TRUE(IsDouble<mp::DoubleSuffix::Type>::VALUE);
   MutSuffix csuf = s;
@@ -232,11 +236,11 @@ TEST_F(SuffixTest, Cast) {
 
 TEST_F(SuffixTest, SuffixKindAgreesWithType) {
   EXPECT_EQ(0, suffixes_.Add<int>("a", 0, 1).kind());
-  EXPECT_ASSERT(suffixes_.Add<int>("b", mp::suf::FLOAT, 1),
+  EXPECT_ASSERT(suffixes_.Add<int>("b", suf::FLOAT, 1),
                 "invalid suffix kind");
-  EXPECT_EQ(mp::suf::FLOAT, suffixes_.Add<double>("c", 0, 1).kind());
-  EXPECT_EQ(mp::suf::FLOAT,
-            suffixes_.Add<double>("d", mp::suf::FLOAT, 1).kind());
+  EXPECT_EQ(suf::FLOAT, suffixes_.Add<double>("c", 0, 1).kind());
+  EXPECT_EQ(suf::FLOAT,
+            suffixes_.Add<double>("d", suf::FLOAT, 1).kind());
 }
 
 TEST(SuffixSetTest, Empty) {
@@ -300,15 +304,45 @@ TEST(SuffixSetTest, Iterator) {
   EXPECT_EQ(s.end(), i);
 }
 
-TEST(ExprFactoryTest, ValueMemoryAllocation) {
+TEST(SuffixSetTest, MemoryAllocation) {
   typedef testing::StrictMock<MockAllocator> Alloc;
   Alloc alloc;
   mp::BasicSuffixSet< AllocatorRef<Alloc> > s((AllocatorRef<Alloc>(&alloc)));
-  char buffer[100];
-  EXPECT_CALL(alloc, allocate(_)).WillOnce(Return(buffer));
+  char buffer1[100], buffer2[100];
+  // Allocate is called twice, for the name and for values.
+  EXPECT_CALL(alloc, allocate(_))
+      .WillOnce(Return(buffer1)).WillOnce(Return(buffer2));
   s.Add<int>("test", 0, 1);
-  EXPECT_CALL(alloc, deallocate(buffer, _));
+  EXPECT_CALL(alloc, deallocate(buffer1, _));
+  EXPECT_CALL(alloc, deallocate(buffer2, _));
 }
 
-// TODO: test deallocation of suffix names
-// TODO: test SuffixManager
+TEST(SuffixManager, VirtualDtor) {
+  struct Test : mp::SuffixManager {
+    bool &called;
+    Test(bool &called) : called(called) {}
+    ~Test() { called = true; }
+  };
+  bool called = false;
+  std::auto_ptr<mp::SuffixManager>(new Test(called));
+  EXPECT_TRUE(called);
+}
+
+TEST(SuffixManager, Suffixes) {
+  mp::SuffixManager sm;
+  mp::SuffixManager::IntSuffix is =
+      sm.suffixes(suf::VAR).Add<int>("test", 0, 1);
+  is.set_value(0, 42);
+  mp::SuffixManager::Suffix s = is;
+  EXPECT_STREQ("test", s.name());
+  for (int i = 0; i < suf::NUM_KINDS; ++i)
+    sm.suffixes(i);
+  EXPECT_ASSERT(sm.suffixes(-1), "invalid suffix kind");
+  EXPECT_ASSERT(sm.suffixes(suf::NUM_KINDS), "invalid suffix kind");
+}
+
+TEST(SuffixManager, SuffixSet) {
+  mp::SuffixManager sm;
+  mp::SuffixManager::SuffixSet &s = sm.suffixes(suf::VAR);
+  s.Add<int>("test", 0, 1);
+}
