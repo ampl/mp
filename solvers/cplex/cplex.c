@@ -96,11 +96,6 @@ THIS SOFTWARE.
 #endif
 /* End hidden params} */
 
-/* For compatibility with CPLEX prior to V12.6.0 */
-#ifndef CPXPARAM_LPMethod
-# define CPXPARAM_LPMethod CPX_PARAM_LPMETHOD
-#endif
-
 #ifndef Sig_ret_type
 #define Sig_ret_type void
 #define SigRet /*nothing*/
@@ -1039,7 +1034,7 @@ sf_mint(Option_Info *oi, keyword *kw, char *v)
 	  case set_netopt:
 		if (t == 3) {
 			m->val = 0;
-			CPXsetintparam(Env, CPXPARAM_LPMethod, CPX_ALG_NET);
+			CPXsetintparam(Env, CPX_PARAM_LPMETHOD, CPX_ALG_NET);
 			}
 		break;
 #ifdef CPLEX_MIP
