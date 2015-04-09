@@ -616,7 +616,7 @@ TEST_F(ExprTest, Format) {
 
 TEST(ExprFactoryTest, ExprMemoryAllocation) {
   MockAllocator alloc;
-  mp::BasicExprFactory< AllocatorRef<char> > f((AllocatorRef<char>(&alloc)));
+  mp::BasicExprFactory< AllocatorRef<> > f((AllocatorRef<>(&alloc)));
   char buffer[100];
   EXPECT_CALL(alloc, allocate(_)).WillOnce(Return(buffer));
   f.MakeNumericConstant(42);
@@ -625,7 +625,7 @@ TEST(ExprFactoryTest, ExprMemoryAllocation) {
 
 TEST(ExprFactoryTest, FuncMemoryAllocation) {
   MockAllocator alloc;
-  mp::BasicExprFactory< AllocatorRef<char> > f((AllocatorRef<char>(&alloc)));
+  mp::BasicExprFactory< AllocatorRef<> > f((AllocatorRef<>(&alloc)));
   char buffer[100];
   EXPECT_CALL(alloc, allocate(_)).WillOnce(Return(buffer));
   f.AddFunction("f", 0);

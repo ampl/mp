@@ -41,7 +41,7 @@ class MockAllocator {
 
 // A reference to a mock allocator which can be passed by value but point
 // to the same underlying allocator used for testing.
-template <typename T, typename Alloc = MockAllocator>
+template <typename Alloc = MockAllocator, typename T = char>
 class AllocatorRef {
  private:
   Alloc *alloc_;
@@ -51,7 +51,7 @@ class AllocatorRef {
 
   template <typename U>
   struct rebind {
-    typedef AllocatorRef<U> other;
+    typedef AllocatorRef<Alloc, U> other;
   };
 
   explicit AllocatorRef(Alloc *alloc = 0) : alloc_(alloc) {}
@@ -59,7 +59,7 @@ class AllocatorRef {
   AllocatorRef(const AllocatorRef &other) : alloc_(other.get()) {}
 
   template <typename U>
-  AllocatorRef(const AllocatorRef<U> &other) : alloc_(other.get()) {}
+  AllocatorRef(const AllocatorRef<Alloc, U> &other) : alloc_(other.get()) {}
 
   AllocatorRef& operator=(const AllocatorRef &other) {
     alloc_ = other.alloc_;
