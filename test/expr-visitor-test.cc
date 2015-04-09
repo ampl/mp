@@ -528,8 +528,8 @@ TEST_PAIRWISE(NOT_ALLDIFF, NotAllDiff)
 
 TEST_F(ExprVisitorTest, InvalidExpr) {
   using ::testing::_;
-  typedef AllocatorRef< ::testing::NiceMock<MockAllocator<char> > > Allocator;
-  ::testing::NiceMock< MockAllocator<char> > alloc;
+  typedef AllocatorRef< char, ::testing::NiceMock<MockAllocator> > Allocator;
+  ::testing::NiceMock<MockAllocator> alloc;
   char buffer[100];
   mp::BasicExprFactory<Allocator> f((Allocator(&alloc)));
 

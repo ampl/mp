@@ -30,27 +30,36 @@
 
 #include "gmock/gmock.h"
 
-template <typename T>
 class MockAllocator {
  public:
   MockAllocator() {}
   MockAllocator(const MockAllocator &) {}
-  typedef T value_type;
-  MOCK_METHOD1_T(allocate, T* (std::size_t n));
-  MOCK_METHOD2_T(deallocate, void (T* p, std::size_t n));
+
+  MOCK_METHOD1(allocate, void* (std::size_t n));
+  MOCK_METHOD2(deallocate, void (void* p, std::size_t n));
 };
 
-template <typename Allocator>
+// A reference to a mock allocator which can be passed by value but point
+// to the same underlying allocator used for testing.
+template <typename T, typename Alloc = MockAllocator>
 class AllocatorRef {
  private:
-  Allocator *alloc_;
+  Alloc *alloc_;
 
  public:
-  typedef typename Allocator::value_type value_type;
+  typedef T value_type;
 
-  explicit AllocatorRef(Allocator *alloc = 0) : alloc_(alloc) {}
+  template <typename U>
+  struct rebind {
+    typedef AllocatorRef<U> other;
+  };
 
-  AllocatorRef(const AllocatorRef &other) : alloc_(other.alloc_) {}
+  explicit AllocatorRef(Alloc *alloc = 0) : alloc_(alloc) {}
+
+  AllocatorRef(const AllocatorRef &other) : alloc_(other.get()) {}
+
+  template <typename U>
+  AllocatorRef(const AllocatorRef<U> &other) : alloc_(other.get()) {}
 
   AllocatorRef& operator=(const AllocatorRef &other) {
     alloc_ = other.alloc_;
@@ -76,9 +85,12 @@ class AllocatorRef {
   }
 #endif
 
-  Allocator *get() const { return alloc_; }
+  Alloc *get() const { return alloc_; }
 
-  value_type* allocate(std::size_t n) { return alloc_->allocate(n); }
+  value_type* allocate(std::size_t n) {
+    return reinterpret_cast<value_type*>(
+          alloc_->allocate(n * sizeof(value_type)));
+  }
   void deallocate(value_type* p, std::size_t n) { alloc_->deallocate(p, n); }
 };
 
