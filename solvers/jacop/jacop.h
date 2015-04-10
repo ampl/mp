@@ -109,6 +109,7 @@ class NLToJaCoPConverter :
   jmethodID impose_;
   jobjectArray var_array_;
   std::vector<jobject> vars_;
+  std::vector<jobject> common_exprs_;
   jobject obj_;
   Class<IntVar> var_class_;
   Class<Sum> sum_class_;
@@ -321,7 +322,8 @@ class NLToJaCoPConverter :
   }
 
   jobject VisitVariable(asl::Reference v) {
-    return vars_[v.index()];
+    int index = v.index(), num_vars = static_cast<int>(vars_.size());
+    return index < num_vars ? vars_[index] : common_exprs_[index - num_vars];
   }
 
   jobject VisitOr(asl::BinaryLogicalExpr e) {

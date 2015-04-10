@@ -299,6 +299,13 @@ void NLToJaCoPConverter::Convert(const ASLProblem &p) {
     env_.SetObjectArrayElement(var_array_, j, jvar);
   }
 
+  int num_common_exprs = p.num_common_exprs();
+  common_exprs_.resize(num_common_exprs);
+  for (int j = 0; j < num_common_exprs; ++j) {
+    if (NumericExpr e = p.common_expr(j).nonlinear_expr())
+      common_exprs_[j] = Visit(e);
+  }
+
   if (p.num_objs() > 0) {
     ASLProblem::Objective obj = p.obj(0);
     jobject result_var = var_class_.NewObject(env_, store_, min_int_, max_int_);
