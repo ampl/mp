@@ -411,6 +411,7 @@ EvalResult NLSolverTest::Eval(
   info.num_vars = info.num_nl_integer_vars_in_cons = 4;
   info.num_algebraic_cons = info.num_nl_cons = 1;
   info.num_con_nonzeros = 1;
+  info.num_common_exprs_in_objs = 1;
   SetInfo(pb, info);
   auto inf = std::numeric_limits<double>::infinity();
   pb.AddVar(-inf, inf, mp::var::INTEGER);
@@ -1156,7 +1157,7 @@ TEST_F(NLSolverTest, CommonExpr) {
   struct CommonExprFactory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
       pb.EndCommonExpr(pb.BeginCommonExpr(0),
-                       pb.MakeUnary(mp::expr::ABS, pb.MakeVariable(1)), 0);
+                       pb.MakeUnary(mp::expr::ABS, pb.MakeVariable(1)), 1);
       return pb.MakeCommonExpr(0);
     }
   } factory;

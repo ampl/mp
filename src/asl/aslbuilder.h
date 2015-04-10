@@ -58,6 +58,14 @@ enum { ASL_STANDARD_OPCODES = 0x1000000 };
 
 // Provides methods for building an ASL problem object.
 class ASLBuilder {
+ public:
+  typedef asl::Function Function;
+  typedef asl::Expr Expr;
+  typedef asl::NumericExpr NumericExpr;
+  typedef asl::LogicalExpr LogicalExpr;
+  typedef asl::Reference Reference;
+  typedef asl::CountExpr CountExpr;
+
  private:
   ASL *asl_;
   bool own_asl_;
@@ -163,6 +171,12 @@ class ASLBuilder {
 
   ::expr *MakeConstant(double value);
 
+  Reference MakeReference(int var_index) {
+   return Expr::Create<Reference>(
+        reinterpret_cast< ::expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
+            + var_index));
+  }
+
   ::expr *DoMakeUnary(expr::Kind kind, Expr arg);
 
   template <typename ExprType>
@@ -224,13 +238,6 @@ class ASLBuilder {
   void Init(ASL *asl);
 
  public:
-  typedef asl::Function Function;
-  typedef asl::Expr Expr;
-  typedef asl::NumericExpr NumericExpr;
-  typedef asl::LogicalExpr LogicalExpr;
-  typedef asl::Reference Reference;
-  typedef asl::CountExpr CountExpr;
-
   explicit ASLBuilder(ASL *asl = 0) { Init(asl); }
   explicit ASLBuilder(ASLProblem::Proxy proxy) {
     Init(proxy.asl_);
@@ -369,8 +376,7 @@ class ASLBuilder {
 
     friend class ASLBuilder;
 
-    AlgebraicCon(ASLBuilder *b, int index)
-      : builder_(b), index_(index) {}
+    AlgebraicCon(ASLBuilder *b, int index) : builder_(b), index_(index) {}
 
    public:
     // Sets the initial dual value.
@@ -454,9 +460,14 @@ class ASLBuilder {
     return Expr::Create<NumericConstant>(MakeConstant(value));
   }
 
-  Reference MakeVariable(int var_index);
+  Reference MakeVariable(int var_index) {
+    assert(var_index >= 0 && var_index < asl_->i.n_var_);
+    return MakeReference(var_index);
+  }
+
   Reference MakeCommonExpr(int index) {
-    return MakeVariable(index);
+    assert(index >= 0 && index < asl_->i.ncom0_ + asl_->i.ncom1_);
+    return MakeReference(index + asl_->i.n_var_);
   }
 
   UnaryExpr MakeUnary(expr::Kind kind, NumericExpr arg);

@@ -78,6 +78,7 @@ class NLToGecodeConverter :
   GecodeProblem problem_;
   Gecode::IntConLevel icl_;
   ASLSuffixPtr icl_suffix_;
+  std::vector<LinExpr> common_exprs_;
 
   typedef Gecode::BoolExpr BoolExpr;
 
@@ -201,7 +202,9 @@ class NLToGecodeConverter :
   }
 
   LinExpr VisitVariable(asl::Reference v) {
-    return problem_.vars()[v.index()];
+    int index = v.index(), num_vars = problem_.vars().size();
+    return index < num_vars ?
+          problem_.vars()[index] : common_exprs_[index - num_vars];
   }
 
   BoolExpr VisitOr(asl::BinaryLogicalExpr e) {

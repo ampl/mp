@@ -333,6 +333,12 @@ void NLToGecodeConverter::Convert(const ASLProblem &p) {
         lb <= negInfinity ? Gecode::Int::Limits::min : CastToInt(lb),
         ub >= Infinity ? Gecode::Int::Limits::max : CastToInt(ub));
   }
+  int num_common_exprs = p.num_common_exprs();
+  common_exprs_.resize(num_common_exprs);
+  for (int j = 0; j < num_common_exprs; ++j) {
+    // TODO: handle linear part
+    common_exprs_[j] = Visit(p.common_expr(j).nonlinear_expr());
+  }
 
   if (p.num_objs() > 0) {
     ASLProblem::Objective obj = p.obj(0);

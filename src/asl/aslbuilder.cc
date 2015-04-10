@@ -552,13 +552,23 @@ ASLBuilder::LinearExprBuilder ASLBuilder::BeginCommonExpr(int num_terms) {
 
 NumericExpr ASLBuilder::EndCommonExpr(LinearExprBuilder builder,
                                       NumericExpr expr, int position) {
-  // TODO: handle position and expr
   int index = expr_index_++;
+  assert(index >= 0 && index < static_->_max_var - asl_->i.n_var_);
+  assert(position != 0); // TODO: cexp_read
+  index += asl_->i.n_var_;
+  // TODO: handle expr
   cexp *e = reinterpret_cast<ASL_fg*>(asl_)->I.cexps_ + index - static_->_nv0;
   e->nlin = builder.num_terms();
   e->L = builder.get();
-  assert(index >= 0 && index < static_->_max_var - asl_->i.n_var_);
-  index += asl_->i.n_var_;
+  if (!static_->_lastj) {
+    static_->_last_d = 0;
+    if (static_->_amax1 < static_->_lasta)
+      static_->_amax1 = static_->_lasta;
+    static_->_lasta = static_->_lasta0;
+    static_->_lastj = position;
+  }
+  // TODO: make compatible with cexp1_read
+  e->e = expr.impl_;
   return Expr::Create<Reference>(
       reinterpret_cast< ::expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
           + index));
@@ -668,13 +678,6 @@ ASLBuilder::SuffixInfo ASLBuilder::AddSuffix(fmt::StringRef name, int kind) {
   else
     d->u.r = 0;
   return SuffixInfo(d, nx, nx1);
-}
-
-Reference ASLBuilder::MakeVariable(int var_index) {
-  assert(var_index >= 0 && var_index < asl_->i.n_var_);
-  return Expr::Create<Reference>(
-      reinterpret_cast< ::expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
-          + var_index));
 }
 
 UnaryExpr ASLBuilder::MakeUnary(expr::Kind kind, NumericExpr arg) {

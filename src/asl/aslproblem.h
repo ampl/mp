@@ -389,6 +389,9 @@ class ASLProblem {
   // Returns the number of nonzeros in constraints' Jacobian.
   int num_con_nonzeros() const { return asl_->i.nzc_; }
 
+  // Returns the number of common expressions.
+  int num_common_exprs() const { return asl_->i.ncom0_ + asl_->i.ncom1_; }
+
   // Returns the type of the variable.
   var::Type var_type(int var_index) const {
     assert(var_index >= 0 && var_index < num_vars());
@@ -564,6 +567,33 @@ class ASLProblem {
   AlgebraicCon algebraic_con(int index) const {
     MP_ASSERT(0 <= index && index < num_algebraic_cons(), "invalid index");
     return AlgebraicCon(this, index);
+  }
+
+  class CommonExpr : private ProblemItem {
+   private:
+    friend class ASLProblem;
+
+    CommonExpr(const ASLProblem *p, int index) : ProblemItem(p, index) {}
+
+   public:
+    // Returns the linear part of the common expression.
+    asl::LinearConExpr linear_expr() const {
+      assert(false); // TODO: implement
+      return asl::LinearConExpr();
+    }
+
+    // Returns the nonlinear part of the common expression.
+    asl::NumericExpr nonlinear_expr() const {
+      if (problem_->asl_->i.ASLtype != ASL_read_fg)
+        return asl::NumericExpr();
+      return asl::NumericExpr::Create<asl::NumericExpr>(
+            reinterpret_cast<ASL_fg*>(problem_->asl_)->I.cexps_[index_].e);
+    }
+  };
+
+  // Returns the common expression at the specified index.
+  CommonExpr common_expr(int index) const {
+    return CommonExpr(this, index);
   }
 
   template <typename ExprType>
