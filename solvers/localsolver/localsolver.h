@@ -203,15 +203,10 @@ class LSProblemBuilder :
 
    public:
     LinearExprBuilder(LSProblemBuilder &builder,
-                      ls::LSExpression &expr, ls::LSExpression sum)
+                      ls::LSExpression term, ls::LSExpression sum)
       : builder_(builder), expr_(sum) {
-      if (expr != ls::LSExpression()) {
-        // Add nonlinear expression.
-        sum.addOperand(expr);
-        expr = sum;
-      } else {
-        expr = sum;
-      }
+      if (term != ls::LSExpression())
+        sum.addOperand(term);
     }
 
     ls::LSExpression expr() { return expr_; }
@@ -272,7 +267,7 @@ class LSProblemBuilder :
     ls::LSExpression result = builder.expr();
     if (result == ls::LSExpression())
       result = expr;
-    if (expr != ls::LSExpression())
+    else if (expr != ls::LSExpression())
       result.addOperand(expr);
     common_exprs_.push_back(result);
   }

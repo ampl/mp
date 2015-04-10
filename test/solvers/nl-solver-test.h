@@ -1152,6 +1152,17 @@ TEST_F(NLSolverTest, NestedAllDiff) {
   EXPECT_TRUE(Solve(factory, 2, 1, 1).has_value());
 }
 
+TEST_F(NLSolverTest, CommonExpr) {
+  struct CommonExprFactory : NumericExprFactory {
+    NumericExpr Create(ProblemBuilder &pb) const {
+      pb.EndCommonExpr(pb.BeginCommonExpr(0),
+                       pb.MakeUnary(mp::expr::ABS, pb.MakeVariable(1)), 0);
+      return pb.MakeCommonExpr(0);
+    }
+  } factory;
+  EXPECT_EQ(42, Eval(factory, -42));
+}
+
 // ----------------------------------------------------------------------------
 // Solve code tests
 
