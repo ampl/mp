@@ -337,7 +337,8 @@ void NLToGecodeConverter::Convert(const ASLProblem &p) {
   common_exprs_.resize(num_common_exprs);
   for (int j = 0; j < num_common_exprs; ++j) {
     // TODO: handle linear part
-    common_exprs_[j] = Visit(p.common_expr(j).nonlinear_expr());
+    if (asl::NumericExpr e = p.common_expr(j).nonlinear_expr())
+      common_exprs_[j] = Visit(e);
   }
 
   if (p.num_objs() > 0) {
