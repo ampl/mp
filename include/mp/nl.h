@@ -64,7 +64,7 @@ template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
                   fmt::StringRef name = "(input)", int flags = 0);
 
-// A read error with location information.
+/** A read error with location information. */
 class ReadError : public Error {
  private:
   std::string filename_;
@@ -72,29 +72,43 @@ class ReadError : public Error {
   int column_;
 
  public:
+  /** Constructs the exception object. */
   ReadError(fmt::StringRef filename,
       int line, int column, fmt::StringRef message)
   : Error(message), filename_(filename), line_(line), column_(column) {}
+
+  /** Destructs the exception object. */
   ~ReadError() throw() {}
 
+  /** Returns the name of the file where error occurred. */
   const std::string &filename() const { return filename_; }
+
+  /** Returns the line number where error occurred. */
   int line() const { return line_; }
+
+  /** Returns the column number where error occurred. */
   int column() const { return column_; }
 };
 
-// A read error with information about offset in a binary input.
+/** A read error with information about offset in a binary input. */
 class BinaryReadError : public Error {
  private:
   std::string filename_;
   std::size_t offset_;
 
  public:
+  /** Constructs the exception object. */
   BinaryReadError(
       fmt::StringRef filename, std::size_t offset, fmt::StringRef message)
   : Error(message), filename_(filename), offset_(offset) {}
+
+  /** Destructs the exception object. */
   ~BinaryReadError() throw() {}
 
+  /** Returns the name of the file where error occurred. */
   const std::string &filename() const { return filename_; }
+
+  /** Returns the offset in chars to the error location. */
   std::size_t offset() const { return offset_; }
 };
 
@@ -229,7 +243,7 @@ struct NLHeader : ProblemInfo {
   }
 };
 
-// Writes NLHeader in the .nl file format.
+/** Writes NLHeader in the NL format. */
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 
 /**
