@@ -430,6 +430,10 @@ class SuffixManager {
     MP_ASSERT(kind >= 0 && kind < suf::NUM_KINDS, "invalid suffix kind");
     return suffixes_[kind];
   }
+  const SuffixSet &suffixes(int kind) const {
+    MP_ASSERT(kind >= 0 && kind < suf::NUM_KINDS, "invalid suffix kind");
+    return suffixes_[kind];
+  }
 };
 }  // namespace mp
 

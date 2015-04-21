@@ -339,6 +339,13 @@ TEST(SuffixManager, Suffixes) {
     sm.suffixes(i);
   EXPECT_ASSERT(sm.suffixes(-1), "invalid suffix kind");
   EXPECT_ASSERT(sm.suffixes(suf::NUM_KINDS), "invalid suffix kind");
+  struct Test {
+    static bool ismut(mp::SuffixManager::SuffixSet &) { return true; }
+    static bool ismut(const mp::SuffixManager::SuffixSet &) { return false; }
+  };
+  EXPECT_TRUE(Test::ismut(sm.suffixes(suf::VAR)));
+  const mp::SuffixManager &csm = sm;
+  EXPECT_FALSE(Test::ismut(csm.suffixes(suf::VAR)));
 }
 
 TEST(SuffixManager, SuffixSet) {
