@@ -116,10 +116,10 @@ class MockProblemBuilder {
   MockProblemBuilder() {}
 
   // Constructs a MockProblemBuilder object and stores a pointer to it
-  // in ``builder``.
-  explicit MockProblemBuilder(MockProblemBuilder **builder) {
-    if (builder)
-      *builder = this;
+  // in ``solver``.
+  template <typename Solver>
+  explicit MockProblemBuilder(Solver &s, fmt::StringRef) {
+    s.builder = this;
   }
 
   typedef mp::MutSuffix Suffix;
@@ -157,12 +157,16 @@ class MockProblemBuilder {
   MOCK_METHOD3(SetComplementarity,
                void (int con_index, int var_index, int flags));
 
-  class Variable {
+  class MutVariable {
    public:
+    MutVariable() {}
+    MutVariable(const MutVariable &) {}
+    MOCK_METHOD1(set_lb, void (double lb));
+    MOCK_METHOD1(set_ub, void (double ub));
     MOCK_METHOD1(set_value, void (double value));
   };
 
-  MOCK_METHOD1(var, Variable &(int var_index));
+  MOCK_METHOD1(var, MutVariable &(int var_index));
 
   class AlgebraicCon {
    public:

@@ -54,27 +54,18 @@ using testing::StartsWith;
 
 typedef Solver::OptionPtr SolverOptionPtr;
 
-class StrictMockProblemBuilder : public StrictMock<MockProblemBuilder> {
- public:
-  StrictMockProblemBuilder() {}
-
-  // Constructs a MockProblemBuilder object and stores a pointer to it
-  // in ``builder``.
-  explicit StrictMockProblemBuilder(StrictMockProblemBuilder **builder) {
-    if (builder)
-      *builder = this;
-  }
-};
+class StrictMockProblemBuilder;
 
 class TestSolver : public mp::Solver {
  private:
-  StrictMockProblemBuilder *builder;
   bool mock_solve_;
 
  public:
+  StrictMockProblemBuilder *builder;
+
   TestSolver(const char *name = "testsolver",
       const char *long_name = 0, long date = 0, int flags = 0)
-  : Solver(name, long_name, date, flags), builder(0), mock_solve_(false) {}
+  : Solver(name, long_name, date, flags), mock_solve_(false), builder(0) {}
 
   // Enables mocking of the Solve method.
   void MockSolve() { mock_solve_ = true; }
@@ -87,10 +78,6 @@ class TestSolver : public mp::Solver {
   typedef StrictMockProblemBuilder ProblemBuilder;
   typedef mp::ProblemBuilderToNLAdapter<ProblemBuilder> NLProblemBuilder;
 
-  ProblemBuilder **GetProblemBuilder(fmt::StringRef) {
-    return &builder;
-  }
-
   bool ParseOptions(char **argv,
       unsigned flags = Solver::NO_OPTION_ECHO, const mp::ASLProblem *p = 0) {
     return Solver::ParseOptions(argv, flags, p);
@@ -100,6 +87,17 @@ class TestSolver : public mp::Solver {
 
   int Solve(ProblemBuilder &pb, SolutionHandler &sh) {
     return mock_solve_ ? DoSolve(pb, sh) : 0;
+  }
+};
+
+class StrictMockProblemBuilder : public StrictMock<MockProblemBuilder> {
+ public:
+  StrictMockProblemBuilder() {}
+
+  // Constructs a MockProblemBuilder object and stores a pointer to it
+  // in ``builder``.
+  explicit StrictMockProblemBuilder(TestSolver &s, fmt::StringRef) {
+    s.builder = this;
   }
 };
 
@@ -1522,10 +1520,10 @@ TEST_F(SolverAppTest, ParseOptionsBeforeReadingProblem) {
 // Matcher that return true if the argument of type ProblemBuilderToNLAdapter
 // points to the solver's problem builder.
 MATCHER_P(MatchAdapterToBuilder, solver, "") {
-  return &arg.builder() == *solver->GetProblemBuilder("");
+  return &arg.builder() == solver->builder;
 }
 
-// Test that SolverApp::Run reads the problem.
+// Test that SolverApp::Run calls the reader's Read method.
 TEST_F(SolverAppTest, ReadProblem) {
   EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"),
                                     MatchAdapterToBuilder(&app_.solver()), 0));
@@ -1576,7 +1574,7 @@ TEST_F(SolverAppTest, ReportInputTime) {
 // Matcher that returns true if the argument points to the solver's problem
 // builder.
 MATCHER_P(MatchBuilder, solver, "") {
-  return &arg == *solver->GetProblemBuilder("");
+  return &arg == solver->builder;
 }
 
 // Test that SolverApp::Run solves the problem.
@@ -1605,9 +1603,9 @@ TEST_F(SolverAppTest, UseAppSolutionHandler) {
 // A solver for testing multiple objective support.
 template <int FLAGS = Solver::MULTIPLE_OBJ>
 struct MultiObjTestSolver : mp::SolverImpl<MockProblemBuilder> {
+  MockProblemBuilder *builder;
   explicit MultiObjTestSolver()
-    : mp::SolverImpl<MockProblemBuilder>("", 0, 0, FLAGS) {}
-  MockProblemBuilder **GetProblemBuilder(fmt::StringRef) { return 0; }
+    : mp::SolverImpl<MockProblemBuilder>("", 0, 0, FLAGS), builder(0) {}
   void Solve(ProblemBuilder &, SolutionHandler &) {}
 };
 

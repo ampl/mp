@@ -84,6 +84,15 @@ class LSProblemBuilder :
 
   std::vector<Bound> obj_bounds_;
 
+  static const double LS_INF;
+
+  static ls::lsint ConvertToInt(double value) {
+    localsolver::lsint int_value = static_cast<localsolver::lsint>(value);
+    if (int_value != value)
+      throw mp::Error("value {} can't be represented as int", value);
+    return int_value;
+  }
+
   typedef ProblemBuilder<LSProblemBuilder, ls::LSExpression> Base;
 
   ls::LSExpression Negate(ls::LSExpression arg) {
@@ -170,7 +179,7 @@ class LSProblemBuilder :
   }
 
  public:
-  explicit LSProblemBuilder(LocalSolver &);
+  explicit LSProblemBuilder(LocalSolver &, fmt::StringRef = "");
 
   ls::LocalSolver &solver() { return solver_; }
 
@@ -230,10 +239,36 @@ class LSProblemBuilder :
     Variable(LSProblemBuilder *b, int index) : builder_(b), index_(index) {}
 
    public:
+    void set_lb(double lb) {
+      ls::LSExpression &var = builder_->vars_[index_];
+      double inf = std::numeric_limits<double>::infinity();
+      if (var.getOperator() == ls::O_Float) {
+        var.setOperand(0, lb == -inf ? -LS_INF : lb);
+      } else {
+        ls::lsint int_lb = lb == -inf ?
+              std::numeric_limits<int>::min() : ConvertToInt(lb);
+        var.setOperand(0, int_lb);
+      }
+    }
+
+    void set_ub(double ub) {
+      ls::LSExpression &var = builder_->vars_[index_];
+      double inf = std::numeric_limits<double>::infinity();
+      if (var.getOperator() == ls::O_Float) {
+        var.setOperand(0, ub == inf ? LS_INF : ub);
+      } else {
+        ls::lsint int_ub = ub == inf ?
+              std::numeric_limits<int>::max() : ConvertToInt(ub);
+        var.setOperand(0, int_ub);
+      }
+    }
+
     void set_value(double value) {
       builder_->SetInitialValue(index_, value);
     }
   };
+
+  typedef Variable MutVariable;
 
   Variable var(int index) {
     CheckBounds(index, vars_.size());
@@ -496,8 +531,6 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   LocalSolver();
 
   void Solve(ProblemBuilder &builder, SolutionHandler &sh);
-
-  LocalSolver &GetProblemBuilder(fmt::StringRef) { return *this; }
 
   double pl_bigm() const { return pl_bigm_; }
 };

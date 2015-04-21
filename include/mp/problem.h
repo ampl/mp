@@ -73,6 +73,8 @@ class LinearExpr {
   }
 };
 
+class Solver;
+
 // An optimization problem.
 template <typename Alloc>
 class BasicProblem : public ExprFactory, public SuffixManager {
@@ -441,6 +443,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   };
 
  public:
+  BasicProblem() {}
+
+  BasicProblem(const Solver &, fmt::StringRef) {}
+
   // Returns the number of variables.
   int num_vars() const { return static_cast<int>(vars_.size()); }
 
@@ -477,6 +483,9 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     operator Variable() const {
       return Variable(this->problem_, this->index_);
     }
+
+    void set_lb(double lb) { this->problem_->vars_[this->index_].lb = lb; }
+    void set_ub(double ub) { this->problem_->vars_[this->index_].ub = ub; }
 
     // Sets the initial value.
     void set_value(double value) {

@@ -158,7 +158,7 @@ TEST(NLProblemBuilderTest, Forward) {
     // OnColumnSizes is ignored by default.
     adapter.OnColumnSizes();
 
-    MockProblemBuilder::Variable var;
+    MockProblemBuilder::MutVariable var;
     EXPECT_CALL(builder, var(33)).WillOnce(testing::ReturnRef(var));
     EXPECT_CALL(var, set_value(4.4));
     adapter.OnInitialValue(33, 4.4);

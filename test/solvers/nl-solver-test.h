@@ -389,7 +389,7 @@ namespace obj = mp::obj;
 EvalResult NLSolverTest::Solve(
     const LogicalExprFactory &factory,
     int var1, int var2, int var3, bool need_result) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_cons = 4;
   info.num_logical_cons = 1;
@@ -406,7 +406,7 @@ EvalResult NLSolverTest::Solve(
 // Constructs and evaluates a numeric expression expression.
 EvalResult NLSolverTest::Eval(
     const NumericExprFactory &factory, int var1, int var2, int var3) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_cons = 4;
   info.num_algebraic_cons = info.num_nl_cons = 1;
@@ -424,7 +424,7 @@ EvalResult NLSolverTest::Eval(
 }
 
 TEST_F(NLSolverTest, NonlinearObj) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   SetInfo(pb);
   pb.AddVar(2, 2, var::INTEGER);
   NumericExpr x = pb.MakeVariable(0);
@@ -433,7 +433,7 @@ TEST_F(NLSolverTest, NonlinearObj) {
 }
 
 TEST_F(NLSolverTest, ObjConst) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   SetInfo(pb);
   pb.AddVar(0, 0, var::INTEGER);
   auto obj = pb.AddObj(obj::MIN, pb.MakeNumericConstant(42), 0);
@@ -442,7 +442,7 @@ TEST_F(NLSolverTest, ObjConst) {
 }
 
 TEST_F(NLSolverTest, Minimize) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   SetInfo(pb);
   pb.AddVar(11, 22, var::INTEGER);
   pb.AddObj(obj::MIN, pb.MakeVariable(0), 0);
@@ -450,7 +450,7 @@ TEST_F(NLSolverTest, Minimize) {
 }
 
 TEST_F(NLSolverTest, Maximize) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   SetInfo(pb);
   pb.AddVar(11, 22, var::INTEGER);
   pb.AddObj(obj::MAX, pb.MakeVariable(0), 0);
@@ -504,7 +504,7 @@ TEST_F(NLSolverTest, NumericConstant) {
 }
 
 TEST_F(NLSolverTest, Variable) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_objs = 1;
   info.num_objs = info.num_nl_objs = 1;
@@ -844,7 +844,7 @@ TEST_F(NLSolverTest, PLTerm) {
 }
 
 TEST_F(NLSolverTest, Call) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_linear_integer_vars = 1;
   info.num_objs = info.num_nl_objs = 1;
@@ -863,6 +863,8 @@ TEST_F(NLSolverTest, Call) {
   EXPECT_THROW({
       ProblemBuilder::Function f = pb.AddFunction("foo", 2, mp::func::NUMERIC);
       auto call = pb.BeginCall(f, 2);
+      call.AddArg(pb.MakeNumericConstant(0));
+      call.AddArg(pb.MakeNumericConstant(0));
       pb.AddObj(mp::obj::MIN, pb.EndCall(call), 0);
       Solve(pb);
   }, mp::UnsupportedError);
@@ -912,7 +914,7 @@ TEST_F(NLSolverTest, NumberOf) {
     explicit NumberOfFactory(int num_args) : num_args_(num_args) {}
     NumericExpr Create(ProblemBuilder &pb) const {
       auto value = pb.MakeNumericConstant(42);
-      auto args = pb.BeginNumberOf(num_args_, value);
+      auto args = pb.BeginNumberOf(num_args_ + 1, value);
       for (int i = 1; i <= num_args_; ++i)
         args.AddArg(pb.MakeVariable(i));
       return pb.EndNumberOf(args);
@@ -1168,7 +1170,7 @@ TEST_F(NLSolverTest, CommonExpr) {
 // Solve code tests
 
 TEST_F(NLSolverTest, OptimalSolveCode) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_linear_integer_vars = info.num_objs = 1;
   info.num_obj_nonzeros = 1;
@@ -1179,7 +1181,7 @@ TEST_F(NLSolverTest, OptimalSolveCode) {
 }
 
 TEST_F(NLSolverTest, FeasibleSolveCode) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_linear_integer_vars = info.num_algebraic_cons = 1;
   pb.SetInfo(info);
@@ -1189,7 +1191,7 @@ TEST_F(NLSolverTest, FeasibleSolveCode) {
 }
 
 TEST_F(NLSolverTest, InfeasibleSolveCode) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_linear_integer_vars = info.num_algebraic_cons = 1;
   pb.SetInfo(info);
@@ -1246,9 +1248,8 @@ class TestInterrupter : public TestInterrupterBase {
 #endif
 
 TEST_F(NLSolverTest, Interrupt) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   MakeTSP(pb);
-  pb.EndBuild();
   TestInterrupter interrupter(solver_);
   TestSolutionHandler sh;
   solver_.Solve(pb, sh);
@@ -1257,13 +1258,12 @@ TEST_F(NLSolverTest, Interrupt) {
 }
 
 TEST_F(NLSolverTest, InitialValues) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   MakeTSP(pb);
   for (int i = 0; i < MP_TSP_SIZE; ++i) {
     for (int j = 0; j < MP_TSP_SIZE; ++j)
       pb.var(i * MP_TSP_SIZE + j).set_value(i + j == MP_TSP_SIZE - 1 ? 1 : 0);
   }
-  pb.EndBuild();
   TestInterrupter interrupter(solver_);
   TestSolutionHandler sh(MP_TSP_SIZE * MP_TSP_SIZE);
   solver_.Solve(pb, sh);
@@ -1306,7 +1306,7 @@ void MakeAllDiffProblem(ProblemBuilder &pb) {
 TEST_F(NLSolverTest, CountSolutions) {
   if (!solver_.FindOption("solutionlimit"))
     return;
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   MakeAllDiffProblem(pb);
   solver_.SetIntOption("solutionlimit", 10);
   solver_.SetIntOption("countsolutions", 1);
@@ -1318,7 +1318,7 @@ TEST_F(NLSolverTest, CountSolutions) {
 TEST_F(NLSolverTest, SolutionLimit) {
   if (!solver_.FindOption("solutionlimit"))
     return;
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   MakeAllDiffProblem(pb);
   solver_.SetIntOption("solutionlimit", 5);
   solver_.SetIntOption("countsolutions", 1);
@@ -1331,7 +1331,7 @@ TEST_F(NLSolverTest, SolutionLimit) {
 TEST_F(NLSolverTest, MultipleSolutions) {
   if (!solver_.FindOption("solutionlimit"))
     return;
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   MakeAllDiffProblem(pb);
   solver_.SetIntOption("solutionlimit", 3);
   solver_.SetStrOption("solutionstub", "test");
@@ -1353,7 +1353,7 @@ TEST_F(NLSolverTest, TimingOption) {
   mp::BasicSolutionHandler sol_handler;
 
   {
-    ProblemBuilder pb(solver_.GetProblemBuilder(""));
+    ProblemBuilder pb(solver_, "");
     MakeAllDiffProblem(pb);
 
     TestOutputHandler oh;
@@ -1367,7 +1367,7 @@ TEST_F(NLSolverTest, TimingOption) {
   }
 
   {
-    ProblemBuilder pb(solver_.GetProblemBuilder(""));
+    ProblemBuilder pb(solver_, "");
     MakeAllDiffProblem(pb);
 
     TestOutputHandler oh;
@@ -1393,7 +1393,7 @@ TEST_F(NLSolverTest, OptionValues) {
 // Solver should not use objno.
 TEST_F(NLSolverTest, IgnoreObjNo) {
   solver_.SetIntOption("objno", 10);
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   SetInfo(pb);
   pb.AddVar(2, 2, var::INTEGER);
   NumericExpr x = pb.MakeVariable(0);
@@ -1408,7 +1408,7 @@ TEST_F(NLSolverTest, CreateSolver) {
 // Makes a problem for testing multiple objectives support and solves it.
 template <typename Solver>
 EvalResult SolveMultiObjTestProblem(Solver &solver, bool multiobj = false) {
-  typename Solver::ProblemBuilder pb(solver.GetProblemBuilder(""));
+  typename Solver::ProblemBuilder pb(solver, "");
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_objs = 1;
   info.num_objs = info.num_nl_objs = multiobj ? 2 : 1;
@@ -1438,16 +1438,17 @@ struct TestOutputHandler : public mp::OutputHandler {
 
 // Test that providing an initial dual value doesn't cause an error.
 TEST_F(NLSolverTest, InitialDualValue) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_algebraic_cons = 1;
   pb.SetInfo(info);
+  pb.AddCon(0, 0, pb.MakeNumericConstant(0), 0);
   pb.algebraic_con(0).set_dual(0);
 }
 
 TEST_F(NLSolverTest, ZeroUB) {
   if (!HasFeature(feature::FLOAT_CONST)) return;
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_objs = 1;
   pb.SetInfo(info);

@@ -36,6 +36,7 @@ struct Static;
 
 namespace mp {
 struct NLHeader;
+class ASLSolver;
 
 namespace asl {
 
@@ -104,6 +105,14 @@ class ASLBuilder {
 
   void SetInitialDualValue(int, double) {
     // TODO
+  }
+
+  void SetVarLB(int index, double lb) {
+    (asl_->i.Uvx_ ? asl_->i.LUv_[index] : asl_->i.LUv_[2 * index]) = lb;
+  }
+
+  void SetVarUB(int index, double ub) {
+    (asl_->i.Uvx_ ? asl_->i.Uvx_[index] : asl_->i.LUv_[2 * index + 1]) = ub;
   }
 
   template <typename ExprType>
@@ -245,6 +254,7 @@ class ASLBuilder {
     own_asl_ = true;
     flags_ = proxy.flags_ | ASL_STANDARD_OPCODES | ASL_allow_CLP;
   }
+  ASLBuilder(ASLSolver &s, fmt::StringRef stub);
   ~ASLBuilder();
 
   // Returns a built problem via proxy. No builder methods other than
@@ -292,11 +302,14 @@ class ASLBuilder {
       : builder_(b), index_(index) {}
 
    public:
+    void set_lb(double lb) { builder_->SetVarLB(index_, lb); }
+    void set_ub(double ub) { builder_->SetVarUB(index_, ub); }
+
     // Sets the initial value.
-    void set_value(double value) {
-      builder_->SetInitialValue(index_, value);
-    }
+    void set_value(double value) { builder_->SetInitialValue(index_, value); }
   };
+
+  typedef Variable MutVariable;
 
   Variable var(int index) { return Variable(this, index); }
 

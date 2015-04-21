@@ -1351,11 +1351,10 @@ int SolverApp<Solver, Reader>::Run(char **argv, int nl_reader_flags) {
   // Read the problem.
   steady_clock::time_point start = steady_clock::now();
   // TODO: use name provider instead of passing filename to builder
-  ProblemBuilder builder(solver_.GetProblemBuilder(filename_no_ext));
+  ProblemBuilder builder(solver_, filename_no_ext);
   internal::SolverNLHandler<Solver> handler(builder, solver_);
   this->Read(nl_filename, handler, nl_reader_flags);
 
-  builder.EndBuild();
   double read_time = GetTimeAndReset(start);
   if (solver_.timing())
     solver_.Print("Input time = {:.6f}s\n", read_time);

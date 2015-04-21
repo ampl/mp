@@ -35,8 +35,6 @@ using Gecode::IntVarBranch;
 using Gecode::Reify;
 namespace Search = Gecode::Search;
 
-using namespace mp::asl;
-
 namespace {
 
 const mp::OptionValueInfo INT_CON_LEVELS[] = {
@@ -274,9 +272,9 @@ BoolExpr NLToGecodeConverter::Convert(
   return var;
 }
 
-LinExpr NLToGecodeConverter::Convert(VarArgExpr e, VarArgFunc f) {
+LinExpr NLToGecodeConverter::Convert(IteratedExpr e, VarArgFunc f) {
   IntVarArgs args;
-  for (VarArgExpr::iterator i = e.begin(); *i; ++i)
+  for (VarArgExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
     args << Gecode::expr(problem_, Visit(*i), icl_);
   IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   f(problem_, args, result, icl_);
@@ -289,12 +287,11 @@ void NLToGecodeConverter::RequireZeroRHS(
     throw MakeUnsupportedError("{} with nonzero second parameter", func_name);
 }
 
-template <typename Term>
 LinExpr NLToGecodeConverter::ConvertExpr(
-    LinearExpr<Term> linear, NumericExpr nonlinear) {
+    const LinearExpr &linear, NumericExpr nonlinear) {
   IntVarArray &vars = problem_.vars();
   LinExpr expr;
-  typename LinearExpr<Term>::iterator i = linear.begin(), end = linear.end();
+  LinearExpr::iterator i = linear.begin(), end = linear.end();
   bool has_linear_part = i != end;
   if (has_linear_part) {
     expr = CastToInt(i->coef()) * vars[i->var_index()];
@@ -311,9 +308,9 @@ LinExpr NLToGecodeConverter::ConvertExpr(
 }
 
 Gecode::IntConLevel NLToGecodeConverter::GetICL(int con_index) const {
-  if (!icl_suffix_ || !icl_suffix_->has_values())
+  if (!icl_suffix_)
     return icl_;
-  int value = icl_suffix_->int_value(con_index);
+  int value = icl_suffix_.value(con_index);
   assert(value == Gecode::ICL_VAL || value == Gecode::ICL_BND ||
          value == Gecode::ICL_DOM || value == Gecode::ICL_DEF);
   if (value < 0 || value > Gecode::ICL_DEF)
@@ -321,33 +318,34 @@ Gecode::IntConLevel NLToGecodeConverter::GetICL(int con_index) const {
   return static_cast<Gecode::IntConLevel>(value);
 }
 
-void NLToGecodeConverter::Convert(const ASLProblem &p) {
-  if (p.num_continuous_vars() != 0)
-    throw Error("Gecode doesn't support continuous variables");
-
+void NLToGecodeConverter::Convert(const Problem &p) {
+  double inf = std::numeric_limits<double>::infinity();
   IntVarArray &vars = problem_.vars();
   for (int j = 0, n = p.num_vars(); j < n; ++j) {
-    ASLProblem::Variable var = p.var(j);
+    Problem::Variable var = p.var(j);
+    if (var.type() == mp::var::CONTINUOUS)
+      throw Error("Gecode doesn't support continuous variables");
     double lb = var.lb(), ub = var.ub();
     vars[j] = IntVar(problem_,
-        lb <= negInfinity ? Gecode::Int::Limits::min : CastToInt(lb),
-        ub >= Infinity ? Gecode::Int::Limits::max : CastToInt(ub));
+        lb <= -inf ? Gecode::Int::Limits::min : CastToInt(lb),
+        ub >=  inf ? Gecode::Int::Limits::max : CastToInt(ub));
   }
   int num_common_exprs = p.num_common_exprs();
   common_exprs_.resize(num_common_exprs);
   for (int j = 0; j < num_common_exprs; ++j) {
     // TODO: handle linear part
-    if (asl::NumericExpr e = p.common_expr(j).nonlinear_expr())
+    if (NumericExpr e = p.common_expr(j).nonlinear_expr())
       common_exprs_[j] = Visit(e);
   }
 
   if (p.num_objs() > 0) {
-    ASLProblem::Objective obj = p.obj(0);
+    Problem::Objective obj = p.obj(0);
     problem_.SetObj(obj.type(),
                     ConvertExpr(obj.linear_expr(), obj.nonlinear_expr()));
   }
 
-  icl_suffix_ = p.suffixes(suf::CON).Find("icl");
+  Suffix suffix = p.suffixes(suf::CON).Find("icl");
+  icl_suffix_ = suffix ? Cast<IntSuffix>(suffix) : IntSuffix();
 
   class ICLSetter {
    private:
@@ -364,16 +362,16 @@ void NLToGecodeConverter::Convert(const ASLProblem &p) {
 
   // Convert algebraic constraints.
   for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
-    ASLProblem::AlgebraicCon con = p.algebraic_con(i);
+    Problem::AlgebraicCon con = p.algebraic_con(i);
     LinExpr con_expr(
         ConvertExpr(con.linear_expr(), con.nonlinear_expr()));
     double lb = con.lb(), ub = con.ub();
     ICLSetter icl_setter(icl_, GetICL(i));
-    if (lb <= negInfinity) {
+    if (lb <= -inf) {
       rel(problem_, con_expr <= CastToInt(ub), icl_);
       continue;
     }
-    if (ub >= Infinity) {
+    if (ub >= inf) {
       rel(problem_, con_expr >= CastToInt(lb), icl_);
       continue;
     }
@@ -389,7 +387,7 @@ void NLToGecodeConverter::Convert(const ASLProblem &p) {
   // Convert logical constraints.
   int num_logical_cons = p.num_logical_cons();
   for (int i = 0; i < num_logical_cons; ++i) {
-    LogicalExpr e = p.logical_con_expr(i);
+    LogicalExpr e = p.logical_con(i).expr();
     ICLSetter icl_setter(icl_, GetICL(p.num_algebraic_cons() + i));
     if (e.kind() != expr::ALLDIFF) {
       rel(problem_, Visit(e), icl_);
@@ -399,7 +397,7 @@ void NLToGecodeConverter::Convert(const ASLProblem &p) {
     int num_args = alldiff.num_args();
     IntVarArgs args(num_args);
     for (int i = 0; i < num_args; ++i) {
-      NumericExpr arg(alldiff[i]);
+      NumericExpr arg = alldiff.arg(i);
       if (Variable var = Cast<Variable>(arg))
         args[i] = vars[var.index()];
       else
@@ -461,7 +459,7 @@ LinExpr NLToGecodeConverter::VisitCount(CountExpr e) {
   return result;
 }
 
-LinExpr NLToGecodeConverter::VisitNumberOf(NumberOfExpr e) {
+LinExpr NLToGecodeConverter::VisitNumberOf(IteratedExpr e) {
   // Gecode only supports global cardinality (count) constraint where no other
   // values except those specified may occur, so we use only local count
   // constraints.
@@ -469,8 +467,8 @@ LinExpr NLToGecodeConverter::VisitNumberOf(NumberOfExpr e) {
   int num_args = e.num_args();
   IntVarArgs args(num_args - 1);
   for (int i = 1; i < num_args; ++i)
-    args[i - 1] = Gecode::expr(problem_, Visit(e[i]), icl_);
-  count(problem_, args, Gecode::expr(problem_, Visit(e[0]), icl_),
+    args[i - 1] = Gecode::expr(problem_, Visit(e.arg(i)), icl_);
+  count(problem_, args, Gecode::expr(problem_, Visit(e.arg(0)), icl_),
       Gecode::IRT_EQ, result);
   return result;
 }
@@ -592,7 +590,7 @@ void GecodeSolver::Output(fmt::StringRef format, const fmt::ArgList &args) {
 }
 
 GecodeSolver::GecodeSolver()
-: ASLSolver("gecode", "gecode " GECODE_VERSION, 20141107, MULTIPLE_SOL),
+: SolverImpl("gecode", "gecode " GECODE_VERSION, 20141107, MULTIPLE_SOL),
   output_(false), output_frequency_(1), output_count_(0), solve_code_(-1),
   icl_(Gecode::ICL_DEF),
   var_branching_(IntVarBranch::SEL_SIZE_MIN),
@@ -604,7 +602,7 @@ GecodeSolver::GecodeSolver()
 
   set_version("Gecode " GECODE_VERSION);
 
-  AddSuffix("icl", 0, ASL_Sufkind_con);
+  AddSuffix("icl", 0, suf::CON);
 
   set_option_header(
       "Gecode Options for AMPL\n"
@@ -728,7 +726,7 @@ void GetSolution(GecodeProblem &gecode_problem, std::vector<double> &solution) {
 
 template<template<template<typename> class, typename> class Meta>
 GecodeSolver::ProblemPtr GecodeSolver::Search(
-    ASLProblem &p, GecodeProblem &problem,
+    Problem &p, GecodeProblem &problem,
     Search::Statistics &stats, SolutionHandler &sh) {
   ProblemPtr final_problem;
   unsigned solution_limit = solution_limit_;
@@ -769,7 +767,7 @@ GecodeSolver::ProblemPtr GecodeSolver::Search(
   return final_problem;
 }
 
-void GecodeSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
+void GecodeSolver::Solve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   SetStatus(-1, "");

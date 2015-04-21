@@ -32,6 +32,8 @@ class ASLSolver : public SolverImpl<asl::internal::ASLBuilder> {
  private:
   void RegisterSuffixes(ASL *asl);
 
+  friend class asl::internal::ASLBuilder;
+
  class ASLSolutionHandler : public SolutionHandler {
   private:
    SolutionHandler &handler_;
@@ -61,8 +63,6 @@ class ASLSolver : public SolverImpl<asl::internal::ASLBuilder> {
             long date = 0, int flags = 0);
 
   typedef asl::internal::ASLHandler NLProblemBuilder;
-
-  ASLProblem::Proxy GetProblemBuilder(fmt::StringRef stub);
 
   // Solves a problem and report solutions via the solution handler.
   void Solve(ASLProblem &problem, SolutionHandler &sh);

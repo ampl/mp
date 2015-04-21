@@ -42,6 +42,8 @@
 #undef max
 #undef ampl_options
 
+#include "aslsolver.h"
+
 extern "C" void bswap_ASL(void *x, size_t L);
 
 namespace {
@@ -211,6 +213,20 @@ void ASLBuilder::Init(ASL *asl) {
   lcon_index_ = 0;
   func_index_ = 0;
   expr_index_ = 0;
+}
+
+ASLBuilder::ASLBuilder(ASLSolver &s, fmt::StringRef stub) {
+  ASL *asl = ASL_alloc(ASL_read_fg);
+  std::size_t stub_len = stub.size();
+  Edaginfo &info = asl->i;
+  info.filename_ = reinterpret_cast<char*>(M1alloc_ASL(&info, stub_len + 5));
+  std::strcpy(info.filename_, stub.c_str());
+  info.stub_end_ = info.filename_ + stub_len;
+  std::strcpy(info.filename_ + stub_len, ".nl");
+  s.RegisterSuffixes(asl);
+  Init(asl);
+  own_asl_ = true;
+  flags_ = ASL_STANDARD_OPCODES | ASL_allow_CLP;
 }
 
 ASLBuilder::~ASLBuilder() {

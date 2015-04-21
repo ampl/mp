@@ -199,7 +199,7 @@ asl::Function MakeInRelationProblem(asl::internal::ASLBuilder &pb) {
 }
 
 TEST_F(FunctionTest, InRelationConstraint) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto in_relation = MakeInRelationProblem(pb);
   auto args = pb.BeginCall(in_relation, 2);
   args.AddArg(pb.MakeVariable(0));
@@ -223,7 +223,7 @@ TEST_F(FunctionTest, NestedInRelationNotSupported) {
 }
 
 TEST_F(FunctionTest, TooFewArgsToInRelationConstraint) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto in_relation = MakeInRelationProblem(pb);
   auto args = pb.BeginCall(in_relation, 0);
   pb.AddCon(pb.MakeRelational(
@@ -252,20 +252,20 @@ void MakeInRelationProblem2(asl::internal::ASLBuilder &pb, int num_const_args) {
 }
 
 TEST_F(FunctionTest, InRelationSizeIsNotMultipleOfArity) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   MakeInRelationProblem2(pb, 3);
   EXPECT_THROW_MSG(Solve(pb), mp::Error,
       "in_relation: the number of arguments 5 is not a multiple of arity 2");
 }
 
 TEST_F(FunctionTest, InRelationTuple) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   MakeInRelationProblem2(pb, 2);
   EXPECT_EQ(33, Solve(pb).obj_value());
 }
 
 TEST_F(FunctionTest, InRelationEmptySet) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto in_relation = MakeInRelationProblem(pb);
   auto args = pb.BeginCall(in_relation, 1);
   args.AddArg(pb.MakeVariable(0));
@@ -275,7 +275,7 @@ TEST_F(FunctionTest, InRelationEmptySet) {
 }
 
 TEST_F(FunctionTest, InRelationNonConstantSetElement) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   auto in_relation = MakeInRelationProblem(pb);
   auto args = pb.BeginCall(in_relation, 3);
   args.AddArg(pb.MakeVariable(0));
@@ -685,7 +685,7 @@ TEST_F(IlogCPTest, MIPIntervalOption) {
 // Interrupt tests
 
 TEST_F(NLSolverTest, InterruptCP) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   MakeTSP(pb);
   pb.EndBuild();
   solver_.SetStrOption("optimizer", "cp");
@@ -697,7 +697,7 @@ TEST_F(NLSolverTest, InterruptCP) {
 }
 
 TEST_F(NLSolverTest, InterruptCPLEX) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   MakeTSP(pb);
   pb.EndBuild();
   solver_.SetStrOption("optimizer", "cplex");

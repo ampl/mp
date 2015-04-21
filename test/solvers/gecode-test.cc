@@ -36,7 +36,7 @@ enum {FEATURES = 0};
 using std::string;
 using Gecode::IntVarBranch;
 using mp::InvalidOptionValue;
-using mp::ASLProblem;
+using mp::Problem;
 
 // ----------------------------------------------------------------------------
 // Solver tests
@@ -68,7 +68,7 @@ TEST_F(NLSolverTest, CDOption) {
 }
 
 TEST_F(NLSolverTest, FailLimitOption) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   MakeTSP(pb);
   solver_.SetIntOption("faillimit", 10);
   TestSolutionHandler sh;
@@ -80,7 +80,7 @@ TEST_F(NLSolverTest, FailLimitOption) {
 }
 
 TEST_F(NLSolverTest, NodeLimitOption) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   MakeTSP(pb);
   solver_.SetIntOption("nodelimit", 10);
   TestSolutionHandler sh;
@@ -92,7 +92,7 @@ TEST_F(NLSolverTest, NodeLimitOption) {
 }
 
 TEST_F(NLSolverTest, TimeLimitOption) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  ProblemBuilder pb(solver_, "");
   MakeTSP(pb);
   solver_.SetDblOption("timelimit", 0.1);
   EXPECT_EQ(400, Solve(pb).solve_code());
@@ -261,8 +261,10 @@ TEST_F(NLSolverTest, RestartScaleOption) {
 TEST_F(NLSolverTest, OutLevOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
-  ASLProblem p;
-  p.Read(MP_TEST_DATA_DIR "/objconstint.nl");
+  Problem p;
+  p.AddVar(0, 1, mp::var::INTEGER);
+  p.AddObj(mp::obj::MIN, p.MakeBinary(mp::expr::ADD, p.MakeVariable(0),
+                                      p.MakeNumericConstant(42)));
   mp::BasicSolutionHandler sh;
   solver_.Solve(p, sh);
   EXPECT_EQ("", h.output);
@@ -285,8 +287,8 @@ TEST_F(NLSolverTest, OutLevOption) {
 TEST_F(NLSolverTest, OutFreqOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
-  ASLProblem p;
-  p.Read(MP_TEST_DATA_DIR "/party1.nl");
+  Problem p;
+  MakeTSP(p);
   solver_.SetIntOption("outlev", 1);
   solver_.SetDblOption("timelimit", 0.125);
 
@@ -294,13 +296,13 @@ TEST_F(NLSolverTest, OutFreqOption) {
   mp::BasicSolutionHandler sh;
   solver_.Solve(p, sh);
   std::string out = h.output;
-  EXPECT_EQ(3, std::count(out.begin(), out.end(), '\n'));
+  EXPECT_EQ(4, std::count(out.begin(), out.end(), '\n'));
 
   h.output.clear();
   solver_.SetDblOption("outfreq", 0.1);
   solver_.Solve(p, sh);
   out = h.output;
-  EXPECT_EQ(2, std::count(out.begin(), out.end(), '\n'));
+  EXPECT_EQ(3, std::count(out.begin(), out.end(), '\n'));
 
   solver_.SetDblOption("outfreq", 1.23);
   EXPECT_EQ(1.23, solver_.GetDblOption("outfreq"));

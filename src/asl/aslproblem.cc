@@ -115,13 +115,13 @@ void ASLProblem::Free() {
 }
 
 ASLProblem::ASLProblem()
-: asl_(ASL_alloc(ASL_read_fg)), var_capacity_(0), obj_capacity_(0),
-  logical_con_capacity_(0), var_types_(0) {
+: asl_(ASL_alloc(ASL_read_fg)),
+  var_capacity_(0), obj_capacity_(0), logical_con_capacity_(0), var_types_(0) {
 }
 
 ASLProblem::ASLProblem(Proxy proxy)
-: asl_(proxy.asl_), var_capacity_(0), obj_capacity_(0),
-  logical_con_capacity_(0), var_types_(0) {
+: asl_(proxy.asl_),
+  var_capacity_(0), obj_capacity_(0), logical_con_capacity_(0), var_types_(0) {
   proxy.asl_ = 0;
 }
 

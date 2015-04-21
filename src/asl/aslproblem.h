@@ -575,17 +575,21 @@ class ASLProblem {
 
     CommonExpr(const ASLProblem *p, int index) : ProblemItem(p, index) {}
 
+    bool IsSupported() const {
+      return problem_->asl_->i.ASLtype == ASL_read_fg;
+    }
+
    public:
     // Returns the linear part of the common expression.
-    asl::LinearConExpr linear_expr() const {
-      assert(false); // TODO: implement
-      return asl::LinearConExpr();
+    asl::LinearCommonExpr linear_expr() const {
+      if (!IsSupported()) return asl::LinearCommonExpr();
+      return asl::LinearCommonExpr(
+            &reinterpret_cast<ASL_fg*>(problem_->asl_)->I.cexps_[index_]);
     }
 
     // Returns the nonlinear part of the common expression.
     asl::NumericExpr nonlinear_expr() const {
-      if (problem_->asl_->i.ASLtype != ASL_read_fg)
-        return asl::NumericExpr();
+      if (!IsSupported()) return asl::NumericExpr();
       return asl::NumericExpr::Create<asl::NumericExpr>(
             reinterpret_cast<ASL_fg*>(problem_->asl_)->I.cexps_[index_].e);
     }

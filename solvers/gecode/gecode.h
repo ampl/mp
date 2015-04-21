@@ -38,9 +38,9 @@
 #endif
 
 #include "mp/clock.h"
-#include "asl/aslexpr-visitor.h"
-#include "asl/aslproblem.h"
-#include "asl/aslsolver.h"
+#include "mp/expr-visitor.h"
+#include "mp/problem.h"
+#include "mp/solver.h"
 
 namespace mp {
 
@@ -73,11 +73,11 @@ class GecodeProblem: public Gecode::Space {
 
 // Converter of constraint programming problems from NL to Gecode format.
 class NLToGecodeConverter :
-  public asl::ExprConverter<NLToGecodeConverter, LinExpr, Gecode::BoolExpr> {
+  public ExprConverter<NLToGecodeConverter, LinExpr, Gecode::BoolExpr> {
  private:
   GecodeProblem problem_;
   Gecode::IntConLevel icl_;
-  ASLSuffixPtr icl_suffix_;
+  IntSuffix icl_suffix_;
   std::vector<LinExpr> common_exprs_;
 
   typedef Gecode::BoolExpr BoolExpr;
@@ -89,18 +89,17 @@ class NLToGecodeConverter :
     return int_value;
   }
 
-  BoolExpr Convert(Gecode::BoolOpType op, asl::IteratedLogicalExpr e);
+  BoolExpr Convert(Gecode::BoolOpType op, IteratedLogicalExpr e);
 
   typedef void (*VarArgFunc)(
       Gecode::Home, const Gecode::IntVarArgs &,
       Gecode::IntVar, Gecode::IntConLevel);
 
-  LinExpr Convert(asl::VarArgExpr e, VarArgFunc f);
+  LinExpr Convert(IteratedExpr e, VarArgFunc f);
 
-  static void RequireZeroRHS(asl::BinaryExpr e, fmt::StringRef func_name);
+  static void RequireZeroRHS(BinaryExpr e, fmt::StringRef func_name);
 
-  template<typename Term>
-  LinExpr ConvertExpr(asl::LinearExpr<Term> linear, asl::NumericExpr nonlinear);
+  LinExpr ConvertExpr(const LinearExpr &linear, NumericExpr nonlinear);
 
   Gecode::IntConLevel GetICL(int con_index) const;
 
@@ -108,7 +107,7 @@ class NLToGecodeConverter :
   NLToGecodeConverter(int num_vars, Gecode::IntConLevel icl)
   : problem_(num_vars, icl), icl_(icl) {}
 
-  void Convert(const ASLProblem &p);
+  void Convert(const Problem &p);
 
   GecodeProblem &problem() { return problem_; }
 
@@ -121,153 +120,155 @@ class NLToGecodeConverter :
   // * log, log10, exp, pow
   // * sqrt other than floor(sqrt())
 
-  LinExpr VisitAdd(asl::BinaryExpr e) {
+  LinExpr VisitAdd(BinaryExpr e) {
     return Visit(e.lhs()) + Visit(e.rhs());
   }
 
-  LinExpr VisitSub(asl::BinaryExpr e) {
+  LinExpr VisitSub(BinaryExpr e) {
     return Visit(e.lhs()) - Visit(e.rhs());
   }
 
-  LinExpr VisitMul(asl::BinaryExpr e) {
+  LinExpr VisitMul(BinaryExpr e) {
     return Visit(e.lhs()) * Visit(e.rhs());
   }
 
-  LinExpr VisitMod(asl::BinaryExpr e) {
+  LinExpr VisitMod(BinaryExpr e) {
     return Visit(e.lhs()) % Visit(e.rhs());
   }
 
-  LinExpr VisitLess(asl::BinaryExpr e) {
+  LinExpr VisitLess(BinaryExpr e) {
     return max(Visit(e.lhs()) - Visit(e.rhs()), 0);
   }
 
-  LinExpr VisitMin(asl::VarArgExpr e) {
+  LinExpr VisitMin(IteratedExpr e) {
     return Convert(e, Gecode::min);
   }
 
-  LinExpr VisitMax(asl::VarArgExpr e) {
+  LinExpr VisitMax(IteratedExpr e) {
     return Convert(e, Gecode::max);
   }
 
-  LinExpr VisitMinus(asl::UnaryExpr e) {
+  LinExpr VisitMinus(UnaryExpr e) {
     return -Visit(e.arg());
   }
 
-  LinExpr VisitAbs(asl::UnaryExpr e) {
+  LinExpr VisitAbs(UnaryExpr e) {
     return abs(Visit(e.arg()));
   }
 
-  LinExpr VisitFloor(asl::UnaryExpr e);
+  LinExpr VisitFloor(UnaryExpr e);
 
-  LinExpr VisitCeil(asl::UnaryExpr e) {
+  LinExpr VisitCeil(UnaryExpr e) {
     // ceil does nothing because Gecode supports only integer expressions.
     return Visit(e.arg());
   }
 
-  LinExpr VisitIf(asl::IfExpr e);
+  LinExpr VisitIf(IfExpr e);
 
-  LinExpr VisitSum(asl::SumExpr e);
+  LinExpr VisitSum(IteratedExpr e);
 
-  LinExpr VisitIntDiv(asl::BinaryExpr e) {
+  LinExpr VisitIntDiv(BinaryExpr e) {
     return Visit(e.lhs()) / Visit(e.rhs());
   }
 
-  LinExpr VisitRound(asl::BinaryExpr e) {
+  LinExpr VisitRound(BinaryExpr e) {
     // round does nothing because Gecode supports only integer expressions.
     RequireZeroRHS(e, "round");
     return Visit(e.lhs());
   }
 
-  LinExpr VisitTrunc(asl::BinaryExpr e) {
+  LinExpr VisitTrunc(BinaryExpr e) {
     // trunc does nothing because Gecode supports only integer expressions.
     RequireZeroRHS(e, "trunc");
     return Visit(e.lhs());
   }
 
-  LinExpr VisitCount(asl::CountExpr e);
+  LinExpr VisitCount(CountExpr e);
 
-  LinExpr VisitNumberOf(asl::NumberOfExpr e);
+  LinExpr VisitNumberOf(IteratedExpr e);
 
-  LinExpr VisitPowConstExp(asl::BinaryExpr e) {
+  LinExpr VisitPowConstExp(BinaryExpr e) {
     return Gecode::pow(Visit(e.lhs()),
-        CastToInt(asl::Cast<asl::NumericConstant>(e.rhs()).value()));
+        CastToInt(Cast<NumericConstant>(e.rhs()).value()));
   }
 
-  LinExpr VisitPow2(asl::UnaryExpr e) {
+  LinExpr VisitPow2(UnaryExpr e) {
     return sqr(Visit(e.arg()));
   }
 
-  LinExpr VisitNumericConstant(asl::NumericConstant c) {
+  LinExpr VisitNumericConstant(NumericConstant c) {
     return CastToInt(c.value());
   }
 
-  LinExpr VisitVariable(asl::Reference v) {
-    int index = v.index(), num_vars = problem_.vars().size();
-    return index < num_vars ?
-          problem_.vars()[index] : common_exprs_[index - num_vars];
+  LinExpr VisitVariable(Reference v) {
+    return problem_.vars()[v.index()];
   }
 
-  BoolExpr VisitOr(asl::BinaryLogicalExpr e) {
+  LinExpr VisitCommonExpr(Reference v) {
+    return common_exprs_[v.index()];
+  }
+
+  BoolExpr VisitOr(BinaryLogicalExpr e) {
     return Visit(e.lhs()) || Visit(e.rhs());
   }
 
-  BoolExpr VisitAnd(asl::BinaryLogicalExpr e) {
+  BoolExpr VisitAnd(BinaryLogicalExpr e) {
     return Visit(e.lhs()) && Visit(e.rhs());
   }
 
-  BoolExpr VisitLT(asl::RelationalExpr e) {
+  BoolExpr VisitLT(RelationalExpr e) {
     return Visit(e.lhs()) < Visit(e.rhs());
   }
 
-  BoolExpr VisitLE(asl::RelationalExpr e) {
+  BoolExpr VisitLE(RelationalExpr e) {
     return Visit(e.lhs()) <= Visit(e.rhs());
   }
 
-  BoolExpr VisitEQ(asl::RelationalExpr e) {
+  BoolExpr VisitEQ(RelationalExpr e) {
     return Visit(e.lhs()) == Visit(e.rhs());
   }
 
-  BoolExpr VisitGE(asl::RelationalExpr e) {
+  BoolExpr VisitGE(RelationalExpr e) {
     return Visit(e.lhs()) >= Visit(e.rhs());
   }
 
-  BoolExpr VisitGT(asl::RelationalExpr e) {
+  BoolExpr VisitGT(RelationalExpr e) {
     return Visit(e.lhs()) > Visit(e.rhs());
   }
 
-  BoolExpr VisitNE(asl::RelationalExpr e) {
+  BoolExpr VisitNE(RelationalExpr e) {
     return Visit(e.lhs()) != Visit(e.rhs());
   }
 
-  BoolExpr VisitNot(asl::NotExpr e) {
+  BoolExpr VisitNot(NotExpr e) {
     return !Visit(e.arg());
   }
 
-  BoolExpr VisitForAll(asl::IteratedLogicalExpr e) {
+  BoolExpr VisitForAll(IteratedLogicalExpr e) {
     return Convert(Gecode::BOT_AND, e);
   }
 
-  BoolExpr VisitExists(asl::IteratedLogicalExpr e) {
+  BoolExpr VisitExists(IteratedLogicalExpr e) {
     return Convert(Gecode::BOT_OR, e);
   }
 
-  BoolExpr VisitImplication(asl::ImplicationExpr e);
+  BoolExpr VisitImplication(ImplicationExpr e);
 
-  BoolExpr VisitIff(asl::BinaryLogicalExpr e) {
+  BoolExpr VisitIff(BinaryLogicalExpr e) {
     return Visit(e.lhs()) == Visit(e.rhs());
   }
 
-  BoolExpr VisitAllDiff(asl::PairwiseExpr e);
-  BoolExpr VisitNotAllDiff(asl::PairwiseExpr e) { return VisitAllDiff(e); }
+  BoolExpr VisitAllDiff(PairwiseExpr e);
+  BoolExpr VisitNotAllDiff(PairwiseExpr e) { return VisitAllDiff(e); }
 
-  BoolExpr VisitLogicalConstant(asl::LogicalConstant c) {
+  BoolExpr VisitLogicalConstant(LogicalConstant c) {
     bool value = c.value();
     return Gecode::BoolVar(problem_, value, value);
   }
 };
 
 // Gecode solver.
-class GecodeSolver : public ASLSolver {
+class GecodeSolver : public SolverImpl<Problem> {
  private:
   bool output_;
   double output_frequency_;
@@ -358,11 +359,8 @@ class GecodeSolver : public ASLSolver {
 #endif
 
   template<template<template<typename> class, typename> class Meta>
-  ProblemPtr Search(ASLProblem &p, GecodeProblem &gecode_problem,
+  ProblemPtr Search(Problem &p, GecodeProblem &gecode_problem,
                     Gecode::Search::Statistics &stats, SolutionHandler &sh);
-
- protected:
-  void DoSolve(ASLProblem &p, SolutionHandler &sh);
 
  public:
   GecodeSolver();
@@ -376,6 +374,8 @@ class GecodeSolver : public ASLSolver {
   Gecode::RestartMode restart() const { return restart_; }
   double restart_base() const { return restart_base_; }
   unsigned long restart_scale() const { return restart_scale_; }
+
+  void Solve(Problem &p, SolutionHandler &sh);
 };
 }
 

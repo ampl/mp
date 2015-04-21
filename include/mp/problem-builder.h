@@ -61,7 +61,6 @@ class ProblemBuilder : public SuffixManager {
   }
 
   void SetInfo(const ProblemInfo &) {}
-  void EndBuild() {}
 
   // Adds a variable.
   void AddVar(double lb, double ub, var::Type type) {
@@ -375,8 +374,6 @@ class ProblemBuilder : public SuffixManager {
 };
 
 // Adapts ProblemBuilder for use as an .nl handler.
-// It doesn't call ProblemBuilder::EndBuild to allow for modification
-// of a problem after it has been read.
 template <typename ProblemBuilder>
 class ProblemBuilderToNLAdapter {
  public:
@@ -407,6 +404,7 @@ class ProblemBuilderToNLAdapter {
     ConInfo() : expr(), lb(0), ub(0) {}
   };
   std::vector<ConInfo> cons_;
+  std::vector<double> initial_duals_;
 
   std::vector<Function> funcs_;
 
@@ -440,6 +438,13 @@ class ProblemBuilderToNLAdapter {
     objs_.resize(h.num_objs);
     cons_.resize(h.num_algebraic_cons);
     funcs_.resize(h.num_funcs);
+
+    // Add variables.
+    int num_integer_vars = h.num_integer_vars();
+    for (int i = 0; i < num_integer_vars; ++i)
+      builder_.AddVar(0, 0, var::INTEGER);
+    for (int i = num_integer_vars; i < h.num_vars; ++i)
+      builder_.AddVar(0, 0, var::CONTINUOUS);
 
     // Update the number of objectives if necessary.
     int num_objs = 0;
@@ -522,9 +527,9 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of variable bounds.
   void OnVarBounds(int index, double lb, double ub) {
-    var::Type type =
-        index < num_continuous_vars_ ? var::CONTINUOUS : var::INTEGER;
-    builder_.AddVar(lb, ub, type);
+    typename ProblemBuilder::MutVariable var = builder_.var(index);
+    var.set_lb(lb);
+    var.set_ub(ub);
   }
 
   // Receives notification of constraint bounds (ranges).
@@ -541,7 +546,9 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of the initial value for a dual variable.
   void OnInitialDualValue(int con_index, double value) {
-    builder_.algebraic_con(con_index).set_dual(value);
+    if (initial_duals_.empty())
+      initial_duals_.resize(cons_.size());
+    initial_duals_[con_index] = value;
   }
 
   struct ColumnSizeHandler {
@@ -753,6 +760,9 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of the end of the input.
   void EndInput() {
+    // Set initial dual values.
+    for (std::size_t i = 0, n = initial_duals_.size(); i < n; ++i)
+      builder_.algebraic_con(i).set_dual(initial_duals_[i]);
   }
 };
 }  // namespace mp

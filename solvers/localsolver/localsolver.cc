@@ -44,13 +44,6 @@ inline double GetValue(localsolver::LSExpression e) {
   return e.isDouble() ? e.getDoubleValue() : e.getValue();
 }
 
-inline localsolver::lsint ConvertToInt(double value) {
-  localsolver::lsint int_value = static_cast<localsolver::lsint>(value);
-  if (int_value != value)
-    throw mp::Error("value {} can't be represented as int", value);
-  return int_value;
-}
-
 bool StopSolver(void *data) {
   localsolver::LocalSolver* solver =
       static_cast<localsolver::LocalSolver*>(data);
@@ -59,13 +52,13 @@ bool StopSolver(void *data) {
   solver->stop();
   return true;
 }
-
-// LocalSolver doesn't allow infinite bounds for variables, so use the max
-// double value instead.
-const double LS_INF = std::numeric_limits<double>::max();
 }  // namespace
 
 namespace mp {
+
+// LocalSolver doesn't allow infinite bounds for variables, so use the max
+// double value instead.
+const double LSProblemBuilder::LS_INF = std::numeric_limits<double>::max();
 
 LSProblemBuilder::HyperbolicTerms
     LSProblemBuilder::MakeHyperbolicTerms(ls::LSExpression arg) {
@@ -75,7 +68,7 @@ LSProblemBuilder::HyperbolicTerms
   return terms;
 }
 
-LSProblemBuilder::LSProblemBuilder(LocalSolver &s)
+LSProblemBuilder::LSProblemBuilder(LocalSolver &s, fmt::StringRef)
   : model_(solver_.getModel()),
     num_objs_(0), num_cons_(0), pl_bigm_(s.pl_bigm()) {
   solver_.getParam().setVerbosity(0);

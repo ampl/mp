@@ -54,7 +54,7 @@ namespace {
 
 void Solve(const char *stub) {
   mp::SMPSWriter writer;
-  mp::asl::internal::ASLBuilder builder(writer.GetProblemBuilder(stub));
+  mp::asl::internal::ASLBuilder builder(writer, stub);
   mp::SMPSWriter::NLProblemBuilder adapter(builder);
   mp::ReadNLFile(std::string(stub) + ".nl", adapter);
   builder.EndBuild();
