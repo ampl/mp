@@ -82,6 +82,7 @@ struct TestLResult {
 struct MockVisitor : mp::ExprVisitor<MockVisitor, TestResult, TestLResult> {
   MOCK_METHOD1(VisitNumericConstant, TestResult (NumericConstant e));
   MOCK_METHOD1(VisitVariable, TestResult (Variable e));
+  MOCK_METHOD1(VisitCommonExpr, TestResult (CommonExpr e));
 
   // Unary expressions.
   MOCK_METHOD1(VisitMinus, TestResult (UnaryExpr e));
@@ -231,6 +232,14 @@ TEST_F(ExprVisitorTest, VisitNumericConstant) {
 TEST_F(ExprVisitorTest, VisitVariable) {
   auto e = factory_.MakeVariable(42);
   EXPECT_CALL(visitor_, VisitVariable(e));
+  mp::NumericExpr base = e;
+  visitor_.Visit(base);
+  TEST_UNHANDLED_NUMERIC(base);
+}
+
+TEST_F(ExprVisitorTest, VisitCommonExpr) {
+  auto e = factory_.MakeCommonExpr(0);
+  EXPECT_CALL(visitor_, VisitCommonExpr(e));
   mp::NumericExpr base = e;
   visitor_.Visit(base);
   TEST_UNHANDLED_NUMERIC(base);

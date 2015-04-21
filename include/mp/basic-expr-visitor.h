@@ -84,6 +84,10 @@ class BasicExprVisitor {
     return MP_DISPATCH(VisitUnhandledNumericExpr(v));
   }
 
+  Result VisitCommonExpr(CommonExpr e) {
+    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
   // Visits a unary expression or a function taking one argument.
   Result VisitUnary(UnaryExpr e) {
     return MP_DISPATCH(VisitUnhandledNumericExpr(e));
@@ -396,6 +400,9 @@ Result BasicExprVisitor<Impl, Result, LResult, ET>::Visit(NumericExpr e) {
                          ET::template UncheckedCast<NumericConstant>(e)));
   case expr::VARIABLE:
     return MP_DISPATCH(VisitVariable(ET::template UncheckedCast<Variable>(e)));
+  case expr::COMMON_EXPR:
+    return MP_DISPATCH(VisitCommonExpr(
+                         ET::template UncheckedCast<CommonExpr>(e)));
 
   // Unary expressions.
   case expr::MINUS:
