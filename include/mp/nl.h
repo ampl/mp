@@ -903,6 +903,9 @@ class NLHandler {
     internal::Unused(&condition, &true_expr, &false_expr);
     return Expr();
   }
+
+  /** Receives notification of the end of the input. */
+  void EndInput() {}
 };
 
 namespace internal {
@@ -1945,6 +1948,7 @@ void NLReader<Reader, Handler>::Read() {
   } else {
     Read(0);
   }
+  handler_.EndInput();
 }
 
 // An .nl file reader.

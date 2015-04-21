@@ -53,6 +53,7 @@ class MockNLHandler : public mp::NLHandler<TestExpr> {
   MOCK_CONST_METHOD1(NeedObj, bool (int obj_index));
   MOCK_METHOD2(OnLinearObjExpr,
                LinearObjHandler (int obj_index, int num_linear_terms));
+  MOCK_METHOD0(EndInput, void ());
 };
 
 TEST(ReaderBaseTest, ReadChar) {
@@ -750,6 +751,8 @@ class TestNLHandler {
                            std::string true_expr, std::string false_expr) {
     return OnIf(condition, true_expr, false_expr);
   }
+
+  void EndInput() {}
 };
 
 TEST(NLTest, WriteTextHeader) {
@@ -985,6 +988,8 @@ struct TestNLHandler2 {
   TestExpr OnSymbolicIf(TestLogicalExpr, TestExpr, TestExpr) {
     return TestExpr();
   }
+
+  void EndInput() {}
 };
 
 NLHeader MakeHeader() {
@@ -1289,7 +1294,7 @@ TEST(NLTest, ReadLinearObjExpr) {
 
 // Test that handler's OnLinearObjExpr is not called if NeedObj returns false.
 TEST(NLTest, SkipObj) {
-  MockNLHandler handler;
+  testing::NiceMock<MockNLHandler> handler;
   EXPECT_CALL(handler, NeedObj(0)).WillOnce(Return(false));
   EXPECT_CALL(handler, OnLinearObjExpr(_, _)).Times(0);
   auto header = NLHeader();
@@ -1299,7 +1304,7 @@ TEST(NLTest, SkipObj) {
 
 // Test that handler's OnLinearObjExpr is called if NeedObj returns true.
 TEST(NLTest, PassObj) {
-  MockNLHandler handler;
+  testing::NiceMock<MockNLHandler> handler;
   EXPECT_CALL(handler, NeedObj(0)).WillOnce(Return(true));
   EXPECT_CALL(handler, OnLinearObjExpr(0, 1)).
       WillOnce(Return(MockNLHandler::LinearObjHandler()));
@@ -1446,7 +1451,7 @@ TEST(NLTest, NLHandler) {
 }
 
 TEST(NLTest, ReadBoundsFirst) {
-  MockNLHandler handler;
+  testing::NiceMock<MockNLHandler> handler;
   testing::InSequence dummy;
   EXPECT_CALL(handler, OnHeader(_));
   EXPECT_CALL(handler, OnVarBounds(0, 1, 2));
@@ -1474,5 +1479,15 @@ TEST(NLTest, Example) {
   EXPECT_WRITE(stdout, fmt::print("The number of variable references is {}.",
                                   counter.num_vars),
                "The number of variable references is 2.");
+}
+
+TEST(NLTest, EndInput) {
+  testing::NiceMock<MockNLHandler> handler;
+  testing::InSequence dummy;
+  EXPECT_CALL(handler, OnVarBounds(0, 1, 2));
+  EXPECT_CALL(handler, EndInput());
+  auto header = NLHeader();
+  header.num_vars = header.num_objs = 1;
+  ReadNLString(FormatHeader(header, false) + "b\n0 1 2\n", handler, "");
 }
 }  // namespace

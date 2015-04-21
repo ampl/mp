@@ -750,6 +750,10 @@ class ProblemBuilderToNLAdapter {
   Expr OnSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {
     return builder_.MakeSymbolicIf(condition, true_expr, false_expr);
   }
+
+  // Receives notification of the end of the input.
+  void EndInput() {
+  }
 };
 }  // namespace mp
 
