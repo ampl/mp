@@ -171,7 +171,6 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Sets the initial value for a variable.
   void SetInitialValue(int var_index, double value) {
-    CheckIndex(var_index, num_vars());
     if (initial_values_.size() <= static_cast<unsigned>(var_index)) {
       initial_values_.reserve(vars_.capacity());
       initial_values_.resize(num_vars());
