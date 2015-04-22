@@ -275,6 +275,8 @@ TEST(SuffixSetTest, Find) {
     static bool ismut(MutSuffix) { return true; }
   };
   EXPECT_EQ(suf, s.Find("test"));
+  EXPECT_EQ(mp::Suffix(), s.Find<double>("test"));
+  EXPECT_EQ(suf, s.Find<int>("test"));
   EXPECT_TRUE(Test::ismut(s.Find("test")));
   const mp::SuffixSet &cs = s;
   EXPECT_EQ(suf, cs.Find("test"));

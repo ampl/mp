@@ -338,6 +338,7 @@ class BasicSuffixSet : private Alloc {
     return MutSuffix(i != set_.end() ? &*i : 0);
   }
 
+  // Finds a suffix with the specified name and value type.
   template <typename T>
   BasicSuffix<T> Find(fmt::StringRef name) const {
     Suffix s = Find(name);
