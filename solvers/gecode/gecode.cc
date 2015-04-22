@@ -344,8 +344,7 @@ void NLToGecodeConverter::Convert(const Problem &p) {
                     ConvertExpr(obj.linear_expr(), obj.nonlinear_expr()));
   }
 
-  Suffix suffix = p.suffixes(suf::CON).Find("icl");
-  icl_suffix_ = suffix ? Cast<IntSuffix>(suffix) : IntSuffix();
+  icl_suffix_ = p.suffixes(suf::CON).Find<int>("icl");
 
   class ICLSetter {
    private:

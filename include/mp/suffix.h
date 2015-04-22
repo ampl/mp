@@ -338,6 +338,12 @@ class BasicSuffixSet : private Alloc {
     return MutSuffix(i != set_.end() ? &*i : 0);
   }
 
+  template <typename T>
+  BasicSuffix<T> Find(fmt::StringRef name) const {
+    Suffix s = Find(name);
+    return s ? Cast< BasicSuffix<T> >(s) : BasicSuffix<T>();
+  }
+
   // A suffix iterator.
   class iterator : public std::iterator<std::forward_iterator_tag, Suffix> {
    private:

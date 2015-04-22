@@ -537,7 +537,7 @@ class CallExpr : public BasicExpr<expr::CALL> {
 
   int num_args() const { return impl()->al->n; }
 
-  Expr operator[](int index) {
+  Expr arg(int index) {
     assert(index >= 0 && index < num_args());
     return Create<Expr>(impl()->args[index]);
   }
@@ -615,7 +615,7 @@ class BasicIteratedExpr : public BasicExpr<FIRST, LAST> {
     return static_cast<int>(this->impl()->R.ep - this->impl()->L.ep);
   }
 
-  Arg operator[](int index) const {
+  Arg arg(int index) const {
     assert(index >= 0 && index < num_args());
     return BasicIteratedExpr::template Create<Arg>(this->impl()->L.ep[index]);
   }
@@ -704,10 +704,6 @@ class StringLiteral : public BasicExpr<expr::STRING> {
 // Example: if x != 0 then 'a' else 0, where x is a variable.
 typedef BasicIfExpr<Expr, expr::IFSYM> SymbolicIfExpr;
 
-// Recursively compares two expressions and returns true if they are equal.
-bool Equal(NumericExpr e1, NumericExpr e2);
-bool Equal(LogicalExpr e1, LogicalExpr e2);
-
 template <typename Grad>
 class LinearExpr;
 
@@ -783,6 +779,15 @@ class LinearExpr {
 typedef LinearExpr<LinearObjTerm> LinearObjExpr;
 typedef LinearExpr<LinearConTerm> LinearConExpr;
 
+class LinearCommonExpr {
+ private:
+  const cexp *expr_;
+
+ public:
+  explicit LinearCommonExpr(const cexp *e = 0) : expr_(e) {}
+  // TODO
+};
+
 template <typename LinearExpr>
 void WriteExpr(fmt::Writer &w, LinearExpr linear, NumericExpr nonlinear);
 
@@ -840,97 +845,7 @@ class HashNumberOfArgs {
   std::size_t operator()(NumberOfExpr e) const;
 };
 #endif
-
-class EqualNumberOfArgs {
- public:
-  bool operator()(NumberOfExpr lhs, NumberOfExpr rhs) const;
-};
-
-template <typename NumberOf>
-class MatchNumberOfArgs {
- private:
-  NumberOfExpr impl_;
-
- public:
-  explicit MatchNumberOfArgs(NumberOfExpr e) : impl_(e) {}
-
-  // Returns true if the stored expression has the same arguments as the nof's
-  // expression.
-  bool operator()(const NumberOf &nof) const {
-    return EqualNumberOfArgs()(impl_, nof.expr);
-  }
-};
 }  // namespace internal
-
-// A map from numberof expressions with the same argument lists to
-// values and corresponding variables.
-template <typename Var, typename CreateVar>
-class NumberOfMap {
- public:
-  typedef std::map<double, Var> ValueMap;
-
-  struct NumberOf {
-    NumberOfExpr expr;
-    ValueMap values;
-
-    explicit NumberOf(NumberOfExpr e) : expr(e) {}
-  };
-
- private:
-  CreateVar create_var_;
-
-#ifdef MP_USE_UNORDERED_MAP
-  // Map from a numberof expression to an index in numberofs_.
-  typedef std::unordered_map<NumberOfExpr, std::size_t,
-    internal::HashNumberOfArgs, internal::EqualNumberOfArgs> Map;
-  Map map_;
-#endif
-
-  std::vector<NumberOf> numberofs_;
-
- public:
-  explicit NumberOfMap(CreateVar cv) : create_var_(cv) {}
-
-  typedef typename std::vector<NumberOf>::const_iterator iterator;
-
-  iterator begin() const {
-    return numberofs_.begin();
-  }
-
-  iterator end() const {
-    return numberofs_.end();
-  }
-
-  // Adds a numberof expression with a constant value.
-  Var Add(double value, NumberOfExpr e);
-};
-
-template <typename Var, typename CreateVar>
-Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
-  assert(Cast<NumericConstant>(e[0]).value() == value);
-#ifdef MP_USE_UNORDERED_MAP
-  std::pair<typename Map::iterator, bool> result =
-      map_.insert(typename Map::value_type(e, numberofs_.size()));
-  if (result.second)
-    numberofs_.push_back(NumberOf(e));
-  ValueMap &values = numberofs_[result.first->second].values;
-#else
-  typename std::vector<NumberOf>::reverse_iterator np =
-      std::find_if(numberofs_.rbegin(), numberofs_.rend(),
-                   internal::MatchNumberOfArgs<NumberOf>(e));
-  if (np == numberofs_.rend()) {
-    numberofs_.push_back(NumberOf(e));
-    np = numberofs_.rbegin();
-  }
-  ValueMap &values = np->values;
-#endif
-  typename ValueMap::iterator i = values.lower_bound(value);
-  if (i != values.end() && !values.key_comp()(value, i->first))
-    return i->second;
-  Var var(create_var_());
-  values.insert(i, typename ValueMap::value_type(value, var));
-  return var;
-}
 }  // namespace asl
 }  // namespace mp
 

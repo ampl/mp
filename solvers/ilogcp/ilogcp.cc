@@ -31,7 +31,6 @@
  */
 
 #include "ilogcp.h"
-#include "asl/aslproblem.h"
 
 #include <cctype>
 #include <cstdlib>
@@ -43,8 +42,6 @@
 
 using std::strcmp;
 using std::vector;
-
-namespace asl = mp::asl;
 
 #ifndef ILOGCP_NO_VERS
 static char xxxvers[] = "ilogcp_options\0\n"
@@ -216,11 +213,11 @@ void GetSolution(IloCP cp, IloNumVarArray vars, vector<double> &solution) {
   }
 }
 
-bool HasNonlinearObj(const mp::ASLProblem &p) {
+bool HasNonlinearObj(const mp::Problem &p) {
   if (p.num_objs() == 0)
     return false;
-  asl::NumericExpr expr = p.obj(0).nonlinear_expr();
-  return expr && !asl::Cast<asl::NumericConstant>(expr);
+  mp::NumericExpr expr = p.obj(0).nonlinear_expr();
+  return expr && !mp::Cast<mp::NumericConstant>(expr);
 }
 
 std::string ConvertSolutionStatus(
@@ -275,16 +272,14 @@ bool InterruptCPLEX(void *aborter) {
 namespace mp {
 
 IlogCPSolver::IlogCPSolver() :
-   ASLSolver("ilogcp", 0, YYYYMMDD, MULTIPLE_SOL | MULTIPLE_OBJ),
-   cp_(env_), cplex_(env_),
-   optimizer_(AUTO) {
+   SolverImpl("ilogcp", 0, YYYYMMDD, MULTIPLE_SOL | MULTIPLE_OBJ),
+   cp_(env_), cplex_(env_), optimizer_(AUTO) {
   cp_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
   cplex_.setParam(IloCplex::MIPDisplay, 0);
 
   options_[DEBUGEXPR] = false;
   options_[USENUMBEROF] = true;
   options_[SOLUTION_LIMIT] = -1;
-  set_read_flags(ASL_allow_missing_funcs);
 
   set_long_name(fmt::format("ilogcp {}.{}.{}",
       IloConcertVersion::_ILO_MAJOR_VERSION,
@@ -598,14 +593,14 @@ void IlogCPSolver::SetCPLEXIntOption(
 }
 
 void IlogCPSolver::SolveWithCP(
-    ASLProblem &p, const NLToConcertConverter &converter,
+    Problem &p, const NLToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
   IloNumVarArray vars = converter.vars();
   IloIntVarArray priority_vars(env_);
-  ASLSuffixPtr priority_suffix = p.suffixes(suf::VAR).Find("priority");
-  if (priority_suffix && priority_suffix->has_values()) {
+  IntSuffix priority_suffix = p.suffixes(suf::VAR).Find<int>("priority");
+  if (priority_suffix) {
     for (int i = 0, n = p.num_vars(); i < n; ++i) {
-      if (priority_suffix->int_value(i) > 0)
+      if (priority_suffix.value(i) > 0)
         priority_vars.add(vars[i]);
     }
   }
@@ -690,7 +685,7 @@ void IlogCPSolver::SolveWithCP(
 }
 
 void IlogCPSolver::SolveWithCPLEX(
-    ASLProblem &p, const NLToConcertConverter &converter,
+    Problem &p, const NLToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
   IloCplex::Aborter aborter(env_);
   cplex_.use(aborter);
@@ -739,19 +734,23 @@ void IlogCPSolver::SolveWithCPLEX(
       dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
 }
 
-void IlogCPSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
+void IlogCPSolver::Solve(Problem &p, SolutionHandler &sh) {
   Stats stats = Stats();
   stats.time = steady_clock::now();
 
   Optimizer optimizer = optimizer_;
   if (optimizer == AUTO) {
-    if (p.num_logical_cons() != 0 || p.num_nonlinear_cons() != 0 ||
+    if (p.num_logical_cons() != 0 || p.has_nonlinear_cons() ||
         HasNonlinearObj(p)) {
-      if (p.num_continuous_vars() != 0)
-        throw Error("CP Optimizer doesn't support continuous variables");
       optimizer = CP;
     } else {
       optimizer = CPLEX;
+    }
+  }
+  if (optimizer == CP) {
+    for (int i = 0, num_vars = p.num_vars(); i < num_vars; ++i) {
+      if (p.var(i).type() == mp::var::CONTINUOUS)
+        throw Error("CP Optimizer doesn't support continuous variables");
     }
   }
 

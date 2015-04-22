@@ -39,111 +39,6 @@ using mp::asl::LogicalExpr;
 namespace prec = mp::prec;
 namespace asl = mp::asl;
 
-namespace {
-
-// Compares expressions for equality.
-class ExprEqual : public mp::asl::ExprVisitor<ExprEqual, bool, bool> {
- private:
-  Expr expr_;
-
- public:
-  explicit ExprEqual(Expr e) : expr_(e) {}
-
-  template <typename T>
-  bool VisitNumericConstant(T c) { return Cast<T>(expr_).value() == c.value(); }
-
-  bool VisitVariable(asl::Reference v) {
-    return Cast<asl::Reference>(expr_).index() == v.index();
-  }
-
-  template <typename E>
-  bool VisitUnary(E e) {
-    return Equal(Cast<E>(expr_).arg(), e.arg());
-  }
-
-  template <typename E>
-  bool VisitBinary(E e) {
-    E binary = Cast<E>(expr_);
-    return Equal(binary.lhs(), e.lhs()) && Equal(binary.rhs(), e.rhs());
-  }
-
-  template <typename E>
-  bool VisitIf(E e) {
-    E if_expr = Cast<E>(expr_);
-    return Equal(if_expr.condition(), e.condition()) &&
-           Equal(if_expr.true_expr(), e.true_expr()) &&
-           Equal(if_expr.false_expr(), e.false_expr());
-  }
-
-  bool VisitPLTerm(asl::PiecewiseLinearExpr e) {
-    asl::PiecewiseLinearExpr pl = Cast<asl::PiecewiseLinearExpr>(expr_);
-    int num_breakpoints = pl.num_breakpoints();
-    if (num_breakpoints != e.num_breakpoints())
-      return false;
-    for (int i = 0; i < num_breakpoints; ++i) {
-      if (pl.slope(i) != e.slope(i) || pl.breakpoint(i) != e.breakpoint(i))
-        return false;
-    }
-    return pl.slope(num_breakpoints) == e.slope(num_breakpoints) &&
-           Equal(pl.arg(), e.arg());
-  }
-
-  bool VisitCall(asl::CallExpr e) {
-    asl::CallExpr call = Cast<asl::CallExpr>(expr_);
-    int num_args = call.num_args();
-    if (call.function() != e.function() || num_args != e.num_args())
-      return false;
-    for (int i = 0; i < num_args; ++i) {
-      Expr arg = call[i], other_arg = e[i];
-      if (arg.kind() != other_arg.kind())
-        return false;
-      if (NumericExpr num_arg = Cast<NumericExpr>(arg)) {
-        if (!Equal(num_arg, Cast<NumericExpr>(other_arg)))
-          return false;
-      } else if (std::strcmp(
-              Cast<asl::StringLiteral>(arg).value(),
-              Cast<asl::StringLiteral>(other_arg).value()) != 0)
-        return false;
-    }
-    return true;
-  }
-
-  template <typename E>
-  bool VisitVarArg(E e) {
-    E vararg = Cast<E>(expr_);
-    typename E::iterator i = vararg.begin(), iend = vararg.end();
-    typename E::iterator j = e.begin(), jend = e.end();
-    for (; i != iend; ++i, ++j) {
-      if (j == jend || !Equal(*i, *j))
-        return false;
-    }
-    return j == jend;
-  }
-
-  bool VisitSum(asl::SumExpr e) { return VisitVarArg(e); }
-  bool VisitCount(asl::CountExpr e) { return VisitVarArg(e); }
-  bool VisitNumberOf(asl::NumberOfExpr e) { return VisitVarArg(e); }
-
-  bool VisitLogicalConstant(asl::LogicalConstant c) {
-    return VisitNumericConstant(c);
-  }
-
-  bool VisitNot(asl::NotExpr e) { return VisitUnary(e); }
-
-  bool VisitBinaryLogical(asl::BinaryLogicalExpr e) { return VisitBinary(e); }
-  bool VisitRelational(asl::RelationalExpr e) { return VisitBinary(e); }
-  bool VisitLogicalCount(asl::LogicalCountExpr e) { return VisitBinary(e); }
-
-  bool VisitImplication(asl::ImplicationExpr e) { return VisitIf(e); }
-
-  bool VisitIteratedLogical(asl::IteratedLogicalExpr e) {
-    return VisitVarArg(e);
-  }
-
-  bool VisitAllDiff(asl::PairwiseExpr e) { return VisitVarArg(e); }
-};
-}  // namespace
-
 #ifdef MP_USE_UNORDERED_MAP
 
 using asl::internal::HashCombine;
@@ -192,7 +87,7 @@ class ExprHasher : public mp::asl::ExprVisitor<ExprHasher, size_t, size_t> {
     // object is the same for all calls to the same function.
     size_t hash = Hash(e, e.function().name());
     for (int i = 0, n = e.num_args(); i < n; ++i)
-      hash = HashCombine(hash, e[i]);
+      hash = HashCombine(hash, e.arg(i));
     return hash;
   }
 
@@ -278,37 +173,13 @@ namespace asl {
 
 const de VarArgExpr::END = de();
 
-bool Equal(NumericExpr e1, NumericExpr e2) {
-  if (e1.kind() != e2.kind())
-    return false;
-  return ExprEqual(e1).Visit(e2);
-}
-
-bool Equal(LogicalExpr e1, LogicalExpr e2) {
-  if (e1.kind() != e2.kind())
-    return false;
-  return ExprEqual(e1).Visit(e2);
-}
-
 #ifdef MP_USE_UNORDERED_MAP
 size_t internal::HashNumberOfArgs::operator()(NumberOfExpr e) const {
   size_t hash = 0;
   for (int i = 1, n = e.num_args(); i < n; ++i)
-    hash = HashCombine(hash, e[i]);
+    hash = HashCombine(hash, e.arg(i));
   return hash;
 }
 #endif
-
-bool internal::EqualNumberOfArgs::operator()(
-    NumberOfExpr lhs, NumberOfExpr rhs) const {
-  int num_args = lhs.num_args();
-  if (num_args != rhs.num_args())
-    return false;
-  for (int i = 1; i < num_args; ++i) {
-    if (!Equal(lhs[i], rhs[i]))
-      return false;
-  }
-  return true;
-}
 }
 }

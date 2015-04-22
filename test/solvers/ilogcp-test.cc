@@ -38,6 +38,8 @@
 #include <stdexcept>
 #include <string>
 
+#include "gmock/gmock.h"
+#include "ilogcp/concert.h"
 #include "ilogcp/ilogcp.h"
 #include "mp/expr-visitor.h"
 #include "mp/nl.h"
@@ -49,18 +51,39 @@ enum {FEATURES = ~feature::TRIGONOMETRIC & ~feature::INITIAL_VALUES};
 #include "nl-solver-test.h"
 
 using mp::Expr;
+using mp::IteratedExpr;
 using mp::IlogCPSolver;
 using mp::InvalidOptionValue;
 using mp::OptionError;
-using mp::ASLProblem;
-
-namespace asl = mp::asl;
-using asl::NumericExpr;
+using mp::Problem;
 
 namespace var = mp::var;
 namespace obj = mp::obj;
+namespace expr = mp::expr;
 
 using std::string;
+
+using testing::_;
+
+namespace {
+
+struct Var {
+  int index;
+};
+
+struct CreateVar {
+ private:
+  int index_;
+
+ public:
+  CreateVar() : index_(0) {}
+
+  Var operator()() {
+    Var v = {++index_};
+    return v;
+  }
+};
+}
 
 class FunctionTest : public NLSolverTest {
  protected:
@@ -73,7 +96,7 @@ class FunctionTest : public NLSolverTest {
       : num_args_(num_args), factory_(factory) {}
 
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginCall(pb.FindFunction("element"), num_args_);
+      auto args = pb.BeginCall(pb.AddFunction("element", -2), num_args_);
       for (int i = 1; i < num_args_; ++i)
         args.AddArg(pb.MakeNumericConstant(11 * i));
       args.AddArg(factory_(pb));
@@ -85,19 +108,6 @@ class FunctionTest : public NLSolverTest {
   CallFactory<IndexFactory> MakeCallFactory(
       int num_args, IndexFactory factory) {
     return CallFactory<IndexFactory>(num_args, factory);
-  }
-
-  static double TestFunc(arglist *) { return 0; }
-
-  virtual void SetInfo(ProblemBuilder &pb, mp::ProblemInfo &info) {
-    info.num_funcs = 2;
-    NLSolverTest::SetInfo(pb, info);
-    // Create functions permitting less arguments than necessary.
-    // This is done to be able to test calls with invalid arguments.
-    pb.RegisterFunction("element", TestFunc, -2);
-    pb.AddFunction("element", -2, mp::func::NUMERIC);
-    pb.RegisterFunction("in_relation", TestFunc, -1);
-    pb.AddFunction("in_relation", -1, mp::func::NUMERIC);
   }
 };
 
@@ -125,7 +135,7 @@ TEST_F(FunctionTest, ElementAtConstantIndex) {
 TEST_F(FunctionTest, ElementExprAtConstantIndex) {
   struct Factory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginCall(pb.FindFunction("element"), 3);
+      auto args = pb.BeginCall(pb.AddFunction("element", -2), 3);
       args.AddArg(x);
       args.AddArg(pb.MakeNumericConstant(22));
       args.AddArg(pb.MakeNumericConstant(0));
@@ -138,7 +148,7 @@ TEST_F(FunctionTest, ElementExprAtConstantIndex) {
 TEST_F(FunctionTest, ElementExprPlusConstantAtConstantIndex) {
   struct Factory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginCall(pb.FindFunction("element"), 3);
+      auto args = pb.BeginCall(pb.AddFunction("element", -2), 3);
       args.AddArg(pb.MakeNumericConstant(11));
       args.AddArg(pb.MakeBinary(mp::expr::ADD, x, pb.MakeNumericConstant(2)));
       args.AddArg(pb.MakeNumericConstant(1));
@@ -160,7 +170,7 @@ TEST_F(FunctionTest, ElementConstantAtVariableIndex) {
 TEST_F(FunctionTest, ElementExprAtVariableIndex) {
   struct Factory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginCall(pb.FindFunction("element"), 3);
+      auto args = pb.BeginCall(pb.AddFunction("element", -2), 3);
       args.AddArg(x);
       args.AddArg(pb.MakeNumericConstant(22));
       args.AddArg(y);
@@ -173,7 +183,7 @@ TEST_F(FunctionTest, ElementExprAtVariableIndex) {
 TEST_F(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
   struct Factory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginCall(pb.FindFunction("element"), 3);
+      auto args = pb.BeginCall(pb.AddFunction("element", -2), 3);
       args.AddArg(pb.MakeNumericConstant(11));
       args.AddArg(pb.MakeBinary(mp::expr::ADD, x, pb.MakeNumericConstant(2)));
       args.AddArg(y);
@@ -187,14 +197,10 @@ TEST_F(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
 // in_relation constraint tests
 
 // Makes a problem for testing in_relation constraint.
-asl::Function MakeInRelationProblem(asl::internal::ASLBuilder &pb) {
-  auto info = mp::ProblemInfo();
-  info.num_vars = info.num_nl_integer_vars_in_cons = 1;
-  info.num_objs = info.num_logical_cons = info.num_funcs = 1;
-  pb.SetInfo(info);
-  auto in_relation = pb.AddFunction("in_relation", -1, mp::func::NUMERIC);
-  pb.AddVar(0, 100, var::INTEGER);
-  pb.AddObj(obj::MIN, NumericExpr(), 0).AddTerm(0, 1);
+mp::Function MakeInRelationProblem(Problem &p) {
+  auto in_relation = p.AddFunction("in_relation", -1, mp::func::NUMERIC);
+  p.AddVar(0, 100, var::INTEGER);
+  p.AddObj(obj::MIN, mp::NumericExpr(), 0).AddTerm(0, 1);
   return in_relation;
 }
 
@@ -212,7 +218,7 @@ TEST_F(FunctionTest, InRelationConstraint) {
 TEST_F(FunctionTest, NestedInRelationNotSupported) {
   struct Factory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
-      auto args = pb.BeginCall(pb.FindFunction("in_relation"), 2);
+      auto args = pb.BeginCall(pb.AddFunction("in_relation", -1), 2);
       args.AddArg(x);
       args.AddArg(pb.MakeNumericConstant(42));
       return pb.MakeBinary(mp::expr::ADD, pb.EndCall(args), one);
@@ -231,24 +237,20 @@ TEST_F(FunctionTest, TooFewArgsToInRelationConstraint) {
   EXPECT_THROW_MSG(Solve(pb), mp::Error, "in_relation: too few arguments");
 }
 
-void MakeInRelationProblem2(asl::internal::ASLBuilder &pb, int num_const_args) {
-  auto info = mp::ProblemInfo();
-  info.num_vars = info.num_nl_integer_vars_in_cons = 2;
-  info.num_objs = info.num_logical_cons = info.num_funcs = 1;
-  pb.SetInfo(info);
-  auto in_relation = pb.AddFunction("in_relation", -1, mp::func::NUMERIC);
-  pb.AddVar(0, 100, var::INTEGER);
-  pb.AddVar(0, 100, var::INTEGER);
-  auto obj = pb.AddObj(obj::MIN, NumericExpr(), 2);
+void MakeInRelationProblem2(Problem &p, int num_const_args) {
+  auto in_relation = p.AddFunction("in_relation", -1, mp::func::NUMERIC);
+  p.AddVar(0, 100, var::INTEGER);
+  p.AddVar(0, 100, var::INTEGER);
+  auto obj = p.AddObj(obj::MIN, mp::NumericExpr(), 2);
   obj.AddTerm(0, 1);
   obj.AddTerm(1, 1);
-  auto args = pb.BeginCall(in_relation, num_const_args + 2);
-  args.AddArg(pb.MakeVariable(0));
-  args.AddArg(pb.MakeVariable(1));
+  auto args = p.BeginCall(in_relation, num_const_args + 2);
+  args.AddArg(p.MakeVariable(0));
+  args.AddArg(p.MakeVariable(1));
   for (int i = 1; i <= num_const_args; ++i)
-    args.AddArg(pb.MakeNumericConstant(11 * i));
-  pb.AddCon(pb.MakeRelational(
-              mp::expr::NE, pb.EndCall(args), pb.MakeNumericConstant(0)));
+    args.AddArg(p.MakeNumericConstant(11 * i));
+  p.AddCon(p.MakeRelational(
+              mp::expr::NE, p.EndCall(args), p.MakeNumericConstant(0)));
 }
 
 TEST_F(FunctionTest, InRelationSizeIsNotMultipleOfArity) {
@@ -295,19 +297,11 @@ struct EnumValue {
   IloCP::ParameterValues value;
 };
 
-class IlogCPTest : public ::testing::Test, public asl::internal::ASLBuilder {
+class IlogCPTest : public ::testing::Test, public Problem {
  protected:
   IlogCPSolver s;
 
-  IlogCPTest() {
-    set_flags(asl::internal::ASL_STANDARD_OPCODES);
-    mp::ProblemInfo info = mp::ProblemInfo();
-    info.num_vars = 3;
-    info.num_objs = 1;
-    SetInfo(info);
-  }
-
-  EvalResult Solve(mp::ASLProblem &p) {
+  EvalResult Solve(mp::Problem &p) {
     TestSolutionHandler sh(1);
     s.Solve(p, sh);
     const double *sol = sh.primal();
@@ -318,7 +312,7 @@ class IlogCPTest : public ::testing::Test, public asl::internal::ASLBuilder {
 
   int CountIloDistribute();
 
-  asl::NumericConstant MakeConst(double value) {
+  mp::NumericConstant MakeConst(double value) {
     return MakeNumericConstant(value);
   }
 
@@ -333,6 +327,22 @@ class IlogCPTest : public ::testing::Test, public asl::internal::ASLBuilder {
 
   void CheckDblCPOption(const char *option,
       IloCP::NumParam param, double good, double bad);
+
+  template <int N>
+  IteratedExpr MakeIterated(expr::Kind kind, mp::NumericExpr (&args)[N]) {
+    auto builder = BeginIterated(kind, N);
+    for (int i = 0; i < N; ++i)
+      builder.AddArg(args[i]);
+    return EndIterated(builder);
+  }
+
+  template <int N>
+  mp::PairwiseExpr MakeAllDiff(mp::NumericExpr (&args)[N]) {
+    auto builder = BeginPairwise(expr::ALLDIFF, N);
+    for (int i = 0; i < N; ++i)
+      builder.AddArg(args[i]);
+    return EndPairwise(builder);
+  }
 };
 
 int IlogCPTest::CountIloDistribute() {
@@ -416,11 +426,12 @@ TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
 
 TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
   s.use_numberof();
-  ASLProblem p;
+  Problem p;
   p.AddVar(0, 0, var::INTEGER);
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
-  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0),
+                          MakeIterated(expr::NUMBEROF, args)));
   mp::BasicSolutionHandler sh;
   s.Solve(p, sh);
   ASSERT_EQ(1, CountIloDistribute());
@@ -428,12 +439,14 @@ TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   s.use_numberof();
-  ASLProblem p;
+  Problem p;
   p.AddVar(0, 0, var::INTEGER);
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
-  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
-  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0),
+                          MakeIterated(expr::NUMBEROF, args)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0),
+                          MakeIterated(expr::NUMBEROF, args)));
   mp::BasicSolutionHandler sh;
   s.Solve(p, sh);
   ASSERT_EQ(1, CountIloDistribute());
@@ -441,13 +454,15 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
   s.use_numberof();
-  ASLProblem p;
+  Problem p;
   p.AddVar(0, 0, var::INTEGER);
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
-  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0),
+                          MakeIterated(expr::NUMBEROF, args)));
   args[0] = MakeConst(43);
-  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0),
+                          MakeIterated(expr::NUMBEROF, args)));
   mp::BasicSolutionHandler sh;
   s.Solve(p, sh);
   ASSERT_EQ(1, CountIloDistribute());
@@ -455,20 +470,22 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   s.use_numberof();
-  ASLProblem p;
+  Problem p;
   p.AddVar(0, 0, var::INTEGER);
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
-  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0),
+                          MakeIterated(expr::NUMBEROF, args)));
   NumericExpr args2[] = {MakeConst(42), MakeVariable(1)};
-  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args2)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0),
+                          MakeIterated(expr::NUMBEROF, args2)));
   mp::BasicSolutionHandler sh;
   s.Solve(p, sh);
   ASSERT_EQ(2, CountIloDistribute());
 }
 
 TEST_F(IlogCPTest, DefaultSolutionLimit) {
-  ASLProblem p;
+  Problem p;
   p.AddVar(1, 3, var::INTEGER);
   p.AddVar(1, 3, var::INTEGER);
   p.AddVar(1, 3, var::INTEGER);
@@ -496,41 +513,76 @@ TEST_F(IlogCPTest, DefaultSolutionLimit) {
 }
 
 TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
-  ASLProblem p;
+  Problem p;
   p.AddVar(0, 1);
   p.AddObj(mp::obj::MIN, MakeVariable(0));
   mp::BasicSolutionHandler sh;
   EXPECT_THROW(s.Solve(p, sh), mp::Error);
 }
 
+TEST_F(IlogCPTest, NumberOfMap) {
+  mp::NumberOfMap< ::Var, CreateVar> map((CreateVar()));
+  EXPECT_TRUE(map.begin() == map.end());
+  NumericExpr args1[] = {MakeConst(11), MakeVariable(0)};
+  IteratedExpr e1 = MakeIterated(expr::NUMBEROF, args1);
+  NumericExpr args2[] = {MakeConst(22), MakeVariable(1)};
+  IteratedExpr e2 = MakeIterated(expr::NUMBEROF, args2);
+  map.Add(11, e1);
+  map.Add(22, e2);
+  NumericExpr args3[] = {MakeConst(33), MakeVariable(0)};
+  map.Add(33, MakeIterated(expr::NUMBEROF, args3));
+  mp::NumberOfMap< ::Var, CreateVar>::iterator i = map.begin();
+  EXPECT_EQ(e1, i->expr);
+  EXPECT_EQ(2u, i->values.size());
+  EXPECT_EQ(1, i->values.find(11)->second.index);
+  EXPECT_EQ(3, i->values.find(33)->second.index);
+  ++i;
+  EXPECT_EQ(e2, i->expr);
+  EXPECT_EQ(1u, i->values.size());
+  EXPECT_EQ(2, i->values.find(22)->second.index);
+  ++i;
+  EXPECT_TRUE(i == map.end());
+}
+
 // ----------------------------------------------------------------------------
 // Option tests
 
+class MockSolutionHandler : public mp::SolutionHandler {
+ public:
+  MOCK_METHOD4(HandleFeasibleSolution,
+               void (fmt::StringRef message, const double *values,
+                     const double *dual_values, double obj_value));
+
+  MOCK_METHOD5(HandleSolution,
+               void (int status, fmt::StringRef message, const double *values,
+                     const double *dual_values, double obj_value));
+};
+
 TEST_F(IlogCPTest, OptimizerOption) {
   EXPECT_EQ("auto", s.GetStrOption("optimizer"));
-  ASLProblem p;
+  Problem p;
   p.AddVar(1, 2, var::INTEGER);
   p.AddVar(1, 2, var::INTEGER);
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1)};
   p.AddCon(MakeAllDiff(args));
   s.SetStrOption("optimizer", "cp");
-  mp::BasicSolutionHandler sh;
+  MockSolutionHandler sh;
+  EXPECT_CALL(sh, HandleSolution(0, _, _, _, _));
   s.Solve(p, sh);
-  EXPECT_EQ(0, p.solve_code());
   s.SetStrOption("optimizer", "cplex");
   EXPECT_THROW(s.Solve(p, sh), mp::UnsupportedError);
   s.SetStrOption("optimizer", "auto");
+  EXPECT_CALL(sh, HandleSolution(0, _, _, _, _));
   s.Solve(p, sh);
-  EXPECT_EQ(0, p.solve_code());
 }
 
 TEST_F(IlogCPTest, UseCplexForLinearProblem) {
-  ASLProblem p;
+  Problem p;
   p.AddVar(1, 2);
   p.AddObj(obj::MIN, MakeConst(42));
-  mp::BasicSolutionHandler sh;
+  MockSolutionHandler sh;
+  EXPECT_CALL(sh, HandleSolution(0, _, _, _, _));
   s.Solve(p, sh);
-  EXPECT_EQ(0, p.solve_code());
 }
 
 TEST_F(IlogCPTest, DebugExprOption) {
@@ -687,7 +739,6 @@ TEST_F(IlogCPTest, MIPIntervalOption) {
 TEST_F(NLSolverTest, InterruptCP) {
   ProblemBuilder pb(solver_, "");
   MakeTSP(pb);
-  pb.EndBuild();
   solver_.SetStrOption("optimizer", "cp");
   TestInterrupter interrupter(solver_);
   TestSolutionHandler sh;
@@ -699,7 +750,6 @@ TEST_F(NLSolverTest, InterruptCP) {
 TEST_F(NLSolverTest, InterruptCPLEX) {
   ProblemBuilder pb(solver_, "");
   MakeTSP(pb);
-  pb.EndBuild();
   solver_.SetStrOption("optimizer", "cplex");
   TestInterrupter interrupter(solver_);
   TestSolutionHandler sh;

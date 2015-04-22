@@ -29,12 +29,61 @@
 using ::testing::_;
 using ::testing::Return;
 
+using mp::NumericExpr;
+using mp::LogicalExpr;
 using mp::ExprFactory;
+
 namespace expr = mp::expr;
 
 class ExprTest : public ::testing::Test {
  protected:
   ExprFactory factory_;
+  LogicalExpr l0, l1;
+
+  ExprTest() {
+    l0 = factory_.MakeLogicalConstant(false);
+    l1 = factory_.MakeLogicalConstant(true);
+  }
+
+  mp::NumericConstant MakeConst(double value) {
+    return factory_.MakeNumericConstant(value);
+  }
+
+  mp::Reference MakeVariable(int index) { return factory_.MakeVariable(index); }
+
+  mp::UnaryExpr MakeUnary(expr::Kind kind, NumericExpr arg) {
+    return factory_.MakeUnary(kind, arg);
+  }
+  mp::BinaryExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+    return factory_.MakeBinary(kind, lhs, rhs);
+  }
+
+  template <int N>
+  mp::IteratedExpr MakeIterated(expr::Kind kind, NumericExpr (&args)[N]) {
+    auto builder = factory_.BeginIterated(kind, N);
+    for (int i = 0; i < N; ++i)
+      builder.AddArg(args[i]);
+    return factory_.EndIterated(builder);
+  }
+
+  template <int N>
+  mp::CountExpr MakeCount(LogicalExpr (&args)[N]) {
+    auto builder = factory_.BeginCount(N);
+    for (int i = 0; i < N; ++i)
+      builder.AddArg(args[i]);
+    return factory_.EndCount(builder);
+  }
+
+  mp::PLTerm MakePLTerm(int num_breakpoints, const double *breakpoints,
+                        const double *slopes, mp::Reference arg) {
+    auto builder = factory_.BeginPLTerm(num_breakpoints);
+    for (int i = 0; i < num_breakpoints - 1; ++i) {
+      builder.AddBreakpoint(breakpoints[i]);
+      builder.AddSlope(slopes[i]);
+    }
+    builder.AddBreakpoint(num_breakpoints - 1);
+    return factory_.EndPLTerm(builder, arg);
+  }
 };
 
 TEST_F(ExprTest, Expr) {
@@ -43,13 +92,13 @@ TEST_F(ExprTest, Expr) {
 }
 
 TEST_F(ExprTest, NumericExpr) {
-  mp::NumericExpr e;
+  NumericExpr e;
   EXPECT_TRUE(e == 0);
   (void)mp::Expr(e);
 }
 
 TEST_F(ExprTest, LogicalExpr) {
-  mp::LogicalExpr e;
+  LogicalExpr e;
   EXPECT_TRUE(e == 0);
   (void)mp::Expr(e);
 }
@@ -57,7 +106,7 @@ TEST_F(ExprTest, LogicalExpr) {
 TEST_F(ExprTest, NumericConstant) {
   mp::NumericConstant e;
   EXPECT_TRUE(e == 0);
-  (void)mp::NumericExpr(e);
+  (void)NumericExpr(e);
   e = factory_.MakeNumericConstant(1.23);
   EXPECT_EQ(expr::NUMBER, e.kind());
   EXPECT_TRUE(e != 0);
@@ -67,7 +116,7 @@ TEST_F(ExprTest, NumericConstant) {
 TEST_F(ExprTest, Variable) {
   mp::Reference e;
   EXPECT_TRUE(e == 0);
-  (void)mp::NumericExpr(e);
+  (void)NumericExpr(e);
   e = factory_.MakeVariable(42);
   EXPECT_EQ(expr::VARIABLE, e.kind());
   EXPECT_TRUE(e != 0);
@@ -77,7 +126,7 @@ TEST_F(ExprTest, Variable) {
 TEST_F(ExprTest, CommonExpr) {
   mp::Reference e;
   EXPECT_TRUE(e == 0);
-  (void)mp::NumericExpr(e);
+  (void)NumericExpr(e);
   e = factory_.MakeCommonExpr(42);
   EXPECT_EQ(expr::COMMON_EXPR, e.kind());
   EXPECT_TRUE(e != 0);
@@ -87,40 +136,37 @@ TEST_F(ExprTest, CommonExpr) {
 TEST_F(ExprTest, UnaryExpr) {
   mp::UnaryExpr e;
   EXPECT_TRUE(e == 0);
-  (void)mp::NumericExpr(e);
+  (void)NumericExpr(e);
   auto arg = factory_.MakeNumericConstant(42);
-  e = factory_.MakeUnary(expr::ABS, arg);
+  e = MakeUnary(expr::ABS, arg);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::ABS, e.kind());
   EXPECT_EQ(arg, e.arg());
-  EXPECT_ASSERT(factory_.MakeUnary(expr::ADD, arg), "invalid expression kind");
-  EXPECT_ASSERT(factory_.MakeUnary(expr::ABS, mp::NumericExpr()),
+  EXPECT_ASSERT(MakeUnary(expr::ADD, arg), "invalid expression kind");
+  EXPECT_ASSERT(MakeUnary(expr::ABS, NumericExpr()),
                 "invalid argument");
 }
 
 TEST_F(ExprTest, BinaryExpr) {
   mp::BinaryExpr e;
   EXPECT_TRUE(e == 0);
-  (void)mp::NumericExpr(e);
+  (void)NumericExpr(e);
   auto lhs = factory_.MakeNumericConstant(42);
   auto rhs = factory_.MakeVariable(0);
-  e = factory_.MakeBinary(expr::MUL, lhs, rhs);
+  e = MakeBinary(expr::MUL, lhs, rhs);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::MUL, e.kind());
   EXPECT_EQ(lhs, e.lhs());
   EXPECT_EQ(rhs, e.rhs());
-  EXPECT_ASSERT(factory_.MakeBinary(expr::IF, lhs, rhs),
-                "invalid expression kind");
-  EXPECT_ASSERT(factory_.MakeBinary(expr::MUL, mp::NumericExpr(), rhs),
-                "invalid argument");
-  EXPECT_ASSERT(factory_.MakeBinary(expr::MUL, lhs, mp::NumericExpr()),
-                "invalid argument");
+  EXPECT_ASSERT(MakeBinary(expr::IF, lhs, rhs), "invalid expression kind");
+  EXPECT_ASSERT(MakeBinary(expr::MUL, NumericExpr(), rhs), "invalid argument");
+  EXPECT_ASSERT(MakeBinary(expr::MUL, lhs, NumericExpr()), "invalid argument");
 }
 
 TEST_F(ExprTest, IfExpr) {
   mp::IfExpr e;
   EXPECT_TRUE(e == 0);
-  (void)mp::NumericExpr(e);
+  (void)NumericExpr(e);
   auto condition = factory_.MakeLogicalConstant(true);
   auto true_expr = factory_.MakeNumericConstant(42);
   auto false_expr = factory_.MakeVariable(0);
@@ -130,17 +176,17 @@ TEST_F(ExprTest, IfExpr) {
   EXPECT_EQ(condition, e.condition());
   EXPECT_EQ(true_expr, e.true_expr());
   EXPECT_EQ(false_expr, e.false_expr());
-  EXPECT_ASSERT(factory_.MakeIf(mp::LogicalExpr(), true_expr, false_expr),
+  EXPECT_ASSERT(factory_.MakeIf(LogicalExpr(), true_expr, false_expr),
                 "invalid argument");
-  EXPECT_ASSERT(factory_.MakeIf(condition, mp::NumericExpr(), false_expr),
+  EXPECT_ASSERT(factory_.MakeIf(condition, NumericExpr(), false_expr),
                 "invalid argument");
-  factory_.MakeIf(condition, true_expr, mp::NumericExpr());
+  factory_.MakeIf(condition, true_expr, NumericExpr());
 }
 
 TEST_F(ExprTest, PLTerm) {
   mp::PLTerm e;
   EXPECT_TRUE(e == 0);
-  (void)mp::NumericExpr(e);
+  (void)NumericExpr(e);
   ExprFactory::PLTermBuilder builder = factory_.BeginPLTerm(2);
   builder.AddSlope(11);
   builder.AddBreakpoint(111);
@@ -240,7 +286,7 @@ TEST_F(ExprTest, TooManyCallArgs) {
 TEST_F(ExprTest, InvalidCallArg) {
   mp::Function f = factory_.AddFunction("foo", 1);
   auto builder = factory_.BeginCall(f, 1);
-  EXPECT_ASSERT(builder.AddArg(mp::NumericExpr()), "invalid argument");
+  EXPECT_ASSERT(builder.AddArg(NumericExpr()), "invalid argument");
 }
 
 TEST_F(ExprTest, TooFewCallArgs) {
@@ -281,7 +327,7 @@ TEST_F(ExprTest, ExprIterator) {
 TEST_F(ExprTest, LogicalConstant) {
   mp::LogicalConstant e;
   EXPECT_TRUE(e == 0);
-  (void)mp::LogicalExpr(e);
+  (void)LogicalExpr(e);
   e = factory_.MakeLogicalConstant(false);
   EXPECT_EQ(expr::BOOL, e.kind());
   EXPECT_TRUE(e != 0);
@@ -292,19 +338,19 @@ TEST_F(ExprTest, LogicalConstant) {
 TEST_F(ExprTest, NotExpr) {
   mp::NotExpr e;
   EXPECT_TRUE(e == 0);
-  (void)mp::LogicalExpr(e);
+  (void)LogicalExpr(e);
   auto arg = factory_.MakeLogicalConstant(false);
   e = factory_.MakeNot(arg);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::NOT, e.kind());
   EXPECT_EQ(arg, e.arg());
-  EXPECT_ASSERT(factory_.MakeNot(mp::LogicalExpr()), "invalid argument");
+  EXPECT_ASSERT(factory_.MakeNot(LogicalExpr()), "invalid argument");
 }
 
 TEST_F(ExprTest, BinaryLogicalExpr) {
   mp::BinaryLogicalExpr e;
   EXPECT_TRUE(e == 0);
-  (void)mp::LogicalExpr(e);
+  (void)LogicalExpr(e);
   auto lhs = factory_.MakeLogicalConstant(true);
   auto rhs = factory_.MakeLogicalConstant(false);
   e = factory_.MakeBinaryLogical(expr::AND, lhs, rhs);
@@ -314,16 +360,16 @@ TEST_F(ExprTest, BinaryLogicalExpr) {
   EXPECT_EQ(rhs, e.rhs());
   EXPECT_ASSERT(factory_.MakeBinaryLogical(expr::LT, lhs, rhs),
                 "invalid expression kind");
-  EXPECT_ASSERT(factory_.MakeBinaryLogical(expr::AND, mp::LogicalExpr(), rhs),
+  EXPECT_ASSERT(factory_.MakeBinaryLogical(expr::AND, LogicalExpr(), rhs),
                 "invalid argument");
-  EXPECT_ASSERT(factory_.MakeBinaryLogical(expr::AND, lhs, mp::LogicalExpr()),
+  EXPECT_ASSERT(factory_.MakeBinaryLogical(expr::AND, lhs, LogicalExpr()),
                 "invalid argument");
 }
 
 TEST_F(ExprTest, RelationalExpr) {
   mp::RelationalExpr e;
   EXPECT_TRUE(e == 0);
-  (void)mp::LogicalExpr(e);
+  (void)LogicalExpr(e);
   auto lhs = factory_.MakeNumericConstant(42);
   auto rhs = factory_.MakeVariable(0);
   e = factory_.MakeRelational(expr::EQ, lhs, rhs);
@@ -333,16 +379,16 @@ TEST_F(ExprTest, RelationalExpr) {
   EXPECT_EQ(rhs, e.rhs());
   EXPECT_ASSERT(factory_.MakeRelational(expr::ATLEAST, lhs, rhs),
                 "invalid expression kind");
-  EXPECT_ASSERT(factory_.MakeRelational(expr::EQ, mp::NumericExpr(), rhs),
+  EXPECT_ASSERT(factory_.MakeRelational(expr::EQ, NumericExpr(), rhs),
                 "invalid argument");
-  EXPECT_ASSERT(factory_.MakeRelational(expr::EQ, lhs, mp::NumericExpr()),
+  EXPECT_ASSERT(factory_.MakeRelational(expr::EQ, lhs, NumericExpr()),
                 "invalid argument");
 }
 
 TEST_F(ExprTest, LogicalCountExpr) {
   mp::LogicalCountExpr e;
   EXPECT_TRUE(e == 0);
-  (void)mp::LogicalExpr(e);
+  (void)LogicalExpr(e);
   auto lhs = factory_.MakeNumericConstant(42);
   auto rhs = factory_.EndCount(factory_.BeginCount(0));
   e = factory_.MakeLogicalCount(expr::ATMOST, lhs, rhs);
@@ -352,7 +398,7 @@ TEST_F(ExprTest, LogicalCountExpr) {
   EXPECT_EQ(rhs, e.rhs());
   EXPECT_ASSERT(factory_.MakeLogicalCount(expr::IMPLICATION, lhs, rhs),
                 "invalid expression kind");
-  EXPECT_ASSERT(factory_.MakeLogicalCount(expr::ATMOST, mp::NumericExpr(), rhs),
+  EXPECT_ASSERT(factory_.MakeLogicalCount(expr::ATMOST, NumericExpr(), rhs),
                 "invalid argument");
   EXPECT_ASSERT(factory_.MakeLogicalCount(expr::ATMOST, lhs, mp::CountExpr()),
                 "invalid argument");
@@ -360,7 +406,7 @@ TEST_F(ExprTest, LogicalCountExpr) {
 
 TEST_F(ExprTest, ImplicationExpr) {
   mp::ImplicationExpr e;
-  (void)mp::LogicalExpr(e);
+  (void)LogicalExpr(e);
   EXPECT_TRUE(e == 0);
   auto condition = factory_.MakeLogicalConstant(true);
   auto true_expr = factory_.MakeLogicalConstant(false);
@@ -372,12 +418,12 @@ TEST_F(ExprTest, ImplicationExpr) {
   EXPECT_EQ(true_expr, e.true_expr());
   EXPECT_EQ(false_expr, e.false_expr());
   EXPECT_ASSERT(factory_.MakeImplication(
-                  mp::LogicalExpr(), true_expr, false_expr),
+                  LogicalExpr(), true_expr, false_expr),
                 "invalid argument");
   EXPECT_ASSERT(factory_.MakeImplication(
-                  condition, mp::LogicalExpr(), false_expr),
+                  condition, LogicalExpr(), false_expr),
                 "invalid argument");
-  factory_.MakeImplication(condition, true_expr, mp::LogicalExpr());
+  factory_.MakeImplication(condition, true_expr, LogicalExpr());
 }
 
 template <typename ExprInfo>
@@ -387,11 +433,11 @@ class IteratedExprTest : public ::testing::Test {
 };
 
 template <typename ExprType, expr::Kind K,
-          typename BaseType = mp::NumericExpr>
+          typename BaseType = NumericExpr>
 struct ExprInfo {
   typedef BaseType Base;
   typedef ExprType Expr;
-  typedef mp::NumericExpr Arg;
+  typedef NumericExpr Arg;
   static expr::Kind kind() { return K; }
   static int min_args() { return 0; }
 };
@@ -414,15 +460,15 @@ struct IteratedInfo : ExprInfo<mp::IteratedExpr, expr::SUM> {
 };
 
 struct CountInfo : ExprInfo<mp::CountExpr, expr::COUNT> {
-  typedef mp::LogicalExpr Arg;
+  typedef LogicalExpr Arg;
   typedef ExprFactory::CountExprBuilder Builder;
   Builder BeginBuild(ExprFactory &f, int n) { return f.BeginCount(n); }
   Expr EndBuild(ExprFactory &f, Builder b) { return f.EndCount(b); }
 };
 
 struct IteratedLogicalInfo :
-    ExprInfo<mp::IteratedLogicalExpr, expr::EXISTS, mp::LogicalExpr> {
-  typedef mp::LogicalExpr Arg;
+    ExprInfo<mp::IteratedLogicalExpr, expr::EXISTS, LogicalExpr> {
+  typedef LogicalExpr Arg;
   typedef ExprFactory::IteratedLogicalExprBuilder Builder;
   Builder BeginBuild(ExprFactory &f, int n) {
     return f.BeginIteratedLogical(expr::EXISTS, n);
@@ -431,7 +477,7 @@ struct IteratedLogicalInfo :
 };
 
 struct PairwiseInfo :
-    ExprInfo<mp::PairwiseExpr, expr::ALLDIFF, mp::LogicalExpr> {
+    ExprInfo<mp::PairwiseExpr, expr::ALLDIFF, LogicalExpr> {
   typedef ExprFactory::PairwiseExprBuilder Builder;
   Builder BeginBuild(ExprFactory &f, int n) {
     return f.BeginPairwise(expr::ALLDIFF, n);
@@ -445,24 +491,24 @@ TYPED_TEST_CASE(IteratedExprTest, IteratedExprTypes);
 
 template <typename ExprType>
 struct TestArgs {
-  mp::NumericExpr args[3];
+  NumericExpr args[3];
   explicit TestArgs(ExprFactory &f) {
     args[0] = f.MakeNumericConstant(11);
     args[1] = f.MakeVariable(0);
     args[2] = f.MakeNumericConstant(22);
   }
-  mp::NumericExpr operator[](int i) const { return args[i]; }
+  NumericExpr operator[](int i) const { return args[i]; }
 };
 
 template <>
-struct TestArgs<mp::LogicalExpr> {
-  mp::LogicalExpr args[3];
+struct TestArgs<LogicalExpr> {
+  LogicalExpr args[3];
   explicit TestArgs(ExprFactory &f) {
     args[0] = f.MakeLogicalConstant(false);
     args[1] = f.MakeLogicalConstant(true);
     args[2] = f.MakeLogicalConstant(false);
   }
-  mp::LogicalExpr operator[](int i) const { return args[i]; }
+  LogicalExpr operator[](int i) const { return args[i]; }
 };
 
 TYPED_TEST(IteratedExprTest, Test) {
@@ -517,7 +563,7 @@ TEST_F(ExprTest, SymbolicIfExpr) {
   EXPECT_EQ(condition, e.condition());
   EXPECT_EQ(true_expr, e.true_expr());
   EXPECT_EQ(false_expr, e.false_expr());
-  EXPECT_ASSERT(factory_.MakeSymbolicIf(mp::LogicalExpr(),
+  EXPECT_ASSERT(factory_.MakeSymbolicIf(LogicalExpr(),
                                         true_expr, false_expr),
                 "invalid argument");
   EXPECT_ASSERT(factory_.MakeSymbolicIf(condition, mp::Expr(), false_expr),
@@ -527,7 +573,7 @@ TEST_F(ExprTest, SymbolicIfExpr) {
 
 TEST_F(ExprTest, UncheckedCast) {
   mp::Expr e = factory_.MakeNumericConstant(42);
-  mp::internal::UncheckedCast<mp::NumericExpr>(e);
+  mp::internal::UncheckedCast<NumericExpr>(e);
   mp::NumericConstant n = mp::internal::UncheckedCast<mp::NumericConstant>(e);
   EXPECT_EQ(42, n.value());
   EXPECT_ASSERT(mp::internal::UncheckedCast<mp::UnaryExpr>(e), "invalid cast");
@@ -535,7 +581,7 @@ TEST_F(ExprTest, UncheckedCast) {
 
 TEST_F(ExprTest, Cast) {
   mp::Expr e = factory_.MakeNumericConstant(42);
-  EXPECT_EQ(e, mp::Cast<mp::NumericExpr>(e));
+  EXPECT_EQ(e, mp::Cast<NumericExpr>(e));
   mp::NumericConstant n = mp::Cast<mp::NumericConstant>(e);
   EXPECT_EQ(42, n.value());
   EXPECT_EQ(mp::UnaryExpr(), mp::Cast<mp::UnaryExpr>(e));
@@ -561,7 +607,7 @@ TEST_F(ExprTest, NumberOfExpr) {
 }
 
 TEST_F(ExprTest, InvalidNumberOfExprArg) {
-  EXPECT_ASSERT(factory_.BeginNumberOf(1, mp::NumericExpr()),
+  EXPECT_ASSERT(factory_.BeginNumberOf(1, NumericExpr()),
       "invalid argument");
 }
 
@@ -592,7 +638,7 @@ TEST_F(ExprTest, ConversionToExpr) {
   // The conversion is forbidden because it compromises type safety
   // as illustrated in the following example:
   //   auto n = factory_.MakeNumericConstant(42);
-  //   auto u = factory_.MakeUnary(expr::ABS, n);
+  //   auto u = MakeUnary(expr::ABS, n);
   //   mp::Expr &e = n;
   //   e = u;
   struct Test {
@@ -604,14 +650,127 @@ TEST_F(ExprTest, ConversionToExpr) {
 }
 
 TEST_F(ExprTest, ArgumentDependentLookup) {
-  mp::NumericExpr e = factory_.MakeNumericConstant(42);
+  NumericExpr e = factory_.MakeNumericConstant(42);
   // IsZero should be found by ADL:
   IsZero(e);
 }
 
 TEST_F(ExprTest, Format) {
-  auto e = factory_.MakeUnary(expr::ABS, factory_.MakeNumericConstant(-42));
+  auto e = MakeUnary(expr::ABS, factory_.MakeNumericConstant(-42));
   EXPECT_EQ("abs(-42)", fmt::format("{}", e));
+}
+
+TEST_F(ExprTest, EqualNumericConstant) {
+  EXPECT_TRUE(Equal(MakeConst(0.42), MakeConst(0.42)));
+  EXPECT_FALSE(Equal(MakeConst(0.42), MakeConst(42)));
+}
+
+TEST_F(ExprTest, EqualVariable) {
+  EXPECT_TRUE(Equal(MakeVariable(0), MakeVariable(0)));
+  EXPECT_FALSE(Equal(MakeVariable(0), MakeVariable(1)));
+  EXPECT_FALSE(Equal(MakeVariable(0), MakeConst(0)));
+}
+
+TEST_F(ExprTest, EqualCommonExpr) {
+  EXPECT_TRUE(Equal(factory_.MakeCommonExpr(0), factory_.MakeCommonExpr(0)));
+  EXPECT_FALSE(Equal(factory_.MakeCommonExpr(0), factory_.MakeCommonExpr(1)));
+  EXPECT_FALSE(Equal(factory_.MakeCommonExpr(0), factory_.MakeVariable(0)));
+}
+
+TEST_F(ExprTest, EqualUnaryExpr) {
+  NumericExpr e = MakeUnary(expr::MINUS, MakeVariable(0));
+  EXPECT_TRUE(Equal(e, MakeUnary(expr::MINUS, MakeVariable(0))));
+  EXPECT_FALSE(Equal(e, MakeVariable(0)));
+  EXPECT_FALSE(Equal(e, MakeUnary(expr::FLOOR, MakeVariable(0))));
+  EXPECT_FALSE(Equal(e, MakeUnary(expr::MINUS, MakeVariable(1))));
+}
+
+TEST_F(ExprTest, EqualBinaryExpr) {
+  NumericExpr e = MakeBinary(expr::ADD, MakeVariable(0), MakeConst(42));
+  EXPECT_TRUE(Equal(e, MakeBinary(expr::ADD, MakeVariable(0), MakeConst(42))));
+  EXPECT_FALSE(Equal(e, MakeBinary(expr::SUB, MakeVariable(0), MakeConst(42))));
+  EXPECT_FALSE(Equal(e, MakeBinary(expr::ADD, MakeConst(42), MakeVariable(0))));
+  EXPECT_FALSE(Equal(e, MakeBinary(expr::ADD, MakeVariable(0), MakeConst(0))));
+  EXPECT_FALSE(Equal(MakeConst(42), e));
+}
+
+TEST_F(ExprTest, EqualIfExpr) {
+  NumericExpr e = factory_.MakeIf(
+        factory_.MakeLogicalConstant(false), MakeVariable(1), MakeConst(42));
+  EXPECT_TRUE(Equal(e, factory_.MakeIf(factory_.MakeLogicalConstant(false),
+                                       MakeVariable(1), MakeConst(42))));
+  NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  EXPECT_FALSE(Equal(e, MakeIterated(expr::SUM, args)));
+  EXPECT_FALSE(Equal(e, factory_.MakeIf(factory_.MakeLogicalConstant(false),
+                                        MakeVariable(1), MakeConst(0))));
+  EXPECT_FALSE(Equal(e, MakeConst(42)));
+}
+
+TEST_F(ExprTest, EqualPiecewiseLinear) {
+  double breaks[] = {5, 10};
+  double slopes[] = {-1, 0, 1};
+  mp::Reference x = MakeVariable(0), y = MakeVariable(1);
+  NumericExpr e = MakePLTerm(2, breaks, slopes, x);
+  EXPECT_TRUE(Equal(e, MakePLTerm(2, breaks, slopes, x)));
+  EXPECT_FALSE(Equal(e, MakePLTerm(1, breaks, slopes, x)));
+  EXPECT_FALSE(Equal(e, MakePLTerm(2, breaks, slopes, y)));
+  double breaks2[] = {5, 11};
+  EXPECT_FALSE(Equal(e, MakePLTerm(2, breaks2, slopes, x)));
+  EXPECT_FALSE(Equal(e, MakeConst(42)));
+}
+
+TEST_F(ExprTest, EqualVarArgExpr) {
+  NumericExpr args1[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  // args2 is used to make sure that Equal compares expressions structurally
+  // instead of comparing pointers; don't replace with args.
+  NumericExpr args2[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  NumericExpr e = MakeIterated(expr::MIN, args1);
+  EXPECT_TRUE(Equal(e, MakeIterated(expr::MIN, args2)));
+  NumericExpr args3[] = {MakeVariable(0), MakeVariable(1)};
+  EXPECT_FALSE(Equal(e, MakeIterated(expr::MIN, args3)));
+  EXPECT_FALSE(Equal(MakeIterated(expr::MIN, args3),
+                     MakeIterated(expr::MIN, args1)));
+  EXPECT_FALSE(Equal(e, MakeIterated(expr::MAX, args1)));
+  NumericExpr args4[] = {MakeVariable(0), MakeVariable(1), MakeConst(0)};
+  EXPECT_FALSE(Equal(e, MakeIterated(expr::MIN, args4)));
+  EXPECT_FALSE(Equal(e, MakeConst(42)));
+}
+
+TEST_F(ExprTest, EqualSumExpr) {
+  NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  NumericExpr e = MakeIterated(expr::SUM, args);
+  // args2 is used to make sure that Equal compares expressions structurally
+  // instead of comparing pointers; don't replace with args.
+  NumericExpr args2[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  EXPECT_TRUE(Equal(e, MakeIterated(expr::SUM, args2)));
+  NumericExpr args3[] = {MakeVariable(0), MakeVariable(1)};
+  EXPECT_FALSE(Equal(e, MakeIterated(expr::SUM, args3)));
+  EXPECT_FALSE(Equal(MakeIterated(expr::SUM, args3), e));
+  LogicalExpr args4[] = {l0, l1, l1};
+  EXPECT_FALSE(Equal(e, MakeCount(args4)));
+  NumericExpr args5[] = {MakeVariable(0), MakeVariable(1), MakeConst(0)};
+  EXPECT_FALSE(Equal(e, MakeIterated(expr::SUM, args5)));
+  EXPECT_FALSE(Equal(e, MakeConst(42)));
+}
+
+TEST_F(ExprTest, EqualCountExpr) {
+  LogicalExpr args[] = {l0, l1, l1};
+  NumericExpr e = MakeCount(args);
+  // args2 is used to make sure that Equal compares expressions structurally
+  // instead of comparing pointers; don't replace with args.
+  LogicalExpr args2[] = {
+    factory_.MakeLogicalConstant(false),
+    factory_.MakeLogicalConstant(true),
+    factory_.MakeLogicalConstant(true)
+  };
+  EXPECT_TRUE(Equal(e, MakeCount(args2)));
+  LogicalExpr args3[] = {l0, l1};
+  EXPECT_FALSE(Equal(e, MakeCount(args3)));
+  EXPECT_FALSE(Equal(MakeCount(args3), e));
+  NumericExpr args4[] = {MakeConst(0), MakeConst(1), MakeConst(1)};
+  EXPECT_FALSE(Equal(e, MakeIterated(expr::SUM, args4)));
+  LogicalExpr args5[] = {l0, l1, l0};
+  EXPECT_FALSE(Equal(e, MakeCount(args5)));
 }
 
 TEST(ExprFactoryTest, ExprMemoryAllocation) {

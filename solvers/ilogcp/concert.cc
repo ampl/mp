@@ -21,20 +21,20 @@
  */
 
 #include "concert.h"
-#include "asl/aslproblem.h"
 
 #include <ilconcert/ilotupleset.h>
 
 #include <algorithm>
 #include <functional>
 
+#include "mp/problem.h"
+
 #ifndef M_PI
 # define M_PI 3.14159265358979323846
 #endif
 
 using mp::Error;
-
-using namespace mp::asl;
+using mp::NumericExpr;
 
 namespace {
 
@@ -46,8 +46,8 @@ inline T ConvertTo(double value) {
   return int_value;
 }
 
-NumericExpr GetArg(CallExpr e, int index) {
-  NumericExpr result = Cast<NumericExpr>(e[index]);
+NumericExpr GetArg(mp::CallExpr e, int index) {
+  NumericExpr result = mp::Cast<NumericExpr>(e.arg(index));
   if (!result) {
     throw Error("{}: argument {} is not numeric",
         e.function().name(), index + 1);
@@ -55,7 +55,7 @@ NumericExpr GetArg(CallExpr e, int index) {
   return result;
 }
 
-void RequireNonzeroConstRHS(BinaryExpr e, fmt::StringRef func_name) {
+void RequireNonzeroConstRHS(mp::BinaryExpr e, fmt::StringRef func_name) {
   if (!IsZero(e.rhs())) {
     throw mp::MakeUnsupportedError(
           "{} with nonzero second parameter", func_name);
@@ -65,9 +65,20 @@ void RequireNonzeroConstRHS(BinaryExpr e, fmt::StringRef func_name) {
 
 namespace mp {
 
+bool EqualNumberOfArgs::operator()(IteratedExpr lhs, IteratedExpr rhs) const {
+  int num_args = lhs.num_args();
+  if (num_args != rhs.num_args())
+    return false;
+  for (int i = 1; i < num_args; ++i) {
+    if (!Equal(lhs.arg(i), rhs.arg(i)))
+      return false;
+  }
+  return true;
+}
+
 IloNumExprArray NLToConcertConverter::ConvertArgs(VarArgExpr e) {
   IloNumExprArray args(env_);
-  for (VarArgExpr::iterator i = e.begin(); *i; ++i)
+  for (VarArgExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
     args.add(Visit(*i));
   return args;
 }
@@ -131,18 +142,18 @@ IloExpr NLToConcertConverter::VisitCount(CountExpr e) {
 }
 
 IloExpr NLToConcertConverter::VisitNumberOf(NumberOfExpr e) {
-  NumericExpr value = e[0];
+  NumericExpr value = e.arg(0);
   NumericConstant num = Cast<NumericConstant>(value);
   if (num && (flags_ & USENUMBEROF) != 0)
     return numberofs_.Add(num.value(), e);
   IloExpr sum(env_);
   IloExpr concert_value(Visit(value));
   for (int i = 1, n = e.num_args(); i < n; ++i)
-    sum += (Visit(e[i]) == concert_value);
+    sum += (Visit(e.arg(i)) == concert_value);
   return sum;
 }
 
-IloExpr NLToConcertConverter::VisitPLTerm(PiecewiseLinearExpr e) {
+IloExpr NLToConcertConverter::VisitPLTerm(PLTerm e) {
   IloNumArray slopes(env_), breakpoints(env_);
   int num_breakpoints = e.num_breakpoints();
   for (int i = 0; i < num_breakpoints; ++i) {
@@ -160,7 +171,7 @@ IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
   if (std::strcmp(function_name, "element") == 0) {
     if (num_args < 2)
       throw Error("{}: too few arguments", function_name);
-    if (NumericConstant num = Cast<NumericConstant>(e[num_args - 1])) {
+    if (NumericConstant num = Cast<NumericConstant>(e.arg(num_args - 1))) {
       // Index is constant - return the argument at specified index.
       int index = ConvertTo<int>(num.value());
       if (index < 0 || index >= num_args - 1)
@@ -170,7 +181,7 @@ IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
     IloIntVar index_var = ConvertArg(e, num_args - 1, num_args - 2);
     bool const_args = true;
     for (int i = 0, n = num_args - 1; i < n; ++i) {
-      if (!Cast<NumericConstant>(e[i])) {
+      if (!Cast<NumericConstant>(e.arg(i))) {
         const_args = false;
         break;
       }
@@ -185,7 +196,7 @@ IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
     // All elements are constants - build IloNumArray.
     IloNumArray elements(env_, num_args - 1);
     for (int i = 0, n = num_args - 1; i < n; ++i)
-      elements[i] = Cast<NumericConstant>(e[i]).value();
+      elements[i] = Cast<NumericConstant>(e.arg(i)).value();
     return IloElement(elements, index_var);
   } else if (std::strcmp(function_name, "in_relation") == 0)
     throw MakeUnsupportedError("nested 'in_relation'");
@@ -236,7 +247,7 @@ void NLToConcertConverter::FinishBuildingNumberOf() {
     for (int j = 1; j < num_args; ++j) {
       IloIntVar var(env_, IloIntMin, IloIntMax);
       vars[j - 1] = var;
-      model_.add(var == Visit(expr[j]));
+      model_.add(var == Visit(expr.arg(j)));
     }
 
     model_.add(IloDistribute(env_, cards, values, vars));
@@ -252,7 +263,7 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
   if (num_args < 1)
     throw Error("{}: too few arguments", function_name);
   int arity = 0;
-  for (; arity < num_args && !Cast<NumericConstant>(expr[arity]); ++arity)
+  for (; arity < num_args && !Cast<NumericConstant>(expr.arg(arity)); ++arity)
     ;  // Count variables.
   IloIntVarArray vars(env_, arity);
   for (int i = 0; i < arity; ++i)
@@ -265,7 +276,7 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
   for (int i = arity; i < num_args; i += arity) {
     IloIntArray tuple(env_, arity);
     for (int j = 0; j < arity; ++j) {
-      NumericConstant num = Cast<NumericConstant>(expr[i + j]);
+      NumericConstant num = Cast<NumericConstant>(expr.arg(i + j));
       if (!num) {
         throw Error("{}: argument {} is not constant",
             function_name, (i + j + 1));
@@ -278,12 +289,12 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
   return true;
 }
 
-void NLToConcertConverter::Convert(const ASLProblem &p) {
+void NLToConcertConverter::Convert(const Problem &p) {
   // Set up optimization problem using the Concert API.
   int num_vars = p.num_vars();
   vars_.setSize(num_vars);
   for (int j = 0; j < num_vars; ++j) {
-    ASLProblem::Variable var = p.var(j);
+    Problem::Variable var = p.var(j);
     vars_[j] = IloNumVar(env_, var.lb(), var.ub(),
                          var.type() == mp::var::CONTINUOUS ? ILOFLOAT : ILOINT);
   }
@@ -292,14 +303,12 @@ void NLToConcertConverter::Convert(const ASLProblem &p) {
     obj::Type main_obj_type = p.obj(0).type();
     IloNumExprArray objs(env_);
     for (int i = 0; i < num_objs; ++i) {
-      ASLProblem::Objective obj = p.obj(i);
-      NumericExpr expr = obj.nonlinear_expr();
-      NumericConstant constant = Cast<NumericConstant>(expr);
-      IloExpr ilo_expr(env_, constant ? constant.value() : 0);
-      if (p.num_nonlinear_objs() > 0 && !constant)
+      Problem::Objective obj = p.obj(i);
+      IloExpr ilo_expr(env_, 0);
+      if (NumericExpr expr = obj.nonlinear_expr())
         ilo_expr += Visit(expr);
-      LinearObjExpr linear = obj.linear_expr();
-      for (LinearObjExpr::iterator
+      const LinearExpr &linear = obj.linear_expr();
+      for (LinearExpr::iterator
           j = linear.begin(), end = linear.end(); j != end; ++j) {
         ilo_expr += j->coef() * vars_[j->var_index()];
       }
@@ -316,14 +325,14 @@ void NLToConcertConverter::Convert(const ASLProblem &p) {
     cons_.setSize(n_cons);
     for (int i = 0; i < n_cons; ++i) {
       IloExpr expr(env_);
-      ASLProblem::AlgebraicCon con = p.algebraic_con(i);
-      LinearConExpr linear = con.linear_expr();
-      for (LinearConExpr::iterator
+      Problem::AlgebraicCon con = p.algebraic_con(i);
+      const LinearExpr &linear = con.linear_expr();
+      for (LinearExpr::iterator
           j = linear.begin(), end = linear.end(); j != end; ++j) {
         expr += j->coef() * vars_[j->var_index()];
       }
-      if (i < p.num_nonlinear_cons())
-        expr += Visit(con.nonlinear_expr());
+      if (NumericExpr e = con.nonlinear_expr())
+        expr += Visit(e);
       cons_[i] = (con.lb() <= expr <= con.ub());
     }
     model_.add(cons_);
@@ -332,7 +341,7 @@ void NLToConcertConverter::Convert(const ASLProblem &p) {
   if (int n_lcons = p.num_logical_cons()) {
     IloConstraintArray cons(env_, n_lcons);
     for (int i = 0; i < n_lcons; ++i) {
-      LogicalExpr expr = p.logical_con_expr(i);
+      LogicalExpr expr = p.logical_con(i).expr();
       if (expr.kind() == expr::NE) {
         RelationalExpr rel = Cast<RelationalExpr>(expr);
         NumericConstant const_rhs = Cast<NumericConstant>(rel.rhs());

@@ -463,6 +463,11 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     return static_cast<int>(logical_cons_.size());
   }
 
+  // Return true if the problem has nonlinear constraints.
+  bool has_nonlinear_cons() const {
+    return !nonlinear_cons_.empty();
+  }
+
   // Returns the number of common expressions.
   int num_common_exprs() const {
     return static_cast<int>(linear_exprs_.size());

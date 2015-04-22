@@ -1049,6 +1049,10 @@ inline bool IsZero(NumericExpr e) {
   NumericConstant c = Cast<NumericConstant>(e);
   return c && c.value() == 0;
 }
+
+// Recursively compares two expressions and returns true if they are equal.
+bool Equal(NumericExpr e1, NumericExpr e2);
+bool Equal(LogicalExpr e1, LogicalExpr e2);
 }  // namespace mp
 
 #endif  // MP_EXPR_H_

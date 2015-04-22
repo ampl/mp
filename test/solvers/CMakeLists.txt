@@ -19,6 +19,9 @@ if (TARGET ilogcp)
                  ${ILOGCP_TEST_SRC})
   target_link_libraries(ilogcp-test amplilogcp-static)
   add_test(NAME ilogcp-test COMMAND $<TARGET_FILE:ilogcp-test>)
+  
+  add_executable(numberofmap-speed-test numberofmap-speed-test.cc)
+  target_link_libraries(numberofmap-speed-test amplilogcp-static)
 endif ()
 
 if (TARGET jacop)

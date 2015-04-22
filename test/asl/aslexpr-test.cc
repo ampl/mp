@@ -479,113 +479,6 @@ TEST_F(ExprTest, EqualityOperator) {
   EXPECT_TRUE(::MakeExpr(&raw2) == ::MakeExpr(&raw2));
 }
 
-TEST_F(ExprTest, EqualNumericConstant) {
-  EXPECT_TRUE(Equal(MakeConst(0.42), MakeConst(0.42)));
-  EXPECT_FALSE(Equal(MakeConst(0.42), MakeConst(42)));
-}
-
-TEST_F(ExprTest, EqualVariable) {
-  EXPECT_TRUE(Equal(MakeVariable(0), MakeVariable(0)));
-  EXPECT_FALSE(Equal(MakeVariable(0), MakeVariable(1)));
-  EXPECT_FALSE(Equal(MakeVariable(0), MakeConst(0)));
-}
-
-TEST_F(ExprTest, EqualUnaryExpr) {
-  NumericExpr e = MakeUnary(ex::MINUS, MakeVariable(0));
-  EXPECT_TRUE(Equal(e, MakeUnary(ex::MINUS, MakeVariable(0))));
-  EXPECT_FALSE(Equal(e, MakeVariable(0)));
-  EXPECT_FALSE(Equal(e, MakeUnary(ex::FLOOR, MakeVariable(0))));
-  EXPECT_FALSE(Equal(e, MakeUnary(ex::MINUS, MakeVariable(1))));
-}
-
-TEST_F(ExprTest, EqualBinaryExpr) {
-  NumericExpr e = MakeBinary(ex::ADD, MakeVariable(0), MakeConst(42));
-  EXPECT_TRUE(Equal(e, MakeBinary(ex::ADD, MakeVariable(0), MakeConst(42))));
-  EXPECT_FALSE(Equal(e, MakeBinary(ex::SUB, MakeVariable(0), MakeConst(42))));
-  EXPECT_FALSE(Equal(e, MakeBinary(ex::ADD, MakeConst(42), MakeVariable(0))));
-  EXPECT_FALSE(Equal(e, MakeBinary(ex::ADD, MakeVariable(0), MakeConst(0))));
-  EXPECT_FALSE(Equal(MakeConst(42), e));
-}
-
-TEST_F(ExprTest, EqualIfExpr) {
-  NumericExpr e =
-      MakeIf(builder.MakeLogicalConstant(0), MakeVariable(1), MakeConst(42));
-  EXPECT_TRUE(Equal(e,
-      MakeIf(builder.MakeLogicalConstant(0), MakeVariable(1), MakeConst(42))));
-  NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  EXPECT_FALSE(Equal(e, builder.MakeSum(args)));
-  EXPECT_FALSE(Equal(e,
-    MakeIf(builder.MakeLogicalConstant(0), MakeVariable(1), MakeConst(0))));
-  EXPECT_FALSE(Equal(e, MakeConst(42)));
-}
-
-TEST_F(ExprTest, EqualPiecewiseLinear) {
-  double breaks[] = {5, 10};
-  double slopes[] = {-1, 0, 1};
-  Reference x = MakeVariable(0), y = MakeVariable(1);
-  NumericExpr e = builder.MakePiecewiseLinear(2, breaks, slopes, x);
-  EXPECT_TRUE(Equal(e, builder.MakePiecewiseLinear(2, breaks, slopes, x)));
-  EXPECT_FALSE(Equal(e, builder.MakePiecewiseLinear(1, breaks, slopes, x)));
-  EXPECT_FALSE(Equal(e, builder.MakePiecewiseLinear(2, breaks, slopes, y)));
-  double breaks2[] = {5, 11};
-  EXPECT_FALSE(Equal(e, builder.MakePiecewiseLinear(2, breaks2, slopes, x)));
-  EXPECT_FALSE(Equal(e, MakeConst(42)));
-}
-
-TEST_F(ExprTest, EqualVarArgExpr) {
-  NumericExpr args1[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  // args2 is used to make sure that Equal compares expressions structurally
-  // instead of comparing pointers; don't replace with args.
-  NumericExpr args2[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  NumericExpr e = builder.MakeVarArg(ex::MIN, args1);
-  EXPECT_TRUE(Equal(e, builder.MakeVarArg(ex::MIN, args2)));
-  NumericExpr args3[] = {MakeVariable(0), MakeVariable(1)};
-  EXPECT_FALSE(Equal(e, builder.MakeVarArg(ex::MIN, args3)));
-  EXPECT_FALSE(Equal(builder.MakeVarArg(ex::MIN, args3),
-                     builder.MakeVarArg(ex::MIN, args1)));
-  EXPECT_FALSE(Equal(e, builder.MakeVarArg(ex::MAX, args1)));
-  NumericExpr args4[] = {MakeVariable(0), MakeVariable(1), MakeConst(0)};
-  EXPECT_FALSE(Equal(e, builder.MakeVarArg(ex::MIN, args4)));
-  EXPECT_FALSE(Equal(e, MakeConst(42)));
-}
-
-TEST_F(ExprTest, EqualSumExpr) {
-  NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  NumericExpr e = builder.MakeSum(args);
-  // args2 is used to make sure that Equal compares expressions structurally
-  // instead of comparing pointers; don't replace with args.
-  NumericExpr args2[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  EXPECT_TRUE(Equal(e, builder.MakeSum(args2)));
-  NumericExpr args3[] = {MakeVariable(0), MakeVariable(1)};
-  EXPECT_FALSE(Equal(e, builder.MakeSum(args3)));
-  EXPECT_FALSE(Equal(builder.MakeSum(args3), e));
-  LogicalExpr args4[] = {l0, l1, l1};
-  EXPECT_FALSE(Equal(e, builder.MakeCount(args4)));
-  NumericExpr args5[] = {MakeVariable(0), MakeVariable(1), MakeConst(0)};
-  EXPECT_FALSE(Equal(e, builder.MakeSum(args5)));
-  EXPECT_FALSE(Equal(e, MakeConst(42)));
-}
-
-TEST_F(ExprTest, EqualCountExpr) {
-  LogicalExpr args[] = {l0, l1, l1};
-  NumericExpr e = builder.MakeCount(args);
-  // args2 is used to make sure that Equal compares expressions structurally
-  // instead of comparing pointers; don't replace with args.
-  LogicalExpr args2[] = {
-    builder.MakeLogicalConstant(false),
-    builder.MakeLogicalConstant(true),
-    builder.MakeLogicalConstant(true)
-  };
-  EXPECT_TRUE(Equal(e, builder.MakeCount(args2)));
-  LogicalExpr args3[] = {l0, l1};
-  EXPECT_FALSE(Equal(e, builder.MakeCount(args3)));
-  EXPECT_FALSE(Equal(builder.MakeCount(args3), e));
-  NumericExpr args4[] = {MakeConst(0), MakeConst(1), MakeConst(1)};
-  EXPECT_FALSE(Equal(e, builder.MakeSum(args4)));
-  LogicalExpr args5[] = {l0, l1, l0};
-  EXPECT_FALSE(Equal(e, builder.MakeCount(args5)));
-}
-
 TEST_F(ExprTest, NumericExpr) {
   EXPECT_EQ(45u,
       CheckExpr<NumericExpr>(ex::FIRST_NUMERIC, ex::LAST_NUMERIC, ex::NOT));
@@ -700,7 +593,7 @@ TEST_F(ExprTest, CallExpr) {
   for (CallExpr::iterator
       i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
     EXPECT_EQ(args[arg_index], *i);
-    EXPECT_EQ(args[arg_index], expr[arg_index]);
+    EXPECT_EQ(args[arg_index], expr.arg(arg_index));
   }
   EXPECT_EQ(NUM_ARGS, arg_index);
 }
@@ -763,7 +656,7 @@ TEST_F(ExprTest, NumberOfExpr) {
   EXPECT_EQ(ex::NUMBEROF, expr.kind());
   EXPECT_EQ(NUM_ARGS, expr.num_args());
   for (int i = 0; i < NUM_ARGS; ++i)
-    EXPECT_EQ(args[i], expr[i]);
+    EXPECT_EQ(args[i], expr.arg(i));
 #ifndef NDEBUG
   EXPECT_DEBUG_DEATH(
       builder.MakeNumberOf(MakeArrayRef(args, 0));, "Assertion");  // NOLINT(*)
@@ -867,7 +760,7 @@ TEST_F(ExprTest, PairwiseExpr) {
   for (PairwiseExpr::iterator
        i = expr.begin(), end = expr.end(); i != end; ++i, ++index) {
     EXPECT_EQ(args[index], *i);
-    EXPECT_EQ(args[index], expr[index]);
+    EXPECT_EQ(args[index], expr.arg(index));
   }
   EXPECT_EQ(NUM_ARGS, index);
 }
@@ -947,47 +840,6 @@ TEST_F(ExprTest, LinearExprIterator) {
   EXPECT_TRUE(i2++ != i3);
   EXPECT_TRUE(i2 == i3);
   EXPECT_EQ(&g2, i->grad_);
-}
-
-struct Var {
-  int index;
-};
-
-struct CreateVar {
- private:
-  int index_;
-
- public:
-  CreateVar() : index_(0) {}
-
-  Var operator()() {
-    Var v = {++index_};
-    return v;
-  }
-};
-
-TEST_F(ExprTest, NumberOfMap) {
-  asl::NumberOfMap<Var, CreateVar> map((CreateVar()));
-  EXPECT_TRUE(map.begin() == map.end());
-  NumericExpr args1[] = {MakeConst(11), MakeVariable(0)};
-  NumberOfExpr e1 = builder.MakeNumberOf(args1);
-  NumericExpr args2[] = {MakeConst(22), MakeVariable(1)};
-  NumberOfExpr e2 = builder.MakeNumberOf(args2);
-  map.Add(11, e1);
-  map.Add(22, e2);
-  NumericExpr args3[] = {MakeConst(33), MakeVariable(0)};
-  map.Add(33, builder.MakeNumberOf(args3));
-  asl::NumberOfMap<Var, CreateVar>::iterator i = map.begin();
-  EXPECT_EQ(e1, i->expr);
-  EXPECT_EQ(2u, i->values.size());
-  EXPECT_EQ(1, i->values.find(11)->second.index);
-  EXPECT_EQ(3, i->values.find(33)->second.index);
-  ++i;
-  EXPECT_EQ(e2, i->expr);
-  EXPECT_EQ(1u, i->values.size());
-  EXPECT_EQ(2, i->values.find(22)->second.index);
-  ++i;
-  EXPECT_TRUE(i == map.end());
 }
 
 TEST_F(ExprTest, IsZero) {

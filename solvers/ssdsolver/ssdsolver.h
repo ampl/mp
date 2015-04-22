@@ -74,9 +74,9 @@ class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void, void> {
   void Extract(asl::CallExpr call) {
     assert(call.num_args() == 2);
     sign_ = 1;
-    Visit(asl::Cast<asl::NumericExpr>(call[0]));
+    Visit(asl::Cast<asl::NumericExpr>(call.arg(0)));
     sign_ = -1;
-    Visit(asl::Cast<asl::NumericExpr>(call[1]));
+    Visit(asl::Cast<asl::NumericExpr>(call.arg(1)));
     ++con_index_;
   }
 

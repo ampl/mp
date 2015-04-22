@@ -30,19 +30,113 @@
 
 #include <ilconcert/ilomodel.h>
 
+#include <map>
 #include <memory>
 
-#include "mp/solver.h"
-#include "asl/aslexpr-visitor.h"
+#ifdef MP_USE_UNORDERED_MAP
+# include <unordered_map>
+#endif
+
+#include "mp/expr-visitor.h"
 
 namespace mp {
 
-class ASLProblem;
+template <typename Alloc>
+class BasicProblem;
 
 class NLToConcertConverter;
 
-typedef asl::ExprConverter<
-  NLToConcertConverter, IloExpr, IloConstraint> Converter;
+typedef ExprConverter<NLToConcertConverter, IloExpr, IloConstraint> Converter;
+
+class EqualNumberOfArgs {
+ public:
+  bool operator()(IteratedExpr lhs, IteratedExpr rhs) const;
+};
+
+template <typename NumberOf>
+class MatchNumberOfArgs {
+ private:
+  IteratedExpr impl_;
+
+ public:
+  explicit MatchNumberOfArgs(IteratedExpr e) : impl_(e) {}
+
+  // Returns true if the stored expression has the same arguments as the nof's
+  // expression.
+  bool operator()(const NumberOf &nof) const {
+    return EqualNumberOfArgs()(impl_, nof.expr);
+  }
+};
+
+// A map from numberof expressions with the same argument lists to
+// values and corresponding variables.
+template <typename Var, typename CreateVar>
+class NumberOfMap {
+ public:
+  typedef std::map<double, Var> ValueMap;
+
+  struct NumberOf {
+    IteratedExpr expr;  // numberof expression
+    ValueMap values;
+
+    explicit NumberOf(IteratedExpr e) : expr(e) {}
+  };
+
+ private:
+  CreateVar create_var_;
+
+#ifdef MP_USE_UNORDERED_MAP
+  // Map from a numberof expression to an index in numberofs_.
+  typedef std::unordered_map<IteratedExpr, std::size_t,
+    internal::HashNumberOfArgs, internal::EqualNumberOfArgs> Map;
+  Map map_;
+#endif
+
+  std::vector<NumberOf> numberofs_;
+
+ public:
+  explicit NumberOfMap(CreateVar cv) : create_var_(cv) {}
+
+  typedef typename std::vector<NumberOf>::const_iterator iterator;
+
+  iterator begin() const {
+    return numberofs_.begin();
+  }
+
+  iterator end() const {
+    return numberofs_.end();
+  }
+
+  // Adds a numberof expression with a constant value.
+  Var Add(double value, IteratedExpr e);
+};
+
+template <typename Var, typename CreateVar>
+Var NumberOfMap<Var, CreateVar>::Add(double value, IteratedExpr e) {
+  assert(Cast<NumericConstant>(e.arg(0)).value() == value);
+#ifdef MP_USE_UNORDERED_MAP
+  std::pair<typename Map::iterator, bool> result =
+      map_.insert(typename Map::value_type(e, numberofs_.size()));
+  if (result.second)
+    numberofs_.push_back(NumberOf(e));
+  ValueMap &values = numberofs_[result.first->second].values;
+#else
+  typename std::vector<NumberOf>::reverse_iterator np =
+      std::find_if(numberofs_.rbegin(), numberofs_.rend(),
+                   MatchNumberOfArgs<NumberOf>(e));
+  if (np == numberofs_.rend()) {
+    numberofs_.push_back(NumberOf(e));
+    np = numberofs_.rbegin();
+  }
+  ValueMap &values = np->values;
+#endif
+  typename ValueMap::iterator i = values.lower_bound(value);
+  if (i != values.end() && !values.key_comp()(value, i->first))
+    return i->second;
+  Var var(create_var_());
+  values.insert(i, typename ValueMap::value_type(value, var));
+  return var;
+}
 
 // Converter of optimization problems from NL to Concert format.
 class NLToConcertConverter : public Converter {
@@ -65,25 +159,23 @@ class NLToConcertConverter : public Converter {
     }
   };
 
-  typedef asl::NumberOfMap<IloIntVar, CreateVar> IlogNumberOfMap;
+  typedef NumberOfMap<IloIntVar, CreateVar> IlogNumberOfMap;
   IlogNumberOfMap numberofs_;
 
-  IloNumExprArray ConvertArgs(asl::VarArgExpr e);
-  IloIntVar ConvertArg(asl::CallExpr call, int index,
+  IloNumExprArray ConvertArgs(VarArgExpr e);
+  IloIntVar ConvertArg(CallExpr call, int index,
                        IloInt lb = IloIntMin, IloInt ub = IloIntMax);
 
-  bool ConvertGlobalConstraint(asl::CallExpr expr, IloConstraint &con);
+  bool ConvertGlobalConstraint(CallExpr expr, IloConstraint &con);
 
   // Converts a pairwise expression (alldiff or !alldiff).
   template <typename Constraint, bool negate>
-  IloConstraint Convert(asl::PairwiseExpr e) {
+  IloConstraint Convert(PairwiseExpr e) {
     int n = e.num_args();
     std::vector<IloExpr> args(n);
     int index = 0;
-    for (asl::PairwiseExpr::iterator
-         i = e.begin(), end = e.end(); i != end; ++i) {
+    for (PairwiseExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
       args[index++] = Visit(*i);
-    }
     Constraint alldiff(env_);
     for (int i = 0; i < n; ++i) {
       for (int j = i + 1; j < n; ++j)
@@ -104,240 +196,238 @@ class NLToConcertConverter : public Converter {
   IloNumVarArray vars() const { return vars_; }
   IloRangeArray cons() const { return cons_; }
 
-  IloExpr Visit(asl::NumericExpr e) {
+  IloExpr Visit(NumericExpr e) {
     if ((flags_ & DEBUG) != 0)
       fmt::print("{}\n", str(e.kind()));
     return Converter::Visit(e);
   }
 
-  IloConstraint Visit(asl::LogicalExpr e) {
+  IloConstraint Visit(LogicalExpr e) {
     if ((flags_ & DEBUG) != 0)
       fmt::print("{}\n", str(e.kind()));
     return Converter::Visit(e);
   }
 
-  IloExpr VisitAdd(asl::BinaryExpr e) {
+  IloExpr VisitAdd(BinaryExpr e) {
     return Visit(e.lhs()) + Visit(e.rhs());
   }
 
-  IloExpr VisitSub(asl::BinaryExpr e) {
+  IloExpr VisitSub(BinaryExpr e) {
     return Visit(e.lhs()) - Visit(e.rhs());
   }
 
-  IloExpr VisitMul(asl::BinaryExpr e) {
+  IloExpr VisitMul(BinaryExpr e) {
     return Visit(e.lhs()) * Visit(e.rhs());
   }
 
-  IloExpr VisitDiv(asl::BinaryExpr e) {
+  IloExpr VisitDiv(BinaryExpr e) {
     return Visit(e.lhs()) / Visit(e.rhs());
   }
 
-  IloExpr VisitMod(asl::BinaryExpr e) {
+  IloExpr VisitMod(BinaryExpr e) {
     IloNumExpr lhs(Visit(e.lhs())), rhs(Visit(e.rhs()));
     return lhs - IloTrunc(lhs / rhs) * rhs;
   }
 
-  IloExpr VisitPow(asl::BinaryExpr e) {
+  IloExpr VisitPow(BinaryExpr e) {
     return IloPower(Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  IloExpr VisitLess(asl::BinaryExpr e) {
+  IloExpr VisitLess(BinaryExpr e) {
     return IloMax(Visit(e.lhs()) - Visit(e.rhs()), 0.0);
   }
 
-  IloExpr VisitMin(asl::VarArgExpr e) {
+  IloExpr VisitMin(VarArgExpr e) {
     return IloMin(ConvertArgs(e));
   }
 
-  IloExpr VisitMax(asl::VarArgExpr e) {
+  IloExpr VisitMax(VarArgExpr e) {
     return IloMax(ConvertArgs(e));
   }
 
-  IloExpr VisitMinus(asl::UnaryExpr e) {
+  IloExpr VisitMinus(UnaryExpr e) {
     return -Visit(e.arg());
   }
 
-  IloExpr VisitAbs(asl::UnaryExpr e) {
+  IloExpr VisitAbs(UnaryExpr e) {
     return IloAbs(Visit(e.arg()));
   }
 
-  IloExpr VisitFloor(asl::UnaryExpr e) {
+  IloExpr VisitFloor(UnaryExpr e) {
     return IloFloor(Visit(e.arg()));
   }
 
-  IloExpr VisitCeil(asl::UnaryExpr e) {
+  IloExpr VisitCeil(UnaryExpr e) {
     return IloCeil(Visit(e.arg()));
   }
 
-  IloExpr VisitIf(asl::IfExpr e);
+  IloExpr VisitIf(IfExpr e);
 
-  IloExpr VisitTanh(asl::UnaryExpr e) {
+  IloExpr VisitTanh(UnaryExpr e) {
     IloNumExpr exp(IloExponent(2 * Visit(e.arg())));
     return (exp - 1) / (exp + 1);
   }
 
-  IloExpr VisitTan(asl::UnaryExpr e) {
+  IloExpr VisitTan(UnaryExpr e) {
     return IloTan(Visit(e.arg()));
   }
 
-  IloExpr VisitSqrt(asl::UnaryExpr e) {
+  IloExpr VisitSqrt(UnaryExpr e) {
     return IloPower(Visit(e.arg()), 0.5);
   }
 
-  IloExpr VisitSinh(asl::UnaryExpr e) {
+  IloExpr VisitSinh(UnaryExpr e) {
     IloNumExpr arg(Visit(e.arg()));
     return (IloExponent(arg) - IloExponent(-arg)) * 0.5;
   }
 
-  IloExpr VisitSin(asl::UnaryExpr e) {
+  IloExpr VisitSin(UnaryExpr e) {
     return IloSin(Visit(e.arg()));
   }
 
-  IloExpr VisitLog10(asl::UnaryExpr e) {
+  IloExpr VisitLog10(UnaryExpr e) {
     return IloLog10(Visit(e.arg()));
   }
 
-  IloExpr VisitLog(asl::UnaryExpr e) {
+  IloExpr VisitLog(UnaryExpr e) {
     return IloLog(Visit(e.arg()));
   }
 
-  IloExpr VisitExp(asl::UnaryExpr e) {
+  IloExpr VisitExp(UnaryExpr e) {
     return IloExponent(Visit(e.arg()));
   }
 
-  IloExpr VisitCosh(asl::UnaryExpr e) {
+  IloExpr VisitCosh(UnaryExpr e) {
     IloNumExpr arg(Visit(e.arg()));
     return (IloExponent(arg) + IloExponent(-arg)) * 0.5;
   }
 
-  IloExpr VisitCos(asl::UnaryExpr e) {
+  IloExpr VisitCos(UnaryExpr e) {
     return IloCos(Visit(e.arg()));
   }
 
-  IloExpr VisitAtanh(asl::UnaryExpr e) {
+  IloExpr VisitAtanh(UnaryExpr e) {
     IloNumExpr arg(Visit(e.arg()));
     return IloLog((1 + arg) / (1 - arg)) * 0.5;
   }
 
-  IloExpr VisitAtan2(asl::BinaryExpr e);
+  IloExpr VisitAtan2(BinaryExpr e);
 
-  IloExpr VisitAtan(asl::UnaryExpr e) {
+  IloExpr VisitAtan(UnaryExpr e) {
     return IloArcTan(Visit(e.arg()));
   }
 
-  IloExpr VisitAsinh(asl::UnaryExpr e) {
+  IloExpr VisitAsinh(UnaryExpr e) {
     IloNumExpr arg(Visit(e.arg()));
     return IloLog(arg + IloPower(IloSquare(arg) + 1, 0.5));
   }
 
-  IloExpr VisitAsin(asl::UnaryExpr e) {
+  IloExpr VisitAsin(UnaryExpr e) {
     return IloArcSin(Visit(e.arg()));
   }
 
-  IloExpr VisitAcosh(asl::UnaryExpr e) {
+  IloExpr VisitAcosh(UnaryExpr e) {
     IloNumExpr arg(Visit(e.arg()));
     return IloLog(arg + IloPower(arg + 1, 0.5) * IloPower(arg - 1, 0.5));
   }
 
-  IloExpr VisitAcos(asl::UnaryExpr e) {
+  IloExpr VisitAcos(UnaryExpr e) {
     return IloArcCos(Visit(e.arg()));
   }
 
-  IloExpr VisitSum(asl::SumExpr e);
+  IloExpr VisitSum(SumExpr e);
 
-  IloExpr VisitIntDiv(asl::BinaryExpr e) {
+  IloExpr VisitIntDiv(BinaryExpr e) {
     return IloTrunc(Visit(e.lhs()) / Visit(e.rhs()));
   }
 
-  IloExpr VisitRound(asl::BinaryExpr e);
+  IloExpr VisitRound(BinaryExpr e);
 
-  IloExpr VisitTrunc(asl::BinaryExpr e);
+  IloExpr VisitTrunc(BinaryExpr e);
 
-  IloExpr VisitCount(asl::CountExpr e);
+  IloExpr VisitCount(CountExpr e);
 
-  IloExpr VisitNumberOf(asl::NumberOfExpr e);
+  IloExpr VisitNumberOf(NumberOfExpr e);
 
-  IloExpr VisitPowConstExp(asl::BinaryExpr e) {
-    return IloPower(Visit(e.lhs()),
-                    asl::Cast<asl::NumericConstant>(e.rhs()).value());
+  IloExpr VisitPowConstExp(BinaryExpr e) {
+    return IloPower(Visit(e.lhs()), Cast<NumericConstant>(e.rhs()).value());
   }
 
-  IloExpr VisitPow2(asl::UnaryExpr e) {
+  IloExpr VisitPow2(UnaryExpr e) {
     return IloSquare(Visit(e.arg()));
   }
 
-  IloExpr VisitPowConstBase(asl::BinaryExpr e) {
-    return IloPower(asl::Cast<asl::NumericConstant>(
-                      e.lhs()).value(), Visit(e.rhs()));
+  IloExpr VisitPowConstBase(BinaryExpr e) {
+    return IloPower(Cast<NumericConstant>(e.lhs()).value(), Visit(e.rhs()));
   }
 
-  IloExpr VisitPLTerm(asl::PiecewiseLinearExpr e);
+  IloExpr VisitPLTerm(PLTerm e);
 
-  IloExpr VisitCall(asl::CallExpr e);
+  IloExpr VisitCall(CallExpr e);
 
-  IloExpr VisitNumericConstant(asl::NumericConstant n) {
+  IloExpr VisitNumericConstant(NumericConstant n) {
     return IloExpr(env_, n.value());
   }
 
-  IloExpr VisitVariable(asl::Reference v) {
+  IloExpr VisitVariable(Reference v) {
     return vars_[v.index()];
   }
 
-  IloConstraint VisitLogicalConstant(asl::LogicalConstant c) {
+  IloConstraint VisitLogicalConstant(LogicalConstant c) {
     return IloNumVar(env_, 1, 1) == c.value();
   }
 
-  IloConstraint VisitLT(asl::RelationalExpr e) {
+  IloConstraint VisitLT(RelationalExpr e) {
     return Visit(e.lhs()) < Visit(e.rhs());
   }
 
-  IloConstraint VisitLE(asl::RelationalExpr e) {
+  IloConstraint VisitLE(RelationalExpr e) {
     return Visit(e.lhs()) <= Visit(e.rhs());
   }
 
-  IloConstraint VisitEQ(asl::RelationalExpr e) {
+  IloConstraint VisitEQ(RelationalExpr e) {
     return Visit(e.lhs()) == Visit(e.rhs());
   }
 
-  IloConstraint VisitGE(asl::RelationalExpr e) {
+  IloConstraint VisitGE(RelationalExpr e) {
     return Visit(e.lhs()) >= Visit(e.rhs());
   }
 
-  IloConstraint VisitGT(asl::RelationalExpr e) {
+  IloConstraint VisitGT(RelationalExpr e) {
     return Visit(e.lhs()) > Visit(e.rhs());
   }
 
-  IloConstraint VisitNE(asl::RelationalExpr e) {
+  IloConstraint VisitNE(RelationalExpr e) {
     return Visit(e.lhs()) != Visit(e.rhs());
   }
 
-  IloConstraint VisitOr(asl::BinaryLogicalExpr e) {
+  IloConstraint VisitOr(BinaryLogicalExpr e) {
     return IloIfThen(env_, !Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  IloConstraint VisitExists(asl::IteratedLogicalExpr e);
+  IloConstraint VisitExists(IteratedLogicalExpr e);
 
-  IloConstraint VisitAnd(asl::BinaryLogicalExpr e) {
+  IloConstraint VisitAnd(BinaryLogicalExpr e) {
     return Visit(e.lhs()) && Visit(e.rhs());
   }
 
-  IloConstraint VisitForAll(asl::IteratedLogicalExpr e);
+  IloConstraint VisitForAll(IteratedLogicalExpr e);
 
-  IloConstraint VisitNot(asl::NotExpr e) {
+  IloConstraint VisitNot(NotExpr e) {
     return !Visit(e.arg());
   }
 
-  IloConstraint VisitIff(asl::BinaryLogicalExpr e) {
+  IloConstraint VisitIff(BinaryLogicalExpr e) {
     return Visit(e.lhs()) == Visit(e.rhs());
   }
 
-  IloConstraint VisitImplication(asl::ImplicationExpr e);
+  IloConstraint VisitImplication(ImplicationExpr e);
 
-  IloConstraint VisitAllDiff(asl::PairwiseExpr e) {
+  IloConstraint VisitAllDiff(PairwiseExpr e) {
     return Convert<IloAnd, false>(e);
   }
 
-  IloConstraint VisitNotAllDiff(asl::PairwiseExpr e) {
+  IloConstraint VisitNotAllDiff(PairwiseExpr e) {
     return Convert<IloOr, true>(e);
   }
 
@@ -345,7 +435,9 @@ class NLToConcertConverter : public Converter {
   // which are much more useful to the solution procedure.
   void FinishBuildingNumberOf();
 
-  void Convert(const ASLProblem &p);
+  typedef BasicProblem< std::allocator<char> > Problem;
+
+  void Convert(const Problem &p);
 };
 }
 

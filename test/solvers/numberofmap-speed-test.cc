@@ -1,24 +1,21 @@
-#include "asl/aslbuilder.h"
+#include "ilogcp/concert.h"
 #include "mp/clock.h"
-#include "mp/nl.h"
+#include "mp/problem.h"
 
 struct CreateVar {
   int operator()() { return 0; }
 };
 
 int main() {
-  mp::asl::internal::ASLBuilder b;
+  mp::Problem p;
   int num_exprs = 10000;
-  mp::ProblemInfo pi = mp::ProblemInfo();
-  pi.num_vars = num_exprs;
-  pi.num_objs = 1;
-  b.SetInfo(pi);
-  mp::asl::NumberOfMap<int, CreateVar> map((CreateVar()));
-  mp::asl::NumericConstant n = b.MakeNumericConstant(0);
-  std::vector<mp::asl::NumberOfExpr> exprs(num_exprs);
+  mp::NumberOfMap<int, CreateVar> map((CreateVar()));
+  mp::NumericConstant n = p.MakeNumericConstant(0);
+  std::vector<mp::IteratedExpr> exprs(num_exprs);
   for (int i = 0; i < num_exprs; ++i) {
-    mp::asl::NumericExpr args[] = {n, b.MakeVariable(i)};
-    exprs[i] = b.MakeNumberOf(args);
+    mp::Problem::NumberOfExprBuilder b = p.BeginNumberOf(2, n);
+    b.AddArg(p.MakeVariable(i));
+    exprs[i] = p.EndNumberOf(b);
   }
   mp::steady_clock::time_point start = mp::steady_clock::now();
   for (int i = 0; i < num_exprs; ++i)

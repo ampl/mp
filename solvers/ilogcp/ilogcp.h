@@ -53,14 +53,15 @@
 #include <string>
 
 #include "mp/clock.h"
-#include "asl/aslsolver.h"
+#include "mp/problem.h"
+#include "mp/solver.h"
 
 namespace mp {
 
 class NLToConcertConverter;
 
 // IlogCP solver.
-class IlogCPSolver : public ASLSolver {
+class IlogCPSolver : public SolverImpl<Problem> {
  private:
   IloEnv env_;
   IloCP cp_;
@@ -111,14 +112,10 @@ class IlogCPSolver : public ASLSolver {
     double solution_time;
   };
 
-  void SolveWithCP(ASLProblem &p, const NLToConcertConverter &converter,
+  void SolveWithCP(Problem &p, const NLToConcertConverter &converter,
                    Stats &stats, SolutionHandler &sh);
-  void SolveWithCPLEX(ASLProblem &p, const NLToConcertConverter &converter,
+  void SolveWithCPLEX(Problem &p, const NLToConcertConverter &converter,
                       Stats &stats, SolutionHandler &sh);
-
- protected:
-
-  void DoSolve(ASLProblem &p, SolutionHandler &sh);
 
  public:
   IlogCPSolver();
@@ -134,6 +131,8 @@ class IlogCPSolver : public ASLSolver {
   }
 
   void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
+
+  void Solve(Problem &p, SolutionHandler &sh);
 };
 }
 
