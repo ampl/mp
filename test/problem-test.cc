@@ -477,6 +477,16 @@ TEST(ProblemTest, LogicalCons) {
   EXPECT_ASSERT(*i, "invalid access");
 }
 
+TEST(ProblemTest, HasNonlinearCons) {
+  Problem p;
+  p.AddVar(0, 1);
+  EXPECT_FALSE(p.has_nonlinear_cons());
+  p.AddCon(0, 0, 1).AddTerm(0, 1);
+  EXPECT_FALSE(p.has_nonlinear_cons());
+  p.AddCon(0, 0, p.MakeNumericConstant(42));
+  EXPECT_TRUE(p.has_nonlinear_cons());
+}
+
 TEST(ProblemTest, AddCommonExpr) {
   Problem p;
   EXPECT_EQ(0, p.num_common_exprs());
