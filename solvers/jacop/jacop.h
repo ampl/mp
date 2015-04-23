@@ -26,9 +26,9 @@
 #include <vector>
 
 #include "mp/clock.h"
-#include "asl/aslexpr-visitor.h"
-#include "asl/aslproblem.h"
-#include "asl/aslsolver.h"
+#include "mp/expr-visitor.h"
+#include "mp/problem.h"
+#include "mp/solver.h"
 #include "jacop/java.h"
 
 namespace mp {
@@ -101,8 +101,7 @@ CLASS_INFO(InterruptingListener, "InterruptingListener", "(J)V")
 CLASS_INFO(SolutionListener, "SolutionListener", "(J)V")
 
 // Converter of constraint programming problems from NL to JaCoP format.
-class NLToJaCoPConverter :
-  public asl::ExprConverter<NLToJaCoPConverter, jobject> {
+class NLToJaCoPConverter : public ExprConverter<NLToJaCoPConverter, jobject> {
  private:
   Env env_;
   jobject store_;
@@ -182,11 +181,11 @@ class NLToJaCoPConverter :
     return CreateCon(plus_class_, lhs, CreateCon(mul_const_class_, rhs, -1));
   }
 
-  jobject Convert(asl::VarArgExpr e, ClassBase &cls) {
+  jobject Convert(VarArgExpr e, ClassBase &cls) {
     jobjectArray args = CreateVarArray(
         static_cast<jsize>(std::distance(e.begin(), e.end())));
     int index = 0;
-    for (asl::VarArgExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    for (VarArgExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
       env_.SetObjectArrayElement(args, index++, Visit(*i));
     return CreateCon(cls, args);
   }
@@ -198,28 +197,27 @@ class NLToJaCoPConverter :
   }
 
   // Converts an iterated logical expression.
-  jobject Convert(asl::IteratedLogicalExpr e, ClassBase &cls, jmethodID &ctor);
+  jobject Convert(IteratedLogicalExpr e, ClassBase &cls, jmethodID &ctor);
 
   void Impose(jobject constraint) {
     env_.CallVoidMethod(store_, impose_, constraint);
   }
 
-  static void RequireZeroRHS(asl::BinaryExpr e, const std::string &func_name);
+  static void RequireZeroRHS(BinaryExpr e, const std::string &func_name);
 
-  template<typename Term>
-  void ConvertExpr(asl::LinearExpr<Term> linear,
-      asl::NumericExpr nonlinear, jobject result_var);
+  void ConvertExpr(const LinearExpr &linear,
+      NumericExpr nonlinear, jobject result_var);
 
   jobject Convert(ClassBase &logop_class, jmethodID &logop_ctor,
-                  ClassBase &eq_class, asl::PairwiseExpr e);
+                  ClassBase &eq_class, PairwiseExpr e);
 
  public:
   explicit NLToJaCoPConverter();
 
   // Converts a logical constraint.
-  void ConvertLogicalCon(asl::LogicalExpr e);
+  void ConvertLogicalCon(LogicalExpr e);
 
-  void Convert(const ASLProblem &p);
+  void Convert(const Problem &p);
 
   jobject store() const { return store_; }
   jobjectArray var_array() const { return var_array_; }
@@ -234,157 +232,160 @@ class NLToJaCoPConverter :
   // * trigonometric & hyperbolic functions
   // * log, log10, exp, sqrt
 
-  jobject VisitAdd(asl::BinaryExpr e);
+  jobject VisitAdd(BinaryExpr e);
 
-  jobject VisitSub(asl::BinaryExpr e) {
+  jobject VisitSub(BinaryExpr e) {
     return CreateMinus(Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  jobject VisitMul(asl::BinaryExpr e) {
+  jobject VisitMul(BinaryExpr e) {
     return CreateCon(mul_class_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  jobject VisitMod(asl::BinaryExpr e) {
+  jobject VisitMod(BinaryExpr e) {
     return CreateCon(mod_class_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  jobject VisitPow(asl::BinaryExpr e) {
+  jobject VisitPow(BinaryExpr e) {
     return CreateCon(exp_class_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  jobject VisitLess(asl::BinaryExpr e);
+  jobject VisitLess(BinaryExpr e);
 
-  jobject VisitMin(asl::VarArgExpr e) {
+  jobject VisitMin(VarArgExpr e) {
     return Convert(e, min_class_);
   }
 
-  jobject VisitMax(asl::VarArgExpr e) {
+  jobject VisitMax(VarArgExpr e) {
     return Convert(e, max_class_);
   }
 
-  jobject VisitMinus(asl::UnaryExpr e) {
+  jobject VisitMinus(UnaryExpr e) {
     return CreateCon(mul_const_class_, Visit(e.arg()), -1);
   }
 
-  jobject VisitAbs(asl::UnaryExpr e) {
+  jobject VisitAbs(UnaryExpr e) {
     return CreateCon(abs_class_, Visit(e.arg()));
   }
 
-  jobject VisitFloor(asl::UnaryExpr e) {
+  jobject VisitFloor(UnaryExpr e) {
     // floor does nothing because JaCoP supports only integer expressions.
     return Visit(e.arg());
   }
 
-  jobject VisitCeil(asl::UnaryExpr e) {
+  jobject VisitCeil(UnaryExpr e) {
     // ceil does nothing because JaCoP supports only integer expressions.
     return Visit(e.arg());
   }
 
-  jobject VisitIf(asl::IfExpr e);
+  jobject VisitIf(IfExpr e);
 
-  jobject VisitSum(asl::SumExpr e);
+  jobject VisitSum(SumExpr e);
 
-  jobject VisitIntDiv(asl::BinaryExpr e) {
+  jobject VisitIntDiv(BinaryExpr e) {
     return CreateCon(div_class_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  jobject VisitRound(asl::BinaryExpr e) {
+  jobject VisitRound(BinaryExpr e) {
     // round does nothing because JaCoP supports only integer expressions.
     RequireZeroRHS(e, "round");
     return Visit(e.lhs());
   }
 
-  jobject VisitTrunc(asl::BinaryExpr e) {
+  jobject VisitTrunc(BinaryExpr e) {
     // trunc does nothing because JaCoP supports only integer expressions.
     RequireZeroRHS(e, "trunc");
     return Visit(e.lhs());
   }
 
-  jobject VisitCount(asl::CountExpr e);
+  jobject VisitCount(CountExpr e);
 
-  jobject VisitNumberOf(asl::NumberOfExpr e);
+  jobject VisitNumberOf(NumberOfExpr e);
 
-  jobject VisitPowConstExp(asl::BinaryExpr e) {
+  jobject VisitPowConstExp(BinaryExpr e) {
     return VisitPow(e);
   }
 
-  jobject VisitPow2(asl::UnaryExpr e) {
+  jobject VisitPow2(UnaryExpr e) {
     jobject arg = Visit(e.arg());
     return CreateCon(mul_class_, arg, arg);
   }
 
-  jobject VisitPowConstBase(asl::BinaryExpr e) {
+  jobject VisitPowConstBase(BinaryExpr e) {
     return VisitPow(e);
   }
 
-  jobject VisitNumericConstant(asl::NumericConstant c) {
+  jobject VisitNumericConstant(NumericConstant c) {
     return CreateConst(CastToInt(c.value()));
   }
 
-  jobject VisitVariable(asl::Reference v) {
-    int index = v.index(), num_vars = static_cast<int>(vars_.size());
-    return index < num_vars ? vars_[index] : common_exprs_[index - num_vars];
+  jobject VisitVariable(Reference r) {
+    return vars_[r.index()];
   }
 
-  jobject VisitOr(asl::BinaryLogicalExpr e) {
+  jobject VisitCommonExpr(Reference r) {
+    return common_exprs_[r.index()];
+  }
+
+  jobject VisitOr(BinaryLogicalExpr e) {
     return Convert(e, or_class_);
   }
 
-  jobject VisitAnd(asl::BinaryLogicalExpr e) {
+  jobject VisitAnd(BinaryLogicalExpr e) {
     return Convert(e, and_class_);
   }
 
-  jobject VisitLT(asl::RelationalExpr e) {
+  jobject VisitLT(RelationalExpr e) {
     return Convert(e, lt_class_);
   }
 
-  jobject VisitLE(asl::RelationalExpr e) {
+  jobject VisitLE(RelationalExpr e) {
     return Convert(e, le_class_);
   }
 
-  jobject VisitEQ(asl::RelationalExpr e) {
+  jobject VisitEQ(RelationalExpr e) {
     return Convert(e, eq_class_);
   }
 
-  jobject VisitGE(asl::RelationalExpr e) {
+  jobject VisitGE(RelationalExpr e) {
     return Convert(e, ge_class_);
   }
 
-  jobject VisitGT(asl::RelationalExpr e) {
+  jobject VisitGT(RelationalExpr e) {
     return Convert(e, gt_class_);
   }
 
-  jobject VisitNE(asl::RelationalExpr e) {
+  jobject VisitNE(RelationalExpr e) {
     return Convert(e, ne_class_);
   }
 
-  jobject VisitNot(asl::NotExpr e) {
+  jobject VisitNot(NotExpr e) {
     return not_class_.NewObject(env_, Visit(e.arg()));
   }
 
-  jobject VisitForAll(asl::IteratedLogicalExpr e) {
+  jobject VisitForAll(IteratedLogicalExpr e) {
     return Convert(e, and_class_, and_array_ctor_);
   }
 
-  jobject VisitExists(asl::IteratedLogicalExpr e) {
+  jobject VisitExists(IteratedLogicalExpr e) {
     return Convert(e, or_class_, or_array_ctor_);
   }
 
-  jobject VisitImplication(asl::ImplicationExpr e);
+  jobject VisitImplication(ImplicationExpr e);
 
-  jobject VisitIff(asl::BinaryLogicalExpr e) {
+  jobject VisitIff(BinaryLogicalExpr e) {
     return eq_con_class_.NewObject(env_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  jobject VisitAllDiff(asl::PairwiseExpr e) {
+  jobject VisitAllDiff(PairwiseExpr e) {
     return Convert(and_class_, and_array_ctor_, ne_class_, e);
   }
 
-  jobject VisitNotAllDiff(asl::PairwiseExpr e) {
+  jobject VisitNotAllDiff(PairwiseExpr e) {
     return Convert(or_class_, or_array_ctor_, eq_class_, e);
   }
 
-  jobject VisitLogicalConstant(asl::LogicalConstant c) {
+  jobject VisitLogicalConstant(LogicalConstant c) {
     if (!one_var_)
       one_var_ = var_class_.NewObject(env_, store_, 1, 1);
     return eq_const_class_.NewObject(env_, one_var_, c.value());
@@ -392,7 +393,7 @@ class NLToJaCoPConverter :
 };
 
 // JaCoP solver.
-class JaCoPSolver : public ASLSolver {
+class JaCoPSolver : public SolverImpl<Problem> {
  private:
   std::vector<std::string> jvm_options_;
   jlong outlev_;
@@ -471,7 +472,7 @@ class JaCoPSolver : public ASLSolver {
    private:
     JaCoPSolver &solver_;
     SolutionHandler &sol_handler_;
-    ASLProblem &problem_;
+    Problem &problem_;
     const jobject *vars_;
     jobject obj_var_;
     bool multiple_sol_;
@@ -483,7 +484,7 @@ class JaCoPSolver : public ASLSolver {
 
    public:
     SolutionRelay(JaCoPSolver &s, SolutionHandler &sh,
-        ASLProblem &p, const jobject *vars, jobject obj_var)
+        Problem &p, const jobject *vars, jobject obj_var)
     : solver_(s), sol_handler_(sh), problem_(p), vars_(vars), obj_var_(obj_var),
       multiple_sol_(s.need_multiple_solutions()), num_solutions_(0) {
       if (multiple_sol_) {
@@ -500,12 +501,12 @@ class JaCoPSolver : public ASLSolver {
   };
 
  protected:
-  void DoSolve(ASLProblem &p, SolutionHandler &sh);
-
   void HandleUnknownOption(const char *name);
 
  public:
   JaCoPSolver();
+
+  void Solve(Problem &p, SolutionHandler &sh);
 };
 }
 

@@ -25,8 +25,6 @@
 
 #include <iterator>
 
-using namespace mp::asl;
-
 namespace {
 
 // Casts value to intptr_t.
@@ -166,9 +164,8 @@ void NLToJaCoPConverter::RequireZeroRHS(
     throw MakeUnsupportedError("{} with nonzero second parameter", func_name);
 }
 
-template <typename Term>
 void NLToJaCoPConverter::ConvertExpr(
-    LinearExpr<Term> linear, NumericExpr nonlinear, jobject result_var) {
+    const LinearExpr &linear, NumericExpr nonlinear, jobject result_var) {
   jsize num_terms = static_cast<jsize>(
       std::distance(linear.begin(), linear.end()));
   if (nonlinear) {
@@ -182,7 +179,7 @@ void NLToJaCoPConverter::ConvertExpr(
     std::vector<jint> coefs(num_terms);
     jobjectArray vars = CreateVarArray(num_terms);
     int index = 0;
-    for (typename LinearExpr<Term>::iterator
+    for (typename LinearExpr::iterator
         i = linear.begin(), end = linear.end(); i != end; ++i, ++index) {
       coefs[index] = CastToInt(i->coef());
       env_.SetObjectArrayElement(vars, index, vars_[i->var_index()]);
@@ -276,25 +273,25 @@ jobject NLToJaCoPConverter::VisitLess(BinaryExpr e) {
   return CreateCon(max_class_, args);
 }
 
-void NLToJaCoPConverter::Convert(const ASLProblem &p) {
-  if (p.num_continuous_vars() != 0)
-    throw Error("JaCoP doesn't support continuous variables");
-
+void NLToJaCoPConverter::Convert(const Problem &p) {
   jclass store_class = env_.FindClass("org/jacop/core/Store");
   store_ = env_.NewObject(store_class,
       env_.GetMethod(store_class, "<init>", "()V"));
   impose_ = env_.GetMethod(store_class,
       "impose", "(Lorg/jacop/constraints/Constraint;)V");
 
-  int num_vars = p.num_integer_vars();
+  int num_vars = p.num_vars();
   var_array_ = CreateVarArray(num_vars);
   vars_.resize(num_vars);
+  double inf = std::numeric_limits<double>::infinity();
   for (int j = 0; j < num_vars; ++j) {
-    ASLProblem::Variable var = p.var(j);
+    Problem::Variable var = p.var(j);
+    if (var.type() == mp::var::CONTINUOUS)
+      throw Error("JaCoP doesn't support continuous variables");
     double lb = var.lb(), ub = var.ub();
     jobject jvar = var_class_.NewObject(env_, store_,
-        lb <= negInfinity ? min_int_ : CastToInt(lb),
-        ub >= Infinity ? max_int_ : CastToInt(ub));
+        lb <= -inf ? min_int_ : CastToInt(lb),
+        ub >=  inf ? max_int_ : CastToInt(ub));
     vars_[j] = jvar;
     env_.SetObjectArrayElement(var_array_, j, jvar);
   }
@@ -307,7 +304,7 @@ void NLToJaCoPConverter::Convert(const ASLProblem &p) {
   }
 
   if (p.num_objs() > 0) {
-    ASLProblem::Objective obj = p.obj(0);
+    Problem::Objective obj = p.obj(0);
     jobject result_var = var_class_.NewObject(env_, store_, min_int_, max_int_);
     ConvertExpr(obj.linear_expr(), obj.nonlinear_expr(), result_var);
     obj_ = obj.type() == obj::MIN ?
@@ -316,17 +313,17 @@ void NLToJaCoPConverter::Convert(const ASLProblem &p) {
 
   // Convert algebraic constraints.
   for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
-    ASLProblem::AlgebraicCon con = p.algebraic_con(i);
+    Problem::AlgebraicCon con = p.algebraic_con(i);
     double lb = con.lb(), ub = con.ub();
-    jint int_lb = lb <= negInfinity ? min_int_ : CastToInt(lb);
-    jint int_ub = ub >= Infinity ? max_int_ : CastToInt(ub);
+    jint int_lb = lb <= -inf ? min_int_ : CastToInt(lb);
+    jint int_ub = ub >=  inf ? max_int_ : CastToInt(ub);
     jobject result_var = var_class_.NewObject(env_, store_, int_lb, int_ub);
     ConvertExpr(con.linear_expr(), con.nonlinear_expr(), result_var);
   }
 
   // Convert logical constraints.
   for (int i = 0, n = p.num_logical_cons(); i < n; ++i)
-    ConvertLogicalCon(p.logical_con_expr(i));
+    ConvertLogicalCon(p.logical_con(i).expr());
 }
 
 jobject NLToJaCoPConverter::VisitIf(IfExpr e) {
@@ -395,7 +392,7 @@ void JaCoPSolver::HandleUnknownOption(const char *name) {
 }
 
 JaCoPSolver::JaCoPSolver()
-: ASLSolver("jacop", "jacop " JACOP_VERSION, 20141107, MULTIPLE_SOL),
+: SolverImpl("jacop", "jacop " JACOP_VERSION, 20141107, MULTIPLE_SOL),
   outlev_(0), output_frequency_(1), output_count_(0),
   var_select_("SmallestDomain"), val_select_("IndomainMin"),
   time_limit_(-1), node_limit_(-1), fail_limit_(-1),
@@ -544,7 +541,7 @@ JNIEXPORT jboolean JNICALL JaCoPSolver::Stop(JNIEnv *, jobject, jlong data) {
   return JNI_FALSE;
 }
 
-void JaCoPSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
+void JaCoPSolver::Solve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   std::vector<const char*> jvm_options(jvm_options_.size() + 2);
