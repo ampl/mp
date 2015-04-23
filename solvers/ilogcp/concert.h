@@ -145,6 +145,7 @@ class NLToConcertConverter : public Converter {
   IloModel model_;
   IloNumVarArray vars_;
   IloRangeArray cons_;
+  std::vector<IloExpr> common_exprs_;
   unsigned flags_;
 
   class CreateVar {
@@ -369,8 +370,12 @@ class NLToConcertConverter : public Converter {
     return IloExpr(env_, n.value());
   }
 
-  IloExpr VisitVariable(Reference v) {
-    return vars_[v.index()];
+  IloExpr VisitVariable(Reference r) {
+    return vars_[r.index()];
+  }
+
+  IloExpr VisitCommonExpr(Reference r) {
+    return common_exprs_[r.index()];
   }
 
   IloConstraint VisitLogicalConstant(LogicalConstant c) {

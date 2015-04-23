@@ -299,6 +299,14 @@ void NLToConcertConverter::Convert(const Problem &p) {
                          var.type() == mp::var::CONTINUOUS ? ILOFLOAT : ILOINT);
   }
 
+  int num_common_exprs = p.num_common_exprs();
+  common_exprs_.resize(num_common_exprs);
+  for (int j = 0; j < num_common_exprs; ++j) {
+    // TODO: handle linear part
+    if (NumericExpr e = p.common_expr(j).nonlinear_expr())
+      common_exprs_[j] = Visit(e);
+  }
+
   if (int num_objs = p.num_objs()) {
     obj::Type main_obj_type = p.obj(0).type();
     IloNumExprArray objs(env_);
