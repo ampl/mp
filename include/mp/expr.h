@@ -381,6 +381,9 @@ class Function {
 
   // Returns the type of this function.
   func::Type type() const { return impl_->type; }
+
+  bool operator==(Function other) const { return impl_ == other.impl_; }
+  bool operator!=(Function other) const { return impl_ != other.impl_; }
 };
 
 namespace internal {
