@@ -59,11 +59,27 @@ class ExprTest : public ::testing::Test {
   }
 
   template <int N>
+  mp::CallExpr MakeCall(mp::Function f, NumericExpr (&args)[N]) {
+    auto builder = factory_.BeginCall(f, N);
+    for (int i = 0; i < N; ++i)
+      builder.AddArg(args[i]);
+    return factory_.EndCall(builder);
+  }
+
+  template <int N>
   mp::IteratedExpr MakeIterated(expr::Kind kind, NumericExpr (&args)[N]) {
     auto builder = factory_.BeginIterated(kind, N);
     for (int i = 0; i < N; ++i)
       builder.AddArg(args[i]);
     return factory_.EndIterated(builder);
+  }
+
+  template <int N>
+  mp::SymbolicNumberOfExpr MakeSymbolicNumberOf(mp::Expr (&args)[N]) {
+    auto builder = factory_.BeginSymbolicNumberOf(N, args[0]);
+    for (int i = 1; i < N; ++i)
+      builder.AddArg(args[i]);
+    return factory_.EndSymbolicNumberOf(builder);
   }
 
   template <int N>
@@ -77,12 +93,29 @@ class ExprTest : public ::testing::Test {
   mp::PLTerm MakePLTerm(int num_breakpoints, const double *breakpoints,
                         const double *slopes, mp::Reference arg) {
     auto builder = factory_.BeginPLTerm(num_breakpoints);
-    for (int i = 0; i < num_breakpoints - 1; ++i) {
-      builder.AddBreakpoint(breakpoints[i]);
+    for (int i = 0; i < num_breakpoints; ++i) {
       builder.AddSlope(slopes[i]);
+      builder.AddBreakpoint(breakpoints[i]);
     }
-    builder.AddBreakpoint(num_breakpoints - 1);
+    builder.AddSlope(slopes[num_breakpoints]);
     return factory_.EndPLTerm(builder, arg);
+  }
+
+  template <int N>
+  mp::IteratedLogicalExpr MakeIteratedLogical(
+      expr::Kind kind, LogicalExpr (&args)[N]) {
+    auto builder = factory_.BeginIteratedLogical(kind, N);
+    for (int i = 0; i < N; ++i)
+      builder.AddArg(args[i]);
+    return factory_.EndIteratedLogical(builder);
+  }
+
+  template <int N>
+  mp::PairwiseExpr MakePairwise(expr::Kind kind, NumericExpr (&args)[N]) {
+    auto builder = factory_.BeginPairwise(kind, N);
+    for (int i = 0; i < N; ++i)
+      builder.AddArg(args[i]);
+    return factory_.EndPairwise(builder);
   }
 };
 
@@ -259,17 +292,18 @@ TEST_F(ExprTest, TooFewSlopes) {
 TEST_F(ExprTest, Function) {
   mp::Function f;
   EXPECT_TRUE(f == 0);
-}
-
-TEST_F(ExprTest, AddFunction) {
-  mp::Function f = factory_.AddFunction("foo", 42, mp::func::SYMBOLIC);
+  mp::Function foo = factory_.AddFunction("foo", 42, mp::func::SYMBOLIC);
+  f = foo;
   EXPECT_STREQ("foo", f.name());
   EXPECT_EQ(42, f.num_args());
   EXPECT_EQ(mp::func::SYMBOLIC, f.type());
-  f = factory_.AddFunction("bar", 0, mp::func::NUMERIC);
+  mp::Function bar = factory_.AddFunction("bar", 0, mp::func::NUMERIC);
+  f = bar;
   EXPECT_STREQ("bar", f.name());
   EXPECT_EQ(0, f.num_args());
   EXPECT_EQ(mp::func::NUMERIC, f.type());
+  EXPECT_EQ(f, bar);
+  EXPECT_NE(f, foo);
 }
 
 // Iterated expressions share the same builder so it is enough to test
@@ -706,7 +740,7 @@ TEST_F(ExprTest, EqualIfExpr) {
   EXPECT_FALSE(Equal(e, MakeConst(42)));
 }
 
-TEST_F(ExprTest, EqualPiecewiseLinear) {
+TEST_F(ExprTest, EqualPLTerm) {
   double breaks[] = {5, 10};
   double slopes[] = {-1, 0, 1};
   mp::Reference x = MakeVariable(0), y = MakeVariable(1);
@@ -719,10 +753,27 @@ TEST_F(ExprTest, EqualPiecewiseLinear) {
   EXPECT_FALSE(Equal(e, MakeConst(42)));
 }
 
+TEST_F(ExprTest, EqualCallExpr) {
+  NumericExpr args1[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  // args2 is used to make sure that Equal compares expressions structurally
+  // instead of comparing pointers; don't replace with args1.
+  NumericExpr args2[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  mp::Function f1 = factory_.AddFunction("f1", 0);
+  NumericExpr e = MakeCall(f1, args1);
+  EXPECT_TRUE(Equal(e, MakeCall(f1, args2)));
+  NumericExpr args3[] = {MakeVariable(0), MakeVariable(1)};
+  EXPECT_FALSE(Equal(e, MakeCall(f1, args3)));
+  EXPECT_FALSE(Equal(MakeCall(f1, args3), MakeCall(f1, args1)));
+  EXPECT_FALSE(Equal(e, MakeCall(factory_.AddFunction("f2", 0), args1)));
+  NumericExpr args4[] = {MakeVariable(0), MakeVariable(1), MakeConst(0)};
+  EXPECT_FALSE(Equal(e, MakeCall(f1, args4)));
+  EXPECT_FALSE(Equal(e, MakeConst(42)));
+}
+
 TEST_F(ExprTest, EqualVarArgExpr) {
   NumericExpr args1[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
   // args2 is used to make sure that Equal compares expressions structurally
-  // instead of comparing pointers; don't replace with args.
+  // instead of comparing pointers; don't replace with args1.
   NumericExpr args2[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
   NumericExpr e = MakeIterated(expr::MIN, args1);
   EXPECT_TRUE(Equal(e, MakeIterated(expr::MIN, args2)));
@@ -753,6 +804,18 @@ TEST_F(ExprTest, EqualSumExpr) {
   EXPECT_FALSE(Equal(e, MakeConst(42)));
 }
 
+TEST_F(ExprTest, EqualNumberOfExpr) {
+  NumericExpr args[] = {MakeVariable(0), MakeVariable(1)};
+  EXPECT_TRUE(Equal(MakeIterated(expr::NUMBEROF, args),
+                    MakeIterated(expr::NUMBEROF, args)));
+}
+
+// TODO
+//TEST_F(ExprTest, EqualSymbolicNumberOfExpr) {
+//  mp::Expr args[] = {factory_.MakeStringLiteral("test")};
+//  EXPECT_TRUE(Equal(MakeSymbolicNumberOf(args), MakeSymbolicNumberOf(args)));
+//}
+
 TEST_F(ExprTest, EqualCountExpr) {
   LogicalExpr args[] = {l0, l1, l1};
   NumericExpr e = MakeCount(args);
@@ -772,6 +835,67 @@ TEST_F(ExprTest, EqualCountExpr) {
   LogicalExpr args5[] = {l0, l1, l0};
   EXPECT_FALSE(Equal(e, MakeCount(args5)));
 }
+
+TEST_F(ExprTest, EqualLogicalConstant) {
+  EXPECT_TRUE(Equal(l0, factory_.MakeLogicalConstant(false)));
+  EXPECT_FALSE(Equal(l0, factory_.MakeLogicalConstant(true)));
+}
+
+TEST_F(ExprTest, EqualNotExpr) {
+  EXPECT_TRUE(Equal(factory_.MakeNot(l0), factory_.MakeNot(l0)));
+  EXPECT_FALSE(Equal(factory_.MakeNot(l0), factory_.MakeNot(l1)));
+}
+
+TEST_F(ExprTest, EqualBinaryLogicalExpr) {
+  EXPECT_TRUE(Equal(factory_.MakeBinaryLogical(expr::OR, l0, l1),
+                    factory_.MakeBinaryLogical(expr::OR, l0, l1)));
+  EXPECT_FALSE(Equal(factory_.MakeBinaryLogical(expr::OR, l0, l1),
+                     factory_.MakeBinaryLogical(expr::OR, l0, l0)));
+}
+
+TEST_F(ExprTest, EqualRelationalExpr) {
+  auto n0 = MakeConst(0), n1 = MakeConst(1);
+  EXPECT_TRUE(Equal(factory_.MakeRelational(expr::LT, n0, n1),
+                    factory_.MakeRelational(expr::LT, n0, n1)));
+  EXPECT_FALSE(Equal(factory_.MakeRelational(expr::LT, n0, n1),
+                     factory_.MakeRelational(expr::LT, n0, n0)));
+}
+
+TEST_F(ExprTest, EqualLogicalCountExpr) {
+  auto n0 = MakeConst(0), n1 = MakeConst(1);
+  LogicalExpr args[] = {l0};
+  auto count = MakeCount(args);
+  EXPECT_TRUE(Equal(factory_.MakeLogicalCount(expr::ATMOST, n0, count),
+                    factory_.MakeLogicalCount(expr::ATMOST, n0, count)));
+  EXPECT_FALSE(Equal(factory_.MakeLogicalCount(expr::ATMOST, n0, count),
+                     factory_.MakeLogicalCount(expr::ATMOST, n1, count)));
+}
+
+TEST_F(ExprTest, EqualImplicationExpr) {
+  EXPECT_TRUE(Equal(factory_.MakeImplication(l0, l1, l0),
+                    factory_.MakeImplication(l0, l1, l0)));
+  EXPECT_FALSE(Equal(factory_.MakeImplication(l0, l1, l0),
+                     factory_.MakeImplication(l0, l1, l1)));
+}
+
+TEST_F(ExprTest, EqualIteratedLogicalExpr) {
+  LogicalExpr args[] = {l0}, args2[] = {l0}, args3[] = {l1};
+  EXPECT_TRUE(Equal(MakeIteratedLogical(expr::EXISTS, args),
+                    MakeIteratedLogical(expr::EXISTS, args2)));
+  EXPECT_FALSE(Equal(MakeIteratedLogical(expr::EXISTS, args),
+                     MakeIteratedLogical(expr::EXISTS, args3)));
+}
+
+TEST_F(ExprTest, EqualPairwiseExpr) {
+  auto n0 = MakeConst(0), n1 = MakeConst(1);
+  NumericExpr args[] = {n0}, args2[] = {n0}, args3[] = {n1};
+  EXPECT_TRUE(Equal(MakePairwise(expr::ALLDIFF, args),
+                    MakePairwise(expr::ALLDIFF, args2)));
+  EXPECT_FALSE(Equal(MakePairwise(expr::ALLDIFF, args),
+                     MakePairwise(expr::ALLDIFF, args3)));
+}
+
+// TODO: test Equal with StringExpr
 
 TEST(ExprFactoryTest, ExprMemoryAllocation) {
   MockAllocator alloc;

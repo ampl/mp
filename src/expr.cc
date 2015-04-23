@@ -76,25 +76,19 @@ class ExprComparator : public mp::ExprVisitor<ExprComparator, bool, bool> {
   bool VisitVarArg(E e);
 
   bool VisitSum(SumExpr e) { return VisitVarArg(e); }
-  bool VisitCount(CountExpr e) { return VisitVarArg(e); }
   bool VisitNumberOf(NumberOfExpr e) { return VisitVarArg(e); }
+  bool VisitCount(CountExpr e) { return VisitVarArg(e); }
 
   bool VisitLogicalConstant(LogicalConstant c) {
     return VisitNumericConstant(c);
   }
 
   bool VisitNot(NotExpr e) { return VisitUnary(e); }
-
   bool VisitBinaryLogical(BinaryLogicalExpr e) { return VisitBinary(e); }
   bool VisitRelational(RelationalExpr e) { return VisitBinary(e); }
   bool VisitLogicalCount(LogicalCountExpr e) { return VisitBinary(e); }
-
   bool VisitImplication(ImplicationExpr e) { return VisitIf(e); }
-
-  bool VisitIteratedLogical(IteratedLogicalExpr e) {
-    return VisitVarArg(e);
-  }
-
+  bool VisitIteratedLogical(IteratedLogicalExpr e) { return VisitVarArg(e); }
   bool VisitAllDiff(PairwiseExpr e) { return VisitVarArg(e); }
 };
 
