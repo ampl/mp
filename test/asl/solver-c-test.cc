@@ -29,10 +29,6 @@
 # define putenv _putenv
 #endif
 
-#ifndef MP_TEST_DATA_DIR
-# define MP_TEST_DATA_DIR "../data"
-#endif
-
 namespace {
 
 TEST(SolverCTest, CreateSolver) {
