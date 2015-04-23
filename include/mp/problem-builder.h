@@ -553,8 +553,7 @@ class ProblemBuilderToNLAdapter {
 
   struct ColumnSizeHandler {
     void Add(int) {
-      // Ignore column sizes as the constraints are stored row-wise
-      // by default.
+      // Ignore column sizes as the constraints are stored row-wise by default.
     }
   };
 
