@@ -25,10 +25,11 @@
 #ifndef MP_SUFFIX_H_
 #define MP_SUFFIX_H_
 
-#include <cstddef>  // for std::size_t
+#include <cstddef>     // for std::size_t
+#include <algorithm>   // for std::fill_n
 #include <iterator>
 #include <set>
-#include <string>  // for std::char_traits
+#include <string>      // for std::char_traits
 
 #include "mp/common.h"
 #include "mp/error.h"  // for MP_ASSERT
@@ -324,7 +325,9 @@ class BasicSuffixSet : private Alloc {
               "invalid suffix kind");
     SuffixImpl *impl = DoAdd(
           name, kind | internal::SuffixInfo<T>::KIND, num_values);
-    impl->values = Allocate<T>(num_values);
+    T *values = Allocate<T>(num_values);
+    std::fill_n(values, num_values, 0);
+    impl->values = values;
     return BasicMutSuffix<T>(impl);
   }
 

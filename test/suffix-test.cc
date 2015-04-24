@@ -243,6 +243,11 @@ TEST_F(SuffixTest, SuffixKindAgreesWithType) {
             suffixes_.Add<double>("d", suf::FLOAT, 1).kind());
 }
 
+TEST_F(SuffixTest, ValuesZeroInitialized) {
+  auto s = suffixes_.Add<int>("a", 0, 1);
+  EXPECT_EQ(0, s.value(0));
+}
+
 TEST(SuffixSetTest, Empty) {
   mp::SuffixSet s;
   EXPECT_EQ(s.begin(), s.end());
