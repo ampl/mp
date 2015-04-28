@@ -384,8 +384,10 @@ class ProblemBuilderToNLAdapter {
   typedef typename ProblemBuilder::CountExpr CountExpr;
   typedef typename ProblemBuilder::Reference Reference;
 
- private:
+ protected:
   ProblemBuilder &builder_;
+
+ private:
   int num_continuous_vars_;
 
   struct ObjInfo {

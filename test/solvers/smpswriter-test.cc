@@ -54,12 +54,18 @@ namespace {
 
 void Solve(const char *stub) {
   mp::SMPSWriter writer;
-  mp::asl::internal::ASLBuilder builder(writer, stub);
-  mp::SMPSWriter::NLProblemBuilder adapter(builder);
+  mp::ColProblem problem(writer, stub);
+  mp::SMPSWriter::NLProblemBuilder adapter(problem);
   mp::ReadNLFile(std::string(stub) + ".nl", adapter);
-  builder.EndBuild();
   mp::NullSolutionHandler sol_handler;
-  writer.Solve(builder, sol_handler);
+  writer.Solve(problem, sol_handler);
+}
+
+void CopyFileIfExists(fmt::StringRef src, fmt::StringRef dst) {
+  FILE *f = std::fopen(src.c_str(), "r");
+  if (!f) return;
+  std::fclose(f);
+  WriteFile(dst, ReadFile(src));
 }
 
 TEST(SMPSWriterTest, SMPSOutput) {
@@ -74,8 +80,8 @@ TEST(SMPSWriterTest, SMPSOutput) {
     std::string path(MP_TEST_DATA_DIR "/smps/");
     path += PROBLEMS[i];
     WriteFile("test.nl", ReadFile(path + ".nl"));
-    WriteFile("test.col", ReadFile(path + ".col"));
-    WriteFile("test.row", ReadFile(path + ".row"));
+    CopyFileIfExists(path + ".col", "test.col");
+    CopyFileIfExists(path + ".row", "test.row");
     Solve("test");
     for (size_t j = 0, n = sizeof(EXTS) / sizeof(*EXTS); j != n; ++j, ++count) {
       EXPECT_FILES_EQ(

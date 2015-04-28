@@ -21,13 +21,10 @@
  */
 
 #include "smpswriter/smpswriter.h"
-#include "asl/aslproblem.h"
 
 #include <cmath>
 #include <cstdio>
-#include <set>
-
-using namespace mp::asl;
+#include <map>
 
 namespace {
 
@@ -57,14 +54,15 @@ std::string ExtractScenario(std::string &name, bool require_scenario = true) {
   return index;
 }
 
-double GetConRHSAndType(const mp::ASLProblem &p, int con_index, char &type) {
-  mp::ASLProblem::AlgebraicCon con = p.algebraic_con(con_index);
+double GetConRHSAndType(const mp::Problem &p, int con_index, char &type) {
+  mp::Problem::AlgebraicCon con = p.algebraic_con(con_index);
   double lb = con.lb(), ub = con.ub();
-  if (lb <= negInfinity) {
-    type = ub >= Infinity ? 'N' : 'L';
+  double inf = std::numeric_limits<double>::infinity();
+  if (lb <= -inf) {
+    type = ub >= inf ? 'N' : 'L';
     return ub;
   }
-  if (ub >= Infinity)
+  if (ub >= inf)
     type = 'G';
   else if (lb == ub)
     type = 'E';
@@ -72,9 +70,24 @@ double GetConRHSAndType(const mp::ASLProblem &p, int con_index, char &type) {
     throw mp::Error("SMPS writer doesn't support ranges");
   return lb;
 }
-}
+}  // namespace
 
 namespace mp {
+
+class SMPSNameReader {
+ private:
+  internal::NameReader<> reader_;
+  std::vector<fmt::StringRef> names_;
+
+ public:
+  explicit SMPSNameReader(int num_names) { names_.reserve(num_names); }
+
+  fmt::StringRef name(int index) const { return names_[index]; }
+
+  void OnName(fmt::StringRef name) { names_.push_back(name); }
+
+  void Read(fmt::StringRef filename) { reader_.Read(filename, *this); }
+};
 
 class FileWriter {
  private:
@@ -82,7 +95,8 @@ class FileWriter {
   FMT_DISALLOW_COPY_AND_ASSIGN(FileWriter);
 
  public:
-  FileWriter(fmt::StringRef name) : f_(std::fopen(name.c_str(), "w")) {}
+  explicit FileWriter(fmt::StringRef name)
+    : f_(std::fopen(name.c_str(), "w")) {}
   ~FileWriter() { std::fclose(f_); }
 
   void Write(fmt::StringRef format, const fmt::ArgList &args) {
@@ -91,13 +105,13 @@ class FileWriter {
   FMT_VARIADIC(void, Write, fmt::StringRef)
 };
 
-SMPSWriter::SMPSWriter() : ASLSolver("smpswriter", "SMPSWriter", 20130709) {
+SMPSWriter::SMPSWriter() : SolverImpl("smpswriter", "SMPSWriter", 20130709) {
   AddSuffix("stage", 0, suf::VAR);
-  set_read_flags(ASL_want_A_vals);
 }
 
 void SMPSWriter::SplitConRHSIntoScenarios(
-    const ASLProblem &p, std::vector<CoreConInfo> &core_cons) {
+    const Problem &p, std::vector<CoreConInfo> &core_cons,
+    SMPSNameReader &con_names) {
   int num_cons = p.num_algebraic_cons();
   for (int i = 0; i < num_cons; ++i) {
     CoreConInfo &info = core_cons[con_info[i].core_index];
@@ -116,22 +130,23 @@ void SMPSWriter::SplitConRHSIntoScenarios(
     double rhs = GetConRHSAndType(p, i, type);
     int core_con_index = con_info[i].core_index;
     const CoreConInfo &info = core_cons[core_con_index];
-    if (type != info.type)
-      throw Error("Inconsistent constraint type for {}", p.con_name(i));
+    if (type != info.type) {
+      throw Error("Inconsistent constraint type for {}", con_names.name(i));
+    }
     if (rhs != info.rhs)
       scenarios[scenario_index].AddRHS(core_con_index, rhs);
   }
 }
 
 void SMPSWriter::SplitVarBoundsIntoScenarios(
-    const ASLProblem &p, std::vector<CoreVarInfo> &core_vars) {
+    const Problem &p, std::vector<CoreVarInfo> &core_vars) {
   int num_vars = p.num_vars();
   for (int i = 0; i < num_vars; ++i) {
     int scenario_index = var_info[i].scenario_index;
     if (scenario_index != 0)
       continue;
     CoreVarInfo &info = core_vars[var_info[i].core_index];
-    ASLProblem::Variable var = p.var(i);
+    Problem::Variable var = p.var(i);
     info.lb = var.lb();
     info.ub = var.ub();
   }
@@ -141,7 +156,7 @@ void SMPSWriter::SplitVarBoundsIntoScenarios(
       continue;
     int core_var_index = var_info[i].core_index;
     const CoreVarInfo &info = core_vars[core_var_index];
-    ASLProblem::Variable var = p.var(i);
+    Problem::Variable var = p.var(i);
     double lb = var.lb(), ub = var.ub();
     if (lb != info.lb)
       scenarios[scenario_index].AddLB(core_var_index, lb);
@@ -151,23 +166,20 @@ void SMPSWriter::SplitVarBoundsIntoScenarios(
 }
 
 void SMPSWriter::WriteColumns(
-    FileWriter &writer, const ASLProblem &p, int num_stages,
+    FileWriter &writer, const ColProblem &p, int num_stages,
     int num_core_cons, const std::vector<double> &core_obj_coefs) {
   writer.Write("COLUMNS\n");
   std::vector<double> core_coefs(num_core_cons);
   std::vector<int> nonzero_coef_indices;
   nonzero_coef_indices.reserve(num_core_cons);
-  int num_continuous_vars = p.num_continuous_vars();
   int int_var_index = 0;
-  ASLSuffixPtr stage_suffix = p.suffixes(suf::VAR).Find("stage");
+  IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage");
   bool integer_block = false;
   for (int stage = 0; stage < num_stages; ++stage) {
     for (int i = 0, n = p.num_vars(); i < n; ++i) {
-      int var_stage = stage_suffix && stage_suffix->has_values() ?
-          std::max(stage_suffix->int_value(i) - 1, 0) : 0;
+      int var_stage = stage_suffix ? std::max(stage_suffix.value(i) - 1, 0) : 0;
       if (var_stage != stage) continue;
       int core_var_index = var_info[i].core_index;
-      ASLProblem::ColMatrix matrix = p.col_matrix();
       if (var_info[i].scenario_index == 0) {
         // Clear the core_coefs vector.
         for (std::vector<int>::const_iterator j = nonzero_coef_indices.begin(),
@@ -176,7 +188,7 @@ void SMPSWriter::WriteColumns(
         }
         nonzero_coef_indices.clear();
 
-        if (i < num_continuous_vars) {
+        if (p.var(i).type() == var::CONTINUOUS) {
           if (integer_block) {
             writer.Write(
                 "    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);
@@ -194,28 +206,26 @@ void SMPSWriter::WriteColumns(
         }
 
         // Write the core coefficients and store them in the core_coefs vector.
-        for (int k = matrix.col_start(i),
-            end = matrix.col_start(i + 1); k != end; ++k) {
-          int con_index = matrix.row_index(k);
+        for (int k = p.col_start(i), end = p.col_start(i + 1); k != end; ++k) {
+          int con_index = p.row_index(k);
           if (con_info[con_index].scenario_index != 0)
             continue;
           int core_con_index = con_info[con_index].core_index;
-          core_coefs[core_con_index] = matrix.value(k);
+          core_coefs[core_con_index] = p.value(k);
           nonzero_coef_indices.push_back(core_con_index);
           writer.Write("    C{:<7}  R{:<7}  {}\n",
-              core_var_index + 1, core_con_index + 1, matrix.value(k));
+              core_var_index + 1, core_con_index + 1, p.value(k));
         }
       }
 
       // Go over non-core coefficients and compare them to those in the core.
-      for (int k = matrix.col_start(i),
-          end = matrix.col_start(i + 1); k != end; ++k) {
-        int con_index = matrix.row_index(k);
+      for (int k = p.col_start(i), end = p.col_start(i + 1); k != end; ++k) {
+        int con_index = p.row_index(k);
         int scenario_index = con_info[con_index].scenario_index;
         if (scenario_index == 0)
           continue;
         int core_con_index = con_info[con_index].core_index;
-        double coef = matrix.value(k);
+        double coef = p.value(k);
         double core_coef = core_coefs[core_con_index];
         if (coef != core_coef) {
           scenarios[scenario_index].AddConTerm(
@@ -232,19 +242,19 @@ void SMPSWriter::WriteColumns(
     writer.Write("    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);
 }
 
-void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
-  if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0)
+void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
+  if (p.has_nonlinear_cons())
     throw Error("SMPS writer doesn't support nonlinear problems");
 
   // Count the number of stages and the number of variables in stage 0.
   int num_vars = p.num_vars();
-  ASLSuffixPtr stage_suffix = p.suffixes(suf::VAR).Find("stage");
   int num_stage0_vars = num_vars;
   int num_stages = 1;
-  if (stage_suffix && stage_suffix->has_values()) {
+  IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage");
+  if (stage_suffix) {
     num_stage0_vars = 0;
     for (int i = 0; i < num_vars; ++i) {
-      int stage_plus_1 = stage_suffix->int_value(i);
+      int stage_plus_1 = stage_suffix.value(i);
       if (stage_plus_1 > 0)
         num_stages = std::max(stage_plus_1, num_stages);
       else
@@ -254,23 +264,34 @@ void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
   if (num_stages > 2)
     throw Error("SMPS writer doesn't support problems with more than 2 stages");
 
+  std::string smps_basename = p.name();
+  std::string::size_type ext_pos = smps_basename.rfind('.');
+  if (ext_pos != std::string::npos)
+    smps_basename.resize(ext_pos);
+
+   // TODO: skip objective names
+  SMPSNameReader var_names(p.num_vars()), con_names(p.num_algebraic_cons());
+  var_names.Read(smps_basename + ".col");
+  con_names.Read(smps_basename + ".row");
+  // TODO: check that the number of names is correct
+
   int num_cons = p.num_algebraic_cons();
   int num_stage0_cons = num_cons;
   int num_core_vars = num_vars, num_core_cons = num_cons;
   var_info.resize(num_vars);
   con_info.resize(num_cons);
   scenarios.clear();
-  if (stage_suffix && stage_suffix->has_values()) {
+  if (stage_suffix) {
     std::map<std::string, int> scenario_indices;
     int stage0_var_count = 0;
     std::map<std::string, int> stage1_vars;
     for (int i = 0; i < num_vars; ++i) {
-      int stage = stage_suffix->int_value(i) - 1;
+      int stage = stage_suffix.value(i) - 1;
       VarConInfo &info = var_info[i];
       if (stage > 0) {
         // Split the name into scenario and the rest and merge variables that
         // only differ by scenario into the same variable.
-        std::string name = p.var_name(i);
+        std::string name = var_names.name(i);
         std::string scenario = ExtractScenario(name);
         info.core_index = FindOrInsert(stage1_vars, name,
           static_cast<int>(num_stage0_vars + stage1_vars.size()));
@@ -285,22 +306,20 @@ void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
 
     // Compute stage of each constraint as a maximum of stages of
     // variables in it.
-    ASLProblem::ColMatrix matrix = p.col_matrix();
     std::vector<int> con_stages(num_cons);
     std::map<std::string, int> stage1_cons;
     for (int j = 0; j < num_vars; ++j) {
-      int stage = stage_suffix->int_value(j) - 1;
+      int stage = stage_suffix.value(j) - 1;
       if (stage <= 0) continue;
       // Update stages of all constraints containing this variable.
-      for (int k = matrix.col_start(j),
-          end = matrix.col_start(j + 1); k != end; ++k) {
-        int con_index = matrix.row_index(k);
+      for (int k = p.col_start(j), end = p.col_start(j + 1); k != end; ++k) {
+        int con_index = p.row_index(k);
         int &con_stage = con_stages[con_index];
         if (stage > con_stage) {
           if (con_stage == 0) {
             // Split the name into scenario and the rest and merge constraints
             // that only differ by scenario into the same constraint.
-            std::string name = p.con_name(con_index);
+            std::string name = con_names.name(con_index);
             std::string scenario = ExtractScenario(name);
             VarConInfo &info = con_info[con_index];
             info.core_index = FindOrInsert(
@@ -325,7 +344,7 @@ void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
       VarConInfo &info = con_info[i];
       // A constraint with a name which only differs in scenario from a
       // name of some other stage 1 constraint, is also a stage 1 constraint.
-      std::string name = p.con_name(i);
+      std::string name = con_names.name(i);
       std::string scenario = ExtractScenario(name, false);
       std::map<std::string, int>::iterator stage1_con =
           scenario.empty() ? stage1_cons.end() : stage1_cons.find(name);
@@ -357,14 +376,9 @@ void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
   }
 
   std::vector<CoreConInfo> core_cons(num_core_cons);
-  SplitConRHSIntoScenarios(p, core_cons);
+  SplitConRHSIntoScenarios(p, core_cons, con_names);
   std::vector<CoreVarInfo> core_vars(num_core_vars);
   SplitVarBoundsIntoScenarios(p, core_vars);
-
-  std::string smps_basename = p.name();
-  std::string::size_type ext_pos = smps_basename.rfind('.');
-  if (ext_pos != std::string::npos)
-    smps_basename.resize(ext_pos);
 
   // Write the .tim file.
   {
@@ -394,14 +408,17 @@ void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
     std::vector<double> core_obj_coefs(num_core_vars);
     std::vector<double> sum_core_obj_coefs;
     if (p.num_objs() != 0) {
-      LinearObjExpr obj_expr = p.obj(0).linear_expr();
+      Problem::Objective obj = p.obj(0);
+      const LinearExpr &obj_expr = obj.linear_expr();
+      if (obj.nonlinear_expr())
+        throw Error("SMPS writer doesn't support nonlinear problems");
       int reference_var_index = 0;
       int core_reference_var_index = 0;
       if (probabilities.size() != 1) {
         // Deduce probabilities from objective coefficients.
-        for (LinearObjExpr::iterator
+        for (LinearExpr::iterator
              i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
-          int stage = stage_suffix->int_value(i->var_index()) - 1;
+          int stage = stage_suffix.value(i->var_index()) - 1;
           if (stage > 0) {
             reference_var_index = i->var_index();
             core_reference_var_index = var_info[i->var_index()].core_index;
@@ -409,7 +426,7 @@ void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
           }
         }
         sum_core_obj_coefs.resize(num_core_vars);
-        for (LinearObjExpr::iterator
+        for (LinearExpr::iterator
              i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
           const VarConInfo &info = var_info[i->var_index()];
           if (info.core_index == core_reference_var_index)
@@ -423,30 +440,27 @@ void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
       }
 
       // Compute objective coefficients in the core problem.
-      for (LinearObjExpr::iterator
+      for (LinearExpr::iterator
            i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
         const VarConInfo &info = var_info[i->var_index()];
         if (info.scenario_index == 0) {
           double coef = i->coef();
-          if (stage_suffix && stage_suffix->has_values() &&
-              stage_suffix->int_value(i->var_index()) - 1 > 0) {
+          if (stage_suffix && stage_suffix.value(i->var_index()) - 1 > 0)
             coef /= probabilities[0];
-          }
           core_obj_coefs[info.core_index] = coef;
         }
         // Check probabilities deduced using other variables.
-        if (probabilities.size() != 1 &&
-            stage_suffix && stage_suffix->has_values() &&
-            stage_suffix->int_value(i->var_index()) - 1 > 0) {
+        if (probabilities.size() != 1 && stage_suffix &&
+            stage_suffix.value(i->var_index()) - 1 > 0) {
           double ref_prob = probabilities[info.scenario_index];
           double prob = i->coef() / sum_core_obj_coefs[info.core_index];
           double prob_tolerance = 1e-5;
           if (std::abs(prob - ref_prob) > prob_tolerance) {
             throw Error("Probability deduced using variable {} ({}) "
                 "is inconsistent with the one deduced using variable {} ({})",
-                    p.var_name(reference_var_index),
+                    var_names.name(reference_var_index),
                     probabilities[info.scenario_index],
-                    p.var_name(i->var_index()), prob);
+                    var_names.name(i->var_index()), prob);
           }
         }
       }
@@ -459,11 +473,12 @@ void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
       writer.Write("    RHS1      R{:<7}  {}\n", i + 1, core_cons[i].rhs);
 
     writer.Write("BOUNDS\n");
+    double inf = std::numeric_limits<double>::infinity();
     for (int i = 0; i < num_core_vars; ++i) {
       double lb = core_vars[i].lb, ub = core_vars[i].ub;
       if (lb != 0)
         writer.Write(" LO BOUND1      C{:<7}  {}\n", i + 1, lb);
-      if (ub < Infinity)
+      if (ub < inf)
         writer.Write(" UP BOUND1      C{:<7}  {}\n", i + 1, ub);
     }
 
@@ -508,4 +523,4 @@ void SMPSWriter::DoSolve(ASLProblem &p, SolutionHandler &) {
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new SMPSWriter()); }
-}  // namespace ampl
+}  // namespace mp
