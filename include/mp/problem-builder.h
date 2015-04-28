@@ -440,11 +440,10 @@ class ProblemBuilderToNLAdapter {
     funcs_.resize(h.num_funcs);
 
     // Add variables.
-    int num_integer_vars = h.num_integer_vars();
-    for (int i = 0; i < num_integer_vars; ++i)
-      builder_.AddVar(0, 0, var::INTEGER);
-    for (int i = num_integer_vars; i < h.num_vars; ++i)
+    for (int i = 0; i < num_continuous_vars_; ++i)
       builder_.AddVar(0, 0, var::CONTINUOUS);
+    for (int i = num_continuous_vars_; i < h.num_vars; ++i)
+      builder_.AddVar(0, 0, var::INTEGER);
 
     // Update the number of objectives if necessary.
     int num_objs = 0;
