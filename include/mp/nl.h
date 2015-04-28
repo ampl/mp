@@ -908,6 +908,19 @@ class NLHandler {
   void EndInput() {}
 };
 
+/**
+  A basic name handler that ignores all input.
+  NameHandler can be used as a base class for other handlers.
+ */
+class NameHandler {
+ public:
+  /**
+    Receives notification of a name.
+    The *name* argument is a name and it is not zero terminated.
+   */
+  void OnName(fmt::StringRef name) { internal::Unused(&name); }
+};
+
 namespace internal {
 
 class ReaderBase {
@@ -1951,6 +1964,10 @@ void NLReader<Reader, Handler>::Read() {
   handler_.EndInput();
 }
 
+// Converts file size to mmap size.
+std::size_t ConvertFileToMmapSize(fmt::LongLong file_size,
+                                  fmt::StringRef filename);
+
 // An .nl file reader.
 template <typename File = fmt::File>
 class NLFileReader {
@@ -1990,13 +2007,7 @@ class NLFileReader {
 template <typename File>
 void NLFileReader<File>::Open(fmt::StringRef filename) {
   file_ = File(filename, fmt::File::RDONLY);
-  fmt::LongLong file_size = file_.size();
-  assert(file_size >= 0);
-  fmt::ULongLong unsigned_file_size = file_size;
-  // Check if file size fits in size_t.
-  size_ = static_cast<std::size_t>(unsigned_file_size);
-  if (size_ != unsigned_file_size)
-    throw Error("file {} is too big", filename);
+  size_ = ConvertFileToMmapSize(file_.size(), filename);
   // Round size up to a multiple of page_size. The remainded of the last
   // partial page is zero-filled both on POSIX and Windows so the resulting
   // memory buffer is zero terminated.
@@ -2020,6 +2031,41 @@ void ReadBinary(TextReader &reader, const NLHeader &header,
   BinaryReader<InputConverter> bin_reader(reader);
   NLReader<BinaryReader<InputConverter>, Handler>(
         bin_reader, header, handler, flags).Read();
+}
+
+template <typename File = fmt::File>
+class NameReader {
+ private:
+  MemoryMappedFile<File> mapped_file_;
+
+ public:
+  /**
+    Reads names from the file *filename* sending the names to the *handler*
+    object. Each name in the input file should be on a separate line ended
+    with a newline character ('\n').
+  */
+  template <typename NameHandler>
+  void Read(fmt::StringRef filename, NameHandler &handler);
+};
+
+template <typename File>
+template <typename NameHandler>
+void NameReader<File>::Read(fmt::StringRef filename, NameHandler &handler) {
+  File file(filename, fmt::File::RDONLY);
+  std::size_t size = ConvertFileToMmapSize(file.size(), filename);
+  mapped_file_.map(file, size);
+  int line = 1;
+  const char *start = mapped_file_.start();
+  const char *end = start + size;
+  for (const char *ptr = start; ptr != end; ++ptr) {
+    if (*ptr == '\n') {
+      handler.OnName(fmt::StringRef(start, ptr - start));
+      start = ptr + 1;
+      ++line;
+    }
+  }
+  if (start != end)
+    throw ReadError(filename, line, end - start + 1, "missing newline");
 }
 }  // namespace internal
 
