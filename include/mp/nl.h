@@ -83,10 +83,10 @@ class ReadError : public Error {
   /** Returns the name of the file where error occurred. */
   const std::string &filename() const { return filename_; }
 
-  /** Returns the line number where error occurred. */
+  /** Returns the line number where error occurred, starting from 1. */
   int line() const { return line_; }
 
-  /** Returns the column number where error occurred. */
+  /** Returns the column number where error occurred, starting from 1. */
   int column() const { return column_; }
 };
 
