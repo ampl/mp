@@ -39,42 +39,6 @@ inline bool IsZero(NumericExpr e) {
   NumericConstant c = Cast<NumericConstant>(e);
   return c && c.value() == 0;
 }
-
-// Expression converter.
-// Converts logical count expressions to corresponding relational expressions.
-// For example "atleast" is converted to "<=".
-template <typename Impl, typename Result, typename LResult = Result>
-class ExprConverter : public ExprVisitor<Impl, Result, LResult> {
- private:
-  std::vector< ::expr> exprs_;
-
-  RelationalExpr Convert(LogicalCountExpr e, expr::Kind kind) {
-    exprs_.push_back(*e.impl());
-    ::expr *result = &exprs_.back();
-    result->op = reinterpret_cast<efunc*>(opcode(kind));
-    return Expr::Create<RelationalExpr>(result);
-  }
-
- public:
-  LResult VisitAtLeast(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitLE(Convert(e, expr::LE)));
-  }
-  LResult VisitAtMost(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitGE(Convert(e, expr::GE)));
-  }
-  LResult VisitExactly(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitEQ(Convert(e, expr::EQ)));
-  }
-  LResult VisitNotAtLeast(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitGT(Convert(e, expr::GT)));
-  }
-  LResult VisitNotAtMost(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitLT(Convert(e, expr::LT)));
-  }
-  LResult VisitNotExactly(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitNE(Convert(e, expr::NE)));
-  }
-};
 }  // namespace asl
 }  // namespace mp
 

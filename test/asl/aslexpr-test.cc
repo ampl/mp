@@ -780,37 +780,6 @@ TestLResult MakeResult(asl::LogicalExpr e) {
   return result;
 }
 
-struct TestConverter : asl::ExprConverter<TestConverter, void, TestLResult> {
-  TestLResult VisitLT(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitLE(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitEQ(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitGE(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitGT(RelationalExpr e) { return MakeResult(e); }
-  TestLResult VisitNE(RelationalExpr e) { return MakeResult(e); }
-};
-
-void CheckConversion(ex::Kind from_kind, ex::Kind to_kind) {
-  expr lhs = RawExpr(opcode(ex::NUMBER)), rhs = lhs;
-  expr raw = RawExpr(opcode(from_kind));
-  raw.L.e = &lhs;
-  raw.R.e = &rhs;
-  TestConverter converter;
-  RelationalExpr expr =
-      Cast<RelationalExpr>(converter.Visit(::MakeExpr<LogicalExpr>(&raw)).expr);
-  EXPECT_EQ(to_kind, expr.kind());
-  EXPECT_EQ(::MakeExpr(&lhs), expr.lhs());
-  EXPECT_EQ(::MakeExpr(&rhs), expr.rhs());
-}
-
-TEST_F(ExprTest, ConvertLogicalCountToRelational) {
-  CheckConversion(ex::ATLEAST, ex::LE);
-  CheckConversion(ex::ATMOST, ex::GE);
-  CheckConversion(ex::EXACTLY, ex::EQ);
-  CheckConversion(ex::NOT_ATLEAST, ex::GT);
-  CheckConversion(ex::NOT_ATMOST, ex::LT);
-  CheckConversion(ex::NOT_EXACTLY, ex::NE);
-}
-
 TEST_F(ExprTest, LinearTerm) {
   TestGrad g = {0, 11, 22};
   LinearExpr< LinearTerm<TestGrad> > expr(g);
