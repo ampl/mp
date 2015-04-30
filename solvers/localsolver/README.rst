@@ -65,6 +65,7 @@ Value   Message
   100   feasible solution
   200   infeasible problem
   400   limit
+  600   interrupted
 =====   =================================================
 
 ------------
