@@ -799,7 +799,8 @@ class ColProblemBuilder : public ProblemBuilderToNLAdapter<ColProblem> {
   typedef ProblemBuilderToNLAdapter<ColProblem> Base;
 
  public:
-  explicit ColProblemBuilder(ColProblem &p) : ProblemBuilderToNLAdapter(p) {}
+  explicit ColProblemBuilder(ColProblem &p)
+    : ProblemBuilderToNLAdapter<ColProblem>(p) {}
 
   void OnHeader(const NLHeader &h) {
     Base::OnHeader(h);
