@@ -87,6 +87,8 @@ TEST(SMPSWriterTest, SMPSOutput) {
       EXPECT_FILES_EQ(
           std::string(path) + EXTS[j], std::string("test") + EXTS[j]);
     }
+    std::remove("test.col");
+    std::remove("test.row");
   }
   EXPECT_EQ(10 * 3, count);
 }
