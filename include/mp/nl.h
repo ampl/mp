@@ -908,19 +908,6 @@ class NLHandler {
   void EndInput() {}
 };
 
-/**
-  A basic name handler that ignores all input.
-  NameHandler can be used as a base class for other handlers.
- */
-class NameHandler {
- public:
-  /**
-    Receives notification of a name.
-    The *name* argument is a name and it is not zero terminated.
-   */
-  void OnName(fmt::StringRef name) { internal::Unused(&name); }
-};
-
 namespace internal {
 
 class ReaderBase {
@@ -2033,17 +2020,21 @@ void ReadBinary(TextReader &reader, const NLHeader &header,
         bin_reader, header, handler, flags).Read();
 }
 
+// A name file reader.
 template <typename File = fmt::File>
 class NameReader {
  private:
   MemoryMappedFile<File> mapped_file_;
 
  public:
-  /**
-    Reads names from the file *filename* sending the names to the *handler*
-    object. Each name in the input file should be on a separate line ended
-    with a newline character ('\n').
-  */
+  // Reads names from the file *filename* sending the names to the *handler*
+  // object by calling ``handler.OnName(name)``. The name argument to
+  // ``OnName`` is a ``fmt::StringRef`` object and the string it contains
+  // is not zero terminated.
+  // Each name in the input file should be on a separate line ended with a
+  // newline character ('\n').
+  void OnName(fmt::StringRef name) { internal::Unused(&name); }
+
   template <typename NameHandler>
   void Read(fmt::StringRef filename, NameHandler &handler);
 };
