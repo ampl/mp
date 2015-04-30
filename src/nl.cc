@@ -74,6 +74,17 @@ fmt::Writer &mp::operator<<(fmt::Writer &w, const NLHeader &h) {
   return w;
 }
 
+std::size_t mp::internal::ConvertFileToMmapSize(
+    fmt::LongLong file_size, fmt::StringRef filename) {
+  assert(file_size >= 0);
+  fmt::ULongLong unsigned_file_size = file_size;
+  // Check if file size fits in size_t.
+  std::size_t size = static_cast<std::size_t>(unsigned_file_size);
+  if (size != unsigned_file_size)
+    throw Error("file {} is too big", filename);
+  return size;
+}
+
 mp::internal::ReaderBase::ReaderBase(fmt::StringRef data, fmt::StringRef name)
 : ptr_(data.c_str()), start_(ptr_), end_(ptr_ + data.size()),
   token_(ptr_), name_(name) {}
