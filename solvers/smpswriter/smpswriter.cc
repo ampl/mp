@@ -76,17 +76,25 @@ namespace mp {
 
 class SMPSNameReader {
  private:
+  int num_names_;
   internal::NameReader<> reader_;
   std::vector<fmt::StringRef> names_;
 
  public:
-  explicit SMPSNameReader(int num_names) { names_.reserve(num_names); }
+  explicit SMPSNameReader(int num_names) : num_names_(num_names) {
+    names_.reserve(num_names);
+  }
 
   fmt::StringRef name(int index) const { return names_[index]; }
 
   void OnName(fmt::StringRef name) { names_.push_back(name); }
 
-  void Read(fmt::StringRef filename) { reader_.Read(filename, *this); }
+  void Read(fmt::StringRef filename) {
+    reader_.Read(filename, *this);
+    std::size_t num_names = num_names_;
+    if (names_.size() != num_names)
+      throw mp::Error("expected {} names in {}", num_names_, filename);
+  }
 };
 
 class FileWriter {
@@ -269,19 +277,17 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
   if (ext_pos != std::string::npos)
     smps_basename.resize(ext_pos);
 
-   // TODO: skip objective names
-  SMPSNameReader var_names(p.num_vars()), con_names(p.num_algebraic_cons());
-  var_names.Read(smps_basename + ".col");
-  con_names.Read(smps_basename + ".row");
-  // TODO: check that the number of names is correct
-
   int num_cons = p.num_algebraic_cons();
   int num_stage0_cons = num_cons;
   int num_core_vars = num_vars, num_core_cons = num_cons;
   var_info.resize(num_vars);
   con_info.resize(num_cons);
   scenarios.clear();
+  SMPSNameReader var_names(p.num_vars());
+  SMPSNameReader con_names(p.num_algebraic_cons() + p.num_objs());
   if (stage_suffix) {
+    var_names.Read(smps_basename + ".col");
+    con_names.Read(smps_basename + ".row");
     std::map<std::string, int> scenario_indices;
     int stage0_var_count = 0;
     std::map<std::string, int> stage1_vars;
