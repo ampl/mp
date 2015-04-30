@@ -46,6 +46,12 @@ This section describes the C++ API of an NL reader which is
 .. doxygenstruct:: mp::NLHeader
    :members:
 
+.. doxygenclass:: mp::ReadError
+   :members:
+
+.. doxygenclass:: mp::BinaryReadError
+   :members:
+
 .. doxygenenum:: mp::arith::Kind
 
 .. doxygenenumvalue:: mp::READ_BOUNDS_FIRST
