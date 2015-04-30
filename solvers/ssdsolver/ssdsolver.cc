@@ -61,21 +61,21 @@ SSDSolver::SSDSolver() : ASLSolver("ssdsolver", 0, SSDSOLVER_VERSION),
 }
 
 void SSDSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
-  Function ssd_uniform;
+  asl::Function ssd_uniform;
   int num_scenarios = p.num_logical_cons();
   int num_vars = p.num_vars();
   SSDExtractor extractor(num_scenarios, num_vars);
   for (int i = 0; i < num_scenarios; ++i) {
-    LogicalExpr logical_expr = p.logical_con_expr(i);
-    RelationalExpr rel_expr = Cast<RelationalExpr>(logical_expr);
+    asl::LogicalExpr logical_expr = p.logical_con_expr(i);
+    asl::RelationalExpr rel_expr = asl::Cast<asl::RelationalExpr>(logical_expr);
     if (!rel_expr || rel_expr.kind() != expr::NE ||
-        Cast<NumericConstant>(rel_expr.rhs()).value() != 0) {
+        asl::Cast<asl::NumericConstant>(rel_expr.rhs()).value() != 0) {
       throw MakeUnsupportedError(str(logical_expr.kind()));
     }
-    CallExpr call = Cast<CallExpr>(rel_expr.lhs());
+    asl::CallExpr call = asl::Cast<asl::CallExpr>(rel_expr.lhs());
     if (!call)
       throw MakeUnsupportedError(str(rel_expr.lhs().kind()));
-    Function f = call.function();
+    asl::Function f = call.function();
     if (f == ssd_uniform)
       ; // Do nothing.
     else if (!ssd_uniform && std::strcmp(f.name(), "ssd_uniform") == 0)
