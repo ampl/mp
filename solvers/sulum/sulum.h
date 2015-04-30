@@ -24,12 +24,13 @@
 #define MP_SOLVERS_SULUM_H_
 
 #include <sulumc.h>
-#include "asl/aslsolver.h"
+#include "mp/problem.h"
+#include "mp/solver.h"
 
 namespace mp {
 
 // Sulum solver.
-class SulumSolver : public ASLSolver {
+class SulumSolver : public SolverImpl<ColProblem> {
  private:
   SlmEnv_t env_;
   SlmModel_t model_;
@@ -37,12 +38,11 @@ class SulumSolver : public ASLSolver {
   class IntSulumOption;
   class DblSulumOption;
 
- protected:
-  void DoSolve(ASLProblem &p, SolutionHandler &sh);
-
  public:
   SulumSolver();
   ~SulumSolver();
+
+  void Solve(ColProblem &p, SolutionHandler &sh);
 };
 }
 

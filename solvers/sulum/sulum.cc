@@ -26,8 +26,6 @@
 
 #include <limits>
 
-using namespace mp::asl;
-
 namespace {
 template <typename Param>
 struct OptionInfo {
@@ -112,7 +110,7 @@ class SulumSolver::DblSulumOption : public TypedSolverOption<double> {
 };
 
 SulumSolver::SulumSolver()
-  : ASLSolver("sulum", "", 20130908), env_(), model_() {
+  : SolverImpl("sulum", "", 20130908), env_(), model_() {
   int major = 0, minor = 0, interim = 0;
   SlmGetSulumVersion(&major, &minor, &interim);
   std::string version = fmt::format("sulum {}.{}.{}", major, minor, interim);
@@ -154,30 +152,40 @@ SulumSolver::~SulumSolver() {
   SlmFreeEnv(&env_);
 }
 
-void SulumSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
+void SulumSolver::Solve(ColProblem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
-  if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0 ||
-      p.num_logical_cons() != 0) {
+  if (p.has_nonlinear_cons() || p.num_logical_cons() != 0)
     throw Error("Sulum doesn't support nonlinear problems");
-  }
 
   // Convert variables.
   int num_vars = p.num_vars();
+  std::vector<SlmVarType> var_types;
   std::vector<SlmBoundKey> var_bound_keys(num_vars);
+  std::vector<double> var_lb(num_vars), var_ub(num_vars);
   for (int i = 0; i < num_vars; ++i) {
-    ASLProblem::Variable var = p.var(i);
+    Problem::Variable var = p.var(i);
+    if (var.type() == mp::var::INTEGER) {
+      if (var_types.empty())
+        var_types.resize(num_vars);
+      var_types[i] = var.lb() == 0 && var.ub() == 1 ?
+            SlmVarTypeBin : SlmVarTypeInt;
+    }
     var_bound_keys[i] = GetBoundKey(var.lb(), var.ub());
+    var_lb[i] = var.lb();
+    var_ub[i] = var.ub();
   }
 
   std::vector<double> obj_coefs(num_vars);
   if (p.num_objs() > 0) {
     // Convert objective.
-    ASLProblem::Objective obj = p.obj(0);
+    Problem::Objective obj = p.obj(0);
+    if (obj.nonlinear_expr())
+      throw Error("Sulum doesn't support nonlinear problems");
     Check(SlmSetIntParam(model_, SlmPrmIntObjSense,
         obj.type() == obj::MIN ? SlmObjSenseMin : SlmObjSenseMax));
-    LinearObjExpr expr = obj.linear_expr();
-    for (LinearObjExpr::iterator
+    const LinearExpr &expr = obj.linear_expr();
+    for (LinearExpr::iterator
         i = expr.begin(), end = expr.end(); i != end; ++i) {
       obj_coefs[i->var_index()] = i->coef();
     }
@@ -186,33 +194,21 @@ void SulumSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   // Convert constraints.
   int num_cons = p.num_algebraic_cons();
   std::vector<SlmBoundKey> con_bound_keys(num_cons);
+  std::vector<double> con_lb, con_ub;
   for (int i = 0; i < num_cons; ++i) {
-    ASLProblem::AlgebraicCon con = p.algebraic_con(i);
+    Problem::AlgebraicCon con = p.algebraic_con(i);
     con_bound_keys[i] = GetBoundKey(con.lb(), con.ub());
   }
 
-  // Convert constraint matrix.
-  ASLProblem::ColMatrix matrix = p.col_matrix();
-  std::vector<int> col_starts;
-  col_starts.reserve(num_vars + 1);
-  col_starts.assign(matrix.col_starts(), matrix.col_starts() + num_vars);
-  col_starts.push_back(p.num_con_nonzeros());
+  // Create Sulum problem.
   Check(SlmSetAllData(model_, num_cons, num_vars, 0,
-      con_bound_keys.data(), p.con_lb(), p.con_ub(),
-      var_bound_keys.data(), obj_coefs.data(), p.var_lb(), p.var_ub(),
-      1, &col_starts[0], matrix.row_indices(), matrix.values()));
+      con_bound_keys.data(), con_lb.data(), con_ub.data(),
+      var_bound_keys.data(), obj_coefs.data(), var_lb.data(), var_ub.data(),
+      1, p.col_starts(), p.row_indices(), p.values()));
 
   // Set up integer variables.
-  if (int num_int_vars = p.num_integer_vars()) {
-    std::vector<SlmVarType> var_types(num_int_vars, SlmVarTypeInt);
-    for (int i = p.num_continuous_vars(), j = 0; i < num_vars; ++i, ++j) {
-      ASLProblem::Variable var = p.var(i);
-      if (var.lb() == 0 && var.ub() == 1)
-        var_types[j] = SlmVarTypeBin;
-    }
-    SlmSetTypeVarsFromTo(model_,
-        p.num_continuous_vars(), num_vars, &var_types[0]);
-  }
+  if (!var_types.empty())
+    SlmSetTypeVars(model_, &var_types[0]);
 
   double setup_time = GetTimeAndReset(time);
 
