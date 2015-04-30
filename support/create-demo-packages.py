@@ -133,7 +133,7 @@ def prepare_unix_package(amplcml, ampl_demo_dir, kestrel, system):
   # systems that don't have ODBC installed.
   url = ampltabl_url + 'ampltabl.{}.tgz'.format(ampltabl_sys[system])
   with tarfile.open(retrieve_cached(url), 'r:gz') as f:
-    writefile(f, os.path.join(ampl_demo_dir, 'ampltabl.dll'))
+    f.extractall(ampl_demo_dir)
 
 def package(basename, archive_format, package_dir):
   with timer.print_time('Creating', basename, 'package'):
