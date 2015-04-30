@@ -27,6 +27,8 @@
 
 using ::testing::StrictMock;
 
+namespace expr = mp::expr;
+
 // IsSame<T, U>::VALUE is true iff T and U are the same type.
 template <typename T, typename U>
 struct IsSame {
@@ -184,7 +186,7 @@ class ExprVisitorTest : public ::testing::Test {
   }
 
   // Makes a test iterated expression.
-  mp::IteratedExpr MakeIterated(mp::expr::Kind kind) {
+  mp::IteratedExpr MakeIterated(expr::Kind kind) {
     auto builder = factory_.BeginIterated(kind, 1);
     builder.AddArg(var_);
     return factory_.EndIterated(builder);
@@ -253,7 +255,7 @@ struct MockUnaryVisitor :
 
 #define TEST_UNARY(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
-    auto e = factory_.MakeUnary(mp::expr::KIND, var_); \
+    auto e = factory_.MakeUnary(expr::KIND, var_); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::NumericExpr base = e; \
     visitor_.Visit(base); \
@@ -293,7 +295,7 @@ struct MockBinaryVisitor :
 
 #define TEST_BINARY(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
-    auto e = factory_.MakeBinary(mp::expr::KIND, var_, var_); \
+    auto e = factory_.MakeBinary(expr::KIND, var_, var_); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::NumericExpr base = e; \
     visitor_.Visit(base); \
@@ -323,7 +325,7 @@ struct MockBinaryFuncVisitor :
 #define TEST_BINARY_FUNC(KIND, name) \
   TEST_BINARY(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name##Func) { \
-    auto e = factory_.MakeBinary(mp::expr::KIND, var_, var_); \
+    auto e = factory_.MakeBinary(expr::KIND, var_, var_); \
     mp::NumericExpr base = e; \
     StrictMock<MockBinaryFuncVisitor> binary_visitor; \
     EXPECT_CALL(binary_visitor, VisitBinaryFunc(e)); \
@@ -372,7 +374,7 @@ struct MockVarArgVisitor :
 
 #define TEST_ITERATED(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
-    auto e = MakeIterated(mp::expr::KIND); \
+    auto e = MakeIterated(expr::KIND); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::NumericExpr base = e; \
     visitor_.Visit(base); \
@@ -382,7 +384,7 @@ struct MockVarArgVisitor :
 #define TEST_VARARG(KIND, name) \
   TEST_ITERATED(KIND, name) \
   TEST_F(ExprVisitorTest, VisitVarArg##name) { \
-    auto e = MakeIterated(mp::expr::KIND); \
+    auto e = MakeIterated(expr::KIND); \
     StrictMock<MockVarArgVisitor> vararg_visitor; \
     EXPECT_CALL(vararg_visitor, VisitVarArg(e)); \
     mp::NumericExpr base = e; \
@@ -426,7 +428,7 @@ struct MockBinaryLogicalVisitor :
 
 #define TEST_BINARY_LOGICAL(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
-    auto e = factory_.MakeBinaryLogical(mp::expr::KIND, false_, false_); \
+    auto e = factory_.MakeBinaryLogical(expr::KIND, false_, false_); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::LogicalExpr base = e; \
     visitor_.Visit(base); \
@@ -448,7 +450,7 @@ struct MockRelationalVisitor :
 
 #define TEST_RELATIONAL(name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
-    auto e = factory_.MakeRelational(mp::expr::name, var_, var_); \
+    auto e = factory_.MakeRelational(expr::name, var_, var_); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::LogicalExpr base = e; \
     visitor_.Visit(base); \
@@ -473,7 +475,7 @@ struct MockLogicalCountVisitor :
 
 #define TEST_LOGICAL_COUNT(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
-    auto e = factory_.MakeLogicalCount(mp::expr::KIND, var_, MakeCount()); \
+    auto e = factory_.MakeLogicalCount(expr::KIND, var_, MakeCount()); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
     mp::LogicalExpr base = e; \
     visitor_.Visit(base); \
@@ -506,7 +508,7 @@ struct MockIteratedLogicalVisitor :
 
 #define TEST_ITERATED_LOGICAL(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
-    auto builder = factory_.BeginIteratedLogical(mp::expr::KIND, 1); \
+    auto builder = factory_.BeginIteratedLogical(expr::KIND, 1); \
     builder.AddArg(false_); \
     auto e = factory_.EndIteratedLogical(builder); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
@@ -523,7 +525,7 @@ TEST_ITERATED_LOGICAL(FORALL, ForAll)
 
 #define TEST_PAIRWISE(KIND, name) \
   TEST_F(ExprVisitorTest, Visit##name) { \
-    auto builder = factory_.BeginPairwise(mp::expr::KIND, 1); \
+    auto builder = factory_.BeginPairwise(expr::KIND, 1); \
     builder.AddArg(var_); \
     auto e = factory_.EndPairwise(builder); \
     EXPECT_CALL(visitor_, Visit##name(e)); \
@@ -555,4 +557,43 @@ TEST_F(ExprVisitorTest, InvalidExpr) {
   auto e2 = f.MakeLogicalConstant(false);
   std::fill(buffer, buffer + sizeof(buffer), 0);
   EXPECT_ASSERT(visitor_.Visit(e2), "invalid logical expression");
+}
+
+struct MockConverter : mp::ExprConverter<MockConverter, void, TestLResult> {
+  MOCK_METHOD1(VisitLT, TestLResult (RelationalExpr e));
+  MOCK_METHOD1(VisitLE, TestLResult (RelationalExpr e));
+  MOCK_METHOD1(VisitEQ, TestLResult (RelationalExpr e));
+  MOCK_METHOD1(VisitGE, TestLResult (RelationalExpr e));
+  MOCK_METHOD1(VisitGT, TestLResult (RelationalExpr e));
+  MOCK_METHOD1(VisitNE, TestLResult (RelationalExpr e));
+};
+
+MATCHER_P2(IsRelational, kind, expr, "") {
+  return arg.kind() == kind &&
+      arg.lhs() == expr.lhs() && arg.rhs() == expr.rhs();
+}
+
+TEST(ExprConverterTest, ConvertLogicalCountToRelational) {
+  mp::ExprFactory f;
+  auto lhs = f.MakeNumericConstant(42);
+  auto rhs = f.EndCount(f.BeginCount(0));
+  MockConverter converter;
+  auto e = f.MakeLogicalCount(expr::ATLEAST, lhs, rhs);
+  EXPECT_CALL(converter, VisitLE(IsRelational(expr::LE, e)));
+  converter.Visit(e);
+  e = f.MakeLogicalCount(expr::ATMOST, lhs, rhs);
+  EXPECT_CALL(converter, VisitGE(IsRelational(expr::GE, e)));
+  converter.Visit(e);
+  e = f.MakeLogicalCount(expr::EXACTLY, lhs, rhs);
+  EXPECT_CALL(converter, VisitEQ(IsRelational(expr::EQ, e)));
+  converter.Visit(e);
+  e = f.MakeLogicalCount(expr::NOT_ATLEAST, lhs, rhs);
+  EXPECT_CALL(converter, VisitGT(IsRelational(expr::GT, e)));
+  converter.Visit(e);
+  e = f.MakeLogicalCount(expr::NOT_ATMOST, lhs, rhs);
+  EXPECT_CALL(converter, VisitLT(IsRelational(expr::LT, e)));
+  converter.Visit(e);
+  e = f.MakeLogicalCount(expr::NOT_EXACTLY, lhs, rhs);
+  EXPECT_CALL(converter, VisitNE(IsRelational(expr::NE, e)));
+  converter.Visit(e);
 }
