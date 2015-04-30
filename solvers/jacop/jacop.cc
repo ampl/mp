@@ -179,7 +179,7 @@ void NLToJaCoPConverter::ConvertExpr(
     std::vector<jint> coefs(num_terms);
     jobjectArray vars = CreateVarArray(num_terms);
     int index = 0;
-    for (typename LinearExpr::iterator
+    for (LinearExpr::iterator
         i = linear.begin(), end = linear.end(); i != end; ++i, ++index) {
       coefs[index] = CastToInt(i->coef());
       env_.SetObjectArrayElement(vars, index, vars_[i->var_index()]);
