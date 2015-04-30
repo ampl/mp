@@ -272,7 +272,7 @@ bool InterruptCPLEX(void *aborter) {
 namespace mp {
 
 IlogCPSolver::IlogCPSolver() :
-   SolverImpl("ilogcp", 0, YYYYMMDD, MULTIPLE_SOL | MULTIPLE_OBJ),
+   SolverImpl<Problem>("ilogcp", 0, YYYYMMDD, MULTIPLE_SOL | MULTIPLE_OBJ),
    cp_(env_), cplex_(env_), optimizer_(AUTO) {
   cp_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
   cplex_.setParam(IloCplex::MIPDisplay, 0);

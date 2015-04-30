@@ -113,7 +113,8 @@ class FileWriter {
   FMT_VARIADIC(void, Write, fmt::StringRef)
 };
 
-SMPSWriter::SMPSWriter() : SolverImpl("smpswriter", "SMPSWriter", 20130709) {
+SMPSWriter::SMPSWriter()
+  : SolverImpl<ColProblem>("smpswriter", "SMPSWriter", 20130709) {
   AddSuffix("stage", 0, suf::VAR);
 }
 
