@@ -106,8 +106,12 @@ def build_docs(workdir, travis):
     '''.format(os.path.abspath('.')))
   if p.returncode != 0:
     return p.returncode
-  check_call(['sphinx-build', '-D', 'version=' + get_mp_version(),
-              '-b', 'html', build_dir, repo_dir])
+  # Pass the MP version via environment variables rather than command-line
+  # -D version=value option because the latter doesn't work when version
+  # is used in conf.py.
+  env = os.environ.copy()
+  env['MP_VERSION'] = get_mp_version()
+  check_call(['sphinx-build', '-b', 'html', build_dir, repo_dir], env=env)
   # Push docs to GitHub pages.
   if travis:
     check_call(['git', 'config', '--global', 'user.name', 'amplbot'])

@@ -57,7 +57,7 @@ copyright = u'2015 AMPL Optimization, Inc'
 # built documents.
 #
 # The short X.Y version.
-version = None
+version = os.environ['MP_VERSION']
 
 # The full version, including alpha/beta/rc tags.
 release = '20121105'
