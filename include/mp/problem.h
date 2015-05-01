@@ -489,11 +489,15 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       return Variable(this->problem_, this->index_);
     }
 
-    void set_lb(double lb) { this->problem_->vars_[this->index_].lb = lb; }
-    void set_ub(double ub) { this->problem_->vars_[this->index_].ub = ub; }
+    void set_lb(double lb) const {
+      this->problem_->vars_[this->index_].lb = lb;
+    }
+    void set_ub(double ub) const {
+      this->problem_->vars_[this->index_].ub = ub;
+    }
 
     // Sets the initial value.
-    void set_value(double value) {
+    void set_value(double value) const {
       this->problem_->SetInitialValue(this->index_, value);
     }
   };
@@ -616,7 +620,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
 
     // Sets the lower bound on the constraint.
-    void set_lb(double lb) {
+    void set_lb(double lb) const {
       this->problem_->algebraic_cons_[this->index_].lb = lb;
     }
 
@@ -626,7 +630,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
 
     // Sets the initial dual value.
-    void set_dual(double value) {
+    void set_dual(double value) const {
       this->problem_->SetInitialDualValue(this->index_, value);
     }
 

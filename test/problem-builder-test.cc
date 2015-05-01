@@ -28,6 +28,7 @@
 using mp::NLHeader;
 namespace expr = mp::expr;
 
+using testing::_;
 using testing::Field;
 using testing::Return;
 using testing::StrictMock;
@@ -155,6 +156,11 @@ TEST(NLProblemBuilderTest, Forward) {
     StrictMock<MockProblemBuilder> builder;
     mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
 
+    auto header = mp::NLHeader();
+    header.num_algebraic_cons = 100;
+    EXPECT_CALL(builder, SetInfo(_));
+    adapter.OnHeader(header);
+
     // OnColumnSizes is ignored by default.
     adapter.OnColumnSizes();
 
@@ -163,10 +169,14 @@ TEST(NLProblemBuilderTest, Forward) {
     EXPECT_CALL(var, set_value(4.4));
     adapter.OnInitialValue(33, 4.4);
 
+    // Forwarding initial dual values is delayed till EndInput because
+    // they precede constraints in the NL input.
+    adapter.OnInitialDualValue(55, 6.6);
+
     MockProblemBuilder::AlgebraicCon con;
     EXPECT_CALL(builder, algebraic_con(55)).WillOnce(testing::ReturnRef(con));
     EXPECT_CALL(con, set_dual(6.6));
-    adapter.OnInitialDualValue(55, 6.6);
+    adapter.EndInput();
   }
 
   // Use the same StringRef object in arguments, because StringRef objects
@@ -303,8 +313,11 @@ TEST(NLProblemBuilderTest, SingleObjective) {
 
 TEST(NLProblemBuilderTest, OnVarBounds) {
   StrictMock<MockProblemBuilder> builder;
-  EXPECT_CALL(builder, AddVar(7.7, 8.8, mp::var::INTEGER));
   mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  MockProblemBuilder::MutVariable var;
+  EXPECT_CALL(builder, var(66)).WillOnce(testing::ReturnRef(var));
+  EXPECT_CALL(var, set_lb(7.7));
+  EXPECT_CALL(var, set_ub(8.8));
   adapter.OnVarBounds(66, 7.7, 8.8);
 }
 

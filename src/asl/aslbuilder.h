@@ -302,11 +302,13 @@ class ASLBuilder {
       : builder_(b), index_(index) {}
 
    public:
-    void set_lb(double lb) { builder_->SetVarLB(index_, lb); }
-    void set_ub(double ub) { builder_->SetVarUB(index_, ub); }
+    void set_lb(double lb) const { builder_->SetVarLB(index_, lb); }
+    void set_ub(double ub) const { builder_->SetVarUB(index_, ub); }
 
     // Sets the initial value.
-    void set_value(double value) { builder_->SetInitialValue(index_, value); }
+    void set_value(double value) const {
+      builder_->SetInitialValue(index_, value);
+    }
   };
 
   typedef Variable MutVariable;

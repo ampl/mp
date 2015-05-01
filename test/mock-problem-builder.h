@@ -161,16 +161,16 @@ class MockProblemBuilder {
    public:
     MutVariable() {}
     MutVariable(const MutVariable &) {}
-    MOCK_METHOD1(set_lb, void (double lb));
-    MOCK_METHOD1(set_ub, void (double ub));
-    MOCK_METHOD1(set_value, void (double value));
+    MOCK_CONST_METHOD1(set_lb, void (double lb));
+    MOCK_CONST_METHOD1(set_ub, void (double ub));
+    MOCK_CONST_METHOD1(set_value, void (double value));
   };
 
   MOCK_METHOD1(var, MutVariable &(int var_index));
 
   class AlgebraicCon {
    public:
-    MOCK_METHOD1(set_dual, void (double value));
+    MOCK_CONST_METHOD1(set_dual, void (double value));
   };
 
   MOCK_METHOD1(algebraic_con, AlgebraicCon &(int con_index));

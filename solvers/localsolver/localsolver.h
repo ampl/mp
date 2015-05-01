@@ -239,7 +239,7 @@ class LSProblemBuilder :
     Variable(LSProblemBuilder *b, int index) : builder_(b), index_(index) {}
 
    public:
-    void set_lb(double lb) {
+    void set_lb(double lb) const {
       ls::LSExpression &var = builder_->vars_[index_];
       double inf = std::numeric_limits<double>::infinity();
       if (var.getOperator() == ls::O_Float) {
@@ -251,7 +251,7 @@ class LSProblemBuilder :
       }
     }
 
-    void set_ub(double ub) {
+    void set_ub(double ub) const {
       ls::LSExpression &var = builder_->vars_[index_];
       double inf = std::numeric_limits<double>::infinity();
       if (var.getOperator() == ls::O_Float) {
@@ -263,7 +263,7 @@ class LSProblemBuilder :
       }
     }
 
-    void set_value(double value) {
+    void set_value(double value) const {
       builder_->SetInitialValue(index_, value);
     }
   };

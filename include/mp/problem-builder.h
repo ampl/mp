@@ -529,7 +529,7 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of variable bounds.
   void OnVarBounds(int index, double lb, double ub) {
-    typename ProblemBuilder::MutVariable var = builder_.var(index);
+    const typename ProblemBuilder::MutVariable &var = builder_.var(index);
     var.set_lb(lb);
     var.set_ub(ub);
   }
