@@ -1431,13 +1431,11 @@ struct MockNLReader {
 
   void Read(fmt::StringRef filename, Handler &h, int flags) {
     DoRead(filename, h, flags);
-    EXPECT_CALL(h.builder(), EndBuild());
   }
 };
 
 class SolverAppTest : public ::testing::Test {
  protected:
-  OutputRedirect redir_;
   typedef mp::SolverApp<TestSolver, StrictMock<MockNLReader<> > > App;
   App app_;
 
@@ -1454,8 +1452,6 @@ class SolverAppTest : public ::testing::Test {
   OutputHandler output_handler_;
 
   const std::string &output() const { return output_handler_.output; }
-
-  SolverAppTest() : redir_(stdout) {}
 
   void RedirectOutput() {
     app_.solver().set_output_handler(&output_handler_);
@@ -1634,7 +1630,6 @@ TEST(MultiObjTest, NeedAllObjs) {
     }
   };
 
-  OutputRedirect redir(stdout);
   EXPECT_CALL(app.reader(), DoRead(_, _, _))
     .WillOnce(testing::Invoke(Test::ExpectUseObj0));
   app.Run(Args("test", "testproblem"));
@@ -1664,18 +1659,17 @@ struct TestNLReader {
     header.num_vars = 1;
     header.num_objs = 2;
     auto &builder = adapter.builder();
+    EXPECT_CALL(builder, AddVar(0, 0, mp::var::CONTINUOUS));
     EXPECT_CALL(builder, SetInfo(_));
     adapter.OnHeader(header);
     EXPECT_TRUE(adapter.NeedObj(obj_index));
     EXPECT_FALSE(adapter.NeedObj(!obj_index));
-    EXPECT_CALL(builder, EndBuild());
   }
 };
 
 TEST(ObjNoTest, UseFirstObjByDefault) {
   mp::SolverApp<TestSolver, TestNLReader> app;
   EXPECT_EQ(1, app.solver().GetIntOption("objno"));
-  OutputRedirect redir(stdout);
   app.Run(Args("test", "testproblem"));
 }
 
@@ -1683,7 +1677,6 @@ TEST(ObjNoTest, UseSecondObj) {
   mp::SolverApp<TestSolver, TestNLReader> app;
   app.solver().SetIntOption("objno", 2);
   app.reader().obj_index = 1;
-  OutputRedirect redir(stdout);
   app.Run(Args("test", "testproblem"));
 }
 
@@ -1700,6 +1693,5 @@ struct TestNLReader2 {
 TEST(ObjNoTest, InvalidObjNo) {
   mp::SolverApp<TestSolver, TestNLReader2> app;
   app.solver().SetIntOption("objno", 3);
-  OutputRedirect redir(stdout);
   EXPECT_THROW(app.Run(Args("test", "testproblem")), mp::InvalidOptionValue);
 }
