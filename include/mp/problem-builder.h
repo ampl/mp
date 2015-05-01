@@ -762,8 +762,10 @@ class ProblemBuilderToNLAdapter {
   // Receives notification of the end of the input.
   void EndInput() {
     // Set initial dual values.
-    for (std::size_t i = 0, n = initial_duals_.size(); i < n; ++i)
-      builder_.algebraic_con(i).set_dual(initial_duals_[i]);
+    for (std::size_t i = 0, n = initial_duals_.size(); i < n; ++i) {
+      if (double dual = initial_duals_[i])
+        builder_.algebraic_con(i).set_dual(dual);
+    }
   }
 };
 
