@@ -442,12 +442,6 @@ class ProblemBuilderToNLAdapter {
     cons_.resize(h.num_algebraic_cons);
     funcs_.resize(h.num_funcs);
 
-    // Add variables.
-    for (int i = 0; i < num_continuous_vars_; ++i)
-      builder_.AddVar(0, 0, var::CONTINUOUS);
-    for (int i = num_continuous_vars_; i < h.num_vars; ++i)
-      builder_.AddVar(0, 0, var::INTEGER);
-
     // Update the number of objectives if necessary.
     int num_objs = 0;
     if (obj_index_ >= 0)
@@ -461,6 +455,12 @@ class ProblemBuilderToNLAdapter {
       info.num_objs = num_objs;
       builder_.SetInfo(info);
     }
+
+    // Add variables.
+    for (int i = 0; i < num_continuous_vars_; ++i)
+      builder_.AddVar(0, 0, var::CONTINUOUS);
+    for (int i = num_continuous_vars_; i < h.num_vars; ++i)
+      builder_.AddVar(0, 0, var::INTEGER);
   }
 
   // Returns true if objective should be handled.
