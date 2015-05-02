@@ -68,27 +68,39 @@ void CopyFileIfExists(fmt::StringRef src, fmt::StringRef dst) {
   WriteFile(dst, ReadFile(src));
 }
 
+class TempSMPSFiles {
+ private:
+  std::string path_;
+
+ public:
+  explicit TempSMPSFiles(std::string path)
+    : path_(std::string(MP_TEST_DATA_DIR) + "/" + path) {
+    WriteFile("test.nl", ReadFile(path_ + ".nl"));
+    CopyFileIfExists(path_ + ".col", "test.col");
+    CopyFileIfExists(path_ + ".row", "test.row");
+  }
+
+  ~TempSMPSFiles() {
+    std::remove("test.col");
+    std::remove("test.row");
+  }
+
+  const std::string &path() const { return path_; }
+};
+
 TEST(SMPSWriterTest, SMPSOutput) {
   static const char *const EXTS[] = {".cor", ".sto", ".tim"};
-  static const char *const PROBLEMS[] = {
+  static std::string PROBLEMS[] = {
       "int-var", "random-bound", "random-con-matrix", "random-con-matrix2",
       "random-rhs", "single-scenario", "single-stage",
       "vars-not-in-stage-order", "zero-core-coefs", "zero-core-con"
   };
   int count = 0;
   for (size_t i = 0, n = sizeof(PROBLEMS) / sizeof(*PROBLEMS); i != n; ++i) {
-    std::string path(MP_TEST_DATA_DIR "/smps/");
-    path += PROBLEMS[i];
-    WriteFile("test.nl", ReadFile(path + ".nl"));
-    CopyFileIfExists(path + ".col", "test.col");
-    CopyFileIfExists(path + ".row", "test.row");
+    TempSMPSFiles files("smps/" + PROBLEMS[i]);
     Solve("test");
-    for (size_t j = 0, n = sizeof(EXTS) / sizeof(*EXTS); j != n; ++j, ++count) {
-      EXPECT_FILES_EQ(
-          std::string(path) + EXTS[j], std::string("test") + EXTS[j]);
-    }
-    std::remove("test.col");
-    std::remove("test.row");
+    for (size_t j = 0, n = sizeof(EXTS) / sizeof(*EXTS); j != n; ++j, ++count)
+      EXPECT_FILES_EQ(files.path() + EXTS[j], std::string("test") + EXTS[j]);
   }
   EXPECT_EQ(10 * 3, count);
 }
@@ -104,7 +116,7 @@ TEST(SMPSWriterTest, MoreThan2StagesNotSupported) {
 }
 
 TEST(SMPSWriterTest, RangesNotSupported) {
-  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/smps/range-con.nl"));
+  TempSMPSFiles files("smps/range-con");
   EXPECT_THROW(Solve("test"), mp::Error);
 }
 
