@@ -357,7 +357,7 @@ int IlogCPTest::CountIloDistribute() {
 void IlogCPTest::CheckIntCPOption(const char *option,
     IloCP::IntParam param, int start, int end, int offset, bool accepts_auto,
     const EnumValue *values) {
-  SCOPED_TRACE(option);
+  SCOPED_TRACE(fmt::format("{}: {} - {}", option, start, end));
   IloCP cp = s.cp();
   for (int i = start; i <= std::min(end, 9); ++i) {
     if (accepts_auto || values)
@@ -393,7 +393,7 @@ void IlogCPTest::CheckIntCPOption(const char *option,
     --small;
   if (accepts_auto || values) {
     EXPECT_THROW(s.SetStrOption(option, fmt::format("{}", small)),
-        InvalidOptionValue) << small;
+        InvalidOptionValue) << "value = " << small;
   } else {
     EXPECT_THROW(s.SetIntOption(option, small), InvalidOptionValue);
   }
@@ -697,7 +697,7 @@ TEST_F(IlogCPTest, CPOptions) {
   CheckDblCPOption("restartgrowthfactor", IloCP::RestartGrowthFactor, 42, -1);
   CheckIntCPOption("restartfaillimit", IloCP::RestartFailLimit, 1, INT_MAX);
   CheckDblCPOption("timelimit", IloCP::TimeLimit, 42, -1);
-  int min_workers = CPX_VERSION != 1240 ? 1 : 0;
+  int min_workers = CPX_VERSION != 12040000 ? 1 : 0;
   if (CPX_VERSION > 1220)
     CheckIntCPOption("workers", IloCP::Workers, min_workers, INT_MAX, 0, true);
   else
