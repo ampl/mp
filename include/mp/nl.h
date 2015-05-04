@@ -1971,7 +1971,7 @@ class NLFileReader {
  public:
   NLFileReader() : size_(0), rounded_size_(0) {}
 
-  File &file() { return file_; }
+  const File &file() { return file_; }
 
   // Opens and reads the file.
   template <typename Handler>
@@ -2029,12 +2029,10 @@ class NameReader {
  public:
   // Reads names from the file *filename* sending the names to the *handler*
   // object by calling ``handler.OnName(name)``. The name argument to
-  // ``OnName`` is a ``fmt::StringRef`` object and the string it contains
+  // ``OnName`` is a ``fmt::StringRef`` object and the string it refers to
   // is not zero terminated.
   // Each name in the input file should be on a separate line ended with a
   // newline character ('\n').
-  void OnName(fmt::StringRef name) { internal::Unused(&name); }
-
   template <typename NameHandler>
   void Read(fmt::StringRef filename, NameHandler &handler);
 };
