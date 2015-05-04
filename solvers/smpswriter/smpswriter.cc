@@ -77,7 +77,7 @@ namespace mp {
 class SMPSNameReader {
  private:
   int num_names_;
-  internal::NameReader<> reader_;
+  internal::NameReader reader_;
   std::vector<fmt::StringRef> names_;
 
  public:
