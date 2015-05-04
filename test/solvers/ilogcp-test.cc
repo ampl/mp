@@ -697,8 +697,9 @@ TEST_F(IlogCPTest, CPOptions) {
   CheckDblCPOption("restartgrowthfactor", IloCP::RestartGrowthFactor, 42, -1);
   CheckIntCPOption("restartfaillimit", IloCP::RestartFailLimit, 1, INT_MAX);
   CheckDblCPOption("timelimit", IloCP::TimeLimit, 42, -1);
+  int min_workers = CPX_VERSION != 1240 ? 1 : 0;
   if (CPX_VERSION > 1220)
-    CheckIntCPOption("workers", IloCP::Workers, 1, INT_MAX, 0, true);
+    CheckIntCPOption("workers", IloCP::Workers, min_workers, INT_MAX, 0, true);
   else
     CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
 }
