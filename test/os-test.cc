@@ -185,7 +185,7 @@ TEST(OSTest, GetExecutablePathUnicode) {
 
 TEST(OSTest, ConvertFileToMmapSize) {
   EXPECT_THAT(mp::internal::ConvertFileToMmapSize(42, ""),
-              testing::TypedEq<std::size_t>(42));
+              testing::TypedEq<std::size_t>(42u));
   EXPECT_ASSERT(mp::internal::ConvertFileToMmapSize(-1, ""),
                 "negative file size");
   fmt::ULongLong max_size = std::numeric_limits<std::size_t>::max();

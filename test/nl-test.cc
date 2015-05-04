@@ -1494,7 +1494,7 @@ struct MockNameHandler {
 };
 
 MATCHER_P2(StringRefEq, data, size, "") {
-  return arg.c_str() == data && arg.size() == size;
+  return arg.c_str() == data && arg.size() == static_cast<std::size_t>(size);
 }
 
 TEST(NLTest, ReadNames) {
