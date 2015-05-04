@@ -1530,4 +1530,5 @@ TEST(NLTest, NameReader) {
   // Names should be valid after the call to Read.
   EXPECT_EQ("abc", std::string(names[0].c_str(), names[0].size()));
   EXPECT_EQ("def", std::string(names[1].c_str(), names[1].size()));
+  std::remove(filename);
 }
