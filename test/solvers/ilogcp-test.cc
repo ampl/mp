@@ -393,7 +393,7 @@ void IlogCPTest::CheckIntCPOption(const char *option,
     --small;
   if (accepts_auto || values) {
     EXPECT_THROW(s.SetStrOption(option, fmt::format("{}", small)),
-        InvalidOptionValue);
+        InvalidOptionValue) << small;
   } else {
     EXPECT_THROW(s.SetIntOption(option, small), InvalidOptionValue);
   }
