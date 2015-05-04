@@ -357,6 +357,7 @@ int IlogCPTest::CountIloDistribute() {
 void IlogCPTest::CheckIntCPOption(const char *option,
     IloCP::IntParam param, int start, int end, int offset, bool accepts_auto,
     const EnumValue *values) {
+  SCOPED_TRACE(option);
   IloCP cp = s.cp();
   for (int i = start; i <= std::min(end, 9); ++i) {
     if (accepts_auto || values)
