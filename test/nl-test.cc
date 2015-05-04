@@ -1420,21 +1420,6 @@ TEST(NLTest, ReadNLFileMultipleOfPageSize) {
   CheckReadFile(nl + "\n");
 }
 
-TEST(NLTest, ConvertFileToMmapSize) {
-  EXPECT_THAT(mp::internal::ConvertFileToMmapSize(42, ""),
-              testing::TypedEq<std::size_t>(42));
-  fmt::ULongLong max_size = std::numeric_limits<std::size_t>::max();
-  fmt::ULongLong max_long_long = std::numeric_limits<fmt::LongLong>::max();
-  if (max_size < max_long_long) {
-    EXPECT_EQ(max_size, mp::internal::ConvertFileToMmapSize(max_size, ""));
-    EXPECT_THROW_MSG(mp::internal::ConvertFileToMmapSize(max_size + 1, "test"),
-                     mp::Error, "file test is too big");
-  } else {
-    EXPECT_EQ(max_long_long,
-              mp::internal::ConvertFileToMmapSize(max_long_long, ""));
-  }
-}
-
 struct Cancel {};
 
 TEST(NLTest, FileTooBig) {

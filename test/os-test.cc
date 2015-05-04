@@ -183,6 +183,23 @@ TEST(OSTest, GetExecutablePathUnicode) {
       path.substr(path.size() - ending.size()) : path);
 }
 
+TEST(OSTest, ConvertFileToMmapSize) {
+  EXPECT_THAT(mp::internal::ConvertFileToMmapSize(42, ""),
+              testing::TypedEq<std::size_t>(42));
+  EXPECT_ASSERT(mp::internal::ConvertFileToMmapSize(-1, ""),
+                "negative file size");
+  fmt::ULongLong max_size = std::numeric_limits<std::size_t>::max();
+  fmt::ULongLong max_long_long = std::numeric_limits<fmt::LongLong>::max();
+  if (max_size < max_long_long) {
+    EXPECT_EQ(max_size, mp::internal::ConvertFileToMmapSize(max_size, ""));
+    EXPECT_THROW_MSG(mp::internal::ConvertFileToMmapSize(max_size + 1, "test"),
+                     mp::Error, "file test is too big");
+  } else {
+    EXPECT_EQ(max_long_long,
+              mp::internal::ConvertFileToMmapSize(max_long_long, ""));
+  }
+}
+
 TEST(MemoryMappedFileTest, DefaultCtor) {
   MemoryMappedFile<> f;
   EXPECT_EQ(0, f.start());
@@ -194,7 +211,7 @@ TEST(MemoryMappedFileTest, Map) {
   WriteFile(filename, "abc");
   MemoryMappedFile<> f;
   File file(filename, File::RDONLY);
-  f.map(file);
+  f.map(file, filename);
   EXPECT_EQ("abc", std::string(f.start(), 3));
   EXPECT_EQ(3u, f.size());
 }
@@ -213,7 +230,7 @@ TEST(MemoryMappedFileTest, NegativeFileSizeInMap) {
   MockFile file;
   MemoryMappedFile<MockFile> f;
   EXPECT_CALL(file, size()).WillOnce(testing::Return(-1));
-  EXPECT_ASSERT(f.map(file), "negative file size");
+  EXPECT_ASSERT(f.map(file, "test"), "negative file size");
 }
 
 TEST(MemoryMappedFileTest, FileTooBig) {
@@ -226,7 +243,7 @@ TEST(MemoryMappedFileTest, FileTooBig) {
   MockFile file;
   MemoryMappedFile<MockFile> f;
   EXPECT_CALL(file, size()).WillOnce(testing::Return(max_long_long));
-  EXPECT_THROW_MSG(f.map(file), mp::Error, "file is too big");
+  EXPECT_THROW_MSG(f.map(file, "test"), mp::Error, "file test is too big");
 }
 
 TEST(MemoryMappedFileTest, DoubleMap) {

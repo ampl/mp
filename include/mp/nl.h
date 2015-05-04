@@ -1958,10 +1958,6 @@ void NLReader<Reader, Handler>::Read() {
   handler_.EndInput();
 }
 
-// Converts file size to mmap size.
-std::size_t ConvertFileToMmapSize(fmt::LongLong file_size,
-                                  fmt::StringRef filename);
-
 // An .nl file reader.
 template <typename File = fmt::File>
 class NLFileReader {
@@ -2058,7 +2054,7 @@ class NameReader {
   // newline character ('\n').
   template <typename NameHandler>
   void Read(fmt::StringRef filename, NameHandler &handler) {
-    mapped_file_.map(fmt::File(filename, fmt::File::RDONLY));
+    mapped_file_.map(fmt::File(filename, fmt::File::RDONLY), filename);
     fmt::StringRef data(mapped_file_.start(), mapped_file_.size());
     ReadNames(filename, data, handler);
   }

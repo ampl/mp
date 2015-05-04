@@ -426,7 +426,7 @@ NameProvider::NameProvider(
   : gen_name_(gen_name.c_str()) {
   try {
     fmt::File file(filename, fmt::File::RDONLY);
-    file_.map(file);
+    file_.map(file, filename);
     names_.reserve(num_items + 1);
     const char *ptr = file_.start();
     names_.push_back(ptr);

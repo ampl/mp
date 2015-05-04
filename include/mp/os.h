@@ -99,7 +99,19 @@ class MemoryMappedFileBase {
   const char *start() const { return start_; }
   std::size_t size() const { return size_; }
 };
+
+// Converts file size to mmap size.
+inline std::size_t ConvertFileToMmapSize(fmt::LongLong file_size,
+                                         fmt::StringRef filename) {
+  MP_ASSERT(file_size >= 0, "negative file size");
+  fmt::ULongLong unsigned_file_size = file_size;
+  // Check if file size fits in size_t.
+  std::size_t size = static_cast<std::size_t>(unsigned_file_size);
+  if (size != unsigned_file_size)
+    throw Error("file {} is too big", filename);
+  return size;
 }
+}  // namespace internal
 
 template <typename File = fmt::File>
 class MemoryMappedFile : public internal::MemoryMappedFileBase {
@@ -115,13 +127,8 @@ class MemoryMappedFile : public internal::MemoryMappedFileBase {
     internal::MemoryMappedFileBase::map(file.descriptor(), size);
   }
 
-  void map(const File &file) {
-    fmt::LongLong file_size = file.size();
-    MP_ASSERT(file_size >= 0, "negative file size");
-    fmt::ULongLong unsigned_size = file_size;
-    if (unsigned_size > std::numeric_limits<std::size_t>::max())
-      throw Error("file is too big");
-    map(file, static_cast<std::size_t>(unsigned_size));
+  void map(const File &file, fmt::StringRef filename) {
+    map(file, internal::ConvertFileToMmapSize(file.size(), filename));
   }
 };
 
