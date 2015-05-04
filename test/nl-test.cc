@@ -1520,15 +1520,14 @@ MATCHER_P(GetStringRef, names, "") {
 }
 
 TEST(NLTest, NameReader) {
-  const char *filename = "test.col";
-  WriteFile(filename, "abc\ndef\n");
+  TempFile file("test.col");
+  WriteFile(file.name(), "abc\ndef\n");
   MockNameHandler handler;
   std::vector<fmt::StringRef> names;
   EXPECT_CALL(handler, OnName(GetStringRef(&names))).Times(2);
   mp::internal::NameReader reader;
-  reader.Read(filename, handler);
+  reader.Read(file.name(), handler);
   // Names should be valid after the call to Read.
   EXPECT_EQ("abc", std::string(names[0].c_str(), names[0].size()));
   EXPECT_EQ("def", std::string(names[1].c_str(), names[1].size()));
-  std::remove(filename);
 }

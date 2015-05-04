@@ -177,3 +177,7 @@ mp::NLHeader MakeTestHeader() {
   h.num_common_exprs_in_single_objs = 191;
   return h;
 }
+
+TempFile::~TempFile() {
+  std::remove(name_.c_str());
+}

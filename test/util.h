@@ -59,4 +59,15 @@ std::string ReplaceLine(std::string s, int line_index, const char *new_line);
 
 mp::NLHeader MakeTestHeader();
 
+class TempFile {
+ private:
+  std::string name_;
+
+ public:
+  explicit TempFile(fmt::StringRef name) : name_(name) {}
+  ~TempFile();
+
+  const std::string &name() const { return name_; }
+};
+
 #endif  // TEST_UTIL_H_
