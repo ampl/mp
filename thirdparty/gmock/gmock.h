@@ -624,7 +624,7 @@ GMOCK_DECLARE_KIND_(long double, kFloatingPoint);
       ::testing::internal::KindOf<type>::value)
 
 // Evaluates to true iff integer type T is signed.
-#define GMOCK_IS_SIGNED_(T) (static_cast<T>(-1) < 0)
+#define GMOCK_IS_SIGNED_(T) (std::numeric_limits<T>::is_signed)
 
 // LosslessArithmeticConvertibleImpl<kFromKind, From, kToKind, To>::value
 // is true iff arithmetic type From can be losslessly converted to
