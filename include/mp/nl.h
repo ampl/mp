@@ -81,9 +81,6 @@ class ReadError : public Error {
     init(filename, line, column, format_str, args);
   }
 
-  FMT_VARIADIC_(char, , ReadError, init,
-                fmt::StringRef, int, int, fmt::StringRef)
-
   /** Destructs the exception object. */
   ~ReadError() throw() {}
 
@@ -95,6 +92,9 @@ class ReadError : public Error {
 
   /** Returns the column number where error occurred, starting from 1. */
   int column() const { return column_; }
+
+  FMT_VARIADIC_(char, , ReadError, init,
+                fmt::StringRef, int, int, fmt::StringRef)
 };
 
 /** A read error with information about offset in a binary input. */
