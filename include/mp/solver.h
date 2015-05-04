@@ -1202,9 +1202,9 @@ void SolverNLHandler<Solver>::OnHeader(const NLHeader &h) {
 // A variable or constraint name provider.
 class NameProvider {
  private:
-  std::string gen_name_;
-  MemoryMappedFile<> file_;
   std::vector<const char *> names_;
+  std::string gen_name_;
+  NameReader reader_;
   fmt::MemoryWriter writer_;
 
  public:

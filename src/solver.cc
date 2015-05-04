@@ -210,7 +210,24 @@ void RSTFormatter::HandleDirective(const char *type) {
     indent_ -= LIST_ITEM_INDENT;
   end_block_ = true;
 }
-}
+
+class NameHandler {
+ private:
+  std::vector<const char *> &names_;
+  fmt::StringRef name_;
+
+ public:
+  explicit NameHandler(std::vector<const char *> &names)
+    : names_(names), name_("") {}
+
+  void OnName(fmt::StringRef name) {
+    name_ = name;
+    names_.push_back(name.c_str());
+  }
+
+  fmt::StringRef name() const { return name_; }
+};
+}  // namespace
 
 namespace mp {
 
@@ -424,22 +441,15 @@ void SignalHandler::HandleSigInt(int sig) {
 NameProvider::NameProvider(
     fmt::StringRef filename, fmt::StringRef gen_name, std::size_t num_items)
   : gen_name_(gen_name.c_str()) {
+  NameHandler handler(names_);
+  names_.reserve(num_items + 1);
   try {
-    fmt::File file(filename, fmt::File::RDONLY);
-    file_.map(file, filename);
-    names_.reserve(num_items + 1);
-    const char *ptr = file_.start();
-    names_.push_back(ptr);
-    for (unsigned long long i = 0, n = file_.size(); i < n; ++i, ++ptr) {
-      if (*ptr != '\n')
-        continue;
-      if (names_.size() > num_items)
-        break;
-      names_.push_back(ptr + 1);
-    }
+    reader_.Read(filename, handler);
   } catch (const fmt::SystemError &) {
-    // System error, ignore the file and use generated names.
+    return; // System error, ignore the file and use generated names.
   }
+  fmt::StringRef last_name = handler.name();
+  names_.push_back(last_name.c_str() + last_name.size() + 1);
 }
 
 fmt::StringRef NameProvider::name(std::size_t index) {
