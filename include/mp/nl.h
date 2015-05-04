@@ -2057,16 +2057,12 @@ class NameReader {
   // Each name in the input file should be on a separate line ended with a
   // newline character ('\n').
   template <typename NameHandler>
-  void Read(fmt::StringRef filename, NameHandler &handler);
+  void Read(fmt::StringRef filename, NameHandler &handler) {
+    mapped_file_.map(fmt::File(filename, fmt::File::RDONLY));
+    fmt::StringRef data(mapped_file_.start(), mapped_file_.size());
+    ReadNames(filename, data, handler);
+  }
 };
-
-template <typename NameHandler>
-void NameReader::Read(fmt::StringRef filename, NameHandler &handler) {
-  fmt::File file(filename, fmt::File::RDONLY);
-  std::size_t size = ConvertFileToMmapSize(file.size(), filename);
-  mapped_file_.map(file, size);
-  ReadNames(filename, fmt::StringRef(mapped_file_.start(), size), handler);
-}
 }  // namespace internal
 
 /**
