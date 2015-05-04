@@ -326,7 +326,7 @@ class BasicSuffixSet : private Alloc {
     SuffixImpl *impl = DoAdd(
           name, kind | internal::SuffixInfo<T>::KIND, num_values);
     T *values = Allocate<T>(num_values);
-    std::fill_n(values, num_values, 0);
+    std::fill_n(fmt::internal::make_ptr(values, num_values), num_values, 0);
     impl->values = values;
     return BasicMutSuffix<T>(impl);
   }
