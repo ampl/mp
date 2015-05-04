@@ -22,6 +22,17 @@
 
 #include "mp/nl.h"
 
+void mp::ReadError::init(fmt::StringRef filename, int line, int column,
+                         fmt::StringRef format_str, fmt::ArgList args) {
+  filename_ = filename;
+  line_ = line;
+  column_ = column;
+  fmt::MemoryWriter w;
+  w.write("{}:{}:{}: ", filename, line, column);
+  w.write(format_str, args);
+  SetMessage(w.c_str());
+}
+
 mp::arith::Kind mp::arith::GetKind() {
   // Unlike ASL, we don't try detecting floating-point arithmetic at
   // configuration time because it doesn't work with cross-compiling.
@@ -108,10 +119,7 @@ void mp::internal::TextReader::DoReportError(
       ++line_start;
   }
   int column = static_cast<int>(loc - line_start + 1);
-  fmt::MemoryWriter w;
-  w.write("{}:{}:{}: ", name_, line, column);
-  w.write(format_str, args);
-  throw ReadError(name_, line, column, w.c_str());
+  throw ReadError(name_, line, column, format_str, args);
 }
 
 bool mp::internal::TextReader::ReadOptionalDouble(double &value) {

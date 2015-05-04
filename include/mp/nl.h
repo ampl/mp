@@ -71,11 +71,18 @@ class ReadError : public Error {
   int line_;
   int column_;
 
+  void init(fmt::StringRef filename, int line, int column,
+            fmt::StringRef format_str, fmt::ArgList args);
+
  public:
   /** Constructs the exception object. */
-  ReadError(fmt::StringRef filename,
-      int line, int column, fmt::StringRef message)
-  : Error(message), filename_(filename), line_(line), column_(column) {}
+  ReadError(fmt::StringRef filename, int line, int column,
+            fmt::StringRef format_str, fmt::ArgList args) {
+    init(filename, line, column, format_str, args);
+  }
+
+  FMT_VARIADIC_(char, , ReadError, init,
+                fmt::StringRef, int, int, fmt::StringRef)
 
   /** Destructs the exception object. */
   ~ReadError() throw() {}
@@ -2020,11 +2027,27 @@ void ReadBinary(TextReader &reader, const NLHeader &header,
         bin_reader, header, handler, flags).Read();
 }
 
+template <typename NameHandler>
+void ReadNames(fmt::StringRef filename, fmt::StringRef data,
+               NameHandler &handler) {
+  int line = 1;
+  const char *start = data.c_str();
+  const char *end = start + data.size();
+  for (const char *ptr = start; ptr != end; ++ptr) {
+    if (*ptr == '\n') {
+      handler.OnName(fmt::StringRef(start, ptr - start));
+      start = ptr + 1;
+      ++line;
+    }
+  }
+  if (start != end)
+    throw ReadError(filename, line, end - start + 1, "missing newline");
+}
+
 // A name file reader.
-template <typename File = fmt::File>
 class NameReader {
  private:
-  MemoryMappedFile<File> mapped_file_;
+  MemoryMappedFile<> mapped_file_;
 
  public:
   // Reads names from the file *filename* sending the names to the *handler*
@@ -2037,24 +2060,12 @@ class NameReader {
   void Read(fmt::StringRef filename, NameHandler &handler);
 };
 
-template <typename File>
 template <typename NameHandler>
-void NameReader<File>::Read(fmt::StringRef filename, NameHandler &handler) {
-  File file(filename, fmt::File::RDONLY);
+void NameReader::Read(fmt::StringRef filename, NameHandler &handler) {
+  fmt::File file(filename, fmt::File::RDONLY);
   std::size_t size = ConvertFileToMmapSize(file.size(), filename);
   mapped_file_.map(file, size);
-  int line = 1;
-  const char *start = mapped_file_.start();
-  const char *end = start + size;
-  for (const char *ptr = start; ptr != end; ++ptr) {
-    if (*ptr == '\n') {
-      handler.OnName(fmt::StringRef(start, ptr - start));
-      start = ptr + 1;
-      ++line;
-    }
-  }
-  if (start != end)
-    throw ReadError(filename, line, end - start + 1, "missing newline");
+  ReadNames(filename, fmt::StringRef(mapped_file_.start(), size), handler);
 }
 }  // namespace internal
 

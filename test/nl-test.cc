@@ -1421,9 +1421,8 @@ TEST(NLTest, ReadNLFileMultipleOfPageSize) {
 }
 
 TEST(NLTest, ConvertFileToMmapSize) {
-  auto size = mp::internal::ConvertFileToMmapSize(0, "");
-  std::size_t *p = &size;
-  mp::internal::Unused(p);
+  EXPECT_THAT(mp::internal::ConvertFileToMmapSize(42, ""),
+              testing::TypedEq<std::size_t>(42));
   fmt::ULongLong max_size = std::numeric_limits<std::size_t>::max();
   fmt::ULongLong max_long_long = std::numeric_limits<fmt::LongLong>::max();
   if (max_size < max_long_long) {
@@ -1505,3 +1504,45 @@ TEST(NLTest, EndInput) {
   ReadNLString(FormatHeader(header, false) + "b\n0 1 2\n", handler, "");
 }
 
+struct MockNameHandler {
+  MOCK_METHOD1(OnName, void (fmt::StringRef name));
+};
+
+MATCHER_P2(StringRefEq, data, size, "") {
+  return arg.c_str() == data && arg.size() == size;
+}
+
+TEST(NLTest, ReadNames) {
+  MockNameHandler handler;
+  const char data[] = "ab\nc d\n";
+  testing::InSequence sequence;
+  EXPECT_CALL(handler, OnName(StringRefEq(data, 2)));
+  EXPECT_CALL(handler, OnName(StringRefEq(data + 3, 3)));
+  mp::internal::ReadNames("test", data, handler);
+}
+
+TEST(NLTest, ReadNamesError) {
+  MockNameHandler handler;
+  const char data[] = "abc\ndef";
+  EXPECT_CALL(handler, OnName(StringRefEq(data, 3)));
+  EXPECT_THROW_MSG(mp::internal::ReadNames("test", data, handler),
+                   mp::Error, "test:2:4: missing newline");
+}
+
+MATCHER_P(GetStringRef, names, "") {
+  names->push_back(arg);
+  return true;
+}
+
+TEST(NLTest, NameReader) {
+  const char *filename = "test.col";
+  WriteFile(filename, "abc\ndef\n");
+  MockNameHandler handler;
+  std::vector<fmt::StringRef> names;
+  EXPECT_CALL(handler, OnName(GetStringRef(&names))).Times(2);
+  mp::internal::NameReader reader;
+  reader.Read(filename, handler);
+  // Names should be valid after the call to Read.
+  EXPECT_EQ("abc", std::string(names[0].c_str(), names[0].size()));
+  EXPECT_EQ("def", std::string(names[1].c_str(), names[1].size()));
+}
