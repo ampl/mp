@@ -588,11 +588,11 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   if (const double *initial_values = builder.initial_values()) {
     for (int i = 0; i < builder.num_vars(); ++i) {
       double value = initial_values[i];
-      ls::lsint int_value = static_cast<ls::lsint>(value);
-      if (int_value == value)
-        vars[i].setValue(int_value);
+      ls::LSExpression var = vars[i];
+      if (var.getOperator() == ls::O_Float)
+        var.setValue(value);
       else
-        vars[i].setValue(value);
+        var.setValue(static_cast<ls::lsint>(value));
     }
   }
 

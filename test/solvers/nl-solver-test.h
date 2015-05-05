@@ -1279,6 +1279,16 @@ TEST_F(NLSolverTest, InitialValues) {
   }
 }
 
+TEST_F(NLSolverTest, InitialValueForContinousVar) {
+  if (!HasFeature(feature::FLOAT_CONST)) return;
+  ProblemBuilder pb(solver_, "");
+  pb.AddVar(0, 1, var::CONTINUOUS);
+  pb.var(0).set_value(1);
+  pb.AddObj(obj::MIN, pb.MakeNumericConstant(0), 1).AddTerm(0, 1);
+  TestSolutionHandler sh;
+  solver_.Solve(pb, sh);
+}
+
 #endif
 
 struct SolutionCounter : TestSolutionHandler {
