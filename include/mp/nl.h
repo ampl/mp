@@ -2036,8 +2036,10 @@ void ReadNames(fmt::StringRef filename, fmt::StringRef data,
       ++line;
     }
   }
-  if (start != end)
-    throw ReadError(filename, line, end - start + 1, "missing newline");
+  if (start != end) {
+    int column = static_cast<int>(end - start + 1);
+    throw ReadError(filename, line, column, "missing newline");
+  }
 }
 
 // A name file reader.
