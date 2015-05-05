@@ -255,11 +255,11 @@ class LSProblemBuilder :
       ls::LSExpression &var = builder_->vars_[index_];
       double inf = std::numeric_limits<double>::infinity();
       if (var.getOperator() == ls::O_Float) {
-        var.setOperand(0, ub == inf ? LS_INF : ub);
+        var.setOperand(1, ub == inf ? LS_INF : ub);
       } else {
         ls::lsint int_ub = ub == inf ?
               std::numeric_limits<int>::max() : ConvertToInt(ub);
-        var.setOperand(0, int_ub);
+        var.setOperand(1, int_ub);
       }
     }
 

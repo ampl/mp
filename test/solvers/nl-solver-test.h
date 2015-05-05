@@ -490,6 +490,23 @@ void MakeTSP(ProblemBuilder &pb) {
   }
 }
 
+TEST_F(NLSolverTest, UpperBound) {
+  {
+    ProblemBuilder pb(solver_, "");
+    pb.AddVar(0, 0, mp::var::INTEGER);
+    pb.var(0).set_ub(42);
+    pb.AddObj(mp::obj::MAX, pb.MakeNumericConstant(0), 1).AddTerm(0, 1);
+    EXPECT_EQ(42, Solve(pb));
+  }
+  if (HasFeature(feature::FLOAT_CONST)) {
+    ProblemBuilder pb(solver_, "");
+    pb.AddVar(0, 0, mp::var::CONTINUOUS);
+    pb.var(0).set_ub(42);
+    pb.AddObj(mp::obj::MAX, pb.MakeNumericConstant(0), 1).AddTerm(0, 1);
+    EXPECT_EQ(42, Solve(pb));
+  }
+}
+
 // ----------------------------------------------------------------------------
 // Expression tests
 

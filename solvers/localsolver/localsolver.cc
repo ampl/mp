@@ -588,7 +588,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   if (const double *initial_values = builder.initial_values()) {
     for (int i = 0; i < builder.num_vars(); ++i) {
       double value = initial_values[i];
-      ls::LSExpression var = vars[i];
+      auto var = vars[i];
       if (var.getOperator() == ls::O_Float)
         var.setValue(value);
       else
