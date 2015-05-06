@@ -4,16 +4,16 @@
 #   b/       - output directory
 #   include/ - C++ API headers
 #   src/     - C++ API and localsolver source
+#   mkfile   - this mkfile
 
 BUILTINS =
 NPROC = 1
 LIBFORMAT = static_pic
 
-LOCALSOLVERDIR  = /opt/localsolver_5_0
-LS_LINKFLAGS    = -L$LOCALSOLVERDIR/binLS_LINKFLAGS
-LOCALSOLVER_INC = $LOCALSOLVERDIR/include
+LDIR  = /usr/local/locsol/5_0
+LOCALSOLVER_INC = $LDIR/include
 
-S = ..
+S = ../32
 S64 = ../64
 ALIB = amplsolver.a
 #LIBS = -lnsl -lm -ldl -lpthread
@@ -29,14 +29,16 @@ CC64 = cc
 CXX11_FLAGS = -std=c++11 -DMP_USE_UNORDERED_MAP -DMP_NO_CLOCK_GETTIME
 
 CFLAGS = -I$LOCALSOLVER_INC -Iinclude -Isrc -I. $CXX11_FLAGS -DMP_NOMAIN
-L = -lstdc++ $LS_LINKFLAGS -llocalsolver $LDMTFLAGS $S/$ALIB $LIBS
-Lg = -lstdc++ $LS_LINKFLAGS -llocalsolver $LDMTFLAGS $S/asg.a $LIBS
+Rpath32 = -Wl,-rpath,.,-rpath,/usr/local/lib
+Rpath64 = -Wl,-rpath,.,-rpath,/usr/local/lib64
+L = $Rpath32 -lstdc++ -L $LDIR/linux32 -llocalsolver $LDMTFLAGS $S/$ALIB $LIBS
+Lg = $Rpath32 -lstdc++ -L $LDIR/linux32 -llocalsolver $LDMTFLAGS $S/asg.a $LIBS
 L640 = $S64/olib
 Lb64 = $L640/libnsl.so.1 $L640/libdl.so.2 $L640/libpthread.so.0 $L640/libstdc++.so.6 $L640/libm.so.6 $L640/libgcc_s.so.1 $L640/libc.so.6 $L640/ld-linux-x86-64.so.2
 
-L64 = $LS_LINKFLAGS -llocalsolver $LDMTFLAGS $S64/$ALIB -lnsl -ldl -lpthread -lm
+L64 = $Rpath64 -L $LDIR/linux64 -llocalsolver $LDMTFLAGS $S64/$ALIB -lnsl -ldl -lpthread -lm
 
-all:V: b/localsolver32 b/localsolver64 b/localsolver32lt b/localsolver64lt
+all:V: b/locsol32 b/locsol64 b/locsol32lt b/locsol64lt
 
 util = \
 	src/asl/aslbuilder.cc \
@@ -77,42 +79,42 @@ b/util64.a: $util
 	rm $o
 	ranlib $target
 
-localsolver_src = $util src/localsolver/localsolver.cc src/solver.cc localsolvermain.c licmain1.c
+locsol_date.h: $util src/localsolver/localsolver.cc src/solver.cc locsolmain.c licmain1.c
+	now=`Dt -8 $prereq`
+	echo -e "#define YYYYMMDD $now\n#define qYYYYMMDD "'"'"$now"'"'"\n#define lYYYYMMDD $now" >$target
 
-b/%_32.o: src/%.cc
-	mkdir -p b/localsolver
-	$CXX -c -o $target -I$S $CFLAGS -DMP_DRIVER_DATE=`Dt -8 $localsolver_src` $prereq
+b/%_32.o: src/%.cc locsol_date.h
+	$CXX -c -o $target -I$S $CFLAGS $prereq
 
-b/%_64.o: src/%.cc
-	mkdir -p b/localsolver
-	$CXX64 -c -o $target -I$S64 $CFLAGS -DMP_DRIVER_DATE=`Dt -8 $localsolver_src` $prereq
+b/%_64.o: src/%.cc locsol_date.h
+	$CXX64 -c -o $target -I$S64 $CFLAGS $prereq
 
-b/localsolver32: b/localsolver/localsolver_32.o b/util32.a
-	$CC -c $g -I$S localsolvermain.c
-	$CXX -s -o $target localsolvermain.o $prereq $L
-	rm localsolvermain.o
+b/locsol32: src/localsolver/localsolver.cc b/util32.a locsol_date.h
+	$CC -c $g -I. -I$S locsolmain.c
+	$CXX -s -o $target -I$S $CFLAGS locsolmain.o $prereq $L
+	rm locsolmain.o
 
-b/localsolver32lt: b/localsolver/localsolver_32.o b/util32.a
-	$CC -c $g -I$S -DTime_Limited localsolvermain.c
-	$CXX -s -o $target localsolvermain.o $prereq $L
-	rm localsolvermain.o
+b/locsol32lt: src/localsolver/localsolver.cc b/util32.a locsol_date.h
+	$CC -c $g -I. -I$S -DTime_Limited locsolmain.c
+	$CXX -s -o $target -I$S $CFLAGS locsolmain.o $prereq $L
+	rm locsolmain.o
 
-b/localsolver32ltg: src/localsolver/localsolver.cc b/util32g.a
-	$CC -c -g -I$S -DTime_Limited localsolvermain.c
-	$CXX -g -o $target -I$S $CFLAGS localsolvermain.o $prereq $Lg
-	rm localsolvermain.o
+b/locsol32ltg: src/localsolver/localsolver.cc b/util32g.a locsol_date.h
+	$CC -c -g -I. -I$S -DTime_Limited locsolmain.c
+	$CXX -g -o $target -I$S $CFLAGS locsolmain.o $prereq $Lg
+	rm locsolmain.o
 
-b/localsolver32g: src/localsolver/localsolver.cc b/util32g.a
-	$CC -c -g -I$S localsolvermain.c
-	$CXX -g -o $target -I$S $CFLAGS localsolvermain.o $prereq $Lg
-	rm localsolvermain.o
+b/locsol32g: src/localsolver/localsolver.cc b/util32g.a locsol_date.h
+	$CC -c -g -I$S locsolmain.c
+	$CXX -g -o $target -I$S $CFLAGS locsolmain.o $prereq $Lg
+	rm locsolmain.o
 
-b/localsolver64: b/localsolver/localsolver_64.o b/util64.a
-	$CC64 -c $g -I$S64 localsolvermain.c
-	$CXX64 -s -o $target localsolvermain.o $prereq $L64
-	rm localsolvermain.o
+b/locsol64: src/localsolver/localsolver.cc b/util64.a locsol_date.h
+	$CC64 -c $g -I. -I$S64 locsolmain.c
+	$CXX64 -s -o $target -I$S64 $CFLAGS locsolmain.o $prereq $L64
+	rm locsolmain.o
 
-b/localsolver64lt: b/localsolver/localsolver_64.o b/util64.a
-	$CC64 -c $g -I$S64 -DTime_Limited localsolvermain.c
-	$CXX64 -s -o $target localsolvermain.o $prereq $L64
-	rm localsolvermain.o
+b/locsol64lt: src/localsolver/localsolver.cc b/util64.a locsol_date.h
+	$CC64 -c $g -I. -I$S64 -DTime_Limited locsolmain.c
+	$CXX64 -s -o $target -I$S64 $CFLAGS locsolmain.o $prereq $L64
+	rm locsolmain.o
