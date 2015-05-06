@@ -53,8 +53,7 @@ util = \
 	src/rstparser.cc \
 	src/sol.cc \
 	src/solver.cc \
-	src/suffix.cc \
-        src/localsolver/main.cc
+	src/localsolver/main.cc
 
 b/util32.a: $util
 	$CXX -c $g -I$S $CFLAGS $newprereq
