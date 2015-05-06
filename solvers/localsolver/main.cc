@@ -21,9 +21,12 @@
  */
 
 #include "localsolver/localsolver.h"
+#include <lsversion.h>
 
-extern "C" int MP_RunSolver(char **argv) {
+extern "C" int MP_RunSolver(char **argv, const char *lic) {
   try {
+    if (lic)
+      localsolver::ls_set_license_content(lic);
     return mp::SolverApp<mp::LocalSolver>().Run(argv, mp::READ_BOUNDS_FIRST);
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
@@ -33,6 +36,6 @@ extern "C" int MP_RunSolver(char **argv) {
 
 #ifndef MP_NOMAIN
 int main(int, char **argv) {
-  return MP_RunSolver(argv);
+  return MP_RunSolver(argv, 0);
 }
 #endif

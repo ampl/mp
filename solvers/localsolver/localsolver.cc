@@ -27,6 +27,11 @@
 #include "mp/clock.h"
 #include "mp/safeint.h"
 
+#ifndef MP_DRIVER_DATE
+# include "locsol_date.h"
+# define MP_DRIVER_DATE YYYYMMDD
+#endif
+
 namespace {
 
 enum { TERSE_VERBOSITY = -1 };
@@ -492,8 +497,7 @@ void LocalSolver::SetVerbosity(const SolverOption &opt, fmt::StringRef value) {
 }
 
 LocalSolver::LocalSolver()
-  : SolverImpl<LSProblemBuilder>(
-        "localsolver", 0, MP_DRIVER_DATE, MULTIPLE_OBJ) {
+  : SolverImpl<LSProblemBuilder>("locsol", 0, MP_DRIVER_DATE, MULTIPLE_OBJ) {
   options_[SEED] = 0;
   options_[THREADS] = 2;
   options_[ANNEALING_LEVEL] = 1;
@@ -506,7 +510,7 @@ LocalSolver::LocalSolver()
   int ls_version = localsolver::LSVersion::getMajorVersionNumber();
   std::string version = fmt::format("{}.{}",
       ls_version, localsolver::LSVersion::getMinorVersionNumber());
-  set_long_name("localsolver " + version);
+  set_long_name("LocalSolver " + version);
   set_version("LocalSolver " + version);
 
   set_option_header(
@@ -514,9 +518,9 @@ LocalSolver::LocalSolver()
       "----------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to "
-      "the AMPL option ``localsolver_options``. For example::\n"
+      "the AMPL option ``locsol_options``. For example::\n"
       "\n"
-      "  ampl: option localsolver_options 'version timelimit=30';\n");
+      "  ampl: option locsol_options 'version timelimit=30';\n");
 
   AddIntOption("seed",
       "Seed of the pseudo-random number generator used by the solver. "
