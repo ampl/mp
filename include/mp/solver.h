@@ -139,6 +139,9 @@ inline OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
   return OptionError(
         fmt::format("Option \"{}\" is not of type \"{}\"", name, type));
 }
+
+// Perform demo version checks if necessary.
+void CheckDemoVersion(const NLHeader &h);
 }  // namespace internal
 
 // An interface for receiving errors reported via Solver::ReportError.
@@ -1197,6 +1200,9 @@ void SolverNLHandler<Solver>::OnHeader(const NLHeader &h) {
   num_options_ = h.num_ampl_options;
   std::copy(h.ampl_options, h.ampl_options + num_options_, options_);
   Base::OnHeader(h);
+#ifndef MP_DATE
+  internal::CheckDemoVersion(h);
+#endif
 }
 
 // A variable or constraint name provider.

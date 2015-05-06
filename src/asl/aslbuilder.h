@@ -57,6 +57,9 @@ public:
 // Use standard opcodes when building expressions.
 enum { ASL_STANDARD_OPCODES = 0x1000000 };
 
+// Convert NLHeader to Edaginfo.
+void Convert(const NLHeader &h, Edaginfo &info);
+
 // Provides methods for building an ASL problem object.
 class ASLBuilder {
  public:

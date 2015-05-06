@@ -77,6 +77,87 @@ namespace mp {
 namespace asl {
 namespace internal {
 
+void Convert(const NLHeader &h, Edaginfo &info) {
+  info.binary_nl_ = h.format;
+  if (h.arith_kind != arith::UNKNOWN) {
+    arith::Kind arith_kind = arith::GetKind();
+    if (arith_kind != h.arith_kind &&
+        arith::IsIEEE(arith_kind) && arith::IsIEEE(h.arith_kind)) {
+      info.binary_nl_ = h.arith_kind << 1;
+      info.iadjfcn = info.dadjfcn = bswap_ASL;
+    }
+  }
+  info.xscanf_ = info.binary_nl_ ? bscanf : ascanf;
+
+  info.ampl_options_[0] = h.num_ampl_options;
+  for (int i = 0; i < mp::MAX_AMPL_OPTIONS; ++i)
+    info.ampl_options_[i + 1] = h.ampl_options[i];
+  info.ampl_vbtol_ = h.ampl_vbtol;
+
+  info.n_var_ = h.num_vars;
+  info.n_con_ = h.num_algebraic_cons;
+  info.n_obj_ = h.num_objs;
+  info.nranges_ = h.num_ranges;
+  info.n_eqn_ = h.num_eqns;
+  info.n_lcon_ = h.num_logical_cons;
+
+  info.nlc_ = h.num_nl_cons;
+  info.nlo_ = h.num_nl_objs;
+  info.n_cc_ = h.num_compl_conds;
+  info.nlcc_ = h.num_nl_compl_conds;
+  info.ndcc_ = h.num_compl_dbl_ineqs;
+  info.nzlb_ = h.num_compl_vars_with_nz_lb;
+
+  info.nlnc_ = h.num_nl_net_cons;
+  info.lnc_ = h.num_linear_net_cons;
+
+  info.nlvc_ = h.num_nl_vars_in_cons;
+  info.nlvo_ = h.num_nl_vars_in_objs;
+  info.nlvb_ = h.num_nl_vars_in_both;
+
+  info.nwv_ = h.num_linear_net_vars;
+  info.nfunc_ = h.num_funcs;
+  info.flags = h.flags;
+
+  info.nbv_ = h.num_linear_binary_vars;
+  info.niv_ = h.num_linear_integer_vars;
+  info.nlvbi_ = h.num_nl_integer_vars_in_both;
+  info.nlvci_ = h.num_nl_integer_vars_in_cons;
+  info.nlvoi_ = h.num_nl_integer_vars_in_objs;
+
+  info.nZc_ = h.num_con_nonzeros;
+  std::size_t int_max = std::numeric_limits<int>::max();
+  info.nzc_ = info.nZc_ <= int_max ? static_cast<int>(info.nZc_) : 0;
+  info.nZo_ = h.num_obj_nonzeros;
+  info.nzo_ = info.nZo_ <= int_max ? static_cast<int>(info.nZo_) : 0;
+
+  info.maxrownamelen_ = h.max_con_name_len;
+  info.maxcolnamelen_ = h.max_var_name_len;
+
+  info.comb_ = h.num_common_exprs_in_both;
+  info.comc_ = h.num_common_exprs_in_cons;
+  info.como_ = h.num_common_exprs_in_objs;
+  info.comc1_ = h.num_common_exprs_in_single_cons;
+  info.como1_ = h.num_common_exprs_in_single_objs;
+
+  info.nclcon_ = info.n_con_ + info.n_lcon_;
+
+  if (h.num_algebraic_cons < 0 || h.num_vars <= 0 || h.num_objs < 0) {
+    throw ASLError(ASL_readerr_corrupt,
+        fmt::format("invalid problem dimensions: M = {}, N = {}, NO = {}",
+          h.num_algebraic_cons, h.num_vars, h.num_objs));
+  }
+
+  info.n_var0 = info.n_var1 = info.n_var_;
+  info.n_con0 = info.n_con1 = info.n_con_;
+  info.x0len_ = std::max(info.nlvo_, info.nlvc_) * sizeof(double);
+  info.x0kind_ = ASL_first_x;
+  info.n_conjac_[0] = 0;
+  info.n_conjac_[1] = info.n_con_;
+
+  info.c_vars_ = info.o_vars_ = info.n_var_;
+}
+
 const double ASLBuilder::DVALUE[] = {
 #include "dvalue.hd"
 };
@@ -248,85 +329,7 @@ void ASLBuilder::set_stub(const char *stub) {
 void ASLBuilder::InitASL(const NLHeader &h) {
   if (!static_)
     static_ = new Static();
-  Edaginfo &info = asl_->i;
-  info.binary_nl_ = h.format;
-  if (h.arith_kind != arith::UNKNOWN) {
-    arith::Kind arith_kind = arith::GetKind();
-    if (arith_kind != h.arith_kind &&
-        arith::IsIEEE(arith_kind) && arith::IsIEEE(h.arith_kind)) {
-      info.binary_nl_ = h.arith_kind << 1;
-      info.iadjfcn = info.dadjfcn = bswap_ASL;
-    }
-  }
-  info.xscanf_ = info.binary_nl_ ? bscanf : ascanf;
-
-  info.ampl_options_[0] = h.num_ampl_options;
-  for (int i = 0; i < mp::MAX_AMPL_OPTIONS; ++i)
-    info.ampl_options_[i + 1] = h.ampl_options[i];
-  info.ampl_vbtol_ = h.ampl_vbtol;
-
-  info.n_var_ = h.num_vars;
-  info.n_con_ = h.num_algebraic_cons;
-  info.n_obj_ = h.num_objs;
-  info.nranges_ = h.num_ranges;
-  info.n_eqn_ = h.num_eqns;
-  info.n_lcon_ = h.num_logical_cons;
-
-  info.nlc_ = h.num_nl_cons;
-  info.nlo_ = h.num_nl_objs;
-  info.n_cc_ = h.num_compl_conds;
-  info.nlcc_ = h.num_nl_compl_conds;
-  info.ndcc_ = h.num_compl_dbl_ineqs;
-  info.nzlb_ = h.num_compl_vars_with_nz_lb;
-
-  info.nlnc_ = h.num_nl_net_cons;
-  info.lnc_ = h.num_linear_net_cons;
-
-  info.nlvc_ = h.num_nl_vars_in_cons;
-  info.nlvo_ = h.num_nl_vars_in_objs;
-  info.nlvb_ = h.num_nl_vars_in_both;
-
-  info.nwv_ = h.num_linear_net_vars;
-  info.nfunc_ = h.num_funcs;
-  info.flags = h.flags;
-
-  info.nbv_ = h.num_linear_binary_vars;
-  info.niv_ = h.num_linear_integer_vars;
-  info.nlvbi_ = h.num_nl_integer_vars_in_both;
-  info.nlvci_ = h.num_nl_integer_vars_in_cons;
-  info.nlvoi_ = h.num_nl_integer_vars_in_objs;
-
-  info.nZc_ = h.num_con_nonzeros;
-  std::size_t int_max = std::numeric_limits<int>::max();
-  info.nzc_ = info.nZc_ <= int_max ? static_cast<int>(info.nZc_) : 0;
-  info.nZo_ = h.num_obj_nonzeros;
-  info.nzo_ = info.nZo_ <= int_max ? static_cast<int>(info.nZo_) : 0;
-
-  info.maxrownamelen_ = h.max_con_name_len;
-  info.maxcolnamelen_ = h.max_var_name_len;
-
-  info.comb_ = h.num_common_exprs_in_both;
-  info.comc_ = h.num_common_exprs_in_cons;
-  info.como_ = h.num_common_exprs_in_objs;
-  info.comc1_ = h.num_common_exprs_in_single_cons;
-  info.como1_ = h.num_common_exprs_in_single_objs;
-
-  info.nclcon_ = info.n_con_ + info.n_lcon_;
-
-  if (h.num_algebraic_cons < 0 || h.num_vars <= 0 || h.num_objs < 0) {
-    throw ASLError(ASL_readerr_corrupt,
-        fmt::format("invalid problem dimensions: M = {}, N = {}, NO = {}",
-          h.num_algebraic_cons, h.num_vars, h.num_objs));
-  }
-
-  info.n_var0 = info.n_var1 = info.n_var_;
-  info.n_con0 = info.n_con1 = info.n_con_;
-  info.x0len_ = std::max(info.nlvo_, info.nlvc_) * sizeof(double);
-  info.x0kind_ = ASL_first_x;
-  info.n_conjac_[0] = 0;
-  info.n_conjac_[1] = info.n_con_;
-
-  info.c_vars_ = info.o_vars_ = info.n_var_;
+  Convert(h, asl_->i);
 }
 
 void ASLBuilder::SetInfo(const ProblemInfo &pi) {
