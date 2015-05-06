@@ -295,7 +295,7 @@ mdbl_val[] = {
  static int hybmethod = CPX_ALG_PRIMAL;
  static int netiters = -1;
  static CPXFILEptr Logf;
- static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20150327\n";
+ static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20150425\n";
  static char *baralgname, *endbas, *endsol, *endtree, *endvec, *logfname;
  static char *paramfile, *poolstub, *pretunefile, *pretunefileprm;
  static char *startbas, *startsol, *starttree, *startvec, *tunefile, *tunefileprm;
@@ -1118,13 +1118,15 @@ sf_ipar(Option_Info *oi, keyword *kw, char *v)
 {
 	int f, t, z[3];
 	char *rv, *v0 = v;
-	const char *what = kw->name;
+	const char *fmt, *what = kw->name;
 
 	f = (int)strtol(v, &rv, 10);
-	if (rv == v) {
+	if (rv == v || (*rv != '=' && *rv != ' ')) {
 		printf("Expected an integer parameter number after %s%s, not \"%s\"\n",
 			what, oi->eqsign, v);
 		badopt_ASL(oi);
+		while(*v > ' ' && *v++ != ',');
+		return v;
 		}
 	for(v = rv; *v <= ' '; v++)
 		if (!*v) {
@@ -1139,10 +1141,12 @@ sf_ipar(Option_Info *oi, keyword *kw, char *v)
 				badopt_ASL(oi);
 				}
 	if (*v == '?' && v[1] <= ' ') {
-		CPXgetintparam(Env, f, &t);
+		rv = v + 1;
+		if (CPXgetintparam(Env, f, &t))
+			goto badopt;
 		printf("%s=%d=%d\n", what, f, t);
 		oi->option_echo &= ~ASL_OI_echothis;
-		return v + 1;
+		return rv;
 		}
 	t = (int)strtol(v, &rv, 10);
 	if (rv == v) {
@@ -1153,9 +1157,14 @@ sf_ipar(Option_Info *oi, keyword *kw, char *v)
 	else if (CPXsetintparam(Env, f, t)) {
 		z[2] = 0;
 		z[1] = 1;
-		CPXinfointparam(Env, f, z, z+1, z+2);
-		printf("rejecting %s=%d=%d; assigned value must be between %d and %d\n",
-			what, f, t, z[1], z[2]);
+		if (CPXinfointparam(Env, f, z, z+1, z+2)) {
+ badopt:
+			fmt = "Rejecting %s=%d=%d; bad iparam number %d.\n";
+			z[1] = f;
+			}
+		else
+			fmt = "Rejecting %s=%d=%d; assigned value must be between %d and %d\n";
+		printf(fmt, what, f, t, z[1], z[2]);
 		badopt_ASL(oi);
 		}
 	return rv;
@@ -1222,13 +1231,15 @@ sf_dpar(Option_Info *oi, keyword *kw, char *v)
 	double t, z[3];
 	int f;
 	char *rv, *v0 = v;
-	const char *what = kw->name;
+	const char *fmt, *what = kw->name;
 
 	f = (int)strtol(v, &rv, 10);
-	if (rv == v) {
+	if (rv == v || (*rv != '=' && *rv != ' ')) {
 		printf("Expected an integer parameter number after %s%s, not \"%s\"\n",
 			what, oi->eqsign, v);
 		badopt_ASL(oi);
+		while(*v > ' ' && *v++ != ',');
+		return v;
 		}
 	for(v = rv; *v <= ' '; v++)
 		if (!*v) {
@@ -1243,10 +1254,12 @@ sf_dpar(Option_Info *oi, keyword *kw, char *v)
 				badopt_ASL(oi);
 				}
 	if (*v == '?' && v[1] <= ' ') {
-		CPXgetdblparam(Env, f, &t);
+		rv = v + 1;
+		if (CPXgetdblparam(Env, f, &t))
+			goto badopt;
 		printf("%s=%d=%g\n", what, f, t);
 		oi->option_echo &= ~ASL_OI_echothis;
-		return v + 1;
+		return rv;
 		}
 	t = strtod(v, &rv);
 	if (rv == v) {
@@ -1257,9 +1270,14 @@ sf_dpar(Option_Info *oi, keyword *kw, char *v)
 	else if (CPXsetdblparam(Env, f, t)) {
 		z[2] = 0;
 		z[1] = 1;
-		CPXinfodblparam(Env, f, z, z+1, z+2);
-		printf("rejecting %s=%d=%g; assigned value must be between %g and %g\n",
-			what, f, t, z[1], z[2]);
+		if (CPXinfodblparam(Env, f, z, z+1, z+2)) {
+ badopt:
+			fmt = "Rejecting %s=%d=%g; bad dparam number %g.\n";
+			z[1] = f;
+			}
+		else
+			fmt = "Rejecting %s=%d=%g; assigned value must be between %g and %g\n";
+		printf(fmt, what, f, t, z[1], z[2]);
 		badopt_ASL(oi);
 		}
 	return rv;
@@ -1421,7 +1439,9 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	}
 #endif /*}*/
 
+#if 0
  char undoc[] = "Not documented.";
+#endif
 #ifdef CPLEX_MIP /*{*/
  static char
 	absmipap_desc[] = "Absolute mixed-integer optimality gap tolerance\n\
@@ -1592,6 +1612,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 		    1 = generate a modest number of MCS cuts\n\
 		    2 = generate MCS cuts aggressively.",
 #endif
+#if 0 /* old mipalg_desc; not sure when it change to the one for 12.6.1, given below */
 	mipalg_desc[] = "Algorithm used on mixed-integer subproblems\n\
 		(default 2):\n\
 		   1 = primal simplex\n\
@@ -1602,6 +1623,19 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 		specify mipcrossover instead.\n\
 		   5 = dual to iteration limit, then barrier\n\
 		   6 = barrier without crossover.",
+#else /* valid at least for CPLEX 12.6.1 */
+	mipalg_desc[] = "Algorithm used on mixed-integer subproblems:\n\
+		   0 = automatic choice (default)\n\
+		   1 = primal simplex\n\
+		   2 = dual simplex\n\
+		   3 = network simplex\n\
+		   4 = barrier\n\
+		   5 = sifting.\n\
+		For MIQP problems (quadratic objective, linear\n\
+		constraints), settings other than 3 and 5 are treated\n\
+		as 0.  For MIQCP problems (quadratic objective and\n\
+		constraints), all settings are treated as 4.",
+#endif
 	mipalgorithm_desc[] = "Synonym for \"mipalg\".",
 	mipbasis_desc[] = "Whether to compute a basis and dual variables for MIP\n\
 		problems when endbasis is not specified:\n\
@@ -1663,6 +1697,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 		after finding \"mipsolutions\" feasible solutions.\n\
 		Default = 2100000000.",
 	mipstart_desc[] = "Synonym for \"mipstartvalue\".",
+#if 0 /* old mipstartalg_desc; not sure when it change to the one for 12.6.1, given below */
 	mipstartalg_desc[] = "Which LP algorithm to use in solving the initial\n\
 		MIP subproblem:\n\
 		   1 = primal simplex\n\
@@ -1674,6 +1709,21 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 		   5 = dual simplex to iteration limit,\n\
 		       then barrier\n\
 		   6 = barrier without crossover.",
+#else /* valid at least for CPLEX 12.6.1 */
+	mipstartalg_desc[] = "For problems with integer variables, which algorithm\n\
+		to use in solving the initial MIP subproblem:\n\
+		   0 = automatic choice (default)\n\
+		   1 = primal simplex\n\
+		   2 = dual simplex\n\
+		   3 = network simplex\n\
+		   4 = barrier\n\
+		   5 = sifting\n\
+		   6 = concurrent (several at once, if possible).\n\
+		For MIQP problems (quadratic objective, linear\n\
+		constraints), setting 5 is treated as 0 and 6 as 4.\n\
+		For MIQCP problems (quadratic objective & constraints),\n\
+		all settings are treated as 4.",
+#endif
 	mipstartstatus_desc[] = "Whether to use incoming variable and constraint\n\
 		statuses if the problem has integer variables:\n\
 		   0 = no\n\
@@ -1804,7 +1854,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 		New in CPLEX 11 and meaningful only if some variables\n\
 		are integer or binary.  A pool of alternate MIP\n\
 		solutions is computed if poolstub is specified, and the\n\
-		solutions the remain in the solution pool (after some\n\
+		solutions that remain in the solution pool (after some\n\
 		are replaced if more than poolcapacity solutions are\n\
 		found) are written to files\n\
 		  (poolstub & '1') ... (poolstub & |solution pool|),\n\
@@ -2698,6 +2748,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 
  static keyword keywds[] = {	/* must be in alphabetical order */
 
+#if 0	/* These can be accessed via iparam and dparam. {*/
 	/* Undocumented keywords start with underscore... */
 
 	{ "_aggsort",	sf_int,		VP 1061 /*CPX_PARAM_PREAGGSORT*/, undoc},
@@ -2731,6 +2782,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 #endif
 	{ "_splitrow",	sf_int,		VP 1079 /*CPX_PARAM_PRESPLITROW*/, undoc},
 	{ "_svbound",	sf_int,		VP 1069 /*CPX_PARAM_SVBNDSTR*/, undoc},
+#endif /*}*/
 
 	/* Documented keywords... */
 
@@ -2829,7 +2881,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 #endif
 	{ "dependency",	sf_int1,	VP CPX_PARAM_DEPIND, dependency_desc },
 #ifdef CPX_PARAM_DETTILIM
-	{ "dettimelim",	sf_dpar,	VP CPX_PARAM_DETTILIM, dettimelim_desc },
+	{ "dettimelim",	sf_dbl,		VP CPX_PARAM_DETTILIM, dettimelim_desc },
 #endif
 	{ "dgradient",	sf_int,		VP CPX_PARAM_DPRIIND, dgradient_desc },
 #ifdef CPLEX_MIP
@@ -3238,7 +3290,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	};
 
  static Option_Info Oinfo = { "cplex", 0, "cplex_options", keywds, nkeywds, 0,
-				cplex_version, 0,0,0,0,0, 20150327, 0,0,0,0,0,0,0,
+				cplex_version, 0,0,0,0,0, 20150425, 0,0,0,0,0,0,0,
 				ASL_OI_tabexpand | ASL_OI_addnewline };
 
  static void
