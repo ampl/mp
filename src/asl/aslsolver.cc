@@ -59,3 +59,9 @@ void mp::ASLSolver::Solve(ASLProblem &p, SolutionHandler &sh) {
   ASLSolutionHandler asl_sol_handler(sh, p);
   DoSolve(p, asl_sol_handler);
 }
+
+void mp::internal::CheckDemoVersion(const NLHeader &header) {
+  ASL asl = ASL();
+  mp::asl::internal::Convert(header, asl.i);
+  student_check_ASL(&asl);
+}
