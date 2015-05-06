@@ -1,7 +1,8 @@
-20150318
- misc.c, mpec_adj.c, obj_adj.c: fix a bug that bit when reader flags
-ASL_cc_simplify caused changes after flags ASL_obj_replace_ineq or
-ASL_obj_replace_eq had caused changes.
- objval.c, x2check.c xp1known.c xp2known.c: only copy nonlinear variable
-values to expr_v structures (saving a bit of time on some problems).
- pfg_read.c, pfghread.c:  fix a possible fault; fix a minor memory leak.
+20150427
+  asl.h, obj_adj.c, qp_read.c:  fix a bug (possible fault under some
+conditions) in some solver interfaces that call qp_read() and allow
+objective modifications on problems with quadratic constraints and
+linear objectives.  The entire library should be recompiled.
+  mqpcheckv.c, nqpcheck.c, nqpcheckZ.c:  for the benefit of interfaces
+to cplex, gurobi, and xpress, use Cgrad rather than asl->i.Cgrad0,
+which matters when there are objective modifications.

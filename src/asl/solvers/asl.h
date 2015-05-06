@@ -611,6 +611,7 @@ Edaginfo {
 	/* for modifying objectives */
 	Objrep	**Or;
 	real *orscratch;	/* scratch (if needed) */
+	void (*opify)(ASL*);
 
 	/* for simplifying complementarities */
 	MPEC_Adjust *mpa;

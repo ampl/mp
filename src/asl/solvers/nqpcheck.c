@@ -625,8 +625,7 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 			co = cm[co];
  use_Cgrad:
 		c = con_de + co;
-		if (!(cgp = asl->i.Cgrad0))
-			cgp = Cgrad;
+		cgp = Cgrad;
 		cgp += co;
 		ogp = 0;
 		}

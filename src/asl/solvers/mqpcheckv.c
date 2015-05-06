@@ -644,8 +644,7 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 			co = cm[co];
  use_Cgrad:
 		c = con_de + co;
-		if (!(cgp = asl->i.Cgrad0))
-			cgp = Cgrad;
+		cgp = Cgrad;
 		cgp += co;
 		ogp = 0;
 		}

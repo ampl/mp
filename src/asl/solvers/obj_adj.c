@@ -172,7 +172,7 @@ obj_adj1(ASL *asl, int no)
 	od->c1 = c1;
 	od->c12 = -t;
 	od->nxval = -1;
-	od->opify = 0;
+	od->opify = asl->i.opify;
 	od->f = 0.;
 	od->cg = od->cg0 = 0;
 
