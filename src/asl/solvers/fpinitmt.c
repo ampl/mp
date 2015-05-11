@@ -211,7 +211,7 @@ fpinit_ASL(void)
 	}
 
 #ifdef __GNUC__
-#if __GNUC__ >= 4 && __GNUC_MINOR__ >= 5
+#if (__GNUC__ >= 4 && __GNUC_MINOR__ >= 5) || __GNUC__ >= 5
 #undef NO_matherr
 #define NO_matherr
 #endif
