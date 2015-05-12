@@ -975,6 +975,7 @@ QPinfo {
  extern void colstart_inc_ASL(ASL*);
  extern void conscale_ASL(ASL*, int, real, fint*);
  extern void conval_(fint *M, fint *N, real *X, real *F, fint *nerror);
+ extern int degree_ASL(ASL*, int, void**);
  extern void delprb_(VOID);
  extern void dense_j_ASL(ASL*);
  extern void densej_(VOID);

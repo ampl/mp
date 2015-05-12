@@ -14,6 +14,7 @@ conadj.obj
 conpval.obj
 conscale.obj
 conval.obj
+degree.obj
 derprop.obj
 details.obj
 dtoa1.obj

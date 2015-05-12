@@ -1,8 +1,2 @@
-20150427
-  asl.h, obj_adj.c, qp_read.c:  fix a bug (possible fault under some
-conditions) in some solver interfaces that call qp_read() and allow
-objective modifications on problems with quadratic constraints and
-linear objectives.  The entire library should be recompiled.
-  mqpcheckv.c, nqpcheck.c, nqpcheckZ.c:  for the benefit of interfaces
-to cplex, gurobi, and xpress, use Cgrad rather than asl->i.Cgrad0,
-which matters when there are objective modifications.
+20150512
+  fpinitmt.c: tweak for gcc 5.0; no change to asldate.c.

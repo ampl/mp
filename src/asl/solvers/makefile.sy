@@ -56,6 +56,7 @@ a = \
 	conpval.obj \
 	conscale.obj \
 	conval.obj \
+	degree.obj \
 	derprop.obj \
 	details.obj \
 	dtoa1.obj \
@@ -152,7 +153,7 @@ com2eval.obj con2ival.obj con2val.obj obj2val.obj\
  x2check.obj: jac2dim.h nlp2.h $(Aslh)
 conpval.obj pshvprod.obj xp2known.obj:\
 	jacpdim.h asl_pfgh.h psinfo.h nlp2.h $(Aslh)
-comeval.obj con1ival.obj conval.obj mip_pri.obj objval.obj qpcheck.obj\
+comeval.obj con1ival.obj conval.obj degree.obj mip_pri.obj objval.obj qpcheck.obj\
  qpcheckZ.obj readsol.obj: nlp.h $(Aslh)
 indic_cons.obj misc.obj mpec_adj.obj nl_obj.obj obj_adj.obj sos_add.obj suf_sos.obj:\
 	nlp.h nlp2.h asl_pfg.h asl_pfgh.h psinfo.h $(Aslh)

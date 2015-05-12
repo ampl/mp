@@ -948,6 +948,7 @@ new_range(Static *S, range *r, range **rp)
 	r1->nintv = 0;
 	r1->n = r->n;
 	r1->nv = r->nv;
+	r1->chksum = r->chksum;
 	r1->refs = 0;
 	r1->lasttermno = -1;
 	r1->hnext = r1->hunext = 0;

@@ -105,6 +105,7 @@ a = \
 	conpval.c \
 	conscale.c \
 	conval.c \
+	degree.c \
 	derprop.c \
 	details.c \
 	dtoa1.c \
@@ -205,7 +206,7 @@ com2eval.o con2ival.o con2val.o obj2val.o\
  x2check.o: jac2dim.h nlp2.h $(Aslh)
 conpval.o pshvprod.o xp2known.o:\
 	jacpdim.h asl_pfgh.h psinfo.h nlp2.h $(Aslh)
-comeval.o con1ival.o conval.o mip_pri.o objval.o qpcheck.o\
+comeval.o con1ival.o conval.o degree.o mip_pri.o objval.o qpcheck.o\
  qpcheckZ.o readsol.o: nlp.h $(Aslh)
 indic_cons.o misc.o mpec_adj.o nl_obj.o obj_adj.o sos_add.o suf_sos.o:\
 	nlp.h nlp2.h asl_pfg.h asl_pfgh.h psinfo.h $(Aslh)
@@ -328,6 +329,7 @@ xs0 = \
 	conpval.c \
 	conscale.c \
 	conval.c \
+	degree.c \
 	derprop.c \
 	details.c0 \
 	dtoa.c \
