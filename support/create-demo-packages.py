@@ -182,6 +182,7 @@ if __name__ == '__main__':
         url = 'http://ampl.com/dl/neos/kestrel.zip'
         with zipfile.ZipFile(retrieve_cached(url)) as f:
           f.extractall(ampl_demo_dir)
+      shutil.copy('ampl.lic', ampl_demo_dir)
       basename = 'ampl-demo-' + system
       package(basename, archive_format, package_dir)
 
