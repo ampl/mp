@@ -1112,6 +1112,8 @@ FMT_FUNC int fmt::fprintf(std::FILE *f, StringRef format, ArgList args) {
   return std::fwrite(w.data(), 1, size, f) < size ? -1 : static_cast<int>(size);
 }
 
+template class fmt::internal::BasicData<void>;
+
 // Explicit instantiations for char.
 
 template const char *fmt::BasicFormatter<char>::format(
