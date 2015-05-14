@@ -37,10 +37,12 @@ def get_mp_version():
       if m:
         return m.group(1)
 
-def pip_install(package, commit):
-  "Install package from GitHub using pip."
-  check_call(['pip', 'install', '-q',
-              'git+git://github.com/{0}.git@{1}'.format(package, commit)])
+def pip_install(package, **kwargs):
+  "Install package using pip."
+  commit = kwargs.get('commit')
+  if commit:
+    package = 'git+git://github.com/{0}.git@{1}'.format(package, commit)
+  check_call(['pip', 'install', '-q', package])
 
 def build_docs(workdir, travis):
   # Install dependencies.
@@ -52,8 +54,8 @@ def build_docs(workdir, travis):
   activate_this_file = os.path.join(virtualenv_dir, 'bin', 'activate_this.py')
   execfile(activate_this_file, dict(__file__=activate_this_file))
   # Install Sphinx and Breathe.
-  pip_install('sphinx-doc/sphinx', 'a1a80ab509fbf01aa459e0ec5a5c9b66f011ee47')
-  pip_install('michaeljones/breathe', '18bd461b4e29dde0adf5df4b3da7e5473e2c2983')
+  pip_install('sphinx==1.3.1')
+  pip_install('michaeljones/breathe', commit='18bd461b4e29dde0adf5df4b3da7e5473e2c2983')
   # Clone the ampl.github.io repo.
   repo = 'ampl.github.io'
   check_call(['git', 'clone', 'https://github.com/ampl/{}.git'.format(repo)],
