@@ -1,8 +1,9 @@
+#!/usr/bin/env python
 # Build documentation
 
 from __future__ import print_function
 import mmap, os, re, shutil
-from subprocess import call, check_call, check_output, Popen, PIPE, STDOUT
+from subprocess import call, check_call, check_output, Popen, PIPE
 
 def extract_docs(output_dir):
   "Extract the AMPLGSL documentation from the code."
@@ -41,10 +42,7 @@ def pip_install(package, **kwargs):
     package = 'git+git://github.com/{0}.git@{1}'.format(package, commit)
   check_call(['pip', 'install', '-q', package])
 
-def build_docs(workdir, travis):
-  # Install dependencies.
-  if travis:
-    check_call(['sudo', 'apt-get', 'install', 'python-virtualenv', 'doxygen'])
+def build_docs(workdir):
   # Create virtualenv.
   virtualenv_dir = os.path.join(workdir, 'virtualenv')
   check_call(['virtualenv', virtualenv_dir])
@@ -103,25 +101,15 @@ def build_docs(workdir, travis):
       ALIASES           = "rst=\verbatim embed:rst"
       ALIASES          += "endrst=\endverbatim"
     '''.format(os.path.abspath('.')))
-  if p.returncode != 0:
-    return p.returncode
-  # Pass the MP version via environment variables rather than command-line
-  # -D version=value option because the latter doesn't work when version
-  # is used in conf.py.
-  env = os.environ.copy()
-  env['MP_VERSION'] = get_mp_version()
-  check_call(['sphinx-build', '-b', 'html', build_dir, repo_dir], env=env)
-  # Push docs to GitHub pages.
-  if travis:
-    check_call(['git', 'config', '--global', 'user.name', 'amplbot'])
-    check_call(['git', 'config', '--global', 'user.email', 'viz@ampl.com'])
-  check_call(['git', 'add', '--all'], cwd=repo_dir)
-  returncode = 0
-  if call(['git', 'diff-index', '--quiet', 'HEAD'], cwd=repo_dir):
-    check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo_dir)
-    cmd = 'git push https://$KEY@github.com/ampl/{}.git master'.format(repo)
-    p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT, cwd=repo_dir)
-    # Remove URL from output because it may contain a token.
-    print(re.sub(r'https:.*\.git', '<url>', p.communicate()[0]))
-    returncode = p.returncode
-  return returncode
+  returncode = p.returncode
+  if returncode == 0:
+    # Pass the MP version via environment variables rather than command-line
+    # -D version=value option because the latter doesn't work when version
+    # is used in conf.py.
+    env = os.environ.copy()
+    env['MP_VERSION'] = get_mp_version()
+    check_call(['sphinx-build', '-b', 'html', build_dir, repo_dir], env=env)
+  return (returncode, repo_dir)
+
+if __name__ == '__main__':
+  build_docs('.')

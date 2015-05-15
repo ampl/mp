@@ -2,10 +2,10 @@
 # Build the project on Travis CI.
 
 from __future__ import print_function
-import os, shutil, tempfile
+import os, re, shutil, tempfile
 from bootstrap import bootstrap
 from download import Downloader
-from subprocess import check_call, check_output
+from subprocess import call, check_call, check_output, Popen, PIPE, STDOUT
 from build_docs import build_docs
 
 build = os.environ['BUILD']
@@ -14,7 +14,23 @@ if build == 'doc':
   travis = 'TRAVIS' in os.environ
   workdir = tempfile.mkdtemp()
   try:
-    returncode = build_docs(workdir, travis=travis)
+    # Install dependencies.
+    if travis:
+      check_call(['sudo', 'apt-get', 'install', 'python-virtualenv', 'doxygen'])
+    returncode, repo_dir = build_docs(workdir)
+    if returncode == 0:
+      if travis:
+        check_call(['git', 'config', '--global', 'user.name', 'amplbot'])
+        check_call(['git', 'config', '--global', 'user.email', 'viz@ampl.com'])
+      # Push docs to GitHub pages.
+      check_call(['git', 'add', '--all'], cwd=repo_dir)
+      if call(['git', 'diff-index', '--quiet', 'HEAD'], cwd=repo_dir):
+        check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo_dir)
+        cmd = 'git push https://$KEY@github.com/ampl/ampl.github.io.git master'
+        p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT, cwd=repo_dir)
+        # Remove URL from output because it may contain a token.
+        print(re.sub(r'https:.*\.git', '<url>', p.communicate()[0]))
+        returncode = p.returncode
   finally:
     # Don't remove workdir on Travis because the VM is discarded anyway.
     if not travis:
