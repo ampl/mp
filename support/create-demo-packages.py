@@ -35,9 +35,7 @@ ampltabl_sys = {
 }
 
 # Files to download.
-download_files = [
-  'README', 'ampl.gz', 'cplex.gz', 'gjh.gz',
-  'gurobi.tgz', 'minos.gz', 'snopt.gz']
+download_files = ['README', 'gjh.gz']
 
 # Files that need executable permission.
 executables = Set(['ampl', 'cplex', 'gjh', 'gurobix', 'minos', 'snopt'])
@@ -182,6 +180,19 @@ if __name__ == '__main__':
         url = 'http://ampl.com/dl/neos/kestrel.zip'
         with zipfile.ZipFile(retrieve_cached(url)) as f:
           f.extractall(ampl_demo_dir)
+      for dist in ['ampl', 'baron', 'cplex', 'gurobi', 'knitro',
+                   'lgo', 'locsol', 'minos', 'snopt']:
+        pattern = '/var/licadmin/bd/{}.{}.*'.format(dist, ampltabl_sys[system])
+        filenames = glob(pattern)
+        if len(filenames) == 0 and not (dist == 'locsol' and system == 'macosx'):
+          raise Exception('no results for ' + pattern)
+        for filename in filenames:
+          if filename.endswith('.tgz'):
+            with tarfile.open(filename, 'r:gz') as f:
+              f.extractall(ampl_demo_dir)
+          else:
+            with zipfile.ZipFile(filename) as f:
+              f.extractall(ampl_demo_dir)
       shutil.copy('ampl.lic', ampl_demo_dir)
       basename = 'ampl-demo-' + system
       package(basename, archive_format, package_dir)
