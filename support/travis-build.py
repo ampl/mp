@@ -6,7 +6,6 @@ import os, re, shutil, tempfile
 from bootstrap import bootstrap
 from download import Downloader
 from subprocess import call, check_call, check_output, Popen, PIPE, STDOUT
-from build_docs import build_docs
 
 build = os.environ['BUILD']
 if build == 'doc':
@@ -17,7 +16,7 @@ if build == 'doc':
     # Install dependencies.
     if travis:
       check_call(['sudo', 'apt-get', 'install', 'python-virtualenv', 'doxygen'])
-    returncode, repo_dir = build_docs(workdir)
+    returncode, repo_dir = __import__('build-docs').build_docs(workdir)
     if returncode == 0:
       if travis:
         check_call(['git', 'config', '--global', 'user.name', 'amplbot'])
@@ -28,8 +27,8 @@ if build == 'doc':
         check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo_dir)
         cmd = 'git push https://$KEY@github.com/ampl/ampl.github.io.git master'
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT, cwd=repo_dir)
-        # Remove URL from output because it may contain a token.
-        print(re.sub(r'https:.*\.git', '<url>', p.communicate()[0]))
+        # Print the output without the key.
+        print(p.communicate()[0].replace(os.environ['KEY'], '$KEY'))
         returncode = p.returncode
   finally:
     # Don't remove workdir on Travis because the VM is discarded anyway.

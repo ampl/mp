@@ -5,6 +5,8 @@ from __future__ import print_function
 import mmap, os, re, shutil
 from subprocess import call, check_call, check_output, Popen, PIPE
 
+mp_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
 def extract_docs(output_dir):
   "Extract the AMPLGSL documentation from the code."
   output = None
@@ -61,8 +63,9 @@ def build_docs(workdir):
   # image blobs.
   build_dir = os.path.join(workdir, 'build')
   shutil.copytree(os.path.join(repo_dir, 'src'), build_dir)
-  for entry in os.listdir('doc'):
-    src = os.path.join('doc', entry)
+  doc_dir = os.path.join(mp_dir, 'doc')
+  for entry in os.listdir(doc_dir):
+    src = os.path.join(doc_dir, entry)
     dst = os.path.join(build_dir, entry)
     if os.path.isdir(src):
       shutil.copytree(src, dst)
