@@ -100,7 +100,6 @@ def build_docs(workdir):
       XML_OUTPUT        = doxyxml
       QUIET             = YES
       JAVADOC_AUTOBRIEF = YES
-      EXCLUDE_SYMBOLS   = mp::internal::*
       ALIASES           = "rst=\verbatim embed:rst"
       ALIASES          += "endrst=\endverbatim"
     '''.format(os.path.abspath('.')))
