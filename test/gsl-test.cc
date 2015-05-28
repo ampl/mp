@@ -1162,13 +1162,6 @@ TEST_F(GSLTest, GaussianTail) {
   TEST_FUNC2(gsl_ran_ugaussian_tail_pdf, NoDeriv());
 }
 
-struct ExponentialInfo : FunctionInfo {
-  Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
-    return args[0].number() >= 0 && args[1].number() == 0 ?
-        DerivError(f, args) : Result();
-  }
-};
-
 TEST_F(GSLTest, Exponential) {
   TEST_FUNC2(gsl_ran_exponential, NoDeriv());
   TEST_FUNC(gsl_ran_exponential_pdf);
