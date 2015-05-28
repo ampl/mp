@@ -2749,7 +2749,18 @@ WRAP(gsl_ran_levy_skew, RNG_ARGS3)
 WRAP(gsl_ran_gamma, RNG_ARGS2)
 WRAP(gsl_ran_gamma_knuth, RNG_ARGS2)
 WRAP(gsl_ran_gamma_pdf, ARGS3)
-WRAP(gsl_cdf_gamma_P, ARGS3)
+
+static double amplgsl_cdf_gamma_P(arglist *al) {
+  double x = al->ra[0], a = al->ra[1], b = al->ra[2];
+  if (al->derivs && check_const_arg(al, 1, "a") &&
+      check_const_arg(al, 2, "b") && !al->dig[0]) {
+    *al->derivs = pow(x / b, a) / (exp(x / b) * x * gsl_sf_gamma(a));
+    if (al->hes)
+      *al->hes = *al->derivs * ((a - 1) / x - 1 / b);
+  }
+  return check_result(al, gsl_cdf_gamma_P(x, a, b));
+}
+
 WRAP(gsl_cdf_gamma_Q, ARGS3)
 WRAP(gsl_cdf_gamma_Pinv, ARGS3)
 WRAP(gsl_cdf_gamma_Qinv, ARGS3)
