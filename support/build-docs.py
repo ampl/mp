@@ -102,7 +102,7 @@ def build_docs(workdir):
       JAVADOC_AUTOBRIEF = YES
       ALIASES           = "rst=\verbatim embed:rst"
       ALIASES          += "endrst=\endverbatim"
-    '''.format(os.path.abspath('.')))
+    '''.format(mp_dir))
   returncode = p.returncode
   if returncode == 0:
     # Pass the MP version via environment variables rather than command-line
