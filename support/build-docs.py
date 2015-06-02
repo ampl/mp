@@ -52,7 +52,7 @@ def build_docs(workdir):
   execfile(activate_this_file, dict(__file__=activate_this_file))
   # Install Sphinx and Breathe.
   pip_install('sphinx==1.3.1')
-  pip_install('michaeljones/breathe', commit='aaf28c57c616eab2c672449172642f74093e8917')
+  pip_install('michaeljones/breathe', commit='07b6e501fbe71917ec7919982ee9e5b71d318e38')
   # Clone the ampl.github.io repo.
   repo = 'ampl.github.io'
   check_call(['git', 'clone', 'https://github.com/ampl/{}.git'.format(repo)],
