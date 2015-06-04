@@ -6442,22 +6442,22 @@ void funcadd_ASL(AmplExports *ae)
   ADDFUNC(gsl_ran_tdist_pdf, 2);
 
   /**
-   * .. function:: gsl_ran_tdist_P(x, nu)
+   * .. function:: gsl_cdf_tdist_P(x, nu)
    */
   ADDFUNC(gsl_cdf_tdist_P, 2);
 
   /**
-   * .. function:: gsl_ran_tdist_Q(x, nu)
+   * .. function:: gsl_cdf_tdist_Q(x, nu)
    */
   ADDFUNC(gsl_cdf_tdist_Q, 2);
 
   /**
-   * .. function:: gsl_ran_tdist_Pinv(P, nu)
+   * .. function:: gsl_cdf_tdist_Pinv(P, nu)
    */
   ADDFUNC(gsl_cdf_tdist_Pinv, 2);
 
   /**
-   * .. function:: gsl_ran_tdist_Qinv(Q, nu)
+   * .. function:: gsl_cdf_tdist_Qinv(Q, nu)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the t-distribution with ``nu``
