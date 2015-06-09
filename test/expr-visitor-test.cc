@@ -158,6 +158,9 @@ struct MockVisitor : mp::ExprVisitor<MockVisitor, TestResult> {
   MOCK_METHOD1(VisitForAll, TestResult (IteratedLogicalExpr e));
   MOCK_METHOD1(VisitAllDiff, TestResult (PairwiseExpr e));
   MOCK_METHOD1(VisitNotAllDiff, TestResult (PairwiseExpr e));
+
+  MOCK_METHOD1(VisitStringLiteral, TestResult (StringLiteral e));
+  MOCK_METHOD1(VisitSymbolicIf, TestResult (SymbolicIfExpr e));
 };
 
 class ExprVisitorTest : public ::testing::Test {
@@ -192,30 +195,30 @@ class ExprVisitorTest : public ::testing::Test {
 // An expression visitor that doesn't handle anything.
 struct NullVisitor : mp::ExprVisitor<NullVisitor, TestResult> {};
 
-// A visitor for testing VisitUnhandledNumericExpr and
-// VisitUnhandledLogicalExpr.
+// A visitor for testing VisitNumeric and VisitLogical.
 struct MockUnhandledVisitor :
     mp::ExprVisitor<MockUnhandledVisitor, TestResult> {
-  MOCK_METHOD1(VisitUnhandledNumericExpr, TestResult (NumericExpr e));
-  MOCK_METHOD1(VisitUnhandledLogicalExpr, TestResult (LogicalExpr e));
+  MOCK_METHOD1(VisitNumeric, TestResult (NumericExpr e));
+  MOCK_METHOD1(VisitLogical, TestResult (LogicalExpr e));
 };
+
+#define TEST_UNHANDLED(expr) \
+  EXPECT_THROW_MSG(StrictMock<NullVisitor>().Visit(expr), \
+                   mp::UnsupportedError, \
+                   fmt::format("unsupported: {}", str(expr.kind())))
 
 // Tests that UnsupportedError is thrown if expr is unhandled.
 #define TEST_UNHANDLED_NUMERIC(expr) { \
-    EXPECT_THROW_MSG(StrictMock<NullVisitor>().Visit(expr), \
-                     mp::UnsupportedError, \
-                     fmt::format("unsupported: {}", str(expr.kind()))); \
+    TEST_UNHANDLED(expr); \
     StrictMock<MockUnhandledVisitor> visitor; \
-    EXPECT_CALL(visitor, VisitUnhandledNumericExpr(expr)); \
+    EXPECT_CALL(visitor, VisitNumeric(expr)); \
     visitor.Visit(expr); \
   }
 
 #define TEST_UNHANDLED_LOGICAL(expr) { \
-    EXPECT_THROW_MSG(StrictMock<NullVisitor>().Visit(expr), \
-                     mp::UnsupportedError, \
-                     fmt::format("unsupported: {}", str(expr.kind()))); \
+    TEST_UNHANDLED(expr); \
     StrictMock<MockUnhandledVisitor> visitor; \
-    EXPECT_CALL(visitor, VisitUnhandledLogicalExpr(expr)); \
+    EXPECT_CALL(visitor, VisitLogical(expr)); \
     visitor.Visit(expr); \
   }
 
@@ -529,6 +532,22 @@ TEST_ITERATED_LOGICAL(FORALL, ForAll)
 
 TEST_PAIRWISE(ALLDIFF, AllDiff)
 TEST_PAIRWISE(NOT_ALLDIFF, NotAllDiff)
+
+TEST_F(ExprVisitorTest, VisitStringLiteral) {
+  auto e = factory_.MakeStringLiteral("foo");
+  EXPECT_CALL(visitor_, VisitStringLiteral(e));
+  mp::Expr base = e;
+  visitor_.Visit(base);
+  TEST_UNHANDLED(base);
+}
+
+TEST_F(ExprVisitorTest, VisitSymbolicIf) {
+  auto e = factory_.MakeSymbolicIf(false_, var_, var_);
+  EXPECT_CALL(visitor_, VisitSymbolicIf(e));
+  mp::Expr base = e;
+  visitor_.Visit(base);
+  TEST_UNHANDLED(base);
+}
 
 TEST_F(ExprVisitorTest, InvalidExpr) {
   using ::testing::_;

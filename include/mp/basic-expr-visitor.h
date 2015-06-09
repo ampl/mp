@@ -51,7 +51,8 @@
   typedef typename ExprTypes::ImplicationExpr ImplicationExpr; \
   typedef typename ExprTypes::IteratedLogicalExpr IteratedLogicalExpr; \
   typedef typename ExprTypes::PairwiseExpr PairwiseExpr; \
-  typedef typename ExprTypes::StringLiteral StringLiteral
+  typedef typename ExprTypes::StringLiteral StringLiteral; \
+  typedef typename ExprTypes::SymbolicIfExpr SymbolicIfExpr
 
 namespace mp {
 
@@ -67,29 +68,33 @@ class BasicExprVisitor {
 
   Result Visit(Expr e);
 
-  Result VisitUnhandledNumericExpr(NumericExpr e) {
+  Result VisitUnsupported(Expr e) {
     throw MakeUnsupportedError(str(e.kind()));
   }
 
-  Result VisitUnhandledLogicalExpr(LogicalExpr e) {
-    throw MakeUnsupportedError(str(e.kind()));
+  Result VisitNumeric(NumericExpr e) {
+    return VisitUnsupported(e);
+  }
+
+  Result VisitLogical(LogicalExpr e) {
+    return VisitUnsupported(e);
   }
 
   Result VisitNumericConstant(NumericConstant c) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(c));
+    return MP_DISPATCH(VisitNumeric(c));
   }
 
   Result VisitVariable(Variable v) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(v));
+    return MP_DISPATCH(VisitNumeric(v));
   }
 
   Result VisitCommonExpr(CommonExpr e) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitNumeric(e));
   }
 
   // Visits a unary expression or a function taking one argument.
   Result VisitUnary(UnaryExpr e) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitNumeric(e));
   }
 
   Result VisitMinus(UnaryExpr e) {
@@ -178,7 +183,7 @@ class BasicExprVisitor {
 
   // Visits a binary expression or a function taking two arguments.
   Result VisitBinary(BinaryExpr e) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitNumeric(e));
   }
 
   Result VisitAdd(BinaryExpr e) {
@@ -243,19 +248,19 @@ class BasicExprVisitor {
   }
 
   Result VisitIf(IfExpr e) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitNumeric(e));
   }
 
   Result VisitPLTerm(PLTerm e) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitNumeric(e));
   }
 
   Result VisitCall(CallExpr e) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitNumeric(e));
   }
 
   Result VisitVarArg(VarArgExpr e) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitNumeric(e));
   }
 
   Result VisitMin(VarArgExpr e) {
@@ -267,31 +272,31 @@ class BasicExprVisitor {
   }
 
   Result VisitSum(SumExpr e) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitNumeric(e));
   }
 
   Result VisitNumberOf(NumberOfExpr e) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitNumeric(e));
   }
 
   Result VisitNumberOfSym(SymbolicNumberOfExpr e) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitNumeric(e));
   }
 
   Result VisitCount(CountExpr e) {
-    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitNumeric(e));
   }
 
   Result VisitLogicalConstant(LogicalConstant c) {
-    return MP_DISPATCH(VisitUnhandledLogicalExpr(c));
+    return MP_DISPATCH(VisitLogical(c));
   }
 
   Result VisitNot(NotExpr e) {
-    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitLogical(e));
   }
 
   Result VisitBinaryLogical(BinaryLogicalExpr e) {
-    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitLogical(e));
   }
 
   Result VisitOr(BinaryLogicalExpr e) {
@@ -307,7 +312,7 @@ class BasicExprVisitor {
   }
 
   Result VisitRelational(RelationalExpr e) {
-    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitLogical(e));
   }
 
   Result VisitLT(RelationalExpr e) {
@@ -335,7 +340,7 @@ class BasicExprVisitor {
   }
 
   Result VisitLogicalCount(LogicalCountExpr e) {
-    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitLogical(e));
   }
 
   Result VisitAtLeast(LogicalCountExpr e) {
@@ -363,11 +368,11 @@ class BasicExprVisitor {
   }
 
   Result VisitImplication(ImplicationExpr e) {
-    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitLogical(e));
   }
 
   Result VisitIteratedLogical(IteratedLogicalExpr e) {
-    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitLogical(e));
   }
 
   Result VisitExists(IteratedLogicalExpr e) {
@@ -379,11 +384,19 @@ class BasicExprVisitor {
   }
 
   Result VisitAllDiff(PairwiseExpr e) {
-    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitLogical(e));
   }
 
   Result VisitNotAllDiff(PairwiseExpr e) {
-    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitLogical(e));
+  }
+
+  Result VisitStringLiteral(StringLiteral e) {
+    return VisitUnsupported(e);
+  }
+
+  Result VisitSymbolicIf(SymbolicIfExpr e) {
+    return VisitUnsupported(e);
   }
 };
 
@@ -561,6 +574,14 @@ Result BasicExprVisitor<Impl, Result, ET>::Visit(Expr e) {
   case expr::NOT_ALLDIFF:
     return MP_DISPATCH(VisitNotAllDiff(
                          ET::template UncheckedCast<PairwiseExpr>(e)));
+
+    // String expressions.
+  case expr::STRING:
+    return MP_DISPATCH(VisitStringLiteral(
+                         ET::template UncheckedCast<StringLiteral>(e)));
+  case expr::IFSYM:
+    return MP_DISPATCH(VisitSymbolicIf(
+                         ET::template UncheckedCast<SymbolicIfExpr>(e)));
   }
 }
 }  // namespace mp

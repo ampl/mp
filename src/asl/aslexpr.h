@@ -820,6 +820,7 @@ struct ExprTypes {
   typedef mp::asl::IteratedLogicalExpr IteratedLogicalExpr;
   typedef mp::asl::PairwiseExpr PairwiseExpr;
   typedef mp::asl::StringLiteral StringLiteral;
+  typedef mp::asl::SymbolicIfExpr SymbolicIfExpr;
 
   // Checked cast. See mp::Cast.
   template <typename ExprType>

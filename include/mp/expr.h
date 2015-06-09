@@ -614,6 +614,7 @@ struct ExprTypes {
   typedef mp::IteratedLogicalExpr IteratedLogicalExpr;
   typedef mp::PairwiseExpr PairwiseExpr;
   typedef mp::StringLiteral StringLiteral;
+  typedef mp::SymbolicIfExpr SymbolicIfExpr;
 
   // Checked cast. See mp::Cast.
   template <typename ExprType>
