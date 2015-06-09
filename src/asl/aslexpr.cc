@@ -45,7 +45,7 @@ using asl::internal::HashCombine;
 
 namespace {
 // Computes a hash value for an expression.
-class ExprHasher : public mp::asl::ExprVisitor<ExprHasher, size_t, size_t> {
+class ExprHasher : public mp::asl::ExprVisitor<ExprHasher, size_t> {
  private:
   static size_t Hash(Expr e) {
     return HashCombine<int>(0, e.kind());

@@ -69,19 +69,15 @@ TEST(ExprTypesTest, Typedefs) {
   CHECK_EXPR_TYPE(PairwiseExpr);
 }
 
-// Dummy struct used as an argument to TestResult and TestLResult constructors
-// to make sure they are not called accidentally.
+// Dummy struct used as an argument to the TestResult constructor
+// to make sure it is not called accidentally.
 struct Dummy {};
 
-// Use different classes for Result and LResult to make sure that it works.
 struct TestResult {
   TestResult(Dummy) {}
 };
-struct TestLResult {
-  TestLResult(Dummy) {}
-};
 
-struct MockVisitor : mp::ExprVisitor<MockVisitor, TestResult, TestLResult> {
+struct MockVisitor : mp::ExprVisitor<MockVisitor, TestResult> {
   MOCK_METHOD1(VisitNumericConstant, TestResult (NumericConstant e));
   MOCK_METHOD1(VisitVariable, TestResult (Variable e));
   MOCK_METHOD1(VisitCommonExpr, TestResult (CommonExpr e));
@@ -134,34 +130,34 @@ struct MockVisitor : mp::ExprVisitor<MockVisitor, TestResult, TestLResult> {
   MOCK_METHOD1(VisitNumberOf, TestResult (NumberOfExpr e));
   MOCK_METHOD1(VisitCount, TestResult (CountExpr e));
 
-  MOCK_METHOD1(VisitLogicalConstant, TestLResult (LogicalConstant e));
-  MOCK_METHOD1(VisitNot, TestLResult (NotExpr e));
+  MOCK_METHOD1(VisitLogicalConstant, TestResult (LogicalConstant e));
+  MOCK_METHOD1(VisitNot, TestResult (NotExpr e));
 
-  MOCK_METHOD1(VisitOr, TestLResult (BinaryLogicalExpr e));
-  MOCK_METHOD1(VisitAnd, TestLResult (BinaryLogicalExpr e));
-  MOCK_METHOD1(VisitIff, TestLResult (BinaryLogicalExpr e));
+  MOCK_METHOD1(VisitOr, TestResult (BinaryLogicalExpr e));
+  MOCK_METHOD1(VisitAnd, TestResult (BinaryLogicalExpr e));
+  MOCK_METHOD1(VisitIff, TestResult (BinaryLogicalExpr e));
 
   // Relational expressions.
-  MOCK_METHOD1(VisitLT, TestLResult (RelationalExpr e));
-  MOCK_METHOD1(VisitLE, TestLResult (RelationalExpr e));
-  MOCK_METHOD1(VisitEQ, TestLResult (RelationalExpr e));
-  MOCK_METHOD1(VisitGE, TestLResult (RelationalExpr e));
-  MOCK_METHOD1(VisitGT, TestLResult (RelationalExpr e));
-  MOCK_METHOD1(VisitNE, TestLResult (RelationalExpr e));
+  MOCK_METHOD1(VisitLT, TestResult (RelationalExpr e));
+  MOCK_METHOD1(VisitLE, TestResult (RelationalExpr e));
+  MOCK_METHOD1(VisitEQ, TestResult (RelationalExpr e));
+  MOCK_METHOD1(VisitGE, TestResult (RelationalExpr e));
+  MOCK_METHOD1(VisitGT, TestResult (RelationalExpr e));
+  MOCK_METHOD1(VisitNE, TestResult (RelationalExpr e));
 
   // Logical count expressions.
-  MOCK_METHOD1(VisitAtLeast, TestLResult (LogicalCountExpr e));
-  MOCK_METHOD1(VisitAtMost, TestLResult (LogicalCountExpr e));
-  MOCK_METHOD1(VisitExactly, TestLResult (LogicalCountExpr e));
-  MOCK_METHOD1(VisitNotAtLeast, TestLResult (LogicalCountExpr e));
-  MOCK_METHOD1(VisitNotAtMost, TestLResult (LogicalCountExpr e));
-  MOCK_METHOD1(VisitNotExactly, TestLResult (LogicalCountExpr e));
+  MOCK_METHOD1(VisitAtLeast, TestResult (LogicalCountExpr e));
+  MOCK_METHOD1(VisitAtMost, TestResult (LogicalCountExpr e));
+  MOCK_METHOD1(VisitExactly, TestResult (LogicalCountExpr e));
+  MOCK_METHOD1(VisitNotAtLeast, TestResult (LogicalCountExpr e));
+  MOCK_METHOD1(VisitNotAtMost, TestResult (LogicalCountExpr e));
+  MOCK_METHOD1(VisitNotExactly, TestResult (LogicalCountExpr e));
 
-  MOCK_METHOD1(VisitImplication, TestLResult (ImplicationExpr e));
-  MOCK_METHOD1(VisitExists, TestLResult (IteratedLogicalExpr e));
-  MOCK_METHOD1(VisitForAll, TestLResult (IteratedLogicalExpr e));
-  MOCK_METHOD1(VisitAllDiff, TestLResult (PairwiseExpr e));
-  MOCK_METHOD1(VisitNotAllDiff, TestLResult (PairwiseExpr e));
+  MOCK_METHOD1(VisitImplication, TestResult (ImplicationExpr e));
+  MOCK_METHOD1(VisitExists, TestResult (IteratedLogicalExpr e));
+  MOCK_METHOD1(VisitForAll, TestResult (IteratedLogicalExpr e));
+  MOCK_METHOD1(VisitAllDiff, TestResult (PairwiseExpr e));
+  MOCK_METHOD1(VisitNotAllDiff, TestResult (PairwiseExpr e));
 };
 
 class ExprVisitorTest : public ::testing::Test {
@@ -173,7 +169,7 @@ class ExprVisitorTest : public ::testing::Test {
 
   ExprVisitorTest() {
     ::testing::DefaultValue<TestResult>::Set(TestResult(Dummy()));
-    ::testing::DefaultValue<TestLResult>::Set(TestLResult(Dummy()));
+    ::testing::DefaultValue<TestResult>::Set(TestResult(Dummy()));
     var_ = factory_.MakeVariable(0);
     false_ = factory_.MakeLogicalConstant(false);
   }
@@ -194,14 +190,14 @@ class ExprVisitorTest : public ::testing::Test {
 };
 
 // An expression visitor that doesn't handle anything.
-struct NullVisitor : mp::ExprVisitor<NullVisitor, TestResult, TestLResult> {};
+struct NullVisitor : mp::ExprVisitor<NullVisitor, TestResult> {};
 
 // A visitor for testing VisitUnhandledNumericExpr and
 // VisitUnhandledLogicalExpr.
 struct MockUnhandledVisitor :
-    mp::ExprVisitor<MockUnhandledVisitor, TestResult, TestLResult> {
+    mp::ExprVisitor<MockUnhandledVisitor, TestResult> {
   MOCK_METHOD1(VisitUnhandledNumericExpr, TestResult (NumericExpr e));
-  MOCK_METHOD1(VisitUnhandledLogicalExpr, TestLResult (LogicalExpr e));
+  MOCK_METHOD1(VisitUnhandledLogicalExpr, TestResult (LogicalExpr e));
 };
 
 // Tests that UnsupportedError is thrown if expr is unhandled.
@@ -248,8 +244,7 @@ TEST_F(ExprVisitorTest, VisitCommonExpr) {
 }
 
 // A visitor for testing VisitUnary.
-struct MockUnaryVisitor :
-    mp::ExprVisitor<MockUnaryVisitor, TestResult, TestLResult> {
+struct MockUnaryVisitor : mp::ExprVisitor<MockUnaryVisitor, TestResult> {
   MOCK_METHOD1(VisitUnary, TestResult (UnaryExpr e));
 };
 
@@ -288,8 +283,7 @@ TEST_UNARY(ATAN, Atan)
 TEST_UNARY(ATANH, Atanh)
 
 // A visitor for testing VisitBinary.
-struct MockBinaryVisitor :
-    mp::ExprVisitor<MockBinaryVisitor, TestResult, TestLResult> {
+struct MockBinaryVisitor : mp::ExprVisitor<MockBinaryVisitor, TestResult> {
   MOCK_METHOD1(VisitBinary, TestResult (BinaryExpr e));
 };
 
@@ -318,7 +312,7 @@ TEST_BINARY(POW_CONST_EXP, PowConstExp)
 
 // A visitor for testing VisitBinaryFunc.
 struct MockBinaryFuncVisitor :
-    mp::ExprVisitor<MockBinaryFuncVisitor, TestResult, TestLResult> {
+    mp::ExprVisitor<MockBinaryFuncVisitor, TestResult> {
   MOCK_METHOD1(VisitBinaryFunc, TestResult (BinaryExpr e));
 };
 
@@ -367,8 +361,7 @@ TEST_F(ExprVisitorTest, VisitCall) {
 }
 
 // A visitor for testing VisitVarArg.
-struct MockVarArgVisitor :
-    mp::ExprVisitor<MockVarArgVisitor, TestResult, TestLResult> {
+struct MockVarArgVisitor : mp::ExprVisitor<MockVarArgVisitor, TestResult> {
   MOCK_METHOD1(VisitVarArg, TestResult (VarArgExpr e));
 };
 
@@ -422,8 +415,8 @@ TEST_F(ExprVisitorTest, VisitNot) {
 
 // A visitor for testing VisitBinaryLogical.
 struct MockBinaryLogicalVisitor :
-    mp::ExprVisitor<MockBinaryLogicalVisitor, TestResult, TestLResult> {
-  MOCK_METHOD1(VisitBinaryLogical, TestLResult (BinaryLogicalExpr e));
+    mp::ExprVisitor<MockBinaryLogicalVisitor, TestResult> {
+  MOCK_METHOD1(VisitBinaryLogical, TestResult (BinaryLogicalExpr e));
 };
 
 #define TEST_BINARY_LOGICAL(KIND, name) \
@@ -444,8 +437,8 @@ TEST_BINARY_LOGICAL(IFF, Iff)
 
 // A visitor for testing VisitRelational.
 struct MockRelationalVisitor :
-    mp::ExprVisitor<MockRelationalVisitor, TestResult, TestLResult> {
-  MOCK_METHOD1(VisitRelational, TestLResult (RelationalExpr e));
+    mp::ExprVisitor<MockRelationalVisitor, TestResult> {
+  MOCK_METHOD1(VisitRelational, TestResult (RelationalExpr e));
 };
 
 #define TEST_RELATIONAL(name) \
@@ -469,8 +462,8 @@ TEST_RELATIONAL(NE)
 
 // A visitor for testing VisitLogicalCount.
 struct MockLogicalCountVisitor :
-    mp::ExprVisitor<MockLogicalCountVisitor, TestResult, TestLResult> {
-  MOCK_METHOD1(VisitLogicalCount, TestLResult (LogicalCountExpr e));
+    mp::ExprVisitor<MockLogicalCountVisitor, TestResult> {
+  MOCK_METHOD1(VisitLogicalCount, TestResult (LogicalCountExpr e));
 };
 
 #define TEST_LOGICAL_COUNT(KIND, name) \
@@ -502,8 +495,8 @@ TEST_F(ExprVisitorTest, VisitImplication) {
 
 // A visitor for testing VisitIteratedLogical.
 struct MockIteratedLogicalVisitor :
-    mp::ExprVisitor<MockIteratedLogicalVisitor, TestResult, TestLResult> {
-  MOCK_METHOD1(VisitIteratedLogical, TestLResult (IteratedLogicalExpr e));
+    mp::ExprVisitor<MockIteratedLogicalVisitor, TestResult> {
+  MOCK_METHOD1(VisitIteratedLogical, TestResult (IteratedLogicalExpr e));
 };
 
 #define TEST_ITERATED_LOGICAL(KIND, name) \
@@ -549,23 +542,23 @@ TEST_F(ExprVisitorTest, InvalidExpr) {
   EXPECT_CALL(alloc, allocate(_)).WillOnce(::testing::Return(buffer));
   auto e1 = f.MakeNumericConstant(0);
   std::fill(buffer, buffer + sizeof(buffer), 0);
-  EXPECT_ASSERT(visitor_.Visit(e1), "invalid numeric expression");
+  EXPECT_ASSERT(visitor_.Visit(e1), "invalid expression");
 
   // Corrupt a logical expression and check if visiting it results in
   // assertion failure.
   EXPECT_CALL(alloc, allocate(_)).WillOnce(::testing::Return(buffer));
   auto e2 = f.MakeLogicalConstant(false);
   std::fill(buffer, buffer + sizeof(buffer), 0);
-  EXPECT_ASSERT(visitor_.Visit(e2), "invalid logical expression");
+  EXPECT_ASSERT(visitor_.Visit(e2), "invalid expression");
 }
 
-struct MockConverter : mp::ExprConverter<MockConverter, void, TestLResult> {
-  MOCK_METHOD1(VisitLT, TestLResult (RelationalExpr e));
-  MOCK_METHOD1(VisitLE, TestLResult (RelationalExpr e));
-  MOCK_METHOD1(VisitEQ, TestLResult (RelationalExpr e));
-  MOCK_METHOD1(VisitGE, TestLResult (RelationalExpr e));
-  MOCK_METHOD1(VisitGT, TestLResult (RelationalExpr e));
-  MOCK_METHOD1(VisitNE, TestLResult (RelationalExpr e));
+struct MockConverter : mp::ExprConverter<MockConverter, TestResult> {
+  MOCK_METHOD1(VisitLT, TestResult (RelationalExpr e));
+  MOCK_METHOD1(VisitLE, TestResult (RelationalExpr e));
+  MOCK_METHOD1(VisitEQ, TestResult (RelationalExpr e));
+  MOCK_METHOD1(VisitGE, TestResult (RelationalExpr e));
+  MOCK_METHOD1(VisitGT, TestResult (RelationalExpr e));
+  MOCK_METHOD1(VisitNE, TestResult (RelationalExpr e));
 };
 
 MATCHER_P2(IsRelational, kind, expr, "") {

@@ -101,8 +101,8 @@ NLToConcertConverter::NLToConcertConverter(IloEnv env, unsigned flags)
 IloExpr NLToConcertConverter::VisitIf(IfExpr e) {
   IloConstraint condition(Visit(e.condition()));
   IloNumVar var(env_, -IloInfinity, IloInfinity);
-  model_.add(IloIfThen(env_, condition, var == Visit(e.true_expr())));
-  model_.add(IloIfThen(env_, !condition, var == Visit(e.false_expr())));
+  model_.add(IloIfThen(env_, condition, var == Visit(e.then_expr())));
+  model_.add(IloIfThen(env_, !condition, var == Visit(e.else_expr())));
   return var;
 }
 
@@ -203,8 +203,9 @@ IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
   throw UnsupportedError("unsupported function: {}", function_name);
 }
 
-IloConstraint NLToConcertConverter::VisitExists(IteratedLogicalExpr e) {
-  IloOr disjunction(env_);
+IloConstraint NLToConcertConverter::LogicalExprConverter::VisitExists(
+    IteratedLogicalExpr e) {
+  IloOr disjunction(converter_.env_);
   for (IteratedLogicalExpr::iterator
       i = e.begin(), end = e.end(); i != end; ++i) {
     disjunction.add(Visit(*i));
@@ -212,8 +213,9 @@ IloConstraint NLToConcertConverter::VisitExists(IteratedLogicalExpr e) {
   return disjunction;
 }
 
-IloConstraint NLToConcertConverter::VisitForAll(IteratedLogicalExpr e) {
-  IloAnd conjunction(env_);
+IloConstraint NLToConcertConverter::LogicalExprConverter::VisitForAll(
+    IteratedLogicalExpr e) {
+  IloAnd conjunction(converter_.env_);
   for (IteratedLogicalExpr::iterator
       i = e.begin(), end = e.end(); i != end; ++i) {
     conjunction.add(Visit(*i));
@@ -221,10 +223,11 @@ IloConstraint NLToConcertConverter::VisitForAll(IteratedLogicalExpr e) {
   return conjunction;
 }
 
-IloConstraint NLToConcertConverter::VisitImplication(ImplicationExpr e) {
+IloConstraint NLToConcertConverter::LogicalExprConverter::VisitImplication(
+    ImplicationExpr e) {
   IloConstraint condition(Visit(e.condition()));
-  return IloIfThen(env_,  condition, Visit(e.true_expr())) &&
-      IloIfThen(env_, !condition, Visit(e.false_expr()));
+  return IloIfThen(converter_.env_,  condition, Visit(e.then_expr())) &&
+      IloIfThen(converter_.env_, !condition, Visit(e.else_expr()));
 }
 
 void NLToConcertConverter::FinishBuildingNumberOf() {

@@ -44,10 +44,6 @@ namespace mp {
 template <typename Alloc>
 class BasicProblem;
 
-class NLToConcertConverter;
-
-typedef ExprConverter<NLToConcertConverter, IloExpr, IloConstraint> Converter;
-
 class EqualNumberOfArgs {
  public:
   bool operator()(IteratedExpr lhs, IteratedExpr rhs) const;
@@ -139,7 +135,7 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, IteratedExpr e) {
 }
 
 // Converter of optimization problems from NL to Concert format.
-class NLToConcertConverter : public Converter {
+class NLToConcertConverter : public ExprVisitor<NLToConcertConverter, IloExpr> {
  private:
   IloEnv env_;
   IloModel model_;
@@ -185,6 +181,80 @@ class NLToConcertConverter : public Converter {
     return alldiff;
   }
 
+  // Converts logical expressions from NL to Concert format.
+  class LogicalExprConverter :
+      public ExprConverter<LogicalExprConverter, IloConstraint> {
+   private:
+    NLToConcertConverter &converter_;  // Main converter.
+
+   public:
+    explicit LogicalExprConverter(NLToConcertConverter &c) : converter_(c) {}
+
+    using ExprConverter<LogicalExprConverter, IloConstraint>::Visit;
+
+    IloExpr Visit(NumericExpr e) {
+      return converter_.Visit(e);
+    }
+
+    IloConstraint VisitLogicalConstant(LogicalConstant c) {
+      return IloNumVar(converter_.env_, 1, 1) == c.value();
+    }
+
+    IloConstraint VisitLT(RelationalExpr e) {
+      return Visit(e.lhs()) < Visit(e.rhs());
+    }
+
+    IloConstraint VisitLE(RelationalExpr e) {
+      return Visit(e.lhs()) <= Visit(e.rhs());
+    }
+
+    IloConstraint VisitEQ(RelationalExpr e) {
+      return Visit(e.lhs()) == Visit(e.rhs());
+    }
+
+    IloConstraint VisitGE(RelationalExpr e) {
+      return Visit(e.lhs()) >= Visit(e.rhs());
+    }
+
+    IloConstraint VisitGT(RelationalExpr e) {
+      return Visit(e.lhs()) > Visit(e.rhs());
+    }
+
+    IloConstraint VisitNE(RelationalExpr e) {
+      return Visit(e.lhs()) != Visit(e.rhs());
+    }
+
+    IloConstraint VisitOr(BinaryLogicalExpr e) {
+      return IloIfThen(converter_.env_, !Visit(e.lhs()), Visit(e.rhs()));
+    }
+
+    IloConstraint VisitExists(IteratedLogicalExpr e);
+
+    IloConstraint VisitAnd(BinaryLogicalExpr e) {
+      return Visit(e.lhs()) && Visit(e.rhs());
+    }
+
+    IloConstraint VisitForAll(IteratedLogicalExpr e);
+
+    IloConstraint VisitNot(NotExpr e) {
+      return !Visit(e.arg());
+    }
+
+    IloConstraint VisitIff(BinaryLogicalExpr e) {
+      return Visit(e.lhs()) == Visit(e.rhs());
+    }
+
+    IloConstraint VisitImplication(ImplicationExpr e);
+
+    IloConstraint VisitAllDiff(PairwiseExpr e) {
+      return converter_.Convert<IloAnd, false>(e);
+    }
+
+    IloConstraint VisitNotAllDiff(PairwiseExpr e) {
+      return converter_.Convert<IloOr, true>(e);
+    }
+  };
+
  public:
   // Flags.
   enum {
@@ -200,13 +270,13 @@ class NLToConcertConverter : public Converter {
   IloExpr Visit(NumericExpr e) {
     if ((flags_ & DEBUG) != 0)
       fmt::print("{}\n", str(e.kind()));
-    return Converter::Visit(e);
+    return ExprVisitor<NLToConcertConverter, IloExpr>::Visit(e);
   }
 
   IloConstraint Visit(LogicalExpr e) {
     if ((flags_ & DEBUG) != 0)
       fmt::print("{}\n", str(e.kind()));
-    return Converter::Visit(e);
+    return LogicalExprConverter(*this).Visit(e);
   }
 
   IloExpr VisitAdd(BinaryExpr e) {
@@ -376,64 +446,6 @@ class NLToConcertConverter : public Converter {
 
   IloExpr VisitCommonExpr(Reference r) {
     return common_exprs_[r.index()];
-  }
-
-  IloConstraint VisitLogicalConstant(LogicalConstant c) {
-    return IloNumVar(env_, 1, 1) == c.value();
-  }
-
-  IloConstraint VisitLT(RelationalExpr e) {
-    return Visit(e.lhs()) < Visit(e.rhs());
-  }
-
-  IloConstraint VisitLE(RelationalExpr e) {
-    return Visit(e.lhs()) <= Visit(e.rhs());
-  }
-
-  IloConstraint VisitEQ(RelationalExpr e) {
-    return Visit(e.lhs()) == Visit(e.rhs());
-  }
-
-  IloConstraint VisitGE(RelationalExpr e) {
-    return Visit(e.lhs()) >= Visit(e.rhs());
-  }
-
-  IloConstraint VisitGT(RelationalExpr e) {
-    return Visit(e.lhs()) > Visit(e.rhs());
-  }
-
-  IloConstraint VisitNE(RelationalExpr e) {
-    return Visit(e.lhs()) != Visit(e.rhs());
-  }
-
-  IloConstraint VisitOr(BinaryLogicalExpr e) {
-    return IloIfThen(env_, !Visit(e.lhs()), Visit(e.rhs()));
-  }
-
-  IloConstraint VisitExists(IteratedLogicalExpr e);
-
-  IloConstraint VisitAnd(BinaryLogicalExpr e) {
-    return Visit(e.lhs()) && Visit(e.rhs());
-  }
-
-  IloConstraint VisitForAll(IteratedLogicalExpr e);
-
-  IloConstraint VisitNot(NotExpr e) {
-    return !Visit(e.arg());
-  }
-
-  IloConstraint VisitIff(BinaryLogicalExpr e) {
-    return Visit(e.lhs()) == Visit(e.rhs());
-  }
-
-  IloConstraint VisitImplication(ImplicationExpr e);
-
-  IloConstraint VisitAllDiff(PairwiseExpr e) {
-    return Convert<IloAnd, false>(e);
-  }
-
-  IloConstraint VisitNotAllDiff(PairwiseExpr e) {
-    return Convert<IloOr, true>(e);
   }
 
   // Combines 'numberof' operators into IloDistribute constraints

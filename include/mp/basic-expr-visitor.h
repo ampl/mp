@@ -60,19 +60,18 @@ namespace mp {
 //
 // BasicExprVisitor uses the curiously recurring template pattern:
 // http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
-template <typename Impl, typename Result, typename LResult, typename ExprTypes>
+template <typename Impl, typename Result, typename ExprTypes>
 class BasicExprVisitor {
  public:
   MP_DEFINE_EXPR_TYPES(ExprTypes);
 
-  Result Visit(NumericExpr e);
-  LResult Visit(LogicalExpr e);
+  Result Visit(Expr e);
 
   Result VisitUnhandledNumericExpr(NumericExpr e) {
     throw MakeUnsupportedError(str(e.kind()));
   }
 
-  LResult VisitUnhandledLogicalExpr(LogicalExpr e) {
+  Result VisitUnhandledLogicalExpr(LogicalExpr e) {
     throw MakeUnsupportedError(str(e.kind()));
   }
 
@@ -283,117 +282,117 @@ class BasicExprVisitor {
     return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
-  LResult VisitLogicalConstant(LogicalConstant c) {
+  Result VisitLogicalConstant(LogicalConstant c) {
     return MP_DISPATCH(VisitUnhandledLogicalExpr(c));
   }
 
-  LResult VisitNot(NotExpr e) {
+  Result VisitNot(NotExpr e) {
     return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitBinaryLogical(BinaryLogicalExpr e) {
+  Result VisitBinaryLogical(BinaryLogicalExpr e) {
     return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitOr(BinaryLogicalExpr e) {
+  Result VisitOr(BinaryLogicalExpr e) {
     return MP_DISPATCH(VisitBinaryLogical(e));
   }
 
-  LResult VisitAnd(BinaryLogicalExpr e) {
+  Result VisitAnd(BinaryLogicalExpr e) {
     return MP_DISPATCH(VisitBinaryLogical(e));
   }
 
-  LResult VisitIff(BinaryLogicalExpr e) {
+  Result VisitIff(BinaryLogicalExpr e) {
     return MP_DISPATCH(VisitBinaryLogical(e));
   }
 
-  LResult VisitRelational(RelationalExpr e) {
+  Result VisitRelational(RelationalExpr e) {
     return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitLT(RelationalExpr e) {
+  Result VisitLT(RelationalExpr e) {
     return MP_DISPATCH(VisitRelational(e));
   }
 
-  LResult VisitLE(RelationalExpr e) {
+  Result VisitLE(RelationalExpr e) {
     return MP_DISPATCH(VisitRelational(e));
   }
 
-  LResult VisitEQ(RelationalExpr e) {
+  Result VisitEQ(RelationalExpr e) {
     return MP_DISPATCH(VisitRelational(e));
   }
 
-  LResult VisitGE(RelationalExpr e) {
+  Result VisitGE(RelationalExpr e) {
     return MP_DISPATCH(VisitRelational(e));
   }
 
-  LResult VisitGT(RelationalExpr e) {
+  Result VisitGT(RelationalExpr e) {
     return MP_DISPATCH(VisitRelational(e));
   }
 
-  LResult VisitNE(RelationalExpr e) {
+  Result VisitNE(RelationalExpr e) {
     return MP_DISPATCH(VisitRelational(e));
   }
 
-  LResult VisitLogicalCount(LogicalCountExpr e) {
+  Result VisitLogicalCount(LogicalCountExpr e) {
     return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitAtLeast(LogicalCountExpr e) {
+  Result VisitAtLeast(LogicalCountExpr e) {
     return MP_DISPATCH(VisitLogicalCount(e));
   }
 
-  LResult VisitAtMost(LogicalCountExpr e) {
+  Result VisitAtMost(LogicalCountExpr e) {
     return MP_DISPATCH(VisitLogicalCount(e));
   }
 
-  LResult VisitExactly(LogicalCountExpr e) {
+  Result VisitExactly(LogicalCountExpr e) {
     return MP_DISPATCH(VisitLogicalCount(e));
   }
 
-  LResult VisitNotAtLeast(LogicalCountExpr e) {
+  Result VisitNotAtLeast(LogicalCountExpr e) {
     return MP_DISPATCH(VisitLogicalCount(e));
   }
 
-  LResult VisitNotAtMost(LogicalCountExpr e) {
+  Result VisitNotAtMost(LogicalCountExpr e) {
     return MP_DISPATCH(VisitLogicalCount(e));
   }
 
-  LResult VisitNotExactly(LogicalCountExpr e) {
+  Result VisitNotExactly(LogicalCountExpr e) {
     return MP_DISPATCH(VisitLogicalCount(e));
   }
 
-  LResult VisitImplication(ImplicationExpr e) {
+  Result VisitImplication(ImplicationExpr e) {
     return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitIteratedLogical(IteratedLogicalExpr e) {
+  Result VisitIteratedLogical(IteratedLogicalExpr e) {
     return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitExists(IteratedLogicalExpr e) {
+  Result VisitExists(IteratedLogicalExpr e) {
     return MP_DISPATCH(VisitIteratedLogical(e));
   }
 
-  LResult VisitForAll(IteratedLogicalExpr e) {
+  Result VisitForAll(IteratedLogicalExpr e) {
     return MP_DISPATCH(VisitIteratedLogical(e));
   }
 
-  LResult VisitAllDiff(PairwiseExpr e) {
+  Result VisitAllDiff(PairwiseExpr e) {
     return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitNotAllDiff(PairwiseExpr e) {
+  Result VisitNotAllDiff(PairwiseExpr e) {
     return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 };
 
-template <typename Impl, typename Result, typename LResult, typename ET>
-Result BasicExprVisitor<Impl, Result, LResult, ET>::Visit(NumericExpr e) {
+template <typename Impl, typename Result, typename ET>
+Result BasicExprVisitor<Impl, Result, ET>::Visit(Expr e) {
   // All expressions except OPNUMBEROFs and OPIFSYM are supported.
   switch (e.kind()) {
   default:
-    MP_ASSERT(false, "invalid numeric expression");
+    MP_ASSERT(false, "invalid expression");
     // Fall through.
   case expr::NUMBER:
     return MP_DISPATCH(VisitNumericConstant(
@@ -501,17 +500,9 @@ Result BasicExprVisitor<Impl, Result, LResult, ET>::Visit(NumericExpr e) {
                          ET::template UncheckedCast<SymbolicNumberOfExpr>(e)));
   case expr::COUNT:
     return MP_DISPATCH(VisitCount(ET::template UncheckedCast<CountExpr>(e)));
-  }
-}
 
-template <typename Impl, typename Result, typename LResult, typename ET>
-LResult BasicExprVisitor<Impl, Result, LResult, ET>::Visit(LogicalExpr e) {
-  switch (e.kind()) {
-  default:
-    MP_ASSERT(false, "invalid logical expression");
-    // Fall through.
+    // Logical expressions.
   case expr::BOOL:
-  case expr::NUMBER:
     return MP_DISPATCH(VisitLogicalConstant(
                          ET::template UncheckedCast<LogicalConstant>(e)));
   case expr::NOT:

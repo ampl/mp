@@ -41,20 +41,20 @@ namespace mp {
 // a corresponding method of BasicExprVisitor will be called.
 //
 // Example:
-//  class MyExprVisitor : public ExprVisitor<MyExprVisitor, double, void> {
+//  class MyExprVisitor : public ExprVisitor<MyExprVisitor, double> {
 //   public:
 //    double VisitAdd(BinaryExpr e) { return Visit(e.lhs()) + Visit(e.rhs()); }
 //    double VisitConstant(NumericConstant n) { return n.value(); }
 //  };
-template <typename Impl, typename Result, typename LResult = Result>
+template <typename Impl, typename Result>
 class ExprVisitor :
-    public BasicExprVisitor<Impl, Result, LResult, internal::ExprTypes> {};
+    public BasicExprVisitor<Impl, Result, internal::ExprTypes> {};
 
 // Expression converter.
 // Converts logical count expressions to corresponding relational expressions.
 // For example "atleast" is converted to "<=".
-template <typename Impl, typename Result, typename LResult = Result>
-class ExprConverter : public ExprVisitor<Impl, Result, LResult> {
+template <typename Impl, typename Result>
+class ExprConverter : public ExprVisitor<Impl, Result> {
  private:
   ExprFactory factory_;
 
@@ -63,22 +63,22 @@ class ExprConverter : public ExprVisitor<Impl, Result, LResult> {
   }
 
  public:
-  LResult VisitAtLeast(LogicalCountExpr e) {
+  Result VisitAtLeast(LogicalCountExpr e) {
     return MP_DISPATCH(VisitLE(Convert(e, expr::LE)));
   }
-  LResult VisitAtMost(LogicalCountExpr e) {
+  Result VisitAtMost(LogicalCountExpr e) {
     return MP_DISPATCH(VisitGE(Convert(e, expr::GE)));
   }
-  LResult VisitExactly(LogicalCountExpr e) {
+  Result VisitExactly(LogicalCountExpr e) {
     return MP_DISPATCH(VisitEQ(Convert(e, expr::EQ)));
   }
-  LResult VisitNotAtLeast(LogicalCountExpr e) {
+  Result VisitNotAtLeast(LogicalCountExpr e) {
     return MP_DISPATCH(VisitGT(Convert(e, expr::GT)));
   }
-  LResult VisitNotAtMost(LogicalCountExpr e) {
+  Result VisitNotAtMost(LogicalCountExpr e) {
     return MP_DISPATCH(VisitLT(Convert(e, expr::LT)));
   }
-  LResult VisitNotExactly(LogicalCountExpr e) {
+  Result VisitNotExactly(LogicalCountExpr e) {
     return MP_DISPATCH(VisitNE(Convert(e, expr::NE)));
   }
 };

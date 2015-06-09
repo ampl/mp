@@ -31,7 +31,7 @@ using mp::Cast;
 namespace {
 
 // Compares expressions for equality.
-class ExprComparator : public mp::ExprVisitor<ExprComparator, bool, bool> {
+class ExprComparator : public mp::ExprVisitor<ExprComparator, bool> {
  private:
   mp::Expr expr_;
 

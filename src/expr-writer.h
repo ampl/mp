@@ -41,14 +41,14 @@ inline bool IsZero(NumericExpr expr) {
 // confusing cases such as "!x = y" which is written as "!(x = y) instead.
 template <typename ExprTypes>
 class ExprWriter :
-    public BasicExprVisitor<ExprWriter<ExprTypes>, void, void, ExprTypes> {
+    public BasicExprVisitor<ExprWriter<ExprTypes>, void, ExprTypes> {
  private:
   fmt::Writer &writer_;
   int precedence_;
 
   MP_DEFINE_EXPR_TYPES(ExprTypes);
 
-  typedef BasicExprVisitor<ExprWriter<ExprTypes>, void, void, ExprTypes> Base;
+  typedef BasicExprVisitor<ExprWriter<ExprTypes>, void, ExprTypes> Base;
 
   static int precedence(Expr e) { return internal::precedence(e.kind()); }
 
