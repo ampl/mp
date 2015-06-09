@@ -30,9 +30,9 @@ namespace mp {
 namespace asl {
 
 // ASL expression visitor.
-template <typename Impl, typename Result, typename LResult = Result>
+template <typename Impl, typename Result>
 class ExprVisitor :
-    public BasicExprVisitor<Impl, Result, LResult, internal::ExprTypes> {};
+    public BasicExprVisitor<Impl, Result, internal::ExprTypes> {};
 
 // Returns true iff e is a zero constant.
 inline bool IsZero(NumericExpr e) {
