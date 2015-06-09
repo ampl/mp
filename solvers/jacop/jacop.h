@@ -101,7 +101,7 @@ CLASS_INFO(InterruptingListener, "InterruptingListener", "(J)V")
 CLASS_INFO(SolutionListener, "SolutionListener", "(J)V")
 
 // Converter of constraint programming problems from NL to JaCoP format.
-class NLToJaCoPConverter : public ExprConverter<NLToJaCoPConverter, jobject> {
+class MPToJaCoPConverter : public ExprConverter<MPToJaCoPConverter, jobject> {
  private:
   Env env_;
   jobject store_;
@@ -212,7 +212,7 @@ class NLToJaCoPConverter : public ExprConverter<NLToJaCoPConverter, jobject> {
                   ClassBase &eq_class, PairwiseExpr e);
 
  public:
-  explicit NLToJaCoPConverter();
+  explicit MPToJaCoPConverter();
 
   // Converts a logical constraint.
   void ConvertLogicalCon(LogicalExpr e);

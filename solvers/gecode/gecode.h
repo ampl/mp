@@ -71,8 +71,8 @@ class GecodeProblem: public Gecode::Space {
   virtual void constrain(const Gecode::Space &best);
 };
 
-// Converter of constraint programming problems from NL to Gecode format.
-class NLToGecodeConverter : public ExprVisitor<NLToGecodeConverter, LinExpr> {
+// Converter of constraint programming problems from MP to Gecode format.
+class MPToGecodeConverter : public ExprVisitor<MPToGecodeConverter, LinExpr> {
  private:
   GecodeProblem problem_;
   Gecode::IntConLevel icl_;
@@ -105,10 +105,10 @@ class NLToGecodeConverter : public ExprVisitor<NLToGecodeConverter, LinExpr> {
   class LogicalExprConverter :
       public ExprConverter<LogicalExprConverter, Gecode::BoolExpr> {
    private:
-    NLToGecodeConverter &converter_;  // Main converter.
+    MPToGecodeConverter &converter_;  // Main converter.
 
    public:
-    explicit LogicalExprConverter(NLToGecodeConverter &c) : converter_(c) {}
+    explicit LogicalExprConverter(MPToGecodeConverter &c) : converter_(c) {}
 
     using ExprConverter<LogicalExprConverter, Gecode::BoolExpr>::Visit;
 
@@ -175,14 +175,14 @@ class NLToGecodeConverter : public ExprVisitor<NLToGecodeConverter, LinExpr> {
     BoolExpr VisitNotAllDiff(PairwiseExpr e) { return VisitAllDiff(e); }
   };
 
-  using ExprVisitor<NLToGecodeConverter, LinExpr>::Visit;
+  using ExprVisitor<MPToGecodeConverter, LinExpr>::Visit;
 
   BoolExpr Visit(LogicalExpr e) {
     return LogicalExprConverter(*this).Visit(e);
   }
 
  public:
-  NLToGecodeConverter(int num_vars, Gecode::IntConLevel icl)
+  MPToGecodeConverter(int num_vars, Gecode::IntConLevel icl)
   : problem_(num_vars, icl), icl_(icl) {}
 
   void Convert(const Problem &p);

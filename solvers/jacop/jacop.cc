@@ -131,7 +131,7 @@ const mp::OptionValueInfo VAL_SELECT_VALUES[] = {
 
 namespace mp {
 
-jint NLToJaCoPConverter::CastToInt(double value) const {
+jint MPToJaCoPConverter::CastToInt(double value) const {
   jint int_value = static_cast<jint>(value);
   if (int_value != value)
     throw Error("value {} can't be represented as int", value);
@@ -140,7 +140,7 @@ jint NLToJaCoPConverter::CastToInt(double value) const {
   return int_value;
 }
 
-jobject NLToJaCoPConverter::Convert(
+jobject MPToJaCoPConverter::Convert(
     IteratedLogicalExpr e, ClassBase &cls, jmethodID &ctor) {
   if (!ctor) {
     cls.Init(env_);
@@ -158,13 +158,13 @@ jobject NLToJaCoPConverter::Convert(
   return env_.NewObject(cls.get(), ctor, args);
 }
 
-void NLToJaCoPConverter::RequireZeroRHS(
+void MPToJaCoPConverter::RequireZeroRHS(
     BinaryExpr e, const std::string &func_name) {
   if (!IsZero(e.rhs()))
     throw MakeUnsupportedError("{} with nonzero second parameter", func_name);
 }
 
-void NLToJaCoPConverter::ConvertExpr(
+void MPToJaCoPConverter::ConvertExpr(
     const LinearExpr &linear, NumericExpr nonlinear, jobject result_var) {
   jsize num_terms = static_cast<jsize>(
       std::distance(linear.begin(), linear.end()));
@@ -196,7 +196,7 @@ void NLToJaCoPConverter::ConvertExpr(
     Impose(eq_class_.NewObject(env_, Visit(nonlinear), result_var));
 }
 
-void NLToJaCoPConverter::ConvertLogicalCon(LogicalExpr e) {
+void MPToJaCoPConverter::ConvertLogicalCon(LogicalExpr e) {
   if (e.kind() != expr::ALLDIFF) {
     Impose(Visit(e));
     return;
@@ -216,7 +216,7 @@ void NLToJaCoPConverter::ConvertLogicalCon(LogicalExpr e) {
   Impose(alldiff_class_.NewObject(env_, args));
 }
 
-jobject NLToJaCoPConverter::Convert(
+jobject MPToJaCoPConverter::Convert(
     ClassBase &logop_class, jmethodID &logop_ctor,
     ClassBase &eq_class, PairwiseExpr e) {
   if (!logop_ctor) {
@@ -245,7 +245,7 @@ jobject NLToJaCoPConverter::Convert(
   return env_.NewObject(logop_class.get(), logop_ctor, and_args);
 }
 
-NLToJaCoPConverter::NLToJaCoPConverter()
+MPToJaCoPConverter::MPToJaCoPConverter()
 : env_(JVM::env()), store_(), impose_(), var_array_(), obj_(),
   constraint_class_(), or_array_ctor_(), and_array_ctor_(), one_var_() {
   var_class_.Init(env_);
@@ -256,7 +256,7 @@ NLToJaCoPConverter::NLToJaCoPConverter()
       domain_class, env_.GetStaticFieldID(domain_class, "MaxInt", "I"));
 }
 
-jobject NLToJaCoPConverter::VisitAdd(BinaryExpr e) {
+jobject MPToJaCoPConverter::VisitAdd(BinaryExpr e) {
   NumericExpr lhs = e.lhs(), rhs = e.rhs();
   if (NumericConstant c = Cast<NumericConstant>(lhs))
     return CreateCon(plus_const_class_, Visit(e.rhs()), CastToInt(c.value()));
@@ -265,7 +265,7 @@ jobject NLToJaCoPConverter::VisitAdd(BinaryExpr e) {
   return CreateCon(plus_class_, Visit(lhs), Visit(rhs));
 }
 
-jobject NLToJaCoPConverter::VisitLess(BinaryExpr e) {
+jobject MPToJaCoPConverter::VisitLess(BinaryExpr e) {
   jobjectArray args = CreateVarArray(2);
   env_.SetObjectArrayElement(args, 0,
       CreateMinus(Visit(e.lhs()), Visit(e.rhs())));
@@ -273,7 +273,7 @@ jobject NLToJaCoPConverter::VisitLess(BinaryExpr e) {
   return CreateCon(max_class_, args);
 }
 
-void NLToJaCoPConverter::Convert(const Problem &p) {
+void MPToJaCoPConverter::Convert(const Problem &p) {
   jclass store_class = env_.FindClass("org/jacop/core/Store");
   store_ = env_.NewObject(store_class,
       env_.GetMethod(store_class, "<init>", "()V"));
@@ -326,15 +326,15 @@ void NLToJaCoPConverter::Convert(const Problem &p) {
     ConvertLogicalCon(p.logical_con(i).expr());
 }
 
-jobject NLToJaCoPConverter::VisitIf(IfExpr e) {
+jobject MPToJaCoPConverter::VisitIf(IfExpr e) {
   jobject result_var = CreateVar();
   Impose(if_else_class_.NewObject(env_, Visit(e.condition()),
-      eq_class_.NewObject(env_, result_var, Visit(e.true_expr())),
-      eq_class_.NewObject(env_, result_var, Visit(e.false_expr()))));
+      eq_class_.NewObject(env_, result_var, Visit(e.then_expr())),
+      eq_class_.NewObject(env_, result_var, Visit(e.else_expr()))));
   return result_var;
 }
 
-jobject NLToJaCoPConverter::VisitSum(SumExpr e) {
+jobject MPToJaCoPConverter::VisitSum(SumExpr e) {
   jobjectArray args = CreateVarArray(e.num_args());
   int index = 0;
   for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
@@ -342,7 +342,7 @@ jobject NLToJaCoPConverter::VisitSum(SumExpr e) {
   return CreateCon(sum_class_, args);
 }
 
-jobject NLToJaCoPConverter::VisitCount(CountExpr e) {
+jobject MPToJaCoPConverter::VisitCount(CountExpr e) {
   jobjectArray args = CreateVarArray(e.num_args());
   int index = 0;
   for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
@@ -355,7 +355,7 @@ jobject NLToJaCoPConverter::VisitCount(CountExpr e) {
   return CreateCon(sum_class_, args);
 }
 
-jobject NLToJaCoPConverter::VisitNumberOf(NumberOfExpr e) {
+jobject MPToJaCoPConverter::VisitNumberOf(NumberOfExpr e) {
   // JaCoP only supports count constraints with constant value.
   NumericConstant num = Cast<NumericConstant>(e.arg(0));
   if (!num)
@@ -370,10 +370,10 @@ jobject NLToJaCoPConverter::VisitNumberOf(NumberOfExpr e) {
   return result_var;
 }
 
-jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
+jobject MPToJaCoPConverter::VisitImplication(ImplicationExpr e) {
   jobject condition = Visit(e.condition());
   return if_else_class_.NewObject(env_, condition,
-      Visit(e.true_expr()), Visit(e.false_expr()));
+      Visit(e.then_expr()), Visit(e.else_expr()));
 }
 
 void JaCoPSolver::SetOutputFrequency(const SolverOption &opt, double value) {
@@ -556,7 +556,7 @@ void JaCoPSolver::Solve(Problem &p, SolutionHandler &sh) {
   env_ = JVM::env(&jvm_options[0]);
 
   // Set up an optimization problem in JaCoP.
-  NLToJaCoPConverter converter;
+  MPToJaCoPConverter converter;
   converter.Convert(p);
 
   Class<DepthFirstSearch> dfs_class;

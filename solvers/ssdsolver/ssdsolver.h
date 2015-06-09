@@ -34,7 +34,7 @@
 namespace mp {
 
 // Expression visitor that extracts SSD constraints.
-class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void, void> {
+class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void> {
  private:
   // A matrix of variable coefficients in the SSD constraint with one
   // row per scenario and one column per variable. The matrix is stored in

@@ -76,14 +76,14 @@ bool EqualNumberOfArgs::operator()(IteratedExpr lhs, IteratedExpr rhs) const {
   return true;
 }
 
-IloNumExprArray NLToConcertConverter::ConvertArgs(VarArgExpr e) {
+IloNumExprArray MPToConcertConverter::ConvertArgs(VarArgExpr e) {
   IloNumExprArray args(env_);
   for (VarArgExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
     args.add(Visit(*i));
   return args;
 }
 
-IloIntVar NLToConcertConverter::ConvertArg(
+IloIntVar MPToConcertConverter::ConvertArg(
     CallExpr call, int index, IloInt lb, IloInt ub) {
   NumericExpr arg = GetArg(call, index);
   if (Variable var = Cast<Variable>(arg))
@@ -93,12 +93,12 @@ IloIntVar NLToConcertConverter::ConvertArg(
   return ilo_var;
 }
 
-NLToConcertConverter::NLToConcertConverter(IloEnv env, unsigned flags)
+MPToConcertConverter::MPToConcertConverter(IloEnv env, unsigned flags)
 : env_(env), model_(env), vars_(env), cons_(env), flags_(flags),
   numberofs_(CreateVar(env)) {
 }
 
-IloExpr NLToConcertConverter::VisitIf(IfExpr e) {
+IloExpr MPToConcertConverter::VisitIf(IfExpr e) {
   IloConstraint condition(Visit(e.condition()));
   IloNumVar var(env_, -IloInfinity, IloInfinity);
   model_.add(IloIfThen(env_, condition, var == Visit(e.then_expr())));
@@ -106,7 +106,7 @@ IloExpr NLToConcertConverter::VisitIf(IfExpr e) {
   return var;
 }
 
-IloExpr NLToConcertConverter::VisitAtan2(BinaryExpr e) {
+IloExpr MPToConcertConverter::VisitAtan2(BinaryExpr e) {
   IloNumExpr y(Visit(e.lhs())), x(Visit(e.rhs()));
   IloNumExpr atan(IloArcTan(y / x));
   IloNumVar result(env_, -IloInfinity, IloInfinity);
@@ -116,32 +116,32 @@ IloExpr NLToConcertConverter::VisitAtan2(BinaryExpr e) {
   return result;
 }
 
-IloExpr NLToConcertConverter::VisitSum(SumExpr e) {
+IloExpr MPToConcertConverter::VisitSum(SumExpr e) {
   IloExpr sum(env_);
   for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
     sum += Visit(*i);
   return sum;
 }
 
-IloExpr NLToConcertConverter::VisitRound(BinaryExpr e) {
+IloExpr MPToConcertConverter::VisitRound(BinaryExpr e) {
   RequireNonzeroConstRHS(e, "round");
   // Note that IloOplRound rounds half up.
   return IloOplRound(Visit(e.lhs()));
 }
 
-IloExpr NLToConcertConverter::VisitTrunc(BinaryExpr e) {
+IloExpr MPToConcertConverter::VisitTrunc(BinaryExpr e) {
   RequireNonzeroConstRHS(e, "trunc");
   return IloTrunc(Visit(e.lhs()));
 }
 
-IloExpr NLToConcertConverter::VisitCount(CountExpr e) {
+IloExpr MPToConcertConverter::VisitCount(CountExpr e) {
   IloExpr sum(env_);
   for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
     sum += Visit(*i);
   return sum;
 }
 
-IloExpr NLToConcertConverter::VisitNumberOf(NumberOfExpr e) {
+IloExpr MPToConcertConverter::VisitNumberOf(NumberOfExpr e) {
   NumericExpr value = e.arg(0);
   NumericConstant num = Cast<NumericConstant>(value);
   if (num && (flags_ & USENUMBEROF) != 0)
@@ -153,7 +153,7 @@ IloExpr NLToConcertConverter::VisitNumberOf(NumberOfExpr e) {
   return sum;
 }
 
-IloExpr NLToConcertConverter::VisitPLTerm(PLTerm e) {
+IloExpr MPToConcertConverter::VisitPLTerm(PLTerm e) {
   IloNumArray slopes(env_), breakpoints(env_);
   int num_breakpoints = e.num_breakpoints();
   for (int i = 0; i < num_breakpoints; ++i) {
@@ -165,7 +165,7 @@ IloExpr NLToConcertConverter::VisitPLTerm(PLTerm e) {
   return IloPiecewiseLinear(vars_[var.index()], breakpoints, slopes, 0, 0);
 }
 
-IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
+IloExpr MPToConcertConverter::VisitCall(CallExpr e) {
   const char *function_name = e.function().name();
   int num_args = e.num_args();
   if (std::strcmp(function_name, "element") == 0) {
@@ -203,7 +203,7 @@ IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
   throw UnsupportedError("unsupported function: {}", function_name);
 }
 
-IloConstraint NLToConcertConverter::LogicalExprConverter::VisitExists(
+IloConstraint MPToConcertConverter::LogicalExprConverter::VisitExists(
     IteratedLogicalExpr e) {
   IloOr disjunction(converter_.env_);
   for (IteratedLogicalExpr::iterator
@@ -213,7 +213,7 @@ IloConstraint NLToConcertConverter::LogicalExprConverter::VisitExists(
   return disjunction;
 }
 
-IloConstraint NLToConcertConverter::LogicalExprConverter::VisitForAll(
+IloConstraint MPToConcertConverter::LogicalExprConverter::VisitForAll(
     IteratedLogicalExpr e) {
   IloAnd conjunction(converter_.env_);
   for (IteratedLogicalExpr::iterator
@@ -223,14 +223,14 @@ IloConstraint NLToConcertConverter::LogicalExprConverter::VisitForAll(
   return conjunction;
 }
 
-IloConstraint NLToConcertConverter::LogicalExprConverter::VisitImplication(
+IloConstraint MPToConcertConverter::LogicalExprConverter::VisitImplication(
     ImplicationExpr e) {
   IloConstraint condition(Visit(e.condition()));
   return IloIfThen(converter_.env_,  condition, Visit(e.then_expr())) &&
       IloIfThen(converter_.env_, !condition, Visit(e.else_expr()));
 }
 
-void NLToConcertConverter::FinishBuildingNumberOf() {
+void MPToConcertConverter::FinishBuildingNumberOf() {
   for (IlogNumberOfMap::iterator
       i = numberofs_.begin(), end = numberofs_.end(); i != end; ++i) {
     int index = 0;
@@ -257,7 +257,7 @@ void NLToConcertConverter::FinishBuildingNumberOf() {
   }
 }
 
-bool NLToConcertConverter::ConvertGlobalConstraint(
+bool MPToConcertConverter::ConvertGlobalConstraint(
     CallExpr expr, IloConstraint &con) {
   const char *function_name = expr.function().name();
   if (std::strcmp(function_name, "in_relation") != 0)
@@ -292,7 +292,7 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
   return true;
 }
 
-void NLToConcertConverter::Convert(const Problem &p) {
+void MPToConcertConverter::Convert(const Problem &p) {
   // Set up optimization problem using the Concert API.
   int num_vars = p.num_vars();
   vars_.setSize(num_vars);

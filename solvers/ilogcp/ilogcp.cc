@@ -593,7 +593,7 @@ void IlogCPSolver::SetCPLEXIntOption(
 }
 
 void IlogCPSolver::SolveWithCP(
-    Problem &p, const NLToConcertConverter &converter,
+    Problem &p, const MPToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
   IloNumVarArray vars = converter.vars();
   IloIntVarArray priority_vars(env_);
@@ -685,7 +685,7 @@ void IlogCPSolver::SolveWithCP(
 }
 
 void IlogCPSolver::SolveWithCPLEX(
-    Problem &p, const NLToConcertConverter &converter,
+    Problem &p, const MPToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
   IloCplex::Aborter aborter(env_);
   cplex_.use(aborter);
@@ -756,10 +756,10 @@ void IlogCPSolver::Solve(Problem &p, SolutionHandler &sh) {
 
   unsigned flags = 0;
   if (GetOption(USENUMBEROF) != 0)
-    flags |= NLToConcertConverter::USENUMBEROF;
+    flags |= MPToConcertConverter::USENUMBEROF;
   if (GetOption(DEBUGEXPR) != 0)
-    flags |= NLToConcertConverter::DEBUG;
-  NLToConcertConverter converter(env_, flags);
+    flags |= MPToConcertConverter::DEBUG;
+  MPToConcertConverter converter(env_, flags);
   converter.Convert(p);
 
   try {

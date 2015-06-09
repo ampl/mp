@@ -254,13 +254,19 @@ void ConvertLinearExpr(mp::LinearExpr expr, LinearExprBuilder builder) {
 
 // Converts a nonlinear expression into the ASL form.
 class MPToASLExprConverter :
-    public mp::ExprVisitor<MPToASLExprConverter,
-                           asl::NumericExpr, asl::LogicalExpr> {
+    public mp::ExprVisitor<MPToASLExprConverter, asl::NumericExpr> {
  private:
   ASLBuilder &builder_;
 
  public:
   explicit MPToASLExprConverter(ASLBuilder &b) : builder_(b) {}
+
+  using mp::ExprVisitor<MPToASLExprConverter, asl::NumericExpr>::Visit;
+
+  asl::LogicalExpr Visit(mp::LogicalExpr) {
+    // TODO
+    return asl::LogicalExpr();
+  }
 
   asl::NumericExpr VisitNumericConstant(mp::NumericConstant c) {
     return builder_.MakeNumericConstant(c.value());

@@ -135,7 +135,7 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, IteratedExpr e) {
 }
 
 // Converter of optimization problems from NL to Concert format.
-class NLToConcertConverter : public ExprVisitor<NLToConcertConverter, IloExpr> {
+class MPToConcertConverter : public ExprVisitor<MPToConcertConverter, IloExpr> {
  private:
   IloEnv env_;
   IloModel model_;
@@ -185,10 +185,10 @@ class NLToConcertConverter : public ExprVisitor<NLToConcertConverter, IloExpr> {
   class LogicalExprConverter :
       public ExprConverter<LogicalExprConverter, IloConstraint> {
    private:
-    NLToConcertConverter &converter_;  // Main converter.
+    MPToConcertConverter &converter_;  // Main converter.
 
    public:
-    explicit LogicalExprConverter(NLToConcertConverter &c) : converter_(c) {}
+    explicit LogicalExprConverter(MPToConcertConverter &c) : converter_(c) {}
 
     using ExprConverter<LogicalExprConverter, IloConstraint>::Visit;
 
@@ -261,7 +261,7 @@ class NLToConcertConverter : public ExprVisitor<NLToConcertConverter, IloExpr> {
     USENUMBEROF = 1,
     DEBUG       = 2
   };
-  NLToConcertConverter(IloEnv env, unsigned flags);
+  MPToConcertConverter(IloEnv env, unsigned flags);
 
   IloModel model() const { return model_; }
   IloNumVarArray vars() const { return vars_; }
@@ -270,7 +270,7 @@ class NLToConcertConverter : public ExprVisitor<NLToConcertConverter, IloExpr> {
   IloExpr Visit(NumericExpr e) {
     if ((flags_ & DEBUG) != 0)
       fmt::print("{}\n", str(e.kind()));
-    return ExprVisitor<NLToConcertConverter, IloExpr>::Visit(e);
+    return ExprVisitor<MPToConcertConverter, IloExpr>::Visit(e);
   }
 
   IloConstraint Visit(LogicalExpr e) {

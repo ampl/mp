@@ -259,7 +259,7 @@ void GecodeProblem::constrain(const Gecode::Space &best) {
   }
 }
 
-BoolExpr NLToGecodeConverter::Convert(
+BoolExpr MPToGecodeConverter::Convert(
     Gecode::BoolOpType op, IteratedLogicalExpr e) {
   Gecode::BoolVarArgs args(e.num_args());
   int index = 0;
@@ -272,7 +272,7 @@ BoolExpr NLToGecodeConverter::Convert(
   return var;
 }
 
-LinExpr NLToGecodeConverter::Convert(IteratedExpr e, VarArgFunc f) {
+LinExpr MPToGecodeConverter::Convert(IteratedExpr e, VarArgFunc f) {
   IntVarArgs args;
   for (VarArgExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
     args << Gecode::expr(problem_, Visit(*i), icl_);
@@ -281,13 +281,13 @@ LinExpr NLToGecodeConverter::Convert(IteratedExpr e, VarArgFunc f) {
   return result;
 }
 
-void NLToGecodeConverter::RequireZeroRHS(
+void MPToGecodeConverter::RequireZeroRHS(
     BinaryExpr e, fmt::StringRef func_name) {
   if (!IsZero(e.rhs()))
     throw MakeUnsupportedError("{} with nonzero second parameter", func_name);
 }
 
-LinExpr NLToGecodeConverter::ConvertExpr(
+LinExpr MPToGecodeConverter::ConvertExpr(
     const LinearExpr &linear, NumericExpr nonlinear) {
   IntVarArray &vars = problem_.vars();
   LinExpr expr;
@@ -307,7 +307,7 @@ LinExpr NLToGecodeConverter::ConvertExpr(
   return expr;
 }
 
-Gecode::IntConLevel NLToGecodeConverter::GetICL(int con_index) const {
+Gecode::IntConLevel MPToGecodeConverter::GetICL(int con_index) const {
   if (!icl_suffix_)
     return icl_;
   int value = icl_suffix_.value(con_index);
@@ -318,7 +318,7 @@ Gecode::IntConLevel NLToGecodeConverter::GetICL(int con_index) const {
   return static_cast<Gecode::IntConLevel>(value);
 }
 
-void NLToGecodeConverter::Convert(const Problem &p) {
+void MPToGecodeConverter::Convert(const Problem &p) {
   double inf = std::numeric_limits<double>::infinity();
   IntVarArray &vars = problem_.vars();
   for (int j = 0, n = p.num_vars(); j < n; ++j) {
@@ -406,7 +406,7 @@ void NLToGecodeConverter::Convert(const Problem &p) {
   }
 }
 
-LinExpr NLToGecodeConverter::VisitFloor(UnaryExpr e) {
+LinExpr MPToGecodeConverter::VisitFloor(UnaryExpr e) {
   // floor does nothing because Gecode supports only integer expressions
   // currently.
   NumericExpr arg = e.arg();
@@ -415,7 +415,7 @@ LinExpr NLToGecodeConverter::VisitFloor(UnaryExpr e) {
   return Visit(arg);
 }
 
-LinExpr NLToGecodeConverter::VisitIf(IfExpr e) {
+LinExpr MPToGecodeConverter::VisitIf(IfExpr e) {
   IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   BoolExpr condition = Visit(e.condition());
   NumericExpr then_expr = e.then_expr(), else_expr = e.else_expr();
@@ -436,7 +436,7 @@ LinExpr NLToGecodeConverter::VisitIf(IfExpr e) {
   return result;
 }
 
-LinExpr NLToGecodeConverter::VisitSum(SumExpr e) {
+LinExpr MPToGecodeConverter::VisitSum(SumExpr e) {
   SumExpr::iterator i = e.begin(), end = e.end();
   if (i == end)
     return 0;
@@ -446,7 +446,7 @@ LinExpr NLToGecodeConverter::VisitSum(SumExpr e) {
   return sum;
 }
 
-LinExpr NLToGecodeConverter::VisitCount(CountExpr e) {
+LinExpr MPToGecodeConverter::VisitCount(CountExpr e) {
   Gecode::BoolVarArgs args(e.num_args());
   int index = 0;
   for (CountExpr::iterator
@@ -458,7 +458,7 @@ LinExpr NLToGecodeConverter::VisitCount(CountExpr e) {
   return result;
 }
 
-LinExpr NLToGecodeConverter::VisitNumberOf(IteratedExpr e) {
+LinExpr MPToGecodeConverter::VisitNumberOf(IteratedExpr e) {
   // Gecode only supports global cardinality (count) constraint where no other
   // values except those specified may occur, so we use only local count
   // constraints.
@@ -472,14 +472,14 @@ LinExpr NLToGecodeConverter::VisitNumberOf(IteratedExpr e) {
   return result;
 }
 
-BoolExpr NLToGecodeConverter::LogicalExprConverter::VisitImplication(
+BoolExpr MPToGecodeConverter::LogicalExprConverter::VisitImplication(
     ImplicationExpr e) {
   BoolExpr condition = Visit(e.condition());
   return (condition && Visit(e.then_expr())) ||
         (!condition && Visit(e.else_expr()));
 }
 
-BoolExpr NLToGecodeConverter::LogicalExprConverter::VisitAllDiff(
+BoolExpr MPToGecodeConverter::LogicalExprConverter::VisitAllDiff(
     PairwiseExpr e) {
   bool negate = e.kind() == expr::NOT_ALLDIFF;
   int n = e.num_args();
@@ -776,7 +776,7 @@ void GecodeSolver::Solve(Problem &p, SolutionHandler &sh) {
   SetStatus(-1, "");
 
   // Set up an optimization problem in Gecode.
-  NLToGecodeConverter converter(p.num_vars(), icl_);
+  MPToGecodeConverter converter(p.num_vars(), icl_);
   converter.Convert(p);
 
   // Post branching.

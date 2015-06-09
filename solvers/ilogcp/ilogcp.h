@@ -58,7 +58,7 @@
 
 namespace mp {
 
-class NLToConcertConverter;
+class MPToConcertConverter;
 
 // IlogCP solver.
 class IlogCPSolver : public SolverImpl<Problem> {
@@ -112,9 +112,9 @@ class IlogCPSolver : public SolverImpl<Problem> {
     double solution_time;
   };
 
-  void SolveWithCP(Problem &p, const NLToConcertConverter &converter,
+  void SolveWithCP(Problem &p, const MPToConcertConverter &converter,
                    Stats &stats, SolutionHandler &sh);
-  void SolveWithCPLEX(Problem &p, const NLToConcertConverter &converter,
+  void SolveWithCPLEX(Problem &p, const MPToConcertConverter &converter,
                       Stats &stats, SolutionHandler &sh);
 
  public:
