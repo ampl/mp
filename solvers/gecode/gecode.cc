@@ -418,20 +418,20 @@ LinExpr NLToGecodeConverter::VisitFloor(UnaryExpr e) {
 LinExpr NLToGecodeConverter::VisitIf(IfExpr e) {
   IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   BoolExpr condition = Visit(e.condition());
-  NumericExpr true_expr = e.true_expr(), false_expr = e.false_expr();
-  NumericConstant false_const = Cast<NumericConstant>(false_expr);
+  NumericExpr then_expr = e.then_expr(), else_expr = e.else_expr();
+  NumericConstant false_const = Cast<NumericConstant>(else_expr);
   if (false_const && false_const.value() == 0) {
-    NumericConstant true_const = Cast<NumericConstant>(true_expr);
+    NumericConstant true_const = Cast<NumericConstant>(then_expr);
     if (true_const && true_const.value() == 1) {
       Gecode::channel(problem_, Gecode::expr(problem_, condition, icl_), result);
       return result;
     }
   }
   rel(problem_, result, Gecode::IRT_EQ,
-      Gecode::expr(problem_, Visit(true_expr), icl_),
+      Gecode::expr(problem_, Visit(then_expr), icl_),
       Reify(Gecode::expr(problem_, condition, icl_), Gecode::RM_IMP), icl_);
   rel(problem_, result, Gecode::IRT_EQ,
-      Gecode::expr(problem_, Visit(false_expr), icl_),
+      Gecode::expr(problem_, Visit(else_expr), icl_),
       Reify(Gecode::expr(problem_, !condition, icl_), Gecode::RM_IMP), icl_);
   return result;
 }
@@ -472,13 +472,15 @@ LinExpr NLToGecodeConverter::VisitNumberOf(IteratedExpr e) {
   return result;
 }
 
-BoolExpr NLToGecodeConverter::VisitImplication(ImplicationExpr e) {
+BoolExpr NLToGecodeConverter::LogicalExprConverter::VisitImplication(
+    ImplicationExpr e) {
   BoolExpr condition = Visit(e.condition());
-  return (condition && Visit(e.true_expr())) ||
-        (!condition && Visit(e.false_expr()));
+  return (condition && Visit(e.then_expr())) ||
+        (!condition && Visit(e.else_expr()));
 }
 
-BoolExpr NLToGecodeConverter::VisitAllDiff(PairwiseExpr e) {
+BoolExpr NLToGecodeConverter::LogicalExprConverter::VisitAllDiff(
+    PairwiseExpr e) {
   bool negate = e.kind() == expr::NOT_ALLDIFF;
   int n = e.num_args();
   std::vector<LinExpr> args(n);
@@ -487,15 +489,16 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(PairwiseExpr e) {
     args[index++] = Visit(*i);
   Gecode::BoolVarArgs logical_args(n * (n - 1) / 2);
   index = 0;
+  GecodeProblem &problem = converter_.problem_;
   for (int i = 0; i < n; ++i) {
     for (int j = i + 1; j < n; ++j) {
       Gecode::BoolExpr expr = negate ? args[i] == args[j] : args[i] != args[j];
-      logical_args[index++] = Gecode::expr(problem_, expr, icl_);
+      logical_args[index++] = Gecode::expr(problem, expr, converter_.icl_);
     }
   }
-  Gecode::BoolVar var(problem_, 0, 1);
-  rel(problem_, negate ? Gecode::BOT_OR : Gecode::BOT_AND,
-      logical_args, var, icl_);
+  Gecode::BoolVar var(problem, 0, 1);
+  rel(problem, negate ? Gecode::BOT_OR : Gecode::BOT_AND,
+      logical_args, var, converter_.icl_);
   return var;
 }
 

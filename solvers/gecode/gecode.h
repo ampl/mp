@@ -72,8 +72,7 @@ class GecodeProblem: public Gecode::Space {
 };
 
 // Converter of constraint programming problems from NL to Gecode format.
-class NLToGecodeConverter :
-  public ExprConverter<NLToGecodeConverter, LinExpr, Gecode::BoolExpr> {
+class NLToGecodeConverter : public ExprVisitor<NLToGecodeConverter, LinExpr> {
  private:
   GecodeProblem problem_;
   Gecode::IntConLevel icl_;
@@ -102,6 +101,85 @@ class NLToGecodeConverter :
   LinExpr ConvertExpr(const LinearExpr &linear, NumericExpr nonlinear);
 
   Gecode::IntConLevel GetICL(int con_index) const;
+
+  class LogicalExprConverter :
+      public ExprConverter<LogicalExprConverter, Gecode::BoolExpr> {
+   private:
+    NLToGecodeConverter &converter_;  // Main converter.
+
+   public:
+    explicit LogicalExprConverter(NLToGecodeConverter &c) : converter_(c) {}
+
+    using ExprConverter<LogicalExprConverter, Gecode::BoolExpr>::Visit;
+
+    LinExpr Visit(NumericExpr e) {
+      return converter_.Visit(e);
+    }
+
+    BoolExpr VisitLogicalConstant(LogicalConstant c) {
+      bool value = c.value();
+      return Gecode::BoolVar(converter_.problem_, value, value);
+    }
+
+    BoolExpr VisitOr(BinaryLogicalExpr e) {
+      return Visit(e.lhs()) || Visit(e.rhs());
+    }
+
+    BoolExpr VisitAnd(BinaryLogicalExpr e) {
+      return Visit(e.lhs()) && Visit(e.rhs());
+    }
+
+    BoolExpr VisitLT(RelationalExpr e) {
+      return Visit(e.lhs()) < Visit(e.rhs());
+    }
+
+    BoolExpr VisitLE(RelationalExpr e) {
+      return Visit(e.lhs()) <= Visit(e.rhs());
+    }
+
+    BoolExpr VisitEQ(RelationalExpr e) {
+      return Visit(e.lhs()) == Visit(e.rhs());
+    }
+
+    BoolExpr VisitGE(RelationalExpr e) {
+      return Visit(e.lhs()) >= Visit(e.rhs());
+    }
+
+    BoolExpr VisitGT(RelationalExpr e) {
+      return Visit(e.lhs()) > Visit(e.rhs());
+    }
+
+    BoolExpr VisitNE(RelationalExpr e) {
+      return Visit(e.lhs()) != Visit(e.rhs());
+    }
+
+    BoolExpr VisitNot(NotExpr e) {
+      return !Visit(e.arg());
+    }
+
+    BoolExpr VisitForAll(IteratedLogicalExpr e) {
+      return converter_.Convert(Gecode::BOT_AND, e);
+    }
+
+    BoolExpr VisitExists(IteratedLogicalExpr e) {
+      return converter_.Convert(Gecode::BOT_OR, e);
+    }
+
+    BoolExpr VisitImplication(ImplicationExpr e);
+
+    BoolExpr VisitIff(BinaryLogicalExpr e) {
+      return Visit(e.lhs()) == Visit(e.rhs());
+    }
+
+    BoolExpr VisitAllDiff(PairwiseExpr e);
+    BoolExpr VisitNotAllDiff(PairwiseExpr e) { return VisitAllDiff(e); }
+  };
+
+  using ExprVisitor<NLToGecodeConverter, LinExpr>::Visit;
+
+  BoolExpr Visit(LogicalExpr e) {
+    return LogicalExprConverter(*this).Visit(e);
+  }
 
  public:
   NLToGecodeConverter(int num_vars, Gecode::IntConLevel icl)
@@ -206,64 +284,6 @@ class NLToGecodeConverter :
 
   LinExpr VisitCommonExpr(Reference v) {
     return common_exprs_[v.index()];
-  }
-
-  BoolExpr VisitOr(BinaryLogicalExpr e) {
-    return Visit(e.lhs()) || Visit(e.rhs());
-  }
-
-  BoolExpr VisitAnd(BinaryLogicalExpr e) {
-    return Visit(e.lhs()) && Visit(e.rhs());
-  }
-
-  BoolExpr VisitLT(RelationalExpr e) {
-    return Visit(e.lhs()) < Visit(e.rhs());
-  }
-
-  BoolExpr VisitLE(RelationalExpr e) {
-    return Visit(e.lhs()) <= Visit(e.rhs());
-  }
-
-  BoolExpr VisitEQ(RelationalExpr e) {
-    return Visit(e.lhs()) == Visit(e.rhs());
-  }
-
-  BoolExpr VisitGE(RelationalExpr e) {
-    return Visit(e.lhs()) >= Visit(e.rhs());
-  }
-
-  BoolExpr VisitGT(RelationalExpr e) {
-    return Visit(e.lhs()) > Visit(e.rhs());
-  }
-
-  BoolExpr VisitNE(RelationalExpr e) {
-    return Visit(e.lhs()) != Visit(e.rhs());
-  }
-
-  BoolExpr VisitNot(NotExpr e) {
-    return !Visit(e.arg());
-  }
-
-  BoolExpr VisitForAll(IteratedLogicalExpr e) {
-    return Convert(Gecode::BOT_AND, e);
-  }
-
-  BoolExpr VisitExists(IteratedLogicalExpr e) {
-    return Convert(Gecode::BOT_OR, e);
-  }
-
-  BoolExpr VisitImplication(ImplicationExpr e);
-
-  BoolExpr VisitIff(BinaryLogicalExpr e) {
-    return Visit(e.lhs()) == Visit(e.rhs());
-  }
-
-  BoolExpr VisitAllDiff(PairwiseExpr e);
-  BoolExpr VisitNotAllDiff(PairwiseExpr e) { return VisitAllDiff(e); }
-
-  BoolExpr VisitLogicalConstant(LogicalConstant c) {
-    bool value = c.value();
-    return Gecode::BoolVar(problem_, value, value);
   }
 };
 
