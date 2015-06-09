@@ -609,8 +609,8 @@ class NLHandler {
     \endrst
    */
   NumericExpr OnIf(LogicalExpr condition,
-      NumericExpr true_expr, NumericExpr false_expr) {
-    internal::Unused(&condition, &true_expr, &false_expr);
+      NumericExpr then_expr, NumericExpr else_expr) {
+    internal::Unused(&condition, &then_expr, &else_expr);
     return NumericExpr();
   }
 
@@ -841,8 +841,8 @@ class NLHandler {
     \endrst
    */
   LogicalExpr OnImplication(
-      LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
-    internal::Unused(&condition, &true_expr, &false_expr);
+      LogicalExpr condition, LogicalExpr then_expr, LogicalExpr else_expr) {
+    internal::Unused(&condition, &then_expr, &else_expr);
     return LogicalExpr();
   }
 
@@ -906,8 +906,8 @@ class NLHandler {
     Receives notification of a :ref:`symbolic if expression <ifsym>`.
     \endrst
    */
-  Expr OnSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {
-    internal::Unused(&condition, &true_expr, &false_expr);
+  Expr OnSymbolicIf(LogicalExpr condition, Expr then_expr, Expr else_expr) {
+    internal::Unused(&condition, &then_expr, &else_expr);
     return Expr();
   }
 
@@ -1478,9 +1478,9 @@ typename Handler::Expr NLReader<Reader, Handler>::ReadSymbolicExpr() {
       return ReadNumericExpr(opcode);
     // Read symbolic if expression.
     LogicalExpr condition = ReadLogicalExpr();
-    Expr true_expr = ReadSymbolicExpr();
-    Expr false_expr = ReadSymbolicExpr();
-    return handler_.OnSymbolicIf(condition, true_expr, false_expr);
+    Expr then_expr = ReadSymbolicExpr();
+    Expr else_expr = ReadSymbolicExpr();
+    return handler_.OnSymbolicIf(condition, then_expr, else_expr);
   }
   }
   return ReadNumericExpr(c, false);
@@ -1532,9 +1532,9 @@ typename Handler::NumericExpr
   }
   case expr::IF: {
     LogicalExpr condition = ReadLogicalExpr();
-    NumericExpr true_expr = ReadNumericExpr();
-    NumericExpr false_expr = ReadNumericExpr();
-    return handler_.OnIf(condition, true_expr, false_expr);
+    NumericExpr then_expr = ReadNumericExpr();
+    NumericExpr else_expr = ReadNumericExpr();
+    return handler_.OnIf(condition, then_expr, else_expr);
   }
   case expr::PLTERM: {
     // Read a piecewise-linear term.
@@ -1628,9 +1628,9 @@ typename Handler::LogicalExpr
   case expr::IMPLICATION: {
     // Read an implication (=>).
     LogicalExpr condition = ReadLogicalExpr();
-    LogicalExpr true_expr = ReadLogicalExpr();
-    LogicalExpr false_expr = ReadLogicalExpr();
-    return handler_.OnImplication(condition, true_expr, false_expr);
+    LogicalExpr then_expr = ReadLogicalExpr();
+    LogicalExpr else_expr = ReadLogicalExpr();
+    return handler_.OnImplication(condition, then_expr, else_expr);
   }
   case expr::FIRST_ITERATED_LOGICAL: {
     // Read an iterated logical expression (exists or forall).

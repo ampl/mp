@@ -236,12 +236,12 @@ void ASLBuilder::SetObjOrCon(
 }
 
 ::expr *ASLBuilder::MakeIf(
-    expr::Kind kind, LogicalExpr condition, Expr true_expr, Expr false_expr) {
+    expr::Kind kind, LogicalExpr condition, Expr then_expr, Expr else_expr) {
   expr_if *e = Allocate<expr_if>();
   e->op = r_ops_[opcode(kind)];
   e->e = condition.impl_;
-  e->T = true_expr.impl_;
-  e->F = false_expr.impl_;
+  e->T = then_expr.impl_;
+  e->F = else_expr.impl_;
   return reinterpret_cast< ::expr*>(e);
 }
 

@@ -413,8 +413,8 @@ class BasicIfExpr : public BasicExpr<KIND> {
     return Base::template Create<LogicalExpr>(impl()->e);
   }
 
-  Arg true_expr() const { return Base::template Create<Arg>(impl()->T); }
-  Arg false_expr() const { return Base::template Create<Arg>(impl()->F); }
+  Arg then_expr() const { return Base::template Create<Arg>(impl()->T); }
+  Arg else_expr() const { return Base::template Create<Arg>(impl()->F); }
 };
 
 // An if-then-else expression.

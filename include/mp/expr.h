@@ -276,8 +276,8 @@ class BasicIfExpr : public BasicExpr<K> {
   typedef BasicExpr<K> Base;
   struct Impl : Base::Impl {
     const typename Base::Impl *condition;
-    const typename Base::Impl *true_expr;
-    const typename Base::Impl *false_expr;
+    const typename Base::Impl *then_expr;
+    const typename Base::Impl *else_expr;
   };
   MP_EXPR(Base);
 
@@ -288,11 +288,11 @@ class BasicIfExpr : public BasicExpr<K> {
     return Base::template Create<LogicalExpr>(impl()->condition);
   }
 
-  Arg true_expr() const {
-    return Base::template Create<Arg>(impl()->true_expr);
+  Arg then_expr() const {
+    return Base::template Create<Arg>(impl()->then_expr);
   }
-  Arg false_expr() const {
-    return Base::template Create<Arg>(impl()->false_expr);
+  Arg else_expr() const {
+    return Base::template Create<Arg>(impl()->else_expr);
   }
 };
 
@@ -690,13 +690,13 @@ class BasicExprFactory : private Alloc {
   }
 
   template <typename ExprType, typename Arg>
-  ExprType MakeIf(LogicalExpr condition, Arg true_expr, Arg false_expr) {
-    // false_expr can be null.
-    MP_ASSERT(condition != 0 && true_expr != 0, "invalid argument");
+  ExprType MakeIf(LogicalExpr condition, Arg then_expr, Arg else_expr) {
+    // else_expr can be null.
+    MP_ASSERT(condition != 0 && then_expr != 0, "invalid argument");
     typename ExprType::Impl *impl = Allocate<ExprType>(ExprType::KIND);
     impl->condition = condition.impl_;
-    impl->true_expr = true_expr.impl_;
-    impl->false_expr = false_expr.impl_;
+    impl->then_expr = then_expr.impl_;
+    impl->else_expr = else_expr.impl_;
     return Expr::Create<ExprType>(impl);
   }
 
@@ -792,8 +792,8 @@ class BasicExprFactory : private Alloc {
 
   // Makes an if expression.
   IfExpr MakeIf(LogicalExpr condition,
-                NumericExpr true_expr, NumericExpr false_expr) {
-    return MakeIf<IfExpr>(condition, true_expr, false_expr);
+                NumericExpr then_expr, NumericExpr else_expr) {
+    return MakeIf<IfExpr>(condition, then_expr, else_expr);
   }
 
   // A piecewise-linear term builder.
@@ -959,9 +959,9 @@ class BasicExprFactory : private Alloc {
   }
 
   // Makes an implication expression.
-  ImplicationExpr MakeImplication(LogicalExpr condition, LogicalExpr true_expr,
-                                  LogicalExpr false_expr) {
-    return MakeIf<ImplicationExpr>(condition, true_expr, false_expr);
+  ImplicationExpr MakeImplication(LogicalExpr condition, LogicalExpr then_expr,
+                                  LogicalExpr else_expr) {
+    return MakeIf<ImplicationExpr>(condition, then_expr, else_expr);
   }
 
   typedef BasicIteratedExprBuilder<IteratedLogicalExpr>
@@ -1004,8 +1004,8 @@ class BasicExprFactory : private Alloc {
 
   // Makes a symbolic if expression.
   SymbolicIfExpr MakeSymbolicIf(LogicalExpr condition,
-                                Expr true_expr, Expr false_expr) {
-    return MakeIf<SymbolicIfExpr>(condition, true_expr, false_expr);
+                                Expr then_expr, Expr else_expr) {
+    return MakeIf<SymbolicIfExpr>(condition, then_expr, else_expr);
   }
 };
 

@@ -68,7 +68,7 @@ class ExprHasher : public mp::asl::ExprVisitor<ExprHasher, size_t, size_t> {
   template <typename E>
   size_t VisitIf(E e) {
     size_t hash = HashCombine(Hash(e), e.condition());
-    return HashCombine(HashCombine(hash, e.true_expr()), e.false_expr());
+    return HashCombine(HashCombine(hash, e.then_expr()), e.else_expr());
   }
 
   size_t VisitPLTerm(asl::PiecewiseLinearExpr e) {

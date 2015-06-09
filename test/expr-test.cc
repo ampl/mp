@@ -201,19 +201,19 @@ TEST_F(ExprTest, IfExpr) {
   EXPECT_TRUE(e == 0);
   (void)NumericExpr(e);
   auto condition = factory_.MakeLogicalConstant(true);
-  auto true_expr = factory_.MakeNumericConstant(42);
-  auto false_expr = factory_.MakeVariable(0);
-  e = factory_.MakeIf(condition, true_expr, false_expr);
+  auto then_expr = factory_.MakeNumericConstant(42);
+  auto else_expr = factory_.MakeVariable(0);
+  e = factory_.MakeIf(condition, then_expr, else_expr);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::IF, e.kind());
   EXPECT_EQ(condition, e.condition());
-  EXPECT_EQ(true_expr, e.true_expr());
-  EXPECT_EQ(false_expr, e.false_expr());
-  EXPECT_ASSERT(factory_.MakeIf(LogicalExpr(), true_expr, false_expr),
+  EXPECT_EQ(then_expr, e.then_expr());
+  EXPECT_EQ(else_expr, e.else_expr());
+  EXPECT_ASSERT(factory_.MakeIf(LogicalExpr(), then_expr, else_expr),
                 "invalid argument");
-  EXPECT_ASSERT(factory_.MakeIf(condition, NumericExpr(), false_expr),
+  EXPECT_ASSERT(factory_.MakeIf(condition, NumericExpr(), else_expr),
                 "invalid argument");
-  factory_.MakeIf(condition, true_expr, NumericExpr());
+  factory_.MakeIf(condition, then_expr, NumericExpr());
 }
 
 TEST_F(ExprTest, PLTerm) {
@@ -443,21 +443,21 @@ TEST_F(ExprTest, ImplicationExpr) {
   (void)LogicalExpr(e);
   EXPECT_TRUE(e == 0);
   auto condition = factory_.MakeLogicalConstant(true);
-  auto true_expr = factory_.MakeLogicalConstant(false);
-  auto false_expr = factory_.MakeLogicalConstant(true);
-  e = factory_.MakeImplication(condition, true_expr, false_expr);
+  auto then_expr = factory_.MakeLogicalConstant(false);
+  auto else_expr = factory_.MakeLogicalConstant(true);
+  e = factory_.MakeImplication(condition, then_expr, else_expr);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::IMPLICATION, e.kind());
   EXPECT_EQ(condition, e.condition());
-  EXPECT_EQ(true_expr, e.true_expr());
-  EXPECT_EQ(false_expr, e.false_expr());
+  EXPECT_EQ(then_expr, e.then_expr());
+  EXPECT_EQ(else_expr, e.else_expr());
   EXPECT_ASSERT(factory_.MakeImplication(
-                  LogicalExpr(), true_expr, false_expr),
+                  LogicalExpr(), then_expr, else_expr),
                 "invalid argument");
   EXPECT_ASSERT(factory_.MakeImplication(
-                  condition, LogicalExpr(), false_expr),
+                  condition, LogicalExpr(), else_expr),
                 "invalid argument");
-  factory_.MakeImplication(condition, true_expr, LogicalExpr());
+  factory_.MakeImplication(condition, then_expr, LogicalExpr());
 }
 
 template <typename ExprInfo>
@@ -589,20 +589,20 @@ TEST_F(ExprTest, SymbolicIfExpr) {
   EXPECT_TRUE(e == 0);
   (void)mp::Expr(e);
   auto condition = factory_.MakeLogicalConstant(true);
-  mp::Expr true_expr = factory_.MakeStringLiteral("a");
-  mp::Expr false_expr = factory_.MakeVariable(0);
-  e = factory_.MakeSymbolicIf(condition, true_expr, false_expr);
+  mp::Expr then_expr = factory_.MakeStringLiteral("a");
+  mp::Expr else_expr = factory_.MakeVariable(0);
+  e = factory_.MakeSymbolicIf(condition, then_expr, else_expr);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::IFSYM, e.kind());
   EXPECT_EQ(condition, e.condition());
-  EXPECT_EQ(true_expr, e.true_expr());
-  EXPECT_EQ(false_expr, e.false_expr());
+  EXPECT_EQ(then_expr, e.then_expr());
+  EXPECT_EQ(else_expr, e.else_expr());
   EXPECT_ASSERT(factory_.MakeSymbolicIf(LogicalExpr(),
-                                        true_expr, false_expr),
+                                        then_expr, else_expr),
                 "invalid argument");
-  EXPECT_ASSERT(factory_.MakeSymbolicIf(condition, mp::Expr(), false_expr),
+  EXPECT_ASSERT(factory_.MakeSymbolicIf(condition, mp::Expr(), else_expr),
                 "invalid argument");
-  factory_.MakeSymbolicIf(condition, true_expr, mp::Expr());
+  factory_.MakeSymbolicIf(condition, then_expr, mp::Expr());
 }
 
 TEST_F(ExprTest, UncheckedCast) {

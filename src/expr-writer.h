@@ -232,12 +232,12 @@ void ExprWriter<ExprTypes>::VisitIf(IfExpr e) {
   writer_ << "if ";
   Visit(e.condition(), prec::UNKNOWN);
   writer_ << " then ";
-  NumericExpr false_expr = e.false_expr();
-  bool has_else = !IsZero<ExprTypes>(false_expr);
-  Visit(e.true_expr(), prec::CONDITIONAL + (has_else ? 1 : 0));
+  NumericExpr else_expr = e.else_expr();
+  bool has_else = !IsZero<ExprTypes>(else_expr);
+  Visit(e.then_expr(), prec::CONDITIONAL + (has_else ? 1 : 0));
   if (has_else) {
     writer_ << " else ";
-    Visit(false_expr);
+    Visit(else_expr);
   }
 }
 
@@ -321,12 +321,12 @@ template <typename ExprTypes>
 void ExprWriter<ExprTypes>::VisitImplication(ImplicationExpr e) {
   Visit(e.condition());
   writer_ << " ==> ";
-  Visit(e.true_expr(), prec::IMPLICATION + 1);
-  LogicalExpr false_expr = e.false_expr();
-  LogicalConstant c = ExprTypes::template Cast<LogicalConstant>(false_expr);
+  Visit(e.then_expr(), prec::IMPLICATION + 1);
+  LogicalExpr else_expr = e.else_expr();
+  LogicalConstant c = ExprTypes::template Cast<LogicalConstant>(else_expr);
   if (!c || c.value() != 0) {
     writer_ << " else ";
-    Visit(false_expr);
+    Visit(else_expr);
   }
 }
 

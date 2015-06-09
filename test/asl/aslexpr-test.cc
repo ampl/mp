@@ -193,8 +193,8 @@ class ExprTest : public ::testing::Test {
   }
 
   IfExpr MakeIf(LogicalExpr condition,
-      NumericExpr true_expr, NumericExpr false_expr) {
-    return builder.MakeIf(condition, true_expr, false_expr);
+      NumericExpr then_expr, NumericExpr else_expr) {
+    return builder.MakeIf(condition, then_expr, else_expr);
   }
 
   BinaryLogicalExpr MakeBinaryLogical(
@@ -212,8 +212,8 @@ class ExprTest : public ::testing::Test {
   }
 
   ImplicationExpr MakeImplication(
-      LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
-    return builder.MakeImplication(condition, true_expr, false_expr);
+      LogicalExpr condition, LogicalExpr then_expr, LogicalExpr else_expr) {
+    return builder.MakeImplication(condition, then_expr, else_expr);
   }
 
 public:
@@ -550,8 +550,8 @@ TEST_F(ExprTest, IfExpr) {
   asl::IfExpr expr = builder.MakeIf(l1, n1, n2);
   EXPECT_EQ(ex::IF, expr.kind());
   EXPECT_EQ(l1, expr.condition());
-  EXPECT_EQ(n1, expr.true_expr());
-  EXPECT_EQ(n2, expr.false_expr());
+  EXPECT_EQ(n1, expr.then_expr());
+  EXPECT_EQ(n2, expr.else_expr());
 }
 
 TEST_F(ExprTest, PiecewiseLinearExpr) {
@@ -726,8 +726,8 @@ TEST_F(ExprTest, ImplicationExpr) {
   asl::ImplicationExpr expr = builder.MakeImplication(condition, l0, l1);
   EXPECT_EQ(ex::IMPLICATION, expr.kind());
   EXPECT_EQ(condition, expr.condition());
-  EXPECT_EQ(l0, expr.true_expr());
-  EXPECT_EQ(l1, expr.false_expr());
+  EXPECT_EQ(l0, expr.then_expr());
+  EXPECT_EQ(l1, expr.else_expr());
 }
 
 TEST_F(ExprTest, IteratedLogicalExpr) {
@@ -869,8 +869,8 @@ template <typename Arg, mp::expr::Kind KIND>
 void CheckHash(asl::BasicIfExpr<Arg, KIND> e) {
   size_t hash = HashCombine<int>(0, e.kind());
   hash = HashCombine<LogicalExpr>(hash, e.condition());
-  hash = HashCombine<Arg>(hash, e.true_expr());
-  hash = HashCombine<Arg>(hash, e.false_expr());
+  hash = HashCombine<Arg>(hash, e.then_expr());
+  hash = HashCombine<Arg>(hash, e.else_expr());
   EXPECT_EQ(hash, std::hash<Arg>()(e));
 }
 

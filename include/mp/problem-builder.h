@@ -204,8 +204,8 @@ class ProblemBuilder : public SuffixManager {
   }
 
   NumericExpr MakeIf(LogicalExpr condition,
-      NumericExpr true_expr, NumericExpr false_expr) {
-    internal::Unused(&condition, &true_expr, &false_expr);
+      NumericExpr then_expr, NumericExpr else_expr) {
+    internal::Unused(&condition, &then_expr, &else_expr);
     MP_DISPATCH(ReportUnhandledConstruct("if expression"));
     return NumericExpr();
   }
@@ -328,8 +328,8 @@ class ProblemBuilder : public SuffixManager {
   }
 
   LogicalExpr MakeImplication(
-      LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
-    internal::Unused(&condition, &true_expr, &false_expr);
+      LogicalExpr condition, LogicalExpr then_expr, LogicalExpr else_expr) {
+    internal::Unused(&condition, &then_expr, &else_expr);
     MP_DISPATCH(ReportUnhandledConstruct("implication expression"));
     return LogicalExpr();
   }
@@ -367,8 +367,8 @@ class ProblemBuilder : public SuffixManager {
     return Expr();
   }
 
-  Expr MakeSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {
-    internal::Unused(&condition, &true_expr, &false_expr);
+  Expr MakeSymbolicIf(LogicalExpr condition, Expr then_expr, Expr else_expr) {
+    internal::Unused(&condition, &then_expr, &else_expr);
     MP_DISPATCH(ReportUnhandledConstruct("symbolic if expression"));
     return Expr();
   }
@@ -611,8 +611,8 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of an if expression.
   NumericExpr OnIf(LogicalExpr condition,
-      NumericExpr true_expr, NumericExpr false_expr) {
-    return builder_.MakeIf(condition, true_expr, false_expr);
+      NumericExpr then_expr, NumericExpr else_expr) {
+    return builder_.MakeIf(condition, then_expr, else_expr);
   }
 
   typedef typename ProblemBuilder::PLTermBuilder PLTermHandler;
@@ -723,8 +723,8 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of an implication expression.
   LogicalExpr OnImplication(
-      LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
-    return builder_.MakeImplication(condition, true_expr, false_expr);
+      LogicalExpr condition, LogicalExpr then_expr, LogicalExpr else_expr) {
+    return builder_.MakeImplication(condition, then_expr, else_expr);
   }
 
   typedef typename ProblemBuilder::IteratedLogicalExprBuilder LogicalArgHandler;
@@ -755,8 +755,8 @@ class ProblemBuilderToNLAdapter {
   }
 
   // Receives notification of a symbolic if expression.
-  Expr OnSymbolicIf(LogicalExpr condition, Expr true_expr, Expr false_expr) {
-    return builder_.MakeSymbolicIf(condition, true_expr, false_expr);
+  Expr OnSymbolicIf(LogicalExpr condition, Expr then_expr, Expr else_expr) {
+    return builder_.MakeSymbolicIf(condition, then_expr, else_expr);
   }
 
   // Receives notification of the end of the input.

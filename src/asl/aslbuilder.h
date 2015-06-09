@@ -205,7 +205,7 @@ class ASLBuilder {
   }
 
   ::expr *MakeIf(expr::Kind kind,
-      LogicalExpr condition, Expr true_expr, Expr false_expr);
+      LogicalExpr condition, Expr then_expr, Expr else_expr);
   ::expr *MakeIterated(expr::Kind kind, ArrayRef<Expr> args);
 
   template <typename IteratedExpr, typename Arg>
@@ -495,9 +495,9 @@ class ASLBuilder {
   }
 
   IfExpr MakeIf(LogicalExpr condition,
-      NumericExpr true_expr, NumericExpr false_expr) {
+      NumericExpr then_expr, NumericExpr else_expr) {
     return Expr::Create<IfExpr>(
-        MakeIf(expr::IF, condition, true_expr, false_expr));
+        MakeIf(expr::IF, condition, then_expr, else_expr));
   }
 
   class PLTermBuilder {
@@ -660,9 +660,9 @@ class ASLBuilder {
   }
 
   ImplicationExpr MakeImplication(
-      LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
+      LogicalExpr condition, LogicalExpr then_expr, LogicalExpr else_expr) {
     return Expr::Create<ImplicationExpr>(
-        MakeIf(expr::IMPLICATION, condition, true_expr, false_expr));
+        MakeIf(expr::IMPLICATION, condition, then_expr, else_expr));
   }
 
   typedef ExprBuilder<LogicalExpr> IteratedLogicalExprBuilder;
@@ -697,9 +697,9 @@ class ASLBuilder {
   StringLiteral MakeStringLiteral(fmt::StringRef value);
 
   SymbolicIfExpr MakeSymbolicIf(
-      LogicalExpr condition, Expr true_expr, Expr false_expr) {
+      LogicalExpr condition, Expr then_expr, Expr else_expr) {
     return Expr::Create<SymbolicIfExpr>(
-        MakeIf(expr::IFSYM, condition, true_expr, false_expr));
+        MakeIf(expr::IFSYM, condition, then_expr, else_expr));
   }
 };
 

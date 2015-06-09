@@ -207,7 +207,7 @@ class MockProblemBuilder {
 
   MOCK_METHOD3(MakeIf,
                NumericExpr (LogicalExpr condition,
-                            NumericExpr true_expr, NumericExpr false_expr));
+                            NumericExpr then_expr, NumericExpr else_expr));
 
   typedef TestPLTermBuilder PLTermBuilder;
 
@@ -259,7 +259,7 @@ class MockProblemBuilder {
                             NumericExpr lhs, CountExpr rhs));
   MOCK_METHOD3(MakeImplication,
                LogicalExpr (LogicalExpr condition,
-                            LogicalExpr true_expr, LogicalExpr false_expr));
+                            LogicalExpr then_expr, LogicalExpr else_expr));
 
   typedef TestIteratedLogicalExprBuilder IteratedLogicalExprBuilder;
 
@@ -277,7 +277,7 @@ class MockProblemBuilder {
   MOCK_METHOD1(MakeStringLiteral, Expr (fmt::StringRef value));
 
   MOCK_METHOD3(MakeSymbolicIf,
-               Expr (LogicalExpr condition, Expr true_expr, Expr false_expr));
+               Expr (LogicalExpr condition, Expr then_expr, Expr else_expr));
 };
 
 #endif  // MP_MOCK_PROBLEM_BUILDER_H_

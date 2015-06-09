@@ -64,8 +64,8 @@ class ExprComparator : public mp::ExprVisitor<ExprComparator, bool, bool> {
   bool VisitIf(E e) {
     E if_expr = Cast<E>(expr_);
     return Equal(if_expr.condition(), e.condition()) &&
-           Equal(if_expr.true_expr(), e.true_expr()) &&
-           Equal(if_expr.false_expr(), e.false_expr());
+           Equal(if_expr.then_expr(), e.then_expr()) &&
+           Equal(if_expr.else_expr(), e.else_expr());
   }
 
   bool VisitPLTerm(PLTerm e);

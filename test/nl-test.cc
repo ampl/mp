@@ -602,9 +602,9 @@ class TestNLHandler {
   }
 
   std::string OnIf(std::string condition,
-                   std::string true_expr, std::string false_expr) {
+                   std::string then_expr, std::string else_expr) {
     return fmt::format("if {} then {} else {}",
-                       condition, true_expr, false_expr);
+                       condition, then_expr, else_expr);
   }
 
   class PLTermHandler {
@@ -721,8 +721,8 @@ class TestNLHandler {
   }
 
   std::string OnImplication(std::string condition,
-                            std::string true_expr, std::string false_expr) {
-    return fmt::format("{} ==> {} else {}", condition, true_expr, false_expr);
+                            std::string then_expr, std::string else_expr) {
+    return fmt::format("{} ==> {} else {}", condition, then_expr, else_expr);
   }
 
   typedef ArgHandler LogicalArgHandler;
@@ -746,8 +746,8 @@ class TestNLHandler {
   }
 
   std::string OnSymbolicIf(std::string condition,
-                           std::string true_expr, std::string false_expr) {
-    return OnIf(condition, true_expr, false_expr);
+                           std::string then_expr, std::string else_expr) {
+    return OnIf(condition, then_expr, else_expr);
   }
 
   void EndInput() {}
