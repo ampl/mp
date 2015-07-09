@@ -24,7 +24,7 @@ if you give the AMPL commands
      solve;
 
 You can control the solver by setting the environment variable
-``localsolver_options`` appropriately (either by using ampl's ``option`` command,
+``locsol_options`` appropriately (either by using ampl's ``option`` command,
 or by using the shell's ``set`` and ``export`` commands before you invoke ampl).
 You can put one or more (white-space separated) option assignments in
 ``$localsolver_options``. The option ``version`` doesn't take a value:
