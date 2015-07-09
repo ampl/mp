@@ -574,6 +574,11 @@ LocalSolver::LocalSolver()
   AddDblOption("pl_bigm",
     "The artificial bound used for unbounded variables in piecewise-linear "
     "terms. Default = 1e6.", &LocalSolver::GetPLBigM, &LocalSolver::SetPLBigM);
+
+  AddStrOption("envfile",
+    "Path to the file where to export LocalSolver environment. "
+    "Default = \"\" (no file)",
+    &LocalSolver::GetEnvFile, &LocalSolver::SetEnvFile);
 }
 
 void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
@@ -683,6 +688,9 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
     }
   } callback(*this, solver, custom_output);
   solver.addCallback(ls::CT_Ticked, &Callback::Call, &callback);
+
+  if (!envfile_.empty())
+    solver.saveEnvironment(envfile_);
 
   double setup_time = GetTimeAndReset(time);
 

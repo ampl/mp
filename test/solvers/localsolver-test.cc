@@ -229,6 +229,24 @@ TEST(LocalSolverTest, LogFileOption) {
   EXPECT_THROW(solver.SetIntOption("logfile", 1), mp::OptionError);
 }
 
+TEST(LocalSolverTest, EnvFileOption) {
+  mp::LocalSolver solver;
+  EXPECT_EQ("", solver.GetStrOption("envfile"));
+  const char *envfile = "test.lsm";
+  solver.SetStrOption("envfile", envfile);
+  EXPECT_EQ(envfile, solver.GetStrOption("envfile"));
+  EXPECT_THROW(solver.SetIntOption("envfile", 1), mp::OptionError);
+
+  mp::LSProblemBuilder pb(solver);
+  pb.AddVar(0, 1, var::INTEGER);
+  pb.AddObj(obj::MIN, pb.MakeVariable(0), 0);
+  TestSolutionHandler sh;
+  std::remove(envfile);
+  solver.Solve(pb, sh);
+  // Check if file exists by opening it.
+  fmt::File(envfile, fmt::File::RDONLY);
+}
+
 // LocalSolver option stored in LSPhase
 template <typename T>
 struct PhaseOption : public BasicOption<fmt::LongLong> {

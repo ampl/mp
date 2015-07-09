@@ -484,6 +484,7 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   fmt::LongLong iterlimit_;
   double pl_bigm_;
   std::string logfile_;
+  std::string envfile_;
   mp::OptionValueInfo verbosities_[4];
 
   struct OptionInfo {
@@ -509,6 +510,11 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   std::string GetLogFile(const SolverOption &) const { return logfile_; }
   void SetLogFile(const SolverOption &, fmt::StringRef value) {
     logfile_.assign(value.c_str(), value.size());
+  }
+
+  std::string GetEnvFile(const SolverOption &) const { return envfile_; }
+  void SetEnvFile(const SolverOption &, fmt::StringRef value) {
+    envfile_.assign(value.c_str(), value.size());
   }
 
   fmt::LongLong GetIterLimit(const SolverOption &) const { return iterlimit_; }
