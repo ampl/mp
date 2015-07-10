@@ -3,8 +3,6 @@ language: c++
 addons:
   apt:
     packages:
-      - doxygen
-      - python-virtualenv
       - unixodbc-dev
 
 os:
@@ -18,6 +16,7 @@ env:
         six7w64OcBxbMU87P5sqnO6nw70elG0=
   matrix:
     - BUILD=doc
+      addons: {apt: {packages: [doxygen, python-virtualenv]}}
     - BUILD=native
 
 matrix:
