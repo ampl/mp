@@ -31,6 +31,7 @@ THIS SOFTWARE.
 #ifndef STDIO_H_included	/* allow suppressing stdio.h */
 #include <stdio.h>		/* in case it's already included, */
 #endif				/* e.g., by cplex.h */
+#include <stdlib.h>
 
 #ifdef KR_headers
 #ifndef _SIZE_T
