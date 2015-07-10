@@ -2,9 +2,10 @@ language: c++
 
 addons:
   apt:
-    - doxygen
-    - python-virtualenv
-    - unixodbc-dev
+    packages:
+      - doxygen
+      - python-virtualenv
+      - unixodbc-dev
 
 os:
   - linux
