@@ -1,13 +1,5 @@
 language: c++
 
-addons:
-  apt:
-    packages:
-      - unixodbc-dev
-
-os:
-  - linux
-
 env:
   global:
     - secure: |-
@@ -18,10 +10,11 @@ env:
 matrix:
   include:
     - os: linux
-      addons: {apt: {packages: [doxygen, python-virtualenv]}}
       env: BUILD=doc
+      addons: {apt: {packages: [doxygen, python-virtualenv]}}
     - os: linux
       env: BUILD=native
+      addons: {apt: {packages: [unixodbc-dev]}}
     - os: osx
       env: BUILD=native
 
