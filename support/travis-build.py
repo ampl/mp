@@ -14,8 +14,6 @@ if build == 'doc':
   workdir = tempfile.mkdtemp()
   try:
     # Install dependencies.
-    if travis:
-      check_call(['sudo', 'apt-get', 'install', 'python-virtualenv', 'doxygen'])
     returncode, repo_dir = __import__('build-docs').build_docs(workdir)
     if returncode == 0:
       if travis:
