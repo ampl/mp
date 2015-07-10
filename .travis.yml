@@ -10,6 +10,8 @@ env:
 # Use the container-based infrastructure.
 sudo: false
 
+cache: ccache
+
 matrix:
   include:
     - os: linux
