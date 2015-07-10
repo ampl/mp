@@ -26,3 +26,4 @@ matrix:
 script:
   - ccache -s
   - support/travis-build.py
+  - ccache -s
