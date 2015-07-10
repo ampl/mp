@@ -37,8 +37,9 @@ if build == 'doc':
   exit(returncode)
 
 cmake_flags = ['-DBUILD=all']
-ubuntu_packages = ['gfortran', 'unixodbc-dev']
 
+# This is not used right now because container-based infrastructure on Travis
+# doesn't support sudo.
 if build == 'cross':
   cmake_flags = [
     '-DCMAKE_SYSTEM_NAME=Windows',
@@ -59,8 +60,6 @@ if build == 'cross':
 os_name = os.environ['TRAVIS_OS_NAME']
 if os_name == 'linux':
   # Install newer version of CMake.
-  #check_call(['sudo', 'apt-get', 'update'])
-  #check_call(['sudo', 'apt-get', 'install'] + ubuntu_packages)
   cmake_path = bootstrap.install_cmake(
     'cmake-3.1.1-Linux-x86_64.tar.gz', check_installed=False,
     download_dir=None, install_dir='.')

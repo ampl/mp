@@ -1,5 +1,9 @@
 language: c++
 
+addons:
+  apt:
+    - unixodbc-dev
+
 os:
   - linux
 
@@ -12,7 +16,6 @@ env:
   matrix:
     - BUILD=doc
     - BUILD=native
-    - BUILD=cross
 
 matrix:
   include:
