@@ -24,4 +24,5 @@ matrix:
       env: BUILD=native
 
 script:
+  - ccache -s
   - support/travis-build.py
