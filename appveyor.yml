@@ -6,3 +6,6 @@ before_build:
 build_script:
   - msbuild /m MP.sln
   - msbuild RUN_TESTS.vcxproj
+
+on_failure:
+  - appveyor PushArtifact "C:\Program Files (x86)\Windows Kits\10\Include\10.0.10056.0\ucrt\stdlib.h"
