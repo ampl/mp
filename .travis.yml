@@ -14,13 +14,14 @@ env:
         QFQl9tcXV3RZ8G0mkZF71l6v1PrU8qE1B6mu7Y5agsgx0WqhoWyWXQgRzduPtPBsYzk8oO
         n/BtdN5d2YW9G0ewcKv1CB5OnoFWfXxy+0vkjjgH3odUQZr41vJ72elcLzVXwvSitzIeta
         six7w64OcBxbMU87P5sqnO6nw70elG0=
-  matrix:
-    - BUILD=doc
-      addons: {apt: {packages: [doxygen, python-virtualenv]}}
-    - BUILD=native
 
 matrix:
   include:
+    - os: linux
+      addons: {apt: {packages: [doxygen, python-virtualenv]}}
+      env: BUILD=doc
+    - os: linux
+      env: BUILD=native
     - os: osx
       env: BUILD=native
 
