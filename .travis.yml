@@ -7,6 +7,7 @@ env:
         n/BtdN5d2YW9G0ewcKv1CB5OnoFWfXxy+0vkjjgH3odUQZr41vJ72elcLzVXwvSitzIeta
         six7w64OcBxbMU87P5sqnO6nw70elG0=
 
+# Use the container-based infrastructure.
 sudo: false
 
 matrix:
@@ -18,7 +19,6 @@ matrix:
       env: BUILD=native
       addons: {apt: {packages: [unixodbc-dev]}}
     - os: osx
-      sudo: true
       env: BUILD=native
 
 script:
