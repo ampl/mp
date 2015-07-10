@@ -69,8 +69,10 @@ else:
     bootstrap.install_dmg(f)
   cmake_path = 'cmake'
 
-check_call([cmake_path] + cmake_flags + ['.'])
-check_call(['make', '-j3'])
+env = os.environ.copy()
+env['PATH'] = '/usr/lib/ccache:' + env['PATH']
+check_call([cmake_path] + cmake_flags + ['.'], env=env)
+check_call(['make', '-j3'], env=env)
 
 # Install test dependencies.
 if build == 'cross':
