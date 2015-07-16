@@ -23,7 +23,6 @@ THIS SOFTWARE.
 ****************************************************************/
 
 #include <math.h>
-#include <fenv.h>
 
 #ifdef NO_ERRNO
 #define errno_set(x) /*nothing*/
@@ -35,6 +34,7 @@ THIS SOFTWARE.
 
 #ifdef NANCHECK
 #ifdef math_errhandling
+#include <fenv.h>
 #define errchk(x) fetestexcept(FE_ALL_EXCEPT)
 #else
 #ifdef IEEE_MC68k
