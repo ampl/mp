@@ -22,6 +22,9 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
+#include <math.h>
+#include <fenv.h>
+
 #ifdef NO_ERRNO
 #define errno_set(x) /*nothing*/
 #define ErrnoChk /* nothing */
@@ -31,6 +34,9 @@ THIS SOFTWARE.
 #endif
 
 #ifdef NANCHECK
+#ifdef math_errhandling
+#define errchk(x) fetestexcept(FE_ALL_EXCEPT)
+#else
 #ifdef IEEE_MC68k
 #define errchk(x) ErrnoChk ((((Long *)&(x))[0] & 0x7ff00000L) == 0x7ff00000L)\
 	&& (((Long *)&(x))[1] || ((Long *)&(x))[0] & 0xfffffL)
@@ -40,6 +46,7 @@ THIS SOFTWARE.
 	&& (((Long *)&(x))[0] || ((Long *)&(x))[1] & 0xfffffL)
 #else
 !!!! Cannot use -DNANCHECK on non-IEEE machines
+#endif
 #endif
 #endif
 #else
