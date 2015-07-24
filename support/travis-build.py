@@ -64,7 +64,7 @@ if os_name == 'linux':
 else:
   # Install Java as a workaround for bug
   # http://bugs.java.com/bugdatabase/view_bug.do?bug_id=7131356.
-  java_url = 'http://support.apple.com/downloads/DL1572/en_US/JavaForOSX2014-001.dmg'
+  java_url = 'https://support.apple.com/downloads/DL1572/en_US/javaforosx.dmg'
   with Downloader().download(java_url) as f:
     bootstrap.install_dmg(f)
   cmake_path = 'cmake'
