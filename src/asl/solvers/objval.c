@@ -23,6 +23,7 @@ THIS SOFTWARE.
 ****************************************************************/
 
 #include "nlp.h"
+#include "errchk.h"
 
  int
 x0_check_ASL(ASL_fg *asl, real *X)
@@ -112,6 +113,8 @@ obj1val_ASL(ASL *a, int i, real *X, fint *nerror)
 	int ij, j1, kv, *vmi;
 	ograd *gr;
 	real f, *vscale;
+
+	ASL_FECLEAREXCEPT();
 
 	NNOBJ_chk(a, i, "obj1val");
 	asl = (ASL_fg*)a;

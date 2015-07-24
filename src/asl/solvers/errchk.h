@@ -36,6 +36,7 @@ THIS SOFTWARE.
 #ifdef math_errhandling
 #include <fenv.h>
 #define errchk(x) fetestexcept(FE_ALL_EXCEPT)
+#define ASL_FECLEAREXCEPT() feclearexcept(FE_ALL_EXCEPT)
 #else
 #ifdef IEEE_MC68k
 #define errchk(x) ErrnoChk ((((Long *)&(x))[0] & 0x7ff00000L) == 0x7ff00000L)\
@@ -55,4 +56,8 @@ THIS SOFTWARE.
 
 #ifdef KR_headers
 extern char *strerror();
+#endif
+
+#ifndef ASL_FECLEAREXCEPT
+# define ASL_FECLEAREXCEPT()
 #endif
