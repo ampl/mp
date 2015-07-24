@@ -102,54 +102,68 @@ double *asl_ucon(ASL *asl) {
 
 // Objective.
 
-void asl_varscale(ASL *asl, double *s) {
+void asl_varscale(ASL *asl, double *s, int *err) {
   fint ne;
   int this_nvar = asl->i.n_var_;
 
-  for (int i = 0; i < this_nvar; i++)
+  for (int i = 0; i < this_nvar; i++) {
     varscale_ASL(asl, i, s[i], &ne);
+    *err = (int)ne;
+    if (ne) return;
+  }
 }
 
-double asl_obj(ASL *asl, double *x) {
+double asl_obj(ASL *asl, double *x, int *err) {
   fint ne;
-  return asl->p.Objval(asl, 0, x, &ne);
+  double f = asl->p.Objval(asl, 0, x, &ne);
+  *err = (int)ne;
+  return f;
 }
 
-void asl_grad(ASL *asl, double *x, double *g) {
+void asl_grad(ASL *asl, double *x, double *g, int *err) {
   fint ne;
   asl->p.Objgrd(asl, 0, x, g, &ne);
+  *err = (int)ne;
 }
 
 // Lagrangian.
 
-void asl_lagscale(ASL *asl, double s) {
+void asl_lagscale(ASL *asl, double s, int *err) {
   fint ne;
   lagscale_ASL(asl, s, &ne);
+  *err = (int)ne;
 }
 
 // Constraints and Jacobian.
 
-void asl_conscale(ASL *asl, double *s) {
+void asl_conscale(ASL *asl, double *s, int *err) {
   fint ne;
   int this_ncon = asl->i.n_con_;
 
-  for (int j = 0; j < this_ncon; j++)
+  for (int j = 0; j < this_ncon; j++) {
     conscale_ASL(asl, j, s[j], &ne);
+    *err = (int)ne;
+    if (ne) return;
+  }
 }
 
-void asl_cons(ASL *asl, double *x, double *c) {
+void asl_cons(ASL *asl, double *x, double *c, int *err) {
   fint ne;
   asl->p.Conval(asl, x, c, &ne);
+  *err = (int)ne;
 }
 
-double asl_jcon(ASL *asl, double *x, int j) {
+double asl_jcon(ASL *asl, double *x, int j, int *err) {
   fint ne;
-  return asl->p.Conival(asl, j, x, &ne);
+  double cj = asl->p.Conival(asl, j, x, &ne);
+  *err = (int)ne;
+  return cj;
 }
 
-void asl_jcongrad(ASL *asl, double *x, double *g, int j) {
+void asl_jcongrad(ASL *asl, double *x, double *g, int j, int *err) {
   fint ne;
   asl->p.Congrd(asl, j, x, g, &ne);
+  *err = (int)ne;
 }
 
 size_t asl_sparse_congrad_nnz(ASL *asl, int j) {
@@ -159,12 +173,14 @@ size_t asl_sparse_congrad_nnz(ASL *asl, int j) {
 }
 
 void asl_sparse_congrad(
-    ASL *asl, double *x, int j, int64_t *inds, double *vals) {
+    ASL *asl, double *x, int j, int64_t *inds, double *vals, int *err) {
   int congrd_mode_bkup = asl->i.congrd_mode;
   asl->i.congrd_mode = 1;  // Sparse gradient mode.
 
   fint ne;
   asl->p.Congrd(asl, j, x, vals, &ne);
+  *err = (int)ne;
+  if (ne) return;
 
   int k = 0;
   for (cgrad *cg = asl->i.Cgrad_[j]; cg; cg = cg->next)
@@ -174,11 +190,13 @@ void asl_sparse_congrad(
 }
 
 // Evaluate Jacobian at x in triplet form (rows, vals, cols).
-void asl_jac(ASL *asl, double *x, int64_t *rows, int64_t *cols, double *vals) {
+void asl_jac(ASL *asl, double *x, int64_t *rows, int64_t *cols, double *vals, int *err) {
   int this_ncon = asl->i.n_con_;
 
   fint ne;
   asl->p.Jacval(asl, x, vals, &ne);
+  *err = ne;
+  if (ne) return;
 
   // Fill in sparsity pattern.
   for (int j = 0; j < this_ncon; j++)
