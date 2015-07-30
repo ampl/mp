@@ -53,8 +53,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
     c.vm.box = "osx-ml"
     c.vm.network :private_network, ip: "10.11.12.13"
+    # Options "nolocks" and "locallocks" are required for mounting DMG files
+    # from an NFS share.
     c.vm.synced_folder ".", "/vagrant", :type => "nfs",
-                       :mount_options => ["resvport"]
+                       :mount_options => ["resvport", "nolocks", "locallocks"]
     c.vm.provision :shell, :inline => "/vagrant/support/bootstrap/bootstrap-osx.py"
   end
 
