@@ -133,7 +133,9 @@ def pip_install(package, test_module=None):
       check_call(['python', f])
   # Install pip 6.1.1 because buildbot-slave installation is broken in pip 7.0.0:
   # https://github.com/pypa/pip/issues/2996
-  check_call(['pip', 'install', 'pip==6.1.1'])
+  # Also run pip via Python, not using script, because the latter fails on Windows
+  # due to file locking.
+  check_call(['python', '-m', 'pip', 'install', 'pip==6.1.1'])
   # Install the package.
   print('Installing', package)
   check_call(['pip', 'install', package])
