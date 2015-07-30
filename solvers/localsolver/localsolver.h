@@ -214,7 +214,7 @@ class LSProblemBuilder :
     LinearExprBuilder(LSProblemBuilder &builder,
                       ls::LSExpression term, ls::LSExpression sum)
       : builder_(builder), expr_(sum) {
-      if (term != ls::LSExpression())
+      if (term.getIndex() != -1)
         sum.addOperand(term);
     }
 
@@ -300,9 +300,9 @@ class LSProblemBuilder :
 
   void EndCommonExpr(LinearExprBuilder builder, ls::LSExpression expr, int) {
     ls::LSExpression result = builder.expr();
-    if (result == ls::LSExpression())
+    if (result.getIndex() == -1)
       result = expr;
-    else if (expr != ls::LSExpression())
+    else if (expr.getIndex() != -1)
       result.addOperand(expr);
     common_exprs_.push_back(result);
   }
