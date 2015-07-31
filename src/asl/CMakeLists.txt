@@ -77,7 +77,7 @@ else ()
     target_link_libraries(arithchk m)
   endif ()
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/arith.h DEPENDS arithchk
-    COMMAND ${WINE} $<TARGET_FILE:arithchk> > arith.h)
+    COMMAND ${WINE} $<TARGET_FILE:arithchk> > arith.h COMMENT "Writing arith.h")
   if (NOT MSVC)
     string(REPLACE "-Wall -Wextra -pedantic" ""
       CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
