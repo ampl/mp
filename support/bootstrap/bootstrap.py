@@ -135,7 +135,7 @@ def pip_install(package, test_module=None):
   # https://github.com/pypa/pip/issues/2996
   # Also run pip via Python, not using script, because the latter fails on Windows
   # due to file locking.
-  check_call(['python', '-m', 'pip', 'install', 'pip==6.1.1'])
+  check_call(['python', '-m', 'pip.__main__', 'install', 'pip==6.1.1'])
   # Install the package.
   print('Installing', package)
   check_call(['pip', 'install', package])
