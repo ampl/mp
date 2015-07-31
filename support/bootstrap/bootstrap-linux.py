@@ -25,7 +25,7 @@ if __name__ == '__main__':
   if not installed('cmake'):
     # Add git-core PPA for newer version of Git because version 1.7 available
     # in Lucid cannot access private repos on GitHub via a token.
-    check_call(['apt-get', 'install', 'python-software-properties'])
+    check_call(['apt-get', 'install', '-qy', 'python-software-properties'])
     check_call(['add-apt-repository', 'ppa:git-core/ppa'])
     # Install packages.
     check_call(['apt-get', 'update', '-q'])
