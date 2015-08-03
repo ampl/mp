@@ -1,8 +1,6 @@
-install: set PATH=C:\Program Files (x86)\MSBuild\14.0\Bin;%PATH%
-
 before_build:
   - cmake -DBUILD=all .
 
 build_script:
-  - msbuild /m MP.sln
-  - msbuild RUN_TESTS.vcxproj
+  - cmake --build . -- /m /v:diag
+  - ctest -C Debug
