@@ -310,8 +310,7 @@ add_ampl_library(ampltabl tables/tableproxy.c tables/tableproxyver.h)
 
 find_package(ODBC)
 if (ODBC_FOUND)
-  add_library(amplodbc STATIC
-    ${CMAKE_CURRENT_BINARY_DIR}/arith.h tables/amplodbc.c)
+  add_library(amplodbc STATIC tables/amplodbc.c)
   target_include_directories(amplodbc PRIVATE ${ODBC_INCLUDE_DIR})
   target_compile_definitions(amplodbc PRIVATE funcadd_ASL=funcaddodbc_ASL)
   add_c_compiler_flags(amplodbc -Wno-deprecated-declarations)
