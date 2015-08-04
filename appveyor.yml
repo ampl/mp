@@ -2,5 +2,5 @@ before_build:
   - cmake -DBUILD=all .
 
 build_script:
-  - cmake --build . -- /m /v:diag
+  - cmake --build . -- /m
   - ctest -C Debug
