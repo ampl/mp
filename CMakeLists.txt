@@ -188,7 +188,7 @@ set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
 function (add_mp_library name)
   cmake_parse_arguments(add_mp_library "OBJECT;STATIC" ""
-    "COMPILE_DEFINITIONS;INCLUDE_DIRECTORIES;LIBRARIES;OBJECT_LIBRARIES"
+    "COMPILE_DEFINITIONS;INCLUDE_DIRECTORIES;LIBRARIES;OBJECT_LIBRARIES;DEPENDS"
     ${ARGN})
   # Get object files.
   set(objects)
@@ -210,6 +210,9 @@ function (add_mp_library name)
     PRIVATE ${add_mp_library_COMPILE_DEFINITIONS})
   target_include_directories(${name}
     PUBLIC include ${add_mp_library_INCLUDE_DIRECTORIES})
+  if (add_mp_library_DEPENDS)
+    add_dependencies(${name} ${add_mp_library_DEPENDS})
+  endif ()
   # Add library linked with dynamic runtime.
   if (MSVC)
     add_library(${name}-dynrt ${libtype} EXCLUDE_FROM_ALL
@@ -219,6 +222,9 @@ function (add_mp_library name)
       PRIVATE ${add_mp_library_COMPILE_DEFINITIONS})
     target_include_directories(${name}-dynrt
       PUBLIC ${add_mp_library_INCLUDE_DIRECTORIES})
+    if (add_mp_library_DEPENDS)
+      add_dependencies(${name}-dynrt ${add_mp_library_DEPENDS})
+    endif ()
   endif ()
   # Link libraries.
   foreach (lib ${add_mp_library_LIBRARIES})

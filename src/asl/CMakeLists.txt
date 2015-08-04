@@ -207,10 +207,9 @@ if (NOT HAVE_STRTOULL)
 endif ()
 
 # Compile C sources separately to be able to specify compile options.
-add_mp_library(asl-core OBJECT ${ASL_CORE_SOURCES}
+add_mp_library(asl-core OBJECT ${ASL_CORE_SOURCES} DEPENDS arith.h
   COMPILE_DEFINITIONS ${ASL_COMPILE_DEFINITIONS}
   INCLUDE_DIRECTORIES ${CMAKE_CURRENT_BINARY_DIR})
-add_dependencies(asl-core arith.h)
 
 # Public ASL headers.
 set(ASL_HEADERS aslbuilder.h aslsolver.h aslexpr.h aslexpr-visitor.h
@@ -222,9 +221,8 @@ set(ASL_SOURCES
   aslbuilder.cc aslsolver.cc aslexpr.cc aslproblem.cc aslinterface.cc)
 
 set(ASL_INCLUDE_DIRS solvers ${CMAKE_CURRENT_BINARY_DIR})
-add_mp_library(asl-extra OBJECT ${ASL_SOURCES} ${ASL_HEADERS}
+add_mp_library(asl-extra OBJECT ${ASL_SOURCES} ${ASL_HEADERS} DEPENDS arith.h
   INCLUDE_DIRECTORIES ${ASL_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/src)
-add_dependencies(asl-extra arith.h)
 
 add_mp_library(asl STATIC OBJECT_LIBRARIES asl-core asl-extra
   LIBRARIES mp INCLUDE_DIRECTORIES ${ASL_INCLUDE_DIRS})
