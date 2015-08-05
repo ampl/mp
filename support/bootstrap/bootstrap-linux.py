@@ -38,6 +38,7 @@ if __name__ == '__main__':
     check_call(['apt-get', 'install', '-qy'] + packages)
 
     install_cmake('cmake-3.0.1-Linux-i386.tar.gz')
+    install_maven()
 
   # Installs symlinks for ccache.
   for name in ['gcc', 'cc', 'g++', 'c++']:

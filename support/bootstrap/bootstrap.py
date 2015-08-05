@@ -98,6 +98,18 @@ def install_cmake(package, **kwargs):
     add_to_path(cmake_path)
   return cmake_path
 
+# Downloads and installs Maven.
+def install_maven(**kwargs):
+  if installed('mvn'):
+    return
+  dir = 'apache-maven-3.3.3'
+  url = 'http://ftp.wayne.edu/apache/maven/maven-3/3.3.3/binaries/{}-bin.zip'.format(dir)
+  install_dir = kwargs.get('install_dir', opt_dir)
+  with Downloader(kwargs.get('download_dir', '.')).download(url) as f:
+    with zipfile.ZipFile(f) as archive:
+      archive.extractall(install_dir)
+  add_to_path(os.path.join(install_dir, dir, 'bin', 'mvn'))
+
 # Install f90cache.
 def install_f90cache():
   if not installed('f90cache'):

@@ -9,6 +9,7 @@ from subprocess import check_call
 vagrant = bootstrap_init()
 
 install_cmake('cmake-3.0.1-Darwin64-universal.tar.gz')
+install_maven()
 
 # Install command-line tools for Xcode.
 if not installed('clang'):
