@@ -103,7 +103,7 @@ def install_maven(**kwargs):
   if installed('mvn'):
     return
   dir = 'apache-maven-3.3.3'
-  url = 'http://ftp.wayne.edu/apache/maven/maven-3/3.3.3/binaries/{}-bin.zip'.format(dir)
+  url = 'http://ftp.wayne.edu/apache/maven/maven-3/3.3.3/binaries/{0}-bin.zip'.format(dir)
   install_dir = kwargs.get('install_dir', opt_dir)
   with Downloader(kwargs.get('download_dir', '.')).download(url) as f:
     with zipfile.ZipFile(f) as archive:
