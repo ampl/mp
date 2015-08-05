@@ -106,7 +106,7 @@ def install_maven(**kwargs):
   url = 'http://ftp.wayne.edu/apache/maven/maven-3/3.3.3/binaries/{0}-bin.zip'.format(dir)
   install_dir = kwargs.get('install_dir', opt_dir)
   with Downloader(kwargs.get('download_dir', '.')).download(url) as f:
-    with zipfile.ZipFile(f) as archive:
+    with closing(zipfile.ZipFile(f)) as archive:
       archive.extractall(install_dir)
   add_to_path(os.path.join(install_dir, dir, 'bin', 'mvn'))
 
