@@ -37,7 +37,7 @@ if __name__ == '__main__':
     # Install packages.
     check_call(['apt-get', 'update', '-q'])
     packages = [
-      'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
+      'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'libgtk2.0-0', 'make',
       'oracle-java7-installer', 'oracle-java7-set-default',
       'python-dev', 'unixodbc-dev'
     ]
