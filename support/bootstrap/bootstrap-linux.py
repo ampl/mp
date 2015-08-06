@@ -31,7 +31,7 @@ if __name__ == '__main__':
     # Add webupd8team java PPA for Java 7.
     check_call(['add-apt-repository', 'ppa:webupd8team/java'])
     # Suppress license dialog.
-    cmd = 'echo debconf shared/accepted-oracle-license-v1-1 {} true | debconf-set-selections'
+    cmd = 'echo debconf shared/accepted-oracle-license-v1-1 {0} true | debconf-set-selections'
     check_call(cmd.format('select'), shell=True)
     check_call(cmd.format('seen'), shell=True)
     # Install packages.
