@@ -102,8 +102,9 @@ def install_cmake(package, **kwargs):
 def install_maven(**kwargs):
   if installed('mvn'):
     return
-  dir = 'apache-maven-3.3.3'
-  url = 'http://mirrors.sonic.net/apache/maven/maven-3/3.3.3/binaries/{0}-bin.tar.gz'.format(dir)
+  # 3.2.5 is the most recent version of Maven compatible with Java 6.
+  dir = 'apache-maven-3.2.5'
+  url = 'http://mirrors.sonic.net/apache/maven/maven-3/3.2.5/binaries/{0}-bin.tar.gz'.format(dir)
   install_dir = kwargs.get('install_dir', opt_dir)
   with Downloader(kwargs.get('download_dir', '.')).download(url) as f:
     with closing(tarfile.open(f, 'r:gz')) as archive:
