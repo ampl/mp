@@ -213,7 +213,7 @@ def install_dmg(filename, allow_untrusted=False):
   check_call(['hdiutil', 'detach', dir])
   os.rmdir(dir)
 
-LOCALSOLVER_VERSION = '5_5_20150710'
+LOCALSOLVER_VERSION = '5_5_20150804'
 
 jdk_download_url = 'http://download.oracle.com/otn-pub/java/jdk/7u79-b12/'
 jdk_cookie = 'oraclelicense=accept-securebackup-cookie'
