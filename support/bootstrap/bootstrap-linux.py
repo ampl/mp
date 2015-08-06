@@ -23,11 +23,17 @@ if __name__ == '__main__':
 
   # Install build tools.
   if not installed('cmake'):
+    # Install python-software-properties for apt-add-repository.
+    check_call(['apt-get', 'install', '-qy', 'python-software-properties'])
     # Add git-core PPA for newer version of Git because version 1.7 available
     # in Lucid cannot access private repos on GitHub via a token.
-    check_call(['apt-get', 'install', '-qy', 'python-software-properties'])
     check_call(['add-apt-repository', 'ppa:git-core/ppa'])
+    # Add webupd8team java PPA for Java 7.
     check_call(['add-apt-repository', 'ppa:webupd8team/java'])
+    # Suppress license dialog.
+    cmd = 'echo debconf shared/accepted-oracle-license-v1-1 {} true | debconf-set-selections'
+    check_call(cmd.format('select'), shell=True)
+    check_call(cmd.format('seen'), shell=True)
     # Install packages.
     check_call(['apt-get', 'update', '-q'])
     packages = [
