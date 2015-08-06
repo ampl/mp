@@ -62,15 +62,15 @@ install_mingw('i686')
 install_mingw('x86_64')
 
 # Install 32-bit JDK.
-if not os.path.exists(r'\Program Files (x86)\Java\jdk1.7.0_55'):
-  with download(
-      jdk_download_url + 'jdk-7u55-windows-i586.exe', jdk_cookie) as f:
+if not os.path.exists(r'\Program Files (x86)\Java\jdk1.7.0_' + str(jdk_update)):
+  url = '{}jdk-7u{}-windows-i586.exe'.format(jdk_download_url, jdk_update)
+  with download(url, jdk_cookie) as f:
     check_call([f, '/s'])
 
 # Install 64-bit JDK.
-if not os.path.exists(r'\Program Files\Java\jdk1.7.0_55'):
-  with download(
-      jdk_download_url + 'jdk-7u55-windows-x64.exe', jdk_cookie) as f:
+if not os.path.exists(r'\Program Files\Java\jdk1.7.0_' + str(jdk_update)):
+  url = '{}jdk-7u{}-windows-x64.exe'.format(jdk_download_url, jdk_update)
+  with download(url, jdk_cookie) as f:
     check_call([f, '/s'])
 
 # Install LocalSolver.

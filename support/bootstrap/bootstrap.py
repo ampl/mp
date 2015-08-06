@@ -215,5 +215,6 @@ def install_dmg(filename, allow_untrusted=False):
 
 LOCALSOLVER_VERSION = '5_5_20150804'
 
-jdk_download_url = 'http://download.oracle.com/otn-pub/java/jdk/7u79-b12/'
+jdk_update = 79
+jdk_download_url = 'http://download.oracle.com/otn-pub/java/jdk/7u{0}-b12/'.format(jdk_update)
 jdk_cookie = 'oraclelicense=accept-securebackup-cookie'
