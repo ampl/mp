@@ -27,11 +27,13 @@ if __name__ == '__main__':
     # in Lucid cannot access private repos on GitHub via a token.
     check_call(['apt-get', 'install', '-qy', 'python-software-properties'])
     check_call(['add-apt-repository', 'ppa:git-core/ppa'])
+    check_call(['add-apt-repository', 'ppa:webupd8team/java'])
     # Install packages.
     check_call(['apt-get', 'update', '-q'])
     packages = [
       'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
-      'python-dev', 'default-jdk', 'unixodbc-dev'
+      'oracle-java7-installer', 'oracle-java7-set-default',
+      'python-dev', 'unixodbc-dev'
     ]
     if x86_64:
       packages.append('libc6-i386')
