@@ -103,10 +103,10 @@ def install_maven(**kwargs):
   if installed('mvn'):
     return
   dir = 'apache-maven-3.3.3'
-  url = 'http://ftp.wayne.edu/apache/maven/maven-3/3.3.3/binaries/{0}-bin.zip'.format(dir)
+  url = 'http://mirrors.sonic.net/apache/maven/maven-3/3.3.3/binaries/{0}-bin.tar.gz'.format(dir)
   install_dir = kwargs.get('install_dir', opt_dir)
   with Downloader(kwargs.get('download_dir', '.')).download(url) as f:
-    with closing(zipfile.ZipFile(f)) as archive:
+    with closing(tarfile.open(f, 'r:gz')) as archive:
       archive.extractall(install_dir)
   add_to_path(os.path.join(install_dir, dir, 'bin', 'mvn'))
 
