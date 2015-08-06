@@ -11,6 +11,22 @@ vagrant = bootstrap_init()
 install_cmake('cmake-3.0.1-Darwin64-universal.tar.gz')
 install_maven()
 
+# Installs a package from a .dmg file.
+def install_dmg(filename, allow_untrusted=False):
+  dir = tempfile.mkdtemp()
+  check_call(['hdiutil', 'attach', filename, '-mountpoint', dir])
+  install_pkg(glob.glob(dir + '/*pkg')[0], allow_untrusted)
+  check_call(['hdiutil', 'detach', dir])
+  os.rmdir(dir)
+
+# Installs an OS X package.
+def install_pkg(filename, allow_untrusted=False):
+  print('Installing', filename)
+  cmd = ['sudo', 'installer', '-pkg', filename, '-target', '/']
+  if allow_untrusted:
+    cmd.append('-allowUntrusted')
+  check_call(cmd)
+
 # Install command-line tools for Xcode.
 if not installed('clang'):
   with download(
@@ -55,6 +71,12 @@ if not installed('gfortran-4.9'):
 install_f90cache()
 create_symlink('/usr/local/bin/f90cache',
                '/opt/local/libexec/ccache/gfortran-4.9')
+
+# Install JDK.
+with download(
+    'http://download.oracle.com/otn-pub/java/jdk/7u79-b15/' +
+    'jdk-7u79-macosx-x64.dmg', jdk_cookie) as f:
+  install_dmg(f)
 
 # Install LocalSolver.
 if not installed('localsolver'):

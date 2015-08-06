@@ -197,20 +197,7 @@ def copy_optional_dependencies(platform):
       if not os.path.exists(dest):
         shutil.copytree(src, dest, symlinks=True)
 
-# Installs an OS X package.
-def install_pkg(filename, allow_untrusted=False):
-  print('Installing', filename)
-  cmd = ['sudo', 'installer', '-pkg', filename, '-target', '/']
-  if allow_untrusted:
-    cmd.append('-allowUntrusted')
-  check_call(cmd)
-
-# Installs a package from a .dmg file.
-def install_dmg(filename, allow_untrusted=False):
-  dir = tempfile.mkdtemp()
-  check_call(['hdiutil', 'attach', filename, '-mountpoint', dir])
-  install_pkg(glob.glob(dir + '/*pkg')[0], allow_untrusted)
-  check_call(['hdiutil', 'detach', dir])
-  os.rmdir(dir)
-
 LOCALSOLVER_VERSION = '5_5_20150710'
+
+jdk_download_url = 'http://download.oracle.com/otn-pub/java/jdk/7u79-b12/'
+jdk_cookie = 'oraclelicense=accept-securebackup-cookie'
