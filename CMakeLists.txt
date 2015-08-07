@@ -42,6 +42,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+# Set the default Java search path.
+if (UNIX)
+  set(JAVA_HOME /usr/lib/jvm/java-7-oracle)
+endif ()
+
 # Get optional modules.
 set_cache(BUILD "" STRING
   "Comma-separated list of optional modules to build or \"all\""
