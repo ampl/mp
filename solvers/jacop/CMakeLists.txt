@@ -14,14 +14,11 @@ if (build_jacop)
   find_package(Java)
   if (JNI_FOUND AND JAVA_FOUND)
     # Add libmawt.so to JNI_LIBRARIES to avoid linkage errors on Ubuntu 10.04.
-    foreach (arch amd64 i386)
-      set(LIBMAWT_PATH
-        /usr/lib/jvm/java-6-openjdk/jre/lib/${arch}/xawt/libmawt.so)
-      if (EXISTS ${LIBMAWT_PATH})
-        set(JNI_LIBRARIES ${JNI_LIBRARIES} ${LIBMAWT_PATH})
-        break ()
-      endif ()
-    endforeach ()
+    find_library(JAVA_MAWT_LIBRARY mawt
+      PATHS ${JAVA_AWT_LIBRARY_DIRECTORIES} PATH_SUFFIXES xawt)
+    if (JAVA_MAWT_LIBRARY)
+      set(JNI_LIBRARIES ${JNI_LIBRARIES} ${JAVA_MAWT_LIBRARY})
+    endif ()
 
     add_ampl_solver(jacop jacop.cc jacop.h java.cc java.h
       INCLUDE_DIRS ${JNI_INCLUDE_DIRS} LIBRARIES ${JNI_LIBRARIES})
