@@ -35,6 +35,7 @@ set(MP_VERSION_MAJOR ${CMAKE_MATCH_1})
 set(MP_VERSION_MINOR ${CMAKE_MATCH_2})
 set(MP_VERSION_PATCH ${CMAKE_MATCH_3})
 
+message(STATUS "System: ${CMAKE_SYSTEM}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # Set output directories.
