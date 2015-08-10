@@ -68,7 +68,7 @@ if not installed('localsolver'):
       'LocalSolver_{0}_MacOS64.pkg'.format(LOCALSOLVER_VERSION)) as f:
     install_pkg(f)
 
-copy_optional_dependencies('osx')
+copy_optional_dependencies('osx', '/mnt')
 for dir in ['Xcode.app', 'MATLAB_R2014a.app']:
   if os.path.exists('/opt/' + dir):
     create_symlink('/opt/' + dir, '/Applications/' + dir)

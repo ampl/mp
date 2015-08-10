@@ -189,10 +189,11 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False, **args):
   # Ignore errors from buildslave as the buildbot may not be accessible.
   call(['sudo', '-H', '-u', username, 'buildslave', 'start', path])
 
-# Copies optional dependencies from opt/<platform> to /opt.
-def copy_optional_dependencies(platform):
-  if os.path.exists('opt'):
-    for src in glob.glob('opt/' + platform + '/*'):
+# Copies optional dependencies from <source_dir>/opt/<platform> to /opt.
+def copy_optional_dependencies(platform, source_dir=''):
+  source_path = os.path.join(source_dir, 'opt')
+  if os.path.exists(source_path):
+    for src in glob.glob(os.path.join(source_path, platform, '*')):
       dest = '/opt/' + os.path.basename(src)
       if not os.path.exists(dest):
         shutil.copytree(src, dest, symlinks=True)
