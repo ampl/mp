@@ -9,48 +9,41 @@ VAGRANTFILE_API_VERSION = "2"
 # Path to directory containing optional dependencies.
 OPT_DIR = ENV["AMPL_OPT_DIR"]
 
-def get_volumes(arch)
-  if OPT_DIR
-    dir = OPT_DIR + "/linux-" + arch + "/*/"
-    return Pathname.glob(dir).map { |p| p.to_s + ":/opt/" + p.basename.to_s }
-  end
-  return []
-end
-  
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+def configure_docker(config, image, arch)
   config.vm.provider "docker" do |d|
+    d.image = "vitaut/ampl:" + image
+    if OPT_DIR
+      dir = OPT_DIR + "/linux-" + arch + "/*/"
+      d.volumes = Pathname.glob(dir).map { |p| p.to_s + ":/opt/" + p.basename.to_s }
+    end
     d.cmd = ["sudo", "-H", "-u", "buildbot", "buildslave", "start",
              "--nodaemon", "/var/lib/buildbot/slave"]
   end
+end
 
+def configure_virtualbox(config, cpus, memory, port)
   # This requires VirtualBox Extension Pack to be installed on the host.
   config.vm.provider "virtualbox" do |v|
-    v.memory = 1024
-    v.cpus = 1
-    v.customize ["modifyvm", :id, "--vrde", "on", "--vrdeauthtype", "external"]
+    v.cpus = cpus
+    v.memory = memory
+    v.customize ["modifyvm", :id, "--vrde", "on", "--vrdeauthtype", "external",
+                                  "--vrdeport", port.to_s]
   end
-
+end
+  
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Linux boxes don't use provisioning. To update them, use
   # support/bootstrap/create-lucid-image.py script.
   config.vm.define "lucid32" do |c|
-    c.vm.provider "docker" do |d|
-      d.image = "vitaut/ampl:lucid32"
-      d.volumes = get_volumes("i686")
-    end
+    configure_docker(c, "lucid32", "i686")
   end
 
   config.vm.define "lucid64", primary: true do |c|
-    c.vm.provider "docker" do |d|
-      d.image = "vitaut/ampl:lucid64"
-      d.volumes = get_volumes("x86_64")
-    end
+    configure_docker(c, "lucid64", "x86_64")
   end
 
   config.vm.define "osx-ml" do |c|
-    c.vm.provider "virtualbox" do |v|
-      v.cpus = 2
-      v.customize ["modifyvm", :id, "--vrdeport", "5000"]
-    end
+    configure_virtualbox(config, 2, 1024, 5000)
     c.vm.box = "osx-ml"
     c.vm.network :private_network, ip: "10.11.12.13"
     # Options "nolocks" and "locallocks" are required for mounting DMG files
@@ -61,11 +54,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.define "win2008" do |c|
-    c.vm.provider "virtualbox" do |v|
-      v.memory = 2024
-      v.cpus = 4
-      v.customize ["modifyvm", :id, "--vrdeport", "5001"]
-    end
+    configure_virtualbox(config, 4, 2048, 5000)
     c.vm.box = "win2008"
     c.vm.guest = :windows
     c.vm.communicator = "winrm"
