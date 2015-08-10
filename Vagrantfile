@@ -18,16 +18,16 @@ def get_volumes(arch)
 end
   
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.provider "docker" do |d|
+    d.cmd = ["sudo", "-H", "-u", "buildbot", "buildslave", "start",
+             "--nodaemon", "/var/lib/buildbot/slave"]
+  end
+
   # This requires VirtualBox Extension Pack to be installed on the host.
   config.vm.provider "virtualbox" do |v|
     v.memory = 1024
     v.cpus = 1
     v.customize ["modifyvm", :id, "--vrde", "on", "--vrdeauthtype", "external"]
-  end
-
-  config.vm.provider "docker" do |d|
-    d.cmd = ["sudo", "-H", "-u", "buildbot", "buildslave", "start",
-             "--nodaemon", "/var/lib/buildbot/slave"]
   end
 
   # Linux boxes don't use provisioning. To update them, use
