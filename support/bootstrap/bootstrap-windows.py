@@ -96,7 +96,7 @@ with open(os.path.join(localsolver_license_dir, 'license.dat'), 'w') as f:
   f.write("FREE_TRIAL = 1\n")
 
 # Copy optional dependencies.
-opt_dir = r'\vagrant\opt\win64'
+opt_dir = r'\opt\win64'
 if os.path.exists(opt_dir):
   for entry in os.listdir(opt_dir):
     subdir = os.path.join(opt_dir, entry)

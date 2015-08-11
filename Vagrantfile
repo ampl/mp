@@ -71,5 +71,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     c.vm.guest = :windows
     c.vm.communicator = "winrm"
     c.vm.provision :shell, :inline => "\\vagrant\\support\\bootstrap\\bootstrap-windows.bat"
+    if OPT_DIR
+      c.vm.synced_folder OPT_DIR, "\\opt"
+    end
   end
 end
