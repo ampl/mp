@@ -1,16 +1,6 @@
 # Check requirements.
 # Use specific version of Sphinx which fixes local search and has
 # better C++ support.
-check_module(sphinx have_sphinx EXTERNAL)
-check_module(breathe have_breathe EXTERNAL)
-if (NOT have_sphinx)
-  message(STATUS "Target doc disabled (requires sphinx module)")
-  return ()
-endif ()
-if (NOT have_breathe)
-  message(STATUS "Target doc disabled (requires breathe module)")
-  return ()
-endif ()
 find_program(DOXYGEN doxygen)
 if (NOT DOXYGEN)
   message(STATUS "Target doc disabled (requires doxygen)")
