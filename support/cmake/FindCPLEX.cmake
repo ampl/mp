@@ -24,7 +24,10 @@ if (UNIX)
   endif ()
   if (APPLE)
     set(CPLEX_ILOG_DIRS $ENV{HOME}/Applications/IBM/ILOG ${CPLEX_ILOG_DIRS})
-    set(CPLEX_LIB_PATH_SUFFIXES lib/${CPLEX_ARCH}_darwin9_gcc4.0/static_pic)
+    foreach (suffix "osx" "darwin9_gcc4.0")
+      set(CPLEX_LIB_PATH_SUFFIXES
+          ${CPLEX_LIB_PATH_SUFFIXES} lib/${CPLEX_ARCH}_${suffix}/static_pic)
+    endforeach ()
   else ()
     set(CPLEX_LIB_PATH_SUFFIXES
       lib/${CPLEX_ARCH}_sles10_4.1/static_pic lib/${CPLEX_ARCH}_linux/static_pic)
