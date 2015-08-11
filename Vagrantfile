@@ -66,7 +66,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.define "win2008" do |c|
-    configure_virtualbox(config, 4, 2048, 5000)
+    configure_virtualbox(config, 4, 2048, 5001)
     c.vm.box = "win2008"
     c.vm.guest = :windows
     c.vm.communicator = "winrm"
