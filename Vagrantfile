@@ -51,7 +51,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     mount_options = ["resvport", "nolocks", "locallocks"]
     c.vm.synced_folder ".", "/vagrant", :type => "nfs", :mount_options => mount_options
     if OPT_DIR
-      c.vm.synced_folder OPT_DIR + "/osx", "/mnt", :type => "nfs", :mount_options => mount_options
+      c.vm.synced_folder OPT_DIR, "/mnt/opt", :type => "nfs", :mount_options => mount_options
     end
     c.vm.provision :shell, :inline => "/vagrant/support/bootstrap/bootstrap-osx.py"
   end
