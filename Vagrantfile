@@ -1,5 +1,14 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+#
+# Vagrant configuration for AMPL/MP.
+#
+# Usage:
+#   > vagrant up lucid64
+#   ...
+#   lucid64: Container created: <container-id>
+#   ...
+#   > docker exec -it <container-id> bash
 
 require 'pathname'
 
