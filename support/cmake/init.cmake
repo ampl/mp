@@ -16,7 +16,7 @@ if (ARGS)
       set(setenv_arg "/x86")
     endif ()
     # If Microsoft SDK is installed create script run-msbuild.bat that
-    # calls SetEnv.cmd to to set up build environment and runs msbuild.
+    # calls SetEnv.cmd to set up build environment and runs msbuild.
     # It is useful when building Visual Studio projects with the SDK
     # toolchain rather than Visual Studio.
     # Set FrameworkPathOverride to get rid of MSB3644 warnings.
