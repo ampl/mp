@@ -46,7 +46,7 @@ if __name__ == '__main__':
       packages.append('libc6-i386')
     check_call(['apt-get', 'install', '-qy'] + packages)
 
-    install_cmake('cmake-3.0.1-Linux-i386.tar.gz')
+    install_cmake('cmake-3.1.0-Linux-i386.tar.gz')
     install_maven()
 
   # Installs symlinks for ccache.
