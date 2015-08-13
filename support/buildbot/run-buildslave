@@ -1,5 +1,5 @@
 #!/bin/sh
 
-Xvfb &
+Xvfb :1 &
 export DISPLAY=:1
 sudo -H -u buildbot buildslave start --nodaemon /var/lib/buildbot/slave
