@@ -25,8 +25,7 @@ def configure_docker(config, image, arch)
       dir = OPT_DIR + "/linux-" + arch + "/*/"
       d.volumes = Pathname.glob(dir).map { |p| p.to_s + ":/opt/" + p.basename.to_s }
     end
-    d.cmd = ["sudo", "-H", "-u", "buildbot", "buildslave", "start",
-             "--nodaemon", "/var/lib/buildbot/slave"]
+    d.cmd = ["/vagrant/support/buildbot/run-buildslave"]
   end
 end
 
