@@ -167,7 +167,7 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False, **args):
                   '--create-home', '--shell', '/bin/false', 'buildbot'])
   path = path or os.path.expanduser('~{0}/slave'.format(username))
   if os.path.exists(path):
-    return
+    return None
   pip_install('buildbot-slave', 'buildbot')
   # The password is insecure but it doesn't matter as the buildslaves are
   # not publicly accessible.
@@ -176,18 +176,7 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False, **args):
   if not windows:
     command = ['sudo', '-u', username] + command
   check_call(command, shell=shell)
-  if windows:
-    return
-  if args.get('nocron', False):
-    return
-  pip_install('python-crontab', 'crontab')
-  from crontab import CronTab
-  cron = CronTab(username)
-  cron.new('PATH={0}:/usr/local/bin buildslave start {1}'.format(
-    os.environ['PATH'], path)).every_reboot()
-  cron.write()
-  # Ignore errors from buildslave as the buildbot may not be accessible.
-  call(['sudo', '-H', '-u', username, 'buildslave', 'start', path])
+  return path
 
 # Copies optional dependencies from <source_dir>/opt/<platform> to /opt.
 def copy_optional_dependencies(platform, source_dir=''):

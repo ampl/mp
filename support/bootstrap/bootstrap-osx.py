@@ -75,4 +75,10 @@ for dir in ['Xcode.app', 'MATLAB_R2014a.app']:
 
 check_call([vagrant_dir + '/support/bootstrap/accept-xcode-license'])
 
-install_buildbot_slave('osx-ml')
+buildbot_path = install_buildbot_slave('osx-ml')
+if buildbot_path:
+  # Add buildslave app to Login Items. We add buildslave as a login items
+  # instead of a launch agent because GUI tests are not working in the second case.
+  check_call(['defaults', 'write', '~/Library/Preferences/loginwindow',
+              'AutoLaunchedApplicationDictionary', '-array-add',
+              '{Path="/vagrant/support/buildbot/buidslave.app";}'])

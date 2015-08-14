@@ -73,5 +73,15 @@ if __name__ == '__main__':
   docker = args['docker']
   if args['buildbot'] or docker:
     ip = '172.17.42.1' if docker else None
-    install_buildbot_slave(
-      'lucid64' if x86_64 else 'lucid32', nocron=docker, ip=ip)
+    path = install_buildbot_slave(
+      'lucid64' if x86_64 else 'lucid32', ip=ip)
+    if not docker and path:
+      pip_install('python-crontab', 'crontab')
+      from crontab import CronTab
+      cron = CronTab(username)
+      cron.new('PATH={0}:/usr/local/bin buildslave start {1}'.format(
+        os.environ['PATH'], path)).every_reboot()
+      cron.write()
+      # Ignore errors from buildslave as the buildbot may not be accessible.
+      call(['sudo', '-H', '-u', username, 'buildslave', 'start', path])
+
