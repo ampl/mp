@@ -77,8 +77,12 @@ check_call([vagrant_dir + '/support/bootstrap/accept-xcode-license'])
 
 buildbot_path = install_buildbot_slave('osx-ml')
 if buildbot_path:
-  # Add buildslave app to Login Items. We add buildslave as a login items
-  # instead of a launch agent because GUI tests are not working in the second case.
-  check_call(['defaults', 'write', '~/Library/Preferences/loginwindow',
-              'AutoLaunchedApplicationDictionary', '-array-add',
-              '{Path="/vagrant/support/buildbot/buidslave.app";}'])
+  # Add buildslave launch agent.
+  plist_name = 'buildslave.plist'
+  with open(vagrant_dir + '/support/buildbot/' + plist_name, 'r') as f:
+    plist_content = f.read()
+  plist_content = plist_content.replace('$PATH', os.environ['PATH'])
+  plist_path = '/Users/vagrant/Library/LaunchAgents/' + plist_name
+  with open(plist_path, 'w') as f:
+    f.write(plist_content)
+  check_call(['launchctl', 'load', plist_path])
