@@ -83,6 +83,11 @@ if buildbot_path:
     plist_content = f.read()
   plist_content = plist_content.replace('$PATH', os.environ['PATH'])
   plist_path = '/Users/vagrant/Library/LaunchAgents/' + plist_name
+  try:
+    os.makedirs(plist_path)
+  except OSError as e:
+    if not (e.errno == errno.EEXIST and os.path.isdir(plist_path)):
+      raise
   with open(plist_path, 'w') as f:
     f.write(plist_content)
   check_call(['launchctl', 'load', plist_path])
