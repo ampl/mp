@@ -27,8 +27,18 @@ void asl_write_sol(ASL *asl, const char *msg, double *x, double *y);
 
 int asl_objtype(ASL *asl);
 int asl_nvar(   ASL *asl);
+int asl_nbv(    ASL *asl);
+int asl_niv(    ASL *asl);
+int asl_nlvb(   ASL *asl);
+int asl_nlvo(   ASL *asl);
+int asl_nlvc(   ASL *asl);
+int asl_nlvbi(  ASL *asl);
+int asl_nlvci(  ASL *asl);
+int asl_nlvoi(  ASL *asl);
+int asl_nwv(    ASL *asl);
 int asl_ncon(   ASL *asl);
 int asl_nlc(    ASL *asl);
+int asl_lnc(    ASL *asl);
 int asl_nlnc(   ASL *asl);
 int asl_nnzj(   ASL *asl);
 int asl_nnzh(   ASL *asl);
