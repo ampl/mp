@@ -1,2 +1,4 @@
-20150512
-  fpinitmt.c: tweak for gcc 5.0; no change to asldate.c.
+20150814
+  arithchk.c, errchk.h, mypow.c, repwhere.c, rops.c, rops2.c: adjust
+for systems, such as MacOSX, that do not set errno.  See the changes
+file for more details.

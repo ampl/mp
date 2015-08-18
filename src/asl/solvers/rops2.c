@@ -1229,3 +1229,4 @@ r_ops[] = {
 #ifdef __cplusplus
 }
 #endif
+/* It may be necessary to recompile this file after the change of 20150814 to errchk.h. */

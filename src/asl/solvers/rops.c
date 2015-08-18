@@ -1191,3 +1191,4 @@ f_OPNUMBEROF(expr *e A_ASL)
 r_ops[] = {
 #include "r_op.hd"
 	};
+/* It may be necessary to recompile this file after the change of 20150814 to errchk.h. */

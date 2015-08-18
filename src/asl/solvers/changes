@@ -2585,3 +2585,23 @@ chksum in changes of 20141121 -- that affected problems with more than
 
 20150512
   fpinitmt.c: tweak for gcc 5.0; no change to asldate.c.
+
+20150602
+  pfg_read.c, pfghread.c:  fix a bug in setting the al->dig array
+passed to imported functions.
+
+20150814
+  arithchk.c: omit possible generation of "#define NANCHECK" in favor of
+possibly generating "#define ALSO_CHECK_ERRNO" or "#define CHECK_ERRNO",
+for use with updated errchk.h.  CHECK_ERRNO only arises when none of the
+library functions now tested returns an Infinity or NaN (when it should);
+ALSO_CHECK_ERRNO arises when some of the tested library functions set
+errno but do not return an Infinity or NaN when they should.
+  errchk.h:  adjust so on IEEE-arithmetic machines (i.e., most current
+machines), errchk() will test values returned by library functions to
+see if they are an Infinity or NaN.  The updated errno.h also responds
+to ALSO_CHECK_ERRNO or CHECK_ERRNO when appropriate.  These changes
+mainly matter for MacOSX and Solaris.
+  mypow.c: when setting errno to EDOM is appropriate, also return a
+quiet NaN rather than 0.
+  repwhere.c:  omit KR_headers stuff (should be invisible).

@@ -51,11 +51,7 @@ of or in connection with the use or performance of this software.
 #include "errchk.h"
 
  void
-#ifdef KR_headers
-report_where(asl) ASL *asl;
-#else
 report_where(ASL *asl)
-#endif
 {
 	int i, j, k, k1;
 	static const char *what[2] = { "constraint", "objective" };

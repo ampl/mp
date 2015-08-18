@@ -49,14 +49,29 @@ Akind {
 	int   kind;
 	} Akind;
 
+ typedef struct
+ErrnoTest {
+	double (*f)(double);
+	double *x;
+	} ErrnoTest;
+
+ static double Big = 1e10, Two = 2., t_nan;
+
+ static ErrnoTest Entest[] = {
+	{ log, &t_nan },
+	{ exp, &Big },
+	{ asin, &Two },
+	{ acos, &Two },
+	{ sqrt, &t_nan }};
+
+ static int nEntest = sizeof(Entest)/sizeof(ErrnoTest);
+
  static Akind
 IEEE_8087	= { "IEEE_8087", 1 },
 IEEE_MC68k	= { "IEEE_MC68k", 2 },
 IBM		= { "IBM", 3 },
 VAX		= { "VAX", 4 },
 CRAY		= { "CRAY", 5};
-
- static double t_nan;
 
  static Akind *
 Lcheck(void)
@@ -154,20 +169,6 @@ fzcheck(void)
 	return b == 0.;
 	}
 
- static int
-need_nancheck(void)
-{
-	double t;
-
-	errno = 0;
-	t = log(t_nan);
-	if (errno == 0)
-		return 1;
-	errno = 0;
-	t = sqrt(t_nan);
-	return errno == 0;
-	}
-
  void
 get_nanbits(unsigned int *b, int k)
 {
@@ -185,10 +186,14 @@ get_nanbits(unsigned int *b, int k)
 main(void)
 {
 	FILE *f;
-	Akind *a = 0;
-	int Ldef = 0;
+	Akind *a;
+	ErrnoTest *et, *ete;
+	int Ldef, goodbits, gooderrno, w0;
+	union { double d; unsigned int u[2]; } u;
 	unsigned int nanbits[2];
 
+	a = 0;
+	Ldef = 0;
 	fpinit_ASL();
 #ifdef WRITE_ARITH_H	/* for Symantec's buggy "make" */
 	f = fopen("arith.h", "w");
@@ -244,13 +249,28 @@ main(void)
 			if (fzcheck())
 				fprintf(f, "#define Sudden_Underflow\n");
 			t_nan = -a->kind;
-			if (need_nancheck())
-				fprintf(f, "#define NANCHECK\n");
 			if (sizeof(double) == 2*sizeof(unsigned int)) {
 				get_nanbits(nanbits, a->kind);
 				fprintf(f, "#define QNaN0 0x%x\n", nanbits[0]);
 				fprintf(f, "#define QNaN1 0x%x\n", nanbits[1]);
 				}
+			w0 = 2 - a->kind;
+			goodbits = gooderrno = 0;
+			ete = Entest + nEntest;
+			for(et = Entest; et < ete; ++et) {
+				errno = 0;
+				u.d = et->f(*et->x);
+				if (errno)
+					++gooderrno;
+				if ((u.u[w0] & 0x7ff00000) == 0x7ff00000)
+					++goodbits;
+				}
+			if (goodbits) {
+				if (goodbits < nEntest && gooderrno)
+					fprintf(f, "#define ALSO_CHECK_ERRNO\n");
+				}
+			else if (gooderrno)
+				fprintf(f, "#define CHECK_ERRNO\n");
 			}
 		return 0;
 		}

@@ -2731,13 +2731,13 @@ psfind(Static *S)
  static void
 ewalk(Static *S, expr *e, int deriv)
 {
-	int a0, a1, i, j, k, kf, numargs, op;
+	int a0, a1, i, j, j1, k, kf, numargs, op;
 	real *b, *b0, *ra;
 	unsigned int len;
 #ifdef PSHVREAD
 	ASL *asl;
 	argpair *da;
-	int i1, j0, j1, k0, k1, kn, *nn, *nn0;
+	int i1, j0, k0, k1, kn, *nn, *nn0;
 	real **fh;
 	expr **args1;
 #endif
@@ -2983,6 +2983,8 @@ ewalk(Static *S, expr *e, int deriv)
 				if (kf < numargs) {
 					ASLTYPE *asl = S->asl;
 					dig = (char*)mem(numargs);
+					for(j1 = 0; j1 < numargs; ++j1)
+						dig[j1] = 1;
 					}
 				}
 			else
@@ -3011,7 +3013,7 @@ ewalk(Static *S, expr *e, int deriv)
 #endif
 
 			for(ap = ap0 = rvf->ap; ap < ape; ap++) {
-				j = 1;
+				j1 = 0;
 				arg = ap->e;
 				arg->op = r_ops[op = Intcast arg->op];
 				switch(op) {
@@ -3029,11 +3031,11 @@ ewalk(Static *S, expr *e, int deriv)
 				da->e = arg;
 				(da++)->u.v = b;
 				*nn++ = j;
-				j = 0;
+				j1 = 1;
 #endif
 			loopend:
-				if (dig)
-					*dig++ = j;
+				if (dig && j1)
+					dig[j] = 0;
 				}
 #ifdef PSHVREAD
 			rvf->dae = da;

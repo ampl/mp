@@ -25,6 +25,7 @@ THIS SOFTWARE.
 #include "math.h"
 #include "errno.h"
 #include "limits.h"
+#include "arith.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,6 +41,9 @@ mypow_ASL(double x, double y) /* return x ^ y (exponentiation) */
 	double xy, y1, ye;
 	unsigned long i;
 	int ex, ey, flip;
+#ifdef QNaN1
+	union { double d; unsigned int u[2]; } u;
+#endif
 
 	if (!y)
 		return 1.0;	/* Kahan advocates this */
@@ -47,7 +51,7 @@ mypow_ASL(double x, double y) /* return x ^ y (exponentiation) */
 	flip = 0;
 	if (y < 0.)
 		{ y = -y; flip = 1; }
-	if (y1 = modf(y, &ye)) {
+	if ((y1 = modf(y, &ye))) {
 		if (x <= 0.)
 			goto zreturn;
 		if (y1 > 0.5) {
@@ -66,8 +70,14 @@ mypow_ASL(double x, double y) /* return x ^ y (exponentiation) */
 	if (ye > (unsigned long)ULONG_MAX) {
 		if (x <= 0.) {
  zreturn:
-			if (x || flip)
+			if (x || flip) {
 				errno = EDOM;
+#ifdef QNaN1
+				u.u[0] = QNaN0;
+				u.u[1] = QNaN1;
+				return u.d;
+#endif
+				}
 			return 0.;
 			}
 		if (flip)
@@ -76,7 +86,7 @@ mypow_ASL(double x, double y) /* return x ^ y (exponentiation) */
 		}
 	x = frexp(x, &ex);
 	ey = 0;
-	if (i = (unsigned long)ye) for(;;) {
+	if ((i = (unsigned long)ye)) for(;;) {
 		if (i & 1) { xy *= x; ey += ex; }
 		if (!(i >>= 1))
 			break;
