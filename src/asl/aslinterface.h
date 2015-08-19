@@ -26,6 +26,8 @@ void asl_finalize(ASL *asl);
 void asl_write_sol(ASL *asl, const char *msg, double *x, double *y);
 
 int asl_objtype(ASL *asl);
+int asl_nlo(    ASL *asl);
+int asl_nzo(    ASL *asl);
 int asl_nvar(   ASL *asl);
 int asl_nbv(    ASL *asl);
 int asl_niv(    ASL *asl);
