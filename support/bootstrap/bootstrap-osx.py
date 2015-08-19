@@ -77,6 +77,9 @@ check_call([vagrant_dir + '/support/bootstrap/accept-xcode-license'])
 
 buildbot_path = install_buildbot_slave('osx-ml')
 if buildbot_path:
+  # Disable the screensaver because it breaks GUI tests.
+  check_call(['defaults', '-currentHost', 'write',
+              'com.apple.screensaver', 'idleTime', '0'])
   # Add buildslave launch agent.
   plist_name = 'buildslave.plist'
   with open(vagrant_dir + '/support/buildbot/' + plist_name, 'r') as f:
