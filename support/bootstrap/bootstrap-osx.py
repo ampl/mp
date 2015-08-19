@@ -82,12 +82,13 @@ if buildbot_path:
   with open(vagrant_dir + '/support/buildbot/' + plist_name, 'r') as f:
     plist_content = f.read()
   plist_content = plist_content.replace('$PATH', os.environ['PATH'])
-  plist_path = '/Users/vagrant/Library/LaunchAgents/' + plist_name
+  launchagents_dir = '/Users/vagrant/Library/LaunchAgents'
   try:
-    os.makedirs(plist_path)
+    os.makedirs(launchagents_dir)
   except OSError as e:
-    if not (e.errno == errno.EEXIST and os.path.isdir(plist_path)):
+    if not (e.errno == errno.EEXIST and os.path.isdir(launchagents_dir)):
       raise
+  plist_path = os.path.join(launchagents_dir, plist_name)
   with open(plist_path, 'w') as f:
     f.write(plist_content)
   check_call(['launchctl', 'load', plist_path])
