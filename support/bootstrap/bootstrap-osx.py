@@ -8,6 +8,12 @@ from subprocess import check_call
 
 vagrant = bootstrap_init()
 
+if vagrant:
+  # Disable the screensaver because it breaks GUI tests.
+  print("Disabling the screensaver")
+  check_call(['defaults', '-currentHost', 'write',
+              'com.apple.screensaver', 'idleTime', '0'])
+
 install_cmake('cmake-3.1.0-Darwin64-universal.tar.gz')
 install_maven()
 
@@ -77,9 +83,6 @@ check_call([vagrant_dir + '/support/bootstrap/accept-xcode-license'])
 
 buildbot_path = install_buildbot_slave('osx-ml')
 if buildbot_path:
-  # Disable the screensaver because it breaks GUI tests.
-  check_call(['defaults', '-currentHost', 'write',
-              'com.apple.screensaver', 'idleTime', '0'])
   # Add buildslave launch agent.
   plist_name = 'buildslave.plist'
   with open(vagrant_dir + '/support/buildbot/' + plist_name, 'r') as f:
