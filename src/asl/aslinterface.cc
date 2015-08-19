@@ -48,11 +48,19 @@ int asl_objtype(ASL *asl) {
   return asl->i.objtype_[0];  // 0 means minimization problem.
 }
 
-int asl_nvar(ASL *asl) {
-  return asl->i.n_var_;
+int asl_nlo(ASL *asl) {
+  return asl->i.nlo_;
+}
+
+int asl_nzo(ASL *asl) {
+  return asl->i.nzo_;
 }
 
 //   Variables.
+
+int asl_nvar(ASL *asl) {
+  return asl->i.n_var_;
+}
 
 int asl_nbv(ASL *asl) {
   return asl->i.nbv_;
