@@ -48,9 +48,57 @@ int asl_objtype(ASL *asl) {
   return asl->i.objtype_[0];  // 0 means minimization problem.
 }
 
+int asl_nlo(ASL *asl) {
+  return asl->i.nlo_;
+}
+
+int asl_nzo(ASL *asl) {
+  return asl->i.nzo_;
+}
+
+//   Variables.
+
 int asl_nvar(ASL *asl) {
   return asl->i.n_var_;
 }
+
+int asl_nbv(ASL *asl) {
+  return asl->i.nbv_;
+}
+
+int asl_niv(ASL *asl) {
+  return asl->i.niv_;
+}
+
+int asl_nlvb(ASL *asl) {
+  return asl->i.nlvb_;
+}
+
+int asl_nlvo(ASL *asl) {
+  return asl->i.nlvo_;
+}
+
+int asl_nlvc(ASL *asl) {
+  return asl->i.nlvc_;
+}
+
+int asl_nlvbi(ASL *asl) {
+  return asl->i.nlvbi_;
+}
+
+int asl_nlvci(ASL *asl) {
+  return asl->i.nlvci_;
+}
+
+int asl_nlvoi(ASL *asl) {
+  return asl->i.nlvoi_;
+}
+
+int asl_nwv(ASL *asl) {
+  return asl->i.nwv_;
+}
+
+//   Constraints.
 
 int asl_ncon(ASL *asl) {
   return asl->i.n_con_;
@@ -58,6 +106,10 @@ int asl_ncon(ASL *asl) {
 
 int asl_nlc(ASL *asl) {
   return asl->i.nlc_;
+}
+
+int asl_lnc(ASL *asl) {
+  return asl->i.lnc_;
 }
 
 int asl_nlnc(ASL *asl) {
