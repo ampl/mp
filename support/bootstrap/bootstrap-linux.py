@@ -66,10 +66,6 @@ if __name__ == '__main__':
 
   copy_optional_dependencies('linux-' + platform.machine())
 
-  # Install xvfb init script.
-  if vagrant:
-    shutil.copy('support/bootstrap/xvfb', '/etc/init.d')
-
   docker = args['docker']
   if args['buildbot'] or docker:
     ip = '172.17.42.1' if docker else None
