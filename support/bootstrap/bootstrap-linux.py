@@ -71,9 +71,10 @@ if __name__ == '__main__':
                 'deb http://old-releases.ubuntu.com/ubuntu maverick-updates main universe'])
     check_call(['apt-get', 'update', '-q'])
     check_call(['apt-get', 'install', '-qy', 'libssl0.9.8=0.9.8o-1ubuntu4.6', 'x11vnc'])
-    os.mkdir(os.path.expanduser('~/.vnc'))
+    vnc_dir = os.path.expanduser('~/.vnc')
+    os.mkdir(vnc_dir)
     # This is unsecure, but the box is not publicly accessible.
-    check_call(['x11vnc', '-storepasswd', 'vagrant', '~/.vnc/passwd'])
+    check_call(['x11vnc', '-storepasswd', 'vagrant', os.path.join(vnc_dir, 'passwd')])
 
   # Install LocalSolver.
   if not installed('localsolver'):
