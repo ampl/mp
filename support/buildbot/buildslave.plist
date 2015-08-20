@@ -9,7 +9,7 @@
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key>
-    <string>/opt/local/libexec/ccache:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/cmake-3.1.0-Darwin64-universal/CMake.app/Contents/bin:/opt/local/bin:/opt/local/bin:/usr/local/bin</string>
+    <string>$PATH</string>
   </dict>
   <key>KeepAlive</key>
   <dict>
