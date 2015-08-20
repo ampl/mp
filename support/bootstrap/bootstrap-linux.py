@@ -31,7 +31,8 @@ if __name__ == '__main__':
     # Add webupd8team java PPA for Java 7.
     check_call(['add-apt-repository', 'ppa:webupd8team/java'])
     # Suppress license dialog.
-    cmd = 'echo debconf shared/accepted-oracle-license-v1-1 {0} true | debconf-set-selections'
+    cmd = 'echo debconf shared/accepted-oracle-license-v1-1 {0} true | ' + \
+          'debconf-set-selections'
     check_call(cmd.format('select'), shell=True)
     check_call(cmd.format('seen'), shell=True)
     # Install packages.
@@ -60,26 +61,30 @@ if __name__ == '__main__':
 
   docker = args['docker']
   if docker:
-    # Install x11vnc 0.9.10 from maverick because version 0.9.9 from lucid is broken:
-    # https://bugs.launchpad.net/ubuntu/+source/x11vnc/+bug/645106
+    # Install x11vnc 0.9.10 from maverick because version 0.9.9 from lucid is
+    # broken: https://bugs.launchpad.net/ubuntu/+source/x11vnc/+bug/645106
     # x11vnc is required for GUI tests.
     with open('/etc/apt/apt.conf.d/01ubuntu', 'a') as f:
       f.write('\nAPT::Default-Release "lucid";\n')
+    repo_url = 'http://old-releases.ubuntu.com/ubuntu'
     check_call(['add-apt-repository',
-                'deb http://old-releases.ubuntu.com/ubuntu maverick main universe'])
+                'deb {0} maverick main universe'.format(repo_url)])
     check_call(['add-apt-repository',
-                'deb http://old-releases.ubuntu.com/ubuntu maverick-updates main universe'])
+                'deb {0} maverick-updates main universe'.format(repo_url)])
     check_call(['apt-get', 'update', '-q'])
-    check_call(['apt-get', 'install', '-qy', 'libssl0.9.8=0.9.8o-1ubuntu4.6', 'x11vnc'])
-    vnc_dir = os.path.expanduser('~/.vnc')
+    check_call(['apt-get', 'install', '-qy',
+                'libssl0.9.8=0.9.8o-1ubuntu4.6', 'xvfb', 'x11vnc'])
+    vnc_dir = '/root/.vnc'
     os.mkdir(vnc_dir)
     # This is unsecure, but the box is not publicly accessible.
-    check_call(['x11vnc', '-storepasswd', 'vagrant', os.path.join(vnc_dir, 'passwd')])
+    check_call(['x11vnc', '-storepasswd', 'vagrant',
+               os.path.join(vnc_dir, 'passwd')])
 
   # Install LocalSolver.
   if not installed('localsolver'):
-    with download('http://www.localsolver.com/downloads/LocalSolver_' +
-        '{0}_Linux{1}.run'.format(LOCALSOLVER_VERSION, 64 if x86_64 else 32)) as f:
+    ls_filename = 'LocalSolver_{0}_Linux{1}.run'.format(
+      LOCALSOLVER_VERSION, 64 if x86_64 else 32)
+    with download('http://www.localsolver.com/downloads/' + ls_filename) as f:
       check_call(['sh', f])
 
   copy_optional_dependencies('linux-' + platform.machine())
