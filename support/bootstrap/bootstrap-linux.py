@@ -39,7 +39,7 @@ if __name__ == '__main__':
     packages = [
       'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
       'oracle-java7-installer', 'oracle-java7-set-default',
-      'libgtk2.0-0', 'libxrender1', 'libxtst6', 'xvfb', # Java/Eclipse requirements
+      'libgtk2.0-0', 'libxrender1', 'libxtst6', # Java/Eclipse requirements
       'python-dev', 'unixodbc-dev'
     ]
     if x86_64:
@@ -58,6 +58,23 @@ if __name__ == '__main__':
   version = re.match(r'.* (\d+\.\d+)\.\d+', output).group(1)
   add_to_path('/usr/local/bin/f90cache', 'gfortran-' + version)
 
+  docker = args['docker']
+  if docker:
+    # Install x11vnc 0.9.10 from maverick because version 0.9.9 from lucid is broken:
+    # https://bugs.launchpad.net/ubuntu/+source/x11vnc/+bug/645106
+    # x11vnc is required for GUI tests.
+    with open('/etc/apt/apt.conf.d/01ubuntu', 'a') as f:
+      f.write('\nAPT::Default-Release "lucid";\n')
+    check_call(['add-apt-repository',
+                'deb http://old-releases.ubuntu.com/ubuntu maverick main universe'])
+    check_call(['add-apt-repository',
+                'deb http://old-releases.ubuntu.com/ubuntu maverick-updates main universe'])
+    check_call(['apt-get', 'update', '-q'])
+    check_call(['apt-get', 'install', '-qy', 'libssl0.9.8=0.9.8o-1ubuntu4.6', 'x11vnc'])
+    os.mkdir(os.path.expanduser('~/.vnc'))
+    # This is unsecure, but the box is not publicly accessible.
+    check_call(['x11vnc', '-storepasswd', 'vagrant', '~/.vnc/passwd'])
+
   # Install LocalSolver.
   if not installed('localsolver'):
     with download('http://www.localsolver.com/downloads/LocalSolver_' +
@@ -66,7 +83,6 @@ if __name__ == '__main__':
 
   copy_optional_dependencies('linux-' + platform.machine())
 
-  docker = args['docker']
   if args['buildbot'] or docker:
     ip = '172.17.42.1' if docker else None
     path = install_buildbot_slave(
