@@ -31,7 +31,6 @@ THIS SOFTWARE.
 #ifndef STDIO_H_included	/* allow suppressing stdio.h */
 #include <stdio.h>		/* in case it's already included, */
 #endif				/* e.g., by cplex.h */
-#include <stdlib.h>
 
 #ifdef KR_headers
 #ifndef _SIZE_T
@@ -52,6 +51,11 @@ typedef unsigned int size_t;
 #endif
 
 #ifndef NO_STDIO1
+#ifdef _WIN32
+/* Avoid Microsoft bug that perrror may appear in stdlib.h. */
+/* It should only be declared in stdio.h. */
+#include <stdlib.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

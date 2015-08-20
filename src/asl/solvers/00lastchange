@@ -1,4 +1,5 @@
-20150814
-  arithchk.c, errchk.h, mypow.c, repwhere.c, rops.c, rops2.c: adjust
-for systems, such as MacOSX, that do not set errno.  See the changes
-file for more details.
+20150820
+  stdio1.h0:  when _WIN32 is #defined, include stdlib.h before
+defining perror, to bypass the Microsoft bug (with Visual Studio 2015)
+that perror may be declared in stdlib.h as well as in stdio.h (where
+it should appear).  No change to asldate.c.
