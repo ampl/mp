@@ -46,6 +46,7 @@ if __name__ == '__main__':
     if x86_64:
       packages.append('libc6-i386')
     check_call(['apt-get', 'install', '-qy'] + packages)
+    shutil.rmtree('/var/cache/oracle-jdk7-installer')
 
     install_cmake('cmake-3.1.0-Linux-i386.tar.gz')
     install_maven()
@@ -67,6 +68,8 @@ if __name__ == '__main__':
                 'deb http://archive.ubuntu.com/ubuntu lucid universe'])
     check_call(['apt-get', 'update', '-q'])
     check_call(['apt-get', 'install', '-qy', 'xvfb', 'x11vnc', 'miwm'])
+
+  check_call(['apt-get', 'clean'])
 
   # Install LocalSolver.
   if not installed('localsolver'):
@@ -90,4 +93,3 @@ if __name__ == '__main__':
       cron.write()
       # Ignore errors from buildslave as the buildbot may not be accessible.
       call(['sudo', '-H', '-u', username, 'buildslave', 'start', path])
-
