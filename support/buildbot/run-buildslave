@@ -7,5 +7,6 @@ x11vnc -storepasswd vagrant $HOME/.vnc/passwd
 
 x11vnc -display :0 -forever -usepw -create &
 export DISPLAY=:0
+miwm &
 
 sudo -H -u buildbot buildslave start --nodaemon /var/lib/buildbot/slave

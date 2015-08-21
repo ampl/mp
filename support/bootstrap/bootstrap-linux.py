@@ -63,7 +63,7 @@ if __name__ == '__main__':
   if docker:
     # Install x11vnc 0.9.10 from maverick because version 0.9.9 from lucid is
     # broken: https://bugs.launchpad.net/ubuntu/+source/x11vnc/+bug/645106
-    # x11vnc is required for GUI tests.
+    # x11vnc and miwm (a window manager) are required for GUI tests.
     with open('/etc/apt/apt.conf.d/01ubuntu', 'a') as f:
       f.write('\nAPT::Default-Release "lucid";\n')
     repo_url = 'http://old-releases.ubuntu.com/ubuntu'
@@ -73,7 +73,7 @@ if __name__ == '__main__':
                 'deb {0} maverick-updates main universe'.format(repo_url)])
     check_call(['apt-get', 'update', '-q'])
     check_call(['apt-get', 'install', '-qy',
-                'libssl0.9.8=0.9.8o-1ubuntu4.6', 'xvfb', 'x11vnc'])
+                'libssl0.9.8=0.9.8o-1ubuntu4.6', 'xvfb', 'x11vnc', 'miwm'])
 
   # Install LocalSolver.
   if not installed('localsolver'):
