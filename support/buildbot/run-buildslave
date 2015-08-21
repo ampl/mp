@@ -1,12 +1,11 @@
 #!/bin/sh
 
-mkdir $HOME/.vnc
-
-# This is unsecure, but the box is not publicly accessible.
-x11vnc -storepasswd vagrant $HOME/.vnc/passwd
-
-x11vnc -display :0 -forever -usepw -create &
 export DISPLAY=:0
 miwm &
+
+# This is unsecure, but the box is not publicly accessible.
+mkdir $HOME/.vnc
+x11vnc -storepasswd vagrant $HOME/.vnc/passwd
+x11vnc -display $DISPLAY -forever -usepw &
 
 sudo -H -u buildbot buildslave start --nodaemon /var/lib/buildbot/slave

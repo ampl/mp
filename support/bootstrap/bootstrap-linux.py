@@ -73,7 +73,7 @@ if __name__ == '__main__':
                 'deb {0} maverick-updates main universe'.format(repo_url)])
     check_call(['apt-get', 'update', '-q'])
     check_call(['apt-get', 'install', '-qy',
-                'libssl0.9.8=0.9.8o-1ubuntu4.6', 'xvfb', 'x11vnc', 'miwm'])
+                'libssl0.9.8=0.9.8o-1ubuntu4.6', 'xvfb', 'x11vnc', 'xinit', 'miwm'])
 
   # Install LocalSolver.
   if not installed('localsolver'):
