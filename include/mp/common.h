@@ -108,33 +108,144 @@ enum Kind {
   /** A unary minus expression. */
   MINUS = FIRST_UNARY,
 
-  /** The `abs <http://ampl.com/BOOK/CHAPTERS/24-refman.pdf#page=6>`_ function. */
+  /**
+    \rst
+    The absolute value function, :math:`\mathrm{abs}(x) = |x|`.
+    \endrst
+   */
   ABS,
 
-  /** The ``floor`` function. */
+  /**
+    \rst
+    The floor function, :math:`\mathrm{floor}(x) = \lfloor x \rfloor`.
+    \endrst
+   */
   FLOOR,
 
-  /** The ``ceil`` function. */
+  /**
+    \rst
+    The ceiling function, :math:`\mathrm{ceil}(x) = \lceil x \rceil`.
+    \endrst
+   */
   CEIL,
 
-  /** The ``sqrt`` function. */
+  /**
+    \rst
+    The square root function, :math:`\mathrm{sqrt}(x) = \sqrt{x}`.
+    \endrst
+   */
   SQRT,
 
+  /**
+    \rst
+    The power function with exponent 2: :math:`\mathrm{pow2}(x) = x^2`.
+    \endrst
+   */
   POW2,
+
+  /**
+    \rst
+    The natural exponential function, :math:`\mathrm{exp}(x) = e^2`.
+    \endrst
+   */
   EXP,
+
+  /**
+    \rst
+    The natural logarithmic function, :math:`\mathrm{log}(x) = \mathrm{ln}(x)`.
+    \endrst
+   */
   LOG,
+
+  /**
+    \rst
+    The base 10 logarithmic function, :math:`\mathrm{log10}(x) = \mathrm{log}_{10}(x)`.
+    \endrst
+   */
   LOG10,
+
+  /**
+    \rst
+    Sine, :math:`\mathrm{sin}(x)`.
+    \endrst
+   */
   SIN,
+
+  /**
+    \rst
+    Hyperbolic sine, :math:`\mathrm{sinh}(x)`.
+    \endrst
+   */
   SINH,
+
+  /**
+    \rst
+    Cosine, :math:`\mathrm{cos}(x)`.
+    \endrst
+   */
   COS,
+
+  /**
+    \rst
+    Hyperbolic cosine, :math:`\mathrm{cosh}(x)`.
+    \endrst
+   */
   COSH,
+
+  /**
+    \rst
+    Tangent, :math:`\mathrm{tan}(x)`.
+    \endrst
+   */
   TAN,
+
+  /**
+    \rst
+    Hyperbolic tangent, :math:`\mathrm{tan}(x)`.
+    \endrst
+   */
   TANH,
+
+  /**
+    \rst
+    Inverse sine, :math:`\mathrm{sin}^{-1}(x)`.
+    \endrst
+   */
   ASIN,
+
+  /**
+    \rst
+    Inverse hyperbolic sine, :math:`\mathrm{sinh}^{-1}(x)`.
+    \endrst
+   */
   ASINH,
+
+  /**
+    \rst
+    Inverse cosine, :math:`\mathrm{cos}^{-1}(x)`.
+    \endrst
+   */
   ACOS,
+
+  /**
+    \rst
+    Inverse hyperbolic cosine, :math:`\mathrm{cosh}^{-1}(x)`.
+    \endrst
+   */
   ACOSH,
+
+  /**
+    \rst
+    Inverse tangent, :math:`\mathrm{tan}^{-1}(x)`.
+    \endrst
+   */
   ATAN,
+
+  /**
+    \rst
+    Inverse hyperbolic tangent, :math:`\mathrm{tanh}^{-1}(x)`.
+    \endrst
+   */
   ATANH,
   
   /** The last unary numeric expression kind. */
