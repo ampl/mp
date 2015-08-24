@@ -2,7 +2,7 @@
 
 from __future__ import print_function
 from contextlib import contextmanager
-import timeit
+import sys, timeit
 
 class Timer:
   """
@@ -29,7 +29,9 @@ def print_time(*args):
   """
   t = Timer()
   print(*args)
+  sys.stdout.flush()
   with t:
     yield
   print(*args, end=' ')
   print('finished in {0:.2f} second(s)'.format(t.time))
+  sys.stdout.flush()
