@@ -3,15 +3,33 @@
 
 from __future__ import print_function
 from bootstrap import *
-import glob, os, tempfile
+import glob, os, sys, tempfile
 from subprocess import call, check_call
 
 vagrant = bootstrap_init()
 
+class flushfile:
+  def __init__(self, f):
+    self.f = f
+
+  def __getattr__(self, name):
+    return object.__getattribute__(self.f, name)
+
+  def write(self, x):
+    self.f.write(x)
+    self.f.flush()
+
+# Flush the buffer on every output.
+sys.stdout = flushfile(sys.stdout)
+
+def run(cmd):
+  print('Running', cmd)
+  check_call(cmd)
+
 if vagrant:
   # Disable the screensaver because it breaks GUI tests and consumes resources.
-  check_call(['sudo', '-u', 'vagrant', 'defaults', 'write',
-              'com.apple.screensaver', 'idleTime', '0'])
+  run(['sudo', '-u', 'vagrant', 'defaults', 'write',
+       'com.apple.screensaver', 'idleTime', '0'])
   # Kill the screensaver if it has started already.
   call(['killall', 'ScreenSaverEngine'])
 
@@ -48,7 +66,7 @@ if not installed('port'):
 
 # Install ccache.
 if not installed('ccache'):
-  check_call(['port', 'install', 'ccache'])
+  run(['port', 'install', 'ccache'])
   home = os.path.expanduser('~vagrant' if vagrant else '~')
   with open(home + '/.profile', 'a') as f:
     f.write('export PATH=/opt/local/libexec/ccache:$PATH')
@@ -56,7 +74,7 @@ if not installed('ccache'):
 
 # Install gfortran.
 if not installed('gfortran-4.9'):
-  check_call(['port', 'install', 'gcc49', '+gfortran'])
+  run(['port', 'install', 'gcc49', '+gfortran'])
   add_to_path('/opt/local/bin/gfortran-mp-4.9', 'gfortran-4.9')
 
 install_f90cache()
@@ -80,7 +98,7 @@ for dir in ['Xcode.app', 'MATLAB_R2014a.app']:
   if os.path.exists('/opt/' + dir):
     create_symlink('/opt/' + dir, '/Applications/' + dir)
 
-check_call([vagrant_dir + '/support/bootstrap/accept-xcode-license'])
+run([vagrant_dir + '/support/bootstrap/accept-xcode-license'])
 
 buildbot_path = install_buildbot_slave('osx-ml')
 if buildbot_path:
@@ -98,4 +116,4 @@ if buildbot_path:
   plist_path = os.path.join(launchagents_dir, plist_name)
   with open(plist_path, 'w') as f:
     f.write(plist_content)
-  check_call(['launchctl', 'load', plist_path])
+  run(['launchctl', 'load', plist_path])
