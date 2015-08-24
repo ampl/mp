@@ -3,7 +3,7 @@
 
 from __future__ import print_function
 from bootstrap import *
-import glob, os, sys, tempfile
+import glob, os, tempfile
 from subprocess import call, check_call
 
 vagrant = bootstrap_init()
