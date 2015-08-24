@@ -41,18 +41,18 @@ namespace expr {
 
 /** Expression kind. */
 enum Kind {
-  // An unknown expression.
+  /** An unknown expression. */
   UNKNOWN = 0,
 
+  /** The first expression kind other than the unknown expression kind. */
   FIRST_EXPR,
 
-  // To simplify checks, numeric expression kinds are in the range
-  // [FIRST_NUMERIC, LAST_NUMERIC].
   /**
     \rst
     .. _numeric-expr:
 
-    A numeric expression.
+    The first numeric expression kind. Numeric expression kinds are in
+    the range ``[FIRST_NUMERIC, LAST_NUMERIC]``.
     \endrst
    */
   FIRST_NUMERIC = FIRST_EXPR,
@@ -66,7 +66,12 @@ enum Kind {
    */
   NUMBER = FIRST_NUMERIC,
 
-  // Reference expressions.
+  /**
+    \rst
+    The first reference expression kind. Reference expression kinds are in
+    the range ``[FIRST_REFERENCE, LAST_REFERENCE]``.
+    \endrst
+   */
   FIRST_REFERENCE,
 
   /**
@@ -87,23 +92,34 @@ enum Kind {
    */
   COMMON_EXPR,
 
+  /** The last reference expression kind. */
   LAST_REFERENCE = COMMON_EXPR,
 
-  // Unary expressions.
   /**
     \rst
     .. _unary-expr:
 
-    A unary numeric expression.
+    The first unary numeric expression kind.
     Examples: ``-x``, ``sin(x)``, where ``x`` is a variable.
     \endrst
    */
   FIRST_UNARY,
+
+  /** A unary minus expression. */
   MINUS = FIRST_UNARY,
+
+  /** The `abs <http://ampl.com/BOOK/CHAPTERS/24-refman.pdf#page=6>`_ function. */
   ABS,
+
+  /** The ``floor`` function. */
   FLOOR,
+
+  /** The ``ceil`` function. */
   CEIL,
+
+  /** The ``sqrt`` function. */
   SQRT,
+
   POW2,
   EXP,
   LOG,
@@ -120,6 +136,8 @@ enum Kind {
   ACOSH,
   ATAN,
   ATANH,
+  
+  /** The last unary numeric expression kind. */
   LAST_UNARY = ATANH,
 
   // Binary expressions.
