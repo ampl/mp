@@ -28,7 +28,7 @@ if not installed('clang'):
 # Install MacPorts.
 if not installed('port'):
   with download(
-      'https://distfiles.macports.org/MacPorts/' +
+      'http://sea.us.distfiles.macports.org/macports/distfiles/MacPorts/' +
       'MacPorts-2.2.0-10.8-MountainLion.pkg') as f:
     install_pkg(f)
   # Get rid of "No Xcode installation was found" error.
