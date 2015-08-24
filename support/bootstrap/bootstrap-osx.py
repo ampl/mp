@@ -4,15 +4,16 @@
 from __future__ import print_function
 from bootstrap import *
 import glob, os, sys, tempfile
-from subprocess import check_call
+from subprocess import call, check_call
 
 vagrant = bootstrap_init()
 
 if vagrant:
-  # Disable the screensaver because it breaks GUI tests.
-  print("Disabling the screensaver")
-  check_call(['defaults', '-currentHost', 'write',
+  # Disable the screensaver because it breaks GUI tests and consumes resources.
+  check_call(['sudo', '-u', 'vagrant', 'defaults', 'write',
               'com.apple.screensaver', 'idleTime', '0'])
+  # Kill the screensaver if it has started already.
+  call(['killall', 'ScreenSaverEngine'])
 
 install_cmake('cmake-3.1.0-Darwin64-universal.tar.gz')
 install_maven()
