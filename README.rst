@@ -153,18 +153,6 @@ To get rid of semantic errors reported by Indexer add preprocessor symbols
 in "Project Properties" / "C/C++ Include Files and Symbols" and rebuild
 the index.
 
-Using Windows SDK
-`````````````````
-
-If you want to build MP with the Windows SDK toolchain, use a helper
-script run-cmake.bat__ instead of running CMake directly. This script
-configures build environment and runs CMake forwarding all command-line
-arguments to it, for example::
-
-  support\cmake\run-cmake -G "Visual Studio 10 Win64" .
-
-__ https://github.com/ampl/mp/blob/master/support/cmake/run-cmake.bat
-
 Links
 -----
 `AMPL home <http://www.ampl.com/>`_ |

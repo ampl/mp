@@ -1,25 +1,32 @@
 # CMake initialization code that should be run before the project command.
 
-function (find_setenv var)
+if (WIN32)
+  # Find Windows SDK.
   set(winsdk_key
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows")
   find_program(setenv NAMES SetEnv.cmd
     PATHS "[${winsdk_key};CurrentInstallFolder]/bin")
-  set(${var} ${setenv} PARENT_SCOPE)
-endfunction ()
+  if (setenv)
+    # Call SetEnv.cmd and set environment variables accordingly.
+    message(STATUS "Found SetEnv: ${setenv}")
+    file(WRITE CMakeFiles\\run-setenv.bat "call %*\nset\n")
+    execute_process(COMMAND CMakeFiles\\run-setenv.bat "${setenv}" OUTPUT_VARIABLE out)
+    string(REPLACE ";" "\;" out "${out}")
+    string(REGEX MATCHALL "[^\n]+" out "${out}")
+    foreach (env ${out})
+      if (env MATCHES "([^=]+)=(.*)")
+        set(ENV{${CMAKE_MATCH_1}} "${CMAKE_MATCH_2}")
+      endif ()
+    endforeach ()
 
-if (ARGS)
-  # Run CMake in a Microsoft SDK build environment.
-  find_setenv(WINSDK_SETENV)
-  if (WINSDK_SETENV)
-    if (NOT ARGS MATCHES Win64)
-      set(setenv_arg "/x86")
-    endif ()
     # If Microsoft SDK is installed create script run-msbuild.bat that
     # calls SetEnv.cmd to set up build environment and runs msbuild.
     # It is useful when building Visual Studio projects with the SDK
     # toolchain rather than Visual Studio.
     # Set FrameworkPathOverride to get rid of MSB3644 warnings.
+    if (NOT CMAKE_GENERATOR MATCHES Win64)
+      set(setenv_arg "/x86")
+    endif ()
     file(WRITE "${CMAKE_BINARY_DIR}/run-msbuild.bat" "
       call \"${WINSDK_SETENV}\" ${setenv_arg}
       msbuild -p:FrameworkPathOverride=^\"C:\\Program Files^
@@ -27,7 +34,6 @@ if (ARGS)
     execute_process(
       COMMAND ${CMAKE_COMMAND} -E echo "\"${WINSDK_SETENV}\" ${setenv_arg}")
   endif ()
-  return ()
 endif ()
 
 include(CMakeParseArguments)
