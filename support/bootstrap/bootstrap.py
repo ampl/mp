@@ -114,7 +114,7 @@ def install_maven(**kwargs):
 # Install f90cache.
 def install_f90cache():
   if not installed('f90cache'):
-    f90cache = 'f90cache-0.95'
+    f90cache = 'f90cache-0.96'
     tempdir = tempfile.mkdtemp(suffix='f90cache', dir='')
     with download(
         'http://people.irisa.fr/Edouard.Canot/f90cache/' +
