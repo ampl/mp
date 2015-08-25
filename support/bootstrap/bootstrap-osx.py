@@ -26,10 +26,11 @@ def run(cmd):
   print('Running', cmd)
   check_call(cmd)
 
+sudo = ['sudo', '-H', '-u', 'vagrant'] if vagrant else []
+
 if vagrant:
   # Disable the screensaver because it breaks GUI tests and consumes resources.
-  run(['sudo', '-u', 'vagrant', 'defaults', 'write',
-       'com.apple.screensaver', 'idleTime', '0'])
+  run(sudo + ['defaults', 'write', 'com.apple.screensaver', 'idleTime', '0'])
   # Kill the screensaver if it has started already.
   call(['killall', 'ScreenSaverEngine'])
 
@@ -43,43 +44,27 @@ if not installed('clang'):
       'command_line_tools_for_xcode_os_x_mountain_lion_april_2013.dmg') as f:
     install_dmg(f, True)
 
-# Install MacPorts.
-if not installed('port'):
+# Install Homebrew.
+if not installed('brew'):
   with download(
-      'http://sea.us.distfiles.macports.org/macports/distfiles/MacPorts/' +
-      'MacPorts-2.2.0-10.8-MountainLion.pkg') as f:
-    install_pkg(f)
-  # Get rid of "No Xcode installation was found" error.
-  macports_conf = '/opt/local/etc/macports/macports.conf'
-  macports_conf_new = macports_conf + '.new'
-  if os.path.exists(macports_conf):
-    with open(macports_conf, 'r') as f:
-      conf = f.read()
-    with open(macports_conf_new, 'w') as f:
-      f.write(re.sub(r'#\s*(developer_dir\s*).*', r'\1/', conf))
-    os.remove(macports_conf)
-  # The new config may also exists if the script was interrupted just after
-  # removing the old config and then restarted.
-  if os.path.exists(macports_conf_new):
-    os.rename(macports_conf_new, macports_conf)
-  add_to_path('/opt/local/bin/port')
+      'https://raw.githubusercontent.com/Homebrew/install/master/install') as f:
+    run(sudo + ['ruby', f])
 
 # Install ccache.
 if not installed('ccache'):
-  run(['port', 'install', 'ccache'])
+  run(sudo + ['brew', 'install', 'ccache'])
   home = os.path.expanduser('~vagrant' if vagrant else '~')
   with open(home + '/.profile', 'a') as f:
-    f.write('export PATH=/opt/local/libexec/ccache:$PATH')
-  add_to_path('/opt/local/libexec/ccache', None, True)
+    f.write('export PATH=/usr/local/opt/ccache/libexec:$PATH')
+  add_to_path('/usr/local/opt/ccache/libexec', None, True)
 
-# Install gfortran.
-if not installed('gfortran-4.9'):
-  run(['port', 'install', 'gcc49', '+gfortran'])
-  add_to_path('/opt/local/bin/gfortran-mp-4.9', 'gfortran-4.9')
+# Install gfortran which is a part of the gcc package in Homebrew.
+if not installed('gfortran'):
+  run(sudo + ['brew', 'install', 'gcc'])
 
 install_f90cache()
 create_symlink('/usr/local/bin/f90cache',
-               '/opt/local/libexec/ccache/gfortran-4.9')
+               '/usr/local/opt/ccache/libexec/gfortran')
 
 # Install JDK.
 with download(
