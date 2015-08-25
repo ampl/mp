@@ -185,6 +185,7 @@ def copy_optional_dependencies(platform, source_dir=''):
     for src in glob.glob(os.path.join(source_path, platform, '*')):
       dest = '/opt/' + os.path.basename(src)
       if not os.path.exists(dest):
+        print('Copying {0} to {1}'.format(src, dest))
         shutil.copytree(src, dest, symlinks=True)
 
 # Installs an OS X package.
