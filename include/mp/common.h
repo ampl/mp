@@ -99,15 +99,21 @@ enum Kind {
     \rst
     .. _unary-expr:
 
-    The first unary numeric expression kind.
-    Examples: ``-x``, ``sin(x)``, where ``x`` is a variable.
+    The first unary numeric expression kind. Unary numeric expression kinds
+    are in the range ``[FIRST_UNARY, LAST_UNARY]``.
     \endrst
    */
   FIRST_UNARY,
 
-  /** A unary minus expression. */
+  /**
+    \rst
+    A unary minus, :math:`-x`.
+    \endrst
+   */
   MINUS = FIRST_UNARY,
 
+  // Give both AMPL and mathematical notation of each function as in
+  // abs(x) = |x|, unless they are identical as in sin(x).
   /**
     \rst
     The absolute value function, :math:`\mathrm{abs}(x) = |x|`.
@@ -138,7 +144,7 @@ enum Kind {
 
   /**
     \rst
-    The power function with exponent 2: :math:`\mathrm{pow2}(x) = x^2`.
+    The power function with exponent 2: :math:`\mathrm{pow}(x, 2) = x^2`.
     \endrst
    */
   POW2,
@@ -159,7 +165,8 @@ enum Kind {
 
   /**
     \rst
-    The base 10 logarithmic function, :math:`\mathrm{log10}(x) = \mathrm{log}_{10}(x)`.
+    The base 10 logarithmic function,
+    :math:`\mathrm{log10}(x) = \mathrm{log}_{10}(x)`.
     \endrst
    */
   LOG10,
@@ -208,42 +215,42 @@ enum Kind {
 
   /**
     \rst
-    Inverse sine, :math:`\mathrm{sin}^{-1}(x)`.
+    Inverse sine, :math:`\mathrm{asin}(x) = \mathrm{sin}^{-1}(x)`.
     \endrst
    */
   ASIN,
 
   /**
     \rst
-    Inverse hyperbolic sine, :math:`\mathrm{sinh}^{-1}(x)`.
+    Inverse hyperbolic sine, :math:`\mathrm{asinh}(x) = \mathrm{sinh}^{-1}(x)`.
     \endrst
    */
   ASINH,
 
   /**
     \rst
-    Inverse cosine, :math:`\mathrm{cos}^{-1}(x)`.
+    Inverse cosine, :math:`\mathrm{acos}(x) = \mathrm{cos}^{-1}(x)`.
     \endrst
    */
   ACOS,
 
   /**
     \rst
-    Inverse hyperbolic cosine, :math:`\mathrm{cosh}^{-1}(x)`.
+    Inverse hyperbolic cosine, :math:`\mathrm{acosh}(x) = \mathrm{cosh}^{-1}(x)`.
     \endrst
    */
   ACOSH,
 
   /**
     \rst
-    Inverse tangent, :math:`\mathrm{tan}^{-1}(x)`.
+    Inverse tangent, :math:`\mathrm{atan}(x) = \mathrm{tan}^{-1}(x)`.
     \endrst
    */
   ATAN,
 
   /**
     \rst
-    Inverse hyperbolic tangent, :math:`\mathrm{tanh}^{-1}(x)`.
+    Inverse hyperbolic tangent, :math:`\mathrm{atanh}(x) = \mathrm{tanh}^{-1}(x)`.
     \endrst
    */
   ATANH,
@@ -251,17 +258,22 @@ enum Kind {
   /** The last unary numeric expression kind. */
   LAST_UNARY = ATANH,
 
-  // Binary expressions.
   /**
     \rst
     .. _binary-expr:
 
-    A binary numeric expression.
-    Examples: ``x / y``, ``atan2(x, y)``, where ``x`` and ``y`` are variables.
+    The first binary numeric expression kind.
     \endrst
    */
   FIRST_BINARY,
+
+  /**
+    \rst
+    An addition, :math:`x + y`.
+    \endrst
+   */
   ADD = FIRST_BINARY,
+
   SUB,
   LESS,
   MUL,
@@ -275,6 +287,8 @@ enum Kind {
   PRECISION,
   ROUND,
   TRUNC,
+  
+  /** The last binary numeric expression kind. */
   LAST_BINARY = TRUNC,
 
   /**
