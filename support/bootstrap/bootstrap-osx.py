@@ -64,7 +64,7 @@ if not installed('gfortran'):
 
 install_f90cache()
 create_symlink('/usr/local/bin/f90cache',
-               '/usr/local/opt/ccache/libexec/gfortran')
+               '/usr/local/opt/ccache/libexec/gfortran-5')
 
 # Install JDK.
 with download(
