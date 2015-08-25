@@ -151,7 +151,7 @@ enum Kind {
 
   /**
     \rst
-    The natural exponential function, :math:`\mathrm{exp}(x) = e^2`.
+    The natural exponential function, :math:`\mathrm{exp}(x) = e^x`.
     \endrst
    */
   EXP,
