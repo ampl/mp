@@ -1,16 +1,16 @@
 # CMake initialization code that should be run before the project command.
 
-if (WIN32)
+if (MP_WINSDK)
   # Find Windows SDK.
   set(winsdk_key
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows")
-  find_program(setenv NAMES SetEnv.cmd
+  find_program(MP_SETENV NAMES SetEnv.cmd
     PATHS "[${winsdk_key};CurrentInstallFolder]/bin")
-  if (setenv)
+  if (MP_SETENV)
     # Call SetEnv.cmd and set environment variables accordingly.
-    message(STATUS "Found SetEnv: ${setenv}")
+    message(STATUS "Found SetEnv: ${MP_SETENV}")
     file(WRITE CMakeFiles\\run-setenv.bat "call %*\nset\n")
-    execute_process(COMMAND CMakeFiles\\run-setenv.bat "${setenv}" OUTPUT_VARIABLE out)
+    execute_process(COMMAND CMakeFiles\\run-setenv.bat "${MP_SETENV}" OUTPUT_VARIABLE out)
     string(REPLACE ";" "\;" out "${out}")
     string(REGEX MATCHALL "[^\n]+" out "${out}")
     foreach (env ${out})
@@ -28,11 +28,11 @@ if (WIN32)
       set(setenv_arg "/x86")
     endif ()
     file(WRITE "${CMAKE_BINARY_DIR}/run-msbuild.bat" "
-      call \"${WINSDK_SETENV}\" ${setenv_arg}
+      call \"${MP_SETENV}\" ${setenv_arg}
       msbuild -p:FrameworkPathOverride=^\"C:\\Program Files^
 \\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0^\" %*")
     execute_process(
-      COMMAND ${CMAKE_COMMAND} -E echo "\"${WINSDK_SETENV}\" ${setenv_arg}")
+      COMMAND ${CMAKE_COMMAND} -E echo "\"${MP_SETENV}\" ${setenv_arg}")
   endif ()
 endif ()
 
