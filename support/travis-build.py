@@ -2,8 +2,9 @@
 # Build the project on Travis CI.
 
 from __future__ import print_function
-import os, re, shutil, tempfile
+import os, re, shutil, tarfile, tempfile
 from bootstrap import bootstrap
+from contextlib import closing
 from download import Downloader
 from subprocess import call, check_call, check_output, Popen, PIPE, STDOUT
 
@@ -13,8 +14,13 @@ if build == 'doc':
   travis = 'TRAVIS' in os.environ
   workdir = tempfile.mkdtemp()
   try:
-    # Install dependencies.
-    returncode, repo_dir = __import__('build-docs').build_docs(workdir)
+    doxygen_url = 'http://ftp.stack.nl/pub/users/dimitri/doxygen-1.8.10.linux.bin.tar.gz'
+    dir = os.path.dirname(os.path.realpath(__file__))
+    with Downloader().download(doxygen_url) as f:
+      with closing(tarfile.open(f, 'r:gz')) as archive:
+        archive.extractall(dir)
+    doxygen = os.path.join(dir, 'doxygen-1.8.10/bin/doxygen')
+    returncode, repo_dir = __import__('build-docs').build_docs(workdir, doxygen)
     if returncode == 0:
       if travis:
         check_call(['git', 'config', '--global', 'user.name', 'amplbot'])

@@ -44,7 +44,7 @@ def pip_install(package, **kwargs):
     package = 'git+git://github.com/{0}.git@{1}'.format(package, commit)
   check_call(['pip', 'install', '-q', package])
 
-def build_docs(workdir):
+def build_docs(workdir, doxygen='doxygen'):
   # Create virtualenv.
   virtualenv_dir = os.path.join(workdir, 'virtualenv')
   check_call(['virtualenv', virtualenv_dir])
@@ -86,7 +86,7 @@ def build_docs(workdir):
       os.remove(path)
   # Build docs.
   extract_docs(build_dir)
-  p = Popen(['doxygen', '-'], stdin=PIPE, cwd=build_dir)
+  p = Popen([doxygen, '-'], stdin=PIPE, cwd=build_dir)
   p.communicate(input=r'''
       PROJECT_NAME      = MP
       INPUT             = {0}/include/mp/common.h \

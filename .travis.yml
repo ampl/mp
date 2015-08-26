@@ -23,7 +23,7 @@ matrix:
   include:
     - os: linux
       env: BUILD=doc
-      addons: {apt: {packages: [doxygen, python-virtualenv]}}
+      addons: {apt: {packages: [python-virtualenv]}}
     - os: linux
       env: BUILD=native
       addons: {apt: {packages: [unixodbc-dev]}}
