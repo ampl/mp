@@ -22,6 +22,8 @@ IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 
+----------------------------------------------------------------------
+
 Copyright (C) 2007 David M. Gay
 
 Permission to use, copy, modify, and distribute this software and its
@@ -37,6 +39,8 @@ consequential damages or any damages whatsoever resulting from loss of
 use, data or profits, whether in an action of contract, negligence or
 other tortious action, arising out of or in connection with the use or
 performance of this software.
+
+----------------------------------------------------------------------
 
 Copyright (C) 2002 - 2014 AMPL Optimization LLC
 
