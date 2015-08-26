@@ -31,8 +31,6 @@ if (MP_WINSDK)
       call \"${MP_SETENV}\" ${setenv_arg}
       msbuild -p:FrameworkPathOverride=^\"C:\\Program Files^
 \\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0^\" %*")
-    execute_process(
-      COMMAND ${CMAKE_COMMAND} -E echo "\"${MP_SETENV}\" ${setenv_arg}")
   endif ()
 endif ()
 
