@@ -10,7 +10,8 @@ if (MP_WINSDK)
     # Call SetEnv.cmd and set environment variables accordingly.
     message(STATUS "Found SetEnv: ${MP_SETENV}")
     file(WRITE CMakeFiles\\run-setenv.bat "call %*\nset\n")
-    execute_process(COMMAND CMakeFiles\\run-setenv.bat "${MP_SETENV}" OUTPUT_VARIABLE out)
+    execute_process(COMMAND CMakeFiles\\run-setenv.bat "${MP_SETENV}"
+      OUTPUT_VARIABLE out ERROR_VARIABLE err)
     string(REPLACE ";" "\;" out "${out}")
     string(REGEX MATCHALL "[^\n]+" out "${out}")
     foreach (env ${out})
