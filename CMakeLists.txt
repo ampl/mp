@@ -311,7 +311,6 @@ if (HAVE_ATOMIC)
   target_compile_definitions(mp PUBLIC MP_USE_ATOMIC)
 endif ()
 
-
 # Link with librt for clock_gettime (Linux on i386).
 find_library(RT_LIBRARY rt)
 if (RT_LIBRARY)
