@@ -144,7 +144,7 @@ enum Kind {
 
   /**
     \rst
-    The power function with exponent 2: :math:`\mathrm{pow}(x, 2) = x^2`.
+    Squaring: :math:`\mathrm{pow}(x, 2) = x^2`.
     \endrst
    */
   POW2,
@@ -269,20 +269,69 @@ enum Kind {
 
   /**
     \rst
-    An addition, :math:`x + y`.
+    Addition, :math:`x + y`.
     \endrst
    */
   ADD = FIRST_BINARY,
 
+  /**
+    \rst
+    Subtraction, :math:`x - y`.
+    \endrst
+   */
   SUB,
+
   LESS,
+
+  /**
+    \rst
+    Multiplication, :math:`x * y = x y`.
+    \endrst
+   */
   MUL,
+
+  /**
+    \rst
+    Division, :math:`x / y`.
+    \endrst
+   */
   DIV,
+
+  /**
+    \rst
+    Truncated division, :math:`x \mathrm{div} y = \mathrm{trunc}(x / y)`.
+    \endrst
+   */
   INT_DIV,
+
+  /**
+    \rst
+    The modulo operation, :math:`x \mathrm{mod} y`.
+    \endrst
+   */
   MOD,
+
+  /**
+    \rst
+    Exponentiation, :math:`x^y`.
+    \endrst
+   */
   POW,
+
+  /**
+    \rst
+    Exponentiation with a constant base, :math:`a^x`.
+    \endrst
+   */
   POW_CONST_BASE,
+
+  /**
+    \rst
+    Exponentiation with a constant exponent :math:`x^a`.
+    \endrst
+   */
   POW_CONST_EXP,
+
   ATAN2,
   PRECISION,
   ROUND,
