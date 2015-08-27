@@ -285,7 +285,7 @@ enum Kind {
 
   /**
     \rst
-    The ``less`` operation, :math:`x less y = max(x - y, 0)`.
+    The ``less`` operation, :math:`x {\mathrm{less}} y = \mathrm{max}(x - y, 0)`.
     \endrst
    */
   LESS,
@@ -306,7 +306,7 @@ enum Kind {
 
   /**
     \rst
-    Truncated division, :math:`x \mathrm{ div } y = \mathrm{trunc}(x / y)`.
+    Truncated division, :math:`x {\mathrm{div}} y = \mathrm{trunc}(x / y)`.
     \endrst
    */
   TRUNC_DIV,
@@ -320,7 +320,7 @@ enum Kind {
 
   /**
     \rst
-    Exponentiation, :math:`x \^ y = x^y`.
+    Exponentiation, :math:`x \hat{} y = x^y`.
     \endrst
    */
   POW,
