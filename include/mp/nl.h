@@ -271,7 +271,7 @@ class NLHandler {
 
   /**
     \rst
-    .. |Expr| replace:: `Expr <mp::NLHandler<ExprType>::Expr>`
+    .. |Expr| replace:: `Expr <mp::NLHandler::Expr>`
 
     A numeric expression type.
     It is a typedef of |Expr| but subclasses may define it as a different type
@@ -293,7 +293,7 @@ class NLHandler {
     \rst
     A count expression type.
     It is a typedef of |Expr| but subclasses may define it as a different type
-    convertible to `NumericExpr <mp::NLHandler<ExprType>::NumericExpr>`.
+    convertible to `NumericExpr <mp::NLHandler::NumericExpr>`.
     \endrst
    */
   typedef Expr CountExpr;
@@ -302,7 +302,7 @@ class NLHandler {
     \rst
     A reference expression type.
     It is a typedef of |Expr| but subclasses may define it as a different type
-    convertible to `NumericExpr <mp::NLHandler<ExprType>::NumericExpr>`.
+    convertible to `NumericExpr <mp::NLHandler::NumericExpr>`.
     \endrst
    */
   typedef Expr Reference;
