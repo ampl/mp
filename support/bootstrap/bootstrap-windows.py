@@ -142,26 +142,18 @@ buildslave_dir = r'\buildslave'
 if not os.path.exists(buildslave_dir):
   install_buildbot_slave('win2008', buildslave_dir, python_dir + r'\Scripts', True)
 
-  # Grant the user the right to "log on as a service".
-  import win32api, win32security
-  username = win32api.GetUserNameEx(win32api.NameSamCompatible)
-  domain, username = username.split('\\')
-  policy = win32security.LsaOpenPolicy(domain, win32security.POLICY_ALL_ACCESS)
-  sid_obj, domain, tmp = win32security.LookupAccountName(domain, username)
-  win32security.LsaAddAccountRights(policy, sid_obj, ('SeServiceLogonRight',))
-  win32security.LsaClose(policy)
-
   # Set buildslave parameters.
   with reg.CreateKey(reg.HKEY_LOCAL_MACHINE,
       r'System\CurrentControlSet\services\BuildBot\Parameters') as key:
     reg.SetValueEx(key, 'directories', 0, reg.REG_SZ, buildslave_dir)
 
   # Install buildbot service.
+  # The service is run under Local System account to allow it interact with
+  # the desktop (--interactive) which is required for GUI tests.
   check_call([
     os.path.join(python_dir, 'python'),
     os.path.join(python_dir, r'Scripts\buildbot_service.py'),
-    '--user', '.\\' + username, '--password', 'vagrant',
-    '--startup', 'auto', 'install'])
+    '--startup', '--interactive', 'auto', 'install'])
   win32serviceutil.StartService('BuildBot')
 elif restart:
   print('Restarting BuildBot')
