@@ -144,7 +144,7 @@ enum Kind {
 
   /**
     \rst
-    Squaring: :math:`x \^ 2 = x^2`.
+    Squaring: :math:`x \mathop{\verb!^!} 2 = x^2`.
     \endrst
    */
   POW2,
@@ -285,7 +285,8 @@ enum Kind {
 
   /**
     \rst
-    The ``less`` operation, :math:`x {\mathrm{less}} y = \mathrm{max}(x - y, 0)`.
+    The ``less`` operation,
+    :math:`x \mathop{\rm less} y = \mathrm{max}(x - y, 0)`.
     \endrst
    */
   LESS,
@@ -306,21 +307,21 @@ enum Kind {
 
   /**
     \rst
-    Truncated division, :math:`x {\mathrm{div}} y = \mathrm{trunc}(x / y)`.
+    Truncated division, :math:`x \mathop{\rm div} y = \mathrm{trunc}(x / y)`.
     \endrst
    */
   TRUNC_DIV,
 
   /**
     \rst
-    The modulo operation, :math:`x \mathrm{ mod } y`.
+    The modulo operation, :math:`x \mathop{\rm mod} y`.
     \endrst
    */
   MOD,
 
   /**
     \rst
-    Exponentiation, :math:`x \hat{} y = x^y`.
+    Exponentiation, :math:`x \mathop{\verb!^!} y = x^y`.
     \endrst
    */
   POW,
