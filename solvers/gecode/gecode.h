@@ -245,7 +245,7 @@ class MPToGecodeConverter : public ExprVisitor<MPToGecodeConverter, LinExpr> {
 
   LinExpr VisitSum(IteratedExpr e);
 
-  LinExpr VisitIntDiv(BinaryExpr e) {
+  LinExpr VisitTruncDiv(BinaryExpr e) {
     return Visit(e.lhs()) / Visit(e.rhs());
   }
 

@@ -84,7 +84,7 @@ const ExprInfo info[] = {
   BINARY(LESS,            6, ADDITIVE,       "less"),
   BINARY(MUL,             2, MULTIPLICATIVE, "*"),
   BINARY(DIV,             3, MULTIPLICATIVE, "/"),
-  BINARY(INT_DIV,        55, MULTIPLICATIVE, "div"),
+  BINARY(TRUNC_DIV,      55, MULTIPLICATIVE, "div"),
   BINARY(MOD,             4, MULTIPLICATIVE, "mod"),
   BINARY(POW,             5, EXPONENTIATION, "^"),
   BINARY(POW_CONST_BASE, 78, EXPONENTIATION, "^"),

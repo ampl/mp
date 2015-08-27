@@ -206,7 +206,7 @@ class BasicExprVisitor {
     return MP_DISPATCH(VisitBinary(e));
   }
 
-  Result VisitIntDiv(BinaryExpr e) {
+  Result VisitTruncDiv(BinaryExpr e) {
     return MP_DISPATCH(VisitBinary(e));
   }
 
@@ -471,8 +471,9 @@ Result BasicExprVisitor<Impl, Result, ET>::Visit(Expr e) {
     return MP_DISPATCH(VisitMul(ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::DIV:
     return MP_DISPATCH(VisitDiv(ET::template UncheckedCast<BinaryExpr>(e)));
-  case expr::INT_DIV:
-    return MP_DISPATCH(VisitIntDiv(ET::template UncheckedCast<BinaryExpr>(e)));
+  case expr::TRUNC_DIV:
+    return MP_DISPATCH(VisitTruncDiv(
+                         ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::MOD:
     return MP_DISPATCH(VisitMod(ET::template UncheckedCast<BinaryExpr>(e)));
   case expr::POW:

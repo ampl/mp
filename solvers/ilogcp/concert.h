@@ -408,7 +408,7 @@ class MPToConcertConverter : public ExprVisitor<MPToConcertConverter, IloExpr> {
 
   IloExpr VisitSum(SumExpr e);
 
-  IloExpr VisitIntDiv(BinaryExpr e) {
+  IloExpr VisitTruncDiv(BinaryExpr e) {
     return IloTrunc(Visit(e.lhs()) / Visit(e.rhs()));
   }
 

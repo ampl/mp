@@ -59,7 +59,7 @@ const mp::expr::OpCodeInfo mp::expr::OpCodeInfo::INFO[] = {
   {expr::ACOSH, expr::FIRST_UNARY},
   {expr::ACOS, expr::FIRST_UNARY},
   {expr::SUM, expr::SUM},
-  {expr::INT_DIV, expr::FIRST_BINARY},
+  {expr::TRUNC_DIV, expr::FIRST_BINARY},
   {expr::PRECISION, expr::FIRST_BINARY},
   {expr::ROUND, expr::FIRST_BINARY},
   {expr::TRUNC, expr::FIRST_BINARY},

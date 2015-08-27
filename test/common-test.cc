@@ -67,7 +67,7 @@ const ExprInfo INFO[] = {
   {ex::LESS,           "less"},
   {ex::MUL,            "*"},
   {ex::DIV,            "/"},
-  {ex::INT_DIV,        "div"},
+  {ex::TRUNC_DIV,      "div"},
   {ex::MOD,            "mod"},
   {ex::POW,            "^"},
   {ex::POW_CONST_BASE, "^"},

@@ -111,7 +111,7 @@ struct MockVisitor : mp::ExprVisitor<MockVisitor, TestResult> {
   MOCK_METHOD1(VisitLess, TestResult (BinaryExpr e));
   MOCK_METHOD1(VisitMul, TestResult (BinaryExpr e));
   MOCK_METHOD1(VisitDiv, TestResult (BinaryExpr e));
-  MOCK_METHOD1(VisitIntDiv, TestResult (BinaryExpr e));
+  MOCK_METHOD1(VisitTruncDiv, TestResult (BinaryExpr e));
   MOCK_METHOD1(VisitMod, TestResult (BinaryExpr e));
   MOCK_METHOD1(VisitPow, TestResult (BinaryExpr e));
   MOCK_METHOD1(VisitPowConstBase, TestResult (BinaryExpr e));
@@ -307,7 +307,7 @@ TEST_BINARY(SUB, Sub)
 TEST_BINARY(LESS, Less)
 TEST_BINARY(MUL, Mul)
 TEST_BINARY(DIV, Div)
-TEST_BINARY(INT_DIV, IntDiv)
+TEST_BINARY(TRUNC_DIV, TruncDiv)
 TEST_BINARY(MOD, Mod)
 TEST_BINARY(POW, Pow)
 TEST_BINARY(POW_CONST_BASE, PowConstBase)

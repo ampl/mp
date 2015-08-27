@@ -221,8 +221,8 @@ ls::LSExpression LSProblemBuilder::MakeBinary(
   case expr::DIV:
     op = ls::O_Div;
     break;
-  case expr::INT_DIV:
-    return IntDiv(lhs, rhs);
+  case expr::TRUNC_DIV:
+    return TruncDiv(lhs, rhs);
   case expr::MOD:
     op = ls::O_Mod;
     break;

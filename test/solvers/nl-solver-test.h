@@ -721,8 +721,8 @@ TEST_F(NLSolverTest, Div) {
   EXPECT_EQ(-7, EvalBinary(kind, -133, 19));
 }
 
-TEST_F(NLSolverTest, IntDiv) {
-  auto kind = mp::expr::INT_DIV;
+TEST_F(NLSolverTest, TruncDiv) {
+  auto kind = mp::expr::TRUNC_DIV;
   EXPECT_EQ( 3, EvalBinary(kind,  9,  3));
   EXPECT_EQ( 2, EvalBinary(kind,  8,  3));
   EXPECT_EQ(-2, EvalBinary(kind, -8,  3));

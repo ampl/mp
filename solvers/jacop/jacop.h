@@ -282,7 +282,7 @@ class MPToJaCoPConverter : public ExprConverter<MPToJaCoPConverter, jobject> {
 
   jobject VisitSum(SumExpr e);
 
-  jobject VisitIntDiv(BinaryExpr e) {
+  jobject VisitTruncDiv(BinaryExpr e) {
     return CreateCon(div_class_, Visit(e.lhs()), Visit(e.rhs()));
   }
 

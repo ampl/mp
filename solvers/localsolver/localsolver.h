@@ -136,7 +136,7 @@ class LSProblemBuilder :
 
   // Makes an expression representing lhs div rhs.
   template <typename RHS>
-  ls::LSExpression IntDiv(ls::LSExpression lhs, RHS rhs) {
+  ls::LSExpression TruncDiv(ls::LSExpression lhs, RHS rhs) {
     return MakeBinary(ls::O_Div, MakeBinary(
                         ls::O_Sub, lhs, MakeBinary(ls::O_Mod, lhs, rhs)), rhs);
   }

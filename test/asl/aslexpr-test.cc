@@ -378,7 +378,7 @@ const OpInfo OP_INFO[] = {
   {ex::ACOSH,          ex::FIRST_UNARY},
   {ex::ACOS,           ex::FIRST_UNARY},
   {ex::SUM,            ex::SUM},
-  {ex::INT_DIV,        ex::FIRST_BINARY},
+  {ex::TRUNC_DIV,      ex::FIRST_BINARY},
   {ex::PRECISION,      ex::FIRST_BINARY},
   {ex::ROUND,          ex::FIRST_BINARY},
   {ex::TRUNC,          ex::FIRST_BINARY},
@@ -532,7 +532,7 @@ TEST_F(ExprTest, UnaryExpr) {
 TEST_F(ExprTest, BinaryExpr) {
   const ex::Kind kinds[] = {
     ex::ADD, ex::SUB, ex::MUL, ex::DIV, ex::MOD, ex::POW, ex::LESS,
-    ex::ATAN2, ex::INT_DIV, ex::PRECISION, ex::ROUND, ex::TRUNC,
+    ex::ATAN2, ex::TRUNC_DIV, ex::PRECISION, ex::ROUND, ex::TRUNC,
     ex::POW_CONST_BASE, ex::POW_CONST_EXP
   };
   std::size_t num_kinds = sizeof(kinds) / sizeof(*kinds);

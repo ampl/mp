@@ -144,7 +144,7 @@ enum Kind {
 
   /**
     \rst
-    Squaring: :math:`\mathrm{pow}(x, 2) = x^2`.
+    Squaring: :math:`x \^ 2 = x^2`.
     \endrst
    */
   POW2,
@@ -236,7 +236,8 @@ enum Kind {
 
   /**
     \rst
-    Inverse hyperbolic cosine, :math:`\mathrm{acosh}(x) = \mathrm{cosh}^{-1}(x)`.
+    Inverse hyperbolic cosine,
+    :math:`\mathrm{acosh}(x) = \mathrm{cosh}^{-1}(x)`.
     \endrst
    */
   ACOSH,
@@ -250,7 +251,8 @@ enum Kind {
 
   /**
     \rst
-    Inverse hyperbolic tangent, :math:`\mathrm{atanh}(x) = \mathrm{tanh}^{-1}(x)`.
+    Inverse hyperbolic tangent,
+    :math:`\mathrm{atanh}(x) = \mathrm{tanh}^{-1}(x)`.
     \endrst
    */
   ATANH,
@@ -281,6 +283,11 @@ enum Kind {
    */
   SUB,
 
+  /**
+    \rst
+    The ``less`` operation, :math:`x less y = max(x - y, 0)`.
+    \endrst
+   */
   LESS,
 
   /**
@@ -299,21 +306,21 @@ enum Kind {
 
   /**
     \rst
-    Truncated division, :math:`x \mathrm{div} y = \mathrm{trunc}(x / y)`.
+    Truncated division, :math:`x \mathrm{ div } y = \mathrm{trunc}(x / y)`.
     \endrst
    */
-  INT_DIV,
+  TRUNC_DIV,
 
   /**
     \rst
-    The modulo operation, :math:`x \mathrm{mod} y`.
+    The modulo operation, :math:`x \mathrm{ mod } y`.
     \endrst
    */
   MOD,
 
   /**
     \rst
-    Exponentiation, :math:`x^y`.
+    Exponentiation, :math:`x \^ y = x^y`.
     \endrst
    */
   POW,

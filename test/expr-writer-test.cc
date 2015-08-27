@@ -139,7 +139,7 @@ TEST_F(ExprWriterTest, WriteBinaryExpr) {
   CHECK_WRITE("x1 ^ 42", MakeBinary(ex::POW_CONST_BASE, x1, n42));
   CHECK_WRITE("x1 ^ 42", MakeBinary(ex::POW_CONST_EXP, x1, n42));
   CHECK_WRITE("x1 less 42", MakeBinary(ex::LESS, x1, n42));
-  CHECK_WRITE("x1 div 42", MakeBinary(ex::INT_DIV, x1, n42));
+  CHECK_WRITE("x1 div 42", MakeBinary(ex::TRUNC_DIV, x1, n42));
 }
 
 TEST_F(ExprWriterTest, WriteBinaryFunc) {
@@ -348,7 +348,7 @@ TEST_F(ExprWriterTest, MultiplicativeExprPrecedence) {
   CHECK_WRITE("x1 * x2 / x3",
       MakeBinary(ex::DIV, MakeBinary(ex::MUL, x1, x2), x3));
   CHECK_WRITE("x1 * x2 div x3",
-      MakeBinary(ex::INT_DIV, MakeBinary(ex::MUL, x1, x2), x3));
+      MakeBinary(ex::TRUNC_DIV, MakeBinary(ex::MUL, x1, x2), x3));
   CHECK_WRITE("x1 * x2 mod x3",
       MakeBinary(ex::MOD, MakeBinary(ex::MUL, x1, x2), x3));
   CHECK_WRITE("x1 * (x2 * x3)",
