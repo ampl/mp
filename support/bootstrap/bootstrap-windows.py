@@ -153,7 +153,7 @@ if not os.path.exists(buildslave_dir):
   check_call([
     os.path.join(python_dir, 'python'),
     os.path.join(python_dir, r'Scripts\buildbot_service.py'),
-    '--startup', '--interactive', 'auto', 'install'])
+    '--startup', 'auto', '--interactive', 'install'])
   win32serviceutil.StartService('BuildBot')
 elif restart:
   print('Restarting BuildBot')
