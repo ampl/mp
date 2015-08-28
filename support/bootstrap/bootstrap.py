@@ -7,7 +7,6 @@ from contextlib import closing
 from subprocess import check_call, call
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-import timer
 from download import Downloader
 
 windows = platform.system() == 'Windows'

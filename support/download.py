@@ -1,6 +1,6 @@
 # A file downloader.
 
-import contextlib, os, tempfile, timer, urllib2, urlparse
+import contextlib, os, tempfile, ctxtimer, urllib2, urlparse
 
 class Downloader:
   def __init__(self, dir=None):
@@ -15,7 +15,7 @@ class Downloader:
     suffix = os.path.splitext(urlparse.urlsplit(url)[2])[1]
     fd, filename = tempfile.mkstemp(suffix=suffix, dir=self.dir)
     os.close(fd)
-    with timer.print_time('Downloading', url, 'to', filename):
+    with ctxtimer.print_time('Downloading', url, 'to', filename):
       opener = urllib2.build_opener()
       if cookie:
         opener.addheaders.append(('Cookie', cookie))

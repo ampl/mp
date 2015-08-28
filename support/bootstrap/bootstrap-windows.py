@@ -7,7 +7,7 @@ from glob import glob
 from subprocess import check_call, check_output
 
 # The timer module should be imported after bootstrap which sets up sys.path.
-import timer
+import ctxtimer
 
 # Add Python to PATH.
 python_dir = r'C:\Python27'
@@ -52,7 +52,7 @@ def install_mingw(arch):
       'Toolchains%20targetting%20Win' + bits + '/Personal%20Builds/' +
       'mingw-builds/4.8.2/threads-win32/sjlj/' + arch +
       '-4.8.2-release-win32-sjlj-rt_v3-rev4.7z/download') as f:
-    with timer.print_time("Installing MinGW" + bits):
+    with ctxtimer.print_time("Installing MinGW" + bits):
       output = check_output([sevenzip, 'x', '-oC:\\', f])
       for line in output.split('\n'):
         if not line.startswith('Extracting '):

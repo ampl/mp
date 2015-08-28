@@ -2,7 +2,7 @@ import os, sys, time, timeit, util
 from nose2.tests._common import TestCase
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'support'))
-from timer import Timer, print_time
+from ctxtimer import Timer, print_time
 
 def do_something():
   time.sleep(0.01)

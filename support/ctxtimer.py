@@ -1,4 +1,4 @@
-# A with statement based timer.
+# A with statement context based timer.
 
 from __future__ import print_function
 from contextlib import contextmanager

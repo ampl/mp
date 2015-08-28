@@ -10,7 +10,7 @@ Options:
 
 from __future__ import print_function
 import fileutil, gzip, os, shutil, stat, subprocess
-import tarfile, tempfile, timer, urllib, zipfile
+import tarfile, tempfile, ctxtimer, urllib, zipfile
 from docopt import docopt
 from glob import glob
 from sets import Set
@@ -134,7 +134,7 @@ def prepare_unix_package(amplcml, ampl_demo_dir, kestrel, system):
     f.extractall(ampl_demo_dir)
 
 def package(basename, archive_format, package_dir):
-  with timer.print_time('Creating', basename, 'package'):
+  with ctxtimer.print_time('Creating', basename, 'package'):
     if archive_format == 'gztar':
       # Use command-line tar instead of shutil.make_archive because the
       # latter is too slow.
