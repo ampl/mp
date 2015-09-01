@@ -33,7 +33,6 @@
 #include "mp/error.h"
 #include "mp/nl.h"
 #include "mp/problem.h"
-#include "mp/nl.h"
 
 namespace mp {
 
