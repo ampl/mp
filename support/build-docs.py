@@ -1,20 +1,23 @@
 #!/usr/bin/env python
-# Build documentation
+"""Build documentation.
+
+Usage: build-docs.py [extract-docs <file>]
+"""
 
 from __future__ import print_function
 import mmap, os, re, shutil
 from subprocess import call, check_call, check_output, Popen, PIPE
+from docopt import docopt
 
 mp_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
-def extract_docs(output_dir):
+def extract_docs(filename, output_dir):
   "Extract the AMPLGSL documentation from the code."
   output = None
-  dir = os.path.dirname(__file__)
   output_dir = os.path.join(output_dir, 'amplgsl')
   if not os.path.exists(output_dir):
     os.mkdir(output_dir)
-  with open(os.path.join(dir, '../src/gsl/amplgsl.c'), 'r+b') as input:
+  with open(filename, 'r+b') as input:
     map = mmap.mmap(input.fileno(), 0)
     for i in re.finditer(r'/\*\*(.*?)\*/', map, re.DOTALL):
       s = re.sub(r'\n +\* ?', r'\n', i.group(1))
@@ -85,7 +88,8 @@ def build_docs(workdir, doxygen='doxygen'):
     else:
       os.remove(path)
   # Build docs.
-  extract_docs(build_dir)
+  dir = os.path.dirname(__file__)
+  extract_docs(os.path.join(dir, '../src/gsl/amplgsl.c'), build_dir)
   p = Popen([doxygen, '-'], stdin=PIPE, cwd=build_dir)
   p.communicate(input=r'''
       PROJECT_NAME      = MP
@@ -114,4 +118,8 @@ def build_docs(workdir, doxygen='doxygen'):
   return (returncode, repo_dir)
 
 if __name__ == '__main__':
-  build_docs('.')
+  args = docopt(__doc__)
+  if args['extract-docs']:
+    extract_docs(args['<file>'], '.')
+  else:
+    build_docs('.')
