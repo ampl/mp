@@ -155,3 +155,105 @@ bool mp::Equal(LogicalExpr e1, LogicalExpr e2) {
     return false;
   return ExprComparator(e1).Visit(e2);
 }
+
+#ifdef MP_USE_HASH
+
+using std::size_t;
+using mp::internal::HashCombine;
+
+inline size_t HashCombine(size_t seed, mp::Reference r) {
+  return HashCombine<mp::Expr>(seed, r);
+}
+
+template <mp::expr::Kind FIRST, mp::expr::Kind LAST>
+inline size_t HashCombine(size_t seed, mp::BasicExpr<FIRST, LAST> e) {
+  return HashCombine<mp::Expr>(seed, e);
+}
+
+namespace {
+// Computes a hash value for an expression.
+class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
+ private:
+  static size_t Hash(Expr e) {
+    return HashCombine<int>(0, e.kind());
+  }
+
+  template <typename T>
+  static size_t Hash(Expr e, const T &value) {
+    return HashCombine(Hash(e), value);
+  }
+
+ public:
+  size_t VisitNumericConstant(NumericConstant c) { return Hash(c, c.value()); }
+  size_t VisitVariable(Variable v) { return Hash(v, v.index()); }
+  size_t VisitCommonExpr(CommonExpr e) { return Hash(e, e.index()); }
+
+  size_t VisitUnary(UnaryExpr e) { return Hash(e, e.arg()); }
+
+  template <typename E>
+  size_t VisitBinary(E e) { return HashCombine(Hash(e, e.lhs()), e.rhs()); }
+
+  template <typename E>
+  size_t VisitIf(E e) {
+    size_t hash = HashCombine(Hash(e), e.condition());
+    return HashCombine(HashCombine(hash, e.then_expr()), e.else_expr());
+  }
+
+  size_t VisitPLTerm(PLTerm e) {
+    size_t hash = Hash(e);
+    int num_breakpoints = e.num_breakpoints();
+    for (int i = 0; i < num_breakpoints; ++i) {
+      hash = HashCombine(hash, e.slope(i));
+      hash = HashCombine(hash, e.breakpoint(i));
+    }
+    hash = HashCombine(hash, e.slope(num_breakpoints));
+    return HashCombine(hash, e.arg());
+  }
+
+  size_t VisitCall(CallExpr e) {
+    // Function name is hashed as a pointer. This works because the function
+    // object is the same for all calls to the same function.
+    size_t hash = Hash(e, e.function().name());
+    for (int i = 0, n = e.num_args(); i < n; ++i)
+      hash = HashCombine(hash, e.arg(i));
+    return hash;
+  }
+
+  template <typename E>
+  size_t VisitVarArg(E e) {
+    size_t hash = Hash(e);
+    for (typename E::iterator i = e.begin(), end = e.end(); i != end; ++i)
+      hash = HashCombine(hash, *i);
+    return hash;
+  }
+
+  size_t VisitSum(SumExpr e) { return VisitVarArg(e); }
+  size_t VisitCount(CountExpr e) { return VisitVarArg(e); }
+  size_t VisitNumberOf(NumberOfExpr e) { return VisitVarArg(e); }
+  size_t VisitLogicalConstant(LogicalConstant c) { return Hash(c, c.value()); }
+  size_t VisitNot(NotExpr e) { return Hash(e, e.arg()); }
+  size_t VisitBinaryLogical(BinaryLogicalExpr e) { return VisitBinary(e); }
+  size_t VisitRelational(RelationalExpr e) { return VisitBinary(e); }
+
+  size_t VisitLogicalCount(LogicalCountExpr e) {
+    return HashCombine(Hash(e, e.lhs()), NumericExpr(e.rhs()));
+  }
+
+  size_t VisitImplication(ImplicationExpr e) { return VisitIf(e); }
+  size_t VisitIteratedLogical(IteratedLogicalExpr e) { return VisitVarArg(e); }
+  size_t VisitAllDiff(PairwiseExpr e) { return VisitVarArg(e); }
+
+  size_t VisitStringLiteral(StringLiteral s) {
+    size_t hash = Hash(s);
+    for (const char *value = s.value(); *value; ++value)
+      hash = HashCombine(hash, *value);
+    return hash;
+  }
+};
+}  // namespace
+
+size_t std::hash<mp::Expr>::operator()(mp::Expr expr) const {
+  return ExprHasher().Visit(expr);
+}
+
+#endif  // MP_USE_HASH

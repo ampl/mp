@@ -29,6 +29,7 @@
 using ::testing::_;
 using ::testing::Return;
 
+using mp::Expr;
 using mp::NumericExpr;
 using mp::LogicalExpr;
 using mp::ExprFactory;
@@ -59,7 +60,7 @@ class ExprTest : public ::testing::Test {
   }
 
   template <int N>
-  mp::CallExpr MakeCall(mp::Function f, NumericExpr (&args)[N]) {
+  mp::CallExpr MakeCall(mp::Function f, Expr (&args)[N]) {
     auto builder = factory_.BeginCall(f, N);
     for (int i = 0; i < N; ++i)
       builder.AddArg(args[i]);
@@ -75,7 +76,7 @@ class ExprTest : public ::testing::Test {
   }
 
   template <int N>
-  mp::SymbolicNumberOfExpr MakeSymbolicNumberOf(mp::Expr (&args)[N]) {
+  mp::SymbolicNumberOfExpr MakeSymbolicNumberOf(Expr (&args)[N]) {
     auto builder = factory_.BeginSymbolicNumberOf(N, args[0]);
     for (int i = 1; i < N; ++i)
       builder.AddArg(args[i]);
@@ -120,20 +121,20 @@ class ExprTest : public ::testing::Test {
 };
 
 TEST_F(ExprTest, Expr) {
-  mp::Expr e;
+  Expr e;
   EXPECT_TRUE(e == 0);
 }
 
 TEST_F(ExprTest, NumericExpr) {
   NumericExpr e;
   EXPECT_TRUE(e == 0);
-  (void)mp::Expr(e);
+  (void)Expr(e);
 }
 
 TEST_F(ExprTest, LogicalExpr) {
   LogicalExpr e;
   EXPECT_TRUE(e == 0);
-  (void)mp::Expr(e);
+  (void)Expr(e);
 }
 
 TEST_F(ExprTest, NumericConstant) {
@@ -335,7 +336,7 @@ TEST_F(ExprTest, ExprIterator) {
   enum {NUM_ARGS = 3};
   mp::Function f = factory_.AddFunction("foo", NUM_ARGS);
   ExprFactory::CallExprBuilder builder = factory_.BeginCall(f, NUM_ARGS);
-  mp::Expr args[NUM_ARGS] = {
+  Expr args[NUM_ARGS] = {
     factory_.MakeNumericConstant(11),
     factory_.MakeVariable(0),
     factory_.MakeNumericConstant(22)
@@ -576,7 +577,7 @@ TYPED_TEST(IteratedExprTest, Test) {
 TEST_F(ExprTest, StringLiteral) {
   mp::StringLiteral e;
   EXPECT_TRUE(e == 0);
-  (void)mp::Expr(e);
+  (void)Expr(e);
   const char STR[] = "abc\0def";
   e = factory_.MakeStringLiteral(fmt::StringRef(STR, sizeof(STR)));
   EXPECT_EQ(expr::STRING, e.kind());
@@ -587,10 +588,10 @@ TEST_F(ExprTest, StringLiteral) {
 TEST_F(ExprTest, SymbolicIfExpr) {
   mp::SymbolicIfExpr e;
   EXPECT_TRUE(e == 0);
-  (void)mp::Expr(e);
+  (void)Expr(e);
   auto condition = factory_.MakeLogicalConstant(true);
-  mp::Expr then_expr = factory_.MakeStringLiteral("a");
-  mp::Expr else_expr = factory_.MakeVariable(0);
+  Expr then_expr = factory_.MakeStringLiteral("a");
+  Expr else_expr = factory_.MakeVariable(0);
   e = factory_.MakeSymbolicIf(condition, then_expr, else_expr);
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::IFSYM, e.kind());
@@ -600,13 +601,13 @@ TEST_F(ExprTest, SymbolicIfExpr) {
   EXPECT_ASSERT(factory_.MakeSymbolicIf(LogicalExpr(),
                                         then_expr, else_expr),
                 "invalid argument");
-  EXPECT_ASSERT(factory_.MakeSymbolicIf(condition, mp::Expr(), else_expr),
+  EXPECT_ASSERT(factory_.MakeSymbolicIf(condition, Expr(), else_expr),
                 "invalid argument");
-  factory_.MakeSymbolicIf(condition, then_expr, mp::Expr());
+  factory_.MakeSymbolicIf(condition, then_expr, Expr());
 }
 
 TEST_F(ExprTest, UncheckedCast) {
-  mp::Expr e = factory_.MakeNumericConstant(42);
+  Expr e = factory_.MakeNumericConstant(42);
   mp::internal::UncheckedCast<NumericExpr>(e);
   mp::NumericConstant n = mp::internal::UncheckedCast<mp::NumericConstant>(e);
   EXPECT_EQ(42, n.value());
@@ -614,7 +615,7 @@ TEST_F(ExprTest, UncheckedCast) {
 }
 
 TEST_F(ExprTest, Cast) {
-  mp::Expr e = factory_.MakeNumericConstant(42);
+  Expr e = factory_.MakeNumericConstant(42);
   EXPECT_EQ(e, mp::Cast<NumericExpr>(e));
   mp::NumericConstant n = mp::Cast<mp::NumericConstant>(e);
   EXPECT_EQ(42, n.value());
@@ -646,8 +647,8 @@ TEST_F(ExprTest, InvalidNumberOfExprArg) {
 }
 
 TEST_F(ExprTest, SymbolicNumberOfExpr) {
-  mp::Expr arg0 = factory_.MakeStringLiteral("abc");
-  mp::Expr arg1 = factory_.MakeStringLiteral("def");
+  Expr arg0 = factory_.MakeStringLiteral("abc");
+  Expr arg1 = factory_.MakeStringLiteral("def");
   auto builder = factory_.BeginSymbolicNumberOf(2, arg0);
   builder.AddArg(arg1);
   auto expr = factory_.EndSymbolicNumberOf(builder);
@@ -657,7 +658,7 @@ TEST_F(ExprTest, SymbolicNumberOfExpr) {
 }
 
 TEST_F(ExprTest, InvalidSymbolicNumberOfExprArg) {
-  EXPECT_ASSERT(factory_.BeginSymbolicNumberOf(1, mp::Expr()),
+  EXPECT_ASSERT(factory_.BeginSymbolicNumberOf(1, Expr()),
       "invalid argument");
 }
 
@@ -673,11 +674,11 @@ TEST_F(ExprTest, ConversionToExpr) {
   // as illustrated in the following example:
   //   auto n = factory_.MakeNumericConstant(42);
   //   auto u = MakeUnary(expr::ABS, n);
-  //   mp::Expr &e = n;
+  //   Expr &e = n;
   //   e = u;
   struct Test {
-    static void f(mp::Expr) {}
-    static void f(mp::Expr &) {}
+    static void f(Expr) {}
+    static void f(Expr &) {}
   };
   auto n = factory_.MakeNumericConstant(42);
   Test::f(n);
@@ -754,18 +755,18 @@ TEST_F(ExprTest, EqualPLTerm) {
 }
 
 TEST_F(ExprTest, EqualCallExpr) {
-  NumericExpr args1[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  Expr args1[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
   // args2 is used to make sure that Equal compares expressions structurally
   // instead of comparing pointers; don't replace with args1.
-  NumericExpr args2[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  Expr args2[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
   mp::Function f1 = factory_.AddFunction("f1", 0);
   NumericExpr e = MakeCall(f1, args1);
   EXPECT_TRUE(Equal(e, MakeCall(f1, args2)));
-  NumericExpr args3[] = {MakeVariable(0), MakeVariable(1)};
+  Expr args3[] = {MakeVariable(0), MakeVariable(1)};
   EXPECT_FALSE(Equal(e, MakeCall(f1, args3)));
   EXPECT_FALSE(Equal(MakeCall(f1, args3), MakeCall(f1, args1)));
   EXPECT_FALSE(Equal(e, MakeCall(factory_.AddFunction("f2", 0), args1)));
-  NumericExpr args4[] = {MakeVariable(0), MakeVariable(1), MakeConst(0)};
+  Expr args4[] = {MakeVariable(0), MakeVariable(1), MakeConst(0)};
   EXPECT_FALSE(Equal(e, MakeCall(f1, args4)));
   EXPECT_FALSE(Equal(e, MakeConst(42)));
 }
@@ -812,7 +813,7 @@ TEST_F(ExprTest, EqualNumberOfExpr) {
 
 // TODO
 //TEST_F(ExprTest, EqualSymbolicNumberOfExpr) {
-//  mp::Expr args[] = {factory_.MakeStringLiteral("test")};
+//  Expr args[] = {factory_.MakeStringLiteral("test")};
 //  EXPECT_TRUE(Equal(MakeSymbolicNumberOf(args), MakeSymbolicNumberOf(args)));
 //}
 
@@ -928,3 +929,222 @@ TEST(ExprFactoryTest, IntOverflow) {
   EXPECT_THROW(f.MakeStringLiteral(fmt::StringRef("s", int_max + 1)),
                mp::OverflowError);
 }
+
+#ifdef MP_USE_HASH
+
+using mp::internal::HashCombine;
+typedef std::hash<Expr> ExprHash;
+
+TEST_F(ExprTest, HashNumericConstant) {
+  size_t hash = HashCombine<int>(0, expr::NUMBER);
+  hash = HashCombine(hash, 42.0);
+  EXPECT_EQ(hash, ExprHash()(MakeConst(42)));
+}
+
+TEST_F(ExprTest, HashVariable) {
+  size_t hash = HashCombine<int>(0, expr::VARIABLE);
+  hash = HashCombine(hash, 42);
+  EXPECT_EQ(hash, ExprHash()(MakeVariable(42)));
+}
+
+template <typename Arg, expr::Kind FIRST, expr::Kind LAST>
+void CheckHash(mp::BasicUnaryExpr<Arg, FIRST, LAST> e) {
+  size_t hash = HashCombine<int>(0, e.kind());
+  hash = HashCombine<Expr>(hash, e.arg());
+  EXPECT_EQ(hash, ExprHash()(e));
+}
+
+TEST_F(ExprTest, HashUnaryExpr) {
+  CheckHash(factory_.MakeUnary(expr::MINUS, MakeVariable(0)));
+}
+
+template <typename ExprType>
+void CheckHashBinary(ExprType e) {
+  size_t hash = HashCombine<int>(0, e.kind());
+  hash = HashCombine<Expr>(hash, e.lhs());
+  hash = HashCombine<Expr>(hash, e.rhs());
+  EXPECT_EQ(hash, ExprHash()(e));
+}
+
+template <typename Arg, expr::Kind FIRST, expr::Kind LAST>
+void CheckHash(mp::BasicBinaryExpr<Arg, FIRST, LAST> e) {
+  CheckHashBinary(e);
+}
+
+TEST_F(ExprTest, HashBinaryExpr) {
+  CheckHash(factory_.MakeBinary(expr::ADD, MakeVariable(9), MakeConst(2)));
+}
+
+template <typename Arg, expr::Kind KIND>
+void CheckHash(mp::BasicIfExpr<Arg, KIND> e) {
+  size_t hash = HashCombine<int>(0, e.kind());
+  hash = HashCombine<Expr>(hash, e.condition());
+  hash = HashCombine<Expr>(hash, e.then_expr());
+  hash = HashCombine<Expr>(hash, e.else_expr());
+  EXPECT_EQ(hash, ExprHash()(e));
+}
+
+TEST_F(ExprTest, HashIfExpr) {
+  CheckHash(factory_.MakeIf(l0, MakeVariable(2), MakeConst(1)));
+}
+
+TEST_F(ExprTest, HashPLTerm) {
+  size_t hash = HashCombine<int>(0, expr::PLTERM);
+  enum {NUM_BREAKPOINTS = 2};
+  double breakpoints[NUM_BREAKPOINTS] = {5, 10};
+  double slopes[NUM_BREAKPOINTS + 1] = {-1, 0, 1};
+  for (size_t i = 0; i < NUM_BREAKPOINTS; ++i) {
+    hash = HashCombine(hash, slopes[i]);
+    hash = HashCombine(hash, breakpoints[i]);
+  }
+  hash = HashCombine(hash, slopes[NUM_BREAKPOINTS]);
+  auto var = factory_.MakeVariable(9);
+  hash = HashCombine<Expr>(hash, var);
+  EXPECT_EQ(hash, ExprHash()(
+    MakePLTerm(NUM_BREAKPOINTS, breakpoints, slopes, var)));
+}
+
+TEST_F(ExprTest, HashCallExpr) {
+  mp::Reference var = MakeVariable(9);
+  mp::NumericExpr n1 = MakeConst(1);
+  Expr args[2] = {n1, var};
+  mp::Function f = factory_.AddFunction("foo", 2, mp::func::SYMBOLIC);
+  size_t hash = HashCombine<int>(0, expr::CALL);
+  hash = HashCombine(hash, f.name());
+  hash = HashCombine<Expr>(hash, n1);
+  hash = HashCombine<Expr>(hash, var);
+  EXPECT_EQ(hash, ExprHash()(MakeCall(f, args)));
+}
+
+template <typename ExprType>
+void CheckHash(ExprType e) {
+  size_t hash = HashCombine<int>(0, e.kind());
+  for (typename ExprType::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    hash = HashCombine<Expr>(hash, *i);
+  EXPECT_EQ(hash, ExprHash()(e));
+}
+
+TEST_F(ExprTest, HashNumericVarArgExpr) {
+  // Test computing hash for numeric expressions with abitrary numeric
+  // arguments: VarArgExpr, SumExpr, NumberOfExpr.
+  NumericExpr args[] = { MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  CheckHash(MakeIterated(expr::MIN, args));
+  CheckHash(MakeIterated(expr::SUM, args));
+  CheckHash(MakeIterated(expr::NUMBEROF, args));
+}
+
+TEST_F(ExprTest, HashCountExpr) {
+  LogicalExpr args[] = {l0, l1, l1};
+  CheckHash(MakeCount(args));
+}
+
+TEST_F(ExprTest, HashLogicalConstant) {
+  size_t hash = HashCombine<int>(0, expr::BOOL);
+  hash = HashCombine(hash, true);
+  EXPECT_EQ(hash, ExprHash()(l1));
+}
+
+TEST_F(ExprTest, HashNotExpr) {
+  CheckHash(factory_.MakeNot(l1));
+}
+
+TEST_F(ExprTest, HashBinaryLogicalExpr) {
+  CheckHash(factory_.MakeBinaryLogical(expr::OR, l1, l0));
+}
+
+TEST_F(ExprTest, HashRelationalExpr) {
+  CheckHash(factory_.MakeRelational(expr::LT, MakeVariable(6), MakeConst(2)));
+}
+
+TEST_F(ExprTest, HashLogicalCountExpr) {
+  LogicalExpr args[] = {l0, l1};
+  CheckHashBinary(
+        factory_.MakeLogicalCount(expr::ATMOST, MakeConst(1), MakeCount(args)));
+}
+
+TEST_F(ExprTest, HashImplicationExpr) {
+  CheckHash(factory_.MakeImplication(
+              l1, l0, factory_.MakeLogicalConstant(true)));
+}
+
+TEST_F(ExprTest, HashIteratedLogical) {
+  LogicalExpr args[] = {l0, l1, factory_.MakeLogicalConstant(false)};
+  CheckHash(MakeIteratedLogical(expr::EXISTS, args));
+}
+
+TEST_F(ExprTest, HashAllDiff) {
+  NumericExpr args[] = {MakeConst(1), MakeConst(2), MakeVariable(4)};
+  CheckHash(MakePairwise(expr::ALLDIFF, args));
+}
+
+struct TestString {
+  const char *str;
+};
+
+namespace std {
+template <>
+struct hash<TestString> {
+  std::size_t operator()(TestString ts) const {
+    size_t hash = mp::internal::HashCombine<int>(0, expr::STRING);
+    for (const char *s = ts.str; *s; ++s)
+      hash = mp::internal::HashCombine(hash, *s);
+    return hash;
+  }
+};
+}
+
+TEST_F(ExprTest, HashStringLiteral) {
+  // String literal can only occur as a function argument, so test
+  // it as a part of a call expression.
+  Expr args[] = {factory_.MakeStringLiteral("test")};
+  mp::Function f = factory_.AddFunction("foo", 1, mp::func::SYMBOLIC);
+  size_t hash = HashCombine<int>(0, expr::CALL);
+  hash = HashCombine(hash, f.name());
+  TestString ts = {"test"};
+  hash = HashCombine(hash, ts);
+  EXPECT_EQ(hash, ExprHash()(MakeCall(f, args)));
+}
+
+// TODO
+/*TEST_F(ExprTest, HashNumberOfArgs) {
+  size_t hash = HashCombine<NumericExpr>(0, MakeVariable(11));
+  hash = HashCombine<NumericExpr>(hash, MakeConst(22));
+  NumericExpr args[] = {MakeConst(42), MakeVariable(11), MakeConst(22)};
+  EXPECT_EQ(hash, mp::internal::HashNumberOfArgs()(
+              builder.MakeNumberOf(args)));
+}
+
+TEST_F(ExprTest, EqualNumberOfArgs) {
+  using asl::internal::EqualNumberOfArgs;
+  NumericExpr args1[] = {MakeConst(0), MakeVariable(11), MakeConst(22)};
+  NumericExpr args2[] = {MakeConst(1), MakeVariable(11), MakeConst(22)};
+  EXPECT_TRUE(EqualNumberOfArgs()(
+                builder.MakeNumberOf(args1), builder.MakeNumberOf(args2)));
+  NumericExpr args3[] = {MakeConst(1), MakeVariable(11)};
+  EXPECT_FALSE(EqualNumberOfArgs()(
+                 builder.MakeNumberOf(args1), builder.MakeNumberOf(args3)));
+  NumericExpr args4[] = {MakeConst(1), MakeVariable(11), MakeConst(33)};
+  EXPECT_FALSE(EqualNumberOfArgs()(
+                 builder.MakeNumberOf(args1), builder.MakeNumberOf(args4)));
+}
+
+struct TestNumberOf {
+  NumberOfExpr expr;
+
+  TestNumberOf(NumberOfExpr e) : expr(e) {}
+};
+
+TEST_F(ExprTest, MatchNumberOfArgs) {
+  using asl::internal::MatchNumberOfArgs;
+  NumericExpr args1[] = {MakeConst(1), MakeVariable(11), MakeConst(22)};
+  NumericExpr args2[] = {MakeConst(0), MakeVariable(11), MakeConst(22)};
+  EXPECT_TRUE(MatchNumberOfArgs<TestNumberOf>(
+      builder.MakeNumberOf(args1))(TestNumberOf(builder.MakeNumberOf(args2))));
+  NumericExpr args3[] = {MakeConst(1), MakeVariable(11)};
+  EXPECT_FALSE(MatchNumberOfArgs<TestNumberOf>(
+      builder.MakeNumberOf(args3))(TestNumberOf(builder.MakeNumberOf(args2))));
+  NumericExpr args4[] = {MakeConst(1), MakeVariable(11), MakeConst(33)};
+  EXPECT_FALSE(MatchNumberOfArgs<TestNumberOf>(
+      builder.MakeNumberOf(args4))(TestNumberOf(builder.MakeNumberOf(args2))));
+}*/
+#endif

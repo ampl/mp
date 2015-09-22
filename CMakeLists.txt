@@ -311,6 +311,13 @@ if (HAVE_ATOMIC)
   target_compile_definitions(mp PUBLIC MP_USE_ATOMIC)
 endif ()
 
+check_cxx_source_compiles(
+  "#include <functional>
+  int main() { std::hash<int> h; }" HAVE_HASH)
+if (HAVE_HASH)
+  target_compile_definitions(mp PUBLIC MP_USE_HASH)
+endif ()
+
 # Link with librt for clock_gettime (Linux on i386).
 find_library(RT_LIBRARY rt)
 if (RT_LIBRARY)

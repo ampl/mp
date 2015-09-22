@@ -23,10 +23,6 @@
 #ifndef MP_ASLEXPR_H_
 #define MP_ASLEXPR_H_
 
-#ifdef MP_USE_UNORDERED_MAP
-# include <unordered_map>
-#endif
-
 #include <cassert>
 #include <cstddef>
 #include <algorithm>
@@ -183,19 +179,6 @@ inline bool Is<asl::LogicalConstant>(expr::Kind k) {
 }
 }
 }  // namespace mp
-
-#ifdef MP_USE_UNORDERED_MAP
-namespace std {
-template <>
-struct hash<mp::asl::NumericExpr> {
-  std::size_t operator()(mp::asl::NumericExpr e) const;
-};
-template <>
-struct hash<mp::asl::LogicalExpr> {
-  std::size_t operator()(mp::asl::LogicalExpr e) const;
-};
-}
-#endif
 
 namespace mp {
 
@@ -834,18 +817,6 @@ struct ExprTypes {
     return mp::internal::UncheckedCast<ExprType>(e);
   }
 };
-
-#ifdef MP_USE_UNORDERED_MAP
-template <class T>
-inline std::size_t HashCombine(std::size_t seed, const T &v) {
-  return seed ^ (std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
-}
-
-class HashNumberOfArgs {
- public:
-  std::size_t operator()(NumberOfExpr e) const;
-};
-#endif
 }  // namespace internal
 }  // namespace asl
 }  // namespace mp

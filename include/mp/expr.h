@@ -27,6 +27,10 @@
 #include <memory>  // for std::allocator
 #include <vector>
 
+#ifdef MP_USE_HASH
+# include <functional>
+#endif
+
 #include "mp/common.h"
 #include "mp/error.h"
 #include "mp/format.h"
@@ -1058,5 +1062,24 @@ inline bool IsZero(NumericExpr e) {
 bool Equal(NumericExpr e1, NumericExpr e2);
 bool Equal(LogicalExpr e1, LogicalExpr e2);
 }  // namespace mp
+
+#ifdef MP_USE_HASH
+namespace mp {
+namespace internal {
+template <class T>
+inline std::size_t HashCombine(std::size_t seed, const T &v) {
+  return seed ^ (std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+}
+}
+}
+namespace std {
+template <>
+struct hash<mp::Expr> {
+  std::size_t operator()(mp::Expr e) const;
+};
+}
+#endif
+
+// TODO: use memory pool allocator
 
 #endif  // MP_EXPR_H_
