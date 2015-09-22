@@ -1059,8 +1059,7 @@ inline bool IsZero(NumericExpr e) {
 }
 
 // Recursively compares two expressions and returns true if they are equal.
-bool Equal(NumericExpr e1, NumericExpr e2);
-bool Equal(LogicalExpr e1, LogicalExpr e2);
+bool Equal(Expr e1, Expr e2);
 }  // namespace mp
 
 #ifdef MP_USE_HASH

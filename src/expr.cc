@@ -144,13 +144,7 @@ void mp::format(fmt::BasicFormatter<char> &f, const char *&, NumericExpr e) {
   f.writer() << fmt::StringRef(writer.data(), writer.size());
 }
 
-bool mp::Equal(NumericExpr e1, NumericExpr e2) {
-  if (e1.kind() != e2.kind())
-    return false;
-  return ExprComparator(e1).Visit(e2);
-}
-
-bool mp::Equal(LogicalExpr e1, LogicalExpr e2) {
+bool mp::Equal(Expr e1, Expr e2) {
   if (e1.kind() != e2.kind())
     return false;
   return ExprComparator(e1).Visit(e2);
