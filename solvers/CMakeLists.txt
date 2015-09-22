@@ -104,9 +104,9 @@ function(add_ampl_solver name)
   target_compile_options(${static_lib} PUBLIC ${definitions})
 
   if (use_dll_runtime)
-    target_link_libraries(${static_lib} PUBLIC asl-dynrt)
+    target_link_libraries(${static_lib} PUBLIC mp-dynrt)
   else ()
-    target_link_libraries(${static_lib} PUBLIC asl)
+    target_link_libraries(${static_lib} PUBLIC mp)
   endif ()
 
   # Add a solver shared library.

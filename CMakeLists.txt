@@ -213,7 +213,7 @@ function (add_mp_library name)
   add_library(${name} ${libtype}
     ${add_mp_library_UNPARSED_ARGUMENTS} ${objects})
   target_compile_definitions(${name}
-    PRIVATE ${add_mp_library_COMPILE_DEFINITIONS})
+    PUBLIC ${add_mp_library_COMPILE_DEFINITIONS})
   target_include_directories(${name}
     PUBLIC include ${add_mp_library_INCLUDE_DIRECTORIES})
   if (add_mp_library_DEPENDS)
@@ -225,7 +225,7 @@ function (add_mp_library name)
       ${add_mp_library_UNPARSED_ARGUMENTS} ${dynrt-objects})
     target_compile_options(${name}-dynrt PUBLIC /MD$<$<CONFIG:Debug>:d>)
     target_compile_definitions(${name}-dynrt
-      PRIVATE ${add_mp_library_COMPILE_DEFINITIONS})
+      PUBLIC ${add_mp_library_COMPILE_DEFINITIONS})
     target_include_directories(${name}-dynrt
       PUBLIC ${add_mp_library_INCLUDE_DIRECTORIES})
     if (add_mp_library_DEPENDS)
