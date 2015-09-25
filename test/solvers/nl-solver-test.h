@@ -1428,9 +1428,9 @@ TEST_F(NLSolverTest, IgnoreObjNo) {
   EXPECT_EQ(4, Solve(pb).obj_value());
 }
 
-TEST_F(NLSolverTest, CreateSolver) {
-  EXPECT_STREQ(solver_.name(), mp::CreateSolver(0)->name());
-}
+//TEST_F(NLSolverTest, CreateSolver) {
+//  EXPECT_STREQ(solver_.name(), mp::CreateSolver(0)->name());
+//}
 
 // Makes a problem for testing multiple objectives support and solves it.
 template <typename Solver>
