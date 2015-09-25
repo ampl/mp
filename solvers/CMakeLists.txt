@@ -187,10 +187,12 @@ add_subdirectory(path)
 
 add_ampl_solver(smpswriter)
 
-add_ampl_solver(ssdsolver LIBRARIES amplilogcp-static)
-if (TARGET ssdsolver)
-  add_ampl_library(ssd ssdsolver/ssd.cc)
-  target_include_directories(ssd PRIVATE .)
+if (TARGET ilogcp)
+  add_ampl_solver(ssdsolver LIBRARIES amplilogcp-static)
+  if (TARGET ssdsolver)
+    add_ampl_library(ssd ssdsolver/ssd.cc)
+    target_include_directories(ssd PRIVATE .)
+  endif ()
 endif ()
 
 add_ampl_solver(sulum)
