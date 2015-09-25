@@ -95,7 +95,7 @@ function(add_ampl_solver name)
   endif ()
 
   # Add a solver static library to be linked with the shared library and
-  # the exectuable.
+  # the executable.
   set(static_lib ampl${name}-static)
   add_library(${static_lib} STATIC ${sources})
   target_include_directories(${static_lib}
