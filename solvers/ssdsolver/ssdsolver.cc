@@ -22,13 +22,12 @@
  */
 
 #include "ssdsolver/ssdsolver.h"
-#include "asl/aslproblem.h"
+#include "mp/problem.h"
+#include "ilogcp/ilogcp.h"
 
 #ifdef _WIN32
 # define putenv _putenv
 #endif
-
-using namespace mp::asl;
 
 namespace {
 
@@ -46,10 +45,10 @@ struct ValueLess {
 
 namespace mp {
 
-SSDSolver::SSDSolver() : ASLSolver("ssdsolver", 0, SSDSOLVER_VERSION),
+SSDSolver::SSDSolver()
+: SolverImpl<Problem>("ssdsolver", 0, SSDSOLVER_VERSION),
   output_(false), scaled_(false), abs_tolerance_(1e-5), solver_name_("cplex") {
   set_version("SSD Solver");
-  set_read_flags(ASLProblem::READ_INITIAL_VALUES);
   AddIntOption("outlev", "0 or 1 (default 0):  Whether to print solution log.",
       &SSDSolver::GetBoolOption, &SSDSolver::SetBoolOption, &output_);
   AddIntOption("scaled", "0 or 1 (default 0):  Whether to use a scaled model.",
@@ -60,22 +59,22 @@ SSDSolver::SSDSolver() : ASLSolver("ssdsolver", 0, SSDSOLVER_VERSION),
       &SSDSolver::GetSolverName, &SSDSolver::SetSolverName);
 }
 
-void SSDSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
-  asl::Function ssd_uniform;
+void SSDSolver::Solve(Problem &p, SolutionHandler &outer_sh) {
+  Function ssd_uniform;
   int num_scenarios = p.num_logical_cons();
   int num_vars = p.num_vars();
   SSDExtractor extractor(num_scenarios, num_vars);
   for (int i = 0; i < num_scenarios; ++i) {
-    asl::LogicalExpr logical_expr = p.logical_con_expr(i);
-    asl::RelationalExpr rel_expr = asl::Cast<asl::RelationalExpr>(logical_expr);
+    LogicalExpr logical_expr = p.logical_con(i).expr();
+    RelationalExpr rel_expr = Cast<RelationalExpr>(logical_expr);
     if (!rel_expr || rel_expr.kind() != expr::NE ||
-        asl::Cast<asl::NumericConstant>(rel_expr.rhs()).value() != 0) {
+        Cast<NumericConstant>(rel_expr.rhs()).value() != 0) {
       throw MakeUnsupportedError(str(logical_expr.kind()));
     }
-    asl::CallExpr call = asl::Cast<asl::CallExpr>(rel_expr.lhs());
+    CallExpr call = Cast<CallExpr>(rel_expr.lhs());
     if (!call)
       throw MakeUnsupportedError(str(rel_expr.lhs().kind()));
-    asl::Function f = call.function();
+    Function f = call.function();
     if (f == ssd_uniform)
       ; // Do nothing.
     else if (!ssd_uniform && std::strcmp(f.name(), "ssd_uniform") == 0)
@@ -88,10 +87,9 @@ void SSDSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   if (p.num_objs() != 0)
     throw Error("SSD solver doesn't support user-defined objectives");
 
-  ProblemChanges pc(p);
-  int dominance_var = pc.AddVar(-Infinity, Infinity);
-  double coef = 1;
-  pc.AddObj(obj::MAX, 1, &coef, &dominance_var);
+  double inf = std::numeric_limits<double>::infinity();
+  int dominance_var = p.AddVar(-inf, inf).index();
+  p.AddObj(obj::MAX, 1).AddTerm(1, dominance_var);
 
   // Compute the tails of the reference distribution.
   std::vector<double> ref_tails(extractor.rhs());
@@ -99,22 +97,35 @@ void SSDSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
   for (int i = 1; i < num_scenarios; ++i)
     ref_tails[i] += ref_tails[i - 1];
 
+  struct SSDSolutionHandler : BasicSolutionHandler {
+    int num_vars;
+    int status;
+    std::vector<double> solution;
+    explicit SSDSolutionHandler(int num_vars) : num_vars(num_vars), status(0) {}
+
+    void HandleSolution(int status, fmt::StringRef,
+        const double *values, const double *, double) {
+      this->status = status;
+      solution.assign(values, values + num_vars + 1);
+    }
+  } sh(p.num_vars());
+
   // Get the initial solution.
-  std::vector<double> solution;
-  if (const double *initial_values = p.initial_values())
-    solution.assign(initial_values, initial_values + num_vars);
-  else
-    solution.assign(num_vars, 0);
+  sh.solution.reserve(p.num_vars());
+  for (auto v: p.vars())
+    sh.solution.push_back(v.value());
 
   // Disable solver output.
   char solver_msg[] = "solver_msg=0";
   putenv(solver_msg);
 
+  // TODO: convert problem
+
   // Solve the problem using a cutting-plane method.
-  Solution sol;
-  double dominance_lb = -Infinity;
-  double dominance_ub =  Infinity;
-  std::vector<double> cut_coefs(num_vars + 1);
+  IlogCPSolver solver;
+  solver.SetStrOption("optimizer", "cplex");
+  double dominance_lb = -inf;
+  double dominance_ub =  inf;
   const double *coefs = extractor.coefs();
   std::vector<ValueScenario> tails(num_scenarios);
   int iteration = 1;
@@ -125,7 +136,7 @@ void SSDSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
       double value = 0;
       const double *row = coefs + i * num_vars;
       for (int j = 0; j < num_vars; ++j)
-        value += row[j] * solution[j];
+        value += row[j] * sh.solution[j];
       tails[i].value = value;
       tails[i].scenario = i;
     }
@@ -134,7 +145,7 @@ void SSDSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
       tails[i].value += tails[i - 1].value;
 
     // Compute violation and minimal tail difference.
-    double min_tail_diff = Infinity;
+    double min_tail_diff = inf;
     double max_rel_violation = 0;
     int max_rel_violation_scen = -1;
     for (int i = 0; i < num_scenarios; ++i) {
@@ -168,25 +179,24 @@ void SSDSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
     }
 
     // Add a cut.
+    Problem::LinearConBuilder cut =
+        p.AddCon(ref_tails[max_rel_violation_scen], inf, num_vars + 1);
     for (int i = 0; i < num_vars; ++i) {
       double coef = 0;
       for (int j = 0; j <= max_rel_violation_scen; ++j)
         coef += coefs[tails[j].scenario * num_vars + i];
-      cut_coefs[i] = coef;
+      cut.AddTerm(i, coef);
     }
-    cut_coefs[dominance_var] = -scaling;
-    pc.AddCon(&cut_coefs[0], ref_tails[max_rel_violation_scen], Infinity);
+    cut.AddTerm(dominance_var, -scaling);
 
-    p.Solve(solver_name_, sol, &pc, ASLProblem::IGNORE_FUNCTIONS);
-    if (sol.status() != sol::SOLVED) break;
-    dominance_ub = sol.value(dominance_var);
-    const double *values = sol.values();
-    solution.assign(values, values + num_vars);
+    solver.Solve(p, sh);
+    if (sh.status != sol::SOLVED) break;
+    dominance_ub = sh.solution[dominance_var];
   }
 
   // Convert solution status.
   const char *message = 0;
-  switch (sol.status()) {
+  switch (sh.status) {
   case sol::SOLVED:
     message = "optimal solution";
     break;
@@ -203,11 +213,11 @@ void SSDSolver::DoSolve(ASLProblem &p, SolutionHandler &sh) {
 
   fmt::MemoryWriter w;
   w.write("{}: {}", long_name(), message);
-  if (sol.status() == sol::SOLVED)
+  if (sh.status == sol::SOLVED)
     w.write("; dominance {}", dominance_ub);
   w.write("\n{} iteration(s)", iteration);
-  sh.HandleSolution(sol.solve_code(), w.c_str(), solution.data(), 0, 0);
+  outer_sh.HandleSolution(sh.status, w.c_str(), &sh.solution[0], 0, 0);
 }
 
-SolverPtr CreateSolver(const char *) { return SolverPtr(new SSDSolver()); }
+SolverPtr create_ssdsolver(const char *) { return SolverPtr(new SSDSolver()); }
 }

@@ -768,5 +768,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   }
 }
 
-SolverPtr CreateSolver(const char *) { return SolverPtr(new LocalSolver()); }
+SolverPtr create_localsolver(const char *) {
+  return SolverPtr(new LocalSolver());
+}
 }  // namespace mp

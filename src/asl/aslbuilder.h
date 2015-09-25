@@ -257,7 +257,6 @@ class ASLBuilder {
     own_asl_ = true;
     flags_ = proxy.flags_ | ASL_STANDARD_OPCODES | ASL_allow_CLP;
   }
-  ASLBuilder(ASLSolver &s, fmt::StringRef stub);
   ~ASLBuilder();
 
   // Returns a built problem via proxy. No builder methods other than

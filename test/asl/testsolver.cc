@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "asl/aslsolver.h"
+#include "mp/solver.h"
 
 #undef getenv
 
@@ -29,9 +29,9 @@
 
 namespace mp {
 
-class TestSolver : public ASLSolver {
+class TestSolver : public SolverImpl<TestSolver> {
  protected:
-  void DoSolve(ASLProblem &, SolutionHandler &) {}
+  void Solve(Problem &, SolutionHandler &) {}
 
   std::string GetOption(const SolverOption &) const { return ""; }
   void SetOption(const SolverOption &, fmt::StringRef ) {
@@ -39,7 +39,7 @@ class TestSolver : public ASLSolver {
   }
 
  public:
-  TestSolver() : ASLSolver("testsolver") {
+  TestSolver() : SolverImpl("testsolver") {
     set_option_header("Options rock!");
     AddStrOption("opt1", "desc1",
         &TestSolver::GetOption, &TestSolver::SetOption);
@@ -53,7 +53,7 @@ class TestSolver : public ASLSolver {
   }
 };
 
-SolverPtr CreateSolver(const char *options) {
+SolverPtr create_testsolver(const char *options) {
   if (options)
     throw std::runtime_error("epic fail");
   return SolverPtr(new TestSolver());

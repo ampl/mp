@@ -1380,12 +1380,6 @@ typedef std::unique_ptr<Solver> SolverPtr;
 typedef std::auto_ptr<Solver> SolverPtr;
 inline SolverPtr move(SolverPtr p) { return p; }
 #endif
-
-// Implement this function in your code returning a new concrete solver object.
-// options: Solver initialization options.
-// Example:
-//   SolverPtr CreateSolver(const char *) { return SolverPtr(new MySolver()); }
-SolverPtr CreateSolver(const char *options);
 }  // namespace mp
 
 #endif  // MP_SOLVER_H_

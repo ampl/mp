@@ -26,15 +26,15 @@
 
 #include <vector>
 
-#include "asl/aslexpr-visitor.h"
-#include "asl/aslsolver.h"
+#include "mp/expr-visitor.h"
+#include "mp/solver.h"
 
 #define SSDSOLVER_VERSION 20130226
 
 namespace mp {
 
 // Expression visitor that extracts SSD constraints.
-class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void> {
+class SSDExtractor : public ExprVisitor<SSDExtractor, void> {
  private:
   // A matrix of variable coefficients in the SSD constraint with one
   // row per scenario and one column per variable. The matrix is stored in
@@ -54,29 +54,29 @@ class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void> {
   : coefs_(num_scenarios * num_vars), num_vars_(num_vars),
     con_index_(0), sign_(0), rhs_(num_scenarios) {}
 
-  void VisitMul(asl::BinaryExpr e) {
-    asl::NumericConstant coef = asl::Cast<asl::NumericConstant>(e.lhs());
-    asl::Reference var = asl::Cast<asl::Reference>(e.rhs());
+  void VisitMul(BinaryExpr e) {
+    NumericConstant coef = Cast<NumericConstant>(e.lhs());
+    Reference var = Cast<Reference>(e.rhs());
     if (!coef || !var)
       throw MakeUnsupportedError("nonlinear *");
     coefs_[con_index_ * num_vars_ + var.index()] = sign_ * coef.value();
   }
 
-  void VisitSum(asl::SumExpr e) {
-    for (asl::SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+  void VisitSum(SumExpr e) {
+    for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
       Visit(*i);
   }
 
-  void VisitNumericConstant(asl::NumericConstant n) {
+  void VisitNumericConstant(NumericConstant n) {
     rhs_[con_index_] -= sign_ * n.value();
   }
 
-  void Extract(asl::CallExpr call) {
+  void Extract(CallExpr call) {
     assert(call.num_args() == 2);
     sign_ = 1;
-    Visit(asl::Cast<asl::NumericExpr>(call.arg(0)));
+    Visit(Cast<NumericExpr>(call.arg(0)));
     sign_ = -1;
-    Visit(asl::Cast<asl::NumericExpr>(call.arg(1)));
+    Visit(Cast<NumericExpr>(call.arg(1)));
     ++con_index_;
   }
 
@@ -84,7 +84,7 @@ class SSDExtractor : public asl::ExprVisitor<SSDExtractor, void> {
   const std::vector<double> &rhs() const { return rhs_; }
 };
 
-class SSDSolver : public ASLSolver {
+class SSDSolver : public SolverImpl<Problem> {
  private:
   bool output_;
   bool scaled_;
@@ -110,11 +110,10 @@ class SSDSolver : public ASLSolver {
     solver_name_ = value.c_str();
   }
 
- protected:
-  void DoSolve(ASLProblem &p, SolutionHandler &sh);
-
  public:
   SSDSolver();
+
+  void Solve(Problem &p, SolutionHandler &sh);
 };
 }
 

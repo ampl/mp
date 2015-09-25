@@ -110,8 +110,10 @@ function(add_ampl_solver name)
   endif ()
 
   # Add a solver shared library.
-  add_library(ampl${name} SHARED ${PROJECT_SOURCE_DIR}/src/solver-c.cc)
-  target_link_libraries(ampl${name} PRIVATE ${static_lib})
+  set(shared_lib ampl${name})
+  add_library(${shared_lib} SHARED ${PROJECT_SOURCE_DIR}/src/solver-c.cc)
+  target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name})
+  target_link_libraries(${shared_lib} PRIVATE ${static_lib})
 
   # Add a solver executable.
   add_executable(${name} ${dir}main.cc)
@@ -185,7 +187,7 @@ add_subdirectory(path)
 
 add_ampl_solver(smpswriter)
 
-add_ampl_solver(ssdsolver)
+add_ampl_solver(ssdsolver LIBRARIES amplilogcp-static)
 if (TARGET ssdsolver)
   add_ampl_library(ssd ssdsolver/ssd.cc)
   target_include_directories(ssd PRIVATE .)

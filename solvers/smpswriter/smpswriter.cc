@@ -529,5 +529,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
   }
 }
 
-SolverPtr CreateSolver(const char *) { return SolverPtr(new SMPSWriter()); }
+SolverPtr create_smpswriter(const char *) {
+  return SolverPtr(new SMPSWriter());
+}
 }  // namespace mp

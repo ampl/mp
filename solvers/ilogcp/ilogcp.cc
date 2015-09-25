@@ -786,5 +786,5 @@ void IlogCPSolver::Solve(Problem &p, SolutionHandler &sh) {
   }
 }
 
-SolverPtr CreateSolver(const char *) { return SolverPtr(new IlogCPSolver()); }
+SolverPtr create_ilogcp(const char *) { return SolverPtr(new IlogCPSolver()); }
 }

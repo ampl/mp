@@ -743,5 +743,5 @@ void JaCoPSolver::Solve(Problem &p, SolutionHandler &sh) {
   }
 }
 
-SolverPtr CreateSolver(const char *) { return SolverPtr(new JaCoPSolver()); }
+SolverPtr create_jacop(const char *) { return SolverPtr(new JaCoPSolver()); }
 }  // namespace mp

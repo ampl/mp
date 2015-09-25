@@ -868,5 +868,5 @@ void GecodeSolver::Solve(Problem &p, SolutionHandler &sh) {
   }
 }
 
-SolverPtr CreateSolver(const char *) { return SolverPtr(new GecodeSolver()); }
+SolverPtr create_gecode(const char *) { return SolverPtr(new GecodeSolver()); }
 }  // namespace mp

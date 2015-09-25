@@ -22,7 +22,6 @@
 
 #include "sulum/sulum.h"
 #include "mp/clock.h"
-#include "asl/aslproblem.h"
 
 #include <limits>
 
@@ -117,7 +116,6 @@ SulumSolver::SulumSolver()
   set_long_name(version);
   version[0] = 'S';
   set_version(version);
-  set_read_flags(ASL_want_A_vals | ASL_sep_U_arrays);
 
   Check(SlmMakeEnv(&env_));
   SlmReturn ret = SlmMakeModel(env_, &model_);
@@ -298,5 +296,5 @@ void SulumSolver::Solve(ColProblem &p, SolutionHandler &sh) {
   }
 }
 
-SolverPtr CreateSolver(const char *) { return SolverPtr(new SulumSolver()); }
+SolverPtr create_sulum(const char *) { return SolverPtr(new SulumSolver()); }
 }

@@ -29,6 +29,19 @@
 #include <exception>
 #include <memory>
 
+#define MP_CONCAT(a, b) FMT_CONCAT(a, b)
+#define MP_CREATE_SOLVER MP_CONCAT(create_, MP_SOLVER)
+
+namespace mp {
+// Implement this function in your code returning a new concrete solver object.
+// options: Solver initialization options.
+// Example:
+//   SolverPtr create_<solver>(const char *) {
+//     return SolverPtr(new MySolver());
+//   }
+SolverPtr MP_CREATE_SOLVER(const char *options);
+}
+
 extern "C" {
 
 // Flags for MP_Error.
@@ -46,7 +59,7 @@ struct MP_Solver {
   mp::SolverPtr solver;
   MP_Error last_error;
   explicit MP_Solver(const char *options)
-  : solver(mp::CreateSolver(options)) {
+  : solver(mp::MP_CREATE_SOLVER(options)) {
     last_error.message = 0;
     last_error.flags = 0;
   }
