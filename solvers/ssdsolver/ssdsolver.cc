@@ -112,8 +112,9 @@ void SSDSolver::Solve(Problem &p, SolutionHandler &outer_sh) {
 
   // Get the initial solution.
   sh.solution.reserve(p.num_vars());
-  for (auto v: p.vars())
-    sh.solution.push_back(v.value());
+  auto vars = p.vars();
+  for (auto i = vars.begin(), end = vars.end(); i != end; ++i)
+    sh.solution.push_back(i->value());
 
   // Disable solver output.
   char solver_msg[] = "solver_msg=0";
