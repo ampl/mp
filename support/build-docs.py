@@ -50,7 +50,12 @@ def pip_install(package, **kwargs):
 def build_docs(workdir, doxygen='doxygen'):
   # Create virtualenv.
   virtualenv_dir = os.path.join(workdir, 'virtualenv')
-  check_call(['virtualenv', virtualenv_dir])
+  if not os.path.exists(virtualenv_dir):
+    # Use a temporary directory and then rename it atomically to prevent leaving
+    # a partial environment in case virtualenv is interrupted.
+    tmp_dir = virtualenv_dir + '.tmp'
+    check_call(['virtualenv', tmp_dir])
+    os.rename(tmp_dir, virtualenv_dir)
   activate_this_file = os.path.join(virtualenv_dir, 'bin', 'activate_this.py')
   execfile(activate_this_file, dict(__file__=activate_this_file))
   # Install Sphinx and Breathe.
