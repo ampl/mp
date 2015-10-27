@@ -715,7 +715,7 @@ void IlogCPSolver::SolveWithCPLEX(
 
     if (cplex_.isMIP()) {
       writer << cplex_.getNnodes() << " nodes, ";
-    } else {
+    } else if (!cplex_.isQC()) {
       IloRangeArray cons = converter.cons();
       IloInt num_cons = cons.getSize();
       dual_solution.resize(num_cons);
