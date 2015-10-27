@@ -332,10 +332,9 @@ void MPToGecodeConverter::Convert(const Problem &p) {
   }
   int num_common_exprs = p.num_common_exprs();
   common_exprs_.resize(num_common_exprs);
-  for (int j = 0; j < num_common_exprs; ++j) {
-    // TODO: handle linear part
-    if (NumericExpr e = p.common_expr(j).nonlinear_expr())
-      common_exprs_[j] = Visit(e);
+  for (int i = 0; i < num_common_exprs; ++i) {
+    Problem::CommonExpr expr = p.common_expr(i);
+    common_exprs_[i] = ConvertExpr(expr.linear_expr(), expr.nonlinear_expr());
   }
 
   if (p.num_objs() > 0) {
