@@ -44,6 +44,8 @@ namespace mp {
 template <typename Alloc>
 class BasicProblem;
 
+class LinearExpr;
+
 class EqualNumberOfArgs {
  public:
   bool operator()(IteratedExpr lhs, IteratedExpr rhs) const;
