@@ -298,9 +298,11 @@ void MPToJaCoPConverter::Convert(const Problem &p) {
 
   int num_common_exprs = p.num_common_exprs();
   common_exprs_.resize(num_common_exprs);
-  for (int j = 0; j < num_common_exprs; ++j) {
-    if (NumericExpr e = p.common_expr(j).nonlinear_expr())
-      common_exprs_[j] = Visit(e);
+  for (int i = 0; i < num_common_exprs; ++i) {
+    Problem::CommonExpr expr = p.common_expr(i);
+    jobject result_var = var_class_.NewObject(env_, store_, min_int_, max_int_);
+    ConvertExpr(expr.linear_expr(), expr.nonlinear_expr(), result_var);
+    common_exprs_[i] = result_var;
   }
 
   if (p.num_objs() > 0) {
