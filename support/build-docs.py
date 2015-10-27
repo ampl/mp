@@ -58,9 +58,11 @@ def build_docs(workdir, doxygen='doxygen'):
   pip_install('michaeljones/breathe', commit='07b6e501fbe71917ec7919982ee9e5b71d318e38')
   # Clone the ampl.github.io repo.
   repo = 'ampl.github.io'
-  check_call(['git', 'clone', 'https://github.com/ampl/{}.git'.format(repo)],
-             cwd=workdir)
   repo_dir = os.path.join(workdir, repo)
+  if not os.path.exists(repo_dir):
+    check_call(['git', 'clone', 'https://github.com/ampl/{}.git'.format(repo)],
+               cwd=workdir)
+
   # Copy API docs and the database connection guides to the build directory.
   # The guides are not stored in the mp repo to avoid polluting history with
   # image blobs.
