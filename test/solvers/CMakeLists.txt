@@ -6,7 +6,7 @@ if (MP_THREAD)
 endif ()
 
 if (TARGET gecode)
-  add_mp_test(gecode-test PREFIX gecode-test.cc feature.h nl-solver-test.h
+  add_mp_test(gecode-mp-test gecode-test.cc feature.h nl-solver-test.h
     LIBS amplgecode-static)
 endif ()
 

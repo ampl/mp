@@ -44,26 +44,22 @@ endif ()
 
 # Adds an MP test.
 # Usage:
-#   add_mp_test(name [PREFIX] sources... [LIBS libraries])
+#   add_mp_test(name sources... [LIBS libraries])
 function(add_mp_test name)
-  cmake_parse_arguments(add_mp_test PREFIX "" LIBS ${ARGN})
-  set(target_name ${name})
-  if (add_mp_test_PREFIX)
-    set(target_name mp${name})
-  endif ()
-  add_executable(${target_name} ${add_mp_test_UNPARSED_ARGUMENTS})
-  set_target_properties(${target_name} PROPERTIES OUTPUT_NAME ${name})
+  cmake_parse_arguments(add_mp_test "" "" LIBS ${ARGN})
+  add_executable(${name} ${add_mp_test_UNPARSED_ARGUMENTS})
+  set_target_properties(${name} PROPERTIES OUTPUT_NAME ${name})
   if (MINGW)
-    set_target_properties(${target_name} PROPERTIES
+    set_target_properties(${name} PROPERTIES
       LINK_FLAGS "-static-libgcc -static-libstdc++")
   endif ()
   if (NOT add_mp_test_LIBS)
     set(add_mp_test_LIBS mp)
   endif ()
-  target_link_libraries(${target_name} gtest-extra ${add_mp_test_LIBS})
-  target_compile_definitions(${target_name} PRIVATE
+  target_link_libraries(${name} gtest-extra ${add_mp_test_LIBS})
+  target_compile_definitions(${name} PRIVATE
     MP_TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/data")
-  add_test(NAME ${name} COMMAND $<TARGET_FILE:${target_name}>)
+  add_test(NAME ${name} COMMAND $<TARGET_FILE:${name}>)
 endfunction()
 
 add_ampl_library(testlib PRIVATE testlib.cc)
