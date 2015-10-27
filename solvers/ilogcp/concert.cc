@@ -292,8 +292,8 @@ bool MPToConcertConverter::ConvertGlobalConstraint(
   return true;
 }
 
-IloExpr MPToConcertConverter::Convert(
-    NumericExpr nonlinear, const LinearExpr &linear) {
+IloExpr MPToConcertConverter::ConvertExpr(
+    const LinearExpr &linear, NumericExpr nonlinear) {
   IloExpr ilo_expr(env_, 0);
   if (nonlinear)
     ilo_expr = Visit(nonlinear);
@@ -315,9 +315,8 @@ void MPToConcertConverter::Convert(const Problem &p) {
   int num_common_exprs = p.num_common_exprs();
   common_exprs_.resize(num_common_exprs);
   for (int i = 0; i < num_common_exprs; ++i) {
-    Problem::CommonExpr common_expr = p.common_expr(i);
-    common_exprs_[i] = Convert(
-          common_expr.nonlinear_expr(), common_expr.linear_expr());
+    Problem::CommonExpr expr = p.common_expr(i);
+    common_exprs_[i] = ConvertExpr(expr.linear_expr(), expr.nonlinear_expr());
   }
 
   if (int num_objs = p.num_objs()) {
@@ -325,7 +324,7 @@ void MPToConcertConverter::Convert(const Problem &p) {
     IloNumExprArray objs(env_);
     for (int i = 0; i < num_objs; ++i) {
       Problem::Objective obj = p.obj(i);
-      IloExpr ilo_expr = Convert(obj.nonlinear_expr(), obj.linear_expr());
+      IloExpr ilo_expr = ConvertExpr(obj.linear_expr(), obj.nonlinear_expr());
       objs.add(obj.type() == main_obj_type ? ilo_expr : -ilo_expr);
     }
     IloObjective::Sense sense = main_obj_type == obj::MIN ?

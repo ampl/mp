@@ -166,7 +166,7 @@ class MPToConcertConverter : public ExprVisitor<MPToConcertConverter, IloExpr> {
   bool ConvertGlobalConstraint(CallExpr expr, IloConstraint &con);
 
   // Converts a sum of nonlinear and linear expressions into Concert format.
-  IloExpr Convert(NumericExpr nonlinear, const LinearExpr &linear);
+  IloExpr ConvertExpr(const LinearExpr &linear, NumericExpr nonlinear);
 
   // Converts a pairwise expression (alldiff or !alldiff).
   template <typename Constraint, bool negate>
