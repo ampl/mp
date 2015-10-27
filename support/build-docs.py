@@ -60,7 +60,9 @@ def build_docs(workdir, doxygen='doxygen'):
   execfile(activate_this_file, dict(__file__=activate_this_file))
   # Install Sphinx and Breathe.
   pip_install('sphinx==1.3.1')
-  pip_install('michaeljones/breathe', commit='07b6e501fbe71917ec7919982ee9e5b71d318e38')
+  pip_install('michaeljones/breathe',
+              commit='07b6e501fbe71917ec7919982ee9e5b71d318e38')
+
   # Clone the ampl.github.io repo.
   repo = 'ampl.github.io'
   repo_dir = os.path.join(workdir, repo)
