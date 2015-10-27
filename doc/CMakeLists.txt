@@ -47,14 +47,6 @@ if (NOT ${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
 endif ()
 add_prefix(doc_deps ../ ${MP_HEADERS})
 
-# TODO
-add_custom_command(OUTPUT html/index.html
-  COMMAND ${DOXYGEN}
+add_custom_target(doc
   COMMAND python ${BUILD_DOCS}
-  COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/sphinx/sphinx-build.py
-    -D "breathe_projects.mp=${CMAKE_CURRENT_BINARY_DIR}/doxyxml"
-    -b html -c ${CMAKE_CURRENT_SOURCE_DIR} . html
-  DEPENDS conf.py ${BUILD_DOCS} ${doc_deps} ${amplgsl_docs})
-add_custom_target(doc DEPENDS html/index.html)
-
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION doc)
+  DEPENDS conf.py ${doc_deps} ${amplgsl_docs})
