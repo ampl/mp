@@ -55,6 +55,7 @@ def build_docs(workdir, doxygen='doxygen'):
     # a partial environment in case virtualenv is interrupted.
     tmp_dir = virtualenv_dir + '.tmp'
     check_call(['virtualenv', tmp_dir])
+    check_call(['virtualenv', '--relocatable', tmp_dir])
     os.rename(tmp_dir, virtualenv_dir)
   activate_this_file = os.path.join(virtualenv_dir, 'bin', 'activate_this.py')
   execfile(activate_this_file, dict(__file__=activate_this_file))
