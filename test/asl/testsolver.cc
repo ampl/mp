@@ -39,7 +39,7 @@ class TestSolver : public SolverImpl<TestSolver> {
   }
 
  public:
-  TestSolver() : SolverImpl("testsolver") {
+  TestSolver() : SolverImpl<TestSolver>("testsolver") {
     set_option_header("Options rock!");
     AddStrOption("opt1", "desc1",
         &TestSolver::GetOption, &TestSolver::SetOption);
