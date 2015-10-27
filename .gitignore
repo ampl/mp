@@ -8,3 +8,4 @@ CTestTestfile.cmake
 Makefile
 Testing
 *.pyc
+*.user
