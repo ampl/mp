@@ -1183,6 +1183,18 @@ TEST_F(NLSolverTest, CommonExpr) {
   EXPECT_EQ(42, Eval(factory, -42));
 }
 
+TEST_F(NLSolverTest, LinearCommonExpr) {
+  struct CommonExprFactory : NumericExprFactory {
+    NumericExpr Create(ProblemBuilder &pb) const {
+      ProblemBuilder::LinearExprBuilder linear = pb.BeginCommonExpr(1);
+      linear.AddTerm(1, -1);
+      pb.EndCommonExpr(linear, NumericExpr(), 1);
+      return pb.MakeCommonExpr(0);
+    }
+  } factory;
+  EXPECT_EQ(42, Eval(factory, -42));
+}
+
 // ----------------------------------------------------------------------------
 // Solve code tests
 

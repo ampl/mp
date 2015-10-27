@@ -292,6 +292,16 @@ bool MPToConcertConverter::ConvertGlobalConstraint(
   return true;
 }
 
+IloExpr MPToConcertConverter::Convert(
+    NumericExpr nonlinear, const LinearExpr &linear) {
+  IloExpr ilo_expr(env_, 0);
+  if (nonlinear)
+    ilo_expr = Visit(nonlinear);
+  for (LinearExpr::iterator i = linear.begin(), e = linear.end(); i != e; ++i)
+    ilo_expr += i->coef() * vars_[i->var_index()];
+  return ilo_expr;
+}
+
 void MPToConcertConverter::Convert(const Problem &p) {
   // Set up optimization problem using the Concert API.
   int num_vars = p.num_vars();
@@ -304,10 +314,10 @@ void MPToConcertConverter::Convert(const Problem &p) {
 
   int num_common_exprs = p.num_common_exprs();
   common_exprs_.resize(num_common_exprs);
-  for (int j = 0; j < num_common_exprs; ++j) {
-    // TODO: handle linear part
-    if (NumericExpr e = p.common_expr(j).nonlinear_expr())
-      common_exprs_[j] = Visit(e);
+  for (int i = 0; i < num_common_exprs; ++i) {
+    Problem::CommonExpr common_expr = p.common_expr(i);
+    common_exprs_[i] = Convert(
+          common_expr.nonlinear_expr(), common_expr.linear_expr());
   }
 
   if (int num_objs = p.num_objs()) {
@@ -315,14 +325,7 @@ void MPToConcertConverter::Convert(const Problem &p) {
     IloNumExprArray objs(env_);
     for (int i = 0; i < num_objs; ++i) {
       Problem::Objective obj = p.obj(i);
-      IloExpr ilo_expr(env_, 0);
-      if (NumericExpr expr = obj.nonlinear_expr())
-        ilo_expr += Visit(expr);
-      const LinearExpr &linear = obj.linear_expr();
-      for (LinearExpr::iterator
-          j = linear.begin(), end = linear.end(); j != end; ++j) {
-        ilo_expr += j->coef() * vars_[j->var_index()];
-      }
+      IloExpr ilo_expr = Convert(obj.nonlinear_expr(), obj.linear_expr());
       objs.add(obj.type() == main_obj_type ? ilo_expr : -ilo_expr);
     }
     IloObjective::Sense sense = main_obj_type == obj::MIN ?
