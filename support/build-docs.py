@@ -5,7 +5,7 @@ Usage: build-docs.py [extract-docs <file>]
 """
 
 from __future__ import print_function
-import fileutil, mmap, os, re, shutil, virtualenv
+import fileutil, mmap, os, re, shutil, virtual
 from subprocess import call, check_call, check_output, Popen, PIPE
 from docopt import docopt
 
@@ -62,11 +62,7 @@ def copy_content(src_dir, dst_dir):
       shutil.copyfile(src, dst)
 
 def build_docs(workdir, doxygen='doxygen'):
-  # Create virtualenv.
-  virtualenv_dir = os.path.join(workdir, 'build', 'virtualenv')
-  virtualenv.create(virtualenv_dir)
-  check_call(['which', 'pip'])
-  check_call(['pip', '--version'])
+  virtual.create(os.path.join(workdir, 'build', 'virtualenv'))
   # Install Sphinx and Breathe.
   pip_install('sphinx==1.3.1')
   pip_install('michaeljones/breathe',

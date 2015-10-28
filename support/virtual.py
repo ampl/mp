@@ -21,6 +21,8 @@ def create(virtualenv_dir):
                                     'activate_this.py')
   with open(activate_this_file) as f:
     exec(f.read(), dict(__file__=activate_this_file))
+  run('which', 'pip')
+  run('pip', '--version')
   # Upgrade pip because installation of sphinx with pip 1.1 available on Travis
   # is broken and it doesn't support the show command.
   from pkg_resources import get_distribution, DistributionNotFound
