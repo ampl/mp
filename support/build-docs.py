@@ -47,9 +47,19 @@ def pip_install(package, **kwargs):
     package = 'git+git://github.com/{0}.git@{1}'.format(package, commit)
   check_call(['pip', 'install', '-q', package])
 
+def copy_content(src_dir, dst_dir):
+  "Copy content of the src_dir to dst_dir recursively."
+  for entry in os.listdir(src_dir):
+    src = os.path.join(src_dir, entry)
+    dst = os.path.join(dst_dir, entry)
+    if os.path.isdir(src):
+      shutil.copytree(src, dst)
+    else:
+      shutil.copyfile(src, dst)
+
 def build_docs(workdir, doxygen='doxygen'):
   # Create virtualenv.
-  virtualenv_dir = os.path.join(workdir, 'virtualenv')
+  virtualenv_dir = os.path.join(workdir, 'build', 'virtualenv')
   if not os.path.exists(virtualenv_dir):
     # Use a temporary directory and then rename it atomically to prevent leaving
     # a partial environment in case virtualenv is interrupted.
@@ -75,15 +85,9 @@ def build_docs(workdir, doxygen='doxygen'):
   # The guides are not stored in the mp repo to avoid polluting history with
   # image blobs.
   build_dir = os.path.join(workdir, 'build')
-  shutil.copytree(os.path.join(repo_dir, 'src'), build_dir)
+  copy_content(os.path.join(repo_dir, 'src'), build_dir)
   doc_dir = os.path.join(mp_dir, 'doc')
-  for entry in os.listdir(doc_dir):
-    src = os.path.join(doc_dir, entry)
-    dst = os.path.join(build_dir, entry)
-    if os.path.isdir(src):
-      shutil.copytree(src, dst)
-    else:
-      shutil.copyfile(src, dst)
+  copy_content(doc_dir, build_dir)
   # Remove generated content.
   keep = {
     '.git', 'demo', 'models', 'src', 'ampl-book.pdf', 'nlwrite.pdf',
