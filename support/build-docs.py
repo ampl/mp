@@ -53,6 +53,7 @@ def copy_content(src_dir, dst_dir):
     src = os.path.join(src_dir, entry)
     dst = os.path.join(dst_dir, entry)
     if os.path.isdir(src):
+      shutil.rmtree(dst)
       shutil.copytree(src, dst)
     else:
       shutil.copyfile(src, dst)
