@@ -45,7 +45,10 @@ def pip_install(package, **kwargs):
   commit = kwargs.get('commit')
   if commit:
     package = 'git+git://github.com/{0}.git@{1}'.format(package, commit)
-  check_call(['pip', 'install', '-q', package])
+  try:
+    check_call(['pip', 'install', '-q', package])
+  except:
+    check_call(['cat', '/home/travis/.pip/pip.log'])
 
 def copy_content(src_dir, dst_dir):
   "Copy content of the src_dir to dst_dir recursively."
@@ -68,8 +71,14 @@ def build_docs(workdir, doxygen='doxygen'):
     check_call(['virtualenv', tmp_dir])
     check_call(['virtualenv', '--relocatable', tmp_dir])
     os.rename(tmp_dir, virtualenv_dir)
-  activate_this_file = os.path.join(virtualenv_dir, 'bin', 'activate_this.py')
-  execfile(activate_this_file, dict(__file__=activate_this_file))
+  import sysconfig
+  scripts_dir = os.path.basename(sysconfig.get_path('scripts'))
+  activate_this_file = os.path.join(virtualenv_dir, scripts_dir,
+                                    'activate_this.py')
+  with open(activate_this_file) as f:
+    exec(f.read(), dict(__file__=activate_this_file))
+  check_call(['which', 'pip'])
+  check_call(['pip', '--version'])
   # Install Sphinx and Breathe.
   pip_install('sphinx==1.3.1')
   pip_install('michaeljones/breathe',
