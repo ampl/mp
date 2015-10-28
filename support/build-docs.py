@@ -5,7 +5,7 @@ Usage: build-docs.py [extract-docs <file>]
 """
 
 from __future__ import print_function
-import mmap, os, re, shutil
+import fileutil, mmap, os, re, shutil, virtualenv
 from subprocess import call, check_call, check_output, Popen, PIPE
 from docopt import docopt
 
@@ -56,7 +56,7 @@ def copy_content(src_dir, dst_dir):
     src = os.path.join(src_dir, entry)
     dst = os.path.join(dst_dir, entry)
     if os.path.isdir(src):
-      shutil.rmtree(dst)
+      fileutil.rmtree_if_exists(dst)
       shutil.copytree(src, dst)
     else:
       shutil.copyfile(src, dst)
@@ -64,19 +64,7 @@ def copy_content(src_dir, dst_dir):
 def build_docs(workdir, doxygen='doxygen'):
   # Create virtualenv.
   virtualenv_dir = os.path.join(workdir, 'build', 'virtualenv')
-  if not os.path.exists(virtualenv_dir):
-    # Use a temporary directory and then rename it atomically to prevent leaving
-    # a partial environment in case virtualenv is interrupted.
-    tmp_dir = virtualenv_dir + '.tmp'
-    check_call(['virtualenv', tmp_dir])
-    check_call(['virtualenv', '--relocatable', tmp_dir])
-    os.rename(tmp_dir, virtualenv_dir)
-  import sysconfig
-  scripts_dir = os.path.basename(sysconfig.get_path('scripts'))
-  activate_this_file = os.path.join(virtualenv_dir, scripts_dir,
-                                    'activate_this.py')
-  with open(activate_this_file) as f:
-    exec(f.read(), dict(__file__=activate_this_file))
+  virtualenv.create(virtualenv_dir)
   check_call(['which', 'pip'])
   check_call(['pip', '--version'])
   # Install Sphinx and Breathe.
