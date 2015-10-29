@@ -493,6 +493,18 @@ IlogCPSolver::IlogCPSolver() :
       "``auto`` since CP Optimizer version 12.3. Default = ``auto``.",
       cp_, IloCP::Workers, 0, AUTO_VALUE, true)));
 
+#if CPX_VERSION >= 12060100
+  AddDblOption("failuredirectedsearchemphasis",
+      "Specifies the number of workers that use failure-directed search once "
+      "it has started. The value does not have to be integer. For example, "
+      "value 1.5 means that first worker spends 100% of the time by "
+      "failure-directed search, second worker 50% and remaining workers 0%. "
+      "Default = auto (depends on actual performance of the failure-directed "
+      "search).",
+      &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
+      IloCP::FailureDirectedSearchEmphasis);
+#endif
+
   // CPLEX options:
 
   AddIntOption<IlogCPSolver, int>("mipdisplay",

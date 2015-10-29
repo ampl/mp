@@ -702,6 +702,8 @@ TEST_F(IlogCPTest, CPOptions) {
     CheckIntCPOption("workers", IloCP::Workers, min_workers, INT_MAX, 0, true);
   else
     CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
+  CheckDblCPOption("failuredirectedsearchemphasis",
+                   IloCP::FailureDirectedSearchEmphasis, 42, -2);
 }
 
 TEST_F(IlogCPTest, SolutionLimitOption) {
