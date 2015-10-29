@@ -5,11 +5,29 @@ Usage: build-docs.py [extract-docs <file>]
 """
 
 from __future__ import print_function
-import fileutil, mmap, os, re, shutil, virtual
+import fileutil, mmap, os, re, shutil
 from subprocess import call, check_call, check_output, Popen, PIPE
 from docopt import docopt
 
 mp_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
+def run(*args, **kwargs):
+  check_call(args, **kwargs)
+
+def create_virtualenv(venv_dir):
+  "Create and activate virtualenv in the given directory."
+  # File "check" is used to make sure that we don't have
+  # a partial environment in case virtualenv was interrupted.
+  check_path = os.path.join(venv_dir, 'check')
+  if not os.path.exists(check_path):
+    run('virtualenv', venv_dir)
+    os.mknod(check_path)
+  # Activate virtualenv.
+  import sysconfig
+  scripts_dir = os.path.basename(sysconfig.get_path('scripts'))
+  activate_this_file = os.path.join(venv_dir, scripts_dir, 'activate_this.py')
+  with open(activate_this_file) as f:
+    exec(f.read(), dict(__file__=activate_this_file))
 
 def extract_docs(filename, output_dir):
   "Extract the AMPLGSL documentation from the code."
@@ -45,10 +63,7 @@ def pip_install(package, **kwargs):
   commit = kwargs.get('commit')
   if commit:
     package = 'git+git://github.com/{0}.git@{1}'.format(package, commit)
-  try:
-    check_call(['pip', 'install', '-q', package])
-  except:
-    check_call(['cat', '/home/travis/.pip/pip.log'])
+  run('pip', 'install', '-q', package)
 
 def copy_content(src_dir, dst_dir):
   "Copy content of the src_dir to dst_dir recursively."
@@ -62,7 +77,7 @@ def copy_content(src_dir, dst_dir):
       shutil.copyfile(src, dst)
 
 def build_docs(workdir, doxygen='doxygen'):
-  virtual.create(os.path.join(workdir, 'build', 'virtualenv'))
+  create_virtualenv(os.path.join(workdir, 'build', 'virtualenv'))
   # Install Sphinx and Breathe.
   pip_install('sphinx==1.3.1')
   pip_install('michaeljones/breathe',
@@ -72,8 +87,7 @@ def build_docs(workdir, doxygen='doxygen'):
   repo = 'ampl.github.io'
   repo_dir = os.path.join(workdir, repo)
   if not os.path.exists(repo_dir):
-    check_call(['git', 'clone', 'https://github.com/ampl/{}.git'.format(repo)],
-               cwd=workdir)
+    run('git', 'clone', 'https://github.com/ampl/{}.git'.format(repo), cwd=workdir)
 
   # Copy API docs and the database connection guides to the build directory.
   # The guides are not stored in the mp repo to avoid polluting history with
@@ -122,7 +136,7 @@ def build_docs(workdir, doxygen='doxygen'):
     # is used in conf.py.
     env = os.environ.copy()
     env['MP_VERSION'] = get_mp_version()
-    check_call(['sphinx-build', '-b', 'html', build_dir, repo_dir], env=env)
+    run('sphinx-build', '-b', 'html', build_dir, repo_dir, env=env)
   return (returncode, repo_dir)
 
 if __name__ == '__main__':
