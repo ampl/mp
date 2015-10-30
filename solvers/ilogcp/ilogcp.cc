@@ -385,7 +385,7 @@ IlogCPSolver::IlogCPSolver() :
   AddDblOption("dynamicprobingstrength",
       "Effort dedicated to dynamic probing as a factor "
       "of the total search effort. Default = 0.03.",
-      &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
+      &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::DynamicProbingStrength);
 
   AddOption(OptionPtr(new EnumOption("elementinferencelevel",
@@ -423,7 +423,7 @@ IlogCPSolver::IlogCPSolver() :
 
   AddDblOption("optimalitytolerance",
       "Absolute tolerance on the objective value. Default = 0.",
-      &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
+      &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::OptimalityTolerance);
 
   AddOption(OptionPtr(new EnumOption("outlev",
@@ -444,7 +444,7 @@ IlogCPSolver::IlogCPSolver() :
 
   AddDblOption("relativeoptimalitytolerance",
       "Relative tolerance on the objective value. Default = 1e-4.",
-      &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
+      &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::RelativeOptimalityTolerance);
 
   AddOption(OptionPtr(new IntOption("restartfaillimit",
@@ -454,7 +454,7 @@ IlogCPSolver::IlogCPSolver() :
   AddDblOption("restartgrowthfactor",
       "Increase of the number of allowed failures "
       "before restarting search. Default = 1.05.",
-      &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
+      &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::RestartGrowthFactor);
 
   AddOption(OptionPtr(new EnumOption("searchtype",
@@ -480,7 +480,7 @@ IlogCPSolver::IlogCPSolver() :
   AddDblOption("timelimit",
       "Limit on the CPU time spent solving before "
       "terminating a search. Default = no limit.",
-      &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
+      &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::TimeLimit);
 
   AddOption(OptionPtr(new EnumOption("timemode",
@@ -511,8 +511,19 @@ IlogCPSolver::IlogCPSolver() :
       "failure-directed search, second worker 50% and remaining workers 0%. "
       "Default = auto (depends on actual performance of the failure-directed "
       "search).",
-      &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
+      &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::FailureDirectedSearchEmphasis);
+#endif
+
+#if CPX_VERSION >= 12060200
+  AddIntOption("warninglevel",
+      "Specifies the highest warning level to be displayed, all warnings "
+      "higher than this level are masked. CP Optimizer warning levels run "
+      "from 1 to 4, so setting this option to 0 turns off all warnings. "
+      "Warnings issued may indicate potential errors or inefficiencies in "
+      "your model. Default = 2.",
+      &IlogCPSolver::GetCPOption<int>, &IlogCPSolver::SetCPOption<int>,
+      IloCP::WarningLevel);
 #endif
 
   // CPLEX options:
@@ -578,8 +589,9 @@ void IlogCPSolver::DoSetIntOption(
   options_[id] = value;
 }
 
-double IlogCPSolver::GetCPDblOption(
-    const SolverOption &opt, IloCP::NumParam param) const {
+template <typename T>
+T IlogCPSolver::GetCPOption(
+    const SolverOption &opt, typename ParamTraits<T>::Type param) const {
   try {
     return cp_.getParameter(param);
   } catch (const IloException &e) {
@@ -587,8 +599,9 @@ double IlogCPSolver::GetCPDblOption(
   }
 }
 
-void IlogCPSolver::SetCPDblOption(
-    const SolverOption &opt, double value, IloCP::NumParam param) {
+template <typename T>
+void IlogCPSolver::SetCPOption(
+    const SolverOption &opt, T value, typename ParamTraits<T>::Type param) {
   try {
     cp_.setParameter(param, value);
   } catch (const IloException &) {

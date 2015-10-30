@@ -704,8 +704,13 @@ TEST_F(IlogCPTest, CPOptions) {
     CheckIntCPOption("workers", IloCP::Workers, min_workers, INT_MAX, 0, true);
   else
     CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
+#if CPX_VERSION >= 12060100
   CheckDblCPOption("failuredirectedsearchemphasis",
                    IloCP::FailureDirectedSearchEmphasis, 42, -2);
+#endif
+#if CPX_VERSION >= 12060200
+  CheckIntCPOption("warninglevel", IloCP::WarningLevel, 0, 3);
+#endif
 }
 
 TEST_F(IlogCPTest, SolutionLimitOption) {

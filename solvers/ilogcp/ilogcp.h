@@ -60,6 +60,19 @@ namespace mp {
 
 class MPToConcertConverter;
 
+template <typename T>
+struct ParamTraits;
+
+template <>
+struct ParamTraits<int> {
+  typedef IloCP::IntParam Type;
+};
+
+template <>
+struct ParamTraits<double> {
+  typedef IloCP::NumParam Type;
+};
+
 // IlogCP solver.
 class IlogCPSolver : public SolverImpl<Problem> {
  private:
@@ -93,12 +106,15 @@ class IlogCPSolver : public SolverImpl<Problem> {
   void SetBoolOption(const SolverOption &opt, int value, Option id);
   void DoSetIntOption(const SolverOption &opt, int value, Option id);
 
-  // Returns a double option of the constraint programming optimizer.
-  double GetCPDblOption(const SolverOption &opt, IloCP::NumParam param) const;
+  // Returns an option of the constraint programming optimizer.
+  template <typename T>
+  T GetCPOption(const SolverOption &opt,
+                typename ParamTraits<T>::Type param) const;
 
-  // Sets a double option of the constraint programming optimizer.
-  void SetCPDblOption(
-      const SolverOption &opt, double value, IloCP::NumParam param);
+  // Sets an option of the constraint programming optimizer.
+  template <typename T>
+  void SetCPOption(const SolverOption &opt, T value,
+                   typename ParamTraits<T>::Type param);
 
   // Returns an integer option of the CPLEX optimizer.
   int GetCPLEXIntOption(const SolverOption &opt, int param) const;
