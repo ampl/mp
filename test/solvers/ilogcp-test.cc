@@ -635,6 +635,8 @@ TEST_F(IlogCPTest, CPInferenceLevelOptions) {
       0, 4, IloCP::Default, false, inf_levels);
   CheckIntCPOption("defaultinferencelevel", IloCP::DefaultInferenceLevel,
       1, 4, IloCP::Default, false, inf_levels + 1);
+  CheckIntCPOption("elementinferencelevel", IloCP::ElementInferenceLevel,
+      0, 4, IloCP::Default, false, inf_levels);
   CheckIntCPOption("distributeinferencelevel", IloCP::DistributeInferenceLevel,
       0, 4, IloCP::Default, false, inf_levels);
 }

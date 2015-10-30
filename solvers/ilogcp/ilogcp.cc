@@ -317,7 +317,6 @@ IlogCPSolver::IlogCPSolver() :
   // - CountInferenceLevel
   // - SequenceInferenceLevel
   // - AllMinDistanceInferenceLevel
-  // - ElementInferenceLevel
   // - PrecedenceInferenceLevel
   // - IntervalSequenceInferenceLevel
   // - NoOverlapInferenceLevel
@@ -388,6 +387,17 @@ IlogCPSolver::IlogCPSolver() :
       "of the total search effort. Default = 0.03.",
       &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
       IloCP::DynamicProbingStrength);
+
+  AddOption(OptionPtr(new EnumOption("elementinferencelevel",
+      "Inference level for ``element`` (``IloElement``) constraints. "
+      "Possible values:\n"
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``default``, which allows the inference "
+      "strength of all ``element`` constraints to be controlled via "
+      "``defaultinferencelevel``.",
+      cp_, IloCP::ElementInferenceLevel, IloCP::Default, INFERENCE_LEVELS)));
 
   AddOption(OptionPtr(new IntOption("faillimit",
       "Limit on the number of failures allowed before terminating a search. "
