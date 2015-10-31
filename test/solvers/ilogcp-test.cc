@@ -713,6 +713,24 @@ TEST_F(IlogCPTest, CPOptions) {
 #endif
 }
 
+TEST_F(IlogCPTest, DumpFileOption) {
+  EXPECT_EQ("", s.GetStrOption("dumpfile"));
+  IlogCPSolver::ProblemBuilder pb(s, "");
+  pb.AddVar(0, 100, var::INTEGER);
+  auto obj = pb.AddObj(obj::MIN, mp::NumericExpr(), 1);
+  obj.AddTerm(0, 1);
+  TestSolutionHandler sh;
+  s.SetStrOption("optimizer", "cp");
+  s.SetStrOption("dumpfile", "test");
+  EXPECT_EQ("test", s.GetStrOption("dumpfile"));
+  EXPECT_THROW(s.Solve(pb, sh), IloException);
+  const char *filename = "test.cpo";
+  s.SetStrOption("dumpfile", filename);
+  std::remove(filename);
+  s.Solve(pb, sh);
+  fmt::File(filename, fmt::File::RDONLY); // Check if file exists.
+}
+
 TEST_F(IlogCPTest, SolutionLimitOption) {
   EXPECT_EQ(-1, s.GetOption(IlogCPSolver::SOLUTION_LIMIT));
   s.SetIntOption("solutionlimit", 0);

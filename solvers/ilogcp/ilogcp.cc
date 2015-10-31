@@ -513,6 +513,12 @@ IlogCPSolver::IlogCPSolver() :
       "search).",
       &IlogCPSolver::GetCPOption<double>, &IlogCPSolver::SetCPOption<double>,
       IloCP::FailureDirectedSearchEmphasis);
+
+  AddStrOption("dumpfile",
+               "Specifies the name of a file where to dump the model before "
+               "solving it. This file name must have extension ``.cpo``."
+               "Default = "" (don't dump the model).",
+               &IlogCPSolver::GetDumpFile, &IlogCPSolver::SetDumpFile);
 #endif
 
 #if CPX_VERSION >= 12060200
@@ -630,6 +636,11 @@ void IlogCPSolver::SetCPLEXIntOption(
 void IlogCPSolver::SolveWithCP(
     Problem &p, const MPToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
+#if CPX_VERSION >= 12060100
+  if (!dumpfile_.empty())
+    cp_.dumpModel(dumpfile_.c_str());
+#endif
+
   IloNumVarArray vars = converter.vars();
   IloIntVarArray priority_vars(env_);
   IntSuffix priority_suffix = p.suffixes(suf::VAR).Find<int>("priority");
