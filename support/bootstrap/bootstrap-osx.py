@@ -59,12 +59,15 @@ if not installed('ccache'):
   add_to_path('/usr/local/opt/ccache/libexec', None, True)
 
 # Install gfortran which is a part of the gcc package in Homebrew.
+gfortran = 'gfortran-5.2'
 if not installed('gfortran'):
   run(sudo + ['brew', 'install', 'gcc'])
+  # Create a symlink in the form gfortran-<major>.<minor> for f90cache.
+  create_symlink('/usr/local/bin/gfortran', '/usr/local/bin/' + gfortran)
 
 install_f90cache()
 create_symlink('/usr/local/bin/f90cache',
-               '/usr/local/opt/ccache/libexec/gfortran-5')
+               '/usr/local/opt/ccache/libexec/' + gfortran)
 
 # Install JDK.
 with download(
