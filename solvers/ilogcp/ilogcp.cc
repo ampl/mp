@@ -515,10 +515,16 @@ IlogCPSolver::IlogCPSolver() :
       IloCP::FailureDirectedSearchEmphasis);
 
   AddStrOption("dumpfile",
-               "Specifies the name of a file where to dump the model before "
-               "solving it. This file name must have extension ``.cpo``."
-               "Default = "" (don't dump the model).",
-               &IlogCPSolver::GetDumpFile, &IlogCPSolver::SetDumpFile);
+      "Specifies the name of a file where to dump the model before "
+      "solving it. This file name must have extension ``.cpo``."
+      "Default = "" (don't dump the model).",
+      &IlogCPSolver::GetFile, &IlogCPSolver::SetFile, DUMP_FILE);
+
+  AddStrOption("exportfile",
+      "Specifies the name of a file where to export the model before "
+      "solving it. This file name must have extension ``.cpo``."
+      "Default = "" (don't export the model).",
+      &IlogCPSolver::GetFile, &IlogCPSolver::SetFile, EXPORT_FILE);
 #endif
 
 #if CPX_VERSION >= 12060200
@@ -637,8 +643,10 @@ void IlogCPSolver::SolveWithCP(
     Problem &p, const MPToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
 #if CPX_VERSION >= 12060100
-  if (!dumpfile_.empty())
-    cp_.dumpModel(dumpfile_.c_str());
+  if (!filenames_[DUMP_FILE].empty())
+    cp_.dumpModel(filenames_[DUMP_FILE].c_str());
+  if (!filenames_[EXPORT_FILE].empty())
+    cp_.exportModel(filenames_[EXPORT_FILE].c_str());
 #endif
 
   IloNumVarArray vars = converter.vars();

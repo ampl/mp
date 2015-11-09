@@ -97,7 +97,13 @@ class IlogCPSolver : public SolverImpl<Problem> {
   Optimizer optimizer_;
   int options_[NUM_OPTIONS];
 
-  std::string dumpfile_;
+  enum FileKind {
+    DUMP_FILE,
+    EXPORT_FILE,
+    NUM_FILES
+  };
+
+  std::string filenames_[NUM_FILES];
 
   std::string GetOptimizer(const SolverOption &) const;
   void SetOptimizer(const SolverOption &opt, fmt::StringRef value);
@@ -118,11 +124,13 @@ class IlogCPSolver : public SolverImpl<Problem> {
   void SetCPOption(const SolverOption &opt, T value,
                    typename ParamTraits<T>::Type param);
 
-  std::string GetDumpFile(const SolverOption &) const {
-    return dumpfile_;
+  std::string GetFile(const SolverOption &, FileKind kind) const {
+    assert(kind < NUM_FILES);
+    return filenames_[kind];
   }
-  void SetDumpFile(const SolverOption &, fmt::StringRef filename) {
-    dumpfile_ = filename.c_str();
+  void SetFile(const SolverOption &, fmt::StringRef filename, FileKind kind) {
+    assert(kind < NUM_FILES);
+    filenames_[kind] = filename.c_str();
   }
 
   // Returns an integer option of the CPLEX optimizer.
