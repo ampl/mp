@@ -33,7 +33,7 @@
 #include <map>
 #include <memory>
 
-#ifdef MP_USE_UNORDERED_MAP
+#ifdef MP_USE_HASH
 # include <unordered_map>
 #endif
 
@@ -66,6 +66,13 @@ class MatchNumberOfArgs {
   }
 };
 
+#ifdef MP_USE_HASH
+class HashNumberOfArgs {
+ public:
+  std::size_t operator()(IteratedExpr e) const;
+};
+#endif
+
 // A map from numberof expressions with the same argument lists to
 // values and corresponding variables.
 template <typename Var, typename CreateVar>
@@ -83,10 +90,10 @@ class NumberOfMap {
  private:
   CreateVar create_var_;
 
-#ifdef MP_USE_UNORDERED_MAP
+#ifdef MP_USE_HASH
   // Map from a numberof expression to an index in numberofs_.
-  typedef std::unordered_map<IteratedExpr, std::size_t,
-    internal::HashNumberOfArgs, internal::EqualNumberOfArgs> Map;
+  typedef std::unordered_map<IteratedExpr,
+    std::size_t, HashNumberOfArgs, EqualNumberOfArgs> Map;
   Map map_;
 #endif
 
@@ -112,13 +119,13 @@ class NumberOfMap {
 template <typename Var, typename CreateVar>
 Var NumberOfMap<Var, CreateVar>::Add(double value, IteratedExpr e) {
   assert(Cast<NumericConstant>(e.arg(0)).value() == value);
-#ifdef MP_USE_UNORDERED_MAP
+#ifdef MP_USE_HASH
   std::pair<typename Map::iterator, bool> result =
       map_.insert(typename Map::value_type(e, numberofs_.size()));
   if (result.second)
     numberofs_.push_back(NumberOf(e));
   ValueMap &values = numberofs_[result.first->second].values;
-#else
+# else
   typename std::vector<NumberOf>::reverse_iterator np =
       std::find_if(numberofs_.rbegin(), numberofs_.rend(),
                    MatchNumberOfArgs<NumberOf>(e));
@@ -127,7 +134,7 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, IteratedExpr e) {
     np = numberofs_.rbegin();
   }
   ValueMap &values = np->values;
-#endif
+#endif  // MP_USE_HASH
   typename ValueMap::iterator i = values.lower_bound(value);
   if (i != values.end() && !values.key_comp()(value, i->first))
     return i->second;

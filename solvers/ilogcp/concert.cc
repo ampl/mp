@@ -76,6 +76,22 @@ bool EqualNumberOfArgs::operator()(IteratedExpr lhs, IteratedExpr rhs) const {
   return true;
 }
 
+#ifdef MP_USE_HASH
+size_t HashNumberOfArgs::operator()(IteratedExpr e) const {
+  size_t hash = 0;
+  for (int i = 1, n = e.num_args(); i < n; ++i)
+    hash = internal::HashCombine<Expr>(hash, e.arg(i));
+  return hash;
+}
+#elif defined(_MSC_VER)
+# pragma message("warning: unordered_map not available, numberof may be slow")
+#else
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wpedantic"
+# warning "unordered_map not available, numberof may be slow"
+# pragma clang diagnostic pop
+#endif
+
 IloNumExprArray MPToConcertConverter::ConvertArgs(VarArgExpr e) {
   IloNumExprArray args(env_);
   for (VarArgExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
