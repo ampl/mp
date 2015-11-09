@@ -32,7 +32,6 @@ if __name__ == '__main__':
   with zipfile.ZipFile(solver + '.zip', 'w') as archive:
     add_to_archive(archive, 'include/mp')
     add_to_archive(archive, 'src')
-    add_to_archive(archive, 'src/asl', exclude={'CMakeLists.txt'})
     solver_dir = os.path.join('solvers', solver)
     mkfile = 'mkfile'
     add_to_archive(archive, solver_dir, os.path.join('src', solver), exclude={mkfile})
