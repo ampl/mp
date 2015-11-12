@@ -516,14 +516,14 @@ IlogCPSolver::IlogCPSolver() :
 
   AddStrOption("dumpfile",
       "Specifies the name of a file where to dump the model before "
-      "solving it. This file name must have extension ``.cpo``."
-      "Default = "" (don't dump the model).",
+      "solving it. This file name must have extension ``.cpo``. "
+      "Default = \"\" (don't dump the model).",
       &IlogCPSolver::GetFile, &IlogCPSolver::SetFile, DUMP_FILE);
 
   AddStrOption("exportfile",
       "Specifies the name of a file where to export the model before "
-      "solving it. This file name must have extension ``.cpo``."
-      "Default = "" (don't export the model).",
+      "solving it. This file name must have extension ``.cpo``. "
+      "Default = \"\" (don't export the model).",
       &IlogCPSolver::GetFile, &IlogCPSolver::SetFile, EXPORT_FILE);
 #endif
 
