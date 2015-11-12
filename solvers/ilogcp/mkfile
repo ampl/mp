@@ -13,7 +13,6 @@ CPLEXSTUDIODIR = /opt/ibm/ILOG/CPLEX_Studio1262
 CONCERTDIR     = $CPLEXSTUDIODIR/concert
 CPLEXDIR       = $CPLEXSTUDIODIR/cplex
 CPOPTIMIZERDIR = $CPLEXSTUDIODIR/cpoptimizer
-#CPLEXLINKFLAGS = -L$CPLEXSTUDIODIR/linux64
 CPLEXLINKFLAGS = -L$CONCERTDIR/lib/x86-64_linux/static_pic \
                  -L$CPLEXDIR/lib/x86-64_linux/static_pic \
                  -L$CPOPTIMIZERDIR/lib/x86-64_linux/static_pic
@@ -25,9 +24,9 @@ CPOPTIMIZER_INC=$CPOPTIMIZERDIR/include
 S = ..
 S64 = ../64
 ALIB = amplsolver.a
-#LIBS = -lnsl -lm -ldl -lpthread
 L32 = /usr/local/olib32
 LIBS = $L32/libnsl.so.1 $L32/libdl.so.2 $L32/libpthread.so.0 $L32/libstdc++.so.6 $L32/libm.so.6 $L32/libgcc_s.so.1 $L32/libc.so.6 $L32/ld-linux.so.2
+LIBS64 = -lnsl -ldl -lpthread -lm
 
 g = -O2
 gs = -std=c++11 -DHAVE_UNORDERED_MAP
@@ -35,15 +34,22 @@ CXX = g++ -m32
 CXX64 = g++
 CC = cc -m32
 CC64 = cc
-CXX11_FLAGS = -std=c++11 -DMP_USE_UNORDERED_MAP -DMP_NO_CLOCK_GETTIME
+CXX11_FLAGS = -std=c++11 -DMP_USE_HASH -DMP_NO_CLOCK_GETTIME
+CL = cplex1262
 
 CFLAGS = -I$CONCERT_INC -I$CPLEX_INC -I$CPOPTIMIZER_INC -Iinclude -Isrc -I. -DILCUSEMT -DIL_STD $CXX11_FLAGS
-L = -lstdc++ -L$CPLEXSTUDIODIR/linux32 -lcp -lilocplex -lcplex -lconcert $LDMTFLAGS $S/$ALIB $LIBS
-Lg = -lstdc++ -L$CPLEXSTUDIODIR/linux32 -lcp -lilocplex -lcplex -lconcert $LDMTFLAGS $S/asg.a $LIBS
-L640 = $S64/olib
-Lb64 = $L640/libnsl.so.1 $L640/libdl.so.2 $L640/libpthread.so.0 $L640/libstdc++.so.6 $L640/libm.so.6 $L640/libgcc_s.so.1 $L640/libc.so.6 $L640/ld-linux-x86-64.so.2
+Rpath32 = -Wl,-rpath,.
+Rpath64 = -Wl,-rpath,.
+L0 = $Rpath32 -lstdc++ -L$CPLEXSTUDIODIR/linux32 -lcp -lilocplex -l$CL -lconcert $LDMTFLAGS
+L = $L0 $S/$ALIB $LIBS
+Lg = $L0 $S/asg.a $LIBS
+L640 = $Rpath64 -L$CPLEXSTUDIODIR/linux64 -lcp -lilocplex -l$CL -lconcert $LDMTFLAGS $S64/$ALIB -lnsl -ldl -lpthread -lm
+L64 = $L640 $S64/$ALIB $LIBS64
 
-L64 = $CPLEXLINKFLAGS -lcp -lilocplex -lcplex -lconcert $LDMTFLAGS $S64/$ALIB -lnsl -ldl -lpthread -lm
+b/ilogcp32g: src/ilogcp/ilogcpdb.cc b/util32g.a ilogcpmain.c
+	$CC -c -g -I$S ilogcpmain.c
+	$CXX -g -o $target -I$S $CFLAGS $CXX11_FLAGS ilogcpmain.o src/ilogcp/ilogcpdb.cc b/util32g.a $Lg
+	rm ilogcpmain.o
 
 all:V: b/ilogcp32 b/ilogcp64 b/ilogcp32lt b/ilogcp64lt
 
@@ -51,6 +57,7 @@ util = \
 	src/ilogcp/concert.cc \
 	src/ilogcp/main.cc \
 	src/clock.cc \
+	src/expr.cc \
 	src/expr-info.cc \
 	src/format.cc \
 	src/nl.cc \
@@ -60,6 +67,8 @@ util = \
 	src/rstparser.cc \
 	src/sol.cc \
 	src/solver.cc
+
+ilcp = src/ilogcp/ilogcp.cc
 
 b/util32.a: $util
 	$CXX -c $g -I$S $CFLAGS $newprereq
@@ -82,46 +91,87 @@ b/util64.a: $util
 	rm $o
 	ranlib $target
 
-ilogcp_date.h: $util src/ilogcp/ilogcp.cc src/solver.cc ilogcpmain.c licmain1.c
-	now=`Dt -8 $util`
+ilogcp_date.h: $util $ilcp ilogcpmain.c licmain1.c
+	now=`Dt -8 $util $ilcp`
 	lnow=`Dt -8 $prereq`
 	echo -e "#define YYYYMMDD $now\n#define qYYYYMMDD "'"'"$now"'"' >$target
 	echo -e "#define lYYYYMMDD $lnow\n" >>$target
 
-b/%_32.o: src/%.cc ilogcp_date.h
+#	now=`Dt -8 $util`
+
+b/%_32.o: src/ilogcp/%.cc ilogcp_date.h
 	$CXX -c -o $target -I$S $CFLAGS `echo $prereq | sed 's/ ilogcp_date.h//'`
 
-b/%_64.o: src/%.cc ilogcp_date.h
+b/%_64.o: src/ilogcp/%.cc ilogcp_date.h
 	$CXX64 -c -o $target -I$S64 $CFLAGS `echo $prereq | sed 's/ ilogcp_date.h//'`
 
-util =  src/ilogcp/ilogcp.cc
-
-b/ilogcp32: $ilogcp_src b/util32.a
+b/ilogcp32: b/ilogcp_32.o b/util32.a
 	$CC -c $g -I$S ilogcpmain.c
 	$CXX -s -o $target ilogcpmain.o $prereq $L
 	rm ilogcpmain.o
 
-b/ilogcp32lt: $ilogcp_src b/util32.a
+b/ilogcp32lt: b/ilogcp_32.o b/util32.a
 	$CC -c $g -I$S -DTime_Limited ilogcpmain.c
 	$CXX -s -o $target ilogcpmain.o $prereq $L
 	rm ilogcpmain.o
 
-b/ilogcp32ltg: $ilogcp_src b/util32g.a
+b/ilogcp32ltg: src/ilogcp.cc b/util32g.a
 	$CC -c -g -I$S -DTime_Limited ilogcpmain.c
-	$CXX -g -o $target -I$S $CFLAGS ilogcpmain.o $prereq $Lg
+	$CXX -g -o $target -I$S $CFLAGS $CXX11_FLAGS ilogcpmain.o $prereq $Lg
 	rm ilogcpmain.o
 
-b/ilogcp32g: $ilogcp_src b/util32g.a
-	$CC -c -g -I$S ilogcpmain.c
-	$CXX -g -o $target -I$S $CFLAGS ilogcpmain.o $prereq $Lg
-	rm ilogcpmain.o
-
-b/ilogcp64: $ilogcp_src b/util64.a
+b/ilogcp64: b/ilogcp_64.o b/util64.a
 	$CC64 -c $g -I$S64 ilogcpmain.c
 	$CXX64 -s -o $target ilogcpmain.o $prereq $L64
 	rm ilogcpmain.o
 
-b/ilogcp64lt: $ilogcp_src b/util64.a
+b/ilogcp64lt: b/ilogcp_64.o b/util64.a
 	$CC64 -c $g -I$S64 -DTime_Limited ilogcpmain.c
 	$CXX64 -s -o $target ilogcpmain.o $prereq $L64
 	rm ilogcpmain.o
+
+BDV = 20141223
+bd:V: $bd/ilogcp.linux-intel32.$BDV.tgz \
+ $bd/ilogcp.linux-intel64.$BDV.tgz \
+ $bd/ilogcp.mswin32.$BDV.zip $bd/ilogcp.mswin64.$BDV.zip \
+ $cd/linux-intel32/ilogcp $cd/linux-intel64/ilogcp \
+ $cd/mswin32/ilogcp.exe $cd/mswin64/ilogcp.exe
+
+$bd/ilogcp.linux-intel32.$BDV.tgz: b/ilogcp32 b/cp.ampl b/cp_32.dll
+	ln b/ilogcp32 b/ilogcp
+	(cd b; tar cf - ilogcp cp.ampl cp_32.dll | gzip -c >$target)
+	rm b/ilogcp
+
+$bd/ilogcp.linux-intel64.$BDV.tgz: b/ilogcp64 b/cp.ampl b/cp_64.dll
+	ln b/ilogcp64 b/ilogcp
+	(cd b; tar cf - ilogcp cp.ampl cp_64.dll | gzip -c >$target)
+	rm b/ilogcp
+
+$bd/ilogcp.mswin32.$BDV.zip: b/win32/ilogcp.exe b/win32/cp_32.dll b/win32/cp.ampl
+	(cd b/win32; zip $target ilogcp.exe cp.ampl cp_32.dll cplex1262.dll msvcr100.dll msvcp100.dll)
+
+$bd/ilogcp.mswin64.$BDV.zip: b/win64/ilogcp.exe b/win64/cp_64.dll b/win64/cp.ampl
+	(cd b/win64; zip $target ilogcp.exe cp.ampl cp_64.dll cplex1262.dll msvcr100.dll msvcp100.dll)
+
+$cd/linux-intel32/ilogcp: b/ilogcp32lt
+	ln -f $prereq $target
+
+$cd/linux-intel64/ilogcp: b/ilogcp64lt
+	ln -f $prereq $target
+
+$cd/mswin32/ilogcp.exe: b/win32/ilogcplt.exe
+	ln -f $prereq $target
+
+$cd/mswin64/ilogcp.exe: b/win64/ilogcplt.exe
+	ln -f $prereq $target
+
+bdr:V: $bd/ilogcp.doc.$BDV.tgz $bd/ilogcp.doc.$BDV.zip
+
+$bd/ilogcp.doc.$BDV.tgz: README.ilogcp
+	tar cf - $prereq | gzip -c >$target
+
+$bd/ilogcp.doc.$BDV.zip: README.ilogcp
+	rmcr -a README.ilogcp >README.ilogcp.txt
+	cpt README.ilogcp README.ilogcp.txt
+	zip $target README.ilogcp.txt
+	rm README.ilogcp.txt
