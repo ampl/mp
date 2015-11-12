@@ -125,16 +125,6 @@ if not module_exists('win32api'):
 # Specifies whether to restart BuildBot service.
 restart = False
 
-# Remove sh.exe from the path as it breaks MinGW makefile generation.
-paths = os.environ['PATH'].split(os.pathsep)
-for path in paths:
-  if os.path.exists(os.path.join(path, "sh.exe")):
-    print('Removing', path, 'from $PATH')
-    paths.remove(path)
-    restart = True
-os.environ['PATH'] = os.pathsep.join(paths)
-check_call(['setx', '/m', 'PATH', os.environ['PATH']])
-
 import win32serviceutil
 import _winreg as reg
 
