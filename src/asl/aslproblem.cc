@@ -34,6 +34,7 @@
 #include "mp/nl.h"
 #include "mp/os.h"
 #include "mp/problem-builder.h"
+#include "mp/solver.h"
 #include "aslbuilder.h"
 #include "expr-writer.h"
 
@@ -400,4 +401,11 @@ fmt::Writer &operator<<(fmt::Writer &w, const ASLProblem &p) {
   Write(w, p);
   return w;
 }
+}
+
+// Perform demo version checks if necessary.
+void mp::internal::CheckDemoVersion(const NLHeader &header) {
+  ASL asl = ASL();
+  mp::asl::internal::Convert(header, asl.i);
+  student_check_ASL(&asl);
 }
