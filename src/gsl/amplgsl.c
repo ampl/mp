@@ -1490,7 +1490,13 @@ static double amplgsl_sf_ellint_E(arglist *al) {
 }
 
 WRAP_CHECKED(gsl_sf_ellint_P, ARGS3_PREC)
+
+#if GSL_MAJOR_VERSION >= 2
+WRAP_CHECKED(gsl_sf_ellint_D, ARGS2_PREC)
+#else
 WRAP_CHECKED(gsl_sf_ellint_D, ARGS3_PREC)
+#endif
+
 WRAP_CHECKED(gsl_sf_ellint_RC, ARGS2_PREC)
 WRAP_CHECKED(gsl_sf_ellint_RD, ARGS3_PREC)
 WRAP_CHECKED(gsl_sf_ellint_RF, ARGS3_PREC)
