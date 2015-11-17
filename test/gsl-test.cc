@@ -24,6 +24,7 @@
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_version.h>
 
 #include <functional>
 #include <map>
@@ -1034,12 +1035,17 @@ TEST_F(GSLTest, Log) {
 }
 
 TEST_F(GSLTest, Mathieu) {
-  TEST_FUNC2(gsl_sf_mathieu_a, NoDeriv("n"));
-  TEST_FUNC2(gsl_sf_mathieu_b, NoDeriv("n"));
-  TEST_FUNC2(gsl_sf_mathieu_ce, NoDeriv("n"));
-  TEST_FUNC2(gsl_sf_mathieu_se, NoDeriv("n"));
-  TEST_FUNC2(gsl_sf_mathieu_Mc, NoDeriv("j n"));
-  TEST_FUNC2(gsl_sf_mathieu_Ms, NoDeriv("j n"));
+#if GSL_MAJOR_VERSION >= 2
+# define TEST_MATHIEU TEST_EFUNC2
+#else
+# define TEST_MATHIEU TEST_FUNC2
+#endif
+  TEST_MATHIEU(gsl_sf_mathieu_a, NoDeriv("n"));
+  TEST_MATHIEU(gsl_sf_mathieu_b, NoDeriv("n"));
+  TEST_MATHIEU(gsl_sf_mathieu_ce, NoDeriv("n"));
+  TEST_MATHIEU(gsl_sf_mathieu_se, NoDeriv("n"));
+  TEST_MATHIEU(gsl_sf_mathieu_Mc, NoDeriv("j n"));
+  TEST_MATHIEU(gsl_sf_mathieu_Ms, NoDeriv("j n"));
 }
 
 TEST_F(GSLTest, Power) {

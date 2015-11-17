@@ -1,6 +1,6 @@
 # CMake build script for the GSL wrapper for AMPL.
 
-add_ampl_library(amplgsl amplgsl.c)
+add_ampl_library(amplgsl amplgsl.cc)
 target_link_libraries(amplgsl asl gsl gslcblas)
 target_include_directories(amplgsl
   PRIVATE ${PROJECT_BINARY_DIR}/thirdparty/build/gsl)

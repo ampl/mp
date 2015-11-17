@@ -9,10 +9,10 @@ endif ()
 
 set(BUILD_DOCS ${MP_SOURCE_DIR}/support/build-docs.py)
 
-# Get .rst file names from amplgsl.c.
+# Get .rst file names from amplgsl.cc.
 set(amplgsl_docs )
-set(amplgsl_c ${MP_SOURCE_DIR}/src/gsl/amplgsl.c)
-file(READ ${amplgsl_c} content)
+set(amplgsl_src ${MP_SOURCE_DIR}/src/gsl/amplgsl.cc)
+file(READ ${amplgsl_src} content)
 string(REGEX MATCHALL "@file[^\n]*" files ${content})
 foreach (f ${files})
    if (f MATCHES "@file +(.*)")

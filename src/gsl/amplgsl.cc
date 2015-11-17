@@ -33,6 +33,16 @@
 
 #include "funcadd.h"
 
+// Macros used for compatibility with GSL 1.x.
+#if GSL_MAJOR_VERSION < 2
+# define gsl_sf_mathieu_a_e gsl_sf_mathieu_a
+# define gsl_sf_mathieu_b_e gsl_sf_mathieu_b
+# define gsl_sf_mathieu_ce_e gsl_sf_mathieu_ce
+# define gsl_sf_mathieu_se_e gsl_sf_mathieu_se
+# define gsl_sf_mathieu_Mc_e gsl_sf_mathieu_Mc
+# define gsl_sf_mathieu_Ms_e gsl_sf_mathieu_Ms
+#endif
+
 enum { MAX_ERROR_MESSAGE_SIZE = 100 };
 
 static const char *const DERIVS_NOT_PROVIDED = "derivatives are not provided";
@@ -42,11 +52,15 @@ static double mul_by_sign(double x, double y) {
   return y != 0 ? (x / fabs(x)) * y : 0;
 }
 
+static char* allocate_string(arglist *al, size_t size) {
+  return static_cast<char*>(al->AE->Tempmem(al->TMI, size));
+}
+
 /* Formats the error message and stores it in al->Errmsg. */
 static void format_error(
     arglist *al, const char *format, va_list args, char prefix) {
   size_t size = MAX_ERROR_MESSAGE_SIZE + (prefix ? 1 : 0);
-  char *message = al->Errmsg = al->AE->Tempmem(al->TMI, size);
+  char *message = al->Errmsg = allocate_string(al, size);
   if (prefix)
     *message++ = prefix;
   al->AE->VsnprintF(message, MAX_ERROR_MESSAGE_SIZE, format, args);
@@ -90,7 +104,7 @@ static int check_deriv_arg(arglist *al, int arg, int min, int max) {
 static void format_eval_error(arglist *al, char prefix, const char *suffix) {
   int n = 0, i = 0;
   size_t size = MAX_ERROR_MESSAGE_SIZE + (prefix ? 1 : 0);
-  char *message = al->Errmsg = al->AE->Tempmem(al->TMI, size);
+  char *message = al->Errmsg = allocate_string(al, size);
   if (prefix)
     *message++ = prefix;
   n += al->AE->SnprintF(message, MAX_ERROR_MESSAGE_SIZE,
@@ -1492,10 +1506,11 @@ static double amplgsl_sf_ellint_E(arglist *al) {
 WRAP_CHECKED(gsl_sf_ellint_P, ARGS3_PREC)
 
 #if GSL_MAJOR_VERSION >= 2
-WRAP_CHECKED(gsl_sf_ellint_D, ARGS2_PREC)
+# define GSL_ELLINT_D_ARGS ARGS2_PREC
 #else
-WRAP_CHECKED(gsl_sf_ellint_D, ARGS3_PREC)
+# define GSL_ELLINT_D_ARGS ARGS2, 0, GSL_PREC_DOUBLE
 #endif
+WRAP_CHECKED(gsl_sf_ellint_D, GSL_ELLINT_D_ARGS)
 
 WRAP_CHECKED(gsl_sf_ellint_RC, ARGS2_PREC)
 WRAP_CHECKED(gsl_sf_ellint_RD, ARGS3_PREC)
@@ -2319,7 +2334,7 @@ static double amplgsl_sf_mathieu_a(arglist *al) {
   if (al->derivs)
     deriv_error(al, DERIVS_NOT_PROVIDED);
   return check_result(al,
-      gsl_sf_mathieu_a(n, q, &result) ? GSL_NAN : result.val);
+      gsl_sf_mathieu_a_e(n, q, &result) ? GSL_NAN : result.val);
 }
 
 static double amplgsl_sf_mathieu_b(arglist *al) {
@@ -2333,7 +2348,7 @@ static double amplgsl_sf_mathieu_b(arglist *al) {
   if (al->derivs)
     deriv_error(al, DERIVS_NOT_PROVIDED);
   return check_result(al,
-      gsl_sf_mathieu_b(n, q, &result) ? GSL_NAN : result.val);
+      gsl_sf_mathieu_b_e(n, q, &result) ? GSL_NAN : result.val);
 }
 
 static double amplgsl_sf_mathieu_ce(arglist *al) {
@@ -2348,7 +2363,7 @@ static double amplgsl_sf_mathieu_ce(arglist *al) {
   if (al->derivs)
     deriv_error(al, DERIVS_NOT_PROVIDED);
   return check_result(al,
-      gsl_sf_mathieu_ce(n, q, x, &result) ? GSL_NAN : result.val);
+      gsl_sf_mathieu_ce_e(n, q, x, &result) ? GSL_NAN : result.val);
 }
 
 static double amplgsl_sf_mathieu_se(arglist *al) {
@@ -2363,7 +2378,7 @@ static double amplgsl_sf_mathieu_se(arglist *al) {
   if (al->derivs)
     deriv_error(al, DERIVS_NOT_PROVIDED);
   return check_result(al,
-      gsl_sf_mathieu_se(n, q, x, &result) ? GSL_NAN : result.val);
+      gsl_sf_mathieu_se_e(n, q, x, &result) ? GSL_NAN : result.val);
 }
 
 static double amplgsl_sf_mathieu_Mc(arglist *al) {
@@ -2379,7 +2394,7 @@ static double amplgsl_sf_mathieu_Mc(arglist *al) {
   if (al->derivs)
     deriv_error(al, DERIVS_NOT_PROVIDED);
   return check_result(al,
-      gsl_sf_mathieu_Mc(j, n, q, x, &result) ? GSL_NAN : result.val);
+      gsl_sf_mathieu_Mc_e(j, n, q, x, &result) ? GSL_NAN : result.val);
 }
 
 static double amplgsl_sf_mathieu_Ms(arglist *al) {
@@ -2395,7 +2410,7 @@ static double amplgsl_sf_mathieu_Ms(arglist *al) {
   if (al->derivs)
     deriv_error(al, DERIVS_NOT_PROVIDED);
   return check_result(al,
-      gsl_sf_mathieu_Ms(j, n, q, x, &result) ? GSL_NAN : result.val);
+      gsl_sf_mathieu_Ms_e(j, n, q, x, &result) ? GSL_NAN : result.val);
 }
 
 static double amplgsl_sf_pow_int(arglist *al) {
@@ -2865,7 +2880,7 @@ WRAP(gsl_cdf_gumbel2_Qinv, ARGS3)
     return check_result(al, func((unsigned)args)); \
   }
 
-const char *const *const DEFAULT_ARGS;
+const char *const *const DEFAULT_ARGS = 0;
 
 WRAP(gsl_ran_poisson, RNG_ARGS1)
 WRAP_DISCRETE(gsl_ran_poisson_pdf, ARGS2, DEFAULT_ARGS)
@@ -2941,18 +2956,19 @@ WRAP(gsl_ran_logarithmic, RNG_ARGS1)
 WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)
 
 #define ADDFUNC(name, num_args) \
-    addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
+    addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, \
+            const_cast<char*>(#name));
 
 #define ADDFUNC_RANDOM(name, num_args) \
-    addfunc(#name, ampl##name, FUNCADD_RANDOM_VALUED, num_args, #name);
+    addfunc(#name, ampl##name, FUNCADD_RANDOM_VALUED, num_args, \
+            const_cast<char*>(#name));
 
-void funcadd_ASL(AmplExports *ae)
-{
+extern "C" void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
 
   addfunc("gsl_version", (rfunc)amplgsl_version,
-      FUNCADD_STRING_VALUED, 0, "gsl_version");
+      FUNCADD_STRING_VALUED, 0, const_cast<char*>("gsl_version"));
 
   /**
    * @file elementary
@@ -3964,19 +3980,17 @@ void funcadd_ASL(AmplExports *ae)
   ADDFUNC(gsl_sf_ellint_P, 3);
 
   /**
-   * .. function:: gsl_sf_ellint_D(phi, k, n)
+   * .. function:: gsl_sf_ellint_D(phi, k)
    *
-   *  This routine computes the incomplete elliptic integral $D(\phi,k,n)$
+   *  This routine computes the incomplete elliptic integral $D(\phi,k)$
    *  which is defined through the Carlson form $RD(x,y,z)$ by the following
    *  relation,
    *
    *  .. math::
-   *    D(\phi,k,n) = (1/3)(\sin(\phi))^3
+   *    D(\phi,k) = (1/3)(\sin(\phi))^3
    *      RD (1-\sin^2(\phi), 1-k^2 \sin^2(\phi), 1).
-   *
-   * The argument $n$ is not used and will be removed in a future release.
    */
-  ADDFUNC(gsl_sf_ellint_D, 3);
+  ADDFUNC(gsl_sf_ellint_D, 2);
 
   /**
    * Carlson Forms

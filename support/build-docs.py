@@ -111,7 +111,7 @@ def build_docs(workdir, doxygen='doxygen'):
       os.remove(path)
   # Build docs.
   dir = os.path.dirname(__file__)
-  extract_docs(os.path.join(dir, '../src/gsl/amplgsl.c'), build_dir)
+  extract_docs(os.path.join(dir, '../src/gsl/amplgsl.cc'), build_dir)
   p = Popen([doxygen, '-'], stdin=PIPE, cwd=build_dir)
   p.communicate(input=r'''
       PROJECT_NAME      = MP
