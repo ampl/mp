@@ -822,6 +822,14 @@ TEST_F(GSLTest, Dilog) {
   TEST_EFUNC2(gsl_sf_dilog, DilogFunctionInfo());
 }
 
+int ellint_D(double phi, double k, gsl_mode_t mode, gsl_sf_result *result) {
+#if GSL_MAJOR_VERSION >= 2
+  return gsl_sf_ellint_D_e(phi, k, mode, result);
+#else
+  return gsl_sf_ellint_D_e(phi, k, 0, mode, result);
+#endif
+}
+
 TEST_F(GSLTest, EllInt) {
   TEST_EFUNC(gsl_sf_ellint_Kcomp);
   TEST_EFUNC(gsl_sf_ellint_Ecomp);
@@ -829,7 +837,7 @@ TEST_F(GSLTest, EllInt) {
   TEST_EFUNC(gsl_sf_ellint_F);
   TEST_EFUNC(gsl_sf_ellint_E);
   TEST_EFUNC2(gsl_sf_ellint_P, NoDeriv());
-  TEST_EFUNC2(gsl_sf_ellint_D, NoDeriv());
+  TestFunc(GetFunction("gsl_sf_ellint_D", NoDeriv()), ellint_D);
   TEST_EFUNC2(gsl_sf_ellint_RC, NoDeriv());
   TEST_EFUNC2(gsl_sf_ellint_RD, NoDeriv());
   TEST_EFUNC2(gsl_sf_ellint_RF, NoDeriv());
