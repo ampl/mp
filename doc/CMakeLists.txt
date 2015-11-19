@@ -50,3 +50,7 @@ add_prefix(doc_deps ../ ${MP_HEADERS})
 add_custom_target(doc
   COMMAND python ${BUILD_DOCS}
   DEPENDS conf.py ${doc_deps} ${amplgsl_docs})
+
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ampl.github.io/
+        DESTINATION share/doc/mp
+        PATTERN .* EXCLUDE)
