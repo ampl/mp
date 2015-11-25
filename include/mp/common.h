@@ -1,5 +1,5 @@
 /*
- Common declarations
+ Common definitions
 
  Copyright (C) 2014 AMPL Optimization Inc
 
@@ -49,19 +49,15 @@ enum Kind {
 
   /**
     \rst
-    .. _numeric-expr:
-
     The first numeric expression kind. Numeric expression kinds are in
-    the range ``[FIRST_NUMERIC, LAST_NUMERIC]``.
+    the range [`~mp::expr::FIRST_NUMERIC`, `~mp::expr::LAST_NUMERIC`].
     \endrst
    */
   FIRST_NUMERIC = FIRST_EXPR,
 
   /**
     \rst
-    .. _number:
-
-    A number such as ``42`` or ``-1.23e-4``.
+    A number such as 42 or -1.23e-4.
     \endrst
    */
   NUMBER = FIRST_NUMERIC,
@@ -69,15 +65,13 @@ enum Kind {
   /**
     \rst
     The first reference expression kind. Reference expression kinds are in
-    the range ``[FIRST_REFERENCE, LAST_REFERENCE]``.
+    the range [`~mp::expr::FIRST_REFERENCE`, `~mp::expr::LAST_REFERENCE`].
     \endrst
    */
   FIRST_REFERENCE,
 
   /**
     \rst
-    .. _variable:
-
     A reference to a variable.
     \endrst
    */
@@ -85,8 +79,6 @@ enum Kind {
 
   /**
     \rst
-    .. _common-expr:
-
     A reference to a common expression.
     \endrst
    */
@@ -97,10 +89,8 @@ enum Kind {
 
   /**
     \rst
-    .. _unary-expr:
-
     The first unary numeric expression kind. Unary numeric expression kinds
-    are in the range ``[FIRST_UNARY, LAST_UNARY]``.
+    are in the range [`~mp::expr::FIRST_UNARY`, `~mp::expr::LAST_UNARY`].
     \endrst
    */
   FIRST_UNARY,
@@ -262,9 +252,8 @@ enum Kind {
 
   /**
     \rst
-    .. _binary-expr:
-
-    The first binary numeric expression kind.
+    The first binary expression kind. Binary expression kinds are in
+    the range [`~mp::expr::FIRST_BINARY`, `~mp::expr::LAST_BINARY`].
     \endrst
    */
   FIRST_BINARY,
@@ -285,7 +274,7 @@ enum Kind {
 
   /**
     \rst
-    The ``less`` operation,
+    The :math:`\mathrm{less}` operation,
     :math:`x \mathop{\rm less} y = \mathrm{max}(x - y, 0)`.
     \endrst
    */
@@ -340,18 +329,42 @@ enum Kind {
    */
   POW_CONST_EXP,
 
+  /**
+    \rst
+    Inverse tangent, :math:`\mathrm{atan2}(y, x) = \mathrm{tan}^{-1}(y/x)`.
+    \endrst
+   */
   ATAN2,
+
+  /**
+    \rst
+    The function :math:`\mathrm{precision}(x, n)` which returns :math:`x`
+    rounded to :math:`n` significant decimal digits.
+    \endrst
+   */
   PRECISION,
+
+  /**
+    \rst
+    The function :math:`\mathrm{round}(x, n)` which returns :math:`x`
+    rounded to :math:`n` digits past decimal point.
+    \endrst
+   */
   ROUND,
+
+  /**
+    \rst
+    The function :math:`\mathrm{trunc}(x, n)` which returns :math:`x`
+    truncated to :math:`n` digits past decimal point.
+    \endrst
+   */
   TRUNC,
-  
+
   /** The last binary numeric expression kind. */
   LAST_BINARY = TRUNC,
 
   /**
     \rst
-    .. _if-expr:
-
     An if-then-else expression.
     Example: ``if x != 0 then y else z``, where ``x``, ``y`` and ``z`` are
     variables.
@@ -361,8 +374,6 @@ enum Kind {
 
   /**
     \rst
-    .. _plterm:
-
     A piecewise-linear term.
     Example: ``<<0; -1, 1>> x``, where ``x`` is a variable.
     \endrst
@@ -371,8 +382,6 @@ enum Kind {
 
   /**
     \rst
-    .. _call-expr:
-
     A function call expression.
     Example: ``f(x)``, where ``f`` is a function and ``x`` is a variable.
     \endrst
@@ -383,12 +392,16 @@ enum Kind {
   // The term "iterated" in the context of operators and expressions comes
   // from the article "AMPL: A Mathematical Programming Language" and is
   // used to denote operators indexed over sets.
+  /**
+    \rst
+    The first iterated expression kind. Iterated expression kinds are in
+    the range [`~mp::expr::FIRST_ITERATED`, `~mp::expr::LAST_ITERATED`].
+    \endrst
+   */
   FIRST_ITERATED,
 
   /**
     \rst
-    .. _vararg-expr:
-
     A varag expression (``min`` or ``max``). Example: ``min{i in I} x[i]``,
     where ``I`` is a set and ``x`` is a variable.
     \endrst
@@ -400,8 +413,6 @@ enum Kind {
 
   /**
     \rst
-    .. _sum-expr:
-
     A sum expression. Example: ``sum{i in I} x[i]``, where ``I`` is a set and
     ``x`` is a variable.
     \endrst
@@ -410,8 +421,6 @@ enum Kind {
 
   /**
     \rst
-    .. _numberof-expr:
-
     A numberof expression. Example: ``numberof 42 in ({i in I} x[i])``,
     where ``I`` is a set and ``x`` is a variable.
     \endrst
@@ -421,8 +430,6 @@ enum Kind {
 
   /**
     \rst
-    .. _numberof-sym-expr:
-
     A symbolic numberof expression.
     Example: ``numberof (if x != 0 then 'a' else 'b') in ('a', 'b', 'c')``,
     where ``x`` is a variable.
@@ -432,8 +439,6 @@ enum Kind {
 
   /**
     \rst
-    .. _count-expr:
-
     A count expression.
     Example: ``count{i in I} (x[i] >= 0)``, where ``I`` is a set and ``x``
     is a variable.
@@ -442,21 +447,16 @@ enum Kind {
   COUNT,
   LAST_NUMERIC = COUNT,
 
-  // To simplify checks, logical expression kinds are in the range
-  // [FIRST_LOGICAL, LAST_LOGICAL].
   /**
     \rst
-    .. _logical-expr:
-
-    A logical expression.
+    The first logical expression kind. Logical expression kinds are in
+    the range [`~mp::expr::FIRST_LOGICAL`, `~mp::expr::LAST_LOGICAL`].
     \endrst
    */
   FIRST_LOGICAL,
 
   /**
     \rst
-    .. _bool:
-
     A Boolean (logical) constant such as ``0`` or ``1``.
     \endrst
    */
@@ -464,8 +464,6 @@ enum Kind {
 
   /**
     \rst
-    .. _not-expr:
-
     A logical NOT expression.
     Example: ``not a``, where ``a`` is a logical expression.
     \endrst
@@ -475,8 +473,6 @@ enum Kind {
   // Binary logical expressions.
   /**
     \rst
-    .. _binary-logical-expr:
-
     A binary logical expression.
     Examples: ``a || b``, ``a && b``, where ``a`` and ``b`` are logical
     expressions.
@@ -491,8 +487,6 @@ enum Kind {
   // Relational expressions.
   /**
     \rst
-    .. _relational-expr:
-
     A relational expression.
     Examples: ``a < b``, ``a != b``, where ``a`` and ``b`` are numeric
     expressions.
@@ -509,8 +503,6 @@ enum Kind {
 
   /**
     \rst
-    .. _logical-count-expr:
-
     A logical count expression.
     Examples: ``atleast 1 (a < b, a != b)``, where ``a`` and ``b`` are
     numeric expressions.
@@ -527,8 +519,6 @@ enum Kind {
 
   /**
     \rst
-    .. _implication-expr:
-
     An implication expression.
     Example: ``a ==> b else c``, where ``a``, ``b`` and ``c`` are logical
     expressions.
@@ -539,8 +529,6 @@ enum Kind {
   // Iterated logical expressions.
   /**
     \rst
-    .. _iterated-logical-expr:
-
     An iterated logical expression.
     Example: ``exists{i in I} x[i] >= 0``, where ``I`` is a set and ``x`` is a
     variable.
@@ -554,8 +542,6 @@ enum Kind {
   // Pairwise expressions.
   /**
     \rst
-    .. _pairwise-expr:
-
     A pairwise expression (``alldiff`` or ``!alldiff``).
     Example: ``alldiff{i in I} x[i]``, where ``I`` is a set and ``x`` is a
     variable.
@@ -570,8 +556,6 @@ enum Kind {
   // String expressions.
   /**
     \rst
-    .. _string:
-
     A string such as ``"abc"``.
     \endrst
    */
@@ -579,8 +563,6 @@ enum Kind {
 
   /**
     \rst
-    .. _ifsym:
-
     A symbolic if-then-else expression.
     Example: ``if x != 0 then 'a' else 0``, where ``x`` is a variable.
     \endrst

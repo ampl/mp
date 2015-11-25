@@ -490,56 +490,56 @@ class NLHandler {
 
   /**
     \rst
-    A typedef of a class that receives notifications of :ref:`numeric
-    <numeric-expr>` arguments.
+    A typedef of a class that receives notifications of `numeric
+    <mp::expr::FIRST_NUMERIC>` arguments.
     \endrst
    */
   typedef ArgHandler NumericArgHandler;
 
   /**
     \rst
-    A typedef of a class that receives notifications of :ref:`vararg
-    expression <vararg-expr>` arguments.
+    A typedef of a class that receives notifications of `vararg expression
+    <mp::expr::FIRST_VARARG>` arguments.
     \endrst
    */
   typedef ArgHandler VarArgHandler;
 
   /**
     \rst
-    A typedef of a class that receives notifications of :ref:`call
-    expression <call-expr>` arguments.
+    A typedef of a class that receives notifications of `call expression
+    <mp::expr::CALL>` arguments.
     \endrst
    */
   typedef ArgHandler CallArgHandler;
 
   /**
     \rst
-    A typedef of a class that receives notifications of :ref:`numberof
-    expression <numberof-expr>` arguments.
+    A typedef of a class that receives notifications of `numberof expression
+    <mp::expr::NUMBEROF>` arguments.
     \endrst
    */
   typedef ArgHandler NumberOfArgHandler;
 
   /**
     \rst
-    A typedef of a class that receives notifications of :ref:`count
-    expression <count-expr>` arguments.
+    A typedef of a class that receives notifications of `count expression
+    <mp::expr::COUNT>` arguments.
     \endrst
    */
   typedef ArgHandler CountArgHandler;
 
   /**
     \rst
-    A typedef of a class that receives notifications of :ref:`logical
-    <logical-expr>` arguments.
+    A typedef of a class that receives notifications of `logical
+    <mp::expr::FIRST_LOGICAL>` arguments.
     \endrst
    */
   typedef ArgHandler LogicalArgHandler;
 
   /**
     \rst
-    A typedef of a class that receives notifications of :ref:`pairwise
-    expression <pairwise-expr>` arguments.
+    A typedef of a class that receives notifications of `pairwise expression
+    <mp::expr::FIRST_PAIRWISE>` arguments.
     \endrst
    */
   typedef ArgHandler PairwiseArgHandler;
@@ -547,14 +547,16 @@ class NLHandler {
   /**
     \rst
     A typedef of a class that receives notifications of symbolic
-    (:ref:`numeric <numeric-expr>` or :ref:`string <string-expr>`) arguments.
+    (`numeric <mp::expr::FIRST_NUMERIC>` or `string <mp::expr::STRING>`)
+    arguments.
     \endrst
    */
   typedef ArgHandler SymbolicArgHandler;
 
   /**
     \rst
-    Receives notification of a :ref:`number` in a nonlinear expression.
+    Receives notification of a `number <mp::expr::FIRST_NUMERIC>` in a
+    nonlinear expression.
     \endrst
    */
   NumericExpr OnNumber(double value) {
@@ -564,7 +566,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`variable reference <variable>`.
+    Receives notification of a `variable reference <mp::expr::FIRST_REFERENCE>`.
     \endrst
    */
   Reference OnVariableRef(int var_index) {
@@ -574,7 +576,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`common expression <common-expr>`
+    Receives notification of a `common expression <mp::expr::COMMON_EXPR>`
     (defined variable) reference.
     \endrst
    */
@@ -585,7 +587,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`unary expression <unary-expr>`.
+    Receives notification of a `unary expression <mp::expr::FIRST_UNARY>`.
     \endrst
    */
   NumericExpr OnUnary(expr::Kind kind, NumericExpr arg) {
@@ -595,7 +597,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`binary expression <binary-expr>`.
+    Receives notification of a `binary expression <mp::expr::FIRST_BINARY>`.
     \endrst
    */
   NumericExpr OnBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
@@ -605,7 +607,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of an :ref:`if expression <if-expr>`.
+    Receives notification of an `if expression <mp::expr::IF>`.
     \endrst
    */
   NumericExpr OnIf(LogicalExpr condition,
@@ -617,7 +619,7 @@ class NLHandler {
   /**
     \rst
     A class (struct) that receives notifications of slopes and breakpoints in a
-    :ref:`piecewise-linear term <plterm>`.
+    `piecewise-linear term <mp::expr::PLTERM>`.
     \endrst
    */
   struct PLTermHandler {
@@ -630,8 +632,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the beginning of a :ref:`piecewise-linear term
-    <plterm>`.
+    Receives notification of the beginning of a `piecewise-linear term
+    <mp::expr::PLTERM>`.
     \endrst
    */
   PLTermHandler BeginPLTerm(int num_breakpoints) {
@@ -641,8 +643,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the end of a :ref:`piecewise-linear term
-    <plterm>`.
+    Receives notification of the end of a `piecewise-linear term
+    <mp::expr::PLTERM>`.
 
     *arg*: argument that is a variable or a common expression reference.
     \endrst
@@ -654,8 +656,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the beginning of a :ref:`call expression
-    <call-expr>`.
+    Receives notification of the beginning of a `call expression
+    <mp::expr::CALL>`.
     \endrst
    */
   CallArgHandler BeginCall(int func_index, int num_args) {
@@ -665,7 +667,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the end of a :ref:`call expression <call-expr>`.
+    Receives notification of the end of a `call expression <mp::expr::CALL>`.
     \endrst
    */
   NumericExpr EndCall(CallArgHandler handler) {
@@ -675,8 +677,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the beginning of a :ref:`vararg expression
-    <vararg-expr>`.
+    Receives notification of the beginning of a `vararg expression
+    <mp::expr::FIRST_VARARG>`.
     \endrst
    */
   VarArgHandler BeginVarArg(expr::Kind kind, int num_args) {
@@ -686,8 +688,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the end of a :ref:`vararg expression
-    <vararg-expr>`.
+    Receives notification of the end of a `vararg expression
+    <mp::expr::FIRST_VARARG>`.
     \endrst
    */
   NumericExpr EndVarArg(VarArgHandler handler) {
@@ -697,8 +699,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the beginning of a :ref:`sum expression
-    <sum-expr>`.
+    Receives notification of the beginning of a `sum expression
+    <mp::expr::SUM>`.
     \endrst
    */
   NumericArgHandler BeginSum(int num_args) {
@@ -708,7 +710,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the end of a :ref:`sum expression <sum-expr>`.
+    Receives notification of the end of a `sum expression <mp::expr::SUM>`.
     \endrst
    */
   NumericExpr EndSum(NumericArgHandler handler) {
@@ -718,8 +720,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the beginning of a :ref:`count expression
-    <count-expr>`.
+    Receives notification of the beginning of a `count expression
+    <mp::expr::COUNT>`.
     \endrst
    */
   CountArgHandler BeginCount(int num_args) {
@@ -729,7 +731,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the end of a :ref:`count expression <count-expr>`.
+    Receives notification of the end of a `count expression <mp::expr::COUNT>`.
     \endrst
    */
   CountExpr EndCount(CountArgHandler handler) {
@@ -739,8 +741,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the beginning of a :ref:`numberof expression
-    <numberof-expr>`.
+    Receives notification of the beginning of a `numberof expression
+    <mp::expr::NUMBEROF>`.
     \endrst
    */
   NumberOfArgHandler BeginNumberOf(int num_args, NumericExpr arg0) {
@@ -750,8 +752,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the end of a :ref:`numberof expression
-    <numberof-expr>`.
+    Receives notification of the end of a `numberof expression
+    <mp::expr::NUMBEROF>`.
     \endrst
    */
   NumericExpr EndNumberOf(NumberOfArgHandler handler) {
@@ -761,8 +763,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the beginning of a :ref:`symbolic numberof
-    expression <numberof-sym-expr>`.
+    Receives notification of the beginning of a `symbolic numberof
+    expression <mp::expr::NUMBEROF_SYM>`.
     \endrst
    */
   SymbolicArgHandler BeginSymbolicNumberOf(int num_args, Expr arg0) {
@@ -772,8 +774,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the end of a :ref:`symbolic numberof expression
-    <numberof-sym-expr>`.
+    Receives notification of the end of a `symbolic numberof expression
+    <mp::expr::NUMBEROF_SYM>`.
     \endrst
    */
   NumericExpr EndSymbolicNumberOf(SymbolicArgHandler handler) {
@@ -783,7 +785,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`Boolean value <bool>`.
+    Receives notification of a `Boolean value <mp::expr::BOOL>`.
     \endrst
    */
   LogicalExpr OnBool(bool value) {
@@ -793,7 +795,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`logical not expression <not-expr>`.
+    Receives notification of a `logical not expression <mp::expr::NOT>`.
     \endrst
    */
   LogicalExpr OnNot(LogicalExpr arg) {
@@ -803,8 +805,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`binary logical expression
-    <binary-logical-expr>`.
+    Receives notification of a `binary logical expression
+    <mp::expr::FIRST_BINARY_LOGICAL>`.
     \endrst
    */
   LogicalExpr OnBinaryLogical(
@@ -815,7 +817,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`relational expression <relational-expr>`.
+    Receives notification of a `relational expression
+    <mp::expr::FIRST_RELATIONAL>`.
     \endrst
    */
   LogicalExpr OnRelational(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
@@ -825,8 +828,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`logical count expression
-    <logical-count-expr>`.
+    Receives notification of a `logical count expression
+    <mp::expr::FIRST_LOGICAL_COUNT>`.
     \endrst
    */
   LogicalExpr OnLogicalCount(expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
@@ -836,8 +839,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of an :ref:`implication expression
-    <implication-expr>`.
+    Receives notification of an `implication expression
+    <mp::expr::IMPLICATION>`.
     \endrst
    */
   LogicalExpr OnImplication(
@@ -848,8 +851,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the beginning of an :ref:`iterated logical
-    expression <iterated-logical-expr>`.
+    Receives notification of the beginning of an `iterated logical
+    expression <mp::expr::FIRST_ITERATED_LOGICAL>`.
     \endrst
    */
   LogicalArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
@@ -859,8 +862,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the end of an :ref:`iterated logical expression
-    <iterated-logical-expr>`.
+    Receives notification of the end of an `iterated logical expression
+    <mp::expr::FIRST_ITERATED_LOGICAL>`.
     \endrst
    */
   LogicalExpr EndIteratedLogical(LogicalArgHandler handler) {
@@ -870,8 +873,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the beginning of a :ref:`pairwise expression
-    <pairwise-expr>`.
+    Receives notification of the beginning of a `pairwise expression
+    <mp::expr::FIRST_PAIRWISE>`.
     \endrst
    */
   PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
@@ -881,8 +884,8 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of the end of a :ref:`pairwise expression
-    <pairwise-expr>`.
+    Receives notification of the end of a `pairwise expression
+    <mp::expr::FIRST_PAIRWISE>`.
     \endrst
    */
   LogicalExpr EndPairwise(PairwiseArgHandler handler) {
@@ -892,7 +895,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`string`.
+    Receives notification of a `string <mp::expr::STRING>`.
     The *value* argument is a string value and it is not zero terminated.
     \endrst
    */
@@ -903,7 +906,7 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a :ref:`symbolic if expression <ifsym>`.
+    Receives notification of a `symbolic if expression <mp::expr::IFSYM>`.
     \endrst
    */
   Expr OnSymbolicIf(LogicalExpr condition, Expr then_expr, Expr else_expr) {
