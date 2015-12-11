@@ -82,7 +82,7 @@ def install_cmake(package, **kwargs):
     r'(cmake-(\d+\.\d+)\.(\d+).*-[^\.]+)\..*', package).groups()
   # extractall overwrites existing files, so no need to prepare the
   # destination.
-  url = 'http://www.cmake.org/files/v{0}/{1}'.format(version, package)
+  url = 'https://cmake.org/files/v{0}/{1}'.format(version, package)
   install_dir = kwargs.get('install_dir', opt_dir)
   with Downloader(kwargs.get('download_dir', '.')).download(url) as f:
     iszip = package.endswith('zip')
