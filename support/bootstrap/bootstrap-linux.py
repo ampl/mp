@@ -38,7 +38,7 @@ if __name__ == '__main__':
     # Install packages.
     check_call(['apt-get', 'update', '-q'])
     packages = [
-      'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
+      'doxygen', 'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
       'oracle-java7-installer', 'oracle-java7-set-default',
       'libgtk2.0-0', 'libxrender1', 'libxtst6', # Java/Eclipse requirements
       'python-dev', 'unixodbc-dev'
