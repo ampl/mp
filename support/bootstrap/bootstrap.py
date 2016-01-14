@@ -136,7 +136,7 @@ def module_exists(module):
 # Install package using pip if it hasn't been installed already.
 def pip_install(package, test_module=None):
   if not test_module:
-    test_module = package
+    test_module = package.split('==')[0]
   if module_exists(test_module):
     return
   # If pip doesn't exist install it first.
@@ -167,6 +167,9 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False, **args):
   path = path or os.path.expanduser('~{0}/slave'.format(username))
   if os.path.exists(path):
     return None
+  # Install twisted 15.4.0 because newer version require Python 2.7 unavailable
+  # on Ubuntu 10.04.
+  pip_install('twisted==15.4.0')
   pip_install('buildbot-slave', 'buildbot')
   # The password is insecure but it doesn't matter as the buildslaves are
   # not publicly accessible.
