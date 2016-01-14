@@ -54,7 +54,7 @@ def get_archive_name(system, package=None):
   return 'ampl-open-{}.zip'.format(system)
 
 def create_packages(system, workdir):
-  """Create packages and upload them to the server."""
+  """Create packages."""
 
   # Download build artifacts.
   artifact_dir = os.path.join(workdir, 'artifacts')
