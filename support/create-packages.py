@@ -94,7 +94,7 @@ def create_packages(system, workdir):
       if package.is_open:
         paths.add(path)
 
-  # Careate a full package.
+  # Create a full package.
   with zipfile.ZipFile(get_archive_name(system), 'w', zipfile.ZIP_DEFLATED) as zip:
     for path in paths:
       zip.write(path, os.path.join('ampl-open', os.path.basename(path)))
