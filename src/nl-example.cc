@@ -50,6 +50,7 @@ struct SparsityPrinter : mp::NLHandler<int> {
   }
 };
 
+// Print objective or constraint expression in SSA-like form.
 class ExprPrinter : public mp::NLHandler<std::string> {
  private:
   // Next expression ID for SSA-like output.
