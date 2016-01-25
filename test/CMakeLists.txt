@@ -27,13 +27,6 @@ if (MSVC)
   target_compile_definitions(gtest-extra PUBLIC _VARIADIC_MAX=10)
 endif ()
 
-# Check if variadic templates are working and not affected by GCC bug 39653:
-# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=39653
-check_cxx_source_compiles("
-  template <class T, class ...Types>
-  struct S { typedef typename S<Types...>::type type; };
-  int main() {}" MP_VARIADIC_TEMPLATES)
-
 check_cxx_source_compiles("
   #include <initializer_list>
   int main() {}" MP_INITIALIZER_LISTS)
