@@ -614,10 +614,10 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 	expr *e;
 	expr_n *en;
 	int *cm, *colno, *qm, *rowq, *rowq0, *rowq1, *s, *vmi, *w, *z;
-	int arrays, co0, ftn, i, icol, j, ncol, ncom, nv, nva, nz, pass;
+	int arrays, co0, ftn, i, icol, icolf, j, ncol, ncom, nv, nva, nz, nz1, pass;
 	ograd *og, *og1, *og2, **ogp;
 	real *L, *U, *delsq, *delsq0, *delsq1, objadj, t, *x;
-	size_t  *colq, *colq1, nelq;
+	size_t  *colq, *colq1, nelq, nelq0;
 	term *T;
 
 	ASL_CHECK(a, ASL_read_fg, "nqpcheck");
@@ -748,15 +748,19 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 		*cgq = 0;
 		}
 
-	q = s_q;
 	objadj = dsort(S, T, S->oq, cgp, ogp, arrays);
 
-	nelq = ncol = nz = 0;
+	icolf = nelq = ncol = nz = nz1 = 0;
 	qpi = 0;
+	/* In pass 0, we the count nonzeros in the lower triangle. */
+	/* In pass 1, we compute the lower triangle and use column dispatch */
+	/* (via the cdisp array) to copy the strict lower triangle to the */
+	/* strict upper triangle.  This ensures symmetry. */
 	for(pass = 0; pass < 2; pass++) {
 		if (pass) {
 			if (!nelq)
 				break;
+			nelq += nelq - nz1; /* nz1 = number of diagonal elements */
 			if (!arrays) {
 				for(qm = (int*)AVL_first(AQ, &NQ); qm; ) {
 					*qm = 0;
@@ -770,52 +774,38 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 						+ nelq*(sizeof(real) + sizeof(int))
 						+ ncol*sizeof(int)
 						+ (ncol + 1)*sizeof(size_t));
-			qpi->nz = nelq;
-			qpi->nc = ncol;
 			qpi->delsq = delsq = delsq1 = (double *)(qpi+1);
 			qpi->colbeg = colq = (size_t *)(delsq + nelq);
 			qpi->rowno = rowq = (int *)(colq + ncol + 1);
 			qpi->colno = colno = rowq + nelq;
+			qpi->nc = ncol;
+			qpi->nz = nelq;
 			nelq = ftn;
 			delsq0 = delsq - ftn;
 			rowq0 = rowq - ftn;
-			for(d = T->Q; d; d = d->next) {
-				og = d->Rq;
-				og1 = d->Lq;
-				i = og->varno;
-				while(og1 && og1->varno < i)
-					og1 = og1->next;
-				if (og1) {
-					q1 = q + i;
-					if (!w[i]++)
-						AVL_vinsert(AQ, 0, (Element*)&w[i], 0);
-					*q1 = new_dyad(S, *q1, og, og1, 0);
-					}
-				og1 = d->Lq;
-				i = og1->varno;
-				while(og && og->varno < i)
-					og = og->next;
-				if (og) {
-					q1 = q + i;
-					if (!w[i]++)
-						AVL_vinsert(AQ, 0, (Element*)&w[i], 0);
-					*q1 = new_dyad(S, *q1, og1, og, 0);
-					}
-				}
 			}
-		else {
-			for(d = T->Q; d; d = d->next) {
-				og = d->Rq;
-				og1 = d->Lq;
-				q1 = q + (i = og->varno);
-				if (!w[i]++) {
-					++ncol;
+		for(d = T->Q; d; d = d->next) {
+			og = d->Rq;
+			og1 = d->Lq;
+			i = og->varno;
+			while(og1 && og1->varno < i)
+				og1 = og1->next;
+			if (og1) {
+				q1 = q + i;
+				if (!w[i]) {
+					w[i] = 1;
 					AVL_vinsert(AQ, 0, (Element*)&w[i], 0);
 					}
 				*q1 = new_dyad(S, *q1, og, og1, 0);
-				q1 = q + (i = og1->varno);
-				if (!w[i]++) {
-					++ncol;
+				}
+			og1 = d->Lq;
+			i = og1->varno;
+			while(og && og->varno < i)
+				og = og->next;
+			if (og) {
+				q1 = q + i;
+				if (!w[i]) {
+					w[i] = 1;
 					AVL_vinsert(AQ, 0, (Element*)&w[i], 0);
 					}
 				*q1 = new_dyad(S, *q1, og1, og, 0);
@@ -825,10 +815,10 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 		for(qm = (int*)AVL_first(AQ, &NQ); qm; ) {
 			NQ0 = NQ;
 			icol = qm - w;
+			nelq0 = nelq;
 			if (pass) {
 				*qm = 0;
-				*colno++ = icol + ftn;
-				*colq++ = nelq;
+				icolf = icol + ftn;
 				if ((cd = cdisp[icol])) {
 				    cdisp[icol] = 0;
 				    do {
@@ -848,32 +838,25 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 			    do {
 				og = d->Lq;
 				og1 = d->Rq;
-				switch(pass) {
-				  case 0:
-					for(; og1; og1 = og1->next)
-						if (!s[i = og1->varno]++)
-							z[nz++] = i;
-					break;
-				  case 1:
-					t = og->coef;
-					for(; og1; og1 = og1->next) {
-						if (!s[i = og1->varno]++)
-							x[z[nz++] = i] =
-								t*og1->coef;
-						else
-							x[i] += t*og1->coef;
-						}
-					if ((og1 = og->next)) {
-					  og2 = d->Rq;
-					  while (og2->varno < og1->varno)
-					    if (!(og2 = og2->next)) {
-						while((og1 = og->next))
-							og = og1;
-						break;
-						}
-					  d->Rq = og2;
-					  }
+				t = og->coef;
+				for(; og1; og1 = og1->next) {
+					if (!s[i = og1->varno]++)
+						x[z[nz++] = i] =
+							t*og1->coef;
+					else
+						x[i] += t*og1->coef;
 					}
+				if ((og1 = og->next)) {
+				  og2 = d->Rq;
+				  while (og2->varno < og1->varno)
+				    if (!(og2 = og2->next)) {
+					while((og1 = og->next))
+						og = og1;
+					goto get_d1;
+					}
+				  d->Rq = og2;
+				  }
+ get_d1:
 				d1 = d->next;
 				if ((og = og->next)) {
 					i = og->varno;
@@ -886,8 +869,8 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 						}
 					d->Lq = og;
 					q2 = q + i;
-					if (!w[i]++) {
-						++ncol;
+					if (!w[i]) {
+						w[i] = 1;
 						AVL_vinsert(AQ, 0, (Element*)&w[i], 0);
 						}
 					d->next = *q2;
@@ -904,36 +887,53 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 				if (pass) {
 					if (nz > 1)
 						qsortv(z, nz, sizeof(int), lcmp, NULL);
-					for(i = 0; i < nz; i++) {
+					for(i = nz1 = 0; i < nz; i++) {
 						if ((t = x[j = z[i]])) {
 							*delsq++ = t;
 							if (vmi)
 								j = vmi[j];
 							*rowq++ = j + ftn;
 							nelq++;
+							z[nz1++] = j;
 							}
 						s[j] = 0;
 						}
-					for(i = 0; i < nz; i++)
-					    if ((j = z[i]) > icol && x[j]) {
+					if (nelq > nelq0) {
+						*colq++ = nelq0;
+						*colno++ = icolf;
+						}
+					for(i = 0; i < nz1; i++)
+					    if ((j = z[i]) > icol) {
 						cd0->i = icol;
-						cd0->j = colq[-1] + i;
+						cd0->j = nelq0 + i;
 						cd0->jend = nelq;
 						cdp = cdisp + j;
 						cd0->next = *cdp;
 						*cdp = cd0++;
-						if (!w[j]++)
-							AVL_vinsert(AQ, 0, (Element*)&w[j], 0);
 						break;
 						}
 					nz = 0;
 					}
 				else {
-					nelq += nz;
-					while(nz > 0)
-						s[z[--nz]] = 0;
+					while(nz > 0) {
+						s[i = z[--nz]] = 0;
+						if (x[i]) {
+							++nelq;
+							if (i == icol)
+								++nz1;
+							else {
+								if (!w[i])
+						AVL_vinsert(AQ, 0, (Element*)&w[i], 0);
+								w[i] = 2;
+								}
+							}
+						}
+					if (nelq > nelq0 || w[icol] == 2)
+						++ncol;
 					}
 				}
+			else if (!pass && w[icol] == 2)
+				++ncol;
 			qm = (int*) AVL_next(&NQ);
 			if (pass)
 				AVL_delnode(AQ, &NQ0);

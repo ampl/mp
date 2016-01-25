@@ -73,23 +73,23 @@ cival(ASL_fg *asl, int i, real *X, fint *nerror)
 	return f;
 	}
 
- real
-con1ival(ASL *a, int i, real *X, fint *nerror)
+ static real
+Conival1(ASL_fg *asl, int i, real *X, fint *nerror)
 {
-	ASL_fg *asl;
 	cgrad *gr;
 	int j1, kv, *vmi;
 	real f, *vscale;
 
-	INchk(a, "con1ival", i, a->i.n_con0);
-	asl = (ASL_fg*)a;
-	f = cival(asl, i, X, nerror);
+	if (i < asl->i.n_con0)
+		f = cival(asl, i, X, nerror);
+	else
+		f = 0.;
 	kv = 0;
 	vmi = 0;
 	if ((vscale = asl->i.vscale))
 		kv = 2;
 	if (asl->i.vmap) {
-		vmi = get_vminv_ASL(a);
+		vmi = get_vminv_ASL((ASL*)asl);
 		++kv;
 		}
 	gr = asl->i.Cgrad0[i];
@@ -117,6 +117,24 @@ con1ival(ASL *a, int i, real *X, fint *nerror)
 	return f;
 	}
 
+ real
+con1ival_nomap_ASL(ASL *a, int i, real *X, fint *nerror)
+{
+	INchk(a, "con1ival_nomap", i, a->i.n_con0);
+	return  Conival1((ASL_fg*)a, i, X, nerror);
+	}
+
+ real
+con1ival(ASL *a, int i, real *X, fint *nerror)
+{
+	int *cm;
+
+	INchk(a, "con1ival", i, a->i.n_con_);
+	if ((cm = a->i.cmap))
+		i = cm[i];
+	return  Conival1((ASL_fg*)a, i, X, nerror);
+	}
+
  int
 lcon1val(ASL *a, int i, real *X, fint *nerror)
 {
@@ -128,21 +146,15 @@ lcon1val(ASL *a, int i, real *X, fint *nerror)
 	}
 
  void
-con1grd(ASL *a, int i, real *X, real *G, fint *nerror)
+Congrd1(ASL_fg *asl, int i, real *X, real *G, fint *nerror)
 {
-	ASL_fg *asl;
 	Jmp_buf err_jmp0;
 	cde *d;
 	cgrad *gr, *gr1;
 	int i0, ij, j, *vmi, xksave;
 	real *Adjoints, *vscale;
 	size_t L;
-	static char who[] = "con1grd";
 
-	INchk(a, who, i, a->i.n_con0);
-	asl = (ASL_fg*)a;
-	if (!want_derivs)
-		No_derivs_ASL(who);
 	if (nerror && *nerror >= 0) {
 		err_jmp = &err_jmp0;
 		ij = setjmp(err_jmp0.jb);
@@ -157,13 +169,13 @@ con1grd(ASL *a, int i, real *X, real *G, fint *nerror)
 	     || i < n_conjac[0] || i >= n_conjac[1])) {
 		xksave = asl->i.x_known;
 		asl->i.x_known = 1;
-		con1ival(a,i,X,nerror);
+		con1ival((ASL*)asl,i,X,nerror);
 		asl->i.x_known = xksave;
 		if (nerror && *nerror)
 			return;
 		}
 	if (asl->i.Derrs)
-		deriv_errchk_ASL(a, nerror, i, 1);
+		deriv_errchk_ASL((ASL*)asl, nerror, i, 1);
 	if (!(x0kind & ASL_have_funnel)) {
 		if (f_b)
 			funnelset_ASL(asl, f_b);
@@ -182,7 +194,7 @@ con1grd(ASL *a, int i, real *X, real *G, fint *nerror)
 		}
 	vmi = 0;
 	if (asl->i.vmap)
-		vmi = get_vminv_ASL(a);
+		vmi = get_vminv_ASL((ASL*)asl);
 	if ((vscale = asl->i.vscale)) {
 		if (vmi)
 			for(gr = gr1; gr; gr = gr->next) {
@@ -229,4 +241,33 @@ con1grd(ASL *a, int i, real *X, real *G, fint *nerror)
 			G[i0++] = 0;
 	  }
 	err_jmp = 0;
+	}
+
+ void
+con1grd_nomap_ASL(ASL *a, int i, real *X, real *G, fint *nerror)
+{
+	ASL_fg *asl;
+	static char who[] = "con1grd_nomap";
+
+	INchk(a, who, i, a->i.n_con0);
+	asl = (ASL_fg*)a;
+	if (!want_derivs)
+		No_derivs_ASL(who);
+	Congrd1(asl, i, X, G, nerror);
+	}
+
+ void
+con1grd_ASL(ASL *a, int i, real *X, real *G, fint *nerror)
+{
+	ASL_fg *asl;
+	int *cm;
+	static char who[] = "con1grd";
+
+	INchk(a, who, i, a->i.n_con_);
+	asl = (ASL_fg*)a;
+	if (!want_derivs)
+		No_derivs_ASL(who);
+	if ((cm = a->i.cmap))
+		i = cm[i];
+	Congrd1(asl, i, X, G, nerror);
 	}

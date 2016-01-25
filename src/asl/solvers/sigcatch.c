@@ -96,7 +96,7 @@ intcatch_ASL(ASL *a, void (*f)(int,void*), void *v)
 		}
 	else
 		signal(SIGINT, SIG_IGN);
-	if (ae = a->i.ae) {
+	if ((ae = a->i.ae)) {
 		ae->Breakfunc = f;
 		ae->Breakarg = v;
 		}

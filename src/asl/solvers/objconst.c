@@ -30,6 +30,7 @@ THIS SOFTWARE.
 #include "nlp2.h"
 #include "asl_pfg.h"
 #include "asl_pfgh.h"
+#include "obj_adj.h"
 #undef f_OPNUM
 #include "r_opn0.hd"	/* for f_OPNUM */
 
@@ -40,8 +41,10 @@ objconst_ASL(asl, n) ASL *asl; int n;
 objconst_ASL(ASL *asl, int n)
 #endif
 {
+	Objrep *r, **rp;
 	expr_n *e;
 	efunc_n *opnum = f_OPNUM_ASL;
+	real c;
 	static char who[] = "objconst";
 
 	if (!asl)
@@ -49,7 +52,10 @@ objconst_ASL(ASL *asl, int n)
 	else if (asl->i.ASLtype < ASL_read_f || asl->i.ASLtype >ASL_read_pfgh)
 		badasl_ASL(asl,ASL_read_f,who);
 
+	c = 0.;
 	if (n >= 0 && n < n_obj) {
+		if ((rp = asl->i.Or) && (r = rp[n]))
+			c = r->c0a;
 		switch(asl->i.ASLtype) {
 		  case ASL_read_fgh:
 			e = (expr_n*)(((ASL_fgh*)asl)->I.obj2_de_ + n)->e;
@@ -66,7 +72,7 @@ objconst_ASL(ASL *asl, int n)
 			e = (expr_n*)(((ASL_fg*)asl)->I.obj_de_ + n)->e;
 		  }
 		if (e->op == opnum || e->op == (efunc_n *)f_OPNUM)
-			return e->v;
+			return c + e->v;
 		}
-	return 0;
+	return c;
 	}

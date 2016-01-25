@@ -61,6 +61,7 @@ f_OPMINUS(expr *e A_ASL)
 f_OPMULT(expr *e A_ASL)
 {
 	expr *e1, *e2;
+
 	e1 = e->L.e;
 	e2 = e->R.e;
 	return (e->dR = (*e1->op)(e1 K_ASL)) * (e->dL = (*e2->op)(e2 K_ASL));
@@ -71,6 +72,7 @@ f_OPDIV(expr *e A_ASL)
 {
 	expr *e1;
 	real L, R, rv;
+
 	e1 = e->L.e;
 	L = (*e1->op)(e1 K_ASL);
 	e1 = e->R.e;
@@ -89,29 +91,33 @@ f_OPDIV(expr *e A_ASL)
  static real
 f_OPREM(expr *e A_ASL)
 {
+	U rv;
 	expr *e1;
-	real L, R, rv;
+	real L, R;
+
 	/* e->dL = 1.; */
 	e1 = e->L.e;
 	L = (*e1->op)(e1 K_ASL);
 	e1 = e->R.e;
 	R = (*e1->op)(e1 K_ASL);
-	rv = fmod(L,R);
+	rv.d = fmod(L,R);
 	if (errchk(rv))
 		introuble2("fmod",L,R,1);
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OPPOW(expr *e A_ASL)
 {
+	U rv;
 	expr *e1;
-	real L, R, rv;
+	real L, R;
+
 	e1 = e->L.e;
 	L = (*e1->op)(e1 K_ASL);
 	e1 = e->R.e;
 	R = (*e1->op)(e1 K_ASL);
-	rv = mypow(L,R);
+	rv.d = mypow(L,R);
 	if (errchk(rv)) {
 #ifdef WANT_INFNAN
 		if (!L && R < 0.) {
@@ -125,8 +131,8 @@ f_OPPOW(expr *e A_ASL)
 		}
 	if (want_deriv) {
 		if (L > 0.) {
-			e->dL = R * (rv/L);
-			e->dR = log(L) * rv;
+			e->dL = R * (rv.d/L);
+			e->dR = log(L) * rv.d;
 			}
 		else if (L != 0.) {
 #ifndef WANT_INFNAN
@@ -152,17 +158,19 @@ f_OPPOW(expr *e A_ASL)
 #endif
 			}
 		}
-	return rv;
+	return rv.d;
 	}
  static real
 f_OP1POW(expr *e A_ASL) /* f_OPPOW for R = numeric constant */
 {
+	U rv;
 	expr *e1;
-	real L, R, rv;
+	real L, R;
+
 	e1 = e->L.e;
 	L = (*e1->op)(e1 K_ASL);
 	R = ((expr_n *)e->R.e)->v;
-	rv = mypow(L,R);
+	rv.d = mypow(L,R);
 	if (errchk(rv)) {
 #ifdef WANT_INFNAN
 		if (!L && R < 0.) {
@@ -175,7 +183,7 @@ f_OP1POW(expr *e A_ASL) /* f_OPPOW for R = numeric constant */
 		}
 	if (want_deriv) {
 		if (L)
-			e->dL = R * (rv/L);
+			e->dL = R * (rv.d/L);
 		else if (R > 1.)
 			e->dL = 0.;
 		/* R == 1. does not arise here */
@@ -187,7 +195,7 @@ f_OP1POW(expr *e A_ASL) /* f_OPPOW for R = numeric constant */
 #endif
 			}
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
@@ -195,6 +203,7 @@ f_OP2POW(expr *e A_ASL)	/* f_OPPOW for R = 2 */
 {
 	expr *e1;
 	real L;
+
 	e1 = e->L.e;
 	L = (*e1->op)(e1 K_ASL);
 	e->dL = L + L;
@@ -204,11 +213,12 @@ f_OP2POW(expr *e A_ASL)	/* f_OPPOW for R = 2 */
  static real
 f_OPCPOW(expr *e A_ASL)	/* f_OPPOW for L = numeric constant */
 {
+	U rv;
 	expr *e1;
-	real L, R, rv;
+	real L, R;
 
 	e1 = e->R.e;
-	rv = mypow(L = e->L.en->v, R = (*e1->op)(e1 K_ASL));
+	rv.d = mypow(L = e->L.en->v, R = (*e1->op)(e1 K_ASL));
 	if (errchk(rv)) {
 #ifdef WANT_INFNAN
 		if (!L && R < 0.) {
@@ -223,7 +233,7 @@ f_OPCPOW(expr *e A_ASL)	/* f_OPPOW for L = numeric constant */
 		if (L > 0.) {
 			if (e->dL == 1)
 				e->dL = log(L);	/* cache value */
-			e->dR = e->dL * rv;
+			e->dR = e->dL * rv.d;
 			}
 		else if (L == 0.)
 			e->dR = 0.;
@@ -238,7 +248,7 @@ f_OPCPOW(expr *e A_ASL)	/* f_OPPOW for L = numeric constant */
 #endif
 			}
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
@@ -246,6 +256,7 @@ f_OPLESS(expr *e A_ASL)
 {
 	expr *e1;
 	real L;
+
 	e1 = e->L.e;
 	L = (*e1->op)(e1 K_ASL);
 	e1 = e->R.e;
@@ -287,9 +298,9 @@ f_MINLIST(expr *e0 A_ASL)
 f_MAXLIST(expr *e0 A_ASL)
 {
 	de *d, *d1;
-	real t, rv;
-	expr *e1;
 	derp *D;
+	expr *e1;
+	real t, rv;
 	expr_va *e = (expr_va *)e0;
 
 	d = e->L.d;
@@ -328,8 +339,9 @@ f_CEIL(expr *e A_ASL)
  static real
 f_ABS(expr *e A_ASL)
 {
-	real rv;
 	expr *e1;
+	real rv;
+
 	e1 = e->L.e;
 	rv = (*e1->op)(e1 K_ASL);
 	if (rv < 0.) {
@@ -351,111 +363,124 @@ f_OPUMINUS(expr *e A_ASL)
  static real
 f_OP_tanh(expr *e A_ASL)
 {
-	real rv, t, t1;
+	U rv, t1;
 	expr *e1;
+	real t, t2;
+
 	e1 = e->L.e;
-	rv = tanh(t = (*e1->op)(e1 K_ASL));
+	rv.d = tanh(t = (*e1->op)(e1 K_ASL));
 	if (errchk(rv))
 		introuble("tanh",t,1);
 	if (want_deriv) {
-		t1 = cosh(t);
+		t1.d = cosh(t);
 		if (errchk(t1))
 			introuble("tanh'", t, 2);
 		else {
-			t1 = 1. / t1;
-			e->dL = t1*t1;
+			t2 = 1. / t1.d;
+			e->dL = t2*t2;
 			}
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_tan(expr *e A_ASL)
 {
-	real rv, t, t1;
+	U rv, t1;
 	expr *e1;
+	real t, t2;
+
 	e1 = e->L.e;
-	rv = tan(t = (*e1->op)(e1 K_ASL));
+	rv.d = tan(t = (*e1->op)(e1 K_ASL));
 	if (errchk(rv))
 		introuble("tan",t,1);
 	if (want_deriv) {
-		t1 = cos(t);
-		if (errchk(t1) || !t1)
+		t1.d = cos(t);
+		if (errchk(t1) || !t1.d)
 			introuble("tan'",t,2);
 		else {
-			t1 = 1. / t1;
-			e->dL = t1*t1;
+			t2 = 1. / t1.d;
+			e->dL = t2*t2;
 			}
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_sqrt(expr *e A_ASL)
 {
-	real t, rv;
+	U rv;
 	expr *e1;
+	real t;
+
 	e1 = e->L.e;
 	t = (*e1->op)(e1 K_ASL);
 	if (t < 0.) {
  badsqrt:
 		introuble("sqrt",t,1);
 		}
-	rv = sqrt(t);
+	rv.d = sqrt(t);
 	if (errchk(rv))
 		goto badsqrt;
 	if (want_deriv) {
-		if (rv <= 0.)
+		if (rv.d <= 0.)
 			introuble("sqrt'",t,2);
 		else
-			e->dL = 0.5 / rv;
+			e->dL = 0.5 / rv.d;
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_sinh(expr *e A_ASL)
 {
-	real t, rv;
+	U dL, rv;
 	expr *e1;
+	real t;
+
 	e1 = e->L.e;
-	rv = sinh(t = (*e1->op)(e1 K_ASL));
+	rv.d = sinh(t = (*e1->op)(e1 K_ASL));
 	if (errchk(rv))
 		introuble("sinh",t,1);
 	if (want_deriv) {
-		e->dL = cosh(t);
-		if (errchk(e->dL))
+		dL.d = cosh(t);
+		if (errchk(dL))
 			introuble("sinh'",t,2);
+		e->dL = dL.d;
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_sin(expr *e A_ASL)
 {
-	real t, rv;
+	U dL, rv;
 	expr *e1;
+	real t;
+
 	e1 = e->L.e;
-	rv = sin(t = (*e1->op)(e1 K_ASL));
+	rv.d = sin(t = (*e1->op)(e1 K_ASL));
 	if (errchk(rv))
 		introuble("sin",t,1);
 	if (want_deriv) {
-		e->dL = cos(t);
-		if (errchk(e->dL))
+		dL.d = cos(t);
+		if (errchk(dL))
 			introuble("sin'",t,2);
+		e->dL = dL.d;
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_log10(expr *e A_ASL)
 {
-	real t, rv;
+	U rv;
 	expr *e1;
+	real t;
 	static real Le10;
 
 	e1 = e->L.e;
-	rv = log10(t = (*e1->op)(e1 K_ASL));
+	rv.d = log10(t = (*e1->op)(e1 K_ASL));
 	if (errchk(rv))
 		introuble("log10",t,1);
 	if (want_deriv) {
@@ -463,110 +488,122 @@ f_OP_log10(expr *e A_ASL)
 			Le10 = 1. / log(10.);
 		e->dL = Le10 / t;
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_log(expr *e A_ASL)
 {
-	real t, rv;
+	U rv;
 	expr *e1;
+	real t;
+
 	e1 = e->L.e;
-	rv = log(t = (*e1->op)(e1 K_ASL));
+	rv.d = log(t = (*e1->op)(e1 K_ASL));
 	if (errchk(rv))
 		introuble("log",t,1);
 	if (want_deriv)
 		e->dL = 1. / t;
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_exp(expr *e A_ASL)
 {
-	real t, rv;
+	U rv;
 	expr *e1;
+	real t;
+
 	e1 = e->L.e;
-	rv = e->dL = exp(t = (*e1->op)(e1 K_ASL));
+	rv.d = e->dL = exp(t = (*e1->op)(e1 K_ASL));
 	if (errchk(rv)) {
 		if (t >= 0.)
 			introuble("exp",t,1);
 		else {
 			errno_set(0);
-			rv = 0.;
+			rv.d = 0.;
 			}
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_cosh(expr *e A_ASL)
 {
-	real t, rv;
+	U dL, rv;
 	expr *e1;
+	real t;
+
 	e1 = e->L.e;
-	rv = cosh(t = (*e1->op)(e1 K_ASL));
+	rv.d = cosh(t = (*e1->op)(e1 K_ASL));
 	if (errchk(rv))
 		introuble("cosh",t,1);
 	if (want_deriv) {
-		e->dL = sinh(t);
-		if (errchk(e->dL))
+		dL.d = sinh(t);
+		if (errchk(dL))
 			introuble("cosh'",t,2);
+		e->dL = dL.d;
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_cos(expr *e A_ASL)
 {
-	real t, rv;
+	U dL, rv;
 	expr *e1;
+	real t;
+
 	e1 = e->L.e;
-	rv = cos(t = (*e1->op)(e1 K_ASL));
+	rv.d = cos(t = (*e1->op)(e1 K_ASL));
 	if (errchk(rv))
 		introuble("cos",t,1);
 	if (want_deriv) {
-		e->dL = -sin(t);
-		if (errchk(e->dL))
+		dL.d = -sin(t);
+		if (errchk(dL))
 			introuble("cos'",t,2);
+		e->dL = dL.d;
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_atanh(expr *e A_ASL)
 {
-	real t, rv;
+	U rv;
 	expr *e1;
+	real t;
 
 	e1 = e->L.e;
 	t = (*e1->op)(e1 K_ASL);
 	if (t <= -1. || t >= 1.) {
 		errno_set(EDOM);
  bad_atan:
-		rv = 0.;
+		rv.d = 0.;
 		introuble("atanh",t,1);
 		}
 	else {
-		rv = 0.5*log((1. + t) / (1. - t));
+		rv.d = 0.5*log((1. + t) / (1. - t));
 		if (errchk(rv))
 			goto bad_atan;
 		}
 	if (want_deriv)
 		e->dL = 1. / (1. - t*t);
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_atan2(expr *e A_ASL)
 {
-	real L, R, rv, t, t1;
+	U rv;
 	expr *e1;
+	real L, R, t, t1;
 
 	e1 = e->L.e;
 	L = (*e1->op)(e1 K_ASL);
 	e1 = e->R.e;
 	R = (*e1->op)(e1 K_ASL);
-	rv = atan2(L,R);
+	rv.d = atan2(L,R);
 	if (errchk(rv))
 		introuble2("atan2",L,R,1);
 	if (want_deriv) {
@@ -587,53 +624,56 @@ f_OP_atan2(expr *e A_ASL)
 			e->dL = -t*t1;
 			}
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_atan(expr *e A_ASL)
 {
-	real t, rv;
+	U rv;
 	expr *e1;
+	real t;
 
 	e1 = e->L.e;
-	rv = atan(t = (*e1->op)(e1 K_ASL));
+	rv.d = atan(t = (*e1->op)(e1 K_ASL));
 	if (errchk(rv))
 		introuble("atan",t,1);
 	if (want_deriv)
 		e->dL = 1. / (1. + t*t);
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_asinh(expr *e A_ASL)
 {
+	U rv;
 	expr *e1;
-	real rv, t, t0, t1;
 	int sign;
+	real t, t0, t1;
 
 	e1 = e->L.e;
 	t = t0 = (*e1->op)(e1 K_ASL);
 	if ((sign = t < 0.))
 		t = -t;
-	rv = log(t + (t1 = sqrt(t*t + 1.)));
+	rv.d = log(t + (t1 = sqrt(t*t + 1.)));
 	if (errchk(rv))
 		introuble("asinh",t0,1);
 	if (sign)
-		rv = -rv;
+		rv.d = -rv.d;
 	if (want_deriv)
 		e->dL = 1. / t1;
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_asin(expr *e A_ASL)
 {
+	U rv;
 	expr *e1;
-	real rv, t, t1;
+	real t, t1;
 
 	e1 = e->L.e;
-	rv = asin(t = (*e1->op)(e1 K_ASL));
+	rv.d = asin(t = (*e1->op)(e1 K_ASL));
 	if (errchk(rv))
 		introuble("asin",t,1);
 	if (want_deriv) {
@@ -642,25 +682,26 @@ f_OP_asin(expr *e A_ASL)
 		else
 			e->dL = 1. / sqrt(t1);
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_acosh(expr *e A_ASL)
 {
+	U rv;
 	expr *e1;
-	real rv, t, t1;
+	real t, t1;
 
 	e1 = e->L.e;
 	t = (*e1->op)(e1 K_ASL);
 	if (t < 1.) {
 		errno_set(EDOM);
  bad_acosh:
-		rv = t1 = 0.;
+		rv.d = t1 = 0.;
 		introuble("acosh",t,1);
 		}
 	else {
-		rv = log(t + (t1 = sqrt(t*t - 1.)));
+		rv.d = log(t + (t1 = sqrt(t*t - 1.)));
 		if (errchk(rv))
 			goto bad_acosh;
 		}
@@ -670,17 +711,18 @@ f_OP_acosh(expr *e A_ASL)
 		else
 			e->dL = 1. / t1;
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OP_acos(expr *e A_ASL)
 {
+	U rv;
 	expr *e1;
-	real rv, t, t1;
+	real t, t1;
 
 	e1 = e->L.e;
-	rv = acos(t = (*e1->op)(e1 K_ASL));
+	rv.d = acos(t = (*e1->op)(e1 K_ASL));
 	if (errchk(rv))
 		introuble("acos",t,1);
 	if (want_deriv) {
@@ -689,14 +731,14 @@ f_OP_acos(expr *e A_ASL)
 		else
 			e->dL = -1. / sqrt(t1);
 		}
-	return rv;
+	return rv.d;
 	}
 
  static real
 f_OPIFnl(expr *e A_ASL)
 {
-	expr_if *eif = (expr_if *)e;
 	derp *D;
+	expr_if *eif = (expr_if *)e;
 
 	e = eif->e;
 	if ((*e->op)(e K_ASL)) {
@@ -719,8 +761,7 @@ f_OPIFnl(expr *e A_ASL)
  static real
 f_OPOR(expr *e A_ASL)
 {
-	expr *e2;
-	e2 = e->R.e;
+	expr *e2 = e->R.e;
 	e = e->L.e;
 	return (*e->op)(e K_ASL) || (*e2->op)(e2 K_ASL) ? 1. : 0.;
 	}
@@ -728,8 +769,7 @@ f_OPOR(expr *e A_ASL)
  static real
 f_OPAND(expr *e A_ASL)
 {
-	expr *e2;
-	e2 = e->R.e;
+	expr *e2 = e->R.e;
 	e = e->L.e;
 	return (*e->op)(e K_ASL) && (*e2->op)(e2 K_ASL) ? 1. : 0.;
 	}
@@ -737,8 +777,7 @@ f_OPAND(expr *e A_ASL)
  static real
 f_LT(expr *e A_ASL)
 {
-	expr *e2;
-	e2 = e->R.e;
+	expr *e2 = e->R.e;
 	e = e->L.e;
 	return (*e->op)(e K_ASL) < (*e2->op)(e2 K_ASL) ? 1. : 0;
 	}
@@ -746,8 +785,7 @@ f_LT(expr *e A_ASL)
  static real
 f_LE(expr *e A_ASL)
 {
-	expr *e2;
-	e2 = e->R.e;
+	expr *e2 = e->R.e;
 	e = e->L.e;
 	return (*e->op)(e K_ASL) <= (*e2->op)(e2 K_ASL) ? 1. : 0;
 	}
@@ -755,8 +793,7 @@ f_LE(expr *e A_ASL)
  static real
 f_EQ(expr *e A_ASL)
 {
-	expr *e2;
-	e2 = e->R.e;
+	expr *e2 = e->R.e;
 	e = e->L.e;
 	return (*e->op)(e K_ASL) == (*e2->op)(e2 K_ASL) ? 1. : 0;
 	}
@@ -764,8 +801,7 @@ f_EQ(expr *e A_ASL)
  static real
 f_GE(expr *e A_ASL)
 {
-	expr *e2;
-	e2 = e->R.e;
+	expr *e2 = e->R.e;
 	e = e->L.e;
 	return (*e->op)(e K_ASL) >= (*e2->op)(e2 K_ASL) ? 1. : 0;
 	}
@@ -773,8 +809,7 @@ f_GE(expr *e A_ASL)
  static real
 f_GT(expr *e A_ASL)
 {
-	expr *e2;
-	e2 = e->R.e;
+	expr *e2 = e->R.e;
 	e = e->L.e;
 	return (*e->op)(e K_ASL) > (*e2->op)(e2 K_ASL) ? 1. : 0;
 	}
@@ -782,8 +817,7 @@ f_GT(expr *e A_ASL)
  static real
 f_NE(expr *e A_ASL)
 {
-	expr *e2;
-	e2 = e->R.e;
+	expr *e2 = e->R.e;
 	e = e->L.e;
 	return (*e->op)(e K_ASL) != (*e2->op)(e2 K_ASL) ? 1. : 0;
 	}
@@ -855,6 +889,7 @@ f_OPSUMLIST(expr *e A_ASL)
 {
 	expr **ep, **epe;
 	real x;
+
 	ep = e->L.ep;
 	epe = e->R.ep;
 	e = *ep++;
@@ -884,9 +919,9 @@ f_OPintDIV(expr *e A_ASL)
  static real
 f_OPprecision(expr *e A_ASL)
 {
+	char buf[32];
 	expr *e1;
 	real L, R;
-	char buf[32];
 
 	e1 = e->L.e;
 	L = (*e1->op)(e1 K_ASL);
@@ -901,8 +936,8 @@ f_OPprecision(expr *e A_ASL)
  static real
 Round(real x, int prec)
 {
-	real scale;
 	int flip;
+	real scale;
 
 	if (!x)
 		return x;
@@ -929,8 +964,8 @@ Round(real x, int prec)
 Round(real x, int prec)
 {
 	char *b, *s, *s0, *se;
-	int decpt, L, sign;
 	char buf[96];
+	int decpt, L, sign;
 
 	if (!x)
 		return x;
@@ -979,8 +1014,8 @@ f_OPround(expr *e A_ASL)
 f_OPtrunc(expr *e A_ASL)
 {
 	expr *e1;
-	real L, R;
 	int prec;
+	real L, R;
 
 	e1 = e->L.e;
 	L = (*e1->op)(e1 K_ASL);
@@ -1058,10 +1093,12 @@ f_OPFUNCALL(expr *e A_ASL)
 	arglist *al;
 	argpair *ap, *ape;
 	const char *s;
-	expr_f *f = (expr_f *)e;
-	func_info *fi = f->fi;
+	expr_f *f;
+	func_info *fi;
 	real rv;
 
+	f = (expr_f *)e;
+	fi = f->fi;
 	for(ap = f->ap, ape = f->ape; ap < ape; ap++) {
 		e = ap->e;
 		*ap->u.v = (*e->op)(e K_ASL);
@@ -1090,6 +1127,7 @@ f_OPCOUNT(expr *e A_ASL)
 {
 	expr **ep, **epe;
 	real x;
+
 	ep = e->L.ep;
 	epe = e->R.ep;
 	e = *ep++;
@@ -1125,8 +1163,8 @@ rcompj(const void *a, const void *b, void *v)
  static real
 f_OPALLDIFF(expr *e A_ASL)
 {
-	int n;
 	expr **ep, **epe;
+	int n;
 	jb_st J;
 	real *r, *r1, rbuf[128], t;
 

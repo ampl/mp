@@ -42,7 +42,7 @@ comeval_ASL(ASL_fg *asl, int i, int ie)
 		cv_index = ++i;	/* identify var in case of error */
 		e = c->e;
 		t = (*e->op)(e C_ASL);
-		if (L = c->L)
+		if ((L = c->L))
 			for(Le = L + c->nlin; L < Le; L++)
 				t += L->fac * *L->v.rp;
 		(*V++).v = t;
@@ -71,7 +71,7 @@ com1eval_ASL(ASL_fg *asl, int i, int ie)
 		cv_index = ncom0 + ++i;	/* identify var in case of error */
 		e = c->e;
 		t = (*e->op)(e C_ASL);
-		if (L = c->L)
+		if ((L = c->L))
 			for(Le = L + c->nlin; L < Le; L++)
 				t += L->fac * *L->v.rp;
 		(*V++).v = t;
@@ -94,13 +94,13 @@ funnelset_ASL(ASL_fg *asl, register funnel *f)
 		memset(adjoints_nv1, 0, f->fcde.zaplen);
 		cl = f->cl;
 		do *cl->ca.rp = 0;
-			while(cl = cl->next);
+			while((cl = cl->next));
 		d = f->fcde.d;
 		*d->b.rp = 1.;
 		do *d->a.rp += *d->b.rp * *d->c.rp;
-			while(d = d->next);
+			while((d = d->next));
 		cl = f->cl;
 		do *cl->cfa = *cl->ca.rp;
-			while(cl = cl->next);
+			while((cl = cl->next));
 		}
 	}

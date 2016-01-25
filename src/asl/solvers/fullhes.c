@@ -36,7 +36,7 @@ add_op(real *H, ograd *og0, real t, fint n)
 	int j;
 
 	for(og = og0; og; og = og->next) {
-		if (t1 = t * og->coef) {
+		if ((t1 = t * og->coef)) {
 			j = og->varno;
 			Hj = H + n*j;
 			for(og1 = og0;; og1 = og1->next) {
@@ -77,7 +77,7 @@ fullhes_ASL(ASL *a, real *H, fint LH, int nobj, real *ow, real *y)
 	else {
 		nobj = -1;
 		no = noe = 0;
-		if (owi = ow)
+		if ((owi = ow))
 			noe = n_obj;
 		}
 
@@ -125,7 +125,7 @@ fullhes_ASL(ASL *a, real *H, fint LH, int nobj, real *ow, real *y)
 		}
 	if (asl->P.nobjgroups)
 		for(; no < noe; no++)
-			if (t = *owi++) {
+			if ((t = *owi++)) {
 				p = asl->P.ops + no;
 				g = p->g;
 				for(ge = g + p->ng; g < ge; g++)
@@ -136,13 +136,13 @@ fullhes_ASL(ASL *a, real *H, fint LH, int nobj, real *ow, real *y)
 		cscale = asl->i.lscale;
 		p = asl->P.cps;
 		for(pe = p + n_con; p < pe; p++, y++)
-			if (t = cscale ? *cscale++ * *y : *y)
+			if ((t = cscale ? *cscale++ * *y : *y))
 				for(g = p->g, ge = g + p->ng; g < ge; g++)
 					if (g->g2)
 						add_op(H, g->og, t*g->g2, LH);
 		}
 
-	if (s = asl->i.vscale) {
+	if ((s = asl->i.vscale)) {
 		Hi = H;
 		for(i = 0; i < n; i++, Hi += LH) {
 			t = s[i];

@@ -59,11 +59,12 @@ mpec_adjust_ASL(ASL *asl)
 	cde2 *cd2;
 	cgrad **Cgrd, **Cgrd1, **Cgrda, *cg, *cg1, *ncg, **pcg;
 	char *hx0;
-	int *cc, *ck, *cv, *ind1, *ind2, *map;
+	int *cc, *ck, *cv, *ind1, *ind2, *vm;
 	int i, incc, incv, j, k, m, m0, n, n0, n1, n2, nb, ncc, ncc0, nib, nib0;
-	int nnv, nz, nz0, nznew, v1, v2, v3, v4;
+	int nnv, v1, v2, v3, v4;
 	real *Lc, *Lc0, *Lc1, *Lv, *Lv0, *Lv1, *Uc, *Uc0, *Uc1, *Uv, *Uv0, *Uv1;
 	real a, b, *x;
+	size_t nz, nz0, nznew;
 	extern void f_OPVARVAL_ASL(), f2_VARVAL_ASL();
 
 	n = n0 = n1 = n_var;
@@ -71,7 +72,7 @@ mpec_adjust_ASL(ASL *asl)
 	nib = niv + nbv;
 	nib0 = n - nib;	/* offset of first linear integer or binary variable */
 	m = m0 = n_con;
-	nz = nz0 = nzc;
+	nz = nz0 = nZc;
 	cv = cvar;
 	Cgrd = Cgrad;
 	Cgrd1 = Cgrd + m;
@@ -128,12 +129,12 @@ mpec_adjust_ASL(ASL *asl)
 		}
 	n_var = n;
 	n_con = m;
-	nnv = n - n0;
+	asl->i.n_var1 += nnv = n - n0;
 	if (n_obj)
 		adjust_zerograds_ASL(asl, nnv);
 	if (n_conjac[1] >= m0)
 		n_conjac[1] = m;
-	nzc = nz;
+	nzc = nZc = nz;
 	n_cc = ncc;
 	nznew = nz - nz0;
 	ncg = (cgrad*)M1alloc(2*(ncc + ncc0)*sizeof(int) + nznew*sizeof(cgrad)
@@ -149,19 +150,13 @@ mpec_adjust_ASL(ASL *asl)
 	mpa->rhs1 = Lc1;
 	mpa->incc = incc;
 	mpa->incv = incv;
-	map = get_vcmap_ASL(asl, ASL_Sufkind_var);
-	if (n1 < n2) {
-		j = n2;
-		k = n2 + asl->i.nsufext[ASL_Sufkind_var];
-		for(i = n1; i < k; ++i, ++j)
-			map[i] = j;
-		}
 	if (nib) {
-		/* Three reverse calls move nib values of map up nnv places. */
+		vm = get_vcmap_ASL(asl, ASL_Sufkind_var);
+		/* Three reverse calls move nib values of vm up nnv places. */
 		j = n0 - nib;
-		reverse(map+j, map + n0 + nnv);
-		reverse(map+j, map + j + nnv);
-		reverse(map + j + nnv, map + n0 + nnv);
+		reverse(vm+j, vm + n0 + nnv);
+		reverse(vm+j, vm + j + nnv);
+		reverse(vm + j + nnv, vm + n0 + nnv);
 		i = n0 + nnv;
 		while(--i >= n0) {
 			j = i - nnv;
@@ -302,16 +297,8 @@ mpec_adjust_ASL(ASL *asl)
 				}
 			}
 #undef vset
-	if ((map = asl->i.cmap)) {
-		j = asl->i.n_con0;
-		Cgrd1 = asl->i.Cgrad0;
-		for(i = m0; i < m; ++i) {
-			map[i] = -1;
-			Cgrd1[j++] = Cgrd[i];
-			}
-		}
 	i = m0;
-	k = m - m0;
+	asl->i.n_con1 += k = m - m0;
 	switch(asl->i.ASLtype) {
 	  case ASL_read_pfg:
 		memset(((ASL_pfg*)asl)->P.cps + m0, 0, k*sizeof(ps_func));

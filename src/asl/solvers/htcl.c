@@ -59,7 +59,7 @@ new_mblk_ASL(ASL *a, int k)
 	  }
 	ACQUIRE_DTOA_LOCK(MBLK_LOCK);
 	t = ((ASL_pfgh*)a)->mblk_free + k;
-	if (rv = *t) {
+	if ((rv = *t)) {
 		*t = *(Char**)rv;
 		FREE_DTOA_LOCK(MBLK_LOCK);
 		}

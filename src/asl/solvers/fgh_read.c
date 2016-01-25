@@ -29,6 +29,9 @@ THIS SOFTWARE.
 extern "C" {
 #endif
 
+extern real con2ival_nomap_ASL(ASL*, int, real*, fint*);
+extern void con2grd_nomap_ASL(ASL*, int, real *, real*, fint*);
+
 #define Egulp 400
 
  static int com11, n_com1, ncom_togo, nvar0, nvinc, nvref;
@@ -1527,8 +1530,10 @@ fgh_read_ASL(ASL *a, FILE *nl, int flags)
 			a->p.Hvcompd = hv2compd_ASL;
 			a->p.Hvcomps = hv2comps_ASL;
 			a->p.Hvinit  = a->p.Hvinit_nomap  = hv2init_ignore;
-			a->p.Conival = a->p.Conival_nomap = con2ival_ASL;
-			a->p.Congrd  = a->p.Congrd_nomap  = con2grd_ASL;
+			a->p.Conival = con2ival_ASL;
+			a->p.Conival_nomap = con2ival_nomap_ASL;
+			a->p.Congrd  = con2grd_ASL;
+			a->p.Congrd_nomap = con2grd_nomap_ASL;
 			a->p.Lconval = lcon2val_ASL;
 			a->p.Xknown  = x2known_ASL;
 			return prob_adj_ASL(a);

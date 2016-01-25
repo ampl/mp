@@ -35,10 +35,10 @@ of or in connection with the use or performance of this software.
 obj_adj1(ASL *asl, int no)
 {
 	Objrep *od, **pod;
-	cgrad **Cgrd, **Cgrd0, *cg, *cgo, **pcg, **pcge;
+	cgrad **Cgrd, **Cgrd0, *cg, *cgo, **pcg;
 	efunc_n *op;
 	expr_n *e;
-	int co, cv, flags, i, incc, incv, j, k, m, n;
+	int co, cv, cva, flags, i, incc, incv, j, k, m, n, nx;
 	int *Cvar, *cm, *vm, *zg, **zgp;
 	ograd *og;
         ps_func *P;
@@ -85,13 +85,22 @@ obj_adj1(ASL *asl, int no)
 		return;
 	if (!(c1 = og->coef))
 		return;
+	cva = cv;
+	n = n_var;
+	if ((vm = asl->i.vmap)) {
+		for(j = 0; j < n; ++j)
+			if (vm[j] == cv) {
+				cva = j;
+				break;
+				}
+		}
 	if (Uvx) {
-		Lv = LUv + cv;
-		Uv = Uvx + cv;
+		Lv = LUv + cva;
+		Uv = Uvx + cva;
 		incv = 1;
 		}
 	else {
-		Lv = LUv + 2*cv;
+		Lv = LUv + 2*cva;
 		Uv = Lv + 1;
 		incv = 2;
 		}
@@ -100,14 +109,15 @@ obj_adj1(ASL *asl, int no)
 	pcg = Cgrd = Cgrad;
 	cgo = 0;
 	co = k = 0;
-	for(pcge = pcg + n_con; pcg < pcge; ++pcg) {
-		for(cg = *pcg; cg; cg = cg->next)
+	m = n_con;
+	for(i = 0; i < m; ++i) {
+		for(cg = *pcg++; cg; cg = cg->next)
 			if (cg->varno == cv) {
 				if (cgo)
 					return;
 				cgo = cg;
-				co = pcg - Cgrd;
-				for(cg = *pcg; cg; cg = cg->next)
+				co = i;
+				for(cg = pcg[-1]; cg; cg = cg->next)
 					++k;
 				break;
 				}
@@ -165,7 +175,8 @@ obj_adj1(ASL *asl, int no)
 			pod[k] = 0;
 		}
 	pod[no] = od;
-	od->ico = co;
+	cm = asl->i.cmap;
+	od->ico = cm ? cm[co] : co;
 	od->ivo = cv;
 	od->c0 = e->v;
 	od->c0a = e->v + t*rhs;
@@ -180,7 +191,7 @@ obj_adj1(ASL *asl, int no)
 	while((cg = *pcg) != cgo)
 		pcg = &cg->next;
 	*pcg = cgo->next;
-	if ((cm = asl->i.cmap) && (Cgrd0 = asl->i.Cgrad0))
+	if (cm && (Cgrd0 = asl->i.Cgrad0))
 		Cgrd0[cm[co]] = Cgrd[co];
 
 	m = --n_con;
@@ -200,10 +211,13 @@ obj_adj1(ASL *asl, int no)
 				Cvar[i] = k;
 				}
 			}
+		if ((nx = asl->i.nsufext[ASL_Sufkind_con])) {
+			for(nx += m; i < nx; ++i)
+				cm[i] = cm[j = i + 1];
+			}
 		if ((pi = pi0))
 			for(i = co; i < m; ++i)
 				pi[i] = pi[i+1];
-		cm[m] = -1;
 		}
 	for(i = co; i < m; ++i) {
 		*Lc = Lc[incc];
@@ -211,12 +225,14 @@ obj_adj1(ASL *asl, int no)
 		Lc += incc;
 		Uc += incc;
 		}
-	n = --n_var;
+	n_var = --n;
 	if (cv != n) {
 		vm = get_vcmap_ASL(asl, ASL_Sufkind_var);
-		for(i = cv; i < n; ++i)
+		nx = asl->i.n_var0 + asl->i.nsufext[ASL_Sufkind_var] - 1;
+		for(i = cva; i < nx; ++i) {
 			vm[i] = vm[i+1];
-		vm[n] = -1;
+			}
+		vm[nx] = -1;
 		if ((pi = X0))
 			for(i = cv; i < n; ++i)
 				pi[i] = pi[i+1];

@@ -1056,9 +1056,14 @@ bad_bounds(ASL *asl, const char *fmt, ...)
 	}
 #endif /*}*/
 
+ static expr_n Zero = { f_OPNUM_ASL, 0. };
+
  int
 prob_adj_ASL(ASL *asl)
 {
+#undef cde
+	cde *d, *de;
+	cde2 *d2, *d2e;
 	cgrad *cg, **pcg, **pcge;
 	int flags, k;
 #ifndef NO_BOUNDSFILE_OPTION /*{*/
@@ -1073,6 +1078,30 @@ prob_adj_ASL(ASL *asl)
 		adjust_zerograds_ASL(asl, 0);
 	flags = asl->i.rflags;
 	asl->i.Cgrad0 = asl->i.Cgrad_;
+	if ((k = asl->i.nsufext[ASL_Sufkind_con])) {
+		switch(asl->i.ASLtype) {
+		  case ASL_read_f:
+		  case ASL_read_fg:
+			d = ((ASL_fg*)asl)->I.con_de_;
+			goto have_d;
+		  case ASL_read_fgh:
+			d2 = ((ASL_fgh*)asl)->I.con2_de_;
+			goto have_d2;
+		  case ASL_read_pfg:
+			d = ((ASL_pfg*)asl)->I.con_de_;
+ have_d:
+			d += n_con;
+			for(de = d + k; d < de; ++d)
+				d->e = (expr*)&Zero;
+			break;
+		  case ASL_read_pfgh:
+			d2 = ((ASL_pfgh*)asl)->I.con2_de_;
+ have_d2:
+			d2 += n_con;
+			for(d2e = d2 + k; d2 < d2e; ++d2)
+				d2->e = (expr2*)&Zero;
+		  }
+		}
 	if (flags & (ASL_obj_replace_eq | ASL_obj_replace_ineq))
 		obj_adj_ASL(asl);
 	if (!A_vals) {
@@ -1330,7 +1359,7 @@ get_vcmap_ASL(ASL *asl, int k)
  int *
 get_vminv_ASL(ASL *asl)
 {
-	int i, j, n, *vm, *x;
+	int i, j, n, nv, *vm, *x;
 
 	if ((x = asl->i.vminv))
 		return x;
@@ -1340,13 +1369,16 @@ get_vminv_ASL(ASL *asl)
 	x = (int*)M1alloc(n*sizeof(int));
 	for(i = 0; i < n; ++i)
 		x[i] = -1;
-	for(i = 0; i < n; ++i) {
+	nv = n_var;
+	for(i = 0; i < nv; ++i) {
 		if ((j = vm[i]) >= 0)
 			x[j] = i;
 		}
-	for(i = 0, j = n; i < n; ++i)
+	j = n;
+	for(i = 0; i < n; ++i) {
 		if (x[i] < 0)
 			x[i] = j++;
+		}
 	return asl->i.vminv = x;
 	}
 

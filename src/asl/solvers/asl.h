@@ -663,7 +663,6 @@ TMInfo {
 #define A_rownos	asl->i.A_rownos_
 #define A_vals		asl->i.A_vals_
 #define Cgrad		asl->i.Cgrad_
-#define CgradZ		asl->i.CgradZ_
 #define Fortran		asl->i.Fortran_
 #define LUrhs		asl->i.LUrhs_
 #define LUv		asl->i.LUv_

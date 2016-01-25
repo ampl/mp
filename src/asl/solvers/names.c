@@ -25,13 +25,11 @@ THIS SOFTWARE.
 #include "asl.h"
 
  static char **
-get_names(ASL *asl, const char *suf, int no, int n0)
+get_names(ASL *asl, const char *suf, int nt)
 {
 	FILE *f;
 	char buf[512], **nam, **ne, **rv, *s;
-	int nt;
 
-	nt = n0 + no;
 	nam = rv = (char**)mem(nt*sizeof(char*));
 	ne = nam + nt;
 	strcpy(stub_end, suf);
@@ -51,9 +49,24 @@ get_names(ASL *asl, const char *suf, int no, int n0)
  static void
 get_row_names(ASL *asl)
 {
-	asl->i.connames = get_names(asl, ".row", n_obj + n_lcon, asl->i.n_con0);
-	asl->i.lconnames = asl->i.connames + asl->i.n_con0;
-	asl->i.objnames = asl->i.lconnames + n_lcon;
+	char **s, **s0, **t;
+	int nc0, nol, nx;
+
+	nc0 = asl->i.n_con0;
+	nol = n_obj + n_lcon;
+	nx = asl->i.nsufext[ASL_Sufkind_con];
+	s = asl->i.connames = get_names(asl, ".row", nc0 + nol + nx);
+	t = asl->i.lconnames = s + nc0 + nx;
+	asl->i.objnames = t + n_lcon;
+	if (nx) {
+		s0 = s + nc0;
+		s = s0 + nol;
+		t += nol;
+		while(s > s0) {
+			*--t = *--s;
+			*s = 0;
+			}
+		}
 	}
 
 static char badconname[] = "**con_name(bad n)**";
@@ -117,8 +130,11 @@ obj_name_ASL(ASL *asl, int n)
 {
 	char buf[32], **np, *rv;
 	static char badobjname[] = "**obj_name(bad n)**";
+	static char no_obj[] = "_No_Objective";
 
-	if (n < 0 || n >= n_obj)
+	if (n < 0)
+		return n == -1 ? no_obj : badobjname;
+	if (n >= n_obj)
 		return badobjname;
 	if (!asl->i.objnames)
 		get_row_names(asl);
@@ -133,15 +149,24 @@ obj_name_ASL(ASL *asl, int n)
  char *
 var_name_nomap_ASL(ASL *asl, int n, int *p /* not used */)
 {
-	char buf[32], **np, *rv;
+	char buf[40], **np, *rv;
+	const char *what;
+	int k;
 
 	if (n < 0 || n >= asl->i.n_var1)
 		return badvarname;
-	if (!asl->i.varnames)
-		asl->i.varnames = get_names(asl, ".col", 0, asl->i.n_var0);
+	if (!asl->i.varnames) {
+		k = asl->i.n_var0 + asl->i.nsufext[ASL_Sufkind_var];
+		asl->i.varnames = get_names(asl, ".col", k);
+		}
 	np = asl->i.varnames + n;
 	if (!(rv = *np)) {
-		*np = rv = (char*)mem(Sprintf(buf,"_svar[%d]",n+1)+1);
+		what = "_svar";
+		if (n >= asl->i.n_var0) {
+			n -= asl->i.n_var0;
+			what = "_svar_aux";
+			}
+		*np = rv = (char*)mem(Sprintf(buf,"%s[%d]",what,n+1)+1);
 		strcpy(rv, buf);
 		}
 	return rv;

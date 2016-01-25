@@ -77,7 +77,7 @@ g_fmtp(register char *b, double x, int prec)
 	if (sign)
 		*b++ = '-';
 	if (decpt == 9999) /* Infinity or Nan */ {
-		while(*b = *s++)
+		while((*b = *s++))
 			b++;
 		goto done0;
 		}
@@ -85,7 +85,7 @@ g_fmtp(register char *b, double x, int prec)
 		*b++ = *s++;
 		if (*s || g_fmt_decpt) {
 			*b++ = '.';
-			while(*b = *s++)
+			while((*b = *s++))
 				b++;
 			}
 		*b++ = g_fmt_E;
@@ -111,11 +111,11 @@ g_fmtp(register char *b, double x, int prec)
 		*b++ = '.';
 		for(; decpt < 0; decpt++)
 			*b++ = '0';
-		while(*b = *s++)
+		while((*b = *s++))
 			b++;
 		}
 	else {
-		while(*b = *s++) {
+		while((*b = *s++)) {
 			b++;
 			if (--decpt == 0 && (g_fmt_decpt || *s))
 				*b++ = '.';

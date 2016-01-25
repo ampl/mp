@@ -643,23 +643,23 @@ cpval(ASL_pfgh *asl, int i, real *X, fint *nerror)
 	return f;
 	}
 
- real
-conpival_ASL(ASL *a, int i, real *X, fint *nerror)
+ static real
+Conivalp(ASL_pfgh *asl, int i, real *X, fint *nerror)
 {
-	ASL_pfgh *asl;
 	cgrad *gr;
 	int j1, kv, *vmi;
 	real f, *vscale;
 
-	INchk(a, "conpival", i, a->i.n_con0);
-	asl = (ASL_pfgh*)a;
-	f = cpval(asl, i, X, nerror);
+	if (i < asl->i.n_con0)
+		f = cpval(asl, i, X, nerror);
+	else
+		f = 0.;
 	kv = 0;
 	vmi = 0;
 	if ((vscale = asl->i.vscale))
 		kv = 2;
 	if (asl->i.vmap) {
-		vmi = get_vminv_ASL(a);
+		vmi = get_vminv_ASL((ASL*)asl);
 		++kv;
 		}
 	gr = asl->i.Cgrad0[i];
@@ -687,6 +687,24 @@ conpival_ASL(ASL *a, int i, real *X, fint *nerror)
 	return f;
 	}
 
+ real
+conpival_nomap_ASL(ASL *a, int i, real *X, fint *nerror)
+{
+	INchk(a, "conpival_nomap", i, a->i.n_con0);
+	return  Conivalp((ASL_pfgh*)a, i, X, nerror);
+	}
+
+ real
+conpival_ASL(ASL *a, int i, real *X, fint *nerror)
+{
+	int *cm;
+
+	INchk(a, "conpival", i, a->i.n_con_);
+	if ((cm = a->i.cmap))
+		i = cm[i];
+	return  Conivalp((ASL_pfgh*)a, i, X, nerror);
+	}
+
  int
 lconpval(ASL *a, int i, real *X, fint *nerror)
 {
@@ -697,10 +715,9 @@ lconpval(ASL *a, int i, real *X, fint *nerror)
 	return f != 0.;
 	}
 
- void
-conpgrd_ASL(ASL *a, int i, real *X, real *G, fint *nerror)
+ static void
+Congrdp(ASL_pfgh *asl, int i, real *X, real *G, fint *nerror)
 {
-	ASL_pfgh *asl;
 	Jmp_buf err_jmp0;
 	cgrad *gr, *gr0;
 	fint ne0;
@@ -711,12 +728,7 @@ conpgrd_ASL(ASL *a, int i, real *X, real *G, fint *nerror)
 	psb_elem *b, *be;
 	range *U;
 	real *Adjoints, t, *vscale;
-	static char who[] = "conpgrd";
 
-	INchk(a, who, i, a->i.n_con0);
-	asl = (ASL_pfgh*)a;
-	if (!want_derivs)
-		No_derivs_ASL(who);
 	ne0 = -1;
 	if (nerror && (ne0 = *nerror) >= 0) {
 		err_jmp = &err_jmp0;
@@ -732,13 +744,13 @@ conpgrd_ASL(ASL *a, int i, real *X, real *G, fint *nerror)
 	     || i < n_conjac[0] || i >= n_conjac[1])) {
 		xksave = asl->i.x_known;
 		asl->i.x_known = 1;
-		conpival_ASL(a,i,X,nerror);
+		conpival_ASL((ASL*)asl,i,X,nerror);
 		asl->i.x_known = xksave;
 		if (ne0 >= 0 && *nerror)
 			return;
 		}
 	if (asl->i.Derrs)
-		deriv_errchk_ASL(a, nerror, i, 1);
+		deriv_errchk_ASL((ASL*)asl, nerror, i, 1);
 	Adjoints = adjoints;
 	p = asl->P.cps + i;
 	p->nxval = asl->i.nxval;
@@ -775,7 +787,7 @@ conpgrd_ASL(ASL *a, int i, real *X, real *G, fint *nerror)
 
 	vmi = 0;
 	if (asl->i.vmap)
-		vmi = get_vminv_ASL(a);
+		vmi = get_vminv_ASL((ASL*)asl);
 	if ((vscale = asl->i.vscale)) {
 		gr = gr0;
 		if (vmi)
@@ -823,6 +835,35 @@ conpgrd_ASL(ASL *a, int i, real *X, real *G, fint *nerror)
 			G[i0++] = 0;
 	  }
 	err_jmp = 0;
+	}
+
+ void
+conpgrd_nomap_ASL(ASL *a, int i, real *X, real *G, fint *nerror)
+{
+	ASL_pfgh *asl;
+	static char who[] = "conpgrd_nomap";
+
+	INchk(a, who, i, a->i.n_con0);
+	asl = (ASL_pfgh*)a;
+	if (!want_derivs)
+		No_derivs_ASL(who);
+	Congrdp(asl, i, X, G, nerror);
+	}
+
+ void
+conpgrd_ASL(ASL *a, int i, real *X, real *G, fint *nerror)
+{
+	ASL_pfgh *asl;
+	int *cm;
+	static char who[] = "conpgrd";
+
+	INchk(a, who, i, a->i.n_con_);
+	asl = (ASL_pfgh*)a;
+	if (!want_derivs)
+		No_derivs_ASL(who);
+	if ((cm = asl->i.cmap))
+		i = cm[i];
+	Congrdp(asl, i, X, G, nerror);
 	}
 
  static void

@@ -151,7 +151,7 @@ comeval.obj con1ival.obj conval.obj degree.obj mip_pri.obj objval.obj qpcheck.ob
  qpcheckZ.obj readsol.obj: nlp.h $(Aslh)
 indic_cons.obj misc.obj mpec_adj.obj nl_obj.obj obj_adj.obj sos_add.obj suf_sos.obj:\
 	nlp.h nlp2.h asl_pfg.h asl_pfgh.h psinfo.h $(Aslh)
-nl_obj.obj nqpcheck.obj nqpcheckZ.obj obj_adj.c: obj_adj.h
+nl_obj.obj nqpcheck.obj nqpcheckZ.obj obj_adj.obj objconst.obj: obj_adj.h
 op_type.obj: op_type.hd op_typeb.hd
 fgh_read.obj: jac2dim.h opnos.hd op_type.hd dvalue.hd nlp2.h $(Aslh)
 rops.obj: nlp.h errchk.h $(Aslh)

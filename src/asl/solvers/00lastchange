@@ -1,5 +1,5 @@
-20150820
-  stdio1.h0:  when _WIN32 is #defined, include stdlib.h before
-defining perror, to bypass the Microsoft bug (with Visual Studio 2015)
-that perror may be declared in stdlib.h as well as in stdio.h (where
-it should appear).  No change to asldate.c.
+20151209
+  mqpcheckv.c:  fix a bug with diagonal elements that sum to zero and
+whose rows contain nonzeros to the left but not to the right of the
+diagonal:  the number of columns was miscomputed and a memory
+overwrite was possible.

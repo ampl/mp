@@ -596,7 +596,7 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 	expr *e;
 	expr_n *en;
 	fint *rowq, *rowq0, *rowq1, *s, *z;
-	fint ftn, i, icol, j, ncom, nv, nz;
+	fint ftn, i, icol, j, ncom, nv, nz, nz1;
 	int arrays, *cm, co0, pass, *vmi;
 	ograd *og, *og1, *og2, **ogp;
 	real *L, *U, *delsq, *delsq0, *delsq1, objadj, t, *x;
@@ -705,9 +705,14 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 	qe = q + nv;
 	objadj = dsort(S, T, (ograd **)q, cgp, ogp, arrays);
 
-	nelq = nz = 0;
+	nelq = nz = nz1 = 0;
+	/* In pass 0, we the count nonzeros in the lower triangle. */
+	/* In pass 1, we compute the lower triangle and use column dispatch */
+	/* (via the cdisp array) to copy the strict lower triangle to the */
+	/* strict upper triangle.  This ensures symmetry. */
 	for(pass = 0; pass < 2; pass++) {
 		if (pass) {
+			nelq += nelq - nz1;
 			if (!nelq || !arrays)
 				break;
 			free(q);
@@ -728,41 +733,30 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 			}
 		memset(q, 0, nv*sizeof(dyad *));
 
-		if (pass)
-			for(d = T->Q; d; d = d->next) {
-				og = d->Rq;
-				og1 = d->Lq;
-				i = og->varno;
-				while(og1 && og1->varno < i)
-					og1 = og1->next;
-				if (og1) {
-					q1 = q + i;
-					*q1 = new_dyad(S, *q1, og, og1, 0);
-					}
-				og1 = d->Lq;
-				i = og1->varno;
-				while(og && og->varno < i)
-					og = og->next;
-				if (og) {
-					q1 = q + i;
-					*q1 = new_dyad(S, *q1, og1, og, 0);
-					}
-				}
-		else
-			for(d = T->Q; d; d = d->next) {
-				og = d->Rq;
-				og1 = d->Lq;
-				q1 = q + og->varno;
+		for(d = T->Q; d; d = d->next) {
+			og = d->Rq;
+			og1 = d->Lq;
+			i = og->varno;
+			while(og1 && og1->varno < i)
+				og1 = og1->next;
+			if (og1) {
+				q1 = q + i;
 				*q1 = new_dyad(S, *q1, og, og1, 0);
-				q1 = q + og1->varno;
+				}
+			og1 = d->Lq;
+			i = og1->varno;
+			while(og && og->varno < i)
+				og = og->next;
+			if (og) {
+				q1 = q + i;
 				*q1 = new_dyad(S, *q1, og1, og, 0);
 				}
-		icol = -1;
+			}
 		vmi = asl->i.vmap ? get_vminv_ASL((ASL*)asl) : 0;
-		for(q1 = q; q1 < qe; q1++) {
+		for(icol = 0, q1 = q; q1 < qe; ++icol, ++q1) {
 		    if (pass) {
 			*colq++ = nelq;
-			for(cd = cdisp[++icol]; cd; cd = cdnext) {
+			for(cd = cdisp[icol]; cd; cd = cdnext) {
 				cdnext = cd->next;
 				s[i = cd->i]++;
 				x[z[nz++] = i] = delsq0[cd->j++];
@@ -777,32 +771,24 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 			do {
 				og = d->Lq;
 				og1 = d->Rq;
-				switch(pass) {
-				  case 0:
-					for(; og1; og1 = og1->next)
-						if (!s[i = og1->varno]++)
-							z[nz++] = i;
-					break;
-				  case 1:
-					t = og->coef;
-					for(; og1; og1 = og1->next) {
-						if (!s[i = og1->varno]++)
-							x[z[nz++] = i] =
-								t*og1->coef;
-						else
-							x[i] += t*og1->coef;
-						}
-					if ((og1 = og->next)) {
-					  og2 = d->Rq;
-					  while (og2->varno < og1->varno)
-					    if (!(og2 = og2->next)) {
-						while((og1 = og->next))
-							og = og1;
-						break;
-						}
-					  d->Rq = og2;
-					  }
+				t = og->coef;
+				for(; og1; og1 = og1->next) {
+					if (!s[i = og1->varno]++)
+						x[z[nz++] = i] =
+							t*og1->coef;
+					else
+						x[i] += t*og1->coef;
 					}
+				if ((og1 = og->next)) {
+				  og2 = d->Rq;
+				  while (og2->varno < og1->varno)
+				    if (!(og2 = og2->next)) {
+					while((og1 = og->next))
+						og = og1;
+					break;
+					}
+				  d->Rq = og2;
+				  }
 				d1 = d->next;
 				if ((og = og->next)) {
 					i = og->varno;
@@ -828,17 +814,18 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 			if (pass) {
 				if (nz > 1)
 					qsortv(z, nz, sizeof(fint), lcmp, NULL);
-				for(i = 0; i < nz; i++) {
+				for(i = nz1 = 0; i < nz; i++) {
 					if ((t = x[j = z[i]])) {
 						*delsq++ = t;
 						if (vmi)
 							j = vmi[j];
 						*rowq++ = j + ftn;
 						nelq++;
+						z[nz1++] = j;
 						}
 					s[j] = 0;
 					}
-				for(i = 0; i < nz; i++)
+				for(i = 0; i < nz1; i++)
 				    if ((j = z[i]) > icol && x[j]) {
 					cd0->i = icol;
 					cd0->j = colq[-1] + i;
@@ -851,9 +838,14 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 				nz = 0;
 				}
 			else {
-				nelq += nz;
-				while(nz > 0)
-					s[z[--nz]] = 0;
+				while(nz > 0) {
+					s[i = z[--nz]] = 0;
+					if (x[i]) {
+						++nelq;
+						if (i == icol)
+							++nz1;
+						}
+					}
 				}
 			}
 		    }

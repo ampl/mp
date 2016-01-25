@@ -3947,6 +3947,12 @@ dtoa(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve)
 						dval(&eps1) *= bigtens[i];
 				if (eps.d < eps1.d)
 					eps.d = eps1.d;
+				if (10. - u.d < 10.*eps.d && eps.d < 1.) {
+					/* eps.d < 1. excludes trouble with the tiniest denormal */
+					*s++ = '1';
+					++k;
+					goto ret1;
+					}
 				}
 #endif
 			for(i = 0;;) {

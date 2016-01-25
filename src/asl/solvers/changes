@@ -2611,3 +2611,52 @@ quiet NaN rather than 0.
 defining perror, to bypass the Microsoft bug (with Visual Studio 2015)
 that perror may be declared in stdlib.h as well as in stdio.h (where
 it should appear).  No change to asldate.c.
+
+20150828
+  mqpcheckv.c, nqpcheck.c:  fix bugs with columns that are empty due
+to cancellation.
+
+20150829
+  mqpcheckv.c, nqpcheck.c:  make sparsity computation exact, rather
+than initially overestimating it and allocating oversize arrays when
+cancellations reduce the number of nonzeros.
+
+20151005
+  mqpcheckv.c:  fix a bug that caused qpi->nc to be miscomputed on
+some problems, which could lead to a fault.
+  nqpcheck.c:  fix a bug that sometimes caused mqpcheck(asl,co,0,0,0)
+to return too small a value.
+
+20151007
+  errchk.h, rops.c, rops2.c:  adjust to bypass a gcc bug seen with
+older gcc versions on x86_64.
+  nqpcheckZ.c: adjust comment (to force recompilation with some
+makefiles after changes of 20151005).
+
+20151020
+  dtoa.c: adjustment to dtoa mode 4 that should be invisible to ASL.
+
+20151021
+  mpec_adj.c: update n_con1 and n_var1 for use in names.c.
+  names.c: use updated n_con1 and n_var1.
+  dtoa1.c: reflect update of 20151020 (to avoid possible confusion
+with debuggers).
+
+20151026:
+  asl.h: omit the unused #define of CgradZ.
+  con1ival.c, con2ival.c, conpval.c, fgh_read.c, fg_read.c,
+makefile.*, misc.c, mpec_adj.c, names.c, obj_adj.c, objconst.c,
+pfghread.c, pfg_read.c:  adjust conval() and congrd() to reflect
+results of flags ASL_obj_replace_eq and ASL_obj_replace_ineq to the
+.nl reader.  Fix bugs with the interaction of these flags and
+ASL_cc_simplify.  Arrange for var_name() to return _svar_aux[...] for
+variables added by problem adjustments, such as ASL_cc_simplify.
+  comeval.c, derprop.c, duthes.c, fullhes.c, g_fmt.c, htcl.c,
+qsortv.c, sigcatch.c, wrtsol_.c:  trivial changes to quiet pedantic
+warnings by misguided compilers.
+
+20151209
+  mqpcheckv.c:  fix a bug with diagonal elements that sum to zero and
+whose rows contain nonzeros to the left but not to the right of the
+diagonal:  the number of columns was miscomputed and a memory
+overwrite was possible.

@@ -30,10 +30,12 @@ THIS SOFTWARE.
 #define ErrnoChk errno ||
 #endif
 
+typedef union { real d; unsigned int u[2]; } U;
+
 #ifdef IEEE_MC68k
-#define errchk(x) ErrnoChk ((((unsigned Long *)&(x))[0] & 0x7ff00000) == 0x7ff00000)
+#define errchk(x) ErrnoChk ((x.u[0] & 0x7ff00000) == 0x7ff00000)
 #elif defined(IEEE_8087)
-#define errchk(x) ErrnoChk ((((unsigned Long *)&(x))[1] & 0x7ff00000) == 0x7ff00000)
+#define errchk(x) ErrnoChk ((x.u[1] & 0x7ff00000) == 0x7ff00000)
 #elif !defined(NO_ERRNO)
 #define errchk(x) errno
 #else

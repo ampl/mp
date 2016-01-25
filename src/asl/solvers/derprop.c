@@ -34,6 +34,6 @@ derprop(register derp *d)
 	if (d) {
 		*d->b.rp = 1.;
 		do *d->a.rp += *d->b.rp * *d->c.rp;
-			while(d = d->next);
+			while((d = d->next));
 		}
 	}

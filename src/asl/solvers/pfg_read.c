@@ -48,6 +48,9 @@ THIS SOFTWARE.
 extern "C" {
 #endif
 
+extern real conpival_nomap_ASL(ASL*, int, real*, fint*);
+extern void conpgrd_nomap_ASL(ASL*, int, real *, real*, fint*);
+
 #define GAP_MAX 10
 
 #ifdef PSHVREAD
@@ -2140,7 +2143,7 @@ termwalk(Static *S, expr **ep, PSfind *p)
 	i = k = nzcperm(S);
 	f = p->f;
 	if (!larvlist)
-		for(; i < nzc; i++)
+		for(; i < nzc; i++) {
 			if ((j = zci[i]) < max_var) {
 				for(L = cexps[j-nv0x].cref; L; L = L->next)
 					if (!zc[L->item.i]++)
@@ -2155,6 +2158,7 @@ termwalk(Static *S, expr **ep, PSfind *p)
 							zci[nzc++] = j;
 					}
 				}
+			}
 
 	r = (range *)rnz;	/* scratch */
 	if ((ncp = nzc - k)) {
@@ -2598,7 +2602,7 @@ psfind(Static *S)
 {
 	ASLTYPE *asl;
 	fint x;
-	int i, j, k, m, mx, nv;
+	int i, j, k, m, mx, nv, nx;
 	linarg *la, **lap;
 	ps_func *f, *f1;
 	range *r, *r0;
@@ -2609,12 +2613,14 @@ psfind(Static *S)
 #endif
 	asl = S->asl;
 	m = asl->i.n_con0;
-	mx = m + asl->i.nsufext[ASL_Sufkind_con];
+	mx = m + (nx = asl->i.nsufext[ASL_Sufkind_con]);
 	x = (n_obj+mx)*sizeof(ps_func)
 		+ slmax*sizeof(expr*)
 		+ (Ncom+1)*sizeof(int);
 	asl->P.ops = f = (ps_func *)M1alloc(x);
 	asl->P.cps = f1 = f + n_obj;
+	if (nx)
+		memset(f1 + m, 0, nx*sizeof(ps_func));
 	slscratch = (expr**)(f1 + mx);
 	asl->P.dvsp0 = (int*)(slscratch + slmax);
 	*asl->P.dvsp0 = Ncom;
@@ -4395,8 +4401,10 @@ pfg_read_ASL(ASL *a, FILE *nl, int flags)
 #ifdef PSHVREAD
 			a->i.ncxval = (int*)M1zapalloc(nco*sizeof(int));
 			a->i.noxval = a->i.ncxval + nc;
-			a->p.Conival = a->p.Conival_nomap = conpival_ASL;
-			a->p.Congrd  = a->p.Congrd_nomap  = conpgrd_ASL;
+			a->p.Conival = conpival_ASL;
+			a->p.Conival_nomap = conpival_nomap_ASL;
+			a->p.Congrd  = conpgrd_ASL;
+			a->p.Congrd_nomap  = conpgrd_nomap_ASL;
 			a->p.Objval = a->p.Objval_nomap = objpval_ASL;
 			a->p.Objgrd = a->p.Objgrd_nomap = objpgrd_ASL;
 			a->p.Conval = conpval_ASL;

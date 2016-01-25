@@ -44,7 +44,7 @@ extern "C" void qsortv(void*, size_t, size_t, cmpfunc*, void*);
 #endif
 
 #define SWAPINIT(a, es) swaptype =         \
-    ((char*)a-(char*)0 | es) % sizeof(long) ? 2 : es > sizeof(long) ? 1 : 0;
+    (((char*)a-(char*)0) | es) % sizeof(long) ? 2 : es > sizeof(long) ? 1 : 0;
 #define swapcode(TYPE, parmi, parmj, n) {  \
     register TYPE *pi = (TYPE *) (parmi);  \
     register TYPE *pj = (TYPE *) (parmj);  \
@@ -123,15 +123,17 @@ qsortv(void *a0, size_t n, size_t es, cmpfunc *cmp, void *v)
 	pc = pd = a + (n-1)*es;
 	for (;;) {
 		for ( ; pb <= pc; pb += es) {
-			if (pb != pm)
+			if (pb != pm) {
 				if ((r = (*cmp)(pb, pm, v)) > 0) break;
 				else if (r < 0) continue;
+				}
 			swap(pa, pb); pm = pa; pa += es;
 		}
 		for ( ; pb <= pc; pc -= es) {
-			if (pc != pm)
+			if (pc != pm) {
 				if ((r = (*cmp)(pc, pm, v)) < 0) break;
 				else if (r > 0) continue;
+				}
 			swap(pc, pd); pm = pd; pd -= es;
 			}
 		if (pb > pc) break;

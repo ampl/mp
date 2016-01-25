@@ -23,6 +23,8 @@ THIS SOFTWARE.
 ****************************************************************/
 
 #include "nlp.h"
+#undef con1ival
+#undef con1grd
 
 #define Egulp 400
 #define GAP_MAX 10
@@ -34,8 +36,12 @@ THIS SOFTWARE.
 #define who "fg_read"
 #ifdef __cplusplus
 extern "C" {
+#endif
  static real Missing_func(arglist*);
  static int compar(const void*, const void*, void*);
+ extern real con1ival_nomap_ASL(ASL*, int, real*, fint*);
+ extern void con1grd_nomap_ASL(ASL*, int, real *, real*, fint*);
+#ifdef __cplusplus
 	}
 #endif /* __cplusplus */
 #endif /* Just_Linear */
@@ -1596,8 +1602,10 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 			a->p.Objgrd  = a->p.Objgrd_nomap  = obj1grd_ASL;
 			a->p.Conval  = con1val_ASL;
 			a->p.Jacval  = jac1val_ASL;
-			a->p.Conival = a->p.Conival_nomap = con1ival_ASL;
-			a->p.Congrd  = a->p.Congrd_nomap  = con1grd_ASL;
+			a->p.Conival = con1ival_ASL;
+			a->p.Conival_nomap = con1ival_nomap_ASL;
+			a->p.Congrd  = con1grd_ASL;
+			a->p.Congrd_nomap = con1grd_nomap_ASL;
 			a->p.Lconval = lcon1val_ASL;
 			a->p.Xknown  = x1known_ASL;
 #endif /* Just_Linear */

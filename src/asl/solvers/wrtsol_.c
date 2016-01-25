@@ -63,7 +63,7 @@ wrsolw_(char *msg, fint *nmsg, real *x, real *y, fint *ws, ftnlen msg_len)
 	b = buf = (char *)Malloc(len);
 	if (nm)
 		for(;;) {
-			if (i = slen(msg, msg_len)) {
+			if ((i = slen(msg, msg_len))) {
 				strncpy(b, msg, i);
 				b += i;
 				}
