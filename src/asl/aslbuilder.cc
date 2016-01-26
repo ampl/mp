@@ -497,8 +497,10 @@ void ASLBuilder::EndBuild() {
     pars.Objgrd = pars.Objgrd_nomap = obj1grd_ASL;
     pars.Conval = con1val_ASL;
     pars.Jacval = jac1val_ASL;
-    pars.Conival = pars.Conival_nomap = con1ival_ASL;
-    pars.Congrd = pars.Congrd_nomap = con1grd_ASL;
+    pars.Conival = con1ival_ASL;
+    pars.Conival_nomap = con1ival_nomap_ASL;
+    pars.Congrd = con1grd_ASL;
+    pars.Congrd_nomap = con1grd_nomap_ASL;
     pars.Lconval = lcon1val_ASL;
     pars.Xknown = x1known_ASL;
   }
