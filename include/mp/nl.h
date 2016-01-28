@@ -49,6 +49,7 @@
 #include <cstdlib>
 #include <limits>
 #include <string>
+#include <locale.h>
 
 namespace mp {
 
@@ -920,6 +921,33 @@ class NLHandler {
 
 namespace internal {
 
+// TODO: test
+class Locale {
+ private:
+  locale_t locale_;
+
+  locale_t dup() const {
+    locale_t copy = duplocale(locale_);
+    if (!copy)
+      throw fmt::SystemError(errno, "cannot duplicate locale");
+    return copy;
+  }
+
+ public:
+  Locale() : locale_(newlocale(LC_NUMERIC_MASK, "C", NULL)) {
+    if (!locale_)
+      throw fmt::SystemError(errno, "cannot create locale");
+  }
+  Locale(const Locale &other) : locale_(other.dup()) {}
+  Locale &operator=(const Locale &other) {
+    locale_ = other.dup();
+    return *this;
+  }
+  ~Locale() { freelocale(locale_); }
+
+  locale_t get() const { return locale_; }
+};
+
 class ReaderBase {
  protected:
   const char *ptr_, *start_, *end_;
@@ -947,6 +975,7 @@ class TextReader : public ReaderBase {
  private:
   const char *line_start_;
   int line_;
+  Locale locale_;
 
   // Reads an integer without a sign.
   // Int: signed or unsigned integer type.
@@ -1058,11 +1087,14 @@ class TextReader : public ReaderBase {
 
   double ReadDouble() {
     SkipSpace();
-    char *end = 0;
+    const char *end = ptr_;
     double value = 0;
-    if (*ptr_ != '\n')
-      value = std::strtod(ptr_, &end);
-    if (!end || ptr_ == end)
+    if (*ptr_ != '\n') {
+      char *mut_end = 0;
+      value = strtod_l(ptr_, &mut_end, locale_.get());
+      end = mut_end;
+    }
+    if (ptr_ == end)
       ReportError("expected double");
     ptr_ = end;
     return value;
