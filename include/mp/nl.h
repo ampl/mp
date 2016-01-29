@@ -921,28 +921,39 @@ class NLHandler {
 
 namespace internal {
 
+// A "C" locale.
 class Locale {
  private:
 #ifdef _MSC_VER
   typedef _locale_t locale_t;
+
+  enum { LC_NUMERIC_MASK = LC_NUMERIC };
+
+  static locale_t newlocale(int category_mask, const char *locale, locale_t) {
+    return _create_locale(category_mask, locale);
+  }
+
+  static void freelocale(locale_t locale) {
+    _free_locale(locale);
+  }
 #endif
+
   locale_t locale_;
 
-  locale_t dup() const {
-    locale_t copy = duplocale(locale_);
-    if (!copy)
-      throw fmt::SystemError(errno, "cannot duplicate locale");
-    return copy;
+  locale_t Create() const {
+    locale_t locale = newlocale(LC_NUMERIC_MASK, "C", NULL);
+    if (!locale)
+      throw fmt::SystemError(errno, "cannot create locale");
+    return locale;
   }
 
  public:
-  Locale() : locale_(newlocale(LC_NUMERIC_MASK, "C", NULL)) {
-    if (!locale_)
-      throw fmt::SystemError(errno, "cannot create locale");
-  }
-  Locale(const Locale &other) : locale_(other.dup()) {}
-  Locale &operator=(const Locale &other) {
-    locale_ = other.dup();
+  Locale() : locale_(Create()) {}
+  Locale(const Locale &) : locale_(Create()) {}
+  Locale &operator=(const Locale &) {
+    locale_t locale = Create();
+    freelocale(locale_);
+    locale_ = locale;
     return *this;
   }
   ~Locale() { freelocale(locale_); }
@@ -978,6 +989,12 @@ class TextReader : public ReaderBase {
   const char *line_start_;
   int line_;
   Locale locale_;
+
+#ifdef _MSC_VER
+  static double strtod_l(const char *nptr, char **endptr, _locale_t locale) {
+    return _strtod_l(nptr, endptr, locale);
+  }
+#endif
 
   // Reads an integer without a sign.
   // Int: signed or unsigned integer type.
