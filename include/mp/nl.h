@@ -921,9 +921,11 @@ class NLHandler {
 
 namespace internal {
 
-// TODO: test
 class Locale {
  private:
+#ifdef _MSC_VER
+  typedef _locale_t locale_t;
+#endif
   locale_t locale_;
 
   locale_t dup() const {
