@@ -4433,6 +4433,10 @@ pfg_read_ASL(ASL *a, FILE *nl, int flags)
 				if (k < 0 || k >= nc0)
 					badline(R);
 				co_read(R, con_de, k);
+				if (k == 0 && nlc > 0 && con_de[k].e->op == (efunc*)f_OPNUM)
+					scream(R, ASL_readerr_badperm,
+						"ASL only supports files generated "
+						"with default $nl_permute\n");
 				break;
 			case 'F':
 				if (Xscanf(R, "%d %d %d %127s",
