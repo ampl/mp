@@ -216,7 +216,7 @@ class Table {
   const char *string(unsigned index) const { return strings_[index].c_str(); }
 
   void AddString(fmt::StringRef s) {
-    strings_.push_back(s);
+    strings_.push_back(s.to_string());
   }
 
   bool HasColNames() const { return values_.size() >= num_cols_; }
@@ -247,7 +247,7 @@ class Table {
   }
 
   void Add(fmt::StringRef s) {
-    str_values_.push_back(s.c_str());
+    str_values_.push_back(s.to_string());
     values_.push_back(Variant::FromString(str_values_.back().c_str()));
   }
 
@@ -285,7 +285,7 @@ class Library {
   std::auto_ptr<LibraryImpl> impl_;
 
  public:
-  explicit Library(fmt::StringRef name);
+  explicit Library(fmt::CStringRef name);
   ~Library();
 
   LibraryImpl *impl() { return impl_.get(); }
@@ -823,8 +823,9 @@ class FunctionInfo {
 
    public:
     explicit Result(double value) : value_(value) {}
-    explicit Result(const char *error = "") :
-      value_(std::numeric_limits<double>::quiet_NaN()), error_(error) {}
+    explicit Result(fmt::StringRef error = "") :
+      value_(std::numeric_limits<double>::quiet_NaN()),
+      error_(error.to_string()) {}
 
     double value() const { return value_; }
     const char *error() const { return error_.empty() ? 0 : error_.c_str(); }

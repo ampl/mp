@@ -23,7 +23,7 @@
 #include "mp/problem.h"
 #include "mp/problem-builder.h"
 
-void mp::ReadNLFile(fmt::StringRef filename, Problem &p) {
+void mp::ReadNLFile(fmt::CStringRef filename, Problem &p) {
   ProblemBuilderToNLAdapter<Problem> adapter(p);
   ReadNLFile(filename, adapter);
 }

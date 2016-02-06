@@ -94,7 +94,7 @@ namespace internal {
 // s:      string containing reStructuredText to format
 // values: information about possible option values to be formatted by the
 //         value-table directive
-void FormatRST(fmt::Writer &w, fmt::StringRef s,
+void FormatRST(fmt::Writer &w, fmt::CStringRef s,
     int indent = 0, ValueArrayRef values = ValueArrayRef());
 
 // A helper class for implementing an option of type T.
@@ -150,7 +150,7 @@ class ErrorHandler {
   ~ErrorHandler() {}
 
  public:
-  virtual void HandleError(fmt::StringRef message) = 0;
+  virtual void HandleError(fmt::CStringRef message) = 0;
 };
 
 // An interface for receiving solver output.
@@ -159,7 +159,7 @@ class OutputHandler {
   ~OutputHandler() {}
 
  public:
-  virtual void HandleOutput(fmt::StringRef output) = 0;
+  virtual void HandleOutput(fmt::CStringRef output) = 0;
 };
 
 // An interface for receiving solutions.
@@ -168,20 +168,20 @@ class SolutionHandler {
   virtual ~SolutionHandler() {}
 
   // Receives a feasible solution.
-  virtual void HandleFeasibleSolution(fmt::StringRef message,
+  virtual void HandleFeasibleSolution(fmt::CStringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
 
   // Receives the final solution or a notification that the problem is
   // infeasible or unbounded.
-  virtual void HandleSolution(int status, fmt::StringRef message,
+  virtual void HandleSolution(int status, fmt::CStringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
 };
 
 class BasicSolutionHandler : public SolutionHandler {
  public:
-  virtual void HandleFeasibleSolution(fmt::StringRef,
+  virtual void HandleFeasibleSolution(fmt::CStringRef,
       const double *, const double *, double) {}
-  virtual void HandleSolution(int, fmt::StringRef,
+  virtual void HandleSolution(int, fmt::CStringRef,
       const double *, const double *, double) {}
 };
 
@@ -421,7 +421,7 @@ class Solver : private ErrorHandler,
     return solution_stub_;
   }
   void SetSolutionStub(const SolverOption &, fmt::StringRef value) {
-    solution_stub_ = value.c_str();
+    solution_stub_ = value.to_string();
   }
 
  public:
@@ -449,11 +449,11 @@ class Solver : private ErrorHandler,
 
   friend class ASLSolver;
 
-  void HandleOutput(fmt::StringRef output) {
+  void HandleOutput(fmt::CStringRef output) {
     std::fputs(output.c_str(), stdout);
   }
 
-  void HandleError(fmt::StringRef message) {
+  void HandleError(fmt::CStringRef message) {
     std::fputs(message.c_str(), stderr);
     std::fputc('\n', stderr);
   }
@@ -569,10 +569,10 @@ class Solver : private ErrorHandler,
   // flags: Bitwise OR of zero or more of the following values
   //          MULTIPLE_SOL
   //          MULTIPLE_OBJ
-  Solver(fmt::StringRef name, fmt::StringRef long_name, long date, int flags);
+  Solver(fmt::CStringRef name, fmt::CStringRef long_name, long date, int flags);
 
-  void set_long_name(fmt::StringRef name) { long_name_ = name; }
-  void set_version(fmt::StringRef version) { version_ = version; }
+  void set_long_name(fmt::StringRef name) { long_name_ = name.to_string(); }
+  void set_version(fmt::StringRef version) { version_ = version.to_string(); }
 
   // Sets the flags for Problem::Read.
   void set_read_flags(unsigned flags) { read_flags_ = flags; }
@@ -890,22 +890,22 @@ class Solver : private ErrorHandler,
 
   // Reports an error printing the formatted error message to stderr.
   // Usage: ReportError("File not found: {}") << filename;
-  void ReportError(fmt::StringRef format, const fmt::ArgList &args) {
+  void ReportError(fmt::CStringRef format, const fmt::ArgList &args) {
     has_errors_ = true;
     fmt::MemoryWriter w;
     w.write(format, args);
-    error_handler_->HandleError(fmt::StringRef(w.c_str(), w.size()));
+    error_handler_->HandleError(w.c_str());
   }
-  FMT_VARIADIC(void, ReportError, fmt::StringRef)
+  FMT_VARIADIC(void, ReportError, fmt::CStringRef)
 
   // Formats a string and prints it to stdout or, if an output handler
   // is registered, sends it to the output handler.
-  void Print(fmt::StringRef format, const fmt::ArgList &args) {
+  void Print(fmt::CStringRef format, const fmt::ArgList &args) {
     fmt::MemoryWriter w;
     w.write(format, args);
-    output_handler_->HandleOutput(fmt::StringRef(w.c_str(), w.size()));
+    output_handler_->HandleOutput(w.c_str());
   }
-  FMT_VARIADIC(void, Print, fmt::StringRef)
+  FMT_VARIADIC(void, Print, fmt::CStringRef)
 
   // Prints version information.
   bool ShowVersion();
@@ -926,7 +926,7 @@ class SolverImpl : public Solver {
   typedef ProblemBuilderT ProblemBuilder;
   typedef ProblemBuilderToNLAdapter<ProblemBuilder> NLProblemBuilder;
 
-  SolverImpl(fmt::StringRef name, fmt::StringRef long_name = 0,
+  SolverImpl(fmt::CStringRef name, fmt::CStringRef long_name = 0,
              long date = 0, int flags = 0)
     : Solver(name, long_name, date, flags) {}
 };
@@ -970,16 +970,16 @@ class SolutionAdapter {
 class NullSolutionHandler : public SolutionHandler {
  public:
   void HandleFeasibleSolution(
-        fmt::StringRef, const double *, const double *, double) {}
+        fmt::CStringRef, const double *, const double *, double) {}
   void HandleSolution(
-        int, fmt::StringRef, const double *, const double *, double) {}
+        int, fmt::CStringRef, const double *, const double *, double) {}
 };
 
 // The default .sol file writer.
 class SolFileWriter {
  public:
   template <typename Solution>
-  void Write(fmt::StringRef filename, const Solution &sol) {
+  void Write(fmt::CStringRef filename, const Solution &sol) {
     WriteSolFile(filename, sol);
   }
 };
@@ -1009,23 +1009,23 @@ class SolutionWriter : private Writer, public SolutionHandler {
  public:
   SolutionWriter(fmt::StringRef stub, Solver &s, ProblemBuilder &b,
                  ArrayRef<int> options = mp::ArrayRef<int>(0, 0))
-    : stub_(stub.c_str()), solver_(s), builder_(b),
+    : stub_(stub.to_string()), solver_(s), builder_(b),
       options_(options), num_solutions_(0) {}
 
   // Returns the .sol writer.
   Writer &sol_writer() { return *this; }
 
-  void HandleFeasibleSolution(fmt::StringRef message,
+  void HandleFeasibleSolution(fmt::CStringRef message,
         const double *values, const double *dual_values, double);
 
   // Writes the solution to a .sol file.
-  void HandleSolution(int status, fmt::StringRef message,
+  void HandleSolution(int status, fmt::CStringRef message,
         const double *values, const double *dual_values, double);
 };
 
 template <typename Solver, typename Writer>
 void SolutionWriter<Solver, Writer>::HandleFeasibleSolution(
-    fmt::StringRef message, const double *values,
+    fmt::CStringRef message, const double *values,
     const double *dual_values, double) {
   ++num_solutions_;
   const char *solution_stub = solver_.solution_stub();
@@ -1043,7 +1043,7 @@ void SolutionWriter<Solver, Writer>::HandleFeasibleSolution(
 
 template <typename Solver, typename Writer>
 void SolutionWriter<Solver, Writer>::HandleSolution(
-    int status, fmt::StringRef message, const double *values,
+    int status, fmt::CStringRef message, const double *values,
     const double *dual_values, double) {
   typedef typename ProblemBuilder::IntSuffix IntSuffix;
   if (solver_.need_multiple_solutions()) {
@@ -1214,7 +1214,7 @@ class NameProvider {
   fmt::MemoryWriter writer_;
 
  public:
-  NameProvider(fmt::StringRef filename, fmt::StringRef gen_name,
+  NameProvider(fmt::CStringRef filename, fmt::CStringRef gen_name,
                std::size_t num_items);
 
   // Returns the name of the item at specified index.
@@ -1238,13 +1238,13 @@ class AppSolutionHandler : public SolutionWriter<Solver, Writer> {
   : SolutionWriter<Solver, Writer>(stub, s, b, options),
     banner_size_(banner_size) {}
 
-  void HandleSolution(int status, fmt::StringRef message, const double *values,
+  void HandleSolution(int status, fmt::CStringRef message, const double *values,
                       const double *dual_values, double obj_value);
 };
 
 template <typename Solver, typename Writer>
 void AppSolutionHandler<Solver, Writer>::HandleSolution(
-    int status, fmt::StringRef message, const double *values,
+    int status, fmt::CStringRef message, const double *values,
     const double *dual_values, double obj_value) {
   Solver &solver = this->solver();
   int wantsol = solver.wantsol();
@@ -1291,7 +1291,7 @@ class SolverApp : private Reader {
   struct AppOutputHandler : OutputHandler {
     bool has_output;
     AppOutputHandler() : has_output(false) {}
-    void HandleOutput(fmt::StringRef output) {
+    void HandleOutput(fmt::CStringRef output) {
       has_output = true;
       std::fputs(output.c_str(), stdout);
     }

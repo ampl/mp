@@ -48,7 +48,7 @@ private:
   int error_code_;
 
 public:
-  ASLError(int error_code, fmt::StringRef message) :
+  ASLError(int error_code, fmt::CStringRef message) :
       Error(message), error_code_(error_code) {}
 
   int error_code() const { return error_code_; }
@@ -445,7 +445,7 @@ class ASLBuilder {
   Function AddFunction(fmt::StringRef name, int num_args,
                        func::Type type = func::NUMERIC);
 
-  Function FindFunction(fmt::StringRef name) const {
+  Function FindFunction(fmt::CStringRef name) const {
     return Function(func_lookup_ASL(asl_, name.c_str(), 0));
   }
 

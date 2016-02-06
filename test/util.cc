@@ -41,7 +41,7 @@
 # define WEXITSTATUS(status) status
 #endif
 
-std::string ReadFile(fmt::StringRef name) {
+std::string ReadFile(fmt::CStringRef name) {
   std::string data;
   std::ifstream ifs(name.c_str());
   enum { BUFFER_SIZE = 4096 };
@@ -53,28 +53,27 @@ std::string ReadFile(fmt::StringRef name) {
   return data;
 }
 
-void WriteFile(fmt::StringRef name, fmt::StringRef data) {
+void WriteFile(fmt::CStringRef name, fmt::StringRef data) {
   fmt::BufferedFile file(name, "wb");
   std::size_t size = data.size();
-  if (std::fwrite(data.c_str(), 1, size, file.get()) != size)
+  if (std::fwrite(data.data(), 1, size, file.get()) != size)
     throw fmt::SystemError(errno, "cannot write file {}", name);
 }
 
-std::string FixPath(fmt::StringRef path, char sep) {
-  if (sep == '/')
-    return path;
-  std::string fixed = path;
-  std::replace(fixed.begin(), fixed.end(), '/', sep);
+std::string FixPath(fmt::CStringRef path, char sep) {
+  std::string fixed(path.c_str());
+  if (sep != '/')
+    std::replace(fixed.begin(), fixed.end(), '/', sep);
   return fixed;
 }
 
-void ChangeDirectory(fmt::StringRef path) {
+void ChangeDirectory(fmt::CStringRef path) {
   if (chdir(path.c_str()) != 0)
     throw mp::Error("chdir failed, error code = {}", errno);
 }
 
 int ExecuteShellCommand(
-    fmt::StringRef command, bool throw_on_nonzero_exit_code) {
+    fmt::CStringRef command, bool throw_on_nonzero_exit_code) {
 #ifdef _WIN32
   std::wstring command_str = fmt::internal::UTF8ToUTF16(command).str();
   std::replace(command_str.begin(), command_str.end(), L'/', L'\\');
@@ -108,7 +107,8 @@ std::vector<std::string> Split(const std::string &s, char sep) {
   return items;
 }
 
-std::string ReplaceLine(std::string s, int line_index, const char *new_line) {
+std::string ReplaceLine(std::string s, int line_index,
+                        fmt::StringRef new_line) {
   std::string::size_type start = 0;
   while (line_index-- > 0) {
     start = s.find('\n', start);
@@ -119,7 +119,7 @@ std::string ReplaceLine(std::string s, int line_index, const char *new_line) {
   std::string::size_type end = s.find('\n', start);
   if (end == std::string::npos)
     end = s.size();
-  s.replace(start, end - start, new_line);
+  s.replace(start, end - start, new_line.data(), new_line.size());
   return s;
 }
 

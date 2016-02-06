@@ -99,7 +99,7 @@ class SuffixBase {
   SuffixBase() : impl_() {}
 
   // Returns the suffix name.
-  const char *name() const { return impl_->name.c_str(); }
+  const char *name() const { return impl_->name.data(); }
 
   // Returns the suffix kind.
   int kind() const { return impl_->kind; }
@@ -291,7 +291,7 @@ class BasicSuffixSet : private Alloc {
       if (lhs_size != rhs_size)
         return lhs_size < rhs_size;
       return std::char_traits<char>::compare(
-            lhs.name.c_str(), rhs.name.c_str(), lhs_size) < 0;
+            lhs.name.data(), rhs.name.data(), lhs_size) < 0;
     }
   };
 
@@ -396,7 +396,7 @@ template <typename Alloc>
 BasicSuffixSet<Alloc>::~BasicSuffixSet() {
   // Deallocate names and values.
   for (typename Set::iterator i = set_.begin(), e = set_.end(); i != e; ++i) {
-    Deallocate(const_cast<char*>(i->name.c_str()));
+    Deallocate(const_cast<char*>(i->name.data()));
     if ((i->kind & suf::FLOAT) != 0)
       Deallocate(i->dbl_values);
     else
@@ -416,10 +416,10 @@ typename BasicSuffixSet<Alloc>::SuffixImpl *BasicSuffixSet<Alloc>::DoAdd(
   std::size_t size = name.size();
   impl->name = fmt::StringRef(0, 0);
   char *name_copy = Allocate<char>(size + 1);
-  const char *s = name.c_str();
+  const char *s = name.data();
   std::copy(s, s + size, fmt::internal::make_ptr(name_copy, size));
   name_copy[size] = 0;
-  impl->name = fmt::StringRef(name_copy, size);
+  impl->name = name_copy;
   impl->num_values = num_values;
   return impl;
 }

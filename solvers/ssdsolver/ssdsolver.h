@@ -107,7 +107,7 @@ class SSDSolver : public SolverImpl<Problem> {
 
   std::string GetSolverName(const SolverOption &) const { return solver_name_; }
   void SetSolverName(const SolverOption &, fmt::StringRef value) {
-    solver_name_ = value.c_str();
+    solver_name_ = value.to_string();
   }
 
  public:

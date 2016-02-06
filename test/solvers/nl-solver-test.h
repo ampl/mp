@@ -75,7 +75,7 @@ EvalResult Solve(Solver &solver, typename Solver::ProblemBuilder &pb) {
   struct TestSolutionHandler : mp::BasicSolutionHandler {
     EvalResult result;
     virtual ~TestSolutionHandler() {}
-    void HandleSolution(int status, fmt::StringRef,
+    void HandleSolution(int status, fmt::CStringRef,
           const double *values, const double *, double obj_value) {
       result = values ? EvalResult(values[0], obj_value) : EvalResult();
       result.set_solve_code(status);
@@ -1324,7 +1324,7 @@ struct SolutionCounter : TestSolutionHandler {
   int num_solutions;
   SolutionCounter() : num_solutions(0) {}
   void HandleFeasibleSolution(
-      fmt::StringRef, const double *, const double *, double) {
+      fmt::CStringRef, const double *, const double *, double) {
     ++num_solutions;
   }
 };
@@ -1384,8 +1384,8 @@ TEST_F(NLSolverTest, TimingOption) {
     std::string output;
 
     virtual ~TestOutputHandler() {}
-    void HandleOutput(fmt::StringRef output) {
-      this->output += output;
+    void HandleOutput(fmt::CStringRef output) {
+      this->output += output.c_str();
     }
   };
 
@@ -1472,7 +1472,7 @@ TEST_F(NLSolverTest, MultiObjOption) {
 
 struct TestOutputHandler : public mp::OutputHandler {
   std::string output;
-  void HandleOutput(fmt::StringRef output) { this->output += output; }
+  void HandleOutput(fmt::CStringRef output) { this->output += output.c_str(); }
 };
 
 // Test that providing an initial dual value doesn't cause an error.

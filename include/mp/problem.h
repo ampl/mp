@@ -895,7 +895,7 @@ void BasicProblem<Alloc>::SetInfo(const ProblemInfo &info) {
 
 typedef BasicProblem< std::allocator<char> > Problem;
 
-void ReadNLFile(fmt::StringRef filename, Problem &p);
+void ReadNLFile(fmt::CStringRef filename, Problem &p);
 }  // namespace mp
 
 #endif  // MP_PROBLEM_H_

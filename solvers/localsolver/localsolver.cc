@@ -473,7 +473,10 @@ std::string LocalSolver::GetVerbosity(const SolverOption &opt) const {
 
 void LocalSolver::SetVerbosity(const SolverOption &opt, fmt::StringRef value) {
   char *end = 0;
-  const char *str = value.c_str();
+  // Copy the value adding a terminating null for strtol.
+  fmt::MemoryWriter writer;
+  writer << value;
+  const char *str = writer.c_str();
   long intval = std::strtol(str, &end, 0);
   if (!*end) {
     std::size_t i = 0, size = sizeof(VERBOSITIES) / sizeof(*VERBOSITIES);

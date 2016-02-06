@@ -74,6 +74,13 @@ struct BasicOption {
   virtual void set(Solver &s, T value) const = 0;
 };
 
+template <typename T>
+T ConvertOptionValue(T value) { return value; }
+
+std::string ConvertOptionValue(const fmt::StringRef &value) {
+  return value.to_string();
+}
+
 // LocalSolver option stored in LSParam
 template <typename T, typename ParamT = T>
 struct Option : public BasicOption<T> {
@@ -92,7 +99,7 @@ struct Option : public BasicOption<T> {
 
   T get(Solver &s) const { return (s.getParam().*get_)(); }
   void set(Solver &s, T value) const {
-    (s.getParam().*set_)(mp::internal::OptionHelper<ParamT>::CastArg(value));
+    (s.getParam().*set_)(ConvertOptionValue(value));
   }
 };
 

@@ -63,7 +63,7 @@ enum {
 
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
-                  fmt::StringRef name = "(input)", int flags = 0);
+                  fmt::CStringRef name = "(input)", int flags = 0);
 
 /** A read error with location information. */
 class ReadError : public Error {
@@ -72,13 +72,13 @@ class ReadError : public Error {
   int line_;
   int column_;
 
-  void init(fmt::StringRef filename, int line, int column,
-            fmt::StringRef format_str, fmt::ArgList args);
+  void init(fmt::CStringRef filename, int line, int column,
+            fmt::CStringRef format_str, fmt::ArgList args);
 
  public:
   /** Constructs the exception object. */
-  ReadError(fmt::StringRef filename, int line, int column,
-            fmt::StringRef format_str, fmt::ArgList args) {
+  ReadError(fmt::CStringRef filename, int line, int column,
+            fmt::CStringRef format_str, fmt::ArgList args) {
     init(filename, line, column, format_str, args);
   }
 
@@ -95,7 +95,7 @@ class ReadError : public Error {
   int column() const { return column_; }
 
   FMT_VARIADIC_(char, , ReadError, init,
-                fmt::StringRef, int, int, fmt::StringRef)
+                fmt::CStringRef, int, int, fmt::CStringRef)
 };
 
 /** A read error with information about offset in a binary input. */
@@ -107,7 +107,7 @@ class BinaryReadError : public Error {
  public:
   /** Constructs the exception object. */
   BinaryReadError(
-      fmt::StringRef filename, std::size_t offset, fmt::StringRef message)
+      const std::string &filename, std::size_t offset, fmt::CStringRef message)
   : Error(message), filename_(filename), offset_(offset) {}
 
   /** Destructs the exception object. */
@@ -970,7 +970,7 @@ class ReaderBase {
   ~ReaderBase() {}
 
  public:
-  ReaderBase(fmt::StringRef data, fmt::StringRef name);
+  ReaderBase(fmt::StringRef data, fmt::CStringRef name);
 
   char ReadChar() {
     token_ = ptr_;
@@ -1065,7 +1065,7 @@ class TextReader : public ReaderBase {
   bool ReadOptionalDouble(double &value);
 
   void DoReportError(
-      const char *loc, fmt::StringRef format_str,
+      const char *loc, fmt::CStringRef format_str,
       const fmt::ArgList &args = fmt::ArgList());
 
   void SkipSpace() {
@@ -1075,12 +1075,12 @@ class TextReader : public ReaderBase {
   }
 
  public:
-  TextReader(fmt::StringRef data, fmt::StringRef name);
+  TextReader(fmt::StringRef data, fmt::CStringRef name);
 
-  void ReportError(fmt::StringRef format_str, const fmt::ArgList &args) {
+  void ReportError(fmt::CStringRef format_str, const fmt::ArgList &args) {
     DoReportError(token_, format_str, args);
   }
-  FMT_VARIADIC(void, ReportError, fmt::StringRef)
+  FMT_VARIADIC(void, ReportError, fmt::CStringRef)
 
   void ReadTillEndOfLine() {
     while (char c = *ptr_) {
@@ -1167,8 +1167,8 @@ class BinaryReaderBase : public ReaderBase {
   }
 
  public:
-  void ReportError(fmt::StringRef format_str, const fmt::ArgList &args);
-  FMT_VARIADIC(void, ReportError, fmt::StringRef)
+  void ReportError(fmt::CStringRef format_str, const fmt::ArgList &args);
+  FMT_VARIADIC(void, ReportError, fmt::CStringRef)
 
   void ReadTillEndOfLine() {
     // Do nothing.
@@ -2020,7 +2020,7 @@ class NLFileReader {
   std::size_t size_;
   std::size_t rounded_size_;  // Size rounded up to a multiple of page size.
 
-  void Open(fmt::StringRef filename);
+  void Open(fmt::CStringRef filename);
 
   // Reads the file into an array.
   void Read(fmt::internal::MemoryBuffer<char, 1> &array);
@@ -2032,7 +2032,7 @@ class NLFileReader {
 
   // Opens and reads the file.
   template <typename Handler>
-  void Read(fmt::StringRef filename, Handler &handler, int flags) {
+  void Read(fmt::CStringRef filename, Handler &handler, int flags) {
     Open(filename);
     if (size_ == rounded_size_) {
       // Don't use mmap, because the file size is a multiple of the page size
@@ -2049,7 +2049,7 @@ class NLFileReader {
 };
 
 template <typename File>
-void NLFileReader<File>::Open(fmt::StringRef filename) {
+void NLFileReader<File>::Open(fmt::CStringRef filename) {
   file_ = File(filename, fmt::File::RDONLY);
   size_ = ConvertFileToMmapSize(file_.size(), filename);
   // Round size up to a multiple of page_size. The remainded of the last
@@ -2078,10 +2078,10 @@ void ReadBinary(TextReader &reader, const NLHeader &header,
 }
 
 template <typename NameHandler>
-void ReadNames(fmt::StringRef filename, fmt::StringRef data,
+void ReadNames(fmt::CStringRef filename, fmt::StringRef data,
                NameHandler &handler) {
   int line = 1;
-  const char *start = data.c_str();
+  const char *start = data.data();
   const char *end = start + data.size();
   for (const char *ptr = start; ptr != end; ++ptr) {
     if (*ptr == '\n') {
@@ -2109,7 +2109,7 @@ class NameReader {
   // Each name in the input file should be on a separate line ended with a
   // newline character ('\n').
   template <typename NameHandler>
-  void Read(fmt::StringRef filename, NameHandler &handler) {
+  void Read(fmt::CStringRef filename, NameHandler &handler) {
     mapped_file_.map(fmt::File(filename, fmt::File::RDONLY), filename);
     fmt::StringRef data(mapped_file_.start(), mapped_file_.size());
     ReadNames(filename, data, handler);
@@ -2123,6 +2123,7 @@ class NameReader {
   and sends notifications of the problem components to the *handler* object.
   
   Both *str* and *name* can be C strings or ``std::string`` objects.
+  The string *str* must be null-terminated.
   The *name* argument is used as the name of the input when reporting errors.
   *flags* can be either 0, which is the default, to read all constructs in
   the order they appear in the input, or `mp::READ_BOUNDS_FIRST` to read
@@ -2132,7 +2133,7 @@ class NameReader {
  */
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
-                  fmt::StringRef name, int flags) {
+                  fmt::CStringRef name, int flags) {
   internal::TextReader reader(str, name);
   NLHeader header = NLHeader();
   reader.ReadHeader(header);
@@ -2185,7 +2186,7 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
   \endrst
  */
 template <typename Handler>
-inline void ReadNLFile(fmt::StringRef filename,
+inline void ReadNLFile(fmt::CStringRef filename,
                        Handler &handler, int flags = 0) {
   internal::NLFileReader<>().Read(filename, handler, flags);
 }

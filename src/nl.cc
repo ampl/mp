@@ -22,9 +22,9 @@
 
 #include "mp/nl.h"
 
-void mp::ReadError::init(fmt::StringRef filename, int line, int column,
-                         fmt::StringRef format_str, fmt::ArgList args) {
-  filename_ = filename;
+void mp::ReadError::init(fmt::CStringRef filename, int line, int column,
+                         fmt::CStringRef format_str, fmt::ArgList args) {
+  filename_ = filename.c_str();
   line_ = line;
   column_ = column;
   fmt::MemoryWriter w;
@@ -85,15 +85,15 @@ fmt::Writer &mp::operator<<(fmt::Writer &w, const NLHeader &h) {
   return w;
 }
 
-mp::internal::ReaderBase::ReaderBase(fmt::StringRef data, fmt::StringRef name)
-: ptr_(data.c_str()), start_(ptr_), end_(ptr_ + data.size()),
-  token_(ptr_), name_(name) {}
+mp::internal::ReaderBase::ReaderBase(fmt::StringRef data, fmt::CStringRef name)
+: ptr_(data.data()), start_(ptr_), end_(ptr_ + data.size()),
+  token_(ptr_), name_(name.c_str()) {}
 
-mp::internal::TextReader::TextReader(fmt::StringRef data, fmt::StringRef name)
+mp::internal::TextReader::TextReader(fmt::StringRef data, fmt::CStringRef name)
 : ReaderBase(data, name), line_start_(ptr_), line_(1) {}
 
 void mp::internal::TextReader::DoReportError(
-    const char *loc, fmt::StringRef format_str, const fmt::ArgList &args) {
+    const char *loc, fmt::CStringRef format_str, const fmt::ArgList &args) {
   int line = line_;
   const char *line_start = line_start_;
   if (loc < line_start) {
@@ -258,7 +258,7 @@ void mp::internal::TextReader::ReadHeader(NLHeader &header) {
 }
 
 void mp::internal::BinaryReaderBase::ReportError(
-    fmt::StringRef format_str, const fmt::ArgList &args) {
+    fmt::CStringRef format_str, const fmt::ArgList &args) {
   fmt::MemoryWriter w;
   std::size_t offset = token_ - start_;
   w.write("{}:offset {}: ", name_, offset);

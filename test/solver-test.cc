@@ -63,8 +63,8 @@ class TestSolver : public mp::Solver {
  public:
   StrictMockProblemBuilder *builder;
 
-  TestSolver(const char *name = "testsolver",
-      const char *long_name = 0, long date = 0, int flags = 0)
+  TestSolver(fmt::CStringRef name = "testsolver",
+             fmt::CStringRef long_name = 0, long date = 0, int flags = 0)
   : Solver(name, long_name, date, flags), mock_solve_(false), builder(0) {}
 
   // Enables mocking of the Solve method.
@@ -208,7 +208,7 @@ TEST(SolverTest, ValueArrayRefInvalidOffset) {
 }
 
 // A wrapper around mp::internal::FormatRST used to simplify testing.
-std::string FormatRST(fmt::StringRef s,
+std::string FormatRST(fmt::CStringRef s,
     int indent = 0, mp::ValueArrayRef values = mp::ValueArrayRef()) {
   fmt::MemoryWriter w;
   mp::internal::FormatRST(w, s, indent, values);
@@ -330,8 +330,8 @@ TEST(SolverTest, ErrorHandler) {
     std::string message;
 
     virtual ~TestErrorHandler() {}
-    void HandleError(fmt::StringRef message) {
-      this->message = message;
+    void HandleError(fmt::CStringRef message) {
+      this->message = message.c_str();
     }
   };
 
@@ -348,8 +348,8 @@ TEST(SolverTest, OutputHandler) {
     std::string output;
 
     virtual ~TestOutputHandler() {}
-    void HandleOutput(fmt::StringRef output) {
-      this->output += output;
+    void HandleOutput(fmt::CStringRef output) {
+      this->output += output.c_str();
     }
   };
 
@@ -383,7 +383,7 @@ TEST(SolverTest, SignalHandler) {
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
-  EXPECT_EQ("0\n<BREAK> (testsolver)\n1", ReadFile("out"));
+  EXPECT_EQ("false\n<BREAK> (testsolver)\ntrue", ReadFile("out"));
 }
 
 TEST(SolverTest, SignalHandlerExitOnTwoSIGINTs) {
@@ -493,7 +493,7 @@ TEST(SolverTest, StringOptionHelper) {
   EXPECT_EQ("def", OptionHelper<string>::Parse(s));
   EXPECT_EQ(start + 3, s);
   EXPECT_STREQ("abc",
-               OptionHelper<string>::CastArg(fmt::StringRef("abc")).c_str());
+               OptionHelper<string>::CastArg(fmt::StringRef("abc")).data());
 }
 
 TEST(SolverTest, TypedSolverOption) {
@@ -557,7 +557,7 @@ struct TestSolverWithOptions : Solver {
   std::string GetStrOption(const SolverOption &) const { return stropt1; }
   void SetStrOption(const SolverOption &opt, fmt::StringRef value) {
     EXPECT_STREQ("stropt1", opt.name());
-    stropt1 = value.c_str();
+    stropt1 = value.to_string();
   }
 
   std::string GetStrOptionWithInfo(const SolverOption &, Info) const {
@@ -566,7 +566,7 @@ struct TestSolverWithOptions : Solver {
   void SetStrOptionWithInfo(
       const SolverOption &opt, fmt::StringRef value, Info info) {
     EXPECT_STREQ("stropt2", opt.name());
-    stropt2 = value.c_str();
+    stropt2 = value.to_string();
     EXPECT_EQ(INFO, info);
   }
 
@@ -710,8 +710,8 @@ struct TestErrorHandler : mp::ErrorHandler {
   std::vector<std::string> errors;
 
   virtual ~TestErrorHandler() {}
-  void HandleError(fmt::StringRef message) {
-    errors.push_back(message);
+  void HandleError(fmt::CStringRef message) {
+    errors.push_back(message.c_str());
   }
 };
 
@@ -1092,23 +1092,21 @@ TEST(SolverTest, NSolSuffix) {
   EXPECT_STREQ("nsol", i->name());
 }
 
-std::string str(fmt::StringRef s) { return std::string(s.c_str(), s.size()); }
-
 TEST(NameProviderTest, GenerateNames) {
   int num_items = 5;
   mp::internal::NameProvider np("", "foo", num_items);
   for (int i = 0; i <= num_items + 1; ++i)
-    EXPECT_EQ(fmt::format("foo[{}]", i + 1), str(np.name(i)));
+    EXPECT_EQ(fmt::format("foo[{}]", i + 1), np.name(i).to_string());
 }
 
 TEST(NameProviderTest, ReadNames) {
   std::string filename = GetExecutableDir() + "test";
   WriteFile(filename, "abc\ndef\n");
   mp::internal::NameProvider np(filename, "bar", 5);
-  EXPECT_EQ("abc", str(np.name(0)));
-  EXPECT_EQ("def", str(np.name(1)));
-  EXPECT_EQ("bar[3]", str(np.name(2)));
-  EXPECT_EQ("bar[7]", str(np.name(6)));
+  EXPECT_EQ("abc", np.name(0).to_string());
+  EXPECT_EQ("def", np.name(1).to_string());
+  EXPECT_EQ("bar[3]", np.name(2).to_string());
+  EXPECT_EQ("bar[7]", np.name(6).to_string());
 }
 
 TEST(SolverTest, PrintSolution) {
@@ -1127,7 +1125,7 @@ TEST(SolverTest, PrintSolution) {
 struct OutputHandler : mp::OutputHandler {
   std::string output;
 
-  void HandleOutput(fmt::StringRef message) { output += message.c_str(); }
+  void HandleOutput(fmt::CStringRef message) { output += message.c_str(); }
 };
 
 class SolverAppOptionParserTest : public ::testing::Test {
@@ -1237,7 +1235,7 @@ struct MockSolWriter {
 
 // Matcher that compares a StringRef with a C string for equality.
 MATCHER_P(StringRefEq, str, "") {
-  return std::strcmp(arg.c_str(), fmt::StringRef(str).c_str()) == 0;
+  return arg == str;
 }
 
 // Matcher that checks that the solution being written has the specified

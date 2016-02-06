@@ -64,16 +64,17 @@ void Solution::Swap(Solution &other) {
   std::swap(dual_values_, other.dual_values_);
 }
 
-void Solution::Read(fmt::StringRef stub, int num_vars, int num_cons) {
+void Solution::Read(fmt::CStringRef stub, int num_vars, int num_cons) {
   // Allocate filename large enough to hold stub, ".sol" and terminating zero.
-  std::vector<char> filename(stub.size() + 5);
+  std::size_t stub_len = std::strlen(stub.c_str());
+  std::vector<char> filename(stub_len + 5);
   std::strcpy(&filename[0], stub.c_str());
   ASL asl = ASL();
   asl.i.n_var_ = num_vars;
   asl.i.n_con_ = num_cons;
   asl.i.ASLtype = 1;
   asl.i.filename_ = &filename[0];
-  asl.i.stub_end_ = asl.i.filename_ + stub.size();
+  asl.i.stub_end_ = asl.i.filename_ + stub_len;
   Solution sol;
   sol.num_vars_ = num_vars;
   sol.num_cons_ = num_cons;
@@ -266,7 +267,7 @@ void ASLProblem::Read(fmt::StringRef stub, unsigned flags) {
 }
 
 void ASLProblem::WriteNL(
-    fmt::StringRef stub, ProblemChanges *pc, unsigned flags) {
+    fmt::CStringRef stub, ProblemChanges *pc, unsigned flags) {
   int nfunc = asl_->i.nfunc_;
   if ((flags & IGNORE_FUNCTIONS) != 0)
     asl_->i.nfunc_ = 0;
@@ -283,7 +284,7 @@ void ASLProblem::Solve(fmt::StringRef solver_name,
   WriteNL(temp.stub(), pc, flags);
   // Run the solver and read the solution file.
   fmt::MemoryWriter command;
-  command.write("{} {} -AMPL", solver_name.c_str(), temp.stub());
+  command.write("{} {} -AMPL", solver_name, temp.stub());
   int exit_code = std::system(command.c_str());
   if (exit_code != 0) {
     throw Error(

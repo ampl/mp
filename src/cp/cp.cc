@@ -27,9 +27,10 @@
 #include "funcadd.h"
 
 namespace {
-void error(arglist *al, fmt::StringRef message) {
-  al->Errmsg = static_cast<char*>(al->AE->Tempmem(al->TMI, message.size() + 1));
-  std::strcpy(al->Errmsg, message.c_str());
+void error(arglist *al, const char *message) {
+  al->Errmsg = static_cast<char*>(
+        al->AE->Tempmem(al->TMI, std::strlen(message) + 1));
+  std::strcpy(al->Errmsg, message);
 }
 
 double element(arglist *al) {

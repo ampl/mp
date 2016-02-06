@@ -95,7 +95,7 @@ class Solution {
   }
 
   // Reads a solution from the file <stub>.sol.
-  void Read(fmt::StringRef stub, int num_vars, int num_cons);
+  void Read(fmt::CStringRef stub, int num_vars, int num_cons);
 };
 
 class ASLSuffixPtr {
@@ -289,7 +289,8 @@ class ASLProblem {
   void Free();
 
   // Write an .nl file.
-  void WriteNL(fmt::StringRef stub, ProblemChanges *pc = 0, unsigned flags = 0);
+  void WriteNL(fmt::CStringRef stub, ProblemChanges *pc = 0,
+               unsigned flags = 0);
 
   class Proxy {
    private:

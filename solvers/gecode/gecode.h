@@ -348,9 +348,8 @@ class GecodeSolver : public SolverImpl<Problem> {
     status_ = status;
   }
 
-  void Output(fmt::StringRef format, const fmt::ArgList &args);
-
-  FMT_VARIADIC(void, Output, fmt::StringRef)
+  void Output(fmt::CStringRef format, const fmt::ArgList &args);
+  FMT_VARIADIC(void, Output, fmt::CStringRef)
 
   class Stop : public Gecode::Search::Stop {
    private:

@@ -89,7 +89,7 @@ class SMPSNameReader {
 
   void OnName(fmt::StringRef name) { names_.push_back(name); }
 
-  void Read(fmt::StringRef filename) {
+  void Read(fmt::CStringRef filename) {
     reader_.Read(filename, *this);
     std::size_t num_names = num_names_;
     if (names_.size() != num_names)
@@ -103,14 +103,14 @@ class FileWriter {
   FMT_DISALLOW_COPY_AND_ASSIGN(FileWriter);
 
  public:
-  explicit FileWriter(fmt::StringRef name)
+  explicit FileWriter(fmt::CStringRef name)
     : f_(std::fopen(name.c_str(), "w")) {}
   ~FileWriter() { std::fclose(f_); }
 
-  void Write(fmt::StringRef format, const fmt::ArgList &args) {
+  void Write(fmt::CStringRef format, const fmt::ArgList &args) {
     fmt::print(f_, format, args);
   }
-  FMT_VARIADIC(void, Write, fmt::StringRef)
+  FMT_VARIADIC(void, Write, fmt::CStringRef)
 };
 
 SMPSWriter::SMPSWriter()
@@ -298,7 +298,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       if (stage > 0) {
         // Split the name into scenario and the rest and merge variables that
         // only differ by scenario into the same variable.
-        std::string name = var_names.name(i);
+        std::string name = var_names.name(i).to_string();
         std::string scenario = ExtractScenario(name);
         info.core_index = FindOrInsert(stage1_vars, name,
           static_cast<int>(num_stage0_vars + stage1_vars.size()));
@@ -326,7 +326,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
           if (con_stage == 0) {
             // Split the name into scenario and the rest and merge constraints
             // that only differ by scenario into the same constraint.
-            std::string name = con_names.name(con_index);
+            std::string name = con_names.name(con_index).to_string();
             std::string scenario = ExtractScenario(name);
             VarConInfo &info = con_info[con_index];
             info.core_index = FindOrInsert(
@@ -351,7 +351,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       VarConInfo &info = con_info[i];
       // A constraint with a name which only differs in scenario from a
       // name of some other stage 1 constraint, is also a stage 1 constraint.
-      std::string name = con_names.name(i);
+      std::string name = con_names.name(i).to_string();
       std::string scenario = ExtractScenario(name, false);
       std::map<std::string, int>::iterator stage1_con =
           scenario.empty() ? stage1_cons.end() : stage1_cons.find(name);

@@ -567,7 +567,7 @@ void GecodeSolver::SetEnumOption(
     const SolverOption &opt, fmt::StringRef value, T *ptr) {
   for (mp::ValueArrayRef::iterator
       i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
-    if (std::strcmp(value.c_str(), i->value) == 0) {
+    if (value == i->value) {
       *ptr = static_cast<T>(i->data);
       return;
     }
@@ -583,7 +583,7 @@ void GecodeSolver::SetNonnegativeOption(
   *option = value;
 }
 
-void GecodeSolver::Output(fmt::StringRef format, const fmt::ArgList &args) {
+void GecodeSolver::Output(fmt::CStringRef format, const fmt::ArgList &args) {
   if (output_count_ == 0)
     Print("{}", header_);
   output_count_ = (output_count_ + 1) % 20;

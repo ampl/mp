@@ -453,8 +453,8 @@ class JaCoPSolver : public SolverImpl<Problem> {
   }
   void SetOutputFrequency(const SolverOption &opt, double value);
 
-  void Output(fmt::StringRef format, const fmt::ArgList &args);
-  FMT_VARIADIC(void, Output, fmt::StringRef)
+  void Output(fmt::CStringRef format, const fmt::ArgList &args);
+  FMT_VARIADIC(void, Output, fmt::CStringRef)
 
   steady_clock::duration GetOutputInterval() const {
     return steady_clock::duration(

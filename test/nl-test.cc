@@ -56,7 +56,7 @@ class MockNLHandler : public mp::NLHandler<TestExpr> {
 
 TEST(ReaderBaseTest, ReadChar) {
   struct TestReaderBase : mp::internal::ReaderBase {
-    TestReaderBase(fmt::StringRef data, fmt::StringRef name)
+    TestReaderBase(fmt::StringRef data, fmt::CStringRef name)
          : ReaderBase(data, name) {}
   };
   TestReaderBase rb(" b", "test");
@@ -113,7 +113,7 @@ TEST(TextReaderTest, ReadDouble) {
 TEST(TextReaderTest, ReadName) {
   TextReader reader("  abc  \n  ", "test");
   fmt::StringRef name = reader.ReadName();
-  EXPECT_EQ("abc", std::string(name.c_str(), name.size()));
+  EXPECT_EQ("abc", name.to_string());
   EXPECT_THROW_MSG(reader.ReadName(), mp::ReadError, "test:1:8: expected name");
   reader.ReadTillEndOfLine();
   EXPECT_THROW_MSG(reader.ReadName(), mp::ReadError, "test:2:3: expected name");
@@ -122,7 +122,7 @@ TEST(TextReaderTest, ReadName) {
 TEST(TextReaderTest, ReadString) {
   TextReader reader("  3:a\nb\nc\n2x\n2:de \n2:fg", "test");
   fmt::StringRef name = reader.ReadString();
-  EXPECT_EQ("a\nb", std::string(name.c_str(), name.size()));
+  EXPECT_EQ("a\nb", name.to_string());
   EXPECT_THROW_MSG(reader.ReadString(), mp::ReadError,
                    "test:3:1: expected unsigned integer");
   reader.ReadTillEndOfLine();
@@ -158,8 +158,7 @@ NLHeader ReadHeader(const std::string &s) {
 
 // Reads a zero header with one modified line.
 NLHeader ReadHeader(int line_index, fmt::StringRef line) {
-  return ReadHeader(ReplaceLine(
-      FormatHeader(NLHeader()), line_index, line.c_str()));
+  return ReadHeader(ReplaceLine(FormatHeader(NLHeader()), line_index, line));
 }
 
 TEST(TextReaderTest, InvalidFormat) {
@@ -276,7 +275,7 @@ TEST(TextReaderTest, ReadHeaderIntegerOverflow) {
 
 class TestReaderBase : public mp::internal::ReaderBase {
  public:
-   TestReaderBase(fmt::StringRef data, fmt::StringRef name)
+   TestReaderBase(fmt::StringRef data, fmt::CStringRef name)
      : ReaderBase(data, name) {}
 
    TestReaderBase &get() { return *this; }
@@ -286,7 +285,7 @@ template <typename Converter = mp::internal::IdentityConverter>
 class TestBinaryReader :
     private TestReaderBase, public BinaryReader<Converter> {
  public:
-  TestBinaryReader(fmt::StringRef data, fmt::StringRef name = "test")
+  TestBinaryReader(fmt::StringRef data, fmt::CStringRef name = "test")
     : TestReaderBase(data, name), BinaryReader<Converter>(get()) {}
 };
 
@@ -360,7 +359,7 @@ void TestReadString(fmt::StringRef (BinaryReader<Converter>::*read)(),
     TestBinaryReader<Converter> reader(
           fmt::StringRef(reinterpret_cast<char*>(data), sizeof(int) + 3));
     fmt::StringRef name = (reader.*read)();
-    EXPECT_EQ("abc", std::string(name.c_str(), name.size()));
+    EXPECT_EQ("abc", name.to_string());
   }
   {
     std::size_t size = sizeof(int) + 2;
@@ -545,8 +544,7 @@ class TestNLHandler {
 
   void OnFunction(
       int index, fmt::StringRef name, int num_args, mp::func::Type type) {
-    WriteSep().write("f{}: {} {} {};", index,
-                     std::string(name.c_str(), name.size()), num_args, type);
+    WriteSep().write("f{}: {} {} {};", index, name, num_args, type);
   }
 
   template <typename T>
@@ -703,7 +701,7 @@ class TestNLHandler {
   ArgHandler BeginCount(int) { return ArgHandler("count"); }
   std::string EndCount(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
-  std::string OnBool(bool value) { return fmt::format("l{}", value); }
+  std::string OnBool(bool value) { return fmt::format("l{:d}", value); }
   std::string OnNot(std::string arg) { return fmt::format("not {}", arg); }
 
   std::string OnBinaryLogical(
@@ -742,7 +740,7 @@ class TestNLHandler {
   std::string EndPairwise(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
   std::string OnString(fmt::StringRef value) {
-    return fmt::format("'{}'", std::string(value.c_str(), value.size()));
+    return fmt::format("'{}'", value.data() ? value : "");
   }
 
   std::string OnSymbolicIf(std::string condition,
@@ -1494,7 +1492,7 @@ struct MockNameHandler {
 };
 
 MATCHER_P2(StringRefEq, data, size, "") {
-  return arg.c_str() == data && arg.size() == static_cast<std::size_t>(size);
+  return arg.data() == data && arg.size() == static_cast<std::size_t>(size);
 }
 
 TEST(NLTest, ReadNames) {
@@ -1528,6 +1526,6 @@ TEST(NLTest, NameReader) {
   mp::internal::NameReader reader;
   reader.Read(file.name(), handler);
   // Names should be valid after the call to Read.
-  EXPECT_EQ("abc", std::string(names[0].c_str(), names[0].size()));
-  EXPECT_EQ("def", std::string(names[1].c_str(), names[1].size()));
+  EXPECT_EQ("abc", names[0].to_string());
+  EXPECT_EQ("def", names[1].to_string());
 }

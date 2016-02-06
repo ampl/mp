@@ -63,16 +63,16 @@ class RegKey {
   FMT_DISALLOW_COPY_AND_ASSIGN(RegKey);
 
  public:
-  RegKey(HKEY key, fmt::StringRef subkey, REGSAM access);
+  RegKey(HKEY key, fmt::CStringRef subkey, REGSAM access);
   ~RegKey();
 
   HKEY get() const { return key_; }
 
   std::string GetSubKeyName(int index) const;
-  std::string GetStrValue(fmt::StringRef name) const;
+  std::string GetStrValue(fmt::CStringRef name) const;
 };
 
-RegKey::RegKey(HKEY key, fmt::StringRef subkey, REGSAM access) : key_() {
+RegKey::RegKey(HKEY key, fmt::CStringRef subkey, REGSAM access) : key_() {
   LONG result = RegOpenKeyExA(key, subkey.c_str(), 0, access, &key_);
   if (result != ERROR_SUCCESS) {
     throw fmt::WindowsError(GetLastError(),
@@ -96,7 +96,7 @@ std::string RegKey::GetSubKeyName(int index) const {
   return &name[0];
 }
 
-std::string RegKey::GetStrValue(fmt::StringRef name) const {
+std::string RegKey::GetStrValue(fmt::CStringRef name) const {
   char buffer[256];
   DWORD size = sizeof(buffer);
   DWORD type = 0;

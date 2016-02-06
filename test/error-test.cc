@@ -26,7 +26,7 @@
 namespace {
 
 TEST(ErrorTest, Error) {
-  mp::Error e(fmt::StringRef("test"));
+  mp::Error e(fmt::CStringRef("test"));
   EXPECT_STREQ("test", e.what());
 }
 

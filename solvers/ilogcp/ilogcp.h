@@ -130,7 +130,7 @@ class IlogCPSolver : public SolverImpl<Problem> {
   }
   void SetFile(const SolverOption &, fmt::StringRef filename, FileKind kind) {
     assert(kind < NUM_FILES);
-    filenames_[kind] = filename.c_str();
+    filenames_[kind] = filename.to_string();
   }
 
   // Returns an integer option of the CPLEX optimizer.

@@ -660,16 +660,14 @@ ASLBuilder::SuffixInfo ASLBuilder::AddSuffix(fmt::StringRef name, int kind) {
     asl_->i.nsuff[item_type]++;
     asl_->i.nsuffixes++;
     d->sufname = reinterpret_cast<char*>(d + 1);
-    std::copy(name.c_str(), name.c_str() + size,
+    std::copy(name.data(), name.data() + size,
               fmt::internal::make_ptr(d->sufname, size));
     d->kind = kind;
   } else {
     for (d = asl_->i.suffixes[item_type]; ; d = d->next) {
       if (!d)
         return SuffixInfo();  // Skip this suffix table.
-      if (item_type == (d->kind & suf::MASK) &&
-          !strncmp(name.c_str(), d->sufname, name.size()) &&
-          !d->sufname[name.size()])
+      if (item_type == (d->kind & suf::MASK) && name == d->sufname)
         if ((d->kind & suf::OUTONLY) != 0)
           return SuffixInfo();
         break;
@@ -769,7 +767,7 @@ StringLiteral ASLBuilder::MakeStringLiteral(fmt::StringRef value) {
   result->op = r_ops_[OPHOL];
   // Passing result->sym to std::copy causes an assertion failure in MSVC.
   char *dest = result->sym;
-  const char *str = value.c_str();
+  const char *str = value.data();
   std::copy(str, str + size, fmt::internal::make_ptr(dest, size));
   result->sym[size] = 0;
   return Expr::Create<StringLiteral>(reinterpret_cast< ::expr*>(result));

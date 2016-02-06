@@ -44,7 +44,7 @@ class JavaError : public std::runtime_error {
 
  public:
   explicit JavaError(fmt::StringRef message, jthrowable exception = 0)
-    : std::runtime_error(message), exception_(exception) {}
+    : std::runtime_error(message.to_string()), exception_(exception) {}
 
   jthrowable exception() const { return exception_; }
 };

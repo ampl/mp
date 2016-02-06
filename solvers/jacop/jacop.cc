@@ -470,7 +470,7 @@ void JaCoPSolver::SetEnumOption(
     const SolverOption &opt, fmt::StringRef value, const char **ptr) {
   for (mp::ValueArrayRef::iterator
       i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
-    if (std::strcmp(value.c_str(), i->value) == 0) {
+    if (value == i->value) {
       *ptr = reinterpret_cast<const char*>(i->data);
       return;
     }
@@ -478,7 +478,7 @@ void JaCoPSolver::SetEnumOption(
   throw InvalidOptionValue(opt, value);
 }
 
-void JaCoPSolver::Output(fmt::StringRef format, const fmt::ArgList &args) {
+void JaCoPSolver::Output(fmt::CStringRef format, const fmt::ArgList &args) {
   if (output_count_ == 0)
     Print("{}", header_);
   output_count_ = (output_count_ + 1) % 20;

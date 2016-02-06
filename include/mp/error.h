@@ -36,32 +36,32 @@ class Error : public fmt::internal::RuntimeError {
  protected:
   Error() {}
 
-  void SetMessage(fmt::StringRef message) {
+  void SetMessage(const std::string &message) {
     std::runtime_error &base = *this;
-    base = std::runtime_error(message.c_str());
+    base = std::runtime_error(message);
   }
 
-  void init(fmt::StringRef format_str, fmt::ArgList args) {
+  void init(fmt::CStringRef format_str, fmt::ArgList args) {
     SetMessage(fmt::format(format_str, args));
   }
 
  public:
-  FMT_VARIADIC_(char, , Error, init, fmt::StringRef)
+  FMT_VARIADIC_(char, , Error, init, fmt::CStringRef)
   ~Error() throw() {}
 };
 
 // The operation is not supported by the object.
 class UnsupportedError : public Error {
  public:
-  FMT_VARIADIC_(char, , UnsupportedError, init, fmt::StringRef)
+  FMT_VARIADIC_(char, , UnsupportedError, init, fmt::CStringRef)
 };
 
 // Makes UnsupportedError with prefix "unsupported: ".
 inline UnsupportedError MakeUnsupportedError(
-    fmt::StringRef format_str, fmt::ArgList args) {
+    fmt::CStringRef format_str, fmt::ArgList args) {
   return UnsupportedError("unsupported: {}", fmt::format(format_str, args));
 }
-FMT_VARIADIC(UnsupportedError, MakeUnsupportedError, fmt::StringRef)
+FMT_VARIADIC(UnsupportedError, MakeUnsupportedError, fmt::CStringRef)
 }  // namespace mp
 
 #endif  // MP_ERROR_H_

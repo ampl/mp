@@ -32,7 +32,7 @@ namespace mp {
 // An option error.
 class OptionError : public Error {
 public:
-  explicit OptionError(fmt::StringRef message) : Error(message) {}
+  explicit OptionError(fmt::CStringRef message) : Error(message) {}
 };
 
 struct Option {

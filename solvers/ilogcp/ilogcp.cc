@@ -184,7 +184,10 @@ void EnumOption::GetValue(std::string &value) const {
 
 void EnumOption::SetValue(fmt::StringRef value) {
   try {
-    const char *str = value.c_str();
+    // Copy the value adding a terminating null for strtol.
+    fmt::MemoryWriter writer;
+    writer << value;
+    const char *str = writer.c_str();
     char *end = 0;
     long intval = std::strtol(str, &end, 0);
     if (!*end) {
@@ -576,12 +579,11 @@ std::string IlogCPSolver::GetOptimizer(const SolverOption &) const {
 }
 
 void IlogCPSolver::SetOptimizer(const SolverOption &opt, fmt::StringRef value) {
-  const char *str = value.c_str();
-  if (strcmp(str, "auto") == 0)
+  if (value == "auto")
     optimizer_ = AUTO;
-  else if (strcmp(str, "cp") == 0)
+  else if (value == "cp")
     optimizer_ = CP;
-  else if (strcmp(str, "cplex") == 0)
+  else if (value == "cplex")
     optimizer_ = CPLEX;
   else
     throw InvalidOptionValue(opt, value);

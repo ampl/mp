@@ -103,7 +103,7 @@ void SSDSolver::Solve(Problem &p, SolutionHandler &outer_sh) {
     std::vector<double> solution;
     explicit SSDSolutionHandler(int num_vars) : num_vars(num_vars), status(0) {}
 
-    void HandleSolution(int status, fmt::StringRef,
+    void HandleSolution(int status, fmt::CStringRef,
         const double *values, const double *, double) {
       this->status = status;
       solution.assign(values, values + num_vars + 1);

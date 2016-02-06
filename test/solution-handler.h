@@ -26,10 +26,10 @@ class TestSolutionHandler : public mp::BasicSolutionHandler {
   const double *primal() const { return primal_.empty() ? 0 : &primal_[0]; }
   const double *dual() const { return dual_; }
 
-  void HandleSolution(int status, fmt::StringRef message,
+  void HandleSolution(int status, fmt::CStringRef message,
         const double *primal, const double *dual, double obj_value) {
     status_ = status;
-    message_ = message;
+    message_ = message.c_str();
     if (primal)
       primal_.assign(primal, primal + num_vars_);
     dual_ = dual;

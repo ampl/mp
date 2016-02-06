@@ -97,7 +97,7 @@ class RSTFormatter : public rst::ContentHandler {
   }
 
   // Writes a string doing a text reflow.
-  void Write(fmt::StringRef s);
+  void Write(fmt::CStringRef s);
 
  public:
   RSTFormatter(fmt::Writer &w, mp::ValueArrayRef values, int indent)
@@ -111,7 +111,7 @@ class RSTFormatter : public rst::ContentHandler {
   void HandleDirective(const char *type);
 };
 
-void RSTFormatter::Write(fmt::StringRef s) {
+void RSTFormatter::Write(fmt::CStringRef s) {
   enum { MAX_LINE_LENGTH = 78 };
   const char *p = s.c_str();
   for (;;) {
@@ -222,7 +222,7 @@ class NameHandler {
 
   void OnName(fmt::StringRef name) {
     name_ = name;
-    names_.push_back(name.c_str());
+    names_.push_back(name.data());
   }
 
   fmt::StringRef name() const { return name_; }
@@ -234,7 +234,7 @@ namespace mp {
 namespace internal {
 
 void FormatRST(fmt::Writer &w,
-    fmt::StringRef s, int indent, ValueArrayRef values) {
+    fmt::CStringRef s, int indent, ValueArrayRef values) {
   RSTFormatter formatter(w, values, indent);
   rst::Parser parser(&formatter);
   parser.Parse(s.c_str());
@@ -439,7 +439,7 @@ void SignalHandler::HandleSigInt(int sig) {
 }
 
 NameProvider::NameProvider(
-    fmt::StringRef filename, fmt::StringRef gen_name, std::size_t num_items)
+    fmt::CStringRef filename, fmt::CStringRef gen_name, std::size_t num_items)
   : gen_name_(gen_name.c_str()) {
   NameHandler handler(names_);
   names_.reserve(num_items + 1);
@@ -449,7 +449,7 @@ NameProvider::NameProvider(
     return; // System error, ignore the file and use generated names.
   }
   fmt::StringRef last_name = handler.name();
-  names_.push_back(last_name.c_str() + last_name.size() + 1);
+  names_.push_back(last_name.data() + last_name.size() + 1);
 }
 
 fmt::StringRef NameProvider::name(std::size_t index) {
@@ -485,9 +485,10 @@ bool Solver::OptionNameLess::operator()(
 }
 
 Solver::Solver(
-    fmt::StringRef name, fmt::StringRef long_name, long date, int flags)
-: name_(name), long_name_(long_name.c_str() ? long_name : name), date_(date),
-  wantsol_(0), obj_precision_(-1), objno_(-1), bool_options_(0),
+    fmt::CStringRef name, fmt::CStringRef long_name, long date, int flags)
+: name_(name.c_str()),
+  long_name_((long_name.c_str() ? long_name : name).c_str()),
+  date_(date), wantsol_(0), obj_precision_(-1), objno_(-1), bool_options_(0),
   count_solutions_(false), read_flags_(0), timing_(false), multiobj_(false),
   has_errors_(false) {
   version_ = long_name_;
@@ -668,7 +669,7 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
           w << &name[0] << '=';
           opt->Write(w);
           w << '\n';
-          Print(fmt::StringRef(w.c_str(), w.size()));
+          Print("{}", w.c_str());
         }
         continue;
       }

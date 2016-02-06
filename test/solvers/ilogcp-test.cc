@@ -497,7 +497,7 @@ TEST_F(IlogCPTest, DefaultSolutionLimit) {
   struct TestSolutionHandler : mp::BasicSolutionHandler {
     int num_solutions;
     TestSolutionHandler() : num_solutions(0) {}
-    void HandleSolution(int, fmt::StringRef,
+    void HandleSolution(int, fmt::CStringRef,
           const double *values, const double *, double) {
       ++num_solutions;
       for (int i = 0; i < 3; ++i) {
@@ -551,11 +551,11 @@ TEST_F(IlogCPTest, NumberOfMap) {
 class MockSolutionHandler : public mp::SolutionHandler {
  public:
   MOCK_METHOD4(HandleFeasibleSolution,
-               void (fmt::StringRef message, const double *values,
+               void (fmt::CStringRef message, const double *values,
                      const double *dual_values, double obj_value));
 
   MOCK_METHOD5(HandleSolution,
-               void (int status, fmt::StringRef message, const double *values,
+               void (int status, fmt::CStringRef message, const double *values,
                      const double *dual_values, double obj_value));
 };
 

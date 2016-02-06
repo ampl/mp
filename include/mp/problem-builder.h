@@ -56,7 +56,7 @@ class ProblemBuilder : public SuffixManager {
   typedef Expr CountExpr;
   typedef Expr Reference;
 
-  static void ReportUnhandledConstruct(fmt::StringRef name) {
+  static void ReportUnhandledConstruct(fmt::CStringRef name) {
     throw MakeUnsupportedError(name);
   }
 
@@ -781,7 +781,7 @@ class ColProblem : public Problem {
   friend class ColProblemBuilder;
 
  public:
-  ColProblem(const Solver &, fmt::StringRef name) { name_ = name; }
+  ColProblem(const Solver &, fmt::StringRef name) : name_(name.to_string()) {}
 
   int col_start(int col_index) const { return col_starts_[col_index]; }
   int row_index(int elt_index) const { return row_indices_[elt_index]; }

@@ -170,10 +170,8 @@ class LSProblemBuilder :
 
   template <typename T>
   SuffixHandler<T> AddSuffix(fmt::StringRef name, int kind, int num_values) {
-    if (std::strncmp(name.c_str(), "bound", name.size()) != 0 ||
-        (kind & suf::MASK) != suf::OBJ) {
+    if (name != "bound" || (kind & suf::MASK) != suf::OBJ)
       return SuffixHandler<T>();
-    }
     obj_bounds_.reserve(num_values);
     return SuffixHandler<T>(&obj_bounds_);
   }
@@ -509,12 +507,12 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
 
   std::string GetLogFile(const SolverOption &) const { return logfile_; }
   void SetLogFile(const SolverOption &, fmt::StringRef value) {
-    logfile_.assign(value.c_str(), value.size());
+    logfile_.assign(value.data(), value.size());
   }
 
   std::string GetEnvFile(const SolverOption &) const { return envfile_; }
   void SetEnvFile(const SolverOption &, fmt::StringRef value) {
-    envfile_.assign(value.c_str(), value.size());
+    envfile_.assign(value.data(), value.size());
   }
 
   fmt::LongLong GetIterLimit(const SolverOption &) const { return iterlimit_; }

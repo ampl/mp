@@ -28,7 +28,7 @@
 
 struct MockFile {
   MockFile() {}
-  MockFile(fmt::StringRef, int) {}
+  MockFile(fmt::CStringRef, int) {}
   MockFile(const MockFile &) {}
   MockFile &operator=(const MockFile &) { return *this; }
 

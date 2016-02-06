@@ -748,7 +748,7 @@ class BasicExprFactory : private Alloc {
   // src: Reference to a source string that may not be null-terminated
   //      (.nl reader can generate such strings)
   static void Copy(fmt::StringRef src, char *dst) {
-    const char *s = src.c_str();
+    const char *s = src.data();
     std::size_t size = src.size();
     std::copy(s, s + size, fmt::internal::make_ptr(dst, size));
     dst[size] = 0;

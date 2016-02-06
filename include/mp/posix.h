@@ -1,7 +1,7 @@
 /*
  A C++ interface to POSIX functions.
 
- Copyright (c) 2014, Victor Zverovich
+ Copyright (c) 2014 - 2015, Victor Zverovich
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -28,20 +28,23 @@
 #ifndef FMT_POSIX_H_
 #define FMT_POSIX_H_
 
+#ifdef __MINGW32__
+// Workaround MinGW bug https://sourceforge.net/p/mingw/bugs/2024/.
+# undef __STRICT_ANSI__
+#endif
+
 #include <errno.h>
-#include <fcntl.h>  // for O_RDONLY
+#include <fcntl.h>   // for O_RDONLY
+#include <locale.h>  // for locale_t
 #include <stdio.h>
+#include <stdlib.h>  // for strtod_l
 
 #include <cstddef>
 
-#include "mp/format.h"
-
-#ifdef FMT_INCLUDE_POSIX_TEST
-# include "test/posix-test.h"
-#endif
+#include "format.h"
 
 #ifndef FMT_POSIX
-# ifdef _WIN32
+# if defined(_WIN32) && !defined(__MINGW32__)
 // Fix warnings about deprecated symbols.
 #  define FMT_POSIX(call) _##call
 # else
@@ -68,8 +71,12 @@
 # define FMT_UNUSED
 #endif
 
-#if FMT_USE_STATIC_ASSERT || FMT_HAS_CPP_ATTRIBUTE(cxx_static_assert) || \
-  (FMT_GCC_VERSION >= 403 && FMT_HAS_GXX_CXX11) ||  _MSC_VER >= 1600 
+#ifndef FMT_USE_STATIC_ASSERT
+# define FMT_USE_STATIC_ASSERT 0
+#endif
+
+#if FMT_USE_STATIC_ASSERT || FMT_HAS_FEATURE(cxx_static_assert) || \
+  (FMT_GCC_VERSION >= 403 && FMT_HAS_GXX_CXX11) || _MSC_VER >= 1600
 # define FMT_STATIC_ASSERT(cond, message) static_assert(cond, message)
 #else
 # define FMT_CONCAT_(a, b) FMT_CONCAT(a, b)
@@ -180,7 +187,7 @@ public:
 #endif
 
   // Opens a file.
-  BufferedFile(fmt::StringRef filename, fmt::StringRef mode);
+  BufferedFile(CStringRef filename, CStringRef mode);
 
   // Closes the file.
   void close();
@@ -188,12 +195,14 @@ public:
   // Returns the pointer to a FILE object representing this file.
   FILE *get() const FMT_NOEXCEPT { return file_; }
 
-  int fileno() const;
+  // We place parentheses around fileno to workaround a bug in some versions
+  // of MinGW that define fileno as a macro.
+  int (fileno)() const;
 
-  void print(fmt::StringRef format_str, const ArgList &args) {
+  void print(CStringRef format_str, const ArgList &args) {
     fmt::print(file_, format_str, args);
   }
-  FMT_VARIADIC(void, print, fmt::StringRef)
+  FMT_VARIADIC(void, print, CStringRef)
 };
 
 // A file. Closed file is represented by a File object with descriptor -1.
@@ -221,7 +230,7 @@ class File {
   File() FMT_NOEXCEPT : fd_(-1) {}
 
   // Opens a file and constructs a File object representing this file.
-  File(fmt::StringRef path, int oflag);
+  File(CStringRef path, int oflag);
 
 #if !FMT_USE_RVALUE_REFERENCES
   // Emulate a move constructor and a move assignment operator if rvalue
@@ -293,7 +302,7 @@ class File {
   void close();
 
   // Returns the file size.
-  fmt::LongLong size() const;
+  LongLong size() const;
 
   // Attempts to read count bytes from the file into the specified buffer.
   std::size_t read(void *buffer, std::size_t count);
@@ -324,6 +333,58 @@ class File {
 
 // Returns the memory page size.
 long getpagesize();
+
+#if defined(LC_NUMERIC_MASK) || defined(_MSC_VER)
+# define FMT_LOCALE
+#endif
+
+#ifdef FMT_LOCALE
+// A "C" numeric locale.
+class Locale {
+ private:
+# ifdef _MSC_VER
+  typedef _locale_t locale_t;
+
+  enum { LC_NUMERIC_MASK = LC_NUMERIC };
+
+  static locale_t newlocale(int category_mask, const char *locale, locale_t) {
+    return _create_locale(category_mask, locale);
+  }
+
+  static void freelocale(locale_t locale) {
+    _free_locale(locale);
+  }
+
+  static double strtod_l(const char *nptr, char **endptr, _locale_t locale) {
+    return _strtod_l(nptr, endptr, locale);
+  }
+# endif
+
+  locale_t locale_;
+
+  FMT_DISALLOW_COPY_AND_ASSIGN(Locale);
+
+ public:
+  typedef locale_t Type;
+
+  Locale() : locale_(newlocale(LC_NUMERIC_MASK, "C", NULL)) {
+    if (!locale_)
+      throw fmt::SystemError(errno, "cannot create locale");
+  }
+  ~Locale() { freelocale(locale_); }
+
+  Type get() const { return locale_; }
+
+  // Converts string to floating-point number and advances str past the end
+  // of the parsed input.
+  double strtod(const char *&str) const {
+    char *end = 0;
+    double result = strtod_l(str, &end, locale_);
+    str = end;
+    return result;
+  }
+};
+#endif  // FMT_LOCALE
 }  // namespace fmt
 
 #if !FMT_USE_RVALUE_REFERENCES

@@ -61,7 +61,7 @@ void Solve(const char *stub) {
   writer.Solve(problem, sol_handler);
 }
 
-void CopyFileIfExists(fmt::StringRef src, fmt::StringRef dst) {
+void CopyFileIfExists(fmt::CStringRef src, fmt::CStringRef dst) {
   FILE *f = std::fopen(src.c_str(), "r");
   if (!f) return;
   std::fclose(f);

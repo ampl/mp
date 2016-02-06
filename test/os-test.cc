@@ -134,7 +134,7 @@ TEST(OSTest, GetExecutablePath) {
 
 // Creates a new link for a file or copies the file if the system doesn't
 // support symlinks. Both filenames are UTF-8 encoded.
-void LinkFile(fmt::StringRef filename, fmt::StringRef linkname) {
+void LinkFile(fmt::CStringRef filename, fmt::CStringRef linkname) {
 #ifndef _WIN32
   int result = link(filename.c_str(), linkname.c_str());
   if (result && errno != EEXIST) {

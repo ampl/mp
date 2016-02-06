@@ -102,7 +102,7 @@ class MemoryMappedFileBase {
 
 // Converts file size to mmap size.
 inline std::size_t ConvertFileToMmapSize(fmt::LongLong file_size,
-                                         fmt::StringRef filename) {
+                                         fmt::CStringRef filename) {
   MP_ASSERT(file_size >= 0, "negative file size");
   fmt::ULongLong unsigned_file_size = file_size;
   // Check if file size fits in size_t.
@@ -127,7 +127,7 @@ class MemoryMappedFile : public internal::MemoryMappedFileBase {
     internal::MemoryMappedFileBase::map(file.descriptor(), size);
   }
 
-  void map(const File &file, fmt::StringRef filename) {
+  void map(const File &file, fmt::CStringRef filename) {
     map(file, internal::ConvertFileToMmapSize(file.size(), filename));
   }
 };

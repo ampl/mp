@@ -32,20 +32,20 @@
 #include "mp/nl.h"
 #include "mp/os.h"
 
-std::string ReadFile(fmt::StringRef name);
-void WriteFile(fmt::StringRef name, fmt::StringRef data);
+std::string ReadFile(fmt::CStringRef name);
+void WriteFile(fmt::CStringRef name, fmt::StringRef data);
 
 // Replaces all occurrences of '/' in the path with sep. If sep is 0
 // it is set to the system-specific directory separator.
 std::string FixPath(
-    fmt::StringRef path, char sep = mp::path::preferred_separator);
+    fmt::CStringRef path, char sep = mp::path::preferred_separator);
 
 // Changes the current working directory. Throws Error on error.
-void ChangeDirectory(fmt::StringRef path);
+void ChangeDirectory(fmt::CStringRef path);
 
 // Executes a shell command. Throws Error on error.
 int ExecuteShellCommand(
-  fmt::StringRef command, bool throw_on_nonzero_exit_code = true);
+  fmt::CStringRef command, bool throw_on_nonzero_exit_code = true);
 
 inline std::string GetExecutableDir() {
   return mp::GetExecutablePath().remove_filename().string();
@@ -55,7 +55,7 @@ inline std::string GetExecutableDir() {
 std::vector<std::string> Split(const std::string &s, char sep);
 
 // Replace line at line_index in s with new_line.
-std::string ReplaceLine(std::string s, int line_index, const char *new_line);
+std::string ReplaceLine(std::string s, int line_index, fmt::StringRef new_line);
 
 mp::NLHeader MakeTestHeader();
 
@@ -64,7 +64,7 @@ class TempFile {
   std::string name_;
 
  public:
-  explicit TempFile(fmt::StringRef name) : name_(name) {}
+  explicit TempFile(fmt::CStringRef name) : name_(name.c_str()) {}
   ~TempFile();
 
   const std::string &name() const { return name_; }
