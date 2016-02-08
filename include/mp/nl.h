@@ -1040,6 +1040,8 @@ class TextReader : public ReaderBase {
  public:
   TextReader(fmt::StringRef data, fmt::CStringRef name);
 
+  Locale &locale() { return locale_; }
+
   void ReportError(fmt::CStringRef format_str, const fmt::ArgList &args) {
     DoReportError(token_, format_str, args);
   }

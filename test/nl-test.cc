@@ -113,6 +113,22 @@ TEST(TextReaderTest, ReadDouble) {
                    "test:1:13: expected double");
 }
 
+class MockLocale {
+ public:
+  MOCK_METHOD1(strtod, double (const char *&str));
+};
+
+TEST(TextReaderTest, ReadDoubleUsesCLocale) {
+  const char *str = "4.2";
+  mp::internal::TextReader<MockLocale> reader(str, "test.nl");
+  EXPECT_CALL(reader.locale(), strtod(str))
+    .WillOnce(testing::DoAll(testing::SetArgReferee<0>(str + 1), Return(1.23)));
+  EXPECT_EQ(1.23, reader.ReadDouble());
+  TextReader default_reader(str, "test.nl");
+  fmt::Locale &locale = default_reader.locale();
+  mp::internal::Unused(&locale);
+}
+
 TEST(TextReaderTest, ReadName) {
   TextReader reader("  abc  \n  ", "test");
   fmt::StringRef name = reader.ReadName();
