@@ -921,46 +921,6 @@ class NLHandler {
 
 namespace internal {
 
-// A "C" locale.
-class Locale {
- private:
-#ifdef _MSC_VER
-  typedef _locale_t locale_t;
-
-  enum { LC_NUMERIC_MASK = LC_NUMERIC };
-
-  static locale_t newlocale(int category_mask, const char *locale, locale_t) {
-    return _create_locale(category_mask, locale);
-  }
-
-  static void freelocale(locale_t locale) {
-    _free_locale(locale);
-  }
-#endif
-
-  locale_t locale_;
-
-  locale_t Create() const {
-    locale_t locale = newlocale(LC_NUMERIC_MASK, "C", NULL);
-    if (!locale)
-      throw fmt::SystemError(errno, "cannot create locale");
-    return locale;
-  }
-
- public:
-  Locale() : locale_(Create()) {}
-  Locale(const Locale &) : locale_(Create()) {}
-  Locale &operator=(const Locale &) {
-    locale_t locale = Create();
-    freelocale(locale_);
-    locale_ = locale;
-    return *this;
-  }
-  ~Locale() { freelocale(locale_); }
-
-  locale_t get() const { return locale_; }
-};
-
 class ReaderBase {
  protected:
   const char *ptr_, *start_, *end_;
@@ -988,13 +948,15 @@ class TextReader : public ReaderBase {
  private:
   const char *line_start_;
   int line_;
-  Locale locale_;
 
-#ifdef _MSC_VER
-  static double strtod_l(const char *nptr, char **endptr, _locale_t locale) {
-    return _strtod_l(nptr, endptr, locale);
-  }
-#endif
+  class Locale : public fmt::Locale {
+   public:
+    Locale() {}
+    // All Locale objects refer to the "C" locale, so no need to copy.
+    Locale(const Locale &) : fmt::Locale() {}
+    Locale &operator=(const Locale &) { return *this; }
+  };
+  Locale locale_;
 
   // Reads an integer without a sign.
   // Int: signed or unsigned integer type.
@@ -1106,16 +1068,12 @@ class TextReader : public ReaderBase {
 
   double ReadDouble() {
     SkipSpace();
-    const char *end = ptr_;
+    const char *start = ptr_;
     double value = 0;
-    if (*ptr_ != '\n') {
-      char *mut_end = 0;
-      value = strtod_l(ptr_, &mut_end, locale_.get());
-      end = mut_end;
-    }
-    if (ptr_ == end)
+    if (*ptr_ != '\n')
+      value = locale_.strtod(ptr_);
+    if (ptr_ == start)
       ReportError("expected double");
-    ptr_ = end;
     return value;
   }
 
@@ -2047,27 +2005,6 @@ class NLFileReader {
           fmt::StringRef(mapped_file.start(), size_), handler, filename, flags);
   }
 };
-
-template <typename File>
-void NLFileReader<File>::Open(fmt::CStringRef filename) {
-  file_ = File(filename, fmt::File::RDONLY);
-  size_ = ConvertFileToMmapSize(file_.size(), filename);
-  // Round size up to a multiple of page_size. The remainded of the last
-  // partial page is zero-filled both on POSIX and Windows so the resulting
-  // memory buffer is zero terminated.
-  std::size_t page_size = fmt::getpagesize();
-  std::size_t remainder = size_ % page_size;
-  rounded_size_ = remainder != 0 ? (size_ + page_size - remainder) : size_;
-}
-
-template <typename File>
-void NLFileReader<File>::Read(fmt::internal::MemoryBuffer<char, 1> &array) {
-  array.resize(size_ + 1);
-  std::size_t offset = 0;
-  while (offset < size_)
-    offset += file_.read(&array[offset], size_ - offset);
-  array[size_] = 0;
-}
 
 template <typename InputConverter, typename Handler>
 void ReadBinary(TextReader &reader, const NLHeader &header,

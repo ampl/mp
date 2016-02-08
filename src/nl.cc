@@ -265,3 +265,27 @@ void mp::internal::BinaryReaderBase::ReportError(
   w.write(format_str, args);
   throw BinaryReadError(name_, offset, w.c_str());
 }
+
+template <typename File>
+void mp::internal::NLFileReader<File>::Open(fmt::CStringRef filename) {
+  file_ = File(filename, fmt::File::RDONLY);
+  size_ = ConvertFileToMmapSize(file_.size(), filename);
+  // Round size up to a multiple of page_size. The remainded of the last
+  // partial page is zero-filled both on POSIX and Windows so the resulting
+  // memory buffer is zero terminated.
+  std::size_t page_size = fmt::getpagesize();
+  std::size_t remainder = size_ % page_size;
+  rounded_size_ = remainder != 0 ? (size_ + page_size - remainder) : size_;
+}
+
+template <typename File>
+void mp::internal::NLFileReader<File>::Read(
+    fmt::internal::MemoryBuffer<char, 1> &array) {
+  array.resize(size_ + 1);
+  std::size_t offset = 0;
+  while (offset < size_)
+    offset += file_.read(&array[offset], size_ - offset);
+  array[size_] = 0;
+}
+
+template class mp::internal::NLFileReader<>;

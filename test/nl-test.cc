@@ -20,10 +20,12 @@
  Author: Victor Zverovich
  */
 
+// Include the source file to test the implementation.
+#include "../src/nl.cc"
+
 #include <climits>
 #include <cstring>
 
-#include "mp/nl.h"
 #include "gmock/gmock.h"
 #include "gtest-extra.h"
 #include "mock-file.h"
