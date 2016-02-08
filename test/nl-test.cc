@@ -413,7 +413,7 @@ TEST(NLTest, ArithKind) {
   namespace arith = mp::arith;
   EXPECT_GE(arith::GetKind(), arith::UNKNOWN);
   EXPECT_LE(arith::GetKind(), arith::LAST);
-  EXPECT_TRUE(arith::IsIEEE(arith::IEEE_BIG_ENDIAN));
+  EXPECT_TRUE(arith::IsIEEE(arith::IEEE_LITTLE_ENDIAN));
   EXPECT_TRUE(arith::IsIEEE(arith::IEEE_BIG_ENDIAN));
   EXPECT_FALSE(arith::IsIEEE(arith::UNKNOWN));
   EXPECT_FALSE(arith::IsIEEE(arith::IBM));
