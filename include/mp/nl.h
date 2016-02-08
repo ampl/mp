@@ -944,19 +944,20 @@ class ReaderBase {
   bool IsEOF() const { return IsEOF(ptr_); }
 };
 
+template <typename Locale = fmt::Locale>
 class TextReader : public ReaderBase {
  private:
   const char *line_start_;
   int line_;
 
-  class Locale : public fmt::Locale {
+  class CopyableLocale : public Locale {
    public:
-    Locale() {}
+    CopyableLocale() {}
     // All Locale objects refer to the "C" locale, so no need to copy.
-    Locale(const Locale &) : fmt::Locale() {}
-    Locale &operator=(const Locale &) { return *this; }
+    CopyableLocale(const CopyableLocale &) : Locale() {}
+    CopyableLocale &operator=(const CopyableLocale &) { return *this; }
   };
-  Locale locale_;
+  CopyableLocale locale_;
 
   // Reads an integer without a sign.
   // Int: signed or unsigned integer type.
@@ -2007,7 +2008,7 @@ class NLFileReader {
 };
 
 template <typename InputConverter, typename Handler>
-void ReadBinary(TextReader &reader, const NLHeader &header,
+void ReadBinary(TextReader<> &reader, const NLHeader &header,
                 Handler &handler, int flags) {
   BinaryReader<InputConverter> bin_reader(reader);
   NLReader<BinaryReader<InputConverter>, Handler>(
@@ -2071,13 +2072,13 @@ class NameReader {
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
                   fmt::CStringRef name, int flags) {
-  internal::TextReader reader(str, name);
+  internal::TextReader<> reader(str, name);
   NLHeader header = NLHeader();
   reader.ReadHeader(header);
   handler.OnHeader(header);
   switch (header.format) {
   case NLHeader::TEXT:
-    internal::NLReader<internal::TextReader, Handler>(
+    internal::NLReader<internal::TextReader<>, Handler>(
           reader, header, handler, flags).Read();
     break;
   case NLHeader::BINARY: {

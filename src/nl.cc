@@ -89,10 +89,13 @@ mp::internal::ReaderBase::ReaderBase(fmt::StringRef data, fmt::CStringRef name)
 : ptr_(data.data()), start_(ptr_), end_(ptr_ + data.size()),
   token_(ptr_), name_(name.c_str()) {}
 
-mp::internal::TextReader::TextReader(fmt::StringRef data, fmt::CStringRef name)
+template <typename Locale>
+mp::internal::TextReader<Locale>::TextReader(
+    fmt::StringRef data, fmt::CStringRef name)
 : ReaderBase(data, name), line_start_(ptr_), line_(1) {}
 
-void mp::internal::TextReader::DoReportError(
+template <typename Locale>
+void mp::internal::TextReader<Locale>::DoReportError(
     const char *loc, fmt::CStringRef format_str, const fmt::ArgList &args) {
   int line = line_;
   const char *line_start = line_start_;
@@ -111,7 +114,8 @@ void mp::internal::TextReader::DoReportError(
   throw ReadError(name_, line, column, format_str, args);
 }
 
-bool mp::internal::TextReader::ReadOptionalDouble(double &value) {
+template <typename Locale>
+bool mp::internal::TextReader<Locale>::ReadOptionalDouble(double &value) {
   SkipSpace();
   if (*ptr_ == '\n')
     return false;
@@ -122,7 +126,8 @@ bool mp::internal::TextReader::ReadOptionalDouble(double &value) {
   return has_value;
 }
 
-fmt::StringRef mp::internal::TextReader::ReadString() {
+template <typename Locale>
+fmt::StringRef mp::internal::TextReader<Locale>::ReadString() {
   int length = ReadUInt();
   if (*ptr_ != ':')
     DoReportError(ptr_, "expected ':'");
@@ -144,7 +149,8 @@ fmt::StringRef mp::internal::TextReader::ReadString() {
   return fmt::StringRef(length != 0 ? start : 0, length);
 }
 
-fmt::StringRef mp::internal::TextReader::ReadName() {
+template <typename Locale>
+fmt::StringRef mp::internal::TextReader<Locale>::ReadName() {
   SkipSpace();
   const char *start = ptr_;
   if (*ptr_ == '\n' || !*ptr_)
@@ -154,7 +160,8 @@ fmt::StringRef mp::internal::TextReader::ReadName() {
   return fmt::StringRef(start, ptr_ - start);
 }
 
-void mp::internal::TextReader::ReadHeader(NLHeader &header) {
+template <typename Locale>
+void mp::internal::TextReader<Locale>::ReadHeader(NLHeader &header) {
   // Read the format (text or binary).
   switch (ReadChar()) {
   case 'g':
@@ -288,4 +295,5 @@ void mp::internal::NLFileReader<File>::Read(
   array[size_] = 0;
 }
 
+template class mp::internal::TextReader<>;
 template class mp::internal::NLFileReader<>;

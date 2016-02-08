@@ -34,10 +34,11 @@
 using mp::NLHeader;
 using mp::ReadError;
 using mp::ReadNLString;
-using mp::internal::TextReader;
 using mp::internal::BinaryReader;
 using mp::internal::EndiannessConverter;
 namespace expr = mp::expr;
+
+typedef mp::internal::TextReader<> TextReader;
 
 using testing::_;
 using testing::Return;
@@ -1269,7 +1270,6 @@ TEST(NLTest, ReadConBounds) {
   header.num_vars = INT_MAX;
   header.num_algebraic_cons = 1;
   std::string input = fmt::format("r\n5 1 {}\n", INT_MAX);
-  using mp::internal::TextReader;
   TextReader text_reader(input, "(input");
   typedef mp::internal::NLReader<TextReader, TestNLHandler> NLReader;
   NLReader reader(text_reader, header, handler, 0);
