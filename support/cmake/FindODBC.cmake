@@ -10,8 +10,14 @@ set(winsdk_key
   "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows")
 find_path(ODBC_INCLUDE_DIR sql.h
   PATHS "[${winsdk_key};CurrentInstallFolder]/include")
+
+set(libdir_suffix )
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(libdir_suffix x64)
+endif ()
+
 find_library(ODBC_LIBRARY NAMES odbc odbc32
-  PATHS "[${winsdk_key};CurrentInstallFolder]/lib")
+  PATHS "[${winsdk_key};CurrentInstallFolder]/lib/${libdir_suffix}")
 
 if (APPLE)
   find_library(COREFOUNDATION_LIBRARY CoreFoundation)
