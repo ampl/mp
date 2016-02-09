@@ -22,6 +22,11 @@ target_compile_definitions(gtest-extra PUBLIC FMT_USE_FILE_DESCRIPTORS)
 find_package(Threads)
 target_link_libraries(gtest-extra ${CMAKE_THREAD_LIBS_INIT})
 
+# Workaround a bug in implementation of variadic templates in MSVC11.
+if (MSVC)
+  target_compile_definitions(gtest-extra PUBLIC _VARIADIC_MAX=10)
+endif ()
+
 # Check if variadic templates are working and not affected by GCC bug 39653:
 # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=39653
 check_cxx_source_compiles("
