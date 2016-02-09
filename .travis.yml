@@ -1,23 +1,32 @@
 language: c++
 
-sudo: true
-
-os:
-  - linux
-
 env:
   global:
     - secure: |-
-        TUZKaV/W4ldNNY5UqPqUgVGL3oMnktX2ny9c/FCa1tdFU34XBkMtDFIIQ19Qu/GGIYbG32
-        Pdf/rX5+65kmjONSusBheRlVlWfZ2/cXjGFFFSkNn2JLLyGWpEZ6fdvr9yQVD57TXsY9Zf
-        allEyZLeSLeWFPeuhEOxq4F8YhKlQxI=
-  matrix:
-    - BUILD=doc
-    - BUILD=native
-    - BUILD=cross
+        pJiO4vaU1TJqWONW0dKf6oH/HyfcWizsXYzyHU2cJizXOsV+BARCJQT2tylXH5IGUUWm8J
+        9g39/PqkXHWKpvKHgylaAnYf6R2WFoRjfUl/c9fKgTdeXvDK+Y9rOjaPEyulfDwFzL4mk8
+        H2dvL8S6fPqKxj8QgeCvqkkso5L2zeAP3eIlfgxBwgdkMZXgv9HYIO7EDPydcLQS+3qpVr
+        MBYb9ne/HAONb/9KPBe+9YOB2RcqXUgp2KbitTQacCJNbv8XKlkAuJ5NPWzhAa+3TEJR7d
+        i45QqcNdN0+BWCDFMHV/l80CG+D8G+sgwPn7ZJhJb2rkQ/iv6aTCyYbQiu6VgjcfSRTh1u
+        3XH/q9giRdTQ+09TGeb01tzjITOAVfdJB5I778hDHTvkwADb2sXOoYoAULoLcLEV+Zu7ra
+        YF63PvYwKi/mecw8bI22l5z+I72vx0VQ3fRnHP2f81pdbWBiot5Npr65xdjs7cBCQJkSn8
+        MCtwxsJKAtM5iPBP29pQ4BMlQ8bk33mbIUJen6GsQ/deCfykZFATjbj8B+GB5AiLdqfayf
+        Tj96PnqabrjHi5GevSAXxT+cpXCasweQC91qmvv1uRlhXs89SuvsxOuPCkFc60oROooAfZ
+        xAj6qnX4H+Gb3ZXUA1zGG+WWOA2QuFVNc4ufoGCKFyibiZv277eBk=
+
+# Use the container-based infrastructure.
+sudo: false
+
+cache: ccache
 
 matrix:
   include:
+    - os: linux
+      env: BUILD=doc
+      addons: {apt: {packages: [python-virtualenv]}}
+    - os: linux
+      env: BUILD=native
+      addons: {apt: {packages: [unixodbc-dev]}}
     - os: osx
       env: BUILD=native
 
