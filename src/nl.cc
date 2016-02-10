@@ -85,13 +85,13 @@ fmt::Writer &mp::operator<<(fmt::Writer &w, const NLHeader &h) {
   return w;
 }
 
-mp::internal::ReaderBase::ReaderBase(fmt::StringRef data, fmt::CStringRef name)
-: ptr_(data.data()), start_(ptr_), end_(ptr_ + data.size()),
+mp::internal::ReaderBase::ReaderBase(NLStringRef data, fmt::CStringRef name)
+: ptr_(data.c_str()), start_(ptr_), end_(ptr_ + data.size()),
   token_(ptr_), name_(name.c_str()) {}
 
 template <typename Locale>
 mp::internal::TextReader<Locale>::TextReader(
-    fmt::StringRef data, fmt::CStringRef name)
+    NLStringRef data, fmt::CStringRef name)
 : ReaderBase(data, name), line_start_(ptr_), line_(1) {}
 
 template <typename Locale>

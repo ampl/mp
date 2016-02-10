@@ -18,7 +18,7 @@
  where handler is an object that receives notifications of problem
  components. See NLHandler for an example of a handler class.
 
- Copyright (C) 2013 AMPL Optimization Inc
+ Copyright (C) 2013 - 2016 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -55,6 +55,40 @@ namespace mp {
 
 using fmt::internal::MakeUnsigned;
 
+/** A reference to a null-terminated string with size. */
+class NLStringRef {
+ private:
+  const char *data_;
+  std::size_t size_;
+
+ public:
+  /**
+    \rst
+    Constructs a string reference object from a C string computing
+    the size with ``std::strlen``.
+    \endrst
+   */
+  NLStringRef(const char *s) : data_(s), size_(std::strlen(s)) {}
+
+  /** Constructs a string reference object from a C string and a size. */
+  NLStringRef(const char *s, std::size_t size) : data_(s), size_(size) {
+    MP_ASSERT(!s[size], "string not null-terminated");
+  }
+
+  /**
+    \rst
+    Constructs a string reference from an ``std::string`` object.
+    \endrst
+   */
+  NLStringRef(const std::string &s) : data_(s.c_str()), size_(s.size()) {}
+
+  /** Returns the pointer to a C string. */
+  const char *c_str() const { return data_; }
+
+  /** Returns the string size. */
+  std::size_t size() const { return size_; }
+};
+
 // Flags for ReadNLFile and ReadNLString.
 enum {
   /** Read variable bounds before anything else. */
@@ -62,7 +96,7 @@ enum {
 };
 
 template <typename Handler>
-void ReadNLString(fmt::StringRef str, Handler &handler,
+void ReadNLString(NLStringRef str, Handler &handler,
                   fmt::CStringRef name = "(input)", int flags = 0);
 
 /** A read error with location information. */
@@ -435,7 +469,7 @@ class NLHandler {
   /**
     \rst
     Receives notification of a function.
-    The *name* argument is a function name and it is not zero terminated.
+    The *name* argument is a function name and it is not null-terminated.
     \endrst
    */
   void OnFunction(int index, fmt::StringRef name,
@@ -452,7 +486,7 @@ class NLHandler {
   /**
     \rst
     Receives notification of an integer suffix.
-    The *name* argument is a suffix name and it is not zero terminated.
+    The *name* argument is a suffix name and it is not null-terminated.
     \endrst
    */
   IntSuffixHandler OnIntSuffix(fmt::StringRef name, int kind, int num_values) {
@@ -469,7 +503,7 @@ class NLHandler {
   /**
     \rst
     Receives notification of a double suffix.
-    The *name* argument is a suffix name and it is not zero terminated.
+    The *name* argument is a suffix name and it is not null-terminated.
     \endrst
    */
   DblSuffixHandler OnDblSuffix(fmt::StringRef name, int kind, int num_values) {
@@ -897,7 +931,7 @@ class NLHandler {
   /**
     \rst
     Receives notification of a `string <mp::expr::STRING>`.
-    The *value* argument is a string value and it is not zero terminated.
+    The *value* argument is a string value and it is not null-terminated.
     \endrst
    */
   Expr OnString(fmt::StringRef value) {
@@ -930,7 +964,7 @@ class ReaderBase {
   ~ReaderBase() {}
 
  public:
-  ReaderBase(fmt::StringRef data, fmt::CStringRef name);
+  ReaderBase(NLStringRef data, fmt::CStringRef name);
 
   char ReadChar() {
     token_ = ptr_;
@@ -1038,7 +1072,7 @@ class TextReader : public ReaderBase {
   }
 
  public:
-  TextReader(fmt::StringRef data, fmt::CStringRef name);
+  TextReader(NLStringRef data, fmt::CStringRef name);
 
   Locale &locale() { return locale_; }
 
@@ -1997,15 +2031,15 @@ class NLFileReader {
     Open(filename);
     if (size_ == rounded_size_) {
       // Don't use mmap, because the file size is a multiple of the page size
-      // and therefore the mmap'ed buffer won't be zero terminated.
+      // and therefore the mmap'ed buffer won't be null-terminated.
       fmt::internal::MemoryBuffer<char, 1> array;
       Read(array);
       return ReadNLString(
-            fmt::StringRef(&array[0], size_), handler, filename, flags);
+            NLStringRef(&array[0], size_), handler, filename, flags);
     }
     MemoryMappedFile<File> mapped_file(file_, rounded_size_);
     ReadNLString(
-          fmt::StringRef(mapped_file.start(), size_), handler, filename, flags);
+          NLStringRef(mapped_file.start(), size_), handler, filename, flags);
   }
 };
 
@@ -2045,7 +2079,7 @@ class NameReader {
   // Reads names from the file *filename* sending the names to the *handler*
   // object by calling ``handler.OnName(name)``. The name argument to
   // ``OnName`` is a ``fmt::StringRef`` object and the string it refers to
-  // is not zero terminated.
+  // is not null-terminated.
   // Each name in the input file should be on a separate line ended with a
   // newline character ('\n').
   template <typename NameHandler>
@@ -2063,7 +2097,6 @@ class NameReader {
   and sends notifications of the problem components to the *handler* object.
   
   Both *str* and *name* can be C strings or ``std::string`` objects.
-  The string *str* must be null-terminated.
   The *name* argument is used as the name of the input when reporting errors.
   *flags* can be either 0, which is the default, to read all constructs in
   the order they appear in the input, or `mp::READ_BOUNDS_FIRST` to read
@@ -2072,7 +2105,7 @@ class NameReader {
   \endrst
  */
 template <typename Handler>
-void ReadNLString(fmt::StringRef str, Handler &handler,
+void ReadNLString(NLStringRef str, Handler &handler,
                   fmt::CStringRef name, int flags) {
   internal::TextReader<> reader(str, name);
   NLHeader header = NLHeader();
