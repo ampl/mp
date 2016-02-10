@@ -365,25 +365,22 @@ enum Kind {
 
   /**
     \rst
-    An if-then-else expression.
-    Example: ``if x != 0 then y else z``, where ``x``, ``y`` and ``z`` are
-    variables.
+    An if-then-else expression,
+    :math:`\verb|if | lexpr \verb| then | expr \verb| | [\verb|else | expr]`.
     \endrst
    */
   IF,
 
   /**
     \rst
-    A piecewise-linear term.
-    Example: ``<<0; -1, 1>> x``, where ``x`` is a variable.
+    A piecewise-linear term, :math:`\verb|<<|expr,...; expr,...\verb|>> | ref`.
     \endrst
    */
   PLTERM,
 
   /**
     \rst
-    A function call expression.
-    Example: ``f(x)``, where ``f`` is a function and ``x`` is a variable.
+    A function call expression, :math:`f(expr,...)`.
     \endrst
    */
   CALL,
@@ -402,49 +399,62 @@ enum Kind {
 
   /**
     \rst
-    A varag expression (``min`` or ``max``). Example: ``min{i in I} x[i]``,
-    where ``I`` is a set and ``x`` is a variable.
+    A vararg expression, :math:`\mathrm{min}` or :math:`\mathrm{max}`.
     \endrst
    */
   FIRST_VARARG = FIRST_ITERATED,
+
+  /**
+    \rst
+    The :math:`\mathrm{min}` expression, :math:`\mathrm{min}(expr,...)`.
+    \endrst
+   */
   MIN = FIRST_VARARG,
+
+  /**
+    \rst
+    The :math:`\mathrm{max}` expression, :math:`\mathrm{max}(expr,...)`.
+    \endrst
+   */
   MAX,
+
+  /** The last vararg expression kind. */
   LAST_VARARG = MAX,
 
   /**
     \rst
-    A sum expression. Example: ``sum{i in I} x[i]``, where ``I`` is a set and
-    ``x`` is a variable.
+    A :math:`\mathrm{sum}` expression, :math:`\mathrm{sum}(expr,...)`.
     \endrst
    */
   SUM,
 
   /**
     \rst
-    A numberof expression. Example: ``numberof 42 in ({i in I} x[i])``,
-    where ``I`` is a set and ``x`` is a variable.
+    A :math:`\mathrm{numberof}` expression,
+    :math:`\text{numberof } expr \text{ in } (expr,...)`.
     \endrst
    */
   NUMBEROF,
+
+  /** The last iterated expression kind. */
   LAST_ITERATED = NUMBEROF,
 
   /**
     \rst
-    A symbolic numberof expression.
-    Example: ``numberof (if x != 0 then 'a' else 'b') in ('a', 'b', 'c')``,
-    where ``x`` is a variable.
+    A symbolic :math:`\mathrm{numberof}` expression.
+    :math:`\text{numberof } strexpr \text{ in } (strexpr,...)`.
     \endrst
    */
   NUMBEROF_SYM,
 
   /**
     \rst
-    A count expression.
-    Example: ``count{i in I} (x[i] >= 0)``, where ``I`` is a set and ``x``
-    is a variable.
+    A :math:`\mathrm{count}` expression, :math:`\mathrm{count}(lexpr,...)`.
     \endrst
    */
   COUNT,
+
+  /** The last numeric expression kind. */
   LAST_NUMERIC = COUNT,
 
   /**
@@ -656,7 +666,7 @@ namespace func {
 enum Type {
   /** A numeric function. */
   NUMERIC  = 0,
-  /** A symbolic function - accepts numeric and string arguments. */
+  /** A symbolic function accepting numeric and string arguments. */
   SYMBOLIC = 1
 };
 }
@@ -777,16 +787,10 @@ struct ProblemInfo {
   /** Number of nonlinear complementarity conditions. */
   int num_nl_compl_conds;
 
-  /**
-    Number of complementarities involving double inequalities
-    (for ``ASL_cc_simplify``).
-   */
+  /** Number of complementarities involving double inequalities. */
   int num_compl_dbl_ineqs;
 
-  /**
-    Number of complemented variables with a nonzero lower bound
-    (for ASL_cc_simplify).
-   */
+  /** Number of complemented variables with a nonzero lower bound. */
   int num_compl_vars_with_nz_lb;
 
   // Information about network constraints

@@ -1,5 +1,5 @@
-Common Declarations
-===================
+Common Definitions
+==================
 
 Header: :file:`mp/common.h`
 
