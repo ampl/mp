@@ -346,9 +346,9 @@ void ChangeEndianness(T &value) {
 }
 
 TEST(BinaryReaderTest, ReadInt) {
-  int data[] = {11, -22};
-  std::size_t size = sizeof(data);
-  mp::NLStringRef str(reinterpret_cast<char*>(data), sizeof(data));
+  int data[] = {11, -22, 0};
+  std::size_t size = sizeof(data) - sizeof(int);
+  mp::NLStringRef str(reinterpret_cast<char*>(data), size);
   TestBinaryReader<> reader(str);
   EXPECT_EQ(11, reader.ReadInt<int>());
   EXPECT_EQ(-22, reader.ReadInt<int>());
