@@ -942,8 +942,22 @@ struct ProblemInfo {
   // Information about common expressions
   // ------------------------------------
 
+  /**
+    Number of common expressions that appear both in constraints
+    and objectives.
+   */
   int num_common_exprs_in_both;
+
+  /**
+    Number of common expressions that appear in multiple constraints
+    and don't appear in objectives.
+   */
   int num_common_exprs_in_cons;
+
+  /**
+    Number of common expressions that appear in multiple objective
+    and don't appear in constraints.
+   */
   int num_common_exprs_in_objs;
 
   /**
