@@ -366,21 +366,28 @@ enum Kind {
   /**
     \rst
     An if-then-else expression,
-    :math:`\verb|if | lexpr \verb| then | expr \verb| | [\verb|else | expr]`.
+    :math:`\verb|if | c \verb| then | e_1 \verb| | [\verb|else |e_2]`,
+    where :math:`c` is a logical expression representing condition, while
+    :math:`e_1` and :math:`e_2` are numeric expression. The expression
+    evaluates to :math:`e_1` if :math:`c` is true and to :math:`e_2` otherwise.
+    If :math:`e_2` is omitted, it is assumed to be zero.
     \endrst
    */
   IF,
 
   /**
     \rst
-    A piecewise-linear term, :math:`\verb|<<|expr,...; expr,...\verb|>> | ref`.
+    A piecewise-linear term,
+    :math:`\verb|<<|b_1, ..., b_n; s_1, ..., s_{n + 1}\verb|>> | r`,
+    where :math:`b_i` are breakpoints, :math:`s_i` are slopes and :math:`r` is
+    a reference.
     \endrst
    */
   PLTERM,
 
   /**
     \rst
-    A function call expression, :math:`f(expr,...)`.
+    A function call, :math:`f(e_1, ..., e_n)`.
     \endrst
    */
   CALL,
@@ -406,14 +413,14 @@ enum Kind {
 
   /**
     \rst
-    The :math:`\mathrm{min}` expression, :math:`\mathrm{min}(expr,...)`.
+    Minimum, :math:`\mathrm{min}(e_1, ..., e_n) = \min_{i=1,...,n} e_i`.
     \endrst
    */
   MIN = FIRST_VARARG,
 
   /**
     \rst
-    The :math:`\mathrm{max}` expression, :math:`\mathrm{max}(expr,...)`.
+    Maximum, :math:`\mathrm{max}(e_1, ..., e_n) = \max_{i=1,...,n} e_i`.
     \endrst
    */
   MAX,
@@ -423,7 +430,7 @@ enum Kind {
 
   /**
     \rst
-    A :math:`\mathrm{sum}` expression, :math:`\mathrm{sum}(expr,...)`.
+    Sum, :math:`\mathrm{sum}(e_1, ..., e_n) = \sum_{i=1}^n e_i`.
     \endrst
    */
   SUM,
@@ -431,7 +438,9 @@ enum Kind {
   /**
     \rst
     A :math:`\mathrm{numberof}` expression,
-    :math:`\text{numberof } expr \text{ in } (expr,...)`.
+    :math:`\text{numberof } e_0 \text{ in } (e_1, ..., e_n)`, which evaluates
+    to the number of times the value of :math:`e_0` appears among the values
+    of :math:`e_1, ..., e_n`.
     \endrst
    */
   NUMBEROF,
@@ -442,14 +451,14 @@ enum Kind {
   /**
     \rst
     A symbolic :math:`\mathrm{numberof}` expression.
-    :math:`\text{numberof } strexpr \text{ in } (strexpr,...)`.
+    :math:`\text{numberof } s_0 \text{ in } (s_1,...)`.
     \endrst
    */
   NUMBEROF_SYM,
 
   /**
     \rst
-    A :math:`\mathrm{count}` expression, :math:`\mathrm{count}(lexpr,...)`.
+    A :math:`\mathrm{count}` expression, :math:`\mathrm{count}(l_1, ..., l_n)`.
     \endrst
    */
   COUNT,
@@ -467,48 +476,67 @@ enum Kind {
 
   /**
     \rst
-    A Boolean (logical) constant such as ``0`` or ``1``.
+    A Boolean (logical) constant, true or false.
     \endrst
    */
   BOOL = FIRST_LOGICAL,
 
   /**
     \rst
-    A logical NOT expression.
-    Example: ``not a``, where ``a`` is a logical expression.
+    A logical NOT expression, :math:`!l`.
     \endrst
    */
   NOT,
 
-  // Binary logical expressions.
   /**
     \rst
-    A binary logical expression.
-    Examples: ``a || b``, ``a && b``, where ``a`` and ``b`` are logical
-    expressions.
+    The first binary logical expression kind.
+    Binary logical expression kinds are in the range
+    [`~mp::expr::FIRST_BINARY_LOGICAL`, `~mp::expr::LAST_BINARY_LOGICAL`].
     \endrst
    */
   FIRST_BINARY_LOGICAL,
-  OR = FIRST_BINARY_LOGICAL,
-  AND,
-  IFF,
-  LAST_BINARY_LOGICAL = IFF,
 
-  // Relational expressions.
   /**
     \rst
-    A relational expression.
-    Examples: ``a < b``, ``a != b``, where ``a`` and ``b`` are numeric
-    expressions.
+    Logical or, :math:`l_1` || :math:`l_2`.
+    \endrst
+   */
+  OR = FIRST_BINARY_LOGICAL,
+
+  /**
+    \rst
+    Logical and, :math:`l_1` && :math:`l_2`.
+    \endrst
+   */
+  AND,
+
+  /**
+    \rst
+    If and only if, :math:`l_1` <==> :math:`l_2`.
+    \endrst
+   */
+  IFF,
+
+  /** The last binary logical expression kind. */
+  LAST_BINARY_LOGICAL = IFF,
+
+  /**
+    \rst
+    The first relational expression kind. Relational expression kinds are in
+    the range [`~mp::expr::FIRST_RELATIONAL`, `~mp::expr::LAST_RELATIONAL`].
     \endrst
    */
   FIRST_RELATIONAL,
+
   LT = FIRST_RELATIONAL,  // <
   LE,                     // <=
   EQ,                     // =
   GE,                     // >=
   GT,                     // >
   NE,                     // !=
+
+  /** The last relational expression kind. */
   LAST_RELATIONAL = NE,
 
   /**
@@ -579,6 +607,7 @@ enum Kind {
    */
   IFSYM,
 
+  /** The last expression kind. */
   LAST_EXPR = IFSYM
 };
 
