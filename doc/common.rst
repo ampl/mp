@@ -9,5 +9,7 @@ Header: :file:`mp/common.h`
 
 .. doxygenenum:: mp::expr::Kind
 
+.. doxygenfunction:: mp::expr::str
+
 .. doxygenstruct:: mp::ProblemInfo
    :members:
