@@ -451,14 +451,18 @@ enum Kind {
   /**
     \rst
     A symbolic :math:`\mathrm{numberof}` expression.
-    :math:`\text{numberof } s_0 \text{ in } (s_1,...)`.
+    :math:`\text{numberof } s_0 \text{ in } (s_1, ..., s_n)`, which evaluates
+    to the number of times the value of :math:`s_0` appears among the values
+    of :math:`s_1, ..., s_n`.
     \endrst
    */
   NUMBEROF_SYM,
 
   /**
     \rst
-    A :math:`\mathrm{count}` expression, :math:`\mathrm{count}(l_1, ..., l_n)`.
+    A :math:`\mathrm{count}` expression, :math:`\mathrm{count}(l_1, l_2, ...)`,
+    where :math:`l_i` are logical expressions. This expression evaluates to
+    the number of :math:`l_i` whose values are true.
     \endrst
    */
   COUNT,
@@ -529,12 +533,47 @@ enum Kind {
    */
   FIRST_RELATIONAL,
 
-  LT = FIRST_RELATIONAL,  // <
-  LE,                     // <=
-  EQ,                     // =
-  GE,                     // >=
-  GT,                     // >
-  NE,                     // !=
+  /**
+    \rst
+    Less than, :math:`e_1` < :math:`e_2`.
+    \endrst
+   */
+  LT = FIRST_RELATIONAL,
+
+  /**
+    \rst
+    Less or equal to, :math:`e_1` <= :math:`e_2`.
+    \endrst
+   */
+  LE,
+
+  /**
+    \rst
+    Equal to, :math:`e_1` = :math:`e_2`.
+    \endrst
+   */
+  EQ,
+
+  /**
+    \rst
+    Greater or equal to, :math:`e_1` >= :math:`e_2`.
+    \endrst
+   */
+  GE,
+
+  /**
+    \rst
+    Greater than, :math:`e_1` > :math:`e_2`.
+    \endrst
+   */
+  GT,
+
+  /**
+    \rst
+    Not equal to, :math:`e_1` != :math:`e_2`.
+    \endrst
+   */
+  NE,
 
   /** The last relational expression kind. */
   LAST_RELATIONAL = NE,
