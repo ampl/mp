@@ -1,7 +1,7 @@
-Support for the NL Format
-=========================
+NL Reader
+=========
 
-Header: :file:`mp/nl.h`
+Header: :file:`mp/nl-reader.h`
 
 `NL <https://en.wikipedia.org/wiki/Nl_(format)>`_ is a format for representing
 optimization problems in discrete or continuous variables. It is described in

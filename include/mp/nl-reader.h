@@ -13,7 +13,7 @@
    ReadNLFile(filename, handler);
 
    // Read an NL string:
-   ReadNLString(nl_string, handler);
+   ReadNLString(string, handler);
 
  where handler is an object that receives notifications of problem
  components. See NLHandler for an example of a handler class.
@@ -37,8 +37,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef MP_NL_H_
-#define MP_NL_H_
+#ifndef MP_NL_READER_H_
+#define MP_NL_READER_H_
 
 #include "mp/common.h"
 #include "mp/error.h"
@@ -2165,4 +2165,4 @@ inline void ReadNLFile(fmt::CStringRef filename,
 }
 }  // namespace mp
 
-#endif  // MP_NL_H_
+#endif  // MP_NL_READER_H_

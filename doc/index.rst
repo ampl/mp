@@ -5,7 +5,7 @@ Contents
    :maxdepth: 2
 
    common
-   nl
+   nl-reader
    amplgsl/index
    tables/index
 
