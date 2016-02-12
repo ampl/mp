@@ -21,11 +21,11 @@ if build == 'doc':
         archive.extractall(dir)
     doxygen = os.path.join(dir, 'doxygen-1.8.10/bin/doxygen')
     returncode, repo_dir = __import__('build-docs').build_docs(workdir, doxygen)
-    if returncode == 0:
+    if returncode == 0 and os.environ['TRAVIS_BRANCH'] == 'master':
+      # Push docs to GitHub pages if this is a master branch.
       if travis:
         check_call(['git', 'config', '--global', 'user.name', 'amplbot'])
         check_call(['git', 'config', '--global', 'user.email', 'viz@ampl.com'])
-      # Push docs to GitHub pages.
       check_call(['git', 'add', '--all'], cwd=repo_dir)
       if call(['git', 'diff-index', '--quiet', 'HEAD'], cwd=repo_dir):
         check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo_dir)
