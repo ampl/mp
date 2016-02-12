@@ -121,7 +121,7 @@ ExprType MakeExpr(expr *e) { return TestExpr::MakeExpr<ExprType>(e); }
 Expr MakeExpr(expr *e) { return TestExpr::MakeExpr<Expr>(e); }
 
 void TestExpr::TestProxy() {
-  expr e = RawExpr(opcode(ex::DIV));
+  expr e = RawExpr(nl_opcode(ex::DIV));
   Proxy<NumericExpr> p(&e);
   EXPECT_EQ(ex::DIV, p->kind());
 }
@@ -133,9 +133,9 @@ void TestExpr::TestExprIterator() {
     EXPECT_EQ(ExprIterator<NumericExpr>(), i);
   }
   expr exprs[] = {
-      RawExpr(opcode(ex::DIV)),
-      RawExpr(opcode(ex::ADD)),
-      RawExpr(opcode(ex::ATAN)),
+      RawExpr(nl_opcode(ex::DIV)),
+      RawExpr(nl_opcode(ex::ADD)),
+      RawExpr(nl_opcode(ex::ATAN)),
   };
   expr *const ptrs[] = {exprs, exprs + 1, exprs + 2};
   ExprIterator<NumericExpr> i(ptrs);
@@ -161,7 +161,7 @@ void TestExpr::TestExprIterator() {
   for (ExprIterator<NumericExpr>
       i(ptrs), e(ptrs + 3); i != e; ++i, ++index) {
     int code = static_cast<int>(reinterpret_cast<size_t>(ptrs[index]->op));
-    EXPECT_EQ(code, opcode(i->kind()));
+    EXPECT_EQ(code, nl_opcode(i->kind()));
   }
   EXPECT_EQ(3, index);
   std::vector<NumericExpr> vec;
@@ -297,12 +297,12 @@ TEST_F(ExprTest, ExprCtor) {
     EXPECT_FALSE(e);
   }
   {
-    expr raw = RawExpr(opcode(ex::SUB));
+    expr raw = RawExpr(nl_opcode(ex::SUB));
     Expr e(::MakeExpr(&raw));
     EXPECT_EQ(ex::SUB, e.kind());
   }
   {
-    expr raw = RawExpr(opcode(ex::OR));
+    expr raw = RawExpr(nl_opcode(ex::OR));
     Expr e(::MakeExpr(&raw));
     EXPECT_EQ(ex::OR, e.kind());
   }
@@ -427,7 +427,7 @@ std::size_t CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
     ExprType e;
     EXPECT_FALSE(e);
   }
-  TestAssertInCreate<ExprType>(opcode(bad_kind));
+  TestAssertInCreate<ExprType>(nl_opcode(bad_kind));
   std::size_t expr_count = 0;
   int size = sizeof(OP_INFO) / sizeof(*OP_INFO);
   for (int i = 0; i < size; ++i) {
@@ -444,7 +444,7 @@ std::size_t CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
     }
     if (!is_this_kind) continue;
     ExprType e(MakeExpr<ExprType>(&raw));
-    EXPECT_EQ(opcode, ex::opcode(e.kind()));
+    EXPECT_EQ(opcode, nl_opcode(e.kind()));
     ++expr_count;
   }
   EXPECT_GT(expr_count, 0u);
@@ -463,11 +463,11 @@ TEST_F(ExprTest, Expr) {
 // expensive death tests. Is() is specialized for TestExpr to accept unary
 // and binary but not other expression kinds.
 TEST_F(ExprTest, CreateUsesIs) {
-  expr raw1 = RawExpr(opcode(ex::ADD));  // binary
+  expr raw1 = RawExpr(nl_opcode(ex::ADD));  // binary
   ::MakeExpr<TestExpr>(&raw1);
-  expr raw2 = RawExpr(opcode(ex::MINUS));  // unary
+  expr raw2 = RawExpr(nl_opcode(ex::MINUS));  // unary
   ::MakeExpr<TestExpr>(&raw2);
-  TestAssertInCreate<TestExpr>(opcode(ex::PLTERM));  // neither
+  TestAssertInCreate<TestExpr>(nl_opcode(ex::PLTERM));  // neither
 }
 
 TEST_F(ExprTest, EqualityOperator) {

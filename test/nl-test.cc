@@ -638,11 +638,11 @@ class TestNLHandler {
   }
 
   std::string OnUnary(expr::Kind kind, std::string arg) {
-    return fmt::format("u{}({})", opcode(kind), arg);
+    return fmt::format("u{}({})", nl_opcode(kind), arg);
   }
 
   std::string OnBinary(expr::Kind kind, std::string lhs, std::string rhs) {
-    return fmt::format("b{}({}, {})", opcode(kind), lhs, rhs);
+    return fmt::format("b{}({}, {})", nl_opcode(kind), lhs, rhs);
   }
 
   std::string OnIf(std::string condition,
@@ -717,7 +717,7 @@ class TestNLHandler {
   typedef ArgHandler VarArgHandler;
 
   VarArgHandler BeginVarArg(expr::Kind kind, int) {
-    return VarArgHandler(fmt::format("v{}", opcode(kind)));
+    return VarArgHandler(fmt::format("v{}", nl_opcode(kind)));
   }
   std::string EndVarArg(VarArgHandler h) {
     return MakeVarArg(h.name_, h.args_);
@@ -752,16 +752,16 @@ class TestNLHandler {
 
   std::string OnBinaryLogical(
       expr::Kind kind, std::string lhs, std::string rhs) {
-    return fmt::format("bl{}({}, {})", opcode(kind), lhs, rhs);
+    return fmt::format("bl{}({}, {})", nl_opcode(kind), lhs, rhs);
   }
 
   std::string OnRelational(expr::Kind kind, std::string lhs, std::string rhs) {
-    return fmt::format("r{}({}, {})", opcode(kind), lhs, rhs);
+    return fmt::format("r{}({}, {})", nl_opcode(kind), lhs, rhs);
   }
 
   std::string OnLogicalCount(
       expr::Kind kind, std::string lhs, std::string rhs) {
-    return fmt::format("lc{}({}, {})", opcode(kind), lhs, rhs);
+    return fmt::format("lc{}({}, {})", nl_opcode(kind), lhs, rhs);
   }
 
   std::string OnImplication(std::string condition,
@@ -772,7 +772,7 @@ class TestNLHandler {
   typedef ArgHandler LogicalArgHandler;
 
   ArgHandler BeginIteratedLogical(expr::Kind kind, int) {
-    return ArgHandler(fmt::format("il{}", opcode(kind)));
+    return ArgHandler(fmt::format("il{}", nl_opcode(kind)));
   }
   std::string EndIteratedLogical(ArgHandler h) {
     return MakeVarArg(h.name_, h.args_);

@@ -669,7 +669,7 @@ inline const OpCodeInfo &GetOpCodeInfo(int opcode) {
   return OpCodeInfo::INFO[opcode];
 }
 
-int opcode(expr::Kind kind);
+int nl_opcode(expr::Kind kind);
 
 /**
   \rst
@@ -707,7 +707,7 @@ class ExprInfo {
  private:
   static const ExprInfo INFO[];
 
-  friend int expr::opcode(expr::Kind kind);
+  friend int expr::nl_opcode(expr::Kind kind);
   friend const char *expr::str(expr::Kind kind);
 
  public:
@@ -722,7 +722,7 @@ class ExprInfo {
 };
 }
 
-inline int expr::opcode(expr::Kind kind) {
+inline int expr::nl_opcode(expr::Kind kind) {
   assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
   return internal::ExprInfo::INFO[kind].opcode;
 }

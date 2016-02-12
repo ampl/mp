@@ -213,7 +213,7 @@ void ASLBuilder::SetObjOrCon(
 
 ::expr *ASLBuilder::DoMakeUnary(expr::Kind kind, Expr arg) {
   ::expr *e = Allocate< ::expr>();
-  int opcode = expr::opcode(kind);
+  int opcode = nl_opcode(kind);
   e->op = reinterpret_cast<efunc*>(opcode);
   e->L.e = arg.impl_;
   e->a = asl_->i.n_var_ + asl_->i.nsufext[suf::VAR];
@@ -223,7 +223,7 @@ void ASLBuilder::SetObjOrCon(
 
 ::expr *ASLBuilder::DoMakeBinary(expr::Kind kind, Expr lhs, Expr rhs) {
   ::expr *e = Allocate< ::expr>();
-  int opcode = expr::opcode(kind);
+  int opcode = nl_opcode(kind);
   e->op = reinterpret_cast<efunc*>(opcode);
   e->L.e = lhs.impl_;
   e->R.e = rhs.impl_;
@@ -236,7 +236,7 @@ void ASLBuilder::SetObjOrCon(
 ::expr *ASLBuilder::MakeIf(
     expr::Kind kind, LogicalExpr condition, Expr then_expr, Expr else_expr) {
   expr_if *e = Allocate<expr_if>();
-  e->op = r_ops_[opcode(kind)];
+  e->op = r_ops_[nl_opcode(kind)];
   e->e = condition.impl_;
   e->T = then_expr.impl_;
   e->F = else_expr.impl_;
@@ -248,7 +248,7 @@ void ASLBuilder::SetObjOrCon(
   ::expr *e = Allocate< ::expr>(
       sizeof(::expr) - sizeof(double) +
       SafeInt<int>(num_args + 1) * sizeof(::expr*));
-  e->op = reinterpret_cast<efunc*>(opcode(kind));
+  e->op = reinterpret_cast<efunc*>(nl_opcode(kind));
   e->L.ep = reinterpret_cast< ::expr**>(&e->dR);
   e->R.ep = e->L.ep + num_args;
   if (args.data()) {
@@ -686,7 +686,7 @@ ASLBuilder::SuffixInfo ASLBuilder::AddSuffix(fmt::StringRef name, int kind) {
 UnaryExpr ASLBuilder::MakeUnary(expr::Kind kind, NumericExpr arg) {
   CheckKind<UnaryExpr>(kind, "unary");
   UnaryExpr expr = MakeUnary<UnaryExpr>(kind, arg);
-  expr.impl_->dL = DVALUE[opcode(kind)];  // for UMINUS, FLOOR, CEIL
+  expr.impl_->dL = DVALUE[nl_opcode(kind)];  // for UMINUS, FLOOR, CEIL
   return expr;
 }
 
@@ -739,7 +739,7 @@ ASLBuilder::IteratedExprBuilder
     ASLBuilder::BeginIterated(expr::Kind kind, int num_args) {
   CheckKind<VarArgExpr>(kind, "vararg");
   expr_va *result = Allocate<expr_va>();
-  result->op = r_ops_[opcode(kind)];
+  result->op = r_ops_[nl_opcode(kind)];
   de *d = result->L.d = Allocate<de>(
         SafeInt<int>(num_args) * sizeof(de) + sizeof(::expr*));
   d[num_args].e = 0;

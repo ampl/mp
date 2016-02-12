@@ -1523,7 +1523,7 @@ typename Handler::Expr NLReader<Reader, Handler>::ReadSymbolicExpr() {
     return handler_.OnString(reader_.ReadString());
   case 'o': {
     int opcode = ReadOpCode();
-    if (opcode != expr::opcode(expr::IFSYM))
+    if (opcode != expr::nl_opcode(expr::IFSYM))
       return ReadNumericExpr(opcode);
     // Read symbolic if expression.
     LogicalExpr condition = ReadLogicalExpr();
