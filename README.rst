@@ -14,7 +14,7 @@ Documentation: http://ampl.github.io
 Features
 --------
 
-* Reusable high-performance `.nl file reader <http://ampl.github.io/nl.html>`_
+* Reusable high-performance `.nl file reader <http://ampl.github.io/nl-reader.html>`_
   which is up to `6x faster
   <http://zverovich.net/slides/2015-01-11-ics/socp-reformulation.html#/14>`_
   than the one provided by ASL
