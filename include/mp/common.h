@@ -368,7 +368,7 @@ enum Kind {
     An if-then-else expression,
     :math:`\verb|if | c \verb| then | e_1 \verb| | [\verb|else |e_2]`,
     where :math:`c` is a logical expression representing condition, while
-    :math:`e_1` and :math:`e_2` are numeric expression. The expression
+    :math:`e_1` and :math:`e_2` are numeric expressions. The expression
     evaluates to :math:`e_1` if :math:`c` is true and to :math:`e_2` otherwise.
     If :math:`e_2` is omitted, it is assumed to be zero.
     \endrst
@@ -430,7 +430,7 @@ enum Kind {
 
   /**
     \rst
-    Sum, :math:`\mathrm{sum}(e_1, ..., e_n) = \sum_{i=1}^n e_i`.
+    Summation, :math:`\mathrm{sum}(e_1, ..., e_n) = \sum_{i=1}^n e_i`.
     \endrst
    */
   SUM,
@@ -628,12 +628,14 @@ enum Kind {
   ALLDIFF = FIRST_PAIRWISE,
   NOT_ALLDIFF,
   LAST_PAIRWISE = NOT_ALLDIFF,
+
+  /** The last logical expression kind. */
   LAST_LOGICAL = LAST_PAIRWISE,
 
   // String expressions.
   /**
     \rst
-    A string such as ``"abc"``.
+    A string such as "abc".
     \endrst
    */
   STRING,
@@ -641,7 +643,11 @@ enum Kind {
   /**
     \rst
     A symbolic if-then-else expression.
-    Example: ``if x != 0 then 'a' else 0``, where ``x`` is a variable.
+    :math:`\verb|if | c \verb| then | e_1 \verb| | [\verb|else |e_2]`,
+    where :math:`c` is a logical expression representing condition, while
+    :math:`e_1` and :math:`e_2` are numeric or string expressions.
+    The expression evaluates to :math:`e_1` if :math:`c` is true and to
+    :math:`e_2` otherwise. If :math:`e_2` is omitted, it is assumed to be zero.
     \endrst
    */
   IFSYM,
@@ -650,7 +656,7 @@ enum Kind {
   LAST_EXPR = IFSYM
 };
 
-// Maximum opcode.
+// Maximum NL opcode.
 enum { MAX_OPCODE = 82 };
 
 class OpCodeInfo {
@@ -720,7 +726,7 @@ class ExprInfo {
     return internal::ExprInfo::INFO[kind].precedence;
   }
 };
-}
+}  // namespace internal
 
 inline int expr::nl_opcode(expr::Kind kind) {
   assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
