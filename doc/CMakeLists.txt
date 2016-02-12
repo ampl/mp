@@ -37,7 +37,7 @@ add_prefix(docs amplgsl/
   no-warranty rng)
 if (NOT ${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
   set(doc_deps ${BUILD_DOCS})
-  foreach (doc ${docs} common index nl)
+  foreach (doc ${docs} common index nl-reader)
     set(src ${CMAKE_CURRENT_SOURCE_DIR}/${doc}.rst)
     set(dst ${CMAKE_CURRENT_BINARY_DIR}/${doc}.rst)
     add_custom_command(OUTPUT ${dst}
