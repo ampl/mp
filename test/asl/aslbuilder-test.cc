@@ -23,7 +23,7 @@
 #include <gtest/gtest.h>
 
 #include "asl/aslbuilder.h"
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 #include "mp/problem-builder.h"
 #include "opcode.hd"
 #include "../util.h"

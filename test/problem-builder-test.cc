@@ -23,7 +23,7 @@
 #include "gmock/gmock.h"
 #include "gtest-extra.h"
 #include "mock-problem-builder.h"
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 
 using mp::NLHeader;
 namespace expr = mp::expr;

@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 
 void mp::ReadError::init(fmt::CStringRef filename, int line, int column,
                          fmt::CStringRef format_str, fmt::ArgList args) {

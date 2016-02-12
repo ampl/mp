@@ -1,6 +1,6 @@
 // NL reader example
 
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 #include <cstdlib>
 #include <cstring>
 #include <stdexcept>

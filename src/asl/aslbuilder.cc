@@ -23,7 +23,7 @@
 #define ASL_PRESERVE_DEFINES
 #include "aslbuilder.h"
 
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 #include "opcode.hd"
 
 #include <algorithm>

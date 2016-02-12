@@ -23,7 +23,7 @@
 #include "test-assert.h"
 
 // Include the source file to test the implementation.
-#include "../src/nl.cc"
+#include "../src/nl-reader.cc"
 
 #include <climits>
 #include <cstring>
