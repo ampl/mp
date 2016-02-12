@@ -40,7 +40,7 @@
 
 #include "ilogcp/ilogcp.h"
 #include "mp/expr-visitor.h"
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 #include "feature.h"
 
 typedef mp::IlogCPSolver Solver;

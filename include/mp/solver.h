@@ -43,7 +43,7 @@
 #include "mp/clock.h"
 #include "mp/error.h"
 #include "mp/format.h"
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 #include "mp/option.h"
 #include "mp/os.h"
 #include "mp/problem-builder.h"

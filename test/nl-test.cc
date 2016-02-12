@@ -23,7 +23,7 @@
 #include <climits>
 #include <cstring>
 
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 #include "gmock/gmock.h"
 #include "gtest-extra.h"
 #include "mock-file.h"

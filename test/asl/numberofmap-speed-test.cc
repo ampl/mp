@@ -1,6 +1,6 @@
 #include "asl/aslbuilder.h"
 #include "mp/clock.h"
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 
 struct CreateVar {
   int operator()() { return 0; }

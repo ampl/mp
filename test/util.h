@@ -29,7 +29,7 @@
 #include <vector>
 
 #include "mp/format.h"
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 #include "mp/os.h"
 
 std::string ReadFile(fmt::StringRef name);

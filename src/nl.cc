@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 
 mp::arith::Kind mp::arith::GetKind() {
   // Unlike ASL, we don't try detecting floating-point arithmetic at

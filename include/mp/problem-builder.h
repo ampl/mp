@@ -31,7 +31,7 @@
 
 #include "mp/common.h"
 #include "mp/error.h"
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 #include "mp/suffix.h"
 
 namespace mp {

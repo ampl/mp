@@ -31,7 +31,7 @@
 # include <io.h>
 #endif
 
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 #include "mp/os.h"
 #include "mp/problem-builder.h"
 #include "aslbuilder.h"

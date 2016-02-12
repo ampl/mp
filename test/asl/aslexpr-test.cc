@@ -25,7 +25,7 @@
 #include "../gtest-extra.h"
 #include "../util.h"
 
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 #include "asl/aslbuilder.h"
 #include "asl/aslexpr-visitor.h"
 #include "asl/aslproblem.h"
