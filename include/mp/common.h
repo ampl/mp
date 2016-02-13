@@ -366,7 +366,7 @@ enum Kind {
   /**
     \rst
     An if-then-else expression,
-    :math:`\verb|if | c \verb| then | e_1 \verb| | [\verb|else |e_2]`,
+    :math:`\mathrm{if}\;c\;\mathrm{then}\;e_1\;[\mathrm{else}\;e_2]`,
     where :math:`c` is a logical expression representing condition, while
     :math:`e_1` and :math:`e_2` are numeric expressions. The expression
     evaluates to :math:`e_1` if :math:`c` is true and to :math:`e_2` otherwise.
@@ -646,24 +646,29 @@ enum Kind {
 
   /**
     \rst
-    An implication expression.
-    Example: ``a ==> b else c``, where ``a``, ``b`` and ``c`` are logical
-    expressions.
+    An implication expression,
+    :math:`c\;\verb|==>|\;l_1\;[\mathrm{else}\;l_2]`,
+    where :math:`c` is a logical expression representing condition, while
+    :math:`l_1` and :math:`l_2` are logical expressions. The expression
+    evaluates to :math:`l_1` if :math:`c` is true and to :math:`l_2` otherwise.
+    If :math:`l_2` is omitted, it is assumed to be true.
     \endrst
    */
   IMPLICATION,
 
-  // Iterated logical expressions.
   /**
     \rst
-    An iterated logical expression.
-    Example: ``exists{i in I} x[i] >= 0``, where ``I`` is a set and ``x`` is a
-    variable.
+    The first iterated logical expression kind.
+    Iterated logical expression kinds are in the range
+    [`~mp::expr::FIRST_ITERATED_LOGICAL`, `~mp::expr::LAST_ITERATED_LOGICAL`].
     \endrst
    */
   FIRST_ITERATED_LOGICAL,
+
   EXISTS = FIRST_ITERATED_LOGICAL,
   FORALL,
+
+  /** The last iterated logical expression kind. */
   LAST_ITERATED_LOGICAL = FORALL,
 
   // Pairwise expressions.
@@ -682,7 +687,6 @@ enum Kind {
   /** The last logical expression kind. */
   LAST_LOGICAL = LAST_PAIRWISE,
 
-  // String expressions.
   /**
     \rst
     A string such as "abc".
@@ -693,7 +697,7 @@ enum Kind {
   /**
     \rst
     A symbolic if-then-else expression.
-    :math:`\verb|if | c \verb| then | e_1 \verb| | [\verb|else |e_2]`,
+    :math:`\mathrm{if}\;c\;\mathrm{then}\;e_1\;[\mathrm{else}\;e_2]`,
     where :math:`c` is a logical expression representing condition, while
     :math:`e_1` and :math:`e_2` are numeric or string expressions.
     The expression evaluates to :math:`e_1` if :math:`c` is true and to
