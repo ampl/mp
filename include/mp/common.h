@@ -1,7 +1,7 @@
 /*
  Common definitions
 
- Copyright (C) 2014 AMPL Optimization Inc
+ Copyright (C) 2014 - 2016 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -438,9 +438,9 @@ enum Kind {
   /**
     \rst
     A :math:`\mathrm{numberof}` expression,
-    :math:`\text{numberof } e_0 \text{ in } (e_1, ..., e_n)`, which evaluates
-    to the number of times the value of :math:`e_0` appears among the values
-    of :math:`e_1, ..., e_n`.
+    :math:`\mathrm{numberof}\;e_0\;\mathrm{in}\;(e_1, ..., e_n)`, which
+    evaluates to the number of times the value of :math:`e_0` appears among the
+    values of :math:`e_1, ..., e_n`.
     \endrst
    */
   NUMBEROF,
@@ -451,16 +451,16 @@ enum Kind {
   /**
     \rst
     A symbolic :math:`\mathrm{numberof}` expression.
-    :math:`\text{numberof } s_0 \text{ in } (s_1, ..., s_n)`, which evaluates
-    to the number of times the value of :math:`s_0` appears among the values
-    of :math:`s_1, ..., s_n`.
+    :math:`\mathrm{numberof}\;s_0\;\mathrm{in}\;(s_1, ..., s_n)`, which
+    evaluates to the number of times the value of :math:`s_0` appears among the
+    values of :math:`s_1, ..., s_n`.
     \endrst
    */
   NUMBEROF_SYM,
 
   /**
     \rst
-    A :math:`\mathrm{count}` expression, :math:`\mathrm{count}(l_1, l_2, ...)`,
+    A :math:`\mathrm{count}` expression, :math:`\mathrm{count}(l_1, ..., l_n)`,
     where :math:`l_i` are logical expressions. This expression evaluates to
     the number of :math:`l_i` whose values are true.
     \endrst
@@ -580,18 +580,68 @@ enum Kind {
 
   /**
     \rst
-    A logical count expression.
-    Examples: ``atleast 1 (a < b, a != b)``, where ``a`` and ``b`` are
-    numeric expressions.
+    The first logical count expression kind.
+    Logical count expression kinds are in the range
+    [`~mp::expr::FIRST_LOGICAL_COUNT`, `~mp::expr::LAST_LOGICAL_COUNT`].
     \endrst
    */
   FIRST_LOGICAL_COUNT,
+
+  /**
+    \rst
+    An :math:`\mathrm{atleast}` expression,
+    :math:`\mathrm{atleast}\;e\;(l_1, ..., l_n)`, where :math:`e` is a numeric
+    expression and :math:`l_i` are logical expressions. It evaluates to true if
+    at least :math:`e` expressions :math:`l_i` are true.
+    \endrst
+   */
   ATLEAST = FIRST_LOGICAL_COUNT,
+
+  /**
+    \rst
+    An :math:`\mathrm{atmost}` expression,
+    :math:`\mathrm{atmost}\;e\;(l_1, ..., l_n)`, where :math:`e` is a numeric
+    expression and :math:`l_i` are logical expressions. It evaluates to true if
+    at most :math:`e` expressions :math:`l_i` are true.
+    \endrst
+   */
   ATMOST,
+
+  /**
+    \rst
+    An :math:`\mathrm{exactly}` expression,
+    :math:`\mathrm{exactly}\;e\;(l_1, ..., l_n)`, where :math:`e` is a numeric
+    expression and :math:`l_i` are logical expressions. It evaluates to true if
+    exactly :math:`e` expressions :math:`l_i` are true.
+    \endrst
+   */
   EXACTLY,
+
+  /**
+    \rst
+    The negation of an :math:`\mathrm{atleast}` expression,
+    :math:`!\mathrm{atleast}\;e\;(l_1, ..., l_n)`.
+    \endrst
+   */
   NOT_ATLEAST,
+
+  /**
+    \rst
+    The negation of an :math:`\mathrm{atmost}` expression,
+    :math:`!\mathrm{atmost}\;e\;(l_1, ..., l_n)`.
+    \endrst
+   */
   NOT_ATMOST,
+
+  /**
+    \rst
+    The negation of an :math:`\mathrm{exactly}` expression,
+    :math:`!\mathrm{exactly}\;e\;(l_1, ..., l_n)`.
+    \endrst
+   */
   NOT_EXACTLY,
+
+  /** The last logical count expression kind. */
   LAST_LOGICAL_COUNT = NOT_EXACTLY,
 
   /**
