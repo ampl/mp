@@ -370,7 +370,7 @@ enum Kind {
     where :math:`c` is a logical expression representing condition, while
     :math:`e_1` and :math:`e_2` are numeric expressions. The expression
     evaluates to :math:`e_1` if :math:`c` is true and to :math:`e_2` otherwise.
-    If :math:`e_2` is omitted, it is assumed to be zero.
+    If the else clause is omitted, :math:`e_2` is assumed to be zero.
     \endrst
    */
   IF,
@@ -380,19 +380,19 @@ enum Kind {
     A piecewise-linear term,
     :math:`\verb|<<|b_1, ..., b_n; s_1, ..., s_{n + 1}\verb|>> | r`,
     where :math:`b_i` are breakpoints, :math:`s_i` are slopes and :math:`r` is
-    a reference.
+    a `reference <mp::expr::FIRST_REFERENCE>`.
     \endrst
    */
   PLTERM,
 
   /**
     \rst
-    A function call, :math:`f(e_1, ..., e_n)`.
+    A function call, :math:`f(e_1, ..., e_n)`, where :math:`f` is a function
+    name and :math:`e_i` are numeric or string expressions.
     \endrst
    */
   CALL,
 
-  // Iterated expressions.
   // The term "iterated" in the context of operators and expressions comes
   // from the article "AMPL: A Mathematical Programming Language" and is
   // used to denote operators indexed over sets.
@@ -407,6 +407,8 @@ enum Kind {
   /**
     \rst
     A vararg expression, :math:`\mathrm{min}` or :math:`\mathrm{max}`.
+    Vararg expression kinds are in the range
+    [`~mp::expr::FIRST_VARARG`, `~mp::expr::LAST_VARARG`].
     \endrst
    */
   FIRST_VARARG = FIRST_ITERATED,
@@ -487,7 +489,7 @@ enum Kind {
 
   /**
     \rst
-    A logical NOT expression, :math:`!l`.
+    A logical not, :math:`!l`, where :math:`l` is a logical expression.
     \endrst
    */
   NOT,
@@ -651,7 +653,7 @@ enum Kind {
     where :math:`c` is a logical expression representing condition, while
     :math:`l_1` and :math:`l_2` are logical expressions. The expression
     evaluates to :math:`l_1` if :math:`c` is true and to :math:`l_2` otherwise.
-    If :math:`l_2` is omitted, it is assumed to be true.
+    If the else clause is omitted, :math:`l_2` is assumed to be true.
     \endrst
    */
   IMPLICATION,
@@ -665,33 +667,59 @@ enum Kind {
    */
   FIRST_ITERATED_LOGICAL,
 
+  /**
+    \rst
+    An :math:`\mathrm{exists}` expression,
+    :math:`\mathrm{exists}(l_1, ..., l_n)`, where :math:`l_i` are logical
+    expressions. It evaluates to true if at least one :math:`l_i` is true.
+    \endrst
+   */
   EXISTS = FIRST_ITERATED_LOGICAL,
+
+  /**
+    \rst
+    A :math:`\mathrm{forall}` expression,
+    :math:`\mathrm{forall}(l_1, ..., l_n)`, where :math:`l_i` are logical
+    expressions. It evaluates to true if all :math:`l_i` are true.
+    \endrst
+   */
   FORALL,
 
   /** The last iterated logical expression kind. */
   LAST_ITERATED_LOGICAL = FORALL,
 
-  // Pairwise expressions.
   /**
     \rst
-    A pairwise expression (``alldiff`` or ``!alldiff``).
-    Example: ``alldiff{i in I} x[i]``, where ``I`` is a set and ``x`` is a
-    variable.
+    The first pairwise expression kind. Pairwise expression kinds are in the
+    range [`~mp::expr::FIRST_PAIRWISE`, `~mp::expr::LAST_PAIRWISE`].
     \endrst
    */
   FIRST_PAIRWISE,
+
+  /**
+    \rst
+    An alldifferent expression, :math:`\mathrm{alldiff}(e_1, ..., e_n)`,
+    where :math:`e_i` are numeric expressions. It evaluates to true if all
+    :math:`e_i` take different values.
+    \endrst
+   */
   ALLDIFF = FIRST_PAIRWISE,
+
+  /**
+    \rst
+    The negation of an alldifferent expression,
+    :math:`!\mathrm{alldiff}(e_1, ..., e_n)`.
+    \endrst
+   */
   NOT_ALLDIFF,
+
+  /** The last pairwise expression kind. */
   LAST_PAIRWISE = NOT_ALLDIFF,
 
   /** The last logical expression kind. */
   LAST_LOGICAL = LAST_PAIRWISE,
 
-  /**
-    \rst
-    A string such as "abc".
-    \endrst
-   */
+  /** A string such as "abc". */
   STRING,
 
   /**
