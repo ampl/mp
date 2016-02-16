@@ -34,7 +34,13 @@ namespace mp {
 /** Expression information. */
 namespace expr {
 
-/** Expression kind. */
+/**
+  Expression kind.
+  Both AMPL-like and mathematical notation is given for each expression in the
+  descriptions below as in :math:`\mathrm{abs}(x) = |x|`, unless they are
+  identical such as :math:`\mathrm{sin}(x)` or there is no standard
+  mathematical notation.
+  */
 enum Kind {
   /** An unknown expression. */
   UNKNOWN = 0,
@@ -97,8 +103,6 @@ enum Kind {
    */
   MINUS = FIRST_UNARY,
 
-  // Give both AMPL and mathematical notation of each function as in
-  // abs(x) = |x|, unless they are identical as in sin(x).
   /**
     \rst
     The absolute value function, :math:`\mathrm{abs}(x) = |x|`.
