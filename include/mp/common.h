@@ -31,6 +31,35 @@
 /** The mp namespace. */
 namespace mp {
 
+/** Variable information */
+namespace var {
+/** Variable type. */
+enum Type {
+  CONTINUOUS, /**< A continuous variable. */
+  INTEGER     /**< An integer variable. */
+};
+}
+
+/** Objective information. */
+namespace obj {
+/** Objective type. */
+enum Type {
+  MIN = 0, /**< A minimization objective. */
+  MAX = 1  /**< A maximization objective. */
+};
+}
+
+/** Function information. */
+namespace func {
+/** Function type. */
+enum Type {
+  /** A numeric function. */
+  NUMERIC  = 0,
+  /** A symbolic function accepting numeric and string arguments. */
+  SYMBOLIC = 1
+};
+}
+
 /** Expression information. */
 namespace expr {
 
@@ -741,8 +770,6 @@ enum Kind {
   LAST_EXPR = IFSYM
 };
 
-int nl_opcode(expr::Kind kind);
-
 /**
   \rst
   Returns the string representation of this expression kind.
@@ -752,6 +779,9 @@ int nl_opcode(expr::Kind kind);
   \endrst
  */
 const char *str(expr::Kind kind);
+
+/** Returns the NL opcode for the given expression kind. */
+int nl_opcode(expr::Kind kind);
 }  // namespace expr
 
 namespace internal {
@@ -824,35 +854,6 @@ inline int expr::nl_opcode(expr::Kind kind) {
 inline const char *expr::str(expr::Kind kind) {
   assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
   return internal::ExprInfo::INFO[kind].str;
-}
-
-/** Function information. */
-namespace func {
-/** Function type. */
-enum Type {
-  /** A numeric function. */
-  NUMERIC  = 0,
-  /** A symbolic function accepting numeric and string arguments. */
-  SYMBOLIC = 1
-};
-}
-
-/** Variable information */
-namespace var {
-/** Variable type. */
-enum Type {
-  CONTINUOUS, /**< A continuous variable. */
-  INTEGER     /**< An integer variable. */
-};
-}
-
-/** Objective information. */
-namespace obj {
-/** Objective type. */
-enum Type {
-  MIN = 0, /**< A minimization objective. */
-  MAX = 1  /**< A maximization objective. */
-};
 }
 
 // Complementarity namespace.
