@@ -35,11 +35,13 @@ namespace mp {
 namespace expr {
 
 /**
+  \rst
   Expression kind.
   Both AMPL-like and mathematical notation is given for each expression in the
   descriptions below as in :math:`\mathrm{abs}(x) = |x|`, unless they are
   identical such as :math:`\mathrm{sin}(x)` or there is no standard
   mathematical notation.
+  \endrst
   */
 enum Kind {
   /** An unknown expression. */
