@@ -31,11 +31,6 @@
 /** The mp namespace. */
 namespace mp {
 
-namespace internal {
-// Suppresses warnings about unused variables.
-inline void Unused(...) {}
-}
-
 /** Expression information. */
 namespace expr {
 
@@ -752,6 +747,9 @@ const char *str(expr::Kind kind);
 }  // namespace expr
 
 namespace internal {
+
+// Suppresses warnings about unused variables.
+inline void Unused(...) {}
 
 template<bool B, typename T = void>
 struct enable_if {};
