@@ -869,8 +869,6 @@ inline bool Is(expr::Kind k) {
   return ExprType::FIRST_KIND <= kind && kind <= ExprType::LAST_KIND;
 }
 
-int precedence(expr::Kind kind);
-
 // Expression information.
 class ExprInfo {
  private:
@@ -881,13 +879,7 @@ class ExprInfo {
 
  public:
   int opcode;
-  int precedence;
   const char *str;
-
-  friend int precedence(expr::Kind kind) {
-    assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
-    return internal::ExprInfo::INFO[kind].precedence;
-  }
 };
 
 // Maximum NL opcode.

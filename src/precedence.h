@@ -23,6 +23,8 @@
 #ifndef MP_PRECEDENCE_H_
 #define MP_PRECEDENCE_H_
 
+#include "mp/common.h"
+
 namespace mp {
 namespace prec {
 enum Precedence {
@@ -42,9 +44,24 @@ enum Precedence {
   UNARY,             // + - (unary)
   CALL,              // a function call including functional forms of
                      // min and max
-  PRIMARY            // variable or constant
+  PRIMARY            // variable, string or constant
 };
 }
+
+prec::Precedence precedence(expr::Kind kind);
+
+namespace internal {
+class PrecInfo {
+ private:
+  static const prec::Precedence INFO[expr::LAST_EXPR + 1];
+  friend prec::Precedence mp::precedence(expr::Kind kind);
+};
 }
+
+inline prec::Precedence precedence(expr::Kind kind) {
+  assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
+  return internal::PrecInfo::INFO[kind];
+}
+}  // namespace mp
 
 #endif  // MP_PRECEDENCE_H_

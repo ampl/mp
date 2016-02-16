@@ -192,8 +192,9 @@ int main(int argc, char **argv) {
   for (std::size_t i = 0; i < num_exprs; ++i)
     expr_info[info[i].kind] = info + i;
 
+  // Write expression info.
   f.print("const mp::internal::ExprInfo mp::internal::ExprInfo::INFO[] = {{\n");
-  f.print("  {{-1, prec::UNKNOWN, \"unknown\"}}");
+  f.print("  {{-1, \"unknown\"}}");
   for (std::size_t i = 1; i <= expr::LAST_EXPR; ++i) {
     f.print(",\n");
     const ExprInfo *ei = expr_info[i];
@@ -201,8 +202,21 @@ int main(int argc, char **argv) {
       fmt::print(stderr, "unknown expression kind {}", i);
       return 1;
     }
-    f.print("  {{{}, prec::{}, \"{}\"}}", ei->opcode, ei->prec_str, ei->str);
+    f.print("  {{{}, \"{}\"}}", ei->opcode, ei->str);
+  }
+  f.print("\n}};\n\n");
+
+  // Write precedence info.
+  f.print("const mp::prec::Precedence mp::internal::PrecInfo::INFO[] = {{\n");
+  f.print("  prec::UNKNOWN");
+  for (std::size_t i = 1; i <= expr::LAST_EXPR; ++i) {
+    f.print(",\n");
+    const ExprInfo *ei = expr_info[i];
+    if (!ei) {
+      fmt::print(stderr, "unknown expression kind {}", i);
+      return 1;
+    }
+    f.print("  prec::{}", ei->prec_str);
   }
   f.print("\n}};\n");
-  return 0;
 }

@@ -50,7 +50,7 @@ class ExprWriter :
 
   typedef BasicExprVisitor<ExprWriter<ExprTypes>, void, ExprTypes> Base;
 
-  static int precedence(Expr e) { return internal::precedence(e.kind()); }
+  static int precedence(Expr e) { return mp::precedence(e.kind()); }
 
   // Writes an argument list surrounded by parentheses.
   template <typename Iter>

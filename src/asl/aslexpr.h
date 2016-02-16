@@ -272,8 +272,6 @@ class ExprBase {
     std::size_t opcode = reinterpret_cast<std::size_t>(impl_->op);
     return mp::internal::GetOpCodeInfo(static_cast<int>(opcode)).kind;
   }
-
-  int precedence() const { return mp::internal::precedence(kind()); }
 };
 }  // namespace internal
 
