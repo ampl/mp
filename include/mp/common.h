@@ -26,8 +26,6 @@
 #include <cassert>
 #include <cstddef>  // for std::size_t
 
-#define MP_DISPATCH(call) static_cast<Impl*>(this)->call
-
 /** The mp namespace. */
 namespace mp {
 
@@ -60,7 +58,7 @@ enum Type {
 };
 }
 
-/** Complementarity information */
+/** Complementarity information. */
 namespace complement {
 /** Flags for complementarity constraints. */
 enum {
@@ -69,7 +67,7 @@ enum {
 };
 }
 
-/** Suffix information */
+/** Suffix information. */
 namespace suf {
 // Suffix kinds.
 enum {
@@ -843,6 +841,8 @@ const char *str(expr::Kind kind);
 /** Returns the NL opcode for the given expression kind. */
 int nl_opcode(expr::Kind kind);
 }  // namespace expr
+
+#define MP_DISPATCH(call) static_cast<Impl*>(this)->call
 
 namespace internal {
 

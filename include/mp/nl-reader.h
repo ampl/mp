@@ -2102,7 +2102,9 @@ class NameReader {
   \rst
   Reads an optimization problem in the NL format from the string *str*
   and sends notifications of the problem components to the *handler* object.
-  
+  The handler class can be derived from `mp::NLHandler` or provide a compatible
+  interface.
+
   Both *str* and *name* can be C strings or ``std::string`` objects.
   The *name* argument is used as the name of the input when reporting errors.
   *flags* can be either 0, which is the default, to read all constructs in
@@ -2142,6 +2144,8 @@ void ReadNLString(NLStringRef str, Handler &handler,
   \rst
   Reads an optimization problem in the NL format from the file *filename*
   and sends notifications of the problem components to the *handler* object.
+  The handler class can be derived from `mp::NLHandler` or provide a compatible
+  interface.
 
   The *filename* argument can be a C string or an ``std::string`` object.
   *flags* can be either 0, which is the default, to read all constructs in
