@@ -1,0 +1,2 @@
+# Don't include thirdparty projects in the language stats.
+thirdparty/* linguist-vendored
