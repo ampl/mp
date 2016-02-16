@@ -73,7 +73,7 @@ keywds[] = {
 
  static Option_Info
 Oinfo = { "gjh", "gjh", "gjh_options", keywds, nkeywds,
-	  ASL_OI_want_funcadd, 0, usage_msg };
+	  ASL_OI_want_funcadd, 0, usage_msg, 0,0,0,0, 20160215 };
 
  int
 main(int argc, char **argv)
@@ -105,7 +105,7 @@ main(int argc, char **argv)
 	if (y = pi0)
 		for(i = 0; i < m; i++)
 			y[i] = -y[i];
-	nh = sphsetup(no, w != 0, y != 0, 0);
+	nh = sphsetup(no, w != 0, m > 0, 0);
 	strcpy(stub_end, ".gjh");
 	if (!(f = fopen(filename, "w"))) {
 		printf("Cannot open \"%s\"\n", filename);
