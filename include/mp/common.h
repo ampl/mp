@@ -831,9 +831,13 @@ enum Type {
 };
 }
 
+/** Variable information */
 namespace var {
-// Variable type.
-enum Type { CONTINUOUS, INTEGER };
+/** Variable type. */
+enum Type {
+  CONTINUOUS, /**< A continuous variable. */
+  INTEGER     /**< An integer variable. */
+};
 }
 
 /** Objective information. */
@@ -1021,10 +1025,10 @@ struct ProblemInfo {
   // Information about names
   // -----------------------
 
-  /** Length of longest constraint name (if ``stub.row`` exists). */
+  /** Length of longest constraint name if names are available. */
   int max_con_name_len;
 
-  /** Length of longest variable name (if ``stub.col`` exists). */
+  /** Length of longest variable name if names are available. */
   int max_var_name_len;
 
   // Information about common expressions
