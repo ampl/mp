@@ -11,6 +11,12 @@ Header: :file:`mp/common.h`
 
 .. doxygenenum:: mp::expr::Kind
 
+.. doxygennamespace:: mp::complement
+
+.. doxygennamespace:: mp::suf
+
+.. doxygenenum:: mp::sol::Status
+
 .. doxygenfunction:: mp::expr::str
 
 .. doxygenfunction:: mp::expr::nl_opcode

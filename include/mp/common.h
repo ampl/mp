@@ -60,6 +60,61 @@ enum Type {
 };
 }
 
+/** Complementarity information */
+namespace complement {
+/** Flags for complementarity constraints. */
+enum {
+  INF_LB = 1,
+  INF_UB = 2
+};
+}
+
+/** Suffix information */
+namespace suf {
+// Suffix kinds.
+enum {
+  VAR     =    0,  /**< Applies to variables. */
+  CON     =    1,  /**< Applies to constraints. */
+  OBJ     =    2,  /**< Applies to objectives. */
+  PROBLEM =    3,  /**< Applies to problems. */
+  NUM_KINDS,       /**< The number of suffix kinds. */
+  MASK    =    3,  /**< Mask for suffix kind. */
+  FLOAT   =    4,  /**< Suffix values are floating-point numbers. */
+  IODECL  =    8,  /**< Declare an INOUT suffix. */
+  OUTPUT  = 0x10,  /**< Output suffix: return values from a solver. */
+  INPUT   = 0x20,  /**< Input suffix: values were passed to a solver. */
+  OUTONLY = 0x40   /**< Output only: reject as an input value. */
+};
+}
+
+namespace sol {
+// Solution status.
+enum Status {
+  UNKNOWN     =  -1,
+
+  // An optimal solution found for an optimization problem or a feasible
+  // solution found for a satisfaction problem.
+  SOLVED      =   0,
+
+  // Solution returned but it can be non-optimal or even infeasible.
+  UNSOLVED    = 100,
+
+  // Problem is infeasible.
+  INFEASIBLE  = 200,
+
+  // Problem is unbounded.
+  UNBOUNDED   = 300,
+
+  // Stopped by a limit, e.g. on iterations or time.
+  LIMIT       = 400,
+
+  FAILURE     = 500,
+
+  // Interrupted by the user.
+  INTERRUPTED = 600
+};
+}
+
 /** Expression information. */
 namespace expr {
 
@@ -772,7 +827,7 @@ enum Kind {
 
 /**
   \rst
-  Returns the string representation of this expression kind.
+  Returns the string representation of the given expression kind.
   Expressions of different kinds can have identical strings.
   For example, `~mp::expr::POW`, `~mp::expr::POW_CONST_BASE` and
   `~mp::expr::POW_CONST_EXP` all have the same representation "^".
@@ -854,57 +909,6 @@ inline int expr::nl_opcode(expr::Kind kind) {
 inline const char *expr::str(expr::Kind kind) {
   assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
   return internal::ExprInfo::INFO[kind].str;
-}
-
-// Complementarity namespace.
-namespace complement {
-// Flags for complementarity constraints.
-enum { INF_LB = 1, INF_UB = 2 };
-}
-
-namespace suf {
-// Suffix kinds.
-enum {
-  VAR     =    0,  // Applies to variables.
-  CON     =    1,  // Applies to constraints.
-  OBJ     =    2,  // Applies to objectives.
-  PROBLEM =    3,  // Applies to problems.
-  NUM_KINDS,       // The number of suffix kinds.
-  MASK    =    3,  // Mask for suffix kind.
-  FLOAT   =    4,  // Suffix values are floating-point numbers.
-  IODECL  =    8,  // Tell AMPL to make this an INOUT suffix.
-  OUTPUT  = 0x10,  // Output suffix: return values from a solver.
-  INPUT   = 0x20,  // Input suffix: values were passed to a solver.
-  OUTONLY = 0x40   // Output only: reject as an input value.
-};
-}
-
-namespace sol {
-// Solution status.
-enum Status {
-  UNKNOWN     =  -1,
-
-  // An optimal solution found for an optimization problem or a feasible
-  // solution found for a satisfaction problem.
-  SOLVED      =   0,
-
-  // Solution returned but it can be non-optimal or even infeasible.
-  UNSOLVED    = 100,
-
-  // Problem is infeasible.
-  INFEASIBLE  = 200,
-
-  // Problem is unbounded.
-  UNBOUNDED   = 300,
-
-  // Stopped by a limit, e.g. on iterations or time.
-  LIMIT       = 400,
-
-  FAILURE     = 500,
-
-  // Interrupted by the user.
-  INTERRUPTED = 600
-};
 }
 
 /** Information about an optimization problem. */

@@ -401,7 +401,13 @@ class NLHandler {
     internal::Unused(handler, &expr, position);
   }
 
-  /** Receives notification of a complementarity relation. */
+  /**
+    \rst
+    Receives notification of a complementarity relation.
+    *flags* is a bitwise OR of the flags defined in the `mp::complement`
+    namespace.
+    \endrst
+   */
   void OnComplementarity(int con_index, int var_index, int flags) {
     internal::Unused(con_index, var_index, flags);
   }
