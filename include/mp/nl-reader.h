@@ -1777,7 +1777,7 @@ void NLReader<Reader, Handler>::ReadBounds() {
         if (var_index == 0 || var_index > header_.num_vars)
           reader_.ReportError("integer {} out of bounds", var_index);
         --var_index;
-        int mask = comp::INF_LB | comp::INF_UB;
+        int mask = complement::INF_LB | complement::INF_UB;
         handler_.OnComplementarity(i, var_index, flags & mask);
         reader_.ReadTillEndOfLine();
         continue;

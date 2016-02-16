@@ -849,9 +849,8 @@ enum Type {
 };
 }
 
-// Complementarity namespace. It would make more sense to call it compl,
-// but the latter is a reserved word in C++.
-namespace comp {
+// Complementarity namespace.
+namespace complement {
 // Flags for complementarity constraints.
 enum { INF_LB = 1, INF_UB = 2 };
 }
