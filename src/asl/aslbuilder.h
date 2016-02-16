@@ -74,7 +74,7 @@ class ASLBuilder {
   ASL *asl_;
   bool own_asl_;
   efunc **r_ops_;
-  efunc *standard_opcodes_[expr::MAX_OPCODE + 1];
+  efunc *standard_opcodes_[mp::internal::MAX_OPCODE + 1];
   int flags_;
   int nz_;
   int nderp_;

@@ -270,7 +270,7 @@ class ExprBase {
   // Returns the expression kind.
   expr::Kind kind() const {
     std::size_t opcode = reinterpret_cast<std::size_t>(impl_->op);
-    return expr::GetOpCodeInfo(static_cast<int>(opcode)).kind;
+    return mp::internal::GetOpCodeInfo(static_cast<int>(opcode)).kind;
   }
 
   int precedence() const { return mp::internal::precedence(kind()); }

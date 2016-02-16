@@ -3,7 +3,7 @@
 #include "mp/common.h"
 #include "precedence.h"
 
-const mp::expr::OpCodeInfo mp::expr::OpCodeInfo::INFO[] = {
+const mp::internal::OpCodeInfo mp::internal::OpCodeInfo::INFO[] = {
   {expr::ADD, expr::FIRST_BINARY},
   {expr::SUB, expr::FIRST_BINARY},
   {expr::MUL, expr::FIRST_BINARY},

@@ -1305,7 +1305,7 @@ class NLReader {
 
   int ReadOpCode() {
     int opcode = reader_.ReadUInt();
-    if (opcode > expr::MAX_OPCODE)
+    if (opcode > internal::MAX_OPCODE)
       reader_.ReportError("invalid opcode {}", opcode);
     reader_.ReadTillEndOfLine();
     return opcode;
@@ -1570,7 +1570,7 @@ typename Handler::NumericExpr
 template <typename Reader, typename Handler>
 typename Handler::NumericExpr
     NLReader<Reader, Handler>::ReadNumericExpr(int opcode) {
-  const expr::OpCodeInfo &info = expr::GetOpCodeInfo(opcode);
+  const internal::OpCodeInfo &info = internal::GetOpCodeInfo(opcode);
   expr::Kind kind = info.kind;
   switch (info.first_kind) {
   case expr::FIRST_UNARY:
@@ -1654,7 +1654,7 @@ typename Handler::LogicalExpr NLReader<Reader, Handler>::ReadLogicalExpr() {
 template <typename Reader, typename Handler>
 typename Handler::LogicalExpr
     NLReader<Reader, Handler>::ReadLogicalExpr(int opcode) {
-  const expr::OpCodeInfo &info = expr::GetOpCodeInfo(opcode);
+  const internal::OpCodeInfo &info = internal::GetOpCodeInfo(opcode);
   expr::Kind kind = info.kind;
   switch (info.first_kind) {
   case expr::NOT:
@@ -1670,7 +1670,7 @@ typename Handler::LogicalExpr
   case expr::FIRST_LOGICAL_COUNT: {
     NumericExpr lhs = ReadNumericExpr();
     char c = reader_.ReadChar();
-    if (c != 'o' || expr::GetOpCodeInfo(ReadOpCode()).kind != expr::COUNT)
+    if (c != 'o' || internal::GetOpCodeInfo(ReadOpCode()).kind != expr::COUNT)
       reader_.ReportError("expected count expression");
     return handler_.OnLogicalCount(kind, lhs, ReadCountExpr());
   }

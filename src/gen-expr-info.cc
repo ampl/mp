@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
         "#include \"mp/common.h\"\n"
         "#include \"precedence.h\"\n"
         "\n"
-        "const mp::expr::OpCodeInfo mp::expr::OpCodeInfo::INFO[] = {{\n"
+        "const mp::internal::OpCodeInfo mp::internal::OpCodeInfo::INFO[] = {{\n"
         );
   for (std::size_t i = 0; i < num_opcodes; ++i) {
     if (i != 0)

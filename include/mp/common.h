@@ -738,25 +738,6 @@ enum Kind {
   LAST_EXPR = IFSYM
 };
 
-// Maximum NL opcode.
-enum { MAX_OPCODE = 82 };
-
-class OpCodeInfo {
- private:
-  static const OpCodeInfo INFO[MAX_OPCODE + 1];
-
- public:
-  expr::Kind kind;
-  expr::Kind first_kind;  // First member of a kind.
-
-  friend const OpCodeInfo &GetOpCodeInfo(int opcode);
-};
-
-inline const OpCodeInfo &GetOpCodeInfo(int opcode) {
-  assert(opcode >= 0 && opcode <= MAX_OPCODE);
-  return OpCodeInfo::INFO[opcode];
-}
-
 int nl_opcode(expr::Kind kind);
 
 /**
@@ -808,6 +789,25 @@ class ExprInfo {
     return internal::ExprInfo::INFO[kind].precedence;
   }
 };
+
+// Maximum NL opcode.
+enum { MAX_OPCODE = 82 };
+
+class OpCodeInfo {
+ private:
+  static const OpCodeInfo INFO[MAX_OPCODE + 1];
+
+ public:
+  expr::Kind kind;
+  expr::Kind first_kind;  // First member of a kind.
+
+  friend const OpCodeInfo &GetOpCodeInfo(int opcode);
+};
+
+inline const OpCodeInfo &GetOpCodeInfo(int opcode) {
+  assert(opcode >= 0 && opcode <= MAX_OPCODE);
+  return OpCodeInfo::INFO[opcode];
+}
 }  // namespace internal
 
 inline int expr::nl_opcode(expr::Kind kind) {
