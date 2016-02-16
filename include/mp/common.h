@@ -856,17 +856,17 @@ enum { INF_LB = 1, INF_UB = 2 };
 namespace suf {
 // Suffix kinds.
 enum {
-  VAR     =  0,  // Applies to variables.
-  CON     =  1,  // Applies to constraints.
-  OBJ     =  2,  // Applies to objectives.
-  PROBLEM =  3,  // Applies to problems.
-  NUM_KINDS,     // The number of suffix kinds.
-  MASK    =  3,  // Mask for suffix kind.
-  FLOAT   =  4,  // Suffix values are floating-point numbers.
-  IODECL  =  8,  // Tell AMPL to make this an INOUT suffix.
-  OUTPUT  = 16,  // Output suffix: return values to AMPL.
-  INPUT   = 32,  // Input suffix: values were received from AMPL.
-  OUTONLY = 64   // Output only: reject as an input value.
+  VAR     =    0,  // Applies to variables.
+  CON     =    1,  // Applies to constraints.
+  OBJ     =    2,  // Applies to objectives.
+  PROBLEM =    3,  // Applies to problems.
+  NUM_KINDS,       // The number of suffix kinds.
+  MASK    =    3,  // Mask for suffix kind.
+  FLOAT   =    4,  // Suffix values are floating-point numbers.
+  IODECL  =    8,  // Tell AMPL to make this an INOUT suffix.
+  OUTPUT  = 0x10,  // Output suffix: return values from a solver.
+  INPUT   = 0x20,  // Input suffix: values were passed to a solver.
+  OUTONLY = 0x40   // Output only: reject as an input value.
 };
 }
 
