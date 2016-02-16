@@ -436,7 +436,7 @@ TEST(BinaryReaderTest, ReadString) {
   TestReadString(&BinaryReader<EndiannessConverter>::ReadString, true);
 }
 
-TEST(NLTest, ArithKind) {
+TEST(NLReaderTest, ArithKind) {
   namespace arith = mp::arith;
   EXPECT_GE(arith::GetKind(), arith::UNKNOWN);
   EXPECT_LE(arith::GetKind(), arith::LAST);
@@ -797,7 +797,7 @@ class TestNLHandler {
   void EndInput() {}
 };
 
-TEST(NLTest, WriteTextHeader) {
+TEST(NLReaderTest, WriteTextHeader) {
   NLHeader h = MakeTestHeader();
   fmt::MemoryWriter w;
   w << h;
@@ -815,7 +815,7 @@ TEST(NLTest, WriteTextHeader) {
       w.str());
 }
 
-TEST(NLTest, WriteBinaryHeader) {
+TEST(NLReaderTest, WriteBinaryHeader) {
   NLHeader header = NLHeader();
   header.format = NLHeader::BINARY;
   header.num_ampl_options = 3;
@@ -1047,12 +1047,12 @@ NLHeader MakeHeader() {
 
 // Test that the .nl reader accepts expression class hierarchy rather than
 // a single expression type.
-TEST(NLTest, ExprHierarchy) {
+TEST(NLReaderTest, ExprHierarchy) {
   TestNLHandler2 handler;
   ReadNLString(FormatHeader(MakeHeader()), handler);
 }
 
-TEST(NLTest, NoNewlineAtEOF) {
+TEST(NLReaderTest, NoNewlineAtEOF) {
   TestNLHandler handler;
   EXPECT_THROW_MSG(ReadNLString("g\n"
     " 1 1 0\n"
@@ -1081,7 +1081,7 @@ std::string ReadNL(std::string body, bool var_bounds = true) {
 #define EXPECT_READ_ERROR(nl_body, error) \
   EXPECT_THROW_MSG(ReadNL(nl_body), ReadError, error)
 
-TEST(NLTest, ReadObj) {
+TEST(NLReaderTest, ReadObj) {
   EXPECT_READ("minimize o1: ;", "O1 0\nn0\n");
   EXPECT_READ("maximize o0: v0;", "O0 1\nv0\n");
   EXPECT_READ("maximize o5: v0;", "O5 10\nv0\n");
@@ -1103,12 +1103,12 @@ void CheckReadInt(char code) {
     "(input):18:2: number is too big");
 }
 
-TEST(NLTest, ReadCon) {
+TEST(NLReaderTest, ReadCon) {
   EXPECT_READ("c0: ;", "C0\nn0\n");
   EXPECT_READ("c0: u13(0);", "C0\no13\nn0\n");
 }
 
-TEST(NLTest, ReadNumericConstant) {
+TEST(NLReaderTest, ReadNumericConstant) {
   EXPECT_READ("c0: 4.2;", "C0\nn4.2\n");
   EXPECT_READ("c0: -100;", "C0\nn-1e+2\n");
   CheckReadInt<short>('s');
@@ -1118,29 +1118,29 @@ TEST(NLTest, ReadNumericConstant) {
     CheckReadInt<long>('l');
 }
 
-TEST(NLTest, ReadVariable) {
+TEST(NLReaderTest, ReadVariable) {
   EXPECT_READ("c0: v4;", "C0\nv4\n");
   EXPECT_READ_ERROR("C0\nv-1\n", "(input):18:2: expected unsigned integer");
   EXPECT_READ_ERROR("C0\nv6\n", "(input):18:2: integer 6 out of bounds");
 }
 
-TEST(NLTest, ReadCommonExprRef) {
+TEST(NLReaderTest, ReadCommonExprRef) {
   EXPECT_READ("c0: e0;", "C0\nv5\n");
 }
 
-TEST(NLTest, ReadUnaryExpr) {
+TEST(NLReaderTest, ReadUnaryExpr) {
   EXPECT_READ("c0: u13(v3);", "C0\no13\nv3\n");
 }
 
-TEST(NLTest, ReadBinaryExpr) {
+TEST(NLReaderTest, ReadBinaryExpr) {
   EXPECT_READ("c0: b0(v1, 42);", "C0\no0\nv1\nn42\n");
 }
 
-TEST(NLTest, ReadIfExpr) {
+TEST(NLReaderTest, ReadIfExpr) {
   EXPECT_READ("c0: if l1 then v1 else v2;", "C0\no35\nn1\nv1\nv2\n");
 }
 
-TEST(NLTest, ReadPiecewiseLinearExpr) {
+TEST(NLReaderTest, ReadPiecewiseLinearExpr) {
   EXPECT_READ("c0: <<0; -1, 1>> v1;", "C0\no64\n2\nn-1.0\ns0\nl1\nv1\n");
   EXPECT_READ_ERROR("C0\no64\n-1\nn0\nv1\n",
     "(input):19:1: expected unsigned integer");
@@ -1154,7 +1154,7 @@ TEST(NLTest, ReadPiecewiseLinearExpr) {
     "(input):23:1: expected reference");
 }
 
-TEST(NLTest, ReadCallExpr) {
+TEST(NLReaderTest, ReadCallExpr) {
   EXPECT_READ("c0: f1(v1, 0);", "C0\nf1 2\nv1\nn0\n");
   EXPECT_READ_ERROR("C0\nf-1 1\nn0\n",
     "(input):18:2: expected unsigned integer");
@@ -1163,31 +1163,31 @@ TEST(NLTest, ReadCallExpr) {
   EXPECT_READ_ERROR("C0\nf1 1\nx\n", "(input):19:1: expected expression");
 }
 
-TEST(NLTest, ReadVarArgExpr) {
+TEST(NLReaderTest, ReadVarArgExpr) {
   EXPECT_READ("c0: v11(v4, 5, v1);", "C0\no11\n3\nv4\nn5\nv1\n");
   EXPECT_READ("c0: v12(v4);", "C0\no12\n1\nv4\n");
   EXPECT_READ_ERROR("C0\no12\n0\n" , "(input):19:1: too few arguments");
 }
 
-TEST(NLTest, ReadSumExpr) {
+TEST(NLReaderTest, ReadSumExpr) {
   EXPECT_READ("c0: sum(v4, 5, v1);", "C0\no54\n3\nv4\nn5\nv1\n");
   EXPECT_READ_ERROR("C0\no54\n2\nv4\nn5\n", "(input):19:1: too few arguments");
 }
 
-TEST(NLTest, ReadCountExpr) {
+TEST(NLReaderTest, ReadCountExpr) {
   EXPECT_READ("c0: count(l1, r24(v1, 42), l0);",
                "C0\no59\n3\nn1\no24\nv1\nn42\nn0\n");
   EXPECT_READ("c0: count(l1);", "C0\no59\n1\nn1\n");
   EXPECT_READ_ERROR("C0\no59\n0\n", "(input):19:1: too few arguments");
 }
 
-TEST(NLTest, ReadNumberOfExpr) {
+TEST(NLReaderTest, ReadNumberOfExpr) {
   EXPECT_READ("c0: numberof v4 in (5, v1);", "C0\no60\n3\nv4\nn5\nv1\n");
   EXPECT_READ("c0: numberof v4 in ();", "C0\no60\n1\nv4\n");
   EXPECT_READ_ERROR("C0\no60\n0\n", "(input):19:1: too few arguments");
 }
 
-TEST(NLTest, ReadSymbolicNumberOfExpr) {
+TEST(NLReaderTest, ReadSymbolicNumberOfExpr) {
   EXPECT_READ("c0: numberof 'a' in ('b', 42);",
               "C0\no61\n3\nh1:a\nh1:b\nn42\n");
   EXPECT_READ("c0: numberof 42 in ('b', 'c');",
@@ -1196,7 +1196,7 @@ TEST(NLTest, ReadSymbolicNumberOfExpr) {
   EXPECT_READ_ERROR("C0\no61\n1\nx", "(input):20:1: expected expression");
 }
 
-TEST(NLTest, ReadLogicalConstant) {
+TEST(NLReaderTest, ReadLogicalConstant) {
   EXPECT_READ("l0: l0;", "L0\nn0\n");
   EXPECT_READ("l0: l1;", "L0\nn1\n");
   EXPECT_READ("l0: l1;", "L0\nn4.2\n");
@@ -1204,19 +1204,19 @@ TEST(NLTest, ReadLogicalConstant) {
   EXPECT_READ("l0: l1;", "L0\nl1\n");
 }
 
-TEST(NLTest, ReadNotExpr) {
+TEST(NLReaderTest, ReadNotExpr) {
   EXPECT_READ("l0: not l0;", "L0\no34\nn0\n");
 }
 
-TEST(NLTest, ReadBinaryLogicalExpr) {
+TEST(NLReaderTest, ReadBinaryLogicalExpr) {
   EXPECT_READ("l0: bl20(l1, l0);", "L0\no20\nn1\nn0\n");
 }
 
-TEST(NLTest, ReadRelationalExpr) {
+TEST(NLReaderTest, ReadRelationalExpr) {
   EXPECT_READ("l0: r23(v1, 0);", "L0\no23\nv1\nn0\n");
 }
 
-TEST(NLTest, ReadLogicalCountExpr) {
+TEST(NLReaderTest, ReadLogicalCountExpr) {
   EXPECT_READ("l0: lc63(v1, count(l1));", "L0\no63\nv1\no59\n1\nn1\n");
   EXPECT_READ_ERROR("L0\no63\nv1\nn0\n",
     "(input):20:1: expected count expression");
@@ -1224,22 +1224,22 @@ TEST(NLTest, ReadLogicalCountExpr) {
     "(input):20:2: expected count expression");
 }
 
-TEST(NLTest, ReadImplicationExpr) {
+TEST(NLReaderTest, ReadImplicationExpr) {
   EXPECT_READ("l0: l1 ==> l0 else l1;", "L0\no72\nn1\nn0\nn1\n");
 }
 
-TEST(NLTest, ReadIteratedLogicalExpr) {
+TEST(NLReaderTest, ReadIteratedLogicalExpr) {
   EXPECT_READ("l0: il71(l1, l0, l1);", "L0\no71\n3\nn1\nn0\nn1\n");
   EXPECT_READ_ERROR("L0\no71\n2\nn1\nn0\n", "(input):19:1: too few arguments");
 }
 
-TEST(NLTest, ReadAllDiffExpr) {
+TEST(NLReaderTest, ReadAllDiffExpr) {
   EXPECT_READ("l0: alldiff(v4, 5, v1);", "L0\no74\n3\nv4\nn5\nv1\n");
   EXPECT_READ("l0: !alldiff(v4);", "L0\no75\n1\nv4\n");
   EXPECT_READ_ERROR("L0\no74\n0\n", "(input):19:1: too few arguments");
 }
 
-TEST(NLTest, ReadStringLiteral) {
+TEST(NLReaderTest, ReadStringLiteral) {
   EXPECT_READ("c0: f1('');", "C0\nf1 1\nh0:\n");
   EXPECT_READ("c0: f1('abc');", "C0\nf1 1\nh3:abc\n");
   EXPECT_READ("c0: f1('ab\nc');", "C0\nf1 1\nh4:ab\nc\n");
@@ -1255,7 +1255,7 @@ TEST(NLTest, ReadStringLiteral) {
   EXPECT_READ_ERROR("C0\nf1 1\nh3:ab\n", "(input):20:1: expected newline");
 }
 
-TEST(NLTest, ReadSymbolicIfExpr) {
+TEST(NLReaderTest, ReadSymbolicIfExpr) {
   EXPECT_READ("c0: f1(if l1 then v1 else 'abc');",
               "C0\nf1 1\no65\nn1\nv1\nh3:abc\n");
   EXPECT_READ("c0: f1(if l1 then 'abc' else 42);",
@@ -1266,24 +1266,24 @@ TEST(NLTest, ReadSymbolicIfExpr) {
                     "(input):21:1: expected expression");
 }
 
-TEST(NLTest, ReadInvalidOpCode) {
+TEST(NLReaderTest, ReadInvalidOpCode) {
   EXPECT_READ_ERROR("C0\no-1\n", "(input):18:2: expected unsigned integer");
   EXPECT_READ_ERROR("C0\no83\n", "(input):18:2: invalid opcode 83");
 }
 
-TEST(NLTest, ReadInvalidNumericExpr) {
+TEST(NLReaderTest, ReadInvalidNumericExpr) {
   EXPECT_READ_ERROR("C0\nx\n", "(input):18:1: expected expression");
   EXPECT_READ_ERROR("C0\no22\nv1\nn0\n",
         "(input):18:2: expected numeric expression opcode");
 }
 
-TEST(NLTest, ReadInvalidLogicalExpr) {
+TEST(NLReaderTest, ReadInvalidLogicalExpr) {
   EXPECT_READ_ERROR("L0\nx\n", "(input):18:1: expected logical expression");
   EXPECT_READ_ERROR("L0\no0\nv1\nn0\n",
         "(input):18:2: expected logical expression opcode");
 }
 
-TEST(NLTest, ReadVarBounds) {
+TEST(NLReaderTest, ReadVarBounds) {
   EXPECT_THROW_MSG(ReadNL("", false), ReadError,
                    "(input):11:1: segment 'b' missing");
   EXPECT_THROW_MSG(ReadNL("b\n"), ReadError,
@@ -1298,7 +1298,7 @@ TEST(NLTest, ReadVarBounds) {
                    "(input):16:1: expected bound");
 }
 
-TEST(NLTest, ReadConBounds) {
+TEST(NLReaderTest, ReadConBounds) {
   EXPECT_READ("1.1 <= c0; c1 <= 22; c2 = 33; c3; 44 <= c4 <= 55; "
               "c5 complements v1 3; c6 complements v4 2;",
               "r\n21.1\n1 22\n4 33\n3\n0 44 55\n5 7 2\n5 2 5\n");
@@ -1321,7 +1321,7 @@ TEST(NLTest, ReadConBounds) {
             handler.log.str());
 }
 
-TEST(NLTest, ReadLinearObjExpr) {
+TEST(NLReaderTest, ReadLinearObjExpr) {
   EXPECT_READ("o0 2: 1.3 * v1 + 5 * v3;", "G0 2\n1 1.3\n3 5\n");
   EXPECT_READ("o5 4: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4;",
               "G5 4\n1 1\n2 1\n3 1\n4 1\n");
@@ -1334,7 +1334,7 @@ TEST(NLTest, ReadLinearObjExpr) {
 }
 
 // Test that handler's OnLinearObjExpr is not called if NeedObj returns false.
-TEST(NLTest, SkipObj) {
+TEST(NLReaderTest, SkipObj) {
   testing::NiceMock<MockNLHandler> handler;
   EXPECT_CALL(handler, NeedObj(0)).WillOnce(Return(false));
   EXPECT_CALL(handler, OnLinearObjExpr(_, _)).Times(0);
@@ -1344,7 +1344,7 @@ TEST(NLTest, SkipObj) {
 }
 
 // Test that handler's OnLinearObjExpr is called if NeedObj returns true.
-TEST(NLTest, PassObj) {
+TEST(NLReaderTest, PassObj) {
   testing::NiceMock<MockNLHandler> handler;
   EXPECT_CALL(handler, NeedObj(0)).WillOnce(Return(true));
   EXPECT_CALL(handler, OnLinearObjExpr(0, 1)).
@@ -1354,7 +1354,7 @@ TEST(NLTest, PassObj) {
   ReadNLString(FormatHeader(header) + "G0 1\n0 1\n", handler);
 }
 
-TEST(NLTest, ReadLinearConExpr) {
+TEST(NLReaderTest, ReadLinearConExpr) {
   EXPECT_READ("c0 2: 1.3 * v1 + 5 * v3;", "J0 2\n1 1.3\n3 5\n");
   EXPECT_READ("c5 4: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4;",
               "J5 4\n1 1\n2 1\n3 1\n4 1\n");
@@ -1366,7 +1366,7 @@ TEST(NLTest, ReadLinearConExpr) {
   EXPECT_READ_ERROR("J0 1\n5 0\n", "(input):18:1: integer 5 out of bounds");
 }
 
-TEST(NLTest, ReadColumnSizes) {
+TEST(NLReaderTest, ReadColumnSizes) {
   EXPECT_READ("sizes: 1 2 2 4;", "k4\n1\n3\n5\n9\n");
   EXPECT_READ("sizes: 1 2 2 4;", "K4\n1\n2\n2\n4\n");
   EXPECT_READ_ERROR("k3\n", "(input):17:2: expected 4");
@@ -1374,7 +1374,7 @@ TEST(NLTest, ReadColumnSizes) {
   EXPECT_READ_ERROR("k4\n2\n1\n", "(input):19:1: invalid column offset");
 }
 
-TEST(NLTest, ReadInitialValues) {
+TEST(NLReaderTest, ReadInitialValues) {
   EXPECT_READ("v4 := 1.1; v3 := 0; v2 := 1; v1 := 2; v0 := 3;",
               "x5\n4 1.1\n3 0\n2 1\n1 2\n0 3\n");
   EXPECT_READ_ERROR("x6\n", "(input):17:2: too many initial values");
@@ -1383,7 +1383,7 @@ TEST(NLTest, ReadInitialValues) {
   EXPECT_READ_ERROR("x2\n4 1.1\n\n", "(input):19:1: expected unsigned integer");
 }
 
-TEST(NLTest, ReadInitialDualValues) {
+TEST(NLReaderTest, ReadInitialDualValues) {
   EXPECT_READ("c4 := 1.1; c3 := 0; c2 := 1; c1 := 2; "
               "c0 := 3; c5 := 1; c6 := 2;",
               "d7\n4 1.1\n3 0\n2 1\n1 2\n0 3\n5 1\n6 2\n");
@@ -1393,7 +1393,7 @@ TEST(NLTest, ReadInitialDualValues) {
   EXPECT_READ_ERROR("d2\n4 1.1\n\n", "(input):19:1: expected unsigned integer");
 }
 
-TEST(NLTest, ReadFunction) {
+TEST(NLReaderTest, ReadFunction) {
   EXPECT_READ("f0: foo 2 1;", "F0 1 2 foo\n");
   EXPECT_READ("f0: foo -1 0;", "F0 0 -1 foo\n");
   EXPECT_READ_ERROR("F0 1 2 \n", "(input):17:8: expected name");
@@ -1403,14 +1403,14 @@ TEST(NLTest, ReadFunction) {
   EXPECT_READ_ERROR("F0 2 0 f\n", "(input):17:4: invalid function type");
 }
 
-TEST(NLTest, ReadCommonExpr) {
+TEST(NLReaderTest, ReadCommonExpr) {
   EXPECT_READ("e0 0:  + b2(v0, 42) 1;", "V5 0 1\no2\nv0\nn42\n");
   EXPECT_READ("e0 2: 2 * v1 + 3 * v0 + 0 1;", "V5 2 1\n1 2.0\n0 3\nn0\n");
   EXPECT_READ_ERROR("V4 0 1\nv0\n", "(input):17:2: integer 4 out of bounds");
   EXPECT_READ_ERROR("V6 0 1\nv0\n", "(input):17:2: integer 6 out of bounds");
 }
 
-TEST(NLTest, ReadSuffix) {
+TEST(NLReaderTest, ReadSuffix) {
   EXPECT_READ("suffix foo:0:5: i0 = 3, i1 = 2, i2 = 1, i3 = 2, i4 = 3;",
               "S0 5 foo\n0 3\n1 2\n2 1\n3 2\n4 3\n");
   EXPECT_READ_ERROR("S-1 1 foo\n", "(input):17:2: expected unsigned integer");
@@ -1419,13 +1419,13 @@ TEST(NLTest, ReadSuffix) {
   EXPECT_READ_ERROR("S0 6 foo\n", "(input):17:4: integer 6 out of bounds");
 }
 
-TEST(NLTest, InvalidSegmentType) {
+TEST(NLReaderTest, InvalidSegmentType) {
   EXPECT_READ_ERROR("?", "(input):17:1: invalid segment type");
   EXPECT_READ_ERROR(std::string("C0\nn4.2\n") + '\0',
                     "(input):19:1: invalid segment type");
 }
 
-TEST(NLTest, ErrorOnNonexistentNLFile) {
+TEST(NLReaderTest, ErrorOnNonexistentNLFile) {
   TestNLHandler handler;
   EXPECT_THROW(mp::ReadNLFile("nonexistent", handler), fmt::SystemError);
 }
@@ -1441,7 +1441,7 @@ void CheckReadFile(std::string nl) {
   reader.Read(filename, handler, 0);
 }
 
-TEST(NLTest, ReadNLFile) {
+TEST(NLReaderTest, ReadNLFile) {
   std::string header = FormatHeader(MakeHeader());
   std::string nl = header + "C0\nn4.2";
   std::size_t page_size = fmt::getpagesize();
@@ -1453,7 +1453,7 @@ TEST(NLTest, ReadNLFile) {
   CheckReadFile(nl + "\n");
 }
 
-TEST(NLTest, ReadNLFileMultipleOfPageSize) {
+TEST(NLReaderTest, ReadNLFileMultipleOfPageSize) {
   std::string header = FormatHeader(MakeHeader());
   std::string nl = header + "C0\nn4.2";
   std::size_t page_size = fmt::getpagesize();
@@ -1465,7 +1465,7 @@ TEST(NLTest, ReadNLFileMultipleOfPageSize) {
 
 struct Cancel {};
 
-TEST(NLTest, FileTooBig) {
+TEST(NLReaderTest, FileTooBig) {
   fmt::ULongLong max_size = std::numeric_limits<std::size_t>::max();
   fmt::ULongLong max_long_long = std::numeric_limits<fmt::LongLong>::max();
   mp::internal::NLFileReader<MockFile> reader;
@@ -1486,12 +1486,12 @@ TEST(NLTest, FileTooBig) {
 
 struct TestNLHandler3 : mp::NLHandler<int> {};
 
-TEST(NLTest, NLHandler) {
+TEST(NLReaderTest, NLHandler) {
   TestNLHandler3 handler;
   ReadNLString(FormatHeader(MakeHeader()) + "C0\nn4.2\n", handler);
 }
 
-TEST(NLTest, ReadBoundsFirst) {
+TEST(NLReaderTest, ReadBoundsFirst) {
   testing::NiceMock<MockNLHandler> handler;
   testing::InSequence dummy;
   EXPECT_CALL(handler, OnHeader(_));
@@ -1513,7 +1513,7 @@ struct VarCounter : mp::NLHandler<int> {
   }
 };
 
-TEST(NLTest, Example) {
+TEST(NLReaderTest, Example) {
   WriteFile("test.nl", FormatHeader(MakeHeader()) + "O0 0\no2\nv0\nv0\n");
   VarCounter counter;
   mp::ReadNLFile("test.nl", counter);
@@ -1522,7 +1522,7 @@ TEST(NLTest, Example) {
                "The number of variable references is 2.");
 }
 
-TEST(NLTest, EndInput) {
+TEST(NLReaderTest, EndInput) {
   testing::NiceMock<MockNLHandler> handler;
   testing::InSequence dummy;
   EXPECT_CALL(handler, OnVarBounds(0, 1, 2));
@@ -1540,7 +1540,7 @@ MATCHER_P2(StringRefEq, data, size, "") {
   return arg.data() == data && arg.size() == static_cast<std::size_t>(size);
 }
 
-TEST(NLTest, ReadNames) {
+TEST(NLReaderTest, ReadNames) {
   MockNameHandler handler;
   const char data[] = "ab\nc d\n";
   testing::InSequence sequence;
@@ -1549,7 +1549,7 @@ TEST(NLTest, ReadNames) {
   mp::internal::ReadNames("test", data, handler);
 }
 
-TEST(NLTest, ReadNamesError) {
+TEST(NLReaderTest, ReadNamesError) {
   MockNameHandler handler;
   const char data[] = "abc\ndef";
   EXPECT_CALL(handler, OnName(StringRefEq(data, 3)));
@@ -1562,7 +1562,7 @@ MATCHER_P(GetStringRef, names, "") {
   return true;
 }
 
-TEST(NLTest, NameReader) {
+TEST(NLReaderTest, NameReader) {
   TempFile file("test.col");
   WriteFile(file.name(), "abc\ndef\n");
   MockNameHandler handler;
