@@ -492,6 +492,7 @@ class NLHandler {
     \rst
     Receives notification of an integer suffix.
     The *name* argument is a suffix name and it is not null-terminated.
+    *kind* is a bitwise OR of the constants defined in the `mp::suf` namespace.
     \endrst
    */
   IntSuffixHandler OnIntSuffix(fmt::StringRef name, int kind, int num_values) {
@@ -509,6 +510,7 @@ class NLHandler {
     \rst
     Receives notification of a double suffix.
     The *name* argument is a suffix name and it is not null-terminated.
+    *kind* is a bitwise OR of the constants defined in the `mp::suf` namespace.
     \endrst
    */
   DblSuffixHandler OnDblSuffix(fmt::StringRef name, int kind, int num_values) {
