@@ -36,6 +36,9 @@ This section describes the C++ API of an NL reader which is
   AMPL Solver Library
 * Reliable: extensively and continuously tested on a variety of platforms
 
+`nl-example.cc <https://github.com/ampl/mp/blob/master/src/nl-example.cc>`_
+gives a few examples of how to use the NL reader.
+
 .. doxygenfunction:: ReadNLFile(fmt::StringRef, Handler &)
 
 .. doxygenfunction:: ReadNLString(fmt::StringRef, Handler &, fmt::StringRef)
