@@ -392,13 +392,15 @@ enum Kind {
    */
   CALL,
 
-  // The term "iterated" in the context of operators and expressions comes
-  // from the article "AMPL: A Mathematical Programming Language" and is
-  // used to denote operators indexed over sets.
   /**
     \rst
     The first iterated expression kind. Iterated expression kinds are in
     the range [`~mp::expr::FIRST_ITERATED`, `~mp::expr::LAST_ITERATED`].
+
+    The term "iterated" in the context of operators and expressions comes
+    from the article `AMPL: A Mathematical Programming Language
+    <http://www.ampl.com/REFS/amplmod.pdf>`_ and is used to denote operators
+    indexed over sets.
     \endrst
    */
   FIRST_ITERATED,

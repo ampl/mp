@@ -5,6 +5,8 @@ Header: :file:`mp/common.h`
 
 .. doxygenenum:: mp::obj::Type
 
+.. doxygenenum:: mp::var::Type
+
 .. doxygenenum:: mp::func::Type
 
 .. doxygenenum:: mp::expr::Kind
