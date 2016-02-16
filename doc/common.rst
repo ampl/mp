@@ -9,13 +9,13 @@ Header: :file:`mp/common.h`
 
 .. doxygenenum:: mp::func::Type
 
-.. doxygenenum:: mp::expr::Kind
-
 .. doxygennamespace:: mp::complement
 
 .. doxygennamespace:: mp::suf
 
 .. doxygenenum:: mp::sol::Status
+
+.. doxygenenum:: mp::expr::Kind
 
 .. doxygenfunction:: mp::expr::str
 
