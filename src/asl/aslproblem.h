@@ -184,7 +184,7 @@ void ASLSuffixPtr::Proxy::VisitValues(
 
 template <typename Visitor>
 void ASLSuffixPtr::Proxy::VisitValues(Visitor &visitor) const {
-  int kind = ptr_->kind & suf::MASK;
+  int kind = ptr_->kind & internal::SUFFIX_MASK;
   int num_items = (&asl_->i.n_var_)[kind];
   const int *map = kind < 2 ? (&asl_->i.vmap)[kind] : 0;
   if ((ptr_->kind & suf::FLOAT) != 0)
@@ -675,7 +675,7 @@ class ASLProblem {
   }
 
   SuffixView suffixes(int kind) const {
-    assert(kind <= suf::NUM_KINDS);
+    assert(kind <= internal::NUM_SUFFIX_KINDS);
     return SuffixView(asl_, kind);
   }
 

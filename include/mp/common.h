@@ -77,13 +77,18 @@ enum {
   CON     =    1,  /**< Applies to constraints. */
   OBJ     =    2,  /**< Applies to objectives. */
   PROBLEM =    3,  /**< Applies to problems. */
-  NUM_KINDS,       /**< The number of suffix kinds. */
-  MASK    =    3,  /**< Mask for suffix kind. */
   FLOAT   =    4,  /**< Suffix values are floating-point numbers. */
   IODECL  =    8,  /**< Declare an INOUT suffix. */
   OUTPUT  = 0x10,  /**< Output suffix: return values from a solver. */
   INPUT   = 0x20,  /**< Input suffix: values were passed to a solver. */
   OUTONLY = 0x40   /**< Output only: reject as an input value. */
+};
+}
+
+namespace internal {
+enum {
+  SUFFIX_MASK      = 3,  // Mask for suffix kind.
+  NUM_SUFFIX_KINDS = 4,  // The number of suffix kinds.
 };
 }
 

@@ -1928,9 +1928,9 @@ void NLReader<Reader, Handler>::Read(Reader *bound_reader) {
     case 'S': {
       // Suffix values.
       int kind = reader_.ReadUInt();
-      if (kind > (suf::MASK | suf::FLOAT))
+      if (kind > (internal::SUFFIX_MASK | suf::FLOAT))
         reader_.ReportError("invalid suffix kind");
-      switch (kind & suf::MASK) {
+      switch (kind & internal::SUFFIX_MASK) {
       case suf::VAR:
         ReadSuffix<VarHandler>(kind);
         break;

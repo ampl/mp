@@ -428,7 +428,7 @@ typedef BasicSuffixSet< std::allocator<char> > SuffixSet;
 
 class SuffixManager {
  private:
-  mp::SuffixSet suffixes_[suf::NUM_KINDS];
+  mp::SuffixSet suffixes_[internal::NUM_SUFFIX_KINDS];
 
  public:
   virtual ~SuffixManager() {}
@@ -439,11 +439,13 @@ class SuffixManager {
 
   // Returns a set of suffixes.
   SuffixSet &suffixes(int kind) {
-    MP_ASSERT(kind >= 0 && kind < suf::NUM_KINDS, "invalid suffix kind");
+    MP_ASSERT(kind >= 0 && kind < internal::NUM_SUFFIX_KINDS,
+              "invalid suffix kind");
     return suffixes_[kind];
   }
   const SuffixSet &suffixes(int kind) const {
-    MP_ASSERT(kind >= 0 && kind < suf::NUM_KINDS, "invalid suffix kind");
+    MP_ASSERT(kind >= 0 && kind < internal::NUM_SUFFIX_KINDS,
+              "invalid suffix kind");
     return suffixes_[kind];
   }
 };

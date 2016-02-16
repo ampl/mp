@@ -79,7 +79,7 @@ class ASLBuilder {
   int nz_;
   int nderp_;
   static const double DVALUE[];
-  SuffixView suffixes_[suf::NUM_KINDS];
+  SuffixView suffixes_[mp::internal::NUM_SUFFIX_KINDS];
   int var_index_;
   int obj_index_;
   int con_index_;
@@ -274,7 +274,7 @@ class ASLBuilder {
   typedef SuffixView SuffixSet;
 
   SuffixView &suffixes(int kind) {
-    assert(kind < suf::NUM_KINDS);
+    assert(kind < mp::internal::NUM_SUFFIX_KINDS);
     return suffixes_[kind];
   }
 

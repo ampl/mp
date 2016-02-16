@@ -284,7 +284,7 @@ void ASLBuilder::Init(ASL *asl) {
     asl_ = ASL_alloc(ASL_read_fg);
     own_asl_ = true;
   }
-  for (int i = 0; i < suf::NUM_KINDS; ++i)
+  for (int i = 0; i < mp::internal::NUM_SUFFIX_KINDS; ++i)
     suffixes_[i] = SuffixView(asl_, i);
   var_index_ = 0;
   obj_index_ = 0;
@@ -650,7 +650,7 @@ Function ASLBuilder::AddFunction(
 
 ASLBuilder::SuffixInfo ASLBuilder::AddSuffix(fmt::StringRef name, int kind) {
   bool readall = (flags_ & ASL_keep_all_suffixes) != 0;
-  int item_type = kind & suf::MASK;
+  int item_type = kind & mp::internal::SUFFIX_MASK;
   SufDesc *d = 0;
   if (readall) {
     std::size_t size = name.size();
@@ -667,10 +667,12 @@ ASLBuilder::SuffixInfo ASLBuilder::AddSuffix(fmt::StringRef name, int kind) {
     for (d = asl_->i.suffixes[item_type]; ; d = d->next) {
       if (!d)
         return SuffixInfo();  // Skip this suffix table.
-      if (item_type == (d->kind & suf::MASK) && name == d->sufname)
+      if (item_type == (d->kind & mp::internal::SUFFIX_MASK) &&
+          name == d->sufname) {
         if ((d->kind & suf::OUTONLY) != 0)
           return SuffixInfo();
-        break;
+      }
+      break;
     }
   }
   int nx = (&asl_->i.n_var_)[item_type];

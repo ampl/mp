@@ -80,7 +80,7 @@ void WriteSuffixes(fmt::BufferedFile &file, const SuffixMap *suffixes) {
       continue;
     const char *name = i->name();
     file.print("suffix {} {} {} {} {}\n{}\n",
-               i->kind() & (suf::MASK | suf::FLOAT | suf::IODECL),
+               i->kind() & (internal::SUFFIX_MASK | suf::FLOAT | suf::IODECL),
                num_values, std::strlen(name) + 1, 0, 0, name);
     // TODO: write table
     SuffixValueWriter writer(file);
@@ -109,7 +109,7 @@ void WriteSolFile(fmt::CStringRef filename, const Solution &sol) {
   for (int i = 0, n = num_dual_values; i < n; ++i)
     file.print("{}\n", sol.dual_value(i));
   file.print("objno 0 {}\n", sol.status());
-  for (int suf_kind = 0; suf_kind < suf::NUM_KINDS; ++suf_kind)
+  for (int suf_kind = 0; suf_kind < internal::NUM_SUFFIX_KINDS; ++suf_kind)
     internal::WriteSuffixes(file, sol.suffixes(suf_kind));
   // TODO: test
 }
