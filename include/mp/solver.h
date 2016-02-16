@@ -1032,7 +1032,7 @@ void SolutionWriter<Solver, Writer>::HandleFeasibleSolution(
   if (!*solution_stub)
     return;
   SolutionAdapter<ProblemBuilder> sol(
-        sol::UNSOLVED, 0, message.c_str(), ArrayRef<int>(0, 0),
+        sol::UNCERTAIN, 0, message.c_str(), ArrayRef<int>(0, 0),
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values,
                      dual_values ? builder_.num_algebraic_cons() : 0));

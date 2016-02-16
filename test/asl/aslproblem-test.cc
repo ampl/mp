@@ -110,7 +110,7 @@ TEST(SolutionTest, SolveCodes) {
   namespace sol = mp::sol;
   const sol::Status STATES[] = {
       sol::SOLVED,
-      sol::UNSOLVED,
+      sol::UNCERTAIN,
       sol::INFEASIBLE,
       sol::UNBOUNDED,
       sol::LIMIT,

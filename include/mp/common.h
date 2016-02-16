@@ -100,7 +100,7 @@ enum Status {
   SOLVED      =   0,
 
   // Solution returned but it can be non-optimal or even infeasible.
-  UNSOLVED    = 100,
+  UNCERTAIN   = 100,
 
   // Problem is infeasible.
   INFEASIBLE  = 200,
