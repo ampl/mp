@@ -32,11 +32,11 @@ struct ExprInfo {
 };
 
 const ExprInfo INFO[] = {
-  {ex::UNKNOWN,     "unknown"},
+  {ex::UNKNOWN,        "unknown"},
 
-  {ex::NUMBER,      "number"},
-  {ex::VARIABLE,    "variable"},
-  {ex::COMMON_EXPR, "common expression"},
+  {ex::NUMBER,         "number"},
+  {ex::VARIABLE,       "variable"},
+  {ex::COMMON_EXPR,    "common expression"},
 
   // Unary expressions.
   {ex::MINUS,          "unary -"},
@@ -77,48 +77,48 @@ const ExprInfo INFO[] = {
   {ex::ROUND,          "round"},
   {ex::TRUNC,          "trunc"},
 
-  {ex::IF,              "if"},
-  {ex::PLTERM,          "piecewise-linear term"},
-  {ex::CALL,            "function call"},
+  {ex::IF,             "if"},
+  {ex::PLTERM,         "piecewise-linear term"},
+  {ex::CALL,           "function call"},
 
-  {ex::MIN,             "min"},
-  {ex::MAX,             "max"},
-  {ex::SUM,             "sum"},
-  {ex::NUMBEROF,        "numberof"},
-  {ex::NUMBEROF_SYM,    "symbolic numberof"},
-  {ex::COUNT,           "count"},
+  {ex::MIN,            "min"},
+  {ex::MAX,            "max"},
+  {ex::SUM,            "sum"},
+  {ex::NUMBEROF,       "numberof"},
+  {ex::NUMBEROF_SYM,   "symbolic numberof"},
+  {ex::COUNT,          "count"},
 
-  {ex::BOOL,            "bool"},
-  {ex::NOT,             "!"},
+  {ex::BOOL,           "bool"},
+  {ex::NOT,            "!"},
 
-  {ex::OR,              "||"},
-  {ex::AND,             "&&"},
-  {ex::IFF,             "<==>"},
+  {ex::OR,             "||"},
+  {ex::AND,            "&&"},
+  {ex::IFF,            "<==>"},
 
-  {ex::LT,              "<"},
-  {ex::LE,              "<="},
-  {ex::EQ,              "="},
-  {ex::GE,              ">="},
-  {ex::GT,              ">"},
-  {ex::NE,              "!="},
+  {ex::LT,             "<"},
+  {ex::LE,             "<="},
+  {ex::EQ,             "="},
+  {ex::GE,             ">="},
+  {ex::GT,             ">"},
+  {ex::NE,             "!="},
 
-  {ex::ATLEAST,         "atleast"},
-  {ex::ATMOST,          "atmost"},
-  {ex::EXACTLY,         "exactly"},
-  {ex::NOT_ATLEAST,     "!atleast"},
-  {ex::NOT_ATMOST,      "!atmost"},
-  {ex::NOT_EXACTLY,     "!exactly"},
+  {ex::ATLEAST,        "atleast"},
+  {ex::ATMOST,         "atmost"},
+  {ex::EXACTLY,        "exactly"},
+  {ex::NOT_ATLEAST,    "!atleast"},
+  {ex::NOT_ATMOST,     "!atmost"},
+  {ex::NOT_EXACTLY,    "!exactly"},
 
-  {ex::IMPLICATION,     "==>"},
+  {ex::IMPLICATION,    "==>"},
 
-  {ex::EXISTS,          "exists"},
-  {ex::FORALL,          "forall"},
+  {ex::EXISTS,         "exists"},
+  {ex::FORALL,         "forall"},
 
-  {ex::ALLDIFF,         "alldiff"},
-  {ex::NOT_ALLDIFF,     "!alldiff"},
+  {ex::ALLDIFF,        "alldiff"},
+  {ex::NOT_ALLDIFF,    "!alldiff"},
 
-  {ex::STRING,          "string"},
-  {ex::IFSYM,           "symbolic if"}
+  {ex::STRING,         "string"},
+  {ex::IFSYM,          "symbolic if"}
 };
 
 TEST(CommonTest, Str) {
