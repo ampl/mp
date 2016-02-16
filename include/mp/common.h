@@ -91,29 +91,33 @@ enum {
 }
 
 namespace sol {
-// Solution status.
+/** Solution status. */
 enum Status {
+  /** Unknown status. */
   UNKNOWN     =  -1,
 
-  // An optimal solution found for an optimization problem or a feasible
-  // solution found for a satisfaction problem.
+  /**
+    An optimal solution found for an optimization problem or a feasible
+    solution found for a satisfaction problem.
+   */
   SOLVED      =   0,
 
-  // Solution returned but it can be non-optimal or even infeasible.
+  /** Solution returned but it can be non-optimal or even infeasible. */
   UNCERTAIN   = 100,
 
-  // Problem is infeasible.
+  /** Problem is infeasible. */
   INFEASIBLE  = 200,
 
-  // Problem is unbounded.
+  /** Problem is unbounded. */
   UNBOUNDED   = 300,
 
-  // Stopped by a limit, e.g. on iterations or time.
+  /** Stopped by a limit, e.g. on iterations or time. */
   LIMIT       = 400,
 
+  /** A solver error. */
   FAILURE     = 500,
 
-  // Interrupted by the user.
+  /** Interrupted by the user. */
   INTERRUPTED = 600
 };
 }
