@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
   f.print("\n}};\n\n");
 
   // Write precedence info.
-  f.print("const mp::prec::Precedence mp::internal::PrecInfo::INFO[] = {{\n");
+  f.print("const mp::prec::Precedence mp::PrecInfo::INFO[] = {{\n");
   f.print("  prec::UNKNOWN");
   for (std::size_t i = 1; i <= expr::LAST_EXPR; ++i) {
     f.print(",\n");

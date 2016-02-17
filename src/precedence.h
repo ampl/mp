@@ -50,18 +50,14 @@ enum Precedence {
 
 prec::Precedence precedence(expr::Kind kind);
 
-namespace internal {
 class PrecInfo {
  private:
   static const prec::Precedence INFO[expr::LAST_EXPR + 1];
-  friend prec::Precedence mp::precedence(expr::Kind kind);
+  friend prec::Precedence precedence(expr::Kind kind) {
+    MP_ASSERT(internal::IsValid(kind), "invalid expression kind");
+    return INFO[kind];
+  }
 };
-}
-
-inline prec::Precedence precedence(expr::Kind kind) {
-  assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
-  return internal::PrecInfo::INFO[kind];
-}
 }  // namespace mp
 
 #endif  // MP_PRECEDENCE_H_

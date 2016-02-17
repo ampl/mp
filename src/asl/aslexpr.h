@@ -307,7 +307,7 @@ class BasicExpr : private internal::ExprBase {
   template <typename Expr>
   BasicExpr(
       Expr other,
-      typename mp::internal::enable_if<
+      typename fmt::internal::EnableIf<
         static_cast<expr::Kind>(Expr::FIRST_KIND) >= FIRST &&
         static_cast<expr::Kind>(Expr::LAST_KIND)  <= LAST, int>::type = 0)
     : ExprBase(other) {}

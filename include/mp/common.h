@@ -23,8 +23,8 @@
 #ifndef MP_COMMON_H_
 #define MP_COMMON_H_
 
-#include <cassert>
-#include <cstddef>  // for std::size_t
+#include "mp/error.h"  // for MP_ASSERT
+#include <cstddef>     // for std::size_t
 
 /** The mp namespace. */
 namespace mp {
@@ -853,12 +853,6 @@ namespace internal {
 // Suppresses warnings about unused variables.
 inline void Unused(...) {}
 
-template<bool B, typename T = void>
-struct enable_if {};
-
-template<class T>
-struct enable_if<true, T> { typedef T type; };
-
 // Returns true if ExprType is of kind k.
 template <typename ExprType>
 inline bool Is(expr::Kind k) {
@@ -867,6 +861,10 @@ inline bool Is(expr::Kind k) {
   // this to kind == ExprType::FIRST_KIND (checked with GCC 4.8.2).
   // No need to do it ourselves.
   return ExprType::FIRST_KIND <= kind && kind <= ExprType::LAST_KIND;
+}
+
+inline bool IsValid(expr::Kind kind) {
+  return kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR;
 }
 
 // Expression information.
@@ -897,18 +895,18 @@ class OpCodeInfo {
 };
 
 inline const OpCodeInfo &GetOpCodeInfo(int opcode) {
-  assert(opcode >= 0 && opcode <= MAX_OPCODE);
+  MP_ASSERT(opcode >= 0 && opcode <= MAX_OPCODE, "invalid opcode");
   return OpCodeInfo::INFO[opcode];
 }
 }  // namespace internal
 
 inline int expr::nl_opcode(expr::Kind kind) {
-  assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
+  MP_ASSERT(internal::IsValid(kind), "invalid expression kind");
   return internal::ExprInfo::INFO[kind].opcode;
 }
 
 inline const char *expr::str(expr::Kind kind) {
-  assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
+  MP_ASSERT(internal::IsValid(kind), "invalid expression kind");
   return internal::ExprInfo::INFO[kind].str;
 }
 
