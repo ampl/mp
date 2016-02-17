@@ -24,6 +24,7 @@
 #include "mp/common.h"
 
 #include <algorithm>
+#include <utility>
 #include <gtest/gtest.h>
 
 namespace ex = mp::expr;
@@ -39,6 +40,9 @@ struct ExprInfo {
 // (http://ampl.github.io/nlwrite.pdf).
 const ExprInfo INFO[] = {
   {ex::UNKNOWN,        "unknown",                 -1, ex::UNKNOWN},
+
+  // Numeric expressions
+  // -------------------
 
   {ex::NUMBER,         "number",                  80, ex::NUMBER},
   {ex::VARIABLE,       "variable",                82, ex::FIRST_REFERENCE},
@@ -94,6 +98,9 @@ const ExprInfo INFO[] = {
   {ex::NUMBEROF_SYM,   "symbolic numberof",       61, ex::NUMBEROF_SYM},
   {ex::COUNT,          "count",                   59, ex::COUNT},
 
+  // Logical expressions
+  // -------------------
+
   {ex::BOOL,           "bool",                    80, ex::NUMBER},
   {ex::NOT,            "!",                       34, ex::NOT},
 
@@ -125,11 +132,109 @@ const ExprInfo INFO[] = {
   {ex::ALLDIFF,        "alldiff",                 74, ex::FIRST_PAIRWISE},
   {ex::NOT_ALLDIFF,    "!alldiff",                75, ex::FIRST_PAIRWISE},
 
+  // String expressions
+  // ------------------
+
   {ex::STRING,         "string",                  81, ex::STRING},
   {ex::IFSYM,          "symbolic if",             65, ex::IFSYM}
 };
 
 const std::size_t NUM_KINDS = sizeof(INFO) / sizeof(*INFO);
+
+const ExprInfo *FindInfo(ex::Kind kind) {
+  for (std::size_t i = 0; i < NUM_KINDS; ++i) {
+    if (INFO[i].kind == kind)
+      return INFO + i;
+  }
+  return 0;
+}
+
+const ExprInfo *const BOOL_INFO = FindInfo(ex::BOOL);
+const ExprInfo *const STRING_INFO = FindInfo(ex::STRING);
+
+typedef std::pair<ex::Kind, ex::Kind> KindPair;
+
+template <typename Match>
+KindPair minmax(Match match) {
+  bool found = false;
+  ex::Kind min = ex::UNKNOWN, max = ex::UNKNOWN;
+  for (std::size_t i = 0; i < NUM_KINDS; ++i) {
+    if (!match(INFO[i])) continue;
+    ex::Kind kind = INFO[i].kind;
+    if (found) {
+      min = std::min(min, kind);
+      max = std::max(min, kind);
+    } else {
+      min = max = kind;
+      found = true;
+    }
+  }
+  return std::make_pair(min, max);
+}
+
+class MatchFirstKind {
+ private:
+  ex::Kind kind_;
+
+ public:
+  explicit MatchFirstKind(ex::Kind kind) : kind_(kind) {}
+  bool operator()(const ExprInfo &info) const {
+    return info.first_kind == kind_;
+  }
+};
+
+struct MatchKnownKind {
+  bool operator()(const ExprInfo &info) const {
+    return info.kind != ex::UNKNOWN;
+  }
+};
+
+struct MatchNumericKind {
+  bool operator()(const ExprInfo &info) const {
+    return &info < BOOL_INFO && info.kind != ex::UNKNOWN;
+  }
+};
+
+struct MatchLogicalKind {
+  bool operator()(const ExprInfo &info) const {
+    return &info >= BOOL_INFO && &info < STRING_INFO;
+  }
+};
+
+TEST(CommonTest, ExprKind) {
+  struct {
+    ex::Kind first;
+    ex::Kind last;
+  } kinds[] = {
+    {ex::FIRST_REFERENCE,         ex::LAST_REFERENCE},
+    {ex::FIRST_UNARY,             ex::LAST_UNARY},
+    {ex::FIRST_BINARY,            ex::LAST_BINARY},
+    {ex::FIRST_VARARG,            ex::LAST_VARARG},
+    {ex::FIRST_BINARY_LOGICAL,    ex::LAST_BINARY_LOGICAL},
+    {ex::FIRST_RELATIONAL,        ex::LAST_RELATIONAL},
+    {ex::FIRST_LOGICAL_COUNT,     ex::LAST_LOGICAL_COUNT},
+    {ex::FIRST_ITERATED_LOGICAL,  ex::LAST_ITERATED_LOGICAL},
+    {ex::FIRST_PAIRWISE,          ex::LAST_PAIRWISE}
+  };
+  std::size_t num_kinds = sizeof(kinds) / sizeof(*kinds);
+  for (std::size_t i = 0; i < num_kinds; ++i) {
+    KindPair p = minmax(MatchFirstKind(kinds[i].first));
+    EXPECT_EQ(kinds[i].first, p.first);
+    EXPECT_EQ(kinds[i].last, p.second);
+  }
+
+  KindPair p = minmax(MatchKnownKind());
+  EXPECT_EQ(ex::FIRST_EXPR, p.first);
+  EXPECT_EQ(ex::LAST_EXPR, p.second);
+
+  p = minmax(MatchNumericKind());
+  EXPECT_EQ(ex::FIRST_NUMERIC, p.first);
+  EXPECT_EQ(ex::LAST_NUMERIC, p.second);
+
+  p = minmax(MatchLogicalKind());
+  EXPECT_EQ(ex::FIRST_LOGICAL, p.first);
+  EXPECT_EQ(ex::LAST_LOGICAL, p.second);
+}
 
 TEST(CommonTest, IsValid) {
   EXPECT_TRUE(mp::internal::IsValid(ex::UNKNOWN));
@@ -186,4 +291,7 @@ TEST(CommonTest, GetOpCodeInfo) {
     EXPECT_EQ(kind, info.kind) << str(info.kind);
     EXPECT_EQ(INFO[i].first_kind, info.first_kind);
   }
+  EXPECT_ASSERT(mp::internal::GetOpCodeInfo(-1), "invalid opcode");
+  EXPECT_ASSERT(mp::internal::GetOpCodeInfo(mp::internal::MAX_OPCODE + 1),
+                "invalid opcode");
 }
