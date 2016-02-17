@@ -20,110 +20,143 @@
  Author: Victor Zverovich
  */
 
-#include <gtest/gtest.h>
-
+#include "test-assert.h"
 #include "mp/common.h"
+
+#include <algorithm>
+#include <gtest/gtest.h>
 
 namespace ex = mp::expr;
 
 struct ExprInfo {
   ex::Kind kind;
   const char *str;
+  int opcode;
 };
 
+// The opcodes are defined in the technical report Writing .nl Files
+// (http://ampl.github.io/nlwrite.pdf).
 const ExprInfo INFO[] = {
-  {ex::UNKNOWN,        "unknown"},
+  {ex::UNKNOWN,        "unknown",                 -1},
 
-  {ex::NUMBER,         "number"},
-  {ex::VARIABLE,       "variable"},
-  {ex::COMMON_EXPR,    "common expression"},
+  {ex::NUMBER,         "number",                  80},
+  {ex::VARIABLE,       "variable",                82},
+  {ex::COMMON_EXPR,    "common expression",       -1},
 
   // Unary expressions.
-  {ex::MINUS,          "unary -"},
-  {ex::ABS,            "abs"},
-  {ex::FLOOR,          "floor"},
-  {ex::CEIL,           "ceil"},
-  {ex::SQRT,           "sqrt"},
-  {ex::POW2,           "^2"},
-  {ex::EXP,            "exp"},
-  {ex::LOG,            "log"},
-  {ex::LOG10,          "log10"},
-  {ex::SIN,            "sin"},
-  {ex::SINH,           "sinh"},
-  {ex::COS,            "cos"},
-  {ex::COSH,           "cosh"},
-  {ex::TAN,            "tan"},
-  {ex::TANH,           "tanh"},
-  {ex::ASIN,           "asin"},
-  {ex::ASINH,          "asinh"},
-  {ex::ACOS,           "acos"},
-  {ex::ACOSH,          "acosh"},
-  {ex::ATAN,           "atan"},
-  {ex::ATANH,          "atanh"},
+  {ex::MINUS,          "unary -",                 16},
+  {ex::ABS,            "abs",                     15},
+  {ex::FLOOR,          "floor",                   13},
+  {ex::CEIL,           "ceil",                    14},
+  {ex::SQRT,           "sqrt",                    39},
+  {ex::POW2,           "^2",                      77},
+  {ex::EXP,            "exp",                     44},
+  {ex::LOG,            "log",                     43},
+  {ex::LOG10,          "log10",                   42},
+  {ex::SIN,            "sin",                     41},
+  {ex::SINH,           "sinh",                    40},
+  {ex::COS,            "cos",                     46},
+  {ex::COSH,           "cosh",                    45},
+  {ex::TAN,            "tan",                     38},
+  {ex::TANH,           "tanh",                    37},
+  {ex::ASIN,           "asin",                    51},
+  {ex::ASINH,          "asinh",                   50},
+  {ex::ACOS,           "acos",                    53},
+  {ex::ACOSH,          "acosh",                   52},
+  {ex::ATAN,           "atan",                    49},
+  {ex::ATANH,          "atanh",                   47},
 
   // Binary expressions.
-  {ex::ADD,            "+"},
-  {ex::SUB,            "-"},
-  {ex::LESS,           "less"},
-  {ex::MUL,            "*"},
-  {ex::DIV,            "/"},
-  {ex::TRUNC_DIV,      "div"},
-  {ex::MOD,            "mod"},
-  {ex::POW,            "^"},
-  {ex::POW_CONST_BASE, "^"},
-  {ex::POW_CONST_EXP,  "^"},
-  {ex::ATAN2,          "atan2"},
-  {ex::PRECISION,      "precision"},
-  {ex::ROUND,          "round"},
-  {ex::TRUNC,          "trunc"},
+  {ex::ADD,            "+",                        0},
+  {ex::SUB,            "-",                        1},
+  {ex::LESS,           "less",                     6},
+  {ex::MUL,            "*",                        2},
+  {ex::DIV,            "/",                        3},
+  {ex::TRUNC_DIV,      "div",                     55},
+  {ex::MOD,            "mod",                      4},
+  {ex::POW,            "^",                        5},
+  {ex::POW_CONST_BASE, "^",                       78},
+  {ex::POW_CONST_EXP,  "^",                       76},
+  {ex::ATAN2,          "atan2",                   48},
+  {ex::PRECISION,      "precision",               56},
+  {ex::ROUND,          "round",                   57},
+  {ex::TRUNC,          "trunc",                   58},
 
-  {ex::IF,             "if"},
-  {ex::PLTERM,         "piecewise-linear term"},
-  {ex::CALL,           "function call"},
+  {ex::IF,             "if",                      35},
+  {ex::PLTERM,         "piecewise-linear term",   64},
+  {ex::CALL,           "function call",           79},
 
-  {ex::MIN,            "min"},
-  {ex::MAX,            "max"},
-  {ex::SUM,            "sum"},
-  {ex::NUMBEROF,       "numberof"},
-  {ex::NUMBEROF_SYM,   "symbolic numberof"},
-  {ex::COUNT,          "count"},
+  {ex::MIN,            "min",                     11},
+  {ex::MAX,            "max",                     12},
+  {ex::SUM,            "sum",                     54},
+  {ex::NUMBEROF,       "numberof",                60},
+  {ex::NUMBEROF_SYM,   "symbolic numberof",       61},
+  {ex::COUNT,          "count",                   59},
 
-  {ex::BOOL,           "bool"},
-  {ex::NOT,            "!"},
+  {ex::BOOL,           "bool",                    80},
+  {ex::NOT,            "!",                       34},
 
-  {ex::OR,             "||"},
-  {ex::AND,            "&&"},
-  {ex::IFF,            "<==>"},
+  {ex::OR,             "||",                      20},
+  {ex::AND,            "&&",                      21},
+  {ex::IFF,            "<==>",                    73},
 
-  {ex::LT,             "<"},
-  {ex::LE,             "<="},
-  {ex::EQ,             "="},
-  {ex::GE,             ">="},
-  {ex::GT,             ">"},
-  {ex::NE,             "!="},
+  {ex::LT,             "<",                       22},
+  {ex::LE,             "<=",                      23},
+  {ex::EQ,             "=",                       24},
+  {ex::GE,             ">=",                      28},
+  {ex::GT,             ">",                       29},
+  {ex::NE,             "!=",                      30},
 
-  {ex::ATLEAST,        "atleast"},
-  {ex::ATMOST,         "atmost"},
-  {ex::EXACTLY,        "exactly"},
-  {ex::NOT_ATLEAST,    "!atleast"},
-  {ex::NOT_ATMOST,     "!atmost"},
-  {ex::NOT_EXACTLY,    "!exactly"},
+  {ex::ATLEAST,        "atleast",                 62},
+  {ex::ATMOST,         "atmost",                  63},
+  {ex::EXACTLY,        "exactly",                 66},
+  {ex::NOT_ATLEAST,    "!atleast",                67},
+  {ex::NOT_ATMOST,     "!atmost",                 68},
+  {ex::NOT_EXACTLY,    "!exactly",                69},
 
-  {ex::IMPLICATION,    "==>"},
+  {ex::IMPLICATION,    "==>",                     72},
 
-  {ex::EXISTS,         "exists"},
-  {ex::FORALL,         "forall"},
+  {ex::EXISTS,         "exists",                  71},
+  {ex::FORALL,         "forall",                  70},
 
-  {ex::ALLDIFF,        "alldiff"},
-  {ex::NOT_ALLDIFF,    "!alldiff"},
+  {ex::ALLDIFF,        "alldiff",                 74},
+  {ex::NOT_ALLDIFF,    "!alldiff",                75},
 
-  {ex::STRING,         "string"},
-  {ex::IFSYM,          "symbolic if"}
+  {ex::STRING,         "string",                  81},
+  {ex::IFSYM,          "symbolic if",             65}
 };
 
+const std::size_t NUM_KINDS = sizeof(INFO) / sizeof(*INFO);
+
+TEST(CommonTest, IsValid) {
+  EXPECT_TRUE(mp::internal::IsValid(ex::UNKNOWN));
+  EXPECT_TRUE(mp::internal::IsValid(ex::LAST_EXPR));
+  EXPECT_FALSE(mp::internal::IsValid(static_cast<ex::Kind>(-1)));
+  EXPECT_FALSE(mp::internal::IsValid(static_cast<ex::Kind>(ex::LAST_EXPR + 1)));
+}
+
 TEST(CommonTest, Str) {
-  std::size_t num_kinds = sizeof(INFO) / sizeof(*INFO);
-  EXPECT_EQ(ex::LAST_EXPR + 1u, num_kinds);
-  for (std::size_t i = 0; i < num_kinds; ++i)
+  EXPECT_EQ(ex::LAST_EXPR + 1u, NUM_KINDS);
+  for (std::size_t i = 0; i < NUM_KINDS; ++i)
     EXPECT_STREQ(INFO[i].str, str(INFO[i].kind));
+  EXPECT_ASSERT(ex::str(static_cast<ex::Kind>(-1)), "invalid expression kind");
+  EXPECT_ASSERT(ex::str(static_cast<ex::Kind>(ex::LAST_EXPR + 1)),
+                "invalid expression kind");
+}
+
+TEST(CommonTest, NLOpCode) {
+  EXPECT_EQ(ex::LAST_EXPR + 1u, NUM_KINDS);
+  for (std::size_t i = 0; i < NUM_KINDS; ++i)
+    EXPECT_EQ(INFO[i].opcode, nl_opcode(INFO[i].kind));
+  EXPECT_ASSERT(ex::nl_opcode(static_cast<ex::Kind>(-1)),
+                "invalid expression kind");
+  EXPECT_ASSERT(ex::nl_opcode(static_cast<ex::Kind>(ex::LAST_EXPR + 1)),
+                "invalid expression kind");
+}
+
+TEST(CommonTest, MaxOpCode) {
+  int max_opcode = INFO[0].opcode;
+  for (std::size_t i = 0; i < NUM_KINDS; ++i)
+    max_opcode = std::max(max_opcode, INFO[i].opcode);
+  EXPECT_EQ(max_opcode, mp::internal::MAX_OPCODE);
 }
