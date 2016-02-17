@@ -164,18 +164,10 @@ enum Kind {
    */
   FIRST_REFERENCE,
 
-  /**
-    \rst
-    A reference to a variable.
-    \endrst
-   */
+  /** A reference to a variable. */
   VARIABLE = FIRST_REFERENCE,
 
-  /**
-    \rst
-    A reference to a common expression.
-    \endrst
-   */
+  /** A reference to a common expression. */
   COMMON_EXPR,
 
   /** The last reference expression kind. */
