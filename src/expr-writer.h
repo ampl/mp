@@ -24,9 +24,44 @@
 #define MP_EXPR_WRITER_H_
 
 #include "mp/basic-expr-visitor.h"
-#include "precedence.h"
 
 namespace mp {
+
+namespace prec {
+enum Precedence {
+  UNKNOWN,
+  CONDITIONAL,       // if-then-else
+  IFF,               // <==>
+  IMPLICATION,       // ==> else
+  LOGICAL_OR,        // or ||
+  LOGICAL_AND,       // and &&
+  NOT,               // not !
+  RELATIONAL,        // < <= = == >= > != <>
+  ADDITIVE,          // + - less
+  ITERATIVE,         // sum prod min max
+  MULTIPLICATIVE,    // * / div mod
+  EXPONENTIATION,    // ^
+  UNARY,             // + - (unary)
+  CALL,              // a function call including functional forms of
+                     // min and max
+  PRIMARY            // variable, string or constant
+};
+}
+
+namespace expr {
+// Returns operator precedence for the specified expression kind assuming the
+// notation used by ExprWriter.
+prec::Precedence precedence(expr::Kind kind);
+
+class PrecInfo {
+ private:
+  static const prec::Precedence INFO[LAST_EXPR + 1];
+  friend prec::Precedence precedence(Kind kind) {
+    MP_ASSERT(internal::IsValid(kind), "invalid expression kind");
+    return INFO[kind];
+  }
+};
+}
 
 template <typename ExprTypes, typename NumericExpr>
 inline bool IsZero(NumericExpr expr) {
@@ -50,7 +85,7 @@ class ExprWriter :
 
   typedef BasicExprVisitor<ExprWriter<ExprTypes>, void, ExprTypes> Base;
 
-  static int precedence(Expr e) { return mp::precedence(e.kind()); }
+  static int precedence(Expr e) { return expr::precedence(e.kind()); }
 
   // Writes an argument list surrounded by parentheses.
   template <typename Iter>

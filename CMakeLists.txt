@@ -287,7 +287,7 @@ add_prefix(MP_HEADERS include/mp/
   rstparser.h safeint.h sol.h solver.h suffix.h)
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
-  clock.cc expr.cc expr-writer.h nl-reader.cc option.cc os.cc precedence.h
+  clock.cc expr.cc expr-writer.h nl-reader.cc option.cc os.cc
   problem.cc rstparser.cc sol.cc solver.cc solver-c.h)
 
 add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}

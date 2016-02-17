@@ -48,7 +48,7 @@ const ExprInfo INFO[] = {
   {ex::VARIABLE,       "variable",                82, ex::FIRST_REFERENCE},
   {ex::COMMON_EXPR,    "common expression",       -1, ex::FIRST_REFERENCE},
 
-  // Unary expressions.
+  // Unary expressions
   {ex::MINUS,          "unary -",                 16, ex::FIRST_UNARY},
   {ex::ABS,            "abs",                     15, ex::FIRST_UNARY},
   {ex::FLOOR,          "floor",                   13, ex::FIRST_UNARY},
@@ -71,7 +71,7 @@ const ExprInfo INFO[] = {
   {ex::ATAN,           "atan",                    49, ex::FIRST_UNARY},
   {ex::ATANH,          "atanh",                   47, ex::FIRST_UNARY},
 
-  // Binary expressions.
+  // Binary expressions
   {ex::ADD,            "+",                        0, ex::FIRST_BINARY},
   {ex::SUB,            "-",                        1, ex::FIRST_BINARY},
   {ex::LESS,           "less",                     6, ex::FIRST_BINARY},
@@ -253,7 +253,6 @@ TEST(CommonTest, Str) {
 }
 
 TEST(CommonTest, NLOpCode) {
-  EXPECT_EQ(ex::LAST_EXPR + 1u, NUM_KINDS);
   for (std::size_t i = 0; i < NUM_KINDS; ++i)
     EXPECT_EQ(INFO[i].opcode, nl_opcode(INFO[i].kind));
   EXPECT_ASSERT(ex::nl_opcode(static_cast<ex::Kind>(-1)),

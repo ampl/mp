@@ -27,6 +27,7 @@
 #include "expr-writer.h"
 
 namespace ex = mp::expr;
+namespace prec = mp::prec;
 
 using mp::NumericExpr;
 using mp::LogicalExpr;
@@ -85,6 +86,135 @@ class ExprWriterTest : public ::testing::Test, protected mp::ExprFactory {
     return EndIteratedLogical(builder);
   }
 };
+
+// Precedence info.
+const struct {
+  ex::Kind kind;
+  prec::Precedence prec;
+} INFO[] = {
+  {ex::UNKNOWN,        prec::UNKNOWN},
+
+  // Numeric expressions
+  // -------------------
+
+  {ex::NUMBER,         prec::PRIMARY},
+  {ex::VARIABLE,       prec::PRIMARY},
+  {ex::COMMON_EXPR,    prec::PRIMARY},
+
+  // Unary expressions
+  {ex::MINUS,          prec::UNARY},
+  {ex::ABS,            prec::CALL},
+  {ex::FLOOR,          prec::CALL},
+  {ex::CEIL,           prec::CALL},
+  {ex::SQRT,           prec::CALL},
+  {ex::POW2,           prec::EXPONENTIATION},
+  {ex::EXP,            prec::CALL},
+  {ex::LOG,            prec::CALL},
+  {ex::LOG10,          prec::CALL},
+  {ex::SIN,            prec::CALL},
+  {ex::SINH,           prec::CALL},
+  {ex::COS,            prec::CALL},
+  {ex::COSH,           prec::CALL},
+  {ex::TAN,            prec::CALL},
+  {ex::TANH,           prec::CALL},
+  {ex::ASIN,           prec::CALL},
+  {ex::ASINH,          prec::CALL},
+  {ex::ACOS,           prec::CALL},
+  {ex::ACOSH,          prec::CALL},
+  {ex::ATAN,           prec::CALL},
+  {ex::ATANH,          prec::CALL},
+
+  // Binary expressions
+  {ex::ADD,            prec::ADDITIVE},
+  {ex::SUB,            prec::ADDITIVE},
+  {ex::LESS,           prec::ADDITIVE},
+  {ex::MUL,            prec::MULTIPLICATIVE},
+  {ex::DIV,            prec::MULTIPLICATIVE},
+  {ex::TRUNC_DIV,      prec::MULTIPLICATIVE},
+  {ex::MOD,            prec::MULTIPLICATIVE},
+  {ex::POW,            prec::EXPONENTIATION},
+  {ex::POW_CONST_BASE, prec::EXPONENTIATION},
+  {ex::POW_CONST_EXP,  prec::EXPONENTIATION},
+  {ex::ATAN2,          prec::CALL},
+  {ex::PRECISION,      prec::CALL},
+  {ex::ROUND,          prec::CALL},
+  {ex::TRUNC,          prec::CALL},
+
+  {ex::IF,             prec::CONDITIONAL},
+  {ex::PLTERM,         prec::CALL},
+  {ex::CALL,           prec::CALL},
+
+  {ex::MIN,            prec::CALL},
+  {ex::MAX,            prec::CALL},
+  {ex::SUM,            prec::ITERATIVE},
+  {ex::NUMBEROF,       prec::CALL},
+  {ex::NUMBEROF_SYM,   prec::CALL},
+  {ex::COUNT,          prec::CALL},
+
+  // Logical expressions
+  // -------------------
+
+  {ex::BOOL,           prec::PRIMARY},
+  {ex::NOT,            prec::NOT},
+
+  {ex::OR,             prec::LOGICAL_OR},
+  {ex::AND,            prec::LOGICAL_AND},
+  {ex::IFF,            prec::IFF},
+
+  {ex::LT,             prec::RELATIONAL},
+  {ex::LE,             prec::RELATIONAL},
+  {ex::EQ,             prec::RELATIONAL},
+  {ex::GE,             prec::RELATIONAL},
+  {ex::GT,             prec::RELATIONAL},
+  {ex::NE,             prec::RELATIONAL},
+
+  {ex::ATLEAST,        prec::CALL},
+  {ex::ATMOST,         prec::CALL},
+  {ex::EXACTLY,        prec::CALL},
+  {ex::NOT_ATLEAST,    prec::CALL},
+  {ex::NOT_ATMOST,     prec::CALL},
+  {ex::NOT_EXACTLY,    prec::CALL},
+
+  {ex::IMPLICATION,    prec::IMPLICATION},
+
+  {ex::EXISTS,         prec::CALL},
+  {ex::FORALL,         prec::CALL},
+
+  {ex::ALLDIFF,        prec::CALL},
+  {ex::NOT_ALLDIFF,    prec::CALL},
+
+  // String expressions
+  // ------------------
+
+  {ex::STRING,         prec::PRIMARY},
+  {ex::IFSYM,          prec::CONDITIONAL}
+};
+
+TEST_F(ExprWriterTest, Precedence) {
+  const std::size_t num_exprs = sizeof(INFO) / sizeof(*INFO);
+  EXPECT_EQ(ex::LAST_EXPR + 1, num_exprs);
+  for (std::size_t i = 0; i < num_exprs; ++i)
+    EXPECT_EQ(INFO[i].prec, precedence(INFO[i].kind)) << str(INFO[i].kind);
+  const prec::Precedence PREC[] = {
+    prec::UNKNOWN,
+    prec::CONDITIONAL,
+    prec::IFF,
+    prec::IMPLICATION,
+    prec::LOGICAL_OR,
+    prec::LOGICAL_AND,
+    prec::NOT,
+    prec::RELATIONAL,
+    prec::ADDITIVE,
+    prec::ITERATIVE,
+    prec::MULTIPLICATIVE,
+    prec::EXPONENTIATION,
+    prec::UNARY,
+    prec::CALL,
+    prec::PRIMARY
+  };
+  for (std::size_t i = 1, n = sizeof(PREC) / sizeof(*PREC); i < n; ++i)
+    EXPECT_EQ(PREC[i - 1] + 1, PREC[i]);
+}
 
 // Checks if formatting expr produces expected output.
 #define CHECK_WRITE(expected_output, expr) \
