@@ -869,8 +869,8 @@ void BasicProblem<Alloc>::SetComplementarity(
   compl_vars_[con_index] = var_index + 1u;
   double inf = std::numeric_limits<double>::infinity();
   AlgebraicConInfo &con = algebraic_cons_[con_index];
-  con.lb = (flags & complement::INF_LB) != 0 ? -inf : 0;
-  con.ub = (flags & complement::INF_UB) != 0 ?  inf : 0;
+  con.lb = (flags & complement::FINITE_LB) != 0 ? 0 : -inf;
+  con.ub = (flags & complement::FINITE_UB) != 0 ? 0 :  inf;
 }
 
 template <typename Alloc>

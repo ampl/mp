@@ -403,9 +403,12 @@ class NLHandler {
 
   /**
     \rst
-    Receives notification of a complementarity relation.
-    *flags* is a bitwise OR of the flags defined in the `mp::complement`
-    namespace.
+    Receives notification of a complementarity relation
+    ``lb <= x <= ub complements body``, where ``x`` is the variable at index
+    *var_index* and ``body`` is the constraint body. *flags* is a bitwise OR
+    of the flags defined in the `mp::complement` namespace specifying which
+    bounds on the variable are finite. Bound values are given separately via
+    `~mp::NLHandler::OnVarBounds`.
     \endrst
    */
   void OnComplementarity(int con_index, int var_index, int flags) {
@@ -1784,7 +1787,7 @@ void NLReader<Reader, Handler>::ReadBounds() {
         if (var_index == 0 || var_index > header_.num_vars)
           reader_.ReportError("integer {} out of bounds", var_index);
         --var_index;
-        int mask = complement::INF_LB | complement::INF_UB;
+        int mask = complement::FINITE_LB | complement::FINITE_UB;
         handler_.OnComplementarity(i, var_index, flags & mask);
         reader_.ReadTillEndOfLine();
         continue;

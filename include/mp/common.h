@@ -62,8 +62,8 @@ enum Type {
 namespace complement {
 /** Flags for complementarity constraints. */
 enum {
-  INF_LB = 1,
-  INF_UB = 2
+  FINITE_LB = 1,  /**< Finite lower bound on a variable */
+  FINITE_UB = 2   /**< Finite upper bound on a variable */
 };
 }
 
