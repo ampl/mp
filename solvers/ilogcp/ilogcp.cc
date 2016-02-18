@@ -241,7 +241,7 @@ std::string ConvertSolutionStatus(
       solve_code = 600;
       return "interrupted";
     }
-    solve_code = sol::UNSOLVED;
+    solve_code = sol::UNCERTAIN;
     return "feasible solution";
   case IloAlgorithm::Optimal:
     solve_code = sol::SOLVED;
@@ -716,7 +716,7 @@ void IlogCPSolver::SolveWithCP(
         solve_code = sol::LIMIT;
         status = "limit";
       }
-    } else if (solve_code == sol::UNSOLVED)
+    } else if (solve_code == sol::UNCERTAIN)
       solve_code = 0;
   }
 
