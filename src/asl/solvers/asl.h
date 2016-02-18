@@ -899,8 +899,7 @@ enum ASL_reader_error_codes {
 	ASL_readerr_unavail= 4, /* user-defined function not available */
 	ASL_readerr_corrupt= 5, /* corrupt .nl file */
 	ASL_readerr_bug	   = 6,	/* bug in .nl reader */
-	ASL_readerr_CLP    = 7, /* solver cannot handle CLP extensions */
-	ASL_readerr_badperm= 8  /* .nl file generated with bad $nl_permute */
+	ASL_readerr_CLP    = 7  /* solver cannot handle CLP extensions */
 	};
 
 enum ASL_suf_sos_flags { /* bits in flags parameter of suf_sos() */
