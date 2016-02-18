@@ -592,7 +592,7 @@ void GecodeSolver::Output(fmt::CStringRef format, const fmt::ArgList &args) {
 
 GecodeSolver::GecodeSolver()
 : SolverImpl<Problem>(
-    "gecode", "gecode " GECODE_VERSION, 20141107, MULTIPLE_SOL),
+    "gecode", "gecode " GECODE_VERSION, 20160205, MULTIPLE_SOL),
   output_(false), output_frequency_(1), output_count_(0), solve_code_(-1),
   icl_(Gecode::ICL_DEF),
   var_branching_(IntVarBranch::SEL_SIZE_MIN),
