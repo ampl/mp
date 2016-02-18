@@ -109,7 +109,7 @@ class SulumSolver::DblSulumOption : public TypedSolverOption<double> {
 };
 
 SulumSolver::SulumSolver()
-  : SolverImpl<ColProblem>("sulum", "", 20130908), env_(), model_() {
+  : SolverImpl<ColProblem>("sulum", "", 20160218), env_(), model_() {
   int major = 0, minor = 0, interim = 0;
   SlmGetSulumVersion(&major, &minor, &interim);
   std::string version = fmt::format("sulum {}.{}.{}", major, minor, interim);
@@ -241,11 +241,11 @@ void SulumSolver::Solve(ColProblem &p, SolutionHandler &sh) {
     status = "optimal solution";
     break;
   case SlmSolStatPrimFeas:
-    solve_code = sol::UNSOLVED;
+    solve_code = sol::UNCERTAIN;
     status = "feasible solution";
     break;
   case SlmSolStatDualFeas:
-    solve_code = sol::UNSOLVED + 1;
+    solve_code = sol::UNCERTAIN + 1;
     status = "dual feasible solution";
     break;
   case SlmSolStatPrimInf:
@@ -257,7 +257,7 @@ void SulumSolver::Solve(ColProblem &p, SolutionHandler &sh) {
     status = "infeasible or unbounded";
     break;
   case SlmSolStatIntFeas:
-    solve_code = sol::UNSOLVED + 2;
+    solve_code = sol::UNCERTAIN + 2;
     status = "integer feasible solution";
     break;
   case SlmSolStatIntInf:
