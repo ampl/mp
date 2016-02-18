@@ -1,5 +1,5 @@
-Sulum
-=====
+Sulum (discontinued)
+====================
 
 The solver ``sulum`` uses `Sulum <http://www.sulumoptimization.com/>`_
 to solve LP or MIP problems.

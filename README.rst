@@ -36,9 +36,6 @@ Features
 
   - `LocalSolver <https://github.com/ampl/mp/tree/master/solvers/localsolver>`_
 
-* Interface to `Sulum <https://github.com/ampl/mp/tree/master/solvers/sulum>`_
-  LP and MIP solver
-
 * Interfaces to COIN-OR Solvers (in the `ampl/coin <https://github.com/ampl/coin>`_ repository):
 
   - Clp
