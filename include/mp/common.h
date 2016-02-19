@@ -101,7 +101,7 @@ enum Kind {
   VAR     =    0,  /**< Applies to variables. */
   CON     =    1,  /**< Applies to constraints. */
   OBJ     =    2,  /**< Applies to objectives. */
-  PROBLEM =    3,  /**< Applies to problems. */
+  PROBLEM =    3   /**< Applies to problems. */
 };
 
 // Suffix flags.
