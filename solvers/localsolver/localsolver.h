@@ -169,8 +169,9 @@ class LSProblemBuilder :
   };
 
   template <typename T>
-  SuffixHandler<T> AddSuffix(fmt::StringRef name, int kind, int num_values) {
-    if (name != "bound" || (kind & suf::MASK) != suf::OBJ)
+  SuffixHandler<T> AddSuffix(fmt::StringRef name, suf::Kind kind,
+                             int num_values) {
+    if (name != "bound" || kind != suf::OBJ)
       return SuffixHandler<T>();
     obj_bounds_.reserve(num_values);
     return SuffixHandler<T>(&obj_bounds_);
@@ -456,11 +457,13 @@ class LSProblemBuilder :
   typedef SuffixHandler<int> IntSuffixHandler;
   typedef SuffixHandler<double> DblSuffixHandler;
 
-  IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int num_values) {
+  IntSuffixHandler AddIntSuffix(fmt::StringRef name, suf::Kind kind,
+                                int num_values) {
     return AddSuffix<int>(name, kind, num_values);
   }
 
-  DblSuffixHandler AddDblSuffix(fmt::StringRef name, int kind, int num_values) {
+  DblSuffixHandler AddDblSuffix(fmt::StringRef name, suf::Kind kind,
+                                int num_values) {
     return AddSuffix<double>(name, kind, num_values);
   }
 };

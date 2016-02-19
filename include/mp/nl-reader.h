@@ -158,13 +158,6 @@ enum {
   MAX_AMPL_OPTIONS = 9
 };
 
-namespace internal {
-enum {
-  USE_VBTOL_OPTION = 1,
-  READ_VBTOL       = 3
-};
-}
-
 namespace arith {
 
 /** Floating-point arithmetic kind. */
@@ -404,15 +397,13 @@ class NLHandler {
   /**
     \rst
     Receives notification of a complementarity relation
-    ``lb <= x <= ub complements body``, where ``x`` is the variable at index
-    *var_index* and ``body`` is the constraint body. *flags* is a bitwise OR
-    of the flags defined in the `mp::complement` namespace specifying which
-    bounds on the variable are finite. Bound values are given separately via
-    `~mp::NLHandler::OnVarBounds`.
+    ``lb <= x <= ub complements body``, where ``x`` is the variable at
+    index *var_index* and ``body`` is the constraint body. *info* gives
+    the constraint bounds.
     \endrst
    */
-  void OnComplementarity(int con_index, int var_index, int flags) {
-    internal::Unused(con_index, var_index, flags);
+  void OnComplementarity(int con_index, int var_index, ComplInfo info) {
+    internal::Unused(con_index, var_index, &info);
   }
 
   /**
@@ -495,10 +486,11 @@ class NLHandler {
     \rst
     Receives notification of an integer suffix.
     The *name* argument is a suffix name and it is not null-terminated.
-    *kind* is a bitwise OR of the constants defined in the `mp::suf` namespace.
+    *kind* specifies the suffix kind.
     \endrst
    */
-  IntSuffixHandler OnIntSuffix(fmt::StringRef name, int kind, int num_values) {
+  IntSuffixHandler OnIntSuffix(fmt::StringRef name, suf::Kind kind,
+                               int num_values) {
     internal::Unused(&name, kind, num_values);
     return IntSuffixHandler();
   }
@@ -513,10 +505,11 @@ class NLHandler {
     \rst
     Receives notification of a double suffix.
     The *name* argument is a suffix name and it is not null-terminated.
-    *kind* is a bitwise OR of the constants defined in the `mp::suf` namespace.
+    *kind* specifies the suffix kind.
     \endrst
    */
-  DblSuffixHandler OnDblSuffix(fmt::StringRef name, int kind, int num_values) {
+  DblSuffixHandler OnDblSuffix(fmt::StringRef name, suf::Kind kind,
+                               int num_values) {
     internal::Unused(&name, kind, num_values);
     return DblSuffixHandler();
   }
@@ -1463,7 +1456,7 @@ class NLReader {
   }
 
   template <typename ItemInfo>
-  void ReadSuffix(int kind);
+  void ReadSuffix(int info);
 
  public:
   NLReader(Reader &reader, const NLHeader &header, Handler &handler, int flags)
@@ -1787,8 +1780,8 @@ void NLReader<Reader, Handler>::ReadBounds() {
         if (var_index == 0 || var_index > header_.num_vars)
           reader_.ReportError("integer {} out of bounds", var_index);
         --var_index;
-        int mask = complement::FINITE_LB | complement::FINITE_UB;
-        handler_.OnComplementarity(i, var_index, flags & mask);
+        int mask = ComplInfo::INF_LB | ComplInfo::INF_UB;
+        handler_.OnComplementarity(i, var_index, ComplInfo(flags & mask));
         reader_.ReadTillEndOfLine();
         continue;
       }
@@ -1840,12 +1833,13 @@ void NLReader<Reader, Handler>::ReadInitialValues() {
 
 template <typename Reader, typename Handler>
 template <typename ItemInfo>
-void NLReader<Reader, Handler>::ReadSuffix(int kind) {
+void NLReader<Reader, Handler>::ReadSuffix(int info) {
   int num_items = ItemInfo(*this).num_items();
   int num_values = ReadUInt(1, num_items + 1);
   fmt::StringRef name = reader_.ReadName();
   reader_.ReadTillEndOfLine();
-  if ((kind & suf::FLOAT) != 0) {
+  suf::Kind kind = static_cast<suf::Kind>(info & internal::SUFFIX_KIND_MASK);
+  if ((info & suf::FLOAT) != 0) {
     typename Handler::DblSuffixHandler
         suffix_handler = handler_.OnDblSuffix(name, kind, num_values);
     ReadSuffixValues<DoubleReader>(num_values, num_items, suffix_handler);
@@ -1930,21 +1924,21 @@ void NLReader<Reader, Handler>::Read(Reader *bound_reader) {
       break;
     case 'S': {
       // Suffix values.
-      int kind = reader_.ReadUInt();
-      if (kind > (internal::SUFFIX_MASK | suf::FLOAT))
+      int info = reader_.ReadUInt();
+      if (info > (internal::SUFFIX_KIND_MASK | suf::FLOAT))
         reader_.ReportError("invalid suffix kind");
-      switch (kind & internal::SUFFIX_MASK) {
+      switch (info & internal::SUFFIX_KIND_MASK) {
       case suf::VAR:
-        ReadSuffix<VarHandler>(kind);
+        ReadSuffix<VarHandler>(info);
         break;
       case suf::CON:
-        ReadSuffix<ConHandler>(kind);
+        ReadSuffix<ConHandler>(info);
         break;
       case suf::OBJ:
-        ReadSuffix<ObjHandler>(kind);
+        ReadSuffix<ObjHandler>(info);
         break;
       case suf::PROBLEM:
-        ReadSuffix<ProblemHandler>(kind);
+        ReadSuffix<ProblemHandler>(info);
         break;
       }
       break;

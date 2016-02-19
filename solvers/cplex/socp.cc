@@ -21,7 +21,7 @@
  */
 
 #include "mp/expr-visitor.h"
-#include "mp/nl.h"
+#include "mp/nl-reader.h"
 #include "mp/problem.h"
 #include "mp/problem-builder.h"
 #include "asl.h"

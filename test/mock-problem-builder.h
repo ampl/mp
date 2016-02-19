@@ -155,7 +155,7 @@ class MockProblemBuilder {
                                     NumericExpr expr, int position));
 
   MOCK_METHOD3(SetComplementarity,
-               void (int con_index, int var_index, int flags));
+               void (int con_index, int var_index, mp::ComplInfo info));
 
   class MutVariable {
    public:
@@ -186,13 +186,13 @@ class MockProblemBuilder {
 
   MOCK_METHOD3(AddIntSuffix,
                IntSuffixHandler (fmt::StringRef name,
-                                 int kind, int num_values));
+                                 mp::suf::Kind kind, int num_values));
 
   typedef TestSuffixHandler<1> DblSuffixHandler;
 
   MOCK_METHOD3(AddDblSuffix,
                DblSuffixHandler (fmt::StringRef name,
-                                 int kind, int num_values));
+                                 mp::suf::Kind kind, int num_values));
 
 
   typedef TestNumericExprBuilder NumericExprBuilder;

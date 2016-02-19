@@ -79,9 +79,9 @@ void WriteSuffixes(fmt::BufferedFile &file, const SuffixMap *suffixes) {
     if (num_values == 0)
       continue;
     const char *name = i->name();
+    int mask = internal::SUFFIX_KIND_MASK | suf::FLOAT | suf::IODECL;
     file.print("suffix {} {} {} {} {}\n{}\n",
-               i->kind() & (internal::SUFFIX_MASK | suf::FLOAT | suf::IODECL),
-               num_values, std::strlen(name) + 1, 0, 0, name);
+               i->kind() & mask, num_values, std::strlen(name) + 1, 0, 0, name);
     // TODO: write table
     SuffixValueWriter writer(file);
     i->VisitValues(writer);
@@ -109,8 +109,9 @@ void WriteSolFile(fmt::CStringRef filename, const Solution &sol) {
   for (int i = 0, n = num_dual_values; i < n; ++i)
     file.print("{}\n", sol.dual_value(i));
   file.print("objno 0 {}\n", sol.status());
-  for (int suf_kind = 0; suf_kind < internal::NUM_SUFFIX_KINDS; ++suf_kind)
-    internal::WriteSuffixes(file, sol.suffixes(suf_kind));
+  suf::Kind kinds[] = {suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM};
+  for (std::size_t i = 0, n = sizeof(kinds) / sizeof(*kinds); i < n; ++i)
+    internal::WriteSuffixes(file, sol.suffixes(kinds[i]));
   // TODO: test
 }
 }  // namepace mp

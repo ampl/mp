@@ -650,7 +650,7 @@ Function ASLBuilder::AddFunction(
 
 ASLBuilder::SuffixInfo ASLBuilder::AddSuffix(fmt::StringRef name, int kind) {
   bool readall = (flags_ & ASL_keep_all_suffixes) != 0;
-  int item_type = kind & mp::internal::SUFFIX_MASK;
+  int item_type = kind & mp::internal::SUFFIX_KIND_MASK;
   SufDesc *d = 0;
   if (readall) {
     std::size_t size = name.size();
@@ -667,7 +667,7 @@ ASLBuilder::SuffixInfo ASLBuilder::AddSuffix(fmt::StringRef name, int kind) {
     for (d = asl_->i.suffixes[item_type]; ; d = d->next) {
       if (!d)
         return SuffixInfo();  // Skip this suffix table.
-      if (item_type == (d->kind & mp::internal::SUFFIX_MASK) &&
+      if (item_type == (d->kind & mp::internal::SUFFIX_KIND_MASK) &&
           name == d->sufname) {
         if ((d->kind & suf::OUTONLY) != 0)
           return SuffixInfo();

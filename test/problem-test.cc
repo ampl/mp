@@ -548,10 +548,11 @@ TEST(ProblemTest, Complementarity) {
   EXPECT_FALSE(p.HasComplementarity());
   p.AddVar(0, 1);
   p.AddCon(0, 1);
-  p.SetComplementarity(0, 0, 0);
+  using mp::ComplInfo;
+  p.SetComplementarity(0, 0, ComplInfo(0));
   EXPECT_TRUE(p.HasComplementarity());
-  EXPECT_ASSERT(p.SetComplementarity(-1, 0, 0), "invalid index");
-  EXPECT_ASSERT(p.SetComplementarity(1, 0, 0), "invalid index");
-  EXPECT_ASSERT(p.SetComplementarity(0, -1, 0), "invalid index");
-  EXPECT_ASSERT(p.SetComplementarity(0, 1, 0), "invalid index");
+  EXPECT_ASSERT(p.SetComplementarity(-1, 0, ComplInfo(0)), "invalid index");
+  EXPECT_ASSERT(p.SetComplementarity(1, 0, ComplInfo(0)), "invalid index");
+  EXPECT_ASSERT(p.SetComplementarity(0, -1, ComplInfo(0)), "invalid index");
+  EXPECT_ASSERT(p.SetComplementarity(0, 1, ComplInfo(0)), "invalid index");
 }

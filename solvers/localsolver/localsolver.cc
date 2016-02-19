@@ -720,7 +720,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
       status = "limit";
       break;
     case ls::SS_Feasible:
-      solve_code = sol::UNSOLVED;
+      solve_code = sol::UNCERTAIN;
       status = "feasible solution";
       break;
     case ls::SS_Optimal:

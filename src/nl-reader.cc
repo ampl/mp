@@ -22,6 +22,13 @@
 
 #include "mp/nl-reader.h"
 
+namespace {
+enum {
+  USE_VBTOL_OPTION = 1,
+  READ_VBTOL       = 3
+};
+}
+
 void mp::ReadError::init(fmt::CStringRef filename, int line, int column,
                          fmt::CStringRef format_str, fmt::ArgList args) {
   filename_ = filename.c_str();
@@ -55,7 +62,7 @@ fmt::Writer &mp::operator<<(fmt::Writer &w, const NLHeader &h) {
   w << (h.format == NLHeader::TEXT ? 'g' : 'b') << h.num_ampl_options;
   for (int i = 0; i < h.num_ampl_options; ++i)
     w << ' ' << h.ampl_options[i];
-  if (h.ampl_options[internal::USE_VBTOL_OPTION] == internal::READ_VBTOL)
+  if (h.ampl_options[USE_VBTOL_OPTION] == READ_VBTOL)
     w << ' ' << h.ampl_vbtol;
   w << '\n';
   w.write(" {} {} {} {} {} {}\n",
@@ -182,7 +189,7 @@ void mp::internal::TextReader<Locale>::ReadHeader(NLHeader &header) {
     if (!ReadOptionalInt(header.ampl_options[i]))
       break;
   }
-  if (header.ampl_options[internal::USE_VBTOL_OPTION] == internal::READ_VBTOL)
+  if (header.ampl_options[USE_VBTOL_OPTION] == READ_VBTOL)
     ReadOptionalDouble(header.ampl_vbtol);
   ReadTillEndOfLine();
 

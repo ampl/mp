@@ -58,23 +58,54 @@ enum Type {
 };
 }
 
-/** Complementarity information. */
-namespace complement {
-/** Flags for complementarity constraints. */
-enum {
-  FINITE_LB = 1,  /**< Finite lower bound on a variable */
-  FINITE_UB = 2   /**< Finite upper bound on a variable */
+/** Complementarity constraint information. */
+class ComplInfo {
+ private:
+  int flags_;
+
+ public:
+  // Flags for the constructor.
+  enum {
+    /** Constraint upper bound is  infinity (finite variable lower bound). */
+    INF_UB = 1,
+    /** Constraint lower bound is -infinity (finite variable upper bound). */
+    INF_LB = 2
+  };
+
+  /**
+    \rst
+    Constructs a `ComplInfo` object.
+    \endrst
+   */
+  explicit ComplInfo(int flags) : flags_(flags) {
+    MP_ASSERT((flags & ~(INF_UB | INF_LB)) == 0,
+              "invalid complementarity flags");
+  }
+
+  /** Constraint lower bound. */
+  double con_lb() const {
+    return (flags_ & INF_LB) != 0 ?
+          -std::numeric_limits<double>::infinity() : 0;
+  }
+
+  /** Constraint upper bound. */
+  double con_ub() const {
+    return (flags_ & INF_UB) != 0 ? std::numeric_limits<double>::infinity() : 0;
+  }
 };
-}
 
 /** Suffix information. */
 namespace suf {
-// Suffix kinds.
-enum {
+/** Suffix kind. */
+enum Kind {
   VAR     =    0,  /**< Applies to variables. */
   CON     =    1,  /**< Applies to constraints. */
   OBJ     =    2,  /**< Applies to objectives. */
   PROBLEM =    3,  /**< Applies to problems. */
+};
+
+// Suffix flags.
+enum {
   FLOAT   =    4,  /**< Suffix values are floating-point numbers. */
   IODECL  =    8,  /**< Declare an INOUT suffix. */
   OUTPUT  = 0x10,  /**< Output suffix: return values from a solver. */
@@ -85,8 +116,8 @@ enum {
 
 namespace internal {
 enum {
-  SUFFIX_MASK      = 3,  // Mask for suffix kind.
-  NUM_SUFFIX_KINDS = 4,  // The number of suffix kinds.
+  SUFFIX_KIND_MASK = 3,  // Mask for suffix kinds.
+  NUM_SUFFIX_KINDS = 4   // The number of suffix kinds.
 };
 }
 

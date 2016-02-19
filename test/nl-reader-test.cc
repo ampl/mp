@@ -508,8 +508,9 @@ class TestNLHandler {
     WriteBounds('c', index, lb, ub);
   }
 
-  void OnComplementarity(int con_index, int var_index, int flags) {
-    WriteSep().write("c{} complements v{} {};", con_index, var_index, flags);
+  void OnComplementarity(int con_index, int var_index, mp::ComplInfo info) {
+    WriteSep().write("{} <= c{} <= {} complements v{};",
+                     info.con_lb(), con_index, info.con_ub(), var_index);
   }
 
   class LinearExprHandler {
@@ -851,7 +852,7 @@ struct TestNLHandler2 {
 
   void OnVarBounds(int, double, double) {}
   void OnConBounds(int, double, double) {}
-  void OnComplementarity(int, int, int) {}
+  void OnComplementarity(int, int, mp::ComplInfo) {}
 
   struct LinearObjHandler {
     void AddTerm(int, double) {}
@@ -1300,7 +1301,8 @@ TEST(NLReaderTest, ReadVarBounds) {
 
 TEST(NLReaderTest, ReadConBounds) {
   EXPECT_READ("1.1 <= c0; c1 <= 22; c2 = 33; c3; 44 <= c4 <= 55; "
-              "c5 complements v1 3; c6 complements v4 2;",
+              "-inf <= c5 <= inf complements v1; "
+              "-inf <= c6 <= 0 complements v4;",
               "r\n21.1\n1 22\n4 33\n3\n0 44 55\n5 7 2\n5 2 5\n");
   EXPECT_READ_ERROR("r\n-1\n", "(input):18:1: expected bound");
   EXPECT_READ_ERROR("r\n6 1\n", "(input):18:1: expected bound");
@@ -1317,7 +1319,7 @@ TEST(NLReaderTest, ReadConBounds) {
   typedef mp::internal::NLReader<TextReader, TestNLHandler> NLReader;
   NLReader reader(text_reader, header, handler, 0);
   reader.ReadBounds<NLReader::AlgebraicConHandler>();
-  EXPECT_EQ(fmt::format("c0 complements v{} 1;", INT_MAX - 1),
+  EXPECT_EQ(fmt::format("0 <= c0 <= inf complements v{};", INT_MAX - 1),
             handler.log.str());
 }
 

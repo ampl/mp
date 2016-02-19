@@ -539,7 +539,7 @@ TEST_P(SuffixTest, FindSuffix) {
   mp::ASLSuffixPtr suffix = p.suffixes(kind).Find("foo");
   EXPECT_TRUE(suffix);
   EXPECT_STREQ("foo", suffix->name());
-  EXPECT_EQ(kind, suffix->kind() & mp::internal::SUFFIX_MASK);
+  EXPECT_EQ(kind, suffix->kind() & mp::internal::SUFFIX_KIND_MASK);
   EXPECT_STREQ("bar", p.suffixes(kind).Find("bar")->name());
   int kinds[] = {suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM};
   for (std::size_t i = 0, n = sizeof(kinds) / sizeof(*kinds); i != n; ++i) {

@@ -29,6 +29,28 @@
 
 namespace ex = mp::expr;
 
+TEST(CommmonTest, ComplInfo) {
+  using mp::ComplInfo;
+  int flags[] = {
+    0,
+    ComplInfo::INF_LB,
+    ComplInfo::INF_UB,
+    ComplInfo::INF_LB | ComplInfo::INF_UB
+  };
+  EXPECT_NE(0, ComplInfo::INF_LB);
+  EXPECT_NE(0, ComplInfo::INF_UB);
+  EXPECT_NE(ComplInfo::INF_LB, ComplInfo::INF_UB);
+  double inf = std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0, n = sizeof(flags) / sizeof(*flags); i < n; ++i) {
+    int f = flags[i];
+    ComplInfo info(f);
+    EXPECT_EQ((f & ComplInfo::INF_LB) != 0 ? -inf : 0, info.con_lb());
+    EXPECT_EQ((f & ComplInfo::INF_UB) != 0 ?  inf : 0, info.con_ub());
+  }
+  EXPECT_ASSERT(ComplInfo((ComplInfo::INF_LB | ComplInfo::INF_UB) + 1),
+                "invalid complementarity flags");
+}
+
 struct ExprInfo {
   ex::Kind kind;
   const char *str;

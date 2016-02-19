@@ -211,7 +211,7 @@ void asl_jac(ASL *asl, double *x, int64_t *rows, int64_t *cols, double *vals, in
 void asl_hprod(ASL *asl, double *y, double *v, double *hv, double w) {
   double ow  = asl->i.objtype_[0] ? -w : w;  // Objective weight.
   hvpinit_ASL(asl, asl->p.ihd_limit_, 0, NULL, y);
-  asl->p.Hvcomp(asl, hv, v, -1, &ow, y); // nobj=-1 so ow takes precendence.
+  asl->p.Hvcomp(asl, hv, v, -1, &ow, y); // nobj=-1 so ow takes precedence.
 }
 
 void asl_hvcompd(ASL *asl, double *v, double *hv, int nobj) {

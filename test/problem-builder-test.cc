@@ -66,7 +66,8 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(AddCon(0, 0, TestExpr(), 0), "algebraic constraint");
   EXPECT_DISPATCH(AddCon(TestExpr()), "logical constraint");
   EXPECT_DISPATCH(BeginCommonExpr(0), "common expression");
-  EXPECT_DISPATCH(SetComplementarity(0, 0, 0), "complementarity constraint");
+  EXPECT_DISPATCH(SetComplementarity(0, 0, mp::ComplInfo(0)),
+                  "complementarity constraint");
 
   // Initial (dual) values are not reported as unhandled.
   TestProblemBuilder builder;
@@ -149,12 +150,18 @@ TEST(ProblemBuilderTest, Throw) {
   adapter.adapter_func args; \
 }
 
-TEST(NLProblemBuilderTest, Forward) {
-  EXPECT_FORWARD(OnComplementarity, SetComplementarity, (66, 77, 88));
+MATCHER_P2(MatchComplInfo, lb, ub, "") {
+  return arg.con_lb() == lb && arg.con_ub() == ub;
+}
 
+TEST(NLProblemBuilderTest, Forward) {
   {
     StrictMock<MockProblemBuilder> builder;
     mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+
+    double inf = std::numeric_limits<double>::infinity();
+    EXPECT_CALL(builder, SetComplementarity(66, 77, MatchComplInfo(0, inf)));
+    adapter.OnComplementarity(66, 77, mp::ComplInfo(1));
 
     auto header = mp::NLHeader();
     header.num_algebraic_cons = 100;
@@ -183,9 +190,9 @@ TEST(NLProblemBuilderTest, Forward) {
   // are compared as pointers and string literals they point to may not
   // be merged.
   fmt::StringRef str("foo");
-  EXPECT_FORWARD_RET(OnIntSuffix, AddIntSuffix, (str, 99, 11),
+  EXPECT_FORWARD_RET(OnIntSuffix, AddIntSuffix, (str, mp::suf::OBJ, 11),
                      TestSuffixHandler<0>(ID));
-  EXPECT_FORWARD_RET(OnDblSuffix, AddDblSuffix, (str, 99, 11),
+  EXPECT_FORWARD_RET(OnDblSuffix, AddDblSuffix, (str, mp::suf::OBJ, 11),
                      TestSuffixHandler<1>(ID));
 
   EXPECT_FORWARD_RET(OnNumber, MakeNumericConstant,

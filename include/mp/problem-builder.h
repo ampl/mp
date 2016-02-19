@@ -116,8 +116,8 @@ class ProblemBuilder : public SuffixManager {
   }
 
   // Sets a complementarity relation.
-  void SetComplementarity(int con_index, int var_index, int flags) {
-    internal::Unused(con_index, var_index, flags);
+  void SetComplementarity(int con_index, int var_index, ComplInfo info) {
+    internal::Unused(con_index, var_index, &info);
     MP_DISPATCH(ReportUnhandledConstruct("complementarity constraint"));
   }
 
@@ -493,8 +493,8 @@ class ProblemBuilderToNLAdapter {
   }
 
   // Receives notification of a complementarity relation.
-  void OnComplementarity(int con_index, int var_index, int flags) {
-    builder_.SetComplementarity(con_index, var_index, flags);
+  void OnComplementarity(int con_index, int var_index, ComplInfo info) {
+    builder_.SetComplementarity(con_index, var_index, info);
   }
 
   typedef typename ProblemBuilder::LinearObjBuilder LinearObjHandler;
@@ -572,14 +572,16 @@ class ProblemBuilderToNLAdapter {
   typedef typename ProblemBuilder::IntSuffixHandler IntSuffixHandler;
 
   // Receives notification of an integer suffix.
-  IntSuffixHandler OnIntSuffix(fmt::StringRef name, int kind, int num_values) {
+  IntSuffixHandler OnIntSuffix(fmt::StringRef name, suf::Kind kind,
+                               int num_values) {
     return builder_.AddIntSuffix(name, kind, num_values);
   }
 
   typedef typename ProblemBuilder::DblSuffixHandler DblSuffixHandler;
 
   // Receives notification of a double suffix.
-  DblSuffixHandler OnDblSuffix(fmt::StringRef name, int kind, int num_values) {
+  DblSuffixHandler OnDblSuffix(fmt::StringRef name, suf::Kind kind,
+                               int num_values) {
     return builder_.AddDblSuffix(name, kind, num_values);
   }
 

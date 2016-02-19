@@ -1234,9 +1234,7 @@ struct MockSolWriter {
 };
 
 // Matcher that compares a StringRef with a C string for equality.
-MATCHER_P(StringRefEq, str, "") {
-  return arg == str;
-}
+MATCHER_P(StringRefEq, str, "") { return arg == str; }
 
 // Matcher that checks that the solution being written has the specified
 // values and dual values.

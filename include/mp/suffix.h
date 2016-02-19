@@ -430,6 +430,11 @@ class SuffixManager {
  private:
   mp::SuffixSet suffixes_[internal::NUM_SUFFIX_KINDS];
 
+  static void Check(suf::Kind kind) {
+    MP_ASSERT(kind >= 0 && kind < internal::NUM_SUFFIX_KINDS,
+              "invalid suffix kind");
+  }
+
  public:
   virtual ~SuffixManager() {}
 
@@ -438,14 +443,12 @@ class SuffixManager {
   typedef mp::SuffixSet SuffixSet;
 
   // Returns a set of suffixes.
-  SuffixSet &suffixes(int kind) {
-    MP_ASSERT(kind >= 0 && kind < internal::NUM_SUFFIX_KINDS,
-              "invalid suffix kind");
+  SuffixSet &suffixes(suf::Kind kind) {
+    Check(kind);
     return suffixes_[kind];
   }
-  const SuffixSet &suffixes(int kind) const {
-    MP_ASSERT(kind >= 0 && kind < internal::NUM_SUFFIX_KINDS,
-              "invalid suffix kind");
+  const SuffixSet &suffixes(suf::Kind kind) const {
+    Check(kind);
     return suffixes_[kind];
   }
 };

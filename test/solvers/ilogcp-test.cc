@@ -42,7 +42,6 @@
 #include "ilogcp/concert.h"
 #include "ilogcp/ilogcp.h"
 #include "mp/expr-visitor.h"
-#include "mp/nl.h"
 #include "feature.h"
 
 typedef mp::IlogCPSolver Solver;

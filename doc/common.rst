@@ -9,9 +9,9 @@ Header: :file:`mp/common.h`
 
 .. doxygenenum:: mp::func::Type
 
-.. doxygennamespace:: mp::complement
+.. doxygenclass:: mp::ComplInfo
 
-.. doxygennamespace:: mp::suf
+.. doxygenenum:: mp::suf::Kind
 
 .. doxygenenum:: mp::sol::Status
 

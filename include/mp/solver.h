@@ -962,7 +962,7 @@ class SolutionAdapter {
   int num_dual_values() const { return static_cast<int>(dual_values_.size()); }
   double dual_value(int index) const { return dual_values_[index]; }
 
-  const typename ProblemBuilder::SuffixSet *suffixes(int kind) const {
+  const typename ProblemBuilder::SuffixSet *suffixes(suf::Kind kind) const {
     return builder_ ? &builder_->suffixes(kind) : 0;
   }
 };

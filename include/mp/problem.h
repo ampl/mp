@@ -267,13 +267,12 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
   };
 
-  int GetSuffixSize(int suffix_type);
+  int GetSuffixSize(suf::Kind kind);
 
   template <typename T>
-  SuffixHandler<T> AddSuffix(fmt::StringRef name, int kind) {
-    int type = kind & internal::SUFFIX_MASK;
+  SuffixHandler<T> AddSuffix(fmt::StringRef name, suf::Kind kind) {
     return SuffixHandler<T>(
-          suffixes(type).template Add<T>(name, kind, GetSuffixSize(type)));
+          suffixes(kind).template Add<T>(name, kind, GetSuffixSize(kind)));
   }
 
   template <typename ProblemType>
@@ -782,7 +781,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
   // Sets a complementarity condition.
-  void SetComplementarity(int con_index, int var_index, int flags);
+  void SetComplementarity(int con_index, int var_index, ComplInfo info);
 
   // Returns true if the problem has complementarity conditions.
   bool HasComplementarity() const { return !compl_vars_.empty(); }
@@ -791,7 +790,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Adds an integer suffix.
   // name: Suffix name that may not be null-terminated.
-  IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int) {
+  IntSuffixHandler AddIntSuffix(fmt::StringRef name, suf::Kind kind, int) {
     return AddSuffix<int>(name, kind);
   }
 
@@ -799,7 +798,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Adds an double suffix.
   // name: Suffix name that may not be null-terminated.
-  DblSuffixHandler AddDblSuffix(fmt::StringRef name, int kind, int) {
+  DblSuffixHandler AddDblSuffix(fmt::StringRef name, suf::Kind kind, int) {
     return AddSuffix<double>(name, kind);
   }
 
@@ -808,11 +807,11 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 };
 
 template <typename Alloc>
-int BasicProblem<Alloc>::GetSuffixSize(int suffix_type) {
+int BasicProblem<Alloc>::GetSuffixSize(suf::Kind kind) {
   std::size_t size = 0;
-  switch (suffix_type) {
+  switch (kind) {
   default:
-    MP_ASSERT(false, "invalid suffix type");
+    MP_ASSERT(false, "invalid suffix kind");
     // Fall through.
   case suf::VAR:
     size = vars_.capacity();
@@ -858,7 +857,7 @@ typename BasicProblem<Alloc>::LinearConBuilder BasicProblem<Alloc>::AddCon(
 
 template <typename Alloc>
 void BasicProblem<Alloc>::SetComplementarity(
-    int con_index, int var_index, int flags) {
+    int con_index, int var_index, ComplInfo info) {
   MP_ASSERT(0 <= con_index && con_index < num_algebraic_cons(),
             "invalid index");
   MP_ASSERT(0 <= var_index && var_index < num_vars(), "invalid index");
@@ -867,10 +866,9 @@ void BasicProblem<Alloc>::SetComplementarity(
     compl_vars_.resize(algebraic_cons_.size());
   }
   compl_vars_[con_index] = var_index + 1u;
-  double inf = std::numeric_limits<double>::infinity();
   AlgebraicConInfo &con = algebraic_cons_[con_index];
-  con.lb = (flags & complement::FINITE_LB) != 0 ? 0 : -inf;
-  con.ub = (flags & complement::FINITE_UB) != 0 ? 0 :  inf;
+  con.lb = info.con_lb();
+  con.ub = info.con_ub();
 }
 
 template <typename Alloc>

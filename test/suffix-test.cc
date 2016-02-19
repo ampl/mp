@@ -343,10 +343,11 @@ TEST(SuffixManager, Suffixes) {
   mp::SuffixManager::Suffix s = is;
   EXPECT_STREQ("test", s.name());
   for (int i = 0; i < mp::internal::NUM_SUFFIX_KINDS; ++i)
-    sm.suffixes(i);
-  EXPECT_ASSERT(sm.suffixes(-1), "invalid suffix kind");
-  EXPECT_ASSERT(sm.suffixes(mp::internal::NUM_SUFFIX_KINDS),
-                "invalid suffix kind");
+    sm.suffixes(static_cast<suf::Kind>(i));
+  EXPECT_ASSERT(sm.suffixes(static_cast<suf::Kind>(-1)), "invalid suffix kind");
+  EXPECT_ASSERT(
+        sm.suffixes(static_cast<suf::Kind>(mp::internal::NUM_SUFFIX_KINDS)),
+        "invalid suffix kind");
   struct Test {
     static bool ismut(mp::SuffixManager::SuffixSet &) { return true; }
     static bool ismut(const mp::SuffixManager::SuffixSet &) { return false; }
