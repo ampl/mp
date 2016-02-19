@@ -10,6 +10,7 @@ Header: :file:`mp/common.h`
 .. doxygenenum:: mp::func::Type
 
 .. doxygenclass:: mp::ComplInfo
+   :members:
 
 .. doxygenenum:: mp::suf::Kind
 

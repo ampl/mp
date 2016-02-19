@@ -397,9 +397,9 @@ class NLHandler {
   /**
     \rst
     Receives notification of a complementarity relation
-    ``lb <= x <= ub complements body``, where ``x`` is the variable at
-    index *var_index* and ``body`` is the constraint body. *info* gives
-    the constraint bounds.
+    ``var_lb <= x <= var_ub complements con_lb <= body <= con_ub``, where ``x``
+    is the variable at index *var_index* and ``body`` is the constraint body.
+    *info* gives the constraint bounds.
     \endrst
    */
   void OnComplementarity(int con_index, int var_index, ComplInfo info) {
