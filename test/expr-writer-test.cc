@@ -192,7 +192,7 @@ const struct {
 
 TEST_F(ExprWriterTest, Precedence) {
   const std::size_t num_exprs = sizeof(INFO) / sizeof(*INFO);
-  EXPECT_EQ(ex::LAST_EXPR + 1, num_exprs);
+  EXPECT_EQ(ex::LAST_EXPR + 1u, num_exprs);
   for (std::size_t i = 0; i < num_exprs; ++i)
     EXPECT_EQ(INFO[i].prec, precedence(INFO[i].kind)) << str(INFO[i].kind);
   const prec::Precedence PREC[] = {
