@@ -431,9 +431,10 @@ class SuffixManager {
   mp::SuffixSet suffixes_[internal::NUM_SUFFIX_KINDS];
 
   static void Check(suf::Kind kind) {
-    internal::Unused(kind);
-    MP_ASSERT(kind >= 0 && kind < internal::NUM_SUFFIX_KINDS,
-              "invalid suffix kind");
+    // Assign to an int variable to avoid warning about comparing enums.
+    int num_kinds = internal::NUM_SUFFIX_KINDS;
+    internal::Unused(kind, num_kinds);
+    MP_ASSERT(kind >= 0 && kind < num_kinds, "invalid suffix kind");
   }
 
  public:
