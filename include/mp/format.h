@@ -433,7 +433,7 @@ class BasicStringRef {
     return std::basic_string<Char>(data_, size_);
   }
 
-  /** Returns the pointer to a C string. */
+  /** Returns a pointer to the string data. */
   const Char *data() const { return data_; }
 
   /** Returns the string size. */
@@ -892,10 +892,8 @@ class UTF8ToUTF16 {
  private:
   MemoryBuffer<wchar_t, INLINE_BUFFER_SIZE> buffer_;
 
-  FMT_API void convert(fmt::StringRef s);
  public:
-  explicit UTF8ToUTF16(StringRef s) { convert(s); }
-  explicit UTF8ToUTF16(CStringRef s) { convert(s.c_str()); }
+  FMT_API explicit UTF8ToUTF16(StringRef s);
   operator WStringRef() const { return WStringRef(&buffer_[0], size()); }
   size_t size() const { return buffer_.size() - 1; }
   const wchar_t *c_str() const { return &buffer_[0]; }
@@ -1957,7 +1955,13 @@ struct ArgArray<N, true/*IsPacked*/> {
   typedef Value Type[N > 0 ? N : 1];
   
   template <typename Formatter, typename T>
-  static Value make(const T &value) { return MakeValue<Formatter>(value); }
+  static Value make(const T &value) {
+    Value result = MakeValue<Formatter>(value);
+    // Workaround a bug in Apple LLVM version 4.2 (clang-425.0.28) of clang:
+    // https://github.com/cppformat/cppformat/issues/276
+    (void)result.custom.format;
+    return result;
+  }
 };
 
 template <unsigned N>

@@ -143,10 +143,10 @@ void LinkFile(fmt::CStringRef filename, fmt::CStringRef linkname) {
   }
 #else
   using fmt::internal::UTF8ToUTF16;
-  if (!CopyFileW(UTF8ToUTF16(filename).c_str(),
-      UTF8ToUTF16(linkname).c_str(), FALSE)) {
-    throw fmt::WindowsError(GetLastError(), "cannot copy file {} to {}",
-      filename.c_str(), linkname.c_str());
+  if (!CopyFileW(UTF8ToUTF16(filename.c_str()).c_str(),
+      UTF8ToUTF16(linkname.c_str()).c_str(), FALSE)) {
+    throw fmt::WindowsError(GetLastError(),
+                            "cannot copy file {} to {}", filename, linkname);
   }
 #endif
 }
