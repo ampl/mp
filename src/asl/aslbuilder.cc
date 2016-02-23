@@ -334,7 +334,7 @@ void ASLBuilder::SetInfo(const ProblemInfo &pi) {
     throw ASLError(ASL_readerr_CLP, "cannot handle logical constraints");
 
   // TODO: test
-  bool readall = (flags_ & ASL_keep_all_suffixes) != 0;
+  //bool readall = (flags_ & ASL_keep_all_suffixes) != 0;
   if (!info.size_expr_n_)
     info.size_expr_n_ = sizeof(expr_n);
 
@@ -362,8 +362,8 @@ void ASLBuilder::SetInfo(const ProblemInfo &pi) {
   int nc0 = info.n_con_;
   int nc = nc0 + info.nsufext[suf::CON];
   int no = info.n_obj_;
-  int nvc = info.c_vars_;
-  int nvo = info.o_vars_;
+  //int nvc = info.c_vars_;
+  //int nvo = info.o_vars_;
   int nco = nc + no + nlcon;
   if (no < 0 || nco <= 0) {
     throw ASLError(ASL_readerr_corrupt,
@@ -462,7 +462,7 @@ void ASLBuilder::SetInfo(const ProblemInfo &pi) {
     info.cvar_ = reinterpret_cast<int*>(M1alloc_ASL(&info, nc * sizeof(int)));
   if (info.cvar_)
     std::memset(info.cvar_, 0, nc * sizeof(int));
-  int *ka = 0;
+  //int *ka = 0;
   nz_ = 0;
   nderp_ = 0;
 }
