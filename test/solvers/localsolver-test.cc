@@ -81,6 +81,10 @@ std::string ConvertOptionValue(const fmt::StringRef &value) {
   return value.to_string();
 }
 
+int ConvertOptionValue(fmt::LongLong value) {
+  return static_cast<int>(value);
+}
+
 // LocalSolver option stored in LSParam
 template <typename T, typename ParamT = T>
 struct Option : public BasicOption<T> {
