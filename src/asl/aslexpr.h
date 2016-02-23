@@ -766,6 +766,7 @@ class LinearCommonExpr {
 
  public:
   explicit LinearCommonExpr(const cexp *e = 0) : expr_(e) {}
+  int num_terms() const { return expr_->nlin; }
   // TODO
 };
 
