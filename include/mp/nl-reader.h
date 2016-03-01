@@ -284,15 +284,15 @@ fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
   \rst
   An NL handler.
 
-  `NLHandler` can be used as a base class for other handlers. Subclasses
+  `~mp::NLHandler` can be used as a base class for other handlers. Subclasses
   only need to redefine methods that handle constructs they are interested
   in and, possibly, the types used by these methods.
 
-  *Impl* is a type derived from `NLHandler` that will receive notifications of
-  unhandled constructs via `NLHandler::OnUnhandled`.
+  *Impl* is a type derived from `~mp::NLHandler` that will receive notifications
+  of unhandled constructs via `~mp::NLHandler::OnUnhandled`.
 
   *ExprType* is a return type of expression handler methods such as
-  `NLHandler::OnUnary` useful for building expression objects. If not used
+  `~mp::NLHandler::OnUnary` useful for building expression objects. If not used
   it can be any default-constructible type.
   \endrst
  */
@@ -1029,11 +1029,12 @@ class NLHandler {
 /**
   An NL handler that ignores all input.
 
-  `NullNLHandler` can be used as a base class when only a subset of constructs
-  needs to be handled. Unhandled constructs will be ignored, not reported.
+  `~mp::NullNLHandler` can be used as a base class when only a subset of
+  constructs needs to be handled. Unhandled constructs will be ignored, not
+  reported.
 
   *ExprType* is a return type of expression handler methods such as
-  `NLHandler::OnUnary` useful for building expression objects. If not used
+  `~mp::NLHandler::OnUnary` useful for building expression objects. If not used
   it can be any default-constructible type.
  */
 template <typename ExprType>
