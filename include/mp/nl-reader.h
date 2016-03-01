@@ -281,13 +281,22 @@ struct NLHeader : ProblemInfo {
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 
 /**
-  A basic NL handler that ignores all input.
+  \rst
+  An NL handler.
 
-  NLHandler can be used as a base class for other handlers. Subclasses
+  `NLHandler` can be used as a base class for other handlers. Subclasses
   only need to redefine methods that handle constructs they are interested
   in and, possibly, the types used by these methods.
+
+  *Impl* is a type derived from `NLHandler` that will receive notifications of
+  unhandled constructs via `NLHandler::OnUnhandled`.
+
+  *ExprType* is a return type of expression handler methods such as
+  `NLHandler::OnUnary` useful for building expression objects. If not used
+  it can be any default-constructible type.
+  \endrst
  */
-template <typename ExprType>
+template <typename Impl, typename ExprType>
 class NLHandler {
  public:
   /** Destroys the object. */
@@ -334,8 +343,19 @@ class NLHandler {
    */
   typedef Expr Reference;
 
+  /**
+    Receives notification of an unhandled construct of the given kind.
+    Throws `UnsupportedError`.
+   */
+  void OnUnhandled(const char *kind) {
+    throw MakeUnsupportedError(kind);
+  }
+
   /** Receives notification of an NL header. */
-  void OnHeader(const NLHeader &h) { internal::Unused(&h); }
+  void OnHeader(const NLHeader &h) {
+    internal::Unused(&h);
+    MP_DISPATCH(OnUnhandled("NL header"));
+  }
 
   /**
     \rst
@@ -353,6 +373,7 @@ class NLHandler {
    */
   void OnObj(int index, obj::Type type, NumericExpr expr) {
     internal::Unused(index, type, &expr);
+    MP_DISPATCH(OnUnhandled("objective"));
   }
 
   /**
@@ -361,11 +382,13 @@ class NLHandler {
    */
   void OnAlgebraicCon(int index, NumericExpr expr) {
     internal::Unused(index, &expr);
+    MP_DISPATCH(OnUnhandled("nonlinear constraint"));
   }
 
   /** Receives notification of a logical constraint expression. */
   void OnLogicalCon(int index, LogicalExpr expr) {
     internal::Unused(index, &expr);
+    MP_DISPATCH(OnUnhandled("logical constraint"));
   }
 
   /**
@@ -385,6 +408,7 @@ class NLHandler {
    */
   LinearExprHandler BeginCommonExpr(int index, int num_linear_terms) {
     internal::Unused(index, num_linear_terms);
+    MP_DISPATCH(OnUnhandled("common expression"));
     return LinearExprHandler();
   }
 
@@ -392,6 +416,7 @@ class NLHandler {
   void EndCommonExpr(LinearExprHandler handler,
                      NumericExpr expr, int position) {
     internal::Unused(handler, &expr, position);
+    MP_DISPATCH(OnUnhandled("common expression"));
   }
 
   /**
@@ -404,6 +429,7 @@ class NLHandler {
    */
   void OnComplementarity(int con_index, int var_index, ComplInfo info) {
     internal::Unused(con_index, var_index, &info);
+    MP_DISPATCH(OnUnhandled("complementarity constraint"));
   }
 
   /**
@@ -415,6 +441,7 @@ class NLHandler {
   /** Receives notification of the linear part of an objective expression. */
   LinearObjHandler OnLinearObjExpr(int obj_index, int num_linear_terms) {
     internal::Unused(obj_index, num_linear_terms);
+    MP_DISPATCH(OnUnhandled("linear objective"));
     return LinearObjHandler();
   }
 
@@ -427,33 +454,39 @@ class NLHandler {
   /** Receives notification of the linear part of a constraint expression. */
   LinearConHandler OnLinearConExpr(int con_index, int num_linear_terms) {
     internal::Unused(con_index, num_linear_terms);
+    MP_DISPATCH(OnUnhandled("linear constraint"));
     return LinearConHandler();
   }
 
   /** Receives notification of the linear part of a common expression. */
-  LinearExprHandler OnLinearCommonExpr(int var_index, int num_linear_terms) {
-    internal::Unused(var_index, num_linear_terms);
+  LinearExprHandler OnLinearCommonExpr(int expr_index, int num_linear_terms) {
+    internal::Unused(expr_index, num_linear_terms);
+    MP_DISPATCH(OnUnhandled("linear common expression"));
     return LinearExprHandler();
   }
 
   /** Receives notification of variable bounds. */
   void OnVarBounds(int index, double lb, double ub) {
     internal::Unused(index, lb, ub);
+    MP_DISPATCH(OnUnhandled("variable bounds"));
   }
 
   /** Receives notification of constraint bounds (ranges). */
   void OnConBounds(int index, double lb, double ub) {
     internal::Unused(index, lb, ub);
+    MP_DISPATCH(OnUnhandled("constraint bounds"));
   }
 
   /** Receives notification of the initial value for a variable. */
   void OnInitialValue(int var_index, double value) {
     internal::Unused(var_index, value);
+    MP_DISPATCH(OnUnhandled("initial value"));
   }
 
   /** Receives notification of the initial value for a dual variable. */
   void OnInitialDualValue(int con_index, double value) {
     internal::Unused(con_index, value);
+    MP_DISPATCH(OnUnhandled("initial dual value"));
   }
 
   /** A class (struct) that receives notifications of Jacobian column sizes. */
@@ -463,7 +496,10 @@ class NLHandler {
   };
 
   /** Receives notification of Jacobian column sizes. */
-  ColumnSizeHandler OnColumnSizes() { return ColumnSizeHandler(); }
+  ColumnSizeHandler OnColumnSizes() {
+    MP_DISPATCH(OnUnhandled("column sizes"));
+    return ColumnSizeHandler();
+  }
 
   /**
     \rst
@@ -474,6 +510,7 @@ class NLHandler {
   void OnFunction(int index, fmt::StringRef name,
                   int num_args, func::Type type) {
     internal::Unused(index, &name, num_args, type);
+    MP_DISPATCH(OnUnhandled("function"));
   }
 
   /** A class (struct) that receives notifications of integer suffix values. */
@@ -492,6 +529,7 @@ class NLHandler {
   IntSuffixHandler OnIntSuffix(fmt::StringRef name, suf::Kind kind,
                                int num_values) {
     internal::Unused(&name, kind, num_values);
+    MP_DISPATCH(OnUnhandled("integer suffix"));
     return IntSuffixHandler();
   }
 
@@ -511,6 +549,7 @@ class NLHandler {
   DblSuffixHandler OnDblSuffix(fmt::StringRef name, suf::Kind kind,
                                int num_values) {
     internal::Unused(&name, kind, num_values);
+    MP_DISPATCH(OnUnhandled("double suffix"));
     return DblSuffixHandler();
   }
 
@@ -599,6 +638,7 @@ class NLHandler {
    */
   NumericExpr OnNumber(double value) {
     internal::Unused(value);
+    MP_DISPATCH(OnUnhandled("number"));
     return NumericExpr();
   }
 
@@ -609,6 +649,7 @@ class NLHandler {
    */
   Reference OnVariableRef(int var_index) {
     internal::Unused(var_index);
+    MP_DISPATCH(OnUnhandled("variable reference"));
     return Reference();
   }
 
@@ -618,8 +659,9 @@ class NLHandler {
     (defined variable) reference.
     \endrst
    */
-  Reference OnCommonExprRef(int index) {
-    internal::Unused(index);
+  Reference OnCommonExprRef(int expr_index) {
+    internal::Unused(expr_index);
+    MP_DISPATCH(OnUnhandled("common expression reference"));
     return Reference();
   }
 
@@ -630,6 +672,7 @@ class NLHandler {
    */
   NumericExpr OnUnary(expr::Kind kind, NumericExpr arg) {
     internal::Unused(kind, &arg);
+    MP_DISPATCH(OnUnhandled("unary expression"));
     return NumericExpr();
   }
 
@@ -640,6 +683,7 @@ class NLHandler {
    */
   NumericExpr OnBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     internal::Unused(kind, &lhs, &rhs);
+    MP_DISPATCH(OnUnhandled("binary expression"));
     return NumericExpr();
   }
 
@@ -651,6 +695,7 @@ class NLHandler {
   NumericExpr OnIf(LogicalExpr condition,
       NumericExpr then_expr, NumericExpr else_expr) {
     internal::Unused(&condition, &then_expr, &else_expr);
+    MP_DISPATCH(OnUnhandled("if expression"));
     return NumericExpr();
   }
 
@@ -676,6 +721,7 @@ class NLHandler {
    */
   PLTermHandler BeginPLTerm(int num_breakpoints) {
     internal::Unused(num_breakpoints);
+    MP_DISPATCH(OnUnhandled("piecewise-linear term"));
     return PLTermHandler();
   }
 
@@ -689,6 +735,7 @@ class NLHandler {
    */
   NumericExpr EndPLTerm(PLTermHandler handler, Reference arg) {
     internal::Unused(&handler, &arg);
+    MP_DISPATCH(OnUnhandled("piecewise-linear term"));
     return NumericExpr();
   }
 
@@ -700,6 +747,7 @@ class NLHandler {
    */
   CallArgHandler BeginCall(int func_index, int num_args) {
     internal::Unused(func_index, num_args);
+    MP_DISPATCH(OnUnhandled("call expression"));
     return CallArgHandler();
   }
 
@@ -710,6 +758,7 @@ class NLHandler {
    */
   NumericExpr EndCall(CallArgHandler handler) {
     internal::Unused(handler);
+    MP_DISPATCH(OnUnhandled("call expression"));
     return NumericExpr();
   }
 
@@ -721,6 +770,7 @@ class NLHandler {
    */
   VarArgHandler BeginVarArg(expr::Kind kind, int num_args) {
     internal::Unused(kind, num_args);
+    MP_DISPATCH(OnUnhandled("vararg expression"));
     return NumericArgHandler();
   }
 
@@ -732,27 +782,29 @@ class NLHandler {
    */
   NumericExpr EndVarArg(VarArgHandler handler) {
     internal::Unused(handler);
+    MP_DISPATCH(OnUnhandled("vararg expression"));
     return NumericExpr();
   }
 
   /**
     \rst
-    Receives notification of the beginning of a `sum expression
-    <mp::expr::SUM>`.
+    Receives notification of the beginning of a `summation <mp::expr::SUM>`.
     \endrst
    */
   NumericArgHandler BeginSum(int num_args) {
     internal::Unused(num_args);
+    MP_DISPATCH(OnUnhandled("summation"));
     return NumericArgHandler();
   }
 
   /**
     \rst
-    Receives notification of the end of a `sum expression <mp::expr::SUM>`.
+    Receives notification of the end of a `summation <mp::expr::SUM>`.
     \endrst
    */
   NumericExpr EndSum(NumericArgHandler handler) {
     internal::Unused(handler);
+    MP_DISPATCH(OnUnhandled("summation"));
     return NumericExpr();
   }
 
@@ -764,6 +816,7 @@ class NLHandler {
    */
   CountArgHandler BeginCount(int num_args) {
     internal::Unused(num_args);
+    MP_DISPATCH(OnUnhandled("count expression"));
     return CountArgHandler();
   }
 
@@ -774,6 +827,7 @@ class NLHandler {
    */
   CountExpr EndCount(CountArgHandler handler) {
     internal::Unused(handler);
+    MP_DISPATCH(OnUnhandled("count expression"));
     return NumericExpr();
   }
 
@@ -785,6 +839,7 @@ class NLHandler {
    */
   NumberOfArgHandler BeginNumberOf(int num_args, NumericExpr arg0) {
     internal::Unused(num_args, &arg0);
+    MP_DISPATCH(OnUnhandled("numberof expression"));
     return NumberOfArgHandler();
   }
 
@@ -796,6 +851,7 @@ class NLHandler {
    */
   NumericExpr EndNumberOf(NumberOfArgHandler handler) {
     internal::Unused(handler);
+    MP_DISPATCH(OnUnhandled("numberof expression"));
     return NumericExpr();
   }
 
@@ -807,6 +863,7 @@ class NLHandler {
    */
   SymbolicArgHandler BeginSymbolicNumberOf(int num_args, Expr arg0) {
     internal::Unused(num_args, &arg0);
+    MP_DISPATCH(OnUnhandled("symbolic numberof expression"));
     return SymbolicArgHandler();
   }
 
@@ -818,6 +875,7 @@ class NLHandler {
    */
   NumericExpr EndSymbolicNumberOf(SymbolicArgHandler handler) {
     internal::Unused(handler);
+    MP_DISPATCH(OnUnhandled("symbolic numberof expression"));
     return NumericExpr();
   }
 
@@ -828,16 +886,18 @@ class NLHandler {
    */
   LogicalExpr OnBool(bool value) {
     internal::Unused(value);
+    MP_DISPATCH(OnUnhandled("bool"));
     return LogicalExpr();
   }
 
   /**
     \rst
-    Receives notification of a `logical not expression <mp::expr::NOT>`.
+    Receives notification of a `logical not <mp::expr::NOT>`.
     \endrst
    */
   LogicalExpr OnNot(LogicalExpr arg) {
     internal::Unused(&arg);
+    MP_DISPATCH(OnUnhandled("logical not"));
     return LogicalExpr();
   }
 
@@ -850,6 +910,7 @@ class NLHandler {
   LogicalExpr OnBinaryLogical(
       expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {
     internal::Unused(kind, &lhs, &rhs);
+    MP_DISPATCH(OnUnhandled("binary logical expression"));
     return LogicalExpr();
   }
 
@@ -861,6 +922,7 @@ class NLHandler {
    */
   LogicalExpr OnRelational(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     internal::Unused(kind, &lhs, &rhs);
+    MP_DISPATCH(OnUnhandled("relational expression"));
     return LogicalExpr();
   }
 
@@ -872,6 +934,7 @@ class NLHandler {
    */
   LogicalExpr OnLogicalCount(expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
     internal::Unused(kind, &lhs, &rhs);
+    MP_DISPATCH(OnUnhandled("logical count expression"));
     return LogicalExpr();
   }
 
@@ -884,6 +947,7 @@ class NLHandler {
   LogicalExpr OnImplication(
       LogicalExpr condition, LogicalExpr then_expr, LogicalExpr else_expr) {
     internal::Unused(&condition, &then_expr, &else_expr);
+    MP_DISPATCH(OnUnhandled("implication expression"));
     return LogicalExpr();
   }
 
@@ -895,6 +959,7 @@ class NLHandler {
    */
   LogicalArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
     internal::Unused(kind, num_args);
+    MP_DISPATCH(OnUnhandled("iterated logical expression"));
     return LogicalArgHandler();
   }
 
@@ -906,6 +971,7 @@ class NLHandler {
    */
   LogicalExpr EndIteratedLogical(LogicalArgHandler handler) {
     internal::Unused(handler);
+    MP_DISPATCH(OnUnhandled("iterated logical expression"));
     return LogicalExpr();
   }
 
@@ -917,6 +983,7 @@ class NLHandler {
    */
   PairwiseArgHandler BeginPairwise(expr::Kind kind, int num_args) {
     internal::Unused(kind, num_args);
+    MP_DISPATCH(OnUnhandled("pairwise expression"));
     return PairwiseArgHandler();
   }
 
@@ -928,6 +995,7 @@ class NLHandler {
    */
   LogicalExpr EndPairwise(PairwiseArgHandler handler) {
     internal::Unused(handler);
+    MP_DISPATCH(OnUnhandled("pairwise expression"));
     return LogicalExpr();
   }
 
@@ -939,6 +1007,7 @@ class NLHandler {
    */
   Expr OnString(fmt::StringRef value) {
     internal::Unused(&value);
+    MP_DISPATCH(OnUnhandled("string"));
     return Expr();
   }
 
@@ -949,11 +1018,29 @@ class NLHandler {
    */
   Expr OnSymbolicIf(LogicalExpr condition, Expr then_expr, Expr else_expr) {
     internal::Unused(&condition, &then_expr, &else_expr);
+    MP_DISPATCH(OnUnhandled("symbolic if expression"));
     return Expr();
   }
 
   /** Receives notification of the end of the input. */
   void EndInput() {}
+};
+
+/**
+  An NL handler that ignores all input.
+
+  `NullNLHandler` can be used as a base class when only a subset of constructs
+  needs to be handled. Unhandled constructs will be ignored, not reported.
+
+  *ExprType* is a return type of expression handler methods such as
+  `NLHandler::OnUnary` useful for building expression objects. If not used
+  it can be any default-constructible type.
+ */
+template <typename ExprType>
+class NullNLHandler : public NLHandler<NullNLHandler<ExprType>, ExprType> {
+ public:
+  /** Receives notification of an unhandled construct and ignores it. */
+  void OnUnhandled(const char *) {}
 };
 
 namespace internal {
@@ -1210,7 +1297,7 @@ class BinaryReader : private InputConverter, public BinaryReaderBase {
 // An NLHandler that forwards notification of variable bounds to another
 // handler and ignores all other notifications.
 template <typename Handler>
-class VarBoundHandler : public NLHandler<typename Handler::Expr> {
+class VarBoundHandler : public NullNLHandler<typename Handler::Expr> {
  private:
   Handler &handler_;
 
@@ -1228,8 +1315,8 @@ struct NullLinearExprHandler {
 };
 
 // An NL reader.
-// Handler: a class implementing the ProblemHandler concept that receives
-//          notifications of problem components
+// Handler: a class implementing the NLHandler concept that receives
+//          notifications of NL constructs
 template <typename Reader, typename Handler>
 class NLReader {
  private:
@@ -2141,8 +2228,8 @@ void ReadNLString(NLStringRef str, Handler &handler,
   \rst
   Reads an optimization problem in the NL format from the file *filename*
   and sends notifications of the problem components to the *handler* object.
-  The handler class can be derived from `mp::NLHandler` or provide a compatible
-  interface.
+  The handler class can be derived from `mp::NLHandler`, `mp::NullNLHandler`
+  or provide a compatible interface.
 
   The *filename* argument can be a C string or an ``std::string`` object.
   *flags* can be either 0, which is the default, to read all constructs in
@@ -2153,7 +2240,7 @@ void ReadNLString(NLStringRef str, Handler &handler,
   **Example**::
 
     // Count the number of variable references in all nonlinear expressions.
-    struct VarCounter : mp::NLHandler<int> {
+    struct VarCounter : mp::NullNLHandler<int> {
       int num_vars;
       VarCounter() : num_vars(0) {}
       Reference OnVariableRef(int) {

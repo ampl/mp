@@ -48,8 +48,9 @@ using testing::Throw;
 
 class TestExpr {};
 
-class MockNLHandler : public mp::NLHandler<TestExpr> {
+class MockNLHandler : public mp::NLHandler<MockNLHandler, TestExpr> {
  public:
+  MOCK_METHOD1(OnUnhandled, void (const char *name));
   MOCK_METHOD1(OnHeader, void (const NLHeader &h));
   MOCK_METHOD3(OnVarBounds, void (int index, double lb, double ub));
   MOCK_METHOD3(OnObj, void (int index, mp::obj::Type type, NumericExpr expr));
@@ -1486,7 +1487,9 @@ TEST(NLReaderTest, FileTooBig) {
   }
 }
 
-struct TestNLHandler3 : mp::NLHandler<int> {};
+struct TestNLHandler3 : mp::NLHandler<TestNLHandler3, int> {
+  void OnUnhandled(const char *) {}
+};
 
 TEST(NLReaderTest, NLHandler) {
   TestNLHandler3 handler;
@@ -1506,7 +1509,7 @@ TEST(NLReaderTest, ReadBoundsFirst) {
 }
 
 // Count the number of variable references in all nonlinear expressions.
-struct VarCounter : mp::NLHandler<int> {
+struct VarCounter : mp::NullNLHandler<int> {
   int num_vars;
   VarCounter() : num_vars(0) {}
   Reference OnVariableRef(int) {
@@ -1575,4 +1578,87 @@ TEST(NLReaderTest, NameReader) {
   // Names should be valid after the call to Read.
   EXPECT_EQ("abc", names[0].to_string());
   EXPECT_EQ("def", names[1].to_string());
+}
+
+#define EXPECT_UNHANDLED(kind, call) { \
+    MockNLHandler handler; \
+    mp::NLHandler<MockNLHandler, TestExpr> &base = handler; \
+    EXPECT_CALL(handler, OnUnhandled(kind)); \
+    base.call; \
+  }
+
+TEST(NLReaderTest, OnUnhandled) {
+  EXPECT_UNHANDLED("NL header", OnHeader(mp::NLHeader()));
+  EXPECT_UNHANDLED("objective", OnObj(0, mp::obj::MAX, TestExpr()));
+  EXPECT_UNHANDLED("nonlinear constraint", OnAlgebraicCon(0, TestExpr()));
+  EXPECT_UNHANDLED("logical constraint", OnLogicalCon(0, TestExpr()));
+  EXPECT_UNHANDLED("common expression", BeginCommonExpr(0, 0));
+  EXPECT_UNHANDLED("common expression",
+                   EndCommonExpr(MockNLHandler::LinearExprHandler(),
+                                 TestExpr(), 0));
+  EXPECT_UNHANDLED("complementarity constraint",
+                   OnComplementarity(0, 0, mp::ComplInfo(0)));
+  EXPECT_UNHANDLED("linear objective", OnLinearObjExpr(0, 0));
+  EXPECT_UNHANDLED("linear constraint", OnLinearConExpr(0, 0));
+  EXPECT_UNHANDLED("linear common expression", OnLinearCommonExpr(0, 0));
+  EXPECT_UNHANDLED("variable bounds", OnVarBounds(0, 0, 0));
+  EXPECT_UNHANDLED("constraint bounds", OnConBounds(0, 0, 0));
+  EXPECT_UNHANDLED("initial value", OnInitialValue(0, 0));
+  EXPECT_UNHANDLED("initial dual value", OnInitialDualValue(0, 0));
+  EXPECT_UNHANDLED("column sizes", OnColumnSizes());
+  EXPECT_UNHANDLED("function", OnFunction(0, "", 0, mp::func::NUMERIC));
+  EXPECT_UNHANDLED("integer suffix", OnIntSuffix("",  mp::suf::OBJ, 0));
+  EXPECT_UNHANDLED("double suffix", OnDblSuffix("",  mp::suf::OBJ, 0));
+  EXPECT_UNHANDLED("number", OnNumber(0));
+  EXPECT_UNHANDLED("variable reference", OnVariableRef(0));
+  EXPECT_UNHANDLED("common expression reference", OnCommonExprRef(0));
+  EXPECT_UNHANDLED("unary expression", OnUnary(expr::MINUS, TestExpr()));
+  EXPECT_UNHANDLED("binary expression",
+                   OnBinary(expr::ADD, TestExpr(), TestExpr()));
+  EXPECT_UNHANDLED("if expression", OnIf(TestExpr(), TestExpr(), TestExpr()));
+  EXPECT_UNHANDLED("piecewise-linear term", BeginPLTerm(0));
+  EXPECT_UNHANDLED("piecewise-linear term",
+                   EndPLTerm(MockNLHandler::PLTermHandler(), TestExpr()));
+  EXPECT_UNHANDLED("call expression", BeginCall(0, 0));
+  EXPECT_UNHANDLED("call expression", EndCall(MockNLHandler::CallArgHandler()));
+  EXPECT_UNHANDLED("vararg expression", BeginVarArg(mp::expr::MIN, 0));
+  EXPECT_UNHANDLED("vararg expression",
+                   EndVarArg(MockNLHandler::VarArgHandler()));
+  EXPECT_UNHANDLED("summation", BeginSum(0));
+  EXPECT_UNHANDLED("summation", EndSum(MockNLHandler::NumericArgHandler()));
+  EXPECT_UNHANDLED("count expression", BeginCount(0));
+  EXPECT_UNHANDLED("count expression",
+                   EndCount(MockNLHandler::CountArgHandler()));
+  EXPECT_UNHANDLED("numberof expression", BeginNumberOf(0, TestExpr()));
+  EXPECT_UNHANDLED("numberof expression",
+                   EndNumberOf(MockNLHandler::NumberOfArgHandler()));
+  EXPECT_UNHANDLED("symbolic numberof expression",
+                   BeginSymbolicNumberOf(0, TestExpr()));
+  EXPECT_UNHANDLED("symbolic numberof expression",
+                   EndSymbolicNumberOf(MockNLHandler::SymbolicArgHandler()));
+  EXPECT_UNHANDLED("bool", OnBool(true));
+  EXPECT_UNHANDLED("logical not", OnNot(TestExpr()));
+  EXPECT_UNHANDLED("binary logical expression",
+                   OnBinaryLogical(mp::expr::OR, TestExpr(), TestExpr()));
+  EXPECT_UNHANDLED("relational expression",
+                   OnRelational(mp::expr::LT, TestExpr(), TestExpr()));
+  EXPECT_UNHANDLED("logical count expression",
+                   OnLogicalCount(mp::expr::ATMOST, TestExpr(), TestExpr()));
+  EXPECT_UNHANDLED("implication expression",
+                   OnImplication(TestExpr(), TestExpr(), TestExpr()));
+  EXPECT_UNHANDLED("iterated logical expression",
+                   BeginIteratedLogical(mp::expr::EXISTS, 0));
+  EXPECT_UNHANDLED("iterated logical expression",
+                   EndIteratedLogical(MockNLHandler::LogicalArgHandler()));
+  EXPECT_UNHANDLED("pairwise expression",
+                   BeginPairwise(mp::expr::ALLDIFF, 0));
+  EXPECT_UNHANDLED("pairwise expression",
+                   EndPairwise(MockNLHandler::PairwiseArgHandler()));
+  EXPECT_UNHANDLED("string", OnString(""));
+  EXPECT_UNHANDLED("symbolic if expression",
+                   OnSymbolicIf(TestExpr(), TestExpr(), TestExpr()));
+}
+
+TEST(NLReaderTest, NullNLHandler) {
+  // TODO: test
 }

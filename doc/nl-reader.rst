@@ -49,6 +49,9 @@ gives a few examples of how to use the NL reader.
 .. doxygenclass:: mp::NLHandler
    :members:
 
+.. doxygenclass:: mp::NullNLHandler
+   :members:
+
 .. doxygenstruct:: mp::NLHeader
    :members:
 

@@ -11,7 +11,7 @@ namespace expr = mp::expr;
 enum Expr {OTHER, CONST};
 
 // Count the number of divisions by non-constant expressions.
-struct ExprCounter : mp::NLHandler<Expr> {
+struct ExprCounter : mp::NullNLHandler<Expr> {
   int num_divs;
   ExprCounter() : num_divs(0) {}
   Expr OnBinary(mp::expr::Kind kind, Expr, Expr rhs) {
@@ -24,7 +24,7 @@ struct ExprCounter : mp::NLHandler<Expr> {
 
 // Print problem dimensions: the number of constraints, variables and nonzeros
 // (in constraints).
-struct DimensionPrinter : mp::NLHandler<int> {
+struct DimensionPrinter : mp::NullNLHandler<int> {
   void OnHeader(const mp::NLHeader &h) {
     fmt::print("Variables:   {}\n", h.num_vars);
     fmt::print("Constraints: {}\n", h.num_algebraic_cons);
@@ -33,7 +33,7 @@ struct DimensionPrinter : mp::NLHandler<int> {
 };
 
 // Print sparsity pattern of the objective and constraint gradients.
-struct SparsityPrinter : mp::NLHandler<int> {
+struct SparsityPrinter : mp::NullNLHandler<int> {
   struct LinearObjHandler {
     void AddTerm(int var_index, double) {
       fmt::print("  {}\n", var_index);
@@ -53,7 +53,7 @@ struct SparsityPrinter : mp::NLHandler<int> {
 };
 
 // Print objective or constraint expression in SSA-like form.
-class ExprPrinter : public mp::NLHandler<std::string> {
+class ExprPrinter : public mp::NullNLHandler<std::string> {
  private:
   // Next expression ID for SSA-like output.
   int next_expr_id_;
