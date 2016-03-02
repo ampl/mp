@@ -48,6 +48,12 @@ using testing::Throw;
 
 class TestExpr {};
 
+// Suppress a spurious warning
+// "'<anonymous>' may be used uninitialized in this function" in GCC 4.4.
+#if FMT_GCC_VERSION == 404
+# pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
+
 class MockNLHandler : public mp::NLHandler<MockNLHandler, TestExpr> {
  public:
   MOCK_METHOD1(OnUnhandled, void (const char *name));
