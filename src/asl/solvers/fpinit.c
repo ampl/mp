@@ -22,6 +22,10 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
+#ifndef _WIN32
+#include <fenv.h>
+#endif
+
 #undef ASL_USE_FPINITMT
 #ifdef __powerpc__
 #undef  ASL_NO_FPINITMT
