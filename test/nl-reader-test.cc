@@ -1586,6 +1586,16 @@ TEST(NLReaderTest, NameReader) {
   EXPECT_EQ("def", names[1].to_string());
 }
 
+struct DummyNLHandler : public mp::NLHandler<DummyNLHandler, int> {};
+
+TEST(NLReaderTest, OnUnhandled) {
+  DummyNLHandler handler;
+  EXPECT_THROW_MSG(handler.OnUnhandled("foo"), mp::UnsupportedError,
+                   "unsupported: foo");
+  EXPECT_THROW_MSG(handler.OnHeader(mp::NLHeader()), mp::UnsupportedError,
+                   "unsupported: NL header");
+}
+
 #define EXPECT_UNHANDLED(kind, call) { \
     MockNLHandler handler; \
     mp::NLHandler<MockNLHandler, TestExpr> &base = handler; \
@@ -1593,7 +1603,7 @@ TEST(NLReaderTest, NameReader) {
     base.call; \
   }
 
-TEST(NLReaderTest, OnUnhandled) {
+TEST(NLReaderTest, OnUnhandledDispatch) {
   EXPECT_UNHANDLED("NL header", OnHeader(mp::NLHeader()));
   EXPECT_UNHANDLED("objective", OnObj(0, mp::obj::MAX, TestExpr()));
   EXPECT_UNHANDLED("nonlinear constraint", OnAlgebraicCon(0, TestExpr()));
@@ -1666,5 +1676,6 @@ TEST(NLReaderTest, OnUnhandled) {
 }
 
 TEST(NLReaderTest, NullNLHandler) {
-  // TODO: test
+  mp::NullNLHandler<int> handler;
+  handler.OnHeader(mp::NLHeader());
 }
