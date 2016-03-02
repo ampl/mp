@@ -1583,7 +1583,7 @@ TEST(NLReaderTest, NameReader) {
 #define EXPECT_UNHANDLED(kind, call) { \
     MockNLHandler handler; \
     mp::NLHandler<MockNLHandler, TestExpr> &base = handler; \
-    EXPECT_CALL(handler, OnUnhandled(kind)); \
+    EXPECT_CALL(handler, OnUnhandled(testing::StrEq(kind))); \
     base.call; \
   }
 
