@@ -1027,6 +1027,7 @@ class NLHandler {
 };
 
 /**
+  \rst
   An NL handler that ignores all input.
 
   `~mp::NullNLHandler` can be used as a base class when only a subset of
@@ -1036,6 +1037,7 @@ class NLHandler {
   *ExprType* is a return type of expression handler methods such as
   `~mp::NLHandler::OnUnary` useful for building expression objects. If not used
   it can be any default-constructible type.
+  \endrst
  */
 template <typename ExprType>
 class NullNLHandler : public NLHandler<NullNLHandler<ExprType>, ExprType> {
