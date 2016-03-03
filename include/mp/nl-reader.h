@@ -1071,7 +1071,21 @@ class ReaderBase {
   bool IsEOF() const { return IsEOF(ptr_); }
 };
 
-template <typename Locale = fmt::Locale>
+#ifdef FMT_LOCALE
+typedef fmt::Locale Locale;
+#else
+# warning "Parsing is locale-dependent"
+struct Locale {
+  double strtod(const char *&str) const {
+    char *end = 0;
+    double result = std::strtod(str, &end);
+    str = end;
+    return result;
+  }
+};
+#endif
+
+template <typename Locale = Locale>
 class TextReader : public ReaderBase {
  private:
   const char *line_start_;
