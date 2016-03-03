@@ -38,7 +38,7 @@
 #if defined(_MSC_VER)
 # define isnan _isnan
 #else
-# define isnan std::isnan
+# define isnan(x) std::isnan(x)
 #endif
 
 struct func_info;
