@@ -27,7 +27,7 @@ if (POLICY CMP0054)
   cmake_policy(SET CMP0054 NEW)
 endif ()
 
-set(MP_VERSION 3.0.0)
+set(MP_VERSION 3.0.1)
 if (NOT MP_VERSION MATCHES "^([0-9]+).([0-9]+).([0-9]+)$")
   message(FATAL_ERROR "Invalid version format ${MP_VERSION}.")
 endif ()
