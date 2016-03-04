@@ -75,10 +75,11 @@ create_symlink('/usr/local/bin/f90cache',
                '/usr/local/opt/ccache/libexec/' + gfortran)
 
 # Install JDK.
-with download(
-    'http://download.oracle.com/otn-pub/java/jdk/7u79-b15/' +
-    'jdk-7u79-macosx-x64.dmg', jdk_cookie) as f:
-  install_dmg(f)
+if len(glob.glob('/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk')) == 0:
+  with download(
+      'http://download.oracle.com/otn-pub/java/jdk/7u79-b15/' +
+      'jdk-7u79-macosx-x64.dmg', jdk_cookie) as f:
+    install_dmg(f)
 
 # Install LocalSolver.
 if not installed('localsolver'):
