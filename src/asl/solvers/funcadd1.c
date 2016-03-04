@@ -21,7 +21,6 @@ IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
-#include <sys/mman.h>
 
 #ifdef NO_FUNCADD
 #include "funcadd.h"
@@ -42,6 +41,8 @@ funcadd(AmplExports *ae)
 #ifdef WIN32
 #include "windows.h"
 #undef void
+#else
+#include <sys/mman.h> /* not on windows, needed for solaris */
 #endif
 
 #define _POSIX_SOURCE	/* for HP-UX */
