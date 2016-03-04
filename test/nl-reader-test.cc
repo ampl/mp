@@ -156,9 +156,11 @@ TEST(TextReaderTest, ReadDoubleUsesCLocale) {
   EXPECT_CALL(reader.locale(), strtod(str))
     .WillOnce(testing::DoAll(testing::SetArgReferee<0>(str + 1), Return(1.23)));
   EXPECT_EQ(1.23, reader.ReadDouble());
+#ifdef FMT_LOCALE
   TextReader default_reader(str, "test.nl");
-  mp::internal::Locale &locale = default_reader.locale();
+  fmt::Locale &locale = default_reader.locale();
   mp::internal::Unused(&locale);
+#endif
 }
 
 TEST(TextReaderTest, ReadName) {
