@@ -22,9 +22,9 @@ class flushfile:
 # Flush the buffer on every output.
 sys.stdout = flushfile(sys.stdout)
 
-def run(cmd):
+def run(cmd, **kwargs):
   print('Running', cmd)
-  check_call(cmd)
+  check_call(cmd, **kwargs)
 
 sudo = ['sudo', '-H', '-u', 'vagrant'] if vagrant else []
 
@@ -61,7 +61,12 @@ if not installed('ccache'):
 # Install gfortran which is a part of the gcc package in Homebrew.
 gfortran = 'gfortran-5.2'
 if not installed('gfortran'):
-  run(sudo + ['brew', 'install', 'gcc'])
+  # Install newer version of curl because curl 7.24.0 fails with error
+  # "Unknown SSL protocol error in connection to gmplib.org:443".
+  run(sudo + ['brew', 'install', 'curl'])
+  env = os.environ.copy()
+  env['PATH'] = glob.glob('/usr/local/Cellar/curl/*/bin')[0] + ':' + env['PATH']
+  run(sudo + ['brew', 'install', 'gcc'], env=env)
   # Create a symlink in the form gfortran-<major>.<minor> for f90cache.
   create_symlink('/usr/local/bin/gfortran', '/usr/local/bin/' + gfortran)
 
