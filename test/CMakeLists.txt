@@ -24,6 +24,13 @@ target_compile_definitions(gtest-extra PUBLIC FMT_USE_FILE_DESCRIPTORS)
 find_package(Threads)
 target_link_libraries(gtest-extra ${CMAKE_THREAD_LIBS_INIT})
 
+# Workaround GTest bug https://github.com/google/googletest/issues/705.
+check_cxx_compiler_flag(
+  -fno-delete-null-pointer-checks HAVE_FNO_DELETE_NULL_POINTER_CHECKS)
+if (HAVE_FNO_DELETE_NULL_POINTER_CHECKS)
+  target_compile_options(gtest-extra PUBLIC -fno-delete-null-pointer-checks)
+endif ()
+
 # Workaround a bug in implementation of variadic templates in MSVC11.
 if (MSVC)
   target_compile_definitions(gtest-extra PUBLIC _VARIADIC_MAX=10)
