@@ -41,6 +41,8 @@ funcadd(AmplExports *ae)
 #ifdef WIN32
 #include "windows.h"
 #undef void
+#else
+#include <sys/mman.h> /* not on windows, needed for solaris */
 #endif
 
 #define _POSIX_SOURCE	/* for HP-UX */

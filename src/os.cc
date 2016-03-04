@@ -46,6 +46,11 @@
 # include <unistd.h>
 #endif
 
+// for solaris compatability
+#ifndef MAP_FILE
+# define MAP_FILE 0x0001
+#endif
+
 #undef getenv
 
 using std::size_t;
