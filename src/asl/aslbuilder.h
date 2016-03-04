@@ -703,7 +703,7 @@ class ASLBuilder {
 };
 
 // An .nl handler that builds an ASL problem using ASLBuilder.
-class ASLHandler : public mp::ProblemBuilderToNLAdapter<ASLBuilder> {
+class ASLHandler : public mp::internal::ProblemBuilderToNLAdapter<ASLBuilder> {
  private:
   int flags_;
 

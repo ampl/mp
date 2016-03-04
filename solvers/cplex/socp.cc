@@ -359,7 +359,7 @@ class SOCPConverter {
 };
 
 void SOCPConverter::Run(const char *stub) {
-  mp::ProblemBuilderToNLAdapter<CustomProblem> adapter(problem_);
+  mp::internal::ProblemBuilderToNLAdapter<CustomProblem> adapter(problem_);
   ReadNLFile(fmt::format("{}.nl", stub), adapter);
   num_vars_ = problem_.num_vars();
   num_algebraic_cons_ = problem_.num_algebraic_cons();

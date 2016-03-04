@@ -113,7 +113,7 @@ void BasicProblem<Alloc>::SetInfo(const ProblemInfo &info) {
 template class BasicProblem< std::allocator<char> >;
 
 void ReadNLFile(fmt::CStringRef filename, Problem &p) {
-  ProblemBuilderToNLAdapter<Problem> adapter(p);
+  internal::ProblemBuilderToNLAdapter<Problem> adapter(p);
   ReadNLFile(filename, adapter);
 }
 }  // namespace mp

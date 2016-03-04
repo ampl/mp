@@ -76,7 +76,8 @@ class TestSolver : public mp::Solver {
   using Solver::AddSuffix;
 
   typedef StrictMockProblemBuilder ProblemBuilder;
-  typedef mp::ProblemBuilderToNLAdapter<ProblemBuilder> NLProblemBuilder;
+  typedef mp::internal::ProblemBuilderToNLAdapter<ProblemBuilder>
+    NLProblemBuilder;
 
   bool ParseOptions(char **argv,
       unsigned flags = Solver::NO_OPTION_ECHO, const mp::ASLProblem *p = 0) {
