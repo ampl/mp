@@ -336,7 +336,7 @@ class SOCPConverter {
     ConvertLinearExpr(expr, con_builder);
   }
 
-  typedef Problem::ObjList ObjList;
+  typedef Problem::ObjRange ObjRange;
 
  public:
   explicit SOCPConverter(ASL *asl)
@@ -384,15 +384,15 @@ void SOCPConverter::Run(const char *stub) {
   info.num_objs = problem_.num_objs();
 
   // Count nonzeros in objectives.
-  ObjList objs = problem_.objs();
-  for (ObjList::iterator i = objs.begin(), end = objs.end(); i != end; ++i)
+  ObjRange objs = problem_.objs();
+  for (ObjRange::iterator i = objs.begin(), end = objs.end(); i != end; ++i)
     info.num_obj_nonzeros += i->linear_expr().num_terms();
 
   // Get algebraic constraint information.
   col_sizes_.resize(info.num_vars);
   double inf = std::numeric_limits<double>::infinity();
-  Problem::AlgebraicConList cons = problem_.algebraic_cons();
-  for (Problem::AlgebraicConList::iterator
+  Problem::AlgebraicConRange cons = problem_.algebraic_cons();
+  for (Problem::AlgebraicConRange::iterator
        i = cons.begin(), end = cons.end(); i != end; ++i) {
     if (-inf < i->lb() && i->ub() < inf)
       ++info.num_ranges;
@@ -418,8 +418,8 @@ void SOCPConverter::ConvertToASL() {
   }
 
   // Convert objectives.
-  ObjList objs = problem_.objs();
-  for (ObjList::iterator i = objs.begin(), end = objs.end(); i != end; ++i) {
+  ObjRange objs = problem_.objs();
+  for (ObjRange::iterator i = objs.begin(), end = objs.end(); i != end; ++i) {
     mp::LinearExpr expr = i->linear_expr();
     ASLBuilder::LinearObjBuilder obj_builder = builder_.AddObj(
           i->type(), Convert(i->nonlinear_expr()), expr.num_terms());
@@ -431,15 +431,15 @@ void SOCPConverter::ConvertToASL() {
     cols.Add(col_sizes_[i]);
 
   // Convert nonlinear algebraic constraints first as required by ASL.
-  Problem::AlgebraicConList algebraic_cons = problem_.algebraic_cons();
-  for (Problem::AlgebraicConList::iterator
+  Problem::AlgebraicConRange algebraic_cons = problem_.algebraic_cons();
+  for (Problem::AlgebraicConRange::iterator
        i = algebraic_cons.begin(), end = algebraic_cons.end(); i != end; ++i) {
     if (i->nonlinear_expr())
       Convert(*i);
   }
 
   // Convert linear algebraic constraints.
-  for (Problem::AlgebraicConList::iterator
+  for (Problem::AlgebraicConRange::iterator
        i = algebraic_cons.begin(), end = algebraic_cons.end(); i != end; ++i) {
     if (!i->nonlinear_expr())
       Convert(*i);
@@ -447,8 +447,8 @@ void SOCPConverter::ConvertToASL() {
 
   // Convert logical constraints.
   MPToASLExprConverter converter(builder_);
-  Problem::LogicalConList logical_cons = problem_.logical_cons();
-  for (Problem::LogicalConList::iterator
+  Problem::LogicalConRange logical_cons = problem_.logical_cons();
+  for (Problem::LogicalConRange::iterator
        i = logical_cons.begin(), end = logical_cons.end(); i != end; ++i) {
     builder_.AddCon(converter.Visit(i->expr()));
   }

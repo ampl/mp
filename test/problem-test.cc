@@ -134,15 +134,15 @@ TEST(ProblemTest, Vars) {
   Problem p;
   p.AddVar(11, 22);
   p.AddVar(33, 44, mp::var::INTEGER);
-  Problem::VarList vars = p.vars();
-  Problem::VarList::iterator i = vars.begin();
+  Problem::VarRange vars = p.vars();
+  Problem::VarRange::iterator i = vars.begin();
   // Test dereference.
   EXPECT_EQ(p.var(0), *i);
   // Test the arrow operator.
   EXPECT_EQ(11, i->lb());
   EXPECT_EQ(mp::var::CONTINUOUS, i->type());
   // Test postincrement.
-  Problem::VarList::iterator j = i++;
+  Problem::VarRange::iterator j = i++;
   EXPECT_EQ(p.var(0), *j);
   EXPECT_EQ(p.var(1), *i);
   EXPECT_TRUE(i != j);
@@ -241,14 +241,14 @@ TEST(ProblemTest, Objs) {
   Problem p;
   p.AddObj(mp::obj::MAX);
   p.AddObj(mp::obj::MIN);
-  Problem::ObjList objs = p.objs();
-  Problem::ObjList::iterator i = objs.begin();
+  Problem::ObjRange objs = p.objs();
+  Problem::ObjRange::iterator i = objs.begin();
   // Test dereference.
   EXPECT_EQ(p.obj(0), *i);
   // Test the arrow operator.
   EXPECT_EQ(mp::obj::MAX, i->type());
   // Test postincrement.
-  Problem::ObjList::iterator j = i++;
+  Problem::ObjRange::iterator j = i++;
   EXPECT_EQ(p.obj(0), *j);
   EXPECT_EQ(p.obj(1), *i);
   EXPECT_TRUE(i != j);
@@ -356,14 +356,14 @@ TEST(ProblemTest, AlgebraicCons) {
   Problem p;
   p.AddCon(1, 2);
   p.AddCon(3, 4);
-  Problem::AlgebraicConList cons = p.algebraic_cons();
-  Problem::AlgebraicConList::iterator i = cons.begin();
+  Problem::AlgebraicConRange cons = p.algebraic_cons();
+  Problem::AlgebraicConRange::iterator i = cons.begin();
   // Test dereference.
   EXPECT_EQ(p.algebraic_con(0), *i);
   // Test the arrow operator.
   EXPECT_EQ(1, i->lb());
   // Test postincrement.
-  Problem::AlgebraicConList::iterator j = i++;
+  Problem::AlgebraicConRange::iterator j = i++;
   EXPECT_EQ(p.algebraic_con(0), *j);
   EXPECT_EQ(p.algebraic_con(1), *i);
   EXPECT_TRUE(i != j);
@@ -454,14 +454,14 @@ TEST(ProblemTest, LogicalCons) {
   mp::LogicalExpr expr = p.MakeLogicalConstant(false);
   p.AddCon(expr);
   p.AddCon(p.MakeLogicalConstant(true));
-  Problem::LogicalConList cons = p.logical_cons();
-  Problem::LogicalConList::iterator i = cons.begin();
+  Problem::LogicalConRange cons = p.logical_cons();
+  Problem::LogicalConRange::iterator i = cons.begin();
   // Test dereference.
   EXPECT_EQ(p.logical_con(0), *i);
   // Test the arrow operator.
   EXPECT_EQ(expr, i->expr());
   // Test postincrement.
-  Problem::LogicalConList::iterator j = i++;
+  Problem::LogicalConRange::iterator j = i++;
   EXPECT_EQ(p.logical_con(0), *j);
   EXPECT_EQ(p.logical_con(1), *i);
   EXPECT_TRUE(i != j);

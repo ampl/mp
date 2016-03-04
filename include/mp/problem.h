@@ -191,22 +191,22 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     initial_dual_values_[con_index] = value;
   }
 
-  // A list of problem elements.
+  // A pair of iterators to problem elements.
   template <typename T>
-  class List {
+  class Range {
    private:
     const BasicProblem *problem_;
 
     friend class BasicProblem;
 
-    explicit List(const BasicProblem *p) : problem_(p) {}
+    explicit Range(const BasicProblem *p) : problem_(p) {}
 
    public:
     class iterator : std::iterator<std::forward_iterator_tag, T> {
      private:
       T item_;
 
-      friend class List<T>;
+      friend class Range<T>;
 
       iterator(const BasicProblem *p, int index) : item_(p, index) {}
 
@@ -239,13 +239,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       }
     };
 
-    // Returns an iterator to the first element in the list.
+    // Returns an iterator to the first element in the range.
     iterator begin() const {
       return iterator(problem_, 0);
     }
 
     // Returns an iterator to the element following the last element
-    // in the list. An attempt to access this element will result in
+    // in the range. An attempt to access this element will result in
     // assertion failure if assertions are enabled and undefined behavoir
     // otherwise.
     iterator end() const {
@@ -501,15 +501,15 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
   };
 
-  // A list of variables.
-  typedef List<Variable> VarList;
+  // A range of variables.
+  typedef Range<Variable> VarRange;
 
-  // Returns the list of problem variables.
-  // It can be used to iterate over all variables in a problem:
+  // Returns a range representing all variables in this optimization problem.
+  // It can be used for iterating over variables:
   //   for (auto var: problem.vars()) {
   //     ...
   //   }
-  VarList vars() const { return VarList(this); }
+  VarRange vars() const { return VarRange(this); }
 
   // Returns the variable at the specified index.
   Variable var(int index) const {
@@ -557,15 +557,15 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
   };
 
-  // A list of objectives.
-  typedef List<Objective> ObjList;
+  // A range of objectives.
+  typedef Range<Objective> ObjRange;
 
-  // Returns the list of problem objectives.
-  // It can be used to iterate over all objectives in a problem:
+  // Returns a range representing all objectives in this optimization problem.
+  // It can be used for iterating over objectives:
   //   for (auto obj: problem.objs()) {
   //     ...
   //   }
-  ObjList objs() const { return ObjList(this); }
+  ObjRange objs() const { return ObjRange(this); }
 
   // Returns the objective at the specified index.
   Objective obj(int index) const {
@@ -644,15 +644,16 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
   };
 
-  // A list of algebraic constraints.
-  typedef List<AlgebraicCon> AlgebraicConList;
+  // A range of algebraic constraints.
+  typedef Range<AlgebraicCon> AlgebraicConRange;
 
-  // Returns the list of algebraic constraints.
-  // It can be used to iterate over all algebraic constraints in a problem:
+  // Returns a range representing all algebraic constraints in this
+  // optimization problem. It can be used for iterating over algebraic
+  // constraints:
   //   for (auto con: problem.algebraic_cons()) {
   //     ...
   //   }
-  AlgebraicConList algebraic_cons() const { return AlgebraicConList(this); }
+  AlgebraicConRange algebraic_cons() const { return AlgebraicConRange(this); }
 
   // Returns the algebraic constraint at the specified index.
   AlgebraicCon algebraic_con(int index) const {
@@ -704,15 +705,16 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
   };
 
-  // A list of logical constraints.
-  typedef List<LogicalCon> LogicalConList;
+  // A range of logical constraints.
+  typedef Range<LogicalCon> LogicalConRange;
 
-  // Returns the list of logical constraints.
-  // It can be used to iterate over all logical constraints in a problem:
+  // Returns a range representing all logical constraints in this
+  // optimization problem. It can be used for iterating over logical
+  // constraints:
   //   for (auto con: problem.logical_cons()) {
   //     ...
   //   }
-  LogicalConList logical_cons() const { return LogicalConList(this); }
+  LogicalConRange logical_cons() const { return LogicalConRange(this); }
 
   // Returns the logical constraint at the specified index.
   LogicalCon logical_con(int index) const {
