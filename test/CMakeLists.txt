@@ -14,9 +14,11 @@ if (NOSE2)
   add_test(support-test ${NOSE2} -s ${CMAKE_CURRENT_SOURCE_DIR}/support)
 endif ()
 
+add_prefix(GTEST_SRC ../thirdparty/gmock/ gmock-gtest-all.cc gmock.h)
+
 # Add gtest library with some extra features.
-set(GTEST_SRC ../thirdparty/gmock/gmock-gtest-all.cc
-  gtest-extra.cc gtest-extra.h util.cc util.h test-main.cc)
+set(GTEST_SRC ${GTEST_SRC}
+              gtest-extra.cc gtest-extra.h util.cc util.h test-main.cc)
 add_library(gtest-extra STATIC ${GTEST_SRC})
 target_compile_definitions(gtest-extra PUBLIC FMT_USE_FILE_DESCRIPTORS)
 find_package(Threads)
