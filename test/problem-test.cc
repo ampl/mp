@@ -27,7 +27,8 @@
 // to test size overflow checks.
 #define MP_MAX_PROBLEM_ITEMS 100
 
-#include "mp/problem.h"
+// Include the source file to test the implementation.
+#include "../src/problem.cc"
 
 using mp::Problem;
 
