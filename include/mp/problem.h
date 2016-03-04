@@ -75,7 +75,7 @@ class LinearExpr {
 
 class Solver;
 
-// An optimization problem.
+/** An optimization problem. */
 template <typename Alloc>
 class BasicProblem : public ExprFactory, public SuffixManager {
  public:
@@ -446,18 +446,18 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   BasicProblem(const Solver &, fmt::StringRef) {}
 
-  // Returns the number of variables.
+  /** Returns the number of variables. */
   int num_vars() const { return static_cast<int>(vars_.size()); }
 
-  // Returns the number of objectives.
+  /** Returns the number of objectives. */
   int num_objs() const { return static_cast<int>(linear_objs_.size()); }
 
-  // Returns the number of algebraic constraints.
+  /** Returns the number of algebraic constraints. */
   int num_algebraic_cons() const {
     return static_cast<int>(algebraic_cons_.size());
   }
 
-  // Returns the number of logical constraints.
+  /** Returns the number of logical constraints. */
   int num_logical_cons() const {
     return static_cast<int>(logical_cons_.size());
   }
@@ -467,7 +467,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     return !nonlinear_cons_.empty();
   }
 
-  // Returns the number of common expressions.
+  /** Returns the number of common expressions. */
   int num_common_exprs() const {
     return static_cast<int>(linear_exprs_.size());
   }

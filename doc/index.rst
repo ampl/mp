@@ -6,6 +6,7 @@ Contents
 
    common
    nl-reader
+   problem
    amplgsl/index
    tables/index
 
