@@ -46,11 +46,6 @@
 # include <unistd.h>
 #endif
 
-// for solaris compatability
-#ifndef MAP_FILE
-# define MAP_FILE 0x0001
-#endif
-
 #undef getenv
 
 using std::size_t;
@@ -120,7 +115,7 @@ path path::temp_directory_path() {
 
 void mp::internal::MemoryMappedFileBase::map(int fd, std::size_t size) {
   char *start = reinterpret_cast<char*>(
-      mmap(0, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0));
+      mmap(0, size, PROT_READ, MAP_PRIVATE, fd, 0));
   if (start == MAP_FAILED)
     throw SystemError(errno, "cannot map file");
   start_ = start;
