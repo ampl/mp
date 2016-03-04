@@ -323,6 +323,14 @@ if (MP_CLANG)
   add_c_compiler_flags(tableproxy -Wno-string-plus-int)
 endif ()
 
+# Special treatment for solaris, see
+# 1. http://stackoverflow.com/questions/3905829/linking-error-in-sun-studio-10-under-solaris
+# 2. https://github.com/rtv/Stage/blob/master/cmake/internal/FindOS.cmake
+STRING (REGEX MATCH "SunOS" PROJECT_OS_SOLARIS ${CMAKE_SYSTEM_NAME})
+IF (PROJECT_OS_SOLARIS)
+  target_link_libraries(tableproxy socket nsl)
+ENDIF (PROJECT_OS_SOLARIS)
+
 if (WIN32)
   target_link_libraries(ampltabl wsock32)
   target_link_libraries(tableproxy wsock32)
