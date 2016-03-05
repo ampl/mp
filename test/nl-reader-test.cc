@@ -39,7 +39,7 @@ using mp::ReadError;
 using mp::ReadNLString;
 using mp::internal::BinaryReader;
 using mp::internal::EndiannessConverter;
-using mp::internal::ProblemBuilderToNLAdapter;
+using mp::internal::NLProblemBuilder;
 namespace expr = mp::expr;
 
 typedef mp::internal::TextReader<> TextReader;
@@ -1684,12 +1684,12 @@ TEST(NLReaderTest, NullNLHandler) {
   handler.OnHeader(mp::NLHeader());
 }
 
-// Checks if ProblemBuilderToNLAdapter forwards arguments passed to
+// Checks if NLProblemBuilder forwards arguments passed to
 // adapter_func to ProblemBuilder's builder_func.
 #define EXPECT_FORWARD(adapter_func, builder_func, args) { \
   StrictMock<MockProblemBuilder> builder; \
   EXPECT_CALL(builder, builder_func args); \
-  ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder); \
+  NLProblemBuilder<MockProblemBuilder> adapter(builder); \
   adapter.adapter_func args; \
 }
 
@@ -1697,7 +1697,7 @@ TEST(NLReaderTest, NullNLHandler) {
 #define EXPECT_FORWARD_RET(adapter_func, builder_func, args, result) { \
   StrictMock<MockProblemBuilder> builder; \
   EXPECT_CALL(builder, builder_func args).WillOnce(Return(result)); \
-  ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder); \
+  NLProblemBuilder<MockProblemBuilder> adapter(builder); \
   adapter.adapter_func args; \
 }
 
@@ -1708,7 +1708,7 @@ MATCHER_P2(MatchComplInfo, lb, ub, "") {
 TEST(NLProblemBuilderTest, Forward) {
   {
     StrictMock<MockProblemBuilder> builder;
-    ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+    NLProblemBuilder<MockProblemBuilder> adapter(builder);
 
     double inf = std::numeric_limits<double>::infinity();
     EXPECT_CALL(builder, SetComplementarity(66, 77, MatchComplInfo(0, inf)));
@@ -1825,17 +1825,17 @@ TEST(NLProblemBuilderTest, Forward) {
 
 TEST(NLProblemBuilderTest, OnHeader) {
   StrictMock<MockProblemBuilder> builder;
-  ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
   NLHeader h;
   EXPECT_CALL(builder, SetInfo(testing::Ref(h)));
   adapter.OnHeader(h);
 }
 
-// Test that ProblemBuilderToNLAdapter passes 0 as the number of objectives
+// Test that NLProblemBuilder passes 0 as the number of objectives
 // if obj_index is set to SKIP_ALL_OBJS.
 TEST(NLProblemBuilderTest, SkipAllObjs) {
   MockProblemBuilder builder;
-  typedef ProblemBuilderToNLAdapter<MockProblemBuilder> Adapter;
+  typedef NLProblemBuilder<MockProblemBuilder> Adapter;
   Adapter adapter(builder, Adapter::SKIP_ALL_OBJS);
   auto header = NLHeader();
   header.num_objs = 10;
@@ -1843,11 +1843,11 @@ TEST(NLProblemBuilderTest, SkipAllObjs) {
   adapter.OnHeader(header);
 }
 
-// Test that ProblemBuilderToNLAdapter passes the total number of objectives
+// Test that NLProblemBuilder passes the total number of objectives
 // if obj_index is set to NEED_ALL_OBJS.
 TEST(NLProblemBuilderTest, NeedAllObjs) {
   MockProblemBuilder builder;
-  typedef ProblemBuilderToNLAdapter<MockProblemBuilder> Adapter;
+  typedef NLProblemBuilder<MockProblemBuilder> Adapter;
   Adapter adapter(builder, Adapter::NEED_ALL_OBJS);
   auto header = NLHeader();
   header.num_objs = 10;
@@ -1855,11 +1855,11 @@ TEST(NLProblemBuilderTest, NeedAllObjs) {
   adapter.OnHeader(header);
 }
 
-// Test that ProblemBuilderToNLAdapter passes min(1, num_objs) as the
+// Test that NLProblemBuilder passes min(1, num_objs) as the
 // number of objectives by default.
 TEST(NLProblemBuilderTest, SingleObjective) {
   MockProblemBuilder builder;
-  ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
   auto header = NLHeader();
   header.num_objs = 10;
   EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 1)));
@@ -1871,7 +1871,7 @@ TEST(NLProblemBuilderTest, SingleObjective) {
 
 TEST(NLProblemBuilderTest, OnVarBounds) {
   StrictMock<MockProblemBuilder> builder;
-  ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
   MockProblemBuilder::MutVariable var;
   EXPECT_CALL(builder, var(66)).WillOnce(testing::ReturnRef(var));
   EXPECT_CALL(var, set_lb(7.7));
@@ -1881,7 +1881,7 @@ TEST(NLProblemBuilderTest, OnVarBounds) {
 
 TEST(NLProblemBuilderTest, OnObj) {
   StrictMock<MockProblemBuilder> builder;
-  ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
   auto header = mp::NLHeader();
   header.num_objs = 1;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
@@ -1896,7 +1896,7 @@ TEST(NLProblemBuilderTest, OnObj) {
 
 TEST(NLProblemBuilderTest, OnCon) {
   StrictMock<MockProblemBuilder> builder;
-  ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
   auto header = mp::NLHeader();
   header.num_algebraic_cons = 1;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
@@ -1911,7 +1911,7 @@ TEST(NLProblemBuilderTest, OnCon) {
 
 TEST(NLProblemBuilderTest, OnLogicalCon) {
   StrictMock<MockProblemBuilder> builder;
-  ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
   auto expr = TestLogicalExpr(ID);
   EXPECT_CALL(builder, AddCon(expr));
   adapter.OnLogicalCon(0, expr);
@@ -1919,7 +1919,7 @@ TEST(NLProblemBuilderTest, OnLogicalCon) {
 
 TEST(NLProblemBuilderTest, OnCommonExpr) {
   StrictMock<MockProblemBuilder> builder;
-  ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
   auto header = mp::NLHeader();
   header.num_common_exprs_in_cons = 1;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
@@ -1934,7 +1934,7 @@ TEST(NLProblemBuilderTest, OnCommonExpr) {
 
 TEST(NLProblemBuilderTest, OnFunction) {
   StrictMock<MockProblemBuilder> builder;
-  ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
   auto header = mp::NLHeader();
   header.num_funcs = 1;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));

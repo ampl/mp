@@ -32,10 +32,10 @@ struct TestProblemBuilder : mp::ProblemBuilder<TestProblemBuilder, TestExpr> {
   MOCK_METHOD1(ReportUnhandledConstruct, void (const std::string &name));
 };
 
-// Test that ProblemBuilder can be used with ProblemBuilderToNLAdapter.
-TEST(ProblemBuilderTest, UseWithProblemBuilderToNLAdapter) {
+// Test that ProblemBuilder can be used with NLProblemBuilder.
+TEST(ProblemBuilderTest, UseWithNLProblemBuilder) {
   TestProblemBuilder builder;
-  mp::internal::ProblemBuilderToNLAdapter<TestProblemBuilder> handler(builder);
+  mp::internal::NLProblemBuilder<TestProblemBuilder> handler(builder);
   EXPECT_CALL(builder, ReportUnhandledConstruct(::testing::_)).
       Times(::testing::Exactly(2));
   handler.OnNumber(0);

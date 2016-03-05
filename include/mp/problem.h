@@ -806,11 +806,11 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Sets problem information and reserves memory for problem elements.
   void SetInfo(const ProblemInfo &info);
+
+  typedef BasicProblem Builder;
 };
 
 typedef BasicProblem< std::allocator<char> > Problem;
-
-void ReadNLFile(fmt::CStringRef filename, Problem &p);
 }  // namespace mp
 
 #endif  // MP_PROBLEM_H_

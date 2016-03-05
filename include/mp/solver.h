@@ -924,7 +924,7 @@ template <typename ProblemBuilderT>
 class SolverImpl : public Solver {
  public:
   typedef ProblemBuilderT ProblemBuilder;
-  typedef internal::ProblemBuilderToNLAdapter<ProblemBuilder> NLProblemBuilder;
+  typedef internal::NLProblemBuilder<ProblemBuilder> NLProblemBuilder;
 
   SolverImpl(fmt::CStringRef name, fmt::CStringRef long_name = 0,
              long date = 0, int flags = 0)

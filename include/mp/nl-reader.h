@@ -2198,9 +2198,9 @@ class NameReader {
   }
 };
 
-// Adapts ProblemBuilder for use as an NL handler.
+// An NL handler that constructs an optimization problem using ProblemBuilder.
 template <typename ProblemBuilder>
-class ProblemBuilderToNLAdapter {
+class NLProblemBuilder {
  public:
   typedef typename ProblemBuilder::Function Function;
   typedef typename ProblemBuilder::Expr Expr;
@@ -2254,7 +2254,7 @@ class ProblemBuilderToNLAdapter {
   // skip all objectives, NEED_ALL_OBJS to pass all objectives.
   int obj_index() const { return obj_index_; }
 
-  explicit ProblemBuilderToNLAdapter(ProblemBuilder &builder, int obj_index = 0)
+  explicit NLProblemBuilder(ProblemBuilder &builder, int obj_index = 0)
     : builder_(builder), num_continuous_vars_(0), obj_index_(obj_index) {}
 
   ProblemBuilder &builder() { return builder_; }
@@ -2594,14 +2594,39 @@ class ProblemBuilderToNLAdapter {
     }
   }
 };
+
+template <typename Handler, bool>
+struct NLAdapter {
+  typedef Handler Type;
+  typedef Handler &RefType;
+};
+
+template <typename Handler>
+struct NLAdapter<Handler, true> {
+  typedef NLProblemBuilder<typename Handler::Builder> Type;
+  typedef Type RefType;
+};
+
+// Checks if T has a member type Builder.
+template <typename T>
+class HasBuilder {
+ private:
+  template <typename U> static fmt::internal::Yes &test(typename U::Builder *);
+  template <typename U> static fmt::internal::No &test(...);
+ public:
+  enum {value = sizeof(test<T>(0)) == sizeof(fmt::internal::Yes)};
+};
 }  // namespace internal
 
 /**
   \rst
   Reads an optimization problem in the NL format from the string *str*
   and sends notifications of the problem components to the *handler* object.
-  The handler class can be derived from `mp::NLHandler` or provide a compatible
-  interface.
+  The handler class can be one of the following
+
+  * derived from `mp::NLHandler` or `mp::NullNLHandler`,
+  * `mp::Problem`,
+  * provide an interface compatible with one of the above.
 
   Both *str* and *name* can be C strings or ``std::string`` objects.
   The *name* argument is used as the name of the input when reporting errors.
@@ -2614,25 +2639,30 @@ class ProblemBuilderToNLAdapter {
 template <typename Handler>
 void ReadNLString(NLStringRef str, Handler &handler,
                   fmt::CStringRef name, int flags) {
+  // If handler is a Problem-like object (Problem::Builder type is defined)
+  // then use ProblemBuilder API to populate it.
+  typedef internal::NLAdapter<
+      Handler, internal::HasBuilder<Handler>::value> Adapter;
+  typename Adapter::RefType adapter(handler);
   internal::TextReader<> reader(str, name);
   NLHeader header = NLHeader();
   reader.ReadHeader(header);
-  handler.OnHeader(header);
+  adapter.OnHeader(header);
   switch (header.format) {
   case NLHeader::TEXT:
-    internal::NLReader<internal::TextReader<>, Handler>(
-          reader, header, handler, flags).Read();
+    internal::NLReader<internal::TextReader<>, typename Adapter::Type>(
+          reader, header, adapter, flags).Read();
     break;
   case NLHeader::BINARY: {
       using internal::ReadBinary;
     arith::Kind arith_kind = arith::GetKind();
     if (arith_kind == header.arith_kind) {
-      ReadBinary<internal::IdentityConverter>(reader, header, handler, flags);
+      ReadBinary<internal::IdentityConverter>(reader, header, adapter, flags);
       break;
     }
     if (!IsIEEE(arith_kind) || !IsIEEE(header.arith_kind))
       throw ReadError(name, 0, 0, "unsupported floating-point arithmetic");
-    ReadBinary<internal::EndiannessConverter>(reader, header, handler, flags);
+    ReadBinary<internal::EndiannessConverter>(reader, header, adapter, flags);
     break;
   }
   }
@@ -2642,8 +2672,11 @@ void ReadNLString(NLStringRef str, Handler &handler,
   \rst
   Reads an optimization problem in the NL format from the file *filename*
   and sends notifications of the problem components to the *handler* object.
-  The handler class can be derived from `mp::NLHandler`, `mp::NullNLHandler`
-  or provide a compatible interface.
+  The handler class can be one of the following
+
+  * derived from `mp::NLHandler` or `mp::NullNLHandler`,
+  * `mp::Problem`,
+  * provide an interface compatible with one of the above.
 
   The *filename* argument can be a C string or an ``std::string`` object.
   *flags* can be either 0, which is the default, to read all constructs in

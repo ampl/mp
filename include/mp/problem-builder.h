@@ -400,14 +400,12 @@ class ColProblem : public Problem {
 };
 
 // An NL handler that builds a problem with a column-wise constraint matrix.
-class ColProblemBuilder :
-    public internal::ProblemBuilderToNLAdapter<ColProblem> {
+class ColProblemBuilder : public internal::NLProblemBuilder<ColProblem> {
  private:
-  typedef ProblemBuilderToNLAdapter<ColProblem> Base;
+  typedef NLProblemBuilder<ColProblem> Base;
 
  public:
-  explicit ColProblemBuilder(ColProblem &p)
-    : ProblemBuilderToNLAdapter<ColProblem>(p) {}
+  explicit ColProblemBuilder(ColProblem &p) : NLProblemBuilder<ColProblem>(p) {}
 
   void OnHeader(const NLHeader &h) {
     Base::OnHeader(h);

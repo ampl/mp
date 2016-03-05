@@ -76,7 +76,7 @@ class TestSolver : public mp::Solver {
   using Solver::AddSuffix;
 
   typedef StrictMockProblemBuilder ProblemBuilder;
-  typedef mp::internal::ProblemBuilderToNLAdapter<ProblemBuilder>
+  typedef mp::internal::NLProblemBuilder<ProblemBuilder>
     NLProblemBuilder;
 
   bool ParseOptions(char **argv,
@@ -1510,7 +1510,7 @@ TEST_F(SolverAppTest, ParseOptionsBeforeReadingProblem) {
   EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem")));
 }
 
-// Matcher that return true if the argument of type ProblemBuilderToNLAdapter
+// Matcher that return true if the argument of type NLProblemBuilder
 // points to the solver's problem builder.
 MATCHER_P(MatchAdapterToBuilder, solver, "") {
   return &arg.builder() == solver->builder;
