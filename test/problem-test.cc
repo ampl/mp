@@ -90,10 +90,11 @@ TEST(ProblemTest, AddVar) {
   p.AddVar(1.1, 2.2);
   EXPECT_EQ(1, p.num_vars());
   Problem::Variable var = p.var(0);
-  EXPECT_EQ(0, var.index());
-  EXPECT_EQ(1.1, var.lb());
-  EXPECT_EQ(2.2, var.ub());
-  EXPECT_EQ(mp::var::CONTINUOUS, var.type());
+  const Problem::Variable cvar = var;
+  EXPECT_EQ(0, cvar.index());
+  EXPECT_EQ(1.1, cvar.lb());
+  EXPECT_EQ(2.2, cvar.ub());
+  EXPECT_EQ(mp::var::CONTINUOUS, cvar.type());
   p.AddVar(3.3, 4.4, mp::var::INTEGER);
   EXPECT_EQ(2, p.num_vars());
   var = p.var(1);
@@ -289,10 +290,11 @@ TEST(ProblemTest, AddAlgebraicCon) {
   p.AddCon(1.1, 2.2);
   EXPECT_EQ(1, p.num_algebraic_cons());
   Problem::AlgebraicCon con = p.algebraic_con(0);
-  EXPECT_EQ(1.1, con.lb());
-  EXPECT_EQ(2.2, con.ub());
-  EXPECT_TRUE(!con.nonlinear_expr());
-  EXPECT_EQ(0, con.linear_expr().num_terms());
+  const Problem::AlgebraicCon ccon = con;
+  EXPECT_EQ(1.1, ccon.lb());
+  EXPECT_EQ(2.2, ccon.ub());
+  EXPECT_TRUE(!ccon.nonlinear_expr());
+  EXPECT_EQ(0, ccon.linear_expr().num_terms());
 
   p.AddCon(3.3, 4.4, mp::NumericExpr());
   EXPECT_EQ(2, p.num_algebraic_cons());
@@ -412,7 +414,8 @@ TEST(ProblemTest, AddLogicalCon) {
   p.AddCon(expr);
   EXPECT_EQ(1, p.num_logical_cons());
   Problem::LogicalCon con = p.logical_con(0);
-  EXPECT_EQ(expr, con.expr());
+  const Problem::LogicalCon ccon = con;
+  EXPECT_EQ(expr, ccon.expr());
 
   mp::LogicalExpr expr2 = p.MakeNot(expr);
   p.AddCon(expr2);

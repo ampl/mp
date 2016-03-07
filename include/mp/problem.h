@@ -303,7 +303,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
    public:
     // Returns the index of the variable.
-    int index() { return this->index_; }
+    int index() const { return this->index_; }
 
     // Returns the lower bound on the variable.
     double lb() const {
