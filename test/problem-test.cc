@@ -557,3 +557,7 @@ TEST(ProblemTest, Complementarity) {
   EXPECT_ASSERT(p.SetComplementarity(0, -1, ComplInfo(0)), "invalid index");
   EXPECT_ASSERT(p.SetComplementarity(0, 1, ComplInfo(0)), "invalid index");
 }
+
+TEST(ProblemTest, RangeIteratorHasCategory) {
+  Problem::VarRange::iterator::iterator_category();
+}
