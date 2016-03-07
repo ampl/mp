@@ -202,7 +202,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     explicit Range(const BasicProblem *p) : problem_(p) {}
 
    public:
-    class iterator : std::iterator<std::forward_iterator_tag, T> {
+    class iterator : public std::iterator<std::forward_iterator_tag, T> {
      private:
       T item_;
 
