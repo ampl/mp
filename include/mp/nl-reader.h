@@ -2224,6 +2224,17 @@ class NLProblemBuilder {
 
   int obj_index_;
 
+  // The next logical constraint index used to detect if constraint indices
+  // are not in increasing order.
+  int logical_con_index_;
+
+  // The number of logical constraints.
+  int num_logical_cons_;
+
+  // Logical constraint expressions used when constraint indices are not in
+  // increasing order.
+  std::vector<LogicalExpr> logical_cons_;
+
   // Algebraic constraints
   struct ConInfo {
     NumericExpr expr;
@@ -2234,6 +2245,11 @@ class NLProblemBuilder {
   std::vector<double> initial_duals_;
 
   std::vector<Function> funcs_;
+
+  void CheckIndex(int index, std::size_t size) {
+    MP_ASSERT(0 <= index && static_cast<unsigned>(index) < size,
+              "invalid index");
+  }
 
  protected:
   void set_obj_index(int index) { obj_index_ = index; }
@@ -2255,7 +2271,8 @@ class NLProblemBuilder {
   int obj_index() const { return obj_index_; }
 
   explicit NLProblemBuilder(ProblemBuilder &builder, int obj_index = 0)
-    : builder_(builder), num_continuous_vars_(0), obj_index_(obj_index) {}
+    : builder_(builder), num_continuous_vars_(0), obj_index_(obj_index),
+      logical_con_index_(0), num_logical_cons_(0) {}
 
   ProblemBuilder &builder() { return builder_; }
 
@@ -2265,6 +2282,7 @@ class NLProblemBuilder {
     objs_.resize(h.num_objs);
     cons_.resize(h.num_algebraic_cons);
     funcs_.resize(h.num_funcs);
+    num_logical_cons_ = h.num_logical_cons;
 
     // Update the number of objectives if necessary.
     int num_objs = 0;
@@ -2297,7 +2315,7 @@ class NLProblemBuilder {
   // Receives notification of an objective type and the nonlinear part of
   // an objective expression.
   void OnObj(int index, obj::Type type, NumericExpr expr) {
-    assert(0 <= index && static_cast<unsigned>(index) < objs_.size());
+    CheckIndex(index, objs_.size());
     if (!NeedObj(index))
       return;  // Ignore inactive objective.
     ObjInfo &obj = objs_[index];
@@ -2308,13 +2326,24 @@ class NLProblemBuilder {
   // Receives notification of the nonlinear part of an algebraic constraint
   // expression.
   void OnAlgebraicCon(int index, NumericExpr expr) {
-    assert(0 <= index && static_cast<unsigned>(index) < cons_.size());
+    CheckIndex(index, cons_.size());
     cons_[index].expr = expr;
   }
 
   // Receives notification of a logical constraint.
-  void OnLogicalCon(int, LogicalExpr expr) {
-    builder_.AddCon(expr);
+  void OnLogicalCon(int index, LogicalExpr expr) {
+    if (index == logical_con_index_) {
+      // Logical constraint indices are increasing, so add the constraint now.
+      ++logical_con_index_;
+      builder_.AddCon(expr);
+      return;
+    }
+    // Otherwise store the constraint expression and add it in EndInput
+    // to preseve constraint indices.
+    if (logical_cons_.empty())
+      logical_cons_.resize(num_logical_cons_);
+    CheckIndex(index, logical_cons_.size());
+    logical_cons_[index] = expr;
   }
 
   // Receives notification of a complementarity relation.
@@ -2326,7 +2355,7 @@ class NLProblemBuilder {
 
   // Receives notification of the linear part of an objective expression.
   LinearObjHandler OnLinearObjExpr(int obj_index, int num_linear_terms) {
-    assert(0 <= obj_index && static_cast<unsigned>(obj_index) < objs_.size());
+    CheckIndex(obj_index, objs_.size());
     const ObjInfo &obj_info = objs_[obj_index];
     return builder_.AddObj(obj_info.type, obj_info.expr, num_linear_terms);
   }
@@ -2335,6 +2364,7 @@ class NLProblemBuilder {
 
   // Receives notification of the linear part of a constraint expression.
   LinearConHandler OnLinearConExpr(int con_index, int num_linear_terms) {
+    CheckIndex(con_index, cons_.size());
     const ConInfo &con = cons_[con_index];
     return builder_.AddCon(con.lb, con.ub, con.expr, num_linear_terms);
   }
@@ -2592,6 +2622,9 @@ class NLProblemBuilder {
       if (double dual = initial_duals_[i])
         builder_.algebraic_con(i).set_dual(dual);
     }
+    // Add logical constraints if their indices where permuted.
+    for (int i = logical_con_index_; i < num_logical_cons_; ++i)
+      builder_.AddCon(logical_cons_[i]);
   }
 };
 
