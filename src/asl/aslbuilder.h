@@ -707,7 +707,7 @@ class ASLHandler : public mp::internal::NLProblemBuilder<ASLBuilder> {
  private:
   int flags_;
 
-  typedef NLProblemBuilder<ASLBuilder> Base;
+  typedef mp::internal::NLProblemBuilder<ASLBuilder> Base;
 
  public:
   explicit ASLHandler(ASLBuilder &b, int obj_index = 0) : Base(b, obj_index) {}

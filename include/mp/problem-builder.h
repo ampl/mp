@@ -402,10 +402,11 @@ class ColProblem : public Problem {
 // An NL handler that builds a problem with a column-wise constraint matrix.
 class ColProblemBuilder : public internal::NLProblemBuilder<ColProblem> {
  private:
-  typedef NLProblemBuilder<ColProblem> Base;
+  typedef internal::NLProblemBuilder<ColProblem> Base;
 
  public:
-  explicit ColProblemBuilder(ColProblem &p) : NLProblemBuilder<ColProblem>(p) {}
+  explicit ColProblemBuilder(ColProblem &p)
+    : internal::NLProblemBuilder<ColProblem>(p) {}
 
   void OnHeader(const NLHeader &h) {
     Base::OnHeader(h);
