@@ -1816,7 +1816,7 @@ void NLReader<Reader, Handler>::ReadLinearExpr() {
   LinearHandler lh(*this);
   int index = ReadUInt(lh.num_items());
   // The number of terms should be less than num_vars because common
-  // expressions are not allowed in a linear expressions.
+  // expressions are not allowed in a linear expression.
   int num_terms = ReadUInt(1, header_.num_vars + 1u);
   reader_.ReadTillEndOfLine();
   if (lh.NeedExpr(index))
@@ -1831,7 +1831,7 @@ void NLReader<Reader, Handler>::ReadLinearExpr(
     int num_terms, LinearHandler linear_expr) {
   for (int i = 0; i < num_terms; ++i) {
     // Variable index should be less than num_vars because common
-    // expressions are not allowed in a linear expressions.
+    // expressions are not allowed in a linear expression.
     int var_index = ReadUInt(header_.num_vars);
     double coef = reader_.ReadDouble();
     reader_.ReadTillEndOfLine();
