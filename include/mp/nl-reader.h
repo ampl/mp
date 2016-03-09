@@ -2249,6 +2249,7 @@ class NLProblemBuilder {
   void CheckIndex(int index, std::size_t size) {
     MP_ASSERT(0 <= index && static_cast<unsigned>(index) < size,
               "invalid index");
+    internal::Unused(index, size);
   }
 
  protected:
