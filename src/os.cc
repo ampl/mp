@@ -61,25 +61,7 @@ const char path::preferred_separator;
 
 #ifndef _WIN32
 
-#ifdef __APPLE__
-
-// Mac OS X implementation.
-path mp::GetExecutablePath() {
-  fmt::internal::MemoryBuffer<char, BUFFER_SIZE> buffer;
-  uint32_t size = BUFFER_SIZE;
-  buffer.resize(size);
-  if (_NSGetExecutablePath(&buffer[0], &size) != 0) {
-    buffer.resize(size);
-    if (_NSGetExecutablePath(&buffer[0], &size) != 0)
-      throw SystemError(errno, "cannot get executable path");
-  }
-  if (size == BUFFER_SIZE)
-    size = std::strlen(&buffer[0]);
-  const char *s = &buffer[0];
-  return path(s, s + size);
-}
-
-#else
+# if defined(__linux__)
 
 // Linux implementation.
 path mp::GetExecutablePath() {
@@ -97,18 +79,45 @@ path mp::GetExecutablePath() {
   return path(s, s + size);
 }
 
-#endif
+# elif defined(__APPLE__)
+
+// Mac OS X implementation.
+path mp::GetExecutablePath() {
+  fmt::internal::MemoryBuffer<char, BUFFER_SIZE> buffer;
+  uint32_t size = BUFFER_SIZE;
+  buffer.resize(size);
+  if (_NSGetExecutablePath(&buffer[0], &size) != 0) {
+    buffer.resize(size);
+    if (_NSGetExecutablePath(&buffer[0], &size) != 0)
+      throw SystemError(errno, "cannot get executable path");
+  }
+  if (size == BUFFER_SIZE)
+    size = std::strlen(&buffer[0]);
+  const char *s = &buffer[0];
+  return path(s, s + size);
+}
+
+# elif defined(__sun)
+
+// Solaris implementation.
+path mp::GetExecutablePath() {
+  return path(getexecname());
+}
+
+# else
+#  error GetExecutablePath is not implemented for this system
+# endif
 
 // POSIX implementation.
 
 path path::temp_directory_path() {
   const char *dir = std::getenv("TMPDIR");
   if (!dir) {
-#ifdef P_tmpdir
+# ifdef P_tmpdir
     dir = P_tmpdir;
-#else
+# else
     dir = "/tmp";
-#endif
+# endif
   }
   return path(dir);
 }
@@ -129,7 +138,7 @@ void mp::internal::MemoryMappedFileBase::unmap() {
     fmt::report_system_error(errno, "cannot unmap file");
 }
 
-#else
+#else  // _WIN32
 
 // Windows implementation.
 
@@ -197,4 +206,4 @@ void mp::internal::MemoryMappedFileBase::unmap() {
     throw WindowsError(GetLastError(), "cannot unmap file");
 }
 
-#endif
+#endif  // _WIN32
