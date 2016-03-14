@@ -2660,3 +2660,26 @@ warnings by misguided compilers.
 whose rows contain nonzeros to the left but not to the right of the
 diagonal:  the number of columns was miscomputed and a memory
 overwrite was possible.
+
+20160219
+  arithchk.c, dtoa.c:  sync with netlib/fp; should have no affect on
+ASL; asldate.c not changed.
+
+20160302
+  fpinit.c:  on non-Windows systems, #include "fenv.h", which helps
+on at least one kind of system (and should be harmless elsewhere).
+Thanks to Victor Zverovich for suggesting this; asldate.c not changed.
+
+20160303
+  funcadd1.c: on most Unix-like systems, give a better error message
+when a shared library cannot be loaded.
+
+20160307:
+  dtoa.c (and dtoa1.c):  Fix glitches with floating-point values in
+hexadecimal notation (use of which is supported but very unlikely):
+some values that should overflow to (appropriately signed) Infinity,
+such as 0x1p1025, were mishandled, and values greater than 0x1p-1075
+and less than 0x1.0000000000001p-1075 where treated as zero rather
+than the smallest denormal number.  AMPL does not use hexadecimal
+notation for floating-point numbers in .nl files, so solvers should
+not be affected.

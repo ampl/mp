@@ -1,5 +1,9 @@
-20151209
-  mqpcheckv.c:  fix a bug with diagonal elements that sum to zero and
-whose rows contain nonzeros to the left but not to the right of the
-diagonal:  the number of columns was miscomputed and a memory
-overwrite was possible.
+20160307:
+  dtoa.c (and dtoa1.c):  Fix glitches with floating-point values in
+hexadecimal notation (use of which is supported but very unlikely):
+some values that should overflow to (appropriately signed) Infinity,
+such as 0x1p1025, were mishandled, and values greater than 0x1p-1075
+and less than 0x1.0000000000001p-1075 where treated as zero rather
+than the smallest denormal number.  AMPL does not use hexadecimal
+notation for floating-point numbers in .nl files, so solvers should
+not be affected.

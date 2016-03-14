@@ -1978,7 +1978,7 @@ gethex( const char **sp, U *rvp, int rounding, int sign MTd)
 		e -= n;
 		x = b->x;
 		}
-	if (e > Emax) {
+	if (e > emax) {
  ovfl:
 		Bfree(b MTa);
  ovfl1:
@@ -1997,7 +1997,7 @@ gethex( const char **sp, U *rvp, int rounding, int sign MTd)
 #ifdef IEEE_Arith /*{*/
 			switch (rounding) {
 			  case Round_near:
-				if (n == nbits && (n < 2 || any_on(b,n-1)))
+				if (n == nbits && (n < 2 || lostbits || any_on(b,n-1)))
 					goto ret_tinyf;
 				break;
 			  case Round_up:
@@ -2526,7 +2526,7 @@ strtod(const char *s00, char **se)
 		  case 'x':
 		  case 'X':
 #ifdef Honor_FLT_ROUNDS
-			gethex(&s, &rv, bc.rounding, sign MTa);
+			gethex(&s, &rv, bc.rounding, sign MTb);
 #else
 			gethex(&s, &rv, 1, sign MTb);
 #endif
@@ -3083,7 +3083,7 @@ strtod(const char *s00, char **se)
 						if (y)
 #endif
 						  {
-						  delta = lshift(delta,Log2P);
+						  delta = lshift(delta,Log2P MTb);
 						  if (cmp(delta, bs) <= 0)
 							adj.d = -0.5;
 						  }

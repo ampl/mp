@@ -41,8 +41,6 @@ funcadd(AmplExports *ae)
 #ifdef WIN32
 #include "windows.h"
 #undef void
-#else
-#include <sys/mman.h> /* not on windows, needed for solaris */
 #endif
 
 #define _POSIX_SOURCE	/* for HP-UX */
@@ -127,7 +125,7 @@ file_kind(const char *name) /* 1 == regular file, 2 ==> directory; else 0 */
 	return 0;
 	}
 
-#ifdef WIN32
+#ifdef WIN32 /*{{*/
 
 #define SLASH '\\'
 char afdll[] = "\\amplfunc.dll";
@@ -148,7 +146,7 @@ Abspath(const char *s)
 	return 0;
 	}
 
-#else /* !WIN32 */
+#else /*}{ !WIN32 */
 
 #define SLASH '/'
 
@@ -159,14 +157,14 @@ char afdll[] = "/amplfunc.dll";
 #include "unistd.h"	/* for getcwd */
 #define GetCurrentDirectory(a,b) getcwd(b,(int)(a))
 
-#ifdef __hpux
+#ifdef __hpux /*{{*/
 #include "dl.h"
 #define dlopen(x,y) shl_load(x, BIND_IMMEDIATE, 0)
 #define find_dlsym(a,b,c) !shl_findsym(&b, c, TYPE_PROCEDURE, &a)
 #define dlclose(x) shl_unload((shl_t)x)
 #define NO_DLERROR
-#else
-#ifdef Old_APPLE
+#else /*}{*/
+#ifdef Old_APPLE /*{{*/
 #include <mach-o/dyld.h>
 typedef struct {
 	NSObjectFileImage ofi;
@@ -195,18 +193,21 @@ dlclose(NS_pair *p)
 	free(p);
 	}
 #define NO_DLERROR
-#else
+#else /*}{*/
+#ifdef __sun__
+#define __EXTENSIONS__
+#endif
 #include "dlfcn.h"
 typedef void *shl_t;
 #define find_dlsym(a,b,c) (a = (Funcadd*)dlsym(b,c))
-#ifdef sun
+#ifdef sun /*{*/
 #ifndef RTLD_NOW
 #define RTLD_NOW RTLD_LAZY
 #endif
-#endif /* sun */
-#endif /* Old_APPLE */
-#endif /* __hpux */
-#endif /* WIN32 */
+#endif /* sun }*/
+#endif /*}} Old_APPLE */
+#endif /*}} __hpux */
+#endif /*}} WIN32 */
 
 #ifdef __cplusplus
 extern "C" {
@@ -334,16 +335,20 @@ dl_open(AmplExports *ae, char *name, int *warned, int *pns)
 			}
 		if (d0)
 			for(s = d0; (s[0] = s[3]); ++s);
-		if (!warned && (f = fopen(name,"rb"))) {
+		if (!*warned && (f = fopen(name,"rb"))) {
 			fclose(f);
 			if (file_kind(name) == 1) {
-				*warned = 1;
 #ifdef NO_DLERROR
+				*warned = 1;
 				fprintf(Stderr, "Cannot load library \"%s\".\n", name);
 #else
-				fprintf(Stderr, "Cannot load library \"%s\"", name);
-				cs = dlerror();
-				fprintf(Stderr, cs ? ":\n%s\n" : ".\n", cs);
+				/* get dlerror() for original name */
+				if (!d0 || !(h = dlopen(name, RTLD_NOW))) {
+					*warned = 1;
+					fprintf(Stderr, "Cannot load library \"%s\"", name);
+					cs = dlerror();
+					fprintf(Stderr, cs ? ":\n%s\n" : ".\n", cs);
+					}
 #endif
 				}
 			}

@@ -22,10 +22,6 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
-#ifndef _WIN32
-#include <fenv.h>
-#endif
-
 #undef ASL_USE_FPINITMT
 #ifdef __powerpc__
 #undef  ASL_NO_FPINITMT
@@ -52,6 +48,8 @@ int isatty_ASL; /* for use with "sw" under NT */
 #ifdef _WIN32
 #undef WIN32
 #define WIN32
+#else
+#include "fenv.h"
 #endif
 
 #ifdef WIN32

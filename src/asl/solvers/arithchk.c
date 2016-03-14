@@ -127,10 +127,8 @@ icheck(void)
 	return 0;
 	}
 
-char *emptyfmt = "";	/* avoid possible warning message with printf("") */
-
  static Akind *
-ccheck(void)
+ccheck(int ac, char **av)
 {
 	union {
 		double d;
@@ -139,10 +137,11 @@ ccheck(void)
 	long Cray1;
 
 	/* Cray1 = 4617762693716115456 -- without overflow on non-Crays */
-	Cray1 = printf(emptyfmt) < 0 ? 0 : 4617762;
-	if (printf(emptyfmt, Cray1) >= 0)
+	/* The next three tests should always be true. */
+	Cray1 = ac >= -2 ? 4617762 : 0;
+	if (ac >= -1)
 		Cray1 = 1000000*Cray1 + 693716;
-	if (printf(emptyfmt, Cray1) >= 0)
+	if (av || ac >= 0)
 		Cray1 = 1000000*Cray1 + 115456;
 	u.d = 1e13;
 	if (u.L == Cray1)
@@ -183,7 +182,7 @@ get_nanbits(unsigned int *b, int k)
 	}
 
  int
-main(void)
+main(int argc, char **argv)
 {
 	FILE *f;
 	Akind *a;
@@ -212,7 +211,7 @@ main(void)
 		a = icheck();
 		}
 	else if (sizeof(double) == sizeof(long))
-		a = ccheck();
+		a = ccheck(argc, argv);
 	if (a) {
 		fprintf(f, "#define %s\n#define Arith_Kind_ASL %d\n",
 			a->name, a->kind);
