@@ -367,7 +367,7 @@ foreach (module ${MP_MODULES})
   endif ()
 endforeach ()
 
-set(BENCHMARK_ENABLE_TESTING OFF)
+option(BENCHMARK_ENABLE_TESTING "Enable testing of the benchmark library." OFF)
 add_subdirectory(thirdparty/benchmark)
 
 enable_testing()
