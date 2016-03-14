@@ -367,8 +367,11 @@ foreach (module ${MP_MODULES})
   endif ()
 endforeach ()
 
-option(BENCHMARK_ENABLE_TESTING "Enable testing of the benchmark library." OFF)
-add_subdirectory(thirdparty/benchmark)
+if (MP_VARIADIC_TEMPLATES)
+  option(BENCHMARK_ENABLE_TESTING
+         "Enable testing of the benchmark library." OFF)
+  add_subdirectory(thirdparty/benchmark)
+endif ()
 
 enable_testing()
 add_subdirectory(test)
