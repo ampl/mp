@@ -30,10 +30,9 @@ public:
       std::abort();
   }
 
-  CheckHandler & operator=(const CheckHandler&) = delete;
-  CheckHandler(const CheckHandler&) = delete;
-  CheckHandler() = delete;
 private:
+  CheckHandler();
+  BENCHMARK_DISALLOW_COPY_AND_ASSIGN(CheckHandler);
   std::ostream& log_;
 };
 
