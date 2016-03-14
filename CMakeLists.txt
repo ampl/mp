@@ -367,6 +367,9 @@ foreach (module ${MP_MODULES})
   endif ()
 endforeach ()
 
+set(BENCHMARK_ENABLE_TESTING OFF)
+add_subdirectory(thirdparty/benchmark)
+
 enable_testing()
 add_subdirectory(test)
 
