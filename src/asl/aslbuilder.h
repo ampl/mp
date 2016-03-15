@@ -118,6 +118,14 @@ class ASLBuilder {
     (asl_->i.Uvx_ ? asl_->i.Uvx_[index] : asl_->i.LUv_[2 * index + 1]) = ub;
   }
 
+  void SetObjExpr(int index, NumericExpr expr) {
+    if (!expr)
+      expr = MakeNumericConstant(0);
+    SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
+                asl_->i.o_cexp1st_, expr.impl_, asl_->i.zao_);
+  }
+
+
   template <typename ExprType>
   static void CheckKind(expr::Kind kind, const char *expr_name) {
     if (!mp::internal::Is<ExprType>(kind))
@@ -403,11 +411,7 @@ class ASLBuilder {
     }
 
     void set_nonlinear_expr(NumericExpr expr) const {
-      ASL *asl = builder_->asl_;
-      if (!expr)
-        expr = builder_->MakeNumericConstant(0);
-      builder_->SetObjOrCon(index_, reinterpret_cast<ASL_fg*>(asl)->I.obj_de_,
-                            asl->i.o_cexp1st_, expr.impl_, asl->i.zao_);
+      builder_->SetObjExpr(index_, expr);
     }
   };
 
