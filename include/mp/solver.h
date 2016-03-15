@@ -1370,7 +1370,7 @@ int SolverApp<Solver, Reader>::Run(char **argv, int nl_reader_flags) {
   internal::AppSolutionHandler<Solver> sol_handler(
         filename_no_ext, solver_, builder, options,
         output_handler_.has_output ? 0 : banner_size);
-  solver_.Solve(builder, sol_handler);
+  solver_.Solve(builder.problem(), sol_handler);
   return 0;
 }
 

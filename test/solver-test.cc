@@ -59,16 +59,21 @@ class StrictMockProblemBuilder;
 class TestSolver : public mp::Solver {
  private:
   bool mock_solve_;
+  bool call_problem_;
 
  public:
   StrictMockProblemBuilder *builder;
 
   TestSolver(fmt::CStringRef name = "testsolver",
              fmt::CStringRef long_name = 0, long date = 0, int flags = 0)
-  : Solver(name, long_name, date, flags), mock_solve_(false), builder(0) {}
+  : Solver(name, long_name, date, flags), mock_solve_(false),
+    call_problem_(true), builder(0) {}
 
   // Enables mocking of the Solve method.
   void MockSolve() { mock_solve_ = true; }
+
+  bool call_problem() const { return call_problem_; }
+  void set_call_problem(bool value = true) { call_problem_ = value; }
 
   using Solver::set_long_name;
   using Solver::set_version;
@@ -97,9 +102,13 @@ class StrictMockProblemBuilder : public StrictMock<MockProblemBuilder> {
 
   // Constructs a MockProblemBuilder object and stores a pointer to it
   // in ``builder``.
-  explicit StrictMockProblemBuilder(TestSolver &s, fmt::StringRef) {
+  StrictMockProblemBuilder(TestSolver &s, fmt::StringRef) {
     s.builder = this;
+    if (s.call_problem())
+      EXPECT_CALL(*this, problem()).WillOnce(testing::ReturnRef(*this));
   }
+
+  MOCK_METHOD0(problem, StrictMockProblemBuilder &());
 };
 
 // Helper class that copies arguments to comply with the main function
@@ -1593,12 +1602,18 @@ TEST_F(SolverAppTest, UseAppSolutionHandler) {
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
 }
 
+struct MultiObjMockProblemBuilder : MockProblemBuilder {
+  template <typename Solver>
+  MultiObjMockProblemBuilder(Solver &, fmt::StringRef) {}
+  MultiObjMockProblemBuilder &problem() { return *this; }
+};
+
 // A solver for testing multiple objective support.
 template <int FLAGS = Solver::MULTIPLE_OBJ>
-struct MultiObjTestSolver : mp::SolverImpl<MockProblemBuilder> {
-  MockProblemBuilder *builder;
+struct MultiObjTestSolver : mp::SolverImpl<MultiObjMockProblemBuilder> {
+  MultiObjMockProblemBuilder *builder;
   explicit MultiObjTestSolver()
-    : mp::SolverImpl<MockProblemBuilder>("", 0, 0, FLAGS), builder(0) {}
+    : mp::SolverImpl<MultiObjMockProblemBuilder>("", 0, 0, FLAGS), builder(0) {}
   void Solve(ProblemBuilder &, SolutionHandler &) {}
 };
 
@@ -1617,23 +1632,25 @@ TEST(MultiObjTest, NeedAllObjs) {
     }
 
     static void ExpectUseObj0(fmt::StringRef, NLReader::Handler &h, int) {
+      EXPECT_CALL(h.builder(), AddObj(_));
       OnHeader(h);
       EXPECT_EQ(0, h.obj_index());
     }
 
     static void ExpectNeedAllObjs(fmt::StringRef, NLReader::Handler &h, int) {
+      EXPECT_CALL(h.builder(), AddObj(_)).Times(2);
       OnHeader(h);
       EXPECT_EQ(NLReader::Handler::NEED_ALL_OBJS, h.obj_index());
     }
   };
 
   EXPECT_CALL(app.reader(), DoRead(_, _, _))
-    .WillOnce(testing::Invoke(Test::ExpectUseObj0));
+      .WillOnce(testing::Invoke(Test::ExpectUseObj0));
   app.Run(Args("test", "testproblem"));
 
   app.solver().SetIntOption("multiobj", 1);
-  EXPECT_CALL(app.reader(), DoRead(_, _, _)).
-      WillOnce(testing::Invoke(Test::ExpectNeedAllObjs));
+  EXPECT_CALL(app.reader(), DoRead(_, _, _))
+      .WillOnce(testing::Invoke(Test::ExpectNeedAllObjs));
   app.Run(Args("test", "testproblem"));
 }
 
@@ -1656,8 +1673,9 @@ struct TestNLReader {
     header.num_vars = 1;
     header.num_objs = 2;
     auto &builder = adapter.builder();
-    EXPECT_CALL(builder, AddVar(0, 0, mp::var::CONTINUOUS));
     EXPECT_CALL(builder, SetInfo(_));
+    EXPECT_CALL(builder, AddVar(0, 0, mp::var::CONTINUOUS));
+    EXPECT_CALL(builder, AddObj(mp::obj::MIN));
     adapter.OnHeader(header);
     EXPECT_TRUE(adapter.NeedObj(obj_index));
     EXPECT_FALSE(adapter.NeedObj(!obj_index));
@@ -1689,6 +1707,7 @@ struct TestNLReader2 {
 
 TEST(ObjNoTest, InvalidObjNo) {
   mp::SolverApp<TestSolver, TestNLReader2> app;
+  app.solver().set_call_problem(false);
   app.solver().SetIntOption("objno", 3);
   EXPECT_THROW(app.Run(Args("test", "testproblem")), mp::InvalidOptionValue);
 }

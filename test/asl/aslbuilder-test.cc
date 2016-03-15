@@ -799,8 +799,8 @@ TEST(ASLBuilderTest, AddObj) {
   cde *obj_de = reinterpret_cast<ASL_fg*>(asl.get())->I.obj_de_;
   EXPECT_EQ(mp::obj::MIN, asl->i.objtype_[1]);
   EXPECT_EQ(0, obj_de[1].e);
-  builder.AddObj(mp::obj::MIN, builder.MakeVariable(0), 0);
-  builder.AddObj(mp::obj::MAX, builder.MakeNumericConstant(42), 0);
+  builder.AddObj(mp::obj::MIN, builder.MakeVariable(0));
+  builder.AddObj(mp::obj::MAX, builder.MakeNumericConstant(42));
   EXPECT_EQ(mp::obj::MAX, asl->i.objtype_[1]);
   EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), obj_de[1].e->op);
 }
@@ -811,8 +811,8 @@ TEST(ASLBuilderTest, AddObjIndexOutOfRange) {
   TestASLBuilder builder(asl);
   auto expr = builder.MakeNumericConstant(42);
   for (int i = 0; i < TestASLBuilder::NUM_OBJS; ++i)
-    builder.AddObj(mp::obj::MIN, expr, 0);
-  EXPECT_DEBUG_DEATH(builder.AddObj(mp::obj::MIN, expr, 0), "Assertion");
+    builder.AddObj(mp::obj::MIN, expr);
+  EXPECT_DEBUG_DEATH(builder.AddObj(mp::obj::MIN, expr), "Assertion");
 }
 #endif
 

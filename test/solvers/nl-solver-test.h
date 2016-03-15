@@ -82,7 +82,7 @@ EvalResult Solve(Solver &solver, typename Solver::ProblemBuilder &pb) {
     }
   };
   TestSolutionHandler sh;
-  solver.Solve(pb, sh);
+  solver.Solve(pb.problem(), sh);
   return sh.result;
 }
 
@@ -428,7 +428,7 @@ TEST_F(NLSolverTest, NonlinearObj) {
   SetInfo(pb);
   pb.AddVar(2, 2, var::INTEGER);
   NumericExpr x = pb.MakeVariable(0);
-  pb.AddObj(obj::MIN, pb.MakeBinary(mp::expr::MUL, x, x), 0);
+  pb.AddObj(obj::MIN, pb.MakeBinary(mp::expr::MUL, x, x));
   EXPECT_EQ(4, Solve(pb).obj_value());
 }
 
@@ -436,8 +436,8 @@ TEST_F(NLSolverTest, ObjConst) {
   ProblemBuilder pb(solver_, "");
   SetInfo(pb);
   pb.AddVar(0, 0, var::INTEGER);
-  auto obj = pb.AddObj(obj::MIN, pb.MakeNumericConstant(42), 0);
-  obj.AddTerm(0, 1);
+  pb.AddObj(obj::MIN, pb.MakeNumericConstant(42));
+  pb.obj(0).set_linear_expr(0).AddTerm(0, 1);
   EXPECT_EQ(42, Solve(pb).obj_value());
 }
 
@@ -445,7 +445,7 @@ TEST_F(NLSolverTest, Minimize) {
   ProblemBuilder pb(solver_, "");
   SetInfo(pb);
   pb.AddVar(11, 22, var::INTEGER);
-  pb.AddObj(obj::MIN, pb.MakeVariable(0), 0);
+  pb.AddObj(obj::MIN, pb.MakeVariable(0));
   EXPECT_EQ(11, Solve(pb).obj_value());
 }
 
@@ -453,7 +453,7 @@ TEST_F(NLSolverTest, Maximize) {
   ProblemBuilder pb(solver_, "");
   SetInfo(pb);
   pb.AddVar(11, 22, var::INTEGER);
-  pb.AddObj(obj::MAX, pb.MakeVariable(0), 0);
+  pb.AddObj(obj::MAX, pb.MakeVariable(0));
   EXPECT_EQ(22, Solve(pb).obj_value());
 }
 
@@ -477,7 +477,8 @@ void MakeTSP(ProblemBuilder &pb) {
       pb.AddVar(0, 1, mp::var::INTEGER);
   }
   // Add objective and constraints.
-  auto obj = pb.AddObj(mp::obj::MIN, NumericExpr(), n * n);
+  pb.AddObj(mp::obj::MIN, NumericExpr());
+  auto obj = pb.obj(0).set_linear_expr(n * n);
   for (int i = 0; i < n; ++i) {
     auto in_con = pb.AddCon(1, 1, NumericExpr(), n);   // exactly one incoming
     auto out_con = pb.AddCon(1, 1, NumericExpr(), n);  // exactly one outgoing
@@ -495,15 +496,17 @@ TEST_F(NLSolverTest, UpperBound) {
     ProblemBuilder pb(solver_, "");
     pb.AddVar(0, 0, mp::var::INTEGER);
     pb.var(0).set_ub(42);
-    pb.AddObj(mp::obj::MAX, pb.MakeNumericConstant(0), 1).AddTerm(0, 1);
-    EXPECT_EQ(42, Solve(pb));
+    pb.AddObj(mp::obj::MAX, pb.MakeNumericConstant(0));
+    pb.obj(0).set_linear_expr(1).AddTerm(0, 1);
+    EXPECT_EQ(42, Solve(pb.problem()));
   }
   if (HasFeature(feature::FLOAT_CONST)) {
     ProblemBuilder pb(solver_, "");
     pb.AddVar(0, 0, mp::var::CONTINUOUS);
     pb.var(0).set_ub(42);
-    pb.AddObj(mp::obj::MAX, pb.MakeNumericConstant(0), 1).AddTerm(0, 1);
-    EXPECT_EQ(42, Solve(pb));
+    pb.AddObj(mp::obj::MAX, pb.MakeNumericConstant(0));
+    pb.obj(0).set_linear_expr(1).AddTerm(0, 1);
+    EXPECT_EQ(42, Solve(pb.problem()));
   }
 }
 
@@ -527,7 +530,7 @@ TEST_F(NLSolverTest, Variable) {
   info.num_objs = info.num_nl_objs = 1;
   pb.SetInfo(info);
   pb.AddVar(42, 43, mp::var::INTEGER);
-  pb.AddObj(mp::obj::MIN, pb.MakeVariable(0), 0);
+  pb.AddObj(mp::obj::MIN, pb.MakeVariable(0));
   EXPECT_EQ(42, Solve(pb));
 }
 
@@ -882,7 +885,7 @@ TEST_F(NLSolverTest, Call) {
       auto call = pb.BeginCall(f, 2);
       call.AddArg(pb.MakeNumericConstant(0));
       call.AddArg(pb.MakeNumericConstant(0));
-      pb.AddObj(mp::obj::MIN, pb.EndCall(call), 0);
+      pb.AddObj(mp::obj::MIN, pb.EndCall(call));
       Solve(pb);
   }, mp::UnsupportedError);
 }
@@ -1205,7 +1208,8 @@ TEST_F(NLSolverTest, OptimalSolveCode) {
   info.num_obj_nonzeros = 1;
   pb.SetInfo(info);
   pb.AddVar(0, 0, mp::var::INTEGER);
-  pb.AddObj(obj::MIN, NumericExpr(), 1).AddTerm(0, 1);
+  pb.AddObj(obj::MIN, NumericExpr());
+  pb.obj(0).set_linear_expr(1).AddTerm(0, 1);
   EXPECT_EQ(mp::sol::SOLVED, Solve(pb).solve_code());
 }
 
@@ -1295,7 +1299,7 @@ TEST_F(NLSolverTest, InitialValues) {
   }
   TestInterrupter interrupter(solver_);
   TestSolutionHandler sh(MP_TSP_SIZE * MP_TSP_SIZE);
-  solver_.Solve(pb, sh);
+  solver_.Solve(pb.problem(), sh);
   const double *primal = sh.primal();
   if (!HasFeature(feature::INITIAL_VALUES)) {
     ASSERT_TRUE(primal == 0);
@@ -1313,7 +1317,8 @@ TEST_F(NLSolverTest, InitialValueForContinousVar) {
   ProblemBuilder pb(solver_, "");
   pb.AddVar(0, 1, var::CONTINUOUS);
   pb.var(0).set_value(1);
-  pb.AddObj(obj::MIN, pb.MakeNumericConstant(0), 1).AddTerm(0, 1);
+  pb.AddObj(obj::MIN, pb.MakeNumericConstant(0));
+  pb.obj(0).set_linear_expr(1).AddTerm(0, 1);
   TestSolutionHandler sh;
   solver_.Solve(pb, sh);
 }
@@ -1436,7 +1441,7 @@ TEST_F(NLSolverTest, IgnoreObjNo) {
   SetInfo(pb);
   pb.AddVar(2, 2, var::INTEGER);
   NumericExpr x = pb.MakeVariable(0);
-  pb.AddObj(obj::MIN, pb.MakeBinary(mp::expr::MUL, x, x), 0);
+  pb.AddObj(obj::MIN, pb.MakeBinary(mp::expr::MUL, x, x));
   EXPECT_EQ(4, Solve(pb).obj_value());
 }
 
@@ -1455,9 +1460,9 @@ EvalResult SolveMultiObjTestProblem(Solver &solver, bool multiobj = false) {
   pb.AddVar(0, 2, var::INTEGER);
   auto var = pb.MakeVariable(0);
   pb.AddObj(mp::obj::MIN, pb.MakeBinary(
-              mp::expr::MOD, var, pb.MakeNumericConstant(2)), 0);
+              mp::expr::MOD, var, pb.MakeNumericConstant(2)));
   if (multiobj)
-    pb.AddObj(mp::obj::MAX, var, 0);
+    pb.AddObj(mp::obj::MAX, var);
   return Solve(solver, pb);
 }
 
@@ -1492,7 +1497,8 @@ TEST_F(NLSolverTest, ZeroUB) {
   info.num_vars = info.num_objs = 1;
   pb.SetInfo(info);
   pb.AddVar(-std::numeric_limits<double>::infinity(), 0, var::CONTINUOUS);
-  pb.AddObj(obj::MAX, NumericExpr(), 1).AddTerm(0, 1);
+  pb.AddObj(obj::MAX, NumericExpr());
+  pb.obj(0).set_linear_expr(1).AddTerm(0, 1);
   EXPECT_EQ(0, Solve(pb).obj_value());
 }
 

@@ -397,6 +397,10 @@ class ColProblem : public Problem {
   const double *values() const { return coefs_.data(); }
 
   const std::string &name() const { return name_; }
+
+  // Returns the built problem. This is used for compatibility with the problem
+  // builder API.
+  ColProblem &problem() { return *this; }
 };
 
 // An NL handler that builds a problem with a column-wise constraint matrix.

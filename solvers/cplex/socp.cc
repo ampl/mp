@@ -421,9 +421,9 @@ void SOCPConverter::ConvertToASL() {
   ObjRange objs = problem_.objs();
   for (ObjRange::iterator i = objs.begin(), end = objs.end(); i != end; ++i) {
     mp::LinearExpr expr = i->linear_expr();
-    ASLBuilder::LinearObjBuilder obj_builder = builder_.AddObj(
-          i->type(), Convert(i->nonlinear_expr()), expr.num_terms());
-    ConvertLinearExpr(expr, obj_builder);
+    int obj_index = builder_.num_objs();
+    builder_.AddObj(i->type(), Convert(i->nonlinear_expr()));
+    ConvertLinearExpr(expr, builder_.obj(obj_index).set_linear_expr(expr.num_terms()));
   }
 
   ASLBuilder::ColumnSizeHandler cols = builder_.GetColumnSizeHandler();

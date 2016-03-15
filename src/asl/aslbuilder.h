@@ -217,6 +217,7 @@ class ASLBuilder {
 
  public:
   int num_vars() const { return asl_->i.n_var_; }
+  int num_objs() const { return asl_->i.n_obj_; }
   int num_algebraic_cons() const { return asl_->i.n_con_; }
 
   class CallExprBuilder {
@@ -383,8 +384,38 @@ class ASLBuilder {
     }
   };
 
+  class Objective {
+   private:
+    ASLBuilder *builder_;
+    int index_;
+
+    friend class ASLBuilder;
+
+    Objective(ASLBuilder *b, int index) : builder_(b), index_(index) {}
+
+   public:
+    void set_type(obj::Type type) const {
+      builder_->asl_->i.objtype_[index_] = type;
+    }
+
+    LinearObjBuilder set_linear_expr(int) const {
+      return LinearObjBuilder(builder_, builder_->asl_->i.Ograd_ + index_);
+    }
+
+    void set_nonlinear_expr(NumericExpr expr) const {
+      ASL *asl = builder_->asl_;
+      if (!expr)
+        expr = builder_->MakeNumericConstant(0);
+      builder_->SetObjOrCon(index_, reinterpret_cast<ASL_fg*>(asl)->I.obj_de_,
+                            asl->i.o_cexp1st_, expr.impl_, asl->i.zao_);
+    }
+  };
+
+  Objective obj(int index) { return Objective(this, index); }
+
   // Adds and objective.
-  LinearObjBuilder AddObj(obj::Type type, NumericExpr expr, int);
+  // TODO: don't return LinearObjBuilder
+  LinearObjBuilder AddObj(obj::Type type, NumericExpr expr = NumericExpr());
 
   class AlgebraicCon {
    private:

@@ -138,8 +138,7 @@ class MockProblemBuilder {
 
   typedef TestLinearObjBuilder LinearObjBuilder;
 
-  MOCK_METHOD3(AddObj, LinearObjBuilder (mp::obj::Type type, NumericExpr expr,
-                                         int num_linear_terms));
+  MOCK_METHOD1(AddObj, void (mp::obj::Type type));
 
   typedef TestLinearConBuilder LinearConBuilder;
 
@@ -167,6 +166,16 @@ class MockProblemBuilder {
   };
 
   MOCK_METHOD1(var, MutVariable &(int var_index));
+
+  class Objective {
+   public:
+    MOCK_CONST_METHOD1(set_type, void (mp::obj::Type type));
+    MOCK_CONST_METHOD1(set_linear_expr,
+                       LinearObjBuilder (int num_linear_terms));
+    MOCK_CONST_METHOD1(set_nonlinear_expr, void (NumericExpr expr));
+  };
+
+  MOCK_METHOD1(obj, Objective &(int obj_index));
 
   class AlgebraicCon {
    public:
@@ -278,6 +287,8 @@ class MockProblemBuilder {
 
   MOCK_METHOD3(MakeSymbolicIf,
                Expr (LogicalExpr condition, Expr then_expr, Expr else_expr));
+
+  MOCK_METHOD0(problem, MockProblemBuilder &());
 };
 
 #endif  // MP_MOCK_PROBLEM_BUILDER_H_

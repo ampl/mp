@@ -520,14 +520,14 @@ ASLBuilder::LinearConBuilder::LinearConBuilder(ASLBuilder *b, int con_index)
 }
 
 ASLBuilder::LinearObjBuilder
-    ASLBuilder::AddObj(obj::Type type, NumericExpr expr, int) {
+    ASLBuilder::AddObj(obj::Type type, NumericExpr expr) {
   int index = obj_index_++;
   assert(0 <= index && index < asl_->i.n_obj_);
   asl_->i.objtype_[index] = type;
-  if (!expr)
-    expr = MakeNumericConstant(0);
-  SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
-              asl_->i.o_cexp1st_, expr.impl_, asl_->i.zao_);
+  if (expr) {
+    SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
+                asl_->i.o_cexp1st_, expr.impl_, asl_->i.zao_);
+  }
   return LinearObjBuilder(this, asl_->i.Ograd_ + index);
 }
 

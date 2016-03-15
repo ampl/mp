@@ -74,7 +74,6 @@ class LSProblemBuilder :
   // LocalSolver only supports one model per solver.
   ls::LocalSolver solver_;
   ls::LSModel model_;
-  int num_objs_;
   int num_cons_;
   double pl_bigm_;
 
@@ -82,6 +81,13 @@ class LSProblemBuilder :
   std::vector<ls::LSExpression> common_exprs_;
   std::vector<double> initial_values_;
 
+  struct ObjInfo {
+    obj::Type type;
+    ls::LSExpression expr;
+    ObjInfo(obj::Type t, ls::LSExpression e) : type(t), expr(e) {}
+  };
+
+  std::vector<ObjInfo> objs_;
   std::vector<Bound> obj_bounds_;
 
   static const double LS_INF;
@@ -188,7 +194,7 @@ class LSProblemBuilder :
   // The return value may be different from the one returned by
   // model_.getNbObjectives() because a dummy LocalSolver objective is
   // added if the problem doesn't containt objectives.
-  int num_objs() const { return num_objs_; }
+  int num_objs() const { return static_cast<int>(objs_.size()); }
 
   // Returns the number of constraints.
   // The return value may be different from the one returned by
@@ -278,7 +284,39 @@ class LSProblemBuilder :
 
   typedef LinearExprBuilder LinearObjBuilder;
 
-  LinearObjBuilder AddObj(obj::Type type, ls::LSExpression expr, int);
+  void AddObj(obj::Type type, ls::LSExpression expr = ls::LSExpression()) {
+    objs_.push_back(ObjInfo(type, expr));
+  }
+
+  class Objective {
+   private:
+    LSProblemBuilder *builder_;
+    int index_;
+
+    friend class LSProblemBuilder;
+
+    Objective(LSProblemBuilder *b, int index) : builder_(b), index_(index) {}
+
+   public:
+    void set_type(obj::Type type) const { builder_->objs_[index_].type = type; }
+
+    void set_nonlinear_expr(ls::LSExpression expr) const {
+      builder_->objs_[index_].expr = expr;
+    }
+
+    LinearObjBuilder set_linear_expr(int) const {
+      ls::LSExpression sum = builder_->model_.createExpression(ls::O_Sum);
+      ls::LSExpression &expr = builder_->objs_[index_].expr;
+      LinearObjBuilder builder(*builder_, expr, sum);
+      expr = sum;
+      return builder;
+    }
+  };
+
+  Objective obj(int index) {
+    CheckBounds(index, objs_.size());
+    return Objective(this, index);
+  }
 
   typedef LinearExprBuilder LinearConBuilder;
 
@@ -465,6 +503,17 @@ class LSProblemBuilder :
   DblSuffixHandler AddDblSuffix(fmt::StringRef name, suf::Kind kind,
                                 int num_values) {
     return AddSuffix<double>(name, kind, num_values);
+  }
+
+  // Returns the built problem.
+  LSProblemBuilder &problem() {
+    for (std::vector<ObjInfo>::const_iterator
+         i = objs_.begin(), end = objs_.end(); i != end; ++i) {
+      ls::LSObjectiveDirection dir =
+          i->type == obj::MIN ? ls::OD_Minimize : ls::OD_Maximize;
+      model_.addObjective(i->expr, dir);
+    }
+    return *this;
   }
 };
 

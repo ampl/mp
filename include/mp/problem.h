@@ -530,6 +530,20 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     return Variable(this, static_cast<int>(index));
   }
 
+  class LinearExprBuilder {
+   private:
+    LinearExpr *expr_;
+
+   public:
+    explicit LinearExprBuilder(LinearExpr *expr) : expr_(expr) {}
+
+    void AddTerm(int var_index, double coef) {
+      expr_->AddTerm(var_index, coef);
+    }
+  };
+
+  typedef LinearExprBuilder LinearObjBuilder;
+
   // An objective.
   typedef BasicObjective<ProblemItem> Objective;
 
@@ -546,9 +560,20 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       return Objective(this->problem_, this->index_);
     }
 
+    void set_type(obj::Type type) const {
+      this->problem_->is_obj_max_[this->index_] = (type == obj::MAX);
+    }
+
     // Returns the linear part of the objective expression.
     LinearExpr &linear_expr() const {
       return this->problem_->linear_objs_[this->index_];
+    }
+
+    // Sets the linear part of the objective expression.
+    LinearObjBuilder set_linear_expr(int num_linear_terms) const {
+      LinearExpr &expr = linear_expr();
+      expr.Reserve(num_linear_terms);
+      return LinearObjBuilder(&expr);
     }
 
     // Sets the nonlinear part of the objective expression.
@@ -578,20 +603,6 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     CheckIndex(index, num_objs());
     return MutObjective(this, index);
   }
-
-  class LinearExprBuilder {
-   private:
-    LinearExpr *expr_;
-
-   public:
-    explicit LinearExprBuilder(LinearExpr *expr) : expr_(expr) {}
-
-    void AddTerm(int var_index, double coef) {
-      expr_->AddTerm(var_index, coef);
-    }
-  };
-
-  typedef LinearExprBuilder LinearObjBuilder;
 
   // Adds an objective.
   // Returns a builder for the linear part of an objective expression.
@@ -808,6 +819,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   void SetInfo(const ProblemInfo &info);
 
   typedef BasicProblem Builder;
+
+  // Returns the built problem. This is used for compatibility with the problem
+  // builder API.
+  BasicProblem &problem() { return *this; }
 };
 
 typedef BasicProblem< std::allocator<char> > Problem;

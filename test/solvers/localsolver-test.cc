@@ -250,7 +250,7 @@ TEST(LocalSolverTest, EnvFileOption) {
 
   mp::LSProblemBuilder pb(solver);
   pb.AddVar(0, 1, var::INTEGER);
-  pb.AddObj(obj::MIN, pb.MakeVariable(0), 0);
+  pb.AddObj(obj::MIN, pb.MakeVariable(0));
   TestSolutionHandler sh;
   std::remove(envfile);
   solver.Solve(pb, sh);
@@ -334,10 +334,10 @@ TYPED_TEST(SuffixTest, ObjBound) {
   TestSolver solver;
   mp::LSProblemBuilder pb(solver);
   pb.AddVar(0, 1, TypeParam::type());
-  pb.AddObj(obj::MIN, pb.MakeVariable(0), 0);
+  pb.AddObj(obj::MIN, pb.MakeVariable(0));
   TypeParam::AddSuffix(pb).SetValue(0, TypeParam::value());
   TestSolutionHandler sh;
-  solver.Solve(pb, sh);
+  solver.Solve(pb.problem(), sh);
   EXPECT_EQ(TypeParam::value(), solver.bound);
 }
 

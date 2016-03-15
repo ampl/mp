@@ -47,6 +47,7 @@ typedef mp::internal::TextReader<> TextReader;
 using testing::_;
 using testing::Field;
 using testing::Return;
+using testing::ReturnRef;
 using testing::StrictMock;
 using testing::Throw;
 
@@ -1723,7 +1724,7 @@ TEST(NLProblemBuilderTest, Forward) {
     adapter.OnColumnSizes();
 
     MockProblemBuilder::MutVariable var;
-    EXPECT_CALL(builder, var(33)).WillOnce(testing::ReturnRef(var));
+    EXPECT_CALL(builder, var(33)).WillOnce(ReturnRef(var));
     EXPECT_CALL(var, set_value(4.4));
     adapter.OnInitialValue(33, 4.4);
 
@@ -1732,7 +1733,7 @@ TEST(NLProblemBuilderTest, Forward) {
     adapter.OnInitialDualValue(55, 6.6);
 
     MockProblemBuilder::AlgebraicCon con;
-    EXPECT_CALL(builder, algebraic_con(55)).WillOnce(testing::ReturnRef(con));
+    EXPECT_CALL(builder, algebraic_con(55)).WillOnce(ReturnRef(con));
     EXPECT_CALL(con, set_dual(6.6));
     adapter.EndInput();
   }
@@ -1852,6 +1853,7 @@ TEST(NLProblemBuilderTest, NeedAllObjs) {
   auto header = NLHeader();
   header.num_objs = 10;
   EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 10)));
+  EXPECT_CALL(builder, AddObj(mp::obj::MIN)).Times(header.num_objs);
   adapter.OnHeader(header);
 }
 
@@ -1863,6 +1865,7 @@ TEST(NLProblemBuilderTest, SingleObjective) {
   auto header = NLHeader();
   header.num_objs = 10;
   EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 1)));
+  EXPECT_CALL(builder, AddObj(mp::obj::MIN));
   adapter.OnHeader(header);
   header.num_objs = 0;
   EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 0)));
@@ -1873,7 +1876,7 @@ TEST(NLProblemBuilderTest, OnVarBounds) {
   StrictMock<MockProblemBuilder> builder;
   NLProblemBuilder<MockProblemBuilder> adapter(builder);
   MockProblemBuilder::MutVariable var;
-  EXPECT_CALL(builder, var(66)).WillOnce(testing::ReturnRef(var));
+  EXPECT_CALL(builder, var(66)).WillOnce(ReturnRef(var));
   EXPECT_CALL(var, set_lb(7.7));
   EXPECT_CALL(var, set_ub(8.8));
   adapter.OnVarBounds(66, 7.7, 8.8);
@@ -1881,17 +1884,25 @@ TEST(NLProblemBuilderTest, OnVarBounds) {
 
 TEST(NLProblemBuilderTest, OnObj) {
   StrictMock<MockProblemBuilder> builder;
-  NLProblemBuilder<MockProblemBuilder> adapter(builder);
-  auto header = mp::NLHeader();
-  header.num_objs = 1;
-  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
-  adapter.OnHeader(header);
+  typedef NLProblemBuilder<MockProblemBuilder> Adapter;
+  Adapter adapter(builder, Adapter::NEED_ALL_OBJS);
   auto expr = TestNumericExpr(ID);
-  adapter.OnObj(0, mp::obj::MAX, expr);
+  StrictMock<MockProblemBuilder::Objective> obj;
+  EXPECT_CALL(builder, obj(42)).WillOnce(ReturnRef(obj));
+  EXPECT_CALL(obj, set_type(mp::obj::MAX));
+  EXPECT_CALL(obj, set_nonlinear_expr(expr));
+  adapter.OnObj(42, mp::obj::MAX, expr);
+}
+
+TEST(NLProblemBuilderTest, OnLinearObjExpr) {
+  StrictMock<MockProblemBuilder> builder;
+  typedef NLProblemBuilder<MockProblemBuilder> Adapter;
+  Adapter adapter(builder, Adapter::NEED_ALL_OBJS);
+  MockProblemBuilder::Objective obj;
+  EXPECT_CALL(builder, obj(42)).WillOnce(ReturnRef(obj));
   auto obj_builder = TestLinearObjBuilder(ID);
-  EXPECT_CALL(builder, AddObj(mp::obj::MAX, expr, 11)).
-      WillOnce(Return(obj_builder));
-  EXPECT_EQ(obj_builder, adapter.OnLinearObjExpr(0, 11));
+  EXPECT_CALL(obj, set_linear_expr(11)).WillOnce(Return(obj_builder));
+  EXPECT_EQ(obj_builder, adapter.OnLinearObjExpr(42, 11));
 }
 
 TEST(NLProblemBuilderTest, OnCon) {
@@ -1907,14 +1918,47 @@ TEST(NLProblemBuilderTest, OnCon) {
   auto con_builder = TestLinearConBuilder(ID);
   EXPECT_CALL(builder, AddCon(11, 22, expr, 33)).WillOnce(Return(con_builder));
   EXPECT_EQ(con_builder, adapter.OnLinearConExpr(0, 33));
+  EXPECT_ASSERT(adapter.OnAlgebraicCon(-1, expr), "invalid index");
+  EXPECT_ASSERT(adapter.OnAlgebraicCon(header.num_algebraic_cons, expr),
+                "invalid index");
+  EXPECT_ASSERT(adapter.OnLinearConExpr(-1, 11), "invalid index");
+  EXPECT_ASSERT(adapter.OnLinearConExpr(header.num_algebraic_cons, 11),
+                "invalid index");
 }
 
 TEST(NLProblemBuilderTest, OnLogicalCon) {
   StrictMock<MockProblemBuilder> builder;
   NLProblemBuilder<MockProblemBuilder> adapter(builder);
+  auto header = mp::NLHeader();
+  header.num_logical_cons = 2;
+  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  adapter.OnHeader(header);
   auto expr = TestLogicalExpr(ID);
   EXPECT_CALL(builder, AddCon(expr));
   adapter.OnLogicalCon(0, expr);
+  EXPECT_ASSERT(adapter.OnLogicalCon(-1, expr), "invalid index");
+  EXPECT_ASSERT(adapter.OnLogicalCon(header.num_logical_cons, expr),
+                "invalid index");
+}
+
+TEST(NLProblemBuilderTest, PreserveLogicalConIndices) {
+  StrictMock<MockProblemBuilder> builder;
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
+  auto header = mp::NLHeader();
+  header.num_logical_cons = 3;
+  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  adapter.OnHeader(header);
+  auto expr0 = TestLogicalExpr(ID);
+  auto expr1 = TestLogicalExpr(ID2);
+  auto expr2 = TestLogicalExpr(ID3);
+  testing::InSequence dummy;
+  EXPECT_CALL(builder, AddCon(expr0));
+  EXPECT_CALL(builder, AddCon(expr1));
+  EXPECT_CALL(builder, AddCon(expr2));
+  adapter.OnLogicalCon(0, expr0);
+  adapter.OnLogicalCon(2, expr2);
+  adapter.OnLogicalCon(1, expr1);
+  adapter.EndInput();
 }
 
 TEST(NLProblemBuilderTest, OnCommonExpr) {

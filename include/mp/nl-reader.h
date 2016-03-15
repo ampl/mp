@@ -2215,18 +2215,11 @@ class NLProblemBuilder {
  private:
   int num_continuous_vars_;
 
-  struct ObjInfo {
-    obj::Type type;
-    NumericExpr expr;
-    ObjInfo() : type(obj::MIN), expr() {}
-  };
-  std::vector<ObjInfo> objs_;
-
   int obj_index_;
 
-  // The next logical constraint index used to detect if constraint indices
-  // are not in increasing order.
-  int logical_con_index_;
+  // The number of logical constraints seen so far. It is used to check if
+  // constraint indices are in increasing order.
+  int logical_con_count_;
 
   // The number of logical constraints.
   int num_logical_cons_;
@@ -2252,6 +2245,12 @@ class NLProblemBuilder {
     internal::Unused(index, size);
   }
 
+  template <typename Obj>
+  void SetObj(const Obj &obj, obj::Type type, NumericExpr expr) {
+    obj.set_type(type);
+    obj.set_nonlinear_expr(expr);
+  }
+
  protected:
   void set_obj_index(int index) { obj_index_ = index; }
 
@@ -2273,14 +2272,14 @@ class NLProblemBuilder {
 
   explicit NLProblemBuilder(ProblemBuilder &builder, int obj_index = 0)
     : builder_(builder), num_continuous_vars_(0), obj_index_(obj_index),
-      logical_con_index_(0), num_logical_cons_(0) {}
+      logical_con_count_(0), num_logical_cons_(0) {}
 
   ProblemBuilder &builder() { return builder_; }
 
   // Receives notification of an .nl header.
   void OnHeader(const NLHeader &h) {
     num_continuous_vars_ = h.num_continuous_vars();
-    objs_.resize(h.num_objs);
+
     cons_.resize(h.num_algebraic_cons);
     funcs_.resize(h.num_funcs);
     num_logical_cons_ = h.num_logical_cons;
@@ -2304,6 +2303,13 @@ class NLProblemBuilder {
       builder_.AddVar(0, 0, var::CONTINUOUS);
     for (int i = num_continuous_vars_; i < h.num_vars; ++i)
       builder_.AddVar(0, 0, var::INTEGER);
+
+    // Add objectives. As nl-benchmark shows, adding all objectives at once
+    // and then updating them is faster than adding objectives incrementally.
+    // The latter requires additional checks to make sure that objectives are
+    // in the correct order.
+    for (int i = 0; i < num_objs; ++i)
+      builder_.AddObj(obj::MIN);
   }
 
   // Returns true if objective should be handled.
@@ -2316,12 +2322,8 @@ class NLProblemBuilder {
   // Receives notification of an objective type and the nonlinear part of
   // an objective expression.
   void OnObj(int index, obj::Type type, NumericExpr expr) {
-    CheckIndex(index, objs_.size());
-    if (!NeedObj(index))
-      return;  // Ignore inactive objective.
-    ObjInfo &obj = objs_[index];
-    obj.type = type;
-    obj.expr = expr;
+    if (NeedObj(index))
+      SetObj(builder_.obj(index), type, expr);
   }
 
   // Receives notification of the nonlinear part of an algebraic constraint
@@ -2333,9 +2335,9 @@ class NLProblemBuilder {
 
   // Receives notification of a logical constraint.
   void OnLogicalCon(int index, LogicalExpr expr) {
-    if (index == logical_con_index_) {
+    if (index == logical_con_count_) {
       // Logical constraint indices are increasing, so add the constraint now.
-      ++logical_con_index_;
+      ++logical_con_count_;
       builder_.AddCon(expr);
       return;
     }
@@ -2356,9 +2358,8 @@ class NLProblemBuilder {
 
   // Receives notification of the linear part of an objective expression.
   LinearObjHandler OnLinearObjExpr(int obj_index, int num_linear_terms) {
-    CheckIndex(obj_index, objs_.size());
-    const ObjInfo &obj_info = objs_[obj_index];
-    return builder_.AddObj(obj_info.type, obj_info.expr, num_linear_terms);
+    // TODO: don't skip objectives
+    return builder_.obj(obj_index).set_linear_expr(num_linear_terms);
   }
 
   typedef typename ProblemBuilder::LinearConBuilder LinearConHandler;
@@ -2623,8 +2624,8 @@ class NLProblemBuilder {
       if (double dual = initial_duals_[i])
         builder_.algebraic_con(i).set_dual(dual);
     }
-    // Add logical constraints if their indices where permuted.
-    for (int i = logical_con_index_; i < num_logical_cons_; ++i)
+    // Add logical constraints with permuted indices.
+    for (int i = logical_con_count_; i < num_logical_cons_; ++i)
       builder_.AddCon(logical_cons_[i]);
   }
 };

@@ -74,13 +74,13 @@ LSProblemBuilder::HyperbolicTerms
 }
 
 LSProblemBuilder::LSProblemBuilder(LocalSolver &s, fmt::StringRef)
-  : model_(solver_.getModel()),
-    num_objs_(0), num_cons_(0), pl_bigm_(s.pl_bigm()) {
+  : model_(solver_.getModel()), num_cons_(0), pl_bigm_(s.pl_bigm()) {
   solver_.getParam().setVerbosity(0);
 }
 
 void LSProblemBuilder::SetInfo(const ProblemInfo &info) {
   vars_.reserve(info.num_vars);
+  objs_.reserve(info.num_objs);
 }
 
 void LSProblemBuilder::AddVar(double lb, double ub, var::Type type) {
@@ -99,16 +99,6 @@ void LSProblemBuilder::AddVar(double lb, double ub, var::Type type) {
           std::numeric_limits<int>::max() : ConvertToInt(ub);
     var = model_.createExpression(ls::O_Int, int_lb, int_ub);
   }
-}
-
-LSProblemBuilder::LinearObjBuilder
-    LSProblemBuilder::AddObj(obj::Type type, ls::LSExpression expr, int) {
-  ++num_objs_;
-  ls::LSObjectiveDirection dir =
-      type == obj::MIN ? ls::OD_Minimize : ls::OD_Maximize;
-  ls::LSExpression sum = model_.createExpression(ls::O_Sum);
-  model_.addObjective(sum, dir);
-  return LinearObjBuilder(*this, expr, sum);
 }
 
 LSProblemBuilder::LinearConBuilder
