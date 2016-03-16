@@ -90,6 +90,8 @@ class LSProblemBuilder :
   std::vector<ObjInfo> objs_;
   std::vector<Bound> obj_bounds_;
 
+  std::vector<LogicalExpr> logical_cons_;
+
   static const double LS_INF;
 
   static ls::lsint ConvertToInt(double value) {
@@ -318,6 +320,26 @@ class LSProblemBuilder :
     return Objective(this, index);
   }
 
+  class LogicalCon {
+   private:
+    LSProblemBuilder *builder_;
+    int index_;
+
+    friend class LSProblemBuilder;
+
+    LogicalCon(LSProblemBuilder *b, int index) : builder_(b), index_(index) {}
+
+   public:
+    void set_expr(LogicalExpr expr) {
+      builder_->logical_cons_[index_] = expr;
+    }
+  };
+
+  LogicalCon logical_con(int index) {
+    CheckBounds(index, logical_cons_.size());
+    return LogicalCon(this, index);
+  }
+
   typedef LinearExprBuilder LinearConBuilder;
 
   // Adds an algebraic constraint.
@@ -512,6 +534,10 @@ class LSProblemBuilder :
       ls::LSObjectiveDirection dir =
           i->type == obj::MIN ? ls::OD_Minimize : ls::OD_Maximize;
       model_.addObjective(i->expr, dir);
+    }
+    for (std::vector<ls::LSExpression>::const_iterator
+         i = logical_cons_.begin(), end = logical_cons_.end(); i != end; ++i) {
+      model_.addConstraint(*i);
     }
     return *this;
   }

@@ -182,7 +182,14 @@ class MockProblemBuilder {
     MOCK_CONST_METHOD1(set_dual, void (double value));
   };
 
-  MOCK_METHOD1(algebraic_con, AlgebraicCon &(int con_index));
+  MOCK_METHOD1(algebraic_con, AlgebraicCon &(int index));
+
+  class LogicalCon {
+   public:
+    MOCK_CONST_METHOD1(set_expr, void (LogicalExpr expr));
+  };
+
+  MOCK_METHOD1(logical_con, LogicalCon &(int index));
 
   typedef TestColumnSizeHandler ColumnSizeHandler;
 

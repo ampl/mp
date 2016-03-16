@@ -2217,17 +2217,6 @@ class NLProblemBuilder {
 
   int obj_index_;
 
-  // The number of logical constraints seen so far. It is used to check if
-  // constraint indices are in increasing order.
-  int logical_con_count_;
-
-  // The number of logical constraints.
-  int num_logical_cons_;
-
-  // Logical constraint expressions used when constraint indices are not in
-  // increasing order.
-  std::vector<LogicalExpr> logical_cons_;
-
   // Algebraic constraints
   struct ConInfo {
     NumericExpr expr;
@@ -2271,8 +2260,7 @@ class NLProblemBuilder {
   int obj_index() const { return obj_index_; }
 
   explicit NLProblemBuilder(ProblemBuilder &builder, int obj_index = 0)
-    : builder_(builder), num_continuous_vars_(0), obj_index_(obj_index),
-      logical_con_count_(0), num_logical_cons_(0) {}
+    : builder_(builder), num_continuous_vars_(0), obj_index_(obj_index) {}
 
   ProblemBuilder &builder() { return builder_; }
 
@@ -2282,7 +2270,6 @@ class NLProblemBuilder {
 
     cons_.resize(h.num_algebraic_cons);
     funcs_.resize(h.num_funcs);
-    num_logical_cons_ = h.num_logical_cons;
 
     // Update the number of objectives if necessary.
     int num_objs = 0;
@@ -2310,6 +2297,9 @@ class NLProblemBuilder {
     // in the correct order.
     for (int i = 0; i < num_objs; ++i)
       builder_.AddObj(obj::MIN);
+
+    for (int i = 0; i < h.num_logical_cons; ++i)
+      builder_.AddCon(LogicalExpr());
   }
 
   // Returns true if objective should be handled.
@@ -2335,18 +2325,7 @@ class NLProblemBuilder {
 
   // Receives notification of a logical constraint.
   void OnLogicalCon(int index, LogicalExpr expr) {
-    if (index == logical_con_count_) {
-      // Logical constraint indices are increasing, so add the constraint now.
-      ++logical_con_count_;
-      builder_.AddCon(expr);
-      return;
-    }
-    // Otherwise store the constraint expression and add it in EndInput
-    // to preseve constraint indices.
-    if (logical_cons_.empty())
-      logical_cons_.resize(num_logical_cons_);
-    CheckIndex(index, logical_cons_.size());
-    logical_cons_[index] = expr;
+    builder_.logical_con(index).set_expr(expr);
   }
 
   // Receives notification of a complementarity relation.
@@ -2624,9 +2603,6 @@ class NLProblemBuilder {
       if (double dual = initial_duals_[i])
         builder_.algebraic_con(i).set_dual(dual);
     }
-    // Add logical constraints with permuted indices.
-    for (int i = logical_con_count_; i < num_logical_cons_; ++i)
-      builder_.AddCon(logical_cons_[i]);
   }
 };
 

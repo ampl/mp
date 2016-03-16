@@ -690,11 +690,12 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
   // A logical constraint.
-  class LogicalCon : private ProblemItem {
+  template <typename Item>
+  class BasicLogicalCon : private Item {
    private:
     friend class BasicProblem;
 
-    LogicalCon(const BasicProblem *p, int index) : ProblemItem(p, index) {}
+    BasicLogicalCon(typename Item::Problem *p, int index) : Item(p, index) {}
 
     static int num_items(const BasicProblem &p) {
       return p.num_logical_cons();
@@ -706,13 +707,35 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       return this->problem_->logical_cons_[this->index_];
     }
 
-    bool operator==(LogicalCon other) const {
-      MP_ASSERT(this->problem_ == other.problem_,
+    template <typename OtherItem>
+    bool operator==(BasicLogicalCon<OtherItem> rhs) const {
+      MP_ASSERT(this->problem_ == rhs.problem_,
                 "comparing constraints from different problems");
-      return this->index_ == other.index_;
+      return this->index_ == rhs.index_;
     }
-    bool operator!=(LogicalCon other) const {
-      return !(*this == other);
+
+    template <typename OtherItem>
+    bool operator!=(BasicLogicalCon<OtherItem> rhs) const {
+      return !(*this == rhs);
+    }
+  };
+
+  typedef BasicLogicalCon<ProblemItem> LogicalCon;
+
+  class MutLogicalCon : public BasicLogicalCon<MutProblemItem> {
+   private:
+    friend class BasicProblem;
+
+    MutLogicalCon(BasicProblem *p, int index)
+      : BasicLogicalCon<MutProblemItem>(p, index) {}
+
+   public:
+    operator LogicalCon() const {
+      return LogicalCon(this->problem_, this->index_);
+    }
+
+    void set_expr(LogicalExpr expr) {
+      this->problem_->logical_cons_[this->index_] = expr;
     }
   };
 
@@ -731,6 +754,12 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   LogicalCon logical_con(int index) const {
     CheckIndex(index, num_logical_cons());
     return LogicalCon(this, index);
+  }
+
+  // Returns the mutable logical constraint at the specified index.
+  MutLogicalCon logical_con(int index) {
+    CheckIndex(index, num_logical_cons());
+    return MutLogicalCon(this, index);
   }
 
   // Adds a logical constraint.

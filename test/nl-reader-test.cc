@@ -1932,33 +1932,14 @@ TEST(NLProblemBuilderTest, OnLogicalCon) {
   auto header = mp::NLHeader();
   header.num_logical_cons = 2;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  EXPECT_CALL(builder, AddCon(TestLogicalExpr())).
+      Times(header.num_logical_cons);
   adapter.OnHeader(header);
+  MockProblemBuilder::LogicalCon con;
+  EXPECT_CALL(builder, logical_con(1)).WillOnce(ReturnRef(con));
   auto expr = TestLogicalExpr(ID);
-  EXPECT_CALL(builder, AddCon(expr));
-  adapter.OnLogicalCon(0, expr);
-  EXPECT_ASSERT(adapter.OnLogicalCon(-1, expr), "invalid index");
-  EXPECT_ASSERT(adapter.OnLogicalCon(header.num_logical_cons, expr),
-                "invalid index");
-}
-
-TEST(NLProblemBuilderTest, PreserveLogicalConIndices) {
-  StrictMock<MockProblemBuilder> builder;
-  NLProblemBuilder<MockProblemBuilder> adapter(builder);
-  auto header = mp::NLHeader();
-  header.num_logical_cons = 3;
-  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
-  adapter.OnHeader(header);
-  auto expr0 = TestLogicalExpr(ID);
-  auto expr1 = TestLogicalExpr(ID2);
-  auto expr2 = TestLogicalExpr(ID3);
-  testing::InSequence dummy;
-  EXPECT_CALL(builder, AddCon(expr0));
-  EXPECT_CALL(builder, AddCon(expr1));
-  EXPECT_CALL(builder, AddCon(expr2));
-  adapter.OnLogicalCon(0, expr0);
-  adapter.OnLogicalCon(2, expr2);
-  adapter.OnLogicalCon(1, expr1);
-  adapter.EndInput();
+  EXPECT_CALL(con, set_expr(expr));
+  adapter.OnLogicalCon(1, expr);
 }
 
 TEST(NLProblemBuilderTest, OnCommonExpr) {

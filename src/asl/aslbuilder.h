@@ -125,6 +125,10 @@ class ASLBuilder {
                 asl_->i.o_cexp1st_, expr.impl_, asl_->i.zao_);
   }
 
+  void SetConExpr(int index, LogicalExpr expr) {
+    SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.lcon_de_,
+                0, expr.impl_, 0);
+  }
 
   template <typename ExprType>
   static void CheckKind(expr::Kind kind, const char *expr_name) {
@@ -438,6 +442,23 @@ class ASLBuilder {
   };
 
   AlgebraicCon algebraic_con(int index) { return AlgebraicCon(this, index); }
+
+  class LogicalCon {
+   private:
+    ASLBuilder *builder_;
+    int index_;
+
+    friend class ASLBuilder;
+
+    LogicalCon(ASLBuilder *b, int index) : builder_(b), index_(index) {}
+
+   public:
+    void set_expr(LogicalExpr expr) {
+      builder_->SetConExpr(index_, expr);
+    }
+  };
+
+  LogicalCon logical_con(int index) { return LogicalCon(this, index); }
 
   // Adds an algebraic constraint.
   LinearConBuilder AddCon(double lb, double ub, NumericExpr expr, int);
