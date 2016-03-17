@@ -613,6 +613,8 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     return AddObj(type, NumericExpr(), num_linear_terms);
   }
 
+  typedef LinearExprBuilder LinearConBuilder;
+
   // An algebraic constraint.
   typedef BasicAlgebraicCon<ProblemItem> AlgebraicCon;
 
@@ -649,9 +651,17 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       return this->problem_->algebraic_cons_[this->index_].linear_expr;
     }
 
+    // Sets the linear part of the objective expression.
+    LinearConBuilder set_linear_expr(int num_linear_terms) const {
+      LinearExpr &expr = linear_expr();
+      expr.Reserve(num_linear_terms);
+      return LinearConBuilder(&expr);
+    }
+
     // Sets the nonlinear part of the constraint expression.
     void set_nonlinear_expr(NumericExpr expr) const {
-      this->problem_->SetNonlinearConExpr(this->index_, expr);
+      if (expr)
+        this->problem_->SetNonlinearConExpr(this->index_, expr);
     }
   };
 
@@ -678,15 +688,14 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     return MutAlgebraicCon(this, index);
   }
 
-  typedef LinearExprBuilder LinearConBuilder;
-
   // Adds an algebraic constraint.
   // Returns a builder for the linear part of a constraint expression.
-  LinearConBuilder AddCon(double lb, double ub, NumericExpr expr,
-                          int num_linear_terms = 0);
-
-  LinearConBuilder AddCon(double lb, double ub, int num_linear_terms = 0) {
-    return AddCon(lb, ub, NumericExpr(), num_linear_terms);
+  MutAlgebraicCon AddCon(double lb, double ub) {
+    std::size_t num_cons = algebraic_cons_.size();
+    MP_ASSERT(num_cons < MP_MAX_PROBLEM_ITEMS,
+              "too many algebraic constraints");
+    algebraic_cons_.push_back(AlgebraicConInfo(lb, ub));
+    return MutAlgebraicCon(this, static_cast<int>(num_cons));
   }
 
   // A logical constraint.

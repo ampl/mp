@@ -180,8 +180,9 @@ void SSDSolver::Solve(Problem &p, SolutionHandler &outer_sh) {
     }
 
     // Add a cut.
-    Problem::LinearConBuilder cut =
-        p.AddCon(ref_tails[max_rel_violation_scen], inf, num_vars + 1);
+    p.AddCon(ref_tails[max_rel_violation_scen], inf);
+    Problem::LinearConBuilder cut = p.algebraic_con(p.num_algebraic_cons() - 1).
+        set_linear_expr(num_vars + 1);
     for (int i = 0; i < num_vars; ++i) {
       double coef = 0;
       for (int j = 0; j <= max_rel_violation_scen; ++j)

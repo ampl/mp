@@ -418,8 +418,9 @@ EvalResult NLSolverTest::Eval(
   pb.AddVar(var1, var1, mp::var::INTEGER);
   pb.AddVar(var2, var2, mp::var::INTEGER);
   pb.AddVar(var3, var3, mp::var::INTEGER);
-  auto con_builder = pb.AddCon(0, 0, factory(pb), 0);
-  con_builder.AddTerm(0, -1);
+  auto con = pb.AddCon(0, 0);
+  con.set_nonlinear_expr(factory(pb));
+  con.set_linear_expr(0).AddTerm(0, -1);
   return Solve(pb);
 }
 
@@ -480,8 +481,8 @@ void MakeTSP(ProblemBuilder &pb) {
   pb.AddObj(mp::obj::MIN, NumericExpr());
   auto obj = pb.obj(0).set_linear_expr(n * n);
   for (int i = 0; i < n; ++i) {
-    auto in_con = pb.AddCon(1, 1, NumericExpr(), n);   // exactly one incoming
-    auto out_con = pb.AddCon(1, 1, NumericExpr(), n);  // exactly one outgoing
+    auto in_con = pb.AddCon(1, 1).set_linear_expr(n);   // exactly one incoming
+    auto out_con = pb.AddCon(1, 1).set_linear_expr(n);  // exactly one outgoing
     for (int j = 0; j < n; ++j) {
       // Distance is arbitrarily chosen to be i + j + 1.
       obj.AddTerm(i * n + j, i * j + 1);
@@ -1219,7 +1220,7 @@ TEST_F(NLSolverTest, FeasibleSolveCode) {
   info.num_vars = info.num_linear_integer_vars = info.num_algebraic_cons = 1;
   pb.SetInfo(info);
   pb.AddVar(0, 0, mp::var::INTEGER);
-  pb.AddCon(0, 1, NumericExpr(), 1).AddTerm(0, 1);
+  pb.AddCon(0, 1).set_linear_expr(1).AddTerm(0, 1);
   EXPECT_EQ(mp::sol::SOLVED, Solve(pb).solve_code());
 }
 
@@ -1229,7 +1230,7 @@ TEST_F(NLSolverTest, InfeasibleSolveCode) {
   info.num_vars = info.num_linear_integer_vars = info.num_algebraic_cons = 1;
   pb.SetInfo(info);
   pb.AddVar(0, 0, mp::var::INTEGER);
-  pb.AddCon(1, 1, NumericExpr(), 1).AddTerm(0, 1);
+  pb.AddCon(1, 1).set_linear_expr(1).AddTerm(0, 1);
   EXPECT_EQ(mp::sol::INFEASIBLE, Solve(pb).solve_code());
 }
 
@@ -1285,7 +1286,7 @@ TEST_F(NLSolverTest, Interrupt) {
   MakeTSP(pb);
   TestInterrupter interrupter(solver_);
   TestSolutionHandler sh;
-  solver_.Solve(pb, sh);
+  solver_.Solve(pb.problem(), sh);
   EXPECT_EQ(600, sh.status());
   EXPECT_TRUE(sh.message().find("interrupted") != std::string::npos);
 }
@@ -1486,8 +1487,9 @@ TEST_F(NLSolverTest, InitialDualValue) {
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_algebraic_cons = 1;
   pb.SetInfo(info);
-  pb.AddCon(0, 0, pb.MakeNumericConstant(0), 0);
-  pb.algebraic_con(0).set_dual(0);
+  auto con = pb.AddCon(0, 0);
+  con.set_nonlinear_expr(pb.MakeNumericConstant(0));
+  con.set_dual(0);
 }
 
 TEST_F(NLSolverTest, ZeroUB) {

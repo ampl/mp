@@ -81,6 +81,7 @@ LSProblemBuilder::LSProblemBuilder(LocalSolver &s, fmt::StringRef)
 void LSProblemBuilder::SetInfo(const ProblemInfo &info) {
   vars_.reserve(info.num_vars);
   objs_.reserve(info.num_objs);
+  cons_.reserve(info.num_algebraic_cons);
 }
 
 void LSProblemBuilder::AddVar(double lb, double ub, var::Type type) {
@@ -99,24 +100,6 @@ void LSProblemBuilder::AddVar(double lb, double ub, var::Type type) {
           std::numeric_limits<int>::max() : ConvertToInt(ub);
     var = model_.createExpression(ls::O_Int, int_lb, int_ub);
   }
-}
-
-LSProblemBuilder::LinearConBuilder
-    LSProblemBuilder::AddCon(double lb, double ub, ls::LSExpression expr, int) {
-  ++num_cons_;
-  double inf = std::numeric_limits<double>::infinity();
-  ls::LSExpression sum = model_.createExpression(ls::O_Sum);
-  if (lb <= -inf) {
-    model_.addConstraint(model_.createExpression(ls::O_Leq, sum, ub));
-  } else if (ub >= inf) {
-    model_.addConstraint(model_.createExpression(ls::O_Geq, sum, lb));
-  } else if (lb == ub) {
-    model_.addConstraint(model_.createExpression(ls::O_Eq, sum, lb));
-  } else {
-    model_.addConstraint(model_.createExpression(ls::O_Geq, sum, lb));
-    model_.addConstraint(model_.createExpression(ls::O_Leq, sum, ub));
-  }
-  return LinearConBuilder(*this, expr, sum);
 }
 
 ls::LSExpression LSProblemBuilder::MakeUnary(

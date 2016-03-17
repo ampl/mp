@@ -151,7 +151,7 @@ class AffineExprConverter : public SumConverter<AffineExprConverter> {
  public:
   explicit AffineExprConverter(Problem &p)
     : SumConverter<AffineExprConverter>(p),
-      builder_(p.AddCon(0, 0)), constant_(0),
+      builder_(p.AddCon(0, 0).set_linear_expr(0)), constant_(0),
       var_index_(0), con_index_(p.num_algebraic_cons() - 1) {
   }
 
@@ -237,7 +237,7 @@ void SumOfNormsConverter::VisitSqrt(UnaryExpr e) {
   UnaryExpr term = p.MakeUnary(
         expr::MINUS, p.MakeUnary(expr::POW2, p.MakeVariable(x.index())));
   sum.AddArg(term);
-  p.AddCon(-inf, 0, p.EndIterated(sum));
+  p.AddCon(-inf, 0).set_nonlinear_expr(p.EndIterated(sum));
 }
 }  // namespace mp
 
@@ -331,9 +331,9 @@ class SOCPConverter {
   // Convertes an algebraic constraint to ASL format.
   void Convert(Problem::AlgebraicCon con) {
     mp::LinearExpr expr = con.linear_expr();
-    ASLBuilder::LinearConBuilder con_builder = builder_.AddCon(
-          con.lb(), con.ub(), Convert(con.nonlinear_expr()), expr.num_terms());
-    ConvertLinearExpr(expr, con_builder);
+    auto new_con = builder_.AddCon(con.lb(), con.ub());
+    new_con.set_nonlinear_expr(Convert(con.nonlinear_expr()));
+    ConvertLinearExpr(expr, new_con.set_linear_expr(expr.num_terms()));
   }
 
   typedef Problem::ObjRange ObjRange;

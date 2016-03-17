@@ -142,8 +142,7 @@ class MockProblemBuilder {
 
   typedef TestLinearConBuilder LinearConBuilder;
 
-  MOCK_METHOD4(AddCon, LinearConBuilder (double lb, double ub, NumericExpr expr,
-                                         int num_linear_terms));
+  MOCK_METHOD2(AddCon, void (double lb, double ub));
 
   MOCK_METHOD1(AddCon, void (LogicalExpr expr));
 
@@ -179,7 +178,12 @@ class MockProblemBuilder {
 
   class AlgebraicCon {
    public:
+    MOCK_CONST_METHOD1(set_lb, void (double value));
+    MOCK_CONST_METHOD1(set_ub, void (double value));
     MOCK_CONST_METHOD1(set_dual, void (double value));
+    MOCK_CONST_METHOD1(set_linear_expr,
+                       LinearConBuilder (int num_linear_terms));
+    MOCK_CONST_METHOD1(set_nonlinear_expr, void (NumericExpr expr));
   };
 
   MOCK_METHOD1(algebraic_con, AlgebraicCon &(int index));

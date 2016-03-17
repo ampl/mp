@@ -62,19 +62,6 @@ typename BasicProblem<Alloc>::LinearObjBuilder BasicProblem<Alloc>::AddObj(
 }
 
 template <typename Alloc>
-typename BasicProblem<Alloc>::LinearConBuilder BasicProblem<Alloc>::AddCon(
-    double lb, double ub, NumericExpr expr, int num_linear_terms) {
-  MP_ASSERT(algebraic_cons_.size() < MP_MAX_PROBLEM_ITEMS,
-            "too many algebraic constraints");
-  algebraic_cons_.push_back(AlgebraicConInfo(lb, ub));
-  AlgebraicConInfo &con = algebraic_cons_.back();
-  con.linear_expr.Reserve(num_linear_terms);
-  if (expr)
-    SetNonlinearConExpr(static_cast<int>(algebraic_cons_.size() - 1), expr);
-  return LinearConBuilder(&con.linear_expr);
-}
-
-template <typename Alloc>
 void BasicProblem<Alloc>::SetComplementarity(
     int con_index, int var_index, ComplInfo info) {
   MP_ASSERT(0 <= con_index && con_index < num_algebraic_cons(),

@@ -1718,6 +1718,7 @@ TEST(NLProblemBuilderTest, Forward) {
     auto header = mp::NLHeader();
     header.num_algebraic_cons = 100;
     EXPECT_CALL(builder, SetInfo(_));
+    EXPECT_CALL(builder, AddCon(0, 0)).Times(header.num_algebraic_cons);
     adapter.OnHeader(header);
 
     // OnColumnSizes is ignored by default.
@@ -1727,15 +1728,6 @@ TEST(NLProblemBuilderTest, Forward) {
     EXPECT_CALL(builder, var(33)).WillOnce(ReturnRef(var));
     EXPECT_CALL(var, set_value(4.4));
     adapter.OnInitialValue(33, 4.4);
-
-    // Forwarding initial dual values is delayed till EndInput because
-    // they precede constraints in the NL input.
-    adapter.OnInitialDualValue(55, 6.6);
-
-    MockProblemBuilder::AlgebraicCon con;
-    EXPECT_CALL(builder, algebraic_con(55)).WillOnce(ReturnRef(con));
-    EXPECT_CALL(con, set_dual(6.6));
-    adapter.EndInput();
   }
 
   // Use the same StringRef object in arguments, because StringRef objects
@@ -1882,6 +1874,17 @@ TEST(NLProblemBuilderTest, OnVarBounds) {
   adapter.OnVarBounds(66, 7.7, 8.8);
 }
 
+TEST(NLProblemBuilderTest, AddObjs) {
+  StrictMock<MockProblemBuilder> builder;
+  typedef NLProblemBuilder<MockProblemBuilder> Adapter;
+  Adapter adapter(builder, Adapter::NEED_ALL_OBJS);
+  auto header = mp::NLHeader();
+  header.num_objs = 42;
+  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  EXPECT_CALL(builder, AddObj(mp::obj::MIN)).Times(header.num_objs);
+  adapter.OnHeader(header);
+}
+
 TEST(NLProblemBuilderTest, OnObj) {
   StrictMock<MockProblemBuilder> builder;
   typedef NLProblemBuilder<MockProblemBuilder> Adapter;
@@ -1905,36 +1908,60 @@ TEST(NLProblemBuilderTest, OnLinearObjExpr) {
   EXPECT_EQ(obj_builder, adapter.OnLinearObjExpr(42, 11));
 }
 
-TEST(NLProblemBuilderTest, OnCon) {
+TEST(NLProblemBuilderTest, AddAlgebraicCons) {
   StrictMock<MockProblemBuilder> builder;
   NLProblemBuilder<MockProblemBuilder> adapter(builder);
   auto header = mp::NLHeader();
-  header.num_algebraic_cons = 1;
+  header.num_algebraic_cons = 42;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  EXPECT_CALL(builder, AddCon(0, 0)).Times(header.num_algebraic_cons);
   adapter.OnHeader(header);
+}
+
+TEST(NLProblemBuilderTest, OnAlgebraicCon) {
+  StrictMock<MockProblemBuilder> builder;
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
+  MockProblemBuilder::AlgebraicCon con;
+  EXPECT_CALL(builder, algebraic_con(42)).WillOnce(ReturnRef(con));
   auto expr = TestNumericExpr(ID);
-  adapter.OnAlgebraicCon(0, expr);
-  adapter.OnConBounds(0, 11, 22);
+  EXPECT_CALL(con, set_nonlinear_expr(expr));
+  adapter.OnAlgebraicCon(42, expr);
+}
+
+TEST(NLProblemBuilderTest, OnLinearConExpr) {
+  StrictMock<MockProblemBuilder> builder;
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
+  MockProblemBuilder::AlgebraicCon con;
+  EXPECT_CALL(builder, algebraic_con(42)).WillOnce(ReturnRef(con));
   auto con_builder = TestLinearConBuilder(ID);
-  EXPECT_CALL(builder, AddCon(11, 22, expr, 33)).WillOnce(Return(con_builder));
-  EXPECT_EQ(con_builder, adapter.OnLinearConExpr(0, 33));
-  EXPECT_ASSERT(adapter.OnAlgebraicCon(-1, expr), "invalid index");
-  EXPECT_ASSERT(adapter.OnAlgebraicCon(header.num_algebraic_cons, expr),
-                "invalid index");
-  EXPECT_ASSERT(adapter.OnLinearConExpr(-1, 11), "invalid index");
-  EXPECT_ASSERT(adapter.OnLinearConExpr(header.num_algebraic_cons, 11),
-                "invalid index");
+  EXPECT_CALL(con, set_linear_expr(11)).WillOnce(Return(con_builder));
+  EXPECT_EQ(con_builder, adapter.OnLinearConExpr(42, 11));
+}
+
+TEST(NLProblemBuilderTest, OnConBounds) {
+  StrictMock<MockProblemBuilder> builder;
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
+  MockProblemBuilder::AlgebraicCon con;
+  EXPECT_CALL(builder, algebraic_con(42)).WillOnce(ReturnRef(con));
+  EXPECT_CALL(con, set_lb(11));
+  EXPECT_CALL(con, set_ub(22));
+  adapter.OnConBounds(42, 11, 22);
+}
+
+TEST(NLProblemBuilderTest, AddLogicalCons) {
+  StrictMock<MockProblemBuilder> builder;
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
+  auto header = mp::NLHeader();
+  header.num_logical_cons = 42;
+  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  EXPECT_CALL(builder, AddCon(TestLogicalExpr())).
+      Times(header.num_logical_cons);
+  adapter.OnHeader(header);
 }
 
 TEST(NLProblemBuilderTest, OnLogicalCon) {
   StrictMock<MockProblemBuilder> builder;
   NLProblemBuilder<MockProblemBuilder> adapter(builder);
-  auto header = mp::NLHeader();
-  header.num_logical_cons = 2;
-  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
-  EXPECT_CALL(builder, AddCon(TestLogicalExpr())).
-      Times(header.num_logical_cons);
-  adapter.OnHeader(header);
   MockProblemBuilder::LogicalCon con;
   EXPECT_CALL(builder, logical_con(1)).WillOnce(ReturnRef(con));
   auto expr = TestLogicalExpr(ID);

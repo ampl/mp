@@ -822,8 +822,8 @@ TEST(ASLBuilderTest, AddCon) {
 #undef con_de
   cde *con_de = reinterpret_cast<ASL_fg*>(asl.get())->I.con_de_;
   EXPECT_EQ(0, con_de[2].e);
-  builder.AddCon(0, 0, builder.MakeVariable(0), 0);
-  builder.AddCon(11, 22, builder.MakeNumericConstant(42), 0);
+  builder.AddCon(0, 0).set_nonlinear_expr(builder.MakeVariable(0));
+  builder.AddCon(11, 22).set_nonlinear_expr(builder.MakeNumericConstant(42));
   EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), con_de[1].e->op);
 }
 
@@ -833,8 +833,8 @@ TEST(ASLBuilderTest, AddConIndexOutOfRange) {
   TestASLBuilder builder(asl);
   auto expr = builder.MakeNumericConstant(42);
   for (int i = 0; i < TestASLBuilder::NUM_CONS; ++i)
-    builder.AddCon(0, 0, expr, 0);
-  EXPECT_DEBUG_DEATH(builder.AddCon(0, 0, expr, 0), "Assertion");
+    builder.AddCon(0, 0).set_nonlinear_expr(expr);
+  EXPECT_DEBUG_DEATH(builder.AddCon(0, 0), "Assertion");
 }
 #endif
 
@@ -1018,13 +1018,17 @@ TEST(ASLBuilderTest, BuildColumnwiseMatrix) {
   handler.Add(0);
   handler.Add(2);
   auto expr = NumericExpr();
-  ASLBuilder::LinearConBuilder con = builder.AddCon(0, 0, expr, 0);
-  con = builder.AddCon(0, 0, expr, 0);
-  con.AddTerm(1, 5);
-  con.AddTerm(2, 3);
-  con = builder.AddCon(0, 0, expr, 0);
-  con = builder.AddCon(0, 0, expr, 0);
-  con.AddTerm(1, 1);
+  builder.AddCon(0, 0).set_nonlinear_expr(expr);
+  auto con = builder.AddCon(0, 0);
+  con.set_nonlinear_expr(expr);
+  auto con_builder = con.set_linear_expr(2);
+  con_builder.AddTerm(1, 5);
+  con_builder.AddTerm(2, 3);
+  builder.AddCon(0, 0).set_nonlinear_expr(expr);
+  con = builder.AddCon(0, 0);
+  con.set_nonlinear_expr(expr);
+  con_builder = con.set_linear_expr(1);
+  con_builder.AddTerm(1, 1);
   const int ROWNOS[]  = {1, 3, 1};
   const double VALS[] = {5, 1, 3};
   for (std::size_t i = 0; i < sizeof(ROWNOS) / sizeof(*ROWNOS); ++i) {

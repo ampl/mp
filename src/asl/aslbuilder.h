@@ -118,11 +118,23 @@ class ASLBuilder {
     (asl_->i.Uvx_ ? asl_->i.Uvx_[index] : asl_->i.LUv_[2 * index + 1]) = ub;
   }
 
+  void SetConLB(int index, double lb) {
+    (asl_->i.Urhsx_ ? asl_->i.LUrhs_[index] : asl_->i.LUrhs_[2 * index]) = lb;
+  }
+
+  void SetConUB(int index, double ub) {
+    (asl_->i.Urhsx_ ?
+          asl_->i.Urhsx_[index] : asl_->i.LUrhs_[2 * index + 1]) = ub;
+  }
+
   void SetObjExpr(int index, NumericExpr expr) {
-    if (!expr)
-      expr = MakeNumericConstant(0);
     SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
                 asl_->i.o_cexp1st_, expr.impl_, asl_->i.zao_);
+  }
+
+  void SetConExpr(int index, NumericExpr expr) {
+    SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.con_de_,
+                asl_->i.c_cexp1st_, expr.impl_, asl_->i.zac_);
   }
 
   void SetConExpr(int index, LogicalExpr expr) {
@@ -415,6 +427,8 @@ class ASLBuilder {
     }
 
     void set_nonlinear_expr(NumericExpr expr) const {
+      if (!expr)
+        expr = builder_->MakeNumericConstant(0);
       builder_->SetObjExpr(index_, expr);
     }
   };
@@ -435,9 +449,22 @@ class ASLBuilder {
     AlgebraicCon(ASLBuilder *b, int index) : builder_(b), index_(index) {}
 
    public:
+    void set_lb(double lb) const { builder_->SetConLB(index_, lb); }
+    void set_ub(double ub) const { builder_->SetConUB(index_, ub); }
+
     // Sets the initial dual value.
     void set_dual(double value) {
       builder_->SetInitialDualValue(index_, value);
+    }
+
+    LinearConBuilder set_linear_expr(int) const {
+      return LinearConBuilder(builder_, index_);
+    }
+
+    void set_nonlinear_expr(NumericExpr expr) const {
+      if (!expr)
+        expr = builder_->MakeNumericConstant(0);
+      builder_->SetConExpr(index_, expr);
     }
   };
 
@@ -461,7 +488,7 @@ class ASLBuilder {
   LogicalCon logical_con(int index) { return LogicalCon(this, index); }
 
   // Adds an algebraic constraint.
-  LinearConBuilder AddCon(double lb, double ub, NumericExpr expr, int);
+  AlgebraicCon AddCon(double lb, double ub);
 
   // Adds a logical constraint.
   void AddCon(LogicalExpr expr);

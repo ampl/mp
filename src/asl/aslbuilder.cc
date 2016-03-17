@@ -524,23 +524,16 @@ ASLBuilder::LinearObjBuilder
   int index = obj_index_++;
   assert(0 <= index && index < asl_->i.n_obj_);
   asl_->i.objtype_[index] = type;
-  if (expr) {
-    SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
-                asl_->i.o_cexp1st_, expr.impl_, asl_->i.zao_);
-  }
+  if (expr)
+    SetObjExpr(index, expr);
   return LinearObjBuilder(this, asl_->i.Ograd_ + index);
 }
 
-ASLBuilder::LinearConBuilder
-    ASLBuilder::AddCon(double lb, double ub, NumericExpr expr, int) {
+ASLBuilder::AlgebraicCon ASLBuilder::AddCon(double lb, double ub) {
   int index = con_index_++;
   assert(0 <= index && index < asl_->i.n_con_);
   SetBounds(asl_->i.LUrhs_, asl_->i.Urhsx_, index, lb, ub);
-  if (!expr)
-    expr = MakeNumericConstant(0);
-  SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.con_de_,
-              asl_->i.c_cexp1st_, expr.impl_, asl_->i.zac_);
-  return LinearConBuilder(this, index);
+  return AlgebraicCon(this, index);
 }
 
 void ASLBuilder::AddCon(LogicalExpr expr) {

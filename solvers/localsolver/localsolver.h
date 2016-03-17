@@ -90,6 +90,14 @@ class LSProblemBuilder :
   std::vector<ObjInfo> objs_;
   std::vector<Bound> obj_bounds_;
 
+  // Algebraic constraints
+  struct ConInfo {
+    NumericExpr expr;
+    double lb, ub;
+    explicit ConInfo(double lb = 0, double ub = 0) : expr(), lb(lb), ub(ub) {}
+  };
+  std::vector<ConInfo> cons_;
+
   std::vector<LogicalExpr> logical_cons_;
 
   static const double LS_INF;
@@ -302,10 +310,6 @@ class LSProblemBuilder :
    public:
     void set_type(obj::Type type) const { builder_->objs_[index_].type = type; }
 
-    void set_nonlinear_expr(ls::LSExpression expr) const {
-      builder_->objs_[index_].expr = expr;
-    }
-
     LinearObjBuilder set_linear_expr(int) const {
       ls::LSExpression sum = builder_->model_.createExpression(ls::O_Sum);
       ls::LSExpression &expr = builder_->objs_[index_].expr;
@@ -313,11 +317,52 @@ class LSProblemBuilder :
       expr = sum;
       return builder;
     }
+
+    void set_nonlinear_expr(ls::LSExpression expr) const {
+      builder_->objs_[index_].expr = expr;
+    }
   };
 
   Objective obj(int index) {
     CheckBounds(index, objs_.size());
     return Objective(this, index);
+  }
+
+  typedef LinearExprBuilder LinearConBuilder;
+
+  class AlgebraicCon {
+   private:
+    LSProblemBuilder *builder_;
+    int index_;
+
+    friend class LSProblemBuilder;
+
+    AlgebraicCon(LSProblemBuilder *b, int index) : builder_(b), index_(index) {}
+
+   public:
+    void set_lb(double lb) const { builder_->cons_[index_].lb = lb; }
+    void set_ub(double ub) const { builder_->cons_[index_].ub = ub; }
+
+    void set_dual(double) const {
+      // Ignore dual values.
+    }
+
+    void set_nonlinear_expr(NumericExpr expr) const {
+      builder_->cons_[index_].expr = expr;
+    }
+
+    LinearConBuilder set_linear_expr(int) const {
+      ls::LSExpression sum = builder_->model_.createExpression(ls::O_Sum);
+      ls::LSExpression &expr = builder_->cons_[index_].expr;
+      LinearConBuilder builder(*builder_, expr, sum);
+      expr = sum;
+      return builder;
+    }
+  };
+
+  AlgebraicCon algebraic_con(int index) {
+    CheckBounds(index, cons_.size());
+    return AlgebraicCon(this, index);
   }
 
   class LogicalCon {
@@ -340,10 +385,12 @@ class LSProblemBuilder :
     return LogicalCon(this, index);
   }
 
-  typedef LinearExprBuilder LinearConBuilder;
-
   // Adds an algebraic constraint.
-  LinearConBuilder AddCon(double lb, double ub, ls::LSExpression expr, int);
+  AlgebraicCon AddCon(double lb, double ub) {
+    std::size_t index = cons_.size();
+    cons_.push_back(ConInfo(lb, ub));
+    return AlgebraicCon(this, static_cast<int>(index));
+  }
 
   // Adds a logical constraint.
   void AddCon(ls::LSExpression expr) {
@@ -529,12 +576,30 @@ class LSProblemBuilder :
 
   // Returns the built problem.
   LSProblemBuilder &problem() {
+    // Add objectives.
     for (std::vector<ObjInfo>::const_iterator
          i = objs_.begin(), end = objs_.end(); i != end; ++i) {
       ls::LSObjectiveDirection dir =
           i->type == obj::MIN ? ls::OD_Minimize : ls::OD_Maximize;
       model_.addObjective(i->expr, dir);
     }
+    // Add algebraic constraints.
+    for (std::vector<ConInfo>::const_iterator
+         i = cons_.begin(), end = cons_.end(); i != end; ++i) {
+      double lb = i->lb, ub = i->ub;
+      double inf = std::numeric_limits<double>::infinity();
+      if (lb <= -inf) {
+        model_.addConstraint(model_.createExpression(ls::O_Leq, i->expr, ub));
+      } else if (ub >= inf) {
+        model_.addConstraint(model_.createExpression(ls::O_Geq, i->expr, lb));
+      } else if (lb == ub) {
+        model_.addConstraint(model_.createExpression(ls::O_Eq, i->expr, lb));
+      } else {
+        model_.addConstraint(model_.createExpression(ls::O_Geq, i->expr, lb));
+        model_.addConstraint(model_.createExpression(ls::O_Leq, i->expr, ub));
+      }
+    }
+    // Add logical constraints.
     for (std::vector<ls::LSExpression>::const_iterator
          i = logical_cons_.begin(), end = logical_cons_.end(); i != end; ++i) {
       model_.addConstraint(*i);

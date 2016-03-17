@@ -296,7 +296,7 @@ TEST(ProblemTest, AddAlgebraicCon) {
   EXPECT_TRUE(!ccon.nonlinear_expr());
   EXPECT_EQ(0, ccon.linear_expr().num_terms());
 
-  p.AddCon(3.3, 4.4, mp::NumericExpr());
+  p.AddCon(3.3, 4.4);
   EXPECT_EQ(2, p.num_algebraic_cons());
   con = p.algebraic_con(1);
   EXPECT_EQ(3.3, con.lb());
@@ -305,7 +305,9 @@ TEST(ProblemTest, AddAlgebraicCon) {
   EXPECT_EQ(0, con.linear_expr().num_terms());
 
   auto nl_expr = p.MakeNumericConstant(42);
-  Problem::LinearObjBuilder builder = p.AddCon(5.5, 6.6, nl_expr);
+  Problem::MutAlgebraicCon con1 = p.AddCon(5.5, 6.6);
+  con1.set_nonlinear_expr(nl_expr);
+  Problem::LinearConBuilder builder = con1.set_linear_expr(2);
   builder.AddTerm(0, 1.1);
   builder.AddTerm(3, 2.2);
   EXPECT_EQ(3, p.num_algebraic_cons());
@@ -322,7 +324,7 @@ TEST(ProblemTest, AddAlgebraicCon) {
 // the nonlinear part of the linear constraint.
 TEST(ProblemTest, IncompleteNonlinearCon) {
   Problem p;
-  p.AddCon(0, 1, p.MakeNumericConstant(42));
+  p.AddCon(0, 1).set_nonlinear_expr(p.MakeNumericConstant(42));
   p.AddCon(0, 1);
   EXPECT_EQ(mp::NumericExpr(), p.algebraic_con(1).nonlinear_expr());
 }
@@ -485,9 +487,9 @@ TEST(ProblemTest, HasNonlinearCons) {
   Problem p;
   p.AddVar(0, 1);
   EXPECT_FALSE(p.has_nonlinear_cons());
-  p.AddCon(0, 0, 1).AddTerm(0, 1);
+  p.AddCon(0, 0).set_linear_expr(0).AddTerm(0, 1);
   EXPECT_FALSE(p.has_nonlinear_cons());
-  p.AddCon(0, 0, p.MakeNumericConstant(42));
+  p.AddCon(0, 0).set_nonlinear_expr(p.MakeNumericConstant(42));
   EXPECT_TRUE(p.has_nonlinear_cons());
 }
 

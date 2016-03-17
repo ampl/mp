@@ -2213,31 +2213,20 @@ class NLProblemBuilder {
   ProblemBuilder &builder_;
 
  private:
-  int num_continuous_vars_;
-
   int obj_index_;
 
-  // Algebraic constraints
-  struct ConInfo {
-    NumericExpr expr;
-    double lb, ub;
-    ConInfo() : expr(), lb(0), ub(0) {}
-  };
-  std::vector<ConInfo> cons_;
-  std::vector<double> initial_duals_;
-
   std::vector<Function> funcs_;
-
-  void CheckIndex(int index, std::size_t size) {
-    MP_ASSERT(0 <= index && static_cast<unsigned>(index) < size,
-              "invalid index");
-    internal::Unused(index, size);
-  }
 
   template <typename Obj>
   void SetObj(const Obj &obj, obj::Type type, NumericExpr expr) {
     obj.set_type(type);
     obj.set_nonlinear_expr(expr);
+  }
+
+  template <typename T>
+  void SetBounds(const T &entity, double lb, double ub) {
+    entity.set_lb(lb);
+    entity.set_ub(ub);
   }
 
  protected:
@@ -2260,17 +2249,12 @@ class NLProblemBuilder {
   int obj_index() const { return obj_index_; }
 
   explicit NLProblemBuilder(ProblemBuilder &builder, int obj_index = 0)
-    : builder_(builder), num_continuous_vars_(0), obj_index_(obj_index) {}
+    : builder_(builder), obj_index_(obj_index) {}
 
   ProblemBuilder &builder() { return builder_; }
 
   // Receives notification of an .nl header.
   void OnHeader(const NLHeader &h) {
-    num_continuous_vars_ = h.num_continuous_vars();
-
-    cons_.resize(h.num_algebraic_cons);
-    funcs_.resize(h.num_funcs);
-
     // Update the number of objectives if necessary.
     int num_objs = 0;
     if (obj_index_ >= 0)
@@ -2286,9 +2270,10 @@ class NLProblemBuilder {
     }
 
     // Add variables.
-    for (int i = 0; i < num_continuous_vars_; ++i)
+    int num_continuous_vars = h.num_continuous_vars();
+    for (int i = 0; i < num_continuous_vars; ++i)
       builder_.AddVar(0, 0, var::CONTINUOUS);
-    for (int i = num_continuous_vars_; i < h.num_vars; ++i)
+    for (int i = num_continuous_vars; i < h.num_vars; ++i)
       builder_.AddVar(0, 0, var::INTEGER);
 
     // Add objectives. As nl-benchmark shows, adding all objectives at once
@@ -2298,8 +2283,15 @@ class NLProblemBuilder {
     for (int i = 0; i < num_objs; ++i)
       builder_.AddObj(obj::MIN);
 
+    // Add algebraic constraints.
+    for (int i = 0; i < h.num_algebraic_cons; ++i)
+      builder_.AddCon(0, 0);
+
+    // Add logical constraints.
     for (int i = 0; i < h.num_logical_cons; ++i)
       builder_.AddCon(LogicalExpr());
+
+    funcs_.resize(h.num_funcs);
   }
 
   // Returns true if objective should be handled.
@@ -2319,8 +2311,7 @@ class NLProblemBuilder {
   // Receives notification of the nonlinear part of an algebraic constraint
   // expression.
   void OnAlgebraicCon(int index, NumericExpr expr) {
-    CheckIndex(index, cons_.size());
-    cons_[index].expr = expr;
+    builder_.algebraic_con(index).set_nonlinear_expr(expr);
   }
 
   // Receives notification of a logical constraint.
@@ -2345,16 +2336,14 @@ class NLProblemBuilder {
 
   // Receives notification of the linear part of a constraint expression.
   LinearConHandler OnLinearConExpr(int con_index, int num_linear_terms) {
-    CheckIndex(con_index, cons_.size());
-    const ConInfo &con = cons_[con_index];
-    return builder_.AddCon(con.lb, con.ub, con.expr, num_linear_terms);
+    return builder_.algebraic_con(con_index).set_linear_expr(num_linear_terms);
   }
 
   typedef typename ProblemBuilder::LinearExprBuilder LinearExprHandler;
 
   // Receives notification of a commmon expression (defined variable).
   LinearExprHandler BeginCommonExpr(int index, int num_linear_terms) {
-    internal::Unused(index);
+    // TODO: use index
     return builder_.BeginCommonExpr(num_linear_terms);
   }
   void EndCommonExpr(LinearExprHandler handler,
@@ -2364,16 +2353,12 @@ class NLProblemBuilder {
 
   // Receives notification of variable bounds.
   void OnVarBounds(int index, double lb, double ub) {
-    const typename ProblemBuilder::MutVariable &var = builder_.var(index);
-    var.set_lb(lb);
-    var.set_ub(ub);
+    SetBounds(builder_.var(index), lb, ub);
   }
 
   // Receives notification of constraint bounds (ranges).
   void OnConBounds(int index, double lb, double ub) {
-    ConInfo &con = cons_[index];
-    con.lb = lb;
-    con.ub = ub;
+    SetBounds(builder_.algebraic_con(index), lb, ub);
   }
 
   // Receives notification of the initial value for a variable.
@@ -2383,9 +2368,7 @@ class NLProblemBuilder {
 
   // Receives notification of the initial value for a dual variable.
   void OnInitialDualValue(int con_index, double value) {
-    if (initial_duals_.empty())
-      initial_duals_.resize(cons_.size());
-    initial_duals_[con_index] = value;
+    builder_.algebraic_con(con_index).set_dual(value);
   }
 
   struct ColumnSizeHandler {
@@ -2596,14 +2579,7 @@ class NLProblemBuilder {
     return builder_.MakeSymbolicIf(condition, then_expr, else_expr);
   }
 
-  // Receives notification of the end of the input.
-  void EndInput() {
-    // Set initial dual values.
-    for (int i = 0, n = static_cast<int>(initial_duals_.size()); i < n; ++i) {
-      if (double dual = initial_duals_[i])
-        builder_.algebraic_con(i).set_dual(dual);
-    }
-  }
+  void EndInput() {}
 };
 
 template <typename Handler, bool>
