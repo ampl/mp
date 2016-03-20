@@ -413,9 +413,8 @@ class NLHandler {
   }
 
   /** Receives notification of the end of a common expression. */
-  void EndCommonExpr(LinearExprHandler handler,
-                     NumericExpr expr, int position) {
-    internal::Unused(handler, &expr, position);
+  void EndCommonExpr(int index, NumericExpr expr, int position) {
+    internal::Unused(index, &expr, position);
     MP_DISPATCH(OnUnhandled("common expression"));
   }
 
@@ -2002,8 +2001,7 @@ void NLReader<Reader, Handler>::Read(Reader *bound_reader) {
           expr_handler(handler_.BeginCommonExpr(expr_index, num_linear_terms));
       if (num_linear_terms != 0)
         ReadLinearExpr(num_linear_terms, expr_handler);
-      handler_.EndCommonExpr(
-            expr_handler, ReadNumericExpr(), position);
+      handler_.EndCommonExpr(expr_index, ReadNumericExpr(), position);
       break;
     }
     case 'F': {
@@ -2229,6 +2227,13 @@ class NLProblemBuilder {
     entity.set_ub(ub);
   }
 
+  template <typename CommonExpr>
+  void SetCommonExpr(const CommonExpr &common_expr,
+                     NumericExpr expr, int position) {
+    common_expr.set_nonlinear_expr(expr);
+    common_expr.set_position(position);
+  }
+
  protected:
   void set_obj_index(int index) { obj_index_ = index; }
 
@@ -2275,6 +2280,10 @@ class NLProblemBuilder {
       builder_.AddVar(0, 0, var::CONTINUOUS);
     for (int i = num_continuous_vars; i < h.num_vars; ++i)
       builder_.AddVar(0, 0, var::INTEGER);
+
+    // Add common expressions.
+    for (int i = 0, n = h.num_common_exprs(); i < n; ++i)
+      builder_.AddCommonExpr(NumericExpr());
 
     // Add objectives. As nl-benchmark shows, adding all objectives at once
     // and then updating them is faster than adding objectives incrementally.
@@ -2343,12 +2352,10 @@ class NLProblemBuilder {
 
   // Receives notification of a commmon expression (defined variable).
   LinearExprHandler BeginCommonExpr(int index, int num_linear_terms) {
-    // TODO: use index
-    return builder_.BeginCommonExpr(num_linear_terms);
+    return builder_.common_expr(index).set_linear_expr(num_linear_terms);
   }
-  void EndCommonExpr(LinearExprHandler handler,
-                     NumericExpr expr, int position) {
-    builder_.EndCommonExpr(handler, expr, position);
+  void EndCommonExpr(int index, NumericExpr expr, int position) {
+    SetCommonExpr(builder_.common_expr(index), expr, position);
   }
 
   // Receives notification of variable bounds.

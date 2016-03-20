@@ -589,7 +589,7 @@ class TestNLHandler {
     WriteSep().write("e{} {}: ", index, num_terms);
     return LinearExprHandler(log, false);
   }
-  void EndCommonExpr(LinearExprHandler, std::string expr, int position) {
+  void EndCommonExpr(int, std::string expr, int position) {
     log.write(" + {} {};", expr, position);
   }
 
@@ -890,7 +890,7 @@ struct TestNLHandler2 {
     return LinearExprHandler();
   }
 
-  void EndCommonExpr(LinearExprHandler, TestNumericExpr, int) {}
+  void EndCommonExpr(int, TestNumericExpr, int) {}
 
   struct ColumnSizeHandler {
     void Add(int) {}
@@ -1614,9 +1614,7 @@ TEST(NLReaderTest, OnUnhandledDispatch) {
   EXPECT_UNHANDLED("nonlinear constraint", OnAlgebraicCon(0, TestExpr()));
   EXPECT_UNHANDLED("logical constraint", OnLogicalCon(0, TestExpr()));
   EXPECT_UNHANDLED("common expression", BeginCommonExpr(0, 0));
-  EXPECT_UNHANDLED("common expression",
-                   EndCommonExpr(MockNLHandler::LinearExprHandler(),
-                                 TestExpr(), 0));
+  EXPECT_UNHANDLED("common expression", EndCommonExpr(0, TestExpr(), 0));
   EXPECT_UNHANDLED("complementarity constraint",
                    OnComplementarity(0, 0, mp::ComplInfo(0)));
   EXPECT_UNHANDLED("linear objective", OnLinearObjExpr(0, 0));
@@ -1969,19 +1967,37 @@ TEST(NLProblemBuilderTest, OnLogicalCon) {
   adapter.OnLogicalCon(1, expr);
 }
 
-TEST(NLProblemBuilderTest, OnCommonExpr) {
+TEST(NLProblemBuilderTest, AddCommonExpr) {
   StrictMock<MockProblemBuilder> builder;
   NLProblemBuilder<MockProblemBuilder> adapter(builder);
   auto header = mp::NLHeader();
-  header.num_common_exprs_in_cons = 1;
+  header.num_common_exprs_in_both = 42;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  MockProblemBuilder::MutCommonExpr expr;
+  EXPECT_CALL(builder, AddCommonExpr(TestNumericExpr())).
+      Times(header.num_common_exprs_in_both).WillRepeatedly(ReturnRef(expr));
   adapter.OnHeader(header);
+}
+
+TEST(NLProblemBuilderTest, BeginCommonExpr) {
+  StrictMock<MockProblemBuilder> builder;
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
+  MockProblemBuilder::MutCommonExpr common_expr;
+  EXPECT_CALL(builder, common_expr(42)).WillOnce(ReturnRef(common_expr));
   auto expr_builder = TestLinearExprBuilder(ID);
-  EXPECT_CALL(builder, BeginCommonExpr(11)).WillOnce(Return(expr_builder));
-  adapter.BeginCommonExpr(0, 11);
+  EXPECT_CALL(common_expr, set_linear_expr(11)).WillOnce(Return(expr_builder));
+  EXPECT_EQ(expr_builder, adapter.BeginCommonExpr(42, 11));
+}
+
+TEST(NLProblemBuilderTest, EndCommonExpr) {
+  StrictMock<MockProblemBuilder> builder;
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
+  MockProblemBuilder::MutCommonExpr common_expr;
   auto expr = TestNumericExpr(ID);
-  EXPECT_CALL(builder, EndCommonExpr(expr_builder, expr, 22));
-  adapter.EndCommonExpr(expr_builder, expr, 22);
+  EXPECT_CALL(builder, common_expr(42)).WillOnce(ReturnRef(common_expr));
+  EXPECT_CALL(common_expr, set_nonlinear_expr(expr));
+  EXPECT_CALL(common_expr, set_position(11));
+  adapter.EndCommonExpr(42, expr, 11);
 }
 
 TEST(NLProblemBuilderTest, OnFunction) {

@@ -102,17 +102,30 @@ class ProblemBuilder : public SuffixManager {
     MP_DISPATCH(ReportUnhandledConstruct("logical constraint"));
   }
 
-  // Adds a common expression (defined variable).
-  // Returns a builder for the linear part of the common expression.
-  LinearExprBuilder BeginCommonExpr(int num_linear_terms) {
-    internal::Unused(num_linear_terms);
+  struct CommonExpr {
+    LinearExprBuilder set_linear_expr(int num_linear_terms) const {
+      internal::Unused(num_linear_terms);
+      return LinearExprBuilder();
+    }
+    void set_nonlinear_expr(NumericExpr expr) const {
+      internal::Unused(&expr);
+    }
+    void set_position(int position) const {
+      internal::Unused(position);
+    }
+  };
+
+  CommonExpr common_expr(int expr_index) {
+    internal::Unused(expr_index);
     MP_DISPATCH(ReportUnhandledConstruct("common expression"));
-    return LinearExprBuilder();
+    return CommonExpr();
   }
 
-  void EndCommonExpr(LinearExprBuilder builder,
-                     NumericExpr expr, int position) {
-    internal::Unused(&builder, &expr, &position);
+  // Adds a common expression (defined variable).
+  CommonExpr AddCommonExpr(NumericExpr expr) {
+    internal::Unused(&expr);
+    MP_DISPATCH(ReportUnhandledConstruct("common expression"));
+    return CommonExpr();
   }
 
   // Sets a complementarity relation.

@@ -1179,8 +1179,7 @@ TEST_F(NLSolverTest, NestedAllDiff) {
 TEST_F(NLSolverTest, CommonExpr) {
   struct CommonExprFactory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
-      pb.EndCommonExpr(pb.BeginCommonExpr(0),
-                       pb.MakeUnary(mp::expr::ABS, pb.MakeVariable(1)), 1);
+      pb.AddCommonExpr(pb.MakeUnary(mp::expr::ABS, pb.MakeVariable(1)));
       return pb.MakeCommonExpr(0);
     }
   } factory;
@@ -1190,9 +1189,7 @@ TEST_F(NLSolverTest, CommonExpr) {
 TEST_F(NLSolverTest, LinearCommonExpr) {
   struct CommonExprFactory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
-      ProblemBuilder::LinearExprBuilder linear = pb.BeginCommonExpr(1);
-      linear.AddTerm(1, -1);
-      pb.EndCommonExpr(linear, NumericExpr(), 1);
+      pb.AddCommonExpr(NumericExpr()).set_linear_expr(1).AddTerm(1, -1);
       return pb.MakeCommonExpr(0);
     }
   } factory;

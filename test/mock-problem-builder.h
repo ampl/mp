@@ -148,9 +148,20 @@ class MockProblemBuilder {
 
   typedef TestLinearExprBuilder LinearExprBuilder;
 
-  MOCK_METHOD1(BeginCommonExpr, LinearExprBuilder (int num_linear_terms));
-  MOCK_METHOD3(EndCommonExpr, void (LinearExprBuilder builder,
-                                    NumericExpr expr, int position));
+  class MutCommonExpr {
+   public:
+    MutCommonExpr() {}
+    MutCommonExpr(const MutCommonExpr &) {}
+
+    MOCK_CONST_METHOD1(set_linear_expr,
+                       LinearExprBuilder (int num_linear_terms));
+    MOCK_CONST_METHOD1(set_nonlinear_expr, void (NumericExpr expr));
+    MOCK_CONST_METHOD1(set_position, void (int position));
+  };
+
+  MOCK_METHOD1(common_expr, MutCommonExpr &(int var_index));
+
+  MOCK_METHOD1(AddCommonExpr, MutCommonExpr &(NumericExpr expr));
 
   MOCK_METHOD3(SetComplementarity,
                void (int con_index, int var_index, mp::ComplInfo info));

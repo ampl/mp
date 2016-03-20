@@ -493,10 +493,25 @@ class ASLBuilder {
   // Adds a logical constraint.
   void AddCon(LogicalExpr expr);
 
-  LinearExprBuilder BeginCommonExpr(int num_terms);
+  class CommonExpr {
+   private:
+    ASLBuilder *builder_;
+    int index_;
 
-  NumericExpr EndCommonExpr(LinearExprBuilder builder,
-                            NumericExpr expr, int position);
+    friend class ASLBuilder;
+
+    CommonExpr(ASLBuilder *b, int index) : builder_(b), index_(index) {}
+
+   public:
+    LinearExprBuilder set_linear_expr(int num_linear_terms) const;
+    void set_nonlinear_expr(NumericExpr expr) const;
+
+    void set_position(int position) const;
+  };
+
+  CommonExpr AddCommonExpr(NumericExpr expr);
+
+  CommonExpr common_expr(int index) { return CommonExpr(this, index); }
 
   void SetComplementarity(int, int, ComplInfo) {
     // TODO

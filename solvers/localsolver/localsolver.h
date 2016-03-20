@@ -397,21 +397,43 @@ class LSProblemBuilder :
     model_.addConstraint(expr);
   }
 
-  LinearExprBuilder BeginCommonExpr(int num_terms) {
-    ls::LSExpression expr;
-    return LinearExprBuilder(
-          *this, expr,
-          num_terms != 0 ? model_.createExpression(ls::O_Sum) : expr);
+  class CommonExpr {
+   private:
+    LSProblemBuilder *builder_;
+    int index_;
+
+    friend class LSProblemBuilder;
+
+    CommonExpr(LSProblemBuilder *b, int index) : builder_(b), index_(index) {}
+
+   public:
+    LinearExprBuilder set_linear_expr(int num_linear_terms) const {
+      ls::LSExpression &expr = builder_->common_exprs_[index_];
+      ls::LSExpression sum = builder_->model_.createExpression(ls::O_Sum);
+      LinearExprBuilder builder(
+            *builder_, expr, num_linear_terms != 0 ? sum : expr);
+      expr = sum;
+      return builder;
+    }
+
+    void set_nonlinear_expr(ls::LSExpression expr) const {
+      ls::LSExpression &result = builder_->common_exprs_[index_];
+      if (result.getIndex() == -1)
+        result = expr;
+      else if (expr.getIndex() != -1)
+        result.addOperand(expr);
+    }
+
+    void set_position(int) const {}
+  };
+
+  CommonExpr AddCommonExpr(ls::LSExpression expr) {
+    std::size_t index = common_exprs_.size();
+    common_exprs_.push_back(expr);
+    return CommonExpr(this, static_cast<int>(index));
   }
 
-  void EndCommonExpr(LinearExprBuilder builder, ls::LSExpression expr, int) {
-    ls::LSExpression result = builder.expr();
-    if (result.getIndex() == -1)
-      result = expr;
-    else if (expr.getIndex() != -1)
-      result.addOperand(expr);
-    common_exprs_.push_back(result);
-  }
+  CommonExpr common_expr(int index) { return CommonExpr(this, index); }
 
   ls::LSExpression MakeNumericConstant(double value) {
     ls::lsint int_value = static_cast<ls::lsint>(value);

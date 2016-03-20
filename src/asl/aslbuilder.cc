@@ -165,6 +165,35 @@ inline T *ASLBuilder::ZapAllocate(std::size_t size) {
   return reinterpret_cast<T*>(M1zapalloc_ASL(&asl_->i, size));
 }
 
+ASLBuilder::LinearExprBuilder
+    ASLBuilder::CommonExpr::set_linear_expr(int num_linear_terms) const {
+  int index = index_ + builder_->asl_->i.n_var_;
+  cexp *e = reinterpret_cast<ASL_fg*>(builder_->asl_)->I.cexps_ +
+      index - builder_->static_->_nv0;
+  e->nlin = num_linear_terms;
+  e->L = builder_->Allocate<linpart>(num_linear_terms * sizeof(linpart));
+  return LinearExprBuilder(e->L, num_linear_terms);
+}
+
+void ASLBuilder::CommonExpr::set_nonlinear_expr(NumericExpr expr) const {
+  int index = index_ + builder_->asl_->i.n_var_;
+  cexp *e = reinterpret_cast<ASL_fg*>(builder_->asl_)->I.cexps_ +
+      index - builder_->static_->_nv0;
+  e->e = expr.impl_;
+}
+
+void ASLBuilder::CommonExpr::set_position(int position) const {
+  assert(position != 0); // TODO: cexp_read
+  Static *s = builder_->static_;
+  if (!s->_lastj) {
+    s->_last_d = 0;
+    if (s->_amax1 < s->_lasta)
+      s->_amax1 = s->_lasta;
+    s->_lasta = s->_lasta0;
+    s->_lastj = position;
+  }
+}
+
 void ASLBuilder::SetObjOrCon(
     int index, cde *d, int *cexp1_end, ::expr *e, int **z) {
   bool linear = asl_->i.ASLtype == ASL_read_f;
@@ -543,33 +572,15 @@ void ASLBuilder::AddCon(LogicalExpr expr) {
               0, expr.impl_, 0);
 }
 
-ASLBuilder::LinearExprBuilder ASLBuilder::BeginCommonExpr(int num_terms) {
-  return LinearExprBuilder(
-        Allocate<linpart>(num_terms * sizeof(linpart)), num_terms);
-}
-
-NumericExpr ASLBuilder::EndCommonExpr(LinearExprBuilder builder,
-                                      NumericExpr expr, int position) {
+ASLBuilder::CommonExpr ASLBuilder::AddCommonExpr(NumericExpr expr) {
   int index = expr_index_++;
   assert(index >= 0 && index < static_->_max_var - asl_->i.n_var_);
-  assert(position != 0); // TODO: cexp_read
-  index += asl_->i.n_var_;
   // TODO: handle expr
-  cexp *e = reinterpret_cast<ASL_fg*>(asl_)->I.cexps_ + index - static_->_nv0;
-  e->nlin = builder.num_terms();
-  e->L = builder.get();
-  if (!static_->_lastj) {
-    static_->_last_d = 0;
-    if (static_->_amax1 < static_->_lasta)
-      static_->_amax1 = static_->_lasta;
-    static_->_lasta = static_->_lasta0;
-    static_->_lastj = position;
-  }
+  cexp *e = reinterpret_cast<ASL_fg*>(asl_)->I.cexps_ +
+      index + asl_->i.n_var_ - static_->_nv0;
   // TODO: make compatible with cexp1_read
   e->e = expr.impl_;
-  return Expr::Create<Reference>(
-      reinterpret_cast< ::expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
-          + index));
+  return CommonExpr(this, index);
 }
 
 ASLBuilder::ColumnSizeHandler ASLBuilder::GetColumnSizeHandler() {

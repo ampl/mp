@@ -36,11 +36,10 @@ struct TestProblemBuilder : mp::ProblemBuilder<TestProblemBuilder, TestExpr> {
 TEST(ProblemBuilderTest, UseWithNLProblemBuilder) {
   TestProblemBuilder builder;
   mp::internal::NLProblemBuilder<TestProblemBuilder> handler(builder);
-  EXPECT_CALL(builder, ReportUnhandledConstruct(::testing::_)).
-      Times(::testing::Exactly(2));
+  EXPECT_CALL(builder, ReportUnhandledConstruct(::testing::_)).Times(3);
   handler.OnNumber(0);
-  auto expr_builder = handler.BeginCommonExpr(0, 0);
-  handler.EndCommonExpr(expr_builder, TestExpr(), 0);
+  handler.BeginCommonExpr(0, 0);
+  handler.EndCommonExpr(0, TestExpr(), 0);
 }
 
 // Check that handling problem info doesn't throw an exception.
@@ -60,7 +59,7 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(AddObj(mp::obj::MIN, TestExpr(), 0), "objective");
   EXPECT_DISPATCH(AddCon(0, 0, TestExpr(), 0), "algebraic constraint");
   EXPECT_DISPATCH(AddCon(TestExpr()), "logical constraint");
-  EXPECT_DISPATCH(BeginCommonExpr(0), "common expression");
+  EXPECT_DISPATCH(AddCommonExpr(TestExpr()), "common expression");
   EXPECT_DISPATCH(SetComplementarity(0, 0, mp::ComplInfo(0)),
                   "complementarity constraint");
 

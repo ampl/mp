@@ -779,11 +779,12 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
   // A common expression.
-  class CommonExpr : private ProblemItem {
+  template <typename Item>
+  class BasicCommonExpr : private Item {
    private:
     friend class BasicProblem;
 
-    CommonExpr(const BasicProblem *p, int index) : ProblemItem(p, index) {}
+    BasicCommonExpr(typename Item::Problem *p, int index) : Item(p, index) {}
 
    public:
     // Returns the linear part of the common expression.
@@ -798,15 +799,40 @@ class BasicProblem : public ExprFactory, public SuffixManager {
             this->problem_->nonlinear_exprs_[index] : NumericExpr();
     }
 
-    bool operator==(CommonExpr other) const {
+    template <typename OtherItem>
+    bool operator==(BasicCommonExpr<OtherItem> other) const {
       MP_ASSERT(this->problem_ == other.problem_,
                 "comparing expressions from different problems");
       return this->index_ == other.index_;
     }
 
-    bool operator!=(CommonExpr other) const {
+    template <typename OtherItem>
+    bool operator!=(BasicCommonExpr<OtherItem> other) const {
       return !(*this == other);
     }
+  };
+
+  typedef BasicCommonExpr<ProblemItem> CommonExpr;
+
+  class MutCommonExpr : public BasicCommonExpr<MutProblemItem> {
+   private:
+    friend class BasicProblem;
+
+    MutCommonExpr(BasicProblem *p, int index)
+      : BasicCommonExpr<MutProblemItem>(p, index) {}
+
+   public:
+    LinearExprBuilder set_linear_expr(int num_linear_terms) const {
+      LinearExpr &linear = this->problem_->linear_exprs_[this->index_];
+      linear.Reserve(num_linear_terms);
+      return LinearExprBuilder(&linear);
+    }
+
+    void set_nonlinear_expr(NumericExpr expr) const {
+      this->problem_->nonlinear_exprs_[this->index_] = expr;
+    }
+
+    void set_position(int) const {}
   };
 
   // Returns the common expression at the specified index.
@@ -814,21 +840,18 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     CheckIndex(index, num_common_exprs());
     return CommonExpr(this, index);
   }
-
-  // Begins building a common expression (defined variable).
-  // Returns a builder for the linear part of a common expression.
-  LinearExprBuilder BeginCommonExpr(int num_linear_terms) {
-    MP_ASSERT(linear_exprs_.size() < MP_MAX_PROBLEM_ITEMS,
-              "too many expressions");
-    linear_exprs_.push_back(LinearExpr());
-    LinearExpr &linear = linear_exprs_.back();
-    linear.Reserve(num_linear_terms);
-    return LinearExprBuilder(&linear);
+  MutCommonExpr common_expr(int index) {
+    CheckIndex(index, num_common_exprs());
+    return MutCommonExpr(this, index);
   }
 
-  // Ends building a common expression.
-  void EndCommonExpr(LinearExprBuilder, NumericExpr expr, int) {
+  // Adds a common expression (defined variable).
+  MutCommonExpr AddCommonExpr(NumericExpr expr) {
+    std::size_t num_exprs = linear_exprs_.size();
+    MP_ASSERT(num_exprs < MP_MAX_PROBLEM_ITEMS, "too many expressions");
+    linear_exprs_.push_back(LinearExpr());
     nonlinear_exprs_.push_back(expr);
+    return MutCommonExpr(this, static_cast<int>(num_exprs));
   }
 
   // Sets a complementarity condition.
