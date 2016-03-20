@@ -175,13 +175,6 @@ ASLBuilder::LinearExprBuilder
   return LinearExprBuilder(e->L, num_linear_terms);
 }
 
-void ASLBuilder::CommonExpr::set_nonlinear_expr(NumericExpr expr) const {
-  int index = index_ + builder_->asl_->i.n_var_;
-  cexp *e = reinterpret_cast<ASL_fg*>(builder_->asl_)->I.cexps_ +
-      index - builder_->static_->_nv0;
-  e->e = expr.impl_;
-}
-
 void ASLBuilder::CommonExpr::set_position(int position) const {
   assert(position != 0); // TODO: cexp_read
   Static *s = builder_->static_;
@@ -192,6 +185,12 @@ void ASLBuilder::CommonExpr::set_position(int position) const {
     s->_lasta = s->_lasta0;
     s->_lastj = position;
   }
+}
+
+void ASLBuilder::SetNonlinearCommonExpr(int index, NumericExpr expr) {
+  index += asl_->i.n_var_;
+  cexp *e = reinterpret_cast<ASL_fg*>(asl_)->I.cexps_ + index - static_->_nv0;
+  e->e = expr.impl_;
 }
 
 void ASLBuilder::SetObjOrCon(

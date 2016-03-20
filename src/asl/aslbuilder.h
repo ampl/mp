@@ -202,6 +202,8 @@ class ASLBuilder {
       std::memset(values + nx, 0, (nx1 - nx) * sizeof(T));
   }
 
+  void SetNonlinearCommonExpr(int index, NumericExpr expr);
+
   // Sets objective or constraint expression; adapted from co_read.
   void SetObjOrCon(int index, cde *d, int *cexp1_end, ::expr *e, int **z);
 
@@ -504,7 +506,10 @@ class ASLBuilder {
 
    public:
     LinearExprBuilder set_linear_expr(int num_linear_terms) const;
-    void set_nonlinear_expr(NumericExpr expr) const;
+
+    void set_nonlinear_expr(NumericExpr expr) const {
+      builder_->SetNonlinearCommonExpr(index_, expr);
+    }
 
     void set_position(int position) const;
   };
