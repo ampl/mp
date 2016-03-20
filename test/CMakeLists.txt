@@ -120,3 +120,8 @@ add_mp_test(problem-builder-test problem-builder-test.cc)
 
 add_mp_test(rstparser-test rstparser-test.cc)
 add_mp_test(safeint-test safeint-test.cc)
+
+if (TARGET benchmark)
+  add_executable(nl-benchmark nl-benchmark.cc)
+  target_link_libraries(nl-benchmark benchmark)
+endif ()
