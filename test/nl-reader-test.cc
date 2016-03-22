@@ -2000,21 +2000,28 @@ TEST(NLProblemBuilderTest, EndCommonExpr) {
   adapter.EndCommonExpr(42, expr, 11);
 }
 
-TEST(NLProblemBuilderTest, OnFunction) {
+TEST(NLProblemBuilderTest, AddFunction) {
   StrictMock<MockProblemBuilder> builder;
   NLProblemBuilder<MockProblemBuilder> adapter(builder);
   auto header = mp::NLHeader();
-  header.num_funcs = 1;
+  header.num_funcs = 42;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  EXPECT_CALL(builder, AddFunction()).Times(header.num_funcs);
   adapter.OnHeader(header);
+}
+
+TEST(NLProblemBuilderTest, OnFunction) {
+  StrictMock<MockProblemBuilder> builder;
+  NLProblemBuilder<MockProblemBuilder> adapter(builder);
   auto func = TestFunction(ID);
   fmt::StringRef name("f");
-  EXPECT_CALL(builder, AddFunction(name, 11, mp::func::SYMBOLIC)).
+  EXPECT_CALL(builder, DefineFunction(42, name, 11, mp::func::SYMBOLIC)).
       WillOnce(Return(func));
-  adapter.OnFunction(0, name, 11, mp::func::SYMBOLIC);
+  adapter.OnFunction(42, name, 11, mp::func::SYMBOLIC);
   auto call_builder = TestCallExprBuilder(ID);
+  EXPECT_CALL(builder, function(42)).WillOnce(Return(func));
   EXPECT_CALL(builder, BeginCall(func, 11)).WillOnce(Return(call_builder));
-  adapter.BeginCall(0, 11);
+  adapter.BeginCall(42, 11);
   EXPECT_CALL(builder, EndCall(call_builder)).
       WillOnce(Return(TestNumericExpr(ID)));
   adapter.EndCall(call_builder);

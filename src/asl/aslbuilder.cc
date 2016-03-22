@@ -614,10 +614,8 @@ Function ASLBuilder::RegisterFunction(
   return Function(fi);
 }
 
-Function ASLBuilder::AddFunction(
-    fmt::StringRef name, int num_args, func::Type type) {
-  int index = func_index_++;
-  assert(index >= 0 && index < asl_->i.nfunc_);
+Function ASLBuilder::DefineFunction(
+    int index, fmt::StringRef name, int num_args, func::Type type) {
   // Make sure the name is null-terminated for C API.
   fmt::MemoryWriter cname;
   cname << name;

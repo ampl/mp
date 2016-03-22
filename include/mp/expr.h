@@ -53,6 +53,13 @@ namespace internal {
 template <typename ExprType>
 ExprType UncheckedCast(Expr e);
 
+// Checks if index is in the range [0, size).
+inline void CheckIndex(int index, std::size_t size) {
+  MP_ASSERT(0 <= index && static_cast<std::size_t>(index) < size,
+            "invalid index");
+  internal::Unused(index, size);
+}
+
 class ExprBase {
  protected:
   // The following members are protected rather than private because
@@ -754,6 +761,9 @@ class BasicExprFactory : private Alloc {
     dst[size] = 0;
   }
 
+  Function CreateFunction(const Function::Impl *&impl, fmt::StringRef name,
+                          int num_args, func::Type type);
+
  public:
   explicit BasicExprFactory(Alloc alloc = Alloc()) : Alloc(alloc) {}
 
@@ -762,10 +772,42 @@ class BasicExprFactory : private Alloc {
     Deallocate(funcs_);
   }
 
+  // Returns the function at the specified index.
+  Function function(int index) const {
+    internal::CheckIndex(index, this->funcs_.size());
+    return Function(this->funcs_[index]);
+  }
+
   // Adds a function.
   // name: Function name that may not be null-terminated.
   Function AddFunction(fmt::StringRef name, int num_args,
-                       func::Type type = func::NUMERIC);
+                       func::Type type = func::NUMERIC) {
+    // Call push_back first to make sure that the impl pointer doesn't leak
+    // if push_back throws an exception.
+    this->funcs_.push_back(0);
+    return CreateFunction(this->funcs_.back(), name, num_args, type);
+  }
+
+  // Adds a function that will be defined later.
+  void AddFunction() {
+    funcs_.push_back(0);
+  }
+
+  // Defines a function.
+  Function DefineFunction(int index, fmt::StringRef name,
+                          int num_args, func::Type type) {
+    internal::CheckIndex(index, funcs_.size());
+    const Function::Impl *&impl = funcs_[index];
+    if (impl)
+      throw Error("function {} is already defined", index);
+    return CreateFunction(impl, name, num_args, type);
+  }
+
+  // Reserve memory for num_funcs functions.
+  void ReserveFunctions(int num_funcs) {
+    MP_ASSERT(num_funcs >= 0, "invalid size");
+    funcs_.reserve(num_funcs);
+  }
 
   // Makes a numeric constant.
   NumericConstant MakeNumericConstant(double value) {
@@ -1024,20 +1066,19 @@ void BasicExprFactory<Alloc>::Deallocate(const std::vector<T> &data) {
 }
 
 template <typename Alloc>
-Function BasicExprFactory<Alloc>::AddFunction(
-    fmt::StringRef name, int num_args, func::Type type) {
-  // Call push_back first to make sure that the impl pointer doesn't leak
-  // if push_back throws an exception.
-  funcs_.push_back(0);
+Function BasicExprFactory<Alloc>::CreateFunction(
+    const Function::Impl *&impl, fmt::StringRef name,
+    int num_args, func::Type type) {
   // Function::Impl already has space for terminating null char so
   // we need to allocate extra size chars only.
   typedef Function::Impl Impl;
   SafeInt<std::size_t> size = sizeof(Impl);
-  Impl *impl = reinterpret_cast<Impl*>(this->allocate(val(size + name.size())));
-  impl->type = type;
-  impl->num_args = num_args;
-  Copy(name, impl->name);
-  funcs_.back() = impl;
+  Impl *new_impl = reinterpret_cast<Impl*>(
+        this->allocate(val(size + name.size())));
+  new_impl->type = type;
+  new_impl->num_args = num_args;
+  this->Copy(name, new_impl->name);
+  impl = new_impl;
   return Function(impl);
 }
 

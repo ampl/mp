@@ -148,24 +148,15 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   // Initial values for dual variables.
   std::vector<double> initial_dual_values_;
 
-  std::vector<Function> funcs_;
-
-  // Checks if index is in the range [0, size).
-  static void CheckIndex(int index, std::size_t size) {
-    MP_ASSERT(0 <= index && static_cast<std::size_t>(index) < size,
-              "invalid index");
-    internal::Unused(index, size);
-  }
-
   void SetNonlinearObjExpr(int obj_index, NumericExpr expr) {
-    CheckIndex(obj_index, linear_objs_.size());
+    internal::CheckIndex(obj_index, linear_objs_.size());
     if (nonlinear_objs_.size() <= static_cast<std::size_t>(obj_index))
       nonlinear_objs_.resize(obj_index + 1);
     nonlinear_objs_[obj_index] = expr;
   }
 
   void SetNonlinearConExpr(int con_index, NumericExpr expr) {
-    CheckIndex(con_index, algebraic_cons_.size());
+    internal::CheckIndex(con_index, algebraic_cons_.size());
     if (nonlinear_cons_.size() <= static_cast<std::size_t>(con_index))
       nonlinear_cons_.resize(con_index + 1);
     nonlinear_cons_[con_index] = expr;
@@ -513,11 +504,11 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Returns the variable at the specified index.
   Variable var(int index) const {
-    CheckIndex(index, num_vars());
+    internal::CheckIndex(index, num_vars());
     return Variable(this, index);
   }
   MutVariable var(int index) {
-    CheckIndex(index, num_vars());
+    internal::CheckIndex(index, num_vars());
     return MutVariable(this, index);
   }
 
@@ -594,13 +585,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Returns the objective at the specified index.
   Objective obj(int index) const {
-    CheckIndex(index, num_objs());
+    internal::CheckIndex(index, num_objs());
     return Objective(this, index);
   }
 
   // Returns the mutable objective at the specified index.
   MutObjective obj(int index) {
-    CheckIndex(index, num_objs());
+    internal::CheckIndex(index, num_objs());
     return MutObjective(this, index);
   }
 
@@ -678,13 +669,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Returns the algebraic constraint at the specified index.
   AlgebraicCon algebraic_con(int index) const {
-    CheckIndex(index, num_algebraic_cons());
+    internal::CheckIndex(index, num_algebraic_cons());
     return AlgebraicCon(this, index);
   }
 
   // Returns the mutable algebraic constraint at the specified index.
   MutAlgebraicCon algebraic_con(int index) {
-    CheckIndex(index, num_algebraic_cons());
+    internal::CheckIndex(index, num_algebraic_cons());
     return MutAlgebraicCon(this, index);
   }
 
@@ -761,13 +752,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Returns the logical constraint at the specified index.
   LogicalCon logical_con(int index) const {
-    CheckIndex(index, num_logical_cons());
+    internal::CheckIndex(index, num_logical_cons());
     return LogicalCon(this, index);
   }
 
   // Returns the mutable logical constraint at the specified index.
   MutLogicalCon logical_con(int index) {
-    CheckIndex(index, num_logical_cons());
+    internal::CheckIndex(index, num_logical_cons());
     return MutLogicalCon(this, index);
   }
 
@@ -837,11 +828,11 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Returns the common expression at the specified index.
   CommonExpr common_expr(int index) const {
-    CheckIndex(index, num_common_exprs());
+    internal::CheckIndex(index, num_common_exprs());
     return CommonExpr(this, index);
   }
   MutCommonExpr common_expr(int index) {
-    CheckIndex(index, num_common_exprs());
+    internal::CheckIndex(index, num_common_exprs());
     return MutCommonExpr(this, index);
   }
 

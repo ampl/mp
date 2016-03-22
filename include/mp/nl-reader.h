@@ -2213,8 +2213,6 @@ class NLProblemBuilder {
  private:
   int obj_index_;
 
-  std::vector<Function> funcs_;
-
   template <typename Obj>
   void SetObj(const Obj &obj, obj::Type type, NumericExpr expr) {
     obj.set_type(type);
@@ -2298,7 +2296,9 @@ class NLProblemBuilder {
     for (int i = 0; i < h.num_logical_cons; ++i)
       builder_.AddCon(LogicalExpr());
 
-    funcs_.resize(h.num_funcs);
+    // Add functions.
+    for (int i = 0; i < h.num_funcs; ++i)
+      builder_.AddFunction();
   }
 
   // Returns true if objective should be handled.
@@ -2375,7 +2375,7 @@ class NLProblemBuilder {
 
   void OnFunction(int index, fmt::StringRef name,
                   int num_args, func::Type type) {
-    funcs_[index] = builder_.AddFunction(name, num_args, type);
+    builder_.DefineFunction(index, name, num_args, type);
   }
 
   typedef typename ProblemBuilder::IntSuffixHandler IntSuffixHandler;
@@ -2429,7 +2429,10 @@ class NLProblemBuilder {
   typedef typename ProblemBuilder::CallExprBuilder CallArgHandler;
 
   CallArgHandler BeginCall(int func_index, int num_args) {
-    return builder_.BeginCall(funcs_[func_index], num_args);
+    // Check if the function is defined.
+    if (Function func = builder_.function(func_index))
+      return builder_.BeginCall(func, num_args);
+    throw Error("function {} is not defined", func_index);
   }
   NumericExpr EndCall(CallArgHandler handler) {
     return builder_.EndCall(handler);

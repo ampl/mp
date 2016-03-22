@@ -539,6 +539,14 @@ class ASLBuilder {
 
   ColumnSizeHandler GetColumnSizeHandler();
 
+  void AddFunction() {
+    int index = func_index_++;
+    assert(index >= 0 && index < asl_->i.nfunc_);
+  }
+
+  Function DefineFunction(int index, fmt::StringRef name, int num_args,
+                          func::Type type = func::NUMERIC);
+
   Function RegisterFunction(const char *name, ufunc f, int num_args,
                             func::Type type = func::NUMERIC, void *info = 0);
 
@@ -546,10 +554,18 @@ class ASLBuilder {
   // If the function with the specified name doesn't exist and the flag
   // ASL_allow_missing_funcs is not set, SetFunction throws ASLError.
   Function AddFunction(fmt::StringRef name, int num_args,
-                       func::Type type = func::NUMERIC);
+                       func::Type type = func::NUMERIC) {
+    int index = func_index_++;
+    assert(index >= 0 && index < asl_->i.nfunc_);
+    return DefineFunction(index, name, num_args, type);
+  }
 
   Function FindFunction(fmt::CStringRef name) const {
     return Function(func_lookup_ASL(asl_, name.c_str(), 0));
+  }
+
+  Function function(int index) const {
+    return Function(asl_->i.funcs_[index]);
   }
 
   typedef SuffixHandler<int> IntSuffixHandler;

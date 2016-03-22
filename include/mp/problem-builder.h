@@ -158,11 +158,40 @@ class ProblemBuilder : public SuffixManager {
     return AlgebraicCon();
   }
 
-  struct Function {};
+  class Function {
+   private:
+    // Safe bool type.
+    typedef void (Function::*SafeBool)() const;
+
+   public:
+    // Returns a value convertible to bool that can be used in conditions but
+    // not in comparisons and evaluates to "true" if this function is not null
+    // and "false" otherwise.
+    // Example:
+    //   if (f) {
+    //     // Do something if f is not null.
+    //   }
+    operator SafeBool() const { return 0; }
+  };
+
+  void AddFunction() {
+    function(0);
+  }
+
+  Function DefineFunction(int index, fmt::StringRef name,
+                          int num_args, func::Type type) {
+    internal::Unused(&name, num_args, type);
+    return function(index);
+  }
 
   // Adds a function.
   Function AddFunction(fmt::StringRef name, int num_args, func::Type type) {
     internal::Unused(&name, num_args, type);
+    return function(0);
+  }
+
+  Function function(int index) {
+    internal::Unused(index);
     MP_DISPATCH(ReportUnhandledConstruct("function"));
     return Function();
   }

@@ -20,11 +20,13 @@
  Author: Victor Zverovich
  */
 
-#include <stdexcept>
-#include "gtest-extra.h"
-#include "mock-allocator.h"
 #include "test-assert.h"
 #include "mp/expr.h"
+
+#include "gtest-extra.h"
+#include "mock-allocator.h"
+
+#include <stdexcept>
 
 using ::testing::_;
 using ::testing::Return;
@@ -119,6 +121,15 @@ class ExprTest : public ::testing::Test {
     return factory_.EndPairwise(builder);
   }
 };
+
+TEST_F(ExprTest, CheckIndex) {
+  mp::internal::CheckIndex(0, 3);
+  mp::internal::CheckIndex(2, 3);
+  EXPECT_ASSERT(mp::internal::CheckIndex(-10, 3), "invalid index");
+  EXPECT_ASSERT(mp::internal::CheckIndex(-1, 3), "invalid index");
+  EXPECT_ASSERT(mp::internal::CheckIndex(3, 3), "invalid index");
+  EXPECT_ASSERT(mp::internal::CheckIndex(10, 3), "invalid index");
+}
 
 TEST_F(ExprTest, Expr) {
   Expr e;
@@ -305,6 +316,10 @@ TEST_F(ExprTest, Function) {
   EXPECT_EQ(mp::func::NUMERIC, f.type());
   EXPECT_EQ(f, bar);
   EXPECT_NE(f, foo);
+  EXPECT_EQ(foo, factory_.function(0));
+  EXPECT_EQ(bar, factory_.function(1));
+  EXPECT_ASSERT(factory_.function(-1), "invalid index");
+  EXPECT_ASSERT(factory_.function(2), "invalid index");
 }
 
 // Iterated expressions share the same builder so it is enough to test
@@ -928,6 +943,24 @@ TEST(ExprFactoryTest, IntOverflow) {
                mp::OverflowError);
   EXPECT_THROW(f.MakeStringLiteral(fmt::StringRef("s", int_max + 1)),
                mp::OverflowError);
+}
+
+TEST(ExprFactoryTest, DefineFunction) {
+  mp::ExprFactory factory;
+  factory.AddFunction();
+  mp::func::Type type = mp::func::NUMERIC;
+  EXPECT_ASSERT(factory.DefineFunction(-1, "foo", 0, type), "invalid index");
+  EXPECT_ASSERT(factory.DefineFunction(1, "foo", 0, type), "invalid index");
+  factory.AddFunction();
+  factory.DefineFunction(1, "bar", 0, type);
+  factory.DefineFunction(0, "foo", 0, type);
+  EXPECT_THROW_MSG(factory.DefineFunction(1, "bar", 0, type),
+                   mp::Error, "function 1 is already defined");
+}
+
+TEST(ExprFactoryTest, ReserveFunctions) {
+  mp::ExprFactory f;
+  f.ReserveFunctions(3);
 }
 
 #ifdef MP_USE_HASH

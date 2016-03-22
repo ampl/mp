@@ -39,7 +39,24 @@ enum IDType { NULL_ID = 0, ID = 42, ID2, ID3, ID4 };
  private: \
   IDType id_
 
-struct TestFunction {
+class TestFunction {
+ private:
+  // Safe bool type.
+  typedef void (TestFunction::*SafeBool)() const;
+
+  // A member function representing the true value of SafeBool.
+  void True() const {}
+
+ public:
+  // Returns a value convertible to bool that can be used in conditions but
+  // not in comparisons and evaluates to "true" if this function is not null
+  // and "false" otherwise.
+  // Example:
+  //   if (f) {
+  //     // Do something if f is not null.
+  //   }
+  operator SafeBool() const { return &TestFunction::True; }
+
   DEFINE_ID(TestFunction);
 };
 
@@ -210,8 +227,15 @@ class MockProblemBuilder {
 
   MOCK_METHOD0(GetColumnSizeHandler, ColumnSizeHandler ());
 
+  MOCK_METHOD0(AddFunction, void ());
+
   MOCK_METHOD3(AddFunction, Function (fmt::StringRef name,
                                       int num_args, mp::func::Type type));
+
+  MOCK_METHOD4(DefineFunction, Function (int index, fmt::StringRef name,
+                                         int num_args, mp::func::Type type));
+
+  MOCK_METHOD1(function, Function (int index));
 
   typedef TestSuffixHandler<0> IntSuffixHandler;
 
