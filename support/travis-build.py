@@ -63,17 +63,19 @@ if build == 'cross':
 # Install dependencies.
 os_name = os.environ['TRAVIS_OS_NAME']
 if os_name == 'linux':
-  # Install newer version of CMake.
-  cmake_path = bootstrap.install_cmake(
-    'cmake-3.3.0-Linux-x86_64.tar.gz', check_installed=False,
-    download_dir=None, install_dir='.')
+  cmake_system = 'Linux-x86_64'
 else:
+  cmake_system = 'Darwin-universal'
   # Install Java as a workaround for bug
   # http://bugs.java.com/bugdatabase/view_bug.do?bug_id=7131356.
   java_url = 'https://support.apple.com/downloads/DL1572/en_US/javaforosx.dmg'
   with Downloader().download(java_url) as f:
     bootstrap.install_dmg(f)
-  cmake_path = 'cmake'
+
+# Install newer version of CMake.
+cmake_path = bootstrap.install_cmake(
+  'cmake-3.3.0-{}.tar.gz'.format(cmake_system), check_installed=False,
+  download_dir=None, install_dir='.')
 
 env = os.environ.copy()
 env['PATH'] = '/usr/lib/ccache:' + env['PATH']
