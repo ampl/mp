@@ -52,5 +52,5 @@ add_custom_target(doc
   DEPENDS conf.py ${doc_deps} ${amplgsl_docs})
 
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ampl.github.io/
-        DESTINATION share/doc/mp
+        DESTINATION share/doc/mp OPTIONAL
         PATTERN .* EXCLUDE)
