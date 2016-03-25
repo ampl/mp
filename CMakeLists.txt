@@ -284,7 +284,9 @@ add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
   INCLUDE_DIRECTORIES src OBJECT_LIBRARIES format)
 set_target_properties(mp PROPERTIES
   VERSION ${MP_VERSION} SOVERSION ${MP_VERSION_MAJOR})
-target_compile_options(mp PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${MP_CXX11_FLAG}>)
+if (MP_CXX11_FLAG)
+  target_compile_options(mp PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${MP_CXX11_FLAG}>)
+endif ()
 
 include(CheckCXXSourceCompiles)
 
