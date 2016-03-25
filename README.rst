@@ -150,6 +150,23 @@ To get rid of semantic errors reported by Indexer add preprocessor symbols
 in "Project Properties" / "C/C++ Include Files and Symbols" and rebuild
 the index.
 
+Building the documentation
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To build the documentation you need the following software installed on your
+system:
+
+* `Python <https://www.python.org/>`_ with pip and virtualenv
+* `Doxygen <www.doxygen.org/>`_
+
+First generate makefiles or project files using CMake as described in
+the previous section. Then compile the ``doc`` target/project, for example::
+
+  make doc
+
+This will generate the HTML documenation in ``doc/ampl.github.io``.
+
+
 Links
 -----
 `AMPL home <http://www.ampl.com/>`_ |
