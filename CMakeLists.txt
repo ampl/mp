@@ -125,11 +125,11 @@ endfunction()
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-std=c++11 HAVE_STD_CPP11_FLAG)
 if (HAVE_STD_CPP11_FLAG)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  set(MP_CXX11_FLAG -std=c++11)
 else ()
   check_cxx_compiler_flag(-std=c++0x HAVE_STD_CPP0X_FLAG)
   if (HAVE_STD_CPP0X_FLAG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+    set(MP_CXX11_FLAG -std=c++0x)
   endif ()
 endif ()
 
@@ -284,6 +284,7 @@ add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
   INCLUDE_DIRECTORIES src OBJECT_LIBRARIES format)
 set_target_properties(mp PROPERTIES
   VERSION ${MP_VERSION} SOVERSION ${MP_VERSION_MAJOR})
+target_compile_options(mp PUBLIC ${MP_CXX11_FLAG})
 
 include(CheckCXXSourceCompiles)
 

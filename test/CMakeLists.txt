@@ -21,6 +21,7 @@ set(GTEST_SRC ${GTEST_SRC}
               gtest-extra.cc gtest-extra.h util.cc util.h test-main.cc)
 add_library(gtest-extra STATIC ${GTEST_SRC})
 target_compile_definitions(gtest-extra PUBLIC FMT_USE_FILE_DESCRIPTORS)
+target_compile_options(gtest-extra PUBLIC ${MP_CXX11_FLAG})
 find_package(Threads)
 target_link_libraries(gtest-extra ${CMAKE_THREAD_LIBS_INIT})
 
