@@ -1,7 +1,7 @@
-# CMake 2.8.12 or later is required for target_compile_options.
+# CMake 3.3 or later is required for COMPILE_LANGUAGE.
 # It can be easily obtained and used without superuser privileges
 # even if the system has an older version of CMake installed.
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.3)
 
 if (CMAKE_MAJOR_VERSION LESS 3)
   # CMake 3.0 is used for generator expressions in install(FILES).
@@ -284,7 +284,7 @@ add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
   INCLUDE_DIRECTORIES src OBJECT_LIBRARIES format)
 set_target_properties(mp PROPERTIES
   VERSION ${MP_VERSION} SOVERSION ${MP_VERSION_MAJOR})
-target_compile_options(mp PUBLIC ${MP_CXX11_FLAG})
+target_compile_options(mp PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${MP_CXX11_FLAG}>)
 
 include(CheckCXXSourceCompiles)
 

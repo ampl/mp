@@ -65,7 +65,7 @@ os_name = os.environ['TRAVIS_OS_NAME']
 if os_name == 'linux':
   # Install newer version of CMake.
   cmake_path = bootstrap.install_cmake(
-    'cmake-3.1.1-Linux-x86_64.tar.gz', check_installed=False,
+    'cmake-3.3.0-Linux-x86_64.tar.gz', check_installed=False,
     download_dir=None, install_dir='.')
 else:
   # Install Java as a workaround for bug
