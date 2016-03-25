@@ -945,22 +945,20 @@ TEST(ExprFactoryTest, IntOverflow) {
                mp::OverflowError);
 }
 
-TEST(ExprFactoryTest, DefineFunction) {
+TEST(ExprFactoryTest, AddFunctions) {
   mp::ExprFactory factory;
-  factory.AddFunction();
+  factory.AddFunctions(1);
+  EXPECT_ASSERT(factory.AddFunctions(-1), "invalid size");
+  EXPECT_THROW(factory.AddFunctions(std::numeric_limits<int>::max()),
+               mp::OverflowError);
   mp::func::Type type = mp::func::NUMERIC;
   EXPECT_ASSERT(factory.DefineFunction(-1, "foo", 0, type), "invalid index");
   EXPECT_ASSERT(factory.DefineFunction(1, "foo", 0, type), "invalid index");
-  factory.AddFunction();
+  factory.AddFunctions(1);
   factory.DefineFunction(1, "bar", 0, type);
   factory.DefineFunction(0, "foo", 0, type);
   EXPECT_THROW_MSG(factory.DefineFunction(1, "bar", 0, type),
                    mp::Error, "function 1 is already defined");
-}
-
-TEST(ExprFactoryTest, ReserveFunctions) {
-  mp::ExprFactory f;
-  f.ReserveFunctions(3);
 }
 
 #ifdef MP_USE_HASH

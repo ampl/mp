@@ -157,11 +157,17 @@ class MockProblemBuilder {
 
   MOCK_METHOD1(AddObj, void (mp::obj::Type type));
 
+  MOCK_METHOD1(AddObjs, void (int num_objs));
+
   typedef TestLinearConBuilder LinearConBuilder;
 
   MOCK_METHOD2(AddCon, void (double lb, double ub));
 
   MOCK_METHOD1(AddCon, void (LogicalExpr expr));
+
+  MOCK_METHOD1(AddAlgebraicCons, void (int num_cons));
+
+  MOCK_METHOD1(AddLogicalCons, void (int num_cons));
 
   typedef TestLinearExprBuilder LinearExprBuilder;
 
@@ -227,7 +233,7 @@ class MockProblemBuilder {
 
   MOCK_METHOD0(GetColumnSizeHandler, ColumnSizeHandler ());
 
-  MOCK_METHOD0(AddFunction, void ());
+  MOCK_METHOD1(AddFunctions, void (int num_funcs));
 
   MOCK_METHOD3(AddFunction, Function (fmt::StringRef name,
                                       int num_args, mp::func::Type type));

@@ -2281,24 +2281,18 @@ class NLProblemBuilder {
     for (int i = 0, n = h.num_common_exprs(); i < n; ++i)
       builder_.AddCommonExpr(NumericExpr());
 
-    // Add objectives. As nl-benchmark shows, adding all objectives at once
-    // and then updating them is faster than adding objectives incrementally.
-    // The latter requires additional checks to make sure that objectives are
+    // As nl-benchmark shows, adding problem components at once and then
+    // updating them is faster than adding them incrementally. The latter
+    // requires additional checks to make sure that prolbem components are
     // in the correct order.
-    for (int i = 0; i < num_objs; ++i)
-      builder_.AddObj(obj::MIN);
-
-    // Add algebraic constraints.
-    for (int i = 0; i < h.num_algebraic_cons; ++i)
-      builder_.AddCon(0, 0);
-
-    // Add logical constraints.
-    for (int i = 0; i < h.num_logical_cons; ++i)
-      builder_.AddCon(LogicalExpr());
-
-    // Add functions.
-    for (int i = 0; i < h.num_funcs; ++i)
-      builder_.AddFunction();
+    if (num_objs != 0)
+      builder_.AddObjs(num_objs);
+    if (h.num_algebraic_cons != 0)
+      builder_.AddAlgebraicCons(h.num_algebraic_cons);
+    if (h.num_logical_cons != 0)
+      builder_.AddLogicalCons(h.num_logical_cons);
+    if (h.num_funcs != 0)
+      builder_.AddFunctions(h.num_funcs);
   }
 
   // Returns true if objective should be handled.

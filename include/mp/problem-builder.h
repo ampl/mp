@@ -174,8 +174,8 @@ class ProblemBuilder : public SuffixManager {
     operator SafeBool() const { return 0; }
   };
 
-  void AddFunction() {
-    function(0);
+  void AddFunctions(int num_funcs) {
+    function(num_funcs);
   }
 
   Function DefineFunction(int index, fmt::StringRef name,

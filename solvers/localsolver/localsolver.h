@@ -84,6 +84,7 @@ class LSProblemBuilder :
   struct ObjInfo {
     obj::Type type;
     ls::LSExpression expr;
+    ObjInfo() : type(obj::MIN) {}
     ObjInfo(obj::Type t, ls::LSExpression e) : type(t), expr(e) {}
   };
 
@@ -298,6 +299,10 @@ class LSProblemBuilder :
     objs_.push_back(ObjInfo(type, expr));
   }
 
+  void AddObjs(int num_objs) {
+    objs_.resize(num_objs);
+  }
+
   class Objective {
    private:
     LSProblemBuilder *builder_;
@@ -392,9 +397,17 @@ class LSProblemBuilder :
     return AlgebraicCon(this, static_cast<int>(index));
   }
 
+  void AddAlgebraicCons(int num_cons) {
+    cons_.resize(num_cons);
+  }
+
   // Adds a logical constraint.
   void AddCon(ls::LSExpression expr) {
     model_.addConstraint(expr);
+  }
+
+  void AddLogicalCons(int num_cons) {
+    logical_cons_.resize(num_cons);
   }
 
   class CommonExpr {

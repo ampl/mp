@@ -441,6 +441,10 @@ class ASLBuilder {
   // TODO: don't return LinearObjBuilder
   LinearObjBuilder AddObj(obj::Type type, NumericExpr expr = NumericExpr());
 
+  void AddObjs(int num_objs) {
+    obj_index_ = num_objs;
+  }
+
   class AlgebraicCon {
    private:
     ASLBuilder *builder_;
@@ -492,8 +496,16 @@ class ASLBuilder {
   // Adds an algebraic constraint.
   AlgebraicCon AddCon(double lb, double ub);
 
+  void AddAlgebraicCons(int num_cons) {
+    con_index_ = num_cons;
+  }
+
   // Adds a logical constraint.
   void AddCon(LogicalExpr expr);
+
+  void AddLogicalCons(int num_cons) {
+    lcon_index_ = num_cons;
+  }
 
   class CommonExpr {
    private:
@@ -539,9 +551,8 @@ class ASLBuilder {
 
   ColumnSizeHandler GetColumnSizeHandler();
 
-  void AddFunction() {
-    int index = func_index_++;
-    assert(index >= 0 && index < asl_->i.nfunc_);
+  void AddFunctions(int num_funcs) {
+    func_index_ = num_funcs;
   }
 
   Function DefineFunction(int index, fmt::StringRef name, int num_args,

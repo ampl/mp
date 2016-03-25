@@ -1716,7 +1716,7 @@ TEST(NLProblemBuilderTest, Forward) {
     auto header = mp::NLHeader();
     header.num_algebraic_cons = 100;
     EXPECT_CALL(builder, SetInfo(_));
-    EXPECT_CALL(builder, AddCon(0, 0)).Times(header.num_algebraic_cons);
+    EXPECT_CALL(builder, AddAlgebraicCons(header.num_algebraic_cons));
     adapter.OnHeader(header);
 
     // OnColumnSizes is ignored by default.
@@ -1843,7 +1843,7 @@ TEST(NLProblemBuilderTest, NeedAllObjs) {
   auto header = NLHeader();
   header.num_objs = 10;
   EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 10)));
-  EXPECT_CALL(builder, AddObj(mp::obj::MIN)).Times(header.num_objs);
+  EXPECT_CALL(builder, AddObjs(header.num_objs));
   adapter.OnHeader(header);
 }
 
@@ -1855,7 +1855,7 @@ TEST(NLProblemBuilderTest, SingleObjective) {
   auto header = NLHeader();
   header.num_objs = 10;
   EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 1)));
-  EXPECT_CALL(builder, AddObj(mp::obj::MIN));
+  EXPECT_CALL(builder, AddObjs(1));
   adapter.OnHeader(header);
   header.num_objs = 0;
   EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 0)));
@@ -1879,7 +1879,7 @@ TEST(NLProblemBuilderTest, AddObjs) {
   auto header = mp::NLHeader();
   header.num_objs = 42;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
-  EXPECT_CALL(builder, AddObj(mp::obj::MIN)).Times(header.num_objs);
+  EXPECT_CALL(builder, AddObjs(header.num_objs));
   adapter.OnHeader(header);
 }
 
@@ -1912,7 +1912,7 @@ TEST(NLProblemBuilderTest, AddAlgebraicCons) {
   auto header = mp::NLHeader();
   header.num_algebraic_cons = 42;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
-  EXPECT_CALL(builder, AddCon(0, 0)).Times(header.num_algebraic_cons);
+  EXPECT_CALL(builder, AddAlgebraicCons(header.num_algebraic_cons));
   adapter.OnHeader(header);
 }
 
@@ -1952,8 +1952,7 @@ TEST(NLProblemBuilderTest, AddLogicalCons) {
   auto header = mp::NLHeader();
   header.num_logical_cons = 42;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
-  EXPECT_CALL(builder, AddCon(TestLogicalExpr())).
-      Times(header.num_logical_cons);
+  EXPECT_CALL(builder, AddLogicalCons(header.num_logical_cons));
   adapter.OnHeader(header);
 }
 
@@ -2000,13 +1999,13 @@ TEST(NLProblemBuilderTest, EndCommonExpr) {
   adapter.EndCommonExpr(42, expr, 11);
 }
 
-TEST(NLProblemBuilderTest, AddFunction) {
+TEST(NLProblemBuilderTest, AddFunctions) {
   StrictMock<MockProblemBuilder> builder;
   NLProblemBuilder<MockProblemBuilder> adapter(builder);
   auto header = mp::NLHeader();
   header.num_funcs = 42;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
-  EXPECT_CALL(builder, AddFunction()).Times(header.num_funcs);
+  EXPECT_CALL(builder, AddFunctions(header.num_funcs));
   adapter.OnHeader(header);
 }
 

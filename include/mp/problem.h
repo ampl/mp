@@ -119,6 +119,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     LinearExpr linear_expr;
     double lb;
     double ub;
+    AlgebraicConInfo() : lb(0), ub(0) {}
     AlgebraicConInfo(double lb, double ub) : lb(lb), ub(ub) {}
   };
   std::vector<AlgebraicConInfo> algebraic_cons_;
@@ -604,6 +605,11 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     return AddObj(type, NumericExpr(), num_linear_terms);
   }
 
+  void AddObjs(int num_objs) {
+    linear_objs_.resize(num_objs);
+    is_obj_max_.resize(num_objs);
+  }
+
   typedef LinearExprBuilder LinearConBuilder;
 
   // An algebraic constraint.
@@ -689,6 +695,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     return MutAlgebraicCon(this, static_cast<int>(num_cons));
   }
 
+  void AddAlgebraicCons(int num_cons) {
+    algebraic_cons_.resize(num_cons);
+  }
+
   // A logical constraint.
   template <typename Item>
   class BasicLogicalCon : private Item {
@@ -767,6 +777,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     MP_ASSERT(logical_cons_.size() < MP_MAX_PROBLEM_ITEMS,
               "too many logical constraints");
     logical_cons_.push_back(expr);
+  }
+
+  void AddLogicalCons(int num_cons) {
+    logical_cons_.resize(num_cons);
   }
 
   // A common expression.

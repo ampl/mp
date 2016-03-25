@@ -784,13 +784,14 @@ class BasicExprFactory : private Alloc {
                        func::Type type = func::NUMERIC) {
     // Call push_back first to make sure that the impl pointer doesn't leak
     // if push_back throws an exception.
-    this->funcs_.push_back(0);
-    return CreateFunction(this->funcs_.back(), name, num_args, type);
+    funcs_.push_back(0);
+    return CreateFunction(funcs_.back(), name, num_args, type);
   }
 
   // Adds a function that will be defined later.
-  void AddFunction() {
-    funcs_.push_back(0);
+  void AddFunctions(int num_funcs) {
+    MP_ASSERT(num_funcs >= 0, "invalid size");
+    funcs_.resize(val(SafeInt<int>(funcs_.size()) + num_funcs));
   }
 
   // Defines a function.
@@ -801,12 +802,6 @@ class BasicExprFactory : private Alloc {
     if (impl)
       throw Error("function {} is already defined", index);
     return CreateFunction(impl, name, num_args, type);
-  }
-
-  // Reserve memory for num_funcs functions.
-  void ReserveFunctions(int num_funcs) {
-    MP_ASSERT(num_funcs >= 0, "invalid size");
-    funcs_.reserve(num_funcs);
   }
 
   // Makes a numeric constant.

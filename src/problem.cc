@@ -94,7 +94,6 @@ void BasicProblem<Alloc>::SetInfo(const ProblemInfo &info) {
   int num_common_exprs = info.num_common_exprs();
   linear_exprs_.reserve(num_common_exprs);
   nonlinear_exprs_.reserve(num_common_exprs);
-  this->ReserveFunctions(info.num_funcs);
 }
 
 template class BasicProblem< std::allocator<char> >;
