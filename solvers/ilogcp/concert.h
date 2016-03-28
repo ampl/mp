@@ -30,6 +30,7 @@
 
 #include <ilconcert/ilomodel.h>
 
+#include <algorithm>  // std::find_if
 #include <map>
 #include <memory>
 
