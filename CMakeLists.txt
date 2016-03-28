@@ -313,6 +313,8 @@ if (HAVE_HASH)
   target_compile_definitions(mp PUBLIC MP_USE_HASH)
 endif ()
 
+set(CMAKE_REQUIRED_FLAGS )
+
 # Link with librt for clock_gettime (Linux on i386).
 find_library(RT_LIBRARY rt)
 if (RT_LIBRARY)
