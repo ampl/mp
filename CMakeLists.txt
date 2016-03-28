@@ -290,6 +290,8 @@ endif ()
 
 include(CheckCXXSourceCompiles)
 
+set(CMAKE_REQUIRED_FLAGS ${MP_CXX11_FLAG})
+
 check_cxx_source_compiles(
   "#include <memory>
   int main() { std::unique_ptr<int> p; }" HAVE_UNIQUE_PTR)
