@@ -31,6 +31,8 @@ namespace mp {
 # define MP_ASSERT(condition, message) assert((condition) && message)
 #endif
 
+#define MP_EMPTY
+
 // A general error.
 class Error : public fmt::internal::RuntimeError {
  protected:
@@ -46,7 +48,7 @@ class Error : public fmt::internal::RuntimeError {
   }
 
  public:
-  FMT_VARIADIC_(char, , Error, init, fmt::CStringRef)
+  FMT_VARIADIC_(char, MP_EMPTY, Error, init, fmt::CStringRef)
   ~Error() throw() {}
 };
 
