@@ -2317,7 +2317,6 @@ class NLProblemBuilder {
   typedef typename ProblemBuilder::LinearObjBuilder LinearObjHandler;
 
   LinearObjHandler OnLinearObjExpr(int obj_index, int num_linear_terms) {
-    // TODO: don't skip objectives
     return builder_.obj(obj_index).set_linear_expr(num_linear_terms);
   }
 
