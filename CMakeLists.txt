@@ -256,6 +256,7 @@ add_mp_library(format OBJECT
 set(MP_EXPR_INFO_FILE ${MP_SOURCE_DIR}/src/expr-info.cc)
 add_executable(gen-expr-info EXCLUDE_FROM_ALL
   src/gen-expr-info.cc $<TARGET_OBJECTS:format>)
+enable_cxx11(gen-expr-info)
 if (MINGW)
   SET_TARGET_PROPERTIES(gen-expr-info PROPERTIES
     LINK_FLAGS "-static-libgcc -static-libstdc++")
