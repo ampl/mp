@@ -210,6 +210,7 @@ function (add_mp_library name)
   endif ()
   add_library(${name} ${libtype}
     ${add_mp_library_UNPARSED_ARGUMENTS} ${objects})
+  enable_cxx11(${name})
   target_compile_definitions(${name}
     PUBLIC ${add_mp_library_COMPILE_DEFINITIONS})
   target_include_directories(${name}
@@ -293,7 +294,6 @@ add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
   INCLUDE_DIRECTORIES src OBJECT_LIBRARIES format)
 set_target_properties(mp PROPERTIES
   VERSION ${MP_VERSION} SOVERSION ${MP_VERSION_MAJOR})
-enable_cxx11(mp)
 
 include(CheckCXXSourceCompiles)
 
