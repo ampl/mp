@@ -48,7 +48,7 @@ if __name__ == '__main__':
     check_call(['apt-get', 'install', '-qy'] + packages)
     shutil.rmtree('/var/cache/oracle-jdk7-installer')
 
-    install_cmake('cmake-3.1.0-Linux-i386.tar.gz')
+    install_cmake('cmake-3.3.0-Linux-i386.tar.gz')
     install_maven()
 
   # Installs symlinks for ccache.

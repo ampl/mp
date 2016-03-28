@@ -34,7 +34,7 @@ if vagrant:
   # Kill the screensaver if it has started already.
   call(['killall', 'ScreenSaverEngine'])
 
-install_cmake('cmake-3.1.0-Darwin64-universal.tar.gz')
+install_cmake('cmake-3.3.0-Darwin64-universal.tar.gz')
 install_maven()
 
 # Install command-line tools for Xcode.
