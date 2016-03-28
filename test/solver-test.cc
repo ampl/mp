@@ -1632,13 +1632,13 @@ TEST(MultiObjTest, NeedAllObjs) {
     }
 
     static void ExpectUseObj0(fmt::StringRef, NLReader::Handler &h, int) {
-      EXPECT_CALL(h.builder(), AddObj(_));
+      EXPECT_CALL(h.builder(), AddObjs(1));
       OnHeader(h);
       EXPECT_EQ(0, h.obj_index());
     }
 
     static void ExpectNeedAllObjs(fmt::StringRef, NLReader::Handler &h, int) {
-      EXPECT_CALL(h.builder(), AddObj(_)).Times(2);
+      EXPECT_CALL(h.builder(), AddObjs(2));
       OnHeader(h);
       EXPECT_EQ(NLReader::Handler::NEED_ALL_OBJS, h.obj_index());
     }
@@ -1674,8 +1674,8 @@ struct TestNLReader {
     header.num_objs = 2;
     auto &builder = adapter.builder();
     EXPECT_CALL(builder, SetInfo(_));
-    EXPECT_CALL(builder, AddVar(0, 0, mp::var::CONTINUOUS));
-    EXPECT_CALL(builder, AddObj(mp::obj::MIN));
+    EXPECT_CALL(builder, AddVars(header.num_vars, mp::var::CONTINUOUS));
+    EXPECT_CALL(builder, AddObjs(1));
     adapter.OnHeader(header);
     EXPECT_TRUE(adapter.NeedObj(obj_index));
     EXPECT_FALSE(adapter.NeedObj(!obj_index));

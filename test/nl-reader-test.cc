@@ -1972,9 +1972,7 @@ TEST(NLProblemBuilderTest, AddCommonExpr) {
   auto header = mp::NLHeader();
   header.num_common_exprs_in_both = 42;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
-  MockProblemBuilder::MutCommonExpr expr;
-  EXPECT_CALL(builder, AddCommonExpr(TestNumericExpr())).
-      Times(header.num_common_exprs_in_both).WillRepeatedly(ReturnRef(expr));
+  EXPECT_CALL(builder, AddCommonExprs(header.num_common_exprs_in_both));
   adapter.OnHeader(header);
 }
 

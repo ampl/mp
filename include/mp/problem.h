@@ -522,6 +522,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     return Variable(this, static_cast<int>(index));
   }
 
+  void AddVars(int num_vars, var::Type type) {
+    MP_ASSERT(num_vars >= 0, "invalid size");
+    std::size_t new_size = val(SafeInt<int>(vars_.size()) + num_vars);
+    vars_.resize(new_size, Var(0, 0));
+    is_var_int_.resize(new_size, type != var::CONTINUOUS);
+  }
+
   class LinearExprBuilder {
    private:
     LinearExpr *expr_;
@@ -857,6 +864,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     linear_exprs_.push_back(LinearExpr());
     nonlinear_exprs_.push_back(expr);
     return MutCommonExpr(this, static_cast<int>(num_exprs));
+  }
+
+  void AddCommonExprs(int num_exprs) {
+    MP_ASSERT(num_exprs >= 0, "invalid size");
+    std::size_t new_size = val(SafeInt<int>(vars_.size()) + num_exprs);
+    linear_exprs_.resize(new_size, LinearExpr());
+    nonlinear_exprs_.resize(new_size, NumericExpr());
   }
 
   // Sets a complementarity condition.

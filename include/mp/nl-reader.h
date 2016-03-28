@@ -2270,21 +2270,16 @@ class NLProblemBuilder {
       builder_.SetInfo(info);
     }
 
-    // Add variables.
-    int num_continuous_vars = h.num_continuous_vars();
-    for (int i = 0; i < num_continuous_vars; ++i)
-      builder_.AddVar(0, 0, var::CONTINUOUS);
-    for (int i = num_continuous_vars; i < h.num_vars; ++i)
-      builder_.AddVar(0, 0, var::INTEGER);
-
-    // Add common expressions.
-    for (int i = 0, n = h.num_common_exprs(); i < n; ++i)
-      builder_.AddCommonExpr(NumericExpr());
-
     // As nl-benchmark shows, adding problem components at once and then
     // updating them is faster than adding them incrementally. The latter
     // requires additional checks to make sure that prolbem components are
     // in the correct order.
+    if (int n = h.num_continuous_vars())
+      builder_.AddVars(n, var::CONTINUOUS);
+    if (int n = h.num_integer_vars())
+      builder_.AddVars(n, var::INTEGER);
+    if (int n = h.num_common_exprs())
+      builder_.AddCommonExprs(n);
     if (num_objs != 0)
       builder_.AddObjs(num_objs);
     if (h.num_algebraic_cons != 0)
@@ -2304,7 +2299,7 @@ class NLProblemBuilder {
 
   void OnObj(int index, obj::Type type, NumericExpr expr) {
     if (NeedObj(index))
-      SetObj(builder_.obj(index), type, expr);
+      SetObj(builder_.obj(index == obj_index_ ? 0 : index), type, expr);
   }
 
   void OnAlgebraicCon(int index, NumericExpr expr) {

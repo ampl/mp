@@ -349,6 +349,10 @@ class ASLBuilder {
     SetBounds(asl_->i.LUv_, asl_->i.Uvx_, var_index_++, lb, ub);
   }
 
+  void AddVars(int num_vars, var::Type) {
+    var_index_ += num_vars;
+  }
+
   template <typename Grad>
   class BasicLinearExprBuilder {
    protected:
@@ -527,6 +531,10 @@ class ASLBuilder {
   };
 
   CommonExpr AddCommonExpr(NumericExpr expr);
+
+  void AddCommonExprs(int num_exprs) {
+    expr_index_ = num_exprs;
+  }
 
   CommonExpr common_expr(int index) { return CommonExpr(this, index); }
 

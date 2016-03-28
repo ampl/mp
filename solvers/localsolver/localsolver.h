@@ -293,6 +293,11 @@ class LSProblemBuilder :
 
   void AddVar(double lb, double ub, var::Type type);
 
+  void AddVars(int num_vars, var::Type type) {
+    for (int i = 0; i < num_vars; ++i)
+      AddVar(0, 0, type);
+  }
+
   typedef LinearExprBuilder LinearObjBuilder;
 
   void AddObj(obj::Type type, ls::LSExpression expr = ls::LSExpression()) {
@@ -444,6 +449,10 @@ class LSProblemBuilder :
     std::size_t index = common_exprs_.size();
     common_exprs_.push_back(expr);
     return CommonExpr(this, static_cast<int>(index));
+  }
+
+  void AddCommonExprs(int num_vars) {
+    common_exprs_.resize(common_exprs_.size() + num_vars, ls::LSExpression());
   }
 
   CommonExpr common_expr(int index) { return CommonExpr(this, index); }

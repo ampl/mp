@@ -152,21 +152,18 @@ class MockProblemBuilder {
   MOCK_METHOD0(EndBuild, void ());
 
   MOCK_METHOD3(AddVar, void (double lb, double ub, mp::var::Type));
+  MOCK_METHOD2(AddVars, void (int num_vars, mp::var::Type));
 
   typedef TestLinearObjBuilder LinearObjBuilder;
 
   MOCK_METHOD1(AddObj, void (mp::obj::Type type));
-
   MOCK_METHOD1(AddObjs, void (int num_objs));
 
   typedef TestLinearConBuilder LinearConBuilder;
 
   MOCK_METHOD2(AddCon, void (double lb, double ub));
-
   MOCK_METHOD1(AddCon, void (LogicalExpr expr));
-
   MOCK_METHOD1(AddAlgebraicCons, void (int num_cons));
-
   MOCK_METHOD1(AddLogicalCons, void (int num_cons));
 
   typedef TestLinearExprBuilder LinearExprBuilder;
@@ -185,6 +182,7 @@ class MockProblemBuilder {
   MOCK_METHOD1(common_expr, MutCommonExpr &(int var_index));
 
   MOCK_METHOD1(AddCommonExpr, MutCommonExpr &(NumericExpr expr));
+  MOCK_METHOD1(AddCommonExprs, void (int num_exprs));
 
   MOCK_METHOD3(SetComplementarity,
                void (int con_index, int var_index, mp::ComplInfo info));
