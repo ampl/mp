@@ -207,6 +207,8 @@ def install_dmg(filename, allow_untrusted=False):
   os.rmdir(dir)
 
 LOCALSOLVER_VERSION = '5_5_20151124'
+LOCALSOLVER_DOWNLOADS_URL = \
+  'http://www.localsolver.com/downloads/archives/' + LOCALSOLVER_VERSION + '/'
 
 jdk_update = 79
 jdk_download_url = 'http://download.oracle.com/otn-pub/java/jdk/7u{0}-b15/'.format(jdk_update)

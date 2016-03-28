@@ -83,7 +83,7 @@ for bits in [32, 64]:
   try:
     tempdir = tempfile.mkdtemp()
     with download(
-        'http://www.localsolver.com/downloads/' +
+        LOCALSOLVER_DOWNLOADS_URL +
         'LocalSolver_{}_Win{}.exe'.format(LOCALSOLVER_VERSION, bits)) as f:
       check_call([sevenzip, 'x', '-o' + tempdir, f])
     shutil.move(os.path.join(tempdir, '$_OUTDIR'), install_dir)

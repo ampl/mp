@@ -75,7 +75,7 @@ if __name__ == '__main__':
   if not installed('localsolver'):
     ls_filename = 'LocalSolver_{0}_Linux{1}.run'.format(
       LOCALSOLVER_VERSION, 64 if x86_64 else 32)
-    with download('http://www.localsolver.com/downloads/' + ls_filename) as f:
+    with download(LOCALSOLVER_DOWNLOADS_URL + ls_filename) as f:
       check_call(['sh', f])
 
   copy_optional_dependencies('linux-' + platform.machine())

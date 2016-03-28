@@ -83,7 +83,7 @@ if len(glob.glob('/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk')) == 0:
 
 # Install LocalSolver.
 if not installed('localsolver'):
-  with download('http://www.localsolver.com/downloads/' +
+  with download(LOCALSOLVER_DOWNLOADS_URL +
       'LocalSolver_{0}_MacOS64.pkg'.format(LOCALSOLVER_VERSION)) as f:
     install_pkg(f)
 
