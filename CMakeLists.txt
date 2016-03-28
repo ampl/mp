@@ -133,6 +133,14 @@ else ()
   endif ()
 endif ()
 
+# Enable C++11 for target.
+function (enable_cxx11 target)
+  if (MP_CXX11_FLAG)
+    target_compile_options(${target}
+      PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${MP_CXX11_FLAG}>)
+  endif ()
+endfunction ()
+
 if (NOT MSVC)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
@@ -284,9 +292,7 @@ add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
   INCLUDE_DIRECTORIES src OBJECT_LIBRARIES format)
 set_target_properties(mp PROPERTIES
   VERSION ${MP_VERSION} SOVERSION ${MP_VERSION_MAJOR})
-if (MP_CXX11_FLAG)
-  target_compile_options(mp PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${MP_CXX11_FLAG}>)
-endif ()
+enable_cxx11(mp)
 
 include(CheckCXXSourceCompiles)
 
@@ -378,6 +384,7 @@ if (MP_VARIADIC_TEMPLATES)
   option(BENCHMARK_ENABLE_TESTING
          "Enable testing of the benchmark library." OFF)
   add_subdirectory(thirdparty/benchmark)
+  enable_cxx11(benchmark)
 endif ()
 
 enable_testing()
