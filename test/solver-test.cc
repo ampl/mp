@@ -1617,40 +1617,26 @@ struct MultiObjTestSolver : mp::SolverImpl<MultiObjMockProblemBuilder> {
   void Solve(ProblemBuilder &, SolutionHandler &) {}
 };
 
-// Test that SolverApp sets NLAdapter's obj_index to NEED_ALL_OBJS
-// if solver supports multiple objectives.
+// Test that all objectives are passed to the builder.
 TEST(MultiObjTest, NeedAllObjs) {
   typedef MockNLReader<MultiObjTestSolver<> > NLReader;
   mp::SolverApp<MultiObjTestSolver<>, NLReader> app;
   struct Test {
     static void OnHeader(NLReader::Handler &h) {
-      // Invoke OnHeader first, because the obj_index is set there.
       auto header = mp::NLHeader();
-      header.num_objs = 2;
+      header.num_objs = 42;
       EXPECT_CALL(h.builder(), SetInfo(_));
       h.OnHeader(header);
     }
 
-    static void ExpectUseObj0(fmt::StringRef, NLReader::Handler &h, int) {
-      EXPECT_CALL(h.builder(), AddObjs(1));
+    static void ExpectAllObjs(fmt::StringRef, NLReader::Handler &h, int) {
+      EXPECT_CALL(h.builder(), AddObjs(42));
       OnHeader(h);
-      EXPECT_EQ(0, h.obj_index());
-    }
-
-    static void ExpectNeedAllObjs(fmt::StringRef, NLReader::Handler &h, int) {
-      EXPECT_CALL(h.builder(), AddObjs(2));
-      OnHeader(h);
-      EXPECT_EQ(NLReader::Handler::NEED_ALL_OBJS, h.obj_index());
     }
   };
 
   EXPECT_CALL(app.reader(), DoRead(_, _, _))
-      .WillOnce(testing::Invoke(Test::ExpectUseObj0));
-  app.Run(Args("test", "testproblem"));
-
-  app.solver().SetIntOption("multiobj", 1);
-  EXPECT_CALL(app.reader(), DoRead(_, _, _))
-      .WillOnce(testing::Invoke(Test::ExpectNeedAllObjs));
+      .WillOnce(testing::Invoke(Test::ExpectAllObjs));
   app.Run(Args("test", "testproblem"));
 }
 
@@ -1662,11 +1648,6 @@ TEST(MultiObjTest, MultiObjOption) {
 // An NLReader for testing objno option.
 // It simulates reading a problem with two objectives.
 struct TestNLReader {
-  // Index of the active objective.
-  int obj_index;
-
-  TestNLReader() : obj_index(0) {}
-
   template <typename NLHandler>
   void Read(fmt::StringRef, NLHandler &adapter, int) {
     auto header = mp::NLHeader();
@@ -1675,10 +1656,8 @@ struct TestNLReader {
     auto &builder = adapter.builder();
     EXPECT_CALL(builder, SetInfo(_));
     EXPECT_CALL(builder, AddVars(header.num_vars, mp::var::CONTINUOUS));
-    EXPECT_CALL(builder, AddObjs(1));
+    EXPECT_CALL(builder, AddObjs(2));
     adapter.OnHeader(header);
-    EXPECT_TRUE(adapter.NeedObj(obj_index));
-    EXPECT_FALSE(adapter.NeedObj(!obj_index));
   }
 };
 
@@ -1691,7 +1670,6 @@ TEST(ObjNoTest, UseFirstObjByDefault) {
 TEST(ObjNoTest, UseSecondObj) {
   mp::SolverApp<TestSolver, TestNLReader> app;
   app.solver().SetIntOption("objno", 2);
-  app.reader().obj_index = 1;
   app.Run(Args("test", "testproblem"));
 }
 

@@ -1703,9 +1703,7 @@ TEST(NLReaderTest, NullNLHandler) {
 class NLProblemBuilderTest : public ::testing::Test {
  protected:
   StrictMock<MockProblemBuilder> builder;
-
-  typedef NLProblemBuilder<MockProblemBuilder> Adapter;
-  Adapter adapter;
+  NLProblemBuilder<MockProblemBuilder> adapter;
 
   NLProblemBuilderTest() : adapter(builder) {}
 };
@@ -1803,47 +1801,6 @@ TEST_F(NLProblemBuilderTest, OnHeader) {
   adapter.OnHeader(h);
 }
 
-// Test that NLProblemBuilder passes 0 as the number of objectives
-// if obj_index is set to SKIP_ALL_OBJS.
-TEST_F(NLProblemBuilderTest, SkipAllObjs) {
-  Adapter adapter(builder, Adapter::SKIP_ALL_OBJS);
-  auto header = NLHeader();
-  header.num_objs = 10;
-  EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 0)));
-  adapter.OnHeader(header);
-  for (int i = 0; i < header.num_objs; ++i)
-    EXPECT_FALSE(adapter.NeedObj(i));
-}
-
-// Test that NLProblemBuilder passes the total number of objectives
-// if obj_index is set to NEED_ALL_OBJS.
-TEST_F(NLProblemBuilderTest, NeedAllObjs) {
-  Adapter adapter(builder, Adapter::NEED_ALL_OBJS);
-  auto header = NLHeader();
-  header.num_objs = 10;
-  EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 10)));
-  EXPECT_CALL(builder, AddObjs(header.num_objs));
-  adapter.OnHeader(header);
-  for (int i = 0; i < header.num_objs; ++i)
-    EXPECT_TRUE(adapter.NeedObj(i));
-}
-
-// Test that NLProblemBuilder passes min(1, num_objs) as the
-// number of objectives by default.
-TEST_F(NLProblemBuilderTest, SingleObjective) {
-  auto header = NLHeader();
-  header.num_objs = 10;
-  EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 1)));
-  EXPECT_CALL(builder, AddObjs(1));
-  adapter.OnHeader(header);
-  EXPECT_TRUE(adapter.NeedObj(0));
-  for (int i = 1; i < header.num_objs; ++i)
-    EXPECT_FALSE(adapter.NeedObj(i));
-  header.num_objs = 0;
-  EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 0)));
-  adapter.OnHeader(header);
-}
-
 TEST_F(NLProblemBuilderTest, AddVars) {
   auto header = mp::NLHeader();
   header.num_vars = 42;
@@ -1872,7 +1829,6 @@ TEST_F(NLProblemBuilderTest, OnVarBounds) {
 }
 
 TEST_F(NLProblemBuilderTest, AddObjs) {
-  Adapter adapter(builder, Adapter::NEED_ALL_OBJS);
   auto header = mp::NLHeader();
   header.num_objs = 42;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
@@ -1881,7 +1837,6 @@ TEST_F(NLProblemBuilderTest, AddObjs) {
 }
 
 TEST_F(NLProblemBuilderTest, OnObj) {
-  Adapter adapter(builder, Adapter::NEED_ALL_OBJS);
   auto expr = TestNumericExpr(ID);
   StrictMock<MockProblemBuilder::Objective> obj;
   EXPECT_CALL(builder, obj(42)).WillOnce(ReturnRef(obj));
@@ -1891,7 +1846,6 @@ TEST_F(NLProblemBuilderTest, OnObj) {
 }
 
 TEST_F(NLProblemBuilderTest, OnLinearObjExpr) {
-  Adapter adapter(builder, Adapter::NEED_ALL_OBJS);
   MockProblemBuilder::Objective obj;
   EXPECT_CALL(builder, obj(42)).WillOnce(ReturnRef(obj));
   auto obj_builder = TestLinearObjBuilder(ID);

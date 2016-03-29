@@ -1193,10 +1193,6 @@ void SolverNLHandler<Solver>::OnHeader(const NLHeader &h) {
   int objno = solver_.objno();
   if (objno > h.num_objs)
     throw InvalidOptionValue("objno", objno);
-  if (solver_.multiobj())
-    this->set_obj_index(Base::NEED_ALL_OBJS);
-  else if (objno != -1)
-    this->set_obj_index(objno - 1);
   num_options_ = h.num_ampl_options;
   std::copy(h.ampl_options, h.ampl_options + num_options_, options_);
   Base::OnHeader(h);

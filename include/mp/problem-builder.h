@@ -456,10 +456,11 @@ class ColProblemBuilder : public internal::NLProblemBuilder<ColProblem> {
 
   void OnHeader(const NLHeader &h) {
     Base::OnHeader(h);
-    builder_.col_starts_.reserve(h.num_vars + 1);
-    builder_.col_starts_.resize(2);
-    builder_.row_indices_.resize(h.num_con_nonzeros);
-    builder_.coefs_.resize(h.num_con_nonzeros);
+    ColProblem &problem = builder();
+    problem.col_starts_.reserve(h.num_vars + 1);
+    problem.col_starts_.resize(2);
+    problem.row_indices_.resize(h.num_con_nonzeros);
+    problem.coefs_.resize(h.num_con_nonzeros);
   }
 
   class ColumnSizeHandler {
@@ -478,7 +479,7 @@ class ColProblemBuilder : public internal::NLProblemBuilder<ColProblem> {
   };
 
   ColumnSizeHandler OnColumnSizes() {
-    return ColumnSizeHandler(builder_);
+    return ColumnSizeHandler(builder());
   }
 
   class LinearConHandler {
@@ -503,7 +504,7 @@ class ColProblemBuilder : public internal::NLProblemBuilder<ColProblem> {
     // Pass zero as the number of linear terms as we store constraints
     // column-wise rather than row-wise.
     Base::OnLinearConExpr(con_index, 0);
-    return LinearConHandler(builder_, con_index);
+    return LinearConHandler(builder(), con_index);
   }
 };
 }  // namespace mp

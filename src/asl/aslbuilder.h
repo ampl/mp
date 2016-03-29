@@ -848,7 +848,7 @@ class ASLHandler : public mp::internal::NLProblemBuilder<ASLBuilder> {
   typedef mp::internal::NLProblemBuilder<ASLBuilder> Base;
 
  public:
-  explicit ASLHandler(ASLBuilder &b, int obj_index = 0) : Base(b, obj_index) {}
+  explicit ASLHandler(ASLBuilder &b) : Base(b) {}
 
   int flags() const { return flags_; }
 

@@ -360,6 +360,7 @@ class NLHandler {
   /**
     \rst
     Returns true if the objective with index *obj_index* should be handled.
+    This method is deprecated.
     \endrst
    */
   bool NeedObj(int obj_index) const {
@@ -1498,9 +1499,9 @@ class NLReader {
 
     int num_items() const { return this->reader_.header_.num_objs; }
 
-    // Returns true if objective expression should be read.
-    bool NeedExpr(int obj_index) const {
-      return this->reader_.handler_.NeedObj(obj_index);
+    // Returns true if objective expression should be skipped.
+    bool SkipExpr(int obj_index) const {
+      return !this->reader_.handler_.NeedObj(obj_index);
     }
 
     typename Handler::LinearObjHandler OnLinearExpr(int index, int num_terms) {
@@ -1572,8 +1573,8 @@ class NLReader {
 
     int num_items() const { return this->reader_.header_.num_algebraic_cons; }
 
-    // Returns true because constraint expressions are always read.
-    bool NeedExpr(int) const { return true; }
+    // Returns false because constraint expressions are always read.
+    bool SkipExpr(int) const { return false; }
 
     typename Handler::LinearConHandler OnLinearExpr(int index, int num_terms) {
       return this->reader_.handler_.OnLinearConExpr(index, num_terms);
@@ -1818,10 +1819,10 @@ void NLReader<Reader, Handler>::ReadLinearExpr() {
   // expressions are not allowed in a linear expression.
   int num_terms = ReadUInt(1, header_.num_vars + 1u);
   reader_.ReadTillEndOfLine();
-  if (lh.NeedExpr(index))
-    ReadLinearExpr(num_terms, lh.OnLinearExpr(index, num_terms));
-  else
+  if (lh.SkipExpr(index))
     ReadLinearExpr(num_terms, NullLinearExprHandler());
+  else
+    ReadLinearExpr(num_terms, lh.OnLinearExpr(index, num_terms));
 }
 
 template <typename Reader, typename Handler>
@@ -2207,11 +2208,8 @@ class NLProblemBuilder {
   typedef typename ProblemBuilder::CountExpr CountExpr;
   typedef typename ProblemBuilder::Reference Reference;
 
- protected:
-  ProblemBuilder &builder_;
-
  private:
-  int obj_index_;
+  ProblemBuilder &builder_;
 
   template <typename Obj>
   void SetObj(const Obj &obj, obj::Type type, NumericExpr expr) {
@@ -2233,42 +2231,13 @@ class NLProblemBuilder {
     common_expr.set_position(position);
   }
 
- protected:
-  void set_obj_index(int index) { obj_index_ = index; }
-
  public:
-  // Possible values for the objective index.
-  enum {
-    // Skip all objectives.
-    SKIP_ALL_OBJS = -1,
-
-    // Pass all objectives to the builder.
-    NEED_ALL_OBJS = -2
-  };
-
-  // Index of the objective to pass to the builder, SKIP_ALL_OBJS to
-  // skip all objectives, NEED_ALL_OBJS to pass all objectives.
-  int obj_index() const { return obj_index_; }
-
-  explicit NLProblemBuilder(ProblemBuilder &builder, int obj_index = 0)
-    : builder_(builder), obj_index_(obj_index) {}
+  explicit NLProblemBuilder(ProblemBuilder &builder): builder_(builder) {}
 
   ProblemBuilder &builder() { return builder_; }
 
   void OnHeader(const NLHeader &h) {
-    // Update the number of objectives if necessary.
-    int num_objs = 0;
-    if (obj_index_ >= 0)
-      num_objs = std::min(h.num_objs, 1);
-    else if (obj_index_ == NEED_ALL_OBJS)
-      num_objs = h.num_objs;
-    if (num_objs == h.num_objs) {
-      builder_.SetInfo(h);
-    } else {
-      ProblemInfo info(h);
-      info.num_objs = num_objs;
-      builder_.SetInfo(info);
-    }
+    builder_.SetInfo(h);
 
     // As nl-benchmark shows, adding problem components at once and then
     // updating them is faster than adding them incrementally. The latter
@@ -2280,8 +2249,8 @@ class NLProblemBuilder {
       builder_.AddVars(n, var::INTEGER);
     if (int n = h.num_common_exprs())
       builder_.AddCommonExprs(n);
-    if (num_objs != 0)
-      builder_.AddObjs(num_objs);
+    if (h.num_objs != 0)
+      builder_.AddObjs(h.num_objs);
     if (h.num_algebraic_cons != 0)
       builder_.AddAlgebraicCons(h.num_algebraic_cons);
     if (h.num_logical_cons != 0)
@@ -2290,16 +2259,13 @@ class NLProblemBuilder {
       builder_.AddFunctions(h.num_funcs);
   }
 
-  // Returns true if objective should be handled.
   bool NeedObj(int obj_index) const {
-    if (obj_index == obj_index_)
-      return true;
-    return obj_index_ == NEED_ALL_OBJS;
+    internal::Unused(obj_index);
+    return true;
   }
 
   void OnObj(int index, obj::Type type, NumericExpr expr) {
-    if (NeedObj(index))
-      SetObj(builder_.obj(index == obj_index_ ? 0 : index), type, expr);
+    SetObj(builder_.obj(index), type, expr);
   }
 
   void OnAlgebraicCon(int index, NumericExpr expr) {

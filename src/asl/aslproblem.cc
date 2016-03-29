@@ -261,7 +261,7 @@ void ASLProblem::Read(fmt::StringRef stub, unsigned flags) {
                     asl::internal::ASL_STANDARD_OPCODES | flags);
   builder.set_stub(name.c_str());
   using asl::internal::ASLHandler;
-  ASLHandler handler(builder, ASLHandler::NEED_ALL_OBJS);
+  ASLHandler handler(builder);
   ReadNLFile(name.c_str(), handler);
   asl_->i.flags = handler.flags();
 }
