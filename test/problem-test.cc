@@ -34,7 +34,7 @@ TEST(ProblemTest, ReadNL) {
   mp::Problem p;
   // Just make sure that ReadNLFile and ReadNLString are accessible.
   // They are tested elsewhere.
-  EXPECT_THROW(ReadNLFile("nonexistent", p), mp::Error);
+  EXPECT_THROW(ReadNLFile("nonexistent", p), fmt::SystemError);
   EXPECT_THROW(ReadNLString("", p), mp::Error);
 }
 
