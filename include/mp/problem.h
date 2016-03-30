@@ -183,7 +183,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     initial_dual_values_[con_index] = value;
   }
 
-  // A pair of iterators to problem elements.
+  /** A pair of iterators to problem elements. */
   template <typename T>
   class Range {
    private:
@@ -231,15 +231,17 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       }
     };
 
-    // Returns an iterator to the first element in the range.
+    /** Returns an iterator to the first element in the range. */
     iterator begin() const {
       return iterator(problem_, 0);
     }
 
-    // Returns an iterator to the element following the last element
-    // in the range. An attempt to access this element will result in
-    // assertion failure if assertions are enabled and undefined behavoir
-    // otherwise.
+    /**
+      Returns an iterator to the element following the last element
+      in the range. An attempt to access this element will result in
+      assertion failure if assertions are enabled and undefined behavoir
+      otherwise.
+     */
     iterator end() const {
       return iterator(problem_, T::num_items(*problem_));
     }
