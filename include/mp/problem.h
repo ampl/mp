@@ -586,7 +586,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
   };
 
-  /* A range of objectives. */
+  /** A range of objectives. */
   typedef Range<Objective> ObjRange;
 
   /**
