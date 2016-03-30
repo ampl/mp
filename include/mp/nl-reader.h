@@ -2508,8 +2508,7 @@ void ReadNLString(NLStringRef str, Handler &handler,
 }
 
 template <typename Handler>
-inline void ReadNLFile(fmt::CStringRef filename,
-                       Handler &handler, int flags = 0) {
+inline void ReadNLFile(fmt::CStringRef filename, Handler &handler, int flags) {
   internal::NLFileReader<>().Read(filename, handler, flags);
 }
 }  // namespace mp
