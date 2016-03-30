@@ -493,14 +493,19 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
   };
 
-  // A range of variables.
+  /** A range of variables. */
   typedef Range<Variable> VarRange;
 
-  // Returns a range representing all variables in this optimization problem.
-  // It can be used for iterating over variables:
-  //   for (auto var: problem.vars()) {
-  //     ...
-  //   }
+  /**
+    \rst
+    Returns a range representing all variables in this optimization problem.
+    It can be used for iterating over variables::
+
+      for (auto var: problem.vars()) {
+        ...
+      }
+    \endrst
+   */
   VarRange vars() const { return VarRange(this); }
 
   // Returns the variable at the specified index.
@@ -581,14 +586,19 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
   };
 
-  // A range of objectives.
+  /* A range of objectives. */
   typedef Range<Objective> ObjRange;
 
-  // Returns a range representing all objectives in this optimization problem.
-  // It can be used for iterating over objectives:
-  //   for (auto obj: problem.objs()) {
-  //     ...
-  //   }
+  /**
+    \rst
+    Returns a range representing all objectives in this optimization problem.
+    It can be used for iterating over objectives::
+
+      for (auto obj: problem.objs()) {
+        ...
+      }
+    \endrst
+   */
   ObjRange objs() const { return ObjRange(this); }
 
   // Returns the objective at the specified index.
@@ -669,15 +679,20 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
   };
 
-  // A range of algebraic constraints.
+  /** A range of algebraic constraints. */
   typedef Range<AlgebraicCon> AlgebraicConRange;
 
-  // Returns a range representing all algebraic constraints in this
-  // optimization problem. It can be used for iterating over algebraic
-  // constraints:
-  //   for (auto con: problem.algebraic_cons()) {
-  //     ...
-  //   }
+  /**
+    \rst
+    Returns a range representing all algebraic constraints in this
+    optimization problem. It can be used for iterating over algebraic
+    constraints::
+
+      for (auto con: problem.algebraic_cons()) {
+        ...
+      }
+    \endrst
+   */
   AlgebraicConRange algebraic_cons() const { return AlgebraicConRange(this); }
 
   // Returns the algebraic constraint at the specified index.
@@ -756,15 +771,20 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     }
   };
 
-  // A range of logical constraints.
+  /** A range of logical constraints. */
   typedef Range<LogicalCon> LogicalConRange;
 
-  // Returns a range representing all logical constraints in this
-  // optimization problem. It can be used for iterating over logical
-  // constraints:
-  //   for (auto con: problem.logical_cons()) {
-  //     ...
-  //   }
+  /**
+    \rst
+    Returns a range representing all logical constraints in this
+    optimization problem. It can be used for iterating over logical
+    constraints::
+
+      for (auto con: problem.logical_cons()) {
+        ...
+      }
+    \endrst
+   */
   LogicalConRange logical_cons() const { return LogicalConRange(this); }
 
   // Returns the logical constraint at the specified index.
