@@ -183,70 +183,6 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     initial_dual_values_[con_index] = value;
   }
 
-  /** A pair of iterators to problem elements. */
-  template <typename T>
-  class Range {
-   private:
-    const BasicProblem *problem_;
-
-    friend class BasicProblem;
-
-    explicit Range(const BasicProblem *p) : problem_(p) {}
-
-   public:
-    class iterator : public std::iterator<std::forward_iterator_tag, T> {
-     private:
-      T item_;
-
-      friend class Range<T>;
-
-      iterator(const BasicProblem *p, int index) : item_(p, index) {}
-
-     public:
-      const T *operator->() const {
-        MP_ASSERT(0 <= item_.index_ &&
-                  item_.index_ < T::num_items(*item_.problem_),
-                  "invalid access");
-        return &item_;
-      }
-
-      T operator*() const { return *this->operator->(); }
-
-      iterator &operator++() {
-        ++item_.index_;
-        return *this;
-      }
-
-      iterator operator++(int ) {
-        iterator it(*this);
-        ++item_.index_;
-        return it;
-      }
-
-      bool operator==(iterator other) const {
-        return item_ == other.item_;
-      }
-      bool operator!=(iterator other) const {
-        return item_ != other.item_;
-      }
-    };
-
-    /** Returns an iterator to the first element in the range. */
-    iterator begin() const {
-      return iterator(problem_, 0);
-    }
-
-    /**
-      Returns an iterator to the element following the last element
-      in the range. An attempt to access this element will result in
-      assertion failure if assertions are enabled and undefined behavoir
-      otherwise.
-     */
-    iterator end() const {
-      return iterator(problem_, T::num_items(*problem_));
-    }
-  };
-
   template <typename T>
   class SuffixHandler {
    private:
@@ -492,6 +428,70 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     // Sets the initial value.
     void set_value(double value) const {
       this->problem_->SetInitialValue(this->index_, value);
+    }
+  };
+
+  /** A pair of iterators to problem elements. */
+  template <typename T>
+  class Range {
+   private:
+    const BasicProblem *problem_;
+
+    friend class BasicProblem;
+
+    explicit Range(const BasicProblem *p) : problem_(p) {}
+
+   public:
+    class iterator : public std::iterator<std::forward_iterator_tag, T> {
+     private:
+      T item_;
+
+      friend class Range<T>;
+
+      iterator(const BasicProblem *p, int index) : item_(p, index) {}
+
+     public:
+      const T *operator->() const {
+        MP_ASSERT(0 <= item_.index_ &&
+                  item_.index_ < T::num_items(*item_.problem_),
+                  "invalid access");
+        return &item_;
+      }
+
+      T operator*() const { return *this->operator->(); }
+
+      iterator &operator++() {
+        ++item_.index_;
+        return *this;
+      }
+
+      iterator operator++(int ) {
+        iterator it(*this);
+        ++item_.index_;
+        return it;
+      }
+
+      bool operator==(iterator other) const {
+        return item_ == other.item_;
+      }
+      bool operator!=(iterator other) const {
+        return item_ != other.item_;
+      }
+    };
+
+    /** Returns an iterator to the first element in the range. */
+    iterator begin() const {
+      return iterator(problem_, 0);
+    }
+
+    /**
+      Returns an iterator to the element following the last element
+      in the range. An attempt to access this element will result in
+      assertion failure if assertions are enabled and undefined behavoir
+      otherwise.
+     */
+    iterator end() const {
+      return iterator(problem_, T::num_items(*problem_));
     }
   };
 
