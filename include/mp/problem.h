@@ -487,7 +487,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     /**
       Returns an iterator to the element following the last element
       in the range. An attempt to access this element will result in
-      assertion failure if assertions are enabled and undefined behavoir
+      assertion failure if assertions are enabled and undefined behavior
       otherwise.
      */
     iterator end() const {
