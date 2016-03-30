@@ -1,7 +1,7 @@
 NL Reader
 =========
 
-Header: :file:`mp/nl-reader.h`
+Headers: :file:`mp/nl.h` and :file:`mp/nl-reader.h`
 
 `NL <https://en.wikipedia.org/wiki/Nl_(format)>`_ is a format for representing
 optimization problems in discrete or continuous variables. It is described in
@@ -38,6 +38,22 @@ This section describes the C++ API of an NL reader which is
 
 `nl-example.cc <https://github.com/ampl/mp/blob/master/src/nl-example.cc>`_
 gives a few examples of how to use the NL reader.
+
+The ``mp/nl.h`` header only contains declarations of `mp::ReadNLString` and
+`mp::ReadNLFile`, and can be used to read standard optimization problem objects,
+for example:
+
+.. code-block:: c++
+
+   #include "mp/nl.h"
+   #include "mp/problem.h"
+
+   mp::Problem p;
+   ReadNLProblem("diet.nl", p);
+
+If you want to provide a custom NL handler, include ``mp/nl-reader.h`` instead.
+Note that ``mp/nl.h`` is a much smaller header than ``mp/nl-reader.h`` so prefer
+it unless you need access to the full NL reader API.
 
 .. doxygenfunction:: ReadNLFile(fmt::StringRef, Handler &)
 

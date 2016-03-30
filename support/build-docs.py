@@ -116,6 +116,7 @@ def build_docs(workdir, doxygen='doxygen'):
   p.communicate(input=r'''
       PROJECT_NAME      = MP
       INPUT             = {0}/include/mp/common.h \
+                          {0}/include/mp/nl.h \
                           {0}/include/mp/nl-reader.h \
                           {0}/include/mp/problem.h
       EXCLUDE_SYMBOLS   = mp::internal::*

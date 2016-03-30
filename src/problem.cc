@@ -97,4 +97,10 @@ void BasicProblem<Alloc>::SetInfo(const ProblemInfo &info) {
 }
 
 template class BasicProblem< std::allocator<char> >;
+
+template <>
+void ReadNLFile(fmt::CStringRef filename, Problem &p, int flags);
+
+template <>
+void ReadNLString(NLStringRef str, Problem &p, fmt::CStringRef name, int flags);
 }  // namespace mp
