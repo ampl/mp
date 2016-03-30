@@ -27,6 +27,17 @@
 // to test size overflow checks.
 #define MP_MAX_PROBLEM_ITEMS 100
 
+#include "mp/nl.h"
+#include "mp/problem.h"
+
+TEST(ProblemTest, ReadNL) {
+  mp::Problem p;
+  // Just make sure that ReadNLFile and ReadNLString are accessible.
+  // They are tested elsewhere.
+  EXPECT_THROW(ReadNLFile("nonexistent", p), mp::Error);
+  EXPECT_THROW(ReadNLString("", p), mp::Error);
+}
+
 // Include the source file to test the implementation.
 #include "../src/problem.cc"
 
