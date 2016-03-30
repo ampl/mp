@@ -20,6 +20,9 @@
  Author: Victor Zverovich
  */
 
+#ifndef MP_NL_
+#define MP_NL_
+
 #include "mp/error.h"   // MP_ASSERT
 #include "mp/format.h"  // fmt::CStringRef
 
@@ -125,3 +128,5 @@ void ReadNLString(NLStringRef str, Handler &handler,
 template <typename Handler>
 void ReadNLFile(fmt::CStringRef filename, Handler &handler, int flags = 0);
 }  // namespace mp
+
+#endif  // MP_NL_
