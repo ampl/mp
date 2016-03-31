@@ -65,6 +65,17 @@ Features
   a converter from deterministic equivalent of a two-stage stochastic
   programming (SP) problem written in AMPL to an SP problem in SMPS format.
 
+Examples
+--------
+
+Reading an .nl file::
+
+  #include "mp/nl.h"
+  #include "mp/problem.h"
+  
+  mp::Problem p;
+  ReadNLFile("diet.nl", p);
+
 Usage
 -----
 
