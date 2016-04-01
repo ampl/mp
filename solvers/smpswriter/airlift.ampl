@@ -1,5 +1,19 @@
 # Airlift operation scheduling.
 #
+# In scheduling monthly airlift operations, demands for specific routes can be
+# predicted. Actual requirements will be known in the future, and they may
+# not agree with predicted requirements. Recourse actions are then required
+# to meet the actual requirements. The actual requirements are expressed in
+# tons, or any other appropriate measure, and they can be represented by a
+# random variable. Aircraft of several different types are available for service.
+# Each of these types of aircraft has its own restriction on number of flight
+# hours available during the month.
+#
+# The recourse actions available include allowing available flight time to go
+# unused, switching aircraft from one route to another, and buying commercial
+# flights. Each of these has its associated cost, depending on the type(s) of
+# aircraft involved.
+#
 # References:
 #
 # * K. A. Ariyawansa and A. J. Felt. On a new collection of stochastic linear
