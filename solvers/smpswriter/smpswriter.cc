@@ -25,7 +25,6 @@
 
 #include <cmath>
 #include <cstdio>
-#include <map>
 
 namespace {
 
@@ -48,29 +47,6 @@ double GetConRHSAndType(const mp::Problem &p, int con_index, char &type) {
 }  // namespace
 
 namespace mp {
-
-class SMPSNameReader {
- private:
-  int num_names_;
-  internal::NameReader reader_;
-  std::vector<fmt::StringRef> names_;
-
- public:
-  explicit SMPSNameReader(int num_names) : num_names_(num_names) {
-    names_.reserve(num_names);
-  }
-
-  fmt::StringRef name(int index) const { return names_[index]; }
-
-  void OnName(fmt::StringRef name) { names_.push_back(name); }
-
-  void Read(fmt::CStringRef filename) {
-    reader_.Read(filename, *this);
-    std::size_t num_names = num_names_;
-    if (names_.size() != num_names)
-      throw mp::Error("expected {} names in {}", num_names_, filename);
-  }
-};
 
 class FileWriter {
  private:
@@ -126,30 +102,9 @@ void SMPSWriter::WriteColumns(
     for (int k = p.col_start(i), end = p.col_start(i + 1); k != end; ++k) {
       int con_index = p.row_index(k);
       int core_con_index = core_con_indices_[con_index];
-      //core_coefs[core_con_index] = p.value(k);
-      //nonzero_coef_indices.push_back(core_con_index);
       writer.Write("    C{:<7}  R{:<7}  {}\n",
           core_var_index + 1, core_con_index + 1, coefs[k]);
     }
-
-    // Go over non-core coefficients and compare them to those in the core.
-    /*for (int k = p.col_start(i), end = p.col_start(i + 1); k != end; ++k) {
-      int con_index = p.row_index(k);
-      int scenario_index = con_info[con_index].scenario_index;
-      if (scenario_index == 0)
-        continue;
-      int core_con_index = con_info[con_index].core_index;
-      double coef = p.value(k);
-      double core_coef = core_coefs[core_con_index];
-      if (coef != core_coef) {
-        scenarios_[scenario_index].AddConTerm(
-            core_con_index, core_var_index, coef);
-        if (core_coef == 0) {
-          writer.Write("    C{:<7}  R{:<7}  0\n",
-              core_var_index + 1, core_con_index + 1);
-        }
-      }
-    }*/
   }
   if (integer_block)
     writer.Write("    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);

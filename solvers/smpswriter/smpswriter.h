@@ -1,7 +1,7 @@
 /*
  SMPS writer implemented as an AMPL solver.
 
- Copyright (C) 2013 AMPL Optimization Inc
+ Copyright (C) 2013 - 2016 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -31,53 +31,9 @@
 namespace mp {
 
 class FileWriter;
-class SMPSNameReader;
 
 class SMPSWriter : public SolverImpl<ColProblem> {
  private:
-  class Scenario {
-   public:
-    // A constraint expression term.
-    struct ConTerm {
-      int con_index;
-      int var_index;
-      double coef;
-      ConTerm(int con_index, int var_index, double coef)
-      : con_index(con_index), var_index(var_index), coef(coef) {}
-    };
-
-    struct RHS {
-      int con_index;
-      double rhs;
-      RHS(int con_index, double rhs) : con_index(con_index), rhs(rhs) {}
-    };
-
-   private:
-    std::vector<ConTerm> con_terms_;
-    std::vector<RHS> rhs_;
-
-   public:
-    Scenario() {}
-
-    void AddConTerm(int con_index, int var_index, double coef) {
-      con_terms_.push_back(ConTerm(con_index, var_index, coef));
-    }
-
-    void AddRHS(int con_index, double rhs) {
-      rhs_.push_back(RHS(con_index, rhs));
-    }
-
-    typedef std::vector<ConTerm>::const_iterator ConTermIterator;
-
-    ConTermIterator con_term_begin() const { return con_terms_.begin(); }
-    ConTermIterator con_term_end() const { return con_terms_.end(); }
-
-    typedef std::vector<RHS>::const_iterator RHSIterator;
-
-    RHSIterator rhs_begin() const { return rhs_.begin(); }
-    RHSIterator rhs_end() const { return rhs_.end(); }
-  };
-
   // core_var_indices_[i] is the index of variable i in the core problem.
   std::vector<int> core_var_indices_;
 
@@ -88,8 +44,6 @@ class SMPSWriter : public SolverImpl<ColProblem> {
 
   // core_con_indices_[i] is the index of constraint i in the core problem.
   std::vector<int> core_con_indices_;
-
-  std::vector<Scenario> scenarios_;
 
   void GetScenario(ColProblem &p, int scenario, std::vector<double> &coefs);
 
