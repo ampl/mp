@@ -172,9 +172,10 @@ class RandomConstantExprExtractor : public mp::ExprVisitor<Impl, double> {
 
   double VisitCall(CallExpr e) {
     // TODO: check the number of arguments
-    if (std::strcmp(e.function().name(), "random") == 0)
-      return this->Visit(e.arg(scenario_));
-    return mp::ExprVisitor<Impl, double>::VisitCall(e);
+    const char *name = e.function().name();
+    if (std::strcmp(name, "random") != 0)
+      throw Error("unsupported function: {}", name);
+    return this->Visit(e.arg(scenario_));
   }
 
   // TODO
