@@ -228,45 +228,6 @@ class RandomAffineExprExtractor :
   // TODO
 };
 
-// Counts the number of scenarios for all random variables (parameters) used
-// in an expression.
-class ScenarioCounter : public mp::ExprVisitor<ScenarioCounter, void> {
- private:
-  int num_scenarios_;
-
- public:
-  ScenarioCounter() : num_scenarios_(0) {}
-
-  int num_scenarios() const { return num_scenarios_; }
-
-  void VisitVariable(Variable) {}
-
-  void VisitUnary(UnaryExpr e) {
-    Visit(e.arg());
-  }
-
-  void VisitBinary(BinaryExpr e) {
-    Visit(e.lhs());
-    Visit(e.rhs());
-  }
-
-  void VisitCall(CallExpr e) {
-    const char *name = e.function().name();
-    // TODO: don't compare function name
-    if (std::strcmp(name, "random") != 0)
-      throw Error("unsupported function: {}", name);
-    int num_args = e.num_args();
-    if (num_args == 0)
-      throw Error("random: zero arguments");
-    if (num_scenarios_ == 0) {
-      num_scenarios_ = num_args;
-    } else if (num_scenarios_ != num_args) {
-      throw Error("inconsistent number of scenarios: {} and {}",
-                  num_scenarios_, num_args);
-    }
-  }
-};
-
 // Finds term with the specified constraint and variable indices in the
 // column-wise constraint matrix.
 int FindTerm(ColProblem &p, int con_index, int var_index) {
