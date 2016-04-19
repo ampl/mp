@@ -35,25 +35,6 @@ class SMPSNameReader;
 
 class SMPSWriter : public SolverImpl<ColProblem> {
  private:
-  // Information about a variable or constraint.
-  struct VarConInfo {
-    int core_index;  // index of this variable in the core problem
-    int scenario_index;
-    VarConInfo() : core_index(), scenario_index() {}
-  };
-
-  struct CoreConInfo {
-    char type;
-    double rhs;
-    CoreConInfo() : type(), rhs() {}
-  };
-
-  struct CoreVarInfo {
-    double lb;
-    double ub;
-    CoreVarInfo() : lb(), ub() {}
-  };
-
   class Scenario {
    public:
     // A constraint expression term.
@@ -71,17 +52,9 @@ class SMPSWriter : public SolverImpl<ColProblem> {
       RHS(int con_index, double rhs) : con_index(con_index), rhs(rhs) {}
     };
 
-    struct Bound {
-      int var_index;
-      double bound;
-      Bound(int var_index, double bound) : var_index(var_index), bound(bound) {}
-    };
-
    private:
     std::vector<ConTerm> con_terms_;
     std::vector<RHS> rhs_;
-    std::vector<Bound> lb_;
-    std::vector<Bound> ub_;
 
    public:
     Scenario() {}
@@ -94,14 +67,6 @@ class SMPSWriter : public SolverImpl<ColProblem> {
       rhs_.push_back(RHS(con_index, rhs));
     }
 
-    void AddLB(int var_index, double lb) {
-      lb_.push_back(Bound(var_index, lb));
-    }
-
-    void AddUB(int var_index, double ub) {
-      ub_.push_back(Bound(var_index, ub));
-    }
-
     typedef std::vector<ConTerm>::const_iterator ConTermIterator;
 
     ConTermIterator con_term_begin() const { return con_terms_.begin(); }
@@ -111,29 +76,27 @@ class SMPSWriter : public SolverImpl<ColProblem> {
 
     RHSIterator rhs_begin() const { return rhs_.begin(); }
     RHSIterator rhs_end() const { return rhs_.end(); }
-
-    typedef std::vector<Bound>::const_iterator BoundIterator;
-
-    BoundIterator lb_begin() const { return lb_.begin(); }
-    BoundIterator lb_end() const { return lb_.end(); }
-
-    BoundIterator ub_begin() const { return ub_.begin(); }
-    BoundIterator ub_end() const { return ub_.end(); }
   };
 
-  std::vector<VarConInfo> var_info;
-  std::vector<VarConInfo> con_info;
-  std::vector<Scenario> scenarios;
+  // core_var_indices_[i] is the index of variable i in the core problem.
+  std::vector<int> core_var_indices_;
 
-  void SplitConRHSIntoScenarios(
-      const Problem &p, std::vector<CoreConInfo> &core_cons,
-      SMPSNameReader &con_names);
+  int num_stage1_cons_;
 
-  void SplitVarBoundsIntoScenarios(
-      const Problem &p, std::vector<CoreVarInfo> &core_vars);
+  // con_indices_[i] is the index of core constraint i in the original problem.
+  std::vector<int> con_indices_;
 
-  void WriteColumns(FileWriter &writer, const ColProblem &p, int num_stages,
-      int num_core_cons, const std::vector<double> &core_obj_coefs);
+  // core_con_indices_[i] is the index of constraint i in the core problem.
+  std::vector<int> core_con_indices_;
+
+  std::vector<Scenario> scenarios_;
+
+  void GetScenario(ColProblem &p, int scenario, std::vector<double> &coefs);
+
+  void WriteColumns(FileWriter &writer, const ColProblem &p,
+                    int num_stages, int num_core_cons,
+                    const std::vector<double> &core_obj_coefs,
+                    const std::vector<double> &coefs);
 
  public:
   SMPSWriter();

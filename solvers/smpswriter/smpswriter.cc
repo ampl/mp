@@ -1,7 +1,7 @@
 /*
  SMPS writer implemented as an AMPL solver.
 
- Copyright (C) 2013 AMPL Optimization Inc
+ Copyright (C) 2013 - 2016 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -21,38 +21,13 @@
  */
 
 #include "smpswriter/smpswriter.h"
+#include "mp/expr-visitor.h"
 
 #include <cmath>
 #include <cstdio>
 #include <map>
 
 namespace {
-
-template <typename Map>
-typename Map::mapped_type &FindOrInsert(
-    Map &map, const typename Map::key_type &key,
-    const typename Map::mapped_type &value) {
-  typename Map::iterator lb = map.lower_bound(key);
-  if (lb != map.end() && !(map.key_comp()(key, lb->first)))
-    return lb->second;
-  return map.insert(lb, std::make_pair(key, value))->second;
-}
-
-std::string ExtractScenario(std::string &name, bool require_scenario = true) {
-  std::size_t index_pos = name.find_last_of("[,");
-  if (index_pos == std::string::npos) {
-    if (!require_scenario)
-      return std::string();
-    throw mp::Error("Missing scenario index for {}", name);
-  }
-  bool single_index = name[index_pos] == '[';
-  ++index_pos;
-  std::string index = name.substr(index_pos, name.size() - index_pos - 1);
-  name = name.substr(0, index_pos - 1);
-  if (!single_index)
-    name += ']';
-  return index;
-}
 
 double GetConRHSAndType(const mp::Problem &p, int con_index, char &type) {
   mp::Problem::AlgebraicCon con = p.algebraic_con(con_index);
@@ -114,164 +89,290 @@ class FileWriter {
 };
 
 SMPSWriter::SMPSWriter()
-  : SolverImpl<ColProblem>("smpswriter", "SMPSWriter", 20130709) {
+  : SolverImpl<ColProblem>("smpswriter", "SMPSWriter", 20160419),
+    num_stage1_cons_(0) {
   AddSuffix("stage", 0, suf::VAR);
-}
-
-void SMPSWriter::SplitConRHSIntoScenarios(
-    const Problem &p, std::vector<CoreConInfo> &core_cons,
-    SMPSNameReader &con_names) {
-  int num_cons = p.num_algebraic_cons();
-  for (int i = 0; i < num_cons; ++i) {
-    CoreConInfo &info = core_cons[con_info[i].core_index];
-    int scenario_index = con_info[i].scenario_index;
-    if (scenario_index != 0 && info.type)
-      continue;
-    double rhs = GetConRHSAndType(p, i, info.type);
-    if (scenario_index == 0)
-      info.rhs = rhs;
-  }
-  for (int i = 0; i < num_cons; ++i) {
-    int scenario_index = con_info[i].scenario_index;
-    if (scenario_index == 0)
-      continue;
-    char type = 0;
-    double rhs = GetConRHSAndType(p, i, type);
-    int core_con_index = con_info[i].core_index;
-    const CoreConInfo &info = core_cons[core_con_index];
-    if (type != info.type) {
-      throw Error("Inconsistent constraint type for {}", con_names.name(i));
-    }
-    if (rhs != info.rhs)
-      scenarios[scenario_index].AddRHS(core_con_index, rhs);
-  }
-}
-
-void SMPSWriter::SplitVarBoundsIntoScenarios(
-    const Problem &p, std::vector<CoreVarInfo> &core_vars) {
-  int num_vars = p.num_vars();
-  for (int i = 0; i < num_vars; ++i) {
-    int scenario_index = var_info[i].scenario_index;
-    if (scenario_index != 0)
-      continue;
-    CoreVarInfo &info = core_vars[var_info[i].core_index];
-    Problem::Variable var = p.var(i);
-    info.lb = var.lb();
-    info.ub = var.ub();
-  }
-  for (int i = 0; i < num_vars; ++i) {
-    int scenario_index = var_info[i].scenario_index;
-    if (scenario_index == 0)
-      continue;
-    int core_var_index = var_info[i].core_index;
-    const CoreVarInfo &info = core_vars[core_var_index];
-    Problem::Variable var = p.var(i);
-    double lb = var.lb(), ub = var.ub();
-    if (lb != info.lb)
-      scenarios[scenario_index].AddLB(core_var_index, lb);
-    if (ub != info.ub)
-      scenarios[scenario_index].AddUB(core_var_index, ub);
-  }
 }
 
 void SMPSWriter::WriteColumns(
     FileWriter &writer, const ColProblem &p, int num_stages,
-    int num_core_cons, const std::vector<double> &core_obj_coefs) {
+    int num_core_cons, const std::vector<double> &core_obj_coefs,
+    const std::vector<double> &coefs) {
   writer.Write("COLUMNS\n");
   std::vector<double> core_coefs(num_core_cons);
   std::vector<int> nonzero_coef_indices;
   nonzero_coef_indices.reserve(num_core_cons);
   int int_var_index = 0;
-  IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage");
   bool integer_block = false;
-  for (int stage = 0; stage < num_stages; ++stage) {
-    for (int i = 0, n = p.num_vars(); i < n; ++i) {
-      int var_stage = stage_suffix ? std::max(stage_suffix.value(i) - 1, 0) : 0;
-      if (var_stage != stage) continue;
-      int core_var_index = var_info[i].core_index;
-      if (var_info[i].scenario_index == 0) {
-        // Clear the core_coefs vector.
-        for (std::vector<int>::const_iterator j = nonzero_coef_indices.begin(),
-            end = nonzero_coef_indices.end(); j != end; ++j) {
-          core_coefs[*j] = 0;
-        }
-        nonzero_coef_indices.clear();
-
-        if (p.var(i).type() == var::CONTINUOUS) {
-          if (integer_block) {
-            writer.Write(
-                "    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);
-            integer_block = false;
-          }
-        } else if (!integer_block) {
-          writer.Write(
-              "    INT{:<5}    'MARKER'      'INTORG'\n", ++int_var_index);
-          integer_block = true;
-        }
-
-        if (double obj_coef = core_obj_coefs[core_var_index]) {
-          writer.Write(
-              "    C{:<7}  OBJ       {}\n", core_var_index + 1, obj_coef);
-        }
-
-        // Write the core coefficients and store them in the core_coefs vector.
-        for (int k = p.col_start(i), end = p.col_start(i + 1); k != end; ++k) {
-          int con_index = p.row_index(k);
-          if (con_info[con_index].scenario_index != 0)
-            continue;
-          int core_con_index = con_info[con_index].core_index;
-          core_coefs[core_con_index] = p.value(k);
-          nonzero_coef_indices.push_back(core_con_index);
-          writer.Write("    C{:<7}  R{:<7}  {}\n",
-              core_var_index + 1, core_con_index + 1, p.value(k));
-        }
+  // TODO: traverse variables in the order of stages
+  for (int i = 0, n = p.num_vars(); i < n; ++i) {
+    int core_var_index = i;
+    if (p.var(i).type() == var::CONTINUOUS) {
+      if (integer_block) {
+        writer.Write(
+            "    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);
+        integer_block = false;
       }
-
-      // Go over non-core coefficients and compare them to those in the core.
-      for (int k = p.col_start(i), end = p.col_start(i + 1); k != end; ++k) {
-        int con_index = p.row_index(k);
-        int scenario_index = con_info[con_index].scenario_index;
-        if (scenario_index == 0)
-          continue;
-        int core_con_index = con_info[con_index].core_index;
-        double coef = p.value(k);
-        double core_coef = core_coefs[core_con_index];
-        if (coef != core_coef) {
-          scenarios[scenario_index].AddConTerm(
-              core_con_index, core_var_index, coef);
-          if (core_coef == 0) {
-            writer.Write("    C{:<7}  R{:<7}  0\n",
-                core_var_index + 1, core_con_index + 1);
-          }
-        }
-      }
+    } else if (!integer_block) {
+      writer.Write(
+          "    INT{:<5}    'MARKER'      'INTORG'\n", ++int_var_index);
+      integer_block = true;
     }
+
+    if (double obj_coef = core_obj_coefs[core_var_index])
+      writer.Write("    C{:<7}  OBJ       {}\n", core_var_index + 1, obj_coef);
+
+    // Write the core coefficients and store them in the core_coefs vector.
+    for (int k = p.col_start(i), end = p.col_start(i + 1); k != end; ++k) {
+      int con_index = p.row_index(k);
+      int core_con_index = core_con_indices_[con_index];
+      //core_coefs[core_con_index] = p.value(k);
+      //nonzero_coef_indices.push_back(core_con_index);
+      writer.Write("    C{:<7}  R{:<7}  {}\n",
+          core_var_index + 1, core_con_index + 1, coefs[k]);
+    }
+
+    // Go over non-core coefficients and compare them to those in the core.
+    /*for (int k = p.col_start(i), end = p.col_start(i + 1); k != end; ++k) {
+      int con_index = p.row_index(k);
+      int scenario_index = con_info[con_index].scenario_index;
+      if (scenario_index == 0)
+        continue;
+      int core_con_index = con_info[con_index].core_index;
+      double coef = p.value(k);
+      double core_coef = core_coefs[core_con_index];
+      if (coef != core_coef) {
+        scenarios_[scenario_index].AddConTerm(
+            core_con_index, core_var_index, coef);
+        if (core_coef == 0) {
+          writer.Write("    C{:<7}  R{:<7}  0\n",
+              core_var_index + 1, core_con_index + 1);
+        }
+      }
+    }*/
   }
   if (integer_block)
     writer.Write("    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);
 }
 
-void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
-  if (p.has_nonlinear_cons())
-    throw Error("SMPS writer doesn't support nonlinear problems");
+// Extracts an affine expression from a nonlinear one.
+class AffineExprExtractor : public mp::ExprVisitor<AffineExprExtractor, void> {
+ private:
+  LinearExpr linear_;
+  double constant_;
+  double coef_;
 
-  // Count the number of stages and the number of variables in stage 0.
+  void VisitMultiplied(double multiplier, NumericExpr expr) {
+    double saved_coef = coef_;
+    coef_ *= multiplier;
+    Visit(expr);
+    coef_ = saved_coef;
+  }
+
+ public:
+  AffineExprExtractor() : constant_(0), coef_(1) {}
+
+  const LinearExpr &linear_expr() const { return linear_; }
+
+  void VisitVariable(Variable v) {
+    linear_.AddTerm(v.index(), coef_);
+  }
+
+  void VisitBinary(BinaryExpr e) {
+    switch (e.kind()) {
+    case expr::ADD:
+      Visit(e.lhs());
+      Visit(e.rhs());
+      break;
+    case expr::MUL:
+      if (auto n = Cast<mp::NumericConstant>(e.lhs()))
+        return VisitMultiplied(n.value(), e.rhs());
+      if (auto n = Cast<mp::NumericConstant>(e.rhs()))
+        return VisitMultiplied(n.value(), e.lhs());
+      throw UnsupportedError("nonlinear expression");
+      break;
+    default:
+      mp::ExprVisitor<AffineExprExtractor, void>::VisitBinary(e);
+    }
+  }
+
+  void VisitSum(SumExpr e) {
+    for (auto arg: e)
+      Visit(arg);
+  }
+};
+
+class RandomConstantExprExtractor :
+    public mp::ExprVisitor<RandomConstantExprExtractor, double> {
+ private:
+  int scenario_;
+
+ public:
+  explicit RandomConstantExprExtractor(int scenario) : scenario_(scenario) {}
+
+  double VisitNumericConstant(NumericConstant n) {
+    return n.value();
+  }
+
+  double VisitCall(CallExpr e) {
+    // TODO: check the number of arguments
+    if (std::strcmp(e.function().name(), "random") == 0)
+      return Visit(e.arg(scenario_));
+    return mp::ExprVisitor<RandomConstantExprExtractor, double>::VisitCall(e);
+  }
+
+  // TODO
+};
+
+// Extracts an affine expression for a single scenario from an expression
+// containing random variables.
+class RandomAffineExprExtractor :
+    public mp::ExprVisitor<RandomAffineExprExtractor, void> {
+ private:
+  LinearExpr linear_;
+  double coef_;
+  int scenario_;
+
+  typedef mp::ExprVisitor<RandomAffineExprExtractor, void> Base;
+
+  void ExtractTerm(Expr coef, Expr var) {
+    RandomConstantExprExtractor extractor(scenario_);
+    linear_.AddTerm(Cast<Reference>(var).index(), coef_ * extractor.Visit(coef));
+  }
+
+ public:
+  explicit RandomAffineExprExtractor(int scenario)
+    : coef_(1), scenario_(scenario) {}
+
+  const LinearExpr &linear_expr() const { return linear_; }
+
+  void VisitUnary(UnaryExpr e) {
+    if (e.kind() != expr::MINUS)
+      return Base::VisitUnary(e);
+    double saved_coef = coef_;
+    coef_ = -coef_;
+    Visit(e.arg());
+    coef_ = saved_coef;
+  }
+
+  void VisitBinary(BinaryExpr e) {
+    switch (e.kind()) {
+    case expr::MUL:
+      if (e.rhs().kind() == expr::VARIABLE)
+        return ExtractTerm(e.lhs(), e.rhs());
+      if (e.lhs().kind() == expr::VARIABLE)
+        return ExtractTerm(e.rhs(), e.lhs());
+      throw UnsupportedError("nonlinear expression");
+      break;
+    default:
+      Base::VisitBinary(e);
+    }
+  }
+
+  // TODO
+};
+
+// Counts the number of scenarios for all random variables (parameters) used
+// in an expression.
+class ScenarioCounter : public mp::ExprVisitor<ScenarioCounter, void> {
+ private:
+  int num_scenarios_;
+
+ public:
+  ScenarioCounter() : num_scenarios_(0) {}
+
+  int num_scenarios() const { return num_scenarios_; }
+
+  void VisitVariable(Variable) {}
+
+  void VisitUnary(UnaryExpr e) {
+    Visit(e.arg());
+  }
+
+  void VisitBinary(BinaryExpr e) {
+    Visit(e.lhs());
+    Visit(e.rhs());
+  }
+
+  void VisitCall(CallExpr e) {
+    const char *name = e.function().name();
+    if (std::strcmp(name, "random") != 0)
+      throw Error("unsupported function: {}", name);
+    int num_args = e.num_args();
+    if (num_args == 0)
+      throw Error("random: zero arguments");
+    if (num_scenarios_ == 0) {
+      num_scenarios_ = num_args;
+    } else if (num_scenarios_ != num_args) {
+      throw Error("inconsistent number of scenarios: {} and {}",
+                  num_scenarios_, num_args);
+    }
+  }
+};
+
+// Finds term with the specified constraint and variable indices in the
+// column-wise constraint matrix.
+int FindTerm(ColProblem &p, int con_index, int var_index) {
+  for (int i = p.col_start(var_index),
+       n = p.col_start(var_index + 1); i < n; ++i) {
+    if (p.row_index(i) == con_index)
+      return i;
+  }
+  return -1;
+}
+
+void SMPSWriter::GetScenario(ColProblem &p, int scenario,
+                             std::vector<double> &coefs) {
+  coefs.assign(p.values(), p.values() + p.col_start(p.num_vars()));
+  for (int core_con_index = num_stage1_cons_, num_cons = p.num_algebraic_cons();
+       core_con_index < num_cons; ++core_con_index) {
+    int con_index = con_indices_[core_con_index];
+    auto con = p.algebraic_con(con_index);
+    auto expr = con.nonlinear_expr();
+    if (!expr) continue;
+    // Get constraint coefficients for scenario.
+    RandomAffineExprExtractor extractor(scenario);
+    extractor.Visit(expr);
+    for (auto term: extractor.linear_expr()) {
+      int var_index = term.var_index();
+      int index = FindTerm(p, con_index, var_index);
+      if (index == -1)
+        throw Error("cannot find term ({}, {})", con_index, var_index);
+      // Add extracted term coefficient to the one in constraint matrix.
+      coefs[index] += term.coef();
+    }
+  }
+}
+
+void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
+  // Count the number of stages, the number of variables in the first stage and
+  // compute core indices for the first-stage variables.
   int num_vars = p.num_vars();
-  int num_stage0_vars = num_vars;
+  int num_stage1_vars = num_vars;
   int num_stages = 1;
-  IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage");
-  if (stage_suffix) {
-    num_stage0_vars = 0;
+  core_var_indices_.resize(num_vars, -1);
+  if (IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage")) {
+    num_stage1_vars = 0;
     for (int i = 0; i < num_vars; ++i) {
       int stage_plus_1 = stage_suffix.value(i);
-      if (stage_plus_1 > 0)
+      if (stage_plus_1 > 1) {
         num_stages = std::max(stage_plus_1, num_stages);
-      else
-        ++num_stage0_vars;
+      } else {
+        core_var_indices_[i] = num_stage1_vars;
+        ++num_stage1_vars;
+      }
     }
   }
   if (num_stages > 2)
     throw Error("SMPS writer doesn't support problems with more than 2 stages");
+
+  // Compute core indices for variables in later stages.
+  int stage2_index = num_stage1_vars;
+  for (int i = 0; i < num_vars; ++i) {
+    if (core_var_indices_[i] == -1)
+      core_var_indices_[i] = stage2_index++;
+  }
+  assert(stage2_index == num_vars);
 
   std::string smps_basename = p.name();
   std::string::size_type ext_pos = smps_basename.rfind('.');
@@ -279,113 +380,65 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
     smps_basename.resize(ext_pos);
 
   int num_cons = p.num_algebraic_cons();
-  int num_stage0_cons = num_cons;
-  int num_core_vars = num_vars, num_core_cons = num_cons;
-  var_info.resize(num_vars);
-  con_info.resize(num_cons);
-  scenarios.clear();
-  SMPSNameReader var_names(p.num_vars());
-  SMPSNameReader con_names(p.num_algebraic_cons() + p.num_objs());
-  if (stage_suffix) {
-    var_names.Read(smps_basename + ".col");
-    con_names.Read(smps_basename + ".row");
-    std::map<std::string, int> scenario_indices;
-    int stage0_var_count = 0;
-    std::map<std::string, int> stage1_vars;
-    for (int i = 0; i < num_vars; ++i) {
-      int stage = stage_suffix.value(i) - 1;
-      VarConInfo &info = var_info[i];
-      if (stage > 0) {
-        // Split the name into scenario and the rest and merge variables that
-        // only differ by scenario into the same variable.
-        std::string name = var_names.name(i).to_string();
-        std::string scenario = ExtractScenario(name);
-        info.core_index = FindOrInsert(stage1_vars, name,
-          static_cast<int>(num_stage0_vars + stage1_vars.size()));
-        info.scenario_index = FindOrInsert(scenario_indices,
-          scenario, static_cast<int>(scenario_indices.size()));
-      } else {
-        info.core_index = stage0_var_count++;
-      }
-    }
-    assert(stage0_var_count == num_stage0_vars);
-    num_core_vars = static_cast<int>(num_stage0_vars + stage1_vars.size());
-
+  num_stage1_cons_ = num_cons;
+  std::vector<double> probabilities;
+  mp::Expr obj_expr;
+  if (num_stages > 1) {
     // Compute stage of each constraint as a maximum of stages of
     // variables in it.
     std::vector<int> con_stages(num_cons);
-    std::map<std::string, int> stage1_cons;
     for (int j = 0; j < num_vars; ++j) {
-      int stage = stage_suffix.value(j) - 1;
-      if (stage <= 0) continue;
+      if (core_var_indices_[j] < num_stage1_vars)
+        continue;
       // Update stages of all constraints containing this variable.
       for (int k = p.col_start(j), end = p.col_start(j + 1); k != end; ++k) {
         int con_index = p.row_index(k);
         int &con_stage = con_stages[con_index];
-        if (stage > con_stage) {
-          if (con_stage == 0) {
-            // Split the name into scenario and the rest and merge constraints
-            // that only differ by scenario into the same constraint.
-            std::string name = con_names.name(con_index).to_string();
-            std::string scenario = ExtractScenario(name);
-            VarConInfo &info = con_info[con_index];
-            info.core_index = FindOrInsert(
-                stage1_cons, name, static_cast<int>(stage1_cons.size()));
-            info.scenario_index = FindOrInsert(scenario_indices,
-                scenario, static_cast<int>(scenario_indices.size()));
-            --num_stage0_cons;
-          }
-          con_stage = stage;
+        if (con_stage < 1) {
+          if (con_stage == 0)
+            --num_stage1_cons_;
+          con_stage = 1;
         }
       }
     }
 
-    // Check for any stage 1 constraints remaining - some of them may not
-    // have been detected previously because they don't have stage 1 variables.
-    // This can happen if all stage 1 variables have zero coefficients in a
-    // core constraint.
-    int stage0_con_count = 0;
+    // Compute core indices for constraints.
+    con_indices_.resize(num_cons);
+    core_con_indices_.resize(num_cons);
+    int stage1_index = 0, stage2_index = num_stage1_cons_;
     for (int i = 0; i < num_cons; ++i) {
-      if (con_stages[i] != 0)
-        continue;
-      VarConInfo &info = con_info[i];
-      // A constraint with a name which only differs in scenario from a
-      // name of some other stage 1 constraint, is also a stage 1 constraint.
-      std::string name = con_names.name(i).to_string();
-      std::string scenario = ExtractScenario(name, false);
-      std::map<std::string, int>::iterator stage1_con =
-          scenario.empty() ? stage1_cons.end() : stage1_cons.find(name);
-      if (stage1_con != stage1_cons.end()) {
-        con_stages[i] = 1;
-        info.core_index = stage1_con->second;
-        info.scenario_index = FindOrInsert(scenario_indices,
-            scenario, static_cast<int>(scenario_indices.size()));
-        --num_stage0_cons;
-      } else {
-        info.core_index = stage0_con_count++;
-      }
+      int &index = con_stages[i] != 0 ? stage2_index : stage1_index;
+      con_indices_[index] = i;
+      core_con_indices_[i] = index++;
     }
-    assert(stage0_con_count == num_stage0_cons);
-    num_core_cons = static_cast<int>(num_stage0_cons + stage1_cons.size());
+    assert(stage1_index == num_stage1_cons_ && stage2_index == num_cons);
 
-    for (int i = 0; i < num_cons; ++i) {
-      if (con_stages[i] != 0)
-        con_info[i].core_index += num_stage0_cons;
+    // Get the number of scenarios from the expectation in the objective.
+    CallExpr expr;
+    if (p.num_objs() > 0)
+      expr = Cast<CallExpr>(p.obj(0).nonlinear_expr());
+    if (!expr)
+      throw Error("objective doesn't contain expectation");
+    int num_scenarios = expr.num_args() - 1;
+    probabilities.resize(num_scenarios);
+    // Get probabilities.
+    for (int i = 0; i < num_scenarios; ++i) {
+      auto prob = Cast<mp::NumericConstant>(expr.arg(i));
+      if (!prob)
+        throw Error("probability is not constant");
+      probabilities[i] = prob.value();
     }
-
-    scenarios.resize(scenario_indices.size());
+    obj_expr = expr.arg(num_scenarios);
+    // TODO: check that second-stage variables only occur in expectation
   } else {
     for (int i = 0; i < num_vars; ++i)
-      var_info[i].core_index = i;
-    for (int i = 0; i < num_cons; ++i)
-      con_info[i].core_index = i;
-    scenarios.resize(1);
+      core_var_indices_[i] = i;
+    for (int i = 0; i < num_cons; ++i) {
+      con_indices_[i] = i;
+      core_con_indices_[i] = i;
+    }
+    probabilities.push_back(1);
   }
-
-  std::vector<CoreConInfo> core_cons(num_core_cons);
-  SplitConRHSIntoScenarios(p, core_cons, con_names);
-  std::vector<CoreVarInfo> core_vars(num_core_vars);
-  SplitVarBoundsIntoScenarios(p, core_vars);
 
   // Write the .tim file.
   {
@@ -396,93 +449,49 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       "    C1        OBJ                      T1\n");
     if (num_stages > 1) {
       writer.Write("    C{:<7}  R{:<7}                 T2\n",
-          num_stage0_vars + 1, num_stage0_cons + 1);
+          num_stage1_vars + 1, num_stage1_cons_ + 1);
     }
     writer.Write("ENDATA\n");
   }
 
   // Write the .cor file.
-  std::vector<double> probabilities(scenarios.size());
+  std::vector<double> core_coefs;
+  std::vector<double> rhs(p.num_algebraic_cons());
   {
     FileWriter writer(smps_basename + ".cor");
     writer.Write(
       "NAME          PROBLEM\n"
       "ROWS\n"
       " N  OBJ\n");
-    for (int i = 0; i < num_core_cons; ++i)
-      writer.Write(" {}  R{}\n", core_cons[i].type, i + 1);
-
-    std::vector<double> core_obj_coefs(num_core_vars);
-    std::vector<double> sum_core_obj_coefs;
-    if (p.num_objs() != 0) {
-      Problem::Objective obj = p.obj(0);
-      const LinearExpr &obj_expr = obj.linear_expr();
-      if (obj.nonlinear_expr())
-        throw Error("SMPS writer doesn't support nonlinear problems");
-      int reference_var_index = 0;
-      int core_reference_var_index = 0;
-      if (probabilities.size() != 1) {
-        // Deduce probabilities from objective coefficients.
-        for (LinearExpr::iterator
-             i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
-          int stage = stage_suffix.value(i->var_index()) - 1;
-          if (stage > 0) {
-            reference_var_index = i->var_index();
-            core_reference_var_index = var_info[i->var_index()].core_index;
-            break;
-          }
-        }
-        sum_core_obj_coefs.resize(num_core_vars);
-        for (LinearExpr::iterator
-             i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
-          const VarConInfo &info = var_info[i->var_index()];
-          if (info.core_index == core_reference_var_index)
-            probabilities[info.scenario_index] = i->coef();
-          sum_core_obj_coefs[info.core_index] += i->coef();
-        }
-        for (size_t i = 0, n = scenarios.size(); i != n; ++i)
-          probabilities[i] /= sum_core_obj_coefs[core_reference_var_index];
-      } else {
-        probabilities[0] = 1;
-      }
-
-      // Compute objective coefficients in the core problem.
-      for (LinearExpr::iterator
-           i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
-        const VarConInfo &info = var_info[i->var_index()];
-        if (info.scenario_index == 0) {
-          double coef = i->coef();
-          if (stage_suffix && stage_suffix.value(i->var_index()) - 1 > 0)
-            coef /= probabilities[0];
-          core_obj_coefs[info.core_index] = coef;
-        }
-        // Check probabilities deduced using other variables.
-        if (probabilities.size() != 1 && stage_suffix &&
-            stage_suffix.value(i->var_index()) - 1 > 0) {
-          double ref_prob = probabilities[info.scenario_index];
-          double prob = i->coef() / sum_core_obj_coefs[info.core_index];
-          double prob_tolerance = 1e-5;
-          if (std::abs(prob - ref_prob) > prob_tolerance) {
-            throw Error("Probability deduced using variable {} ({}) "
-                "is inconsistent with the one deduced using variable {} ({})",
-                    var_names.name(reference_var_index),
-                    probabilities[info.scenario_index],
-                    var_names.name(i->var_index()), prob);
-          }
-        }
-      }
+    for (int i = 0; i < num_cons; ++i) {
+      char type = 0;
+      rhs[i] = GetConRHSAndType(p, i, type);
+      writer.Write(" {}  R{}\n", type, i + 1);
     }
 
-    WriteColumns(writer, p, num_stages, num_core_cons, core_obj_coefs);
+    std::vector<double> core_obj_coefs(num_vars);
+    if (p.num_objs() != 0) {
+      // Get objective coefficients in the core problem (first scenario).
+      AffineExprExtractor extractor;
+      extractor.Visit(obj_expr);
+      for (auto term: p.obj(0).linear_expr())
+        core_obj_coefs[term.var_index()] = term.coef();
+      for (auto term: extractor.linear_expr())
+        core_obj_coefs[term.var_index()] += term.coef();
+    }
+
+    GetScenario(p, 0, core_coefs);
+    WriteColumns(writer, p, num_stages, num_cons, core_obj_coefs, core_coefs);
 
     writer.Write("RHS\n");
-    for (int i = 0; i < num_core_cons; ++i)
-      writer.Write("    RHS1      R{:<7}  {}\n", i + 1, core_cons[i].rhs);
+    for (int i = 0; i < num_cons; ++i)
+      writer.Write("    RHS1      R{:<7}  {}\n", i + 1, rhs[i]);
 
     writer.Write("BOUNDS\n");
     double inf = std::numeric_limits<double>::infinity();
-    for (int i = 0; i < num_core_vars; ++i) {
-      double lb = core_vars[i].lb, ub = core_vars[i].ub;
+    for (int i = 0; i < num_vars; ++i) {
+      auto var = p.var(i); // TODO: reorder by stages
+      double lb = var.lb(), ub = var.ub();
       if (lb != 0)
         writer.Write(" LO BOUND1      C{:<7}  {}\n", i + 1, lb);
       if (ub < inf)
@@ -499,30 +508,28 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       "STOCH         PROBLEM\n"
       "SCENARIOS     DISCRETE\n");
     if (num_stages > 1) {
+      std::vector<double> coefs;
       writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n", probabilities[0]);
-      for (size_t i = 1, n = scenarios.size(); i < n; ++i) {
+      for (size_t i = 1, num_scen = probabilities.size(); i < num_scen; ++i) {
         writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n",
             i + 1, probabilities[i]);
-        for (Scenario::ConTermIterator j = scenarios[i].con_term_begin(),
-            end = scenarios[i].con_term_end(); j != end; ++j) {
-          writer.Write("    C{:<7}  R{:<7}  {}\n",
-              j->var_index + 1, j->con_index + 1, j->coef);
+        GetScenario(p, i, coefs);
+        // Compare to the core and write differences.
+        for (int j = 0, num_vars = p.num_vars(); j < num_vars; ++j) {
+          for (int k = p.col_start(j), n = p.col_start(j + 1); k != n; ++k) {
+            double coef = coefs[k];
+            if (coef == core_coefs[k]) continue;
+            int core_con_index = core_con_indices_[p.row_index(k)];
+            writer.Write("    C{:<7}  R{:<7}  {}\n",
+                core_var_indices_[j] + 1, core_con_index + 1, coef);
+          }
         }
-        for (Scenario::RHSIterator j = scenarios[i].rhs_begin(),
-            end = scenarios[i].rhs_end(); j != end; ++j) {
+        // TODO: handle RHS
+        /*for (Scenario::RHSIterator j = scenarios_[i].rhs_begin(),
+            end = scenarios_[i].rhs_end(); j != end; ++j) {
           writer.Write("    RHS1      R{:<7}  {}\n",
               j->con_index + 1, j->rhs);
-        }
-        for (Scenario::BoundIterator j = scenarios[i].lb_begin(),
-            end = scenarios[i].lb_end(); j != end; ++j) {
-          writer.Write(" LO BOUND1      C{:<7}  {}\n",
-              j->var_index + 1, j->bound);
-        }
-        for (Scenario::BoundIterator j = scenarios[i].ub_begin(),
-            end = scenarios[i].ub_end(); j != end; ++j) {
-          writer.Write(" UP BOUND1      C{:<7}  {}\n",
-              j->var_index + 1, j->bound);
-        }
+        }*/
       }
     }
     writer.Write("ENDATA\n");
