@@ -158,9 +158,9 @@ class AffineExprExtractor : public mp::ExprVisitor<AffineExprExtractor, void> {
   }
 };
 
-class RandomConstantExprExtractor :
-    public mp::ExprVisitor<RandomConstantExprExtractor, double> {
- private:
+template <typename Impl>
+class RandomConstantExprExtractor : public mp::ExprVisitor<Impl, double> {
+ protected:
   int scenario_;
 
  public:
@@ -173,8 +173,8 @@ class RandomConstantExprExtractor :
   double VisitCall(CallExpr e) {
     // TODO: check the number of arguments
     if (std::strcmp(e.function().name(), "random") == 0)
-      return Visit(e.arg(scenario_));
-    return mp::ExprVisitor<RandomConstantExprExtractor, double>::VisitCall(e);
+      return this->Visit(e.arg(scenario_));
+    return mp::ExprVisitor<Impl, double>::VisitCall(e);
   }
 
   // TODO
@@ -183,35 +183,35 @@ class RandomConstantExprExtractor :
 // Extracts an affine expression for a single scenario from an expression
 // containing random variables.
 class RandomAffineExprExtractor :
-    public mp::ExprVisitor<RandomAffineExprExtractor, void> {
+    public RandomConstantExprExtractor<RandomAffineExprExtractor> {
  private:
   LinearExpr linear_;
   double coef_;
-  int scenario_;
 
-  typedef mp::ExprVisitor<RandomAffineExprExtractor, void> Base;
+  typedef RandomConstantExprExtractor<RandomAffineExprExtractor> Base;
 
-  void ExtractTerm(Expr coef, Expr var) {
+  double ExtractTerm(Expr coef, Expr var) {
     RandomConstantExprExtractor extractor(scenario_);
     linear_.AddTerm(Cast<Reference>(var).index(), coef_ * extractor.Visit(coef));
+    return 0;
   }
 
  public:
-  explicit RandomAffineExprExtractor(int scenario)
-    : coef_(1), scenario_(scenario) {}
+  explicit RandomAffineExprExtractor(int scenario) : Base(scenario), coef_(1) {}
 
   const LinearExpr &linear_expr() const { return linear_; }
 
-  void VisitUnary(UnaryExpr e) {
+  double VisitUnary(UnaryExpr e) {
     if (e.kind() != expr::MINUS)
       return Base::VisitUnary(e);
     double saved_coef = coef_;
     coef_ = -coef_;
-    Visit(e.arg());
+    double result = Visit(e.arg());
     coef_ = saved_coef;
+    return result;
   }
 
-  void VisitBinary(BinaryExpr e) {
+  double VisitBinary(BinaryExpr e) {
     switch (e.kind()) {
     case expr::MUL:
       if (e.rhs().kind() == expr::VARIABLE)
@@ -221,7 +221,7 @@ class RandomAffineExprExtractor :
       throw UnsupportedError("nonlinear expression");
       break;
     default:
-      Base::VisitBinary(e);
+      return Base::VisitBinary(e);
     }
   }
 
