@@ -80,10 +80,10 @@ void SMPSWriter::WriteColumns(
   nonzero_coef_indices.reserve(num_core_cons);
   int int_var_index = 0;
   bool integer_block = false;
-  // TODO: traverse variables in the order of stages
-  for (int i = 0, n = p.num_vars(); i < n; ++i) {
-    int core_var_index = i;
-    if (p.var(i).type() == var::CONTINUOUS) {
+  for (int core_var_index = 0, n = p.num_vars();
+       core_var_index < n; ++core_var_index) {
+    int var_index = var_indices_[core_var_index];
+    if (p.var(var_index).type() == var::CONTINUOUS) {
       if (integer_block) {
         writer.Write(
             "    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);
@@ -95,11 +95,12 @@ void SMPSWriter::WriteColumns(
       integer_block = true;
     }
 
-    if (double obj_coef = core_obj_coefs[core_var_index])
+    if (double obj_coef = core_obj_coefs[var_index])
       writer.Write("    C{:<7}  OBJ       {}\n", core_var_index + 1, obj_coef);
 
     // Write the core coefficients and store them in the core_coefs vector.
-    for (int k = p.col_start(i), end = p.col_start(i + 1); k != end; ++k) {
+    for (int k = p.col_start(var_index), end = p.col_start(var_index + 1);
+         k != end; ++k) {
       int con_index = p.row_index(k);
       int core_con_index = core_con_indices_[con_index];
       writer.Write("    C{:<7}  R{:<7}  {}\n",
@@ -251,6 +252,7 @@ class ScenarioCounter : public mp::ExprVisitor<ScenarioCounter, void> {
 
   void VisitCall(CallExpr e) {
     const char *name = e.function().name();
+    // TODO: don't compare function name
     if (std::strcmp(name, "random") != 0)
       throw Error("unsupported function: {}", name);
     int num_args = e.num_args();
@@ -305,6 +307,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
   int num_vars = p.num_vars();
   int num_stage1_vars = num_vars;
   int num_stages = 1;
+  var_indices_.resize(num_vars);
   core_var_indices_.resize(num_vars, -1);
   if (IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage")) {
     num_stage1_vars = 0;
@@ -313,6 +316,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       if (stage_plus_1 > 1) {
         num_stages = std::max(stage_plus_1, num_stages);
       } else {
+        var_indices_[num_stage1_vars] = i;
         core_var_indices_[i] = num_stage1_vars;
         ++num_stage1_vars;
       }
@@ -323,11 +327,15 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
 
   // Compute core indices for variables in later stages.
   int stage2_index = num_stage1_vars;
-  for (int i = 0; i < num_vars; ++i) {
-    if (core_var_indices_[i] == -1)
-      core_var_indices_[i] = stage2_index++;
+  if (num_stages > 1) {
+    for (int i = 0; i < num_vars; ++i) {
+      if (core_var_indices_[i] == -1) {
+        var_indices_[stage2_index] = i;
+        core_var_indices_[i] = stage2_index++;
+      }
+    }
+    assert(stage2_index == num_vars);
   }
-  assert(stage2_index == num_vars);
 
   std::string smps_basename = p.name();
   std::string::size_type ext_pos = smps_basename.rfind('.');
@@ -338,6 +346,8 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
   num_stage1_cons_ = num_cons;
   std::vector<double> probabilities;
   mp::Expr obj_expr;
+  con_indices_.resize(num_cons);
+  core_con_indices_.resize(num_cons);
   if (num_stages > 1) {
     // Compute stage of each constraint as a maximum of stages of
     // variables in it.
@@ -358,8 +368,6 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
     }
 
     // Compute core indices for constraints.
-    con_indices_.resize(num_cons);
-    core_con_indices_.resize(num_cons);
     int stage1_index = 0, stage2_index = num_stage1_cons_;
     for (int i = 0; i < num_cons; ++i) {
       int &index = con_stages[i] != 0 ? stage2_index : stage1_index;
@@ -370,8 +378,10 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
 
     // Get the number of scenarios from the expectation in the objective.
     CallExpr expr;
-    if (p.num_objs() > 0)
-      expr = Cast<CallExpr>(p.obj(0).nonlinear_expr());
+    if (p.num_objs() > 0) {
+      if (auto e = p.obj(0).nonlinear_expr())
+        expr = Cast<CallExpr>(e);
+    }
     if (!expr)
       throw Error("objective doesn't contain expectation");
     int num_scenarios = expr.num_args() - 1;
@@ -386,8 +396,10 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
     obj_expr = expr.arg(num_scenarios);
     // TODO: check that second-stage variables only occur in expectation
   } else {
-    for (int i = 0; i < num_vars; ++i)
+    for (int i = 0; i < num_vars; ++i) {
+      var_indices_[i] = i;
       core_var_indices_[i] = i;
+    }
     for (int i = 0; i < num_cons; ++i) {
       con_indices_[i] = i;
       core_con_indices_[i] = i;
@@ -420,7 +432,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       " N  OBJ\n");
     for (int i = 0; i < num_cons; ++i) {
       char type = 0;
-      rhs[i] = GetConRHSAndType(p, i, type);
+      rhs[i] = GetConRHSAndType(p, con_indices_[i], type);
       writer.Write(" {}  R{}\n", type, i + 1);
     }
 

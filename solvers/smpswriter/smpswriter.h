@@ -34,6 +34,9 @@ class FileWriter;
 
 class SMPSWriter : public SolverImpl<ColProblem> {
  private:
+  // var_indices_[i] is the index of core variable i in the original problem.
+  std::vector<int> var_indices_;
+
   // core_var_indices_[i] is the index of variable i in the core problem.
   std::vector<int> core_var_indices_;
 
