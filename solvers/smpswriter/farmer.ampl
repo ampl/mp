@@ -1,13 +1,20 @@
-# The deterministic equivalent of the farmer's problem from "Introduction
-# to Stochastic Programming" by John R. Birge and Francois Louveaux.
+# The farmer's stochastic programming problem in AMPL
+#
+# Reference:
+#  John R. Birge and Francois Louveaux. Introduction to Stochastic Programming.
+#
+# AMPL coding by Victor Zverovich.
+
+function expectation;
+function random;
 
 set Crops;
 
-set Scenarios;
-param P{Scenarios}; # probabilities
+set Scen;
+param P{Scen}; # probabilities
 
 param TotalArea;               # acre
-param Yield{Crops, Scenarios}; # T/acre
+param Yield{Crops, Scen};      # T/acre
 param PlantingCost{Crops};     # $/acre
 param SellingPrice{Crops};     # $/T
 param ExcessSellingPrice;      # $/T
@@ -15,41 +22,41 @@ param PurchasePrice{Crops};    # $/T
 param MinRequirement{Crops};   # T
 param BeetsQuota;              # T
 
-# Area in acres devoted to crop c
+# Area in acres devoted to crop c.
 var area{c in Crops} >= 0;
 
-# Tons of crop c sold (at favourable price) under scenario s
-var sell{c in Crops, s in Scenarios} >= 0, suffix stage 2;
+# Tons of crop c sold (at favourable price) under scenario s.
+var sell{c in Crops} >= 0, suffix stage 2;
 
-# Tons of sugar beets sold in excess of the quota under
-# scenario s
-var sellExcess{s in Scenarios} >= 0, suffix stage 2;
+# Tons of sugar beets sold in excess of the quota under scenario s.
+var sell_excess >= 0, suffix stage 2;
 
 # Tons of crop c bought under scenario s
-var buy{c in Crops, s in Scenarios} >= 0, suffix stage 2;
+var buy{c in Crops} >= 0, suffix stage 2;
 
-maximize profit: sum{s in Scenarios} P[s] * (
-    ExcessSellingPrice * sellExcess[s] +
-    sum{c in Crops} (SellingPrice[c] * sell[c, s] -
-                     PurchasePrice[c] * buy[c, s]) -
-    sum{c in Crops} PlantingCost[c] * area[c]);
+maximize profit:
+  expectation({s in Scen} P[s],
+    ExcessSellingPrice * sell_excess +
+    sum{c in Crops} (SellingPrice[c] * sell[c] -
+                     PurchasePrice[c] * buy[c])) -
+  sum{c in Crops} PlantingCost[c] * area[c];
 
 s.t. totalArea: sum {c in Crops} area[c] <= TotalArea;
 
-s.t. requirement{c in Crops, s in Scenarios}:
-    Yield[c, s] * area[c] - sell[c, s] + buy[c, s]
-        >= MinRequirement[c];
+s.t. requirement{c in Crops}:
+    random({s in Scen} Yield[c, s]) * area[c] - sell[c] + buy[c]
+      >= MinRequirement[c];
 
-s.t. quota{s in Scenarios}: sell['beets', s] <= BeetsQuota;
+s.t. quota: sell['beets'] <= BeetsQuota;
 
-s.t. sellBeets{s in Scenarios}:
-    sell['beets', s] + sellExcess[s]
-        <= Yield['beets', s] * area['beets'];
+s.t. sellBeets:
+    sell['beets'] + sell_excess
+      <= random({s in Scen} Yield['beets', s]) * area['beets'];
 
 data;
 
 set Crops := wheat corn beets;
-set Scenarios := below average above;
+set Scen := below average above;
 
 param TotalArea := 500;
 
