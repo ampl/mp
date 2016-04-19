@@ -48,7 +48,8 @@ class SMPSWriter : public SolverImpl<ColProblem> {
   // core_con_indices_[i] is the index of constraint i in the core problem.
   std::vector<int> core_con_indices_;
 
-  void GetScenario(ColProblem &p, int scenario, std::vector<double> &coefs);
+  void GetScenario(ColProblem &p, int scenario, std::vector<double> &coefs,
+                   std::vector<double> &rhs);
 
   void WriteColumns(FileWriter &writer, const ColProblem &p, int num_core_cons,
                     const std::vector<double> &core_obj_coefs,

@@ -192,7 +192,8 @@ class RandomAffineExprExtractor :
 
   double ExtractTerm(Expr coef, Expr var) {
     RandomConstantExprExtractor extractor(scenario_);
-    linear_.AddTerm(Cast<Reference>(var).index(), coef_ * extractor.Visit(coef));
+    linear_.AddTerm(Cast<Reference>(var).index(),
+                    coef_ * extractor.Visit(coef));
     return 0;
   }
 
@@ -206,7 +207,7 @@ class RandomAffineExprExtractor :
       return Base::VisitUnary(e);
     double saved_coef = coef_;
     coef_ = -coef_;
-    double result = Visit(e.arg());
+    double result = -Visit(e.arg());
     coef_ = saved_coef;
     return result;
   }
@@ -240,7 +241,8 @@ int FindTerm(ColProblem &p, int con_index, int var_index) {
 }
 
 void SMPSWriter::GetScenario(ColProblem &p, int scenario,
-                             std::vector<double> &coefs) {
+                             std::vector<double> &coefs,
+                             std::vector<double> &rhs) {
   coefs.assign(p.values(), p.values() + p.col_start(p.num_vars()));
   for (int core_con_index = num_stage1_cons_, num_cons = p.num_algebraic_cons();
        core_con_index < num_cons; ++core_con_index) {
@@ -250,7 +252,7 @@ void SMPSWriter::GetScenario(ColProblem &p, int scenario,
     if (!expr) continue;
     // Get constraint coefficients for scenario.
     RandomAffineExprExtractor extractor(scenario);
-    extractor.Visit(expr);
+    rhs[core_con_index] -= extractor.Visit(expr);
     for (auto term: extractor.linear_expr()) {
       int var_index = term.var_index();
       int index = FindTerm(p, con_index, var_index);
@@ -384,7 +386,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
 
   // Write the .cor file.
   std::vector<double> core_coefs;
-  std::vector<double> rhs(p.num_algebraic_cons());
+  std::vector<double> base_rhs(p.num_algebraic_cons()), core_rhs;
   {
     FileWriter writer(smps_basename + ".cor");
     writer.Write(
@@ -393,7 +395,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       " N  OBJ\n");
     for (int i = 0; i < num_cons; ++i) {
       char type = 0;
-      rhs[i] = GetConRHSAndType(p, con_indices_[i], type);
+      base_rhs[i] = GetConRHSAndType(p, con_indices_[i], type);
       writer.Write(" {}  R{}\n", type, i + 1);
     }
 
@@ -408,12 +410,13 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
         core_obj_coefs[term.var_index()] += term.coef();
     }
 
-    GetScenario(p, 0, core_coefs);
+    core_rhs = base_rhs;
+    GetScenario(p, 0, core_coefs, core_rhs);
     WriteColumns(writer, p, num_cons, core_obj_coefs, core_coefs);
 
     writer.Write("RHS\n");
     for (int i = 0; i < num_cons; ++i)
-      writer.Write("    RHS1      R{:<7}  {}\n", i + 1, rhs[i]);
+      writer.Write("    RHS1      R{:<7}  {}\n", i + 1, core_rhs[i]);
 
     writer.Write("BOUNDS\n");
     double inf = std::numeric_limits<double>::infinity();
@@ -436,12 +439,13 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       "STOCH         PROBLEM\n"
       "SCENARIOS     DISCRETE\n");
     if (num_stages > 1) {
-      std::vector<double> coefs;
+      std::vector<double> coefs, rhs;
       writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n", probabilities[0]);
-      for (size_t i = 1, num_scen = probabilities.size(); i < num_scen; ++i) {
+      for (size_t s = 1, num_scen = probabilities.size(); s < num_scen; ++s) {
         writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n",
-            i + 1, probabilities[i]);
-        GetScenario(p, i, coefs);
+            s + 1, probabilities[s]);
+        rhs = base_rhs;
+        GetScenario(p, s, coefs, rhs);
         // Compare to the core and write differences.
         for (int j = 0, num_vars = p.num_vars(); j < num_vars; ++j) {
           for (int k = p.col_start(j), n = p.col_start(j + 1); k != n; ++k) {
@@ -452,12 +456,11 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
                 core_var_indices_[j] + 1, core_con_index + 1, coef);
           }
         }
-        // TODO: handle RHS
-        /*for (Scenario::RHSIterator j = scenarios_[i].rhs_begin(),
-            end = scenarios_[i].rhs_end(); j != end; ++j) {
-          writer.Write("    RHS1      R{:<7}  {}\n",
-              j->con_index + 1, j->rhs);
-        }*/
+        for (int i = num_stage1_cons_, n = p.num_algebraic_cons(); i < n; ++i) {
+          double value = rhs[i];
+          if (core_rhs[i] != value)
+            writer.Write("    RHS1      R{:<7}  {}\n", i + 1, value);
+        }
       }
     }
     writer.Write("ENDATA\n");
