@@ -50,8 +50,7 @@ class SMPSWriter : public SolverImpl<ColProblem> {
 
   void GetScenario(ColProblem &p, int scenario, std::vector<double> &coefs);
 
-  void WriteColumns(FileWriter &writer, const ColProblem &p,
-                    int num_stages, int num_core_cons,
+  void WriteColumns(FileWriter &writer, const ColProblem &p, int num_core_cons,
                     const std::vector<double> &core_obj_coefs,
                     const std::vector<double> &coefs);
 

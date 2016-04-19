@@ -71,8 +71,8 @@ SMPSWriter::SMPSWriter()
 }
 
 void SMPSWriter::WriteColumns(
-    FileWriter &writer, const ColProblem &p, int num_stages,
-    int num_core_cons, const std::vector<double> &core_obj_coefs,
+    FileWriter &writer, const ColProblem &p, int num_core_cons,
+    const std::vector<double> &core_obj_coefs,
     const std::vector<double> &coefs) {
   writer.Write("COLUMNS\n");
   std::vector<double> core_coefs(num_core_cons);
@@ -448,7 +448,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
     }
 
     GetScenario(p, 0, core_coefs);
-    WriteColumns(writer, p, num_stages, num_cons, core_obj_coefs, core_coefs);
+    WriteColumns(writer, p, num_cons, core_obj_coefs, core_coefs);
 
     writer.Write("RHS\n");
     for (int i = 0; i < num_cons; ++i)
