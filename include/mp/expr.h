@@ -772,6 +772,11 @@ class BasicExprFactory : private Alloc {
     Deallocate(funcs_);
   }
 
+  // Returns the number of functions.
+  int num_functions() const {
+    return static_cast<int>(this->funcs_.size());
+  }
+
   // Returns the function at the specified index.
   Function function(int index) const {
     internal::CheckIndex(index, this->funcs_.size());
