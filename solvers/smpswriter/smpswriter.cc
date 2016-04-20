@@ -434,7 +434,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
     writer.Write("BOUNDS\n");
     double inf = std::numeric_limits<double>::infinity();
     for (int i = 0; i < num_vars; ++i) {
-      auto var = p.var(i); // TODO: reorder by stages
+      auto var = p.var(var_indices_[i]);
       double lb = var.lb(), ub = var.ub();
       if (lb != 0)
         writer.Write(" LO BOUND1      C{:<7}  {}\n", i + 1, lb);
