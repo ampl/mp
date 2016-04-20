@@ -159,22 +159,24 @@ class AffineExprExtractor : public mp::ExprVisitor<AffineExprExtractor, void> {
 };
 
 template <typename Impl>
-class RandomConstantExprExtractor : public mp::ExprVisitor<Impl, double> {
- protected:
+class RandomConstExprExtractor : public mp::ExprVisitor<Impl, double> {
+ private:
+  mp::Function random_;
   int scenario_;
 
  public:
-  explicit RandomConstantExprExtractor(int scenario) : scenario_(scenario) {}
+  explicit RandomConstExprExtractor(mp::Function random, int scenario)
+    : random_(random), scenario_(scenario) {}
 
   double VisitNumericConstant(NumericConstant n) {
     return n.value();
   }
 
   double VisitCall(CallExpr e) {
+    auto function = e.function();
+    if (function != random_)
+      throw Error("unsupported function: {}", function.name());
     // TODO: check the number of arguments
-    const char *name = e.function().name();
-    if (std::strcmp(name, "random") != 0)
-      throw Error("unsupported function: {}", name);
     return this->Visit(e.arg(scenario_));
   }
 
@@ -184,22 +186,23 @@ class RandomConstantExprExtractor : public mp::ExprVisitor<Impl, double> {
 // Extracts an affine expression for a single scenario from an expression
 // containing random variables.
 class RandomAffineExprExtractor :
-    public RandomConstantExprExtractor<RandomAffineExprExtractor> {
+    public RandomConstExprExtractor<RandomAffineExprExtractor> {
  private:
   LinearExpr linear_;
   double coef_;
 
-  typedef RandomConstantExprExtractor<RandomAffineExprExtractor> Base;
+  typedef RandomConstExprExtractor<RandomAffineExprExtractor> Base;
 
   double ExtractTerm(Expr coef, Expr var) {
-    RandomConstantExprExtractor extractor(scenario_);
+    RandomConstExprExtractor extractor(*this);
     linear_.AddTerm(Cast<Reference>(var).index(),
                     coef_ * extractor.Visit(coef));
     return 0;
   }
 
  public:
-  explicit RandomAffineExprExtractor(int scenario) : Base(scenario), coef_(1) {}
+  explicit RandomAffineExprExtractor(mp::Function random, int scenario)
+    : Base(random, scenario), coef_(1) {}
 
   const LinearExpr &linear_expr() const { return linear_; }
 
@@ -252,7 +255,7 @@ void SMPSWriter::GetScenario(ColProblem &p, int scenario,
     auto expr = con.nonlinear_expr();
     if (!expr) continue;
     // Get constraint coefficients for scenario.
-    RandomAffineExprExtractor extractor(scenario);
+    RandomAffineExprExtractor extractor(random_, scenario);
     rhs[core_con_index] -= extractor.Visit(expr);
     for (auto term: extractor.linear_expr()) {
       int var_index = term.var_index();
@@ -369,6 +372,15 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       core_con_indices_[i] = i;
     }
     probabilities.push_back(1);
+  }
+
+  // Find the random function.
+  for (int i = 0, n = p.num_functions(); i < n; ++i) {
+    auto function = p.function(i);
+    if (std::strcmp(function.name(), "random") == 0) {
+      random_ = function;
+      break;
+    }
   }
 
   // Write the .tim file.
