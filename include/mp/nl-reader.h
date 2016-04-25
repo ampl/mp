@@ -2148,7 +2148,8 @@ class NameReader {
   // newline character ('\n').
   template <typename NameHandler>
   void Read(fmt::CStringRef filename, NameHandler &handler) {
-    mapped_file_.map(fmt::File(filename, fmt::File::RDONLY), filename);
+    fmt::File file(filename, fmt::File::RDONLY);
+    mapped_file_.map(file, filename);
     fmt::StringRef data(mapped_file_.start(), mapped_file_.size());
     ReadNames(filename, data, handler);
   }
