@@ -349,7 +349,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       if (auto e = p.obj(0).nonlinear_expr())
         expr = Cast<CallExpr>(e);
     }
-    if (!expr)
+    if (!expr || std::strcmp(expr.function().name(), "expectation") != 0)
       throw Error("objective doesn't contain expectation");
     int num_scenarios = expr.num_args() - 1;
     probabilities.resize(num_scenarios);
