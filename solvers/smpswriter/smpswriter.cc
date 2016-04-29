@@ -415,12 +415,14 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
     std::vector<double> core_obj_coefs(num_vars);
     if (p.num_objs() != 0) {
       // Get objective coefficients in the core problem (first scenario).
-      AffineExprExtractor extractor;
-      extractor.Visit(obj_expr);
       for (auto term: p.obj(0).linear_expr())
         core_obj_coefs[term.var_index()] = term.coef();
-      for (auto term: extractor.linear_expr())
-        core_obj_coefs[term.var_index()] += term.coef();
+      if (obj_expr) {
+        AffineExprExtractor extractor;
+        extractor.Visit(obj_expr);
+        for (auto term: extractor.linear_expr())
+          core_obj_coefs[term.var_index()] += term.coef();
+      }
     }
 
     core_rhs = base_rhs;
