@@ -42,6 +42,10 @@ class SMPSWriter : public SolverImpl<ColProblem> {
     std::vector<double> data_;
 
    public:
+    void AddProbability(double prob) {
+      probabilities_.push_back(prob);
+    }
+
     void Add(double value) {
       data_.push_back(value);
     }
@@ -118,6 +122,16 @@ class SMPSWriter : public SolverImpl<ColProblem> {
   typedef ColProblemBuilder NLProblemBuilder;
 
   void Solve(ColProblem &p, SolutionHandler &sh);
+
+  int GetRVIndex(int var_index) const {
+    int core_var_index = var_orig2core_[var_index];
+    return core_var_index < 0 ? -(core_var_index + 1) : -1;
+  }
+
+  double GetRealization(int rv_index, int scenario) const {
+    const auto &info = rv_info_[rv_index];
+    return rvs_[info.rv_index].value(info.element_index, scenario);
+  }
 };
 }
 

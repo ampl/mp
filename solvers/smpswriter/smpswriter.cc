@@ -78,7 +78,7 @@ void SMPSWriter::AddRVElement(Expr arg, int rv_index, int element_index) {
   if (core_var_index != 0)
     throw Error("RV {}: redefinition of variable {}", rv_index, var_index);
   // Mark variable as random.
-  core_var_index = -1;
+  core_var_index = -static_cast<int>(rv_info_.size());
 }
 
 void SMPSWriter::GetRandomVectors(const Problem &p) {
@@ -102,27 +102,32 @@ void SMPSWriter::GetRandomVectors(const Problem &p) {
     if (num_args == 0)
       continue;
     auto &rv = rvs_[con_index];
-    int num_realizations = -1;
-    int realization_index = 0;
+    int arg_index = 0;
     int element_index = 0;
-    auto arg = call.arg(0);
-    if (arg.kind() != expr::VARIABLE)
-      throw Error("RV {}: expected variable reference", con_index);
-    AddRVElement(arg, con_index, element_index);
-    for (int i = 1; i < num_args; ++i) {
-      arg = call.arg(i);
+    // Get probabilities.
+    for (; arg_index < num_args; ++arg_index) {
+      auto arg = call.arg(arg_index);
+      if (arg.kind() == expr::VARIABLE) {
+        AddRVElement(arg, con_index, element_index);
+        ++arg_index;
+        break;
+      }
+      auto prob = Cast<mp::NumericConstant>(arg);
+      if (!prob)
+        throw Error("RV {}: expected variable or constant", con_index);
+      rv.AddProbability(prob.value());
+    }
+    // Get realizations.
+    int num_realizations = rv.num_realizations();
+    if (num_realizations == 0)
+      num_realizations = -1;
+    int realization_index = 0;
+    for (; arg_index < num_args; ++arg_index) {
+      auto arg = call.arg(arg_index);
       if (arg.kind() == expr::VARIABLE) {
         if (num_realizations == -1) {
           num_realizations = realization_index;
           rv.set_num_realizations(num_realizations);
-          // TODO: get probabilties from the random function
-          /*// Get probabilities.
-          for (int i = 0; i < num_scenarios; ++i) {
-            auto prob = Cast<mp::NumericConstant>(expr.arg(i));
-            if (!prob)
-              throw Error("probability is not constant");
-            probabilities[i] = prob.value();
-          }*/
         } else if (realization_index != num_realizations) {
           throw Error("RV {}: inconsistent number of realizations", con_index);
         }
@@ -229,24 +234,31 @@ class AffineExprExtractor : public mp::ExprVisitor<AffineExprExtractor, void> {
 template <typename Impl>
 class RandomConstExprExtractor : public mp::ExprVisitor<Impl, double> {
  private:
-  mp::Function random_;
+  const SMPSWriter &writer_;
   int scenario_;
 
  public:
-  explicit RandomConstExprExtractor(mp::Function random, int scenario)
-    : random_(random), scenario_(scenario) {}
+  explicit RandomConstExprExtractor(const SMPSWriter &writer, int scenario)
+    : writer_(writer), scenario_(scenario) {}
 
   double VisitNumericConstant(NumericConstant n) {
     return n.value();
   }
 
-  double VisitCall(CallExpr e) {
+  double VisitVariable(Reference v) {
+    int rv_index = writer_.GetRVIndex(v.index());
+    return rv_index >= 0 ?
+          writer_.GetRealization(rv_index, scenario_) :
+          mp::ExprVisitor<Impl, double>::VisitVariable(v);
+  }
+
+  /*double VisitCall(CallExpr e) {
     auto function = e.function();
     if (function != random_)
       throw Error("unsupported function: {}", function.name());
     // TODO: check the number of arguments
     return this->Visit(e.arg(scenario_));
-  }
+  }*/
 
   // TODO
 };
@@ -269,8 +281,8 @@ class RandomAffineExprExtractor :
   }
 
  public:
-  explicit RandomAffineExprExtractor(mp::Function random, int scenario)
-    : Base(random, scenario), coef_(1) {}
+  explicit RandomAffineExprExtractor(const SMPSWriter &writer, int scenario)
+    : Base(writer, scenario), coef_(1) {}
 
   const LinearExpr &linear_expr() const { return linear_; }
 
@@ -322,7 +334,6 @@ void SMPSWriter::GetScenario(ColProblem &p, int scenario,
     for (int k = p.col_start(var_index),
          end = p.col_start(var_index + 1); k != end; ++k) {
       auto value = rvs_[info.rv_index].value(info.element_index, scenario);
-      fmt::print("RV: {} {} {}\n", info.element_index, scenario, value);
       rhs[p.row_index(k)] -= coefs[k] * value;
     }
   }
@@ -334,7 +345,7 @@ void SMPSWriter::GetScenario(ColProblem &p, int scenario,
     auto expr = con.nonlinear_expr();
     if (!expr) continue;
     // Get constraint coefficients for scenario.
-    RandomAffineExprExtractor extractor(random_, scenario);
+    RandomAffineExprExtractor extractor(*this, scenario);
     rhs[core_con_index] -= extractor.Visit(expr);
     for (auto term: extractor.linear_expr()) {
       int var_index = term.var_index();
@@ -530,6 +541,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
 
   // Write the .sto file.
   {
+    // TODO: handle all RVs
     const auto &rv = rvs_[0];
     FileWriter writer(smps_basename + ".sto");
     writer.Write(
