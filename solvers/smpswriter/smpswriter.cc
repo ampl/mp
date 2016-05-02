@@ -70,19 +70,87 @@ SMPSWriter::SMPSWriter()
   AddSuffix("stage", 0, suf::VAR);
 }
 
+void SMPSWriter::AddRVElement(Expr arg, int rv_index, int element_index) {
+  auto var = Cast<Reference>(arg);
+  int var_index = var.index();
+  rv_info_.push_back(RVInfo(var_index, rv_index, element_index));
+  int &core_var_index = var_orig2core_[var_index];
+  if (core_var_index != 0)
+    throw Error("RV {}: redefinition of variable {}", rv_index, var_index);
+  // Mark variable as random.
+  core_var_index = -1;
+}
+
+void SMPSWriter::GetRandomVectors(const Problem &p) {
+  var_orig2core_.resize(p.num_vars());
+  int num_logical_cons = p.num_logical_cons();
+  if (num_logical_cons == 0) {
+    rvs_.resize(1);
+    rvs_.back().set_num_realizations(1);
+    return;
+  }
+  rvs_.resize(num_logical_cons);
+  for (int con_index = 0; con_index < num_logical_cons; ++con_index) {
+    auto expr = p.logical_con(con_index).expr();
+    if (expr.kind() != expr::NE)
+      throw MakeUnsupportedError("logical constraint");
+    auto relational = Cast<RelationalExpr>(expr);
+    auto call = Cast<CallExpr>(relational.lhs());
+    if (!call || call.function() != random_ || !IsZero(relational.rhs()))
+      throw MakeUnsupportedError("logical constraint");
+    int num_args = call.num_args();
+    if (num_args == 0)
+      continue;
+    auto &rv = rvs_[con_index];
+    int num_realizations = -1;
+    int realization_index = 0;
+    int element_index = 0;
+    auto arg = call.arg(0);
+    if (arg.kind() != expr::VARIABLE)
+      throw Error("RV {}: expected variable reference", con_index);
+    AddRVElement(arg, con_index, element_index);
+    for (int i = 1; i < num_args; ++i) {
+      arg = call.arg(i);
+      if (arg.kind() == expr::VARIABLE) {
+        if (num_realizations == -1) {
+          num_realizations = realization_index;
+          rv.set_num_realizations(num_realizations);
+          // TODO: get probabilties from the random function
+          /*// Get probabilities.
+          for (int i = 0; i < num_scenarios; ++i) {
+            auto prob = Cast<mp::NumericConstant>(expr.arg(i));
+            if (!prob)
+              throw Error("probability is not constant");
+            probabilities[i] = prob.value();
+          }*/
+        } else if (realization_index != num_realizations) {
+          throw Error("RV {}: inconsistent number of realizations", con_index);
+        }
+        ++element_index;
+        realization_index = 0;
+        AddRVElement(arg, con_index, element_index);
+      } else if (auto constant = Cast<NumericConstant>(arg)) {
+        rv.Add(constant.value());
+        ++realization_index;
+      } else {
+        throw Error("RV {}: expected variable or constant", con_index);
+      }
+    }
+  }
+}
+
 void SMPSWriter::WriteColumns(
     FileWriter &writer, const ColProblem &p, int num_core_cons,
     const std::vector<double> &core_obj_coefs,
     const std::vector<double> &coefs) {
   writer.Write("COLUMNS\n");
-  std::vector<double> core_coefs(num_core_cons);
   std::vector<int> nonzero_coef_indices;
   nonzero_coef_indices.reserve(num_core_cons);
   int int_var_index = 0;
   bool integer_block = false;
-  for (int core_var_index = 0, n = p.num_vars();
+  for (int core_var_index = 0, n = var_core2orig_.size();
        core_var_index < n; ++core_var_index) {
-    int var_index = var_indices_[core_var_index];
+    int var_index = var_core2orig_[core_var_index];
     if (p.var(var_index).type() == var::CONTINUOUS) {
       if (integer_block) {
         writer.Write(
@@ -102,7 +170,7 @@ void SMPSWriter::WriteColumns(
     for (int k = p.col_start(var_index), end = p.col_start(var_index + 1);
          k != end; ++k) {
       int con_index = p.row_index(k);
-      int core_con_index = core_con_indices_[con_index];
+      int core_con_index = con_orig2core_[con_index];
       writer.Write("    C{:<7}  R{:<7}  {}\n",
           core_var_index + 1, core_con_index + 1, coefs[k]);
     }
@@ -248,9 +316,20 @@ void SMPSWriter::GetScenario(ColProblem &p, int scenario,
                              std::vector<double> &coefs,
                              std::vector<double> &rhs) {
   coefs.assign(p.values(), p.values() + p.col_start(p.num_vars()));
+  // Handle random variables/parameters in the constraint matrix.
+  for (const auto &info: rv_info_) {
+    int var_index = info.var_index;
+    for (int k = p.col_start(var_index),
+         end = p.col_start(var_index + 1); k != end; ++k) {
+      auto value = rvs_[info.rv_index].value(info.element_index, scenario);
+      fmt::print("RV: {} {} {}\n", info.element_index, scenario, value);
+      rhs[p.row_index(k)] -= coefs[k] * value;
+    }
+  }
+  // Handle random variables/parameters in nonlinear constraint expressions.
   for (int core_con_index = num_stage1_cons_, num_cons = p.num_algebraic_cons();
        core_con_index < num_cons; ++core_con_index) {
-    int con_index = con_indices_[core_con_index];
+    int con_index = con_core2orig_[core_con_index];
     auto con = p.algebraic_con(con_index);
     auto expr = con.nonlinear_expr();
     if (!expr) continue;
@@ -269,22 +348,34 @@ void SMPSWriter::GetScenario(ColProblem &p, int scenario,
 }
 
 void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
+  // Find the random function.
+  for (int i = 0, n = p.num_functions(); i < n; ++i) {
+    auto function = p.function(i);
+    if (std::strcmp(function.name(), "random") == 0) {
+      random_ = function;
+      break;
+    }
+  }
+
+  GetRandomVectors(p);
+
   // Count the number of stages, the number of variables in the first stage and
   // compute core indices for the first-stage variables.
   int num_vars = p.num_vars();
   int num_stage1_vars = num_vars;
   int num_stages = 1;
-  var_indices_.resize(num_vars);
-  core_var_indices_.resize(num_vars, -1);
+  var_core2orig_.resize(p.num_vars() - rv_info_.size());
   if (IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage")) {
     num_stage1_vars = 0;
     for (int i = 0; i < num_vars; ++i) {
+      if (var_orig2core_[i])
+        continue;  // Skip random variables.
       int stage_plus_1 = stage_suffix.value(i);
       if (stage_plus_1 > 1) {
         num_stages = std::max(stage_plus_1, num_stages);
       } else {
-        var_indices_[num_stage1_vars] = i;
-        core_var_indices_[i] = num_stage1_vars;
+        var_core2orig_[num_stage1_vars] = i;
+        var_orig2core_[i] = num_stage1_vars;
         ++num_stage1_vars;
       }
     }
@@ -295,13 +386,21 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
   // Compute core indices for variables in later stages.
   int stage2_index = num_stage1_vars;
   if (num_stages > 1) {
+    // Temporary change mapping for the core variable 0, not to confuse it with
+    // second-stage variables.
+    if (num_stage1_vars > 0)
+      var_orig2core_[var_core2orig_[0]] = 1;
     for (int i = 0; i < num_vars; ++i) {
-      if (core_var_indices_[i] == -1) {
-        var_indices_[stage2_index] = i;
-        core_var_indices_[i] = stage2_index++;
+      if (var_orig2core_[i] == 0) {
+        var_core2orig_[stage2_index] = i;
+        var_orig2core_[i] = stage2_index++;
       }
     }
-    assert(stage2_index == num_vars);
+    // Restore mapping for the core variable 0.
+    if (num_stage1_vars > 0)
+      var_orig2core_[var_core2orig_[0]] = 0;
+    assert(static_cast<std::size_t>(num_vars) ==
+           stage2_index + rv_info_.size());
   }
 
   std::string smps_basename = p.name();
@@ -311,16 +410,15 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
 
   int num_cons = p.num_algebraic_cons();
   num_stage1_cons_ = num_cons;
-  std::vector<double> probabilities;
-  mp::Expr obj_expr;
-  con_indices_.resize(num_cons);
-  core_con_indices_.resize(num_cons);
+  Expr obj_expr;
+  con_core2orig_.resize(num_cons);
+  con_orig2core_.resize(num_cons);
   if (num_stages > 1) {
     // Compute stage of each constraint as a maximum of stages of
     // variables in it.
     std::vector<int> con_stages(num_cons);
     for (int j = 0; j < num_vars; ++j) {
-      if (core_var_indices_[j] < num_stage1_vars)
+      if (var_orig2core_[j] < num_stage1_vars)
         continue;
       // Update stages of all constraints containing this variable.
       for (int k = p.col_start(j), end = p.col_start(j + 1); k != end; ++k) {
@@ -338,8 +436,8 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
     int stage1_index = 0, stage2_index = num_stage1_cons_;
     for (int i = 0; i < num_cons; ++i) {
       int &index = con_stages[i] != 0 ? stage2_index : stage1_index;
-      con_indices_[index] = i;
-      core_con_indices_[i] = index++;
+      con_core2orig_[index] = i;
+      con_orig2core_[i] = index++;
     }
     assert(stage1_index == num_stage1_cons_ && stage2_index == num_cons);
 
@@ -351,35 +449,17 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
     }
     if (!expr || std::strcmp(expr.function().name(), "expectation") != 0)
       throw Error("objective doesn't contain expectation");
-    int num_scenarios = expr.num_args() - 1;
-    probabilities.resize(num_scenarios);
-    // Get probabilities.
-    for (int i = 0; i < num_scenarios; ++i) {
-      auto prob = Cast<mp::NumericConstant>(expr.arg(i));
-      if (!prob)
-        throw Error("probability is not constant");
-      probabilities[i] = prob.value();
-    }
-    obj_expr = expr.arg(num_scenarios);
+    // TODO: check that the number of arguments is 1.
+    obj_expr = expr.arg(0);
     // TODO: check that second-stage variables only occur in expectation
   } else {
     for (int i = 0; i < num_vars; ++i) {
-      var_indices_[i] = i;
-      core_var_indices_[i] = i;
+      var_core2orig_[i] = i;
+      var_orig2core_[i] = i;
     }
     for (int i = 0; i < num_cons; ++i) {
-      con_indices_[i] = i;
-      core_con_indices_[i] = i;
-    }
-    probabilities.push_back(1);
-  }
-
-  // Find the random function.
-  for (int i = 0, n = p.num_functions(); i < n; ++i) {
-    auto function = p.function(i);
-    if (std::strcmp(function.name(), "random") == 0) {
-      random_ = function;
-      break;
+      con_core2orig_[i] = i;
+      con_orig2core_[i] = i;
     }
   }
 
@@ -408,7 +488,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       " N  OBJ\n");
     for (int i = 0; i < num_cons; ++i) {
       char type = 0;
-      base_rhs[i] = GetConRHSAndType(p, con_indices_[i], type);
+      base_rhs[i] = GetConRHSAndType(p, con_core2orig_[i], type);
       writer.Write(" {}  R{}\n", type, i + 1);
     }
 
@@ -435,13 +515,14 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
 
     writer.Write("BOUNDS\n");
     double inf = std::numeric_limits<double>::infinity();
-    for (int i = 0; i < num_vars; ++i) {
-      auto var = p.var(var_indices_[i]);
+    for (int core_var_index = 0, n = var_core2orig_.size();
+         core_var_index < n; ++core_var_index) {
+      auto var = p.var(var_core2orig_[core_var_index]);
       double lb = var.lb(), ub = var.ub();
       if (lb != 0)
-        writer.Write(" LO BOUND1      C{:<7}  {}\n", i + 1, lb);
+        writer.Write(" LO BOUND1      C{:<7}  {}\n", core_var_index + 1, lb);
       if (ub < inf)
-        writer.Write(" UP BOUND1      C{:<7}  {}\n", i + 1, ub);
+        writer.Write(" UP BOUND1      C{:<7}  {}\n", core_var_index + 1, ub);
     }
 
     writer.Write("ENDATA\n");
@@ -449,16 +530,17 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
 
   // Write the .sto file.
   {
+    const auto &rv = rvs_[0];
     FileWriter writer(smps_basename + ".sto");
     writer.Write(
       "STOCH         PROBLEM\n"
       "SCENARIOS     DISCRETE\n");
     if (num_stages > 1) {
       std::vector<double> coefs, rhs;
-      writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n", probabilities[0]);
-      for (size_t s = 1, num_scen = probabilities.size(); s < num_scen; ++s) {
+      writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n", rv.probability(0));
+      for (size_t s = 1, num_scen = rv.num_realizations(); s < num_scen; ++s) {
         writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n",
-            s + 1, probabilities[s]);
+            s + 1, rv.probability(s));
         rhs = base_rhs;
         GetScenario(p, s, coefs, rhs);
         // Compare to the core and write differences.
@@ -466,9 +548,9 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
           for (int k = p.col_start(j), n = p.col_start(j + 1); k != n; ++k) {
             double coef = coefs[k];
             if (coef == core_coefs[k]) continue;
-            int core_con_index = core_con_indices_[p.row_index(k)];
+            int core_con_index = con_orig2core_[p.row_index(k)];
             writer.Write("    C{:<7}  R{:<7}  {}\n",
-                core_var_indices_[j] + 1, core_con_index + 1, coef);
+                var_orig2core_[j] + 1, core_con_index + 1, coef);
           }
         }
         for (int i = num_stage1_cons_, n = p.num_algebraic_cons(); i < n; ++i) {

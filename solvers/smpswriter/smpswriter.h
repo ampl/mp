@@ -34,21 +34,76 @@ class FileWriter;
 
 class SMPSWriter : public SolverImpl<ColProblem> {
  private:
-  // var_indices_[i] is the index of core variable i in the original problem.
-  std::vector<int> var_indices_;
+  class RandomVector {
+   private:
+    std::vector<double> probabilities_;
+    // A matrix with rows representing elements and columns representing
+    // realizatons.
+    std::vector<double> data_;
 
-  // core_var_indices_[i] is the index of variable i in the core problem.
-  std::vector<int> core_var_indices_;
+   public:
+    void Add(double value) {
+      data_.push_back(value);
+    }
+
+    int num_realizations() const {
+      return static_cast<int>(probabilities_.size());
+    }
+
+    int num_elements() const {
+      return static_cast<int>(data_.size() / probabilities_.size());
+    }
+
+    void set_num_realizations(int num_realizations) {
+      probabilities_.resize(num_realizations, 1.0 / num_realizations);
+    }
+
+    double probability(int realization) const {
+      return probabilities_[realization];
+    }
+
+    double value(int element, int realization) const {
+      return data_[element * num_realizations() + realization];
+    }
+  };
+
+  std::vector<RandomVector> rvs_;
+
+  struct RVInfo {
+    int var_index;      // Index of the variable in the original problem.
+    int rv_index;       // Index of a random vector in rvs_.
+    int element_index;  // Index of an element in the random vector.
+
+    RVInfo(int var_index, int rv_index, int element_index)
+      : var_index(var_index), rv_index(rv_index),
+        element_index(element_index) {}
+  };
+  std::vector<RVInfo> rv_info_;
+
+  // var_core2orig_[i] is the index of core variable i in the original problem.
+  std::vector<int> var_core2orig_;
+
+  // If var_orig2core_[i] >= 0 then it gives the index of variable i in the
+  // core problem. Otherwise, variable i represents a random variable/parameter.
+  std::vector<int> var_orig2core_;
 
   int num_stage1_cons_;
 
-  // con_indices_[i] is the index of core constraint i in the original problem.
-  std::vector<int> con_indices_;
+  // con_core2orig_[i] is the index of core constraint i in the original
+  // problem.
+  std::vector<int> con_core2orig_;
 
-  // core_con_indices_[i] is the index of constraint i in the core problem.
-  std::vector<int> core_con_indices_;
+  // con_orig2core_[i] is the index of constraint i in the core problem.
+  std::vector<int> con_orig2core_;
 
   mp::Function random_;
+
+  // Add an element of a random vector.
+  void AddRVElement(Expr arg, int rv_index, int element_index);
+
+  // Extract random vectors from logical constraints with expressions of the
+  // form random(x, a_1, ..., a_n).
+  void GetRandomVectors(const Problem &p);
 
   void GetScenario(ColProblem &p, int scenario, std::vector<double> &coefs,
                    std::vector<double> &rhs);
