@@ -171,7 +171,7 @@ void SMPSWriter::WriteColumns(
     if (double obj_coef = core_obj_coefs[var_index])
       writer.Write("    C{:<7}  OBJ       {}\n", core_var_index + 1, obj_coef);
 
-    // Write the core coefficients and store them in the core_coefs vector.
+    // Write the core coefficients and store them in the core_coefs_ vector.
     for (int k = p.col_start(var_index), end = p.col_start(var_index + 1);
          k != end; ++k) {
       int con_index = p.row_index(k);
@@ -315,7 +315,7 @@ class RandomAffineExprExtractor :
 
 // Finds term with the specified constraint and variable indices in the
 // column-wise constraint matrix.
-int FindTerm(ColProblem &p, int con_index, int var_index) {
+int FindTerm(const ColProblem &p, int con_index, int var_index) {
   for (int i = p.col_start(var_index),
        n = p.col_start(var_index + 1); i < n; ++i) {
     if (p.row_index(i) == con_index)
@@ -324,7 +324,7 @@ int FindTerm(ColProblem &p, int con_index, int var_index) {
   return -1;
 }
 
-void SMPSWriter::GetScenario(ColProblem &p, int scenario,
+void SMPSWriter::GetScenario(const ColProblem &p, int scenario,
                              std::vector<double> &coefs,
                              std::vector<double> &rhs) {
   coefs.assign(p.values(), p.values() + p.col_start(p.num_vars()));
@@ -354,6 +354,52 @@ void SMPSWriter::GetScenario(ColProblem &p, int scenario,
         throw Error("cannot find term ({}, {})", con_index, var_index);
       // Add extracted term coefficient to the one in constraint matrix.
       coefs[index] += term.coef();
+    }
+  }
+}
+
+void SMPSWriter::WriteDiscreteScenarios(
+    const ColProblem &p, FileWriter &writer) {
+  assert(rvs_.size() == 1);
+  writer.Write("SCENARIOS     DISCRETE\n");
+  const auto &rv = rvs_.back();
+  std::vector<double> coefs, rhs;
+  writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n", rv.probability(0));
+  for (size_t s = 1, num_scen = rv.num_realizations(); s < num_scen; ++s) {
+    writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n",
+        s + 1, rv.probability(s));
+    rhs = base_rhs_;
+    GetScenario(p, s, coefs, rhs);
+    // Compare to the core and write differences.
+    for (int j = 0, num_vars = p.num_vars(); j < num_vars; ++j) {
+      for (int k = p.col_start(j), n = p.col_start(j + 1); k != n; ++k) {
+        double coef = coefs[k];
+        if (coef == core_coefs_[k]) continue;
+        int core_con_index = con_orig2core_[p.row_index(k)];
+        writer.Write("    C{:<7}  R{:<7}  {}\n",
+            var_orig2core_[j] + 1, core_con_index + 1, coef);
+      }
+    }
+    for (int i = num_stage1_cons_, n = p.num_algebraic_cons(); i < n; ++i) {
+      double value = rhs[i];
+      if (core_rhs_[i] != value)
+        writer.Write("    RHS1      R{:<7}  {}\n", i + 1, value);
+    }
+  }
+}
+
+void SMPSWriter::WriteDiscreteIndep(const ColProblem &p, FileWriter &writer,
+                                    const std::vector<int> &rv2con) {
+  writer.Write("INDEP         DISCRETE\n");
+  std::vector<double> coefs, rhs;
+  for (int i = 0, n = rvs_.size(); i < n; ++i) {
+    const auto &rv = rvs_[i];
+    for (size_t s = 0, num_scen = rv.num_realizations(); s < num_scen; ++s) {
+      rhs = base_rhs_;
+      GetScenario(p, s, coefs, rhs);
+      int con_index = rv2con[i];
+      writer.Write("    RHS1      R{:<7}  {:12}   T2        {:.4}\n",
+                   con_index + 1, rhs[con_index], rv.probability(s));
     }
   }
 }
@@ -489,8 +535,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
   }
 
   // Write the .cor file.
-  std::vector<double> core_coefs;
-  std::vector<double> base_rhs(p.num_algebraic_cons()), core_rhs;
+  base_rhs_.resize(p.num_algebraic_cons());
   {
     FileWriter writer(smps_basename + ".cor");
     writer.Write(
@@ -499,7 +544,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       " N  OBJ\n");
     for (int i = 0; i < num_cons; ++i) {
       char type = 0;
-      base_rhs[i] = GetConRHSAndType(p, con_core2orig_[i], type);
+      base_rhs_[i] = GetConRHSAndType(p, con_core2orig_[i], type);
       writer.Write(" {}  R{}\n", type, i + 1);
     }
 
@@ -516,24 +561,42 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       }
     }
 
-    core_rhs = base_rhs;
-    GetScenario(p, 0, core_coefs, core_rhs);
-    WriteColumns(writer, p, num_cons, core_obj_coefs, core_coefs);
+    core_rhs_ = base_rhs_;
+    GetScenario(p, 0, core_coefs_, core_rhs_);
+    WriteColumns(writer, p, num_cons, core_obj_coefs, core_coefs_);
 
     writer.Write("RHS\n");
-    for (int i = 0; i < num_cons; ++i)
-      writer.Write("    RHS1      R{:<7}  {}\n", i + 1, core_rhs[i]);
+    for (int i = 0; i < num_cons; ++i) {
+      if (auto rhs = core_rhs_[i])
+        writer.Write("    RHS1      R{:<7}  {}\n", i + 1, rhs);
+    }
 
-    writer.Write("BOUNDS\n");
+    class BoundsWriter {
+     private:
+      FileWriter &writer_;
+      bool has_bounds_;
+
+     public:
+      explicit BoundsWriter(FileWriter &w) : writer_(w), has_bounds_(false) {}
+
+      FileWriter &get() {
+        if (!has_bounds_) {
+          writer_.Write("BOUNDS\n");
+          has_bounds_ = true;
+        }
+        return writer_;
+      }
+    } bw(writer);
+
     double inf = std::numeric_limits<double>::infinity();
     for (int core_var_index = 0, n = var_core2orig_.size();
          core_var_index < n; ++core_var_index) {
       auto var = p.var(var_core2orig_[core_var_index]);
       double lb = var.lb(), ub = var.ub();
       if (lb != 0)
-        writer.Write(" LO BOUND1      C{:<7}  {}\n", core_var_index + 1, lb);
+        bw.get().Write(" LO BOUND1      C{:<7}  {}\n", core_var_index + 1, lb);
       if (ub < inf)
-        writer.Write(" UP BOUND1      C{:<7}  {}\n", core_var_index + 1, ub);
+        bw.get().Write(" UP BOUND1      C{:<7}  {}\n", core_var_index + 1, ub);
     }
 
     writer.Write("ENDATA\n");
@@ -541,35 +604,29 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
 
   // Write the .sto file.
   {
-    // TODO: handle all RVs
-    const auto &rv = rvs_[0];
     FileWriter writer(smps_basename + ".sto");
-    writer.Write(
-      "STOCH         PROBLEM\n"
-      "SCENARIOS     DISCRETE\n");
+    writer.Write("STOCH         PROBLEM\n");
     if (num_stages > 1) {
-      std::vector<double> coefs, rhs;
-      writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n", rv.probability(0));
-      for (size_t s = 1, num_scen = rv.num_realizations(); s < num_scen; ++s) {
-        writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n",
-            s + 1, rv.probability(s));
-        rhs = base_rhs;
-        GetScenario(p, s, coefs, rhs);
-        // Compare to the core and write differences.
-        for (int j = 0, num_vars = p.num_vars(); j < num_vars; ++j) {
-          for (int k = p.col_start(j), n = p.col_start(j + 1); k != n; ++k) {
-            double coef = coefs[k];
-            if (coef == core_coefs[k]) continue;
-            int core_con_index = con_orig2core_[p.row_index(k)];
-            writer.Write("    C{:<7}  R{:<7}  {}\n",
-                var_orig2core_[j] + 1, core_con_index + 1, coef);
+      if (rvs_.size() == 1) {
+        WriteDiscreteScenarios(p, writer);
+      } else {
+        // Get constraints where each random variables/parameter is used.
+        bool indep_vars = true;
+        std::vector<int> rv2con(rv_info_.size());
+        for (int i = 0, n = rv_info_.size(); i < n; ++i) {
+          const auto &info = rv_info_[i];
+          int var_index = info.var_index;
+          int start = p.col_start(var_index), end = p.col_start(var_index + 1);
+          if (start != end - 1) {
+            indep_vars = false;
+            break;
           }
+          // TODO: handle randomness in constraint matrix
+          rv2con[i] = p.row_index(start);
         }
-        for (int i = num_stage1_cons_, n = p.num_algebraic_cons(); i < n; ++i) {
-          double value = rhs[i];
-          if (core_rhs[i] != value)
-            writer.Write("    RHS1      R{:<7}  {}\n", i + 1, value);
-        }
+        if (!indep_vars)
+          throw Error("unsupported RV");
+        WriteDiscreteIndep(p, writer, rv2con);
       }
     }
     writer.Write("ENDATA\n");

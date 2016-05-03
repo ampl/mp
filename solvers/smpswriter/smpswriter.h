@@ -102,6 +102,10 @@ class SMPSWriter : public SolverImpl<ColProblem> {
 
   mp::Function random_;
 
+  std::vector<double> core_coefs_;
+  std::vector<double> core_rhs_;
+  std::vector<double> base_rhs_;
+
   // Add an element of a random vector.
   void AddRVElement(Expr arg, int rv_index, int element_index);
 
@@ -109,12 +113,17 @@ class SMPSWriter : public SolverImpl<ColProblem> {
   // form random(x, a_1, ..., a_n).
   void GetRandomVectors(const Problem &p);
 
-  void GetScenario(ColProblem &p, int scenario, std::vector<double> &coefs,
-                   std::vector<double> &rhs);
+  void GetScenario(const ColProblem &p, int scenario,
+                   std::vector<double> &coefs, std::vector<double> &rhs);
 
   void WriteColumns(FileWriter &writer, const ColProblem &p, int num_core_cons,
                     const std::vector<double> &core_obj_coefs,
                     const std::vector<double> &coefs);
+
+  void WriteDiscreteScenarios(const ColProblem &p, FileWriter &writer);
+
+  void WriteDiscreteIndep(const ColProblem &p, FileWriter &writer,
+                          const std::vector<int> &rv2con);
 
  public:
   SMPSWriter();
