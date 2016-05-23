@@ -125,12 +125,10 @@ void SMPSWriter::GetRandomVectors(const Problem &p) {
     for (; arg_index < num_args; ++arg_index) {
       auto arg = call.arg(arg_index);
       if (arg.kind() == expr::VARIABLE) {
-        if (num_realizations == -1) {
+        if (num_realizations == -1)
           num_realizations = realization_index;
-          rv.set_num_realizations(num_realizations);
-        } else if (realization_index != num_realizations) {
+        else if (realization_index != num_realizations)
           throw Error("RV {}: inconsistent number of realizations", con_index);
-        }
         ++element_index;
         realization_index = 0;
         AddRVElement(arg, con_index, element_index);
@@ -141,6 +139,8 @@ void SMPSWriter::GetRandomVectors(const Problem &p) {
         throw Error("RV {}: expected variable or constant", con_index);
       }
     }
+    rv.set_num_realizations(num_realizations == -1 ?
+                              realization_index : num_realizations);
   }
 }
 
@@ -212,6 +212,12 @@ class AffineExprExtractor : public mp::ExprVisitor<AffineExprExtractor, void> {
     case expr::ADD:
       Visit(e.lhs());
       Visit(e.rhs());
+      break;
+    case expr::SUB:
+      Visit(e.lhs());
+      coef_ = -coef_;
+      Visit(e.rhs());
+      coef_ = -coef_;
       break;
     case expr::MUL:
       if (auto n = Cast<mp::NumericConstant>(e.lhs()))
@@ -398,7 +404,7 @@ void SMPSWriter::WriteDiscreteIndep(const ColProblem &p, FileWriter &writer,
       rhs = base_rhs_;
       GetScenario(p, s, coefs, rhs);
       int con_index = rv2con[i];
-      writer.Write("    RHS1      R{:<7}  {:12}   T2        {:.4}\n",
+      writer.Write("    RHS1      R{:<7}  {:12}   T2        {:.2}\n",
                    con_index + 1, rhs[con_index], rv.probability(s));
     }
   }
