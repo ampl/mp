@@ -187,6 +187,7 @@ void SMPSWriter::WriteColumns(
 // Extracts an affine expression from a nonlinear one.
 class AffineExprExtractor : public mp::ExprVisitor<AffineExprExtractor, void> {
  private:
+  Problem &problem_;
   LinearExpr linear_;
   double constant_;
   double coef_;
@@ -199,12 +200,19 @@ class AffineExprExtractor : public mp::ExprVisitor<AffineExprExtractor, void> {
   }
 
  public:
-  AffineExprExtractor() : constant_(0), coef_(1) {}
+  AffineExprExtractor(Problem &p) : problem_(p), constant_(0), coef_(1) {}
 
   const LinearExpr &linear_expr() const { return linear_; }
 
   void VisitVariable(Variable v) {
     linear_.AddTerm(v.index(), coef_);
+  }
+
+  void VisitCommonExpr(CommonExpr e) {
+    auto common_expr = problem_.common_expr(e.index());
+    for (auto term: common_expr.linear_expr())
+      linear_.AddTerm(term.var_index(), coef_ * term.coef());
+    Visit(common_expr.nonlinear_expr());
   }
 
   void VisitBinary(BinaryExpr e) {
@@ -560,7 +568,7 @@ void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
       for (auto term: p.obj(0).linear_expr())
         core_obj_coefs[term.var_index()] = term.coef();
       if (obj_expr) {
-        AffineExprExtractor extractor;
+        AffineExprExtractor extractor(p);
         extractor.Visit(obj_expr);
         for (auto term: extractor.linear_expr())
           core_obj_coefs[term.var_index()] += term.coef();
