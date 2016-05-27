@@ -196,11 +196,8 @@ void SPAdapter::AddRVElement(Expr arg, int rv_index, int element_index) {
 void SPAdapter::GetRandomVectors(const Problem &p) {
   var_orig2core_.resize(p.num_vars());
   int num_logical_cons = p.num_logical_cons();
-  if (num_logical_cons == 0) {
-    rvs_.resize(1);
-    rvs_.back().set_num_realizations(1);
+  if (num_logical_cons == 0)
     return;
-  }
   rvs_.resize(num_logical_cons);
   for (int con_index = 0; con_index < num_logical_cons; ++con_index) {
     auto expr = p.logical_con(con_index).expr();
@@ -273,7 +270,7 @@ void SPAdapter::GetScenario(const ColProblem &p, int scenario,
     }
   }
   // Handle random variables/parameters in nonlinear constraint expressions.
-  for (int core_con_index = num_stage_cons_[0], num_cons = num_core_cons();
+  for (int core_con_index = num_stage_cons_[0], num_cons = this->num_cons();
        core_con_index < num_cons; ++core_con_index) {
     int con_index = con_core2orig_[core_con_index];
     auto con = p.algebraic_con(con_index);
@@ -387,13 +384,14 @@ SPAdapter::SPAdapter(const ColProblem &p)
     // Get the number of scenarios from the expectation in the objective.
     CallExpr expr;
     if (p.num_objs() > 0) {
-      if (auto e = p.obj(0).nonlinear_expr())
+      if (auto e = p.obj(0).nonlinear_expr()) {
         expr = Cast<CallExpr>(e);
+        if (expr && std::strcmp(expr.function().name(), "expectation")) {
+          // TODO: check that the number of arguments is 1.
+          obj_expr_ = expr.arg(0);
+        }
+      }
     }
-    if (!expr || std::strcmp(expr.function().name(), "expectation") != 0)
-      throw Error("objective doesn't contain expectation");
-    // TODO: check that the number of arguments is 1.
-    obj_expr_ = expr.arg(0);
     // TODO: check that second-stage variables only occur in expectation
   } else {
     for (int i = 0; i < num_vars; ++i) {
@@ -410,8 +408,8 @@ SPAdapter::SPAdapter(const ColProblem &p)
   num_stage_vars_[0] = num_stage1_vars;
   num_stage_cons_[0] = num_stage1_cons;
   if (num_stages_ > 1) {
-    num_stage_vars_[1] = num_core_vars() - num_stage1_vars;
-    num_stage_cons_[1] = num_core_cons() - num_stage1_cons;
+    num_stage_vars_[1] = this->num_vars() - num_stage1_vars;
+    num_stage_cons_[1] = this->num_cons() - num_stage1_cons;
   }
 
   base_rhs_.resize(p.num_algebraic_cons());
@@ -442,7 +440,7 @@ SPAdapter::SPAdapter(const ColProblem &p)
 }
 
 std::vector<double> SPAdapter::core_obj() const {
-  std::vector<double> obj(num_core_vars());
+  std::vector<double> obj(num_vars());
   if (problem_.num_objs() == 0)
     return obj;
   // Get objective coefficients in the core problem (first scenario).

@@ -37,7 +37,3 @@ if (TARGET localsolver)
   add_mp_test(localsolver-test localsolver-test.cc feature.h nl-solver-test.h
     LIBS ampllocalsolver-static)
 endif ()
-
-if (TARGET smpswriter)
-  add_mp_test(smpswriter-test smpswriter-test.cc LIBS amplsmpswriter-static)
-endif ()

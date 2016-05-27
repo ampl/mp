@@ -110,6 +110,7 @@ add_mp_test(solver-test
 target_compile_definitions(solver-test
   PRIVATE MP_SYSINFO="${MP_SYSINFO}" MP_DATE=${MP_DATE})
 
+add_mp_test(sp-test sp-test.cc)
 add_mp_test(suffix-test suffix-test.cc)
 
 find_program(LSOF lsof)

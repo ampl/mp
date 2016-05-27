@@ -55,7 +55,8 @@ class SPAdapter {
     }
 
     int num_elements() const {
-      return static_cast<int>(data_.size() / probabilities_.size());
+      return probabilities_.empty() ?
+            0 : static_cast<int>(data_.size() / probabilities_.size());
     }
 
     void set_num_realizations(int num_realizations) {
@@ -131,6 +132,25 @@ class SPAdapter {
  public:
   SPAdapter(const ColProblem &p);
 
+  // Returns the number of variables in the core problem.
+  int num_vars() const { return static_cast<int>(var_core2orig_.size()); }
+
+  // Returns the number of constraints in the core problem.
+  int num_cons() const { return problem_.num_algebraic_cons(); }
+
+  // Returns the core variable with the specified index.
+  Problem::Variable var(int index) const {
+    return problem_.var(var_core2orig_[index]);
+  }
+
+  // Returns the core constraint with the specified index.
+  Problem::AlgebraicCon con(int index) const {
+    return problem_.algebraic_con(con_core2orig_[index]);
+  }
+
+  // Returns the core objective.
+  std::vector<double> core_obj() const;
+
   // Returns the number of stages.
   int num_stages() const { return num_stages_; }
 
@@ -154,25 +174,6 @@ class SPAdapter {
 
   // Returns the stage with the specified index.
   Stage stage(int index) const { return Stage(this, index); }
-
-  // Returns the number of variables in the core problem.
-  int num_core_vars() const { return static_cast<int>(var_core2orig_.size()); }
-
-  // Returns the number of constraints in the core problem.
-  int num_core_cons() const { return problem_.num_algebraic_cons(); }
-
-  // Returns the core variable with the specified index.
-  Problem::Variable core_var(int index) const {
-    return problem_.var(var_core2orig_[index]);
-  }
-
-  // Returns the core constraint with the specified index.
-  Problem::AlgebraicCon core_con(int index) const {
-    return problem_.algebraic_con(con_core2orig_[index]);
-  }
-
-  // Returns the core objective.
-  std::vector<double> core_obj() const;
 
   class Column {
    private:

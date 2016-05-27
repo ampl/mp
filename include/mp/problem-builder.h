@@ -428,6 +428,7 @@ class ColProblem : public Problem {
   friend class ColProblemBuilder;
 
  public:
+  ColProblem() {}
   ColProblem(const Solver &, fmt::StringRef name) : name_(name.to_string()) {}
 
   int col_start(int col_index) const { return col_starts_[col_index]; }
