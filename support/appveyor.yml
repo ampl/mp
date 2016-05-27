@@ -1,5 +1,8 @@
 install: set PATH=C:\Program Files (x86)\MSBuild\14.0\Bin;%PATH%
 
+environment:
+  CTEST_OUTPUT_ON_FAILURE: 1
+
 before_build:
   - cmake -DBUILD=all -G "Visual Studio 11 2012 Win64" .
 
