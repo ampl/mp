@@ -384,7 +384,15 @@ SPAdapter::SPAdapter(const ColProblem &p)
     // Get the number of scenarios from the expectation in the objective.
     CallExpr expr;
     if (p.num_objs() > 0) {
-      if (auto e = p.obj(0).nonlinear_expr()) {
+      auto obj = p.obj(0);
+      for (auto term: obj.linear_expr()) {
+        if (var_orig2core_[term.var_index()] >= num_stage1_vars &&
+            term.coef() != 0) {
+          throw mp::Error(
+                "second-stage variable outside of expectation in objective");
+        }
+      }
+      if (auto e = obj.nonlinear_expr()) {
         expr = Cast<CallExpr>(e);
         if (expr && std::strcmp(expr.function().name(), "expectation")) {
           // TODO: check that the number of arguments is 1.
@@ -392,7 +400,6 @@ SPAdapter::SPAdapter(const ColProblem &p)
         }
       }
     }
-    // TODO: check that second-stage variables only occur in expectation
   } else {
     for (int i = 0; i < num_vars; ++i) {
       var_core2orig_[i] = i;
@@ -445,12 +452,12 @@ std::vector<double> SPAdapter::core_obj() const {
     return obj;
   // Get objective coefficients in the core problem (first scenario).
   for (auto term: problem_.obj(0).linear_expr())
-    obj[con_orig2core_[term.var_index()]] = term.coef();
+    obj[var_orig2core_[term.var_index()]] = term.coef();
   if (obj_expr_) {
     AffineExprExtractor extractor(problem_);
     extractor.Visit(obj_expr_);
     for (auto term: extractor.linear_expr())
-      obj[con_orig2core_[term.var_index()]] += term.coef();
+      obj[var_orig2core_[term.var_index()]] += term.coef();
   }
   return obj;
 }
