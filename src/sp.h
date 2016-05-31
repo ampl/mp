@@ -117,6 +117,11 @@ class SPAdapter {
   std::vector<Bounds> core_rhs_;
   std::vector<Bounds> base_rhs_;
 
+  // Count the number of stages, the number of variables in the first stage and
+  // compute core indices for the first-stage variables.
+  template <typename Suffix>
+  int ProcessStage1Vars(const ColProblem &p, Suffix stage);
+
   // Add an element of a random vector.
   void AddRVElement(Expr arg, int rv_index, int element_index);
 
@@ -208,12 +213,26 @@ class SPAdapter {
       Iterator(const SPAdapter *adapter, int coef_index)
         : adapter_(adapter), coef_index_(coef_index) {}
 
+      class Proxy {
+       private:
+        Term term_;
+
+        friend class Iterator;
+
+        Proxy(const Term &term) : term_(term) {}
+
+       public:
+        const Term *operator->() const { return &term_; }
+      };
+
      public:
       Term operator*() const {
         int orig_con_index = adapter_->problem_.row_index(coef_index_);
         return Term(adapter_->con_orig2core_[orig_con_index],
                     adapter_->problem_.value(coef_index_));
       }
+
+      Proxy operator->() const { return Proxy(**this); }
 
       Iterator &operator++() {
         ++coef_index_;
@@ -246,8 +265,8 @@ class SPAdapter {
   };
 
   // Returns a constraint matrix column.
-  Column core_column(int var_index) const {
-    return Column(this, var_index);
+  Column column(int var_index) const {
+    return Column(this, var_core2orig_[var_index]);
   }
 
   // Returns the number of random vectors.

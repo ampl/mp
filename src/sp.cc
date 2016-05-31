@@ -180,7 +180,30 @@ int FindTerm(const ColProblem &p, int con_index, int var_index) {
   }
   return -1;
 }
+
+class NullSuffix {
+ public:
+  int value(int) const { return 0; }
+};
 }  // namespace
+
+template <typename Suffix>
+int SPAdapter::ProcessStage1Vars(const ColProblem &p, Suffix stage) {
+  int num_stage1_vars = 0;
+  for (int i = 0, n = p.num_vars(); i < n; ++i) {
+    if (var_orig2core_[i])
+      continue;  // Skip random variables.
+    int stage_plus_1 = stage.value(i);
+    if (stage_plus_1 > 1) {
+      num_stages_ = std::max(stage_plus_1, num_stages_);
+    } else {
+      var_core2orig_[num_stage1_vars] = i;
+      var_orig2core_[i] = num_stage1_vars;
+      ++num_stage1_vars;
+    }
+  }
+  return num_stage1_vars;
+}
 
 void SPAdapter::AddRVElement(Expr arg, int rv_index, int element_index) {
   auto var = Cast<Reference>(arg);
@@ -306,30 +329,15 @@ SPAdapter::SPAdapter(const ColProblem &p)
 
   GetRandomVectors(p);
 
-  // Count the number of stages, the number of variables in the first stage and
-  // compute core indices for the first-stage variables.
-  int num_vars = p.num_vars();
-  int num_stage1_vars = num_vars;
   var_core2orig_.resize(p.num_vars() - rv_info_.size());
-  if (IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage")) {
-    num_stage1_vars = 0;
-    for (int i = 0; i < num_vars; ++i) {
-      if (var_orig2core_[i])
-        continue;  // Skip random variables.
-      int stage_plus_1 = stage_suffix.value(i);
-      if (stage_plus_1 > 1) {
-        num_stages_ = std::max(stage_plus_1, num_stages_);
-      } else {
-        var_core2orig_[num_stage1_vars] = i;
-        var_orig2core_[i] = num_stage1_vars;
-        ++num_stage1_vars;
-      }
-    }
-  }
+  IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage");
+  int num_stage1_vars = stage_suffix ?
+        ProcessStage1Vars(p, stage_suffix) : ProcessStage1Vars(p, NullSuffix());
   if (num_stages_ > 2)
     throw Error("SP problems with more than 2 stages are not supported");
 
   // Compute core indices for variables in later stages.
+  int num_vars = p.num_vars();
   int stage2_index = num_stage1_vars;
   if (num_stages_ > 1) {
     // Temporary change mapping for the core variable 0, not to confuse it with
@@ -401,12 +409,6 @@ SPAdapter::SPAdapter(const ColProblem &p)
       }
     }
   } else {
-    for (int i = 0; i < num_vars; ++i)
-      var_orig2core_[i] = i;
-    // The number of core variables can be smaller than the total number of
-    // variables because it doesn't include random variables.
-    for (int i = 0, n = this->num_vars(); i < n; ++i)
-      var_core2orig_[i] = i;
     for (int i = 0; i < num_cons; ++i) {
       con_core2orig_[i] = i;
       con_orig2core_[i] = i;
