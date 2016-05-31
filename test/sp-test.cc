@@ -235,14 +235,17 @@ TEST(SPTest, RandomRHS) {
   EXPECT_EQ(col.begin(), col.end());
 }
 
+TEST(SPTest, MoreThan2StagesNotSupported) {
+  TestBasicProblem p(1);
+  p.AddIntSuffix("stage", mp::suf::VAR, 1).SetValue(0, 3);
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p), mp::Error,
+    "SP problems with more than 2 stages are not supported");
+}
+
+// TODO
 /*
 TEST(SMPSWriterTest, NonlinearNotSupported) {
   WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/smps/nonlinear.nl"));
-  EXPECT_THROW(Solve("test"), mp::Error);
-}
-
-TEST(SMPSWriterTest, MoreThan2StagesNotSupported) {
-  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/smps/three-stage.nl"));
   EXPECT_THROW(Solve("test"), mp::Error);
 }
 
