@@ -159,14 +159,22 @@ class SPAdapter {
 
   class Objective {
    private:
-    SPAdapter *adapter_;
+    const SPAdapter *adapter_;
     int index_;
+
+    friend class SPAdapter;
+
+    Objective(const SPAdapter *adapter, int index)
+      : adapter_(adapter), index_(index) {}
 
    public:
     NumericExpr nonlinear_expr() const {
       return adapter_->nonlinear_objs_[index_];
     }
   };
+
+  // Returns the core objective with the specified index.
+  Objective obj(int index) const { return Objective(this, index); }
 
   // Returns the core objective.
   std::vector<double> core_obj() const;

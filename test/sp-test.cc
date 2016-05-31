@@ -52,6 +52,15 @@ class TestProblem : public mp::ColProblem {
   mp::ColProblemBuilder::LinearConHandler OnLinearConExpr(int con_index) {
     return builder_.OnLinearConExpr(con_index, 0);
   }
+
+  Reference MakeTestRV() {
+    auto rv = MakeVariable(0);
+    auto builder = BeginRandom(2);
+    builder.AddArg(rv);
+    builder.AddArg(MakeNumericConstant(11));
+    EndRandom(builder);
+    return rv;
+  }
 };
 
 mp::NLHeader MakeHeader(int num_vars, int num_integer_vars = 0) {
@@ -143,6 +152,17 @@ TEST(SPTest, MultipleRealizations) {
   EXPECT_EQ(1, sp.rv(0).num_elements());
 }
 
+TEST(SPTest, Expectation) {
+  TestBasicProblem p(1);
+  p.AddObj(mp::obj::MIN, 0);
+  auto call = p.BeginCall(p.AddFunction("expectation", 0), 1);
+  auto expr = p.MakeNumericConstant(0);
+  call.AddArg(expr);
+  p.obj(0).set_nonlinear_expr(p.EndCall(call));
+  mp::SPAdapter sp(p);
+  EXPECT_EQ(expr, sp.obj(0).nonlinear_expr());
+}
+
 TEST(SPTest, Stage2VarOutsideOfExpectation) {
   TestBasicProblem p(1);
   p.AddIntSuffix("stage", mp::suf::VAR, 1).SetValue(0, 2);
@@ -185,11 +205,7 @@ TEST(SPTest, RandomConMatrix) {
   auto header = MakeHeader(2);
   header.num_con_nonzeros = 1;
   TestProblem p(header);
-  auto rv = p.MakeVariable(0);
-  auto builder = p.BeginRandom(2);
-  builder.AddArg(rv);
-  builder.AddArg(p.MakeNumericConstant(11));
-  p.EndRandom(builder);
+  auto rv = p.MakeTestRV();
   auto con = p.AddCon(0, 0);
   con.set_nonlinear_expr(p.MakeBinary(mp::expr::MUL, rv, p.MakeVariable(1)));
   auto cols = p.OnColumnSizes();
@@ -205,7 +221,18 @@ TEST(SPTest, RandomConMatrix) {
 }
 
 TEST(SPTest, RandomRHS) {
-  // TODO
+  auto header = MakeHeader(2);
+  header.num_con_nonzeros = 1;
+  TestProblem p(header);
+  p.MakeTestRV();
+  p.AddCon(0, 0);
+  auto cols = p.OnColumnSizes();
+  cols.Add(1);
+  cols.Add(0);
+  p.OnLinearConExpr(0).AddTerm(0, 42);
+  mp::SPAdapter sp(p);
+  auto col = sp.column(0);
+  EXPECT_EQ(col.begin(), col.end());
 }
 
 /*
