@@ -110,7 +110,7 @@ void WriteCoreFile(fmt::CStringRef filename, const SPAdapter &sp) {
 
     if (auto obj_coef = obj[i])
       writer.Write("    C{:<7}  OBJ       {}\n", i + 1, obj_coef);
-    for (auto term: sp.core_column(i)) {
+    for (auto term: sp.column(i)) {
       writer.Write("    C{:<7}  R{:<7}  {}\n",
                    i + 1, term.con_index() + 1, term.coef());
     }
