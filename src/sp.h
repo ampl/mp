@@ -103,7 +103,9 @@ class SPAdapter {
   // con_orig2core_[i] is the index of constraint i in the core problem.
   std::vector<int> con_orig2core_;
 
-  Expr obj_expr_;
+  // Nonlinear parts of objective expressions.
+  // The array can be empty if the problem is linear.
+  std::vector<NumericExpr> nonlinear_objs_;
 
   struct Bounds {
     double lb;
@@ -120,7 +122,9 @@ class SPAdapter {
   // Count the number of stages, the number of variables in the first stage and
   // compute core indices for the first-stage variables.
   template <typename Suffix>
-  int ProcessStage1Vars(const ColProblem &p, Suffix stage);
+  int ProcessStage1Vars(Suffix stage);
+
+  void ProcessObjs(int num_stage1_vars);
 
   // Add an element of a random vector.
   void AddRVElement(Expr arg, int rv_index, int element_index);
@@ -152,6 +156,17 @@ class SPAdapter {
   Problem::AlgebraicCon con(int index) const {
     return problem_.algebraic_con(con_core2orig_[index]);
   }
+
+  class Objective {
+   private:
+    SPAdapter *adapter_;
+    int index_;
+
+   public:
+    NumericExpr nonlinear_expr() const {
+      return adapter_->nonlinear_objs_[index_];
+    }
+  };
 
   // Returns the core objective.
   std::vector<double> core_obj() const;

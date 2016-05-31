@@ -188,9 +188,9 @@ class NullSuffix {
 }  // namespace
 
 template <typename Suffix>
-int SPAdapter::ProcessStage1Vars(const ColProblem &p, Suffix stage) {
+int SPAdapter::ProcessStage1Vars(Suffix stage) {
   int num_stage1_vars = 0;
-  for (int i = 0, n = p.num_vars(); i < n; ++i) {
+  for (int i = 0, n = problem_.num_vars(); i < n; ++i) {
     if (var_orig2core_[i])
       continue;  // Skip random variables.
     int stage_plus_1 = stage.value(i);
@@ -203,6 +203,31 @@ int SPAdapter::ProcessStage1Vars(const ColProblem &p, Suffix stage) {
     }
   }
   return num_stage1_vars;
+}
+
+void SPAdapter::ProcessObjs(int num_stage1_vars) {
+  int num_objs = problem_.num_objs();
+  if (num_objs == 0)
+    return;
+  nonlinear_objs_.reserve(num_objs);
+  for (auto obj: problem_.objs())
+    nonlinear_objs_.push_back(obj.nonlinear_expr());
+  // Strip expectation from the first objective.
+  auto obj = problem_.obj(0);
+  for (auto term: obj.linear_expr()) {
+    if (var_orig2core_[term.var_index()] >= num_stage1_vars && term.coef() != 0)
+      throw Error("second-stage variable outside of expectation in objective");
+  }
+  auto obj_expr = obj.nonlinear_expr();
+  if (!obj_expr)
+    return;
+  auto call = Cast<CallExpr>(obj_expr);
+  if (!call || std::strcmp(call.function().name(), "expectation") != 0)
+    return;
+  NumericExpr arg;
+  if (call.num_args() != 1 || !(arg = Cast<NumericExpr>(call.arg(0))))
+    throw Error("invalid arguments to expectation");
+  nonlinear_objs_[0] = arg;
 }
 
 void SPAdapter::AddRVElement(Expr arg, int rv_index, int element_index) {
@@ -277,8 +302,8 @@ void SPAdapter::GetRandomVectors(const Problem &p) {
 }
 
 void SPAdapter::GetScenario(const ColProblem &p, int scenario,
-                              std::vector<double> &coefs,
-                              std::vector<Bounds> &rhs) {
+                            std::vector<double> &coefs,
+                            std::vector<Bounds> &rhs) {
   coefs.assign(p.values(), p.values() + p.col_start(p.num_vars()));
   // Handle random variables/parameters in the constraint matrix.
   for (const auto &info: rv_info_) {
@@ -332,9 +357,11 @@ SPAdapter::SPAdapter(const ColProblem &p)
   var_core2orig_.resize(p.num_vars() - rv_info_.size());
   IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage");
   int num_stage1_vars = stage_suffix ?
-        ProcessStage1Vars(p, stage_suffix) : ProcessStage1Vars(p, NullSuffix());
+        ProcessStage1Vars(stage_suffix) : ProcessStage1Vars(NullSuffix());
   if (num_stages_ > 2)
     throw Error("SP problems with more than 2 stages are not supported");
+
+  ProcessObjs(num_stage1_vars);
 
   // Compute core indices for variables in later stages.
   int num_vars = p.num_vars();
@@ -388,26 +415,6 @@ SPAdapter::SPAdapter(const ColProblem &p)
       con_orig2core_[i] = index++;
     }
     assert(stage1_index == num_stage1_cons && stage2_index == num_cons);
-
-    // Get the number of scenarios from the expectation in the objective.
-    CallExpr expr;
-    if (p.num_objs() > 0) {
-      auto obj = p.obj(0);
-      for (auto term: obj.linear_expr()) {
-        if (var_orig2core_[term.var_index()] >= num_stage1_vars &&
-            term.coef() != 0) {
-          throw mp::Error(
-                "second-stage variable outside of expectation in objective");
-        }
-      }
-      if (auto e = obj.nonlinear_expr()) {
-        expr = Cast<CallExpr>(e);
-        if (expr && std::strcmp(expr.function().name(), "expectation")) {
-          // TODO: check that the number of arguments is 1.
-          obj_expr_ = expr.arg(0);
-        }
-      }
-    }
   } else {
     for (int i = 0; i < num_cons; ++i) {
       con_core2orig_[i] = i;
@@ -457,9 +464,9 @@ std::vector<double> SPAdapter::core_obj() const {
   // Get objective coefficients in the core problem (first scenario).
   for (auto term: problem_.obj(0).linear_expr())
     obj[var_orig2core_[term.var_index()]] = term.coef();
-  if (obj_expr_) {
+  if (NumericExpr expr = nonlinear_objs_[0]) {
     AffineExprExtractor extractor(problem_);
-    extractor.Visit(obj_expr_);
+    extractor.Visit(expr);
     for (auto term: extractor.linear_expr())
       obj[var_orig2core_[term.var_index()]] += term.coef();
   }

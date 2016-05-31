@@ -151,6 +151,36 @@ TEST(SPTest, Stage2VarOutsideOfExpectation) {
                    "second-stage variable outside of expectation in objective");
 }
 
+TEST(SPTest, TooFewArgsToExpectation) {
+  TestBasicProblem p(1);
+  p.AddObj(mp::obj::MIN, 0);
+  auto call = p.BeginCall(p.AddFunction("expectation", 0), 0);
+  p.obj(0).set_nonlinear_expr(p.EndCall(call));
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p), mp::Error,
+                   "invalid arguments to expectation");
+}
+
+TEST(SPTest, TooManyArgsToExpectation) {
+  TestBasicProblem p(1);
+  p.AddObj(mp::obj::MIN, 0);
+  auto call = p.BeginCall(p.AddFunction("expectation", 0), 2);
+  call.AddArg(p.MakeNumericConstant(0));
+  call.AddArg(p.MakeNumericConstant(0));
+  p.obj(0).set_nonlinear_expr(p.EndCall(call));
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p), mp::Error,
+                   "invalid arguments to expectation");
+}
+
+TEST(SPTest, StringArgToExpectation) {
+  TestBasicProblem p(1);
+  p.AddObj(mp::obj::MIN, 0);
+  auto call = p.BeginCall(p.AddFunction("expectation", 0), 1);
+  call.AddArg(p.MakeStringLiteral("foo"));
+  p.obj(0).set_nonlinear_expr(p.EndCall(call));
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p), mp::Error,
+                   "invalid arguments to expectation");
+}
+
 TEST(SPTest, RandomConMatrix) {
   auto header = MakeHeader(2);
   header.num_con_nonzeros = 1;
