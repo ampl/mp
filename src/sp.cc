@@ -301,18 +301,18 @@ void SPAdapter::GetRandomVectors(const Problem &p) {
   }
 }
 
-void SPAdapter::GetScenario(const ColProblem &p, int scenario,
-                            std::vector<double> &coefs,
+void SPAdapter::GetScenario(int scenario, std::vector<double> &coefs,
                             std::vector<Bounds> &rhs) {
-  coefs.assign(p.values(), p.values() + p.col_start(p.num_vars()));
+  coefs.assign(problem_.values(),
+               problem_.values() + problem_.col_start(problem_.num_vars()));
   // Handle random variables/parameters in the constraint matrix.
   for (const auto &info: rv_info_) {
     int var_index = info.var_index;
-    for (int k = p.col_start(var_index),
-         end = p.col_start(var_index + 1); k != end; ++k) {
+    for (int k = problem_.col_start(var_index),
+         end = problem_.col_start(var_index + 1); k != end; ++k) {
       auto value = rvs_[info.rv_index].value(info.element_index, scenario);
       value *= coefs[k];
-      auto &bounds = rhs[p.row_index(k)];
+      auto &bounds = rhs[problem_.row_index(k)];
       bounds.lb -= value;
       bounds.ub -= value;
     }
@@ -321,7 +321,7 @@ void SPAdapter::GetScenario(const ColProblem &p, int scenario,
   for (int core_con_index = num_stage_cons_[0], num_cons = this->num_cons();
        core_con_index < num_cons; ++core_con_index) {
     int con_index = con_core2orig_[core_con_index];
-    auto con = p.algebraic_con(con_index);
+    auto con = problem_.algebraic_con(con_index);
     auto expr = con.nonlinear_expr();
     if (!expr) continue;
     // Get constraint coefficients for scenario.
@@ -332,7 +332,7 @@ void SPAdapter::GetScenario(const ColProblem &p, int scenario,
     bounds.ub -= value;
     for (auto term: extractor.linear_expr()) {
       int var_index = term.var_index();
-      int index = FindTerm(p, con_index, var_index);
+      int index = FindTerm(problem_, con_index, var_index);
       if (index == -1)
         throw Error("cannot find term ({}, {})", con_index, var_index);
       // Add extracted term coefficient to the one in constraint matrix.
@@ -438,7 +438,7 @@ SPAdapter::SPAdapter(const ColProblem &p)
 
   core_rhs_ = base_rhs_;
   std::vector<double> core_coefs;
-  GetScenario(p, 0, core_coefs, core_rhs_);
+  GetScenario(0, core_coefs, core_rhs_);
 
   // TODO: remove if unused
   /*std::vector<int> nonzero_coef_indices;

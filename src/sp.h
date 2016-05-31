@@ -133,8 +133,8 @@ class SPAdapter {
   // form random(x, a_1, ..., a_n).
   void GetRandomVectors(const Problem &p);
 
-  void GetScenario(const ColProblem &p, int scenario,
-                   std::vector<double> &coefs, std::vector<Bounds> &rhs);
+  void GetScenario(int scenario, std::vector<double> &coefs,
+                   std::vector<Bounds> &rhs);
 
   void WriteTimeFile(fmt::CStringRef filename, SPAdapter &adapter);
 
