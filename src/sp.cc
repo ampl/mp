@@ -401,10 +401,12 @@ SPAdapter::SPAdapter(const ColProblem &p)
       }
     }
   } else {
-    for (int i = 0; i < num_vars; ++i) {
-      var_core2orig_[i] = i;
+    for (int i = 0; i < num_vars; ++i)
       var_orig2core_[i] = i;
-    }
+    // The number of core variables can be smaller than the total number of
+    // variables because it doesn't include random variables.
+    for (int i = 0, n = this->num_vars(); i < n; ++i)
+      var_core2orig_[i] = i;
     for (int i = 0; i < num_cons; ++i) {
       con_core2orig_[i] = i;
       con_orig2core_[i] = i;
