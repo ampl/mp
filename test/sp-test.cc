@@ -21,20 +21,16 @@
  */
 
 #include "sp.h"
-#include "gtest/gtest.h"
+#include "gtest-extra.h"
 
 // A test column-wise problem with specified number of variables.
 class TestProblem : public mp::ColProblem {
+ private:
+  mp::ColProblemBuilder builder_;
+
  public:
-  explicit TestProblem(int num_vars, int num_integer_vars = 0) {
-    mp::ColProblemBuilder builder(*this);
-    mp::NLHeader header = mp::NLHeader();
-    header.num_vars = num_vars;
-    header.num_linear_integer_vars = num_integer_vars;
-    builder.OnHeader(header);
-    auto col_sizes = builder.OnColumnSizes();
-    for (int i = 0; i < num_vars; ++i)
-      col_sizes.Add(0);
+  TestProblem(const mp::NLHeader &header) : builder_(*this) {
+    builder_.OnHeader(header);
   }
 
   // Begins a random variable/vector.
@@ -48,10 +44,37 @@ class TestProblem : public mp::ColProblem {
     auto zero = MakeNumericConstant(0);
     AddCon(MakeRelational(mp::expr::NE, EndCall(builder), zero));
   }
+
+  mp::ColProblemBuilder::ColumnSizeHandler OnColumnSizes() {
+    return builder_.OnColumnSizes();
+  }
+
+  mp::ColProblemBuilder::LinearConHandler OnLinearConExpr(int con_index) {
+    return builder_.OnLinearConExpr(con_index, 0);
+  }
+};
+
+mp::NLHeader MakeHeader(int num_vars, int num_integer_vars = 0) {
+  mp::NLHeader header = mp::NLHeader();
+  header.num_vars = num_vars;
+  header.num_linear_integer_vars = num_integer_vars;
+  return header;
+}
+
+// A test column-wise problem with specified number of variables and
+// an empty constraint matrix.
+class TestBasicProblem : public TestProblem {
+ public:
+  explicit TestBasicProblem(int num_vars, int num_integer_vars = 0)
+    : TestProblem(MakeHeader(num_vars, num_integer_vars)) {
+    auto col_sizes = OnColumnSizes();
+    for (int i = 0; i < num_vars; ++i)
+      col_sizes.Add(0);
+  }
 };
 
 TEST(SPTest, EmptyProblem) {
-  TestProblem p(0);
+  TestBasicProblem p(0);
   mp::SPAdapter sp(p);
   EXPECT_EQ(0, sp.num_vars());
   EXPECT_EQ(0, sp.num_cons());
@@ -60,7 +83,7 @@ TEST(SPTest, EmptyProblem) {
 }
 
 TEST(SPTest, SecondStageVar) {
-  TestProblem p(2);
+  TestBasicProblem p(2);
   p.AddIntSuffix("stage", mp::suf::VAR, 1).SetValue(0, 2);
   mp::SPAdapter sp(p);
   EXPECT_EQ(2, sp.num_vars());
@@ -73,7 +96,7 @@ TEST(SPTest, SecondStageVar) {
 }
 
 TEST(SPTest, OrderVarsByStage) {
-  TestProblem p(2, 1);
+  TestBasicProblem p(2, 1);
   EXPECT_EQ(mp::var::INTEGER, p.var(1).type());
   p.var(0).set_lb(42);
   p.AddIntSuffix("stage", mp::suf::VAR, 1).SetValue(0, 2);
@@ -84,7 +107,7 @@ TEST(SPTest, OrderVarsByStage) {
 }
 
 TEST(SPTest, RandomVar) {
-  TestProblem p(2);
+  TestBasicProblem p(2);
   auto random = p.BeginRandom(1);
   random.AddArg(p.MakeVariable(0));
   p.EndRandom(random);
@@ -95,7 +118,7 @@ TEST(SPTest, RandomVar) {
 }
 
 TEST(SPTest, SingleRealization) {
-  TestProblem p(2);
+  TestBasicProblem p(2);
   auto random = p.BeginRandom(2);
   random.AddArg(p.MakeVariable(0));
   random.AddArg(p.MakeNumericConstant(42));
@@ -107,7 +130,7 @@ TEST(SPTest, SingleRealization) {
 }
 
 TEST(SPTest, MultipleRealizations) {
-  TestProblem p(2);
+  TestBasicProblem p(2);
   auto random = p.BeginRandom(4);
   random.AddArg(p.MakeVariable(0));
   random.AddArg(p.MakeNumericConstant(11));
@@ -120,7 +143,40 @@ TEST(SPTest, MultipleRealizations) {
   EXPECT_EQ(1, sp.rv(0).num_elements());
 }
 
-// TODO: more tests: "random-con-matrix", "random-con-matrix2", "random-rhs"
+TEST(SPTest, Stage2VarOutsideOfExpectation) {
+  TestBasicProblem p(1);
+  p.AddIntSuffix("stage", mp::suf::VAR, 1).SetValue(0, 2);
+  p.AddObj(mp::obj::MIN, 1).AddTerm(0, 1);
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p), mp::Error,
+                   "second-stage variable outside of expectation in objective");
+}
+
+TEST(SPTest, RandomConMatrix) {
+  auto header = MakeHeader(2);
+  header.num_con_nonzeros = 1;
+  TestProblem p(header);
+  auto rv = p.MakeVariable(0);
+  auto builder = p.BeginRandom(2);
+  builder.AddArg(rv);
+  builder.AddArg(p.MakeNumericConstant(11));
+  p.EndRandom(builder);
+  auto con = p.AddCon(0, 0);
+  con.set_nonlinear_expr(p.MakeBinary(mp::expr::MUL, rv, p.MakeVariable(1)));
+  auto cols = p.OnColumnSizes();
+  cols.Add(0);
+  cols.Add(1);
+  p.OnLinearConExpr(0).AddTerm(1, 42);
+  mp::SPAdapter sp(p);
+  auto col = sp.column(0);
+  auto it = col.begin();
+  EXPECT_EQ(42, it->coef());
+  EXPECT_EQ(0, it->con_index());
+  EXPECT_EQ(col.end(), ++it);
+}
+
+TEST(SPTest, RandomRHS) {
+  // TODO
+}
 
 /*
 TEST(SMPSWriterTest, NonlinearNotSupported) {
