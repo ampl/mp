@@ -435,12 +435,6 @@ SPAdapter::SPAdapter(const ColProblem &p)
     num_stage_cons_[1] = this->num_cons() - num_stage1_cons;
   }
 
-  // Check if first-stage constraints are linear.
-  for (int i = 0; i < num_stage1_cons; ++i) {
-    if (p.algebraic_con(con_core2orig_[i]).nonlinear_expr())
-      throw MakeUnsupportedError("nonlinear expression");
-  }
-
   // rv_counts_[i] is the number of random variables that appear linearly
   // in the second-stage constraint i.
   std::vector<int> rv_counts(num_stage_cons_[1]);
