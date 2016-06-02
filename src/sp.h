@@ -37,6 +37,7 @@ class SPAdapter {
   class RandomVector {
    private:
     std::vector<double> probabilities_;
+
     // A matrix with rows representing elements and columns representing
     // realizatons.
     std::vector<double> data_;
@@ -125,6 +126,7 @@ class SPAdapter {
   int ProcessStage1Vars(Suffix stage);
 
   void ProcessObjs(int num_stage1_vars);
+  int ProcessCons(int num_stage1_vars);
 
   // Add an element of a random vector.
   void AddRVElement(Expr arg, int rv_index, int element_index);

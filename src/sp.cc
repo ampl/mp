@@ -230,6 +230,46 @@ void SPAdapter::ProcessObjs(int num_stage1_vars) {
   nonlinear_objs_[0] = arg;
 }
 
+int SPAdapter::ProcessCons(int num_stage1_vars) {
+  int num_vars = problem_.num_vars();
+  int num_cons = problem_.num_algebraic_cons();
+  std::vector<int> con_stages(num_cons);
+  if (num_stage1_vars != num_vars) {
+    // Compute stage of each constraint as a maximum of stages of
+    // variables in it.
+    for (int j = 0; j < num_vars; ++j) {
+      int core_var_index = var_orig2core_[j];
+      if (core_var_index >= 0 && core_var_index < num_stage1_vars)
+        continue;
+      // Update stages of all constraints containing this variable.
+      for (int k = problem_.col_start(j),
+           end = problem_.col_start(j + 1); k != end; ++k) {
+        con_stages[problem_.row_index(k)] = 1;
+      }
+    }
+  }
+  int num_stage1_cons = 0;
+  for (int i = 0; i < num_cons; ++i) {
+    if (problem_.algebraic_con(i).nonlinear_expr())
+      con_stages[i] = 1;
+    else if (con_stages[i] == 0)
+      ++num_stage1_cons;
+  }
+  // Compute core indices for constraints.
+  con_core2orig_.resize(num_cons);
+  con_orig2core_.resize(num_cons);
+  int stage1_index = 0, stage2_index = num_stage1_cons;
+  for (int i = 0; i < num_cons; ++i) {
+    int &index = con_stages[i] != 0 ? stage2_index : stage1_index;
+    con_core2orig_[index] = i;
+    con_orig2core_[i] = index++;
+  }
+  assert(stage1_index == num_stage1_cons && stage2_index == num_cons);
+  if (num_stage1_cons != num_cons)
+    num_stages_ = 2;
+  return num_stage1_cons;
+}
+
 void SPAdapter::AddRVElement(Expr arg, int rv_index, int element_index) {
   auto var = Cast<Reference>(arg);
   int var_index = var.index();
@@ -384,43 +424,8 @@ SPAdapter::SPAdapter(const ColProblem &p)
            stage2_index + rv_info_.size());
   }
 
-  int num_cons = p.num_algebraic_cons();
-  int num_stage1_cons = num_cons;
-  con_core2orig_.resize(num_cons);
-  con_orig2core_.resize(num_cons);
-  if (num_stages_ > 1) {
-    // Compute stage of each constraint as a maximum of stages of
-    // variables in it.
-    std::vector<int> con_stages(num_cons);
-    for (int j = 0; j < num_vars; ++j) {
-      if (var_orig2core_[j] < num_stage1_vars)
-        continue;
-      // Update stages of all constraints containing this variable.
-      for (int k = p.col_start(j), end = p.col_start(j + 1); k != end; ++k) {
-        int con_index = p.row_index(k);
-        int &con_stage = con_stages[con_index];
-        if (con_stage < 1) {
-          if (con_stage == 0)
-            --num_stage1_cons;
-          con_stage = 1;
-        }
-      }
-    }
+  int num_stage1_cons = ProcessCons(num_stage1_vars);
 
-    // Compute core indices for constraints.
-    int stage1_index = 0, stage2_index = num_stage1_cons;
-    for (int i = 0; i < num_cons; ++i) {
-      int &index = con_stages[i] != 0 ? stage2_index : stage1_index;
-      con_core2orig_[index] = i;
-      con_orig2core_[i] = index++;
-    }
-    assert(stage1_index == num_stage1_cons && stage2_index == num_cons);
-  } else {
-    for (int i = 0; i < num_cons; ++i) {
-      con_core2orig_[i] = i;
-      con_orig2core_[i] = i;
-    }
-  }
   num_stage_vars_.resize(num_stages_);
   num_stage_cons_.resize(num_stages_);
   num_stage_vars_[0] = num_stage1_vars;
@@ -430,8 +435,28 @@ SPAdapter::SPAdapter(const ColProblem &p)
     num_stage_cons_[1] = this->num_cons() - num_stage1_cons;
   }
 
+  // Check if first-stage constraints are linear.
+  for (int i = 0; i < num_stage1_cons; ++i) {
+    if (p.algebraic_con(con_core2orig_[i]).nonlinear_expr())
+      throw MakeUnsupportedError("nonlinear expression");
+  }
+
+  // rv_counts_[i] is the number of random variables that appear linearly
+  // in the second-stage constraint i.
+  std::vector<int> rv_counts(num_stage_cons_[1]);
+  // Count random variables in second-stage constraints.
+  for (auto info: rv_info_) {
+    for (int k = p.col_start(info.var_index),
+         end = p.col_start(info.var_index + 1); k != end; ++k) {
+       int core_con_index = con_orig2core_[p.row_index(k)];
+       assert(core_con_index >= num_stage1_cons);
+       ++rv_counts[core_con_index - num_stage1_cons];
+    }
+  }
+  // TODO: map constraints to random variables that appear linearly in them
+
   base_rhs_.resize(p.num_algebraic_cons());
-  for (int i = 0; i < num_cons; ++i) {
+  for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
     auto con = p.algebraic_con(con_core2orig_[i]);
     base_rhs_[i] = Bounds(con.lb(), con.ub());
   }

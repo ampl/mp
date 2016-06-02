@@ -239,21 +239,22 @@ TEST(SPTest, MoreThan2StagesNotSupported) {
   TestBasicProblem p(1);
   p.AddIntSuffix("stage", mp::suf::VAR, 1).SetValue(0, 3);
   EXPECT_THROW_MSG(mp::SPAdapter sp(p), mp::Error,
-    "SP problems with more than 2 stages are not supported");
+                   "SP problems with more than 2 stages are not supported");
 }
+
+TEST(SPTest, NonlinearNotSupported) {
+  TestBasicProblem p(1);
+  p.AddCon(0, 0);
+  p.algebraic_con(0).set_nonlinear_expr(
+        p.MakeUnary(mp::expr::POW2, p.MakeVariable(0)));
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p), mp::UnsupportedError,
+                   "unsupported: ^2");
+}
+
+// TODO: random RHS
 
 // TODO
 /*
-TEST(SMPSWriterTest, NonlinearNotSupported) {
-  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/smps/nonlinear.nl"));
-  EXPECT_THROW(Solve("test"), mp::Error);
-}
-
-TEST(SMPSWriterTest, RangesNotSupported) {
-  TempSMPSFiles files("smps/range-con");
-  EXPECT_THROW(Solve("test"), mp::Error);
-}
-
 TEST(SMPSWriterTest, InconsistentProbabilities) {
   std::string filename = MP_TEST_DATA_DIR "/smps/inconsistent-probabilities";
   WriteFile("test.nl", ReadFile(filename + ".nl"));
