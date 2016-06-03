@@ -28,6 +28,25 @@
 
 namespace mp {
 
+class SparseMatrix {
+ private:
+  std::vector<int> starts_;
+  std::vector<int> indices_;
+  std::vector<double> coefs_;
+
+ public:
+  explicit SparseMatrix(int major_size) : starts_(major_size + 1) {}
+
+  void resize_elements(int num_elements) {
+    indices_.resize(num_elements);
+    coefs_.resize(num_elements);
+  }
+
+  int &start(int major_index) { return starts_[major_index]; }
+  int &index(int element_index) { return indices_[element_index]; }
+  double &coef(int element_index) { return coefs_[element_index]; }
+};
+
 // Adapts ColProblem to stochastic programming problem API.
 class SPAdapter {
  private:
@@ -138,7 +157,7 @@ class SPAdapter {
   void GetScenario(int scenario, std::vector<double> &coefs,
                    std::vector<Bounds> &rhs);
 
-  void WriteTimeFile(fmt::CStringRef filename, SPAdapter &adapter);
+  void ExtractRandomTerms();
 
  public:
   SPAdapter(const ColProblem &p);

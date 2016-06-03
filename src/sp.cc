@@ -381,6 +381,47 @@ void SPAdapter::GetScenario(int scenario, std::vector<double> &coefs,
   }
 }
 
+void SPAdapter::ExtractRandomTerms() {
+  int num_stage1_cons = num_stage_cons_[0];
+  int num_stage2_cons = num_stage_cons_[1];
+
+  // A matrix containing linear terms involving random variables.
+  // The major dimension is equal to the number of second-stage constraints.
+  SparseMatrix random(num_stage2_cons);
+
+  // Count random variables in second-stage constraints.
+  for (auto info: rv_info_) {
+    for (int k = problem_.col_start(info.var_index),
+         end = problem_.col_start(info.var_index + 1); k != end; ++k) {
+       int core_con_index = con_orig2core_[problem_.row_index(k)];
+       assert(core_con_index >= num_stage1_cons);
+       ++random.start(core_con_index - num_stage1_cons + 1);
+    }
+  }
+  // Acummulate counts to get vector starts.
+  int start = 0;
+  for (int i = 1; i <= num_stage2_cons; ++i) {
+    int next = start + random.start(i);
+    random.start(i) = start;
+    start = next;
+  }
+
+  // Map second-stage constraints to random variables that appear linearly
+  // in them.
+  random.resize_elements(start);
+  for (auto info: rv_info_) {
+    for (int k = problem_.col_start(info.var_index),
+         end = problem_.col_start(info.var_index + 1); k != end; ++k) {
+       int core_con_index = con_orig2core_[problem_.row_index(k)];
+       assert(core_con_index >= num_stage1_cons);
+       int index = core_con_index - num_stage1_cons + 1;
+       int element_index = random.start(index)++;
+       random.index(element_index) = info.var_index;
+       random.coef(element_index) = problem_.value(k);
+    }
+  }
+}
+
 SPAdapter::SPAdapter(const ColProblem &p)
   : problem_(p), num_stages_(1) {
   // Find the random function.
@@ -433,21 +474,9 @@ SPAdapter::SPAdapter(const ColProblem &p)
   if (num_stages_ > 1) {
     num_stage_vars_[1] = this->num_vars() - num_stage1_vars;
     num_stage_cons_[1] = this->num_cons() - num_stage1_cons;
+    ExtractRandomTerms();
+    // TODO: use sparse matrix to compute random RHS
   }
-
-  // rv_counts_[i] is the number of random variables that appear linearly
-  // in the second-stage constraint i.
-  std::vector<int> rv_counts(num_stage_cons_[1]);
-  // Count random variables in second-stage constraints.
-  for (auto info: rv_info_) {
-    for (int k = p.col_start(info.var_index),
-         end = p.col_start(info.var_index + 1); k != end; ++k) {
-       int core_con_index = con_orig2core_[p.row_index(k)];
-       assert(core_con_index >= num_stage1_cons);
-       ++rv_counts[core_con_index - num_stage1_cons];
-    }
-  }
-  // TODO: map constraints to random variables that appear linearly in them
 
   base_rhs_.resize(p.num_algebraic_cons());
   for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
