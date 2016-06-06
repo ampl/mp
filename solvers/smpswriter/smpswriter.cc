@@ -24,8 +24,10 @@
 #include "sp.h"
 #include "mp/expr-visitor.h"
 
-#include <cmath>
-#include <cstdio>
+#include <cstdio>  // std::fopen
+#include <limits>  // std::numeric_limits
+#include <string>
+#include <vector>
 
 using mp::SPAdapter;
 
