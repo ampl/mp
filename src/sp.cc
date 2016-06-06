@@ -22,7 +22,9 @@
 
 #include "sp.h"
 #include "mp/expr-visitor.h"
-#include <vector>
+
+#include <cstring>    // std::strcmp
+#include <algorithm>  // std::max
 
 namespace mp {
 namespace {
@@ -58,35 +60,37 @@ class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
     Visit(common_expr.nonlinear_expr());
   }
 
-  void VisitBinary(BinaryExpr e) {
-    switch (e.kind()) {
-    case expr::ADD:
-      Visit(e.lhs());
-      Visit(e.rhs());
-      break;
-    case expr::SUB:
-      Visit(e.lhs());
-      coef_ = -coef_;
-      Visit(e.rhs());
-      coef_ = -coef_;
-      break;
-    case expr::MUL:
-      if (auto n = Cast<NumericConstant>(e.lhs()))
-        return VisitMultiplied(n.value(), e.rhs());
-      if (auto n = Cast<NumericConstant>(e.rhs()))
-        return VisitMultiplied(n.value(), e.lhs());
-      throw UnsupportedError("nonlinear expression");
-      break;
-    default:
-      ExprVisitor<AffineExprExtractor, void>::VisitBinary(e);
-    }
-  }
+  void VisitBinary(BinaryExpr e);
 
   void VisitSum(SumExpr e) {
     for (auto arg: e)
       Visit(arg);
   }
 };
+
+void AffineExprExtractor::VisitBinary(BinaryExpr e) {
+  switch (e.kind()) {
+  case expr::ADD:
+    Visit(e.lhs());
+    Visit(e.rhs());
+    break;
+  case expr::SUB:
+    Visit(e.lhs());
+    coef_ = -coef_;
+    Visit(e.rhs());
+    coef_ = -coef_;
+    break;
+  case expr::MUL:
+    if (auto n = Cast<NumericConstant>(e.lhs()))
+      return VisitMultiplied(n.value(), e.rhs());
+    if (auto n = Cast<NumericConstant>(e.rhs()))
+      return VisitMultiplied(n.value(), e.lhs());
+    throw UnsupportedError("nonlinear expression");
+    break;
+  default:
+    ExprVisitor<AffineExprExtractor, void>::VisitBinary(e);
+  }
+}
 
 template <typename Impl>
 class RandomConstExprExtractor : public mp::ExprVisitor<Impl, double> {
@@ -169,17 +173,6 @@ class RandomAffineExprExtractor :
 
   // TODO
 };
-
-// Finds term with the specified constraint and variable indices in the
-// column-wise constraint matrix.
-int FindTerm(const ColProblem &p, int con_index, int var_index) {
-  for (int i = p.col_start(var_index),
-       n = p.col_start(var_index + 1); i < n; ++i) {
-    if (p.row_index(i) == con_index)
-      return i;
-  }
-  return -1;
-}
 
 class NullSuffix {
  public:
@@ -341,46 +334,6 @@ void SPAdapter::GetRandomVectors(const Problem &p) {
   }
 }
 
-void SPAdapter::GetScenario(int scenario, std::vector<double> &coefs,
-                            std::vector<Bounds> &rhs) {
-  coefs.assign(problem_.values(),
-               problem_.values() + problem_.col_start(problem_.num_vars()));
-  // Handle random variables/parameters in the constraint matrix.
-  for (const auto &info: rv_info_) {
-    int var_index = info.var_index;
-    for (int k = problem_.col_start(var_index),
-         end = problem_.col_start(var_index + 1); k != end; ++k) {
-      auto value = rvs_[info.rv_index].value(info.element_index, scenario);
-      value *= coefs[k];
-      auto &bounds = rhs[problem_.row_index(k)];
-      bounds.lb -= value;
-      bounds.ub -= value;
-    }
-  }
-  // Handle random variables/parameters in nonlinear constraint expressions.
-  for (int core_con_index = num_stage_cons_[0], num_cons = this->num_cons();
-       core_con_index < num_cons; ++core_con_index) {
-    int con_index = con_core2orig_[core_con_index];
-    auto con = problem_.algebraic_con(con_index);
-    auto expr = con.nonlinear_expr();
-    if (!expr) continue;
-    // Get constraint coefficients for scenario.
-    RandomAffineExprExtractor extractor(*this, scenario);
-    auto value = extractor.Visit(expr);
-    auto &bounds = rhs[core_con_index];
-    bounds.lb -= value;
-    bounds.ub -= value;
-    for (auto term: extractor.linear_expr()) {
-      int var_index = term.var_index();
-      int index = FindTerm(problem_, con_index, var_index);
-      if (index == -1)
-        throw Error("cannot find term ({}, {})", con_index, var_index);
-      // Add extracted term coefficient to the one in constraint matrix.
-      coefs[index] += term.coef();
-    }
-  }
-}
-
 void SPAdapter::ExtractRandomTerms() {
   int num_stage1_cons = num_stage_cons_[0];
   int num_stage2_cons = num_stage_cons_[1];
@@ -509,20 +462,9 @@ void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {
     int orig_con_index = con_core2orig_[num_stage1_cons + stage2_con];
     if (auto expr = problem_.algebraic_con(orig_con_index).nonlinear_expr()) {
       RandomAffineExprExtractor extractor(*this, scenario_index);
-      // TODO: add result to rhs offsets
-      extractor.Visit(expr);
+      s.rhs_offsets_[stage2_con] += extractor.Visit(expr);
     }
   }
-
-  /*base_rhs_.resize(p.num_algebraic_cons());
-  for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
-    auto con = p.algebraic_con(con_core2orig_[i]);
-    base_rhs_[i] = Bounds(con.lb(), con.ub());
-  }
-
-  core_rhs_ = base_rhs_;
-  std::vector<double> core_coefs;
-  GetScenario(0, core_coefs, core_rhs_);
 
   // TODO: remove if unused
   /*std::vector<int> nonzero_coef_indices;
@@ -541,3 +483,56 @@ void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {
   }*/
 }
 }  // namespace mp
+
+// TODO: migrate
+/*
+// Finds term with the specified constraint and variable indices in the
+// column-wise constraint matrix.
+int FindTerm(const ColProblem &p, int con_index, int var_index) {
+  for (int i = p.col_start(var_index),
+       n = p.col_start(var_index + 1); i < n; ++i) {
+    if (p.row_index(i) == con_index)
+      return i;
+  }
+  return -1;
+}
+
+void SPAdapter::GetScenario(int scenario, std::vector<double> &coefs,
+                            std::vector<Bounds> &rhs) {
+  coefs.assign(problem_.values(),
+               problem_.values() + problem_.col_start(problem_.num_vars()));
+  // Handle random variables/parameters in the constraint matrix.
+  for (const auto &info: rv_info_) {
+    int var_index = info.var_index;
+    for (int k = problem_.col_start(var_index),
+         end = problem_.col_start(var_index + 1); k != end; ++k) {
+      auto value = rvs_[info.rv_index].value(info.element_index, scenario);
+      value *= coefs[k];
+      auto &bounds = rhs[problem_.row_index(k)];
+      bounds.lb -= value;
+      bounds.ub -= value;
+    }
+  }
+  // Handle random variables/parameters in nonlinear constraint expressions.
+  for (int core_con_index = num_stage_cons_[0], num_cons = this->num_cons();
+       core_con_index < num_cons; ++core_con_index) {
+    int con_index = con_core2orig_[core_con_index];
+    auto con = problem_.algebraic_con(con_index);
+    auto expr = con.nonlinear_expr();
+    if (!expr) continue;
+    // Get constraint coefficients for scenario.
+    RandomAffineExprExtractor extractor(*this, scenario);
+    auto value = extractor.Visit(expr);
+    auto &bounds = rhs[core_con_index];
+    bounds.lb -= value;
+    bounds.ub -= value;
+    for (auto term: extractor.linear_expr()) {
+      int var_index = term.var_index();
+      int index = FindTerm(problem_, con_index, var_index);
+      if (index == -1)
+        throw Error("cannot find term ({}, {})", con_index, var_index);
+      // Add extracted term coefficient to the one in constraint matrix.
+      coefs[index] += term.coef();
+    }
+  }
+}*/

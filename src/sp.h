@@ -24,7 +24,9 @@
 #define MP_SP_H_
 
 #include "mp/problem-builder.h"
+
 #include <iterator>
+#include <vector>
 
 namespace mp {
 
@@ -135,18 +137,6 @@ class SPAdapter {
   // The array can be empty if the problem is linear.
   std::vector<NumericExpr> nonlinear_objs_;
 
-  struct Bounds {
-    double lb;
-    double ub;
-
-    Bounds() : lb(0), ub(0) {}
-    Bounds(double lb, double ub) : lb(lb), ub(ub) {}
-  };
-
-  // TODO: remove
-  std::vector<Bounds> core_rhs_;
-  std::vector<Bounds> base_rhs_;
-
   // Count the number of stages, the number of variables in the first stage and
   // compute core indices for the first-stage variables.
   template <typename Suffix>
@@ -161,9 +151,6 @@ class SPAdapter {
   // Extract random vectors from logical constraints with expressions of the
   // form random(x, a_1, ..., a_n).
   void GetRandomVectors(const Problem &p);
-
-  void GetScenario(int scenario, std::vector<double> &coefs,
-                   std::vector<Bounds> &rhs);
 
   void ExtractRandomTerms();
 
@@ -206,6 +193,7 @@ class SPAdapter {
   Objective obj(int index) const { return Objective(this, index); }
 
   // Returns the core objective.
+  // TODO: remove
   std::vector<double> core_obj() const;
 
   // Returns the number of stages.
