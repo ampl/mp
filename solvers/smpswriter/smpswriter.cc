@@ -118,6 +118,12 @@ void WriteCoreFile(fmt::CStringRef filename, const SPAdapter &sp) {
   if (integer_block)
     writer.Write("    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);
 
+  SPAdapter::Scenario scenario;
+  sp.GetScenario(scenario, 0);
+  int stage2_con = sp.stage(0).num_cons();
+  for (double offset: scenario.rhs_offsets())
+    core_rhs[stage2_con++] += offset;
+
   writer.Write("RHS\n");
   for (int i = 0; i < num_core_cons; ++i) {
     if (auto rhs = core_rhs[i])
@@ -155,16 +161,16 @@ void WriteCoreFile(fmt::CStringRef filename, const SPAdapter &sp) {
 
 void WriteDiscreteScenarios(FileWriter &writer, const SPAdapter &sp) {
   assert(sp.num_rvs() == 1);
-  writer.Write("SCENARIOS     DISCRETE\n");
   const auto &rv = sp.rv(0);
-  std::vector<double> coefs, rhs;
+  writer.Write("SCENARIOS     DISCRETE\n");
   writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n", rv.probability(0));
+  SPAdapter::Scenario scenario;
   for (size_t s = 1, num_scen = rv.num_realizations(); s < num_scen; ++s) {
     writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n",
                  s + 1, rv.probability(s));
-    // TODO: separate SP info extraction and output
+    sp.GetScenario(scenario, s);
+    // TODO: random constraint matrix
     /*rhs = base_rhs_;
-    sp.GetScenario(s, coefs, rhs);
     // Compare to the core and write differences.
     for (int j = 0, num_vars = sp.num_core_vars(); j < num_vars; ++j) {
       for (int k = p.col_start(j), n = p.col_start(j + 1); k != n; ++k) {
@@ -174,12 +180,13 @@ void WriteDiscreteScenarios(FileWriter &writer, const SPAdapter &sp) {
         writer.Write("    C{:<7}  R{:<7}  {}\n",
                      var_orig2core_[j] + 1, core_con_index + 1, coef);
       }
-    }
-    for (int i = num_stage1_cons_, n = p.num_algebraic_cons(); i < n; ++i) {
-      double value = rhs[i];
-      if (core_rhs_[i] != value)
-        writer.Write("    RHS1      R{:<7}  {}\n", i + 1, value);
     }*/
+    int stage2_con = sp.stage(0).num_cons() + 1;
+    for (double offset: scenario.rhs_offsets()) {
+      if (offset != 0)
+        writer.Write("    RHS1      R{:<7}  {}\n", stage2_con, offset);
+      ++stage2_con;
+    }
   }
 }
 
