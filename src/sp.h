@@ -35,15 +35,22 @@ class SparseMatrix {
   std::vector<double> coefs_;
 
  public:
-  explicit SparseMatrix(int major_size) : starts_(major_size + 1) {}
+  SparseMatrix() {}
+
+  void resize_major(int major_size) { starts_.resize(major_size + 1); }
 
   void resize_elements(int num_elements) {
     indices_.resize(num_elements);
     coefs_.resize(num_elements);
   }
 
+  int start(int major_index) const { return starts_[major_index]; }
   int &start(int major_index) { return starts_[major_index]; }
+
+  int index(int element_index) const { return indices_[element_index]; }
   int &index(int element_index) { return indices_[element_index]; }
+
+  double coef(int element_index) const { return coefs_[element_index]; }
   double &coef(int element_index) { return coefs_[element_index]; }
 };
 
@@ -52,6 +59,7 @@ class SPAdapter {
  private:
   const ColProblem &problem_;
   Function random_;
+  SparseMatrix linear_random_;
 
   class RandomVector {
    private:
@@ -135,7 +143,7 @@ class SPAdapter {
     Bounds(double lb, double ub) : lb(lb), ub(ub) {}
   };
 
-  // TODO: rename
+  // TODO: remove
   std::vector<Bounds> core_rhs_;
   std::vector<Bounds> base_rhs_;
 
@@ -319,7 +327,21 @@ class SPAdapter {
   // Returns the random vector with the specified index.
   const RandomVector &rv(int index) const { return rvs_[index]; }
 
-  int GetRVIndex(int var_index) const {
+  class Scenario {
+   private:
+    std::vector<double> rhs_offsets_;
+
+    friend class SPAdapter;
+
+   public:
+    const std::vector<double> &rhs_offsets() const { return rhs_offsets_; }
+  };
+
+  void GetScenario(Scenario &s, int scenario_index) const;
+
+  // If var_index refers to a random variable, returns its index in rv_info_.
+  // Otherwise returns -1.
+  int GetRandVarIndex(int var_index) const {
     int core_var_index = var_orig2core_[var_index];
     return core_var_index < 0 ? -(core_var_index + 1) : -1;
   }

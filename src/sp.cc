@@ -103,7 +103,7 @@ class RandomConstExprExtractor : public mp::ExprVisitor<Impl, double> {
   }
 
   double VisitVariable(Reference v) {
-    int rv_index = adapter_.GetRVIndex(v.index());
+    int rv_index = adapter_.GetRandVarIndex(v.index());
     return rv_index >= 0 ?
           adapter_.GetRealization(rv_index, scenario_) :
           mp::ExprVisitor<Impl, double>::VisitVariable(v);
@@ -387,7 +387,7 @@ void SPAdapter::ExtractRandomTerms() {
 
   // A matrix containing linear terms involving random variables.
   // The major dimension is equal to the number of second-stage constraints.
-  SparseMatrix random(num_stage2_cons);
+  linear_random_.resize_major(num_stage2_cons);
 
   // Count random variables in second-stage constraints.
   for (auto info: rv_info_) {
@@ -395,29 +395,29 @@ void SPAdapter::ExtractRandomTerms() {
          end = problem_.col_start(info.var_index + 1); k != end; ++k) {
        int core_con_index = con_orig2core_[problem_.row_index(k)];
        assert(core_con_index >= num_stage1_cons);
-       ++random.start(core_con_index - num_stage1_cons + 1);
+       ++linear_random_.start(core_con_index - num_stage1_cons + 1);
     }
   }
   // Acummulate counts to get vector starts.
   int start = 0;
   for (int i = 1; i <= num_stage2_cons; ++i) {
-    int next = start + random.start(i);
-    random.start(i) = start;
+    int next = start + linear_random_.start(i);
+    linear_random_.start(i) = start;
     start = next;
   }
 
   // Map second-stage constraints to random variables that appear linearly
   // in them.
-  random.resize_elements(start);
+  linear_random_.resize_elements(start);
   for (auto info: rv_info_) {
     for (int k = problem_.col_start(info.var_index),
          end = problem_.col_start(info.var_index + 1); k != end; ++k) {
        int core_con_index = con_orig2core_[problem_.row_index(k)];
        assert(core_con_index >= num_stage1_cons);
        int index = core_con_index - num_stage1_cons + 1;
-       int element_index = random.start(index)++;
-       random.index(element_index) = info.var_index;
-       random.coef(element_index) = problem_.value(k);
+       int element_index = linear_random_.start(index)++;
+       linear_random_.index(element_index) = info.var_index;
+       linear_random_.coef(element_index) = -problem_.value(k);
     }
   }
 }
@@ -475,10 +475,46 @@ SPAdapter::SPAdapter(const ColProblem &p)
     num_stage_vars_[1] = this->num_vars() - num_stage1_vars;
     num_stage_cons_[1] = this->num_cons() - num_stage1_cons;
     ExtractRandomTerms();
-    // TODO: use sparse matrix to compute random RHS
+  }
+}
+
+std::vector<double> SPAdapter::core_obj() const {
+  std::vector<double> obj(num_vars());
+  if (problem_.num_objs() == 0)
+    return obj;
+  // Get objective coefficients in the core problem (first scenario).
+  for (auto term: problem_.obj(0).linear_expr())
+    obj[var_orig2core_[term.var_index()]] = term.coef();
+  if (NumericExpr expr = nonlinear_objs_[0]) {
+    AffineExprExtractor extractor(problem_);
+    extractor.Visit(expr);
+    for (auto term: extractor.linear_expr())
+      obj[var_orig2core_[term.var_index()]] += term.coef();
+  }
+  return obj;
+}
+
+void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {
+  int num_stage1_cons = num_stage_cons_[0];
+  int num_stage2_cons = num_stage_cons_[1];
+  s.rhs_offsets_.assign(num_stage2_cons, 0);
+  for (int stage2_con = 0; stage2_con < num_stage2_cons; ++stage2_con) {
+    for (int i = linear_random_.start(stage2_con),
+         end = linear_random_.start(stage2_con + 1); i < end; ++i) {
+      int rv_index = GetRandVarIndex(linear_random_.index(i));
+      assert(rv_index >= 0);
+      s.rhs_offsets_[stage2_con] +=
+          linear_random_.coef(i) * GetRealization(rv_index, scenario_index);
+    }
+    int orig_con_index = con_core2orig_[num_stage1_cons + stage2_con];
+    if (auto expr = problem_.algebraic_con(orig_con_index).nonlinear_expr()) {
+      RandomAffineExprExtractor extractor(*this, scenario_index);
+      // TODO: add result to rhs offsets
+      extractor.Visit(expr);
+    }
   }
 
-  base_rhs_.resize(p.num_algebraic_cons());
+  /*base_rhs_.resize(p.num_algebraic_cons());
   for (int i = 0, n = p.num_algebraic_cons(); i < n; ++i) {
     auto con = p.algebraic_con(con_core2orig_[i]);
     base_rhs_[i] = Bounds(con.lb(), con.ub());
@@ -503,21 +539,5 @@ SPAdapter::SPAdapter(const ColProblem &p)
       //handler.OnTerm(core_con_index, core_coefs_[k]);
     }
   }*/
-}
-
-std::vector<double> SPAdapter::core_obj() const {
-  std::vector<double> obj(num_vars());
-  if (problem_.num_objs() == 0)
-    return obj;
-  // Get objective coefficients in the core problem (first scenario).
-  for (auto term: problem_.obj(0).linear_expr())
-    obj[var_orig2core_[term.var_index()]] = term.coef();
-  if (NumericExpr expr = nonlinear_objs_[0]) {
-    AffineExprExtractor extractor(problem_);
-    extractor.Visit(expr);
-    for (auto term: extractor.linear_expr())
-      obj[var_orig2core_[term.var_index()]] += term.coef();
-  }
-  return obj;
 }
 }  // namespace mp
