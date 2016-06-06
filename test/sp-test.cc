@@ -22,6 +22,7 @@
 
 #include "sp.h"
 #include "gtest-extra.h"
+#include <gmock/gmock.h>
 
 // A test column-wise problem with specified number of variables.
 class TestProblem : public mp::ColProblem {
@@ -247,11 +248,27 @@ TEST(SPTest, NonlinearNotSupported) {
   p.AddCon(0, 0);
   p.algebraic_con(0).set_nonlinear_expr(
         p.MakeUnary(mp::expr::POW2, p.MakeVariable(0)));
-  EXPECT_THROW_MSG(mp::SPAdapter sp(p), mp::UnsupportedError,
+  mp::SPAdapter sp(p);
+  mp::SPAdapter::Scenario scenario;
+  EXPECT_THROW_MSG(sp.GetScenario(scenario, 0), mp::UnsupportedError,
                    "unsupported: ^2");
 }
 
-// TODO: random RHS
+TEST(SPTest, GetScenario) {
+  auto header = MakeHeader(2);
+  header.num_con_nonzeros = 1;
+  TestProblem p(header);
+  p.MakeTestRV();
+  p.AddCon(0, 0);
+  auto cols = p.OnColumnSizes();
+  cols.Add(1);
+  cols.Add(0);
+  p.OnLinearConExpr(0).AddTerm(0, -3);
+  mp::SPAdapter sp(p);
+  mp::SPAdapter::Scenario scenario;
+  sp.GetScenario(scenario, 0);
+  EXPECT_THAT(scenario.rhs_offsets(), testing::ElementsAre(33));
+}
 
 // TODO
 /*
