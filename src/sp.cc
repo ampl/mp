@@ -185,27 +185,26 @@ class NullSuffix {
 };
 }  // namespace
 
-void SPAdapter::AddRVElement(Expr arg, int rv_index, int element_index) {
-  auto var = Cast<Reference>(arg);
-  int var_index = var.index();
-  rv_info_.push_back(RVInfo(var_index, rv_index, element_index));
-  int &core_var_index = var_orig2core_[var_index];
-  if (core_var_index != 0)
-    throw Error("RV {}: redefinition of variable {}", rv_index, var_index);
-  // Mark variable as random.
-  core_var_index = -static_cast<int>(rv_info_.size());
-}
-
 void SPAdapter::GetRealizations(int con_index, CallExpr random,
                                 int &arg_index) {
-  auto arg = random.arg(arg_index);
-  assert(arg.kind() == expr::VARIABLE);
+  // Add a random variable.
   auto &rv = rvs_[con_index];
-  AddRVElement(arg, con_index, rv.num_elements());
+  auto var = Cast<Reference>(random.arg(arg_index));
+  int var_index = var.index();
+  random_vars_.push_back(RandomVar(var_index, con_index, rv.num_elements()));
+  int &core_var_index = var_orig2core_[var_index];
+  if (core_var_index != 0) {
+    throw Error("{}: redefinition of variable {}",
+                lcon_name(con_index), var_index);
+  }
+  // Mark variable as random.
+  core_var_index = -static_cast<int>(random_vars_.size());
+
+  // Get realizatons.
   int start_arg_index = ++arg_index;
   for (; ; ++arg_index) {
-    auto constant = arg_index < random.num_args() ?
-          Cast<NumericConstant>(random.arg(arg_index)) : NumericConstant();
+    if (arg_index >= random.num_args()) break;
+    auto constant = Cast<NumericConstant>(random.arg(arg_index));
     if (!constant) break;
     rv.Add(constant.value());
   }
@@ -247,7 +246,7 @@ void SPAdapter::GetRandomVectors(const Problem &p) {
       rv.AddProbability(prob);
     }
     // Get realizations.
-    for (; arg_index < num_args; ++arg_index) {
+    while (arg_index < num_args) {
       auto arg = call.arg(arg_index);
       if (arg.kind() != expr::VARIABLE)
         throw Error("{}: expected variable or constant", lcon_name(con_index));
@@ -348,9 +347,9 @@ void SPAdapter::ExtractRandomTerms() {
   linear_random_.resize_major(num_stage2_cons);
 
   // Count random variables in second-stage constraints.
-  for (auto info: rv_info_) {
-    for (int k = problem_.col_start(info.var_index),
-         end = problem_.col_start(info.var_index + 1); k != end; ++k) {
+  for (const auto &rv: random_vars_) {
+    for (int k = problem_.col_start(rv.var_index),
+         end = problem_.col_start(rv.var_index + 1); k != end; ++k) {
        int core_con_index = con_orig2core_[problem_.row_index(k)];
        assert(core_con_index >= num_stage1_cons);
        ++linear_random_.start(core_con_index - num_stage1_cons + 1);
@@ -367,14 +366,14 @@ void SPAdapter::ExtractRandomTerms() {
   // Map second-stage constraints to random variables that appear linearly
   // in them.
   linear_random_.resize_elements(start);
-  for (auto info: rv_info_) {
-    for (int k = problem_.col_start(info.var_index),
-         end = problem_.col_start(info.var_index + 1); k != end; ++k) {
+  for (const auto &rv: random_vars_) {
+    for (int k = problem_.col_start(rv.var_index),
+         end = problem_.col_start(rv.var_index + 1); k != end; ++k) {
        int core_con_index = con_orig2core_[problem_.row_index(k)];
        assert(core_con_index >= num_stage1_cons);
        int index = core_con_index - num_stage1_cons + 1;
        int element_index = linear_random_.start(index)++;
-       linear_random_.index(element_index) = info.var_index;
+       linear_random_.index(element_index) = rv.var_index;
        linear_random_.coef(element_index) = -problem_.value(k);
     }
   }
@@ -393,7 +392,7 @@ SPAdapter::SPAdapter(const ColProblem &p)
 
   GetRandomVectors(p);
 
-  var_core2orig_.resize(p.num_vars() - rv_info_.size());
+  var_core2orig_.resize(p.num_vars() - random_vars_.size());
   IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage");
   int num_stage1_vars = stage_suffix ?
         ProcessStage1Vars(stage_suffix) : ProcessStage1Vars(NullSuffix());
@@ -420,7 +419,7 @@ SPAdapter::SPAdapter(const ColProblem &p)
     if (num_stage1_vars > 0)
       var_orig2core_[var_core2orig_[0]] = 0;
     assert(static_cast<std::size_t>(num_vars) ==
-           stage2_index + rv_info_.size());
+           stage2_index + random_vars_.size());
   }
 
   int num_stage1_cons = ProcessCons(num_stage1_vars);
@@ -506,18 +505,6 @@ void SPAdapter::GetScenario(int scenario, std::vector<double> &coefs,
                             std::vector<Bounds> &rhs) {
   coefs.assign(problem_.values(),
                problem_.values() + problem_.col_start(problem_.num_vars()));
-  // Handle random variables/parameters in the constraint matrix.
-  for (const auto &info: rv_info_) {
-    int var_index = info.var_index;
-    for (int k = problem_.col_start(var_index),
-         end = problem_.col_start(var_index + 1); k != end; ++k) {
-      auto value = rvs_[info.rv_index].value(info.element_index, scenario);
-      value *= coefs[k];
-      auto &bounds = rhs[problem_.row_index(k)];
-      bounds.lb -= value;
-      bounds.ub -= value;
-    }
-  }
   // Handle random variables/parameters in nonlinear constraint expressions.
   for (int core_con_index = num_stage_cons_[0], num_cons = this->num_cons();
        core_con_index < num_cons; ++core_con_index) {

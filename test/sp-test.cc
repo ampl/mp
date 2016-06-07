@@ -178,14 +178,49 @@ TEST(SPTest, ProbabilityWithRandVar) {
   random.AddArg(p.MakeNumericConstant(0.3));
   random.AddArg(p.MakeNumericConstant(0.7));
   random.AddArg(p.MakeVariable(0));
-  random.AddArg(p.MakeNumericConstant(1));
-  random.AddArg(p.MakeNumericConstant(2));
+  random.AddArg(p.MakeNumericConstant(11));
+  random.AddArg(p.MakeNumericConstant(22));
   p.EndRandom(random);
   mp::SPAdapter sp(p);
   auto rv = sp.rv(0);
   EXPECT_EQ(2, rv.num_realizations());
   EXPECT_EQ(0.3, rv.probability(0));
   EXPECT_EQ(0.7, rv.probability(1));
+  EXPECT_EQ(1, rv.num_elements());
+  EXPECT_EQ(11, rv.value(0, 0));
+  EXPECT_EQ(22, rv.value(0, 1));
+}
+
+TEST(SPTest, Equiprobable) {
+  TestBasicProblem p(2);
+  auto random = p.BeginRandom(6);
+  random.AddArg(p.MakeVariable(0));
+  random.AddArg(p.MakeNumericConstant(11));
+  random.AddArg(p.MakeNumericConstant(12));
+  random.AddArg(p.MakeVariable(1));
+  random.AddArg(p.MakeNumericConstant(21));
+  random.AddArg(p.MakeNumericConstant(22));
+  p.EndRandom(random);
+  mp::SPAdapter sp(p);
+  auto rv = sp.rv(0);
+  EXPECT_EQ(2, rv.num_realizations());
+  EXPECT_EQ(0.5, rv.probability(0));
+  EXPECT_EQ(0.5, rv.probability(1));
+  EXPECT_EQ(2, rv.num_elements());
+  EXPECT_EQ(11, rv.value(0, 0));
+  EXPECT_EQ(12, rv.value(0, 1));
+  EXPECT_EQ(21, rv.value(1, 0));
+  EXPECT_EQ(22, rv.value(1, 1));
+}
+
+TEST(SPTest, RandVarRedifinition) {
+  TestBasicProblem p(2);
+  auto random = p.BeginRandom(2);
+  random.AddArg(p.MakeVariable(0));
+  random.AddArg(p.MakeVariable(0));
+  p.EndRandom(random);
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::Error,
+                   "_slogcon[1]: redefinition of variable 0");
 }
 
 TEST(SPTest, InvalidProbability) {
@@ -221,8 +256,6 @@ TEST(SPTest, InvalidRandomArg) {
   EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::Error,
                    fmt::format("_slogcon[1]: expected variable or constant"));
 }
-
-// TODO: test realizations
 
 TEST(SPTest, SecondStageVar) {
   TestBasicProblem p(2);

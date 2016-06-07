@@ -104,16 +104,16 @@ class SPAdapter {
 
   std::vector<RandomVector> rvs_;
 
-  struct RVInfo {
+  struct RandomVar {
     int var_index;      // Index of the variable in the original problem.
     int rv_index;       // Index of a random vector in rvs_.
     int element_index;  // Index of an element in the random vector.
 
-    RVInfo(int var_index, int rv_index, int element_index)
+    RandomVar(int var_index, int rv_index, int element_index)
       : var_index(var_index), rv_index(rv_index),
         element_index(element_index) {}
   };
-  std::vector<RVInfo> rv_info_;
+  std::vector<RandomVar> random_vars_;
 
   // var_core2orig_[i] is the index of core variable i in the original problem.
   std::vector<int> var_core2orig_;
@@ -136,9 +136,6 @@ class SPAdapter {
   // Nonlinear parts of objective expressions.
   // The array can be empty if the problem is linear.
   std::vector<NumericExpr> nonlinear_objs_;
-
-  // Add an element of a random vector.
-  void AddRVElement(Expr arg, int rv_index, int element_index);
 
   // Extract realizations of a random variable from a call to random(...).
   void GetRealizations(int con_index, CallExpr random, int &arg_index);
@@ -330,15 +327,15 @@ class SPAdapter {
 
   void GetScenario(Scenario &s, int scenario_index) const;
 
-  // If var_index refers to a random variable, returns its index in rv_info_.
-  // Otherwise returns -1.
+  // If var_index refers to a random variable, returns its index in
+  // random_vars_. Otherwise returns -1.
   int GetRandVarIndex(int var_index) const {
     int core_var_index = var_orig2core_[var_index];
     return core_var_index < 0 ? -(core_var_index + 1) : -1;
   }
 
   double GetRealization(int rv_index, int scenario) const {
-    const auto &info = rv_info_[rv_index];
+    const auto &info = random_vars_[rv_index];
     return rvs_[info.rv_index].value(info.element_index, scenario);
   }
 };
