@@ -24,6 +24,8 @@
 #include "gtest-extra.h"
 #include <gmock/gmock.h>
 
+namespace expr = mp::expr;
+
 // A test column-wise problem with specified number of variables.
 class TestProblem : public mp::ColProblem {
  private:
@@ -43,7 +45,7 @@ class TestProblem : public mp::ColProblem {
   // Ends a random variable/vector.
   void EndRandom(CallExprBuilder builder) {
     auto zero = MakeNumericConstant(0);
-    AddCon(MakeRelational(mp::expr::NE, EndCall(builder), zero));
+    AddCon(MakeRelational(expr::NE, EndCall(builder), zero));
   }
 
   mp::ColProblemBuilder::ColumnSizeHandler OnColumnSizes() {
@@ -90,6 +92,62 @@ TEST(SPTest, EmptyProblem) {
   EXPECT_EQ(0, sp.num_cons());
   EXPECT_EQ(1, sp.num_stages());
   EXPECT_EQ(0, sp.num_rvs());
+}
+
+TEST(SPTest, LogicalConstraint) {
+  TestBasicProblem p(1);
+  p.AddCon(p.MakeRelational(
+             expr::EQ, p.MakeVariable(0), p.MakeNumericConstant(0)));
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::UnsupportedError,
+                   "unsupported: logical constraint");
+}
+
+TEST(SPTest, NoFuncInLogicalConstraint) {
+  TestBasicProblem p(1);
+  p.AddCon(p.MakeRelational(
+             expr::NE, p.MakeVariable(0), p.MakeNumericConstant(0)));
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::UnsupportedError,
+                   "unsupported: logical constraint");
+}
+
+TEST(SPTest, FuncInLogicalConstraint) {
+  TestBasicProblem p(1);
+  auto f = p.AddFunction("f", 0);
+  auto builder = p.BeginCall(f, 0);
+  p.AddCon(p.MakeRelational(
+             expr::NE, p.EndCall(builder), p.MakeNumericConstant(0)));
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::UnsupportedError,
+                   "unsupported: logical constraint");
+}
+
+TEST(SPTest, NonzeroRHSInLogicalConstraint) {
+  TestBasicProblem p(1);
+  auto random = p.BeginRandom(0);
+  p.AddCon(p.MakeRelational(
+             expr::NE, p.EndCall(random), p.MakeNumericConstant(1)));
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::UnsupportedError,
+                   "unsupported: logical constraint");
+}
+
+TEST(SPTest, EmptyRandom) {
+  TestBasicProblem p(1);
+  auto random = p.BeginRandom(0);
+  p.EndRandom(random);
+  mp::SPAdapter sp(p);
+  EXPECT_EQ(1, sp.num_rvs());
+}
+
+TEST(SPTest, InvalidProbability) {
+  const double PROB[] = {-0.001, 1.001};
+  for (auto prob: PROB) {
+    TestBasicProblem p(2);
+    auto random = p.BeginRandom(2);
+    random.AddArg(p.MakeNumericConstant(prob));
+    random.AddArg(p.MakeVariable(0));
+    p.EndRandom(random);
+    EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::Error,
+                     fmt::format("invalid probability: {}", prob));
+  }
 }
 
 TEST(SPTest, SecondStageVar) {
@@ -208,7 +266,7 @@ TEST(SPTest, RandomConMatrix) {
   TestProblem p(header);
   auto rv = p.MakeTestRV();
   auto con = p.AddCon(0, 0);
-  con.set_nonlinear_expr(p.MakeBinary(mp::expr::MUL, rv, p.MakeVariable(1)));
+  con.set_nonlinear_expr(p.MakeBinary(expr::MUL, rv, p.MakeVariable(1)));
   auto cols = p.OnColumnSizes();
   cols.Add(0);
   cols.Add(1);
@@ -247,7 +305,7 @@ TEST(SPTest, NonlinearNotSupported) {
   TestBasicProblem p(1);
   p.AddCon(0, 0);
   p.algebraic_con(0).set_nonlinear_expr(
-        p.MakeUnary(mp::expr::POW2, p.MakeVariable(0)));
+        p.MakeUnary(expr::POW2, p.MakeVariable(0)));
   mp::SPAdapter sp(p);
   mp::SPAdapter::Scenario scenario;
   EXPECT_THROW_MSG(sp.GetScenario(scenario, 0), mp::UnsupportedError,
@@ -270,13 +328,18 @@ TEST(SPTest, GetScenario) {
   EXPECT_THAT(scenario.rhs_offsets(), testing::ElementsAre(33));
 }
 
-// TODO
-/*
-TEST(SMPSWriterTest, InconsistentProbabilities) {
-  std::string filename = MP_TEST_DATA_DIR "/smps/inconsistent-probabilities";
-  WriteFile("test.nl", ReadFile(filename + ".nl"));
-  WriteFile("test.row", ReadFile(filename + ".row"));
-  WriteFile("test.col", ReadFile(filename + ".col"));
-  EXPECT_THROW(Solve("test"), mp::Error);
+TEST(SPTest, RandoRHSInNonlinear) {
+  auto header = MakeHeader(2);
+  header.num_con_nonzeros = 1;
+  TestProblem p(header);
+  p.MakeTestRV();
+  p.AddCon(0, 0).set_nonlinear_expr(p.MakeVariable(0));
+  auto cols = p.OnColumnSizes();
+  cols.Add(1);
+  cols.Add(0);
+  p.OnLinearConExpr(0).AddTerm(0, -3);
+  mp::SPAdapter sp(p);
+  mp::SPAdapter::Scenario scenario;
+  sp.GetScenario(scenario, 0);
+  EXPECT_THAT(scenario.rhs_offsets(), testing::ElementsAre(44));
 }
-*/
