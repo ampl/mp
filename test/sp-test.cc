@@ -137,6 +137,28 @@ TEST(SPTest, EmptyRandom) {
   EXPECT_EQ(1, sp.num_rvs());
 }
 
+TEST(SPTest, RandomVar) {
+  TestBasicProblem p(2);
+  auto random = p.BeginRandom(1);
+  random.AddArg(p.MakeVariable(0));
+  p.EndRandom(random);
+  mp::SPAdapter sp(p);
+  EXPECT_EQ(1, sp.num_rvs());
+  EXPECT_EQ(0, sp.rv(0).num_realizations());
+  EXPECT_EQ(0, sp.rv(0).num_elements());
+}
+
+TEST(SPTest, EmptyRVWithProbability) {
+  TestBasicProblem p(2);
+  auto random = p.BeginRandom(1);
+  random.AddArg(p.MakeNumericConstant(1));
+  p.EndRandom(random);
+  mp::SPAdapter sp(p);
+  EXPECT_EQ(1, sp.num_rvs());
+  EXPECT_EQ(1, sp.rv(0).num_realizations());
+  EXPECT_EQ(0, sp.rv(0).num_elements());
+}
+
 TEST(SPTest, InvalidProbability) {
   const double PROB[] = {-0.001, 1.001};
   for (auto prob: PROB) {
@@ -146,7 +168,7 @@ TEST(SPTest, InvalidProbability) {
     random.AddArg(p.MakeVariable(0));
     p.EndRandom(random);
     EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::Error,
-                     fmt::format("invalid probability: {}", prob));
+                     fmt::format("_slogcon[1]: invalid probability {}", prob));
   }
 }
 
@@ -172,17 +194,6 @@ TEST(SPTest, OrderVarsByStage) {
   EXPECT_EQ(mp::var::INTEGER, sp.var(0).type());
   EXPECT_EQ(mp::var::CONTINUOUS, sp.var(1).type());
   EXPECT_EQ(42, sp.var(1).lb());
-}
-
-TEST(SPTest, RandomVar) {
-  TestBasicProblem p(2);
-  auto random = p.BeginRandom(1);
-  random.AddArg(p.MakeVariable(0));
-  p.EndRandom(random);
-  mp::SPAdapter sp(p);
-  EXPECT_EQ(1, sp.num_rvs());
-  EXPECT_EQ(0, sp.rv(0).num_realizations());
-  EXPECT_EQ(0, sp.rv(0).num_elements());
 }
 
 TEST(SPTest, SingleRealization) {
