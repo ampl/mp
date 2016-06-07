@@ -159,6 +159,35 @@ TEST(SPTest, EmptyRVWithProbability) {
   EXPECT_EQ(0, sp.rv(0).num_elements());
 }
 
+TEST(SPTest, Probability) {
+  TestBasicProblem p(2);
+  auto random = p.BeginRandom(2);
+  random.AddArg(p.MakeNumericConstant(0.3));
+  random.AddArg(p.MakeNumericConstant(0.7));
+  p.EndRandom(random);
+  mp::SPAdapter sp(p);
+  auto rv = sp.rv(0);
+  EXPECT_EQ(2, rv.num_realizations());
+  EXPECT_EQ(0.3, rv.probability(0));
+  EXPECT_EQ(0.7, rv.probability(1));
+}
+
+TEST(SPTest, ProbabilityWithRandVar) {
+  TestBasicProblem p(2);
+  auto random = p.BeginRandom(5);
+  random.AddArg(p.MakeNumericConstant(0.3));
+  random.AddArg(p.MakeNumericConstant(0.7));
+  random.AddArg(p.MakeVariable(0));
+  random.AddArg(p.MakeNumericConstant(1));
+  random.AddArg(p.MakeNumericConstant(2));
+  p.EndRandom(random);
+  mp::SPAdapter sp(p);
+  auto rv = sp.rv(0);
+  EXPECT_EQ(2, rv.num_realizations());
+  EXPECT_EQ(0.3, rv.probability(0));
+  EXPECT_EQ(0.7, rv.probability(1));
+}
+
 TEST(SPTest, InvalidProbability) {
   const double PROB[] = {-0.001, 1.001};
   for (auto prob: PROB) {
@@ -171,6 +200,29 @@ TEST(SPTest, InvalidProbability) {
                      fmt::format("_slogcon[1]: invalid probability {}", prob));
   }
 }
+
+TEST(SPTest, InconsistentNumberOfRealizations) {
+  TestBasicProblem p(2);
+  auto random = p.BeginRandom(4);
+  random.AddArg(p.MakeNumericConstant(0.3));
+  random.AddArg(p.MakeNumericConstant(0.7));
+  random.AddArg(p.MakeVariable(0));
+  random.AddArg(p.MakeNumericConstant(1));
+  p.EndRandom(random);
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::Error,
+                   "_slogcon[1]: inconsistent number of realizations");
+}
+
+TEST(SPTest, InvalidRandomArg) {
+  TestBasicProblem p(2);
+  auto random = p.BeginRandom(1);
+  random.AddArg(p.MakeUnary(expr::MINUS, p.MakeNumericConstant(1)));
+  p.EndRandom(random);
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::Error,
+                   fmt::format("_slogcon[1]: expected variable or constant"));
+}
+
+// TODO: test realizations
 
 TEST(SPTest, SecondStageVar) {
   TestBasicProblem p(2);

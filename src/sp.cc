@@ -185,6 +185,39 @@ class NullSuffix {
 };
 }  // namespace
 
+void SPAdapter::AddRVElement(Expr arg, int rv_index, int element_index) {
+  auto var = Cast<Reference>(arg);
+  int var_index = var.index();
+  rv_info_.push_back(RVInfo(var_index, rv_index, element_index));
+  int &core_var_index = var_orig2core_[var_index];
+  if (core_var_index != 0)
+    throw Error("RV {}: redefinition of variable {}", rv_index, var_index);
+  // Mark variable as random.
+  core_var_index = -static_cast<int>(rv_info_.size());
+}
+
+void SPAdapter::GetRealizations(int con_index, CallExpr random,
+                                int &arg_index) {
+  auto arg = random.arg(arg_index);
+  assert(arg.kind() == expr::VARIABLE);
+  auto &rv = rvs_[con_index];
+  AddRVElement(arg, con_index, rv.num_elements());
+  int start_arg_index = ++arg_index;
+  for (; ; ++arg_index) {
+    auto constant = arg_index < random.num_args() ?
+          Cast<NumericConstant>(random.arg(arg_index)) : NumericConstant();
+    if (!constant) break;
+    rv.Add(constant.value());
+  }
+  int num_realizations = arg_index - start_arg_index;
+  if (rv.num_realizations() == 0) {
+    rv.set_num_realizations(num_realizations);
+  } else if (rv.num_realizations() != num_realizations) {
+    throw Error("{}: inconsistent number of realizations",
+                lcon_name(con_index));
+  }
+}
+
 void SPAdapter::GetRandomVectors(const Problem &p) {
   var_orig2core_.resize(p.num_vars());
   int num_logical_cons = p.num_logical_cons();
@@ -204,47 +237,22 @@ void SPAdapter::GetRandomVectors(const Problem &p) {
       continue;
     auto &rv = rvs_[con_index];
     int arg_index = 0;
-    int element_index = 0;
     // Get probabilities.
     for (; arg_index < num_args; ++arg_index) {
-      auto arg = call.arg(arg_index);
-      if (arg.kind() == expr::VARIABLE) {
-        AddRVElement(arg, con_index, element_index);
-        ++arg_index;
-        break;
-      }
-      auto prob = Cast<NumericConstant>(arg);
-      if (!prob)
-        throw Error("{}: expected variable or constant", lcon_name(con_index));
-      double p = prob.value();
-      if (p < 0 || p > 1)
-        throw Error("{}: invalid probability {}", lcon_name(con_index), p);
-      rv.AddProbability(p);
+      auto constant = Cast<NumericConstant>(call.arg(arg_index));
+      if (!constant) break;
+      double prob = constant.value();
+      if (prob < 0 || prob > 1)
+        throw Error("{}: invalid probability {}", lcon_name(con_index), prob);
+      rv.AddProbability(prob);
     }
     // Get realizations.
-    int num_realizations = rv.num_realizations();
-    if (num_realizations == 0)
-      num_realizations = -1;
-    int realization_index = 0;
     for (; arg_index < num_args; ++arg_index) {
       auto arg = call.arg(arg_index);
-      if (arg.kind() == expr::VARIABLE) {
-        if (num_realizations == -1)
-          num_realizations = realization_index;
-        else if (realization_index != num_realizations)
-          throw Error("RV {}: inconsistent number of realizations", con_index);
-        ++element_index;
-        realization_index = 0;
-        AddRVElement(arg, con_index, element_index);
-      } else if (auto constant = Cast<NumericConstant>(arg)) {
-        rv.Add(constant.value());
-        ++realization_index;
-      } else {
-        throw Error("RV {}: expected variable or constant", con_index);
-      }
+      if (arg.kind() != expr::VARIABLE)
+        throw Error("{}: expected variable or constant", lcon_name(con_index));
+      GetRealizations(con_index, call, arg_index);
     }
-    rv.set_num_realizations(num_realizations == -1 ?
-                              realization_index : num_realizations);
   }
 }
 
@@ -329,17 +337,6 @@ int SPAdapter::ProcessCons(int num_stage1_vars) {
   if (num_stage1_cons != num_cons)
     num_stages_ = 2;
   return num_stage1_cons;
-}
-
-void SPAdapter::AddRVElement(Expr arg, int rv_index, int element_index) {
-  auto var = Cast<Reference>(arg);
-  int var_index = var.index();
-  rv_info_.push_back(RVInfo(var_index, rv_index, element_index));
-  int &core_var_index = var_orig2core_[var_index];
-  if (core_var_index != 0)
-    throw Error("RV {}: redefinition of variable {}", rv_index, var_index);
-  // Mark variable as random.
-  core_var_index = -static_cast<int>(rv_info_.size());
 }
 
 void SPAdapter::ExtractRandomTerms() {

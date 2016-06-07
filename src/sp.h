@@ -137,6 +137,12 @@ class SPAdapter {
   // The array can be empty if the problem is linear.
   std::vector<NumericExpr> nonlinear_objs_;
 
+  // Add an element of a random vector.
+  void AddRVElement(Expr arg, int rv_index, int element_index);
+
+  // Extract realizations of a random variable from a call to random(...).
+  void GetRealizations(int con_index, CallExpr random, int &arg_index);
+
   // Extract random vectors from logical constraints with expressions of the
   // form random(x, a_1, ..., a_n).
   void GetRandomVectors(const Problem &p);
@@ -148,9 +154,6 @@ class SPAdapter {
 
   void ProcessObjs(int num_stage1_vars);
   int ProcessCons(int num_stage1_vars);
-
-  // Add an element of a random vector.
-  void AddRVElement(Expr arg, int rv_index, int element_index);
 
   void ExtractRandomTerms();
 

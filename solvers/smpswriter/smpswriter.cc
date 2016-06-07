@@ -172,9 +172,8 @@ void WriteDiscreteScenarios(FileWriter &writer, const SPAdapter &sp) {
                  s + 1, rv.probability(s));
     sp.GetScenario(scenario, s);
     // TODO: random constraint matrix
-    /*rhs = base_rhs_;
     // Compare to the core and write differences.
-    for (int j = 0, num_vars = sp.num_core_vars(); j < num_vars; ++j) {
+    /*for (int j = 0, num_vars = sp.num_core_vars(); j < num_vars; ++j) {
       for (int k = p.col_start(j), n = p.col_start(j + 1); k != n; ++k) {
         double coef = coefs[k];
         if (coef == core_coefs_[k]) continue;
@@ -218,7 +217,7 @@ void WriteStochFile(fmt::CStringRef filename, const SPAdapter &sp) {
     } else {
       // Get constraints where each random variable/parameter is used.
       bool indep_vars = true;
-      std::vector<int> rv2con(sp.num_rvs());
+      std::vector<int> rv2con(num_rvs);
       for (int i = 0; i < num_rvs; ++i) {
         /*const auto &info = rv_info_[i];
         int var_index = info.var_index;
