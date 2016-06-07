@@ -29,6 +29,11 @@
 namespace mp {
 namespace {
 
+// Returns the name of a logical constraint.
+inline std::string lcon_name(int index) {
+  return fmt::format("_slogcon[{}]", index + 1);
+}
+
 // Extracts an affine expression from a nonlinear one.
 class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
  private:
@@ -180,6 +185,69 @@ class NullSuffix {
 };
 }  // namespace
 
+void SPAdapter::GetRandomVectors(const Problem &p) {
+  var_orig2core_.resize(p.num_vars());
+  int num_logical_cons = p.num_logical_cons();
+  if (num_logical_cons == 0)
+    return;
+  rvs_.resize(num_logical_cons);
+  for (int con_index = 0; con_index < num_logical_cons; ++con_index) {
+    auto expr = p.logical_con(con_index).expr();
+    if (expr.kind() != expr::NE)
+      throw MakeUnsupportedError("logical constraint");
+    auto relational = Cast<RelationalExpr>(expr);
+    auto call = Cast<CallExpr>(relational.lhs());
+    if (!call || call.function() != random_ || !IsZero(relational.rhs()))
+      throw MakeUnsupportedError("logical constraint");
+    int num_args = call.num_args();
+    if (num_args == 0)
+      continue;
+    auto &rv = rvs_[con_index];
+    int arg_index = 0;
+    int element_index = 0;
+    // Get probabilities.
+    for (; arg_index < num_args; ++arg_index) {
+      auto arg = call.arg(arg_index);
+      if (arg.kind() == expr::VARIABLE) {
+        AddRVElement(arg, con_index, element_index);
+        ++arg_index;
+        break;
+      }
+      auto prob = Cast<NumericConstant>(arg);
+      if (!prob)
+        throw Error("{}: expected variable or constant", lcon_name(con_index));
+      double p = prob.value();
+      if (p < 0 || p > 1)
+        throw Error("{}: invalid probability {}", lcon_name(con_index), p);
+      rv.AddProbability(p);
+    }
+    // Get realizations.
+    int num_realizations = rv.num_realizations();
+    if (num_realizations == 0)
+      num_realizations = -1;
+    int realization_index = 0;
+    for (; arg_index < num_args; ++arg_index) {
+      auto arg = call.arg(arg_index);
+      if (arg.kind() == expr::VARIABLE) {
+        if (num_realizations == -1)
+          num_realizations = realization_index;
+        else if (realization_index != num_realizations)
+          throw Error("RV {}: inconsistent number of realizations", con_index);
+        ++element_index;
+        realization_index = 0;
+        AddRVElement(arg, con_index, element_index);
+      } else if (auto constant = Cast<NumericConstant>(arg)) {
+        rv.Add(constant.value());
+        ++realization_index;
+      } else {
+        throw Error("RV {}: expected variable or constant", con_index);
+      }
+    }
+    rv.set_num_realizations(num_realizations == -1 ?
+                              realization_index : num_realizations);
+  }
+}
+
 template <typename Suffix>
 int SPAdapter::ProcessStage1Vars(Suffix stage) {
   int num_stage1_vars = 0;
@@ -272,66 +340,6 @@ void SPAdapter::AddRVElement(Expr arg, int rv_index, int element_index) {
     throw Error("RV {}: redefinition of variable {}", rv_index, var_index);
   // Mark variable as random.
   core_var_index = -static_cast<int>(rv_info_.size());
-}
-
-void SPAdapter::GetRandomVectors(const Problem &p) {
-  var_orig2core_.resize(p.num_vars());
-  int num_logical_cons = p.num_logical_cons();
-  if (num_logical_cons == 0)
-    return;
-  rvs_.resize(num_logical_cons);
-  for (int con_index = 0; con_index < num_logical_cons; ++con_index) {
-    auto expr = p.logical_con(con_index).expr();
-    if (expr.kind() != expr::NE)
-      throw MakeUnsupportedError("logical constraint");
-    auto relational = Cast<RelationalExpr>(expr);
-    auto call = Cast<CallExpr>(relational.lhs());
-    if (!call || call.function() != random_ || !IsZero(relational.rhs()))
-      throw MakeUnsupportedError("logical constraint");
-    int num_args = call.num_args();
-    if (num_args == 0)
-      continue;
-    auto &rv = rvs_[con_index];
-    int arg_index = 0;
-    int element_index = 0;
-    // Get probabilities.
-    for (; arg_index < num_args; ++arg_index) {
-      auto arg = call.arg(arg_index);
-      if (arg.kind() == expr::VARIABLE) {
-        AddRVElement(arg, con_index, element_index);
-        ++arg_index;
-        break;
-      }
-      auto prob = Cast<NumericConstant>(arg);
-      if (!prob)
-        throw Error("RV {}: expected variable or constant", con_index);
-      rv.AddProbability(prob.value());
-    }
-    // Get realizations.
-    int num_realizations = rv.num_realizations();
-    if (num_realizations == 0)
-      num_realizations = -1;
-    int realization_index = 0;
-    for (; arg_index < num_args; ++arg_index) {
-      auto arg = call.arg(arg_index);
-      if (arg.kind() == expr::VARIABLE) {
-        if (num_realizations == -1)
-          num_realizations = realization_index;
-        else if (realization_index != num_realizations)
-          throw Error("RV {}: inconsistent number of realizations", con_index);
-        ++element_index;
-        realization_index = 0;
-        AddRVElement(arg, con_index, element_index);
-      } else if (auto constant = Cast<NumericConstant>(arg)) {
-        rv.Add(constant.value());
-        ++realization_index;
-      } else {
-        throw Error("RV {}: expected variable or constant", con_index);
-      }
-    }
-    rv.set_num_realizations(num_realizations == -1 ?
-                              realization_index : num_realizations);
-  }
 }
 
 void SPAdapter::ExtractRandomTerms() {
