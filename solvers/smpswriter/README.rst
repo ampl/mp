@@ -1,28 +1,20 @@
 smpswriter
 ==========
 
-smpswriter converts a deterministic equivalent of a two-stage
-stochastic programming (SP) problem written in AMPL to an SP problem
-in `SMPS format <http://myweb.dal.ca/gassmann/smps2.htm>`__.
+smpswriter converts a two-stage stochastic programming (SP) problem from AMPL
+to `SMPS format <http://myweb.dal.ca/gassmann/smps2.htm>`__.
 It is written as an AMPL solver but can be used as a stand-alone program
-to convert `.nl files <http://en.wikipedia.org/wiki/Nl_(format)>`__
-(requires .col and .row files as well) into SMPS.
+to convert `.nl files <http://en.wikipedia.org/wiki/Nl_(format)>`__ into SMPS.
 
 Features
 --------
 
 * Supports continuous, binary and integer variables.
 
-* Automatically deduces probabilities from the objective function.
-
 * Supports randomness in
 
   - constraint right-hand sides
   - constraint matrix elements
-  - variable bounds
-  
-* The same problem can be used for solving a deterministic equivalent in
-  AMPL and for generating SMPS using smpswriter.
 
 Problem requirements
 --------------------
@@ -34,50 +26,47 @@ the following requirements:
 
    .. code-block:: python
 
-      var sell{Crops, Scenarios} >= 0, suffix stage 2;
+      var sell{Crops} >= 0, suffix stage 2;
 
-2. Second-stage variables and constraints should be indexed over a scenario
-   set which should be the last in indexing:
-
-   .. code-block:: python
-
-      set Scenarios;
-      var sell{Crops, Scenarios} >= 0, suffix stage 2;
-      s.t. quota{s in Scenarios}: sell['beets', s] <= BeetsQuota;
-
-3. Objective should contain at least one second-stage variable, no random
-   (scenario-dependent) parameters and expression should have the form of
-   expectation:
+2. Random variables/parameters should be specified using the random function:
 
    .. code-block:: python
 
-      param P{Scenarios}; # probabilities
+      # The random variable (parameter) representing the yield of crop c.
+      var RandomYield{c in Crops};
 
-      maximize profit: sum{s in Scenarios} P[s] * (
-        ExcessSellingPrice * sellExcess[s] +
-        sum{c in Crops} (SellingPrice[c] * sell[c, s] -
-                         PurchasePrice[c] * buy[c, s]) -
-        sum{c in Crops} PlantingCost[c] * area[c]);
+      # Realizations of the yield of crop c.
+      param Yield{c in Crops, s in Scen}; # T/acre
+
+      yield: random({c in Crops} (RandomYield[c], {s in Scen} Yield[c, s]));
+
+3. Objective expression should have the form of expectation:
+
+   .. code-block:: python
+
+      maximize profit:
+        expectation(
+          ExcessSellingPrice * sell_excess +
+          sum{c in Crops} (SellingPrice[c] * sell[c] -
+                           PurchasePrice[c] * buy[c])) -
+        sum{c in Crops} PlantingCost[c] * area[c];
 
 Usage example
 -------------
 
 The file `farmer.ampl <https://raw.github.com/vitaut/ampl/master/solvers/smpswriter/farmer.ampl>`__
-contains the deterministic equivalent of the farmer's problem from the
-book Introduction to Stochastic Programming by Birge and Louveaux.
+contains the farmer's problem from the book Introduction to Stochastic
+Programming by Birge and Louveaux.
 
 1. Read the deterministic equivalent of the farmer's problem written in AMPL
-   and write .nl, .col and .row files:
+   and write the .nl file:
 
    .. code-block:: python
 
       ampl: include farmer.ampl;
-      ampl: suffix stage IN;    # make the write command output stage information
-      ampl: option auxfiles rc; # make the write command output .row and .col files
-      ampl: write gfarmer;      # write farmer.nl, farmer.row and farmer.col files
+      ampl: write gfarmer; # write farmer.nl
 
-2. Convert the deterministic equivalent in the .nl format into the SP problem
-   in SMPS format:
+2. Convert the problem from .nl to SMPS format:
 
    .. code-block:: shell
 
@@ -114,21 +103,15 @@ book Introduction to Stochastic Programming by Birge and Louveaux.
       Optimal solution found, objective = 108390.
       Solution time = 0.011307 s.
 
-   and compare the optimal value to the one found by solving the deterministic
-   equivalent:
-   
-   .. code-block:: text
-
-      ampl: solve;
-      MINOS 5.51: optimal solution found.
-      11 iterations, objective 108389.8916
-
 Limitations
 -----------
 
-* Ranges are not supported.
+The following constructs are not supported:
 
-* Random objective coefficients are not supported. A simple workaround is
-  to introduce an auxiliary second-stage variable equal to the objective
-  expression (without the expectation) and use this variable in the
-  objective function.
+* Ranges
+* Random bounds
+* Random objective coefficients
+
+Randomness in the objective can be represented by introducing an auxiliary
+second-stage variable equal to the objective expression (without the
+expectation) and using this variable in the objective function.
