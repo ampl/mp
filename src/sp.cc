@@ -198,7 +198,7 @@ void SPAdapter::GetRealizations(int con_index, CallExpr random,
   random_vars_.push_back(RandomVar(var_index, con_index, rv.num_elements()));
   int &core_var_index = var_orig2core_[var_index];
   if (core_var_index != 0) {
-    throw Error("{}: redefinition of variable {}",
+    throw Error("{}: variable {} used in multiple random vectors",
                 lcon_name(con_index), var_index);
   }
   // Mark variable as random.

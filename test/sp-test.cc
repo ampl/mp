@@ -220,7 +220,7 @@ TEST(SPTest, RandVarRedifinition) {
   random.AddArg(p.MakeVariable(0));
   p.EndRandom(random);
   EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::Error,
-                   "_slogcon[1]: redefinition of variable 0");
+                   "_slogcon[1]: variable 0 used in multiple random vectors");
 }
 
 TEST(SPTest, InvalidProbability) {
