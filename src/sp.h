@@ -146,13 +146,12 @@ class SPAdapter {
   // form random(x, a_1, ..., a_n).
   void GetRandomVectors(const Problem &p);
 
-  // Count the number of stages, the number of variables in the first stage and
-  // compute core indices for the first-stage variables.
+  // Reorder variables by stages.
   template <typename Suffix>
-  int ProcessStage1Vars(Suffix stage);
+  void ReorderVarsByStages(Suffix stage);
 
-  void ProcessObjs(int num_stage1_vars);
-  int ProcessCons(int num_stage1_vars);
+  void ProcessObjs();
+  int ProcessCons();
 
   void ExtractRandomTerms();
 

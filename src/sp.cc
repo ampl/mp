@@ -260,28 +260,42 @@ void SPAdapter::GetRandomVectors(const Problem &p) {
 }
 
 template <typename Suffix>
-int SPAdapter::ProcessStage1Vars(Suffix stage) {
-  int num_stage1_vars = 0;
-  for (int i = 0, n = problem_.num_vars(); i < n; ++i) {
+void SPAdapter::ReorderVarsByStages(Suffix stage_suffix) {
+  // Count the number of variables in each stage and temporarily store variable
+  // stages in var_orig2core_.
+  int num_vars = problem_.num_vars();
+  for (int i = 0; i < num_vars; ++i) {
     if (var_orig2core_[i])
       continue;  // Skip random variables.
-    int stage_plus_1 = stage.value(i);
-    if (stage_plus_1 > 1) {
-      num_stages_ = std::max(stage_plus_1, num_stages_);
-    } else {
-      var_core2orig_[num_stage1_vars] = i;
-      var_orig2core_[i] = num_stage1_vars;
-      ++num_stage1_vars;
-    }
+    int stage = std::max(stage_suffix.value(i) - 1, 0);
+    var_orig2core_[i] = stage;
+    if (stage >= static_cast<int>(num_stage_vars_.size()))
+      num_stage_vars_.resize(stage + 1);
+    ++num_stage_vars_[stage];
   }
-  return num_stage1_vars;
+  if (num_stage_vars_.empty())
+    num_stage_vars_.resize(1);
+  num_stages_ = static_cast<int>(num_stage_vars_.size());
+  // Reorder variables by stages.
+  std::vector<int> stage_offsets(num_stages_);
+  for (int i = 1; i < num_stages_; ++i)
+    stage_offsets[i] = num_stage_vars_[i - 1] + num_stage_vars_[i - 1];
+  for (int i = 0; i < num_vars; ++i) {
+    int stage = var_orig2core_[i];
+    if (stage < 0)
+      continue;  // Skip random variables.
+    int core_var_index = stage_offsets[stage]++;
+    var_core2orig_[core_var_index] = i;
+    var_orig2core_[i] = core_var_index;
+  }
 }
 
-void SPAdapter::ProcessObjs(int num_stage1_vars) {
+void SPAdapter::ProcessObjs() {
   int num_objs = problem_.num_objs();
   if (num_objs == 0)
     return;
 
+  int num_stage1_vars = num_stage_vars_[0];
   nonlinear_objs_.reserve(num_objs);
   for (auto obj: problem_.objs())
     nonlinear_objs_.push_back(obj.nonlinear_expr());
@@ -315,10 +329,11 @@ void SPAdapter::ProcessObjs(int num_stage1_vars) {
   }
 }
 
-int SPAdapter::ProcessCons(int num_stage1_vars) {
+int SPAdapter::ProcessCons() {
   int num_vars = problem_.num_vars();
   int num_cons = problem_.num_algebraic_cons();
   std::vector<int> con_stages(num_cons);
+  int num_stage1_vars = num_stage_vars_[0];
   if (num_stage1_vars != num_vars) {
     // Compute stage of each constraint as a maximum of stages of
     // variables in it.
@@ -351,7 +366,7 @@ int SPAdapter::ProcessCons(int num_stage1_vars) {
   }
   assert(stage1_index == num_stage1_cons && stage2_index == num_cons);
   if (num_stage1_cons != num_cons)
-    num_stages_ = 2;
+    num_stages_ = std::max(num_stages_, 2);
   return num_stage1_cons;
 }
 
@@ -410,42 +425,21 @@ SPAdapter::SPAdapter(const ColProblem &p)
   GetRandomVectors(p);
 
   var_core2orig_.resize(p.num_vars() - random_vars_.size());
-  IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage");
-  int num_stage1_vars = stage_suffix ?
-        ProcessStage1Vars(stage_suffix) : ProcessStage1Vars(NullSuffix());
+  if (IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage"))
+    ReorderVarsByStages(stage_suffix);
+  else
+    ReorderVarsByStages(NullSuffix());
+
   if (num_stages_ > 2)
     throw Error("SP problems with more than 2 stages are not supported");
 
-  // Compute core indices for variables in later stages.
-  int num_vars = p.num_vars();
-  int stage2_index = num_stage1_vars;
-  if (num_stages_ > 1) {
-    // Temporary change mapping for the core variable 0, not to confuse it with
-    // second-stage variables.
-    if (num_stage1_vars > 0)
-      var_orig2core_[var_core2orig_[0]] = 1;
-    for (int i = 0; i < num_vars; ++i) {
-      if (var_orig2core_[i] == 0) {
-        var_core2orig_[stage2_index] = i;
-        var_orig2core_[i] = stage2_index++;
-      }
-    }
-    // Restore mapping for the core variable 0.
-    if (num_stage1_vars > 0)
-      var_orig2core_[var_core2orig_[0]] = 0;
-    assert(static_cast<std::size_t>(num_vars) ==
-           stage2_index + random_vars_.size());
-  }
-
-  ProcessObjs(num_stage1_vars);
-  int num_stage1_cons = ProcessCons(num_stage1_vars);
+  ProcessObjs();
+  int num_stage1_cons = ProcessCons();
 
   num_stage_vars_.resize(num_stages_);
   num_stage_cons_.resize(num_stages_);
-  num_stage_vars_[0] = num_stage1_vars;
   num_stage_cons_[0] = num_stage1_cons;
   if (num_stages_ > 1) {
-    num_stage_vars_[1] = this->num_vars() - num_stage1_vars;
     num_stage_cons_[1] = this->num_cons() - num_stage1_cons;
     ExtractRandomTerms();
   }
