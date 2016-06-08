@@ -55,7 +55,7 @@ class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
   const LinearExpr &linear_expr() const { return linear_; }
 
   void VisitNumericConstant(NumericConstant n) {
-    constant_ = n.value();
+    constant_ += coef_ * n.value();
   }
 
   void VisitVariable(Variable v) {
@@ -260,11 +260,10 @@ void SPAdapter::GetRandomVectors(const Problem &p) {
 }
 
 template <typename Suffix>
-void SPAdapter::ReorderVarsByStages(Suffix stage_suffix) {
+void SPAdapter::GetVarStages(Suffix stage_suffix) {
   // Count the number of variables in each stage and temporarily store variable
   // stages in var_orig2core_.
-  int num_vars = problem_.num_vars();
-  for (int i = 0; i < num_vars; ++i) {
+  for (int i = 0, n = problem_.num_vars(); i < n; ++i) {
     if (var_orig2core_[i])
       continue;  // Skip random variables.
     int stage = std::max(stage_suffix.value(i) - 1, 0);
@@ -273,28 +272,12 @@ void SPAdapter::ReorderVarsByStages(Suffix stage_suffix) {
       num_stage_vars_.resize(stage + 1);
     ++num_stage_vars_[stage];
   }
-  if (num_stage_vars_.empty())
-    num_stage_vars_.resize(1);
-  num_stages_ = static_cast<int>(num_stage_vars_.size());
-  // Reorder variables by stages.
-  std::vector<int> stage_offsets(num_stages_);
-  for (int i = 1; i < num_stages_; ++i)
-    stage_offsets[i] = num_stage_vars_[i - 1] + num_stage_vars_[i - 1];
-  for (int i = 0; i < num_vars; ++i) {
-    int stage = var_orig2core_[i];
-    if (stage < 0)
-      continue;  // Skip random variables.
-    int core_var_index = stage_offsets[stage]++;
-    var_core2orig_[core_var_index] = i;
-    var_orig2core_[i] = core_var_index;
-  }
 }
 
 void SPAdapter::ProcessObjs() {
   int num_objs = problem_.num_objs();
   if (num_objs == 0)
     return;
-
   int num_stage1_vars = num_stage_vars_[0];
   nonlinear_objs_.reserve(num_objs);
   for (auto obj: problem_.objs())
@@ -424,14 +407,27 @@ SPAdapter::SPAdapter(const ColProblem &p)
 
   GetRandomVectors(p);
 
-  var_core2orig_.resize(p.num_vars() - random_vars_.size());
+  // Reorder variables by stages.
   if (IntSuffix stage_suffix = p.suffixes(suf::VAR).Find<int>("stage"))
-    ReorderVarsByStages(stage_suffix);
+    GetVarStages(stage_suffix);
   else
-    ReorderVarsByStages(NullSuffix());
-
-  if (num_stages_ > 2)
-    throw Error("SP problems with more than 2 stages are not supported");
+    GetVarStages(NullSuffix());
+  if (num_stage_vars_.empty())
+    num_stage_vars_.resize(1);
+  num_stages_ = static_cast<int>(num_stage_vars_.size());
+  int num_vars = p.num_vars();
+  var_core2orig_.resize(num_vars - random_vars_.size());
+  std::vector<int> stage_offsets(num_stages_);
+  for (int i = 1; i < num_stages_; ++i)
+    stage_offsets[i] = stage_offsets[i - 1] + num_stage_vars_[i - 1];
+  for (int i = 0; i < num_vars; ++i) {
+    int stage = var_orig2core_[i];
+    if (stage < 0)
+      continue;  // Skip random variables.
+    int core_var_index = stage_offsets[stage]++;
+    var_core2orig_[core_var_index] = i;
+    var_orig2core_[i] = core_var_index;
+  }
 
   ProcessObjs();
   int num_stage1_cons = ProcessCons();

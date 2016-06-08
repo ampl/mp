@@ -146,9 +146,9 @@ class SPAdapter {
   // form random(x, a_1, ..., a_n).
   void GetRandomVectors(const Problem &p);
 
-  // Reorder variables by stages.
+  // Get the information about variable stages.
   template <typename Suffix>
-  void ReorderVarsByStages(Suffix stage);
+  void GetVarStages(Suffix stage);
 
   void ProcessObjs();
   int ProcessCons();

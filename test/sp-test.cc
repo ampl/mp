@@ -148,6 +148,32 @@ TEST(SPTest, RandomVar) {
   EXPECT_EQ(0, sp.rv(0).num_elements());
 }
 
+TEST(SPTest, SingleRealization) {
+  TestBasicProblem p(2);
+  auto random = p.BeginRandom(2);
+  random.AddArg(p.MakeVariable(0));
+  random.AddArg(p.MakeNumericConstant(42));
+  p.EndRandom(random);
+  mp::SPAdapter sp(p);
+  EXPECT_EQ(1, sp.num_rvs());
+  EXPECT_EQ(1, sp.rv(0).num_realizations());
+  EXPECT_EQ(1, sp.rv(0).num_elements());
+}
+
+TEST(SPTest, MultipleRealizations) {
+  TestBasicProblem p(2);
+  auto random = p.BeginRandom(4);
+  random.AddArg(p.MakeVariable(0));
+  random.AddArg(p.MakeNumericConstant(11));
+  random.AddArg(p.MakeNumericConstant(22));
+  random.AddArg(p.MakeNumericConstant(33));
+  p.EndRandom(random);
+  mp::SPAdapter sp(p);
+  EXPECT_EQ(1, sp.num_rvs());
+  EXPECT_EQ(3, sp.rv(0).num_realizations());
+  EXPECT_EQ(1, sp.rv(0).num_elements());
+}
+
 TEST(SPTest, EmptyRVWithProbability) {
   TestBasicProblem p(2);
   auto random = p.BeginRandom(1);
@@ -257,17 +283,21 @@ TEST(SPTest, InvalidRandomArg) {
                    fmt::format("_slogcon[1]: expected variable or constant"));
 }
 
-TEST(SPTest, SecondStageVar) {
-  TestBasicProblem p(2);
-  p.AddIntSuffix("stage", mp::suf::VAR, 1).SetValue(0, 2);
+TEST(SPTest, VarStages) {
+  TestBasicProblem p(6);
+  auto stage = p.AddIntSuffix("stage", mp::suf::VAR, 3);
+  stage.SetValue(0, 3);
+  stage.SetValue(1, 2);
+  stage.SetValue(2, 3);
   mp::SPAdapter sp(p);
-  EXPECT_EQ(2, sp.num_vars());
+  EXPECT_EQ(6, sp.num_vars());
   EXPECT_EQ(0, sp.num_cons());
-  EXPECT_EQ(2, sp.num_stages());
-  EXPECT_EQ(1, sp.stage(0).num_vars());
-  EXPECT_EQ(0, sp.stage(0).num_cons());
+  EXPECT_EQ(3, sp.num_stages());
+  EXPECT_EQ(3, sp.stage(0).num_vars());
   EXPECT_EQ(1, sp.stage(1).num_vars());
-  EXPECT_EQ(0, sp.stage(1).num_cons());
+  EXPECT_EQ(2, sp.stage(2).num_vars());
+  for (int i = 0; i < 3; ++i)
+    EXPECT_EQ(0, sp.stage(i).num_cons());
 }
 
 TEST(SPTest, OrderVarsByStage) {
@@ -279,32 +309,6 @@ TEST(SPTest, OrderVarsByStage) {
   EXPECT_EQ(mp::var::INTEGER, sp.var(0).type());
   EXPECT_EQ(mp::var::CONTINUOUS, sp.var(1).type());
   EXPECT_EQ(42, sp.var(1).lb());
-}
-
-TEST(SPTest, SingleRealization) {
-  TestBasicProblem p(2);
-  auto random = p.BeginRandom(2);
-  random.AddArg(p.MakeVariable(0));
-  random.AddArg(p.MakeNumericConstant(42));
-  p.EndRandom(random);
-  mp::SPAdapter sp(p);
-  EXPECT_EQ(1, sp.num_rvs());
-  EXPECT_EQ(1, sp.rv(0).num_realizations());
-  EXPECT_EQ(1, sp.rv(0).num_elements());
-}
-
-TEST(SPTest, MultipleRealizations) {
-  TestBasicProblem p(2);
-  auto random = p.BeginRandom(4);
-  random.AddArg(p.MakeVariable(0));
-  random.AddArg(p.MakeNumericConstant(11));
-  random.AddArg(p.MakeNumericConstant(22));
-  random.AddArg(p.MakeNumericConstant(33));
-  p.EndRandom(random);
-  mp::SPAdapter sp(p);
-  EXPECT_EQ(1, sp.num_rvs());
-  EXPECT_EQ(3, sp.rv(0).num_realizations());
-  EXPECT_EQ(1, sp.rv(0).num_elements());
 }
 
 TEST(SPTest, Expectation) {
@@ -388,13 +392,6 @@ TEST(SPTest, RandomRHS) {
   mp::SPAdapter sp(p);
   auto col = sp.column(0);
   EXPECT_EQ(col.begin(), col.end());
-}
-
-TEST(SPTest, MoreThan2StagesNotSupported) {
-  TestBasicProblem p(1);
-  p.AddIntSuffix("stage", mp::suf::VAR, 1).SetValue(0, 3);
-  EXPECT_THROW_MSG(mp::SPAdapter sp(p), mp::Error,
-                   "SP problems with more than 2 stages are not supported");
 }
 
 TEST(SPTest, NonlinearNotSupported) {
