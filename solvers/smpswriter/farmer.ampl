@@ -1,4 +1,4 @@
-# The farmer's stochastic programming problem in AMPL
+# The farmer's problem in AMPL
 #
 # Reference:
 #  John R. Birge and Francois Louveaux. Introduction to Stochastic Programming.
@@ -8,13 +8,14 @@
 function expectation;
 function random;
 
+suffix stage IN;
+
 set Crops;
 
 set Scen;
 param P{Scen}; # probabilities
 
 param TotalArea;               # acre
-param Yield{Crops, Scen};      # T/acre
 param PlantingCost{Crops};     # $/acre
 param SellingPrice{Crops};     # $/T
 param ExcessSellingPrice;      # $/T
@@ -34,8 +35,14 @@ var sell_excess >= 0, suffix stage 2;
 # Tons of crop c bought under scenario s
 var buy{c in Crops} >= 0, suffix stage 2;
 
+# The random variable (parameter) representing the yield of crop c.
+var RandomYield{c in Crops};
+
+# Realizations of the yield of crop c.
+param Yield{c in Crops, s in Scen}; # T/acre
+
 maximize profit:
-  expectation({s in Scen} P[s],
+  expectation(
     ExcessSellingPrice * sell_excess +
     sum{c in Crops} (SellingPrice[c] * sell[c] -
                      PurchasePrice[c] * buy[c])) -
@@ -44,14 +51,12 @@ maximize profit:
 s.t. totalArea: sum {c in Crops} area[c] <= TotalArea;
 
 s.t. requirement{c in Crops}:
-    random({s in Scen} Yield[c, s]) * area[c] - sell[c] + buy[c]
-      >= MinRequirement[c];
+  RandomYield[c] * area[c] - sell[c] + buy[c] >= MinRequirement[c];
 
 s.t. quota: sell['beets'] <= BeetsQuota;
 
 s.t. sellBeets:
-    sell['beets'] + sell_excess
-      <= random({s in Scen} Yield['beets', s]) * area['beets'];
+  sell['beets'] + sell_excess <= RandomYield['beets'] * area['beets'];
 
 data;
 
@@ -59,11 +64,6 @@ set Crops := wheat corn beets;
 set Scen := below average above;
 
 param TotalArea := 500;
-
-param P := 
-    below   0.333333
-    average 0.333333
-    above   0.333333;
 
 param Yield:
            below average above :=
@@ -94,3 +94,5 @@ param MinRequirement :=
     beets   0;
 
 param BeetsQuota := 6000;
+
+yield: random({c in Crops} (RandomYield[c], {s in Scen} Yield[c, s]));
