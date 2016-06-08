@@ -133,6 +133,8 @@ class SPAdapter {
   // con_orig2core_[i] is the index of constraint i in the core problem.
   std::vector<int> con_orig2core_;
 
+  LinearExpr linear_obj_;
+
   // Nonlinear parts of objective expressions.
   // The array can be empty if the problem is linear.
   std::vector<NumericExpr> nonlinear_objs_;
@@ -184,6 +186,11 @@ class SPAdapter {
       : adapter_(adapter), index_(index) {}
 
    public:
+    const LinearExpr &linear_expr() const {
+      assert(index_ == 0);
+      return adapter_->linear_obj_;
+    }
+
     NumericExpr nonlinear_expr() const {
       return adapter_->nonlinear_objs_[index_];
     }
@@ -191,10 +198,6 @@ class SPAdapter {
 
   // Returns the core objective with the specified index.
   Objective obj(int index) const { return Objective(this, index); }
-
-  // Returns the core objective.
-  // TODO: remove
-  std::vector<double> core_obj() const;
 
   // Returns the number of stages.
   int num_stages() const { return num_stages_; }

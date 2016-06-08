@@ -38,7 +38,7 @@ inline std::string lcon_name(int index) {
 class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
  private:
   const Problem &problem_;
-  LinearExpr linear_;
+  LinearExpr linear_; // TODO: combine similar terms
   double constant_;
   double coef_;
 
@@ -53,6 +53,10 @@ class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
   AffineExprExtractor(const Problem &p) : problem_(p), constant_(0), coef_(1) {}
 
   const LinearExpr &linear_expr() const { return linear_; }
+
+  void VisitNumericConstant(NumericConstant n) {
+    constant_ = n.value();
+  }
 
   void VisitVariable(Variable v) {
     linear_.AddTerm(v.index(), coef_);
@@ -277,25 +281,38 @@ void SPAdapter::ProcessObjs(int num_stage1_vars) {
   int num_objs = problem_.num_objs();
   if (num_objs == 0)
     return;
+
   nonlinear_objs_.reserve(num_objs);
   for (auto obj: problem_.objs())
     nonlinear_objs_.push_back(obj.nonlinear_expr());
   // Strip expectation from the first objective.
   auto obj = problem_.obj(0);
+  int num_vars = this->num_vars();
+  std::vector<double> core_obj(num_vars);
   for (auto term: obj.linear_expr()) {
-    if (var_orig2core_[term.var_index()] >= num_stage1_vars && term.coef() != 0)
+    int core_var_index = var_orig2core_[term.var_index()];
+    if (core_var_index >= num_stage1_vars && term.coef() != 0)
       throw Error("second-stage variable outside of expectation in objective");
+    core_obj[core_var_index] = term.coef();
   }
   auto obj_expr = obj.nonlinear_expr();
-  if (!obj_expr)
-    return;
-  auto call = Cast<CallExpr>(obj_expr);
-  if (!call || std::strcmp(call.function().name(), "expectation") != 0)
-    return;
-  NumericExpr arg;
-  if (call.num_args() != 1 || !(arg = Cast<NumericExpr>(call.arg(0))))
-    throw Error("invalid arguments to expectation");
-  nonlinear_objs_[0] = arg;
+  if (obj_expr) {
+    auto call = Cast<CallExpr>(obj_expr);
+    if (call && std::strcmp(call.function().name(), "expectation") == 0) {
+      if (call.num_args() != 1 || !(obj_expr = Cast<NumericExpr>(call.arg(0))))
+        throw Error("invalid arguments to expectation");
+      nonlinear_objs_[0] = obj_expr;
+    }
+    AffineExprExtractor extractor(problem_);
+    extractor.Visit(obj_expr);
+    // TODO: handle constant
+    for (auto term: extractor.linear_expr())
+      core_obj[var_orig2core_[term.var_index()]] += term.coef();
+  }
+  for (int i = 0; i < num_vars; ++i) {
+    if (auto obj = core_obj[i])
+      linear_obj_.AddTerm(i, obj);
+  }
 }
 
 int SPAdapter::ProcessCons(int num_stage1_vars) {
@@ -399,8 +416,6 @@ SPAdapter::SPAdapter(const ColProblem &p)
   if (num_stages_ > 2)
     throw Error("SP problems with more than 2 stages are not supported");
 
-  ProcessObjs(num_stage1_vars);
-
   // Compute core indices for variables in later stages.
   int num_vars = p.num_vars();
   int stage2_index = num_stage1_vars;
@@ -422,6 +437,7 @@ SPAdapter::SPAdapter(const ColProblem &p)
            stage2_index + random_vars_.size());
   }
 
+  ProcessObjs(num_stage1_vars);
   int num_stage1_cons = ProcessCons(num_stage1_vars);
 
   num_stage_vars_.resize(num_stages_);
@@ -433,22 +449,6 @@ SPAdapter::SPAdapter(const ColProblem &p)
     num_stage_cons_[1] = this->num_cons() - num_stage1_cons;
     ExtractRandomTerms();
   }
-}
-
-std::vector<double> SPAdapter::core_obj() const {
-  std::vector<double> obj(num_vars());
-  if (problem_.num_objs() == 0)
-    return obj;
-  // Get objective coefficients in the core problem (first scenario).
-  for (auto term: problem_.obj(0).linear_expr())
-    obj[var_orig2core_[term.var_index()]] = term.coef();
-  if (NumericExpr expr = nonlinear_objs_[0]) {
-    AffineExprExtractor extractor(problem_);
-    extractor.Visit(expr);
-    for (auto term: extractor.linear_expr())
-      obj[var_orig2core_[term.var_index()]] += term.coef();
-  }
-  return obj;
 }
 
 void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {

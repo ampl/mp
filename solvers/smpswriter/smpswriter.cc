@@ -97,7 +97,8 @@ void WriteCoreFile(fmt::CStringRef filename, const SPAdapter &sp) {
   bool integer_block = false;
   writer.Write("COLUMNS\n");
   int num_core_vars = sp.num_vars();
-  auto obj = sp.core_obj();
+  auto obj = sp.obj(0).linear_expr();
+  auto obj_term = obj.begin(), obj_end = obj.end();
   for (int i = 0; i < num_core_vars; ++i) {
     auto var = sp.var(i);
     if (var.type() == mp::var::CONTINUOUS) {
@@ -110,8 +111,11 @@ void WriteCoreFile(fmt::CStringRef filename, const SPAdapter &sp) {
       integer_block = true;
     }
 
-    if (auto obj_coef = obj[i])
-      writer.Write("    C{:<7}  OBJ       {}\n", i + 1, obj_coef);
+    if (i == obj_term->var_index()) {
+      writer.Write("    C{:<7}  OBJ       {}\n", i + 1, obj_term->coef());
+      if (obj_term != obj_end)
+        ++obj_term;
+    }
     for (auto term: sp.column(i)) {
       writer.Write("    C{:<7}  R{:<7}  {}\n",
                    i + 1, term.con_index() + 1, term.coef());
