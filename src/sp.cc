@@ -34,76 +34,6 @@ inline std::string lcon_name(int index) {
   return fmt::format("_slogcon[{}]", index + 1);
 }
 
-// Extracts an affine expression from a nonlinear one.
-class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
- private:
-  const Problem &problem_;
-  LinearExpr linear_; // TODO: store coefs directly in linear_obj
-  double constant_;
-  double coef_;
-
-  void VisitMultiplied(double multiplier, NumericExpr expr) {
-    double saved_coef = coef_;
-    coef_ *= multiplier;
-    Visit(expr);
-    coef_ = saved_coef;
-  }
-
- public:
-  AffineExprExtractor(const Problem &p) : problem_(p), constant_(0), coef_(1) {}
-
-  double constant() const { return constant_; }
-  const LinearExpr &linear_expr() const { return linear_; }
-
-  void VisitNumericConstant(NumericConstant n) {
-    constant_ += coef_ * n.value();
-  }
-
-  void VisitVariable(Variable v) {
-    linear_.AddTerm(v.index(), coef_);
-  }
-
-  void VisitCommonExpr(CommonExpr e);
-
-  void VisitBinary(BinaryExpr e);
-
-  void VisitSum(SumExpr e) {
-    for (auto arg: e)
-      Visit(arg);
-  }
-};
-
-void AffineExprExtractor::VisitCommonExpr(CommonExpr e) {
-  auto common_expr = problem_.common_expr(e.index());
-  for (auto term: common_expr.linear_expr())
-    linear_.AddTerm(term.var_index(), coef_ * term.coef());
-  Visit(common_expr.nonlinear_expr());
-}
-
-void AffineExprExtractor::VisitBinary(BinaryExpr e) {
-  switch (e.kind()) {
-  case expr::ADD:
-    Visit(e.lhs());
-    Visit(e.rhs());
-    break;
-  case expr::SUB:
-    Visit(e.lhs());
-    coef_ = -coef_;
-    Visit(e.rhs());
-    coef_ = -coef_;
-    break;
-  case expr::MUL:
-    if (auto n = Cast<NumericConstant>(e.lhs()))
-      return VisitMultiplied(n.value(), e.rhs());
-    if (auto n = Cast<NumericConstant>(e.rhs()))
-      return VisitMultiplied(n.value(), e.lhs());
-    throw MakeUnsupportedError("nonlinear expression");
-    break;
-  default:
-    ExprVisitor<AffineExprExtractor, void>::VisitBinary(e);
-  }
-}
-
 template <typename Impl>
 class RandomConstExprExtractor : public mp::ExprVisitor<Impl, double> {
  private:
@@ -185,6 +115,83 @@ class NullSuffix {
   int value(int) const { return 0; }
 };
 }  // namespace
+
+namespace internal {
+
+// Extracts an affine expression from a nonlinear one.
+class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
+ private:
+  const SPAdapter &sp_;
+  std::vector<double> &coefs_;
+  double constant_;
+  double coef_;
+
+  void VisitMultiplied(double multiplier, NumericExpr expr) {
+    double saved_coef = coef_;
+    coef_ *= multiplier;
+    Visit(expr);
+    coef_ = saved_coef;
+  }
+
+  void AddTerm(int var_index, double coef) {
+    coefs_[sp_.var_orig2core_[var_index]] += coef;
+  }
+
+ public:
+  explicit AffineExprExtractor(const SPAdapter &sp, std::vector<double> &coefs)
+    : sp_(sp), coefs_(coefs), constant_(0), coef_(1) {}
+
+  double constant() const { return constant_; }
+
+  void VisitNumericConstant(NumericConstant n) {
+    constant_ += coef_ * n.value();
+  }
+
+  void VisitVariable(Variable v) {
+    AddTerm(v.index(), coef_);
+  }
+
+  void VisitCommonExpr(CommonExpr e);
+
+  void VisitBinary(BinaryExpr e);
+
+  void VisitSum(SumExpr e) {
+    for (auto arg: e)
+      Visit(arg);
+  }
+};
+
+void AffineExprExtractor::VisitCommonExpr(CommonExpr e) {
+  auto common_expr = sp_.problem_.common_expr(e.index());
+  for (auto term: common_expr.linear_expr())
+    AddTerm(term.var_index(), coef_ * term.coef());
+  Visit(common_expr.nonlinear_expr());
+}
+
+void AffineExprExtractor::VisitBinary(BinaryExpr e) {
+  switch (e.kind()) {
+  case expr::ADD:
+    Visit(e.lhs());
+    Visit(e.rhs());
+    break;
+  case expr::SUB:
+    Visit(e.lhs());
+    coef_ = -coef_;
+    Visit(e.rhs());
+    coef_ = -coef_;
+    break;
+  case expr::MUL:
+    if (auto n = Cast<NumericConstant>(e.lhs()))
+      return VisitMultiplied(n.value(), e.rhs());
+    if (auto n = Cast<NumericConstant>(e.rhs()))
+      return VisitMultiplied(n.value(), e.lhs());
+    throw MakeUnsupportedError("nonlinear expression");
+    break;
+  default:
+    ExprVisitor<AffineExprExtractor, void>::VisitBinary(e);
+  }
+}
+}
 
 void SPAdapter::GetRealizations(int con_index, CallExpr random,
                                 int &arg_index) {
@@ -297,12 +304,10 @@ void SPAdapter::ProcessObjs() {
         throw Error("invalid arguments to expectation");
       nonlinear_objs_[0] = mp::NumericExpr();
     }
-    AffineExprExtractor extractor(problem_);
+    internal::AffineExprExtractor extractor(*this, core_obj);
     extractor.Visit(obj_expr);
     if (auto constant = extractor.constant())
       nonlinear_objs_[0] = factory_.MakeNumericConstant(constant);
-    for (auto term: extractor.linear_expr())
-      core_obj[var_orig2core_[term.var_index()]] += term.coef();
   }
   for (int i = 0; i < num_vars; ++i) {
     if (auto obj = core_obj[i])

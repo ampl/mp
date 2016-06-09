@@ -29,6 +29,9 @@
 #include <vector>
 
 namespace mp {
+namespace internal {
+class AffineExprExtractor;
+}
 
 class SparseMatrix {
  private:
@@ -139,6 +142,8 @@ class SPAdapter {
   // Nonlinear parts of objective expressions.
   // The array can be empty if the problem is linear.
   std::vector<NumericExpr> nonlinear_objs_;
+
+  friend class internal::AffineExprExtractor;
 
   // Extract realizations of a random variable from a call to random(...).
   void GetRealizations(int con_index, CallExpr random, int &arg_index);
