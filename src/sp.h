@@ -156,6 +156,8 @@ class SPAdapter {
   template <typename Suffix>
   void GetVarStages(Suffix stage);
 
+  void UpdateConStages(int var_index, int stage);
+
   void ProcessObjs();
   void ProcessCons();
 
@@ -335,6 +337,7 @@ class SPAdapter {
 
   void GetScenario(Scenario &s, int scenario_index) const;
 
+  // TODO: make private
   // If var_index refers to a random variable, returns its index in
   // random_vars_. Otherwise returns -1.
   int GetRandVarIndex(int var_index) const {

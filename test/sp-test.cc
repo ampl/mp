@@ -344,7 +344,7 @@ TEST(SPTest, VarInExpectation) {
 TEST(SPTest, SimilarTermsInExpectation) {
   TestBasicProblem p(10);
   p.AddExpectationObj(
-        p.MakeBinary(mp::expr::ADD, p.MakeVariable(7), p.MakeVariable(7)));
+        p.MakeBinary(expr::ADD, p.MakeVariable(7), p.MakeVariable(7)));
   mp::SPAdapter sp(p);
   auto obj = sp.obj(0);
   auto expr = obj.linear_expr();
@@ -355,7 +355,63 @@ TEST(SPTest, SimilarTermsInExpectation) {
   EXPECT_EQ(mp::NumericExpr(), obj.nonlinear_expr());
 }
 
-// TODO: test AffineExprExtractor
+TEST(SPTest, CommonExprInExpectation) {
+  TestBasicProblem p(10);
+  p.AddCommonExpr(p.MakeVariable(7));
+  p.AddExpectationObj(p.MakeCommonExpr(0));
+  mp::SPAdapter sp(p);
+  auto obj = sp.obj(0);
+  auto expr = obj.linear_expr();
+  EXPECT_EQ(1, expr.num_terms());
+  auto term = *expr.begin();
+  EXPECT_EQ(7, term.var_index());
+  EXPECT_EQ(1, term.coef());
+  EXPECT_EQ(mp::NumericExpr(), obj.nonlinear_expr());
+}
+
+TEST(SPTest, SubInExpectation) {
+  TestBasicProblem p(10);
+  p.AddExpectationObj(
+        p.MakeBinary(expr::SUB, p.MakeNumericConstant(42), p.MakeVariable(7)));
+  mp::SPAdapter sp(p);
+  auto obj = sp.obj(0);
+  auto expr = obj.linear_expr();
+  EXPECT_EQ(1, expr.num_terms());
+  auto term = *expr.begin();
+  EXPECT_EQ(7, term.var_index());
+  EXPECT_EQ(-1, term.coef());
+  EXPECT_EQ(42, mp::Cast<mp::NumericConstant>(obj.nonlinear_expr()).value());
+}
+
+TEST(SPTest, MulInExpectation) {
+  TestBasicProblem p(10);
+  auto e = p.MakeBinary(expr::ADD, p.MakeNumericConstant(6), p.MakeVariable(3));
+  p.AddExpectationObj(p.MakeBinary(expr::MUL, p.MakeNumericConstant(7),e));
+  mp::SPAdapter sp(p);
+  auto obj = sp.obj(0);
+  auto expr = obj.linear_expr();
+  EXPECT_EQ(1, expr.num_terms());
+  auto term = *expr.begin();
+  EXPECT_EQ(3, term.var_index());
+  EXPECT_EQ(7, term.coef());
+  EXPECT_EQ(42, mp::Cast<mp::NumericConstant>(obj.nonlinear_expr()).value());
+}
+
+TEST(SPTest, SumInExpectation) {
+  TestBasicProblem p(10);
+  auto sum = p.BeginSum(2);
+  sum.AddArg(p.MakeNumericConstant(42));
+  sum.AddArg(p.MakeVariable(3));
+  p.AddExpectationObj(p.EndSum(sum));
+  mp::SPAdapter sp(p);
+  auto obj = sp.obj(0);
+  auto expr = obj.linear_expr();
+  EXPECT_EQ(1, expr.num_terms());
+  auto term = *expr.begin();
+  EXPECT_EQ(3, term.var_index());
+  EXPECT_EQ(1, term.coef());
+  EXPECT_EQ(42, mp::Cast<mp::NumericConstant>(obj.nonlinear_expr()).value());
+}
 
 TEST(SPTest, Stage2VarOutsideOfExpectation) {
   TestBasicProblem p(1);
@@ -401,6 +457,8 @@ TEST(SPTest, NonlinearObj) {
   EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::UnsupportedError,
                    "unsupported: ^2");
 }
+
+// TODO: test processing of constraints
 
 TEST(SPTest, RandomConMatrix) {
   auto header = MakeHeader(2);

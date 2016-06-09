@@ -278,6 +278,15 @@ void SPAdapter::GetVarStages(Suffix stage_suffix) {
   }
 }
 
+// Update stages of all constraints containing this variable.
+void SPAdapter::UpdateConStages(int var_index, int stage) {
+  for (int k = problem_.col_start(var_index),
+       end = problem_.col_start(var_index + 1); k != end; ++k) {
+    int &con_stage = con_orig2core_[problem_.row_index(k)];
+    con_stage = std::max(stage, con_stage);
+  }
+}
+
 void SPAdapter::ProcessObjs() {
   int num_objs = problem_.num_objs();
   if (num_objs == 0)
@@ -316,37 +325,33 @@ void SPAdapter::ProcessObjs() {
 }
 
 void SPAdapter::ProcessCons() {
-  int num_vars = problem_.num_vars();
   int num_cons = problem_.num_algebraic_cons();
-  std::vector<int> con_stages(num_cons);
-  int num_stage1_vars = num_stage_vars_[0];
-  if (num_stage1_vars != num_vars) {
-    // Compute stage of each constraint as a maximum of stages of
-    // variables in it.
-    for (int j = 0; j < num_vars; ++j) {
-      int core_var_index = var_orig2core_[j];
-      if (core_var_index >= 0 && core_var_index < num_stage1_vars)
-        continue;
-      // Update stages of all constraints containing this variable.
-      for (int k = problem_.col_start(j),
-           end = problem_.col_start(j + 1); k != end; ++k) {
-        con_stages[problem_.row_index(k)] = 1;
-      }
+  // Compute stage of each constraint as a maximum of stages of variables
+  // in it and temporarily store stages in con_orig2core_.
+  con_orig2core_.resize(num_cons);
+  int core_var_index = num_stage_vars_[0];
+  for (int stage = 1; stage < num_stages_; ++stage) {
+    for (int n = core_var_index + num_stage_vars_[stage];
+         core_var_index < n; ++core_var_index) {
+      UpdateConStages(var_core2orig_[core_var_index], stage);
     }
   }
+  // Constraints containing random variables should be at least in the
+  // second stage.
+  for (const auto &rv: random_vars_)
+    UpdateConStages(rv.var_index, 1);
   int num_stage1_cons = 0;
   for (int i = 0; i < num_cons; ++i) {
     if (problem_.algebraic_con(i).nonlinear_expr())
-      con_stages[i] = 1;
-    else if (con_stages[i] == 0)
+      con_orig2core_[i] = std::max(con_orig2core_[i], 1);
+    else if (con_orig2core_[i] == 0)
       ++num_stage1_cons;
   }
   // Compute core indices for constraints.
   con_core2orig_.resize(num_cons);
-  con_orig2core_.resize(num_cons);
   int stage1_index = 0, stage2_index = num_stage1_cons;
   for (int i = 0; i < num_cons; ++i) {
-    int &index = con_stages[i] != 0 ? stage2_index : stage1_index;
+    int &index = con_orig2core_[i] != 0 ? stage2_index : stage1_index;
     con_core2orig_[index] = i;
     con_orig2core_[i] = index++;
   }
