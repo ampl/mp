@@ -64,6 +64,13 @@ class TestProblem : public mp::ColProblem {
     EndRandom(builder);
     return rv;
   }
+
+  void AddExpectationObj(Expr expr) {
+    AddObj(mp::obj::MIN, 0);
+    auto call = BeginCall(AddFunction("expectation", 0), 1);
+    call.AddArg(expr);
+    obj(0).set_nonlinear_expr(EndCall(call));
+  }
 };
 
 mp::NLHeader MakeHeader(int num_vars, int num_integer_vars = 0) {
@@ -311,16 +318,44 @@ TEST(SPTest, OrderVarsByStage) {
   EXPECT_EQ(42, sp.var(1).lb());
 }
 
-TEST(SPTest, Expectation) {
+TEST(SPTest, ConstantExprInExpectation) {
   TestBasicProblem p(1);
-  p.AddObj(mp::obj::MIN, 0);
-  auto call = p.BeginCall(p.AddFunction("expectation", 0), 1);
-  auto expr = p.MakeNumericConstant(0);
-  call.AddArg(expr);
-  p.obj(0).set_nonlinear_expr(p.EndCall(call));
+  p.AddExpectationObj(
+        p.MakeBinary(expr::MUL, p.MakeNumericConstant(6),
+                     p.MakeNumericConstant(7)));
   mp::SPAdapter sp(p);
-  EXPECT_EQ(expr, sp.obj(0).nonlinear_expr());
+  auto constant = mp::Cast<mp::NumericConstant>(sp.obj(0).nonlinear_expr());
+  EXPECT_EQ(42, constant.value());
 }
+
+TEST(SPTest, VarInExpectation) {
+  TestBasicProblem p(10);
+  p.AddExpectationObj(p.MakeVariable(7));
+  mp::SPAdapter sp(p);
+  auto obj = sp.obj(0);
+  auto expr = obj.linear_expr();
+  EXPECT_EQ(1, expr.num_terms());
+  auto term = *expr.begin();
+  EXPECT_EQ(7, term.var_index());
+  EXPECT_EQ(1, term.coef());
+  EXPECT_EQ(mp::NumericExpr(), obj.nonlinear_expr());
+}
+
+TEST(SPTest, SimilarTermsInExpectation) {
+  TestBasicProblem p(10);
+  p.AddExpectationObj(
+        p.MakeBinary(mp::expr::ADD, p.MakeVariable(7), p.MakeVariable(7)));
+  mp::SPAdapter sp(p);
+  auto obj = sp.obj(0);
+  auto expr = obj.linear_expr();
+  EXPECT_EQ(1, expr.num_terms());
+  auto term = *expr.begin();
+  EXPECT_EQ(7, term.var_index());
+  EXPECT_EQ(2, term.coef());
+  EXPECT_EQ(mp::NumericExpr(), obj.nonlinear_expr());
+}
+
+// TODO: test AffineExprExtractor
 
 TEST(SPTest, Stage2VarOutsideOfExpectation) {
   TestBasicProblem p(1);
@@ -358,6 +393,13 @@ TEST(SPTest, StringArgToExpectation) {
   p.obj(0).set_nonlinear_expr(p.EndCall(call));
   EXPECT_THROW_MSG(mp::SPAdapter sp(p), mp::Error,
                    "invalid arguments to expectation");
+}
+
+TEST(SPTest, NonlinearObj) {
+  TestBasicProblem p(1);
+  p.AddObj(mp::obj::MIN, p.MakeUnary(expr::POW2, p.MakeVariable(0)));
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::UnsupportedError,
+                   "unsupported: ^2");
 }
 
 TEST(SPTest, RandomConMatrix) {

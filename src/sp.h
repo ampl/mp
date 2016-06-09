@@ -60,6 +60,7 @@ class SparseMatrix {
 class SPAdapter {
  private:
   const ColProblem &problem_;
+  ExprFactory factory_;
   Function random_;
   SparseMatrix linear_random_;
 
@@ -151,7 +152,7 @@ class SPAdapter {
   void GetVarStages(Suffix stage);
 
   void ProcessObjs();
-  int ProcessCons();
+  void ProcessCons();
 
   void ExtractRandomTerms();
 

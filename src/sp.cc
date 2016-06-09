@@ -38,7 +38,7 @@ inline std::string lcon_name(int index) {
 class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
  private:
   const Problem &problem_;
-  LinearExpr linear_; // TODO: combine similar terms
+  LinearExpr linear_; // TODO: store coefs directly in linear_obj
   double constant_;
   double coef_;
 
@@ -52,6 +52,7 @@ class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
  public:
   AffineExprExtractor(const Problem &p) : problem_(p), constant_(0), coef_(1) {}
 
+  double constant() const { return constant_; }
   const LinearExpr &linear_expr() const { return linear_; }
 
   void VisitNumericConstant(NumericConstant n) {
@@ -62,12 +63,7 @@ class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
     linear_.AddTerm(v.index(), coef_);
   }
 
-  void VisitCommonExpr(CommonExpr e) {
-    auto common_expr = problem_.common_expr(e.index());
-    for (auto term: common_expr.linear_expr())
-      linear_.AddTerm(term.var_index(), coef_ * term.coef());
-    Visit(common_expr.nonlinear_expr());
-  }
+  void VisitCommonExpr(CommonExpr e);
 
   void VisitBinary(BinaryExpr e);
 
@@ -76,6 +72,13 @@ class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
       Visit(arg);
   }
 };
+
+void AffineExprExtractor::VisitCommonExpr(CommonExpr e) {
+  auto common_expr = problem_.common_expr(e.index());
+  for (auto term: common_expr.linear_expr())
+    linear_.AddTerm(term.var_index(), coef_ * term.coef());
+  Visit(common_expr.nonlinear_expr());
+}
 
 void AffineExprExtractor::VisitBinary(BinaryExpr e) {
   switch (e.kind()) {
@@ -94,7 +97,7 @@ void AffineExprExtractor::VisitBinary(BinaryExpr e) {
       return VisitMultiplied(n.value(), e.rhs());
     if (auto n = Cast<NumericConstant>(e.rhs()))
       return VisitMultiplied(n.value(), e.lhs());
-    throw UnsupportedError("nonlinear expression");
+    throw MakeUnsupportedError("nonlinear expression");
     break;
   default:
     ExprVisitor<AffineExprExtractor, void>::VisitBinary(e);
@@ -121,14 +124,6 @@ class RandomConstExprExtractor : public mp::ExprVisitor<Impl, double> {
           adapter_.GetRealization(rv_index, scenario_) :
           mp::ExprVisitor<Impl, double>::VisitVariable(v);
   }
-
-  /*double VisitCall(CallExpr e) {
-    auto function = e.function();
-    if (function != random_)
-      throw Error("unsupported function: {}", function.name());
-    // TODO: check the number of arguments
-    return this->Visit(e.arg(scenario_));
-  }*/
 
   // TODO
 };
@@ -166,22 +161,24 @@ class RandomAffineExprExtractor :
     return result;
   }
 
-  double VisitBinary(BinaryExpr e) {
-    switch (e.kind()) {
-    case expr::MUL:
-      if (e.rhs().kind() == expr::VARIABLE)
-        return ExtractTerm(e.lhs(), e.rhs());
-      if (e.lhs().kind() == expr::VARIABLE)
-        return ExtractTerm(e.rhs(), e.lhs());
-      throw UnsupportedError("nonlinear expression");
-      break;
-    default:
-      return Base::VisitBinary(e);
-    }
-  }
+  double VisitBinary(BinaryExpr e);
 
   // TODO
 };
+
+double RandomAffineExprExtractor::VisitBinary(BinaryExpr e) {
+  switch (e.kind()) {
+  case expr::MUL:
+    if (e.rhs().kind() == expr::VARIABLE)
+      return ExtractTerm(e.lhs(), e.rhs());
+    if (e.lhs().kind() == expr::VARIABLE)
+      return ExtractTerm(e.rhs(), e.lhs());
+    throw UnsupportedError("nonlinear expression");
+    break;
+  default:
+    return Base::VisitBinary(e);
+  }
+}
 
 class NullSuffix {
  public:
@@ -298,11 +295,12 @@ void SPAdapter::ProcessObjs() {
     if (call && std::strcmp(call.function().name(), "expectation") == 0) {
       if (call.num_args() != 1 || !(obj_expr = Cast<NumericExpr>(call.arg(0))))
         throw Error("invalid arguments to expectation");
-      nonlinear_objs_[0] = obj_expr;
+      nonlinear_objs_[0] = mp::NumericExpr();
     }
     AffineExprExtractor extractor(problem_);
     extractor.Visit(obj_expr);
-    // TODO: handle constant
+    if (auto constant = extractor.constant())
+      nonlinear_objs_[0] = factory_.MakeNumericConstant(constant);
     for (auto term: extractor.linear_expr())
       core_obj[var_orig2core_[term.var_index()]] += term.coef();
   }
@@ -312,7 +310,7 @@ void SPAdapter::ProcessObjs() {
   }
 }
 
-int SPAdapter::ProcessCons() {
+void SPAdapter::ProcessCons() {
   int num_vars = problem_.num_vars();
   int num_cons = problem_.num_algebraic_cons();
   std::vector<int> con_stages(num_cons);
@@ -350,7 +348,14 @@ int SPAdapter::ProcessCons() {
   assert(stage1_index == num_stage1_cons && stage2_index == num_cons);
   if (num_stage1_cons != num_cons)
     num_stages_ = std::max(num_stages_, 2);
-  return num_stage1_cons;
+
+  num_stage_vars_.resize(num_stages_);
+  num_stage_cons_.resize(num_stages_);
+  num_stage_cons_[0] = num_stage1_cons;
+  if (num_stages_ > 1) {
+    num_stage_cons_[1] = this->num_cons() - num_stage1_cons;
+    ExtractRandomTerms();
+  }
 }
 
 void SPAdapter::ExtractRandomTerms() {
@@ -430,15 +435,7 @@ SPAdapter::SPAdapter(const ColProblem &p)
   }
 
   ProcessObjs();
-  int num_stage1_cons = ProcessCons();
-
-  num_stage_vars_.resize(num_stages_);
-  num_stage_cons_.resize(num_stages_);
-  num_stage_cons_[0] = num_stage1_cons;
-  if (num_stages_ > 1) {
-    num_stage_cons_[1] = this->num_cons() - num_stage1_cons;
-    ExtractRandomTerms();
-  }
+  ProcessCons();
 }
 
 void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {
@@ -474,25 +471,8 @@ void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {
       // TODO
       //handler.OnTerm(core_con_index, core_coefs_[k]);
     }
-  }*/
-}
-}  // namespace mp
-
-// TODO: migrate
-/*
-// Finds term with the specified constraint and variable indices in the
-// column-wise constraint matrix.
-int FindTerm(const ColProblem &p, int con_index, int var_index) {
-  for (int i = p.col_start(var_index),
-       n = p.col_start(var_index + 1); i < n; ++i) {
-    if (p.row_index(i) == con_index)
-      return i;
   }
-  return -1;
-}
 
-void SPAdapter::GetScenario(int scenario, std::vector<double> &coefs,
-                            std::vector<Bounds> &rhs) {
   coefs.assign(problem_.values(),
                problem_.values() + problem_.col_start(problem_.num_vars()));
   // Handle random variables/parameters in nonlinear constraint expressions.
@@ -516,5 +496,19 @@ void SPAdapter::GetScenario(int scenario, std::vector<double> &coefs,
       // Add extracted term coefficient to the one in constraint matrix.
       coefs[index] += term.coef();
     }
+  }*/
+}
+}  // namespace mp
+
+// TODO: migrate
+/*
+// Finds term with the specified constraint and variable indices in the
+// column-wise constraint matrix.
+int FindTerm(const ColProblem &p, int con_index, int var_index) {
+  for (int i = p.col_start(var_index),
+       n = p.col_start(var_index + 1); i < n; ++i) {
+    if (p.row_index(i) == con_index)
+      return i;
   }
+  return -1;
 }*/
