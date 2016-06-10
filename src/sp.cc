@@ -326,6 +326,9 @@ void SPAdapter::ProcessObjs() {
 
 void SPAdapter::ProcessCons() {
   int num_cons = problem_.num_algebraic_cons();
+  num_stage_cons_.resize(num_stages_);
+  if (num_cons == 0)
+    return;
   // Compute stage of each constraint as a maximum of stages of variables
   // in it and temporarily store stages in con_orig2core_.
   con_orig2core_.resize(num_cons);
@@ -340,32 +343,28 @@ void SPAdapter::ProcessCons() {
   // second stage.
   for (const auto &rv: random_vars_)
     UpdateConStages(rv.var_index, 1);
-  int num_stage1_cons = 0;
   for (int i = 0; i < num_cons; ++i) {
+    int &stage = con_orig2core_[i];
     if (problem_.algebraic_con(i).nonlinear_expr())
-      con_orig2core_[i] = std::max(con_orig2core_[i], 1);
-    else if (con_orig2core_[i] == 0)
-      ++num_stage1_cons;
+      stage = std::max(con_orig2core_[i], 1);
+    if (stage >= static_cast<int>(num_stage_cons_.size()))
+      num_stage_cons_.resize(stage + 1);
+    ++num_stage_cons_[stage];
+  }
+  if (num_stage_cons_.size() > num_stage_vars_.size()) {
+    num_stages_ = num_stage_cons_.size();
+    num_stage_vars_.resize(num_stages_);
   }
   // Compute core indices for constraints.
   con_core2orig_.resize(num_cons);
-  int stage1_index = 0, stage2_index = num_stage1_cons;
+  int stage1_index = 0, stage2_index = num_stage_cons_[0];
   for (int i = 0; i < num_cons; ++i) {
     int &index = con_orig2core_[i] != 0 ? stage2_index : stage1_index;
     con_core2orig_[index] = i;
     con_orig2core_[i] = index++;
   }
-  assert(stage1_index == num_stage1_cons && stage2_index == num_cons);
-  if (num_stage1_cons != num_cons)
-    num_stages_ = std::max(num_stages_, 2);
-
-  num_stage_vars_.resize(num_stages_);
-  num_stage_cons_.resize(num_stages_);
-  num_stage_cons_[0] = num_stage1_cons;
-  if (num_stages_ > 1) {
-    num_stage_cons_[1] = this->num_cons() - num_stage1_cons;
+  if (num_stages_ > 1)
     ExtractRandomTerms();
-  }
 }
 
 void SPAdapter::ExtractRandomTerms() {

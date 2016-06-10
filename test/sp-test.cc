@@ -458,6 +458,29 @@ TEST(SPTest, NonlinearObj) {
                    "unsupported: ^2");
 }
 
+TEST(SPTest, ConStages) {
+  auto header = MakeHeader(2);
+  header.num_con_nonzeros = 2;
+  TestProblem p(header);
+  auto stage = p.AddIntSuffix("stage", mp::suf::VAR, 2);
+  stage.SetValue(0, 3);
+  stage.SetValue(1, 2);
+  p.AddCon(0, 0);
+  auto cols = p.OnColumnSizes();
+  cols.Add(1);
+  cols.Add(1);
+  auto expr = p.OnLinearConExpr(0);
+  expr.AddTerm(0, 1);
+  expr.AddTerm(1, 1);
+  mp::SPAdapter sp(p);
+  EXPECT_EQ(2, sp.num_vars());
+  EXPECT_EQ(1, sp.num_cons());
+  EXPECT_EQ(3, sp.num_stages());
+  EXPECT_EQ(0, sp.stage(0).num_cons());
+  EXPECT_EQ(0, sp.stage(1).num_cons());
+  EXPECT_EQ(1, sp.stage(2).num_cons());
+}
+
 // TODO: test processing of constraints
 
 TEST(SPTest, RandomConMatrix) {
