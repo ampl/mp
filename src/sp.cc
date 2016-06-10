@@ -355,13 +355,16 @@ void SPAdapter::ProcessCons() {
     num_stages_ = num_stage_cons_.size();
     num_stage_vars_.resize(num_stages_);
   }
-  // Compute core indices for constraints.
+  // Reorder constraints by stages.
   con_core2orig_.resize(num_cons);
-  int stage1_index = 0, stage2_index = num_stage_cons_[0];
+  std::vector<int> stage_offsets(num_stages_);
+  for (int i = 1; i < num_stages_; ++i)
+    stage_offsets[i] = stage_offsets[i - 1] + num_stage_cons_[i - 1];
   for (int i = 0; i < num_cons; ++i) {
-    int &index = con_orig2core_[i] != 0 ? stage2_index : stage1_index;
-    con_core2orig_[index] = i;
-    con_orig2core_[i] = index++;
+    int stage = con_orig2core_[i];
+    int core_con_index = stage_offsets[stage]++;
+    con_core2orig_[core_con_index] = i;
+    con_orig2core_[i] = core_con_index++;
   }
   if (num_stages_ > 1)
     ExtractRandomTerms();

@@ -459,6 +459,8 @@ TEST(SPTest, NonlinearObj) {
 }
 
 TEST(SPTest, ConStages) {
+  // Test that constraint stage is determined as the maximum of stages of
+  // variables in it.
   auto header = MakeHeader(2);
   header.num_con_nonzeros = 2;
   TestProblem p(header);
@@ -479,6 +481,41 @@ TEST(SPTest, ConStages) {
   EXPECT_EQ(0, sp.stage(0).num_cons());
   EXPECT_EQ(0, sp.stage(1).num_cons());
   EXPECT_EQ(1, sp.stage(2).num_cons());
+}
+
+TEST(SPTest, ConWithRandomVar) {
+  // Test that constraint that contains a random var belongs at least to
+  // the second stage.
+  auto header = MakeHeader(1);
+  header.num_con_nonzeros = 1;
+  TestProblem p(header);
+  p.MakeTestRV();
+  p.AddCon(0, 0);
+  auto cols = p.OnColumnSizes();
+  cols.Add(1);
+  auto expr = p.OnLinearConExpr(0);
+  expr.AddTerm(0, 1);
+  mp::SPAdapter sp(p);
+  EXPECT_EQ(1, sp.num_cons());
+  EXPECT_EQ(2, sp.num_stages());
+  EXPECT_EQ(0, sp.stage(0).num_cons());
+  EXPECT_EQ(1, sp.stage(1).num_cons());
+}
+
+TEST(SPTest, OrderConsByStage) {
+  auto header = MakeHeader(1);
+  header.num_con_nonzeros = 1;
+  TestProblem p(header);
+  auto stage = p.AddIntSuffix("stage", mp::suf::VAR, 1);
+  stage.SetValue(0, 2);
+  p.AddCon(0, 7);
+  p.AddCon(0, 11);
+  p.OnColumnSizes().Add(1);
+  auto expr = p.OnLinearConExpr(0);
+  expr.AddTerm(0, 1);
+  mp::SPAdapter sp(p);
+  EXPECT_EQ(11, sp.con(0).ub());
+  EXPECT_EQ( 7, sp.con(1).ub());
 }
 
 // TODO: test processing of constraints
