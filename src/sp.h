@@ -108,16 +108,16 @@ class SPAdapter {
 
   std::vector<RandomVector> rvs_;
 
-  struct RandomVar {
+  struct RandomVarInfo {
     int var_index;      // Index of the variable in the original problem.
     int rv_index;       // Index of a random vector in rvs_.
     int element_index;  // Index of an element in the random vector.
 
-    RandomVar(int var_index, int rv_index, int element_index)
+    RandomVarInfo(int var_index, int rv_index, int element_index)
       : var_index(var_index), rv_index(rv_index),
         element_index(element_index) {}
   };
-  std::vector<RandomVar> random_vars_;
+  std::vector<RandomVarInfo> random_vars_;
 
   // var_core2orig_[i] is the index of core variable i in the original problem.
   std::vector<int> var_core2orig_;
@@ -337,17 +337,42 @@ class SPAdapter {
 
   void GetScenario(Scenario &s, int scenario_index) const;
 
-  // TODO: make private
-  // If var_index refers to a random variable, returns its index in
-  // random_vars_. Otherwise returns -1.
-  int GetRandVarIndex(int var_index) const {
-    int core_var_index = var_orig2core_[var_index];
-    return core_var_index < 0 ? -(core_var_index + 1) : -1;
-  }
+  class RandomVar {
+   private:
+    const SPAdapter *sp_;
+    int index_;
 
-  double GetRealization(int rv_index, int scenario) const {
-    const auto &info = random_vars_[rv_index];
-    return rvs_[info.rv_index].value(info.element_index, scenario);
+    friend class SPAdapter;
+
+    RandomVar(const SPAdapter *sp, int index) : sp_(sp), index_(index) {}
+
+    // Safe bool type.
+    typedef void (RandomVar::*SafeBool)() const;
+
+    // A member function representing the true value of SafeBool.
+    void True() const {}
+
+   public:
+    // Returns a value convertible to bool that can be used in conditions but
+    // not in comparisons and evaluates to "true" if this random variable is
+    // not null and "false" otherwise.
+    // Example:
+    //   if (rv) {
+    //     // Do something if rv is not null.
+    //   }
+    operator SafeBool() const { return index_ >= 0 ? &RandomVar::True : 0; }
+
+    double realization(int scenario) const {
+      const auto &random_var = sp_->random_vars_[index_];
+      return sp_->rvs_[random_var.rv_index].value(
+          random_var.element_index, scenario);
+    }
+  };
+
+  // Returns a random variable corresponding to var_index, or a null random
+  // variable if var_index doesn't refer to a random variable.
+  RandomVar random_var(int var_index) const {
+    return RandomVar(this, -var_orig2core_[var_index] - 1);
   }
 };
 }  // namespace mp

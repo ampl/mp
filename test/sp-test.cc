@@ -518,7 +518,41 @@ TEST(SPTest, OrderConsByStage) {
   EXPECT_EQ( 7, sp.con(1).ub());
 }
 
-// TODO: test processing of constraints
+TEST(SPTest, RandomRHS) {
+  auto header = MakeHeader(2);
+  header.num_con_nonzeros = 1;
+  TestProblem p(header);
+  p.MakeTestRV();
+  p.AddCon(0, 0);
+  auto cols = p.OnColumnSizes();
+  cols.Add(1);
+  cols.Add(0);
+  p.OnLinearConExpr(0).AddTerm(0, 3);
+  mp::SPAdapter sp(p);
+  auto col = sp.column(0);
+  EXPECT_EQ(col.begin(), col.end());
+  mp::SPAdapter::Scenario scenario;
+  sp.GetScenario(scenario, 0);
+  EXPECT_THAT(scenario.rhs_offsets(), testing::ElementsAre(-33));
+}
+
+TEST(SPTest, RandomRHSInNonlinear) {
+  auto header = MakeHeader(2);
+  header.num_con_nonzeros = 1;
+  TestProblem p(header);
+  p.MakeTestRV();
+  p.AddCon(0, 0).set_nonlinear_expr(p.MakeVariable(0));
+  auto cols = p.OnColumnSizes();
+  cols.Add(1);
+  cols.Add(0);
+  p.OnLinearConExpr(0).AddTerm(0, -3);
+  mp::SPAdapter sp(p);
+  mp::SPAdapter::Scenario scenario;
+  sp.GetScenario(scenario, 0);
+  EXPECT_THAT(scenario.rhs_offsets(), testing::ElementsAre(44));
+}
+
+// TODO: test processing of random terms
 
 TEST(SPTest, RandomConMatrix) {
   auto header = MakeHeader(2);
@@ -539,21 +573,6 @@ TEST(SPTest, RandomConMatrix) {
   EXPECT_EQ(col.end(), ++it);
 }
 
-TEST(SPTest, RandomRHS) {
-  auto header = MakeHeader(2);
-  header.num_con_nonzeros = 1;
-  TestProblem p(header);
-  p.MakeTestRV();
-  p.AddCon(0, 0);
-  auto cols = p.OnColumnSizes();
-  cols.Add(1);
-  cols.Add(0);
-  p.OnLinearConExpr(0).AddTerm(0, 42);
-  mp::SPAdapter sp(p);
-  auto col = sp.column(0);
-  EXPECT_EQ(col.begin(), col.end());
-}
-
 TEST(SPTest, NonlinearNotSupported) {
   TestBasicProblem p(1);
   p.AddCon(0, 0);
@@ -563,36 +582,4 @@ TEST(SPTest, NonlinearNotSupported) {
   mp::SPAdapter::Scenario scenario;
   EXPECT_THROW_MSG(sp.GetScenario(scenario, 0), mp::UnsupportedError,
                    "unsupported: ^2");
-}
-
-TEST(SPTest, GetScenario) {
-  auto header = MakeHeader(2);
-  header.num_con_nonzeros = 1;
-  TestProblem p(header);
-  p.MakeTestRV();
-  p.AddCon(0, 0);
-  auto cols = p.OnColumnSizes();
-  cols.Add(1);
-  cols.Add(0);
-  p.OnLinearConExpr(0).AddTerm(0, -3);
-  mp::SPAdapter sp(p);
-  mp::SPAdapter::Scenario scenario;
-  sp.GetScenario(scenario, 0);
-  EXPECT_THAT(scenario.rhs_offsets(), testing::ElementsAre(33));
-}
-
-TEST(SPTest, RandoRHSInNonlinear) {
-  auto header = MakeHeader(2);
-  header.num_con_nonzeros = 1;
-  TestProblem p(header);
-  p.MakeTestRV();
-  p.AddCon(0, 0).set_nonlinear_expr(p.MakeVariable(0));
-  auto cols = p.OnColumnSizes();
-  cols.Add(1);
-  cols.Add(0);
-  p.OnLinearConExpr(0).AddTerm(0, -3);
-  mp::SPAdapter sp(p);
-  mp::SPAdapter::Scenario scenario;
-  sp.GetScenario(scenario, 0);
-  EXPECT_THAT(scenario.rhs_offsets(), testing::ElementsAre(44));
 }

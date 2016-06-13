@@ -49,10 +49,9 @@ class RandomConstExprExtractor : public mp::ExprVisitor<Impl, double> {
   }
 
   double VisitVariable(Reference v) {
-    int rv_index = adapter_.GetRandVarIndex(v.index());
-    return rv_index >= 0 ?
-          adapter_.GetRealization(rv_index, scenario_) :
-          mp::ExprVisitor<Impl, double>::VisitVariable(v);
+    if (auto rv = adapter_.random_var(v.index()))
+      return rv.realization(scenario_);
+    return mp::ExprVisitor<Impl, double>::VisitVariable(v);
   }
 
   // TODO
@@ -199,7 +198,8 @@ void SPAdapter::GetRealizations(int con_index, CallExpr random,
   auto &rv = rvs_[con_index];
   auto var = Cast<Reference>(random.arg(arg_index));
   int var_index = var.index();
-  random_vars_.push_back(RandomVar(var_index, con_index, rv.num_elements()));
+  random_vars_.push_back(RandomVarInfo(
+                           var_index, con_index, rv.num_elements()));
   int &core_var_index = var_orig2core_[var_index];
   if (core_var_index != 0) {
     throw Error("{}: variable {} used in multiple random vectors",
@@ -366,8 +366,6 @@ void SPAdapter::ProcessCons() {
     con_core2orig_[core_con_index] = i;
     con_orig2core_[i] = core_con_index++;
   }
-  if (num_stages_ > 1)
-    ExtractRandomTerms();
 }
 
 void SPAdapter::ExtractRandomTerms() {
@@ -448,6 +446,8 @@ SPAdapter::SPAdapter(const ColProblem &p)
 
   ProcessObjs();
   ProcessCons();
+  if (num_stages_ > 1)
+    ExtractRandomTerms();
 }
 
 void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {
@@ -457,10 +457,10 @@ void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {
   for (int stage2_con = 0; stage2_con < num_stage2_cons; ++stage2_con) {
     for (int i = linear_random_.start(stage2_con),
          end = linear_random_.start(stage2_con + 1); i < end; ++i) {
-      int rv_index = GetRandVarIndex(linear_random_.index(i));
-      assert(rv_index >= 0);
+      auto random_var = this->random_var(linear_random_.index(i));
+      assert(random_var);
       s.rhs_offsets_[stage2_con] +=
-          linear_random_.coef(i) * GetRealization(rv_index, scenario_index);
+          linear_random_.coef(i) * random_var.realization(scenario_index);
     }
     int orig_con_index = con_core2orig_[num_stage1_cons + stage2_con];
     if (auto expr = problem_.algebraic_con(orig_con_index).nonlinear_expr()) {
@@ -497,9 +497,6 @@ void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {
     // Get constraint coefficients for scenario.
     RandomAffineExprExtractor extractor(*this, scenario);
     auto value = extractor.Visit(expr);
-    auto &bounds = rhs[core_con_index];
-    bounds.lb -= value;
-    bounds.ub -= value;
     for (auto term: extractor.linear_expr()) {
       int var_index = term.var_index();
       int index = FindTerm(problem_, con_index, var_index);
