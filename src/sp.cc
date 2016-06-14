@@ -64,25 +64,19 @@ class RandomConstExprExtractor: public ExprVisitor<Impl, double> {
 template <typename Impl>
 class BasicRandomAffineExprExtractor: public RandomConstExprExtractor<Impl> {
  private:
-  LinearExpr linear_;
   double coef_;
 
   typedef RandomConstExprExtractor<Impl> Base;
 
-  void AddTerm(int var_index, double coef) {
-    linear_.AddTerm(var_index, coef);
-  }
-
   double DoAddTerm(Expr coef, Expr var) {
-    AddTerm(Cast<Reference>(var).index(), coef_ * Base(*this).Visit(coef));
+    MP_DISPATCH(AddTerm(Cast<Reference>(var).index(),
+                        coef_ * Base(*this).Visit(coef)));
     return 0;
   }
 
  public:
   BasicRandomAffineExprExtractor(const SPAdapter &sp, int scenario):
     Base(sp, scenario), coef_(1) {}
-
-  const LinearExpr &linear_expr() const { return linear_; }
 
   double VisitUnary(UnaryExpr e) {
     if (e.kind() != expr::MINUS)
@@ -95,8 +89,6 @@ class BasicRandomAffineExprExtractor: public RandomConstExprExtractor<Impl> {
   }
 
   double VisitBinary(BinaryExpr e);
-
-  // TODO
 };
 
 template <typename Impl>
@@ -116,21 +108,30 @@ double BasicRandomAffineExprExtractor<Impl>::VisitBinary(BinaryExpr e) {
 
 class RandomAffineExprExtractor:
     public BasicRandomAffineExprExtractor<RandomAffineExprExtractor> {
+ private:
+  std::vector<double> &coefs_;
+
  public:
-  RandomAffineExprExtractor(const SPAdapter &sp, int scenario):
-    BasicRandomAffineExprExtractor<RandomAffineExprExtractor>(sp, scenario) {}
+  RandomAffineExprExtractor(const SPAdapter &sp, int scenario,
+                            std::vector<double> &coefs):
+    BasicRandomAffineExprExtractor<RandomAffineExprExtractor>(sp, scenario),
+    coefs_(coefs) {}
+
+  void AddTerm(int var_index, double coef) {
+    coefs_[sp_.core_var_index(var_index)] += coef;
+  }
 };
 
 // Collects the list of variables that appear in a nonlinear expression.
 class VariableCollector:
     public BasicRandomAffineExprExtractor<VariableCollector> {
  private:
-  SparseMatrix<int> &vars_in_nonlinear_;
+  SparseMatrix &vars_in_nonlinear_;
   std::vector<bool> visited_vars_;
   int con_index_;
 
  public:
-  VariableCollector(const SPAdapter &sp, SparseMatrix<int> &vars_in_nonlinear):
+  VariableCollector(const SPAdapter &sp, SparseMatrix &vars_in_nonlinear):
     BasicRandomAffineExprExtractor<VariableCollector>(sp, 0),
     vars_in_nonlinear_(vars_in_nonlinear), visited_vars_(sp.num_vars()),
     con_index_(0) {}
@@ -161,6 +162,7 @@ void VariableCollector::Collect() {
       Visit(expr);
     ++con_index_;
     vars_in_nonlinear_.start(con_index_) = vars_in_nonlinear_.num_elements();
+    // TODO: populate vars_in_nonlinear_.values
     if (con_index_ == num_stage2_cons) break;
     for (int i = vars_in_nonlinear_.start(con_index_ - 1),
          n = vars_in_nonlinear_.start(con_index_); i < n; ++i) {
@@ -513,6 +515,7 @@ void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {
   int num_stage1_cons = num_stage_cons_[0];
   int num_stage2_cons = num_stage_cons_[1];
   s.rhs_offsets_.assign(num_stage2_cons, 0);
+  std::vector<double> coefs(num_vars());
   for (int stage2_con = 0; stage2_con < num_stage2_cons; ++stage2_con) {
     for (int i = linear_random_.start(stage2_con),
          end = linear_random_.start(stage2_con + 1); i < end; ++i) {
@@ -523,64 +526,17 @@ void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {
     }
     int orig_con_index = con_core2orig_[num_stage1_cons + stage2_con];
     if (auto expr = problem_.algebraic_con(orig_con_index).nonlinear_expr()) {
-      RandomAffineExprExtractor extractor(*this, scenario_index);
+      RandomAffineExprExtractor extractor(*this, scenario_index, coefs);
       s.rhs_offsets_[stage2_con] += extractor.Visit(expr);
-      for (auto term: extractor.linear_expr()) {
-        // TODO: get coefficient from the linear part
-        fmt::print("Term: {} {}\n", term.coef(), term.var_index());
+      for (int i = vars_in_nonlinear_.start(stage2_con),
+           n = vars_in_nonlinear_.start(stage2_con + 1); i < n; ++i) {
+        int core_var_index = vars_in_nonlinear_.index(i);
+        double coef = coefs[core_var_index];
+        coefs[core_var_index] = 0;
+        // TODO: pass terms to the client
+        fmt::print("Term: {} {}\n", coef, core_var_index);
       }
     }
   }
-
-  // TODO: remove if unused
-  /*std::vector<int> nonzero_coef_indices;
-  nonzero_coef_indices.reserve(p.num_algebraic_cons());
-  for (int core_var_index = 0, n = var_core2orig_.size();
-       core_var_index < n; ++core_var_index) {
-    int var_index = var_core2orig_[core_var_index];
-    // Write the core coefficients and store them in the core_coefs_ vector.
-    for (int k = p.col_start(var_index), end = p.col_start(var_index + 1);
-         k != end; ++k) {
-      int con_index = p.row_index(k);
-      int core_con_index = con_orig2core_[con_index];
-      // TODO
-      //handler.OnTerm(core_con_index, core_coefs_[k]);
-    }
-  }
-
-  coefs.assign(problem_.values(),
-               problem_.values() + problem_.col_start(problem_.num_vars()));
-  // Handle random variables/parameters in nonlinear constraint expressions.
-  for (int core_con_index = num_stage_cons_[0], num_cons = this->num_cons();
-       core_con_index < num_cons; ++core_con_index) {
-    int con_index = con_core2orig_[core_con_index];
-    auto con = problem_.algebraic_con(con_index);
-    auto expr = con.nonlinear_expr();
-    if (!expr) continue;
-    // Get constraint coefficients for scenario.
-    RandomAffineExprExtractor extractor(*this, scenario);
-    auto value = extractor.Visit(expr);
-    for (auto term: extractor.linear_expr()) {
-      int var_index = term.var_index();
-      int index = FindTerm(problem_, con_index, var_index);
-      if (index == -1)
-        throw Error("cannot find term ({}, {})", con_index, var_index);
-      // Add extracted term coefficient to the one in constraint matrix.
-      coefs[index] += term.coef();
-    }
-  }*/
 }
 }  // namespace mp
-
-// TODO: migrate
-/*
-// Finds term with the specified constraint and variable indices in the
-// column-wise constraint matrix.
-int FindTerm(const ColProblem &p, int con_index, int var_index) {
-  for (int i = p.col_start(var_index),
-       n = p.col_start(var_index + 1); i < n; ++i) {
-    if (p.row_index(i) == con_index)
-      return i;
-  }
-  return -1;
-}*/
