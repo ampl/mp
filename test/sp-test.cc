@@ -578,8 +578,6 @@ TEST(SPTest, NonlinearNotSupported) {
   p.AddCon(0, 0);
   p.algebraic_con(0).set_nonlinear_expr(
         p.MakeUnary(expr::POW2, p.MakeVariable(0)));
-  mp::SPAdapter sp(p);
-  mp::SPAdapter::Scenario scenario;
-  EXPECT_THROW_MSG(sp.GetScenario(scenario, 0), mp::UnsupportedError,
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::UnsupportedError,
                    "unsupported: ^2");
 }

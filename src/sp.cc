@@ -35,48 +35,51 @@ inline std::string lcon_name(int index) {
 }
 
 template <typename Impl>
-class RandomConstExprExtractor : public mp::ExprVisitor<Impl, double> {
+class RandomConstExprExtractor: public ExprVisitor<Impl, double> {
  private:
-  const SPAdapter &adapter_;
+  const SPAdapter &sp_;
   int scenario_;
 
- public:
-  explicit RandomConstExprExtractor(const SPAdapter &extractor, int scenario)
-    : adapter_(extractor), scenario_(scenario) {}
-
-  double VisitNumericConstant(NumericConstant n) {
-    return n.value();
+ protected:
+  int core_var_index(int var_index) const {
+    return sp_.core_var_index(var_index);
   }
 
+ public:
+  explicit RandomConstExprExtractor(const SPAdapter &sp, int scenario):
+    sp_(sp), scenario_(scenario) {}
+
+  double VisitNumericConstant(NumericConstant n) { return n.value(); }
+
   double VisitVariable(Reference v) {
-    if (auto rv = adapter_.random_var(v.index()))
+    if (auto rv = sp_.random_var(v.index()))
       return rv.realization(scenario_);
     return mp::ExprVisitor<Impl, double>::VisitVariable(v);
   }
-
-  // TODO
 };
 
 // Extracts an affine expression for a single scenario from an expression
 // containing random variables.
-class RandomAffineExprExtractor :
-    public RandomConstExprExtractor<RandomAffineExprExtractor> {
+template <typename Impl>
+class BasicRandomAffineExprExtractor: public RandomConstExprExtractor<Impl> {
  private:
   LinearExpr linear_;
   double coef_;
 
-  typedef RandomConstExprExtractor<RandomAffineExprExtractor> Base;
+  typedef RandomConstExprExtractor<Impl> Base;
 
-  double ExtractTerm(Expr coef, Expr var) {
-    RandomConstExprExtractor extractor(*this);
-    linear_.AddTerm(Cast<Reference>(var).index(),
-                    coef_ * extractor.Visit(coef));
+  void AddTerm(int var_index, double coef) {
+    linear_.AddTerm(var_index, coef);
+  }
+
+  double DoAddTerm(Expr coef, Expr var) {
+    AddTerm(Cast<Reference>(var).index(), coef_ * Base(*this).Visit(coef));
     return 0;
   }
 
  public:
-  explicit RandomAffineExprExtractor(const SPAdapter &extractor, int scenario)
-    : Base(extractor, scenario), coef_(1) {}
+  BasicRandomAffineExprExtractor(const SPAdapter &sp, int scenario):
+    Base(sp, scenario), coef_(1) {}
 
   const LinearExpr &linear_expr() const { return linear_; }
 
@@ -85,7 +88,7 @@ class RandomAffineExprExtractor :
       return Base::VisitUnary(e);
     double saved_coef = coef_;
     coef_ = -coef_;
-    double result = -Visit(e.arg());
+    double result = -this->Visit(e.arg());
     coef_ = saved_coef;
     return result;
   }
@@ -95,19 +98,57 @@ class RandomAffineExprExtractor :
   // TODO
 };
 
-double RandomAffineExprExtractor::VisitBinary(BinaryExpr e) {
+template <typename Impl>
+double BasicRandomAffineExprExtractor<Impl>::VisitBinary(BinaryExpr e) {
   switch (e.kind()) {
   case expr::MUL:
     if (e.rhs().kind() == expr::VARIABLE)
-      return ExtractTerm(e.lhs(), e.rhs());
+      return DoAddTerm(e.lhs(), e.rhs());
     if (e.lhs().kind() == expr::VARIABLE)
-      return ExtractTerm(e.rhs(), e.lhs());
+      return DoAddTerm(e.rhs(), e.lhs());
     throw UnsupportedError("nonlinear expression");
     break;
   default:
     return Base::VisitBinary(e);
   }
 }
+
+class RandomAffineExprExtractor:
+    public BasicRandomAffineExprExtractor<RandomAffineExprExtractor> {
+ public:
+  RandomAffineExprExtractor(const SPAdapter &sp, int scenario):
+    BasicRandomAffineExprExtractor<RandomAffineExprExtractor>(sp, scenario) {}
+};
+
+// Collects the list of variables that appear in a nonlinear expression.
+class VariableCollector:
+    public BasicRandomAffineExprExtractor<VariableCollector> {
+ private:
+  std::vector<int> vars_;
+  std::vector<bool> visited_vars_;
+
+ public:
+  explicit VariableCollector(const SPAdapter &sp):
+    BasicRandomAffineExprExtractor<VariableCollector>(sp, 0),
+    visited_vars_(sp.num_vars()) {}
+
+  void Reset() {
+    for (int v: vars_)
+      visited_vars_[v] = false;
+  }
+
+  double VisitNumericConstant(NumericConstant) { return 0; }
+
+  void AddTerm(int var_index, double) {
+    int core_var_index = this->core_var_index(var_index);
+    if (core_var_index >= 0 && !visited_vars_[core_var_index]) {
+      vars_.push_back(core_var_index);
+      visited_vars_[core_var_index] = true;
+    }
+  }
+  void VisitMultiplied(double, NumericExpr expr) { this->Visit(expr); }
+};
+
 
 class NullSuffix {
  public:
@@ -118,12 +159,16 @@ class NullSuffix {
 namespace internal {
 
 // Extracts an affine expression from a nonlinear one.
-class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
+class AffineExprExtractor: public ExprVisitor<AffineExprExtractor, void> {
  private:
   const SPAdapter &sp_;
   std::vector<double> &coefs_;
   double constant_;
   double coef_;
+
+  void AddTerm(int var_index, double coef) {
+    coefs_[sp_.var_orig2core_[var_index]] += coef * coef_;
+  }
 
   void VisitMultiplied(double multiplier, NumericExpr expr) {
     double saved_coef = coef_;
@@ -132,13 +177,9 @@ class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
     coef_ = saved_coef;
   }
 
-  void AddTerm(int var_index, double coef) {
-    coefs_[sp_.var_orig2core_[var_index]] += coef;
-  }
-
  public:
-  explicit AffineExprExtractor(const SPAdapter &sp, std::vector<double> &coefs)
-    : sp_(sp), coefs_(coefs), constant_(0), coef_(1) {}
+  AffineExprExtractor(const SPAdapter &sp, std::vector<double> &coefs):
+    sp_(sp), coefs_(coefs), constant_(0), coef_(1){}
 
   double constant() const { return constant_; }
 
@@ -146,24 +187,22 @@ class AffineExprExtractor : public ExprVisitor<AffineExprExtractor, void> {
     constant_ += coef_ * n.value();
   }
 
-  void VisitVariable(Variable v) {
-    AddTerm(v.index(), coef_);
-  }
+  void VisitVariable(Reference v) { AddTerm(v.index(), 1); }
 
-  void VisitCommonExpr(CommonExpr e);
+  void VisitCommonExpr(Reference e);
 
   void VisitBinary(BinaryExpr e);
 
-  void VisitSum(SumExpr e) {
+  void VisitSum(IteratedExpr e) {
     for (auto arg: e)
       Visit(arg);
   }
 };
 
-void AffineExprExtractor::VisitCommonExpr(CommonExpr e) {
+void AffineExprExtractor::VisitCommonExpr(Reference e) {
   auto common_expr = sp_.problem_.common_expr(e.index());
   for (auto term: common_expr.linear_expr())
-    AddTerm(term.var_index(), coef_ * term.coef());
+    AddTerm(term.var_index(), term.coef());
   Visit(common_expr.nonlinear_expr());
 }
 
@@ -175,9 +214,7 @@ void AffineExprExtractor::VisitBinary(BinaryExpr e) {
     break;
   case expr::SUB:
     Visit(e.lhs());
-    coef_ = -coef_;
-    Visit(e.rhs());
-    coef_ = -coef_;
+    VisitMultiplied(-1, e.rhs());
     break;
   case expr::MUL:
     if (auto n = Cast<NumericConstant>(e.lhs()))
@@ -190,7 +227,7 @@ void AffineExprExtractor::VisitBinary(BinaryExpr e) {
     ExprVisitor<AffineExprExtractor, void>::VisitBinary(e);
   }
 }
-}
+}  // namespace internal
 
 void SPAdapter::GetRealizations(int con_index, CallExpr random,
                                 int &arg_index) {
@@ -407,10 +444,19 @@ void SPAdapter::ExtractRandomTerms() {
        linear_random_.coef(element_index) = -problem_.value(k);
     }
   }
+
+  // Get variables that appear in nonlinear parts of constraint expressions.
+  VariableCollector collector(*this);
+  for (int i = 0; i < num_stage2_cons; ++i) {
+    auto expr = this->con(num_stage1_cons + i).nonlinear_expr();
+    if (!expr) continue;
+    collector.Visit(expr);
+    // TODO: store variable list
+    collector.Reset();
+  }
 }
 
-SPAdapter::SPAdapter(const ColProblem &p)
-  : problem_(p), num_stages_(1) {
+SPAdapter::SPAdapter(const ColProblem &p): problem_(p), num_stages_(1) {
   // Find the random function.
   for (int i = 0, n = p.num_functions(); i < n; ++i) {
     auto function = p.function(i);
@@ -466,6 +512,10 @@ void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {
     if (auto expr = problem_.algebraic_con(orig_con_index).nonlinear_expr()) {
       RandomAffineExprExtractor extractor(*this, scenario_index);
       s.rhs_offsets_[stage2_con] += extractor.Visit(expr);
+      for (auto term: extractor.linear_expr()) {
+        // TODO: get coefficient from the linear part
+        fmt::print("Term: {} {}\n", term.coef(), term.var_index());
+      }
     }
   }
 

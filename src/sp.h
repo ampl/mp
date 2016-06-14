@@ -33,11 +33,12 @@ namespace internal {
 class AffineExprExtractor;
 }
 
+template <typename T>
 class SparseMatrix {
  private:
   std::vector<int> starts_;
   std::vector<int> indices_;
-  std::vector<double> coefs_;
+  std::vector<T> coefs_;
 
  public:
   SparseMatrix() {}
@@ -55,8 +56,8 @@ class SparseMatrix {
   int index(int element_index) const { return indices_[element_index]; }
   int &index(int element_index) { return indices_[element_index]; }
 
-  double coef(int element_index) const { return coefs_[element_index]; }
-  double &coef(int element_index) { return coefs_[element_index]; }
+  T coef(int element_index) const { return coefs_[element_index]; }
+  T &coef(int element_index) { return coefs_[element_index]; }
 };
 
 // Adapts ColProblem to stochastic programming problem API.
@@ -65,7 +66,7 @@ class SPAdapter {
   const ColProblem &problem_;
   ExprFactory factory_;
   Function random_;
-  SparseMatrix linear_random_;
+  SparseMatrix<double> linear_random_;
 
   class RandomVector {
    private:
@@ -374,6 +375,8 @@ class SPAdapter {
   RandomVar random_var(int var_index) const {
     return RandomVar(this, -var_orig2core_[var_index] - 1);
   }
+
+  int core_var_index(int var_index) const { return var_orig2core_[var_index]; }
 };
 }  // namespace mp
 
