@@ -45,6 +45,12 @@ class SparseMatrix {
 
   void resize_major(int major_size) { starts_.resize(major_size + 1); }
 
+  void add_index(int index) {
+    indices_.push_back(index);
+  }
+
+  int num_elements() const { return static_cast<int>(indices_.size()); }
+
   void resize_elements(int num_elements) {
     indices_.resize(num_elements);
     coefs_.resize(num_elements);
@@ -67,6 +73,11 @@ class SPAdapter {
   ExprFactory factory_;
   Function random_;
   SparseMatrix<double> linear_random_;
+
+  // A sparse matrix with a second-stage constraint index as a major index
+  // containing indices of variables that appear nonlinearly in these
+  // constraints together with their coefficients in linear parts.
+  SparseMatrix<int> vars_in_nonlinear_;
 
   class RandomVector {
    private:

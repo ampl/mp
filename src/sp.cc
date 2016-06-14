@@ -37,17 +37,18 @@ inline std::string lcon_name(int index) {
 template <typename Impl>
 class RandomConstExprExtractor: public ExprVisitor<Impl, double> {
  private:
-  const SPAdapter &sp_;
   int scenario_;
 
  protected:
+  const SPAdapter &sp_;
+
   int core_var_index(int var_index) const {
     return sp_.core_var_index(var_index);
   }
 
  public:
   explicit RandomConstExprExtractor(const SPAdapter &sp, int scenario):
-    sp_(sp), scenario_(scenario) {}
+    scenario_(scenario), sp_(sp) {}
 
   double VisitNumericConstant(NumericConstant n) { return n.value(); }
 
@@ -124,31 +125,49 @@ class RandomAffineExprExtractor:
 class VariableCollector:
     public BasicRandomAffineExprExtractor<VariableCollector> {
  private:
-  std::vector<int> vars_;
+  SparseMatrix<int> &vars_in_nonlinear_;
   std::vector<bool> visited_vars_;
+  int con_index_;
 
  public:
-  explicit VariableCollector(const SPAdapter &sp):
+  VariableCollector(const SPAdapter &sp, SparseMatrix<int> &vars_in_nonlinear):
     BasicRandomAffineExprExtractor<VariableCollector>(sp, 0),
-    visited_vars_(sp.num_vars()) {}
+    vars_in_nonlinear_(vars_in_nonlinear), visited_vars_(sp.num_vars()),
+    con_index_(0) {}
 
-  void Reset() {
-    for (int v: vars_)
-      visited_vars_[v] = false;
-  }
+  void Collect();
 
   double VisitNumericConstant(NumericConstant) { return 0; }
 
   void AddTerm(int var_index, double) {
     int core_var_index = this->core_var_index(var_index);
     if (core_var_index >= 0 && !visited_vars_[core_var_index]) {
-      vars_.push_back(core_var_index);
+      vars_in_nonlinear_.add_index(core_var_index);
       visited_vars_[core_var_index] = true;
     }
   }
+
   void VisitMultiplied(double, NumericExpr expr) { this->Visit(expr); }
 };
 
+void VariableCollector::Collect() {
+  int num_stage1_cons = sp_.stage(0).num_cons();
+  int num_stage2_cons = sp_.stage(1).num_cons();
+  vars_in_nonlinear_.resize_major(num_stage2_cons);
+  if (num_stage2_cons == 0) return;
+  for (;;) {
+    auto expr = sp_.con(num_stage1_cons + con_index_).nonlinear_expr();
+    if (expr)
+      Visit(expr);
+    ++con_index_;
+    vars_in_nonlinear_.start(con_index_) = vars_in_nonlinear_.num_elements();
+    if (con_index_ == num_stage2_cons) break;
+    for (int i = vars_in_nonlinear_.start(con_index_ - 1),
+         n = vars_in_nonlinear_.start(con_index_); i < n; ++i) {
+      visited_vars_[vars_in_nonlinear_.index(i)] = false;
+    }
+  }
+}
 
 class NullSuffix {
  public:
@@ -446,14 +465,8 @@ void SPAdapter::ExtractRandomTerms() {
   }
 
   // Get variables that appear in nonlinear parts of constraint expressions.
-  VariableCollector collector(*this);
-  for (int i = 0; i < num_stage2_cons; ++i) {
-    auto expr = this->con(num_stage1_cons + i).nonlinear_expr();
-    if (!expr) continue;
-    collector.Visit(expr);
-    // TODO: store variable list
-    collector.Reset();
-  }
+  VariableCollector collector(*this, vars_in_nonlinear_);
+  collector.Collect();
 }
 
 SPAdapter::SPAdapter(const ColProblem &p): problem_(p), num_stages_(1) {
