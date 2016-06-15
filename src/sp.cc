@@ -55,6 +55,7 @@ class VariableCollector:
     int core_var_index = this->core_var_index(var_index);
     if (core_var_index >= 0 && !visited_vars_[core_var_index]) {
       vars_in_nonlinear_.add_index(core_var_index);
+      // TODO: populate vars_in_nonlinear_.values
       visited_vars_[core_var_index] = true;
     }
   }
@@ -73,7 +74,6 @@ void VariableCollector::Collect() {
       Visit(expr);
     ++con_index_;
     vars_in_nonlinear_.start(con_index_) = vars_in_nonlinear_.num_elements();
-    // TODO: populate vars_in_nonlinear_.values
     if (con_index_ == num_stage2_cons) break;
     for (int i = vars_in_nonlinear_.start(con_index_ - 1),
          n = vars_in_nonlinear_.start(con_index_); i < n; ++i) {
@@ -86,6 +86,27 @@ class NullSuffix {
  public:
   int value(int) const { return 0; }
 };
+
+void Transpose(const SparseMatrix &m, SparseMatrix &transposed,
+               int major_size) {
+  transposed.resize_major(major_size);
+  transposed.resize_elements(m.num_elements());
+  int orig_major_size = m.major_size();
+  for (int i = 0; i < orig_major_size; ++i) {
+    for (int j = m.start(i), n = m.start(i + 1); j < n; ++j)
+      ++transposed.start(m.index(j) + 1);
+  }
+  for (int i = 1; i <= major_size; ++i)
+    transposed.start(i + 1) += transposed.start(i);
+  for (int i = 0; i < orig_major_size; ++i) {
+    for (int j = m.start(i), n = m.start(i + 1); j < n; ++j) {
+      int index = transposed.start(m.index(j))++;
+      transposed.index(index) = m.index(j);
+      // TODO: value
+      //transposed.value(index) = m.value(j);
+    }
+  }
+}
 }  // namespace
 
 namespace internal {
@@ -373,13 +394,30 @@ void SPAdapter::ExtractRandomTerms() {
        int index = core_con_index - num_stage1_cons + 1;
        int element_index = linear_random_.start(index)++;
        linear_random_.index(element_index) = rv.var_index;
-       linear_random_.coef(element_index) = -problem_.value(k);
+       linear_random_.value(element_index) = -problem_.value(k);
     }
   }
 
   // Get variables that appear in nonlinear parts of constraint expressions.
   VariableCollector collector(*this, vars_in_nonlinear_);
   collector.Collect();
+
+  // Convert vars_in_nonlinear_ to column-major form.
+  int num_vars = this->num_vars();
+  SparseMatrix var2con;
+  Transpose(vars_in_nonlinear_, var2con, num_vars);
+
+  for (int i = 0; i < num_vars; ++i) {
+    int elt_index = problem_.col_start(i);
+    for (int j = var2con.start(i), n = var2con.start(i + 1); j < n; ++j) {
+      int con_index = var2con.index(j);
+      while (problem_.row_index(elt_index) < con_index)
+        ++elt_index;
+      fmt::print("!!! {} {} {}\n", i, con_index, problem_.value(elt_index));
+      // TODO: merge var2con with constraint matrix in problem_ and
+      // put in core_coefs_
+    }
+  }
 }
 
 SPAdapter::SPAdapter(const ColProblem &p): problem_(p), num_stages_(1) {

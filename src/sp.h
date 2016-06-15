@@ -38,10 +38,12 @@ class SparseMatrix {
  private:
   std::vector<int> starts_;
   std::vector<int> indices_;
-  std::vector<double> coefs_;
+  std::vector<double> values_;
 
  public:
   SparseMatrix() {}
+
+  int major_size() const { return static_cast<int>(starts_.size() - 1); }
 
   void resize_major(int major_size) { starts_.resize(major_size + 1); }
 
@@ -53,7 +55,7 @@ class SparseMatrix {
 
   void resize_elements(int num_elements) {
     indices_.resize(num_elements);
-    coefs_.resize(num_elements);
+    values_.resize(num_elements);
   }
 
   int start(int major_index) const { return starts_[major_index]; }
@@ -62,8 +64,8 @@ class SparseMatrix {
   int index(int element_index) const { return indices_[element_index]; }
   int &index(int element_index) { return indices_[element_index]; }
 
-  double coef(int element_index) const { return coefs_[element_index]; }
-  double &coef(int element_index) { return coefs_[element_index]; }
+  double value(int element_index) const { return values_[element_index]; }
+  double &value(int element_index) { return values_[element_index]; }
 };
 
 // Adapts ColProblem to stochastic programming problem API.
@@ -73,6 +75,9 @@ class SPAdapter {
   ExprFactory factory_;
   Function random_;
   SparseMatrix linear_random_;
+
+  // Coefficients of the constraint matrix in the core problem.
+  std::vector<double> core_coefs_;
 
   // A sparse matrix with a second-stage constraint index as a major index
   // containing indices of variables that appear nonlinearly in these
@@ -484,7 +489,7 @@ void SPAdapter::GetScenario(int scenario_index,
          end = linear_random_.start(stage2_con + 1); i < end; ++i) {
       auto random_var = this->random_var(linear_random_.index(i));
       assert(random_var);
-      rhs += linear_random_.coef(i) * random_var.realization(scenario_index);
+      rhs += linear_random_.value(i) * random_var.realization(scenario_index);
     }
     int con_index = num_stage1_cons + stage2_con;
     int orig_con_index = con_core2orig_[con_index];
