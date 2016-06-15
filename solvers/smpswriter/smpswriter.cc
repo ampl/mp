@@ -79,6 +79,36 @@ void WriteTimeFile(fmt::CStringRef filename, const SPAdapter &sp) {
   writer.Write("ENDATA\n");
 }
 
+class RHSHandler {
+ private:
+  std::vector<double> &rhs_;
+
+ public:
+  explicit RHSHandler(std::vector<double> &rhs) : rhs_(rhs) {}
+
+  void OnTerm(int con_index, int var_index, double coef) {
+    fmt::print("coef: {} {} {}\n", con_index, var_index, coef);
+  }
+  void OnRHS(int con_index, double offset) { rhs_[con_index] += offset; }
+};
+
+class ScenarioWriter {
+ private:
+  FileWriter &writer_;
+
+ public:
+  explicit ScenarioWriter(FileWriter &w) : writer_(w) {}
+
+  void OnTerm(int con_index, int var_index, double coef) {
+    writer_.Write("    C{:<7}  R{:<7}  {}\n",
+                  var_index + 1, con_index + 1, coef);
+  }
+
+  void OnRHS(int con_index, double offset) {
+    writer_.Write("    RHS1      R{:<7}  {}\n", con_index + 1, offset);
+  }
+};
+
 void WriteCoreFile(fmt::CStringRef filename, const SPAdapter &sp) {
   FileWriter writer(filename);
   writer.Write(
@@ -117,6 +147,7 @@ void WriteCoreFile(fmt::CStringRef filename, const SPAdapter &sp) {
         ++obj_term;
     }
     for (auto term: sp.column(i)) {
+      // TODO: merge with the first scenario
       writer.Write("    C{:<7}  R{:<7}  {}\n",
                    i + 1, term.con_index() + 1, term.coef());
     }
@@ -124,11 +155,8 @@ void WriteCoreFile(fmt::CStringRef filename, const SPAdapter &sp) {
   if (integer_block)
     writer.Write("    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);
 
-  SPAdapter::Scenario scenario;
-  sp.GetScenario(scenario, 0);
-  int stage2_con = sp.stage(0).num_cons();
-  for (double offset: scenario.rhs_offsets())
-    core_rhs[stage2_con++] += offset;
+  RHSHandler handler(core_rhs);
+  sp.GetScenario(0, handler);
 
   writer.Write("RHS\n");
   for (int i = 0; i < num_core_cons; ++i) {
@@ -170,28 +198,11 @@ void WriteDiscreteScenarios(FileWriter &writer, const SPAdapter &sp) {
   const auto &rv = sp.rv(0);
   writer.Write("SCENARIOS     DISCRETE\n");
   writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n", rv.probability(0));
-  SPAdapter::Scenario scenario;
   for (size_t s = 1, num_scen = rv.num_realizations(); s < num_scen; ++s) {
     writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n",
                  s + 1, rv.probability(s));
-    sp.GetScenario(scenario, s);
-    // TODO: random constraint matrix
-    // Compare to the core and write differences.
-    /*for (int j = 0, num_vars = sp.num_core_vars(); j < num_vars; ++j) {
-      for (int k = p.col_start(j), n = p.col_start(j + 1); k != n; ++k) {
-        double coef = coefs[k];
-        if (coef == core_coefs_[k]) continue;
-        int core_con_index = con_orig2core_[p.row_index(k)];
-        writer.Write("    C{:<7}  R{:<7}  {}\n",
-                     var_orig2core_[j] + 1, core_con_index + 1, coef);
-      }
-    }*/
-    int stage2_con = sp.stage(0).num_cons() + 1;
-    for (double offset: scenario.rhs_offsets()) {
-      if (offset != 0)
-        writer.Write("    RHS1      R{:<7}  {}\n", stage2_con, offset);
-      ++stage2_con;
-    }
+    ScenarioWriter sw(writer);
+    sp.GetScenario(s, sw);
   }
 }
 

@@ -518,6 +518,12 @@ TEST(SPTest, OrderConsByStage) {
   EXPECT_EQ( 7, sp.con(1).ub());
 }
 
+class MockScenarioHandler {
+ public:
+  MOCK_METHOD3(OnTerm, void (int con_index, int var_index, double offset));
+  MOCK_METHOD2(OnRHS, void (int con_index, double offset));
+};
+
 TEST(SPTest, RandomRHS) {
   auto header = MakeHeader(2);
   header.num_con_nonzeros = 1;
@@ -531,9 +537,9 @@ TEST(SPTest, RandomRHS) {
   mp::SPAdapter sp(p);
   auto col = sp.column(0);
   EXPECT_EQ(col.begin(), col.end());
-  mp::SPAdapter::Scenario scenario;
-  sp.GetScenario(scenario, 0);
-  EXPECT_THAT(scenario.rhs_offsets(), testing::ElementsAre(-33));
+  MockScenarioHandler handler;
+  EXPECT_CALL(handler, OnRHS(0, -33));
+  sp.GetScenario(0, handler);
 }
 
 TEST(SPTest, RandomRHSInNonlinear) {
@@ -547,9 +553,18 @@ TEST(SPTest, RandomRHSInNonlinear) {
   cols.Add(0);
   p.OnLinearConExpr(0).AddTerm(0, -3);
   mp::SPAdapter sp(p);
-  mp::SPAdapter::Scenario scenario;
-  sp.GetScenario(scenario, 0);
-  EXPECT_THAT(scenario.rhs_offsets(), testing::ElementsAre(44));
+  MockScenarioHandler handler;
+  EXPECT_CALL(handler, OnRHS(0, 44));
+  sp.GetScenario(0, handler);
+}
+
+TEST(SPTest, NonlinearNotSupported) {
+  TestBasicProblem p(1);
+  p.AddCon(0, 0);
+  p.algebraic_con(0).set_nonlinear_expr(
+        p.MakeUnary(expr::POW2, p.MakeVariable(0)));
+  EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::UnsupportedError,
+                   "unsupported: ^2");
 }
 
 // TODO: test processing of random terms
@@ -571,13 +586,4 @@ TEST(SPTest, RandomConMatrix) {
   EXPECT_EQ(42, it->coef());
   EXPECT_EQ(0, it->con_index());
   EXPECT_EQ(col.end(), ++it);
-}
-
-TEST(SPTest, NonlinearNotSupported) {
-  TestBasicProblem p(1);
-  p.AddCon(0, 0);
-  p.algebraic_con(0).set_nonlinear_expr(
-        p.MakeUnary(expr::POW2, p.MakeVariable(0)));
-  EXPECT_THROW_MSG(mp::SPAdapter sp(p);, mp::UnsupportedError,
-                   "unsupported: ^2");
 }

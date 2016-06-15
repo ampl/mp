@@ -21,7 +21,6 @@
  */
 
 #include "sp.h"
-#include "mp/expr-visitor.h"
 
 #include <cstring>    // std::strcmp
 #include <algorithm>  // std::max
@@ -34,97 +33,9 @@ inline std::string lcon_name(int index) {
   return fmt::format("_slogcon[{}]", index + 1);
 }
 
-template <typename Impl>
-class RandomConstExprExtractor: public ExprVisitor<Impl, double> {
- private:
-  int scenario_;
-
- protected:
-  const SPAdapter &sp_;
-
-  int core_var_index(int var_index) const {
-    return sp_.core_var_index(var_index);
-  }
-
- public:
-  explicit RandomConstExprExtractor(const SPAdapter &sp, int scenario):
-    scenario_(scenario), sp_(sp) {}
-
-  double VisitNumericConstant(NumericConstant n) { return n.value(); }
-
-  double VisitVariable(Reference v) {
-    if (auto rv = sp_.random_var(v.index()))
-      return rv.realization(scenario_);
-    return mp::ExprVisitor<Impl, double>::VisitVariable(v);
-  }
-};
-
-// Extracts an affine expression for a single scenario from an expression
-// containing random variables.
-template <typename Impl>
-class BasicRandomAffineExprExtractor: public RandomConstExprExtractor<Impl> {
- private:
-  double coef_;
-
-  typedef RandomConstExprExtractor<Impl> Base;
-
-  double DoAddTerm(Expr coef, Expr var) {
-    MP_DISPATCH(AddTerm(Cast<Reference>(var).index(),
-                        coef_ * Base(*this).Visit(coef)));
-    return 0;
-  }
-
- public:
-  BasicRandomAffineExprExtractor(const SPAdapter &sp, int scenario):
-    Base(sp, scenario), coef_(1) {}
-
-  double VisitUnary(UnaryExpr e) {
-    if (e.kind() != expr::MINUS)
-      return Base::VisitUnary(e);
-    double saved_coef = coef_;
-    coef_ = -coef_;
-    double result = -this->Visit(e.arg());
-    coef_ = saved_coef;
-    return result;
-  }
-
-  double VisitBinary(BinaryExpr e);
-};
-
-template <typename Impl>
-double BasicRandomAffineExprExtractor<Impl>::VisitBinary(BinaryExpr e) {
-  switch (e.kind()) {
-  case expr::MUL:
-    if (e.rhs().kind() == expr::VARIABLE)
-      return DoAddTerm(e.lhs(), e.rhs());
-    if (e.lhs().kind() == expr::VARIABLE)
-      return DoAddTerm(e.rhs(), e.lhs());
-    throw UnsupportedError("nonlinear expression");
-    break;
-  default:
-    return Base::VisitBinary(e);
-  }
-}
-
-class RandomAffineExprExtractor:
-    public BasicRandomAffineExprExtractor<RandomAffineExprExtractor> {
- private:
-  std::vector<double> &coefs_;
-
- public:
-  RandomAffineExprExtractor(const SPAdapter &sp, int scenario,
-                            std::vector<double> &coefs):
-    BasicRandomAffineExprExtractor<RandomAffineExprExtractor>(sp, scenario),
-    coefs_(coefs) {}
-
-  void AddTerm(int var_index, double coef) {
-    coefs_[sp_.core_var_index(var_index)] += coef;
-  }
-};
-
 // Collects the list of variables that appear in a nonlinear expression.
 class VariableCollector:
-    public BasicRandomAffineExprExtractor<VariableCollector> {
+    public internal::BasicRandomAffineExprExtractor<VariableCollector> {
  private:
   SparseMatrix &vars_in_nonlinear_;
   std::vector<bool> visited_vars_;
@@ -509,34 +420,5 @@ SPAdapter::SPAdapter(const ColProblem &p): problem_(p), num_stages_(1) {
   ProcessCons();
   if (num_stages_ > 1)
     ExtractRandomTerms();
-}
-
-void SPAdapter::GetScenario(Scenario &s, int scenario_index) const {
-  int num_stage1_cons = num_stage_cons_[0];
-  int num_stage2_cons = num_stage_cons_[1];
-  s.rhs_offsets_.assign(num_stage2_cons, 0);
-  std::vector<double> coefs(num_vars());
-  for (int stage2_con = 0; stage2_con < num_stage2_cons; ++stage2_con) {
-    for (int i = linear_random_.start(stage2_con),
-         end = linear_random_.start(stage2_con + 1); i < end; ++i) {
-      auto random_var = this->random_var(linear_random_.index(i));
-      assert(random_var);
-      s.rhs_offsets_[stage2_con] +=
-          linear_random_.coef(i) * random_var.realization(scenario_index);
-    }
-    int orig_con_index = con_core2orig_[num_stage1_cons + stage2_con];
-    if (auto expr = problem_.algebraic_con(orig_con_index).nonlinear_expr()) {
-      RandomAffineExprExtractor extractor(*this, scenario_index, coefs);
-      s.rhs_offsets_[stage2_con] += extractor.Visit(expr);
-      for (int i = vars_in_nonlinear_.start(stage2_con),
-           n = vars_in_nonlinear_.start(stage2_con + 1); i < n; ++i) {
-        int core_var_index = vars_in_nonlinear_.index(i);
-        double coef = coefs[core_var_index];
-        coefs[core_var_index] = 0;
-        // TODO: pass terms to the client
-        fmt::print("Term: {} {}\n", coef, core_var_index);
-      }
-    }
-  }
 }
 }  // namespace mp

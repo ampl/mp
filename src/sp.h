@@ -24,6 +24,7 @@
 #define MP_SP_H_
 
 #include "mp/problem-builder.h"
+#include "mp/expr-visitor.h"
 
 #include <iterator>
 #include <vector>
@@ -336,18 +337,8 @@ class SPAdapter {
   // Returns the random vector with the specified index.
   const RandomVector &rv(int index) const { return rvs_[index]; }
 
-  class Scenario {
-   private:
-    // rhs_offsets_[i] is an RHS offset of second-stage constraint i.
-    std::vector<double> rhs_offsets_;
-
-    friend class SPAdapter;
-
-   public:
-    const std::vector<double> &rhs_offsets() const { return rhs_offsets_; }
-  };
-
-  void GetScenario(Scenario &s, int scenario_index) const;
+  template <typename ScenarioHandler>
+  void GetScenario(int scenario_index, ScenarioHandler &handler) const;
 
   class RandomVar {
    private:
@@ -389,6 +380,130 @@ class SPAdapter {
 
   int core_var_index(int var_index) const { return var_orig2core_[var_index]; }
 };
+
+namespace internal {
+
+template <typename Impl>
+class RandomConstExprExtractor: public ExprVisitor<Impl, double> {
+ private:
+  int scenario_;
+
+ protected:
+  const SPAdapter &sp_;
+
+  int core_var_index(int var_index) const {
+    return sp_.core_var_index(var_index);
+  }
+
+ public:
+  explicit RandomConstExprExtractor(const SPAdapter &sp, int scenario):
+    scenario_(scenario), sp_(sp) {}
+
+  double VisitNumericConstant(NumericConstant n) { return n.value(); }
+
+  double VisitVariable(Reference v) {
+    if (auto rv = sp_.random_var(v.index()))
+      return rv.realization(scenario_);
+    return mp::ExprVisitor<Impl, double>::VisitVariable(v);
+  }
+};
+
+// Extracts an affine expression for a single scenario from an expression
+// containing random variables.
+template <typename Impl>
+class BasicRandomAffineExprExtractor: public RandomConstExprExtractor<Impl> {
+ private:
+  double coef_;
+
+  typedef RandomConstExprExtractor<Impl> Base;
+
+  double DoAddTerm(Expr coef, Expr var) {
+    MP_DISPATCH(AddTerm(Cast<Reference>(var).index(),
+                        coef_ * Base(*this).Visit(coef)));
+    return 0;
+  }
+
+ public:
+  BasicRandomAffineExprExtractor(const SPAdapter &sp, int scenario):
+    Base(sp, scenario), coef_(1) {}
+
+  double VisitUnary(UnaryExpr e) {
+    if (e.kind() != expr::MINUS)
+      return Base::VisitUnary(e);
+    double saved_coef = coef_;
+    coef_ = -coef_;
+    double result = -this->Visit(e.arg());
+    coef_ = saved_coef;
+    return result;
+  }
+
+  double VisitBinary(BinaryExpr e);
+};
+
+template <typename Impl>
+double BasicRandomAffineExprExtractor<Impl>::VisitBinary(BinaryExpr e) {
+  switch (e.kind()) {
+  case expr::MUL:
+    if (e.rhs().kind() == expr::VARIABLE)
+      return DoAddTerm(e.lhs(), e.rhs());
+    if (e.lhs().kind() == expr::VARIABLE)
+      return DoAddTerm(e.rhs(), e.lhs());
+    throw UnsupportedError("nonlinear expression");
+    break;
+  default:
+    return Base::VisitBinary(e);
+  }
+}
+
+class RandomAffineExprExtractor:
+    public BasicRandomAffineExprExtractor<RandomAffineExprExtractor> {
+ private:
+  std::vector<double> &coefs_;
+
+ public:
+  RandomAffineExprExtractor(const SPAdapter &sp, int scenario,
+                            std::vector<double> &coefs):
+    BasicRandomAffineExprExtractor<RandomAffineExprExtractor>(sp, scenario),
+    coefs_(coefs) {}
+
+  void AddTerm(int var_index, double coef) {
+    coefs_[sp_.core_var_index(var_index)] += coef;
+  }
+};
+}  // namespace internal
+
+template <typename ScenarioHandler>
+void SPAdapter::GetScenario(int scenario_index,
+                            ScenarioHandler &handler) const {
+  int num_stage1_cons = num_stage_cons_[0];
+  int num_stage2_cons = num_stage_cons_[1];
+  std::vector<double> coefs(num_vars());
+  for (int stage2_con = 0; stage2_con < num_stage2_cons; ++stage2_con) {
+    double rhs = 0;
+    for (int i = linear_random_.start(stage2_con),
+         end = linear_random_.start(stage2_con + 1); i < end; ++i) {
+      auto random_var = this->random_var(linear_random_.index(i));
+      assert(random_var);
+      rhs += linear_random_.coef(i) * random_var.realization(scenario_index);
+    }
+    int con_index = num_stage1_cons + stage2_con;
+    int orig_con_index = con_core2orig_[con_index];
+    if (auto expr = problem_.algebraic_con(orig_con_index).nonlinear_expr()) {
+      internal::RandomAffineExprExtractor
+          extractor(*this, scenario_index, coefs);
+      rhs += extractor.Visit(expr);
+      for (int i = vars_in_nonlinear_.start(stage2_con),
+           n = vars_in_nonlinear_.start(stage2_con + 1); i < n; ++i) {
+        int core_var_index = vars_in_nonlinear_.index(i);
+        double coef = coefs[core_var_index];
+        coefs[core_var_index] = 0;
+        handler.OnTerm(con_index, core_var_index, coef);
+      }
+    }
+    if (rhs != 0)
+      handler.OnRHS(con_index, rhs);
+  }
+}
 }  // namespace mp
 
 #endif  // MP_SP_H_
