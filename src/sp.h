@@ -30,15 +30,13 @@
 #include <vector>
 
 namespace mp {
-namespace internal {
-class AffineExprExtractor;
-}
 
+template <typename T>
 class SparseMatrix {
  private:
   std::vector<int> starts_;
   std::vector<int> indices_;
-  std::vector<double> values_;
+  std::vector<T> values_;
 
  public:
   SparseMatrix() {}
@@ -64,9 +62,17 @@ class SparseMatrix {
   int index(int element_index) const { return indices_[element_index]; }
   int &index(int element_index) { return indices_[element_index]; }
 
-  double value(int element_index) const { return values_[element_index]; }
-  double &value(int element_index) { return values_[element_index]; }
+  T value(int element_index) const { return values_[element_index]; }
+  T &value(int element_index) { return values_[element_index]; }
 };
+
+namespace internal {
+
+class AffineExprExtractor;
+
+void Transpose(SparseMatrix<double> &m, SparseMatrix<double*> &transposed,
+               int major_size);
+}
 
 // Adapts ColProblem to stochastic programming problem API.
 class SPAdapter {
@@ -74,7 +80,7 @@ class SPAdapter {
   const ColProblem &problem_;
   ExprFactory factory_;
   Function random_;
-  SparseMatrix linear_random_;
+  SparseMatrix<double> linear_random_;
 
   // Coefficients of the constraint matrix in the core problem.
   std::vector<double> core_coefs_;
@@ -82,7 +88,7 @@ class SPAdapter {
   // A sparse matrix with a second-stage constraint index as a major index
   // containing indices of variables that appear nonlinearly in these
   // constraints together with their coefficients in linear parts.
-  SparseMatrix vars_in_nonlinear_;
+  SparseMatrix<double> vars_in_nonlinear_;
 
   class RandomVector {
    private:
@@ -296,7 +302,7 @@ class SPAdapter {
       Term operator*() const {
         int orig_con_index = adapter_->problem_.row_index(coef_index_);
         return Term(adapter_->con_orig2core_[orig_con_index],
-                    adapter_->problem_.value(coef_index_));
+                    adapter_->core_coefs_[coef_index_]);
       }
 
       Proxy operator->() const { return Proxy(**this); }
@@ -409,7 +415,7 @@ class RandomConstExprExtractor: public ExprVisitor<Impl, double> {
   double VisitVariable(Reference v) {
     if (auto rv = sp_.random_var(v.index()))
       return rv.realization(scenario_);
-    return mp::ExprVisitor<Impl, double>::VisitVariable(v);
+    return ExprVisitor<Impl, double>::VisitVariable(v);
   }
 };
 
@@ -418,19 +424,27 @@ class RandomConstExprExtractor: public ExprVisitor<Impl, double> {
 template <typename Impl>
 class BasicRandomAffineExprExtractor: public RandomConstExprExtractor<Impl> {
  private:
+  // Variable coefficients in the current constraint.
+  std::vector<double> temp_coefs_;
   double coef_;
 
   typedef RandomConstExprExtractor<Impl> Base;
 
   double DoAddTerm(Expr coef, Expr var) {
-    MP_DISPATCH(AddTerm(Cast<Reference>(var).index(),
-                        coef_ * Base(*this).Visit(coef)));
+    int var_index = Cast<Reference>(var).index();
+    temp_coefs_[this->sp_.core_var_index(var_index)] +=
+        coef_ * Base(*this).Visit(coef);
+    MP_DISPATCH(OnVar(var_index));
     return 0;
   }
 
  public:
   BasicRandomAffineExprExtractor(const SPAdapter &sp, int scenario):
-    Base(sp, scenario), coef_(1) {}
+    Base(sp, scenario), temp_coefs_(sp.num_vars()), coef_(1) {}
+
+  double &coef(int var_index) { return temp_coefs_[var_index]; }
+
+  void OnVar(int) {}
 
   double VisitUnary(UnaryExpr e) {
     if (e.kind() != expr::MINUS)
@@ -462,18 +476,9 @@ double BasicRandomAffineExprExtractor<Impl>::VisitBinary(BinaryExpr e) {
 
 class RandomAffineExprExtractor:
     public BasicRandomAffineExprExtractor<RandomAffineExprExtractor> {
- private:
-  std::vector<double> &coefs_;
-
  public:
-  RandomAffineExprExtractor(const SPAdapter &sp, int scenario,
-                            std::vector<double> &coefs):
-    BasicRandomAffineExprExtractor<RandomAffineExprExtractor>(sp, scenario),
-    coefs_(coefs) {}
-
-  void AddTerm(int var_index, double coef) {
-    coefs_[sp_.core_var_index(var_index)] += coef;
-  }
+  RandomAffineExprExtractor(const SPAdapter &sp, int scenario):
+    BasicRandomAffineExprExtractor<RandomAffineExprExtractor>(sp, scenario){}
 };
 }  // namespace internal
 
@@ -482,7 +487,7 @@ void SPAdapter::GetScenario(int scenario_index,
                             ScenarioHandler &handler) const {
   int num_stage1_cons = num_stage_cons_[0];
   int num_stage2_cons = num_stage_cons_[1];
-  std::vector<double> coefs(num_vars());
+  internal::RandomAffineExprExtractor extractor(*this, scenario_index);
   for (int stage2_con = 0; stage2_con < num_stage2_cons; ++stage2_con) {
     double rhs = 0;
     for (int i = linear_random_.start(stage2_con),
@@ -494,15 +499,14 @@ void SPAdapter::GetScenario(int scenario_index,
     int con_index = num_stage1_cons + stage2_con;
     int orig_con_index = con_core2orig_[con_index];
     if (auto expr = problem_.algebraic_con(orig_con_index).nonlinear_expr()) {
-      internal::RandomAffineExprExtractor
-          extractor(*this, scenario_index, coefs);
       rhs += extractor.Visit(expr);
       for (int i = vars_in_nonlinear_.start(stage2_con),
            n = vars_in_nonlinear_.start(stage2_con + 1); i < n; ++i) {
         int core_var_index = vars_in_nonlinear_.index(i);
-        double coef = coefs[core_var_index];
-        coefs[core_var_index] = 0;
-        handler.OnTerm(con_index, core_var_index, coef);
+        double &coef = extractor.coef(core_var_index);
+        handler.OnTerm(con_index, core_var_index,
+                       coef + vars_in_nonlinear_.value(i));
+        coef = 0;
       }
     }
     if (rhs != 0)

@@ -37,25 +37,23 @@ inline std::string lcon_name(int index) {
 class VariableCollector:
     public internal::BasicRandomAffineExprExtractor<VariableCollector> {
  private:
-  SparseMatrix &vars_in_nonlinear_;
+  SparseMatrix<double> &vars_in_nonlinear_;
   std::vector<bool> visited_vars_;
-  int con_index_;
 
  public:
-  VariableCollector(const SPAdapter &sp, SparseMatrix &vars_in_nonlinear):
+  VariableCollector(const SPAdapter &sp,
+                    SparseMatrix<double> &vars_in_nonlinear):
     BasicRandomAffineExprExtractor<VariableCollector>(sp, 0),
-    vars_in_nonlinear_(vars_in_nonlinear), visited_vars_(sp.num_vars()),
-    con_index_(0) {}
+    vars_in_nonlinear_(vars_in_nonlinear), visited_vars_(sp.num_vars()) {}
 
   void Collect();
 
   double VisitNumericConstant(NumericConstant) { return 0; }
 
-  void AddTerm(int var_index, double) {
+  void OnVar(int var_index) {
     int core_var_index = this->core_var_index(var_index);
     if (core_var_index >= 0 && !visited_vars_[core_var_index]) {
       vars_in_nonlinear_.add_index(core_var_index);
-      // TODO: populate vars_in_nonlinear_.values
       visited_vars_[core_var_index] = true;
     }
   }
@@ -67,17 +65,20 @@ void VariableCollector::Collect() {
   int num_stage1_cons = sp_.stage(0).num_cons();
   int num_stage2_cons = sp_.stage(1).num_cons();
   vars_in_nonlinear_.resize_major(num_stage2_cons);
-  if (num_stage2_cons == 0) return;
-  for (;;) {
-    auto expr = sp_.con(num_stage1_cons + con_index_).nonlinear_expr();
+  for (int con_index = 0; con_index < num_stage2_cons; ++con_index) {
+    auto expr = sp_.con(num_stage1_cons + con_index).nonlinear_expr();
     if (expr)
       Visit(expr);
-    ++con_index_;
-    vars_in_nonlinear_.start(con_index_) = vars_in_nonlinear_.num_elements();
-    if (con_index_ == num_stage2_cons) break;
-    for (int i = vars_in_nonlinear_.start(con_index_ - 1),
-         n = vars_in_nonlinear_.start(con_index_); i < n; ++i) {
-      visited_vars_[vars_in_nonlinear_.index(i)] = false;
+    int num_elements = vars_in_nonlinear_.num_elements();
+    vars_in_nonlinear_.start(con_index + 1) = num_elements;
+    vars_in_nonlinear_.resize_elements(num_elements);
+    for (int i = vars_in_nonlinear_.start(con_index),
+         n = vars_in_nonlinear_.start(con_index + 1); i < n; ++i) {
+      int core_var_index = vars_in_nonlinear_.index(i);
+      double &coef = this->coef(core_var_index);
+      vars_in_nonlinear_.value(i) = coef;
+      coef = 0;
+      visited_vars_[core_var_index] = false;
     }
   }
 }
@@ -86,8 +87,11 @@ class NullSuffix {
  public:
   int value(int) const { return 0; }
 };
+}  // namespace
 
-void Transpose(const SparseMatrix &m, SparseMatrix &transposed,
+namespace internal {
+
+void Transpose(SparseMatrix<double> &m, SparseMatrix<double*> &transposed,
                int major_size) {
   transposed.resize_major(major_size);
   transposed.resize_elements(m.num_elements());
@@ -96,20 +100,20 @@ void Transpose(const SparseMatrix &m, SparseMatrix &transposed,
     for (int j = m.start(i), n = m.start(i + 1); j < n; ++j)
       ++transposed.start(m.index(j) + 1);
   }
-  for (int i = 1; i <= major_size; ++i)
-    transposed.start(i + 1) += transposed.start(i);
+  int start = 0;
+  for (int i = 1; i <= major_size; ++i) {
+    double next = start + transposed.start(i);
+    transposed.start(i) =  start;
+    start = next;
+  }
   for (int i = 0; i < orig_major_size; ++i) {
     for (int j = m.start(i), n = m.start(i + 1); j < n; ++j) {
-      int index = transposed.start(m.index(j))++;
-      transposed.index(index) = m.index(j);
-      // TODO: value
-      //transposed.value(index) = m.value(j);
+      int index = transposed.start(m.index(j) + 1)++;
+      transposed.index(index) = i;
+      transposed.value(index) = &m.value(j);
     }
   }
 }
-}  // namespace
-
-namespace internal {
 
 // Extracts an affine expression from a nonlinear one.
 class AffineExprExtractor: public ExprVisitor<AffineExprExtractor, void> {
@@ -400,22 +404,28 @@ void SPAdapter::ExtractRandomTerms() {
 
   // Get variables that appear in nonlinear parts of constraint expressions.
   VariableCollector collector(*this, vars_in_nonlinear_);
+  const double *coefs = problem_.values();
   collector.Collect();
 
   // Convert vars_in_nonlinear_ to column-major form.
   int num_vars = this->num_vars();
-  SparseMatrix var2con;
-  Transpose(vars_in_nonlinear_, var2con, num_vars);
+  SparseMatrix<double*> var2con;
+  internal::Transpose(vars_in_nonlinear_, var2con, num_vars);
 
-  for (int i = 0; i < num_vars; ++i) {
-    int elt_index = problem_.col_start(i);
-    for (int j = var2con.start(i), n = var2con.start(i + 1); j < n; ++j) {
-      int con_index = var2con.index(j);
-      while (problem_.row_index(elt_index) < con_index)
+  // Combine the first scenario with core coefficients.
+  core_coefs_.assign(coefs, coefs + problem_.col_start(problem_.num_vars()));
+  for (int core_var_index = 0; core_var_index < num_vars; ++core_var_index) {
+    int var_index = var_core2orig_[core_var_index];
+    int elt_index = problem_.col_start(var_index);
+    for (int j = var2con.start(core_var_index),
+         n = var2con.start(core_var_index + 1); j < n; ++j) {
+      int con_index = con_core2orig_[var2con.index(j) + num_stage1_cons];
+      while (problem_.row_index(elt_index) != con_index)
         ++elt_index;
-      fmt::print("!!! {} {} {}\n", i, con_index, problem_.value(elt_index));
-      // TODO: merge var2con with constraint matrix in problem_ and
-      // put in core_coefs_
+      assert(elt_index < problem_.col_start(var_index + 1));
+      double coef = core_coefs_[elt_index] + *var2con.value(j);
+      *var2con.value(j) = core_coefs_[elt_index];
+      core_coefs_[elt_index] = coef;
     }
   }
 }

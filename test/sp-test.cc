@@ -92,6 +92,33 @@ class TestBasicProblem : public TestProblem {
   }
 };
 
+TEST(SPTest, Transpose) {
+  mp::SparseMatrix<double> m;
+  m.resize_major(3);
+  m.resize_elements(3);
+  {
+    int starts[] = {0, 2, 3};
+    int indices[] = {1, 2, 0};
+    double values[] = {11, 13, 7};
+    for (int i = 0; i < 3; ++i) {
+      m.start(i) = starts[i];
+      m.index(i) = indices[i];
+      m.value(i) = values[i];
+    }
+  }
+  mp::SparseMatrix<double*> t;
+  mp::internal::Transpose(m, t, 3);
+  int starts[] = {0, 1, 2, 3};
+  for (int i = 0; i < 4; ++i)
+    EXPECT_EQ(starts[i], t.start(i)) << i;
+  int indices[] = {1, 0, 0};
+  double *values[] = {&m.value(2), &m.value(0), &m.value(1)};
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(indices[i], t.index(i));
+    EXPECT_EQ(values[i], t.value(i));
+  }
+}
+
 TEST(SPTest, EmptyProblem) {
   TestBasicProblem p(0);
   mp::SPAdapter sp(p);
@@ -567,8 +594,6 @@ TEST(SPTest, NonlinearNotSupported) {
                    "unsupported: ^2");
 }
 
-// TODO: test processing of random terms
-
 TEST(SPTest, RandomConMatrix) {
   auto header = MakeHeader(2);
   header.num_con_nonzeros = 1;
@@ -579,7 +604,7 @@ TEST(SPTest, RandomConMatrix) {
   auto cols = p.OnColumnSizes();
   cols.Add(0);
   cols.Add(1);
-  p.OnLinearConExpr(0).AddTerm(1, 42);
+  p.OnLinearConExpr(0).AddTerm(1, 31);
   mp::SPAdapter sp(p);
   auto col = sp.column(0);
   auto it = col.begin();

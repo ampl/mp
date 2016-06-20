@@ -86,9 +86,7 @@ class RHSHandler {
  public:
   explicit RHSHandler(std::vector<double> &rhs) : rhs_(rhs) {}
 
-  void OnTerm(int con_index, int var_index, double coef) {
-    fmt::print("coef: {} {} {}\n", con_index, var_index, coef);
-  }
+  void OnTerm(int, int, double) {}
   void OnRHS(int con_index, double offset) { rhs_[con_index] += offset; }
 };
 
@@ -256,7 +254,7 @@ void WriteStochFile(fmt::CStringRef filename, const SPAdapter &sp) {
 namespace mp {
 
 SMPSWriter::SMPSWriter()
-  : SolverImpl<ColProblem>("smpswriter", "SMPSWriter", 20160419) {
+  : SolverImpl<ColProblem>("smpswriter", "SMPSWriter", 20160620) {
   AddSuffix("stage", 0, suf::VAR);
 }
 
