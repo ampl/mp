@@ -378,13 +378,6 @@ foreach (module ${MP_MODULES})
   endif ()
 endforeach ()
 
-if (MP_VARIADIC_TEMPLATES AND HAVE_ATOMIC)
-  option(BENCHMARK_ENABLE_TESTING
-         "Enable testing of the benchmark library." OFF)
-  add_subdirectory(thirdparty/benchmark)
-  enable_cxx11(benchmark)
-endif ()
-
 enable_testing()
 add_subdirectory(test)
 
