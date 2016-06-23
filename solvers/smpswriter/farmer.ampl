@@ -58,6 +58,8 @@ s.t. quota: sell['beets'] <= BeetsQuota;
 s.t. sellBeets:
   sell['beets'] + sell_excess <= RandomYield['beets'] * area['beets'];
 
+yield: random({c in Crops} (RandomYield[c], {s in Scen} Yield[c, s]));
+
 data;
 
 set Crops := wheat corn beets;
@@ -94,5 +96,3 @@ param MinRequirement :=
     beets   0;
 
 param BeetsQuota := 6000;
-
-yield: random({c in Crops} (RandomYield[c], {s in Scen} Yield[c, s]));
