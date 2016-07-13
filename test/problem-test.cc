@@ -398,6 +398,7 @@ TEST(ProblemTest, AlgebraicCons) {
 TEST(ProblemTest, MutAlgebraicCon) {
   Problem p;
   p.AddCon(0, 0);
+  EXPECT_EQ(1, p.num_algebraic_cons());
   Problem::MutAlgebraicCon con = p.algebraic_con(0);
   EXPECT_EQ(0, con.dual());
   con.set_dual(4.2);

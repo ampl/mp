@@ -174,7 +174,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Sets the initial value for a dual variable.
   void SetInitialDualValue(int con_index, double value) {
-    MP_ASSERT(0 <= con_index && con_index <= num_algebraic_cons(),
+    MP_ASSERT(0 <= con_index && con_index < num_algebraic_cons(),
               "invalid index");
     if (initial_dual_values_.size() <= static_cast<unsigned>(con_index)) {
       initial_dual_values_.reserve(algebraic_cons_.capacity());
