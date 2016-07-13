@@ -890,7 +890,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   void AddCommonExprs(int num_exprs) {
     MP_ASSERT(num_exprs >= 0, "invalid size");
-    std::size_t new_size = val(SafeInt<int>(vars_.size()) + num_exprs);
+    std::size_t new_size = val(SafeInt<int>(linear_exprs_.size()) + num_exprs);
     linear_exprs_.resize(new_size, LinearExpr());
     nonlinear_exprs_.resize(new_size, NumericExpr());
   }

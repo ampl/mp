@@ -524,6 +524,14 @@ TEST(ProblemTest, AddCommonExpr) {
   EXPECT_EQ(0, expr.linear_expr().num_terms());
 }
 
+TEST(ProblemTest, AddCommonExprs) {
+  Problem p;
+  p.AddVars(1, mp::var::CONTINUOUS);
+  EXPECT_EQ(0, p.num_common_exprs());
+  p.AddCommonExprs(2);
+  EXPECT_EQ(2, p.num_common_exprs());
+}
+
 // Test adding linear after nonlinear expression and then accessing
 // the nonlinear part of the linear expression.
 TEST(ProblemTest, IncompleteNonlinearCommonExpr) {
