@@ -396,8 +396,8 @@ void MPToGecodeConverter::Convert(const Problem &p) {
     IntVarArgs args(num_args);
     for (int i = 0; i < num_args; ++i) {
       NumericExpr arg = alldiff.arg(i);
-      if (Variable var = Cast<Variable>(arg))
-        args[i] = vars[var.index()];
+      if (arg.kind() == expr::VARIABLE)
+        args[i] = vars[Cast<Variable>(arg).index()];
       else
         args[i] = Gecode::expr(problem_, Visit(arg), icl_);
     }

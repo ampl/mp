@@ -387,8 +387,8 @@ void MPToConcertConverter::Convert(const Problem &p) {
         IloIntVarArray vars(env_);
         for (PairwiseExpr::iterator
              j = alldiff.begin(), end = alldiff.end(); j != end; ++j) {
-          if (Variable v = Cast<Variable>(*j)) {
-            vars.add(vars_[v.index()]);
+          if (j->kind() == expr::VARIABLE) {
+            vars.add(vars_[Cast<Variable>(*j).index()]);
             continue;
           }
           IloIntVar var(env_, IloIntMin, IloIntMax);

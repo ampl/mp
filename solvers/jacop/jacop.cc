@@ -207,8 +207,8 @@ void MPToJaCoPConverter::ConvertLogicalCon(LogicalExpr e) {
   for (int i = 0; i < num_args; ++i) {
     NumericExpr arg = alldiff.arg(i);
     jobject result_var = 0;
-    if (Variable var = Cast<Variable>(arg))
-      result_var = vars_[var.index()];
+    if (arg.kind() == expr::VARIABLE)
+      result_var = vars_[Cast<Variable>(arg).index()];
     else
       result_var = Visit(arg);
     env_.SetObjectArrayElement(args, i, result_var);
