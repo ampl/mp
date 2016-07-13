@@ -98,7 +98,7 @@ fpinit_ASL(Void)
 #endif /*APPLE*/
 
 #ifndef ASL_NO_FP_INIT
-#ifdef __linux__ /*{*/
+#ifdef __GLIBC__ /*{*/
 #ifndef NO_fpu_control /*{*/
 #define FP_INIT_DONE
 #include "fpu_control.h"
