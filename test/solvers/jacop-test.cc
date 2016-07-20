@@ -41,7 +41,7 @@ using mp::Problem;
 // Option tests
 
 TEST_F(NLSolverTest, BacktrackLimitOption) {
-  ProblemBuilder pb(solver_, "");
+  ProblemBuilder pb(solver_);
   MakeTSP(pb);
   solver_.SetIntOption("backtracklimit", 42);
   EXPECT_EQ(42, solver_.GetIntOption("backtracklimit"));
@@ -50,7 +50,7 @@ TEST_F(NLSolverTest, BacktrackLimitOption) {
 }
 
 TEST_F(NLSolverTest, DecisionLimitOption) {
-  ProblemBuilder pb(solver_, "");
+  ProblemBuilder pb(solver_);
   MakeTSP(pb);
   solver_.SetIntOption("decisionlimit", 42);
   EXPECT_EQ(400, Solve(pb).solve_code());
@@ -59,7 +59,7 @@ TEST_F(NLSolverTest, DecisionLimitOption) {
 }
 
 TEST_F(NLSolverTest, FailLimitOption) {
-  ProblemBuilder pb(solver_, "");
+  ProblemBuilder pb(solver_);
   MakeTSP(pb);
   solver_.SetIntOption("faillimit", 42);
   TestSolutionHandler sh;
@@ -71,7 +71,7 @@ TEST_F(NLSolverTest, FailLimitOption) {
 }
 
 TEST_F(NLSolverTest, NodeLimitOption) {
-  ProblemBuilder pb(solver_, "");
+  ProblemBuilder pb(solver_);
   MakeTSP(pb);
   solver_.SetIntOption("nodelimit", 42);
   TestSolutionHandler sh;
@@ -83,7 +83,7 @@ TEST_F(NLSolverTest, NodeLimitOption) {
 }
 
 TEST_F(NLSolverTest, TimeLimitOption) {
-  ProblemBuilder pb(solver_, "");
+  ProblemBuilder pb(solver_);
   MakeTSP(pb);
   solver_.SetIntOption("timelimit", 1);
   EXPECT_EQ(400, Solve(pb).solve_code());

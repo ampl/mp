@@ -122,7 +122,7 @@ struct TestLocalSolver : mp::LocalSolver {
 // Creates and solves a test problem.
 template <typename T>
 T GetOption(TestLocalSolver<T> &solver, const BasicOption<T> &opt) {
-  mp::LSProblemBuilder pb(solver, "");
+  mp::LSProblemBuilder pb(solver);
   MakeAllDiffProblem(pb);
   TestSolutionHandler sh;
   solver.opt = &opt;
@@ -191,7 +191,7 @@ TEST(LocalSolverTest, VerbosityOption) {
 
   // Test default value.
   EXPECT_EQ("quiet", solver.GetStrOption("verbosity"));
-  mp::LSProblemBuilder builder(solver, "");
+  mp::LSProblemBuilder builder(solver);
   EXPECT_EQ(0, builder.solver().getParam().getVerbosity());
 
   // Test option values.

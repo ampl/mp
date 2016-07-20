@@ -195,7 +195,7 @@ class LSProblemBuilder :
   }
 
  public:
-  explicit LSProblemBuilder(LocalSolver &, fmt::StringRef = "");
+  explicit LSProblemBuilder(LocalSolver &);
 
   ls::LocalSolver &solver() { return solver_; }
 

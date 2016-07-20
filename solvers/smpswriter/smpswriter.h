@@ -28,10 +28,17 @@
 namespace mp {
 
 class SMPSWriter : public SolverImpl<ColProblem> {
+ private:
+  std::string basename_;
+
  public:
   SMPSWriter();
 
   typedef ColProblemBuilder NLProblemBuilder;
+
+  void set_basename(fmt::StringRef basename) {
+    basename_ = basename.to_string();
+  }
 
   void Solve(ColProblem &p, SolutionHandler &sh);
 };

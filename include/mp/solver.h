@@ -1271,6 +1271,20 @@ void AppSolutionHandler<Solver, Writer>::HandleSolution(
     PrintSolution(dual_values, num_cons, "constraint", "dual value", np);
   }
 }
+
+template<typename T, T> struct Check {
+  Check(int) {}
+};
+
+template <typename Solver>
+inline void SetBasename(
+    Solver &s, const std::string *basename,
+    Check<void (Solver::*)(fmt::StringRef), &Solver::set_basename> = 0) {
+  s.set_basename(*basename);
+}
+
+template <typename Solver>
+inline void SetBasename(Solver &, ...) {}
 }  // namespace internal
 
 // A solver application.
@@ -1343,6 +1357,7 @@ int SolverApp<Solver, Reader>::Run(char **argv, int nl_reader_flags) {
     nl_filename += ".nl";
   else
     filename_no_ext.resize(filename_no_ext.size() - 3);
+  internal::SetBasename(solver_, &filename_no_ext);
 
   // Parse solver options.
   unsigned flags =
@@ -1352,8 +1367,7 @@ int SolverApp<Solver, Reader>::Run(char **argv, int nl_reader_flags) {
 
   // Read the problem.
   steady_clock::time_point start = steady_clock::now();
-  // TODO: use name provider instead of passing filename to builder
-  ProblemBuilder builder(solver_, filename_no_ext);
+  ProblemBuilder builder(solver_);
   internal::SolverNLHandler<Solver> handler(builder, solver_);
   this->Read(nl_filename, handler, nl_reader_flags);
 

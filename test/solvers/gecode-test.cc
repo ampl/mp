@@ -68,7 +68,7 @@ TEST_F(NLSolverTest, CDOption) {
 }
 
 TEST_F(NLSolverTest, FailLimitOption) {
-  ProblemBuilder pb(solver_, "");
+  ProblemBuilder pb(solver_);
   MakeTSP(pb);
   solver_.SetIntOption("faillimit", 10);
   TestSolutionHandler sh;
@@ -80,7 +80,7 @@ TEST_F(NLSolverTest, FailLimitOption) {
 }
 
 TEST_F(NLSolverTest, NodeLimitOption) {
-  ProblemBuilder pb(solver_, "");
+  ProblemBuilder pb(solver_);
   MakeTSP(pb);
   solver_.SetIntOption("nodelimit", 10);
   TestSolutionHandler sh;
@@ -92,7 +92,7 @@ TEST_F(NLSolverTest, NodeLimitOption) {
 }
 
 TEST_F(NLSolverTest, TimeLimitOption) {
-  ProblemBuilder pb(solver_, "");
+  ProblemBuilder pb(solver_);
   MakeTSP(pb);
   solver_.SetDblOption("timelimit", 0.1);
   EXPECT_EQ(400, Solve(pb).solve_code());

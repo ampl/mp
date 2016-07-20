@@ -372,9 +372,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   };
 
  public:
+  /** Constructs an empty optimization problem. */
   BasicProblem() {}
 
-  BasicProblem(const Solver &, fmt::StringRef) {}
+  explicit BasicProblem(const Solver &) {}
 
   /** Returns the number of variables. */
   int num_vars() const { return static_cast<int>(vars_.size()); }

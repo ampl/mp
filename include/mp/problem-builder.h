@@ -423,13 +423,11 @@ class ColProblem : public Problem {
   std::vector<int> row_indices_;
   std::vector<double> coefs_;
 
-  std::string name_;
-
   friend class ColProblemBuilder;
 
  public:
   ColProblem() {}
-  ColProblem(const Solver &, fmt::StringRef name) : name_(name.to_string()) {}
+  explicit ColProblem(const Solver &) {}
 
   int col_start(int col_index) const { return col_starts_[col_index]; }
   int row_index(int elt_index) const { return row_indices_[elt_index]; }
@@ -438,8 +436,6 @@ class ColProblem : public Problem {
   const int *col_starts() const { return col_starts_.data(); }
   const int *row_indices() const { return row_indices_.data(); }
   const double *values() const { return coefs_.data(); }
-
-  const std::string &name() const { return name_; }
 
   // Returns the built problem. This is used for compatibility with the problem
   // builder API.

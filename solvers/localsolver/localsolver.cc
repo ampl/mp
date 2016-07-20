@@ -73,7 +73,7 @@ LSProblemBuilder::HyperbolicTerms
   return terms;
 }
 
-LSProblemBuilder::LSProblemBuilder(LocalSolver &s, fmt::StringRef)
+LSProblemBuilder::LSProblemBuilder(LocalSolver &s)
   : model_(solver_.getModel()), num_cons_(0), pl_bigm_(s.pl_bigm()) {
   solver_.getParam().setVerbosity(0);
 }

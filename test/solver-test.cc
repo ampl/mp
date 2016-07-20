@@ -102,7 +102,7 @@ class StrictMockProblemBuilder : public StrictMock<MockProblemBuilder> {
 
   // Constructs a MockProblemBuilder object and stores a pointer to it
   // in ``builder``.
-  StrictMockProblemBuilder(TestSolver &s, fmt::StringRef) {
+  explicit StrictMockProblemBuilder(TestSolver &s) {
     s.builder = this;
     if (s.call_problem())
       EXPECT_CALL(*this, problem()).WillOnce(testing::ReturnRef(*this));
@@ -1604,7 +1604,7 @@ TEST_F(SolverAppTest, UseAppSolutionHandler) {
 
 struct MultiObjMockProblemBuilder : MockProblemBuilder {
   template <typename Solver>
-  MultiObjMockProblemBuilder(Solver &, fmt::StringRef) {}
+  explicit MultiObjMockProblemBuilder(Solver &) {}
   MultiObjMockProblemBuilder &problem() { return *this; }
 };
 

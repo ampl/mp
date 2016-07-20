@@ -260,7 +260,7 @@ SMPSWriter::SMPSWriter()
 
 void SMPSWriter::Solve(ColProblem &p, SolutionHandler &) {
   SPAdapter sp(p);
-  std::string smps_basename = p.name();
+  std::string smps_basename = basename_;
   std::string::size_type ext_pos = smps_basename.rfind('.');
   if (ext_pos != std::string::npos)
     smps_basename.resize(ext_pos);
