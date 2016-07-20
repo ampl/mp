@@ -22,6 +22,7 @@
 
 #include "jacop/java.h"
 
+#include <algorithm>  // std::min
 #include <cstdlib>
 #include <vector>
 
