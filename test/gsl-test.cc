@@ -830,6 +830,10 @@ int ellint_D(double phi, double k, gsl_mode_t mode, gsl_sf_result *result) {
 #endif
 }
 
+TEST_F(GSLTest, EllIntNaN) {
+  EXPECT_EQ(42, gsl_sf_ellint_Kcomp(GSL_NAN, GSL_PREC_DOUBLE));
+}
+
 TEST_F(GSLTest, EllInt) {
   TEST_EFUNC(gsl_sf_ellint_Kcomp);
   TEST_EFUNC(gsl_sf_ellint_Ecomp);
