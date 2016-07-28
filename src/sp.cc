@@ -374,9 +374,9 @@ void SPAdapter::ExtractRandomTerms() {
   linear_random_.resize_major(num_stage2_cons);
 
   // Count random variables in second-stage constraints.
-  for (const auto &rv: random_vars_) {
-    for (int k = problem_.col_start(rv.var_index),
-         end = problem_.col_start(rv.var_index + 1); k != end; ++k) {
+  for (auto i = random_vars_.begin(), end = random_vars_.end(); i != end; ++i) {
+    for (int k = problem_.col_start(i->var_index),
+         end = problem_.col_start(i->var_index + 1); k != end; ++k) {
        int core_con_index = con_orig2core_[problem_.row_index(k)];
        assert(core_con_index >= num_stage1_cons);
        ++linear_random_.start(core_con_index - num_stage1_cons + 1);
@@ -393,14 +393,14 @@ void SPAdapter::ExtractRandomTerms() {
   // Map second-stage constraints to random variables that appear linearly
   // in them.
   linear_random_.resize_elements(start);
-  for (const auto &rv: random_vars_) {
-    for (int k = problem_.col_start(rv.var_index),
-         end = problem_.col_start(rv.var_index + 1); k != end; ++k) {
+  for (auto i = random_vars_.begin(), end = random_vars_.end(); i != end; ++i) {
+    for (int k = problem_.col_start(i->var_index),
+         end = problem_.col_start(i->var_index + 1); k != end; ++k) {
        int core_con_index = con_orig2core_[problem_.row_index(k)];
        assert(core_con_index >= num_stage1_cons);
        int index = core_con_index - num_stage1_cons + 1;
        int element_index = linear_random_.start(index)++;
-       linear_random_.index(element_index) = rv.var_index;
+       linear_random_.index(element_index) = i->var_index;
        linear_random_.value(element_index) = -problem_.value(k);
     }
   }
