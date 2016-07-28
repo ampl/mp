@@ -151,15 +151,16 @@ class AffineExprExtractor: public ExprVisitor<AffineExprExtractor, void> {
   void VisitBinary(BinaryExpr e);
 
   void VisitSum(IteratedExpr e) {
-    for (auto arg: e)
-      Visit(arg);
+    for (auto i = e.begin(), end = e.end(); i != end; ++i)
+      Visit(*i);
   }
 };
 
 void AffineExprExtractor::VisitCommonExpr(Reference e) {
   auto common_expr = sp_.problem_.common_expr(e.index());
-  for (auto term: common_expr.linear_expr())
-    AddTerm(term.var_index(), term.coef());
+  const auto &linear = common_expr.linear_expr();
+  for (auto i = linear.begin(), end = linear.end(); i != end; ++i)
+    AddTerm(i->var_index(), i->coef());
   Visit(common_expr.nonlinear_expr());
 }
 
@@ -287,17 +288,19 @@ void SPAdapter::ProcessObjs() {
     return;
   int num_stage1_vars = num_stage_vars_[0];
   nonlinear_objs_.reserve(num_objs);
-  for (auto obj: problem_.objs())
-    nonlinear_objs_.push_back(obj.nonlinear_expr());
+  auto objs = problem_.objs();
+  for (auto i = objs.begin(), end = objs.end(); i != end; ++i)
+    nonlinear_objs_.push_back(i->nonlinear_expr());
   // Strip expectation from the first objective.
   auto obj = problem_.obj(0);
   int num_vars = this->num_vars();
   std::vector<double> core_obj(num_vars);
-  for (auto term: obj.linear_expr()) {
-    int core_var_index = var_orig2core_[term.var_index()];
-    if (core_var_index >= num_stage1_vars && term.coef() != 0)
+  const auto &linear = obj.linear_expr();
+  for (auto i = linear.begin(), end = linear.end(); i != end; ++i) {
+    int core_var_index = var_orig2core_[i->var_index()];
+    if (core_var_index >= num_stage1_vars && i->coef() != 0)
       throw Error("second-stage variable outside of expectation in objective");
-    core_obj[core_var_index] = term.coef();
+    core_obj[core_var_index] = i->coef();
   }
   auto obj_expr = obj.nonlinear_expr();
   if (obj_expr) {
