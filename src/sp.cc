@@ -43,7 +43,7 @@ class VariableCollector:
  public:
   VariableCollector(const SPAdapter &sp,
                     SparseMatrix<double> &vars_in_nonlinear):
-    BasicRandomAffineExprExtractor<VariableCollector>(sp, 0),
+    internal::BasicRandomAffineExprExtractor<VariableCollector>(sp, 0),
     vars_in_nonlinear_(vars_in_nonlinear), visited_vars_(sp.num_vars()) {}
 
   void Collect();
