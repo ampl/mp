@@ -338,8 +338,8 @@ void SPAdapter::ProcessCons() {
   }
   // Constraints containing random variables should be at least in the
   // second stage.
-  for (const auto &rv: random_vars_)
-    UpdateConStages(rv.var_index, 1);
+  for (auto i = random_vars_.begin(), end = random_vars_.end(); i != end; ++i)
+    UpdateConStages(i->var_index, 1);
   for (int i = 0; i < num_cons; ++i) {
     int &stage = con_orig2core_[i];
     if (problem_.algebraic_con(i).nonlinear_expr())
