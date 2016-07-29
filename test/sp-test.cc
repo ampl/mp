@@ -285,7 +285,8 @@ TEST(SPTest, RandVarRedifinition) {
 
 TEST(SPTest, InvalidProbability) {
   const double PROB[] = {-0.001, 1.001};
-  for (auto prob: PROB) {
+  for (size_t i = 0, n = sizeof(PROB) / sizeof(*PROB); i < n; ++i) {
+    double prob = PROB[i];
     TestBasicProblem p(2);
     auto random = p.BeginRandom(2);
     random.AddArg(p.MakeNumericConstant(prob));

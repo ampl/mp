@@ -144,10 +144,11 @@ void WriteCoreFile(fmt::CStringRef filename, const SPAdapter &sp) {
       if (obj_term != obj_end)
         ++obj_term;
     }
-    for (auto term: sp.column(i)) {
+    auto column = sp.column(i);
+    for (auto term = column.begin(), end = column.end(); term != end; ++term) {
       // TODO: merge with the first scenario
       writer.Write("    C{:<7}  R{:<7}  {}\n",
-                   i + 1, term.con_index() + 1, term.coef());
+                   i + 1, term->con_index() + 1, term->coef());
     }
   }
   if (integer_block)

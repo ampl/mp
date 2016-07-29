@@ -43,7 +43,7 @@ class VariableCollector:
  public:
   VariableCollector(const SPAdapter &sp,
                     SparseMatrix<double> &vars_in_nonlinear):
-    BasicRandomAffineExprExtractor<VariableCollector>(sp, 0),
+    internal::BasicRandomAffineExprExtractor<VariableCollector>(sp, 0),
     vars_in_nonlinear_(vars_in_nonlinear), visited_vars_(sp.num_vars()) {}
 
   void Collect();
@@ -151,15 +151,16 @@ class AffineExprExtractor: public ExprVisitor<AffineExprExtractor, void> {
   void VisitBinary(BinaryExpr e);
 
   void VisitSum(IteratedExpr e) {
-    for (auto arg: e)
-      Visit(arg);
+    for (auto i = e.begin(), end = e.end(); i != end; ++i)
+      Visit(*i);
   }
 };
 
 void AffineExprExtractor::VisitCommonExpr(Reference e) {
   auto common_expr = sp_.problem_.common_expr(e.index());
-  for (auto term: common_expr.linear_expr())
-    AddTerm(term.var_index(), term.coef());
+  const auto &linear = common_expr.linear_expr();
+  for (auto i = linear.begin(), end = linear.end(); i != end; ++i)
+    AddTerm(i->var_index(), i->coef());
   Visit(common_expr.nonlinear_expr());
 }
 
@@ -287,17 +288,19 @@ void SPAdapter::ProcessObjs() {
     return;
   int num_stage1_vars = num_stage_vars_[0];
   nonlinear_objs_.reserve(num_objs);
-  for (auto obj: problem_.objs())
-    nonlinear_objs_.push_back(obj.nonlinear_expr());
+  auto objs = problem_.objs();
+  for (auto i = objs.begin(), end = objs.end(); i != end; ++i)
+    nonlinear_objs_.push_back(i->nonlinear_expr());
   // Strip expectation from the first objective.
   auto obj = problem_.obj(0);
   int num_vars = this->num_vars();
   std::vector<double> core_obj(num_vars);
-  for (auto term: obj.linear_expr()) {
-    int core_var_index = var_orig2core_[term.var_index()];
-    if (core_var_index >= num_stage1_vars && term.coef() != 0)
+  const auto &linear = obj.linear_expr();
+  for (auto i = linear.begin(), end = linear.end(); i != end; ++i) {
+    int core_var_index = var_orig2core_[i->var_index()];
+    if (core_var_index >= num_stage1_vars && i->coef() != 0)
       throw Error("second-stage variable outside of expectation in objective");
-    core_obj[core_var_index] = term.coef();
+    core_obj[core_var_index] = i->coef();
   }
   auto obj_expr = obj.nonlinear_expr();
   if (obj_expr) {
@@ -335,8 +338,8 @@ void SPAdapter::ProcessCons() {
   }
   // Constraints containing random variables should be at least in the
   // second stage.
-  for (const auto &rv: random_vars_)
-    UpdateConStages(rv.var_index, 1);
+  for (auto i = random_vars_.begin(), end = random_vars_.end(); i != end; ++i)
+    UpdateConStages(i->var_index, 1);
   for (int i = 0; i < num_cons; ++i) {
     int &stage = con_orig2core_[i];
     if (problem_.algebraic_con(i).nonlinear_expr())
@@ -371,9 +374,9 @@ void SPAdapter::ExtractRandomTerms() {
   linear_random_.resize_major(num_stage2_cons);
 
   // Count random variables in second-stage constraints.
-  for (const auto &rv: random_vars_) {
-    for (int k = problem_.col_start(rv.var_index),
-         end = problem_.col_start(rv.var_index + 1); k != end; ++k) {
+  for (auto i = random_vars_.begin(), end = random_vars_.end(); i != end; ++i) {
+    for (int k = problem_.col_start(i->var_index),
+         end = problem_.col_start(i->var_index + 1); k != end; ++k) {
        int core_con_index = con_orig2core_[problem_.row_index(k)];
        assert(core_con_index >= num_stage1_cons);
        ++linear_random_.start(core_con_index - num_stage1_cons + 1);
@@ -390,14 +393,14 @@ void SPAdapter::ExtractRandomTerms() {
   // Map second-stage constraints to random variables that appear linearly
   // in them.
   linear_random_.resize_elements(start);
-  for (const auto &rv: random_vars_) {
-    for (int k = problem_.col_start(rv.var_index),
-         end = problem_.col_start(rv.var_index + 1); k != end; ++k) {
+  for (auto i = random_vars_.begin(), end = random_vars_.end(); i != end; ++i) {
+    for (int k = problem_.col_start(i->var_index),
+         end = problem_.col_start(i->var_index + 1); k != end; ++k) {
        int core_con_index = con_orig2core_[problem_.row_index(k)];
        assert(core_con_index >= num_stage1_cons);
        int index = core_con_index - num_stage1_cons + 1;
        int element_index = linear_random_.start(index)++;
-       linear_random_.index(element_index) = rv.var_index;
+       linear_random_.index(element_index) = i->var_index;
        linear_random_.value(element_index) = -problem_.value(k);
     }
   }
