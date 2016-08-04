@@ -248,6 +248,8 @@ class GSLTest : public ::testing::Test {
 
   template <typename F>
   void TestFunc(const Function &af, F f) {
+    fmt::print("Testing {}\n", af.name());
+    std::fflush(stdout);
     TestFuncBindPointers(af, fun::FunctionPointer(f));
   }
 };
@@ -490,7 +492,7 @@ void GSLTest::TestFunc(
         args[i] = Variant::FromDouble(0);
       }
     }
-    if (has_double_arg)
+    if (has_double_arg && !af.SkipPoint(args))
       EXPECT_ERROR(EvalError(af, args).error(), af(args));
   }
   if (arg_index < num_args) {
@@ -830,18 +832,36 @@ int ellint_D(double phi, double k, gsl_mode_t mode, gsl_sf_result *result) {
 #endif
 }
 
+struct SkipNaN : FunctionInfo {
+  bool SkipPoint(const Tuple &args) const {
+    for (std::size_t i = 0, n = args.size(); i != n; ++i) {
+      if (gsl_isnan(args[0].number()))
+        return true;
+    }
+    return false;
+  }
+};
+
+struct NoDerivOrNaN : SkipNaN {
+  Result GetDerivative(const Function &, unsigned, const Tuple &) const {
+    return Result("'derivatives are not provided");
+  }
+};
+
 TEST_F(GSLTest, EllInt) {
-  TEST_EFUNC(gsl_sf_ellint_Kcomp);
-  TEST_EFUNC(gsl_sf_ellint_Ecomp);
-  TEST_EFUNC(gsl_sf_ellint_Pcomp);
-  TEST_EFUNC(gsl_sf_ellint_F);
-  TEST_EFUNC(gsl_sf_ellint_E);
-  TEST_EFUNC2(gsl_sf_ellint_P, NoDeriv());
-  TestFunc(GetFunction("gsl_sf_ellint_D", NoDeriv()), ellint_D);
-  TEST_EFUNC2(gsl_sf_ellint_RC, NoDeriv());
-  TEST_EFUNC2(gsl_sf_ellint_RD, NoDeriv());
-  TEST_EFUNC2(gsl_sf_ellint_RF, NoDeriv());
-  TEST_EFUNC2(gsl_sf_ellint_RJ, NoDeriv());
+  // Don't test on NaN because it causes gsl_sf_ellint_Kcomp to stall on EPEL6:
+  // https://github.com/ampl/mp/issues/103
+  TEST_EFUNC2(gsl_sf_ellint_Kcomp, SkipNaN());
+  TEST_EFUNC2(gsl_sf_ellint_Ecomp, SkipNaN());
+  TEST_EFUNC2(gsl_sf_ellint_Pcomp, SkipNaN());
+  TEST_EFUNC2(gsl_sf_ellint_F, SkipNaN());
+  TEST_EFUNC2(gsl_sf_ellint_E, SkipNaN());
+  TEST_EFUNC2(gsl_sf_ellint_P, NoDerivOrNaN());
+  TestFunc(GetFunction("gsl_sf_ellint_D", NoDerivOrNaN()), ellint_D);
+  TEST_EFUNC2(gsl_sf_ellint_RC, NoDerivOrNaN());
+  TEST_EFUNC2(gsl_sf_ellint_RD, NoDerivOrNaN());
+  TEST_EFUNC2(gsl_sf_ellint_RF, NoDerivOrNaN());
+  TEST_EFUNC2(gsl_sf_ellint_RJ, NoDerivOrNaN());
 }
 
 TEST_F(GSLTest, Erf) {
