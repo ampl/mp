@@ -47,7 +47,8 @@ if not installed('clang'):
 # Install Homebrew.
 if not installed('brew'):
   with download(
-      'https://raw.githubusercontent.com/Homebrew/install/master/install') as f:
+      'https://raw.githubusercontent.com/Homebrew/install/' +
+      'b43a27f13a2f6750608cd01a6e724fb5f956b089/install') as f:
     run(sudo + ['ruby', f])
 
 # Install ccache.
