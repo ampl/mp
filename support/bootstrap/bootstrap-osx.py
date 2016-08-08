@@ -50,6 +50,8 @@ if not installed('brew'):
       'https://raw.githubusercontent.com/Homebrew/install/' +
       'b43a27f13a2f6750608cd01a6e724fb5f956b089/install') as f:
     run(sudo + ['ruby', f])
+    run(['sudo', 'xcode-select', '-switch', '/usr/bin'])
+    run(sudo + ['brew', 'update'])
 
 # Install ccache.
 if not installed('ccache'):
