@@ -44,13 +44,19 @@ if not installed('clang'):
       'command_line_tools_for_xcode_os_x_mountain_lion_april_2013.dmg') as f:
     install_dmg(f, True)
 
+copy_optional_dependencies('osx', '/mnt')
+for dir in ['Xcode.app', 'MATLAB_R2014a.app']:
+  if os.path.exists('/opt/' + dir):
+    create_symlink('/opt/' + dir, '/Applications/' + dir)
+run(['sudo', 'xcode-select', '-switch', '/Applications/Xcode.app/Contents/Developer/'])
+run([vagrant_dir + '/support/bootstrap/accept-xcode-license'])
+
 # Install Homebrew.
 if not installed('brew'):
   with download(
       'https://raw.githubusercontent.com/Homebrew/install/' +
       'b43a27f13a2f6750608cd01a6e724fb5f956b089/install') as f:
     run(sudo + ['ruby', f])
-    run(['sudo', 'xcode-select', '-switch', '/usr/bin'])
     run(sudo + ['brew', 'update'])
 
 # Install ccache.
@@ -89,13 +95,6 @@ if not installed('localsolver'):
   with download(LOCALSOLVER_DOWNLOADS_URL +
       'LocalSolver_{0}_MacOS64.pkg'.format(LOCALSOLVER_VERSION)) as f:
     install_pkg(f)
-
-copy_optional_dependencies('osx', '/mnt')
-for dir in ['Xcode.app', 'MATLAB_R2014a.app']:
-  if os.path.exists('/opt/' + dir):
-    create_symlink('/opt/' + dir, '/Applications/' + dir)
-
-run([vagrant_dir + '/support/bootstrap/accept-xcode-license'])
 
 buildbot_path = install_buildbot_slave('osx-ml')
 if buildbot_path:
