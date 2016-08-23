@@ -87,9 +87,27 @@ void SSDSolver::Solve(Problem &p, SolutionHandler &outer_sh) {
   if (p.num_objs() != 0)
     throw Error("SSD solver doesn't support user-defined objectives");
 
+  Problem converted;
+  converted.AddVars(num_vars + 1, var::CONTINUOUS);
+  for (int i = 0; i < num_vars; ++i) {
+    Problem::Variable var = p.var(i);
+    Problem::MutVariable new_var = converted.var(i);
+    new_var.set_lb(var.lb());
+    new_var.set_ub(var.ub());
+  }
+
   double inf = std::numeric_limits<double>::infinity();
-  int dominance_var = p.AddVar(-inf, inf).index();
-  p.AddObj(obj::MAX, 1).AddTerm(1, dominance_var);
+  int dominance_var = num_vars;
+  Problem::MutVariable new_var = converted.var(dominance_var);
+  new_var.set_lb(-inf);
+  new_var.set_ub(inf);
+  converted.AddObj(obj::MAX, 1).AddTerm(1, dominance_var);
+
+  int num_algebraic_cons = p.num_algebraic_cons();
+  converted.AddAlgebraicCons(num_algebraic_cons);
+  for (int i = 0; i < num_algebraic_cons; ++i) {
+    // TODO: copy algebraic constraint
+  }
 
   // Compute the tails of the reference distribution.
   std::vector<double> ref_tails(extractor.rhs());
@@ -108,19 +126,17 @@ void SSDSolver::Solve(Problem &p, SolutionHandler &outer_sh) {
       this->status = status;
       solution.assign(values, values + num_vars + 1);
     }
-  } sh(p.num_vars());
+  } sh(num_vars);
 
   // Get the initial solution.
-  sh.solution.reserve(p.num_vars());
-  auto vars = p.vars();
+  sh.solution.reserve(num_vars);
+  auto vars = converted.vars();
   for (auto i = vars.begin(), end = vars.end(); i != end; ++i)
     sh.solution.push_back(i->value());
 
   // Disable solver output.
   char solver_msg[] = "solver_msg=0";
   putenv(solver_msg);
-
-  // TODO: convert problem
 
   // Solve the problem using a cutting-plane method.
   IlogCPSolver solver;
@@ -180,8 +196,9 @@ void SSDSolver::Solve(Problem &p, SolutionHandler &outer_sh) {
     }
 
     // Add a cut.
-    p.AddCon(ref_tails[max_rel_violation_scen], inf);
-    Problem::LinearConBuilder cut = p.algebraic_con(p.num_algebraic_cons() - 1).
+    converted.AddCon(ref_tails[max_rel_violation_scen], inf);
+    Problem::LinearConBuilder cut =
+        converted.algebraic_con(converted.num_algebraic_cons() - 1).
         set_linear_expr(num_vars + 1);
     for (int i = 0; i < num_vars; ++i) {
       double coef = 0;
@@ -191,7 +208,7 @@ void SSDSolver::Solve(Problem &p, SolutionHandler &outer_sh) {
     }
     cut.AddTerm(dominance_var, -scaling);
 
-    solver.Solve(p, sh);
+    solver.Solve(converted, sh);
     if (sh.status != sol::SOLVED) break;
     dominance_ub = sh.solution[dominance_var];
   }
