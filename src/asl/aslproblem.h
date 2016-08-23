@@ -437,6 +437,12 @@ class ASLProblem {
             var::CONTINUOUS : var::INTEGER;
     }
 
+    // Returns the name of the variable or a null pointer if the name is not
+    // available.
+    const char *name() const {
+      return var_name_ASL(problem_->asl_, index_);
+    }
+
     bool operator==(Variable other) const {
       MP_ASSERT(problem_ == other.problem_,
                 "comparing variables from different problems");
@@ -553,6 +559,12 @@ class ASLProblem {
             reinterpret_cast<ASL_fg*>(problem_->asl_)->I.con_de_[index_].e);
     }
 
+    // Returns the name of the constraint or a null pointer if the name is not
+    // available.
+    const char *name() const {
+      return con_name_ASL(problem_->asl_, index_);
+    }
+
     bool operator==(AlgebraicCon other) const {
       MP_ASSERT(problem_ == other.problem_,
                 "comparing constraint from different problems");
@@ -618,18 +630,6 @@ class ASLProblem {
   asl::LogicalExpr logical_con_expr(int lcon_index) const {
     return GetExpr<asl::LogicalExpr>(
           &Edag1info::lcon_de_, lcon_index, num_logical_cons());
-  }
-
-  // Returns the name of the variable or a null pointer if the name is not
-  // available.
-  const char *var_name(int var_index) const {
-    return var_name_ASL(asl_, var_index);
-  }
-
-  // Returns the name of the constraint or a null pointer if the name is not
-  // available.
-  const char *con_name(int con_index) const {
-    return con_name_ASL(asl_, con_index);
   }
 
   // Returns the name of the logical constraint or a null pointer if the

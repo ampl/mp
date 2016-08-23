@@ -146,7 +146,7 @@ fpinit_ASL(Void)
 #endif
 	}
 #endif /*} NO_fpu_control */
-#endif /*} __linux__ */
+#endif /*} __GLIBC__ */
 
 #ifdef sgi /*{*/
 #ifndef _ABIO32
