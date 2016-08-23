@@ -1120,6 +1120,4 @@ struct hash<mp::Expr> {
 }
 #endif
 
-// TODO: use memory pool allocator
-
 #endif  // MP_EXPR_H_
