@@ -20,12 +20,12 @@ OPT_DIR = ENV["AMPL_OPT_DIR"]
 
 def configure_docker(config, image, arch)
   config.vm.provider "docker" do |d|
-    d.image = "vitaut/ampl:" + image
+    d.image = "buildbot:" + image
     if OPT_DIR
       dir = OPT_DIR + "/linux-" + arch + "/*/"
       d.volumes = Pathname.glob(dir).map { |p| p.to_s + ":/opt/" + p.basename.to_s }
     end
-    d.cmd = ["xvfb-run", "-s" ":0", "/vagrant/support/buildbot/run-buildslave"]
+    d.cmd = ["/vagrant/support/buildbot/run-buildslave"]
   end
 end
 
@@ -41,13 +41,37 @@ end
   
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Linux boxes don't use provisioning. To update them, use
-  # support/bootstrap/create-lucid-image.py script.
+  # support/bootstrap/create-ubuntu-image.py script.
   config.vm.define "lucid32" do |c|
     configure_docker(c, "lucid32", "i686")
   end
 
   config.vm.define "lucid64", primary: true do |c|
     configure_docker(c, "lucid64", "x86_64")
+  end
+
+  config.vm.define "precise32" do |c|  
+    configure_docker(c, "precise32", "i686")
+  end
+
+  config.vm.define "precise64" do |c|
+    configure_docker(c, "precise64", "x86_64")
+  end
+
+  config.vm.define "trusty32" do |c|  
+    configure_docker(c, "trusty32", "i686")
+  end
+
+  config.vm.define "trusty64" do |c|
+    configure_docker(c, "trusty64", "x86_64")
+  end
+
+  config.vm.define "xenial32" do |c|  
+    configure_docker(c, "xenial32", "i686")
+  end
+
+  config.vm.define "xenial64" do |c|
+    configure_docker(c, "xenial64", "x86_64")
   end
 
   config.vm.define "osx-ml" do |c|
