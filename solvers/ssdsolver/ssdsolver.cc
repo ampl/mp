@@ -25,10 +25,6 @@
 #include "mp/problem.h"
 #include "ilogcp/ilogcp.h"
 
-#ifdef _WIN32
-# define putenv _putenv
-#endif
-
 namespace {
 
 struct ValueScenario {
@@ -105,8 +101,16 @@ void SSDSolver::Solve(Problem &p, SolutionHandler &outer_sh) {
 
   int num_algebraic_cons = p.num_algebraic_cons();
   converted.AddAlgebraicCons(num_algebraic_cons);
-  for (int i = 0; i < num_algebraic_cons; ++i) {
-    // TODO: copy algebraic constraint
+  for (int con_index = 0; con_index < num_algebraic_cons; ++con_index) {
+    Problem::AlgebraicCon con = p.algebraic_con(con_index);
+    Problem::MutAlgebraicCon new_con = converted.algebraic_con(con_index);
+    new_con.set_lb(con.lb());
+    new_con.set_ub(con.ub());
+    const LinearExpr &linear = con.linear_expr();
+    Problem::LinearConBuilder
+        builder(new_con.set_linear_expr(linear.num_terms()));
+    for (LinearExpr::iterator i = linear.begin(), e = linear.end(); i != e; ++i)
+      builder.AddTerm(i->var_index(), i->coef());
   }
 
   // Compute the tails of the reference distribution.
@@ -134,13 +138,13 @@ void SSDSolver::Solve(Problem &p, SolutionHandler &outer_sh) {
   for (auto i = vars.begin(), end = vars.end(); i != end; ++i)
     sh.solution.push_back(i->value());
 
-  // Disable solver output.
-  char solver_msg[] = "solver_msg=0";
-  putenv(solver_msg);
-
   // Solve the problem using a cutting-plane method.
   IlogCPSolver solver;
   solver.SetStrOption("optimizer", "cplex");
+
+  // Disable solver output.
+  solver.SetStrOption("outlev", "quiet");
+
   double dominance_lb = -inf;
   double dominance_ub =  inf;
   const double *coefs = extractor.coefs();
