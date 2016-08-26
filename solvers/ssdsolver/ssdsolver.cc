@@ -97,7 +97,7 @@ void SSDSolver::Solve(Problem &p, SolutionHandler &outer_sh) {
   Problem::MutVariable new_var = converted.var(dominance_var);
   new_var.set_lb(-inf);
   new_var.set_ub(inf);
-  converted.AddObj(obj::MAX, 1).AddTerm(1, dominance_var);
+  converted.AddObj(obj::MAX, 1).AddTerm(dominance_var, 1);
 
   int num_algebraic_cons = p.num_algebraic_cons();
   converted.AddAlgebraicCons(num_algebraic_cons);
