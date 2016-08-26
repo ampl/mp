@@ -7,5 +7,7 @@ cmake_install.cmake
 CTestTestfile.cmake
 Makefile
 Testing
+.vagrant
 *.pyc
 *.user
+*~
