@@ -1,7 +1,12 @@
 #!/bin/sh
 
-export DISPLAY=:0
+export DISPLAY=:10
+
+Xvfb $DISPLAY &
+sleep 1
+
 miwm &
+sleep 1
 
 # This is unsecure, but the box is not publicly accessible.
 mkdir $HOME/.vnc
