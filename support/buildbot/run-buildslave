@@ -2,11 +2,9 @@
 
 export DISPLAY=:10
 
-Xvfb $DISPLAY &
+Xvfb $DISPLAY -screen 0 1024x768x16 &
 sleep 1
-
 miwm &
-sleep 1
 
 # This is unsecure, but the box is not publicly accessible.
 mkdir $HOME/.vnc
