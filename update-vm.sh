@@ -71,6 +71,17 @@ do
         vagrant up $1
         shift 1;;
 
+    proxy)
+        docker stop squid
+        docker rm squid
+        docker pull sameersbn/squid:3.3.8-19
+        docker run --name squid -d \
+            --publish 3128:3128 \
+            --volume `pwd`/support/squid.conf:/etc/squid3/squid.conf \
+            --volume /srv/docker/squid/cache:/var/spool/squid3 \
+            sameersbn/squid:3.3.8-19
+        shift 1;;
+
     *)
         if [[ -n "$1" ]]; then
             echo "Invalid option!"

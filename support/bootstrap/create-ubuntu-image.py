@@ -40,9 +40,12 @@ if __name__ == '__main__':
   check_call(['docker', 'run', '-v', 
               os.path.abspath(parent_dir) + ':/support',
               '--name', image_name + '_tmp', 'debootstrap:' + image_name, '/bin/sh', '-c',
-              'apt-get install -y python; '
-              'support/bootstrap/bootstrap-linux.py '
-              '{0} {1} {2} docker'.format(version, image_name, mirror)])
+              'export ftp_proxy=http://172.17.42.1:3128;'
+              'export http_proxy=http://172.17.42.1:3128;' 
+              'export https_proxy=http://172.17.42.1:3128;'
+              'apt-get install -y python;'
+              'support/bootstrap/bootstrap-linux.py'
+              ' {0} {1} {2} docker'.format(version, image_name, mirror)])
   call(['docker', 'rmi', 'buildbot:' + image_name])
   check_call(['docker', 'commit', image_name + '_tmp', 
               'buildbot:' + image_name])
