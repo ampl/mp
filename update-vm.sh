@@ -76,7 +76,7 @@ do
         docker rm squid
         docker pull sameersbn/squid:3.3.8-19
         docker run --name squid -d \
-            --publish 3128:3128 \
+            --publish 172.17.42.1:3128:3128 \
             --volume `pwd`/support/squid.conf:/etc/squid3/squid.conf \
             --volume /srv/docker/squid/cache:/var/spool/squid3 \
             sameersbn/squid:3.3.8-19
