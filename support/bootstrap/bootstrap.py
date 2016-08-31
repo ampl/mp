@@ -110,6 +110,19 @@ def install_maven(**kwargs):
       archive.extractall(install_dir)
   add_to_path(os.path.join(install_dir, dir, 'bin', 'mvn'))
 
+# Downloads and installs AMPL.
+def install_ampl(filename, **kwargs):
+  if installed('ampl'):
+    return
+  dir = filename.replace('.tgz', '')
+  url = 'http://ampl.com/demo/' + filename
+  install_dir = kwargs.get('install_dir', opt_dir)
+  with Downloader(kwargs.get('download_dir', '.')).download(url) as f:
+    with closing(tarfile.open(f, 'r:gz')) as archive:
+      archive.extractall(install_dir)
+  add_to_path(os.path.join(install_dir, dir, 'ampl'))
+  add_to_path(os.path.join(install_dir, dir, 'ampl.lic'))
+
 # Install f90cache.
 def install_f90cache():
   if not installed('f90cache'):

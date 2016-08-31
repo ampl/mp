@@ -30,6 +30,12 @@ if __name__ == '__main__':
   
   check_call(['cp', '-r', '/support/bootstrap/cache', '/var/'])
 
+  # Install AMPL.
+  if x86_64:
+    install_ampl('amplide.linux64.tgz')
+  else:
+    install_ampl('amplide.linux32.tgz')
+
   # Install build tools.
   if not installed('cmake'):
     # Install python-software-properties or software-properties-common for apt-add-repository.
