@@ -28,6 +28,8 @@ if __name__ == '__main__':
   env = os.environ.copy()
   env['DEBIAN_FRONTEND'] = 'noninteractive'
   
+  check_call(['cp', '-r', '/support/bootstrap/cache', '/var/'])
+
   # Install build tools.
   if not installed('cmake'):
     # Install python-software-properties or software-properties-common for apt-add-repository.
