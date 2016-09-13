@@ -205,48 +205,15 @@ void WriteDiscreteScenarios(FileWriter &writer, const SPAdapter &sp) {
   }
 }
 
-void WriteDiscreteIndep(FileWriter &writer, const SPAdapter &sp,
-                        const std::vector<int> &rv2con) {
-  writer.Write("INDEP         DISCRETE\n");
-  std::vector<double> coefs, rhs;
-  for (int i = 0, n = sp.num_rvs(); i < n; ++i) {
-    const auto &rv = sp.rv(i);
-    /*for (size_t s = 0, num_scen = rv.num_realizations(); s < num_scen; ++s) {
-      rhs = base_rhs_;
-      GetScenario(p, s, coefs, rhs);
-      int con_index = rv2con[i];
-      writer.Write("    RHS1      R{:<7}  {:12}   T2        {:.2}\n",
-                   con_index + 1, rhs[con_index], rv.probability(s));
-    }*/
-  }
-}
-
 void WriteStochFile(fmt::CStringRef filename, const SPAdapter &sp) {
   FileWriter writer(filename);
   writer.Write("STOCH         PROBLEM\n");
   if (sp.num_stages() > 1) {
     int num_rvs = sp.num_rvs();
-    if (num_rvs == 1) {
+    if (num_rvs == 1)
       WriteDiscreteScenarios(writer, sp);
-    } else {
-      // Get constraints where each random variable/parameter is used.
-      bool indep_vars = true;
-      std::vector<int> rv2con(num_rvs);
-      for (int i = 0; i < num_rvs; ++i) {
-        /*const auto &info = rv_info_[i];
-        int var_index = info.var_index;
-        int start = p.col_start(var_index), end = p.col_start(var_index + 1);
-        if (start != end - 1) {
-          indep_vars = false;
-          break;
-        }
-        // TODO: handle randomness in constraint matrix
-        rv2con[i] = p.row_index(start);*/
-      }
-      if (!indep_vars)
-        throw mp::Error("unsupported RV");
-      WriteDiscreteIndep(writer, sp, rv2con);
-    }
+    else
+      throw mp::Error("unsupported RV");
   }
   writer.Write("ENDATA\n");
 }
