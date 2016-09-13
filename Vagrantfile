@@ -20,11 +20,13 @@ OPT_DIR = ENV["AMPL_OPT_DIR"]
 
 def configure_docker(config, image, arch)
   config.vm.provider "docker" do |d|
+    d.name = image
+    d.create_args = "-h", image
     d.image = "buildbot:" + image
     if OPT_DIR
       dir = OPT_DIR + "/linux-" + arch + "/*/"
       d.volumes = Pathname.glob(dir).map { |p| p.to_s + ":/opt/" + p.basename.to_s }
-    end
+    end   
     d.cmd = ["/vagrant/support/buildbot/run-buildslave"]
   end
 end
