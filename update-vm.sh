@@ -11,64 +11,64 @@ do
     case "$1" in
     osx-ml)
         vagrant destroy $1
-        vagrant up $1
+        vagrant up $1 || exit 1
         shift 1;;
 
     win2008)
         vagrant destroy $1
-        vagrant up $1        
-        shift 1;;     
+        vagrant up $1 || exit 1
+        shift 1;;
 
     lucid32)
-        vagrant destroy $1
-        sudo docker rmi buildbot:$1
-        sudo python $BOOTSTRAP_LINUX 32 lucid $1 $OLD_MIRROR || exit 1 
-        vagrant up $1
+        vagrant destroy -f $1
+        docker rmi buildbot:$1
+        python $BOOTSTRAP_LINUX 32 lucid $1 $OLD_MIRROR || exit 1
+        vagrant up $1 || exit 1
         shift 1;;
     lucid64)
-        vagrant destroy $1
-        sudo docker rmi buildbot:$1
-        sudo python $BOOTSTRAP_LINUX 64 lucid $1 $OLD_MIRROR || exit 1 
-        vagrant up $1
+        vagrant destroy -f $1
+        docker rmi buildbot:$1
+        python $BOOTSTRAP_LINUX 64 lucid $1 $OLD_MIRROR || exit 1
+        vagrant up $1 || exit 1
         shift 1;;
 
     precise32)
-        vagrant destroy $1
-        sudo docker rmi buildbot:$1
-        sudo python $BOOTSTRAP_LINUX 32 precise $1 $CUR_MIRROR || exit 1 
-        vagrant up $1
+        vagrant destroy -f $1
+        docker rmi buildbot:$1
+        python $BOOTSTRAP_LINUX 32 precise $1 $CUR_MIRROR || exit 1
+        vagrant up $1 || exit 1
         shift 1;;
     precise64)
-        vagrant destroy $1
-        sudo docker rmi buildbot:$1
-        sudo python $BOOTSTRAP_LINUX 64 precise $1 $CUR_MIRROR || exit 1 
-        vagrant up $1
+        vagrant destroy -f $1
+        docker rmi buildbot:$1
+        python $BOOTSTRAP_LINUX 64 precise $1 $CUR_MIRROR || exit 1
+        vagrant up $1 || exit 1
         shift 1;;
 
     trusty32)
-        vagrant destroy $1
-        sudo docker rmi buildbot:$1
-        sudo python $BOOTSTRAP_LINUX 32 trusty $1 $CUR_MIRROR || exit 1 
-        vagrant up $1
+        vagrant destroy -f $1
+        docker rmi buildbot:$1
+        python $BOOTSTRAP_LINUX 32 trusty $1 $CUR_MIRROR || exit 1
+        vagrant up $1 || exit 1
         shift 1;;
     trusty64)
-        vagrant destroy $1
-        sudo docker rmi buildbot:$1
-        sudo python $BOOTSTRAP_LINUX 64 trusty $1 $CUR_MIRROR || exit 1 
-        vagrant up $1
+        vagrant destroy -f $1
+        docker rmi buildbot:$1
+        python $BOOTSTRAP_LINUX 64 trusty $1 $CUR_MIRROR || exit 1
+        vagrant up $1 || exit 1
         shift 1;;
 
     xenial32)
-        vagrant destroy $1
-        sudo docker rmi buildbot:$1
-        sudo python $BOOTSTRAP_LINUX 32 xenial $1 $CUR_MIRROR || exit 1 
-        vagrant up $1
+        vagrant destroy -f $1
+        docker rmi buildbot:$1
+        python $BOOTSTRAP_LINUX 32 xenial $1 $CUR_MIRROR || exit 1
+        vagrant up $1 || exit 1
         shift 1;;
     xenial64)
-        vagrant destroy $1
-        sudo docker rmi buildbot:$1
-        sudo python $BOOTSTRAP_LINUX 64 xenial $1 $CUR_MIRROR || exit 1 
-        vagrant up $1
+        vagrant destroy -f $1
+        docker rmi buildbot:$1
+        python $BOOTSTRAP_LINUX 64 xenial $1 $CUR_MIRROR || exit 1
+        vagrant up $1 || exit 1
         shift 1;;
 
     proxy)
@@ -79,7 +79,7 @@ do
             --publish 172.17.42.1:3128:3128 \
             --volume `pwd`/support/squid.conf:/etc/squid3/squid.conf \
             --volume /srv/docker/squid/cache:/var/spool/squid3 \
-            sameersbn/squid:3.3.8-19
+            sameersbn/squid:3.3.8-19 || exit 1
         shift 1;;
 
     *)
@@ -88,6 +88,6 @@ do
             exit 1
         else
             break
-        fi        
+        fi
     esac
 done
