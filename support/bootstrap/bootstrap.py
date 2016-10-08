@@ -121,6 +121,7 @@ def install_ampl(filename, **kwargs):
     with closing(tarfile.open(f, 'r:gz')) as archive:
       archive.extractall(install_dir)
   add_to_path(os.path.join(install_dir, dir, 'ampl'))
+  add_to_path(os.path.join(install_dir, dir, 'minos'))
   add_to_path(os.path.join(install_dir, dir, 'ampl.lic'))
 
 # Install f90cache.
