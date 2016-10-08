@@ -177,7 +177,7 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False, **args):
       pwd.getpwnam(username)
     except KeyError:
       check_call(['sudo', 'useradd', '--system', '--home', '/var/lib/buildbot',
-                  '--create-home', '--shell', '/bin/false', 'buildbot'])
+                  '--create-home', '--shell', '/bin/bash', 'buildbot'])
   path = path or os.path.expanduser('~{0}/slave'.format(username))
   if os.path.exists(path):
     return None
