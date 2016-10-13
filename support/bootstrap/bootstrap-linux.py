@@ -69,6 +69,19 @@ if __name__ == '__main__':
     install_cmake('cmake-3.3.0-Linux-i386.tar.gz')
     install_maven()
 
+  # Upgrade gcc to 4.8 if necessary
+  output = Popen(['gcc', '--version'], stdout=PIPE).communicate()[0]
+  gcc_version = re.match(r'.* (\d+\.\d+)\.\d+', output).group(1)
+  if gcc_version.split('.')[:2] < ['4', '8']:
+    # Add ubuntu-toolchain-r PPA for gcc-4.8 or superior
+    check_call(['add-apt-repository', 'ppa:ubuntu-toolchain-r/test'], env=env)
+    check_call(['apt-get', 'update', '-q'], env=env)
+    check_call(['apt-get', 'install', '-qy', 'gcc-4.8', 'g++-4.8'], env=env)
+    check_call(['sudo', 'update-alternatives', '--install', 
+                '/usr/bin/gcc', 'gcc', '/usr/bin/gcc-4.8', '50'], env=env)
+    check_call(['sudo', 'update-alternatives', '--install', 
+                '/usr/bin/g++', 'g++', '/usr/bin/g++-4.8', '50'], env=env)
+
   # Installs symlinks for ccache.
   for name in ['gcc', 'cc', 'g++', 'c++']:
     add_to_path(which('ccache'), name)
@@ -76,7 +89,7 @@ if __name__ == '__main__':
   install_f90cache()
   output = Popen(['gfortran', '--version'], stdout=PIPE).communicate()[0]
   gf_version = re.match(r'.* (\d+\.\d+)\.\d+', output).group(1)
-  if gf_version.split('.')[:2] <= [5, 2]:
+  if gf_version.split('.')[:2] <= ['5', '2']:
     # f90cache 0.96 is not compatible with gfortran > 5.2
     add_to_path('/usr/local/bin/f90cache', 'gfortran-' + gf_version)
 
