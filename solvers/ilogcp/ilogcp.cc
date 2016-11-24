@@ -825,7 +825,7 @@ void IlogCPSolver::Solve(Problem &p, SolutionHandler &sh) {
     const IloExtractableArray &extractables = e.getExtractables();
     if (extractables.getSize() == 0)
       throw;
-    throw mp::MakeUnsupportedError("{}", extractables[0]);
+    throw mp::MakeUnsupportedError("{}", extractables[0].getObject());
   }
 
   if (optimizer == CP)

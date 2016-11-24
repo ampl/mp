@@ -30,7 +30,7 @@ extern "C" int main1(int, char **argv) {
     s.reset(new IlogCPApp());
     return s->Run(argv);
   } catch (const IloException &e) {
-    fmt::print(stderr, "Error: {}\n", e);
+    fmt::print(stderr, "Error: {}\n", e.getMessage());
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
   }
