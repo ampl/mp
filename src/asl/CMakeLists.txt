@@ -1,3 +1,8 @@
+check_module(asl build_asl)
+if (NOT build_asl)
+  return ()
+endif ()
+
 file(READ solvers/details.c0 DETAILS)
 string(REPLACE "System_details"
   "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}" DETAILS "${DETAILS}")
