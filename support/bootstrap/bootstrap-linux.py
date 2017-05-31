@@ -101,6 +101,9 @@ if __name__ == '__main__':
     check_call(['apt-get', 'update', '-q'], env=env)
     check_call(['apt-get', 'install', '-qy', 'xvfb', 'x11vnc', 'miwm'], env=env)
 
+  # Install mono-complete for C#
+  check_call(['apt-get', 'install', '-qy', 'mono-complete'], env=env)
+
   check_call(['apt-get', 'clean'], env=env)
 
   # Install LocalSolver.
