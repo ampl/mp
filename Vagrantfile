@@ -77,7 +77,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.define "osx-ml" do |c|
-    configure_virtualbox(config, 2, 1024, 5000)
+    configure_virtualbox(config, 2, 4096, 5000)
     c.vm.box = "osx-ml"
     c.ssh.insert_key = false
     c.vm.network :private_network, ip: "10.11.12.13"
