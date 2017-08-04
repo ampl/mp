@@ -221,7 +221,7 @@ set(ASL_HEADERS aslbuilder.h aslexpr.h aslexpr-visitor.h
   aslproblem.h aslinterface.h ${CMAKE_CURRENT_BINARY_DIR}/stdio1.h)
 add_prefix(ASL_HEADERS solvers/
   asl.h asl_pfg.h asl_pfgh.h avltree.h funcadd.h getstub.h jacpdim.h nlp.h
-  nlp2.h psinfo.h)
+  nlp2.h psinfo.h errchk.h jac2dim.h obj_adj.h)
 set(ASL_SOURCES aslbuilder.cc aslexpr.cc aslproblem.cc aslinterface.cc)
 
 set(ASL_INCLUDE_DIRS solvers ${CMAKE_CURRENT_BINARY_DIR})
