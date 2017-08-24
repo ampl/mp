@@ -58,4 +58,4 @@ if (ODBC_FOUND)
 endif ()
 
 add_mp_test(tableproxy-test tableproxy-test.cc LIBS function)
-add_dependencies(tableproxy-test tableproxy)
+add_dependencies(tableproxy-test ampltabl)
