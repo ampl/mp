@@ -211,7 +211,7 @@ function (add_mp_library name)
   target_compile_definitions(${name}
     PUBLIC ${add_mp_library_COMPILE_DEFINITIONS})
   target_include_directories(${name}
-    PUBLIC include ${add_mp_library_INCLUDE_DIRECTORIES})
+    PUBLIC ${add_mp_library_INCLUDE_DIRECTORIES})
   if (add_mp_library_DEPENDS)
     add_dependencies(${name} ${add_mp_library_DEPENDS})
   endif ()
