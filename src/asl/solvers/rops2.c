@@ -102,7 +102,7 @@ f_OPREM(expr *e A_ASL)
 {
 	U rv;
 	expr *e1;
-	real L, R;
+	real L, R, t;
 
 	/* e->dL = 1.; */
 	e1 = e->L.e;
@@ -112,6 +112,10 @@ f_OPREM(expr *e A_ASL)
 	rv.d = fmod(L,R);
 	if (errchk(rv))
 		introuble2("fmod",L,R,1);
+	else if (want_deriv) {
+		t = L / R;
+		e->dR = t > 0. ? -floor(t) : -ceil(t);
+		}
 	return rv.d;
 	}
 
@@ -141,11 +145,7 @@ f_OPPOW(expr *e A_ASL)
 		introuble2("pow",L,R,1);
 		}
 	if (want_deriv) {
-		if (L < 0.) {
- badpow:
-			introuble2("pow'",L,R,2);
-			}
-		else if (L > 0.) {
+		if (L > 0.) {
 			xym1 = rv.d / L;
 			xlog = log(L);
 			e->dL = R*xym1;
@@ -154,10 +154,18 @@ f_OPPOW(expr *e A_ASL)
 			e->dLR = xym1 * (1. + R*xlog);
 			e->dR2 = xlog * e->dR;
 			}
+		else if (L != 0.) {
+ badpow:
+			introuble2("pow'",L,R,2);
+			}
 		else if (R > 1.) {
 			e->dL = 0.;
-			if (R >= 2.)
-				goto dRzero;
+			if (R >= 2.) {
+				if (R > 2.)
+					goto dRzero;
+				e->dL2 = 2.;
+				goto dRzero2;
+				}
 			e->dR = 0.;
 #ifdef WANT_INFNAN
 			e->dL2 = Infinity;
@@ -168,8 +176,8 @@ f_OPPOW(expr *e A_ASL)
 			}
 		else if (R == 1.) {
 			e->dL = 1.;
- dRzero:
-			e->dR = e->dL2 = e->dLR = e->dR2 = 0.;
+ dRzero:		e->dL2 = 0.;
+ dRzero2:		e->dR = e->dLR = e->dR2 = 0.;
 			}
 		else if (R == 0.) {
 			e->dL = 0.;
@@ -198,7 +206,7 @@ f_OP1POW(expr *e A_ASL)
 
 	e1 = e->L.e;
 	L = (*e1->op)(e1 K_ASL);
-	R = ((expr_n *)e->R.e)->v;
+	R = e->dR; /* til 20160607, was ((expr_n *)e->R.e)->v; */
 	rv.d = mypow(L,R);
 	if (errchk(rv)) {
 #ifdef WANT_INFNAN
@@ -1089,16 +1097,15 @@ f_OPprecision(expr *e A_ASL)
  static real
 Round(real x, int prec)
 {
-	char *b, *s, *s0, *se;
+	char *b, *s, sbuf[400], *se;
 	char buf[96];
 	int decpt, L, sign;
 
 	if (!x)
 		return x;
-	s = dtoa(x, 3, prec, &decpt, &sign, &se);
+	s = dtoa_r(x, 3, prec, &decpt, &sign, &se, sbuf, sizeof(sbuf));
 	if (decpt == 9999) {
  zreturn:
-		freedtoa(s);
 		return x;
 		}
 	L = se - s;
@@ -1108,7 +1115,6 @@ Round(real x, int prec)
 		}
 	if (L > 80)
 		se = s + 80;
-	s0 = s;
 	b = buf;
 	if (sign)
 	*b++ = '-';
@@ -1116,7 +1122,6 @@ Round(real x, int prec)
 	while(s < se)
 		*b++ = *s++;
 	*b = 0;
-	freedtoa(s0);
 	if (decpt)
 		snprintf(b, buf + sizeof(buf) - b, "e%d", decpt);
 	return strtod(buf, (char **)0);

@@ -63,19 +63,19 @@ myhypot(arglist *al)	/* sqrt(x*x + y*y) */
 	if (rv) {
 		y /= x;
 		rv = x * sqrt(1. + y*y);
-		if ((d = al->derivs)) {
+		if (d = al->derivs) {
 			d[0] = x0 / rv;
 			d[1] = y0 / rv;
-			if ((h = al->hes)) {
+			if (h = al->hes) {
 				h[0] =  d[1]*d[1] / rv;
 				h[1] = -d[0]*d[1] / rv;
 				h[2] =  d[0]*d[0] / rv;
 				}
 			}
 		}
-	else if ((d = al->derivs)) {
+	else if (d = al->derivs) {
 		d[0] = d[1] = 0;
-		if ((h = al->hes))
+		if (h = al->hes)
 			h[0] = h[1] = h[2] = 0;
 		}
 	return rv;

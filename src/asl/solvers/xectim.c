@@ -22,9 +22,11 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
-/* Many Unix systems have a getrusage() that returns time with */
-/* a resolution of microseconds.  Compile with -DNO_RUSAGE to */
-/* avoid using this routine. */
+/* Many Unix systems have a clock_gettime() that returns time with a */
+/* resolution of nanoseconds or a getrusage() that returns time with */
+/* a resolution of microseconds.  Compile with -DNO_RUSAGE to avoid */
+/* avoid using both, and with -DNO_CLOCK_GETTIME to avoid using */
+/* clock_gettime(). */
 
 #ifdef KR_headers
 #define Void /*void*/
@@ -45,8 +47,26 @@ extern "C" double xectim_(Void);
 #define ASSUME_STDC
 #include <windows.h>
 #endif
+#ifdef __APPLE__
+#define NO_CLOCK_GETTIME
+#endif
 
 #ifndef NO_RUSAGE /*{{*/
+
+#ifndef NO_CLOCK_GETTIME /*{{*/
+
+#include <time.h>
+
+ double
+xectim_(Void)
+{
+	struct timespec T;
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &T);
+	return T.tv_sec + 1e-9*T.tv_nsec;
+	}
+
+#else /*}NO_CLOCK_GETTIME{*/
+
 #include <sys/time.h>
 #include <sys/resource.h>
 
@@ -58,6 +78,8 @@ xectim_(Void)
 	return R.ru_utime.tv_sec + R.ru_stime.tv_sec
 		+ 1e-6*(R.ru_utime.tv_usec + R.ru_stime.tv_usec);
 	}
+
+#endif /*}}*/
 
 #else /* }NO_RUSAGE{ */
 

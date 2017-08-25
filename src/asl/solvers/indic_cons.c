@@ -1,5 +1,5 @@
-/****************************************************************
-Copyright (C) 2011 AMPL Optimization LLC; written by David M. Gay.
+/*******************************************************************
+Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -7,14 +7,14 @@ provided that the above copyright notice appear in all copies and that
 both that the copyright notice and this permission notice and warranty
 disclaimer appear in supporting documentation.
 
-The author and AMPL Optimization LLC disclaim all warranties with
+The author and AMPL Optimization, Inc. disclaim all warranties with
 regard to this software, including all implied warranties of
 merchantability and fitness.  In no event shall the author be liable
 for any special, indirect or consequential damages or any damages
 whatsoever resulting from loss of use, data or profits, whether in an
 action of contract, negligence or other tortious action, arising out
 of or in connection with the use or performance of this software.
-****************************************************************/
+*******************************************************************/
 
 #include "nlp.h"
 #include "opcode.hd"
@@ -566,7 +566,7 @@ chunkfree(LCADJ_Info *lci)
 add_indicator(int ci, LCADJ_Info *lci, expr *e)
 {
 	Lconstr *lc;
-	int compl, i, j, k, sense, vk;
+	int Compl, i, j, k, sense, vk;
 	real *LU, rhs;
 
 	if (lci->tchunks)
@@ -583,7 +583,7 @@ add_indicator(int ci, LCADJ_Info *lci, expr *e)
 		}
 	vk = lci->vk;
 	rhs = lci->rhs;
-	compl = 0;
+	Compl = 0;
 	switch(lci->b[0]) {
 	  case 0: /* > */
 		if (rhs < 0. || rhs >= 1.) {
@@ -600,18 +600,18 @@ add_indicator(int ci, LCADJ_Info *lci, expr *e)
 	  case 2: /* <= */
 		if (rhs < 0. || rhs >= 1.)
 			goto bad_cmpop;
-		compl = 1;
+		Compl = 1;
 		break;
 	  case 3: /* < */
 		if (rhs <= 0. || rhs > 1.)
 			goto bad_cmpop;
-		compl = 1;
+		Compl = 1;
 		break;
 	  case 4: /* == */
 		if (rhs == 1.)
 			break;
 		if (rhs == 0.) {
-			compl = 1;
+			Compl = 1;
 			break;
 			}
 		goto bad_cmpop;
@@ -619,12 +619,12 @@ add_indicator(int ci, LCADJ_Info *lci, expr *e)
 		if (rhs == 0.)
 			break;
 		if (rhs == 1.) {
-			compl = 1;
+			Compl = 1;
 			break;
 			}
 		goto bad_cmpop;
 	  }
-	for(j = 0; j < k; j++, compl = 1 - compl) {
+	for(j = 0; j < k; j++, Compl = 1 - Compl) {
 		for(lc = lci->lc[j]; lc; lc = lc->next) {
 			LU = lc->LU;
 			if (LU[0] > negInfinity) {
@@ -635,14 +635,14 @@ add_indicator(int ci, LCADJ_Info *lci, expr *e)
 				rhs = LU[1];
 				sense = 0;
 				}
-			if ((i = lci->add_indic(lci->v, vk, compl, sense, lc->nx,
+			if ((i = lci->add_indic(lci->v, vk, Compl, sense, lc->nx,
 					lc->z, lc->x, rhs))) {
  badret:
 				lci->errinfo[0] = i;
 				return 3;
 				}
 			if (sense == 1 && LU[1] < Infinity
-			 && (i = lci->add_indic(lci->v, vk, compl, sense, lc->nx,
+			 && (i = lci->add_indic(lci->v, vk, Compl, sense, lc->nx,
 					lc->z, lc->x, rhs)))
 				goto badret;
 			}

@@ -1,26 +1,20 @@
-/****************************************************************
-Copyright (C) 1997, 1998, 2000, 2001 Lucent Technologies
-All Rights Reserved
+/*******************************************************************
+Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
 
-Permission to use, copy, modify, and distribute this software and
-its documentation for any purpose and without fee is hereby
-granted, provided that the above copyright notice appear in all
-copies and that both that the copyright notice and this
-permission notice and warranty disclaimer appear in supporting
-documentation, and that the name of Lucent or any of its entities
-not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior
-permission.
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
+provided that the above copyright notice appear in all copies and that
+both that the copyright notice and this permission notice and warranty
+disclaimer appear in supporting documentation.
 
-LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
-IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
-SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
-IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
-ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
-THIS SOFTWARE.
-****************************************************************/
+The author and AMPL Optimization, Inc. disclaim all warranties with
+regard to this software, including all implied warranties of
+merchantability and fitness.  In no event shall the author be liable
+for any special, indirect or consequential damages or any damages
+whatsoever resulting from loss of use, data or profits, whether in an
+action of contract, negligence or other tortious action, arising out
+of or in connection with the use or performance of this software.
+*******************************************************************/
 
 #include "jacpdim.h"
 
@@ -46,6 +40,7 @@ hv_fwd(expr *e)
 
 		case Hv_timesLR:
 		case Hv_binaryLR:
+		case Hv_divLR:
 			e->dO.r = e->L.e->dO.r*e->dL + e->R.e->dO.r*e->dR;
 			break;
 
@@ -205,6 +200,18 @@ hv_back(expr *e)
 			e2->adO += adO * e->dR;
 			break;
 
+		case Hv_divLR:
+			e1 = e->L.e;
+			e2 = e->R.e;
+			adO = e->adO;
+			t1 = adO * e1->dO.r;
+			t2 = adO * e2->dO.r;
+			e1->aO  += e->aO*e->dL + t2*e->dLR;
+			e2->aO  += e->aO*e->dR + t1*e->dLR + t2*e->dR2;
+			e1->adO += adO * e->dL;
+			e2->adO += adO * e->dR;
+			break;
+
 		case Hv_unary:
 			e1 = e->L.e;
 			e1->adO += e->adO * e->dL;
@@ -221,8 +228,8 @@ hv_back(expr *e)
 			else {
 				e1 = ((expr_va *)e)->val;
 				if (e1->op != f_OPNUM) {
-					e1->aO = e->aO;
-					e1->adO = e->adO;
+					e1->aO += e->aO;
+					e1->adO += e->adO;
 					}
 				}
 			break;
@@ -318,6 +325,8 @@ hv_fwd0(ASL_pfgh *asl, cexp *c, expr_v *v)
 {
 	expr_v **vp, **vpe;
 	hes_fun *hf;
+	int i;
+	linarg *la;
 	linpart *L, *Le;
 	ograd *og;
 	real *g, x;
@@ -344,9 +353,15 @@ hv_fwd0(ASL_pfgh *asl, cexp *c, expr_v *v)
 		x = c->e->dO.r;
 	else
 		x = 0;
-	if ((L = c->L))
+	if ((la = c->la)) {
+		i = c - asl->I.cexps2_;
+		x += asl->P.dv[i].scale * la->v->dO.r;
+		}
+
+	else if ((L = c->L)) {
 		for(Le = L + c->nlin; L < Le; L++)
 			x += L->fac * ((expr_v*)L->v.vp)->dO.r;
+		}
 	v->dO.r = x;
 	}
 
@@ -372,7 +387,7 @@ hfg_back(expr *e)
 	expr *e1, **ep;
 	real aO;
 
-	if (!e || (!e->aO && !e->adO))
+	if (!e || !e->aO)
 		return;
 	for(; e; e = e->bak)
 	    switch(e->a) {
@@ -383,6 +398,7 @@ hfg_back(expr *e)
 
 		case Hv_binaryLR:
 		case Hv_timesLR:
+		case Hv_divLR:
 			aO = e->aO;
 			e->L.e->aO += aO * e->dL;
 			e->R.e->aO += aO * e->dR;
@@ -402,7 +418,7 @@ hfg_back(expr *e)
 			else {
 				e1 = ((expr_va *)e)->val;
 				if (e1->op != f_OPNUM)
-					e1->aO = e->aO;
+					e1->aO += e->aO;
 				}
 			break;
 
@@ -540,7 +556,6 @@ hvp0comp_ASL(ASL_pfgh *asl, real *hv, real *p, int nobj, real *ow, real *y)
 	c1 = ce = 0;
 	dvsp0 = 0;
 	i1 = 0;
-	v = 0;
 #endif
 
 	if (x0kind & ASL_need_funnel)
@@ -703,7 +718,7 @@ hvp0comp_ASL(ASL_pfgh *asl, real *hv, real *p, int nobj, real *ow, real *y)
 			}
 		else if ((e = ce->e)->op != f_OPNUM) {
 			e->aO = t;
-			e->adO = v->adO;
+			e->adO = x->adO;
 			}
 		}
 	    }
@@ -750,6 +765,7 @@ hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 {
 	ASL_pfgh *asl;
 	Ihinfo *ihi;
+	expr_v *v;
 	int kp, kw, n, no, noe, ns, nv, *ui, *uie;
 	linarg *la, **lap, **lape;
 	ograd *og;
@@ -782,6 +798,15 @@ hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 		}
 	asl->P.nhvprod++;
 	memset(hv, 0, nv*sizeof(real));
+	for(la = asl->P.lalist; la; la = la->lnext) {
+		og = la->nz;
+		t = p[og->varno]*og->coef;
+		while((og = og->next))
+			t += p[og->varno]*og->coef;
+		v = la->v;
+		v->dO.r = t;
+		v->aO = v->adO = 0;
+		}
 	kw = kp + 1;
 	w = (real*)new_mblk(kw);
 	x = w + n_var;
@@ -903,6 +928,13 @@ hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 					while((og = og->next));
 				}
 		}
+	v = var_e;
+	for(la = asl->P.lalist; la; la = la->lnext)
+		if ((t = la->v->aO)) {
+			og = la->nz;
+			do v[og->varno].aO += t*og->coef;
+				while((og = og->next));
+			}
  done:
 	if (p0) {
 		del_mblk(kp, p0);
@@ -996,9 +1028,14 @@ pshv_prod_ASL(ASL_pfgh *asl, range *r, int nobj, real *ow, real *y)
 		i = *--cei;
 		c = cexps + i;
 		v = asl->P.vp[i];
-		if ((t = v->aO) && (L = c->L))
-		    for(Le = L + c->nlin; L < Le; L++)
-			((expr_v*)L->v.vp)->aO += t * L->fac;
+		if ((t = v->aO) && (L = c->L)) {
+		    if ((la = c->la))
+			la->v->aO += t * asl->P.dv[i].scale;
+		    else {
+			for(Le = L + c->nlin; L < Le; L++)
+				((expr_v*)L->v.vp)->aO += t * L->fac;
+			}
+		    }
 		if (c->hfun)
 			funnel_back(asl, c, v, t);
 		else if ((e = c->ee)) {
@@ -1068,6 +1105,7 @@ hvpcompd_ASL(ASL *a, real *hv, real *p, int co)
 	if (x0kind == ASL_first_x) {
 		if (!(s = X0))
 			memset(s = Lastx, 0, n_var*sizeof(real));
+		co_index = co;
 		xp_check_ASL(asl, s);
 		}
 	nx = asl->i.nxval;
@@ -1235,7 +1273,7 @@ hvpcompd_ASL(ASL *a, real *hv, real *p, int co)
 			}
 		else if ((e = ce->e)->op != f_OPNUM) {
 			e->aO = t;
-			e->adO = v->adO;
+			e->adO = x->adO;
 			}
 		}
 	    }
@@ -1317,6 +1355,7 @@ hvpcomps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 	if (x0kind == ASL_first_x) {
 		if (!(s = X0))
 			memset(s = Lastx, 0, n_var*sizeof(real));
+		co_index = co;
 		xp_check_ASL(asl, s);
 		}
 	nx = asl->i.nxval;
@@ -1484,7 +1523,7 @@ hvpcomps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 			}
 		else if ((e = ce->e)->op != f_OPNUM) {
 			e->aO = t;
-			e->adO = v->adO;
+			e->adO = x->adO;
 			}
 		}
 	    }

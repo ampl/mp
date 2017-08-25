@@ -1,26 +1,20 @@
-/****************************************************************
-Copyright (C) 1997-2001 Lucent Technologies
-All Rights Reserved
+/*******************************************************************
+Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
 
-Permission to use, copy, modify, and distribute this software and
-its documentation for any purpose and without fee is hereby
-granted, provided that the above copyright notice appear in all
-copies and that both that the copyright notice and this
-permission notice and warranty disclaimer appear in supporting
-documentation, and that the name of Lucent or any of its entities
-not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior
-permission.
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
+provided that the above copyright notice appear in all copies and that
+both that the copyright notice and this permission notice and warranty
+disclaimer appear in supporting documentation.
 
-LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
-IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
-SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
-IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
-ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
-THIS SOFTWARE.
-****************************************************************/
+The author and AMPL Optimization, Inc. disclaim all warranties with
+regard to this software, including all implied warranties of
+merchantability and fitness.  In no event shall the author be liable
+for any special, indirect or consequential damages or any damages
+whatsoever resulting from loss of use, data or profits, whether in an
+action of contract, negligence or other tortious action, arising out
+of or in connection with the use or performance of this software.
+*******************************************************************/
 
 #ifdef DEBUG
 #include "assert.h"
@@ -295,7 +289,7 @@ ed_reset(ASLTYPE *asl)
  static ograd *ogzork;
  static expr *ezork;
  static EU *enzork;
- static int dzork1, dzork2, izork = -1;
+ static int dzork1, dzork2, exprzork, exprzork1, izork = -1;
 #endif
 
  static Elemtemp *
@@ -477,6 +471,10 @@ new_expr(Static *S, int o, expr *L, expr *R)
 {
 	expr *rv;
 
+#ifdef DEBUG
+	if (++exprzork1 == exprzork)
+		printf("exprzork1 = %d\n", exprzork1);;
+#endif
 	if ((rv = expr_free))
 		expr_free = rv->L.e;
 	else
@@ -489,8 +487,11 @@ new_expr(Static *S, int o, expr *L, expr *R)
 				R = 0;
 				PSHV(rv->dL2 = 2);
 				}
-			else
+			else {
 				o = f_OP1POW;
+				rv->dR = ((expr_n *)R)->v;
+				/* rv->R.e may be used for a back pointer */
+				}
 			}
 		else if (Intcast L->op == f_OPNUM)
 			o = f_OPCPOW;
@@ -498,6 +499,7 @@ new_expr(Static *S, int o, expr *L, expr *R)
 	rv->op = (efunc *)(size_t)o;
 	rv->L.e = L;
 	rv->R.e = R;
+	rv->a = 0;
 #ifdef DEBUG
 	if (rv == ezork)
 		printf("");
@@ -534,6 +536,7 @@ dexpr(Static *S, expr *e, expr *L, expr *R)
 				case PLUS:	i = Hv_plusLR;	break;
 				case MINUS:	i = Hv_minusLR;	break;
 				case MULT:	i = Hv_timesLR;	break;
+				case DIV:	i = Hv_divLR;	break;
 				default:	i = Hv_binaryLR;
 				}
 		    else switch(opcode) {
@@ -1547,9 +1550,6 @@ awalk(Static *S, expr *e)		/* return 0 if e is not linear */
 
 		case 5: /* if */
 			rvif = (expr_if *)e;
-			afree(S, awalk(S,rvif->e), &rvif->e);
-			/* The above may introduce "range" rows that */
-			/* are not involved in any derivatives... */
 			afree(S, awalk(S,rvif->T), &rvif->T);
 			afree(S, awalk(S,rvif->F), &rvif->F);
 			break;
@@ -1644,9 +1644,6 @@ awalk(Static *S, expr *e)		/* return 0 if e is not linear */
 			return new_ograd(S, 0, k, 1.);
 
 		case 11: /* OPCOUNT */
-			args = e->L.ep;
-			for(argse = e->R.ep; args < argse; args++)
-				afree(S, awalk(S, *args), args);
 			break;
 
 		default:
@@ -1996,7 +1993,7 @@ dvwalk(Static *S, int i)
 		dvi->nl = 0;
 		return;
 		}
-	if ((dvi->lt = afree(S, og, 0)))
+	if ((c->la = dvi->lt = afree(S, og, 0)))
 		dvi->scale = lt_scale;
 	for(n = 1, tl = tlist; tl; tl = tl->tnext)
 		n++;
@@ -3421,11 +3418,12 @@ linpt_read(EdRead *R, int nlin)
  static int
 funnelkind(Static *S, int i0, int *ip)
 {
-	cexp *ce, *cej;
+	cexp *ce, *cej, *ce2;
 	dv_info *dvi;
 	int i, j, k, k1, k2, nzc0, rv;
 	int *vr, *vre;
 	linarg *la, **lap, **lape;
+	linpart *L, *Le;
 	list *tl;
 	range *r;
 	ASLTYPE *asl = S->asl;
@@ -3438,6 +3436,7 @@ funnelkind(Static *S, int i0, int *ip)
 	dvi = asl->P.dv;
 	if (i0 >= Ncom || !dvi[i0].nl)
 		dvi = 0;
+	ce2 = 0; /* used to get funnelkind 2 right in rare cases */
 	for(i = k = 0; i < nzc; i++)
 		if ((j = zci[i]) < nv0x) {
 			if (k >= maxfwd) {
@@ -3449,10 +3448,17 @@ funnelkind(Static *S, int i0, int *ip)
 		else  {
 			cej = cexps + (j -= nv0x);
 			if (!(vr = cej->vref)) {
-				if (dvi && j < Ncom && dvi[j].ll)
-					for(tl = cej->cref; tl; tl = tl->next)
+				if (dvi && j < Ncom && (tl = cej->cref)) {
+				    if (dvi[j].ll) {
+					for(; tl; tl = tl->next)
 					    if (!zc[tl->item.i]++)
 						zci[nzc++] = tl->item.i;
+					}
+				    else {
+					cej->vref = (int*)ce2;
+					ce2 = cej;
+					}
+				    }
 				continue;
 				}
 			if (!*++vr) {
@@ -3487,6 +3493,8 @@ funnelkind(Static *S, int i0, int *ip)
 	else
 		while(i < k1)
 			*vr++ = zci[i++];
+	while(nzc > nzc0)
+		zc[zci[--nzc]] = 0;
 	if (!nocopy) {
 		k1 = 0;
 		if (i0 < Ncom) {
@@ -3505,16 +3513,54 @@ funnelkind(Static *S, int i0, int *ip)
 			}
 		if (k) {
 			if (nderp > 3*(k+k1)) {
+				if (!ce2)
+					goto ret2;
+				while((cej = ce2)) {
+					ce2 = (cexp*)cej->vref;
+					cej->vref = 0;
+					for(tl = cej->cref; tl; tl = tl->next)
+						if (!zc[tl->item.i]++)
+							zci[nzc++] = tl->item.i;
+					}
+				for(i = k = 0; i < nzc; i++) {
+					if ((j = zci[i]) < nv0x) {
+						vrefx[k++] = j;
+						continue;
+						}
+					cej = cexps + (j -= nv0x);
+					if ((vr = cej->vref)) {
+						if (*++vr) {
+							for(vre = vr + *vr; ++vr < vre; )
+								if (!zc[*vr]++)
+									zci[nzc++] = *vr;
+							}
+						}
+					if (j < Ncom) {
+						for(tl = cej->cref; tl; tl = tl->next)
+							if (!zc[tl->item.i]++)
+								zci[nzc++] = tl->item.i;
+						}
+					if ((L = cej->L)) {
+						for(Le = L + cej->nlin; L < Le; ++L)
+							if (!zc[L->v.i]++)
+								zci[nzc++] = L->v.i;
+						}
+					}
+				while(nzc > nzc0)
+					zc[zci[--nzc]] = 0;
+ ret2:
 				*ip = k;
 				return 2;
 				}
 			}
 		}
+	while((cej = ce2)) {
+		ce2 = (cexp*)cej->vref;
+		cej->vref = 0;
+		}
 	rv = 0;
 	if (nocopy || nderp > 3*(nzc0+k1))
 		rv = 1;
-	while(nzc > nzc0)
-		zc[zci[--nzc]] = 0;
 	return rv;
 	}
 
@@ -3590,12 +3636,13 @@ cexp_walk(Static *S, int k)
 	ewalk(S, e, 1);
 	PSHV(ce->ee = last_e;)
 	ka = k + nv0x;
-	if ((ce->zlen = lasta - la0))
+	if ((na = lasta - la0))
 		ce->z.i = la0;
 	else {
 		ce->z.i = k < Ncom ? ka : ((expr_vx*)varp[k-Ncom])->a0;
-		ce->zlen = 1;
+		na = 1;
 		}
+	ce->zlen = na;
 	j = ap ? *ap : ka;
 	if (nlin) {
 		if (nlin == 1)
@@ -3625,8 +3672,7 @@ cexp_walk(Static *S, int k)
 			for(i = nzc; --i >= 0; )
 				if ((j = zci[i]) >= nv0x && j < max_var1)
 					imap[varp[j-nv0x]->a] = a++;
-			if ((na = ce->zlen) || a > lasta00)
-				na += a - nv1;
+			na += a - nv1;
 			f->fcde.zaplen = na*sizeof(real);
 			i = nzc;
 			derpadjust(S, last_d, a, 0);
@@ -3634,7 +3680,7 @@ cexp_walk(Static *S, int k)
 		else {
 			f->fulld = 0;
 			f->fcde.e = e;
-			comsubs(S, ce->zlen, &f->fcde);
+			comsubs(S, na, &f->fcde);
 			memcpy(zci, vrefx, i*sizeof(int));
 			}
 		last_d = 0;
@@ -4648,10 +4694,13 @@ heswork(expr *e)
 			n += 10;
 			break;
 
+		case Hv_divLR:
+			n += 13;
+			break;
+
 		case Hv_binaryLR:
 			n += 14;
 			break;
-
 
 		case Hv_vararg:
 			d = ((expr_va*)e)->L.d;
@@ -4713,15 +4762,25 @@ hesfunnel(Static *S, int *ip, int nrefs, ograd **ogp, linarg ***lapp, linarg ***
 	linarg *la, **lap, **lape;
 	ograd *og;
 	dv_info *dvi;
-	list *L;
+	/*list *L;*//*20170615*/
 	range *r;
+	split_ce *cs; /*20170615*/
 	ASLTYPE *asl = S->asl;
 
 	i = *ip;
 	c = cexps + i;
+#if 1 /*20170615*/
+	if (c->cref)
+		return 0;
+#endif
 	n = 0;
 	if (i >= Ncom) {
-		r = asl->P.Split_ce[i-Ncom].r;
+		cs = &asl->P.Split_ce[i-Ncom];
+#if 1 /*20170615*/
+		if (cs->ce)
+			return 0;
+#endif
+		r = cs->r;
 		lap = r->lap;
 		lape = lap + (n = r->n);
 		}
@@ -4760,8 +4819,10 @@ hesfunnel(Static *S, int *ip, int nrefs, ograd **ogp, linarg ***lapp, linarg ***
 	m = nzc;
 	while(nzc > 0)
 		zc[zci[--nzc]] = 0;
+#if 0 /*20170615*/
 	for(L = c->cref; L; L = L->next)
 		n++;
+#endif
 	if (m > n)
 		m = n;
 	if ((k = m*nrefs - n) <= 0)

@@ -93,7 +93,7 @@ f_OPREM(expr *e A_ASL)
 {
 	U rv;
 	expr *e1;
-	real L, R;
+	real L, R, t;
 
 	/* e->dL = 1.; */
 	e1 = e->L.e;
@@ -103,6 +103,10 @@ f_OPREM(expr *e A_ASL)
 	rv.d = fmod(L,R);
 	if (errchk(rv))
 		introuble2("fmod",L,R,1);
+	else if (want_deriv) {
+		t = L / R;
+		e->dR = t > 0. ? -floor(t) : -ceil(t);
+		}
 	return rv.d;
 	}
 
@@ -963,16 +967,15 @@ Round(real x, int prec)
  static real
 Round(real x, int prec)
 {
-	char *b, *s, *s0, *se;
+	char *b, *s, sbuf[400], *se;
 	char buf[96];
 	int decpt, L, sign;
 
 	if (!x)
 		return x;
-	s = dtoa(x, 3, prec, &decpt, &sign, &se);
+	s = dtoa_r(x, 3, prec, &decpt, &sign, &se, sbuf, sizeof(sbuf));
 	if (decpt == 9999) {
  zreturn:
-		freedtoa(s);
 		return x;
 		}
 	L = se - s;
@@ -982,7 +985,6 @@ Round(real x, int prec)
 		}
 	if (L > 80)
 		se = s + 80;
-	s0 = s;
 	b = buf;
 	if (sign)
 	*b++ = '-';
@@ -990,7 +992,6 @@ Round(real x, int prec)
 	while(s < se)
 		*b++ = *s++;
 	*b = 0;
-	freedtoa(s0);
 	if (decpt)
 		snprintf(b, buf + sizeof(buf) - b, "e%d", decpt);
 	return strtod(buf, (char **)0);

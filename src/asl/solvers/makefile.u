@@ -235,7 +235,7 @@ arith.h: arithchk.c fpinit.c
 	$(CC) $(CFLAGS) arithchk.c fpinit.o -lm ||\
 	 $(CC) -DNO_LONG_LONG $(CFLAGS) arithchk.c fpinit.o -lm ||\
 	 $(CC) -DNO_SSIZE_T $(CFLAGS) arithchk.c fpinit.o -lm ||\
-	 $(CC) -DNO_SSIZE_T -DNO_SSIZE_T $(CFLAGS) arithchk.c fpinit.o -lm
+	 $(CC) -DNO_LONG_LONG -DNO_SSIZE_T $(CFLAGS) arithchk.c fpinit.o -lm
 	./a.out >arith.h
 	rm -f a.out arithchk.o fpinit.o
 

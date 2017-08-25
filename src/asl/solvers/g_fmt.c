@@ -39,11 +39,7 @@ THIS SOFTWARE.
  int g_fmt_decpt;
 
  int
-#ifdef KR_headers
-g_fmtp(b, x, prec) register char *b; double x; int prec;
-#else
-g_fmtp(register char *b, double x, int prec)
-#endif
+g_fmtp(char *b, double x, int prec)
 {
 	char *b0 = b;
 #ifdef No_dtoa
@@ -54,10 +50,8 @@ g_fmtp(register char *b, double x, int prec)
 	while(*b)
 		b++;
 #else
-	register int i, k;
-	register char *s;
-	int decpt, j, sign;
-	char *s0, *se;
+	int decpt, i, j, k, sign;
+	char *s, sbuf[400], *se;
 
 	if (!x) {
 		*b++ = '0';
@@ -73,13 +67,13 @@ g_fmtp(register char *b, double x, int prec)
 			}
 		goto done;
 		}
-	s = s0 = dtoa(x, prec ? 2 : 0, prec, &decpt, &sign, &se);
+	s = dtoa_r(x, prec ? 2 : 0, prec, &decpt, &sign, &se, sbuf, sizeof(sbuf));
 	if (sign)
 		*b++ = '-';
 	if (decpt == 9999) /* Infinity or Nan */ {
 		while((*b = *s++))
 			b++;
-		goto done0;
+		goto done;
 		}
 	if (decpt <= -4 || decpt > se - s + 5 || g_fmt_decpt == 2) {
 		*b++ = *s++;
@@ -127,8 +121,6 @@ g_fmtp(register char *b, double x, int prec)
 				*b++ = '.';
 			}
 		}
- done0:
-	freedtoa(s0);
  done:
 	*b = 0;
 #endif
@@ -136,24 +128,13 @@ g_fmtp(register char *b, double x, int prec)
 	}
 
  int
-#ifdef KR_headers
-g_fmt(b, x) register char *b; double x;
-#else
-g_fmt(register char *b, double x)
-#endif
+g_fmt(char *b, double x)
 { return g_fmtp(b, x, 0); }
 
-#ifdef KR_headers
- extern int obj_prec();
-
- int
-g_fmtop(b, x) register char *b; double x;
-#else
  extern int obj_prec(void);
 
  int
-g_fmtop(register char *b, double x)
-#endif
+g_fmtop(char *b, double x)
 {
 	return g_fmtp(b, x, obj_prec());
 	}

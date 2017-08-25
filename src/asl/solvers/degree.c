@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2015 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -54,6 +54,8 @@ Dhelp {
  static int
 kind(expr *e, Dhelp *h)
 {
+	cexp *c0;
+	cexp1 *c1;
 	expr **ep, **epe;
 	int i, j;
 
@@ -116,10 +118,16 @@ kind(expr *e, Dhelp *h)
 		if ((i -= h->nv) < 0)
 			return 1;
 		if ((j = h->vk[i]) == -2) {
-			if (i >= h->nc0)
-				j = kind(h->c1[i-h->nc0].e, h);
-			else
-				j = kind(h->c0[i].e, h);
+			if (i >= h->nc0) {
+				c1 = &h->c1[i-h->nc0];
+				if (!(j = kind(c1->e, h)) && c1->nlin)
+					j = 1;
+				}
+			else {
+				c0 = &h->c0[i];
+				if (!(j = kind(c0->e, h)) && c0->nlin)
+					j = 1;
+				}
 			h->vk[i] = j;
 			}
 		return j;
@@ -134,7 +142,9 @@ degree_ASL(ASL *a, int co, void **pv)
 	Dhelp h;
 	Objrep *od, **pod;
 	cde *c;
+	cgrad *cg;
 	int *cm, i, ncom, rv;
+	ograd *og;
 
 	ASL_CHECK(a, ASL_read_fg, "degree");
 	asl = (ASL_fg*)a;
@@ -161,8 +171,9 @@ degree_ASL(ASL *a, int co, void **pv)
 			co = od->ico;
 			goto use_Cgrad;
 			}
-		else
-			c = obj_de + co;
+		c = obj_de + co;
+		og = Ograd[co];
+		cg = 0;
 		}
 	else {
 		co = -1 - co;
@@ -170,11 +181,30 @@ degree_ASL(ASL *a, int co, void **pv)
 			co = cm[co];
  use_Cgrad:
 		c = con_de + co;
+		cg = Cgrad[co];
+		og = 0;
 		}
 	rv = kind(c->e, &h);
 	if (h.vk && !pv)
 		free(h.vk);
 	if (rv > 3)
 		rv = 3;
+	else if (rv == 0) {
+		while(og) {
+			if (og->coef) {
+				rv = 1;
+				goto ret;
+				}
+			og = og->next;
+			}
+		while(cg) {
+			if (cg->coef) {
+				rv = 1;
+				goto ret;
+				}
+			cg = cg->next;
+			}
+		}
+ ret:
 	return rv;
 	}

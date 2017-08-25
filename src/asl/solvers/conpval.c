@@ -1,26 +1,20 @@
-/****************************************************************
-Copyright (C) 1997-2001 Lucent Technologies
-All Rights Reserved
+/*******************************************************************
+Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
 
-Permission to use, copy, modify, and distribute this software and
-its documentation for any purpose and without fee is hereby
-granted, provided that the above copyright notice appear in all
-copies and that both that the copyright notice and this
-permission notice and warranty disclaimer appear in supporting
-documentation, and that the name of Lucent or any of its entities
-not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior
-permission.
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
+provided that the above copyright notice appear in all copies and that
+both that the copyright notice and this permission notice and warranty
+disclaimer appear in supporting documentation.
 
-LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
-IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
-SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
-IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
-ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
-THIS SOFTWARE.
-****************************************************************/
+The author and AMPL Optimization, Inc. disclaim all warranties with
+regard to this software, including all implied warranties of
+merchantability and fitness.  In no event shall the author be liable
+for any special, indirect or consequential damages or any damages
+whatsoever resulting from loss of use, data or profits, whether in an
+action of contract, negligence or other tortious action, arising out
+of or in connection with the use or performance of this software.
+*******************************************************************/
 
 #include "jacpdim.h"
 
@@ -221,11 +215,13 @@ conpval_ASL(ASL *a, real *X, real *F, fint *nerror)
 		}
 	want_deriv = want_derivs;
 	errno = 0;	/* in case f77 set errno opening files */
-	if (!asl->i.x_known)
-		xp_check_ASL(asl, X);
-	x0kind |= ASL_have_conval;
 	je = n_conjac[1];
 	j = n_conjac[0];
+	if (!asl->i.x_known) {
+		co_index = j;
+		xp_check_ASL(asl, X);
+		}
+	x0kind |= ASL_have_conval;
 	if (!(gr0 = asl->i.Cgrad0))
 		asl->i.Cgrad0 = gr0 = asl->i.Cgrad_;
 	p0 = asl->P.cps;
@@ -320,6 +316,7 @@ jacpval_ASL(ASL *a, real *X, real *G, fint *nerror)
 			return;
 		}
 	errno = 0;	/* in case f77 set errno opening files */
+	co_index = j = n_conjac[0];
 	if ((!asl->i.x_known && xp_check_ASL(asl,X))
 	 || !(x0kind & ASL_have_conval)) {
 		xksave = asl->i.x_known;
@@ -337,7 +334,6 @@ jacpval_ASL(ASL *a, real *X, real *G, fint *nerror)
 	vmi = 0;
 	if (asl->i.vmap)
 		vmi = get_vminv_ASL(a);
-	j = n_conjac[0];
 	k = n_conjac[1];
 	if (asl->i.Derrs)
 		deriv_errchk_ASL(a, nerror, j, k-j);
@@ -447,9 +443,9 @@ objpval_ASL(ASL *a, int i, real *X, fint *nerror)
 		}
 	want_deriv = want_derivs;
 	errno = 0;	/* in case f77 set errno opening files */
+	co_index = -(i + 1);
 	if (!asl->i.x_known)
 		xp_check_ASL(asl,X);
-	co_index = -(i + 1);
 	p = asl->P.ops + i;
 	if (p->nb) {
 		f = copeval(p C_ASL);
@@ -524,6 +520,7 @@ objpgrd_ASL(ASL *a, int i, real *X, real *G, fint *nerror)
 			return;
 		}
 	errno = 0;	/* in case f77 set errno opening files */
+	co_index = -(i + 1);
 	if (!asl->i.x_known)
 		xp_check_ASL(asl,X);
 	if (!asl->i.noxval || asl->i.noxval[i] != asl->i.nxval) {
@@ -617,9 +614,9 @@ cpval(ASL_pfgh *asl, int i, real *X, fint *nerror)
 		}
 	want_deriv = want_derivs;
 	errno = 0;	/* in case f77 set errno opening files */
+	co_index = i;
 	if (!asl->i.x_known)
 		xp_check_ASL(asl, X);
-	co_index = i;
 	asl->i.ncxval[i] = asl->i.nxval;
 	if (i >= (nc = asl->i.n_con0)) {
 		e = lcon_de[i-nc].e;
@@ -737,8 +734,10 @@ Congrdp(ASL_pfgh *asl, int i, real *X, real *G, fint *nerror)
 			return;
 		}
 	errno = 0;	/* in case f77 set errno opening files */
-	if (!asl->i.x_known)
+	if (!asl->i.x_known) {
+		co_index = i;
 		xp_check_ASL(asl, X);
+		}
 	if ((!asl->i.ncxval || asl->i.ncxval[i] != asl->i.nxval)
 	 && (!(x0kind & ASL_have_conval)
 	     || i < n_conjac[0] || i >= n_conjac[1])) {
@@ -870,7 +869,7 @@ conpgrd_ASL(ASL *a, int i, real *X, real *G, fint *nerror)
 xpsgchk(ASL_pfgh *asl, ps_func *f0, int *xv, int n, int nx,
 	real (*ev)(ASL *a, int i, real *X, fint *nerror),
 	void (*gv)(ASL *a, int i, real *X, real *G, fint *nerror),
-	real *y, int oxk)
+	real *y, int oxk, int isobj)
 {
 	int i, i1, i2;
 	ps_func *f;
@@ -894,7 +893,7 @@ xpsgchk(ASL_pfgh *asl, ps_func *f0, int *xv, int n, int nx,
 			if (y[i]) {
 				while(i1 <= i2 && y[i1])
 					++i1;
-				deriv_errchk_ASL((ASL*)asl, 0, i, i1-i);
+				deriv_errchk_ASL((ASL*)asl, 0, isobj ? -(i+1) : i, i1-i);
 				}
 			}
 		asl->i.x_known = 1;
@@ -908,14 +907,38 @@ xpsg_check_ASL(ASL_pfgh *asl, int nobj, real *ow, real *y)
 	ps_func *f;
 	real t, *x;
 
+	nc = nlc;
+	no = nlo;
 	if (x0kind == ASL_first_x) {
 		if (!(x = X0))
 			memset(x = Lastx, 0, n_var*sizeof(real));
+		if (y) {
+			for(i = 0; i < nc; ++i) {
+				if (y[i]) {
+					co_index = i;
+					goto chk;
+					}
+				}
+			}
+		if (ow) {
+			for(i = 0; i < no; ++i) {
+				if (ow[i]) {
+					co_index = -(i+1);
+					goto chk;
+					}
+				}
+			}
+		if (nobj >= 0 && nobj < no)
+			co_index = -(nobj + 1);
+		else if (no)
+			co_index = -1;
+		else
+			co_index = 0;
+ chk:
 		xp_check_ASL(asl, x);
 		}
-	nc = nlc;
 	tno = -1;
-	if (!(no = nlo)) {
+	if (!no) {
 		if (!nc)
 			return;
 		ow = 0;
@@ -931,7 +954,7 @@ xpsg_check_ASL(ASL_pfgh *asl, int nobj, real *ow, real *y)
 				}
 			}
 		}
-	else if (nobj >= 0 && nobj < nlo)
+	else if (nobj >= 0 && nobj < no)
 		tno = nobj;
 	if (!(x = asl->P.oyow))
 		asl->P.oyow = x = (real*)M1alloc((nc + no)*sizeof(real));
@@ -980,7 +1003,7 @@ xpsg_check_ASL(ASL_pfgh *asl, int nobj, real *ow, real *y)
 	asl->i.x_known = 1;
 	if (y)
 		xpsgchk(asl, asl->P.cps, asl->i.ncxval, nc,
-			nx, conpival_ASL, conpgrd_ASL, y, oxk);
+			nx, conpival_ASL, conpgrd_ASL, y, oxk, 0);
 	f = asl->P.ops;
 	xv = asl->i.noxval;
 	if (nobj >= 0 && nobj < n_obj) {
@@ -1001,7 +1024,7 @@ xpsg_check_ASL(ASL_pfgh *asl, int nobj, real *ow, real *y)
 		}
 	else if (ow && no)
 		xpsgchk(asl, f, xv, no,
-			nx, objpval_ASL, objpgrd_ASL, ow, oxk);
+			nx, objpval_ASL, objpgrd_ASL, ow, oxk, 1);
  done:
 	asl->i.x_known = oxk;
 	return;

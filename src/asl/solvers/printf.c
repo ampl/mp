@@ -73,8 +73,7 @@ THIS SOFTWARE.
 extern "C" {
 #endif
 
- extern char *dtoa ANSI((double, int, int, int*, int*, char **));
- extern void freedtoa ANSI((char*));
+ extern char *dtoa_r ANSI((double, int, int, int*, int*, char **, char*, size_t));
 
 
 
@@ -271,7 +270,7 @@ lcstrcmp(const char *a, const char *b)
 	for(;;) {
 		if ((c = *a++) >= 'A' && c <= 'Z')
 			c += 'a' - 'A';
-		if ((d = c - *b++))
+		if (d = c - *b++)
 			return d;
 		if (!c)
 			break;
@@ -295,8 +294,7 @@ valid_param(char *t, int ekeep)
 	switch(*t) {
 	 case '0':
 		if ((t[1] == 'x' || t[1] == 'X')) {
-                        if (!strtod(t,&se))
-                          ; /* Ignore return value. */
+			strtod(t,&se);
 			return *se == 0;
 			}
 		break;
@@ -333,16 +331,17 @@ valid_param(char *t, int ekeep)
 	}
 #undef D
 
+
  void
 qt_init(void)
 {
 	int n1;
 	const char *t;
-	for(t = "\"'\n.+-_"; *t; t++)
+	for(t = "\"'\n.+-_"; *t; ++t)
 		qtype[(int)*t] = *t;
-	for(n1 = 'A'; n1 <= 'Z'; n1++)
+	for(n1 = 'A'; n1 <= 'Z'; ++n1)
 		qtype[n1] = qtype[n1+'a'-'A'] = 1;
-	for(n1 = '0'; n1 <= '9'; n1++)
+	for(n1 = '0'; n1 <= '9'; ++n1)
 		qtype[n1] = 2;
 	}
 
@@ -350,7 +349,7 @@ qt_init(void)
 qkind(char *s, int prec, int *quote, int *widthp)
 {
 	int n0, n1, n2, ne;
-	char *s0;
+	char *s0, *se;
 
 	if (!*s)
 		goto quote_it;
@@ -358,13 +357,16 @@ qkind(char *s, int prec, int *quote, int *widthp)
 		qt_init();
 	n0 = n1 = n2 = ne = 0;
 	s0 = s;
-	while(prec-- > 0)
-		switch(qtype[*(unsigned char *)s++]) {
+	se = s + prec;
+	while(s < se) {
+		switch(qtype[*(unsigned char *)s]) {
 			case '\'': n1++; break;
 			case '"':  n2++; break;
 			case '\n': ne++; break;
 			case 0:	   n0++;
 			}
+		++s;
+		}
 	if ((ne + n1 + n2) || n0) {
 		if (n1 > n2) {
 			ne += n2;
@@ -389,9 +391,9 @@ qkind(char *s, int prec, int *quote, int *widthp)
  static int
 x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 {
-	char *digits, *ob0, *outbuf, *s, *s0, *se;
+	char *digits, *ob0, *outbuf, *s, *se;
 	Const char *fmt0;
-	char buf[32];
+	char buf[32], sbuf[400];
 	double x;
 	int alt, base, c, decpt, dot, conv, i1, k, lead0, left,
 		len, prec, prec1, psign, rv, sgn, sign, width;
@@ -687,7 +689,6 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 			case 'q':
 #endif /*QUOTIFY*/
 			case 's':
-				s0 = 0;
 				s = va_arg(ap, char*);
 				if (!s)
 					s = NullStr;
@@ -728,15 +729,13 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 					put(*s++)
 				while(--width >= 0)
 					put(' ')
-				if (s0)
-					freedtoa(s0);
 				continue;
 			case 'f':
 				if (!dot)
 					prec = 6;
 				x = va_arg(ap, double);
  infnan:
-				s = s0 = dtoa(x, 3, prec, &decpt, &sgn, &se);
+				s = dtoa_r(x, 3, prec, &decpt, &sgn, &se, sbuf, sizeof(sbuf));
 				if (decpt == 9999) {
  fmt9999:
 					dot = prec = alt = 0;
@@ -809,7 +808,6 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 					}
 				while(--width >= 0)
 					put(' ')
-				freedtoa(s0);
 				continue;
 			case 'G':
 			case 'g':
@@ -818,8 +816,8 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 				x = va_arg(ap, double);
 				if (prec < 0)
 					prec = 0;
-				s = s0 = dtoa(x, prec ? 2 : 0, prec, &decpt,
-					&sgn, &se);
+				s = dtoa_r(x, prec ? 2 : 0, prec, &decpt,
+					   &sgn, &se, sbuf, sizeof(sbuf));
 				if (decpt == 9999)
 					goto fmt9999;
 				c = se - s;
@@ -850,8 +848,8 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 				x = va_arg(ap, double);
 				if (prec < 0)
 					prec = 0;
-				s = s0 = dtoa(x, 2, prec+1, &decpt,
-					&sgn, &se);
+				s = dtoa_r(x, 2, prec+1, &decpt,
+					   &sgn, &se, sbuf, sizeof(sbuf));
 				if (decpt == 9999)
 					goto fmt9999;
  e_fmt:
@@ -910,7 +908,6 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 					}
 				while(--width >= 0)
 					put(' ')
-				freedtoa(s0);
 				continue;
 #ifndef NO_PRINTF_A_FMT
 			case 'a':
