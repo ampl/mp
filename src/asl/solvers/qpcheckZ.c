@@ -1,5 +1,5 @@
-/****************************************************************
-Copyright (C) 2013 AMPL Optimization LLC; written by David M. Gay.
+/*******************************************************************
+Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -7,14 +7,14 @@ provided that the above copyright notice appear in all copies and that
 both that the copyright notice and this permission notice and warranty
 disclaimer appear in supporting documentation.
 
-The author and AMPL Optimization LLC disclaim all warranties with
+The author and AMPL Optimization, Inc. disclaim all warranties with
 regard to this software, including all implied warranties of
 merchantability and fitness.  In no event shall the author be liable
 for any special, indirect or consequential damages or any damages
 whatsoever resulting from loss of use, data or profits, whether in an
 action of contract, negligence or other tortious action, arising out
 of or in connection with the use or performance of this software.
-****************************************************************/
+*******************************************************************/
 
 /* variant of qpcheck.c */
 
@@ -24,10 +24,12 @@ of or in connection with the use or performance of this software.
 qpcheckZ_ASL(ASL *asl, fint **rowqp, size_t **colqp, double **delsqp)
 {
 
-	int i;
+	int akind, i;
 	ssize_t rv;
 
-	ASL_CHECK(asl, ASL_read_fg, "qpcheck");
+	if ((akind = asl->i.ASLtype) != ASL_read_pfgh)
+		akind = ASL_read_fg;
+	ASL_CHECK(asl, akind, "qpcheckZ");
 	i = obj_no;
 	if (i < 0 || i >= n_obj)
 		return 0;

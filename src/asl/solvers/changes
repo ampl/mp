@@ -2916,3 +2916,35 @@ The bug did not appear in solvers2.tgz.
 20170722
   mpec_adj.c: fix a bug with ASL_cc_simplify (in the flags argument to
 .nl readers) that bit on problems with integer (or binary) variables.
+
+20170723:
+  asl.h in solvers2.tgz: add field void* dbuginfo to struct EvalWorkspace.
+
+20170801
+  solvers2.tgz: fix a bug in pfgh_read() with computing first derivatives
+for the abs() function.  The bug only bit for negative arguments.
+
+20170802
+  solvers2.tgz: fix a bug with fg_read()'s handling of the example
+	var x; minimize o: if x < 3 then 3 else if x > 6 then 6 else x;
+and (for debugging) add field stats to EvalWorkspace for accumulating
+various evaluation counts.
+
+20170803
+  solvers2.tgz: fix a glitch with obj_adj() (for the "objrep" keyword
+in various solvers) that could bite when the constraint defining the
+objective is the last constraint.
+
+20170809
+  solvers2.tgz: fix a glitch in obj_adj.c that could cause a fault.
+
+20170831
+  solvers2.tgz: degree.c: fix some bugs with use of reader pfgh_read().
+  *qpcheck*.c: allow use with reader pfgh_read().
+
+20170925
+  printf.c: have printf format %q quote ".".
+
+20171006
+  The *qpcheck*.c change of 20170831 made it to solvers2 but not
+solvers; fixed.

@@ -8,7 +8,7 @@ arithchk.c	63b0185	6532
 asl.h	2630115	41500
 asl_pfg.h	6483336	1268
 asl_pfgh.h	49b5a53	1288
-asldate.c	1c85310d	29
+asldate.c	ea742494	29
 atof.c	1fabc7d3	1747
 auxinfo.c	1a3c8690	1488
 avltree.c	10aeaa58	11346
@@ -104,13 +104,13 @@ opcode.hd	12bc8de3	1348
 opnos.hd	1a7c2f8d	78
 pfg_read.c	523a8da	97909
 pfghread.c	fd0ee460	1107
-printf.c	1cd81a84	23927
+printf.c	14c9f5ce	23958
 pshvprod.c	1a59717b	30688
 psinfo.h	2114caf	9864
 punknown.c	fa46cf10	1704
 qp_read.c	eb2d7246	3986
-qpcheck.c	16ec2d20	1782
-qpcheckZ.c	e3d6416b	1526
+qpcheck.c	1712f297	1588
+qpcheckZ.c	ea5a705c	1609
 qsortv.c	9485d56	4876
 r_op.hd	fc6da923	890
 r_opn.hd	e78c0980	412
