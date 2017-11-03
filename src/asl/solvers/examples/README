@@ -1,0 +1,150 @@
+This directory (solvers/examples) contains examples for "Hooking Your
+Solver to AMPL", a technical report that discusses how to make solvers
+work with AMPL.  Postscript for this report is
+
+	ftp://www.ampl.com/ampl/REFS/hooking.ps.gz
+	http://www.ampl.com/ampl/REFS/hooking.ps.gz
+
+Be sure to request the changes file periodically to see about bug fixes
+and other updates, or send the 2-word E-mail message
+
+	subscribe ampl
+
+to netlib@www.netlib.org to receive notification of updates.
+Please send bug reports and other comments to dmg@ampl.com .
+
+File "makefile.u" in this directory is a makefile for Unix systems.
+Variants for some PC compilers have names of the form makefile.* .
+All variants start (after legal disclaimers) with comments saying
+what compiler they are for and telling what "make" incantation to use.
+The makefile variants have rules for compiling Fortran files with f2c;
+f2cx == ftp://netlib.bell-labs.com/netlib/f2c/mdsos/f2cx.exe.gz is an
+extended-memory version of f2c.  The "rmcr" program invoked by the
+makefile variants removes \r (carriage-return) characters; you could
+make other arrangements.  It may be best to copy the relevant makefile.*
+variant to makefile and then edit the latter if necessary.
+
+
+See the comments in "makefile.u" about compiler flags and source for
+the solvers (dmngb, dn2g, dn2gb, tn, v8, ve08) used in some of the
+examples.
+
+This directory contains some files not described in "Hooking Your
+Solver to AMPL":
+
+	File		Description
+
+	diet.amp	Diet problem from AMPL book.
+	diet.nl		From "auxfiles=rc ampl -ogdiet diet.amp".
+	diet.row	"	"	"	"	"
+	diet.col	"	"	"	"	"
+	dietl1.out	From "lin1 diet >dietl1.out".
+	dietl2.out	From "lin2 diet >dietl2.out".
+	dietl3.out	From "lin3 diet >dietl3.out".
+	dietlrc.out	From "linrc diet >dietlrc.out".
+	dietd.nl	From "dualconv diet dietd".
+	dietd.duw	"	"	"	"
+	diet.sol	From "minos diet".
+	dietd.sol	From "minos dietd".
+	dietu.sol	From "dualconv -u dietd dietu".
+
+	ch3.amp		AMPL version of Chebyquad 3 problem, both as
+			least-squares and as minimization problem.
+	ch3.nl		From "ampl -ogch3 ch3.amp".
+	ch3mng.out	From "mng1 ch3 >ch3mng.out"
+			or "mng ch3 >ch3mng.out".
+	ch3mng.sol	From "mng ch3 -AMPL; mv ch3.sol ch3mng.sol".
+	ch3mnh.out	From "mnh ch3 >ch3mnh.out".
+	ch3mnh.sol	From "mnh ch3 -AMPL; mv ch3.sol ch3mnh.sol".
+	ch3nl21.out	From "nl21 ch3 >ch3nl21.out"
+	ch3nl2.out	From "nl2 ch3 >ch3nl2.out".
+	ch3nl2.sol	From "nl2 ch3 -AMPL; mv ch3.sol ch3nl2.sol".
+	ch3qtest.out	From "qtest ch3 >ch3qtest.out".
+	ch3tn.out	From "tn ch3 >ch3tn.out".
+	ch3tn.sol	From "tn ch3 -AMPL; mv ch3.sol ch3tn.sol".
+
+Type "make test" to see if your system can reproduce the output files
+mentioned above.
+
+
+********************************
+If you're a hard-core enthusiast, you can adjust ve08ad.f as follows
+to use the "xknown" and "xunkno" routines (thereby obtaining an
+example of their use, which saves time on some examples):
+
+1917a1918
+> 	if (.not. difest) call xknown(x)
+1936a1938
+> 	call xunkno
+2486a2489
+> 	if (.not. difest) call xknown(wk(lgx))
+2510a2514
+> 	call xunkno
+
+In context (diff -c), the changes are
+
+*** ve08ad.f	Mon Dec  3 10:08:01 1990
+--- ve08ad1.f	Wed Dec  6 14:37:09 1995
+***************
+*** 1915,1920 ****
+--- 1915,1921 ----
+  C
+  C   1) LOOP ON THE ELEMENT FUNCTIONS
+  C
++ 	if (.not. difest) call xknown(x)
+        FX = 0.0D0
+        DO 370 I=1,NS
+          IFXI = NFXI + I
+***************
+*** 1934,1939 ****
+--- 1935,1941 ----
+          FX = FX + WK(IFXI)
+          NGR(2) = NGR(2) + NGRI
+    370 CONTINUE
++ 	call xunkno
+  C
+  C
+  C***********************************************************************
+***************
+*** 2484,2489 ****
+--- 2486,2492 ----
+  C
+  C   2) LOOP ON THE ELEMENT FUNCTIONS
+  C
++ 	if (.not. difest) call xknown(wk(lgx))
+            DO 690 I=1,NS
+              JL = NVAR(I)
+              NDIMI = NVAR(I+1) - JL
+***************
+*** 2508,2513 ****
+--- 2511,2517 ----
+              FN = FN + FNOISE
+              NGR(2) = NGR(2) + NGRI
+    690     CONTINUE
++ 	call xunkno
+  C
+  C   TEST SATISFACTION OF THE LINE SEARCH CRITERIA
+  C   ---------------------------------------------
+
+=======================
+solve_result_num values
+=======================
+
+Solvers mng, mnh, and nl2 return a "solve_result" to AMPL, with
+corresponding solve_result_num values and text for solve_message
+shown in the following table:
+
+	Value	Message
+
+	1	Relative Function Convergence
+	2	X-Convergence
+	3	X- and Relative Function Convergence
+	4	Absolute Function Convergence
+	5	Singular Convergence
+	400	Function Evaluation Limit
+	401	Iteration Limit
+	401	STOPX
+	500	False Convergence
+	501	Initial f(x) cannot be computed
+	502	Gradient could not be computed
+	511	Bad parameters to ASSESS
