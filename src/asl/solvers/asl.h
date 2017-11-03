@@ -1,20 +1,26 @@
-/*******************************************************************
-Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
+/****************************************************************
+Copyright (C) 1997-2001 Lucent Technologies
+All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that the copyright notice and this permission notice and warranty
-disclaimer appear in supporting documentation.
+Permission to use, copy, modify, and distribute this software and
+its documentation for any purpose and without fee is hereby
+granted, provided that the above copyright notice appear in all
+copies and that both that the copyright notice and this
+permission notice and warranty disclaimer appear in supporting
+documentation, and that the name of Lucent or any of its entities
+not be used in advertising or publicity pertaining to
+distribution of the software without specific, written prior
+permission.
 
-The author and AMPL Optimization, Inc. disclaim all warranties with
-regard to this software, including all implied warranties of
-merchantability and fitness.  In no event shall the author be liable
-for any special, indirect or consequential damages or any damages
-whatsoever resulting from loss of use, data or profits, whether in an
-action of contract, negligence or other tortious action, arising out
-of or in connection with the use or performance of this software.
-*******************************************************************/
+LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+****************************************************************/
 
 #ifndef ASL_included
 #define ASL_included
@@ -262,7 +268,7 @@ Edagpars {
 	void (*Hvinit_nomap)	(ASL*, int hid_limit, int nobj, real *ow, real *y);
 	void (*Hesset)		(ASL*, int flags, int no, int nno, int nc, int nnc);
 	int  (*Lconval)		(ASL*, int ncon, real *X, fint *nerror);
-	int  (*Xknown)		(ASL*, real*, fint*);
+	void (*Xknown)		(ASL*, real*, fint*);
 	void (*Duthes)		(ASL*, real *H, int nobj, real *ow, real *y);
 	void (*Duthes_nomap)	(ASL*, real *H, int nobj, real *ow, real *y);
 	void (*Fulhes)		(ASL*, real *H, fint LH, int no, real *ow, real *y);
@@ -616,12 +622,6 @@ Edaginfo {
 	/* bounds and solution filenames */
 	char *boundsfile;
 	char *solfile;
-
-	/* memory use statistics */
-	size_t temp_rd_bytes;	/* bytes temporarily allocated during .nl read */
-	size_t tot_M1z_bytes;	/* total allocated by M1alloc and M1zapalloc */
-	size_t rd_M1z_bytes;	/* tot_M1z_bytes after reading the .nl file */
-
 	} Edaginfo;
 
  struct
@@ -828,8 +828,8 @@ enum ASL_reader_flag_bits {	/* bits in flags arg */
 	ASL_findgroups	= 12,	/* Find both group structures; you want this */
 				/* unless you're a solver like LANCELOT that */
 				/* deals explicitly with group structure. */
-	ASL_find_c_class = 32,	/* Find c_class and c_class_max: see nlp.h and nlp2.h */
-	ASL_find_o_class = 64,	/* Find o_class and o_class_max: see nlp.h and nlp2.h */
+	ASL_find_c_class = 32,	/* Find c_class and c_class_max: see nlp.h */
+	ASL_find_o_class = 64,	/* Find o_class and o_class_max: or nlp2.h */
 	ASL_find_co_class = 96,	/* Find all four */
 
 	/* applicable to all .nl file readers: */
@@ -913,10 +913,7 @@ enum ASL_suf_sos_flags { /* bits in flags parameter of suf_sos() */
 
 enum ASL_write_flags {
 	ASL_write_ASCII = 1,
-	ASL_write_CR = 2,
-	ASL_write_binary = 4,
-	ASL_write_no_X0 = 8,
-	ASL_write_no_pi0 = 16
+	ASL_write_CR = 2
 	};
 
 enum ASL_writer_error_codes {

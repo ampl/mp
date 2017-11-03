@@ -378,7 +378,7 @@ qkind(char *s, int prec, int *quote, int *widthp)
 			}
 		*widthp -= ne + 2;
 		}
-	else if ((*s0 == '.' && s - s0 == 1) || valid_param(s0,1)) {
+	else if (valid_param(s0,1)) {
  quote_it:
 		*widthp -= 2;
 		*quote = '\'';

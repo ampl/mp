@@ -48,12 +48,12 @@ extern "C" double xectim_(Void);
 #include <windows.h>
 #endif
 #ifdef __APPLE__
-#define NO_CLOCK_GETTIME
+#define NO_CLOCKGETTIME
 #endif
 
 #ifndef NO_RUSAGE /*{{*/
 
-#ifndef NO_CLOCK_GETTIME /*{{*/
+#ifndef NO_CLOCKGETTIME /*{{*/
 
 #include <time.h>
 
@@ -65,7 +65,7 @@ xectim_(Void)
 	return T.tv_sec + 1e-9*T.tv_nsec;
 	}
 
-#else /*}NO_CLOCK_GETTIME{*/
+#else /*}NO_CLOCKGETTIME{*/
 
 #include <sys/time.h>
 #include <sys/resource.h>

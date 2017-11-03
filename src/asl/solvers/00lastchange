@@ -1,3 +1,8 @@
-20171006
-  The *qpcheck*.c change of 20170831 made it to solvers2 but not
-solvers; fixed.
+20161024
+  degree.c:  fix a bug handling linear defined variables used linearly:
+degree() could return 0 rather than 1 if nothing else contributed to
+the objective or constraint being assessed.
+  con1ival.c, con2ival.c, dtoa.c, dtoa1.c, ind_cons.c mqpcheckv.c,
+nqpcheck.c:  tweaks for C++ compilation.
+  xectim.c:  adjust to use clock_gettime() unless compiled with
+-DNO_CLOCK_GETTIME or -DNO_RUSAGE.

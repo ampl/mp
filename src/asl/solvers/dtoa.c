@@ -194,11 +194,6 @@
  *	inexact or when it is a numeric value rounded to +-infinity).
  * #define NO_ERRNO if strtod should not assign errno = ERANGE when
  *	the result overflows to +-Infinity or underflows to 0.
- *	When errno should be assigned, under seemingly rare conditions
- *	it may be necessary to define Set_errno(x) suitably, e.g., in
- *	a local errno.h, such as
- *		#include <errno.h>
- *		#define Set_errno(x) _set_errno(x)
  * #define NO_HEX_FP to omit recognition of hexadecimal floating-point
  *	values by strtod.
  * #define NO_STRTOD_BIGCOMP (on IEEE-arithmetic systems only for now)
@@ -291,15 +286,6 @@ static double private_mem[PRIVATE_mem], *pmem_next = private_mem;
 #endif
 
 #include "errno.h"
-
-#ifdef NO_ERRNO /*{*/
-#undef Set_errno
-#define Set_errno(x)
-#else
-#ifndef Set_errno
-#define Set_errno(x) errno = x
-#endif
-#endif /*}*/
 
 #ifdef Bad_float_h
 
@@ -2863,7 +2849,9 @@ gethex( const char **sp, U *rvp, int rounding, int sign MTd)
  ret_tinyf:
 			Bfree(b MTa);
  ret_tiny:
-			Set_errno(ERANGE);
+#ifndef NO_ERRNO
+			errno = ERANGE;
+#endif
 			word0(rvp) = 0;
 			word1(rvp) = 1;
 			return;
@@ -2944,7 +2932,9 @@ gethex( const char **sp, U *rvp, int rounding, int sign MTd)
  ovfl:
 		Bfree(b MTa);
  ovfl1:
-		Set_errno(ERANGE);
+#ifndef NO_ERRNO
+		errno = ERANGE;
+#endif
 #ifdef Honor_FLT_ROUNDS
 		switch (rounding) {
 		  case Round_zero:
@@ -2984,7 +2974,9 @@ gethex( const char **sp, U *rvp, int rounding, int sign MTd)
 #endif /* } IEEE_Arith */
 			Bfree(b MTa);
  retz:
-			Set_errno(ERANGE);
+#ifndef NO_ERRNO
+			errno = ERANGE;
+#endif
  retz1:
 			rvp->d = 0.;
 			return;
@@ -3936,7 +3928,9 @@ strtod(const char *s00, char **se)
  noround_den:
 #endif
 			LLval(&rv) = t00 >> (12 - erv);
-			Set_errno(ERANGE);
+#ifndef NO_ERRNO
+			errno = ERANGE;
+#endif
 			goto ret;
 			}
 		if (bexact) {
@@ -4006,7 +4000,9 @@ strtod(const char *s00, char **se)
 					goto undfl;
  tiniest:
 				LLval(&rv) = 1;
-				Set_errno(ERANGE);
+#ifndef NO_ERRNO
+				errno = ERANGE;
+#endif
 				goto ret;
 				}
 			tg = 1ull << (11 - erv);
@@ -4033,7 +4029,9 @@ strtod(const char *s00, char **se)
 			if (erv <= -52)
 				goto undfl;
 			LLval(&rv) = t00 >> (12 - erv);
-			Set_errno(ERANGE);
+#ifndef NO_ERRNO
+			errno = ERANGE;
+#endif
 			goto ret;
 			}
 		if (bexact) {
@@ -4155,7 +4153,9 @@ strtod(const char *s00, char **se)
 					Bfree(bd0 MTb);
 					Bfree(delta MTb);
 					}
-				Set_errno(ERANGE);
+#ifndef NO_ERRNO
+				errno = ERANGE;
+#endif
 				goto ret;
 				}
 			e1 >>= 4;
@@ -4824,7 +4824,7 @@ strtod(const char *s00, char **se)
 #else
 		if (word0(&rv) == 0 && word1(&rv) == 0)
 #endif
-			Set_errno(ERANGE);
+			errno = ERANGE;
 #endif
 		}
 #endif /* Avoid_Underflow */

@@ -1,5 +1,5 @@
-/*******************************************************************
-Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
+/****************************************************************
+Copyright (C) 2011 AMPL Optimization LLC; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -7,14 +7,14 @@ provided that the above copyright notice appear in all copies and that
 both that the copyright notice and this permission notice and warranty
 disclaimer appear in supporting documentation.
 
-The author and AMPL Optimization, Inc. disclaim all warranties with
+The author and AMPL Optimization LLC disclaim all warranties with
 regard to this software, including all implied warranties of
 merchantability and fitness.  In no event shall the author be liable
 for any special, indirect or consequential damages or any damages
 whatsoever resulting from loss of use, data or profits, whether in an
 action of contract, negligence or other tortious action, arising out
 of or in connection with the use or performance of this software.
-*******************************************************************/
+****************************************************************/
 
 /* For replacing objectives of the form v or c*v, where c is a constant	  */
 /* and variable v has no bounds and appears linearly in one constraint    */
@@ -36,19 +36,16 @@ obj_adj1(ASL *asl, int no)
 {
 	Objrep *od, **pod;
 	cgrad **Cgrd, **Cgrd0, *cg, *cgo, **pcg;
-	char *cclass, *oclass;
 	efunc_n *op;
 	expr_n *e;
-	int co, cv, cva, flags, i, incc, incv, j, k, k1, m, n, nx;
-	int *Cvar, *cm, *cmax, *omax, *vm, *zg, **zgp;
+	int co, cv, cva, flags, i, incc, incv, j, k, m, n, nx;
+	int *Cvar, *cm, *vm, *zg, **zgp;
 	ograd *og;
         ps_func *P;
         ps_func2 *P2;
 	real *Lc, *Lv, *Uc, *Uv, c1, c2, *pi, rhs, t;
 
 	op = f_OPNUM_ASL;
-	cclass = oclass = 0;
-	cmax = omax = 0;
 	switch (asl->i.ASLtype) {
 	 case ASL_read_fg:
 		e = (expr_n*)((ASL_fg*)asl)->I.obj_de_[no].e;
@@ -62,10 +59,6 @@ obj_adj1(ASL *asl, int no)
 		if (P->nb || P->ng)
 			return;
 		op = (efunc_n*)OPNUM;
-		cclass = ((ASL_pfg*)asl)->I.c_class;
-		oclass = ((ASL_pfg*)asl)->I.o_class;
-		cmax = &((ASL_pfg*)asl)->I.c_class_max;
-		omax = &((ASL_pfg*)asl)->I.o_class_max;
 		break;
 	 case ASL_read_pfgh:
 		e = (expr_n*)((ASL_pfgh*)asl)->I.obj2_de_[no].e;
@@ -73,10 +66,6 @@ obj_adj1(ASL *asl, int no)
 		if (P2->nb || P2->ng)
 			return;
 		op = (efunc_n*)OPNUM;
-		cclass = ((ASL_pfgh*)asl)->I.c_class;
-		oclass = ((ASL_pfgh*)asl)->I.o_class;
-		cmax = &((ASL_pfgh*)asl)->I.c_class_max;
-		omax = &((ASL_pfgh*)asl)->I.o_class_max;
 		break;
 	 default:
 		fprintf(Stderr, "Bug: surprise ASLtype = %d in obj_adj\n", asl->i.ASLtype);
@@ -209,27 +198,8 @@ obj_adj1(ASL *asl, int no)
 	--n_conjac[1];
 	if (n_conjac[1] > m)
 		n_conjac[1] = m;
-	cm = co == m ? 0 : get_vcmap_ASL(asl, ASL_Sufkind_con);
-	if (cclass) {
-		if (oclass) {
-			i = oclass[no] = cclass[co];
-			if (*omax < i)
-				*omax = i;
-			}
-		if (cm) {
-			for(i = co; i < m; i = j)
-				cclass[i] = cclass[j = i + 1];
-			}
-		k = 0;
-		for(i = 0; i < m; ++i) {
-			k1 = cclass[i];
-			if (k < k1)
-				k = k1;
-			}
-		if (*cmax > k)
-			*cmax = k;
-		}
-	if (cm) {
+	if (co != m) {
+		cm = get_vcmap_ASL(asl, ASL_Sufkind_con);
 		pcg = Cgrd;
 		Cvar = cvar;
 		for(i = co; i < m; i = j) {

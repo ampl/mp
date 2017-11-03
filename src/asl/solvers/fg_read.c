@@ -769,7 +769,6 @@ derpcopy(Static *S, cexp *ce, derp *dnext)
 imap_alloc(Static *S)
 {
 	int i, *r, *re;
-	size_t L;
 
 	if (imap) {
 		imap_len += lasta;
@@ -778,8 +777,7 @@ imap_alloc(Static *S)
 		}
 	imap_len = amax1 > lasta ? amax1 : lasta;
 	imap_len += 100;
-	r = imap = (int *)Malloc(L = imap_len*Sizeof(int));
-	S->a->i.temp_rd_bytes += L;
+	r = imap = (int *)Malloc(imap_len*Sizeof(int));
 	for(i = 0, re = r + nv1+1; r < re;)
 		*r++ = i++;
 	}
