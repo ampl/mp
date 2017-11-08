@@ -1,8 +1,9 @@
-20161024
-  degree.c:  fix a bug handling linear defined variables used linearly:
-degree() could return 0 rather than 1 if nothing else contributed to
-the objective or constraint being assessed.
-  con1ival.c, con2ival.c, dtoa.c, dtoa1.c, ind_cons.c mqpcheckv.c,
-nqpcheck.c:  tweaks for C++ compilation.
-  xectim.c:  adjust to use clock_gettime() unless compiled with
--DNO_CLOCK_GETTIME or -DNO_RUSAGE.
+20171011
+  readsol.c:  new variant fread_sol_ASL of read_sol_ASL with signature
+
+  char* fread_sol_ASL(ASL*, const char *fname, real**xp, real **yp);
+
+which adds argument fname to specify the full name of the ".sol" file
+to read.  (This name need not end in ".sol".)  This is used in today's
+updated solvers/examples/et.c, via a corresponding new #define of
+fread_sol() in asl.h.

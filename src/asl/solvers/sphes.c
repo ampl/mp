@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -235,6 +235,13 @@ hv_back(expr *e)
 			break;
 
 		case Hv_if:
+			if (!((expr_if *)e)->Fe) {
+				e1 = ((expr_if *)e)->F;
+				if (e1->op != f_OPNUM) {
+					e1->aO = e->aO;
+					e1->adO = e->adO;
+					}
+				}
 			if ((e1 = ((expr_if *)e)->Te)) {
 				e1->aO = e->aO;
 				e1->adO = e->adO;
@@ -251,13 +258,6 @@ hv_back(expr *e)
 				e1->aO = e->aO;
 				e1->adO = e->adO;
 				hv_back(e1);
-				}
-			else {
-				e1 = ((expr_if *)e)->F;
-				if (e1->op != f_OPNUM) {
-					e1->aO = e->aO;
-					e1->adO = e->adO;
-					}
 				}
 			break;
 
@@ -350,6 +350,7 @@ hv_back(expr *e)
  static void
 hv_fwd0(ASL_pfgh *asl, cexp *c, expr_v *v)
 {
+	linarg *la;
 	linpart *L, *Le;
 	real x;
 
@@ -362,7 +363,9 @@ hv_fwd0(ASL_pfgh *asl, cexp *c, expr_v *v)
 		x = c->e->dO.r;
 	else
 		x = 0;
-	if ((L = c->L))
+	if ((la = c->la))
+		x += la->v->dO.r;
+	else if ((L = c->L))
 		for(Le = L + c->nlin; L < Le; L++)
 			x += ((expr_v*)L->v.vp)->dO.r;
 	v->dO.r = x;
@@ -422,9 +425,14 @@ pshv_prod1(ASL_pfgh *asl, range *r, int nobj, int ow, int y)
 		i = *--cei;
 		c = cexps + i;
 		v = asl->P.vp[i];
-		if (v->aO && (L = c->L))
-		    for(Le = L + c->nlin; L < Le; L++)
-			((expr_v*)L->v.vp)->aO++;
+		if (v->aO && (L = c->L)) {
+		    if ((la = c->la))
+			la->v->aO = 1;
+		    else {
+			for(Le = L + c->nlin; L < Le; L++)
+				((expr_v*)L->v.vp)->aO++;
+			}
+		    }
 		if ((e = c->ee)) {
 			e->aO = 1.;
 			e->adO = v->adO;
@@ -899,7 +907,6 @@ sphes_setup_ASL(ASL *a, SputInfo **pspi, int nobj, int ow, int y, int uptri)
 		*rtodo++ = 0;	/* reset */
 		while((uhw = uhwi)) {
 			uhwi = uhwi->next;
-			si = s;
 			ogp = uhw->ogp;
 			r = uhw->r;
 			ogpe = ogp + r->n;
@@ -1089,7 +1096,7 @@ sphes_ASL(ASL *a, SputInfo **pspi, real *H, int nobj, real *ow, real *y)
 	if (asl->P.hes_setup_called != 3)
 		sphes_setup_ASL(a, pspi, nobj, ow != 0, y != 0, 0);
 	spi = *pspi;
-	if (spi->nobj != nobj || spi->ow < i || spi->y < j) {
+	if ((spi->nobj != nobj && nobj >= 0) || spi->ow < i || spi->y < j) {
 		fprintf(Stderr,
 		 "\nsphes() call inconsistent with previous sphsetup()\n");
 		exit(1);

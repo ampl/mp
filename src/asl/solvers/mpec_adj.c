@@ -67,9 +67,10 @@ mpec_adjust_ASL(ASL *asl)
 	size_t nz, nz0, nznew;
 	extern void f_OPVARVAL_ASL(), f2_VARVAL_ASL();
 
-	n = n0 = n1 = n_var;
+	n = n0 = n_var;
 	n2 = asl->i.n_var0;
 	nib = niv + nbv;
+	n1 = n - nib;
 	nib0 = n - nib;	/* offset of first linear integer or binary variable */
 	m = m0 = n_con;
 	nz = nz0 = nZc;

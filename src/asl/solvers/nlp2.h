@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -157,10 +157,11 @@ cexp2 {
 	expr2	*e, *ee, *ef;
 	linpart	*L;
 	int	nlin;
+	int	zlen;
+	struct linarg2 *la;	/* corresponding to L */
 	funnel2	*funneled;
 	list2	*cref;
 	ei2	z;
-	int	zlen;
 	derp	*d;
 	int	*vref;
 	hes_fun	*hfun;

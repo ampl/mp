@@ -1,26 +1,20 @@
-/****************************************************************
-Copyright (C) 1997-2001 Lucent Technologies
-All Rights Reserved
+/*******************************************************************
+Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
 
-Permission to use, copy, modify, and distribute this software and
-its documentation for any purpose and without fee is hereby
-granted, provided that the above copyright notice appear in all
-copies and that both that the copyright notice and this
-permission notice and warranty disclaimer appear in supporting
-documentation, and that the name of Lucent or any of its entities
-not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior
-permission.
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
+provided that the above copyright notice appear in all copies and that
+both that the copyright notice and this permission notice and warranty
+disclaimer appear in supporting documentation.
 
-LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
-IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
-SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
-IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
-ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
-THIS SOFTWARE.
-****************************************************************/
+The author and AMPL Optimization, Inc. disclaim all warranties with
+regard to this software, including all implied warranties of
+merchantability and fitness.  In no event shall the author be liable
+for any special, indirect or consequential damages or any damages
+whatsoever resulting from loss of use, data or profits, whether in an
+action of contract, negligence or other tortious action, arising out
+of or in connection with the use or performance of this software.
+*******************************************************************/
 
 /* include vararg/stdarg stuff first to avoid trouble with C++ */
 #include "stddef.h"
@@ -233,13 +227,14 @@ hes0set(ASL *a, int flags, int obj, int nobj, int con, int ncon)
 	notread("duthes, fullhes, or sputhes", "pfgh_read or jacpdim");
 	}
 
- static void
+ static int
 x0known(ASL *a, real *x, fint *nerror)
 {
 	Not_Used(a);
 	Not_Used(x);
 	Not_Used(nerror);
 	notread("xknown", psedag);
+	return 1;
 	}
 
  static void
@@ -522,7 +517,9 @@ M1alloc_ASL(Edaginfo *I, size_t n)
 {
 	Mblock *mb;
 
+	I->tot_M1z_bytes += n;
 	if (I->Mbnext >= I->Mblast) {
+		I->tot_M1z_bytes += sizeof(Mblock);
 		mb = (Mblock *)Malloc(sizeof(Mblock));
 		mb->next = (Mblock*)I->Mb;
 		I->Mb = (void*)mb;
@@ -646,7 +643,7 @@ ASL_free(ASL **aslp)
 {
 	ASL *a;
 	ASLhead *h;
-	extern void at_end_ASL ANSI((Exitcall*));
+	extern void at_end_ASL(Exitcall*);
 
 	if (!(a = *aslp))
 		return;
@@ -1253,6 +1250,7 @@ prob_adj_ASL(ASL *asl)
 		}
 #endif /*}*/
 	asl->i.err_jmp_ = 0;
+	asl->i.rd_M1z_bytes = asl->i.tot_M1z_bytes;
 	return 0;
 	}
 

@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -624,6 +624,8 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 	if (co >= 0) {
 		if ((pod = asl->i.Or) && (od = pod[co])) {
 			co = od->ico;
+			if (!(cgp = asl->i.Cgrad0))
+				cgp = Cgrad;
 			goto use_Cgrad;
 			}
 		else {
@@ -636,9 +638,9 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 		co = -1 - co;
 		if ((cm = asl->i.cmap))
 			co = cm[co];
+		cgp = Cgrad;
  use_Cgrad:
 		c = con_de + co;
-		cgp = Cgrad;
 		cgp += co;
 		ogp = 0;
 		}

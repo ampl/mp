@@ -48,7 +48,7 @@ extern "C" {
  extern void hvpcompd(ASL*,real *hv, real *p, int co);
  extern varno_t hvpcomps(ASL*, real *hv, real *p, int co, varno_t nz, varno_t *z);
  extern int xp_check_ASL(ASL_pfgh*, real*);
- extern void xp2known(ASL*, real*, fint*);
+ extern int xp2known(ASL*, real*, fint*);
 #ifdef __cplusplus
 	}
 #endif
