@@ -1,8 +1,6 @@
-20161208
-  asl.h, jac2dim.h, jacpdim.h, misc.c, nlp.h, objval.c, psinfo.h,
-x2check.c, xp1known.c, xp2known.c:  change return type of xknown(x)
-and xknowne(x,ne) from void to int, with return 0 meaning x is the
-same as before and return 1 meaning x has changed.
-  obj_adj.c:  when readers pfg_read(nl,flags) or pfgh_read(nl,flags)
-were called with ASL_find_co_class in flags, and when an objective
-is adjusted, also adjust [co]_class and [co]_class_max.
+20161228
+  asl.h, misc.c, fg_read.c: added to Edaginfo (type size_t):
+	temp_rd_bytes = bytes temporarily allocated during .nl read
+	tot_M1z_bytes = total allocated by M1alloc and M1zapalloc
+	rd_M1z_bytes  = tot_M1z_bytes after reading the .nl file
+The whole ASL library needs to be recompiled.

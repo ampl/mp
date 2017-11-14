@@ -616,6 +616,12 @@ Edaginfo {
 	/* bounds and solution filenames */
 	char *boundsfile;
 	char *solfile;
+
+	/* memory use statistics */
+	size_t temp_rd_bytes;	/* bytes temporarily allocated during .nl read */
+	size_t tot_M1z_bytes;	/* total allocated by M1alloc and M1zapalloc */
+	size_t rd_M1z_bytes;	/* tot_M1z_bytes after reading the .nl file */
+
 	} Edaginfo;
 
  struct

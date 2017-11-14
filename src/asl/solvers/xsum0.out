@@ -5,10 +5,10 @@ amplsolv.sy	5451119	1343
 arith.ibm	f398be2b	1391
 arith.h0	e206209c	2309
 arithchk.c	63b0185	6532
-asl.h	ec8db6b5	41187
+asl.h	fd83475b	41431
 asl_pfg.h	6483336	1268
 asl_pfgh.h	49b5a53	1288
-asldate.c	e42ad946	29
+asldate.c	fadfd931	29
 atof.c	1fabc7d3	1747
 auxinfo.c	1a3c8690	1488
 avltree.c	10aeaa58	11346
@@ -38,7 +38,7 @@ dvalue.hd	9606f1	1125
 dynlink.c	f185cc89	1375
 errchk.h	f88aec0	1695
 f_read.c	12b32457	1227
-fg_read.c	f7e26883	36761
+fg_read.c	e0bc2b0d	36805
 fg_write.c	163779ef	17452
 fgh_read.c	f7bc92e6	34391
 float.h0	11d95cda	1822
@@ -78,7 +78,7 @@ makefile.u	589112c	11177
 makefile.vc	1bb69704	7500
 makefile.wat	c465856	5860
 mip_pri.c	f1dd1d47	7887
-misc.c	3696c1e	29474
+misc.c	1ed34be9	29581
 mpec_adj.c	f4f4aef4	9140
 mpec_adj0.c	efb8be74	70
 mqpcheckv.c	1939fcb	19328
