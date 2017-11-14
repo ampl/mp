@@ -517,9 +517,7 @@ M1alloc_ASL(Edaginfo *I, size_t n)
 {
 	Mblock *mb;
 
-	I->tot_M1z_bytes += n;
 	if (I->Mbnext >= I->Mblast) {
-		I->tot_M1z_bytes += sizeof(Mblock);
 		mb = (Mblock *)Malloc(sizeof(Mblock));
 		mb->next = (Mblock*)I->Mb;
 		I->Mb = (void*)mb;
@@ -1250,7 +1248,6 @@ prob_adj_ASL(ASL *asl)
 		}
 #endif /*}*/
 	asl->i.err_jmp_ = 0;
-	asl->i.rd_M1z_bytes = asl->i.tot_M1z_bytes;
 	return 0;
 	}
 

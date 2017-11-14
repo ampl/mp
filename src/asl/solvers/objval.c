@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -122,11 +122,11 @@ obj1val_ASL(ASL *a, int i, real *X, fint *nerror)
 		}
 	want_deriv = want_derivs;
 	errno = 0;	/* in case f77 set errno opening files */
-	co_index = -(i + 1);
 	if (!asl->i.x_known)
 		x0_check_ASL(asl,X);
 	if (!asl->i.noxval)
 		asl->i.noxval = (int*)M1zapalloc(n_obj*sizeof(int));
+	co_index = -(i + 1);
 	if (!(x0kind & ASL_have_objcom)) {
 		if (ncom0 > combc)
 			comeval_ASL(asl, combc, ncom0);
@@ -198,10 +198,8 @@ obj1grd_ASL(ASL *a, int i, real *X, real *G, fint *nerror)
 			goto done;
 		}
 	errno = 0;	/* in case f77 set errno opening files */
-	if (!asl->i.x_known) {
-		co_index = -(i + 1);
+	if (!asl->i.x_known)
 		x0_check_ASL(asl,X);
-		}
 	if (!asl->i.noxval || asl->i.noxval[i] != asl->i.nxval) {
 		xksave = asl->i.x_known;
 		asl->i.x_known = 1;

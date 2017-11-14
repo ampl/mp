@@ -616,12 +616,6 @@ Edaginfo {
 	/* bounds and solution filenames */
 	char *boundsfile;
 	char *solfile;
-
-	/* memory use statistics */
-	size_t temp_rd_bytes;	/* bytes temporarily allocated during .nl read */
-	size_t tot_M1z_bytes;	/* total allocated by M1alloc and M1zapalloc */
-	size_t rd_M1z_bytes;	/* tot_M1z_bytes after reading the .nl file */
-
 	} Edaginfo;
 
  struct
@@ -913,10 +907,7 @@ enum ASL_suf_sos_flags { /* bits in flags parameter of suf_sos() */
 
 enum ASL_write_flags {
 	ASL_write_ASCII = 1,
-	ASL_write_CR = 2,
-	ASL_write_binary = 4,
-	ASL_write_no_X0 = 8,
-	ASL_write_no_pi0 = 16
+	ASL_write_CR = 2
 	};
 
 enum ASL_writer_error_codes {
@@ -997,7 +988,6 @@ QPinfo {
  extern int fg_write_ASL(ASL*, const char*, NewVCO*, int);
  extern void fintrouble_ASL(ASL*, func_info*, const char*, TMInfo*);
  extern void flagsave_ASL(ASL*, int);
- extern char *fread_sol_ASL(ASL*, const char *fname, real**xp, real **yp);
  extern func_info *func_lookup(ASL*, const char*, int add);
  extern void func_add(ASL*);
  extern int g_fmt(char*, double);
@@ -1134,7 +1124,6 @@ extern void set_max_dtoa_threads(unsigned int);
 #define fg_wread(a,b) fg_wread_ASL((ASL*)asl,a,b)
 #define fg_write(a,b,c) fg_write_ASL((ASL*)asl,a,b,c)
 #define fgh_read(a,b) fgh_read_ASL((ASL*)asl,a,b)
-#define fread_soln(f,x,y) fread_sol_ASL((ASL*)asl,f,x,y)
 #define gen_rownos() gen_rownos_ASL((ASL*)asl)
 #undef getenv
 #define getenv getenv_ASL

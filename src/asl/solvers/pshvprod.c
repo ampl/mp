@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -325,8 +325,6 @@ hv_fwd0(ASL_pfgh *asl, cexp *c, expr_v *v)
 {
 	expr_v **vp, **vpe;
 	hes_fun *hf;
-	int i;
-	linarg *la;
 	linpart *L, *Le;
 	ograd *og;
 	real *g, x;
@@ -353,15 +351,9 @@ hv_fwd0(ASL_pfgh *asl, cexp *c, expr_v *v)
 		x = c->e->dO.r;
 	else
 		x = 0;
-	if ((la = c->la)) {
-		i = c - asl->I.cexps2_;
-		x += asl->P.dv[i].scale * la->v->dO.r;
-		}
-
-	else if ((L = c->L)) {
+	if ((L = c->L))
 		for(Le = L + c->nlin; L < Le; L++)
 			x += L->fac * ((expr_v*)L->v.vp)->dO.r;
-		}
 	v->dO.r = x;
 	}
 
@@ -765,7 +757,6 @@ hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 {
 	ASL_pfgh *asl;
 	Ihinfo *ihi;
-	expr_v *v;
 	int kp, kw, n, no, noe, ns, nv, *ui, *uie;
 	linarg *la, **lap, **lape;
 	ograd *og;
@@ -798,15 +789,6 @@ hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 		}
 	asl->P.nhvprod++;
 	memset(hv, 0, nv*sizeof(real));
-	for(la = asl->P.lalist; la; la = la->lnext) {
-		og = la->nz;
-		t = p[og->varno]*og->coef;
-		while((og = og->next))
-			t += p[og->varno]*og->coef;
-		v = la->v;
-		v->dO.r = t;
-		v->aO = v->adO = 0;
-		}
 	kw = kp + 1;
 	w = (real*)new_mblk(kw);
 	x = w + n_var;
@@ -928,13 +910,6 @@ hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 					while((og = og->next));
 				}
 		}
-	v = var_e;
-	for(la = asl->P.lalist; la; la = la->lnext)
-		if ((t = la->v->aO)) {
-			og = la->nz;
-			do v[og->varno].aO += t*og->coef;
-				while((og = og->next));
-			}
  done:
 	if (p0) {
 		del_mblk(kp, p0);
@@ -1028,14 +1003,9 @@ pshv_prod_ASL(ASL_pfgh *asl, range *r, int nobj, real *ow, real *y)
 		i = *--cei;
 		c = cexps + i;
 		v = asl->P.vp[i];
-		if ((t = v->aO) && (L = c->L)) {
-		    if ((la = c->la))
-			la->v->aO += t * asl->P.dv[i].scale;
-		    else {
-			for(Le = L + c->nlin; L < Le; L++)
-				((expr_v*)L->v.vp)->aO += t * L->fac;
-			}
-		    }
+		if ((t = v->aO) && (L = c->L))
+		    for(Le = L + c->nlin; L < Le; L++)
+			((expr_v*)L->v.vp)->aO += t * L->fac;
 		if (c->hfun)
 			funnel_back(asl, c, v, t);
 		else if ((e = c->ee)) {
@@ -1105,7 +1075,6 @@ hvpcompd_ASL(ASL *a, real *hv, real *p, int co)
 	if (x0kind == ASL_first_x) {
 		if (!(s = X0))
 			memset(s = Lastx, 0, n_var*sizeof(real));
-		co_index = co;
 		xp_check_ASL(asl, s);
 		}
 	nx = asl->i.nxval;
@@ -1355,7 +1324,6 @@ hvpcomps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 	if (x0kind == ASL_first_x) {
 		if (!(s = X0))
 			memset(s = Lastx, 0, n_var*sizeof(real));
-		co_index = co;
 		xp_check_ASL(asl, s);
 		}
 	nx = asl->i.nxval;

@@ -1,9 +1,8 @@
-20171011
-  readsol.c:  new variant fread_sol_ASL of read_sol_ASL with signature
-
-  char* fread_sol_ASL(ASL*, const char *fname, real**xp, real **yp);
-
-which adds argument fname to specify the full name of the ".sol" file
-to read.  (This name need not end in ".sol".)  This is used in today's
-updated solvers/examples/et.c, via a corresponding new #define of
-fread_sol() in asl.h.
+20161208
+  asl.h, jac2dim.h, jacpdim.h, misc.c, nlp.h, objval.c, psinfo.h,
+x2check.c, xp1known.c, xp2known.c:  change return type of xknown(x)
+and xknowne(x,ne) from void to int, with return 0 meaning x is the
+same as before and return 1 meaning x has changed.
+  obj_adj.c:  when readers pfg_read(nl,flags) or pfgh_read(nl,flags)
+were called with ASL_find_co_class in flags, and when an objective
+is adjusted, also adjust [co]_class and [co]_class_max.
