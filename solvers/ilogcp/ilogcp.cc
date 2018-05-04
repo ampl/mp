@@ -345,11 +345,20 @@ IlogCPSolver::IlogCPSolver() :
       "Limit on the number of choice points created "
       "before terminating a search. Default = no limit.",
       cp_, IloCP::ChoicePointLimit)));
-
+ 
+#if CPX_VERSION >= 12080000
+  // Changed behaviour:
+  // https://www.ibm.com/support/knowledgecenter/en/SSSA5P_12.8.0/ilog.odms.studio.help/CP_Optimizer/Release_notes/topics/relnotes_V1280_changes_api.html
+  AddOption(OptionPtr(new EnumOption("cppresolve",
+	  "0 or 1 (default 1):  Whether to activate presolve on the CP optimizer.",
+	  cp_, IloCP::IntParam::Presolve, IloCP::Off,
+	  ValueArrayRef(FLAGS, 1))));
+#else
   AddOption(OptionPtr(new EnumOption("constraintaggregation",
-      "0 or 1 (default 1):  Whether to aggregate basic constraints.",
-      cp_, IloCP::ConstraintAggregation, IloCP::Off,
-      ValueArrayRef(FLAGS, 1))));
+	  "0 or 1 (default 1):  Whether to aggregate basic constraints.",
+	  cp_, IloCP::ConstraintAggregation, IloCP::Off,
+	  ValueArrayRef(FLAGS, 1))));
+#endif
 
   AddIntOption("debugexpr",
       "0 or 1 (default 0):  Whether to print debugging "
@@ -433,6 +442,9 @@ IlogCPSolver::IlogCPSolver() :
       "Synonym for ``logverbosity``.",
       cp_, IloCP::LogVerbosity, IloCP::Quiet, VERBOSITIES)));
 
+#if CPX_VERSION < 12080000
+  // Not available in 12.8, documented only in the Java docs
+  // https://www.ibm.com/support/knowledgecenter/en/SSSA5P_12.8.0/ilog.odms.studio.help/CP_Optimizer/Release_notes/topics/relnotes_V1280_changes_java.html
   AddOption(OptionPtr(new EnumOption("propagationlog",
       "Level of propagation trace reporting. Possible values:\n"
       "\n"
@@ -440,6 +452,7 @@ IlogCPSolver::IlogCPSolver() :
       "\n"
       "The default value is ``quiet``.",
       cp_, IloCP::PropagationLog, IloCP::Quiet, VERBOSITIES)));
+#endif
 
   AddOption(OptionPtr(new IntOption("randomseed",
       "Seed for the random number generator. Default = 0.",
@@ -644,6 +657,7 @@ void IlogCPSolver::SetCPLEXIntOption(
 void IlogCPSolver::SolveWithCP(
     Problem &p, const MPToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
+	
 #if CPX_VERSION >= 12060100
   if (!filenames_[DUMP_FILE].empty())
     cp_.dumpModel(filenames_[DUMP_FILE].c_str());
@@ -674,8 +688,12 @@ void IlogCPSolver::SolveWithCP(
     solution_limit = p.num_objs() > 0 ? INT_MAX : 1;
   stats.setup_time = GetTimeAndReset(stats.time);
   if (priority_vars.getSize() != 0) {
-    IloSearchPhase phase(env_, priority_vars);
-    cp_.startNewSearch(phase);
+    #if CPX_VERSION >= 12080000
+    IloGoal goal(env_, priority_vars);
+    #else
+    IloSearchPhase goal(env_, priority_vars);
+    #endif  
+    cp_.startNewSearch(goal);
   } else {
     cp_.startNewSearch();
   }

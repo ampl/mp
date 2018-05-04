@@ -191,7 +191,8 @@ if (TARGET ilogcp)
   add_ampl_solver(ssdsolver LIBRARIES amplilogcp-static)
   if (TARGET ssdsolver)
     add_ampl_library(ssd ssdsolver/ssd.cc)
-    target_include_directories(ssd PRIVATE .)
+    target_include_directories(ssd PRIVATE . 
+    ${CMAKE_SOURCE_DIR}/src/asl/solvers)
   endif ()
 endif ()
 
