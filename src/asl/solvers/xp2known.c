@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -151,7 +151,6 @@ xp2known_ASL(ASL* asl, real *X, fint *nerror)
 			goto done;
 		}
 	errno = 0;	/* in case f77 set errno opening files */
-	cv_index = nlo ? -1 : 0;
 	rc = xp_check_ASL((ASL_pfgh*)asl, X);
 	asl->i.x_known = 1;
  done:

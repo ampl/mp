@@ -1,3 +1,6 @@
-20170722
-  mpec_adj.c: fix a bug with ASL_cc_simplify (in the flags argument to
-.nl readers) that bit on problems with integer (or binary) variables.
+20161228
+  asl.h, misc.c, fg_read.c: added to Edaginfo (type size_t):
+	temp_rd_bytes = bytes temporarily allocated during .nl read
+	tot_M1z_bytes = total allocated by M1alloc and M1zapalloc
+	rd_M1z_bytes  = tot_M1z_bytes after reading the .nl file
+The whole ASL library needs to be recompiled.

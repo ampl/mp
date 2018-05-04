@@ -913,10 +913,7 @@ enum ASL_suf_sos_flags { /* bits in flags parameter of suf_sos() */
 
 enum ASL_write_flags {
 	ASL_write_ASCII = 1,
-	ASL_write_CR = 2,
-	ASL_write_binary = 4,
-	ASL_write_no_X0 = 8,
-	ASL_write_no_pi0 = 16
+	ASL_write_CR = 2
 	};
 
 enum ASL_writer_error_codes {

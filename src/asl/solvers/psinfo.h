@@ -327,6 +327,5 @@ typedef unsigned Long Ulong;
 #endif
 
 #define pshv_prod(r,no,ow,y) pshv_prod_ASL(asl,r,no,ow,y)
-#define hvpinit(hx, no, ow, y) hvpinit_ASL((ASL*)asl, hx, no, ow, y)
 
 #endif /* PSINFO_H_included */

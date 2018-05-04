@@ -29,8 +29,8 @@ THIS SOFTWARE.
 /* The following AMPL copyright notice applies to material added in 2011,
    identified by #ifndef ASL_OLD_DERIV_CHECK . */
 
-/*******************************************************************
-Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
+/****************************************************************
+Copyright (C) 2011 AMPL Optimization LLC; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -38,14 +38,14 @@ provided that the above copyright notice appear in all copies and that
 both that the copyright notice and this permission notice and warranty
 disclaimer appear in supporting documentation.
 
-The author and AMPL Optimization, Inc. disclaim all warranties with
+The author and AMPL Optimization LLC disclaim all warranties with
 regard to this software, including all implied warranties of
 merchantability and fitness.  In no event shall the author be liable
 for any special, indirect or consequential damages or any damages
 whatsoever resulting from loss of use, data or profits, whether in an
 action of contract, negligence or other tortious action, arising out
 of or in connection with the use or performance of this software.
-*******************************************************************/
+****************************************************************/
 
 #include "asl.h"
 #include "errchk.h"
@@ -165,7 +165,6 @@ DerrRecord {
 	real a;
 	union { const char *s; real b; } u;
 	int jv;
-	int dv;
 	};
 
  static void
@@ -215,7 +214,6 @@ deriv_errchk_ASL(ASL *asl, fint *nerror, int coi, int n)
 		k = -(k + 1);
 		if (k >= nlo)
 			return;
-		k += nlc;
 		}
 	else if (k >= nlc)
 		return;
@@ -223,7 +221,6 @@ deriv_errchk_ASL(ASL *asl, fint *nerror, int coi, int n)
 		if ((R = *Rp)) {
 			jmp_check(err_jmp, R->jv);
 			co_index = coi;
-			cv_index = R->dv;
 			report_where(asl);
 			R->errprint(asl,R);
 			fflush(Stderr);
@@ -291,14 +288,13 @@ getDR(ASL *asl)
 {
 	DerivErrInfo *D;
 	DerrRecord *R;
-	int i, j, je, k;
+	int k;
 	size_t L;
 
 	if ((k = co_index) < 0) {
 		k = -(k + 1);
 		if (k >= nlo)
 			return 0;
-		k += nlc;
 		}
 	else if (k >= nlc)
 		return 0;
@@ -314,22 +310,6 @@ getDR(ASL *asl)
 	D->R[k] = R = (DerrRecord*)(D->mblast - L);
 	D->mblast = (char*)R;
 	D->busy[D->nbusy++] = k;
-	if ((R->dv = i = cv_index)) {
-		j = 0;
-		je = nlc + nlo;
-		if (i > comb) {
-			if (i <= combc)
-				je = nlc;
-			else if (i <= ncom0)
-				j = combc;
-			}
-		for(; j < je; ++j) {
-			if (!D->R[j]) {
-				D->R[j] = R;
-				D->busy[D->nbusy++] = j;
-				}
-			}
-		}
 	return R;
 	}
 
