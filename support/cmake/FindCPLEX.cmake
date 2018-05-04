@@ -40,16 +40,27 @@ else ()
     set(CPLEX_ARCH x86)
     set(CPLEX_ILOG_DIRS "C:/Program Files (x86)/IBM/ILOG" ${CPLEX_ILOG_DIRS})
   endif ()
-  if (MSVC10)
-    set(CPLEX_LIB_PATH_SUFFIXES
-      lib/${CPLEX_ARCH}_windows_vs2010/stat_mda)
-    set(CPLEX_LIB_PATH_SUFFIXES_DEBUG
-      lib/${CPLEX_ARCH}_windows_vs2010/stat_mdd)
-  elseif (MSVC9)
-    set(CPLEX_LIB_PATH_SUFFIXES
-      lib/${CPLEX_ARCH}_windows_vs2008/stat_mda)
-    set(CPLEX_LIB_PATH_SUFFIXES_DEBUG
-      lib/${CPLEX_ARCH}_windows_vs2008/stat_mdd)
+   # Amended for VS and its various toolsets
+  # https://cmake.org/cmake/help/v3.11/variable/MSVC_VERSION.html
+  # Can use GREATER_EQUAL instead of the mess below if cmake version >= 3.7
+  if(NOT (MSVC_VERSION LESS 1910)) 
+	set(CPLEX_LIB_PATH_SUFFIXES lib/${CPLEX_ARCH}_windows_vs2017/stat_mda)
+    set(CPLEX_LIB_PATH_SUFFIXES_DEBUG lib/${CPLEX_ARCH}_windows_vs2017/stat_mdd)
+  elseif (NOT (MSVC_VERSION LESS 1900)) # to support VS2015 with 2013 libraries change below
+    set(CPLEX_LIB_PATH_SUFFIXES lib/${CPLEX_ARCH}_windows_vs2015/stat_mda)
+    set(CPLEX_LIB_PATH_SUFFIXES_DEBUG lib/${CPLEX_ARCH}_windows_vs2015/stat_mdd)
+  elseif (NOT (MSVC_VERSION LESS 1800))
+  set(CPLEX_LIB_PATH_SUFFIXES lib/${CPLEX_ARCH}_windows_vs2013/stat_mda)
+    set(CPLEX_LIB_PATH_SUFFIXES_DEBUG lib/${CPLEX_ARCH}_windows_vs2013/stat_mdd)
+  elseif (NOT (MSVC_VERSION LESS 1700))
+    set(CPLEX_LIB_PATH_SUFFIXES lib/${CPLEX_ARCH}_windows_vs2012/stat_mda)
+    set(CPLEX_LIB_PATH_SUFFIXES_DEBUG lib/${CPLEX_ARCH}_windows_vs2012/stat_mdd)
+  elseif (NOT (MSVC_VERSION LESS 1600))
+    set(CPLEX_LIB_PATH_SUFFIXES lib/${CPLEX_ARCH}_windows_vs2010/stat_mda)
+    set(CPLEX_LIB_PATH_SUFFIXES_DEBUG lib/${CPLEX_ARCH}_windows_vs2010/stat_mdd)
+   elseif (NOT (MSVC_VERSION LESS 1500))
+    set(CPLEX_LIB_PATH_SUFFIXES lib/${CPLEX_ARCH}_windows_vs2008/stat_mda)
+    set(CPLEX_LIB_PATH_SUFFIXES_DEBUG lib/${CPLEX_ARCH}_windows_vs2008/stat_mdd)
   endif ()
 endif ()
 if (NOT CPLEX_STUDIO_DIR)
@@ -75,14 +86,14 @@ find_package(Threads)
 # ----------------------------------------------------------------------------
 # CPLEX
 
-set(CPLEX_DIR ${CPLEX_STUDIO_DIR}/cplex)
+set(CPLEX_DIR ${CPLEX_STUDIO_DIR_}/cplex)
 
 # Find the CPLEX include directory.
 find_path(CPLEX_INCLUDE_DIR ilcplex/cplex.h PATHS ${CPLEX_DIR}/include)
 
 macro(find_win_cplex_library var path_suffixes)
   foreach (s ${path_suffixes})
-    file(GLOB CPLEX_LIBRARY_CANDIDATES "${CPLEX_DIR}/${s}/cplex*.lib")
+	file(GLOB CPLEX_LIBRARY_CANDIDATES "${CPLEX_DIR}/${s}/cplex*.lib")
     if (CPLEX_LIBRARY_CANDIDATES)
       list(GET CPLEX_LIBRARY_CANDIDATES 0 ${var})
       break ()
@@ -99,16 +110,24 @@ if (UNIX)
     PATHS ${CPLEX_DIR} PATH_SUFFIXES ${CPLEX_LIB_PATH_SUFFIXES})
   set(CPLEX_LIBRARY_DEBUG ${CPLEX_LIBRARY})
 elseif (NOT CPLEX_LIBRARY)
+message("in windows trying " ${${CPLEX_LIB_PATH_SUFFIXES}})
   # On Windows the version is appended to the library name which cannot be
   # handled by find_library, so search manually.
   find_win_cplex_library(CPLEX_LIB "${CPLEX_LIB_PATH_SUFFIXES}")
+  message("CPLEX_LIB " ${CPLEX_LIB})
+  message("CPLEX_LIBRARY " ${CPLEX_LIBRARY})
   set(CPLEX_LIBRARY ${CPLEX_LIB} CACHE FILEPATH "Path to the CPLEX library")
   find_win_cplex_library(CPLEX_LIB "${CPLEX_LIB_PATH_SUFFIXES_DEBUG}")
+    
+	
+	
   set(CPLEX_LIBRARY_DEBUG ${CPLEX_LIB} CACHE
     FILEPATH "Path to the debug CPLEX library")
+	message("CPLEX_LIBRARY " ${CPLEX_LIBRARY})
   if (CPLEX_LIBRARY MATCHES ".*/(cplex.*)\\.lib")
     file(GLOB CPLEX_DLL_ "${CPLEX_DIR}/bin/*/${CMAKE_MATCH_1}.dll")
     set(CPLEX_DLL ${CPLEX_DLL_} CACHE PATH "Path to the CPLEX DLL.")
+	message("CPLEX_DLL " ${CPLEX_DLL})
   endif ()
 endif ()
 
