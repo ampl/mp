@@ -15,7 +15,7 @@ if os.path.exists(python_dir) and not installed('python'):
   add_to_path(python_dir + r'\python')
   add_to_path(python_dir + r'\Scripts', None, True)
 
-install_cmake('cmake-3.3.0-win32-x86.zip')
+install_cmake('cmake-3.4.0-win32-x86.zip')
 install_maven()
 
 # Install .NET Framework 4 for msbuild.

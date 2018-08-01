@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
   env = os.environ.copy()
   env['DEBIAN_FRONTEND'] = 'noninteractive'
-  
+
   check_call(['cp', '-r', '/support/bootstrap/cache', '/var/'])
 
   # Install AMPL.
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     check_call(['apt-get', 'install', '-qy'] + packages, env=env)
     shutil.rmtree('/var/cache/oracle-jdk7-installer')
 
-    install_cmake('cmake-3.3.0-Linux-i386.tar.gz')
+    install_cmake('cmake-3.4.0-Linux-i386.tar.gz')
     install_maven()
 
   # Upgrade gcc to 4.8 if necessary
@@ -77,9 +77,9 @@ if __name__ == '__main__':
     check_call(['add-apt-repository', 'ppa:ubuntu-toolchain-r/test'], env=env)
     check_call(['apt-get', 'update', '-q'], env=env)
     check_call(['apt-get', 'install', '-qy', 'gcc-4.8', 'g++-4.8'], env=env)
-    check_call(['sudo', 'update-alternatives', '--install', 
+    check_call(['sudo', 'update-alternatives', '--install',
                 '/usr/bin/gcc', 'gcc', '/usr/bin/gcc-4.8', '50'], env=env)
-    check_call(['sudo', 'update-alternatives', '--install', 
+    check_call(['sudo', 'update-alternatives', '--install',
                 '/usr/bin/g++', 'g++', '/usr/bin/g++-4.8', '50'], env=env)
 
   # Installs symlinks for ccache.
