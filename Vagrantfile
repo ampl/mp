@@ -18,10 +18,10 @@ VAGRANTFILE_API_VERSION = "2"
 # Path to directory containing optional dependencies.
 OPT_DIR = ENV["AMPL_OPT_DIR"]
 
-def configure_docker(config, image, arch)
+def configure_docker(config, image, arch, addr)
   config.vm.provider "docker" do |d|
     d.name = image
-    d.create_args = "-h", image
+    d.create_args = "-h", image, "--mac-address", addr
     d.image = "buildbot:" + image
     if OPT_DIR
       dir = OPT_DIR + "/linux-" + arch + "/*/"
@@ -45,35 +45,35 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Linux boxes don't use provisioning. To update them, use
   # support/bootstrap/create-ubuntu-image.py script.
   config.vm.define "lucid32" do |c|
-    configure_docker(c, "lucid32", "i686")
+    configure_docker(c, "lucid32", "i686", "02:42:AC:11:00:02")
   end
 
   config.vm.define "lucid64", primary: true do |c|
-    configure_docker(c, "lucid64", "x86_64")
+    configure_docker(c, "lucid64", "x86_64", "02:42:AC:11:00:07")
   end
 
   config.vm.define "precise32" do |c|  
-    configure_docker(c, "precise32", "i686")
+    configure_docker(c, "precise32", "i686", "02:42:AC:11:00:06")
   end
 
   config.vm.define "precise64" do |c|
-    configure_docker(c, "precise64", "x86_64")
+    configure_docker(c, "precise64", "x86_64", "02:42:AC:11:00:09")
   end
 
   config.vm.define "trusty32" do |c|  
-    configure_docker(c, "trusty32", "i686")
+    configure_docker(c, "trusty32", "i686", "02:42:AC:11:00:03")
   end
 
   config.vm.define "trusty64" do |c|
-    configure_docker(c, "trusty64", "x86_64")
+    configure_docker(c, "trusty64", "x86_64", "02:42:AC:11:00:04")
   end
 
   config.vm.define "xenial32" do |c|  
-    configure_docker(c, "xenial32", "i686")
+    configure_docker(c, "xenial32", "i686", "02:42:AC:11:00:08")
   end
 
   config.vm.define "xenial64" do |c|
-    configure_docker(c, "xenial64", "x86_64")
+    configure_docker(c, "xenial64", "x86_64", "02:42:AC:11:00:05")
   end
 
   config.vm.define "osx-ml" do |c|
