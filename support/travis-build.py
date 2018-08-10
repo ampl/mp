@@ -65,7 +65,7 @@ os_name = os.environ['TRAVIS_OS_NAME']
 if os_name == 'linux':
   cmake_system = 'Linux-x86_64'
 else:
-  cmake_system = 'Darwin-universal'
+  cmake_system = 'Darwin-x86_64'
   # Install Java as a workaround for bug
   # http://bugs.java.com/bugdatabase/view_bug.do?bug_id=7131356.
   java_url = 'https://support.apple.com/downloads/DL1572/en_US/javaforosx.dmg'
