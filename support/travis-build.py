@@ -68,9 +68,9 @@ else:
   cmake_system = 'Darwin-x86_64'
   # Install Java as a workaround for bug
   # http://bugs.java.com/bugdatabase/view_bug.do?bug_id=7131356.
-  java_url = 'https://support.apple.com/downloads/DL1572/en_US/javaforosx.dmg'
-  with Downloader().download(java_url) as f:
-    bootstrap.install_dmg(f)
+  # java_url = 'https://support.apple.com/downloads/DL1572/en_US/javaforosx.dmg'
+  # with Downloader().download(java_url) as f:
+  #   bootstrap.install_dmg(f)
 
 # Install newer version of CMake.
 cmake_path = bootstrap.install_cmake(
