@@ -74,7 +74,7 @@ else:
 
 # Install newer version of CMake.
 cmake_path = bootstrap.install_cmake(
-  'cmake-3.3.0-{}.tar.gz'.format(cmake_system), check_installed=False,
+  'cmake-3.4.0-{}.tar.gz'.format(cmake_system), check_installed=False,
   download_dir=None, install_dir='.')
 
 env = os.environ.copy()
