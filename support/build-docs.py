@@ -80,8 +80,7 @@ def build_docs(workdir, doxygen='doxygen'):
   create_virtualenv(os.path.join(workdir, 'build', 'virtualenv'))
   # Install Sphinx and Breathe.
   pip_install('sphinx==1.3.1')
-  pip_install('michaeljones/breathe',
-              commit='6a3797213f40b6d5679b3fa95637d3bbc967e1bf')
+  pip_install('breathe', check_version='4.1.0')
 
   # Clone the ampl.github.io repo.
   repo = 'ampl.github.io'
