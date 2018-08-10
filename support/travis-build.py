@@ -25,7 +25,7 @@ if build == 'doc':
       # Push docs to GitHub pages if this is a master branch.
       if travis:
         check_call(['git', 'config', '--global', 'user.name', 'amplbot'])
-        check_call(['git', 'config', '--global', 'user.email', 'viz@ampl.com'])
+        check_call(['git', 'config', '--global', 'user.email', 'bot@ampl.com'])
       check_call(['git', 'add', '--all'], cwd=repo_dir)
       if call(['git', 'diff-index', '--quiet', 'HEAD'], cwd=repo_dir):
         check_call(['git', 'commit', '-m', 'Update documentation'], cwd=repo_dir)
