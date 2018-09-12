@@ -46,7 +46,7 @@ if __name__ == '__main__':
     # Add git-core PPA for newer version of Git because version 1.7 available
     # in Lucid cannot access private repos on GitHub via a token.
     check_call(['add-apt-repository', 'ppa:git-core/ppa'], env=env)
-    # Add webupd8team java PPA for Java 7.
+    # Add webupd8team java PPA for Java 8.
     check_call(['add-apt-repository', 'ppa:webupd8team/java'], env=env)
     # Suppress license dialog.
     cmd = 'echo debconf shared/accepted-oracle-license-v1-1 {0} true | ' + \
@@ -57,14 +57,14 @@ if __name__ == '__main__':
     check_call(['apt-get', 'update', '-q'], env=env)
     packages = [
       'doxygen', 'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
-      'oracle-java7-installer', 'oracle-java7-set-default',
+      'oracle-java8-installer', 'oracle-java8-set-default',
       'libgtk2.0-0', 'libxrender1', 'libxtst6', # Java/Eclipse requirements
       'python-dev', 'unixodbc-dev'
     ]
     if x86_64:
       packages.append('libc6-i386')
     check_call(['apt-get', 'install', '-qy'] + packages, env=env)
-    shutil.rmtree('/var/cache/oracle-jdk7-installer')
+    shutil.rmtree('/var/cache/oracle-jdk8-installer')
 
     install_cmake('cmake-3.4.0-Linux-i386.tar.gz')
     install_maven()
