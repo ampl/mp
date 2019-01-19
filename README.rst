@@ -99,11 +99,13 @@ CMake works by generating native makefiles or project files that can
 be used in the compiler environment of your choice. The typical
 workflow starts with::
 
-  mkdir build         # Create a directory to hold the build output.
+  git clone https://github.com/ampl/mp.git
+  cd mp
+  git submodule init
+  git submodule update
+  mkdir build  # Create a directory to hold the build output.
   cd build
-  cmake <path/to/mp>  # Generate native build scripts.
-
-where ``<path/to/mp>`` is a path to the ``mp`` repository.
+  cmake -DBUILD=all ..  # Generate native build scripts.
 
 If you are on a \*nix system, you should now see a Makefile in the
 current directory. Now you can build MP by running ``make``.
