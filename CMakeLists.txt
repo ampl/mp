@@ -378,8 +378,11 @@ foreach (module ${MP_MODULES})
   endif ()
 endforeach ()
 
+include(CTest)
 enable_testing()
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
 install(DIRECTORY include/mp DESTINATION include)
 install(TARGETS mp DESTINATION lib RUNTIME DESTINATION bin)
