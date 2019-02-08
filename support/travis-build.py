@@ -14,7 +14,7 @@ if build == 'doc':
   travis = 'TRAVIS' in os.environ
   workdir = tempfile.mkdtemp()
   try:
-    doxygen_url = 'http://ftp.stack.nl/pub/users/dimitri/doxygen-1.8.10.linux.bin.tar.gz'
+    doxygen_url = 'http://ftp.kaist.ac.kr/doxygen/doxygen-1.8.10.linux.bin.tar.gz'
     dir = os.path.dirname(os.path.realpath(__file__))
     with Downloader().download(doxygen_url) as f:
       with closing(tarfile.open(f, 'r:gz')) as archive:
