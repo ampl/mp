@@ -259,10 +259,7 @@ if (NOT HAVE_GETRUSAGE)
   target_compile_definitions(asl-extra PRIVATE NO_RUSAGE)
 endif ()
 
-find_library(DL_LIBRARY dl)
-if (DL_LIBRARY)
-  target_link_libraries(asl dl)
-endif ()
+target_link_libraries(asl ${CMAKE_DL_LIBS})
 
 find_package(MATLAB)
 if (MATLAB_FOUND)
