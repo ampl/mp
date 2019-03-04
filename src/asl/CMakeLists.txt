@@ -234,10 +234,6 @@ add_mp_library(asl STATIC OBJECT_LIBRARIES asl-core asl-extra
 if (NOT WIN32)
   target_link_libraries(asl m)
 endif ()
-check_library_exists(dl dlopen "" HAVE_LIBDL)
-if (HAVE_LIBDL)
-  target_link_libraries(asl dl)
-endif ()
 
 if (BUILD_SHARED_LIBS)
   add_library(asl-shared $<TARGET_OBJECTS:asl-core> $<TARGET_OBJECTS:asl-extra>)
