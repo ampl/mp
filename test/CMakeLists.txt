@@ -1,4 +1,5 @@
 include_directories(../thirdparty)
+include(CheckCXXCompilerFlag)
 
 if (MSVC)
   # Fix error C1128: number of sections exceeded object file format limit.
