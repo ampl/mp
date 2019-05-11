@@ -17,6 +17,11 @@ include(init)
 
 project(MP)
 
+# Set the c++11 flag without GNU extensions.
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if (POLICY CMP0042)
   # Enable @rpath support on OS X.
   cmake_policy(SET CMP0042 NEW)
@@ -118,26 +123,6 @@ function(check_module name var)
   set(${var} TRUE PARENT_SCOPE)
 endfunction()
 
-# Enable C++11.
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(-std=c++11 HAVE_STD_CPP11_FLAG)
-if (HAVE_STD_CPP11_FLAG)
-  set(MP_CXX11_FLAG -std=c++11)
-else ()
-  check_cxx_compiler_flag(-std=c++0x HAVE_STD_CPP0X_FLAG)
-  if (HAVE_STD_CPP0X_FLAG)
-    set(MP_CXX11_FLAG -std=c++0x)
-  endif ()
-endif ()
-
-# Enable C++11 for target.
-function (enable_cxx11 target)
-  if (MP_CXX11_FLAG)
-    target_compile_options(${target}
-      PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${MP_CXX11_FLAG}>)
-  endif ()
-endfunction ()
-
 if (NOT MSVC)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
@@ -207,7 +192,6 @@ function (add_mp_library name)
   endif ()
   add_library(${name} ${libtype}
     ${add_mp_library_UNPARSED_ARGUMENTS} ${objects})
-  enable_cxx11(${name})
   target_compile_definitions(${name}
     PUBLIC ${add_mp_library_COMPILE_DEFINITIONS})
   target_include_directories(${name}
@@ -254,7 +238,6 @@ add_mp_library(format OBJECT
 set(MP_EXPR_INFO_FILE ${MP_SOURCE_DIR}/src/expr-info.cc)
 add_executable(gen-expr-info EXCLUDE_FROM_ALL
   src/gen-expr-info.cc $<TARGET_OBJECTS:format>)
-enable_cxx11(gen-expr-info)
 if (MINGW)
   SET_TARGET_PROPERTIES(gen-expr-info PROPERTIES
     LINK_FLAGS "-static-libgcc -static-libstdc++")
@@ -378,8 +361,11 @@ foreach (module ${MP_MODULES})
   endif ()
 endforeach ()
 
+include(CTest)
 enable_testing()
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
 install(DIRECTORY include/mp DESTINATION include)
 install(TARGETS mp DESTINATION lib RUNTIME DESTINATION bin)
