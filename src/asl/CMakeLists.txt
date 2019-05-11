@@ -334,8 +334,10 @@ endif ()
 if (MSVC)
   foreach (target asl-core asl-core-dynrt gjh ampltabl amplodbc
                   fullbit simpbit tableproxy)
-    target_compile_options(${target}
-      PRIVATE /wd4013 /wd4018 /wd4101 /wd4244 /wd4273 /wd4267 /wd4996)
+    if (TARGET ${target})
+      target_compile_options(${target}
+        PRIVATE /wd4013 /wd4018 /wd4101 /wd4244 /wd4273 /wd4267 /wd4996)
+    endif ()
   endforeach ()
 else ()
   add_c_compiler_flags(asl-core -Wno-unused-result -Wno-parentheses)
