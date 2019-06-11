@@ -107,6 +107,10 @@ workflow starts with::
   cd build
   cmake -DBUILD=all ..  # Generate native build scripts.
 
+Note: If the arith.h file used by default does not match the target architecture,
+or if the compiler is not sufficiently compatible with gcc or Microsoft C/C++,
+run `cmake -DBUILD=all -DGENERATE_ARITH=true ..` to generate an architecture-specific arit.h file with `arithchk`.
+
 If you are on a \*nix system, you should now see a Makefile in the
 current directory. Now you can build MP by running ``make``.
 
