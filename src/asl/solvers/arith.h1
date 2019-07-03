@@ -51,3 +51,6 @@ Unexpected byte ordering!!!!
 #define QNaN0 0xfff80000
 #define QNaN1 0x0
 #endif
+#ifndef Long
+#define Long int
+#endif
