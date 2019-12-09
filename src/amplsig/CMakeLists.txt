@@ -6,8 +6,14 @@ if (NOT WIN32)
   return ()
 endif ()
 
-find_library(WS2_32_LIBRARY Ws2_32)
+find_package(WindowsSDK)
+GetUMWindowsSKDLibraryDir(WIN_LIBRARY_DIR)
+
+unset(WS2_32_LIBRARY CACHE)
+find_library(WS2_32_LIBRARY Ws2_32
+PATHS ${WIN_LIBRARY_DIR} NO_DEFAULT_PATH)
 if (WS2_32_LIBRARY)
   add_ampl_library(amplsig amplsig.cc)
+  message(WS2_32_LIBRARY ${WS2_32_LIBRARY})
   target_link_libraries(amplsig mp ${WS2_32_LIBRARY})
 endif ()
