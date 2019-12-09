@@ -266,7 +266,7 @@ endif ()
 target_link_libraries(asl ${CMAKE_DL_LIBS})
 
 find_package(MATLAB)
-if (MATLAB_FOUND)
+if (MATLAB_FOUND AND MATLAB_BUILD)
   set(matlab_asl asl)
   if (MSVC)
     set(matlab_asl asl-dynrt)
