@@ -613,8 +613,6 @@ TEST_F(IlogCPTest, CPFlagOptions) {
       {"on",  IloCP::On},
       {0,     IloCP::Off}
   };
-  CheckIntCPOption("constraintaggregation", IloCP::ConstraintAggregation,
-      0, 1, IloCP::Off, false, flags);
   CheckIntCPOption("dynamicprobing", IloCP::DynamicProbing,
       0, 1, IloCP::Off, true, flags);
   CheckIntCPOption("temporalrelaxation", IloCP::TemporalRelaxation,
@@ -656,8 +654,6 @@ TEST_F(IlogCPTest, CPVerbosityOptions) {
   CheckIntCPOption("logverbosity", IloCP::LogVerbosity,
       0, 3, IloCP::Quiet, false, verbosities);
   CheckIntCPOption("outlev", IloCP::LogVerbosity,
-      0, 3, IloCP::Quiet, false, verbosities);
-  CheckIntCPOption("propagationlog", IloCP::PropagationLog,
       0, 3, IloCP::Quiet, false, verbosities);
 }
 
