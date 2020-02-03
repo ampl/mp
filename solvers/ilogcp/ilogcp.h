@@ -95,7 +95,12 @@ class IlogCPSolver : public SolverImpl<Problem> {
 
  private:
   Optimizer optimizer_;
+  Optimizer optimizer;
   int options_[NUM_OPTIONS];
+
+  unsigned converter_flags = 0;
+  std::unique_ptr<MPToConcertConverter> converter;
+
 
   enum FileKind {
     DUMP_FILE,
@@ -144,6 +149,7 @@ class IlogCPSolver : public SolverImpl<Problem> {
     double setup_time;
     double solution_time;
   };
+  Stats stats;
 
   void SolveWithCP(Problem &p, const MPToConcertConverter &converter,
                    Stats &stats, SolutionHandler &sh);
@@ -166,6 +172,11 @@ class IlogCPSolver : public SolverImpl<Problem> {
   void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
 
   void Solve(Problem &p, SolutionHandler &sh);
+
+ public:                    // [[ The interface ]]
+  void Convert(Problem& p);
+  void InitConversion(Problem& p);
+  void SolveConvertedModel(Problem& p, SolutionHandler &sh);
 };
 }
 

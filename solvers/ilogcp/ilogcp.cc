@@ -276,7 +276,7 @@ namespace mp {
 
 IlogCPSolver::IlogCPSolver() :
    SolverImpl<Problem>("ilogcp", 0, YYYYMMDD, MULTIPLE_SOL | MULTIPLE_OBJ),
-   cp_(env_), cplex_(env_), optimizer_(AUTO) {
+   cp_(env_), cplex_(env_), optimizer_(AUTO), optimizer(AUTO) {
   cp_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
   cplex_.setParam(IloCplex::MIPDisplay, 0);
 
@@ -809,10 +809,14 @@ void IlogCPSolver::SolveWithCPLEX(
 }
 
 void IlogCPSolver::Solve(Problem &p, SolutionHandler &sh) {
-  Stats stats = Stats();
+  Convert(p);
+  SolveConvertedModel(p, sh);
+}
+
+void IlogCPSolver::InitConversion(Problem &p) {
   stats.time = steady_clock::now();
 
-  Optimizer optimizer = optimizer_;
+  optimizer = optimizer_;
   if (optimizer == AUTO) {
     if (p.num_logical_cons() != 0 || p.has_nonlinear_cons() ||
         HasNonlinearObj(p)) {
@@ -828,17 +832,22 @@ void IlogCPSolver::Solve(Problem &p, SolutionHandler &sh) {
     }
   }
 
-  unsigned flags = 0;
   if (GetOption(USENUMBEROF) != 0)
-    flags |= MPToConcertConverter::USENUMBEROF;
+    converter_flags |= MPToConcertConverter::USENUMBEROF;
   if (GetOption(DEBUGEXPR) != 0)
-    flags |= MPToConcertConverter::DEBUG;
-  MPToConcertConverter converter(env_, flags);
-  converter.Convert(p);
+    converter_flags |= MPToConcertConverter::DEBUG;
+  converter.reset(new MPToConcertConverter(env_, converter_flags));
+}
 
+void IlogCPSolver::Convert(Problem &p) {
+  InitConversion(p);
+  converter->Convert(p);
+}
+
+void IlogCPSolver::SolveConvertedModel(Problem &p, SolutionHandler &sh) {
   try {
     IloAlgorithm &cp_alg = cp_;
-    (optimizer == CP ? cp_alg : cplex_).extract(converter.model());
+    (optimizer == CP ? cp_alg : cplex_).extract(converter->model());
   } catch (IloAlgorithm::CannotExtractException &e) {
     const IloExtractableArray &extractables = e.getExtractables();
     if (extractables.getSize() == 0)
@@ -847,9 +856,9 @@ void IlogCPSolver::Solve(Problem &p, SolutionHandler &sh) {
   }
 
   if (optimizer == CP)
-    SolveWithCP(p, converter, stats, sh);
+    SolveWithCP(p, *converter, stats, sh);
   else
-    SolveWithCPLEX(p, converter, stats, sh);
+    SolveWithCPLEX(p, *converter, stats, sh);
   double output_time = GetTimeAndReset(stats.time);
 
   if (timing()) {
@@ -859,6 +868,7 @@ void IlogCPSolver::Solve(Problem &p, SolutionHandler &sh) {
           stats.setup_time, stats.solution_time, output_time);
   }
 }
+
 
 SolverPtr create_ilogcp(const char *) { return SolverPtr(new IlogCPSolver()); }
 }
