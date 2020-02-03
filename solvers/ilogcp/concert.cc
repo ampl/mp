@@ -320,6 +320,15 @@ IloExpr MPToConcertConverter::ConvertExpr(
 
 void MPToConcertConverter::Convert(const Problem &p) {
   // Set up optimization problem using the Concert API.
+  PushVariables(p);
+  PushCommonSubExpr(p);
+  PushObjectives(p);
+  PushAlgebraicConstraints(p);
+  PushLogicalConstraints(p);
+  FinishConversion(p);
+}
+
+void MPToConcertConverter::PushVariables(const Problem &p) {
   int num_vars = p.num_vars();
   vars_.setSize(num_vars);
   for (int j = 0; j < num_vars; ++j) {
@@ -327,14 +336,18 @@ void MPToConcertConverter::Convert(const Problem &p) {
     vars_[j] = IloNumVar(env_, var.lb(), var.ub(),
                          var.type() == mp::var::CONTINUOUS ? ILOFLOAT : ILOINT);
   }
+}
 
+void MPToConcertConverter::PushCommonSubExpr(const Problem &p) {
   int num_common_exprs = p.num_common_exprs();
   common_exprs_.resize(num_common_exprs);
   for (int i = 0; i < num_common_exprs; ++i) {
     Problem::CommonExpr expr = p.common_expr(i);
     common_exprs_[i] = ConvertExpr(expr.linear_expr(), expr.nonlinear_expr());
   }
+}
 
+void MPToConcertConverter::PushObjectives(const Problem &p) {
   if (int num_objs = p.num_objs()) {
     obj::Type main_obj_type = p.obj(0).type();
     IloNumExprArray objs(env_);
@@ -349,7 +362,9 @@ void MPToConcertConverter::Convert(const Problem &p) {
         IloObjective(env_, objs[0], sense) :
         IloObjective(env_, IloStaticLex(env_, objs), sense));
   }
+}
 
+void MPToConcertConverter::PushAlgebraicConstraints(const Problem &p) {
   if (int n_cons = p.num_algebraic_cons()) {
     cons_.setSize(n_cons);
     for (int i = 0; i < n_cons; ++i) {
@@ -366,7 +381,9 @@ void MPToConcertConverter::Convert(const Problem &p) {
     }
     model_.add(cons_);
   }
+}
 
+void MPToConcertConverter::PushLogicalConstraints(const Problem &p) {
   if (int n_lcons = p.num_logical_cons()) {
     IloConstraintArray cons(env_, n_lcons);
     for (int i = 0; i < n_lcons; ++i) {
@@ -402,7 +419,10 @@ void MPToConcertConverter::Convert(const Problem &p) {
     }
     model_.add(cons);
   }
+}
 
+void MPToConcertConverter::FinishConversion(const Problem &p) {
   FinishBuildingNumberOf();
 }
+
 }  // namespace mp

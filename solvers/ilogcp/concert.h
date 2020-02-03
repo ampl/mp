@@ -468,6 +468,15 @@ class MPToConcertConverter : public ExprVisitor<MPToConcertConverter, IloExpr> {
   typedef BasicProblem< std::allocator<char> > Problem;
 
   void Convert(const Problem &p);
+
+  /// [[ The interface ]]
+  void PushVariables(const Problem& p);
+  void PushCommonSubExpr(const Problem& p);
+  void PushObjectives(const Problem& p);
+  void PushAlgebraicConstraints(const Problem& p);
+  void PushLogicalConstraints(const Problem& p);
+  void FinishConversion(const Problem& p);
+
 };
 }
 
