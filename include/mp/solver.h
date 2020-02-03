@@ -1293,10 +1293,18 @@ inline void SetBasename(Solver &, ...) {}
 template <typename Solver, typename Reader = internal::NLFileReader<> >
 class SolverApp : private Reader {
  private:
-  Solver solver_;
-  internal::SolverAppOptionParser option_parser_;
+  int result_code_ = 0;
+  unsigned banner_size = 0;
 
+  Solver solver_;
+
+  std::string nl_filename, filename_no_ext;
   typedef typename Solver::ProblemBuilder ProblemBuilder;
+  std::unique_ptr<ProblemBuilder> builder;
+  std::unique_ptr< internal::SolverNLHandler<Solver> > handler;
+
+  internal::SignalHandler sig_handler;
+  internal::SolverAppOptionParser option_parser_;
 
   struct AppOutputHandler : OutputHandler {
     bool has_output;
@@ -1309,7 +1317,9 @@ class SolverApp : private Reader {
   AppOutputHandler output_handler_;
 
  public:
-  SolverApp() : option_parser_(solver_) {
+  SolverApp() :
+    sig_handler(solver_),
+    option_parser_(solver_) {
     solver_.set_output_handler(&output_handler_);
   }
 
@@ -1329,17 +1339,28 @@ class SolverApp : private Reader {
   // solution(s).
   // argv: an array of command-line arguments terminated by a null pointer
   int Run(char **argv, int nl_reader_flags = 0);
+
+protected:
+  bool Init(char** argv, int nl_reader_flags);
+  void ReadNL(int nl_reader_flags);
+  void Solve();
 };
 
 template <typename Solver, typename Reader>
 int SolverApp<Solver, Reader>::Run(char **argv, int nl_reader_flags) {
-  internal::SignalHandler sig_handler(solver_);
+  if (!Init(argv, nl_reader_flags))
+    return result_code_;
+  ReadNL(nl_reader_flags);
+  Solve();
+  return 0;
+}
 
+template <typename Solver, typename Reader>
+bool SolverApp<Solver, Reader>::Init(char **argv, int nl_reader_flags) {
   // Parse command-line arguments.
   const char *filename = option_parser_.Parse(argv);
-  if (!filename) return 0;
+  if (!filename) return false;
 
-  unsigned banner_size = 0;
   if (solver_.ampl_flag()) {
     fmt::MemoryWriter banner;
     banner.write("{}: ", solver_.long_name());
@@ -1351,7 +1372,8 @@ int SolverApp<Solver, Reader>::Run(char **argv, int nl_reader_flags) {
   // TODO: test output
 
   // Add .nl extension if necessary.
-  std::string nl_filename = filename, filename_no_ext = nl_filename;
+  nl_filename = filename;
+  filename_no_ext = nl_filename;
   const char *ext = std::strrchr(filename, '.');
   if (!ext || std::strcmp(ext, ".nl") != 0)
     nl_filename += ".nl";
@@ -1362,26 +1384,34 @@ int SolverApp<Solver, Reader>::Run(char **argv, int nl_reader_flags) {
   // Parse solver options.
   unsigned flags =
       option_parser_.echo_solver_options() ? 0 : Solver::NO_OPTION_ECHO;
-  if (!solver_.ParseOptions(argv, flags))
-    return 1;
+  if (!solver_.ParseOptions(argv, flags)) {
+    result_code_ = 1;
+    return false;
+  }
 
-  // Read the problem.
+  return true;
+}
+
+template <typename Solver, typename Reader>
+void SolverApp<Solver, Reader>::ReadNL(int nl_reader_flags) {
   steady_clock::time_point start = steady_clock::now();
-  ProblemBuilder builder(solver_);
-  internal::SolverNLHandler<Solver> handler(builder, solver_);
-  this->Read(nl_filename, handler, nl_reader_flags);
+
+  builder.reset(new ProblemBuilder(solver_));
+  handler.reset(new internal::SolverNLHandler<Solver>(*builder, solver_));
+  this->Read(nl_filename, *handler, nl_reader_flags);
 
   double read_time = GetTimeAndReset(start);
   if (solver_.timing())
     solver_.Print("Input time = {:.6f}s\n", read_time);
+}
 
-  // Solve the problem and write solution(s) if necessary.
-  ArrayRef<int> options(handler.options(), handler.num_options());
+template <typename Solver, typename Reader>
+void SolverApp<Solver, Reader>::Solve() {
+  ArrayRef<int> options(handler->options(), handler->num_options());
   internal::AppSolutionHandler<Solver> sol_handler(
-        filename_no_ext, solver_, builder, options,
+        filename_no_ext, solver_, *builder, options,
         output_handler_.has_output ? 0 : banner_size);
-  solver_.Solve(builder.problem(), sol_handler);
-  return 0;
+  solver_.Solve(builder->problem(), sol_handler);
 }
 
 #ifdef MP_USE_UNIQUE_PTR
