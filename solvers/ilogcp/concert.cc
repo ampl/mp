@@ -110,8 +110,8 @@ IloIntVar MPToConcertConverter::ConvertArg(
 }
 
 MPToConcertConverter::MPToConcertConverter(IloEnv env, unsigned flags)
-: env_(env), model_(env), vars_(env), cons_(env), flags_(flags),
-  numberofs_(CreateVar(env)) {
+: env_(env), model_(env), vars_(env), cons_(env), flags_(flags), objs_(env),
+  numberofs_(CreateVar(env)), nNumberofsFinalized_(0) {
 }
 
 IloExpr MPToConcertConverter::VisitIf(IfExpr e) {
@@ -247,8 +247,11 @@ IloConstraint MPToConcertConverter::LogicalExprConverter::VisitImplication(
 }
 
 void MPToConcertConverter::FinishBuildingNumberOf() {
+  if (nNumberofsFinalized_ != 0)
+    throw Error("Incrementality with numberofs not implemented");
   for (IlogNumberOfMap::iterator
       i = numberofs_.begin(), end = numberofs_.end(); i != end; ++i) {
+    ++nNumberofsFinalized_;
     int index = 0;
     const IlogNumberOfMap::ValueMap &val_map = i->values;
     IloIntVarArray cards(env_, val_map.size());
@@ -330,99 +333,147 @@ void MPToConcertConverter::Convert(const Problem &p) {
 
 void MPToConcertConverter::PushVariables(const Problem &p) {
   int num_vars = p.num_vars();
-  vars_.setSize(num_vars);
   for (int j = 0; j < num_vars; ++j) {
     Problem::Variable var = p.var(j);
-    vars_[j] = IloNumVar(env_, var.lb(), var.ub(),
-                         var.type() == mp::var::CONTINUOUS ? ILOFLOAT : ILOINT);
+    double lb = var.lb();
+    double ub = var.ub();
+    var::Type ty = var.type();
+    AddVariables(1, &lb, &ub, &ty);
   }
 }
 
 void MPToConcertConverter::PushCommonSubExpr(const Problem &p) {
   int num_common_exprs = p.num_common_exprs();
-  common_exprs_.resize(num_common_exprs);
   for (int i = 0; i < num_common_exprs; ++i) {
     Problem::CommonExpr expr = p.common_expr(i);
-    common_exprs_[i] = ConvertExpr(expr.linear_expr(), expr.nonlinear_expr());
+    AddCommonExpressions(1, &expr);
   }
 }
 
 void MPToConcertConverter::PushObjectives(const Problem &p) {
   if (int num_objs = p.num_objs()) {
-    obj::Type main_obj_type = p.obj(0).type();
-    IloNumExprArray objs(env_);
     for (int i = 0; i < num_objs; ++i) {
       Problem::Objective obj = p.obj(i);
-      IloExpr ilo_expr = ConvertExpr(obj.linear_expr(), obj.nonlinear_expr());
-      objs.add(obj.type() == main_obj_type ? ilo_expr : -ilo_expr);
+      AddObjectives(1, &obj);
     }
-    IloObjective::Sense sense = main_obj_type == obj::MIN ?
-        IloObjective::Minimize : IloObjective::Maximize;
-    IloAdd(model_, num_objs == 1 ?
-        IloObjective(env_, objs[0], sense) :
-        IloObjective(env_, IloStaticLex(env_, objs), sense));
   }
 }
 
 void MPToConcertConverter::PushAlgebraicConstraints(const Problem &p) {
   if (int n_cons = p.num_algebraic_cons()) {
-    cons_.setSize(n_cons);
     for (int i = 0; i < n_cons; ++i) {
-      IloExpr expr(env_);
       Problem::AlgebraicCon con = p.algebraic_con(i);
-      const LinearExpr &linear = con.linear_expr();
-      for (LinearExpr::iterator
-          j = linear.begin(), end = linear.end(); j != end; ++j) {
-        expr += j->coef() * vars_[j->var_index()];
-      }
-      if (NumericExpr e = con.nonlinear_expr())
-        expr += Visit(e);
-      cons_[i] = (con.lb() <= expr <= con.ub());
+      AddAlgebraicConstraints(1, &con);
     }
-    model_.add(cons_);
   }
 }
 
 void MPToConcertConverter::PushLogicalConstraints(const Problem &p) {
   if (int n_lcons = p.num_logical_cons()) {
-    IloConstraintArray cons(env_, n_lcons);
     for (int i = 0; i < n_lcons; ++i) {
-      LogicalExpr expr = p.logical_con(i).expr();
-      if (expr.kind() == expr::NE) {
-        RelationalExpr rel = Cast<RelationalExpr>(expr);
-        NumericConstant const_rhs = Cast<NumericConstant>(rel.rhs());
-        if (const_rhs && const_rhs.value() == 0) {
-          CallExpr call = Cast<CallExpr>(rel.lhs());
-          if (call && ConvertGlobalConstraint(call, cons[i]))
-            continue;
-        }
-      } else if (expr.kind() == mp::expr::ALLDIFF) {
-        PairwiseExpr alldiff = Cast<PairwiseExpr>(expr);
-        // IloAllDiff is a global constraint that cannot be used
-        // as a subexpression (the Concert API allows this, but
-        // IloAlgorithm::extract throws CannotExtractException).
-        IloIntVarArray vars(env_);
-        for (PairwiseExpr::iterator
-             j = alldiff.begin(), end = alldiff.end(); j != end; ++j) {
-          if (j->kind() == expr::VARIABLE) {
-            vars.add(vars_[Cast<Variable>(*j).index()]);
-            continue;
-          }
-          IloIntVar var(env_, IloIntMin, IloIntMax);
-          model_.add(var == Visit(*j));
-          vars.add(var);
-        }
-        cons[i] = IloAllDiff(env_, vars);
-        continue;
-      }
-      cons[i] = Visit(expr);
+      Problem::LogicalCon con = p.logical_con(i);
+      AddLogicalConstraints(1, &con);
     }
-    model_.add(cons);
   }
 }
 
 void MPToConcertConverter::FinishConversion(const Problem &p) {
   FinishBuildingNumberOf();
+  FinishBuildingObjectives();
+  FinishBuildingAlgebraicConstraints();
+}
+
+void MPToConcertConverter::FinishBuildingObjectives() {
+  IloObjective::Sense sense = main_obj_type_ == obj::MIN ?
+      IloObjective::Minimize : IloObjective::Maximize;
+  if (objs_.getSize()>0)
+    IloAdd(model_, objs_.getSize() == 1 ?
+      IloObjective(env_, objs_[0], sense) :
+      IloObjective(env_, IloStaticLex(env_, objs_), sense));
+}
+
+void MPToConcertConverter::FinishBuildingAlgebraicConstraints() {
+}
+
+void MPToConcertConverter::AddVariables(int n, double *lbs, double *ubs, var::Type *types) {
+  IloNumVarArray varsNew(env_, n);
+  for (int j = 0; j < n; ++j) {
+    varsNew[j] = IloNumVar(env_, lbs[j], ubs[j],
+                         types[j] == mp::var::CONTINUOUS ? ILOFLOAT : ILOINT);
+  }
+  vars_.add(varsNew);
+}
+
+void MPToConcertConverter::AddCommonExpressions(int n, Problem::CommonExpr *cexprs) {
+  common_exprs_.reserve(common_exprs_.size() + n);
+  for (int i = 0; i < n; ++i) {
+    common_exprs_[i] =
+        ConvertExpr(cexprs[i].linear_expr(), cexprs[i].nonlinear_expr());
+  }
+}
+
+void MPToConcertConverter::AddObjectives(int n, Problem::Objective *objs) {
+  assert(n>0);
+  if (0==objs_.getSize())
+    main_obj_type_ = objs[0].type();
+  for (int i = 0; i < n; ++i) {
+    Problem::Objective obj = objs[i];
+    IloExpr ilo_expr = ConvertExpr(objs[i].linear_expr(), objs[i].nonlinear_expr());
+    objs_.add(objs[i].type() == main_obj_type_ ? ilo_expr : -ilo_expr);
+  }
+}
+
+void MPToConcertConverter::AddAlgebraicConstraints(int n, Problem::AlgebraicCon *cons) {
+  for (int i = 0; i < n; ++i) {
+    IloExpr expr(env_);
+    Problem::AlgebraicCon con = cons[i];
+    const LinearExpr &linear = con.linear_expr();
+    for (LinearExpr::iterator
+        j = linear.begin(), end = linear.end(); j != end; ++j) {
+      expr += j->coef() * vars_[j->var_index()];
+    }
+    if (NumericExpr e = con.nonlinear_expr())
+      expr += Visit(e);
+    IloRange rng(env_, con.lb(), expr, con.ub());
+    cons_.add(rng);
+    model_.add(rng);
+  }
+}
+
+void MPToConcertConverter::AddLogicalConstraints(int n, Problem::LogicalCon *lcons) {
+  IloConstraintArray cons(env_, n);
+  for (int i = 0; i < n; ++i) {
+    LogicalExpr expr = lcons[i].expr();
+    if (expr.kind() == expr::NE) {
+      RelationalExpr rel = Cast<RelationalExpr>(expr);
+      NumericConstant const_rhs = Cast<NumericConstant>(rel.rhs());
+      if (const_rhs && const_rhs.value() == 0) {
+        CallExpr call = Cast<CallExpr>(rel.lhs());
+        if (call && ConvertGlobalConstraint(call, cons[i]))
+          continue;
+      }
+    } else if (expr.kind() == mp::expr::ALLDIFF) {
+      PairwiseExpr alldiff = Cast<PairwiseExpr>(expr);
+      // IloAllDiff is a global constraint that cannot be used
+      // as a subexpression (the Concert API allows this, but
+      // IloAlgorithm::extract throws CannotExtractException).
+      IloIntVarArray vars(env_);
+      for (PairwiseExpr::iterator
+           j = alldiff.begin(), end = alldiff.end(); j != end; ++j) {
+        if (j->kind() == expr::VARIABLE) {
+          vars.add(vars_[Cast<Variable>(*j).index()]);
+          continue;
+        }
+        IloIntVar var(env_, IloIntMin, IloIntMax);
+        model_.add(var == Visit(*j));
+        vars.add(var);
+      }
+      cons[i] = IloAllDiff(env_, vars);
+      continue;
+    }
+    cons[i] = Visit(expr);
+  }
+  model_.add(cons);
 }
 
 }  // namespace mp
