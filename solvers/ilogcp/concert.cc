@@ -28,6 +28,7 @@
 #include <functional>
 
 #include "mp/problem.h"
+#include "mp/interface.h"
 
 #ifndef M_PI
 # define M_PI 3.14159265358979323846
@@ -323,61 +324,11 @@ IloExpr MPToConcertConverter::ConvertExpr(
 
 void MPToConcertConverter::Convert(const Problem &p) {
   // Set up optimization problem using the Concert API.
-  PushVariables(p);
-  PushCommonSubExpr(p);
-  PushObjectives(p);
-  PushAlgebraicConstraints(p);
-  PushLogicalConstraints(p);
-  FinishConversion(p);
+  ProblemToInterfaceFeeder<Problem, MPToConcertConverter> feeder(p, *this);
+  feeder.PushWholeProblem();
 }
 
-void MPToConcertConverter::PushVariables(const Problem &p) {
-  int num_vars = p.num_vars();
-  for (int j = 0; j < num_vars; ++j) {
-    Problem::Variable var = p.var(j);
-    double lb = var.lb();
-    double ub = var.ub();
-    var::Type ty = var.type();
-    AddVariables(1, &lb, &ub, &ty);
-  }
-}
-
-void MPToConcertConverter::PushCommonSubExpr(const Problem &p) {
-  int num_common_exprs = p.num_common_exprs();
-  for (int i = 0; i < num_common_exprs; ++i) {
-    Problem::CommonExpr expr = p.common_expr(i);
-    AddCommonExpressions(1, &expr);
-  }
-}
-
-void MPToConcertConverter::PushObjectives(const Problem &p) {
-  if (int num_objs = p.num_objs()) {
-    for (int i = 0; i < num_objs; ++i) {
-      Problem::Objective obj = p.obj(i);
-      AddObjectives(1, &obj);
-    }
-  }
-}
-
-void MPToConcertConverter::PushAlgebraicConstraints(const Problem &p) {
-  if (int n_cons = p.num_algebraic_cons()) {
-    for (int i = 0; i < n_cons; ++i) {
-      Problem::AlgebraicCon con = p.algebraic_con(i);
-      AddAlgebraicConstraints(1, &con);
-    }
-  }
-}
-
-void MPToConcertConverter::PushLogicalConstraints(const Problem &p) {
-  if (int n_lcons = p.num_logical_cons()) {
-    for (int i = 0; i < n_lcons; ++i) {
-      Problem::LogicalCon con = p.logical_con(i);
-      AddLogicalConstraints(1, &con);
-    }
-  }
-}
-
-void MPToConcertConverter::FinishConversion(const Problem &p) {
+void MPToConcertConverter::FinishConversion() {
   FinishBuildingNumberOf();
   FinishBuildingObjectives();
   FinishBuildingAlgebraicConstraints();

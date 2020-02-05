@@ -477,20 +477,13 @@ class MPToConcertConverter : public ExprVisitor<MPToConcertConverter, IloExpr> {
 
   void Convert(const Problem &p);
 
-  /// [[ The interface ]]
-  void PushVariables(const Problem& p);
-  void PushCommonSubExpr(const Problem& p);
-  void PushObjectives(const Problem& p);
-  void PushAlgebraicConstraints(const Problem& p);
-  void PushLogicalConstraints(const Problem& p);
-  void FinishConversion(const Problem& p);
-
-  /// [[ The interface -- individual items ]]
+  /// [[ Incremental interface for model manipulation ]]
   void AddVariables(int n, double* lbs, double* ubs, var::Type* types);
   void AddCommonExpressions(int n, Problem::CommonExpr* cexprs);
   void AddObjectives(int n, Problem::Objective* objs);
   void AddAlgebraicConstraints(int n, Problem::AlgebraicCon* cons);
   void AddLogicalConstraints(int n, Problem::LogicalCon* lcons);
+  void FinishConversion();
 };
 }
 
