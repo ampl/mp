@@ -810,10 +810,10 @@ void IlogCPSolver::SolveWithCPLEX(
 
 void IlogCPSolver::Solve(Problem &p, SolutionHandler &sh) {
   Convert(p);
-  SolveConvertedModel(p, sh);
+  Resolve(p, sh);
 }
 
-void IlogCPSolver::InitConversion(Problem &p) {
+void IlogCPSolver::InitProblemModificationPhase(const Problem &p) {
   stats.time = steady_clock::now();
 
   optimizer = optimizer_;
@@ -833,21 +833,40 @@ void IlogCPSolver::InitConversion(Problem &p) {
   }
 
   if (GetOption(USENUMBEROF) != 0)
-    converter_flags |= MPToConcertConverter::USENUMBEROF;
+    converter_flags_ |= MPToConcertConverter::USENUMBEROF;
   if (GetOption(DEBUGEXPR) != 0)
-    converter_flags |= MPToConcertConverter::DEBUG;
-  converter.reset(new MPToConcertConverter(env_, converter_flags));
+    converter_flags_ |= MPToConcertConverter::DEBUG;
+  converter_.reset(new MPToConcertConverter(env_, converter_flags_));
+}
+
+void IlogCPSolver::AddVariables(int n, double *lbs, double *ubs, var::Type *types) {
+  converter_->AddVariables(n, lbs, ubs, types);
+}
+void IlogCPSolver::AddCommonExpressions(int n, Problem::CommonExpr *cexprs) {
+  converter_->AddCommonExpressions(n, cexprs);
+}
+void IlogCPSolver::AddObjectives(int n, Problem::Objective *objs) {
+  converter_->AddObjectives(n, objs);
+}
+void IlogCPSolver::AddAlgebraicConstraints(int n, Problem::AlgebraicCon *cons) {
+  converter_->AddAlgebraicConstraints(n, cons);
+}
+void IlogCPSolver::AddLogicalConstraints(int n, Problem::LogicalCon *lcons) {
+  converter_->AddLogicalConstraints(n, lcons);
+}
+void IlogCPSolver::FinishProblemModificationPhase() {
+  converter_->FinishProblemModificationPhase();
 }
 
 void IlogCPSolver::Convert(Problem &p) {
-  InitConversion(p);
-  converter->Convert(p);
+  InitProblemModificationPhase(p);
+  converter_->Convert(p);
 }
 
-void IlogCPSolver::SolveConvertedModel(Problem &p, SolutionHandler &sh) {
+void IlogCPSolver::Resolve(Problem &p, SolutionHandler &sh) {
   try {
     IloAlgorithm &cp_alg = cp_;
-    (optimizer == CP ? cp_alg : cplex_).extract(converter->model());
+    (optimizer == CP ? cp_alg : cplex_).extract(converter_->model());
   } catch (IloAlgorithm::CannotExtractException &e) {
     const IloExtractableArray &extractables = e.getExtractables();
     if (extractables.getSize() == 0)
@@ -856,9 +875,9 @@ void IlogCPSolver::SolveConvertedModel(Problem &p, SolutionHandler &sh) {
   }
 
   if (optimizer == CP)
-    SolveWithCP(p, *converter, stats, sh);
+    SolveWithCP(p, *converter_, stats, sh);
   else
-    SolveWithCPLEX(p, *converter, stats, sh);
+    SolveWithCPLEX(p, *converter_, stats, sh);
   double output_time = GetTimeAndReset(stats.time);
 
   if (timing()) {

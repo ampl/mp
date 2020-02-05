@@ -328,7 +328,7 @@ void MPToConcertConverter::Convert(const Problem &p) {
   feeder.PushWholeProblem();
 }
 
-void MPToConcertConverter::FinishConversion() {
+void MPToConcertConverter::FinishProblemModificationPhase() {
   FinishBuildingNumberOf();
   FinishBuildingObjectives();
   FinishBuildingAlgebraicConstraints();

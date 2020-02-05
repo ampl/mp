@@ -98,8 +98,8 @@ class IlogCPSolver : public SolverImpl<Problem> {
   Optimizer optimizer;
   int options_[NUM_OPTIONS];
 
-  unsigned converter_flags = 0;
-  std::unique_ptr<MPToConcertConverter> converter;
+  unsigned converter_flags_ = 0;
+  std::unique_ptr<MPToConcertConverter> converter_;
 
 
   enum FileKind {
@@ -151,9 +151,9 @@ class IlogCPSolver : public SolverImpl<Problem> {
   };
   Stats stats;
 
-  void SolveWithCP(Problem &p, const MPToConcertConverter &converter,
+  void SolveWithCP(Problem &p, const MPToConcertConverter &converter_,
                    Stats &stats, SolutionHandler &sh);
-  void SolveWithCPLEX(Problem &p, const MPToConcertConverter &converter,
+  void SolveWithCPLEX(Problem &p, const MPToConcertConverter &converter_,
                       Stats &stats, SolutionHandler &sh);
 
  public:
@@ -175,8 +175,16 @@ class IlogCPSolver : public SolverImpl<Problem> {
 
  public:                    // [[ The interface ]]
   void Convert(Problem& p);
-  void InitConversion(Problem& p);
-  void SolveConvertedModel(Problem& p, SolutionHandler &sh);
+  void Resolve(Problem& p, SolutionHandler &sh);
+
+  /// [[ Surface the incremental interface ]]
+  void InitProblemModificationPhase(const Problem& p);
+  void AddVariables(int n, double* lbs, double* ubs, var::Type* types);
+  void AddCommonExpressions(int n, Problem::CommonExpr* cexprs);
+  void AddObjectives(int n, Problem::Objective* objs);
+  void AddAlgebraicConstraints(int n, Problem::AlgebraicCon* cons);
+  void AddLogicalConstraints(int n, Problem::LogicalCon* lcons);
+  void FinishProblemModificationPhase();
 };
 }
 

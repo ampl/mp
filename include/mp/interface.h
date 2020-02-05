@@ -1,5 +1,5 @@
 /*
- A mathematical optimization app using abstract interfaces.
+ An abstract interface between modeling system and solver backend.
 
  Copyright (C) 2020 AMPL Optimization Inc
 
@@ -35,12 +35,17 @@ public:
     : problem_(p), interface_(i)  { }
 
   void PushWholeProblem() {
+    InitProblemModificationPhase();
     PushVariables();
     PushCommonSubExpr();
     PushObjectives();
     PushAlgebraicConstraints();
     PushLogicalConstraints();
-    FinishConversion();
+    FinishProblemModificationPhase();
+  }
+
+  void InitProblemModificationPhase() {
+    interface_.InitProblemModificationPhase(problem_);       // TODO remove problem_ here
   }
 
   void PushVariables() {
@@ -89,8 +94,8 @@ public:
     }
   }
 
-  void FinishConversion() {
-    interface_.FinishConversion();
+  void FinishProblemModificationPhase() {
+    interface_.FinishProblemModificationPhase();
   }
 };
 

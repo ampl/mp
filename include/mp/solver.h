@@ -1300,12 +1300,18 @@ class SolverApp : private Reader {
 
   std::string nl_filename, filename_no_ext;
   typedef typename Solver::ProblemBuilder ProblemBuilder;
-  std::unique_ptr<ProblemBuilder> builder;
-  std::unique_ptr< internal::SolverNLHandler<Solver> > handler;
+  std::unique_ptr<ProblemBuilder> builder_;
+  std::unique_ptr< internal::SolverNLHandler<Solver> > handler_;
 
   internal::SignalHandler sig_handler;
   internal::SolverAppOptionParser option_parser_;
 
+ protected:
+  int GetResultCode() const { return result_code_; }
+  Solver& GetSolver() { return solver_; }
+  ProblemBuilder& GetProblemBuilder() { return *builder_; }
+
+ private:
   struct AppOutputHandler : OutputHandler {
     bool has_output;
     AppOutputHandler() : has_output(false) {}
@@ -1344,6 +1350,9 @@ protected:
   bool Init(char** argv, int nl_reader_flags);
   void ReadNL(int nl_reader_flags);
   void Solve();
+
+  /// Methods for incremental interface
+  void Resolve();      // assuming the Solver has the corr. method
 };
 
 template <typename Solver, typename Reader>
@@ -1396,9 +1405,9 @@ template <typename Solver, typename Reader>
 void SolverApp<Solver, Reader>::ReadNL(int nl_reader_flags) {
   steady_clock::time_point start = steady_clock::now();
 
-  builder.reset(new ProblemBuilder(solver_));
-  handler.reset(new internal::SolverNLHandler<Solver>(*builder, solver_));
-  this->Read(nl_filename, *handler, nl_reader_flags);
+  builder_.reset(new ProblemBuilder(solver_));
+  handler_.reset(new internal::SolverNLHandler<Solver>(*builder_, solver_));
+  this->Read(nl_filename, *handler_, nl_reader_flags);
 
   double read_time = GetTimeAndReset(start);
   if (solver_.timing())
@@ -1407,11 +1416,20 @@ void SolverApp<Solver, Reader>::ReadNL(int nl_reader_flags) {
 
 template <typename Solver, typename Reader>
 void SolverApp<Solver, Reader>::Solve() {
-  ArrayRef<int> options(handler->options(), handler->num_options());
+  ArrayRef<int> options(handler_->options(), handler_->num_options());
   internal::AppSolutionHandler<Solver> sol_handler(
-        filename_no_ext, solver_, *builder, options,
+        filename_no_ext, solver_, *builder_, options,
         output_handler_.has_output ? 0 : banner_size);
-  solver_.Solve(builder->problem(), sol_handler);
+  solver_.Solve(builder_->problem(), sol_handler);
+}
+
+template <typename Solver, typename Reader>
+void SolverApp<Solver, Reader>::Resolve() {
+  ArrayRef<int> options(handler_->options(), handler_->num_options());
+  internal::AppSolutionHandler<Solver> sol_handler(
+        filename_no_ext, solver_, *builder_, options,
+        output_handler_.has_output ? 0 : banner_size);
+  solver_.Resolve(builder_->problem(), sol_handler);
 }
 
 #ifdef MP_USE_UNIQUE_PTR
