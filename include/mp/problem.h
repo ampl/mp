@@ -537,6 +537,18 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     is_var_int_.resize(new_size, type != var::CONTINUOUS);
   }
 
+  void AddVars(int num_vars,
+               const double* lb, const double* ub, const var::Type* type) {
+    MP_ASSERT(num_vars >= 0, "invalid size");
+    std::size_t new_size = val(SafeInt<int>(vars_.size()) + num_vars);
+    vars_.reserve(new_size);
+    is_var_int_.reserve(new_size);
+    for (size_t i=0; i!=num_vars; ++i) {
+      vars_.push_back(Var(lb[i], ub[i]));
+      is_var_int_.push_back(type[i] != var::CONTINUOUS);
+    }
+  }
+
   class LinearExprBuilder {
    private:
     LinearExpr *expr_;

@@ -28,7 +28,7 @@
 #include <functional>
 
 #include "mp/problem.h"
-#include "mp/interface.h"
+#include "mp/backend.h"
 
 #ifndef M_PI
 # define M_PI 3.14159265358979323846
@@ -324,7 +324,7 @@ IloExpr MPToConcertConverter::ConvertExpr(
 
 void MPToConcertConverter::Convert(const Problem &p) {
   // Set up optimization problem using the Concert API.
-  ProblemToInterfaceFeeder<Problem, MPToConcertConverter> feeder(p, *this);
+  ModelToBackendFeeder<Problem, MPToConcertConverter> feeder(p, *this);
   feeder.PushWholeProblem();
 }
 

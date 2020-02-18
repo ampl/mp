@@ -123,3 +123,5 @@ add_mp_test(problem-builder-test problem-builder-test.cc)
 
 add_mp_test(rstparser-test rstparser-test.cc)
 add_mp_test(safeint-test safeint-test.cc)
+
+add_mp_test(interface-mip-test interface-mip-test.cpp)

@@ -25,7 +25,7 @@
 
 
 #include "mp/solver.h"
-#include "mp/interface.h"
+#include "mp/backend.h"
 
 
 namespace mp {
@@ -53,7 +53,7 @@ protected:
   using TBaseClass::Init;
   using TBaseClass::ReadNL;
   void ConvertModel() {
-    ProblemToInterfaceFeeder<Problem, Interface>
+    ModelToBackendFeeder<Problem, Interface>
         feeder(GetProblemBuilder().problem(), GetSolver());
     feeder.PushWholeProblem();
   }
