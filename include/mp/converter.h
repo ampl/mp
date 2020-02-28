@@ -92,6 +92,11 @@ public:
 
 };
 
+template <class Impl, template <typename, typename, typename> class Converter,
+          class Backend, class Model = BasicProblem<std::allocator<char> > >
+class BasicInterface : public Converter<Impl, Backend, Model> {
+};
+
 }  // namespace mp
 
 #endif  // CONVERTER_H_
