@@ -158,6 +158,14 @@ if (TARGET ilogcp)
   target_compile_definitions(ilogcp PRIVATE main1=main)
 endif ()
 
+add_ampl_solver(cplexdirect DLL_RUNTIME MODULE CPLEX
+  concert.cc concert.h ilogcp.cc ilogcp.h ilogcp_date.h
+  LIBRARIES cplex-cp ilocplex ${CMAKE_DL_LIBS})
+if (TARGET cplexdirect)
+  target_compile_definitions(amplcplexdirect-static PRIVATE ILOGCP_NO_VERS)
+  target_compile_definitions(cplexdirect PRIVATE main1=main)
+endif ()
+
 # Copy CPLEX DLL to the target directory.
 if (CPLEX_DLL)
   get_filename_component(CPLEX_DLL_NAME "${CPLEX_DLL}" NAME)
