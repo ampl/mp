@@ -67,10 +67,13 @@ if (NOT CPLEX_STUDIO_DIR)
   foreach (dir ${CPLEX_ILOG_DIRS})
     file(GLOB CPLEX_STUDIO_DIRS "${dir}/CPLEX_Studio*")
     list(SORT CPLEX_STUDIO_DIRS)
-    list(REVERSE CPLEX_STUDIO_DIRS)
+    #list(REVERSE CPLEX_STUDIO_DIRS)
+    message("Found studio dirs: ${CPLEX_STUDIO_DIRS}")
     if (CPLEX_STUDIO_DIRS)
       list(GET CPLEX_STUDIO_DIRS 0 CPLEX_STUDIO_DIR_)
+      string(REGEX MATCH "[0-9][0-9][0-9][0-9]" CPXVERSION ${CPLEX_STUDIO_DIR_})
       message(STATUS "Found CPLEX Studio: ${CPLEX_STUDIO_DIR_}")
+      message(STATUS "Detected CPLEX version ${CPXVERSION}")
       break ()
     endif ()
   endforeach ()
@@ -81,6 +84,15 @@ if (NOT CPLEX_STUDIO_DIR)
     "Path to the CPLEX Studio directory")
 endif ()
 
+# On windows, CPLEX 12.10 brought a big semplification in terms of libraries:
+# only one version is used for VS2015, 2017 and 2019 due to the maintained 
+# ABI compatibility. Therefore, override the directory
+if(MSVC AND (NOT "${CPXVERSION}" STREQUAL ""))
+  if(NOT(${CPXVERSION} LESS 1210))
+    set(CPLEX_LIB_PATH_SUFFIXES lib/${CPLEX_ARCH}_windows_msvc14/stat_mda)
+    set(CPLEX_LIB_PATH_SUFFIXES_DEBUG lib/${CPLEX_ARCH}_windows_msvc14/stat_mdd)
+  endif()
+endif()
 find_package(Threads)
 
 # ----------------------------------------------------------------------------
@@ -110,7 +122,6 @@ if (UNIX)
     PATHS ${CPLEX_DIR} PATH_SUFFIXES ${CPLEX_LIB_PATH_SUFFIXES})
   set(CPLEX_LIBRARY_DEBUG ${CPLEX_LIBRARY})
 elseif (NOT CPLEX_LIBRARY)
-message("in windows trying " ${${CPLEX_LIB_PATH_SUFFIXES}})
   # On Windows the version is appended to the library name which cannot be
   # handled by find_library, so search manually.
   find_win_cplex_library(CPLEX_LIB "${CPLEX_LIB_PATH_SUFFIXES}")
@@ -118,9 +129,6 @@ message("in windows trying " ${${CPLEX_LIB_PATH_SUFFIXES}})
   message("CPLEX_LIBRARY " ${CPLEX_LIBRARY})
   set(CPLEX_LIBRARY ${CPLEX_LIB} CACHE FILEPATH "Path to the CPLEX library")
   find_win_cplex_library(CPLEX_LIB "${CPLEX_LIB_PATH_SUFFIXES_DEBUG}")
-    
-	
-	
   set(CPLEX_LIBRARY_DEBUG ${CPLEX_LIB} CACHE
     FILEPATH "Path to the debug CPLEX library")
 	message("CPLEX_LIBRARY " ${CPLEX_LIBRARY})
@@ -139,7 +147,7 @@ find_package_handle_standard_args(
 mark_as_advanced(CPLEX_LIBRARY CPLEX_LIBRARY_DEBUG CPLEX_INCLUDE_DIR)
 
 if (CPLEX_FOUND AND NOT TARGET cplex-library)
-  set(CPLEX_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+  set(CPLEX_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
   check_library_exists(m floor "" HAVE_LIBM)
   if (HAVE_LIBM)
     set(CPLEX_LINK_LIBRARIES ${CPLEX_LINK_LIBRARIES} m)
