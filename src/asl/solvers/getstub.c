@@ -359,6 +359,8 @@ show_version_ASL(Option_Info *oi)
 		printf("%s\n", Lic_info_add_ASL);
 	if (Lic_info_ASL && *Lic_info_ASL)
 		printf("%s\n", Lic_info_ASL);
+	else
+		putchar('\n');
 	}
 
  char *

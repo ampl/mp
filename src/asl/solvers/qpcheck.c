@@ -1,43 +1,34 @@
-/****************************************************************
-Copyright (C) 1997 Lucent Technologies
-All Rights Reserved
+/*******************************************************************
+Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
 
-Permission to use, copy, modify, and distribute this software and
-its documentation for any purpose and without fee is hereby
-granted, provided that the above copyright notice appear in all
-copies and that both that the copyright notice and this
-permission notice and warranty disclaimer appear in supporting
-documentation, and that the name of Lucent or any of its entities
-not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior
-permission.
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
+provided that the above copyright notice appear in all copies and that
+both that the copyright notice and this permission notice and warranty
+disclaimer appear in supporting documentation.
 
-LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
-IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
-SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
-IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
-ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
-THIS SOFTWARE.
-****************************************************************/
+The author and AMPL Optimization, Inc. disclaim all warranties with
+regard to this software, including all implied warranties of
+merchantability and fitness.  In no event shall the author be liable
+for any special, indirect or consequential damages or any damages
+whatsoever resulting from loss of use, data or profits, whether in an
+action of contract, negligence or other tortious action, arising out
+of or in connection with the use or performance of this software.
+*******************************************************************/
 
 #include "nlp.h"
 
  fint
-#ifdef KR_headers
-qpcheck_ASL(a, rowqp, colqp, delsqp)
-	ASL *a; fint **rowqp,**colqp;double **delsqp;
-#else
 qpcheck_ASL(ASL *a, fint **rowqp, fint **colqp, double **delsqp)
-#endif
 {
 
-	fint rv;
-	int i;
 	ASL_fg *asl;
+	fint rv;
+	int akind, i;
 
-	ASL_CHECK(a, ASL_read_fg, "qpcheck");
+	if ((akind = a->i.ASLtype) != ASL_read_pfgh)
+		akind = ASL_read_fg;
+	ASL_CHECK(a, akind, "qpcheck");
 	asl = (ASL_fg*)a;
 	i = obj_no;
 	if (i < 0 || i >= n_obj)

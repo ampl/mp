@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -19,4 +19,4 @@ of or in connection with the use or performance of this software.
 #define PSHVREAD
 #define pfg_read_ASL pfgh_read_ASL
 #include "pfg_read.c"
-/*  Last update 20160915.  */
+/*  Last update 20181129.  */

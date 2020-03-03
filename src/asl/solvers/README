@@ -1,12 +1,12 @@
 This directory contains source for a library of routines that help
 solvers work with AMPL.  In this README file, the library is called
 amplsolver.a (the name it usually has on Unix systems), but on some
-systems it may have another name, such as amplsolver.so or (on
-Microsoft systems) amplsolv.lib.  Services provided by amplsolver.a
-include reading AMPL's generic output (.nl) files, and writing
-solution (.sol) files.  Subdirectories (e.g., cplex, examples, minos)
-contain interface routines for particular solvers; you may wish to
-modify these routines to make your own solver work with AMPL.
+systems it may have another name, such as amplsolv.lib on Microsoft
+systems.  Services provided by amplsolver.a include reading AMPL's
+generic output (.nl) files, and writing solution (.sol) files.  On
+netlib, subdirectories (e.g., cplex, examples, minos) contain
+interface routines for particular solvers; you may wish to modify
+these routines to make your own solver work with AMPL.
 
 To make an executable version of a particular solver, you need
 at least this directory and the solver's subdirectory.  You need
@@ -50,40 +50,16 @@ way (after "./configure" or "./configurehere") you invoke "make"
 to compile amplsolver.a
 
 
-To get all the source files for amplsolver.a by E-mail, send netlib
-(e.g., netlib@netlib.org) the one-line message
+Updates to the source for amplsolver.a appear first in
 
-	send all from ampl/solvers
+	http://ampl.com/netlib/solvers
 
-(This one line, not indented, should be the entire body of the
-message; do not provide a "Subject:" line.)
+and the current source is generally available in the gzipped tar file
 
-You can also get a gzipped tar file of ampl/solvers and all its
-subdirectories from URL
+	http://ampl.com/netlib/solvers.tgz
 
-	ftp://www.netlib.org/ampl/solvers.tar.gz
-
-Executing
-
-	gzip -dc solvers.tar.gz | tar xf -
-
-will give you directory solvers and various subdirectories.
-Alternatively, you can get a tar file (called netlibfiles.tar) from URL
-
-	http://netlib.sandia.gov/cgi-bin/netlib/netlibfiles.tar?filename=netlib/ampl/solvers
-
-Executing
-
-	tar xf netlibfiles.tar
-
-will likewise give you directory solvers and various subdirectories.
-
-Beware that some older versions of Netscape and Internet Explorer
-mishandle "http:" URLs that end in ".gz".
-
-See the comments about tar and .gz files in /netlib/bib/compression.html
-(e.g., http://netlib.sandia.gov/bib/compression.html or
-http://www.netlib.org/bib/compression.html).
+In the course of a week or so, updates should reach netlib servers,
+such as http://www.netlib.org.
 
 For more about AMPL itself, see the AMPL book (second edition):
 
@@ -92,19 +68,13 @@ For more about AMPL itself, see the AMPL book (second edition):
 	Duxbury Press / Brooks/Cole Publishing Company, 2002;
 	ISBN 0-534-38809-4
 
-See the pointers to book vendors in
+PDF files for individual chapters are freely available from the
+AMPL web site; see http://ampl.com/resources/the-ampl-book/ .
 
-	http://www.ampl.com/BOOK/
 
-
-For solvers written in Fortran, we assume the f2c calling
+For solvers written in Fortran 77, we assume the f2c calling
 conventions.  Source for f2c (Fortran-to-C converter) is
-available by E-mail from netlib@netlib.org and anonymous
-ftp from netlib.bell-labs.com; for details, send the E-mail message
-
-	send index from f2c
-
-to netlib@netlib.org .
+available from netlib.
 
 See README.f77 for a summary of adjustments that permit use of the
 native Fortran 77 compilers on some systems.
@@ -117,19 +87,14 @@ let the makefile compile and execute arithchk.c to create a
 suitable arith.h.  Do not copy arith.h from one kind of computer
 to another.
 
-See the comments in "makefile" about compiling on non-ANSI systems,
-which may require compiling with -DKR_headers, saying "make float.h",
-adding strerror.c to the makefile's "a =" assignment, etc.  Also see
-the comments in "makefile" about compiling on particular systems.
+See the comments in "makefile" about compiling on particular systems.
 
 
-Various subdirectories are available, including the following.  They
-provide sample AMPL interfaces, but do not include source or objects
-for the solvers themselves (which you must get from the relevant
-solver vendor, noted in the README.1st file in each subdirectory).
-For more details about, say, MINOS, send the E-mail message
-	send readme from ampl/solvers/minos
-to netlib@netlib.org .
+Various solver-specific subdirectories are available from netlib or
+http://ampl.com/netlib, including the following.  They provide sample
+AMPL interfaces, but do not include source or objects for the solvers
+themselves (which you must get from the relevant solver vendor, noted
+in the README.1st file in each subdirectory).
 
 	Subdirectory	Comments
 
@@ -150,6 +115,10 @@ to netlib@netlib.org .
 	funclink	Examples and system-specific makefiles for making
 			shared libraries (.dll files) of imported (i.e.,
 			user-defined) functions.
+
+	gurobi		Uses Gurobi Optimization's solver: linear (simplex
+			and interior algorithms), network, quadratic, and
+			MIP problems.
 
 	lancelot	Based on LANCELOT (by A. R. Conn, Nick Gould, and
 			Ph. L. Toint): general nonlinear programming code
@@ -185,70 +154,48 @@ to netlib@netlib.org .
 
 	xpress		Based on XPRESS-MP, a solver for linear and
 			quadratic programming problems involving continuous
-			or integer variables by Dash Optimization,
-			http://www.dashoptimization.com/
+			or integer variables by Fair Isaac Corporation.
 
 For information about arranging to use other solvers with AMPL,
 see "Hooking Your Solver to AMPL", Postscript for which is
 
-	ftp://www.ampl.com/REFS/hooking.ps.gz
-	http://www.ampl.com/REFS/hooking.ps.gz
+	http://ampl.com/REFS/hooking.ps.gz
 
 and a corresponding html version is
 
-	http://www.ampl.com/REFS/HOOKING/
+	http://ampl.com/REFS/HOOKING/
 
-Be sure to request the changes file periodically to see about bug fixes
-and other updates, or send the 2-word E-mail message
+Updates to AMPL are reported in
 
-	subscribe ampl
-
-to netlib@netlib.org to receive notification of updates.
-Please send bug reports and other comments to dmg@ampl.com
-(David M. Gay).
+	http://ampl.com/dl/ampl.updates.html
 
 
-This directory contains several makefile variants with names of the
-form makefile.*; makefile.u is for Unix systems, and the others are
-for various PC compilers.  Comments in makefile.u describe adaptions
-for particular Unix systems.  The PC variants start (after legal
-disclaimers) with comments saying what compiler they are for and
-telling what "make" incantation to use.  The "examples" subdirectory
-and a few others have analogous makefile variants are obtained from
-makefile.u by changing ".o" to ".obj" and suitably adjusting the rules
-for compiling, linking, and making libraries.
+This directory contains two makefile variants with names of the
+form makefile.*; makefile.u is for Unix systems and makefile.vc is
+for Microsoft systems.  Comments in makefile.u describe adaptions
+for particular Unix systems.
 
-The PC makefiles create "amplsolv.lib" and are set up for Win32;
-some of the PC makefiles have comments explaining changes for MS-DOS.
-If you are using Microsoft Visual C++, see the comments in makefile.vc
-about linking solvers.
-
-The PC makefiles require you to make details.c by hand (since deriving
-it automatically seems hard to do reliably).  It should reflect the
-compiler you are using.  For example, for Microsoft Visual C++ 6.0,
-having details.c consist of the single line
+The makefile.vc variant creates "amplsolv.lib" and has comments about
+linking solvers.  This variant require you to make details.c by hand
+(since deriving it automatically seems hard to do reliably).  The
+details.c file should reflect the compiler you are using.  For
+example, for Microsoft Visual C++ 6.0, having details.c consist of the
+single line
 	char sysdetails_ASL[] = "MS VC++ 6.0";
-would be appropriate.  For systems other than Intel IA32 systems
-(e.g., for IA64 or DEC Alpha systems), the system should also be
-indicated in sysdetails_ASL.  This string is used by some solvers
-as part of the output produced for the "version" keyword and the -v
-command-line option.
+would be appropriate.  This string is used by some solvers as part of
+the output produced for the "version" keyword and the -v command-line
+option.
 
-Formerly it was necessary to check by hand whether your math library
-sometimes returns NaNs without setting errno when math functions are
-called with invalid arguments, and if so to add -DNANCHECK to the
-CFLAGS assignment of the relevant makefile variant.  Now this detail
-should be handled by a #define in arith.h, which should be computed
-automatically as described above.  If you know that your math library
-never sets errno, adding -DNO_ERRNO to the relevant CFLAGS assignment
-will save a little time and perhaps avoid compiler complaints.
+If you know that your math library never sets errno, adding -DNO_ERRNO
+to the relevant CFLAGS assignment will save a little time and perhaps
+avoid compiler complaints.
 
 When linking nonlinear solvers on some systems, it's necessary to
 add system-dependent keywords to the linking command, e.g., to make
 dlopen() visible.  Some of the makefiles for specific solvers have
-comments about this, and subdirectory funclink contains sample
-makefiles that illustrate how to do things on for several popular
-systems.
+comments about this, and on netlib, subdirectory funclink contains
+sample makefiles that illustrate how to do things on for several'
+popular systems.
 
 In general, it is necessary once in this directory to give the
 appropriate "make" invocation, such as
@@ -259,8 +206,54 @@ on Unix platforms,
 
 	nmake -f makefile.vc
 
-under Windows NT or W9x with MS Visual C++, etc., and then to give
-a suitable "make" invocation in each solver subdirectory of interest.
-On non-Unix systems, in many of the solver subdirectories it may be
-necessary to modify the Unix makefile into the form required by the
-system.
+under MS Windows, and then to give a suitable "make" invocation in
+each solver subdirectory of interest.  On non-Unix (non-Linux)
+systems, in many of the solver subdirectories it may be necessary to
+modify the Unix makefile into the form required by the system.
+
+With Microsoft Studio 2017, due to a compiler bug you will need to
+compile avltree.c without optimization.  After the "nmake" invocation
+aborts with an error message about an internal error in the compiler,
+invoke
+
+	cl -c -MT avltree.c
+
+and then again invoke
+
+	nmake -f makefile.vc
+
+to continue building the solver-interface library.
+
+A variant of the "solvers" directory is "solvers2", whose source is
+in the gzipped tar file
+
+	http://ampl.com/netlib/solvers2.tgz
+
+which is preferable for use with many nonlinear solvers, because its
+nonlinear evaluations are often faster, and for large problems, its
+internal representation of nonlinear expressions takes less space.
+With suitable call variants involving a thread-specific workspace,
+it also allows parallel nonlinear evaluations.  For most nonlinear
+solvers that just use one thread, "solvers2" is a drop-in replacement
+for the "solvers" directory.  Solvers that use multiple threads should
+first call fg_read() or pfgh_read() and then invoke
+
+	EvalWorkspace *ew = ewalloc();
+
+(or "ew = asl->p.Ewalloc(asl);") once per thread.  Such solvers should
+use the resulting thread-specific ew value in call variants whose
+names end in "_ew" and whose first argument is ew, e.g.,
+"objval(ew,np,x,ne)" rather than "objval(np,x,ne)".  The "_ew"
+variants are declared in solvers2/asl.h.
+
+Some solvers, such as ilogcp for constraint programming, need to see
+expression graphs.  Such solvers must continue to use "solvers"
+rather than "solvers2".
+
+Solver source can check "#ifdef _ASL_EW_" to determine whether header
+files come from "solvers2" (when the "ifdef" test is true) or
+"solvers".  This should only be relevant to solvers that use multiple
+threads.  When using the "solvers" directory (rather than "solvers2"),
+for each new thread, such solvers must allocate a new ASL structure,
+use it in a call on the desired .nl reader, and use the thread-specific
+asl value when doing nonlinear evaluations.

@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2016, 2018 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -1250,6 +1250,10 @@ prob_adj_ASL(ASL *asl)
 		}
 #endif /*}*/
 	asl->i.err_jmp_ = 0;
+	if (want_xpi0 & 8 && !X0)
+		X0 = M1zapalloc(n_var*sizeof(real));
+	if (want_xpi0 & 16 && !pi0 && n_con > 0)
+		pi0 = M1zapalloc(n_con*sizeof(real));
 	asl->i.rd_M1z_bytes = asl->i.tot_M1z_bytes;
 	return 0;
 	}

@@ -131,6 +131,7 @@ cexp {
 	expr	*e;
 	int	nlin;
 	linpart	*L;
+	struct linarg *la;	/* corresponding to L */
 	funnel	*funneled;
 	list	*cref;
 	ei	z;

@@ -606,6 +606,7 @@ Edaginfo {
 	Objrep	**Or;
 	real *orscratch;	/* scratch (if needed) */
 	void (*opify)(ASL*);
+	int nlc0, nlo0;	/* values of nlc_ and nlo_ before obj_adj() */
 
 	/* for simplifying complementarities */
 	MPEC_Adjust *mpa;
@@ -913,7 +914,10 @@ enum ASL_suf_sos_flags { /* bits in flags parameter of suf_sos() */
 
 enum ASL_write_flags {
 	ASL_write_ASCII = 1,
-	ASL_write_CR = 2
+	ASL_write_CR = 2,
+	ASL_write_binary = 4,
+	ASL_write_no_X0 = 8,
+	ASL_write_no_pi0 = 16
 	};
 
 enum ASL_writer_error_codes {
@@ -994,6 +998,7 @@ QPinfo {
  extern int fg_write_ASL(ASL*, const char*, NewVCO*, int);
  extern void fintrouble_ASL(ASL*, func_info*, const char*, TMInfo*);
  extern void flagsave_ASL(ASL*, int);
+ extern char *fread_sol_ASL(ASL*, const char *fname, real**xp, real **yp);
  extern func_info *func_lookup(ASL*, const char*, int add);
  extern void func_add(ASL*);
  extern int g_fmt(char*, double);
@@ -1130,6 +1135,7 @@ extern void set_max_dtoa_threads(unsigned int);
 #define fg_wread(a,b) fg_wread_ASL((ASL*)asl,a,b)
 #define fg_write(a,b,c) fg_write_ASL((ASL*)asl,a,b,c)
 #define fgh_read(a,b) fgh_read_ASL((ASL*)asl,a,b)
+#define fread_soln(f,x,y) fread_sol_ASL((ASL*)asl,f,x,y)
 #define gen_rownos() gen_rownos_ASL((ASL*)asl)
 #undef getenv
 #define getenv getenv_ASL

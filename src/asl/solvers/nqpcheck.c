@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2017, 2018 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -297,6 +297,15 @@ comterm(Static *S, int i)
 	return T;
 	}
 
+ static void
+Comeval(Static *S, int i, int ie)
+{
+	term **Cterms;
+
+	for(Cterms = cterms; i < ie; ++i)
+		Cterms[i] = comterm(S, i);
+	}
+
  static term *
 termdup(Static *S, term *T)
 {
@@ -426,9 +435,12 @@ ewalk(Static *S, expr *e)
 		if ((i = (expr_v *)e - var_e) < n_var)
 			return new_term(S, new_og(S, 0, i, 1.));
 		i -= S->nvinc;
-		if (!(L = cterms[i -= n_var])
-		 && !(L = cterms[i] = comterm(S, i)))
-			return 0;
+		if (!(L = cterms[i -= n_var])) {
+			/* c_cexp1st and o_cexp1st may not have been allocated */
+			if (!(L = comterm(S,i)))
+				return L;
+			cterms[i] = L;
+			}
 		return termdup(S, L);
 		}
 	return 0; /* nonlinear */
@@ -591,7 +603,7 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 	expr_n *en;
 	fint *rowq, *rowq0, *rowq1, *s, *z;
 	fint ftn, i, icol, j, ncom, nv, nz, nz1;
-	int arrays, *cm, co0, pass, *vmi;
+	int *C1, C10, arrays, *cm, co0, dv0, dv1, pass, *vmi;
 	ograd *og, *og1, *og2, **ogp;
 	real *L, *U, *delsq, *delsq0, *delsq1, objadj, t, *x;
 	term *T;
@@ -605,21 +617,27 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 	if (co >= 0) {
 		if ((pod = asl->i.Or) && (od = pod[co])) {
 			co = od->ico;
+			if (!(cgp = asl->i.Cgrad0))
+				cgp = Cgrad;
 			goto use_Cgrad;
 			}
-		else {
-			c = obj_de + co;
-			ogp = Ograd + co;
-			cgp = 0;
-			}
+		dv0 = combc;
+		dv1 = dv0 + como;
+		C1 = o_cexp1st;
+		c = obj_de + co;
+		ogp = Ograd + co;
+		cgp = 0;
 		}
 	else {
 		co = -1 - co;
 		if ((cm = asl->i.cmap))
 			co = cm[co];
- use_Cgrad:
-		c = con_de + co;
 		cgp = Cgrad;
+ use_Cgrad:
+		dv0 = comb;
+		dv1 = combc;
+		C1 = c_cexp1st;
+		c = con_de + co;
 		cgp += co;
 		ogp = 0;
 		}
@@ -649,7 +667,8 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 	cd0 = 0;					/* ditto */
 	cdisp = cdisp0 = 0;				/* ditto */
 
-	if ((ncom = ncom0 + ncom1)) {
+	C10 = ncom0;
+	if ((ncom = C10 + ncom1)) {
 		cterms = (term **)Malloc(ncom*sizeof(term*));
 		memset(cterms, 0, ncom*sizeof(term*));
 		}
@@ -669,7 +688,15 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 		arrays = 0;
 
 	zerodiv = 0;
+	if (comb)
+		Comeval(S, 0, comb);
+	if (dv1 > dv0)
+		Comeval(S, dv0, dv1);
+	if (C1 && C1[co] < C1[co+1])
+		Comeval(S, C10 + C1[co], C10 + C1[co+1]);
 	if (!(T = ewalk(S, e)) || zerodiv) {
+		if (cterms)
+			free(cterms);
 		free_blocks(S);
 		free(x);
 		return T ? -2L : -1L;
@@ -686,10 +713,12 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 		if (i) {
 			cq = (cgrad*)Malloc(i*sizeof(cgrad));
 			for(cg = *cgp; cg; cg = cg->next) {
-				*cgq = cq;
-				cgq = &cq->next;
-				*cq = *cg;
-				++cq;
+				if (cg->coef != 0.) {
+					*cgq = cq;
+					cgq = &cq->next;
+					*cq = *cg;
+					++cq;
+					}
 				}
 			}
 		*cgq = 0;

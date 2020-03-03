@@ -97,6 +97,10 @@ fpinit_ASL(Void)
 #endif /* __i386 */
 #endif /*APPLE*/
 
+#ifdef __ARM_ARCH
+#define ASL_NO_FP_INIT
+#endif
+
 #ifndef ASL_NO_FP_INIT
 #ifdef __GLIBC__ /*{*/
 #ifndef NO_fpu_control /*{*/

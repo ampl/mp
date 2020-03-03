@@ -378,7 +378,7 @@ qkind(char *s, int prec, int *quote, int *widthp)
 			}
 		*widthp -= ne + 2;
 		}
-	else if (valid_param(s0,1)) {
+	else if ((*s0 == '.' && s - s0 == 1) || valid_param(s0,1)) {
  quote_it:
 		*widthp -= 2;
 		*quote = '\'';
@@ -514,7 +514,15 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 				goto fmtloop;
 			case 'c':
 				c = va_arg(ap, int);
+				if (width > 1 && !left) {
+					while(--width >= 1)
+						put(' ');
+					}
 				put(c)
+				if (width > 1) {
+					while(--width >= 1)
+						put(' ');
+					}
 				continue;
 			case '%':
 				put(conv)

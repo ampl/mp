@@ -1,0 +1,202 @@
+SGI machines executing binaries compiled with -n32 or -64 (but not -o32)
+do not do correct IEEE arithmetic: they flush underflows to zero rather
+than underflowing gradually.  For many (non-benchmark) computations,
+there are no underflows, so this detail does not matter, but it can
+lead to different computational results when true IEEE arithmetic would
+involve gradual underflow.
+
+There are several ways to work around this bug.  The least attractive
+is machine-dependent source code modification: in the source file for
+main(), insert
+
+	#include <sys/fpu.h>
+
+and at the start of main(), insert
+
+	union fpc_csr f;
+	f.fc_word = get_fpc_csr();
+	f.fc_struct.flush = 0;
+	set_fpc_csr(f.fc_word);
+
+A more portable approach, not requiring changes to source code or
+makefiles, is to put a suitable "cc" shell script into a directory in
+$PATH (ahead of the directory containing SGI's "cc") to cause binaries
+to be linked as described in the following messages.  For example,
+for -64 C compilation, I might have a "cc" in my bin consisting of
+
+	#!/bin/sh
+	exec /bin/cc -64 -L/usr/dmg/lib/64 -Wl,-init,__zap_fz_bit /usr/dmg/lib/64/zapfzbit.o "$@"
+
+with zapfzbit.o compiled from
+
+	/* Clear FPCSR_FLUSH_ZERO bit on SGI machines -- see mbox./98/bean */
+	/* Load with cc -Wl,-init,__zap_fz_bit */
+
+	#include <sys/fpu.h>
+	#include <sys/syssgi.h>
+
+	 void
+	__zap_fz_bit(void)
+	{
+		union fpc_csr f;
+
+		f.fc_word = get_fpc_csr();
+		f.fc_struct.flush = 0;
+		set_fpc_csr ( f.fc_word );
+		}
+
+For C++, something more complicated is required, as seen in the
+following messages...
+
+From bean@sgi.com Thu Oct 22 16:41:06 1998
+From: bean anderson <bean@sgi.com>
+To: dmg@bell-labs.com, cbm@research.bell-labs.com
+Subject: FPCSR_FLUSH_ZERO
+
+Hi David,
+
+It was a pleasure talking with you today.  I've written
+up what we talked about and I hope it will meet your needs.
+Again, don't hesitate to call me directly if you have
+any problems with it.
+
+I've attached three files:
+
+	ieee.c    -- The source code for setting processor state.
+	bug.c     -- Simple test case.
+	Makefile  -- Build and test
+
+A discussion of how to use this mechanism and what the
+performance costs might be are included in comments
+in the file "ieee.c".  And, if it should be necessary,
+the engineering bug report number is PV 628694.
+
+-bean
+
+[ Bean Anderson, bean@sgi.com, 650-933-4107 ]
+
+begin 644 t.tar.gz
+M'XL(`%&=+S8``^U72V_;1A!6TDO(2WK,<9(T@!Q(-&7+<I!'D4?E5$#<&+;[
+M.`0@:&HH;4/N"KM+RW+JMG^@0']"D;;W'E*@Q]S:0POT7[3H(9?^@<Z2U(.*
+M$Q\:I6C+#[:7WIW'-S,[RZ5>KBP<KNNNKZV!&1O-;'17FMF8`]Q6J[&ZWF@U
+MU^FY07`KL+9X:I5*HK0OB4HW[IT@A_)EZWD<D_%?`KV\Z3_$D$6X.!^4CU:S
+M^>+Z-]8:D_HWFNM4_Y6U9JL"[N(H3?$_K__%\Z!BV@&VK5%IZRKL)3W;<I;-
+M8-.?;,81P!#1$;85!%`7\-9-J'\8U>J,,UWSO(WW[]WS.NUVV[NUW=E]=[.]
+MV[E3T`-[ZO+-LU__TJR<KHC/*I53,U1.G7WRM)H*G/ZT2;_G)@JGCWXPX]GO
+M/_@YDYRLC,<SN=QW^<0;J?SC/W0Z/OGUIW3\]O:7+TC#C[/_3.0?__ZTZ*=R
+M)J=Z,_/WQ=."7NYOROM1QON;[3&OS_,1YOQ#IO_;>,OG\7SR53;_Y\V,U[-J
+MD>>S/%^C<\?YGZX?G#M.WT";2CO!_/0KQ4G]WVPUY_O?72W[_[7@(N-!E'01
+MKBO=9<+IOVW;79'L10@'<`,:6%]UW1J,S+,S>5UGT]=L._89K^X+UEVR']F0
+M(]<_I/7QU"'I'T`=1M<F4P/)N`ZK%XR;2TYCI?>`CZ:/%VIP0&Z7IO(LA"K)
+MWJ!)F/J:M[:32'I4>!X@$SY/MF:L'`%&"E]B(&59X'$XJV[;1_9_J__3`WJA
+M!\`)_;_:6F_-]_^*ZY;]_SJP?!ELN%Q_E2![L-&YU[Z:O?N#!=BG'^MNXDN?
+M:T0P%P_8P[Z_SX2$(=-]D*@&&&C0`KK(A8S]B!UB%W@2[Z%4CC&P`%Z6.0K!
+M\Q1J+U3>'M.>%IX+U:6<M'4G0E\JV-@!6@3&(8R$KQGOP4#0`02!X%J*"&A7
+MZD11'#VF-$IGK/_>_5U*+.SVF8)0R``5^'1NSED1`Y3TO^`*4BW=]RD7=,W+
+MLT%*BIP/$A*5$+->7T,/N5'"5&$L)CB(1!LYRJ26_H"TS%,?X2%*CA$,^R@Q
+M=X*TJK1,`N,:B"'&240FNQ/Z[Z1VC1'DBNTCQ4OOGB&+(L`#(LV0!P@^*-;C
+M+&0!%3C5BX0B,B&02&BJ25)CF[,I'W@#B0$=_S,9WTZXR7.^4,>#``<IO]BX
+MKFY?,>TJ>#1:<@`*:;8HS0B90-\D+!Y;GTOWQ&:VL:S;&/AT7AC")O,U,*56
+MP(4F!:68>3N.\TE$9G=HJI^6CW<5$>I0`607I9$W)@N[>2P'0X28#K*L#(DD
+MG;"0JRQ6$@59R`84LY&Q3__<YU2%-/0:Q4#DTQIUI1]3X($?12-0D1C2NWY(
+MDK0T24FJ/M[,7:RE87],[&!N@ZBL50L1/1>^SAQ3;R,9`@Q#T]9F6Y(U"9N=
+MK1T*1E`?*)'WM65>U#,[X[B/DU3.A$&=L"?(MAX*D+35&4>5[ZQ7?CBT/[JU
+MN67.1:KJOJ!F#!.>M8J?:#%-+/4JA=2C7(/YO@+-8G1@LCDO`7V#62D>I''0
+M]U@\,AHP,W?2UUDNEW^>S5C+3.5SN;$H6-"!N6R/+Z#6=352R^$@,5?0XB3]
+MJAY+KZ:FI-9QYRO0_=-*N$EF.`B\0$D(Z?YIA4X8>$-J(;K2]=(C(EVLTITN
+M6\NVHQ-&B>J3#%UJ+365@RI,+9#.49%"X;PA`AG3ZL[=CK?3WO4VMKRM[?:=
+MSDZ[UB@H'UN1S,2\Y93I<Q%7,W-_O_[_]/VC1(D2)4J4*%&B1(D2)4J4*%&B
+.1(D2B\-?J5T;9``H````
+`
+end
+
+From dmg Thu Oct 22 17:38:16 1998
+From: "David M. Gay" <dmg@research.bell-labs.com>
+To: bean@sgi.com (bean anderson)
+Subject: FPCSR_FLUSH_ZERO
+
+Thanks for your helpful message.  That's a nice way get
+initializations done.
+
+If you could some little functions like __set_fs_bit_to_0 and
+__set_fp_precise into, e.g., libc, then it would be easy to
+add a set of flags to cc to specify various behaviors
+independently.  But for now I'm glad to have a simple work-around
+(a suitable "cc" script in PATH) that permits gradual underflow with
+64-bit addressing.
+
+-- dmg
+
+From bean@sgi.com Thu Oct 22 18:03:03 1998
+Sender: bean@sgi.com
+From: bean anderson <bean@sgi.com>
+To: "David M. Gay" <dmg@research.bell-labs.com>
+Subject: FPCSR_FLUSH_ZERO
+
+David,
+
+I was just reminded that for released compilers, C++ already
+uses the -init functionality for static initializers/constructors,
+so these mechanisms may  interfere with each other.  [ This is
+because the linker can handle at most one -init function. ]
+
+As of 7.3, the linker will accept multiple -init entries
+and it plays well with c++ static initializers.  [The 7.3
+compiler release is in test right now and is scheduled for
+release in March '99]
+
+In the mean time, as long as you are not using static
+constructors in C++, there should be no problem.
+
+-bean
+
+------------
+
+p.s.  Here is an alternate way to deal with this if
+	c++ static constructors become a problem.
+
+Another way to deal with this is to recognize that the .init
+section exists in each a.out and each DSO (dynamic library) so
+as each executable file gets loaded by the dynamic loader,
+it's associated .init section get's run.
+
+In the worst case scenario, you could put the ieee.o
+file into it's own dynamic library.  Here is an
+example (assuming it is a -64 compile):
+
+	% ld -64 -shared -o libieee.so -soname libieee.so \
+		ieee.o -init __FULL_IEEE_ARITHMETIC
+
+	%	CC -64 -o myprog ... -L. -lieee ...
+
+
+There are two ways to "find" this library at run time.
+
+	(1)  Copy it to one of the standard locations in
+	     which the runtime loader (RLD) always looks
+	     for requested dynamic libraries:
+
+		% cp libieee.so /usr/lib64/internal
+	     or
+		% cp libieee.so /opt/lib64
+
+		% myprog
+
+
+	(2)  Set an environment variable to tell the runtime
+	     loader (RLD) where else search:
+
+		% setenv LD_LIBRARY_PATH my-library-directory
+		% myprog
+
+From dmg Fri Oct 23 23:31:58 1998
+To: bean@sgi.com (bean anderson)
+Subject: FPCSR_FLUSH_ZERO
+
+Thanks for the second message you sent yesterday (about C++
+and using dynamic libraries).  I had assumed that one could
+have multiple -init functions and am glad to hear that will
+eventually be possible.
+
+-- dmg
+

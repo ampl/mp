@@ -204,6 +204,8 @@ jac0dim_ASL(ASL *asl, const char *stub, ftnlen stub_len)
 					&ndcc, &nzlb);
 			if (k < 2)
 				badints(R,k,2);
+			asl->i.nlc0 = nlc;
+			asl->i.nlo0 = nlo;
 			if ((n_cc += nlcc) > 0 && k < 6)
 				ndcc = -1; /* indicate unknown */
 

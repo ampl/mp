@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -289,7 +289,7 @@ ed_reset(ASLTYPE *asl)
  static ograd *ogzork;
  static expr *ezork;
  static EU *enzork;
- static int dzork1, dzork2, izork = -1;
+ static int dzork1, dzork2, exprzork, exprzork1, izork = -1;
 #endif
 
  static Elemtemp *
@@ -471,6 +471,10 @@ new_expr(Static *S, int o, expr *L, expr *R)
 {
 	expr *rv;
 
+#ifdef DEBUG
+	if (++exprzork1 == exprzork)
+		printf("exprzork1 = %d\n", exprzork1);;
+#endif
 	if ((rv = expr_free))
 		expr_free = rv->L.e;
 	else
@@ -495,6 +499,7 @@ new_expr(Static *S, int o, expr *L, expr *R)
 	rv->op = (efunc *)(size_t)o;
 	rv->L.e = L;
 	rv->R.e = R;
+	rv->a = 0;
 #ifdef DEBUG
 	if (rv == ezork)
 		printf("");
@@ -792,6 +797,7 @@ eread(EdRead *R)
 		case 5: /* if */
 			rvif = (expr_if *)mem(sizeof(expr_if));
 			PSHV(rvif->val = 0;)
+			PSHV(rvif->Te = rvif->Fe = 0;) /* for bogus .nl files */
 			rvif->op = (efunc *)(size_t)k;
 			rvif->next = iflist;
 			iflist = rvif;
@@ -1055,8 +1061,8 @@ uhash(Static *S, range *r)
 	n = r->n;
 	if (asl->P.merge)
 	    while((r1 = *rp)) {
-		if (r1->nv == nv && r1->n == n && !memcmp(ui, r1->ui, len)) {
-			if (!memcmp(r->lap, r1->lap, n*sizeof(linarg*)))
+		if (r1->nv == nv && r1->n == n && (len == 0 || !memcmp(ui, r1->ui, len))) {
+			if (n == 0 || !memcmp(r->lap, r1->lap, n*sizeof(linarg*)))
 				return *rp;
 			if (!ndiff(r, r1))
 				return *rp;
@@ -1988,7 +1994,7 @@ dvwalk(Static *S, int i)
 		dvi->nl = 0;
 		return;
 		}
-	if ((dvi->lt = afree(S, og, 0)))
+	if ((c->la = dvi->lt = afree(S, og, 0)))
 		dvi->scale = lt_scale;
 	for(n = 1, tl = tlist; tl; tl = tl->tnext)
 		n++;
@@ -3413,11 +3419,12 @@ linpt_read(EdRead *R, int nlin)
  static int
 funnelkind(Static *S, int i0, int *ip)
 {
-	cexp *ce, *cej;
+	cexp *ce, *cej, *ce2;
 	dv_info *dvi;
 	int i, j, k, k1, k2, nzc0, rv;
 	int *vr, *vre;
 	linarg *la, **lap, **lape;
+	linpart *L, *Le;
 	list *tl;
 	range *r;
 	ASLTYPE *asl = S->asl;
@@ -3430,6 +3437,7 @@ funnelkind(Static *S, int i0, int *ip)
 	dvi = asl->P.dv;
 	if (i0 >= Ncom || !dvi[i0].nl)
 		dvi = 0;
+	ce2 = 0; /* used to get funnelkind 2 right in rare cases */
 	for(i = k = 0; i < nzc; i++)
 		if ((j = zci[i]) < nv0x) {
 			if (k >= maxfwd) {
@@ -3441,10 +3449,17 @@ funnelkind(Static *S, int i0, int *ip)
 		else  {
 			cej = cexps + (j -= nv0x);
 			if (!(vr = cej->vref)) {
-				if (dvi && j < Ncom && dvi[j].ll)
-					for(tl = cej->cref; tl; tl = tl->next)
+				if (dvi && j < Ncom && (tl = cej->cref)) {
+				    if (dvi[j].ll) {
+					for(; tl; tl = tl->next)
 					    if (!zc[tl->item.i]++)
 						zci[nzc++] = tl->item.i;
+					}
+				    else {
+					cej->vref = (int*)ce2;
+					ce2 = cej;
+					}
+				    }
 				continue;
 				}
 			if (!*++vr) {
@@ -3479,6 +3494,8 @@ funnelkind(Static *S, int i0, int *ip)
 	else
 		while(i < k1)
 			*vr++ = zci[i++];
+	while(nzc > nzc0)
+		zc[zci[--nzc]] = 0;
 	if (!nocopy) {
 		k1 = 0;
 		if (i0 < Ncom) {
@@ -3497,16 +3514,54 @@ funnelkind(Static *S, int i0, int *ip)
 			}
 		if (k) {
 			if (nderp > 3*(k+k1)) {
+				if (!ce2)
+					goto ret2;
+				while((cej = ce2)) {
+					ce2 = (cexp*)cej->vref;
+					cej->vref = 0;
+					for(tl = cej->cref; tl; tl = tl->next)
+						if (!zc[tl->item.i]++)
+							zci[nzc++] = tl->item.i;
+					}
+				for(i = k = 0; i < nzc; i++) {
+					if ((j = zci[i]) < nv0x) {
+						vrefx[k++] = j;
+						continue;
+						}
+					cej = cexps + (j -= nv0x);
+					if ((vr = cej->vref)) {
+						if (*++vr) {
+							for(vre = vr + *vr; ++vr < vre; )
+								if (!zc[*vr]++)
+									zci[nzc++] = *vr;
+							}
+						}
+					if (j < Ncom) {
+						for(tl = cej->cref; tl; tl = tl->next)
+							if (!zc[tl->item.i]++)
+								zci[nzc++] = tl->item.i;
+						}
+					if ((L = cej->L)) {
+						for(Le = L + cej->nlin; L < Le; ++L)
+							if (!zc[L->v.i]++)
+								zci[nzc++] = L->v.i;
+						}
+					}
+				while(nzc > nzc0)
+					zc[zci[--nzc]] = 0;
+ ret2:
 				*ip = k;
 				return 2;
 				}
 			}
 		}
+	while((cej = ce2)) {
+		ce2 = (cexp*)cej->vref;
+		cej->vref = 0;
+		}
 	rv = 0;
 	if (nocopy || nderp > 3*(nzc0+k1))
 		rv = 1;
-	while(nzc > nzc0)
-		zc[zci[--nzc]] = 0;
 	return rv;
 	}
 
@@ -3582,12 +3637,13 @@ cexp_walk(Static *S, int k)
 	ewalk(S, e, 1);
 	PSHV(ce->ee = last_e;)
 	ka = k + nv0x;
-	if ((ce->zlen = lasta - la0))
+	if ((na = lasta - la0))
 		ce->z.i = la0;
 	else {
 		ce->z.i = k < Ncom ? ka : ((expr_vx*)varp[k-Ncom])->a0;
-		ce->zlen = 1;
+		na = 1;
 		}
+	ce->zlen = na;
 	j = ap ? *ap : ka;
 	if (nlin) {
 		if (nlin == 1)
@@ -3617,8 +3673,7 @@ cexp_walk(Static *S, int k)
 			for(i = nzc; --i >= 0; )
 				if ((j = zci[i]) >= nv0x && j < max_var1)
 					imap[varp[j-nv0x]->a] = a++;
-			if ((na = ce->zlen) || a > lasta00)
-				na += a - nv1;
+			na += a - nv1;
 			f->fcde.zaplen = na*sizeof(real);
 			i = nzc;
 			derpadjust(S, last_d, a, 0);
@@ -3626,7 +3681,7 @@ cexp_walk(Static *S, int k)
 		else {
 			f->fulld = 0;
 			f->fcde.e = e;
-			comsubs(S, ce->zlen, &f->fcde);
+			comsubs(S, na, &f->fcde);
 			memcpy(zci, vrefx, i*sizeof(int));
 			}
 		last_d = 0;
@@ -4708,15 +4763,25 @@ hesfunnel(Static *S, int *ip, int nrefs, ograd **ogp, linarg ***lapp, linarg ***
 	linarg *la, **lap, **lape;
 	ograd *og;
 	dv_info *dvi;
-	list *L;
+	/*list *L;*//*20170615*/
 	range *r;
+	split_ce *cs; /*20170615*/
 	ASLTYPE *asl = S->asl;
 
 	i = *ip;
 	c = cexps + i;
+#if 1 /*20170615*/
+	if (c->cref)
+		return 0;
+#endif
 	n = 0;
 	if (i >= Ncom) {
-		r = asl->P.Split_ce[i-Ncom].r;
+		cs = &asl->P.Split_ce[i-Ncom];
+#if 1 /*20170615*/
+		if (cs->ce)
+			return 0;
+#endif
+		r = cs->r;
 		lap = r->lap;
 		lape = lap + (n = r->n);
 		}
@@ -4755,8 +4820,10 @@ hesfunnel(Static *S, int *ip, int nrefs, ograd **ogp, linarg ***lapp, linarg ***
 	m = nzc;
 	while(nzc > 0)
 		zc[zci[--nzc]] = 0;
+#if 0 /*20170615*/
 	for(L = c->cref; L; L = L->next)
 		n++;
+#endif
 	if (m > n)
 		m = n;
 	if ((k = m*nrefs - n) <= 0)

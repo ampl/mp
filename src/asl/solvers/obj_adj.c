@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2019 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -32,10 +32,10 @@ of or in connection with the use or performance of this software.
 #include "r_qp.hd" /* for OPNUM */
 
  static void
-obj_adj1(ASL *asl, int no)
+obj_adj1(ASL *asl, int no, int *pco, cgrad **pcgo, real *prhs)
 {
 	Objrep *od, **pod;
-	cgrad **Cgrd, **Cgrd0, *cg, *cgo, **pcg;
+	cgrad **Cgrd, *cg, *cgo, **pcg;
 	char *cclass, *oclass;
 	efunc_n *op;
 	expr_n *e;
@@ -117,26 +117,31 @@ obj_adj1(ASL *asl, int no)
 		}
 	if (*Lv > negInfinity || *Uv < Infinity)
 		return;
-	pcg = Cgrd = Cgrad;
-	cgo = 0;
-	co = k = 0;
+	Cgrd = Cgrad;
 	m = n_con;
-	for(i = 0; i < m; ++i) {
-		for(cg = *pcg++; cg; cg = cg->next)
-			if (cg->varno == cv) {
-				if (cgo)
-					return;
-				cgo = cg;
-				co = i;
-				for(cg = pcg[-1]; cg; cg = cg->next)
-					++k;
-				break;
-				}
+	cm = asl->i.cmap;
+	k = 0;
+	if (!(cgo = *pcgo)) {
+		for(co = i = 0; i < m; ++i) {
+			pcg = Cgrd + (cm ? cm[i] : i);
+			for(cg = *pcg; cg; cg = cg->next)
+				if (cg->varno == cv) {
+					if (cgo)
+						return;
+					cgo = cg;
+					co = pcg - Cgrd;
+					for(cg = *pcg; cg; cg = cg->next)
+						++k;
+					break;
+					}
+			}
+		if (!cgo)
+			return;
+		if (n_cc && cvar[co])
+			return;
 		}
-	if (!cgo)
-		return;
-	if (n_cc && cvar[co])
-		return;
+	else
+		co = *pco;
 	if ((c2 = cgo->coef) == 0.)
 		return;
 	t = c1 / c2;
@@ -153,7 +158,9 @@ obj_adj1(ASL *asl, int no)
 		Uc = Lc + 1;
 		incc = 2;
 		}
-	if (j) {
+	if (*pcgo)
+		rhs = *prhs;
+	else if (j) {
 		if ((rhs = *Uc) >= Infinity)
 			return;
 		}
@@ -171,23 +178,17 @@ obj_adj1(ASL *asl, int no)
 			return;
 		}
 
-	if (co < nlc) {
-		--nlc;
-		++nlo;
-		}
-	nzc = nZc -= k;
-	nzo = nZo = k - 1;
 	pod = asl->i.Or;
 	od = (Objrep*)M1alloc(sizeof(Objrep)
 		+ (pod ? 0 : n_obj*sizeof(Objrep*)));
 	if (!pod) {
 		pod = asl->i.Or = (Objrep**)(od+1);
-		for(k = n_obj; --k >= 0; )
-			pod[k] = 0;
+		for(i = n_obj; --i >= 0; )
+			pod[i] = 0;
 		}
 	pod[no] = od;
 	cm = asl->i.cmap;
-	od->ico = cm ? cm[co] : co;
+	od->ico = co;
 	od->ivo = cv;
 	od->c0 = e->v;
 	od->c0a = e->v + t*rhs;
@@ -197,19 +198,32 @@ obj_adj1(ASL *asl, int no)
 	od->opify = asl->i.opify;
 	od->f = 0.;
 	od->cg = od->cg0 = 0;
+	if ((zgp = zerograds))
+		for(zg = zgp[no]; *zg >= 0; ++zg)
+			if (*zg >= cv)
+				--*zg;
+	if (*pcgo)
+		return;
+	*pcgo = cgo;
+	*pco = co;
+	*prhs = rhs;
+	if (co < nlc) {
+		--nlc;
+		++nlo;
+		}
+	nzc = nZc -= k;
+	nzo = nZo = k - 1;
 
 	pcg = &Cgrd[co];
 	while((cg = *pcg) != cgo)
 		pcg = &cg->next;
 	*pcg = cgo->next;
-	if (cm && (Cgrd0 = asl->i.Cgrad0))
-		Cgrd0[cm[co]] = Cgrd[co];
-
-	m = --n_con;
+	n_con = --m;
 	--n_conjac[1];
 	if (n_conjac[1] > m)
 		n_conjac[1] = m;
-	cm = co == m ? 0 : get_vcmap_ASL(asl, ASL_Sufkind_con);
+	if (!cm && co != m)
+		cm = get_vcmap_ASL(asl, ASL_Sufkind_con);
 	if (cclass) {
 		if (oclass) {
 			i = oclass[no] = cclass[co];
@@ -242,9 +256,10 @@ obj_adj1(ASL *asl, int no)
 				}
 			}
 		if ((nx = asl->i.nsufext[ASL_Sufkind_con])) {
-			for(nx += m; i < nx; ++i)
+			for(nx += m; i < nx; i = j)
 				cm[i] = cm[j = i + 1];
 			}
+		cm[i] = -1;
 		if ((pi = pi0))
 			for(i = co; i < m; ++i)
 				pi[i] = pi[i+1];
@@ -259,9 +274,8 @@ obj_adj1(ASL *asl, int no)
 	if (cv != n) {
 		vm = get_vcmap_ASL(asl, ASL_Sufkind_var);
 		nx = asl->i.n_var0 + asl->i.nsufext[ASL_Sufkind_var] - 1;
-		for(i = cva; i < nx; ++i) {
+		for(i = cva; i < nx; ++i)
 			vm[i] = vm[i+1];
-			}
 		vm[nx] = -1;
 		if ((pi = X0))
 			for(i = cv; i < n; ++i)
@@ -273,10 +287,6 @@ obj_adj1(ASL *asl, int no)
 		Lv += incv;
 		Uv += incv;
 		}
-	if ((zgp = zerograds))
-		for(zg = zgp[no]; *zg >= 0; ++zg)
-			if (*zg >= cv)
-				--*zg;
 	}
 
  static real
@@ -487,15 +497,18 @@ sphes_setup_adj(ASL *asl, SputInfo **spi, int no, int ow, int y, int uptri)
 	return asl->p.Sphset_nomap(asl, spi, no, ow, y, uptri);
 	}
 
+ enum {nscratch= 16};
+
  void
 obj_adj_ASL(ASL *asl)
 {
 	Objrep *od, **pod;
-	cgrad *cg, **cgp, **cgp0;
-	int *cs, *cs0, ftn, i, j, n, nc0, ng, no, nobj, nv0, nz;
-	int *rn, *rn0, *rn1, *rne, *zc, *zv;
-	ograd *og, **ogp, **ogp0;
-	real *a, *a1, t;
+	cgrad *cg, **cgp, **cgp0, **cgseen, *cgseen0[nscratch];
+	int *coseen, coseen0[4*nscratch], *cs, *cs0, cv, ftn, i, j;
+	int n, nc0, ng, no, nobj, ntodo, nv0, nvseen, nz;
+	int *rn, *rn0, *rn1, *rne, *todo, *vprev, *vseen, *zc, *zv;
+	ograd **Ogrd, *og, **ogp, **ogp0;
+	real *a, *a1, *rhs, rhs0[nscratch], t;
 	size_t *csZ, *csZ0;
 
 	nobj = n_obj;
@@ -556,8 +569,48 @@ obj_adj_ASL(ASL *asl)
 				}
 			}
 		}
-	for(no = 0; no < nobj; ++no)
-		obj_adj1(asl, no);
+	if (nobj > nscratch) {
+		rhs = (real*)Malloc(nobj*(4*sizeof(int*) + sizeof(cgrad*) + sizeof(real)));
+		cgseen = (cgrad**)(rhs + nobj);
+		coseen = (int*)(cgseen + nobj);
+		}
+	else {
+		rhs = rhs0;
+		cgseen = cgseen0;
+		coseen = coseen0;
+		}
+	vprev = coseen + nobj;
+	vseen = vprev + nobj;
+	todo = vseen + nobj;
+	Ogrd = Ograd;
+	for(no = nvseen = ntodo = 0; no < nobj; ++no) {
+		vprev[no] = -1;
+		if ((og = Ogrd[no]) && !og->next) {
+			todo[ntodo++] = no;
+			cv = og->varno;
+			for(i = 0;; ++i) {
+				if (i >= nvseen) {
+					vseen[nvseen] = cv;
+					cgseen[nvseen] = 0;
+					coseen[nvseen] = 0;
+					rhs[nvseen] = 0.;
+					vprev[no] = nvseen++;
+					break;
+					}
+				if (vseen[i] == cv) {
+					vprev[no] = i;
+					break;
+					}
+				}
+			}
+		}
+	if (!ntodo)
+		goto done;
+	for(i = 0; i < ntodo; ++i) {
+		no = todo[i];
+		j = vprev[no];
+		obj_adj1(asl, no, &coseen[j], &cgseen[j], &rhs[j]);
+		}
 	if ((pod = asl->i.Or)) {
 		if (asl->i.ASLtype != ASL_read_f) {
 			asl->p.Objval = objval_adj;
@@ -574,7 +627,7 @@ obj_adj_ASL(ASL *asl)
 		jac_adj(asl);
 		asl->i.orscratch = (real*)M1zapalloc((nc0 + nobj)*sizeof(real));
 		if (!a)
-			return;
+			goto done;
 		if (!(cgp0 = asl->i.Cgrad0))
 			cgp0 = Cgrad;
 		ogp0 = Ograd;
@@ -653,6 +706,9 @@ obj_adj_ASL(ASL *asl)
 				}
 			}
 		}
+ done:
+	if (rhs != rhs0)
+		free(rhs);
 	}
 
  void

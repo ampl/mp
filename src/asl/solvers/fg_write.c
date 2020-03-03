@@ -1,26 +1,20 @@
-/****************************************************************
-Copyright (C) 1999,2000 Lucent Technologies
-All Rights Reserved
+/*******************************************************************
+Copyright (C) 2017 AMPL Optimization, Inc.; written by David M. Gay.
 
-Permission to use, copy, modify, and distribute this software and
-its documentation for any purpose and without fee is hereby
-granted, provided that the above copyright notice appear in all
-copies and that both that the copyright notice and this
-permission notice and warranty disclaimer appear in supporting
-documentation, and that the name of Lucent or any of its entities
-not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior
-permission.
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
+provided that the above copyright notice appear in all copies and that
+both that the copyright notice and this permission notice and warranty
+disclaimer appear in supporting documentation.
 
-LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
-IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
-SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
-IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
-ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
-THIS SOFTWARE.
-****************************************************************/
+The author and AMPL Optimization, Inc. disclaim all warranties with
+regard to this software, including all implied warranties of
+merchantability and fitness.  In no event shall the author be liable
+for any special, indirect or consequential damages or any damages
+whatsoever resulting from loss of use, data or profits, whether in an
+action of contract, negligence or other tortious action, arising out
+of or in connection with the use or performance of this software.
+*******************************************************************/
 
 #include "nlp.h"
 
@@ -705,7 +699,7 @@ fg_write_ASL(ASL *a, const char *stub, NewVCO *nu, int flags)
 		fclose(nl);
 		return ASL_writeerr_badrops;
 		}
-	if (flags & ASL_write_ASCII) {
+	if ((flags & ASL_write_ASCII) || (!(flags & ASL_write_binary) && !(binary_nl & 1))) {
 		ak = 0;
 		c = 'g';
 		pf = aprintf;
@@ -819,15 +813,17 @@ fg_write_ASL(ASL *a, const char *stub, NewVCO *nu, int flags)
 	S.cexps1_ = asl->I.cexps1_;
 	S.nv0 = n_var;
 	S.com1off = S.nv0 + comb + comc + como;
+	br(pf, nl, 'b', LUv, Uvx, n_var);
+	br(pf, nl, 0, nu->LUnv, nu->Unv, nnv);
+	if (!(flags & ASL_write_no_X0))
+		iguess(pf, nl, 'x', X0, havex0, n_var, nnv, nu->x0);
+	br(pf, nl, 'r', LUrhs, Urhsx, n_con);
+	br(pf, nl, 0, nu->LUnc, nu->Unc, nnc);
+	if (!(flags & ASL_write_no_pi0))
+		iguess(pf, nl, 'd', pi0, havepi0, n_con, nnc, nu->d0);
 	coput(&S, 'C', con_de, n_con, c_cexp1st, 0, 0, nnc, 0, 0);
 	coput(&S, 'O', obj_de, n_obj, o_cexp1st, objtype, n_con,
 		nno, nu->oc, nu->ot);
-	iguess(pf, nl, 'd', pi0, havepi0, n_con, nnc, nu->d0);
-	iguess(pf, nl, 'x', X0, havex0, n_var, nnv, nu->x0);
-	br(pf, nl, 'r', LUrhs, Urhsx, n_con);
-	br(pf, nl, 0, nu->LUnc, nu->Unc, nnc);
-	br(pf, nl, 'b', LUv, Uvx, n_var);
-	br(pf, nl, 0, nu->LUnv, nu->Unv, nnv);
 	if (A_vals)
 		k1put(pf, nl, A_colstarts, A_vals, A_rownos, n_con, n_var,
 			nnv, nnc, nu->newc);
@@ -851,7 +847,7 @@ fg_wread_ASL(ASL *asl, FILE *f, int flags)
 		o_cexp1st = (int*)M1zapalloc((n_obj + 1)*sizeof(int));
 	if (!(flags & ASL_keep_derivs)) {
 		maxfwd = 0;
-		want_deriv = 0;
+		want_derivs = 0;
 		}
 	if (!(flags & ASL_omit_all_suffixes))
 		flags |= ASL_keep_all_suffixes;

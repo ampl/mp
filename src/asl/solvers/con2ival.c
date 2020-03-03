@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2017, 2018 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -52,6 +52,7 @@ c2ival(ASL_fgh *asl, int i, real *X, fint *nerror)
 		}
 	want_deriv = want_derivs;
 	errno = 0;	/* in case f77 set errno opening files */
+	co_index = i;
 	if (!asl->i.x_known)
 		x2_check_ASL(asl,X);
 	if (!asl->i.ncxval)
@@ -63,13 +64,12 @@ c2ival(ASL_fgh *asl, int i, real *X, fint *nerror)
 			com1eval(asl, 0, comc1);
 		x0kind |= ASL_have_concom;
 		}
-	asl->i.ncxval[i] = asl->i.nxval;
-	co_index = i;
 	if (i >= (nc = asl->i.n_con0))
 		e = lcon_de[i-nc].e;
 	else
 		e = con_de[i].e;
 	f = (*e->op)(e C_ASL);
+	asl->i.ncxval[i] = asl->i.nxval;
 	err_jmp = 0;
 	return f;
 	}
@@ -163,14 +163,16 @@ Congrd2(ASL_fgh *asl, int i, real *X, real *G, fint *nerror)
 			return;
 		}
 	errno = 0;	/* in case f77 set errno opening files */
-	if (!asl->i.x_known)
+	if (!asl->i.x_known) {
+		co_index = i;
 		x2_check_ASL(asl,X);
+		}
 	if ((!asl->i.ncxval || asl->i.ncxval[i] != asl->i.nxval)
 	 && (!(x0kind & ASL_have_conval)
 	     || i < n_conjac[0] || i >= n_conjac[1])) {
 		xksave = asl->i.x_known;
 		asl->i.x_known = 1;
-		con2ival_ASL((ASL*)asl,i,X,nerror);
+		con2ival_nomap_ASL((ASL*)asl,i,X,nerror);
 		asl->i.x_known = xksave;
 		if (nerror && *nerror)
 			return;

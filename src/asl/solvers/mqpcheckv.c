@@ -1,5 +1,5 @@
 /*******************************************************************
-Copyright (C) 2016 AMPL Optimization, Inc.; written by David M. Gay.
+Copyright (C) 2018 AMPL Optimization, Inc.; written by David M. Gay.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -51,21 +51,21 @@ Memblock {
 Static {
 	ASL_fg *asl;
 	AVL_Tree *AQ;
-	Memblock *mb, *mb0, *mblast;
+	Memblock *mb[2], *mb0, *mblast[2];
 	dispatch *cd0, **cdisp;
 	double *_s_x;
-	dyad *_freedyad, **_s_q;
-	int *_s_s, *_s_z, *w, *zct;
-	ograd *_freeog, **oq;
-	term **_cterms, *_freeterm;
-	void **v, **ve;
-	int _zerodiv, nvinc, nzct;
+	dyad *_freedyad[2], **_s_q;
+	int *_s_s, *_s_z, *w;
+	ograd *_freeog[2], **oq;
+	term **_cterms, *_freeterm[2];
+	void **v[2], **ve[2];
+	int _zerodiv, comterms, flags, nvinc;
 	} Static;
 
 #define cterms		S->_cterms
-#define freedyad	S->_freedyad
-#define freeog		S->_freeog
-#define freeterm	S->_freeterm
+#define freedyad	S->_freedyad[S->comterms]
+#define freeog		S->_freeog[S->comterms]
+#define freeterm	S->_freeterm[S->comterms]
 #define s_q		S->_s_q
 #define s_s		S->_s_s
 #define s_x		S->_s_x
@@ -76,26 +76,30 @@ Static {
 M2alloc(Static *S, size_t len, int dbl_align)
 {
 	Memblock *mb, *mb1;
+	int ct;
 	size_t n;
-	void *rv;
+	void *rv, ***vp;
 
+	vp = &S->v[ct = S->comterms];
 	if (dbl_align)
-		S->v = (void**)(((size_t)S->v + (sizeof(void*)-1)) & ~(sizeof(void*)-1));
+		*vp = (void**)(((size_t)*vp + (sizeof(void*)-1)) & ~(sizeof(void*)-1));
 	n = (len + (sizeof(void*)-1))/sizeof(void*);
-	if (S->v + n >= S->ve) {
-		mb = S->mb;
-		if (!(mb1 = mb->next)) {
-			mb1 = (Memblock*)Malloc(sizeof(Memblock));
-			S->mblast = mb->next = mb1;
+	if (*vp + n >= S->ve[ct]) {
+		mb = S->mb[ct];
+		if (!mb || !(mb1 = mb->next)) {
+			S->mblast[ct] = mb1 = (Memblock*)Malloc(sizeof(Memblock));
+			if (mb)
+				mb->next = mb1;
 			mb1->prev = mb;
 			mb1->next = 0;
 			}
-		S->mb = mb1;
-		S->v = mb1->x;
-		S->ve = S->v + Memblock_gulp;
+		S->mb[ct] = mb1;
+		S->v[ct] = mb1->x;
+		S->ve[ct] = (S->v[ct] = mb1->x) + Memblock_gulp;
+		vp = &S->v[ct];
 		}
-	rv = (void*)S->v;
-	S->v += n;
+	rv = (void*)*vp;
+	*vp += n;
 	return rv;
 	}
 
@@ -273,14 +277,16 @@ scale(Static *S, term *T, register double t)
  static term *
 comterm(Static *S, int i)
 {
-	int nlin;
+	ASL_fg* asl;
 	cexp *c;
 	cexp1 *c1;
-	linpart *L, *Le;
 	expr_v ev, *vp;
+	int nlin;
+	linpart *L, *Le;
+	ograd *og;
 	term *T;
-	ASL_fg* asl = S->asl;
 
+	asl = S->asl;
 	if (i < ncom0) {
 		c = cexps + i;
 		T = ewalk(S, c->e);
@@ -293,14 +299,26 @@ comterm(Static *S, int i)
 		L = c1->L;
 		nlin = c1->nlin;
 		}
-	if (L && T)
+	if (L && T) {
 		for(Le = L + nlin; L < Le; L++) {
 			vp = (expr_v *)((char *)L->v.rp -
 				((char *)&ev.v - (char *)&ev));
 			T = termsum(S, T, new_term(S,
 				new_og(S, 0, (int)(vp - var_e), L->fac)));
 			}
+		}
 	return T;
+	}
+
+ static void
+Comeval(Static *S, int i, int ie)
+{
+	term **Cterms;
+
+	S->comterms = 1;
+	for(Cterms = cterms; i < ie; ++i)
+		Cterms[i] = comterm(S, i);
+	S->comterms = 0;
 	}
 
  static term *
@@ -326,16 +344,16 @@ termdup(Static *S, term *T)
  static term *
 ewalk(Static *S, expr *e)
 {
-	term *L, *R, *T;
-	ograd *o, *oR;
+	ASL_fg *asl;
 	expr **ep, **epe;
 	int i;
-	ASL_fg *asl;
+	ograd *o, *oR;
+	term *L, *R, *T;
 
 	switch(Intcast e->op) {
 
 	  case OPNUM:
-		return new_term(S, new_og(S, 0, -1 , ((expr_n *)e)->v));
+		return new_term(S, new_og(S, 0, -1, ((expr_n *)e)->v));
 
 	  case OPPLUS:
 		return termsum(S, ewalk(S, e->L.e), ewalk(S, e->R.e));
@@ -433,10 +451,12 @@ ewalk(Static *S, expr *e)
 			return new_term(S, new_og(S, 0, i, 1.));
 		i -= S->nvinc;
 		if (!(L = cterms[i -= n_var])) {
+			/* c_cexp1st and o_cexp1st may not have been allocated */
+			S->comterms = 1;
 			if (!(L = comterm(S, i)))
 				return 0;
 			cterms[i] = L;
-			S->zct[S->nzct++] = i;
+			S->comterms = 0;
 			}
 		return termdup(S, L);
 		}
@@ -537,45 +557,6 @@ dsort(Static *S, term *T, ograd **q, cgrad **cgp, ograd **ogp, int arrays)
 	return rv;
 	}
 
- static void
-free_oglist(Static *S, ograd *og)
-{
-	ograd *og1;
-
-	for(; og; og = og1) {
-		og1 = og->next;
-		free_og(S, og);
-		}
-	}
-
- static void
-cterm_free(Static *S)
-{
-	dyad *d, *d1;
-	term **ct, *t;
-	int i, n, *zct;
-
-	if (!(n = S->nzct))
-		return;
-	zct = S->zct;
-	S->nzct = 0;
-	ct = cterms;
-	while(n > 0) {
-		if ((t = ct[i = zct[--n]])) {
-			ct[i] = 0;
-			free_oglist(S, t->L);
-			d1 = t->Q;
-			while((d = d1)) {
-				d1 = d->next;
-				free_oglist(S, d->Lq);
-				if (d->Rq != d->Lq)
-					free_oglist(S, d->Rq);
-				free_dyad(S, d);
-				}
-			}
-		}
-	}
-
  static int
 lcmp(const void *a, const void *b, void *v)
 {
@@ -607,8 +588,9 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 	dyad *d, *d1, **q, **q1, **q2;
 	expr *e;
 	expr_n *en;
-	int *cm, *colno, *qm, *rowq, *rowq0, *rowq1, *s, *vmi, *w, *z;
-	int arrays, co0, ftn, i, icol, icolf, j, ncol, ncom, nv, nva, nz, nz1, pass;
+	int *C1, *cm, *colno, *qm, *rowq, *rowq0, *rowq1, *s, *vmi, *w, *z;
+	int C10, arrays, co0, dv0, dv1, dvbit, ftn, i, icol, icolf, j;
+	int ncol, ncom, nv, nva, nz, nz1, pass;
 	ograd *og, *og1, *og2, **ogp;
 	real *L, *U, *delsq, *delsq0, *delsq1, objadj, t, *x;
 	size_t  *colq, *colq1, nelq, nelq0;
@@ -624,21 +606,29 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 	if (co >= 0) {
 		if ((pod = asl->i.Or) && (od = pod[co])) {
 			co = od->ico;
+			if (!(cgp = asl->i.Cgrad0))
+				cgp = Cgrad;
 			goto use_Cgrad;
 			}
-		else {
-			c = obj_de + co;
-			ogp = Ograd + co;
-			cgp = 0;
-			}
+		dv0 = combc;
+		dv1 = dv0 + como;
+		dvbit = 2;
+		C1 = o_cexp1st;
+		c = obj_de + co;
+		ogp = Ograd + co;
+		cgp = 0;
 		}
 	else {
 		co = -1 - co;
 		if ((cm = asl->i.cmap))
 			co = cm[co];
- use_Cgrad:
-		c = con_de + co;
 		cgp = Cgrad;
+ use_Cgrad:
+		dv0 = comb;
+		dv1 = combc;
+		dvbit = 3;
+		C1 = c_cexp1st;
+		c = con_de + co;
 		cgp += co;
 		ogp = 0;
 		}
@@ -650,7 +640,8 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 	if (asl->i.vmap && !asl->i.vminv)
 		get_vminv_ASL(a);
 	nv = n_var;
-	ncom = ncom0 + ncom1;
+	C10 = ncom0;
+	ncom = C10 + ncom1;
 	if (!(S = *(Static**)vp)) {
 		i = asl->i.n_var0 + asl->i.nsufext[0];
 		if ((nva = nv) < i)
@@ -668,7 +659,7 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 		S = (Static*)(mb + 1);
 		*vp = (void*)S;
 		memset(S, 0, sizeof(Static));
-		S->mb0 = S->mblast = mb;
+		S->mb0 = S->mblast[0] = mb;
 		s_x = x;
 		S->asl = asl;
 		s_q = q = (dyad**)(S+1);
@@ -683,9 +674,8 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 		memset(q, 0, nva*sizeof(dyad *));
 		memset(S->w, 0, nva*sizeof(int));
 		if (ncom) {
-			cterms = (term **)Malloc(ncom*(sizeof(term*)+sizeof(int)));
+			cterms = (term **)Malloc(ncom*sizeof(term*));
 			memset(cterms, 0, ncom*sizeof(term*));
-			S->zct = (int*)(cterms + ncom);
 			}
 		S->AQ = AVL_Tree_alloc2(0, vcomp, mymalloc, 0);
 		}
@@ -697,9 +687,9 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 		cdisp = S->cdisp;
 		cd0 = S->cd0;
 		}
-	S->mb = mb = S->mb0;
-	S->v  = &mb->x[0];
-	S->ve = &mb->x[Memblock_gulp];
+	S->mb[0] = mb = S->mb0;
+	S->v[0]  = &mb->x[0];
+	S->ve[0] = &mb->x[Memblock_gulp];
 	w = S->w;
 	freedyad = 0;
 	freeog = 0;
@@ -719,11 +709,20 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 		arrays = 1;
 		}
 	zerodiv = 0;
+	if (comb && !(S->flags & 1)) {
+		Comeval(S, 0, comb);
+		S->flags |= 1;
+		}
+	if (!(S->flags & dvbit)) {
+		S->flags |= dvbit;
+		if (dv1 > dv0)
+			Comeval(S, dv0, dv1);
+		}
+	if (C1 && C1[co] < C1[co+1])
+		Comeval(S, C10 + C1[co], C10 + C1[co+1]);
 	if (!(T = ewalk(S, e)) || zerodiv)
 		return T ? -2L : -1L;
 
-	if (S->nzct)
-		cterm_free(S);
 	if (od) {
 		cgq = &od->cg;
 		for(i = 0, cg = *cgp; cg; cg = cg->next) {
@@ -733,10 +732,12 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
 		if (i) {
 			cq = (cgrad*)M1alloc(i*sizeof(cgrad));
 			for(cg = *cgp; cg; cg = cg->next) {
-				*cgq = cq;
-				cgq = &cq->next;
-				*cq = *cg;
-				++cq;
+				if (cg->coef != 0.) {
+					*cgq = cq;
+					cgq = &cq->next;
+					*cq = *cg;
+					++cq;
+					}
 				}
 			}
 		*cgq = 0;
@@ -983,14 +984,21 @@ mqpcheckv_ASL(ASL *a, int co, QPinfo **QPIp, void **vp)
  void
 mqpcheckv_free_ASL(ASL *asl, void **vp)
 {
-	Memblock *m, *p;
+	Memblock *m, *m0, *p;
 	Static *S;
+	int i;
 
 	if (vp && (S = *(Static**)vp)) {
-		for(m = S->mblast; (p = m->prev); m = p)
-			free(m);
+		m0 = S->mb0;
+		for(i = 0; i < 2; ++i, m0 = 0) {
+			for(m = S->mblast[i]; m != m0; m = p) {
+				p = m->prev;
+				free(m);
+				}
+			}
 		if (cterms)
 			free(cterms);
+		AVL_Tree_free(&S->AQ);
 		free(S->_s_x);
 		*vp = 0;
 		}

@@ -465,7 +465,8 @@ enum {	/* bits in flags field of TableInfo */
  * that describe arg i:
  *	AMPLFUNC_INARG  = 1 ==> input arg;
  *	AMPLFUNC_OUTARG = 2 ==> output arg;
- *	AMPLFUNC_STROUT = 4 ==> can be assigned a string value.
+ *	AMPLFUNC_STRING = 4 ==> input is sa[i]
+ *	AMPLFUNC_STROUT = 8 ==> can be assigned a string value.
  *
  * INOUT args have both the AMPLFUNC_INARG and the AMPLFUNC_OUTARG bits
  * are on, i.e., (at[i] & 3) == 3.
