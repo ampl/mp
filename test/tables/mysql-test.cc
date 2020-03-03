@@ -97,7 +97,7 @@ void MySQLTest::SetUp() {
   char hostname[BUFFER_SIZE] = "";
   SocketEnv().GetHostname(hostname, BUFFER_SIZE);
   // The table name contains space to check quotation.
-  table_name_ = str(fmt::Format("{} {}") << hostname << getpid());
+  table_name_ = fmt::format("{} {}", hostname, getpid());
 }
 
 void MySQLTest::TearDown() {
@@ -106,7 +106,7 @@ void MySQLTest::TearDown() {
   con.Connect(strings_[1].c_str());
   odbc::Statement stmt(con);
   try {
-    stmt.Execute(c_str(fmt::Format("DROP TABLE `{}`") << table_name_));
+    stmt.Execute(fmt::format("DROP TABLE `{}`", table_name_).c_str());
   } catch (const std::exception &) {}  // Ignore errors.
 }
 
@@ -259,9 +259,9 @@ TEST_F(MySQLTest, InvalidCharInTableName) {
   table_name_ += '\t';
   Table t(table_name_, 1, 0, strings_);
   t = "c", "v";
-  std::string error = str(fmt::Format(
-      "Table name contains invalid character with code {}")
-      << static_cast<int>('\t'));
+  std::string error = fmt::format(
+      "Table name contains invalid character with code {}",
+      static_cast<int>('\t'));
   EXPECT_ERROR(handler_->Write(t), error.c_str());
   EXPECT_ERROR(handler_->Read(&t), error.c_str());
 }
@@ -329,9 +329,9 @@ TEST_F(MySQLTest, InvalidCharsInColumnName) {
     char col_name[2] = {static_cast<char>(c)};
     Table t(table_name_, 1, 0, strings_);
     t = col_name, "v";
-    std::string error = str(fmt::Format(
-          "Column 1's name contains invalid character with code {}")
-          << static_cast<int>(c));
+    std::string error = fmt::format(
+          "Column 1's name contains invalid character with code {}",
+          static_cast<int>(c));
     EXPECT_ERROR(handler_->Write(t), error.c_str());
     EXPECT_ERROR(handler_->Read(&t), error.c_str());
   }
