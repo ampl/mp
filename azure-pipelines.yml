@@ -1,0 +1,21 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-18.04'
+
+steps:
+- script: git submodule update
+  displayName: 'Updating submodules'
+- script: mkdir build
+  displayName: Make Build Directory
+- task: CMake@1
+  inputs:
+    workingDirectory: 'build'
+    cmakeArgs: '-DBUILD=all'
+  displayName: 'Run a multi-line script'
