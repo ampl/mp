@@ -236,16 +236,29 @@ GecodeProblem::GecodeProblem(int num_vars, Gecode::IntPropLevel ipl) :
   vars_(space(), num_vars), obj_irt_(Gecode::IRT_NQ), ipl_(ipl) {
 }
 
-GecodeProblem::GecodeProblem(bool share, GecodeProblem &s) :
+#if GECODE_VERSION_NUMBER > 600000
+GecodeProblem::GecodeProblem(GecodeProblem &s) :
+  Gecode::Space(s), obj_irt_(s.obj_irt_), ipl_(s.ipl_) {
+  vars_.update(*this, s.vars_);
+  if (obj_irt_ != Gecode::IRT_NQ)
+    obj_.update(*this, s.obj_);
+}
+Gecode::Space* GecodeProblem::copy() {
+  return new GecodeProblem(*this);
+}
+#else
+GecodeProblem::GecodeProblem(bool share, GecodeProblem& s) :
   Gecode::Space(share, s), obj_irt_(s.obj_irt_), ipl_(s.ipl_) {
   vars_.update(*this, share, s.vars_);
   if (obj_irt_ != Gecode::IRT_NQ)
     obj_.update(*this, share, s.obj_);
 }
-
-Gecode::Space *GecodeProblem::copy(bool share) {
+Gecode::Space* GecodeProblem::copy(bool share) {
   return new GecodeProblem(share, *this);
 }
+#endif
+
+
 
 void GecodeProblem::SetObj(obj::Type obj_type, const LinExpr &expr) {
   obj_irt_ = obj_type == obj::MAX ? Gecode::IRT_GR : Gecode::IRT_LE;

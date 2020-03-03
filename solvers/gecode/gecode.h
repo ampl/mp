@@ -58,10 +58,13 @@ class GecodeProblem: public Gecode::Space {
 
  public:
   GecodeProblem(int num_vars, Gecode::IntPropLevel ipl);
-  GecodeProblem(bool share, GecodeProblem &s);
-
-  Gecode::Space *copy(bool share);
-
+#if GECODE_VERSION_NUMBER > 600000
+  GecodeProblem(GecodeProblem &s);
+  Gecode::Space *copy();
+#else
+  GecodeProblem(bool share, GecodeProblem& s);
+  Gecode::Space* copy(bool share);
+#endif
   Gecode::IntVarArray &vars() { return vars_; }
   Gecode::IntVar &obj() { return obj_; }
 
@@ -74,6 +77,7 @@ class GecodeProblem: public Gecode::Space {
 // Converter of constraint programming problems from MP to Gecode format.
 class MPToGecodeConverter : public ExprVisitor<MPToGecodeConverter, LinExpr> {
  private:
+   
   GecodeProblem problem_;
   Gecode::IntPropLevel ipl_;
   IntSuffix ipl_suffix_;

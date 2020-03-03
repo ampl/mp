@@ -115,7 +115,7 @@ struct OptionValue {
   T value;
 };
 
-const OptionValue<Gecode::IntPropLevel> INT_PROP_LEVELS[] = {
+const OptionValue<Gecode::IntPropLevel> INT_CON_LEVELS[] = {
     {"val", Gecode::IPL_VAL},
     {"bnd", Gecode::IPL_BND},
     {"dom", Gecode::IPL_DOM},
@@ -123,11 +123,11 @@ const OptionValue<Gecode::IntPropLevel> INT_PROP_LEVELS[] = {
     {0,     Gecode::IPL_VAL}
 };
 
-TEST_F(NLSolverTest, IntPropLevelOption) {
+TEST_F(NLSolverTest, IntConLevelOption) {
   EXPECT_EQ(Gecode::IPL_DEF, solver_.ipl());
   unsigned count = 0;
   for (const OptionValue<Gecode::IntPropLevel>
-      *p = INT_PROP_LEVELS; p->name; ++p, ++count) {
+      *p = INT_CON_LEVELS; p->name; ++p, ++count) {
     solver_.SetStrOption("ipl", p->name);
     EXPECT_EQ(p->name, solver_.GetStrOption("ipl"));
     EXPECT_EQ(p->value, solver_.ipl());
@@ -168,8 +168,8 @@ const OptionValue<IntVarBranch::Select> VAR_BRANCHINGS[] = {
     {"degree_max",        IntVarBranch::SEL_DEGREE_MAX},
     {"afc_min",           IntVarBranch::SEL_AFC_MIN},
     {"afc_max",           IntVarBranch::SEL_AFC_MAX},
-    {"action_min",        IntVarBranch::SEL_ACTION_MIN},
-    {"action_max",        IntVarBranch::SEL_ACTION_MAX},
+    {"action_min",      IntVarBranch::SEL_ACTION_MIN},
+    {"action_max",      IntVarBranch::SEL_ACTION_MAX},
     {"min_min",           IntVarBranch::SEL_MIN_MIN},
     {"min_max",           IntVarBranch::SEL_MIN_MAX},
     {"max_min",           IntVarBranch::SEL_MAX_MIN},
@@ -180,8 +180,8 @@ const OptionValue<IntVarBranch::Select> VAR_BRANCHINGS[] = {
     {"degree_size_max",   IntVarBranch::SEL_DEGREE_SIZE_MAX},
     {"afc_size_min",      IntVarBranch::SEL_AFC_SIZE_MIN},
     {"afc_size_max",      IntVarBranch::SEL_AFC_SIZE_MAX},
-    {"action_size_min",   IntVarBranch::SEL_ACTION_SIZE_MIN},
-    {"action_size_max",   IntVarBranch::SEL_ACTION_SIZE_MAX},
+    {"action_size_min", IntVarBranch::SEL_ACTION_SIZE_MIN},
+    {"action_size_max", IntVarBranch::SEL_ACTION_SIZE_MAX},
     {"regret_min_min",    IntVarBranch::SEL_REGRET_MIN_MIN},
     {"regret_min_max",    IntVarBranch::SEL_REGRET_MIN_MAX},
     {"regret_max_min",    IntVarBranch::SEL_REGRET_MAX_MIN},
