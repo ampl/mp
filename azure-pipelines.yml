@@ -1,5 +1,5 @@
 trigger:
-- azure-pipelines
+- master
 
 jobs:
 - template: support/azure/template-build.yml  # Template reference
