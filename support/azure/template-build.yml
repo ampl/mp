@@ -1,0 +1,27 @@
+parameters:
+- name: name  # defaults for any parameters that aren't specified
+  default: ''
+- name: vmImage
+  default: ''
+
+jobs:
+- job: ${{ parameters.name }}
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+  steps:
+  - script: git submodule update
+    displayName: 'update submodules'
+  - task: CMake@1
+    inputs:
+        workingDirectory: 'build' 
+        cmakeArgs: .. -DBUILD=all
+    displayName: 'Run cmake'
+  - task: CMake@1
+    inputs:
+        workingDirectory: 'build' 
+        cmakeArgs: --build . --config Release
+    displayName: 'Build with cmake'
+  - script: 'ctest -C Release'
+    workingDirectory: 'build' 
+    displayName: 'Running tests'
+    
