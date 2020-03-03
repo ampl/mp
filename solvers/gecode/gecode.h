@@ -52,12 +52,12 @@ class GecodeProblem: public Gecode::Space {
   Gecode::IntVar obj_;
   Gecode::IntRelType obj_irt_; // IRT_NQ - no objective,
                                // IRT_LE - minimization, IRT_GR - maximization
-  Gecode::IntConLevel icl_;
+  Gecode::IntPropLevel ipl_;
 
   Gecode::Space &space() { return *this; }
 
  public:
-  GecodeProblem(int num_vars, Gecode::IntConLevel icl);
+  GecodeProblem(int num_vars, Gecode::IntPropLevel ipl);
   GecodeProblem(bool share, GecodeProblem &s);
 
   Gecode::Space *copy(bool share);
@@ -75,8 +75,8 @@ class GecodeProblem: public Gecode::Space {
 class MPToGecodeConverter : public ExprVisitor<MPToGecodeConverter, LinExpr> {
  private:
   GecodeProblem problem_;
-  Gecode::IntConLevel icl_;
-  IntSuffix icl_suffix_;
+  Gecode::IntPropLevel ipl_;
+  IntSuffix ipl_suffix_;
   std::vector<LinExpr> common_exprs_;
 
   typedef Gecode::BoolExpr BoolExpr;
@@ -92,7 +92,7 @@ class MPToGecodeConverter : public ExprVisitor<MPToGecodeConverter, LinExpr> {
 
   typedef void (*VarArgFunc)(
       Gecode::Home, const Gecode::IntVarArgs &,
-      Gecode::IntVar, Gecode::IntConLevel);
+      Gecode::IntVar, Gecode::IntPropLevel);
 
   LinExpr Convert(IteratedExpr e, VarArgFunc f);
 
@@ -100,7 +100,7 @@ class MPToGecodeConverter : public ExprVisitor<MPToGecodeConverter, LinExpr> {
 
   LinExpr ConvertExpr(const LinearExpr &linear, NumericExpr nonlinear);
 
-  Gecode::IntConLevel GetICL(int con_index) const;
+  Gecode::IntPropLevel GetIPL(int con_index) const;
 
   class LogicalExprConverter :
       public ExprConverter<LogicalExprConverter, Gecode::BoolExpr> {
@@ -182,8 +182,8 @@ class MPToGecodeConverter : public ExprVisitor<MPToGecodeConverter, LinExpr> {
   }
 
  public:
-  MPToGecodeConverter(int num_vars, Gecode::IntConLevel icl)
-  : problem_(num_vars, icl), icl_(icl) {}
+  MPToGecodeConverter(int num_vars, Gecode::IntPropLevel ipl)
+  : problem_(num_vars, ipl), ipl_(ipl) {}
 
   void Convert(const Problem &p);
 
@@ -297,7 +297,7 @@ class GecodeSolver : public SolverImpl<Problem> {
   int solve_code_;
   std::string status_;
 
-  Gecode::IntConLevel icl_;
+  Gecode::IntPropLevel ipl_;
   Gecode::IntVarBranch::Select var_branching_;
   Gecode::IntValBranch::Select val_branching_;
   double decay_;
@@ -371,20 +371,20 @@ class GecodeSolver : public SolverImpl<Problem> {
               const Gecode::Search::Options &);
   };
 
-#ifdef HAVE_UNIQUE_PTR
+#ifdef MP_USE_UNIQUE_PTR
   typedef std::unique_ptr<GecodeProblem> ProblemPtr;
 #else
   typedef std::auto_ptr<GecodeProblem> ProblemPtr;
 #endif
 
-  template<template<template<typename> class, typename> class Meta>
+  template<template<typename, template<typename> class> class Meta>
   ProblemPtr Search(Problem &p, GecodeProblem &gecode_problem,
                     Gecode::Search::Statistics &stats, SolutionHandler &sh);
 
  public:
   GecodeSolver();
 
-  Gecode::IntConLevel icl() const { return icl_; }
+  Gecode::IntPropLevel ipl() const { return ipl_; }
   Gecode::IntVarBranch::Select var_branching() const { return var_branching_; }
   Gecode::IntValBranch val_branching() const { return val_branching_; }
   const Gecode::Search::Options &options() const { return options_; }
