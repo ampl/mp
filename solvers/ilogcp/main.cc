@@ -18,13 +18,9 @@
  of or in connection with the use or performance of this software.
 
  Author: Victor Zverovich
- Author: Gleb Belov <gleb.belov@monash.edu>
  */
 
 #include "ilogcp.h"
-
-#include "mp/interface_app.h"
-#include "ilogcp_direct.h"
 
 extern "C" int main1(int, char **argv) {
   // Solver should be destroyed after any IloException is handled.
