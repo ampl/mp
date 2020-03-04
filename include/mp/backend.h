@@ -51,13 +51,17 @@ public:
   /// [[ TODO Incrementality ]]
 
   /// TODO InitProblemModificationPhase: demand redefinition in concrete backend?
+  /// TODO Remove the function stubs, just don't compile when not defined?
   void InitProblemModificationPhase(const Problem& p) { }  // TODO Get rid of Problem here
   void FinishProblemModificationPhase() { }
+  void AddVariables(int n, double* lbs, double* ubs, mp::var::Type* types) {
+    throw MakeUnsupportedError("BasicBackend::AddVariables");
+  }
   void AddCommonExpressions(int n, Problem::CommonExpr* cexprs) {
-    throw MakeUnsupportedError("NullMPConverter::AddCommonExpressions");
+    throw MakeUnsupportedError("BasicBackend::AddCommonExpressions");
   }
   void AddLogicalConstraints(int n, Problem::LogicalCon* lcons) {
-    throw MakeUnsupportedError("NullMPConverter::AddLogicalConstraints");
+    throw MakeUnsupportedError("BasicBackend::AddLogicalConstraints");
   }
 
   /// We distinguish linear-only vs general objectives
@@ -75,10 +79,10 @@ public:
   }
   void AddLinearObjective( obj::Type sense, int nnz,
                            const double* c, const int* v) {
-    throw MakeUnsupportedError("MPToMILPConverter::AddLinearObjective");
+    throw MakeUnsupportedError("BasicBackend::AddLinearObjective");
   }
   void AddGeneralObjective(Problem::Objective obj) {
-    throw MakeUnsupportedError("NullMPConverter::AddGeneralObjective");
+    throw MakeUnsupportedError("BasicBackend::AddGeneralObjective");
   }
 
   /// We distinguish linear-only vs general algebraic constraint
@@ -98,10 +102,10 @@ public:
   /// TODO Attributes (lazy/user cut, etc)
   void AddLinearConstraint(int nnz, const double* c, const int* v,
                            double lb, double ub) {
-    throw MakeUnsupportedError("MPToMILPConverter::AddLinearConstraint");
+    throw MakeUnsupportedError("BasicBackend::AddLinearConstraint");
   }
   void AddGeneralConstraint(Problem::AlgebraicCon con) {
-    throw MakeUnsupportedError("MPToMILPConverter::AddGeneralConstraint");
+    throw MakeUnsupportedError("BasicBackend::AddGeneralConstraint");
   }
 };
 
