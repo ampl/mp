@@ -56,6 +56,8 @@
 #include "mp/problem.h"
 #include "mp/solver.h"
 
+#include "mp/backend.h"
+
 namespace mp {
 
 class MPToConcertConverter;
@@ -74,7 +76,9 @@ struct ParamTraits<double> {
 };
 
 // IlogCP solver.
-class IlogCPSolver : public SolverImpl<Problem> {
+class IlogCPSolver : public SolverImpl<Problem>,
+    public BasicBackend<IlogCPSolver>
+{
  private:
   IloEnv env_;
   IloCP cp_;
@@ -180,10 +184,11 @@ class IlogCPSolver : public SolverImpl<Problem> {
   /// [[ Surface the incremental interface ]]
   void InitProblemModificationPhase(const Problem& p);
   void AddVariables(int n, double* lbs, double* ubs, var::Type* types);
-  void AddCommonExpressions(int n, Problem::CommonExpr* cexprs);
-  void AddObjectives(int n, Problem::Objective* objs);
-  void AddAlgebraicConstraints(int n, Problem::AlgebraicCon* cons);
-  void AddLogicalConstraints(int n, Problem::LogicalCon* lcons);
+  /// Supporting linear stuff for now
+  void AddLinearObjective( obj::Type sense, int nnz,
+                           const double* c, const int* v);
+  void AddLinearConstraint(int nnz, const double* c, const int* v,
+                           double lb, double ub);
   void FinishProblemModificationPhase();
 };
 }

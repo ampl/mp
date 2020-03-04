@@ -21,33 +21,22 @@
  Author: Gleb Belov <gleb.belov@monash.edu>
  */
 
-#include "ilogcp.h"
-
 #include "mp/interface_app.h"
-#include "ilogcp_direct.h"
+#include "mp/converter.h"
+#include "mp/backend.h"
+
+#include "ilogcp.h"
 
 extern "C" int main1(int, char **argv) {
   // Solver should be destroyed after any IloException is handled.
   try {
-    // Unless we are/have in path 'ilogcp-old', we run the new interface
-    if (std::string::npos == std::string(argv[0]).find("ilogcp-old")) {
-      using IlogCPInterfaceApp = mp::InterfaceApp<mp::IlogCPDirect>;
-      std::unique_ptr<IlogCPInterfaceApp> s;
-      try {
-        s.reset(new IlogCPInterfaceApp());
-        return s->RunFromNLFile(argv);
-      } catch (const IloException &e) {
-        fmt::print(stderr, "Error: {}\n", e.getMessage());
-      }
-    } else {                             // Old way
-      typedef mp::SolverApp<mp::IlogCPSolver> IlogCPApp;
-      std::unique_ptr<IlogCPApp> s;
-      try {
-        s.reset(new IlogCPApp());
-        return s->Run(argv);
-      } catch (const IloException &e) {
-        fmt::print(stderr, "Error: {}\n", e.getMessage());
-      }
+    using IlogCPInterfaceApp = mp::InterfaceApp<mp::IlogCPSolver>;
+    std::unique_ptr<IlogCPInterfaceApp> s;
+    try {
+      s.reset(new IlogCPInterfaceApp());
+      return s->RunFromNLFile(argv);
+    } catch (const IloException &e) {
+      fmt::print(stderr, "Error: {}\n", e.getMessage());
     }
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());

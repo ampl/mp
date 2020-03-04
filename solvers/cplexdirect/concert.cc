@@ -355,76 +355,24 @@ void MPToConcertConverter::AddVariables(int n, double *lbs, double *ubs, var::Ty
   vars_.add(varsNew);
 }
 
-void MPToConcertConverter::AddCommonExpressions(int n, Problem::CommonExpr *cexprs) {
-  common_exprs_.reserve(common_exprs_.size() + n);
-  for (int i = 0; i < n; ++i) {
-    common_exprs_[i] =
-        ConvertExpr(cexprs[i].linear_expr(), cexprs[i].nonlinear_expr());
-  }
-}
-
-void MPToConcertConverter::AddObjectives(int n, Problem::Objective *objs) {
-  assert(n>0);
+void MPToConcertConverter::AddLinearObjective( obj::Type sense, int nnz,
+                         const double* c, const int* v) {
   if (0==objs_.getSize())
-    main_obj_type_ = objs[0].type();
-  for (int i = 0; i < n; ++i) {
-    Problem::Objective obj = objs[i];
-    IloExpr ilo_expr = ConvertExpr(objs[i].linear_expr(), objs[i].nonlinear_expr());
-    objs_.add(objs[i].type() == main_obj_type_ ? ilo_expr : -ilo_expr);
-  }
+    main_obj_type_ = sense;
+  IloExpr ilo_expr(env_, 0);
+  for (int i = 0; i < nnz; ++i)
+    ilo_expr += c[i] * vars_[v[i]];
+  objs_.add(sense == main_obj_type_ ? ilo_expr : -ilo_expr);
+}
+void MPToConcertConverter::AddLinearConstraint(int nnz, const double* c, const int* v,
+                         double lb, double ub) {
+  IloExpr ilo_expr(env_, 0);
+  for (int i = 0; i < nnz; ++i)
+    ilo_expr += c[i] * vars_[v[i]];
+  IloRange rng(env_, lb, ilo_expr, ub);
+  cons_.add(rng);
+  model_.add(rng);
 }
 
-void MPToConcertConverter::AddAlgebraicConstraints(int n, Problem::AlgebraicCon *cons) {
-  for (int i = 0; i < n; ++i) {
-    IloExpr expr(env_);
-    Problem::AlgebraicCon con = cons[i];
-    const LinearExpr &linear = con.linear_expr();
-    for (LinearExpr::iterator
-        j = linear.begin(), end = linear.end(); j != end; ++j) {
-      expr += j->coef() * vars_[j->var_index()];
-    }
-    if (NumericExpr e = con.nonlinear_expr())
-      expr += Visit(e);
-    IloRange rng(env_, con.lb(), expr, con.ub());
-    cons_.add(rng);
-    model_.add(rng);
-  }
-}
-
-void MPToConcertConverter::AddLogicalConstraints(int n, Problem::LogicalCon *lcons) {
-  IloConstraintArray cons(env_, n);
-  for (int i = 0; i < n; ++i) {
-    LogicalExpr expr = lcons[i].expr();
-    if (expr.kind() == expr::NE) {
-      RelationalExpr rel = Cast<RelationalExpr>(expr);
-      NumericConstant const_rhs = Cast<NumericConstant>(rel.rhs());
-      if (const_rhs && const_rhs.value() == 0) {
-        CallExpr call = Cast<CallExpr>(rel.lhs());
-        if (call && ConvertGlobalConstraint(call, cons[i]))
-          continue;
-      }
-    } else if (expr.kind() == mp::expr::ALLDIFF) {
-      PairwiseExpr alldiff = Cast<PairwiseExpr>(expr);
-      // IloAllDiff is a global constraint that cannot be used
-      // as a subexpression (the Concert API allows this, but
-      // IloAlgorithm::extract throws CannotExtractException).
-      IloIntVarArray vars(env_);
-      for (PairwiseExpr::iterator
-           j = alldiff.begin(), end = alldiff.end(); j != end; ++j) {
-        if (j->kind() == expr::VARIABLE) {
-          vars.add(vars_[Cast<Variable>(*j).index()]);
-          continue;
-        }
-        IloIntVar var(env_, IloIntMin, IloIntMax);
-        model_.add(var == Visit(*j));
-        vars.add(var);
-      }
-      cons[i] = IloAllDiff(env_, vars);
-      continue;
-    }
-    cons[i] = Visit(expr);
-  }
-  model_.add(cons);
-}
 
 }  // namespace mp

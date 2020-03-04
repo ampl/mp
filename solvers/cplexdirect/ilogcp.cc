@@ -842,17 +842,13 @@ void IlogCPSolver::InitProblemModificationPhase(const Problem &p) {
 void IlogCPSolver::AddVariables(int n, double *lbs, double *ubs, var::Type *types) {
   converter_->AddVariables(n, lbs, ubs, types);
 }
-void IlogCPSolver::AddCommonExpressions(int n, Problem::CommonExpr *cexprs) {
-  converter_->AddCommonExpressions(n, cexprs);
+void IlogCPSolver::AddLinearObjective( obj::Type sense, int nnz,
+                         const double* c, const int* v) {
+  converter_->AddLinearObjective(sense, nnz, c, v);
 }
-void IlogCPSolver::AddObjectives(int n, Problem::Objective *objs) {
-  converter_->AddObjectives(n, objs);
-}
-void IlogCPSolver::AddAlgebraicConstraints(int n, Problem::AlgebraicCon *cons) {
-  converter_->AddAlgebraicConstraints(n, cons);
-}
-void IlogCPSolver::AddLogicalConstraints(int n, Problem::LogicalCon *lcons) {
-  converter_->AddLogicalConstraints(n, lcons);
+void IlogCPSolver::AddLinearConstraint(int nnz, const double* c, const int* v,
+                         double lb, double ub) {
+  converter_->AddLinearConstraint(nnz, c, v, lb, ub);
 }
 void IlogCPSolver::FinishProblemModificationPhase() {
   converter_->FinishProblemModificationPhase();

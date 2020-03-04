@@ -41,6 +41,8 @@
 #include "mp/expr-visitor.h"
 #include "mp/problem.h"
 
+#include "mp/backend.h"
+
 namespace mp {
 
 template <typename Alloc>
@@ -146,7 +148,10 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, IteratedExpr e) {
 }
 
 // Converter of optimization problems from NL to Concert format.
-class MPToConcertConverter : public ExprVisitor<MPToConcertConverter, IloExpr> {
+class MPToConcertConverter :
+    public ExprVisitor<MPToConcertConverter, IloExpr>,
+    public BasicBackend<MPToConcertConverter>
+{
  private:
   IloEnv env_;
   IloModel model_;
@@ -480,10 +485,11 @@ class MPToConcertConverter : public ExprVisitor<MPToConcertConverter, IloExpr> {
   /// [[ Incremental interface for model manipulation ]]
   void InitProblemModificationPhase(const Problem& p) { }
   void AddVariables(int n, double* lbs, double* ubs, var::Type* types);
-  void AddCommonExpressions(int n, Problem::CommonExpr* cexprs);
-  void AddObjectives(int n, Problem::Objective* objs);
-  void AddAlgebraicConstraints(int n, Problem::AlgebraicCon* cons);
-  void AddLogicalConstraints(int n, Problem::LogicalCon* lcons);
+  /// Just linear
+  void AddLinearObjective( obj::Type sense, int nnz,
+                           const double* c, const int* v);
+  void AddLinearConstraint(int nnz, const double* c, const int* v,
+                           double lb, double ub);
   void FinishProblemModificationPhase();
 };
 }
