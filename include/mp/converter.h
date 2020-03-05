@@ -62,8 +62,9 @@ public:
     return result;
   }
   NLReadResult ReadNLFileAndUpdate(const std::string& nl_filename, int nl_reader_flags) {
-    ReadNLFile(nl_filename, nl_reader_flags);
+    NLReadResult result = ReadNLFile(nl_filename, nl_reader_flags);
     UpdateBackend();
+    return result;
   }
 
   /// These guys used from outside to feed a model to be converted
