@@ -30,7 +30,9 @@
 extern "C" int main1(int, char **argv) {
   // Solver should be destroyed after any IloException is handled.
   try {
-    using IlogCPInterfaceApp = mp::InterfaceApp<mp::IlogCPSolver>;
+    class CplexInterface : public mp::BasicInterface<
+      CplexInterface, mp::BasicMPToMIPConverter, mp::IlogCPSolver> { };
+    using IlogCPInterfaceApp = mp::InterfaceApp<CplexInterface>;
     std::unique_ptr<IlogCPInterfaceApp> s;
     try {
       s.reset(new IlogCPInterfaceApp());

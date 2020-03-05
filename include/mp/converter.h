@@ -25,6 +25,7 @@
 
 #include <mp/problem.h>
 #include <mp/backend.h>
+#include <mp/solver.h>
 
 namespace mp {
 
@@ -33,14 +34,33 @@ namespace mp {
 /// Backend access is hidden (the backend itself is a parameter)
 template <class Impl, class Backend,
           class Model = BasicProblem<std::allocator<char> > >
-class NullMPConverter {
+class MPConverter {
+protected:
+  /// This is to wrap some old dependencies from MP
+  using SolverAdapter = SolverImpl<Model>;
 public:
   Model model_;
   Backend backend_;
-protected:
+public:
+  using Converter = Impl;
+  using ModelType = Model;
+  using ProblemBuilder = Model;           // for old MP stuff
+  using BackendType = Backend;
   Model& GetModel() { return model_; }    // Can be used for NL file input
   Backend& GetBackend() { return backend_; }
 public:
+
+  struct NLReadResult {
+    std::unique_ptr< internal::SolverNLHandler<SolverAdapter> > handler_;
+  };
+  NLReadResult ReadNLFile(const std::string& nl_filename, int nl_reader_flags) {
+    NLReadResult result;
+    result.handler_.reset(
+          new internal::SolverNLHandler<SolverAdapter>(GetModel(), GetBackend()));
+    internal::NLFileReader<> reader;
+    reader.Read(nl_filename, *result.handler_, nl_reader_flags);
+    return result;
+  }
 
   /// These guys used from outside to feed a model to be converted
   /// and forwarded to a backend
@@ -70,8 +90,8 @@ public:
     MP_DISPATCH( PushChangesToBackend() );
   }
 
-  void Solve() {
-    throw MakeUnsupportedError("NullMPConverter::Solve");
+  void Solve(SolutionHandler &sh) {
+    GetBackend().Solve(GetModel(), sh);   // TODO no model any more
   }
 
 
@@ -86,7 +106,7 @@ protected:
 /// One of the converters requiring a "minimal" output interface
 template <class Impl, class Backend,
           class Model = BasicProblem<std::allocator<char> > >
-class BasicMPToMIPConverter : public NullMPConverter<Impl, Backend, Model> {
+class BasicMPToMIPConverter : public MPConverter<Impl, Backend, Model> {
 public:
   void ConvertModel() { /* DO NOTHING YET */ }
 
