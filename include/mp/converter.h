@@ -115,16 +115,21 @@ protected:
 /// One of the converters requiring a "minimal" output interface
 template <class Impl, class Backend,
           class Model = BasicProblem<std::allocator<char> > >
-class BasicMPToMIPConverter : public MPConverter<Impl, Backend, Model> {
+class MPToMIPConverter : public MPConverter<Impl, Backend, Model> {
 public:
   void ConvertModel() { /* DO NOTHING YET */ }
 
 };
 
-template <class Impl, template <typename, typename, typename> class Converter,
+/// A 'final' converter in a hierarchy, no static polymorphism
+template <template <typename, typename, typename> class Converter,
           class Backend, class Model = BasicProblem<std::allocator<char> > >
-class BasicInterface : public Converter<Impl, Backend, Model> {
-};
+class ConverterImpl :
+    public Converter<ConverterImpl<Converter, Backend, Model>, Backend, Model> { };
+
+template <template <typename, typename, typename> class Converter,
+          class Backend, class Model = BasicProblem<std::allocator<char> > >
+using Interface = ConverterImpl<Converter, Backend, Model>;
 
 }  // namespace mp
 

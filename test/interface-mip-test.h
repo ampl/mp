@@ -98,7 +98,7 @@ public:
 
 /// Testing the default MIP interface layer
 class MIPInterfaceTester :
-    public mp::BasicMPToMIPConverter<MIPInterfaceTester, MIPInstanceBackend>
+    public mp::MPToMIPConverter<MIPInterfaceTester, MIPInstanceBackend>
 {
 public:
   /// This is testing API
