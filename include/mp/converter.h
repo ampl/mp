@@ -50,6 +50,10 @@ public:
   Backend& GetBackend() { return backend_; }
 public:
 
+  bool ParseOptions(char **argv, unsigned flags = 0) {
+    return GetBackend().ParseOptions(argv, flags);
+  }
+
   struct NLReadResult {
     std::unique_ptr< internal::SolverNLHandler<SolverAdapter> > handler_;
   };

@@ -110,7 +110,7 @@ bool InterfaceApp<Interface>::Init(char **argv, int nl_reader_flags) {
   const char *filename = option_parser_.Parse(argv);
   if (!filename) return false;
 
-  if (true /*interface_.ampl_flag()*/) {
+  if (GetBackend().ampl_flag()) {
     fmt::MemoryWriter banner;
     banner.write("{}: ", GetInterface().GetBackend().long_name());
     std::fputs(banner.c_str(), stdout);
@@ -133,7 +133,7 @@ bool InterfaceApp<Interface>::Init(char **argv, int nl_reader_flags) {
   // Parse solver options.
   unsigned flags =
       option_parser_.echo_solver_options() ? 0 : Solver::NO_OPTION_ECHO;
-  if (false /*!interface_.ParseOptions(argv, flags)*/) {
+  if (!interface_.ParseOptions(argv, flags)) {
     result_code_ = 1;
     return false;
   }
@@ -148,7 +148,7 @@ void InterfaceApp<Interface>::ReadNL(int nl_reader_flags) {
   nl_read_result = interface_.ReadNLFileAndUpdate(nl_filename, nl_reader_flags);
 
   double read_time = GetTimeAndReset(start);
-  if (true /*interface_.timing()*/)      // TODO why print via backend? We are the app!
+  if (GetBackend().timing())      // TODO why print via backend? We are the app!
     GetInterface().GetBackend().Print("Input time = {:.6f}s\n", read_time);
 }
 
