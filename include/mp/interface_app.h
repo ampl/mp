@@ -145,10 +145,10 @@ template <typename Interface>
 void InterfaceApp<Interface>::ReadNL(int nl_reader_flags) {
   steady_clock::time_point start = steady_clock::now();
 
-  nl_read_result = interface_.ReadNLFile(nl_filename, nl_reader_flags);
+  nl_read_result = interface_.ReadNLFileAndUpdate(nl_filename, nl_reader_flags);
 
   double read_time = GetTimeAndReset(start);
-  if (true /*interface_.timing()*/)
+  if (true /*interface_.timing()*/)      // TODO why print via backend? We are the app!
     GetInterface().GetBackend().Print("Input time = {:.6f}s\n", read_time);
 }
 

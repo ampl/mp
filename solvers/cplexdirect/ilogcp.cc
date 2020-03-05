@@ -809,7 +809,6 @@ void IlogCPSolver::SolveWithCPLEX(
 }
 
 void IlogCPSolver::Solve(Problem &p, SolutionHandler &sh) {
-  Convert(p);
   Resolve(p, sh);
 }
 

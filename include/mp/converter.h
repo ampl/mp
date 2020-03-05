@@ -61,6 +61,10 @@ public:
     reader.Read(nl_filename, *result.handler_, nl_reader_flags);
     return result;
   }
+  NLReadResult ReadNLFileAndUpdate(const std::string& nl_filename, int nl_reader_flags) {
+    ReadNLFile(nl_filename, nl_reader_flags);
+    UpdateBackend();
+  }
 
   /// These guys used from outside to feed a model to be converted
   /// and forwarded to a backend
@@ -85,7 +89,7 @@ public:
 
   /// Says we finished problem modification,
   /// so we run model conversion and communicate the result into the backend
-  void updateModel() {
+  void UpdateBackend() {
     MP_DISPATCH( ConvertModel() );
     MP_DISPATCH( PushChangesToBackend() );
   }
