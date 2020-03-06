@@ -3,7 +3,7 @@
 # Adds a cplex solver.
 function(add_cplex_solver name)
   add_executable(${name} cplex.c
-    ${PROJECT_SOURCE_DIR}/src/asl/solvers/funcadd0.c)
+    ${PROJECT_SOURCE_DIR}/thirdparty/asl/src/solvers/funcadd0.c)
   target_include_directories(${name} PRIVATE ${CPLEX_INCLUDE_DIR}/ilcplex)
   target_link_libraries(${name} cplex-library asl)
 
@@ -32,7 +32,7 @@ if (CPLEX_FOUND)
 
   # Version of CPLEX with SOCP transformations.
   add_library(socp STATIC socp.cc)
-  target_link_libraries(socp asl)
+  target_link_libraries(socp aslmp)
   add_cplex_solver(cplex-socp)
   target_compile_definitions(cplex-socp PRIVATE
     jac0dim_ASL=socp_jac0dim write_sol_ASL=socp_write_sol

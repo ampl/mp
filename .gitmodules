@@ -10,3 +10,6 @@
 [submodule "thirdparty/gecode"]
 	path = thirdparty/gecode
 	url = https://github.com/Gecode/gecode.git
+[submodule "thirdparty/asl"]
+	path = thirdparty/asl
+	url = git@github.com:ampl/asl.git

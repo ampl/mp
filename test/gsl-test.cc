@@ -37,7 +37,7 @@
 // #define DEBUG_DIFFERENTIATOR
 #include "function.h"
 #include "util.h"
-#include "asl/solvers/asl.h"
+#include "asl.h"
 
 using std::string;
 using std::vector;

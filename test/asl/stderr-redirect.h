@@ -23,7 +23,7 @@
 #ifndef TEST_ASL_STDERR_REDIRECT_H_
 #define TEST_ASL_STDERR_REDIRECT_H_
 
-#include "asl/solvers/asl.h"
+#include "asl.h"
 
 // Redirects Stderr to a file.
 class StderrRedirect {

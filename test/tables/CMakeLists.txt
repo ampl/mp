@@ -7,7 +7,7 @@ if (ODBC_FOUND)
   set(CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
   set(CMAKE_REQUIRED_LIBRARIES ${ODBC_LIBRARIES})
 
-  add_mp_test(odbc-test odbc-test.cc odbc.cc LIBS function ${ODBC_LIBRARIES})
+  add_mp_test(odbc-test odbc-test.cc odbc.cc LIBS function ${ODBC_LIBRARIES} aslmp)
 
   include(CheckCXXSourceRuns)
   check_cxx_source_runs(
@@ -60,6 +60,6 @@ if (ODBC_FOUND)
 endif ()
 
 if (TARGET ampltabl)
-  add_mp_test(tableproxy-test tableproxy-test.cc LIBS function)
+  add_mp_test(tableproxy-test tableproxy-test.cc LIBS function aslmp)
   add_dependencies(tableproxy-test ampltabl)
 endif ()

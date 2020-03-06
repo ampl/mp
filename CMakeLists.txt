@@ -128,7 +128,7 @@ if (NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
 else ()
   # Disable useless MSVC warnings suggesting nonportable "secure" alternatives.
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
 endif ()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
