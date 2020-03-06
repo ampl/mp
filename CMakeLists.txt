@@ -326,14 +326,6 @@ add_subdirectory(src/asl)
 add_subdirectory(src/cp)
 add_subdirectory(solvers)
 
-set(GSL_DISABLE_WARNINGS TRUE)
-set(GSL_DISABLE_TESTS TRUE) # GSL tests are run separately
-set(GSL_INSTALL FALSE)
-check_module(gsl build_gsl EXTERNAL)
-if (build_gsl)
-  add_subdirectory(src/gsl)
-endif ()
-
 # Add a target that generates a file with solver and library versions.
 set(AMPL_VERSIONS_FILE versions.txt)
 add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE}

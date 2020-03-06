@@ -110,7 +110,6 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 else ()
   set(TABLEPROXY_SUFFIX 32)
 endif ()
-message("ASL1_SOURCE_DIR ${ASL1_SOURCE_DIR}")
 add_executable(tableproxy
   tables/tableproxy.c ${ASL1_SOURCE_DIR}/printf.c tables/tableproxyver.h)
 set_target_properties(tableproxy
