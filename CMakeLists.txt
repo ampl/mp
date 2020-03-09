@@ -330,7 +330,7 @@ add_subdirectory(solvers)
 set(AMPL_VERSIONS_FILE versions.txt)
 add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE}
   DEPENDS src/asl/tables/amplodbc.c)
-foreach (target gsl-info gecode jacop path)
+foreach (target gsl-info gecode jacop)
   if (TARGET ${target})
     add_custom_command(TARGET versions POST_BUILD
         COMMAND $<TARGET_FILE:${target}> -v >> ${AMPL_VERSIONS_FILE})

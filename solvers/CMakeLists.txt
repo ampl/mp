@@ -183,9 +183,6 @@ if (LOCALSOLVER_DLL)
     "${LOCALSOLVER_DLL}"
     "$<TARGET_FILE_DIR:localsolver>/${LOCALSOLVER_DLL_NAME}")
 endif ()
-
-add_subdirectory(path)
-
 add_ampl_solver(smpswriter)
 
 if (TARGET ilogcp)

@@ -36,26 +36,6 @@ Features
 
   - `LocalSolver <https://github.com/ampl/mp/tree/master/solvers/localsolver>`_
 
-* Interfaces to COIN-OR Solvers (in the `ampl/coin <https://github.com/ampl/coin>`_ repository):
-
-  - Clp
-  - Cbc
-  - Ipopt
-  - Bonmin
-  - Couenne
-
-* Interfaces to other solvers via AMPL Solver Library:
-  `list of supported solvers <http://ampl.com/products/solvers/all-solvers-for-ampl/>`_
-
-* Cross-platform build support with `CMake <http://www.cmake.org/>`_ and
-  continuous integration systems. This includes third-party solvers and
-  libraries (COIN-OR solvers with CMake support are available in the
-  `ampl/coin <https://github.com/ampl/coin>`_ repository).
-
-* `AMPLGSL <https://github.com/ampl/mp/tree/master/src/gsl>`_, an AMPL function
-  library providing access to the GNU Scientific Library (GSL) functions.
-  See the `AMPLGSL documentation <http://ampl.github.io/amplgsl>`_.
-
 * Database support on Linux and MacOS X.
   See `Database and spreadsheet connection guide`__.
 
@@ -135,7 +115,7 @@ By default all modules are disabled and only the main MP libraries are built.
 To enable modules, pass their names as a comma-separated list in the ``BUILD``
 variable when running CMake::
 
-  cmake -DBUILD=gsl,ilogcp .
+  cmake -DBUILD=ilogcp,gecode .
 
 Use ``-DBUILD=all`` to build all modules.
 
