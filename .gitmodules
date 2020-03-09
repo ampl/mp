@@ -1,12 +1,6 @@
 [submodule "thirdparty/jacop"]
 	path = thirdparty/jacop
 	url = https://github.com/ampl/jacop
-[submodule "thirdparty/path"]
-	path = thirdparty/path
-	url = https://github.com/ampl/pathlib
-[submodule "thirdparty/gsl"]
-	path = thirdparty/gsl
-	url = https://github.com/ampl/gsl
 [submodule "thirdparty/gecode"]
 	path = thirdparty/gecode
 	url = https://github.com/Gecode/gecode.git
