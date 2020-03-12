@@ -166,6 +166,13 @@ if (TARGET cplexdirect)
   target_compile_definitions(cplexdirect PRIVATE main1=main)
 endif ()
 
+add_ampl_solver(gurobidirect DLL_RUNTIME MODULE GUROBI
+  gurobi.cc gurobi.h
+  LIBRARIES ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS})
+if (TARGET gurobidirect)
+  target_compile_definitions(gurobidirect PRIVATE main1=main)
+endif ()
+
 # Copy CPLEX DLL to the target directory.
 if (CPLEX_DLL)
   get_filename_component(CPLEX_DLL_NAME "${CPLEX_DLL}" NAME)
