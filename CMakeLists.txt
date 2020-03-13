@@ -328,19 +328,13 @@ add_subdirectory(solvers)
 
 # Add a target that generates a file with solver and library versions.
 set(AMPL_VERSIONS_FILE versions.txt)
-add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE}
-  DEPENDS src/asl/tables/amplodbc.c)
+add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE})
 foreach (target gsl-info gecode jacop)
   if (TARGET ${target})
     add_custom_command(TARGET versions POST_BUILD
         COMMAND $<TARGET_FILE:${target}> -v >> ${AMPL_VERSIONS_FILE})
   endif ()
 endforeach ()
-file(READ src/asl/tables/amplodbc.c amplodbc)
-if (amplodbc MATCHES "version ([0-9]+)")
-  add_custom_command(TARGET versions POST_BUILD
-      COMMAND echo ampltabl ${CMAKE_MATCH_1} >> ${AMPL_VERSIONS_FILE})
-endif ()
 
 # Check for invalid module names.
 get_property(modules GLOBAL PROPERTY MP_USED_MODULES)

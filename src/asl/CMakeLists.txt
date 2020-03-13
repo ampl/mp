@@ -81,70 +81,7 @@ if (MATLAB_FOUND AND MATLAB_BUILD)
       DESTINATION ${mex_install_dir})
   endforeach ()
 endif ()
-
-#add_executable(gjh solvers/examples/gjh.c)
-#target_link_libraries(gjh asl)
-#add_c_compiler_flags(gjh -Wno-parentheses)
-
-add_ampl_library(simpbit PRIVATE tables/simpbit.c)
-add_ampl_library(fullbit PRIVATE tables/fullbit.c)
-
-add_c_compiler_flags(simpbit -Wno-parentheses)
-add_c_compiler_flags(fullbit -Wno-parentheses)
-
-add_ampl_library(ampltabl tables/tableproxy.c tables/tableproxyver.h)
-
-find_package(ODBC)
-if (ODBC_FOUND)
-  add_library(amplodbc STATIC tables/amplodbc.c)
-  target_include_directories(amplodbc PRIVATE ${ODBC_INCLUDE_DIR})
-  target_compile_definitions(amplodbc PRIVATE funcadd_ASL=funcaddodbc_ASL)
-  add_c_compiler_flags(amplodbc -Wno-deprecated-declarations)
-  target_link_libraries(amplodbc asl ${ODBC_LIBRARIES})
-  target_link_libraries(ampltabl amplodbc)
-  target_compile_definitions(ampltabl PRIVATE OTHER_FUNCADD=funcaddodbc_ASL)
-endif ()
-
-if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(TABLEPROXY_SUFFIX 64)
-else ()
-  set(TABLEPROXY_SUFFIX 32)
-endif ()
-add_executable(tableproxy
-  tables/tableproxy.c ${ASL1_SOURCE_DIR}/printf.c tables/tableproxyver.h)
-set_target_properties(tableproxy
-  PROPERTIES OUTPUT_NAME tableproxy${TABLEPROXY_SUFFIX})
-target_compile_definitions(tableproxy PRIVATE STAND_ALONE=1 QUOTIFY=1)
-target_link_libraries(tableproxy asl)
-if (MP_CLANG)
-  # add_c_compiler_flags cannot detect that GCC doesn't support
-  # -Wno-string-plus-int, so add this option for clang only.
-  add_c_compiler_flags(tableproxy -Wno-string-plus-int)
-endif ()
-
-# Link with system socket libraries.
-if (WIN32)
-  target_link_libraries(ampltabl wsock32)
-  target_link_libraries(tableproxy wsock32)
-  target_compile_definitions(tableproxy PRIVATE NO_sockaddr_in6)
-elseif (CMAKE_SYSTEM_NAME MATCHES "SunOS")
-  target_link_libraries(tableproxy socket nsl)
-endif ()
-
-# Suppress warnings in ASL and tableproxy.
-if (MSVC)
-  foreach (target asl-core asl-core-dynrt gjh ampltabl amplodbc
-                  fullbit simpbit tableproxy)
-    if (TARGET ${target})
-      target_compile_options(${target}
-        PRIVATE /wd4013 /wd4018 /wd4101 /wd4244 /wd4273 /wd4267 /wd4996)
-    endif ()
-  endforeach ()
-else ()
-  add_c_compiler_flags(aslmp -Wno-unused-result -Wno-parentheses)
-endif ()
-
 install(FILES ${ASL_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/arith.h
               solvers/opcode.hd solvers/r_opn.hd
         DESTINATION include/asl)
-install(TARGETS aslmp tableproxy DESTINATION lib RUNTIME DESTINATION bin)
+install(TARGETS aslmp DESTINATION lib RUNTIME DESTINATION bin)

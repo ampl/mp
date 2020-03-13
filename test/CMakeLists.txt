@@ -76,7 +76,6 @@ add_dependencies(cp-test cp)
 
 add_subdirectory(asl)
 add_subdirectory(solvers)
-add_subdirectory(tables)
 
 add_mp_test(util-test util-test.cc)
 
