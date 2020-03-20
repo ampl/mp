@@ -53,7 +53,6 @@
 #include <string>
 
 #include "mp/clock.h"
-#include "mp/problem.h"
 #include "mp/solver.h"
 
 namespace mp {
