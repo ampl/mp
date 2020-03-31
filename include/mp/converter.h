@@ -23,13 +23,14 @@
 #ifndef CONVERTER_H_
 #define CONVERTER_H_
 
-#include <mp/convert/model.h>
+#include <mp/problem.h>
 #include <mp/backend.h>
 #include <mp/solver.h>
 
 namespace mp {
 
 /// An abstract MP converter - only complains, all conversions need to be redefined
+/// in derived classes.
 /// Responsible for model modification and solving, typical 'exported' solver API
 /// Backend access is hidden (the backend itself is a parameter)
 template <class Impl, class Backend,
@@ -159,15 +160,6 @@ protected:
     return false;
     return true;
   }
-
-  /// An abstract item of a model
-  class Item {
-  public:
-    virtual ~Item() { }
-    virtual void Host(Impl & ) = 0;
-    virtual void Remove() = 0;
-    virtual bool IsRemoved() const = 0;
-  };
 
   void VisitPoppedItem() {
     ////////////

@@ -1,8 +1,8 @@
 #ifndef EXPR2CONSTRAINT_H
 #define EXPR2CONSTRAINT_H
 
-#include "mp/converter.h"
-#include "mp/expr-visitor.h"
+#include "mp/problem.h"
+
 
 namespace mp {
 
@@ -66,17 +66,6 @@ template <template <typename, typename, typename> class E2C,
 E2CImpl<E2C, Converter, Constraint> makeE2CConverter(Converter& cvt) {
   return E2CImpl<E2C, Converter, Constraint>(cvt);
 }
-
-/// MPFlatConverter: it "flattens" most expressions by replacing them by a result variable and constraints
-template <class Impl, class Backend,
-          class Model = BasicProblem<std::allocator<char> > >
-class MPFlatConverter
-    : public BasicMPConverter<Impl, Backend, Model>,
-      public ExprVisitor<Impl, EExpr>
-{
-public:
-
-};
 
 } // namespace mp
 

@@ -9,7 +9,7 @@
 namespace mp {
 
 template <class Converter, class Backend>
-class MaximumConstraint : public Constraint<Converter, Backend> {
+class MaximumConstraint : public BasicConstraint {
   std::vector<EExpr> args_;
   int result_var_;
 };

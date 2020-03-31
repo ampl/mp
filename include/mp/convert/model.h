@@ -9,10 +9,9 @@
 namespace mp {
 
 /// class Model extends Problem to store custom constraints
-template <class Converter, class Backend>
-class CustomModel : public Problem {
-  using TConstraint = Constraint<Converter, Backend>;
-  using PConstraint = std::unique_ptr<TConstraint>;
+template <class Allocator>
+class BasicModel : public BasicProblem<Allocator> {
+  using PConstraint = std::unique_ptr<BasicConstraint>;
 
   std::vector<PConstraint> custom_constr_;
 };
