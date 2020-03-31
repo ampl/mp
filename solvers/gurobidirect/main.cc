@@ -22,7 +22,7 @@
  */
 
 #include "mp/interface_app.h"
-#include "mp/converter.h"
+#include "mp/convert/MIP/mp2mip.h"
 #include "mp/backend.h"
 
 #include "gurobi.h"

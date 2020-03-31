@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include <mp/converter.h>
+#include <mp/convert/MIP/mp2mip.h>
 
 
 namespace interface_test {

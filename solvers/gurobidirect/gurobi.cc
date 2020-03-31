@@ -243,6 +243,10 @@ double GurobiBackend::Niterations() const {
   return ni;
 }
 
+void GurobiBackend::ExportModel(const std::string &file) {
+  GRB_CALL( GRBwrite(model, file.c_str()) );
+}
+
 std::string GurobiBackend::GetOptimizer(const SolverOption &) const {
   switch (optimizer_) {
   default:
@@ -285,7 +289,7 @@ void GurobiBackend::SolveWithGurobi(
     Stats &stats, SolutionHandler &sh) {
   interrupter()->SetHandler(InterruptGurobi, model);
 
-//  GRBwrite(model, "model.lp");
+  ExportModel("model_gurobi.lp");
 
   stats.setup_time = GetTimeAndReset(stats.time);
   GRB_CALL( GRBoptimize(model) );
@@ -345,7 +349,7 @@ void GurobiBackend::AddVariables(int n, double *lbs, double *ubs, var::Type *typ
       vtypes[var] = GRB_INTEGER;
   }
   GRB_CALL( GRBaddvars(model, n, 0,
-                       &n, &n, lbs, lbs,                  // placeholders, no matrix here
+                       NULL, NULL, NULL, NULL,                  // placeholders, no matrix here
                        lbs, ubs, vtypes.data(), NULL) );
 }
 void GurobiBackend::AddLinearObjective( obj::Type sense, int nnz,
@@ -365,6 +369,13 @@ void GurobiBackend::AddLinearObjective( obj::Type sense, int nnz,
 void GurobiBackend::AddLinearConstraint(int nnz, const double* c, const int* v,
                          double lb, double ub) {
   /// TODO Separate abstraction
+  std::cout << "  ADD LIN CONSTR:  " << lb << " <= ";
+  for (int i=0; i<nnz; ++i) {
+    std::cout << c[i] << '[' << v[i] << "] ";
+    if (i<nnz-1)
+      std::cout << "+ ";
+  }
+  std::cout << "<= " << ub << std::endl;
   if (lb==ub)
     GRB_CALL( GRBaddconstr(model, nnz, (int*)v, (double*)c, GRB_EQUAL, lb, NULL) );
   else {            // Let solver deal with lb>~ub etc.

@@ -291,7 +291,7 @@ LinExpr MPToGecodeConverter::ConvertExpr(
     const LinearExpr &linear, NumericExpr nonlinear) {
   IntVarArray &vars = problem_.vars();
   LinExpr expr;
-  LinearExpr::iterator i = linear.begin(), end = linear.end();
+  LinearExpr::const_iterator i = linear.begin(), end = linear.end();
   bool has_linear_part = i != end;
   if (has_linear_part) {
     expr = CastToInt(i->coef()) * vars[i->var_index()];

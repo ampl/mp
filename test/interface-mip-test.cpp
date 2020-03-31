@@ -46,7 +46,7 @@ TEST(RedefsMIPTest, PureMILP__01) {
   };
   MIPInterfaceTester tester;
   feedInstance(tester, milp);
-  tester.UpdateBackend();
+  tester.ConvertModelAndUpdateBackend();
   EXPECT_TRUE(tester.OutputModelSeemsEqualTo(milp));
 }
 

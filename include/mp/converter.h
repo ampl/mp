@@ -23,18 +23,18 @@
 #ifndef CONVERTER_H_
 #define CONVERTER_H_
 
-#include <mp/problem.h>
+#include <mp/convert/model.h>
 #include <mp/backend.h>
 #include <mp/solver.h>
 
 namespace mp {
 
-/// An abstract MP converter - does not change anything
+/// An abstract MP converter - only complains, all conversions need to be redefined
 /// Responsible for model modification and solving, typical 'exported' solver API
 /// Backend access is hidden (the backend itself is a parameter)
 template <class Impl, class Backend,
           class Model = BasicProblem<std::allocator<char> > >
-class MPConverter {
+class BasicMPConverter {
 protected:
   /// This is to wrap some old dependencies from MP
   using SolverAdapter = SolverImpl<Model>;
@@ -67,7 +67,7 @@ public:
   }
   NLReadResult ReadNLFileAndUpdate(const std::string& nl_filename, int nl_reader_flags) {
     NLReadResult result = ReadNLFile(nl_filename, nl_reader_flags);
-    UpdateBackend();
+    ConvertModelAndUpdateBackend();
     return result;
   }
 
@@ -94,9 +94,9 @@ public:
 
   /// Says we finished problem modification,
   /// so we run model conversion and communicate the result into the backend
-  void UpdateBackend() {
+  void ConvertModelAndUpdateBackend() {
     MP_DISPATCH( ConvertModel() );
-    MP_DISPATCH( PushChangesToBackend() );
+    MP_DISPATCH( PushWholeModelToBackend() );
   }
 
   void Solve(SolutionHandler &sh) {
@@ -105,20 +105,107 @@ public:
 
 
 protected:
-  void PushChangesToBackend() {
+  /// Convert the whole model, e.g., after reading from NL
+  void ConvertModel() {
+    MP_DISPATCH( ConvertStandardItems() );
+           //    TODO PushWholeModelToQueue();    ????
+           //    TODO ProcessQueuedItems();
+  }
+  void PushWholeModelToQueue() {
+    ////////////
+  }
+  void ProcessQueuedItems() {  //            Not using yet
+    while (PopNextItem()) {
+      VisitPoppedItem();
+      CheckForIntermediatePreprocessing();
+    }
+    CheckForIntermediatePreprocessing();
+  }
+
+
+  void ConvertStandardItems() {
+    int num_common_exprs = model_.num_common_exprs();
+    for (int i = 0; i < num_common_exprs; ++i)
+      MP_DISPATCH( Convert( model_.common_expr(i) ) );
+    if (int num_objs = model_.num_objs())
+      for (int i = 0; i < num_objs; ++i)
+        MP_DISPATCH( Convert( model_.obj(i) ) );
+    if (int n_cons = model_.num_algebraic_cons())
+      for (int i = 0; i < n_cons; ++i)
+        MP_DISPATCH( Convert( model_.algebraic_con(i) ) );
+    if (int n_lcons = model_.num_logical_cons())
+      for (int i = 0; i < n_lcons; ++i)
+        MP_DISPATCH( Convert( model_.logical_con(i) ) );
+  }
+
+  void Convert(typename Model::MutCommonExpr e) {
+    throw std::runtime_error("No common exprs conversion implemented");
+  }
+
+  void Convert(typename Model::MutObjective obj) {
+    throw std::runtime_error("No objectives conversion implemented");
+  }
+
+  void Convert(typename Model::MutAlgebraicCon con) {
+    throw std::runtime_error("No algebraic constraints conversion implemented");
+  }
+
+  void Convert(typename Model::MutLogicalCon e) {
+    throw std::runtime_error("No logical constraints conversion implemented");
+  }
+
+  bool PopNextItem() {
+    ////////////
+    return false;
+    return true;
+  }
+
+  /// An abstract item of a model
+  class Item {
+  public:
+    virtual ~Item() { }
+    virtual void Host(Impl & ) = 0;
+    virtual void Remove() = 0;
+    virtual bool IsRemoved() const = 0;
+  };
+
+  void VisitPoppedItem() {
+    ////////////
+  }
+
+  void CheckForIntermediatePreprocessing() {
+    ////////////
+  }
+
+  void CheckForFinalPreprocessing() {
+    ////////////
+  }
+
+  void PushWholeModelToBackend() {
     ModelToBackendFeeder<Model, Backend>
         feeder(GetModel(), GetBackend());
     feeder.PushWholeProblem();
   }
+
+public:
+  /// These methods to be used by converter objects
+  static constexpr double PlusInfinity() { return std::numeric_limits<double>::infinity(); }
+  static constexpr double MinusInfinity() { return -std::numeric_limits<double>::infinity(); }
+  typename Model::Variable AddVar(double lb=MinusInfinity(), double ub=PlusInfinity(), var::Type type = var::CONTINUOUS) {
+    return GetModel().AddVar(lb, ub, type);
+  }
+  void AddConstraint() {
+
+  }
+
 };
 
-/// One of the converters requiring a "minimal" output interface
+/// A null converter - does not change anything
 template <class Impl, class Backend,
           class Model = BasicProblem<std::allocator<char> > >
-class MPToMIPConverter : public MPConverter<Impl, Backend, Model> {
+class NullMPConverter : public BasicMPConverter<Impl, Backend, Model> {
 public:
-  void ConvertModel() { /* DO NOTHING YET */ }
-
+  void ConvertModel() { }
 };
 
 /// A 'final' converter in a hierarchy, no static polymorphism

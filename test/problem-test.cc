@@ -46,7 +46,7 @@ using mp::Problem;
 #define EXPECT_LINEAR_EXPR(expr, indices, coefs) { \
   int num_terms = sizeof(indices) / sizeof(int); \
   EXPECT_EQ(num_terms, expr.num_terms()); \
-  mp::LinearExpr::iterator it = expr.begin(); \
+  mp::LinearExpr::const_iterator it = expr.begin(); \
   for (int i = 0; i < num_terms; ++i, ++it) { \
     EXPECT_EQ(indices[i], it->var_index()); \
     EXPECT_EQ(coefs[i], it->coef()); \

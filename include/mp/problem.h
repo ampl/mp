@@ -52,6 +52,7 @@ class LinearExpr {
    public:
     int var_index() const { return var_index_; }
     double coef() const { return coef_; }
+    void set_coef(double c) { coef_=c; }
   };
   std::vector<Term> terms_;
 
@@ -59,13 +60,22 @@ class LinearExpr {
   int num_terms() const { return static_cast<int>(terms_.size()); }
   int capacity() const { return static_cast<int>(terms_.capacity()); }
 
-  typedef std::vector<Term>::const_iterator iterator;
+  typedef std::vector<Term>::const_iterator const_iterator;
 
-  iterator begin() const { return terms_.begin(); }
-  iterator end() const { return terms_.end(); }
+  const_iterator begin() const { return terms_.begin(); }
+  const_iterator end() const { return terms_.end(); }
+
+  typedef std::vector<Term>::iterator iterator;
+
+  iterator begin() { return terms_.begin(); }
+  iterator end() { return terms_.end(); }
 
   void AddTerm(int var_index, double coef) {
     terms_.push_back(Term(var_index, coef));
+  }
+
+  void AddTerms(const LinearExpr& li) {
+    terms_.insert(end(), li.begin(), li.end());
   }
 
   void Reserve(int num_terms) {
@@ -692,6 +702,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       if (expr)
         this->problem_->SetNonlinearConExpr(this->index_, expr);
     }
+
+    // Unsets the nonlinear part of the constraint expression.
+    void unset_nonlinear_expr() {
+      this->problem_->SetNonlinearConExpr(this->index_, NumericExpr());
+      assert(!this->nonlinear_expr());
+    }
+
   };
 
   /** A range of algebraic constraints. */

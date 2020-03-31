@@ -34,7 +34,7 @@ struct LinearExprUnzipper {
   std::vector<double> c_;
   std::vector<int> v_;
   LinearExprUnzipper(const LinearExpr& e) {
-    for (LinearExpr::iterator it=e.begin(); it!=e.end(); ++it) {
+    for (LinearExpr::const_iterator it=e.begin(); it!=e.end(); ++it) {
       c_.push_back(it->coef());
       v_.push_back(it->var_index());
     }

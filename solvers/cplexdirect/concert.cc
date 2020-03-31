@@ -317,7 +317,7 @@ IloExpr MPToConcertConverter::ConvertExpr(
   IloExpr ilo_expr(env_, 0);
   if (nonlinear)
     ilo_expr = Visit(nonlinear);
-  for (LinearExpr::iterator i = linear.begin(), e = linear.end(); i != e; ++i)
+  for (LinearExpr::const_iterator i = linear.begin(), e = linear.end(); i != e; ++i)
     ilo_expr += i->coef() * vars_[i->var_index()];
   return ilo_expr;
 }

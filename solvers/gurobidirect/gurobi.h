@@ -179,6 +179,8 @@ class GurobiBackend : public SolverImpl<Problem>,
   static double Infinity() { return GRB_INFINITY; }
   static double MinusInfinity() { return -GRB_INFINITY; }
 
+  void ExportModel(const std::string& file);
+
   int GetOption(Option id) const {
     assert(id >= 0 && id < NUM_OPTIONS);
     return options_[id];
