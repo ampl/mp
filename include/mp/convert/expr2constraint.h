@@ -62,9 +62,9 @@ public:
 };
 
 template <template <typename, typename, typename> class E2C,
-          class Converter, class Constraint>
-E2CImpl<E2C, Converter, Constraint> makeE2CConverter(Converter& cvt) {
-  return E2CImpl<E2C, Converter, Constraint>(cvt);
+          class Converter, class Constraint, class Converter2>
+E2CImpl<E2C, Converter, Constraint> makeE2CConverter(Converter2& cvt) {
+  return E2CImpl<E2C, Converter, Constraint>(static_cast<Converter&>(cvt));
 }
 
 } // namespace mp
