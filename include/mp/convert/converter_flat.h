@@ -20,10 +20,11 @@ class BasicMPFlatConverter
       public ExprVisitor<Impl, EExpr>,
       public BasicConstraintConverter
 {
-public:
+protected:
 
   using ClassName = BasicMPFlatConverter<Impl, Backend, Model>;
   using BaseExprVisitor = ExprVisitor<Impl, EExpr>;
+
 public:
 
   void Convert(typename Model::MutCommonExpr e) {
@@ -51,7 +52,7 @@ public:
 
 public:
   /// Add custom constraint. Takes ownership
-  void AddConstraint(BasicConstraint* pbc) {
+  void AddConstraint(BasicConstraintKeeper* pbc) {
     MP_DISPATCH( GetModel() ).AddConstraint(pbc);
   }
 

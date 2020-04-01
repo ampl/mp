@@ -2,7 +2,7 @@
 #define EXPR2CONSTRAINT_H
 
 #include "mp/problem.h"
-
+#include "mp/convert/constraint_keeper.h"
 
 namespace mp {
 
@@ -51,7 +51,8 @@ public:
     MP_DISPATCH( SetResultVar( MP_DISPATCH( GetConverter() ).AddVar().index() ) );
     /// TODO propagate bounds from arguments
     MP_DISPATCH( GetConverter() ).AddConstraint(
-          new Constraint(MP_DISPATCH( MoveArguments() ), MP_DISPATCH( GetResultVar() )));
+          new ConstraintKeeper<Converter, typename Converter::BackendType, Constraint>
+            (MP_DISPATCH( MoveArguments() ), MP_DISPATCH( GetResultVar() )));
   }
 };
 
@@ -65,11 +66,10 @@ public:
 };
 
 template <template <typename, typename, typename> class E2C,
-          class Converter, template <class, class> class Constraint, class Converter2>
-E2CImpl<E2C, Converter, Constraint<Converter, typename Converter::BackendType> >
+          class Converter, class Constraint, class Converter2>
+E2CImpl<E2C, Converter, Constraint >
 makeE2CConverter(Converter2& cvt) {
-  return E2CImpl<E2C, Converter,
-      Constraint<Converter, typename Converter::BackendType> >( static_cast<Converter&>(cvt) );
+  return E2CImpl<E2C, Converter, Constraint>( static_cast<Converter&>(cvt) );
 }
 
 } // namespace mp

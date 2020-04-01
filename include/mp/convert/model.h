@@ -11,10 +11,10 @@ namespace mp {
 template <class Allocator>
 class BasicModel : public BasicProblem<Allocator> {
 protected:
-  using PConstraint = std::unique_ptr<BasicConstraint>;
+  using PConstraintKeeper = std::unique_ptr<BasicConstraintKeeper>;
 
 private:
-  std::vector<PConstraint> custom_constr_;
+  std::vector<PConstraintKeeper> custom_constr_;
 
 public:
 
@@ -22,18 +22,18 @@ public:
   int num_custom_cons() const { return static_cast<int>(custom_constr_.size()); }
 
   /** Returns custom constraint i */
-  const BasicConstraint* custom_con(int i) const {
+  const BasicConstraintKeeper* custom_con(int i) const {
     internal::CheckIndex(i, num_custom_cons());
     return custom_constr_[i].get();
   }
 
   /// Add custom constraint. Takes ownership
-  void AddConstraint(BasicConstraint* pbc) {
-    PConstraint pc;
+  void AddConstraint(BasicConstraintKeeper* pbc) {
+    PConstraintKeeper pc;
     pc.reset(pbc);
     AddConstraint(std::move(pc));
   }
-  void AddConstraint(PConstraint&& pc) {
+  void AddConstraint(PConstraintKeeper&& pc) {
     custom_constr_.push_back(std::move(pc));
   }
 };

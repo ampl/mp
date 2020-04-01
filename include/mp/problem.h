@@ -85,6 +85,7 @@ class LinearExpr {
 };
 
 class Solver;
+class BasicConstraintKeeper;
 
 /** An optimization problem. */
 template <typename Alloc>
@@ -930,7 +931,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   int num_custom_cons() const { return 0; }
 
   /** Returns custom constraint i */
-  BasicConstraint* custom_con(int i) const {
+  const BasicConstraintKeeper* custom_con(int i) const {
     throw std::logic_error("BasicProblem: no custom constraints");
     return NULL;
   }

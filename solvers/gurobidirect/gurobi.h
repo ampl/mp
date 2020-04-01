@@ -206,14 +206,7 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
   void AddLinearConstraint(int nnz, const double* c, const int* v,
                            double lb, double ub);
 
-  template <class Converter>
-  void AddConstraint(const MaximumConstraint<Converter, GurobiBackend>& mc) {
-    std::vector<int> vars;
-    const auto& args = mc.GetArguments();
-    for (const auto& ee: args)
-      vars.push_back(ee.begin()->var_index());
-    GRB_CALL( GRBaddgenconstrMax(model, NULL, mc.GetResultVar(), vars.size(), vars.data(), Converter::MinusInfinity()) );
-  }
+  void AddConstraint(const MaximumConstraint& mc);
 
   void FinishProblemModificationPhase();
 };

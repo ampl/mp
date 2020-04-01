@@ -25,7 +25,7 @@
 #define BACKEND_H_
 
 #include "mp/problem.h"
-#include "mp/convert/constraint.h"
+#include "mp/convert/constraint_keeper.h"
 
 namespace mp {
 
