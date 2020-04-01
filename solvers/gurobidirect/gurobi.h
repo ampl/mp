@@ -54,10 +54,12 @@ extern "C" {
 #include <string>
 
 #include "mp/clock.h"
-#include "mp/problem.h"
+#include "mp/convert/model.h"
 #include "mp/solver.h"
 
 #include "mp/backend.h"
+
+#include "mp/convert/constraints/maximum.h"
 
 namespace mp {
 
@@ -69,9 +71,10 @@ struct ParamTraits;
     fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
 
 // IlogCP solver.
-class GurobiBackend : public SolverImpl<Problem>,
+class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // TODO no SolverImpl
     public BasicBackend<GurobiBackend>
 {
+  using BaseSolverImpl = SolverImpl<BasicModel<std::allocator<char>>>;
  private:
   GRBenv   *env   = NULL;
   GRBmodel *model = NULL;
@@ -202,6 +205,16 @@ class GurobiBackend : public SolverImpl<Problem>,
                            const double* c, const int* v);
   void AddLinearConstraint(int nnz, const double* c, const int* v,
                            double lb, double ub);
+
+  template <class Converter>
+  void AddConstraint(const MaximumConstraint<Converter, GurobiBackend>& mc) {
+    std::vector<int> vars;
+    const auto& args = mc.GetArguments();
+    for (const auto& ee: args)
+      vars.push_back(ee.begin()->var_index());
+    GRB_CALL( GRBaddgenconstrMax(model, NULL, mc.GetResultVar(), vars.size(), vars.data(), Converter::MinusInfinity()) );
+  }
+
   void FinishProblemModificationPhase();
 };
 }

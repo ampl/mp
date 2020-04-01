@@ -49,6 +49,15 @@ public:
     throw std::runtime_error("MPToMIPConverter: Only algebraic constraints implemented TODO");
   }
 
+public:
+  /// Add custom constraint. Takes ownership
+  void AddConstraint(BasicConstraint* pbc) {
+    MP_DISPATCH( GetModel() ).AddConstraint(pbc);
+  }
+
+
+public:
+  //////////////////////////////////// Visitors /////////////////////////////////////////
   EExpr VisitMinus(UnaryExpr e) {
     auto ee = this->Visit(e.arg());
     for (auto& term: ee)

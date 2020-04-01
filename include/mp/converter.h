@@ -23,9 +23,9 @@
 #ifndef CONVERTER_H_
 #define CONVERTER_H_
 
-#include <mp/problem.h>
-#include <mp/backend.h>
-#include <mp/solver.h>
+#include "mp/convert/model.h"
+#include "mp/backend.h"
+#include "mp/solver.h"
 
 namespace mp {
 
@@ -186,9 +186,6 @@ public:
   typename Model::Variable AddVar(double lb=MinusInfinity(), double ub=PlusInfinity(), var::Type type = var::CONTINUOUS) {
     return GetModel().AddVar(lb, ub, type);
   }
-  void AddConstraint() {
-
-  }
 
 };
 
@@ -202,12 +199,12 @@ public:
 
 /// A 'final' converter in a hierarchy, no static polymorphism
 template <template <typename, typename, typename> class Converter,
-          class Backend, class Model = BasicProblem<std::allocator<char> > >
+          class Backend, class Model = BasicModel<std::allocator<char> > >
 class ConverterImpl :
     public Converter<ConverterImpl<Converter, Backend, Model>, Backend, Model> { };
 
 template <template <typename, typename, typename> class Converter,
-          class Backend, class Model = BasicProblem<std::allocator<char> > >
+          class Backend, class Model = BasicModel<std::allocator<char> > >
 using Interface = ConverterImpl<Converter, Backend, Model>;
 
 }  // namespace mp

@@ -24,7 +24,8 @@
 #ifndef BACKEND_H_
 #define BACKEND_H_
 
-#include <mp/problem.h>
+#include "mp/problem.h"
+#include "mp/convert/constraint.h"
 
 namespace mp {
 
@@ -46,7 +47,7 @@ struct LinearExprUnzipper {
 /// The basic wrapper provides common functionality: option handling
 /// and placeholders for solver API
 template <class Impl>
-class BasicBackend {
+class BasicBackend : public BasicConstraintAdder {
 public:
   /// [[ TODO Incrementality ]]
 
@@ -118,14 +119,25 @@ public:
   ModelToBackendFeeder(const Model& p, Backend& i)
     : model_(p), backend_(i)  { }
 
+  void PushWholeProblem_noCustomConstraints() {
+    InitProblemModificationPhase();
+    PushStandardItems();
+    FinishProblemModificationPhase();
+  }
   void PushWholeProblem() {
     InitProblemModificationPhase();
+    PushStandardItems();
+    PushCustomConstraints();
+    FinishProblemModificationPhase();
+  }
+
+protected:
+  void PushStandardItems() {
     PushVariables();
     PushCommonSubExpr();
     PushObjectives();
     PushAlgebraicConstraints();
     PushLogicalConstraints();
-    FinishProblemModificationPhase();
   }
 
   void InitProblemModificationPhase() {
@@ -174,6 +186,14 @@ public:
       for (int i = 0; i < n_lcons; ++i) {
         typename Model::LogicalCon con = model_.logical_con(i);
         backend_.AddLogicalConstraints(1, &con);
+      }
+    }
+  }
+
+  void PushCustomConstraints() {
+    if (int n_ccons = model_.num_custom_cons()) {
+      for (int i = 0; i < n_ccons; ++i) {
+        model_.custom_con(i)->AddToBackend(backend_);
       }
     }
   }

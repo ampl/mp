@@ -3,8 +3,7 @@
 
 #include <vector>
 
-#include <mp/convert/MIP/mp2mip.h>
-
+#include "mp/convert/MIP/mp2mip.h"
 
 namespace interface_test {
 
@@ -73,7 +72,9 @@ void feedInstance( Interface& interface, const MIPInstance& mip ) {
 }
 
 /// A toy backend using struct MIPInstance
-class MIPInstanceBackend : public mp::BasicBackend<MIPInstanceBackend> {
+class MIPInstanceBackend :
+    public mp::BasicBackend<MIPInstanceBackend>
+{
   MIPInstance instance_;
 public:
   MIPInstance& GetInstance() { return instance_; }

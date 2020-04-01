@@ -56,6 +56,7 @@
 #include "mp/solver.h"
 
 #include "mp/backend.h"
+#include "mp/convert/model.h"
 
 namespace mp {
 
@@ -75,9 +76,10 @@ struct ParamTraits<double> {
 };
 
 // IlogCP solver.
-class IlogCPSolver : public SolverImpl<Problem>,
+class IlogCPSolver : public SolverImpl<BasicModel<std::allocator<char>>>,   // TODO no SolverImpl
     public BasicBackend<IlogCPSolver>
 {
+  using BaseSolverImpl = SolverImpl<BasicModel<std::allocator<char>>>;
  private:
   IloEnv env_;
   IloCP cp_;

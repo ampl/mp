@@ -325,7 +325,7 @@ IloExpr MPToConcertConverter::ConvertExpr(
 void MPToConcertConverter::Convert(const Problem &p) {
   // Set up optimization problem using the Concert API.
   ModelToBackendFeeder<Problem, MPToConcertConverter> feeder(p, *this);
-  feeder.PushWholeProblem();
+  feeder.PushWholeProblem_noCustomConstraints();
 }
 
 void MPToConcertConverter::FinishProblemModificationPhase() {

@@ -20,7 +20,9 @@ class BasicExprToConstraintConverter {
   int result_var_;
 protected:
   Converter& GetConverter() { return converter_; }
-  std::vector<EExpr>& GetArguments() { return args_; }
+  std::vector<EExpr>&& MoveArguments() {        // this returns rvalue and invalidates args_
+    return std::move(args_);
+  }
   void AddArgument(EExpr&& ee) { args_.push_back(ee); }
   int GetResultVar() { return result_var_; }
   void SetResultVar(int v) { result_var_ = v; }
@@ -48,7 +50,8 @@ public:
   void AddConstraint() {
     MP_DISPATCH( SetResultVar( MP_DISPATCH( GetConverter() ).AddVar().index() ) );
     /// TODO propagate bounds from arguments
-    MP_DISPATCH( GetConverter() ).AddConstraint();
+    MP_DISPATCH( GetConverter() ).AddConstraint(
+          new Constraint(MP_DISPATCH( MoveArguments() ), MP_DISPATCH( GetResultVar() )));
   }
 };
 

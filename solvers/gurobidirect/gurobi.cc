@@ -124,7 +124,7 @@ bool InterruptGurobi(void *model) {
 namespace mp {
 
 GurobiBackend::GurobiBackend() :
-   SolverImpl<Problem>("gurobi", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
+   BaseSolverImpl("gurobi", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
    {
   InitBackend();
 

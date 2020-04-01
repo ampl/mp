@@ -29,6 +29,7 @@
 
 #include "mp/expr.h"
 #include "mp/suffix.h"
+#include "mp/convert/constraint.h"
 
 // Maximum index of a variable, objective or constraint.
 #ifndef MP_MAX_PROBLEM_ITEMS
@@ -924,6 +925,16 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     linear_exprs_.resize(new_size, LinearExpr());
     nonlinear_exprs_.resize(new_size, NumericExpr());
   }
+
+  /** Returns the number of custom constraints. */
+  int num_custom_cons() const { return 0; }
+
+  /** Returns custom constraint i */
+  BasicConstraint* custom_con(int i) const {
+    throw std::logic_error("BasicProblem: no custom constraints");
+    return NULL;
+  }
+
 
   // Sets a complementarity condition.
   void SetComplementarity(int con_index, int var_index, ComplInfo info);
