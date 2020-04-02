@@ -765,6 +765,9 @@ void IlogCPSolver::SolveWithCPLEX(
   cplex_.use(aborter);
   interrupter()->SetHandler(InterruptCPLEX, &aborter);
 
+  if (!filenames_[EXPORT_FILE].empty())
+    cplex_.exportModel(filenames_[EXPORT_FILE].c_str());
+
   stats.setup_time = GetTimeAndReset(stats.time);
   cplex_.solve();
   stats.solution_time = GetTimeAndReset(stats.time);
