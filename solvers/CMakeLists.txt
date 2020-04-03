@@ -174,7 +174,8 @@ if (TARGET gurobidirect)
 endif ()
 
 # Copy CPLEX DLL to the target directory.
-if (CPLEX_DLL)
+if (CPLEX_DLL AND (TARGET ilogcp))
+
   get_filename_component(CPLEX_DLL_NAME "${CPLEX_DLL}" NAME)
   add_custom_command(TARGET ilogcp
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -197,9 +198,6 @@ if (LOCALSOLVER_DLL)
     "${LOCALSOLVER_DLL}"
     "$<TARGET_FILE_DIR:localsolver>/${LOCALSOLVER_DLL_NAME}")
 endif ()
-
-add_subdirectory(path)
-
 add_ampl_solver(smpswriter)
 
 if (TARGET ilogcp)

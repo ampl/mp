@@ -1,0 +1,18 @@
+trigger:
+- master
+
+jobs:
+- template: support/azure/template-build.yml  # Template reference
+  parameters:
+    name: Linux
+    vmImage: 'ubuntu-latest'
+
+- template: support/azure/template-build.yml  # Template reference
+  parameters:
+    name: windows
+    vmImage: 'windows-2019'
+
+- template: support/azure/template-build.yml  # Template reference
+  parameters:
+    name: macOS
+    vmImage: 'macOS-10.15'

@@ -613,10 +613,20 @@ TEST_F(IlogCPTest, CPFlagOptions) {
       {"on",  IloCP::On},
       {0,     IloCP::Off}
   };
+#if CPX_VERSION >= 12080000
+  CheckIntCPOption("cppresolve", 
+    IloCP::Presolve,
+      0, 1, IloCP::Off, false, flags);
+#else
+  CheckIntCPOption("constraintaggregation", IloCP::ConstraintAggregation,
+    0, 1, IloCP::Off, false, flags);
+#endif
   CheckIntCPOption("dynamicprobing", IloCP::DynamicProbing,
       0, 1, IloCP::Off, true, flags);
+#if CPX_VERSION < 12080000
   CheckIntCPOption("temporalrelaxation", IloCP::TemporalRelaxation,
       0, 1, IloCP::Off, false, flags);
+#endif
 }
 
 TEST_F(IlogCPTest, CPInferenceLevelOptions) {
@@ -655,6 +665,10 @@ TEST_F(IlogCPTest, CPVerbosityOptions) {
       0, 3, IloCP::Quiet, false, verbosities);
   CheckIntCPOption("outlev", IloCP::LogVerbosity,
       0, 3, IloCP::Quiet, false, verbosities);
+  #if CPX_VERSION < 12080000
+  CheckIntCPOption("propagationlog", IloCP::PropagationLog,
+    0, 3, IloCP::Quiet, false, verbosities);
+  #endif
 }
 
 TEST_F(IlogCPTest, CPSearchTypeOption) {
@@ -662,10 +676,14 @@ TEST_F(IlogCPTest, CPSearchTypeOption) {
       {"depthfirst", IloCP::DepthFirst},
       {"restart",    IloCP::Restart},
       {"multipoint", IloCP::MultiPoint},
+      #if CPX_VERSION >= 12090000
+      {"iterativediving", IloCP::IterativeDiving},
+      #endif    
       {0,            IloCP::Off}
   };
   CheckIntCPOption("searchtype", IloCP::SearchType,
-      0, 2, IloCP::DepthFirst, CPX_VERSION > 1220, types);
+      0, 2 + CPX_VERSION >= 12090000, IloCP::DepthFirst, 
+    CPX_VERSION > 1220, types);
 }
 
 TEST_F(IlogCPTest, CPTimeModeOption) {

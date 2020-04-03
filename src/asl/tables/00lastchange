@@ -1,4 +1,0 @@
-20150217
-  amplodbc.c:  fix a glitch in strcmpv() that caused it to sort on
-string addresses rather than string values.  Thanks to
-peter.jackson@rtdmsolutions.com for pointing this out.

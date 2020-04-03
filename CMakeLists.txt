@@ -128,7 +128,7 @@ if (NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
 else ()
   # Disable useless MSVC warnings suggesting nonportable "secure" alternatives.
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
 endif ()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -326,29 +326,15 @@ add_subdirectory(src/asl)
 add_subdirectory(src/cp)
 add_subdirectory(solvers)
 
-set(GSL_DISABLE_WARNINGS TRUE)
-set(GSL_DISABLE_TESTS TRUE) # GSL tests are run separately
-set(GSL_INSTALL FALSE)
-check_module(gsl build_gsl EXTERNAL)
-if (build_gsl)
-  add_subdirectory(src/gsl)
-endif ()
-
 # Add a target that generates a file with solver and library versions.
 set(AMPL_VERSIONS_FILE versions.txt)
-add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE}
-  DEPENDS src/asl/tables/amplodbc.c)
-foreach (target gsl-info gecode jacop path)
+add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE})
+foreach (target gsl-info gecode jacop)
   if (TARGET ${target})
     add_custom_command(TARGET versions POST_BUILD
         COMMAND $<TARGET_FILE:${target}> -v >> ${AMPL_VERSIONS_FILE})
   endif ()
 endforeach ()
-file(READ src/asl/tables/amplodbc.c amplodbc)
-if (amplodbc MATCHES "version ([0-9]+)")
-  add_custom_command(TARGET versions POST_BUILD
-      COMMAND echo ampltabl ${CMAKE_MATCH_1} >> ${AMPL_VERSIONS_FILE})
-endif ()
 
 # Check for invalid module names.
 get_property(modules GLOBAL PROPERTY MP_USED_MODULES)

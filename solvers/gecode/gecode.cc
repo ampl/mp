@@ -37,11 +37,11 @@ namespace Search = Gecode::Search;
 
 namespace {
 
-const mp::OptionValueInfo INT_CON_LEVELS[] = {
-  {"val", "value propagation or consistency (naive)", Gecode::ICL_VAL},
-  {"bnd", "bounds propagation or consistency",        Gecode::ICL_BND},
-  {"dom", "domain propagation or consistency",        Gecode::ICL_DOM},
-  {"def", "the default consistency for a constraint", Gecode::ICL_DEF}
+const mp::OptionValueInfo INT_PROP_LEVELS[] = {
+  {"val", "value propagation or consistency (naive)", Gecode::IPL_VAL},
+  {"bnd", "bounds propagation or consistency",        Gecode::IPL_BND},
+  {"dom", "domain propagation or consistency",        Gecode::IPL_DOM},
+  {"def", "the default propagation for a constraint", Gecode::IPL_DEF}
 };
 
 const mp::OptionValueInfo VAR_BRANCHINGS[] = {
@@ -76,14 +76,14 @@ const mp::OptionValueInfo VAR_BRANCHINGS[] = {
     IntVarBranch::SEL_AFC_MAX
   },
   {
-    "activity_min",
-    "lowest activity",
-    IntVarBranch::SEL_ACTIVITY_MIN
+    "action_min",
+    "lowest action",
+    IntVarBranch::SEL_ACTION_MIN
   },
   {
-    "activity_max",
-    "highest activity",
-    IntVarBranch::SEL_ACTIVITY_MAX
+    "action_max",
+    "highest action",
+    IntVarBranch::SEL_ACTION_MAX
   },
   {
     "min_min",
@@ -136,13 +136,13 @@ const mp::OptionValueInfo VAR_BRANCHINGS[] = {
     IntVarBranch::SEL_AFC_SIZE_MAX
   },
   {
-    "activity_size_min",
-    "smallest activity by domain size",
-    IntVarBranch::SEL_ACTIVITY_SIZE_MIN},
+    "action_size_min",
+    "smallest action divided by domain size",
+    IntVarBranch::SEL_ACTION_SIZE_MIN},
   {
-    "activity_size_max",
-    "largest activity by domain size",
-    IntVarBranch::SEL_ACTIVITY_SIZE_MAX
+    "action_size_max",
+    "largest action divided by domain size",
+    IntVarBranch::SEL_ACTION_SIZE_MAX
   },
   {
     "regret_min_min",
@@ -232,20 +232,33 @@ const mp::OptionValueInfo RESTART_MODES[] = {
 
 namespace mp {
 
-GecodeProblem::GecodeProblem(int num_vars, Gecode::IntConLevel icl) :
-  vars_(space(), num_vars), obj_irt_(Gecode::IRT_NQ), icl_(icl) {
+GecodeProblem::GecodeProblem(int num_vars, Gecode::IntPropLevel ipl) :
+  vars_(space(), num_vars), obj_irt_(Gecode::IRT_NQ), ipl_(ipl) {
 }
 
-GecodeProblem::GecodeProblem(bool share, GecodeProblem &s) :
-  Gecode::Space(share, s), obj_irt_(s.obj_irt_), icl_(s.icl_) {
+#if GECODE_VERSION_NUMBER > 600000
+GecodeProblem::GecodeProblem(GecodeProblem &s) :
+  Gecode::Space(s), obj_irt_(s.obj_irt_), ipl_(s.ipl_) {
+  vars_.update(*this, s.vars_);
+  if (obj_irt_ != Gecode::IRT_NQ)
+    obj_.update(*this, s.obj_);
+}
+Gecode::Space* GecodeProblem::copy() {
+  return new GecodeProblem(*this);
+}
+#else
+GecodeProblem::GecodeProblem(bool share, GecodeProblem& s) :
+  Gecode::Space(share, s), obj_irt_(s.obj_irt_), ipl_(s.ipl_) {
   vars_.update(*this, share, s.vars_);
   if (obj_irt_ != Gecode::IRT_NQ)
     obj_.update(*this, share, s.obj_);
 }
-
-Gecode::Space *GecodeProblem::copy(bool share) {
+Gecode::Space* GecodeProblem::copy(bool share) {
   return new GecodeProblem(share, *this);
 }
+#endif
+
+
 
 void GecodeProblem::SetObj(obj::Type obj_type, const LinExpr &expr) {
   obj_irt_ = obj_type == obj::MAX ? Gecode::IRT_GR : Gecode::IRT_LE;
@@ -255,7 +268,7 @@ void GecodeProblem::SetObj(obj::Type obj_type, const LinExpr &expr) {
 void GecodeProblem::constrain(const Gecode::Space &best) {
   if (obj_irt_ != Gecode::IRT_NQ) {
     rel(*this, obj_, obj_irt_,
-        static_cast<const GecodeProblem&>(best).obj_, icl_);
+        static_cast<const GecodeProblem&>(best).obj_, ipl_);
   }
 }
 
@@ -265,19 +278,19 @@ BoolExpr MPToGecodeConverter::Convert(
   int index = 0;
   for (IteratedLogicalExpr::iterator
       i = e.begin(), end = e.end(); i != end; ++i, ++index) {
-    args[index] = Gecode::expr(problem_, Visit(*i), icl_);
+    args[index] = Gecode::expr(problem_, Visit(*i), ipl_);
   }
   Gecode::BoolVar var(problem_, 0, 1);
-  rel(problem_, op, args, var, icl_);
+  rel(problem_, op, args, var, ipl_);
   return var;
 }
 
 LinExpr MPToGecodeConverter::Convert(IteratedExpr e, VarArgFunc f) {
   IntVarArgs args;
   for (VarArgExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    args << Gecode::expr(problem_, Visit(*i), icl_);
+    args << Gecode::expr(problem_, Visit(*i), ipl_);
   IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-  f(problem_, args, result, icl_);
+  f(problem_, args, result, ipl_);
   return result;
 }
 
@@ -307,15 +320,15 @@ LinExpr MPToGecodeConverter::ConvertExpr(
   return expr;
 }
 
-Gecode::IntConLevel MPToGecodeConverter::GetICL(int con_index) const {
-  if (!icl_suffix_)
-    return icl_;
-  int value = icl_suffix_.value(con_index);
-  assert(value == Gecode::ICL_VAL || value == Gecode::ICL_BND ||
-         value == Gecode::ICL_DOM || value == Gecode::ICL_DEF);
-  if (value < 0 || value > Gecode::ICL_DEF)
-    throw Error("Invalid value \"{}\" for suffix \"icl\"", value);
-  return static_cast<Gecode::IntConLevel>(value);
+Gecode::IntPropLevel MPToGecodeConverter::GetIPL(int con_index) const {
+  if (!ipl_suffix_)
+    return ipl_;
+  int value = ipl_suffix_.value(con_index);
+  assert(value == Gecode::IPL_VAL || value == Gecode::IPL_BND ||
+         value == Gecode::IPL_DOM || value == Gecode::IPL_DEF);
+  if (value < 0 || value > Gecode::IPL_DEF)
+    throw Error("Invalid value \"{}\" for suffix \"ipl\"", value);
+  return static_cast<Gecode::IntPropLevel>(value);
 }
 
 void MPToGecodeConverter::Convert(const Problem &p) {
@@ -343,19 +356,19 @@ void MPToGecodeConverter::Convert(const Problem &p) {
                     ConvertExpr(obj.linear_expr(), obj.nonlinear_expr()));
   }
 
-  icl_suffix_ = p.suffixes(suf::CON).Find<int>("icl");
+  ipl_suffix_ = p.suffixes(suf::CON).Find<int>("ipl");
 
-  class ICLSetter {
+  class IPLSetter {
    private:
-    Gecode::IntConLevel &icl_;
-    Gecode::IntConLevel saved_value_;
+    Gecode::IntPropLevel &ipl_;
+    Gecode::IntPropLevel saved_value_;
 
    public:
-    ICLSetter(Gecode::IntConLevel &icl, Gecode::IntConLevel new_value) :
-      icl_(icl), saved_value_(icl) {
-      icl = new_value;
+    IPLSetter(Gecode::IntPropLevel &ipl, Gecode::IntPropLevel new_value) :
+      ipl_(ipl), saved_value_(ipl) {
+      ipl = new_value;
     }
-    ~ICLSetter() { icl_ = saved_value_; }
+    ~IPLSetter() { ipl_ = saved_value_; }
   };
 
   // Convert algebraic constraints.
@@ -364,21 +377,21 @@ void MPToGecodeConverter::Convert(const Problem &p) {
     LinExpr con_expr(
         ConvertExpr(con.linear_expr(), con.nonlinear_expr()));
     double lb = con.lb(), ub = con.ub();
-    ICLSetter icl_setter(icl_, GetICL(i));
+    IPLSetter ipl_setter(ipl_, GetIPL(i));
     if (lb <= -inf) {
-      rel(problem_, con_expr <= CastToInt(ub), icl_);
+      rel(problem_, con_expr <= CastToInt(ub), ipl_);
       continue;
     }
     if (ub >= inf) {
-      rel(problem_, con_expr >= CastToInt(lb), icl_);
+      rel(problem_, con_expr >= CastToInt(lb), ipl_);
       continue;
     }
     int int_lb = CastToInt(lb), int_ub = CastToInt(ub);
     if (int_lb == int_ub) {
-      rel(problem_, con_expr == int_lb, icl_);
+      rel(problem_, con_expr == int_lb, ipl_);
     } else {
-      rel(problem_, con_expr >= int_lb, icl_);
-      rel(problem_, con_expr <= int_ub, icl_);
+      rel(problem_, con_expr >= int_lb, ipl_);
+      rel(problem_, con_expr <= int_ub, ipl_);
     }
   }
 
@@ -386,9 +399,9 @@ void MPToGecodeConverter::Convert(const Problem &p) {
   int num_logical_cons = p.num_logical_cons();
   for (int i = 0; i < num_logical_cons; ++i) {
     LogicalExpr e = p.logical_con(i).expr();
-    ICLSetter icl_setter(icl_, GetICL(p.num_algebraic_cons() + i));
+    IPLSetter ipl_setter(ipl_, GetIPL(p.num_algebraic_cons() + i));
     if (e.kind() != expr::ALLDIFF) {
-      rel(problem_, Visit(e), icl_);
+      rel(problem_, Visit(e), ipl_);
       continue;
     }
     PairwiseExpr alldiff = Cast<PairwiseExpr>(e);
@@ -399,9 +412,9 @@ void MPToGecodeConverter::Convert(const Problem &p) {
       if (arg.kind() == expr::VARIABLE)
         args[i] = vars[Cast<Variable>(arg).index()];
       else
-        args[i] = Gecode::expr(problem_, Visit(arg), icl_);
+        args[i] = Gecode::expr(problem_, Visit(arg), ipl_);
     }
-    distinct(problem_, args, icl_);
+    distinct(problem_, args, ipl_);
   }
 }
 
@@ -422,16 +435,16 @@ LinExpr MPToGecodeConverter::VisitIf(IfExpr e) {
   if (false_const && false_const.value() == 0) {
     NumericConstant true_const = Cast<NumericConstant>(then_expr);
     if (true_const && true_const.value() == 1) {
-      Gecode::channel(problem_, Gecode::expr(problem_, condition, icl_), result);
+      Gecode::channel(problem_, Gecode::expr(problem_, condition, ipl_), result);
       return result;
     }
   }
   rel(problem_, result, Gecode::IRT_EQ,
-      Gecode::expr(problem_, Visit(then_expr), icl_),
-      Reify(Gecode::expr(problem_, condition, icl_), Gecode::RM_IMP), icl_);
+      Gecode::expr(problem_, Visit(then_expr), ipl_),
+      Reify(Gecode::expr(problem_, condition, ipl_), Gecode::RM_IMP), ipl_);
   rel(problem_, result, Gecode::IRT_EQ,
-      Gecode::expr(problem_, Visit(else_expr), icl_),
-      Reify(Gecode::expr(problem_, !condition, icl_), Gecode::RM_IMP), icl_);
+      Gecode::expr(problem_, Visit(else_expr), ipl_),
+      Reify(Gecode::expr(problem_, !condition, ipl_), Gecode::RM_IMP), ipl_);
   return result;
 }
 
@@ -450,10 +463,10 @@ LinExpr MPToGecodeConverter::VisitCount(CountExpr e) {
   int index = 0;
   for (CountExpr::iterator
       i = e.begin(), end = e.end(); i != end; ++i, ++index) {
-    args[index] = Gecode::expr(problem_, Visit(*i), icl_);
+    args[index] = Gecode::expr(problem_, Visit(*i), ipl_);
   }
   IntVar result(problem_, 0, e.num_args());
-  Gecode::linear(problem_, args, Gecode::IRT_EQ, result, icl_);
+  Gecode::linear(problem_, args, Gecode::IRT_EQ, result, ipl_);
   return result;
 }
 
@@ -465,8 +478,8 @@ LinExpr MPToGecodeConverter::VisitNumberOf(IteratedExpr e) {
   int num_args = e.num_args();
   IntVarArgs args(num_args - 1);
   for (int i = 1; i < num_args; ++i)
-    args[i - 1] = Gecode::expr(problem_, Visit(e.arg(i)), icl_);
-  count(problem_, args, Gecode::expr(problem_, Visit(e.arg(0)), icl_),
+    args[i - 1] = Gecode::expr(problem_, Visit(e.arg(i)), ipl_);
+  count(problem_, args, Gecode::expr(problem_, Visit(e.arg(0)), ipl_),
       Gecode::IRT_EQ, result);
   return result;
 }
@@ -492,12 +505,12 @@ BoolExpr MPToGecodeConverter::LogicalExprConverter::VisitAllDiff(
   for (int i = 0; i < n; ++i) {
     for (int j = i + 1; j < n; ++j) {
       Gecode::BoolExpr expr = negate ? args[i] == args[j] : args[i] != args[j];
-      logical_args[index++] = Gecode::expr(problem, expr, converter_.icl_);
+      logical_args[index++] = Gecode::expr(problem, expr, converter_.ipl_);
     }
   }
   Gecode::BoolVar var(problem, 0, 1);
   rel(problem, negate ? Gecode::BOT_OR : Gecode::BOT_AND,
-      logical_args, var, converter_.icl_);
+      logical_args, var, converter_.ipl_);
   return var;
 }
 
@@ -594,7 +607,7 @@ GecodeSolver::GecodeSolver()
 : SolverImpl<Problem>(
     "gecode", "gecode " GECODE_VERSION, 20160205, MULTIPLE_SOL),
   output_(false), output_frequency_(1), output_count_(0), solve_code_(-1),
-  icl_(Gecode::ICL_DEF),
+  ipl_(Gecode::IPL_DEF),
   var_branching_(IntVarBranch::SEL_SIZE_MIN),
   val_branching_(IntValBranch::SEL_MIN),
   decay_(1),
@@ -604,7 +617,7 @@ GecodeSolver::GecodeSolver()
 
   set_version("Gecode " GECODE_VERSION);
 
-  AddSuffix("icl", 0, suf::CON);
+  AddSuffix("ipl", 0, suf::CON);
 
   set_option_header(
       "Gecode Options for AMPL\n"
@@ -625,13 +638,13 @@ GecodeSolver::GecodeSolver()
       "Output frequency in seconds. The value should be a positive number.",
       &GecodeSolver::GetOutputFrequency, &GecodeSolver::SetOutputFrequency);
 
-  AddStrOption("icl",
-      "Consistency level for integer propagators. Possible values:\n"
+  AddStrOption("ipl",
+      "Propagation level for integer propagators. Possible values:\n"
       "\n"
       ".. value-table::\n",
-      &GecodeSolver::GetEnumOption<Gecode::IntConLevel>,
-      &GecodeSolver::SetEnumOption<Gecode::IntConLevel>,
-      &icl_, INT_CON_LEVELS);
+      &GecodeSolver::GetEnumOption<Gecode::IntPropLevel>,
+      &GecodeSolver::SetEnumOption<Gecode::IntPropLevel>,
+      &ipl_, INT_PROP_LEVELS);
 
   AddStrOption("var_branching",
       "Variable branching. Possible values:\n"
@@ -726,7 +739,7 @@ void GetSolution(GecodeProblem &gecode_problem, std::vector<double> &solution) {
     solution[j] = vars[j].val();
 }
 
-template<template<template<typename> class, typename> class Meta>
+template<template<typename, template<typename> class> class Meta>
 GecodeSolver::ProblemPtr GecodeSolver::Search(
     Problem &p, GecodeProblem &problem,
     Search::Statistics &stats, SolutionHandler &sh) {
@@ -734,7 +747,7 @@ GecodeSolver::ProblemPtr GecodeSolver::Search(
   unsigned solution_limit = solution_limit_;
   unsigned num_solutions = 0;
   if (problem.has_obj()) {
-    Meta<Gecode::BAB, GecodeProblem> engine(&problem, options_);
+    Meta<GecodeProblem, Gecode::BAB> engine(&problem, options_);
     while (GecodeProblem *next = engine.next()) {
       if (output_)
         Output("{:46}\n", next->obj().val());
@@ -748,7 +761,7 @@ GecodeSolver::ProblemPtr GecodeSolver::Search(
   } else {
     if (solution_limit == UINT_MAX)
       solution_limit = 1;
-    Meta<Gecode::DFS, GecodeProblem> engine(&problem, options_);
+    Meta<GecodeProblem, Gecode::DFS> engine(&problem, options_);
     std::vector<double> solution;
     bool multiple_sol = need_multiple_solutions();
     if (multiple_sol)
@@ -775,7 +788,7 @@ void GecodeSolver::Solve(Problem &p, SolutionHandler &sh) {
   SetStatus(-1, "");
 
   // Set up an optimization problem in Gecode.
-  MPToGecodeConverter converter(p.num_vars(), icl_);
+  MPToGecodeConverter converter(p.num_vars(), ipl_);
   converter.Convert(p);
 
   // Post branching.
@@ -787,12 +800,12 @@ void GecodeSolver::Solve(Problem &p, SolutionHandler &sh) {
     break;
   case IntVarBranch::SEL_AFC_MIN:
   case IntVarBranch::SEL_AFC_MAX:
-  case IntVarBranch::SEL_ACTIVITY_MIN:
-  case IntVarBranch::SEL_ACTIVITY_MAX:
+  case IntVarBranch::SEL_ACTION_MIN:
+  case IntVarBranch::SEL_ACTION_MAX:
   case IntVarBranch::SEL_AFC_SIZE_MIN:
   case IntVarBranch::SEL_AFC_SIZE_MAX:
-  case IntVarBranch::SEL_ACTIVITY_SIZE_MIN:
-  case IntVarBranch::SEL_ACTIVITY_SIZE_MAX:
+  case IntVarBranch::SEL_ACTION_SIZE_MIN:
+  case IntVarBranch::SEL_ACTION_SIZE_MAX:
     var_branch = IntVarBranch(var_branching_, decay_, 0);
     break;
   default:

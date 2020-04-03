@@ -206,6 +206,20 @@ Env JVM::env(const char *const *options) {
     } catch (const JavaError &) {
       // Ignore error.
     }
+    catch (const fmt::WindowsError& ) {
+       // Registry key not found
+    }
+    if (!exists)
+    {
+      RegKey jdk_key(HKEY_LOCAL_MACHINE,
+        "SOFTWARE\\JavaSoft\\JDK",
+        KEY_ENUMERATE_SUB_KEYS);
+      RegKey key(jdk_key.get(), jdk_key.GetSubKeyName(0), KEY_QUERY_VALUE);
+      std::string java_home_path = key.GetStrValue("JavaHome");
+      // Quick fix to reuse logic below, which seems to hint that on some
+      // installations, the jvm.dll path is wrong
+      runtime_lib_path = java_home_path + "\\bin\\d1\\d2";
+    }
     std::string::size_type pos = runtime_lib_path.rfind('\\');
     if (pos != std::string::npos) {
       runtime_lib_path = runtime_lib_path.substr(0, pos);

@@ -21,6 +21,7 @@
 
  October 2000: Linear/Nonlinear version (Robert Fourer)
  June 2012:    Updated to Concert 12.4 (Victor Zverovich)
+ March 2020:   Updated to Concert 12.10 (Christian Valente)
 
  Possible improvements: Some sort of variable preference mechanism.
 
@@ -71,6 +72,9 @@ const mp::OptionValueInfo SEARCH_TYPES[] = {
   {"depthfirst", 0, IloCP::DepthFirst},
   {"restart",    0, IloCP::Restart   },
   {"multipoint", 0, IloCP::MultiPoint}
+  #if CPX_VERSION >= 12090000
+  ,{"iterativediving", 0, IloCP::IterativeDiving}
+  #endif
 };
 
 const mp::OptionValueInfo VERBOSITIES[] = {
