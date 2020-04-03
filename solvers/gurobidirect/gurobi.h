@@ -182,6 +182,9 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
   static double Infinity() { return GRB_INFINITY; }
   static double MinusInfinity() { return -GRB_INFINITY; }
 
+  int GetGrbIntAttribute(const char* attr_id) const;
+  double GetGrbDblAttribute(const char* attr_id) const;
+
   void ExportModel(const std::string& file);
 
   int GetOption(Option id) const {

@@ -183,34 +183,35 @@ void GurobiBackend::CloseBackend() {
   GRBfreeenv(env);
 }
 
+int GurobiBackend::GetGrbIntAttribute(const char* attr_id) const {
+  int tmp;
+  GRB_CALL( GRBgetintattr(model, attr_id, &tmp) );
+  return tmp;
+}
+double GurobiBackend::GetGrbDblAttribute(const char* attr_id) const {
+  double tmp;
+  GRB_CALL( GRBgetdblattr(model, attr_id, &tmp) );
+  return tmp;
+}
+
 bool GurobiBackend::IsMIP() const {
-  int isMIP;
-  GRB_CALL( GRBgetintattr(model, GRB_INT_ATTR_IS_MIP, &isMIP) );
-  return isMIP;
+  return 1 == GetGrbIntAttribute(GRB_INT_ATTR_IS_MIP);
 }
 
 bool GurobiBackend::IsQCP() const {
-  int isQCP;
-  GRB_CALL( GRBgetintattr(model, GRB_INT_ATTR_IS_QCP, &isQCP) );
-  return isQCP;
+  return 1 == GetGrbIntAttribute(GRB_INT_ATTR_IS_QCP);
 }
 
 int GurobiBackend::NumberOfConstraints() const {
-  int nc;
-  GRB_CALL( GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS, &nc) );
-  return nc;
+  return GetGrbIntAttribute(GRB_INT_ATTR_NUMCONSTRS);
 }
 
 int GurobiBackend::NumberOfVariables() const {
-  int nv;
-  GRB_CALL( GRBgetintattr(model, GRB_INT_ATTR_NUMVARS, &nv) );
-  return nv;
+  return GetGrbIntAttribute(GRB_INT_ATTR_NUMVARS);
 }
 
 int GurobiBackend::NumberOfObjectives() const {
-  int no;
-  GRB_CALL( GRBgetintattr(model, GRB_INT_ATTR_NUMOBJ, &no) );
-  return no;
+  return GetGrbIntAttribute(GRB_INT_ATTR_NUMOBJ);
 }
 
 void GurobiBackend::PrimalSolution(std::vector<double> &x) {
@@ -226,21 +227,15 @@ void GurobiBackend::DualSolution(std::vector<double> &pi) {
 }
 
 double GurobiBackend::ObjectiveValue() const {
-  double objval;
-  GRB_CALL( GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &objval) );
-  return objval;
+  return GetGrbDblAttribute(GRB_DBL_ATTR_OBJVAL);
 }
 
 double GurobiBackend::NodeCount() const {
-  double ndcount;
-  GRB_CALL( GRBgetdblattr(model, GRB_DBL_ATTR_NODECOUNT, &ndcount) );
-  return ndcount;
+  return GetGrbDblAttribute(GRB_DBL_ATTR_NODECOUNT);
 }
 
 double GurobiBackend::Niterations() const {
-  double ni;
-  GRB_CALL( GRBgetdblattr(model, GRB_DBL_ATTR_ITERCOUNT, &ni) );
-  return ni;
+  return GetGrbDblAttribute(GRB_DBL_ATTR_ITERCOUNT);
 }
 
 void GurobiBackend::ExportModel(const std::string &file) {
@@ -393,7 +388,10 @@ void GurobiBackend::AddConstraint(const MaximumConstraint &mc)  {
   const auto& args = mc.GetArguments();
   for (const auto& ee: args)
     vars.push_back(ee.begin()->var_index());
-  GRB_CALL( GRBaddgenconstrMax(model, NULL, mc.GetResultVar(), vars.size(), vars.data(), MinusInfinity()) );
+  GRB_CALL( GRBaddgenconstrMax(model, NULL,
+                               mc.GetResultVar(),
+                               vars.size(), vars.data(),
+                               MinusInfinity()) );
 }
 
 void GurobiBackend::FinishProblemModificationPhase() {

@@ -67,7 +67,7 @@ public:
   }
 
   EExpr VisitMax(typename BaseExprVisitor::VarArgExpr e) {       // TODO why need Base:: here in g++ 9.2.1?
-    auto e2c = makeE2CConverter<Expr2Constr, Impl, MaximumConstraint >(*this);
+    auto e2c = makeE2CConverter<Expr2Constr, Impl, MaximumConstraint>(*this);
     return e2c.ConvertArray(e);
   }
 
