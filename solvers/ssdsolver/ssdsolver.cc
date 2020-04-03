@@ -109,7 +109,7 @@ void SSDSolver::Solve(Problem &p, SolutionHandler &outer_sh) {
     const LinearExpr &linear = con.linear_expr();
     Problem::LinearConBuilder
         builder(new_con.set_linear_expr(linear.num_terms()));
-    for (LinearExpr::iterator i = linear.begin(), e = linear.end(); i != e; ++i)
+    for (LinearExpr::const_iterator i = linear.begin(), e = linear.end(); i != e; ++i)
       builder.AddTerm(i->var_index(), i->coef());
   }
 
