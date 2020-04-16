@@ -20,8 +20,8 @@
  Author: Gleb Belov <gleb.belov@monash.edu>
  */
 
-#ifndef CONVERTER_H_
-#define CONVERTER_H_
+#ifndef BASIC_CONVERTERS_H_
+#define BASIC_CONVERTERS_H_
 
 #include "mp/convert/model.h"
 #include "mp/backend.h"
@@ -183,8 +183,9 @@ public:
   /// These methods to be used by converter objects
   static constexpr double PlusInfinity() { return std::numeric_limits<double>::infinity(); }
   static constexpr double MinusInfinity() { return -std::numeric_limits<double>::infinity(); }
-  typename Model::Variable AddVar(double lb=MinusInfinity(), double ub=PlusInfinity(), var::Type type = var::CONTINUOUS) {
-    return GetModel().AddVar(lb, ub, type);
+  int AddVar(double lb=MinusInfinity(), double ub=PlusInfinity(), var::Type type = var::CONTINUOUS) {
+    auto var = GetModel().AddVar(lb, ub, type);
+    return var.index();
   }
 
 };
@@ -209,4 +210,4 @@ using Interface = ConverterImpl<Converter, Backend, Model>;
 
 }  // namespace mp
 
-#endif  // CONVERTER_H_
+#endif  // BASIC_CONVERTERS_H_

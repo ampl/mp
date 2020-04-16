@@ -384,13 +384,10 @@ void GurobiBackend::AddLinearConstraint(int nnz, const double* c, const int* v,
 }
 
 void GurobiBackend::AddConstraint(const MaximumConstraint &mc)  {
-  std::vector<int> vars;
   const auto& args = mc.GetArguments();
-  for (const auto& ee: args)
-    vars.push_back(ee.begin()->var_index());
   GRB_CALL( GRBaddgenconstrMax(model, NULL,
                                mc.GetResultVar(),
-                               vars.size(), vars.data(),
+                               args.size(), args.data(),
                                MinusInfinity()) );
 }
 

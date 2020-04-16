@@ -29,7 +29,6 @@
 
 #include "mp/expr.h"
 #include "mp/suffix.h"
-#include "mp/convert/constraint.h"
 
 // Maximum index of a variable, objective or constraint.
 #ifndef MP_MAX_PROBLEM_ITEMS

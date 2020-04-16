@@ -95,6 +95,7 @@ public:
                            double lb, double ub) {
     instance_.cons_.push_back({ { nnz, c, v }, lb, ub });
   }
+
 };
 
 /// Testing the default MIP interface layer

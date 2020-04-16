@@ -59,7 +59,7 @@ extern "C" {
 
 #include "mp/backend.h"
 
-#include "mp/convert/constraints/maximum.h"
+#include "mp/convert/std_constr.h"
 
 namespace mp {
 
@@ -75,6 +75,7 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
     public BasicBackend<GurobiBackend>
 {
   using BaseSolverImpl = SolverImpl<BasicModel<std::allocator<char>>>;
+  using BaseBackend = BasicBackend<GurobiBackend>;
  private:
   GRBenv   *env   = NULL;
   GRBmodel *model = NULL;
@@ -208,6 +209,9 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
                            const double* c, const int* v);
   void AddLinearConstraint(int nnz, const double* c, const int* v,
                            double lb, double ub);
+
+  //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
+  using BaseBackend::AddConstraint;                    // to reuse general versions
 
   void AddConstraint(const MaximumConstraint& mc);
 

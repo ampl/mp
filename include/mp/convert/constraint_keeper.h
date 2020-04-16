@@ -46,6 +46,14 @@ public:
   }
 };
 
+/// Helper function constructing a constraint keeper
+template <class Converter, class Constraint, class... Args>
+BasicConstraintKeeper *makeConstraint(Args... args) {
+  return
+    new ConstraintKeeper<Converter, typename Converter::BackendType, Constraint>(
+        std::forward<Args>(args)...);
+}
+
 } // namespace mp
 
 #endif // CONSTRAINT_KEEPER_H

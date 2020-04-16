@@ -1,18 +1,20 @@
 #ifndef CONVERTER_FLAT_H
 #define CONVERTER_FLAT_H
 
-#include "mp/converter.h"
+#include <unordered_map>
+
+#include "mp/convert/basic_converters.h"
 #include "mp/expr-visitor.h"
 #include "mp/convert/expr2constraint.h"
 #include "mp/convert/model.h"
 
-#include "mp/convert/constraints/maximum.h"
+#include "mp/convert/std_constr.h"
 
 namespace mp {
 
 
 /// BasicMPFlatConverter: it "flattens" most expressions by replacing them by a result variable and constraints
-/// Such constraints might need to be decomposed, which is handled by redefined virtual methods in derived classes
+/// Such constraints might need to be decomposed, which is handled by override methods in derived classes
 template <class Impl, class Backend,
           class Model = BasicModel<std::allocator<char> > >
 class BasicMPFlatConverter
@@ -20,10 +22,21 @@ class BasicMPFlatConverter
       public ExprVisitor<Impl, EExpr>,
       public BasicConstraintConverter
 {
+  std::unordered_map<double, int> map_fixed_vars_;
+
 protected:
 
   using ClassName = BasicMPFlatConverter<Impl, Backend, Model>;
   using BaseExprVisitor = ExprVisitor<Impl, EExpr>;
+
+  int MakeFixedVar(double value) {
+    auto it = map_fixed_vars_.find(value);
+    if (map_fixed_vars_.end()!=it)
+      return it->second;
+    auto v = this->AddVar(value, value);
+    map_fixed_vars_[value] = v;
+    return v;
+  }
 
 public:
 
@@ -41,8 +54,6 @@ public:
     if (NumericExpr e = con.nonlinear_expr()) {
       linear.AddTerms(this->Visit(e));
       con.unset_nonlinear_expr();                  // delete the non-linear expr
-      auto ne = NumericExpr();
-      assert(!ne);
     } // Modifying the original constraint by replacing the expr
   }
 
@@ -58,21 +69,60 @@ public:
 
 
 public:
-  //////////////////////////////////// Visitors /////////////////////////////////////////
+  //////////////////////////////////// Visitor Adapters /////////////////////////////////////////
+
+  EExpr Convert2EExpr(Expr e) {
+    return this->Visit(e);
+  }
+
+  /// Adds a result variable r and constraint r = expr
+  int Convert2Var(Expr e) {
+    return Convert2Var( Convert2EExpr(e) );
+  }
+  int Convert2Var(EExpr ee) {
+    if (ee.is_variable())
+      return ee.get_representing_variable();
+    if (ee.is_constant())
+      return MakeFixedVar(ee.constant_term());
+    auto r = this->AddVar();    // TODO use a helper class for propagations etc
+    auto lck = makeConstraint<Impl, LinearDefiningConstraint>(std::move(ee), r);
+    AddConstraint(lck);
+    return r;
+  }
+
+  //////////////////////////////////// Specialized Visitors /////////////////////////////////////////
+
+  EExpr VisitNumericConstant(NumericConstant n) {
+    return EExpr::Constant{ n.value() };
+  }
+
+  EExpr VisitVariable(Reference r) {
+    return EExpr::Variable{ r.index() };
+  }
+
   EExpr VisitMinus(UnaryExpr e) {
-    auto ee = this->Visit(e.arg());
-    for (auto& term: ee)
-      term.set_coef(-term.coef());
+    auto ee = Convert2EExpr(e.arg());
+    ee.Negate();
     return ee;
+  }
+
+  EExpr VisitAdd(BinaryExpr e) {
+    auto ee = Convert2EExpr(e.lhs());
+    ee.Add( Convert2EExpr(e.rhs()) );
+    return ee;
+  }
+
+  EExpr VisitSub(BinaryExpr e) {
+    auto el = Convert2EExpr(e.lhs());
+    auto er = Convert2EExpr(e.rhs());
+    er.Negate();
+    el.Add(er);
+    return el;
   }
 
   EExpr VisitMax(typename BaseExprVisitor::VarArgExpr e) {       // TODO why need Base:: here in g++ 9.2.1?
     auto e2c = makeE2CConverter<Expr2Constr, Impl, MaximumConstraint>(*this);
     return e2c.ConvertArray(e);
-  }
-
-  EExpr VisitVariable(Reference r) {
-    return r.index();
   }
 
 };

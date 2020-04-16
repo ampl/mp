@@ -2,13 +2,17 @@
 #define EXPR2CONSTRAINT_H
 
 #include "mp/problem.h"
+#include "mp/convert/affine_expr.h"
 #include "mp/convert/constraint_keeper.h"
 
 namespace mp {
 
-class EExpr : public LinearExpr {   // Result expression for expression conversions
+class EExpr : public AffineExpr {   // Result expression for expression conversions
 public:
-  EExpr(int i) { AddTerm(i, 1.0); }
+  EExpr() = default;
+  EExpr(Constant c) : AffineExpr(c) {}
+  EExpr(Variable v) : AffineExpr(v) {}
+  EExpr(int i, double c) { AddTerm(i, c); }
 };
 
 /// Helper class providing a default framework for converting an expression
@@ -16,14 +20,16 @@ public:
 template <class Impl, class Converter, class Constraint>
 class BasicExprToConstraintConverter {
   Converter& converter_;
-  std::vector<EExpr> args_;
+public:
+  using ArgArray = typename Constraint::ArgArray;
+  ArgArray args_;                       // variables
   int result_var_;
 protected:
   Converter& GetConverter() { return converter_; }
-  std::vector<EExpr>&& MoveArguments() {        // this returns rvalue and invalidates args_
+  ArgArray&& MoveOutArguments() {        // this returns rvalue and invalidates args_
     return std::move(args_);
   }
-  void AddArgument(EExpr&& ee) { args_.push_back(ee); }
+  void AddArgument(int v) { args_.push_back(v); }
   int GetResultVar() { return result_var_; }
   void SetResultVar(int v) { result_var_ = v; }
 public:
@@ -31,9 +37,8 @@ public:
   template <class ExprArray>
   EExpr ConvertArray(ExprArray e) {
     MP_DISPATCH( ConvertArguments(e) );
-    /// TODO Preprocessing, Common Subexpression Elimination, Explanation
     MP_DISPATCH( AddConstraint() );
-    return MP_DISPATCH( GetResultVar() );
+    return EExpr::Variable{ MP_DISPATCH( GetResultVar() ) };
   }
 };
 
@@ -45,14 +50,14 @@ public:
   template <class ExprArray>
   void ConvertArguments(ExprArray ea) {
     for (const auto& e: ea)
-      MP_DISPATCH( AddArgument(MP_DISPATCH( GetConverter() ).Visit(e)) );
+      MP_DISPATCH( AddArgument(MP_DISPATCH( GetConverter() ).Convert2Var(e)) );
   }
   void AddConstraint() {
-    MP_DISPATCH( SetResultVar( MP_DISPATCH( GetConverter() ).AddVar().index() ) );
+    MP_DISPATCH( SetResultVar( MP_DISPATCH( GetConverter() ).AddVar() ) );
     /// TODO propagate bounds from arguments
     MP_DISPATCH( GetConverter() ).AddConstraint(
-          new ConstraintKeeper<Converter, typename Converter::BackendType, Constraint>
-            (MP_DISPATCH( MoveArguments() ), MP_DISPATCH( GetResultVar() )));
+          makeConstraint<Converter, Constraint>
+            (MP_DISPATCH( MoveOutArguments() ), MP_DISPATCH( GetResultVar() )));
   }
 };
 

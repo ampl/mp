@@ -26,6 +26,7 @@
 
 #include "mp/problem.h"
 #include "mp/convert/constraint_keeper.h"
+#include "mp/convert/std_constr.h"
 
 namespace mp {
 
@@ -35,11 +36,13 @@ struct LinearExprUnzipper {
   std::vector<double> c_;
   std::vector<int> v_;
   LinearExprUnzipper(const LinearExpr& e) {
+    Reserve(e.num_terms());
     for (LinearExpr::const_iterator it=e.begin(); it!=e.end(); ++it) {
-      c_.push_back(it->coef());
-      v_.push_back(it->var_index());
+      AddTerm(it->coef(), it->var_index());
     }
   }
+  void Reserve(size_t s) { c_.reserve(s); v_.reserve(s); }
+  void AddTerm(double c, int v) { c_.push_back(c); v_.push_back(v); }
 };
 
 /// Basic backend wrapper.
@@ -108,6 +111,18 @@ public:
   void AddGeneralConstraint(Problem::AlgebraicCon con) {
     throw MakeUnsupportedError("BasicBackend::AddGeneralConstraint");
   }
+
+  ////////////////// Some basic custom constraints /////////////////
+  using BasicConstraintAdder::AddConstraint;
+
+  void AddConstraint(const LinearDefiningConstraint& ldc) {
+    const auto& ae = ldc.GetAffineExpr();
+    LinearExprUnzipper aeu(ae);
+    aeu.AddTerm(-1, ldc.GetResultVar());
+    MP_DISPATCH( AddLinearConstraint(aeu.c_.size(), aeu.c_.data(), aeu.v_.data(),
+                                     -ae.constant_term(), -ae.constant_term()) );
+  }
+
 };
 
 

@@ -2,6 +2,7 @@
 #define MODEL_H
 
 #include <memory>
+#include <vector>
 
 #include "mp/problem.h"
 
@@ -15,6 +16,7 @@ protected:
 
 private:
   std::vector<PConstraintKeeper> custom_constr_;
+
 
 public:
 
