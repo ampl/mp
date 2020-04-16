@@ -391,6 +391,14 @@ void GurobiBackend::AddConstraint(const MaximumConstraint &mc)  {
                                MinusInfinity()) );
 }
 
+void GurobiBackend::AddConstraint(const MinimumConstraint &mc)  {
+  const auto& args = mc.GetArguments();
+  GRB_CALL( GRBaddgenconstrMin(model, NULL,
+                               mc.GetResultVar(),
+                               args.size(), args.data(),
+                               Infinity()) );
+}
+
 void GurobiBackend::FinishProblemModificationPhase() {
 }
 

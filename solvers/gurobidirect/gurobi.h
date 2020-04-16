@@ -214,6 +214,7 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
   using BaseBackend::AddConstraint;                    // to reuse general versions
 
   void AddConstraint(const MaximumConstraint& mc);
+  void AddConstraint(const MinimumConstraint& mc);
 
   void FinishProblemModificationPhase();
 };

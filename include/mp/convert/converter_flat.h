@@ -125,6 +125,11 @@ public:
     return e2c.ConvertArray(e);
   }
 
+  EExpr VisitMin(typename BaseExprVisitor::VarArgExpr e) {
+    auto e2c = makeE2CConverter<Expr2Constr, Impl, MinimumConstraint>(*this);
+    return e2c.ConvertArray(e);
+  }
+
 };
 
 

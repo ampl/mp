@@ -17,10 +17,19 @@ public:
 };
 
 /// Maximum: r = max(v1, v2, ..., vn)
+/// TODO template: using MaximumConstraint = VarArrayDefiningConstraint<...>
 class MaximumConstraint :
     public VarArrayArgConstraint, public DefiningConstraint {
 public:
   MaximumConstraint(ArgArray&& aa, int r) :
+    VarArrayArgConstraint(std::move(aa)), DefiningConstraint(r) { }
+};
+
+/// Minimum: r = min(v1, v2, ..., vn)
+class MinimumConstraint :
+    public VarArrayArgConstraint, public DefiningConstraint {
+public:
+  MinimumConstraint(ArgArray&& aa, int r) :
     VarArrayArgConstraint(std::move(aa)), DefiningConstraint(r) { }
 };
 
