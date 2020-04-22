@@ -14,7 +14,7 @@ namespace mp {
 
 
 /// BasicMPFlatConverter: it "flattens" most expressions by replacing them by a result variable and constraints
-/// Such constraints might need to be decomposed, which is handled by override methods in derived classes
+/// Such constraints might need to be decomposed, which is handled by overloaded methods in derived classes
 template <class Impl, class Backend,
           class Model = BasicModel<std::allocator<char> > >
 class BasicMPFlatConverter
@@ -40,6 +40,7 @@ protected:
 
 public:
 
+  /////////////////////// Converters ////////////////////////
   void Convert(typename Model::MutCommonExpr e) {
     throw std::runtime_error("MPToMIPConverter: No common exprs convertible yet TODO");
   }
@@ -61,12 +62,46 @@ public:
     throw std::runtime_error("MPToMIPConverter: Only algebraic constraints implemented TODO");
   }
 
+
+  USE_BASE_CONSTRAINT_CONVERTERS(BasicConstraintConverter)      // reuse default converters
+
+  /// Convert custom constraints
+  void ConvertExtraItems() {
+    int endConstraintsThisLoop = 0, iConstraint = 0;
+    while ( (endConstraintsThisLoop = this->GetModel().num_custom_cons()) > iConstraint) {
+      PreprocessIntermediate();                        // preprocess before each level
+      for (; iConstraint<endConstraintsThisLoop; ++iConstraint) {
+        auto* pConstraint = this->GetModel().custom_con(iConstraint);
+        if (!pConstraint->IsRemoved()) {
+          if (BasicConstraintAdder::Recommended !=
+              pConstraint->BackendAcceptance(this->GetBackend())) {
+            pConstraint->ConvertWith(*this);
+            pConstraint->Remove();
+          }
+        }
+      }
+    }
+    PreprocessFinal();                                 // final prepro
+  }
+
+  /// If backend does not like LDC, we can redefine it
+  void Convert(const LinearDefiningConstraint& ldc) {
+    this->AddConstraint(ldc.to_linear_constraint());
+  }
+
+  //////////////////////// PREPROCESSING /////////////////////////
+  void PreprocessIntermediate() { }
+  void PreprocessFinal() { }
+
 public:
   /// Add custom constraint. Takes ownership
   void AddConstraint(BasicConstraintKeeper* pbc) {
     MP_DISPATCH( GetModel() ).AddConstraint(pbc);
   }
-
+  template <class Constraint>
+  void AddConstraint(Constraint&& con) {
+    AddConstraint(makeConstraint<Impl, Constraint>(std::move(con)));
+  }
 
 public:
   //////////////////////////////////// Visitor Adapters /////////////////////////////////////////

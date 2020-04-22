@@ -926,16 +926,6 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     nonlinear_exprs_.resize(new_size, NumericExpr());
   }
 
-  /** Returns the number of custom constraints. */
-  int num_custom_cons() const { return 0; }
-
-  /** Returns custom constraint i */
-  const BasicConstraintKeeper* custom_con(int i) const {
-    throw std::logic_error("BasicProblem: no custom constraints");
-    return NULL;
-  }
-
-
   // Sets a complementarity condition.
   void SetComplementarity(int con_index, int var_index, ComplInfo info);
 
@@ -961,6 +951,95 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   // Sets problem information and reserves memory for problem elements.
   void SetInfo(const ProblemInfo &info);
 
+  /// Pushing the whole instance to a backend or converter.
+  /// A responsible backend should handle all essential items
+  template <class Backend>
+  void PushModelTo(Backend& backend) const {
+    InitProblemModificationPhase(backend);
+    PushStandardMPItemsTo(backend);
+    FinishProblemModificationPhase(backend);
+  }
+
+protected:
+  template <class Backend>
+  void PushStandardMPItemsTo(Backend& backend) const {
+    PushVariablesTo(backend);
+    PushCommonExprTo(backend);
+    PushObjectivesTo(backend);
+    PushAlgebraicConstraintsTo(backend);
+    PushLogicalConstraintsTo(backend);
+    PushComplementarityConstraintsTo(backend);
+  }
+
+  template <class Backend>
+  void InitProblemModificationPhase(Backend& backend) const {
+    backend.InitProblemModificationPhase(*this);       // TODO remove problem_ here
+  }
+
+  template <class Backend>
+  void PushVariablesTo(Backend& backend) const {
+    const int nv = num_vars();
+    for (int j = 0; j < nv; ++j) {
+      Variable v = var(j);
+      double lb = v.lb();
+      double ub = v.ub();
+      var::Type ty = v.type();
+      backend.AddVariables(1, &lb, &ub, &ty);           // 1 by 1. May be too slow?
+    }
+  }
+
+  template <class Backend>
+  void PushCommonExprTo(Backend& backend) const {
+    const int nce = num_common_exprs();
+    for (int i = 0; i < nce; ++i) {
+      CommonExpr expr = common_expr(i);
+      backend.AddCommonExpressions(1, &expr);
+    }
+  }
+
+  template <class Backend>
+  void PushObjectivesTo(Backend& backend) const {
+    if (const int no = num_objs()) {
+      for (int i = 0; i < no; ++i) {
+        Objective o = obj(i);
+        backend.AddObjectives(1, &o);
+      }
+    }
+  }
+
+  template <class Backend>
+  void PushAlgebraicConstraintsTo(Backend& backend) const {
+    if (const int n_cons = num_algebraic_cons()) {
+      for (int i = 0; i < n_cons; ++i) {
+        AlgebraicCon con = algebraic_con(i);
+        backend.AddAlgebraicConstraints(1, &con);
+      }
+    }
+  }
+
+  template <class Backend>
+  void PushLogicalConstraintsTo(Backend& backend) const {
+    if (const int n_lcons = num_logical_cons()) {
+      for (int i = 0; i < n_lcons; ++i) {
+        LogicalCon con = logical_con(i);
+        backend.AddLogicalConstraints(1, &con);
+      }
+    }
+  }
+
+  template <class Backend>
+  void PushComplementarityConstraintsTo(Backend& backend) const {
+    if (HasComplementarity()) {
+      throw std::logic_error("mp::Problem cannot push complementarity to a backend yet.");
+    }
+  }
+
+  template <class Backend>
+  void FinishProblemModificationPhase(Backend& backend) const {
+    backend.FinishProblemModificationPhase();
+  }
+
+public:
   typedef BasicProblem Builder;
 
   // Returns the built problem. This is used for compatibility with the problem

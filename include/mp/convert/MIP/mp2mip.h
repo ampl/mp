@@ -11,6 +11,11 @@ template <class Impl, class Backend,
 class MPToMIPConverter
     : public BasicMPFlatConverter<Impl, Backend, Model>
 {
+public:
+  using BaseConverter = BasicMPFlatConverter<Impl, Backend, Model>;
+
+  ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
+  USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter )           // reuse default ones
 
 };
 

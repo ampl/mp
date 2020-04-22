@@ -109,20 +109,8 @@ protected:
   /// Convert the whole model, e.g., after reading from NL
   void ConvertModel() {
     MP_DISPATCH( ConvertStandardItems() );
-           //    TODO PushWholeModelToQueue();    ????
-           //    TODO ProcessQueuedItems();
+    MP_DISPATCH( ConvertExtraItems() );
   }
-  void PushWholeModelToQueue() {
-    ////////////
-  }
-  void ProcessQueuedItems() {  //            Not using yet
-    while (PopNextItem()) {
-      VisitPoppedItem();
-      CheckForIntermediatePreprocessing();
-    }
-    CheckForIntermediatePreprocessing();
-  }
-
 
   void ConvertStandardItems() {
     int num_common_exprs = model_.num_common_exprs();
@@ -138,6 +126,8 @@ protected:
       for (int i = 0; i < n_lcons; ++i)
         MP_DISPATCH( Convert( model_.logical_con(i) ) );
   }
+
+  void ConvertExtraItems() { }
 
   void Convert(typename Model::MutCommonExpr e) {
     throw std::runtime_error("No common exprs conversion implemented");
@@ -155,28 +145,8 @@ protected:
     throw std::runtime_error("No logical constraints conversion implemented");
   }
 
-  bool PopNextItem() {
-    ////////////
-    return false;
-    return true;
-  }
-
-  void VisitPoppedItem() {
-    ////////////
-  }
-
-  void CheckForIntermediatePreprocessing() {
-    ////////////
-  }
-
-  void CheckForFinalPreprocessing() {
-    ////////////
-  }
-
   void PushWholeModelToBackend() {
-    ModelToBackendFeeder<Model, Backend>
-        feeder(GetModel(), GetBackend());
-    feeder.PushWholeProblem();
+    GetModel().PushModelTo(GetBackend());
   }
 
 public:

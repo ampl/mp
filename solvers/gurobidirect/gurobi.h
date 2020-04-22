@@ -211,9 +211,11 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
                            double lb, double ub);
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
-  using BaseBackend::AddConstraint;                    // to reuse general versions
+  USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
 
+  ACCEPT_CONSTRAINT(MaximumConstraint, Recommended)    // For now, unless we have a better decomposition
   void AddConstraint(const MaximumConstraint& mc);
+  ACCEPT_CONSTRAINT(MinimumConstraint, Recommended)
   void AddConstraint(const MinimumConstraint& mc);
 
   void FinishProblemModificationPhase();

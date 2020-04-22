@@ -30,21 +30,6 @@
 
 namespace mp {
 
-/// Converting linear expr to 2 vectors.
-/// TODO Change mp::LinearExpr to store them right away.
-struct LinearExprUnzipper {
-  std::vector<double> c_;
-  std::vector<int> v_;
-  LinearExprUnzipper(const LinearExpr& e) {
-    Reserve(e.num_terms());
-    for (LinearExpr::const_iterator it=e.begin(); it!=e.end(); ++it) {
-      AddTerm(it->coef(), it->var_index());
-    }
-  }
-  void Reserve(size_t s) { c_.reserve(s); v_.reserve(s); }
-  void AddTerm(double c, int v) { c_.push_back(c); v_.push_back(v); }
-};
-
 /// Basic backend wrapper.
 /// Used by converter to directly access a solver.
 /// The basic wrapper provides common functionality: option handling
@@ -52,10 +37,6 @@ struct LinearExprUnzipper {
 template <class Impl>
 class BasicBackend : public BasicConstraintAdder {
 public:
-  /// [[ TODO Incrementality ]]
-
-  /// TODO InitProblemModificationPhase: demand redefinition in concrete backend?
-  /// TODO Remove the function stubs, just don't compile when not defined?
   void InitProblemModificationPhase(const Problem& p) { }  // TODO Get rid of Problem here
   void FinishProblemModificationPhase() { }
   void AddVariables(int n, double* lbs, double* ubs, mp::var::Type* types) {
@@ -113,110 +94,24 @@ public:
   }
 
   ////////////////// Some basic custom constraints /////////////////
-  using BasicConstraintAdder::AddConstraint;
+  USE_BASE_CONSTRAINT_HANDLERS(BasicConstraintAdder)
 
+  /// Optionally exclude LFDs from being posted,
+  /// then all those are converted to LinearConstraint's first
+  ACCEPT_CONSTRAINT(LinearDefiningConstraint, NotAccepted)
   void AddConstraint(const LinearDefiningConstraint& ldc) {
-    const auto& ae = ldc.GetAffineExpr();
-    LinearExprUnzipper aeu(ae);
-    aeu.AddTerm(-1, ldc.GetResultVar());
-    MP_DISPATCH( AddLinearConstraint(aeu.c_.size(), aeu.c_.data(), aeu.v_.data(),
-                                     -ae.constant_term(), -ae.constant_term()) );
+    MP_DISPATCH( AddConstraint(ldc.to_linear_constraint()) );
   }
+
+  ACCEPT_CONSTRAINT(LinearConstraint, Recommended)
+  void AddConstraint(const LinearConstraint& ldc) {     // TODO make this primary
+    MP_DISPATCH( AddLinearConstraint(ldc.nnz(), ldc.coefs(), ldc.vars(),
+                                     ldc.lb(), ldc.ub()) );
+  }
+
 
 };
 
-
-template <class Model, class Backend>
-class ModelToBackendFeeder {
-  const Model& model_;
-  Backend& backend_;
-public:
-  ModelToBackendFeeder(const Model& p, Backend& i)
-    : model_(p), backend_(i)  { }
-
-  void PushWholeProblem_noCustomConstraints() {
-    InitProblemModificationPhase();
-    PushStandardItems();
-    FinishProblemModificationPhase();
-  }
-  void PushWholeProblem() {
-    InitProblemModificationPhase();
-    PushStandardItems();
-    PushCustomConstraints();
-    FinishProblemModificationPhase();
-  }
-
-protected:
-  void PushStandardItems() {
-    PushVariables();
-    PushCommonSubExpr();
-    PushObjectives();
-    PushAlgebraicConstraints();
-    PushLogicalConstraints();
-  }
-
-  void InitProblemModificationPhase() {
-    backend_.InitProblemModificationPhase(model_);       // TODO remove problem_ here
-  }
-
-  void PushVariables() {
-    int num_vars = model_.num_vars();
-    for (int j = 0; j < num_vars; ++j) {
-      typename Model::Variable var = model_.var(j);
-      double lb = var.lb();
-      double ub = var.ub();
-      var::Type ty = var.type();
-      backend_.AddVariables(1, &lb, &ub, &ty);
-    }
-  }
-
-  void PushCommonSubExpr() {
-    int num_common_exprs = model_.num_common_exprs();
-    for (int i = 0; i < num_common_exprs; ++i) {
-      typename Model::CommonExpr expr = model_.common_expr(i);
-      backend_.AddCommonExpressions(1, &expr);
-    }
-  }
-
-  void PushObjectives() {
-    if (int num_objs = model_.num_objs()) {
-      for (int i = 0; i < num_objs; ++i) {
-        typename Model::Objective obj = model_.obj(i);
-        backend_.AddObjectives(1, &obj);
-      }
-    }
-  }
-
-  void PushAlgebraicConstraints() {
-    if (int n_cons = model_.num_algebraic_cons()) {
-      for (int i = 0; i < n_cons; ++i) {
-        typename Model::AlgebraicCon con = model_.algebraic_con(i);
-        backend_.AddAlgebraicConstraints(1, &con);
-      }
-    }
-  }
-
-  void PushLogicalConstraints() {
-    if (int n_lcons = model_.num_logical_cons()) {
-      for (int i = 0; i < n_lcons; ++i) {
-        typename Model::LogicalCon con = model_.logical_con(i);
-        backend_.AddLogicalConstraints(1, &con);
-      }
-    }
-  }
-
-  void PushCustomConstraints() {
-    if (int n_ccons = model_.num_custom_cons()) {
-      for (int i = 0; i < n_ccons; ++i) {
-        model_.custom_con(i)->AddToBackend(backend_);
-      }
-    }
-  }
-
-  void FinishProblemModificationPhase() {
-    backend_.FinishProblemModificationPhase();
-  }
-};
 
 }  // namespace mp
 
