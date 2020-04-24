@@ -40,7 +40,9 @@ protected:
 
 public:
 
-  /////////////////////// Converters ////////////////////////
+  //////////////////////////// COVERTERS OF STANDRAD MP ITEMS ///////////////////////////////
+  ///
+  ///////////////////////////////////////////////////////////////////////////////////////////
   void Convert(typename Model::MutCommonExpr e) {
     throw std::runtime_error("MPToMIPConverter: No common exprs convertible yet TODO");
   }
@@ -63,26 +65,38 @@ public:
   }
 
 
-  USE_BASE_CONSTRAINT_CONVERTERS(BasicConstraintConverter)      // reuse default converters
-
-  /// Convert custom constraints
+  //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
+  ///
+  //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
   void ConvertExtraItems() {
-    int endConstraintsThisLoop = 0, iConstraint = 0;
-    while ( (endConstraintsThisLoop = this->GetModel().num_custom_cons()) > iConstraint) {
+    for (int endConstraintsThisLoop = 0, endPrevious = 0;
+         (endConstraintsThisLoop = this->GetModel().num_custom_cons()) > endPrevious;
+         endPrevious = endConstraintsThisLoop
+         ) {
       PreprocessIntermediate();                        // preprocess before each level
-      for (; iConstraint<endConstraintsThisLoop; ++iConstraint) {
-        auto* pConstraint = this->GetModel().custom_con(iConstraint);
-        if (!pConstraint->IsRemoved()) {
-          if (BasicConstraintAdder::Recommended !=
-              pConstraint->BackendAcceptance(this->GetBackend())) {
-            pConstraint->ConvertWith(*this);
-            pConstraint->Remove();
-          }
-        }
-      }
+      ConvertExtraItemsInRange(endPrevious, endConstraintsThisLoop);
     }
     PreprocessFinal();                                 // final prepro
   }
+
+  void ConvertExtraItemsInRange(int first, int after_last) {
+    for (; first<after_last; ++first) {
+      auto* pConstraint = this->GetModel().custom_con(first);
+      if (!pConstraint->IsRemoved()) {
+        if (BasicConstraintAdder::Recommended !=
+            pConstraint->BackendAcceptance(this->GetBackend())) {
+          pConstraint->ConvertWith(*this);
+          pConstraint->Remove();
+        }
+      }
+    }
+  }
+
+  //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
+  ///
+  //////////////////////////// SPECIFIC CONSTRAINT CONVERTERS ///////////////////////////
+
+  USE_BASE_CONSTRAINT_CONVERTERS(BasicConstraintConverter)      // reuse default converters
 
   /// If backend does not like LDC, we can redefine it
   void Convert(const LinearDefiningConstraint& ldc) {
