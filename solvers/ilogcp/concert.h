@@ -478,12 +478,12 @@ class MPToConcertConverter : public ExprVisitor<MPToConcertConverter, IloExpr> {
   void Convert(const Problem &p);
 
   /// [[ Incremental interface for model manipulation ]]
-  void InitProblemModificationPhase(const Problem& p) { }
+  void InitProblemModificationPhase(const Problem& ) { }
   void AddVariables(int n, double* lbs, double* ubs, var::Type* types);
-  void AddCommonExpressions(int n, Problem::CommonExpr* cexprs);
-  void AddObjectives(int n, Problem::Objective* objs);
-  void AddAlgebraicConstraints(int n, Problem::AlgebraicCon* cons);
-  void AddLogicalConstraints(int n, Problem::LogicalCon* lcons);
+  void AddCommonExpression(Problem::CommonExpr cexpr);
+  void AddObjective(Problem::Objective obj);
+  void AddAlgebraicConstraint(Problem::AlgebraicCon con);
+  void AddLogicalConstraint(Problem::LogicalCon lcon);
   void FinishProblemModificationPhase();
 };
 }

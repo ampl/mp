@@ -984,7 +984,7 @@ protected:
       double lb = v.lb();
       double ub = v.ub();
       var::Type ty = v.type();
-      backend.AddVariables(1, &lb, &ub, &ty);           // 1 by 1. May be too slow?
+      backend.AddVariables(1, &lb, &ub, &ty);
     }
   }
 
@@ -992,8 +992,7 @@ protected:
   void PushCommonExprTo(Backend& backend) const {
     const int nce = num_common_exprs();
     for (int i = 0; i < nce; ++i) {
-      CommonExpr expr = common_expr(i);
-      backend.AddCommonExpressions(1, &expr);
+      backend.AddCommonExpression(common_expr(i));
     }
   }
 
@@ -1001,8 +1000,7 @@ protected:
   void PushObjectivesTo(Backend& backend) const {
     if (const int no = num_objs()) {
       for (int i = 0; i < no; ++i) {
-        Objective o = obj(i);
-        backend.AddObjectives(1, &o);
+        backend.AddObjective(obj(i));
       }
     }
   }
@@ -1011,8 +1009,7 @@ protected:
   void PushAlgebraicConstraintsTo(Backend& backend) const {
     if (const int n_cons = num_algebraic_cons()) {
       for (int i = 0; i < n_cons; ++i) {
-        AlgebraicCon con = algebraic_con(i);
-        backend.AddAlgebraicConstraints(1, &con);
+        backend.AddAlgebraicConstraint(algebraic_con(i));
       }
     }
   }
@@ -1021,8 +1018,7 @@ protected:
   void PushLogicalConstraintsTo(Backend& backend) const {
     if (const int n_lcons = num_logical_cons()) {
       for (int i = 0; i < n_lcons; ++i) {
-        LogicalCon con = logical_con(i);
-        backend.AddLogicalConstraints(1, &con);
+        backend.AddLogicalConstraint(logical_con(i));
       }
     }
   }

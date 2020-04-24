@@ -179,10 +179,10 @@ class IlogCPSolver : public SolverImpl<Problem> {
   /// [[ Surface the incremental interface ]]
   void InitProblemModificationPhase(const Problem& p);
   void AddVariables(int n, double* lbs, double* ubs, var::Type* types);
-  void AddCommonExpressions(int n, Problem::CommonExpr* cexprs);
-  void AddObjectives(int n, Problem::Objective* objs);
-  void AddAlgebraicConstraints(int n, Problem::AlgebraicCon* cons);
-  void AddLogicalConstraints(int n, Problem::LogicalCon* lcons);
+  void AddCommonExpression(Problem::CommonExpr cexpr);
+  void AddObjective(Problem::Objective obj);
+  void AddAlgebraicConstraint(Problem::AlgebraicCon con);
+  void AddLogicalConstraint(Problem::LogicalCon lcon);
   void FinishProblemModificationPhase();
 };
 }
