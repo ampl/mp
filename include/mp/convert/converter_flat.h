@@ -7,11 +7,18 @@
 #include "mp/expr-visitor.h"
 #include "mp/convert/expr2constraint.h"
 #include "mp/convert/model.h"
-
 #include "mp/convert/std_constr.h"
 
 namespace mp {
 
+/// Result expression type for expression conversions
+class EExpr : public AffineExpr {
+public:
+  EExpr() = default;
+  EExpr(Constant c) : AffineExpr(c) {}
+  EExpr(Variable v) : AffineExpr(v) {}
+  EExpr(int i, double c) { AddTerm(i, c); }
+};
 
 /// BasicMPFlatConverter: it "flattens" most expressions by replacing them by a result variable and constraints
 /// Such constraints might need to be decomposed, which is handled by overloaded methods in derived classes
@@ -22,13 +29,20 @@ class BasicMPFlatConverter
       public ExprVisitor<Impl, EExpr>,
       public BasicConstraintConverter
 {
-  std::unordered_map<double, int> map_fixed_vars_;
+public:
+  using VarArray = std::vector<int>;
 
 protected:
-
   using ClassName = BasicMPFlatConverter<Impl, Backend, Model>;
   using BaseExprVisitor = ExprVisitor<Impl, EExpr>;
 
+  using EExprArray = std::vector<EExpr>;
+
+private:
+  std::unordered_map<double, int> map_fixed_vars_;
+
+protected:
+  //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
   int MakeFixedVar(double value) {
     auto it = map_fixed_vars_.find(value);
     if (map_fixed_vars_.end()!=it)
@@ -40,7 +54,7 @@ protected:
 
 public:
 
-  //////////////////////////// COVERTERS OF STANDRAD MP ITEMS ///////////////////////////////
+  //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
   ///
   ///////////////////////////////////////////////////////////////////////////////////////////
   void Convert(typename Model::MutCommonExpr e) {
@@ -108,7 +122,8 @@ public:
   void PreprocessFinal() { }
 
 public:
-  /// Add custom constraint. Takes ownership
+  //////////////////////// Add custom constraint ///////////////////////
+  //////////////////////// Takes ownership /////////////////////////////
   void AddConstraint(BasicConstraintKeeper* pbc) {
     MP_DISPATCH( GetModel() ).AddConstraint(pbc);
   }
@@ -120,11 +135,13 @@ public:
 public:
   //////////////////////////////////// Visitor Adapters /////////////////////////////////////////
 
+  /// Convert an expression to an EExpr
   EExpr Convert2EExpr(Expr e) {
     return this->Visit(e);
   }
 
-  /// Adds a result variable r and constraint r = expr
+  /// From an expression:
+  /// Adds a result variable r and constraint r == expr
   int Convert2Var(Expr e) {
     return Convert2Var( Convert2EExpr(e) );
   }
@@ -139,7 +156,33 @@ public:
     return r;
   }
 
-  //////////////////////////////////// Specialized Visitors /////////////////////////////////////////
+  /// Generic functional expression array visitor
+  /// Can produce a new variable/expression and specified constraints on it
+  template <class FuncConstraint>
+  EExpr VisitFunctional(typename BaseExprVisitor::VarArgExpr ea) {
+    auto args = Exprs2Vars(ea);
+    return VisitFunctional<FuncConstraint>(std::move(args));
+  }
+
+  template <class ExprArray>
+  VarArray Exprs2Vars(const ExprArray& ea) {
+    VarArray result;
+    result.reserve(ea.num_args());
+    for (const auto& e: ea)
+      result.push_back( MP_DISPATCH( Convert2Var(e) ) );
+    return result;
+  }
+
+  template <class FuncConstraint>
+  EExpr VisitFunctional(VarArray&& va) {
+    auto e2c = makeFuncConstrConverter<Impl, FuncConstraint>(*this, std::move(va));
+    return EExpr::Variable{ e2c.Convert() };
+  }
+
+
+  ///////////////////////////////// EXPRESSION VISITORS ////////////////////////////////////
+  ///
+  //////////////////////////////////////////////////////////////////////////////////////////
 
   EExpr VisitNumericConstant(NumericConstant n) {
     return EExpr::Constant{ n.value() };
@@ -170,13 +213,11 @@ public:
   }
 
   EExpr VisitMax(typename BaseExprVisitor::VarArgExpr e) {       // TODO why need Base:: here in g++ 9.2.1?
-    auto e2c = makeE2CConverter<Expr2Constr, Impl, MaximumConstraint>(*this);
-    return e2c.ConvertArray(e);
+    return VisitFunctional<MaximumConstraint>(e);
   }
 
   EExpr VisitMin(typename BaseExprVisitor::VarArgExpr e) {
-    auto e2c = makeE2CConverter<Expr2Constr, Impl, MinimumConstraint>(*this);
-    return e2c.ConvertArray(e);
+    return VisitFunctional<MinimumConstraint>(e);
   }
 
 };
