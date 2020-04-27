@@ -2,6 +2,7 @@
 #define CONVERTER_FLAT_H
 
 #include <unordered_map>
+#include <cmath>
 
 #include "mp/convert/basic_converters.h"
 #include "mp/expr-visitor.h"
@@ -50,6 +51,30 @@ protected:
     auto v = this->AddVar(value, value);
     map_fixed_vars_[value] = v;
     return v;
+  }
+
+  //////////////////////////// UTILITIES /////////////////////////////////
+  struct BoundsAndType {
+    double lb_=Impl::MinusInfinity(), ub_=Impl::PlusInfinity();
+    var::Type type_=var::CONTINUOUS;
+    BoundsAndType(double l, double u, var::Type t) : lb_(l), ub_(u), type_(t) { }
+  };
+
+  BoundsAndType ComputeBoundsAndType(const AffineExpr& ae) {
+    BoundsAndType result(ae.constant_term(), ae.constant_term(), var::INTEGER);
+    for (const auto& term: ae) {
+      auto v = this->GetModel().var(term.var_index());
+      if (term.coef() >= 0.0) {
+        result.lb_ += term.coef() * v.lb();
+        result.ub_ += term.coef() * v.ub();
+      } else {
+        result.lb_ += term.coef() * v.ub();
+        result.ub_ += term.coef() * v.lb();
+      }
+      if (var::INTEGER!=v.type() || std::floor(term.coef())!=std::ceil(term.coef()))
+        result.type_=var::CONTINUOUS;
+    }
+    return result;
   }
 
 public:
@@ -150,7 +175,8 @@ public:
       return ee.get_representing_variable();
     if (ee.is_constant())
       return MakeFixedVar(ee.constant_term());
-    auto r = this->AddVar();    // TODO use a helper class for propagations etc
+    auto bnt = ComputeBoundsAndType(ee);
+    auto r = this->AddVar(bnt.lb_, bnt.ub_, bnt.type_);
     auto lck = makeConstraint<Impl, LinearDefiningConstraint>(std::move(ee), r);
     AddConstraint(lck);
     return r;
