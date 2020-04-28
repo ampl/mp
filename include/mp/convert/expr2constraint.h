@@ -1,79 +1,80 @@
 #ifndef EXPR2CONSTRAINT_H
 #define EXPR2CONSTRAINT_H
 
-#include "mp/convert/affine_expr.h"
+#include "mp/convert/prepro_args.h"
 
 namespace mp {
 
 /// Helper class providing a default framework for converting an expression
 /// to a variable plus a constraint equating that variable to that expression
 template <class Impl, class Converter, class Constraint>
-class BasicFunctionalConstraintConverter {
+class BasicFCC {
   Converter& converter_;
+  Constraint constr_;
 public:
-  using ArgArray = typename Converter::VarArray;
-  ArgArray args_;
-  bool result_is_known_ = false;
-  int result_var_ = -1;
-  double lb_ = Converter::MinusInfinity();
-  double ub_ = Converter::PlusInfinity();
-  var::Type type_ = var::CONTINUOUS;
+  using EExprType = typename Converter::EExprType;
+  BasicPreprocessInfo<Constraint> prepro_;
 protected:
   Converter& GetConverter() { return converter_; }
-  double lb() const { return lb_; }
-  double ub() const { return ub_; }
-  var::Type type() const { return type_; }
-public:
-  ArgArray& Arguments() const { return args_; }
-  bool ResultIsKnown() const { return result_is_known_; }
-  int ResultVar() const { assert(result_var_>=-1); return result_var_; }
+  Constraint& GetConstraint() { return constr_; }
+  double lb() const { return prepro_.lb_; }
+  double ub() const { return prepro_.ub_; }
+  var::Type type() const { return prepro_.type_; }
 protected:
-  void SetResultVar(int v) { result_var_ = v; }
+  bool ResultIsConstant() const { return prepro_.is_constant(); }
+  bool ResultVarIsKnown() const { return prepro_.is_result_var_known(); }
+  int GetResultVar() const { return prepro_.get_result_var(); }
+protected:
+  void SetResultVar(int r) { prepro_.set_result_var(r); }
 public:
-  BasicFunctionalConstraintConverter(Converter& cvt, ArgArray&& aa) :
-    converter_(cvt), args_(aa) { }
-  /// Convert array of arguments into a result variable
-  /// plus constraint(s)
-  int Convert() {
-    MP_DISPATCH( AnalyzeArguments() );
-    if (ResultIsKnown())
-      return ResultVar();
+  BasicFCC(Converter& cvt, Constraint&& fc) :
+    converter_(cvt), constr_(std::move(fc)) { }
+  /// Convert array of arguments into a result expression
+  /// possible adding extra constraint(s)
+  EExprType Convert() {
+    MP_DISPATCH( PreprocessArguments() );
+    if (ResultIsConstant())
+      return typename EExprType::Constant{ lb() };
+    if (ResultVarIsKnown())
+      return typename EExprType::Variable{ GetResultVar() };
     MP_DISPATCH( AddResultVariable() );
     MP_DISPATCH( AddConstraint() );
-    return ResultVar();
+    return typename EExprType::Variable{ GetResultVar() };
   }
-  void AnalyzeArguments() {
-
+  void PreprocessArguments() {
+    PreprocessConstraint(GetConverter().GetModel(), GetConstraint(), prepro_);
   }
   void AddResultVariable() {
-    SetResultVar( GetConverter().AddVar(lb(), ub(), type()) );
+    auto r = GetConverter().AddVar(lb(), ub(), type());
+    SetResultVar( r );
+    GetConstraint().SetResultVar( r );
   }
   void AddConstraint() {
-    GetConverter().AddConstraint( Constraint (
-                                    std::move(args_), ResultVar() ) );
+    GetConverter().AddConstraint( std::move(GetConstraint()) );
   }
 };
-
 
 /// This is a helper to produce a 'final' FC converter avoiding using Impl
 /// Then it could be specialized for individual constraint types
 template <class Converter, class Constraint>
-class FunctionalConstraintConverter :
-    public BasicFunctionalConstraintConverter<
-              FunctionalConstraintConverter<Converter, Constraint>, Converter, Constraint > {
-  using Base = BasicFunctionalConstraintConverter<
-      FunctionalConstraintConverter<Converter, Constraint>, Converter, Constraint >;
+class FCC : public BasicFCC< FCC<Converter, Constraint>, Converter, Constraint > {
+  using Base = BasicFCC< FCC<Converter, Constraint>, Converter, Constraint >;
 public:
-  FunctionalConstraintConverter(
-      Converter& cvt, typename Converter::VarArray&& aa) : Base(cvt, std::move(aa)) { }
+  FCC(Converter& cvt, Constraint&& fc) : Base(cvt, std::move(fc)) { }
 };
 
 template <class Converter, class Constraint, class Converter2>
-FunctionalConstraintConverter<Converter, Constraint>
-makeFuncConstrConverter(Converter2& cvt, typename Converter::VarArray&& aa) {
-  return FunctionalConstraintConverter<Converter, Constraint>(
-        static_cast<Converter&>(cvt), std::move(aa) );
+FCC<Converter, Constraint>
+MakeFuncConstrConverter(Converter2& cvt, Constraint&& fc) {
+  return FCC<Converter, Constraint>(
+        static_cast<Converter&>(cvt), std::move(fc) );
 }
+
+
+//////////////////////////// SPECIALIZED FCCs and/or their components /////////////////////////////
+///
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 } // namespace mp
 

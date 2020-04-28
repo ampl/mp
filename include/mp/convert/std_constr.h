@@ -42,6 +42,7 @@ class LinearDefiningConstraint :
     public BasicConstraint, public DefiningConstraint {
   AffineExpr affine_expr_;
 public:
+  using Arguments = AffineExpr;
   LinearDefiningConstraint(AffineExpr&& ae, int r) :
     DefiningConstraint(r), affine_expr_(std::move(ae)) {
     /// TODO sort elements
@@ -61,16 +62,12 @@ public:
 class MaximumConstraint :
     public VarArrayArgConstraint, public DefiningConstraint {
 public:
-  MaximumConstraint(ArgArray&& aa, int r) :
-    VarArrayArgConstraint(std::move(aa)), DefiningConstraint(r) { }
 };
 
 /// Minimum: r = min(v1, v2, ..., vn)
 class MinimumConstraint :
     public VarArrayArgConstraint, public DefiningConstraint {
 public:
-  MinimumConstraint(ArgArray&& aa, int r) :
-    VarArrayArgConstraint(std::move(aa)), DefiningConstraint(r) { }
 };
 
 } // namespace mp

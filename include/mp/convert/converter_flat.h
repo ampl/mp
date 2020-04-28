@@ -31,6 +31,7 @@ class BasicMPFlatConverter
       public BasicConstraintConverter
 {
 public:
+  using EExprType = EExpr;
   using VarArray = std::vector<int>;
 
 protected:
@@ -42,7 +43,9 @@ protected:
 private:
   std::unordered_map<double, int> map_fixed_vars_;
 
-protected:
+  //////////////////////////// UTILITIES /////////////////////////////////
+public:
+
   //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
   int MakeFixedVar(double value) {
     auto it = map_fixed_vars_.find(value);
@@ -53,35 +56,10 @@ protected:
     return v;
   }
 
-  //////////////////////////// UTILITIES /////////////////////////////////
-  struct BoundsAndType {
-    double lb_=Impl::MinusInfinity(), ub_=Impl::PlusInfinity();
-    var::Type type_=var::CONTINUOUS;
-    BoundsAndType(double l, double u, var::Type t) : lb_(l), ub_(u), type_(t) { }
-  };
-
-  BoundsAndType ComputeBoundsAndType(const AffineExpr& ae) {
-    BoundsAndType result(ae.constant_term(), ae.constant_term(), var::INTEGER);
-    for (const auto& term: ae) {
-      auto v = this->GetModel().var(term.var_index());
-      if (term.coef() >= 0.0) {
-        result.lb_ += term.coef() * v.lb();
-        result.ub_ += term.coef() * v.ub();
-      } else {
-        result.lb_ += term.coef() * v.ub();
-        result.ub_ += term.coef() * v.lb();
-      }
-      if (var::INTEGER!=v.type() || std::floor(term.coef())!=std::ceil(term.coef()))
-        result.type_=var::CONTINUOUS;
-    }
-    return result;
-  }
-
-public:
-
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
   ///
   ///////////////////////////////////////////////////////////////////////////////////////////
+
   void Convert(typename Model::MutCommonExpr e) {
     throw std::runtime_error("MPToMIPConverter: No common exprs convertible yet TODO");
   }
@@ -142,12 +120,12 @@ public:
     this->AddConstraint(ldc.to_linear_constraint());
   }
 
-  //////////////////////// PREPROCESSING /////////////////////////
+  //////////////////////// MODEL PREPROCESSING /////////////////////////
   void PreprocessIntermediate() { }
   void PreprocessFinal() { }
 
 public:
-  //////////////////////// Add custom constraint ///////////////////////
+  //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
   //////////////////////// Takes ownership /////////////////////////////
   void AddConstraint(BasicConstraintKeeper* pbc) {
     MP_DISPATCH( GetModel() ).AddConstraint(pbc);
@@ -158,7 +136,7 @@ public:
   }
 
 public:
-  //////////////////////////////////// Visitor Adapters /////////////////////////////////////////
+  //////////////////////////////////// VISITOR ADAPTERS /////////////////////////////////////////
 
   /// Convert an expression to an EExpr
   EExpr Convert2EExpr(Expr e) {
@@ -175,7 +153,8 @@ public:
       return ee.get_representing_variable();
     if (ee.is_constant())
       return MakeFixedVar(ee.constant_term());
-    auto bnt = ComputeBoundsAndType(ee);
+    PreprocessInfo bnt;
+    ComputeBoundsAndType(this->GetModel(), ee, bnt);
     auto r = this->AddVar(bnt.lb_, bnt.ub_, bnt.type_);
     auto lck = makeConstraint<Impl, LinearDefiningConstraint>(std::move(ee), r);
     AddConstraint(lck);
@@ -184,25 +163,39 @@ public:
 
   /// Generic functional expression array visitor
   /// Can produce a new variable/expression and specified constraints on it
-  template <class FuncConstraint>
-  EExpr VisitFunctional(typename BaseExprVisitor::VarArgExpr ea) {
-    auto args = Exprs2Vars(ea);
-    return VisitFunctional<FuncConstraint>(std::move(args));
+  template <class FuncConstraint, class ExprArray>
+  EExpr VisitFunctionalExpression(ExprArray ea) {
+    FuncConstraint fc;
+    Exprs2Vars(ea, fc.GetArguments());
+    return AssignResultToArguments( std::move(fc) );
   }
 
-  template <class ExprArray>
-  VarArray Exprs2Vars(const ExprArray& ea) {
-    VarArray result;
+  template <class ExprArray, class Vars>
+  void Exprs2Vars(const ExprArray& ea, Vars& result) {
+    assert(result.empty());
     result.reserve(ea.num_args());
     for (const auto& e: ea)
       result.push_back( MP_DISPATCH( Convert2Var(e) ) );
-    return result;
   }
 
   template <class FuncConstraint>
-  EExpr VisitFunctional(VarArray&& va) {
-    auto e2c = makeFuncConstrConverter<Impl, FuncConstraint>(*this, std::move(va));
-    return EExpr::Variable{ e2c.Convert() };
+  EExpr AssignResultToArguments(FuncConstraint&& fc) {
+    auto fcc = MakeFuncConstrConverter<Impl, FuncConstraint>(*this, std::move(fc));
+    return fcc.Convert();
+  }
+
+  template <class FuncConstraint>
+  EExpr AssignResultToArguments_here(FuncConstraint&& fc) {
+    BasicPreprocessInfo<FuncConstraint> prepro;
+    PreprocessConstraint(this->GetModel(), fc);
+    if (prepro.is_constant())
+      return EExpr::Constant{prepro.lb_};
+    if (prepro.is_result_var_known())
+      return EExpr::Variable{ prepro.get_result_var() };
+    auto r = AddVar(prepro.lb_, prepro.ub_. prepro.type_);
+    fc.SetResultVar(r);
+    AddConstraint( std::move(fc) );
+    return EExpr::Variable{ prepro.get_result_var() };
   }
 
 
@@ -239,11 +232,11 @@ public:
   }
 
   EExpr VisitMax(typename BaseExprVisitor::VarArgExpr e) {       // TODO why need Base:: here in g++ 9.2.1?
-    return VisitFunctional<MaximumConstraint>(e);
+    return VisitFunctionalExpression<MaximumConstraint>(e);
   }
 
   EExpr VisitMin(typename BaseExprVisitor::VarArgExpr e) {
-    return VisitFunctional<MinimumConstraint>(e);
+    return VisitFunctionalExpression<MinimumConstraint>(e);
   }
 
 };
