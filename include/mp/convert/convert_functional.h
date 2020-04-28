@@ -14,7 +14,7 @@ class BasicFCC {
   Constraint constr_;
 public:
   using EExprType = typename Converter::EExprType;
-  BasicPreprocessInfo<Constraint> prepro_;
+  PreprocessInfo<Constraint> prepro_;
 protected:
   Converter& GetConverter() { return converter_; }
   Constraint& GetConstraint() { return constr_; }

@@ -153,7 +153,7 @@ public:
       return ee.get_representing_variable();
     if (ee.is_constant())
       return MakeFixedVar(ee.constant_term());
-    PreprocessInfo bnt;
+    PreprocessInfoStd bnt;
     ComputeBoundsAndType(this->GetModel(), ee, bnt);
     auto r = this->AddVar(bnt.lb_, bnt.ub_, bnt.type_);
     auto lck = makeConstraint<Impl, LinearDefiningConstraint>(std::move(ee), r);
@@ -182,20 +182,6 @@ public:
   EExpr AssignResultToArguments(FuncConstraint&& fc) {
     auto fcc = MakeFuncConstrConverter<Impl, FuncConstraint>(*this, std::move(fc));
     return fcc.Convert();
-  }
-
-  template <class FuncConstraint>
-  EExpr AssignResultToArguments_here(FuncConstraint&& fc) {
-    BasicPreprocessInfo<FuncConstraint> prepro;
-    PreprocessConstraint(this->GetModel(), fc);
-    if (prepro.is_constant())
-      return EExpr::Constant{prepro.lb_};
-    if (prepro.is_result_var_known())
-      return EExpr::Variable{ prepro.get_result_var() };
-    auto r = AddVar(prepro.lb_, prepro.ub_. prepro.type_);
-    fc.SetResultVar(r);
-    AddConstraint( std::move(fc) );
-    return EExpr::Variable{ prepro.get_result_var() };
   }
 
 

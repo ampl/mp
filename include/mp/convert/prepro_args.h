@@ -13,14 +13,14 @@ template <class Num>
 bool is_integer(Num n) { return std::floor(n)==std::ceil(n); }
 
 template <class FuncConstraint>
-struct BasicPreprocessInfo {
+struct PreprocessInfo {
   double lb_=-std::numeric_limits<double>::max(),
     ub_=std::numeric_limits<double>::max();
   var::Type type_=var::CONTINUOUS;
   int result_var_ = -1;
 
-  BasicPreprocessInfo() { }
-  BasicPreprocessInfo(double l, double u, var::Type t) : lb_(l), ub_(u), type_(t) { }
+  PreprocessInfo() { }
+  PreprocessInfo(double l, double u, var::Type t) : lb_(l), ub_(u), type_(t) { }
   bool is_constant() const { return lb_==ub_; }
   bool is_result_var_known() const { return result_var_>=0; }
   void set_result_var(int r) { result_var_ = r; }
@@ -31,7 +31,7 @@ struct BasicPreprocessInfo {
 };
 
 /// Typical preprocess info
-using PreprocessInfo = BasicPreprocessInfo<int>;
+using PreprocessInfoStd = PreprocessInfo<int>;
 
 /// Default arguments prepro
 template <class Model, class Constraint, class PreproInfo>
@@ -41,7 +41,7 @@ void PreprocessConstraint(
 }
 
 template <class Model>
-void ComputeBoundsAndType(Model& model, AffineExpr& ae, PreprocessInfo& result) {
+void ComputeBoundsAndType(Model& model, AffineExpr& ae, PreprocessInfoStd& result) {
   result.lb_ = result.ub_ = ae.constant_term();
   result.type_ = var::INTEGER;
   for (const auto& term: ae) {
@@ -61,7 +61,7 @@ void ComputeBoundsAndType(Model& model, AffineExpr& ae, PreprocessInfo& result) 
 /// Preprocess minimum
 template <class Model>
 void PreprocessConstraint(
-    Model& m, MinimumConstraint& c, BasicPreprocessInfo<MinimumConstraint>& prepro) {
+    Model& m, MinimumConstraint& c, PreprocessInfo<MinimumConstraint>& prepro) {
   prepro.lb_ = m.lb_array(c.GetArguments());
   prepro.ub_ = m.ub_min_array(c.GetArguments());
   prepro.type_ = m.common_type(c.GetArguments());
@@ -69,7 +69,7 @@ void PreprocessConstraint(
 
 template <class Model>
 void PreprocessConstraint(
-    Model& m, MaximumConstraint& c, BasicPreprocessInfo<MaximumConstraint>& prepro) {
+    Model& m, MaximumConstraint& c, PreprocessInfo<MaximumConstraint>& prepro) {
   prepro.lb_ = m.lb_max_array(c.GetArguments());
   prepro.ub_ = m.ub_array(c.GetArguments());
   prepro.type_ = m.common_type(c.GetArguments());
