@@ -5,8 +5,9 @@
 
 namespace mp {
 
-/// Helper class providing a default framework for converting an expression
-/// to a variable plus a constraint equating that variable to that expression
+/// Helper class providing a default framework for assigning result
+/// to a functional constraint,
+/// possibly adding a constraint on the result variable
 template <class Impl, class Converter, class Constraint>
 class BasicFCC {
   Converter& converter_;

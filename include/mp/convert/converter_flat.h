@@ -6,7 +6,7 @@
 
 #include "mp/convert/basic_converters.h"
 #include "mp/expr-visitor.h"
-#include "mp/convert/expr2constraint.h"
+#include "mp/convert/convert_functional.h"
 #include "mp/convert/model.h"
 #include "mp/convert/std_constr.h"
 
