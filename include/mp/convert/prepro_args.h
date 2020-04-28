@@ -5,7 +5,7 @@
 #include <cmath>
 
 #include "mp/problem.h"
-#include "mp/convert/affine_expr.h"
+#include "mp/convert/std_constr.h"
 
 namespace mp {
 
@@ -58,6 +58,22 @@ void ComputeBoundsAndType(Model& model, AffineExpr& ae, PreprocessInfo& result) 
   }
 }
 
+/// Preprocess minimum
+template <class Model>
+void PreprocessConstraint(
+    Model& m, MinimumConstraint& c, BasicPreprocessInfo<MinimumConstraint>& prepro) {
+  prepro.lb_ = m.lb_array(c.GetArguments());
+  prepro.ub_ = m.ub_min_array(c.GetArguments());
+  prepro.type_ = m.common_type(c.GetArguments());
+}
+
+template <class Model>
+void PreprocessConstraint(
+    Model& m, MaximumConstraint& c, BasicPreprocessInfo<MaximumConstraint>& prepro) {
+  prepro.lb_ = m.lb_max_array(c.GetArguments());
+  prepro.ub_ = m.ub_array(c.GetArguments());
+  prepro.type_ = m.common_type(c.GetArguments());
+}
 
 } // namespace mp
 

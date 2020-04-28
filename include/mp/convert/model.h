@@ -1,6 +1,8 @@
 #ifndef MODEL_H
 #define MODEL_H
 
+#include <algorithm>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -40,6 +42,73 @@ public:
     custom_constr_.push_back(std::move(pc));
   }
 
+
+  /////////////////////////////// UTILITIES //////////////////////////////////
+  static constexpr double PlusInfinity() { return std::numeric_limits<double>::infinity(); }
+  static constexpr double MinusInfinity() { return -std::numeric_limits<double>::infinity(); }
+  template <class Num>
+  static bool is_integer_value(Num n) { return std::floor(n)==std::ceil(n); }
+
+  template <class VarArray>
+  double lb_array(const VarArray& va) const {
+    double result = PlusInfinity();
+    for (auto v: va) {
+      result = std::min( result, this->var(v).lb() );
+    }
+    return result;
+  }
+  template <class VarArray>
+  double lb_max_array(const VarArray& va) const {
+    double result = MinusInfinity();
+    for (auto v: va) {
+      result = std::max( result, this->var(v).lb() );
+    }
+    return result;
+  }
+  template <class VarArray>
+  double ub_array(const VarArray& va) const {
+    double result = MinusInfinity();
+    for (auto v: va) {
+      result = std::max( result, this->var(v).ub() );
+    }
+    return result;
+  }
+  template <class VarArray>
+  double ub_min_array(const VarArray& va) const {
+    double result = PlusInfinity();
+    for (auto v: va) {
+      result = std::min( result, this->var(v).ub() );
+    }
+    return result;
+  }
+
+  bool is_fixed(int v) const {
+    auto vv = this->var(v);
+    return vv.lb()==vv.ub();
+  }
+
+  double fix(int v) const {
+    if (!is_fixed(v))
+      throw std::logic_error("Variable is not fixed");
+    return this->var(v).lb();
+  }
+
+  template <class VarArray>
+  var::Type common_type(const VarArray& va) const {
+    auto type = var::Type::INTEGER;
+    for (auto v: va) {
+      auto vv = this->var(v);
+      if (var::Type::INTEGER!=vv.type() && (!is_fixed(v) || !is_integer_value(fix(v)))) {
+        type = var::Type::CONTINUOUS;
+        break;
+      }
+    }
+    return type;
+  }
+
+
+  //////////////////////////////// EXPORT INSTANCE TO A BACKEND ///////////////////////////////
+  ///
   /// Pushing the whole instance to a backend or converter.
   /// A responsible backend should handle all essential items
   template <class Backend>
