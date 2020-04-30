@@ -38,7 +38,7 @@ public:
     pc.reset(pbc);
     AddConstraint(std::move(pc));
   }
-  void AddConstraint(PConstraintKeeper&& pc) {
+  void AddConstraint(PConstraintKeeper pc) {
     custom_constr_.push_back(std::move(pc));
   }
 

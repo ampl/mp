@@ -34,6 +34,7 @@ struct PreprocessInfo {
 using PreprocessInfoStd = PreprocessInfo<int>;
 
 /// Default arguments prepro
+/// All parameters are 'in-out'
 template <class Model, class Constraint, class PreproInfo>
 void PreprocessConstraint(
     Model& , Constraint&, PreproInfo& ) {
@@ -42,7 +43,7 @@ void PreprocessConstraint(
 
 template <class Model>
 void ComputeBoundsAndType(Model& model, AffineExpr& ae, PreprocessInfoStd& result) {
-  result.lb_ = result.ub_ = ae.constant_term();
+  result.lb_ = result.ub_ = ae.constant_term();           // TODO reuse bounds if supplied
   result.type_ = var::INTEGER;
   for (const auto& term: ae) {
     auto v = model.var(term.var_index());

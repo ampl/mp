@@ -57,6 +57,17 @@ class LinearExpr {
   std::vector<Term> terms_;
 
  public:
+  LinearExpr() { }
+
+  template <class CoefVec=std::vector<double>, class VarVec=std::vector<int> >
+  LinearExpr(CoefVec&& c, VarVec&& v) {
+    ConstructFrom(std::forward<CoefVec>(c), std::forward<VarVec>(v));
+  }
+  template <int N>
+  LinearExpr(const std::array<double, N>& c, const std::array<int, N>& v) {
+    ConstructFrom(c, v);
+  }
+
   int num_terms() const { return static_cast<int>(terms_.size()); }
   int capacity() const { return static_cast<int>(terms_.capacity()); }
 
@@ -77,6 +88,16 @@ class LinearExpr {
   void AddTerms(const LinearExpr& li) {
     terms_.insert(end(), li.begin(), li.end());
   }
+
+  template <class CoefVec=std::vector<double>, class VarVec=std::vector<int> >
+  void ConstructFrom(CoefVec&& c, VarVec&& v) {
+    assert(c.size()==v.size());
+    assert(0==num_terms());
+    Reserve(c.size());
+    for (size_t i=0; i<c.size(); ++i)
+      AddTerm(v[i], c[i]);
+  }
+
 
   void Reserve(int num_terms) {
     terms_.reserve(num_terms);

@@ -17,6 +17,41 @@ public:
   ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
   USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter )           // reuse default ones
 
+  template <int sense, class MinOrMaxConstraint>
+  void ConvertMinOrMax(const MinOrMaxConstraint& mc) {
+    const auto& args = mc.GetArguments();
+    const int nargs = args.size();
+    const auto flags = this->AddVars(nargs, 0.0, 1.0, var::Type::INTEGER);   // binary flags
+    this->AddConstraint(LinearConstraint(std::vector<double>(nargs, 1.0),    // sum of the flags >= 1
+                        flags, 1.0, this->PlusInfinity()));
+    const auto resvar = mc.GetResultVar();
+    for (int i=0; i<nargs; ++i) {
+      this->AddConstraint(LinearConstraint({1.0*sense, -1.0*sense},
+                          {args[i], resvar}, this->MinusInfinity(), 0.0));
+      this->AddConstraint(IndicatorConstraintLinLE{flags[i], 1,
+                          {1.0*sense, -1.0*sense}, {resvar, args[i]}, 0.0});
+    }
+  }
+
+  void Convert(const MaximumConstraint& mc) {
+    ConvertMinOrMax<1>(mc);
+  }
+
+  void Convert(const MinimumConstraint& mc) {
+    ConvertMinOrMax<-1>(mc);
+  }
+
+  void Convert(const IndicatorConstraintLinLE& indc) {
+    auto binvar=indc.get_binary_var();
+    if (indc.is_binary_value_1())                  /// If binval==1, complement the variable
+      binvar = this->MakeComplementVar(binvar);
+    /// Convert indc's linear inequality to 'cmpvar<=0'
+    int cmpvar = MP_DISPATCH( Convert2Var(indc.to_lhs_affine_expr()) );
+    this->AddConstraint(LinearConstraint(          /// Big-M constraint cmpvar <= ub(cmpvar)*binvar
+        {1.0, -this->ub(cmpvar)}, {cmpvar, binvar}, this->MinusInfinity(), 0.0));
+  }
+
+
 };
 
 } // namespace mp

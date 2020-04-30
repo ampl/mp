@@ -213,10 +213,12 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
 
-  ACCEPT_CONSTRAINT(MaximumConstraint, Recommended)    // For now, unless we have a better decomposition
+  ACCEPT_CONSTRAINT(MaximumConstraint, AcceptedButNotRecommended)
   void AddConstraint(const MaximumConstraint& mc);
-  ACCEPT_CONSTRAINT(MinimumConstraint, Recommended)
+  ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)
   void AddConstraint(const MinimumConstraint& mc);
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
+  void AddConstraint(const IndicatorConstraintLinLE& mc);
 
   void FinishProblemModificationPhase();
 };

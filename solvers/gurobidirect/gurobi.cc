@@ -399,6 +399,12 @@ void GurobiBackend::AddConstraint(const MinimumConstraint &mc)  {
                                Infinity()) );
 }
 
+void GurobiBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
+  GRB_CALL( GRBaddgenconstrIndicator(model, NULL,
+                               ic.b_, ic.bv_, (int)ic.c_.size(),
+                               ic.v_.data(), ic.c_.data(), GRB_LESS_EQUAL, ic.rhs_ ) );
+}
+
 void GurobiBackend::FinishProblemModificationPhase() {
 }
 

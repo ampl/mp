@@ -47,7 +47,9 @@ public:
   using ModelType = Model;
   using ProblemBuilder = Model;           // for old MP stuff
   using BackendType = Backend;
+  const Model& GetModel() const { return model_; }    // Can be used for NL file input
   Model& GetModel() { return model_; }    // Can be used for NL file input
+  const Backend& GetBackend() const { return backend_; }
   Backend& GetBackend() { return backend_; }
 public:
 
@@ -156,6 +158,12 @@ public:
   int AddVar(double lb=MinusInfinity(), double ub=PlusInfinity(), var::Type type = var::CONTINUOUS) {
     auto var = GetModel().AddVar(lb, ub, type);
     return var.index();
+  }
+  std::vector<int> AddVars(int nvars, double lb, double ub, var::Type type = var::CONTINUOUS) {
+    std::vector<int> newVars(nvars);                          // The binary flags
+    for (int i=0; i<nvars; ++i)
+      newVars[i] = AddVar(lb, ub, type);
+    return newVars;
   }
 
 };

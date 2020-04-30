@@ -6,7 +6,7 @@
 
 namespace mp {
 
-/// Custom constraints to derive from
+/// Custom constraints to derive from, so that overloaded default settings work
 class BasicConstraint {
 public:
 };
@@ -19,7 +19,7 @@ private:
   Arguments args_;
 public:
   VarArrayArgConstraint() { }
-  VarArrayArgConstraint(Arguments&& aa) : args_(aa) {}
+  VarArrayArgConstraint(Arguments&& aa) : args_(std::move(aa)) {}
   const Arguments& GetArguments() const { return args_; }
   Arguments& GetArguments() { return args_; }
 };

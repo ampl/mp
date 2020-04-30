@@ -16,6 +16,7 @@ namespace mp {
 class EExpr : public AffineExpr {
 public:
   EExpr() = default;
+  EExpr(AffineExpr&& ae) : AffineExpr(std::move(ae)) { }
   EExpr(Constant c) : AffineExpr(c) {}
   EExpr(Variable v) : AffineExpr(v) {}
   EExpr(int i, double c) { AddTerm(i, c); }
@@ -36,6 +37,7 @@ public:
 
 protected:
   using ClassName = BasicMPFlatConverter<Impl, Backend, Model>;
+  using BaseConverter = BasicMPConverter<Impl, Backend, Model>;
   using BaseExprVisitor = ExprVisitor<Impl, EExpr>;
 
   using EExprArray = std::vector<EExpr>;
@@ -54,6 +56,24 @@ public:
     auto v = this->AddVar(value, value);
     map_fixed_vars_[value] = v;
     return v;
+  }
+
+  /// Create or find a fixed variable
+  int AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
+    if (lb!=ub)
+      return BaseConverter::AddVar(lb, ub, type);
+    return MakeFixedVar(lb);
+  }
+
+  double lb(int var) const { return this->GetModel().var(var).lb(); }
+  double ub(int var) const { return this->GetModel().var(var).ub(); }
+
+  int MakeComplementVar(int bvar) {
+    if (! (lb(bvar)==0.0 && ub(bvar)==1.0) )
+      throw std::logic_error("Asked to complement variable with bounds "
+                             + std::to_string(lb(bvar)) + ".." + std::to_string(ub(bvar)));
+    AffineExpr ae({-1.0}, {bvar}, 1.0);
+    return MP_DISPATCH( Convert2Var(std::move(ae)) );
   }
 
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
@@ -132,7 +152,7 @@ public:
   }
   template <class Constraint>
   void AddConstraint(Constraint&& con) {
-    AddConstraint(makeConstraint<Impl, Constraint>(std::move(con)));
+    AddConstraint(makeConstraint<Impl, Constraint>(std::forward<Constraint>(con)));
   }
 
 public:
@@ -180,7 +200,8 @@ public:
 
   template <class FuncConstraint>
   EExpr AssignResultToArguments(FuncConstraint&& fc) {
-    auto fcc = MakeFuncConstrConverter<Impl, FuncConstraint>(*this, std::move(fc));
+    auto fcc = MakeFuncConstrConverter<Impl, FuncConstraint>(
+          *this, std::forward<FuncConstraint>(fc));
     return fcc.Convert();
   }
 

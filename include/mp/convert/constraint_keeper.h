@@ -67,7 +67,7 @@ class ConstraintKeeper : public BasicConstraintKeeper {
   bool is_removed_ = false;
 public:
   template <class... Args>
-  ConstraintKeeper(Args&&... args) : cons_(std::forward<Args>(args)...) { }
+  ConstraintKeeper(Args&&... args) : cons_(std::move(args)...) { }
   bool IsRemoved() const override { return is_removed_; }
   void Remove() override { is_removed_=true; }
   void ConvertWith(BasicConstraintConverter& cvt) override {

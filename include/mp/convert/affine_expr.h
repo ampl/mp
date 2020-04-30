@@ -12,6 +12,9 @@ class AffineExpr : public LinearExpr {
 public:
   AffineExpr() {}
   AffineExpr(AffineExpr&& ae) = default;
+  template <class CV=std::vector<double>, class VV=std::vector<int> >
+  AffineExpr(CV&& coefs, VV&& vars, double const_term) :
+    LinearExpr(std::forward<CV>(coefs), std::forward<VV>(vars)), constant_term_(const_term) { }
   AffineExpr& operator = (AffineExpr&& ae) = default;
   /// Helper struct to construct AffineExpr from something special
   template <class Value>

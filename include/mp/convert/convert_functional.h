@@ -68,7 +68,7 @@ template <class Converter, class Constraint, class Converter2>
 FCC<Converter, Constraint>
 MakeFuncConstrConverter(Converter2& cvt, Constraint&& fc) {
   return FCC<Converter, Constraint>(
-        static_cast<Converter&>(cvt), std::move(fc) );
+        static_cast<Converter&>(cvt), std::forward<Constraint>(fc) );
 }
 
 
