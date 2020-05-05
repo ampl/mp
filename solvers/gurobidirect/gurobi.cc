@@ -284,6 +284,7 @@ void GurobiBackend::SolveWithGurobi(
     Stats &stats, SolutionHandler &sh) {
   interrupter()->SetHandler(InterruptGurobi, model);
 
+  std::cout << "Exporting model" << std::endl;
   ExportModel("model_gurobi.lp");
 
   stats.setup_time = GetTimeAndReset(stats.time);
@@ -363,14 +364,13 @@ void GurobiBackend::AddLinearObjective( obj::Type sense, int nnz,
 }
 void GurobiBackend::AddLinearConstraint(int nnz, const double* c, const int* v,
                          double lb, double ub) {
-  /// TODO Separate abstraction
-  std::cout << "  ADD LIN CONSTR:  " << lb << " <= ";
-  for (int i=0; i<nnz; ++i) {
-    std::cout << c[i] << '[' << v[i] << "] ";
-    if (i<nnz-1)
-      std::cout << "+ ";
-  }
-  std::cout << "<= " << ub << std::endl;
+//  std::cout << "  ADD LIN CONSTR:  " << lb << " <= ";
+//  for (int i=0; i<nnz; ++i) {
+//    std::cout << c[i] << '[' << v[i] << "] ";
+//    if (i<nnz-1)
+//      std::cout << "+ ";
+//  }
+//  std::cout << "<= " << ub << std::endl;
   if (lb==ub)
     GRB_CALL( GRBaddconstr(model, nnz, (int*)v, (double*)c, GRB_EQUAL, lb, NULL) );
   else {            // Let solver deal with lb>~ub etc.

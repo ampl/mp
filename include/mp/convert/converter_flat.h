@@ -53,7 +53,7 @@ public:
     auto it = map_fixed_vars_.find(value);
     if (map_fixed_vars_.end()!=it)
       return it->second;
-    auto v = this->AddVar(value, value);
+    auto v = BaseConverter::AddVar(value, value);
     map_fixed_vars_[value] = v;
     return v;
   }
@@ -85,14 +85,24 @@ public:
   }
 
   void Convert(typename Model::MutObjective obj) {
-    if (obj.nonlinear_expr())
-      throw std::runtime_error("MPToMIPConverter: Only linear objectives allowed TODO");
+    if (NumericExpr e = obj.nonlinear_expr()) {
+      LinearExpr &linear = obj.linear_expr();
+      const auto affine_expr=this->Visit(e);
+      linear.AddTerms(affine_expr);
+      if (std::fabs(affine_expr.constant_term())!=0.0) {
+        linear.AddTerm(MakeFixedVar(affine_expr.constant_term()), 1.0);
+      }
+      obj.unset_nonlinear_expr();
+    } // Modifying the original objective by replacing the expr
   }
 
   void Convert(typename Model::MutAlgebraicCon con) {
-    LinearExpr &linear = con.linear_expr();
     if (NumericExpr e = con.nonlinear_expr()) {
-      linear.AddTerms(this->Visit(e));
+      LinearExpr &linear = con.linear_expr();
+      const auto affine_expr=this->Visit(e);
+      linear.AddTerms(affine_expr);
+      con.set_lb(con.lb() + affine_expr.constant_term());
+      con.set_ub(con.ub() + affine_expr.constant_term());
       con.unset_nonlinear_expr();                  // delete the non-linear expr
     } // Modifying the original constraint by replacing the expr
   }

@@ -631,6 +631,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     void set_nonlinear_expr(NumericExpr expr) const {
       this->problem_->SetNonlinearObjExpr(this->index_, expr);
     }
+
+    // Unsets the nonlinear part of the objective.
+    void unset_nonlinear_expr() {
+      this->problem_->SetNonlinearObjExpr(this->index_, NumericExpr());
+      assert(!this->nonlinear_expr());
+    }
+
   };
 
   /** A range of objectives. */
