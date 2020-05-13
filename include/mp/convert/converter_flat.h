@@ -130,7 +130,7 @@ public:
     for (; first<after_last; ++first) {
       auto* pConstraint = this->GetModel().custom_con(first);
       if (!pConstraint->IsRemoved()) {
-        if (BasicConstraintAdder::Recommended !=
+        if (Recommended !=
             pConstraint->BackendAcceptance(this->GetBackend())) {
           pConstraint->ConvertWith(*this);
           pConstraint->Remove();

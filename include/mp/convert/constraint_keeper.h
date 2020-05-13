@@ -20,6 +20,13 @@ public:
 
 class BasicConstraint;
 
+/// Level of acceptance of a constraint by a backend
+enum ConstraintAcceptanceLevel {
+  NotAccepted,
+  AcceptedButNotRecommended,
+  Recommended
+};
+
 /// Backends handling custom constraints should derive from
 class BasicConstraintAdder {
 public:
@@ -28,24 +35,19 @@ public:
     throw std::logic_error(
           std::string("Not handling constraint ") + typeid(Constraint).name());
   }
-  /// Level of acceptance of a constraint by a backend
-  enum ConstraintAcceptanceLevel {
-    NotAccepted,
-    AcceptedButNotRecommended,
-    Recommended
-  };
   /// Derived backends have to tell C++ to use default handlers if they are needed
   /// when they overload AddConstraint(), due to C++ name hiding
 #define USE_BASE_CONSTRAINT_HANDLERS(BaseBackend) \
   using BaseBackend::AddConstraint; \
   using BaseBackend::AcceptanceLevel;
-  /// By default, we say constraint XYZ is not accepted
+  /// By default, we say constraint XYZ is not accepted but...
   static constexpr ConstraintAcceptanceLevel AcceptanceLevel(const BasicConstraint*) { return NotAccepted; }
-  /// Then for a certain constraint it can be specified
-#define ACCEPT_CONSTRAINT(ConstrType, level) \
-  static constexpr ConstraintAcceptanceLevel AcceptanceLevel(const ConstrType*) { return level; }
-
 };
+
+/// ... then for a certain constraint it can be specified
+#define ACCEPT_CONSTRAINT(ConstrType, level) \
+  static constexpr mp::ConstraintAcceptanceLevel \
+    AcceptanceLevel(const ConstrType*) { return level; }
 
 class BasicConstraintKeeper {
 public:
@@ -55,7 +57,7 @@ public:
   /// This normally dispatches conversion (decomposition) to the Converter
   virtual void ConvertWith(BasicConstraintConverter& cvt) = 0;
   /// Checks backend's acceptance level for the constraint
-  virtual BasicConstraintAdder::ConstraintAcceptanceLevel BackendAcceptance(
+  virtual ConstraintAcceptanceLevel BackendAcceptance(
       const BasicConstraintAdder& ) const = 0;
   /// This adds the constraint to the backend without conversion
   virtual void AddToBackend(BasicConstraintAdder& be) const = 0;
@@ -77,7 +79,7 @@ public:
       throw std::logic_error(typeid(Converter).name() + std::string(": ") + exc.what());
     }
   }
-  BasicConstraintAdder::ConstraintAcceptanceLevel BackendAcceptance(
+  ConstraintAcceptanceLevel BackendAcceptance(
       const BasicConstraintAdder& ba) const override {
     return static_cast<const Backend&>( ba ).AcceptanceLevel(&cons_);
   }

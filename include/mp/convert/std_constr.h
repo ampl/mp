@@ -8,6 +8,7 @@
 
 namespace mp {
 
+////////////////////////////////////////////////////////////////////////
 /// Standard linear constraint
 class LinearConstraint : public BasicConstraint {
   const std::vector<double> coefs_;
@@ -25,6 +26,7 @@ public:
   double ub() const { return ub_; }
 };
 
+////////////////////////////////////////////////////////////////////////
 /// Converting linear expr to 2 vectors.
 struct LinearExprUnzipper {
   std::vector<double> c_;
@@ -39,6 +41,7 @@ struct LinearExprUnzipper {
   void AddTerm(double c, int v) { c_.push_back(c); v_.push_back(v); }
 };
 
+////////////////////////////////////////////////////////////////////////
 /// Linear Defining Constraint: r = affine_expr
 class LinearDefiningConstraint :
     public BasicConstraint, public DefiningConstraint {
@@ -59,19 +62,21 @@ public:
   }
 };
 
-/// Maximum: r = max(v1, v2, ..., vn)
-/// TODO template: using MaximumConstraint = VarArrayDefiningConstraint<...>
-class MaximumConstraint :
-    public VarArrayArgConstraint, public DefiningConstraint {
-public:
+////////////////////////////////////////////////////////////////////////
+struct MaximumConstraintId {
+  static constexpr auto description_ = "r = max(v1, v2, ..., vn)";
 };
+using MaximumConstraint =
+   CustomDefiningConstraint<VarArrayArgConstraint, MaximumConstraintId>;
 
-/// Minimum: r = min(v1, v2, ..., vn)
-class MinimumConstraint :
-    public VarArrayArgConstraint, public DefiningConstraint {
-public:
+////////////////////////////////////////////////////////////////////////
+struct MinimumConstraintId {
+  static constexpr auto description_ = "r = min(v1, v2, ..., vn)";
 };
+using MinimumConstraint =
+   CustomDefiningConstraint<VarArrayArgConstraint, MinimumConstraintId>;
 
+////////////////////////////////////////////////////////////////////////
 /// Indicator: b==bv -> c'x <= rhs
 class IndicatorConstraintLinLE: public BasicConstraint {
 public:
