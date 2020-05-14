@@ -41,6 +41,11 @@ public:
     ConvertMinOrMax<-1>(mc);
   }
 
+  void Convert(const NotConstraint& nc) {
+    this->AddConstraint(LinearDefiningConstraint(
+      nc.GetResultVar(), {{-1.0}, {nc.GetArguments()[0]}, 1.0}));
+  }
+
   void Convert(const LEConstraint& lec) {
     auto& m = this->GetModel();
     if (m.is_fixed(lec.GetResultVar()))

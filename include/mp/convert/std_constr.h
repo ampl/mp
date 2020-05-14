@@ -51,7 +51,7 @@ class LinearDefiningConstraint :
 public:
   using Arguments = AffineExpr;
   using DefiningConstraint::GetResultVar;
-  LinearDefiningConstraint(AffineExpr&& ae, int r) :
+  LinearDefiningConstraint(int r, AffineExpr&& ae) :
     DefiningConstraint(r), affine_expr_(std::move(ae)) {
     /// TODO sort elements
   }
@@ -80,11 +80,18 @@ using MinimumConstraint =
    CustomDefiningConstraint<VarArrayArgConstraint<>, MinimumConstraintId>;
 
 ////////////////////////////////////////////////////////////////////////
-struct NotEqualId {
+struct EqualId {
+  static constexpr auto description_ = "r = (v1 == v2)";
+};
+using EQConstraint =
+   CustomDefiningConstraint<VarArray2ArgConstraint, EqualId>;
+
+////////////////////////////////////////////////////////////////////////
+struct NotEqualId__unused {
   static constexpr auto description_ = "r = (v1 != v2)";
 };
-using NEConstraint =
-   CustomDefiningConstraint<VarArray2ArgConstraint, NotEqualId>;
+using NEConstraint__unused =
+   CustomDefiningConstraint<VarArray2ArgConstraint, NotEqualId__unused>;
 
 ////////////////////////////////////////////////////////////////////////
 struct LessOrEqualId {
@@ -92,6 +99,13 @@ struct LessOrEqualId {
 };
 using LEConstraint =
    CustomDefiningConstraint<VarArray2ArgConstraint, LessOrEqualId>;
+
+////////////////////////////////////////////////////////////////////////
+struct NotId {
+  static constexpr auto description_ = "r = !v";
+};
+using NotConstraint =
+   CustomDefiningConstraint<VarArray1ArgConstraint, NotId>;
 
 ////////////////////////////////////////////////////////////////////////
 struct DisjunctionId {

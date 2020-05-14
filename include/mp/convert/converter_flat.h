@@ -181,6 +181,12 @@ public:
   void PropagateResult(LinearDefiningConstraint& con, double lb, double ub, Context ctx) {
   }
 
+  void PropagateResult(NotConstraint& con, double lb, double ub, Context ctx) {
+    con.AddContext(ctx);
+    for (const auto a: con.GetArguments())
+      PropagateResult(a, 1.0-ub, 1.0-lb, -ctx);
+  }
+
   void PropagateResult(DisjunctionConstraint& con, double lb, double ub, Context ctx) {
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
@@ -245,7 +251,7 @@ public:
     PreprocessInfoStd bnt;
     ComputeBoundsAndType(this->GetModel(), ee, bnt);
     auto r = MP_DISPATCH( AddVar(bnt.lb_, bnt.ub_, bnt.type_) );
-    auto lck = makeConstraint<Impl, LinearDefiningConstraint>(std::move(ee), r);
+    auto lck = makeConstraint<Impl, LinearDefiningConstraint>(r, std::move(ee));
     AddConstraint(lck);
     return r;
   }
@@ -330,12 +336,21 @@ public:
     return VisitFunctionalExpression<MinimumConstraint>(e);
   }
 
+  EExpr VisitEQ(RelationalExpr e) {
+    return VisitRelationalExpression<EQConstraint>({ e.lhs(), e.rhs() });
+  }
+
   EExpr VisitNE(RelationalExpr e) {
-    return VisitRelationalExpression<NEConstraint>({ e.lhs(), e.rhs() });
+    auto EQ = this->GetModel().MakeRelational(expr::EQ, e.lhs(), e.rhs());
+    return VisitFunctionalExpression<NotConstraint>({ EQ });
   }
 
   EExpr VisitLE(RelationalExpr e) {
     return VisitRelationalExpression<LEConstraint>({ e.lhs(), e.rhs() });
+  }
+
+  EExpr VisitNot(NotExpr e) {
+    return VisitFunctionalExpression<NotConstraint>({ e.arg() });
   }
 
   EExpr VisitOr(BinaryLogicalExpr e) {

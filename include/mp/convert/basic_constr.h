@@ -29,6 +29,7 @@ public:
   Arguments& GetArguments() { return args_; }
 };
 
+using VarArray1ArgConstraint = VarArrayArgConstraint< std::array<int, 1> >;
 using VarArray2ArgConstraint = VarArrayArgConstraint< std::array<int, 2> >;
 
 /// A constraint extension which defines a variable

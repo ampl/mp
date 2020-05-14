@@ -86,16 +86,16 @@ void PreprocessConstraint(
   prepro.set_result_type( m.common_type(args) );
 }
 
-/// Preprocess NE's arguments
+/// Preprocess EQ's arguments
 template <class Converter>
 void PreprocessConstraint(
-    Converter& cvt, NEConstraint& c, PreprocessInfo<NEConstraint>& prepro) {
+    Converter& cvt, EQConstraint& c, PreprocessInfo<EQConstraint>& prepro) {
   auto& m = cvt.GetModel();
   auto& args = c.GetArguments();
   prepro.narrow_result_bounds(0.0, 1.0);
   prepro.set_result_type( var::INTEGER );
   if (m.is_fixed(args[0]) && m.is_fixed(args[1])) {
-    auto res = (double)int(m.fixed_value(args[0])!=m.fixed_value(args[1]));
+    auto res = (double)int(m.fixed_value(args[0])==m.fixed_value(args[1]));
     prepro.narrow_result_bounds(res, res);
     return;
   }
@@ -104,9 +104,9 @@ void PreprocessConstraint(
   }
   if (m.is_fixed(args[1])) {                 // See if this is binary var==const
     if (m.is_binary_var(args[0])) {
-      if (0.0==std::fabs(m.fixed_value(args[1])))
+      if (1.0==std::fabs(m.fixed_value(args[1])))
         prepro.set_result_var( args[0] );
-      else if (1.0==m.fixed_value(args[1]))
+      else if (0.0==m.fixed_value(args[1]))
         prepro.set_result_var( cvt.MakeComplementVar(args[0]) );
       else
         prepro.narrow_result_bounds(0.0, 0.0);    // not 0/1 value, result false
@@ -119,6 +119,28 @@ void PreprocessConstraint(
 template <class Converter>
 void PreprocessConstraint(
     Converter& cvt, LEConstraint& c, PreprocessInfo<LEConstraint>& prepro) {
+  prepro.narrow_result_bounds(0.0, 1.0);
+  prepro.set_result_type( var::INTEGER );
+  auto& m = cvt.GetModel();
+  auto& args = c.GetArguments();
+  // TODO special cases
+}
+
+/// Preprocess Disjunction's arguments
+template <class Converter>
+void PreprocessConstraint(
+    Converter& cvt, DisjunctionConstraint& c, PreprocessInfo<DisjunctionConstraint>& prepro) {
+  prepro.narrow_result_bounds(0.0, 1.0);
+  prepro.set_result_type( var::INTEGER );
+  auto& m = cvt.GetModel();
+  auto& args = c.GetArguments();
+  // TODO special cases
+}
+
+/// Preprocess Not's arguments
+template <class Converter>
+void PreprocessConstraint(
+    Converter& cvt, NotConstraint& c, PreprocessInfo<NotConstraint>& prepro) {
   prepro.narrow_result_bounds(0.0, 1.0);
   prepro.set_result_type( var::INTEGER );
   auto& m = cvt.GetModel();
