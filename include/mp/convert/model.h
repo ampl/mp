@@ -87,10 +87,23 @@ public:
     return vv.lb()==vv.ub();
   }
 
-  double fix(int v) const {
+  double fixed_value(int v) const {
     if (!is_fixed(v))
       throw std::logic_error("Variable is not fixed");
     return this->var(v).lb();
+  }
+
+  void narrow_var_bounds(int v, double lb, double ub) {
+    auto vv = this->var(v);
+    vv.set_lb(std::max(vv.lb(), lb));
+    vv.set_ub(std::min(vv.ub(), ub));
+    if (vv.lb()>vv.ub())
+      throw std::logic_error("infeasibility: empty variable domain");
+  }
+
+  bool is_binary_var(int v) const {
+    auto vv = this->var(v);
+    return 0.0==vv.lb() && 1.0==vv.ub() && var::Type::INTEGER==vv.type();
   }
 
   template <class VarArray>
@@ -98,7 +111,7 @@ public:
     auto type = var::Type::INTEGER;
     for (auto v: va) {
       auto vv = this->var(v);
-      if (var::Type::INTEGER!=vv.type() && (!is_fixed(v) || !is_integer_value(fix(v)))) {
+      if (var::Type::INTEGER!=vv.type() && (!is_fixed(v) || !is_integer_value(fixed_value(v)))) {
         type = var::Type::CONTINUOUS;
         break;
       }
@@ -114,7 +127,9 @@ public:
   template <class Backend>
   void PushModelTo(Backend& backend) const {
     this->InitProblemModificationPhase(backend);
-    this->PushStandardMPItemsTo(backend);
+    this->PushVariablesTo(backend);
+    this->PushObjectivesTo(backend);
+    this->PushAlgebraicConstraintsTo(backend);
     PushCustomConstraintsTo(backend);
     this->FinishProblemModificationPhase(backend);
   }

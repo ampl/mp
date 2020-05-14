@@ -217,6 +217,8 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
   void AddConstraint(const MaximumConstraint& mc);
   ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)
   void AddConstraint(const MinimumConstraint& mc);
+  ACCEPT_CONSTRAINT(DisjunctionConstraint, Recommended)
+  void AddConstraint(const DisjunctionConstraint& mc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
 

@@ -399,6 +399,13 @@ void GurobiBackend::AddConstraint(const MinimumConstraint &mc)  {
                                Infinity()) );
 }
 
+void GurobiBackend::AddConstraint(const DisjunctionConstraint &dc)  {
+  const auto& args = dc.GetArguments();
+  GRB_CALL( GRBaddgenconstrOr(model, NULL,
+                               dc.GetResultVar(),
+                               args.size(), args.data()) );
+}
+
 void GurobiBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
   GRB_CALL( GRBaddgenconstrIndicator(model, NULL,
                                ic.b_, ic.bv_, (int)ic.c_.size(),

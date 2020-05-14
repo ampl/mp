@@ -1,6 +1,8 @@
 #ifndef CONSTRAINT_KEEPER_H
 #define CONSTRAINT_KEEPER_H
 
+#include "mp/convert/basic_constr.h"
+
 namespace mp {
 
 /// Converters handling custom constraints should derive from
@@ -54,6 +56,10 @@ public:
   virtual ~BasicConstraintKeeper() { }
   virtual bool IsRemoved() const = 0;
   virtual void Remove() = 0;
+  virtual void PropagateResult(BasicConstraintConverter& cvt,
+                               double lb, double ub, Context ctx) = 0;
+  /// Returns -1 if none
+  virtual int GetResultVar() const = 0;
   /// This normally dispatches conversion (decomposition) to the Converter
   virtual void ConvertWith(BasicConstraintConverter& cvt) = 0;
   /// Checks backend's acceptance level for the constraint
@@ -72,6 +78,17 @@ public:
   ConstraintKeeper(Args&&... args) : cons_(std::move(args)...) { }
   bool IsRemoved() const override { return is_removed_; }
   void Remove() override { is_removed_=true; }
+  void PropagateResult(BasicConstraintConverter& cvt,
+                       double lb, double ub, Context ctx) override {
+    try {
+      static_cast<Converter&>(cvt).PropagateResult(cons_, lb, ub, ctx);
+    } catch (const std::exception& exc) {
+      throw std::logic_error(typeid(Converter).name() +
+                             std::string(": propagating result for constraint ") + typeid(Constraint).name() +
+                             ":  " + exc.what());
+    }
+  }
+  virtual int GetResultVar() const { return cons_.GetResultVar(); }
   void ConvertWith(BasicConstraintConverter& cvt) override {
     try {
       static_cast<Converter&>(cvt).Convert(cons_);

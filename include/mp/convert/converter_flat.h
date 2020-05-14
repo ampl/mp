@@ -67,6 +67,8 @@ public:
 
   double lb(int var) const { return this->GetModel().var(var).lb(); }
   double ub(int var) const { return this->GetModel().var(var).ub(); }
+  bool is_fixed(int var) const { return this->GetModel().is_fixed(var); }
+  double fixed_value(int var) const { return this->GetModel().fixed_value(var); }
 
   int MakeComplementVar(int bvar) {
     if (! (lb(bvar)==0.0 && ub(bvar)==1.0) )
@@ -76,18 +78,40 @@ public:
     return MP_DISPATCH( Convert2Var(std::move(ae)) );
   }
 
+  struct VarInfo {
+    BasicConstraintKeeper *pInitExpr=nullptr;
+  };
+
+private:
+  std::vector<VarInfo> var_info_;
+
+public:
+  void AddInitExpression(int var, BasicConstraintKeeper* pie) {
+    var_info_.resize(std::max(var_info_.size(), (size_t)var+1));
+    var_info_[var].pInitExpr = pie;
+  }
+
+  bool HasInitExpression(int var) const {
+    return var_info_.size()>var && nullptr!=var_info_[var].pInitExpr;
+  }
+
+  BasicConstraintKeeper* GetInitExpression(int var) {
+    assert(HasInitExpression(var));
+    return var_info_[var].pInitExpr;
+  }
+
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
   ///
   ///////////////////////////////////////////////////////////////////////////////////////////
 
   void Convert(typename Model::MutCommonExpr e) {
-    throw std::runtime_error("MPToMIPConverter: No common exprs convertible yet TODO");
+    throw std::runtime_error("BasicMPFlatConverter: No common exprs convertible yet TODO");
   }
 
   void Convert(typename Model::MutObjective obj) {
     if (NumericExpr e = obj.nonlinear_expr()) {
       LinearExpr &linear = obj.linear_expr();
-      const auto affine_expr=this->Visit(e);
+      const auto affine_expr=MP_DISPATCH( Visit(e) );
       linear.AddTerms(affine_expr);
       if (std::fabs(affine_expr.constant_term())!=0.0) {
         linear.AddTerm(MakeFixedVar(affine_expr.constant_term()), 1.0);
@@ -99,7 +123,7 @@ public:
   void Convert(typename Model::MutAlgebraicCon con) {
     if (NumericExpr e = con.nonlinear_expr()) {
       LinearExpr &linear = con.linear_expr();
-      const auto affine_expr=this->Visit(e);
+      const auto affine_expr=MP_DISPATCH( Visit(e) );
       linear.AddTerms(affine_expr);
       con.set_lb(con.lb() + affine_expr.constant_term());
       con.set_ub(con.ub() + affine_expr.constant_term());
@@ -108,7 +132,14 @@ public:
   }
 
   void Convert(typename Model::MutLogicalCon e) {
-    throw std::runtime_error("MPToMIPConverter: Only algebraic constraints implemented TODO");
+    const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
+    PropagateResult(resvar, 1.0, 1.0, +Context());
+  }
+
+  void PropagateResult(int var, double lb, double ub, Context ctx) {
+    this->GetModel().narrow_var_bounds(var, lb, ub);
+    if (HasInitExpression(var))
+      GetInitExpression(var)->PropagateResult(*this, lb, ub, ctx);
   }
 
 
@@ -141,6 +172,31 @@ public:
 
   //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
   ///
+  //////////////////////////// SPECIFIC CONSTRAINT RESULT-TO-ARGUMENTS PROPAGATORS //////
+
+  void PropagateResult(BasicConstraint& con, double lb, double ub, Context ctx) {
+    throw std::logic_error("Propagation from result not implemented");
+  }
+
+  void PropagateResult(LinearDefiningConstraint& con, double lb, double ub, Context ctx) {
+  }
+
+  void PropagateResult(DisjunctionConstraint& con, double lb, double ub, Context ctx) {
+    con.AddContext(ctx);
+    for (const auto a: con.GetArguments())
+      PropagateResult(a, 0.0, ub, +ctx);
+  }
+
+  void PropagateResult(LEConstraint& con, double lb, double ub, Context ctx) {
+    con.AddContext(ctx);
+    const auto& args = con.GetArguments();
+    PropagateResult(args[0], this->MinusInfinity(), this->PlusInfinity(), -ctx);
+    PropagateResult(args[1], this->MinusInfinity(), this->PlusInfinity(), +ctx);
+  }
+
+
+  //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
+  ///
   //////////////////////////// SPECIFIC CONSTRAINT CONVERTERS ///////////////////////////
 
   USE_BASE_CONSTRAINT_CONVERTERS(BasicConstraintConverter)      // reuse default converters
@@ -159,6 +215,9 @@ public:
   //////////////////////// Takes ownership /////////////////////////////
   void AddConstraint(BasicConstraintKeeper* pbc) {
     MP_DISPATCH( GetModel() ).AddConstraint(pbc);
+    const auto resvar = pbc->GetResultVar();
+    if (resvar>=0)
+      AddInitExpression(resvar, pbc);
   }
   template <class Constraint>
   void AddConstraint(Constraint&& con) {
@@ -170,7 +229,7 @@ public:
 
   /// Convert an expression to an EExpr
   EExpr Convert2EExpr(Expr e) {
-    return this->Visit(e);
+    return MP_DISPATCH(Visit(e));
   }
 
   /// From an expression:
@@ -185,7 +244,7 @@ public:
       return MakeFixedVar(ee.constant_term());
     PreprocessInfoStd bnt;
     ComputeBoundsAndType(this->GetModel(), ee, bnt);
-    auto r = this->AddVar(bnt.lb_, bnt.ub_, bnt.type_);
+    auto r = MP_DISPATCH( AddVar(bnt.lb_, bnt.ub_, bnt.type_) );
     auto lck = makeConstraint<Impl, LinearDefiningConstraint>(std::move(ee), r);
     AddConstraint(lck);
     return r;
@@ -193,19 +252,27 @@ public:
 
   /// Generic functional expression array visitor
   /// Can produce a new variable/expression and specified constraints on it
-  template <class FuncConstraint, class ExprArray>
+  template <class FuncConstraint, class ExprArray=std::initializer_list<Expr> >
   EExpr VisitFunctionalExpression(ExprArray ea) {
     FuncConstraint fc;
     Exprs2Vars(ea, fc.GetArguments());
     return AssignResultToArguments( std::move(fc) );
   }
 
-  template <class ExprArray, class Vars>
-  void Exprs2Vars(const ExprArray& ea, Vars& result) {
+  template <class ExprArray>
+  void Exprs2Vars(const ExprArray& ea, std::vector<int>& result) {
     assert(result.empty());
     result.reserve(ea.num_args());
     for (const auto& e: ea)
       result.push_back( MP_DISPATCH( Convert2Var(e) ) );
+  }
+
+  template <class ExprArray, size_t N>
+  void Exprs2Vars(const ExprArray& ea, std::array<int, N>& result) {
+    assert(ea.size() == result.size());
+    auto itea = ea.begin();
+    for (int i=0; i<N; ++i, ++itea)
+      result[i] = MP_DISPATCH( Convert2Var(*itea) );
   }
 
   template <class FuncConstraint>
@@ -213,6 +280,13 @@ public:
     auto fcc = MakeFuncConstrConverter<Impl, FuncConstraint>(
           *this, std::forward<FuncConstraint>(fc));
     return fcc.Convert();
+  }
+
+  /// Generic relational expression visitor
+  /// Can produce a new variable/expression and specified constraints on it
+  template <class FuncConstraint, class ExprArray=std::initializer_list<Expr> >
+  EExpr VisitRelationalExpression(ExprArray ea) {
+    return VisitFunctionalExpression<FuncConstraint>(ea);
   }
 
 
@@ -255,6 +329,19 @@ public:
   EExpr VisitMin(typename BaseExprVisitor::VarArgExpr e) {
     return VisitFunctionalExpression<MinimumConstraint>(e);
   }
+
+  EExpr VisitNE(RelationalExpr e) {
+    return VisitRelationalExpression<NEConstraint>({ e.lhs(), e.rhs() });
+  }
+
+  EExpr VisitLE(RelationalExpr e) {
+    return VisitRelationalExpression<LEConstraint>({ e.lhs(), e.rhs() });
+  }
+
+  EExpr VisitOr(BinaryLogicalExpr e) {
+    return VisitFunctionalExpression<DisjunctionConstraint>({ e.lhs(), e.rhs() });
+  }
+
 
 };
 

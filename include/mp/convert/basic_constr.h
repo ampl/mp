@@ -3,21 +3,22 @@
 
 #include <vector>
 
+#include "mp/convert/context.h"
 
 namespace mp {
 
 /// Custom constraints to derive from, so that overloaded default settings work
 class BasicConstraint {
 public:
+  int GetResultVar() const { return -1; }
 };
 
 /// A constraint whose arguments are an array of variables
+template <class Args = std::vector<int> >
 class VarArrayArgConstraint : public BasicConstraint {
+  Args args_;
 public:
-  using Arguments = std::vector<int>;       // by default, our arguments are an array of variables
-private:
-  Arguments args_;
-public:
+  using Arguments = Args;
   VarArrayArgConstraint() { }
   VarArrayArgConstraint(Arguments&& aa) : args_(std::move(aa)) {}
   VarArrayArgConstraint(const Arguments& aa) : args_(aa) {}
@@ -28,9 +29,12 @@ public:
   Arguments& GetArguments() { return args_; }
 };
 
+using VarArray2ArgConstraint = VarArrayArgConstraint< std::array<int, 2> >;
+
 /// A constraint extension which defines a variable
 class DefiningConstraint {
   int result_var_=-1;                // defined var can be optional
+  Context ctx;
 public:
   DefiningConstraint(int v=-1) : result_var_(v) {}
   bool operator==(const DefiningConstraint& dc) {
@@ -38,6 +42,9 @@ public:
   }
   void SetResultVar(int v) { result_var_=v; }
   int GetResultVar() const { return result_var_; }
+  void SetContext(Context c) { ctx=c; }
+  void AddContext(Context c) { ctx.Add(c); }
+  Context GetContext() const { return ctx; }
 };
 
 /// A defining constraint with the arguments and further info as parameters
@@ -47,6 +54,7 @@ class CustomDefiningConstraint :
 public:
   CustomDefiningConstraint() { }
   using Arguments = typename Args::Arguments;
+  using DefiningConstraint::GetResultVar;
   CustomDefiningConstraint(int varr, const Arguments& args) :
      DefiningConstraint(varr), Args(args) { }
   bool operator ==(const CustomDefiningConstraint& mc) const {

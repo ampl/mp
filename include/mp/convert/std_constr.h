@@ -31,14 +31,16 @@ public:
 struct LinearExprUnzipper {
   std::vector<double> c_;
   std::vector<int> v_;
+  LinearExprUnzipper() { }
   LinearExprUnzipper(const LinearExpr& e) {
     Reserve(e.num_terms());
     for (LinearExpr::const_iterator it=e.begin(); it!=e.end(); ++it) {
-      AddTerm(it->coef(), it->var_index());
+      AddTerm(it->var_index(), it->coef());
     }
   }
+  int num_terms() const { return c_.size(); }
   void Reserve(size_t s) { c_.reserve(s); v_.reserve(s); }
-  void AddTerm(double c, int v) { c_.push_back(c); v_.push_back(v); }
+  void AddTerm(int v, double c) { c_.push_back(c); v_.push_back(v); }
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -48,6 +50,7 @@ class LinearDefiningConstraint :
   AffineExpr affine_expr_;
 public:
   using Arguments = AffineExpr;
+  using DefiningConstraint::GetResultVar;
   LinearDefiningConstraint(AffineExpr&& ae, int r) :
     DefiningConstraint(r), affine_expr_(std::move(ae)) {
     /// TODO sort elements
@@ -56,7 +59,7 @@ public:
   LinearConstraint to_linear_constraint() const {
     const auto& ae = GetAffineExpr();
     LinearExprUnzipper aeu(ae);
-    aeu.AddTerm(-1.0, GetResultVar());
+    aeu.AddTerm(DefiningConstraint::GetResultVar(), -1.0);
     return LinearConstraint(std::move(aeu.c_), std::move(aeu.v_),
                             -ae.constant_term(), -ae.constant_term());
   }
@@ -67,14 +70,35 @@ struct MaximumConstraintId {
   static constexpr auto description_ = "r = max(v1, v2, ..., vn)";
 };
 using MaximumConstraint =
-   CustomDefiningConstraint<VarArrayArgConstraint, MaximumConstraintId>;
+   CustomDefiningConstraint<VarArrayArgConstraint<>, MaximumConstraintId>;
 
 ////////////////////////////////////////////////////////////////////////
 struct MinimumConstraintId {
   static constexpr auto description_ = "r = min(v1, v2, ..., vn)";
 };
 using MinimumConstraint =
-   CustomDefiningConstraint<VarArrayArgConstraint, MinimumConstraintId>;
+   CustomDefiningConstraint<VarArrayArgConstraint<>, MinimumConstraintId>;
+
+////////////////////////////////////////////////////////////////////////
+struct NotEqualId {
+  static constexpr auto description_ = "r = (v1 != v2)";
+};
+using NEConstraint =
+   CustomDefiningConstraint<VarArray2ArgConstraint, NotEqualId>;
+
+////////////////////////////////////////////////////////////////////////
+struct LessOrEqualId {
+  static constexpr auto description_ = "r = (v1 != v2)";
+};
+using LEConstraint =
+   CustomDefiningConstraint<VarArray2ArgConstraint, LessOrEqualId>;
+
+////////////////////////////////////////////////////////////////////////
+struct DisjunctionId {
+  static constexpr auto description_ = "r = (v1 || v2)";
+};
+using DisjunctionConstraint =
+   CustomDefiningConstraint<VarArray2ArgConstraint, DisjunctionId>;
 
 ////////////////////////////////////////////////////////////////////////
 /// Indicator: b==bv -> c'x <= rhs
