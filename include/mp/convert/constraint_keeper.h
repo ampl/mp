@@ -8,6 +8,17 @@ namespace mp {
 /// Converters handling custom constraints should derive from
 class BasicConstraintConverter {
 public:
+  /// Default constraint prepro
+  /// All parameters are 'in-out'
+  template <class Constraint, class PreproInfo>
+  void PreprocessConstraint( Constraint&, PreproInfo& ) {
+    // ... do nothing by default
+    // Should at least derive bounds & type for the result
+  }
+  /// By default, we complain about constraint without a result propagator
+  void PropagateResult(BasicConstraint& con, double lb, double ub, Context ctx) {
+    throw std::logic_error("Propagation from result not implemented");
+  }
   /// By default, we complain about someone trying to convert an unknown constraint
   template <class Constraint>
   void Convert(const Constraint& ) {
@@ -17,6 +28,8 @@ public:
   /// Derived converter classes have to tell C++ to use default handlers if they need them
   /// when they overload Convert(), due to C++ name hiding
 #define USE_BASE_CONSTRAINT_CONVERTERS(BaseConverter) \
+  using BaseConverter::PreprocessConstraint; \
+  using BaseConverter::PropagateResult; \
   using BaseConverter::Convert;
 };
 

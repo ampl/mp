@@ -43,7 +43,7 @@ public:
     return typename EExprType::Variable{ GetResultVar() };
   }
   void PreprocessArguments() {
-    PreprocessConstraint(GetConverter(), GetConstraint(), prepro_);
+    GetConverter().PreprocessConstraint(GetConstraint(), prepro_);
   }
   void AddResultVariable() {
     auto r = GetConverter().AddVar(lb(), ub(), type());

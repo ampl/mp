@@ -29,8 +29,8 @@
 
 extern "C" int main1(int, char **argv) {
   try {
-    class GurobiInterface :
-        public mp::Interface<mp::MPToMIPConverter, mp::GurobiBackend> { };
+    using GurobiInterface =
+        mp::Interface<mp::MPToMIPConverter, mp::GurobiBackend>;
     using GurobiInterfaceApp = mp::InterfaceApp<GurobiInterface>;
     GurobiInterfaceApp s;
     return s.RunFromNLFile(argv);

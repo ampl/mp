@@ -12,7 +12,7 @@ public:
   bool IsNone() const { return CTX_NONE==value_; }
   bool HasPositive() const { return CTX_POS==value_ || CTX_MIX==value_; }
   bool HasNegative() const { return CTX_NEG==value_ || CTX_MIX==value_; }
-  bool IsMixed() const { CTX_MIX==value_; }
+  bool IsMixed() const { return CTX_MIX==value_; }
 
   /// Positivize
   Context operator+() {

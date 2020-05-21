@@ -22,8 +22,10 @@ public:
   EExpr(int i, double c) { AddTerm(i, c); }
 };
 
-/// BasicMPFlatConverter: it "flattens" most expressions by replacing them by a result variable and constraints
-/// Such constraints might need to be decomposed, which is handled by overloaded methods in derived classes
+/// BasicMPFlatConverter: it "flattens" most expressions
+/// by replacing them by a result variable and constraints.
+/// Such constraints might need to be decomposed, which is
+/// handled by overloaded methods in derived classes
 template <class Impl, class Backend,
           class Model = BasicModel<std::allocator<char> > >
 class BasicMPFlatConverter
@@ -172,11 +174,83 @@ public:
 
   //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
   ///
-  //////////////////////////// SPECIFIC CONSTRAINT RESULT-TO-ARGUMENTS PROPAGATORS //////
+  //////////////////////////// CONSTRAINT PROPAGATORS ///////////////////////////////////
 
-  void PropagateResult(BasicConstraint& con, double lb, double ub, Context ctx) {
-    throw std::logic_error("Propagation from result not implemented");
+
+  /// Preprocess minimum
+  void PreprocessConstraint(
+      MinimumConstraint& c, PreprocessInfo<MinimumConstraint>& prepro) {
+    auto& m = MP_DISPATCH( GetModel() );
+    auto& args = c.GetArguments();
+    prepro.narrow_result_bounds( m.lb_array(args),
+                          m.ub_min_array(args) );
+    prepro.set_result_type( m.common_type(args) );
   }
+
+  /// Preprocess maximum
+  void PreprocessConstraint(
+      MaximumConstraint& c, PreprocessInfo<MaximumConstraint>& prepro) {
+    auto& m = MP_DISPATCH( GetModel() );
+    auto& args = c.GetArguments();
+    prepro.narrow_result_bounds( m.lb_max_array(args),
+                          m.ub_array(args) );
+    prepro.set_result_type( m.common_type(args) );
+  }
+
+  /// Preprocess EQ
+  void PreprocessConstraint(
+      EQConstraint& c, PreprocessInfo<EQConstraint>& prepro) {
+    auto& m = MP_DISPATCH( GetModel() );
+    auto& args = c.GetArguments();
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+    if (m.is_fixed(args[0]) && m.is_fixed(args[1])) {
+      auto res = (double)int(m.fixed_value(args[0])==m.fixed_value(args[1]));
+      prepro.narrow_result_bounds(res, res);
+      return;
+    }
+    if (m.is_fixed(args[0])) {                 // Constant on the right
+      std::swap(args[0], args[1]);
+    }
+    if (m.is_fixed(args[1])) {                 // See if this is binary var==const
+      if (m.is_binary_var(args[0])) {
+        if (1.0==std::fabs(m.fixed_value(args[1])))
+          prepro.set_result_var( args[0] );
+        else if (0.0==m.fixed_value(args[1]))
+          prepro.set_result_var( MakeComplementVar(args[0]) );
+        else
+          prepro.narrow_result_bounds(0.0, 0.0);    // not 0/1 value, result false
+        return;
+      }
+    }
+  }
+
+  /// Preprocess NE
+  void PreprocessConstraint(
+      LEConstraint& c, PreprocessInfo<LEConstraint>& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+  }
+
+  /// Preprocess Disjunction
+  void PreprocessConstraint(
+      DisjunctionConstraint& c, PreprocessInfo<DisjunctionConstraint>& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+  }
+
+  /// Preprocess Not
+  template <class Converter>
+  void PreprocessConstraint(
+      NotConstraint& c, PreprocessInfo<NotConstraint>& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+  }
+
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  ///
+  //////////////////////////// SPECIFIC CONSTRAINT RESULT-TO-ARGUMENTS PROPAGATORS //////
 
   void PropagateResult(LinearDefiningConstraint& con, double lb, double ub, Context ctx) {
   }
