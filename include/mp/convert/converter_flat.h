@@ -44,64 +44,8 @@ protected:
 
   using EExprArray = std::vector<EExpr>;
 
-private:
-  std::unordered_map<double, int> map_fixed_vars_;
-
-  //////////////////////////// UTILITIES /////////////////////////////////
-public:
-
-  //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
-  int MakeFixedVar(double value) {
-    auto it = map_fixed_vars_.find(value);
-    if (map_fixed_vars_.end()!=it)
-      return it->second;
-    auto v = BaseConverter::AddVar(value, value);
-    map_fixed_vars_[value] = v;
-    return v;
-  }
-
-  /// Create or find a fixed variable
-  int AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
-    if (lb!=ub)
-      return BaseConverter::AddVar(lb, ub, type);
-    return MakeFixedVar(lb);
-  }
-
-  double lb(int var) const { return this->GetModel().var(var).lb(); }
-  double ub(int var) const { return this->GetModel().var(var).ub(); }
-  bool is_fixed(int var) const { return this->GetModel().is_fixed(var); }
-  double fixed_value(int var) const { return this->GetModel().fixed_value(var); }
-
-  int MakeComplementVar(int bvar) {
-    if (! (lb(bvar)==0.0 && ub(bvar)==1.0) )
-      throw std::logic_error("Asked to complement variable with bounds "
-                             + std::to_string(lb(bvar)) + ".." + std::to_string(ub(bvar)));
-    AffineExpr ae({-1.0}, {bvar}, 1.0);
-    return MP_DISPATCH( Convert2Var(std::move(ae)) );
-  }
-
-  struct VarInfo {
-    BasicConstraintKeeper *pInitExpr=nullptr;
-  };
-
-private:
-  std::vector<VarInfo> var_info_;
 
 public:
-  void AddInitExpression(int var, BasicConstraintKeeper* pie) {
-    var_info_.resize(std::max(var_info_.size(), (size_t)var+1));
-    var_info_[var].pInitExpr = pie;
-  }
-
-  bool HasInitExpression(int var) const {
-    return var_info_.size()>var && nullptr!=var_info_[var].pInitExpr;
-  }
-
-  BasicConstraintKeeper* GetInitExpression(int var) {
-    assert(HasInitExpression(var));
-    return var_info_[var].pInitExpr;
-  }
-
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
   ///
   ///////////////////////////////////////////////////////////////////////////////////////////
@@ -144,165 +88,6 @@ public:
       GetInitExpression(var)->PropagateResult(*this, lb, ub, ctx);
   }
 
-
-  //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
-  ///
-  //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
-  void ConvertExtraItems() {
-    for (int endConstraintsThisLoop = 0, endPrevious = 0;
-         (endConstraintsThisLoop = this->GetModel().num_custom_cons()) > endPrevious;
-         endPrevious = endConstraintsThisLoop
-         ) {
-      PreprocessIntermediate();                        // preprocess before each level
-      ConvertExtraItemsInRange(endPrevious, endConstraintsThisLoop);
-    }
-    PreprocessFinal();                                 // final prepro
-  }
-
-  void ConvertExtraItemsInRange(int first, int after_last) {
-    for (; first<after_last; ++first) {
-      auto* pConstraint = this->GetModel().custom_con(first);
-      if (!pConstraint->IsRemoved()) {
-        if (Recommended !=
-            pConstraint->BackendAcceptance(this->GetBackend())) {
-          pConstraint->ConvertWith(*this);
-          pConstraint->Remove();
-        }
-      }
-    }
-  }
-
-  //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
-  ///
-  //////////////////////////// CONSTRAINT PROPAGATORS ///////////////////////////////////
-
-
-  /// Preprocess minimum
-  void PreprocessConstraint(
-      MinimumConstraint& c, PreprocessInfo<MinimumConstraint>& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
-    auto& args = c.GetArguments();
-    prepro.narrow_result_bounds( m.lb_array(args),
-                          m.ub_min_array(args) );
-    prepro.set_result_type( m.common_type(args) );
-  }
-
-  /// Preprocess maximum
-  void PreprocessConstraint(
-      MaximumConstraint& c, PreprocessInfo<MaximumConstraint>& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
-    auto& args = c.GetArguments();
-    prepro.narrow_result_bounds( m.lb_max_array(args),
-                          m.ub_array(args) );
-    prepro.set_result_type( m.common_type(args) );
-  }
-
-  /// Preprocess EQ
-  void PreprocessConstraint(
-      EQConstraint& c, PreprocessInfo<EQConstraint>& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
-    auto& args = c.GetArguments();
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-    if (m.is_fixed(args[0]) && m.is_fixed(args[1])) {
-      auto res = (double)int(m.fixed_value(args[0])==m.fixed_value(args[1]));
-      prepro.narrow_result_bounds(res, res);
-      return;
-    }
-    if (m.is_fixed(args[0])) {                 // Constant on the right
-      std::swap(args[0], args[1]);
-    }
-    if (m.is_fixed(args[1])) {                 // See if this is binary var==const
-      if (m.is_binary_var(args[0])) {
-        if (1.0==std::fabs(m.fixed_value(args[1])))
-          prepro.set_result_var( args[0] );
-        else if (0.0==m.fixed_value(args[1]))
-          prepro.set_result_var( MakeComplementVar(args[0]) );
-        else
-          prepro.narrow_result_bounds(0.0, 0.0);    // not 0/1 value, result false
-        return;
-      }
-    }
-  }
-
-  /// Preprocess NE
-  void PreprocessConstraint(
-      LEConstraint& c, PreprocessInfo<LEConstraint>& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  /// Preprocess Disjunction
-  void PreprocessConstraint(
-      DisjunctionConstraint& c, PreprocessInfo<DisjunctionConstraint>& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  /// Preprocess Not
-  template <class Converter>
-  void PreprocessConstraint(
-      NotConstraint& c, PreprocessInfo<NotConstraint>& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  ///
-  //////////////////////////// SPECIFIC CONSTRAINT RESULT-TO-ARGUMENTS PROPAGATORS //////
-
-  void PropagateResult(LinearDefiningConstraint& con, double lb, double ub, Context ctx) {
-  }
-
-  void PropagateResult(NotConstraint& con, double lb, double ub, Context ctx) {
-    con.AddContext(ctx);
-    for (const auto a: con.GetArguments())
-      PropagateResult(a, 1.0-ub, 1.0-lb, -ctx);
-  }
-
-  void PropagateResult(DisjunctionConstraint& con, double lb, double ub, Context ctx) {
-    con.AddContext(ctx);
-    for (const auto a: con.GetArguments())
-      PropagateResult(a, 0.0, ub, +ctx);
-  }
-
-  void PropagateResult(LEConstraint& con, double lb, double ub, Context ctx) {
-    con.AddContext(ctx);
-    const auto& args = con.GetArguments();
-    PropagateResult(args[0], this->MinusInfinity(), this->PlusInfinity(), -ctx);
-    PropagateResult(args[1], this->MinusInfinity(), this->PlusInfinity(), +ctx);
-  }
-
-
-  //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
-  ///
-  //////////////////////////// SPECIFIC CONSTRAINT CONVERTERS ///////////////////////////
-
-  USE_BASE_CONSTRAINT_CONVERTERS(BasicConstraintConverter)      // reuse default converters
-
-  /// If backend does not like LDC, we can redefine it
-  void Convert(const LinearDefiningConstraint& ldc) {
-    this->AddConstraint(ldc.to_linear_constraint());
-  }
-
-  //////////////////////// MODEL PREPROCESSING /////////////////////////
-  void PreprocessIntermediate() { }
-  void PreprocessFinal() { }
-
-public:
-  //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
-  //////////////////////// Takes ownership /////////////////////////////
-  void AddConstraint(BasicConstraintKeeper* pbc) {
-    MP_DISPATCH( GetModel() ).AddConstraint(pbc);
-    const auto resvar = pbc->GetResultVar();
-    if (resvar>=0)
-      AddInitExpression(resvar, pbc);
-  }
-  template <class Constraint>
-  void AddConstraint(Constraint&& con) {
-    AddConstraint(makeConstraint<Impl, Constraint>(std::forward<Constraint>(con)));
-  }
 
 public:
   //////////////////////////////////// VISITOR ADAPTERS /////////////////////////////////////////
@@ -429,6 +214,231 @@ public:
 
   EExpr VisitOr(BinaryLogicalExpr e) {
     return VisitFunctionalExpression<DisjunctionConstraint>({ e.lhs(), e.rhs() });
+  }
+
+
+public:
+
+  //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
+  ///
+  //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
+  void ConvertExtraItems() {
+    for (int endConstraintsThisLoop = 0, endPrevious = 0;
+         (endConstraintsThisLoop = this->GetModel().num_custom_cons()) > endPrevious;
+         endPrevious = endConstraintsThisLoop
+         ) {
+      PreprocessIntermediate();                        // preprocess before each level
+      ConvertExtraItemsInRange(endPrevious, endConstraintsThisLoop);
+    }
+    PreprocessFinal();                                 // final prepro
+  }
+
+  void ConvertExtraItemsInRange(int first, int after_last) {
+    for (; first<after_last; ++first) {
+      auto* pConstraint = this->GetModel().custom_con(first);
+      if (!pConstraint->IsRemoved()) {
+        if (Recommended !=
+            pConstraint->BackendAcceptance(this->GetBackend())) {
+          pConstraint->ConvertWith(*this);
+          pConstraint->Remove();
+        }
+      }
+    }
+  }
+
+  //////////////////////// WHOLE-MODEL PREPROCESSING /////////////////////////
+  void PreprocessIntermediate() { }
+  void PreprocessFinal() { }
+
+
+
+  //////////////////////////// CUSTOM CONSTRAINTS ////////////////////////////
+  ///
+  //////////////////////////// CONSTRAINT PROPAGATORS ///////////////////////////////////
+
+
+  /// Preprocess minimum
+  void PreprocessConstraint(
+      MinimumConstraint& c, PreprocessInfo<MinimumConstraint>& prepro) {
+    auto& m = MP_DISPATCH( GetModel() );
+    auto& args = c.GetArguments();
+    prepro.narrow_result_bounds( m.lb_array(args),
+                          m.ub_min_array(args) );
+    prepro.set_result_type( m.common_type(args) );
+  }
+
+  /// Preprocess maximum
+  void PreprocessConstraint(
+      MaximumConstraint& c, PreprocessInfo<MaximumConstraint>& prepro) {
+    auto& m = MP_DISPATCH( GetModel() );
+    auto& args = c.GetArguments();
+    prepro.narrow_result_bounds( m.lb_max_array(args),
+                          m.ub_array(args) );
+    prepro.set_result_type( m.common_type(args) );
+  }
+
+  /// Preprocess EQ
+  void PreprocessConstraint(
+      EQConstraint& c, PreprocessInfo<EQConstraint>& prepro) {
+    auto& m = MP_DISPATCH( GetModel() );
+    auto& args = c.GetArguments();
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+    if (m.is_fixed(args[0]) && m.is_fixed(args[1])) {
+      auto res = (double)int(m.fixed_value(args[0])==m.fixed_value(args[1]));
+      prepro.narrow_result_bounds(res, res);
+      return;
+    }
+    if (m.is_fixed(args[0])) {                 // Constant on the right
+      std::swap(args[0], args[1]);
+    }
+    if (m.is_fixed(args[1])) {                 // See if this is binary var==const
+      if (m.is_binary_var(args[0])) {
+        if (1.0==std::fabs(m.fixed_value(args[1])))
+          prepro.set_result_var( args[0] );
+        else if (0.0==m.fixed_value(args[1]))
+          prepro.set_result_var( MakeComplementVar(args[0]) );
+        else
+          prepro.narrow_result_bounds(0.0, 0.0);    // not 0/1 value, result false
+        return;
+      }
+    }
+  }
+
+  /// Preprocess NE
+  void PreprocessConstraint(
+      LEConstraint& c, PreprocessInfo<LEConstraint>& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+  }
+
+  /// Preprocess Disjunction
+  void PreprocessConstraint(
+      DisjunctionConstraint& c, PreprocessInfo<DisjunctionConstraint>& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+  }
+
+  /// Preprocess Not
+  template <class Converter>
+  void PreprocessConstraint(
+      NotConstraint& c, PreprocessInfo<NotConstraint>& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+  }
+
+
+  //////////////////////////// CUSTOM CONSTRAINTS //////////////////////
+  ///
+  //////////////////////////// SPECIFIC CONSTRAINT RESULT-TO-ARGUMENTS PROPAGATORS //////
+
+  void PropagateResult(LinearDefiningConstraint& con, double lb, double ub, Context ctx) {
+  }
+
+  void PropagateResult(NotConstraint& con, double lb, double ub, Context ctx) {
+    con.AddContext(ctx);
+    for (const auto a: con.GetArguments())
+      PropagateResult(a, 1.0-ub, 1.0-lb, -ctx);
+  }
+
+  void PropagateResult(DisjunctionConstraint& con, double lb, double ub, Context ctx) {
+    con.AddContext(ctx);
+    for (const auto a: con.GetArguments())
+      PropagateResult(a, 0.0, ub, +ctx);
+  }
+
+  void PropagateResult(LEConstraint& con, double lb, double ub, Context ctx) {
+    con.AddContext(ctx);
+    const auto& args = con.GetArguments();
+    PropagateResult(args[0], this->MinusInfinity(), this->PlusInfinity(), -ctx);
+    PropagateResult(args[1], this->MinusInfinity(), this->PlusInfinity(), +ctx);
+  }
+
+
+  //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
+  ///
+  //////////////////////////// SPECIFIC CONSTRAINT CONVERTERS ///////////////////////////
+
+  USE_BASE_CONSTRAINT_CONVERTERS(BasicConstraintConverter)      // reuse default converters
+
+  /// If backend does not like LDC, we can redefine it
+  void Convert(const LinearDefiningConstraint& ldc) {
+    this->AddConstraint(ldc.to_linear_constraint());
+  }
+
+public:
+  //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
+  //////////////////////// Takes ownership /////////////////////////////
+  void AddConstraint(BasicConstraintKeeper* pbc) {
+    MP_DISPATCH( GetModel() ).AddConstraint(pbc);
+    const auto resvar = pbc->GetResultVar();
+    if (resvar>=0)
+      AddInitExpression(resvar, pbc);
+  }
+  template <class Constraint>
+  void AddConstraint(Constraint&& con) {
+    AddConstraint(makeConstraint<Impl, Constraint>(std::forward<Constraint>(con)));
+  }
+
+
+  //////////////////////////// UTILITIES /////////////////////////////////
+  ///
+
+private:
+  std::unordered_map<double, int> map_fixed_vars_;
+
+public:
+
+  //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
+  int MakeFixedVar(double value) {
+    auto it = map_fixed_vars_.find(value);
+    if (map_fixed_vars_.end()!=it)
+      return it->second;
+    auto v = BaseConverter::AddVar(value, value);
+    map_fixed_vars_[value] = v;
+    return v;
+  }
+
+  /// Create or find a fixed variable
+  int AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
+    if (lb!=ub)
+      return BaseConverter::AddVar(lb, ub, type);
+    return MakeFixedVar(lb);
+  }
+
+  double lb(int var) const { return this->GetModel().var(var).lb(); }
+  double ub(int var) const { return this->GetModel().var(var).ub(); }
+  bool is_fixed(int var) const { return this->GetModel().is_fixed(var); }
+  double fixed_value(int var) const { return this->GetModel().fixed_value(var); }
+
+  int MakeComplementVar(int bvar) {
+    if (! (lb(bvar)==0.0 && ub(bvar)==1.0) )
+      throw std::logic_error("Asked to complement variable with bounds "
+                             + std::to_string(lb(bvar)) + ".." + std::to_string(ub(bvar)));
+    AffineExpr ae({-1.0}, {bvar}, 1.0);
+    return MP_DISPATCH( Convert2Var(std::move(ae)) );
+  }
+
+  struct VarInfo {
+    BasicConstraintKeeper *pInitExpr=nullptr;
+  };
+
+private:
+  std::vector<VarInfo> var_info_;
+
+public:
+  void AddInitExpression(int var, BasicConstraintKeeper* pie) {
+    var_info_.resize(std::max(var_info_.size(), (size_t)var+1));
+    var_info_[var].pInitExpr = pie;
+  }
+
+  bool HasInitExpression(int var) const {
+    return var_info_.size()>var && nullptr!=var_info_[var].pInitExpr;
+  }
+
+  BasicConstraintKeeper* GetInitExpression(int var) {
+    assert(HasInitExpression(var));
+    return var_info_[var].pInitExpr;
   }
 
 

@@ -1,5 +1,5 @@
-#ifndef PREPRO_ARGS_H
-#define PREPRO_ARGS_H
+#ifndef PREPROCESS_H
+#define PREPROCESS_H
 
 #include <limits>
 #include <cmath>
@@ -59,7 +59,6 @@ void ComputeBoundsAndType(Model& model, AffineExpr& ae, PreprocessInfoStd& resul
 }
 
 
-
 } // namespace mp
 
-#endif // PREPRO_ARGS_H
+#endif // PREPROCESS_H
