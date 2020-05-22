@@ -1,34 +1,12 @@
-#include "cplexbackend.h"
-
-#include <cctype>
-#include <cstdlib>
-#include <set>
 #include <vector>
 
-#include <iostream>
+#include "cplexbackend.h"
 
-using std::strcmp;
-using std::vector;
+#define CPLEX_CALL( call ) do { if (int e=call) \
+  throw std::runtime_error( \
+    fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
 
 namespace {
-
-
-const mp::OptionValueInfo OPTIMIZERS[] = {
-  {
-    "auto",
-    "CP Optimizer if the problem has nonlinear objective/constraints "
-    "or logical constraints, CPLEX otherwise", 0
-  },
-  {
-    "cp",
-    "CP Optimizer", 0
-  },
-  {
-    "cplex",
-    "CPLEX Optimizer", 0
-  }
-};
-
 
 mp::OptionError GetOptionValueError(
     const mp::SolverOption &opt, fmt::StringRef message) {
@@ -111,25 +89,14 @@ CplexBackend::CplexBackend() :
   set_long_name(fmt::format("IBM ILOG CPLEX {}", version));
   set_version(fmt::format("AMPL/CPLEX Optimizer [{}]", version));
 
-  AddSuffix("priority", 0, suf::VAR);
-
   set_option_header(
       "IBM ILOG CPLEX Optimizer Options for AMPL\n"
       "--------------------------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to the "
-      "AMPL option ``ilogcp_options``. For example::\n"
+      "AMPL option ``cplexdirect_options``. For example::\n"
       "\n"
-      "  ampl: option ilogcp_options 'optimalitytolerance=1e-6 "
-      "searchtype=restart';\n");
-
-  AddStrOption("optimizer",
-      "Specifies which optimizer to use. Possible values:\n"
-      "\n"
-      ".. value-table::\n"
-      "\n"
-      "The default value is ``auto``.",
-      &CplexBackend::GetOptimizer, &CplexBackend::SetOptimizer, OPTIMIZERS);
+      "  ampl: option cplexdirect_options 'optimalitytolerance=1e-6';\n");
 
 }
 
@@ -221,28 +188,6 @@ void CplexBackend::ExportModel(const std::string &file) {
   CPLEX_CALL( CPXwriteprob (env, lp, file.c_str(), NULL) );
 }
 
-std::string CplexBackend::GetOptimizer(const SolverOption &) const {
-  switch (optimizer_) {
-  default:
-    assert(false);
-    // Fall through.
-  case AUTO:  return "auto";
-  case CP:    return "cp";
-  case CPLEX: return "cplex";
-  }
-}
-
-void CplexBackend::SetOptimizer(const SolverOption &opt, fmt::StringRef value) {
-  if (value == "auto")
-    optimizer_ = AUTO;
-  else if (value == "cp")
-    optimizer_ = CP;
-  else if (value == "cplex")
-    optimizer_ = CPLEX;
-  else
-    throw InvalidOptionValue(opt, value);
-}
-
 void CplexBackend::SetBoolOption(
     const SolverOption &opt, int value, Option id) {
   if (value != 0 && value != 1)
@@ -264,7 +209,7 @@ void CplexBackend::SolveWithCplex(
   interrupter()->SetHandler(InterruptCplex, nullptr);
   CPLEX_CALL( CPXsetterminate (env, &terminate_flag) );
 
-  std::cout << "Exporting model" << std::endl;
+  Print( "Exporting model.\n" );
   ExportModel("model_cplex.lp");
 
   stats.setup_time = GetTimeAndReset(stats.time);
@@ -279,7 +224,7 @@ void CplexBackend::SolveWithCplex(
   fmt::MemoryWriter writer;
   writer.write("{}: {}\n", long_name(), status);
   double obj_value = std::numeric_limits<double>::quiet_NaN();
-  vector<double> solution, dual_solution;
+  std::vector<double> solution, dual_solution;
   if (solve_code < sol::INFEASIBLE) {
     PrimalSolution(solution);
 
@@ -305,17 +250,6 @@ void CplexBackend::Solve(Problem &p, SolutionHandler &sh) {
 
 void CplexBackend::InitProblemModificationPhase(const Problem &p) {
   stats.time = steady_clock::now();
-
-  optimizer = optimizer_;
-  if (optimizer == AUTO) {
-    if (p.num_logical_cons() != 0 || p.has_nonlinear_cons() ||
-        HasNonlinearObj(p)) {
-      optimizer = CP;
-    } else {
-      optimizer = CPLEX;
-    }
-  }
-
 }
 
 void CplexBackend::AddVariables(int n, double *lbs, double *ubs, var::Type *types) {
@@ -376,10 +310,6 @@ void CplexBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
 void CplexBackend::FinishProblemModificationPhase() {
 }
 
-void CplexBackend::Convert(Problem &p) {
-  InitProblemModificationPhase(p);
-}
-
 void CplexBackend::Resolve(Problem &p, SolutionHandler &sh) {
 
   SolveWithCplex(p, stats, sh);
@@ -394,5 +324,5 @@ void CplexBackend::Resolve(Problem &p, SolutionHandler &sh) {
 }
 
 
-SolverPtr create_ilogcp(const char *) { return SolverPtr(new CplexBackend()); }
+SolverPtr create_cplexdirect(const char *) { return SolverPtr(new CplexBackend()); }
 }

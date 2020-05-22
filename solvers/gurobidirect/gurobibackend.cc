@@ -1,66 +1,13 @@
-/*
- IBM/ILOG CP solver for AMPL.
-
- Copyright (C) 2013 AMPL Optimization Inc
-
- Permission to use, copy, modify, and distribute this software and its
- documentation for any purpose and without fee is hereby granted,
- provided that the above copyright notice appear in all copies and that
- both that the copyright notice and this permission notice and warranty
- disclaimer appear in supporting documentation.
-
- The author and AMPL Optimization Inc disclaim all warranties with
- regard to this software, including all implied warranties of
- merchantability and fitness.  In no event shall the author be liable
- for any special, indirect or consequential damages or any damages
- whatsoever resulting from loss of use, data or profits, whether in an
- action of contract, negligence or other tortious action, arising out
- of or in connection with the use or performance of this software.
-
- Author: Victor Zverovich (based on the older version by Robert Fourer)
-
- October 2000: Linear/Nonlinear version (Robert Fourer)
- June 2012:    Updated to Concert 12.4 (Victor Zverovich)
-
- Possible improvements: Some sort of variable preference mechanism.
-
- Reference: "Extending an Algebraic Modeling Language to
- Support Constraint Programming" by Robert Fourer and David M. Gay,
- INFORMS Journal on Computing, Fall 2002, vol. 14, no. 4, 322-344
- (http://joc.journal.informs.org/content/14/4/322).
- */
+#include <vector>
 
 #include "gurobibackend.h"
 
-#include <cctype>
-#include <cstdlib>
-#include <set>
-#include <vector>
+#define GRB_CALL( call ) do { if (int e=call) \
+  throw std::runtime_error( \
+    fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
 
-#include <iostream>
-
-using std::strcmp;
-using std::vector;
 
 namespace {
-
-
-const mp::OptionValueInfo OPTIMIZERS[] = {
-  {
-    "auto",
-    "CP Optimizer if the problem has nonlinear objective/constraints "
-    "or logical constraints, CPLEX otherwise", 0
-  },
-  {
-    "cp",
-    "CP Optimizer", 0
-  },
-  {
-    "cplex",
-    "CPLEX Optimizer", 0
-  }
-};
-
 
 mp::OptionError GetOptionValueError(
     const mp::SolverOption &opt, fmt::StringRef message) {
@@ -144,18 +91,9 @@ GurobiBackend::GurobiBackend() :
       "--------------------------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to the "
-      "AMPL option ``ilogcp_options``. For example::\n"
+      "AMPL option ``gurobidirect_options``. For example::\n"
       "\n"
-      "  ampl: option ilogcp_options 'optimalitytolerance=1e-6 "
-      "searchtype=restart';\n");
-
-  AddStrOption("optimizer",
-      "Specifies which optimizer to use. Possible values:\n"
-      "\n"
-      ".. value-table::\n"
-      "\n"
-      "The default value is ``auto``.",
-      &GurobiBackend::GetOptimizer, &GurobiBackend::SetOptimizer, OPTIMIZERS);
+      "  ampl: option gurobidirect_options 'optimalitytolerance=1e-6';\n");
 
 }
 
@@ -242,27 +180,6 @@ void GurobiBackend::ExportModel(const std::string &file) {
   GRB_CALL( GRBwrite(model, file.c_str()) );
 }
 
-std::string GurobiBackend::GetOptimizer(const SolverOption &) const {
-  switch (optimizer_) {
-  default:
-    assert(false);
-    // Fall through.
-  case AUTO:  return "auto";
-  case CP:    return "cp";
-  case CPLEX: return "cplex";
-  }
-}
-
-void GurobiBackend::SetOptimizer(const SolverOption &opt, fmt::StringRef value) {
-  if (value == "auto")
-    optimizer_ = AUTO;
-  else if (value == "cp")
-    optimizer_ = CP;
-  else if (value == "cplex")
-    optimizer_ = CPLEX;
-  else
-    throw InvalidOptionValue(opt, value);
-}
 
 void GurobiBackend::SetBoolOption(
     const SolverOption &opt, int value, Option id) {
@@ -284,7 +201,7 @@ void GurobiBackend::SolveWithGurobi(
     Stats &stats, SolutionHandler &sh) {
   interrupter()->SetHandler(InterruptGurobi, model);
 
-  std::cout << "Exporting model" << std::endl;
+  Print( "Exporting model.\n" );
   ExportModel("model_gurobi.lp");
 
   stats.setup_time = GetTimeAndReset(stats.time);
@@ -299,7 +216,7 @@ void GurobiBackend::SolveWithGurobi(
   fmt::MemoryWriter writer;
   writer.write("{}: {}\n", long_name(), status);
   double obj_value = std::numeric_limits<double>::quiet_NaN();
-  vector<double> solution, dual_solution;
+  std::vector<double> solution, dual_solution;
   if (solve_code < sol::INFEASIBLE) {
     PrimalSolution(solution);
 
@@ -325,17 +242,6 @@ void GurobiBackend::Solve(Problem &p, SolutionHandler &sh) {
 
 void GurobiBackend::InitProblemModificationPhase(const Problem &p) {
   stats.time = steady_clock::now();
-
-  optimizer = optimizer_;
-  if (optimizer == AUTO) {
-    if (p.num_logical_cons() != 0 || p.has_nonlinear_cons() ||
-        HasNonlinearObj(p)) {
-      optimizer = CP;
-    } else {
-      optimizer = CPLEX;
-    }
-  }
-
 }
 
 void GurobiBackend::AddVariables(int n, double *lbs, double *ubs, var::Type *types) {
@@ -413,10 +319,6 @@ void GurobiBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
 void GurobiBackend::FinishProblemModificationPhase() {
 }
 
-void GurobiBackend::Convert(Problem &p) {
-  InitProblemModificationPhase(p);
-}
-
 void GurobiBackend::Resolve(Problem &p, SolutionHandler &sh) {
 
   SolveWithGurobi(p, stats, sh);
@@ -431,5 +333,5 @@ void GurobiBackend::Resolve(Problem &p, SolutionHandler &sh) {
 }
 
 
-SolverPtr create_ilogcp(const char *) { return SolverPtr(new GurobiBackend()); }
+SolverPtr create_gurobidirect(const char *) { return SolverPtr(new GurobiBackend()); }
 }

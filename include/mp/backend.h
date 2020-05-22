@@ -103,6 +103,12 @@ public:
   }
 
 
+  /////////////////////////////// SERVICE STUFF ///////////////////////////////////
+  ///
+  static bool float_equal(double a, double b) {           // ??????
+    return std::fabs(a-b) < 1e-8*std::max(std::fabs(a), std::fabs(b));
+  }
+
 };
 
 
