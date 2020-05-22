@@ -1,6 +1,5 @@
 /*
- Abstract solver backend wrapper and
- interfaces between converters and solver backends.
+ Abstract solver backend wrapper.
 
  Copyright (C) 2020 AMPL Optimization Inc
 
@@ -24,7 +23,9 @@
 #ifndef BACKEND_H_
 #define BACKEND_H_
 
-#include "mp/problem.h"
+#include "mp/clock.h"
+#include "mp/convert/model.h"
+#include "mp/solver.h"
 #include "mp/convert/constraint_keeper.h"
 #include "mp/convert/std_constr.h"
 
@@ -34,9 +35,15 @@ namespace mp {
 /// Used by converter to directly access a solver.
 /// The basic wrapper provides common functionality: option handling
 /// and placeholders for solver API
-template <class Impl>
-class BasicBackend : public BasicConstraintAdder {
+template <class Impl, class Model = BasicModel<std::allocator<char>>>
+class BasicBackend : public BasicConstraintAdder,
+    public SolverImpl<Model>  // TODO no SolverImpl
+{
 public:
+  BasicBackend(fmt::CStringRef name, fmt::CStringRef longname=0,
+               long date=0, int flags=0) :
+    SolverImpl<Model>(name, longname, date, flags) { }
+
   void InitProblemModificationPhase(const Problem& p) { }  // TODO Get rid of Problem here
   void FinishProblemModificationPhase() { }
   void AddVariables(int n, double* lbs, double* ubs, mp::var::Type* types) {
@@ -103,8 +110,70 @@ public:
   }
 
 
+  void Solve(Problem &p, SolutionHandler &sh) { Resolve(p, sh); }
+
+  void Resolve(Problem& p, SolutionHandler &sh) {
+    MP_DISPATCH( SetInterrupter(MP_DISPATCH( interrupter() )) );
+
+    MP_DISPATCH( Print( "Exporting model.lp.\n" ) );
+    MP_DISPATCH( ExportModel("model.lp") );
+
+    stats.setup_time = GetTimeAndReset(stats.time);
+    MP_DISPATCH( DoOptimize() );
+    stats.solution_time = GetTimeAndReset(stats.time);
+
+    // Convert solution status.
+    int solve_code = 0;
+    std::string status = MP_DISPATCH(
+        ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
+
+    fmt::MemoryWriter writer;
+    writer.write("{}: {}\n", MP_DISPATCH( long_name() ), status);
+    double obj_value = std::numeric_limits<double>::quiet_NaN();
+    std::vector<double> solution, dual_solution;
+    if (solve_code < sol::INFEASIBLE) {
+      MP_DISPATCH( PrimalSolution(solution) );
+
+      if (MP_DISPATCH( IsMIP() )) {
+        writer << MP_DISPATCH( NodeCount() ) << " nodes, ";
+      } else {                                    // Also for QCP
+        MP_DISPATCH( DualSolution(dual_solution) );
+      }
+      writer << MP_DISPATCH( Niterations() ) << " iterations";
+
+      if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
+        writer.write(", objective {}",
+                     MP_DISPATCH( FormatObjValue(MP_DISPATCH( ObjectiveValue() )) ));
+      }
+    }
+    sh.HandleSolution(solve_code, writer.c_str(),
+        solution.empty() ? 0 : solution.data(),
+        dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
+
+    double output_time = GetTimeAndReset(stats.time);
+
+    if (MP_DISPATCH( timing() )) {
+      MP_DISPATCH( Print("Setup time = {:.6f}s\n"
+            "Solution time = {:.6f}s\n"
+            "Output time = {:.6f}s\n",
+            stats.setup_time, stats.solution_time, output_time) );
+    }
+  }
+
+
+
   /////////////////////////////// SERVICE STUFF ///////////////////////////////////
   ///
+  /////////////////////////////////////////////////////////////////////////////////
+
+  struct Stats {
+    steady_clock::time_point time;
+    double setup_time;
+    double solution_time;
+  };
+  Stats stats;
+
+
   static bool float_equal(double a, double b) {           // ??????
     return std::fabs(a-b) < 1e-8*std::max(std::fabs(a), std::fabs(b));
   }

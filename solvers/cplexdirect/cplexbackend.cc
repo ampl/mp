@@ -8,64 +8,7 @@
 
 namespace {
 
-mp::OptionError GetOptionValueError(
-    const mp::SolverOption &opt, fmt::StringRef message) {
-  throw mp::OptionError(fmt::format(
-      "Can't get value of option {}: {}", opt.name(), message));
-}
-
-
-bool HasNonlinearObj(const mp::Problem &p) {
-  if (p.num_objs() == 0)
-    return false;
-  mp::NumericExpr expr = p.obj(0).nonlinear_expr();
-  return expr && !mp::Cast<mp::NumericConstant>(expr);
-}
-
-std::string ConvertSolutionStatus( CPXENVptr env,
-    CPXLPptr lp, const mp::Interrupter &interrupter, int &solve_code) {
-  namespace sol = mp::sol;
-  int optimstatus = CPXgetstat(env, lp);
-  switch (optimstatus) {
-  default:
-    // Fall through.
-    if (interrupter.Stop()) {
-      solve_code = 600;
-      return "interrupted";
-    }
-    int solcount;
-    solcount = CPXgetsolnpoolnumsolns (env, lp);  // Can we use it without CPXpopulate?
-    if (solcount>0) {
-      solve_code = sol::UNCERTAIN;
-      return "feasible solution";
-    }
-    solve_code = sol::FAILURE + 1;
-    return "unknown solution status";
-  case CPX_STAT_OPTIMAL:
-  case CPXMIP_OPTIMAL:
-  case CPX_STAT_MULTIOBJ_OPTIMAL:
-    solve_code = sol::SOLVED;
-    return "optimal solution";
-  case CPX_STAT_INFEASIBLE:
-  case CPXMIP_INFEASIBLE:
-  case CPX_STAT_MULTIOBJ_INFEASIBLE:
-    solve_code = sol::INFEASIBLE;
-    return "infeasible problem";
-  case CPX_STAT_UNBOUNDED:
-  case CPXMIP_UNBOUNDED:
-  case CPX_STAT_MULTIOBJ_UNBOUNDED:
-    solve_code = sol::UNBOUNDED;
-    return "unbounded problem";
-  case CPX_STAT_INForUNBD:
-  case CPXMIP_INForUNBD:
-  case CPX_STAT_MULTIOBJ_INForUNBD:
-    solve_code = sol::INFEASIBLE + 1;
-    return "infeasible or unbounded problem";
-  }
-}
-
 volatile int terminate_flag = 0;
-
 bool InterruptCplex(void *) {
   terminate_flag = 1;
   return true;
@@ -76,7 +19,7 @@ bool InterruptCplex(void *) {
 namespace mp {
 
 CplexBackend::CplexBackend() :
-   BaseSolverImpl("cplexdirect", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
+   BaseBackend("cplexdirect", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
    {
   InitBackend();
 
@@ -203,50 +146,57 @@ void CplexBackend::DoSetIntOption(
 }
 
 
-void CplexBackend::SolveWithCplex(
-    Problem &p,
-    Stats &stats, SolutionHandler &sh) {
-  interrupter()->SetHandler(InterruptCplex, nullptr);
+void CplexBackend::SetInterrupter(mp::Interrupter *inter) {
+  inter->SetHandler(InterruptCplex, nullptr);
   CPLEX_CALL( CPXsetterminate (env, &terminate_flag) );
+}
 
-  Print( "Exporting model.\n" );
-  ExportModel("model_cplex.lp");
-
-  stats.setup_time = GetTimeAndReset(stats.time);
+void CplexBackend::DoOptimize() {
   CPLEX_CALL( CPXmipopt(env, lp) );
-  stats.solution_time = GetTimeAndReset(stats.time);
+}
 
-  // Convert solution status.
-  int solve_code = 0;
-  std::string status =
-      ConvertSolutionStatus(env, lp, *interrupter(), solve_code);
-
-  fmt::MemoryWriter writer;
-  writer.write("{}: {}\n", long_name(), status);
-  double obj_value = std::numeric_limits<double>::quiet_NaN();
-  std::vector<double> solution, dual_solution;
-  if (solve_code < sol::INFEASIBLE) {
-    PrimalSolution(solution);
-
-    if (IsMIP()) {
-      writer << NodeCount() << " nodes, ";
-    } else {                                    // Also for QCP
-      DualSolution(dual_solution);
+std::string CplexBackend::ConvertSolutionStatus(
+    const mp::Interrupter &interrupter, int &solve_code) {
+  namespace sol = mp::sol;
+  int optimstatus = CPXgetstat(env, lp);
+  switch (optimstatus) {
+  default:
+    // Fall through.
+    if (interrupter.Stop()) {
+      solve_code = 600;
+      return "interrupted";
     }
-    writer << Niterations() << " iterations";
-
-    if (NumberOfObjectives() > 0) {
-      writer.write(", objective {}", FormatObjValue(ObjectiveValue()));
+    int solcount;
+    solcount = CPXgetsolnpoolnumsolns (env, lp);  // Can we use it without CPXpopulate?
+    if (solcount>0) {
+      solve_code = sol::UNCERTAIN;
+      return "feasible solution";
     }
+    solve_code = sol::FAILURE + 1;
+    return "unknown solution status";
+  case CPX_STAT_OPTIMAL:
+  case CPXMIP_OPTIMAL:
+  case CPX_STAT_MULTIOBJ_OPTIMAL:
+    solve_code = sol::SOLVED;
+    return "optimal solution";
+  case CPX_STAT_INFEASIBLE:
+  case CPXMIP_INFEASIBLE:
+  case CPX_STAT_MULTIOBJ_INFEASIBLE:
+    solve_code = sol::INFEASIBLE;
+    return "infeasible problem";
+  case CPX_STAT_UNBOUNDED:
+  case CPXMIP_UNBOUNDED:
+  case CPX_STAT_MULTIOBJ_UNBOUNDED:
+    solve_code = sol::UNBOUNDED;
+    return "unbounded problem";
+  case CPX_STAT_INForUNBD:
+  case CPXMIP_INForUNBD:
+  case CPX_STAT_MULTIOBJ_INForUNBD:
+    solve_code = sol::INFEASIBLE + 1;
+    return "infeasible or unbounded problem";
   }
-  sh.HandleSolution(solve_code, writer.c_str(),
-      solution.empty() ? 0 : solution.data(),
-      dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
 }
 
-void CplexBackend::Solve(Problem &p, SolutionHandler &sh) {
-  Resolve(p, sh);
-}
 
 void CplexBackend::InitProblemModificationPhase(const Problem &p) {
   stats.time = steady_clock::now();
@@ -310,19 +260,8 @@ void CplexBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
 void CplexBackend::FinishProblemModificationPhase() {
 }
 
-void CplexBackend::Resolve(Problem &p, SolutionHandler &sh) {
 
-  SolveWithCplex(p, stats, sh);
-  double output_time = GetTimeAndReset(stats.time);
-
-  if (timing()) {
-    Print("Setup time = {:.6f}s\n"
-          "Solution time = {:.6f}s\n"
-          "Output time = {:.6f}s\n",
-          stats.setup_time, stats.solution_time, output_time);
-  }
-}
-
-
+//////////////////////////////////////////////////////////////////////////////////////
 SolverPtr create_cplexdirect(const char *) { return SolverPtr(new CplexBackend()); }
-}
+
+} // namespace mp

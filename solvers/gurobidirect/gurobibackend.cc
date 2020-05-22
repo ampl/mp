@@ -9,58 +9,6 @@
 
 namespace {
 
-mp::OptionError GetOptionValueError(
-    const mp::SolverOption &opt, fmt::StringRef message) {
-  throw mp::OptionError(fmt::format(
-      "Can't get value of option {}: {}", opt.name(), message));
-}
-
-
-bool HasNonlinearObj(const mp::Problem &p) {
-  if (p.num_objs() == 0)
-    return false;
-  mp::NumericExpr expr = p.obj(0).nonlinear_expr();
-  return expr && !mp::Cast<mp::NumericConstant>(expr);
-}
-
-std::string ConvertSolutionStatus(
-    GRBmodel* model, const mp::Interrupter &interrupter, int &solve_code) {
-  namespace sol = mp::sol;
-  int optimstatus;
-  GRB_CALL( GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus) );
-  switch (optimstatus) {
-  default:
-    // Fall through.
-    if (interrupter.Stop()) {
-      solve_code = 600;
-      return "interrupted";
-    }
-    int solcount;
-    GRB_CALL( GRBgetintattr(model, GRB_INT_ATTR_SOLCOUNT, &solcount) );
-    if (solcount>0) {
-      solve_code = sol::UNCERTAIN;
-      return "feasible solution";
-    }
-    solve_code = sol::FAILURE + 1;
-    return "unknown solution status";
-  case GRB_OPTIMAL:
-    solve_code = sol::SOLVED;
-    return "optimal solution";
-  case GRB_INFEASIBLE:
-    solve_code = sol::INFEASIBLE;
-    return "infeasible problem";
-  case GRB_UNBOUNDED:
-    solve_code = sol::UNBOUNDED;
-    return "unbounded problem";
-  case GRB_INF_OR_UNBD:
-    solve_code = sol::INFEASIBLE + 1;
-    return "infeasible or unbounded problem";
-  case GRB_NUMERIC:
-    solve_code = sol::FAILURE;
-    return "error";
-  }
-}
-
 bool InterruptGurobi(void *model) {
   GRBterminate( static_cast<GRBmodel*>(model) );
   return true;
@@ -71,7 +19,7 @@ bool InterruptGurobi(void *model) {
 namespace mp {
 
 GurobiBackend::GurobiBackend() :
-   BaseSolverImpl("gurobidirect", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
+   BaseBackend("gurobidirect", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
    {
   InitBackend();
 
@@ -196,48 +144,50 @@ void GurobiBackend::DoSetIntOption(
 }
 
 
-void GurobiBackend::SolveWithGurobi(
-    Problem &p,
-    Stats &stats, SolutionHandler &sh) {
-  interrupter()->SetHandler(InterruptGurobi, model);
-
-  Print( "Exporting model.\n" );
-  ExportModel("model_gurobi.lp");
-
-  stats.setup_time = GetTimeAndReset(stats.time);
-  GRB_CALL( GRBoptimize(model) );
-  stats.solution_time = GetTimeAndReset(stats.time);
-
-  // Convert solution status.
-  int solve_code = 0;
-  std::string status =
-      ConvertSolutionStatus(model, *interrupter(), solve_code);
-
-  fmt::MemoryWriter writer;
-  writer.write("{}: {}\n", long_name(), status);
-  double obj_value = std::numeric_limits<double>::quiet_NaN();
-  std::vector<double> solution, dual_solution;
-  if (solve_code < sol::INFEASIBLE) {
-    PrimalSolution(solution);
-
-    if (IsMIP()) {
-      writer << NodeCount() << " nodes, ";
-    } else {                                    // Also for QCP
-      DualSolution(dual_solution);
-    }
-    writer << Niterations() << " iterations";
-
-    if (NumberOfObjectives() > 0) {
-      writer.write(", objective {}", FormatObjValue(ObjectiveValue()));
-    }
-  }
-  sh.HandleSolution(solve_code, writer.c_str(),
-      solution.empty() ? 0 : solution.data(),
-      dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
+void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
+  inter->SetHandler(InterruptGurobi, model);
 }
 
-void GurobiBackend::Solve(Problem &p, SolutionHandler &sh) {
-  Resolve(p, sh);
+void GurobiBackend::DoOptimize() {
+  GRB_CALL( GRBoptimize(model) );
+}
+
+std::string GurobiBackend::ConvertSolutionStatus(
+    const mp::Interrupter &interrupter, int &solve_code) {
+  namespace sol = mp::sol;
+  int optimstatus;
+  GRB_CALL( GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus) );
+  switch (optimstatus) {
+  default:
+    // Fall through.
+    if (interrupter.Stop()) {
+      solve_code = 600;
+      return "interrupted";
+    }
+    int solcount;
+    GRB_CALL( GRBgetintattr(model, GRB_INT_ATTR_SOLCOUNT, &solcount) );
+    if (solcount>0) {
+      solve_code = sol::UNCERTAIN;
+      return "feasible solution";
+    }
+    solve_code = sol::FAILURE + 1;
+    return "unknown solution status";
+  case GRB_OPTIMAL:
+    solve_code = sol::SOLVED;
+    return "optimal solution";
+  case GRB_INFEASIBLE:
+    solve_code = sol::INFEASIBLE;
+    return "infeasible problem";
+  case GRB_UNBOUNDED:
+    solve_code = sol::UNBOUNDED;
+    return "unbounded problem";
+  case GRB_INF_OR_UNBD:
+    solve_code = sol::INFEASIBLE + 1;
+    return "infeasible or unbounded problem";
+  case GRB_NUMERIC:
+    solve_code = sol::FAILURE;
+    return "error";
+  }
 }
 
 void GurobiBackend::InitProblemModificationPhase(const Problem &p) {
@@ -319,19 +269,8 @@ void GurobiBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
 void GurobiBackend::FinishProblemModificationPhase() {
 }
 
-void GurobiBackend::Resolve(Problem &p, SolutionHandler &sh) {
 
-  SolveWithGurobi(p, stats, sh);
-  double output_time = GetTimeAndReset(stats.time);
-
-  if (timing()) {
-    Print("Setup time = {:.6f}s\n"
-          "Solution time = {:.6f}s\n"
-          "Output time = {:.6f}s\n",
-          stats.setup_time, stats.solution_time, output_time);
-  }
-}
-
-
+/////////////////////////////////////////////////////////////////////////////////////////
 SolverPtr create_gurobidirect(const char *) { return SolverPtr(new GurobiBackend()); }
-}
+
+} // namespace mp

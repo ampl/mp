@@ -27,40 +27,57 @@ extern "C" {
 
 #include <string>
 
-#include "mp/clock.h"
-#include "mp/convert/model.h"
-#include "mp/solver.h"
-
 #include "mp/backend.h"
 #include "mp/convert/std_constr.h"
 
 namespace mp {
 
-class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // TODO no SolverImpl
-    public BasicBackend<GurobiBackend>
+class GurobiBackend : public BasicBackend<GurobiBackend>
 {
-  using BaseSolverImpl = SolverImpl<BasicModel<std::allocator<char>>>;
   using BaseBackend = BasicBackend<GurobiBackend>;
- private:
+
+  //////////////////// [[ The backend interface ]] //////////////////////
+public:
+  void ExportModel(const std::string& file);
+
+  /// [[ Surface the incremental interface ]]
+  void InitProblemModificationPhase(const Problem& p);
+  void AddVariables(int n, double* lbs, double* ubs, var::Type* types);
+  /// Supporting linear stuff for now
+  void AddLinearObjective( obj::Type sense, int nnz,
+                           const double* c, const int* v);
+  void AddLinearConstraint(int nnz, const double* c, const int* v,
+                           double lb, double ub);
+
+  //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
+  USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
+
+  ACCEPT_CONSTRAINT(MaximumConstraint, AcceptedButNotRecommended)
+  void AddConstraint(const MaximumConstraint& mc);
+  ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)
+  void AddConstraint(const MinimumConstraint& mc);
+  ACCEPT_CONSTRAINT(DisjunctionConstraint, Recommended)
+  void AddConstraint(const DisjunctionConstraint& mc);
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
+  void AddConstraint(const IndicatorConstraintLinLE& mc);
+
+  void FinishProblemModificationPhase();
+
+private:
   GRBenv   *env   = NULL;
   GRBmodel *model = NULL;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(GurobiBackend);
 
 
-  struct Stats {
-    steady_clock::time_point time;
-    double setup_time;
-    double solution_time;
-  };
-  Stats stats;
-
-  void SolveWithGurobi(Problem &p,
-                      Stats &stats, SolutionHandler &sh);
-
- public:
+public:
   GurobiBackend();
   ~GurobiBackend();
+
+  void SetInterrupter(mp::Interrupter* inter);
+  void DoOptimize();
+  std::string ConvertSolutionStatus(
+      const mp::Interrupter &interrupter, int &solve_code);
 
   void InitBackend();
   void CloseBackend();
@@ -90,84 +107,55 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
   double GetGrbDblAttribute(const char* attr_id) const;
 
 
-  void Solve(Problem &p, SolutionHandler &sh);
-
- public:                    // [[ The interface ]]
-  void Resolve(Problem& p, SolutionHandler &sh);
-
-  /// [[ Surface the incremental interface ]]
-  void InitProblemModificationPhase(const Problem& p);
-  void AddVariables(int n, double* lbs, double* ubs, var::Type* types);
-  /// Supporting linear stuff for now
-  void AddLinearObjective( obj::Type sense, int nnz,
-                           const double* c, const int* v);
-  void AddLinearConstraint(int nnz, const double* c, const int* v,
-                           double lb, double ub);
-
-  //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
-  USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
-
-  ACCEPT_CONSTRAINT(MaximumConstraint, AcceptedButNotRecommended)
-  void AddConstraint(const MaximumConstraint& mc);
-  ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)
-  void AddConstraint(const MinimumConstraint& mc);
-  ACCEPT_CONSTRAINT(DisjunctionConstraint, Recommended)
-  void AddConstraint(const DisjunctionConstraint& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
-  void AddConstraint(const IndicatorConstraintLinLE& mc);
-
-  void FinishProblemModificationPhase();
 
 public:
- // Integer options.
- enum Option {
-   DEBUGEXPR,
-   USENUMBEROF,
-   SOLUTION_LIMIT,
-   NUM_OPTIONS
- };
+  // Integer options.
+  enum Option {
+    DEBUGEXPR,
+    USENUMBEROF,
+    SOLUTION_LIMIT,
+    NUM_OPTIONS
+  };
 
 private:
- int options_[NUM_OPTIONS];
+  int options_[NUM_OPTIONS];
 
- void ExportModel(const std::string& file);
+  int GetOption(Option id) const {
+    assert(id >= 0 && id < NUM_OPTIONS);
+    return options_[id];
+  }
 
- int GetOption(Option id) const {
-   assert(id >= 0 && id < NUM_OPTIONS);
-   return options_[id];
- }
+  enum FileKind {
+    DUMP_FILE,
+    EXPORT_FILE,
+    NUM_FILES
+  };
 
- enum FileKind {
-   DUMP_FILE,
-   EXPORT_FILE,
-   NUM_FILES
- };
+  std::string filenames_[NUM_FILES];
 
- std::string filenames_[NUM_FILES];
+  std::string GetOptimizer(const SolverOption &) const;
+  void SetOptimizer(const SolverOption &opt, fmt::StringRef value);
 
- std::string GetOptimizer(const SolverOption &) const;
- void SetOptimizer(const SolverOption &opt, fmt::StringRef value);
+  int DoGetIntOption(const SolverOption &, Option id) const {
+    return options_[id];
+  }
+  void SetBoolOption(const SolverOption &opt, int value, Option id);
+  void DoSetIntOption(const SolverOption &opt, int value, Option id);
 
- int DoGetIntOption(const SolverOption &, Option id) const {
-   return options_[id];
- }
- void SetBoolOption(const SolverOption &opt, int value, Option id);
- void DoSetIntOption(const SolverOption &opt, int value, Option id);
+  std::string GetFile(const SolverOption &, FileKind kind) const {
+    assert(kind < NUM_FILES);
+    return filenames_[kind];
+  }
+  void SetFile(const SolverOption &, fmt::StringRef filename, FileKind kind) {
+    assert(kind < NUM_FILES);
+    filenames_[kind] = filename.to_string();
+  }
 
- std::string GetFile(const SolverOption &, FileKind kind) const {
-   assert(kind < NUM_FILES);
-   return filenames_[kind];
- }
- void SetFile(const SolverOption &, fmt::StringRef filename, FileKind kind) {
-   assert(kind < NUM_FILES);
-   filenames_[kind] = filename.to_string();
- }
+  // Returns an integer option of the CPLEX optimizer.
+  int GetCPLEXIntOption(const SolverOption &opt, int param) const;
 
- // Returns an integer option of the CPLEX optimizer.
- int GetCPLEXIntOption(const SolverOption &opt, int param) const;
-
- // Sets an integer option of the CPLEX optimizer.
- void SetCPLEXIntOption(const SolverOption &opt, int value, int param);
+  // Sets an integer option of the CPLEX optimizer.
+  void SetCPLEXIntOption(const SolverOption &opt, int value, int param);
 
 };
 

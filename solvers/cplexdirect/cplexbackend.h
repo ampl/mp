@@ -27,27 +27,17 @@ extern "C" {
 
 #include <string>
 
-#include "mp/clock.h"
-#include "mp/convert/model.h"
-#include "mp/solver.h"
-
 #include "mp/backend.h"
 #include "mp/convert/std_constr.h"
 
 namespace mp {
 
-class CplexBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // TODO no SolverImpl
-    public BasicBackend<CplexBackend>
+class CplexBackend : public BasicBackend<CplexBackend>
 {
-  using BaseSolverImpl = SolverImpl<BasicModel<std::allocator<char>>>;
   using BaseBackend = BasicBackend<CplexBackend>;
 
   //////////////////// [[ The backend interface ]] //////////////////////
 public:
-  void Solve(Problem &p, SolutionHandler &sh);
-
-  void Resolve(Problem& p, SolutionHandler &sh);
-
   void ExportModel(const std::string& file);
 
   /// [[ Surface the incremental interface ]]
@@ -68,26 +58,21 @@ public:
   void FinishProblemModificationPhase();
 
 
-///////////////////////////////////////////////////////////////////////////////
- private:
+  ///////////////////////////////////////////////////////////////////////////////
+private:
   CPXENVptr     env = NULL;
   CPXLPptr      lp = NULL;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(CplexBackend);
 
-  struct Stats {
-    steady_clock::time_point time;
-    double setup_time;
-    double solution_time;
-  };
-  Stats stats;
-
-  void SolveWithCplex(Problem &p,
-                      Stats &stats, SolutionHandler &sh);
-
- public:
+public:
   CplexBackend();
   ~CplexBackend();
+
+  void SetInterrupter(mp::Interrupter* inter);
+  void DoOptimize();
+  std::string ConvertSolutionStatus(
+      const mp::Interrupter &interrupter, int &solve_code);
 
   void InitBackend();
   void CloseBackend();
