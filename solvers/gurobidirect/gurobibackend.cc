@@ -30,7 +30,7 @@
  (http://joc.journal.informs.org/content/14/4/322).
  */
 
-#include "gurobi.h"
+#include "gurobibackend.h"
 
 #include <cctype>
 #include <cstdlib>
@@ -124,7 +124,7 @@ bool InterruptGurobi(void *model) {
 namespace mp {
 
 GurobiBackend::GurobiBackend() :
-   BaseSolverImpl("gurobi", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
+   BaseSolverImpl("gurobidirect", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
    {
   InitBackend();
 
@@ -171,7 +171,7 @@ void GurobiBackend::InitBackend() {
   GRB_CALL( GRBstartenv(env) );
 
   /* Create an empty model */
-  GRB_CALL( GRBnewmodel(env, &model, "amplgurobimodel", 0, NULL, NULL, NULL, NULL, NULL) );
+  GRB_CALL( GRBnewmodel(env, &model, "amplgurobidirectmodel", 0, NULL, NULL, NULL, NULL, NULL) );
 
 }
 
@@ -353,9 +353,7 @@ void GurobiBackend::AddLinearObjective( obj::Type sense, int nnz,
   if (1>=NumberOfObjectives()) {
     GRB_CALL( GRBsetintattr(model, GRB_INT_ATTR_MODELSENSE,
                           obj::Type::MAX==sense ? GRB_MAXIMIZE : GRB_MINIMIZE) );
-    for (int i = 0; i < nnz; ++i) {
-      GRB_CALL( GRBsetdblattrelement(model, GRB_DBL_ATTR_OBJ, v[i], c[i]) );
-    }
+    GRB_CALL( GRBsetdblattrlist(model, GRB_DBL_ATTR_OBJ, nnz, (int*)v, (double*)c) );
   } else {
 //    TODO
 //    GRB_CALL( GRBsetobjectiven(model, 0, 1, 0.0, 0.0, 0.0, "primary",

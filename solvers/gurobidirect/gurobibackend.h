@@ -1,27 +1,5 @@
-/*
- IBM/ILOG CP solver for AMPL.
-
- Copyright (C) 2012 AMPL Optimization Inc
-
- Permission to use, copy, modify, and distribute this software and its
- documentation for any purpose and without fee is hereby granted,
- provided that the above copyright notice appear in all copies and that
- both that the copyright notice and this permission notice and warranty
- disclaimer appear in supporting documentation.
-
- The author and AMPL Optimization Inc disclaim all warranties with
- regard to this software, including all implied warranties of
- merchantability and fitness.  In no event shall the author be liable
- for any special, indirect or consequential damages or any damages
- whatsoever resulting from loss of use, data or profits, whether in an
- action of contract, negligence or other tortious action, arising out
- of or in connection with the use or performance of this software.
-
- Author: Victor Zverovich
- */
-
-#ifndef MP_SOLVERS_ILOGCP_H_
-#define MP_SOLVERS_ILOGCP_H_
+#ifndef MP_GUROBI_BACKEND_H_
+#define MP_GUROBI_BACKEND_H_
 
 #ifdef __APPLE__
 #include <limits.h>
@@ -37,8 +15,9 @@
 # pragma warning(disable: 4244)
 #endif
 
-#include <ilcp/cp.h>
-#include <ilcplex/ilocplex.h>
+extern "C" {
+  #include "gurobi_c.h"
+}
 
 #if __clang__
 # pragma clang diagnostic pop
@@ -53,39 +32,33 @@
 #include <string>
 
 #include "mp/clock.h"
+#include "mp/convert/model.h"
 #include "mp/solver.h"
 
 #include "mp/backend.h"
-#include "mp/convert/model.h"
+
+#include "mp/convert/std_constr.h"
 
 namespace mp {
-
-class MPToConcertConverter;
 
 template <typename T>
 struct ParamTraits;
 
-template <>
-struct ParamTraits<int> {
-  typedef IloCP::IntParam Type;
-};
-
-template <>
-struct ParamTraits<double> {
-  typedef IloCP::NumParam Type;
-};
+#define GRB_CALL( call ) do { if (int e=call) \
+  throw std::runtime_error( \
+    fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
 
 // IlogCP solver.
-class IlogCPSolver : public SolverImpl<BasicModel<std::allocator<char>>>,   // TODO no SolverImpl
-    public BasicBackend<IlogCPSolver>
+class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // TODO no SolverImpl
+    public BasicBackend<GurobiBackend>
 {
   using BaseSolverImpl = SolverImpl<BasicModel<std::allocator<char>>>;
+  using BaseBackend = BasicBackend<GurobiBackend>;
  private:
-  IloEnv env_;
-  IloCP cp_;
-  IloCplex cplex_;
+  GRBenv   *env   = NULL;
+  GRBmodel *model = NULL;
 
-  FMT_DISALLOW_COPY_AND_ASSIGN(IlogCPSolver);
+  FMT_DISALLOW_COPY_AND_ASSIGN(GurobiBackend);
 
  public:
   // Integer options.
@@ -102,9 +75,6 @@ class IlogCPSolver : public SolverImpl<BasicModel<std::allocator<char>>>,   // T
   Optimizer optimizer_;
   Optimizer optimizer;
   int options_[NUM_OPTIONS];
-
-  unsigned converter_flags_ = 0;
-  std::unique_ptr<MPToConcertConverter> converter_;
 
 
   enum FileKind {
@@ -156,18 +126,45 @@ class IlogCPSolver : public SolverImpl<BasicModel<std::allocator<char>>>,   // T
   };
   Stats stats;
 
-  void SolveWithCP(Problem &p, const MPToConcertConverter &converter_,
-                   Stats &stats, SolutionHandler &sh);
-  void SolveWithCPLEX(Problem &p, const MPToConcertConverter &converter_,
+  void SolveWithGurobi(Problem &p,
                       Stats &stats, SolutionHandler &sh);
 
  public:
-  IlogCPSolver();
-  virtual ~IlogCPSolver();
+  GurobiBackend();
+  ~GurobiBackend();
 
-  IloEnv env() const { return env_; }
-  IloCP cp() const { return cp_; }
-  IloCplex cplex() const { return cplex_; }
+  void InitBackend();
+  void CloseBackend();
+
+  /// Model attributes
+  bool IsMIP() const;
+  bool IsQCP() const;
+
+  int NumberOfConstraints() const;
+  int NumberOfVariables() const;
+  int NumberOfObjectives() const;
+
+  /// Solution values
+  void PrimalSolution(std::vector<double>& x);
+  void DualSolution(std::vector<double>& pi);
+  double ObjectiveValue() const;
+
+  /// Solution attributes
+  double NodeCount() const;
+  double Niterations() const;
+
+  /// Service stuff
+  static bool float_equal(double a, double b) {   // ??????
+    return std::fabs(a-b) < 1e-8*std::max(std::fabs(a), std::fabs(b));
+  }
+  static bool IsPlusMinusInf(double n) { return n<=MinusInfinity() || n>=Infinity(); }
+  static double Infinity() { return GRB_INFINITY; }
+  static double MinusInfinity() { return -GRB_INFINITY; }
+
+  int GetGrbIntAttribute(const char* attr_id) const;
+  double GetGrbDblAttribute(const char* attr_id) const;
+
+  void ExportModel(const std::string& file);
 
   int GetOption(Option id) const {
     assert(id >= 0 && id < NUM_OPTIONS);
@@ -190,8 +187,21 @@ class IlogCPSolver : public SolverImpl<BasicModel<std::allocator<char>>>,   // T
                            const double* c, const int* v);
   void AddLinearConstraint(int nnz, const double* c, const int* v,
                            double lb, double ub);
+
+  //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
+  USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
+
+  ACCEPT_CONSTRAINT(MaximumConstraint, AcceptedButNotRecommended)
+  void AddConstraint(const MaximumConstraint& mc);
+  ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)
+  void AddConstraint(const MinimumConstraint& mc);
+  ACCEPT_CONSTRAINT(DisjunctionConstraint, Recommended)
+  void AddConstraint(const DisjunctionConstraint& mc);
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
+  void AddConstraint(const IndicatorConstraintLinLE& mc);
+
   void FinishProblemModificationPhase();
 };
 }
 
-#endif  // MP_SOLVERS_ILOGCP_H_
+#endif  // MP_GUROBI_BACKEND_H_

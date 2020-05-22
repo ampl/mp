@@ -1,27 +1,5 @@
-/*
- IBM/ILOG CP solver for AMPL.
-
- Copyright (C) 2012 AMPL Optimization Inc
-
- Permission to use, copy, modify, and distribute this software and its
- documentation for any purpose and without fee is hereby granted,
- provided that the above copyright notice appear in all copies and that
- both that the copyright notice and this permission notice and warranty
- disclaimer appear in supporting documentation.
-
- The author and AMPL Optimization Inc disclaim all warranties with
- regard to this software, including all implied warranties of
- merchantability and fitness.  In no event shall the author be liable
- for any special, indirect or consequential damages or any damages
- whatsoever resulting from loss of use, data or profits, whether in an
- action of contract, negligence or other tortious action, arising out
- of or in connection with the use or performance of this software.
-
- Author: Victor Zverovich
- */
-
-#ifndef MP_SOLVERS_ILOGCP_H_
-#define MP_SOLVERS_ILOGCP_H_
+#ifndef MP_CPLEX_BACKEND_H_
+#define MP_CPLEX_BACKEND_H_
 
 #ifdef __APPLE__
 #include <limits.h>
@@ -38,7 +16,7 @@
 #endif
 
 extern "C" {
-  #include "gurobi_c.h"
+  #include <ilcplex/cplex.h>
 }
 
 #if __clang__
@@ -66,21 +44,21 @@ namespace mp {
 template <typename T>
 struct ParamTraits;
 
-#define GRB_CALL( call ) do { if (int e=call) \
+#define CPLEX_CALL( call ) do { if (int e=call) \
   throw std::runtime_error( \
     fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
 
 // IlogCP solver.
-class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // TODO no SolverImpl
-    public BasicBackend<GurobiBackend>
+class CplexBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // TODO no SolverImpl
+    public BasicBackend<CplexBackend>
 {
   using BaseSolverImpl = SolverImpl<BasicModel<std::allocator<char>>>;
-  using BaseBackend = BasicBackend<GurobiBackend>;
+  using BaseBackend = BasicBackend<CplexBackend>;
  private:
-  GRBenv   *env   = NULL;
-  GRBmodel *model = NULL;
+  CPXENVptr     env = NULL;
+  CPXLPptr      lp = NULL;
 
-  FMT_DISALLOW_COPY_AND_ASSIGN(GurobiBackend);
+  FMT_DISALLOW_COPY_AND_ASSIGN(CplexBackend);
 
  public:
   // Integer options.
@@ -148,12 +126,12 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
   };
   Stats stats;
 
-  void SolveWithGurobi(Problem &p,
+  void SolveWithCplex(Problem &p,
                       Stats &stats, SolutionHandler &sh);
 
  public:
-  GurobiBackend();
-  ~GurobiBackend();
+  CplexBackend();
+  ~CplexBackend();
 
   void InitBackend();
   void CloseBackend();
@@ -180,11 +158,8 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
     return std::fabs(a-b) < 1e-8*std::max(std::fabs(a), std::fabs(b));
   }
   static bool IsPlusMinusInf(double n) { return n<=MinusInfinity() || n>=Infinity(); }
-  static double Infinity() { return GRB_INFINITY; }
-  static double MinusInfinity() { return -GRB_INFINITY; }
-
-  int GetGrbIntAttribute(const char* attr_id) const;
-  double GetGrbDblAttribute(const char* attr_id) const;
+  static double Infinity() { return CPX_INFBOUND; }
+  static double MinusInfinity() { return -CPX_INFBOUND; }
 
   void ExportModel(const std::string& file);
 
@@ -213,12 +188,6 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
 
-  ACCEPT_CONSTRAINT(MaximumConstraint, AcceptedButNotRecommended)
-  void AddConstraint(const MaximumConstraint& mc);
-  ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)
-  void AddConstraint(const MinimumConstraint& mc);
-  ACCEPT_CONSTRAINT(DisjunctionConstraint, Recommended)
-  void AddConstraint(const DisjunctionConstraint& mc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
 
@@ -226,4 +195,4 @@ class GurobiBackend : public SolverImpl<BasicModel<std::allocator<char>>>,  // T
 };
 }
 
-#endif  // MP_SOLVERS_ILOGCP_H_
+#endif  // MP_CPLEX_BACKEND_H_
