@@ -22,14 +22,14 @@ public:
     const auto& args = mc.GetArguments();
     const int nargs = args.size();
     const auto flags = this->AddVars(nargs, 0.0, 1.0, var::Type::INTEGER);   // binary flags
-    this->AddConstraint(LinearConstraint(std::vector<double>(nargs, 1.0),    // sum of the flags >= 1
-                        flags, 1.0, this->PlusInfinity()));
+    MP_DISPATCH( AddConstraint(LinearConstraint(std::vector<double>(nargs, 1.0),    // sum of the flags >= 1
+                        flags, 1.0, this->Infty())) );
     const auto resvar = mc.GetResultVar();
     for (int i=0; i<nargs; ++i) {
-      this->AddConstraint(LinearConstraint({1.0*sense, -1.0*sense},
-                          {args[i], resvar}, this->MinusInfinity(), 0.0));
-      this->AddConstraint(IndicatorConstraintLinLE{flags[i], 1,
-                          {1.0*sense, -1.0*sense}, {resvar, args[i]}, 0.0});
+      MP_DISPATCH( AddConstraint(LinearConstraint({1.0*sense, -1.0*sense},
+                          {args[i], resvar}, this->MinusInfty(), 0.0)) );
+      MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE{flags[i], 1,
+                          {1.0*sense, -1.0*sense}, {resvar, args[i]}, 0.0}) );
     }
   }
 
@@ -42,8 +42,8 @@ public:
   }
 
   void Convert(const NotConstraint& nc) {
-    this->AddConstraint(LinearDefiningConstraint(
-      nc.GetResultVar(), {{-1.0}, {nc.GetArguments()[0]}, 1.0}));
+    MP_DISPATCH( AddConstraint(LinearDefiningConstraint(
+      nc.GetResultVar(), {{-1.0}, {nc.GetArguments()[0]}, 1.0})) );
   }
 
   void Convert(const LEConstraint& lec) {
@@ -74,8 +74,8 @@ public:
       if (d<0.0)
         m.narrow_var_bounds(lec.GetResultVar(), 0.0, 0.0);
     } else {
-      this->AddConstraint(IndicatorConstraintLinLE(
-                            lec.GetResultVar(), 1, le.c_, le.v_, d));
+      MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
+                            lec.GetResultVar(), 1, le.c_, le.v_, d)) );
     }
   }
 
@@ -96,8 +96,8 @@ public:
       if (d<0.0)
         m.narrow_var_bounds(lec.GetResultVar(), 1.0, 1.0);
     } else {
-      this->AddConstraint(IndicatorConstraintLinLE(
-                            lec.GetResultVar(), 0, le.c_, le.v_, d));
+      MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
+                            lec.GetResultVar(), 0, le.c_, le.v_, d)) );
     }
   }
 
@@ -107,8 +107,34 @@ public:
       binvar = this->MakeComplementVar(binvar);
     /// Convert indc's linear inequality to 'cmpvar<=0'
     int cmpvar = MP_DISPATCH( Convert2Var(indc.to_lhs_affine_expr()) );
-    this->AddConstraint(LinearConstraint(          /// Big-M constraint cmpvar <= ub(cmpvar)*binvar
-        {1.0, -this->ub(cmpvar)}, {cmpvar, binvar}, this->MinusInfinity(), 0.0));
+    MP_DISPATCH( AddConstraint(LinearConstraint(          /// Big-M constraint cmpvar <= ub(cmpvar)*binvar
+        {1.0, -this->ub(cmpvar)}, {cmpvar, binvar}, this->MinusInfty(), 0.0)) );
+  }
+
+  void Convert(const DisjunctionConstraint& disj) {
+    assert(!disj.GetContext().IsNone());
+    if (disj.GetContext().HasPositive())
+      ConvertImplied(disj);
+    if (disj.GetContext().HasNegative())
+      ConvertReverseImplied(disj);
+  }
+
+  void ConvertImplied(const DisjunctionConstraint& disj) {
+    const auto& args = disj.GetArguments();
+    auto flags = args;
+    flags.push_back(disj.GetResultVar());
+    std::vector<double> ones(args.size(), 1.0);
+    ones.push_back(-1.0);
+    MP_DISPATCH( AddConstraint(LinearConstraint(ones, flags, 0.0, MP_DISPATCH( Infty() ))) );
+  }
+
+  void ConvertReverseImplied(const DisjunctionConstraint& disj) {
+    std::array<double, 2> coefs{1.0, -1.0};
+    std::array<int, 2> vars{-1, disj.GetResultVar()};
+    for (auto arg: disj.GetArguments()) {
+      vars[0] = arg;
+      MP_DISPATCH( AddConstraint(LinearConstraint(coefs, vars, MP_DISPATCH( MinusInfty() ), 0.0)) );
+    }
   }
 
 

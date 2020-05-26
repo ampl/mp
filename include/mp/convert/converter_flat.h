@@ -132,6 +132,14 @@ public:
       result.push_back( MP_DISPATCH( Convert2Var(e) ) );
   }
 
+  template <class Expr>
+  void Exprs2Vars(const std::initializer_list<Expr>& ea, std::vector<int>& result) {
+    assert(result.empty());
+    result.reserve(ea.size());
+    for (const auto& e: ea)
+      result.push_back( MP_DISPATCH( Convert2Var(e) ) );
+  }
+
   template <class ExprArray, size_t N>
   void Exprs2Vars(const ExprArray& ea, std::array<int, N>& result) {
     assert(ea.size() == result.size());
@@ -350,8 +358,8 @@ public:
   void PropagateResult(LEConstraint& con, double lb, double ub, Context ctx) {
     con.AddContext(ctx);
     const auto& args = con.GetArguments();
-    PropagateResult(args[0], this->MinusInfinity(), this->PlusInfinity(), -ctx);
-    PropagateResult(args[1], this->MinusInfinity(), this->PlusInfinity(), +ctx);
+    PropagateResult(args[0], this->MinusInfty(), this->Infty(), -ctx);
+    PropagateResult(args[1], this->MinusInfty(), this->Infty(), +ctx);
   }
 
 

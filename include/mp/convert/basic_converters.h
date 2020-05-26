@@ -153,9 +153,9 @@ protected:
 
 public:
   /// These methods to be used by converter objects
-  static constexpr double PlusInfinity() { return std::numeric_limits<double>::infinity(); }
-  static constexpr double MinusInfinity() { return -std::numeric_limits<double>::infinity(); }
-  int AddVar(double lb=MinusInfinity(), double ub=PlusInfinity(), var::Type type = var::CONTINUOUS) {
+  static constexpr double Infty() { return std::numeric_limits<double>::infinity(); }
+  static constexpr double MinusInfty() { return -std::numeric_limits<double>::infinity(); }
+  int AddVar(double lb=MinusInfty(), double ub=Infty(), var::Type type = var::CONTINUOUS) {
     auto var = GetModel().AddVar(lb, ub, type);
     return var.index();
   }

@@ -19,6 +19,10 @@ public:
   LinearConstraint(CV&& c, VV&& v, double l, double u)
     : coefs_(std::forward<CV>(c)), vars_(std::forward<VV>(v)),
       lb_(l), ub_(u) { assert(coefs_.size()==vars_.size()); }
+  template <size_t N>
+  LinearConstraint(std::array<double, N>& c, std::array<int, N>& v, double l, double u)
+    : coefs_(c.begin(), c.end()), vars_(v.begin(), v.end()),
+      lb_(l), ub_(u) { assert(coefs_.size()==vars_.size()); }
   int nnz() const { return (int)coefs_.size(); }
   const double* coefs() const { return coefs_.data(); }
   const int* vars() const { return vars_.data(); }
@@ -112,7 +116,7 @@ struct DisjunctionId {
   static constexpr auto description_ = "r = (v1 || v2)";
 };
 using DisjunctionConstraint =
-   CustomDefiningConstraint<VarArray2ArgConstraint, DisjunctionId>;
+   CustomDefiningConstraint<VarArrayArgConstraint<>, DisjunctionId>;
 
 ////////////////////////////////////////////////////////////////////////
 /// Indicator: b==bv -> c'x <= rhs

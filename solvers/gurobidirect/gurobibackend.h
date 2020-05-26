@@ -56,7 +56,7 @@ public:
   void AddConstraint(const MaximumConstraint& mc);
   ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)
   void AddConstraint(const MinimumConstraint& mc);
-  ACCEPT_CONSTRAINT(DisjunctionConstraint, Recommended)
+  ACCEPT_CONSTRAINT(DisjunctionConstraint, NotAccepted)
   void AddConstraint(const DisjunctionConstraint& mc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
