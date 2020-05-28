@@ -43,6 +43,8 @@ struct LinearExprUnzipper {
     }
   }
   int num_terms() const { return c_.size(); }
+  const std::vector<double>& coefs() const { return c_; }
+  const std::vector<int>& var_indexes() const { return v_; }
   void Reserve(size_t s) { c_.reserve(s); v_.reserve(s); }
   void AddTerm(int v, double c) { c_.push_back(c); v_.push_back(v); }
 };
@@ -84,11 +86,11 @@ using MinimumConstraint =
    CustomDefiningConstraint<VarArray, MinimumConstraintId>;
 
 ////////////////////////////////////////////////////////////////////////
-struct EqualId {
-  static constexpr auto description_ = "r = (v1 == v2)";
+struct Equal0Id {
+  static constexpr auto description_ = "r = (expr == 0)";
 };
-using EQConstraint =
-   CustomDefiningConstraint<VarArray2, EqualId>;
+using EQ0Constraint =
+   CustomDefiningConstraint<AffineExpr, Equal0Id>;
 
 ////////////////////////////////////////////////////////////////////////
 struct NotEqualId__unused {
@@ -98,11 +100,11 @@ using NEConstraint__unused =
    CustomDefiningConstraint<VarArray2, NotEqualId__unused>;
 
 ////////////////////////////////////////////////////////////////////////
-struct LessOrEqualId {
-  static constexpr auto description_ = "r = (v1 != v2)";
+struct LessOrEqual0Id {
+  static constexpr auto description_ = "r = (expr <= 0)";
 };
-using LEConstraint =
-   CustomDefiningConstraint<VarArray2, LessOrEqualId>;
+using LE0Constraint =
+   CustomDefiningConstraint<AffineExpr, LessOrEqual0Id>;
 
 ////////////////////////////////////////////////////////////////////////
 struct NotId {

@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <cmath>
 
+#include "mp/convert/preprocess.h"
 #include "mp/convert/basic_converters.h"
 #include "mp/expr-visitor.h"
 #include "mp/convert/convert_functional.h"
@@ -107,12 +108,31 @@ public:
       return ee.get_representing_variable();
     if (ee.is_constant())
       return MakeFixedVar(ee.constant_term());
-    PreprocessInfoStd bnt;
-    ComputeBoundsAndType(this->GetModel(), ee, bnt);
+    PreprocessInfoStd bnt = ComputeBoundsAndType(ee);
     auto r = MP_DISPATCH( AddVar(bnt.lb_, bnt.ub_, bnt.type_) );
     auto lck = makeConstraint<Impl, LinearDefiningConstraint>(r, std::move(ee));
     AddConstraint(lck);
     return r;
+  }
+
+  PreprocessInfoStd ComputeBoundsAndType(const AffineExpr& ae) {
+    PreprocessInfoStd result;
+    result.lb_ = result.ub_ = ae.constant_term();           // TODO reuse bounds if supplied
+    result.type_ = var::INTEGER;
+    auto& model = MP_DISPATCH( GetModel() );
+    for (const auto& term: ae) {
+      auto v = model.var(term.var_index());
+      if (term.coef() >= 0.0) {
+        result.lb_ += term.coef() * v.lb();
+        result.ub_ += term.coef() * v.ub();
+      } else {
+        result.lb_ += term.coef() * v.ub();
+        result.ub_ += term.coef() * v.lb();
+      }
+      if (var::INTEGER!=v.type() || !is_integer(term.coef()))
+        result.type_=var::CONTINUOUS;
+    }
+    return result;
   }
 
   /// Generic functional expression array visitor
@@ -159,7 +179,18 @@ public:
   /// Can produce a new variable/expression and specified constraints on it
   template <class FuncConstraint, class ExprArray=std::initializer_list<Expr> >
   EExpr VisitRelationalExpression(ExprArray ea) {
-    return VisitFunctionalExpression<FuncConstraint>(ea);
+    std::array<EExpr, 2> ee;
+    Exprs2EExprs(ea, ee);
+    ee[0].Subtract(ee[1]);
+    return AssignResultToArguments( FuncConstraint(ee[0]) );
+  }
+
+  template <class ExprArray, size_t N>
+  void Exprs2EExprs(const ExprArray& ea, std::array<EExpr, N>& result) {
+    assert(ea.size() == result.size());
+    auto itea = ea.begin();
+    for (int i=0; i<N; ++i, ++itea)
+      result[i] = MP_DISPATCH( Convert2EExpr(*itea) );
   }
 
 
@@ -204,7 +235,7 @@ public:
   }
 
   EExpr VisitEQ(RelationalExpr e) {
-    return VisitRelationalExpression<EQConstraint>({ e.lhs(), e.rhs() });
+    return VisitRelationalExpression<EQ0Constraint>({ e.lhs(), e.rhs() });
   }
 
   EExpr VisitNE(RelationalExpr e) {
@@ -213,11 +244,11 @@ public:
   }
 
   EExpr VisitLE(RelationalExpr e) {
-    return VisitRelationalExpression<LEConstraint>({ e.lhs(), e.rhs() });
+    return VisitRelationalExpression<LE0Constraint>({ e.lhs(), e.rhs() });
   }
 
   EExpr VisitGE(RelationalExpr e) {
-    return VisitRelationalExpression<LEConstraint>({ e.rhs(), e.lhs() });
+    return VisitRelationalExpression<LE0Constraint>({ e.rhs(), e.lhs() });
   }
 
   EExpr VisitNot(NotExpr e) {
@@ -289,27 +320,35 @@ public:
     prepro.set_result_type( m.common_type(args) );
   }
 
-  /// Preprocess EQ
+  /// Preprocess EQ0
   void PreprocessConstraint(
-      EQConstraint& c, PreprocessInfo<EQConstraint>& prepro) {
+      EQ0Constraint& c, PreprocessInfo<EQ0Constraint>& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
-    auto& args = c.GetArguments();
+    AffineExpr& ae = c.GetArguments();
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
-    if (m.is_fixed(args[0]) && m.is_fixed(args[1])) {
-      auto res = (double)int(m.fixed_value(args[0])==m.fixed_value(args[1]));
+    if (ae.is_constant()) {                  // const==0
+      auto res = (double)int(0.0==ae.constant_term());
       prepro.narrow_result_bounds(res, res);
       return;
     }
-    if (m.is_fixed(args[0])) {                 // Constant on the right
-      std::swap(args[0], args[1]);
+    auto bndsNType = ComputeBoundsAndType(ae);
+    if (bndsNType.lb() > 0.0 || bndsNType.ub() < 0.0) {
+      prepro.narrow_result_bounds(0.0, 0.0);
+      return;
     }
-    if (m.is_fixed(args[1])) {                 // See if this is binary var==const
-      if (m.is_binary_var(args[0])) {
-        if (1.0==std::fabs(m.fixed_value(args[1])))
-          prepro.set_result_var( args[0] );
-        else if (0.0==m.fixed_value(args[1]))
-          prepro.set_result_var( MakeComplementVar(args[0]) );
+    if (bndsNType.lb()==0.0 && bndsNType.ub()==0.0) {
+      prepro.narrow_result_bounds(1.0, 1.0);
+      return;
+    }
+    if (1==ae.num_terms() && 1.0==ae.coef(0)) {            // var==const
+      int var = ae.var_index(0);
+      double rhs = -ae.constant_term();
+      if (m.is_binary_var(var)) {            // See if this is binary var==const
+        if (1.0==rhs)
+          prepro.set_result_var( var );
+        else if (0.0==rhs)
+          prepro.set_result_var( MakeComplementVar(var) );
         else
           prepro.narrow_result_bounds(0.0, 0.0);    // not 0/1 value, result false
         return;
@@ -317,9 +356,9 @@ public:
     }
   }
 
-  /// Preprocess LE
+  /// Preprocess LE0
   void PreprocessConstraint(
-      LEConstraint& c, PreprocessInfo<LEConstraint>& prepro) {
+      LE0Constraint& c, PreprocessInfo<LE0Constraint>& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
   }
@@ -345,6 +384,7 @@ public:
   //////////////////////////// SPECIFIC CONSTRAINT RESULT-TO-ARGUMENTS PROPAGATORS //////
 
   void PropagateResult(LinearDefiningConstraint& con, double lb, double ub, Context ctx) {
+    con.AddContext(ctx);
   }
 
   void PropagateResult(NotConstraint& con, double lb, double ub, Context ctx) {
@@ -359,11 +399,8 @@ public:
       PropagateResult(a, 0.0, ub, +ctx);
   }
 
-  void PropagateResult(LEConstraint& con, double lb, double ub, Context ctx) {
+  void PropagateResult(LE0Constraint& con, double lb, double ub, Context ctx) {
     con.AddContext(ctx);
-    const auto& args = con.GetArguments();
-    PropagateResult(args[0], this->MinusInfty(), this->Infty(), -ctx);
-    PropagateResult(args[1], this->MinusInfty(), this->Infty(), +ctx);
   }
 
 

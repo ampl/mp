@@ -71,6 +71,9 @@ class LinearExpr {
   int num_terms() const { return static_cast<int>(terms_.size()); }
   int capacity() const { return static_cast<int>(terms_.capacity()); }
 
+  int var_index(int i) const { return terms_[i].var_index(); }
+  double coef(int i) const { return terms_[i].coef(); }
+
   typedef std::vector<Term>::const_iterator const_iterator;
 
   const_iterator begin() const { return terms_.begin(); }

@@ -11,6 +11,7 @@ class AffineExpr : public LinearExpr {
   double constant_term_ = 0.0;
 public:
   AffineExpr() {}
+  AffineExpr(const AffineExpr& ae) = default;
   AffineExpr(AffineExpr&& ae) = default;
   template <class CV=std::vector<double>, class VV=std::vector<int> >
   AffineExpr(CV&& coefs, VV&& vars, double const_term) :
@@ -52,6 +53,12 @@ public:
     this->Reserve(this->num_terms() + ae.num_terms());
     this->AddTerms(ae); // eliminate duplicates when?
     this->add_to_constant(ae.constant_term());
+  }
+
+  void Subtract(const AffineExpr& ae) {
+    auto ae2 = ae;
+    ae2.Negate();
+    Add(ae2);
   }
 };
 

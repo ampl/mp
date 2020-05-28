@@ -46,59 +46,51 @@ public:
       nc.GetResultVar(), {{-1.0}, {nc.GetArguments()[0]}, 1.0})) );
   }
 
-  void Convert(const LEConstraint& lec) {
+  void Convert(const LE0Constraint& le0c) {
     auto& m = this->GetModel();
-    if (m.is_fixed(lec.GetResultVar()))
+    if (m.is_fixed(le0c.GetResultVar()))
       throw std::logic_error("LEConstraint: result fixed, not implemented");
-    assert(!lec.GetContext().IsNone());
-    if (lec.GetContext().HasPositive())
-      ConvertImplied(lec);
-    if (lec.GetContext().HasNegative())
-      ConvertReverseImplied(lec);
+    assert(!le0c.GetContext().IsNone());
+    if (le0c.GetContext().HasPositive())
+      ConvertImplied(le0c);
+    if (le0c.GetContext().HasNegative())
+      ConvertReverseImplied(le0c);
   }
 
-  void ConvertImplied(const LEConstraint& lec) {
+  void ConvertImplied(const LE0Constraint& le0c) {
     auto& m = this->GetModel();
-    double d=0.0;
-    LinearExprUnzipper le;
-    const auto& args = lec.GetArguments();
-    if (m.is_fixed(args[0]))
-      d -= m.fixed_value(args[0]);
-    else
-      le.AddTerm(args[0], 1.0);
-    if (m.is_fixed(args[1]))
-      d += m.fixed_value(args[1]);
-    else
-      le.AddTerm(args[1], -1.0);
-    if (0==le.num_terms()) {
-      if (d<0.0)
-        m.narrow_var_bounds(lec.GetResultVar(), 0.0, 0.0);
+    const auto& ae = le0c.GetArguments();
+    if (ae.is_constant()) {
+      if (ae.constant_term() > 0.0)
+        m.narrow_var_bounds(le0c.GetResultVar(), 0.0, 0.0);
     } else {
+      LinearExprUnzipper le(ae);
       MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
-                            lec.GetResultVar(), 1, le.c_, le.v_, d)) );
+                   le0c.GetResultVar(), 1,
+                   le.coefs(), le.var_indexes(), -ae.constant_term())) );
     }
   }
 
-  void ConvertReverseImplied(const LEConstraint& lec) {
+  void ConvertReverseImplied(const LE0Constraint& le0c) {
     auto& m = this->GetModel();
-    double d=-1.0;
-    LinearExprUnzipper le;
-    const auto& args = lec.GetArguments();
-    if (m.is_fixed(args[0]))
-      d += m.fixed_value(args[0]);
-    else
-      le.AddTerm(args[0], -1.0);
-    if (m.is_fixed(args[1]))
-      d -= m.fixed_value(args[1]);
-    else
-      le.AddTerm(args[1], 1.0);
-    if (0==le.num_terms()) {
-      if (d<0.0)
-        m.narrow_var_bounds(lec.GetResultVar(), 1.0, 1.0);
+    auto ae = le0c.GetArguments();
+    ae.Negate();
+    if (ae.is_constant()) {
+      if (ae.constant_term() >= 0.0)
+        m.narrow_var_bounds(le0c.GetResultVar(), 1.0, 1.0);
     } else {
+      auto bNt = MP_DISPATCH( ComputeBoundsAndType(ae) );
+      double cmpEps = var::INTEGER==bNt.get_result_type() ? 1.0 : 1e-6;
+      double d = ae.constant_term() + cmpEps;
+      LinearExprUnzipper le(ae);
       MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
-                            lec.GetResultVar(), 0, le.c_, le.v_, d)) );
+                   le0c.GetResultVar(), 0,
+                   le.coefs(), le.var_indexes(), -d)) );
     }
+  }
+
+  double ComparisonEpsilon(int var) {
+    return (MP_DISPATCH( GetModel() ).is_integer_var(var)) ? 1.0 : 1e-6; // TODO param
   }
 
   void Convert(const IndicatorConstraintLinLE& indc) {

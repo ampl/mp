@@ -43,6 +43,8 @@ class CustomDefiningConstraint :
 public:
   CustomDefiningConstraint() { }
   using Arguments = Args;
+  CustomDefiningConstraint(const Arguments& args) : args_(args) { }
+  CustomDefiningConstraint(Arguments&& args) : args_(std::move(args)) { }
   CustomDefiningConstraint(int varr, const Arguments& args) :
      DefiningConstraint(varr), args_(args) { }
   CustomDefiningConstraint(int varr, Arguments&& args) :

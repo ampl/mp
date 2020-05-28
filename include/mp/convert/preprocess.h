@@ -21,10 +21,13 @@ struct PreprocessInfo {
 
   PreprocessInfo() { }
   PreprocessInfo(double l, double u, var::Type t) : lb_(l), ub_(u), type_(t) { }
+  double lb() const { return lb_; }
+  double ub() const { return ub_; }
   void narrow_result_bounds(double l, double u) {
     lb_ = std::max(lb_, l);
     ub_ = std::min(ub_, u);
   }
+  var::Type get_result_type() const { return type_; }
   void set_result_type(var::Type t) { type_=t; }
   bool is_constant() const { return lb_==ub_; }
   bool is_result_var_known() const { return result_var_>=0; }
@@ -39,6 +42,12 @@ struct PreprocessInfo {
 /// Typical preprocess info
 using PreprocessInfoStd = PreprocessInfo<int>;
 
+template <class Model>
+PreprocessInfoStd ComputeBoundsAndType(Model& model, AffineExpr& ae) {
+  PreprocessInfoStd result;
+  ComputeBoundsAndType(model, ae, result);
+  return result;
+}
 
 template <class Model>
 void ComputeBoundsAndType(Model& model, AffineExpr& ae, PreprocessInfoStd& result) {
