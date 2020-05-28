@@ -216,6 +216,10 @@ public:
     return VisitRelationalExpression<LEConstraint>({ e.lhs(), e.rhs() });
   }
 
+  EExpr VisitGE(RelationalExpr e) {
+    return VisitRelationalExpression<LEConstraint>({ e.rhs(), e.lhs() });
+  }
+
   EExpr VisitNot(NotExpr e) {
     return VisitFunctionalExpression<NotConstraint>({ e.arg() });
   }
@@ -313,7 +317,7 @@ public:
     }
   }
 
-  /// Preprocess NE
+  /// Preprocess LE
   void PreprocessConstraint(
       LEConstraint& c, PreprocessInfo<LEConstraint>& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);

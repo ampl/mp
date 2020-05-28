@@ -107,6 +107,10 @@ public:
       binvar = this->MakeComplementVar(binvar);
     /// Convert indc's linear inequality to 'cmpvar<=0'
     int cmpvar = MP_DISPATCH( Convert2Var(indc.to_lhs_affine_expr()) );
+    if (this->ub(cmpvar) >= this->Infty())
+      throw std::logic_error("Cannot convert indicator constraint with variable " +
+                             std::to_string(cmpvar) + " having infinite upper bound."
+                             "Define finite upper bound or use solver built-in indicator");
     MP_DISPATCH( AddConstraint(LinearConstraint(          /// Big-M constraint cmpvar <= ub(cmpvar)*binvar
         {1.0, -this->ub(cmpvar)}, {cmpvar, binvar}, this->MinusInfty(), 0.0)) );
   }

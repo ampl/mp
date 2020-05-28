@@ -218,13 +218,13 @@ void GurobiBackend::AddLinearObjective( obj::Type sense, int nnz,
 }
 void GurobiBackend::AddLinearConstraint(int nnz, const double* c, const int* v,
                          double lb, double ub) {
-//  std::cout << "  ADD LIN CONSTR:  " << lb << " <= ";
+//  this->Print( "  ADD LIN CONSTR:  {} <= ", lb);
 //  for (int i=0; i<nnz; ++i) {
-//    std::cout << c[i] << '[' << v[i] << "] ";
-//    if (i<nnz-1)
-//      std::cout << "+ ";
+//    this->Print( "{}*[{}] ", c[i], v[i] );
+//    if (i<nnz-1 && c[i+1]>=0.0)
+//      this->Print( "+ " );
 //  }
-//  std::cout << "<= " << ub << std::endl;
+//  this->Print( "<= {}\n", ub );
   if (lb==ub)
     GRB_CALL( GRBaddconstr(model, nnz, (int*)v, (double*)c, GRB_EQUAL, lb, NULL) );
   else {            // Let solver deal with lb>~ub etc.

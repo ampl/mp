@@ -52,7 +52,8 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
 
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
+  /// Enabling built-in indicator for infinite bounds, but otherwise may be slow
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
 
   void FinishProblemModificationPhase();

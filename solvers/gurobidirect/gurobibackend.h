@@ -56,9 +56,10 @@ public:
   void AddConstraint(const MaximumConstraint& mc);
   ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)
   void AddConstraint(const MinimumConstraint& mc);
-  ACCEPT_CONSTRAINT(DisjunctionConstraint, NotAccepted)
+  ACCEPT_CONSTRAINT(DisjunctionConstraint, AcceptedButNotRecommended)
   void AddConstraint(const DisjunctionConstraint& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
+  /// Enabling built-in indicator for infinite bounds, but otherwise may be slow
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
 
   void FinishProblemModificationPhase();
