@@ -74,49 +74,49 @@ struct MaximumConstraintId {
   static constexpr auto description_ = "r = max(v1, v2, ..., vn)";
 };
 using MaximumConstraint =
-   CustomDefiningConstraint<VarArrayArgConstraint<>, MaximumConstraintId>;
+   CustomDefiningConstraint<VarArray, MaximumConstraintId>;
 
 ////////////////////////////////////////////////////////////////////////
 struct MinimumConstraintId {
   static constexpr auto description_ = "r = min(v1, v2, ..., vn)";
 };
 using MinimumConstraint =
-   CustomDefiningConstraint<VarArrayArgConstraint<>, MinimumConstraintId>;
+   CustomDefiningConstraint<VarArray, MinimumConstraintId>;
 
 ////////////////////////////////////////////////////////////////////////
 struct EqualId {
   static constexpr auto description_ = "r = (v1 == v2)";
 };
 using EQConstraint =
-   CustomDefiningConstraint<VarArray2ArgConstraint, EqualId>;
+   CustomDefiningConstraint<VarArray2, EqualId>;
 
 ////////////////////////////////////////////////////////////////////////
 struct NotEqualId__unused {
   static constexpr auto description_ = "r = (v1 != v2)";
 };
 using NEConstraint__unused =
-   CustomDefiningConstraint<VarArray2ArgConstraint, NotEqualId__unused>;
+   CustomDefiningConstraint<VarArray2, NotEqualId__unused>;
 
 ////////////////////////////////////////////////////////////////////////
 struct LessOrEqualId {
   static constexpr auto description_ = "r = (v1 != v2)";
 };
 using LEConstraint =
-   CustomDefiningConstraint<VarArray2ArgConstraint, LessOrEqualId>;
+   CustomDefiningConstraint<VarArray2, LessOrEqualId>;
 
 ////////////////////////////////////////////////////////////////////////
 struct NotId {
   static constexpr auto description_ = "r = !v";
 };
 using NotConstraint =
-   CustomDefiningConstraint<VarArray1ArgConstraint, NotId>;
+   CustomDefiningConstraint<VarArray1, NotId>;
 
 ////////////////////////////////////////////////////////////////////////
 struct DisjunctionId {
   static constexpr auto description_ = "r = (v1 || v2)";
 };
 using DisjunctionConstraint =
-   CustomDefiningConstraint<VarArrayArgConstraint<>, DisjunctionId>;
+   CustomDefiningConstraint<VarArray, DisjunctionId>;
 
 ////////////////////////////////////////////////////////////////////////
 /// Indicator: b==bv -> c'x <= rhs
