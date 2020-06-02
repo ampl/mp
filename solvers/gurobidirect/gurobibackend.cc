@@ -253,6 +253,19 @@ void GurobiBackend::AddConstraint(const MinimumConstraint &mc)  {
                                Infinity()) );
 }
 
+void GurobiBackend::AddConstraint(const AbsConstraint &absc)  {
+  const auto& args = absc.GetArguments();
+  GRB_CALL( GRBaddgenconstrAbs(model, NULL,
+                               absc.GetResultVar(), args[0]) );
+}
+
+void GurobiBackend::AddConstraint(const ConjunctionConstraint &cc)  {
+  const auto& args = cc.GetArguments();
+  GRB_CALL( GRBaddgenconstrAnd(model, NULL,
+                               cc.GetResultVar(),
+                               args.size(), args.data()) );
+}
+
 void GurobiBackend::AddConstraint(const DisjunctionConstraint &dc)  {
   const auto& args = dc.GetArguments();
   GRB_CALL( GRBaddgenconstrOr(model, NULL,

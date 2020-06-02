@@ -242,6 +242,10 @@ public:
     return VisitFunctionalExpression<MinimumConstraint>(e);
   }
 
+  EExpr VisitAbs(UnaryExpr e) {
+    return VisitFunctionalExpression<AbsConstraint>({ e.arg() });
+  }
+
   EExpr VisitEQ(RelationalExpr e) {
     return VisitRelationalExpression<EQ0Constraint>({ e.lhs(), e.rhs() });
   }
@@ -261,6 +265,10 @@ public:
 
   EExpr VisitNot(NotExpr e) {
     return VisitFunctionalExpression<NotConstraint>({ e.arg() });
+  }
+
+  EExpr VisitAnd(BinaryLogicalExpr e) {
+    return VisitFunctionalExpression<ConjunctionConstraint>({ e.lhs(), e.rhs() });
   }
 
   EExpr VisitOr(BinaryLogicalExpr e) {
@@ -332,6 +340,13 @@ public:
     prepro.set_result_type( m.common_type(args) );
   }
 
+  template <class Converter>
+  void PreprocessConstraint(
+      AbsConstraint& c, PreprocessInfo<AbsConstraint>& prepro) {
+    prepro.narrow_result_bounds(0.0, this->Infty());
+    prepro.set_result_type( var_type(c.GetArguments()[0]) );
+  }
+
   /// Preprocess EQ0
   void PreprocessConstraint(
       EQ0Constraint& c, PreprocessInfo<EQ0Constraint>& prepro) {
@@ -375,6 +390,13 @@ public:
     prepro.set_result_type( var::INTEGER );
   }
 
+  /// Preprocess Conjunction
+  void PreprocessConstraint(
+      ConjunctionConstraint& c, PreprocessInfo<ConjunctionConstraint>& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+  }
+
   /// Preprocess Disjunction
   void PreprocessConstraint(
       DisjunctionConstraint& c, PreprocessInfo<DisjunctionConstraint>& prepro) {
@@ -412,6 +434,12 @@ public:
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
       PropagateResult(a, 1.0-ub, 1.0-lb, -ctx);
+  }
+
+  void PropagateResult(ConjunctionConstraint& con, double lb, double ub, Context ctx) {
+    con.AddContext(ctx);
+    for (const auto a: con.GetArguments())
+      PropagateResult(a, lb, 1.0, +ctx);
   }
 
   void PropagateResult(DisjunctionConstraint& con, double lb, double ub, Context ctx) {
@@ -478,6 +506,7 @@ public:
 
   double lb(int var) const { return this->GetModel().var(var).lb(); }
   double ub(int var) const { return this->GetModel().var(var).ub(); }
+  var::Type var_type(int var) const { return this->GetModel().var(var).type(); }
   bool is_fixed(int var) const { return this->GetModel().is_fixed(var); }
   double fixed_value(int var) const { return this->GetModel().fixed_value(var); }
 

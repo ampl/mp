@@ -80,6 +80,18 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( MinimumConstraint, VarArray,
                                    "r = min(v1, v2, ..., vn)");
 
 ////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( AbsConstraint, VarArray1,
+                                   "r = abs(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( ConjunctionConstraint, VarArray,
+                                   "r = forall({vi})");
+
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( DisjunctionConstraint, VarArray,
+                                   "r = exists({vi})");
+
+////////////////////////////////////////////////////////////////////////
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( EQ0Constraint, AffineExpr,
                                    "r = (expr == 0)");
 
@@ -98,10 +110,6 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( NotConstraint, VarArray1,
 ////////////////////////////////////////////////////////////////////////
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( IfThenConstraint, VarArrayN<3>,
                                   "if (cond) then (expr1) else (expr2)");
-
-////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( DisjunctionConstraint, VarArray,
-                                   "r = (v1 || v2)");
 
 ////////////////////////////////////////////////////////////////////////
 /// Indicator: b==bv -> c'x <= rhs

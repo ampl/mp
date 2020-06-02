@@ -56,6 +56,10 @@ public:
   void AddConstraint(const MaximumConstraint& mc);
   ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)
   void AddConstraint(const MinimumConstraint& mc);
+  ACCEPT_CONSTRAINT(AbsConstraint, Recommended)          // before we implement conversion
+  void AddConstraint(const AbsConstraint& absc);
+  ACCEPT_CONSTRAINT(ConjunctionConstraint, Recommended)
+  void AddConstraint(const ConjunctionConstraint& cc);
   ACCEPT_CONSTRAINT(DisjunctionConstraint, AcceptedButNotRecommended)
   void AddConstraint(const DisjunctionConstraint& mc);
   /// Enabling built-in indicator for infinite bounds, but otherwise may be slow
