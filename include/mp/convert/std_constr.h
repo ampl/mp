@@ -52,7 +52,7 @@ struct LinearExprUnzipper {
 ////////////////////////////////////////////////////////////////////////
 /// Linear Defining Constraint: r = affine_expr
 class LinearDefiningConstraint :
-    public BasicConstraint, public DefiningConstraint {
+    public DefiningConstraint {
   AffineExpr affine_expr_;
 public:
   using Arguments = AffineExpr;
@@ -72,53 +72,36 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////
-struct MaximumConstraintId {
-  static constexpr auto description_ = "r = max(v1, v2, ..., vn)";
-};
-using MaximumConstraint =
-   CustomDefiningConstraint<VarArray, MaximumConstraintId>;
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( MaximumConstraint, VarArray,
+                                   "r = max(v1, v2, ..., vn)");
 
 ////////////////////////////////////////////////////////////////////////
-struct MinimumConstraintId {
-  static constexpr auto description_ = "r = min(v1, v2, ..., vn)";
-};
-using MinimumConstraint =
-   CustomDefiningConstraint<VarArray, MinimumConstraintId>;
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( MinimumConstraint, VarArray,
+                                   "r = min(v1, v2, ..., vn)");
 
 ////////////////////////////////////////////////////////////////////////
-struct Equal0Id {
-  static constexpr auto description_ = "r = (expr == 0)";
-};
-using EQ0Constraint =
-   CustomDefiningConstraint<AffineExpr, Equal0Id>;
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( EQ0Constraint, AffineExpr,
+                                   "r = (expr == 0)");
 
 ////////////////////////////////////////////////////////////////////////
-struct NotEqualId__unused {
-  static constexpr auto description_ = "r = (v1 != v2)";
-};
-using NEConstraint__unused =
-   CustomDefiningConstraint<VarArray2, NotEqualId__unused>;
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( NEConstraint__unused, VarArray2,
+                                   "r = (v1 != v2)");
 
 ////////////////////////////////////////////////////////////////////////
-struct LessOrEqual0Id {
-  static constexpr auto description_ = "r = (expr <= 0)";
-};
-using LE0Constraint =
-   CustomDefiningConstraint<AffineExpr, LessOrEqual0Id>;
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( LE0Constraint, AffineExpr,
+                                   "r = (expr <= 0)");
 
 ////////////////////////////////////////////////////////////////////////
-struct NotId {
-  static constexpr auto description_ = "r = !v";
-};
-using NotConstraint =
-   CustomDefiningConstraint<VarArray1, NotId>;
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( NotConstraint, VarArray1,
+                                   "r = !v");
 
 ////////////////////////////////////////////////////////////////////////
-struct DisjunctionId {
-  static constexpr auto description_ = "r = (v1 || v2)";
-};
-using DisjunctionConstraint =
-   CustomDefiningConstraint<VarArray, DisjunctionId>;
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( IfThenConstraint, VarArrayN<3>,
+                                  "if (cond) then (expr1) else (expr2)");
+
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( DisjunctionConstraint, VarArray,
+                                   "r = (v1 || v2)");
 
 ////////////////////////////////////////////////////////////////////////
 /// Indicator: b==bv -> c'x <= rhs

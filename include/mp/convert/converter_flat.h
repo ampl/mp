@@ -226,6 +226,14 @@ public:
     return el;
   }
 
+  EExpr VisitSum(typename BaseExprVisitor::SumExpr expr) {
+    EExpr sum;
+    for (typename BaseExprVisitor::SumExpr::iterator i =
+         expr.begin(), end = expr.end(); i != end; ++i)
+      sum.Add( MP_DISPATCH( Convert2EExpr(*i) ) );
+    return sum;
+  }
+
   EExpr VisitMax(typename BaseExprVisitor::VarArgExpr e) {       // TODO why need Base:: here in g++ 9.2.1?
     return VisitFunctionalExpression<MaximumConstraint>(e);
   }
@@ -259,6 +267,10 @@ public:
     return VisitFunctionalExpression<DisjunctionConstraint>({ e.lhs(), e.rhs() });
   }
 
+  EExpr VisitIf(IfExpr e) {
+    return VisitFunctionalExpression<IfThenConstraint>({
+                e.condition(), e.then_expr(), e.else_expr() });
+  }
 
 public:
 
@@ -370,12 +382,21 @@ public:
     prepro.set_result_type( var::INTEGER );
   }
 
-  /// Preprocess Not
   template <class Converter>
   void PreprocessConstraint(
       NotConstraint& c, PreprocessInfo<NotConstraint>& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
+  }
+
+  template <class Converter>
+  void PreprocessConstraint(
+      IfThenConstraint& c, PreprocessInfo<IfThenConstraint>& prepro) {
+    const auto& args = c.GetArguments();
+    prepro.narrow_result_bounds(std::min(lb(args[1]), lb(args[2])),
+        std::max(ub(args[1]), ub(args[2])));
+    prepro.set_result_type( MP_DISPATCH(GetModel()).
+                            common_type( { args[1], args[2] } ) );
   }
 
 

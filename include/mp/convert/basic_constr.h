@@ -33,6 +33,8 @@ public:
 /// Possible argument arrays for CustomDefiningConstraint
 using VarArray1 = std::array<int, 1>;
 using VarArray2 = std::array<int, 2>;
+template <int N>
+using VarArrayN = std::array<int, N>;
 using VarArray = std::vector<int>;
 
 /// A defining constraint with the arguments and further info as parameters
@@ -57,6 +59,15 @@ public:
         this->GetArguments()==mc.GetArguments();
   }
 };
+
+////////////////////////////////////////////////////////////////////////
+#define DEFINE_CUSTOM_DEFINING_CONSTRAINT(Name, Args, Descr) \
+struct Name ## Id { \
+  static constexpr auto description_ = Descr; \
+  static constexpr auto name_        = #Name; \
+}; \
+using Name = \
+   CustomDefiningConstraint<Args, Name ## Id>
 
 
 } // namespace mp
