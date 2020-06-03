@@ -56,7 +56,7 @@ public:
   void AddConstraint(const MaximumConstraint& mc);
   ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)
   void AddConstraint(const MinimumConstraint& mc);
-  ACCEPT_CONSTRAINT(AbsConstraint, Recommended)          // before we implement conversion
+  ACCEPT_CONSTRAINT(AbsConstraint, Recommended)          // before conversion is implemented
   void AddConstraint(const AbsConstraint& absc);
   ACCEPT_CONSTRAINT(ConjunctionConstraint, Recommended)
   void AddConstraint(const ConjunctionConstraint& cc);
@@ -65,6 +65,25 @@ public:
   /// Enabling built-in indicator for infinite bounds, but otherwise may be slow
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
+
+  /// Nonlinear
+  ACCEPT_CONSTRAINT(ExpConstraint, Recommended)
+  void AddConstraint(const ExpConstraint& cc);
+  ACCEPT_CONSTRAINT(ExpAConstraint, Recommended)
+  void AddConstraint(const ExpAConstraint& cc);
+  ACCEPT_CONSTRAINT(LogConstraint, Recommended)
+  void AddConstraint(const LogConstraint& cc);
+  ACCEPT_CONSTRAINT(LogAConstraint, Recommended)
+  void AddConstraint(const LogAConstraint& cc);
+  ACCEPT_CONSTRAINT(PowConstraint, Recommended)
+  void AddConstraint(const PowConstraint& cc);
+  ACCEPT_CONSTRAINT(SinConstraint, Recommended)
+  void AddConstraint(const SinConstraint& cc);
+  ACCEPT_CONSTRAINT(CosConstraint, Recommended)
+  void AddConstraint(const CosConstraint& cc);
+  ACCEPT_CONSTRAINT(TanConstraint, Recommended)
+  void AddConstraint(const TanConstraint& cc);
+
 
   void FinishProblemModificationPhase();
 

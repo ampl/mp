@@ -280,6 +280,59 @@ public:
                 e.condition(), e.then_expr(), e.else_expr() });
   }
 
+  /////////////// NONLINEAR FUNCTIONS ////////////////
+  EExpr VisitPowConstExp(BinaryExpr e) {
+    return AssignResultToArguments( PowConstraint(
+      PowConstraint::Arguments{ Convert2Var(e.lhs()) },
+      PowConstraint::Parameters{ Cast<NumericConstant>(e.rhs()).value() } ) );
+  }
+
+  EExpr VisitPow2(UnaryExpr e) {     // MIP could have better conversion for pow2
+    return AssignResultToArguments( PowConstraint(
+      PowConstraint::Arguments{ Convert2Var(e.arg()) },
+      PowConstraint::Parameters{ 2.0 } ) );
+  }
+
+  EExpr VisitSqrt(UnaryExpr e) {
+    return AssignResultToArguments( PowConstraint(
+      PowConstraint::Arguments{ Convert2Var(e.arg()) },
+      PowConstraint::Parameters{ 0.5 } ) );
+  }
+
+  EExpr VisitExp(UnaryExpr e) {
+    return VisitFunctionalExpression<ExpConstraint>({ e.arg() });
+  }
+
+  EExpr VisitPowConstBase(BinaryExpr e) {
+    return AssignResultToArguments( ExpAConstraint(
+      ExpAConstraint::Arguments{ Convert2Var(e.rhs()) },
+      ExpAConstraint::Parameters{ Cast<NumericConstant>(e.lhs()).value() } ) );
+  }
+
+  EExpr VisitLog(UnaryExpr e) {
+    return VisitFunctionalExpression<LogConstraint>({ e.arg() });
+  }
+
+  EExpr VisitLog10(UnaryExpr e) {
+    return AssignResultToArguments( LogAConstraint(
+      LogAConstraint::Arguments{ Convert2Var(e.arg()) },
+      LogAConstraint::Parameters{ 10.0 } ) );
+  }
+
+  EExpr VisitSin(UnaryExpr e) {
+    return VisitFunctionalExpression<SinConstraint>({ e.arg() });
+  }
+
+  EExpr VisitCos(UnaryExpr e) {
+    return VisitFunctionalExpression<CosConstraint>({ e.arg() });
+  }
+
+  EExpr VisitTan(UnaryExpr e) {
+    return VisitFunctionalExpression<TanConstraint>({ e.arg() });
+  }
+
+
+
 public:
 
   //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
@@ -420,6 +473,46 @@ public:
     prepro.set_result_type( MP_DISPATCH(GetModel()).
                             common_type( { args[1], args[2] } ) );
   }
+
+  ////////////////////// NONLINEAR FUNCTIONS //////////////////////
+  template <class Converter>
+  void PreprocessConstraint(
+      ExpConstraint& c, PreprocessInfo<ExpConstraint>& prepro) {
+    prepro.narrow_result_bounds(0.0, this->Infty());
+  }
+
+  template <class Converter>
+  void PreprocessConstraint(
+      ExpAConstraint& c, PreprocessInfo<ExpAConstraint>& prepro) {
+    prepro.narrow_result_bounds(0.0, this->Infty());
+  }
+
+  template <class Converter>
+  void PreprocessConstraint(
+      LogConstraint& c, PreprocessInfo<LogConstraint>& prepro) {
+    MP_DISPATCH( GetModel() ).narrow_var_bounds(
+          c.GetArguments()[0], 0.0, this->Infty());
+  }
+
+  template <class Converter>
+  void PreprocessConstraint(
+      LogAConstraint& c, PreprocessInfo<LogAConstraint>& prepro) {
+    MP_DISPATCH( GetModel() ).narrow_var_bounds(
+          c.GetArguments()[0], 0.0, this->Infty());
+  }
+
+  template <class Converter>
+  void PreprocessConstraint(
+      SinConstraint& c, PreprocessInfo<SinConstraint>& prepro) {
+    prepro.narrow_result_bounds(-1.0, 1.0);
+  }
+
+  template <class Converter>
+  void PreprocessConstraint(
+      CosConstraint& c, PreprocessInfo<CosConstraint>& prepro) {
+    prepro.narrow_result_bounds(-1.0, 1.0);
+  }
+
 
 
   //////////////////////////// CUSTOM CONSTRAINTS //////////////////////

@@ -279,6 +279,50 @@ void GurobiBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
                                ic.v_.data(), ic.c_.data(), GRB_LESS_EQUAL, ic.rhs_ ) );
 }
 
+//////////////////// Nonlinear /////////////////////
+void GurobiBackend::AddConstraint(const ExpConstraint &cc)  {
+  GRB_CALL( GRBaddgenconstrExp(model, NULL,
+              cc.GetArguments()[0], cc.GetResultVar(), "") );
+}
+
+void GurobiBackend::AddConstraint(const ExpAConstraint &cc)  {
+  GRB_CALL( GRBaddgenconstrExpA(model, NULL,
+              cc.GetArguments()[0], cc.GetResultVar(), cc.GetParameters()[0], "") );
+}
+
+void GurobiBackend::AddConstraint(const LogConstraint &cc)  {
+  GRB_CALL( GRBaddgenconstrLog(model, NULL,
+              cc.GetArguments()[0], cc.GetResultVar(), "") );
+}
+
+void GurobiBackend::AddConstraint(const LogAConstraint &cc)  {
+  GRB_CALL( GRBaddgenconstrLogA(model, NULL,
+              cc.GetArguments()[0], cc.GetResultVar(), cc.GetParameters()[0], "") );
+}
+
+void GurobiBackend::AddConstraint(const PowConstraint &cc)  {
+  GRB_CALL( GRBaddgenconstrPow(model, NULL,
+              cc.GetArguments()[0], cc.GetResultVar(), cc.GetParameters()[0], "") );
+}
+
+void GurobiBackend::AddConstraint(const SinConstraint &cc)  {
+  GRB_CALL( GRBaddgenconstrSin(model, NULL,
+              cc.GetArguments()[0], cc.GetResultVar(), "") );
+}
+
+void GurobiBackend::AddConstraint(const CosConstraint &cc)  {
+  GRB_CALL( GRBaddgenconstrCos(model, NULL,
+              cc.GetArguments()[0], cc.GetResultVar(), "") );
+}
+
+void GurobiBackend::AddConstraint(const TanConstraint &cc)  {
+  GRB_CALL( GRBaddgenconstrTan(model, NULL,
+              cc.GetArguments()[0], cc.GetResultVar(), "") );
+}
+
+
+
+///////////////////////////////////////////////////////
 void GurobiBackend::FinishProblemModificationPhase() {
 }
 

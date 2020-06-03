@@ -111,6 +111,41 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( NotConstraint, VarArray1,
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( IfThenConstraint, VarArrayN<3>,
                                   "if (cond) then (expr1) else (expr2)");
 
+//////////////////// NONLINEAR FUNCTIONS //////////////////////
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( ExpConstraint, VarArray1,
+                                   "r = exp(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS( ExpAConstraint,
+                  VarArray1, DblParamArray1, "r = a**v");
+
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( LogConstraint, VarArray1,
+                                   "r = log(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS( LogAConstraint,
+                  VarArray1, DblParamArray1, "r = log(v)/log(a)");
+
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS( PowConstraint,
+                  VarArray1, DblParamArray1, "r = v ** a");
+
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( SinConstraint, VarArray1,
+                                   "r = sin(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( CosConstraint, VarArray1,
+                                   "r = cos(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( TanConstraint, VarArray1,
+                                   "r = tan(v)");
+
+
+
 ////////////////////////////////////////////////////////////////////////
 /// Indicator: b==bv -> c'x <= rhs
 class IndicatorConstraintLinLE: public BasicConstraint {
