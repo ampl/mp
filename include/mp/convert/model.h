@@ -106,7 +106,7 @@ public:
     return 0.0==vv.lb() && 1.0==vv.ub() && var::Type::INTEGER==vv.type();
   }
 
-  template <class VarArray>
+  template <class VarArray=std::initializer_list<int> >
   var::Type common_type(const VarArray& va) const {
     auto type = var::Type::INTEGER;
     for (auto v: va) {

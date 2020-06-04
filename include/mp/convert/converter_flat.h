@@ -373,9 +373,9 @@ public:
   //////////////////////////// CONSTRAINT PROPAGATORS ///////////////////////////////////
 
 
-  /// Preprocess minimum
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      MinimumConstraint& c, PreprocessInfo<MinimumConstraint>& prepro) {
+      MinimumConstraint& c, PreprocessInfo& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
     auto& args = c.GetArguments();
     prepro.narrow_result_bounds( m.lb_array(args),
@@ -383,9 +383,9 @@ public:
     prepro.set_result_type( m.common_type(args) );
   }
 
-  /// Preprocess maximum
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      MaximumConstraint& c, PreprocessInfo<MaximumConstraint>& prepro) {
+      MaximumConstraint& c, PreprocessInfo& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
     auto& args = c.GetArguments();
     prepro.narrow_result_bounds( m.lb_max_array(args),
@@ -393,16 +393,16 @@ public:
     prepro.set_result_type( m.common_type(args) );
   }
 
-  template <class Converter>
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      AbsConstraint& c, PreprocessInfo<AbsConstraint>& prepro) {
+      AbsConstraint& c, PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, this->Infty());
     prepro.set_result_type( var_type(c.GetArguments()[0]) );
   }
 
-  /// Preprocess EQ0
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      EQ0Constraint& c, PreprocessInfo<EQ0Constraint>& prepro) {
+      EQ0Constraint& c, PreprocessInfo& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
     AffineExpr& ae = c.GetArguments();
     prepro.narrow_result_bounds(0.0, 1.0);
@@ -436,37 +436,37 @@ public:
     }
   }
 
-  /// Preprocess LE0
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      LE0Constraint& c, PreprocessInfo<LE0Constraint>& prepro) {
+      LE0Constraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
   }
 
-  /// Preprocess Conjunction
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      ConjunctionConstraint& c, PreprocessInfo<ConjunctionConstraint>& prepro) {
+      ConjunctionConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
   }
 
-  /// Preprocess Disjunction
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      DisjunctionConstraint& c, PreprocessInfo<DisjunctionConstraint>& prepro) {
+      DisjunctionConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
   }
 
-  template <class Converter>
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      NotConstraint& c, PreprocessInfo<NotConstraint>& prepro) {
+      NotConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
   }
 
-  template <class Converter>
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      IfThenConstraint& c, PreprocessInfo<IfThenConstraint>& prepro) {
+      IfThenConstraint& c, PreprocessInfo& prepro) {
     const auto& args = c.GetArguments();
     prepro.narrow_result_bounds(std::min(lb(args[1]), lb(args[2])),
         std::max(ub(args[1]), ub(args[2])));
@@ -475,41 +475,41 @@ public:
   }
 
   ////////////////////// NONLINEAR FUNCTIONS //////////////////////
-  template <class Converter>
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      ExpConstraint& c, PreprocessInfo<ExpConstraint>& prepro) {
+      ExpConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, this->Infty());
   }
 
-  template <class Converter>
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      ExpAConstraint& c, PreprocessInfo<ExpAConstraint>& prepro) {
+      ExpAConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, this->Infty());
   }
 
-  template <class Converter>
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      LogConstraint& c, PreprocessInfo<LogConstraint>& prepro) {
+      LogConstraint& c, PreprocessInfo& ) {
     MP_DISPATCH( GetModel() ).narrow_var_bounds(
           c.GetArguments()[0], 0.0, this->Infty());
   }
 
-  template <class Converter>
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      LogAConstraint& c, PreprocessInfo<LogAConstraint>& prepro) {
+      LogAConstraint& c, PreprocessInfo& ) {
     MP_DISPATCH( GetModel() ).narrow_var_bounds(
           c.GetArguments()[0], 0.0, this->Infty());
   }
 
-  template <class Converter>
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      SinConstraint& c, PreprocessInfo<SinConstraint>& prepro) {
+      SinConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(-1.0, 1.0);
   }
 
-  template <class Converter>
+  template <class PreprocessInfo>
   void PreprocessConstraint(
-      CosConstraint& c, PreprocessInfo<CosConstraint>& prepro) {
+      CosConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(-1.0, 1.0);
   }
 
