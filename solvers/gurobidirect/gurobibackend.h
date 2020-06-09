@@ -144,7 +144,7 @@ private:
     EXPORT_FILE,
     NUM_STRING_OPTIONS
   };
-  OptionArrayManager<std::string, StringOptions, NUM_STRING_OPTIONS> strOptMgr_;
+  OptionArrayManager<std::string, StringOptions, NUM_STRING_OPTIONS> storedStringOptions_;
 
   /// These options are passed to the solver
   SolverOptionAccessor<GurobiBackend, int, const char*> slvOptInt_ = *this;
