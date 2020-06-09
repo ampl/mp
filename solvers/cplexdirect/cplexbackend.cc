@@ -22,25 +22,7 @@ CplexBackend::CplexBackend() :
    BaseBackend("cplexdirect", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
    {
   InitBackend();
-
-  options_[DEBUGEXPR] = false;
-  options_[USENUMBEROF] = true;
-  options_[SOLUTION_LIMIT] = -1;
-
-  int version;
-  CPXversionnumber(env, &version);
-  set_long_name(fmt::format("IBM ILOG CPLEX {}", version));
-  set_version(fmt::format("AMPL/CPLEX Optimizer [{}]", version));
-
-  set_option_header(
-      "IBM ILOG CPLEX Optimizer Options for AMPL\n"
-      "--------------------------------------------\n"
-      "\n"
-      "To set these options, assign a string specifying their values to the "
-      "AMPL option ``cplexdirect_options``. For example::\n"
-      "\n"
-      "  ampl: option cplexdirect_options 'optimalitytolerance=1e-6';\n");
-
+  InitOptions();
 }
 
 CplexBackend::~CplexBackend() {
@@ -129,20 +111,6 @@ double CplexBackend::Niterations() const {
 
 void CplexBackend::ExportModel(const std::string &file) {
   CPLEX_CALL( CPXwriteprob (env, lp, file.c_str(), NULL) );
-}
-
-void CplexBackend::SetBoolOption(
-    const SolverOption &opt, int value, Option id) {
-  if (value != 0 && value != 1)
-    throw InvalidOptionValue(opt, value);
-  options_[id] = value;
-}
-
-void CplexBackend::DoSetIntOption(
-    const SolverOption &opt, int value, Option id) {
-  if (value < 0)
-    throw InvalidOptionValue(opt, value);
-  options_[id] = value;
 }
 
 
@@ -258,6 +226,73 @@ void CplexBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
 }
 
 void CplexBackend::FinishProblemModificationPhase() {
+  const auto& exportFile = storedStringOptions_.get(EXPORT_FILE);
+  if (0<exportFile.size()) {
+    ExportModel(exportFile);
+  }
+}
+
+
+////////////////////////////// OPTIONS /////////////////////////////////
+
+void CplexBackend::InitOptions() {
+
+  int version;
+  CPXversionnumber(env, &version);
+  set_long_name(fmt::format("IBM ILOG CPLEX {}", version));
+  set_version(fmt::format("AMPL/CPLEX Optimizer [{}]", version));
+
+  set_option_header(
+      "IBM ILOG CPLEX Optimizer Options for AMPL\n"
+      "--------------------------------------------\n"
+      "\n"
+      "To set these options, assign a string specifying their values to the "
+      "AMPL option ``cplexdirect_options``. For example::\n"
+      "\n"
+      "  ampl: option cplexdirect_options 'mipgap=1e-6';\n");
+
+  AddOption("mipdisplay",
+      "1: output logging (console and file). "
+      "Default = 0 (no logging).",
+      slvOptInt_, CPXPARAM_MIP_Display);
+  SetSolverOption(CPXPARAM_MIP_Display, 0);
+
+  AddOption("exportfile",
+      "Specifies the name of a file where to export the model before "
+      "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
+      "Default = \"\" (don't export the model).",
+      storedStringOptions_, EXPORT_FILE);
+
+  AddOption("mipgap",
+      "Relative optimality gap |bestbound-bestinteger|/(1e-10+|bestinteger|).",
+      slvOptDouble_, CPXPARAM_MIP_Tolerances_MIPGap);
+
+}
+
+void CplexBackend::GetSolverOption(int key, int &value) const {
+  CPLEX_CALL( CPXgetintparam(env, key, &value) );
+}
+
+void CplexBackend::SetSolverOption(int key, int value) {
+  CPLEX_CALL( CPXsetintparam(env, key, value) );
+}
+
+void CplexBackend::GetSolverOption(int key, double &value) const {
+  CPLEX_CALL( CPXgetdblparam(env, key, &value) );
+}
+
+void CplexBackend::SetSolverOption(int key, double value) {
+  CPLEX_CALL( CPXsetdblparam(env, key, value) );
+}
+
+void CplexBackend::GetSolverOption(int key, std::string &value) const {
+  char buffer[CPX_STR_PARAM_MAX];
+  CPLEX_CALL( CPXgetstrparam(env, key, buffer) );
+  value = buffer;
+}
+
+void CplexBackend::SetSolverOption(int key, fmt::StringRef value) {
+  CPLEX_CALL( CPXsetstrparam(env, key, value.to_string().c_str()) );
 }
 
 

@@ -99,52 +99,31 @@ public:
   static double Infinity() { return CPX_INFBOUND; }
   static double MinusInfinity() { return -CPX_INFBOUND; }
 
-public:
-  // Integer options.
-  enum Option {
-    DEBUGEXPR,
-    USENUMBEROF,
-    SOLUTION_LIMIT,
-    NUM_OPTIONS
-  };
+protected:
+
+  void InitOptions();
 
 private:
-  int options_[NUM_OPTIONS];
 
-  int GetOption(Option id) const {
-    assert(id >= 0 && id < NUM_OPTIONS);
-    return options_[id];
-  }
-
-  enum FileKind {
-    DUMP_FILE,
+  /// These options are stored in the class
+  enum StringOptions {
     EXPORT_FILE,
-    NUM_FILES
+    NUM_STRING_OPTIONS
   };
+  OptionArrayManager<std::string, StringOptions, NUM_STRING_OPTIONS> storedStringOptions_;
 
-  std::string filenames_[NUM_FILES];
+  /// These options are passed to the solver
+  SolverOptionAccessor<CplexBackend, int, int> slvOptInt_ = *this;
+  SolverOptionAccessor<CplexBackend, double, int> slvOptDouble_ = *this;
+  SolverOptionAccessor<CplexBackend, std::string, int> slvOptString_ = *this;
 
-  int DoGetIntOption(const SolverOption &, Option id) const {
-    return options_[id];
-  }
-  void SetBoolOption(const SolverOption &opt, int value, Option id);
-  void DoSetIntOption(const SolverOption &opt, int value, Option id);
-
-  std::string GetFile(const SolverOption &, FileKind kind) const {
-    assert(kind < NUM_FILES);
-    return filenames_[kind];
-  }
-  void SetFile(const SolverOption &, fmt::StringRef filename, FileKind kind) {
-    assert(kind < NUM_FILES);
-    filenames_[kind] = filename.to_string();
-  }
-
-  // Returns an integer option of the CPLEX optimizer.
-  int GetCPLEXIntOption(const SolverOption &opt, int param) const;
-
-  // Sets an integer option of the CPLEX optimizer.
-  void SetCPLEXIntOption(const SolverOption &opt, int value, int param);
-
+public:
+  void GetSolverOption(int key, int& value) const;
+  void SetSolverOption(int key, int value);
+  void GetSolverOption(int key, double& value) const;
+  void SetSolverOption(int key, double value);
+  void GetSolverOption(int key, std::string& value) const;
+  void SetSolverOption(int key, fmt::StringRef value);
 
 };
 
