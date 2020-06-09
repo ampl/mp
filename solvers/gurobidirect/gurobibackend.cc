@@ -360,8 +360,8 @@ void GurobiBackend::GetSolverOption(const char *key, std::string &value) const {
   value = buffer;
 }
 
-void GurobiBackend::SetSolverOption(const char *key, fmt::StringRef value) {
-  GRB_CALL( GRBsetstrparam(GRBgetenv(model), key, value.to_string().c_str()) );
+void GurobiBackend::SetSolverOption(const char *key, const std::string& value) {
+  GRB_CALL( GRBsetstrparam(GRBgetenv(model), key, value.c_str()) );
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

@@ -157,7 +157,7 @@ public:
   void GetSolverOption(const char* key, double& value) const;
   void SetSolverOption(const char* key, double value);
   void GetSolverOption(const char* key, std::string& value) const;
-  void SetSolverOption(const char* key, fmt::StringRef value);
+  void SetSolverOption(const char* key, const std::string& value);
 
 };
 

@@ -123,7 +123,7 @@ public:
   void GetSolverOption(int key, double& value) const;
   void SetSolverOption(int key, double value);
   void GetSolverOption(int key, std::string& value) const;
-  void SetSolverOption(int key, fmt::StringRef value);
+  void SetSolverOption(int key, const std::string& value);
 
 };
 

@@ -291,8 +291,8 @@ void CplexBackend::GetSolverOption(int key, std::string &value) const {
   value = buffer;
 }
 
-void CplexBackend::SetSolverOption(int key, fmt::StringRef value) {
-  CPLEX_CALL( CPXsetstrparam(env, key, value.to_string().c_str()) );
+void CplexBackend::SetSolverOption(int key, const std::string& value) {
+  CPLEX_CALL( CPXsetstrparam(env, key, value.c_str()) );
 }
 
 
