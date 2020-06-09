@@ -132,54 +132,32 @@ public:
 
 
 
-public:
-  // Integer options.
-  enum Option {
-    DEBUGEXPR,
-    USENUMBEROF,
-    SOLUTION_LIMIT,
-    NUM_OPTIONS
-  };
+protected:
+
+  void InitOptions();
+
 
 private:
-  int options_[NUM_OPTIONS];
 
-  int GetOption(Option id) const {
-    assert(id >= 0 && id < NUM_OPTIONS);
-    return options_[id];
-  }
-
-  enum FileKind {
-    DUMP_FILE,
+  /// These options are stored in the class
+  enum StringOptions {
     EXPORT_FILE,
-    NUM_FILES
+    NUM_STRING_OPTIONS
   };
+  OptionArrayManager<std::string, StringOptions, NUM_STRING_OPTIONS> strOptMgr_;
 
-  std::string filenames_[NUM_FILES];
+  /// These options are passed to the solver
+  SolverOptionAccessor<GurobiBackend, int, const char*> slvOptInt_ = *this;
+  SolverOptionAccessor<GurobiBackend, double, const char*> slvOptDouble_ = *this;
+  SolverOptionAccessor<GurobiBackend, std::string, const char*> slvOptString_ = *this;
 
-  std::string GetOptimizer(const SolverOption &) const;
-  void SetOptimizer(const SolverOption &opt, fmt::StringRef value);
-
-  int DoGetIntOption(const SolverOption &, Option id) const {
-    return options_[id];
-  }
-  void SetBoolOption(const SolverOption &opt, int value, Option id);
-  void DoSetIntOption(const SolverOption &opt, int value, Option id);
-
-  std::string GetFile(const SolverOption &, FileKind kind) const {
-    assert(kind < NUM_FILES);
-    return filenames_[kind];
-  }
-  void SetFile(const SolverOption &, fmt::StringRef filename, FileKind kind) {
-    assert(kind < NUM_FILES);
-    filenames_[kind] = filename.to_string();
-  }
-
-  // Returns an integer option of the CPLEX optimizer.
-  int GetCPLEXIntOption(const SolverOption &opt, int param) const;
-
-  // Sets an integer option of the CPLEX optimizer.
-  void SetCPLEXIntOption(const SolverOption &opt, int value, int param);
+public:
+  void GetSolverOption(const char* key, int& value) const;
+  void SetSolverOption(const char* key, int value);
+  void GetSolverOption(const char* key, double& value) const;
+  void SetSolverOption(const char* key, double value);
+  void GetSolverOption(const char* key, std::string& value) const;
+  void SetSolverOption(const char* key, fmt::StringRef value);
 
 };
 

@@ -176,7 +176,7 @@ public:
   void ConvertModel() { }
 };
 
-/// A 'final' converter in a hierarchy, no static polymorphism
+/// A 'final' converter in a hierarchy
 template <template <typename, typename, typename> class Converter,
           class Backend, class Model = BasicModel<std::allocator<char> > >
 class ConverterImpl :

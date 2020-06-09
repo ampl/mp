@@ -22,27 +22,7 @@ GurobiBackend::GurobiBackend() :
    BaseBackend("gurobidirect", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
    {
   InitBackend();
-
-  options_[DEBUGEXPR] = false;
-  options_[USENUMBEROF] = true;
-  options_[SOLUTION_LIMIT] = -1;
-
-  int a,b,c;
-  GRBversion(&a, &b, &c);
-  set_long_name(fmt::format("Gurobi {}.{}.{}", a, b, c));
-  set_version(fmt::format("AMPL/Gurobi Optimizer [{}.{}.{}]", a,b,c));
-
-  AddSuffix("priority", 0, suf::VAR);
-
-  set_option_header(
-      "Gurobi Optimizer Options for AMPL\n"
-      "--------------------------------------------\n"
-      "\n"
-      "To set these options, assign a string specifying their values to the "
-      "AMPL option ``gurobidirect_options``. For example::\n"
-      "\n"
-      "  ampl: option gurobidirect_options 'optimalitytolerance=1e-6';\n");
-
+  InitOptions();
 }
 
 GurobiBackend::~GurobiBackend() {
@@ -126,21 +106,6 @@ double GurobiBackend::Niterations() const {
 
 void GurobiBackend::ExportModel(const std::string &file) {
   GRB_CALL( GRBwrite(model, file.c_str()) );
-}
-
-
-void GurobiBackend::SetBoolOption(
-    const SolverOption &opt, int value, Option id) {
-  if (value != 0 && value != 1)
-    throw InvalidOptionValue(opt, value);
-  options_[id] = value;
-}
-
-void GurobiBackend::DoSetIntOption(
-    const SolverOption &opt, int value, Option id) {
-  if (value < 0)
-    throw InvalidOptionValue(opt, value);
-  options_[id] = value;
 }
 
 
@@ -324,8 +289,80 @@ void GurobiBackend::AddConstraint(const TanConstraint &cc)  {
 
 ///////////////////////////////////////////////////////
 void GurobiBackend::FinishProblemModificationPhase() {
+  const auto& exportFile = strOptMgr_.get(EXPORT_FILE);
+  if (0<exportFile.size()) {
+    ExportModel(exportFile);
+  }
 }
 
+
+///////////////////////////////////////////////////////////////
+////////////////////////// OPTIONS ////////////////////////////
+void GurobiBackend::InitOptions() {
+
+  int a,b,c;
+  GRBversion(&a, &b, &c);
+  set_long_name(fmt::format("Gurobi {}.{}.{}", a, b, c));
+  set_version(fmt::format("AMPL/Gurobi Optimizer [{}.{}.{}]", a,b,c));
+
+  AddSuffix("priority", 0, suf::VAR);
+
+  set_option_header(
+      "Gurobi Optimizer Options for AMPL\n"
+      "--------------------------------------------\n"
+      "\n"
+      "To set these options, assign a string specifying their values to the "
+      "AMPL option ``gurobidirect_options``. For example::\n"
+      "\n"
+      "  ampl: option gurobidirect_options 'optimalitytolerance=1e-6';\n");
+
+  AddOption("outputflag",
+      "1: output logging (console and file). "
+      "Default = 0 (no logging).",
+      slvOptInt_, GRB_INT_PAR_OUTPUTFLAG);
+  SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);
+
+  AddOption("logfile",
+      "Log file name.",
+      slvOptString_, GRB_STR_PAR_LOGFILE);
+
+  AddOption("exportfile",
+      "Specifies the name of a file where to export the model before "
+      "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
+      "Default = \"\" (don't export the model).",
+      strOptMgr_, EXPORT_FILE);
+
+  AddOption("optimalitytolerance",
+      "Dual feasibility tolerance.",
+      slvOptDouble_, GRB_DBL_PAR_OPTIMALITYTOL);
+
+}
+
+void GurobiBackend::GetSolverOption(const char *key, int &value) const {
+  GRB_CALL( GRBgetintparam(GRBgetenv(model), key, &value) );
+}
+
+void GurobiBackend::SetSolverOption(const char *key, int value) {
+  GRB_CALL( GRBsetintparam(GRBgetenv(model), key, value) );
+}
+
+void GurobiBackend::GetSolverOption(const char *key, double &value) const {
+  GRB_CALL( GRBgetdblparam(GRBgetenv(model), key, &value) );
+}
+
+void GurobiBackend::SetSolverOption(const char *key, double value) {
+  GRB_CALL( GRBsetdblparam(GRBgetenv(model), key, value) );
+}
+
+void GurobiBackend::GetSolverOption(const char *key, std::string &value) const {
+  char buffer[GRB_MAX_STRLEN];
+  GRB_CALL( GRBgetstrparam(GRBgetenv(model), key, buffer) );
+  value = buffer;
+}
+
+void GurobiBackend::SetSolverOption(const char *key, fmt::StringRef value) {
+  GRB_CALL( GRBsetstrparam(GRBgetenv(model), key, value.to_string().c_str()) );
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 SolverPtr create_gurobidirect(const char *) { return SolverPtr(new GurobiBackend()); }

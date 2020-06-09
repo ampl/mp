@@ -37,7 +37,7 @@ namespace mp {
 /// and placeholders for solver API
 template <class Impl, class Model = BasicModel<std::allocator<char>>>
 class BasicBackend : public BasicConstraintAdder,
-    public SolverImpl<Model>  // TODO no SolverImpl
+    public SolverImpl<Model>
 {
 public:
   BasicBackend(fmt::CStringRef name, fmt::CStringRef longname=0,
@@ -115,9 +115,6 @@ public:
   void Resolve(Problem& p, SolutionHandler &sh) {
     MP_DISPATCH( SetInterrupter(MP_DISPATCH( interrupter() )) );
 
-    MP_DISPATCH( Print( "Exporting model.lp.\n" ) );
-    MP_DISPATCH( ExportModel("model.lp") );
-
     stats.setup_time = GetTimeAndReset(stats.time);
     MP_DISPATCH( DoOptimize() );
     stats.solution_time = GetTimeAndReset(stats.time);
@@ -177,6 +174,69 @@ public:
   static bool float_equal(double a, double b) {           // ??????
     return std::fabs(a-b) < 1e-8*std::max(std::fabs(a), std::fabs(b));
   }
+
+
+
+  using Solver::AddOption;
+  template <class OptionsManager>
+  void AddOption(const char *name, const char *description,
+                 OptionsManager& om, typename OptionsManager::index_type i,
+                 ValueArrayRef values = ValueArrayRef()) {
+    AddOption(Solver::OptionPtr(
+                      new Solver::ConcreteOptionWithInfo<OptionsManager,
+                      typename OptionsManager::value_type, typename OptionsManager::index_type>(
+            name, description, &om, &OptionsManager::get, &OptionsManager::set, i, values)));
+  }
+
+
+  template <class Value, class Index, Index N>
+  class OptionArrayManager {
+    std::array<Value, N> values_;
+  public:
+    using value_type = Value;
+    using index_type = Index;
+    /// Options setup
+    Value get(const SolverOption& , Index i) const { return values_.at(i); }
+    void set(const SolverOption& ,
+             typename internal::OptionHelper<Value>::Arg v,
+             Index i) { values_.at(i) = v; }
+    /// Normal getter
+    const value_type& get(Index i) const { return values_.at(i); }
+  };
+  template <class Index, Index N>
+  class OptionArrayManager<std::string, Index, N> {
+    std::array<std::string, N> values_;
+  public:
+    using value_type = std::string;
+    using index_type = Index;
+    /// Options setup
+    value_type get(const SolverOption& , Index i) const { return values_.at(i); }
+    void set(const SolverOption& ,
+             typename internal::OptionHelper<std::string>::Arg v,
+             Index i) { values_.at(i) = v.data(); }
+    /// Normal getter
+    const value_type& get(Index i) const { return values_.at(i); }
+  };
+
+
+  template <class Backend, class Value, class Index>
+  class SolverOptionAccessor {
+    Backend& backend_;
+  public:
+    using value_type = Value;
+    using index_type = Index;
+    SolverOptionAccessor(Backend& b) : backend_(b) { }
+    /// Options setup
+    Value get(const SolverOption& , Index i) const {
+      Value v;
+      backend_.GetSolverOption(i, v);
+      return v;
+    }
+    void set(const SolverOption& ,
+             typename internal::OptionHelper<Value>::Arg v,
+             Index i) {
+      backend_.SetSolverOption(i, v); }
+  };
 
 };
 

@@ -294,7 +294,7 @@ class SolverOption {
   virtual void SetValue(fmt::StringRef) {
     throw internal::OptionTypeError(name_, "string");
   }
-  void SetValue(int value) {
+  virtual void SetValue(int value) {
     fmt::LongLong long_value = value;
     SetValue(long_value);
   }
@@ -518,6 +518,10 @@ class Solver : private ErrorHandler,
         Get get, Set set, InfoArg info, ValueArrayRef values = ValueArrayRef())
     : TypedSolverOption<T>(name, description, values),
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set), info_(info) {}
+    ConcreteOptionWithInfo(const char *name, const char *description, Handler *s,
+        Get get, Set set, InfoArg info, ValueArrayRef values = ValueArrayRef())
+    : TypedSolverOption<T>(name, description, values),
+      handler_(*s), get_(get), set_(set), info_(info) {}
 
     void GetValue(T &value) const { value = (handler_.*get_)(*this, info_); }
     void SetValue(typename internal::OptionHelper<T>::Arg value) {
