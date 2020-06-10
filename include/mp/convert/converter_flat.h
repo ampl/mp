@@ -55,8 +55,8 @@ public:
   ///
   ///////////////////////////////////////////////////////////////////////////////////////////
 
-  void Convert(typename Model::MutCommonExpr e) {
-    throw std::runtime_error("BasicMPFlatConverter: No common exprs convertible yet TODO");
+  void Convert(typename Model::MutCommonExpr ) {
+    /// Convert on demand, not here
   }
 
   void Convert(typename Model::MutObjective obj) {
@@ -107,7 +107,7 @@ public:
   int Convert2Var(Expr e) {
     return Convert2Var( Convert2EExpr(e) );
   }
-  int Convert2Var(EExpr ee) {
+  int Convert2Var(EExpr&& ee) {
     if (ee.is_variable())
       return ee.get_representing_variable();
     if (ee.is_constant())
@@ -208,6 +208,19 @@ public:
 
   EExpr VisitVariable(Reference r) {
     return EExpr::Variable{ r.index() };
+  }
+
+  EExpr VisitCommonExpr(Reference r) {
+    const auto index = r.index();
+    if (index >= common_exprs_.size())
+      common_exprs_.resize(index+1, -1);          // init by -1, "no variable"
+    if (common_exprs_[index]<0) {                 // not yet converted
+      auto ce = MP_DISPATCH( GetModel() ).common_expr(index);
+      EExpr eexpr(ce.linear_expr());
+      eexpr.Add( Convert2EExpr(ce.nonlinear_expr()) );
+      common_exprs_[index] = Convert2Var(std::move(eexpr));
+    }
+    return EExpr::Variable{ common_exprs_[index] };
   }
 
   EExpr VisitMinus(UnaryExpr e) {
@@ -616,6 +629,8 @@ public:
 
 private:
   std::unordered_map<double, int> map_fixed_vars_;
+
+  std::vector<int> common_exprs_;               // variables equal to the result
 
 public:
 

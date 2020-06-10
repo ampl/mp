@@ -11,6 +11,8 @@ class AffineExpr : public LinearExpr {
   double constant_term_ = 0.0;
 public:
   AffineExpr() {}
+  AffineExpr(const LinearExpr& ae) : LinearExpr(ae) { }
+  AffineExpr(LinearExpr&& ae) : LinearExpr(std::move(ae)) { }
   AffineExpr(const AffineExpr& ae) = default;
   AffineExpr(AffineExpr&& ae) = default;
   template <class CV=std::vector<double>, class VV=std::vector<int> >
