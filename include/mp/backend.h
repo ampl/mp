@@ -178,6 +178,11 @@ public:
 
   ///////////////////////////// OPTIONS /////////////////////////////////
   ///
+public:
+  using Solver::add_to_long_name;
+  using Solver::add_to_version;
+  using Solver::add_to_option_header;
+
 protected:
 
   using Solver::AddOption;
@@ -196,6 +201,7 @@ protected:
     void SetValue(typename internal::OptionHelper<Value>::Arg v) override
     { value_ = v; }
   };
+public:
   template <class Value>
   void AddOption(const char *name, const char *description,
                  Value& value, ValueArrayRef values = ValueArrayRef()) {
@@ -204,6 +210,7 @@ protected:
             name, description, value, values)));
   }
 
+protected:
   /// Options stored in an 'options manager'
   template <class OptionsManager>
   void AddOption(const char *name, const char *description,

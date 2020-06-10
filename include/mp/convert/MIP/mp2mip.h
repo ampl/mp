@@ -12,6 +12,10 @@ class MPToMIPConverter
     : public BasicMPFlatConverter<Impl, Backend, Model>
 {
 public:
+  MPToMIPConverter() {
+    InitOptions();
+  }
+
   using BaseConverter = BasicMPFlatConverter<Impl, Backend, Model>;
 
   ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
@@ -133,6 +137,24 @@ public:
     }
   }
 
+
+  ///////////////////////////////////////////////////////////////////////
+  /////////////////////// OPTIONS /////////////////////////
+  ///
+private:
+  struct Options {
+  };
+  Options options_;
+
+  void InitOptions() {
+    this->add_to_long_name("\nMP-to-MIP Converter Layer");
+    this->add_to_version("\nMP-to-MIP Converter Layer for AMPL");
+    this->add_to_option_header(
+          "\n"
+          "Including MP-to-MIP Converter Layer Options\n"
+          "-------------------------------------------\n"
+          );
+  }
 
 };
 

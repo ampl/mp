@@ -35,6 +35,10 @@ class BasicMPFlatConverter
       public BasicConstraintConverter
 {
 public:
+  BasicMPFlatConverter() {
+    InitOptions();
+  }
+
   using EExprType = EExpr;
   using VarArray = std::vector<int>;
 
@@ -403,24 +407,42 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       EQ0Constraint& c, PreprocessInfo& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
-    AffineExpr& ae = c.GetArguments();
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
+    if (0!=CanPreprocess( options_.preprocessEqualityResultBounds_ ))
+      if (FixEqualityResult(c, prepro))
+        return;
+    if (0!=CanPreprocess( options_.preprocessEqualityBvar_ ))
+      if (ReuseEqualityBinaryVar(c, prepro))
+        return;
+  }
+
+  template <class PreprocessInfo>
+  bool FixEqualityResult(
+      EQ0Constraint& c, PreprocessInfo& prepro) {
+    AffineExpr& ae = c.GetArguments();
     if (ae.is_constant()) {                  // const==0
       auto res = (double)int(0.0==ae.constant_term());
       prepro.narrow_result_bounds(res, res);
-      return;
+      return true;
     }
     auto bndsNType = ComputeBoundsAndType(ae);
     if (bndsNType.lb() > 0.0 || bndsNType.ub() < 0.0) {
       prepro.narrow_result_bounds(0.0, 0.0);
-      return;
+      return true;
     }
     if (bndsNType.lb()==0.0 && bndsNType.ub()==0.0) {
       prepro.narrow_result_bounds(1.0, 1.0);
-      return;
+      return true;
     }
+    return false;
+  }
+
+  template <class PreprocessInfo>
+  bool ReuseEqualityBinaryVar(
+      EQ0Constraint& c, PreprocessInfo& prepro) {
+    auto& m = MP_DISPATCH( GetModel() );
+    AffineExpr& ae = c.GetArguments();
     if (1==ae.num_terms() && 1.0==ae.coef(0)) {            // var==const
       int var = ae.var_index(0);
       double rhs = -ae.constant_term();
@@ -431,9 +453,10 @@ public:
           prepro.set_result_var( MakeComplementVar(var) );
         else
           prepro.narrow_result_bounds(0.0, 0.0);    // not 0/1 value, result false
-        return;
+        return true;
       }
     }
+    return false;
   }
 
   template <class PreprocessInfo>
@@ -633,6 +656,34 @@ public:
     return var_info_[var].pInitExpr;
   }
 
+
+  ///////////////////////////////////////////////////////////////////////
+  /////////////////////// OPTIONS /////////////////////////
+  ///
+private:
+  struct Options {
+    int preprocessAnything_ = 1;
+    int preprocessEqualityResultBounds_ = 1;
+    int preprocessEqualityBvar_ = 1;
+  };
+  Options options_;
+
+  void InitOptions() {
+    this->AddOption("cvt:preprocessAnything",
+        "0/1*: Set to 0 to disable all presolve in the converter",
+        options_.preprocessAnything_);
+    this->AddOption("cvt:preprocessEqualityResultBounds",
+        "0/1*: Preprocess reified equality comparison's boolean result",
+        options_.preprocessEqualityResultBounds_);
+    this->AddOption("cvt:preprocessEqualityBinaryVar",
+        "0/1*: Preprocess reified equality comparison with a binary variable",
+        options_.preprocessEqualityBvar_);
+  }
+
+protected:
+  bool CanPreprocess(int f) const {
+    return 0!=options_.preprocessAnything_ && 0!=f;
+  }
 
 };
 

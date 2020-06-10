@@ -267,7 +267,7 @@ class SolverOption {
     throw internal::OptionTypeError(name_, "string");
   }
 
-  void GetValue(int &int_value) const {
+  virtual void GetValue(int &int_value) const {
     fmt::LongLong value = 0;
     GetValue(value);
     if (value < std::numeric_limits<int>::min() ||
@@ -576,13 +576,18 @@ class Solver : private ErrorHandler,
   Solver(fmt::CStringRef name, fmt::CStringRef long_name, long date, int flags);
 
   void set_long_name(fmt::StringRef name) { long_name_ = name.to_string(); }
+  void add_to_long_name(fmt::StringRef name) { long_name_ += name.to_string(); }
   void set_version(fmt::StringRef version) { version_ = version.to_string(); }
+  void add_to_version(fmt::StringRef version) { version_ += version.to_string(); }
 
   // Sets the flags for Problem::Read.
   void set_read_flags(unsigned flags) { read_flags_ = flags; }
 
   // Sets a text to be displayed before option descriptions.
   void set_option_header(const char *header) { option_header_ = header; }
+
+  // Add more text to be displayed before option descriptions.
+  void add_to_option_header(const char *header_more) { option_header_ += header_more; }
 
   void AddOption(OptionPtr opt) {
     // First insert the option, then release a pointer to it. Doing the other

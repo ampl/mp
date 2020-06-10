@@ -152,7 +152,7 @@ protected:
   }
 
 public:
-  /// These methods to be used by converter objects
+  /// These methods to be used by converter helper objects
   static constexpr double Infty() { return std::numeric_limits<double>::infinity(); }
   static constexpr double MinusInfty() { return -std::numeric_limits<double>::infinity(); }
   int AddVar(double lb=MinusInfty(), double ub=Infty(), var::Type type = var::CONTINUOUS) {
@@ -164,6 +164,22 @@ public:
     for (int i=0; i<nvars; ++i)
       newVars[i] = AddVar(lb, ub, type);
     return newVars;
+  }
+
+  ////////////////////////////// OPTIONS ////////////////////////////////
+protected:
+  // Add more text to be displayed before option descriptions.
+  void add_to_long_name(fmt::StringRef name) { GetBackend().add_to_long_name(name); }
+  void add_to_version(fmt::StringRef version) { GetBackend().add_to_version(version); }
+  void add_to_option_header(const char* header_more) {
+    GetBackend().add_to_option_header(header_more);
+  }
+
+  /// Simple stored option referencing a variable
+  template <class Value>
+  void AddOption(const char *name, const char *description,
+                 Value& value, ValueArrayRef values = ValueArrayRef()) {
+    GetBackend().AddOption(name, description, value, values);
   }
 
 };
