@@ -217,7 +217,8 @@ public:
     if (common_exprs_[index]<0) {                 // not yet converted
       auto ce = MP_DISPATCH( GetModel() ).common_expr(index);
       EExpr eexpr(ce.linear_expr());
-      eexpr.Add( Convert2EExpr(ce.nonlinear_expr()) );
+      if (ce.nonlinear_expr())
+        eexpr.Add( Convert2EExpr(ce.nonlinear_expr()) );
       common_exprs_[index] = Convert2Var(std::move(eexpr));
     }
     return EExpr::Variable{ common_exprs_[index] };
