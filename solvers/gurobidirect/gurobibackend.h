@@ -62,8 +62,9 @@ public:
   void AddConstraint(const ConjunctionConstraint& cc);
   ACCEPT_CONSTRAINT(DisjunctionConstraint, AcceptedButNotRecommended)
   void AddConstraint(const DisjunctionConstraint& mc);
-  /// Enabling built-in indicator for infinite bounds, but otherwise may be slow
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended)
+  /// Enabling built-in indicator for infinite bounds,
+  /// but not recommended otherwise --- may be slow
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
 
   /// Nonlinear

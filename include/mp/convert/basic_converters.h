@@ -182,6 +182,12 @@ protected:
     GetBackend().AddOption(name, description, value, values);
   }
 
+  ////////////////////////////// UTILITIES //////////////////////////////
+  template <typename... Args> \
+  void Print(fmt::CStringRef format, const Args & ... args) {
+    GetBackend().Print(format, args...);
+  }
+
 };
 
 /// A null converter - does not change anything
@@ -201,6 +207,14 @@ class ConverterImpl :
 template <template <typename, typename, typename> class Converter,
           class Backend, class Model = BasicModel<std::allocator<char> > >
 using Interface = ConverterImpl<Converter, Backend, Model>;
+
+/// Conversion failure helper
+class ConstraintConversionFailure {
+  const std::string msg_;
+public:
+  ConstraintConversionFailure(std::string&& msg) : msg_(std::move(msg)) { }
+  const std::string& message() const { return msg_; }
+};
 
 }  // namespace mp
 

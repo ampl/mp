@@ -343,24 +343,40 @@ public:
   ///
   //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
   void ConvertExtraItems() {
-    for (int endConstraintsThisLoop = 0, endPrevious = 0;
-         (endConstraintsThisLoop = this->GetModel().num_custom_cons()) > endPrevious;
-         endPrevious = endConstraintsThisLoop
-         ) {
-      PreprocessIntermediate();                        // preprocess before each level
-      ConvertExtraItemsInRange(endPrevious, endConstraintsThisLoop);
+    try {
+      for (int endConstraintsThisLoop = 0, endPrevious = 0;
+           (endConstraintsThisLoop = this->GetModel().num_custom_cons()) > endPrevious;
+           endPrevious = endConstraintsThisLoop
+           ) {
+        PreprocessIntermediate();                        // preprocess before each level
+        ConvertExtraItemsInRange(endPrevious, endConstraintsThisLoop);
+      }
+      PreprocessFinal();                                 // final prepro
+    } catch (const ConstraintConversionFailure& cff) {
+      throw std::logic_error(cff.message());
     }
-    PreprocessFinal();                                 // final prepro
   }
 
   void ConvertExtraItemsInRange(int first, int after_last) {
     for (; first<after_last; ++first) {
       auto* pConstraint = this->GetModel().custom_con(first);
       if (!pConstraint->IsRemoved()) {
-        if (Recommended !=
-            pConstraint->BackendAcceptance(this->GetBackend())) {
+        const auto acceptanceLevel =
+            pConstraint->BackendAcceptance(this->GetBackend());
+        if (NotAccepted == acceptanceLevel) {
           pConstraint->ConvertWith(*this);
           pConstraint->Remove();
+        }
+        else if (AcceptedButNotRecommended == acceptanceLevel) {
+          try {
+            pConstraint->ConvertWith(*this);
+            pConstraint->Remove();
+          } catch (const ConstraintConversionFailure& ccf) {
+            MP_DISPATCH( Print(
+                           "WARNING: {}. Will pass the constraint "
+                           "to the backend {}. Continuing\n",
+                           ccf.message(), typeid(Backend).name() ) );
+          }
         }
       }
     }
