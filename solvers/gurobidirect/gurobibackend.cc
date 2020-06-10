@@ -289,9 +289,8 @@ void GurobiBackend::AddConstraint(const TanConstraint &cc)  {
 
 ///////////////////////////////////////////////////////
 void GurobiBackend::FinishProblemModificationPhase() {
-  const auto& exportFile = storedStringOptions_.get(EXPORT_FILE);
-  if (0<exportFile.size()) {
-    ExportModel(exportFile);
+  if (!storedOptions_.exportFile_.empty()) {
+    ExportModel(storedOptions_.exportFile_);
   }
 }
 
@@ -330,7 +329,7 @@ void GurobiBackend::InitOptions() {
       "Specifies the name of a file where to export the model before "
       "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
-      storedStringOptions_, EXPORT_FILE);
+      storedOptions_.exportFile_);
 
   AddOption("optimalitytolerance",
       "Dual feasibility tolerance.",

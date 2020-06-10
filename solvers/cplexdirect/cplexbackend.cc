@@ -226,9 +226,8 @@ void CplexBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
 }
 
 void CplexBackend::FinishProblemModificationPhase() {
-  const auto& exportFile = storedStringOptions_.get(EXPORT_FILE);
-  if (0<exportFile.size()) {
-    ExportModel(exportFile);
+  if (!storedOptions_.exportFile_.empty()) {
+    ExportModel(storedOptions_.exportFile_);
   }
 }
 
@@ -252,7 +251,7 @@ void CplexBackend::InitOptions() {
       "  ampl: option cplexdirect_options 'mipgap=1e-6';\n");
 
   AddOption("mipdisplay",
-      "1: output logging (console and file). "
+      "0-5: output logging verbosity. "
       "Default = 0 (no logging).",
       slvOptInt_, CPXPARAM_MIP_Display);
   SetSolverOption(CPXPARAM_MIP_Display, 0);
@@ -261,7 +260,7 @@ void CplexBackend::InitOptions() {
       "Specifies the name of a file where to export the model before "
       "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
-      storedStringOptions_, EXPORT_FILE);
+      storedOptions_.exportFile_);
 
   AddOption("mipgap",
       "Relative optimality gap |bestbound-bestinteger|/(1e-10+|bestinteger|).",

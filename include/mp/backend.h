@@ -176,8 +176,35 @@ public:
   }
 
 
+  ///////////////////////////// OPTIONS /////////////////////////////////
+  ///
+protected:
 
   using Solver::AddOption;
+
+  /// Simple stored option referencing a variable
+  template <class Value>
+  class StoredOption : public mp::TypedSolverOption<Value> {
+    Value& value_;
+  public:
+    using value_type = Value;
+    StoredOption(const char *name, const char *description,
+        Value& v, ValueArrayRef values = ValueArrayRef())
+    : mp::TypedSolverOption<Value>(name, description, values), value_(v) {}
+
+    void GetValue(Value &v) const override { v = value_; }
+    void SetValue(typename internal::OptionHelper<Value>::Arg v) override
+    { value_ = v; }
+  };
+  template <class Value>
+  void AddOption(const char *name, const char *description,
+                 Value& value, ValueArrayRef values = ValueArrayRef()) {
+    AddOption(Solver::OptionPtr(
+                      new StoredOption<Value>(
+            name, description, value, values)));
+  }
+
+  /// Options stored in an 'options manager'
   template <class OptionsManager>
   void AddOption(const char *name, const char *description,
                  OptionsManager& om, typename OptionsManager::index_type i,
@@ -218,7 +245,7 @@ public:
     const value_type& get(Index i) const { return values_.at(i); }
   };
 
-
+  /// Solver options
   template <class Backend, class Value, class Index>
   class SolverOptionAccessor {
     Backend& backend_;

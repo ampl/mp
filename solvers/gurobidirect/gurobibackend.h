@@ -140,11 +140,10 @@ protected:
 private:
 
   /// These options are stored in the class
-  enum StringOptions {
-    EXPORT_FILE,
-    NUM_STRING_OPTIONS
+  struct Options {
+    std::string exportFile_;
   };
-  OptionArrayManager<std::string, StringOptions, NUM_STRING_OPTIONS> storedStringOptions_;
+  Options storedOptions_;
 
   /// These options are passed to the solver
   SolverOptionAccessor<GurobiBackend, int, const char*> slvOptInt_ = *this;
