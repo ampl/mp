@@ -114,15 +114,15 @@ public:
       return MakeFixedVar(ee.constant_term());
     PreprocessInfoStd bnt = ComputeBoundsAndType(ee);
     auto r = MP_DISPATCH( AddVar(bnt.lb_, bnt.ub_, bnt.type_) );
-    auto lck = makeConstraint<Impl, LinearDefiningConstraint>(r, std::move(ee));
-    AddConstraint(lck);
+    AddConstraint(LinearDefiningConstraint(r, std::move(ee)));
     return r;
   }
 
   PreprocessInfoStd ComputeBoundsAndType(const AffineExpr& ae) {
     PreprocessInfoStd result;
-    result.lb_ = result.ub_ = ae.constant_term();           // TODO reuse bounds if supplied
-    result.type_ = var::INTEGER;
+    result.lb_ = result.ub_ = ae.constant_term();    // TODO reuse bounds if supplied
+    result.type_ = is_integer(result.lb_) ? var::INTEGER : var::CONTINUOUS;
+    result.linexp_type_ = var::INTEGER;
     auto& model = MP_DISPATCH( GetModel() );
     for (const auto& term: ae) {
       auto v = model.var(term.var_index());
@@ -133,8 +133,10 @@ public:
         result.lb_ += term.coef() * v.ub();
         result.ub_ += term.coef() * v.lb();
       }
-      if (var::INTEGER!=v.type() || !is_integer(term.coef()))
+      if (var::INTEGER!=v.type() || !is_integer(term.coef())) {
         result.type_=var::CONTINUOUS;
+        result.linexp_type_=var::CONTINUOUS;
+      }
     }
     return result;
   }
@@ -362,10 +364,11 @@ public:
            (endConstraintsThisLoop = this->GetModel().num_custom_cons()) > endPrevious;
            endPrevious = endConstraintsThisLoop
            ) {
-        PreprocessIntermediate();                        // preprocess before each level
+        MP_DISPATCH( PreprocessIntermediate() );                        // preprocess before each level
         ConvertExtraItemsInRange(endPrevious, endConstraintsThisLoop);
       }
-      PreprocessFinal();                                 // final prepro
+      MP_DISPATCH( ConvertMaps(); );
+      MP_DISPATCH( PreprocessFinal() );                                 // final prepro
     } catch (const ConstraintConversionFailure& cff) {
       throw std::logic_error(cff.message());
     }
@@ -398,6 +401,7 @@ public:
 
   //////////////////////// WHOLE-MODEL PREPROCESSING /////////////////////////
   void PreprocessIntermediate() { }
+  void ConvertMaps() { }
   void PreprocessFinal() { }
 
 
@@ -442,6 +446,7 @@ public:
     if (0!=CanPreprocess( options_.preprocessEqualityResultBounds_ ))
       if (FixEqualityResult(c, prepro))
         return;
+    PreprocessEqVarConst__unifyCoef(c);
     if (0!=CanPreprocess( options_.preprocessEqualityBvar_ ))
       if (ReuseEqualityBinaryVar(c, prepro))
         return;
@@ -465,7 +470,24 @@ public:
       prepro.narrow_result_bounds(1.0, 1.0);
       return true;
     }
+    if (var::INTEGER==bndsNType.linexp_type_ &&
+        !is_integer(ae.constant_term())) {
+      prepro.narrow_result_bounds(0.0, 0.0);
+      return true;
+    }
     return false;
+  }
+
+  static void PreprocessEqVarConst__unifyCoef(EQ0Constraint& c) {
+    AffineExpr& ae = c.GetArguments();
+    if (1==ae.num_terms()) {
+      const double coef = ae.coef(0);
+      if (1.0!=coef) {
+        assert(0.0!=std::fabs(coef));
+        ae.constant_term(ae.constant_term() / coef);
+        ae.set_coef(0, 1.0);
+      }
+    }
   }
 
   template <class PreprocessInfo>
@@ -473,10 +495,11 @@ public:
       EQ0Constraint& c, PreprocessInfo& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
     AffineExpr& ae = c.GetArguments();
-    if (1==ae.num_terms() && 1.0==ae.coef(0)) {            // var==const
+    if (1==ae.num_terms()) {                           // var==const
+      assert( 1.0==ae.coef(0) );
       int var = ae.var_index(0);
-      double rhs = -ae.constant_term();
       if (m.is_binary_var(var)) {            // See if this is binary var==const
+        const double rhs = -ae.constant_term();
         if (1.0==rhs)
           prepro.set_result_var( var );
         else if (0.0==rhs)
@@ -598,6 +621,10 @@ public:
     con.AddContext(ctx);
   }
 
+  void PropagateResult(EQ0Constraint& con, double lb, double ub, Context ctx) {
+    con.AddContext(ctx);
+  }
+
 
   //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
   ///
@@ -613,15 +640,20 @@ public:
 public:
   //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
   //////////////////////// Takes ownership /////////////////////////////
-  void AddConstraint(BasicConstraintKeeper* pbc) {
+  template <class Constraint>
+  void AddConstraint(Constraint&& con) {
+    const auto pck = makeConstraintKeeper<Impl, Constraint>(std::forward<Constraint>(con));
+    AddConstraintAndTryNoteResultVariable(pck);
+  }
+  template <class ConstraintKeeper>
+  void AddConstraintAndTryNoteResultVariable(ConstraintKeeper* pbc) {
     MP_DISPATCH( GetModel() ).AddConstraint(pbc);
     const auto resvar = pbc->GetResultVar();
     if (resvar>=0)
       AddInitExpression(resvar, pbc);
-  }
-  template <class Constraint>
-  void AddConstraint(Constraint&& con) {
-    AddConstraint(makeConstraint<Impl, Constraint>(std::forward<Constraint>(con)));
+    if (! MP_DISPATCH( MapInsert(pbc) ))
+      throw std::logic_error("Trying to map_insert() duplicated constraint: " +
+                             pbc->GetDescription());
   }
 
 

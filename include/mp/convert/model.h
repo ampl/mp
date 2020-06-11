@@ -101,6 +101,11 @@ public:
       throw std::logic_error("infeasibility: empty variable domain");
   }
 
+  bool is_integer_var(int v) const {
+    auto vv = this->var(v);
+    return var::Type::INTEGER==vv.type();
+  }
+
   bool is_binary_var(int v) const {
     auto vv = this->var(v);
     return 0.0==vv.lb() && 1.0==vv.ub() && var::Type::INTEGER==vv.type();

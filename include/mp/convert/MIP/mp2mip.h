@@ -97,6 +97,14 @@ public:
     return (MP_DISPATCH( GetModel() ).is_integer_var(var)) ? 1.0 : 1e-6; // TODO param
   }
 
+  void Convert(const EQ0Constraint& eq0c) {
+    auto& m = this->GetModel();
+    if (m.is_fixed(eq0c.GetResultVar()))
+      throw std::logic_error("LEConstraint: result fixed, not implemented");
+    assert(!eq0c.GetContext().IsNone());
+    /// Stop here, rest done by postprocessing
+  }
+
   void Convert(const IndicatorConstraintLinLE& indc) {
     auto binvar=indc.get_binary_var();
     if (indc.is_binary_value_1())                  /// If binval==1, complement the variable
@@ -137,6 +145,104 @@ public:
     }
   }
 
+
+  ///////////////////////////////////////////////////////////////////////
+  /////////////////////////// MAPS //////////////////////////
+  ///
+private:
+  /// For a single variable, map its equality comparisons
+  using SingleVarEqConstMap = std::unordered_map<double,
+                     const ConstraintKeeper<Impl, Backend, EQ0Constraint>*>;
+  /// A map keeping such maps for certain variables
+  using VarsEqConstMap = std::unordered_map<int, SingleVarEqConstMap>;
+
+  VarsEqConstMap map_vars_eq_const_;
+
+public:
+  ///////////////////////////////////////////////////////////////////////
+  ///
+  USE_BASE_MAP_FINDERS( BaseConverter )
+
+  const BasicConstraintKeeper* MapFind(const EQ0Constraint& eq0c) const {
+    const auto isVCC = IsVarConstCmp( eq0c );
+    if (isVCC.first) {                    // only var==const comparisons
+      auto itVar = map_vars_eq_const_.find(isVCC.second.first);
+      if (map_vars_eq_const_.end() != itVar) {
+        auto itCmp = itVar->second.find( isVCC.second.second );
+        if (itVar->second.end() != itCmp)
+          return itCmp->second;
+      }
+    }
+    return nullptr;
+  }
+
+  bool MapInsert(const ConstraintKeeper<Impl, Backend, EQ0Constraint>* pck) {
+    const auto isVCC = IsVarConstCmp( pck->GetConstraint() );
+    if (isVCC.first) {                    // only var==const comparisons
+      auto result = map_vars_eq_const_[isVCC.second.first].
+          insert( std::make_pair( isVCC.second.second, pck ) );
+      return result.second;
+    }
+    return true;
+  }
+
+  using VarConstCmp = std::pair<int, double>;
+  static std::pair<bool, VarConstCmp> IsVarConstCmp(const EQ0Constraint& cons) {
+    const AffineExpr& args = cons.GetArguments();
+    if (1==args.num_terms()) {
+      assert(1.0==args.coef(0));
+      return { true, { args.var_index(0), -args.constant_term() } };
+    }
+    return { false, {} };
+  }
+
+  void ConvertMaps() {
+    MP_DISPATCH( ConvertEqVarConstMaps() );
+  }
+
+  void ConvertEqVarConstMaps() {
+    for (const auto& m: map_vars_eq_const_) {
+      ConvertEqVarConstMap(m.first, m.second);
+    }
+  }
+
+  void ConvertEqVarConstMap(int var, const SingleVarEqConstMap& map) {
+    CreateUnaryEncoding(var, map);
+  }
+
+  void CreateUnaryEncoding(int var,  const SingleVarEqConstMap& map) {
+    const Model& model = MP_DISPATCH( GetModel() );
+    if (!model.is_integer_var(var))
+      throw std::logic_error("Equality-comparing non-integer variables not implemented");
+    const auto lb_dbl = this->lb(var);
+    const auto ub_dbl = this->ub(var);
+    if (lb_dbl==this->MinusInfty() || ub_dbl==this->Infty())
+      throw std::logic_error("Equality-comparing unbounded variables not implemented");
+    if (lb_dbl<std::numeric_limits<int>::min() || ub_dbl>std::numeric_limits<int>::max())
+      throw std::logic_error("Equality-comparing variables with domain out of integer range not implemented");
+    const int lb = (int)std::round(lb_dbl);
+    const int ub = (int)std::round(ub_dbl);
+    std::vector<int> unaryEncVars(ub-lb+1);
+    int nTaken=0;
+    for (int v=lb; v!=ub+1; ++v) {
+      auto itV = map.find(v);
+      if (map.end() != itV) {
+        ++nTaken;
+        unaryEncVars[v-lb] = itV->second->GetResultVar();
+      } else {
+        unaryEncVars[v-lb] = this->AddVar(0.0, 1.0, var::INTEGER);
+      }
+    }
+    assert(map.size()==(size_t)nTaken);
+    std::vector<double> coefs(ub_dbl-lb_dbl+1, 1.0);
+    this->AddConstraint(LinearConstraint(coefs, unaryEncVars, 1.0, 1.0));
+    unaryEncVars.push_back(var);
+    for (int v=lb; v!=ub+1; ++v) {
+      coefs[v-lb] = v;
+    }
+    coefs.push_back(-1.0);
+    this->AddConstraint(LinearConstraint(coefs, unaryEncVars, 0.0, 0.0));
+  }
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////

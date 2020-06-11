@@ -73,6 +73,7 @@ class LinearExpr {
 
   int var_index(int i) const { return terms_[i].var_index(); }
   double coef(int i) const { return terms_[i].coef(); }
+  void set_coef(int i, double c) { terms_[i].set_coef(c); }
 
   typedef std::vector<Term>::const_iterator const_iterator;
 

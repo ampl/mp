@@ -16,7 +16,8 @@ template <class FuncConstraint>
 struct PreprocessInfo {
   double lb_=-std::numeric_limits<double>::max(),
     ub_=std::numeric_limits<double>::max();
-  var::Type type_=var::CONTINUOUS;
+  var::Type type_=var::CONTINUOUS,
+     linexp_type_=var::CONTINUOUS;
   int result_var_ = -1;
 
   PreprocessInfo() { }

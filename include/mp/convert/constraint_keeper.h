@@ -5,6 +5,8 @@
 
 namespace mp {
 
+class BasicConstraintKeeper;
+
 /// Converters handling custom constraints should derive from
 class BasicConstraintConverter {
 public:
@@ -31,9 +33,18 @@ public:
   using BaseConverter::PreprocessConstraint; \
   using BaseConverter::PropagateResult; \
   using BaseConverter::Convert;
-};
 
-class BasicConstraint;
+
+  /// For Common Subexpression Elimination, we can use maps
+  const BasicConstraintKeeper* MapFind(const BasicConstraint& ) const { return nullptr; }
+  /// Returns false when we do have a map and entry duplicated
+  bool MapInsert(const BasicConstraintKeeper* ) { return true; }
+#define USE_BASE_MAP_FINDERS(BaseConverter) \
+  using BaseConverter::MapFind; \
+  using BaseConverter::MapInsert;
+
+
+};
 
 /// Level of acceptance of a constraint by a backend
 enum ConstraintAcceptanceLevel {
@@ -67,6 +78,8 @@ public:
 class BasicConstraintKeeper {
 public:
   virtual ~BasicConstraintKeeper() { }
+  virtual std::string GetDescription() const = 0;
+  virtual const BasicConstraint& GetBasicConstraint() const = 0;
   virtual bool IsRemoved() const = 0;
   virtual void Remove() = 0;
   virtual void PropagateResult(BasicConstraintConverter& cvt,
@@ -89,6 +102,10 @@ class ConstraintKeeper : public BasicConstraintKeeper {
 public:
   template <class... Args>
   ConstraintKeeper(Args&&... args) : cons_(std::move(args)...) { }
+  std::string GetDescription() const override { return typeid(ConstraintKeeper).name(); }
+  const BasicConstraint& GetBasicConstraint() const override { return cons_; }
+  const Constraint& GetConstraint() const { return cons_; }
+  Constraint& GetConstraint() { return cons_; }
   bool IsRemoved() const override { return is_removed_; }
   void Remove() override { is_removed_=true; }
   void PropagateResult(BasicConstraintConverter& cvt,
@@ -124,7 +141,8 @@ public:
 
 /// Helper function constructing a constraint keeper
 template <class Converter, class Constraint, class... Args>
-BasicConstraintKeeper *makeConstraint(Args... args) {
+ConstraintKeeper<Converter, typename Converter::BackendType, Constraint>
+  *makeConstraintKeeper(Args... args) {
   return
     new ConstraintKeeper<Converter, typename Converter::BackendType, Constraint>(
         std::forward<Args>(args)...);

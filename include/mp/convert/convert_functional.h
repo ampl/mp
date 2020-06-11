@@ -6,8 +6,8 @@
 namespace mp {
 
 /// Helper class providing a default framework for assigning result
-/// to a functional constraint,
-/// possibly adding a constraint on the result variable
+/// to a functional expression,
+/// possibly adding a corresponding constraint on the result variable
 template <class Impl, class Converter, class Constraint>
 class BasicFCC {
   Converter& converter_;
@@ -24,6 +24,14 @@ protected:
 protected:
   bool ResultIsConstant() const { return prepro_.is_constant(); }
   bool ResultVarIsKnown() const { return prepro_.is_result_var_known(); }
+  bool MapFind() {
+    const auto pck = GetConverter().MapFind(GetConstraint());
+    if (nullptr!=pck) {
+      SetResultVar(pck->GetResultVar());
+      return true;
+    }
+    return false;
+  }
   int GetResultVar() const { return prepro_.get_result_var(); }
 protected:
   void SetResultVar(int r) { prepro_.set_result_var(r); }
@@ -37,6 +45,8 @@ public:
     if (ResultIsConstant())
       return typename EExprType::Constant{ lb() };
     if (ResultVarIsKnown())
+      return typename EExprType::Variable{ GetResultVar() };
+    if (MapFind())
       return typename EExprType::Variable{ GetResultVar() };
     MP_DISPATCH( AddResultVariable() );
     MP_DISPATCH( AddConstraint() );
