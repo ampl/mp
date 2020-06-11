@@ -300,6 +300,12 @@ public:
                 e.condition(), e.then_expr(), e.else_expr() });
   }
 
+  EExpr VisitAllDiff(PairwiseExpr e) {
+    if (expr::ALLDIFF != e.kind())
+      throw std::logic_error("NOT_ALLDIFF NOT IMPLEMENTED");
+    return VisitFunctionalExpression<AllDiffConstraint>(e);
+  }
+
   /////////////// NONLINEAR FUNCTIONS ////////////////
   EExpr VisitPowConstExp(BinaryExpr e) {
     return AssignResultToArguments( PowConstraint(
@@ -617,6 +623,18 @@ public:
       PropagateResult(a, 0.0, ub, +ctx);
   }
 
+  void PropagateResult(IfThenConstraint& con, double lb, double ub, Context ctx) {
+    con.AddContext(ctx);
+    auto& args = con.GetArguments();
+    PropagateResult(args[0], 0.0, 1.0, Context::CTX_MIX);
+    PropagateResult(args[1], this->MinusInfty(), this->Infty(), +ctx);
+    PropagateResult(args[2], this->MinusInfty(), this->Infty(), -ctx);
+  }
+
+  void PropagateResult(AllDiffConstraint& con, double lb, double ub, Context ctx) {
+    con.AddContext(ctx);
+  }
+
   void PropagateResult(LE0Constraint& con, double lb, double ub, Context ctx) {
     con.AddContext(ctx);
   }
@@ -686,6 +704,10 @@ public:
 
   double lb(int var) const { return this->GetModel().var(var).lb(); }
   double ub(int var) const { return this->GetModel().var(var).ub(); }
+  template <class VarArray>
+  double lb_array(const VarArray& va) const { return this->GetModel().lb_array(va); }
+  template <class VarArray>
+  double ub_array(const VarArray& va) const { return this->GetModel().ub_array(va); }
   var::Type var_type(int var) const { return this->GetModel().var(var).type(); }
   bool is_fixed(int var) const { return this->GetModel().is_fixed(var); }
   double fixed_value(int var) const { return this->GetModel().fixed_value(var); }

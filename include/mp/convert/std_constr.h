@@ -111,6 +111,12 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( NotConstraint, VarArray1,
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( IfThenConstraint, VarArrayN<3>,
                                   "if (cond) then (expr1) else (expr2)");
 
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( AllDiffConstraint, VarArray,
+                                  "alldiff({})");
+
+
+
 //////////////////// NONLINEAR FUNCTIONS //////////////////////
 ////////////////////////////////////////////////////////////////////////
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( ExpConstraint, VarArray1,

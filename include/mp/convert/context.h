@@ -4,11 +4,13 @@
 namespace mp {
 
 class Context {
+public:
   enum CtxVal { CTX_NONE, CTX_POS, CTX_NEG, CTX_MIX };
+private:
   CtxVal value_ = CTX_NONE;
-  Context(CtxVal v) : value_(v) { }
 public:
   Context() { }
+  Context(CtxVal v) : value_(v) { }
   bool IsNone() const { return CTX_NONE==value_; }
   bool HasPositive() const { return CTX_POS==value_ || CTX_MIX==value_; }
   bool HasNegative() const { return CTX_NEG==value_ || CTX_MIX==value_; }

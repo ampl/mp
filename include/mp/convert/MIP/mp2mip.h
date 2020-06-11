@@ -101,8 +101,11 @@ public:
     auto& m = this->GetModel();
     if (m.is_fixed(eq0c.GetResultVar()))
       throw std::logic_error("LEConstraint: result fixed, not implemented");
-    assert(!eq0c.GetContext().IsNone());
-    /// Stop here, rest done by postprocessing
+    /// TODO assert(!eq0c.GetContext().IsNone());
+    if (1<eq0c.GetArguments().num_terms()) {
+      throw std::logic_error("MIP conversion of linexp==0 comparison not implemented");
+    }
+    /// Stop here, for var==const rest done by postprocessing
   }
 
   void Convert(const IndicatorConstraintLinLE& indc) {
@@ -145,6 +148,58 @@ public:
     }
   }
 
+  void Convert(const IfThenConstraint& itc) {
+//    assert(!itc.GetContext().IsNone());
+    const auto& args = itc.GetArguments();
+    if (!this->is_fixed(args[1]) || !this->is_fixed(args[2]))
+      throw std::logic_error("MP2MIP: IfThen with variable then/else arguments not implemented");
+    else
+      ConvertIfThen_constantThenElse(itc);
+  }
+
+  void ConvertIfThen_constantThenElse(const IfThenConstraint& itc) {
+    const auto& args = itc.GetArguments();
+    assert((this->is_fixed(args[1]) && this->is_fixed(args[2])));
+    const double const1 = this->fixed_value(args[1]);
+    const double const2 = this->fixed_value(args[2]);
+    this->AddConstraint( LinearDefiningConstraint(
+                           itc.GetResultVar(),
+    { {const1-const2}, {args[0]}, const2 } ) );
+  }
+
+  //////////////////// ALLDIFF ///////////////////////
+  void Convert(const AllDiffConstraint& alld) {
+    if (!this->is_fixed(alld.GetResultVar()) ||
+        1.0!=this->fixed_value(alld.GetResultVar()))
+      throw std::logic_error("MP2MIP: only static alldifferent implemented.");
+    else
+      Convert_staticAllDiff(alld);
+  }
+
+  void Convert_staticAllDiff(const AllDiffConstraint& alld) {
+    assert (this->is_fixed(alld.GetResultVar()) &&
+        1.0==this->fixed_value(alld.GetResultVar()));
+    const auto& args = alld.GetArguments();
+    const auto lba_dbl = this->lb_array(args);
+    const auto uba_dbl = this->ub_array(args);
+    if (lba_dbl==this->MinusInfty() || uba_dbl==this->Infty())
+      throw std::logic_error("MP2MIP: AllDiff on unbounded variables not implemented");
+    if (lba_dbl<std::numeric_limits<int>::min() || uba_dbl>std::numeric_limits<int>::max())
+      throw std::logic_error("MP2MIP: AllDiff on variables with domain out of integer range not implemented");
+    const int lba = (int)std::round(lba_dbl);
+    const int uba = (int)std::round(uba_dbl);
+    std::vector<double> coefs(args.size(), 1.0);
+    std::vector<int> flags(args.size());                // unary encoding flags
+    for (int v=lba; v!=uba+1; ++v) {                    // for each value in the domain union
+      for (size_t ivar = 0; ivar < args.size(); ++ivar) {
+        flags[ivar] = this->AssignResultToArguments(
+              EQ0Constraint( { {1.0}, {args[ivar]}, -double(v) } ) ).
+            get_representing_variable();
+      }
+      this->AddConstraint( LinearConstraint(
+          coefs, flags, this->MinusInfty(), 1.0 ) );
+    }
+  }
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////////// MAPS //////////////////////////
@@ -213,13 +268,13 @@ public:
   void CreateUnaryEncoding(int var,  const SingleVarEqConstMap& map) {
     const Model& model = MP_DISPATCH( GetModel() );
     if (!model.is_integer_var(var))
-      throw std::logic_error("Equality-comparing non-integer variables not implemented");
+      throw std::logic_error("MP2MIP: Equality-comparing non-integer variables not implemented");
     const auto lb_dbl = this->lb(var);
     const auto ub_dbl = this->ub(var);
     if (lb_dbl==this->MinusInfty() || ub_dbl==this->Infty())
-      throw std::logic_error("Equality-comparing unbounded variables not implemented");
+      throw std::logic_error("MP2MIP: Equality-comparing unbounded variables not implemented");
     if (lb_dbl<std::numeric_limits<int>::min() || ub_dbl>std::numeric_limits<int>::max())
-      throw std::logic_error("Equality-comparing variables with domain out of integer range not implemented");
+      throw std::logic_error("MP2MIP: Equality-comparing variables with domain out of integer range not implemented");
     const int lb = (int)std::round(lb_dbl);
     const int ub = (int)std::round(ub_dbl);
     std::vector<int> unaryEncVars(ub-lb+1);
