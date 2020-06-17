@@ -10,6 +10,8 @@
 
 namespace mp {
 
+class BasicConstraintKeeper;
+
 /// class Model extends Problem to store custom constraints
 template <class Allocator>
 class BasicModel : public BasicProblem<Allocator> {

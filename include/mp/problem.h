@@ -109,7 +109,6 @@ class LinearExpr {
 };
 
 class Solver;
-class BasicConstraintKeeper;
 
 /** An optimization problem. */
 template <typename Alloc>

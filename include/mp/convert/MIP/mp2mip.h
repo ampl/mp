@@ -17,6 +17,9 @@ public:
   }
 
   using BaseConverter = BasicMPFlatConverter<Impl, Backend, Model>;
+  template <class Constraint>
+    using ConstraintKeeperType = typename
+      BaseConverter::template ConstraintKeeperType<Constraint>;
 
   ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
   USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter )           // reuse default ones
@@ -207,7 +210,7 @@ public:
 private:
   /// For a single variable, map its equality comparisons
   using SingleVarEqConstMap = std::unordered_map<double,
-                     const ConstraintKeeper<Impl, Backend, EQ0Constraint>*>;
+                     const ConstraintKeeperType<EQ0Constraint>*>;
   /// A map keeping such maps for certain variables
   using VarsEqConstMap = std::unordered_map<int, SingleVarEqConstMap>;
 
@@ -231,7 +234,7 @@ public:
     return nullptr;
   }
 
-  bool MapInsert(const ConstraintKeeper<Impl, Backend, EQ0Constraint>* pck) {
+  bool MapInsert(const ConstraintKeeperType<EQ0Constraint>* pck) {
     const auto isVCC = IsVarConstCmp( pck->GetConstraint() );
     if (isVCC.first) {                    // only var==const comparisons
       auto result = map_vars_eq_const_[isVCC.second.first].

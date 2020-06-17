@@ -25,7 +25,7 @@ public:
 
 /// BasicMPFlatConverter: it "flattens" most expressions
 /// by replacing them by a result variable and constraints.
-/// Such constraints might need to be decomposed, which is
+/// Such constraints might need to be converted to others, which is
 /// handled by overloaded methods in derived classes
 template <class Impl, class Backend,
           class Model = BasicModel<std::allocator<char> > >
@@ -41,6 +41,8 @@ public:
 
   using EExprType = EExpr;
   using VarArray = std::vector<int>;
+  template <class Constraint>
+    using ConstraintKeeperType = ConstraintKeeper<Impl, Backend, Constraint>;
 
 protected:
   using ClassName = BasicMPFlatConverter<Impl, Backend, Model>;
