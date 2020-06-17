@@ -224,12 +224,17 @@ public:
   const BasicConstraintKeeper* MapFind(const EQ0Constraint& eq0c) const {
     const auto isVCC = IsVarConstCmp( eq0c );
     if (isVCC.first) {                    // only var==const comparisons
-      auto itVar = map_vars_eq_const_.find(isVCC.second.first);
-      if (map_vars_eq_const_.end() != itVar) {
-        auto itCmp = itVar->second.find( isVCC.second.second );
-        if (itVar->second.end() != itCmp)
-          return itCmp->second;
-      }
+      return MapFind__VarConstCmp(isVCC.second.first, isVCC.second.second);
+    }
+    return nullptr;
+  }
+
+  const BasicConstraintKeeper* MapFind__VarConstCmp(int var, double val) const {
+    auto itVar = map_vars_eq_const_.find(var);
+    if (map_vars_eq_const_.end() != itVar) {
+      auto itCmp = itVar->second.find( val );
+      if (itVar->second.end() != itCmp)
+        return itCmp->second;
     }
     return nullptr;
   }
@@ -237,11 +242,16 @@ public:
   bool MapInsert(const ConstraintKeeperType<EQ0Constraint>* pck) {
     const auto isVCC = IsVarConstCmp( pck->GetConstraint() );
     if (isVCC.first) {                    // only var==const comparisons
-      auto result = map_vars_eq_const_[isVCC.second.first].
-          insert( std::make_pair( isVCC.second.second, pck ) );
-      return result.second;
+      return MapInsert__VarConstCmp(isVCC.second.first, isVCC.second.second, pck);
     }
     return true;
+  }
+
+  bool MapInsert__VarConstCmp(int var, double val,
+                              const ConstraintKeeperType<EQ0Constraint>* pck) {
+    auto result = map_vars_eq_const_[var].
+        insert( std::make_pair( val, pck ) );
+    return result.second;
   }
 
   using VarConstCmp = std::pair<int, double>;
