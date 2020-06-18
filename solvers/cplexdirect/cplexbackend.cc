@@ -166,7 +166,7 @@ std::string CplexBackend::ConvertSolutionStatus(
 }
 
 
-void CplexBackend::InitProblemModificationPhase(const Problem &p) {
+void CplexBackend::InitProblemModificationPhase() {
   stats.time = steady_clock::now();
 }
 

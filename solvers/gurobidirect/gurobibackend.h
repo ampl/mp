@@ -36,12 +36,13 @@ class GurobiBackend : public BasicBackend<GurobiBackend>
 {
   using BaseBackend = BasicBackend<GurobiBackend>;
 
-  //////////////////// [[ The backend interface ]] //////////////////////
+  //////////////////// [[ The public interface ]] //////////////////////
 public:
   void ExportModel(const std::string& file);
 
-  /// [[ Surface the incremental interface ]]
-  void InitProblemModificationPhase(const Problem& p);
+  /// [[ Prototype an incremental interface ]]
+  void InitProblemModificationPhase();
+  void FinishProblemModificationPhase();
   void AddVariables(int n, double* lbs, double* ubs, var::Type* types);
   /// Supporting linear stuff for now
   void AddLinearObjective( obj::Type sense, int nnz,
@@ -86,14 +87,11 @@ public:
   void AddConstraint(const TanConstraint& cc);
 
 
-  void FinishProblemModificationPhase();
-
+  //////////////////// [[ Implementation details ]] //////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
 private:
   GRBenv   *env   = NULL;
   GRBmodel *model = NULL;
-
-  FMT_DISALLOW_COPY_AND_ASSIGN(GurobiBackend);
-
 
 public:
   GurobiBackend();

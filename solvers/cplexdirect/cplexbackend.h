@@ -36,12 +36,14 @@ class CplexBackend : public BasicBackend<CplexBackend>
 {
   using BaseBackend = BasicBackend<CplexBackend>;
 
-  //////////////////// [[ The backend interface ]] //////////////////////
+  //////////////////// [[ The public interface ]] //////////////////////
 public:
   void ExportModel(const std::string& file);
 
-  /// [[ Surface the incremental interface ]]
-  void InitProblemModificationPhase(const Problem& p);
+  /// [[ Prototype the incremental interface ]]
+  void InitProblemModificationPhase();
+  void FinishProblemModificationPhase();
+
   void AddVariables(int n, double* lbs, double* ubs, var::Type* types);
   /// Supporting linear stuff for now
   void AddLinearObjective( obj::Type sense, int nnz,
@@ -57,15 +59,12 @@ public:
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
 
-  void FinishProblemModificationPhase();
 
-
+  //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 private:
   CPXENVptr     env = NULL;
   CPXLPptr      lp = NULL;
-
-  FMT_DISALLOW_COPY_AND_ASSIGN(CplexBackend);
 
 public:
   CplexBackend();

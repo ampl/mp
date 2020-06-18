@@ -44,7 +44,7 @@ public:
                long date=0, int flags=0) :
     SolverImpl<Model>(name, longname, date, flags) { }
 
-  void InitProblemModificationPhase(const Problem& p) { }  // TODO Get rid of Problem here
+  void InitProblemModificationPhase() { }
   void FinishProblemModificationPhase() { }
   void AddVariables(int n, double* lbs, double* ubs, mp::var::Type* types) {
     throw MakeUnsupportedError("BasicBackend::AddVariables");

@@ -1004,7 +1004,7 @@ protected:
 
   template <class Backend>
   void InitProblemModificationPhase(Backend& backend) const {
-    backend.InitProblemModificationPhase(*this);       // TODO remove problem_ here
+    backend.InitProblemModificationPhase();
   }
 
   template <class Backend>

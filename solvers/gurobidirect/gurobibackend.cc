@@ -155,7 +155,7 @@ std::string GurobiBackend::ConvertSolutionStatus(
   }
 }
 
-void GurobiBackend::InitProblemModificationPhase(const Problem &p) {
+void GurobiBackend::InitProblemModificationPhase() {
   stats.time = steady_clock::now();
 }
 
