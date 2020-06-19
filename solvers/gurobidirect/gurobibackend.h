@@ -38,13 +38,14 @@ class GurobiBackend : public BasicBackend<GurobiBackend>
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:
-  void ExportModel(const std::string& file);
+  GurobiBackend();
+  ~GurobiBackend();
 
   /// [[ Prototype an incremental interface ]]
   void InitProblemModificationPhase();
   void FinishProblemModificationPhase();
+
   void AddVariables(int n, double* lbs, double* ubs, var::Type* types);
-  /// Supporting linear stuff for now
   void AddLinearObjective( obj::Type sense, int nnz,
                            const double* c, const int* v);
   void AddLinearConstraint(int nnz, const double* c, const int* v,
@@ -57,9 +58,9 @@ public:
   void AddConstraint(const MaximumConstraint& mc);
   ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)
   void AddConstraint(const MinimumConstraint& mc);
-  ACCEPT_CONSTRAINT(AbsConstraint, Recommended)          // before conversion is implemented
+  ACCEPT_CONSTRAINT(AbsConstraint, AcceptedButNotRecommended)
   void AddConstraint(const AbsConstraint& absc);
-  ACCEPT_CONSTRAINT(ConjunctionConstraint, Recommended)
+  ACCEPT_CONSTRAINT(ConjunctionConstraint, AcceptedButNotRecommended)
   void AddConstraint(const ConjunctionConstraint& cc);
   ACCEPT_CONSTRAINT(DisjunctionConstraint, AcceptedButNotRecommended)
   void AddConstraint(const DisjunctionConstraint& mc);
@@ -87,31 +88,22 @@ public:
   void AddConstraint(const TanConstraint& cc);
 
 
-  //////////////////// [[ Implementation details ]] //////////////////////
-  ///////////////////////////////////////////////////////////////////////////////
-private:
-  GRBenv   *env   = NULL;
-  GRBmodel *model = NULL;
-
-public:
-  GurobiBackend();
-  ~GurobiBackend();
-
-  void SetInterrupter(mp::Interrupter* inter);
-  void DoOptimize();
-  std::string ConvertSolutionStatus(
-      const mp::Interrupter &interrupter, int &solve_code);
-
-  void InitBackend();
-  void CloseBackend();
-
-  /// Model attributes
+  ////////////////////////////////////////// Model attributes
   bool IsMIP() const;
   bool IsQCP() const;
 
   int NumberOfConstraints() const;
   int NumberOfVariables() const;
   int NumberOfObjectives() const;
+
+  void ExportModel(const std::string& file);
+
+
+  //////////////////////////// SOLVING ///////////////////////////////
+  void SetInterrupter(mp::Interrupter* inter);
+  void DoOptimize();
+  std::string ConvertSolutionStatus(
+      const mp::Interrupter &interrupter, int &solve_code);
 
   /// Solution values
   void PrimalSolution(std::vector<double>& x);
@@ -122,7 +114,17 @@ public:
   double NodeCount() const;
   double Niterations() const;
 
-  static bool IsPlusMinusInf(double n) { return n<=MinusInfinity() || n>=Infinity(); }
+
+  //////////////////// [[ Implementation details ]] //////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+private:
+  GRBenv   *env   = NULL;
+  GRBmodel *model = NULL;
+
+public:
+  void InitBackend();
+  void CloseBackend();
+
   static double Infinity() { return GRB_INFINITY; }
   static double MinusInfinity() { return -GRB_INFINITY; }
 
@@ -130,14 +132,10 @@ public:
   double GetGrbDblAttribute(const char* attr_id) const;
 
 
-
 protected:
-
-  void InitOptions();
-
+  void InitOptions(); //////////////////////////// OPTIONS ////////////////
 
 private:
-
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;
@@ -159,6 +157,6 @@ public:
 
 };
 
-}
+} // namespace mp
 
 #endif  // MP_GUROBI_BACKEND_H_

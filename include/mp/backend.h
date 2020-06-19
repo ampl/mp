@@ -175,6 +175,12 @@ public:
     return std::fabs(a-b) < 1e-8*std::max(std::fabs(a), std::fabs(b));
   }
 
+  bool IsFinite(double n) const {
+    return n>MP_DISPATCH( MinusInfinity() ) &&
+        n<MP_DISPATCH( Infinity() );
+  }
+  static double Infinity() { return std::numeric_limits<double>::infinity(); }
+  static double MinusInfinity() { return -Infinity(); }
 
   ///////////////////////////// OPTIONS /////////////////////////////////
   ///

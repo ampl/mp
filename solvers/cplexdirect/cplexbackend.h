@@ -38,14 +38,14 @@ class CplexBackend : public BasicBackend<CplexBackend>
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:
-  void ExportModel(const std::string& file);
+  CplexBackend();
+  ~CplexBackend();
 
   /// [[ Prototype the incremental interface ]]
   void InitProblemModificationPhase();
   void FinishProblemModificationPhase();
 
   void AddVariables(int n, double* lbs, double* ubs, var::Type* types);
-  /// Supporting linear stuff for now
   void AddLinearObjective( obj::Type sense, int nnz,
                            const double* c, const int* v);
   void AddLinearConstraint(int nnz, const double* c, const int* v,
@@ -60,31 +60,22 @@ public:
   void AddConstraint(const IndicatorConstraintLinLE& mc);
 
 
-  //////////////////// [[ Implementation details ]] //////////////////////
-  ///////////////////////////////////////////////////////////////////////////////
-private:
-  CPXENVptr     env = NULL;
-  CPXLPptr      lp = NULL;
-
-public:
-  CplexBackend();
-  ~CplexBackend();
-
-  void SetInterrupter(mp::Interrupter* inter);
-  void DoOptimize();
-  std::string ConvertSolutionStatus(
-      const mp::Interrupter &interrupter, int &solve_code);
-
-  void InitBackend();
-  void CloseBackend();
-
-  /// Model attributes
+  /////////////////////////// Model attributes
   bool IsMIP() const;
   bool IsQCP() const;
 
   int NumberOfConstraints() const;
   int NumberOfVariables() const;
   int NumberOfObjectives() const;
+
+  void ExportModel(const std::string& file);
+
+
+  //////////////////////////// SOLVING ///////////////////////////////
+  void SetInterrupter(mp::Interrupter* inter);
+  void DoOptimize();
+  std::string ConvertSolutionStatus(
+      const mp::Interrupter &interrupter, int &solve_code);
 
   /// Solution values
   void PrimalSolution(std::vector<double>& x);
@@ -95,16 +86,24 @@ public:
   double NodeCount() const;
   double Niterations() const;
 
-  static bool IsPlusMinusInf(double n) { return n<=MinusInfinity() || n>=Infinity(); }
+
+  //////////////////// [[ Implementation details ]] //////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+private:
+  CPXENVptr     env = NULL;
+  CPXLPptr      lp = NULL;
+
+public:  // public for static polymorphism
+  void InitBackend();
+  void CloseBackend();
+
   static double Infinity() { return CPX_INFBOUND; }
   static double MinusInfinity() { return -CPX_INFBOUND; }
 
 protected:
-
-  void InitOptions();
+  void InitOptions();  /////////////////////////////// OPTIONS ///////////////////////
 
 private:
-
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;
