@@ -18,6 +18,8 @@ bool InterruptCplex(void *) {
 
 namespace mp {
 
+const char* CplexBackend::GetBackendName() { return "CplexBackend"; }
+
 CplexBackend::CplexBackend() :
    BaseBackend("cplexdirect", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
    {

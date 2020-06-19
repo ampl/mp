@@ -12,14 +12,16 @@ class MPToMIPConverter
     : public BasicMPFlatConverter<Impl, Backend, Model>
 {
 public:
-  MPToMIPConverter() {
-    InitOptions();
-  }
-
   using BaseConverter = BasicMPFlatConverter<Impl, Backend, Model>;
   template <class Constraint>
     using ConstraintKeeperType = typename
       BaseConverter::template ConstraintKeeperType<Constraint>;
+
+public:
+  static const char* GetConverterName() { return "MPToMIPConverter"; }
+  MPToMIPConverter() {
+    InitOptions();
+  }
 
   ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
   USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter )           // reuse default ones
@@ -56,7 +58,7 @@ public:
   void Convert(const LE0Constraint& le0c) {
     auto& m = this->GetModel();
     if (m.is_fixed(le0c.GetResultVar()))
-      throw std::logic_error("LEConstraint: result fixed, not implemented");
+      throw std::logic_error("LE0Constraint: result fixed, not implemented");
     assert(!le0c.GetContext().IsNone());
     if (le0c.GetContext().HasPositive())
       ConvertImplied(le0c);
@@ -103,7 +105,7 @@ public:
   void Convert(const EQ0Constraint& eq0c) {
     auto& m = this->GetModel();
     if (m.is_fixed(eq0c.GetResultVar()))
-      throw std::logic_error("LEConstraint: result fixed, not implemented");
+      throw std::logic_error("EQ0Constraint: result fixed, not implemented");
     /// TODO assert(!eq0c.GetContext().IsNone());
     if (1<eq0c.GetArguments().num_terms()) {
       throw std::logic_error("MIP conversion of linexp==0 comparison not implemented");

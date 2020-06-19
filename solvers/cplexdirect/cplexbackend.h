@@ -1,11 +1,6 @@
 #ifndef MP_CPLEX_BACKEND_H_
 #define MP_CPLEX_BACKEND_H_
 
-#ifdef __APPLE__
-#include <limits.h>
-#include <string.h>
-#endif
-
 #if __clang__
 # pragma clang diagnostic push
 # pragma clang diagnostic ignored "-Wunused-parameter"
@@ -40,6 +35,7 @@ class CplexBackend : public BasicBackend<CplexBackend>
 public:
   CplexBackend();
   ~CplexBackend();
+  static const char* GetBackendName();
 
   /// [[ Prototype the incremental interface ]]
   void InitProblemModificationPhase();

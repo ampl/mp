@@ -11,6 +11,7 @@ namespace mp {
 /// Custom constraints to derive from, so that overloaded default settings work
 class BasicConstraint {
 public:
+  static const char* GetConstraintName() { return "BasicConstraint"; }
   int GetResultVar() const { return -1; }
 };
 
@@ -19,6 +20,7 @@ class DefiningConstraint : public BasicConstraint {
   int result_var_=-1;                // defined var can be optional
   Context ctx;
 public:
+  static const char* GetConstraintName() { return "DefiningConstraint"; }
   DefiningConstraint(int v=-1) : result_var_(v) {}
   bool operator==(const DefiningConstraint& dc) {
     return result_var_==dc.result_var_;
@@ -50,6 +52,7 @@ class CustomDefiningConstraint :
   Args args_;
   Params params_;
 public:
+  static const char* GetConstraintName() { return Id::name_; }
   CustomDefiningConstraint() { }
   using Arguments = Args;
   using Parameters = Params;

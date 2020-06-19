@@ -43,6 +43,7 @@ public:
   Model model_;
   Backend backend_;
 public:
+  static const char* GetConverterName() { return "BasicMPConverter"; }
   using Converter = Impl;
   using ModelType = Model;
   using ProblemBuilder = Model;           // for old MP stuff

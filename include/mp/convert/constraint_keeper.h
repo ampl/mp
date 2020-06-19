@@ -25,7 +25,7 @@ public:
   template <class Constraint>
   void Convert(const Constraint& ) {
     throw std::logic_error(
-          std::string("Not converting constraint ") + typeid(Constraint).name());
+          std::string("Not converting constraint ") + Constraint::GetConstraintName());
   }
   /// Derived converter classes have to tell C++ to use default handlers if they need them
   /// when they overload Convert(), due to C++ name hiding
@@ -59,7 +59,7 @@ public:
   template <class Constraint>
   void AddConstraint(const Constraint& ) {
     throw std::logic_error(
-          std::string("Not handling constraint ") + typeid(Constraint).name());
+          std::string("Not handling constraint ") + Constraint::GetConstraintName());
   }
   /// Derived backends have to tell C++ to use default handlers if they are needed
   /// when they overload AddConstraint(), due to C++ name hiding
@@ -102,7 +102,12 @@ class ConstraintKeeper : public BasicConstraintKeeper {
 public:
   template <class... Args>
   ConstraintKeeper(Args&&... args) : cons_(std::move(args)...) { }
-  std::string GetDescription() const override { return typeid(ConstraintKeeper).name(); }
+  std::string GetDescription() const override {
+    return std::string("ConstraintKeeper< ") +
+        Converter::GetConverterName() + ", " +
+        Backend::GetBackendName() + ", " +
+        Constraint::GetConstraintName() + " >";
+  }
   const BasicConstraint& GetBasicConstraint() const override { return cons_; }
   const Constraint& GetConstraint() const { return cons_; }
   Constraint& GetConstraint() { return cons_; }
@@ -113,8 +118,9 @@ public:
     try {
       static_cast<Converter&>(cvt).PropagateResult(cons_, lb, ub, ctx);
     } catch (const std::exception& exc) {
-      throw std::logic_error(typeid(Converter).name() +
-                             std::string(": propagating result for constraint ") + typeid(Constraint).name() +
+      throw std::logic_error(Converter::GetConverterName() +
+                             std::string(": propagating result for constraint ") +
+                             + Constraint::GetConstraintName() +
                              ":  " + exc.what());
     }
   }
@@ -123,7 +129,8 @@ public:
     try {
       static_cast<Converter&>(cvt).Convert(cons_);
     } catch (const std::exception& exc) {
-      throw std::logic_error(typeid(Converter).name() + std::string(": ") + exc.what());
+      throw std::logic_error(Converter::GetConverterName() + std::string(": ")
+                             + exc.what());
     }
   }
   ConstraintAcceptanceLevel BackendAcceptance(
@@ -134,7 +141,8 @@ public:
     try {
       static_cast<Backend&>(be).AddConstraint(cons_);
     } catch (const std::exception& exc) {
-      throw std::logic_error(typeid(Backend).name() + std::string(": ") + exc.what());
+      throw std::logic_error(Backend::GetBackendName() + std::string(": ") +
+                             exc.what());
     }
   }
 };

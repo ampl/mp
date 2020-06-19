@@ -35,10 +35,6 @@ class BasicMPFlatConverter
       public BasicConstraintConverter
 {
 public:
-  BasicMPFlatConverter() {
-    InitOptions();
-  }
-
   using EExprType = EExpr;
   using VarArray = std::vector<int>;
   template <class Constraint>
@@ -53,10 +49,16 @@ protected:
 
 
 public:
+  static const char* GetConverterName() { return "BasicMPFlatConverter"; }
+
+  BasicMPFlatConverter() {
+    InitOptions();
+  }
+
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
   ///
   ///////////////////////////////////////////////////////////////////////////////////////////
-
+public:
   void Convert(typename Model::MutCommonExpr ) {
     /// Convert on demand, not here
   }
@@ -400,7 +402,7 @@ public:
             MP_DISPATCH( Print(
                            "WARNING: {}. Will pass the constraint "
                            "to the backend {}. Continuing\n",
-                           ccf.message(), typeid(Backend).name() ) );
+                           ccf.message(), Backend::GetBackendName() ) );
           }
         }
       }

@@ -15,6 +15,7 @@ class LinearConstraint : public BasicConstraint {
   const std::vector<int> vars_;
   const double lb_, ub_;
 public:
+  static const char* GetConstraintName() { return "LinearConstraint"; }
   template <class CV=std::vector<double>, class VV=std::vector<int> >
   LinearConstraint(CV&& c, VV&& v, double l, double u)
     : coefs_(std::forward<CV>(c)), vars_(std::forward<VV>(v)),
@@ -55,6 +56,7 @@ class LinearDefiningConstraint :
     public DefiningConstraint {
   AffineExpr affine_expr_;
 public:
+  static const char* GetConstraintName() { return "LinearDefiningConstraint"; }
   using Arguments = AffineExpr;
   using DefiningConstraint::GetResultVar;
   LinearDefiningConstraint(int r, AffineExpr&& ae) :
@@ -156,6 +158,7 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( TanConstraint, VarArray1,
 /// Indicator: b==bv -> c'x <= rhs
 class IndicatorConstraintLinLE: public BasicConstraint {
 public:
+  static const char* GetConstraintName() { return "IndicatorConstraint"; }
   const int b_=-1;                            // the indicator variable
   const int bv_=1;                            // the value, 0/1
   const std::vector<double> c_;

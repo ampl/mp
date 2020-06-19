@@ -44,7 +44,7 @@ public:
       value_ = ct.value_;
       break;
     default:
-      throw std::logic_error("Adding context to non-void not implemented");
+      throw std::logic_error("Adding context to non-empty context not implemented");
     }
     return *this;
   }

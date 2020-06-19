@@ -18,6 +18,8 @@ bool InterruptGurobi(void *model) {
 
 namespace mp {
 
+const char* GurobiBackend::GetBackendName() { return "GurobiBackend"; }
+
 GurobiBackend::GurobiBackend() :
    BaseBackend("gurobidirect", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
    {

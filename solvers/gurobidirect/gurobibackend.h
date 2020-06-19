@@ -1,11 +1,6 @@
 #ifndef MP_GUROBI_BACKEND_H_
 #define MP_GUROBI_BACKEND_H_
 
-#ifdef __APPLE__
-#include <limits.h>
-#include <string.h>
-#endif
-
 #if __clang__
 # pragma clang diagnostic push
 # pragma clang diagnostic ignored "-Wunused-parameter"
@@ -40,6 +35,7 @@ class GurobiBackend : public BasicBackend<GurobiBackend>
 public:
   GurobiBackend();
   ~GurobiBackend();
+  static const char* GetBackendName();
 
   /// [[ Prototype an incremental interface ]]
   void InitProblemModificationPhase();

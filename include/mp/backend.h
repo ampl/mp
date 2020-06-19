@@ -44,6 +44,8 @@ public:
                long date=0, int flags=0) :
     SolverImpl<Model>(name, longname, date, flags) { }
 
+  static const char* GetBackendName() { return "BasicBackend"; }
+
   void InitProblemModificationPhase() { }
   void FinishProblemModificationPhase() { }
   void AddVariables(int n, double* lbs, double* ubs, mp::var::Type* types) {
