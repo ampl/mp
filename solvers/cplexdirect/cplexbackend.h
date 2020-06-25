@@ -43,12 +43,12 @@ public:
 
   void AddVariable(Variable var);
   void AddLinearObjective( const LinearObjective& lo );
-  void AddLinearConstraint(int nnz, const double* c, const int* v,
-                           double lb, double ub);
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
 
+  ACCEPT_CONSTRAINT(LinearConstraint, Recommended)
+  void AddConstraint(const LinearConstraint& lc);
   /// Enabling built-in indicator for infinite bounds,
   /// but not recommended otherwise --- may be slow
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)

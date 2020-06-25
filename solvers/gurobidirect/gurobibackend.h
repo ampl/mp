@@ -43,12 +43,13 @@ public:
 
   void AddVariable(Variable var);
   void AddLinearObjective( const LinearObjective& lo );
-  void AddLinearConstraint(int nnz, const double* c, const int* v,
-                           double lb, double ub);
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
 
+  ACCEPT_CONSTRAINT(LinearConstraint, Recommended)
+  /// TODO Attributes (lazy/user cut, etc)
+  void AddConstraint(const LinearConstraint& lc);
   ACCEPT_CONSTRAINT(MaximumConstraint, AcceptedButNotRecommended)
   void AddConstraint(const MaximumConstraint& mc);
   ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)

@@ -182,23 +182,18 @@ void GurobiBackend::AddLinearObjective( const LinearObjective& lo ) {
 //                               0.0, nnz, (int*)v, (double*)c) );
   }
 }
-void GurobiBackend::AddLinearConstraint(int nnz, const double* c, const int* v,
-                         double lb, double ub) {
-//  this->Print( "  ADD LIN CONSTR:  {} <= ", lb);
-//  for (int i=0; i<nnz; ++i) {
-//    this->Print( "{}*[{}] ", c[i], v[i] );
-//    if (i<nnz-1 && c[i+1]>=0.0)
-//      this->Print( "+ " );
-//  }
-//  this->Print( "<= {}\n", ub );
-  if (lb==ub)
-    GRB_CALL( GRBaddconstr(model, nnz, (int*)v, (double*)c, GRB_EQUAL, lb, NULL) );
+void GurobiBackend::AddConstraint( const LinearConstraint& lc ) {
+  if (lc.lb()==lc.ub())
+    GRB_CALL( GRBaddconstr(model, lc.nnz(),
+                           (int*)lc.vars(), (double*)lc.coefs(), GRB_EQUAL, lc.lb(), NULL) );
   else {            // Let solver deal with lb>~ub etc.
-    if (lb>MinusInfinity()) {
-      GRB_CALL( GRBaddconstr(model, nnz, (int*)v, (double*)c, GRB_GREATER_EQUAL, lb, NULL) );
+    if (lc.lb()>MinusInfinity()) {
+      GRB_CALL( GRBaddconstr(model, lc.nnz(),
+                             (int*)lc.vars(), (double*)lc.coefs(), GRB_GREATER_EQUAL, lc.lb(), NULL) );
     }
-    if (ub<Infinity()) {
-      GRB_CALL( GRBaddconstr(model, nnz, (int*)v, (double*)c, GRB_LESS_EQUAL, ub, NULL) );
+    if (lc.ub()<Infinity()) {
+      GRB_CALL( GRBaddconstr(model, lc.nnz(),
+                             (int*)lc.vars(), (double*)lc.coefs(), GRB_LESS_EQUAL, lc.ub(), NULL) );
     }
   }
 }

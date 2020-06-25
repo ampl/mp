@@ -189,32 +189,31 @@ void CplexBackend::AddLinearObjective( const LinearObjective& lo ) {
 //    TODO
   }
 }
-void CplexBackend::AddLinearConstraint(int nnz, const double* c, const int* v,
-                         double lb, double ub) {
-  char sense = 'E';                     // good to initialize
-  double rhs = lb;
-  if (lb==ub)
+void CplexBackend::AddConstraint(const LinearConstraint& lc) {
+  char sense = 'E';                     // good to initialize things
+  double rhs = lc.lb();
+  if (lc.lb()==lc.ub())
     sense = 'E';
-  else {            // Let solver deal with lb>~ub etc.
-    if (lb>MinusInfinity()) {
+  else {                                // Let solver deal with lb>~ub etc.
+    if (lc.lb()>MinusInfinity()) {
       sense = 'G';
     }
-    if (ub<Infinity()) {
+    if (lc.ub()<Infinity()) {
       if ('G'==sense)
         sense = 'R';
       else {
         sense = 'L';
-        rhs = ub;
+        rhs = lc.ub();
       }
     }
   }
   int rmatbeg[] = { 0 };
-  CPLEX_CALL( CPXaddrows (env, lp, 0, 1, nnz, &rhs,
-                          &sense, rmatbeg, v, c,
+  CPLEX_CALL( CPXaddrows (env, lp, 0, 1, lc.nnz(), &rhs,
+                          &sense, rmatbeg, lc.vars(), lc.coefs(),
                           NULL, NULL) );
   if ('R'==sense) {
     int indices = NumberOfConstraints()-1;
-    double range = ub-lb;
+    double range = lc.ub()-lc.lb();
     CPLEX_CALL( CPXchgrngval (env, lp, 1, &indices, &range) );
   }
 }

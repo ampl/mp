@@ -68,7 +68,8 @@ public:
     template <class CoefVec=std::initializer_list<double>,
               class VarVec=std::initializer_list<int> >
     LinearObjective(obj::Type s, CoefVec&& c, VarVec&& v) :
-      sense_(s), coefs_(std::move(c)), vars_(std::move(v)) { }
+      sense_(s),
+      coefs_(std::forward<CoefVec>(c)), vars_(std::forward<VarVec>(v)) { }
     obj::Type get_sense() const { return sense_; }
     int get_num_terms() const { assert(check()); return (int)vars_.size(); }
     bool check() const { return coefs_.size()==vars_.size(); }
@@ -97,10 +98,11 @@ public:
       MP_DISPATCH( AddGeneralConstraint( con ) );
     } else {
       LinearExprUnzipper leu(con.linear_expr());
-      MP_DISPATCH( AddLinearConstraint(leu.c_.size(), leu.c_.data(), leu.v_.data(),
-                                       con.lb(), con.ub()) );
+      MP_DISPATCH( AddConstraint( LinearConstraint{
+                                    std::move(leu.c_), std::move(leu.v_),
+                                       con.lb(), con.ub() } ) );
     }
-    }
+  }
 
   /// TODO Do we need ability to add several at once?
   /// TODO Attributes (lazy/user cut, etc)
@@ -123,9 +125,9 @@ public:
   }
 
   ACCEPT_CONSTRAINT(LinearConstraint, Recommended)
-  void AddConstraint(const LinearConstraint& ldc) {     // TODO make this form primary
-    MP_DISPATCH( AddLinearConstraint(ldc.nnz(), ldc.coefs(), ldc.vars(),
-                                     ldc.lb(), ldc.ub()) );
+  /// TODO Attributes (lazy/user cut, etc)
+  void AddConstraint(const LinearConstraint& ldc) {
+    throw MakeUnsupportedError("BasicBackend::AddLinearConstraint");
   }
 
 
