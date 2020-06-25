@@ -81,11 +81,10 @@ public:
   MIPInstance& GetInstance() { return instance_; }
 
   /// These things the concrete interface currently has to define
-  void AddVariables(int n, double* lbs, double* ubs, mp::var::Type* types) {
-    instance_.varLBs_.insert(instance_.varLBs_.end(), lbs, lbs+n);
-    instance_.varUBs_.insert(instance_.varUBs_.end(), ubs, ubs+n);
-    instance_.varTypes_.insert(instance_.varTypes_.end(),
-                               (VarType*)types, (VarType*)types+n);
+  void AddVariable(Variable var) {
+    instance_.varLBs_.push_back(var.lb());
+    instance_.varUBs_.push_back(var.ub());
+    instance_.varTypes_.push_back((VarType)var.type());
   }
   void AddLinearObjective(mp::obj::Type sense, int nnz,
                           const double* c, const int* v) {

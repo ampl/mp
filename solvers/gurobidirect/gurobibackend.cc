@@ -161,15 +161,13 @@ void GurobiBackend::InitProblemModificationPhase() {
   stats.time = steady_clock::now();
 }
 
-void GurobiBackend::AddVariables(int n, double *lbs, double *ubs, var::Type *types) {
-  std::vector<char> vtypes(n, GRB_CONTINUOUS);
-  for (int var = 0; var < n; ++var) {
-    if (types[var]!=var::Type::CONTINUOUS)
-      vtypes[var] = GRB_INTEGER;
-  }
-  GRB_CALL( GRBaddvars(model, n, 0,
+void GurobiBackend::AddVariable(Variable var) {
+  char vtype = var::Type::CONTINUOUS==var.type() ?
+        GRB_CONTINUOUS : GRB_INTEGER;
+  auto lb=var.lb(), ub=var.ub();
+  GRB_CALL( GRBaddvars(model, 1, 0,
                        NULL, NULL, NULL, NULL,                  // placeholders, no matrix here
-                       lbs, ubs, vtypes.data(), NULL) );
+                       &lb, &ub, &vtype, NULL) );
 }
 void GurobiBackend::AddLinearObjective( obj::Type sense, int nnz,
                          const double* c, const int* v) {

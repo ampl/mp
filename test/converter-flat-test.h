@@ -20,10 +20,8 @@ class TestBackendAcceptingConstraints :
   std::vector<mp::LinearConstraint> lin_constr_;
 public:
   TestBackendAcceptingConstraints() : Base("TestBackend") { }
-  void AddVariables(int n, double *lbs, double *ubs, mp::var::Type *types) {
-    for (int i = 0; i < n; ++i) {
-      vars_.push_back( {lbs[i], ubs[i], types[i]} );
-    }
+  void AddVariable(typename Base::Variable var) {
+    vars_.push_back( {var.lb(), var.ub(), var.type()} );
   }
   int NumVars() const { return (int)vars_.size(); }
   /// The linear constraints

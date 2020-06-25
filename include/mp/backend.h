@@ -44,12 +44,14 @@ public:
                long date=0, int flags=0) :
     SolverImpl<Model>(name, longname, date, flags) { }
 
+  using Variable = Problem::Variable;
+
   static const char* GetBackendName() { return "BasicBackend"; }
 
   void InitProblemModificationPhase() { }
   void FinishProblemModificationPhase() { }
-  void AddVariables(int n, double* lbs, double* ubs, mp::var::Type* types) {
-    throw MakeUnsupportedError("BasicBackend::AddVariables");
+  void AddVariable(Variable var) {
+    throw MakeUnsupportedError("BasicBackend::AddVariable");
   }
   void AddCommonExpression(Problem::CommonExpr cexpr) {
     throw MakeUnsupportedError("BasicBackend::AddCommonExpressions");

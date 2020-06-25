@@ -345,13 +345,9 @@ void MPToConcertConverter::FinishBuildingObjectives() {
 void MPToConcertConverter::FinishBuildingAlgebraicConstraints() {
 }
 
-void MPToConcertConverter::AddVariables(int n, double *lbs, double *ubs, var::Type *types) {
-  IloNumVarArray varsNew(env_, n);
-  for (int j = 0; j < n; ++j) {
-    varsNew[j] = IloNumVar(env_, lbs[j], ubs[j],
-                         types[j] == mp::var::CONTINUOUS ? ILOFLOAT : ILOINT);
-  }
-  vars_.add(varsNew);
+void MPToConcertConverter::AddVariable(Problem::Variable var) {
+  vars_.add(IloNumVar(env_, var.lb(), var.ub(),
+                      var.type() == mp::var::CONTINUOUS ? ILOFLOAT : ILOINT));
 }
 
 void MPToConcertConverter::AddCommonExpression(Problem::CommonExpr cexpr) {

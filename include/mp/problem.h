@@ -1011,11 +1011,7 @@ protected:
   void PushVariablesTo(Backend& backend) const {
     const int nv = num_vars();
     for (int j = 0; j < nv; ++j) {
-      Variable v = var(j);
-      double lb = v.lb();
-      double ub = v.ub();
-      var::Type ty = v.type();
-      backend.AddVariables(1, &lb, &ub, &ty);
+      backend.AddVariable(var(j));
     }
   }
 

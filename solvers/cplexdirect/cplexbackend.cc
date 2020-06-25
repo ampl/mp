@@ -172,13 +172,11 @@ void CplexBackend::InitProblemModificationPhase() {
   stats.time = steady_clock::now();
 }
 
-void CplexBackend::AddVariables(int n, double *lbs, double *ubs, var::Type *types) {
-  std::vector<char> vtypes(n, CPX_CONTINUOUS);
-  for (int var = 0; var < n; ++var) {
-    if (types[var]!=var::Type::CONTINUOUS)
-      vtypes[var] = CPX_INTEGER;
-  }
-  CPLEX_CALL( CPXnewcols (env, lp, n, NULL, lbs, ubs, vtypes.data(), NULL) );
+void CplexBackend::AddVariable(Variable var) {
+  char vtype = var::Type::CONTINUOUS==var.type() ?
+        CPX_CONTINUOUS : CPX_INTEGER;
+  auto lb=var.lb(), ub=var.ub();
+  CPLEX_CALL( CPXnewcols (env, lp, 1, NULL, &lb, &ub, &vtype, NULL) );
 }
 
 void CplexBackend::AddLinearObjective( obj::Type sense, int nnz,

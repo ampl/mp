@@ -846,8 +846,8 @@ void IlogCPSolver::InitProblemModificationPhase(const Problem &p) {
   converter_.reset(new MPToConcertConverter(env_, converter_flags_));
 }
 
-void IlogCPSolver::AddVariables(int n, double *lbs, double *ubs, var::Type *types) {
-  converter_->AddVariables(n, lbs, ubs, types);
+void IlogCPSolver::AddVariable(Problem::Variable var) {
+  converter_->AddVariable(var);
 }
 void IlogCPSolver::AddCommonExpression(Problem::CommonExpr cexpr) {
   converter_->AddCommonExpression(cexpr);
