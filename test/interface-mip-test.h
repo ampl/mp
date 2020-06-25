@@ -30,7 +30,7 @@ struct MIPInstance {
   };
   struct Objective {
     Sense sense_;
-    SparseVec le_;    // lin expression. TODO non-lin as well
+    SparseVec le_;        // lin expression
   };
   using ObjectivesContainer = std::vector<Objective>;
   ObjectivesContainer objs_;
@@ -86,9 +86,10 @@ public:
     instance_.varUBs_.push_back(var.ub());
     instance_.varTypes_.push_back((VarType)var.type());
   }
-  void AddLinearObjective(mp::obj::Type sense, int nnz,
-                          const double* c, const int* v) {
-    instance_.objs_.push_back({(Sense)sense, { nnz, c, v }});
+  void AddLinearObjective(const LinearObjective& lo) {
+    interface_test::MIPInstance::SparseVec lin_part {lo.get_coefs(), lo.get_vars()};
+    instance_.objs_.push_back({(Sense)lo.get_sense(),
+                              std::move(lin_part)});
   }
 
   void AddLinearConstraint(int nnz, const double* c, const int* v,

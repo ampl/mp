@@ -169,12 +169,13 @@ void GurobiBackend::AddVariable(Variable var) {
                        NULL, NULL, NULL, NULL,                  // placeholders, no matrix here
                        &lb, &ub, &vtype, NULL) );
 }
-void GurobiBackend::AddLinearObjective( obj::Type sense, int nnz,
-                         const double* c, const int* v) {
+void GurobiBackend::AddLinearObjective( const LinearObjective& lo ) {
   if (1>=NumberOfObjectives()) {
     GRB_CALL( GRBsetintattr(model, GRB_INT_ATTR_MODELSENSE,
-                          obj::Type::MAX==sense ? GRB_MAXIMIZE : GRB_MINIMIZE) );
-    GRB_CALL( GRBsetdblattrlist(model, GRB_DBL_ATTR_OBJ, nnz, (int*)v, (double*)c) );
+                          obj::Type::MAX==lo.get_sense() ? GRB_MAXIMIZE : GRB_MINIMIZE) );
+    GRB_CALL( GRBsetdblattrlist(model, GRB_DBL_ATTR_OBJ,
+                                lo.get_num_terms(),
+                                (int*)lo.get_vars().data(), (double*)lo.get_coefs().data()) );
   } else {
 //    TODO
 //    GRB_CALL( GRBsetobjectiven(model, 0, 1, 0.0, 0.0, 0.0, "primary",

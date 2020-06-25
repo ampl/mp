@@ -60,17 +60,32 @@ public:
     throw MakeUnsupportedError("BasicBackend::AddLogicalConstraints");
   }
 
+  class LinearObjective {
+    obj::Type sense_;
+    std::vector<double> coefs_;
+    std::vector<int> vars_;
+  public:
+    template <class CoefVec=std::initializer_list<double>,
+              class VarVec=std::initializer_list<int> >
+    LinearObjective(obj::Type s, CoefVec&& c, VarVec&& v) :
+      sense_(s), coefs_(std::move(c)), vars_(std::move(v)) { }
+    obj::Type get_sense() const { return sense_; }
+    int get_num_terms() const { assert(check()); return (int)vars_.size(); }
+    bool check() const { return coefs_.size()==vars_.size(); }
+    const std::vector<double>& get_coefs() const { return coefs_; }
+    const std::vector<int>& get_vars() const { return vars_; }
+  };
+
   void AddObjective(Problem::Objective obj) {
     if (obj.nonlinear_expr()) {
       MP_DISPATCH( AddGeneralObjective( obj ) );
     } else {
       LinearExprUnzipper leu(obj.linear_expr());
-      MP_DISPATCH( AddLinearObjective( obj.type(), leu.c_.size(),
-                                       leu.c_.data(), leu.v_.data()) );
+      MP_DISPATCH( AddLinearObjective( { obj.type(),
+                                         std::move(leu.c_), std::move(leu.v_) } ) );
     }
     }
-  void AddLinearObjective( obj::Type sense, int nnz,
-                           const double* c, const int* v) {
+  void AddLinearObjective( const LinearObjective& ) {
     throw MakeUnsupportedError("BasicBackend::AddLinearObjective");
   }
   void AddGeneralObjective(Problem::Objective obj) {

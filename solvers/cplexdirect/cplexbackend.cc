@@ -179,12 +179,12 @@ void CplexBackend::AddVariable(Variable var) {
   CPLEX_CALL( CPXnewcols (env, lp, 1, NULL, &lb, &ub, &vtype, NULL) );
 }
 
-void CplexBackend::AddLinearObjective( obj::Type sense, int nnz,
-                         const double* c, const int* v) {
+void CplexBackend::AddLinearObjective( const LinearObjective& lo ) {
   if (1>=NumberOfObjectives()) {
     CPLEX_CALL( CPXchgobjsen (env, lp,
-                          obj::Type::MAX==sense ? CPX_MAX : CPX_MIN) );
-    CPLEX_CALL( CPXchgobj (env, lp, nnz, v, c) );
+                    obj::Type::MAX==lo.get_sense() ? CPX_MAX : CPX_MIN) );
+    CPLEX_CALL( CPXchgobj (env, lp, lo.get_num_terms(),
+                           lo.get_vars().data(), lo.get_coefs().data()) );
   } else {
 //    TODO
   }

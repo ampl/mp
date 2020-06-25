@@ -42,8 +42,7 @@ public:
   void FinishProblemModificationPhase();
 
   void AddVariable(Variable var);
-  void AddLinearObjective( obj::Type sense, int nnz,
-                           const double* c, const int* v);
+  void AddLinearObjective( const LinearObjective& lo );
   void AddLinearConstraint(int nnz, const double* c, const int* v,
                            double lb, double ub);
 
