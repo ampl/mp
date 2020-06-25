@@ -24,10 +24,8 @@ public:
     vars_.push_back( {var.lb(), var.ub(), var.type()} );
   }
   int NumVars() const { return (int)vars_.size(); }
-  /// The linear constraints
-  void AddLinearConstraint(int nnz, const double* c, const int* v,
-                           double lb, double ub) {
-    lin_constr_.push_back( { {c, c+nnz}, {v, v+nnz}, lb, ub } );
+  void AddConstraint(const mp::LinearConstraint& lc) {
+    lin_constr_.push_back( lc );
   }
 
   /// ACCEPTING THE CUSTOM CONSTRAINT

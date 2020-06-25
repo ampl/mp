@@ -92,9 +92,13 @@ public:
                               std::move(lin_part)});
   }
 
-  void AddLinearConstraint(int nnz, const double* c, const int* v,
-                           double lb, double ub) {
-    instance_.cons_.push_back({ { nnz, c, v }, lb, ub });
+  /// Allow all constraint types to be compiled
+  USE_BASE_CONSTRAINT_HANDLERS(mp::BasicBackend<MIPInstanceBackend>)
+
+  /// Specialize for LinearConstraint
+  void AddConstraint(const mp::LinearConstraint& lc) {
+    instance_.cons_.push_back({ { lc.nnz(), lc.coefs(), lc.vars() },
+                                lc.lb(), lc.ub() });
   }
 
 };

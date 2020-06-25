@@ -47,8 +47,8 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
 
-  ACCEPT_CONSTRAINT(LinearConstraint, Recommended)
   /// TODO Attributes (lazy/user cut, etc)
+  ACCEPT_CONSTRAINT(LinearConstraint, Recommended)
   void AddConstraint(const LinearConstraint& lc);
   ACCEPT_CONSTRAINT(MaximumConstraint, AcceptedButNotRecommended)
   void AddConstraint(const MaximumConstraint& mc);

@@ -104,12 +104,6 @@ public:
     }
   }
 
-  /// TODO Do we need ability to add several at once?
-  /// TODO Attributes (lazy/user cut, etc)
-  void AddLinearConstraint(int nnz, const double* c, const int* v,
-                           double lb, double ub) {
-    throw MakeUnsupportedError("BasicBackend::AddLinearConstraint");
-  }
   void AddGeneralConstraint(Problem::AlgebraicCon con) {
     throw MakeUnsupportedError("BasicBackend::AddGeneralConstraint");
   }
