@@ -2,6 +2,7 @@
 #define STD_CONSTR_H
 
 #include <vector>
+#include <algorithm>
 
 #include "mp/convert/basic_constr.h"
 #include "mp/convert/affine_expr.h"
@@ -11,24 +12,44 @@ namespace mp {
 ////////////////////////////////////////////////////////////////////////
 /// Standard linear constraint
 class LinearConstraint : public BasicConstraint {
-  const std::vector<double> coefs_;
-  const std::vector<int> vars_;
-  const double lb_, ub_;
+  std::vector<double> coefs_;
+  std::vector<int> vars_;
+  double lb_, ub_;
 public:
   static const char* GetConstraintName() { return "LinearConstraint"; }
   template <class CV=std::vector<double>, class VV=std::vector<int> >
   LinearConstraint(CV&& c, VV&& v, double l, double u)
     : coefs_(std::forward<CV>(c)), vars_(std::forward<VV>(v)),
-      lb_(l), ub_(u) { assert(coefs_.size()==vars_.size()); }
+      lb_(l), ub_(u) { assert(coefs_.size()==vars_.size()); preprocess(); }
   template <size_t N>
   LinearConstraint(std::array<double, N>& c, std::array<int, N>& v, double l, double u)
     : coefs_(c.begin(), c.end()), vars_(v.begin(), v.end()),
-      lb_(l), ub_(u) { assert(coefs_.size()==vars_.size()); }
+      lb_(l), ub_(u) { assert(coefs_.size()==vars_.size()); preprocess(); }
   int nnz() const { return (int)coefs_.size(); }
   const double* coefs() const { return coefs_.data(); }
   const int* vars() const { return vars_.data(); }
   double lb() const { return lb_; }
   double ub() const { return ub_; }
+
+  void preprocess() { eliminate_zeros(); }          // TODO check duplicates?
+  /// So Gurobi does not complain about 0 coefs and duplicate variables
+  void eliminate_zeros() {
+    auto ic1 = std::find_if(coefs_.begin(), coefs_.end(),
+                            [](double c){return 0.0==std::fabs(c);});
+    if (coefs_.end()!=ic1) {
+      auto iv1 = vars_.begin() + (ic1-coefs_.begin());
+      auto iv = iv1;
+      auto ic = ic1;
+      for( ; ++iv, ++ic != coefs_.end(); )
+        if (0.0!=std::fabs(*ic)) {
+          *ic1++ = *ic;
+          *iv1++ = *iv;
+        }
+      coefs_.resize(ic1-coefs_.begin());
+      vars_.resize(ic1-coefs_.begin());
+      assert(coefs_.size()==vars_.size());
+    }
+  }
 };
 
 ////////////////////////////////////////////////////////////////////////
