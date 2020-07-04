@@ -80,9 +80,14 @@ public:
   static const char* GetConstraintName() { return "LinearDefiningConstraint"; }
   using Arguments = AffineExpr;
   using DefiningConstraint::GetResultVar;
+  /// A constructor ignoring result variable: use AssignResultToArguments() then
+  LinearDefiningConstraint(AffineExpr&& ae) :
+    affine_expr_(std::move(ae)) {
+    /// TODO sort+merge elements
+  }
   LinearDefiningConstraint(int r, AffineExpr&& ae) :
     DefiningConstraint(r), affine_expr_(std::move(ae)) {
-    /// TODO sort elements
+    /// TODO sort+merge elements
   }
   const AffineExpr& GetAffineExpr() const { return affine_expr_; }
   LinearConstraint to_linear_constraint() const {

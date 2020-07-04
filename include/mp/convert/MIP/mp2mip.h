@@ -50,6 +50,16 @@ public:
     ConvertMinOrMax<-1>(mc);
   }
 
+  void Convert(const AbsConstraint& ac) {
+    const int arg = ac.GetArguments()[0];
+    const int res = ac.GetResultVar();
+    this->AddConstraint(LinearConstraint({1.0, 1.0}, {res, arg}, 0.0, this->Infty()));
+    this->AddConstraint(LinearConstraint({1.0, -1.0}, {res, arg}, 0.0, this->Infty()));
+    const int flag = this->AddVar(0.0, 1.0, var::INTEGER);
+    this->AddConstraint(IndicatorConstraintLinLE(flag, 1, {1.0, 1.0}, {res, arg}, 0.0));
+    this->AddConstraint(IndicatorConstraintLinLE(flag, 0, {1.0, -1.0}, {res, arg}, 0.0));
+  }
+
   void Convert(const NotConstraint& nc) {
     MP_DISPATCH( AddConstraint(LinearDefiningConstraint(
       nc.GetResultVar(), {{-1.0}, {nc.GetArguments()[0]}, 1.0})) );
@@ -118,6 +128,7 @@ public:
     if (indc.is_binary_value_1())                  /// If binval==1, complement the variable
       binvar = this->MakeComplementVar(binvar);
     /// Convert indc's linear inequality to 'cmpvar<=0'
+    /// Could use the full inequality instead of the new var
     int cmpvar = MP_DISPATCH( Convert2Var(indc.to_lhs_affine_expr()) );
     if (this->ub(cmpvar) >= this->Infty())
       throw ConstraintConversionFailure("Cannot convert indicator constraint with variable " +

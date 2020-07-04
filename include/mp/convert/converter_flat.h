@@ -444,8 +444,21 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       AbsConstraint& c, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, this->Infty());
-    prepro.set_result_type( var_type(c.GetArguments()[0]) );
+    const auto argvar = c.GetArguments()[0];
+    const auto lb = this->lb(argvar),
+        ub = this->ub(argvar);
+    if (lb>=0.0) {
+      prepro.set_result_var(argvar);
+      return;
+    } else if (ub<=0.0) {
+      prepro.set_result_var(                   // create newvar = -argvar
+            AssignResultToArguments(
+                  LinearDefiningConstraint({ {-1.0}, {argvar}, 0.0 })).
+                              get_representing_variable());
+      return;
+    }
+    prepro.narrow_result_bounds(0.0, std::max(-lb, ub));
+    prepro.set_result_type( var_type(argvar) );
   }
 
   template <class PreprocessInfo>
