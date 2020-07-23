@@ -97,7 +97,7 @@ public:
 
   /// Specialize for LinearConstraint
   void AddConstraint(const mp::LinearConstraint& lc) {
-    instance_.cons_.push_back({ { lc.nnz(), lc.coefs(), lc.vars() },
+    instance_.cons_.push_back({ { lc.nnz(), lc.pcoefs(), lc.pvars() },
                                 lc.lb(), lc.ub() });
   }
 

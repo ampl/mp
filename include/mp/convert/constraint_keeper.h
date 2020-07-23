@@ -17,9 +17,8 @@ public:
     // ... do nothing by default
     // Should at least derive bounds & type for the result
   }
-  /// By default, we complain about constraint without a result propagator
   void PropagateResult(BasicConstraint& con, double lb, double ub, Context ctx) {
-    throw std::logic_error("Propagation from result not implemented");
+    throw std::logic_error("This should not be called");
   }
   /// By default, we complain about someone trying to convert an unknown constraint
   template <class Constraint>
@@ -44,6 +43,8 @@ public:
   using BaseConverter::MapInsert;
 
 
+  static constexpr double Infty() { return std::numeric_limits<double>::infinity(); }
+  static constexpr double MinusInfty() { return -std::numeric_limits<double>::infinity(); }
 };
 
 /// Level of acceptance of a constraint by a backend
@@ -127,7 +128,7 @@ public:
   virtual int GetResultVar() const { return cons_.GetResultVar(); }
   void ConvertWith(BasicConstraintConverter& cvt) override {
     try {
-      static_cast<Converter&>(cvt).Convert(cons_);
+      static_cast<Converter&>(cvt).RunConversion(cons_);
     } catch (const std::exception& exc) {
       throw std::logic_error(Converter::GetConverterName() + std::string(": ")
                              + exc.what());

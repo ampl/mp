@@ -26,8 +26,10 @@ public:
     : coefs_(c.begin(), c.end()), vars_(v.begin(), v.end()),
       lb_(l), ub_(u) { assert(coefs_.size()==vars_.size()); preprocess(); }
   int nnz() const { return (int)coefs_.size(); }
-  const double* coefs() const { return coefs_.data(); }
-  const int* vars() const { return vars_.data(); }
+  const double* pcoefs() const { return coefs_.data(); }
+  const int* pvars() const { return vars_.data(); }
+  const std::vector<double>& coefs() const { return coefs_; }
+  const std::vector<int>& vars() const { return vars_; }
   double lb() const { return lb_; }
   double ub() const { return ub_; }
 

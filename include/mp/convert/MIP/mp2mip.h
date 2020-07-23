@@ -165,7 +165,7 @@ public:
   }
 
   void Convert(const IfThenConstraint& itc) {
-//    assert(!itc.GetContext().IsNone());
+    assert(!itc.GetContext().IsNone());
     const auto& args = itc.GetArguments();
     if (!this->is_fixed(args[1]) || !this->is_fixed(args[2]))
       throw std::logic_error("MP2MIP: IfThen with variable then/else arguments not implemented");

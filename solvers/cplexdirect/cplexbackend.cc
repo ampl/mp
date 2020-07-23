@@ -209,7 +209,7 @@ void CplexBackend::AddConstraint(const LinearConstraint& lc) {
   }
   int rmatbeg[] = { 0 };
   CPLEX_CALL( CPXaddrows (env, lp, 0, 1, lc.nnz(), &rhs,
-                          &sense, rmatbeg, lc.vars(), lc.coefs(),
+                          &sense, rmatbeg, lc.pvars(), lc.pcoefs(),
                           NULL, NULL) );
   if ('R'==sense) {
     int indices = NumberOfConstraints()-1;

@@ -35,7 +35,8 @@ namespace mp {
 /// Backend access is hidden (the backend itself is a parameter)
 template <class Impl, class Backend,
           class Model = BasicProblem<std::allocator<char> > >
-class BasicMPConverter {
+class BasicMPConverter :
+    public BasicConstraintConverter {
 protected:
   /// This is to wrap some old dependencies from MP
   using SolverAdapter = SolverImpl<Model>;

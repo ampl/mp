@@ -31,8 +31,7 @@ template <class Impl, class Backend,
           class Model = BasicModel<std::allocator<char> > >
 class BasicMPFlatConverter
     : public BasicMPConverter<Impl, Backend, Model>,
-      public ExprVisitor<Impl, EExpr>,
-      public BasicConstraintConverter
+      public ExprVisitor<Impl, EExpr>
 {
 public:
   using EExprType = EExpr;
@@ -63,6 +62,7 @@ public:
     /// Convert on demand, not here
   }
 
+  /// TODO propagate contexts from objectives and all constraints
   void Convert(typename Model::MutObjective obj) {
     if (NumericExpr e = obj.nonlinear_expr()) {
       LinearExpr &linear = obj.linear_expr();
@@ -88,10 +88,10 @@ public:
 
   void Convert(typename Model::MutLogicalCon e) {
     const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
-    PropagateResult(resvar, 1.0, 1.0, +Context());
+    PropagateResultOfInitExpr(resvar, 1.0, 1.0, +Context());
   }
 
-  void PropagateResult(int var, double lb, double ub, Context ctx) {
+  void PropagateResultOfInitExpr(int var, double lb, double ub, Context ctx) {
     this->GetModel().narrow_var_bounds(var, lb, ub);
     if (HasInitExpression(var))
       GetInitExpression(var)->PropagateResult(*this, lb, ub, ctx);
@@ -618,38 +618,59 @@ public:
   ///
   //////////////////////////// SPECIFIC CONSTRAINT RESULT-TO-ARGUMENTS PROPAGATORS //////
 
+  /// By default, declare mixed context
+  template <class Constraint>
+  void PropagateResult(Constraint& con, double lb, double ub, Context ctx) {
+    con.SetContext(Context::CTX_MIX);
+    for (const auto a: con.GetArguments())
+      PropagateResultOfInitExpr(a, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+  }
+
   void PropagateResult(LinearDefiningConstraint& con, double lb, double ub, Context ctx) {
     con.AddContext(ctx);
+    for (const auto& term: con.GetAffineExpr())
+      PropagateResultOfInitExpr(term.var_index(), this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+  }
+
+  void PropagateResult(LinearConstraint& con, double lb, double ub, Context ctx) {
+    for (const auto& v: con.vars())
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+  }
+
+  void PropagateResult(IndicatorConstraintLinLE& con, double lb, double ub, Context ctx) {
+    for (const auto& v: con.get_lin_vars())
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
   void PropagateResult(NotConstraint& con, double lb, double ub, Context ctx) {
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
-      PropagateResult(a, 1.0-ub, 1.0-lb, -ctx);
+      PropagateResultOfInitExpr(a, 1.0-ub, 1.0-lb, -ctx);
   }
 
   void PropagateResult(ConjunctionConstraint& con, double lb, double ub, Context ctx) {
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
-      PropagateResult(a, lb, 1.0, +ctx);
+      PropagateResultOfInitExpr(a, lb, 1.0, +ctx);
   }
 
   void PropagateResult(DisjunctionConstraint& con, double lb, double ub, Context ctx) {
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
-      PropagateResult(a, 0.0, ub, +ctx);
+      PropagateResultOfInitExpr(a, 0.0, ub, +ctx);
   }
 
   void PropagateResult(IfThenConstraint& con, double lb, double ub, Context ctx) {
     con.AddContext(ctx);
     auto& args = con.GetArguments();
-    PropagateResult(args[0], 0.0, 1.0, Context::CTX_MIX);
-    PropagateResult(args[1], this->MinusInfty(), this->Infty(), +ctx);
-    PropagateResult(args[2], this->MinusInfty(), this->Infty(), -ctx);
+    PropagateResultOfInitExpr(args[0], 0.0, 1.0, Context::CTX_MIX);
+    PropagateResultOfInitExpr(args[1], this->MinusInfty(), this->Infty(), +ctx);
+    PropagateResultOfInitExpr(args[2], this->MinusInfty(), this->Infty(), -ctx);
   }
 
   void PropagateResult(AllDiffConstraint& con, double lb, double ub, Context ctx) {
     con.AddContext(ctx);
+    // TODO go into arguments
   }
 
   void PropagateResult(LE0Constraint& con, double lb, double ub, Context ctx) {
@@ -666,6 +687,17 @@ public:
   //////////////////////////// SPECIFIC CONSTRAINT CONVERTERS ///////////////////////////
 
   USE_BASE_CONSTRAINT_CONVERTERS(BasicConstraintConverter)      // reuse default converters
+
+  /// Assume mixed context if not set in the constraint
+  /// TODO Make sure context is always propagated for all constraints and objectives
+  template <class Constraint>
+  void RunConversion(const Constraint& con) {
+    if (con.HasContext())
+      if (con.GetContext().IsNone())
+        con.SetContext(Context::CTX_MIX);
+    MP_DISPATCH(Convert(con););
+  }
+
 
   /// If backend does not like LDC, we can redefine it
   void Convert(const LinearDefiningConstraint& ldc) {

@@ -185,15 +185,15 @@ void GurobiBackend::AddLinearObjective( const LinearObjective& lo ) {
 void GurobiBackend::AddConstraint( const LinearConstraint& lc ) {
   if (lc.lb()==lc.ub())
     GRB_CALL( GRBaddconstr(model, lc.nnz(),
-                           (int*)lc.vars(), (double*)lc.coefs(), GRB_EQUAL, lc.lb(), NULL) );
+                           (int*)lc.pvars(), (double*)lc.pcoefs(), GRB_EQUAL, lc.lb(), NULL) );
   else {            // Let solver deal with lb>~ub etc.
     if (lc.lb()>MinusInfinity()) {
       GRB_CALL( GRBaddconstr(model, lc.nnz(),
-                             (int*)lc.vars(), (double*)lc.coefs(), GRB_GREATER_EQUAL, lc.lb(), NULL) );
+                             (int*)lc.pvars(), (double*)lc.pcoefs(), GRB_GREATER_EQUAL, lc.lb(), NULL) );
     }
     if (lc.ub()<Infinity()) {
       GRB_CALL( GRBaddconstr(model, lc.nnz(),
-                             (int*)lc.vars(), (double*)lc.coefs(), GRB_LESS_EQUAL, lc.ub(), NULL) );
+                             (int*)lc.pvars(), (double*)lc.pcoefs(), GRB_LESS_EQUAL, lc.ub(), NULL) );
     }
   }
 }

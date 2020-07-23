@@ -12,13 +12,16 @@ namespace mp {
 class BasicConstraint {
 public:
   static const char* GetConstraintName() { return "BasicConstraint"; }
+  static constexpr bool HasContext() { return false; }
+  void SetContext(Context ) const { }
+  Context GetContext() const { return Context::CTX_NONE; }
   int GetResultVar() const { return -1; }
 };
 
 /// A constraint extension which defines a variable
 class DefiningConstraint : public BasicConstraint {
   int result_var_=-1;                // defined var can be optional
-  Context ctx;
+  mutable Context ctx;
 public:
   static const char* GetConstraintName() { return "DefiningConstraint"; }
   DefiningConstraint(int v=-1) : result_var_(v) {}
@@ -27,7 +30,8 @@ public:
   }
   void SetResultVar(int v) { result_var_=v; }
   int GetResultVar() const { return result_var_; }
-  void SetContext(Context c) { ctx=c; }
+  static constexpr bool HasContext() { return true; }
+  void SetContext(Context c) const { ctx=c; }
   void AddContext(Context c) { ctx.Add(c); }
   Context GetContext() const { return ctx; }
 };
