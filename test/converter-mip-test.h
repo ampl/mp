@@ -1,11 +1,11 @@
-#ifndef INTERFACEMIPTEST_H
-#define INTERFACEMIPTEST_H
+#ifndef CONVERTERMIPTEST_H
+#define CONVERTERMIPTEST_H
 
 #include <vector>
 
 #include "mp/convert/MIP/mp2mip.h"
 
-namespace interface_test {
+namespace mip_converter_test {
 
 enum Sense {
   minimize_ = mp::obj::MIN,
@@ -87,7 +87,7 @@ public:
     instance_.varTypes_.push_back((VarType)var.type());
   }
   void AddLinearObjective(const LinearObjective& lo) {
-    interface_test::MIPInstance::SparseVec lin_part {lo.get_coefs(), lo.get_vars()};
+    mip_converter_test::MIPInstance::SparseVec lin_part {lo.get_coefs(), lo.get_vars()};
     instance_.objs_.push_back({(Sense)lo.get_sense(),
                               std::move(lin_part)});
   }
@@ -104,8 +104,8 @@ public:
 };
 
 /// Testing the default MIP interface layer
-class MIPInterfaceTester :
-    public mp::MPToMIPConverter<MIPInterfaceTester, MIPInstanceBackend>
+class MIPConverterTester :
+    public mp::MPToMIPConverter<MIPConverterTester, MIPInstanceBackend>
 {
 public:
   /// This is testing API
@@ -114,7 +114,7 @@ public:
   }
 };
 
-} // namespace interface_test
+} // namespace mip_converter_test
 
 
-#endif // INTERFACEMIPTEST_H
+#endif // CONVERTERMIPTEST_H

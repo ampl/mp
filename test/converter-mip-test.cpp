@@ -22,14 +22,14 @@
 
 #include "gtest/gtest.h"
 
-#include "interface-mip-test.h"
+#include "converter-mip-test.h"
 
 // TODO adapt for interface-to-end test of any concrete backend
 
 
 namespace {
 
-using namespace interface_test;
+using namespace mip_converter_test;
 
 TEST(RedefsMIPTest, PureMILP__01) {
   MIPInstance milp {
@@ -44,7 +44,7 @@ TEST(RedefsMIPTest, PureMILP__01) {
           { 0, 1,   2 } }, -infty_, 56.4 }
     }
   };
-  MIPInterfaceTester tester;
+  MIPConverterTester tester;
   feedInstance(tester, milp);
   tester.ConvertModelAndUpdateBackend();
   ASSERT_TRUE(tester.OutputModelSeemsEqualTo(milp));
