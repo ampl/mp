@@ -34,6 +34,10 @@ class BasicMPFlatConverter
       public ExprVisitor<Impl, EExpr>
 {
 public:
+  using BackendType = Backend;
+  using ModelType = Model;
+
+public:
   using EExprType = EExpr;
   using VarArray = std::vector<int>;
   template <class Constraint>

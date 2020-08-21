@@ -90,6 +90,8 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////
+/// Args is the argument type, e.g., array of variables, or an expression
+/// Params is the parameter type, e.g., array of numbers. Can be empty
 #define DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS(Name, Args, Params, Descr) \
 struct Name ## Id { \
   static constexpr auto description_ = Descr; \

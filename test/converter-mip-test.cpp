@@ -31,7 +31,7 @@ namespace {
 
 using namespace mip_converter_test;
 
-TEST(RedefsMIPTest, PureMILP__01) {
+TEST(RedefsMIPTest, PureMILP__01__seemsPassedToBackendCorrectly) {
   MIPInstance milp {
     { { minimize_,
         { { 1, 1, 2.5 },
