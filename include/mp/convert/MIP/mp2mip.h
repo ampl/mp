@@ -7,7 +7,7 @@ namespace mp {
 
 /// MPToMIPConverter: one of the converters requiring a "minimal" output interface
 template <class Impl, class Backend,
-          class Model = BasicModel<std::allocator<char> > >
+          class Model = BasicModel< > >
 class MPToMIPConverter
     : public BasicMPFlatConverter<Impl, Backend, Model>
 {

@@ -110,8 +110,23 @@ class LinearExpr {
 
 class Solver;
 
+
+/// Optionally adding extra info to some items
+struct EmptyStruct { };
+struct DefaultExtraItemInfo {
+  using AlgConExtraInfo = EmptyStruct;
+  using ObjExtraInfo = EmptyStruct;
+};
+
+template <class A = std::allocator<char>,
+          class EII = DefaultExtraItemInfo>
+struct BasicProblemParams {
+  using Alloc = A;
+  using ExtraItemInfo = EII;
+};
+
 /** An optimization problem. */
-template <typename Alloc>
+template <typename ProblemParams = BasicProblemParams<> >
 class BasicProblem : public ExprFactory, public SuffixManager {
  public:
   typedef mp::Function Function;
@@ -142,6 +157,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   // Linear parts of objective expessions.
   std::vector<LinearExpr> linear_objs_;
 
+  // Extra infos of objective expessions.
+  // The array can be empty if not used.
+  std::vector<typename ProblemParams::ExtraItemInfo::ObjExtraInfo> extrainfo_objs_;
+
   // Nonlinear parts of objective expressions.
   // The array can be empty if the problem is linear.
   std::vector<NumericExpr> nonlinear_objs_;
@@ -158,6 +177,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     AlgebraicConInfo(double lb, double ub) : lb(lb), ub(ub) {}
   };
   std::vector<AlgebraicConInfo> algebraic_cons_;
+
+  // Extra infos of algebraic constraints.
+  // The array can be empty if not used.
+  std::vector<typename ProblemParams::ExtraItemInfo::AlgConExtraInfo> extrainfo_cons_;
 
   // Information about complementarity conditions.
   // compl_vars_[i] > 0 means constraint i complements variable
@@ -184,11 +207,27 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   // Initial values for dual variables.
   std::vector<double> initial_dual_values_;
 
+  template <class EI=typename ProblemParams::ExtraItemInfo::ObjExtraInfo>
+  void SetObjExtraInfo(int obj_index, EI&& ei) {
+    internal::CheckIndex(obj_index, linear_objs_.size());
+    if (extrainfo_objs_.size() <= static_cast<std::size_t>(obj_index))
+      extrainfo_objs_.resize(obj_index + 1);
+    extrainfo_objs_[obj_index] = std::forward<EI>(ei);
+  }
+
   void SetNonlinearObjExpr(int obj_index, NumericExpr expr) {
     internal::CheckIndex(obj_index, linear_objs_.size());
     if (nonlinear_objs_.size() <= static_cast<std::size_t>(obj_index))
       nonlinear_objs_.resize(obj_index + 1);
     nonlinear_objs_[obj_index] = expr;
+  }
+
+  template <class EI=typename ProblemParams::ExtraItemInfo::AlgConExtraInfo>
+  void SetAlgConExtraInfo(int con_index, EI&& ei) {
+    internal::CheckIndex(con_index, algebraic_cons_.size());
+    if (extrainfo_cons_.size() <= static_cast<std::size_t>(con_index))
+      extrainfo_cons_.resize(con_index + 1);
+    extrainfo_cons_[con_index] = std::forward<EI>(ei);
   }
 
   void SetNonlinearConExpr(int con_index, NumericExpr expr) {
@@ -330,6 +369,14 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       return this->problem_->linear_objs_[this->index_];
     }
 
+    // Returns the extra info of the objective expression.
+    const typename ProblemParams::ExtraItemInfo::ObjExtraInfo*
+    p_extra_info() const {
+      std::size_t index = this->index_;
+      return index < this->problem_->extrainfo_objs_.size() ?
+            &this->problem_->extrainfo_objs_[index] : nullptr;
+    }
+
     // Returns the nonlinear part of the objective expression.
     NumericExpr nonlinear_expr() const {
       std::size_t index = this->index_;
@@ -384,6 +431,14 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     // Returns the linear part of a constraint expression.
     const LinearExpr &linear_expr() const {
       return this->problem_->algebraic_cons_[this->index_].linear_expr;
+    }
+
+    // Returns the extra info of the objective expression.
+    const typename ProblemParams::ExtraItemInfo::AlgConExtraInfo*
+    p_extra_info() const {
+      std::size_t index = this->index_;
+      return index < this->problem_->extrainfo_cons_.size() ?
+            &this->problem_->extrainfo_cons_[index] : nullptr;
     }
 
     // Returns the nonlinear part of a constraint expression.
@@ -630,6 +685,12 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       return LinearObjBuilder(&expr);
     }
 
+    // Sets the extra info of the objective expression.
+    template <class EI>
+    void set_extra_info(EI ei) const {
+      this->problem_->SetObjExtraInfo(this->index_, std::forward<EI>(ei));
+    }
+
     // Sets the nonlinear part of the objective expression.
     void set_nonlinear_expr(NumericExpr expr) const {
       this->problem_->SetNonlinearObjExpr(this->index_, expr);
@@ -727,6 +788,12 @@ class BasicProblem : public ExprFactory, public SuffixManager {
       LinearExpr &expr = linear_expr();
       expr.Reserve(num_linear_terms);
       return LinearConBuilder(&expr);
+    }
+
+    // Sets the extra info of the constraint.
+    template <class EI>
+    void set_extra_info(EI ei) const {
+      this->problem_->SetAlgConExtraInfo(this->index_, std::forward<EI>(ei));
     }
 
     // Sets the nonlinear part of the constraint expression.
@@ -1070,7 +1137,7 @@ public:
   BasicProblem &problem() { return *this; }
 };
 
-typedef BasicProblem< std::allocator<char> > Problem;
+typedef BasicProblem< > Problem;
 }  // namespace mp
 
 #endif  // MP_PROBLEM_H_

@@ -35,7 +35,7 @@ namespace mp {
 /// Used by converter to directly access a solver.
 /// The basic wrapper provides common functionality: option handling
 /// and placeholders for solver API
-template <class Impl, class Model = BasicModel<std::allocator<char>>>
+template <class Impl, class Model = BasicModel< > >
 class BasicBackend : public BasicConstraintAdder,
     public SolverImpl<Model>
 {
@@ -44,7 +44,7 @@ public:
                long date=0, int flags=0) :
     SolverImpl<Model>(name, longname, date, flags) { }
 
-  using Variable = Problem::Variable;
+  using Variable = typename Model::Variable;
 
   static const char* GetBackendName() { return "BasicBackend"; }
 
@@ -77,7 +77,7 @@ public:
     const std::vector<int>& get_vars() const { return vars_; }
   };
 
-  void AddObjective(Problem::Objective obj) {
+  void AddObjective(typename Model::Objective obj) {
     if (obj.nonlinear_expr()) {
       MP_DISPATCH( AddGeneralObjective( obj ) );
     } else {
@@ -89,11 +89,11 @@ public:
   void AddLinearObjective( const LinearObjective& ) {
     throw MakeUnsupportedError("BasicBackend::AddLinearObjective");
   }
-  void AddGeneralObjective(Problem::Objective obj) {
+  void AddGeneralObjective(typename Model::Objective obj) {
     throw MakeUnsupportedError("BasicBackend::AddGeneralObjective");
   }
 
-  void AddAlgebraicConstraint(Problem::AlgebraicCon con) {
+  void AddAlgebraicConstraint(typename Model::AlgebraicCon con) {
     if (con.nonlinear_expr()) {
       MP_DISPATCH( AddGeneralConstraint( con ) );
     } else {
@@ -104,7 +104,7 @@ public:
     }
   }
 
-  void AddGeneralConstraint(Problem::AlgebraicCon con) {
+  void AddGeneralConstraint(typename Model::AlgebraicCon con) {
     throw MakeUnsupportedError("BasicBackend::AddGeneralConstraint");
   }
 
@@ -125,9 +125,9 @@ public:
   }
 
 
-  void Solve(Problem &p, SolutionHandler &sh) { Resolve(p, sh); }
+  void Solve(Model &p, SolutionHandler &sh) { Resolve(p, sh); }
 
-  void Resolve(Problem& p, SolutionHandler &sh) {
+  void Resolve(Model& p, SolutionHandler &sh) {
     MP_DISPATCH( SetInterrupter(MP_DISPATCH( interrupter() )) );
 
     stats.setup_time = GetTimeAndReset(stats.time);

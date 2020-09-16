@@ -5,7 +5,7 @@
 #include <algorithm>
 
 #include "mp/convert/basic_constr.h"
-#include "mp/convert/affine_expr.h"
+#include "mp/convert/quad_expr.h"
 
 namespace mp {
 
@@ -92,10 +92,42 @@ public:
     /// TODO sort+merge elements
   }
   const AffineExpr& GetAffineExpr() const { return affine_expr_; }
+  const Arguments& GetArguments() const { return GetAffineExpr(); }
   LinearConstraint to_linear_constraint() const {
     const auto& ae = GetAffineExpr();
     LinearExprUnzipper aeu(ae);
     aeu.AddTerm(DefiningConstraint::GetResultVar(), -1.0);
+    return LinearConstraint(std::move(aeu.c_), std::move(aeu.v_),
+                            -ae.constant_term(), -ae.constant_term());
+  }
+};
+
+////////////////////////////////////////////////////////////////////////
+/// Quadratic Defining Constraint: r = quad_expr
+class QuadraticDefiningConstraint :
+    public DefiningConstraint {
+  QuadExpr quad_expr_;
+public:
+  static const char* GetConstraintName() { return "QuadraticDefiningConstraint"; }
+  using Arguments = QuadExpr;
+  using DefiningConstraint::GetResultVar;
+  /// A constructor ignoring result variable: use AssignResultToArguments() then
+  QuadraticDefiningConstraint(QuadExpr&& qe) :
+    quad_expr_(std::move(qe)) {
+    /// TODO sort+merge elements
+  }
+  QuadraticDefiningConstraint(int r, QuadExpr&& qe) :
+    DefiningConstraint(r), quad_expr_(std::move(qe)) {
+    /// TODO sort+merge elements
+  }
+  const QuadExpr& GetQuadExpr() const { return quad_expr_; }
+  const Arguments& GetArguments() const { return GetQuadExpr(); }
+  LinearConstraint to_quad_constraint() const {
+    const auto& qe = GetQuadExpr();
+    const auto& ae = qe.GetAE();
+    LinearExprUnzipper aeu(ae);
+    aeu.AddTerm(DefiningConstraint::GetResultVar(), -1.0);
+    throw 0; // TODO
     return LinearConstraint(std::move(aeu.c_), std::move(aeu.v_),
                             -ae.constant_term(), -ae.constant_term());
   }
@@ -122,6 +154,9 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( DisjunctionConstraint, VarArray,
                                    "r = exists({vi})");
 
 ////////////////////////////////////////////////////////////////////////
+/// \brief DEFINE_CUSTOM_DEFINING_CONSTRAINT
+/// Keep it with AffineExpr, indicators need that
+/// and we don't want qudratics with big-M's?
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( EQ0Constraint, AffineExpr,
                                    "r = (expr == 0)");
 
@@ -130,6 +165,9 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( NEConstraint__unused, VarArray2,
                                    "r = (v1 != v2)");
 
 ////////////////////////////////////////////////////////////////////////
+/// \brief DEFINE_CUSTOM_DEFINING_CONSTRAINT
+////// Keep it with AffineExpr, indicators need that
+/// and we don't want qudratics with big-M's?
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( LE0Constraint, AffineExpr,
                                    "r = (expr <= 0)");
 

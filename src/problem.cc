@@ -22,6 +22,7 @@
 
 #include "mp/problem.h"
 #include "mp/problem-builder.h"
+#include "mp/convert/model.h"
 
 namespace mp {
 
@@ -96,7 +97,10 @@ void BasicProblem<Alloc>::SetInfo(const ProblemInfo &info) {
   nonlinear_exprs_.reserve(num_common_exprs);
 }
 
-template class BasicProblem< std::allocator<char> >;
+/// Instantiate
+template class BasicProblem< >;
+template class BasicModel< >;       // Why is this not enough in gcc 9.3?
+template class BasicProblem< DefaultFlatConverterModelParams >; // need this too
 
 template void ReadNLFile(fmt::CStringRef filename, Problem &p, int flags);
 

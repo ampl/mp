@@ -7,28 +7,19 @@
 #include "mp/convert/preprocess.h"
 #include "mp/convert/basic_converters.h"
 #include "mp/expr-visitor.h"
+#include "mp/convert/eexpr.h"
 #include "mp/convert/convert_functional.h"
 #include "mp/convert/model.h"
 #include "mp/convert/std_constr.h"
 
 namespace mp {
 
-/// Result expression type for expression conversions
-class EExpr : public AffineExpr {
-public:
-  EExpr() = default;
-  EExpr(AffineExpr&& ae) : AffineExpr(std::move(ae)) { }
-  EExpr(Constant c) : AffineExpr(c) {}
-  EExpr(Variable v) : AffineExpr(v) {}
-  EExpr(int i, double c) { AddTerm(i, c); }
-};
-
 /// BasicMPFlatConverter: it "flattens" most expressions
 /// by replacing them by a result variable and constraints.
 /// Such constraints might need to be converted to others, which is
 /// handled by overloaded methods in derived classes
 template <class Impl, class Backend,
-          class Model = BasicModel<std::allocator<char> > >
+          class Model = BasicModel< > >
 class BasicMPFlatConverter
     : public BasicMPConverter<Impl, Backend, Model>,
       public ExprVisitor<Impl, EExpr>
@@ -63,18 +54,22 @@ public:
   ///////////////////////////////////////////////////////////////////////////////////////////
 public:
   void Convert(typename Model::MutCommonExpr ) {
-    /// Convert on demand, not here
+    /// Convert on demand, see VisitCommonExpr
   }
 
   /// TODO propagate contexts from objectives and all constraints
   void Convert(typename Model::MutObjective obj) {
     if (NumericExpr e = obj.nonlinear_expr()) {
       LinearExpr &linear = obj.linear_expr();
-      const auto affine_expr=MP_DISPATCH( Visit(e) );
-      linear.AddTerms(affine_expr);
-      if (std::fabs(affine_expr.constant_term())!=0.0) {
-        linear.AddTerm(MakeFixedVar(affine_expr.constant_term()), 1.0);
+      const auto eexpr=MP_DISPATCH( Visit(e) );
+      linear.AddTerms(eexpr.GetAE());
+      if (std::fabs(eexpr.constant_term())!=0.0) {   // TODO use constant (in the extra info)
+        linear.AddTerm(MakeFixedVar(eexpr.constant_term()), 1.0);
       }
+      if (!eexpr.is_affine())                     // higher-order terms
+        obj.set_extra_info(
+              typename Model::Params::ExtraItemInfo::ObjExtraInfo{
+                0.0, std::move(eexpr.GetQT()) } );
       obj.unset_nonlinear_expr();
     } // Modifying the original objective by replacing the expr
   }
@@ -82,10 +77,12 @@ public:
   void Convert(typename Model::MutAlgebraicCon con) {
     if (NumericExpr e = con.nonlinear_expr()) {
       LinearExpr &linear = con.linear_expr();
-      const auto affine_expr=MP_DISPATCH( Visit(e) );
-      linear.AddTerms(affine_expr);
-      con.set_lb(con.lb() + affine_expr.constant_term());
-      con.set_ub(con.ub() + affine_expr.constant_term());
+      const auto ee=MP_DISPATCH( Visit(e) );
+      linear.AddTerms(ee.GetAE());
+      if (!ee.is_affine())                       // higher-order terms
+        con.set_extra_info( std::move(ee.GetQT()) );
+      con.set_lb(con.lb() + ee.constant_term());
+      con.set_ub(con.ub() + ee.constant_term());
       con.unset_nonlinear_expr();                  // delete the non-linear expr
     } // Modifying the original constraint by replacing the expr
   }
@@ -122,8 +119,27 @@ public:
       return MakeFixedVar(ee.constant_term());
     PreprocessInfoStd bnt = ComputeBoundsAndType(ee);
     auto r = MP_DISPATCH( AddVar(bnt.lb_, bnt.ub_, bnt.type_) );
-    AddConstraint(LinearDefiningConstraint(r, std::move(ee)));
+    if (ee.is_affine())
+      AddConstraint(LinearDefiningConstraint(r, std::move(ee.GetAE())));
+    else
+      AddConstraint(QuadraticDefiningConstraint(r, std::move(ee)));
     return r;
+  }
+  /// Makes an affine expr representing just one variable
+  AffineExpr Convert2VarAsAffineExpr(EExpr&& ee) {
+    return AffineExpr::Variable{Convert2Var(std::move(ee))};
+  }
+
+  AffineExpr Convert2AffineExpr(EExpr&& ee) {
+    if (ee.is_affine())
+      return std::move(ee.GetAE());
+    return Convert2VarAsAffineExpr(std::move(ee));           // just simple, whole QuadExpr
+  }
+
+  PreprocessInfoStd ComputeBoundsAndType(const QuadExpr& ee) {
+    auto bntAE = ComputeBoundsAndType(ee.GetAE());
+    auto bntQT = ComputeBoundsAndType(ee.GetQT());
+    return AddBoundsAndType(bntAE, bntQT);
   }
 
   PreprocessInfoStd ComputeBoundsAndType(const AffineExpr& ae) {
@@ -147,6 +163,46 @@ public:
       }
     }
     return result;
+  }
+
+  PreprocessInfoStd ComputeBoundsAndType(const QuadTerms& qt) {
+    PreprocessInfoStd result;
+    result.lb_ = result.ub_ = 0.0;
+    result.type_ = var::INTEGER;
+    result.linexp_type_ = var::INTEGER;
+    auto& model = MP_DISPATCH( GetModel() );
+    for (const auto& term: qt) {
+      auto vars = term.vars();
+      auto v1 = model.var(vars.first);
+      auto v2 = model.var(vars.second);
+      auto prodBnd = ProductBounds(v1, v2);
+      if (term.coef() >= 0.0) {
+        result.lb_ += term.coef() * prodBnd.first;
+        result.ub_ += term.coef() * prodBnd.second;
+      } else {
+        result.lb_ += term.coef() * prodBnd.second;
+        result.ub_ += term.coef() * prodBnd.first;
+      }
+      if (var::INTEGER!=v1.type() || var::INTEGER!=v2.type() || !is_integer(term.coef())) {
+        result.type_=var::CONTINUOUS;
+        result.linexp_type_=var::CONTINUOUS;
+      }
+    }
+    return result;
+  }
+
+  template <class Var>
+  std::pair<double, double> ProductBounds(Var x, Var y) const {
+    auto lx=x.lb(), ly=y.lb(), ux=x.ub(), uy=y.ub();
+    std::array<double, 4> pb{lx*ly, lx*uy, ux*ly, ux*uy};
+    return {*std::min_element(pb.begin(), pb.end()), *std::max_element(pb.begin(), pb.end())};
+  }
+
+  PreprocessInfoStd AddBoundsAndType(const PreprocessInfoStd& bnt1,
+                                     const PreprocessInfoStd& bnt2) {
+    return {bnt1.lb()+bnt2.lb(), bnt1.ub()+bnt2.ub(),
+      var::INTEGER==bnt1.type() && var::INTEGER==bnt2.type() ?
+            var::INTEGER : var::CONTINUOUS};
   }
 
   /// Generic functional expression array visitor
@@ -178,7 +234,7 @@ public:
   void Exprs2Vars(const ExprArray& ea, std::array<int, N>& result) {
     assert(ea.size() == result.size());
     auto itea = ea.begin();
-    for (int i=0; i<N; ++i, ++itea)
+    for (unsigned i=0; i<N; ++i, ++itea)
       result[i] = MP_DISPATCH( Convert2Var(*itea) );
   }
 
@@ -195,8 +251,10 @@ public:
   EExpr VisitRelationalExpression(ExprArray ea) {
     std::array<EExpr, 2> ee;
     Exprs2EExprs(ea, ee);
-    ee[0].Subtract(ee[1]);
-    return AssignResultToArguments( FuncConstraint(ee[0]) );
+    ee[0].Subtract(std::move(ee[1]));
+    return AssignResultToArguments(
+          FuncConstraint(                  // comparison with linear expr only
+            Convert2AffineExpr( std::move(ee[0]) ) ) );
   }
 
   template <class ExprArray, size_t N>
@@ -251,6 +309,13 @@ public:
     auto er = Convert2EExpr(e.rhs());
     er.Negate();
     el.Add(er);
+    return el;
+  }
+
+  EExpr VisitMul(BinaryExpr e) {
+    auto el = Convert2EExpr(e.lhs());
+    auto er = Convert2EExpr(e.rhs());
+    throw 0;
     return el;
   }
 
@@ -621,6 +686,7 @@ public:
   //////////////////////////// CUSTOM CONSTRAINTS //////////////////////
   ///
   //////////////////////////// SPECIFIC CONSTRAINT RESULT-TO-ARGUMENTS PROPAGATORS //////
+  /// Currently we should propagate to all arguments, be it always the CTX_MIX.
 
   /// By default, declare mixed context
   template <class Constraint>
@@ -634,6 +700,16 @@ public:
     con.AddContext(ctx);
     for (const auto& term: con.GetAffineExpr())
       PropagateResultOfInitExpr(term.var_index(), this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+  }
+
+  void PropagateResult(QuadraticDefiningConstraint& con, double lb, double ub, Context ctx) {
+    con.AddContext(ctx);
+    for (const auto& term: con.GetArguments().GetAE())
+      PropagateResultOfInitExpr(term.var_index(), this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+    for (const auto& term: con.GetArguments().GetQT()) {
+      PropagateResultOfInitExpr(term.vars().first, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+      PropagateResultOfInitExpr(term.vars().second, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+    }
   }
 
   void PropagateResult(LinearConstraint& con, double lb, double ub, Context ctx) {

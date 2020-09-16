@@ -57,10 +57,9 @@ public:
     this->add_to_constant(ae.constant_term());
   }
 
-  void Subtract(const AffineExpr& ae) {
-    auto ae2 = ae;
-    ae2.Negate();
-    Add(ae2);
+  void Subtract(AffineExpr&& ae) {
+    ae.Negate();
+    Add(ae);
   }
 };
 

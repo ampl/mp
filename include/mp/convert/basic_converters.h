@@ -34,7 +34,7 @@ namespace mp {
 /// Responsible for model modification and solving, typical 'exported' solver API
 /// Backend access is hidden (the backend itself is a parameter)
 template <class Impl, class Backend,
-          class Model = BasicProblem<std::allocator<char> > >
+          class Model = BasicProblem< > >
 class BasicMPConverter :
     public BasicConstraintConverter {
 protected:
@@ -76,6 +76,7 @@ public:
     return result;
   }
 
+  /// INCREMENTAL INTERFACE
   /// These guys used from outside to feed a model to be converted
   /// and forwarded to a backend
   void InputVariables(int n, const double* lb, const double* ub, const var::Type* ty) {
@@ -83,15 +84,15 @@ public:
   }
   void InputObjective(obj::Type t,
                       int nnz, const double* c, const int* v, NumericExpr e=NumericExpr()) {
-    mp::Problem::LinearObjBuilder lob = model_.AddObj(t, e);
+    typename Model::LinearObjBuilder lob = model_.AddObj(t, e);
     for (int i=0; i!=nnz; ++i) {
       lob.AddTerm(c[i], v[i]);
     }
   }
   void InputAlgebraicCon(int nnz, const double* c, const int* v,
                          double lb, double ub, NumericExpr e=NumericExpr()) {
-    mp::Problem::MutAlgebraicCon mac = model_.AddCon(lb, ub);
-    mp::Problem::LinearConBuilder lcb = mac.set_linear_expr(nnz);
+    typename Model::MutAlgebraicCon mac = model_.AddCon(lb, ub);
+    typename Model::LinearConBuilder lcb = mac.set_linear_expr(nnz);
     for (int i=0; i!=nnz; ++i)
       lcb.AddTerm(v[i], c[i]);
     mac.set_nonlinear_expr(e);
@@ -194,7 +195,7 @@ protected:
 
 /// A null converter - does not change anything
 template <class Impl, class Backend,
-          class Model = BasicProblem<std::allocator<char> > >
+          class Model = BasicProblem< > >
 class NullMPConverter : public BasicMPConverter<Impl, Backend, Model> {
 public:
   void ConvertModel() { }
@@ -202,12 +203,12 @@ public:
 
 /// A 'final' converter in a hierarchy
 template <template <typename, typename, typename> class Converter,
-          class Backend, class Model = BasicModel<std::allocator<char> > >
+          class Backend, class Model = BasicModel< > >
 class ConverterImpl :
     public Converter<ConverterImpl<Converter, Backend, Model>, Backend, Model> { };
 
 template <template <typename, typename, typename> class Converter,
-          class Backend, class Model = BasicModel<std::allocator<char> > >
+          class Backend, class Model = BasicModel< > >
 using Interface = ConverterImpl<Converter, Backend, Model>;
 
 /// Conversion failure helper

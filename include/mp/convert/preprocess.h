@@ -29,6 +29,7 @@ struct PreprocessInfo {
     ub_ = std::min(ub_, u);
   }
   var::Type get_result_type() const { return type_; }
+  var::Type type() const { return get_result_type(); }
   void set_result_type(var::Type t) { type_=t; }
   bool is_constant() const { return lb_==ub_; }
   bool is_result_var_known() const { return result_var_>=0; }

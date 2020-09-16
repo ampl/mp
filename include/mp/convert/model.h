@@ -7,15 +7,41 @@
 #include <vector>
 
 #include "mp/problem.h"
+#include "mp/convert/quad_expr.h"
+#include "mp/convert/constraint_keeper.h"
 
 namespace mp {
 
 class BasicConstraintKeeper;
 
+/// Storing extra info in BasicModel's items
+struct FlatConverterModelExraItemInfo : public DefaultExtraItemInfo {
+  struct AlgConExtraInfo {
+    QuadTerms qt_;
+    AlgConExtraInfo() { }
+    template <class QT>
+    AlgConExtraInfo(QT&& qt) : qt_(std::forward<QT>(qt)) { }
+  };
+  struct ObjExtraInfo {
+    double obj_const_term_ = 0.0;
+    QuadTerms qt_;
+    ObjExtraInfo() { }
+    template <class QT>
+    ObjExtraInfo(double c, QT&& qt) :
+      obj_const_term_(c), qt_(std::forward<QT>(qt)) { }
+  };
+};
+
+struct DefaultFlatConverterModelParams : public BasicProblemParams<> {
+  using ExtraItemInfo = FlatConverterModelExraItemInfo;
+};
+
 /// class Model extends Problem to store custom constraints
-template <class Allocator>
-class BasicModel : public BasicProblem<Allocator> {
-  using BaseClass = BasicProblem<Allocator>;
+template <class ModelParams = DefaultFlatConverterModelParams >
+class BasicModel : public BasicProblem<ModelParams> {
+  using BaseClass = BasicProblem<ModelParams>;
+public:
+  using Params = ModelParams;
 protected:
   using PConstraintKeeper = std::unique_ptr<BasicConstraintKeeper>;
 

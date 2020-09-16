@@ -473,7 +473,7 @@ class MPToConcertConverter : public ExprVisitor<MPToConcertConverter, IloExpr> {
   void FinishBuildingObjectives();
   void FinishBuildingAlgebraicConstraints();
 
-  typedef BasicProblem< std::allocator<char> > Problem;
+  typedef BasicProblem< > Problem;
 
   void Convert(const Problem &p);
 
