@@ -7,71 +7,59 @@ namespace mp {
 
 class QuadTerms {
 private:
- class Term {
-  private:
-   using VarPair = std::pair<int, int>;
-   VarPair vars_;
-   double coef_;
-
-   friend class QuadTerms;
-
-   Term(VarPair vars, double coef) : vars_(vars), coef_(coef) {}
-
-  public:
-   VarPair vars() const { return vars_; }
-   double coef() const { return coef_; }
-   void set_coef(double c) { coef_=c; }
- };
- std::vector<Term> terms_;
+  std::vector<double> coefs_;
+  std::vector<int> vars1_;
+  std::vector<int> vars2_;
 
 public:
- QuadTerms() { }
+  QuadTerms() { }
 
- bool empty() const { return terms_.empty(); }
- int num_terms() const { return static_cast<int>(terms_.size()); }
- int capacity() const { return static_cast<int>(terms_.capacity()); }
+  bool empty() const { return coefs_.empty(); }
+  int num_terms() const { return static_cast<int>(coefs_.size()); }
+  int capacity() const { return static_cast<int>(coefs_.capacity()); }
 
- Term::VarPair vars(int i) const { return terms_[i].vars(); }
- double coef(int i) const { return terms_[i].coef(); }
- void set_coef(int i, double c) { terms_[i].set_coef(c); }
+  const double* coefs() const { return coefs_.data(); }
+  const int* vars1() const { return vars1_.data(); }
+  const int* vars2() const { return vars2_.data(); }
 
- typedef std::vector<Term>::const_iterator const_iterator;
+  double coef(int i) const { return coefs_[i]; }
+  void set_coef(int i, double c) { coefs_[i] = c; }
+  int var1(int i) const { return vars1_[i]; }
+  int var2(int i) const { return vars2_[i]; }
 
- const_iterator begin() const { return terms_.begin(); }
- const_iterator end() const { return terms_.end(); }
+  void AddTerm(double coef, int var1, int var2) {
+    coefs_.push_back(coef);
+    vars1_.push_back(var1);
+    vars2_.push_back(var2);
+  }
 
- typedef std::vector<Term>::iterator iterator;
+  void AddTerms(const QuadTerms& li) {
+    coefs_.insert(coefs_.end(), li.coefs_.begin(), li.coefs_.end());
+    vars1_.insert(vars1_.end(), li.vars1_.begin(), li.vars1_.end());
+    vars2_.insert(vars2_.end(), li.vars2_.begin(), li.vars2_.end());
+  }
 
- iterator begin() { return terms_.begin(); }
- iterator end() { return terms_.end(); }
+  void Reserve(int num_terms) {
+    coefs_.reserve(num_terms);
+    vars1_.reserve(num_terms);
+    vars2_.reserve(num_terms);
+  }
 
- void AddTerm(Term::VarPair vars, double coef) {
-   terms_.push_back(Term(vars, coef));
- }
+  /// Arithmetic
+  void Negate() {
+    for (auto& cf: coefs_)
+      cf = -cf;
+  }
 
- void AddTerms(const QuadTerms& li) {
-   terms_.insert(end(), li.begin(), li.end());
- }
+  void Add(const QuadTerms& ae) {
+    this->Reserve(this->num_terms() + ae.num_terms());
+    this->AddTerms(ae); // eliminate duplicates when?
+  }
 
- void Reserve(int num_terms) {
-   terms_.reserve(num_terms);
- }
-
- /// Arithmetic
- void Negate() {
-   for (auto& term: *this)
-     term.set_coef(-term.coef());
- }
-
- void Add(const QuadTerms& ae) {
-   this->Reserve(this->num_terms() + ae.num_terms());
-   this->AddTerms(ae); // eliminate duplicates when?
- }
-
- void Subtract(QuadTerms&& ae) {
-   ae.Negate();
-   Add(ae);
- }
+  void Subtract(QuadTerms&& ae) {
+    ae.Negate();
+    Add(ae);
+  }
 
 };
 

@@ -171,19 +171,19 @@ public:
     result.type_ = var::INTEGER;
     result.linexp_type_ = var::INTEGER;
     auto& model = MP_DISPATCH( GetModel() );
-    for (const auto& term: qt) {
-      auto vars = term.vars();
-      auto v1 = model.var(vars.first);
-      auto v2 = model.var(vars.second);
+    for (int i=0; i<qt.num_terms(); ++i) {
+      auto coef = qt.coef(i);
+      auto v1 = model.var(qt.var1(i));
+      auto v2 = model.var(qt.var2(i));
       auto prodBnd = ProductBounds(v1, v2);
-      if (term.coef() >= 0.0) {
-        result.lb_ += term.coef() * prodBnd.first;
-        result.ub_ += term.coef() * prodBnd.second;
+      if (coef >= 0.0) {
+        result.lb_ += coef * prodBnd.first;
+        result.ub_ += coef * prodBnd.second;
       } else {
-        result.lb_ += term.coef() * prodBnd.second;
-        result.ub_ += term.coef() * prodBnd.first;
+        result.lb_ += coef * prodBnd.second;
+        result.ub_ += coef * prodBnd.first;
       }
-      if (var::INTEGER!=v1.type() || var::INTEGER!=v2.type() || !is_integer(term.coef())) {
+      if (var::INTEGER!=v1.type() || var::INTEGER!=v2.type() || !is_integer(coef)) {
         result.type_=var::CONTINUOUS;
         result.linexp_type_=var::CONTINUOUS;
       }
@@ -704,11 +704,13 @@ public:
 
   void PropagateResult(QuadraticDefiningConstraint& con, double lb, double ub, Context ctx) {
     con.AddContext(ctx);
-    for (const auto& term: con.GetArguments().GetAE())
+    const auto& args = con.GetArguments();
+    for (const auto& term: args.GetAE())
       PropagateResultOfInitExpr(term.var_index(), this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-    for (const auto& term: con.GetArguments().GetQT()) {
-      PropagateResultOfInitExpr(term.vars().first, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-      PropagateResultOfInitExpr(term.vars().second, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+    const auto& qt = args.GetQT();
+    for (int i=0; i<qt.num_terms(); ++i) {
+      PropagateResultOfInitExpr(qt.var1(i), this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+      PropagateResultOfInitExpr(qt.var2(i), this->MinusInfty(), this->Infty(), Context::CTX_MIX);
     }
   }
 
