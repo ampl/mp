@@ -13,6 +13,16 @@ private:
 
 public:
   QuadTerms() { }
+  QuadTerms(std::initializer_list<std::tuple<double, int, int>> quad_terms) {
+    coefs_.reserve(quad_terms.size());
+    vars1_.reserve(quad_terms.size());
+    vars2_.reserve(quad_terms.size());
+    for (const auto& term: quad_terms) {
+      coefs_.push_back(std::get<0>(term));
+      vars1_.push_back(std::get<1>(term));
+      vars2_.push_back(std::get<2>(term));
+    }
+  }
 
   bool empty() const { return coefs_.empty(); }
   int num_terms() const { return static_cast<int>(coefs_.size()); }
@@ -61,6 +71,10 @@ public:
     Add(ae);
   }
 
+  /// Testing API
+  bool operator==(const QuadTerms& qt) const {
+    return coefs_==qt.coefs_ && vars1_==qt.vars1_ && vars2_==qt.vars2_;
+  }
 };
 
 class QuadExpr {
@@ -93,6 +107,9 @@ public:
   void add_to_constant(double a) { GetAE().add_to_constant(a); }
   void AddLinearTerm(int var_index, double coef) {
     GetAE().AddTerm(var_index, coef);
+  }
+  void AddQuadraticTerm(int v1, int v2, double coef) {
+    GetQT().AddTerm(coef, v1, v2);
   }
 
   void Add(const QuadExpr& qe) {

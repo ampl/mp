@@ -98,9 +98,16 @@ public:
       MP_DISPATCH( AddGeneralConstraint( con ) );
     } else {
       LinearExprUnzipper leu(con.linear_expr());
-      MP_DISPATCH( AddConstraint( LinearConstraint{
-                                    std::move(leu.c_), std::move(leu.v_),
-                                       con.lb(), con.ub() } ) );
+      auto lc = LinearConstraint{
+          std::move(leu.c_), std::move(leu.v_),
+             con.lb(), con.ub() };
+      if (nullptr==con.p_extra_info()) {
+        MP_DISPATCH( AddConstraint( lc ) );
+      } else {
+        auto qt = con.p_extra_info()->qt_;
+        assert(!qt.empty());
+        MP_DISPATCH( AddConstraint( QuadraticConstraint{std::move(lc), std::move(qt)} ) );
+      }
     }
   }
 

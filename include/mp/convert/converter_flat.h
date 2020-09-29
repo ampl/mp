@@ -315,8 +315,7 @@ public:
   EExpr VisitMul(BinaryExpr e) {
     auto el = Convert2EExpr(e.lhs());
     auto er = Convert2EExpr(e.rhs());
-    throw 0;
-    return el;
+    return QuadratizeOrLinearize( std::move(el), std::move(er) );
   }
 
   EExpr VisitSum(typename BaseExprVisitor::SumExpr expr) {
@@ -431,6 +430,38 @@ public:
   }
 
 
+  /// Depending on the target backend
+  /// Currently only quadratize higher-order products
+  /// Can change arguments. They could point to the same
+  /// TODO multiply-out optional
+  EExpr QuadratizeOrLinearize(EExpr&& el, EExpr&& er) {
+    if (!el.is_affine() && !er.is_constant())
+      el = Convert2AffineExpr(std::move(el));      // will convert to a new var now
+    if (!er.is_affine() && !el.is_constant())
+      er = Convert2AffineExpr(std::move(er));
+    return MultiplyOut(el, er);
+  }
+
+  EExpr MultiplyOut(const EExpr& el, const EExpr& er) {
+    assert(el.is_affine() && er.is_affine());
+    EExpr result;
+    result.constant_term(el.constant_term() * er.constant_term());
+    if (0.0!=std::fabs(er.constant_term()))
+      for (const auto& term: el.GetAE()) {
+        result.AddLinearTerm(term.var_index(), term.coef() * er.constant_term());
+      }
+    if (0.0!=std::fabs(el.constant_term()))
+      for (const auto& term: er.GetAE()) {
+        result.AddLinearTerm(term.var_index(), term.coef() * el.constant_term());
+      }
+    for (const auto& termL: el.GetAE()) {
+      for (const auto& termR: er.GetAE()) {
+        result.AddQuadraticTerm(termL.var_index(), termR.var_index(),
+                                termL.coef() * termR.coef());
+      }
+    }
+    return result;
+  }
 
 public:
 

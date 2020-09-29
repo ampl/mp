@@ -25,6 +25,15 @@ public:
   LinearConstraint(std::array<double, N>& c, std::array<int, N>& v, double l, double u)
     : coefs_(c.begin(), c.end()), vars_(v.begin(), v.end()),
       lb_(l), ub_(u) { assert(coefs_.size()==vars_.size()); preprocess(); }
+  LinearConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
+                   double lb, double ub) : lb_(lb), ub_(ub) {
+    coefs_.reserve(lin_exp.size());
+    vars_.reserve(lin_exp.size());
+    for (const auto& term: lin_exp) {
+      coefs_.push_back(term.first);
+      vars_.push_back(term.second);
+    }
+  }
   int nnz() const { return (int)coefs_.size(); }
   const double* pcoefs() const { return coefs_.data(); }
   const int* pvars() const { return vars_.data(); }
@@ -51,6 +60,30 @@ public:
       vars_.resize(ic1-coefs_.begin());
       assert(coefs_.size()==vars_.size());
     }
+  }
+
+  /// Testing API
+  bool operator==(const LinearConstraint& lc) const {
+    return coefs_==lc.coefs_ && vars_==lc.vars_ &&
+        lb_==lc.lb_ && ub_==lc.ub_;
+  }
+};
+
+////////////////////////////////////////////////////////////////////////
+/// Standard quadratic constraint
+class QuadraticConstraint : public LinearConstraint {
+  QuadTerms qt_;
+public:
+  QuadraticConstraint(LinearConstraint&& lc, QuadTerms&& qt) :
+    LinearConstraint(std::move(lc)), qt_(std::move(qt)) { }
+  QuadraticConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
+                      std::initializer_list<std::tuple<double, int, int>> quad_terms,
+                      double lb, double ub) :
+    LinearConstraint(lin_exp, lb, ub), qt_(quad_terms) { }
+
+  /// Testing API
+  bool operator==(const QuadraticConstraint& qc) const {
+    return LinearConstraint::operator==(qc) && qt_==qc.qt_;
   }
 };
 

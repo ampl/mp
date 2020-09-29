@@ -31,16 +31,19 @@ TEST_F(InterfaceTester_MaxConstraint, MaximumConstraintIsPassedToBackend) {
 
 /// TODO replace actual constraint etc.
 using InterfaceTester_QuadraticConstraint =
-             InterfaceTesterWithBackendAcceptingConstraints<mp::MaximumConstraint>;
+             InterfaceTesterWithBackendAcceptingConstraints<mp::QuadraticConstraint>;
 
 TEST_F(InterfaceTester_QuadraticConstraint, QuadConstraintIsPassedToBackend) {
   auto con=GetModel().AddCon(5.0, 5.0);
   const auto args = GetInterface().AddVars(2, -1.0, 11.0);
   con.set_nonlinear_expr(GetModel().MakeBinary(mp::expr::MUL,
                                                GetModel().MakeVariable( args[0] ),
-                         GetModel().MakeVariable( args[1]) ) );
+                                               GetModel().MakeVariable( args[1]) ) );
   GetInterface().ConvertModelAndUpdateBackend();
-  ASSERT_TRUE( GetBackend().HasConstraint( mp::MaximumConstraint(3, args)) );
+  ASSERT_TRUE( GetBackend().HasConstraint( mp::QuadraticConstraint(
+    {},
+    { {1.0, args[0], args[1]} },
+    5.0, 5.0 ) ) );
 }
 
 }
