@@ -1,5 +1,5 @@
 
-#include "mp/expr.h"
+#include "mp/easy-modeler.h"
 
 #include "converter-flat-test.h"
 
@@ -33,6 +33,8 @@ TEST_F(InterfaceTester_QuadraticConstraint, QuadConstraintIsPassedToBackend) {
     5.0, 5.0 ) );
 }
 
+/// This is to illustrate how fun it was to model with ProblemBuilder syntax.
+/// You may skip to the next test
 TEST_F(InterfaceTester_QuadraticConstraint, QuadExprIsMultipliedOutAndInlinedAndPassedToBackend) {
   auto con=GetModel().AddCon(5.0, GetInterface().Infty());
   const auto args = GetInterface().AddVars(3, -1.0, 11.0);
@@ -56,6 +58,21 @@ TEST_F(InterfaceTester_QuadraticConstraint, QuadExprIsMultipliedOutAndInlinedAnd
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::QuadraticConstraint(
   { {10.0, args[0]}, {18.0, args[1]}, {1.0, args[2]} },
     { {30.0, args[0], args[1]} },
+    -1.0, GetInterface().Infty() ) );
+}
+
+/// EasyModeler syntax
+TEST_F(InterfaceTester_QuadraticConstraint, QuadExprIsMultipliedOutAndInlinedAndPassedToBackend__EasyModel) {
+  auto modeler = mp::MakeEasyModeler(GetModel());
+  auto x = modeler.AddVars(3, -1.0, 11.0);
+  modeler.AddAlgCon(5.0,
+                    (5*x[0]+3) * (6*x[1]+2) + x[2],
+                    GetInterface().Infty());
+  GetInterface().ConvertModelAndUpdateBackend();
+  const auto xi = modeler.GetVarIndices(x);
+  ASSERT_HAS_CONSTRAINT( GetBackend(), mp::QuadraticConstraint(
+  { {10.0, xi[0]}, {18.0, xi[1]}, {1.0, xi[2]} },
+    { {30.0, xi[0], xi[1]} },
     -1.0, GetInterface().Infty() ) );
 }
 

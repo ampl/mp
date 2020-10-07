@@ -163,7 +163,7 @@ public:
     return var.index();
   }
   std::vector<int> AddVars(int nvars, double lb, double ub, var::Type type = var::CONTINUOUS) {
-    std::vector<int> newVars(nvars);                          // The binary flags
+    std::vector<int> newVars(nvars);
     for (int i=0; i<nvars; ++i)
       newVars[i] = AddVar(lb, ub, type);
     return newVars;
