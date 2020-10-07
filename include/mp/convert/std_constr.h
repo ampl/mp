@@ -67,6 +67,15 @@ public:
     return coefs_==lc.coefs_ && vars_==lc.vars_ &&
         lb_==lc.lb_ && ub_==lc.ub_;
   }
+  void print(std::ostream& os) const {
+    os << lb_ << " <= ";
+    for (int i=0; i<nnz(); ++i) {
+      os << coefs_[i] << "*[" << vars_[i] << ']';
+      if (i<nnz()-1)
+        os << " + ";
+    }
+    os << " <= " << ub_;
+  }
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -74,6 +83,7 @@ public:
 class QuadraticConstraint : public LinearConstraint {
   QuadTerms qt_;
 public:
+  static const char* GetConstraintName() { return "QuadraticConstraint"; }
   QuadraticConstraint(LinearConstraint&& lc, QuadTerms&& qt) :
     LinearConstraint(std::move(lc)), qt_(std::move(qt)) { }
   QuadraticConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
@@ -84,6 +94,19 @@ public:
   /// Testing API
   bool operator==(const QuadraticConstraint& qc) const {
     return LinearConstraint::operator==(qc) && qt_==qc.qt_;
+  }
+  void print(std::ostream& os) const {
+    os << lb() << " <= ";
+    for (int i=0; i<nnz(); ++i) {
+      os << coefs()[i] << "*[" << vars()[i] << ']';
+      if (i<nnz()-1)
+        os << " + ";
+    }
+    for (int i=0; i<qt_.num_terms(); ++i) {
+      os << " + "
+         << qt_.coef(i) << "*[" << qt_.var1(i) << "]*[" << qt_.var2(i) << "]";
+    }
+    os << " <= " << ub();
   }
 };
 

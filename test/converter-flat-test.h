@@ -3,8 +3,11 @@
 
 #include <vector>
 
+#include "gtest/gtest.h"
+
 #include "mp/backend.h"
 #include "mp/convert/basic_converters.h"
+#include "mp/convert/converter_flat.h"
 
 template <class Constraint>
 class TestBackendAcceptingConstraints :
@@ -41,6 +44,17 @@ public:
   bool HasConstraint(const Constraint& con) {
     return constr_.end() != std::find(constr_.begin(), constr_.end(), con);
   }
+  std::string GetConstraintsPrintout() const {
+    std::ostringstream oss;
+    int i=0;
+    for (const auto& con: constr_) {
+      oss << con.GetConstraintName() << ' ' << (i++)
+          << ":  ";
+      con.print(oss);
+      oss << std::endl;
+      return oss.str();
+    }
+  }
 };
 
 template <template <class, class, class> class ConverterTemplate, class Constraint>
@@ -59,5 +73,24 @@ mp::IteratedExpr MakeIterated(mp::ExprFactory& ef, mp::expr::Kind kind,
   return ef.EndIterated(builder);
 }
 
+////////////////////////// TEST FIXTURE /////////////////////////////
+namespace {
+
+template <class Constraint>
+class InterfaceTesterWithBackendAcceptingConstraints : public ::testing::Test {
+  using Interface = InterfaceWithBackendAcceptingConstraints<
+      mp::BasicMPFlatConverter, Constraint>;
+  Interface interface_;
+public:
+  Interface& GetInterface() { return interface_; }
+  typename Interface::ModelType& GetModel() { return interface_.GetModel(); }
+  typename Interface::BackendType& GetBackend() { return interface_.GetBackend(); }
+};
+
+#define ASSERT_HAS_CONSTRAINT( backend, constr ) \
+  ASSERT_TRUE( (backend).HasConstraint( constr ) ) \
+    << (backend).GetConstraintsPrintout()
+
+} // namespace
 
 #endif // CONVERTERFLATTEST_H

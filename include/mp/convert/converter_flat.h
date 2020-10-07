@@ -81,8 +81,8 @@ public:
       linear.AddTerms(ee.GetAE());
       if (!ee.is_affine())                       // higher-order terms
         con.set_extra_info( std::move(ee.GetQT()) );
-      con.set_lb(con.lb() + ee.constant_term());
-      con.set_ub(con.ub() + ee.constant_term());
+      con.set_lb(con.lb() - ee.constant_term());
+      con.set_ub(con.ub() - ee.constant_term());
       con.unset_nonlinear_expr();                  // delete the non-linear expr
     } // Modifying the original constraint by replacing the expr
   }
