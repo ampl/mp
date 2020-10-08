@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <map>
 
 #include "mp/convert/basic_constr.h"
 #include "mp/convert/quad_expr.h"
@@ -33,6 +34,7 @@ public:
       coefs_.push_back(term.first);
       vars_.push_back(term.second);
     }
+    preprocess();
   }
   int nnz() const { return (int)coefs_.size(); }
   const double* pcoefs() const { return coefs_.data(); }
@@ -42,7 +44,7 @@ public:
   double lb() const { return lb_; }
   double ub() const { return ub_; }
 
-  void preprocess() { eliminate_zeros(); }          // TODO check duplicates?
+  void preprocess() { sort_terms(); /*eliminate_zeros();*/ }
   /// So Gurobi does not complain about 0 coefs and duplicate variables
   void eliminate_zeros() {
     auto ic1 = std::find_if(coefs_.begin(), coefs_.end(),
@@ -59,6 +61,23 @@ public:
       coefs_.resize(ic1-coefs_.begin());
       vars_.resize(ic1-coefs_.begin());
       assert(coefs_.size()==vars_.size());
+    }
+  }
+  /// Add same variables, eliminate 0's
+  void sort_terms() {
+    std::map<int, double> var_coef_map;
+    for (int i=0; i<nnz(); ++i)
+      if (0.0!=std::fabs(coefs_[i]))
+        var_coef_map[vars_[i]] += coefs_[i];
+    if (true) {                                  // would check size if using hash map
+      coefs_.clear();
+      vars_.clear();
+      for (const auto& vc: var_coef_map) {
+        if (0.0!=std::fabs(vc.second)) {         // Need tolerance?
+          coefs_.push_back(vc.second);
+          vars_.push_back(vc.first);
+        }
+      }
     }
   }
 
@@ -85,11 +104,17 @@ class QuadraticConstraint : public LinearConstraint {
 public:
   static const char* GetConstraintName() { return "QuadraticConstraint"; }
   QuadraticConstraint(LinearConstraint&& lc, QuadTerms&& qt) :
-    LinearConstraint(std::move(lc)), qt_(std::move(qt)) { }
+    LinearConstraint(std::move(lc)), qt_(std::move(qt)) { sort_terms(); }
   QuadraticConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
                       std::initializer_list<std::tuple<double, int, int>> quad_terms,
                       double lb, double ub) :
-    LinearConstraint(lin_exp, lb, ub), qt_(quad_terms) { }
+    LinearConstraint(lin_exp, lb, ub), qt_(quad_terms) { sort_terms(); }
+
+  // To enable comparison. Also eliminates zeros
+  void sort_terms() {
+    LinearConstraint::sort_terms();
+    qt_.sort_terms();
+  }
 
   /// Testing API
   bool operator==(const QuadraticConstraint& qc) const {

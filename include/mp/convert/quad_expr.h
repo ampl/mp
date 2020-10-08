@@ -1,6 +1,8 @@
 #ifndef QUAD_EXPR_H
 #define QUAD_EXPR_H
 
+#include <map>
+
 #include "mp/convert/affine_expr.h"
 
 namespace mp {
@@ -14,14 +16,10 @@ private:
 public:
   QuadTerms() { }
   QuadTerms(std::initializer_list<std::tuple<double, int, int>> quad_terms) {
-    coefs_.reserve(quad_terms.size());
-    vars1_.reserve(quad_terms.size());
-    vars2_.reserve(quad_terms.size());
-    for (const auto& term: quad_terms) {
-      coefs_.push_back(std::get<0>(term));
-      vars1_.push_back(std::get<1>(term));
-      vars2_.push_back(std::get<2>(term));
-    }
+    Reserve(quad_terms.size());
+    for (const auto& term: quad_terms)
+      AddTerm(std::get<0>(term), std::get<1>(term), std::get<2>(term));
+    sort_terms();
   }
 
   bool empty() const { return coefs_.empty(); }
@@ -69,6 +67,26 @@ public:
   void Subtract(QuadTerms&& ae) {
     ae.Negate();
     Add(ae);
+  }
+
+
+  void sort_terms() {
+    auto sort_pair = [](int a, int b) {
+      return a<b ? std::pair<int, int>(a, b) : std::pair<int, int>(b, a);
+    };
+    std::map<std::pair<int, int>, double> var_coef_map;
+    for (int i=0; i<num_terms(); ++i)
+      if (0.0!=std::fabs(coefs_[i]))
+        var_coef_map[sort_pair(vars1_[i], vars2_[i])] += coefs_[i];
+    if (true) {                                // would check size if using hash map
+      coefs_.clear();
+      vars1_.clear();
+      vars2_.clear();
+      for (const auto& vc: var_coef_map) {
+        if (0.0!=std::fabs(vc.second))         // Need tolerance?
+          AddTerm(vc.second, vc.first.first, vc.first.second);
+      }
+    }
   }
 
   /// Testing API

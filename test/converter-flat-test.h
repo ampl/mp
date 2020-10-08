@@ -52,8 +52,8 @@ public:
           << ":  ";
       con.print(oss);
       oss << std::endl;
-      return oss.str();
     }
+    return oss.str();
   }
 };
 

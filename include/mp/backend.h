@@ -84,6 +84,7 @@ public:
       LinearExprUnzipper leu(obj.linear_expr());
       MP_DISPATCH( AddLinearObjective( { obj.type(),
                                          std::move(leu.c_), std::move(leu.v_) } ) );
+      // TODO quadratics like in AddAlgebraicConstraint
     }
     }
   void AddLinearObjective( const LinearObjective& ) {

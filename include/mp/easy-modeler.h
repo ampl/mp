@@ -28,34 +28,29 @@ public:
     /// The underlying builder
     Builder& GetBuilder() { return bld_; }
 
-    /// Operators: *
-    friend NumExpr operator* (NumExpr e1, NumExpr e2) {
-      return e1.doMUL( e2.GetImpl() );
+    /// inject operator* etc directly into the out-of-class namespace
+#define EXPORT_BINARY_OPERATOR( symbol, NAMEvv, NAMEvc, NAMEcv ) \
+    friend NumExpr operator symbol (NumExpr e1, NumExpr e2) { \
+      return {e1.GetBuilder(), \
+        e1.GetBuilder().MakeBinary(mp::expr::NAMEvv, e1.GetImpl(), e2.GetImpl())}; \
+    } \
+    friend NumExpr operator symbol (NumExpr e1, double c) { \
+      return {e1.GetBuilder(), \
+        e1.GetBuilder().MakeBinary(mp::expr::NAMEvc, e1.GetImpl(), \
+        e1.GetBuilder().MakeNumericConstant(c))}; \
+    } \
+    friend NumExpr operator symbol (double c, NumExpr e2) { \
+      return {e2.GetBuilder(), \
+        e2.GetBuilder().MakeBinary(mp::expr::NAMEcv, \
+        e2.GetBuilder().MakeNumericConstant(c), e2.GetImpl())}; \
     }
-    friend NumExpr operator* (NumExpr e1, double c) {
-      return e1.doMUL( e1.GetBuilder().MakeNumericConstant(c) );
-    }
-    friend NumExpr operator* (double c, NumExpr e2) { return e2*c; }
+#define EXPORT_COMMUTATIVE_BINARY_OPERATOR( symbol, NAME ) \
+  EXPORT_BINARY_OPERATOR( symbol, NAME, NAME, NAME )
 
-    /// Operators: +
-    friend NumExpr operator+ (NumExpr e1, NumExpr e2) {
-      return e1.doADD( e2.GetImpl() );
-    }
-    friend NumExpr operator+ (NumExpr e1, double c) {
-      return e1.doADD( e1.GetBuilder().MakeNumericConstant(c) );
-    }
-    friend NumExpr operator+ (double c, NumExpr e2) { return e2+c; }
-
-  protected:
-    /// Implementations of operators
-    NumExpr doMUL(MP_NumExpr mpe) {
-      return {GetBuilder(),
-                GetBuilder().MakeBinary(mp::expr::MUL, GetImpl(), mpe)};
-    }
-    NumExpr doADD(MP_NumExpr mpe) {
-      return {GetBuilder(),
-                GetBuilder().MakeBinary(mp::expr::ADD, GetImpl(), mpe)};
-    }
+    /// Operator definitions
+    EXPORT_COMMUTATIVE_BINARY_OPERATOR( +, ADD )
+    EXPORT_COMMUTATIVE_BINARY_OPERATOR( *, MUL )
+    EXPORT_BINARY_OPERATOR( ^,   POW,  POW_CONST_EXP,  POW_CONST_BASE )
 
 
   private:

@@ -315,7 +315,7 @@ public:
   EExpr VisitMul(BinaryExpr e) {
     auto el = Convert2EExpr(e.lhs());
     auto er = Convert2EExpr(e.rhs());
-    return QuadratizeOrLinearize( std::move(el), std::move(er) );
+    return QuadratizeOrLinearize( el, er );
   }
 
   EExpr VisitSum(typename BaseExprVisitor::SumExpr expr) {
@@ -380,15 +380,23 @@ public:
 
   /////////////// NONLINEAR FUNCTIONS ////////////////
   EExpr VisitPowConstExp(BinaryExpr e) {
+    auto c = Cast<NumericConstant>(e.rhs()).value();
+    if (2.0==c) {                            // Quadratic
+      auto el = Convert2EExpr(e.lhs());
+      return QuadratizeOrLinearize(el, el);
+    }
     return AssignResultToArguments( PowConstraint(
       PowConstraint::Arguments{ Convert2Var(e.lhs()) },
-      PowConstraint::Parameters{ Cast<NumericConstant>(e.rhs()).value() } ) );
+      PowConstraint::Parameters{ c } ) );
   }
 
   EExpr VisitPow2(UnaryExpr e) {     // MIP could have better conversion for pow2
+    auto el = Convert2EExpr(e.arg());
+    return QuadratizeOrLinearize(el, el);
+    /* TODO Can do better for integer variables if we redefine pow:
     return AssignResultToArguments( PowConstraint(
       PowConstraint::Arguments{ Convert2Var(e.arg()) },
-      PowConstraint::Parameters{ 2.0 } ) );
+      PowConstraint::Parameters{ 2.0 } ) ); */
   }
 
   EExpr VisitSqrt(UnaryExpr e) {
@@ -434,7 +442,8 @@ public:
   /// Currently only quadratize higher-order products
   /// Can change arguments. They could point to the same
   /// TODO multiply-out optional
-  EExpr QuadratizeOrLinearize(EExpr&& el, EExpr&& er) {
+  /// CAUTION: allows &el==&er, needed from Pow2
+  EExpr QuadratizeOrLinearize(EExpr& el, EExpr& er) {
     if (!el.is_affine() && !er.is_constant())
       el = Convert2AffineExpr(std::move(el));      // will convert to a new var now
     if (!er.is_affine() && !el.is_constant())
