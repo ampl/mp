@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <map>
+#include <iostream>
 
 #include "mp/convert/basic_constr.h"
 #include "mp/convert/quad_expr.h"

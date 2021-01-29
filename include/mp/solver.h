@@ -498,7 +498,7 @@ class Solver : private ErrorHandler,
                        internal::OptionHelper<AccessorT>::CastArg(value));
     }
   };
-
+  public:
   template <typename Handler, typename T,
             typename Info, typename InfoArg = Info, typename AccessorT = T>
   class ConcreteOptionWithInfo : public TypedSolverOption<T> {
@@ -537,7 +537,7 @@ class Solver : private ErrorHandler,
     objno_ = value;
   }
 
- public:
+
 #ifdef MP_USE_UNIQUE_PTR
   typedef std::unique_ptr<SolverOption> OptionPtr;
 #else
