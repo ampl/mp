@@ -32,6 +32,14 @@ if (POLICY CMP0054)
   cmake_policy(SET CMP0054 NEW)
 endif ()
 
+get_directory_property(hasParent PARENT_DIRECTORY)
+if(hasParent)
+  set(MP_FOLDER_PREFIX "mp/")
+else()
+  set(MP_FOLDER_PREFIX "")
+endif()
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 set(MP_VERSION 3.1.0)
 if (NOT MP_VERSION MATCHES "^([0-9]+).([0-9]+).([0-9]+)$")
   message(FATAL_ERROR "Invalid version format ${MP_VERSION}.")
@@ -49,6 +57,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+set_property(GLOBAL PROPERTY MP_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 # Set the default Java search path.
 if (UNIX)
   set(JAVA_HOME /usr/lib/jvm/java-7-oracle)
@@ -144,6 +153,17 @@ function (add_prefix var prefix)
   set(${var} ${result} PARENT_SCOPE)
 endfunction ()
 
+# Add files specified as additional arguments to the specified folder.
+function (add_to_folder folder)
+  foreach (target ${ARGN})
+	if(TARGET ${target})
+		set_property(TARGET ${target} PROPERTY FOLDER ${folder})
+	endif()
+  endforeach ()
+endfunction ()
+
+
+
 set_cache(AMPL_LIBRARY_DIR bin STRING
   "A directory to install AMPL function libraries relative to "
   "${CMAKE_INSTALL_PREFIX}")
@@ -163,12 +183,12 @@ macro(add_ampl_library name)
     install(TARGETS ${name} RUNTIME
       DESTINATION ${AMPL_LIBRARY_DIR} LIBRARY DESTINATION ${AMPL_LIBRARY_DIR})
   endif ()
+  add_to_folder(${MP_FOLDER_PREFIX}ampl-libraries ${name})
 endmacro()
 
 include_directories(include)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-
 set(MP_DATE 20141202)
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
@@ -219,6 +239,9 @@ function (add_mp_library name)
       target_link_libraries(${name}-dynrt ${lib}-dynrt)
     endif ()
   endforeach ()
+  if(hasParent)
+    add_to_folder(mp ${name} ${name}-dynrt)
+  endif()
 endfunction ()
 
 # Link target with libraries built with dynamic runtime.
@@ -259,6 +282,7 @@ else ()
     COMMAND ${WINE} $<TARGET_FILE:gen-expr-info> ${MP_EXPR_INFO_FILE}
     DEPENDS gen-expr-info)
 endif ()
+add_to_folder(${MP_FOLDER_PREFIX}util gen-expr-info)
 
 add_prefix(MP_HEADERS include/mp/
   arrayref.h basic-expr-visitor.h clock.h common.h error.h expr.h
@@ -271,7 +295,7 @@ add_prefix(MP_SOURCES src/
 
 add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
   COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"
-  INCLUDE_DIRECTORIES src OBJECT_LIBRARIES format)
+  INCLUDE_DIRECTORIES src include OBJECT_LIBRARIES format)
 set_target_properties(mp PROPERTIES
   VERSION ${MP_VERSION} SOVERSION ${MP_VERSION_MAJOR})
 
@@ -317,18 +341,20 @@ check_cxx_source_compiles("
 
 if (MP_VARIADIC_TEMPLATES)
   add_executable(nl-example src/nl-example.cc)
+  add_to_folder(${MP_FOLDER_PREFIX}util nl-example)
   target_link_libraries(nl-example mp)
 endif ()
 
 add_subdirectory(doc)
-add_subdirectory(src/amplsig)
 add_subdirectory(src/asl)
+add_subdirectory(src/amplsig)
 add_subdirectory(src/cp)
 add_subdirectory(solvers)
 
 # Add a target that generates a file with solver and library versions.
 set(AMPL_VERSIONS_FILE versions.txt)
 add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE})
+add_to_folder(${MP_FOLDER_PREFIX}util versions)
 foreach (target gsl-info gecode jacop)
   if (TARGET ${target})
     add_custom_command(TARGET versions POST_BUILD

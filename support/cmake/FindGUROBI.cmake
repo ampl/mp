@@ -4,16 +4,15 @@
 # https://support.gurobi.com/hc/en-us/articles/360039499751-CMake-C-C-compilation-of-Gurobi-projects
 # on March 11, 2020
 
-
 find_path(GUROBI_INCLUDE_DIRS
     NAMES gurobi_c.h
     HINTS ${GUROBI_DIR} $ENV{GUROBI_HOME}
     PATH_SUFFIXES include)
 
 find_library(GUROBI_LIBRARY
-    NAMES gurobi gurobi81 gurobi90
+    NAMES gurobi gurobi81 gurobi90 gurobi91
     HINTS ${GUROBI_DIR} $ENV{GUROBI_HOME}
-    PATH_SUFFIXES lib)
+    PATH_SUFFIXES lib lib/linux64 lib/osx64 lib/win64)
 
 if(CXX)
     if(MSVC)

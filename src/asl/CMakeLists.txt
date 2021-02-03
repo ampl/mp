@@ -1,16 +1,18 @@
 check_module(asl build_asl)
+set(build_asl ${build_asl} PARENT_SCOPE)
+
 if (NOT build_asl)
-  return ()
+  return()
 endif ()
-
-add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/asl
-${CMAKE_CURRENT_BINARY_DIR}/asl)
-
+# Check if an asl target is already available (in case mp is used as a submodule
+# or we have an imported library). If not, build it.
+if(NOT TARGET asl)
+  add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/asl
+    ${CMAKE_CURRENT_BINARY_DIR}/asl)
+endif()
 
 include(CheckSymbolExists)
 include(CheckLibraryExists)
-
-
 
 # Public ASL headers.
 set(ASL_HEADERS aslbuilder.h aslexpr.h aslexpr-visitor.h
@@ -24,9 +26,6 @@ check_symbol_exists(mkstemps stdlib.h HAVE_MKSTEMPS)
 if (NOT HAVE_MKSTEMPS)
   set(ASL_SOURCES ${ASL_SOURCES} mkstemps.c)
 endif ()
-
-
-
 
 add_mp_library(aslmp STATIC ${ASL_SOURCES} ${ASL_HEADERS} 
   LIBRARIES mp asl

@@ -33,6 +33,8 @@ function(add_ampl_solver name)
   cmake_parse_arguments(add_ampl_solver "DLL_RUNTIME;EXTERNAL"
     "MODULE" "INCLUDE_DIRS;LIBRARIES;DEFINITIONS" ${ARGN})
 
+  get_property(MP_BASE_DIR GLOBAL PROPERTY MP_BASE_DIR)
+
   set(options)
   if (add_ampl_solver_EXTERNAL)
     set(options EXTERNAL)
@@ -82,13 +84,13 @@ function(add_ampl_solver name)
     set(use_dll_runtime True)
   endif ()
 
-  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${name})
+  if (EXISTS ${MP_BASE_DIR}/solvers/${name})
     # Add directory name to sources.
     set(sources )
     foreach (src ${source_names})
-      set(sources ${sources} ${name}/${src})
+      set(sources ${sources} ${MP_BASE_DIR}/solvers/${name}/${src})
     endforeach ()
-    set(dir ${name}/)
+    set(dir  ${MP_BASE_DIR}/solvers/${name}/)
   else ()
     set(sources ${source_names})
     set(dir )
@@ -99,7 +101,7 @@ function(add_ampl_solver name)
   set(static_lib ampl${name}-static)
   add_library(${static_lib} STATIC ${sources})
   target_include_directories(${static_lib}
-    PUBLIC ${include_dirs} ${PROJECT_SOURCE_DIR}/solvers)
+    PUBLIC ${include_dirs} ${MP_BASE_DIR}/solvers)
   target_link_libraries(${static_lib} PUBLIC ${libraries})
   target_compile_options(${static_lib} PUBLIC ${definitions})
 
@@ -111,7 +113,7 @@ function(add_ampl_solver name)
 
   # Add a solver shared library.
   set(shared_lib ampl${name})
-  add_library(${shared_lib} SHARED ${PROJECT_SOURCE_DIR}/src/solver-c.cc)
+  add_library(${shared_lib} SHARED ${MP_BASE_DIR}/src/solver-c.cc)
   target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name})
   target_link_libraries(${shared_lib} PRIVATE ${static_lib})
 
@@ -120,6 +122,8 @@ function(add_ampl_solver name)
   target_link_libraries(${name} PRIVATE ${static_lib})
 
   install(TARGETS ${name} DESTINATION bin)
+
+  add_to_folder(${name} ampl${name}-static ${shared_lib} ${name})
 endfunction()
 
 if (NOT MSVC)
