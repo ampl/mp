@@ -189,7 +189,7 @@ endmacro()
 include_directories(include)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-set(MP_DATE 20141202)
+set(MP_DATE 20210217)
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
 function (add_mp_library name)

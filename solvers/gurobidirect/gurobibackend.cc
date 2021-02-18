@@ -32,14 +32,12 @@ GurobiBackend::~GurobiBackend() {
 }
 
 void GurobiBackend::InitBackend() {
-  GRB_CALL( GRBemptyenv(&env) );
-
-  GRB_CALL( GRBsetstrparam(env, "LogFile", "gurobi.log") );
-
-  GRB_CALL( GRBstartenv(env) );
+  
+  GRB_CALL( GRBloadenv(&env, NULL) );
 
   /* Create an empty model */
   GRB_CALL( GRBnewmodel(env, &model, "amplgurobidirectmodel", 0, NULL, NULL, NULL, NULL, NULL) );
+
 
 }
 
@@ -303,13 +301,13 @@ void GurobiBackend::InitOptions() {
   AddSuffix("priority", 0, suf::VAR);
 
   set_option_header(
-      "Gurobi Optimizer Options for AMPL\n"
-      "--------------------------------------------\n"
+      fmt::format("Gurobi Optimizer Options for AMPL\n"
+                  "---------------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to the "
-      "AMPL option ``gurobidirect_options``. For example::\n"
+      "AMPL option ``{0}_options``. For example::\n"
       "\n"
-      "  ampl: option gurobidirect_options 'optimalitytolerance=1e-6';\n");
+      "  ampl: option {0}_options 'optimalitytolerance=1e-6';\n", name()).c_str());
 
   AddOption("outputflag",
       "1: output logging (console and file). "

@@ -579,7 +579,7 @@ bool Solver::ShowVersion() {
   Print("{} ({})", version_, MP_SYSINFO);
   if (date_ > 0)
     Print(", driver({})", date_);
-  Print(", ASL({})\n", MP_DATE);
+  Print(", MP({})\n", MP_DATE);
   if (!license_info_.empty())
     Print("{}\n", license_info_);
   return false;
