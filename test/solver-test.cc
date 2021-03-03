@@ -995,7 +995,7 @@ TEST(SolverTest, VersionOption) {
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
   fmt::MemoryWriter w;
-  w.write("Test Solver ({}), ASL({})\n", MP_SYSINFO, MP_DATE);
+  w.write("Test Solver ({}), MP({})\n", MP_SYSINFO, MP_DATE);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -1010,7 +1010,7 @@ TEST(SolverTest, VersionOptionReset) {
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
   fmt::MemoryWriter w;
-  w.write("Test Solver ({}), ASL({})\nend\n", MP_SYSINFO, MP_DATE);
+  w.write("Test Solver ({}), MP({})\nend\n", MP_SYSINFO, MP_DATE);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -1184,7 +1184,7 @@ TEST_F(SolverAppOptionParserTest, MinusOption) {
 TEST_F(SolverAppOptionParserTest, VOption) {
   EXPECT_EQ(0, parser_.Parse(Args("unused", "-v", "whatever")));
   EXPECT_EQ(
-        fmt::format("long-solver-name ({}), ASL({})\n", MP_SYSINFO, MP_DATE),
+        fmt::format("long-solver-name ({}), MP({})\n", MP_SYSINFO, MP_DATE),
         handler_.output);
 }
 
