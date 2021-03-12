@@ -165,7 +165,23 @@ public:
         writer.write(", objective {}",
                      MP_DISPATCH( FormatObjValue(MP_DISPATCH( ObjectiveValue() )) ));
       }
+
+//      p.AddIntSuffix("toy_var_suffix", suf::VAR | suf::OUTPUT | suf::OUTONLY, 0);
+
+//      /// To be separated into a separate method, like FillOutputSuffixes()
+//      /// The backend writer should see a very simple interface, like
+//      /// AddSuffix("name", kind, descr, table, {input_fn, output_fn});
+//      MutIntSuffix toy_var_suffix =
+//          Cast<MutIntSuffix>( p. suffixes(suf::VAR). Find("toy_var_suffix") );
+//      assert(toy_var_suffix);
+//      if (toy_var_suffix) {
+//        for (int i = 0, n = MP_DISPATCH( NumberOfVariables() ); i < n; ++i) {
+//          if (i % 2 == 0)
+//            toy_var_suffix.set_value(i, 900+i);
+//        }
+//      }
     }
+
     sh.HandleSolution(solve_code, writer.c_str(),
         solution.empty() ? 0 : solution.data(),
         dual_solution.empty() ? 0 : dual_solution.data(), obj_value);

@@ -245,7 +245,7 @@ class MockProblemBuilder {
 
   MOCK_METHOD3(AddIntSuffix,
                IntSuffixHandler (fmt::StringRef name,
-                                 mp::suf::Kind kind, int num_values));
+                                 int kind, int num_values));
 
   typedef TestSuffixHandler<1> DblSuffixHandler;
 

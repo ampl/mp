@@ -274,9 +274,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   int GetSuffixSize(suf::Kind kind);
 
   template <typename T>
-  SuffixHandler<T> AddSuffix(fmt::StringRef name, suf::Kind kind) {
+  SuffixHandler<T> AddSuffix(fmt::StringRef name, int kind) {
+    auto main_kind = (suf::Kind)(kind & 3);
     return SuffixHandler<T>(
-          suffixes(kind).template Add<T>(name, kind, GetSuffixSize(kind)));
+          suffixes(main_kind).template Add<T>(name, kind, GetSuffixSize(main_kind)));
   }
 
   template <typename ProblemType>
@@ -1034,7 +1035,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Adds an integer suffix.
   // name: Suffix name that may not be null-terminated.
-  IntSuffixHandler AddIntSuffix(fmt::StringRef name, suf::Kind kind, int) {
+  IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int) {
     return AddSuffix<int>(name, kind);
   }
 

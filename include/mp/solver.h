@@ -1056,6 +1056,8 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
     const double *dual_values, double) {
   typedef typename ProblemBuilder::IntSuffix IntSuffix;
   if (solver_.need_multiple_solutions()) {
+    builder_.AddIntSuffix("nsol", suf::PROBLEM | suf::OUTPUT | suf::OUTONLY, 0);
+
     IntSuffix nsol_suffix = Cast<IntSuffix>(
           builder_.suffixes(suf::PROBLEM).Find("nsol"));
     nsol_suffix.set_value(0, num_solutions_);
