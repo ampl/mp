@@ -77,7 +77,7 @@ class MIPInstanceBackend :
 {
   MIPInstance instance_;
 public:
-  MIPInstanceBackend() : mp::BasicBackend<MIPInstanceBackend>("MIPInstanceBackend") { }
+  MIPInstanceBackend() { }
   MIPInstance& GetInstance() { return instance_; }
 
   /// These things the concrete interface currently has to define

@@ -18,20 +18,25 @@ bool InterruptCplex(void *) {
 
 namespace mp {
 
-const char* CplexBackend::GetBackendName() { return "CplexBackend"; }
-
-CplexBackend::CplexBackend() :
-   BaseBackend("cplexdirect", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
-   {
-  InitBackend();
-  InitOptions();
+CplexBackend::CplexBackend() {
+  OpenSolver();
+  InitializationAfterOpeningSolver();
 }
 
 CplexBackend::~CplexBackend() {
-  CloseBackend();
+  CloseSolver();
 }
 
-void CplexBackend::InitBackend() {
+const char* CplexBackend::GetAMPLSolverName() { return "cplexdirect"; }
+const char* CplexBackend::GetBackendName() { return "CplexBackend"; }
+
+std::string CplexBackend::GetSolverVersion() {
+  int version;
+  CPXversionnumber(env, &version);
+  return fmt::format("{}", version);
+}
+
+void CplexBackend::OpenSolver() {
   int status;
   env = CPXopenCPLEX (&status);
   if ( env == NULL ) {
@@ -50,7 +55,7 @@ void CplexBackend::InitBackend() {
           "Failed to create LP, error code {}.", status ) );
 }
 
-void CplexBackend::CloseBackend() {
+void CplexBackend::CloseSolver() {
   if ( lp != NULL ) {
      CPLEX_CALL( CPXfreeprob (env, &lp) );
   }
@@ -234,11 +239,6 @@ void CplexBackend::FinishProblemModificationPhase() {
 ////////////////////////////// OPTIONS /////////////////////////////////
 
 void CplexBackend::InitOptions() {
-
-  int version;
-  CPXversionnumber(env, &version);
-  set_long_name(fmt::format("IBM ILOG CPLEX {}", version));
-  set_version(fmt::format("AMPL/CPLEX Optimizer [{}]", version));
 
   set_option_header(
       "IBM ILOG CPLEX Optimizer Options for AMPL\n"

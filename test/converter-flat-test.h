@@ -22,7 +22,7 @@ class TestBackendAcceptingConstraints :
 
   std::vector<mp::LinearConstraint> lin_constr_;
 public:
-  TestBackendAcceptingConstraints() : Base("TestBackend") { }
+  TestBackendAcceptingConstraints() { }
   void AddVariable(typename Base::Variable var) {
     vars_.push_back( {var.lb(), var.ub(), var.type()} );
   }

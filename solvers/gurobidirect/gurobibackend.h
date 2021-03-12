@@ -35,7 +35,18 @@ class GurobiBackend : public BasicBackend<GurobiBackend>
 public:
   GurobiBackend();
   ~GurobiBackend();
+
+  /// Metadata
+  static const char* GetSolverName() { return "Gurobi"; }
+  static std::string GetSolverVersion();
+  static const char* GetAMPLSolverName();
+  static const char* GetAMPLSolverLongName() { return nullptr; }
   static const char* GetBackendName();
+  static const char* GetBackendLongName() { return nullptr; }
+
+  /// Solver flags
+  static bool IfMultipleSol() { return true; }
+  static bool IfMultipleObj() { return true; }
 
   /// [[ Prototype an incremental interface ]]
   void InitProblemModificationPhase();
@@ -118,18 +129,15 @@ private:
   GRBmodel *model = NULL;
 
 public:
-  void InitBackend();
-  void CloseBackend();
+  void OpenSolver();
+  void CloseSolver();
+  void InitOptions();
 
   static double Infinity() { return GRB_INFINITY; }
   static double MinusInfinity() { return -GRB_INFINITY; }
 
   int GetGrbIntAttribute(const char* attr_id) const;
   double GetGrbDblAttribute(const char* attr_id) const;
-
-
-protected:
-  void InitOptions(); //////////////////////////// OPTIONS ////////////////
 
 private:
   /// These options are stored in the class

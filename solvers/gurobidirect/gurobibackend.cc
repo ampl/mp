@@ -18,35 +18,39 @@ bool InterruptGurobi(void *model) {
 
 namespace mp {
 
+GurobiBackend::GurobiBackend() {
+  OpenSolver();
+  InitializationAfterOpeningSolver();
+}
+GurobiBackend::~GurobiBackend() {
+  CloseSolver();
+}
+
+const char* GurobiBackend::GetAMPLSolverName() { return "gurobidirect"; }
 const char* GurobiBackend::GetBackendName() { return "GurobiBackend"; }
 
-GurobiBackend::GurobiBackend() :
-   BaseBackend("gurobidirect", 0, 0, MULTIPLE_SOL | MULTIPLE_OBJ)
-   {
-  InitBackend();
-  InitOptions();
+std::string GurobiBackend::GetSolverVersion() {
+  int a,b,c;
+  GRBversion(&a, &b, &c);
+  return fmt::format("{}.{}.{}", a, b, c);
 }
 
-GurobiBackend::~GurobiBackend() {
-  CloseBackend();
-}
-
-void GurobiBackend::InitBackend() {
+void GurobiBackend::OpenSolver() {
   
   GRB_CALL( GRBloadenv(&env, NULL) );
 
   /* Create an empty model */
   GRB_CALL( GRBnewmodel(env, &model, "amplgurobidirectmodel", 0, NULL, NULL, NULL, NULL, NULL) );
 
-
 }
 
-void GurobiBackend::CloseBackend() {
+void GurobiBackend::CloseSolver() {
   /* Free model */
   GRBfreemodel(model);
 
   /* Free environment */
   GRBfreeenv(env);
+
 }
 
 int GurobiBackend::GetGrbIntAttribute(const char* attr_id) const {
@@ -292,13 +296,6 @@ void GurobiBackend::FinishProblemModificationPhase() {
 ///////////////////////////////////////////////////////////////
 ////////////////////////// OPTIONS ////////////////////////////
 void GurobiBackend::InitOptions() {
-
-  int a,b,c;
-  GRBversion(&a, &b, &c);
-  set_long_name(fmt::format("Gurobi {}.{}.{}", a, b, c));
-  set_version(fmt::format("AMPL/Gurobi Optimizer [{}.{}.{}]", a,b,c));
-
-  AddSuffix("priority", 0, suf::VAR);
 
   set_option_header(
       fmt::format("Gurobi Optimizer Options for AMPL\n"

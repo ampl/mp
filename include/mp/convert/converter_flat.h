@@ -511,7 +511,8 @@ public:
             MP_DISPATCH( Print(
                            "WARNING: {}. Will pass the constraint "
                            "to the backend {}. Continuing\n",
-                           ccf.message(), Backend::GetBackendName() ) );
+                           ccf.message(),
+                           MP_DISPATCH( GetBackend() ).GetBackendName() ) );
           }
         }
       }

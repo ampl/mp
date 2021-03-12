@@ -35,7 +35,18 @@ class CplexBackend : public BasicBackend<CplexBackend>
 public:
   CplexBackend();
   ~CplexBackend();
+
+  /// Metadata
+  static const char* GetSolverName() { return "IBM ILOG CPLEX"; }
+  std::string GetSolverVersion();
+  static const char* GetAMPLSolverName();
+  static const char* GetAMPLSolverLongName() { return nullptr; }
   static const char* GetBackendName();
+  static const char* GetBackendLongName() { return nullptr; }
+
+  /// Solver flags
+  static bool IfMultipleSol() { return true; }
+  static bool IfMultipleObj() { return true; }
 
   /// [[ Prototype the incremental interface ]]
   void InitProblemModificationPhase();
@@ -89,14 +100,12 @@ private:
   CPXLPptr      lp = NULL;
 
 public:  // public for static polymorphism
-  void InitBackend();
-  void CloseBackend();
+  void OpenSolver();
+  void CloseSolver();
+  void InitOptions();  /////////////////////////////// OPTIONS ///////////////////////
 
   static double Infinity() { return CPX_INFBOUND; }
   static double MinusInfinity() { return -CPX_INFBOUND; }
-
-protected:
-  void InitOptions();  /////////////////////////////// OPTIONS ///////////////////////
 
 private:
   /// These options are stored in the class

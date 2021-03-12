@@ -40,13 +40,56 @@ class BasicBackend : public BasicConstraintAdder,
     public SolverImpl<Model>
 {
 public:
-  BasicBackend(fmt::CStringRef name, fmt::CStringRef longname=0,
-               long date=0, int flags=0) :
-    SolverImpl<Model>(name, longname, date, flags) { }
+  BasicBackend() :
+    SolverImpl<Model>(
+      MP_DISPATCH( GetAMPLSolverName() ),
+      MP_DISPATCH( GetAMPLSolverLongName() ),
+      MP_DISPATCH( Date() ),
+      MP_DISPATCH( Flags() ) )
+  {
+  }
+
+  ~BasicBackend() { }
+
+  void OpenSolver() { }
+  void CloseSolver() { }
+  void InitOptions() { }
+
+  /// Default metadata
+  static const char* GetSolverName() { return "SomeSolver"; }
+  static std::string GetSolverVersion() { return "-285.68.53"; }
+  static const char* GetAMPLSolverName() { return "solverdirect"; }
+  static const char* GetAMPLSolverLongName() { return nullptr; }
+  static const char* GetBackendName()    { return "BasicBackend"; }
+  static const char* GetBackendLongName() { return nullptr; }
+  static long Date() { return MP_DATE; }
+
+  /// Default flags
+  int Flags() {
+    int flg=0;
+    if (MP_DISPATCH( IfMultipleSol() ))
+      flg |= Solver::MULTIPLE_SOL;
+    if (MP_DISPATCH( IfMultipleObj() ))
+      flg |= Solver::MULTIPLE_OBJ;
+    return flg;
+  }
+  static bool IfMultipleSol() { return false; }
+  static bool IfMultipleObj() { return false; }
+
+  void InitializationAfterOpeningSolver() {
+    MP_DISPATCH( InitNamesAndVersion() );
+    MP_DISPATCH( InitOptions() );
+  }
+  void InitNamesAndVersion() {
+    auto name = MP_DISPATCH( GetSolverName() );
+    auto version = MP_DISPATCH( GetSolverVersion() );
+    this->set_long_name( fmt::format("{} {}", name, version ) );
+    this->set_version( fmt::format("AMPL/{} Optimizer [{}]",
+                       name, version ) );
+  }
+
 
   using Variable = typename Model::Variable;
-
-  static const char* GetBackendName() { return "BasicBackend"; }
 
   void InitProblemModificationPhase() { }
   void FinishProblemModificationPhase() { }
@@ -60,6 +103,7 @@ public:
     throw MakeUnsupportedError("BasicBackend::AddLogicalConstraints");
   }
 
+  /// TODO why is this here?
   class LinearObjective {
     obj::Type sense_;
     std::vector<double> coefs_;
