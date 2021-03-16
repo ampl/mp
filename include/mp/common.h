@@ -104,6 +104,8 @@ enum Kind {
   PROBLEM =    3   /**< Applies to problems. */
 };
 
+constexpr int KIND_MASK = Kind::VAR | Kind::CON | Kind::OBJ | Kind ::PROBLEM;
+
 // Suffix flags.
 enum {
   FLOAT   =    4,  /**< Suffix values are floating-point numbers. */

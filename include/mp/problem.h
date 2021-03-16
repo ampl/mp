@@ -275,7 +275,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   template <typename T>
   SuffixHandler<T> AddSuffix(fmt::StringRef name, int kind) {
-    auto main_kind = (suf::Kind)(kind & 3);
+    auto main_kind = (suf::Kind)(kind & suf::KIND_MASK);
     return SuffixHandler<T>(
           suffixes(main_kind).template Add<T>(name, kind, GetSuffixSize(main_kind)));
   }
