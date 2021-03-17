@@ -140,18 +140,15 @@ public:
   double GetGrbDblAttribute(const char* attr_id) const;
 
 private:
-  /// These options are stored in the class
+  /// These options are stored in the class as variables
+  /// for direct access
   struct Options {
     std::string exportFile_;
   };
   Options storedOptions_;
 
-  /// These options are passed to the solver
-  SolverOptionAccessor<GurobiBackend, int, const char*> slvOptInt_ = *this;
-  SolverOptionAccessor<GurobiBackend, double, const char*> slvOptDouble_ = *this;
-  SolverOptionAccessor<GurobiBackend, std::string, const char*> slvOptString_ = *this;
-
 public:
+  /// These methods access Gurobi options. Used by AddSolverOption()
   void GetSolverOption(const char* key, int& value) const;
   void SetSolverOption(const char* key, int value);
   void GetSolverOption(const char* key, double& value) const;

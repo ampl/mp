@@ -306,25 +306,24 @@ void GurobiBackend::InitOptions() {
       "\n"
       "  ampl: option {0}_options 'optimalitytolerance=1e-6';\n", name()).c_str());
 
-  AddOption("outputflag",
+  AddSolverOption("outputflag",
       "1: output logging (console and file). "
-      "Default = 0 (no logging).",
-      slvOptInt_, GRB_INT_PAR_OUTPUTFLAG);
+      "Default = 0 (no logging).", GRB_INT_PAR_OUTPUTFLAG, 0, 1);
   SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);
 
-  AddOption("logfile",
+  AddSolverOption("logfile",
       "Log file name.",
-      slvOptString_, GRB_STR_PAR_LOGFILE);
+      GRB_STR_PAR_LOGFILE);
 
-  AddOption("exportfile",
+  AddStoredOption("exportfile",
       "Specifies the name of a file where to export the model before "
       "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
 
-  AddOption("optimalitytolerance",
+  AddSolverOption("optimalitytolerance",
       "Dual feasibility tolerance.",
-      slvOptDouble_, GRB_DBL_PAR_OPTIMALITYTOL);
+      GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
 
 }
 

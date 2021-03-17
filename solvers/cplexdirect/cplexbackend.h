@@ -114,12 +114,8 @@ private:
   };
   Options storedOptions_;
 
-  /// These options are passed to the solver
-  SolverOptionAccessor<CplexBackend, int, int> slvOptInt_ = *this;
-  SolverOptionAccessor<CplexBackend, double, int> slvOptDouble_ = *this;
-  SolverOptionAccessor<CplexBackend, std::string, int> slvOptString_ = *this;
-
 public:
+  /// These methods access CPLEX options. Used by AddSolverOption()
   void GetSolverOption(int key, int& value) const;
   void SetSolverOption(int key, int value);
   void GetSolverOption(int key, double& value) const;

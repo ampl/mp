@@ -265,18 +265,18 @@ public:
   static double Infinity() { return std::numeric_limits<double>::infinity(); }
   static double MinusInfinity() { return -Infinity(); }
 
-  ///////////////////////////// OPTIONS /////////////////////////////////
-  ///
 public:
   using Solver::add_to_long_name;
   using Solver::add_to_version;
   using Solver::add_to_option_header;
 
+  ///////////////////////////// OPTIONS /////////////////////////////////
+  /// TODOs
+  /// - hide all Solver stuff behind an abstract interface
 protected:
 
   using Solver::AddOption;
 
-  /// Simple stored option referencing a variable
   template <class Value>
   class StoredOption : public mp::TypedSolverOption<Value> {
     Value& value_;
@@ -290,60 +290,12 @@ protected:
     void SetValue(typename internal::OptionHelper<Value>::Arg v) override
     { value_ = v; }
   };
-public:
-  template <class Value>
-  void AddOption(const char *name, const char *description,
-                 Value& value, ValueArrayRef values = ValueArrayRef()) {
-    AddOption(Solver::OptionPtr(
-                      new StoredOption<Value>(
-            name, description, value, values)));
-  }
 
-protected:
-  /// Options stored in an 'options manager'
-  template <class OptionsManager>
-  void AddOption(const char *name, const char *description,
-                 OptionsManager& om, typename OptionsManager::index_type i,
-                 ValueArrayRef values = ValueArrayRef()) {
-    AddOption(Solver::OptionPtr(
-                      new Solver::ConcreteOptionWithInfo<OptionsManager,
-                      typename OptionsManager::value_type, typename OptionsManager::index_type>(
-            name, description, &om, &OptionsManager::get, &OptionsManager::set, i, values)));
-  }
-
-
-  template <class Value, class Index, Index N>
-  class OptionArrayManager {
-    std::array<Value, N> values_;
-  public:
-    using value_type = Value;
-    using index_type = Index;
-    /// Options setup
-    Value get(const SolverOption& , Index i) const { return values_.at(i); }
-    void set(const SolverOption& ,
-             typename internal::OptionHelper<Value>::Arg v,
-             Index i) { values_.at(i) = v; }
-    /// Normal getter
-    const value_type& get(Index i) const { return values_.at(i); }
-  };
-  template <class Index, Index N>
-  class OptionArrayManager<std::string, Index, N> {
-    std::array<std::string, N> values_;
-  public:
-    using value_type = std::string;
-    using index_type = Index;
-    /// Options setup
-    value_type get(const SolverOption& , Index i) const { return values_.at(i); }
-    void set(const SolverOption& ,
-             typename internal::OptionHelper<std::string>::Arg v,
-             Index i) { values_.at(i) = v.data(); }
-    /// Normal getter
-    const value_type& get(Index i) const { return values_.at(i); }
-  };
-
-  /// Solver options
-  template <class Backend, class Value, class Index>
+  /// Solver options accessor, facilitates calling
+  /// backend_.Get/SetSolverOption()
+  template <class Value, class Index>
   class SolverOptionAccessor {
+    using Backend = Impl;
     Backend& backend_;
   public:
     using value_type = Value;
@@ -360,6 +312,51 @@ protected:
              Index i) {
       backend_.SetSolverOption(i, v); }
   };
+
+  template <class ValueType, class KeyType>
+  class ConcreteOptionWrapper :
+    public Solver::ConcreteOptionWithInfo<
+      SolverOptionAccessor<ValueType, KeyType>, ValueType, KeyType> {
+
+    using COType = Solver::ConcreteOptionWithInfo<
+      SolverOptionAccessor<ValueType, KeyType>, ValueType, KeyType>;
+    using SOAType = SolverOptionAccessor<ValueType, KeyType>;
+
+    SOAType soa_;
+  public:
+    ConcreteOptionWrapper(Impl* impl_, const char *name, const char *description,
+                          KeyType k) :
+      COType(name, description, &soa_, &SOAType::get, &SOAType::set, k),
+      soa_(*impl_)
+    { }
+  };
+
+  public:
+
+  /// Simple stored option referencing a variable
+  template <class Value>
+  void AddStoredOption(const char *name, const char *description,
+                 Value& value, ValueArrayRef values = ValueArrayRef()) {
+    AddOption(Solver::OptionPtr(
+                      new StoredOption<Value>(
+            name, description, value, values)));
+  }
+
+  /// Adding solver options of types int/double/string/...
+  /// Assumes existence of Impl::Get/SetSolverOption(KeyType, ValueType(&))
+  template <class KeyType, class ValueType=std::string>
+  void AddSolverOption(const char *name, const char *description,
+                       KeyType k,
+                       /// If min/max omitted, assume ValueType=std::string
+                       ValueType vMin={}, ValueType vMax={}) {
+    AddOption(Solver::OptionPtr(
+                      new ConcreteOptionWrapper<
+                      ValueType, KeyType>(
+                        (Impl*)this, name, description, k)));
+  }
+  /// TODO use vmin/vmax or rely on solver raising error?
+  /// TODO also with ValueTable, deduce type from it
+
 
 };
 

@@ -182,7 +182,7 @@ protected:
   template <class Value>
   void AddOption(const char *name, const char *description,
                  Value& value, ValueArrayRef values = ValueArrayRef()) {
-    GetBackend().AddOption(name, description, value, values);
+    GetBackend().AddStoredOption(name, description, value, values);
   }
 
   ////////////////////////////// UTILITIES //////////////////////////////

@@ -249,21 +249,21 @@ void CplexBackend::InitOptions() {
       "\n"
       "  ampl: option cplexdirect_options 'mipgap=1e-6';\n");
 
-  AddOption("mipdisplay",
+  AddSolverOption("mipdisplay",
       "0-5: output logging verbosity. "
       "Default = 0 (no logging).",
-      slvOptInt_, CPXPARAM_MIP_Display);
+      CPXPARAM_MIP_Display, 0, 5);
   SetSolverOption(CPXPARAM_MIP_Display, 0);
 
-  AddOption("exportfile",
+  AddStoredOption("exportfile",
       "Specifies the name of a file where to export the model before "
       "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
 
-  AddOption("mipgap",
+  AddSolverOption("mipgap",
       "Relative optimality gap |bestbound-bestinteger|/(1e-10+|bestinteger|).",
-      slvOptDouble_, CPXPARAM_MIP_Tolerances_MIPGap);
+      CPXPARAM_MIP_Tolerances_MIPGap, 0.0, 1.0);
 
 }
 
