@@ -24,6 +24,7 @@
 #define INTERFACE_APP_H_
 
 #include <string>
+#include <memory>
 
 #include "solver.h"   // for namespace internal::
 
@@ -41,16 +42,22 @@ class InterfaceApp {
   typedef typename Interface::ModelType ProblemBuilder;
   typename Interface::Converter::NLReadResult nl_read_result;
 
-  internal::SignalHandler sig_handler;
-  internal::SolverAppOptionParser option_parser_;
+  std::unique_ptr<internal::SignalHandler> p_sig_handler_;
+  std::unique_ptr<internal::SolverAppOptionParser> p_option_parser_;
 
  protected:
   int GetResultCode() const { return result_code_; }
+  const Interface& GetInterface() const { return interface_; }
   Interface& GetInterface() { return interface_; }
+  const ProblemBuilder& GetProblemBuilder() const
+  { return GetInterface().GetModel(); }
   ProblemBuilder& GetProblemBuilder() { return GetInterface().GetModel(); }
-  typename Interface::BackendType& GetBackend() {
-    return GetInterface().GetBackend();
-  }
+  using Backend = typename Interface::BackendType;
+  const Backend& GetBackend() const { return GetInterface().GetBackend(); }
+  Backend& GetBackend() { return GetInterface().GetBackend(); }
+  using MPUtils = typename Backend::MPUtils;
+  const MPUtils& GetMPUtils() const { return GetBackend().GetMPUtils(); }
+  MPUtils& GetMPUtils() { return GetBackend().GetMPUtils(); }
 
  private:
   struct AppOutputHandler : OutputHandler {
@@ -64,12 +71,12 @@ class InterfaceApp {
   AppOutputHandler output_handler_;
 
  public:
-  InterfaceApp()
-    :
-    sig_handler(GetInterface().GetBackend()),
-    option_parser_(GetInterface().GetBackend())
-  {
-    GetInterface().GetBackend().set_output_handler(&output_handler_);
+  InterfaceApp() {
+    p_sig_handler_ = std::make_unique<internal::SignalHandler>(
+          GetMPUtils());
+    p_option_parser_ = std::make_unique<internal::SolverAppOptionParser>(
+          GetMPUtils());
+    GetMPUtils().set_output_handler(&output_handler_);
   }
 
 //  // Returns the list of command-line options.
@@ -107,12 +114,12 @@ int InterfaceApp<Interface>::RunFromNLFile(char **argv, int nl_reader_flags) {
 template <typename Interface>
 bool InterfaceApp<Interface>::Init(char **argv, int nl_reader_flags) {
   // Parse command-line arguments.
-  const char *filename = option_parser_.Parse(argv);
+  const char *filename = p_option_parser_->Parse(argv);
   if (!filename) return false;
 
-  if (GetBackend().ampl_flag()) {
+  if (GetMPUtils().ampl_flag()) {
     fmt::MemoryWriter banner;
-    banner.write("{}: ", GetInterface().GetBackend().long_name());
+    banner.write("{}: ", GetMPUtils().long_name());
     std::fputs(banner.c_str(), stdout);
     std::fflush(stdout);
     banner_size = static_cast<unsigned>(banner.size());
@@ -132,7 +139,7 @@ bool InterfaceApp<Interface>::Init(char **argv, int nl_reader_flags) {
 
   // Parse solver options.
   unsigned flags =
-      option_parser_.echo_solver_options() ? 0 : Solver::NO_OPTION_ECHO;
+      p_option_parser_->echo_solver_options() ? 0 : Solver::NO_OPTION_ECHO;
   if (!interface_.ParseOptions(argv, flags)) {
     result_code_ = 1;
     return false;
@@ -148,16 +155,16 @@ void InterfaceApp<Interface>::ReadNL(int nl_reader_flags) {
   nl_read_result = interface_.ReadNLFileAndUpdate(nl_filename, nl_reader_flags);
 
   double read_time = GetTimeAndReset(start);
-  if (GetBackend().timing())      // TODO why print via backend? We are the app!
-    GetInterface().GetBackend().Print("Input time = {:.6f}s\n", read_time);
+  if (GetMPUtils().timing())      // TODO why print via backend? We are the app!
+    GetMPUtils().Print("Input time = {:.6f}s\n", read_time);
 }
 
 template <typename Interface>
 void InterfaceApp<Interface>::Solve() {
   ArrayRef<int> options(nl_read_result.handler_->options(),
                         nl_read_result.handler_->num_options());
-  internal::AppSolutionHandler<typename Interface::BackendType> sol_handler(
-        filename_no_ext, GetBackend(), GetProblemBuilder(), options,
+  internal::AppSolutionHandler<MPUtils> sol_handler(
+        filename_no_ext, GetMPUtils(), GetProblemBuilder(), options,
         output_handler_.has_output ? 0 : banner_size);
   GetInterface().Solve(sol_handler);
 }

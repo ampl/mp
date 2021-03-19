@@ -22,7 +22,7 @@ namespace mp {
 
 CplexBackend::CplexBackend() {
   OpenSolver();
-  InitializationAfterOpeningSolver();
+  InitMetaInfo();
 }
 
 CplexBackend::~CplexBackend() {
@@ -304,8 +304,5 @@ void CplexBackend::SetSolverOption(int key, const std::string& value) {
   CPLEX_CALL( CPXsetstrparam(env, key, value.c_str()) );
 }
 
-
-//////////////////////////////////////////////////////////////////////////////////////
-SolverPtr create_cplexdirect(const char *) { return SolverPtr(new CplexBackend()); }
 
 } // namespace mp

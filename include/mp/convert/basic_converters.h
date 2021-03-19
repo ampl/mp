@@ -49,14 +49,17 @@ public:
   using ModelType = Model;
   using ProblemBuilder = Model;           // for old MP stuff
   using BackendType = Backend;
+  using MPUtils = typename Backend::MPUtils;
   const Model& GetModel() const { return model_; }    // Can be used for NL file input
   Model& GetModel() { return model_; }    // Can be used for NL file input
   const Backend& GetBackend() const { return backend_; }
   Backend& GetBackend() { return backend_; }
+  const MPUtils& GetMPUtils() const { return GetBackend().GetMPUtils(); }
+  MPUtils& GetMPUtils() { return GetBackend().GetMPUtils(); }
 public:
 
   bool ParseOptions(char **argv, unsigned flags = 0) {
-    return GetBackend().ParseOptions(argv, flags);
+    return GetMPUtils().ParseOptions(argv, flags);
   }
 
   struct NLReadResult {
@@ -65,7 +68,7 @@ public:
   NLReadResult ReadNLFile(const std::string& nl_filename, int nl_reader_flags) {
     NLReadResult result;
     result.handler_.reset(
-          new internal::SolverNLHandler<SolverAdapter>(GetModel(), GetBackend()));
+          new internal::SolverNLHandler<SolverAdapter>(GetModel(), GetMPUtils()));
     internal::NLFileReader<> reader;
     reader.Read(nl_filename, *result.handler_, nl_reader_flags);
     return result;
@@ -188,7 +191,7 @@ protected:
   ////////////////////////////// UTILITIES //////////////////////////////
   template <typename... Args> \
   void Print(fmt::CStringRef format, const Args & ... args) {
-    GetBackend().Print(format, args...);
+    GetMPUtils().Print(format, args...);
   }
 
 };

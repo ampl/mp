@@ -37,7 +37,7 @@ namespace mp {
 /// and placeholders for solver API
 template <class Impl, class Model = BasicModel< > >
 class BasicBackend : public BasicConstraintAdder,
-    public SolverImpl<Model>
+    private SolverImpl<Model>
 {
 public:
   BasicBackend() :
@@ -76,10 +76,11 @@ public:
   static bool IfMultipleSol() { return false; }
   static bool IfMultipleObj() { return false; }
 
-  void InitializationAfterOpeningSolver() {
+  void InitMetaInfo() {
     MP_DISPATCH( InitNamesAndVersion() );
     MP_DISPATCH( InitOptions() );
   }
+
   void InitNamesAndVersion() {
     auto name = MP_DISPATCH( GetSolverName() );
     auto version = MP_DISPATCH( GetSolverVersion() );
@@ -199,7 +200,7 @@ public:
       MP_DISPATCH( PrimalSolution(solution) );
 
       if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
-        writer.write(", objective {}",
+        writer.write("; objective {}",
                      MP_DISPATCH( FormatObjValue(MP_DISPATCH( ObjectiveValue() )) ));
       }
     }
@@ -268,8 +269,14 @@ public:
   static double MinusInfinity() { return -Infinity(); }
 
 public:
+
+  using MPUtils = SolverImpl<Model>;
+  const MPUtils& GetMPUtils() const { return *this; }
+  MPUtils& GetMPUtils() { return *this; }
+
   using Solver::add_to_long_name;
   using Solver::add_to_version;
+  using Solver::set_option_header;
   using Solver::add_to_option_header;
 
   ///////////////////////////// OPTIONS /////////////////////////////////

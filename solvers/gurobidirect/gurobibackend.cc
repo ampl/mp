@@ -22,7 +22,7 @@ namespace mp {
 
 GurobiBackend::GurobiBackend() {
   OpenSolver();
-  InitializationAfterOpeningSolver();
+  InitMetaInfo();
 }
 GurobiBackend::~GurobiBackend() {
   CloseSolver();
@@ -306,7 +306,8 @@ void GurobiBackend::InitOptions() {
       "To set these options, assign a string specifying their values to the "
       "AMPL option ``{0}_options``. For example::\n"
       "\n"
-      "  ampl: option {0}_options 'optimalitytolerance=1e-6';\n", name()).c_str());
+      "  ampl: option {0}_options 'optimalitytolerance=1e-6';\n",
+                  GetAMPLSolverName()).c_str());
 
   AddSolverOption("outlev",
       "1: output logging (console and file). "
@@ -364,7 +365,5 @@ void GurobiBackend::SetSolverOption(const char *key, const std::string& value) {
   GRB_CALL( GRBsetstrparam(GRBgetenv(model), key, value.c_str()) );
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////
-SolverPtr create_gurobidirect(const char *) { return SolverPtr(new GurobiBackend()); }
 
 } // namespace mp
