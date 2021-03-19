@@ -1,4 +1,6 @@
 #include <vector>
+#include <climits>
+#include <cfloat>
 
 #include "gurobibackend.h"
 
@@ -306,7 +308,7 @@ void GurobiBackend::InitOptions() {
       "\n"
       "  ampl: option {0}_options 'optimalitytolerance=1e-6';\n", name()).c_str());
 
-  AddSolverOption("outputflag",
+  AddSolverOption("outlev",
       "1: output logging (console and file). "
       "Default = 0 (no logging).", GRB_INT_PAR_OUTPUTFLAG, 0, 1);
   SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);
@@ -324,6 +326,15 @@ void GurobiBackend::InitOptions() {
   AddSolverOption("optimalitytolerance",
       "Dual feasibility tolerance.",
       GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
+
+  AddSolverOption("threads",
+      "How many threads to use when using the barrier algorithm\n"
+      "or solving MIP problems; default 0 ==> automatic choice.",
+      GRB_INT_PAR_THREADS, 0, INT_MAX);
+
+  AddSolverOption("timelim",
+      "limit on solve time (in seconds; default: no limit).",
+      GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
 
 }
 

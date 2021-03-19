@@ -1,4 +1,6 @@
 #include <vector>
+#include <climits>
+#include <cfloat>
 
 #include "cplexbackend.h"
 
@@ -249,7 +251,7 @@ void CplexBackend::InitOptions() {
       "\n"
       "  ampl: option cplexdirect_options 'mipgap=1e-6';\n");
 
-  AddSolverOption("mipdisplay",
+  AddSolverOption("outlev",
       "0-5: output logging verbosity. "
       "Default = 0 (no logging).",
       CPXPARAM_MIP_Display, 0, 5);
@@ -264,6 +266,15 @@ void CplexBackend::InitOptions() {
   AddSolverOption("mipgap",
       "Relative optimality gap |bestbound-bestinteger|/(1e-10+|bestinteger|).",
       CPXPARAM_MIP_Tolerances_MIPGap, 0.0, 1.0);
+
+  AddSolverOption("threads",
+      "How many threads to use when using the barrier algorithm\n"
+      "or solving MIP problems; default 0 ==> automatic choice.",
+      CPXPARAM_Threads, 0, INT_MAX);
+
+  AddSolverOption("timelim",
+      "limit on solve time (in seconds; default: no limit).",
+      CPXPARAM_TimeLimit, 0.0, DBL_MAX);
 
 }
 

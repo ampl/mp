@@ -192,23 +192,26 @@ public:
         ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
 
     fmt::MemoryWriter writer;
-    writer.write("{}: {}\n", MP_DISPATCH( long_name() ), status);
+    writer.write("{}: {}", MP_DISPATCH( long_name() ), status);
     double obj_value = std::numeric_limits<double>::quiet_NaN();
     std::vector<double> solution, dual_solution;
     if (solve_code < sol::INFEASIBLE) {
       MP_DISPATCH( PrimalSolution(solution) );
 
-      if (MP_DISPATCH( IsMIP() )) {
-        writer << MP_DISPATCH( NodeCount() ) << " nodes, ";
-      } else {                                    // Also for QCP
-        MP_DISPATCH( DualSolution(dual_solution) );
-      }
-      writer << MP_DISPATCH( Niterations() ) << " iterations";
-
       if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
         writer.write(", objective {}",
                      MP_DISPATCH( FormatObjValue(MP_DISPATCH( ObjectiveValue() )) ));
       }
+    }
+
+    writer.write("\n");
+
+//    if (MP_DISPATCH( IsMIP() )) {
+//      writer << MP_DISPATCH( NodeCount() ) << " nodes, ";
+//    } else {                                    // Also for QCP
+//      MP_DISPATCH( DualSolution(dual_solution) );
+//    }
+//    writer << MP_DISPATCH( Niterations() ) << " iterations";
 
 //      p.AddIntSuffix("toy_var_suffix", suf::VAR | suf::OUTPUT | suf::OUTONLY, 0);
 
@@ -224,7 +227,6 @@ public:
 //            toy_var_suffix.set_value(i, 900+i);
 //        }
 //      }
-    }
 
     sh.HandleSolution(solve_code, writer.c_str(),
         solution.empty() ? 0 : solution.data(),
