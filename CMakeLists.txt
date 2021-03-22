@@ -32,6 +32,21 @@ if (POLICY CMP0054)
   cmake_policy(SET CMP0054 NEW)
 endif ()
 
+option(USE_PROFILER "Use GCC Profiler" OFF)
+if(USE_PROFILER)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+  SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
+endif()
+
+option(USE_SANITIZERS "Use GCC Sanitizers" OFF)
+if(USE_SANITIZERS)
+  set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
+  set(CMAKE_EXE_LINKER_FLAGS
+    "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
+endif()
+
 get_directory_property(hasParent PARENT_DIRECTORY)
 if(hasParent)
   set(MP_FOLDER_PREFIX "mp/")
