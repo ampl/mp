@@ -3,7 +3,7 @@
 
 /**
   * This is an abstract interface to a 'query class'
-  * which provides solution handling, options, suffixes, etc.
+  * which provides solution handling and suffixes, etc.
   * To be used by a backend
   */
 

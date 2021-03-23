@@ -3,7 +3,7 @@
 
 /**
   * This is an implementation of a 'query class' for flat converters,
-  * which provides solution handling, options, suffixes, etc.
+  * which provides solution handling, suffixes, etc.
   * To be used by a backend
   */
 
