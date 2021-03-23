@@ -22,14 +22,13 @@ namespace mp {
 
 CplexBackend::CplexBackend() {
   OpenSolver();
-  InitMetaInfo();
 }
 
 CplexBackend::~CplexBackend() {
   CloseSolver();
 }
 
-const char* CplexBackend::GetAMPLSolverName() { return "cplexdirect"; }
+const char* CplexBackend::GetSolverInvocationName() { return "cplexdirect"; }
 const char* CplexBackend::GetBackendName() { return "CplexBackend"; }
 
 std::string CplexBackend::GetSolverVersion() {

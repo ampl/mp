@@ -22,7 +22,7 @@ extern "C" {
 
 #include <string>
 
-#include "mp/backend.h"
+#include "mp/convert/backend.h"
 #include "mp/convert/std_constr.h"
 
 namespace mp {
@@ -39,7 +39,7 @@ public:
   /// Metadata
   static const char* GetSolverName() { return "Gurobi"; }
   static std::string GetSolverVersion();
-  static const char* GetAMPLSolverName();
+  static const char* GetSolverInvocationName();
   static const char* GetAMPLSolverLongName() { return nullptr; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }

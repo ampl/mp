@@ -26,7 +26,7 @@
 #include <string>
 #include <memory>
 
-#include "solver.h"   // for namespace internal::
+#include "mp/solver.h"   // for namespace internal::
 
 namespace mp {
 
@@ -55,9 +55,9 @@ class InterfaceApp {
   using Backend = typename Interface::BackendType;
   const Backend& GetBackend() const { return GetInterface().GetBackend(); }
   Backend& GetBackend() { return GetInterface().GetBackend(); }
-  using MPUtils = typename Backend::MPUtils;
-  const MPUtils& GetMPUtils() const { return GetBackend().GetMPUtils(); }
-  MPUtils& GetMPUtils() { return GetBackend().GetMPUtils(); }
+  using MPUtils = typename Interface::MPUtils;
+  const MPUtils& GetMPUtils() const { return GetInterface().GetMPUtils(); }
+  MPUtils& GetMPUtils() { return GetInterface().GetMPUtils(); }
 
  private:
   struct AppOutputHandler : OutputHandler {
@@ -79,11 +79,6 @@ class InterfaceApp {
     GetMPUtils().set_output_handler(&output_handler_);
   }
 
-//  // Returns the list of command-line options.
-//  OptionList &GetOptions() { return option_parser_.options(); }
-
-//  // Returns the solver.
-//  Interface &GetInterface() { return interface_; }
 
   // Runs the application.
   // It processes command-line arguments and, if the file name (stub) is
@@ -98,7 +93,6 @@ protected:
   void ReadNL(int nl_reader_flags);
   void Solve();
 
-  /// Methods for incremental interface
   void Resolve();      // assuming the Solver has the corr. method
 };
 

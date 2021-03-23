@@ -6,6 +6,7 @@
 
 #include "mp/convert/preprocess.h"
 #include "mp/convert/basic_converters.h"
+#include "mp/convert/converter_flat_query.h"
 #include "mp/expr-visitor.h"
 #include "mp/convert/eexpr.h"
 #include "mp/convert/convert_functional.h"
@@ -48,6 +49,11 @@ public:
   BasicMPFlatConverter() {
     InitOptions();
   }
+
+  std::unique_ptr<ConverterQuery> MakeConverterQuery() {
+    return std::make_unique< FlatConverterQuery<Impl> >(*(Impl*)this);
+  }
+
 
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
   ///

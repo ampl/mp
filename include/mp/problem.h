@@ -257,6 +257,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     initial_dual_values_[con_index] = value;
   }
 
+public:
   template <typename T>
   class SuffixHandler {
    private:
@@ -1035,7 +1036,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   // Adds an integer suffix.
   // name: Suffix name that may not be null-terminated.
-  IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int) {
+  IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int=0) {
     return AddSuffix<int>(name, kind);
   }
 

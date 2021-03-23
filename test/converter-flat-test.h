@@ -5,7 +5,7 @@
 
 #include "gtest/gtest.h"
 
-#include "mp/backend.h"
+#include "mp/convert/backend.h"
 #include "mp/convert/basic_converters.h"
 #include "mp/convert/converter_flat.h"
 

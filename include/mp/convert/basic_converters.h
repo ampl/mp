@@ -24,7 +24,7 @@
 #define BASIC_CONVERTERS_H_
 
 #include "mp/convert/model.h"
-#include "mp/backend.h"
+#include "mp/convert/backend.h"
 #include "mp/solver.h"
 
 namespace mp {
@@ -37,18 +37,19 @@ template <class Impl, class Backend,
           class Model = BasicProblem< > >
 class BasicMPConverter :
     public BasicConstraintConverter {
-protected:
-  /// This is to wrap some old dependencies from MP
-  using SolverAdapter = SolverImpl<Model>;
-public:
   Model model_;
   Backend backend_;
+  /// This is to wrap some dependencies from MP
+  using SolverAdapter = SolverImpl<Model>;
+  std::unique_ptr<ConverterQuery> p_converter_query;
 public:
   static const char* GetConverterName() { return "BasicMPConverter"; }
   using Converter = Impl;
   using ModelType = Model;
-  using ProblemBuilder = Model;           // for old MP stuff
   using BackendType = Backend;
+
+  /// MP API requires a 'ProblemBuilder' type
+  using ProblemBuilder = Model;
   using MPUtils = typename Backend::MPUtils;
   const Model& GetModel() const { return model_; }    // Can be used for NL file input
   Model& GetModel() { return model_; }    // Can be used for NL file input
@@ -56,7 +57,29 @@ public:
   Backend& GetBackend() { return backend_; }
   const MPUtils& GetMPUtils() const { return GetBackend().GetMPUtils(); }
   MPUtils& GetMPUtils() { return GetBackend().GetMPUtils(); }
+  const ConverterQuery& GetCQ() const {
+    assert(p_converter_query);
+    return *p_converter_query;
+  }
+  ConverterQuery& GetCQ() {
+    assert(p_converter_query);
+    return *p_converter_query;
+  }
 public:
+
+  BasicMPConverter() {
+    InitConverterQueryObject();
+    GetBackend().InitMetaInfoAndOptions();
+  }
+
+  void InitConverterQueryObject() {
+    p_converter_query = MP_DISPATCH( MakeConverterQuery() );
+    GetBackend().ProvideConverterQueryObject( &MP_DISPATCH( GetCQ() ) );
+  }
+
+  std::unique_ptr<ConverterQuery> MakeConverterQuery() {
+    return std::make_unique<ConverterQuery>();
+  }
 
   bool ParseOptions(char **argv, unsigned flags = 0) {
     return GetMPUtils().ParseOptions(argv, flags);

@@ -24,59 +24,74 @@
 #define BACKEND_H_
 
 #include "mp/clock.h"
-#include "mp/convert/model.h"
-#include "mp/solver.h"
+#include "mp/convert/converter_query.h".h"
 #include "mp/convert/constraint_keeper.h"
 #include "mp/convert/std_constr.h"
+#include "mp/convert/model.h"
 
 namespace mp {
 
 /// Basic backend wrapper.
-/// Used by converter to directly access a solver.
 /// The basic wrapper provides common functionality: option handling
 /// and placeholders for solver API
-template <class Impl, class Model = BasicModel< > >
+template <class Impl>
 class BasicBackend : public BasicConstraintAdder,
-    private SolverImpl<Model>
+    private SolverImpl< BasicModel<> >
 {
+  ConverterQuery *p_converter_query_object = nullptr;
+  using MPSolverBase = SolverImpl< BasicModel<> >;
+public:
+  using MPUtils = MPSolverBase;              // Allow Converter access the SolverImpl
+  const MPUtils& GetMPUtils() const { return *this; }
+  MPUtils& GetMPUtils() { return *this; }
 public:
   BasicBackend() :
-    SolverImpl<Model>(
-      MP_DISPATCH( GetAMPLSolverName() ),
-      MP_DISPATCH( GetAMPLSolverLongName() ),
-      MP_DISPATCH( Date() ),
-      MP_DISPATCH( Flags() ) )
-  {
-  }
-
-  ~BasicBackend() { }
+    SolverImpl< BasicModel<> >(
+      Impl::GetSolverInvocationName(),
+      Impl::GetAMPLSolverLongName(),
+      Impl::Date(), Impl::Flags())
+  { }
+  virtual ~BasicBackend() { }
 
   void OpenSolver() { }
   void CloseSolver() { }
+
+  /// Converter should provide this before Backend can add options, etc
+  void ProvideConverterQueryObject(ConverterQuery* pCQ) { p_converter_query_object = pCQ; }
+
+  const ConverterQuery& GetCQ() const {
+    assert(nullptr!=p_converter_query_object);
+    return *p_converter_query_object;
+  }
+  ConverterQuery& GetCQ() {
+    assert(nullptr!=p_converter_query_object);
+    return *p_converter_query_object;
+  }
+
   void InitOptions() { }
 
   /// Default metadata
   static const char* GetSolverName() { return "SomeSolver"; }
   static std::string GetSolverVersion() { return "-285.68.53"; }
-  static const char* GetAMPLSolverName() { return "solverdirect"; }
+  static const char* GetSolverInvocationName() { return "solverdirect"; }
   static const char* GetAMPLSolverLongName() { return nullptr; }
   static const char* GetBackendName()    { return "BasicBackend"; }
   static const char* GetBackendLongName() { return nullptr; }
   static long Date() { return MP_DATE; }
 
   /// Default flags
-  int Flags() {
+  static int Flags() {
     int flg=0;
-    if (MP_DISPATCH( IfMultipleSol() ))
+    if (Impl::IfMultipleSol() )
       flg |= Solver::MULTIPLE_SOL;
-    if (MP_DISPATCH( IfMultipleObj() ))
+    if (Impl::IfMultipleObj() )
       flg |= Solver::MULTIPLE_OBJ;
     return flg;
   }
   static bool IfMultipleSol() { return false; }
   static bool IfMultipleObj() { return false; }
 
-  void InitMetaInfo() {
+  void InitMetaInfoAndOptions() {
     MP_DISPATCH( InitNamesAndVersion() );
     MP_DISPATCH( InitOptions() );
   }
@@ -86,9 +101,11 @@ public:
     auto version = MP_DISPATCH( GetSolverVersion() );
     this->set_long_name( fmt::format("{} {}", name, version ) );
     this->set_version( fmt::format("AMPL/{} Optimizer [{}]",
-                       name, version ) );
+                                   name, version ) );
   }
 
+
+  using Model = BasicModel<>;
 
   using Variable = typename Model::Variable;
 
@@ -131,7 +148,7 @@ public:
                                          std::move(leu.c_), std::move(leu.v_) } ) );
       // TODO quadratics like in AddAlgebraicConstraint
     }
-    }
+  }
   void AddLinearObjective( const LinearObjective& ) {
     throw MakeUnsupportedError("BasicBackend::AddLinearObjective");
   }
@@ -146,7 +163,7 @@ public:
       LinearExprUnzipper leu(con.linear_expr());
       auto lc = LinearConstraint{
           std::move(leu.c_), std::move(leu.v_),
-             con.lb(), con.ub() };
+          con.lb(), con.ub() };
       if (nullptr==con.p_extra_info()) {
         MP_DISPATCH( AddConstraint( lc ) );
       } else {
@@ -190,7 +207,7 @@ public:
     // Convert solution status.
     int solve_code = 0;
     std::string status = MP_DISPATCH(
-        ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
+          ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
 
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ), status);
@@ -207,39 +224,33 @@ public:
 
     writer.write("\n");
 
-//    if (MP_DISPATCH( IsMIP() )) {
-//      writer << MP_DISPATCH( NodeCount() ) << " nodes, ";
-//    } else {                                    // Also for QCP
-//      MP_DISPATCH( DualSolution(dual_solution) );
-//    }
-//    writer << MP_DISPATCH( Niterations() ) << " iterations";
+    //    if (MP_DISPATCH( IsMIP() )) {
+    //      writer << MP_DISPATCH( NodeCount() ) << " nodes, ";
+    //    } else {                                    // Also for QCP
+    //      MP_DISPATCH( DualSolution(dual_solution) );
+    //    }
+    //    writer << MP_DISPATCH( Niterations() ) << " iterations";
 
-//      p.AddIntSuffix("toy_var_suffix", suf::VAR | suf::OUTPUT | suf::OUTONLY, 0);
+    auto toySuf =
+      GetCQ().AddIntSuffix("toy_var_suffix", suf::VAR | suf::OUTPUT | suf::OUTONLY);
 
-//      /// To be separated into a separate method, like FillOutputSuffixes()
-//      /// The backend writer should see a very simple interface, like
-//      /// AddSuffix("name", kind, descr, table, {input_fn, output_fn});
-//      MutIntSuffix toy_var_suffix =
-//          Cast<MutIntSuffix>( p. suffixes(suf::VAR). Find("toy_var_suffix") );
-//      assert(toy_var_suffix);
-//      if (toy_var_suffix) {
-//        for (int i = 0, n = MP_DISPATCH( NumberOfVariables() ); i < n; ++i) {
-//          if (i % 2 == 0)
-//            toy_var_suffix.set_value(i, 900+i);
-//        }
-//      }
+    /// TODO SuffixHandler should also allow GetValue()
+            for (int i = 0, n = MP_DISPATCH( NumberOfVariables() ); i < n; ++i) {
+              if (i % 2 == 0)
+                toySuf.SetValue(i, 900+i);
+            }
 
     sh.HandleSolution(solve_code, writer.c_str(),
-        solution.empty() ? 0 : solution.data(),
-        dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
+                      solution.empty() ? 0 : solution.data(),
+                      dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
 
     double output_time = GetTimeAndReset(stats.time);
 
     if (MP_DISPATCH( timing() )) {
       MP_DISPATCH( Print("Setup time = {:.6f}s\n"
-            "Solution time = {:.6f}s\n"
-            "Output time = {:.6f}s\n",
-            stats.setup_time, stats.solution_time, output_time) );
+                         "Solution time = {:.6f}s\n"
+                         "Output time = {:.6f}s\n",
+                         stats.setup_time, stats.solution_time, output_time) );
     }
   }
 
@@ -270,10 +281,6 @@ public:
 
 public:
 
-  using MPUtils = SolverImpl<Model>;
-  const MPUtils& GetMPUtils() const { return *this; }
-  MPUtils& GetMPUtils() { return *this; }
-
   using Solver::add_to_long_name;
   using Solver::add_to_version;
   using Solver::set_option_header;
@@ -292,8 +299,8 @@ protected:
   public:
     using value_type = Value;
     StoredOption(const char *name, const char *description,
-        Value& v, ValueArrayRef values = ValueArrayRef())
-    : mp::TypedSolverOption<Value>(name, description, values), value_(v) {}
+                 Value& v, ValueArrayRef values = ValueArrayRef())
+      : mp::TypedSolverOption<Value>(name, description, values), value_(v) {}
 
     void GetValue(Value &v) const override { v = value_; }
     void SetValue(typename internal::OptionHelper<Value>::Arg v) override
@@ -324,11 +331,11 @@ protected:
 
   template <class ValueType, class KeyType>
   class ConcreteOptionWrapper :
-    public Solver::ConcreteOptionWithInfo<
+      public Solver::ConcreteOptionWithInfo<
       SolverOptionAccessor<ValueType, KeyType>, ValueType, KeyType> {
 
     using COType = Solver::ConcreteOptionWithInfo<
-      SolverOptionAccessor<ValueType, KeyType>, ValueType, KeyType>;
+    SolverOptionAccessor<ValueType, KeyType>, ValueType, KeyType>;
     using SOAType = SolverOptionAccessor<ValueType, KeyType>;
 
     SOAType soa_;
@@ -340,15 +347,15 @@ protected:
     { }
   };
 
-  public:
+public:
 
   /// Simple stored option referencing a variable
   template <class Value>
   void AddStoredOption(const char *name, const char *description,
-                 Value& value, ValueArrayRef values = ValueArrayRef()) {
+                       Value& value, ValueArrayRef values = ValueArrayRef()) {
     AddOption(Solver::OptionPtr(
-                      new StoredOption<Value>(
-            name, description, value, values)));
+                new StoredOption<Value>(
+                  name, description, value, values)));
   }
 
   /// Adding solver options of types int/double/string/...
@@ -359,13 +366,12 @@ protected:
                        /// If min/max omitted, assume ValueType=std::string
                        ValueType vMin={}, ValueType vMax={}) {
     AddOption(Solver::OptionPtr(
-                      new ConcreteOptionWrapper<
-                      ValueType, KeyType>(
-                        (Impl*)this, name, description, k)));
+                new ConcreteOptionWrapper<
+                ValueType, KeyType>(
+                  (Impl*)this, name, description, k)));
   }
   /// TODO use vmin/vmax or rely on solver raising error?
   /// TODO also with ValueTable, deduce type from it
-
 
 };
 

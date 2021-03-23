@@ -1,6 +1,6 @@
-#include "mp/interface_app.h"
+#include "mp/convert/interface_app.h"
 #include "mp/convert/MIP/mp2mip.h"
-#include "mp/backend.h"
+#include "mp/convert/backend.h"
 
 #include "cplexbackend.h"
 

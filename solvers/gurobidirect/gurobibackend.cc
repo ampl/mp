@@ -22,13 +22,12 @@ namespace mp {
 
 GurobiBackend::GurobiBackend() {
   OpenSolver();
-  InitMetaInfo();
 }
 GurobiBackend::~GurobiBackend() {
   CloseSolver();
 }
 
-const char* GurobiBackend::GetAMPLSolverName() { return "gurobidirect"; }
+const char* GurobiBackend::GetSolverInvocationName() { return "gurobidirect"; }
 const char* GurobiBackend::GetBackendName() { return "GurobiBackend"; }
 
 std::string GurobiBackend::GetSolverVersion() {
@@ -307,7 +306,7 @@ void GurobiBackend::InitOptions() {
       "AMPL option ``{0}_options``. For example::\n"
       "\n"
       "  ampl: option {0}_options 'optimalitytolerance=1e-6';\n",
-                  GetAMPLSolverName()).c_str());
+                  GetSolverInvocationName()).c_str());
 
   AddSolverOption("outlev",
       "1: output logging (console and file). "
