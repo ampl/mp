@@ -1243,7 +1243,9 @@ class BinaryReader : private InputConverter, public BinaryReaderBase {
   template <typename Int>
   Int ReadInt() {
     token_ = ptr_;
-    return this->Convert(*reinterpret_cast<const Int*>(Read(sizeof(Int))));
+    Int val;
+    memcpy(&val, Read(sizeof(Int)), sizeof(Int));
+    return this->Convert(val);
   }
 
   int ReadUInt() {
@@ -1255,8 +1257,9 @@ class BinaryReader : private InputConverter, public BinaryReaderBase {
 
   double ReadDouble() {
     token_ = ptr_;
-    return this->Convert(
-          *reinterpret_cast<const double*>(Read(sizeof(double))));
+    double val;
+    memcpy(&val, Read(sizeof(double)), sizeof(double));
+    return this->Convert(val);
   }
 
   fmt::StringRef ReadString() {

@@ -104,10 +104,10 @@ void WriteSolFile(fmt::CStringRef filename, const Solution &sol) {
   // TODO: check precision
   int num_values = sol.num_values(), num_dual_values = sol.num_dual_values();
   file.print("{0}\n{0}\n{1}\n{1}\n", num_dual_values, num_values);
-  for (int i = 0; i < num_values; ++i)
-    file.print("{}\n", sol.value(i));
   for (int i = 0, n = num_dual_values; i < n; ++i)
     file.print("{}\n", sol.dual_value(i));
+  for (int i = 0; i < num_values; ++i)
+    file.print("{}\n", sol.value(i));
   file.print("objno 0 {}\n", sol.status());
   suf::Kind kinds[] = {suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM};
   for (std::size_t i = 0, n = sizeof(kinds) / sizeof(*kinds); i < n; ++i)
