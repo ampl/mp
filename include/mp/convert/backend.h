@@ -27,6 +27,7 @@
 #include "mp/convert/converter_query.h".h"
 #include "mp/convert/constraint_keeper.h"
 #include "mp/convert/std_constr.h"
+#include "mp/convert/std_obj.h"
 #include "mp/convert/model.h"
 
 namespace mp {
@@ -35,8 +36,9 @@ namespace mp {
 /// The basic wrapper provides common functionality: option handling
 /// and placeholders for solver API
 template <class Impl>
-class BasicBackend : public BasicConstraintAdder,
-    private SolverImpl< BasicModel<> >
+class BasicBackend :
+    public BasicConstraintAdder,
+    private SolverImpl< BasicModel<> >   // mp::Solver stuff, hidden
 {
   ConverterQuery *p_converter_query_object = nullptr;
   using MPSolverBase = SolverImpl< BasicModel<> >;
@@ -56,9 +58,10 @@ public:
   void OpenSolver() { }
   void CloseSolver() { }
 
-  /// Converter should provide this before Backend can add options, etc
+  /// Converter should provide this before Backend can run solving
   void ProvideConverterQueryObject(ConverterQuery* pCQ) { p_converter_query_object = pCQ; }
 
+private: // hiding this detail, it's not for the final backends
   const ConverterQuery& GetCQ() const {
     assert(nullptr!=p_converter_query_object);
     return *p_converter_query_object;
@@ -68,6 +71,7 @@ public:
     return *p_converter_query_object;
   }
 
+public:
   void InitOptions() { }
 
   /// Default metadata
@@ -121,39 +125,31 @@ public:
     throw MakeUnsupportedError("BasicBackend::AddLogicalConstraints");
   }
 
-  /// TODO why is this here?
-  class LinearObjective {
-    obj::Type sense_;
-    std::vector<double> coefs_;
-    std::vector<int> vars_;
-  public:
-    template <class CoefVec=std::initializer_list<double>,
-              class VarVec=std::initializer_list<int> >
-    LinearObjective(obj::Type s, CoefVec&& c, VarVec&& v) :
-      sense_(s),
-      coefs_(std::forward<CoefVec>(c)), vars_(std::forward<VarVec>(v)) { }
-    obj::Type get_sense() const { return sense_; }
-    int get_num_terms() const { assert(check()); return (int)vars_.size(); }
-    bool check() const { return coefs_.size()==vars_.size(); }
-    const std::vector<double>& get_coefs() const { return coefs_; }
-    const std::vector<int>& get_vars() const { return vars_; }
-  };
-
   void AddObjective(typename Model::Objective obj) {
     if (obj.nonlinear_expr()) {
       MP_DISPATCH( AddGeneralObjective( obj ) );
     } else {
       LinearExprUnzipper leu(obj.linear_expr());
-      MP_DISPATCH( AddLinearObjective( { obj.type(),
-                                         std::move(leu.c_), std::move(leu.v_) } ) );
-      // TODO quadratics like in AddAlgebraicConstraint
+      LinearObjective lo { obj.type(),
+            std::move(leu.c_), std::move(leu.v_) };
+      if (nullptr==obj.p_extra_info()) {
+        MP_DISPATCH( AddLinearObjective( lo ) );
+      } else {
+        auto qt = obj.p_extra_info()->qt_;
+        assert(!qt.empty());
+        MP_DISPATCH( AddQuadraticObjective(
+                       QuadraticObjective{std::move(lo), std::move(qt)} ) );
+      }
     }
+  }
+  void AddGeneralObjective(typename Model::Objective ) {
+    throw MakeUnsupportedError("BasicBackend::AddGeneralObjective");
   }
   void AddLinearObjective( const LinearObjective& ) {
     throw MakeUnsupportedError("BasicBackend::AddLinearObjective");
   }
-  void AddGeneralObjective(typename Model::Objective obj) {
-    throw MakeUnsupportedError("BasicBackend::AddGeneralObjective");
+  void AddQuadraticObjective( const QuadraticObjective& ) {
+    throw MakeUnsupportedError("BasicBackend::AddQuadraticObjective");
   }
 
   void AddAlgebraicConstraint(typename Model::AlgebraicCon con) {
@@ -181,7 +177,7 @@ public:
   ////////////////// Some basic custom constraints /////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BasicConstraintAdder)
 
-  /// Optionally exclude LFDs from being posted,
+  /// Optionally exclude LDCs from being posted,
   /// then all those are converted to LinearConstraint's first
   ACCEPT_CONSTRAINT(LinearDefiningConstraint, NotAccepted)
   void AddConstraint(const LinearDefiningConstraint& ldc) {
@@ -190,7 +186,7 @@ public:
 
   ACCEPT_CONSTRAINT(LinearConstraint, Recommended)
   /// TODO Attributes (lazy/user cut, etc)
-  void AddConstraint(const LinearConstraint& ldc) {
+  void AddConstraint(const LinearConstraint& ) {
     throw MakeUnsupportedError("BasicBackend::AddLinearConstraint");
   }
 
@@ -364,7 +360,7 @@ public:
   void AddSolverOption(const char *name, const char *description,
                        KeyType k,
                        /// If min/max omitted, assume ValueType=std::string
-                       ValueType vMin={}, ValueType vMax={}) {
+                       ValueType ={}, ValueType ={}) {
     AddOption(Solver::OptionPtr(
                 new ConcreteOptionWrapper<
                 ValueType, KeyType>(

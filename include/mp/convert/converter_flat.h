@@ -60,10 +60,9 @@ public:
   ///////////////////////////////////////////////////////////////////////////////////////////
 public:
   void Convert(typename Model::MutCommonExpr ) {
-    /// Convert on demand, see VisitCommonExpr
+    /// Converting on demand, see VisitCommonExpr
   }
 
-  /// TODO propagate contexts from objectives and all constraints
   void Convert(typename Model::MutObjective obj) {
     if (NumericExpr e = obj.nonlinear_expr()) {
       LinearExpr &linear = obj.linear_expr();

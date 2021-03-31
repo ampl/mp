@@ -105,15 +105,21 @@ class QuadraticConstraint : public LinearConstraint {
 public:
   static const char* GetConstraintName() { return "QuadraticConstraint"; }
   QuadraticConstraint(LinearConstraint&& lc, QuadTerms&& qt) :
-    LinearConstraint(std::move(lc)), qt_(std::move(qt)) { sort_terms(); }
+    LinearConstraint(std::move(lc)), qt_(std::move(qt)) { sort_qp_terms(); }
   QuadraticConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
                       std::initializer_list<std::tuple<double, int, int>> quad_terms,
                       double lb, double ub) :
-    LinearConstraint(lin_exp, lb, ub), qt_(quad_terms) { sort_terms(); }
+    LinearConstraint(lin_exp, lb, ub), qt_(quad_terms) { sort_qp_terms(); }
+
+  const QuadTerms& GetQPTerms() const { return qt_; }
 
   // To enable comparison. Also eliminates zeros
   void sort_terms() {
     LinearConstraint::sort_terms();
+    sort_qp_terms();
+  }
+
+  void sort_qp_terms() {
     qt_.sort_terms();
   }
 

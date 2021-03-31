@@ -86,7 +86,7 @@ public:
     instance_.varUBs_.push_back(var.ub());
     instance_.varTypes_.push_back((VarType)var.type());
   }
-  void AddLinearObjective(const LinearObjective& lo) {
+  void AddLinearObjective(const mp::LinearObjective& lo) {
     mip_converter_test::MIPInstance::SparseVec lin_part {lo.get_coefs(), lo.get_vars()};
     instance_.objs_.push_back({(Sense)lo.get_sense(),
                               std::move(lin_part)});

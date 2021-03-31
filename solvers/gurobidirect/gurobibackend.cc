@@ -180,23 +180,46 @@ void GurobiBackend::AddLinearObjective( const LinearObjective& lo ) {
                                 lo.get_num_terms(),
                                 (int*)lo.get_vars().data(), (double*)lo.get_coefs().data()) );
   } else {
+    throw std::runtime_error("Multiple objectives not supported");
 //    TODO
 //    GRB_CALL( GRBsetobjectiven(model, 0, 1, 0.0, 0.0, 0.0, "primary",
 //                               0.0, nnz, (int*)v, (double*)c) );
   }
 }
+void GurobiBackend::AddQuadraticObjective(const QuadraticObjective &qo) {
+  if (1>=NumberOfObjectives()) {
+    AddLinearObjective(qo);                         // add the linear part
+    const auto& qt = qo.GetQPTerms();
+    GRB_CALL( GRBaddqpterms(model, qt.num_terms(),
+                                (int*)qt.vars1(), (int*)qt.vars2(),
+                            (double*)qt.coefs()) );
+  } else {
+    throw std::runtime_error("Multiple quadratic objectives not supported");
+  }
+
+}
+
 void GurobiBackend::AddConstraint( const LinearConstraint& lc ) {
-  if (lc.lb()==lc.ub())
-    GRB_CALL( GRBaddconstr(model, lc.nnz(),
-                           (int*)lc.pvars(), (double*)lc.pcoefs(), GRB_EQUAL, lc.lb(), NULL) );
+  GRB_CALL( GRBaddrangeconstr(model, lc.nnz(),
+                              (int*)lc.pvars(), (double*)lc.pcoefs(), lc.lb(), lc.ub(), NULL) );
+}
+
+void GurobiBackend::AddConstraint( const QuadraticConstraint& qc ) {
+  const auto& qt = qc.GetQPTerms();
+  if (qc.lb()==qc.ub())
+    GRB_CALL( GRBaddqconstr(model, qc.nnz(), (int*)qc.pvars(), (double*)qc.pcoefs(),
+                            qt.num_terms(), (int*)qt.vars1(), (int*)qt.vars2(), (double*)qt.coefs(),
+                            GRB_EQUAL, qc.lb(), NULL) );
   else {            // Let solver deal with lb>~ub etc.
-    if (lc.lb()>MinusInfinity()) {
-      GRB_CALL( GRBaddconstr(model, lc.nnz(),
-                             (int*)lc.pvars(), (double*)lc.pcoefs(), GRB_GREATER_EQUAL, lc.lb(), NULL) );
+    if (qc.lb()>MinusInfinity()) {
+      GRB_CALL( GRBaddqconstr(model, qc.nnz(), (int*)qc.pvars(), (double*)qc.pcoefs(),
+                              qt.num_terms(), (int*)qt.vars1(), (int*)qt.vars2(), (double*)qt.coefs(),
+                              GRB_GREATER_EQUAL, qc.lb(), NULL) );
     }
-    if (lc.ub()<Infinity()) {
-      GRB_CALL( GRBaddconstr(model, lc.nnz(),
-                             (int*)lc.pvars(), (double*)lc.pcoefs(), GRB_LESS_EQUAL, lc.ub(), NULL) );
+    if (qc.ub()<Infinity()) {
+      GRB_CALL( GRBaddqconstr(model, qc.nnz(), (int*)qc.pvars(), (double*)qc.pcoefs(),
+                              qt.num_terms(), (int*)qt.vars1(), (int*)qt.vars2(), (double*)qt.coefs(),
+                              GRB_LESS_EQUAL, qc.ub(), NULL) );
     }
   }
 }

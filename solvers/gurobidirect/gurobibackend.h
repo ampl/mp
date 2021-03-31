@@ -54,6 +54,7 @@ public:
 
   void AddVariable(Variable var);
   void AddLinearObjective( const LinearObjective& lo );
+  void AddQuadraticObjective( const QuadraticObjective& qo );
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
@@ -61,6 +62,8 @@ public:
   /// TODO Attributes (lazy/user cut, etc)
   ACCEPT_CONSTRAINT(LinearConstraint, Recommended)
   void AddConstraint(const LinearConstraint& lc);
+  ACCEPT_CONSTRAINT(QuadraticConstraint, Recommended)
+  void AddConstraint(const QuadraticConstraint& qc);
   ACCEPT_CONSTRAINT(MaximumConstraint, AcceptedButNotRecommended)
   void AddConstraint(const MaximumConstraint& mc);
   ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)

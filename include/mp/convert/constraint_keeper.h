@@ -68,7 +68,9 @@ public:
   using BaseBackend::AddConstraint; \
   using BaseBackend::AcceptanceLevel;
   /// By default, we say constraint XYZ is not accepted but...
-  static constexpr ConstraintAcceptanceLevel AcceptanceLevel(const BasicConstraint*) { return NotAccepted; }
+  static constexpr ConstraintAcceptanceLevel AcceptanceLevel(const BasicConstraint*) {
+    return NotAccepted;
+  }
 };
 
 /// ... then for a certain constraint it can be specified
@@ -76,6 +78,7 @@ public:
   static constexpr mp::ConstraintAcceptanceLevel \
     AcceptanceLevel(const ConstrType*) { return level; }
 
+/// Manages constraints in the Converter
 class BasicConstraintKeeper {
 public:
   virtual ~BasicConstraintKeeper() { }
