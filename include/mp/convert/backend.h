@@ -194,21 +194,33 @@ public:
   void Solve(Model &p, SolutionHandler &sh) { Resolve(p, sh); }
 
   void Resolve(Model& p, SolutionHandler &sh) {
-    MP_DISPATCH( SetInterrupter(MP_DISPATCH( interrupter() )) );
-
-    stats.setup_time = GetTimeAndReset(stats.time);
+    MP_DISPATCH( PrepareOptimize() );
     MP_DISPATCH( DoOptimize() );
+    MP_DISPATCH( WrapupOptimize() );
+
+    ObtainSolutionStatus();
+    ObtainAndReportSolution(p, sh);
+    if (MP_DISPATCH( timing() ))
+      PrintTimingInfo();
+  }
+
+  void PrepareOptimize() {
+    MP_DISPATCH( SetInterrupter(MP_DISPATCH( interrupter() )) );
+    stats.setup_time = GetTimeAndReset(stats.time);
+  }
+
+  void WrapupOptimize() {
     stats.solution_time = GetTimeAndReset(stats.time);
+  }
 
-    // Convert solution status.
-    int solve_code = 0;
-    std::string status = MP_DISPATCH(
+  void ObtainSolutionStatus() {
+    solve_status = MP_DISPATCH(
           ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
+  }
 
+  void ObtainAndReportSolution(Model& p, SolutionHandler &sh) {
     fmt::MemoryWriter writer;
-    writer.write("{}: {}", MP_DISPATCH( long_name() ), status);
-    double obj_value = std::numeric_limits<double>::quiet_NaN();
-    std::vector<double> solution, dual_solution;
+    writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status);
     if (solve_code < sol::INFEASIBLE) {
       MP_DISPATCH( PrimalSolution(solution) );
 
@@ -217,15 +229,12 @@ public:
                      MP_DISPATCH( FormatObjValue(MP_DISPATCH( ObjectiveValue() )) ));
       }
     }
-
     writer.write("\n");
 
-    //    if (MP_DISPATCH( IsMIP() )) {
-    //      writer << MP_DISPATCH( NodeCount() ) << " nodes, ";
-    //    } else {                                    // Also for QCP
-    //      MP_DISPATCH( DualSolution(dual_solution) );
-    //    }
-    //    writer << MP_DISPATCH( Niterations() ) << " iterations";
+    if (MP_DISPATCH( IsMIP() )) {
+    } else {                                    // Also for QCP
+      MP_DISPATCH( DualSolution(dual_solution) );
+    }
 
     auto toySuf =
       GetCQ().AddIntSuffix("toy_var_suffix", suf::VAR | suf::OUTPUT | suf::OUTONLY);
@@ -239,22 +248,24 @@ public:
     sh.HandleSolution(solve_code, writer.c_str(),
                       solution.empty() ? 0 : solution.data(),
                       dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
-
-    double output_time = GetTimeAndReset(stats.time);
-
-    if (MP_DISPATCH( timing() )) {
-      MP_DISPATCH( Print("Setup time = {:.6f}s\n"
-                         "Solution time = {:.6f}s\n"
-                         "Output time = {:.6f}s\n",
-                         stats.setup_time, stats.solution_time, output_time) );
-    }
   }
 
-
+  void PrintTimingInfo() {
+    double output_time = GetTimeAndReset(stats.time);
+    MP_DISPATCH( Print("Setup time = {:.6f}s\n"
+                       "Solution time = {:.6f}s\n"
+                       "Output time = {:.6f}s\n",
+                       stats.setup_time, stats.solution_time, output_time) );
+  }
 
   /////////////////////////////// SERVICE STUFF ///////////////////////////////////
   ///
   /////////////////////////////////////////////////////////////////////////////////
+
+  int solve_code=0;
+  std::string solve_status;
+  double obj_value = std::numeric_limits<double>::quiet_NaN();
+  std::vector<double> solution, dual_solution;
 
   struct Stats {
     steady_clock::time_point time;
