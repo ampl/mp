@@ -127,7 +127,7 @@ void CplexBackend::SetInterrupter(mp::Interrupter *inter) {
   CPLEX_CALL( CPXsetterminate (env, &terminate_flag) );
 }
 
-void CplexBackend::DoOptimize() {
+void CplexBackend::DoSolve() {
   CPLEX_CALL( CPXmipopt(env, lp) );
 }
 

@@ -118,7 +118,7 @@ void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptGurobi, model);
 }
 
-void GurobiBackend::DoOptimize() {
+void GurobiBackend::DoSolve() {
   GRB_CALL( GRBoptimize(model) );
 }
 

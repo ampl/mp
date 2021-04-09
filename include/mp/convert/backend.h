@@ -191,12 +191,10 @@ public:
   }
 
 
-  void Solve(Model &p, SolutionHandler &sh) { Resolve(p, sh); }
-
-  void Resolve(Model& p, SolutionHandler &sh) {
-    MP_DISPATCH( PrepareOptimize() );
-    MP_DISPATCH( DoOptimize() );
-    MP_DISPATCH( WrapupOptimize() );
+  void SolveAndReport(Model &p, SolutionHandler &sh) {
+    MP_DISPATCH( PrepareSolve() );
+    MP_DISPATCH( DoSolve() );
+    MP_DISPATCH( WrapupSolve() );
 
     ObtainSolutionStatus();
     ObtainAndReportSolution(p, sh);
@@ -204,12 +202,12 @@ public:
       PrintTimingInfo();
   }
 
-  void PrepareOptimize() {
+  void PrepareSolve() {
     MP_DISPATCH( SetInterrupter(MP_DISPATCH( interrupter() )) );
     stats.setup_time = GetTimeAndReset(stats.time);
   }
 
-  void WrapupOptimize() {
+  void WrapupSolve() {
     stats.solution_time = GetTimeAndReset(stats.time);
   }
 

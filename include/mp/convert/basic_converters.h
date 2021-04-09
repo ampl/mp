@@ -132,7 +132,7 @@ public:
   }
 
   void Solve(SolutionHandler &sh) {
-    GetBackend().Solve(GetModel(), sh);   // TODO no model any more
+    GetBackend().SolveAndReport(GetModel(), sh);   // TODO no model any more
   }
 
 

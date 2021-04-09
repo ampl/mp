@@ -111,7 +111,7 @@ public:
 
   //////////////////////////// SOLVING ///////////////////////////////
   void SetInterrupter(mp::Interrupter* inter);
-  void DoOptimize();
+  void DoSolve();
   std::string ConvertSolutionStatus(
       const mp::Interrupter &interrupter, int &solve_code);
 
