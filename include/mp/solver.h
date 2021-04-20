@@ -1377,6 +1377,8 @@ int SolverApp<Solver, Reader>::Run(char **argv, int nl_reader_flags) {
 
 template <typename Solver, typename Reader>
 bool SolverApp<Solver, Reader>::Init(char **argv, int nl_reader_flags) {
+  internal::Unused(nl_reader_flags);
+
   // Parse command-line arguments.
   const char *filename = option_parser_.Parse(argv);
   if (!filename) return false;

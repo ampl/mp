@@ -266,7 +266,7 @@ public:
   void Exprs2EExprs(const ExprArray& ea, std::array<EExpr, N>& result) {
     assert(ea.size() == result.size());
     auto itea = ea.begin();
-    for (int i=0; i<N; ++i, ++itea)
+    for (size_t i=0; i<N; ++i, ++itea)
       result[i] = MP_DISPATCH( Convert2EExpr(*itea) );
   }
 
@@ -285,7 +285,7 @@ public:
 
   EExpr VisitCommonExpr(Reference r) {
     const auto index = r.index();
-    if (index >= common_exprs_.size())
+    if (index >= (int)common_exprs_.size())
       common_exprs_.resize(index+1, -1);          // init by -1, "no variable"
     if (common_exprs_[index]<0) {                 // not yet converted
       auto ce = MP_DISPATCH( GetModel() ).common_expr(index);
@@ -737,18 +737,21 @@ public:
   /// By default, declare mixed context
   template <class Constraint>
   void PropagateResult(Constraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     con.SetContext(Context::CTX_MIX);
     for (const auto a: con.GetArguments())
       PropagateResultOfInitExpr(a, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
   void PropagateResult(LinearDefiningConstraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     con.AddContext(ctx);
     for (const auto& term: con.GetAffineExpr())
       PropagateResultOfInitExpr(term.var_index(), this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
   void PropagateResult(QuadraticDefiningConstraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     con.AddContext(ctx);
     const auto& args = con.GetArguments();
     for (const auto& term: args.GetAE())
@@ -761,34 +764,40 @@ public:
   }
 
   void PropagateResult(LinearConstraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     for (const auto& v: con.vars())
       PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
   void PropagateResult(IndicatorConstraintLinLE& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     for (const auto& v: con.get_lin_vars())
       PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
   void PropagateResult(NotConstraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
       PropagateResultOfInitExpr(a, 1.0-ub, 1.0-lb, -ctx);
   }
 
   void PropagateResult(ConjunctionConstraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
       PropagateResultOfInitExpr(a, lb, 1.0, +ctx);
   }
 
   void PropagateResult(DisjunctionConstraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
       PropagateResultOfInitExpr(a, 0.0, ub, +ctx);
   }
 
   void PropagateResult(IfThenConstraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     con.AddContext(ctx);
     auto& args = con.GetArguments();
     PropagateResultOfInitExpr(args[0], 0.0, 1.0, Context::CTX_MIX);
@@ -797,15 +806,18 @@ public:
   }
 
   void PropagateResult(AllDiffConstraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     con.AddContext(ctx);
     // TODO go into arguments
   }
 
   void PropagateResult(LE0Constraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     con.AddContext(ctx);
   }
 
   void PropagateResult(EQ0Constraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     con.AddContext(ctx);
   }
 

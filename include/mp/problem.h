@@ -635,7 +635,7 @@ public:
     std::size_t new_size = val(SafeInt<int>(vars_.size()) + num_vars);
     vars_.reserve(new_size);
     is_var_int_.reserve(new_size);
-    for (size_t i=0; i!=num_vars; ++i) {
+    for (int i=0; i!=num_vars; ++i) {
       vars_.push_back(Var(lb[i], ub[i]));
       is_var_int_.push_back(type[i] != var::CONTINUOUS);
     }
@@ -1120,7 +1120,7 @@ protected:
   }
 
   template <class Backend>
-  void PushComplementarityConstraintsTo(Backend& backend) const {
+  void PushComplementarityConstraintsTo(Backend& ) const {
     if (HasComplementarity()) {
       throw std::logic_error("mp::Problem cannot push complementarity to a backend yet.");
     }

@@ -115,6 +115,8 @@ int InterfaceApp<Interface>::RunFromNLFile(char **argv, int nl_reader_flags) {
 
 template <typename Interface>
 bool InterfaceApp<Interface>::Init(char **argv, int nl_reader_flags) {
+  internal::Unused(nl_reader_flags);
+
   // Parse command-line arguments.
   const char *filename = p_option_parser_->Parse(argv);
   if (!filename) return false;

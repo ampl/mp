@@ -68,7 +68,7 @@ mp::IteratedExpr MakeIterated(mp::ExprFactory& ef, mp::expr::Kind kind,
                           const std::vector<int> &args) {
   const auto N = args.size();
   auto builder = ef.BeginIterated(kind, N);
-  for (int i = 0; i < N; ++i)
+  for (size_t i = 0; i < N; ++i)
     builder.AddArg( ef.MakeVariable(args[i]) );
   return ef.EndIterated(builder);
 }

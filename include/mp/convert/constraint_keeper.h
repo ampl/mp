@@ -18,6 +18,7 @@ public:
     // Should at least derive bounds & type for the result
   }
   void PropagateResult(BasicConstraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
     throw std::logic_error("This should not be called");
   }
   /// By default, we complain about someone trying to convert an unknown constraint

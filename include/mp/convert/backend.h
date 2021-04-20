@@ -171,7 +171,7 @@ public:
     }
   }
 
-  void AddGeneralConstraint(typename Model::AlgebraicCon con) {
+  void AddGeneralConstraint(typename Model::AlgebraicCon ) {
     throw MakeUnsupportedError("BasicBackend::AddGeneralConstraint");
   }
 
