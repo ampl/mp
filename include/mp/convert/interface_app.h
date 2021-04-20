@@ -39,7 +39,6 @@ class InterfaceApp {
   Interface interface_;
 
   std::string nl_filename, filename_no_ext;
-  typedef typename Interface::ModelType ProblemBuilder;
   typename Interface::Converter::NLReadResult nl_read_result;
 
   std::unique_ptr<internal::SignalHandler> p_sig_handler_;
@@ -49,12 +48,21 @@ class InterfaceApp {
   int GetResultCode() const { return result_code_; }
   const Interface& GetInterface() const { return interface_; }
   Interface& GetInterface() { return interface_; }
+
+  using ProblemBuilder = typename Interface::ModelType;
   const ProblemBuilder& GetProblemBuilder() const
-  { return GetInterface().GetModel(); }
-  ProblemBuilder& GetProblemBuilder() { return GetInterface().GetModel(); }
+  { return GetInterface().GetInputModel(); }
+  ProblemBuilder& GetProblemBuilder() { return GetInterface().GetInputModel(); }
+
+  using OutputModel = typename Interface::OutputModelType;
+  const OutputModel& GetOutputModel() const
+  { return GetInterface().GetOutputModel(); }
+  OutputModel& GetOutputModel() { return GetInterface().GetOutputModel(); }
+
   using Backend = typename Interface::BackendType;
   const Backend& GetBackend() const { return GetInterface().GetBackend(); }
   Backend& GetBackend() { return GetInterface().GetBackend(); }
+
   using MPUtils = typename Interface::MPUtils;
   const MPUtils& GetMPUtils() const { return GetInterface().GetMPUtils(); }
   MPUtils& GetMPUtils() { return GetInterface().GetMPUtils(); }
@@ -158,7 +166,7 @@ void InterfaceApp<Interface>::Solve() {
   ArrayRef<int> options(nl_read_result.handler_->options(),
                         nl_read_result.handler_->num_options());
   internal::AppSolutionHandler<MPUtils> sol_handler(
-        filename_no_ext, GetMPUtils(), GetProblemBuilder(), options,
+        filename_no_ext, GetMPUtils(), GetOutputModel(), options,
         output_handler_.has_output ? 0 : banner_size);
   GetInterface().Solve(sol_handler);
 }
@@ -168,7 +176,7 @@ void InterfaceApp<Interface>::Resolve() {
   ArrayRef<int> options(nl_read_result.handler_->options(),
                         nl_read_result.handler_->num_options());
   internal::AppSolutionHandler<Interface> sol_handler(
-        filename_no_ext, GetInterface(), GetProblemBuilder(), options,
+        filename_no_ext, GetInterface(), GetOutputModel(), options,
         output_handler_.has_output ? 0 : banner_size);
   throw 0;        // DON't USE THIS ONE
   GetInterface().Resolve(sol_handler);

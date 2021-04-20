@@ -19,13 +19,18 @@ public:
   const Converter& GetCvt() const { return cvt_; }
   Converter& GetCvt() { return cvt_; }
 
-  using Model = typename Converter::ModelType;
+  using Model = typename Converter::OutputModelType;
 
-  const Model& GetPB() const { return GetCvt().GetModel(); }
-  Model& GetPB() { return GetCvt().GetModel(); }
+  const Model& GetOutputModel() const { return GetCvt().GetOutputModel(); }
+  Model& GetOutputModel() { return GetCvt().GetOutputModel(); }
 
   IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int) override {
-    return GetPB().AddIntSuffix(name, kind);
+    return GetCvt().AddIntSuffix(name, kind);
+  }
+
+  void HandleSolution(int status, fmt::CStringRef msg,
+                      const double *x, const double * y, double obj) override {
+    GetCvt().HandleSolution(status, msg, x, y, obj);
   }
 
 };

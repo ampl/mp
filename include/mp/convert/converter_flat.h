@@ -911,7 +911,8 @@ public:
   }
 
   bool HasInitExpression(int var) const {
-    return var_info_.size()>var && nullptr!=var_info_[var].pInitExpr;
+    return int(var_info_.size())>var &&
+        nullptr!=var_info_[var].pInitExpr;
   }
 
   BasicConstraintKeeper* GetInitExpression(int var) {
@@ -919,6 +920,21 @@ public:
     return var_info_[var].pInitExpr;
   }
 
+
+  ///////////////////////////////////////////////////////////////////////
+  //////////////////// SOLUTION REPORTING FROM BACKEND //////////////////
+  ///////////////////////////////////////////////////////////////////////
+public:
+  void HandleSolution(int status, fmt::CStringRef msg,
+      const double *x, const double *y, double obj) {
+    MP_DISPATCH( GetSolH() ).HandleSolution(status, msg, x, y, obj);
+  }
+
+  using OutputModelType = typename BaseConverter::OutputModelType;
+  typename OutputModelType::IntSuffixHandler
+      AddIntSuffix(fmt::StringRef name, int kind, int =0) {
+    return MP_DISPATCH( GetOutputModel() ).AddIntSuffix(name, kind);
+  }
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////

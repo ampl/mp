@@ -23,7 +23,8 @@
 #ifndef BASIC_CONVERTERS_H_
 #define BASIC_CONVERTERS_H_
 
-#include "mp/convert/model.h"
+#include "mp/problem.h"
+#include "mp/convert/model_adapter.h"
 #include "mp/convert/backend.h"
 #include "mp/solver.h"
 
@@ -37,34 +38,59 @@ template <class Impl, class Backend,
           class Model = BasicProblem< > >
 class BasicMPConverter :
     public BasicConstraintConverter {
-  Model model_;
+
+  ModelAdapter<Model> model_adapter_;
   Backend backend_;
   /// This is to wrap some dependencies from MP
-  using SolverAdapter = SolverImpl<Model>;
-  std::unique_ptr<ConverterQuery> p_converter_query;
+  using SolverAdapter = SolverImpl< ModelAdapter<Model> >;
+
+  std::unique_ptr<ConverterQuery> p_converter_query_;
+  SolutionHandler* p_sol_h_;
+
 public:
   static const char* GetConverterName() { return "BasicMPConverter"; }
   using Converter = Impl;
   using ModelType = Model;
+  using OutputModelType = ModelAdapter<Model>;
   using BackendType = Backend;
 
   /// MP API requires a 'ProblemBuilder' type
-  using ProblemBuilder = Model;
+  using ProblemBuilder = OutputModelType;
   using MPUtils = typename Backend::MPUtils;
-  const Model& GetModel() const { return model_; }    // Can be used for NL file input
-  Model& GetModel() { return model_; }    // Can be used for NL file input
+
+  /// The working model
+  const Model& GetModel() const { return GetOutputModel().GetModel(); }
+  /// The working model
+  Model& GetModel() { return GetOutputModel().GetModel(); }
+
+  /// Dirty: returning the output model
+  ///            // Can be used for NL file input
+  const OutputModelType& GetInputModel() const { return GetOutputModel(); }
+  OutputModelType& GetInputModel() { return GetOutputModel(); }
+
+  const OutputModelType& GetOutputModel() const { return model_adapter_; }   // TODO
+  OutputModelType& GetOutputModel() { return model_adapter_; }
+
   const Backend& GetBackend() const { return backend_; }
   Backend& GetBackend() { return backend_; }
+
   const MPUtils& GetMPUtils() const { return GetBackend().GetMPUtils(); }
   MPUtils& GetMPUtils() { return GetBackend().GetMPUtils(); }
+
   const ConverterQuery& GetCQ() const {
-    assert(p_converter_query);
-    return *p_converter_query;
+    assert(p_converter_query_);
+    return *p_converter_query_;
   }
   ConverterQuery& GetCQ() {
-    assert(p_converter_query);
-    return *p_converter_query;
+    assert(p_converter_query_);
+    return *p_converter_query_;
   }
+
+  const SolutionHandler& GetSolH() const { assert(p_sol_h_); return *p_sol_h_; }
+  SolutionHandler& GetSolH() { assert(p_sol_h_); return *p_sol_h_; }
+  void SetSolHandler(SolutionHandler& sh) { assert(&sh); p_sol_h_ = &sh; }
+  void RemoveSolHandler() { p_sol_h_=nullptr; }
+
 public:
 
   BasicMPConverter() {
@@ -73,7 +99,7 @@ public:
   }
 
   void InitConverterQueryObject() {
-    p_converter_query = MP_DISPATCH( MakeConverterQuery() );
+    p_converter_query_ = MP_DISPATCH( MakeConverterQuery() );
     GetBackend().ProvideConverterQueryObject( &MP_DISPATCH( GetCQ() ) );
   }
 
@@ -91,7 +117,7 @@ public:
   NLReadResult ReadNLFile(const std::string& nl_filename, int nl_reader_flags) {
     NLReadResult result;
     result.handler_.reset(
-          new internal::SolverNLHandler<SolverAdapter>(GetModel(), GetMPUtils()));
+          new internal::SolverNLHandler<SolverAdapter>(GetInputModel(), GetMPUtils()));
     internal::NLFileReader<> reader;
     reader.Read(nl_filename, *result.handler_, nl_reader_flags);
     return result;
@@ -106,18 +132,18 @@ public:
   /// These guys used from outside to feed a model to be converted
   /// and forwarded to a backend
   void InputVariables(int n, const double* lb, const double* ub, const var::Type* ty) {
-    model_.AddVars(n, lb, ub, ty);
+    GetModel().AddVars(n, lb, ub, ty);
   }
   void InputObjective(obj::Type t,
                       int nnz, const double* c, const int* v, NumericExpr e=NumericExpr()) {
-    typename Model::LinearObjBuilder lob = model_.AddObj(t, e);
+    typename Model::LinearObjBuilder lob = GetModel().AddObj(t, e);
     for (int i=0; i!=nnz; ++i) {
       lob.AddTerm(c[i], v[i]);
     }
   }
   void InputAlgebraicCon(int nnz, const double* c, const int* v,
                          double lb, double ub, NumericExpr e=NumericExpr()) {
-    typename Model::MutAlgebraicCon mac = model_.AddCon(lb, ub);
+    typename Model::MutAlgebraicCon mac = GetModel().AddCon(lb, ub);
     typename Model::LinearConBuilder lcb = mac.set_linear_expr(nnz);
     for (int i=0; i!=nnz; ++i)
       lcb.AddTerm(v[i], c[i]);
@@ -132,30 +158,42 @@ public:
   }
 
   void Solve(SolutionHandler &sh) {
-    GetBackend().SolveAndReport(GetModel(), sh);   // TODO no model any more
+    SetSolHandler(sh);
+    GetBackend().SolveAndReport();
+    RemoveSolHandler();
   }
 
 
 protected:
   /// Convert the whole model, e.g., after reading from NL
   void ConvertModel() {
+    MP_DISPATCH( PrepareConversion() );
     MP_DISPATCH( ConvertStandardItems() );
     MP_DISPATCH( ConvertExtraItems() );
   }
 
+  void PrepareConversion() {
+    MP_DISPATCH( MemorizeModelSize() );
+  }
+
+  void MemorizeModelSize() {
+    GetOutputModel().set_num_vars(GetModel().num_vars());
+    GetOutputModel().set_num_alg_cons(GetModel().num_algebraic_cons());
+  }
+
   void ConvertStandardItems() {
-    int num_common_exprs = model_.num_common_exprs();
+    int num_common_exprs = GetModel().num_common_exprs();
     for (int i = 0; i < num_common_exprs; ++i)
-      MP_DISPATCH( Convert( model_.common_expr(i) ) );
-    if (int num_objs = model_.num_objs())
+      MP_DISPATCH( Convert( GetModel().common_expr(i) ) );
+    if (int num_objs = GetModel().num_objs())
       for (int i = 0; i < num_objs; ++i)
-        MP_DISPATCH( Convert( model_.obj(i) ) );
-    if (int n_cons = model_.num_algebraic_cons())
+        MP_DISPATCH( Convert( GetModel().obj(i) ) );
+    if (int n_cons = GetModel().num_algebraic_cons())
       for (int i = 0; i < n_cons; ++i)
-        MP_DISPATCH( Convert( model_.algebraic_con(i) ) );
-    if (int n_lcons = model_.num_logical_cons())
+        MP_DISPATCH( Convert( GetModel().algebraic_con(i) ) );
+    if (int n_lcons = GetModel().num_logical_cons())
       for (int i = 0; i < n_lcons; ++i)
-        MP_DISPATCH( Convert( model_.logical_con(i) ) );
+        MP_DISPATCH( Convert( GetModel().logical_con(i) ) );
   }
 
   void ConvertExtraItems() { }

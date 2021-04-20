@@ -24,11 +24,12 @@
 #define BACKEND_H_
 
 #include "mp/clock.h"
-#include "mp/convert/converter_query.h".h"
+#include "mp/convert/converter_query.h"
 #include "mp/convert/constraint_keeper.h"
 #include "mp/convert/std_constr.h"
 #include "mp/convert/std_obj.h"
 #include "mp/convert/model.h"
+#include "mp/convert/model_adapter.h"
 
 namespace mp {
 
@@ -38,17 +39,17 @@ namespace mp {
 template <class Impl>
 class BasicBackend :
     public BasicConstraintAdder,
-    private SolverImpl< BasicModel<> >   // mp::Solver stuff, hidden
+    private SolverImpl< ModelAdapter< BasicModel<> > >   // mp::Solver stuff, hidden
 {
   ConverterQuery *p_converter_query_object = nullptr;
-  using MPSolverBase = SolverImpl< BasicModel<> >;
+  using MPSolverBase = SolverImpl< ModelAdapter< BasicModel<> > >;
 public:
   using MPUtils = MPSolverBase;              // Allow Converter access the SolverImpl
   const MPUtils& GetMPUtils() const { return *this; }
   MPUtils& GetMPUtils() { return *this; }
 public:
   BasicBackend() :
-    SolverImpl< BasicModel<> >(
+    MPSolverBase(
       Impl::GetSolverInvocationName(),
       Impl::GetAMPLSolverLongName(),
       Impl::Date(), Impl::Flags())
@@ -191,13 +192,13 @@ public:
   }
 
 
-  void SolveAndReport(Model &p, SolutionHandler &sh) {
+  void SolveAndReport() {
     MP_DISPATCH( PrepareSolve() );
     MP_DISPATCH( DoSolve() );
     MP_DISPATCH( WrapupSolve() );
 
     ObtainSolutionStatus();
-    ObtainAndReportSolution(p, sh);
+    ObtainAndReportSolution();
     if (MP_DISPATCH( timing() ))
       PrintTimingInfo();
   }
@@ -216,7 +217,7 @@ public:
           ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
   }
 
-  void ObtainAndReportSolution(Model& p, SolutionHandler &sh) {
+  void ObtainAndReportSolution() {
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status);
     if (solve_code < sol::INFEASIBLE) {
@@ -234,18 +235,9 @@ public:
       MP_DISPATCH( DualSolution(dual_solution) );
     }
 
-    auto toySuf =
-      GetCQ().AddIntSuffix("toy_var_suffix", suf::VAR | suf::OUTPUT | suf::OUTONLY);
-
-    /// TODO SuffixHandler should also allow GetValue()
-            for (int i = 0, n = MP_DISPATCH( NumberOfVariables() ); i < n; ++i) {
-              if (i % 2 == 0)
-                toySuf.SetValue(i, 900+i);
-            }
-
-    sh.HandleSolution(solve_code, writer.c_str(),
-                      solution.empty() ? 0 : solution.data(),
-                      dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
+    HandleSolution(solve_code, writer.c_str(),
+                   solution.empty() ? 0 : solution.data(),
+                   dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
   }
 
   void PrintTimingInfo() {
@@ -290,6 +282,12 @@ public:
   using Solver::add_to_version;
   using Solver::set_option_header;
   using Solver::add_to_option_header;
+
+protected:
+  void HandleSolution(int status, fmt::CStringRef msg,
+      const double *x, const double *y, double obj) {
+    GetCQ().HandleSolution(status, msg, x, y, obj);
+  }
 
   ///////////////////////////// OPTIONS /////////////////////////////////
   /// TODOs
@@ -364,11 +362,13 @@ public:
   }
 
   /// Adding solver options of types int/double/string/...
+  /// The type is deduced from the two last parameters min, max
+  /// (currently unused otherwise - TODO)
+  /// If min/max omitted, assume ValueType=std::string
   /// Assumes existence of Impl::Get/SetSolverOption(KeyType, ValueType(&))
   template <class KeyType, class ValueType=std::string>
   void AddSolverOption(const char *name, const char *description,
                        KeyType k,
-                       /// If min/max omitted, assume ValueType=std::string
                        ValueType ={}, ValueType ={}) {
     AddOption(Solver::OptionPtr(
                 new ConcreteOptionWrapper<

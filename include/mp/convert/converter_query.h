@@ -8,7 +8,7 @@
   */
 
 #include "mp/solver.h"
-#include "mp/convert/model.h".h"
+#include "mp/convert/model.h"
 
 namespace mp {
 
@@ -20,9 +20,13 @@ public:
 
   using IntSuffixHandler = Model::SuffixHandler<int>;
 
-  // Adds an integer suffix.
-  // name: Suffix name that may not be null-terminated.
-  virtual IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int=0) { }
+  /// Adds an integer suffix.
+  /// name: Suffix name that may not be null-terminated.
+  /// TODO put values right there (1. vector, 2. sparse vector)
+  virtual IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int=0) = 0;
+
+  virtual void HandleSolution(int, fmt::CStringRef,
+      const double *, const double *, double) = 0;
 
 };
 
