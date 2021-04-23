@@ -111,14 +111,16 @@ public:
 
   //////////////////////////// SOLVING ///////////////////////////////
   void SetInterrupter(mp::Interrupter* inter);
-  void DoSolve();
+  void SolveAndReportIntermediateResults();
   std::string ConvertSolutionStatus(
       const mp::Interrupter &interrupter, int &solve_code);
 
-  /// Solution values
+  /// Solution values. The vectors are emptied if not available
   void PrimalSolution(std::vector<double>& x);
   void DualSolution(std::vector<double>& pi);
   double ObjectiveValue() const;
+  void VarStatii(std::vector<int>& stt);
+  void ConStatii(std::vector<int>& stt);
 
   /// Solution attributes
   double NodeCount() const;

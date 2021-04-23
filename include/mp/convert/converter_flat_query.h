@@ -24,8 +24,9 @@ public:
   const Model& GetOutputModel() const { return GetCvt().GetOutputModel(); }
   Model& GetOutputModel() { return GetCvt().GetOutputModel(); }
 
-  IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int) override {
-    return GetCvt().AddIntSuffix(name, kind);
+  void DeclareAndReportIntSuffix(fmt::StringRef name, int kind,
+                                 const std::vector<int>& values) override {
+    GetOutputModel().DeclareAndReportIntSuffix(name, kind, values);
   }
 
   void HandleSolution(int status, fmt::CStringRef msg,

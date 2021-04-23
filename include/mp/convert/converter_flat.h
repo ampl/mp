@@ -942,12 +942,6 @@ public:
     MP_DISPATCH( GetSolH() ).HandleSolution(status, msg, x, y, obj);
   }
 
-  using OutputModelType = typename BaseConverter::OutputModelType;
-  typename OutputModelType::IntSuffixHandler
-      AddIntSuffix(fmt::StringRef name, int kind, int =0) {
-    return MP_DISPATCH( GetOutputModel() ).AddIntSuffix(name, kind);
-  }
-
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////
   ///

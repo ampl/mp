@@ -94,13 +94,17 @@ int CplexBackend::NumberOfObjectives() const {
 void CplexBackend::PrimalSolution(std::vector<double> &x) {
   int num_vars = NumberOfVariables();
   x.resize(num_vars);
-  CPLEX_CALL( CPXgetx (env, lp, x.data(), 0, num_vars-1) );
+  int error = CPXgetx (env, lp, x.data(), 0, num_vars-1);
+  if (error)
+    x.clear();
 }
 
 void CplexBackend::DualSolution(std::vector<double> &pi) {
   int num_cons = NumberOfConstraints();
   pi.resize(num_cons);
-  CPLEX_CALL( CPXgetpi (env, lp, pi.data(), 0, num_cons-1) );
+  int error = CPXgetpi (env, lp, pi.data(), 0, num_cons-1);
+  if (error)
+    pi.clear();
 }
 
 double CplexBackend::ObjectiveValue() const {
@@ -127,7 +131,7 @@ void CplexBackend::SetInterrupter(mp::Interrupter *inter) {
   CPLEX_CALL( CPXsetterminate (env, &terminate_flag) );
 }
 
-void CplexBackend::DoSolve() {
+void CplexBackend::SolveAndReportIntermediateResults() {
   CPLEX_CALL( CPXmipopt(env, lp) );
 }
 

@@ -88,18 +88,39 @@ int GurobiBackend::NumberOfObjectives() const {
 void GurobiBackend::PrimalSolution(std::vector<double> &x) {
   int num_vars = NumberOfVariables();
   x.resize(num_vars);
-  GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_vars, x.data());
+  int error = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_vars, x.data());
+  if (error)
+    x.clear();
 }
 
 void GurobiBackend::DualSolution(std::vector<double> &pi) {
   int num_cons = NumberOfConstraints();
   pi.resize(num_cons);
-  GRBgetdblattrarray(model, GRB_DBL_ATTR_PI, 0, num_cons, pi.data());
+  int error = GRBgetdblattrarray(model, GRB_DBL_ATTR_PI, 0, num_cons, pi.data());
+  if (error)
+    pi.clear();
 }
 
 double GurobiBackend::ObjectiveValue() const {
   return GetGrbDblAttribute(GRB_DBL_ATTR_OBJVAL);
 }
+
+void GurobiBackend::VarStatii(std::vector<int> &stt) {
+  int num_vars = NumberOfVariables();
+  stt.resize(num_vars);
+  int error = GRBgetintattrarray(model, GRB_INT_ATTR_VBASIS, 0, num_vars, stt.data());
+  if (error)
+    stt.clear();
+}
+
+void GurobiBackend::ConStatii(std::vector<int> &stt) {
+  int num_cons = NumberOfConstraints();
+  stt.resize(num_cons);
+  int error = GRBgetintattrarray(model, GRB_INT_ATTR_CBASIS, 0, num_cons, stt.data());
+  if (error)
+    stt.clear();
+}
+
 
 double GurobiBackend::NodeCount() const {
   return GetGrbDblAttribute(GRB_DBL_ATTR_NODECOUNT);
@@ -118,7 +139,7 @@ void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptGurobi, model);
 }
 
-void GurobiBackend::DoSolve() {
+void GurobiBackend::SolveAndReportIntermediateResults() {
   GRB_CALL( GRBoptimize(model) );
 }
 

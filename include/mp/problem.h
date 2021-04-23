@@ -266,6 +266,10 @@ public:
    public:
     explicit SuffixHandler(BasicMutSuffix<T> s) : suffix_(s) {}
 
+    // Safe bool type.
+    typedef void (internal::SuffixBase::*SafeBool)() const;
+    operator SafeBool() const { return suffix_; }
+
     // Sets the suffix value.
     void SetValue(int index, T value) {
       suffix_.set_value(index, value);

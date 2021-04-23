@@ -18,12 +18,10 @@ public:
 
   using Model = BasicModel<>;
 
-  using IntSuffixHandler = Model::SuffixHandler<int>;
-
-  /// Adds an integer suffix.
+  /// Outputs an integer suffix.
   /// name: Suffix name that may not be null-terminated.
-  /// TODO put values right there (1. vector, 2. sparse vector)
-  virtual IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int=0) = 0;
+  virtual void DeclareAndReportIntSuffix(fmt::StringRef name, int kind,
+                      const std::vector<int>& values) = 0;
 
   virtual void HandleSolution(int, fmt::CStringRef,
       const double *, const double *, double) = 0;

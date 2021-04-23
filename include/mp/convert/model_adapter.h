@@ -1,6 +1,10 @@
 #ifndef MODEL_ADAPTER_H
 #define MODEL_ADAPTER_H
 
+#include "mp/suffix.h"
+
+namespace mp {
+
 /// Present an interface to "original" model
 /// corresponding to the NL file
 /// This is a workaround to use MP output facilities
@@ -21,11 +25,61 @@ public:
   void set_num_alg_cons(int n) { n_alg_cons_orig_ = n; }
 
 
-  typename Model::IntSuffixHandler
-  AddIntSuffix(fmt::StringRef name, int kind, int=0) {
-    return Model::AddIntSuffix(name, kind);
+  ////////////////////////// SUFFIX DECLARE & OUTPUT ///////////////////////
+  void DeclareAndReportIntSuffix(fmt::StringRef name, int kind,
+                                 const std::vector<int>& values) {
+    DeclareAndReportSuffix(name, kind, values);
+  }
+  void DeclareAndReportDblSuffix(fmt::StringRef name, int kind,
+                                 const std::vector<double>& values) {
+    DeclareAndReportSuffix(name, kind, values);
   }
 
+  template <class T>
+  void DeclareAndReportSuffix(fmt::StringRef name, int kind,
+                              const std::vector<T>& values) {
+    if (values.empty())
+      return;
+    auto main_kind = (suf::Kind)(kind & suf::KIND_MASK);
+    auto suf_raw = Model::suffixes(main_kind).Find(name);
+    auto suf_size = GetSuffixSize(main_kind);    // can be < values.size()
+    assert(suf_size <= values.size());
+    auto suf =
+      (suf_raw) ? (typename Model::SuffixHandler<T>)
+               Cast<BasicMutSuffix<T> >( suf_raw )
+        : (typename Model::SuffixHandler<T>)
+          Model::suffixes(main_kind).template
+          Add<T>(name, kind, suf_size);
+    for (auto i=suf_size; i--; ) {
+      suf.SetValue(i, values[i]);
+    }
+  }
+
+  int GetSuffixSize(suf::Kind kind) {
+    std::size_t size = 0;
+    switch (kind) {
+    default:
+      MP_ASSERT(false, "invalid suffix kind");
+      // Fall through.
+    case suf::VAR:
+      size = num_vars();
+      break;
+    case suf::CON:
+      size = num_algebraic_cons();
+      break;
+    case suf::OBJ:
+      size = Model::num_objs();
+      break;
+    case suf::PROBLEM:
+      size = 1;
+      break;
+    }
+    return static_cast<int>(size);
+  }
+
+
 };
+
+} // namespace mp
 
 #endif // MODEL_ADAPTER_H

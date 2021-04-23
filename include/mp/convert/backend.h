@@ -191,16 +191,26 @@ public:
     throw MakeUnsupportedError("BasicBackend::AddLinearConstraint");
   }
 
+  /// Solution values. The vectors are emptied if not available
+  void DualSolution(std::vector<double>& pi) { pi.clear(); }
+  void VarStatii(std::vector<int>& stt) { stt.clear(); }
+  void ConStatii(std::vector<int>& stt) { stt.clear(); }
+
+
+
+  ////////////////////////////////////////////////////////////////////////////
+  ////////////////////// PROCESS LOGIC ////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
 
   void SolveAndReport() {
     MP_DISPATCH( PrepareSolve() );
-    MP_DISPATCH( DoSolve() );
+    MP_DISPATCH( SolveAndReportIntermediateResults() );
     MP_DISPATCH( WrapupSolve() );
 
-    ObtainSolutionStatus();
-    ObtainAndReportSolution();
+    MP_DISPATCH( ObtainSolutionStatus() );
+    MP_DISPATCH( ReportSolution() );
     if (MP_DISPATCH( timing() ))
-      PrintTimingInfo();
+      MP_DISPATCH( PrintTimingInfo() );
   }
 
   void PrepareSolve() {
@@ -217,7 +227,29 @@ public:
           ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
   }
 
-  void ObtainAndReportSolution() {
+  void ReportSolution() {
+    MP_DISPATCH( ReportSuffixes() );
+    MP_DISPATCH( ReportPrimalDualValues() );
+  }
+
+  void ReportSuffixes() {
+    MP_DISPATCH( ReportStandardSuffixes() );
+    MP_DISPATCH( ReportCustomSuffixes() );
+  }
+
+  void ReportStandardSuffixes() {
+    std::vector<int> stt;
+    MP_DISPATCH( VarStatii(stt) );
+    DeclareAndReportIntSuffix("sstatus", suf::VAR | suf::OUTPUT, stt);
+    MP_DISPATCH( ConStatii(stt) );
+    DeclareAndReportIntSuffix("sstatus", suf::CON | suf::OUTPUT, stt);
+  }
+
+  void ReportCustomSuffixes() {
+
+  }
+
+  void ReportPrimalDualValues() {
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status);
     if (solve_code < sol::INFEASIBLE) {
@@ -230,10 +262,7 @@ public:
     }
     writer.write("\n");
 
-    if (MP_DISPATCH( IsMIP() )) {
-    } else {                                    // Also for QCP
-      MP_DISPATCH( DualSolution(dual_solution) );
-    }
+    MP_DISPATCH( DualSolution(dual_solution) );
 
     HandleSolution(solve_code, writer.c_str(),
                    solution.empty() ? 0 : solution.data(),
@@ -287,6 +316,12 @@ protected:
   void HandleSolution(int status, fmt::CStringRef msg,
       const double *x, const double *y, double obj) {
     GetCQ().HandleSolution(status, msg, x, y, obj);
+  }
+
+  /// Does nothing if vector empty
+  void DeclareAndReportIntSuffix(fmt::StringRef name, int kind,
+                                 const std::vector<int>& values) {
+    GetCQ().DeclareAndReportIntSuffix(name, kind, values);
   }
 
   ///////////////////////////// OPTIONS /////////////////////////////////
