@@ -237,12 +237,16 @@ public:
     MP_DISPATCH( ReportCustomSuffixes() );
   }
 
+  ///////////////////////////// STANDARD SUFFIXES ////////////////////////////
+  const SuffixDef<int> suf_varstatus = { "sstatus", suf::VAR | suf::OUTPUT };
+  const SuffixDef<int> suf_constatus = { "sstatus", suf::CON | suf::OUTPUT };
+
   void ReportStandardSuffixes() {
     std::vector<int> stt;
     MP_DISPATCH( VarStatii(stt) );
-    DeclareAndReportIntSuffix("sstatus", suf::VAR | suf::OUTPUT, stt);
+    DeclareAndReportIntSuffix(suf_varstatus, stt);
     MP_DISPATCH( ConStatii(stt) );
-    DeclareAndReportIntSuffix("sstatus", suf::CON | suf::OUTPUT, stt);
+    DeclareAndReportIntSuffix(suf_constatus, stt);
   }
 
   void ReportCustomSuffixes() {
@@ -319,9 +323,9 @@ protected:
   }
 
   /// Does nothing if vector empty
-  void DeclareAndReportIntSuffix(fmt::StringRef name, int kind,
+  void DeclareAndReportIntSuffix(const SuffixDef<int>& suf,
                                  const std::vector<int>& values) {
-    GetCQ().DeclareAndReportIntSuffix(name, kind, values);
+    GetCQ().DeclareAndReportIntSuffix(suf, values);
   }
 
   ///////////////////////////// OPTIONS /////////////////////////////////

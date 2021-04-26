@@ -9,6 +9,7 @@
 
 #include "mp/solver.h"
 #include "mp/convert/model.h"
+#include "mp/convert/suffix.h"
 
 namespace mp {
 
@@ -20,7 +21,7 @@ public:
 
   /// Outputs an integer suffix.
   /// name: Suffix name that may not be null-terminated.
-  virtual void DeclareAndReportIntSuffix(fmt::StringRef name, int kind,
+  virtual void DeclareAndReportIntSuffix(const SuffixDef<int>& suf,
                       const std::vector<int>& values) = 0;
 
   virtual void HandleSolution(int, fmt::CStringRef,

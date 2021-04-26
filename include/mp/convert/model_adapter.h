@@ -1,7 +1,7 @@
 #ifndef MODEL_ADAPTER_H
 #define MODEL_ADAPTER_H
 
-#include "mp/suffix.h"
+#include "mp/convert/converter_query.h"
 
 namespace mp {
 
@@ -26,30 +26,30 @@ public:
 
 
   ////////////////////////// SUFFIX DECLARE & OUTPUT ///////////////////////
-  void DeclareAndReportIntSuffix(fmt::StringRef name, int kind,
+  void DeclareAndReportIntSuffix(const SuffixDef<int>& suf,
                                  const std::vector<int>& values) {
-    DeclareAndReportSuffix(name, kind, values);
+    DeclareAndReportSuffix(suf, values);
   }
-  void DeclareAndReportDblSuffix(fmt::StringRef name, int kind,
+  void DeclareAndReportDblSuffix(const SuffixDef<double>& suf,
                                  const std::vector<double>& values) {
-    DeclareAndReportSuffix(name, kind, values);
+    DeclareAndReportSuffix(suf, values);
   }
 
   template <class T>
-  void DeclareAndReportSuffix(fmt::StringRef name, int kind,
+  void DeclareAndReportSuffix(const SuffixDef<int>& sufdef,
                               const std::vector<T>& values) {
     if (values.empty())
       return;
-    auto main_kind = (suf::Kind)(kind & suf::KIND_MASK);
-    auto suf_raw = Model::suffixes(main_kind).Find(name);
+    auto main_kind = (suf::Kind)(sufdef.kind() & suf::KIND_MASK);
+    auto suf_raw = Model::suffixes(main_kind).Find(sufdef.name());
     auto suf_size = GetSuffixSize(main_kind);    // can be < values.size()
-    assert(suf_size <= values.size());
+    assert(suf_size <= (int)values.size());
     auto suf =
       (suf_raw) ? (typename Model::SuffixHandler<T>)
                Cast<BasicMutSuffix<T> >( suf_raw )
         : (typename Model::SuffixHandler<T>)
           Model::suffixes(main_kind).template
-          Add<T>(name, kind, suf_size);
+          Add<T>(sufdef.name(), sufdef.kind(), suf_size);
     for (auto i=suf_size; i--; ) {
       suf.SetValue(i, values[i]);
     }

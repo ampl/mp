@@ -24,9 +24,9 @@ public:
   const Model& GetOutputModel() const { return GetCvt().GetOutputModel(); }
   Model& GetOutputModel() { return GetCvt().GetOutputModel(); }
 
-  void DeclareAndReportIntSuffix(fmt::StringRef name, int kind,
+  void DeclareAndReportIntSuffix(const SuffixDef<int>& suf,
                                  const std::vector<int>& values) override {
-    GetOutputModel().DeclareAndReportIntSuffix(name, kind, values);
+    GetOutputModel().DeclareAndReportIntSuffix(suf, values);
   }
 
   void HandleSolution(int status, fmt::CStringRef msg,
