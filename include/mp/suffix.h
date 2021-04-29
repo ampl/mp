@@ -308,8 +308,8 @@ class BasicSuffixSet : private Alloc {
   }
 
   template <typename T>
-  void Deallocate(T *values) {
-    typename Alloc::template rebind<T>::other(*this).deallocate(values, 0);
+  void Deallocate(T *values, std::size_t size) {
+    typename Alloc::template rebind<T>::other(*this).deallocate(values, size);
   }
 
  public:
@@ -396,11 +396,11 @@ template <typename Alloc>
 BasicSuffixSet<Alloc>::~BasicSuffixSet() {
   // Deallocate names and values.
   for (typename Set::iterator i = set_.begin(), e = set_.end(); i != e; ++i) {
-    Deallocate(const_cast<char*>(i->name.data()));
+    Deallocate(const_cast<char*>(i->name.data()), i->name.size());
     if ((i->kind & suf::FLOAT) != 0)
-      Deallocate(i->dbl_values);
+      Deallocate(i->dbl_values, i->num_values);
     else
-      Deallocate(i->int_values);
+      Deallocate(i->int_values, i->num_values);
   }
 }
 
