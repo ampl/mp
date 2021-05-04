@@ -429,4 +429,8 @@ void GurobiBackend::ConsIIS(std::vector<int>& stt) {
     stt.clear();
 }
 
+double GurobiBackend::MIPGap() {
+  return GetGrbDblAttribute(GRB_DBL_ATTR_MIPGAP);
+}
+
 } // namespace mp

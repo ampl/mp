@@ -126,6 +126,8 @@ public:
   void VarsIIS(std::vector<int>& stt);
   void ConsIIS(std::vector<int>& stt);
 
+  double MIPGap();
+
   /// Solution attributes
   double NodeCount() const;
   double Niterations() const;
@@ -174,6 +176,7 @@ public:
 
   // Calculate MIP backend related quantities
   void ComputeIIS();
+  void ComputeMIPGap() {}
 
 };
 

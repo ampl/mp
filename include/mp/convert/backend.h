@@ -333,6 +333,12 @@ protected:
     GetCQ().DeclareAndReportIntSuffix(suf, values);
   }
 
+  void DeclareAndReportDblSuffix(const SuffixDef<double>& suf,
+    const std::vector<double>& values) {
+    GetCQ().DeclareAndReportDblSuffix(suf, values);
+  }
+
+
   ///////////////////////////// OPTIONS /////////////////////////////////
   /// TODOs
   /// - hide all Solver stuff behind an abstract interface
