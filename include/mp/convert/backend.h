@@ -97,6 +97,7 @@ public:
   static bool IfMultipleObj() { return false; }
 
   void InitMetaInfoAndOptions() {
+
     MP_DISPATCH( InitNamesAndVersion() );
     MP_DISPATCH( InitOptions() );
   }
@@ -208,6 +209,7 @@ public:
     MP_DISPATCH( WrapupSolve() );
 
     MP_DISPATCH( ObtainSolutionStatus() );
+    MP_DISPATCH( CalculateDerivedResults() );
     MP_DISPATCH( ReportSolution() );
     if (MP_DISPATCH( timing() ))
       MP_DISPATCH( PrintTimingInfo() );
@@ -225,6 +227,9 @@ public:
   void ObtainSolutionStatus() {
     solve_status = MP_DISPATCH(
           ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
+  }
+  void CalculateDerivedResults() {
+
   }
 
   void ReportSolution() {

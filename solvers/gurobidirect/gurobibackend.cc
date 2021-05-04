@@ -219,8 +219,8 @@ void GurobiBackend::AddQuadraticObjective(const QuadraticObjective &qo) {
   }
 
 }
-
 void GurobiBackend::AddConstraint( const LinearConstraint& lc ) {
+  int j = GetGrbIntAttribute(GRB_INT_ATTR_NUMCONSTRS) + GetGrbIntAttribute(GRB_INT_ATTR_NUMQCONSTRS);
   GRB_CALL( GRBaddrangeconstr(model, lc.nnz(),
                               (int*)lc.pvars(), (double*)lc.pcoefs(), lc.lb(), lc.ub(), NULL) );
 }
@@ -380,6 +380,7 @@ void GurobiBackend::InitOptions() {
       "limit on solve time (in seconds; default: no limit).",
       GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
 
+
 }
 
 void GurobiBackend::GetSolverOption(const char *key, int &value) const {
@@ -408,5 +409,24 @@ void GurobiBackend::SetSolverOption(const char *key, const std::string& value) {
   GRB_CALL( GRBsetstrparam(GRBgetenv(model), key, value.c_str()) );
 }
 
+void GurobiBackend::ComputeIIS() {
+  GRB_CALL(GRBcomputeIIS(model));
+}
+
+void GurobiBackend::VarsIIS(std::vector<int>& stt) {
+  int num_vars = NumberOfVariables();
+  stt.resize(num_vars);
+  int error = GRBgetintattrarray(model, GRB_INT_ATTR_IIS_LB, 0, stt.size(), stt.data());
+  if (error)
+    stt.clear();
+}
+
+void GurobiBackend::ConsIIS(std::vector<int>& stt) {
+  int nl = GetGrbIntAttribute(GRB_INT_ATTR_NUMSOS) + GetGrbIntAttribute(GRB_INT_ATTR_NUMQCONSTRS) + GetGrbIntAttribute(GRB_INT_ATTR_NUMGENCONSTRS);
+  stt.resize((std::size_t)NumberOfConstraints() + nl);
+  int error = GRBgetintattrarray(model, GRB_INT_ATTR_IIS_CONSTR, 0, stt.size()-nl, stt.data()+nl);
+  if (error)
+    stt.clear();
+}
 
 } // namespace mp
