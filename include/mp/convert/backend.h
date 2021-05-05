@@ -31,6 +31,10 @@
 #include "mp/convert/model.h"
 #include "mp/convert/model_adapter.h"
 
+#define ALLOW_STD_FEATURE( name, val ) \
+  constexpr bool AllowFeature__##name() { return val; }
+#define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH( AllowFeature##name() )
+
 namespace mp {
 
 /// Basic backend wrapper.

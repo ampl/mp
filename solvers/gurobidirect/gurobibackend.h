@@ -157,7 +157,6 @@ private:
   /// for direct access
   struct Options {
     std::string exportFile_;
-    int exportIIS_;
   };
 
   Options storedOptions_;
@@ -175,6 +174,7 @@ public:
 
 
   // Calculate MIP backend related quantities
+  ALLOW_STD_FEATURE( IIS, true )
   void ComputeIIS();
   void ComputeMIPGap() {}
 

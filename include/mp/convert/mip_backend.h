@@ -45,17 +45,21 @@ class MIPBackend :
 
 public:
 
+  ALLOW_STD_FEATURE( IIS, false )
+
   void InitOptions() {
     BaseBackend::InitOptions();
     MP_DISPATCH( InitMIPOptions() );
   }
 
+  using BaseBackend::AddStoredOption;
   void InitMIPOptions() {
-    this->AddStoredOption("iisfind",
-      "Whether to find and export the IIS. "
-      "Default = 0 (don't export).",
-      mipStoredOptions_.exportIIS_);
-    this->AddStoredOption("return_mipgap",
+    if (IMPL_HAS_STD_FEATURE( IIS ))
+      AddStoredOption("iisfind",
+                      "Whether to find and export the IIS. "
+                      "Default = 0 (don't export).",
+                      mipStoredOptions_.exportIIS_);
+    AddStoredOption("return_mipgap",
       "Whether to return mipgap suffixes or include mipgap values\n\
 		(|objectve - best_bound|) in the solve_message:  sum of\n\
 			1 = return relmipgap suffix (relative to |obj|);\n\
