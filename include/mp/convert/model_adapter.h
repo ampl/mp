@@ -36,7 +36,7 @@ public:
   }
 
   template <class T>
-  void DeclareAndReportSuffix(const SuffixDef<int>& sufdef,
+  void DeclareAndReportSuffix(const SuffixDef<T>& sufdef,
                               const std::vector<T>& values) {
     if (values.empty())
       return;

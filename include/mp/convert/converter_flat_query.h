@@ -29,6 +29,12 @@ public:
     GetOutputModel().DeclareAndReportIntSuffix(suf, values);
   }
 
+
+  void DeclareAndReportDblSuffix(const SuffixDef<double>& suf,
+    const std::vector<double>& values) override {
+    GetOutputModel().DeclareAndReportDblSuffix(suf, values);
+  }
+
   void HandleSolution(int status, fmt::CStringRef msg,
                       const double *x, const double * y, double obj) override {
     GetCvt().HandleSolution(status, msg, x, y, obj);

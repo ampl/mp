@@ -88,7 +88,8 @@ int GurobiBackend::NumberOfObjectives() const {
 void GurobiBackend::PrimalSolution(std::vector<double> &x) {
   int num_vars = NumberOfVariables();
   x.resize(num_vars);
-  int error = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_vars, x.data());
+  int error = GRBgetdblattrarray(model, GRB_DBL_ATTR_X,
+                                 0, num_vars, x.data());
   if (error)
     x.clear();
 }
@@ -96,7 +97,8 @@ void GurobiBackend::PrimalSolution(std::vector<double> &x) {
 void GurobiBackend::DualSolution(std::vector<double> &pi) {
   int num_cons = NumberOfConstraints();
   pi.resize(num_cons);
-  int error = GRBgetdblattrarray(model, GRB_DBL_ATTR_PI, 0, num_cons, pi.data());
+  int error = GRBgetdblattrarray(model, GRB_DBL_ATTR_PI,
+                                 0, num_cons, pi.data());
   if (error)
     pi.clear();
 }
@@ -108,7 +110,8 @@ double GurobiBackend::ObjectiveValue() const {
 void GurobiBackend::VarStatii(std::vector<int> &stt) {
   int num_vars = NumberOfVariables();
   stt.resize(num_vars);
-  int error = GRBgetintattrarray(model, GRB_INT_ATTR_VBASIS, 0, num_vars, stt.data());
+  int error = GRBgetintattrarray(model, GRB_INT_ATTR_VBASIS,
+                                 0, num_vars, stt.data());
   if (error)
     stt.clear();
 }
@@ -116,7 +119,8 @@ void GurobiBackend::VarStatii(std::vector<int> &stt) {
 void GurobiBackend::ConStatii(std::vector<int> &stt) {
   int num_cons = NumberOfConstraints();
   stt.resize(num_cons);
-  int error = GRBgetintattrarray(model, GRB_INT_ATTR_CBASIS, 0, num_cons, stt.data());
+  int error = GRBgetintattrarray(model, GRB_INT_ATTR_CBASIS,
+                                 0, num_cons, stt.data());
   if (error)
     stt.clear();
 }
@@ -152,7 +156,7 @@ std::string GurobiBackend::ConvertSolutionStatus(
   default:
     // Fall through.
     if (interrupter.Stop()) {
-      solve_code = 600;
+      solve_code = sol::INTERRUPTED;
       return "interrupted";
     }
     int solcount;
@@ -196,10 +200,11 @@ void GurobiBackend::AddVariable(Variable var) {
 void GurobiBackend::AddLinearObjective( const LinearObjective& lo ) {
   if (1>=NumberOfObjectives()) {
     GRB_CALL( GRBsetintattr(model, GRB_INT_ATTR_MODELSENSE,
-                          obj::Type::MAX==lo.get_sense() ? GRB_MAXIMIZE : GRB_MINIMIZE) );
+                  obj::Type::MAX==lo.get_sense() ? GRB_MAXIMIZE : GRB_MINIMIZE) );
     GRB_CALL( GRBsetdblattrlist(model, GRB_DBL_ATTR_OBJ,
                                 lo.get_num_terms(),
-                                (int*)lo.get_vars().data(), (double*)lo.get_coefs().data()) );
+                                (int*)lo.get_vars().data(),
+                                (double*)lo.get_coefs().data()) );
   } else {
     throw std::runtime_error("Multiple objectives not supported");
 //    TODO
@@ -219,28 +224,28 @@ void GurobiBackend::AddQuadraticObjective(const QuadraticObjective &qo) {
   }
 
 }
-
 void GurobiBackend::AddConstraint( const LinearConstraint& lc ) {
   GRB_CALL( GRBaddrangeconstr(model, lc.nnz(),
-                              (int*)lc.pvars(), (double*)lc.pcoefs(), lc.lb(), lc.ub(), NULL) );
+                              (int*)lc.pvars(), (double*)lc.pcoefs(),
+                              lc.lb(), lc.ub(), NULL) );
 }
 
 void GurobiBackend::AddConstraint( const QuadraticConstraint& qc ) {
   const auto& qt = qc.GetQPTerms();
   if (qc.lb()==qc.ub())
     GRB_CALL( GRBaddqconstr(model, qc.nnz(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-                            qt.num_terms(), (int*)qt.vars1(), (int*)qt.vars2(), (double*)qt.coefs(),
-                            GRB_EQUAL, qc.lb(), NULL) );
+                            qt.num_terms(), (int*)qt.vars1(), (int*)qt.vars2(),
+                            (double*)qt.coefs(), GRB_EQUAL, qc.lb(), NULL) );
   else {            // Let solver deal with lb>~ub etc.
     if (qc.lb()>MinusInfinity()) {
       GRB_CALL( GRBaddqconstr(model, qc.nnz(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-                              qt.num_terms(), (int*)qt.vars1(), (int*)qt.vars2(), (double*)qt.coefs(),
-                              GRB_GREATER_EQUAL, qc.lb(), NULL) );
+                              qt.num_terms(), (int*)qt.vars1(), (int*)qt.vars2(),
+                              (double*)qt.coefs(), GRB_GREATER_EQUAL, qc.lb(), NULL) );
     }
     if (qc.ub()<Infinity()) {
       GRB_CALL( GRBaddqconstr(model, qc.nnz(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-                              qt.num_terms(), (int*)qt.vars1(), (int*)qt.vars2(), (double*)qt.coefs(),
-                              GRB_LESS_EQUAL, qc.ub(), NULL) );
+                              qt.num_terms(), (int*)qt.vars1(), (int*)qt.vars2(),
+                              (double*)qt.coefs(), GRB_LESS_EQUAL, qc.ub(), NULL) );
     }
   }
 }
@@ -380,6 +385,7 @@ void GurobiBackend::InitOptions() {
       "limit on solve time (in seconds; default: no limit).",
       GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
 
+
 }
 
 void GurobiBackend::GetSolverOption(const char *key, int &value) const {
@@ -408,5 +414,32 @@ void GurobiBackend::SetSolverOption(const char *key, const std::string& value) {
   GRB_CALL( GRBsetstrparam(GRBgetenv(model), key, value.c_str()) );
 }
 
+void GurobiBackend::ComputeIIS() {
+  GRB_CALL(GRBcomputeIIS(model));
+}
+
+void GurobiBackend::VarsIIS(std::vector<int>& stt) {
+  int num_vars = NumberOfVariables();
+  stt.resize(num_vars);
+  int error = GRBgetintattrarray(model, GRB_INT_ATTR_IIS_LB,
+                                 0, stt.size(), stt.data());
+  if (error)
+    stt.clear();
+}
+
+void GurobiBackend::ConsIIS(std::vector<int>& stt) {
+  int nl = GetGrbIntAttribute(GRB_INT_ATTR_NUMSOS) +
+      GetGrbIntAttribute(GRB_INT_ATTR_NUMQCONSTRS) +
+      GetGrbIntAttribute(GRB_INT_ATTR_NUMGENCONSTRS);
+  stt.resize((std::size_t)NumberOfConstraints() + nl);
+  int error = GRBgetintattrarray(model, GRB_INT_ATTR_IIS_CONSTR,
+                                 0, stt.size()-nl, stt.data()+nl);
+  if (error)
+    stt.clear();
+}
+
+double GurobiBackend::MIPGap() {
+  return GetGrbDblAttribute(GRB_DBL_ATTR_MIPGAP);
+}
 
 } // namespace mp

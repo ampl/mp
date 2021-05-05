@@ -22,14 +22,14 @@ extern "C" {
 
 #include <string>
 
-#include "mp/convert/backend.h"
+#include "mp/convert/mip_backend.h"
 #include "mp/convert/std_constr.h"
 
 namespace mp {
 
-class GurobiBackend : public BasicBackend<GurobiBackend>
+class GurobiBackend : public MIPBackend<GurobiBackend>
 {
-  using BaseBackend = BasicBackend<GurobiBackend>;
+  using BaseBackend = MIPBackend<GurobiBackend>;
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:
@@ -122,6 +122,12 @@ public:
   void VarStatii(std::vector<int>& stt);
   void ConStatii(std::vector<int>& stt);
 
+
+  void VarsIIS(std::vector<int>& stt);
+  void ConsIIS(std::vector<int>& stt);
+
+  double MIPGap();
+
   /// Solution attributes
   double NodeCount() const;
   double Niterations() const;
@@ -132,6 +138,8 @@ public:
 private:
   GRBenv   *env   = NULL;
   GRBmodel *model = NULL;
+  
+  int optimstatus; // Stores gurobi optimization status after SolveAndReportIntermediateResults
 
 public:
   void OpenSolver();
@@ -149,8 +157,12 @@ private:
   /// for direct access
   struct Options {
     std::string exportFile_;
+    int exportIIS_;
   };
+
   Options storedOptions_;
+
+  
 
 public:
   /// These methods access Gurobi options. Used by AddSolverOption()
@@ -160,6 +172,11 @@ public:
   void SetSolverOption(const char* key, double value);
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);
+
+
+  // Calculate MIP backend related quantities
+  void ComputeIIS();
+  void ComputeMIPGap() {}
 
 };
 

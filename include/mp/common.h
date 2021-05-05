@@ -126,6 +126,9 @@ enum {
 namespace sol {
 /** Solution status. */
 enum Status {
+
+  NOT_CHECKED = -200,
+
   /** Unknown status. */
   UNKNOWN     =  -1,
 

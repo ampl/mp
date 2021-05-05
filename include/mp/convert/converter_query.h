@@ -24,6 +24,9 @@ public:
   virtual void DeclareAndReportIntSuffix(const SuffixDef<int>& suf,
                       const std::vector<int>& values) = 0;
 
+  virtual void DeclareAndReportDblSuffix(const SuffixDef<double>& suf,
+    const std::vector<double>& values) = 0;
+
   virtual void HandleSolution(int, fmt::CStringRef,
       const double *, const double *, double) = 0;
 

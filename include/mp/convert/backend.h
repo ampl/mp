@@ -208,6 +208,7 @@ public:
     MP_DISPATCH( WrapupSolve() );
 
     MP_DISPATCH( ObtainSolutionStatus() );
+    MP_DISPATCH( CalculateDerivedResults() );
     MP_DISPATCH( ReportSolution() );
     if (MP_DISPATCH( timing() ))
       MP_DISPATCH( PrintTimingInfo() );
@@ -226,6 +227,7 @@ public:
     solve_status = MP_DISPATCH(
           ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
   }
+  void CalculateDerivedResults() { }
 
   void ReportSolution() {
     MP_DISPATCH( ReportSuffixes() );
@@ -249,9 +251,7 @@ public:
     DeclareAndReportIntSuffix(suf_constatus, stt);
   }
 
-  void ReportCustomSuffixes() {
-
-  }
+  void ReportCustomSuffixes() { }
 
   void ReportPrimalDualValues() {
     fmt::MemoryWriter writer;
@@ -285,8 +285,21 @@ public:
   ///
   /////////////////////////////////////////////////////////////////////////////////
 
-  int solve_code=0;
+  /////////////////////////////// SOLUTION STATUS /////////////////////////////////
+  bool IsProblemInfOrUnb() const {
+    assert( IsSolStatusRetrieved() );
+    return sol::INFEASIBLE<=solve_code &&
+        sol::UNBOUNDED>=solve_code;
+  }
+
+  bool IsSolStatusRetrieved() const {
+    return sol::NOT_CHECKED!=solve_code;
+  }
+
+  int solve_code=sol::NOT_CHECKED;
   std::string solve_status;
+
+  /////////////////////////////// STORING SOLUTON AND STATS ///////////////////////
   double obj_value = std::numeric_limits<double>::quiet_NaN();
   std::vector<double> solution, dual_solution;
 
@@ -328,9 +341,13 @@ protected:
     GetCQ().DeclareAndReportIntSuffix(suf, values);
   }
 
+  void DeclareAndReportDblSuffix(const SuffixDef<double>& suf,
+    const std::vector<double>& values) {
+    GetCQ().DeclareAndReportDblSuffix(suf, values);
+  }
+
+
   ///////////////////////////// OPTIONS /////////////////////////////////
-  /// TODOs
-  /// - hide all Solver stuff behind an abstract interface
 protected:
 
   using Solver::AddOption;
