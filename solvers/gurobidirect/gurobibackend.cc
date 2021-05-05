@@ -345,7 +345,7 @@ void GurobiBackend::FinishProblemModificationPhase() {
 ////////////////////////// OPTIONS ////////////////////////////
 void GurobiBackend::InitOptions() {
 
-
+  MIPBackend::InitMIPOptions();
   set_option_header(
       fmt::format("Gurobi Optimizer Options for AMPL\n"
                   "---------------------------------\n"
