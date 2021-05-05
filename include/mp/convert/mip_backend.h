@@ -37,25 +37,28 @@ class MIPBackend :
 {
   using BaseBackend = BasicBackend<Impl>;
 
-  struct Options {
-    int exportIIS_;
-    int returnMipGap_;
-  };
-  Options mipStoredOptions_;
-
 public:
+  /////////////////// STD FEATURE FLAGS //////////////////////
+  //////// Disable optional std features by default //////////
+  ////////////////////////////////////////////////////////////
+  ALLOW_STD_FEATURE( IIS, false )
 
+  ////////////////////////////////////////////////////////////
+  /////////////////// MIP Backend options ////////////////////
+  ////////////////////////////////////////////////////////////
   void InitOptions() {
     BaseBackend::InitOptions();
     MP_DISPATCH( InitMIPOptions() );
   }
 
+  using BaseBackend::AddStoredOption;
   void InitMIPOptions() {
-    this->AddStoredOption("iisfind",
-      "Whether to find and export the IIS. "
-      "Default = 0 (don't export).",
-      mipStoredOptions_.exportIIS_);
-    this->AddStoredOption("return_mipgap",
+    if (IMPL_HAS_STD_FEATURE( IIS ))
+      AddStoredOption("iisfind",
+                      "Whether to find and export the IIS. "
+                      "Default = 0 (don't export).",
+                      mipStoredOptions_.exportIIS_);
+    AddStoredOption("return_mipgap",
       "Whether to return mipgap suffixes or include mipgap values\n\
 		(|objectve - best_bound|) in the solve_message:  sum of\n\
 			1 = return relmipgap suffix (relative to |obj|);\n\
@@ -68,6 +71,10 @@ public:
       mipStoredOptions_.returnMipGap_);
   }
 
+
+  ////////////////////////////////////////////////////////////////////////////
+  /////////////////////// MIP specific derived calculations //////////////////
+  ////////////////////////////////////////////////////////////////////////////
   void CalculateDerivedResults() {
     BasicBackend<Impl>::CalculateDerivedResults();
     if (MP_DISPATCH( IsProblemInfOrUnb() ) &&
@@ -78,7 +85,7 @@ public:
 
   }
 
-  // Override for standard MIP calculations
+  // Override in the Impl for standard MIP calculations
   /**
   * Compute the IIS and relevant values
   **/
@@ -121,7 +128,15 @@ public:
     }
   }
 
+private:
+  struct Options {
+    int exportIIS_;
+    int returnMipGap_;
+  };
+  Options mipStoredOptions_;
+
 };
+
 }  // namespace mp
 
 #endif  // MIPBACKEND_H_

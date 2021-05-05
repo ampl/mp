@@ -31,6 +31,10 @@
 #include "mp/convert/model.h"
 #include "mp/convert/model_adapter.h"
 
+#define ALLOW_STD_FEATURE( name, val ) \
+  constexpr bool AllowFeature__##name() { return val; }
+#define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH( AllowFeature##name() )
+
 namespace mp {
 
 /// Basic backend wrapper.
@@ -282,7 +286,6 @@ public:
   }
 
   /////////////////////////////// SERVICE STUFF ///////////////////////////////////
-  ///
   /////////////////////////////////////////////////////////////////////////////////
 
   /////////////////////////////// SOLUTION STATUS /////////////////////////////////
@@ -296,13 +299,6 @@ public:
     return sol::NOT_CHECKED!=solve_code;
   }
 
-  int solve_code=sol::NOT_CHECKED;
-  std::string solve_status;
-
-  /////////////////////////////// STORING SOLUTON AND STATS ///////////////////////
-  double obj_value = std::numeric_limits<double>::quiet_NaN();
-  std::vector<double> solution, dual_solution;
-
   struct Stats {
     steady_clock::time_point time;
     double setup_time;
@@ -311,6 +307,7 @@ public:
   Stats stats;
 
 
+  /////////////////////////////// SOME MATHS ////////////////////////////////
   static bool float_equal(double a, double b) {           // ??????
     return std::fabs(a-b) < 1e-8*std::max(std::fabs(a), std::fabs(b));
   }
@@ -323,7 +320,6 @@ public:
   static double MinusInfinity() { return -Infinity(); }
 
 public:
-
   using Solver::add_to_long_name;
   using Solver::add_to_version;
   using Solver::set_option_header;
@@ -345,6 +341,14 @@ protected:
     const std::vector<double>& values) {
     GetCQ().DeclareAndReportDblSuffix(suf, values);
   }
+
+private:
+  ///////////////////////////// STORING SOLUTON /////////////////////////
+  int solve_code=sol::NOT_CHECKED;
+  std::string solve_status;
+
+  double obj_value = std::numeric_limits<double>::quiet_NaN();
+  std::vector<double> solution, dual_solution;
 
 
   ///////////////////////////// OPTIONS /////////////////////////////////
@@ -435,7 +439,6 @@ public:
   /// TODO also with ValueTable, deduce type from it
 
 };
-
 
 }  // namespace mp
 
