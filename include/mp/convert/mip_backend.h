@@ -44,6 +44,27 @@ public:
   ALLOW_STD_FEATURE( IIS, false )
 
   ////////////////////////////////////////////////////////////
+  //// Override in the Impl for standard MIP calculations ////
+  ////////////////////////////////////////////////////////////
+  /**
+  * Compute the IIS and relevant values
+  **/
+  void ComputeIIS();
+  /**
+  * Get IIS values for constraints
+  **/
+  void ConsIIS(std::vector<int>& stt) { stt.clear(); }
+  /**
+  * Get IIS values for variables
+  **/
+  void VarsIIS(std::vector<int>& stt) { stt.clear(); }
+  /**
+  * Get MIP Gap
+  **/
+  double MIPGap() { throw std::runtime_error("Not implemented"); }
+
+
+  ////////////////////////////////////////////////////////////
   /////////////////// MIP Backend options ////////////////////
   ////////////////////////////////////////////////////////////
   void InitOptions() {
@@ -75,57 +96,44 @@ public:
   ////////////////////////////////////////////////////////////////////////////
   /////////////////////// MIP specific derived calculations //////////////////
   ////////////////////////////////////////////////////////////////////////////
-  void CalculateDerivedResults() {
-    BasicBackend<Impl>::CalculateDerivedResults();
-    if (MP_DISPATCH( IsProblemInfOrUnb() ) &&
-        mipStoredOptions_.exportIIS_)
-      MP_DISPATCH( ComputeIIS() );
-    if (mipStoredOptions_.returnMipGap_)
-      MP_DISPATCH( ComputeMipGap() );
-
+  void CalculateAndReportDerivedResults() {
+    BaseBackend::CalculateAndReportDerivedResults();
+    CalculateAndReportDerivedResults_MIP();
   }
 
-  // Override in the Impl for standard MIP calculations
-  /**
-  * Compute the IIS and relevant values
-  **/
-  void ComputeIIS();
-  /**
-  * Get IIS values for constraints 
-  **/
-  void ConsIIS(std::vector<int>& stt) { stt.clear(); }
-  /**
-  * Get IIS values for variables
-  **/
-  void VarsIIS(std::vector<int>& stt) { stt.clear(); }
+  void CalculateAndReportDerivedResults_MIP() {
+    CalculateAndReportIIS();
+    CalculateAndReportMIPGap();
+  }
 
-  void ComputeMipGap() {}
-  double MIPGap() { throw std::runtime_error("Not implemented"); }
+  void CalculateAndReportIIS() {
+    if (MP_DISPATCH( IsProblemInfOrUnb() ) &&
+        mipStoredOptions_.exportIIS_) {
+      MP_DISPATCH( ComputeIIS() );
 
-  const SuffixDef<int> sufIISCon = { "iis", suf::CON | suf::OUTPUT };
-  const SuffixDef<int> sufIISVar = { "iis", suf::VAR | suf::OUTPUT };
-
-  const SuffixDef<double> sufRelMipGapObj = { "relmipgap", suf::OBJ | suf::OUTPUT };
-  const SuffixDef<double> sufRelMipGapProb = { "relmipgap", suf::PROBLEM | suf::OUTPUT };
-
-  void ReportStandardSuffixes() {
-    BasicBackend<Impl>::ReportStandardSuffixes();
-    std::vector<int> stt;
-    std::vector<double> dbl;    
-    if (mipStoredOptions_.exportIIS_)
-    {
+      std::vector<int> stt;
       MP_DISPATCH(ConsIIS(stt));
       this->DeclareAndReportIntSuffix(sufIISCon, stt);
       MP_DISPATCH(VarsIIS(stt));
       this->DeclareAndReportIntSuffix(sufIISVar, stt);
     }
-    if (mipStoredOptions_.returnMipGap_)
-    {
-      dbl.clear();
+  }
+
+  void CalculateAndReportMIPGap() {
+    if (mipStoredOptions_.returnMipGap_) {
+      MP_DISPATCH( ComputeMipGap() );
+
+      std::vector<double> dbl;
       dbl.push_back(MP_DISPATCH( MIPGap() ));
       this->DeclareAndReportDblSuffix(sufRelMipGapObj, dbl);
       this->DeclareAndReportDblSuffix(sufRelMipGapProb, dbl);
     }
+  }
+
+  void ComputeMipGap() {}
+
+  void ReportStandardSuffixes() {
+    BasicBackend<Impl>::ReportStandardSuffixes();
   }
 
 private:
@@ -134,6 +142,16 @@ private:
     int returnMipGap_;
   };
   Options mipStoredOptions_;
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////// STANDARD SUFFIXES ///////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+  const SuffixDef<int> sufIISCon = { "iis", suf::CON | suf::OUTPUT };
+  const SuffixDef<int> sufIISVar = { "iis", suf::VAR | suf::OUTPUT };
+
+  const SuffixDef<double> sufRelMipGapObj = { "relmipgap", suf::OBJ | suf::OUTPUT };
+  const SuffixDef<double> sufRelMipGapProb = { "relmipgap", suf::PROBLEM | suf::OUTPUT };
 
 };
 

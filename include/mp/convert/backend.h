@@ -212,7 +212,7 @@ public:
     MP_DISPATCH( WrapupSolve() );
 
     MP_DISPATCH( ObtainSolutionStatus() );
-    MP_DISPATCH( CalculateDerivedResults() );
+    MP_DISPATCH( CalculateAndReportDerivedResults() );
     MP_DISPATCH( ReportSolution() );
     if (MP_DISPATCH( timing() ))
       MP_DISPATCH( PrintTimingInfo() );
@@ -231,7 +231,7 @@ public:
     solve_status = MP_DISPATCH(
           ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
   }
-  void CalculateDerivedResults() { }
+  void CalculateAndReportDerivedResults() { }
 
   void ReportSolution() {
     MP_DISPATCH( ReportSuffixes() );
