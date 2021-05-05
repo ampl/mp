@@ -242,27 +242,29 @@ public:
   void ReportCustomSuffixes() { }
 
   void ReportPrimalDualValues() {
+    double obj_value = std::numeric_limits<double>::quiet_NaN();
+    std::vector<double> solution, dual_solution;
+
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status);
     if (solve_code < sol::INFEASIBLE) {
-      MP_DISPATCH( PrimalSolution(solution) );
-
+      solution = MP_DISPATCH( PrimalSolution() );
+      obj_value = MP_DISPATCH( ObjectiveValue() );
       if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
         writer.write("; objective {}",
-                     MP_DISPATCH( FormatObjValue(MP_DISPATCH( ObjectiveValue() )) ));
+                     MP_DISPATCH( FormatObjValue(obj_value) ));
       }
     }
     writer.write("\n");
 
-    MP_DISPATCH( DualSolution(dual_solution) );
-
+    dual_solution = MP_DISPATCH( DualSolution() );  // Try in any case
     HandleSolution(solve_code, writer.c_str(),
                    solution.empty() ? 0 : solution.data(),
                    dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
   }
 
-  /// Solution values. The vectors are emptied if not available
-  void DualSolution(std::vector<double>& pi) { pi.clear(); }
+  /// Dual solution. Returns empty if not available
+  std::vector<double> DualSolution() { return {}; }
 
   void PrintTimingInfo() {
     double output_time = GetTimeAndReset(stats.time);
@@ -330,17 +332,13 @@ protected:
   }
 
 private:
-  ///////////////////////////// STORING SOLUTON /////////////////////////
+  ///////////////////////// STORING SOLUTON STATUS //////////////////////
   int solve_code=sol::NOT_CHECKED;
   std::string solve_status;
 
-  double obj_value = std::numeric_limits<double>::quiet_NaN();
-  std::vector<double> solution, dual_solution;
 
-
-  ///////////////////////////// OPTIONS /////////////////////////////////
 protected:
-
+  ///////////////////////////// OPTIONS /////////////////////////////////
   using Solver::AddOption;
 
   template <class Value>

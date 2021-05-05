@@ -115,16 +115,16 @@ public:
   std::string ConvertSolutionStatus(
       const mp::Interrupter &interrupter, int &solve_code);
 
-  /// Solution values. The vectors are emptied if not available
-  void PrimalSolution(std::vector<double>& x);
-  void DualSolution(std::vector<double>& pi);
+  /// Various solution values. Return empty vectors if not available
+  std::vector<double> PrimalSolution();
+  std::vector<double> DualSolution();
   double ObjectiveValue() const;
-  void VarStatii(std::vector<int>& stt);
-  void ConStatii(std::vector<int>& stt);
 
+  std::vector<int> VarStatii();
+  std::vector<int> ConStatii();
 
-  void VarsIIS(std::vector<int>& stt);
-  void ConsIIS(std::vector<int>& stt);
+  std::vector<int> VarsIIS();
+  std::vector<int> ConsIIS();
 
   double MIPGap();
 
@@ -151,10 +151,10 @@ public:
 
   int GetGrbIntAttribute(const char* attr_id) const;
   double GetGrbDblAttribute(const char* attr_id) const;
-  int GetGrbIntArrayAttribute(const char* attr_id, 
-    std::vector<int>& res, std::size_t size, std::size_t offset=0) const;
-  int GetGrbDblArrayAttribute(const char* attr_id,
-    std::vector<double>& res, std::size_t size, std::size_t offset = 0) const;
+  std::vector<int> GetGrbIntArrayAttribute(const char* attr_id,
+    std::size_t size, std::size_t offset=0) const;
+  std::vector<double> GetGrbDblArrayAttribute(const char* attr_id,
+    std::size_t size, std::size_t offset = 0) const;
 
 private:
   /// These options are stored in the class as variables

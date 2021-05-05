@@ -49,20 +49,17 @@ public:
   /**
   * Get AMPL var statii
   **/
-  void VarStatii(std::vector<int>& stt) { stt.clear(); }
-  void ConStatii(std::vector<int>& stt) { stt.clear(); }
+  std::vector<int> VarStatii() { return {}; }
+  std::vector<int> ConStatii() { return {}; }
   /**
   * Compute the IIS and relevant values
   **/
   void ComputeIIS();
   /**
-  * Get IIS values for constraints
+  * Get IIS values for constraints / vars
   **/
-  void ConsIIS(std::vector<int>& stt) { stt.clear(); }
-  /**
-  * Get IIS values for variables
-  **/
-  void VarsIIS(std::vector<int>& stt) { stt.clear(); }
+  std::vector<int> ConsIIS() { return {}; }
+  std::vector<int> VarsIIS() { return {}; }
   /**
   * Get MIP Gap
   **/
@@ -111,16 +108,16 @@ public:
     CalculateAndReportMIPGap();
   }
 
+  using BaseBackend::DeclareAndReportIntSuffix;
+  using BaseBackend::DeclareAndReportDblSuffix;
+
   void CalculateAndReportIIS() {
     if (MP_DISPATCH( IsProblemInfOrUnb() ) &&
         mipStoredOptions_.exportIIS_) {
       MP_DISPATCH( ComputeIIS() );
 
-      std::vector<int> stt;
-      MP_DISPATCH(ConsIIS(stt));
-      this->DeclareAndReportIntSuffix(sufIISCon, stt);
-      MP_DISPATCH(VarsIIS(stt));
-      this->DeclareAndReportIntSuffix(sufIISVar, stt);
+      DeclareAndReportIntSuffix(sufIISCon, MP_DISPATCH(ConsIIS()));
+      DeclareAndReportIntSuffix(sufIISVar, MP_DISPATCH(VarsIIS()));
     }
   }
 
@@ -128,10 +125,9 @@ public:
     if (mipStoredOptions_.returnMipGap_) {
       MP_DISPATCH( ComputeMipGap() );
 
-      std::vector<double> dbl;
-      dbl.push_back(MP_DISPATCH( MIPGap() ));
-      this->DeclareAndReportDblSuffix(sufRelMipGapObj, dbl);
-      this->DeclareAndReportDblSuffix(sufRelMipGapProb, dbl);
+      std::vector<double> dbl(1, MP_DISPATCH( MIPGap() ));
+      DeclareAndReportDblSuffix(sufRelMipGapObj, dbl);
+      DeclareAndReportDblSuffix(sufRelMipGapProb, dbl);
     }
   }
 
@@ -143,11 +139,10 @@ public:
   }
 
   void ReportStadardMIPSuffixes() {
-    std::vector<int> stt;
-    MP_DISPATCH( VarStatii(stt) );
-    this->DeclareAndReportIntSuffix(suf_varstatus, stt);
-    MP_DISPATCH( ConStatii(stt) );
-    this->DeclareAndReportIntSuffix(suf_constatus, stt);
+    DeclareAndReportIntSuffix(suf_varstatus,
+                              MP_DISPATCH( VarStatii() ));
+    DeclareAndReportIntSuffix(suf_constatus,
+                              MP_DISPATCH( ConStatii() ));
   }
 
 private:
