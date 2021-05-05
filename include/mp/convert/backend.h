@@ -97,7 +97,6 @@ public:
   static bool IfMultipleObj() { return false; }
 
   void InitMetaInfoAndOptions() {
-
     MP_DISPATCH( InitNamesAndVersion() );
     MP_DISPATCH( InitOptions() );
   }
@@ -228,9 +227,7 @@ public:
     solve_status = MP_DISPATCH(
           ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
   }
-  void CalculateDerivedResults() {
-
-  }
+  void CalculateDerivedResults() { }
 
   void ReportSolution() {
     MP_DISPATCH( ReportSuffixes() );
@@ -254,9 +251,7 @@ public:
     DeclareAndReportIntSuffix(suf_constatus, stt);
   }
 
-  void ReportCustomSuffixes() {
-
-  }
+  void ReportCustomSuffixes() { }
 
   void ReportPrimalDualValues() {
     fmt::MemoryWriter writer;
