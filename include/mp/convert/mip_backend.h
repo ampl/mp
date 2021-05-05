@@ -37,16 +37,15 @@ class MIPBackend :
 {
   using BaseBackend = BasicBackend<Impl>;
 
-  struct Options {
-    int exportIIS_;
-    int returnMipGap_;
-  };
-  Options mipStoredOptions_;
-
 public:
-
+  /////////////////// STD FEATURE FLAGS //////////////////////
+  //////// Disable optional std features by default //////////
+  ////////////////////////////////////////////////////////////
   ALLOW_STD_FEATURE( IIS, false )
 
+  ////////////////////////////////////////////////////////////
+  /////////////////// MIP Backend options ////////////////////
+  ////////////////////////////////////////////////////////////
   void InitOptions() {
     BaseBackend::InitOptions();
     MP_DISPATCH( InitMIPOptions() );
@@ -72,6 +71,10 @@ public:
       mipStoredOptions_.returnMipGap_);
   }
 
+
+  ////////////////////////////////////////////////////////////////////////////
+  /////////////////////// MIP specific derived calculations //////////////////
+  ////////////////////////////////////////////////////////////////////////////
   void CalculateDerivedResults() {
     BasicBackend<Impl>::CalculateDerivedResults();
     if (MP_DISPATCH( IsProblemInfOrUnb() ) &&
@@ -82,7 +85,7 @@ public:
 
   }
 
-  // Override for standard MIP calculations
+  // Override in the Impl for standard MIP calculations
   /**
   * Compute the IIS and relevant values
   **/
@@ -125,7 +128,15 @@ public:
     }
   }
 
+private:
+  struct Options {
+    int exportIIS_;
+    int returnMipGap_;
+  };
+  Options mipStoredOptions_;
+
 };
+
 }  // namespace mp
 
 #endif  // MIPBACKEND_H_
