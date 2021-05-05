@@ -285,6 +285,11 @@ public:
   ///
   /////////////////////////////////////////////////////////////////////////////////
 
+  bool IsProblemInfOrUnb() const {
+    return sol::INFEASIBLE<=solve_code &&
+        sol::UNBOUNDED>=solve_code;
+  }
+
   int solve_code=0;
   std::string solve_status;
   double obj_value = std::numeric_limits<double>::quiet_NaN();

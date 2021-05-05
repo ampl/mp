@@ -70,10 +70,11 @@ public:
 
   void CalculateDerivedResults() {
     BasicBackend<Impl>::CalculateDerivedResults();
-    if (mipStoredOptions_.exportIIS_)
-      MP_DISPATCH(ComputeIIS());
+    if (MP_DISPATCH( IsProblemInfOrUnb() ) &&
+        mipStoredOptions_.exportIIS_)
+      MP_DISPATCH( ComputeIIS() );
     if (mipStoredOptions_.returnMipGap_)
-      MP_DISPATCH(ComputeMipGap());
+      MP_DISPATCH( ComputeMipGap() );
 
   }
 
