@@ -33,7 +33,7 @@
 
 #define ALLOW_STD_FEATURE( name, val ) \
   constexpr bool AllowFeature__##name() { return val; }
-#define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH( AllowFeature##name() )
+#define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH( AllowFeature__##name() )
 
 namespace mp {
 
