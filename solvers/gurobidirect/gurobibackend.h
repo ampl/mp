@@ -151,6 +151,10 @@ public:
 
   int GetGrbIntAttribute(const char* attr_id) const;
   double GetGrbDblAttribute(const char* attr_id) const;
+  int GetGrbIntArrayAttribute(const char* attr_id, 
+    std::vector<int>& res, std::size_t size, std::size_t offset=0) const;
+  int GetGrbDblArrayAttribute(const char* attr_id,
+    std::vector<double>& res, std::size_t size, std::size_t offset = 0) const;
 
 private:
   /// These options are stored in the class as variables
