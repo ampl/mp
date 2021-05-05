@@ -91,20 +91,22 @@ int CplexBackend::NumberOfObjectives() const {
   return CPXgetnumobjs (env, lp);
 }
 
-void CplexBackend::PrimalSolution(std::vector<double> &x) {
+std::vector<double> CplexBackend::PrimalSolution() {
   int num_vars = NumberOfVariables();
-  x.resize(num_vars);
+  std::vector<double> x(num_vars);
   int error = CPXgetx (env, lp, x.data(), 0, num_vars-1);
   if (error)
     x.clear();
+  return x;
 }
 
-void CplexBackend::DualSolution(std::vector<double> &pi) {
+std::vector<double> CplexBackend::DualSolution() {
   int num_cons = NumberOfConstraints();
-  pi.resize(num_cons);
+  std::vector<double> pi(num_cons);
   int error = CPXgetpi (env, lp, pi.data(), 0, num_cons-1);
   if (error)
     pi.clear();
+  return pi;
 }
 
 double CplexBackend::ObjectiveValue() const {
@@ -143,7 +145,7 @@ std::string CplexBackend::ConvertSolutionStatus(
   default:
     // Fall through.
     if (interrupter.Stop()) {
-      solve_code = 600;
+      solve_code = sol::INTERRUPTED;
       return "interrupted";
     }
     int solcount;

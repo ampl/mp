@@ -31,6 +31,10 @@
 #include "mp/convert/model.h"
 #include "mp/convert/model_adapter.h"
 
+#define ALLOW_STD_FEATURE( name, val ) \
+  constexpr bool AllowFeature__##name() { return val; }
+#define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH( AllowFeature__##name() )
+
 namespace mp {
 
 /// Basic backend wrapper.
@@ -109,7 +113,7 @@ public:
                                    name, version ) );
   }
 
-
+  ///////////////////////////// MODEL MANIP //////////////////////////////
   using Model = BasicModel<>;
 
   using Variable = typename Model::Variable;
@@ -191,15 +195,9 @@ public:
     throw MakeUnsupportedError("BasicBackend::AddLinearConstraint");
   }
 
-  /// Solution values. The vectors are emptied if not available
-  void DualSolution(std::vector<double>& pi) { pi.clear(); }
-  void VarStatii(std::vector<int>& stt) { stt.clear(); }
-  void ConStatii(std::vector<int>& stt) { stt.clear(); }
-
-
 
   ////////////////////////////////////////////////////////////////////////////
-  ////////////////////// PROCESS LOGIC ////////////////////////////
+  /////////////////////////// BASIC PROCESS LOGIC ////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
 
   void SolveAndReport() {
@@ -208,7 +206,7 @@ public:
     MP_DISPATCH( WrapupSolve() );
 
     MP_DISPATCH( ObtainSolutionStatus() );
-    MP_DISPATCH( CalculateDerivedResults() );
+    MP_DISPATCH( CalculateAndReportDerivedResults() );
     MP_DISPATCH( ReportSolution() );
     if (MP_DISPATCH( timing() ))
       MP_DISPATCH( PrintTimingInfo() );
@@ -227,7 +225,7 @@ public:
     solve_status = MP_DISPATCH(
           ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
   }
-  void CalculateDerivedResults() { }
+  void CalculateAndReportDerivedResults() { }
 
   void ReportSolution() {
     MP_DISPATCH( ReportSuffixes() );
@@ -239,39 +237,34 @@ public:
     MP_DISPATCH( ReportCustomSuffixes() );
   }
 
-  ///////////////////////////// STANDARD SUFFIXES ////////////////////////////
-  const SuffixDef<int> suf_varstatus = { "sstatus", suf::VAR | suf::OUTPUT };
-  const SuffixDef<int> suf_constatus = { "sstatus", suf::CON | suf::OUTPUT };
-
-  void ReportStandardSuffixes() {
-    std::vector<int> stt;
-    MP_DISPATCH( VarStatii(stt) );
-    DeclareAndReportIntSuffix(suf_varstatus, stt);
-    MP_DISPATCH( ConStatii(stt) );
-    DeclareAndReportIntSuffix(suf_constatus, stt);
-  }
+  void ReportStandardSuffixes() { }
 
   void ReportCustomSuffixes() { }
 
   void ReportPrimalDualValues() {
+    double obj_value = std::numeric_limits<double>::quiet_NaN();
+    std::vector<double> solution, dual_solution;
+
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status);
     if (solve_code < sol::INFEASIBLE) {
-      MP_DISPATCH( PrimalSolution(solution) );
-
+      solution = MP_DISPATCH( PrimalSolution() );
+      obj_value = MP_DISPATCH( ObjectiveValue() );
       if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
         writer.write("; objective {}",
-                     MP_DISPATCH( FormatObjValue(MP_DISPATCH( ObjectiveValue() )) ));
+                     MP_DISPATCH( FormatObjValue(obj_value) ));
       }
     }
     writer.write("\n");
 
-    MP_DISPATCH( DualSolution(dual_solution) );
-
+    dual_solution = MP_DISPATCH( DualSolution() );  // Try in any case
     HandleSolution(solve_code, writer.c_str(),
                    solution.empty() ? 0 : solution.data(),
                    dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
   }
+
+  /// Dual solution. Returns empty if not available
+  std::vector<double> DualSolution() { return {}; }
 
   void PrintTimingInfo() {
     double output_time = GetTimeAndReset(stats.time);
@@ -282,7 +275,6 @@ public:
   }
 
   /////////////////////////////// SERVICE STUFF ///////////////////////////////////
-  ///
   /////////////////////////////////////////////////////////////////////////////////
 
   /////////////////////////////// SOLUTION STATUS /////////////////////////////////
@@ -296,13 +288,6 @@ public:
     return sol::NOT_CHECKED!=solve_code;
   }
 
-  int solve_code=sol::NOT_CHECKED;
-  std::string solve_status;
-
-  /////////////////////////////// STORING SOLUTON AND STATS ///////////////////////
-  double obj_value = std::numeric_limits<double>::quiet_NaN();
-  std::vector<double> solution, dual_solution;
-
   struct Stats {
     steady_clock::time_point time;
     double setup_time;
@@ -311,6 +296,7 @@ public:
   Stats stats;
 
 
+  /////////////////////////////// SOME MATHS ////////////////////////////////
   static bool float_equal(double a, double b) {           // ??????
     return std::fabs(a-b) < 1e-8*std::max(std::fabs(a), std::fabs(b));
   }
@@ -323,7 +309,6 @@ public:
   static double MinusInfinity() { return -Infinity(); }
 
 public:
-
   using Solver::add_to_long_name;
   using Solver::add_to_version;
   using Solver::set_option_header;
@@ -346,10 +331,14 @@ protected:
     GetCQ().DeclareAndReportDblSuffix(suf, values);
   }
 
+private:
+  ///////////////////////// STORING SOLUTON STATUS //////////////////////
+  int solve_code=sol::NOT_CHECKED;
+  std::string solve_status;
 
-  ///////////////////////////// OPTIONS /////////////////////////////////
+
 protected:
-
+  ///////////////////////////// OPTIONS /////////////////////////////////
   using Solver::AddOption;
 
   template <class Value>
@@ -435,7 +424,6 @@ public:
   /// TODO also with ValueTable, deduce type from it
 
 };
-
 
 }  // namespace mp
 

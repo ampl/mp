@@ -37,25 +37,51 @@ class MIPBackend :
 {
   using BaseBackend = BasicBackend<Impl>;
 
-  struct Options {
-    int exportIIS_;
-    int returnMipGap_;
-  };
-  Options mipStoredOptions_;
-
 public:
+  /////////////////// STD FEATURE FLAGS //////////////////////
+  //////// Disable optional std features by default //////////
+  ////////////////////////////////////////////////////////////
+  ALLOW_STD_FEATURE( IIS, false )
 
+  ////////////////////////////////////////////////////////////
+  //// Override in the Impl for standard MIP calculations ////
+  ////////////////////////////////////////////////////////////
+  /**
+  * Get AMPL var statii
+  **/
+  std::vector<int> VarStatii() { return {}; }
+  std::vector<int> ConStatii() { return {}; }
+  /**
+  * Compute the IIS and relevant values
+  **/
+  void ComputeIIS();
+  /**
+  * Get IIS values for constraints / vars
+  **/
+  std::vector<int> ConsIIS() { return {}; }
+  std::vector<int> VarsIIS() { return {}; }
+  /**
+  * Get MIP Gap
+  **/
+  double MIPGap() { throw std::runtime_error("Not implemented"); }
+
+
+  ////////////////////////////////////////////////////////////
+  /////////////////// MIP Backend options ////////////////////
+  ////////////////////////////////////////////////////////////
   void InitOptions() {
     BaseBackend::InitOptions();
     MP_DISPATCH( InitMIPOptions() );
   }
 
+  using BaseBackend::AddStoredOption;
   void InitMIPOptions() {
-    this->AddStoredOption("iisfind",
-      "Whether to find and export the IIS. "
-      "Default = 0 (don't export).",
-      mipStoredOptions_.exportIIS_);
-    this->AddStoredOption("return_mipgap",
+    if (IMPL_HAS_STD_FEATURE( IIS ))
+      AddStoredOption("iisfind",
+                      "Whether to find and export the IIS. "
+                      "Default = 0 (don't export).",
+                      mipStoredOptions_.exportIIS_);
+    AddStoredOption("return_mipgap",
       "Whether to return mipgap suffixes or include mipgap values\n\
 		(|objectve - best_bound|) in the solve_message:  sum of\n\
 			1 = return relmipgap suffix (relative to |obj|);\n\
@@ -68,32 +94,70 @@ public:
       mipStoredOptions_.returnMipGap_);
   }
 
-  void CalculateDerivedResults() {
-    BasicBackend<Impl>::CalculateDerivedResults();
-    if (MP_DISPATCH( IsProblemInfOrUnb() ) &&
-        mipStoredOptions_.exportIIS_)
-      MP_DISPATCH( ComputeIIS() );
-    if (mipStoredOptions_.returnMipGap_)
-      MP_DISPATCH( ComputeMipGap() );
 
+  ////////////////////////////////////////////////////////////////////////////
+  /////////////////////// MIP specific derived calculations //////////////////
+  ////////////////////////////////////////////////////////////////////////////
+  void CalculateAndReportDerivedResults() {
+    BaseBackend::CalculateAndReportDerivedResults();
+    CalculateAndReportDerivedResults_MIP();
   }
 
-  // Override for standard MIP calculations
-  /**
-  * Compute the IIS and relevant values
-  **/
-  void ComputeIIS();
-  /**
-  * Get IIS values for constraints 
-  **/
-  void ConsIIS(std::vector<int>& stt) { stt.clear(); }
-  /**
-  * Get IIS values for variables
-  **/
-  void VarsIIS(std::vector<int>& stt) { stt.clear(); }
+  void CalculateAndReportDerivedResults_MIP() {
+    CalculateAndReportIIS();
+    CalculateAndReportMIPGap();
+  }
+
+  using BaseBackend::DeclareAndReportIntSuffix;
+  using BaseBackend::DeclareAndReportDblSuffix;
+
+  void CalculateAndReportIIS() {
+    if (MP_DISPATCH( IsProblemInfOrUnb() ) &&
+        mipStoredOptions_.exportIIS_) {
+      MP_DISPATCH( ComputeIIS() );
+
+      DeclareAndReportIntSuffix(sufIISCon, MP_DISPATCH(ConsIIS()));
+      DeclareAndReportIntSuffix(sufIISVar, MP_DISPATCH(VarsIIS()));
+    }
+  }
+
+  void CalculateAndReportMIPGap() {
+    if (mipStoredOptions_.returnMipGap_) {
+      MP_DISPATCH( ComputeMipGap() );
+
+      std::vector<double> dbl(1, MP_DISPATCH( MIPGap() ));
+      DeclareAndReportDblSuffix(sufRelMipGapObj, dbl);
+      DeclareAndReportDblSuffix(sufRelMipGapProb, dbl);
+    }
+  }
 
   void ComputeMipGap() {}
-  double MIPGap() { throw std::runtime_error("Not implemented"); }
+
+  void ReportStandardSuffixes() {
+    BasicBackend<Impl>::ReportStandardSuffixes();
+    ReportStadardMIPSuffixes();
+  }
+
+  void ReportStadardMIPSuffixes() {
+    DeclareAndReportIntSuffix(suf_varstatus,
+                              MP_DISPATCH( VarStatii() ));
+    DeclareAndReportIntSuffix(suf_constatus,
+                              MP_DISPATCH( ConStatii() ));
+  }
+
+private:
+  struct Options {
+    int exportIIS_;
+    int returnMipGap_;
+  };
+  Options mipStoredOptions_;
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////// STANDARD SUFFIXES ///////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+  const SuffixDef<int> suf_varstatus = { "sstatus", suf::VAR | suf::OUTPUT };
+  const SuffixDef<int> suf_constatus = { "sstatus", suf::CON | suf::OUTPUT };
 
   const SuffixDef<int> sufIISCon = { "iis", suf::CON | suf::OUTPUT };
   const SuffixDef<int> sufIISVar = { "iis", suf::VAR | suf::OUTPUT };
@@ -101,27 +165,8 @@ public:
   const SuffixDef<double> sufRelMipGapObj = { "relmipgap", suf::OBJ | suf::OUTPUT };
   const SuffixDef<double> sufRelMipGapProb = { "relmipgap", suf::PROBLEM | suf::OUTPUT };
 
-  void ReportStandardSuffixes() {
-    BasicBackend<Impl>::ReportStandardSuffixes();
-    std::vector<int> stt;
-    std::vector<double> dbl;    
-    if (mipStoredOptions_.exportIIS_)
-    {
-      MP_DISPATCH(ConsIIS(stt));
-      this->DeclareAndReportIntSuffix(sufIISCon, stt);
-      MP_DISPATCH(VarsIIS(stt));
-      this->DeclareAndReportIntSuffix(sufIISVar, stt);
-    }
-    if (mipStoredOptions_.returnMipGap_)
-    {
-      dbl.clear();
-      dbl.push_back(MP_DISPATCH( MIPGap() ));
-      this->DeclareAndReportDblSuffix(sufRelMipGapObj, dbl);
-      this->DeclareAndReportDblSuffix(sufRelMipGapProb, dbl);
-    }
-  }
-
 };
+
 }  // namespace mp
 
 #endif  // MIPBACKEND_H_

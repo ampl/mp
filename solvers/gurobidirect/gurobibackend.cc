@@ -54,16 +54,6 @@ void GurobiBackend::CloseSolver() {
 
 }
 
-int GurobiBackend::GetGrbIntAttribute(const char* attr_id) const {
-  int tmp;
-  GRB_CALL( GRBgetintattr(model, attr_id, &tmp) );
-  return tmp;
-}
-double GurobiBackend::GetGrbDblAttribute(const char* attr_id) const {
-  double tmp;
-  GRB_CALL( GRBgetdblattr(model, attr_id, &tmp) );
-  return tmp;
-}
 
 bool GurobiBackend::IsMIP() const {
   return 1 == GetGrbIntAttribute(GRB_INT_ATTR_IS_MIP);
@@ -85,46 +75,48 @@ int GurobiBackend::NumberOfObjectives() const {
   return GetGrbIntAttribute(GRB_INT_ATTR_NUMOBJ);
 }
 
-void GurobiBackend::PrimalSolution(std::vector<double> &x) {
-  int num_vars = NumberOfVariables();
-  x.resize(num_vars);
-  int error = GRBgetdblattrarray(model, GRB_DBL_ATTR_X,
-                                 0, num_vars, x.data());
-  if (error)
-    x.clear();
+std::vector<double> GurobiBackend::PrimalSolution() {
+  return
+    GetGrbDblArrayAttribute(GRB_DBL_ATTR_X, NumberOfVariables());
 }
 
-void GurobiBackend::DualSolution(std::vector<double> &pi) {
-  int num_cons = NumberOfConstraints();
-  pi.resize(num_cons);
-  int error = GRBgetdblattrarray(model, GRB_DBL_ATTR_PI,
-                                 0, num_cons, pi.data());
-  if (error)
-    pi.clear();
+std::vector<double> GurobiBackend::DualSolution() {
+  return
+    GetGrbDblArrayAttribute(GRB_DBL_ATTR_PI, NumberOfConstraints());
 }
 
 double GurobiBackend::ObjectiveValue() const {
   return GetGrbDblAttribute(GRB_DBL_ATTR_OBJVAL);
 }
 
-void GurobiBackend::VarStatii(std::vector<int> &stt) {
-  int num_vars = NumberOfVariables();
-  stt.resize(num_vars);
-  int error = GRBgetintattrarray(model, GRB_INT_ATTR_VBASIS,
-                                 0, num_vars, stt.data());
-  if (error)
-    stt.clear();
+std::vector<int> GurobiBackend::VarStatii() {
+  return
+    GetGrbIntArrayAttribute(GRB_INT_ATTR_VBASIS, NumberOfVariables());
 }
 
-void GurobiBackend::ConStatii(std::vector<int> &stt) {
-  int num_cons = NumberOfConstraints();
-  stt.resize(num_cons);
-  int error = GRBgetintattrarray(model, GRB_INT_ATTR_CBASIS,
-                                 0, num_cons, stt.data());
-  if (error)
-    stt.clear();
+std::vector<int> GurobiBackend::ConStatii() {
+  return
+    GetGrbIntArrayAttribute(GRB_INT_ATTR_CBASIS, NumberOfConstraints());
 }
 
+std::vector<int> GurobiBackend::VarsIIS() {
+  return
+    GetGrbIntArrayAttribute(GRB_INT_ATTR_IIS_LB, NumberOfVariables());
+}
+
+std::vector<int> GurobiBackend::ConsIIS() {
+  // Adjust for non linear constraints, which always come
+  // after the linear ones in the NL file
+  int nl = GetGrbIntAttribute(GRB_INT_ATTR_NUMSOS) +
+    GetGrbIntAttribute(GRB_INT_ATTR_NUMQCONSTRS) +
+    GetGrbIntAttribute(GRB_INT_ATTR_NUMGENCONSTRS);
+  return
+    GetGrbIntArrayAttribute(GRB_INT_ATTR_IIS_CONSTR,
+      (std::size_t)NumberOfConstraints() + nl, nl);
+}
+double GurobiBackend::MIPGap() {
+  return GetGrbDblAttribute(GRB_DBL_ATTR_MIPGAP);
+}
 
 double GurobiBackend::NodeCount() const {
   return GetGrbDblAttribute(GRB_DBL_ATTR_NODECOUNT);
@@ -185,6 +177,12 @@ std::string GurobiBackend::ConvertSolutionStatus(
   }
 }
 
+void GurobiBackend::ComputeIIS() {
+  GRB_CALL(GRBcomputeIIS(model));
+}
+
+
+//////////////////////////////////////////////////////////////////////////
 void GurobiBackend::InitProblemModificationPhase() {
   stats.time = steady_clock::now();
 }
@@ -347,6 +345,7 @@ void GurobiBackend::FinishProblemModificationPhase() {
 ////////////////////////// OPTIONS ////////////////////////////
 void GurobiBackend::InitOptions() {
 
+  MIPBackend::InitMIPOptions();
   set_option_header(
       fmt::format("Gurobi Optimizer Options for AMPL\n"
                   "---------------------------------\n"
@@ -414,32 +413,38 @@ void GurobiBackend::SetSolverOption(const char *key, const std::string& value) {
   GRB_CALL( GRBsetstrparam(GRBgetenv(model), key, value.c_str()) );
 }
 
-void GurobiBackend::ComputeIIS() {
-  GRB_CALL(GRBcomputeIIS(model));
+
+/// Shortcuts for attributes
+int GurobiBackend::GetGrbIntAttribute(const char* attr_id) const {
+  int tmp;
+  GRB_CALL( GRBgetintattr(model, attr_id, &tmp) );
+  return tmp;
+}
+double GurobiBackend::GetGrbDblAttribute(const char* attr_id) const {
+  double tmp;
+  GRB_CALL( GRBgetdblattr(model, attr_id, &tmp) );
+  return tmp;
 }
 
-void GurobiBackend::VarsIIS(std::vector<int>& stt) {
-  int num_vars = NumberOfVariables();
-  stt.resize(num_vars);
-  int error = GRBgetintattrarray(model, GRB_INT_ATTR_IIS_LB,
-                                 0, stt.size(), stt.data());
+std::vector<int> GurobiBackend::GetGrbIntArrayAttribute(const char* attr_id,
+  std::size_t size, std::size_t offset) const {
+  std::vector<int> res(size);
+  int error = GRBgetintattrarray(model, attr_id,
+    0, size-offset, res.data()+offset);
   if (error)
-    stt.clear();
+    res.clear();
+  return res;
 }
-
-void GurobiBackend::ConsIIS(std::vector<int>& stt) {
-  int nl = GetGrbIntAttribute(GRB_INT_ATTR_NUMSOS) +
-      GetGrbIntAttribute(GRB_INT_ATTR_NUMQCONSTRS) +
-      GetGrbIntAttribute(GRB_INT_ATTR_NUMGENCONSTRS);
-  stt.resize((std::size_t)NumberOfConstraints() + nl);
-  int error = GRBgetintattrarray(model, GRB_INT_ATTR_IIS_CONSTR,
-                                 0, stt.size()-nl, stt.data()+nl);
+std::vector<double> GurobiBackend::GetGrbDblArrayAttribute(const char* attr_id,
+  std::size_t size, std::size_t offset ) const {
+  std::vector<double> res(size);
+  int error = GRBgetdblattrarray(model, attr_id,
+    0, size-offset, res.data()+offset);
   if (error)
-    stt.clear();
+    res.clear();
+  return res;
 }
 
-double GurobiBackend::MIPGap() {
-  return GetGrbDblAttribute(GRB_DBL_ATTR_MIPGAP);
-}
+
 
 } // namespace mp

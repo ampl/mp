@@ -84,8 +84,8 @@ public:
       const mp::Interrupter &interrupter, int &solve_code);
 
   /// Solution values. The vectors are emptied if not available
-  void PrimalSolution(std::vector<double>& x);
-  void DualSolution(std::vector<double>& pi);
+  std::vector<double> PrimalSolution();
+  std::vector<double> DualSolution();
   double ObjectiveValue() const;
 
   /// Solution attributes
