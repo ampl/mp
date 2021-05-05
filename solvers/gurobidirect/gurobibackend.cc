@@ -156,7 +156,7 @@ std::string GurobiBackend::ConvertSolutionStatus(
   default:
     // Fall through.
     if (interrupter.Stop()) {
-      solve_code = 600;
+      solve_code = sol::INTERRUPTED;
       return "interrupted";
     }
     int solcount;

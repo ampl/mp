@@ -285,13 +285,21 @@ public:
   ///
   /////////////////////////////////////////////////////////////////////////////////
 
+  /////////////////////////////// SOLUTION STATUS /////////////////////////////////
   bool IsProblemInfOrUnb() const {
+    assert( IsSolStatusRetrieved() );
     return sol::INFEASIBLE<=solve_code &&
         sol::UNBOUNDED>=solve_code;
   }
 
-  int solve_code=0;
+  bool IsSolStatusRetrieved() const {
+    return sol::NOT_CHECKED!=solve_code;
+  }
+
+  int solve_code=sol::NOT_CHECKED;
   std::string solve_status;
+
+  /////////////////////////////// STORING SOLUTON AND STATS ///////////////////////
   double obj_value = std::numeric_limits<double>::quiet_NaN();
   std::vector<double> solution, dual_solution;
 
@@ -340,8 +348,6 @@ protected:
 
 
   ///////////////////////////// OPTIONS /////////////////////////////////
-  /// TODOs
-  /// - hide all Solver stuff behind an abstract interface
 protected:
 
   using Solver::AddOption;
