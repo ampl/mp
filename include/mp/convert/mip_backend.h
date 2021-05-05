@@ -47,6 +47,11 @@ public:
   //// Override in the Impl for standard MIP calculations ////
   ////////////////////////////////////////////////////////////
   /**
+  * Get AMPL var statii
+  **/
+  void VarStatii(std::vector<int>& stt) { stt.clear(); }
+  void ConStatii(std::vector<int>& stt) { stt.clear(); }
+  /**
   * Compute the IIS and relevant values
   **/
   void ComputeIIS();
@@ -134,6 +139,15 @@ public:
 
   void ReportStandardSuffixes() {
     BasicBackend<Impl>::ReportStandardSuffixes();
+    ReportStadardMIPSuffixes();
+  }
+
+  void ReportStadardMIPSuffixes() {
+    std::vector<int> stt;
+    MP_DISPATCH( VarStatii(stt) );
+    this->DeclareAndReportIntSuffix(suf_varstatus, stt);
+    MP_DISPATCH( ConStatii(stt) );
+    this->DeclareAndReportIntSuffix(suf_constatus, stt);
   }
 
 private:
@@ -147,6 +161,9 @@ private:
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////// STANDARD SUFFIXES ///////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
+  const SuffixDef<int> suf_varstatus = { "sstatus", suf::VAR | suf::OUTPUT };
+  const SuffixDef<int> suf_constatus = { "sstatus", suf::CON | suf::OUTPUT };
+
   const SuffixDef<int> sufIISCon = { "iis", suf::CON | suf::OUTPUT };
   const SuffixDef<int> sufIISVar = { "iis", suf::VAR | suf::OUTPUT };
 

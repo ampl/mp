@@ -113,7 +113,7 @@ public:
                                    name, version ) );
   }
 
-
+  ///////////////////////////// MODEL MANIP //////////////////////////////
   using Model = BasicModel<>;
 
   using Variable = typename Model::Variable;
@@ -195,15 +195,9 @@ public:
     throw MakeUnsupportedError("BasicBackend::AddLinearConstraint");
   }
 
-  /// Solution values. The vectors are emptied if not available
-  void DualSolution(std::vector<double>& pi) { pi.clear(); }
-  void VarStatii(std::vector<int>& stt) { stt.clear(); }
-  void ConStatii(std::vector<int>& stt) { stt.clear(); }
-
-
 
   ////////////////////////////////////////////////////////////////////////////
-  ////////////////////// PROCESS LOGIC ////////////////////////////
+  /////////////////////////// BASIC PROCESS LOGIC ////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
 
   void SolveAndReport() {
@@ -243,17 +237,7 @@ public:
     MP_DISPATCH( ReportCustomSuffixes() );
   }
 
-  ///////////////////////////// STANDARD SUFFIXES ////////////////////////////
-  const SuffixDef<int> suf_varstatus = { "sstatus", suf::VAR | suf::OUTPUT };
-  const SuffixDef<int> suf_constatus = { "sstatus", suf::CON | suf::OUTPUT };
-
-  void ReportStandardSuffixes() {
-    std::vector<int> stt;
-    MP_DISPATCH( VarStatii(stt) );
-    DeclareAndReportIntSuffix(suf_varstatus, stt);
-    MP_DISPATCH( ConStatii(stt) );
-    DeclareAndReportIntSuffix(suf_constatus, stt);
-  }
+  void ReportStandardSuffixes() { }
 
   void ReportCustomSuffixes() { }
 
@@ -276,6 +260,9 @@ public:
                    solution.empty() ? 0 : solution.data(),
                    dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
   }
+
+  /// Solution values. The vectors are emptied if not available
+  void DualSolution(std::vector<double>& pi) { pi.clear(); }
 
   void PrintTimingInfo() {
     double output_time = GetTimeAndReset(stats.time);
