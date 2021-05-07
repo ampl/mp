@@ -115,13 +115,16 @@ public:
   std::string ConvertSolutionStatus(
       const mp::Interrupter &interrupter, int &solve_code);
 
-  /// Various solution values. Return empty vectors if not available
+  /// Various solution values getters/setters.
+  /// Return empty vectors if not available
   std::vector<double> PrimalSolution();
   std::vector<double> DualSolution();
   double ObjectiveValue() const;
 
   std::vector<int> VarStatii();
   std::vector<int> ConStatii();
+  void VarStatii(ArrayRef<int> );
+  void ConStatii(ArrayRef<int> );
 
   std::vector<int> VarsIIS();
   std::vector<int> ConsIIS();
@@ -156,6 +159,12 @@ public:
   std::vector<double> GetGrbDblArrayAttribute(const char* attr_id,
     std::size_t size, std::size_t offset = 0) const;
 
+  bool SetGrbIntArrayAttribute(const char* attr_id,
+                               std::size_t start, std::size_t len,
+                               const int* values);
+  bool SetGrbDblArrayAttribute(const char* attr_id,
+                               std::size_t start, std::size_t len,
+                               const double* values);
 private:
   /// These options are stored in the class as variables
   /// for direct access

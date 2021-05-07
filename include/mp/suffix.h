@@ -34,6 +34,7 @@
 #include "mp/common.h"
 #include "mp/error.h"  // for MP_ASSERT
 #include "mp/format.h"
+#include "mp/arrayref.h"
 
 namespace mp {
 
@@ -106,6 +107,9 @@ class SuffixBase {
 
   int num_values() const { return impl_->num_values; }
 
+  template <class T>
+  ArrayRef<T> get_values() const { assert(0); return {}; }
+
   // Returns a value convertible to bool that can be used in conditions but not
   // in comparisons and evaluates to "true" if this suffix is not null
   // and "false" otherwise.
@@ -115,6 +119,20 @@ class SuffixBase {
   //   }
   operator SafeBool() const { return impl_ != 0 ? &SuffixBase::True : 0; }
 };
+
+template <> inline
+ArrayRef<int> SuffixBase::get_values<int>() const {
+  assert(0 == (suf::FLOAT & kind()));
+  return { impl_->int_values, (std::size_t)num_values() };
+}
+
+template <> inline
+ArrayRef<double> SuffixBase::get_values<double>() const {
+  assert(0 != (suf::FLOAT & kind()));
+  return { impl_->dbl_values, (std::size_t)num_values() };
+}
+
+
 }  // namespace internal
 
 // A suffix.
@@ -196,6 +214,10 @@ class BasicSuffix : private internal::SuffixBase {
   using SuffixBase::num_values;
   using SuffixBase::operator SafeBool;
 
+  ArrayRef<T> get_values() const {
+    return SuffixBase::get_values<T>();
+  }
+
   T value(int index) const {
     MP_ASSERT(index >= 0 && index < impl()->num_values, "index out of bounds");
     T result = T();
@@ -227,6 +249,8 @@ class BasicMutSuffix : public BasicSuffix<T> {
 
  public:
   BasicMutSuffix() {}
+
+  using BasicSuffix<T>::get_values;
 
   void set_value(int index, T value) {
     MP_ASSERT(index >= 0 &&

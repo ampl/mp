@@ -47,10 +47,12 @@ public:
   //// Override in the Impl for standard MIP calculations ////
   ////////////////////////////////////////////////////////////
   /**
-  * Get AMPL var statii
+  * Get/Set AMPL var/con statii
   **/
   std::vector<int> VarStatii() { return {}; }
+  void VarStatii(ArrayRef<int> ) { }
   std::vector<int> ConStatii() { return {}; }
+  void ConStatii(ArrayRef<int> ) { }
   /**
   * Compute the IIS and relevant values
   **/
@@ -108,16 +110,16 @@ public:
     CalculateAndReportMIPGap();
   }
 
-  using BaseBackend::DeclareAndReportIntSuffix;
-  using BaseBackend::DeclareAndReportDblSuffix;
+  using BaseBackend::ReadSuffix;
+  using BaseBackend::ReportSuffix;
 
   void CalculateAndReportIIS() {
     if (MP_DISPATCH( IsProblemInfOrUnb() ) &&
         mipStoredOptions_.exportIIS_) {
       MP_DISPATCH( ComputeIIS() );
 
-      DeclareAndReportIntSuffix(sufIISCon, MP_DISPATCH(ConsIIS()));
-      DeclareAndReportIntSuffix(sufIISVar, MP_DISPATCH(VarsIIS()));
+      ReportSuffix(sufIISCon, MP_DISPATCH(ConsIIS()));
+      ReportSuffix(sufIISVar, MP_DISPATCH(VarsIIS()));
     }
   }
 
@@ -126,22 +128,33 @@ public:
       MP_DISPATCH( ComputeMipGap() );
 
       std::vector<double> dbl(1, MP_DISPATCH( MIPGap() ));
-      DeclareAndReportDblSuffix(sufRelMipGapObj, dbl);
-      DeclareAndReportDblSuffix(sufRelMipGapProb, dbl);
+      ReportSuffix(sufRelMipGapObj, dbl);
+      ReportSuffix(sufRelMipGapProb, dbl);
     }
   }
 
   void ComputeMipGap() {}
 
-  void ReportStandardSuffixes() {
-    BasicBackend<Impl>::ReportStandardSuffixes();
-    ReportStadardMIPSuffixes();
+  //////////////////////// STADDARD MIP SUFFIXES //////////////////////////
+  void ReadStandardSuffixes() {
+    BasicBackend<Impl>::ReadStandardSuffixes();
+    ReadStandardMIPSuffixes();
   }
 
-  void ReportStadardMIPSuffixes() {
-    DeclareAndReportIntSuffix(suf_varstatus,
+  void ReadStandardMIPSuffixes() {
+    MP_DISPATCH( VarStatii(ReadSuffix(suf_varstatus)) );
+    MP_DISPATCH( ConStatii(ReadSuffix(suf_constatus)) );
+  }
+
+  void ReportStandardSuffixes() {
+    BasicBackend<Impl>::ReportStandardSuffixes();
+    ReportStandardMIPSuffixes();
+  }
+
+  void ReportStandardMIPSuffixes() {
+    ReportSuffix(suf_varstatus,
                               MP_DISPATCH( VarStatii() ));
-    DeclareAndReportIntSuffix(suf_constatus,
+    ReportSuffix(suf_constatus,
                               MP_DISPATCH( ConStatii() ));
   }
 

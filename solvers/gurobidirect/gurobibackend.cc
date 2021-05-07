@@ -99,6 +99,16 @@ std::vector<int> GurobiBackend::ConStatii() {
     GetGrbIntArrayAttribute(GRB_INT_ATTR_CBASIS, NumberOfConstraints());
 }
 
+void GurobiBackend::VarStatii(ArrayRef<int> vst) {
+  assert(
+    SetGrbIntArrayAttribute(GRB_INT_ATTR_VBASIS, 0, vst.size(), vst.data()));
+}
+
+void GurobiBackend::ConStatii(ArrayRef<int> cst) {
+  assert(
+    SetGrbIntArrayAttribute(GRB_INT_ATTR_CBASIS, 0, cst.size(), cst.data()));
+}
+
 std::vector<int> GurobiBackend::VarsIIS() {
   return
     GetGrbIntArrayAttribute(GRB_INT_ATTR_IIS_LB, NumberOfVariables());
@@ -445,6 +455,18 @@ std::vector<double> GurobiBackend::GetGrbDblArrayAttribute(const char* attr_id,
   return res;
 }
 
+bool GurobiBackend::SetGrbIntArrayAttribute(
+    const char *attr_id, std::size_t start, std::size_t len, const int *values) {
+  auto error = GRBsetintattrarray(model, attr_id,
+                                  start, len, (int*)values);
+  return 0==error;
+}
 
+bool GurobiBackend::SetGrbDblArrayAttribute(
+    const char *attr_id, std::size_t start, std::size_t len, const double *values) {
+  auto error = GRBsetdblattrarray(model, attr_id,
+                                  start, len, (double*)values);
+  return 0==error;
+}
 
 } // namespace mp

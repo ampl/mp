@@ -202,6 +202,8 @@ public:
   ////////////////////////////////////////////////////////////////////////////
 
   void SolveAndReport() {
+    MP_DISPATCH( ReadSuffixes() );
+
     MP_DISPATCH( PrepareSolve() );
     MP_DISPATCH( SolveAndReportIntermediateResults() );
     MP_DISPATCH( WrapupSolve() );
@@ -212,6 +214,14 @@ public:
     if (MP_DISPATCH( timing() ))
       MP_DISPATCH( PrintTimingInfo() );
   }
+
+  void ReadSuffixes() {
+    MP_DISPATCH( ReadStandardSuffixes() );
+    MP_DISPATCH( ReadCustomSuffixes() );
+  }
+
+  void ReadStandardSuffixes() { }
+  void ReadCustomSuffixes() { }
 
   void PrepareSolve() {
     MP_DISPATCH( SetInterrupter(MP_DISPATCH( interrupter() )) );
@@ -321,15 +331,25 @@ protected:
     GetCQ().HandleSolution(status, msg, x, y, obj);
   }
 
-  /// Does nothing if vector empty
-  void DeclareAndReportIntSuffix(const SuffixDef<int>& suf,
-                                 const std::vector<int>& values) {
-    GetCQ().DeclareAndReportIntSuffix(suf, values);
+  ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) {
+    return GetCQ().ReadSuffix(suf);
   }
 
-  void DeclareAndReportDblSuffix(const SuffixDef<double>& suf,
+  ArrayRef<double> ReadSuffix(const SuffixDef<double>& suf) {
+    return GetCQ().ReadSuffix(suf);
+  }
+
+  /// Record suffix values which are written into .sol
+  /// by HandleSolution()
+  /// Does nothing if vector empty
+  void ReportSuffix(const SuffixDef<int>& suf,
+                    const std::vector<int>& values) {
+    GetCQ().ReportSuffix(suf, values);
+  }
+
+  void ReportSuffix(const SuffixDef<double>& suf,
     const std::vector<double>& values) {
-    GetCQ().DeclareAndReportDblSuffix(suf, values);
+    GetCQ().ReportSuffix(suf, values);
   }
 
 private:

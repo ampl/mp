@@ -25,34 +25,47 @@ public:
   void set_num_alg_cons(int n) { n_alg_cons_orig_ = n; }
 
 
-  ////////////////////////// SUFFIX DECLARE & OUTPUT ///////////////////////
-  void DeclareAndReportIntSuffix(const SuffixDef<int>& suf,
-                                 const std::vector<int>& values) {
-    DeclareAndReportSuffix(suf, values);
-  }
-  void DeclareAndReportDblSuffix(const SuffixDef<double>& suf,
-                                 const std::vector<double>& values) {
-    DeclareAndReportSuffix(suf, values);
+  ////////////////////////// SUFFIX I/O //////////////////////////////
+  template <class T>
+  void ReportSuffix(const SuffixDef<T>& sufdef,
+                    const std::vector<T>& values) {
+    if (values.empty())
+      return;
+    auto suf = FindOrCreateSuffix(sufdef);
+    auto suf_size = suf.num_values();
+    /// Check this because Converter or solver can add more variables
+    assert(suf_size <= (int)values.size());
+    for (auto i=suf_size; i--; ) {
+      suf.set_value(i, values[i]);
+    }
   }
 
   template <class T>
-  void DeclareAndReportSuffix(const SuffixDef<T>& sufdef,
-                              const std::vector<T>& values) {
-    if (values.empty())
-      return;
+  ArrayRef<T> ReadSuffix(const SuffixDef<T>& sufdef) {
+    auto suf = FindSuffix(sufdef);
+    if (!suf)
+      return {};
+    return suf.get_values();
+  }
+
+  template <class T>
+  BasicMutSuffix<T> FindSuffix(const SuffixDef<T>& sufdef) {
     auto main_kind = (suf::Kind)(sufdef.kind() & suf::KIND_MASK);
     auto suf_raw = Model::suffixes(main_kind).Find(sufdef.name());
+    if (suf_raw)
+      return Cast< BasicMutSuffix<T> >( suf_raw );
+    return BasicMutSuffix<T>();
+  }
+
+  template <class T>
+  BasicMutSuffix<T> FindOrCreateSuffix(const SuffixDef<T>& sufdef) {
+    auto main_kind = (suf::Kind)(sufdef.kind() & suf::KIND_MASK);
+    auto suf_raw = FindSuffix(sufdef);
     auto suf_size = GetSuffixSize(main_kind);    // can be < values.size()
-    assert(suf_size <= (int)values.size());
-    auto suf =
-      (suf_raw) ? (typename Model::SuffixHandler<T>)
-               Cast<BasicMutSuffix<T> >( suf_raw )
-        : (typename Model::SuffixHandler<T>)
-          Model::suffixes(main_kind).template
-          Add<T>(sufdef.name(), sufdef.kind(), suf_size);
-    for (auto i=suf_size; i--; ) {
-      suf.SetValue(i, values[i]);
-    }
+    return
+      (suf_raw) ? ( suf_raw )
+        : Model::suffixes(main_kind).template
+            Add<T>(sufdef.name(), sufdef.kind(), suf_size);
   }
 
   int GetSuffixSize(suf::Kind kind) {

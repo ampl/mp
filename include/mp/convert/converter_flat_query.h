@@ -21,18 +21,27 @@ public:
 
   using Model = typename Converter::OutputModelType;
 
-  const Model& GetOutputModel() const { return GetCvt().GetOutputModel(); }
-  Model& GetOutputModel() { return GetCvt().GetOutputModel(); }
+  const Model& GetOutputModel() const
+  { return GetCvt().GetOutputModel(); }
+  Model& GetOutputModel()
+  { return GetCvt().GetOutputModel(); }
 
-  void DeclareAndReportIntSuffix(const SuffixDef<int>& suf,
-                                 const std::vector<int>& values) override {
-    GetOutputModel().DeclareAndReportIntSuffix(suf, values);
+  ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) override {
+    return GetOutputModel().ReadSuffix(suf);
   }
 
+  ArrayRef<double> ReadSuffix(const SuffixDef<double>& suf) override {
+    return GetOutputModel().ReadSuffix(suf);
+  }
 
-  void DeclareAndReportDblSuffix(const SuffixDef<double>& suf,
-    const std::vector<double>& values) override {
-    GetOutputModel().DeclareAndReportDblSuffix(suf, values);
+  void ReportSuffix(const SuffixDef<int>& suf,
+                    const std::vector<int>& values) override {
+    GetOutputModel().ReportSuffix(suf, values);
+  }
+
+  void ReportSuffix(const SuffixDef<double>& suf,
+                    const std::vector<double>& values) override {
+    GetOutputModel().ReportSuffix(suf, values);
   }
 
   void HandleSolution(int status, fmt::CStringRef msg,

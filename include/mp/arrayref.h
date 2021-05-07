@@ -31,10 +31,12 @@ namespace mp {
 template <typename T>
 class ArrayRef {
  private:
-  const T *data_;
-  std::size_t size_;
+  const T *data_ = nullptr;
+  std::size_t size_ = 0;
 
  public:
+  ArrayRef() { }
+
   ArrayRef(const T *data, std::size_t size) : data_(data), size_(size) {}
 
   template <typename U>
