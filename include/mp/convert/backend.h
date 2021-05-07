@@ -32,8 +32,9 @@
 #include "mp/convert/model_adapter.h"
 
 #define ALLOW_STD_FEATURE( name, val ) \
-  constexpr bool AllowFeature__##name() { return val; }
-#define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH( AllowFeature__##name() )
+  constexpr bool STD_FEATURE_QUERY_FN(name)() { return val; }
+#define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH( STD_FEATURE_QUERY_FN(name)() )
+#define STD_FEATURE_QUERY_FN( name ) AllowStdFeature__ ## name
 
 namespace mp {
 
