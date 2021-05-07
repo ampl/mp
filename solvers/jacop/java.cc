@@ -119,7 +119,7 @@ std::string RegKey::GetStrValue(fmt::CStringRef name) const {
 
 namespace mp {
 
-JVM JVM::instance_;
+JVM *JVM::instance_;
 
 void Env::Throw(jthrowable exception, const char *method_name) {
   env_->ExceptionClear();
@@ -190,8 +190,16 @@ JVM::~JVM() {
     jvm_->DestroyJavaVM();
 }
 
+void JVM::cleanup_jvm()
+{
+  if (instance_) {
+    delete instance_;
+    instance_ = nullptr;
+  }
+}
+
 Env JVM::env(const char *const *options) {
-  if (!instance_.jvm_) {
+  if (!instance_) {
 #ifdef _WIN32
     std::string runtime_lib_path;
     bool exists = false;
@@ -251,15 +259,19 @@ Env JVM::env(const char *const *options) {
     }
     vm_args.nOptions = static_cast<jint>(jvm_options.size());
     vm_args.options = &jvm_options[0];
+    instance_ = new JVM();
     void *envp = 0;
-    jint result = JNI_CreateJavaVM(&instance_.jvm_, &envp, &vm_args);
+    jint result = JNI_CreateJavaVM(&instance_->jvm_, &envp, &vm_args);
     if (result != JNI_OK) {
+      delete instance_;
+      instance_ = nullptr;
       throw JavaError(fmt::format(
           "Java VM initialization failed, error code = {}", result));
     }
-    instance_.env_ = Env(static_cast<JNIEnv*>(envp));
+    instance_->env_ = Env(static_cast<JNIEnv*>(envp));
+    std::atexit(cleanup_jvm);
   }
-  return instance_.env_;
+  return instance_->env_;
 }
 
 ClassBase::~ClassBase() {}

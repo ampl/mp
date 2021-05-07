@@ -215,7 +215,8 @@ class JVM {
  private:
   JavaVM *jvm_;
   Env env_;
-  static JVM instance_;
+  static JVM *instance_;
+  static void cleanup_jvm();
 
   JVM() : jvm_() {}
   ~JVM();
