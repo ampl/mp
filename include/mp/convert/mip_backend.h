@@ -124,7 +124,8 @@ public:
   }
 
   void CalculateAndReportMIPGap() {
-    if (mipStoredOptions_.returnMipGap_) {
+    if (MP_DISPATCH(IsMIP()) &&
+        mipStoredOptions_.returnMipGap_) {
       MP_DISPATCH( ComputeMipGap() );
 
       std::vector<double> dbl(1, MP_DISPATCH( MIPGap() ));
