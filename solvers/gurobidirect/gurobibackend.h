@@ -126,6 +126,8 @@ public:
   void VarStatii(ArrayRef<int> );
   void ConStatii(ArrayRef<int> );
 
+  void VarPriority(ArrayRef<int>);
+
   std::vector<int> VarsIIS();
   std::vector<int> ConsIIS();
 
@@ -162,9 +164,12 @@ public:
   bool SetGrbIntArrayAttribute(const char* attr_id,
                                std::size_t start, std::size_t len,
                                const int* values);
+  bool SetGrbIntArrayAttribute(const char* attr_id, ArrayRef<int> values);
+
   bool SetGrbDblArrayAttribute(const char* attr_id,
                                std::size_t start, std::size_t len,
                                const double* values);
+  bool SetGrbDblArrayAttribute(const char* attr_id, ArrayRef<double> values);
 private:
   /// These options are stored in the class as variables
   /// for direct access

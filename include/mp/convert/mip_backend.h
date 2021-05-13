@@ -24,7 +24,7 @@
 
 #include "mp/convert/backend.h"
 
-
+#define NOTIMPLEMENTED(name) throw std::runtime_error(## name " has not been implemented!");
 namespace mp {
 
 /// MIP backend wrapper.
@@ -38,10 +38,14 @@ class MIPBackend :
   using BaseBackend = BasicBackend<Impl>;
 
 public:
+  // Properties
+    bool IsMIP() const { 
+        throw std::runtime_error("Not implemented!"); }
   /////////////////// STD FEATURE FLAGS //////////////////////
   //////// Disable optional std features by default //////////
   ////////////////////////////////////////////////////////////
   ALLOW_STD_FEATURE( IIS, false )
+  ALLOW_STD_FEATURE( MIPGap, false)
 
   ////////////////////////////////////////////////////////////
   //// Override in the Impl for standard MIP calculations ////
@@ -54,9 +58,14 @@ public:
   std::vector<int> ConStatii() { return {}; }
   void ConStatii(ArrayRef<int> ) { }
   /**
+  * Set branch and bound priority 
+  
+ **/
+  void VarPriority(ArrayRef<int>) {}
+  /**
   * Compute the IIS and relevant values
   **/
-  void ComputeIIS();
+  void ComputeIIS() {}
   /**
   * Get IIS values for constraints / vars
   **/
@@ -65,7 +74,7 @@ public:
   /**
   * Get MIP Gap
   **/
-  double MIPGap() { throw std::runtime_error("Not implemented"); }
+  double MIPGap() { NOTIMPLEMENTED("MIPGap") }
 
 
   ////////////////////////////////////////////////////////////
@@ -83,6 +92,11 @@ public:
                       "Whether to find and export the IIS. "
                       "Default = 0 (don't export).",
                       mipStoredOptions_.exportIIS_);
+
+    AddStoredOption("priority",
+        "Whether to read the branch and bound priorities from the"
+        ".priority suffix.",
+        mipStoredOptions_.importPriority_);
     AddStoredOption("return_mipgap",
       "Whether to return mipgap suffixes or include mipgap values\n\
 		(|objectve - best_bound|) in the solve_message:  sum of\n\
@@ -126,7 +140,7 @@ public:
   void CalculateAndReportMIPGap() {
     if (MP_DISPATCH(IsMIP()) &&
         mipStoredOptions_.returnMipGap_) {
-      MP_DISPATCH( ComputeMipGap() );
+      MP_DISPATCH( ComputeMIPGap() );
 
       std::vector<double> dbl(1, MP_DISPATCH( MIPGap() ));
       ReportSuffix(sufRelMipGapObj, dbl);
@@ -134,9 +148,9 @@ public:
     }
   }
 
-  void ComputeMipGap() {}
+  void ComputeMIPGap() { }
 
-  //////////////////////// STADDARD MIP SUFFIXES //////////////////////////
+  //////////////////////// STANDARD MIP SUFFIXES //////////////////////////
   void ReadStandardSuffixes() {
     BasicBackend<Impl>::ReadStandardSuffixes();
     ReadStandardMIPSuffixes();
@@ -145,6 +159,10 @@ public:
   void ReadStandardMIPSuffixes() {
     MP_DISPATCH( VarStatii(ReadSuffix(suf_varstatus)) );
     MP_DISPATCH( ConStatii(ReadSuffix(suf_constatus)) );
+    if (MP_DISPATCH(IsMIP()) && mipStoredOptions_.importPriority_)
+        MP_DISPATCH(VarPriority(ReadSuffix(suf_varpriority)));
+
+
   }
 
   void ReportStandardSuffixes() {
@@ -161,6 +179,7 @@ public:
 
 private:
   struct Options {
+    int importPriority_;
     int exportIIS_;
     int returnMipGap_;
   };
@@ -170,6 +189,9 @@ private:
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////// STANDARD SUFFIXES ///////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
+
+  const SuffixDef<int> suf_varpriority = { "Priority", suf::VAR | suf::INPUT };
+
   const SuffixDef<int> suf_varstatus = { "sstatus", suf::VAR | suf::OUTPUT };
   const SuffixDef<int> suf_constatus = { "sstatus", suf::CON | suf::OUTPUT };
 

@@ -100,14 +100,15 @@ std::vector<int> GurobiBackend::ConStatii() {
 }
 
 void GurobiBackend::VarStatii(ArrayRef<int> vst) {
-  assert(
-    SetGrbIntArrayAttribute(GRB_INT_ATTR_VBASIS, 0, vst.size(), vst.data()));
+  assert(SetGrbIntArrayAttribute(GRB_INT_ATTR_VBASIS, vst));
+}
+void GurobiBackend::VarPriority(ArrayRef<int> priority) {
+    assert(SetGrbIntArrayAttribute(GRB_INT_ATTR_BRANCHPRIORITY, priority));
+}
+void GurobiBackend::ConStatii(ArrayRef<int> cst) {
+    assert(SetGrbIntArrayAttribute(GRB_INT_ATTR_CBASIS, cst));
 }
 
-void GurobiBackend::ConStatii(ArrayRef<int> cst) {
-  assert(
-    SetGrbIntArrayAttribute(GRB_INT_ATTR_CBASIS, 0, cst.size(), cst.data()));
-}
 
 std::vector<int> GurobiBackend::VarsIIS() {
   return
@@ -454,6 +455,20 @@ std::vector<double> GurobiBackend::GetGrbDblArrayAttribute(const char* attr_id,
     res.clear();
   return res;
 }
+
+bool  GurobiBackend::SetGrbIntArrayAttribute(const char* attr_id, ArrayRef<int> values) {
+    auto error = GRBsetintattrarray(model, attr_id,
+        0, values.size(), const_cast<int*>(values.data()));
+    return 0 == error;
+}
+
+
+bool  GurobiBackend::SetGrbDblArrayAttribute(const char* attr_id, ArrayRef<double> values) {
+    auto error = GRBsetdblattrarray(model, attr_id,
+        0, values.size(), const_cast<double*>(values.data()));
+    return 0 == error;
+}
+
 
 bool GurobiBackend::SetGrbIntArrayAttribute(
     const char *attr_id, std::size_t start, std::size_t len, const int *values) {

@@ -12,3 +12,4 @@ Testing
 *.user
 *~
 
+/src/expr-info.cc
