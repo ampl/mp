@@ -460,21 +460,24 @@ private:
 
 protected:
   void InitStandardOptions() {
-    AddStoredOption("priority",
+    if (IMPL_HAS_STD_FEATURE( VarPriority ))
+      AddStoredOption("priority",
         "Whether to read the branch and bound priorities from the\n"
-        ".priority suffix.",
+        "        .priority suffix.",
         storedOptions_.importPriority_);
   }
 
   void InitCustomOptions() { }
 
   ////////////////////////////////////////////////////////////
+  /////////////// OPTIONAL STANDARD FEATURES /////////////////
   /////// Override in the Impl for standard operations ///////
   ////////////////////////////////////////////////////////////
 private:
   /**
   * Set branch and bound priority
   **/
+  ALLOW_STD_FEATURE( VarPriority, true ) // believe true for most
   void VarPriority(ArrayRef<int>) {}
 
   //////////////////////////////////////////////////////////////////////////////

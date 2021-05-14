@@ -98,7 +98,7 @@ public:
   void AddConstraint(const TanConstraint& cc);
 
 
-  ////////////////////////////////////////// Model attributes
+  ///////////////////// Model attributes /////////////////////
   bool IsMIP() const;
   bool IsQCP() const;
 
@@ -115,27 +115,44 @@ public:
   std::string ConvertSolutionStatus(
       const mp::Interrupter &interrupter, int &solve_code);
 
-  /// Various solution values getters/setters.
+  /// Various solution attribute getters.
   /// Return empty vectors if not available
   std::vector<double> PrimalSolution();
   std::vector<double> DualSolution();
   double ObjectiveValue() const;
 
+  double NodeCount() const;
+  double Niterations() const;
+
   std::vector<int> VarStatii();
   std::vector<int> ConStatii();
+
+  /// Various attribute setters
   void VarStatii(ArrayRef<int> );
   void ConStatii(ArrayRef<int> );
 
-  void VarPriority(ArrayRef<int>);
 
+  ////////////////////////////////////////////////////////////
+  /////////////// OPTIONAL STANDARD FEATURES /////////////////
+  ////////////////////////////////////////////////////////////
+
+  /**
+  * Compute the IIS and obtain relevant values
+  **/
+  ALLOW_STD_FEATURE( IIS, true )
+  void ComputeIIS();
   std::vector<int> VarsIIS();
   std::vector<int> ConsIIS();
-
-  double MIPGap();
-
-  /// Solution attributes
-  double NodeCount() const;
-  double Niterations() const;
+  /**
+  * Get MIP Gap
+  **/
+  ALLOW_STD_FEATURE( MIPGap, true )
+  double MIPGap() const;
+  /**
+  * Set branch and bound priority
+  **/
+  ALLOW_STD_FEATURE( VarPriority, true )
+  void VarPriority(ArrayRef<int> );
 
 
   //////////////////// [[ Implementation details ]] //////////////////////
@@ -144,7 +161,8 @@ private:
   GRBenv   *env   = NULL;
   GRBmodel *model = NULL;
   
-  int optimstatus; // Stores gurobi optimization status after SolveAndReportIntermediateResults
+   // Stores gurobi optimization status after SolveAndReportIntermediateResults
+  int optimstatus;
 
 public:
   void OpenSolver();
@@ -157,11 +175,13 @@ public:
   int GetGrbIntAttribute(const char* attr_id) const;
   double GetGrbDblAttribute(const char* attr_id) const;
 
+  /// Return empty vector on failure
   std::vector<int> GetGrbIntArrayAttribute(const char* attr_id,
     std::size_t size, std::size_t offset=0) const;
   std::vector<double> GetGrbDblArrayAttribute(const char* attr_id,
     std::size_t size, std::size_t offset=0) const;
 
+  /// Return false on failure
   bool SetGrbIntArrayAttribute(const char* attr_id,
                                ArrayRef<int> values, std::size_t start=0);
   bool SetGrbDblArrayAttribute(const char* attr_id,
@@ -185,12 +205,6 @@ public:
   void SetSolverOption(const char* key, double value);
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);
-
-
-  // Calculate MIP backend related quantities
-  ALLOW_STD_FEATURE( IIS, true )
-  void ComputeIIS();
-  void ComputeMIPGap() {}
 
 };
 

@@ -66,7 +66,7 @@ public:
   void AddConstraint(const IndicatorConstraintLinLE& mc);
 
 
-  /////////////////////////// Model attributes
+  /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const;
   bool IsQCP() const;
 

@@ -125,7 +125,7 @@ std::vector<int> GurobiBackend::ConsIIS() {
     GetGrbIntArrayAttribute(GRB_INT_ATTR_IIS_CONSTR,
       (std::size_t)NumberOfConstraints() + nl, nl);
 }
-double GurobiBackend::MIPGap() {
+double GurobiBackend::MIPGap() const {
   return GetGrbDblAttribute(GRB_DBL_ATTR_MIPGAP);
 }
 

@@ -40,11 +40,24 @@ public:
   // Properties
   bool IsMIP() const { RAISE_NOT_IMPLEMENTED( "IsMIP()" ); }
 
-  /////////////////// STD FEATURE FLAGS //////////////////////
-  //////// Disable optional std features by default //////////
   ////////////////////////////////////////////////////////////
+  /////////////// OPTIONAL STANDARD FEATURES /////////////////
+  /////////////// Most are disabled by default ///////////////
+  //// To enable, declare ALLOW_STD_FEATURE( name, true ) ////
+  /////////// and implement the relevant methods /////////////
+  ////////////////////////////////////////////////////////////
+  /**
+  * Compute the IIS and obtain relevant values
+  **/
   ALLOW_STD_FEATURE( IIS, false )
-  ALLOW_STD_FEATURE( MIPGap, false)
+  void ComputeIIS() {}
+  std::vector<int> ConsIIS() { return {}; }
+  std::vector<int> VarsIIS() { return {}; }
+  /**
+  * Get MIP Gap
+  **/
+  ALLOW_STD_FEATURE( MIPGap, false )
+  double MIPGap() const { return MP_DISPATCH( Infinity() ); }
 
   ////////////////////////////////////////////////////////////
   ///// Override in the Impl for standard MIP operations /////
@@ -56,19 +69,6 @@ public:
   void VarStatii(ArrayRef<int> ) { }
   std::vector<int> ConStatii() { return {}; }
   void ConStatii(ArrayRef<int> ) { }
-  /**
-  * Compute the IIS and relevant values
-  **/
-  void ComputeIIS() {}
-  /**
-  * Get IIS values for constraints / vars
-  **/
-  std::vector<int> ConsIIS() { return {}; }
-  std::vector<int> VarsIIS() { return {}; }
-  /**
-  * Get MIP Gap
-  **/
-  double MIPGap() { RAISE_NOT_IMPLEMENTED("MIPGap()"); }
 
 
   ////////////////////////////////////////////////////////////
@@ -87,8 +87,9 @@ public:
                       "Default = 0 (don't export).",
                       mipStoredOptions_.exportIIS_);
 
-    AddStoredOption("return_mipgap",
-      "Whether to return mipgap suffixes or include mipgap values\n\
+    if (IMPL_HAS_STD_FEATURE( MIPGap ))
+      AddStoredOption("return_mipgap",
+        "Whether to return mipgap suffixes or include mipgap values\n\
 		(|objectve - best_bound|) in the solve_message:  sum of\n\
 			1 = return relmipgap suffix (relative to |obj|);\n\
 			2 = return absmipgap suffix (absolute mipgap);\n\
@@ -97,7 +98,7 @@ public:
 		Returned suffix values are +Infinity if no integer-feasible\n\
 		solution has been found, in which case no mipgap values are\n\
 		reported in the solve_message.",
-      mipStoredOptions_.returnMipGap_);
+        mipStoredOptions_.returnMipGap_);
   }
 
 
@@ -130,15 +131,11 @@ public:
   void CalculateAndReportMIPGap() {
     if (MP_DISPATCH(IsMIP()) &&
         mipStoredOptions_.returnMipGap_) {
-      MP_DISPATCH( ComputeMIPGap() );
-
       std::vector<double> dbl(1, MP_DISPATCH( MIPGap() ));
       ReportSuffix(sufRelMipGapObj, dbl);
       ReportSuffix(sufRelMipGapProb, dbl);
     }
   }
-
-  void ComputeMIPGap() { }
 
   //////////////////////// STANDARD MIP SUFFIXES //////////////////////////
   void ReadStandardSuffixes() {
@@ -152,7 +149,7 @@ public:
   }
 
   void ReportStandardSuffixes() {
-    BasicBackend<Impl>::ReportStandardSuffixes();
+    BaseBackend::ReportStandardSuffixes();
     ReportStandardMIPSuffixes();
   }
 
