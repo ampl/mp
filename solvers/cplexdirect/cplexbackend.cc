@@ -245,7 +245,7 @@ void CplexBackend::FinishProblemModificationPhase() {
 
 ////////////////////////////// OPTIONS /////////////////////////////////
 
-void CplexBackend::InitOptions() {
+void CplexBackend::InitCustomOptions() {
 
   set_option_header(
       "IBM ILOG CPLEX Optimizer Options for AMPL\n"

@@ -107,7 +107,8 @@ public:
 
   void InitMetaInfoAndOptions() {
     MP_DISPATCH( InitNamesAndVersion() );
-    MP_DISPATCH( InitOptions() );
+    MP_DISPATCH( InitStandardOptions() );
+    MP_DISPATCH( InitCustomOptions() );
   }
 
   void InitNamesAndVersion() {
@@ -458,12 +459,14 @@ private:
   Options storedOptions_;
 
 protected:
-  void InitOptions() {
+  void InitStandardOptions() {
     AddStoredOption("priority",
         "Whether to read the branch and bound priorities from the\n"
         ".priority suffix.",
         storedOptions_.importPriority_);
   }
+
+  void InitCustomOptions() { }
 
   ////////////////////////////////////////////////////////////
   /////// Override in the Impl for standard operations ///////

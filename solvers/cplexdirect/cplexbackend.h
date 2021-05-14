@@ -102,7 +102,7 @@ private:
 public:  // public for static polymorphism
   void OpenSolver();
   void CloseSolver();
-  void InitOptions();  /////////////////////////////// OPTIONS ///////////////////////
+  void InitCustomOptions();
 
   static double Infinity() { return CPX_INFBOUND; }
   static double MinusInfinity() { return -CPX_INFBOUND; }

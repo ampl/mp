@@ -149,7 +149,7 @@ private:
 public:
   void OpenSolver();
   void CloseSolver();
-  void InitOptions();
+  void InitCustomOptions();
 
   static double Infinity() { return GRB_INFINITY; }
   static double MinusInfinity() { return -GRB_INFINITY; }
