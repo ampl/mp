@@ -343,7 +343,7 @@ class SPAdapter {
   }
 
   // Returns the number of random vectors.
-  int num_rvs() const { return rvs_.size(); }
+  std::size_t num_rvs() const { return rvs_.size(); }
 
   // Returns the random vector with the specified index.
   const RandomVector &rv(int index) const { return rvs_[index]; }

@@ -103,7 +103,7 @@ class LinearExpr {
   }
 
 
-  void Reserve(int num_terms) {
+  void Reserve(std::size_t num_terms) {
     terms_.reserve(num_terms);
   }
 };

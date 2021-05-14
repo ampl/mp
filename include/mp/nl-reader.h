@@ -1849,7 +1849,8 @@ void NLReader<Reader, Handler>::ReadBounds() {
         reader_.ReadTillEndOfLine();
         continue;
       }
-      // Fall through as COMPL bound type is invalid for variables.
+      reader_.ReportError("COMPL bound type is invalid for variables");
+      break;
     default:
       reader_.ReportError("expected bound");
     }

@@ -29,7 +29,7 @@ public:
   template <int sense, class MinOrMaxConstraint>
   void ConvertMinOrMax(const MinOrMaxConstraint& mc) {
     const auto& args = mc.GetArguments();
-    const int nargs = args.size();
+    const std::size_t nargs = args.size();
     const auto flags = this->AddVars(nargs, 0.0, 1.0, var::Type::INTEGER);   // binary flags
     MP_DISPATCH( AddConstraint(LinearConstraint(std::vector<double>(nargs, 1.0),    // sum of the flags >= 1
                         flags, 1.0, this->Infty())) );

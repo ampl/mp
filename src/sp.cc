@@ -349,7 +349,7 @@ void SPAdapter::ProcessCons() {
     ++num_stage_cons_[stage];
   }
   if (num_stage_cons_.size() > num_stage_vars_.size()) {
-    num_stages_ = num_stage_cons_.size();
+    num_stages_ = (int)num_stage_cons_.size();
     num_stage_vars_.resize(num_stages_);
   }
   // Reorder constraints by stages.

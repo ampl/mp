@@ -103,9 +103,7 @@ public:
     GetBackend().ProvideConverterQueryObject( &MP_DISPATCH( GetCQ() ) );
   }
 
-  std::unique_ptr<ConverterQuery> MakeConverterQuery() {
-      return std::unique_ptr<ConverterQuery>(new ConverterQuery());
-  }
+  std::unique_ptr<ConverterQuery> MakeConverterQuery() { return MP_DISPATCH(MakeConverterQuery()); }
 
   bool ParseOptions(char **argv, unsigned flags = 0) {
     return GetMPUtils().ParseOptions(argv, flags);
@@ -226,9 +224,9 @@ public:
     auto var = GetModel().AddVar(lb, ub, type);
     return var.index();
   }
-  std::vector<int> AddVars(int nvars, double lb, double ub, var::Type type = var::CONTINUOUS) {
+  std::vector<int> AddVars(std::size_t nvars, double lb, double ub, var::Type type = var::CONTINUOUS) {
     std::vector<int> newVars(nvars);
-    for (int i=0; i<nvars; ++i)
+    for (std::size_t  i=0; i<nvars; ++i)
       newVars[i] = AddVar(lb, ub, type);
     return newVars;
   }

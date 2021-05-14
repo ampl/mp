@@ -47,7 +47,7 @@ public:
     vars2_.insert(vars2_.end(), li.vars2_.begin(), li.vars2_.end());
   }
 
-  void Reserve(int num_terms) {
+  void Reserve(std::size_t num_terms) {
     coefs_.reserve(num_terms);
     vars1_.reserve(num_terms);
     vars2_.reserve(num_terms);

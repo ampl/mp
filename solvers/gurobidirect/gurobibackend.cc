@@ -263,7 +263,7 @@ void GurobiBackend::AddConstraint(const MaximumConstraint &mc)  {
   const auto& args = mc.GetArguments();
   GRB_CALL( GRBaddgenconstrMax(model, NULL,
                                mc.GetResultVar(),
-                               args.size(), args.data(),
+                               (int)args.size(), args.data(),
                                MinusInfinity()) );
 }
 
@@ -271,7 +271,7 @@ void GurobiBackend::AddConstraint(const MinimumConstraint &mc)  {
   const auto& args = mc.GetArguments();
   GRB_CALL( GRBaddgenconstrMin(model, NULL,
                                mc.GetResultVar(),
-                               args.size(), args.data(),
+                               (int)args.size(), args.data(),
                                Infinity()) );
 }
 
@@ -285,14 +285,14 @@ void GurobiBackend::AddConstraint(const ConjunctionConstraint &cc)  {
   const auto& args = cc.GetArguments();
   GRB_CALL( GRBaddgenconstrAnd(model, NULL,
                                cc.GetResultVar(),
-                               args.size(), args.data()) );
+                               (int)args.size(), args.data()) );
 }
 
 void GurobiBackend::AddConstraint(const DisjunctionConstraint &dc)  {
   const auto& args = dc.GetArguments();
   GRB_CALL( GRBaddgenconstrOr(model, NULL,
                                dc.GetResultVar(),
-                               args.size(), args.data()) );
+                               (int)args.size(), args.data()) );
 }
 
 void GurobiBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
@@ -441,7 +441,7 @@ std::vector<int> GurobiBackend::GetGrbIntArrayAttribute(const char* attr_id,
   std::size_t size, std::size_t offset) const {
   std::vector<int> res(size);
   int error = GRBgetintattrarray(model, attr_id,
-    0, size-offset, res.data()+offset);
+    0, (int)(size-offset), res.data()+offset);
   if (error)
     res.clear();
   return res;
@@ -451,7 +451,7 @@ std::vector<double> GurobiBackend::GetGrbDblArrayAttribute(const char* attr_id,
   std::size_t size, std::size_t offset ) const {
   std::vector<double> res(size);
   int error = GRBgetdblattrarray(model, attr_id,
-    0, size-offset, res.data()+offset);
+    0, (int)(size-offset), res.data()+offset);
   if (error)
     res.clear();
   return res;
@@ -460,14 +460,14 @@ std::vector<double> GurobiBackend::GetGrbDblArrayAttribute(const char* attr_id,
 bool GurobiBackend::SetGrbIntArrayAttribute(
     const char *attr_id, ArrayRef<int> values, std::size_t start) {
   auto error = GRBsetintattrarray(model, attr_id,
-                                  start, values.size(), (int*)values.data());
+                                  (int)start, (int)values.size(), (int*)values.data());
   return 0==error;
 }
 
 bool GurobiBackend::SetGrbDblArrayAttribute(
     const char *attr_id, ArrayRef<double> values, std::size_t start) {
   auto error = GRBsetdblattrarray(model, attr_id,
-                                  start, values.size(), (double*)values.data());
+                                  (int)start, (int)values.size(), (double*)values.data());
   return 0==error;
 }
 

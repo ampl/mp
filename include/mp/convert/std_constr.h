@@ -154,10 +154,10 @@ struct LinearExprUnzipper {
       AddTerm(it->var_index(), it->coef());
     }
   }
-  int num_terms() const { return c_.size(); }
+  std::size_t num_terms() const { return c_.size(); }
   const std::vector<double>& coefs() const { return c_; }
   const std::vector<int>& var_indexes() const { return v_; }
-  void Reserve(size_t s) { c_.reserve(s); v_.reserve(s); }
+  void Reserve(std::size_t s) { c_.reserve(s); v_.reserve(s); }
   void AddTerm(int v, double c) { c_.push_back(c); v_.push_back(v); }
 };
 
