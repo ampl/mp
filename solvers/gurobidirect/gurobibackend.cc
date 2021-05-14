@@ -356,7 +356,8 @@ void GurobiBackend::FinishProblemModificationPhase() {
 ////////////////////////// OPTIONS ////////////////////////////
 void GurobiBackend::InitOptions() {
 
-  MIPBackend::InitMIPOptions();
+  MIPBackend::InitOptions();
+
   set_option_header(
       fmt::format("Gurobi Optimizer Options for AMPL\n"
                   "---------------------------------\n"
@@ -431,6 +432,7 @@ int GurobiBackend::GetGrbIntAttribute(const char* attr_id) const {
   GRB_CALL( GRBgetintattr(model, attr_id, &tmp) );
   return tmp;
 }
+
 double GurobiBackend::GetGrbDblAttribute(const char* attr_id) const {
   double tmp;
   GRB_CALL( GRBgetdblattr(model, attr_id, &tmp) );
@@ -446,6 +448,7 @@ std::vector<int> GurobiBackend::GetGrbIntArrayAttribute(const char* attr_id,
     res.clear();
   return res;
 }
+
 std::vector<double> GurobiBackend::GetGrbDblArrayAttribute(const char* attr_id,
   std::size_t size, std::size_t offset ) const {
   std::vector<double> res(size);
@@ -456,31 +459,17 @@ std::vector<double> GurobiBackend::GetGrbDblArrayAttribute(const char* attr_id,
   return res;
 }
 
-bool  GurobiBackend::SetGrbIntArrayAttribute(const char* attr_id, ArrayRef<int> values) {
-    auto error = GRBsetintattrarray(model, attr_id,
-        0, values.size(), const_cast<int*>(values.data()));
-    return 0 == error;
-}
-
-
-bool  GurobiBackend::SetGrbDblArrayAttribute(const char* attr_id, ArrayRef<double> values) {
-    auto error = GRBsetdblattrarray(model, attr_id,
-        0, values.size(), const_cast<double*>(values.data()));
-    return 0 == error;
-}
-
-
 bool GurobiBackend::SetGrbIntArrayAttribute(
-    const char *attr_id, std::size_t start, std::size_t len, const int *values) {
+    const char *attr_id, ArrayRef<int> values, std::size_t start) {
   auto error = GRBsetintattrarray(model, attr_id,
-                                  start, len, (int*)values);
+                                  start, values.size(), (int*)values.data());
   return 0==error;
 }
 
 bool GurobiBackend::SetGrbDblArrayAttribute(
-    const char *attr_id, std::size_t start, std::size_t len, const double *values) {
+    const char *attr_id, ArrayRef<double> values, std::size_t start) {
   auto error = GRBsetdblattrarray(model, attr_id,
-                                  start, len, (double*)values);
+                                  start, values.size(), (double*)values.data());
   return 0==error;
 }
 

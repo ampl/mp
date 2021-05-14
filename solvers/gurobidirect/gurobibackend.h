@@ -156,20 +156,17 @@ public:
 
   int GetGrbIntAttribute(const char* attr_id) const;
   double GetGrbDblAttribute(const char* attr_id) const;
+
   std::vector<int> GetGrbIntArrayAttribute(const char* attr_id,
     std::size_t size, std::size_t offset=0) const;
   std::vector<double> GetGrbDblArrayAttribute(const char* attr_id,
-    std::size_t size, std::size_t offset = 0) const;
+    std::size_t size, std::size_t offset=0) const;
 
   bool SetGrbIntArrayAttribute(const char* attr_id,
-                               std::size_t start, std::size_t len,
-                               const int* values);
-  bool SetGrbIntArrayAttribute(const char* attr_id, ArrayRef<int> values);
-
+                               ArrayRef<int> values, std::size_t start=0);
   bool SetGrbDblArrayAttribute(const char* attr_id,
-                               std::size_t start, std::size_t len,
-                               const double* values);
-  bool SetGrbDblArrayAttribute(const char* attr_id, ArrayRef<double> values);
+                               ArrayRef<double> values, std::size_t start=0);
+
 private:
   /// These options are stored in the class as variables
   /// for direct access
@@ -179,7 +176,6 @@ private:
 
   Options storedOptions_;
 
-  
 
 public:
   /// These methods access Gurobi options. Used by AddSolverOption()

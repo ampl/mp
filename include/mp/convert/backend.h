@@ -23,6 +23,8 @@
 #ifndef BACKEND_H_
 #define BACKEND_H_
 
+#include <stdexcept>
+
 #include "mp/clock.h"
 #include "mp/convert/converter_query.h"
 #include "mp/convert/constraint_keeper.h"
@@ -35,6 +37,9 @@
   constexpr bool STD_FEATURE_QUERY_FN(name)() { return val; }
 #define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH( STD_FEATURE_QUERY_FN(name)() )
 #define STD_FEATURE_QUERY_FN( name ) AllowStdFeature__ ## name
+
+#define RAISE_NOT_IMPLEMENTED(str_name) \
+  throw std::runtime_error(str_name  " has not been implemented!")
 
 namespace mp {
 
@@ -78,7 +83,6 @@ private: // hiding this detail, it's not for the final backends
   }
 
 public:
-  void InitOptions() { }
 
   /// Default metadata
   static const char* GetSolverName() { return "SomeSolver"; }
@@ -220,7 +224,10 @@ public:
     MP_DISPATCH( ReadCustomSuffixes() );
   }
 
-  void ReadStandardSuffixes() { }
+  void ReadStandardSuffixes() {
+    if (storedOptions_.importPriority_)
+      MP_DISPATCH( VarPriority( ReadSuffix(suf_varpriority) ) );
+  }
   void ReadCustomSuffixes() { }
 
   void PrepareSolve() {
@@ -443,6 +450,35 @@ public:
   }
   /// TODO use vmin/vmax or rely on solver raising error?
   /// TODO also with ValueTable, deduce type from it
+
+private:
+  struct Options {
+    int importPriority_;
+  };
+  Options storedOptions_;
+
+protected:
+  void InitOptions() {
+    AddStoredOption("priority",
+        "Whether to read the branch and bound priorities from the\n"
+        ".priority suffix.",
+        storedOptions_.importPriority_);
+  }
+
+  ////////////////////////////////////////////////////////////
+  /////// Override in the Impl for standard operations ///////
+  ////////////////////////////////////////////////////////////
+private:
+  /**
+  * Set branch and bound priority
+  **/
+  void VarPriority(ArrayRef<int>) {}
+
+  //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////// STANDARD SUFFIXES ///////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+
+  const SuffixDef<int> suf_varpriority = { "priority", suf::VAR | suf::INPUT };
 
 };
 

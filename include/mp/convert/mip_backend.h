@@ -24,7 +24,6 @@
 
 #include "mp/convert/backend.h"
 
-#define NOTIMPLEMENTED(name) throw std::runtime_error(## name " has not been implemented!");
 namespace mp {
 
 /// MIP backend wrapper.
@@ -39,8 +38,8 @@ class MIPBackend :
 
 public:
   // Properties
-    bool IsMIP() const { 
-        throw std::runtime_error("Not implemented!"); }
+  bool IsMIP() const { RAISE_NOT_IMPLEMENTED( "IsMIP()" ); }
+
   /////////////////// STD FEATURE FLAGS //////////////////////
   //////// Disable optional std features by default //////////
   ////////////////////////////////////////////////////////////
@@ -48,7 +47,7 @@ public:
   ALLOW_STD_FEATURE( MIPGap, false)
 
   ////////////////////////////////////////////////////////////
-  //// Override in the Impl for standard MIP calculations ////
+  ///// Override in the Impl for standard MIP operations /////
   ////////////////////////////////////////////////////////////
   /**
   * Get/Set AMPL var/con statii
@@ -57,11 +56,6 @@ public:
   void VarStatii(ArrayRef<int> ) { }
   std::vector<int> ConStatii() { return {}; }
   void ConStatii(ArrayRef<int> ) { }
-  /**
-  * Set branch and bound priority 
-  
- **/
-  void VarPriority(ArrayRef<int>) {}
   /**
   * Compute the IIS and relevant values
   **/
@@ -74,7 +68,7 @@ public:
   /**
   * Get MIP Gap
   **/
-  double MIPGap() { NOTIMPLEMENTED("MIPGap") }
+  double MIPGap() { RAISE_NOT_IMPLEMENTED("MIPGap()"); }
 
 
   ////////////////////////////////////////////////////////////
@@ -93,10 +87,6 @@ public:
                       "Default = 0 (don't export).",
                       mipStoredOptions_.exportIIS_);
 
-    AddStoredOption("priority",
-        "Whether to read the branch and bound priorities from the"
-        ".priority suffix.",
-        mipStoredOptions_.importPriority_);
     AddStoredOption("return_mipgap",
       "Whether to return mipgap suffixes or include mipgap values\n\
 		(|objectve - best_bound|) in the solve_message:  sum of\n\
@@ -159,10 +149,6 @@ public:
   void ReadStandardMIPSuffixes() {
     MP_DISPATCH( VarStatii(ReadSuffix(suf_varstatus)) );
     MP_DISPATCH( ConStatii(ReadSuffix(suf_constatus)) );
-    if (MP_DISPATCH(IsMIP()) && mipStoredOptions_.importPriority_)
-        MP_DISPATCH(VarPriority(ReadSuffix(suf_varpriority)));
-
-
   }
 
   void ReportStandardSuffixes() {
@@ -179,7 +165,6 @@ public:
 
 private:
   struct Options {
-    int importPriority_;
     int exportIIS_;
     int returnMipGap_;
   };
@@ -187,10 +172,8 @@ private:
 
 
   //////////////////////////////////////////////////////////////////////////////
-  //////////////////////////// STANDARD SUFFIXES ///////////////////////////////
+  //////////////////////////// STANDARD MIP SUFFIXES ///////////////////////////
   //////////////////////////////////////////////////////////////////////////////
-
-  const SuffixDef<int> suf_varpriority = { "Priority", suf::VAR | suf::INPUT };
 
   const SuffixDef<int> suf_varstatus = { "sstatus", suf::VAR | suf::OUTPUT };
   const SuffixDef<int> suf_constatus = { "sstatus", suf::CON | suf::OUTPUT };
