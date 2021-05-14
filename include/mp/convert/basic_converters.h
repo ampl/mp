@@ -104,7 +104,7 @@ public:
   }
 
   std::unique_ptr<ConverterQuery> MakeConverterQuery() {
-    return std::make_unique<ConverterQuery>();
+      return std::unique_ptr<ConverterQuery>(new ConverterQuery());
   }
 
   bool ParseOptions(char **argv, unsigned flags = 0) {

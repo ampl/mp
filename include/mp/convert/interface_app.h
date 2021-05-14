@@ -80,10 +80,10 @@ class InterfaceApp {
 
  public:
   InterfaceApp() {
-    p_sig_handler_ = std::make_unique<internal::SignalHandler>(
-          GetMPUtils());
-    p_option_parser_ = std::make_unique<internal::SolverAppOptionParser>(
-          GetMPUtils());
+    p_sig_handler_ = std::unique_ptr<internal::SignalHandler>(
+            new internal::SignalHandler(GetMPUtils()));
+    p_option_parser_ = std::unique_ptr<internal::SolverAppOptionParser>(
+        new internal::SolverAppOptionParser(GetMPUtils()));
     GetMPUtils().set_output_handler(&output_handler_);
   }
 

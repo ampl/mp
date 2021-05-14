@@ -51,7 +51,8 @@ public:
   }
 
   std::unique_ptr<ConverterQuery> MakeConverterQuery() {
-    return std::make_unique< FlatConverterQuery<Impl> >(*(Impl*)this);
+      return std::unique_ptr<FlatConverterQuery<Impl>>(
+          new FlatConverterQuery<Impl>(*(Impl*)this));
   }
 
 
