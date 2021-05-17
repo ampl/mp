@@ -4,10 +4,10 @@
 
 #include "gurobibackend.h"
 
-#define GRB_CALL( call ) do { if (int e=call) \
-  throw std::runtime_error( \
-    fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
-
+#define GRB_CALL( call ) do { if (int e=call) RAISE( \
+    fmt::format("  Call failed: '{}' with code {}", #call, e ) \
+  ); } while (0)
+#define RAISE(msg) throw std::runtime_error(msg)
 
 namespace {
 
@@ -126,7 +126,9 @@ std::vector<int> GurobiBackend::ConsIIS() {
       (std::size_t)NumberOfConstraints() + nl, nl);
 }
 double GurobiBackend::MIPGap() const {
-  return GetGrbDblAttribute(GRB_DBL_ATTR_MIPGAP);
+  bool f;
+  double g = GetGrbDblAttribute(GRB_DBL_ATTR_MIPGAP, &f);
+  return f ? g : Infinity();
 }
 
 double GurobiBackend::NodeCount() const {
@@ -425,15 +427,25 @@ void GurobiBackend::SetSolverOption(const char *key, const std::string& value) {
 
 
 /// Shortcuts for attributes
-int GurobiBackend::GetGrbIntAttribute(const char* attr_id) const {
-  int tmp;
-  GRB_CALL( GRBgetintattr(model, attr_id, &tmp) );
+int GurobiBackend::GetGrbIntAttribute(const char* attr_id, bool *flag) const {
+  int tmp=INT_MIN;
+  int error = GRBgetintattr(model, attr_id, &tmp);
+  if (flag)
+    *flag = (0==error);
+  else if (error)
+    RAISE( fmt::format("Failed to obtain attribute {}, error code {}",
+                       attr_id, error ) );
   return tmp;
 }
 
-double GurobiBackend::GetGrbDblAttribute(const char* attr_id) const {
-  double tmp;
-  GRB_CALL( GRBgetdblattr(model, attr_id, &tmp) );
+double GurobiBackend::GetGrbDblAttribute(const char* attr_id, bool *flag) const {
+  double tmp=0.0;
+  int error = GRBgetdblattr(model, attr_id, &tmp);
+  if (flag)
+    *flag = (0==error);
+  else if (error)
+    RAISE( fmt::format("Failed to obtain attribute {}, error code {}",
+                       attr_id, error ) );
   return tmp;
 }
 

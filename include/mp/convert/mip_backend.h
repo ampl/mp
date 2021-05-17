@@ -54,7 +54,7 @@ public:
   std::vector<int> ConsIIS() { return {}; }
   std::vector<int> VarsIIS() { return {}; }
   /**
-  * Get MIP Gap
+  * Get MIP Gap. Return +inf if not available
   **/
   ALLOW_STD_FEATURE( MIPGap, false )
   double MIPGap() const { return MP_DISPATCH( Infinity() ); }

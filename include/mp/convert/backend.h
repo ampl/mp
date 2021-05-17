@@ -38,8 +38,8 @@
 #define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH( STD_FEATURE_QUERY_FN(name)() )
 #define STD_FEATURE_QUERY_FN( name ) AllowStdFeature__ ## name
 
-#define RAISE_NOT_IMPLEMENTED(str_name) \
-  throw std::runtime_error(str_name  " has not been implemented!")
+#define RAISE_NOT_IMPLEMENTED(name) \
+  throw std::runtime_error( #name  " has not been implemented!")
 
 namespace mp {
 

@@ -144,7 +144,7 @@ public:
   std::vector<int> VarsIIS();
   std::vector<int> ConsIIS();
   /**
-  * Get MIP Gap
+  * Get MIP Gap. +inf if not available
   **/
   ALLOW_STD_FEATURE( MIPGap, true )
   double MIPGap() const;
@@ -172,8 +172,10 @@ public:
   static double Infinity() { return GRB_INFINITY; }
   static double MinusInfinity() { return -GRB_INFINITY; }
 
-  int GetGrbIntAttribute(const char* attr_id) const;
-  double GetGrbDblAttribute(const char* attr_id) const;
+  /// if (flag), set *flag <-> success,
+  /// otherwise fail on error
+  int GetGrbIntAttribute(const char* attr_id, bool *flag=nullptr) const;
+  double GetGrbDblAttribute(const char* attr_id, bool *flag=nullptr) const;
 
   /// Return empty vector on failure
   std::vector<int> GetGrbIntArrayAttribute(const char* attr_id,
