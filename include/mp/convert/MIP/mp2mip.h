@@ -34,7 +34,7 @@ public:
     MP_DISPATCH( AddConstraint(LinearConstraint(std::vector<double>(nargs, 1.0),    // sum of the flags >= 1
                         flags, 1.0, this->Infty())) );
     const auto resvar = mc.GetResultVar();
-    for (int i=0; i<nargs; ++i) {
+    for (size_t i=0; i<nargs; ++i) {
       MP_DISPATCH( AddConstraint(LinearConstraint({1.0*sense, -1.0*sense},
                           {args[i], resvar}, this->MinusInfty(), 0.0)) );
       MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE{flags[i], 1,

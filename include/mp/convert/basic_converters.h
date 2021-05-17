@@ -103,8 +103,6 @@ public:
     GetBackend().ProvideConverterQueryObject( &MP_DISPATCH( GetCQ() ) );
   }
 
-  std::unique_ptr<ConverterQuery> MakeConverterQuery() { return MP_DISPATCH(MakeConverterQuery()); }
-
   bool ParseOptions(char **argv, unsigned flags = 0) {
     return GetMPUtils().ParseOptions(argv, flags);
   }
