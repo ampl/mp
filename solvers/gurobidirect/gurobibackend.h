@@ -141,6 +141,7 @@ public:
   **/
   ALLOW_STD_FEATURE( IIS, true )
   void ComputeIIS();
+  /// Elements correspond to IISStatus
   std::vector<int> VarsIIS();
   std::vector<int> ConsIIS();
   /**

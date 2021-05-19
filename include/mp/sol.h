@@ -29,6 +29,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
 
 #include "mp/common.h"
 #include "mp/posix.h"
@@ -80,9 +81,15 @@ void WriteSuffixes(fmt::BufferedFile &file, const SuffixMap *suffixes) {
       continue;
     const char *name = i->name();
     int mask = internal::SUFFIX_KIND_MASK | suf::FLOAT | suf::IODECL;
+    const auto& table = i->table();
+    int tablen = table.size() ? table.size()+1 : 0;
+    int tabNlines = table.empty()? 0 :
+                                   1+std::count(table.begin(), table.end(), '\n');
     file.print("suffix {} {} {} {} {}\n{}\n",
-               i->kind() & mask, num_values, std::strlen(name) + 1, 0, 0, name);
-    // TODO: write table
+               i->kind() & mask, num_values, std::strlen(name) + 1,
+               tablen, tabNlines, name);
+    if (tablen)
+      file.print("{}\n", table);
     SuffixValueWriter writer(file);
     i->VisitValues(writer);
   }

@@ -22,6 +22,7 @@
 #ifndef MIPBACKEND_H_
 #define MIPBACKEND_H_
 
+#include "mp/common.h"
 #include "mp/convert/backend.h"
 
 namespace mp {
@@ -51,6 +52,7 @@ public:
   **/
   ALLOW_STD_FEATURE( IIS, false )
   void ComputeIIS() {}
+  /// Elements correspond to IISStatus
   std::vector<int> ConsIIS() { return {}; }
   std::vector<int> VarsIIS() { return {}; }
   /**
@@ -176,7 +178,17 @@ private:
   const SuffixDef<int> suf_constatus = { "sstatus", suf::CON | suf::OUTPUT };
 
   const SuffixDef<int> sufIISCon = { "iis", suf::CON | suf::OUTPUT };
-  const SuffixDef<int> sufIISVar = { "iis", suf::VAR | suf::OUTPUT };
+  const SuffixDef<int> sufIISVar = { "iis", suf::VAR | suf::OUTPUT,
+                                     "\n"
+                                     "0	non	not in the iis\n"
+                                     "1	low	at lower bound\n"
+                                     "2	fix	fixed\n"
+                                     "3	upp	at upper bound\n"
+                                     "4	mem	member\n"
+                                     "5	pmem	possible member\n"
+                                     "6	plow	possibly at lower bound\n"
+                                     "7	pupp	possibly at upper bound\n"
+                                     "8	bug\n" };
 
   const SuffixDef<double> sufRelMipGapObj = { "relmipgap", suf::OBJ | suf::OUTPUT };
   const SuffixDef<double> sufRelMipGapProb = { "relmipgap", suf::PROBLEM | suf::OUTPUT };

@@ -1108,6 +1108,19 @@ struct ProblemInfo {
         num_common_exprs_in_single_objs;
   }
 };
+
+enum IISStatus {
+  non = 0,
+  low = 1,
+  fix = 2,
+  upp = 3,
+  mem = 4,
+  pmem = 5,
+  plow = 6,
+  pupp = 7,
+  bug = 8
+};
+
 }  // namespace mp
 
 #endif  // MP_COMMON_H_

@@ -47,6 +47,9 @@ class BasicMutSuffix;
 template <typename Alloc>
 class BasicSuffixSet;
 
+/// Suffix table is a newline-separated string
+using SuffixTable = std::string;
+
 namespace internal {
 
 class SuffixBase {
@@ -62,9 +65,12 @@ class SuffixBase {
       int *int_values;
       double *dbl_values;
     };
+    SuffixTable table;
 
-    explicit Impl(fmt::StringRef name, int kind = 0, int num_values = 0)
-      : name(name), kind(kind), num_values(num_values), int_values(0) {}
+    explicit Impl(fmt::StringRef name, int kind = 0, int num_values = 0,
+                  const SuffixTable& tab = {})
+      : name(name), kind(kind), num_values(num_values), int_values(0),
+    table(tab) {}
   };
 
   template <typename SuffixType>
@@ -109,6 +115,8 @@ class SuffixBase {
 
   template <class T>
   ArrayRef<T> get_values() const { assert(0); return {}; }
+
+  const SuffixTable& table() const { return impl_->table; }
 
   // Returns a value convertible to bool that can be used in conditions but not
   // in comparisons and evaluates to "true" if this suffix is not null
@@ -159,6 +167,8 @@ class Suffix : private internal::SuffixBase {
   using SuffixBase::name;
   using SuffixBase::kind;
   using SuffixBase::num_values;
+  using SuffixBase::table;
+  using SuffixBase::impl;
   using SuffixBase::operator SafeBool;
 
   // Iterates over nonzero suffix values and sends them to the visitor.
@@ -324,7 +334,8 @@ class BasicSuffixSet : private Alloc {
 
   FMT_DISALLOW_COPY_AND_ASSIGN(BasicSuffixSet);
 
-  SuffixImpl *DoAdd(fmt::StringRef name, int kind, int num_values);
+  SuffixImpl *DoAdd(fmt::StringRef name, int kind, int num_values,
+                    const SuffixTable& table);
 
   template <typename T>
   T *Allocate(std::size_t size) {
@@ -343,12 +354,13 @@ class BasicSuffixSet : private Alloc {
   // Adds a suffix throwing Error if another suffix with the same name is
   // in the set.
   template <typename T>
-  BasicMutSuffix<T> Add(fmt::StringRef name, int kind, int num_values) {
+  BasicMutSuffix<T> Add(fmt::StringRef name, int kind, int num_values,
+                        const SuffixTable& table = {}) {
     MP_ASSERT((kind & suf::FLOAT) == 0 ||
               (kind & suf::FLOAT) == internal::SuffixInfo<T>::KIND,
               "invalid suffix kind");
     SuffixImpl *impl = DoAdd(
-          name, kind | internal::SuffixInfo<T>::KIND, num_values);
+          name, kind | internal::SuffixInfo<T>::KIND, num_values, table);
     if (num_values != 0) {
       T *values = Allocate<T>(num_values);
       std::fill_n(fmt::internal::make_ptr(values, num_values), num_values, 0);
@@ -430,7 +442,8 @@ BasicSuffixSet<Alloc>::~BasicSuffixSet() {
 
 template <typename Alloc>
 typename BasicSuffixSet<Alloc>::SuffixImpl *BasicSuffixSet<Alloc>::DoAdd(
-    fmt::StringRef name, int kind, int num_values) {
+    fmt::StringRef name, int kind, int num_values,
+    const SuffixTable& table) {
   std::pair<typename Set::iterator, bool> result =
       set_.insert(Suffix::Impl(name, kind));
   if (!result.second)
@@ -445,6 +458,7 @@ typename BasicSuffixSet<Alloc>::SuffixImpl *BasicSuffixSet<Alloc>::DoAdd(
   name_copy[size] = 0;
   impl->name = name_copy;
   impl->num_values = num_values;
+  impl->table = table;
   return impl;
 }
 

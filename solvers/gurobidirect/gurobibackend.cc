@@ -111,8 +111,24 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
 
 
 std::vector<int> GurobiBackend::VarsIIS() {
-  return
+  auto iis_lb =
     GetGrbIntArrayAttribute(GRB_INT_ATTR_IIS_LB, NumberOfVariables());
+  auto iis_ub =
+    GetGrbIntArrayAttribute(GRB_INT_ATTR_IIS_UB, NumberOfVariables());
+  for (size_t i = iis_lb.size(); i--; ) {
+    if (iis_ub[i]) {
+      if (iis_lb[i])
+        iis_lb[i] = (int)IISStatus::fix;
+      else
+        iis_lb[i] = (int)IISStatus::upp;
+    } else {
+      if (iis_lb[i])
+        iis_lb[i] = (int)IISStatus::low;
+      else
+        iis_lb[i] = (int)IISStatus::non;
+    }
+  }
+  return iis_lb;
 }
 
 std::vector<int> GurobiBackend::ConsIIS() {
@@ -121,9 +137,13 @@ std::vector<int> GurobiBackend::ConsIIS() {
   int nl = GetGrbIntAttribute(GRB_INT_ATTR_NUMSOS) +
     GetGrbIntAttribute(GRB_INT_ATTR_NUMQCONSTRS) +
     GetGrbIntAttribute(GRB_INT_ATTR_NUMGENCONSTRS);
-  return
+  auto iis_con =
     GetGrbIntArrayAttribute(GRB_INT_ATTR_IIS_CONSTR,
       (std::size_t)NumberOfConstraints() + nl, nl);
+  for (int i=iis_con.size(); i--; ) {
+    iis_con[i] = iis_con[i] ? IISStatus::mem : IISStatus::non;
+  }
+  return iis_con;
 }
 double GurobiBackend::MIPGap() const {
   bool f;
@@ -450,7 +470,7 @@ double GurobiBackend::GetGrbDblAttribute(const char* attr_id, bool *flag) const 
 }
 
 std::vector<int> GurobiBackend::GetGrbIntArrayAttribute(const char* attr_id,
-  std::size_t size, std::size_t offset) const {
+    std::size_t size, std::size_t offset) const {
   std::vector<int> res(size);
   int error = GRBgetintattrarray(model, attr_id,
     0, (int)(size-offset), res.data()+offset);
