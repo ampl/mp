@@ -1306,7 +1306,7 @@ TEST(NLReaderTest, ReadVarBounds) {
   EXPECT_THROW_MSG(ReadNL("b\n-1\n", false), ReadError,
                    "(input):12:1: expected bound");
   EXPECT_THROW_MSG(ReadNL("b\n5 1\n", false), ReadError,
-                   "(input):12:1: expected bound");
+                   "(input):12:1: COMPL bound type is invalid for variables");
   EXPECT_THROW_MSG(ReadNL("b\n2 11\n1 22\n4 33\n3\n", false), ReadError,
                    "(input):16:1: expected bound");
 }
