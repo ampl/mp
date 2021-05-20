@@ -334,11 +334,11 @@ private:
   Options options_;
 
   void InitOptions() {
-    this->add_to_long_name(" with MP-to-MIP Converter Layer");
-    this->add_to_version("\nMP-to-MIP Converter Layer for AMPL");
+    this->add_to_long_name(" with MIP Converter");
+    this->add_to_version("\nMIP Converter for AMPL");
     this->add_to_option_header(
           "\n"
-          "Including MP-to-MIP Converter Layer Options\n"
+          "Including MIP Converter Options\n"
           "-------------------------------------------\n"
           );
   }
