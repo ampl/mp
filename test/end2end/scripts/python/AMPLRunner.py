@@ -1,11 +1,11 @@
-from Solver import Solver
-from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, Runnable
-from pathlib import Path
-from Model import Model
-from TimeMe import TimeMe
-
 from threading import Lock
 import math
+from pathlib import Path
+from shutil import which
+
+from Solver import Solver
+from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, Runnable
+from Model import Model
 
 
 class InnerOutputHandler(OutputHandler):
@@ -109,13 +109,14 @@ class AMPLRunner(object):
 
     def setSolver(self, solver: Solver):
         self._solver = solver
-        sp = Path(solver.getExecutable())
-        if not sp.exists():
-            raise Exception("Solver {} not found.".format(solver))
+        sp = which(solver.getExecutable())
+        if sp is None:
+            raise Exception("Solver '{}' not found.".
+                format(solver.getExecutable()))
 
     def _setSolverInAMPL(self):
-        sp = Path(self._solver.getExecutable())
-        self._ampl.setOption("solver", str(sp.absolute().resolve()))
+        sp = self._solver.getExecutable()
+        self._ampl.setOption("solver", sp)
         (name, value) = self._solver.getAMPLOptions()
         self._ampl.setOption(name, value)
 

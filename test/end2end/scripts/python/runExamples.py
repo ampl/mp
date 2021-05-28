@@ -18,7 +18,7 @@ modDir = ""
 # Create two solver objects
 # s = Solver.LindoSolver(solversbin + "/lindoglobal-timebound", timeout, nthreads)
 # o = Solver.OcteractSolver("C:/Program Files (x86)/Octeract/bin/octeract-engine", timeout, nthreads)
-g = Solver.GurobiDirectSolver(solversbin + "/gurobidirect", timeout, nthreads)
+g = Solver.GurobiDirectSolver("gurobidirect", timeout, nthreads)
 # b = Solver.BaronSolver(solversbin +"/baron-timebound", timeout, nthreads)
 # Execute a comparison exporting to CSV in the current directory
 
