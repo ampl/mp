@@ -240,6 +240,11 @@ class GurobiDirectSolver(AMPLSolver):
                 self._stats["solution"] = None
 
 
+class CPLEXDirectSolver(GurobiDirectSolver):
+    def _getAMPLOptionsName(self):
+        return "cplexdirect"
+
+
 class CPLEXSolver(AMPLSolver):
     def _setTimeLimit(self, seconds):
         return "time={}".format(seconds)

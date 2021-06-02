@@ -16,6 +16,9 @@ class SolverCollection:
     def getSolvers(self):
         return self._solvers.items()
 
+    def getSolversByNames(self, names):
+        return [self._solvers[x] for x in names]
+
     def getSolverNames(self):
         return self._solvers.keys()
 
@@ -29,6 +32,7 @@ def addStdSolvers(solvers: SolverCollection):
     solvers.addSolver(Solver.GurobiSolver("gurobi"))
     solvers.addSolver(Solver.GurobiDirectSolver("gurobidirect"))
     solvers.addSolver(Solver.CPLEXSolver("cplex"))
+    solvers.addSolver(Solver.CPLEXDirectSolver("cplexdirect"))
     solvers.addSolver(Solver.BaronSolver("baron-timebound"))
 
 

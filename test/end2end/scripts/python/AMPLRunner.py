@@ -35,12 +35,15 @@ class InnerErrorHandler(ErrorHandler):
 
 class AMPLRunner(object):
 
-    def __init__(self, writeSolverName = False,
+    def __init__(self, solver=None, writeSolverName = False,
                  keepAMPLOutput = False):
-      self._solver = None
-      self._writeSolverName = writeSolverName
-      self._amplInitialized = False
-      self._keepAMPLOutput = keepAMPLOutput
+        if solver:
+            self.setSolver(solver)
+        else:
+            self._solver = None
+        self._writeSolverName = writeSolverName
+        self._amplInitialized = False
+        self._keepAMPLOutput = keepAMPLOutput
 
     def _initAMPL(self):
         if self._amplInitialized:
@@ -58,8 +61,10 @@ class AMPLRunner(object):
     def _terminateAMPL(self):
       self._ampl.close()
       self._amplInitialized = False
+
     def appendError(self, exception):
       self._lastError = exception
+
     def readModel(self, model: Model):
         mp = Path(model.getFilePath())
         if not mp.exists():
@@ -141,8 +146,7 @@ class AMPLRunner(object):
       return None
 
     def doInit(self, model: Model):
-        self.stats = {}
-        self.printInitMessage(model)
+        self.stats = { "solver": self._solver.getExecutable() }
         self._initAMPL()
         self._lastError = None
 
@@ -184,7 +188,6 @@ class AMPLRunner(object):
          else:
            self.stats["outmsg"] = "Script ran out of time"
          self.stats["timelimit"] = True
-         print("..... %.4fs" % self._solver.getTimeout(), flush=True, end='')
          return
 
       if not model.isScript():
@@ -192,7 +195,6 @@ class AMPLRunner(object):
       interval = self._ampl.getValue("_solve_elapsed_time")
       self.stats["solutionTime"] = interval
       v = self.tryGetObjective()
-      print("..... %.4fs" % interval, flush=True, end='')
       self.stats["solution"] = v
       if self._lastError:
         self.stats["outmsg"] = str(self._lastError)
@@ -220,7 +222,7 @@ class AMPLRunner(object):
         if expsol is not None:
             self.stats["eval_done"] = True
             self._assertAndRecord(expsol, self.stats["solution"],
-                                  "objective value")
+                                  "objective")
         if model.hasExpectedValues():
             for ev in model.getExpectedValues():
                 self.stats["eval_done"] = True

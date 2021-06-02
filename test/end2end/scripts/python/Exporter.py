@@ -8,14 +8,19 @@ class Exporter(object):
     def export(self, mr: ModelRunner):
         raise Exception("Not defined for base class")
 
+    # Return False if failed
     def printStatus(self, model, run):
         if "eval_done" in run:                # Evaluation happened
             if "eval_fail_msg" not in run:    # Evaluation ok
-                print("    Ok.", end='')
+                print("  Ok.", end='')
             else:
-                print("           FAILED: ", run["eval_fail_msg"], end='')
+                print("          FAILED({}): {}\n{: <80}".format(
+                    run["solver"], run["eval_fail_msg"], ' '),
+                    end='', flush=True)
+                return False
         else:
             print("    <no cmp data>", end='')
+        return True
 
 
 class StringTestExporter(Exporter):

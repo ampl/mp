@@ -16,7 +16,7 @@ def writeNLFiles(directory, recursive=False):
         amplRunner.writeNL(m)
 
 
-def runModels(directory, solver: Solver, solver2: Solver = None,
+def runModels(directory, solvers,
               exporter=None, exportFile=None, justNL=False,
               recursive=False, preferAMPLModels=False):
     """Convenient wrapper function for testing.
@@ -40,19 +40,26 @@ def runModels(directory, solver: Solver, solver2: Solver = None,
           recursive : bool - If True, finds models in the subdirectories also
           preferAMPLModels:bool - If True, executes the AMPL version of a model if both NL and AMPL versions are present.
     """
+    solvernames = [slv.getExecutable() for slv in solvers]
     if not exporter:
         if not exportFile:
-            ename = solver.getName() if not solver2 else "{}-vs-{}".format(solver.getName(), solver2.getName())
+            ename = "-".join(solvernames)
             exportFile = "run-{}-{}-{}.csv".format(Path(directory).stem, platform, ename)
         exporter = CSVTestExporter(exportFile)
-    if solver2:
-        runner = ModelComparer(solver, solver2)
-    else:
-        runner = ModelRunner(solver)
+    runner = ModelRunner(solvers)
 
     m = ModelsDiscovery()
     modelList = m.FindModelsGeneral(directory, recursive=recursive,
                                     preferAMPLModels=preferAMPLModels,
                                     justNL=justNL)
-    runner.run(modelList, exporter)
+    if not modelList:
+        print("No models or case descriptions found.")
+    else:
+        msg = "Running {} test cases with solvers {}".format(len(modelList), solvernames)
+        if solvers:
+            if solvers[0].getNThreads():
+                msg += " using {} threads".format( solvers[0].getNThreads() )
+        msg += '.'
+        print(msg)
+        runner.run(modelList, exporter)
 

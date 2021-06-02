@@ -50,7 +50,7 @@ class Tester:
 
     def collectAndRunCases(self):
         runModels(self._args.dir,
-                  self._solvers.getSolver("gurobidirect"),
+                  self._solvers.getSolversByNames(self._args.solvers),
                   recursive=not self._args.nonrecursive)
 
 

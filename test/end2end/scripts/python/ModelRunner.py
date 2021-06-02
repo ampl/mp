@@ -1,35 +1,45 @@
 from Solver import Solver
 from AMPLRunner import AMPLRunner
+from TimeMe import TimeMe
 
 
 class ModelRunner(object):
     """Class to run a set of models and capture their outputs"""
 
-    def __init__(self, runner):
-        self._runner = runner
-        self._amplRunner = None
+    def __init__(self, runners):
+        self._runners = runners
+        self._amplRunners = None
 
     def run(self, modelList: list, exporter=None):
         """Run the models in this instance. If exporter != None, it exports the results as it goes"""
         self._models = modelList
-        self._runs = list()
+        self._runs = [ list() for r in self._runners ]
         n = 0
+        nFailed = 0
         for m in modelList:
+            n += 1
             if m.isNL():
-                cr = self._runner
+                cr = self._runners
+                msg = "{}. Solving as NL: '{}'".format(n, model.getName())
 
             else:
-                if not self._amplRunner:
-                    self._amplRunner = AMPLRunner()
-                    self._amplRunner.setSolver(self._runner)
-                cr = self._amplRunner
-            n += 1
-            print("{}. ".format(n), end='')
-            cr.runAndEvaluate(m)
-            self._runs.append(cr.getSolutionStats())
-            if exporter:
-                exporter.exportOne(self)
-            print("")
+                if not self._amplRunners:
+                    self._amplRunners = [ AMPLRunner(r) for r in self._runners ]
+                cr = self._amplRunners
+                msg = "{}. Solving with AMPL: '{}'".format(n, m.getName())
+            print("{0: <80}".format(msg), end="", flush=True)
+            t = TimeMe()
+            failedSome = False
+            with t:
+                for i in range(len(cr)):
+                    cr[i].runAndEvaluate(m)
+                    stats = cr[i].getSolutionStats()
+                    self._runs[i].append(stats)
+                    if exporter:
+                        if not exporter.printStatus(m, stats):
+                            failedSome = True
+            nFailed += failedSome
+            print("  (%.4fs, %d failed)" % (t.interval, nFailed))
 
     def export(self, exporter):
         exporter.export(self)

@@ -93,8 +93,6 @@ class ModelsDiscovery(object):
         self._desc = None
         p = Path(directory)
         models = self._findModelsFunction(p, preferAMPLModels, justNL)
-        if not models:
-            print("No models or case descriptions found.")
         if not recursive:
           return models
         
