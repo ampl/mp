@@ -75,8 +75,14 @@ class Solver(object):
     def getSolutionStats(self):
         return self._stats
 
+    def setNThreads(self, nt):
+        self._nthreads = nt
+
     def getNThreads(self):
         return self._nthreads
+
+    def setTimeout(self, t):
+        self._timeout = t
 
     def getTimeout(self):
         return self._timeout

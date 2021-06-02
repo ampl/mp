@@ -18,8 +18,7 @@ class ModelsDiscovery(object):
                     print("Model list file '{}': bad format.".format(f),
                           sys.exc_info())
         except:
-            print("Model list file '{}' not found.".format(f),
-                  sys.exc_info())
+            return None
 
     def _CreateModel(self, f, desc):
         n = f.stem
@@ -94,6 +93,8 @@ class ModelsDiscovery(object):
         self._desc = None
         p = Path(directory)
         models = self._findModelsFunction(p, preferAMPLModels, justNL)
+        if not models:
+            print("No models or case descriptions found.")
         if not recursive:
           return models
         
@@ -151,7 +152,7 @@ class ModelsDiscovery(object):
         desc = self._ReadModelsDescription(directory)
         if desc:
             print("  Path '{}': loaded model description with {} items... ".format(directory, len(desc)))
-        files = [f for f in p.iterdir() if not f.is_dir()
-                 and f.suffix.lower() == extension]
-        models = list(map(self._CreateModel, files, repeat(desc)))
-        return models
+            files = [f for f in p.iterdir() if not f.is_dir()
+                     and f.suffix.lower() == extension]
+            return list(map(self._CreateModel, files, repeat(desc)))
+        return list()

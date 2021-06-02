@@ -1,16 +1,62 @@
-from runModels import runModels, writeNLFiles
 from sys import platform
-import Solver
+import argparse
 
-# Set some parameters
-if platform == "win32":
-    bin = "/build/vs64/bin/debug"
-else:
-    bin = "/../../mp/build/bin"
-solversbin = "../.." + bin
-timeout = 5
-nthreads = 8
-modDir = ""
+from runModels import runModels
+import Solver
+import SolverCollection
+
+
+class Tester:
+    def __init__(self):
+        self._parser = argparse.ArgumentParser(description='Testing script.')
+
+    def runTests(self):
+        self.parseOptions()
+        self.initSolvers()
+        if self._args.printsolvers:
+            self.printSolvers()
+            return
+        self.collectAndRunCases()
+
+    def parseOptions(self):
+        self._parser.add_argument('solvers', metavar='solver', type=str, nargs='+',
+                            help='a solver to test')
+        self._parser.add_argument('--printsolvers', action="store_true",
+                            help='print available solvers and exit')
+        self._parser.add_argument('--timeout', type=int, metavar='T', default=5,
+                        help='timeout per instance, seconds')
+        self._parser.add_argument('--nthreads', type=int, metavar='N', default=8,
+                        help='number of threads in a solver')
+        self._parser.add_argument('--dir', type=str, metavar='path', default="",
+                        help='path to the test case folder')
+        self._parser.add_argument('--nonrecursive', action="store_true",
+                        help='non-recursive case collection')
+
+        self._args = self._parser.parse_args()
+
+    def initSolvers(self):
+        self._solvers = SolverCollection.SolverCollection()
+        SolverCollection.addStdSolvers(self._solvers)
+        self.setSolverParameters()
+
+    def setSolverParameters(self):
+        for name, slv in self._solvers.getSolvers():
+            slv.setTimeout(self._args.timeout)
+            slv.setNThreads(self._args.nthreads)
+
+    def printSolvers(self):
+        print("Available solvers:\n  * ", end='')
+        print(*(self._solvers.getSolverNames()), sep="\n  * ")
+
+    def collectAndRunCases(self):
+        runModels(self._args.dir,
+                  self._solvers.getSolver("gurobidirect"),
+                  recursive=not self._args.nonrecursive)
+
+
+if __name__ == "__main__":
+    tester = Tester()
+    tester.runTests()
 
 # Write NL files
 # writeNLFiles("../../test/models/lindo")
@@ -18,11 +64,9 @@ modDir = ""
 # Create two solver objects
 # s = Solver.LindoSolver(solversbin + "/lindoglobal-timebound", timeout, nthreads)
 # o = Solver.OcteractSolver("C:/Program Files (x86)/Octeract/bin/octeract-engine", timeout, nthreads)
-g = Solver.GurobiDirectSolver("gurobidirect", timeout, nthreads)
+# g = Solver.GurobiDirectSolver("gurobidirect", timeout, nthreads)
 # b = Solver.BaronSolver(solversbin +"/baron-timebound", timeout, nthreads)
 # Execute a comparison exporting to CSV in the current directory
-
-runModels(modDir, g, recursive=True)
 
 
 # Example for defining a new solver to be used
