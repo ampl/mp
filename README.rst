@@ -9,39 +9,59 @@ AMPL/MP
 
 An open-source library for mathematical programming.
 
-Documentation: http://ampl.github.io
 
 Features
 --------
 
-* Reusable high-performance `.nl file reader <http://ampl.github.io/nl-reader.html>`_
-  which is up to `6x faster
-  <http://zverovich.net/slides/2015-01-11-ics/socp-reformulation.html#/14>`_
-  than the one provided by ASL
-
-* Efficient type-safe C++ API for connecting solvers to AMPL and other systems:
-  `source <https://github.com/ampl/mp/tree/master/src/asl>`_
-
-* Interfaces to solvers supporting
+* **Expression-based solver interface.**
+  For solvers with an expression API,
+  expression trees can be efficiently mapped. For example, AMPL expression
+  ``max(a, b)`` directly maps to IBM ILOG Concert's ``IloMax``. The library
+  has the following C++ interfaces of this kind, all of which support
   `AMPL extensions for logic and constraint programming`__:
 
   __ http://ampl.com/resources/logic-and-constraint-programming-extensions/
 
-  - `Ilogcp <https://github.com/ampl/mp/tree/master/solvers/ilogcp>`_:
+  - `Ilogcp <solvers/ilogcp>`_:
     IBM ILOG CPLEX and CPLEX CP Optimizer
 
-  - `Gecode <https://github.com/ampl/mp/tree/master/solvers/gecode>`_
+  - `Gecode <solvers/gecode>`_
 
-  - `JaCoP <https://github.com/ampl/mp/tree/master/solvers/jacop>`_
+  - `JaCoP <solvers/jacop>`_
 
-  - `LocalSolver <https://github.com/ampl/mp/tree/master/solvers/localsolver>`_
+  - `LocalSolver <solvers/localsolver>`_
+
+* **Conversion-based solver interface (WIP).**
+  For solvers with more traditional 'flat' APIs, a customizable conversion
+  layer translates expressions into constraints. For example, ``max(a, b)``
+  is translated into ``<new var> = max(a, b)``, which is in turn redefined
+  into a MIP construct or passed to the solver (Gurobi: ``GRBgenconstrMax``.)
+  `Logical and CP constraints
+  <http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__
+  are supported as well. For the solver API, an easy-to-adapt C++ wrapper class
+  is provided. Currently it's two experimental interfaces:
+  
+  - `Gurobi <solvers/gurobidirect>`_ ('gurobidirect')
+
+  - `IBM ILOG CPLEX <solvers/cplexdirect>`_ ('cplexdirect')
+
+* **End-to-end solver testing script** for testing of various solver features.
+  `Documentation. <test/end2end>`_
+
+* An efficient type-safe C++ **adapter for the previous ASL library** for connecting solvers to AMPL and other systems:
+  `source <src/asl>`_
+
+* Reusable high-performance `.nl file reader <http://ampl.github.io/nl-reader.html>`_
+  which is up to `6x faster
+  <http://zverovich.net/slides/2015-01-11-ics/socp-reformulation.html#/14>`_
+  than the one provided by ASL. Documentation: http://ampl.github.io
 
 * Database support on Linux and MacOS X.
   See `Database and spreadsheet connection guide`__.
 
   __  http://ampl.github.io/tables/
 
-* `SMPSWriter <https://github.com/ampl/mp/tree/master/solvers/smpswriter>`_,
+* `SMPSWriter <solvers/smpswriter>`_,
   a converter from deterministic equivalent of a two-stage stochastic
   programming (SP) problem written in AMPL to an SP problem in SMPS format.
 
@@ -73,7 +93,7 @@ An included `CMake build script`__ can be used to build the MP library,
 solver interfaces and function libraries on a wide range of platforms.
 You can download CMake for free from http://www.cmake.org/download/.
 
-__ https://github.com/ampl/mp/blob/master/CMakeLists.txt
+__ CMakeLists.txt
 
 CMake works by generating native makefiles or project files that can
 be used in the compiler environment of your choice. The typical
