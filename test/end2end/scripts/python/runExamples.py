@@ -54,9 +54,12 @@ class Tester:
                   recursive=not self._args.nonrecursive)
 
 
-if __name__ == "__main__":
+def runTester():
     tester = Tester()
     tester.runTests()
+
+if __name__ == "__main__":
+    runTester()
 
 # Write NL files
 # writeNLFiles("../../test/models/lindo")
