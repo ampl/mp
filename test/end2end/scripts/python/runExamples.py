@@ -31,6 +31,10 @@ class Tester:
                         help='path to the test case folder')
         self._parser.add_argument('--nonrecursive', action="store_true",
                         help='non-recursive case collection')
+        self._parser.add_argument('--preferNL', action="store_true",
+                        help='prefer NL models if both AMPL and NL are present')
+        self._parser.add_argument('--justNL', action="store_true",
+                        help='only run NL models. Useful when AMPL executable is not available')
 
         self._args = self._parser.parse_args()
 
@@ -51,7 +55,9 @@ class Tester:
     def collectAndRunCases(self):
         runModels(self._args.dir,
                   self._solvers.getSolversByNames(self._args.solvers),
-                  recursive=not self._args.nonrecursive)
+                  recursive=not self._args.nonrecursive,
+                  preferAMPLModels=not self._args.preferNL,
+                  justNL=self._args.justNL)
 
 
 def runTester():

@@ -20,7 +20,7 @@ class ModelRunner(object):
             n += 1
             if m.isNL():
                 cr = self._runners
-                msg = "{}. Solving as NL: '{}'".format(n, model.getName())
+                msg = "{}. Solving as NL: '{}'".format(n, m.getName())
 
             else:
                 if not self._amplRunners:

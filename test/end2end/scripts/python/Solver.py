@@ -1,7 +1,9 @@
 import sys
-from Model import Model
+import math
 from pathlib import PurePath
 import subprocess
+
+from Model import Model
 from TimeMe import TimeMe
 
 
@@ -45,25 +47,34 @@ class Solver(object):
             st = sol.read_text().splitlines()
         return self._doParseSolution(st, stdout)
 
-    def run(self, model: Model):
+    def _evaluateRun(self, model: Model):
+        expsol = model.getExpectedSolution()
+        if expsol is not None:
+            self._stats["eval_done"] = True
+            self._assertAndRecord(expsol, self._stats["solution"],
+                                  "objective")
+
+    def _assertAndRecord(self, expval, val, msg):
+        b1 = isinstance(expval, (int, float))
+        b2 = isinstance(val, (int, float))
+        uneq = not math.isclose(expval, val, rel_tol=1e-6) if \
+            b1 and b2 else expval != val
+        if uneq:
+            self._stats["eval_fail_msg"] = msg + \
+                ": value " + str(val) + \
+                ", expected " + str(expval)
+
+    def runAndEvaluate(self, model: Model):
         t = TimeMe()
-        self._stats = {}
+        self._stats = { "solver": self.getExecutable() }
         sol = model.getSolFilePath()
         if sol.exists():
             sol.unlink()
-        print("Solving {}".format(model.getName()), end=" ", flush=True)
-        if self._writeSolverName:
-            print("with {}".format(
-                self.getName()), end=" ", flush=True)
-        if self._nthreads:
-            print("using {} threads".format(self._nthreads), end="",
-                  flush=True)
-
         with t:
             stdout = self._doRun(model)
         self._stats["solutionTime"] = t.interval
-        print("..... %.4fs" % t.interval, flush=True, end='')
         self._getSolution(model, stdout)
+        self._evaluateRun(model)
 
     def getName(self):
         path = PurePath(self._exePath)

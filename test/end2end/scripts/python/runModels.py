@@ -29,9 +29,7 @@ def runModels(directory, solvers,
           ----------
 
           directory : str - Directory to find the models in
-          solver : Solver - Solver to use, choose from the module Solver or implenent your own
-          solver2 : Solver, optional - A second solver object. If specified, the models will be ran on both solvers
-                                       and the report will contain all the statistics side by side
+          solver : list(Solver) - Solvers to use, choose from the module Solver or implement your own
           exporter : Exporter, optional - An exporter object that overrides the default CSV one. In case this is specified, 
                                           the parameter "exportDir" is ignored
           exportFile: str, optional - Override the output file name for the default exporter
