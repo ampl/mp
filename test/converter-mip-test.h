@@ -31,6 +31,24 @@ struct MIPInstance {
   struct Objective {
     Sense sense_;
     SparseVec le_;        // lin expression
+    bool operator==(const Objective& obj) const {
+      bool eq1 = sense_==obj.sense_;
+      bool eq2 = le_==obj.le_;
+      if (!eq1)
+        printf("Diff sense\n");
+      if (!eq2) {
+        printf("Diff coefs\n");
+        for (size_t i=0; i<le_.size(); ++i) {
+          printf(" %d:%f", le_.v_[i], le_.c_[i]);
+        }
+        printf("\n");
+        for (size_t i=0; i<obj.le_.size(); ++i) {
+          printf(" %d:%f", obj.le_.v_[i], obj.le_.c_[i]);
+        }
+        printf("\n");
+      }
+      return eq1 && eq2;
+    }
   };
   using ObjectivesContainer = std::vector<Objective>;
   ObjectivesContainer objs_;
@@ -46,10 +64,17 @@ struct MIPInstance {
   using ConstraintsContainer = std::vector<Constraint>;
   ConstraintsContainer cons_;
 
-  bool ApproxEqual(const MIPInstance& mip) const {
+  bool ObjsEqual(const MIPInstance& mip) const {
     return
-        objs_.size() == mip.objs_.size() &&
-        varLBs_.size() == mip.varLBs_.size() &&
+        objs_ == mip.objs_;
+  }
+  bool VarBoundsEqual(const MIPInstance& mip) const {
+    return
+        varLBs_ == mip.varLBs_ &&
+        varUBs_ == mip.varUBs_;
+  }
+  bool NConstrEqual(const MIPInstance& mip) const {
+    return
         cons_.size() == mip.cons_.size();
   }
 };
@@ -109,8 +134,14 @@ class MIPConverterTester :
 {
 public:
   /// This is testing API
-  bool OutputModelSeemsEqualTo(const MIPInstance& mip) {
-    return GetBackend().GetInstance().ApproxEqual( mip );
+  bool ObjsEqual(const MIPInstance& mip) {
+    return GetBackend().GetInstance().ObjsEqual( mip );
+  }
+  bool VarBoundsEqual(const MIPInstance& mip) {
+    return GetBackend().GetInstance().VarBoundsEqual( mip );
+  }
+  bool NConstrEqual(const MIPInstance& mip) {
+    return GetBackend().GetInstance().NConstrEqual( mip );
   }
 };
 

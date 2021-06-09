@@ -47,7 +47,9 @@ TEST(RedefsMIPTest, PureMILP__01__seemsPassedToBackendCorrectly) {
   MIPConverterTester tester;
   feedInstance(tester, milp);
   tester.ConvertModelAndUpdateBackend();
-  ASSERT_TRUE(tester.OutputModelSeemsEqualTo(milp));
+  ASSERT_TRUE(tester.ObjsEqual(milp));
+  ASSERT_TRUE(tester.VarBoundsEqual(milp));
+  ASSERT_TRUE(tester.NConstrEqual(milp));
 }
 
 }

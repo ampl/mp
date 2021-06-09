@@ -127,6 +127,7 @@ public:
   /// INCREMENTAL INTERFACE
   /// These guys used from outside to feed a model to be converted
   /// and forwarded to a backend
+  /// Currently only used for testing
   void InputVariables(int n, const double* lb, const double* ub, const var::Type* ty) {
     GetModel().AddVars(n, lb, ub, ty);
   }
@@ -134,7 +135,7 @@ public:
                       int nnz, const double* c, const int* v, NumericExpr e=NumericExpr()) {
     typename Model::LinearObjBuilder lob = GetModel().AddObj(t, e);
     for (int i=0; i!=nnz; ++i) {
-      lob.AddTerm(c[i], v[i]);
+      lob.AddTerm(v[i], c[i]);
     }
   }
   void InputAlgebraicCon(int nnz, const double* c, const int* v,
