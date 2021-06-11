@@ -22,7 +22,7 @@ extern "C" {
 
 #include <string>
 
-#include "mp/convert/mip_backend.h"
+#include "mp/convert/MIP/backend.h"
 #include "mp/convert/std_constr.h"
 
 namespace mp {

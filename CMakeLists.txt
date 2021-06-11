@@ -312,16 +312,20 @@ add_prefix(MP_HEADERS include/mp/
 add_prefix(MP_CONVERT_HEADERS include/mp/convert/
   affine_expr.h backend.h basic_constr.h basic_converters.h
   constraint_keeper.h  context.h converter_flat.h converter_flat_query.h
-converter_query.h convert_functional.h eexpr.h interface_app.h
-mip_backend.h model.h model_adapter.h preprocess.h
-quad_expr.h std_constr.h std_obj.h suffix.h MIP/mp2mip.h)
+  converter_query.h convert_functional.h eexpr.h interface_app.h
+  model.h model_adapter.h preprocess.h
+  quad_expr.h std_constr.h std_obj.h suffix.h)
+
+add_prefix(MP_CONVERT_MIP_HEADERS include/mp/convert/MIP/
+  backend.h mp2mip.h)
 
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
   clock.cc expr.cc expr-writer.h nl-reader.cc option.cc os.cc
   problem.cc rstparser.cc sol.cc solver.cc solver-c.h sp.h sp.cc)
 
-add_mp_library(mp ${MP_HEADERS}  ${MP_CONVERT_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
+add_mp_library(mp ${MP_HEADERS} ${MP_CONVERT_HEADERS} ${MP_CONVERT_MIP_HEADERS}
+    ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
   COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"
   INCLUDE_DIRECTORIES src include OBJECT_LIBRARIES format)
 set_target_properties(mp PROPERTIES
