@@ -206,16 +206,17 @@ class AMPLRunner(object):
 
     def setupOptions(self, model: Model):
         if model.hasOptions():
-            optlist = model.getOptions()
-            for opt in optlist:
-                name = opt["name"]
-                if "SOLVER_options" == name:          # Solver option
-                    (name, value) = self._solver.getAMPLOptions()
-                    value += " "
-                    value += opt["value"]
-                    self._ampl.setOption(name, value)
-                else:                                 # Any option
-                    self._ampl.setOption(name, opt["value"])
+            optmap = model.getOptions()
+            for name, val in optmap.items():
+                (slvname, slvval) = self._solver.getAMPLOptions()
+                if name.endswith("SOLVER_options"):               # Any-solver option
+                    if not slvname in optmap:
+                        name = slvname
+                    else:
+                        continue                                  # Skip as solver-specific given
+                if slvname==name:
+                    val = slvval + ' ' + val                      # Prepend 'desired' options like nthreads
+                self._ampl.setOption(name, val)
 
     def _evaluateRun(self, model: Model):
         expsol = model.getExpectedSolution()
