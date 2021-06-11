@@ -5,28 +5,13 @@
     "options": {
         "ANYSOLVER_options": "iisfind=1"
     },
-    "values": [
-      {
-        "name": "x.iis",
-        "value": "non"
-      },
-      {
-        "name": "y.iis",
-        "value": "non"
-      },
-      {
-        "name": "C1.iis",
-        "value": "mem"
-      },
-      {
-        "name": "C2.iis",
-        "value": "mem"
-      },
-      {
-        "name": "C3.iis",
-        "value": "mem"
-      }
-    ]
+    "values": {
+      "x.iis": "non",
+      "y.iis": "non",
+      "C1.iis": "mem",
+      "C2.iis": "mem",
+      "C3.iis": "mem"
+    }
   },
   {
     "name": "infeas_int_02_vars",
@@ -34,27 +19,12 @@
     "options": {
         "ANYSOLVER_options": "iisfind=1"
     },
-    "values": [
-      {
-        "name": "x.iis",
-        "value": "non"
-      },
-      {
-        "name": "y.iis",
-        "value": "upp"
-      },
-      {
-        "name": "C1.iis",
-        "value": "mem"
-      },
-      {
-        "name": "C2.iis",
-        "value": "mem"
-      },
-      {
-        "name": "C3.iis",
-        "value": "non"
-      }
-    ]
+    "values": {
+      "x.iis": "non",
+      "y.iis": "upp",
+      "C1.iis": "mem",
+      "C2.iis": "mem",
+      "C3.iis": "non"
+    }
   }
 ]

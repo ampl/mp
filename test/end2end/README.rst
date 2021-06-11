@@ -48,5 +48,4 @@ HOWTOs
         Option key ending with ``SOLVER_options`` is for any solver, except when
         solver-specific key is present (like ``baron_options``.)
         
-      * *"solutions: [ { "X[0].iis": "upp", ... }, { ... }, ... ]"*. Expected solutions
-        (or their characteristics), one solution must be matched.
+      * *"values": { "X[0].iis": "upp", ... }*. Expected values.

@@ -225,11 +225,11 @@ class AMPLRunner(object):
             self._assertAndRecord(expsol, self.stats["objective"],
                                   "objective")
         if model.hasExpectedValues():
-            for ev in model.getExpectedValues():
+            for name, ev in model.getExpectedValues().items():
                 self.stats["eval_done"] = True
-                val = self._ampl.getValue(ev["name"])
-                self._assertAndRecord(ev["value"], val,
-                    "value of entity {}".format(ev["name"]))
+                val = self._ampl.getValue(name)
+                self._assertAndRecord(ev, val,
+                    "value of entity {}".format(ev))
 
     def _assertAndRecord(self, expval, val, msg):
         b1 = isinstance(expval, (int, float))
