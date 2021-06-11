@@ -267,7 +267,6 @@ public:
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status);
     if (solve_code < sol::INFEASIBLE) {
-      solution = MP_DISPATCH( PrimalSolution() );
       obj_value = MP_DISPATCH( ObjectiveValue() );
       if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
         writer.write("; objective {}",
@@ -276,6 +275,7 @@ public:
     }
     writer.write("\n");
 
+    solution = MP_DISPATCH( PrimalSolution() );
     dual_solution = MP_DISPATCH( DualSolution() );  // Try in any case
     HandleSolution(solve_code, writer.c_str(),
                    solution.empty() ? 0 : solution.data(),
