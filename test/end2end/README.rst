@@ -29,5 +29,24 @@ HOWTOs
   ``Solver.py`` and list it in ``SolverCollection.py``.
   
 * To **add new test cases**, add the model/data/AMPL script files and describe
-  them in the local ``modellist.json`` (please refer to existing examples for
-  the format.)
+  them in the local ``modellist.json`` having the following format. The top JSON
+  object is an array of test cases. Each element is a dictionary with the
+  following items, where non-compulsory items are italicized:
+  
+      * **"name": "<name>"**: <name> is the case name, must coincide with the
+        model / script stem. For example, test case using ``diet.mod`` should be
+        called ``diet``. There can be several cases with equal name.
+      
+      * **"tags": ["linear", "continuous"]**: tags specifying model type, the case
+        is executed only if the tags are a subset of the solver's ones.
+      
+      * *"files": ["diet.mod", "diet.dat"]*
+      
+      * *"objective": value*: expected objective value.
+      
+      * *"options": { "ANYSOLVER_options": "iisfind=1", "baron_options": "iisfind=12", "send_statuses": "0" }*.
+        Option key ending with ``SOLVER_options`` is for any solver, except when
+        solver-specific key is present (like ``baron_options``.)
+        
+      * *"solutions: [ { "X[0].iis": "upp", ... }, { ... }, ... ]"*. Expected solutions
+        (or their characteristics), one solution must be matched.
