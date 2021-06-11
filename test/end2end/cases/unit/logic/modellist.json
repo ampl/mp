@@ -1,57 +1,57 @@
 [
   {
     "name" : "eqVarConst01",
-    "solution" : -43,
+    "objective" : -43,
     "tags" : ["logical"]
   },
   {
     "name" : "logA_1",
-    "solution" : 0.796515,
+    "objective" : 0.796515,
     "tags" : ["log"]
   },
   {
     "name" : "log_1",
-    "solution" : 1,
+    "objective" : 1,
     "tags" : ["log"]
   },
   {
     "name" : "max1",
-    "solution" : 4,
+    "objective" : 4,
     "tags" : ["logical"]
   },
   {
     "name" : "max2",
-    "solution" : 7,
+    "objective" : 7,
     "tags" : ["logical"]
   },
   {
     "name" : "maxAndMin1",
-    "solution" : 3,
+    "objective" : 3,
     "tags" : ["logical"]
   },
   {
     "name" : "impl1",
-    "solution" : 10,
+    "objective" : 10,
     "tags" : ["logical"]
   },
   {
     "name" : "impl2",
-    "solution" : -40,
+    "objective" : -40,
     "tags" : ["logical"]
   },
   {
     "name" : "impl3__1and2",
-    "solution" : -40,
+    "objective" : -40,
     "tags" : ["logical"]
   },
   {
     "name" : "impl4__reuseLEInSameCtx",
-    "solution" : 2,
+    "objective" : 2,
     "tags" : ["logical"]
   },
   {
     "name" : "impl5_commonExpr",
-    "solution" : -40,
+    "objective" : -40,
     "tags" : ["logical"]
   }
 ]

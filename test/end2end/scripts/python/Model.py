@@ -70,7 +70,7 @@ class Model(object):
     def getExpectedValues(self):
         return self._description["values"]
 
-    def getExpectedSolution(self):
+    def getExpectedObjective(self):
         return self._expsolution
 
     def getName(self):

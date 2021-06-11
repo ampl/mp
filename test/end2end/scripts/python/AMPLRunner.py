@@ -182,7 +182,7 @@ class AMPLRunner(object):
       if model.isScript() and mp == None: # if a script ran out of time (had to kill AMPL)
          self._terminateAMPL()
          self.stats["solutionTime"] = self._solver.getTimeout()
-         self.stats["solution"] = None
+         self.stats["objective"] = None
          if self._lastError:
            self.stats["outmsg"] = self._lastError
          else:
@@ -195,7 +195,7 @@ class AMPLRunner(object):
       interval = self._ampl.getValue("_solve_elapsed_time")
       self.stats["solutionTime"] = interval
       v = self.tryGetObjective()
-      self.stats["solution"] = v
+      self.stats["objective"] = v
       if self._lastError:
         self.stats["outmsg"] = str(self._lastError)
         self.stats["timelimit"] = self._ampl.getValue("solve_result")
@@ -219,10 +219,10 @@ class AMPLRunner(object):
                 self._ampl.setOption(name, val)
 
     def _evaluateRun(self, model: Model):
-        expsol = model.getExpectedSolution()
+        expsol = model.getExpectedObjective()
         if expsol is not None:
             self.stats["eval_done"] = True
-            self._assertAndRecord(expsol, self.stats["solution"],
+            self._assertAndRecord(expsol, self.stats["objective"],
                                   "objective")
         if model.hasExpectedValues():
             for ev in model.getExpectedValues():

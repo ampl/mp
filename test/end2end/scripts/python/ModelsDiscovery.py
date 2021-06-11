@@ -25,7 +25,7 @@ class ModelsDiscovery(object):
         if desc:
             md = next((item for item in desc if item["name"] == n), None)
             if md:
-              solution = md["solution"] if "solution" in md else None
+              solution = md["objective"] if "objective" in md else None
               if "files" in md:
                 files = md["files"]
                 f = f.parent.joinpath(files[0])
@@ -124,7 +124,7 @@ class ModelsDiscovery(object):
                 md = next(
                     (item for item in self._desc if item["name"] == n), None)
                 if md:
-                    m = Model(base, md["solution"], ModelTags.fromString(
+                    m = Model(base, md["objective"], ModelTags.fromString(
                         md["tags"]), otherFiles=f, overrideName=n, description=md)
                 else:
                     m = Model(base, 0, ModelTags.NA,
