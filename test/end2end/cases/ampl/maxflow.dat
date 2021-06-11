@@ -1,0 +1,11 @@
+
+set nodes := s a b c d e t ;
+
+param orig := s ;
+param dest := t ;
+
+param:  arcs:  cap :=
+         s a    1     s b    4     s c    6
+         a b    3     a d    4
+         b a    2     b d    3     b e    1
+         c e    4     d t    9     e t    4 ;

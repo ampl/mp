@@ -1,0 +1,15 @@
+Optimal values, rounded to 10 decimal places.
+MINOS 5.5 and CPLEX 4.0 both report these values.
+
+dist03	2369193.444
+dist08	2026689.897
+dist13	903202.0326
+egypt1	58808.37128
+egypt2	58402.19578
+mod8	11025
+oil	12.20834324
+prod03	4428412.468
+prod08	4014853.627
+prod13	2359313.555
+train1	116.64
+train2	129

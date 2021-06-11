@@ -1,0 +1,349 @@
+[
+  {
+  "name" : "bigprod",
+  "solution" : 4428412.468,
+  "tags" : ["linear", "continuous", "trigonometric"]
+  },
+  {
+    "name" : "cut",
+    "solution" : 47,
+    "tags" : ["linear", "integer", "script"],
+    "files" : ["cut.run"]
+  },
+  {
+    "name" : "cut2",
+    "solution" : 47,
+    "tags" : ["linear", "integer", "script"],
+    "files" : ["cut2.run"]
+  },
+  {
+    "name" : "diet",
+    "solution" : 101.0133327,
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet2.dat"]
+  },
+  {
+    "name" : "dietobj",
+    "solution" : 74.273820,
+    "tags" : ["linear", "continuous"],
+    "files" : ["dietobj.mod", "dietobj.dat"]
+  },
+  {
+    "name" : "dietu",
+    "solution" : 74.273820,
+    "tags" : ["linear", "continuous"],
+    "files" : ["dietu.mod", "dietu.dat"]
+  },
+  {
+    "name" : "dist",
+    "solution" : 1468337.447,
+    "tags" : ["linear", "continuous"]
+  },
+  {
+    "name" : "distnode",
+    "solution" : 903202.0326,
+    "tags" : ["linear", "continuous", "arc"],
+    "files" : ["distnode.mod", "dist13.dat"]
+  },
+  {
+    "name" : "econ",
+    "solution" : 0,
+    "tags" : ["linear", "continuous", "complementarity"],
+    "files" : ["econ.mod", "econ.dat"]
+  },
+  {
+    "name" : "econmin",
+    "solution" : 0,
+    "tags" : ["linear", "continuous"],
+    "files" : ["econmin.mod", "econ.dat"]
+  },
+  {
+    "name" : "econ2",
+    "solution" :0,
+    "tags" : ["linear", "continuous", "complementarity"],
+    "files" : ["econ2.mod", "econ2.dat"]
+  },  {
+    "name" : "econ2min",
+    "solution" :0,
+    "tags" : ["linear", "continuous"],
+    "files" : ["econ2min.mod", "econ2.dat"]
+  },
+  {
+    "name" : "econnl",
+    "solution" :0,
+    "tags" : ["nonlinear", "continuous", "complementarity"],
+    "files" : ["econ2.mod", "econ2.dat"]
+  },
+  {
+    "name" : "egypt1",
+    "solution" : 58808.37128,
+    "tags" : ["linear", "continuous"],
+    "files" : ["egypt1.mod", "egypt1.dat"]
+  },
+  {
+    "name" : "egypt2",
+    "solution" : 58402.19578,
+    "tags" : ["linear", "continuous"],
+    "files" : ["egypt2.mod", "egypt2.dat"]
+  },
+  {
+    "name" : "maxflow",
+    "solution" : 9,
+    "tags" : ["linear", "continuous"],
+    "files" : ["maxflow.mod", "maxflow.dat"]
+  },
+  {
+    "name" : "mod8",
+    "solution" : 11025,
+    "tags" : ["linear", "continuous"],
+    "files" : ["mod8.mod", "mod8.dat"]
+  },
+  {
+    "name" : "multi",
+    "solution" : 199500,
+    "tags" : ["linear", "continuous"],
+    "files" : ["multi.mod", "multi.dat"]
+  },
+  {
+    "name" : "multmip1",
+    "solution" : 229850,
+    "tags" : ["linear", "binary"],
+    "files" : ["multmip1.mod", "multmip1.dat"]
+  },
+  {
+    "name" : "multmip2",
+    "solution" : 233150,
+    "tags" : ["linear", "binary"],
+    "files" : ["multmip2.mod", "multmip2.dat"]
+  },
+  {
+    "name" : "multmip3",
+    "solution" : 235625,
+    "tags" : ["linear", "binary"],
+    "files" : ["multmip3.mod", "multmip3.dat"]
+  },
+  {
+    "name" : "net1",
+    "solution" : 1819,
+    "tags" : ["linear", "continuous"],
+    "files" : ["net1.mod", "net1.dat"]
+  },
+  {
+    "name" : "net1node",
+    "solution" : 1819,
+    "tags" : ["linear", "continuous"],
+    "files" : ["net1node.mod", "net1.dat"]
+  },
+  {
+    "name" : "net2",
+    "solution" : 1819,
+    "tags" : ["linear", "continuous"],
+    "files" : ["net2.mod", "net2.dat"]
+  },
+  {
+    "name" : "net3",
+    "solution" : 1819,
+    "tags" : ["linear", "continuous"],
+    "files" : ["net3.mod", "net3.dat"]
+  },
+  {
+    "name" : "netmax",
+    "solution" : 130,
+    "tags" : ["linear", "continuous"]
+  },
+  {
+    "name" : "netmax3",
+    "solution" : 130,
+    "tags" : ["linear", "continuous"]
+  },
+  {
+    "name" : "nltrans",
+    "solution" : -1,
+    "tags" : ["nonlinear", "continuous"],
+    "files" : ["nltrans.mod", "nltrans.dat"]
+  },
+  {
+    "name" : "nltransb",
+    "solution" : 1212117,
+    "tags" : ["nonlinear", "continuous"],
+    "files" : ["nltransb.mod", "nltrans.dat"]
+  },
+  {
+    "name" : "nltransc",
+    "solution" : -18911000274274,
+    "tags" : ["nonlinear", "continuous"],
+    "files" : ["nltransc.mod", "nltrans.dat"]
+  },
+  {
+    "name" : "nltransd",
+    "solution" : 354276,
+    "tags" : ["nonlinear", "continuous"],
+    "files" : ["nltransc.mod", "nltrans.dat"]
+  },
+  {
+    "name" : "oil",
+    "solution" : 12.208,
+    "tags" : ["nonlinear", "continuous"],
+    "files" : ["oil.mod", "oil.dat"]
+  },
+  {
+    "name" : "p2gon",
+    "solution" :  0.6749814429,
+    "tags" : ["nonlinear", "continuous"]
+  },
+  {
+    "name" : "p2gon",
+    "solution" :  0.7768587491398158,
+    "tags" : ["nonlinear", "continuous"]
+  },
+  {
+    "name" : "prod",
+    "solution" :  192000,
+    "tags" : ["linear", "continuous"],
+    "files" : ["prod.mod", "prod.dat"]
+  },
+  {
+    "name" : "sched",
+    "solution" :  265.6,
+    "tags" : ["linear", "continuous"],
+    "files" : ["sched.mod", "sched.dat"]
+  },
+  {
+    "name" : "score",
+    "solution" :  -2941.055022,
+    "tags" : ["linear", "continuous"],
+    "files" : ["score.mod", "score.dat"]
+  },
+  {
+    "name" : "steel",
+    "solution" :  192000,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steel.mod", "steel.dat"]
+  },
+  {
+    "name" : "steel2",
+    "solution" :  196400,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steel.mod", "steel2.dat"]
+  },
+  {
+    "name" : "steel3",
+    "solution" :  194828.5714,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steel3.mod", "steel3.dat"]
+  },
+  {
+    "name" : "steel4",
+    "solution" :  190071.4286,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steel4.mod", "steel4.dat"]
+  },
+  {
+    "name" : "steel4r",
+    "solution" :  187632.2489,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steel4r.mod", "steel4r.dat"]
+  },
+  {
+    "name" : "steelP",
+    "solution" :  1392175,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steelP.mod", "steelP.dat"]
+  },
+  {
+    "name" : "steelpl1",
+    "solution" :  457572.8571,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steelpl1.mod", "steelpl1.dat"]
+  },
+  {
+    "name" : "steelpl2",
+    "solution" :  -1576814.857,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steelpl2.mod", "steelpl2.dat"]
+  },
+  {
+    "name" : "steelpl3",
+    "solution" :  -293856347,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steelpl3.mod", "steelpl2.dat"]
+  },
+  {
+    "name" : "steelpl4",
+    "solution" :  1194250,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steelpl4.mod", "steelpl4.dat"]
+  },
+  {
+    "name" : "steelpl5",
+    "solution" :  370752.8571,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steelpl5.mod", "steelpl5.dat"]
+  },
+  {
+    "name" : "steelT",
+    "solution" :  515033,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steelT.mod", "steelT.dat"]
+  },
+  {
+    "name" : "struc",
+    "solution" :  8.666666667,
+    "tags" : ["linear", "continuous"],
+    "files" : ["struc.mod", "struc1.dat"]
+  },
+  {
+    "name" : "struc6",
+    "solution" :  50.5,
+    "tags" : ["linear", "continuous"],
+    "files" : ["struc.mod", "struc6.dat"]
+  },
+  {
+    "name" : "struc8",
+    "solution" :  905,
+    "tags" : ["linear", "continuous"],
+    "files" : ["struc.mod", "struc8.dat"]
+  },
+  {
+    "name" : "train1",
+    "solution" :   116.64,
+    "tags" : ["linear", "continuous"],
+    "files" : ["train1.mod", "train1.dat"]
+  },
+  {
+    "name" : "train2",
+    "solution" :   129,
+    "tags" : ["linear", "continuous"],
+    "files" : ["train2.mod", "train2.dat"]
+  },
+  {
+    "name" : "transp",
+    "solution" :   196200,
+    "tags" : ["linear", "continuous"],
+    "files" : ["transp.mod", "transp.dat"]
+  },
+  {
+    "name" : "transp2",
+    "solution" :   196200,
+    "tags" : ["linear", "continuous"],
+    "files" : ["transp2.mod", "transp.dat"]
+  },
+  {
+    "name" : "transp3",
+    "solution" :   201700,
+    "tags" : ["linear", "continuous"],
+    "files" : ["transp3.mod", "transp3.dat"]
+  },
+  {
+    "name" : "transpl1",
+    "solution" :   199100,
+    "tags" : ["linear", "continuous"],
+    "files" : ["transpl1.mod", "transpl1.dat"]
+  },
+  {
+    "name" : "transpl2",
+    "solution" :   193300,
+    "tags" : ["linear", "continuous"],
+    "files" : ["transpl2.mod", "transpl2.dat"]
+  }
+]

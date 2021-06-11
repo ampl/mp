@@ -1,0 +1,168 @@
+[
+  {
+    "name" : "blend",
+    "solution" : 0.05172771778,
+    "tags" : ["nonlinear"]
+  },
+  {
+    "name" : "branin",
+    "solution" : 0.3978873577,
+    "tags" : ["nonlinear"]
+  },
+  {
+    "name" : "camel1",
+    "solution" : -1.03163,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "chemeq",
+    "solution" : -1910.87,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "chi",
+    "solution" : -43.3158,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "gold",
+    "solution" : 3,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "gridneta",
+    "solution" : 5.038188,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "griewank",
+    "solution" : 0,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs105",
+    "solution" : 1136.307,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs106",
+    "solution" : 7049.248015,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs109",
+    "solution" : 5326.85133,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs111",
+    "solution" : -47.761,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs112",
+    "solution" : -55.1398,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs114",
+    "solution" : -1768.806964,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs116",
+    "solution" : 97.58750956,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs15",
+    "solution" : 306.5
+    ,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs23",
+    "solution" : 1,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs35",
+    "solution" : 0.111111111,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs44",
+    "solution" : -15,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs5",
+    "solution" : -1.913222955,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs54",
+    "solution" : -1,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs6",
+    "solution" : 0,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs62",
+    "solution" : -26272.51449,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs64",
+    "solution" : 6299.842428,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs8",
+    "solution" : -1,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "hs87",
+    "solution" : 8827.597735,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "kowalik",
+    "solution" : 0.000307486,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "levy3",
+    "solution" : -210.482294,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "ljcluster",
+    "solution" : -17.97789881,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "osborne1",
+    "solution" : 5.464894697e-05,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "powell",
+    "solution" : 2.73E-16
+    ,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "price",
+    "solution" : 1.69E-19,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "rosenbr",
+    "solution" : 3.39E-22,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "s324",
+    "solution" : 5,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "s383",
+    "solution" : 728593.646,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "schwefel",
+    "solution" : 1.72E-11,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "shekel",
+    "solution" : -10.15319968,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "steenbre",
+    "solution" : -1,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "tre",
+    "solution" : 1.95E-27,
+    "tags" : ["nonlinear"]
+  }, {
+    "name" : "weapon",
+    "solution" : -1735.558932,
+    "tags" : ["nonlinear"]
+  }
+
+]

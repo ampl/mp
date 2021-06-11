@@ -1,0 +1,50 @@
+data;
+
+set MINREQ := A B1 B2 C CAL ;
+set MAXREQ := A NA CAL ;
+set FOOD := BEEF CHK FISH HAM MCH MTL SPG TUR ;
+
+param:   f_min  f_max :=
+  BEEF     2     10 
+  CHK      2     10 
+  FISH     2     10 
+  HAM      2     10 
+  MCH      2     10 
+  MTL      2     10 
+  SPG      2     10 
+  TUR      2     10 ;
+
+set STORE := "A&P" JEWEL VONS ;
+
+# param cost (tr): "A&P" JEWEL   VONS :=
+#   BEEF           3.19   3.09   2.59
+#   CHK            2.59   2.79   2.99
+#   FISH           2.29   2.29   2.49
+#   HAM            2.89   2.59   2.69
+#   MCH            1.89   1.59   1.99
+#   MTL            1.99   1.99   2.29
+#   SPG            1.99   2.09   2.00
+#   TUR            2.49   2.30   2.69 ;
+
+param cost: BEEF  CHK FISH  HAM  MCH  MTL  SPG  TUR :=
+     "A&P"  3.19 2.59 2.29 2.89 1.89 1.99 1.99 2.49
+     JEWEL  3.09 2.79 2.29 2.59 1.59 1.99 2.09 2.30
+      VONS  2.59 2.99 2.49 2.69 1.99 2.29 2.00 2.69 ;
+
+param:   n_min  n_max :=
+   A      700   20000
+   C      700       .
+   B1       0       .
+   B2       0       .
+   NA       .   50000
+   CAL  16000   24000 ;
+
+param amt (tr):   A    C   B1   B2    NA   CAL :=
+          BEEF   60   20   10   15   938   295
+          CHK     8    0   20   20  2180   770
+          FISH    8   10   15   10   945   440
+          HAM    40   40   35   10   278   430
+          MCH    15   35   15   15  1182   315
+          MTL    70   30   15   15   896   400
+          SPG    25   50   25   15  1329   370
+          TUR    60   20   15   10  1397   450 ;

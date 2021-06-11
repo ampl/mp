@@ -1,0 +1,16 @@
+data;
+
+set P := lite bud mich ;
+set R := malt hops ;
+
+param T 3 ;
+param M 40 ;
+param a [malt,lite] 5 [malt,bud] 3 [malt,mich] 1
+        [hops,lite] 1 [hops,bud] 2 [hops,mich] 3 ;
+param b [malt] 400 [hops] 275 ;
+param c [lite,1] 25 [lite,2] 20 [lite,3] 10
+        [bud,1] 50 [bud,2] 50 [bud,3] 50
+        [mich,1] 75 [mich,2] 80 [mich,3] 100 ;
+param d [malt] 0.5 [hops] 2.0 ;
+param f [malt] 15 [hops] 25 ;
+
