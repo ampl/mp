@@ -33,10 +33,16 @@
 #include "mp/convert/model.h"
 #include "mp/convert/model_adapter.h"
 
+#define DEFINE_STD_FEATURE( name, defval ) \
+  struct STD_FEATURE_STRUCT_NM( name ) { }; \
+  ALLOW_STD_FEATURE( name, defval )
 #define ALLOW_STD_FEATURE( name, val ) \
-  static constexpr bool STD_FEATURE_QUERY_FN(name)() { return val; }
-#define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH( STD_FEATURE_QUERY_FN(name)() )
-#define STD_FEATURE_QUERY_FN( name ) AllowStdFeature__ ## name
+  static constexpr bool STD_FEATURE_QUERY_FN( \
+    const STD_FEATURE_STRUCT_NM( name )& ) { return val; }
+#define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH( \
+  STD_FEATURE_QUERY_FN( STD_FEATURE_STRUCT_NM( name )() ) )
+#define STD_FEATURE_QUERY_FN AllowStdFeature__func
+#define STD_FEATURE_STRUCT_NM( name ) StdFeatureDesc__ ## name
 
 #define RAISE_NOT_IMPLEMENTED(name) \
   throw std::runtime_error( #name  " has not been implemented!")
@@ -226,7 +232,7 @@ public:
   }
 
   void ReadStandardSuffixes() {
-    if (storedOptions_.importPriority_)
+    if (storedOptions_.importPriorities_)
       MP_DISPATCH( VarPriority( ReadSuffix(suf_varpriority) ) );
   }
   void ReadCustomSuffixes() { }
@@ -454,18 +460,20 @@ public:
 
 private:
   struct Options {
-    int importPriority_;
+    int importPriorities_=1;
   };
   Options storedOptions_;
 
 protected:
   void InitStandardOptions() {
     if (IMPL_HAS_STD_FEATURE( VarPriority ))
-      AddStoredOption("priority",
-        "Whether to read the branch and bound priorities from the\n"
-        "        .priority suffix.",
-        storedOptions_.importPriority_);
+      AddStoredOption("priorities",
+        "Whether to read the branch and bound priorities from the"
+        " .priority suffix. Default: 1 (do read).",
+        storedOptions_.importPriorities_);
   }
+
+  int priorities() const { return storedOptions_.importPriorities_; }
 
   void InitCustomOptions() { }
 
@@ -473,17 +481,18 @@ protected:
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
   /////// Override in the Impl for standard operations ///////
   ////////////////////////////////////////////////////////////
-private:
+protected:
   /**
   * Set branch and bound priority
   **/
-  ALLOW_STD_FEATURE( VarPriority, true ) // believe true for most
+  DEFINE_STD_FEATURE( VarPriority, true ) // believe true for most
   void VarPriority(ArrayRef<int>) {}
 
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////// STANDARD SUFFIXES ///////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
+private:
   const SuffixDef<int> suf_varpriority = { "priority", suf::VAR | suf::INPUT };
 
 };

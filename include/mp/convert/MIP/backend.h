@@ -50,7 +50,7 @@ public:
   /**
   * Compute the IIS and obtain relevant values
   **/
-  ALLOW_STD_FEATURE( IIS, false )
+  DEFINE_STD_FEATURE( IIS, false )
   void ComputeIIS() {}
   /// Elements correspond to IISStatus
   std::vector<int> ConsIIS() { return {}; }
@@ -58,7 +58,7 @@ public:
   /**
   * Get MIP Gap. Return +inf if not available
   **/
-  ALLOW_STD_FEATURE( MIPGap, false )
+  DEFINE_STD_FEATURE( MIPGap, false )
   double MIPGap() const { return MP_DISPATCH( Infinity() ); }
 
   ////////////////////////////////////////////////////////////
@@ -91,15 +91,17 @@ public:
 
     if (IMPL_HAS_STD_FEATURE( MIPGap ))
       AddStoredOption("return_mipgap",
-        "Whether to return mipgap suffixes or include mipgap values\n\
-		(|objectve - best_bound|) in the solve_message:  sum of\n\
-			1 = return relmipgap suffix (relative to |obj|);\n\
-			2 = return absmipgap suffix (absolute mipgap);\n\
-			4 = suppress mipgap values in solve_message.\n\
-		Default = 0.  The suffixes are on the objective and problem.\n\
-		Returned suffix values are +Infinity if no integer-feasible\n\
-		solution has been found, in which case no mipgap values are\n\
-		reported in the solve_message.",
+        "Whether to return mipgap suffixes or include mipgap values "
+    "(|objectve - best_bound|) in the solve_message:  sum of\n"
+    "\n"
+    "| 1 = return relmipgap suffix (relative to |obj|);\n"
+    "| 2 = return absmipgap suffix (absolute mipgap);\n"
+    "| 4 = suppress mipgap values in solve_message.\n"
+    "\n"
+    "Default = 0.  The suffixes are on the objective and problem. "
+    "Returned suffix values are +Infinity if no integer-feasible "
+    "solution has been found, in which case no mipgap values are "
+    "reported in the solve_message.",
         mipStoredOptions_.returnMipGap_);
   }
 
