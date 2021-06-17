@@ -1037,7 +1037,7 @@ TEST(SolverTest, TimingOption) {
 
 TEST(SolverTest, ObjNoOption) {
   TestSolver s("");
-  EXPECT_EQ(-1, s.objno());
+  EXPECT_EQ(1, s.objno());
   EXPECT_EQ(1, s.GetIntOption("objno"));
   s.SetIntOption("objno", 0);
   EXPECT_EQ(0, s.objno());

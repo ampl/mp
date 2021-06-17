@@ -511,6 +511,7 @@ class TestNLHandler {
   void OnHeader(const NLHeader &) { log.clear(); }
 
   bool NeedObj(int) const { return true; }
+  int resulting_obj_index(int obj_index) const { return obj_index; }
 
   void OnVarBounds(int index, double lb, double ub) {
     WriteBounds('v', index, lb, ub);
@@ -861,6 +862,7 @@ struct TestNLHandler2 {
   void OnHeader(const NLHeader &) {}
 
   bool NeedObj(int) const { return true; }
+  int resulting_obj_index(int obj_index) const { return obj_index; }
 
   void OnVarBounds(int, double, double) {}
   void OnConBounds(int, double, double) {}
@@ -1828,11 +1830,11 @@ TEST_F(NLProblemBuilderTest, OnVarBounds) {
   adapter.OnVarBounds(66, 7.7, 8.8);
 }
 
-TEST_F(NLProblemBuilderTest, AddObjs) {
+TEST_F(NLProblemBuilderTest, AddObjs_allByDefault) {
   auto header = mp::NLHeader();
   header.num_objs = 42;
   EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
-  EXPECT_CALL(builder, AddObjs(header.num_objs));
+  EXPECT_CALL(builder, AddObjs(42));
   adapter.OnHeader(header);
 }
 

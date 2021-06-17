@@ -1,0 +1,29 @@
+[
+  {
+    "name" : "dietobj",
+    "objective" : 74.273820,
+    "tags" : ["linear", "continuous"],
+    "files" : ["dietobj.mod", "dietobj.dat"]
+  },
+  {
+    "name" : "dietobj_objno_0",
+    "objective" : 0.0,
+    "tags" : ["linear", "continuous"],
+    "files" : ["dietobj.mod", "dietobj.dat"],
+    "options": { "ANYSOLVER_options": "objno=0" }
+  },
+  {
+    "name" : "dietobj_objno_1",
+    "objective" : 74.273820,
+    "tags" : ["linear", "continuous"],
+    "files" : ["dietobj.mod", "dietobj.dat"],
+    "options": { "ANYSOLVER_options": "objno=1" }
+  },
+  {
+    "name" : "dietobj_objno_4",
+    "objective" : 3.092537313e+01,
+    "tags" : ["linear", "continuous"],
+    "files" : ["dietobj.mod", "dietobj.dat"],
+    "options": { "ANYSOLVER_options": "objno=4" }
+  }
+]

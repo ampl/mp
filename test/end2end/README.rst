@@ -46,6 +46,6 @@ HOWTOs
       
       * *"options": { "ANYSOLVER_options": "iisfind=1", "baron_options": "iisfind=12", "send_statuses": "0" }*.
         Option key ending with ``SOLVER_options`` is for any solver, except when
-        solver-specific key is present (like ``baron_options``.)
+        a solver-specific key is present (like ``baron_options``.)
         
       * *"values": { "X[0].iis": "upp", ... }*. Expected values.

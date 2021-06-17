@@ -311,18 +311,22 @@ class SolverOption {
 class InvalidOptionValue : public OptionError {
  private:
   template <typename T>
-  static std::string Format(fmt::StringRef name, T value) {
-    return fmt::format("Invalid value \"{}\" for option \"{}\"", value, name);
+  static std::string Format(fmt::StringRef name, T value, fmt::StringRef msg) {
+    if (0!=msg.size())
+      return fmt::format("Invalid value \"{}\" for option \"{}\", {}",
+                         value, name, msg);
+    else
+      return fmt::format("Invalid value \"{}\" for option \"{}\"", value, name);
   }
 
  public:
   template <typename T>
-  InvalidOptionValue(fmt::StringRef name, T value)
-  : OptionError(Format(name, value)) {}
+  InvalidOptionValue(fmt::StringRef name, T value, fmt::StringRef msg="")
+  : OptionError(Format(name, value, msg)) {}
 
   template <typename T>
-  InvalidOptionValue(const SolverOption &opt, T value)
-  : OptionError(Format(opt.name(), value)) {}
+  InvalidOptionValue(const SolverOption &opt, T value, fmt::StringRef msg="")
+  : OptionError(Format(opt.name(), value, msg)) {}
 };
 
 template <typename T>
@@ -404,6 +408,10 @@ class Solver : private ErrorHandler,
 
   bool timing_;
   bool multiobj_;
+
+  /// Help description of the "multiobj" option
+  /// Can be changed by a concrete solver
+  virtual const char* GetMultiobjHelpText() const;
 
   bool has_errors_;
   OutputHandler *output_handler_;
@@ -564,6 +572,7 @@ class Solver : private ErrorHandler,
     MULTIPLE_SOL = 1,
 
     // Multiple objectives support.
+    // Makes Solver register the "multiobj" option
     MULTIPLE_OBJ = 2
   };
 
@@ -765,17 +774,19 @@ class Solver : private ErrorHandler,
       bool_options_ &= ~AMPL_FLAG;
   }
 
-  // Returns the index of the objective to optimize starting from 1,
-  // 0 to not use objective, or -1 to use the first objective is there is one.
-  // It is used in SolverApp to select the objective, solvers should not
-  // use this option.
-  int objno() const { return objno_; }
+  /// Returns the index of the objective to optimize starting from 1,
+  /// 0 to not use objective.
+  /// Both multiobj and objno are used in NLReader to select
+  /// the objective(s), solvers should not use these options.
+  int objno() const { return std::abs(objno_); }
+
+  /// Returns true if multiobjective optimization is enabled.
+  /// Both multiobj and objno are used in NLReader to select
+  /// the objective(s), solvers should not use these options.
+  bool multiobj() const { return multiobj_ && objno_<0; }
 
   // Returns true if the timing is enabled.
   bool timing() const { return timing_; }
-
-  // Returns true if multiobjective optimization is enabled.
-  bool multiobj() const { return multiobj_; }
 
   // Returns the error handler.
   ErrorHandler *error_handler() { return error_handler_; }
@@ -950,13 +961,15 @@ class SolutionAdapter {
   mp::ArrayRef<int> options_;
   mp::ArrayRef<double> values_;
   mp::ArrayRef<double> dual_values_;
+  int objno_;
 
  public:
   SolutionAdapter(int status, ProblemBuilder *pb, const char *message,
                   mp::ArrayRef<int> options, mp::ArrayRef<double> values,
-                  mp::ArrayRef<double> dual_values)
+                  mp::ArrayRef<double> dual_values,
+                  int on)
     : status_(status), builder_(pb), message_(message), options_(options),
-      values_(values), dual_values_(dual_values) {}
+      values_(values), dual_values_(dual_values), objno_(on) {}
 
   int status() const { return status_; }
 
@@ -970,6 +983,8 @@ class SolutionAdapter {
 
   int num_dual_values() const { return static_cast<int>(dual_values_.size()); }
   double dual_value(int index) const { return dual_values_[index]; }
+
+  int objno() const { return objno_; }
 
   const typename ProblemBuilder::SuffixSet *suffixes(suf::Kind kind) const {
     return builder_ ? &builder_->suffixes(kind) : 0;
@@ -1044,7 +1059,8 @@ void SolutionWriter<Solver, Writer>::HandleFeasibleSolution(
         sol::UNCERTAIN, 0, message.c_str(), ArrayRef<int>(0, 0),
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values,
-                     dual_values ? builder_.num_algebraic_cons() : 0));
+                     dual_values ? builder_.num_algebraic_cons() : 0),
+        solver_.objno());
   fmt::MemoryWriter filename;
   filename << solution_stub << num_solutions_ << ".sol";
   this->Write(filename.c_str(), sol);
@@ -1066,7 +1082,8 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
         status, &builder_, message.c_str(), options_,
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values,
-                     dual_values ? builder_.num_algebraic_cons() : 0));
+                     dual_values ? builder_.num_algebraic_cons() : 0),
+        solver_.objno());
   this->Write(stub_ + ".sol", sol);
 }
 
@@ -1196,6 +1213,9 @@ class SolverNLHandler : public Solver::NLProblemBuilder {
   int num_options() const { return num_options_; }
   const int *options() const { return options_; }
 
+  int objno() const override { return solver_.objno(); }
+  bool multiobj() const override { return solver_.multiobj(); }
+
   void OnHeader(const NLHeader &h);
 };
 
@@ -1203,7 +1223,8 @@ template <typename Solver>
 void SolverNLHandler<Solver>::OnHeader(const NLHeader &h) {
   int objno = solver_.objno();
   if (objno > h.num_objs)
-    throw InvalidOptionValue("objno", objno);
+    throw InvalidOptionValue("objno", objno,
+                             fmt::format("expected value between 0 and {}", h.num_objs));
   num_options_ = h.num_ampl_options;
   std::copy(h.ampl_options, h.ampl_options + num_options_, options_);
   Base::OnHeader(h);

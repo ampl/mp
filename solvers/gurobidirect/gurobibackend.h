@@ -155,6 +155,9 @@ public:
   ALLOW_STD_FEATURE( VarPriority, true )
   void VarPriority(ArrayRef<int> );
 
+  /// Option "multiobj" is created internally whenever
+  /// IfMultipleObj() return true. Can change the help text here
+  const char* GetMultiobjHelpText() const override;
 
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////

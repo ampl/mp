@@ -540,12 +540,11 @@ Solver::Solver(
     }
   };
 
+
+
   if ((flags & MULTIPLE_OBJ) != 0) {
     AddOption(OptionPtr(new BoolOption(multiobj_, "multiobj",
-       "0 or 1 (default 0):  Whether to use multi-objective optimization. "
-       "If set to 1 multi-objective optimization is performed using "
-       "lexicographic method with the first objective treated as the most "
-       "important, then the second objective and so on.")));
+                                       GetMultiobjHelpText())));
   }
 
   AddOption(OptionPtr(new BoolOption(timing_, "timing",
@@ -572,6 +571,14 @@ Solver::Solver(
 
 Solver::~Solver() {
   std::for_each(options_.begin(), options_.end(), Deleter());
+}
+
+const char* Solver::GetMultiobjHelpText() const {
+  return
+      "0 or 1 (default 0):  Whether to use multi-objective optimization. "
+      "If set to 1 multi-objective optimization is performed using "
+      "lexicographic method with the first objective treated as the most "
+      "important, then the second objective and so on.";
 }
 
 #ifdef MP_DATE

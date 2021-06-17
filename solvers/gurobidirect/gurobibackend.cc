@@ -102,11 +102,34 @@ std::vector<int> GurobiBackend::ConStatii() {
 void GurobiBackend::VarStatii(ArrayRef<int> vst) {
   assert(SetGrbIntArrayAttribute(GRB_INT_ATTR_VBASIS, vst));
 }
-void GurobiBackend::VarPriority(ArrayRef<int> priority) {
-    assert(SetGrbIntArrayAttribute(GRB_INT_ATTR_BRANCHPRIORITY, priority));
-}
+
 void GurobiBackend::ConStatii(ArrayRef<int> cst) {
     assert(SetGrbIntArrayAttribute(GRB_INT_ATTR_CBASIS, cst));
+}
+
+const char* GurobiBackend::GetMultiobjHelpText() const {
+  return
+      "Whether to do multi-objective optimization:\n"
+      "\n"
+      "| 0 = no (default)\n"
+      "| 1 = yes\n"
+      "\n"
+      "When multiobj = 1 and several objectives are present, suffixes \n"
+      ".objpriority, .objweight, .objreltol, and .objabstol on the \n"
+      "objectives are relevant.  Objectives with greater .objpriority \n"
+      "values (integer values) have higher priority.  Objectives with \n"
+      "the same .objpriority are weighted by .objweight.  Objectives \n"
+      "with positive .objabstol or .objreltol are allowed to be \n"
+      "degraded by lower priority objectives by amounts not exceeding \n"
+      "the .objabstol (absolute) and .objreltol (relative) limits. \n"
+      "The objective must all be linear.  Objective-specific \n"
+      "convergence tolerances and method values may be assigned via \n"
+      "keywords of the form obj_n_name, such as obj_1_method for the \n"
+      "first objective.";
+}
+
+void GurobiBackend::VarPriority(ArrayRef<int> priority) {
+    assert(SetGrbIntArrayAttribute(GRB_INT_ATTR_BRANCHPRIORITY, priority));
 }
 
 

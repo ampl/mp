@@ -23,12 +23,6 @@
     "files" : ["diet.mod", "diet2.dat"]
   },
   {
-    "name" : "dietobj",
-    "objective" : 74.273820,
-    "tags" : ["linear", "continuous"],
-    "files" : ["dietobj.mod", "dietobj.dat"]
-  },
-  {
     "name" : "dietu",
     "objective" : 74.273820,
     "tags" : ["linear", "continuous"],
