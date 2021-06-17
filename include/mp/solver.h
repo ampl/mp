@@ -250,6 +250,9 @@ class SolverOption {
   // Returns the option description.
   const char *description() const { return description_; }
 
+  // Sets new description.
+  void SetDesc(const char* d) { description_=d; }
+
   // Returns the information about possible values.
   ValueArrayRef values() const { return values_; }
 
@@ -408,10 +411,6 @@ class Solver : private ErrorHandler,
 
   bool timing_;
   bool multiobj_;
-
-  /// Help description of the "multiobj" option
-  /// Can be changed by a concrete solver
-  virtual const char* GetMultiobjHelpText() const;
 
   bool has_errors_;
   OutputHandler *output_handler_;

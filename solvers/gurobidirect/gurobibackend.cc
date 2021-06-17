@@ -107,27 +107,6 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
     assert(SetGrbIntArrayAttribute(GRB_INT_ATTR_CBASIS, cst));
 }
 
-const char* GurobiBackend::GetMultiobjHelpText() const {
-  return
-      "Whether to do multi-objective optimization:\n"
-      "\n"
-      "| 0 = no (default)\n"
-      "| 1 = yes\n"
-      "\n"
-      "When multiobj = 1 and several objectives are present, suffixes \n"
-      ".objpriority, .objweight, .objreltol, and .objabstol on the \n"
-      "objectives are relevant.  Objectives with greater .objpriority \n"
-      "values (integer values) have higher priority.  Objectives with \n"
-      "the same .objpriority are weighted by .objweight.  Objectives \n"
-      "with positive .objabstol or .objreltol are allowed to be \n"
-      "degraded by lower priority objectives by amounts not exceeding \n"
-      "the .objabstol (absolute) and .objreltol (relative) limits. \n"
-      "The objective must all be linear.  Objective-specific \n"
-      "convergence tolerances and method values may be assigned via \n"
-      "keywords of the form obj_n_name, such as obj_1_method for the \n"
-      "first objective.";
-}
-
 void GurobiBackend::VarPriority(ArrayRef<int> priority) {
     assert(SetGrbIntArrayAttribute(GRB_INT_ATTR_BRANCHPRIORITY, priority));
 }
@@ -411,24 +390,40 @@ void GurobiBackend::InitCustomOptions() {
       "  ampl: option {0}_options 'optimalitytolerance=1e-6';\n",
                   GetSolverInvocationName()).c_str());
 
-  AddSolverOption("outlev",
-      "1: output logging (console and file). "
-      "Default = 0 (no logging).", GRB_INT_PAR_OUTPUTFLAG, 0, 1);
-  SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);
-
   AddSolverOption("logfile",
       "Log file name.",
       GRB_STR_PAR_LOGFILE);
 
-  AddStoredOption("exportfile",
-      "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
-      "Default = \"\" (don't export the model).",
-      storedOptions_.exportFile_);
+  /// Option "multiobj" is created internally if
+  /// ThisBackend::IfMultipleObj() returns true.
+  /// Change the help text
+  ReplaceOptionDescription("multiobj",
+                           "Whether to do multi-objective optimization:\n"
+                           "\n"
+                           "| 0 = no (default)\n"
+                           "| 1 = yes\n"
+                           "\n"
+                           "When multiobj = 1 and several objectives are present, suffixes "
+                           ".objpriority, .objweight, .objreltol, and .objabstol on the "
+                           "objectives are relevant.  Objectives with greater .objpriority "
+                           "values (integer values) have higher priority.  Objectives with "
+                           "the same .objpriority are weighted by .objweight.  Objectives "
+                           "with positive .objabstol or .objreltol are allowed to be "
+                           "degraded by lower priority objectives by amounts not exceeding "
+                           "the .objabstol (absolute) and .objreltol (relative) limits. "
+                           "The objective must all be linear.  Objective-specific "
+                           "convergence tolerances and method values may be assigned via "
+                           "keywords of the form obj_n_name, such as obj_1_method for the "
+                           "first objective.");
 
   AddSolverOption("optimalitytolerance",
       "Dual feasibility tolerance.",
       GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
+
+  AddSolverOption("outlev",
+      "1: output logging (console and file). "
+      "Default = 0 (no logging).", GRB_INT_PAR_OUTPUTFLAG, 0, 1);
+  SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);
 
   AddSolverOption("threads",
       "How many threads to use when using the barrier algorithm\n"
@@ -439,6 +434,11 @@ void GurobiBackend::InitCustomOptions() {
       "limit on solve time (in seconds; default: no limit).",
       GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
 
+  AddStoredOption("writeprob",
+      "Specifies the name of a file where to export the model before "
+      "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
+      "Default = \"\" (don't export the model).",
+      storedOptions_.exportFile_);
 
 }
 

@@ -374,8 +374,6 @@ private:
 
 protected:
   ///////////////////////////// OPTIONS /////////////////////////////////
-  using Solver::AddOption;
-
   template <class Value>
   class StoredOption : public mp::TypedSolverOption<Value> {
     Value& value_;
@@ -431,6 +429,8 @@ protected:
   };
 
 public:
+  using Solver::AddOption;
+  using Solver::FindOption;
 
   /// Simple stored option referencing a variable
   template <class Value>
@@ -457,6 +457,12 @@ public:
   }
   /// TODO use vmin/vmax or rely on solver raising error?
   /// TODO also with ValueTable, deduce type from it
+
+  void ReplaceOptionDescription(const char* name, const char* desc) {
+    auto pOption = FindOption(name);
+    assert(pOption);
+    pOption->SetDesc(desc);
+  }
 
 private:
   struct Options {
