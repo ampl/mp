@@ -31,6 +31,10 @@ class Tester:
                         help='path to the test case folder')
         self._parser.add_argument('--nonrecursive', action="store_true",
                         help='non-recursive case collection')
+        self._parser.add_argument('--allfiles', action="store_true",
+                        help='collect all .mod, .nl files; otherwise local modellist.json only. ' +
+                                  'If modellist.json is to be used for comparison data, each case name ' +
+                             'should match the file stem')
         self._parser.add_argument('--preferNL', action="store_true",
                         help='prefer NL models if both AMPL and NL are present')
         self._parser.add_argument('--justNL', action="store_true",
@@ -56,6 +60,7 @@ class Tester:
         runModels(self._args.dir,
                   self._solvers.getSolversByNames(self._args.solvers),
                   recursive=not self._args.nonrecursive,
+                  modellist=not self._args.allfiles,
                   preferAMPLModels=not self._args.preferNL,
                   justNL=self._args.justNL)
 

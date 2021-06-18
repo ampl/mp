@@ -17,9 +17,9 @@ HOWTOs
 
   .. code-block:: console
   
-      python3 test/end2end/run.py solver
+      python3 test/end2end/run.py solver [another_solver [...]]
       
-  The ``solver`` and ``ampl`` are expected to be on the system path.
+  The ``solver``'s and ``ampl`` are expected to be on the system path.
   
 * To run a **subset of the test cases**, ``cd`` into the corresponding
   subfolder of ``test/end2end/cases``, or use the ``--dir`` or
@@ -33,12 +33,14 @@ HOWTOs
   object is an array of test cases. Each element is a dictionary with the
   following items, where non-compulsory items are italicized:
   
-      * **"name": "<name>"**: <name> is the case name, must coincide with the
-        model / script stem. For example, test case using ``diet.mod`` should be
-        called ``diet``. There can be several cases with equal name.
+      * **"name": "<name>"**: <name> is the case name. Unless *"files"* is present
+        (see below), the first word of <name> must coincide with the
+        model / script stem. For example, test case using ``diet.mod`` could be
+        called ``diet objno=5``.
       
       * **"tags": ["linear", "continuous"]**: tags specifying model type, the case
-        is executed only if the tags are a subset of the solver's ones.
+        is executed only if the tags are a subset of the solver's ones. Except the
+        tag **"run"** which means the test case is an AMPL script.
       
       * *"files": ["diet.mod", "diet.dat"]*
       

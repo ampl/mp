@@ -17,7 +17,7 @@ def writeNLFiles(directory, recursive=False):
 
 
 def runModels(directory, solvers,
-              exporter=None, exportFile=None, justNL=False,
+              exporter=None, exportFile=None, modellist=True, justNL=False,
               recursive=False, preferAMPLModels=False):
     """Convenient wrapper function for testing.
 
@@ -48,6 +48,7 @@ def runModels(directory, solvers,
 
     m = ModelsDiscovery()
     modelList = m.FindModelsGeneral(directory, recursive=recursive,
+                                    modellist=modellist,
                                     preferAMPLModels=preferAMPLModels,
                                     justNL=justNL)
     if not modelList:

@@ -6,14 +6,14 @@
     "files" : ["dietobj.mod", "dietobj.dat"]
   },
   {
-    "name" : "dietobj_objno_1",
+    "name" : "dietobj objno=1",
     "objective" : 74.273820,
     "tags" : ["linear", "continuous"],
     "files" : ["dietobj.mod", "dietobj.dat"],
     "options": { "ANYSOLVER_options": "objno=1" }
   },
   {
-    "name" : "dietobj_objno_4",
+    "name" : "dietobj objno=4",
     "tags" : ["linear", "continuous"],
     "files" : ["dietobj.mod", "dietobj.dat"],
     "options": { "ANYSOLVER_options": "objno=4" },
