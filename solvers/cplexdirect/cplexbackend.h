@@ -53,7 +53,7 @@ public:
   void FinishProblemModificationPhase();
 
   void AddVariable(Variable var);
-  void AddLinearObjective( const LinearObjective& lo );
+  void SetLinearObjective( int iobj, const LinearObjective& lo );
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)

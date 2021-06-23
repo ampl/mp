@@ -229,7 +229,7 @@ class AMPLRunner(object):
                 self.stats["eval_done"] = True
                 val = self._ampl.getValue(name)
                 self._assertAndRecord(ev, val,
-                    "value of entity {}".format(ev))
+                    "value of entity '{}'".format(name))
 
     def _assertAndRecord(self, expval, val, msg):
         b1 = isinstance(expval, (int, float))

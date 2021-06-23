@@ -17,11 +17,11 @@ public:
   LinearObjective(obj::Type s, CoefVec&& c, VarVec&& v) :
     sense_(s),
     coefs_(std::forward<CoefVec>(c)), vars_(std::forward<VarVec>(v)) { }
-  obj::Type get_sense() const { return sense_; }
-  int get_num_terms() const { assert(check()); return (int)vars_.size(); }
+  obj::Type obj_sense() const { return sense_; }
+  int num_terms() const { assert(check()); return (int)vars_.size(); }
   bool check() const { return coefs_.size()==vars_.size(); }
-  const std::vector<double>& get_coefs() const { return coefs_; }
-  const std::vector<int>& get_vars() const { return vars_; }
+  const std::vector<double>& coefs() const { return coefs_; }
+  const std::vector<int>& vars() const { return vars_; }
 
   /// Testing API
   bool operator==(const LinearObjective& lc) const {

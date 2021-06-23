@@ -18,5 +18,18 @@
     "files" : ["dietobj.mod", "dietobj.dat"],
     "options": { "ANYSOLVER_options": "objno=4" },
     "values": { "total_number": 3.092537313e+01 }
+  },
+  {
+    "name" : "dietobj multiobj=1",
+    "tags" : ["linear", "continuous"],
+    "files" : ["dietobj.mod", "dietobj.dat"],
+    "options": { "ANYSOLVER_options": "multiobj=1" },
+    "values": {
+      "total_cost[\"A&P\"]": 74.2738202247191,
+      "total_cost[\"JEWEL\"]": 75.01966292134831,
+      "total_cost[\"VONS\"]": 79.59719101123596,
+      "total_number": 31.49438202247191,
+      "_sobj[4]": 31.49438202247191
+    }
   }
 ]

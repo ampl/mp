@@ -150,11 +150,11 @@ public:
       LinearObjective lo { obj.type(),
             std::move(leu.c_), std::move(leu.v_) };
       if (nullptr==obj.p_extra_info()) {
-        MP_DISPATCH( AddLinearObjective( lo ) );
+        MP_DISPATCH( SetLinearObjective( obj.index(), lo ) );
       } else {
         auto qt = obj.p_extra_info()->qt_;
         assert(!qt.empty());
-        MP_DISPATCH( AddQuadraticObjective(
+        MP_DISPATCH( SetQuadraticObjective( obj.index(),
                        QuadraticObjective{std::move(lo), std::move(qt)} ) );
       }
     }
@@ -162,10 +162,10 @@ public:
   void AddGeneralObjective(typename Model::Objective ) {
     throw MakeUnsupportedError("BasicBackend::AddGeneralObjective");
   }
-  void AddLinearObjective( const LinearObjective& ) {
+  void SetLinearObjective( int, const LinearObjective& ) {
     throw MakeUnsupportedError("BasicBackend::AddLinearObjective");
   }
-  void AddQuadraticObjective( const QuadraticObjective& ) {
+  void SetQuadraticObjective( int, const QuadraticObjective& ) {
     throw MakeUnsupportedError("BasicBackend::AddQuadraticObjective");
   }
 

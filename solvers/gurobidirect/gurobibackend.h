@@ -53,8 +53,8 @@ public:
   void FinishProblemModificationPhase();
 
   void AddVariable(Variable var);
-  void AddLinearObjective( const LinearObjective& lo );
-  void AddQuadraticObjective( const QuadraticObjective& qo );
+  void SetLinearObjective( int iobj, const LinearObjective& lo );
+  void SetQuadraticObjective( int iobj, const QuadraticObjective& qo );
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
@@ -157,13 +157,6 @@ public:
 
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
-private:
-  GRBenv   *env   = NULL;
-  GRBmodel *model = NULL;
-  
-   // Stores gurobi optimization status after SolveAndReportIntermediateResults
-  int optimstatus;
-
 public:
   void OpenSolver();
   void CloseSolver();
@@ -172,22 +165,39 @@ public:
   static double Infinity() { return GRB_INFINITY; }
   static double MinusInfinity() { return -GRB_INFINITY; }
 
-  /// if (flag), set *flag <-> success,
+  /// REMEMBER Gurobi does not update attributes before calling optimize() etc
+  /// Scalar attributes. If (flag), set *flag <-> success,
   /// otherwise fail on error
-  int GetGrbIntAttribute(const char* attr_id, bool *flag=nullptr) const;
-  double GetGrbDblAttribute(const char* attr_id, bool *flag=nullptr) const;
-
-  /// Return empty vector on failure
-  std::vector<int> GetGrbIntArrayAttribute(const char* attr_id,
+  int GrbGetIntAttr(const char* attr_id, bool *flag=nullptr) const;
+  double GrbGetDblAttr(const char* attr_id, bool *flag=nullptr) const;
+  /// Vector attributes. Return empty vector on failure
+  std::vector<int> GrbGetIntAttrArray(const char* attr_id,
     std::size_t size, std::size_t offset=0) const;
-  std::vector<double> GetGrbDblArrayAttribute(const char* attr_id,
+  std::vector<double> GrbGetDblAttrArray(const char* attr_id,
     std::size_t size, std::size_t offset=0) const;
 
-  /// Return false on failure
-  bool SetGrbIntArrayAttribute(const char* attr_id,
+  /// Set attributes. Return false on failure
+  bool GrbSetIntAttr(const char* attr_id, int val);
+  bool GrbSetDblAttr(const char* attr_id, double val);
+  bool GrbSetIntAttrArray(const char* attr_id,
                                ArrayRef<int> values, std::size_t start=0);
-  bool SetGrbDblArrayAttribute(const char* attr_id,
+  bool GrbSetDblAttrArray(const char* attr_id,
                                ArrayRef<double> values, std::size_t start=0);
+  bool GrbSetIntAttrList(const char* attr_id,
+                         const std::vector<int>& idx, const std::vector<int>& val);
+  bool GrbSetDblAttrList(const char* attr_id,
+                         const std::vector<int>& idx, const std::vector<double>& val);
+
+  /// First objective's sense
+  void SetMainObjSense(obj::Type s);
+  obj::Type GetMainObjSense() const;
+
+private:
+  GRBenv   *env   = NULL;
+  GRBmodel *model = NULL;
+
+  /// The sense of the main objective
+  obj::Type main_obj_sense_;
 
 private:
   /// These options are stored in the class as variables

@@ -56,67 +56,67 @@ void GurobiBackend::CloseSolver() {
 
 
 bool GurobiBackend::IsMIP() const {
-  return 1 == GetGrbIntAttribute(GRB_INT_ATTR_IS_MIP);
+  return 1 == GrbGetIntAttr(GRB_INT_ATTR_IS_MIP);
 }
 
 bool GurobiBackend::IsQCP() const {
-  return 1 == GetGrbIntAttribute(GRB_INT_ATTR_IS_QCP);
+  return 1 == GrbGetIntAttr(GRB_INT_ATTR_IS_QCP);
 }
 
 int GurobiBackend::NumberOfConstraints() const {
-  return GetGrbIntAttribute(GRB_INT_ATTR_NUMCONSTRS);
+  return GrbGetIntAttr(GRB_INT_ATTR_NUMCONSTRS);
 }
 
 int GurobiBackend::NumberOfVariables() const {
-  return GetGrbIntAttribute(GRB_INT_ATTR_NUMVARS);
+  return GrbGetIntAttr(GRB_INT_ATTR_NUMVARS);
 }
 
 int GurobiBackend::NumberOfObjectives() const {
-  return GetGrbIntAttribute(GRB_INT_ATTR_NUMOBJ);
+  return GrbGetIntAttr(GRB_INT_ATTR_NUMOBJ);
 }
 
 std::vector<double> GurobiBackend::PrimalSolution() {
   return
-    GetGrbDblArrayAttribute(GRB_DBL_ATTR_X, NumberOfVariables());
+    GrbGetDblAttrArray(GRB_DBL_ATTR_X, NumberOfVariables());
 }
 
 std::vector<double> GurobiBackend::DualSolution() {
   return
-    GetGrbDblArrayAttribute(GRB_DBL_ATTR_PI, NumberOfConstraints());
+    GrbGetDblAttrArray(GRB_DBL_ATTR_PI, NumberOfConstraints());
 }
 
 double GurobiBackend::ObjectiveValue() const {
-  return GetGrbDblAttribute(GRB_DBL_ATTR_OBJVAL);
+  return GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL);
 }
 
 std::vector<int> GurobiBackend::VarStatii() {
   return
-    GetGrbIntArrayAttribute(GRB_INT_ATTR_VBASIS, NumberOfVariables());
+    GrbGetIntAttrArray(GRB_INT_ATTR_VBASIS, NumberOfVariables());
 }
 
 std::vector<int> GurobiBackend::ConStatii() {
   return
-    GetGrbIntArrayAttribute(GRB_INT_ATTR_CBASIS, NumberOfConstraints());
+    GrbGetIntAttrArray(GRB_INT_ATTR_CBASIS, NumberOfConstraints());
 }
 
 void GurobiBackend::VarStatii(ArrayRef<int> vst) {
-  assert(SetGrbIntArrayAttribute(GRB_INT_ATTR_VBASIS, vst));
+  assert(GrbSetIntAttrArray(GRB_INT_ATTR_VBASIS, vst));
 }
 
 void GurobiBackend::ConStatii(ArrayRef<int> cst) {
-    assert(SetGrbIntArrayAttribute(GRB_INT_ATTR_CBASIS, cst));
+    assert(GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, cst));
 }
 
 void GurobiBackend::VarPriority(ArrayRef<int> priority) {
-    assert(SetGrbIntArrayAttribute(GRB_INT_ATTR_BRANCHPRIORITY, priority));
+    assert(GrbSetIntAttrArray(GRB_INT_ATTR_BRANCHPRIORITY, priority));
 }
 
 
 std::vector<int> GurobiBackend::VarsIIS() {
   auto iis_lb =
-    GetGrbIntArrayAttribute(GRB_INT_ATTR_IIS_LB, NumberOfVariables());
+    GrbGetIntAttrArray(GRB_INT_ATTR_IIS_LB, NumberOfVariables());
   auto iis_ub =
-    GetGrbIntArrayAttribute(GRB_INT_ATTR_IIS_UB, NumberOfVariables());
+    GrbGetIntAttrArray(GRB_INT_ATTR_IIS_UB, NumberOfVariables());
   for (size_t i = iis_lb.size(); i--; ) {
     if (iis_ub[i]) {
       if (iis_lb[i])
@@ -136,11 +136,11 @@ std::vector<int> GurobiBackend::VarsIIS() {
 std::vector<int> GurobiBackend::ConsIIS() {
   // Adjust for non linear constraints, which always come
   // after the linear ones in the NL file
-  int nl = GetGrbIntAttribute(GRB_INT_ATTR_NUMSOS) +
-    GetGrbIntAttribute(GRB_INT_ATTR_NUMQCONSTRS) +
-    GetGrbIntAttribute(GRB_INT_ATTR_NUMGENCONSTRS);
+  int nl = GrbGetIntAttr(GRB_INT_ATTR_NUMSOS) +
+    GrbGetIntAttr(GRB_INT_ATTR_NUMQCONSTRS) +
+    GrbGetIntAttr(GRB_INT_ATTR_NUMGENCONSTRS);
   auto iis_con =
-    GetGrbIntArrayAttribute(GRB_INT_ATTR_IIS_CONSTR,
+    GrbGetIntAttrArray(GRB_INT_ATTR_IIS_CONSTR,
       (std::size_t)NumberOfConstraints() + nl, nl);
   for (int i=iis_con.size(); i--; ) {
     iis_con[i] = iis_con[i] ? IISStatus::mem : IISStatus::non;
@@ -149,16 +149,16 @@ std::vector<int> GurobiBackend::ConsIIS() {
 }
 double GurobiBackend::MIPGap() const {
   bool f;
-  double g = GetGrbDblAttribute(GRB_DBL_ATTR_MIPGAP, &f);
+  double g = GrbGetDblAttr(GRB_DBL_ATTR_MIPGAP, &f);
   return f ? g : Infinity();
 }
 
 double GurobiBackend::NodeCount() const {
-  return GetGrbDblAttribute(GRB_DBL_ATTR_NODECOUNT);
+  return GrbGetDblAttr(GRB_DBL_ATTR_NODECOUNT);
 }
 
 double GurobiBackend::Niterations() const {
-  return GetGrbDblAttribute(GRB_DBL_ATTR_ITERCOUNT);
+  return GrbGetDblAttr(GRB_DBL_ATTR_ITERCOUNT);
 }
 
 void GurobiBackend::ExportModel(const std::string &file) {
@@ -230,24 +230,26 @@ void GurobiBackend::AddVariable(Variable var) {
                        NULL, NULL, NULL, NULL,                  // placeholders, no matrix here
                        &lb, &ub, &vtype, NULL) );
 }
-void GurobiBackend::AddLinearObjective( const LinearObjective& lo ) {
-  if (1>=NumberOfObjectives()) {
-    GRB_CALL( GRBsetintattr(model, GRB_INT_ATTR_MODELSENSE,
-                  obj::Type::MAX==lo.get_sense() ? GRB_MAXIMIZE : GRB_MINIMIZE) );
-    GRB_CALL( GRBsetdblattrlist(model, GRB_DBL_ATTR_OBJ,
-                                lo.get_num_terms(),
-                                (int*)lo.get_vars().data(),
-                                (double*)lo.get_coefs().data()) );
+
+void GurobiBackend::SetLinearObjective( int iobj, const LinearObjective& lo ) {
+  if (1>iobj) {
+    GrbSetIntAttr( GRB_INT_ATTR_MODELSENSE,
+                  obj::Type::MAX==lo.obj_sense() ? GRB_MAXIMIZE : GRB_MINIMIZE);
+    SetMainObjSense(lo.obj_sense());
+    GrbSetDblAttrList( GRB_DBL_ATTR_OBJ, lo.vars(), lo.coefs() );
   } else {
-    throw std::runtime_error("Multiple objectives not supported");
-//    TODO
-//    GRB_CALL( GRBsetobjectiven(model, 0, 1, 0.0, 0.0, 0.0, "primary",
-//                               0.0, nnz, (int*)v, (double*)c) );
+    GRB_CALL( GRBsetobjectiven(model, iobj, 0,           // default priority 0
+                               /// Gurobi allows opposite sense by weight sign
+                               lo.obj_sense()==GetMainObjSense() ? 1.0 : -1.0,
+                               0.0, 0.0, nullptr,
+                               0.0, lo.num_terms(),
+                               (int*)lo.vars().data(), (double*)lo.coefs().data()) );
   }
 }
-void GurobiBackend::AddQuadraticObjective(const QuadraticObjective &qo) {
-  if (1>=NumberOfObjectives()) {
-    AddLinearObjective(qo);                         // add the linear part
+
+void GurobiBackend::SetQuadraticObjective(int iobj, const QuadraticObjective &qo) {
+  if (1>iobj) {
+    SetLinearObjective(iobj, qo);                         // add the linear part
     const auto& qt = qo.GetQPTerms();
     GRB_CALL( GRBaddqpterms(model, qt.num_terms(),
                                 (int*)qt.vars1(), (int*)qt.vars2(),
@@ -255,8 +257,8 @@ void GurobiBackend::AddQuadraticObjective(const QuadraticObjective &qo) {
   } else {
     throw std::runtime_error("Multiple quadratic objectives not supported");
   }
-
 }
+
 void GurobiBackend::AddConstraint( const LinearConstraint& lc ) {
   GRB_CALL( GRBaddrangeconstr(model, lc.nnz(),
                               (int*)lc.pvars(), (double*)lc.pcoefs(),
@@ -470,7 +472,7 @@ void GurobiBackend::SetSolverOption(const char *key, const std::string& value) {
 
 
 /// Shortcuts for attributes
-int GurobiBackend::GetGrbIntAttribute(const char* attr_id, bool *flag) const {
+int GurobiBackend::GrbGetIntAttr(const char* attr_id, bool *flag) const {
   int tmp=INT_MIN;
   int error = GRBgetintattr(model, attr_id, &tmp);
   if (flag)
@@ -481,7 +483,7 @@ int GurobiBackend::GetGrbIntAttribute(const char* attr_id, bool *flag) const {
   return tmp;
 }
 
-double GurobiBackend::GetGrbDblAttribute(const char* attr_id, bool *flag) const {
+double GurobiBackend::GrbGetDblAttr(const char* attr_id, bool *flag) const {
   double tmp=0.0;
   int error = GRBgetdblattr(model, attr_id, &tmp);
   if (flag)
@@ -492,7 +494,19 @@ double GurobiBackend::GetGrbDblAttribute(const char* attr_id, bool *flag) const 
   return tmp;
 }
 
-std::vector<int> GurobiBackend::GetGrbIntArrayAttribute(const char* attr_id,
+bool GurobiBackend::GrbSetIntAttr(
+    const char *attr_id, int val) {
+  auto error = GRBsetintattr(model, attr_id, val);
+  return 0==error;
+}
+
+bool GurobiBackend::GrbSetDblAttr(
+    const char *attr_id, double val) {
+  auto error = GRBsetdblattr(model, attr_id, val);
+  return 0==error;
+}
+
+std::vector<int> GurobiBackend::GrbGetIntAttrArray(const char* attr_id,
     std::size_t size, std::size_t offset) const {
   std::vector<int> res(size);
   int error = GRBgetintattrarray(model, attr_id,
@@ -502,7 +516,7 @@ std::vector<int> GurobiBackend::GetGrbIntArrayAttribute(const char* attr_id,
   return res;
 }
 
-std::vector<double> GurobiBackend::GetGrbDblArrayAttribute(const char* attr_id,
+std::vector<double> GurobiBackend::GrbGetDblAttrArray(const char* attr_id,
   std::size_t size, std::size_t offset ) const {
   std::vector<double> res(size);
   int error = GRBgetdblattrarray(model, attr_id,
@@ -512,18 +526,38 @@ std::vector<double> GurobiBackend::GetGrbDblArrayAttribute(const char* attr_id,
   return res;
 }
 
-bool GurobiBackend::SetGrbIntArrayAttribute(
+bool GurobiBackend::GrbSetIntAttrArray(
     const char *attr_id, ArrayRef<int> values, std::size_t start) {
   auto error = GRBsetintattrarray(model, attr_id,
                                   (int)start, (int)values.size(), (int*)values.data());
   return 0==error;
 }
 
-bool GurobiBackend::SetGrbDblArrayAttribute(
+bool GurobiBackend::GrbSetDblAttrArray(
     const char *attr_id, ArrayRef<double> values, std::size_t start) {
   auto error = GRBsetdblattrarray(model, attr_id,
                                   (int)start, (int)values.size(), (double*)values.data());
   return 0==error;
 }
+
+bool GurobiBackend::GrbSetIntAttrList(const char *attr_id,
+                                      const std::vector<int> &idx, const std::vector<int> &val) {
+  assert(idx.size()==val.size());
+  auto error = GRBsetintattrlist(model, attr_id,
+                                  (int)idx.size(), (int*)idx.data(), (int*)val.data());
+  return 0==error;
+}
+
+bool GurobiBackend::GrbSetDblAttrList(const char *attr_id,
+                                      const std::vector<int> &idx, const std::vector<double> &val) {
+  assert(idx.size()==val.size());
+  auto error = GRBsetdblattrlist(model, attr_id,
+                                  (int)idx.size(), (int*)idx.data(), (double*)val.data());
+  return 0==error;
+}
+
+void GurobiBackend::SetMainObjSense(obj::Type s) { main_obj_sense_ = s; }
+
+obj::Type GurobiBackend::GetMainObjSense() const { return main_obj_sense_; }
 
 } // namespace mp

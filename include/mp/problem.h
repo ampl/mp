@@ -288,7 +288,9 @@ public:
   template <typename ProblemType>
   struct BasicProblemItem {
     ProblemType *problem_;
+    ProblemType *problem() const { return problem_; }
     int index_;
+    int index() const { return index_; }
 
     typedef ProblemType Problem;
 
@@ -365,6 +367,9 @@ public:
     }
 
    public:
+    // Returns the objective index
+    using Item::index;
+
     // Returns the type of the objective.
     obj::Type type() const {
       return this->problem_->is_obj_max_[this->index_] ? obj::MAX : obj::MIN;
