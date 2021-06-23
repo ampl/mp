@@ -64,6 +64,9 @@ class SuffixValueWriter {
 
   template <typename T>
   void Visit(int index, T value) { file_.print("{} {}\n", index, value); }
+
+  void Visit(int index, double value)
+  { file_.print("{} {:.16}\n", index, value); }
 };
 
 template <typename SuffixMap>
@@ -112,9 +115,9 @@ void WriteSolFile(fmt::CStringRef filename, const Solution &sol) {
   int num_values = sol.num_values(), num_dual_values = sol.num_dual_values();
   file.print("{0}\n{0}\n{1}\n{1}\n", num_dual_values, num_values);
   for (int i = 0, n = num_dual_values; i < n; ++i)
-    file.print("{}\n", sol.dual_value(i));
+    file.print("{:.16}\n", sol.dual_value(i));
   for (int i = 0; i < num_values; ++i)
-    file.print("{}\n", sol.value(i));
+    file.print("{:.16}\n", sol.value(i));
   file.print("objno {} {}\n", sol.objno()-1, sol.status());
   suf::Kind kinds[] = {suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM};
   for (std::size_t i = 0, n = sizeof(kinds) / sizeof(*kinds); i < n; ++i)
