@@ -31,5 +31,17 @@
       "total_number": 31.49438202247191,
       "_sobj[4]": 31.49438202247191
     }
+  },
+  {
+    "name" : "obj_suf_01 multiobj=1",
+    "tags" : ["linear", "continuous"],
+    "options": { "ANYSOLVER_options": "multiobj=1" },
+    "values": {
+      "x": 0,
+      "y": 1,
+      "z": 0,
+      "_sobj[1]": 1,
+      "_sobj[2]": 1
+    }
   }
 ]

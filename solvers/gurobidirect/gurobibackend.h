@@ -150,10 +150,16 @@ public:
   ALLOW_STD_FEATURE( MIPGap, true )
   double MIPGap() const;
   /**
-  * Set branch and bound priority
+  * Set branch and bound priorities
   **/
-  ALLOW_STD_FEATURE( VarPriority, true )
-  void VarPriority(ArrayRef<int> );
+  ALLOW_STD_FEATURE( VarPriorities, true )
+  void VarPriorities(ArrayRef<int> );
+
+  void ObjPriorities(ArrayRef<int>);
+  void ObjWeights(ArrayRef<double>);
+  void ObjAbsTol(ArrayRef<double>);
+  void ObjRelTol(ArrayRef<double>);
+
 
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////

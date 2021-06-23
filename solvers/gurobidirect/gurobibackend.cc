@@ -104,11 +104,39 @@ void GurobiBackend::VarStatii(ArrayRef<int> vst) {
 }
 
 void GurobiBackend::ConStatii(ArrayRef<int> cst) {
-    assert(GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, cst));
+  assert(GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, cst));
 }
 
-void GurobiBackend::VarPriority(ArrayRef<int> priority) {
-    assert(GrbSetIntAttrArray(GRB_INT_ATTR_BRANCHPRIORITY, priority));
+void GurobiBackend::VarPriorities(ArrayRef<int> priority) {
+  assert(GrbSetIntAttrArray(GRB_INT_ATTR_BRANCHPRIORITY, priority));
+}
+
+void GurobiBackend::ObjPriorities(ArrayRef<int> priority) {
+  for (int i=0; i<(int)priority.size(); ++i) {
+    SetSolverOption(GRB_INT_PAR_OBJNUMBER, i);
+    assert(GrbSetIntAttr(GRB_INT_ATTR_OBJNPRIORITY, priority[i]));
+  }
+}
+
+void GurobiBackend::ObjWeights(ArrayRef<double> val) {
+  for (int i=0; i<(int)val.size(); ++i) {
+    SetSolverOption(GRB_INT_PAR_OBJNUMBER, i);
+    assert(GrbSetDblAttr(GRB_DBL_ATTR_OBJNWEIGHT, val[i]));
+  }
+}
+
+void GurobiBackend::ObjAbsTol(ArrayRef<double> val) {
+  for (int i=0; i<(int)val.size(); ++i) {
+    SetSolverOption(GRB_INT_PAR_OBJNUMBER, i);
+    assert(GrbSetDblAttr(GRB_DBL_ATTR_OBJNABSTOL, val[i]));
+  }
+}
+
+void GurobiBackend::ObjRelTol(ArrayRef<double> val) {
+  for (int i=0; i<(int)val.size(); ++i) {
+    SetSolverOption(GRB_INT_PAR_OBJNUMBER, i);
+    assert(GrbSetDblAttr(GRB_DBL_ATTR_OBJNRELTOL, val[i]));
+  }
 }
 
 
@@ -413,7 +441,7 @@ void GurobiBackend::InitCustomOptions() {
                            "with positive .objabstol or .objreltol are allowed to be "
                            "degraded by lower priority objectives by amounts not exceeding "
                            "the .objabstol (absolute) and .objreltol (relative) limits. "
-                           "The objective must all be linear.  Objective-specific "
+                           "The objectives must all be linear.  Objective-specific "
                            "convergence tolerances and method values may be assigned via "
                            "keywords of the form obj_n_name, such as obj_1_method for the "
                            "first objective.");

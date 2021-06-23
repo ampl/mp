@@ -233,7 +233,11 @@ public:
 
   void ReadStandardSuffixes() {
     if (storedOptions_.importPriorities_)
-      MP_DISPATCH( VarPriority( ReadSuffix(suf_varpriority) ) );
+      MP_DISPATCH( VarPriorities( ReadSuffix(suf_varpriority) ) );
+    MP_DISPATCH( ObjPriorities( ReadSuffix(suf_objpriority) ) );
+    MP_DISPATCH( ObjWeights( ReadSuffix(suf_objweight) ) );
+    MP_DISPATCH( ObjAbsTol( ReadSuffix(suf_objabstol) ) );
+    MP_DISPATCH( ObjRelTol( ReadSuffix(suf_objreltol) ) );
   }
   void ReadCustomSuffixes() { }
 
@@ -472,7 +476,7 @@ private:
 
 protected:
   void InitStandardOptions() {
-    if (IMPL_HAS_STD_FEATURE( VarPriority ))
+    if (IMPL_HAS_STD_FEATURE( VarPriorities ))
       AddStoredOption("priorities",
         "Whether to read the branch and bound priorities from the"
         " .priority suffix. Default: 1 (do read).",
@@ -491,8 +495,13 @@ protected:
   /**
   * Set branch and bound priority
   **/
-  DEFINE_STD_FEATURE( VarPriority, true ) // believe true for most
-  void VarPriority(ArrayRef<int>) {}
+  DEFINE_STD_FEATURE( VarPriorities, true ) // believe true for most
+  void VarPriorities(ArrayRef<int>) {}
+
+  void ObjPriorities(ArrayRef<int>) {}
+  void ObjWeights(ArrayRef<double>) {}
+  void ObjAbsTol(ArrayRef<double>) {}
+  void ObjRelTol(ArrayRef<double>) {}
 
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////// STANDARD SUFFIXES ///////////////////////////////
@@ -501,6 +510,10 @@ protected:
 private:
   const SuffixDef<int> suf_varpriority = { "priority", suf::VAR | suf::INPUT };
 
+  const SuffixDef<int> suf_objpriority = { "objpriority", suf::OBJ | suf::INPUT };
+  const SuffixDef<double> suf_objweight = { "objweight", suf::OBJ | suf::INPUT };
+  const SuffixDef<double> suf_objabstol = { "objabstol", suf::OBJ | suf::INPUT };
+  const SuffixDef<double> suf_objreltol = { "objreltol", suf::OBJ | suf::INPUT };
 };
 
 }  // namespace mp
