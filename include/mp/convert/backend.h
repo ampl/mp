@@ -496,12 +496,23 @@ protected:
   * Set branch and bound priority
   **/
   DEFINE_STD_FEATURE( VarPriorities, true ) // believe true for most
-  void VarPriorities(ArrayRef<int>) {}
+  void VarPriorities(ArrayRef<int>) {
+    throw MakeUnsupportedError("BasicBackend::VarPriorities");
+  }
 
-  void ObjPriorities(ArrayRef<int>) {}
-  void ObjWeights(ArrayRef<double>) {}
-  void ObjAbsTol(ArrayRef<double>) {}
-  void ObjRelTol(ArrayRef<double>) {}
+  void ObjPriorities(ArrayRef<int>) {
+    throw MakeUnsupportedError("BasicBackend::ObjPriorities");
+  }
+  void ObjWeights(ArrayRef<double>) {
+    throw MakeUnsupportedError("BasicBackend::ObjWeights");
+  }
+  void ObjAbsTol(ArrayRef<double>) {
+    throw MakeUnsupportedError("BasicBackend::ObjAbsTol");
+  }
+  void ObjRelTol(ArrayRef<double>) {
+    throw MakeUnsupportedError("BasicBackend::ObjRelTol");
+  }
+
 
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////// STANDARD SUFFIXES ///////////////////////////////

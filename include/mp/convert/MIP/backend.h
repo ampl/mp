@@ -68,9 +68,13 @@ public:
   * Get/Set AMPL var/con statii
   **/
   std::vector<int> VarStatii() { return {}; }
-  void VarStatii(ArrayRef<int> ) { }
+  void VarStatii(ArrayRef<int> ) {
+    throw MakeUnsupportedError("MIPBackend::VarStatii");
+  }
   std::vector<int> ConStatii() { return {}; }
-  void ConStatii(ArrayRef<int> ) { }
+  void ConStatii(ArrayRef<int> ) {
+    throw MakeUnsupportedError("MIPBackend::ConStatii");
+  }
 
 
   ////////////////////////////////////////////////////////////
