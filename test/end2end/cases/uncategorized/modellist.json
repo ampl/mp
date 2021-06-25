@@ -47,7 +47,7 @@
   },
   {
     "name" : "econmin",
-    "objective" : 0,
+    "objective" : 6808640.552995391,
     "tags" : ["linear", "continuous"],
     "files" : ["econmin.mod", "econ.dat"]
   },
@@ -58,7 +58,7 @@
     "files" : ["econ2.mod", "econ2.dat"]
   },  {
     "name" : "econ2min",
-    "objective" :0,
+    "objective" :8693800.0,
     "tags" : ["linear", "continuous"],
     "files" : ["econ2min.mod", "econ2.dat"]
   },
@@ -66,7 +66,7 @@
     "name" : "econnl",
     "objective" :0,
     "tags" : ["nonlinear", "continuous", "complementarity"],
-    "files" : ["econ2.mod", "econ2.dat"]
+    "files" : ["econnl.mod", "econnl.dat"]
   },
   {
     "name" : "egypt1",
@@ -176,7 +176,7 @@
   },
   {
     "name" : "oil",
-    "objective" : 12.208,
+    "objective" : 12.208343242217543,
     "tags" : ["nonlinear", "continuous"],
     "files" : ["oil.mod", "oil.dat"]
   },
