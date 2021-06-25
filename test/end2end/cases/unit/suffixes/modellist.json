@@ -1,0 +1,11 @@
+[
+  {
+    "name" : "dietu_stt iosuf",
+    "objective" : 74.273820,
+    "tags" : ["linear", "continuous"],
+    "values": {
+      "Buy['BEEF'].sstatus": "low",
+      "Diet_Min['A'].sstatus": "bas"
+    }
+  }
+]

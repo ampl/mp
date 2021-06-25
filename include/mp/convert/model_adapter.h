@@ -62,9 +62,11 @@ public:
     auto main_kind = (suf::Kind)(sufdef.kind() & suf::KIND_MASK);
     auto suf_raw = FindSuffix(sufdef);
     auto suf_size = GetSuffixSize(main_kind);    // can be < values.size()
-    return
-      (suf_raw) ? ( suf_raw )
-        : Model::suffixes(main_kind).template
+    if (suf_raw) {
+      suf_raw.or_kind(suf::OUTPUT);
+      return suf_raw;
+    }
+    return Model::suffixes(main_kind).template
             Add<T>(sufdef.name(), sufdef.kind(), suf_size, sufdef.table());
   }
 

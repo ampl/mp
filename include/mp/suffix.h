@@ -58,7 +58,7 @@ class SuffixBase {
     // Name is stored as a StringRef rather than std::string to avoid
     // dynamic memory allocation when using set::find.
     fmt::StringRef name;
-    int kind;
+    mutable int kind;
     int num_values;
     union {
       void *values;
@@ -110,6 +110,9 @@ class SuffixBase {
 
   // Returns the suffix kind.
   int kind() const { return impl_->kind; }
+
+  /// Or's the kind with a given int argument
+  void or_kind(int flg) { impl_->kind |= flg; }
 
   int num_values() const { return impl_->num_values; }
 
@@ -221,6 +224,7 @@ class BasicSuffix : private internal::SuffixBase {
 
   using SuffixBase::name;
   using SuffixBase::kind;
+  using SuffixBase::or_kind;
   using SuffixBase::num_values;
   using SuffixBase::operator SafeBool;
 

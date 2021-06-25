@@ -90,8 +90,9 @@ double GurobiBackend::ObjectiveValue() const {
 }
 
 std::vector<int> GurobiBackend::VarStatii() {
-  return
+  auto stt =
     GrbGetIntAttrArray(GRB_INT_ATTR_VBASIS, NumberOfVariables());
+  return stt;
 }
 
 std::vector<int> GurobiBackend::ConStatii() {
