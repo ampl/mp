@@ -33,6 +33,14 @@
     }
   },
   {
+    "name" : "obj_suf_01 multiobj=0",
+    "tags" : ["linear", "continuous"],
+    "options": { "ANYSOLVER_options": "multiobj=0" },
+    "values": {
+      "_sobj[1]": 1
+    }
+  },
+  {
     "name" : "obj_suf_01 multiobj=1",
     "tags" : ["linear", "continuous"],
     "options": { "ANYSOLVER_options": "multiobj=1" },

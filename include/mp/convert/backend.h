@@ -234,10 +234,12 @@ public:
   void ReadStandardSuffixes() {
     if (storedOptions_.importPriorities_)
       MP_DISPATCH( VarPriorities( ReadSuffix(suf_varpriority) ) );
-    MP_DISPATCH( ObjPriorities( ReadSuffix(suf_objpriority) ) );
-    MP_DISPATCH( ObjWeights( ReadSuffix(suf_objweight) ) );
-    MP_DISPATCH( ObjAbsTol( ReadSuffix(suf_objabstol) ) );
-    MP_DISPATCH( ObjRelTol( ReadSuffix(suf_objreltol) ) );
+    if (multiobj()) {
+      MP_DISPATCH( ObjPriorities( ReadSuffix(suf_objpriority) ) );
+      MP_DISPATCH( ObjWeights( ReadSuffix(suf_objweight) ) );
+      MP_DISPATCH( ObjAbsTol( ReadSuffix(suf_objabstol) ) );
+      MP_DISPATCH( ObjRelTol( ReadSuffix(suf_objreltol) ) );
+    }
   }
   void ReadCustomSuffixes() { }
 
