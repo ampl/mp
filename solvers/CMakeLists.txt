@@ -30,7 +30,7 @@ endfunction ()
 # LIBRARIES gives a list of solver libraries. If omitted, add_ampl_solver
 # uses <module>_LIBRARIES.
 function(add_ampl_solver name)
-  cmake_parse_arguments(add_ampl_solver "DLL_RUNTIME;EXTERNAL"
+  cmake_parse_arguments(add_ampl_solver "DLL_RUNTIME;EXTERNAL;DI"
     "MODULE" "INCLUDE_DIRS;LIBRARIES;DEFINITIONS" ${ARGN})
 
   get_property(MP_BASE_DIR GLOBAL PROPERTY MP_BASE_DIR)
@@ -111,12 +111,15 @@ function(add_ampl_solver name)
     target_link_libraries(${static_lib} PUBLIC mp)
   endif ()
 
-  # Add a solver shared library.
-  set(shared_lib ampl${name})
-  add_library(${shared_lib} SHARED ${MP_BASE_DIR}/src/solver-c.cc)
-  target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name})
-  target_link_libraries(${shared_lib} PRIVATE ${static_lib})
-
+  if(NOT ${add_ampl_solver_DI})
+  # Add a solver shared library if we are not building a directinterface 
+  # solver. In which case, skip the shared library as we still are to define
+  # a proper interface.
+    set(shared_lib ampl${name})
+    add_library(${shared_lib} SHARED ${MP_BASE_DIR}/src/solver-c.cc)
+    target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name})
+    target_link_libraries(${shared_lib} PRIVATE ${static_lib})
+  endif()
   # Add a solver executable.
   add_executable(${name} ${dir}main.cc)
   target_link_libraries(${name} PRIVATE ${static_lib})
