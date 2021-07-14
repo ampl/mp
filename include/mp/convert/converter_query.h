@@ -34,6 +34,10 @@ public:
                               const double *, const double *,
                               double) = 0;
 
+  virtual void HandleFeasibleSolution(fmt::CStringRef,
+                              const double *, const double *,
+                              double) = 0;
+
 };
 
 } // namespace mp

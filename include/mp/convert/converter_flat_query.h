@@ -49,6 +49,11 @@ public:
     GetCvt().HandleSolution(status, msg, x, y, obj);
   }
 
+  void HandleFeasibleSolution(fmt::CStringRef msg,
+                      const double *x, const double * y, double obj) override {
+    GetCvt().HandleFeasibleSolution(msg, x, y, obj);
+  }
+
 };
 
 } // namespace mp

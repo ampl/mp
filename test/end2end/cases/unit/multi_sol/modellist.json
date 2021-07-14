@@ -1,0 +1,43 @@
+[
+  {
+    "name": "multi_sol_01 default",
+    "tags": [ "linear"],
+    "objective": 1
+  },
+  {
+    "name": "multi_sol_01 countsolutions=1",
+    "tags": [ "linear"],
+    "objective": 1,
+    "options": { "ANYSOLVER_options": "countsolutions=1" },
+    "values": {
+      "Initial.nsol": 6
+    }
+  },
+  {
+    "name": "multi_sol_01 pool_eps=0.1 solutionstub=stub",
+    "tags": [ "linear"],
+    "objective": 1,
+    "options": { "ANYSOLVER_options": "pool_eps=0.1 solutionstub=stub" },
+    "values": {
+      "Initial.nsol": 3
+    }
+  },
+  {
+    "name": "multi_sol_01 pool_epsabs=0.1 solutionstub=stub",
+    "tags": [ "linear"],
+    "objective": 1,
+    "options": { "ANYSOLVER_options": "pool_epsabs=0.1 solutionstub=stub" },
+    "values": {
+      "Initial.nsol": 3
+    }
+  },
+  {
+    "name": "multi_sol_01 pool_limit=2 solutionstub=stub",
+    "tags": [ "linear"],
+    "objective": 1,
+    "options": { "ANYSOLVER_options": "pool_limit=2 solutionstub=stub" },
+    "values": {
+      "Initial.nsol": 2
+    }
+  }
+]

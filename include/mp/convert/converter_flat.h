@@ -943,6 +943,11 @@ public:
     MP_DISPATCH( GetSolH() ).HandleSolution(status, msg, x, y, obj);
   }
 
+  void HandleFeasibleSolution(fmt::CStringRef msg,
+      const double *x, const double *y, double obj) {
+    MP_DISPATCH( GetSolH() ).HandleFeasibleSolution(msg, x, y, obj);
+  }
+
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////
   ///

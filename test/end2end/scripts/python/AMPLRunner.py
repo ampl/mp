@@ -227,9 +227,12 @@ class AMPLRunner(object):
         if model.hasExpectedValues():
             for name, ev in model.getExpectedValues().items():
                 self.stats["eval_done"] = True
-                val = self._ampl.getValue(name)
-                self._assertAndRecord(ev, val,
-                    "value of entity '{}'".format(name))
+                try:
+                    val = self._ampl.getValue(name)
+                    self._assertAndRecord(ev, val,
+                        "value of entity '{}'".format(name))
+                except:
+                    self.stats["eval_fail_msg"] = "error retrieving '{}'".format(name)
 
     def _assertAndRecord(self, expval, val, msg):
         b1 = isinstance(expval, (int, float))

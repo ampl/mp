@@ -244,7 +244,15 @@ public:
   void ReadCustomSuffixes() { }
 
   void PrepareSolve() {
+    MP_DISPATCH( SetupInterrupter() );
+    MP_DISPATCH( SetupTimer() );
+  }
+
+  void SetupInterrupter() {
     MP_DISPATCH( SetInterrupter(MP_DISPATCH( interrupter() )) );
+  }
+
+  void SetupTimer() {
     stats.setup_time = GetTimeAndReset(stats.time);
   }
 
@@ -258,8 +266,12 @@ public:
   }
   void CalculateAndReportDerivedResults() { }
 
+  using Solver::need_multiple_solutions;
+
   void ReportSolution() {
     MP_DISPATCH( ReportSuffixes() );
+    if (need_multiple_solutions())
+      MP_DISPATCH( ReportMultipleSolutions() );
     MP_DISPATCH( ReportPrimalDualValues() );
   }
 
@@ -272,6 +284,42 @@ public:
 
   void ReportCustomSuffixes() { }
 
+  void ReportMultipleSolutions() {
+    MP_DISPATCH( StartPoolSolutions() );
+    while (MP_DISPATCH( SelectNextPoolSolution() )) {
+      MP_DISPATCH( ReportCurrentPoolSolution() );
+    }
+    MP_DISPATCH( EndPoolSolutions() );
+  }
+
+  /// When IfMultipleSol() returns true, Impl has to define these
+  void StartPoolSolutions() { RAISE_NOT_IMPLEMENTED("StartPoolSolutions()"); }
+  bool SelectNextPoolSolution() { return false; }   // none by default
+  void EndPoolSolutions() { RAISE_NOT_IMPLEMENTED("EndPoolSolutions()"); }
+  std::vector<double> CurrentPoolPrimalSolution()
+  { RAISE_NOT_IMPLEMENTED("CurrentPoolPrimalSolution()"); return {}; }
+  double CurrentPoolObjectiveValue() const
+  { RAISE_NOT_IMPLEMENTED("CurrentPoolObjectiveValue()"); return 0.0; }
+
+  void ReportCurrentPoolSolution() {
+    double obj_value = std::numeric_limits<double>::quiet_NaN();
+    std::vector<double> solution;
+
+    fmt::MemoryWriter writer;
+    writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status);
+    if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
+      obj_value = MP_DISPATCH( CurrentPoolObjectiveValue() );
+      writer.write("; objective {}",
+                   MP_DISPATCH( FormatObjValue(obj_value) ));
+    }
+    writer.write("\n");
+
+    solution = MP_DISPATCH( CurrentPoolPrimalSolution() );
+    HandleFeasibleSolution(writer.c_str(),
+                   solution.empty() ? 0 : solution.data(),
+                   nullptr, obj_value);
+  }
+
   void ReportPrimalDualValues() {
     double obj_value = std::numeric_limits<double>::quiet_NaN();
     std::vector<double> solution, dual_solution;
@@ -279,8 +327,8 @@ public:
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status);
     if (solve_code < sol::INFEASIBLE) {
-      obj_value = MP_DISPATCH( ObjectiveValue() );
       if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
+        obj_value = MP_DISPATCH( ObjectiveValue() );
         writer.write("; objective {}",
                      MP_DISPATCH( FormatObjValue(obj_value) ));
       }
@@ -349,6 +397,11 @@ protected:
   void HandleSolution(int status, fmt::CStringRef msg,
       const double *x, const double *y, double obj) {
     GetCQ().HandleSolution(status, msg, x, y, obj);
+  }
+
+  void HandleFeasibleSolution(fmt::CStringRef msg,
+      const double *x, const double *y, double obj) {
+    GetCQ().HandleFeasibleSolution(msg, x, y, obj);
   }
 
   ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) {

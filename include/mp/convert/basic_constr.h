@@ -13,13 +13,14 @@ class BasicConstraint {
 public:
   static const char* GetConstraintName() { return "BasicConstraint"; }
   void print(std::ostream& ) const { }
+  /// Whether context is meaningful here
   static constexpr bool HasContext() { return false; }
   void SetContext(Context ) const { }
   Context GetContext() const { return Context::CTX_NONE; }
   int GetResultVar() const { return -1; }
 };
 
-/// A constraint extension which defines a variable
+/// A special constraint 'var=...', which defines a result variable
 class DefiningConstraint : public BasicConstraint {
   int result_var_=-1;                // defined var can be optional
   mutable Context ctx;

@@ -89,6 +89,36 @@ double GurobiBackend::ObjectiveValue() const {
   return GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL);
 }
 
+void GurobiBackend::StartPoolSolutions() {
+  assert(-2==iPoolSolution);
+  iPoolSolution = -1;
+}
+
+bool GurobiBackend::SelectNextPoolSolution() {
+  assert(iPoolSolution>=-1);
+  ++iPoolSolution;
+  if (iPoolSolution < GrbGetIntAttr(GRB_INT_ATTR_SOLCOUNT)) {
+    GrbSetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, iPoolSolution);
+    return true;
+  }
+  return false;
+}
+
+void GurobiBackend::EndPoolSolutions() {
+  assert(iPoolSolution>=-1);
+  iPoolSolution = -2;
+}
+
+std::vector<double> GurobiBackend::CurrentPoolPrimalSolution() {
+  return
+    GrbGetDblAttrArray(GRB_DBL_ATTR_XN, NumberOfVariables());
+}
+
+double GurobiBackend::CurrentPoolObjectiveValue() const {
+  return GrbGetDblAttr(GRB_DBL_ATTR_POOLOBJVAL);
+}
+
+
 std::vector<int> GurobiBackend::VarStatii() {
   auto stt =
     GrbGetIntAttrArray(GRB_INT_ATTR_VBASIS, NumberOfVariables());
@@ -114,28 +144,28 @@ void GurobiBackend::VarPriorities(ArrayRef<int> priority) {
 
 void GurobiBackend::ObjPriorities(ArrayRef<int> priority) {
   for (int i=0; i<(int)priority.size(); ++i) {
-    SetSolverOption(GRB_INT_PAR_OBJNUMBER, i);
+    GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
     assert(GrbSetIntAttr(GRB_INT_ATTR_OBJNPRIORITY, priority[i]));
   }
 }
 
 void GurobiBackend::ObjWeights(ArrayRef<double> val) {
   for (int i=0; i<(int)val.size(); ++i) {
-    SetSolverOption(GRB_INT_PAR_OBJNUMBER, i);
+    GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
     assert(GrbSetDblAttr(GRB_DBL_ATTR_OBJNWEIGHT, val[i]));
   }
 }
 
 void GurobiBackend::ObjAbsTol(ArrayRef<double> val) {
   for (int i=0; i<(int)val.size(); ++i) {
-    SetSolverOption(GRB_INT_PAR_OBJNUMBER, i);
+    GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
     assert(GrbSetDblAttr(GRB_DBL_ATTR_OBJNABSTOL, val[i]));
   }
 }
 
 void GurobiBackend::ObjRelTol(ArrayRef<double> val) {
   for (int i=0; i<(int)val.size(); ++i) {
-    SetSolverOption(GRB_INT_PAR_OBJNUMBER, i);
+    GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
     assert(GrbSetDblAttr(GRB_DBL_ATTR_OBJNRELTOL, val[i]));
   }
 }
@@ -200,7 +230,14 @@ void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void GurobiBackend::SolveAndReportIntermediateResults() {
+  PrepareParameters();
+
   GRB_CALL( GRBoptimize(model) );
+}
+
+void GurobiBackend::PrepareParameters() {
+  if (need_multiple_solutions())
+    GrbSetIntParam(GRB_INT_PAR_POOLSEARCHMODE, 2);   // always 2 now
 }
 
 std::string GurobiBackend::ConvertSolutionStatus(
@@ -456,6 +493,32 @@ void GurobiBackend::InitCustomOptions() {
       "Default = 0 (no logging).", GRB_INT_PAR_OUTPUTFLAG, 0, 1);
   SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);
 
+  /// Solution pool parameters
+  /// Rely on MP's built-in options solutionstub or countsolutions
+  AddSolverOption("pool_eps",
+      "Relative tolerance for reporting alternate MIP solutions "
+      "		(default: Infinity, no limit).",
+      GRB_DBL_PAR_POOLGAP, 0.0, DBL_MAX);
+  AddSolverOption("pool_epsabs",
+      "Absolute tolerance for reporting alternate MIP solutions "
+      "		(default: Infinity, no limit).",
+      GRB_DBL_PAR_POOLGAPABS, 0.0, DBL_MAX);
+  AddSolverOption("pool_limit",
+      "Limit on the number of alternate MIP solutions written. Default: 10.",
+      GRB_INT_PAR_POOLSOLUTIONS, 1, 2000000000);
+  /// Option "solutionstub" is created internally if
+  /// ThisBackend::IfMultipleSol() returns true.
+  /// Change the help text
+  ReplaceOptionDescription("solutionstub",
+                           "Stub for alternative MIP solutions, written to files with "
+                        "names obtained by appending \"1.sol\", \"2.sol\", etc., to "
+                        "<solutionstub>.  The number of such files written is affected "
+                        "by the keywords pool_eps, pool_epsabs, pool_limit. "
+//                          pool_mode specifies how much effort to expend;
+                        "The number of alternative MIP solution files written is "
+                        "returned in suffix .nsol on the problem.");
+
+
   AddSolverOption("threads",
       "How many threads to use when using the barrier algorithm\n"
       "or solving MIP problems; default 0 ==> automatic choice.",
@@ -471,6 +534,31 @@ void GurobiBackend::InitCustomOptions() {
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
 
+}
+
+int GurobiBackend::GrbGetIntParam(const char *key) const {
+  int v;
+  GetSolverOption(key, v);
+  return v;
+}
+double GurobiBackend::GrbGetDblParam(const char *key) const {
+  double v;
+  GetSolverOption(key, v);
+  return v;
+}
+std::string GurobiBackend::GrbGetStrParam(const char *key) const {
+  std::string v;
+  GetSolverOption(key, v);
+  return v;
+}
+void GurobiBackend::GrbSetIntParam(const char *key, int value) {
+  SetSolverOption(key, value);
+}
+void GurobiBackend::GrbSetDblParam(const char *key, double value) {
+  SetSolverOption(key, value);
+}
+void GurobiBackend::GrbSetStrParam(const char *key, const std::string& value) {
+  SetSolverOption(key, value);
 }
 
 void GurobiBackend::GetSolverOption(const char *key, int &value) const {

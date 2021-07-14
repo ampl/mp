@@ -244,7 +244,7 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( DisjunctionConstraint, VarArray,
 ////////////////////////////////////////////////////////////////////////
 /// \brief DEFINE_CUSTOM_DEFINING_CONSTRAINT
 /// Keep it with AffineExpr, indicators need that
-/// and we don't want qudratics with big-M's?
+/// and we don't want quadratics with big-M's?
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( EQ0Constraint, AffineExpr,
                                    "r = (expr == 0)");
 
@@ -255,7 +255,7 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( NEConstraint__unused, VarArray2,
 ////////////////////////////////////////////////////////////////////////
 /// \brief DEFINE_CUSTOM_DEFINING_CONSTRAINT
 ////// Keep it with AffineExpr, indicators need that
-/// and we don't want qudratics with big-M's?
+/// and we don't want quadratics with big-M's?
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( LE0Constraint, AffineExpr,
                                    "r = (expr <= 0)");
 

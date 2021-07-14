@@ -121,6 +121,13 @@ public:
   std::vector<double> DualSolution();
   double ObjectiveValue() const;
 
+  /// Solution pool
+  void StartPoolSolutions();
+  bool SelectNextPoolSolution();
+  void EndPoolSolutions();
+  std::vector<double> CurrentPoolPrimalSolution();
+  double CurrentPoolObjectiveValue() const;
+
   double NodeCount() const;
   double Niterations() const;
 
@@ -198,6 +205,9 @@ public:
   void SetMainObjSense(obj::Type s);
   obj::Type GetMainObjSense() const;
 
+protected:
+  void PrepareParameters();
+
 private:
   GRBenv   *env   = NULL;
   GRBmodel *model = NULL;
@@ -214,8 +224,17 @@ private:
 
   Options storedOptions_;
 
+  int iPoolSolution = -2;          // for SelectNextPoolSolution()
 
 public:
+  /// Wrappers for Get/SetSolverOption()
+  int GrbGetIntParam(const char* key) const;
+  double GrbGetDblParam(const char* key) const;
+  std::string GrbGetStrParam(const char* key) const;
+  void GrbSetIntParam(const char* key, int value);
+  void GrbSetDblParam(const char* key, double value);
+  void GrbSetStrParam(const char* key, const std::string& value);
+
   /// These methods access Gurobi options. Used by AddSolverOption()
   void GetSolverOption(const char* key, int& value) const;
   void SetSolverOption(const char* key, int value);
