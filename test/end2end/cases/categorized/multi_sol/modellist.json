@@ -23,10 +23,10 @@
     }
   },
   {
-    "name": "multi_sol_01 pool_epsabs=0.1 solutionstub=stub",
+    "name": "multi_sol_01 pool_epsabs=0.1 solutionstub=stub pool_mode=2",
     "tags": [ "linear"],
     "objective": 1,
-    "options": { "ANYSOLVER_options": "pool_epsabs=0.1 solutionstub=stub" },
+    "options": { "ANYSOLVER_options": "pool_epsabs=0.1 solutionstub=stub pool_mode=2" },
     "values": {
       "Initial.nsol": 3
     }

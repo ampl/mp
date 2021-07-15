@@ -237,7 +237,7 @@ void GurobiBackend::SolveAndReportIntermediateResults() {
 
 void GurobiBackend::PrepareParameters() {
   if (need_multiple_solutions())
-    GrbSetIntParam(GRB_INT_PAR_POOLSEARCHMODE, 2);   // always 2 now
+    GrbSetIntParam(GRB_INT_PAR_POOLSEARCHMODE, storedOptions_.nPoolMode_);
 }
 
 std::string GurobiBackend::ConvertSolutionStatus(
@@ -506,6 +506,15 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("pool_limit",
       "Limit on the number of alternate MIP solutions written. Default: 10.",
       GRB_INT_PAR_POOLSOLUTIONS, 1, 2000000000);
+  AddStoredOption("pool_mode",
+      "Search mode for MIP solutions when solutionstub/countsolutions are specified "
+                        "to request finding several alternative solutions:\n\n"
+                        "| 0 = just collect solutions during normal solve, "
+                        "and sort them best-first\n"
+                        "| 1 = make some effort at finding additional solutions\n"
+                        "| 2 = seek \"pool_limit\" best solutions (default). "
+                        " 'Best solutions' are defined by the pool_eps(abs) parameters.",
+      storedOptions_.nPoolMode_);
   /// Option "solutionstub" is created internally if
   /// ThisBackend::IfMultipleSol() returns true.
   /// Change the help text
@@ -513,10 +522,14 @@ void GurobiBackend::InitCustomOptions() {
                            "Stub for alternative MIP solutions, written to files with "
                         "names obtained by appending \"1.sol\", \"2.sol\", etc., to "
                         "<solutionstub>.  The number of such files written is affected "
-                        "by the keywords pool_eps, pool_epsabs, pool_limit. "
-//                          pool_mode specifies how much effort to expend;
+                        "by the keywords pool_eps, pool_epsabs, pool_limit, and pool_mode. "
                         "The number of alternative MIP solution files written is "
                         "returned in suffix .nsol on the problem.");
+  ReplaceOptionDescription("countsolutions",
+                           "0 or 1 (default 0): Whether to count the number of solutions "
+                           "and return it in the ``.nsol`` problem suffix. "
+                           "The number and kind of solutions are controlled by the "
+                           "pool_... parameters. Value 1 implied by solutionstub.");
 
 
   AddSolverOption("threads",

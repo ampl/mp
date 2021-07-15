@@ -220,6 +220,7 @@ private:
   /// for direct access
   struct Options {
     std::string exportFile_;
+    int nPoolMode_=2;
   };
 
   Options storedOptions_;
