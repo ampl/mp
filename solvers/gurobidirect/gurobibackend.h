@@ -96,6 +96,8 @@ public:
   void AddConstraint(const CosConstraint& cc);
   ACCEPT_CONSTRAINT(TanConstraint, Recommended)
   void AddConstraint(const TanConstraint& cc);
+  ACCEPT_CONSTRAINT(PLConstraint, Recommended)
+  void AddConstraint(const PLConstraint& cc);
 
 
   ///////////////////// Model attributes /////////////////////
