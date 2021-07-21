@@ -241,9 +241,9 @@ protected:
 
   /// Simple stored option referencing a variable
   template <class Value>
-  void AddOption(const char *name, const char *description,
+  void AddOption(const char *name, const char* qualifiedName, const char *description,
                  Value& value, ValueArrayRef values = ValueArrayRef()) {
-    GetBackend().AddStoredOption(name, description, value, values);
+    GetBackend().AddStoredOption(name, qualifiedName, description, value, values);
   }
 
   ////////////////////////////// UTILITIES //////////////////////////////

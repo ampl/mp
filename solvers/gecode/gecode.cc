@@ -629,16 +629,16 @@ GecodeSolver::GecodeSolver()
       "  ampl: option gecode_options 'version nodelimit=30000 "
       "val_branching=min';\n");
 
-  AddIntOption("outlev",
+  AddIntOption("outlev", "gen:outlev",
       "0 or 1 (default 0): Whether to print solution log.",
       &GecodeSolver::GetOption<int, bool>,
       &GecodeSolver::SetBoolOption, &output_);
 
-  AddDblOption("outfreq",
+  AddDblOption("outfreq", "gen:outlev",
       "Output frequency in seconds. The value should be a positive number.",
       &GecodeSolver::GetOutputFrequency, &GecodeSolver::SetOutputFrequency);
 
-  AddStrOption("ipl",
+  AddStrOption("ipl", "gecode:ipl",
       "Propagation level for integer propagators. Possible values:\n"
       "\n"
       ".. value-table::\n",
@@ -646,7 +646,7 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::SetEnumOption<Gecode::IntPropLevel>,
       &ipl_, INT_PROP_LEVELS);
 
-  AddStrOption("var_branching",
+  AddStrOption("var_branching", "gecode:var_branching",
       "Variable branching. Possible values:\n"
       "\n"
       ".. value-table::\n",
@@ -654,7 +654,7 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::SetEnumOption<IntVarBranch::Select>,
       &var_branching_, VAR_BRANCHINGS);
 
-  AddStrOption("val_branching",
+  AddStrOption("val_branching", "gecode:val_branching",
       "Value branching. Possible values:\n"
       "\n"
       ".. value-table::\n",
@@ -662,11 +662,11 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::SetEnumOption<IntValBranch::Select>,
       &val_branching_, VAL_BRANCHINGS);
 
-  AddDblOption("decay",
+  AddDblOption("decay", "gecode:decay",
       "Decay factor for AFC and activity branchings. Default = 1.",
       &GecodeSolver::GetDecay, &GecodeSolver::SetDecay);
 
-  AddDblOption("threads",
+  AddDblOption("threads", "gen:threads",
       "The number of parallel threads to use. Assume that your computer "
       "has m processing units and that the value for threads is n.\n"
       "\n"
@@ -688,24 +688,24 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::GetOption<double, double>,
       &GecodeSolver::DoSetDblOption, &options_.threads);
 
-  AddIntOption("c_d", "Commit recomputation distance.",
+  AddIntOption("c_d", "gecode:c_d", "Commit recomputation distance.",
       &GecodeSolver::GetOption<int, unsigned>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned>, &options_.c_d);
-  AddIntOption("a_d", "Adaptive recomputation distance.",
+  AddIntOption("a_d", "gecode:a_d", "Adaptive recomputation distance.",
       &GecodeSolver::GetOption<int, unsigned>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned>, &options_.a_d);
 
-  AddDblOption("timelimit", "Time limit in seconds.",
+  AddDblOption("timelimit", "lim:timelimit", "Time limit in seconds.",
       &GecodeSolver::GetOption<double, double>,
       &GecodeSolver::SetNonnegativeOption<double, double>, &time_limit_);
-  AddIntOption("nodelimit", "Node limit.",
+  AddIntOption("nodelimit", "lim:nodelimit", "Node limit.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &node_limit_);
-  AddIntOption("faillimit", "Fail limit.",
+  AddIntOption("faillimit", "lim:faillimit", "Fail limit.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &fail_limit_);
 
-  AddStrOption("restart",
+  AddStrOption("restart", "gecode:restart",
       "Restart sequence type. Possible values:\n"
       "\n"
       ".. value-table::\n",
@@ -713,17 +713,17 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::SetEnumOption<Gecode::RestartMode>,
       &restart_, RESTART_MODES);
 
-  AddDblOption("restart_base",
+  AddDblOption("restart_base", "gecode:restart_base",
       "Base for geometric restart sequence. Default = 1.5.",
       &GecodeSolver::GetOption<double, double>,
       &GecodeSolver::DoSetDblOption, &restart_base_);
 
-  AddIntOption("restart_scale",
+  AddIntOption("restart_scale", "gecode:restart_scale",
       "Scale factor for restart sequence. Default = 250.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &restart_scale_);
 
-  AddIntOption("solutionlimit",
+  AddIntOption("solutionlimit", "lim:solutionlimit",
       "Limit on the number of feasible solutions found before terminating "
       "a search. Leaving the solution limit unspecified will make the "
       "optimizer search for an optimal solution if there is an objective "
