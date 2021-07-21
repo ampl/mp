@@ -448,6 +448,15 @@ void GurobiBackend::FinishProblemModificationPhase() {
 ////////////////////////// OPTIONS ////////////////////////////
 
 // static possible values with descriptions
+
+
+const mp::OptionValueInfo values_pool_mode[] = {
+    {"0", "Just collect solutions during normal solve, and sort them best-first", 0},
+    { "1", "Make some effort at finding additional solutions", 1},
+    { "2", "Seek \"pool_limit\" best solutions (default)."
+      "'Best solutions' are defined by the pool_eps(abs) parameters.", 2}
+};
+
 const mp::OptionValueInfo values_barorder[] = {
     {"-1", "Automatic choiche (default)", -1},
     { "0", "Approximate minimum degree", 0},
@@ -471,10 +480,6 @@ void GurobiBackend::InitCustomOptions() {
 
   AddSolverOption("aggregate", "pre:aggregate", "0/1*: whether to use aggregation in presolve."
     "Setting it to 0 can sometimes reduce numerical errors.", GRB_INT_PAR_AGGREGATE, 0, 1);
-
-
-
-  
 
   AddSolverOption("barorder", "lp:barorder", "Ordering used to reduce fill in sparse-matrix factorizations during the barrier algorithm. Possible values:\n"
     "\n.. value-table::\n", GRB_INT_PAR_AGGREGATE, values_barorder, -1);
@@ -514,26 +519,22 @@ void GurobiBackend::InitCustomOptions() {
 
   /// Solution pool parameters
   /// Rely on MP's built-in options solutionstub or countsolutions
-  AddSolverOption("pool_eps", "gen:pool_eps",
+  AddSolverOption("pool_eps", "sol:pool_eps",
       "Relative tolerance for reporting alternate MIP solutions "
       "		(default: Infinity, no limit).",
       GRB_DBL_PAR_POOLGAP, 0.0, DBL_MAX);
-  AddSolverOption("pool_epsabs", "gen:pool_epsabs",
+  AddSolverOption("pool_epsabs", "sol:pool_epsabs",
       "Absolute tolerance for reporting alternate MIP solutions "
       "		(default: Infinity, no limit).",
       GRB_DBL_PAR_POOLGAPABS, 0.0, DBL_MAX);
-  AddSolverOption("pool_limit", "gen:pool_limit", 
+  AddSolverOption("pool_limit", "sol:pool_limit", 
       "Limit on the number of alternate MIP solutions written. Default: 10.",
       GRB_INT_PAR_POOLSOLUTIONS, 1, 2000000000);
-  AddStoredOption("pool_mode", "gen:pool_mode",
+  AddStoredOption("pool_mode", "sol:pool_mode",
       "Search mode for MIP solutions when solutionstub/countsolutions are specified "
-                        "to request finding several alternative solutions:\n\n"
-                        "| 0 = just collect solutions during normal solve, "
-                        "and sort them best-first\n"
-                        "| 1 = make some effort at finding additional solutions\n"
-                        "| 2 = seek \"pool_limit\" best solutions (default). "
-                        " 'Best solutions' are defined by the pool_eps(abs) parameters.",
-      storedOptions_.nPoolMode_);
+                        "to request finding several alternative solutions:\n"
+                        "\n.. value-table::\n",
+          storedOptions_.nPoolMode_, values_pool_mode);
   /// Option "solutionstub" is created internally if
   /// ThisBackend::IfMultipleSol() returns true.
   /// Change the help text

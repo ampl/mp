@@ -569,7 +569,7 @@ Solver::Solver(
         "and return it in the ``.nsol`` problem suffix.")));
 
     AddStrOption(
-          "solutionstub", "gen:solutionstub",
+          "solutionstub", "sol:solutionstub",
           "Stub for solution files.  If ``solutionstub`` is specified, "
           "found solutions are written to files (``solutionstub & '1' & "
           "'.sol'``) ... (``solutionstub & Current.nsol & '.sol'``), where "
