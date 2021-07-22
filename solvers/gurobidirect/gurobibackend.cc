@@ -478,6 +478,7 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("aggfill", "pre:aggfill", "Amount of fill allowed during aggregation in presolve"
     "(default -1).", GRB_INT_PAR_AGGFILL, -1, INT_MAX);
 
+  
   AddSolverOption("aggregate", "pre:aggregate", "0/1*: whether to use aggregation in presolve."
     "Setting it to 0 can sometimes reduce numerical errors.", GRB_INT_PAR_AGGREGATE, 0, 1);
 
@@ -535,6 +536,8 @@ void GurobiBackend::InitCustomOptions() {
                         "to request finding several alternative solutions:\n"
                         "\n.. value-table::\n",
           storedOptions_.nPoolMode_, values_pool_mode);
+  AddOptionSynonym("ams_mode", "pool_mode");
+  AddOptionSynonym("poolmode", "pool_mode");
   /// Option "solutionstub" is created internally if
   /// ThisBackend::IfMultipleSol() returns true.
   /// Change the help text

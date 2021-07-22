@@ -681,7 +681,7 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
         ++s;
         if ((flags & NO_OPTION_ECHO) == 0) {
           fmt::MemoryWriter w;
-          w << &name[0] << '=';
+          w << opt->echo() << '=';
           opt->Write(w);
           w << '\n';
           Print("{}", w.c_str());
@@ -700,7 +700,13 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
       ReportError("{}", e.what());
     }
     if ((flags & NO_OPTION_ECHO) == 0)
-      Print("{}\n", std::string(name_start, s - name_start));
+    {
+      fmt::MemoryWriter w;
+      w << opt->echo() << '=';
+      opt->Write(w);
+      w << '\n';
+      Print("{}", w.c_str());
+    }
   }
 }
 

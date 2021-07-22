@@ -489,7 +489,9 @@ protected:
 
 public:
   using Solver::AddOption;
+  using Solver::AddOptionSynonym;
   using Solver::FindOption;
+
 
   /// Simple stored option referencing a variable
   template <class Value>

@@ -213,10 +213,12 @@ class SolverOption {
  private:
   const char *name_;
   const char* qualifiedname_;
-  const char *description_;
+  
   ValueArrayRef values_;
   bool is_flag_;
 
+ protected:
+  const char* description_;
  public:
   // Constructs a SolverOption object.
   //
@@ -313,8 +315,37 @@ class SolverOption {
   // Parses a string and sets the option value. Throws InvalidOptionValue
   // if the value is invalid or OptionError in case of another error.
   virtual void Parse(const char *&s) = 0;
+
+  virtual std::string echo() {
+    return name();
+  }
 };
 
+/*
+*/
+class SolverOptionSynonym : public SolverOption
+{
+  SolverOption* real_;
+  std::string desc_;
+public:
+  SolverOptionSynonym(const char* name, SolverOption& real) :
+    SolverOption(name, name, NULL), real_(&real) {
+    desc_ = fmt::sprintf("See %s.", real_->name());
+    description_ = desc_.c_str();
+  }
+  SolverOption* getRealOption() const { return real_; }
+
+  virtual void Write(fmt::Writer& w) {
+    real_->Write(w);
+  }
+  virtual void Parse(const char*& s) {
+    real_->Parse(s);
+  }
+
+  virtual std::string echo() {
+    return fmt::format("{} ({})", name(), real_->echo());
+  }
+};
 // An exception thrown when an invalid value is provided for an option.
 class InvalidOptionValue : public OptionError {
  private:
@@ -606,6 +637,14 @@ class Solver : private ErrorHandler,
   void AddOption(OptionPtr opt) {
     // First insert the option, then release a pointer to it. Doing the other
     // way around may lead to a memory leak if insertion throws an exception.
+    options_.insert(opt.get());
+    opt.release();
+  }
+
+  void AddOptionSynonym(const char* name, const char* realName)
+  {
+    SolverOption* real = FindOption(realName);
+    OptionPtr opt = OptionPtr(new SolverOptionSynonym(name, *real));
     options_.insert(opt.get());
     opt.release();
   }
