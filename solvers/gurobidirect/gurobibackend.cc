@@ -456,6 +456,12 @@ const mp::OptionValueInfo values_pool_mode[] = {
     { "2", "Seek \"pool_limit\" best solutions (default)."
       "'Best solutions' are defined by the pool_eps(abs) parameters.", 2}
 };
+         
+const mp::OptionValueInfo values_barhomogeneous[] = {
+    {"-1", "Only when solving a MIP node relaxation (default)", -1},
+    { "0", "Never", 0},
+    { "1", "Always", 1}
+};
 
 const mp::OptionValueInfo values_barorder[] = {
     {"-1", "Automatic choiche (default)", -1},
@@ -481,11 +487,34 @@ void GurobiBackend::InitCustomOptions() {
   
   AddSolverOption("aggregate", "pre:aggregate", "0/1*: whether to use aggregation in presolve."
     "Setting it to 0 can sometimes reduce numerical errors.", GRB_INT_PAR_AGGREGATE, 0, 1);
+  
+  AddSolverOption("barconvtol", "alg:barconvtol",
+    "Tolerance on the relative difference between the primal and dual objectives for stopping the barrier algorithm "
+    "(default 1e-8).", GRB_DBL_PAR_BARCONVTOL, 0.0, 1.0);
 
-  AddSolverOption("barorder", "lp:barorder", "Ordering used to reduce fill in sparse-matrix factorizations during the barrier algorithm. Possible values:\n"
+
+  AddSolverOption("barcorrectors", "alg:barcorrectors",
+    "Limit on the number of central corrections done in each barrier iteration"
+    "(default -1 = automatic choice).", GRB_INT_PAR_BARCORRECTORS, -1, INT_MAX);
+
+  AddSolverOption("barorder", "alg:barhomogeneous", "Whether to use the homogeneous barrier algorithm (e.g., when method=2 is specified):\n"
+    "\n.. value-table::\n"
+    "The homogeneous barrier algorithm can detect infeasibility or unboundedness directly, "
+    "without crossover, but is a bit slower than the nonhomogeneous barrier algorithm.",
+    GRB_INT_PAR_BARHOMOGENEOUS, values_barhomogeneous, -1);
+
+
+  AddSolverOption("bariterlim", "lim:bariterlim",
+    "Limit on the number of barrier iterations (default 1000).", 
+    GRB_INT_PAR_BARITERLIMIT, 0, INT_MAX);
+
+  AddSolverOption("barorder", "alg:barorder", "Ordering used to reduce fill in sparse-matrix factorizations during the barrier algorithm. Possible values:\n"
     "\n.. value-table::\n", GRB_INT_PAR_AGGREGATE, values_barorder, -1);
 
-
+  AddSolverOption("barqcptol", "alg:barqcptol",
+    "Convergence tolerance on the relative difference between primal and dual objective values for barrier algorithms when solving problems "
+    "with quadratic constraints (default 1e-6).", GRB_DBL_PAR_BARQCPCONVTOL, 
+    0.0, 1.0);
 
   AddSolverOption("logfile", "gen:logfile",
       "Log file name.",
