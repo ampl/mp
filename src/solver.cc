@@ -481,14 +481,7 @@ void PrintSolution(const double *values, int num_values, const char *name_col,
 
 bool Solver::OptionNameLess::operator()(
     const SolverOption *lhs, const SolverOption *rhs) const {
-  printf("Comparing %s with %s\n", lhs->name(), rhs->name());
   int cmp = strcasecmp(lhs->name(), rhs->name());
-  return cmp < 0;
-  if (cmp == 0)
-    return cmp;
-  int cmp2 = strcasecmp(lhs->name(), rhs->qualifiedName());
-  if (cmp2 == 0)
-    return 0;
   return cmp < 0;
 }
 
@@ -618,7 +611,7 @@ bool Solver::ShowVersion() {
 
 SolverOption *Solver::FindOption(const char *name) const {
   struct DummyOption : SolverOption {
-    DummyOption(const char *name) : SolverOption(name, name, 0) {}
+    DummyOption(const char *name) : SolverOption(name, NULL, 0) {}
     void Write(fmt::Writer &) {}
     void Parse(const char *&) {}
   };

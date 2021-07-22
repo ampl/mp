@@ -634,7 +634,7 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::GetOption<int, bool>,
       &GecodeSolver::SetBoolOption, &output_);
 
-  AddDblOption("outfreq", "gen:outlev",
+  AddDblOption("outfreq", "gen:outfreq",
       "Output frequency in seconds. The value should be a positive number.",
       &GecodeSolver::GetOutputFrequency, &GecodeSolver::SetOutputFrequency);
 
