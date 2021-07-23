@@ -324,8 +324,12 @@ add_prefix(MP_SOURCES src/
   clock.cc expr.cc expr-writer.h nl-reader.cc option.cc os.cc
   problem.cc rstparser.cc sol.cc solver.cc solver-c.h sp.h sp.cc)
 
+set(MP_CONVERT_SOURCES )
+add_prefix(MP_CONVERT_SOURCES src/mp/convert/
+  piecewise_linear.cpp)
+
 add_mp_library(mp ${MP_HEADERS} ${MP_CONVERT_HEADERS} ${MP_CONVERT_MIP_HEADERS}
-    ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
+    ${MP_SOURCES} ${MP_CONVERT_SOURCES} ${MP_EXPR_INFO_FILE}
   COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"
   INCLUDE_DIRECTORIES src include OBJECT_LIBRARIES format)
 set_target_properties(mp PROPERTIES

@@ -384,7 +384,23 @@ public:
     return VisitFunctionalExpression<AllDiffConstraint>(e);
   }
 
+  EExpr VisitPLTerm(PLTerm e) {
+    int num_breakpoints = e.num_breakpoints();
+    std::vector<double> slopes(num_breakpoints+1), breakpoints(num_breakpoints);
+    for (int i = 0; i < num_breakpoints; ++i) {
+      slopes[i] = e.slope(i);
+      breakpoints[i] = e.breakpoint(i);
+    }
+    slopes.back() = e.slope(num_breakpoints);
+    return AssignResultToArguments( PLConstraint(
+          PLConstraint::Arguments{ Convert2Var(e.arg()) },
+          PLConstraint::Parameters{ breakpoints, slopes, 0.0, 0.0 } ) );
+  }
+
+
+  ////////////////////////////////////////////////////
   /////////////// NONLINEAR FUNCTIONS ////////////////
+  ////////////////////////////////////////////////////
   EExpr VisitPowConstExp(BinaryExpr e) {
     auto c = Cast<NumericConstant>(e.rhs()).value();
     if (2.0==c) {                            // Quadratic

@@ -339,6 +339,36 @@ public:
   bool check() const { return (b_>=0) && (bv_==0 || bv_==1); }
 };
 
+////////////////////////////////////////////////////////////////////////
+/// AMPL represents PWL by a list of slopes
+/// and breakpoints between them, assuming (X0,Y0) is on the line
+class PLSlopes {
+  const std::vector<double> breakpoints_, slopes_;
+  const double X0_, Y0_;                        // some point on the PWL
+public:
+  template <class Vec>
+  PLSlopes(Vec&& bp, Vec&& sl, double x, double y) :
+    breakpoints_(std::forward<Vec>(bp)), slopes_(std::forward<Vec>(sl)),
+    X0_(x), Y0_(y) { assert(check()); }
+  const std::vector<double>& GetBP() const { return breakpoints_; }
+  const std::vector<double>& GetSlopes() const { return slopes_; }
+  double GetX0() const { return X0_; }
+  double GetY0() const { return Y0_; }
+  int GetNBP() const { return GetBP().size(); }
+  int GetNSlopes() const { return GetSlopes().size(); }
+  bool check() const { return GetNBP()>0 && GetNSlopes()==GetNBP()+1; }
+};
+
+/// Representing a PWL by points
+struct PLPoints {
+  std::vector<double> x_, y_;
+  PLPoints(const PLSlopes& pls);
+};
+
+DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS( PLConstraint,
+                  VarArray1, PLSlopes, "r = piecewise_linear(x)");
+
+
 } // namespace mp
 
 #endif // STD_CONSTR_H

@@ -181,7 +181,7 @@
     "files" : ["oil.mod", "oil.dat"]
   },
   {
-    "name" : "p2gon",
+    "name" : "pgon",
     "objective" :  0.6749814429,
     "tags" : ["nonlinear", "continuous"]
   },
@@ -245,36 +245,6 @@
     "files" : ["steelP.mod", "steelP.dat"]
   },
   {
-    "name" : "steelpl1",
-    "objective" :  457572.8571,
-    "tags" : ["linear", "continuous"],
-    "files" : ["steelpl1.mod", "steelpl1.dat"]
-  },
-  {
-    "name" : "steelpl2",
-    "objective" :  -1576814.857,
-    "tags" : ["linear", "continuous"],
-    "files" : ["steelpl2.mod", "steelpl2.dat"]
-  },
-  {
-    "name" : "steelpl3",
-    "objective" :  -293856347,
-    "tags" : ["linear", "continuous"],
-    "files" : ["steelpl3.mod", "steelpl2.dat"]
-  },
-  {
-    "name" : "steelpl4",
-    "objective" :  1194250,
-    "tags" : ["linear", "continuous"],
-    "files" : ["steelpl4.mod", "steelpl4.dat"]
-  },
-  {
-    "name" : "steelpl5",
-    "objective" :  370752.8571,
-    "tags" : ["linear", "continuous"],
-    "files" : ["steelpl5.mod", "steelpl5.dat"]
-  },
-  {
     "name" : "steelT",
     "objective" :  515033,
     "tags" : ["linear", "continuous"],
@@ -327,17 +297,5 @@
     "objective" :   201700,
     "tags" : ["linear", "continuous"],
     "files" : ["transp3.mod", "transp3.dat"]
-  },
-  {
-    "name" : "transpl1",
-    "objective" :   199100,
-    "tags" : ["linear", "continuous"],
-    "files" : ["transpl1.mod", "transpl1.dat"]
-  },
-  {
-    "name" : "transpl2",
-    "objective" :   193300,
-    "tags" : ["linear", "continuous"],
-    "files" : ["transpl2.mod", "transpl2.dat"]
   }
 ]

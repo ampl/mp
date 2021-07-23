@@ -1,0 +1,107 @@
+[
+  {
+    "name" : "steelpl1",
+    "objective" :  457572.8571,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steelpl1.mod", "steelpl1.dat"]
+  },
+  {
+    "name" : "steelpl2",
+    "objective" :  -1576814.857,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steelpl2.mod", "steelpl2.dat"]
+  },
+  {
+    "name" : "steelpl3",
+    "objective" :  -293856347,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steelpl3.mod", "steelpl2.dat"]
+  },
+  {
+    "name" : "steelpl4",
+    "objective" :  1194250,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steelpl4.mod", "steelpl4.dat"]
+  },
+  {
+    "name" : "steelpl5",
+    "objective" :  370752.8571,
+    "tags" : ["linear", "continuous"],
+    "files" : ["steelpl5.mod", "steelpl5.dat"]
+  },
+  {
+    "name" : "transpl1",
+    "objective" :   199100,
+    "tags" : ["linear", "continuous"],
+    "files" : ["transpl1.mod", "transpl1.dat"]
+  },
+  {
+    "name" : "transpl2",
+    "objective" :   193300,
+    "tags" : ["linear", "continuous"],
+    "files" : ["transpl2.mod", "transpl2.dat"]
+  },
+  {
+    "name" : "steelpl1 pl_linearize=0",
+    "objective" :  457572.8571,
+    "tags" : ["linear", "continuous"],
+    "options": {
+        "pl_linearize": 0
+    },
+    "files" : ["steelpl1.mod", "steelpl1.dat"]
+  },
+  {
+    "name" : "steelpl2 pl_linearize=0",
+    "objective" :  -1576814.857,
+    "tags" : ["linear", "continuous"],
+    "options": {
+        "pl_linearize": 0
+    },
+    "files" : ["steelpl2.mod", "steelpl2.dat"]
+  },
+  {
+    "name" : "steelpl3 pl_linearize=0",
+    "objective" :  -293856347,
+    "tags" : ["linear", "continuous"],
+    "options": {
+        "pl_linearize": 0
+    },
+    "files" : ["steelpl3.mod", "steelpl2.dat"]
+  },
+  {
+    "name" : "steelpl4 pl_linearize=0",
+    "objective" :  1194250,
+    "tags" : ["linear", "continuous"],
+    "options": {
+        "pl_linearize": 0
+    },
+    "files" : ["steelpl4.mod", "steelpl4.dat"]
+  },
+  {
+    "name" : "steelpl5 pl_linearize=0",
+    "objective" :  370752.8571,
+    "tags" : ["linear", "continuous"],
+    "options": {
+        "pl_linearize": 0
+    },
+    "files" : ["steelpl5.mod", "steelpl5.dat"]
+  },
+  {
+    "name" : "transpl1 pl_linearize=0",
+    "objective" :   199100,
+    "tags" : ["linear", "continuous"],
+    "options": {
+        "pl_linearize": 0
+    },
+    "files" : ["transpl1.mod", "transpl1.dat"]
+  },
+  {
+    "name" : "transpl2 pl_linearize=0",
+    "objective" :   193300,
+    "tags" : ["linear", "continuous"],
+    "options": {
+        "pl_linearize": 0
+    },
+    "files" : ["transpl2.mod", "transpl2.dat"]
+  }
+]
