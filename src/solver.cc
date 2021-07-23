@@ -270,6 +270,8 @@ SolverAppOptionParser::SolverAppOptionParser(Solver &s)
   app_options.Add<&SolverAppOptionParser::EndOptions>('-', "end of options");
   app_options.Add<&SolverAppOptionParser::ShowSolverOptions>(
         '=', "show solver options and exit");
+  app_options.Add<&SolverAppOptionParser::ShowSolverOptionsASL>(
+    'a', "show solver options (ASL style) and exit");
   app_options.Add<&SolverAppOptionParser::DontEchoSolverOptions>(
         'e', "suppress echoing of assignments");
   app_options.Add<&SolverAppOptionParser::WantSol>(
@@ -292,9 +294,44 @@ bool SolverAppOptionParser::ShowUsage() {
   return false;
 }
 
+
+bool SolverAppOptionParser::ShowSolverOptionsASL() {
+  struct OptionASLNameLess {
+    bool operator()(
+      const SolverOption* lhs, const SolverOption* rhs) const {
+      int cmp = strcasecmp(lhs->name_ASL(), rhs->name_ASL());
+      return cmp < 0;
+    }
+  };
+  fmt::MemoryWriter writer;
+  const char* option_header = solver_.option_header();
+  internal::FormatRST(writer, option_header);
+  if (*option_header)
+    writer << '\n';
+  solver_.Print("{}", writer.c_str());
+  solver_.Print("Options:\n");
+  const int DESC_INDENT = 6;
+
+  // Create set with ASL ordering
+  std::set<const SolverOption*, OptionASLNameLess> set;
+  for (Solver::option_iterator
+    i = solver_.option_begin(), end = solver_.option_end(); i != end; ++i) {
+    auto cc = (&(*i));
+    set.insert(cc);
+  }
+  for (std::set<const SolverOption*, OptionASLNameLess>::const_iterator i = set.begin();
+    i != set.end(); ++i)
+  {
+    writer.clear();
+    writer << '\n' << (*i)->name_ASL() << '\n';
+    internal::FormatRST(writer, (*i)->description(), DESC_INDENT, (*i)->values());
+    solver_.Print("{}", fmt::StringRef(writer.data(), writer.size()));
+  }
+  return false;
+}
 bool SolverAppOptionParser::ShowSolverOptions() {
   fmt::MemoryWriter writer;
-  const char *option_header = solver_.option_header();
+  const char* option_header = solver_.option_header();
   internal::FormatRST(writer, option_header);
   if (*option_header)
     writer << '\n';
@@ -302,13 +339,13 @@ bool SolverAppOptionParser::ShowSolverOptions() {
   solver_.Print("Options:\n");
   const int DESC_INDENT = 6;
   for (Solver::option_iterator
-       i = solver_.option_begin(), end = solver_.option_end(); i != end; ++i) {
+    i = solver_.option_begin(), end = solver_.option_end(); i != end; ++i) {
     writer.clear();
     writer << '\n' << i->name();
     const auto& syns = i->inline_synonyms();
     if (auto sz = syns.size()) {
       writer << " (";
-      for (const auto& s: syns) {
+      for (const auto& s : syns) {
         writer << s;
         if (--sz)
           writer << ", ";
@@ -497,6 +534,8 @@ bool Solver::OptionNameLess::operator()(
   return cmp < 0;
 }
 
+
+
 Solver::Solver(
     fmt::CStringRef name, fmt::CStringRef long_name, long date, int flags)
 : name_(name.c_str()),
@@ -639,7 +678,7 @@ SolverOption *Solver::FindOption(const char *name) const {
   for (OptionSet::const_iterator i = options_.begin();
     i != options_.end(); ++i)
   {
-    if ((*i)->inline_synonyms().find(name_str) !=
+    if (std::find((*i)->inline_synonyms().begin(), (*i)->inline_synonyms().end(), name_str) !=
         (*i)->inline_synonyms().end()) {
       return *i;
     }

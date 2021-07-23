@@ -212,7 +212,7 @@ class Interrupter {
 class SolverOption {
  private:
   std::string name_ {};
-  std::set<std::string> inline_synonyms_ {};
+  std::vector<std::string> inline_synonyms_ {};
   const char* description_;
 
   ValueArrayRef values_;
@@ -249,16 +249,22 @@ class SolverOption {
       throw std::logic_error("Empty option name list");
     name_ = synonyms.front();
     for (size_t i=1; i<synonyms.size(); ++i)
-      inline_synonyms_.insert(synonyms[i]);
+      inline_synonyms_.push_back(synonyms[i]);
   }
 
   virtual ~SolverOption() {}
 
-  // Returns the option name.
+  // Return the option name.
   const char *name() const { return name_.c_str(); }
-
+  // Return the ASL (not qualified) name as the first
+  // inline synonym - or the name itself if no synonyms
+  // are defined
+  const char* name_ASL() const {
+    return inline_synonyms_.size() == 0 ? name() :
+      inline_synonyms_[0].c_str();
+  }
   // Returns the additional "inline" synonyms
-  const std::set<std::string>& inline_synonyms() const
+  const std::vector<std::string>& inline_synonyms() const
   { return inline_synonyms_; }
 
   // Return/set the option description.
@@ -1150,6 +1156,8 @@ namespace internal {
 // Not to be mistaken with solver option parser built into the Solver class.
 class SolverAppOptionParser {
  private:
+
+  std::string currentOptionString;
   Solver &solver_;
 
   // Command-line options.
@@ -1162,6 +1170,8 @@ class SolverAppOptionParser {
 
   // Prints information about solver options.
   bool ShowSolverOptions();
+  bool ShowSolverOptionsASL();
+
 
   bool WantSol() {
     solver_.set_wantsol(1);
