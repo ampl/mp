@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <stack>
+#include <sstream>
 
 #ifndef _WIN32
 # include <strings.h>
@@ -303,7 +304,18 @@ bool SolverAppOptionParser::ShowSolverOptions() {
   for (Solver::option_iterator
        i = solver_.option_begin(), end = solver_.option_end(); i != end; ++i) {
     writer.clear();
-    writer << '\n' << i->name() << " (" << i->qualifiedName() << ")\n";
+    writer << '\n' << i->name();
+    const auto& syns = i->inline_synonyms();
+    if (auto sz = syns.size()) {
+      writer << " (";
+      for (const auto& s: syns) {
+        writer << s;
+        if (--sz)
+          writer << ", ";
+      }
+      writer << ')';
+    }
+    writer << '\n';
     internal::FormatRST(writer, i->description(), DESC_INDENT, i->values());
     solver_.Print("{}", fmt::StringRef(writer.data(), writer.size()));
   }
@@ -499,7 +511,7 @@ Solver::Solver(
 
   struct VersionOption : SolverOption {
     Solver &s;
-    VersionOption(Solver &s) : SolverOption("version", "gen:version",
+    VersionOption(Solver &s) : SolverOption("version",
         "Single-word phrase: report version details "
         "before solving the problem.", ValueArrayRef(), true), s(s) {}
 
@@ -509,7 +521,7 @@ Solver::Solver(
   AddOption(OptionPtr(new VersionOption(*this)));
 
   AddIntOption(
-        "wantsol", "gen:wantsol",
+        "sol:want wantsol",
         "In a stand-alone invocation (no ``-AMPL`` on the command line), "
         "what solution information to write.  Sum of\n"
         "\n"
@@ -520,7 +532,7 @@ Solver::Solver(
         &Solver::GetWantSol, &Solver::SetWantSol);
 
   AddIntOption(
-        "objno", "gen:objno",
+        "obj:no objno",
         "Objective to optimize:\n"
         "\n"
         "| 0 - none\n"
@@ -530,8 +542,8 @@ Solver::Solver(
 
   struct BoolOption : TypedSolverOption<int> {
     bool &value_;
-    BoolOption(bool &value, const char *name, const char* qualifiedName, const char *description)
-    : TypedSolverOption<int>(name, qualifiedName, description), value_(value) {}
+    BoolOption(bool &value, const char *name, const char *description)
+    : TypedSolverOption<int>(name, description), value_(value) {}
 
     void GetValue(fmt::LongLong &value) const { value = value_; }
     void SetValue(fmt::LongLong value) {
@@ -544,25 +556,25 @@ Solver::Solver(
 
 
   if ((flags & MULTIPLE_OBJ) != 0) {
-    AddOption(OptionPtr(new BoolOption(multiobj_, "multiobj", "gen:multiobj",
-                                       "0 or 1 (default 0):  Whether to use multi-objective optimization. "
+    AddOption(OptionPtr(new BoolOption(multiobj_, "obj:multi multiobj",
+                                       "0*/1:  Whether to use multi-objective optimization. "
                                        "If set to 1 multi-objective optimization is performed using "
                                        "lexicographic method with the first objective treated as the most "
                                        "important, then the second objective and so on.")));
   }
 
-  AddOption(OptionPtr(new BoolOption(timing_, "timing", "gen:timing",
-      "0 or 1 (default 0): Whether to display timings for the run.\n")));
+  AddOption(OptionPtr(new BoolOption(timing_, "gen:timing timing",
+      "0*/1: Whether to display timings for the run.")));
 
   if ((flags & MULTIPLE_SOL) != 0) {
     AddSuffix("nsol", 0, suf::PROBLEM | suf::OUTPUT | suf::OUTONLY);
 
-    AddOption(OptionPtr(new BoolOption(count_solutions_, "countsolutions", "gen:countsolutions",
-        "0 or 1 (default 0): Whether to count the number of solutions "
+    AddOption(OptionPtr(new BoolOption(count_solutions_, "sol:count countsolutions",
+        "0*/1: Whether to count the number of solutions "
         "and return it in the ``.nsol`` problem suffix.")));
 
     AddStrOption(
-          "solutionstub", "sol:solutionstub",
+          "sol:stub solstub solutionstub",
           "Stub for solution files.  If ``solutionstub`` is specified, "
           "found solutions are written to files (``solutionstub & '1' & "
           "'.sol'``) ... (``solutionstub & Current.nsol & '.sol'``), where "
@@ -611,25 +623,28 @@ bool Solver::ShowVersion() {
 
 SolverOption *Solver::FindOption(const char *name) const {
   struct DummyOption : SolverOption {
-    DummyOption(const char *name) : SolverOption(name, NULL, 0) {}
+    DummyOption(const char *name) : SolverOption(name, 0) {}
     void Write(fmt::Writer &) {}
     void Parse(const char *&) {}
   };
   DummyOption option(name);
   // find by name
   OptionSet::const_iterator i = options_.find(&option);
-  if (i != options_.end())
+  if (i != options_.end()) {
     return *i;
+  }
 
-  // find by qualified name
+  // find by inline synonyms
+  std::string name_str {name};
   for (OptionSet::const_iterator i = options_.begin();
     i != options_.end(); ++i)
   {
-    OptionNameLess d;
-    if (d(&option, *i) == 0)
+    if ((*i)->inline_synonyms().find(name_str) !=
+        (*i)->inline_synonyms().end()) {
       return *i;
+    }
   }
-  return i != options_.end() ? *i : 0;
+  return 0;
 }
 
 void Solver::ParseOptionString(const char *s, unsigned flags) {
@@ -732,4 +747,16 @@ Solver::DoubleFormatter Solver::FormatObjValue(double value) {
   DoubleFormatter formatter = {value, obj_precision_};
   return formatter;
 }
+
+std::vector<std::string> SolverOption::split_str(const char *str) {
+  std::vector<std::string> result;
+  std::string word;
+  std::istringstream iss(str);
+  while (iss >> word) {
+    if (!word.empty())
+      result.push_back(word);
+  }
+  return result;
+}
+
 }  // namespace mp

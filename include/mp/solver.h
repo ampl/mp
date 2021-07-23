@@ -211,8 +211,8 @@ class Interrupter {
 // A solver option.
 class SolverOption {
  private:
-  const char *name_;
-  const char* qualifiedname_;
+  std::string name_ {};
+  std::set<std::string> inline_synonyms_ {};
   const char* description_;
 
   ValueArrayRef values_;
@@ -221,10 +221,10 @@ class SolverOption {
  public:
   // Constructs a SolverOption object.
   //
-  // The solver option stores pointers to the passed name and description and
-  // doesn't copy the strings. Normally both the name and the description are
-  // string literals and have static storage duration but if this is not the
-  // case make sure that these strings' lifetimes are longer than that of the
+  // The solver option stores pointers to the passed name(s) and description and
+  // copies the strings for the names only. Normallythe description is a
+  // string literal and has static storage duration but if this is not the
+  // case make sure that the string's lifetime is longer than that of the
   // option object.
   //
   // The description should be written in a subset of reStructuredText (RST).
@@ -237,21 +237,29 @@ class SolverOption {
   // * the value-table directive (.. value-table::) which is replaced by a
   //   table of option values as given by the values array
   //
-  // name:        option name
+  // names_list:  option names list
   // description: option description
   // values:      information about possible option values
-  SolverOption(const char *name, const char* qualifiedName, const char *description,
+  SolverOption(const char *names_list, const char *description,
       ValueArrayRef values = ValueArrayRef(), bool is_flag = false)
-  : name_(name), qualifiedname_(qualifiedName), description_(description),
-    values_(values), is_flag_(is_flag) {}
+  : description_(description),
+    values_(values), is_flag_(is_flag) {
+    auto synonyms = split_str(names_list);
+    if (synonyms.empty())
+      throw std::logic_error("Empty option name list");
+    name_ = synonyms.front();
+    for (size_t i=1; i<synonyms.size(); ++i)
+      inline_synonyms_.insert(synonyms[i]);
+  }
 
   virtual ~SolverOption() {}
 
   // Returns the option name.
-  const char *name() const { return name_; }
+  const char *name() const { return name_.c_str(); }
 
-  // Returns the option name.
-  const char* qualifiedName() const { return qualifiedname_; }
+  // Returns the additional "inline" synonyms
+  const std::set<std::string>& inline_synonyms() const
+  { return inline_synonyms_; }
 
   // Return/set the option description.
   const char *description() const { return description_; }
@@ -316,7 +324,10 @@ class SolverOption {
   virtual std::string echo() {
     return name();
   }
+
+  static std::vector<std::string> split_str(const char* str);
 };
+
 
 /*
 */
@@ -325,8 +336,8 @@ class SolverOptionSynonym : public SolverOption
   SolverOption* real_;
   std::string desc_;
 public:
-  SolverOptionSynonym(const char* name, SolverOption& real) :
-    SolverOption(name, name, NULL), real_(&real) {
+  SolverOptionSynonym(const char* names, SolverOption& real) :
+    SolverOption(names, NULL), real_(&real) {
     desc_ = fmt::sprintf("Synonym for %s.", real_->name());
     SetDesc( desc_.c_str() );
   }
@@ -368,9 +379,9 @@ class InvalidOptionValue : public OptionError {
 template <typename T>
 class TypedSolverOption : public SolverOption {
  public:
-  TypedSolverOption(const char *name, const char* qualifiedName, const char *description,
+  TypedSolverOption(const char *name, const char *description,
       ValueArrayRef values = ValueArrayRef())
-  : SolverOption(name, qualifiedName, description, values) {}
+  : SolverOption(name, description, values) {}
 
   void Write(fmt::Writer &w) { w << GetValue<T>(); }
 
@@ -527,9 +538,9 @@ class Solver : private ErrorHandler,
     Set set_;
 
    public:
-    ConcreteOption(const char *name, const char* qualifiedName, const char *description,
+    ConcreteOption(const char *name, const char *description,
         Solver *s, Get get, Set set, ValueArrayRef values = ValueArrayRef())
-    : TypedSolverOption<T>(name, qualifiedName, description, values),
+    : TypedSolverOption<T>(name, description, values),
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set) {}
 
     void GetValue(T &value) const { value = (handler_.*get_)(*this); }
@@ -554,14 +565,14 @@ class Solver : private ErrorHandler,
     Info info_;
 
    public:
-    ConcreteOptionWithInfo(const char *name, const char* qualifiedName, 
+    ConcreteOptionWithInfo(const char *name,
         const char *description, Solver *s, Get get, Set set, InfoArg info, 
       ValueArrayRef values = ValueArrayRef())
-    : TypedSolverOption<T>(name, qualifiedName, description, values),
+    : TypedSolverOption<T>(name, description, values),
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set), info_(info) {}
-    ConcreteOptionWithInfo(const char *name, const char* qualifiedName, const char *description, 
+    ConcreteOptionWithInfo(const char *name, const char *description,
       Handler *s, Get get, Set set, InfoArg info, ValueArrayRef values = ValueArrayRef())
-    : TypedSolverOption<T>(name, qualifiedName, description, values),
+    : TypedSolverOption<T>(name, description, values),
       handler_(*s), get_(get), set_(set), info_(info) {}
 
     void GetValue(T &value) const { value = (handler_.*get_)(*this, info_); }
@@ -658,11 +669,11 @@ class Solver : private ErrorHandler,
   // The arguments get and set should be pointers to member functions in the
   // solver class. They are used to get and set an option value respectively.
   template <typename Handler, typename Int>
-  void AddIntOption(const char *name, const char* qualifiedName, 
+  void AddIntOption(const char *name,
     const char *description, Int (Handler::*get)(const SolverOption &) const,
       void (Handler::*set)(const SolverOption &, Int)) {
     AddOption(OptionPtr(new ConcreteOption<Handler, fmt::LongLong, Int>(
-        name, qualifiedName, description, this, get, set)));
+        name, description, this, get, set)));
   }
 
   // Adds an integer option with additional information.
@@ -672,23 +683,23 @@ class Solver : private ErrorHandler,
   // The arguments get and set should be pointers to member functions in the
   // solver class. They are used to get and set an option value respectively.
   template <typename Handler, typename Info>
-  void AddIntOption(const char *name, const char* qualifiedName, const char *description,
+  void AddIntOption(const char *name, const char *description,
       int (Handler::*get)(const SolverOption &, const Info &) const,
       void (Handler::*set)(const SolverOption &, int, const Info &),
       const Info &info) {
     AddOption(OptionPtr(new ConcreteOptionWithInfo<
                         Handler, fmt::LongLong, Info, const Info &, int>(
-                          name, qualifiedName, description, this, get, set, info)));
+                          name, description, this, get, set, info)));
   }
 
   // The same as above but with Info argument passed by value.
   template <typename Handler, typename Info>
-  void AddIntOption(const char *name, const char* qualifiedName, const char *description,
+  void AddIntOption(const char *name_list, const char *description,
       int (Handler::*get)(const SolverOption &, Info) const,
       void (Handler::*set)(const SolverOption &, int, Info), Info info) {
     AddOption(OptionPtr(new ConcreteOptionWithInfo<
                         Handler, fmt::LongLong, Info, Info, int>(
-                          name, qualifiedName, description, this, get, set, info)));
+                          name_list, description, this, get, set, info)));
   }
 
   // Adds a double option.
@@ -698,11 +709,11 @@ class Solver : private ErrorHandler,
   // The arguments get and set should be pointers to member functions in the
   // solver class. They are used to get and set an option value respectively.
   template <typename Handler>
-  void AddDblOption(const char *name, const char* qualifiedName, const char *description,
+  void AddDblOption(const char *name, const char *description,
       double (Handler::*get)(const SolverOption &) const,
       void (Handler::*set)(const SolverOption &, double)) {
     AddOption(OptionPtr(new ConcreteOption<Handler, double>(
-        name, qualifiedName, description, this, get, set)));
+        name, description, this, get, set)));
   }
 
   // Adds a double option with additional information.
@@ -712,22 +723,22 @@ class Solver : private ErrorHandler,
   // The arguments get and set should be pointers to member functions in the
   // solver class. They are used to get and set an option value respectively.
   template <typename Handler, typename Info>
-  void AddDblOption(const char *name, const char* qualifiedName, const char *description,
+  void AddDblOption(const char *name, const char *description,
       double (Handler::*get)(const SolverOption &, const Info &) const,
       void (Handler::*set)(const SolverOption &, double, const Info &),
       const Info &info) {
     AddOption(OptionPtr(
         new ConcreteOptionWithInfo<Handler, double, Info, const Info &>(
-            name, qualifiedName, description, this, get, set, info)));
+            name, description, this, get, set, info)));
   }
 
   // The same as above but with Info argument passed by value.
   template <typename Handler, typename Info>
-  void AddDblOption(const char *name, const char* qualifiedName, const char *description,
+  void AddDblOption(const char *name, const char *description,
       double (Handler::*get)(const SolverOption &, Info) const,
       void (Handler::*set)(const SolverOption &, double, Info), Info info) {
     AddOption(OptionPtr(new ConcreteOptionWithInfo<Handler, double, Info>(
-            name, qualifiedName, description, this, get, set, info)));
+            name, description, this, get, set, info)));
   }
 
   // Adds a string option.
@@ -737,12 +748,12 @@ class Solver : private ErrorHandler,
   // The arguments get and set should be pointers to member functions in the
   // solver class. They are used to get and set an option value respectively.
   template <typename Handler>
-  void AddStrOption(const char *name, const char* qualifiedName, const char *description,
+  void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &) const,
       void (Handler::*set)(const SolverOption &, fmt::StringRef),
       ValueArrayRef values = ValueArrayRef()) {
     AddOption(OptionPtr(new ConcreteOption<Handler, std::string>(
-        name, qualifiedName, description, this, get, set, values)));
+        name, description, this, get, set, values)));
   }
 
   // Adds a string option with additional information.
@@ -752,23 +763,23 @@ class Solver : private ErrorHandler,
   // The arguments get and set should be pointers to member functions in the
   // solver class. They are used to get and set an option value respectively.
   template <typename Handler, typename Info>
-  void AddStrOption(const char *name, const char* qualifiedName, const char *description,
+  void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &, const Info &) const,
       void (Handler::*set)(const SolverOption &, fmt::StringRef, const Info &),
       const Info &info, ValueArrayRef values = ValueArrayRef()) {
     AddOption(OptionPtr(
         new ConcreteOptionWithInfo<Handler, std::string, Info, const Info &>(
-            name, qualifiedName, description, this, get, set, info, values)));
+            name, description, this, get, set, info, values)));
   }
 
   // The same as above but with Info argument passed by value.
   template <typename Handler, typename Info>
-  void AddStrOption(const char *name, const char* qualifiedName, const char *description,
+  void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &, Info) const,
       void (Handler::*set)(const SolverOption &, fmt::StringRef, Info),
       Info info, ValueArrayRef values = ValueArrayRef()) {
     AddOption(OptionPtr(new ConcreteOptionWithInfo<Handler, std::string, Info>(
-            name, qualifiedName, description, this, get, set, info, values)));
+            name, description, this, get, set, info, values)));
   }
 
   virtual void HandleUnknownOption(const char *name) {

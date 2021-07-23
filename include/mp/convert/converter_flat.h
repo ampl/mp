@@ -960,13 +960,13 @@ private:
   Options options_;
 
   void InitOptions() {
-    this->AddOption("cvt:prepro:all", "cvt:prepro:all",
+    this->AddOption("cvt:prepro:all",
         "0/1*: Set to 0 to disable all presolve in the converter",
         options_.preprocessAnything_);
-    this->AddOption("cvt:prepro:eqresult", "cvt:prepro:eqresult",
+    this->AddOption("cvt:prepro:eqresult",
         "0/1*: Preprocess reified equality comparison's boolean result bounds",
         options_.preprocessEqualityResultBounds_);
-    this->AddOption("cvt:prepro:eqbinary", "cvt:prepro:eqbinary",
+    this->AddOption("cvt:prepro:eqbinary",
         "0/1*: Preprocess reified equality comparison with a binary variable",
         options_.preprocessEqualityBvar_);
   }

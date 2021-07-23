@@ -88,13 +88,13 @@ public:
   using BaseBackend::AddStoredOption;
   void InitMIPOptions() {
     if (IMPL_HAS_STD_FEATURE( IIS ))
-      AddStoredOption("iisfind", "mip:iisfind",
+      AddStoredOption("mip:iisfind iisfind",
                       "Whether to find and export the IIS. "
                       "Default = 0 (don't export).",
                       mipStoredOptions_.exportIIS_);
 
     if (IMPL_HAS_STD_FEATURE( MIPGap ))
-      AddStoredOption("return_mipgap", "mip:return_mipgap",
+      AddStoredOption("mip:return_mipgap return_mipgap",
         "Whether to return mipgap suffixes or include mipgap values "
     "(|objectve - best_bound|) in the solve_message:  sum of\n"
     "\n"

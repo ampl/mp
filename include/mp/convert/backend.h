@@ -438,9 +438,9 @@ protected:
     Value& value_;
   public:
     using value_type = Value;
-    StoredOption(const char *name, const char* qualifiedName, const char *description,
+    StoredOption(const char *name_list, const char *description,
                  Value& v, ValueArrayRef values = ValueArrayRef())
-      : mp::TypedSolverOption<Value>(name, qualifiedName, description, values), value_(v) {}
+      : mp::TypedSolverOption<Value>(name_list, description, values), value_(v) {}
 
     void GetValue(Value &v) const override { v = value_; }
     void SetValue(typename internal::OptionHelper<Value>::Arg v) override
@@ -480,9 +480,9 @@ protected:
 
     SOAType soa_;
   public:
-    ConcreteOptionWrapper(Impl* impl_, const char *name, const char* qualifiedName, const char *description,
+    ConcreteOptionWrapper(Impl* impl_, const char *name, const char *description,
                           KeyType k, ValueArrayRef values = ValueArrayRef()) :
-      COType(name, qualifiedName, description, &soa_, &SOAType::get, &SOAType::set, k, values),
+      COType(name, description, &soa_, &SOAType::get, &SOAType::set, k, values),
       soa_(*impl_)
     { }
   };
@@ -495,11 +495,11 @@ public:
 
   /// Simple stored option referencing a variable
   template <class Value>
-  void AddStoredOption(const char *name, const char* qualifiedName, const char *description,
+  void AddStoredOption(const char *name, const char *description,
                        Value& value, ValueArrayRef values = ValueArrayRef()) {
     AddOption(Solver::OptionPtr(
                 new StoredOption<Value>(
-                  name, qualifiedName, description, value, values)));
+                  name, description, value, values)));
   }
 
   /// Adding solver options of types int/double/string/...
@@ -508,33 +508,34 @@ public:
   /// If min/max omitted, assume ValueType=std::string
   /// Assumes existence of Impl::Get/SetSolverOption(KeyType, ValueType(&))
   template <class KeyType, class ValueType=std::string>
-  void AddSolverOption(const char *name, const char* qualifiedName, const char *description,
+  void AddSolverOption(const char *name_list, const char *description,
                        KeyType k,
                        ValueType , ValueType ) {
     AddOption(Solver::OptionPtr(
                 new ConcreteOptionWrapper<
                 ValueType, KeyType>(
-                  (Impl*)this, name, qualifiedName, description, k)));
+                  (Impl*)this, name_list, description, k)));
   }
 
   template <class KeyType, class ValueType = std::string>
-  void AddSolverOption(const char* name, const char* qualifiedName, const char* description,
+  void AddSolverOption(const char* name_list, const char* description,
     KeyType k) {
     AddOption(Solver::OptionPtr(
       new ConcreteOptionWrapper<
       ValueType, KeyType>(
-        (Impl*)this, name, qualifiedName, description, k)));
+        (Impl*)this, name_list, description, k)));
   }
 
   /// TODO use vmin/vmax or rely on solver raising error?
   /// TODO also with ValueTable, deduce type from it
   template <class KeyType, class ValueType = std::string>
-  void AddSolverOption(const char* name, const char* qualifiedName, const char* description,
-    KeyType k, ValueArrayRef values, ValueType defaultValue) {
+  void AddSolverOption(const char* name_list, const char* description,
+      KeyType k, ValueArrayRef values, ValueType defaultValue) {
+    internal::Unused(defaultValue);
     AddOption(Solver::OptionPtr(
       new ConcreteOptionWrapper<
       ValueType, KeyType>(
-        (Impl*)this, name, qualifiedName, description, k, values)));
+        (Impl*)this, name_list, description, k, values)));
   }
 
   void ReplaceOptionDescription(const char* name, const char* desc) {
@@ -552,7 +553,7 @@ private:
 protected:
   void InitStandardOptions() {
     if (IMPL_HAS_STD_FEATURE( VarPriorities ))
-      AddStoredOption("priorities", "mip:priorities",
+      AddStoredOption("priority priorities mip:priorities",  // CP has it too
         "0/1*: Whether to read the branch and bound priorities from the"
         " .priority suffix..",
         storedOptions_.importPriorities_);
