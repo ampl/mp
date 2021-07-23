@@ -181,7 +181,7 @@
     "files" : ["oil.mod", "oil.dat"]
   },
   {
-    "name" : "p2gon",
+    "name" : "pgon",
     "objective" :  0.6749814429,
     "tags" : ["nonlinear", "continuous"]
   },
