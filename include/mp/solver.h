@@ -213,12 +213,11 @@ class SolverOption {
  private:
   const char *name_;
   const char* qualifiedname_;
-  
+  const char* description_;
+
   ValueArrayRef values_;
   bool is_flag_;
 
- protected:
-  const char* description_;
  public:
   // Constructs a SolverOption object.
   //
@@ -254,10 +253,8 @@ class SolverOption {
   // Returns the option name.
   const char* qualifiedName() const { return qualifiedname_; }
 
-  // Returns the option description.
+  // Return/set the option description.
   const char *description() const { return description_; }
-
-  // Sets new description.
   void SetDesc(const char* d) { description_=d; }
 
   // Returns the information about possible values.
@@ -330,8 +327,8 @@ class SolverOptionSynonym : public SolverOption
 public:
   SolverOptionSynonym(const char* name, SolverOption& real) :
     SolverOption(name, name, NULL), real_(&real) {
-    desc_ = fmt::sprintf("See %s.", real_->name());
-    description_ = desc_.c_str();
+    desc_ = fmt::sprintf("Synonym for %s.", real_->name());
+    SetDesc( desc_.c_str() );
   }
   SolverOption* getRealOption() const { return real_; }
 
@@ -637,13 +634,18 @@ class Solver : private ErrorHandler,
   void AddOption(OptionPtr opt) {
     // First insert the option, then release a pointer to it. Doing the other
     // way around may lead to a memory leak if insertion throws an exception.
-    options_.insert(opt.get());
+    if (!options_.insert(opt.get()).second)
+      throw std::logic_error(
+          fmt::format("Option {} already defined", opt.get()->name()));
     opt.release();
   }
 
   void AddOptionSynonym(const char* name, const char* realName)
   {
     SolverOption* real = FindOption(realName);
+    if (!real)
+      throw std::logic_error(
+          fmt::format("Option {} referred to by {} is unknown", realName, name));
     OptionPtr opt = OptionPtr(new SolverOptionSynonym(name, *real));
     options_.insert(opt.get());
     opt.release();

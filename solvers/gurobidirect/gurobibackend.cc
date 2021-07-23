@@ -468,8 +468,11 @@ const mp::OptionValueInfo values_barorder[] = {
     { "0", "Approximate minimum degree", 0},
     { "1", "Nested dissection", 1}
 };
-void GurobiBackend::InitCustomOptions() {
 
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+void GurobiBackend::InitCustomOptions() {
                              
   set_option_header(
       fmt::format("Gurobi Optimizer Options for AMPL\n"
@@ -497,7 +500,7 @@ void GurobiBackend::InitCustomOptions() {
     "Limit on the number of central corrections done in each barrier iteration"
     "(default -1 = automatic choice).", GRB_INT_PAR_BARCORRECTORS, -1, INT_MAX);
 
-  AddSolverOption("barorder", "alg:barhomogeneous", "Whether to use the homogeneous barrier algorithm (e.g., when method=2 is specified):\n"
+  AddSolverOption("barhomogeneous", "alg:barhomogeneous", "Whether to use the homogeneous barrier algorithm (e.g., when method=2 is specified):\n"
     "\n.. value-table::\n"
     "The homogeneous barrier algorithm can detect infeasibility or unboundedness directly, "
     "without crossover, but is a bit slower than the nonhomogeneous barrier algorithm.",
