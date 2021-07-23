@@ -96,6 +96,8 @@ void GurobiBackend::StartPoolSolutions() {
 
 bool GurobiBackend::SelectNextPoolSolution() {
   assert(iPoolSolution>=-1);
+  if (!IsMIP())         // Gurobi 9.1.2 returns 1 solution for LP
+    return false;       // but cannot retrieve its pool attributes
   ++iPoolSolution;
   if (iPoolSolution < GrbGetIntAttr(GRB_INT_ATTR_SOLCOUNT)) {
     GrbSetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, iPoolSolution);
