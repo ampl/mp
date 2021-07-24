@@ -553,7 +553,7 @@ private:
 protected:
   void InitStandardOptions() {
     if (IMPL_HAS_STD_FEATURE( VarPriorities ))
-      AddStoredOption("priority priorities mip:priorities",  // CP has it too
+      AddStoredOption("mip:priorities priorities",  // CP has it too
         "0/1*: Whether to read the branch and bound priorities from the"
         " .priority suffix..",
         storedOptions_.importPriorities_);

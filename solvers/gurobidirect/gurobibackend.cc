@@ -461,8 +461,8 @@ void GurobiBackend::FinishProblemModificationPhase() {
 const mp::OptionValueInfo values_pool_mode[] = {
     {"0", "Just collect solutions during normal solve, and sort them best-first", 0},
     { "1", "Make some effort at finding additional solutions", 1},
-    { "2", "Seek \"pool_limit\" best solutions (default)."
-      "'Best solutions' are defined by the pool_eps(abs) parameters.", 2}
+    { "2", "Seek \"poollimit\" best solutions (default)."
+      "'Best solutions' are defined by the poolgap(abs) parameters.", 2}
 };
          
 const mp::OptionValueInfo values_barhomogeneous[] = {
@@ -472,7 +472,7 @@ const mp::OptionValueInfo values_barhomogeneous[] = {
 };
 
 const mp::OptionValueInfo values_barorder[] = {
-    {"-1", "Automatic choiche (default)", -1},
+    {"-1", "Automatic choice (default)", -1},
     { "0", "Approximate minimum degree", 0},
     { "1", "Nested dissection", 1}
 };
@@ -489,7 +489,7 @@ void GurobiBackend::InitCustomOptions() {
       "To set these options, assign a string specifying their values to the "
       "AMPL option ``{0}_options``. For example::\n"
       "\n"
-      "  ampl: option {0}_options 'optimalitytolerance=1e-6';\n",
+      "  ampl: option {0}_options 'opttol=1e-6';\n",
                   GetSolverInvocationName()).c_str());
 
   AddSolverOption("pre:aggfill aggfill", "Amount of fill allowed during aggregation in presolve"
@@ -499,17 +499,17 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("pre:aggregate aggregate", "0/1*: whether to use aggregation in presolve."
     "Setting it to 0 can sometimes reduce numerical errors.", GRB_INT_PAR_AGGREGATE, 0, 1);
   
-  AddSolverOption("tol:barconv barconvtol",
+  AddSolverOption("bar:convtol barconvtol",
     "Tolerance on the relative difference between the primal and dual objectives "
     "for stopping the barrier algorithm "
     "(default 1e-8).", GRB_DBL_PAR_BARCONVTOL, 0.0, 1.0);
 
 
-  AddSolverOption("alg:barcorr barcorrectors",
+  AddSolverOption("bar:corr barcorrectors",
     "Limit on the number of central corrections done in each barrier iteration"
     "(default -1 = automatic choice).", GRB_INT_PAR_BARCORRECTORS, -1, INT_MAX);
 
-  AddSolverOption("alg:barhomog barhomogeneous",
+  AddSolverOption("bar:homog barhomogeneous",
     "Whether to use the homogeneous barrier algorithm (e.g., when method=2 is specified):\n"
     "\n.. value-table::\n"
     "The homogeneous barrier algorithm can detect infeasibility or unboundedness directly, "
@@ -517,14 +517,14 @@ void GurobiBackend::InitCustomOptions() {
     GRB_INT_PAR_BARHOMOGENEOUS, values_barhomogeneous, -1);
 
 
-  AddSolverOption("lim:bariter bariterlim",
+  AddSolverOption("bar:iterlim bariterlim",
     "Limit on the number of barrier iterations (default 1000).", 
     GRB_INT_PAR_BARITERLIMIT, 0, INT_MAX);
 
-  AddSolverOption("alg:barorder barorder", "Ordering used to reduce fill in sparse-matrix factorizations during the barrier algorithm. Possible values:\n"
+  AddSolverOption("bar:order barorder", "Ordering used to reduce fill in sparse-matrix factorizations during the barrier algorithm. Possible values:\n"
     "\n.. value-table::\n", GRB_INT_PAR_AGGREGATE, values_barorder, -1);
 
-  AddSolverOption("tol:barqcp barqcptol",
+  AddSolverOption("bar:qcptol barqcptol",
     "Convergence tolerance on the relative difference between primal and dual objective values for barrier algorithms when solving problems "
     "with quadratic constraints (default 1e-6).", GRB_DBL_PAR_BARQCPCONVTOL, 
     0.0, 1.0);
@@ -538,7 +538,7 @@ void GurobiBackend::InitCustomOptions() {
   /// Change the help text
   ReplaceOptionDescription("obj:multi",
                            "0*/1: Whether to do multi-objective optimization.\n"
-                           "When multiobj = 1 and several objectives are present, suffixes "
+                           "When obj:multi = 1 and several objectives are present, suffixes "
                            ".objpriority, .objweight, .objreltol, and .objabstol on the "
                            "objectives are relevant.  Objectives with greater .objpriority "
                            "values (integer values) have higher priority.  Objectives with "
@@ -551,7 +551,7 @@ void GurobiBackend::InitCustomOptions() {
                            "keywords of the form obj_n_name, such as obj_1_method for the "
                            "first objective.");
 
-  AddSolverOption("tol:optimality optimalitytolerance opttol",
+  AddSolverOption("mip:opttol optimalitytolerance opttol",
       "Dual feasibility tolerance.",
       GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
 
@@ -562,23 +562,24 @@ void GurobiBackend::InitCustomOptions() {
 
   /// Solution pool parameters
   /// Rely on MP's built-in options solutionstub or countsolutions
-  AddSolverOption("sol:pool_eps pool_eps poolgap",
+  AddSolverOption("sol:poolgap ams_eps poolgap",
       "Relative tolerance for reporting alternate MIP solutions "
       "		(default: Infinity, no limit).",
       GRB_DBL_PAR_POOLGAP, 0.0, DBL_MAX);
-  AddSolverOption("sol:pool_epsabs pool_epsabs poolgapabs",
+  AddSolverOption("sol:poolgapabs ams_epsabs poolgapabs",
       "Absolute tolerance for reporting alternate MIP solutions "
       "		(default: Infinity, no limit).",
       GRB_DBL_PAR_POOLGAPABS, 0.0, DBL_MAX);
-  AddSolverOption("sol:pool_limit pool_limit poollimit",
+  AddSolverOption("sol:poollimit ams_limit poollimit",
       "Limit on the number of alternate MIP solutions written. Default: 10.",
       GRB_INT_PAR_POOLSOLUTIONS, 1, 2000000000);
-  AddStoredOption("sol:pool_mode pool_mode poolmode",
-      "Search mode for MIP solutions when solutionstub/countsolutions are specified "
+  AddStoredOption("sol:poolmode ams_mode poolmode",
+      "Search mode for MIP solutions when sol:stub/sol:count are specified "
                         "to request finding several alternative solutions:\n"
                         "\n.. value-table::\n",
           storedOptions_.nPoolMode_, values_pool_mode);
-  AddOptionSynonym("ams_mode", "sol:pool_mode");
+  AddOptionSynonym("ams_stub", "sol:stub");
+
   /// Option "solutionstub" is created internally if
   /// ThisBackend::IfMultipleSol() returns true.
   /// Change the help text
@@ -586,14 +587,14 @@ void GurobiBackend::InitCustomOptions() {
                            "Stub for alternative MIP solutions, written to files with "
                         "names obtained by appending \"1.sol\", \"2.sol\", etc., to "
                         "<solutionstub>.  The number of such files written is affected "
-                        "by the keywords pool_eps, pool_epsabs, pool_limit, and pool_mode. "
+                        "by the keywords poolgap, poolgapabs, poollimit, and poolmode. "
                         "The number of alternative MIP solution files written is "
                         "returned in suffix .nsol on the problem.");
   ReplaceOptionDescription("sol:count",
                            "0*/1: Whether to count the number of solutions "
                            "and return it in the ``.nsol`` problem suffix. "
                            "The number and kind of solutions are controlled by the "
-                           "pool_... parameters. Value 1 implied by solutionstub.");
+                           "sol:pool... parameters. Value 1 implied by sol:stub.");
 
 
   AddSolverOption("gen:threads threads",
@@ -601,7 +602,7 @@ void GurobiBackend::InitCustomOptions() {
       "or solving MIP problems; default 0 ==> automatic choice.",
       GRB_INT_PAR_THREADS, 0, INT_MAX);
 
-  AddSolverOption("lim:time timelimit timelim time",
+  AddSolverOption("lim:time timelim",
       "limit on solve time (in seconds; default: no limit).",
       GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
 

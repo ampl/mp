@@ -1,6 +1,6 @@
 [
   {
-    "name": "multi_sol_01 default",
+    "name": "multi_sol_01",
     "tags": [ "linear"],
     "objective": 1
   },
@@ -14,28 +14,28 @@
     }
   },
   {
-    "name": "multi_sol_01 pool_eps=0.1 solutionstub=stub",
+    "name": "multi_sol_01 poolgap=0.1 solutionstub=stub",
     "tags": [ "linear"],
     "objective": 1,
-    "options": { "ANYSOLVER_options": "pool_eps=0.1 solutionstub=stub" },
+    "options": { "ANYSOLVER_options": "poolgap=0.1 solutionstub=stub" },
     "values": {
       "Initial.nsol": 3
     }
   },
   {
-    "name": "multi_sol_01 pool_epsabs=0.1 solutionstub=stub pool_mode=2",
+    "name": "multi_sol_01 poolgapabs=0.1 solutionstub=stub poolmode=2",
     "tags": [ "linear"],
     "objective": 1,
-    "options": { "ANYSOLVER_options": "pool_epsabs=0.1 solutionstub=stub pool_mode=2" },
+    "options": { "ANYSOLVER_options": "poolgapabs=0.1 solutionstub=stub poolmode=2" },
     "values": {
       "Initial.nsol": 3
     }
   },
   {
-    "name": "multi_sol_01 pool_limit=2 solutionstub=stub",
+    "name": "multi_sol_01 poollimit=2 solutionstub=stub",
     "tags": [ "linear"],
     "objective": 1,
-    "options": { "ANYSOLVER_options": "pool_limit=2 solutionstub=stub" },
+    "options": { "ANYSOLVER_options": "poollimit=2 solutionstub=stub" },
     "values": {
       "Initial.nsol": 2
     }

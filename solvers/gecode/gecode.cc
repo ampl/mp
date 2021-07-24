@@ -688,24 +688,24 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::GetOption<double, double>,
       &GecodeSolver::DoSetDblOption, &options_.threads);
 
-  AddIntOption("gecode:c_d c_d", "Commit recomputation distance.",
+  AddIntOption("cp:c_d c_d", "Commit recomputation distance.",
       &GecodeSolver::GetOption<int, unsigned>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned>, &options_.c_d);
-  AddIntOption("gecode:a_d a_d", "Adaptive recomputation distance.",
+  AddIntOption("cp:a_d a_d", "Adaptive recomputation distance.",
       &GecodeSolver::GetOption<int, unsigned>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned>, &options_.a_d);
 
-  AddDblOption("lim:time timelimit time", "Time limit in seconds.",
+  AddDblOption("lim:time timelim", "Time limit in seconds.",
       &GecodeSolver::GetOption<double, double>,
       &GecodeSolver::SetNonnegativeOption<double, double>, &time_limit_);
-  AddIntOption("lim:nodes nodelimit", "Node limit.",
+  AddIntOption("lim:nodes nodelim", "Node limit.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &node_limit_);
-  AddIntOption("lim:fail faillimit", "Fail limit.",
+  AddIntOption("lim:fail faillim", "Fail limit.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &fail_limit_);
 
-  AddStrOption("gecode:restart restart",
+  AddStrOption("cp:restart restart",
       "Restart sequence type. Possible values:\n"
       "\n"
       ".. value-table::\n",
@@ -713,12 +713,12 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::SetEnumOption<Gecode::RestartMode>,
       &restart_, RESTART_MODES);
 
-  AddDblOption("gecode:restart_base restart_base",
+  AddDblOption("cp:restart_base restart_base",
       "Base for geometric restart sequence. Default = 1.5.",
       &GecodeSolver::GetOption<double, double>,
       &GecodeSolver::DoSetDblOption, &restart_base_);
 
-  AddIntOption("gecode:restart_scale restart_scale",
+  AddIntOption("cp:restart_scale restart_scale",
       "Scale factor for restart sequence. Default = 250.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &restart_scale_);

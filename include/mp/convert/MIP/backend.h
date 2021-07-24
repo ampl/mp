@@ -94,7 +94,7 @@ public:
                       mipStoredOptions_.exportIIS_);
 
     if (IMPL_HAS_STD_FEATURE( MIPGap ))
-      AddStoredOption("mip:return_mipgap return_mipgap",
+      AddStoredOption("mip:return_gap return_mipgap",
         "Whether to return mipgap suffixes or include mipgap values "
     "(|objectve - best_bound|) in the solve_message:  sum of\n"
     "\n"
