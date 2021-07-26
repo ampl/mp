@@ -271,7 +271,7 @@ SolverAppOptionParser::SolverAppOptionParser(Solver &s)
   app_options.Add<&SolverAppOptionParser::ShowSolverOptions>(
         '=', "show solver options and exit");
   app_options.Add<&SolverAppOptionParser::ShowSolverOptionsASL>(
-    'a', "show solver options (ASL style) and exit");
+    'a', "show solver options (ASL style, 1st synonyms if provided) and exit");
   app_options.Add<&SolverAppOptionParser::DontEchoSolverOptions>(
         'e', "suppress echoing of assignments");
   app_options.Add<&SolverAppOptionParser::WantSol>(
@@ -797,5 +797,86 @@ std::vector<std::string> SolverOption::split_str(const char *str) {
   }
   return result;
 }
+
+const char* SolverOption::name_ASL() const {
+  return inline_synonyms_.size() == 0 ? name() :
+    inline_synonyms_[0].c_str();
+}
+void SolverOption::add_synonyms_front(const char* names_list) {
+  auto synonyms = split_str(names_list);
+  inline_synonyms_.insert(inline_synonyms_.begin(),
+                          synonyms.begin(), synonyms.end());
+}
+void SolverOption::add_synonyms_back(const char* names_list) {
+  auto synonyms = split_str(names_list);
+  inline_synonyms_.insert(inline_synonyms_.end(),
+                          synonyms.begin(), synonyms.end());
+}
+
+void Solver::AddOption(OptionPtr opt) {
+  // First insert the option, then release a pointer to it. Doing the other
+  // way around may lead to a memory leak if insertion throws an exception.
+  if (!options_.insert(opt.get()).second)
+    throw std::logic_error(
+        fmt::format("Option {} already defined", opt.get()->name()));
+  opt.release();
+}
+
+void Solver::AddOptionSynonymsFront(const char* names_list, const char* realName)
+{
+  SolverOption* real = FindOption(realName);
+  if (!real)
+    throw std::logic_error(
+        fmt::format("Option {} referred to by synonyms {} is unknown",
+                    realName, names_list));
+  real->add_synonyms_front(names_list);
+}
+
+void Solver::AddOptionSynonymsBack(const char* names_list, const char* realName)
+{
+  SolverOption* real = FindOption(realName);
+  if (!real)
+    throw std::logic_error(
+        fmt::format("Option {} referred to by synonyms {} is unknown",
+                    realName, names_list));
+  real->add_synonyms_back(names_list);
+}
+
+/// An "out-of-line" option synonym
+class SolverOptionSynonym : public SolverOption
+{
+  SolverOption* real_;
+  std::string desc_;
+public:
+  SolverOptionSynonym(const char* names, SolverOption& real) :
+    SolverOption(names, NULL), real_(&real) {
+    desc_ = fmt::sprintf("Synonym for %s.", real_->name());
+    set_description( desc_.c_str() );
+  }
+  SolverOption* getRealOption() const { return real_; }
+
+  virtual void Write(fmt::Writer& w) {
+    real_->Write(w);
+  }
+  virtual void Parse(const char*& s) {
+    real_->Parse(s);
+  }
+
+  virtual std::string echo() {
+    return fmt::format("{} ({})", name(), real_->echo());
+  }
+};
+
+void Solver::AddOptionSynonym_OutOfLine(const char* name, const char* realName)
+{
+  SolverOption* real = FindOption(realName);
+  if (!real)
+    throw std::logic_error(
+        fmt::format("Option {} referred to by {} is unknown", realName, name));
+  OptionPtr opt = OptionPtr(new SolverOptionSynonym(name, *real));
+  options_.insert(opt.get());
+  opt.release();
+}
+
 
 }  // namespace mp

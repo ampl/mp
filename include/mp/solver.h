@@ -222,7 +222,7 @@ class SolverOption {
   // Constructs a SolverOption object.
   //
   // The solver option stores pointers to the passed name(s) and description and
-  // copies the strings for the names only. Normallythe description is a
+  // copies the strings for the names only. Normally the description is a
   // string literal and has static storage duration but if this is not the
   // case make sure that the string's lifetime is longer than that of the
   // option object.
@@ -256,26 +256,17 @@ class SolverOption {
 
   // Return the option name.
   const char *name() const { return name_.c_str(); }
-  // Return the ASL (not qualified) name as the first
-  // inline synonym - or the name itself if no synonyms
-  // are defined
-  const char* name_ASL() const {
-    return inline_synonyms_.size() == 0 ? name() :
-      inline_synonyms_[0].c_str();
-  }
-  // Returns/adds the additional "inline" synonyms
+
+  /// Return the ASL (not qualified) name as the first
+  /// inline synonym - or the name itself if no synonyms
+  /// are defined
+  const char* name_ASL() const;
+  /// Returns the "inline" synonyms
   const std::vector<std::string>& inline_synonyms() const
   { return inline_synonyms_; }
-  void add_synonyms_front(const char* names_list) {
-    auto synonyms = split_str(names_list);
-    inline_synonyms_.insert(inline_synonyms_.begin(),
-                            synonyms.begin(), synonyms.end());
-  }
-  void add_synonyms_back(const char* names_list) {
-    auto synonyms = split_str(names_list);
-    inline_synonyms_.insert(inline_synonyms_.end(),
-                            synonyms.begin(), synonyms.end());
-  }
+  /// Add additional "inline" synonyms
+  void add_synonyms_front(const char* names_list);
+  void add_synonyms_back(const char* names_list);
 
   // Return/set the option description.
   const char *description() const { return description_; }
@@ -345,31 +336,6 @@ class SolverOption {
 };
 
 
-/*
-*/
-class SolverOptionSynonym : public SolverOption
-{
-  SolverOption* real_;
-  std::string desc_;
-public:
-  SolverOptionSynonym(const char* names, SolverOption& real) :
-    SolverOption(names, NULL), real_(&real) {
-    desc_ = fmt::sprintf("Synonym for %s.", real_->name());
-    set_description( desc_.c_str() );
-  }
-  SolverOption* getRealOption() const { return real_; }
-
-  virtual void Write(fmt::Writer& w) {
-    real_->Write(w);
-  }
-  virtual void Parse(const char*& s) {
-    real_->Parse(s);
-  }
-
-  virtual std::string echo() {
-    return fmt::format("{} ({})", name(), real_->echo());
-  }
-};
 // An exception thrown when an invalid value is provided for an option.
 class InvalidOptionValue : public OptionError {
  private:
@@ -658,46 +624,17 @@ class Solver : private ErrorHandler,
   // Add more text to be displayed before option descriptions.
   void add_to_option_header(const char *header_more) { option_header_ += header_more; }
 
-  void AddOption(OptionPtr opt) {
-    // First insert the option, then release a pointer to it. Doing the other
-    // way around may lead to a memory leak if insertion throws an exception.
-    if (!options_.insert(opt.get()).second)
-      throw std::logic_error(
-          fmt::format("Option {} already defined", opt.get()->name()));
-    opt.release();
-  }
+  void AddOption(OptionPtr opt);
 
   /// Add "online" option synonyms
-  void AddOptionSynonymsFront(const char* names_list, const char* realName)
-  {
-    SolverOption* real = FindOption(realName);
-    if (!real)
-      throw std::logic_error(
-          fmt::format("Option {} referred to by synonyms {} is unknown",
-                      realName, names_list));
-    real->add_synonyms_front(names_list);
-  }
-  void AddOptionSynonymsBack(const char* names_list, const char* realName)
-  {
-    SolverOption* real = FindOption(realName);
-    if (!real)
-      throw std::logic_error(
-          fmt::format("Option {} referred to by synonyms {} is unknown",
-                      realName, names_list));
-    real->add_synonyms_back(names_list);
-  }
+  /// The _Front version puts them in the front of the synonyms list
+  /// and the 1st of them is used in the -a output for sorting
+  void AddOptionSynonymsFront(const char* names_list, const char* realName);
+  void AddOptionSynonymsBack(const char* names_list, const char* realName);
 
-  /// Add "out-of-line" option synonym
-  void AddOptionSynonym_OutOfLine(const char* name, const char* realName)
-  {
-    SolverOption* real = FindOption(realName);
-    if (!real)
-      throw std::logic_error(
-          fmt::format("Option {} referred to by {} is unknown", realName, name));
-    OptionPtr opt = OptionPtr(new SolverOptionSynonym(name, *real));
-    options_.insert(opt.get());
-    opt.release();
-  }
+  /// Add an "out-of-line" synonym
+  /// Creates extra entry under -=
+  void AddOptionSynonym_OutOfLine(const char* name, const char* realName);
 
   // Adds an integer option.
   // The option stores pointers to the name and the description so make
