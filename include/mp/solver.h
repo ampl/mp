@@ -263,13 +263,23 @@ class SolverOption {
     return inline_synonyms_.size() == 0 ? name() :
       inline_synonyms_[0].c_str();
   }
-  // Returns the additional "inline" synonyms
+  // Returns/adds the additional "inline" synonyms
   const std::vector<std::string>& inline_synonyms() const
   { return inline_synonyms_; }
+  void add_synonyms_front(const char* names_list) {
+    auto synonyms = split_str(names_list);
+    inline_synonyms_.insert(inline_synonyms_.begin(),
+                            synonyms.begin(), synonyms.end());
+  }
+  void add_synonyms_back(const char* names_list) {
+    auto synonyms = split_str(names_list);
+    inline_synonyms_.insert(inline_synonyms_.end(),
+                            synonyms.begin(), synonyms.end());
+  }
 
   // Return/set the option description.
   const char *description() const { return description_; }
-  void SetDesc(const char* d) { description_=d; }
+  void set_description(const char* d) { description_=d; }
 
   // Returns the information about possible values.
   ValueArrayRef values() const { return values_; }
@@ -345,7 +355,7 @@ public:
   SolverOptionSynonym(const char* names, SolverOption& real) :
     SolverOption(names, NULL), real_(&real) {
     desc_ = fmt::sprintf("Synonym for %s.", real_->name());
-    SetDesc( desc_.c_str() );
+    set_description( desc_.c_str() );
   }
   SolverOption* getRealOption() const { return real_; }
 
@@ -657,7 +667,28 @@ class Solver : private ErrorHandler,
     opt.release();
   }
 
-  void AddOptionSynonym(const char* name, const char* realName)
+  /// Add "online" option synonyms
+  void AddOptionSynonymsFront(const char* names_list, const char* realName)
+  {
+    SolverOption* real = FindOption(realName);
+    if (!real)
+      throw std::logic_error(
+          fmt::format("Option {} referred to by synonyms {} is unknown",
+                      realName, names_list));
+    real->add_synonyms_front(names_list);
+  }
+  void AddOptionSynonymsBack(const char* names_list, const char* realName)
+  {
+    SolverOption* real = FindOption(realName);
+    if (!real)
+      throw std::logic_error(
+          fmt::format("Option {} referred to by synonyms {} is unknown",
+                      realName, names_list));
+    real->add_synonyms_back(names_list);
+  }
+
+  /// Add "out-of-line" option synonym
+  void AddOptionSynonym_OutOfLine(const char* name, const char* realName)
   {
     SolverOption* real = FindOption(realName);
     if (!real)

@@ -550,7 +550,7 @@ Solver::Solver(
 
   struct VersionOption : SolverOption {
     Solver &s;
-    VersionOption(Solver &s) : SolverOption("version",
+    VersionOption(Solver &s) : SolverOption("gen:version version",
         "Single-word phrase: report version details "
         "before solving the problem.", ValueArrayRef(), true), s(s) {}
 

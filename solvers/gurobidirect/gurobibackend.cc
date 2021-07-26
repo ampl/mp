@@ -578,7 +578,7 @@ void GurobiBackend::InitCustomOptions() {
                         "to request finding several alternative solutions:\n"
                         "\n.. value-table::\n",
           storedOptions_.nPoolMode_, values_pool_mode);
-  AddOptionSynonym("ams_stub", "sol:stub");
+  AddOptionSynonymsFront("ams_stub", "sol:stub");
 
   /// Option "solutionstub" is created internally if
   /// ThisBackend::IfMultipleSol() returns true.

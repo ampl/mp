@@ -489,7 +489,9 @@ protected:
 
 public:
   using Solver::AddOption;
-  using Solver::AddOptionSynonym;
+  using Solver::AddOptionSynonymsFront;
+  using Solver::AddOptionSynonymsBack;
+  using Solver::AddOptionSynonym_OutOfLine;
   using Solver::FindOption;
 
 
@@ -541,7 +543,7 @@ public:
   void ReplaceOptionDescription(const char* name, const char* desc) {
     auto pOption = FindOption(name);
     assert(pOption);
-    pOption->SetDesc(desc);
+    pOption->set_description(desc);
   }
 
 private:
