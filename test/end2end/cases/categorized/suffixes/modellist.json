@@ -1,11 +1,25 @@
 [
   {
-    "name" : "dietu_stt iosuf",
+    "name" : "dietu_stt sstatus",
     "objective" : 74.273820,
     "tags" : ["linear", "continuous"],
     "values": {
       "Buy['BEEF'].sstatus": "low",
+      "Buy['MTL'].sstatus":  "bas",
+      "Buy['CHK'].sstatus":  "upp",
       "Diet_Min['A'].sstatus": "bas"
+    }
+  },
+  {
+    "name" : "diet con sstatus none",
+    "objective" : 88.2,
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "values": {
+      "Buy['BEEF'].sstatus": "low",
+      "Buy['MCH'].sstatus":  "bas",
+      "Buy['CHK'].sstatus":  "low",
+      "Diet['A'].sstatus": "none"
     }
   }
 ]

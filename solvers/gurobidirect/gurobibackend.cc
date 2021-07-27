@@ -124,20 +124,93 @@ double GurobiBackend::CurrentPoolObjectiveValue() const {
 std::vector<int> GurobiBackend::VarStatii() {
   auto stt =
     GrbGetIntAttrArray(GRB_INT_ATTR_VBASIS, NumberOfVariables());
+  for (auto& s: stt) {
+    switch (s) {
+    case 0:
+      s = (int)BasicStatus::bas;
+      break;
+    case -1:
+      s = (int)BasicStatus::low;
+      break;
+    case -2:
+      s = (int)BasicStatus::upp;
+      break;
+    case -3:
+      s = (int)BasicStatus::sup;
+      break;
+    default:
+      RAISE(fmt::format("Unknown Gurobi VBasis value: {}", s));
+    }
+  }
   return stt;
 }
 
 std::vector<int> GurobiBackend::ConStatii() {
-  return
+  auto stt =
     GrbGetIntAttrArray(GRB_INT_ATTR_CBASIS, NumberOfConstraints());
+  for (auto& s: stt) {
+    switch (s) {
+    case 0:
+      s = (int)BasicStatus::bas;
+      break;
+    case -1:
+      s = (int)BasicStatus::none;
+      break;
+    default:
+      RAISE(fmt::format("Unknown Gurobi CBasis value: {}", s));
+    }
+  }
+  return stt;
 }
 
 void GurobiBackend::VarStatii(ArrayRef<int> vst) {
-  assert(GrbSetIntAttrArray(GRB_INT_ATTR_VBASIS, vst));
+  std::vector<int> stt(vst.data(), vst.data()+vst.size());
+  for (auto& s: stt) {
+    switch ((BasicStatus)s) {
+    case BasicStatus::bas:
+      s = 0;
+      break;
+    case BasicStatus::low:
+      s = -1;
+      break;
+    case BasicStatus::upp:
+      s = -2;
+      break;
+    case BasicStatus::sup:
+      s = -3;
+      break;
+    case BasicStatus::none:
+    case BasicStatus::equ:
+    case BasicStatus::btw:
+      break;
+    default:
+      RAISE(fmt::format("Unknown AMPL var status value: {}", s));
+    }
+  }
+  assert(GrbSetIntAttrArray(GRB_INT_ATTR_VBASIS, stt));
 }
 
 void GurobiBackend::ConStatii(ArrayRef<int> cst) {
-  assert(GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, cst));
+  std::vector<int> stt(cst.data(), cst.data()+cst.size());
+  for (auto& s: stt) {
+    switch ((BasicStatus)s) {
+    case BasicStatus::bas:
+      s = 0;
+      break;
+    case BasicStatus::none:
+      s = -1;
+      break;
+    case BasicStatus::upp:
+    case BasicStatus::sup:
+    case BasicStatus::low:
+    case BasicStatus::equ:
+    case BasicStatus::btw:
+      break;
+    default:
+      RAISE(fmt::format("Unknown AMPL con status value: {}", s));
+    }
+  }
+  assert(GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, stt));
 }
 
 void GurobiBackend::VarPriorities(ArrayRef<int> priority) {
@@ -204,7 +277,7 @@ std::vector<int> GurobiBackend::ConsIIS() {
     GrbGetIntAttrArray(GRB_INT_ATTR_IIS_CONSTR,
       (std::size_t)NumberOfConstraints() + nl, nl);
   for (int i=iis_con.size(); i--; ) {
-    iis_con[i] = iis_con[i] ? IISStatus::mem : IISStatus::non;
+    iis_con[i] = int(iis_con[i] ? IISStatus::mem : IISStatus::non);
   }
   return iis_con;
 }

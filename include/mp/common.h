@@ -1109,7 +1109,7 @@ struct ProblemInfo {
   }
 };
 
-enum IISStatus {
+enum class IISStatus {
   non = 0,
   low = 1,
   fix = 2,
@@ -1119,6 +1119,16 @@ enum IISStatus {
   plow = 6,
   pupp = 7,
   bug = 8
+};
+
+enum class BasicStatus {
+  none= 0,
+  bas = 1,
+  sup = 2,
+  low = 3,
+  upp = 4,
+  equ = 5,
+  btw = 6
 };
 
 }  // namespace mp
