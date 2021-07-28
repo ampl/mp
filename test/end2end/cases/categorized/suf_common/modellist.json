@@ -1,0 +1,13 @@
+[
+
+  {
+    "name": "unbdd_01__solvers_pri_iss28",
+    "tags": [ "linear"],
+    "values": {
+      "u1": 0,
+      "u2": 3,
+      "u1.unbdd": 1,
+      "u2.unbdd": 3
+    }
+  }
+]

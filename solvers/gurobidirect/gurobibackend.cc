@@ -246,6 +246,17 @@ void GurobiBackend::ObjRelTol(ArrayRef<double> val) {
 }
 
 
+std::vector<double> GurobiBackend::Ray() {
+  return
+    GrbGetDblAttrArray(GRB_DBL_ATTR_UNBDRAY, NumberOfVariables());
+}
+
+std::vector<double> GurobiBackend::DRay() {
+  return
+    GrbGetDblAttrArray(GRB_DBL_ATTR_FARKASDUAL, NumberOfConstraints());
+}
+
+
 std::vector<int> GurobiBackend::VarsIIS() {
   auto iis_lb =
     GrbGetIntAttrArray(GRB_INT_ATTR_IIS_LB, NumberOfVariables());
@@ -313,6 +324,8 @@ void GurobiBackend::SolveAndReportIntermediateResults() {
 void GurobiBackend::PrepareParameters() {
   if (need_multiple_solutions())
     GrbSetIntParam(GRB_INT_PAR_POOLSEARCHMODE, storedOptions_.nPoolMode_);
+  if (need_ray_primal() || need_ray_dual())
+    GrbSetIntParam(GRB_INT_PAR_INFUNBDINFO, 1);
 }
 
 std::string GurobiBackend::ConvertSolutionStatus(
@@ -358,6 +371,8 @@ void GurobiBackend::ComputeIIS() {
 }
 
 
+//////////////////////////////////////////////////////////////////////////
+/////////////////////////// Modeling interface ///////////////////////////
 //////////////////////////////////////////////////////////////////////////
 void GurobiBackend::InitProblemModificationPhase() {
   stats.time = steady_clock::now();

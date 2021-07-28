@@ -146,6 +146,12 @@ public:
   ////////////////////////////////////////////////////////////
 
   /**
+  * Obtain inf/unbounded rays
+  **/
+  ALLOW_STD_FEATURE( RAYS, true )
+  std::vector<double> Ray();
+  std::vector<double> DRay();
+  /**
   * Compute the IIS and obtain relevant values
   **/
   ALLOW_STD_FEATURE( IIS, true )

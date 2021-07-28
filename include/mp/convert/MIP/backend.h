@@ -48,6 +48,12 @@ public:
   /////////// and implement the relevant methods /////////////
   ////////////////////////////////////////////////////////////
   /**
+  * Obtain unbounded/inf rays
+  **/
+  DEFINE_STD_FEATURE( RAYS, false )
+  std::vector<double> Ray() { return {}; }
+  std::vector<double> DRay() { return {}; }
+  /**
   * Compute the IIS and obtain relevant values
   **/
   DEFINE_STD_FEATURE( IIS, false )
@@ -85,8 +91,22 @@ public:
     MP_DISPATCH( InitMIPOptions() );
   }
 
+  const mp::OptionValueInfo values_rays_[4] = {
+      {			"0", "neither", 0 },
+      {     "1", "just .unbdd", 1},
+      {     "2", "just .dunbdd", 2},
+      {     "3", "both (default)", 3}
+  };
+
   using BaseBackend::AddStoredOption;
   void InitMIPOptions() {
+    if (IMPL_HAS_STD_FEATURE( RAYS ))
+      AddStoredOption("mip:rays rays",
+                      "Whether to return suffix .unbdd if the objective is unbounded "
+                      "or suffix .dunbdd if the constraints are infeasible:\n"
+                      "\n.. value-table::\n",
+                      mipStoredOptions_.rays_, values_rays_);
+
     if (IMPL_HAS_STD_FEATURE( IIS ))
       AddStoredOption("mip:iisfind iisfind",
                       "Whether to find and export the IIS. "
@@ -98,9 +118,9 @@ public:
         "Whether to return mipgap suffixes or include mipgap values "
     "(|objectve - best_bound|) in the solve_message:  sum of\n"
     "\n"
-    "| 1 = return relmipgap suffix (relative to |obj|);\n"
-    "| 2 = return absmipgap suffix (absolute mipgap);\n"
-    "| 4 = suppress mipgap values in solve_message.\n"
+    "| 1 - return relmipgap suffix (relative to |obj|)\n"
+    "| 2 - return absmipgap suffix (absolute mipgap)\n"
+    "| 4 - suppress mipgap values in solve_message.\n"
     "\n"
     "Default = 0.  The suffixes are on the objective and problem. "
     "Returned suffix values are +Infinity if no integer-feasible "
@@ -146,6 +166,7 @@ public:
   }
 
   //////////////////////// STANDARD MIP SUFFIXES //////////////////////////
+  ////////////////////////         INPUT         //////////////////////////
   void ReadStandardSuffixes() {
     BasicBackend<Impl>::ReadStandardSuffixes();
     ReadStandardMIPSuffixes();
@@ -156,22 +177,39 @@ public:
     MP_DISPATCH( ConStatii(ReadSuffix(suf_constatus)) );
   }
 
+  //////////////////////// STANDARD MIP SUFFIXES //////////////////////////
+  ////////////////////////         OUNPUT        //////////////////////////
   void ReportStandardSuffixes() {
     BaseBackend::ReportStandardSuffixes();
     ReportStandardMIPSuffixes();
   }
 
   void ReportStandardMIPSuffixes() {
+    MP_DISPATCH( ReportBasis() );
+    MP_DISPATCH( ReportRays() );
+  }
+
+  void ReportBasis() {
     ReportSuffix(suf_varstatus,
                               MP_DISPATCH( VarStatii() ));
     ReportSuffix(suf_constatus,
                               MP_DISPATCH( ConStatii() ));
   }
 
+  void ReportRays() {
+    if ( need_ray_primal() && MP_DISPATCH( IsProblemUnbounded() )) {
+      ReportSuffix(suf_unbdd, MP_DISPATCH( Ray() ));
+    }
+    if ( need_ray_dual() && MP_DISPATCH( IsProblemInfeasible() )) {
+      ReportSuffix(suf_dunbdd, MP_DISPATCH( DRay() ));
+    }
+  }
+
 private:
   struct Options {
-    int exportIIS_;
-    int returnMipGap_;
+    int rays_=3;
+    int exportIIS_=0;
+    int returnMipGap_=0;
   };
   Options mipStoredOptions_;
 
@@ -182,6 +220,9 @@ private:
 
   const SuffixDef<int> suf_varstatus = { "sstatus", suf::VAR | suf::OUTPUT };
   const SuffixDef<int> suf_constatus = { "sstatus", suf::CON | suf::OUTPUT };
+
+  const SuffixDef<double> suf_unbdd  = { "unbdd",   suf::VAR | suf::OUTPUT };
+  const SuffixDef<double> suf_dunbdd = { "dunbdd",  suf::CON | suf::OUTPUT };
 
   const SuffixTable iis_table =
       "\n"
@@ -200,6 +241,12 @@ private:
   const SuffixDef<double> sufRelMipGapObj = { "relmipgap", suf::OBJ | suf::OUTPUT };
   const SuffixDef<double> sufRelMipGapProb = { "relmipgap", suf::PROBLEM | suf::OUTPUT };
 
+
+protected:
+  const Options& GetStandardMIPOptions() const { return mipStoredOptions_; }
+
+  bool need_ray_primal() const { return 1 & mipStoredOptions_.rays_; }
+  bool need_ray_dual() const { return 2 & mipStoredOptions_.rays_; }
 };
 
 }  // namespace mp

@@ -363,6 +363,18 @@ public:
         sol::UNBOUNDED>=solve_code;
   }
 
+  bool IsProblemInfeasible() const {
+    assert( IsSolStatusRetrieved() );
+    return sol::INFEASIBLE<=solve_code &&
+        sol::UNBOUNDED>solve_code;
+  }
+
+  bool IsProblemUnbounded() const {
+    assert( IsSolStatusRetrieved() );
+    return sol::INFEASIBLE<solve_code &&
+        sol::UNBOUNDED>=solve_code;
+  }
+
   bool IsSolStatusRetrieved() const {
     return sol::NOT_CHECKED!=solve_code;
   }
@@ -557,7 +569,7 @@ protected:
     if (IMPL_HAS_STD_FEATURE( VarPriorities ))
       AddStoredOption("mip:priorities priorities",  // CP has it too
         "0/1*: Whether to read the branch and bound priorities from the"
-        " .priority suffix..",
+        " .priority suffix.",
         storedOptions_.importPriorities_);
   }
 
