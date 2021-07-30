@@ -123,6 +123,7 @@ public:
   std::vector<double> PrimalSolution();
   std::vector<double> DualSolution();
   double ObjectiveValue() const;
+  std::vector<double> ObjectiveValues() const;
 
   /// Solution pool
   void StartPoolSolutions();

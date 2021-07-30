@@ -93,6 +93,27 @@ double GurobiBackend::ObjectiveValue() const {
   return GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL);
 }
 
+std::vector<double> GurobiBackend::ObjectiveValues() const {
+  int no = NumberOfObjectives();
+  if(no==0)
+    return std::vector<double>();
+  std::vector<double> objs(no, std::numeric_limits<double>::quiet_NaN());
+
+  if (NumberOfObjectives() == 1)
+    objs[0] = GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL);
+  else {
+    GRBenv* env = GRBgetenv(model);
+    int objnumber = GrbGetIntParam(GRB_INT_PAR_OBJNUMBER);
+    for (int i = 0; i < no; i++)
+    {
+      GRBsetintparam(env, GRB_INT_PAR_OBJNUMBER, i);
+      objs[i] = GrbGetDblAttr(GRB_DBL_ATTR_OBJNVAL);
+    }
+    GRBsetintparam(env, GRB_INT_PAR_OBJNUMBER, objnumber);
+  }
+  return objs;
+}
+
 void GurobiBackend::StartPoolSolutions() {
   assert(-2==iPoolSolution);
   iPoolSolution = -1;

@@ -322,17 +322,30 @@ public:
   void ReportPrimalDualValues() {
     double obj_value = std::numeric_limits<double>::quiet_NaN();
     std::vector<double> solution, dual_solution;
-
+    
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status);
     if (solve_code < sol::INFEASIBLE) {
       if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
-        obj_value = MP_DISPATCH( ObjectiveValue() );
-        writer.write("; objective {}",
-                     MP_DISPATCH( FormatObjValue(obj_value) ));
+        if(multiobj() && MP_DISPATCH(NumberOfObjectives()) > 1)
+        {
+          std::vector<double> obj_values = MP_DISPATCH(ObjectiveValues());
+          writer.write("; objective {}", MP_DISPATCH(FormatObjValue(obj_values[0])));
+          writer.write("\nIndividual objective values:");
+          for (int i = 0; i < obj_values.size(); i++)
+            writer.write("\n\t_sobj[{}] = {}", i+1, // indexing of _sobj starts from 1
+              MP_DISPATCH(FormatObjValue(obj_values[i])));
+        }
+        else {
+          obj_value = MP_DISPATCH(ObjectiveValue());
+          writer.write("; objective {}\n",
+            MP_DISPATCH(FormatObjValue(obj_value)));
+
+        }
       }
+      else 
+        writer.write("\n");
     }
-    writer.write("\n");
 
     solution = MP_DISPATCH( PrimalSolution() );
     dual_solution = MP_DISPATCH( DualSolution() );  // Try in any case
