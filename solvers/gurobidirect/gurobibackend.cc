@@ -545,7 +545,6 @@ void GurobiBackend::FinishProblemModificationPhase() {
 
 // static possible values with descriptions
 
-
 const mp::OptionValueInfo values_pool_mode[] = {
     {"0", "Just collect solutions during normal solve, and sort them best-first", 0},
     { "1", "Make some effort at finding additional solutions", 1},

@@ -44,8 +44,8 @@
 #define STD_FEATURE_QUERY_FN AllowStdFeature__func
 #define STD_FEATURE_STRUCT_NM( name ) StdFeatureDesc__ ## name
 
-#define RAISE_NOT_IMPLEMENTED(name) \
-  throw std::runtime_error( #name  " has not been implemented!")
+#define UNSUPPORTED(name) \
+  throw MakeUnsupportedError( name )
 
 namespace mp {
 
@@ -293,13 +293,13 @@ public:
   }
 
   /// When IfMultipleSol() returns true, Impl has to define these
-  void StartPoolSolutions() { RAISE_NOT_IMPLEMENTED("StartPoolSolutions()"); }
+  void StartPoolSolutions() { UNSUPPORTED("StartPoolSolutions()"); }
   bool SelectNextPoolSolution() { return false; }   // none by default
-  void EndPoolSolutions() { RAISE_NOT_IMPLEMENTED("EndPoolSolutions()"); }
+  void EndPoolSolutions() { UNSUPPORTED("EndPoolSolutions()"); }
   std::vector<double> CurrentPoolPrimalSolution()
-  { RAISE_NOT_IMPLEMENTED("CurrentPoolPrimalSolution()"); return {}; }
+  { UNSUPPORTED("CurrentPoolPrimalSolution()"); return {}; }
   double CurrentPoolObjectiveValue() const
-  { RAISE_NOT_IMPLEMENTED("CurrentPoolObjectiveValue()"); return 0.0; }
+  { UNSUPPORTED("CurrentPoolObjectiveValue()"); return 0.0; }
 
   void ReportCurrentPoolSolution() {
     double obj_value = std::numeric_limits<double>::quiet_NaN();

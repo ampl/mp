@@ -133,18 +133,18 @@ public:
   double NodeCount() const;
   double Niterations() const;
 
-  std::vector<int> VarStatii();
-  std::vector<int> ConStatii();
-
-  /// Various attribute setters
-  void VarStatii(ArrayRef<int> );
-  void ConStatii(ArrayRef<int> );
-
 
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
   ////////////////////////////////////////////////////////////
-
+  /**
+  * Get/Set AMPL var/con statii
+  **/
+  ALLOW_STD_FEATURE( BASIS, true )
+  std::vector<int> VarStatii();
+  std::vector<int> ConStatii();
+  void VarStatii(ArrayRef<int> );
+  void ConStatii(ArrayRef<int> );
   /**
   * Obtain inf/unbounded rays
   **/

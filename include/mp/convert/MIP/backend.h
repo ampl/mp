@@ -39,7 +39,7 @@ class MIPBackend :
 
 public:
   // Properties
-  bool IsMIP() const { RAISE_NOT_IMPLEMENTED( "IsMIP()" ); }
+  bool IsMIP() const { UNSUPPORTED( "IsMIP()" ); }
 
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
@@ -47,6 +47,16 @@ public:
   //// To enable, declare ALLOW_STD_FEATURE( name, true ) ////
   /////////// and implement the relevant methods /////////////
   ////////////////////////////////////////////////////////////
+  /**
+  * Get/Set AMPL var/con statii
+  **/
+  DEFINE_STD_FEATURE( BASIS, false )
+  std::vector<int> VarStatii() { return {}; }
+  void VarStatii(ArrayRef<int> )
+  { UNSUPPORTED("MIPBackend::VarStatii"); }
+  std::vector<int> ConStatii() { return {}; }
+  void ConStatii(ArrayRef<int> )
+  { UNSUPPORTED("MIPBackend::ConStatii"); }
   /**
   * Obtain unbounded/inf rays
   **/
@@ -66,68 +76,6 @@ public:
   **/
   DEFINE_STD_FEATURE( MIPGap, false )
   double MIPGap() const { return MP_DISPATCH( Infinity() ); }
-
-  ////////////////////////////////////////////////////////////
-  ///// Override in the Impl for standard MIP operations /////
-  ////////////////////////////////////////////////////////////
-  /**
-  * Get/Set AMPL var/con statii
-  **/
-  std::vector<int> VarStatii() { return {}; }
-  void VarStatii(ArrayRef<int> ) {
-    throw MakeUnsupportedError("MIPBackend::VarStatii");
-  }
-  std::vector<int> ConStatii() { return {}; }
-  void ConStatii(ArrayRef<int> ) {
-    throw MakeUnsupportedError("MIPBackend::ConStatii");
-  }
-
-
-  ////////////////////////////////////////////////////////////
-  /////////////////// MIP Backend options ////////////////////
-  ////////////////////////////////////////////////////////////
-  void InitStandardOptions() {
-    BaseBackend::InitStandardOptions();
-    MP_DISPATCH( InitMIPOptions() );
-  }
-
-  const mp::OptionValueInfo values_rays_[4] = {
-      {			"0", "neither", 0 },
-      {     "1", "just .unbdd", 1},
-      {     "2", "just .dunbdd", 2},
-      {     "3", "both (default)", 3}
-  };
-
-  using BaseBackend::AddStoredOption;
-  void InitMIPOptions() {
-    if (IMPL_HAS_STD_FEATURE( RAYS ))
-      AddStoredOption("mip:rays rays",
-                      "Whether to return suffix .unbdd if the objective is unbounded "
-                      "or suffix .dunbdd if the constraints are infeasible:\n"
-                      "\n.. value-table::\n",
-                      mipStoredOptions_.rays_, values_rays_);
-
-    if (IMPL_HAS_STD_FEATURE( IIS ))
-      AddStoredOption("mip:iisfind iisfind",
-                      "Whether to find and export the IIS. "
-                      "Default = 0 (don't export).",
-                      mipStoredOptions_.exportIIS_);
-
-    if (IMPL_HAS_STD_FEATURE( MIPGap ))
-      AddStoredOption("mip:return_gap return_mipgap",
-        "Whether to return mipgap suffixes or include mipgap values "
-    "(|objectve - best_bound|) in the solve_message:  sum of\n"
-    "\n"
-    "| 1 - return relmipgap suffix (relative to |obj|)\n"
-    "| 2 - return absmipgap suffix (absolute mipgap)\n"
-    "| 4 - suppress mipgap values in solve_message.\n"
-    "\n"
-    "Default = 0.  The suffixes are on the objective and problem. "
-    "Returned suffix values are +Infinity if no integer-feasible "
-    "solution has been found, in which case no mipgap values are "
-    "reported in the solve_message.",
-        mipStoredOptions_.returnMipGap_);
-  }
 
 
   ////////////////////////////////////////////////////////////////////////////
@@ -173,6 +121,11 @@ public:
   }
 
   void ReadStandardMIPSuffixes() {
+    if (1 & mipStoredOptions_.basis_)
+      ReadBasis();
+  }
+
+  void ReadBasis() {
     MP_DISPATCH( VarStatii(ReadSuffix(suf_varstatus)) );
     MP_DISPATCH( ConStatii(ReadSuffix(suf_constatus)) );
   }
@@ -185,7 +138,8 @@ public:
   }
 
   void ReportStandardMIPSuffixes() {
-    MP_DISPATCH( ReportBasis() );
+    if (2 & mipStoredOptions_.basis_)
+      MP_DISPATCH( ReportBasis() );
     MP_DISPATCH( ReportRays() );
   }
 
@@ -207,6 +161,7 @@ public:
 
 private:
   struct Options {
+    int basis_=3;
     int rays_=3;
     int exportIIS_=0;
     int returnMipGap_=0;
@@ -240,6 +195,72 @@ private:
 
   const SuffixDef<double> sufRelMipGapObj = { "relmipgap", suf::OBJ | suf::OUTPUT };
   const SuffixDef<double> sufRelMipGapProb = { "relmipgap", suf::PROBLEM | suf::OUTPUT };
+
+
+
+  ////////////////////////////////////////////////////////////
+  /////////////////// MIP Backend options ////////////////////
+  ////////////////////////////////////////////////////////////
+public:
+
+  void InitStandardOptions() {
+    BaseBackend::InitStandardOptions();
+    MP_DISPATCH( InitMIPOptions() );
+  }
+
+  using BaseBackend::AddStoredOption;
+
+protected:
+
+  const mp::OptionValueInfo values_basis_[4] = {
+      {     "0", "no", 0 },
+      {     "1", "use incoming basis (if provided)", 1},
+      {     "2", "return final basis", 2},
+      {     "3", "both (1 + 2 = default).", 3}
+  };
+
+  const mp::OptionValueInfo values_rays_[4] = {
+      {     "0", "neither", 0 },
+      {     "1", "just .unbdd", 1},
+      {     "2", "just .dunbdd", 2},
+      {     "3", "both (default)", 3}
+  };
+
+  void InitMIPOptions() {
+    if (IMPL_HAS_STD_FEATURE( BASIS ))
+      AddStoredOption("mip:basis basis",
+                      "Whether to use or return a basis:\n "
+                      "\n.. value-table::\n",
+                      mipStoredOptions_.basis_, values_basis_);
+
+    if (IMPL_HAS_STD_FEATURE( RAYS ))
+      AddStoredOption("mip:rays rays",
+                      "Whether to return suffix .unbdd if the objective is unbounded "
+                      "or suffix .dunbdd if the constraints are infeasible:\n"
+                      "\n.. value-table::\n",
+                      mipStoredOptions_.rays_, values_rays_);
+
+    if (IMPL_HAS_STD_FEATURE( IIS ))
+      AddStoredOption("mip:iisfind iisfind",
+                      "Whether to find and export the IIS. "
+                      "Default = 0 (don't export).",
+                      mipStoredOptions_.exportIIS_);
+
+    if (IMPL_HAS_STD_FEATURE( MIPGap ))
+      AddStoredOption("mip:return_gap return_mipgap",
+        "Whether to return mipgap suffixes or include mipgap values "
+    "(|objectve - best_bound|) in the solve_message:  sum of\n"
+    "\n"
+    "| 1 - return relmipgap suffix (relative to |obj|)\n"
+    "| 2 - return absmipgap suffix (absolute mipgap)\n"
+    "| 4 - suppress mipgap values in solve_message.\n"
+    "\n"
+    "Default = 0.  The suffixes are on the objective and problem. "
+    "Returned suffix values are +Infinity if no integer-feasible "
+    "solution has been found, in which case no mipgap values are "
+    "reported in the solve_message.",
+        mipStoredOptions_.returnMipGap_);
+  }
 
 
 protected:
