@@ -72,10 +72,21 @@ public:
   std::vector<int> ConsIIS() { return {}; }
   std::vector<int> VarsIIS() { return {}; }
   /**
-  * Get MIP Gap. Return +inf if not available
+  * Get MIP Gap
   **/
-  DEFINE_STD_FEATURE( MIPGap, false )
+  DEFINE_STD_FEATURE( ReturnMIPGap, false )
   double MIPGap() const { return MP_DISPATCH( Infinity() ); }
+  double MIPGapAbs() const {
+    return std::fabs(
+          MP_CONST_DISPATCH(ObjectiveValue()) -
+          MP_CONST_DISPATCH(BestDualBound()) );
+  }
+  /**
+  * Get MIP dual bound
+  **/
+  DEFINE_STD_FEATURE( ReturnBestDualBound, false )
+  double BestDualBound() const
+  { UNSUPPORTED("BestDualBound()"); return 0; }
 
 
   ////////////////////////////////////////////////////////////////////////////
@@ -115,6 +126,7 @@ public:
     MP_DISPATCH( ReportRays() );
     MP_DISPATCH( CalculateAndReportIIS() );
     MP_DISPATCH( CalculateAndReportMIPGap() );
+    MP_DISPATCH( ReportBestDualBound() );
   }
 
   void ReportBasis() {
@@ -144,11 +156,27 @@ public:
   }
 
   void CalculateAndReportMIPGap() {
-    if (MP_DISPATCH(IsMIP()) &&
-        mipStoredOptions_.returnMipGap_) {
-      std::vector<double> dbl(1, MP_DISPATCH( MIPGap() ));
-      ReportSuffix(sufRelMipGapObj, dbl);
-      ReportSuffix(sufRelMipGapProb, dbl);
+    if (0 < MP_DISPATCH(NumberOfObjectives()) ) {
+      std::vector<double> dbl(1);
+      if (1 & mipStoredOptions_.returnMipGap_) {
+        dbl[0] = MP_DISPATCH( MIPGap() );
+        ReportSuffix(sufRelMipGapObj, dbl);
+        ReportSuffix(sufRelMipGapProb, dbl);
+      }
+      if (2 & mipStoredOptions_.returnMipGap_) {
+        dbl[0] = MP_DISPATCH( MIPGapAbs() );
+        ReportSuffix(sufAbsMipGapObj, dbl);
+        ReportSuffix(sufAbsMipGapProb, dbl);
+      }
+    }
+  }
+
+  void ReportBestDualBound() {
+    if (mipStoredOptions_.returnBestDualBound_ &&
+        0 < MP_DISPATCH(NumberOfObjectives()) ) {
+      std::vector<double> dbl(1, MP_DISPATCH( BestDualBound() ));
+      ReportSuffix(sufBestBoundObj, dbl);
+      ReportSuffix(sufBestBoundProb, dbl);
     }
   }
 
@@ -162,6 +190,7 @@ private:
     int rays_=3;
     int exportIIS_=0;
     int returnMipGap_=0;
+    int returnBestDualBound_=0;
   };
   Options mipStoredOptions_;
 
@@ -175,6 +204,11 @@ public:
   using BaseBackend::AddStoredOption;
 
 protected:
+
+  const mp::OptionValueInfo values_01_noyes_0default_[2] = {
+      {     "0", "no (default)", 0 },
+      {     "1", "yes", 1}
+  };
 
   const mp::OptionValueInfo values_basis_[4] = {
       {     "0", "no", 0 },
@@ -210,13 +244,13 @@ protected:
                       "Default = 0 (don't export).",
                       mipStoredOptions_.exportIIS_);
 
-    if (IMPL_HAS_STD_FEATURE( MIPGap ))
+    if (IMPL_HAS_STD_FEATURE( ReturnMIPGap ))
       AddStoredOption("mip:return_gap return_mipgap",
         "Whether to return mipgap suffixes or include mipgap values "
-    "(|objectve - best_bound|) in the solve_message:  sum of\n"
+    "(|objectve - .bestbound|) in the solve_message:  sum of\n"
     "\n"
-    "| 1 - return relmipgap suffix (relative to |obj|)\n"
-    "| 2 - return absmipgap suffix (absolute mipgap)\n"
+    "| 1 - return .relmipgap suffix (relative to |obj|)\n"
+    "| 2 - return .absmipgap suffix (absolute mipgap)\n"
     "| 4 - suppress mipgap values in solve_message.\n"
     "\n"
     "Default = 0.  The suffixes are on the objective and problem. "
@@ -224,6 +258,18 @@ protected:
     "solution has been found, in which case no mipgap values are "
     "reported in the solve_message.",
         mipStoredOptions_.returnMipGap_);
+
+    if (IMPL_HAS_STD_FEATURE( ReturnBestDualBound ))
+      AddStoredOption("mip:bestbound bestbound returnbound",
+        "Whether to return suffix .bestbound for the "
+        "best known MIP dual bound on the objective value:\n"
+        "\n.. value-table::\n"
+        "The suffix is on the objective and problem and is -Infinity "
+        "for minimization problems and +Infinity for maximization "
+        "problems if there are no integer variables or if a dual bound "
+        "is not available.",
+          mipStoredOptions_.returnBestDualBound_, values_01_noyes_0default_);
+
   }
 
 
@@ -262,6 +308,10 @@ private:
 
   const SuffixDef<double> sufRelMipGapObj = { "relmipgap", suf::OBJ | suf::OUTPUT };
   const SuffixDef<double> sufRelMipGapProb = { "relmipgap", suf::PROBLEM | suf::OUTPUT };
+  const SuffixDef<double> sufAbsMipGapObj = { "absmipgap", suf::OBJ | suf::OUTPUT };
+  const SuffixDef<double> sufAbsMipGapProb = { "absmipgap", suf::PROBLEM | suf::OUTPUT };
+  const SuffixDef<double> sufBestBoundObj = { "bestbound", suf::OBJ | suf::OUTPUT };
+  const SuffixDef<double> sufBestBoundProb = { "bestbound", suf::PROBLEM | suf::OUTPUT };
 
 };
 

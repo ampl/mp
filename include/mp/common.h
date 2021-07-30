@@ -874,6 +874,7 @@ const char *str(expr::Kind kind);
 int nl_opcode(expr::Kind kind);
 }  // namespace expr
 
+#define MP_CONST_DISPATCH(call) static_cast<const Impl*>(this)->call
 #define MP_DISPATCH(call) static_cast<Impl*>(this)->call
 
 namespace internal {

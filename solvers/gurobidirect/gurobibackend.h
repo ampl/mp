@@ -107,6 +107,7 @@ public:
   int NumberOfConstraints() const;
   int NumberOfVariables() const;
   int NumberOfObjectives() const;
+  int ModelSense() const;
 
   void ExportModel(const std::string& file);
 
@@ -160,10 +161,15 @@ public:
   std::vector<int> VarsIIS();
   std::vector<int> ConsIIS();
   /**
-  * Get MIP Gap. +inf if not available
+  * Get MIP Gap
   **/
-  ALLOW_STD_FEATURE( MIPGap, true )
+  ALLOW_STD_FEATURE( ReturnMIPGap, true )
   double MIPGap() const;
+  /**
+  * Get MIP dual bound
+  **/
+  ALLOW_STD_FEATURE( ReturnBestDualBound, true )
+  double BestDualBound() const;
   /**
   * Set branch and bound priorities
   **/

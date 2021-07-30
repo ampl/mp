@@ -1,5 +1,4 @@
 [
-
   {
     "name": "unbdd_01__solvers_pri_iss28",
     "tags": [ "linear"],
@@ -9,5 +8,24 @@
       "u1.unbdd": 1,
       "u2.unbdd": 3
     }
+  },
+ {
+    "name": "mipbound_01 bestbound=1 return_mipgap=3",
+    "tags": [ "linear"],
+    "options": { "ANYSOLVER_options": "bestbound=1 return_mipgap=3" },
+    "objective": 1,
+    "values": {
+      "TotalSum.relmipgap": 0,
+      "Initial.relmipgap": 0,
+      "TotalSum.absmipgap": 0,
+      "Initial.absmipgap": 0,
+      "TotalSum.bestbound": 1,
+      "Initial.bestbound": 1
+    }
+  },
+ {
+    "name": "mipbound_01 bestbound=1 return_mipgap=3 objno=0",
+    "tags": [ "linear"],
+    "options": { "ANYSOLVER_options": "bestbound=1 return_mipgap=3 objno=0" }
   }
 ]

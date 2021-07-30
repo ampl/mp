@@ -75,6 +75,10 @@ int GurobiBackend::NumberOfObjectives() const {
   return GrbGetIntAttr(GRB_INT_ATTR_NUMOBJ);
 }
 
+int GurobiBackend::ModelSense() const {
+  return GrbGetIntAttr(GRB_INT_ATTR_MODELSENSE);
+}
+
 std::vector<double> GurobiBackend::PrimalSolution() {
   return
     GrbGetDblAttrArray(GRB_DBL_ATTR_X, NumberOfVariables());
@@ -296,6 +300,12 @@ double GurobiBackend::MIPGap() const {
   bool f;
   double g = GrbGetDblAttr(GRB_DBL_ATTR_MIPGAP, &f);
   return f ? g : Infinity();
+}
+
+double GurobiBackend::BestDualBound() const {
+  bool f;
+  double g = GrbGetDblAttr(GRB_DBL_ATTR_OBJBOUND, &f);
+  return f ? g : -ModelSense() * Infinity();
 }
 
 double GurobiBackend::NodeCount() const {
