@@ -1020,6 +1020,9 @@ class SolutionAdapter {
 
   int objno() const { return objno_; }
 
+  int num_vars() const { return builder_->num_vars(); }
+  int num_algebraic_cons() const { return builder_->num_algebraic_cons(); }
+
   const typename ProblemBuilder::SuffixSet *suffixes(suf::Kind kind) const {
     return builder_ ? &builder_->suffixes(kind) : 0;
   }

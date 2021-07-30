@@ -112,8 +112,10 @@ void WriteSolFile(fmt::CStringRef filename, const Solution &sol) {
       file.print("{}\n", sol.option(i));
   }
   // TODO: check precision
-  int num_values = sol.num_values(), num_dual_values = sol.num_dual_values();
-  file.print("{0}\n{0}\n{1}\n{1}\n", num_dual_values, num_values);
+  int num_values = sol.num_values(), num_dual_values = sol.num_dual_values(),
+    num_vars = sol.num_vars(), num_constraints = sol.num_algebraic_cons();
+  file.print("{0}\n{1}\n{2}\n{3}\n",
+    num_constraints, num_dual_values, num_vars, num_values);
   for (int i = 0, n = num_dual_values; i < n; ++i)
     file.print("{:.16}\n", sol.dual_value(i));
   for (int i = 0; i < num_values; ++i)
