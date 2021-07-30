@@ -81,18 +81,57 @@ public:
   ////////////////////////////////////////////////////////////////////////////
   /////////////////////// MIP specific derived calculations //////////////////
   ////////////////////////////////////////////////////////////////////////////
-  void CalculateAndReportDerivedResults() {
-    BaseBackend::CalculateAndReportDerivedResults();
-    CalculateAndReportDerivedResults_MIP();
-  }
 
-  void CalculateAndReportDerivedResults_MIP() {
-    CalculateAndReportIIS();
-    CalculateAndReportMIPGap();
-  }
-
+  //////////////////////// STANDARD MIP SUFFIXES //////////////////////////
+  ////////////////////////         INPUT         //////////////////////////
   using BaseBackend::ReadSuffix;
   using BaseBackend::ReportSuffix;
+
+  void ReadStandardSuffixes() {
+    BasicBackend<Impl>::ReadStandardSuffixes();
+    ReadStandardMIPSuffixes();
+  }
+
+  void ReadStandardMIPSuffixes() {
+    if (1 & mipStoredOptions_.basis_)
+      MP_DISPATCH( ReadBasis() );
+  }
+
+  void ReadBasis() {
+    MP_DISPATCH( VarStatii(ReadSuffix(suf_varstatus)) );
+    MP_DISPATCH( ConStatii(ReadSuffix(suf_constatus)) );
+  }
+
+  //////////////////////// STANDARD MIP SUFFIXES //////////////////////////
+  ////////////////////////         OUNPUT        //////////////////////////
+  void ReportStandardSuffixes() {
+    BaseBackend::ReportStandardSuffixes();
+    ReportStandardMIPSuffixes();
+  }
+
+  void ReportStandardMIPSuffixes() {
+    if (2 & mipStoredOptions_.basis_)
+      MP_DISPATCH( ReportBasis() );
+    MP_DISPATCH( ReportRays() );
+    MP_DISPATCH( CalculateAndReportIIS() );
+    MP_DISPATCH( CalculateAndReportMIPGap() );
+  }
+
+  void ReportBasis() {
+    ReportSuffix(suf_varstatus,
+                              MP_DISPATCH( VarStatii() ));
+    ReportSuffix(suf_constatus,
+                              MP_DISPATCH( ConStatii() ));
+  }
+
+  void ReportRays() {
+    if ( need_ray_primal() && MP_DISPATCH( IsProblemUnbounded() )) {
+      ReportSuffix(suf_unbdd, MP_DISPATCH( Ray() ));
+    }
+    if ( need_ray_dual() && MP_DISPATCH( IsProblemInfeasible() )) {
+      ReportSuffix(suf_dunbdd, MP_DISPATCH( DRay() ));
+    }
+  }
 
   void CalculateAndReportIIS() {
     if (MP_DISPATCH( IsProblemInfOrUnb() ) &&
@@ -113,52 +152,10 @@ public:
     }
   }
 
-  //////////////////////// STANDARD MIP SUFFIXES //////////////////////////
-  ////////////////////////         INPUT         //////////////////////////
-  void ReadStandardSuffixes() {
-    BasicBackend<Impl>::ReadStandardSuffixes();
-    ReadStandardMIPSuffixes();
-  }
 
-  void ReadStandardMIPSuffixes() {
-    if (1 & mipStoredOptions_.basis_)
-      ReadBasis();
-  }
-
-  void ReadBasis() {
-    MP_DISPATCH( VarStatii(ReadSuffix(suf_varstatus)) );
-    MP_DISPATCH( ConStatii(ReadSuffix(suf_constatus)) );
-  }
-
-  //////////////////////// STANDARD MIP SUFFIXES //////////////////////////
-  ////////////////////////         OUNPUT        //////////////////////////
-  void ReportStandardSuffixes() {
-    BaseBackend::ReportStandardSuffixes();
-    ReportStandardMIPSuffixes();
-  }
-
-  void ReportStandardMIPSuffixes() {
-    if (2 & mipStoredOptions_.basis_)
-      MP_DISPATCH( ReportBasis() );
-    MP_DISPATCH( ReportRays() );
-  }
-
-  void ReportBasis() {
-    ReportSuffix(suf_varstatus,
-                              MP_DISPATCH( VarStatii() ));
-    ReportSuffix(suf_constatus,
-                              MP_DISPATCH( ConStatii() ));
-  }
-
-  void ReportRays() {
-    if ( need_ray_primal() && MP_DISPATCH( IsProblemUnbounded() )) {
-      ReportSuffix(suf_unbdd, MP_DISPATCH( Ray() ));
-    }
-    if ( need_ray_dual() && MP_DISPATCH( IsProblemInfeasible() )) {
-      ReportSuffix(suf_dunbdd, MP_DISPATCH( DRay() ));
-    }
-  }
-
+  ////////////////////////////////////////////////////////////
+  /////////////////// MIP Backend options ////////////////////
+  ////////////////////////////////////////////////////////////
 private:
   struct Options {
     int basis_=3;
@@ -168,39 +165,6 @@ private:
   };
   Options mipStoredOptions_;
 
-
-  //////////////////////////////////////////////////////////////////////////////
-  //////////////////////////// STANDARD MIP SUFFIXES ///////////////////////////
-  //////////////////////////////////////////////////////////////////////////////
-
-  const SuffixDef<int> suf_varstatus = { "sstatus", suf::VAR | suf::OUTPUT };
-  const SuffixDef<int> suf_constatus = { "sstatus", suf::CON | suf::OUTPUT };
-
-  const SuffixDef<double> suf_unbdd  = { "unbdd",   suf::VAR | suf::OUTPUT };
-  const SuffixDef<double> suf_dunbdd = { "dunbdd",  suf::CON | suf::OUTPUT };
-
-  const SuffixTable iis_table =
-      "\n"
-      "0	non	not in the iis\n"
-      "1	low	at lower bound\n"
-      "2	fix	fixed\n"
-      "3	upp	at upper bound\n"
-      "4	mem	member\n"
-      "5	pmem	possible member\n"
-      "6	plow	possibly at lower bound\n"
-      "7	pupp	possibly at upper bound\n"
-      "8	bug\n";
-  const SuffixDef<int> sufIISCon = { "iis", suf::CON | suf::OUTPUT, iis_table };
-  const SuffixDef<int> sufIISVar = { "iis", suf::VAR | suf::OUTPUT, iis_table };
-
-  const SuffixDef<double> sufRelMipGapObj = { "relmipgap", suf::OBJ | suf::OUTPUT };
-  const SuffixDef<double> sufRelMipGapProb = { "relmipgap", suf::PROBLEM | suf::OUTPUT };
-
-
-
-  ////////////////////////////////////////////////////////////
-  /////////////////// MIP Backend options ////////////////////
-  ////////////////////////////////////////////////////////////
 public:
 
   void InitStandardOptions() {
@@ -268,6 +232,37 @@ protected:
 
   bool need_ray_primal() const { return 1 & mipStoredOptions_.rays_; }
   bool need_ray_dual() const { return 2 & mipStoredOptions_.rays_; }
+
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////// STANDARD MIP SUFFIXES ///////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+private:
+
+  const SuffixDef<int> suf_varstatus = { "sstatus", suf::VAR | suf::OUTPUT };
+  const SuffixDef<int> suf_constatus = { "sstatus", suf::CON | suf::OUTPUT };
+
+  const SuffixDef<double> suf_unbdd  = { "unbdd",   suf::VAR | suf::OUTPUT };
+  const SuffixDef<double> suf_dunbdd = { "dunbdd",  suf::CON | suf::OUTPUT };
+
+  const SuffixTable iis_table =
+      "\n"
+      "0	non	not in the iis\n"
+      "1	low	at lower bound\n"
+      "2	fix	fixed\n"
+      "3	upp	at upper bound\n"
+      "4	mem	member\n"
+      "5	pmem	possible member\n"
+      "6	plow	possibly at lower bound\n"
+      "7	pupp	possibly at upper bound\n"
+      "8	bug\n";
+  const SuffixDef<int> sufIISCon = { "iis", suf::CON | suf::OUTPUT, iis_table };
+  const SuffixDef<int> sufIISVar = { "iis", suf::VAR | suf::OUTPUT, iis_table };
+
+  const SuffixDef<double> sufRelMipGapObj = { "relmipgap", suf::OBJ | suf::OUTPUT };
+  const SuffixDef<double> sufRelMipGapProb = { "relmipgap", suf::PROBLEM | suf::OUTPUT };
+
 };
 
 }  // namespace mp

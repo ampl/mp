@@ -220,7 +220,6 @@ public:
     MP_DISPATCH( WrapupSolve() );
 
     MP_DISPATCH( ObtainSolutionStatus() );
-    MP_DISPATCH( CalculateAndReportDerivedResults() );
     MP_DISPATCH( ReportSolution() );
     if (MP_DISPATCH( timing() ))
       MP_DISPATCH( PrintTimingInfo() );
@@ -264,7 +263,7 @@ public:
     solve_status = MP_DISPATCH(
           ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
   }
-  void CalculateAndReportDerivedResults() { }
+
 
   using Solver::need_multiple_solutions;
 
@@ -587,20 +586,20 @@ protected:
   **/
   DEFINE_STD_FEATURE( VarPriorities, true ) // believe true for most
   void VarPriorities(ArrayRef<int>) {
-    throw MakeUnsupportedError("BasicBackend::VarPriorities");
+    UNSUPPORTED("BasicBackend::VarPriorities");
   }
 
   void ObjPriorities(ArrayRef<int>) {
-    throw MakeUnsupportedError("BasicBackend::ObjPriorities");
+    UNSUPPORTED("BasicBackend::ObjPriorities");
   }
   void ObjWeights(ArrayRef<double>) {
-    throw MakeUnsupportedError("BasicBackend::ObjWeights");
+    UNSUPPORTED("BasicBackend::ObjWeights");
   }
   void ObjAbsTol(ArrayRef<double>) {
-    throw MakeUnsupportedError("BasicBackend::ObjAbsTol");
+    UNSUPPORTED("BasicBackend::ObjAbsTol");
   }
   void ObjRelTol(ArrayRef<double>) {
-    throw MakeUnsupportedError("BasicBackend::ObjRelTol");
+    UNSUPPORTED("BasicBackend::ObjRelTol");
   }
 
 
