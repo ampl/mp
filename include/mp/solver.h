@@ -969,9 +969,6 @@ class Solver : private ErrorHandler,
   // Usage:
   //   Print("objective {}", FormatObjValue(obj_value));
   DoubleFormatter FormatObjValue(double value);
-
-  // Accessor for option
-  bool WantMultiObj() const { return multiobj_; }
 };
 
 template <typename ProblemBuilderT>

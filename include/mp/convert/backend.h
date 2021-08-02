@@ -332,7 +332,7 @@ public:
           std::vector<double> obj_values = MP_DISPATCH(ObjectiveValues());
           writer.write("; objective {}", MP_DISPATCH(FormatObjValue(obj_values[0])));
           writer.write("\nIndividual objective values:");
-          for (int i = 0; i < obj_values.size(); i++)
+          for (size_t i = 0; i < obj_values.size(); i++)
             writer.write("\n\t_sobj[{}] = {}", i+1, // indexing of _sobj starts from 1
               MP_DISPATCH(FormatObjValue(obj_values[i])));
         }
@@ -365,6 +365,7 @@ public:
                        stats.setup_time, stats.solution_time, output_time) );
   }
 
+  /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////// SERVICE STUFF ///////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
@@ -398,6 +399,13 @@ public:
   };
   Stats stats;
 
+  /////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////// OPTIONAL ACCESSORS /////////////////////////////////
+  //////////////// TO BE IMPLEMENTED IN THE FINAL BACKEND CLASS ///////////////////
+  ////////////////////// IF THE CORRESPONDING FEATURE IS USED /////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  std::vector<double> ObjectiveValues() const
+  { UNSUPPORTED("ObjectiveValues()"); return {}; }
 
   /////////////////////////////// SOME MATHS ////////////////////////////////
   static bool float_equal(double a, double b) {           // ??????
