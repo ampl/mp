@@ -80,8 +80,6 @@ void WriteSuffixes(fmt::BufferedFile &file, const SuffixMap *suffixes) {
     SuffixValueCounter counter;
     i->VisitValues(counter);
     int num_values = counter.num_values();
-    if (num_values == 0) // Don't write table if no values
-      return;
     const char *name = i->name();
     int mask = internal::SUFFIX_KIND_MASK | suf::FLOAT | suf::IODECL;
     const auto& table = i->table();
