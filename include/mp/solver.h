@@ -1104,13 +1104,17 @@ template <typename Solver, typename Writer>
 void SolutionWriter<Solver, Writer>::HandleSolution(
     int status, fmt::CStringRef message, const double *values,
     const double *dual_values, double) {
-  typedef typename ProblemBuilder::IntSuffix IntSuffix;
   if (solver_.need_multiple_solutions()) {
-    builder_.AddIntSuffix("nsol", suf::PROBLEM | suf::OUTPUT | suf::OUTONLY, 0);
-
-    IntSuffix nsol_suffix = Cast<IntSuffix>(
-          builder_.suffixes(suf::PROBLEM).Find("nsol"));
-    nsol_suffix.set_value(0, num_solutions_);
+    auto kindP = suf::PROBLEM | suf::OUTPUT | suf::OUTONLY;
+    auto kindO = suf::OBJ | suf::OUTPUT | suf::OUTONLY;
+    builder_.AddIntSuffix("nsol", kindP, 0).
+        SetValue(0, num_solutions_);
+    builder_.AddIntSuffix("nsol", kindO, 0).
+        SetValue(0, num_solutions_);
+    builder_.AddIntSuffix("npool", kindP, 0).
+        SetValue(0, num_solutions_);
+    builder_.AddIntSuffix("npool", kindO, 0).
+        SetValue(0, num_solutions_);
   }
   SolutionAdapter<ProblemBuilder> sol(
         status, &builder_, message.c_str(), options_,

@@ -5,7 +5,7 @@
     "objective": 1
   },
   {
-    "name": "multi_sol_01 countsolutions=1",
+    "name": "multi_sol_01 countsolutions=1, check .nsol",
     "tags": [ "linear"],
     "objective": 1,
     "options": { "ANYSOLVER_options": "countsolutions=1" },
@@ -19,7 +19,7 @@
     "objective": 1,
     "options": { "ANYSOLVER_options": "poolgap=0.1 solutionstub=stub" },
     "values": {
-      "Initial.nsol": 3
+      "TotalSum.nsol": 3
     }
   },
   {
@@ -37,7 +37,25 @@
     "objective": 1,
     "options": { "ANYSOLVER_options": "poollimit=2 solutionstub=stub" },
     "values": {
-      "Initial.nsol": 2
+      "TotalSum.nsol": 2
+    }
+  },
+  {
+    "name": "multi_sol_01 sol:count=1, check .npool",
+    "tags": [ "linear"],
+    "objective": 1,
+    "options": { "ANYSOLVER_options": "countsolutions=1" },
+    "values": {
+      "Initial.npool": 6
+    }
+  },
+  {
+    "name": "multi_sol_01 poolgap=0.1 ams_stub=stub",
+    "tags": [ "linear"],
+    "objective": 1,
+    "options": { "ANYSOLVER_options": "poolgap=0.1 ams_stub=stub" },
+    "values": {
+      "TotalSum.npool": 3
     }
   }
 ]

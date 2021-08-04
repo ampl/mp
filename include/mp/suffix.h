@@ -71,6 +71,9 @@ class SuffixBase {
                   const SuffixTable& tab = {})
       : name(name), kind(kind), num_values(num_values), int_values(0),
     table(tab) {}
+
+    int kind_full() const { return kind; }
+    int kind_pure() const { return kind & suf::KIND_MASK; }
   };
 
   template <typename SuffixType>
@@ -108,8 +111,11 @@ class SuffixBase {
   // Returns the suffix name.
   const char *name() const { return impl_->name.data(); }
 
+  // Returns the suffix pure kind (var/con/prob/obj).
+  int kind_pure() const { return impl_->kind_pure(); }
+
   // Returns the suffix kind.
-  int kind() const { return impl_->kind; }
+  int kind() const { return impl_->kind_full(); }
 
   /// Or's the kind with a given int argument
   void or_kind(int flg) { impl_->kind |= flg; }
@@ -328,8 +334,11 @@ class BasicSuffixSet : private Alloc {
       std::size_t lhs_size = lhs.name.size(), rhs_size = rhs.name.size();
       if (lhs_size != rhs_size)
         return lhs_size < rhs_size;
-      return std::char_traits<char>::compare(
-            lhs.name.data(), rhs.name.data(), lhs_size) < 0;
+      auto cmp = std::char_traits<char>::compare(
+            lhs.name.data(), rhs.name.data(), lhs_size);
+      return cmp<0;
+      /// Don't compare kind_pure() because BasicProb
+      /// has own suffix set for each kind
     }
   };
 
