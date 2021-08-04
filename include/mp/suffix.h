@@ -495,7 +495,7 @@ class SuffixManager {
   typedef MutIntSuffix IntSuffix;
   typedef mp::SuffixSet SuffixSet;
 
-  // Returns a set of suffixes.
+  // Returns a set of suffixes. TODO hide
   SuffixSet &suffixes(suf::Kind kind) {
     Check(kind);
     return suffixes_[kind];

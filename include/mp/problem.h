@@ -258,33 +258,10 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   }
 
 public:
-  template <typename T>
-  class SuffixHandler {
-   private:
-    BasicMutSuffix<T> suffix_;
 
-   public:
-    explicit SuffixHandler(BasicMutSuffix<T> s) : suffix_(s) {}
-
-    // Safe bool type.
-    typedef void (internal::SuffixBase::*SafeBool)() const;
-    operator SafeBool() const { return suffix_; }
-
-    // Sets the suffix value.
-    void SetValue(int index, T value) {
-      suffix_.set_value(index, value);
-    }
-  };
-
-  int GetSuffixSize(suf::Kind kind);
-
-  template <typename T>
-  SuffixHandler<T> AddSuffix(fmt::StringRef name, int kind) {
-    auto main_kind = (suf::Kind)(kind & suf::KIND_MASK);
-    return SuffixHandler<T>(
-          suffixes(main_kind).template Add<T>(name, kind, GetSuffixSize(main_kind)));
-  }
-
+  ////////////////////////////////////////////////////////////////////
+  /// BasicProblemItem
+  ////////////////////////////////////////////////////////////////////
   template <typename ProblemType>
   struct BasicProblemItem {
     ProblemType *problem_;
@@ -1041,6 +1018,37 @@ public:
   // Returns true if the problem has complementarity conditions.
   bool HasComplementarity() const { return !compl_vars_.empty(); }
 
+
+  /////////////////////////////////////////////////////////////////////////
+  /// Suffixes
+  /////////////////////////////////////////////////////////////////////////
+  template <typename T>
+  class SuffixHandler {
+   private:
+    BasicMutSuffix<T> suffix_;
+
+   public:
+    explicit SuffixHandler(BasicMutSuffix<T> s) : suffix_(s) {}
+
+    // Safe bool type.
+    typedef void (internal::SuffixBase::*SafeBool)() const;
+    operator SafeBool() const { return suffix_; }
+
+    // Sets the suffix value.
+    void SetValue(int index, T value) {
+      suffix_.set_value(index, value);
+    }
+  };
+
+  int GetSuffixSize(suf::Kind kind);
+
+  template <typename T>
+  SuffixHandler<T> AddSuffix(fmt::StringRef name, int kind) {
+    auto main_kind = (suf::Kind)(kind & suf::KIND_MASK);
+    return SuffixHandler<T>(
+          suffixes(main_kind).template Add<T>(name, kind, GetSuffixSize(main_kind)));
+  }
+
   typedef SuffixHandler<int> IntSuffixHandler;
 
   // Adds an integer suffix.
@@ -1057,6 +1065,8 @@ public:
     return AddSuffix<double>(name, kind);
   }
 
+
+  ///////////////////////////////////////////////////////////////////////
   // Sets problem information and reserves memory for problem elements.
   void SetInfo(const ProblemInfo &info);
 
