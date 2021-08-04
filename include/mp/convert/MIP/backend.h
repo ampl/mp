@@ -228,7 +228,12 @@ protected:
     if (IMPL_HAS_STD_FEATURE( BASIS ))
       AddStoredOption("mip:basis basis",
                       "Whether to use or return a basis:\n "
-                      "\n.. value-table::\n",
+                      "\n.. value-table::\n"
+                      "Note that if you provide a valid starting extreme point, "
+                      "either through primal/dual status, or through warmstart, "
+                      "then Gurobi LP presolve will be disabled. For models where "
+                      "presolve greatly reduces the problem size, "
+                      "this might hurt performance.",
                       mipStoredOptions_.basis_, values_basis_);
 
     if (IMPL_HAS_STD_FEATURE( RAYS ))
