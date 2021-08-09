@@ -1018,6 +1018,11 @@ public:
   // Returns true if the problem has complementarity conditions.
   bool HasComplementarity() const { return !compl_vars_.empty(); }
 
+  /// Variables' initial values
+  ArrayRef<double> InitialValues() const { return initial_values_; }
+
+  /// Initial dual values
+  ArrayRef<double> InitialDualValues() const { return initial_dual_values_; }
 
   /////////////////////////////////////////////////////////////////////////
   /// Suffixes

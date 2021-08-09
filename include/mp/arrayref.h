@@ -48,6 +48,8 @@ class ArrayRef {
   template <std::size_t SIZE>
   ArrayRef(const T (&data)[SIZE]) : data_(data), size_(SIZE) {}
 
+  operator bool() const { return 0!=size(); }
+
   const T *data() const { return data_; }
   std::size_t size() const { return size_; }
 

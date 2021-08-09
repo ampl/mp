@@ -26,10 +26,16 @@ public:
   Model& GetOutputModel()
   { return GetCvt().GetOutputModel(); }
 
+  ArrayRef<double> InitialValues() override {
+    return GetOutputModel().InitialValues();
+  }
+  ArrayRef<double> InitialDualValues() override {
+    return GetOutputModel().InitialDualValues();
+  }
+
   ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) override {
     return GetOutputModel().ReadSuffix(suf);
   }
-
   ArrayRef<double> ReadSuffix(const SuffixDef<double>& suf) override {
     return GetOutputModel().ReadSuffix(suf);
   }
@@ -38,7 +44,6 @@ public:
                     const std::vector<int>& values) override {
     GetOutputModel().ReportSuffix(suf, values);
   }
-
   void ReportSuffix(const SuffixDef<double>& suf,
                     const std::vector<double>& values) override {
     GetOutputModel().ReportSuffix(suf, values);
@@ -48,7 +53,6 @@ public:
                       const double *x, const double * y, double obj) override {
     GetCvt().HandleSolution(status, msg, x, y, obj);
   }
-
   void HandleFeasibleSolution(fmt::CStringRef msg,
                       const double *x, const double * y, double obj) override {
     GetCvt().HandleFeasibleSolution(msg, x, y, obj);

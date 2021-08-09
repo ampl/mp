@@ -212,7 +212,7 @@ void GurobiBackend::VarStatii(ArrayRef<int> vst) {
       RAISE(fmt::format("Unknown AMPL var status value: {}", s));
     }
   }
-  assert(GrbSetIntAttrArray(GRB_INT_ATTR_VBASIS, stt));
+  GrbSetIntAttrArray(GRB_INT_ATTR_VBASIS, stt);
 }
 
 void GurobiBackend::ConStatii(ArrayRef<int> cst) {
@@ -235,38 +235,61 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
       RAISE(fmt::format("Unknown AMPL con status value: {}", s));
     }
   }
-  assert(GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, stt));
+  GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, stt);
+}
+
+void GurobiBackend::InputSimplexStart(ArrayRef<double> x0, ArrayRef<double> pi0) {
+  GrbSetDblAttrArray(GRB_DBL_ATTR_PSTART, x0);
+  GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, pi0);
+}
+
+void GurobiBackend::InputMIPStart(ArrayRef<double> x0) {
+  switch (mipstart()) {
+  case 0: break;
+  case 1:
+    GrbSetDblAttrArray(GRB_DBL_ATTR_START, x0);
+    break;
+  case 3:
+    GrbSetIntAttrArray(GRB_INT_ATTR_VARHINTPRI,
+                         ReadSuffix(sufHintPri));
+    /// fall through
+  case 2:
+    GrbSetDblAttrArray(GRB_DBL_ATTR_VARHINTVAL, x0);
+    break;
+  default:
+    assert(0);
+  }
 }
 
 void GurobiBackend::VarPriorities(ArrayRef<int> priority) {
-  assert(GrbSetIntAttrArray(GRB_INT_ATTR_BRANCHPRIORITY, priority));
+  GrbSetIntAttrArray(GRB_INT_ATTR_BRANCHPRIORITY, priority);
 }
 
 void GurobiBackend::ObjPriorities(ArrayRef<int> priority) {
   for (int i=0; i<(int)priority.size(); ++i) {
     GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
-    assert(GrbSetIntAttr(GRB_INT_ATTR_OBJNPRIORITY, priority[i]));
+    GrbSetIntAttr(GRB_INT_ATTR_OBJNPRIORITY, priority[i]);
   }
 }
 
 void GurobiBackend::ObjWeights(ArrayRef<double> val) {
   for (int i=0; i<(int)val.size(); ++i) {
     GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
-    assert(GrbSetDblAttr(GRB_DBL_ATTR_OBJNWEIGHT, val[i]));
+    GrbSetDblAttr(GRB_DBL_ATTR_OBJNWEIGHT, val[i]);
   }
 }
 
 void GurobiBackend::ObjAbsTol(ArrayRef<double> val) {
   for (int i=0; i<(int)val.size(); ++i) {
     GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
-    assert(GrbSetDblAttr(GRB_DBL_ATTR_OBJNABSTOL, val[i]));
+    GrbSetDblAttr(GRB_DBL_ATTR_OBJNABSTOL, val[i]);
   }
 }
 
 void GurobiBackend::ObjRelTol(ArrayRef<double> val) {
   for (int i=0; i<(int)val.size(); ++i) {
     GrbSetIntParam(GRB_INT_PAR_OBJNUMBER, i);
-    assert(GrbSetDblAttr(GRB_DBL_ATTR_OBJNRELTOL, val[i]));
+    GrbSetDblAttr(GRB_DBL_ATTR_OBJNRELTOL, val[i]);
   }
 }
 
@@ -565,6 +588,9 @@ void GurobiBackend::AddConstraint(const PLConstraint& plc) {
 
 ///////////////////////////////////////////////////////
 void GurobiBackend::FinishProblemModificationPhase() {
+  // Update before adding statuses etc
+  GRB_CALL( GRBupdatemodel(model) );
+
   if (!storedOptions_.exportFile_.empty()) {
     ExportModel(storedOptions_.exportFile_);
   }
@@ -575,6 +601,17 @@ void GurobiBackend::FinishProblemModificationPhase() {
 ////////////////////////// OPTIONS ////////////////////////////
 
 // static possible values with descriptions
+
+const mp::OptionValueInfo values_mipstart_[4] = {
+    {     "0", "no (overrides mp:warmstart)", 0 },
+    {     "1", "yes (default)", 1},
+    {     "2", "no, but use the incoming primal "
+          "values as hints (VARHINTVAL), ignoring the .hintpri suffix", 2},
+    {     "3", "similar to 2, but use the .hintpri suffix on "
+          "variables:  larger (integer) values give greater "
+          "priority to the initial value of the associated "
+          "variable.", 3}
+};
 
 const mp::OptionValueInfo values_pool_mode[] = {
     {"0", "Just collect solutions during normal solve, and sort them best-first", 0},
@@ -650,6 +687,12 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("log:file logfile",
       "Log file name.",
       GRB_STR_PAR_LOGFILE);
+
+  AddStoredOption("mip:start mipstart",
+    "Whether to use initial guesses in problems with "
+    "integer variables:\n"   "\n.. value-table::\n",
+    storedOptions_.nMIPStart_, values_mipstart_);
+
 
   /// Option "multiobj" is created internally if
   /// ThisBackend::IfMultipleObj() returns true.
@@ -807,16 +850,14 @@ double GurobiBackend::GrbGetDblAttr(const char* attr_id, bool *flag) const {
   return tmp;
 }
 
-bool GurobiBackend::GrbSetIntAttr(
+void GurobiBackend::GrbSetIntAttr(
     const char *attr_id, int val) {
-  auto error = GRBsetintattr(model, attr_id, val);
-  return 0==error;
+  GRB_CALL( GRBsetintattr(model, attr_id, val) );
 }
 
-bool GurobiBackend::GrbSetDblAttr(
+void GurobiBackend::GrbSetDblAttr(
     const char *attr_id, double val) {
-  auto error = GRBsetdblattr(model, attr_id, val);
-  return 0==error;
+  GRB_CALL( GRBsetdblattr(model, attr_id, val) );
 }
 
 std::vector<int> GurobiBackend::GrbGetIntAttrArray(const char* attr_id,
@@ -839,34 +880,37 @@ std::vector<double> GurobiBackend::GrbGetDblAttrArray(const char* attr_id,
   return res;
 }
 
-bool GurobiBackend::GrbSetIntAttrArray(
+void GurobiBackend::GrbSetIntAttrArray(
     const char *attr_id, ArrayRef<int> values, std::size_t start) {
-  auto error = GRBsetintattrarray(model, attr_id,
-                                  (int)start, (int)values.size(), (int*)values.data());
-  return 0==error;
+  if (values)
+    GRB_CALL( GRBsetintattrarray(model, attr_id,
+              (int)start, (int)values.size(), (int*)values.data()) );
 }
 
-bool GurobiBackend::GrbSetDblAttrArray(
+void GurobiBackend::GrbSetDblAttrArray(
     const char *attr_id, ArrayRef<double> values, std::size_t start) {
-  auto error = GRBsetdblattrarray(model, attr_id,
-                                  (int)start, (int)values.size(), (double*)values.data());
-  return 0==error;
+  if (values)
+    GRB_CALL( GRBsetdblattrarray(model, attr_id,
+              (int)start, (int)values.size(), (double*)values.data()) );
 }
 
-bool GurobiBackend::GrbSetIntAttrList(const char *attr_id,
-                                      const std::vector<int> &idx, const std::vector<int> &val) {
+void GurobiBackend::GrbSetIntAttrList(const char *attr_id,
+                                      const std::vector<int> &idx,
+                                      const std::vector<int> &val) {
   assert(idx.size()==val.size());
-  auto error = GRBsetintattrlist(model, attr_id,
-                                  (int)idx.size(), (int*)idx.data(), (int*)val.data());
-  return 0==error;
+  if (idx.size())
+    GRB_CALL( GRBsetintattrlist(model, attr_id,
+                (int)idx.size(), (int*)idx.data(), (int*)val.data()) );
 }
 
-bool GurobiBackend::GrbSetDblAttrList(const char *attr_id,
-                                      const std::vector<int> &idx, const std::vector<double> &val) {
+void GurobiBackend::GrbSetDblAttrList(const char *attr_id,
+                                      const std::vector<int> &idx,
+                                      const std::vector<double> &val) {
   assert(idx.size()==val.size());
-  auto error = GRBsetdblattrlist(model, attr_id,
-                                  (int)idx.size(), (int*)idx.data(), (double*)val.data());
-  return 0==error;
+  if (idx.size())
+    GRB_CALL( GRBsetdblattrlist(model, attr_id,
+                                (int)idx.size(),
+                                (int*)idx.data(), (double*)val.data()) );
 }
 
 void GurobiBackend::SetMainObjSense(obj::Type s) { main_obj_sense_ = s; }

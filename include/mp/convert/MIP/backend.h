@@ -58,6 +58,20 @@ public:
   void ConStatii(ArrayRef<int> )
   { UNSUPPORTED("MIPBackend::ConStatii"); }
   /**
+  * General warm start, e.g.,
+  * set primal/dual initial guesses for continuous case
+  **/
+  DEFINE_STD_FEATURE( WARMSTART, false )
+  void InputSimplexStart(ArrayRef<double> x0,
+                       ArrayRef<double> pi0)
+  { UNSUPPORTED("MIPBackend::InputSimplexStart"); }
+  /**
+  * Specifically, MIP warm start
+  **/
+  DEFINE_STD_FEATURE( MIPSTART, false )
+  void InputMIPStart(ArrayRef<double> x0)
+  { UNSUPPORTED("MIPBackend::InputMIPStart"); }
+  /**
   * Obtain unbounded/inf rays
   **/
   DEFINE_STD_FEATURE( RAYS, false )
@@ -74,7 +88,7 @@ public:
   /**
   * Get MIP Gap
   **/
-  DEFINE_STD_FEATURE( ReturnMIPGap, false )
+  DEFINE_STD_FEATURE( RETURN_MIP_GAP, false )
   double MIPGap() const { return MP_DISPATCH( Infinity() ); }
   double MIPGapAbs() const {
     return std::fabs(
@@ -84,7 +98,7 @@ public:
   /**
   * Get MIP dual bound
   **/
-  DEFINE_STD_FEATURE( ReturnBestDualBound, false )
+  DEFINE_STD_FEATURE( RETURN_BEST_DUAL_BOUND, false )
   double BestDualBound() const
   { UNSUPPORTED("BestDualBound()"); return 0; }
 
@@ -98,30 +112,59 @@ public:
   using BaseBackend::ReadSuffix;
   using BaseBackend::ReportSuffix;
 
-  void ReadStandardSuffixes() {
-    BasicBackend<Impl>::ReadStandardSuffixes();
-    ReadStandardMIPSuffixes();
+  void InputStdExtras() {
+    BasicBackend<Impl>::InputStdExtras();
+    InputMIPExtras();
   }
 
-  void ReadStandardMIPSuffixes() {
-    if (1 & mipStoredOptions_.basis_)
-      MP_DISPATCH( ReadBasis() );
+  void InputMIPExtras() {
+    MP_DISPATCH( InputStartValues() );
   }
 
-  void ReadBasis() {
-    MP_DISPATCH( VarStatii(ReadSuffix(suf_varstatus)) );
-    MP_DISPATCH( ConStatii(ReadSuffix(suf_constatus)) );
+  void InputStartValues() {
+    if (MP_DISPATCH( IsMIP() )) {
+      if (warmstart() &&
+          IMPL_HAS_STD_FEATURE( MIPSTART )) {
+        MP_DISPATCH( InputMIPStart(
+                       MP_DISPATCH( InitialValues() ) ) );
+      }
+    } else
+      MP_DISPATCH( InputSimplexStartOrBasis() );
   }
+
+  void InputSimplexStartOrBasis() {
+    bool useBasis = need_basis_in();
+    ArrayRef<int> varstt, constt;
+    if (useBasis) {
+      varstt = ReadSuffix(suf_varstatus);
+      constt = ReadSuffix(suf_constatus);
+      useBasis = varstt.size() && constt.size();
+    }
+    auto X0 = MP_DISPATCH( InitialValues() );
+    auto pi0 = MP_DISPATCH( InitialDualValues() );
+    bool haveInis = X0.size() && pi0.size();
+    if (haveInis && (
+          2==warmstart() ||
+          (1==warmstart() && !useBasis))) {
+      MP_DISPATCH( InputSimplexStart(X0, pi0) );
+      useBasis = false;
+    }
+    if (useBasis) {
+      MP_DISPATCH( VarStatii(varstt) );
+      MP_DISPATCH( ConStatii(constt) );
+    }
+  }
+
 
   //////////////////////// STANDARD MIP SUFFIXES //////////////////////////
-  ////////////////////////         OUNPUT        //////////////////////////
+  ////////////////////////         OUtPUT        //////////////////////////
   void ReportStandardSuffixes() {
     BaseBackend::ReportStandardSuffixes();
     ReportStandardMIPSuffixes();
   }
 
   void ReportStandardMIPSuffixes() {
-    if (2 & mipStoredOptions_.basis_)
+    if (need_basis_out())
       MP_DISPATCH( ReportBasis() );
     MP_DISPATCH( ReportRays() );
     MP_DISPATCH( CalculateAndReportIIS() );
@@ -187,6 +230,7 @@ public:
 private:
   struct Options {
     int basis_=3;
+    int warmstart_=1;
     int rays_=3;
     int exportIIS_=0;
     int returnMipGap_=0;
@@ -194,8 +238,24 @@ private:
   };
   Options mipStoredOptions_;
 
-public:
+protected:
+  const Options& GetMIPOptions() const { return mipStoredOptions_; }
 
+  int basis() const
+  { return IMPL_HAS_STD_FEATURE(BASIS) ? GetMIPOptions().basis_ : 0; }
+  bool need_basis_in() const { return 1 & basis(); }
+  bool need_basis_out() const { return 2 & basis(); }
+
+  int warmstart() const
+  { return IMPL_HAS_STD_FEATURE(WARMSTART) ? GetMIPOptions().warmstart_ : 0; }
+
+  int rays() const
+  { return IMPL_HAS_STD_FEATURE(RAYS) ? GetMIPOptions().rays_ : 0; }
+  bool need_ray_primal() const { return 1 & rays(); }
+  bool need_ray_dual() const { return 2 & rays(); }
+
+
+public:
   void InitStandardOptions() {
     BaseBackend::InitStandardOptions();
     MP_DISPATCH( InitMIPOptions() );
@@ -203,8 +263,9 @@ public:
 
   using BaseBackend::AddStoredOption;
 
-protected:
 
+  ////////////////////////////////////////////////////////////////
+protected:
   const mp::OptionValueInfo values_01_noyes_0default_[2] = {
       {     "0", "no (default)", 0 },
       {     "1", "yes", 1}
@@ -217,6 +278,12 @@ protected:
       {     "3", "both (1 + 2 = default).", 3}
   };
 
+  const mp::OptionValueInfo values_warmstart_[3] = {
+      {     "0", "no", 0 },
+      {     "1", "yes (for LP: if there is no incoming mip:basis) (default)", 1},
+      {     "2", "yes (for LP: ignoring the incoming mip:basis, if any)", 2}
+  };
+
   const mp::OptionValueInfo values_rays_[4] = {
       {     "0", "neither", 0 },
       {     "1", "just .unbdd", 1},
@@ -224,6 +291,7 @@ protected:
       {     "3", "both (default)", 3}
   };
 
+  ////////////////////////////////////////////////////////////////
   void InitMIPOptions() {
     if (IMPL_HAS_STD_FEATURE( BASIS ))
       AddStoredOption("mip:basis basis",
@@ -235,6 +303,14 @@ protected:
                       "presolve greatly reduces the problem size, "
                       "this might hurt performance.",
                       mipStoredOptions_.basis_, values_basis_);
+
+    if (IMPL_HAS_STD_FEATURE( WARMSTART ))
+      AddStoredOption("mp:warmstart warmstart",
+                      "Whether to use incoming primal (and dual, for LP) variable values "
+                      "in a warmstart:\n "
+                      "\n.. value-table::\n"
+                      "Note that for LP, mip:basis is usually more efficient.",
+                      mipStoredOptions_.warmstart_, values_warmstart_);
 
     if (IMPL_HAS_STD_FEATURE( RAYS ))
       AddStoredOption("mip:rays rays",
@@ -249,7 +325,7 @@ protected:
                       "Default = 0 (don't export).",
                       mipStoredOptions_.exportIIS_);
 
-    if (IMPL_HAS_STD_FEATURE( ReturnMIPGap ))
+    if (IMPL_HAS_STD_FEATURE( RETURN_MIP_GAP ))
       AddStoredOption("mip:return_gap return_mipgap",
         "Whether to return mipgap suffixes or include mipgap values "
     "(|objectve - .bestbound|) in the solve_message:  sum of\n"
@@ -264,7 +340,7 @@ protected:
     "reported in the solve_message.",
         mipStoredOptions_.returnMipGap_);
 
-    if (IMPL_HAS_STD_FEATURE( ReturnBestDualBound ))
+    if (IMPL_HAS_STD_FEATURE( RETURN_BEST_DUAL_BOUND ))
       AddStoredOption("mip:bestbound bestbound returnbound",
         "Whether to return suffix .bestbound for the "
         "best known MIP dual bound on the objective value:\n"
@@ -276,13 +352,6 @@ protected:
           mipStoredOptions_.returnBestDualBound_, values_01_noyes_0default_);
 
   }
-
-
-protected:
-  const Options& GetStandardMIPOptions() const { return mipStoredOptions_; }
-
-  bool need_ray_primal() const { return 1 & mipStoredOptions_.rays_; }
-  bool need_ray_dual() const { return 2 & mipStoredOptions_.rays_; }
 
 
 

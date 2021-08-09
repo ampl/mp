@@ -33,13 +33,19 @@
 #include "mp/convert/model.h"
 #include "mp/convert/model_adapter.h"
 
+#define DEFAULT_STD_FEATURES_TO( val ) \
+  template <class FeatureStructName> \
+  static constexpr bool STD_FEATURE_QUERY_FN( \
+    const FeatureStructName& ) { return val; }
+/// And default them, but need to repeat in Impl
+DEFAULT_STD_FEATURES_TO( false )
 #define DEFINE_STD_FEATURE( name, defval ) \
   struct STD_FEATURE_STRUCT_NM( name ) { }; \
   ALLOW_STD_FEATURE( name, defval )
 #define ALLOW_STD_FEATURE( name, val ) \
   static constexpr bool STD_FEATURE_QUERY_FN( \
     const STD_FEATURE_STRUCT_NM( name )& ) { return val; }
-#define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH( \
+#define IMPL_HAS_STD_FEATURE( name ) MP_CONST_DISPATCH( \
   STD_FEATURE_QUERY_FN( STD_FEATURE_STRUCT_NM( name )() ) )
 #define STD_FEATURE_QUERY_FN AllowStdFeature__func
 #define STD_FEATURE_STRUCT_NM( name ) StdFeatureDesc__ ## name
@@ -213,7 +219,7 @@ public:
   ////////////////////////////////////////////////////////////////////////////
 
   void SolveAndReport() {
-    MP_DISPATCH( ReadSuffixes() );
+    MP_DISPATCH( InputExtras() );
 
     MP_DISPATCH( PrepareSolve() );
     MP_DISPATCH( SolveAndReportIntermediateResults() );
@@ -225,12 +231,12 @@ public:
       MP_DISPATCH( PrintTimingInfo() );
   }
 
-  void ReadSuffixes() {
-    MP_DISPATCH( ReadStandardSuffixes() );
-    MP_DISPATCH( ReadCustomSuffixes() );
+  void InputExtras() {
+    MP_DISPATCH( InputStdExtras() );
+    MP_DISPATCH( InputCustomExtras() );
   }
 
-  void ReadStandardSuffixes() {
+  void InputStdExtras() {
     if (storedOptions_.importPriorities_)
       MP_DISPATCH( VarPriorities( ReadSuffix(suf_varpriority) ) );
     if (multiobj()) {
@@ -240,7 +246,7 @@ public:
       MP_DISPATCH( ObjRelTol( ReadSuffix(suf_objreltol) ) );
     }
   }
-  void ReadCustomSuffixes() { }
+  void InputCustomExtras() { }
 
   void PrepareSolve() {
     MP_DISPATCH( SetupInterrupter() );
@@ -435,6 +441,17 @@ protected:
       const double *x, const double *y, double obj) {
     GetCQ().HandleFeasibleSolution(msg, x, y, obj);
   }
+
+  /// Variables' initial values
+  ArrayRef<double> InitialValues() {
+    return GetCQ().InitialValues();
+  }
+
+  /// Initial dual values
+  ArrayRef<double> InitialDualValues() {
+    return GetCQ().InitialDualValues();
+  }
+
 
   ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) {
     return GetCQ().ReadSuffix(suf);

@@ -50,6 +50,7 @@ public:
 
   /// [[ Prototype an incremental interface ]]
   void InitProblemModificationPhase();
+  /// Chance to update the model
   void FinishProblemModificationPhase();
 
   void AddVariable(Variable var);
@@ -139,6 +140,8 @@ public:
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
   ////////////////////////////////////////////////////////////
+  /// Default switch, needed if not all std features mentioned
+  DEFAULT_STD_FEATURES_TO( false )
   /**
   * Get/Set AMPL var/con statii
   **/
@@ -147,6 +150,18 @@ public:
   std::vector<int> ConStatii();
   void VarStatii(ArrayRef<int> );
   void ConStatii(ArrayRef<int> );
+  /**
+  * General warm start, e.g.,
+  * set primal/dual initial guesses for continuous case
+  **/
+  ALLOW_STD_FEATURE( WARMSTART, true )
+  void InputSimplexStart(ArrayRef<double> x0,
+                         ArrayRef<double> pi0);
+  /**
+  * Specifically, MIP warm start
+  **/
+  ALLOW_STD_FEATURE( MIPSTART, true )
+  void InputMIPStart(ArrayRef<double> x0);
   /**
   * Obtain inf/unbounded rays
   **/
@@ -164,12 +179,12 @@ public:
   /**
   * Get MIP Gap
   **/
-  ALLOW_STD_FEATURE( ReturnMIPGap, true )
+  ALLOW_STD_FEATURE( RETURN_MIP_GAP, true )
   double MIPGap() const;
   /**
   * Get MIP dual bound
   **/
-  ALLOW_STD_FEATURE( ReturnBestDualBound, true )
+  ALLOW_STD_FEATURE( RETURN_BEST_DUAL_BOUND, true )
   double BestDualBound() const;
   /**
   * Set branch and bound priorities
@@ -204,16 +219,19 @@ public:
   std::vector<double> GrbGetDblAttrArray(const char* attr_id,
     std::size_t size, std::size_t offset=0) const;
 
-  /// Set attributes. Return false on failure
-  bool GrbSetIntAttr(const char* attr_id, int val);
-  bool GrbSetDblAttr(const char* attr_id, double val);
-  bool GrbSetIntAttrArray(const char* attr_id,
+  /// Set attributes.
+  /// Return false on failure
+  void GrbSetIntAttr(const char* attr_id, int val);
+  void GrbSetDblAttr(const char* attr_id, double val);
+  ///  Silently ignore empty vector arguments.
+  void GrbSetIntAttrArray(const char* attr_id,
                                ArrayRef<int> values, std::size_t start=0);
-  bool GrbSetDblAttrArray(const char* attr_id,
+  void GrbSetDblAttrArray(const char* attr_id,
                                ArrayRef<double> values, std::size_t start=0);
-  bool GrbSetIntAttrList(const char* attr_id,
+  ///  Silently ignore empty vector arguments.
+  void GrbSetIntAttrList(const char* attr_id,
                          const std::vector<int>& idx, const std::vector<int>& val);
-  bool GrbSetDblAttrList(const char* attr_id,
+  void GrbSetDblAttrList(const char* attr_id,
                          const std::vector<int>& idx, const std::vector<double>& val);
 
   /// First objective's sense
@@ -235,12 +253,21 @@ private:
   /// for direct access
   struct Options {
     std::string exportFile_;
+
+    int nMIPStart_=1;
     int nPoolMode_=2;
   };
 
   Options storedOptions_;
 
   int iPoolSolution = -2;          // for SelectNextPoolSolution()
+
+protected:
+  int mipstart() const { return storedOptions_.nMIPStart_; }
+
+private:
+  const SuffixDef<int> sufHintPri = { "hintpri", suf::VAR | suf::INPUT };
+
 
 public:
   /// Wrappers for Get/SetSolverOption()
