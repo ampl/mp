@@ -1,14 +1,14 @@
 # This Python file uses the following encoding: utf-8
 
 import Solver
-
+from os import path
 
 class SolverCollection:
     def __init__(self):
         self._solvers = {}
 
     def addSolver(self, solver: Solver):
-        name = solver.getExecutable()
+        name = solver.getName()
         if name in self._solvers:
             raise "Solver '{}' already defined".format(name)
         self._solvers[name] = solver
@@ -25,16 +25,13 @@ class SolverCollection:
     def getSolver(self, name):
         return self._solvers.get(name)
 
-
-def addStdSolvers(solvers: SolverCollection):
-    solvers.addSolver(Solver.LindoSolver("lindoglobal-timebound"))
-    solvers.addSolver(Solver.OcteractSolver("octeract-engine"))
-    solvers.addSolver(Solver.GurobiSolver("gurobi"))
-    solvers.addSolver(Solver.GurobiDirectSolver("gurobidirect"))
-    solvers.addSolver(Solver.CPLEXSolver("cplex"))
-    solvers.addSolver(Solver.CPLEXDirectSolver("cplexdirect"))
-    solvers.addSolver(Solver.BaronSolver("baron-timebound"))
-
-
+def addStdSolvers(solvers: SolverCollection, binPath=""):
+    solvers.addSolver(Solver.LindoSolver(path.join(binPath, "lindoglobal")))
+    solvers.addSolver(Solver.OcteractSolver(path.join(binPath, "octeract-engine")))
+    solvers.addSolver(Solver.GurobiSolver(path.join(binPath,"gurobi")))
+    solvers.addSolver(Solver.GurobiDirectSolver(path.join(binPath,"gurobidirect")))
+    solvers.addSolver(Solver.CPLEXSolver(path.join(binPath,"cplex")))
+    solvers.addSolver(Solver.CPLEXDirectSolver(path.join(binPath,"cplexdirect")))
+    solvers.addSolver(Solver.BaronSolver(path.join(binPath,"baron")))
 # if __name__ == "__main__":
 #     pass

@@ -21,6 +21,8 @@ class Tester:
     def parseOptions(self):
         self._parser.add_argument('solvers', metavar='solver', type=str, nargs='+',
                             help='a solver to test')
+        self._parser.add_argument('--binPath', type=str,  default="",
+                            help='default path to look for solver executables')
         self._parser.add_argument('--printsolvers', action="store_true",
                             help='print available solvers and exit')
         self._parser.add_argument('--timeout', type=int, metavar='T', default=5,
@@ -44,7 +46,7 @@ class Tester:
 
     def initSolvers(self):
         self._solvers = SolverCollection.SolverCollection()
-        SolverCollection.addStdSolvers(self._solvers)
+        SolverCollection.addStdSolvers(self._solvers, self._args.binPath)
         self.setSolverParameters()
 
     def setSolverParameters(self):
