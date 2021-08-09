@@ -150,45 +150,12 @@
     "objective" : 130,
     "tags" : ["linear", "continuous"]
   },
-  {
-    "name" : "nltrans",
-    "objective" : -1,
-    "tags" : ["nonlinear", "continuous"],
-    "files" : ["nltrans.mod", "nltrans.dat"]
-  },
-  {
-    "name" : "nltransb",
-    "objective" : 1212117,
-    "tags" : ["nonlinear", "continuous"],
-    "files" : ["nltransb.mod", "nltrans.dat"]
-  },
-  {
-    "name" : "nltransc",
-    "objective" : -18911000274274,
-    "tags" : ["nonlinear", "continuous"],
-    "files" : ["nltransc.mod", "nltrans.dat"]
-  },
-  {
-    "name" : "nltransd",
-    "objective" : 354276,
-    "tags" : ["nonlinear", "continuous"],
-    "files" : ["nltransc.mod", "nltrans.dat"]
-  },
+
   {
     "name" : "oil",
     "objective" : 12.208343242217543,
     "tags" : ["nonlinear", "continuous"],
     "files" : ["oil.mod", "oil.dat"]
-  },
-  {
-    "name" : "pgon",
-    "objective" :  0.6749814429,
-    "tags" : ["nonlinear", "continuous"]
-  },
-  {
-    "name" : "p2gon",
-    "objective" :  0.7768587491398158,
-    "tags" : ["nonlinear", "continuous"]
   },
   {
     "name" : "prod",
