@@ -3,7 +3,7 @@ import math
 from pathlib import PurePath
 import subprocess
 
-from Model import Model
+from Model import Model, ModelTags
 from TimeMe import TimeMe
 
 
@@ -22,12 +22,14 @@ class Solver(object):
             return name
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None,
-                 writeSolverName=False):
+                 writeSolverName=False, unsupportedTags=None):
         self._exePath = Solver.getExecutableName(exeName)
         self._timeout = timeout
         self._nthreads = nthreads
         self._otherOptions = otherOptions
         self._writeSolverName = writeSolverName
+        self._unsupportedTags = unsupportedTags
+
 
     def _doRun(self,  model: Model):
         """Method to be overriden for solvers implementations"""
@@ -98,6 +100,8 @@ class Solver(object):
     def getTimeout(self):
         return self._timeout
 
+    def getUnsupportedTags(self):
+        return self._unsupportedTags
 
 class AMPLSolver(Solver):
     """ Main class to inherit from when adding a new solver.
@@ -109,8 +113,8 @@ class AMPLSolver(Solver):
     """
 
     def __init__(self, exeName, timeout=None, nthreads=None,
-                 otherOptions=None):
-        super().__init__(exeName, timeout, nthreads, otherOptions)
+                 otherOptions=None, unsupportedTags=None):
+        super().__init__(exeName, timeout, nthreads, otherOptions, unsupportedTags=unsupportedTags)
 
     def _setTimeLimit(self, seconds):
         raise Exception("Not implemented in base class")
@@ -161,6 +165,7 @@ class AMPLSolver(Solver):
             return (name, value)
 
 
+
 class LindoSolver(AMPLSolver):
     def _setTimeLimit(self, seconds):
         return "maxtime={}".format(seconds)
@@ -201,7 +206,8 @@ class GurobiSolver(AMPLSolver):
         return "gurobi"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        super().__init__(exeName, timeout, nthreads, otherOptions)
+        utags = [ModelTags.nonlinear, ModelTags.complementarity]
+        super().__init__(exeName, timeout, nthreads, otherOptions,utags)
 
     def _doParseSolution(self, st, stdout=None):
         if not st:
@@ -232,7 +238,8 @@ class GurobiDirectSolver(AMPLSolver):
         return "gurobidirect"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        super().__init__(exeName, timeout, nthreads, otherOptions)
+        utags = [ModelTags.nonlinear, ModelTags.complementarity]
+        super().__init__(exeName, timeout, nthreads, otherOptions,utags)
 
     def _doParseSolution(self, st, stdout=None):
         if not st:
@@ -267,7 +274,8 @@ class CPLEXSolver(AMPLSolver):
         return "cplex"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        super().__init__(exeName, timeout, nthreads, otherOptions)
+        utags = [ModelTags.nonlinear, ModelTags.complementarity]
+        super().__init__(exeName, timeout, nthreads, otherOptions,utags)
 
     def _doParseSolution(self, st, stdout=None):
         if not st:

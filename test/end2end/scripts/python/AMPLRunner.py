@@ -250,5 +250,8 @@ class AMPLRunner(object):
     def getExecutable(self):
         return self._solver._exePath
 
+    def getSolver(self):
+        return self._solver
+
     def getSolutionStats(self):
         return self.stats

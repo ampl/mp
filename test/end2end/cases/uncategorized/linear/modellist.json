@@ -2,7 +2,7 @@
   {
   "name" : "bigprod",
   "objective" : 4428412.468,
-  "tags" : ["linear", "continuous", "trigonometric"]
+  "tags" : ["linear", "continuous"]
   },
   {
     "name" : "cut",
@@ -40,35 +40,16 @@
     "files" : ["distnode.mod", "dist13.dat"]
   },
   {
-    "name" : "econ",
-    "objective" : 0,
-    "tags" : ["linear", "continuous", "complementarity"],
-    "files" : ["econ.mod", "econ.dat"]
-  },
-  {
     "name" : "econmin",
     "objective" : 6808640.552995391,
     "tags" : ["linear", "continuous"],
     "files" : ["econmin.mod", "econ.dat"]
-  },
-  {
-    "name" : "econ2",
-    "objective" :0,
-    "tags" : ["linear", "continuous", "complementarity"],
-    "files" : ["econ2.mod", "econ2.dat"]
-  },  {
+  }, {
     "name" : "econ2min",
     "objective" :8693800.0,
     "tags" : ["linear", "continuous"],
     "files" : ["econ2min.mod", "econ2.dat"]
-  },
-  {
-    "name" : "econnl",
-    "objective" :0,
-    "tags" : ["nonlinear", "continuous", "complementarity"],
-    "files" : ["econnl.mod", "econnl.dat"]
-  },
-  {
+  }, {
     "name" : "egypt1",
     "objective" : 58808.37128,
     "tags" : ["linear", "continuous"],

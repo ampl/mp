@@ -94,6 +94,14 @@ class Model(object):
       else:
         return tag == self._tags
 
+    def hasAnyTag(self, tags : list):
+      if tags is None:
+        return False
+      for tag in tags:
+        if self.hasTag(tag):
+          return True
+      return False
+
     def isScript(self):
         return self.hasTag(ModelTags.script)
 

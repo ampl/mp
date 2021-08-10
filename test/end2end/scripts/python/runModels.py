@@ -5,7 +5,7 @@ from Solver import Solver, LindoSolver, GurobiSolver, OcteractSolver, CPLEXSolve
 from pathlib import Path
 from sys import platform
 from AMPLRunner import AMPLRunner
-
+from Model import ModelTags
 
 def writeNLFiles(directory, recursive=False):
     m = ModelsDiscovery()

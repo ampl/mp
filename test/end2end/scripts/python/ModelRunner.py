@@ -31,9 +31,12 @@ class ModelRunner(object):
             t = TimeMe()
             failedSome = False
             with t:
-                for i in range(len(cr)):
-                    cr[i].runAndEvaluate(m)
-                    stats = cr[i].getSolutionStats()
+                for (i,r) in enumerate(cr):
+                    if m.hasAnyTag(r.getSolver().getUnsupportedTags()):
+                      print("Skipped")
+                      continue
+                    r.runAndEvaluate(m)
+                    stats = r.getSolutionStats()
                     self._runs[i].append(stats)
                     if exporter:
                         if not exporter.printStatus(m, stats):

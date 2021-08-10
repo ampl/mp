@@ -1,0 +1,33 @@
+data;
+
+set Types :=
+	ihy	# inside highway
+	ion	# inside on-ramp
+	ioff	# inside off-ramp
+	iby	# inside bypass
+	ohy	# outside highway
+	oon	# outside on-ramp
+	ooff	# outside off-ramp
+	oby;	# outside bypass
+
+/* Alternate demand values...
+param demand :=
+1	1
+2	8
+3	1
+4	8
+5	1;
+*/
+
+param: Nodes: demand :=
+1	.1
+2	.2
+3	.3
+4	.4
+5	.5 ;
+
+#param gamma := 0;
+param gamma := 0.5;
+#param gamma := 4;
+
+param c default 1;

@@ -7,6 +7,10 @@ from itertools import repeat
 class ModelsDiscovery(object):
     """Find all models in the specified directory"""
 
+    
+    def FilterByTag(models : list, excludeTags : list):
+        return filter(lambda x : x.hasAnyTag(excludeTags) != True, models)
+
     def FindModelsGeneral(self, directory, recursive = True,
                           modellist=True, preferAMPLModels = False, justNL= False):
         """Find models in the specified directory, recursively unless otherwise specified.

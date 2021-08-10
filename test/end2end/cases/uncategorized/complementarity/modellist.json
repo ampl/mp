@@ -1,0 +1,57 @@
+[
+  {
+    "name" : "bertsek",
+    "tags" : ["linear", "continuous", "complementarity"],
+    "files" : ["bertsek.mod", "bertsek.dat"]
+  },
+  {
+    "name" : "choi",
+    "tags" : ["linear", "continuous", "complementarity"],
+    "files" : ["choi.mod", "choi.dat"]
+  },
+    {
+    "name" : "econ",
+    "tags" : ["linear", "continuous", "complementarity"],
+    "files" : ["econ.mod", "econ.dat"]
+  }, {
+    "name" : "econ2",
+    "tags" : ["linear", "continuous", "complementarity"],
+    "files" : ["econ2.mod", "econ2.dat"]
+  }, {
+    "name" : "econnl",
+    "tags" : ["nonlinear", "continuous", "complementarity"],
+    "files" : ["econnl.mod", "econnl.dat"]
+  } ,{
+    "name" : "ehl-def",
+    "tags" : ["nonlinear", "continuous", "complementarity"],
+    "files" : ["ehl-def.mod"]
+  }, {
+    "name" : "ehl-kost",
+    "tags" : ["nonlinear", "continuous", "complementarity"],
+    "files" : ["ehl-kost.mod", "ehl-kost.dat"]
+  }, {
+    "name" : "josephy",
+    "tags" : ["quadratic", "continuous", "complementarity"],
+    "files" : ["josephy.mod", "josephy.dat"]
+  }, {
+    "name" : "kojshin",
+    "tags" : ["quadratic", "continuous", "complementarity"],
+    "files" : ["kojshin.mod", "kojshin.dat"]
+  }, {
+    "name" : "munson1",
+    "tags" : ["linear", "continuous", "complementarity"],
+    "files" : ["munson1.mod"]
+  }, {
+    "name" : "nash",
+    "tags" : ["nonlinear", "continuous", "complementarity"],
+    "files" : ["nash.run"]
+  }, {
+    "name" : "obstacle",
+    "tags" : ["nonlinear", "continuous", "complementarity"],
+    "files" : ["obstacle.run"]
+  }, {
+    "name" : "pies",
+    "tags" : ["linear", "continuous", "complementarity"],
+    "files" : ["pies.mod", "pies.dat"]
+  },
+]

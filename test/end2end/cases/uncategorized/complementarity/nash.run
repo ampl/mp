@@ -1,0 +1,25 @@
+model nash.mod;
+data nash.dat;
+
+set initpoint := 1 .. 4;
+param initval {Rn,initpoint} >= 0;
+data;param initval
+	:	1	2	3	4 :=
+	1	1       10	1.0	7
+	2	1       10	1.2	4
+	3	1       10	1.4	3
+	4	1       10	1.6	1
+	5	1       10	1.8	18
+	6	1       10	2.1	4
+	7	1       10	2.3	1
+	8	1       10	2.5	6
+	9	1       10	2.7	3
+	10	1	10	2.9	2
+	;
+
+for {point in initpoint}
+{
+	let{i in Rn} q[i] := initval[i,point];
+	solve;
+	include compchk
+}
