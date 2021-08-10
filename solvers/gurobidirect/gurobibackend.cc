@@ -602,12 +602,49 @@ void GurobiBackend::FinishProblemModificationPhase() {
 
 // static possible values with descriptions
 
+const mp::OptionValueInfo values_barhomogeneous[] = {
+    {"-1", "Only when solving a MIP node relaxation (default)", -1},
+    { "0", "Never", 0},
+    { "1", "Always", 1}
+};
+
+const mp::OptionValueInfo values_barorder[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "Approximate minimum degree", 0},
+    { "1", "Nested dissection", 1}
+};
+
+const mp::OptionValueInfo values_iismethod[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "Often faster than method 1", 0},
+    { "1", "Can find a smaller IIS than method 0", 1},
+    { "2", "Ignore the bound constraints", 2},
+};
+
+const mp::OptionValueInfo values_method[] = {
+    { "-1", "Automatic (default): 3 for LP, 2 for !P, 1 for MIP", -1},
+    { "0", "Primal simplex", 0},
+    { "1", "Dual simplex", 1},
+    { "2", "Barrier", 2},
+    { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
+    { "4", "Deterministic concurrent", 4},
+    { "5", "Deterministic concurrent simplex", 5}
+};
+
+const mp::OptionValueInfo values_mipfocus[] = {
+    { "0", "Balance finding good feasible solutions and "
+			    "proving optimality (default)", 0},
+    { "1", "Favor finding feasible solutions", 1},
+    { "2", "Favor providing optimality", 2},
+    { "3", "Focus on improving the best objective bound", 3},
+};
+
 const mp::OptionValueInfo values_mipstart_[4] = {
-    {     "0", "no (overrides mp:warmstart)", 0 },
-    {     "1", "yes (default)", 1},
-    {     "2", "no, but use the incoming primal "
+    {     "0", "No (overrides mp:warmstart)", 0 },
+    {     "1", "Yes (default)", 1},
+    {     "2", "No, but use the incoming primal "
           "values as hints (VARHINTVAL), ignoring the .hintpri suffix", 2},
-    {     "3", "similar to 2, but use the .hintpri suffix on "
+    {     "3", "Similar to 2, but use the .hintpri suffix on "
           "variables:  larger (integer) values give greater "
           "priority to the initial value of the associated "
           "variable.", 3}
@@ -628,7 +665,6 @@ const mp::OptionValueInfo values_multiobjpre[] = {
     {"2", "Aggressive presolve, which may degrade lower priority objectives", 2}
 };
 
-
 const mp::OptionValueInfo values_nodemethod[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Primal simplex", 0},
@@ -636,23 +672,25 @@ const mp::OptionValueInfo values_nodemethod[] = {
     {"2", "Barrier", 2}
 };
 
+const mp::OptionValueInfo values_predeprow[] = {
+    { "-1", "Only for continuous models (default)", -1},
+    { "0", "Never", 0},
+    { "1", "For all models", 1}
+};
+
+const mp::OptionValueInfo values_predual[] = {
+    { "-1", "Automatic choice (default)", -1},
+    { "0", "No", 0},
+    { "1", "Yes", 1},
+    { "2", "Form both primal and dual and use two threads to "
+			     "choose heuristically between them.", 2}
+};
+
 const mp::OptionValueInfo values_pool_mode[] = {
     {"0", "Just collect solutions during normal solve, and sort them best-first", 0},
     { "1", "Make some effort at finding additional solutions", 1},
     { "2", "Seek \"poollimit\" best solutions (default)."
       "'Best solutions' are defined by the poolgap(abs) parameters.", 2}
-};
-         
-const mp::OptionValueInfo values_barhomogeneous[] = {
-    {"-1", "Only when solving a MIP node relaxation (default)", -1},
-    { "0", "Never", 0},
-    { "1", "Always", 1}
-};
-
-const mp::OptionValueInfo values_barorder[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "Approximate minimum degree", 0},
-    { "1", "Nested dissection", 1}
 };
 
 const mp::OptionValueInfo values_varbranch[] = {
@@ -663,15 +701,7 @@ const mp::OptionValueInfo values_varbranch[] = {
     { "3", "Strong branching.",3}
 };
 
-const mp::OptionValueInfo values_method[] = {
-    { "-1", "Automatic (default): 3 for LP, 2 for !P, 1 for MIP", -1},
-    { "0", "Primal simplex", 0},
-    { "1", "Dual simplex", 1},
-    { "2", "Barrier", 2},
-    { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
-    { "4", "Deterministic concurrent", 4},
-    { "5", "Deterministic concurrent simplex", 5}
-};
+
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
@@ -694,6 +724,16 @@ void GurobiBackend::InitCustomOptions() {
   
   AddSolverOption("pre:aggregate aggregate", "0/1*: whether to use aggregation in presolve."
     "Setting it to 0 can sometimes reduce numerical errors.", GRB_INT_PAR_AGGREGATE, 0, 1);
+
+  AddSolverOption("pre:deprow predeprow",
+    "Whether Gurobi's presolve should remove linearly dependent "
+    "constraint-matrix rows:\n" "\n.. value-table::\n",
+    GRB_INT_PAR_PREDEPROW, values_predeprow, -1);
+
+  AddSolverOption("pre:dual predual",
+    "Whether gurobi's presolve should form the dual of a "
+    "continuous model:\n" "\n.. value-table::\n",
+    GRB_INT_PAR_PREDUAL, values_predual, -1);
   
   AddSolverOption("bar:convtol barconvtol",
     "Tolerance on the relative difference between the primal and dual objectives "
@@ -729,10 +769,7 @@ void GurobiBackend::InitCustomOptions() {
       "Log file name.",
       GRB_STR_PAR_LOGFILE);
 
-  AddStoredOption("mip:start mipstart",
-    "Whether to use initial guesses in problems with "
-    "integer variables:\n"   "\n.. value-table::\n",
-    storedOptions_.nMIPStart_, values_mipstart_);
+
 
 
   /// Option "multiobj" is created internally if
@@ -765,22 +802,46 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     GRB_INT_PAR_MULTIOBJPRE, values_multiobjmethod, -1);
 
+  AddSolverOption("mip:focus mipfocus",
+    "MIP solution strategy:\n" "\n.. value-table::\n",
+    GRB_INT_PAR_MIPFOCUS, values_mipfocus, 0);
+
+  AddSolverOption("mip:heurfrac heurfrac",
+    "Fraction of time to spend in MIP heuristics (default 0.05)",
+    GRB_DBL_PAR_HEURISTICS, 0.05, 1.0);
+
+  AddSolverOption("mip:iismethod iismethod",
+    "Which method to use when finding an IIS (irreducible infeasible "
+    "set of constraints, including variable bounds):\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_IISMETHOD, values_iismethod, -1);
+
+  AddStoredOption("mip:start mipstart",
+    "Whether to use initial guesses in problems with "
+    "integer variables:\n"   "\n.. value-table::\n",
+    storedOptions_.nMIPStart_, values_mipstart_);
+
   AddSolverOption("mip:maxmipsub maxmipsub",
     "Maximum number of nodes for RIMS heuristic to explore on MIP problems (default 500).",
       GRB_INT_PAR_SUBMIPNODES, 500, INT_MAX);
 
-  AddSolverOption("mip:mipgap mipgap",
+  AddSolverOption("mip:gap mipgap",
     "Max relative MIP optimality gap (default 1e-4)",
     GRB_DBL_PAR_MIPGAP, 1e-4, DBL_MAX);
 
-  AddSolverOption("mip:mipgapabs mipgapabs",
+  AddSolverOption("mip:gapabs mipgapabs",
     "Max absolute MIP optimality gap (default 1e-10)",
     GRB_DBL_PAR_MIPGAPABS, 1e-10, DBL_MAX);
-
 
   AddSolverOption("mip:opttol optimalitytolerance opttol",
       "Dual feasibility tolerance.",
       GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
+
+  AddSolverOption("mip:minrelnodes minrelnodes",
+    "Number of nodes for the Minimum Relaxation heuristic to "
+		"explore at the MIP root node when a feasible solution has not "
+		"been found by any other heuristic; default -1 ==> automatic choice.",
+    GRB_INT_PAR_MINRELNODES, -1, INT_MAX);
 
   AddSolverOption("mip:nodemethod nodemethod",
     "Algorithm used to solve relaxed MIP node problems:\n"
