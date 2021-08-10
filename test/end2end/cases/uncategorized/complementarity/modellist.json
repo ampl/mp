@@ -22,13 +22,13 @@
     "tags" : ["nonlinear", "continuous", "complementarity"],
     "files" : ["econnl.mod", "econnl.dat"]
   } ,{
-    "name" : "ehl-def",
+    "name" : "ehl_def",
     "tags" : ["nonlinear", "continuous", "complementarity"],
-    "files" : ["ehl-def.mod"]
+    "files" : ["ehl_def.mod"]
   }, {
-    "name" : "ehl-kost",
+    "name" : "ehl_kost",
     "tags" : ["nonlinear", "continuous", "complementarity"],
-    "files" : ["ehl-kost.mod", "ehl-kost.dat"]
+    "files" : ["ehl_kost.mod"]
   }, {
     "name" : "josephy",
     "tags" : ["quadratic", "continuous", "complementarity"],
