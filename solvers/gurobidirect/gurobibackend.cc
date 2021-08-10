@@ -613,6 +613,29 @@ const mp::OptionValueInfo values_mipstart_[4] = {
           "variable.", 3}
 };
 
+const mp::OptionValueInfo values_multiobjmethod[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "Primal simplex", 0},
+    { "1", "Dual simplex", 1},
+    {"2", "Ignore warm-start information; use the algorithm "
+				"specified by the method keyword", 2}
+};
+
+const mp::OptionValueInfo values_multiobjpre[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "Do not use Gurobi's presolve", 0},
+    { "1", "Conservative presolve", 1},
+    {"2", "Aggressive presolve, which may degrade lower priority objectives", 2}
+};
+
+
+const mp::OptionValueInfo values_nodemethod[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "Primal simplex", 0},
+    { "1", "Dual simplex", 1},
+    {"2", "Barrier", 2}
+};
+
 const mp::OptionValueInfo values_pool_mode[] = {
     {"0", "Just collect solutions during normal solve, and sort them best-first", 0},
     { "1", "Make some effort at finding additional solutions", 1},
@@ -630,6 +653,24 @@ const mp::OptionValueInfo values_barorder[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Approximate minimum degree", 0},
     { "1", "Nested dissection", 1}
+};
+
+const mp::OptionValueInfo values_varbranch[] = {
+    {"-1", "Automatic choice (default)",-1},
+    { "0", "Pseudo reduced - cost branching",0},
+    { "1", "Pseudo shadow - price branching",1},
+    { "2", "Maximum infeasibility branching",2},
+    { "3", "Strong branching.",3}
+};
+
+const mp::OptionValueInfo values_method[] = {
+    { "-1", "Automatic (default): 3 for LP, 2 for !P, 1 for MIP", -1},
+    { "0", "Primal simplex", 0},
+    { "1", "Dual simplex", 1},
+    { "2", "Barrier", 2},
+    { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
+    { "4", "Deterministic concurrent", 4},
+    { "5", "Deterministic concurrent simplex", 5}
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -712,9 +753,44 @@ void GurobiBackend::InitCustomOptions() {
                            "keywords of the form obj_n_name, such as obj_1_method for the "
                            "first objective.");
 
+  AddSolverOption("obj:multiobjmethod multiobjmethod",
+    "Choice of optimization algorithm for lower-priority objectives:\n"
+    "\n.. value-table::\n"
+    "The method keyword determines the algorithm to use for the highest "
+    "priority objective.",
+    GRB_INT_PAR_MULTIOBJMETHOD, values_multiobjmethod, -1);
+
+  AddSolverOption("obj:multiobjpre multiobjpre",
+    "How to apply Gurobi's presolve when doing multi-objective optimization:\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_MULTIOBJPRE, values_multiobjmethod, -1);
+
+  AddSolverOption("mip:maxmipsub maxmipsub",
+    "Maximum number of nodes for RIMS heuristic to explore on MIP problems (default 500).",
+      GRB_INT_PAR_SUBMIPNODES, 500, INT_MAX);
+
+  AddSolverOption("mip:mipgap mipgap",
+    "Max relative MIP optimality gap (default 1e-4)",
+    GRB_DBL_PAR_MIPGAP, 1e-4, DBL_MAX);
+
+  AddSolverOption("mip:mipgapabs mipgapabs",
+    "Max absolute MIP optimality gap (default 1e-10)",
+    GRB_DBL_PAR_MIPGAPABS, 1e-10, DBL_MAX);
+
+
   AddSolverOption("mip:opttol optimalitytolerance opttol",
       "Dual feasibility tolerance.",
       GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
+
+  AddSolverOption("mip:nodemethod nodemethod",
+    "Algorithm used to solve relaxed MIP node problems:\n"
+    "\n.. value-table::\n", GRB_INT_PAR_NODEMETHOD, values_nodemethod, -1);
+
+  AddSolverOption("mip:varbranch varbranch",
+    "MIP branch variable selection strategy:\n"
+    "\n.. value-table::\n", GRB_INT_PAR_VARBRANCH, values_varbranch, -1);
+
+
 
   AddSolverOption("log:lev outlev",
       "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.", 
@@ -758,14 +834,29 @@ void GurobiBackend::InitCustomOptions() {
                            "sol:pool... parameters. Value 1 implied by sol:stub.");
 
 
+  AddSolverOption("gen:method method lpmethod",
+    "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
+    "\n.. value-table::\n", GRB_INT_PAR_METHOD, values_method, -1);
+
   AddSolverOption("gen:threads threads",
       "How many threads to use when using the barrier algorithm\n"
       "or solving MIP problems; default 0 ==> automatic choice.",
       GRB_INT_PAR_THREADS, 0, INT_MAX);
 
+
+  AddSolverOption("lim:iterlimit iterlimit",
+    "Iteration limit (default: no limit).",
+    GRB_DBL_PAR_ITERATIONLIMIT, 0.0, DBL_MAX);
+
+  AddSolverOption("lim:node nodelim",
+    "Maximum MIP nodes to explore (default: no limit).",
+    GRB_DBL_PAR_NODELIMIT, 0.0, DBL_MAX);
+
   AddSolverOption("lim:time timelim",
-      "limit on solve time (in seconds; default: no limit).",
+      "Limit on solve time (in seconds; default: no limit).",
       GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
+
+
 
   AddStoredOption("gen:writeprob writeprob exportfile",
       "Specifies the name of a file where to export the model before "
