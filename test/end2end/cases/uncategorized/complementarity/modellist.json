@@ -53,5 +53,5 @@
     "name" : "pies",
     "tags" : ["linear", "continuous", "complementarity"],
     "files" : ["pies.mod", "pies.dat"]
-  },
+  }
 ]
