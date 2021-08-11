@@ -27,10 +27,12 @@
 
 namespace mp {
 
-// A reference to an immutable array.
+/// A reference to an immutable array,
+/// which can be stored inside if
+/// constructed from an rvalue std::vector.
 template <typename T>
 class ArrayRef {
- private:
+  std::vector<T> save_;
   const T *data_ = nullptr;
   std::size_t size_ = 0;
 
@@ -40,20 +42,63 @@ class ArrayRef {
   ArrayRef(const T *data, std::size_t size) : data_(data), size_(size) {}
 
   template <typename U>
-  ArrayRef(ArrayRef<U> other) : data_(other.data()), size_(other.size()) {}
+  ArrayRef(ArrayRef<U>&& other) { init_from_lrvalue(std::move(other)); }
+
+  template <typename U>
+  ArrayRef(const ArrayRef<U>& other) { init_from_lrvalue(other); }
 
   template <typename Vector>
   ArrayRef(const Vector &other) : data_(other.data()), size_(other.size()) {}
 
+  template <typename TT>
+  ArrayRef(std::vector<TT> &&other) :
+    save_(std::move(other)),
+    data_(save_.data()), size_(save_.size()) {}
+
   template <std::size_t SIZE>
   ArrayRef(const T (&data)[SIZE]) : data_(data), size_(SIZE) {}
 
-  operator bool() const { return 0!=size(); }
+  template <class U>
+  ArrayRef<T>& operator=(ArrayRef<U>&& other) {
+    init_from_lrvalue(std::move(other));
+    return *this;
+  }
+
+  template <class U>
+  ArrayRef<T>& operator=(const ArrayRef<U>& other) {
+    init_from_lrvalue(other);
+    return *this;
+  }
+
+  operator bool() const { return !empty(); }
+  bool empty() const { return 0==size(); }
 
   const T *data() const { return data_; }
   std::size_t size() const { return size_; }
 
   const T &operator[](std::size_t i) const { return data_[i]; }
+
+protected:
+  template <class AR>
+  void init_from_lrvalue(AR&& other) {
+    if (other.save_.size()) {
+      copy_save_vec_from(std::forward<AR>(other));
+      data_ = save_.data();
+      size_ = save_.size();
+    } else {
+      data_ = other.data();
+      size_ = other.size();
+    }
+  }
+
+  template <class AR>
+  void copy_save_vec_from(AR&& ar) {
+    save_ = std::move(ar.save_);
+  }
+  template <class AR>
+  void copy_save_vec_from(const AR& ar) {
+    save_ = ar.save_;
+  }
 };
 
 template <typename T>
