@@ -155,13 +155,13 @@ public:
   * set primal/dual initial guesses for continuous case
   **/
   ALLOW_STD_FEATURE( WARMSTART, true )
-  void InputSimplexStart(ArrayRef<double> x0,
+  void InputPrimalDualStart(ArrayRef<double> x0,
                          ArrayRef<double> pi0);
   /**
   * Specifically, MIP warm start
   **/
   ALLOW_STD_FEATURE( MIPSTART, true )
-  void InputMIPStart(ArrayRef<double> x0);
+  void AddMIPStart(ArrayRef<double> x0);
   /**
   * Obtain inf/unbounded rays
   **/

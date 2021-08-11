@@ -69,6 +69,9 @@ public:
   using MPUtils = MPSolverBase;              // Allow Converter access the SolverImpl
   const MPUtils& GetMPUtils() const { return *this; }
   MPUtils& GetMPUtils() { return *this; }
+
+  using MPSolverBase::debug_mode;
+
 public:
   BasicBackend() :
     MPSolverBase(
@@ -465,12 +468,12 @@ protected:
   /// by HandleSolution()
   /// Does nothing if vector empty
   void ReportSuffix(const SuffixDef<int>& suf,
-                    const std::vector<int>& values) {
+                    ArrayRef<int> values) {
     GetCQ().ReportSuffix(suf, values);
   }
 
   void ReportSuffix(const SuffixDef<double>& suf,
-    const std::vector<double>& values) {
+                    ArrayRef<double> values) {
     GetCQ().ReportSuffix(suf, values);
   }
 

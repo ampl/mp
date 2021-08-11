@@ -36,6 +36,7 @@ class MIPBackend :
   public BasicBackend<Impl>
 {
   using BaseBackend = BasicBackend<Impl>;
+  using BaseBackend::debug_mode;
 
 public:
   // Properties
@@ -62,14 +63,14 @@ public:
   * set primal/dual initial guesses for continuous case
   **/
   DEFINE_STD_FEATURE( WARMSTART, false )
-  void InputSimplexStart(ArrayRef<double> x0,
+  void InputPrimalDualStart(ArrayRef<double> x0,
                        ArrayRef<double> pi0)
   { UNSUPPORTED("MIPBackend::InputSimplexStart"); }
   /**
   * Specifically, MIP warm start
   **/
   DEFINE_STD_FEATURE( MIPSTART, false )
-  void InputMIPStart(ArrayRef<double> x0)
+  void AddMIPStart(ArrayRef<double> x0)
   { UNSUPPORTED("MIPBackend::InputMIPStart"); }
   /**
   * Obtain unbounded/inf rays
@@ -125,14 +126,18 @@ public:
     if (MP_DISPATCH( IsMIP() )) {
       if (warmstart() &&
           IMPL_HAS_STD_FEATURE( MIPSTART )) {
-        MP_DISPATCH( InputMIPStart(
+        MP_DISPATCH( AddMIPStart(
                        MP_DISPATCH( InitialValues() ) ) );
+        if (debug_mode()) {                    // Report received initials
+          ReportSuffix(suf_testMIPini,         // Should we check that
+                       MP_DISPATCH( InitialValues() ));
+        }                                      // Impl uses them?
       }
     } else
-      MP_DISPATCH( InputSimplexStartOrBasis() );
+      MP_DISPATCH( InputPrimalDualStartOrBasis() );
   }
 
-  void InputSimplexStartOrBasis() {
+  void InputPrimalDualStartOrBasis() {
     bool useBasis = need_basis_in();
     ArrayRef<int> varstt, constt;
     if (useBasis) {
@@ -146,12 +151,20 @@ public:
     if (haveInis && (
           2==warmstart() ||
           (1==warmstart() && !useBasis))) {
-      MP_DISPATCH( InputSimplexStart(X0, pi0) );
+      MP_DISPATCH( InputPrimalDualStart(X0, pi0) );
       useBasis = false;
+      if (debug_mode()) {                 // Report received initials
+        ReportSuffix(suf_testvarini, X0); // Should we check that
+        ReportSuffix(suf_testconini, pi0); // Impl uses them?
+      }
     }
     if (useBasis) {
       MP_DISPATCH( VarStatii(varstt) );
       MP_DISPATCH( ConStatii(constt) );
+      if (debug_mode()) {                    // Report received statuses
+        ReportSuffix(suf_testvarstatus, varstt); // Should we check that
+        ReportSuffix(suf_testconstatus, constt); // Impl uses them?
+      }
     }
   }
 
@@ -362,6 +375,19 @@ private:
 
   const SuffixDef<int> suf_varstatus = { "sstatus", suf::VAR | suf::OUTPUT };
   const SuffixDef<int> suf_constatus = { "sstatus", suf::CON | suf::OUTPUT };
+  /// Testing API
+  /// Output suffix values to check they were read correctly
+  const SuffixDef<int> suf_testvarstatus = { "test_sstatus", suf::VAR | suf::OUTPUT };
+  const SuffixDef<int> suf_testconstatus = { "test_sstatus", suf::CON | suf::OUTPUT };
+
+  /// Testing API
+  /// Output primal/dual initials to check they were read correctly
+  const SuffixDef<double> suf_testvarini = { "test_ini_pri", suf::VAR | suf::OUTPUT };
+  const SuffixDef<double> suf_testconini = { "test_ini_dua", suf::CON | suf::OUTPUT };
+
+  /// Testing API
+  /// Output MIP initials to check they were read correctly
+  const SuffixDef<double> suf_testMIPini = { "test_ini_mip", suf::VAR | suf::OUTPUT };
 
   const SuffixDef<double> suf_unbdd  = { "unbdd",   suf::VAR | suf::OUTPUT };
   const SuffixDef<double> suf_dunbdd = { "dunbdd",  suf::CON | suf::OUTPUT };

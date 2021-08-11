@@ -238,12 +238,12 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
   GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, stt);
 }
 
-void GurobiBackend::InputSimplexStart(ArrayRef<double> x0, ArrayRef<double> pi0) {
+void GurobiBackend::InputPrimalDualStart(ArrayRef<double> x0, ArrayRef<double> pi0) {
   GrbSetDblAttrArray(GRB_DBL_ATTR_PSTART, x0);
   GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, pi0);
 }
 
-void GurobiBackend::InputMIPStart(ArrayRef<double> x0) {
+void GurobiBackend::AddMIPStart(ArrayRef<double> x0) {
   switch (mipstart()) {
   case 0: break;
   case 1:

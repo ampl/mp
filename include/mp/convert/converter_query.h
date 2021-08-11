@@ -26,9 +26,9 @@ public:
   virtual ArrayRef<double> ReadSuffix(const SuffixDef<double>& suf) = 0;
 
   virtual void ReportSuffix(const SuffixDef<int>& suf,
-                            const std::vector<int>& values) = 0;
+                            ArrayRef<int> values) = 0;
   virtual void ReportSuffix(const SuffixDef<double>& suf,
-                      const std::vector<double>& values) = 0;
+                            ArrayRef<double> values) = 0;
 
   virtual void HandleSolution(int, fmt::CStringRef,
                               const double *, const double *,

@@ -28,7 +28,7 @@ public:
   ////////////////////////// SUFFIX I/O //////////////////////////////
   template <class T>
   void ReportSuffix(const SuffixDef<T>& sufdef,
-                    const std::vector<T>& values) {
+                    ArrayRef<T> values) {
     if (values.empty())
       return;
     auto suf = FindOrCreateSuffix(sufdef);

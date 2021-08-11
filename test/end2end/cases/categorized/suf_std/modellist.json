@@ -11,6 +11,18 @@
     }
   },
   {
+    "name" : "dietu_stt test sstatus IN",
+    "objective" : 74.273820,
+    "tags" : ["linear", "continuous"],
+    "options": { "ANYSOLVER_options": "debug=1" },
+    "values": {
+      "Buy['BEEF'].test_sstatus": 1,
+      "Buy['MTL'].test_sstatus":  4,
+      "Buy['CHK'].sstatus":  "upp",
+      "Diet_Min['A'].test_sstatus": 1
+    }
+  },
+  {
     "name" : "diet con sstatus none",
     "objective" : 88.2,
     "tags" : ["linear", "continuous"],

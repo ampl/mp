@@ -41,11 +41,11 @@ public:
   }
 
   void ReportSuffix(const SuffixDef<int>& suf,
-                    const std::vector<int>& values) override {
+                    ArrayRef<int> values) override {
     GetOutputModel().ReportSuffix(suf, values);
   }
   void ReportSuffix(const SuffixDef<double>& suf,
-                    const std::vector<double>& values) override {
+                    ArrayRef<double> values) override {
     GetOutputModel().ReportSuffix(suf, values);
   }
 
