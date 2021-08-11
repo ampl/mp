@@ -541,7 +541,9 @@ Solver::Solver(
 : name_(name.c_str()),
   long_name_((long_name.c_str() ? long_name : name).c_str()),
   date_(date), wantsol_(0), obj_precision_(-1), objno_(-1), bool_options_(0),
-  count_solutions_(false), read_flags_(0), timing_(false), multiobj_(false),
+  count_solutions_(false), read_flags_(0),
+  debug_(false),
+  timing_(false), multiobj_(false),
   has_errors_(false) {
   version_ = long_name_;
   error_handler_ = this;
@@ -593,6 +595,9 @@ Solver::Solver(
   };
 
 
+  AddOption(OptionPtr(new BoolOption(debug_, "tech:debug debug",
+                                     "0*/1: whether to assist testing & debugging, e.g., "
+                                     "by outputting auxiliary information")));
 
   if ((flags & MULTIPLE_OBJ) != 0) {
     AddOption(OptionPtr(new BoolOption(multiobj_, "obj:multi multiobj",

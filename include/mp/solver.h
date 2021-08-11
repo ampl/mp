@@ -435,6 +435,7 @@ class Solver : private ErrorHandler,
   typedef std::set<SolverOption*, OptionNameLess> OptionSet;
   OptionSet options_;
 
+  bool debug_;
   bool timing_;
   bool multiobj_;
 
@@ -804,6 +805,10 @@ class Solver : private ErrorHandler,
     else
       bool_options_ &= ~AMPL_FLAG;
   }
+
+  /// True if need to debug
+  /// Outputs test infos etc
+  bool debug_mode() const { return debug_; }
 
   /// Returns the index of the objective to optimize starting from 1,
   /// 0 to not use objective.
