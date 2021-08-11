@@ -288,7 +288,21 @@ public:
     MP_DISPATCH( ReportCustomSuffixes() );
   }
 
-  void ReportStandardSuffixes() { }
+  void ReportStandardSuffixes() {
+    if (MP_DISPATCH(IsProblemSolved()) &&
+      exportKappa()) {
+      MP_DISPATCH(ReportKappa());
+    }
+  }
+  void ReportKappa() {
+    double value = MP_DISPATCH(Kappa());
+    if (exportKappa() && 2)
+    {
+      ReportSingleSuffix(suf_objkappa, value);
+      ReportSingleSuffix(suf_probkappa, value);
+    }
+
+  }
 
   void ReportCustomSuffixes() { }
 
@@ -347,15 +361,14 @@ public:
         }
         else {
           obj_value = MP_DISPATCH(ObjectiveValue());
-          writer.write("; objective {}\n",
+          writer.write("; objective {}",
             MP_DISPATCH(FormatObjValue(obj_value)));
-
         }
       }
-      else 
-        writer.write("\n");
     }
-
+    if(exportKappa() && 1)
+      writer.write("\nkappa value: {}", MP_DISPATCH(Kappa()));
+    writer.write("\n");
     solution = MP_DISPATCH( PrimalSolution() );
     dual_solution = MP_DISPATCH( DualSolution() );  // Try in any case
     HandleSolution(solve_code, writer.c_str(),
@@ -379,6 +392,14 @@ public:
   /////////////////////////////////////////////////////////////////////////////////
 
   /////////////////////////////// SOLUTION STATUS /////////////////////////////////
+  /** Following the taxonomy of the enum sol, returns true if
+      we have an optimal solution or a feasible solution for a 
+      satisfaction problem */
+  bool IsProblemSolved() const {
+    assert(IsSolStatusRetrieved());
+    return solve_code == sol::SOLVED;
+
+  }
   bool IsProblemInfOrUnb() const {
     assert( IsSolStatusRetrieved() );
     return sol::INFEASIBLE<=solve_code &&
@@ -476,6 +497,14 @@ protected:
                     ArrayRef<double> values) {
     GetCQ().ReportSuffix(suf, values);
   }
+
+   void ReportSingleSuffix(const SuffixDef<double>& suf,
+     double value) {
+      std::vector<double> values(1);
+      values[0] = value;
+      GetCQ().ReportSuffix(suf, values);
+    }
+
 
 private:
   ///////////////////////// STORING SOLUTON STATUS //////////////////////
@@ -601,6 +630,7 @@ public:
 private:
   struct Options {
     int importPriorities_=1;
+    int exportKappa_ = 0;
   };
   Options storedOptions_;
 
@@ -611,9 +641,17 @@ protected:
         "0/1*: Whether to read the branch and bound priorities from the"
         " .priority suffix.",
         storedOptions_.importPriorities_);
+    if (IMPL_HAS_STD_FEATURE(Kappa))
+      AddStoredOption("alg:kappa kappa basis_cond",  
+        "Whether to return the estimated condition number (kappa) of "
+        "the optimal basis (default 0): sum of 1 = report kappa in the result message; "
+        "2 = return kappa in the solver-defined suffix kappa on the objective and "
+        "problem. The request is ignored when there is no optimal basis.",
+        storedOptions_.exportKappa_);
   }
 
   int priorities() const { return storedOptions_.importPriorities_; }
+  int exportKappa() const { return IMPL_HAS_STD_FEATURE(Kappa) ? storedOptions_.exportKappa_ : 0; }
 
   void InitCustomOptions() { }
 
@@ -642,8 +680,10 @@ protected:
   void ObjRelTol(ArrayRef<double>) {
     UNSUPPORTED("BasicBackend::ObjRelTol");
   }
-
-
+  DEFINE_STD_FEATURE(Kappa, false) // believe true for most
+  double Kappa() {
+    UNSUPPORTED("BasicBackend::Kappa");
+  }
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////// STANDARD SUFFIXES ///////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
@@ -655,6 +695,10 @@ private:
   const SuffixDef<double> suf_objweight = { "objweight", suf::OBJ | suf::INPUT };
   const SuffixDef<double> suf_objabstol = { "objabstol", suf::OBJ | suf::INPUT };
   const SuffixDef<double> suf_objreltol = { "objreltol", suf::OBJ | suf::INPUT };
+  
+  const SuffixDef<double> suf_objkappa = { "kappa", suf::OBJ | suf::OUTONLY };
+
+  const SuffixDef<double> suf_probkappa = { "kappa", suf::PROBLEM | suf::OUTONLY };
 };
 
 }  // namespace mp

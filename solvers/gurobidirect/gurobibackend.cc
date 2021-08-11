@@ -352,6 +352,9 @@ double GurobiBackend::BestDualBound() const {
   return f ? g : -ModelSense() * Infinity();
 }
 
+double  GurobiBackend::Kappa() const {
+  return GrbGetDblAttr(GRB_DBL_ATTR_KAPPA);
+}
 double GurobiBackend::NodeCount() const {
   return GrbGetDblAttr(GRB_DBL_ATTR_NODECOUNT);
 }

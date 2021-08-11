@@ -198,6 +198,12 @@ public:
   void ObjRelTol(ArrayRef<double>);
 
 
+  /**
+  * Get basis condition value (kappa)
+  **/
+  ALLOW_STD_FEATURE(Kappa, true)
+  double Kappa() const;
+
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 public:
