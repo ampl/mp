@@ -622,7 +622,7 @@ const mp::OptionValueInfo values_iismethod[] = {
 };
 
 const mp::OptionValueInfo values_method[] = {
-    { "-1", "Automatic (default): 3 for LP, 2 for !P, 1 for MIP", -1},
+    { "-1", "Automatic (default): 3 for LP, 2 for QP, 1 for MIP", -1},
     { "0", "Primal simplex", 0},
     { "1", "Dual simplex", 1},
     { "2", "Barrier", 2},
@@ -640,7 +640,7 @@ const mp::OptionValueInfo values_mipfocus[] = {
 };
 
 const mp::OptionValueInfo values_mipstart_[4] = {
-    {     "0", "No (overrides mp:warmstart)", 0 },
+    {     "0", "No (overrides mip:warmstart)", 0 },
     {     "1", "Yes (default)", 1},
     {     "2", "No, but use the incoming primal "
           "values as hints (VARHINTVAL), ignoring the .hintpri suffix", 2},
@@ -719,7 +719,7 @@ void GurobiBackend::InitCustomOptions() {
                   GetSolverInvocationName()).c_str());
 
   AddSolverOption("pre:aggfill aggfill", "Amount of fill allowed during aggregation in presolve"
-    "(default -1).", GRB_INT_PAR_AGGFILL, -1, INT_MAX);
+    "(default -1).", GRB_INT_PAR_AGGFILL, -1, GRB_MAXINT);
 
   
   AddSolverOption("pre:aggregate aggregate", "0/1*: whether to use aggregation in presolve."
@@ -743,7 +743,7 @@ void GurobiBackend::InitCustomOptions() {
 
   AddSolverOption("bar:corr barcorrectors",
     "Limit on the number of central corrections done in each barrier iteration"
-    "(default -1 = automatic choice).", GRB_INT_PAR_BARCORRECTORS, -1, INT_MAX);
+    "(default -1 = automatic choice).", GRB_INT_PAR_BARCORRECTORS, -1, GRB_MAXINT);
 
   AddSolverOption("bar:homog barhomogeneous",
     "Whether to use the homogeneous barrier algorithm (e.g., when method=2 is specified):\n"
@@ -755,7 +755,7 @@ void GurobiBackend::InitCustomOptions() {
 
   AddSolverOption("bar:iterlim bariterlim",
     "Limit on the number of barrier iterations (default 1000).", 
-    GRB_INT_PAR_BARITERLIMIT, 0, INT_MAX);
+    GRB_INT_PAR_BARITERLIMIT, 0, GRB_MAXINT);
 
   AddSolverOption("bar:order barorder", "Ordering used to reduce fill in sparse-matrix factorizations during the barrier algorithm. Possible values:\n"
     "\n.. value-table::\n", GRB_INT_PAR_AGGREGATE, values_barorder, -1);
@@ -764,12 +764,6 @@ void GurobiBackend::InitCustomOptions() {
     "Convergence tolerance on the relative difference between primal and dual objective values for barrier algorithms when solving problems "
     "with quadratic constraints (default 1e-6).", GRB_DBL_PAR_BARQCPCONVTOL, 
     0.0, 1.0);
-
-  AddSolverOption("log:file logfile",
-      "Log file name.",
-      GRB_STR_PAR_LOGFILE);
-
-
 
 
   /// Option "multiobj" is created internally if
@@ -823,7 +817,7 @@ void GurobiBackend::InitCustomOptions() {
 
   AddSolverOption("mip:maxmipsub maxmipsub",
     "Maximum number of nodes for RIMS heuristic to explore on MIP problems (default 500).",
-      GRB_INT_PAR_SUBMIPNODES, 500, INT_MAX);
+      GRB_INT_PAR_SUBMIPNODES, 500, GRB_MAXINT);
 
   AddSolverOption("mip:gap mipgap",
     "Max relative MIP optimality gap (default 1e-4)",
@@ -833,7 +827,7 @@ void GurobiBackend::InitCustomOptions() {
     "Max absolute MIP optimality gap (default 1e-10)",
     GRB_DBL_PAR_MIPGAPABS, 1e-10, DBL_MAX);
 
-  AddSolverOption("mip:opttol optimalitytolerance opttol",
+  AddSolverOption("mip:opttol opttol optimalitytolerance",
       "Dual feasibility tolerance.",
       GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
 
@@ -841,7 +835,7 @@ void GurobiBackend::InitCustomOptions() {
     "Number of nodes for the Minimum Relaxation heuristic to "
 		"explore at the MIP root node when a feasible solution has not "
 		"been found by any other heuristic; default -1 ==> automatic choice.",
-    GRB_INT_PAR_MINRELNODES, -1, INT_MAX);
+    GRB_INT_PAR_MINRELNODES, -1, GRB_MAXINT);
 
   AddSolverOption("mip:nodemethod nodemethod",
     "Algorithm used to solve relaxed MIP node problems:\n"
@@ -857,6 +851,15 @@ void GurobiBackend::InitCustomOptions() {
       "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.", 
     GRB_INT_PAR_OUTPUTFLAG, 0, 1);
   SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);
+
+  AddSolverOption("log:freq logfreq outfreq",
+      "Interval in seconds between log lines (default 5).",
+    GRB_INT_PAR_DISPLAYINTERVAL, 1, GRB_MAXINT);
+
+  AddSolverOption("log:file logfile",
+      "Log file name.",
+      GRB_STR_PAR_LOGFILE);
+
 
   /// Solution pool parameters
   /// Rely on MP's built-in options solutionstub or countsolutions
@@ -902,18 +905,18 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("gen:threads threads",
       "How many threads to use when using the barrier algorithm\n"
       "or solving MIP problems; default 0 ==> automatic choice.",
-      GRB_INT_PAR_THREADS, 0, INT_MAX);
+      GRB_INT_PAR_THREADS, 0, GRB_MAXINT);
 
 
-  AddSolverOption("lim:iterlimit iterlimit",
+  AddSolverOption("lim:iter iterlim iterlimit",
     "Iteration limit (default: no limit).",
     GRB_DBL_PAR_ITERATIONLIMIT, 0.0, DBL_MAX);
 
-  AddSolverOption("lim:node nodelim",
+  AddSolverOption("lim:nodes nodelim nodelimit",
     "Maximum MIP nodes to explore (default: no limit).",
     GRB_DBL_PAR_NODELIMIT, 0.0, DBL_MAX);
 
-  AddSolverOption("lim:time timelim",
+  AddSolverOption("lim:time timelim timelimit",
       "Limit on solve time (in seconds; default: no limit).",
       GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
 

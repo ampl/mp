@@ -318,7 +318,7 @@ protected:
                       mipStoredOptions_.basis_, values_basis_);
 
     if (IMPL_HAS_STD_FEATURE( WARMSTART ))
-      AddStoredOption("mp:warmstart warmstart",
+      AddStoredOption("mip:warmstart warmstart",
                       "Whether to use incoming primal (and dual, for LP) variable values "
                       "in a warmstart:\n "
                       "\n.. value-table::\n"

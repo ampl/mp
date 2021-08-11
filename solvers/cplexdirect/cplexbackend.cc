@@ -277,7 +277,7 @@ void CplexBackend::InitCustomOptions() {
       "or solving MIP problems; default 0 ==> automatic choice.",
       CPXPARAM_Threads, 0, INT_MAX);
 
-  AddSolverOption("timelim",
+  AddSolverOption("lim:time timelim timelimit",
       "limit on solve time (in seconds; default: no limit).",
       CPXPARAM_TimeLimit, 0.0, DBL_MAX);
 

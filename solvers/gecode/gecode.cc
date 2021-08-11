@@ -695,13 +695,13 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::GetOption<int, unsigned>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned>, &options_.a_d);
 
-  AddDblOption("lim:time timelim", "Time limit in seconds.",
+  AddDblOption("lim:time timelim timelimit", "Time limit in seconds.",
       &GecodeSolver::GetOption<double, double>,
       &GecodeSolver::SetNonnegativeOption<double, double>, &time_limit_);
-  AddIntOption("lim:nodes nodelim", "Node limit.",
+  AddIntOption("lim:nodes nodelim nodelimit", "Node limit.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &node_limit_);
-  AddIntOption("lim:fail faillim", "Fail limit.",
+  AddIntOption("lim:fail faillim faillimit", "Fail limit.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &fail_limit_);
 
