@@ -27,9 +27,9 @@
 
 namespace mp {
 
-/// A reference to an immutable array,
-/// which can be stored inside if
-/// constructed from an rvalue std::vector.
+/// A reference to an immutable array which can be
+/// stored inside if ArrayRef<> is constructed
+/// from an rvalue std::vector.
 template <typename T>
 class ArrayRef {
   std::vector<T> save_;
@@ -41,32 +41,38 @@ class ArrayRef {
 
   ArrayRef(const T *data, std::size_t size) : data_(data), size_(size) {}
 
-  template <typename U>
-  ArrayRef(ArrayRef<U>&& other) { init_from_lrvalue(std::move(other)); }
-
-  template <typename U>
-  ArrayRef(const ArrayRef<U>& other) { init_from_lrvalue(other); }
-
-  template <typename Vector>
-  ArrayRef(const Vector &other) : data_(other.data()), size_(other.size()) {}
-
-  template <typename TT>
-  ArrayRef(std::vector<TT> &&other) :
-    save_(std::move(other)),
-    data_(save_.data()), size_(save_.size()) {}
-
   template <std::size_t SIZE>
   ArrayRef(const T (&data)[SIZE]) : data_(data), size_(SIZE) {}
 
+  /// Rvalue ArrayRef, take over vector if any
+  template <typename U>
+  ArrayRef(ArrayRef<U>&& other) { init_from_rvalue(std::move(other)); }
+
+  /// Lvalue ArrayRef, pure reference
+  template <typename U>
+  ArrayRef(const ArrayRef<U>& other) : data_(other.data()), size_(other.size()) {}
+
+  /// Rvalue std::vector, take over
+  template <typename TT>
+  ArrayRef(std::vector<TT> &&other) :
+    save_(std::move(other)), data_(save_.data()), size_(save_.size()) {}
+
+  /// Lvalue Vector, pure reference
+  template <typename Vector>
+  ArrayRef(const Vector &other) : data_(other.data()), size_(other.size()) {}
+
+  /// = Rvalue, take over vector if any
   template <class U>
   ArrayRef<T>& operator=(ArrayRef<U>&& other) {
-    init_from_lrvalue(std::move(other));
+    init_from_rvalue(std::move(other));
     return *this;
   }
 
+  /// = Lvalue, pure reference
   template <class U>
   ArrayRef<T>& operator=(const ArrayRef<U>& other) {
-    init_from_lrvalue(other);
+    data_ = other.data();
+    size_ = other.size();
     return *this;
   }
 
@@ -80,24 +86,15 @@ class ArrayRef {
 
 protected:
   template <class AR>
-  void init_from_lrvalue(AR&& other) {
+  void init_from_rvalue(AR&& other) {
     if (other.save_.size()) {
-      copy_save_vec_from(std::forward<AR>(other));
+      save_ = std::move(other.save_);
       data_ = save_.data();
       size_ = save_.size();
     } else {
       data_ = other.data();
       size_ = other.size();
     }
-  }
-
-  template <class AR>
-  void copy_save_vec_from(AR&& ar) {
-    save_ = std::move(ar.save_);
-  }
-  template <class AR>
-  void copy_save_vec_from(const AR& ar) {
-    save_ = ar.save_;
   }
 };
 
