@@ -1,0 +1,54 @@
+[
+  {
+    "name": "infeas_int_01 iisfind=1",
+    "tags": [ "linear"],
+    "options": {
+        "ANYSOLVER_options": "iisfind=1"
+    },
+    "values": {
+      "x.iis": "non",
+      "y.iis": "non",
+      "C1.iis": "mem",
+      "C2.iis": "mem",
+      "C3.iis": "mem"
+    }
+  },
+  {
+    "name": "infeas_int_02_vars iisfind=1",
+    "tags": [ "linear"],
+    "options": {
+        "ANYSOLVER_options": "iisfind=1"
+    },
+    "values": {
+      "x.iis": "non",
+      "y.iis": "upp",
+      "C1.iis": "mem",
+      "C2.iis": "mem",
+      "C3.iis": "non"
+    }
+  },
+  {
+    "name": "infeas_int_02_vars feasrelax=4 ubpen=300",
+    "tags": [ "linear"],
+    "options": {
+        "ANYSOLVER_options": "feasrelax=4 ubpen=300"
+    },
+    "objective": 1.284400000000e+05
+  },
+  {
+    "name": "infeas_int_01 feasrelax=5",
+    "tags": [ "linear"],
+    "options": {
+        "ANYSOLVER_options": "feasrelax=5"
+    },
+    "objective": -2
+  },
+  {
+    "name": "infeas_int_01 feasrelax=6",
+    "tags": [ "linear"],
+    "options": {
+        "ANYSOLVER_options": "feasrelax=6"
+    },
+    "objective": -9.534910000000e+05
+  }
+]

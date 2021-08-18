@@ -82,6 +82,9 @@ class ArrayRef {
   const T *data() const { return data_; }
   std::size_t size() const { return size_; }
 
+  const T* begin() const { return data(); }
+  const T* end() const { return data()+size(); }
+
   const T &operator[](std::size_t i) const { return data_[i]; }
 
 protected:
@@ -98,10 +101,17 @@ protected:
   }
 };
 
-template <typename T>
+template <typename T> inline
 ArrayRef<T> MakeArrayRef(const T *data, std::size_t size) {
   return ArrayRef<T>(data, size);
 }
+
+/// std::vector::data() might not return nullptr when empty
+template <class Vec> inline
+const typename Vec::value_type* data_or_null(const Vec& v) {
+  return v.empty() ? nullptr : v.data();
+}
+
 }  // namespace mp
 
 #endif  // MP_ARRAYREF_H_

@@ -31,7 +31,6 @@ class GurobiBackend : public MIPBackend<GurobiBackend>
 {
   using BaseBackend = MIPBackend<GurobiBackend>;
 
-  //////////////////// [[ The public interface ]] //////////////////////
 public:
   GurobiBackend();
   ~GurobiBackend();
@@ -44,7 +43,80 @@ public:
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
-  /// Solver flags
+  ////////////////////////////////////////////////////////////
+  /////////////// OPTIONAL STANDARD FEATURES /////////////////
+  ////////////////////////////////////////////////////////////
+  /// Default switch, needed if not all std features mentioned
+  DEFAULT_STD_FEATURES_TO( false )
+  /**
+   * MULTIOBJ
+  **/
+  std::vector<double> ObjectiveValues() const;
+  void ObjPriorities(ArrayRef<int>);
+  void ObjWeights(ArrayRef<double>);
+  void ObjAbsTol(ArrayRef<double>);
+  void ObjRelTol(ArrayRef<double>);
+  /**
+  * Get/Set AMPL var/con statii
+  **/
+  ALLOW_STD_FEATURE( BASIS, true )
+  std::vector<int> VarStatii();
+  std::vector<int> ConStatii();
+  void VarStatii(ArrayRef<int> );
+  void ConStatii(ArrayRef<int> );
+  /**
+  * General warm start, e.g.,
+  * set primal/dual initial guesses for continuous case
+  **/
+  ALLOW_STD_FEATURE( WARMSTART, true )
+  void InputPrimalDualStart(ArrayRef<double> x0,
+                         ArrayRef<double> pi0);
+  /**
+  * Specifically, MIP warm start
+  **/
+  ALLOW_STD_FEATURE( MIPSTART, true )
+  void AddMIPStart(ArrayRef<double> x0);
+  /**
+  * Obtain inf/unbounded rays
+  **/
+  ALLOW_STD_FEATURE( RAYS, true )
+  std::vector<double> Ray();
+  std::vector<double> DRay();
+  /**
+  * Compute the IIS and obtain relevant values
+  **/
+  ALLOW_STD_FEATURE( IIS, true )
+  void ComputeIIS();
+  /// Elements correspond to IISStatus
+  std::vector<int> VarsIIS();
+  std::vector<int> ConsIIS();
+  /**
+  * Get MIP Gap
+  **/
+  ALLOW_STD_FEATURE( RETURN_MIP_GAP, true )
+  double MIPGap() const;
+  /**
+  * Get MIP dual bound
+  **/
+  ALLOW_STD_FEATURE( RETURN_BEST_DUAL_BOUND, true )
+  double BestDualBound() const;
+  /**
+  * Set branch and bound priorities
+  **/
+  ALLOW_STD_FEATURE( VAR_PRIORITIES, true )
+  void VarPriorities(ArrayRef<int> );
+  /**
+  * Get basis condition value (kappa)
+  **/
+  ALLOW_STD_FEATURE(KAPPA, true)
+  double Kappa() const;
+  /**
+  * FeasRelax
+  **/
+  ALLOW_STD_FEATURE(FEAS_RELAX, true)
+
+
+  /// Solver flags old-style
   static bool IfMultipleSol() { return true; }
   static bool IfMultipleObj() { return true; }
 
@@ -124,7 +196,6 @@ public:
   std::vector<double> PrimalSolution();
   std::vector<double> DualSolution();
   double ObjectiveValue() const;
-  std::vector<double> ObjectiveValues() const;
 
   /// Solution pool
   void StartPoolSolutions();
@@ -136,73 +207,6 @@ public:
   double NodeCount() const;
   double Niterations() const;
 
-
-  ////////////////////////////////////////////////////////////
-  /////////////// OPTIONAL STANDARD FEATURES /////////////////
-  ////////////////////////////////////////////////////////////
-  /// Default switch, needed if not all std features mentioned
-  DEFAULT_STD_FEATURES_TO( false )
-  /**
-  * Get/Set AMPL var/con statii
-  **/
-  ALLOW_STD_FEATURE( BASIS, true )
-  std::vector<int> VarStatii();
-  std::vector<int> ConStatii();
-  void VarStatii(ArrayRef<int> );
-  void ConStatii(ArrayRef<int> );
-  /**
-  * General warm start, e.g.,
-  * set primal/dual initial guesses for continuous case
-  **/
-  ALLOW_STD_FEATURE( WARMSTART, true )
-  void InputPrimalDualStart(ArrayRef<double> x0,
-                         ArrayRef<double> pi0);
-  /**
-  * Specifically, MIP warm start
-  **/
-  ALLOW_STD_FEATURE( MIPSTART, true )
-  void AddMIPStart(ArrayRef<double> x0);
-  /**
-  * Obtain inf/unbounded rays
-  **/
-  ALLOW_STD_FEATURE( RAYS, true )
-  std::vector<double> Ray();
-  std::vector<double> DRay();
-  /**
-  * Compute the IIS and obtain relevant values
-  **/
-  ALLOW_STD_FEATURE( IIS, true )
-  void ComputeIIS();
-  /// Elements correspond to IISStatus
-  std::vector<int> VarsIIS();
-  std::vector<int> ConsIIS();
-  /**
-  * Get MIP Gap
-  **/
-  ALLOW_STD_FEATURE( RETURN_MIP_GAP, true )
-  double MIPGap() const;
-  /**
-  * Get MIP dual bound
-  **/
-  ALLOW_STD_FEATURE( RETURN_BEST_DUAL_BOUND, true )
-  double BestDualBound() const;
-  /**
-  * Set branch and bound priorities
-  **/
-  ALLOW_STD_FEATURE( VarPriorities, true )
-  void VarPriorities(ArrayRef<int> );
-
-  void ObjPriorities(ArrayRef<int>);
-  void ObjWeights(ArrayRef<double>);
-  void ObjAbsTol(ArrayRef<double>);
-  void ObjRelTol(ArrayRef<double>);
-
-
-  /**
-  * Get basis condition value (kappa)
-  **/
-  ALLOW_STD_FEATURE(Kappa, true)
-  double Kappa() const;
 
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
@@ -245,7 +249,8 @@ public:
   obj::Type GetMainObjSense() const;
 
 protected:
-  void PrepareParameters();
+  void PrepareGurobiSolve();
+  void DoFeasRelax();
 
 private:
   GRBenv   *env   = NULL;
@@ -262,21 +267,22 @@ private:
 
     int nMIPStart_=1;
     int nPoolMode_=2;
-  };
+  } storedOptions_;
 
-  Options storedOptions_;
 
-  int iPoolSolution = -2;          // for SelectNextPoolSolution()
-
-protected:
+protected:  //////////// Option accessors ////////////////
   int mipstart() const { return storedOptions_.nMIPStart_; }
 
-private:
+
+private:  /////////// Some working variables ////////////
+  int iPoolSolution = -2;          // for SelectNextPoolSolution()
+
+
+private: /////////// Suffixes ///////////
   const SuffixDef<int> sufHintPri = { "hintpri", suf::VAR | suf::INPUT };
 
 
-public:
-  /// Wrappers for Get/SetSolverOption()
+public:  //////////// Wrappers for Get/SetSolverOption()
   int GrbGetIntParam(const char* key) const;
   double GrbGetDblParam(const char* key) const;
   std::string GrbGetStrParam(const char* key) const;

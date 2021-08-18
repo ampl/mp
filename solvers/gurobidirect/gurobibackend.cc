@@ -5,7 +5,8 @@
 #include "gurobibackend.h"
 
 #define GRB_CALL( call ) do { if (int e=call) RAISE( \
-    fmt::format("  Call failed: '{}' with code {}", #call, e ) \
+    fmt::format("  Call failed: '{}' with code {}, message: {}", #call, \
+        e, GRBgeterrormsg(env) ) \
   ); } while (0)
 #define RAISE(msg) throw std::runtime_error(msg)
 
@@ -37,7 +38,7 @@ std::string GurobiBackend::GetSolverVersion() {
 }
 
 void GurobiBackend::OpenSolver() {
-  
+
   GRB_CALL( GRBloadenv(&env, NULL) );
 
   /* Create an empty model */
@@ -373,18 +374,40 @@ void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void GurobiBackend::SolveAndReportIntermediateResults() {
-  PrepareParameters();
+  PrepareGurobiSolve();
 
   GRB_CALL( GRBoptimize(model) );
 }
 
-void GurobiBackend::PrepareParameters() {
+void GurobiBackend::PrepareGurobiSolve() {
   if (need_multiple_solutions())
     GrbSetIntParam(GRB_INT_PAR_POOLSEARCHMODE, storedOptions_.nPoolMode_);
   if (need_ray_primal() || need_ray_dual())
     GrbSetIntParam(GRB_INT_PAR_INFUNBDINFO, 1);
+  if (feasrelax_IOdata())
+    DoFeasRelax();
 }
 
+
+void GurobiBackend::DoFeasRelax() {
+  int reltype = feasrelax_IOdata().mode()-1,
+      minrel = 0;
+  if (reltype >= 3) {
+    reltype -= 3;
+    minrel = 1;
+    feasrelax_IOdata().origObjAvailable_ = true;
+  }
+  GRB_CALL( GRBfeasrelax(model, reltype, minrel,
+                         (double*)data_or_null( feasrelax_IOdata().lbpen ),
+                         (double*)data_or_null( feasrelax_IOdata().ubpen ),
+                         (double*)data_or_null( feasrelax_IOdata().rhspen ),
+                         &feasrelax_IOdata().origObjValue_) );
+}
+
+
+//////////////////////////////////////////////////////////////////////
+////////////////////////// Solution Status ///////////////////////////
+//////////////////////////////////////////////////////////////////////
 std::string GurobiBackend::ConvertSolutionStatus(
     const mp::Interrupter &interrupter, int &solve_code) {
   namespace sol = mp::sol;
@@ -636,7 +659,7 @@ const mp::OptionValueInfo values_method[] = {
 
 const mp::OptionValueInfo values_mipfocus[] = {
     { "0", "Balance finding good feasible solutions and "
-			    "proving optimality (default)", 0},
+          "proving optimality (default)", 0},
     { "1", "Favor finding feasible solutions", 1},
     { "2", "Favor providing optimality", 2},
     { "3", "Focus on improving the best objective bound", 3},
@@ -658,7 +681,7 @@ const mp::OptionValueInfo values_multiobjmethod[] = {
     { "0", "Primal simplex", 0},
     { "1", "Dual simplex", 1},
     {"2", "Ignore warm-start information; use the algorithm "
-				"specified by the method keyword", 2}
+        "specified by the method keyword", 2}
 };
 
 const mp::OptionValueInfo values_multiobjpre[] = {
@@ -686,7 +709,7 @@ const mp::OptionValueInfo values_predual[] = {
     { "0", "No", 0},
     { "1", "Yes", 1},
     { "2", "Form both primal and dual and use two threads to "
-			     "choose heuristically between them.", 2}
+           "choose heuristically between them.", 2}
 };
 
 const mp::OptionValueInfo values_pool_mode[] = {
@@ -710,7 +733,7 @@ const mp::OptionValueInfo values_varbranch[] = {
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 void GurobiBackend::InitCustomOptions() {
-                             
+
   set_option_header(
       fmt::format("Gurobi Optimizer Options for AMPL\n"
                   "---------------------------------\n"
@@ -721,10 +744,18 @@ void GurobiBackend::InitCustomOptions() {
       "  ampl: option {0}_options 'opttol=1e-6';\n",
                   GetSolverInvocationName()).c_str());
 
+
+
+  AddSolverOption("alg:feasrelaxbigm feasrelaxbigm",
+                  "Value of \"big-M\" sometimes used with constraints when doing "
+                  "a feasibility relaxation.  Default = 1e6.",
+                  GRB_DBL_PAR_FEASRELAXBIGM, 0.0, DBL_MAX);
+
+
   AddSolverOption("pre:aggfill aggfill", "Amount of fill allowed during aggregation in presolve"
     "(default -1).", GRB_INT_PAR_AGGFILL, -1, GRB_MAXINT);
 
-  
+
   AddSolverOption("pre:aggregate aggregate", "0/1*: whether to use aggregation in presolve."
     "Setting it to 0 can sometimes reduce numerical errors.", GRB_INT_PAR_AGGREGATE, 0, 1);
 
@@ -737,7 +768,7 @@ void GurobiBackend::InitCustomOptions() {
     "Whether gurobi's presolve should form the dual of a "
     "continuous model:\n" "\n.. value-table::\n",
     GRB_INT_PAR_PREDUAL, values_predual, -1);
-  
+
   AddSolverOption("bar:convtol barconvtol",
     "Tolerance on the relative difference between the primal and dual objectives "
     "for stopping the barrier algorithm "
@@ -757,7 +788,7 @@ void GurobiBackend::InitCustomOptions() {
 
 
   AddSolverOption("bar:iterlim bariterlim",
-    "Limit on the number of barrier iterations (default 1000).", 
+    "Limit on the number of barrier iterations (default 1000).",
     GRB_INT_PAR_BARITERLIMIT, 0, GRB_MAXINT);
 
   AddSolverOption("bar:order barorder", "Ordering used to reduce fill in sparse-matrix factorizations during the barrier algorithm. Possible values:\n"
@@ -765,7 +796,7 @@ void GurobiBackend::InitCustomOptions() {
 
   AddSolverOption("bar:qcptol barqcptol",
     "Convergence tolerance on the relative difference between primal and dual objective values for barrier algorithms when solving problems "
-    "with quadratic constraints (default 1e-6).", GRB_DBL_PAR_BARQCPCONVTOL, 
+    "with quadratic constraints (default 1e-6).", GRB_DBL_PAR_BARQCPCONVTOL,
     0.0, 1.0);
 
 
@@ -836,8 +867,8 @@ void GurobiBackend::InitCustomOptions() {
 
   AddSolverOption("mip:minrelnodes minrelnodes",
     "Number of nodes for the Minimum Relaxation heuristic to "
-		"explore at the MIP root node when a feasible solution has not "
-		"been found by any other heuristic; default -1 ==> automatic choice.",
+    "explore at the MIP root node when a feasible solution has not "
+    "been found by any other heuristic; default -1 ==> automatic choice.",
     GRB_INT_PAR_MINRELNODES, -1, GRB_MAXINT);
 
   AddSolverOption("mip:nodemethod nodemethod",
@@ -851,7 +882,7 @@ void GurobiBackend::InitCustomOptions() {
 
 
   AddSolverOption("log:lev outlev",
-      "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.", 
+      "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.",
     GRB_INT_PAR_OUTPUTFLAG, 0, 1);
   SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);
 

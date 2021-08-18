@@ -53,6 +53,7 @@ DEFAULT_STD_FEATURES_TO( false )
 #define UNSUPPORTED(name) \
   throw MakeUnsupportedError( name )
 
+
 namespace mp {
 
 /// Basic backend wrapper.
@@ -63,43 +64,10 @@ class BasicBackend :
     public BasicConstraintAdder,
     private SolverImpl< ModelAdapter< BasicModel<> > >   // mp::Solver stuff, hidden
 {
-  ConverterQuery *p_converter_query_object = nullptr;
-  using MPSolverBase = SolverImpl< ModelAdapter< BasicModel<> > >;
+  ////////////////////////////////////////////////////////////////////////////
+  ///////////////////// Default metadata /////////////////////
+  ////////////////////////////////////////////////////////////////////////////
 public:
-  using MPUtils = MPSolverBase;              // Allow Converter access the SolverImpl
-  const MPUtils& GetMPUtils() const { return *this; }
-  MPUtils& GetMPUtils() { return *this; }
-
-  using MPSolverBase::debug_mode;
-
-public:
-  BasicBackend() :
-    MPSolverBase(
-      Impl::GetSolverInvocationName(),
-      Impl::GetAMPLSolverLongName(),
-      Impl::Date(), Impl::Flags())
-  { }
-  virtual ~BasicBackend() { }
-
-  void OpenSolver() { }
-  void CloseSolver() { }
-
-  /// Converter should provide this before Backend can run solving
-  void ProvideConverterQueryObject(ConverterQuery* pCQ) { p_converter_query_object = pCQ; }
-
-private: // hiding this detail, it's not for the final backends
-  const ConverterQuery& GetCQ() const {
-    assert(nullptr!=p_converter_query_object);
-    return *p_converter_query_object;
-  }
-  ConverterQuery& GetCQ() {
-    assert(nullptr!=p_converter_query_object);
-    return *p_converter_query_object;
-  }
-
-public:
-
-  /// Default metadata
   static const char* GetSolverName() { return "SomeSolver"; }
   static std::string GetSolverVersion() { return "-285.68.53"; }
   static const char* GetSolverInvocationName() { return "solverdirect"; }
@@ -108,35 +76,50 @@ public:
   static const char* GetBackendLongName() { return nullptr; }
   static long Date() { return MP_DATE; }
 
-  /// Default flags
-  static int Flags() {
-    int flg=0;
-    if (Impl::IfMultipleSol() )
-      flg |= Solver::MULTIPLE_SOL;
-    if (Impl::IfMultipleObj() )
-      flg |= Solver::MULTIPLE_OBJ;
-    return flg;
-  }
-  static bool IfMultipleSol() { return false; }
-  static bool IfMultipleObj() { return false; }
+  ////////////////////////////////////////////////////////////
+  /////////////// OPTIONAL STANDARD FEATURES /////////////////
+  /////////////// DISALLOW BY DEFAULT /////////////////
+  /////////////// PLACEHOLDERS FOR CORR. API /////////////////
+  ////////////////////////////////////////////////////////////
+protected:
+  /**
+   * MULTIOBJ support
+   * Implement if Impl supports multiobj
+   */
+  std::vector<double> ObjectiveValues() const
+  { UNSUPPORTED("ObjectiveValues()"); return {}; }
+  void ObjPriorities(ArrayRef<int>)
+  { UNSUPPORTED("BasicBackend::ObjPriorities"); }
+  void ObjWeights(ArrayRef<double>)
+  { UNSUPPORTED("BasicBackend::ObjWeights"); }
+  void ObjAbsTol(ArrayRef<double>)
+  { UNSUPPORTED("BasicBackend::ObjAbsTol"); }
+  void ObjRelTol(ArrayRef<double>)
+  { UNSUPPORTED("BasicBackend::ObjRelTol"); }
+  /**
+  * Set branch and bound priority
+  **/
+  DEFINE_STD_FEATURE( VAR_PRIORITIES, false )
+  void VarPriorities(ArrayRef<int>)
+  { UNSUPPORTED("BasicBackend::VarPriorities"); }
+  /**
+  * Kappa estimate
+  **/
+  DEFINE_STD_FEATURE( KAPPA, false )
+  double Kappa()
+  { UNSUPPORTED("BasicBackend::Kappa"); }
+  /**
+  * FeasRelax
+  **/
+  DEFINE_STD_FEATURE( FEAS_RELAX, false )
+  /** No API, Impl should check feasrelax_IOdata() **/
 
-  void InitMetaInfoAndOptions() {
-    MP_DISPATCH( InitNamesAndVersion() );
-    MP_DISPATCH( InitStandardOptions() );
-    MP_DISPATCH( InitCustomOptions() );
-  }
 
-  void InitNamesAndVersion() {
-    auto name = MP_DISPATCH( GetSolverName() );
-    auto version = MP_DISPATCH( GetSolverVersion() );
-    this->set_long_name( fmt::format("{} {}", name, version ) );
-    this->set_version( fmt::format("AMPL/{} Optimizer [{}]",
-                                   name, version ) );
-  }
-
+  ////////////////////////////////////////////////////////////////////////
   ///////////////////////////// MODEL MANIP //////////////////////////////
+  ////////////////////////////////////////////////////////////////////////
+public:
   using Model = BasicModel<>;
-
   using Variable = typename Model::Variable;
 
   void InitProblemModificationPhase() { }
@@ -220,13 +203,15 @@ public:
   ////////////////////////////////////////////////////////////////////////////
   /////////////////////////// BASIC PROCESS LOGIC ////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
+  void OpenSolver() { }
+  void CloseSolver() { }
 
   void SolveAndReport() {
     MP_DISPATCH( InputExtras() );
 
-    MP_DISPATCH( PrepareSolve() );
+    MP_DISPATCH( SetupTimerAndInterrupter() );
     MP_DISPATCH( SolveAndReportIntermediateResults() );
-    MP_DISPATCH( WrapupSolve() );
+    MP_DISPATCH( RecordSolveTime() );
 
     MP_DISPATCH( ObtainSolutionStatus() );
     MP_DISPATCH( ReportSolution() );
@@ -248,10 +233,12 @@ public:
       MP_DISPATCH( ObjAbsTol( ReadSuffix(suf_objabstol) ) );
       MP_DISPATCH( ObjRelTol( ReadSuffix(suf_objreltol) ) );
     }
+    if (feasrelaxMode())
+      MP_DISPATCH( InputFeasRelaxData() );
   }
   void InputCustomExtras() { }
 
-  void PrepareSolve() {
+  void SetupTimerAndInterrupter() {
     MP_DISPATCH( SetupInterrupter() );
     MP_DISPATCH( SetupTimer() );
   }
@@ -264,7 +251,7 @@ public:
     stats.setup_time = GetTimeAndReset(stats.time);
   }
 
-  void WrapupSolve() {
+  void RecordSolveTime() {
     stats.solution_time = GetTimeAndReset(stats.time);
   }
 
@@ -273,6 +260,21 @@ public:
           ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
   }
 
+  void InputFeasRelaxData() {
+    auto suf_lbpen = ReadDblSuffix( {"lbpen", suf::VAR} );
+    auto suf_ubpen = ReadDblSuffix( {"ubpen", suf::VAR} );
+    auto suf_rhspen = ReadDblSuffix( {"lbpen", suf::CON} );
+    if (suf_lbpen.empty() && suf_ubpen.empty() && suf_rhspen.empty() &&
+        0.0>lbpen() && 0.0>ubpen() && 0.0>rhspen())
+      return;
+    feasrelax_IOdata().mode_ = feasrelaxMode();
+    feasrelax_IOdata().lbpen = FillFeasRelaxPenalty(suf_lbpen, lbpen(),
+                MP_DISPATCH( NumberOfVariables() ));
+    feasrelax_IOdata().ubpen = FillFeasRelaxPenalty(suf_ubpen, ubpen(),
+                MP_DISPATCH( NumberOfVariables() ));
+    feasrelax_IOdata().rhspen = FillFeasRelaxPenalty(suf_rhspen, rhspen(),
+                MP_DISPATCH( NumberOfConstraints() ));
+  }
 
   using Solver::need_multiple_solutions;
 
@@ -361,8 +363,14 @@ public:
         }
         else {
           obj_value = MP_DISPATCH(ObjectiveValue());
-          writer.write("; objective {}",
+          writer.write("; ");
+          if (feasrelax_IOdata())
+            writer.write("feastol ");
+          writer.write("objective {}",
             MP_DISPATCH(FormatObjValue(obj_value)));
+          if (feasrelax_IOdata().origObjAvailable_)
+            writer.write("\nfeasrelax objective = {}",
+                         feasrelax_IOdata().origObjValue_);
         }
       }
     }
@@ -387,11 +395,7 @@ public:
                        stats.setup_time, stats.solution_time, output_time) );
   }
 
-  /////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////// SERVICE STUFF ///////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////
-
-  /////////////////////////////// SOLUTION STATUS /////////////////////////////////
+  //////////////////////// SOLUTION STATUS ADAPTERS ///////////////////////////////
   /** Following the taxonomy of the enum sol, returns true if
       we have an optimal solution or a feasible solution for a 
       satisfaction problem */
@@ -429,13 +433,6 @@ public:
   };
   Stats stats;
 
-  /////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////// OPTIONAL ACCESSORS /////////////////////////////////
-  //////////////// TO BE IMPLEMENTED IN THE FINAL BACKEND CLASS ///////////////////
-  ////////////////////// IF THE CORRESPONDING FEATURE IS USED /////////////////////
-  /////////////////////////////////////////////////////////////////////////////////
-  std::vector<double> ObjectiveValues() const
-  { UNSUPPORTED("ObjectiveValues()"); return {}; }
 
   /////////////////////////////// SOME MATHS ////////////////////////////////
   static bool float_equal(double a, double b) {           // ??????
@@ -477,11 +474,16 @@ protected:
   }
 
 
-  ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) {
+  template <class N>
+  ArrayRef<N> ReadSuffix(const SuffixDef<N>& suf) {
     return GetCQ().ReadSuffix(suf);
   }
 
-  ArrayRef<double> ReadSuffix(const SuffixDef<double>& suf) {
+  ArrayRef<int> ReadIntSuffix(const SuffixDef<int>& suf) {
+    return GetCQ().ReadSuffix(suf);
+  }
+
+  ArrayRef<double> ReadDblSuffix(const SuffixDef<double>& suf) {
     return GetCQ().ReadSuffix(suf);
   }
 
@@ -492,28 +494,27 @@ protected:
                     ArrayRef<int> values) {
     GetCQ().ReportSuffix(suf, values);
   }
-
   void ReportSuffix(const SuffixDef<double>& suf,
                     ArrayRef<double> values) {
     GetCQ().ReportSuffix(suf, values);
   }
 
-   void ReportSingleSuffix(const SuffixDef<double>& suf,
-     double value) {
-      std::vector<double> values(1);
-      values[0] = value;
-      GetCQ().ReportSuffix(suf, values);
-    }
+  template <class N>
+  void ReportSingleSuffix(const SuffixDef<N>& suf,
+                          N value) {
+    std::vector<N> values(1, value);
+    GetCQ().ReportSuffix(suf, values);
+  }
 
 
-private:
   ///////////////////////// STORING SOLUTON STATUS //////////////////////
+private:
   int solve_code=sol::NOT_CHECKED;
   std::string solve_status;
 
 
-protected:
   ///////////////////////////// OPTIONS /////////////////////////////////
+protected:
   template <class Value>
   class StoredOption : public mp::TypedSolverOption<Value> {
     Value& value_;
@@ -631,63 +632,91 @@ private:
   struct Options {
     int importPriorities_=1;
     int exportKappa_ = 0;
-  };
-  Options storedOptions_;
+
+    int feasRelax_=0;
+    double lbpen_=1.0, ubpen_=1.0, rhspen_=1.0;
+  } storedOptions_;
+
+  /// Once Impl declares FeasRelax,
+  /// it should check this via feasrelax_IOdata()
+  struct FeasrelaxIO {
+    /// Whether feasrelax should be done
+    operator bool() const { return mode_; }
+    /// --------------------- INPUT ----------------------
+    int mode_=0;  // whether Impl should do it and which mode,
+                  // can be redefined by Impl if cannot map
+                  // from standard options
+    int mode() const { return mode_; }
+    /// Empty vector means +inf penalties
+    std::vector<double> lbpen, ubpen, rhspen;
+
+    /// --------------------- OUTPUT, filled by Impl -----
+    bool origObjAvailable_ = false;
+    double origObjValue_ = 0.0;
+  } feasRelaxIO_;
+
+
+protected:  //////////// Option accessors ////////////////
+  int priorities() const { return storedOptions_.importPriorities_; }
+  int exportKappa() const { return storedOptions_.exportKappa_; }
+
+  /// Feasrelax I/O data
+  FeasrelaxIO& feasrelax_IOdata() { return feasRelaxIO_; }
+  int feasrelaxMode() const { return storedOptions_.feasRelax_; }
+  double lbpen() const { return storedOptions_.lbpen_; }
+  double ubpen() const { return storedOptions_.ubpen_; }
+  double rhspen() const { return storedOptions_.rhspen_; }
+
 
 protected:
   void InitStandardOptions() {
-    if (IMPL_HAS_STD_FEATURE( VarPriorities ))
+    if (IMPL_HAS_STD_FEATURE(VAR_PRIORITIES))
       AddStoredOption("mip:priorities priorities",  // CP has it too
         "0/1*: Whether to read the branch and bound priorities from the"
         " .priority suffix.",
         storedOptions_.importPriorities_);
-    if (IMPL_HAS_STD_FEATURE(Kappa))
+
+    if (IMPL_HAS_STD_FEATURE(KAPPA))
       AddStoredOption("alg:kappa kappa basis_cond",  
         "Whether to return the estimated condition number (kappa) of "
         "the optimal basis (default 0): sum of 1 = report kappa in the result message; "
         "2 = return kappa in the solver-defined suffix kappa on the objective and "
         "problem. The request is ignored when there is no optimal basis.",
         storedOptions_.exportKappa_);
-  }
 
-  int priorities() const { return storedOptions_.importPriorities_; }
-  int exportKappa() const { return IMPL_HAS_STD_FEATURE(Kappa) ? storedOptions_.exportKappa_ : 0; }
+    if (IMPL_HAS_STD_FEATURE(FEAS_RELAX)) {
+      AddStoredOption("alg:feasrelax feasrelax",
+                      "Whether to modify the problem into a feasibility "
+                          "relaxation problem:\n"
+                          "\n"
+                          "| 0 = no (default)\n"
+                          "| 1 = yes, minimizing the weighted sum of violations\n"
+                          "| 2 = yes, minimizing the weighted sum of squared violations\n"
+                          "| 3 = yes, minimizing the weighted count of violations\n"
+                          "| 4-6 = same objective as 1-3, but also optimize the "
+                             "original objective, subject to the violation "
+                             "objective being minimized.\n"
+                      "\n"
+                      "Weights are given by suffixes .lbpen and .ubpen on variables "
+                      "and .rhspen on constraints (when nonnegative), else by keywords "
+                      "alg:lbpen, alg:ubpen, and alg:rhspen, respectively (default values = 1). "
+                      "Weights < 0 are treated as Infinity, allowing no violation.",
+          storedOptions_.feasRelax_);
+      AddStoredOption("alg:lbpen lbpen", "See alg:feasrelax.",
+          storedOptions_.lbpen_);
+      AddStoredOption("alg:ubpen ubpen", "See alg:feasrelax.",
+          storedOptions_.ubpen_);
+      AddStoredOption("alg:rhspen rhspen", "See alg:feasrelax.",
+          storedOptions_.rhspen_);
+    }
+  }
 
   void InitCustomOptions() { }
 
-  ////////////////////////////////////////////////////////////
-  /////////////// OPTIONAL STANDARD FEATURES /////////////////
-  /////// Override in the Impl for standard operations ///////
-  ////////////////////////////////////////////////////////////
-protected:
-  /**
-  * Set branch and bound priority
-  **/
-  DEFINE_STD_FEATURE( VarPriorities, true ) // believe true for most
-  void VarPriorities(ArrayRef<int>) {
-    UNSUPPORTED("BasicBackend::VarPriorities");
-  }
 
-  void ObjPriorities(ArrayRef<int>) {
-    UNSUPPORTED("BasicBackend::ObjPriorities");
-  }
-  void ObjWeights(ArrayRef<double>) {
-    UNSUPPORTED("BasicBackend::ObjWeights");
-  }
-  void ObjAbsTol(ArrayRef<double>) {
-    UNSUPPORTED("BasicBackend::ObjAbsTol");
-  }
-  void ObjRelTol(ArrayRef<double>) {
-    UNSUPPORTED("BasicBackend::ObjRelTol");
-  }
-  DEFINE_STD_FEATURE(Kappa, false) // believe true for most
-  double Kappa() {
-    UNSUPPORTED("BasicBackend::Kappa");
-  }
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////// STANDARD SUFFIXES ///////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
-
 private:
   const SuffixDef<int> suf_varpriority = { "priority", suf::VAR | suf::INPUT };
 
@@ -699,6 +728,82 @@ private:
   const SuffixDef<double> suf_objkappa = { "kappa", suf::OBJ | suf::OUTONLY };
 
   const SuffixDef<double> suf_probkappa = { "kappa", suf::PROBLEM | suf::OUTONLY };
+
+
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////// SERVICE STUFF ///////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+public:
+  /// Default flags
+  static int Flags() {
+    int flg=0;
+    if (Impl::IfMultipleSol() )
+      flg |= Solver::MULTIPLE_SOL;
+    if (Impl::IfMultipleObj() )
+      flg |= Solver::MULTIPLE_OBJ;
+    return flg;
+  }
+  static bool IfMultipleSol() { return false; }
+  static bool IfMultipleObj() { return false; }
+
+  void InitMetaInfoAndOptions() {
+    MP_DISPATCH( InitNamesAndVersion() );
+    MP_DISPATCH( InitStandardOptions() );
+    MP_DISPATCH( InitCustomOptions() );
+  }
+
+  void InitNamesAndVersion() {
+    auto name = MP_DISPATCH( GetSolverName() );
+    auto version = MP_DISPATCH( GetSolverVersion() );
+    this->set_long_name( fmt::format("{} {}", name, version ) );
+    this->set_version( fmt::format("AMPL/{} Optimizer [{}]",
+                                   name, version ) );
+  }
+
+  /// Converter should provide this before Backend can run solving
+  void ProvideConverterQueryObject(ConverterQuery* pCQ)
+  { p_converter_query_object = pCQ; }
+
+private: // hiding this detail, it's not for the final backends
+  const ConverterQuery& GetCQ() const {
+    assert(nullptr!=p_converter_query_object);
+    return *p_converter_query_object;
+  }
+  ConverterQuery& GetCQ() {
+    assert(nullptr!=p_converter_query_object);
+    return *p_converter_query_object;
+  }
+  ConverterQuery *p_converter_query_object = nullptr;
+  using MPSolverBase = SolverImpl< ModelAdapter< BasicModel<> > >;
+public:
+  using MPUtils = MPSolverBase;              // Allow Converter access the SolverImpl
+  const MPUtils& GetMPUtils() const { return *this; }
+  MPUtils& GetMPUtils() { return *this; }
+
+  using MPSolverBase::debug_mode;
+
+protected:
+  /// Returns {} if these penalties are +inf
+  std::vector<double> FillFeasRelaxPenalty(
+      ArrayRef<double> suf_pen, double pen, int n) {
+    if (suf_pen.empty() && pen<0.0)
+      return {};
+    std::vector<double> result(n,
+                               pen<0.0 ? MP_DISPATCH(Infinity()) : pen);
+    for (size_t i=suf_pen.size(); i--; ) {
+      result[i] = suf_pen[i]<0.0 ? MP_DISPATCH(Infinity()) : suf_pen[i];
+    }
+    return result;
+  }
+
+public:
+  BasicBackend() :
+    MPSolverBase(
+      Impl::GetSolverInvocationName(),
+      Impl::GetAMPLSolverLongName(),
+      Impl::Date(), Impl::Flags())
+  { }
+  virtual ~BasicBackend() { }
 };
 
 }  // namespace mp
