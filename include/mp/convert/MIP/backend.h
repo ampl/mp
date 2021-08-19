@@ -76,6 +76,13 @@ public:
   void AddMIPStart(ArrayRef<double> x0)
   { UNSUPPORTED("MIPBackend::InputMIPStart"); }
   /**
+  * Set branch and bound priority
+  **/
+  DEFINE_STD_FEATURE( VAR_PRIORITIES )
+  ALLOW_STD_FEATURE( VAR_PRIORITIES, false )
+  void VarPriorities(ArrayRef<int>)
+  { UNSUPPORTED("MIPBackend::VarPriorities"); }
+  /**
   * Obtain unbounded/inf rays
   **/
   DEFINE_STD_FEATURE( RAYS )
@@ -127,6 +134,8 @@ public:
 
   void InputMIPExtras() {
     MP_DISPATCH( InputStartValues() );
+    if (priorities())
+      MP_DISPATCH( VarPriorities( ReadSuffix(suf_varpriority) ) );
   }
 
   void InputStartValues() {
@@ -251,6 +260,7 @@ private:
   struct Options {
     int basis_=3;
     int warmstart_=1;
+    int importPriorities_=1;
     int rays_=3;
     int exportIIS_=0;
     int returnMipGap_=0;
@@ -268,6 +278,11 @@ protected:
 
   int warmstart() const
   { return IMPL_HAS_STD_FEATURE(WARMSTART) ? GetMIPOptions().warmstart_ : 0; }
+
+  int priorities() const {
+    return IMPL_HAS_STD_FEATURE(VAR_PRIORITIES) ?
+          mipStoredOptions_.importPriorities_ : 0;
+  }
 
   int rays() const
   { return IMPL_HAS_STD_FEATURE(RAYS) ? GetMIPOptions().rays_ : 0; }
@@ -332,6 +347,13 @@ protected:
                       "Note that for LP, mip:basis is usually more efficient.",
                       mipStoredOptions_.warmstart_, values_warmstart_);
 
+    if (IMPL_HAS_STD_FEATURE(VAR_PRIORITIES))
+      AddStoredOption("mip:priorities priorities",
+        "0/1*: Whether to read the branch and bound priorities from the"
+        " .priority suffix.",
+        mipStoredOptions_.importPriorities_);
+
+
     if (IMPL_HAS_STD_FEATURE( RAYS ))
       AddStoredOption("mip:rays rays",
                       "Whether to return suffix .unbdd if the objective is unbounded "
@@ -395,6 +417,8 @@ private:
   /// Testing API
   /// Output MIP initials to check they were read correctly
   const SuffixDef<double> suf_testMIPini = { "test_ini_mip", suf::VAR | suf::OUTPUT };
+
+  const SuffixDef<int> suf_varpriority = { "priority", suf::VAR | suf::INPUT };
 
   const SuffixDef<double> suf_unbdd  = { "unbdd",   suf::VAR | suf::OUTPUT };
   const SuffixDef<double> suf_dunbdd = { "dunbdd",  suf::CON | suf::OUTPUT };

@@ -110,13 +110,6 @@ protected:
   double CurrentPoolObjectiveValue() const
   { UNSUPPORTED("CurrentPoolObjectiveValue()"); return 0.0; }
   /**
-  * Set branch and bound priority
-  **/
-  DEFINE_STD_FEATURE( VAR_PRIORITIES )
-  ALLOW_STD_FEATURE( VAR_PRIORITIES, false )
-  void VarPriorities(ArrayRef<int>)
-  { UNSUPPORTED("BasicBackend::VarPriorities"); }
-  /**
   * Kappa estimate
   **/
   DEFINE_STD_FEATURE( KAPPA )
@@ -241,8 +234,6 @@ public:
   }
 
   void InputStdExtras() {
-    if (storedOptions_.importPriorities_)
-      MP_DISPATCH( VarPriorities( ReadSuffix(suf_varpriority) ) );
     if (multiobj()) {
       MP_DISPATCH( ObjPriorities( ReadSuffix(suf_objpriority) ) );
       MP_DISPATCH( ObjWeights( ReadSuffix(suf_objweight) ) );
@@ -634,7 +625,6 @@ public:
 
 private:
   struct Options {
-    int importPriorities_=1;
     int exportKappa_ = 0;
 
     int feasRelax_=0;
@@ -661,7 +651,6 @@ private:
 
 
 protected:  //////////// Option accessors ////////////////
-  int priorities() const { return storedOptions_.importPriorities_; }
   int exportKappa() const { return storedOptions_.exportKappa_; }
 
   /// Feasrelax I/O data
@@ -674,12 +663,6 @@ protected:  //////////// Option accessors ////////////////
 
 protected:
   void InitStandardOptions() {
-    if (IMPL_HAS_STD_FEATURE(VAR_PRIORITIES))
-      AddStoredOption("mip:priorities priorities",  // CP has it too
-        "0/1*: Whether to read the branch and bound priorities from the"
-        " .priority suffix.",
-        storedOptions_.importPriorities_);
-
     if (IMPL_HAS_STD_FEATURE(KAPPA))
       AddStoredOption("alg:kappa kappa basis_cond",  
         "Whether to return the estimated condition number (kappa) of "
@@ -722,8 +705,6 @@ protected:
   //////////////////////////// STANDARD SUFFIXES ///////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 private:
-  const SuffixDef<int> suf_varpriority = { "priority", suf::VAR | suf::INPUT };
-
   const SuffixDef<int> suf_objpriority = { "objpriority", suf::OBJ | suf::INPUT };
   const SuffixDef<double> suf_objweight = { "objweight", suf::OBJ | suf::INPUT };
   const SuffixDef<double> suf_objabstol = { "objabstol", suf::OBJ | suf::INPUT };
