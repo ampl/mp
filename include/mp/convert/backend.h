@@ -37,14 +37,14 @@
     const FeatureStructName& ) { return val; }
 /// And default them, but need to repeat in Impl
 DEFAULT_STD_FEATURES_TO( false )
-#define DEFINE_STD_FEATURE( name, defval ) \
-  struct STD_FEATURE_STRUCT_NM( name ) { }; \
-  ALLOW_STD_FEATURE( name, defval )
+#define DEFINE_STD_FEATURE( name ) \
+  struct STD_FEATURE_STRUCT_NM( name ) { };
 #define ALLOW_STD_FEATURE( name, val ) \
   static constexpr bool STD_FEATURE_QUERY_FN( \
     const STD_FEATURE_STRUCT_NM( name )& ) { return val; }
 #define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH_STATIC( \
-  STD_FEATURE_QUERY_FN( STD_FEATURE_STRUCT_NM( name )() ) )
+  STD_FEATURE_QUERY_FN( \
+    typename Impl::STD_FEATURE_STRUCT_NM( name )() ) )
 #define STD_FEATURE_QUERY_FN AllowStdFeature__func
 #define STD_FEATURE_STRUCT_NM( name ) StdFeatureDesc__ ## name
 
@@ -85,7 +85,8 @@ protected:
   /**
    * MULTIOBJ support
    */
-  DEFINE_STD_FEATURE( MULTIOBJ, false )
+  DEFINE_STD_FEATURE( MULTIOBJ )
+  ALLOW_STD_FEATURE( MULTIOBJ, false )
   std::vector<double> ObjectiveValues() const
   { UNSUPPORTED("ObjectiveValues()"); return {}; }
   void ObjPriorities(ArrayRef<int>)
@@ -99,7 +100,8 @@ protected:
   /**
    * MULTISOL support
   **/
-  DEFINE_STD_FEATURE( MULTISOL, false )
+  DEFINE_STD_FEATURE( MULTISOL )
+  ALLOW_STD_FEATURE( MULTISOL, false )
   void StartPoolSolutions() { UNSUPPORTED("StartPoolSolutions()"); }
   bool SelectNextPoolSolution() { return false; }   // none by default
   void EndPoolSolutions() { UNSUPPORTED("EndPoolSolutions()"); }
@@ -110,19 +112,22 @@ protected:
   /**
   * Set branch and bound priority
   **/
-  DEFINE_STD_FEATURE( VAR_PRIORITIES, false )
+  DEFINE_STD_FEATURE( VAR_PRIORITIES )
+  ALLOW_STD_FEATURE( VAR_PRIORITIES, false )
   void VarPriorities(ArrayRef<int>)
   { UNSUPPORTED("BasicBackend::VarPriorities"); }
   /**
   * Kappa estimate
   **/
-  DEFINE_STD_FEATURE( KAPPA, false )
+  DEFINE_STD_FEATURE( KAPPA )
+  ALLOW_STD_FEATURE( KAPPA, false )
   double Kappa()
   { UNSUPPORTED("BasicBackend::Kappa"); }
   /**
   * FeasRelax
   **/
-  DEFINE_STD_FEATURE( FEAS_RELAX, false )
+  DEFINE_STD_FEATURE( FEAS_RELAX )
+  ALLOW_STD_FEATURE( FEAS_RELAX, false )
   /** No API, Impl should check feasrelax_IOdata() **/
 
 

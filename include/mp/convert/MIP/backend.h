@@ -51,7 +51,8 @@ public:
   /**
   * Get/Set AMPL var/con statii
   **/
-  DEFINE_STD_FEATURE( BASIS, false )
+  DEFINE_STD_FEATURE( BASIS )
+  ALLOW_STD_FEATURE( BASIS, false )
   std::vector<int> VarStatii() { return {}; }
   void VarStatii(ArrayRef<int> )
   { UNSUPPORTED("MIPBackend::VarStatii"); }
@@ -62,26 +63,30 @@ public:
   * General warm start, e.g.,
   * set primal/dual initial guesses for continuous case
   **/
-  DEFINE_STD_FEATURE( WARMSTART, false )
+  DEFINE_STD_FEATURE( WARMSTART )
+  ALLOW_STD_FEATURE( WARMSTART, false )
   void InputPrimalDualStart(ArrayRef<double> x0,
                        ArrayRef<double> pi0)
   { UNSUPPORTED("MIPBackend::InputSimplexStart"); }
   /**
   * Specifically, MIP warm start
   **/
-  DEFINE_STD_FEATURE( MIPSTART, false )
+  DEFINE_STD_FEATURE( MIPSTART )
+  ALLOW_STD_FEATURE( MIPSTART, false )
   void AddMIPStart(ArrayRef<double> x0)
   { UNSUPPORTED("MIPBackend::InputMIPStart"); }
   /**
   * Obtain unbounded/inf rays
   **/
-  DEFINE_STD_FEATURE( RAYS, false )
+  DEFINE_STD_FEATURE( RAYS )
+  ALLOW_STD_FEATURE( RAYS, false )
   std::vector<double> Ray() { return {}; }
   std::vector<double> DRay() { return {}; }
   /**
   * Compute the IIS and obtain relevant values
   **/
-  DEFINE_STD_FEATURE( IIS, false )
+  DEFINE_STD_FEATURE( IIS )
+  ALLOW_STD_FEATURE( IIS, false )
   void ComputeIIS() {}
   /// Elements correspond to IISStatus
   std::vector<int> ConsIIS() { return {}; }
@@ -89,7 +94,8 @@ public:
   /**
   * Get MIP Gap
   **/
-  DEFINE_STD_FEATURE( RETURN_MIP_GAP, false )
+  DEFINE_STD_FEATURE( RETURN_MIP_GAP )
+  ALLOW_STD_FEATURE( RETURN_MIP_GAP, false )
   double MIPGap() const { return MP_DISPATCH( Infinity() ); }
   double MIPGapAbs() const {
     return std::fabs(
@@ -99,7 +105,8 @@ public:
   /**
   * Get MIP dual bound
   **/
-  DEFINE_STD_FEATURE( RETURN_BEST_DUAL_BOUND, false )
+  DEFINE_STD_FEATURE( RETURN_BEST_DUAL_BOUND )
+  ALLOW_STD_FEATURE( RETURN_BEST_DUAL_BOUND, false )
   double BestDualBound() const
   { UNSUPPORTED("BestDualBound()"); return 0; }
 
