@@ -272,7 +272,7 @@ void CplexBackend::InitCustomOptions() {
       "Relative optimality gap |bestbound-bestinteger|/(1e-10+|bestinteger|).",
       CPXPARAM_MIP_Tolerances_MIPGap, 0.0, 1.0);
 
-  AddSolverOption("gen:threads threads",
+  AddSolverOption("tech:threads threads",
       "How many threads to use when using the barrier algorithm\n"
       "or solving MIP problems; default 0 ==> automatic choice.",
       CPXPARAM_Threads, 0, INT_MAX);
