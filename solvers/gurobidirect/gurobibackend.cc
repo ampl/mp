@@ -838,13 +838,13 @@ void GurobiBackend::InitCustomOptions() {
     "Fraction of time to spend in MIP heuristics (default 0.05)",
     GRB_DBL_PAR_HEURISTICS, 0.05, 1.0);
 
-  AddSolverOption("mip:iismethod iismethod",
+  AddSolverOption("alg:iismethod iismethod",
     "Which method to use when finding an IIS (irreducible infeasible "
     "set of constraints, including variable bounds):\n"
     "\n.. value-table::\n",
     GRB_INT_PAR_IISMETHOD, values_iismethod, -1);
 
-  AddStoredOption("mip:start mipstart",
+  AddStoredOption("mip:start mipstart intstart",
     "Whether to use initial guesses in problems with "
     "integer variables:\n"   "\n.. value-table::\n",
     storedOptions_.nMIPStart_, values_mipstart_);
@@ -881,16 +881,16 @@ void GurobiBackend::InitCustomOptions() {
 
 
 
-  AddSolverOption("log:lev outlev",
+  AddSolverOption("tech:outlev outlev",
       "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.",
     GRB_INT_PAR_OUTPUTFLAG, 0, 1);
   SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);
 
-  AddSolverOption("log:freq logfreq outfreq",
+  AddSolverOption("tech:logfreq logfreq outfreq",
       "Interval in seconds between log lines (default 5).",
     GRB_INT_PAR_DISPLAYINTERVAL, 1, GRB_MAXINT);
 
-  AddSolverOption("log:file logfile",
+  AddSolverOption("tech:logfile logfile",
       "Log file name.",
       GRB_STR_PAR_LOGFILE);
 
@@ -932,11 +932,11 @@ void GurobiBackend::InitCustomOptions() {
                            "sol:pool... parameters. Value 1 implied by sol:stub.");
 
 
-  AddSolverOption("gen:method method lpmethod",
+  AddSolverOption("alg:method method lpmethod",
     "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
     "\n.. value-table::\n", GRB_INT_PAR_METHOD, values_method, -1);
 
-  AddSolverOption("gen:threads threads",
+  AddSolverOption("tech:threads threads",
       "How many threads to use when using the barrier algorithm\n"
       "or solving MIP problems; default 0 ==> automatic choice.",
       GRB_INT_PAR_THREADS, 0, GRB_MAXINT);
@@ -956,7 +956,7 @@ void GurobiBackend::InitCustomOptions() {
 
 
 
-  AddStoredOption("gen:writeprob writeprob exportfile",
+  AddStoredOption("tech:writeprob writeprob exportfile",
       "Specifies the name of a file where to export the model before "
       "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",

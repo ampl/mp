@@ -355,14 +355,14 @@ protected:
 
 
     if (IMPL_HAS_STD_FEATURE( RAYS ))
-      AddStoredOption("mip:rays rays",
+      AddStoredOption("alg:rays rays",
                       "Whether to return suffix .unbdd if the objective is unbounded "
                       "or suffix .dunbdd if the constraints are infeasible:\n"
                       "\n.. value-table::\n",
                       mipStoredOptions_.rays_, values_rays_);
 
     if (IMPL_HAS_STD_FEATURE( IIS ))
-      AddStoredOption("mip:iisfind iisfind",
+      AddStoredOption("alg:iisfind iisfind",
                       "Whether to find and export the IIS. "
                       "Default = 0 (don't export).",
                       mipStoredOptions_.exportIIS_);

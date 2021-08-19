@@ -634,7 +634,7 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::GetOption<int, bool>,
       &GecodeSolver::SetBoolOption, &output_);
 
-  AddDblOption("log:freq outfreq",
+  AddDblOption("log:freq logfreq outfreq",
       "Output frequency in seconds. The value should be a positive number.",
       &GecodeSolver::GetOutputFrequency, &GecodeSolver::SetOutputFrequency);
 
@@ -666,7 +666,7 @@ GecodeSolver::GecodeSolver()
       "Decay factor for AFC and activity branchings. Default = 1.",
       &GecodeSolver::GetDecay, &GecodeSolver::SetDecay);
 
-  AddDblOption("gen:threads threads",
+  AddDblOption("tech:threads threads",
       "The number of parallel threads to use. Assume that your computer "
       "has m processing units and that the value for threads is n.\n"
       "\n"

@@ -256,23 +256,23 @@ void CplexBackend::InitCustomOptions() {
       "\n"
       "  ampl: option cplexdirect_options 'mipgap=1e-6';\n");
 
-  AddSolverOption("outlev",
+  AddSolverOption("tech:outlev",
       "0-5: output logging verbosity. "
       "Default = 0 (no logging).",
       CPXPARAM_MIP_Display, 0, 5);
   SetSolverOption(CPXPARAM_MIP_Display, 0);
 
-  AddStoredOption("exportfile",
+  AddStoredOption("tech:exportfile writeprob",
       "Specifies the name of a file where to export the model before "
       "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
 
-  AddSolverOption("mipgap",
+  AddSolverOption("mip:gap mipgap",
       "Relative optimality gap |bestbound-bestinteger|/(1e-10+|bestinteger|).",
       CPXPARAM_MIP_Tolerances_MIPGap, 0.0, 1.0);
 
-  AddSolverOption("threads",
+  AddSolverOption("gen:threads threads",
       "How many threads to use when using the barrier algorithm\n"
       "or solving MIP problems; default 0 ==> automatic choice.",
       CPXPARAM_Threads, 0, INT_MAX);

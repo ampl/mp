@@ -552,7 +552,7 @@ Solver::Solver(
 
   struct VersionOption : SolverOption {
     Solver &s;
-    VersionOption(Solver &s) : SolverOption("gen:version version",
+    VersionOption(Solver &s) : SolverOption("tech:version version",
         "Single-word phrase: report version details "
         "before solving the problem.", ValueArrayRef(), true), s(s) {}
 
@@ -607,7 +607,7 @@ Solver::Solver(
                                        "important, then the second objective and so on.")));
   }
 
-  AddOption(OptionPtr(new BoolOption(timing_, "gen:timing timing",
+  AddOption(OptionPtr(new BoolOption(timing_, "tech:timing timing",
       "0*/1: Whether to display timings for the run.")));
 
   if ((flags & MULTIPLE_SOL) != 0) {
