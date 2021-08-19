@@ -876,6 +876,7 @@ int nl_opcode(expr::Kind kind);
 
 #define MP_CONST_DISPATCH(call) static_cast<const Impl*>(this)->call
 #define MP_DISPATCH(call) static_cast<Impl*>(this)->call
+#define MP_DISPATCH_STATIC(call) Impl::call
 
 namespace internal {
 

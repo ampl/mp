@@ -44,10 +44,6 @@ public:
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
-  /// Solver flags
-  static bool IfMultipleSol() { return true; }
-  static bool IfMultipleObj() { return true; }
-
   /// [[ Prototype the incremental interface ]]
   void InitProblemModificationPhase();
   void FinishProblemModificationPhase();

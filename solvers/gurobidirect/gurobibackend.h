@@ -51,11 +51,21 @@ public:
   /**
    * MULTIOBJ
   **/
+  ALLOW_STD_FEATURE( MULTIOBJ, true )
   std::vector<double> ObjectiveValues() const;
   void ObjPriorities(ArrayRef<int>);
   void ObjWeights(ArrayRef<double>);
   void ObjAbsTol(ArrayRef<double>);
   void ObjRelTol(ArrayRef<double>);
+  /**
+   * MULTISOL support
+  **/
+  ALLOW_STD_FEATURE( MULTISOL, true )
+  void StartPoolSolutions();
+  bool SelectNextPoolSolution();
+  void EndPoolSolutions();
+  std::vector<double> CurrentPoolPrimalSolution();
+  double CurrentPoolObjectiveValue() const;
   /**
   * Get/Set AMPL var/con statii
   **/
@@ -115,10 +125,6 @@ public:
   **/
   ALLOW_STD_FEATURE(FEAS_RELAX, true)
 
-
-  /// Solver flags old-style
-  static bool IfMultipleSol() { return true; }
-  static bool IfMultipleObj() { return true; }
 
   /// [[ Prototype an incremental interface ]]
   void InitProblemModificationPhase();
@@ -196,13 +202,6 @@ public:
   std::vector<double> PrimalSolution();
   std::vector<double> DualSolution();
   double ObjectiveValue() const;
-
-  /// Solution pool
-  void StartPoolSolutions();
-  bool SelectNextPoolSolution();
-  void EndPoolSolutions();
-  std::vector<double> CurrentPoolPrimalSolution();
-  double CurrentPoolObjectiveValue() const;
 
   double NodeCount() const;
   double Niterations() const;

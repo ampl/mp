@@ -1,7 +1,7 @@
 /*
  Abstract solver backend wrapper.
 
- Copyright (C) 2020 AMPL Optimization Inc
+ Copyright (C) 2021 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -16,9 +16,7 @@
  whatsoever resulting from loss of use, data or profits, whether in an
  action of contract, negligence or other tortious action, arising out
  of or in connection with the use or performance of this software.
-
- Author: Gleb Belov <gleb.belov@monash.edu>
- */
+*/
 
 #ifndef BACKEND_H_
 #define BACKEND_H_
@@ -45,7 +43,7 @@ DEFAULT_STD_FEATURES_TO( false )
 #define ALLOW_STD_FEATURE( name, val ) \
   static constexpr bool STD_FEATURE_QUERY_FN( \
     const STD_FEATURE_STRUCT_NM( name )& ) { return val; }
-#define IMPL_HAS_STD_FEATURE( name ) MP_CONST_DISPATCH( \
+#define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH_STATIC( \
   STD_FEATURE_QUERY_FN( STD_FEATURE_STRUCT_NM( name )() ) )
 #define STD_FEATURE_QUERY_FN AllowStdFeature__func
 #define STD_FEATURE_STRUCT_NM( name ) StdFeatureDesc__ ## name
@@ -65,7 +63,7 @@ class BasicBackend :
     private SolverImpl< ModelAdapter< BasicModel<> > >   // mp::Solver stuff, hidden
 {
   ////////////////////////////////////////////////////////////////////////////
-  ///////////////////// Default metadata /////////////////////
+  ///////////////////// TO IMPLEMENT IN THE FINAL CLASS //////////////////////
   ////////////////////////////////////////////////////////////////////////////
 public:
   static const char* GetSolverName() { return "SomeSolver"; }
@@ -82,10 +80,12 @@ public:
   /////////////// PLACEHOLDERS FOR CORR. API /////////////////
   ////////////////////////////////////////////////////////////
 protected:
+  /// Dual solution. Returns empty if not available
+  std::vector<double> DualSolution() { return {}; }
   /**
    * MULTIOBJ support
-   * Implement if Impl supports multiobj
    */
+  DEFINE_STD_FEATURE( MULTIOBJ, false )
   std::vector<double> ObjectiveValues() const
   { UNSUPPORTED("ObjectiveValues()"); return {}; }
   void ObjPriorities(ArrayRef<int>)
@@ -96,6 +96,17 @@ protected:
   { UNSUPPORTED("BasicBackend::ObjAbsTol"); }
   void ObjRelTol(ArrayRef<double>)
   { UNSUPPORTED("BasicBackend::ObjRelTol"); }
+  /**
+   * MULTISOL support
+  **/
+  DEFINE_STD_FEATURE( MULTISOL, false )
+  void StartPoolSolutions() { UNSUPPORTED("StartPoolSolutions()"); }
+  bool SelectNextPoolSolution() { return false; }   // none by default
+  void EndPoolSolutions() { UNSUPPORTED("EndPoolSolutions()"); }
+  std::vector<double> CurrentPoolPrimalSolution()
+  { UNSUPPORTED("CurrentPoolPrimalSolution()"); return {}; }
+  double CurrentPoolObjectiveValue() const
+  { UNSUPPORTED("CurrentPoolObjectiveValue()"); return 0.0; }
   /**
   * Set branch and bound priority
   **/
@@ -316,15 +327,6 @@ public:
     MP_DISPATCH( EndPoolSolutions() );
   }
 
-  /// When IfMultipleSol() returns true, Impl has to define these
-  void StartPoolSolutions() { UNSUPPORTED("StartPoolSolutions()"); }
-  bool SelectNextPoolSolution() { return false; }   // none by default
-  void EndPoolSolutions() { UNSUPPORTED("EndPoolSolutions()"); }
-  std::vector<double> CurrentPoolPrimalSolution()
-  { UNSUPPORTED("CurrentPoolPrimalSolution()"); return {}; }
-  double CurrentPoolObjectiveValue() const
-  { UNSUPPORTED("CurrentPoolObjectiveValue()"); return 0.0; }
-
   void ReportCurrentPoolSolution() {
     double obj_value = std::numeric_limits<double>::quiet_NaN();
     std::vector<double> solution;
@@ -383,9 +385,6 @@ public:
                    solution.empty() ? 0 : solution.data(),
                    dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
   }
-
-  /// Dual solution. Returns empty if not available
-  std::vector<double> DualSolution() { return {}; }
 
   void PrintTimingInfo() {
     double output_time = GetTimeAndReset(stats.time);
@@ -637,7 +636,7 @@ private:
     double lbpen_=1.0, ubpen_=1.0, rhspen_=1.0;
   } storedOptions_;
 
-  /// Once Impl declares FeasRelax,
+  /// Once Impl allows FEASRELAX,
   /// it should check this via feasrelax_IOdata()
   struct FeasrelaxIO {
     /// Whether feasrelax should be done
@@ -726,7 +725,6 @@ private:
   const SuffixDef<double> suf_objreltol = { "objreltol", suf::OBJ | suf::INPUT };
   
   const SuffixDef<double> suf_objkappa = { "kappa", suf::OBJ | suf::OUTONLY };
-
   const SuffixDef<double> suf_probkappa = { "kappa", suf::PROBLEM | suf::OUTONLY };
 
 
@@ -734,17 +732,16 @@ private:
   /////////////////////////////// SERVICE STUFF ///////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 public:
-  /// Default flags
+  /// Default mp::Solver flags,
+  /// used there to implement multiobj and .nsol
   static int Flags() {
     int flg=0;
-    if (Impl::IfMultipleSol() )
+    if ( IMPL_HAS_STD_FEATURE(MULTISOL) )
       flg |= Solver::MULTIPLE_SOL;
-    if (Impl::IfMultipleObj() )
+    if ( IMPL_HAS_STD_FEATURE(MULTIOBJ) )
       flg |= Solver::MULTIPLE_OBJ;
     return flg;
   }
-  static bool IfMultipleSol() { return false; }
-  static bool IfMultipleObj() { return false; }
 
   void InitMetaInfoAndOptions() {
     MP_DISPATCH( InitNamesAndVersion() );
