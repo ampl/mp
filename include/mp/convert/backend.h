@@ -67,7 +67,8 @@ class BasicBackend :
   ////////////////////////////////////////////////////////////////////////////
 public:
   static const char* GetSolverName() { return "SomeSolver"; }
-  static std::string GetSolverVersion() { return "-285.68.53"; }
+  static std::string GetSolverVersion() { return "1.0.0"; }
+  /// Whatever the binary is called
   static const char* GetSolverInvocationName() { return "solverdirect"; }
   static const char* GetAMPLSolverLongName() { return nullptr; }
   static const char* GetBackendName()    { return "BasicBackend"; }
@@ -102,13 +103,10 @@ protected:
   **/
   DEFINE_STD_FEATURE( MULTISOL )
   ALLOW_STD_FEATURE( MULTISOL, false )
-  void StartPoolSolutions() { UNSUPPORTED("StartPoolSolutions()"); }
-  bool SelectNextPoolSolution() { return false; }   // none by default
-  void EndPoolSolutions() { UNSUPPORTED("EndPoolSolutions()"); }
-  std::vector<double> CurrentPoolPrimalSolution()
-  { UNSUPPORTED("CurrentPoolPrimalSolution()"); return {}; }
-  double CurrentPoolObjectiveValue() const
-  { UNSUPPORTED("CurrentPoolObjectiveValue()"); return 0.0; }
+      /** No API to overload,
+       *  Impl should check need_multiple_solutions()
+       *  and call ReportIntermediateSolution(obj, x) for each
+       **/
   /**
   * Kappa estimate
   **/
@@ -121,7 +119,8 @@ protected:
   **/
   DEFINE_STD_FEATURE( FEAS_RELAX )
   ALLOW_STD_FEATURE( FEAS_RELAX, false )
-  /** No API, Impl should check feasrelax_IOdata() **/
+  /** No API to overload,
+   *  Impl should check feasrelax_IOdata() **/
 
 
   ////////////////////////////////////////////////////////////////////////
@@ -287,8 +286,6 @@ public:
 
   void ReportSolution() {
     MP_DISPATCH( ReportSuffixes() );
-    if (need_multiple_solutions())
-      MP_DISPATCH( ReportMultipleSolutions() );
     MP_DISPATCH( ReportPrimalDualValues() );
   }
 
@@ -304,39 +301,27 @@ public:
     }
   }
   void ReportKappa() {
-    double value = MP_DISPATCH(Kappa());
     if (exportKappa() && 2)
     {
+      double value = MP_DISPATCH(Kappa());
       ReportSingleSuffix(suf_objkappa, value);
       ReportSingleSuffix(suf_probkappa, value);
     }
-
   }
 
   void ReportCustomSuffixes() { }
 
-  void ReportMultipleSolutions() {
-    MP_DISPATCH( StartPoolSolutions() );
-    while (MP_DISPATCH( SelectNextPoolSolution() )) {
-      MP_DISPATCH( ReportCurrentPoolSolution() );
-    }
-    MP_DISPATCH( EndPoolSolutions() );
-  }
-
-  void ReportCurrentPoolSolution() {
-    double obj_value = std::numeric_limits<double>::quiet_NaN();
-    std::vector<double> solution;
-
+  void ReportIntermediateSolution(
+        double obj_value, ArrayRef<double> solution) {
     fmt::MemoryWriter writer;
-    writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status);
+    writer.write("{}: {}", MP_DISPATCH( long_name() ),
+                 "Alternative solution");
     if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
       obj_value = MP_DISPATCH( CurrentPoolObjectiveValue() );
       writer.write("; objective {}",
                    MP_DISPATCH( FormatObjValue(obj_value) ));
     }
     writer.write("\n");
-
-    solution = MP_DISPATCH( CurrentPoolPrimalSolution() );
     HandleFeasibleSolution(writer.c_str(),
                    solution.empty() ? 0 : solution.data(),
                    nullptr, obj_value);

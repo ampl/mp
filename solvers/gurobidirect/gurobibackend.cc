@@ -115,28 +115,6 @@ std::vector<double> GurobiBackend::ObjectiveValues() const {
   return objs;
 }
 
-void GurobiBackend::StartPoolSolutions() {
-  assert(-2==iPoolSolution);
-  iPoolSolution = -1;
-}
-
-bool GurobiBackend::SelectNextPoolSolution() {
-  assert(iPoolSolution>=-1);
-  if (!IsMIP())         // Gurobi 9.1.2 returns 1 solution for LP
-    return false;       // but cannot retrieve its pool attributes
-  ++iPoolSolution;
-  if (iPoolSolution < GrbGetIntAttr(GRB_INT_ATTR_SOLCOUNT)) {
-    GrbSetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, iPoolSolution);
-    return true;
-  }
-  return false;
-}
-
-void GurobiBackend::EndPoolSolutions() {
-  assert(iPoolSolution>=-1);
-  iPoolSolution = -2;
-}
-
 std::vector<double> GurobiBackend::CurrentPoolPrimalSolution() {
   return
     GrbGetDblAttrArray(GRB_DBL_ATTR_XN, NumberOfVariables());
@@ -373,10 +351,15 @@ void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptGurobi, model);
 }
 
+
+///////////////////////////////////// SOLVE /////////////////////////////////////////
 void GurobiBackend::SolveAndReportIntermediateResults() {
   PrepareGurobiSolve();
 
   GRB_CALL( GRBoptimize(model) );
+
+  if (need_multiple_solutions())
+    ReportGurobiPool();
 }
 
 void GurobiBackend::PrepareGurobiSolve() {
@@ -388,6 +371,17 @@ void GurobiBackend::PrepareGurobiSolve() {
     DoFeasRelax();
 }
 
+void GurobiBackend::ReportGurobiPool() {
+  if (!IsMIP())         // Gurobi 9.1.2 returns 1 solution for LP
+    return;             // but cannot retrieve its pool attributes
+  int iPoolSolution = -1;
+  while (++iPoolSolution < GrbGetIntAttr(GRB_INT_ATTR_SOLCOUNT)) {
+    GrbSetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, iPoolSolution);
+    ReportIntermediateSolution(
+          CurrentPoolObjectiveValue(),
+          CurrentPoolPrimalSolution());
+  }
+}
 
 void GurobiBackend::DoFeasRelax() {
   int reltype = feasrelax_IOdata().mode()-1,

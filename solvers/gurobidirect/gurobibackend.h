@@ -61,9 +61,6 @@ public:
    * MULTISOL support
   **/
   ALLOW_STD_FEATURE( MULTISOL, true )
-  void StartPoolSolutions();
-  bool SelectNextPoolSolution();
-  void EndPoolSolutions();
   std::vector<double> CurrentPoolPrimalSolution();
   double CurrentPoolObjectiveValue() const;
   /**
@@ -194,6 +191,7 @@ public:
   //////////////////////////// SOLVING ///////////////////////////////
   void SetInterrupter(mp::Interrupter* inter);
   void SolveAndReportIntermediateResults();
+  void ReportGurobiPool();
   std::string ConvertSolutionStatus(
       const mp::Interrupter &interrupter, int &solve_code);
 
@@ -271,10 +269,6 @@ private:
 
 protected:  //////////// Option accessors ////////////////
   int mipstart() const { return storedOptions_.nMIPStart_; }
-
-
-private:  /////////// Some working variables ////////////
-  int iPoolSolution = -2;          // for SelectNextPoolSolution()
 
 
 private: /////////// Suffixes ///////////
