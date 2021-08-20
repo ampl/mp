@@ -562,7 +562,7 @@ Solver::Solver(
   AddOption(OptionPtr(new VersionOption(*this)));
 
   AddIntOption(
-        "sol:want wantsol",
+        "tech:wantsol wantsol",
         "In a stand-alone invocation (no ``-AMPL`` on the command line), "
         "what solution information to write.  Sum of\n"
         "\n"
