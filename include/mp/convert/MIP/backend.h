@@ -67,14 +67,14 @@ public:
   ALLOW_STD_FEATURE( WARMSTART, false )
   void InputPrimalDualStart(ArrayRef<double> x0,
                        ArrayRef<double> pi0)
-  { UNSUPPORTED("MIPBackend::InputSimplexStart"); }
+  { UNSUPPORTED("MIPBackend::InputPrimalDualStart"); }
   /**
   * Specifically, MIP warm start
   **/
   DEFINE_STD_FEATURE( MIPSTART )
   ALLOW_STD_FEATURE( MIPSTART, false )
   void AddMIPStart(ArrayRef<double> x0)
-  { UNSUPPORTED("MIPBackend::InputMIPStart"); }
+  { UNSUPPORTED("MIPBackend::AddMIPStart"); }
   /**
   * Set branch and bound priority
   **/
@@ -340,11 +340,12 @@ protected:
                       mipStoredOptions_.basis_, values_basis_);
 
     if (IMPL_HAS_STD_FEATURE( WARMSTART ))
-      AddStoredOption("mip:warmstart warmstart",
+      AddStoredOption("alg:start warmstart",
                       "Whether to use incoming primal (and dual, for LP) variable values "
                       "in a warmstart:\n "
                       "\n.. value-table::\n"
-                      "Note that for LP, mip:basis is usually more efficient.",
+                      "Note that for LP, mip:basis is usually more efficient. "
+                      "MIP-specific options can be accessible via mip:start.",
                       mipStoredOptions_.warmstart_, values_warmstart_);
 
     if (IMPL_HAS_STD_FEATURE(VAR_PRIORITIES))

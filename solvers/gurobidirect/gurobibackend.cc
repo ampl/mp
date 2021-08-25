@@ -660,7 +660,7 @@ const mp::OptionValueInfo values_mipfocus[] = {
 };
 
 const mp::OptionValueInfo values_mipstart_[4] = {
-    {     "0", "No (overrides mip:warmstart)", 0 },
+    {     "0", "No (overrides alg:start)", 0 },
     {     "1", "Yes (default)", 1},
     {     "2", "No, but use the incoming primal "
           "values as hints (VARHINTVAL), ignoring the .hintpri suffix", 2},
