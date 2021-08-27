@@ -35,7 +35,13 @@ public:
   GurobiBackend();
   ~GurobiBackend();
 
-  /// Metadata
+  ////////////////////////////////////////////////////////////
+  /////// Overloading base class method placeholders /////////
+  ////////////////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////////////////
+  //////////////////////// Metadata //////////////////////////
+  ////////////////////////////////////////////////////////////
   static const char* GetSolverName() { return "Gurobi"; }
   static std::string GetSolverVersion();
   static const char* GetSolverInvocationName();
@@ -121,17 +127,35 @@ public:
   * FeasRelax
   **/
   ALLOW_STD_FEATURE(FEAS_RELAX, true)
+  /**
+  * Report sensitivity analysis suffixes
+  **/
+  ALLOW_STD_FEATURE( SENSITIVITY_ANALYSIS, true )
+  ArrayRef<double> Senslbhi() const;
+  ArrayRef<double> Senslblo() const;
+  ArrayRef<double> Sensobjhi() const;
+  ArrayRef<double> Sensobjlo() const;
+  ArrayRef<double> Sensrhshi() const;
+  ArrayRef<double> Sensrhslo() const;
+  ArrayRef<double> Sensubhi() const;
+  ArrayRef<double> Sensublo() const;
 
+
+  /////////////////////////////////////////////////////////////////////////////
+  //////////////////////////// MODELING API        ////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
 
   /// [[ Prototype an incremental interface ]]
   void InitProblemModificationPhase();
   /// Chance to update the model
   void FinishProblemModificationPhase();
 
+  static constexpr double Infinity() { return GRB_INFINITY; }
+  static constexpr double MinusInfinity() { return -GRB_INFINITY; }
+
   void AddVariable(Variable var);
   void SetLinearObjective( int iobj, const LinearObjective& lo );
   void SetQuadraticObjective( int iobj, const QuadraticObjective& qo );
-
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
 
@@ -189,31 +213,48 @@ public:
 
 
   //////////////////////////// SOLVING ///////////////////////////////
-  void SetInterrupter(mp::Interrupter* inter);
-  void SolveAndReportIntermediateResults();
-  void ReportGurobiPool();
-  std::string ConvertSolutionStatus(
-      const mp::Interrupter &interrupter, int &solve_code);
-
-  /// Various solution attribute getters.
-  /// Return empty vectors if not available
-  std::vector<double> PrimalSolution();
-  std::vector<double> DualSolution();
-  double ObjectiveValue() const;
-
-  double NodeCount() const;
-  double Niterations() const;
-
-
-  //////////////////// [[ Implementation details ]] //////////////////////
-  ///////////////////////////////////////////////////////////////////////////////
-public:
   void OpenSolver();
   void CloseSolver();
   void InitCustomOptions();
 
-  static double Infinity() { return GRB_INFINITY; }
-  static double MinusInfinity() { return -GRB_INFINITY; }
+  void SetInterrupter(mp::Interrupter* inter);
+  void SolveAndReportIntermediateResults();
+  std::string ConvertSolutionStatus(
+      const mp::Interrupter &interrupter, int &solve_code);
+
+  /// Various solution attribute getters.
+  std::vector<double> PrimalSolution();
+  double ObjectiveValue() const;
+  /// Return empty vector if not available
+  std::vector<double> DualSolution();
+
+  double NodeCount() const;
+  double Niterations() const;
+
+  /// Public option API.
+  /// These methods access Gurobi options. Used by AddSolverOption()
+public:
+  void GetSolverOption(const char* key, int& value) const;
+  void SetSolverOption(const char* key, int value);
+  void GetSolverOption(const char* key, double& value) const;
+  void SetSolverOption(const char* key, double value);
+  void GetSolverOption(const char* key, std::string& value) const;
+  void SetSolverOption(const char* key, const std::string& value);
+
+
+  ///////////////////////////////////////////////////////////////////////////////
+  //////////////////// [[ Implementation details ]] //////////////////////
+  //////////////////// Gurobi methods should include name Gurobi or similar
+  //////////////////// to avoid name clashes with the base classes
+  ///////////////////////////////////////////////////////////////////////////////
+protected:
+  void PrepareGurobiSolve();
+  void DoGurobiFeasRelax();
+  void ReportGurobiPool();
+  /// First objective's sense
+  void NoteGurobiMainObjSense(obj::Type s);
+  obj::Type GetGurobiMainObjSense() const;
+
 
   /// REMEMBER Gurobi does not update attributes before calling optimize() etc
   /// Scalar attributes. If (flag), set *flag <-> success,
@@ -225,6 +266,9 @@ public:
     std::size_t size, std::size_t offset=0) const;
   std::vector<double> GrbGetDblAttrArray(const char* attr_id,
     std::size_t size, std::size_t offset=0) const;
+
+  ArrayRef<double> GrbGetDblAttrArray_VarCon(
+      const char* attr, int varcon) const;
 
   /// Set attributes.
   /// Return false on failure
@@ -241,13 +285,7 @@ public:
   void GrbSetDblAttrList(const char* attr_id,
                          const std::vector<int>& idx, const std::vector<double>& val);
 
-  /// First objective's sense
-  void SetMainObjSense(obj::Type s);
-  obj::Type GetMainObjSense() const;
 
-protected:
-  void PrepareGurobiSolve();
-  void DoFeasRelax();
 
 private:
   GRBenv   *env   = NULL;
@@ -268,29 +306,20 @@ private:
 
 
 protected:  //////////// Option accessors ////////////////
-  int mipstart() const { return storedOptions_.nMIPStart_; }
+  int Gurobi_mipstart() const { return storedOptions_.nMIPStart_; }
 
 
 private: /////////// Suffixes ///////////
   const SuffixDef<int> sufHintPri = { "hintpri", suf::VAR | suf::INPUT };
 
 
-public:  //////////// Wrappers for Get/SetSolverOption()
+protected:  //////////// Wrappers for Get/SetSolverOption()
   int GrbGetIntParam(const char* key) const;
   double GrbGetDblParam(const char* key) const;
   std::string GrbGetStrParam(const char* key) const;
   void GrbSetIntParam(const char* key, int value);
   void GrbSetDblParam(const char* key, double value);
   void GrbSetStrParam(const char* key, const std::string& value);
-
-  /// These methods access Gurobi options. Used by AddSolverOption()
-  void GetSolverOption(const char* key, int& value) const;
-  void SetSolverOption(const char* key, int value);
-  void GetSolverOption(const char* key, double& value) const;
-  void SetSolverOption(const char* key, double value);
-  void GetSolverOption(const char* key, std::string& value) const;
-  void SetSolverOption(const char* key, const std::string& value);
-
 };
 
 } // namespace mp

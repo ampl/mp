@@ -23,6 +23,7 @@
 #ifndef MP_ARRAYREF_H_
 #define MP_ARRAYREF_H_
 
+#include <vector>
 #include <cstddef>  // for std::size_t
 
 namespace mp {

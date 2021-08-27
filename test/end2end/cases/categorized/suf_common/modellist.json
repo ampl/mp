@@ -9,7 +9,7 @@
       "u2.unbdd": 3
     }
   },
- {
+  {
     "name": "mipbound_01 bestbound=1 return_mipgap=3",
     "tags": [ "linear"],
     "options": { "ANYSOLVER_options": "bestbound=1 return_mipgap=3" },
@@ -23,9 +23,25 @@
       "Initial.bestbound": 1
     }
   },
- {
+  {
     "name": "mipbound_01 bestbound=1 return_mipgap=3 objno=0",
     "tags": [ "linear"],
     "options": { "ANYSOLVER_options": "bestbound=1 return_mipgap=3 objno=0" }
+  },
+  {
+    "name" : "dietu_stt sensitivity=1",
+    "objective" : 74.273820,
+    "options": { "ANYSOLVER_options": "solnsens=1" },
+    "tags" : ["linear", "continuous"],
+    "values": {
+      "Buy['BEEF'].senslbhi": 7.129251700680272,
+      "Buy['MCH'].senslblo": -7.274725274725274,
+      "Buy['CHK'].sensubhi": 10.97922077922078,
+      "Buy['MTL'].sensublo": 6.235955056179775,
+      "Diet_Min['A'].sensrhshi": 1013.977528089888,
+      "Diet_Max['A'].sensrhslo": 0.0,
+      "Buy['CHK'].sensobjhi": 3.443370786516854,
+      "Buy['MTL'].sensobjlo": 1.792727272727273
+    }
   }
 ]

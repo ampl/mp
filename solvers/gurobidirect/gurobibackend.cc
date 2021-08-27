@@ -223,7 +223,7 @@ void GurobiBackend::InputPrimalDualStart(ArrayRef<double> x0, ArrayRef<double> p
 }
 
 void GurobiBackend::AddMIPStart(ArrayRef<double> x0) {
-  switch (mipstart()) {
+  switch (Gurobi_mipstart()) {
   case 0: break;
   case 1:
     GrbSetDblAttrArray(GRB_DBL_ATTR_START, x0);
@@ -331,9 +331,30 @@ double GurobiBackend::BestDualBound() const {
   return f ? g : -ModelSense() * Infinity();
 }
 
-double  GurobiBackend::Kappa() const {
+double GurobiBackend::Kappa() const {
   return GrbGetDblAttr(GRB_DBL_ATTR_KAPPA);
 }
+
+
+ArrayRef<double> GurobiBackend::Senslbhi() const
+{ return GrbGetDblAttrArray_VarCon("SALBUp", 0); }
+ArrayRef<double> GurobiBackend::Senslblo() const
+{ return GrbGetDblAttrArray_VarCon("SALBLow", 0); }
+ArrayRef<double> GurobiBackend::Sensobjhi() const
+{ return GrbGetDblAttrArray_VarCon("SAObjUp", 0); }
+ArrayRef<double> GurobiBackend::Sensobjlo() const
+{ return GrbGetDblAttrArray_VarCon("SAObjLow", 0); }
+ArrayRef<double> GurobiBackend::Sensrhshi() const
+{ return GrbGetDblAttrArray_VarCon("SARHSUp", 1); }
+ArrayRef<double> GurobiBackend::Sensrhslo() const
+{ return GrbGetDblAttrArray_VarCon("SARHSLow", 1); }
+ArrayRef<double> GurobiBackend::Sensubhi() const
+{ return GrbGetDblAttrArray_VarCon("SAUBUp", 0); }
+ArrayRef<double> GurobiBackend::Sensublo() const
+{ return GrbGetDblAttrArray_VarCon("SAUBLow", 0); }
+
+
+
 double GurobiBackend::NodeCount() const {
   return GrbGetDblAttr(GRB_DBL_ATTR_NODECOUNT);
 }
@@ -368,7 +389,7 @@ void GurobiBackend::PrepareGurobiSolve() {
   if (need_ray_primal() || need_ray_dual())
     GrbSetIntParam(GRB_INT_PAR_INFUNBDINFO, 1);
   if (feasrelax_IOdata())
-    DoFeasRelax();
+    DoGurobiFeasRelax();
 }
 
 void GurobiBackend::ReportGurobiPool() {
@@ -383,7 +404,7 @@ void GurobiBackend::ReportGurobiPool() {
   }
 }
 
-void GurobiBackend::DoFeasRelax() {
+void GurobiBackend::DoGurobiFeasRelax() {
   int reltype = feasrelax_IOdata().mode()-1,
       minrel = 0;
   if (reltype >= 3) {
@@ -440,6 +461,7 @@ std::string GurobiBackend::ConvertSolutionStatus(
   }
 }
 
+
 void GurobiBackend::ComputeIIS() {
   GRB_CALL(GRBcomputeIIS(model));
 }
@@ -465,12 +487,12 @@ void GurobiBackend::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   if (1>iobj) {
     GrbSetIntAttr( GRB_INT_ATTR_MODELSENSE,
                   obj::Type::MAX==lo.obj_sense() ? GRB_MAXIMIZE : GRB_MINIMIZE);
-    SetMainObjSense(lo.obj_sense());
+    NoteGurobiMainObjSense(lo.obj_sense());
     GrbSetDblAttrList( GRB_DBL_ATTR_OBJ, lo.vars(), lo.coefs() );
   } else {
     GRB_CALL( GRBsetobjectiven(model, iobj, 0,           // default priority 0
                                /// Gurobi allows opposite sense by weight sign
-                               lo.obj_sense()==GetMainObjSense() ? 1.0 : -1.0,
+                               lo.obj_sense()==GetGurobiMainObjSense() ? 1.0 : -1.0,
                                0.0, 0.0, nullptr,
                                0.0, lo.num_terms(),
                                (int*)lo.vars().data(), (double*)lo.coefs().data()) );
@@ -874,7 +896,6 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n", GRB_INT_PAR_VARBRANCH, values_varbranch, -1);
 
 
-
   AddSolverOption("tech:outlev outlev",
       "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.",
     GRB_INT_PAR_OUTPUTFLAG, 0, 1);
@@ -899,7 +920,7 @@ void GurobiBackend::InitCustomOptions() {
       "Absolute tolerance for reporting alternate MIP solutions "
       "		(default: Infinity, no limit).",
       GRB_DBL_PAR_POOLGAPABS, 0.0, DBL_MAX);
-  AddSolverOption("sol:poollimit ams_limit poollimit",
+  AddSolverOption("sol:poollimit ams_limit poollimit solnlimit",
       "Limit on the number of alternate MIP solutions written. Default: 10.",
       GRB_INT_PAR_POOLSOLUTIONS, 1, 2000000000);
   AddStoredOption("sol:poolmode ams_mode poolmode",
@@ -1063,6 +1084,14 @@ std::vector<double> GurobiBackend::GrbGetDblAttrArray(const char* attr_id,
   return res;
 }
 
+ArrayRef<double> GurobiBackend::GrbGetDblAttrArray_VarCon(
+    const char* attr, int varcon) const {
+  return GrbGetDblAttrArray(attr,
+                            varcon ? NumberOfConstraints() :
+                                     NumberOfVariables());
+}
+
+
 void GurobiBackend::GrbSetIntAttrArray(
     const char *attr_id, ArrayRef<int> values, std::size_t start) {
   if (values)
@@ -1096,8 +1125,8 @@ void GurobiBackend::GrbSetDblAttrList(const char *attr_id,
                                 (int*)idx.data(), (double*)val.data()) );
 }
 
-void GurobiBackend::SetMainObjSense(obj::Type s) { main_obj_sense_ = s; }
+void GurobiBackend::NoteGurobiMainObjSense(obj::Type s) { main_obj_sense_ = s; }
 
-obj::Type GurobiBackend::GetMainObjSense() const { return main_obj_sense_; }
+obj::Type GurobiBackend::GetGurobiMainObjSense() const { return main_obj_sense_; }
 
 } // namespace mp

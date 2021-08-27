@@ -67,7 +67,8 @@ public:
       return suf_raw;
     }
     return Model::suffixes(main_kind).template
-            Add<T>(sufdef.name(), sufdef.kind(), suf_size, sufdef.table());
+            Add<T>(sufdef.name(), sufdef.kind() | suf::OUTPUT,
+                   suf_size, sufdef.table());
   }
 
   int GetSuffixSize(suf::Kind kind) {

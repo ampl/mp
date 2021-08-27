@@ -75,6 +75,11 @@ public:
   static const char* GetBackendLongName() { return nullptr; }
   static long Date() { return MP_DATE; }
 
+  std::vector<double> PrimalSolution()
+  { UNSUPPORTED("PrimalSolution()"); return {}; }
+  double ObjectiveValue() const
+  { UNSUPPORTED("ObjectiveValue()"); return 0.0; }
+
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
   /////////////// DISALLOW BY DEFAULT /////////////////
@@ -423,8 +428,9 @@ public:
     return n>MP_DISPATCH( MinusInfinity() ) &&
         n<MP_DISPATCH( Infinity() );
   }
-  static double Infinity() { return std::numeric_limits<double>::infinity(); }
-  static double MinusInfinity() { return -Infinity(); }
+  static constexpr double Infinity()
+  { return std::numeric_limits<double>::infinity(); }
+  static constexpr double MinusInfinity() { return -Infinity(); }
 
 public:
   using Solver::add_to_long_name;
@@ -476,6 +482,14 @@ protected:
   }
   void ReportSuffix(const SuffixDef<double>& suf,
                     ArrayRef<double> values) {
+    GetCQ().ReportSuffix(suf, values);
+  }
+  void ReportIntSuffix(const SuffixDef<int>& suf,
+                       ArrayRef<int> values) {
+    GetCQ().ReportSuffix(suf, values);
+  }
+  void ReportDblSuffix(const SuffixDef<double>& suf,
+                       ArrayRef<double> values) {
     GetCQ().ReportSuffix(suf, values);
   }
 

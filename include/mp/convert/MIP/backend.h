@@ -116,6 +116,19 @@ public:
   ALLOW_STD_FEATURE( RETURN_BEST_DUAL_BOUND, false )
   double BestDualBound() const
   { UNSUPPORTED("BestDualBound()"); return 0; }
+  /**
+  * Report sensitivity analysis suffixes
+  **/
+  DEFINE_STD_FEATURE( SENSITIVITY_ANALYSIS )
+  ALLOW_STD_FEATURE( SENSITIVITY_ANALYSIS, false )
+  ArrayRef<double> Senslbhi() const { return {}; }
+  ArrayRef<double> Senslblo() const { return {}; }
+  ArrayRef<double> Sensobjhi() const { return {}; }
+  ArrayRef<double> Sensobjlo() const { return {}; }
+  ArrayRef<double> Sensrhshi() const { return {}; }
+  ArrayRef<double> Sensrhslo() const { return {}; }
+  ArrayRef<double> Sensubhi() const { return {}; }
+  ArrayRef<double> Sensublo() const { return {}; }
 
 
   ////////////////////////////////////////////////////////////////////////////
@@ -199,6 +212,8 @@ public:
     MP_DISPATCH( CalculateAndReportIIS() );
     MP_DISPATCH( CalculateAndReportMIPGap() );
     MP_DISPATCH( ReportBestDualBound() );
+    if (sensitivity())
+      MP_DISPATCH( ReportSensitivity() );
   }
 
   void ReportBasis() {
@@ -252,6 +267,24 @@ public:
     }
   }
 
+  void ReportSensitivity() {
+    ReportSuffix( {"senslbhi", suf::Kind::VAR},
+                     MP_DISPATCH( Senslbhi() ) );
+    ReportSuffix( {"senslblo", suf::Kind::VAR},
+                     MP_DISPATCH( Senslblo() ) );
+    ReportSuffix( {"sensobjhi", suf::Kind::VAR},
+                     MP_DISPATCH( Sensobjhi() ) );
+    ReportSuffix( {"sensobjlo", suf::Kind::VAR},
+                     MP_DISPATCH( Sensobjlo() ) );
+    ReportSuffix( {"sensrhshi", suf::Kind::CON},
+                     MP_DISPATCH( Sensrhshi() ) );
+    ReportSuffix( {"sensrhslo", suf::Kind::CON},
+                     MP_DISPATCH( Sensrhslo() ) );
+    ReportSuffix( {"sensubhi", suf::Kind::VAR},
+                     MP_DISPATCH( Sensubhi() ) );
+    ReportSuffix( {"sensublo", suf::Kind::VAR},
+                     MP_DISPATCH( Sensublo() ) );
+  }
 
   ////////////////////////////////////////////////////////////
   /////////////////// MIP Backend options ////////////////////
@@ -265,6 +298,7 @@ private:
     int exportIIS_=0;
     int returnMipGap_=0;
     int returnBestDualBound_=0;
+    int solnSens_=0;
   };
   Options mipStoredOptions_;
 
@@ -288,6 +322,8 @@ protected:
   { return IMPL_HAS_STD_FEATURE(RAYS) ? GetMIPOptions().rays_ : 0; }
   bool need_ray_primal() const { return 1 & rays(); }
   bool need_ray_dual() const { return 2 & rays(); }
+
+  int sensitivity() const { return mipStoredOptions_.solnSens_; }
 
 
 public:
@@ -394,6 +430,26 @@ protected:
         "is not available.",
           mipStoredOptions_.returnBestDualBound_, values_01_noyes_0default_);
 
+    if (IMPL_HAS_STD_FEATURE( SENSITIVITY_ANALYSIS ))
+      AddStoredOption("mip:sens solnsens sensitivity",
+                      "Whether to return suffixes for solution sensitivities, i.e., "
+                      "ranges of values for which the optimal basis remains optimal:\n"
+                        "\n"
+                        "|  0 - no (default)\n"
+                        "|  1 - yes:  suffixes return on variables are\n"
+                        "    .sensobjlo = smallest objective coefficient\n"
+                        "    .sensobjhi = greatest objective coefficient\n"
+                        "    .senslblo = smallest variable lower bound\n"
+                        "    .senslbhi = greatest variable lower bound\n"
+                        "    .sensublo = smallest variable upper bound\n"
+                        "    .sensubhi = greatest variable upper bound\n"
+                        "  suffixes for constraints are\n"
+                        "    .sensrhslo = smallest right-hand side value\n"
+                        "    .sensrhshi = greatest right-hand side value.\n"
+                          "\n"
+                      "For problems with both integer variables and quadratic constraints, "
+                      "solnsens=0 is assumed quietly.",
+                    mipStoredOptions_.solnSens_);
   }
 
 
