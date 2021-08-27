@@ -2,6 +2,7 @@
 #define CONVERTER_FLAT_H
 
 #include <unordered_map>
+#include <map>
 #include <cmath>
 
 #include "mp/convert/preprocess.h"
@@ -541,6 +542,37 @@ public:
     }
   }
 
+  /// fAllSOS2: if false, only groups with sosno<0
+  void ConvertSOSCollection(ArrayRef<int> sosno, ArrayRef<double> ref,
+                            bool fAllSOS2) {
+    assert(sosno.size() == ref.size());
+    std::map< int, std::map< double, int > > sos_map;
+    for (auto i=ref.size(); i--; )
+      if (sosno[i]) {
+        auto& sos_group = sos_map[sosno[i]];
+        if (sos_group.end() != sos_group.find(ref[i]))
+          MP_RAISE(fmt::format(
+                     "In SOS group {}, repeated weight {}",
+                     sosno[i], ref[i]));
+        sos_group[ref[i]] = i;
+      }
+    for (const auto& group: sos_map) {
+      std::vector<int> vars;
+      vars.reserve(group.second.size());
+      std::vector<double> weights;
+      weights.reserve(group.second.size());
+      for (const auto& wv: group.second) {
+        weights.push_back(wv.first);
+        vars.push_back(wv.second);
+      }
+      if (group.first<0 || fAllSOS2)
+        AddConstraint(SOS2Constraint(vars, weights));
+      else
+        AddConstraint(SOS1Constraint(vars, weights));
+    }
+  }
+
+
   //////////////////////// WHOLE-MODEL PREPROCESSING /////////////////////////
   void PreprocessIntermediate() { }
   void ConvertMaps() { }
@@ -788,7 +820,16 @@ public:
 
   void PropagateResult(IndicatorConstraintLinLE& con, double lb, double ub, Context ctx) {
     internal::Unused(con, lb, ub, ctx);
+    PropagateResultOfInitExpr(con.get_binary_var(),
+                              this->MinusInfty(), this->Infty(), Context::CTX_MIX);
     for (const auto& v: con.get_lin_vars())
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+  }
+
+  template <int type>
+  void PropagateResult(SOS_1or2_Constraint<type>& con, double lb, double ub, Context ctx) {
+    internal::Unused(con, lb, ub, ctx);
+    for (const auto& v: con.get_vars())
       PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
@@ -977,13 +1018,13 @@ private:
 
   void InitOptions() {
     this->AddOption("cvt:pre:all",
-        "0/1*: Set to 0 to disable all presolve in the converter",
+        "0/1*: Set to 0 to disable all presolve in the converter.",
         options_.preprocessAnything_);
     this->AddOption("cvt:pre:eqresult",
-        "0/1*: Preprocess reified equality comparison's boolean result bounds",
+        "0/1*: Preprocess reified equality comparison's boolean result bounds.",
         options_.preprocessEqualityResultBounds_);
     this->AddOption("cvt:pre:eqbinary",
-        "0/1*: Preprocess reified equality comparison with a binary variable",
+        "0/1*: Preprocess reified equality comparison with a binary variable.",
         options_.preprocessEqualityBvar_);
   }
 
@@ -993,7 +1034,6 @@ protected:
   }
 
 };
-
 
 } // namespace mp
 

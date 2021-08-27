@@ -369,6 +369,36 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS( PLConstraint,
                   VarArray1, PLSlopes, "r = piecewise_linear(x)");
 
 
+////////////////////////////////////////////////////////////////////////
+/// SOS1, SOS2
+template <int type>
+class SOS_1or2_Constraint: public BasicConstraint {
+  static constexpr const char* name1_ = "SOS1Constraint";
+  static constexpr const char* name2_ = "SOS2Constraint";
+
+  const std::vector<int> v_;
+  const std::vector<double> w_;
+public:
+  static const char* GetConstraintName()
+  { return 1==type ? name1_ : name2_; }
+
+  int get_sos_type() const { return type; }
+  int size() const { return (int)v_.size(); }
+  const std::vector<int>& get_vars() const { return v_; }
+  const std::vector<double>& get_weights() const { return w_; }
+
+  /// Constructor
+  template <class VV=std::vector<int>, class WV=std::vector<double> >
+  SOS_1or2_Constraint(VV&& v, WV&& w) :
+    v_(std::forward<VV>(v)), w_(std::forward<WV>(w))
+  { assert(check()); }
+  bool check() const { return type>=1 && type<=2 &&
+                     v_.size()==w_.size(); }
+};
+
+using SOS1Constraint = SOS_1or2_Constraint<1>;
+using SOS2Constraint = SOS_1or2_Constraint<2>;
+
 } // namespace mp
 
 #endif // STD_CONSTR_H

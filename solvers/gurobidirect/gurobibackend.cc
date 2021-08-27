@@ -4,11 +4,10 @@
 
 #include "gurobibackend.h"
 
-#define GRB_CALL( call ) do { if (int e=call) RAISE( \
+#define GRB_CALL( call ) do { if (int e=call) MP_RAISE( \
     fmt::format("  Call failed: '{}' with code {}, message: {}", #call, \
         e, GRBgeterrormsg(env) ) \
   ); } while (0)
-#define RAISE(msg) throw std::runtime_error(msg)
 
 namespace {
 
@@ -143,7 +142,7 @@ std::vector<int> GurobiBackend::VarStatii() {
       s = (int)BasicStatus::sup;
       break;
     default:
-      RAISE(fmt::format("Unknown Gurobi VBasis value: {}", s));
+      MP_RAISE(fmt::format("Unknown Gurobi VBasis value: {}", s));
     }
   }
   return stt;
@@ -161,7 +160,7 @@ std::vector<int> GurobiBackend::ConStatii() {
       s = (int)BasicStatus::none;
       break;
     default:
-      RAISE(fmt::format("Unknown Gurobi CBasis value: {}", s));
+      MP_RAISE(fmt::format("Unknown Gurobi CBasis value: {}", s));
     }
   }
   return stt;
@@ -188,7 +187,7 @@ void GurobiBackend::VarStatii(ArrayRef<int> vst) {
     case BasicStatus::btw:
       break;
     default:
-      RAISE(fmt::format("Unknown AMPL var status value: {}", s));
+      MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
     }
   }
   GrbSetIntAttrArray(GRB_INT_ATTR_VBASIS, stt);
@@ -211,7 +210,7 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
     case BasicStatus::btw:
       break;
     default:
-      RAISE(fmt::format("Unknown AMPL con status value: {}", s));
+      MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
     }
   }
   GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, stt);
@@ -579,7 +578,23 @@ void GurobiBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
                                ic.v_.data(), ic.c_.data(), GRB_LESS_EQUAL, ic.rhs_ ) );
 }
 
-//////////////////// Nonlinear /////////////////////
+//////////////////// General constraints /////////////////////
+void GurobiBackend::AddConstraint(const SOS1Constraint &sos)  {
+  int type = GRB_SOS_TYPE1;
+  int beg = 0;
+  GRB_CALL( GRBaddsos(model, 1, sos.size(), &type, &beg,
+              (int*)sos.get_vars().data(),
+                      (double*)sos.get_weights().data()) );
+}
+
+void GurobiBackend::AddConstraint(const SOS2Constraint &sos)  {
+  int type = GRB_SOS_TYPE2;
+  int beg = 0;
+  GRB_CALL( GRBaddsos(model, 1, sos.size(), &type, &beg,
+              (int*)sos.get_vars().data(),
+                      (double*)sos.get_weights().data()) );
+}
+
 void GurobiBackend::AddConstraint(const ExpConstraint &cc)  {
   GRB_CALL( GRBaddgenconstrExp(model, NULL,
               cc.GetArguments()[0], cc.GetResultVar(), "") );
@@ -1038,7 +1053,7 @@ int GurobiBackend::GrbGetIntAttr(const char* attr_id, bool *flag) const {
   if (flag)
     *flag = (0==error);
   else if (error)
-    RAISE( fmt::format("Failed to obtain attribute {}, error code {}",
+    MP_RAISE( fmt::format("Failed to obtain attribute {}, error code {}",
                        attr_id, error ) );
   return tmp;
 }
@@ -1049,7 +1064,7 @@ double GurobiBackend::GrbGetDblAttr(const char* attr_id, bool *flag) const {
   if (flag)
     *flag = (0==error);
   else if (error)
-    RAISE( fmt::format("Failed to obtain attribute {}, error code {}",
+    MP_RAISE( fmt::format("Failed to obtain attribute {}, error code {}",
                        attr_id, error ) );
   return tmp;
 }

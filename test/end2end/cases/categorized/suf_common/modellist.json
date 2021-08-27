@@ -43,5 +43,21 @@
       "Buy['CHK'].sensobjhi": 3.443370786516854,
       "Buy['MTL'].sensobjlo": 1.792727272727273
     }
+  },
+  {
+    "name": "sos_01",
+    "tags": [ "linear", "integer"],
+    "objective": 32,
+    "values": {
+      "x[2]": 3,
+      "y[2]": 2.5,
+      "y[6]": 0
+    }
+  },
+  {
+    "name": "sos_01 sos=0",
+    "tags": [ "linear", "integer" ],
+    "options": { "ANYSOLVER_options": "sos=0" },
+    "objective": 37.5
   }
 ]

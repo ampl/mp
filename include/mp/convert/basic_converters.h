@@ -95,6 +95,7 @@ public:
 
   BasicMPConverter() {
     InitConverterQueryObject();
+    InitOptions();
     GetBackend().InitMetaInfoAndOptions();
   }
 
@@ -191,6 +192,9 @@ protected:
     if (int n_lcons = GetModel().num_logical_cons())
       for (int i = 0; i < n_lcons; ++i)
         MP_DISPATCH( Convert( GetModel().logical_con(i) ) );
+
+    ////////////////////////////////////////////////
+    MP_DISPATCH( ConvertSOSConstraints() );
   }
 
   void ConvertExtraItems() { }
@@ -209,6 +213,33 @@ protected:
 
   void Convert(typename Model::MutLogicalCon e) {
     throw std::runtime_error("No logical constraints conversion implemented");
+  }
+
+  void ConvertSOSConstraints() {
+    if (sos()) {
+      auto sosno = GetInputModel().
+          ReadIntSuffix( { "sosno", suf::Kind::VAR } );
+      auto ref = GetInputModel().
+          ReadDblSuffix( { "ref", suf::Kind::VAR } );
+      if (sosno && ref)
+        MP_DISPATCH( ConvertSOSCollection(sosno, ref, false) );
+    }
+    if (sos2_ampl_pl()) {
+      auto sos = GetInputModel().
+          ReadIntSuffix( { "sos", suf::Kind::VAR } );
+      auto sosref = GetInputModel().
+          ReadDblSuffix( { "sosref", suf::Kind::VAR } );
+      if (sos && sosref)
+        MP_DISPATCH( ConvertSOSCollection(sos, sosref, true) );
+    }
+  }
+
+  /// fAllSOS2: if false, only groups with sosno<0
+  void ConvertSOSCollection(ArrayRef<int> sosno, ArrayRef<double> ref,
+                            bool fAllSOS2) {
+    assert(sosno.size() == ref.size());
+    internal::Unused(fAllSOS2);
+    UNSUPPORTED("ConvertSOSCollection");
   }
 
   void PushWholeModelToBackend() {
@@ -250,6 +281,34 @@ protected:
   template <typename... Args> \
   void Print(fmt::CStringRef format, const Args & ... args) {
     GetMPUtils().Print(format, args...);
+  }
+
+private:
+  struct Options {
+    int sos_ = 1;
+    int sos2_ = 1;
+  };
+  Options options_;
+
+protected:
+  int sos() const { return options_.sos_; }
+  int sos2_ampl_pl() const { return options_.sos2_; }
+
+private:
+  void InitOptions() {
+    this->AddOption("cvt:sos sos",
+        "0/1*: Whether to honor declared suffixes .sosno and .ref describing "
+        "SOS sets. Each distinct nonzero .sosno "
+        "value designates an SOS set, of type 1 for "
+        "positive .sosno values and of type 2 for "
+        "negative values.  The .ref suffix contains "
+        "corresponding reference values used to order the variables.",
+        options_.sos_);
+    this->AddOption("cvt:sos2 sos2",
+        "0/1*: Whether to honor SOS2 constraints for nonconvex "
+        "piecewise-linear terms, using suffixes .sos and .sosref "
+        "provided by AMPL.",
+        options_.sos_);
   }
 
 };

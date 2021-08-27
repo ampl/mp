@@ -36,7 +36,10 @@ public:
   ~GurobiBackend();
 
   ////////////////////////////////////////////////////////////
-  /////// Overloading base class method placeholders /////////
+  //////////////////// PART 1. Accessor API //////////////////
+  /// Standard and optional methods to provide or retrieve ///
+  /// information to/from or manipulate the solver. Most  ////
+  /// of them override placeholders from base classes.   /////
   ////////////////////////////////////////////////////////////
 
   ////////////////////////////////////////////////////////////
@@ -179,7 +182,11 @@ public:
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
 
-  /// Nonlinear
+  /// General
+  ACCEPT_CONSTRAINT(SOS1Constraint, Recommended)
+  void AddConstraint(const SOS1Constraint& cc);
+  ACCEPT_CONSTRAINT(SOS2Constraint, Recommended)
+  void AddConstraint(const SOS2Constraint& cc);
   ACCEPT_CONSTRAINT(ExpConstraint, Recommended)
   void AddConstraint(const ExpConstraint& cc);
   ACCEPT_CONSTRAINT(ExpAConstraint, Recommended)
@@ -243,9 +250,9 @@ public:
 
 
   ///////////////////////////////////////////////////////////////////////////////
-  //////////////////// [[ Implementation details ]] //////////////////////
-  //////////////////// Gurobi methods should include name Gurobi or similar
-  //////////////////// to avoid name clashes with the base classes
+  //////////////////// PART 2. Implementation's internals ///////////////////////
+  //////////////////// Gurobi methods should include name Gurobi or similar /////
+  //////////////////// to avoid name clashes with the base classes //////////////
   ///////////////////////////////////////////////////////////////////////////////
 protected:
   void PrepareGurobiSolve();

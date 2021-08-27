@@ -48,6 +48,12 @@ public:
     return suf.get_values();
   }
 
+  /// Allow calling ReadIntSuffix( {"sosno", suf::Kind::VAR} )
+  ArrayRef<int> ReadIntSuffix(const SuffixDef<int>& sufdef)
+  { return ReadSuffix(sufdef); }
+  ArrayRef<double> ReadDblSuffix(const SuffixDef<double>& sufdef)
+  { return ReadSuffix(sufdef); }
+
   template <class T>
   BasicMutSuffix<T> FindSuffix(const SuffixDef<T>& sufdef) {
     auto main_kind = (suf::Kind)(sufdef.kind() & suf::KIND_MASK);
