@@ -227,7 +227,7 @@ public:
     MP_DISPATCH( RecordSolveTime() );
 
     MP_DISPATCH( ObtainSolutionStatus() );
-    MP_DISPATCH( ReportSolution() );
+    MP_DISPATCH( ReportResults() );
     if (MP_DISPATCH( timing() ))
       MP_DISPATCH( PrintTimingInfo() );
   }
@@ -289,9 +289,9 @@ public:
 
   using Solver::need_multiple_solutions;
 
-  void ReportSolution() {
+  void ReportResults() {
     MP_DISPATCH( ReportSuffixes() );
-    MP_DISPATCH( ReportPrimalDualValues() );
+    MP_DISPATCH( ReportSolution() );
   }
 
   void ReportSuffixes() {
@@ -322,7 +322,6 @@ public:
     writer.write("{}: {}", MP_DISPATCH( long_name() ),
                  "Alternative solution");
     if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
-      obj_value = MP_DISPATCH( CurrentPoolObjectiveValue() );
       writer.write("; objective {}",
                    MP_DISPATCH( FormatObjValue(obj_value) ));
     }
@@ -332,7 +331,7 @@ public:
                    nullptr, obj_value);
   }
 
-  void ReportPrimalDualValues() {
+  void ReportSolution() {
     double obj_value = std::numeric_limits<double>::quiet_NaN();
     std::vector<double> solution, dual_solution;
     
@@ -420,17 +419,16 @@ public:
 
 
   /////////////////////////////// SOME MATHS ////////////////////////////////
-  static bool float_equal(double a, double b) {           // ??????
-    return std::fabs(a-b) < 1e-8*std::max(std::fabs(a), std::fabs(b));
-  }
-
   bool IsFinite(double n) const {
     return n>MP_DISPATCH( MinusInfinity() ) &&
         n<MP_DISPATCH( Infinity() );
   }
+
   static constexpr double Infinity()
   { return std::numeric_limits<double>::infinity(); }
+
   static constexpr double MinusInfinity() { return -Infinity(); }
+
 
 public:
   using Solver::add_to_long_name;
@@ -621,6 +619,7 @@ public:
     assert(pOption);
     pOption->set_description(desc);
   }
+
 
 private:
   struct Options {
