@@ -91,7 +91,7 @@ int CplexBackend::NumberOfObjectives() const {
   return CPXgetnumobjs (env, lp);
 }
 
-std::vector<double> CplexBackend::PrimalSolution() {
+ArrayRef<double> CplexBackend::PrimalSolution() {
   int num_vars = NumberOfVariables();
   std::vector<double> x(num_vars);
   int error = CPXgetx (env, lp, x.data(), 0, num_vars-1);
@@ -100,7 +100,7 @@ std::vector<double> CplexBackend::PrimalSolution() {
   return x;
 }
 
-std::vector<double> CplexBackend::DualSolution() {
+ArrayRef<double> CplexBackend::DualSolution() {
   int num_cons = NumberOfConstraints();
   std::vector<double> pi(num_cons);
   int error = CPXgetpi (env, lp, pi.data(), 0, num_cons-1);

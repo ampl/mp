@@ -61,23 +61,22 @@ public:
    * MULTIOBJ
   **/
   ALLOW_STD_FEATURE( MULTIOBJ, true )
-  std::vector<double> ObjectiveValues() const;
+  ArrayRef<double> ObjectiveValues() const;
   void ObjPriorities(ArrayRef<int>);
   void ObjWeights(ArrayRef<double>);
   void ObjAbsTol(ArrayRef<double>);
   void ObjRelTol(ArrayRef<double>);
   /**
    * MULTISOL support
+   * No API, use ReportIntermediateSolution()
   **/
   ALLOW_STD_FEATURE( MULTISOL, true )
-  std::vector<double> CurrentPoolPrimalSolution();
-  double CurrentPoolObjectiveValue() const;
   /**
   * Get/Set AMPL var/con statii
   **/
   ALLOW_STD_FEATURE( BASIS, true )
-  std::vector<int> VarStatii();
-  std::vector<int> ConStatii();
+  ArrayRef<int> VarStatii();
+  ArrayRef<int> ConStatii();
   void VarStatii(ArrayRef<int> );
   void ConStatii(ArrayRef<int> );
   /**
@@ -96,16 +95,16 @@ public:
   * Obtain inf/unbounded rays
   **/
   ALLOW_STD_FEATURE( RAYS, true )
-  std::vector<double> Ray();
-  std::vector<double> DRay();
+  ArrayRef<double> Ray();
+  ArrayRef<double> DRay();
   /**
   * Compute the IIS and obtain relevant values
   **/
   ALLOW_STD_FEATURE( IIS, true )
   void ComputeIIS();
   /// Elements correspond to IISStatus
-  std::vector<int> VarsIIS();
-  std::vector<int> ConsIIS();
+  ArrayRef<int> VarsIIS();
+  ArrayRef<int> ConsIIS();
   /**
   * Get MIP Gap
   **/
@@ -230,10 +229,10 @@ public:
       const mp::Interrupter &interrupter, int &solve_code);
 
   /// Various solution attribute getters.
-  std::vector<double> PrimalSolution();
+  ArrayRef<double> PrimalSolution();
   double ObjectiveValue() const;
   /// Return empty vector if not available
-  std::vector<double> DualSolution();
+  ArrayRef<double> DualSolution();
 
   double NodeCount() const;
   double Niterations() const;
@@ -261,6 +260,8 @@ protected:
   /// First objective's sense
   void NoteGurobiMainObjSense(obj::Type s);
   obj::Type GetGurobiMainObjSense() const;
+  ArrayRef<double> CurrentGrbPoolPrimalSolution();
+  double CurrentGrbPoolObjectiveValue() const;
 
 
   /// REMEMBER Gurobi does not update attributes before calling optimize() etc

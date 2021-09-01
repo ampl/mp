@@ -80,8 +80,8 @@ public:
       const mp::Interrupter &interrupter, int &solve_code);
 
   /// Solution values. The vectors are emptied if not available
-  std::vector<double> PrimalSolution();
-  std::vector<double> DualSolution();
+  ArrayRef<double> PrimalSolution();
+  ArrayRef<double> DualSolution();
   double ObjectiveValue() const;
 
   /// Solution attributes

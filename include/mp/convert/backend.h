@@ -75,7 +75,7 @@ public:
   static const char* GetBackendLongName() { return nullptr; }
   static long Date() { return MP_DATE; }
 
-  std::vector<double> PrimalSolution()
+  ArrayRef<double> PrimalSolution()
   { UNSUPPORTED("PrimalSolution()"); return {}; }
   double ObjectiveValue() const
   { UNSUPPORTED("ObjectiveValue()"); return 0.0; }
@@ -87,13 +87,13 @@ public:
   ////////////////////////////////////////////////////////////
 protected:
   /// Dual solution. Returns empty if not available
-  std::vector<double> DualSolution() { return {}; }
+  ArrayRef<double> DualSolution() { return {}; }
   /**
    * MULTIOBJ support
    */
   DEFINE_STD_FEATURE( MULTIOBJ )
   ALLOW_STD_FEATURE( MULTIOBJ, false )
-  std::vector<double> ObjectiveValues() const
+  ArrayRef<double> ObjectiveValues() const
   { UNSUPPORTED("ObjectiveValues()"); return {}; }
   void ObjPriorities(ArrayRef<int>)
   { UNSUPPORTED("BasicBackend::ObjPriorities"); }
@@ -333,7 +333,6 @@ public:
 
   void ReportSolution() {
     double obj_value = std::numeric_limits<double>::quiet_NaN();
-    std::vector<double> solution, dual_solution;
     
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status);
@@ -341,7 +340,7 @@ public:
       if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
         if(multiobj() && MP_DISPATCH(NumberOfObjectives()) > 1)
         {
-          std::vector<double> obj_values = MP_DISPATCH(ObjectiveValues());
+          auto obj_values = MP_DISPATCH(ObjectiveValues());
           writer.write("; objective {}", MP_DISPATCH(FormatObjValue(obj_values[0])));
           writer.write("\nIndividual objective values:");
           for (size_t i = 0; i < obj_values.size(); i++)
@@ -364,8 +363,8 @@ public:
     if(exportKappa() && 1)
       writer.write("\nkappa value: {}", MP_DISPATCH(Kappa()));
     writer.write("\n");
-    solution = MP_DISPATCH( PrimalSolution() );
-    dual_solution = MP_DISPATCH( DualSolution() );  // Try in any case
+    auto solution = MP_DISPATCH( PrimalSolution() );
+    auto dual_solution = MP_DISPATCH( DualSolution() );  // Try in any case
     HandleSolution(solve_code, writer.c_str(),
                    solution.empty() ? 0 : solution.data(),
                    dual_solution.empty() ? 0 : dual_solution.data(), obj_value);

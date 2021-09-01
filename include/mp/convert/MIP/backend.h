@@ -53,10 +53,10 @@ public:
   **/
   DEFINE_STD_FEATURE( BASIS )
   ALLOW_STD_FEATURE( BASIS, false )
-  std::vector<int> VarStatii() { return {}; }
+  ArrayRef<int> VarStatii() { return {}; }
   void VarStatii(ArrayRef<int> )
   { UNSUPPORTED("MIPBackend::VarStatii"); }
-  std::vector<int> ConStatii() { return {}; }
+  ArrayRef<int> ConStatii() { return {}; }
   void ConStatii(ArrayRef<int> )
   { UNSUPPORTED("MIPBackend::ConStatii"); }
   /**
@@ -87,8 +87,8 @@ public:
   **/
   DEFINE_STD_FEATURE( RAYS )
   ALLOW_STD_FEATURE( RAYS, false )
-  std::vector<double> Ray() { return {}; }
-  std::vector<double> DRay() { return {}; }
+  ArrayRef<double> Ray() { return {}; }
+  ArrayRef<double> DRay() { return {}; }
   /**
   * Compute the IIS and obtain relevant values
   **/
@@ -96,8 +96,8 @@ public:
   ALLOW_STD_FEATURE( IIS, false )
   void ComputeIIS() {}
   /// Elements correspond to IISStatus
-  std::vector<int> ConsIIS() { return {}; }
-  std::vector<int> VarsIIS() { return {}; }
+  ArrayRef<int> ConsIIS() { return {}; }
+  ArrayRef<int> VarsIIS() { return {}; }
   /**
   * Get MIP Gap
   **/

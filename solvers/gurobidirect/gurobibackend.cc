@@ -79,12 +79,12 @@ int GurobiBackend::ModelSense() const {
   return GrbGetIntAttr(GRB_INT_ATTR_MODELSENSE);
 }
 
-std::vector<double> GurobiBackend::PrimalSolution() {
+ArrayRef<double> GurobiBackend::PrimalSolution() {
   return
     GrbGetDblAttrArray(GRB_DBL_ATTR_X, NumberOfVariables());
 }
 
-std::vector<double> GurobiBackend::DualSolution() {
+ArrayRef<double> GurobiBackend::DualSolution() {
   return
     GrbGetDblAttrArray(GRB_DBL_ATTR_PI, NumberOfConstraints());
 }
@@ -93,7 +93,7 @@ double GurobiBackend::ObjectiveValue() const {
   return GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL);
 }
 
-std::vector<double> GurobiBackend::ObjectiveValues() const {
+ArrayRef<double> GurobiBackend::ObjectiveValues() const {
   int no = NumberOfObjectives();
   if(no==0)
     return std::vector<double>();
@@ -114,17 +114,17 @@ std::vector<double> GurobiBackend::ObjectiveValues() const {
   return objs;
 }
 
-std::vector<double> GurobiBackend::CurrentPoolPrimalSolution() {
+ArrayRef<double> GurobiBackend::CurrentGrbPoolPrimalSolution() {
   return
     GrbGetDblAttrArray(GRB_DBL_ATTR_XN, NumberOfVariables());
 }
 
-double GurobiBackend::CurrentPoolObjectiveValue() const {
+double GurobiBackend::CurrentGrbPoolObjectiveValue() const {
   return GrbGetDblAttr(GRB_DBL_ATTR_POOLOBJVAL);
 }
 
 
-std::vector<int> GurobiBackend::VarStatii() {
+ArrayRef<int> GurobiBackend::VarStatii() {
   auto stt =
     GrbGetIntAttrArray(GRB_INT_ATTR_VBASIS, NumberOfVariables());
   for (auto& s: stt) {
@@ -148,7 +148,7 @@ std::vector<int> GurobiBackend::VarStatii() {
   return stt;
 }
 
-std::vector<int> GurobiBackend::ConStatii() {
+ArrayRef<int> GurobiBackend::ConStatii() {
   auto stt =
     GrbGetIntAttrArray(GRB_INT_ATTR_CBASIS, NumberOfConstraints());
   for (auto& s: stt) {
@@ -272,18 +272,18 @@ void GurobiBackend::ObjRelTol(ArrayRef<double> val) {
 }
 
 
-std::vector<double> GurobiBackend::Ray() {
+ArrayRef<double> GurobiBackend::Ray() {
   return
     GrbGetDblAttrArray(GRB_DBL_ATTR_UNBDRAY, NumberOfVariables());
 }
 
-std::vector<double> GurobiBackend::DRay() {
+ArrayRef<double> GurobiBackend::DRay() {
   return
     GrbGetDblAttrArray(GRB_DBL_ATTR_FARKASDUAL, NumberOfConstraints());
 }
 
 
-std::vector<int> GurobiBackend::VarsIIS() {
+ArrayRef<int> GurobiBackend::VarsIIS() {
   auto iis_lb =
     GrbGetIntAttrArray(GRB_INT_ATTR_IIS_LB, NumberOfVariables());
   auto iis_ub =
@@ -304,7 +304,7 @@ std::vector<int> GurobiBackend::VarsIIS() {
   return iis_lb;
 }
 
-std::vector<int> GurobiBackend::ConsIIS() {
+ArrayRef<int> GurobiBackend::ConsIIS() {
   // Adjust for non linear constraints, which always come
   // after the linear ones in the NL file
   int nl = GrbGetIntAttr(GRB_INT_ATTR_NUMSOS) +
@@ -398,8 +398,8 @@ void GurobiBackend::ReportGurobiPool() {
   while (++iPoolSolution < GrbGetIntAttr(GRB_INT_ATTR_SOLCOUNT)) {
     GrbSetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, iPoolSolution);
     ReportIntermediateSolution(
-          CurrentPoolObjectiveValue(),
-          CurrentPoolPrimalSolution());
+          CurrentGrbPoolObjectiveValue(),
+          CurrentGrbPoolPrimalSolution());
   }
 }
 
