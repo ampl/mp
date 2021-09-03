@@ -32,6 +32,7 @@ namespace mp {
 #endif
 
 #define MP_RAISE(msg) throw std::runtime_error(msg)
+#define MP_WARNING(msg) Print(msg)
 
 // A general error.
 class Error : public fmt::internal::RuntimeError {

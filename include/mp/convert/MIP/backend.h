@@ -129,6 +129,13 @@ public:
   ArrayRef<double> Sensrhslo() const { return {}; }
   ArrayRef<double> Sensubhi() const { return {}; }
   ArrayRef<double> Sensublo() const { return {}; }
+  /**
+  * FixModel - duals, basis, and sensitivity for MIP
+  **/
+  DEFINE_STD_FEATURE( FIX_MODEL )
+  ALLOW_STD_FEATURE( FIX_MODEL, false )
+  /** No API to overload,
+   *  Impl should check need_fixed_MIP() **/
 
 
   ////////////////////////////////////////////////////////////////////////////
@@ -299,6 +306,7 @@ private:
     int returnMipGap_=0;
     int returnBestDualBound_=0;
     int solnSens_=0;
+    int fixModel_=1;
   };
   Options mipStoredOptions_;
 
@@ -325,6 +333,13 @@ protected:
 
   int sensitivity() const { return mipStoredOptions_.solnSens_; }
 
+  /// Whether need duals/basis/sens from MIP
+  /// Need at least duals when this option is on
+  int need_fixed_MIP() const {
+    return IMPL_HAS_STD_FEATURE( FIX_MODEL ) ?
+          mipStoredOptions_.fixModel_ : 0;
+  }
+
 
 public:
   void InitStandardOptions() {
@@ -342,6 +357,11 @@ protected:
       {     "1", "yes", 1}
   };
 
+  const mp::OptionValueInfo values_01_noyes_1default_[2] = {
+      {     "0", "no", 0 },
+      {     "1", "yes (default)", 1}
+  };
+
   const mp::OptionValueInfo values_basis_[4] = {
       {     "0", "no", 0 },
       {     "1", "use incoming basis (if provided)", 1},
@@ -351,8 +371,8 @@ protected:
 
   const mp::OptionValueInfo values_warmstart_[3] = {
       {     "0", "no", 0 },
-      {     "1", "yes (for LP: if there is no incoming mip:basis) (default)", 1},
-      {     "2", "yes (for LP: ignoring the incoming mip:basis, if any)", 2}
+      {     "1", "yes (for LP: if there is no incoming alg:basis) (default)", 1},
+      {     "2", "yes (for LP: ignoring the incoming alg:basis, if any)", 2}
   };
 
   const mp::OptionValueInfo values_rays_[4] = {
@@ -365,7 +385,7 @@ protected:
   ////////////////////////////////////////////////////////////////
   void InitMIPOptions() {
     if (IMPL_HAS_STD_FEATURE( BASIS ))
-      AddStoredOption("mip:basis basis",
+      AddStoredOption("alg:basis basis",
                       "Whether to use or return a basis:\n "
                       "\n.. value-table::\n"
                       "Note that if you provide a valid starting extreme point, "
@@ -384,7 +404,7 @@ protected:
                       "MIP-specific options can be accessible via mip:start.",
                       mipStoredOptions_.warmstart_, values_warmstart_);
 
-    if (IMPL_HAS_STD_FEATURE(VAR_PRIORITIES))
+    if (IMPL_HAS_STD_FEATURE( VAR_PRIORITIES ))
       AddStoredOption("mip:priorities priorities",
         "0/1*: Whether to read the branch and bound priorities from the"
         " .priority suffix.",
@@ -431,7 +451,7 @@ protected:
           mipStoredOptions_.returnBestDualBound_, values_01_noyes_0default_);
 
     if (IMPL_HAS_STD_FEATURE( SENSITIVITY_ANALYSIS ))
-      AddStoredOption("mip:sens solnsens sensitivity",
+      AddStoredOption("alg:sens solnsens sensitivity",
                       "Whether to return suffixes for solution sensitivities, i.e., "
                       "ranges of values for which the optimal basis remains optimal:\n"
                         "\n"
@@ -450,6 +470,14 @@ protected:
                       "For problems with both integer variables and quadratic constraints, "
                       "solnsens=0 is assumed quietly.",
                     mipStoredOptions_.solnSens_);
+
+    if (IMPL_HAS_STD_FEATURE( FIX_MODEL ))
+      AddStoredOption("mip:basis fixmodel mip:fix",
+                      "Whether to compute duals and basis for MIP models: "
+                        "\n"
+                        "|  0 - no\n"
+                        "|  1 - yes (default).\n",
+                    mipStoredOptions_.fixModel_);
   }
 
 

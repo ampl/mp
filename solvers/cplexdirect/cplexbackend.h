@@ -86,7 +86,7 @@ public:
 
   /// Solution attributes
   double NodeCount() const;
-  double Niterations() const;
+  double NumberOfIterations() const;
 
 
   //////////////////// [[ Implementation details ]] //////////////////////

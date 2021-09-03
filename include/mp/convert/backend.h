@@ -216,9 +216,6 @@ public:
   ////////////////////////////////////////////////////////////////////////////
   /////////////////////////// BASIC PROCESS LOGIC ////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
-  void OpenSolver() { }
-  void CloseSolver() { }
-
   void SolveAndReport() {
     MP_DISPATCH( InputExtras() );
 
@@ -317,7 +314,8 @@ public:
   void ReportCustomSuffixes() { }
 
   void ReportIntermediateSolution(
-        double obj_value, ArrayRef<double> solution) {
+        double obj_value,
+        ArrayRef<double> solution, ArrayRef<double> dual_solution) {
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ),
                  "Alternative solution");
@@ -328,7 +326,8 @@ public:
     writer.write("\n");
     HandleFeasibleSolution(writer.c_str(),
                    solution.empty() ? 0 : solution.data(),
-                   nullptr, obj_value);
+                   dual_solution.empty() ? 0 : dual_solution.data(),
+                   obj_value);
   }
 
   void ReportSolution() {
@@ -360,9 +359,16 @@ public:
         }
       }
     }
-    if(exportKappa() && 1)
+    if (exportKappa() && 1)
       writer.write("\nkappa value: {}", MP_DISPATCH(Kappa()));
+    if (double ni = MP_DISPATCH( NumberOfIterations() ))
+      writer.write("\n{} simplex iterations", ni);
+    if (double nnd = MP_DISPATCH( NodeCount() ))
+      writer.write("\n{} branching nodes", nnd);
     writer.write("\n");
+    if (solver_msg_extra_.size()) {
+      writer.write(solver_msg_extra_);
+    }
     auto solution = MP_DISPATCH( PrimalSolution() );
     auto dual_solution = MP_DISPATCH( DualSolution() );  // Try in any case
     HandleSolution(solve_code, writer.c_str(),
@@ -430,6 +436,7 @@ public:
 
 
 public:
+  using Solver::Print;
   using Solver::add_to_long_name;
   using Solver::add_to_version;
   using Solver::set_option_header;
@@ -503,6 +510,12 @@ private:
   int solve_code=sol::NOT_CHECKED;
   std::string solve_status;
 
+  ///////////////////////// STORING SOLVER MESSAGES //////////////////////
+private:
+  std::string solver_msg_extra_;
+protected:
+  void AddToSolverMessage(const std::string& msg)
+  { solver_msg_extra_ += msg; }
 
   ///////////////////////////// OPTIONS /////////////////////////////////
 protected:

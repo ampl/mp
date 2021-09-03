@@ -119,7 +119,7 @@ double CplexBackend::NodeCount() const {
   return CPXgetnodecnt (env, lp);
 }
 
-double CplexBackend::Niterations() const {
+double CplexBackend::NumberOfIterations() const {
   return CPXgetmipitcnt (env, lp);
 }
 

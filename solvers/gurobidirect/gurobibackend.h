@@ -141,6 +141,9 @@ public:
   ArrayRef<double> Sensrhslo() const;
   ArrayRef<double> Sensubhi() const;
   ArrayRef<double> Sensublo() const;
+  ALLOW_STD_FEATURE( FIX_MODEL, true )
+  /** No API to overload,
+   *  Impl should check need_fixed_MIP() **/
 
 
   /////////////////////////////////////////////////////////////////////////////
@@ -235,7 +238,7 @@ public:
   ArrayRef<double> DualSolution();
 
   double NodeCount() const;
-  double Niterations() const;
+  double NumberOfIterations() const;
 
   /// Public option API.
   /// These methods access Gurobi options. Used by AddSolverOption()
@@ -257,6 +260,10 @@ protected:
   void PrepareGurobiSolve();
   void DoGurobiFeasRelax();
   void ReportGurobiPool();
+  /// Creates and solves, marks model_fixed to be used for duals/basis/sens
+  void ConsiderGurobiFixedModel();
+  /// Return error message if any
+  std::string DoGurobiFixedModel();
   /// First objective's sense
   void NoteGurobiMainObjSense(obj::Type s);
   obj::Type GetGurobiMainObjSense() const;
@@ -274,8 +281,14 @@ protected:
     std::size_t size, std::size_t offset=0) const;
   std::vector<double> GrbGetDblAttrArray(const char* attr_id,
     std::size_t size, std::size_t offset=0) const;
+  std::vector<int> GrbGetIntAttrArray(GRBmodel* mdl, const char* attr_id,
+    std::size_t size, std::size_t offset=0) const;
+  std::vector<double> GrbGetDblAttrArray(GRBmodel* mdl, const char* attr_id,
+    std::size_t size, std::size_t offset=0) const;
 
   ArrayRef<double> GrbGetDblAttrArray_VarCon(
+      const char* attr, int varcon) const;
+  ArrayRef<double> GrbGetDblAttrArray_VarCon(GRBmodel* mdl,
       const char* attr, int varcon) const;
 
   /// Set attributes.
@@ -296,8 +309,9 @@ protected:
 
 
 private:
-  GRBenv   *env   = NULL;
-  GRBmodel *model = NULL;
+  GRBenv   *env_   = nullptr;
+  GRBmodel *model_ = nullptr;
+  GRBmodel *model_fixed_ = nullptr;
 
   /// The sense of the main objective
   obj::Type main_obj_sense_;
@@ -310,6 +324,8 @@ private:
 
     int nMIPStart_=1;
     int nPoolMode_=2;
+
+    int nFixedMethod_=-2;
   } storedOptions_;
 
 

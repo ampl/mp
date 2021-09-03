@@ -33,5 +33,42 @@
       "Buy['CHK'].sstatus":  "low",
       "Diet['A'].sstatus": "none"
     }
+  },
+  {
+    "name" : "dietu_mip fixedMIP",
+    "objective" : 74.273820,
+    "tags" : ["linear", "continuous"],
+    "values": {
+      "Buy['BEEF'].sstatus": "low",
+      "Buy['MTL'].sstatus":  "bas",
+      "Buy['CHK'].sstatus":  "upp",
+      "Diet_Min['C']": 0.00670787,
+      "Diet_Min['CAL']": 0.00447191,
+      "Diet_Min['A'].sstatus": "bas"
+    }
+  },
+  {
+    "name" : "dietu_mip mip:basis=0",
+    "objective" : 74.273820,
+    "tags" : ["linear", "continuous"],
+    "options": { "ANYSOLVER_options": "mip:basis=0" },
+    "values": {
+      "Buy['BEEF'].sstatus": "bas",
+      "Buy['MTL'].sstatus":  "upp",
+      "Diet_Min['C']": 0,
+      "Diet_Min['CAL']": 0
+    }
+  },
+  {
+    "name" : "mipb_int fixedMIP",
+    "objective" : 1,
+    "tags" : ["linear", "continuous"],
+    "values": {
+      "x.sstatus": "low",
+      "y.sstatus": "low",
+      "z.sstatus": "low",
+      "C1": 0,
+      "C1.sstatus": "bas"
+    }
   }
 ]
