@@ -354,32 +354,32 @@ public:
 protected:
   const mp::OptionValueInfo values_01_noyes_0default_[2] = {
       {     "0", "no (default)", 0 },
-      {     "1", "yes", 1}
+      {     "1", "yes.", 1}
   };
 
   const mp::OptionValueInfo values_01_noyes_1default_[2] = {
       {     "0", "no", 0 },
-      {     "1", "yes (default)", 1}
+      {     "1", "yes (default.)", 1}
   };
 
   const mp::OptionValueInfo values_basis_[4] = {
       {     "0", "no", 0 },
       {     "1", "use incoming basis (if provided)", 1},
       {     "2", "return final basis", 2},
-      {     "3", "both (1 + 2 = default).", 3}
+      {     "3", "both (1 + 2 = default.)", 3}
   };
 
   const mp::OptionValueInfo values_warmstart_[3] = {
       {     "0", "no", 0 },
       {     "1", "yes (for LP: if there is no incoming alg:basis) (default)", 1},
-      {     "2", "yes (for LP: ignoring the incoming alg:basis, if any)", 2}
+      {     "2", "yes (for LP: ignoring the incoming alg:basis, if any.)", 2}
   };
 
   const mp::OptionValueInfo values_rays_[4] = {
       {     "0", "neither", 0 },
       {     "1", "just .unbdd", 1},
       {     "2", "just .dunbdd", 2},
-      {     "3", "both (default)", 3}
+      {     "3", "both (default).", 3}
   };
 
   ////////////////////////////////////////////////////////////////
@@ -387,12 +387,7 @@ protected:
     if (IMPL_HAS_STD_FEATURE( BASIS ))
       AddStoredOption("alg:basis basis",
                       "Whether to use or return a basis:\n "
-                      "\n.. value-table::\n"
-                      "Note that if you provide a valid starting extreme point, "
-                      "either through primal/dual status, or through warmstart, "
-                      "then Gurobi LP presolve will be disabled. For models where "
-                      "presolve greatly reduces the problem size, "
-                      "this might hurt performance.",
+                      "\n.. value-table::\n",
                       mipStoredOptions_.basis_, values_basis_);
 
     if (IMPL_HAS_STD_FEATURE( WARMSTART ))
@@ -457,24 +452,21 @@ protected:
                         "\n"
                         "|  0 - no (default)\n"
                         "|  1 - yes:  suffixes return on variables are\n"
-                        "    .sensobjlo = smallest objective coefficient\n"
-                        "    .sensobjhi = greatest objective coefficient\n"
-                        "    .senslblo = smallest variable lower bound\n"
-                        "    .senslbhi = greatest variable lower bound\n"
-                        "    .sensublo = smallest variable upper bound\n"
-                        "    .sensubhi = greatest variable upper bound\n"
-                        "  suffixes for constraints are\n"
-                        "    .sensrhslo = smallest right-hand side value\n"
-                        "    .sensrhshi = greatest right-hand side value.\n"
-                          "\n"
-                      "For problems with both integer variables and quadratic constraints, "
-                      "solnsens=0 is assumed quietly.",
+                        "|    .sensobjlo = smallest objective coefficient\n"
+                        "|    .sensobjhi = greatest objective coefficient\n"
+                        "|    .senslblo = smallest variable lower bound\n"
+                        "|    .senslbhi = greatest variable lower bound\n"
+                        "|    .sensublo = smallest variable upper bound\n"
+                        "|    .sensubhi = greatest variable upper bound;"
+                              " suffixes for constraints are\n"
+                        "|    .sensrhslo = smallest right-hand side value\n"
+                        "|    .sensrhshi = greatest right-hand side value.",
                     mipStoredOptions_.solnSens_);
 
     if (IMPL_HAS_STD_FEATURE( FIX_MODEL ))
       AddStoredOption("mip:basis fixmodel mip:fix",
-                      "Whether to compute duals and basis for MIP models: "
-                        "\n"
+                      "Whether to compute duals / basis / sensitivity for MIP models:"
+                        "\n\n"
                         "|  0 - no\n"
                         "|  1 - yes (default).\n",
                     mipStoredOptions_.fixModel_);

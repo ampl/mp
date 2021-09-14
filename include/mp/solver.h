@@ -213,7 +213,7 @@ class SolverOption {
  private:
   std::string name_ {};
   std::vector<std::string> inline_synonyms_ {};
-  const char* description_;
+  std::string description_;
 
   ValueArrayRef values_;
   bool is_flag_;
@@ -269,8 +269,9 @@ class SolverOption {
   void add_synonyms_back(const char* names_list);
 
   // Return/set the option description.
-  const char *description() const { return description_; }
+  const char *description() const { return description_.c_str(); }
   void set_description(const char* d) { description_=d; }
+  void add_to_description(const char* d) { description_ += d; }
 
   // Returns the information about possible values.
   ValueArrayRef values() const { return values_; }

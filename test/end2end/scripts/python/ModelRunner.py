@@ -33,7 +33,7 @@ class ModelRunner(object):
             with t:
                 for (i,r) in enumerate(cr):
                     if m.hasAnyTag(r.getSolver().getUnsupportedTags()):
-                      print("Skipped")
+                      print("Skipped due to unsupported tags")
                       continue
                     r.runAndEvaluate(m)
                     stats = r.getSolutionStats()

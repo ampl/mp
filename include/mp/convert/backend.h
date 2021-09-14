@@ -361,9 +361,9 @@ public:
     }
     if (exportKappa() && 1)
       writer.write("\nkappa value: {}", MP_DISPATCH(Kappa()));
-    if (double ni = MP_DISPATCH( NumberOfIterations() ))
+    if (auto ni = MP_DISPATCH( NumberOfIterations() ))
       writer.write("\n{} simplex iterations", ni);
-    if (double nnd = MP_DISPATCH( NodeCount() ))
+    if (auto nnd = MP_DISPATCH( NodeCount() ))
       writer.write("\n{} branching nodes", nnd);
     writer.write("\n");
     if (solver_msg_extra_.size()) {
@@ -630,6 +630,14 @@ public:
     auto pOption = FindOption(name);
     assert(pOption);
     pOption->set_description(desc);
+  }
+
+  void AddToOptionDescription(const char* name, const char* desc_add) {
+    auto pOption = FindOption(name);
+    assert(pOption);
+    std::string to_add = "\n\n";
+    to_add += desc_add;
+    pOption->add_to_description(to_add.c_str());
   }
 
 

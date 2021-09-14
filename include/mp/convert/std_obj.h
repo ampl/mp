@@ -38,7 +38,7 @@ public:
   const QuadTerms& GetQPTerms() const { return qt_; }
 
   void sort_qp_terms() {
-    qt_.sort_terms();
+    qt_.SortTerms();
   }
 
   /// Testing API

@@ -270,11 +270,15 @@ protected:
   ArrayRef<double> CurrentGrbPoolPrimalSolution();
   double CurrentGrbPoolObjectiveValue() const;
 
+  std::vector<double> GurobiDualSolution_LP();
+  std::vector<double> GurobiDualSolution_QCP();
+
 
   /// REMEMBER Gurobi does not update attributes before calling optimize() etc
   /// Scalar attributes. If (flag), set *flag <-> success,
   /// otherwise fail on error
   int GrbGetIntAttr(const char* attr_id, bool *flag=nullptr) const;
+  /// If (flag), set *flag <-> success, otherwise fail on error
   double GrbGetDblAttr(const char* attr_id, bool *flag=nullptr) const;
   /// Vector attributes. Return empty vector on failure
   std::vector<int> GrbGetIntAttrArray(const char* attr_id,
@@ -286,9 +290,11 @@ protected:
   std::vector<double> GrbGetDblAttrArray(GRBmodel* mdl, const char* attr_id,
     std::size_t size, std::size_t offset=0) const;
 
-  ArrayRef<double> GrbGetDblAttrArray_VarCon(
+  /// varcon: 0 - vars, 1 - constraints
+  std::vector<double> GrbGetDblAttrArray_VarCon(
       const char* attr, int varcon) const;
-  ArrayRef<double> GrbGetDblAttrArray_VarCon(GRBmodel* mdl,
+  /// varcon: 0 - vars, 1 - constraints
+  std::vector<double> GrbGetDblAttrArray_VarCon(GRBmodel* mdl,
       const char* attr, int varcon) const;
 
   /// Set attributes.

@@ -61,6 +61,12 @@ public:
     ae.Negate();
     Add(ae);
   }
+
+  void operator*=(double n) {
+    for (auto& term: *this)
+      term *= n;
+    constant_term_ *= n;
+  }
 };
 
 } // namepsace mp

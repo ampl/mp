@@ -96,9 +96,23 @@ ArrayRef<double> GurobiBackend::PrimalSolution() {
 }
 
 ArrayRef<double> GurobiBackend::DualSolution() {
+  /// Rely on QC coming first
+  auto result = GurobiDualSolution_QCP();
+  auto pi = GurobiDualSolution_LP();
+  result.insert(result.end(), pi.begin(), pi.end());
+  return result;
+}
+
+std::vector<double> GurobiBackend::GurobiDualSolution_LP() {
   return
-    GrbGetDblAttrArray(model_fixed_,
-                       GRB_DBL_ATTR_PI, NumberOfConstraints());
+    GrbGetDblAttrArray_VarCon(model_fixed_, GRB_DBL_ATTR_PI, 1);
+}
+
+std::vector<double> GurobiBackend::GurobiDualSolution_QCP() {
+  int nqc;
+  GRBgetintattr(model_fixed_, GRB_INT_ATTR_NUMQCONSTRS, &nqc);
+  return
+    GrbGetDblAttrArray(model_fixed_, GRB_DBL_ATTR_QCPI, nqc);
 }
 
 double GurobiBackend::ObjectiveValue() const {
@@ -232,7 +246,8 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
 
 void GurobiBackend::InputPrimalDualStart(ArrayRef<double> x0, ArrayRef<double> pi0) {
   GrbSetDblAttrArray(GRB_DBL_ATTR_PSTART, x0);
-  GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, pi0);
+  if (!IsQCP())
+    GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, pi0);
 }
 
 void GurobiBackend::AddMIPStart(ArrayRef<double> x0) {
@@ -426,6 +441,11 @@ void GurobiBackend::ReportGurobiPool() {
 void GurobiBackend::ConsiderGurobiFixedModel() {
   if (!IsMIP())
     return;
+  if (IsQCP()) {
+    int i=0;
+    if (GRBgetintparam(env_, GRB_INT_PAR_QCPDUAL, &i) || i == 0)
+      return;
+  }
   if (GRBmodel* mdl = GRBfixedmodel(model_))
     model_fixed_ = mdl;
   else
@@ -756,20 +776,20 @@ void GurobiBackend::FinishProblemModificationPhase() {
 const mp::OptionValueInfo values_barhomogeneous[] = {
     {"-1", "Only when solving a MIP node relaxation (default)", -1},
     { "0", "Never", 0},
-    { "1", "Always", 1}
+    { "1", "Always.", 1}
 };
 
 const mp::OptionValueInfo values_barorder[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Approximate minimum degree", 0},
-    { "1", "Nested dissection", 1}
+    { "1", "Nested dissection.", 1}
 };
 
 const mp::OptionValueInfo values_iismethod[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Often faster than method 1", 0},
     { "1", "Can find a smaller IIS than method 0", 1},
-    { "2", "Ignore the bound constraints", 2},
+    { "2", "Ignore the bound constraints.", 2},
 };
 
 const mp::OptionValueInfo values_method[] = {
@@ -779,7 +799,7 @@ const mp::OptionValueInfo values_method[] = {
     { "2", "Barrier", 2},
     { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
     { "4", "Deterministic concurrent", 4},
-    { "5", "Deterministic concurrent simplex", 5}
+    { "5", "Deterministic concurrent simplex.", 5}
 };
 
 const mp::OptionValueInfo values_mipfocus[] = {
@@ -787,7 +807,7 @@ const mp::OptionValueInfo values_mipfocus[] = {
           "proving optimality (default)", 0},
     { "1", "Favor finding feasible solutions", 1},
     { "2", "Favor providing optimality", 2},
-    { "3", "Focus on improving the best objective bound", 3},
+    { "3", "Focus on improving the best objective bound.", 3},
 };
 
 const mp::OptionValueInfo values_mipstart_[4] = {
@@ -806,27 +826,36 @@ const mp::OptionValueInfo values_multiobjmethod[] = {
     { "0", "Primal simplex", 0},
     { "1", "Dual simplex", 1},
     {"2", "Ignore warm-start information; use the algorithm "
-        "specified by the method keyword", 2}
+        "specified by the method keyword.", 2}
 };
 
 const mp::OptionValueInfo values_multiobjpre[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Do not use Gurobi's presolve", 0},
     { "1", "Conservative presolve", 1},
-    {"2", "Aggressive presolve, which may degrade lower priority objectives", 2}
+    {"2", "Aggressive presolve, which may degrade lower priority objectives.", 2}
 };
 
 const mp::OptionValueInfo values_nodemethod[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Primal simplex", 0},
     { "1", "Dual simplex", 1},
-    {"2", "Barrier", 2}
+    {"2", "Barrier.", 2}
+};
+
+const mp::OptionValueInfo values_nonconvex[] = {
+    { "-1", "Default choice (currently the same as 1)", -1},
+    { "0", "Complain about nonquadratic terms", 0},
+    { "1", "Complain if Gurobi's presolve cannot discard or "
+           "eliminate nonquadratic terms", 1},
+    { "2", "Translate quadratic forms to bilinear form and use "
+           "spatial branching.", 2}
 };
 
 const mp::OptionValueInfo values_predeprow[] = {
     { "-1", "Only for continuous models (default)", -1},
     { "0", "Never", 0},
-    { "1", "For all models", 1}
+    { "1", "For all models.", 1}
 };
 
 const mp::OptionValueInfo values_predual[] = {
@@ -870,29 +899,35 @@ void GurobiBackend::InitCustomOptions() {
                   GetSolverInvocationName()).c_str());
 
 
+  /// Options basis, sens are created internally if
+  /// std features BASIS / SENSITIVITY are set.
+  /// Change the help text
+  AddToOptionDescription("alg:basis",
+                         "Note that if you provide a valid starting extreme point, "
+                         "either through primal/dual status, or through warmstart, "
+                         "then Gurobi LP presolve will be disabled. For models where "
+                         "presolve greatly reduces the problem size, "
+                         "this might hurt performance."
+      "\n\n"
+      "For problems with "
+      "integer variables and quadratic constraints, "
+      "alg:basis=0 is assumed quietly unless qcp:dual=1 "
+      "is specified.");
+
+  AddToOptionDescription("alg:sens",
+                         "For problems with both integer variables and quadratic constraints, "
+                         "alg:sens=0 is assumed quietly.");
+
+
+  AddSolverOption("alg:method method lpmethod simplex",
+    "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
+    "\n.. value-table::\n", GRB_INT_PAR_METHOD, values_method, -1);
+
 
   AddSolverOption("alg:feasrelaxbigm feasrelaxbigm",
                   "Value of \"big-M\" sometimes used with constraints when doing "
                   "a feasibility relaxation.  Default = 1e6.",
                   GRB_DBL_PAR_FEASRELAXBIGM, 0.0, DBL_MAX);
-
-
-  AddSolverOption("pre:aggfill aggfill", "Amount of fill allowed during aggregation in presolve"
-    "(default -1).", GRB_INT_PAR_AGGFILL, -1, GRB_MAXINT);
-
-
-  AddSolverOption("pre:aggregate aggregate", "0/1*: whether to use aggregation in presolve."
-    "Setting it to 0 can sometimes reduce numerical errors.", GRB_INT_PAR_AGGREGATE, 0, 1);
-
-  AddSolverOption("pre:deprow predeprow",
-    "Whether Gurobi's presolve should remove linearly dependent "
-    "constraint-matrix rows:\n" "\n.. value-table::\n",
-    GRB_INT_PAR_PREDEPROW, values_predeprow, -1);
-
-  AddSolverOption("pre:dual predual",
-    "Whether gurobi's presolve should form the dual of a "
-    "continuous model:\n" "\n.. value-table::\n",
-    GRB_INT_PAR_PREDUAL, values_predual, -1);
 
   AddSolverOption("bar:convtol barconvtol",
     "Tolerance on the relative difference between the primal and dual objectives "
@@ -925,35 +960,6 @@ void GurobiBackend::InitCustomOptions() {
     0.0, 1.0);
 
 
-  /// Option "multiobj" is created internally if
-  /// ThisBackend::IfMultipleObj() returns true.
-  /// Change the help text
-  ReplaceOptionDescription("obj:multi",
-                           "0*/1: Whether to do multi-objective optimization.\n"
-                           "When obj:multi = 1 and several objectives are present, suffixes "
-                           ".objpriority, .objweight, .objreltol, and .objabstol on the "
-                           "objectives are relevant.  Objectives with greater .objpriority "
-                           "values (integer values) have higher priority.  Objectives with "
-                           "the same .objpriority are weighted by .objweight.  Objectives "
-                           "with positive .objabstol or .objreltol are allowed to be "
-                           "degraded by lower priority objectives by amounts not exceeding "
-                           "the .objabstol (absolute) and .objreltol (relative) limits. "
-                           "The objectives must all be linear.  Objective-specific "
-                           "convergence tolerances and method values may be assigned via "
-                           "keywords of the form obj_n_name, such as obj_1_method for the "
-                           "first objective.");
-
-  AddSolverOption("obj:multiobjmethod multiobjmethod",
-    "Choice of optimization algorithm for lower-priority objectives:\n"
-    "\n.. value-table::\n"
-    "The method keyword determines the algorithm to use for the highest "
-    "priority objective.",
-    GRB_INT_PAR_MULTIOBJMETHOD, values_multiobjmethod, -1);
-
-  AddSolverOption("obj:multiobjpre multiobjpre",
-    "How to apply Gurobi's presolve when doing multi-objective optimization:\n"
-    "\n.. value-table::\n",
-    GRB_INT_PAR_MULTIOBJPRE, values_multiobjmethod, -1);
 
   AddSolverOption("mip:focus mipfocus",
     "MIP solution strategy:\n" "\n.. value-table::\n",
@@ -990,6 +996,8 @@ void GurobiBackend::InitCustomOptions() {
       "Dual feasibility tolerance.",
       GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
 
+
+
   AddStoredOption("mip:fixedmethod fixedmethod",
           "Value of \"method\" to use when seeking a basis for MIP problems "
           "when \"mip:basis=1\". Default: if \"method\" is 0 or 1 "
@@ -1011,18 +1019,68 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n", GRB_INT_PAR_VARBRANCH, values_varbranch, -1);
 
 
-  AddSolverOption("tech:outlev outlev",
-      "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.",
-    GRB_INT_PAR_OUTPUTFLAG, 0, 1);
-  SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);
 
-  AddSolverOption("tech:logfreq logfreq outfreq",
-      "Interval in seconds between log lines (default 5).",
-    GRB_INT_PAR_DISPLAYINTERVAL, 1, GRB_MAXINT);
+  /// Option "multiobj" is created internally if
+  /// std feature MULTIOBJ is set.
+  /// Change the help text
+  ReplaceOptionDescription("obj:multi",
+                           "0*/1: Whether to do multi-objective optimization.\n"
+                           "When obj:multi = 1 and several objectives are present, suffixes "
+                           ".objpriority, .objweight, .objreltol, and .objabstol on the "
+                           "objectives are relevant.  Objectives with greater .objpriority "
+                           "values (integer values) have higher priority.  Objectives with "
+                           "the same .objpriority are weighted by .objweight.  Objectives "
+                           "with positive .objabstol or .objreltol are allowed to be "
+                           "degraded by lower priority objectives by amounts not exceeding "
+                           "the .objabstol (absolute) and .objreltol (relative) limits. "
+                           "The objectives must all be linear.  Objective-specific "
+                           "convergence tolerances and method values may be assigned via "
+                           "keywords of the form obj_n_name, such as obj_1_method for the "
+                           "first objective.");
 
-  AddSolverOption("tech:logfile logfile",
-      "Log file name.",
-      GRB_STR_PAR_LOGFILE);
+  AddSolverOption("obj:multiobjmethod multiobjmethod",
+    "Choice of optimization algorithm for lower-priority objectives:\n"
+    "\n.. value-table::\n"
+    "The method keyword determines the algorithm to use for the highest "
+    "priority objective.",
+    GRB_INT_PAR_MULTIOBJMETHOD, values_multiobjmethod, -1);
+
+  AddSolverOption("obj:multiobjpre multiobjpre",
+    "How to apply Gurobi's presolve when doing multi-objective optimization:\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_MULTIOBJPRE, values_multiobjmethod, -1);
+
+
+
+  AddSolverOption("pre:aggfill aggfill", "Amount of fill allowed during aggregation in presolve"
+    "(default -1).", GRB_INT_PAR_AGGFILL, -1, GRB_MAXINT);
+
+
+  AddSolverOption("pre:aggregate aggregate", "0/1*: whether to use aggregation in presolve."
+    "Setting it to 0 can sometimes reduce numerical errors.", GRB_INT_PAR_AGGREGATE, 0, 1);
+
+  AddSolverOption("pre:deprow predeprow",
+    "Whether Gurobi's presolve should remove linearly dependent "
+    "constraint-matrix rows:\n" "\n.. value-table::\n",
+    GRB_INT_PAR_PREDEPROW, values_predeprow, -1);
+
+  AddSolverOption("pre:dual predual",
+    "Whether Gurobi's presolve should form the dual of a "
+    "continuous model:\n" "\n.. value-table::\n",
+    GRB_INT_PAR_PREDUAL, values_predual, -1);
+
+
+  AddSolverOption("qp:nonconvex nonconvex",
+                  "How to handle non-convex quadratic objectives and constraints:\n"
+                  "\n.. value-table::\n",
+    GRB_INT_PAR_NONCONVEX, values_nonconvex, -1);
+
+  AddSolverOption("qcp:dual qcpdual",
+                  "Whether to compute dual variables when the problem "
+                  "has quadratic constraints (which can be expensive):\n"
+                  "\n.. value-table::\n",
+    GRB_INT_PAR_QCPDUAL, values_01_noyes_0default_, 0);
+
 
 
   /// Solution pool parameters
@@ -1046,7 +1104,7 @@ void GurobiBackend::InitCustomOptions() {
   AddOptionSynonymsFront("ams_stub", "sol:stub");
 
   /// Option "solutionstub" is created internally if
-  /// ThisBackend::IfMultipleSol() returns true.
+  /// std feature MULTISOL is set.
   /// Change the help text
   ReplaceOptionDescription("sol:stub",
                            "Stub for alternative MIP solutions, written to files with "
@@ -1062,15 +1120,6 @@ void GurobiBackend::InitCustomOptions() {
                            "sol:pool... parameters. Value 1 implied by sol:stub.");
 
 
-  AddSolverOption("alg:method method lpmethod",
-    "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
-    "\n.. value-table::\n", GRB_INT_PAR_METHOD, values_method, -1);
-
-  AddSolverOption("tech:threads threads",
-      "How many threads to use when using the barrier algorithm\n"
-      "or solving MIP problems; default 0 ==> automatic choice.",
-      GRB_INT_PAR_THREADS, 0, GRB_MAXINT);
-
 
   AddSolverOption("lim:iter iterlim iterlimit",
     "Iteration limit (default: no limit).",
@@ -1085,6 +1134,23 @@ void GurobiBackend::InitCustomOptions() {
       GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
 
 
+  AddSolverOption("tech:outlev outlev",
+      "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.",
+    GRB_INT_PAR_OUTPUTFLAG, 0, 1);
+  SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);
+
+  AddSolverOption("tech:logfreq logfreq outfreq",
+      "Interval in seconds between log lines (default 5).",
+    GRB_INT_PAR_DISPLAYINTERVAL, 1, GRB_MAXINT);
+
+  AddSolverOption("tech:logfile logfile",
+      "Log file name.",
+      GRB_STR_PAR_LOGFILE);
+
+  AddSolverOption("tech:threads threads",
+      "How many threads to use when using the barrier algorithm\n"
+      "or solving MIP problems; default 0 ==> automatic choice.",
+      GRB_INT_PAR_THREADS, 0, GRB_MAXINT);
 
   AddStoredOption("tech:writeprob writeprob exportfile",
       "Specifies the name of a file where to export the model before "
@@ -1209,11 +1275,11 @@ std::vector<double> GurobiBackend::GrbGetDblAttrArray(
   return res;
 }
 
-ArrayRef<double> GurobiBackend::GrbGetDblAttrArray_VarCon(
+std::vector<double> GurobiBackend::GrbGetDblAttrArray_VarCon(
     const char* attr, int varcon) const
 { return GrbGetDblAttrArray_VarCon(model_, attr, varcon); }
 
-ArrayRef<double> GurobiBackend::GrbGetDblAttrArray_VarCon(
+std::vector<double> GurobiBackend::GrbGetDblAttrArray_VarCon(
     GRBmodel* mdl, const char* attr, int varcon) const {
   return GrbGetDblAttrArray(mdl, attr,
                             varcon ? NumberOfConstraints() :

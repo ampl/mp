@@ -569,7 +569,7 @@ Solver::Solver(
         "| 1 - write ``.sol`` file\n"
         "| 2 - primal variables to stdout\n"
         "| 4 - dual variables to stdout\n"
-        "| 8 - suppress solution message\n",
+        "| 8 - suppress solution message.",
         &Solver::GetWantSol, &Solver::SetWantSol);
 
   AddIntOption(
@@ -667,7 +667,7 @@ bool Solver::ShowVersion() {
 
 SolverOption *Solver::FindOption(const char *name) const {
   struct DummyOption : SolverOption {
-    DummyOption(const char *name) : SolverOption(name, 0) {}
+    DummyOption(const char *name) : SolverOption(name, "") {}
     void Write(fmt::Writer &) {}
     void Parse(const char *&) {}
   };

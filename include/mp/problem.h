@@ -53,6 +53,7 @@ class LinearExpr {
     int var_index() const { return var_index_; }
     double coef() const { return coef_; }
     void set_coef(double c) { coef_=c; }
+    void operator*=(double n) { coef_*=n; }
   };
   std::vector<Term> terms_;
 
@@ -102,10 +103,11 @@ class LinearExpr {
       AddTerm(v[i], c[i]);
   }
 
-
   void Reserve(std::size_t num_terms) {
     terms_.reserve(num_terms);
   }
+
+  void SortTerms();
 };
 
 class Solver;

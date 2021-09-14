@@ -422,6 +422,19 @@ public:
       PowConstraint::Parameters{ 2.0 } ) ); */
   }
 
+  EExpr VisitPow(BinaryExpr e) {
+    auto el = Convert2EExpr(e.lhs());
+    auto er = Convert2EExpr(e.rhs());
+    if (er.is_constant() && 2.0==er.constant_term())
+      return QuadratizeOrLinearize(el, el);
+    else
+      MP_RAISE("Unsupported: general ^");
+    /* TODO Can do better for integer variables if we redefine pow:
+    return AssignResultToArguments( PowConstraint(
+      PowConstraint::Arguments{ Convert2Var(e.arg()) },
+      PowConstraint::Parameters{ 2.0 } ) ); */
+  }
+
   EExpr VisitSqrt(UnaryExpr e) {
     return AssignResultToArguments( PowConstraint(
       PowConstraint::Arguments{ Convert2Var(e.arg()) },
@@ -475,23 +488,31 @@ public:
   }
 
   EExpr MultiplyOut(const EExpr& el, const EExpr& er) {
-    assert(el.is_affine() && er.is_affine());
+    assert((el.is_affine() && er.is_affine()) ||
+           (el.is_constant() || er.is_constant()));
     EExpr result;
-    result.constant_term(el.constant_term() * er.constant_term());
-    if (0.0!=std::fabs(er.constant_term()))
-      for (const auto& term: el.GetAE()) {
-        result.AddLinearTerm(term.var_index(), term.coef() * er.constant_term());
+    if (0.0!=std::fabs(er.constant_term())) {
+      result.GetAE().Add(el.GetAE());
+      result.GetAE() *= er.constant_term();
+      result.GetQT().AddTerms(el.GetQT());
+      result.GetQT() *= er.constant_term();
+    }
+    if (0.0!=std::fabs(el.constant_term())) {
+      {
+        AffineExpr ae2 = er.GetAE();
+        ae2 *= el.constant_term();
+        result.GetAE().AddTerms(ae2);
       }
-    if (0.0!=std::fabs(el.constant_term()))
-      for (const auto& term: er.GetAE()) {
-        result.AddLinearTerm(term.var_index(), term.coef() * el.constant_term());
-      }
+      result.GetQT().Add(er.GetQT());
+      result.GetQT() *= el.constant_term();
+    }
     for (const auto& termL: el.GetAE()) {
       for (const auto& termR: er.GetAE()) {
         result.AddQuadraticTerm(termL.var_index(), termR.var_index(),
                                 termL.coef() * termR.coef());
       }
     }
+    result.SortTerms();
     return result;
   }
 

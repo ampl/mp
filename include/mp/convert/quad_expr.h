@@ -19,7 +19,7 @@ public:
     Reserve(quad_terms.size());
     for (const auto& term: quad_terms)
       AddTerm(std::get<0>(term), std::get<1>(term), std::get<2>(term));
-    sort_terms();
+    SortTerms();
   }
 
   bool empty() const { return coefs_.empty(); }
@@ -69,8 +69,13 @@ public:
     Add(ae);
   }
 
+  void operator*=(double n) {
+    for (auto& c: coefs_)
+      c *= n;
+  }
 
-  void sort_terms() {
+
+  void SortTerms() {
     auto sort_pair = [](int a, int b) {
       return a<b ? std::pair<int, int>(a, b) : std::pair<int, int>(b, a);
     };
@@ -144,6 +149,12 @@ public:
     GetAE().Negate();
     GetQT().Negate();
   }
+
+  void SortTerms() {
+    GetAE().SortTerms();
+    GetQT().SortTerms();
+  }
+
 private:
   AffineExpr ae_;
   QuadTerms qt_;

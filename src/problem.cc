@@ -26,6 +26,18 @@
 
 namespace mp {
 
+void LinearExpr::SortTerms() {
+  std::map<int, double> var_coef_map;
+  for (int i=0; i<num_terms(); ++i)
+    if (0.0!=std::fabs(coef(i)))
+      var_coef_map[var_index(i)] += coef(i);
+  terms_.clear();
+  for (const auto& vc: var_coef_map) {
+    if (0.0!=std::fabs(vc.second))
+      AddTerm(vc.first, vc.second);
+  }
+}
+
 template <typename Alloc>
 int BasicProblem<Alloc>::GetSuffixSize(suf::Kind kind) {
   std::size_t size = 0;
