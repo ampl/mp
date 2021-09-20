@@ -100,11 +100,8 @@ ArrayRef<double> GurobiBackend::PrimalSolution() {
 }
 
 ArrayRef<double> GurobiBackend::DualSolution() {
-  /// Rely on QC coming first
-  auto result = GurobiDualSolution_QCP();
-  auto pi = GurobiDualSolution_LP();
-  result.insert(result.end(), pi.begin(), pi.end());
-  return result;
+  return MakeDualsFromLPAndQCPDuals(
+        GurobiDualSolution_LP(), GurobiDualSolution_QCP());
 }
 
 std::vector<double> GurobiBackend::GurobiDualSolution_LP() {

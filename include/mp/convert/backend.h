@@ -797,6 +797,16 @@ protected:
     return result;
   }
 
+  /// Convenience method
+  /// Gurobi reports duals separately for linear and QCP constraints
+  /// We rely on QCP ones coming first in NL
+  static
+      std::vector<double> MakeDualsFromLPAndQCPDuals(
+        std::vector<double> pi, std::vector<double> qcpi) {
+    qcpi.insert(qcpi.end(), pi.begin(), pi.end());
+    return qcpi;
+  }
+
 public:
   BasicBackend() :
     MPSolverBase(
