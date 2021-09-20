@@ -211,6 +211,7 @@ public:
 
   ///////////////////// Model attributes /////////////////////
   bool IsMIP() const;
+  bool IsQP() const;
   bool IsQCP() const;
 
   int NumberOfConstraints() const;

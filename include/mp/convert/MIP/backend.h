@@ -40,7 +40,14 @@ class MIPBackend :
 
 public:
   // Properties
-  bool IsMIP() const { UNSUPPORTED( "IsMIP()" ); }
+  bool IsMIP() const { return false; }
+  bool IsQP() const { return false; }
+  bool IsQCP() const { return false; }
+  /// Always add MIP start if supported:
+  /// Gurobi 9.1.2 solves non-convex Q(C)P as MIP
+  /// But model attributes don't work before solve
+  /// TODO count non-linear stuff in the model
+  bool CanBeMIP() const { return true; }
 
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
@@ -159,7 +166,9 @@ public:
   }
 
   void InputStartValues() {
-    if (MP_DISPATCH( IsMIP() )) {
+    /// Always
+    MP_DISPATCH( InputPrimalDualStartOrBasis() );
+    if ( MP_DISPATCH( CanBeMIP() )) {
       if (warmstart() &&
           IMPL_HAS_STD_FEATURE( MIPSTART )) {
         MP_DISPATCH( AddMIPStart(
@@ -169,8 +178,7 @@ public:
                        MP_DISPATCH( InitialValues() ));
         }                                      // Impl uses them?
       }
-    } else
-      MP_DISPATCH( InputPrimalDualStartOrBasis() );
+    }
   }
 
   void InputPrimalDualStartOrBasis() {

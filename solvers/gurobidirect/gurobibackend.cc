@@ -70,6 +70,10 @@ bool GurobiBackend::IsMIP() const {
   return 1 == GrbGetIntAttr(GRB_INT_ATTR_IS_MIP);
 }
 
+bool GurobiBackend::IsQP() const {
+  return 1 == GrbGetIntAttr(GRB_INT_ATTR_IS_QP);
+}
+
 bool GurobiBackend::IsQCP() const {
   return 1 == GrbGetIntAttr(GRB_INT_ATTR_IS_QCP);
 }
