@@ -69,16 +69,16 @@ class CSVTestExporter(Exporter):
         return "Name, Expected Solution, Solution, Time, Time Limit, SolverMsg\n"
 
     def getStringSingleRun(self, m, r):
-        return "{}, {}, {}, {}, {}, {}\n".format(m.getName(), m.getExpectedSolution(), r["solution"], r["solutionTime"], r["timelimit"], self.sanifyString(r["outmsg"]))
+        return "{}, {}, {}, {}, {}, {}\n".format(m.getName(), m.getExpectedObjective(), r["solution"], r["solutionTime"], r["timelimit"], self.sanifyString(r["outmsg"]))
 
     def getHeaderCompareRun(self, mc: ModelComparer):
         (r1, r2) = mc.getRunnerNames()
         return "Name, Expected Solution, {}-Solution, {}-Time, {}-TimeLimit, {}-Solution, {}-Time, {}-TimeLimit, {}-SolverMsg, {}-SolverMsg\n".format(r1, r1, r1, r2, r2, r2, r1, r2)
 
     def getStringCompareRun(self, m, r1, r2):
-        return "{}, {}, {}, {}, {}, {}, {}, {}, {}, {}\n".format(m.getName(), m.getExpectedSolution(),
-                                                                 r1["solution"], r1["solutionTime"], r1["timelimit"],
-                                                                 r2["solution"], r2["solutionTime"], r2["timelimit"],
+        return "{}, {}, {}, {}, {}, {}, {}, {}, {}, {}\n".format(m.getName(), m.getExpectedObjective(),
+                                                                 r1["objective"], r1["solutionTime"], r1["timelimit"],
+                                                                 r2["objective"], r2["solutionTime"], r2["timelimit"],
                                                                  self.sanifyString(r1["outmsg"]), self.sanifyString(r2["outmsg"]))
 
     def export(self, mr: ModelRunner):

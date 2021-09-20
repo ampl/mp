@@ -12,7 +12,8 @@ class ModelTags(enum.Enum):
     nonlinear = 4
     quadraticnonsdp = 5,
     complementarity = 6,
-    arc = 7
+    arc = 7,
+    plinear = 8
 
     continuous = 10,
     integer = 11,

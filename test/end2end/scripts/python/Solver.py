@@ -50,7 +50,7 @@ class Solver(object):
         return self._doParseSolution(st, stdout)
 
     def _evaluateRun(self, model: Model):
-        expsol = model.getExpectedSolution()
+        expsol = model.getExpectedObjective()
         if expsol is not None:
             self._stats["eval_done"] = True
             self._assertAndRecord(expsol, self._stats["solution"],
@@ -370,3 +370,35 @@ class OcteractSolver(AMPLSolver):
                 n = l[l.index(tag) + len(tag):]
                 self._stats["solution"] = float(n)
                 return
+
+
+class COPTSolver(AMPLSolver):
+    def _setTimeLimit(self, seconds):
+        return "timelimit={}".format(seconds)
+
+    def _setNThreads(self, threads):
+        return "threads={}".format(threads)
+
+    def _getAMPLOptionsName(self):
+        return "copt"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        utagss = [ModelTags.nonlinear, ModelTags.log, ModelTags.logical,
+                  ModelTags.plinear]
+        super().__init__(exeName, timeout, nthreads, otherOptions, utagss)
+
+    def _doParseSolution(self, st, stdout=None):
+        if not st:
+            self._stats["outmsg"] = "Solution file empty"
+            self._stats["timelimit"] = False
+            return None
+        self._stats["outmsg"] = st[0]
+        self._stats["timelimit"] = "time limit" in st[0]
+        tag = "objective "
+        if tag in st[0]:
+            n = st[0][st[0].index(tag) + len(tag):]
+            try:
+              self._stats["solution"] = float(n)
+            except:
+              print("No solution, string: {}".format(n))
+              self._stats["solution"] = None

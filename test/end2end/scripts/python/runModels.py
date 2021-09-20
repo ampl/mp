@@ -16,7 +16,7 @@ def writeNLFiles(directory, recursive=False):
         amplRunner.writeNL(m)
 
 
-def runModels(directory, solvers,
+def runModels(directory, solvers : list,
               exporter=None, exportFile=None, modellist=True, justNL=False,
               recursive=False, preferAMPLModels=False):
     """Convenient wrapper function for testing.
@@ -38,13 +38,16 @@ def runModels(directory, solvers,
           recursive : bool - If True, finds models in the subdirectories also
           preferAMPLModels:bool - If True, executes the AMPL version of a model if both NL and AMPL versions are present.
     """
-    solvernames = [slv.getExecutable() for slv in solvers]
+    solvernames = [Path(slv.getExecutable()).stem for slv in solvers]
     if not exporter:
         if not exportFile:
             ename = "-".join(solvernames)
             exportFile = "run-{}-{}-{}.csv".format(Path(directory).stem, platform, ename)
         exporter = CSVTestExporter(exportFile)
-    runner = ModelRunner(solvers)
+    if len(solvers) == 1:
+      runner = ModelRunner(solvers)
+    else:
+      runner = ModelComparer(solvers[0], solvers[1])
 
     m = ModelsDiscovery()
     modelList = m.FindModelsGeneral(directory, recursive=recursive,
@@ -61,4 +64,3 @@ def runModels(directory, solvers,
         msg += '.'
         print(msg)
         runner.run(modelList, exporter)
-
