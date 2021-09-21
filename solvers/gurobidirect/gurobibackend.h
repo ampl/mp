@@ -141,9 +141,12 @@ public:
   ArrayRef<double> Sensrhslo() const;
   ArrayRef<double> Sensubhi() const;
   ArrayRef<double> Sensublo() const;
+  /**
+  * FixModel - duals, basis, and sensitivity for MIP
+  * No API to overload,
+  * Impl should check need_fixed_MIP()
+  **/
   ALLOW_STD_FEATURE( FIX_MODEL, true )
-  /** No API to overload,
-   *  Impl should check need_fixed_MIP() **/
 
 
   /////////////////////////////////////////////////////////////////////////////

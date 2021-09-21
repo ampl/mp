@@ -138,11 +138,11 @@ public:
   ArrayRef<double> Sensublo() const { return {}; }
   /**
   * FixModel - duals, basis, and sensitivity for MIP
+  * No API to overload,
+  * Impl should check need_fixed_MIP()
   **/
   DEFINE_STD_FEATURE( FIX_MODEL )
   ALLOW_STD_FEATURE( FIX_MODEL, false )
-  /** No API to overload,
-   *  Impl should check need_fixed_MIP() **/
 
 
   ////////////////////////////////////////////////////////////////////////////
@@ -166,18 +166,9 @@ public:
   }
 
   void InputStartValues() {
-    /// Always
-    MP_DISPATCH( InputPrimalDualStartOrBasis() );
+    MP_DISPATCH( InputPrimalDualStartOrBasis() ); /// Always
     if ( MP_DISPATCH( CanBeMIP() )) {
-      if (warmstart() &&
-          IMPL_HAS_STD_FEATURE( MIPSTART )) {
-        MP_DISPATCH( AddMIPStart(
-                       MP_DISPATCH( InitialValues() ) ) );
-        if (debug_mode()) {                    // Report received initials
-          ReportSuffix(suf_testMIPini,         // Should we check that
-                       MP_DISPATCH( InitialValues() ));
-        }                                      // Impl uses them?
-      }
+      MP_DISPATCH( InputMIPStart() );
     }
   }
 
@@ -209,6 +200,18 @@ public:
         ReportSuffix(suf_testvarstatus, varstt); // Should we check that
         ReportSuffix(suf_testconstatus, constt); // Impl uses them?
       }
+    }
+  }
+
+  void InputMIPStart() {
+    if (warmstart() &&
+        IMPL_HAS_STD_FEATURE( MIPSTART )) {
+      MP_DISPATCH( AddMIPStart(
+                     MP_DISPATCH( InitialValues() ) ) );
+      if (debug_mode()) {                    // Report received initials
+        ReportSuffix(suf_testMIPini,         // Should we check that
+                     MP_DISPATCH( InitialValues() ));
+      }                                      // Impl uses them?
     }
   }
 

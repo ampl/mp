@@ -105,13 +105,12 @@ protected:
   { UNSUPPORTED("BasicBackend::ObjRelTol"); }
   /**
    * MULTISOL support
-  **/
+   * No API to overload,
+   *  Impl should check need_multiple_solutions()
+   *  and call ReportIntermediateSolution(obj, x, pi) for each
+   **/
   DEFINE_STD_FEATURE( MULTISOL )
   ALLOW_STD_FEATURE( MULTISOL, false )
-      /** No API to overload,
-       *  Impl should check need_multiple_solutions()
-       *  and call ReportIntermediateSolution(obj, x) for each
-       **/
   /**
   * Kappa estimate
   **/
@@ -121,11 +120,11 @@ protected:
   { UNSUPPORTED("BasicBackend::Kappa"); }
   /**
   * FeasRelax
+  * No API to overload,
+  * Impl should check feasrelax_IOdata()
   **/
   DEFINE_STD_FEATURE( FEAS_RELAX )
   ALLOW_STD_FEATURE( FEAS_RELAX, false )
-  /** No API to overload,
-   *  Impl should check feasrelax_IOdata() **/
 
 
   ////////////////////////////////////////////////////////////////////////
