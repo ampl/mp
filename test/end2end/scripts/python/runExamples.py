@@ -8,7 +8,7 @@ import SolverCollection
 
 class Tester:
     def __init__(self):
-        self._parser = argparse.ArgumentParser(description='Testing script.')
+        self._parser = argparse.ArgumentParser(description='AMPL solver testing script.')
 
     def runTests(self):
         self.parseOptions()

@@ -162,15 +162,15 @@ class ModelsDiscovery(object):
     def _ReadModelsDescription(self, directory, filename="modellist.json"):
         p = PurePath(directory)
         f = str(p.joinpath(filename))
-        try:
-            with open(f) as json_file:
-                try:
-                    return json.load(json_file)
-                except:
-                    print("Model list file '{}': bad format.".format(f),
-                          sys.exc_info())
-        except:
+        if not Path(f).is_file():
             return None
+        with open(f) as json_file:
+            try:
+                return json.load(json_file)
+            except:
+                print("Model list file '{}': bad format.".format(f),
+                      sys.exc_info())
+                raise
 
     def _CreateModelFindingDescription(self, f, desc):
         n = f.stem
