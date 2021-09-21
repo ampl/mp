@@ -69,7 +69,7 @@ class CSVTestExporter(Exporter):
         return "Name, Expected Solution, Solution, Time, Time Limit, SolverMsg\n"
 
     def getStringSingleRun(self, m, r):
-        return "{}, {}, {}, {}, {}, {}\n".format(m.getName(), m.getExpectedObjective(), r["solution"], r["solutionTime"], r["timelimit"], self.sanifyString(r["outmsg"]))
+        return "{}, {}, {}, {}, {}, {}\n".format(m.getName(), m.getExpectedObjective(), r["objective"], r["solutionTime"], r["timelimit"], self.sanifyString(r["outmsg"]))
 
     def getHeaderCompareRun(self, mc: ModelComparer):
         (r1, r2) = mc.getRunnerNames()
@@ -91,7 +91,7 @@ class CSVTestExporter(Exporter):
             with open(self._fileName, "w") as file:
                 file.write(self.getHeaderSingleRun())
                 for (m, r) in zip(mr._models, mr._runs):
-                    file.write(self.getStringSingleRun(m, r))
+                    file.write(self.getStringSingleRun(m, r[-1]))
 
     def exportOne(self, mr: ModelRunner):
         i = len(mr._runs)

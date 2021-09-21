@@ -44,7 +44,7 @@ def runModels(directory, solvers : list,
             ename = "-".join(solvernames)
             exportFile = "run-{}-{}-{}.csv".format(Path(directory).stem, platform, ename)
         exporter = CSVTestExporter(exportFile)
-    if len(solvers) == 1:
+    if len(solvers) != 2:
       runner = ModelRunner(solvers)
     else:
       runner = ModelComparer(solvers[0], solvers[1])
