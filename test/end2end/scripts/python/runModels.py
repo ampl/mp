@@ -1,5 +1,5 @@
 from ModelsDiscovery import ModelsDiscovery
-from ModelRunner import ModelRunner, ModelComparer
+from ModelRunner import ModelRunner
 from Exporter import CSVTestExporter
 from Solver import Solver, LindoSolver, GurobiSolver, OcteractSolver, CPLEXSolver
 from pathlib import Path
@@ -39,15 +39,13 @@ def runModels(directory, solvers : list,
           preferAMPLModels:bool - If True, executes the AMPL version of a model if both NL and AMPL versions are present.
     """
     solvernames = [Path(slv.getExecutable()).stem for slv in solvers]
+    if not exportFile:
+        exportFile = "run"
+    ename = "-".join(solvernames)
+    exportFile += "-{}-{}-{}.csv".format(Path(directory).stem, platform, ename)
     if not exporter:
-        if not exportFile:
-            ename = "-".join(solvernames)
-            exportFile = "run-{}-{}-{}.csv".format(Path(directory).stem, platform, ename)
         exporter = CSVTestExporter(exportFile)
-    if len(solvers) != 2:
-      runner = ModelRunner(solvers)
-    else:
-      runner = ModelComparer(solvers[0], solvers[1])
+    runner = ModelRunner(solvers)
 
     m = ModelsDiscovery()
     modelList = m.FindModelsGeneral(directory, recursive=recursive,

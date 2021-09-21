@@ -1,4 +1,4 @@
-from ModelRunner import ModelRunner, ModelComparer
+from ModelRunner import ModelRunner
 import math
 
 
@@ -23,36 +23,6 @@ class Exporter(object):
         return True
 
 
-class StringTestExporter(Exporter):
-
-    def printString(self, m, r):
-        print(m.getName(), m.getExpectedSolution(),
-              r["solution"], r["solutionTime"])
-
-    def printStringCompare(self, m, r, r2):
-        print(m.getName(), m.getExpectedSolution(),
-              r["solution"], r["solutionTime"], r2["solution"],
-              r2["solutionTime"])
-
-    def export(self, mr: ModelRunner):
-        if isinstance(mr, ModelComparer):
-            for (m, r, r2) in zip(mr._models, mr._runs, mr._runs2):
-                self.printStringCompare(m, r, r2)
-        else:
-            for (m, r) in zip(mr._models, mr._runs):
-                self.printString(m, r)
-
-    def exportOne(self, mr: ModelRunner):
-        i = len(mr._runs)
-        m = mr._models[i-1]
-        r = mr._runs[i-1]
-        if isinstance(mr, ModelComparer):
-            r2 = mr._runs2[i-1]
-            self.printStringCompare(m, r, r2)
-        else:
-            self.printString(m, r)
-
-
 class CSVTestExporter(Exporter):
     def __init__(self, fileName):
         self._fileName = fileName
@@ -65,49 +35,41 @@ class CSVTestExporter(Exporter):
         except:
           return s
 
-    def getHeaderSingleRun(self):
-        return "Name, Expected Solution, Solution, Time, Time Limit, SolverMsg\n"
-
-    def getStringSingleRun(self, m, r):
-        return "{}, {}, {}, {}, {}, {}\n".format(m.getName(), m.getExpectedObjective(), r["objective"], r["solutionTime"], r["timelimit"], self.sanifyString(r["outmsg"]))
-
-    def getHeaderCompareRun(self, mc: ModelComparer):
-        (r1, r2) = mc.getRunnerNames()
-        return "Name, Expected Solution, {}-Solution, {}-Time, {}-TimeLimit, {}-Solution, {}-Time, {}-TimeLimit, {}-SolverMsg, {}-SolverMsg\n".format(r1, r1, r1, r2, r2, r2, r1, r2)
-
-    def getStringCompareRun(self, m, r1, r2):
-        return "{}, {}, {}, {}, {}, {}, {}, {}, {}, {}\n".format(m.getName(), m.getExpectedObjective(),
-                                                                 r1["objective"], r1["solutionTime"], r1["timelimit"],
-                                                                 r2["objective"], r2["solutionTime"], r2["timelimit"],
-                                                                 self.sanifyString(r1["outmsg"]), self.sanifyString(r2["outmsg"]))
-
-    def export(self, mr: ModelRunner):
-        if isinstance(mr, ModelComparer):
-            with open(self._fileName, "w") as file:
-                file.write(self.getHeaderCompareRun(mr))
-                for (m, r, r2) in zip(mr._models, mr._runs, mr._runs2):
-                    file.write(self.getStringCompareRun(m, r, r2))
-        else:
-            with open(self._fileName, "w") as file:
-                file.write(self.getHeaderSingleRun())
-                for (m, r) in zip(mr._models, mr._runs):
-                    file.write(self.getStringSingleRun(m, r[-1]))
-
-    def exportOne(self, mr: ModelRunner):
-        i = len(mr._runs)
+    def _getHeader(self, mr: ModelRunner):
+        hdr = "Name,\tExpected_Obj"
+        for (i,r) in enumerate(mr.getRuns()):
+            hdr += ",\t{}-Obj,\t{}-Time,\t{}-TimeLimit".format(
+              r[-1]["solver"], r[-1]["solver"], r[-1]["solver"])
+        for (i,r) in enumerate(mr.getRuns()):
+            hdr += ",\t{}-SolverMsg".format(r[-1]["solver"])
+        return hdr
+            
+    def _getLastResultLine(self, mr: ModelRunner):
+        i = len( mr.getRuns()[0] )
         m = mr._models[i-1]
-        r = mr._runs[i-1]
+        res = "{},\t{}".format(m.getName(), m.getExpectedObjective())
+        for (i,r) in enumerate(mr.getRuns()):
+            res += ",\t{},\t{},\t{}".format(
+              self._getDictMemberOrMissingStr(r[-1], "objective"),
+              self._getDictMemberOrMissingStr(r[-1], "solutionTime"),
+              self._getDictMemberOrMissingStr(r[-1], "timelimit"))
+        for (i,r) in enumerate(mr.getRuns()):
+            res += ",\t{}".format(
+              self.sanifyString(
+                self._getDictMemberOrMissingStr(r[-1], "outmsg")))
+        return res
+                
+    def _getDictMemberOrMissingStr(self, dct, key):
+        try:
+            return dct[key]
+        except:
+            return "-"
 
+    def exportInstanceResults(self, mr: ModelRunner):
+        i = len( mr.getRuns()[0] )
         filemode = "w" if i == 1 else "a+"
-        if isinstance(mr, ModelComparer):
-            r2 = mr._runs2[i-1]
-            with open(self._fileName, filemode) as file:
+        with open(self._fileName, filemode) as file:
                 if i == 1:
-                    file.write(self.getHeaderCompareRun(mr))
-                file.write(self.getStringCompareRun(m, r, r2))
-        else:
-            with open(self._fileName, filemode) as file:
-                if i == 1:
-                    file.write(self.getHeaderSingleRun())
-                file.write(self.getStringSingleRun(m, r))
-            self.printStatus(m, r)
+                    file.write( "{}\n".format( self._getHeader(mr) ) )
+                file.write( "{}\n".format( self._getLastResultLine(mr) ) )
+

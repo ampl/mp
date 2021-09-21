@@ -21,8 +21,10 @@ class Tester:
     def parseOptions(self):
         self._parser.add_argument('solvers', metavar='solver', type=str, nargs='+',
                             help='a solver to test')
-        self._parser.add_argument('--binPath', type=str,  default="",
+        self._parser.add_argument('--binPath', type=str, metavar='', default="",
                             help='default path to look for solver executables')
+        self._parser.add_argument('--reportfile', type=str, metavar='', default="report",
+                            help='stub for test report filename, e.g., /tmp/report')
         self._parser.add_argument('--printsolvers', action="store_true",
                             help='print available solvers and exit')
         self._parser.add_argument('--timeout', type=int, metavar='T', default=5,
@@ -35,8 +37,8 @@ class Tester:
                         help='non-recursive case collection')
         self._parser.add_argument('--allfiles', action="store_true",
                         help='collect all .mod, .nl files; otherwise local modellist.json only. ' +
-                                  'If modellist.json is to be used for comparison data, each case name ' +
-                             'should match the file stem')
+                                  'If modellist.json is to be used for comparison data, each case name' +
+                             '\'s first word should match the file stem unless "files" are specified')
         self._parser.add_argument('--preferNL', action="store_true",
                         help='prefer NL models if both AMPL and NL are present')
         self._parser.add_argument('--justNL', action="store_true",
@@ -61,6 +63,7 @@ class Tester:
     def collectAndRunCases(self):
         runModels(self._args.dir,
                   self._solvers.getSolversByNames(self._args.solvers),
+                  exportFile=self._args.reportfile,
                   recursive=not self._args.nonrecursive,
                   modellist=not self._args.allfiles,
                   preferAMPLModels=not self._args.preferNL,
