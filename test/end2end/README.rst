@@ -13,13 +13,15 @@ An open-source solver testing library.
 HOWTOs
 ------
 
-* To **run all tests** for a given ``solver``, enter the command:
+* To **run all tests** for one or several ``solver``s, enter the command:
 
   .. code-block:: console
   
       python3 test/end2end/run.py solver [another_solver [...]]
       
-  The ``solver``'s and ``ampl`` are expected to be on the system path.
+  The ``solver``s and ``ampl`` executables are expected to be on the system path.
+
+* Detailed results are saved into a CSV report file, see ``--reportstub``.
   
 * To run a **subset of the test cases**, ``cd`` into the corresponding
   subfolder of ``test/end2end/cases``, or use the ``--dir`` or

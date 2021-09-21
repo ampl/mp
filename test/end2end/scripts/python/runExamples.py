@@ -23,8 +23,8 @@ class Tester:
                             help='a solver to test')
         self._parser.add_argument('--binPath', type=str, metavar='', default="",
                             help='default path to look for solver executables')
-        self._parser.add_argument('--reportfile', type=str, metavar='', default="report",
-                            help='stub for test report filename, e.g., /tmp/report')
+        self._parser.add_argument('--reportstub', type=str, metavar='', default="report",
+                            help='stub for CSV test report filename, e.g., /tmp/report, default: report')
         self._parser.add_argument('--printsolvers', action="store_true",
                             help='print available solvers and exit')
         self._parser.add_argument('--timeout', type=int, metavar='T', default=5,
@@ -63,7 +63,7 @@ class Tester:
     def collectAndRunCases(self):
         runModels(self._args.dir,
                   self._solvers.getSolversByNames(self._args.solvers),
-                  exportFile=self._args.reportfile,
+                  exportFile=self._args.reportstub,
                   recursive=not self._args.nonrecursive,
                   modellist=not self._args.allfiles,
                   preferAMPLModels=not self._args.preferNL,
