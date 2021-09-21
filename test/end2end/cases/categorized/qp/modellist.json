@@ -37,12 +37,16 @@
     }
   },
   {
-    "name" : "ellipse_nonconvex",
+    "name" : "ellipse_nonconvex testMIPstart",
     "objective" : 0.8,
     "tags" : ["quadraticnonsdp"],
     "options": {
       "gurobi_options": "nonconvex=2",
-      "gurobidirect_options": "nonconvex=2"
+      "gurobidirect_options": "nonconvex=2 debug=1"
+    },
+    "values": {
+      "_var[1].test_ini_mip": 0.5,
+      "_var[2].test_ini_mip": 1
     }
   }
 ]
