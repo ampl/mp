@@ -114,7 +114,7 @@ class ModelsDiscovery(object):
         self._desc = None
         p = Path(directory)
         self._stem = p.stem
-        _desc  = self._ReadModelsDescription(directory)
+        self._desc  = self._ReadModelsDescription(directory)
         base = [f for f in p.iterdir() if not f.is_dir()
                 and f.suffix == ".mod"][0]
         if not base:
@@ -124,7 +124,7 @@ class ModelsDiscovery(object):
         models = []
         for f in files:
             n = f.stem
-            if _desc:
+            if self._desc:
                 md = next(
                     (item for item in self._desc if item["name"] == n), None)
                 if md:
