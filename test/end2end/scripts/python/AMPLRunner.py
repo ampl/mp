@@ -146,7 +146,7 @@ class AMPLRunner(object):
       return None
 
     def doInit(self, model: Model):
-        self.stats = { "solver": self._solver.getExecutable() }
+        self.stats = { "solver": self._solver.getName() }
         self._initAMPL()
         self._lastError = None
 

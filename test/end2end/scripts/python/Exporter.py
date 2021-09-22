@@ -12,7 +12,7 @@ class Exporter(object):
     def printStatus(self, model, run):
         if "eval_done" in run:                # Evaluation happened
             if "eval_fail_msg" not in run:    # Evaluation ok
-                print("  Ok.", end='')
+                print("  Ok.", end='', flush=True)
             else:
                 print("          FAILED({}): {}\n{: <80}".format(
                     run["solver"], run["eval_fail_msg"], ' '),
