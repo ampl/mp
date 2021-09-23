@@ -113,7 +113,12 @@ path mp::GetExecutablePath() {
 }
 
 # else
-#  error GetExecutablePath is not implemented for this system
+
+path mp::GetExecutablePath() {
+  throw "GetExecutablePath() is not implemented for this system";
+  return path("");
+}
+
 # endif
 
 // POSIX implementation.
