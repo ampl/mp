@@ -186,3 +186,7 @@ Links
 `SolverStudio for Excel <http://solverstudio.org/languages/ampl/>`_
 
 `AMPL models by Håkan Kjellerstrand <http://www.hakank.org/ampl/>`_
+
+
+我弄的
+
