@@ -997,6 +997,18 @@ void GurobiBackend::InitCustomOptions() {
       "Dual feasibility tolerance.",
       GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
 
+  AddSolverOption("mip:intfocus integralityfocus intfocus",
+                  "Setting this parameter to 1 requests the solver to work "
+                  "harder at finding solutions that are still (nearly) feasible "
+                  "when all integer variables are rounded to exact integral "
+                  "values to avoid numerical issues such as trickle flow:\n"
+                  "\n.. value-table::\n",
+      GRB_INT_PAR_INTEGRALITYFOCUS, values_01_noyes_0default_, 0);
+
+  AddToOptionDescription("mip:round",
+                         "For problems with numerical issues such as trickle flow, "
+                         "option \"mip:intfocus\" can be more reliable.");
+
 
 
   AddStoredOption("mip:fixedmethod fixedmethod",

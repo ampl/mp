@@ -1,0 +1,28 @@
+[
+  {
+    "name": "mip_round_01",
+    "tags": [ "linear"],
+    "values": {
+      "x": 0.0,
+      "b": 0
+    }
+  },
+  {
+    "name": "mip_round_01 mip:round=0",
+    "tags": [ "linear"],
+    "options": { "ANYSOLVER_options": "round=0" },
+    "values": {
+      "x": 0.0,
+      "b": 0
+    }
+  },
+  {
+    "name": "mip_round_01 mip:intfocus=1",
+    "tags": [ "linear"],
+    "options": { "ANYSOLVER_options": "integralityfocus=1" },
+    "values": {
+      "x": 0.0,
+      "b": 0
+    }
+  }
+]

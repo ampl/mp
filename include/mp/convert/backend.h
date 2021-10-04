@@ -21,6 +21,7 @@
 #ifndef BACKEND_H_
 #define BACKEND_H_
 
+#include <cmath>
 #include <stdexcept>
 
 #include "mp/clock.h"
@@ -31,11 +32,15 @@
 #include "mp/convert/model.h"
 #include "mp/convert/model_adapter.h"
 
+/// Issue this if you redefine std feature switches
+#define USING_STD_FEATURES using BaseBackend::STD_FEATURE_QUERY_FN
+/// Default switch for unmentioned std features,
+/// can be used to override base class' settings
 #define DEFAULT_STD_FEATURES_TO( val ) \
   template <class FeatureStructName> \
   static constexpr bool STD_FEATURE_QUERY_FN( \
     const FeatureStructName& ) { return val; }
-/// And default them, but need to repeat in Impl
+/// And default them
 DEFAULT_STD_FEATURES_TO( false )
 #define DEFINE_STD_FEATURE( name ) \
   struct STD_FEATURE_STRUCT_NM( name ) { };
@@ -44,7 +49,7 @@ DEFAULT_STD_FEATURES_TO( false )
     const STD_FEATURE_STRUCT_NM( name )& ) { return val; }
 #define IMPL_HAS_STD_FEATURE( name ) MP_DISPATCH_STATIC( \
   STD_FEATURE_QUERY_FN( \
-    typename Impl::STD_FEATURE_STRUCT_NM( name )() ) )
+    STD_FEATURE_STRUCT_NM( name )() ) )
 #define STD_FEATURE_QUERY_FN AllowStdFeature__func
 #define STD_FEATURE_STRUCT_NM( name ) StdFeatureDesc__ ## name
 
@@ -125,6 +130,12 @@ protected:
   **/
   DEFINE_STD_FEATURE( FEAS_RELAX )
   ALLOW_STD_FEATURE( FEAS_RELAX, false )
+      /**
+      * MIP solution rounding
+      * Nothing to do for the Impl, enabled by default
+      **/
+      DEFINE_STD_FEATURE( WANT_ROUNDING )
+      ALLOW_STD_FEATURE( WANT_ROUNDING, true )
 
 
   ////////////////////////////////////////////////////////////////////////
@@ -263,8 +274,8 @@ public:
   }
 
   void ObtainSolutionStatus() {
-    solve_status = MP_DISPATCH(
-          ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code) );
+    solve_status_ = MP_DISPATCH(
+          ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code_) );
   }
 
   void InputFeasRelaxData() {
@@ -312,6 +323,7 @@ public:
 
   void ReportCustomSuffixes() { }
 
+  /// Callback
   void ReportIntermediateSolution(
         double obj_value,
         ArrayRef<double> solution, ArrayRef<double> dual_solution) {
@@ -323,8 +335,11 @@ public:
                    MP_DISPATCH( FormatObjValue(obj_value) ));
     }
     writer.write("\n");
+    auto sol = solution.move_or_copy();
+    if (round() && MP_DISPATCH(IsMIP()))
+      RoundSolution(sol, writer);
     HandleFeasibleSolution(writer.c_str(),
-                   solution.empty() ? 0 : solution.data(),
+                   sol.empty() ? 0 : sol.data(),
                    dual_solution.empty() ? 0 : dual_solution.data(),
                    obj_value);
   }
@@ -333,8 +348,8 @@ public:
     double obj_value = std::numeric_limits<double>::quiet_NaN();
     
     fmt::MemoryWriter writer;
-    writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status);
-    if (solve_code < sol::INFEASIBLE) {
+    writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status_);
+    if (solve_code_ < sol::INFEASIBLE) {
       if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
         if(multiobj() && MP_DISPATCH(NumberOfObjectives()) > 1)
         {
@@ -368,10 +383,12 @@ public:
     if (solver_msg_extra_.size()) {
       writer.write(solver_msg_extra_);
     }
-    auto solution = MP_DISPATCH( PrimalSolution() );
+    auto sol = MP_DISPATCH( PrimalSolution() ).move_or_copy();
+    if (round() && MP_DISPATCH(IsMIP()))
+      RoundSolution(sol, writer);
     auto dual_solution = MP_DISPATCH( DualSolution() );  // Try in any case
-    HandleSolution(solve_code, writer.c_str(),
-                   solution.empty() ? 0 : solution.data(),
+    HandleSolution(solve_code_, writer.c_str(),
+                   sol.empty() ? 0 : sol.data(),
                    dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
   }
 
@@ -383,35 +400,78 @@ public:
                        stats.setup_time, stats.solution_time, output_time) );
   }
 
+  void RoundSolution(std::vector<double>& sol,
+                     fmt::MemoryWriter& writer) {
+    auto rndres = DoRound(sol);
+    if (rndres.first) {
+      ModifySolveCodeAndMessageAfterRounding(rndres, writer);
+    }
+  }
+
+  std::pair<int, double> DoRound(std::vector<double>& sol) {
+    int nround = 0;
+    double maxmodif = 0.0;
+    const bool fAssign = round() & 1;
+    const auto& fInt = IsVarInt();
+    for (auto j = std::min(fInt.size(), sol.size()); j--; ) {
+      if (fInt[j]) {
+        auto y = std::round(sol[j]);
+        auto d = std::fabs(sol[j]-y);
+        if (0.0!=d) {
+          ++nround;
+          if (maxmodif < d)
+            maxmodif = d;
+          if (fAssign)
+            sol[j] = y;
+        }
+      }
+    }
+    return {nround, maxmodif};
+  }
+
+  void ModifySolveCodeAndMessageAfterRounding(
+        std::pair<int, double> rndres, fmt::MemoryWriter& writer) {
+    if (round() & 2 && IsSolStatusRetrieved()) {
+      solve_code_ = 3 - (round() & 1);
+    }
+    if (round() & 4) {
+      auto sc = rndres.first > 1 ? "s" : "";
+      writer.write(
+            "\n{} integer variable{} {}rounded to integer{};"
+      " maxerr = {:.16}", rndres.first, sc,
+            round() & 1 ? "" : "would be ", sc, rndres.second);
+    }
+  }
+
   //////////////////////// SOLUTION STATUS ADAPTERS ///////////////////////////////
   /** Following the taxonomy of the enum sol, returns true if
       we have an optimal solution or a feasible solution for a 
       satisfaction problem */
   bool IsProblemSolved() const {
     assert(IsSolStatusRetrieved());
-    return solve_code == sol::SOLVED;
+    return solve_code_ == sol::SOLVED;
 
   }
   bool IsProblemInfOrUnb() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<=solve_code &&
-        sol::UNBOUNDED>=solve_code;
+    return sol::INFEASIBLE<=solve_code_ &&
+        sol::UNBOUNDED>=solve_code_;
   }
 
   bool IsProblemInfeasible() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<=solve_code &&
-        sol::UNBOUNDED>solve_code;
+    return sol::INFEASIBLE<=solve_code_ &&
+        sol::UNBOUNDED>solve_code_;
   }
 
   bool IsProblemUnbounded() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<solve_code &&
-        sol::UNBOUNDED>=solve_code;
+    return sol::INFEASIBLE<solve_code_ &&
+        sol::UNBOUNDED>=solve_code_;
   }
 
   bool IsSolStatusRetrieved() const {
-    return sol::NOT_CHECKED!=solve_code;
+    return sol::NOT_CHECKED!=solve_code_;
   }
 
   struct Stats {
@@ -503,11 +563,15 @@ protected:
     GetCQ().ReportSuffix(suf, values);
   }
 
+  /// Access underlying model instance
+  const std::vector<bool>& IsVarInt() const {
+    return GetCQ().IsVarInt();
+  }
 
   ///////////////////////// STORING SOLUTON STATUS //////////////////////
 private:
-  int solve_code=sol::NOT_CHECKED;
-  std::string solve_status;
+  int solve_code_=sol::NOT_CHECKED;
+  std::string solve_status_;
 
   ///////////////////////// STORING SOLVER MESSAGES //////////////////////
 private:
@@ -646,6 +710,9 @@ private:
 
     int feasRelax_=0;
     double lbpen_=1.0, ubpen_=1.0, rhspen_=1.0;
+
+    int round_=7;
+    double round_reptol_=1e-9;
   } storedOptions_;
 
   /// Once Impl allows FEASRELAX,
@@ -676,6 +743,12 @@ protected:  //////////// Option accessors ////////////////
   double lbpen() const { return storedOptions_.lbpen_; }
   double ubpen() const { return storedOptions_.ubpen_; }
   double rhspen() const { return storedOptions_.rhspen_; }
+
+  /// Whether to round MIP solution and modify messages
+  int round() const
+  { return IMPL_HAS_STD_FEATURE(WANT_ROUNDING) ? storedOptions_.round_ : 0; }
+  /// MIP solution rounding reporting tolerance
+  double round_reptol() const { return storedOptions_.round_reptol_; }
 
 
 protected:
@@ -713,6 +786,27 @@ protected:
       AddStoredOption("alg:rhspen rhspen", "See alg:feasrelax.",
           storedOptions_.rhspen_);
     }
+
+    if (IMPL_HAS_STD_FEATURE( WANT_ROUNDING )) {
+      AddStoredOption("mip:round round",
+                      "Whether to round integer variables to integral values before "
+                      "returning the solution, and whether to report that the solver "
+                      "returned noninteger values for integer values:  sum of\n"
+                      "\n"
+                      "|  1 ==> round nonintegral integer variables\n"
+                      "|  2 ==> modify solve_result\n"
+                      "|  4 ==> modify solve_message\n"
+                      "\n"
+                      "Default = 7.  Modifications that were or would be made are "
+                      "reported in solve_result and solve_message only if the maximum "
+                      "deviation from integrality exceeded mip:round_reptol.",
+                    storedOptions_.round_);
+      AddStoredOption("mip:round_reptol round_reptol",
+                      "Tolerance for reporting rounding of integer variables to "
+                      "integer values; see \"mip:round\".  Default = 1e-9.",
+                    storedOptions_.round_reptol_);
+    }
+
   }
 
   void InitCustomOptions() { }

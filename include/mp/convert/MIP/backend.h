@@ -55,6 +55,7 @@ public:
   //// To enable, declare ALLOW_STD_FEATURE( name, true ) ////
   /////////// and implement the relevant methods /////////////
   ////////////////////////////////////////////////////////////
+  USING_STD_FEATURES;
   /**
   * Get/Set AMPL var/con statii
   **/

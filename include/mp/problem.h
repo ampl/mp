@@ -280,6 +280,11 @@ public:
   typedef BasicProblemItem<const BasicProblem> ProblemItem;
   typedef BasicProblemItem<BasicProblem> MutProblemItem;
 
+  /// Deprecated
+  const std::vector<bool>& IsVarInt() const {
+    return is_var_int_;
+  }
+
   // An optimization variable.
   template <typename Item>
   class BasicVariable : private Item {

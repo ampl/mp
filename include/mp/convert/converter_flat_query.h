@@ -58,6 +58,10 @@ public:
     GetCvt().HandleFeasibleSolution(msg, x, y, obj);
   }
 
+  const std::vector<bool>& IsVarInt() const override {
+    return GetOutputModel().IsVarInt();
+  }
+
 };
 
 } // namespace mp

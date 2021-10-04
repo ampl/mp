@@ -80,6 +80,16 @@ class ArrayRef {
   operator bool() const { return !empty(); }
   bool empty() const { return 0==size(); }
 
+  /// Move the saved vector if any, otherwise copy
+  std::vector<T> move_or_copy() {
+    if (save_.size()) {
+      data_ = nullptr;
+      size_ = 0;
+      return std::move(save_);
+    }
+    return {begin(), end()};
+  }
+
   const T *data() const { return data_; }
   std::size_t size() const { return size_; }
 

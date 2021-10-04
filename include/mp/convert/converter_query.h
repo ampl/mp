@@ -37,6 +37,8 @@ public:
                               const double *, const double *,
                               double) = 0;
 
+  virtual const std::vector<bool>& IsVarInt() const = 0;
+
 };
 
 } // namespace mp
