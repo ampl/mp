@@ -27,7 +27,7 @@ class DefiningConstraint : public BasicConstraint {
 public:
   static const char* GetConstraintName() { return "DefiningConstraint"; }
   DefiningConstraint(int v=-1) : result_var_(v) {}
-  bool operator==(const DefiningConstraint& dc) {
+  bool operator==(const DefiningConstraint& dc) const {
     return result_var_==dc.result_var_;
   }
   void SetResultVar(int v) { result_var_=v; }
@@ -64,18 +64,19 @@ public:
   using Parameters = Params;
   /// Construct from arguments only
   CustomDefiningConstraint(const Arguments& args) : args_(args) { }
-  CustomDefiningConstraint(Arguments&& args) : args_(std::move(args)) { }
+  CustomDefiningConstraint(Arguments&& args) noexcept :
+    args_(std::move(args)) { }
   /// Construct from arguments and parameters
   /// Might need to use explicit types when using initializer lists,
   /// in order to distinguish from the next 2 constructors
   CustomDefiningConstraint(const Arguments& args, const Parameters& prm) :
     args_(args), params_(prm) { }
-  CustomDefiningConstraint(Arguments&& args, Parameters&& prm) :
+  CustomDefiningConstraint(Arguments&& args, Parameters&& prm) noexcept :
     args_(std::move(args)), params_(std::move(prm)) { }
   /// From resvar and arguments
   CustomDefiningConstraint(int varr, const Arguments& args) :
      DefiningConstraint(varr), args_(args) { }
-  CustomDefiningConstraint(int varr, Arguments&& args) :
+  CustomDefiningConstraint(int varr, Arguments&& args) noexcept :
      DefiningConstraint(varr), args_(std::move(args)) { }
   /////////////////////////////////////////////////////////////////////
   using DefiningConstraint::GetResultVar;

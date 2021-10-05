@@ -12,11 +12,11 @@ class AffineExpr : public LinearExpr {
 public:
   AffineExpr() {}
   AffineExpr(const LinearExpr& ae) : LinearExpr(ae) { }
-  AffineExpr(LinearExpr&& ae) : LinearExpr(std::move(ae)) { }
+  AffineExpr(LinearExpr&& ae) noexcept : LinearExpr(std::move(ae)) { }
   AffineExpr(const AffineExpr& ae) = default;
   AffineExpr(AffineExpr&& ae) = default;
   template <class CV=std::vector<double>, class VV=std::vector<int> >
-  AffineExpr(CV&& coefs, VV&& vars, double const_term) :
+  AffineExpr(CV&& coefs, VV&& vars, double const_term) noexcept :
     LinearExpr(std::forward<CV>(coefs), std::forward<VV>(vars)), constant_term_(const_term) { }
   AffineExpr& operator = (AffineExpr&& ae) = default;
   /// Helper struct to construct AffineExpr from something special

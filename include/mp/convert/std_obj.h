@@ -14,7 +14,7 @@ class LinearObjective {
 public:
   template <class CoefVec=std::initializer_list<double>,
             class VarVec=std::initializer_list<int> >
-  LinearObjective(obj::Type s, CoefVec&& c, VarVec&& v) :
+  LinearObjective(obj::Type s, CoefVec&& c, VarVec&& v) noexcept :
     sense_(s),
     coefs_(std::forward<CoefVec>(c)), vars_(std::forward<VarVec>(v)) { }
   obj::Type obj_sense() const { return sense_; }
@@ -32,7 +32,7 @@ public:
 class QuadraticObjective : public LinearObjective {
   QuadTerms qt_;
 public:
-  QuadraticObjective(LinearObjective&& lc, QuadTerms&& qt) :
+  QuadraticObjective(LinearObjective&& lc, QuadTerms&& qt) noexcept :
     LinearObjective(std::move(lc)), qt_(std::move(qt)) { sort_qp_terms(); }
 
   const QuadTerms& GetQPTerms() const { return qt_; }

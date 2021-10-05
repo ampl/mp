@@ -103,7 +103,7 @@ public:
 class QuadExpr {
 public:
   QuadExpr() { }
-  QuadExpr(AffineExpr&& ae) : ae_(std::move(ae)) { }
+  QuadExpr(AffineExpr&& ae) noexcept : ae_(std::move(ae)) { }
 
   using Constant = AffineExpr::Constant;
   using Variable = AffineExpr::Variable;

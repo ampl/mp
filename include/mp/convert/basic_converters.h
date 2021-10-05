@@ -335,7 +335,8 @@ using Interface = ConverterImpl<Converter, Backend, Model>;
 class ConstraintConversionFailure {
   const std::string msg_;
 public:
-  ConstraintConversionFailure(std::string&& msg) : msg_(std::move(msg)) { }
+  ConstraintConversionFailure(std::string&& msg) noexcept :
+    msg_(std::move(msg)) { }
   const std::string& message() const { return msg_; }
 };
 

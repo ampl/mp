@@ -36,7 +36,7 @@ protected:
 protected:
   void SetResultVar(int r) { prepro_.set_result_var(r); }
 public:
-  BasicFCC(Converter& cvt, Constraint&& fc) :
+  BasicFCC(Converter& cvt, Constraint&& fc) noexcept :
     converter_(cvt), constr_(std::move(fc)) { }
   /// Convert array of arguments into a result expression
   /// possible adding extra constraint(s)
@@ -71,7 +71,7 @@ template <class Converter, class Constraint>
 class FCC : public BasicFCC< FCC<Converter, Constraint>, Converter, Constraint > {
   using Base = BasicFCC< FCC<Converter, Constraint>, Converter, Constraint >;
 public:
-  FCC(Converter& cvt, Constraint&& fc) : Base(cvt, std::move(fc)) { }
+  FCC(Converter& cvt, Constraint&& fc) noexcept : Base(cvt, std::move(fc)) { }
 };
 
 template <class Converter, class Constraint, class Converter2>

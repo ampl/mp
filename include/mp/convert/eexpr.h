@@ -9,7 +9,7 @@ namespace mp {
 class EExpr : public QuadExpr {
 public:
   EExpr() = default;
-  EExpr(AffineExpr&& ae) : QuadExpr(std::move(ae)) { }
+  EExpr(AffineExpr&& ae) noexcept : QuadExpr(std::move(ae)) { }
   EExpr(Constant c) : QuadExpr(c) {}
   EExpr(Variable v) : QuadExpr(v) {}
   EExpr(int i, double c) { AddLinearTerm(i, c); }

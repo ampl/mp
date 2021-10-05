@@ -20,7 +20,7 @@ class LinearConstraint : public BasicConstraint {
 public:
   static const char* GetConstraintName() { return "LinearConstraint"; }
   template <class CV=std::vector<double>, class VV=std::vector<int> >
-  LinearConstraint(CV&& c, VV&& v, double l, double u)
+  LinearConstraint(CV&& c, VV&& v, double l, double u) noexcept
     : coefs_(std::forward<CV>(c)), vars_(std::forward<VV>(v)),
       lb_(l), ub_(u) { assert(coefs_.size()==vars_.size()); preprocess(); }
   template <size_t N>
@@ -104,7 +104,7 @@ class QuadraticConstraint : public LinearConstraint {
   QuadTerms qt_;
 public:
   static const char* GetConstraintName() { return "QuadraticConstraint"; }
-  QuadraticConstraint(LinearConstraint&& lc, QuadTerms&& qt) :
+  QuadraticConstraint(LinearConstraint&& lc, QuadTerms&& qt) noexcept :
     LinearConstraint(std::move(lc)), qt_(std::move(qt)) {
     sort_qp_terms(); // LinearConstr sorts them itself
   }
@@ -175,11 +175,11 @@ public:
   using Arguments = AffineExpr;
   using DefiningConstraint::GetResultVar;
   /// A constructor ignoring result variable: use AssignResultToArguments() then
-  LinearDefiningConstraint(AffineExpr&& ae) :
+  LinearDefiningConstraint(AffineExpr&& ae) noexcept :
     affine_expr_(std::move(ae)) {
     /// TODO sort+merge elements
   }
-  LinearDefiningConstraint(int r, AffineExpr&& ae) :
+  LinearDefiningConstraint(int r, AffineExpr&& ae) noexcept :
     DefiningConstraint(r), affine_expr_(std::move(ae)) {
     /// TODO sort+merge elements
   }
@@ -204,11 +204,11 @@ public:
   using Arguments = QuadExpr;
   using DefiningConstraint::GetResultVar;
   /// A constructor ignoring result variable: use AssignResultToArguments() then
-  QuadraticDefiningConstraint(QuadExpr&& qe) :
+  QuadraticDefiningConstraint(QuadExpr&& qe) noexcept :
     quad_expr_(std::move(qe)) {
     /// TODO sort+merge elements
   }
-  QuadraticDefiningConstraint(int r, QuadExpr&& qe) :
+  QuadraticDefiningConstraint(int r, QuadExpr&& qe) noexcept :
     DefiningConstraint(r), quad_expr_(std::move(qe)) {
     /// TODO sort+merge elements
   }
@@ -337,7 +337,7 @@ public:
   template <class CV=std::vector<double>, class VV=std::vector<int> >
   IndicatorConstraintLinLE(int b, int bv,
                            CV&& c, VV&& v,
-                           double rhs) :
+                           double rhs) noexcept :
     b_(b), bv_(bv), c_(std::forward<CV>(c)), v_(std::forward<VV>(v)), rhs_(rhs)
   { assert(check()); }
   bool check() const { return (b_>=0) && (bv_==0 || bv_==1); }
@@ -351,7 +351,7 @@ class PLSlopes {
   const double X0_, Y0_;                        // some point on the PWL
 public:
   template <class Vec>
-  PLSlopes(Vec&& bp, Vec&& sl, double x, double y) :
+  PLSlopes(Vec&& bp, Vec&& sl, double x, double y) noexcept :
     breakpoints_(std::forward<Vec>(bp)), slopes_(std::forward<Vec>(sl)),
     X0_(x), Y0_(y) { assert(check()); }
   const std::vector<double>& GetBP() const { return breakpoints_; }
@@ -393,7 +393,7 @@ public:
 
   /// Constructor
   template <class VV=std::vector<int>, class WV=std::vector<double> >
-  SOS_1or2_Constraint(VV&& v, WV&& w) :
+  SOS_1or2_Constraint(VV&& v, WV&& w) noexcept :
     v_(std::forward<VV>(v)), w_(std::forward<WV>(w))
   { assert(check()); }
   bool check() const { return type>=1 && type<=2 &&

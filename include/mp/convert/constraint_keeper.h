@@ -106,14 +106,16 @@ class ConstraintKeeper : public BasicConstraintKeeper {
   bool is_removed_ = false;
 public:
   template <class... Args>
-  ConstraintKeeper(Args&&... args) : cons_(std::move(args)...) { }
+  ConstraintKeeper(Args&&... args) noexcept
+    : cons_(std::move(args)...) { }
   std::string GetDescription() const override {
     return std::string("ConstraintKeeper< ") +
         Converter::GetConverterName() + ", " +
         Backend::GetBackendName() + ", " +
         Constraint::GetConstraintName() + " >";
   }
-  const BasicConstraint& GetBasicConstraint() const override { return cons_; }
+  const BasicConstraint& GetBasicConstraint() const override
+  { return cons_; }
   const Constraint& GetConstraint() const { return cons_; }
   Constraint& GetConstraint() { return cons_; }
   bool IsRemoved() const override { return is_removed_; }

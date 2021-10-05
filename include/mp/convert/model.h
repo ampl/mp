@@ -20,14 +20,14 @@ struct FlatConverterModelExraItemInfo : public DefaultExtraItemInfo {
     QuadTerms qt_;
     AlgConExtraInfo() { }
     template <class QT>
-    AlgConExtraInfo(QT&& qt) : qt_(std::forward<QT>(qt)) { }
+    AlgConExtraInfo(QT&& qt) noexcept : qt_(std::forward<QT>(qt)) { }
   };
   struct ObjExtraInfo {
     double obj_const_term_ = 0.0;
     QuadTerms qt_;
     ObjExtraInfo() { }
     template <class QT>
-    ObjExtraInfo(double c, QT&& qt) :
+    ObjExtraInfo(double c, QT&& qt) noexcept :
       obj_const_term_(c), qt_(std::forward<QT>(qt)) { }
   };
 };

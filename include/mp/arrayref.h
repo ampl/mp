@@ -40,31 +40,36 @@ class ArrayRef {
  public:
   ArrayRef() { }
 
-  ArrayRef(const T *data, std::size_t size) : data_(data), size_(size) {}
+  ArrayRef(const T *data, std::size_t size) noexcept :
+    data_(data), size_(size) {}
 
   template <std::size_t SIZE>
-  ArrayRef(const T (&data)[SIZE]) : data_(data), size_(SIZE) {}
+  ArrayRef(const T (&data)[SIZE]) noexcept :
+    data_(data), size_(SIZE) {}
 
   /// Rvalue ArrayRef, take over vector if any
   template <typename U>
-  ArrayRef(ArrayRef<U>&& other) { init_from_rvalue(std::move(other)); }
+  ArrayRef(ArrayRef<U>&& other) noexcept
+  { init_from_rvalue(std::move(other)); }
 
   /// Lvalue ArrayRef, pure reference
   template <typename U>
-  ArrayRef(const ArrayRef<U>& other) : data_(other.data()), size_(other.size()) {}
+  ArrayRef(const ArrayRef<U>& other) noexcept :
+    data_(other.data()), size_(other.size()) {}
 
   /// Rvalue std::vector, take over
   template <typename TT>
-  ArrayRef(std::vector<TT> &&other) :
+  ArrayRef(std::vector<TT> &&other) noexcept :
     save_(std::move(other)), data_(save_.data()), size_(save_.size()) {}
 
   /// Lvalue Vector, pure reference
   template <typename Vector>
-  ArrayRef(const Vector &other) : data_(other.data()), size_(other.size()) {}
+  ArrayRef(const Vector &other) noexcept :
+    data_(other.data()), size_(other.size()) {}
 
   /// = Rvalue, take over vector if any
   template <class U>
-  ArrayRef<T>& operator=(ArrayRef<U>&& other) {
+  ArrayRef<T>& operator=(ArrayRef<U>&& other) noexcept {
     init_from_rvalue(std::move(other));
     return *this;
   }
