@@ -335,6 +335,9 @@ private:
     int nPoolMode_=2;
 
     int nFixedMethod_=-2;
+
+    std::string cloudid_, cloudkey_, cloudpool_;
+    int cloudpriority_;
   } storedOptions_;
 
 

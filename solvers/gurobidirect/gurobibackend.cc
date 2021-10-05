@@ -793,6 +793,12 @@ static const mp::OptionValueInfo values_bqpcuts[] = {
   { "2", "Enable aggressive BQP cut generation.", 2}
 };
 
+static const mp::OptionValueInfo values_branchdir[] = {
+    {"-1", "Explore \"down\" branch first", -1},
+    { "0", "Explore \"most promising\" branch first (default)", 0},
+    { "1", "Explore \"up\" branch first.", 1}
+};
+
 static const mp::OptionValueInfo values_iismethod[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Often faster than method 1", 0},
@@ -889,6 +895,7 @@ static const mp::OptionValueInfo values_varbranch[] = {
     { "3", "Strong branching.",3}
 };
 
+static constexpr int PrmCutsMin=-1, PrmCutsMax=3;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -984,6 +991,19 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n"
     "Overrides the \"cuts\" keyword.",
     GRB_INT_PAR_BQPCUTS, values_bqpcuts, -1);
+
+  AddSolverOption("mip:branchdir branchdir",
+    "Which child node to explore first when branching:\n"
+    "\n.. value-table::",
+    GRB_INT_PAR_BRANCHDIR, values_branchdir, 0);
+
+  AddSolverOption("mip:cliquecuts cliquecuts",
+    "Overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_CLIQUECUTS, PrmCutsMin, PrmCutsMax);
+
+  AddStoredOption("tech:cloudid cloudid",
+      "Use Gurobi Instant Cloud with this \"accessID\".",
+          storedOptions_.cloudid_);
 
   AddSolverOption("mip:focus mipfocus",
     "MIP solution strategy:\n" "\n.. value-table::\n",
