@@ -407,8 +407,7 @@ protected:
                       "Whether to use incoming primal (and dual, for LP) variable values "
                       "in a warmstart:\n "
                       "\n.. value-table::\n"
-                      "Note that for LP, mip:basis is usually more efficient. "
-                      "MIP-specific options can be accessible via mip:start.",
+                      "Note that for LP, \"alg:basis\" is usually more efficient.",
                       mipStoredOptions_.warmstart_, values_warmstart_);
 
     if (IMPL_HAS_STD_FEATURE( VAR_PRIORITIES ))
@@ -447,7 +446,7 @@ protected:
         mipStoredOptions_.returnMipGap_);
 
     if (IMPL_HAS_STD_FEATURE( RETURN_BEST_DUAL_BOUND ))
-      AddStoredOption("mip:bestbound bestbound returnbound",
+      AddStoredOption("mip:bestbound bestbound return_bound",
         "Whether to return suffix .bestbound for the "
         "best known MIP dual bound on the objective value:\n"
         "\n.. value-table::\n"

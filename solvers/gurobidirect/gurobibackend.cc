@@ -774,26 +774,33 @@ void GurobiBackend::FinishProblemModificationPhase() {
 
 // static possible values with descriptions
 
-const mp::OptionValueInfo values_barhomogeneous[] = {
+static const mp::OptionValueInfo values_barhomogeneous[] = {
     {"-1", "Only when solving a MIP node relaxation (default)", -1},
     { "0", "Never", 0},
     { "1", "Always.", 1}
 };
 
-const mp::OptionValueInfo values_barorder[] = {
+static const mp::OptionValueInfo values_barorder[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Approximate minimum degree", 0},
     { "1", "Nested dissection.", 1}
 };
 
-const mp::OptionValueInfo values_iismethod[] = {
+static const mp::OptionValueInfo values_bqpcuts[] = {
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Disallow BQP cuts", 0},
+  { "1", "Enable moderate BQP cut generation", 1},
+  { "2", "Enable aggressive BQP cut generation.", 2}
+};
+
+static const mp::OptionValueInfo values_iismethod[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Often faster than method 1", 0},
     { "1", "Can find a smaller IIS than method 0", 1},
     { "2", "Ignore the bound constraints.", 2},
 };
 
-const mp::OptionValueInfo values_method[] = {
+static const mp::OptionValueInfo values_method[] = {
     { "-1", "Automatic (default): 3 for LP, 2 for QP, 1 for MIP", -1},
     { "0", "Primal simplex", 0},
     { "1", "Dual simplex", 1},
@@ -803,7 +810,7 @@ const mp::OptionValueInfo values_method[] = {
     { "5", "Deterministic concurrent simplex.", 5}
 };
 
-const mp::OptionValueInfo values_mipfocus[] = {
+static const mp::OptionValueInfo values_mipfocus[] = {
     { "0", "Balance finding good feasible solutions and "
           "proving optimality (default)", 0},
     { "1", "Favor finding feasible solutions", 1},
@@ -811,7 +818,7 @@ const mp::OptionValueInfo values_mipfocus[] = {
     { "3", "Focus on improving the best objective bound.", 3},
 };
 
-const mp::OptionValueInfo values_mipstart_[4] = {
+static const mp::OptionValueInfo values_mipstart_[4] = {
     {     "0", "No (overrides alg:start)", 0 },
     {     "1", "Yes (default)", 1},
     {     "2", "No, but use the incoming primal "
@@ -822,7 +829,7 @@ const mp::OptionValueInfo values_mipstart_[4] = {
           "variable.", 3}
 };
 
-const mp::OptionValueInfo values_multiobjmethod[] = {
+static const mp::OptionValueInfo values_multiobjmethod[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Primal simplex", 0},
     { "1", "Dual simplex", 1},
@@ -830,21 +837,21 @@ const mp::OptionValueInfo values_multiobjmethod[] = {
         "specified by the method keyword.", 2}
 };
 
-const mp::OptionValueInfo values_multiobjpre[] = {
+static const mp::OptionValueInfo values_multiobjpre[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Do not use Gurobi's presolve", 0},
     { "1", "Conservative presolve", 1},
     {"2", "Aggressive presolve, which may degrade lower priority objectives.", 2}
 };
 
-const mp::OptionValueInfo values_nodemethod[] = {
+static const mp::OptionValueInfo values_nodemethod[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Primal simplex", 0},
     { "1", "Dual simplex", 1},
     {"2", "Barrier.", 2}
 };
 
-const mp::OptionValueInfo values_nonconvex[] = {
+static const mp::OptionValueInfo values_nonconvex[] = {
     { "-1", "Default choice (currently the same as 1)", -1},
     { "0", "Complain about nonquadratic terms", 0},
     { "1", "Complain if Gurobi's presolve cannot discard or "
@@ -853,13 +860,13 @@ const mp::OptionValueInfo values_nonconvex[] = {
            "spatial branching.", 2}
 };
 
-const mp::OptionValueInfo values_predeprow[] = {
+static const mp::OptionValueInfo values_predeprow[] = {
     { "-1", "Only for continuous models (default)", -1},
     { "0", "Never", 0},
     { "1", "For all models.", 1}
 };
 
-const mp::OptionValueInfo values_predual[] = {
+static const mp::OptionValueInfo values_predual[] = {
     { "-1", "Automatic choice (default)", -1},
     { "0", "No", 0},
     { "1", "Yes", 1},
@@ -867,14 +874,14 @@ const mp::OptionValueInfo values_predual[] = {
            "choose heuristically between them.", 2}
 };
 
-const mp::OptionValueInfo values_pool_mode[] = {
+static const mp::OptionValueInfo values_pool_mode[] = {
     {"0", "Just collect solutions during normal solve, and sort them best-first", 0},
     { "1", "Make some effort at finding additional solutions", 1},
     { "2", "Seek \"poollimit\" best solutions (default)."
       "'Best solutions' are defined by the poolgap(abs) parameters.", 2}
 };
 
-const mp::OptionValueInfo values_varbranch[] = {
+static const mp::OptionValueInfo values_varbranch[] = {
     {"-1", "Automatic choice (default)",-1},
     { "0", "Pseudo reduced - cost branching",0},
     { "1", "Pseudo shadow - price branching",1},
@@ -953,7 +960,7 @@ void GurobiBackend::InitCustomOptions() {
     GRB_INT_PAR_BARITERLIMIT, 0, GRB_MAXINT);
 
   AddSolverOption("bar:order barorder", "Ordering used to reduce fill in sparse-matrix factorizations during the barrier algorithm. Possible values:\n"
-    "\n.. value-table::\n", GRB_INT_PAR_AGGREGATE, values_barorder, -1);
+    "\n.. value-table::\n", GRB_INT_PAR_BARORDER, values_barorder, -1);
 
   AddSolverOption("bar:qcptol barqcptol",
     "Convergence tolerance on the relative difference between primal and dual objective values for barrier algorithms when solving problems "
@@ -962,12 +969,28 @@ void GurobiBackend::InitCustomOptions() {
 
 
 
+  AddSolverOption("mip:bestbndstop bestbndstop",
+    "Stop once the best bound on the objective value "
+    "is at least as good as this value.",
+    GRB_DBL_PAR_BESTBDSTOP, MinusInfinity(), Infinity());
+
+  AddSolverOption("mip:bestobjstop bestobjstop",
+    "Stop after a feasible solution with objective value "
+    "at least as good as this value has been found.",
+    GRB_DBL_PAR_BESTOBJSTOP, MinusInfinity(), Infinity());
+
+  AddSolverOption("mip:bqpcuts bqpcuts",
+    "Whether to enable Boolean Quadric Polytope cut generation:\n"
+    "\n.. value-table::\n"
+    "Overrides the \"cuts\" keyword.",
+    GRB_INT_PAR_BQPCUTS, values_bqpcuts, -1);
+
   AddSolverOption("mip:focus mipfocus",
     "MIP solution strategy:\n" "\n.. value-table::\n",
     GRB_INT_PAR_MIPFOCUS, values_mipfocus, 0);
 
   AddSolverOption("mip:heurfrac heurfrac",
-    "Fraction of time to spend in MIP heuristics (default 0.05)",
+    "Fraction of time to spend in MIP heuristics (default 0.05).",
     GRB_DBL_PAR_HEURISTICS, 0.05, 1.0);
 
   AddSolverOption("alg:iismethod iismethod",
@@ -981,6 +1004,9 @@ void GurobiBackend::InitCustomOptions() {
     "integer variables:\n"   "\n.. value-table::\n",
     storedOptions_.nMIPStart_, values_mipstart_);
 
+  AddToOptionDescription("alg:start",
+                         "MIP-specific options can be tuned via mip:start.");
+
   AddSolverOption("mip:maxmipsub maxmipsub",
     "Maximum number of nodes for RIMS heuristic to explore on MIP problems (default 500).",
       GRB_INT_PAR_SUBMIPNODES, 500, GRB_MAXINT);
@@ -990,7 +1016,7 @@ void GurobiBackend::InitCustomOptions() {
     GRB_DBL_PAR_MIPGAP, 1e-4, DBL_MAX);
 
   AddSolverOption("mip:gapabs mipgapabs",
-    "Max absolute MIP optimality gap (default 1e-10)",
+    "Max absolute MIP optimality gap (default 1e-10).",
     GRB_DBL_PAR_MIPGAPABS, 1e-10, DBL_MAX);
 
   AddSolverOption("mip:opttol opttol optimalitytolerance",
