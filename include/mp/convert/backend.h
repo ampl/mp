@@ -22,6 +22,7 @@
 #define BACKEND_H_
 
 #include <cmath>
+#include <functional>
 #include <stdexcept>
 
 #include "mp/clock.h"
@@ -608,6 +609,21 @@ protected:
     { value_ = v; }
   };
 
+
+private:
+  /// Recorded solver options
+  using SlvOptionRecord = std::function<void(void)>;
+  std::vector< SlvOptionRecord > slvOptionRecords_;
+
+protected:
+  void RecordSolverOption(SlvOptionRecord sor)
+  { slvOptionRecords_.push_back(sor); }
+  void ReplaySolverOptions() {
+    for (auto f: slvOptionRecords_)
+      f();
+  }
+
+
   /// Solver options accessor, facilitates calling
   /// backend_.Get/SetSolverOption()
   template <class Value, class Index>
@@ -627,7 +643,11 @@ protected:
     void set(const SolverOption& ,
              typename internal::OptionHelper<Value>::Arg v,
              Index i) {
-      backend_.SetSolverOption(i, v); }
+      auto *pBackend = &backend_;
+      auto setter = [=]() { pBackend->SetSolverOption(i, v); };
+      setter();    // run it now
+      backend_.RecordSolverOption(setter);
+    }
   };
 
   template <class ValueType, class KeyType>
@@ -920,6 +940,7 @@ protected:
     qcpi.insert(qcpi.end(), pi.begin(), pi.end());
     return qcpi;
   }
+
 
 public:
   BasicBackend() :

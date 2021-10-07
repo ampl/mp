@@ -112,6 +112,7 @@ void GurobiBackend::OpenGurobiCloud() {
     }
   }
   OpenGurobiModel();
+  ReplaySolverOptions();
 }
 
 bool GurobiBackend::IsMIP() const {
