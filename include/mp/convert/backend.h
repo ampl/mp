@@ -145,6 +145,11 @@ public:
   using Model = BasicModel<>;
   using Variable = typename Model::Variable;
 
+  /// Chance for the Backend to init solver environment, etc
+  void InitOptionParsing() { }
+  /// Chance to consider options immediately (open cloud, etc)
+  void FinishOptionParsing() { }
+
   void InitProblemModificationPhase() { }
   void FinishProblemModificationPhase() { }
   void AddVariable(Variable var) {
@@ -390,6 +395,13 @@ public:
     HandleSolution(solve_code_, writer.c_str(),
                    sol.empty() ? 0 : sol.data(),
                    dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
+  }
+
+  void Abort(int /*solve_code_now*/, std::string msg) {
+    /// TODO: need a SolutionHandler in Converter even before NL
+    /// - for example, when cloud env fails
+//    HandleSolution(solve_code_now, msg, 0, 0, 0.0);
+    MP_RAISE(msg);
   }
 
   void PrintTimingInfo() {
@@ -651,6 +663,15 @@ public:
     AddOption(Solver::OptionPtr(
                 new StoredOption<Value>(
                   name, description, value, values)));
+  }
+
+  /// Simple stored option referencing a variable, min, max (TODO)
+  template <class Value>
+  void AddStoredOption(const char *name, const char *description,
+                       Value& value, Value , Value ) {
+    AddOption(Solver::OptionPtr(
+                new StoredOption<Value>(
+                  name, description, value, ValueArrayRef())));
   }
 
   /// Adding solver options of types int/double/string/...

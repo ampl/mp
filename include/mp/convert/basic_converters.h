@@ -45,7 +45,7 @@ class BasicMPConverter :
   using SolverAdapter = SolverImpl< ModelAdapter<Model> >;
 
   std::unique_ptr<ConverterQuery> p_converter_query_;
-  SolutionHandler* p_sol_h_;
+  SolutionHandler* p_sol_h_=nullptr;
 
 public:
   static const char* GetConverterName() { return "BasicMPConverter"; }
@@ -105,7 +105,14 @@ public:
   }
 
   bool ParseOptions(char **argv, unsigned flags = 0) {
-    return GetMPUtils().ParseOptions(argv, flags);
+    /// Chance for the Backend to init solver environment, etc
+    GetBackend().InitOptionParsing();
+    if (GetMPUtils().ParseOptions(argv, flags)) {
+      /// Chance to consider options immediately (open cloud, etc)
+      GetBackend().FinishOptionParsing();
+      return true;
+    }
+    return false;
   }
 
   struct NLReadResult {

@@ -152,9 +152,14 @@ public:
   //////////////////////////// MODELING API        ////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
 
-  /// [[ Prototype an incremental interface ]]
+  /// Chance for the Backend to init solver environment, etc
+  void InitOptionParsing();
+  /// Chance to consider options immediately (open cloud, etc)
+  void FinishOptionParsing();
+
+  /// This is called before model is pushed to the Backend
   void InitProblemModificationPhase();
-  /// Chance to update the model
+  /// Chance to call GRBupdatemodel()
   void FinishProblemModificationPhase();
 
   static constexpr double Infinity() { return GRB_INFINITY; }
@@ -216,6 +221,7 @@ public:
   bool IsQP() const;
   bool IsQCP() const;
 
+  /// TODO Gurobi separates constraint classes
   int NumberOfConstraints() const;
   int NumberOfVariables() const;
   int NumberOfObjectives() const;
@@ -225,8 +231,6 @@ public:
 
 
   //////////////////////////// SOLVING ///////////////////////////////
-  void OpenSolver();
-  void CloseSolver();
   void InitCustomOptions();
 
   void SetInterrupter(mp::Interrupter* inter);
@@ -260,6 +264,12 @@ public:
   //////////////////// to avoid name clashes with the base classes //////////////
   ///////////////////////////////////////////////////////////////////////////////
 protected:
+  void OpenGurobi();
+  void OpenGurobiModel();
+  void CloseGurobi();
+
+  void OpenGurobiCloud();
+
   void PrepareGurobiSolve();
   void DoGurobiFeasRelax();
   void ReportGurobiPool();
@@ -344,12 +354,16 @@ private:
 protected:  //////////// Option accessors ////////////////
   int Gurobi_mipstart() const { return storedOptions_.nMIPStart_; }
 
+  const std::string& cloudid() const { return storedOptions_.cloudid_; }
+  const std::string& cloudkey() const { return storedOptions_.cloudkey_; }
+  const std::string& cloudpool() const { return storedOptions_.cloudpool_; }
+  int cloudpriority() const { return storedOptions_.cloudpriority_; }
 
 private: /////////// Suffixes ///////////
   const SuffixDef<int> sufHintPri = { "hintpri", suf::VAR | suf::INPUT };
 
 
-protected:  //////////// Wrappers for Get/SetSolverOption()
+protected:  //////////// Wrappers for Get/SetSolverOption(). Assume model_ is set
   int GrbGetIntParam(const char* key) const;
   double GrbGetDblParam(const char* key) const;
   std::string GrbGetStrParam(const char* key) const;

@@ -20,13 +20,6 @@ bool InterruptGurobi(void *model) {
 
 namespace mp {
 
-GurobiBackend::GurobiBackend() {
-  OpenSolver();
-}
-GurobiBackend::~GurobiBackend() {
-  CloseSolver();
-}
-
 const char* GurobiBackend::GetSolverInvocationName() { return "gurobidirect"; }
 const char* GurobiBackend::GetBackendName() { return "GurobiBackend"; }
 
@@ -36,35 +29,90 @@ std::string GurobiBackend::GetSolverVersion() {
   return fmt::format("{}.{}.{}", a, b, c);
 }
 
-void GurobiBackend::OpenSolver() {
+GurobiBackend::GurobiBackend() {}
 
-  GRB_CALL( GRBloadenv(&env_, NULL) );
-
-  /* Create an empty model */
-  GRB_CALL( GRBnewmodel(env_, &model_, "amplgurobidirectmodel", 0, NULL, NULL, NULL, NULL, NULL) );
-
-  /* Init fixed model */
-  model_fixed_ = model_;
+GurobiBackend::~GurobiBackend() {
+  CloseGurobi();
 }
 
-void GurobiBackend::CloseSolver() {
+void GurobiBackend::CloseGurobi() {
   /* Free the fixed model */
   if (model_ != model_fixed_) {
     assert(model_);
     assert(model_fixed_);
     GRBfreemodel(model_fixed_);
-    model_fixed_ = nullptr;
   }
+  model_fixed_ = nullptr;
 
   /* Free model */
-  GRBfreemodel(model_);
-  model_ = nullptr;
+  if (model_) {
+    GRBfreemodel(model_);
+    model_ = nullptr;
+  }
 
   /* Free environment */
-  GRBfreeenv(env_);
-  env_ = nullptr;
+  if (env_) {
+    GRBfreeenv(env_);
+    env_ = nullptr;
+  }
 }
 
+void GurobiBackend::InitOptionParsing() {
+  OpenGurobi();
+}
+
+void GurobiBackend::OpenGurobi() {
+  GRB_CALL( GRBloadenv(&env_, NULL) );
+  OpenGurobiModel();
+}
+
+void GurobiBackend::OpenGurobiModel() {
+  /* Set default parameters */
+  GRBsetintparam(env_, GRB_INT_PAR_OUTPUTFLAG, 0);
+  /* Create an empty model */
+  GRB_CALL( GRBnewmodel(env_, &model_, "amplgurobi", 0,
+                        NULL, NULL, NULL, NULL, NULL) );
+  assert(model_);
+  /* Init fixed model */
+  model_fixed_ = model_;
+}
+
+void GurobiBackend::FinishOptionParsing() {
+  if (cloudid().size() && cloudkey().size()) {
+    OpenGurobiCloud();
+  }
+}
+
+void GurobiBackend::OpenGurobiCloud() {
+  assert(cloudid().size() && cloudkey().size());
+  auto logf = GrbGetStrParam(GRB_STR_PAR_LOGFILE);
+  if (env_) {
+    CloseGurobi();
+  }
+  if (int i = GRBloadcloudenv(&env_, logf.c_str(),
+                              cloudid().c_str(), cloudkey().c_str(),
+                              cloudpool().c_str(), cloudpriority()
+                              )) {
+    switch(i) {
+    case GRB_ERROR_NETWORK:
+      Abort(601, "Could not talk to Gurobi Instant Cloud.");
+      break;
+    case GRB_ERROR_JOB_REJECTED:
+      Abort(602, "Job rejected by Gurobi Instant Cloud.");
+      break;
+    case GRB_ERROR_NO_LICENSE:
+      Abort(603, "No license for specified Gurobi Instant Cloud.");
+      break;
+    case GRB_ERROR_CLOUD:
+      Abort(605, "Bad value for cloudid or cloudkey, or Gurobi Cloud out of reach.");
+      break;
+    default:
+      Abort(604, fmt::format(
+              "Surprise return {} from GRBloadcloudenv().", i));
+    }
+  }
+  OpenGurobiModel();
+}
 
 bool GurobiBackend::IsMIP() const {
   return 1 == GrbGetIntAttr(GRB_INT_ATTR_IS_MIP);
@@ -1001,9 +1049,23 @@ void GurobiBackend::InitCustomOptions() {
     "Overrides \"cuts\"; choices as for \"cuts\".",
     GRB_INT_PAR_CLIQUECUTS, PrmCutsMin, PrmCutsMax);
 
+
   AddStoredOption("tech:cloudid cloudid",
       "Use Gurobi Instant Cloud with this \"accessID\".",
           storedOptions_.cloudid_);
+  AddStoredOption("tech:cloudkey cloudkey",
+      "Use Gurobi Instant Cloud with this \"secretKey\". "
+      "Both cloudid and cloudkey are required.",
+          storedOptions_.cloudkey_);
+  AddStoredOption("tech:cloudpool cloudpool",
+      "Optional \"machine pool\" to use with Gurobi Instant Cloud.",
+          storedOptions_.cloudpool_);
+  AddStoredOption("tech:cloudpriority cloudpriority",
+      "Priority of Cloud job, an integer >= -100 and <= 100. "
+      "Default 0.  Jobs with priority 100 run immediately -- use "
+      "caution when specifying this value.",
+          storedOptions_.cloudpriority_, -100, 100);
+
 
   AddSolverOption("mip:focus mipfocus",
     "MIP solution strategy:\n" "\n.. value-table::\n",
@@ -1196,7 +1258,6 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("tech:outlev outlev",
       "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.",
     GRB_INT_PAR_OUTPUTFLAG, 0, 1);
-  SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 0);
 
   AddSolverOption("tech:logfreq logfreq outfreq",
       "Interval in seconds between log lines (default 5).",
@@ -1216,7 +1277,6 @@ void GurobiBackend::InitCustomOptions() {
       "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
-
 }
 
 int GurobiBackend::GrbGetIntParam(const char *key) const {
