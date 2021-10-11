@@ -35,9 +35,10 @@
     }
   },
   {
-    "name" : "dietu_mip fixedMIP",
+    "name" : "dietu_mip mip:basis=1",
     "objective" : 74.273820,
     "tags" : ["linear", "continuous"],
+    "options": { "ANYSOLVER_options": "mip:basis=1" },
     "values": {
       "Buy['BEEF'].sstatus": "low",
       "Buy['MTL'].sstatus":  "bas",
@@ -51,7 +52,6 @@
     "name" : "dietu_mip mip:basis=0",
     "objective" : 74.273820,
     "tags" : ["linear", "continuous"],
-    "options": { "ANYSOLVER_options": "mip:basis=0" },
     "values": {
       "Buy['BEEF'].sstatus": "bas",
       "Buy['MTL'].sstatus":  "upp",
@@ -60,9 +60,10 @@
     }
   },
   {
-    "name" : "mipb_int fixedMIP",
+    "name" : "mipb_int mip:basis=1",
     "objective" : 1,
     "tags" : ["linear", "continuous"],
+    "options": { "ANYSOLVER_options": "mip:basis=1" },
     "values": {
       "x.sstatus": "low",
       "y.sstatus": "low",

@@ -318,7 +318,7 @@ private:
     int returnMipGap_=0;
     int returnBestDualBound_=0;
     int solnSens_=0;
-    int fixModel_=1;
+    int fixModel_=0;
   };
   Options mipStoredOptions_;
 
@@ -476,11 +476,9 @@ protected:
 
     if (IMPL_HAS_STD_FEATURE( FIX_MODEL ))
       AddStoredOption("mip:basis fixmodel mip:fix",
-                      "Whether to compute duals / basis / sensitivity for MIP models:"
-                        "\n\n"
-                        "|  0 - no\n"
-                        "|  1 - yes (default).\n",
-                    mipStoredOptions_.fixModel_);
+                      "Whether to compute duals / basis / sensitivity for MIP models:\n"
+                      "\n.. value-table::\n",
+                    mipStoredOptions_.fixModel_, values_01_noyes_0default_);
   }
 
 
