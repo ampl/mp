@@ -752,7 +752,7 @@ private:
     int feasRelax_=0;
     double lbpen_=1.0, ubpen_=1.0, rhspen_=1.0;
 
-    int round_=7;
+    int round_=0;
     double round_reptol_=1e-9;
   } storedOptions_;
 
@@ -838,7 +838,7 @@ protected:
                       "|  2 ==> modify solve_result\n"
                       "|  4 ==> modify solve_message\n"
                       "\n"
-                      "Default = 7.  Modifications that were or would be made are "
+                      "Default = 0.  Modifications that were or would be made are "
                       "reported in solve_result and solve_message only if the maximum "
                       "deviation from integrality exceeded mip:round_reptol.",
                     storedOptions_.round_);

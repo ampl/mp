@@ -1,7 +1,8 @@
 [
   {
-    "name": "mip_round_01",
+    "name": "mip_round_01 mip:round=1",
     "tags": [ "linear"],
+    "options": { "ANYSOLVER_options": "round=1" },
     "values": {
       "x": 0.0,
       "b": 0
