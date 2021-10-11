@@ -597,7 +597,7 @@ Solver::Solver(
 
   AddOption(OptionPtr(new BoolOption(debug_, "tech:debug debug",
                                      "0*/1: whether to assist testing & debugging, e.g., "
-                                     "by outputting auxiliary information")));
+                                     "by outputting auxiliary information.")));
 
   if ((flags & MULTIPLE_OBJ) != 0) {
     AddOption(OptionPtr(new BoolOption(multiobj_, "obj:multi multiobj",

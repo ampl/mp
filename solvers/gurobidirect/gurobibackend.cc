@@ -823,6 +823,20 @@ void GurobiBackend::FinishProblemModificationPhase() {
 
 // static possible values with descriptions
 
+static const mp::OptionValueInfo values_barcrossover[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "None: return an interior solution", 0},
+    { "1", "Push dual vars first, finish with primal simplex", 1},
+    { "2", "Push dual vars first, finish with dual simplex", 2},
+    { "3", "Push primal vars first, finish with primal simplex", 3},
+    { "4", "Push primal vars first, finish with dual simplex.", 4}
+};
+
+static const mp::OptionValueInfo values_barcrossoverbasis[] = {
+    { "0", "Favor speed (default)", 0},
+    { "1", "Favor numerical stability.", 1}
+};
+
 static const mp::OptionValueInfo values_barhomogeneous[] = {
     {"-1", "Only when solving a MIP node relaxation (default)", -1},
     { "0", "Never", 0},
@@ -847,6 +861,15 @@ static const mp::OptionValueInfo values_branchdir[] = {
     { "0", "Explore \"most promising\" branch first (default)", 0},
     { "1", "Explore \"up\" branch first.", 1}
 };
+
+static const mp::OptionValueInfo values_cuts[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "No cuts", 0},
+    { "1", "Conservative cut generation", 1},
+    { "2", "Aggressive cut generation", 2},
+    { "3", "Very aggressive cut generation.", 3}
+};
+static constexpr int PrmCutsMin=-1, PrmCutsMax=3;
 
 static const mp::OptionValueInfo values_iismethod[] = {
     {"-1", "Automatic choice (default)", -1},
@@ -937,14 +960,12 @@ static const mp::OptionValueInfo values_pool_mode[] = {
 };
 
 static const mp::OptionValueInfo values_varbranch[] = {
-    {"-1", "Automatic choice (default)",-1},
-    { "0", "Pseudo reduced - cost branching",0},
-    { "1", "Pseudo shadow - price branching",1},
-    { "2", "Maximum infeasibility branching",2},
-    { "3", "Strong branching.",3}
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "Pseudo reduced - cost branching", 0},
+    { "1", "Pseudo shadow - price branching", 1},
+    { "2", "Maximum infeasibility branching", 2},
+    { "3", "Strong branching.", 3}
 };
-
-static constexpr int PrmCutsMin=-1, PrmCutsMax=3;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1003,6 +1024,14 @@ void GurobiBackend::InitCustomOptions() {
     "Limit on the number of central corrections done in each barrier iteration"
     "(default -1 = automatic choice).", GRB_INT_PAR_BARCORRECTORS, -1, GRB_MAXINT);
 
+  AddSolverOption("bar:crossover crossover",
+    "How to transform a barrier solution to a basic one:\n"
+    "\n.. value-table::\n", GRB_INT_PAR_CROSSOVER, values_barcrossover, -1);
+
+  AddSolverOption("bar:crossoverbasis crossoverbasis",
+    "Strategy for initial basis construction during crossover:\n"
+    "\n.. value-table::\n", GRB_INT_PAR_CROSSOVERBASIS, values_barcrossoverbasis, 0);
+
   AddSolverOption("bar:homog barhomogeneous",
     "Whether to use the homogeneous barrier algorithm (e.g., when method=2 is specified):\n"
     "\n.. value-table::\n"
@@ -1050,22 +1079,33 @@ void GurobiBackend::InitCustomOptions() {
     "Overrides \"cuts\"; choices as for \"cuts\".",
     GRB_INT_PAR_CLIQUECUTS, PrmCutsMin, PrmCutsMax);
 
+  AddSolverOption("mip:covercuts covercuts",
+    "Overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_COVERCUTS, PrmCutsMin, PrmCutsMax);
 
-  AddStoredOption("tech:cloudid cloudid",
-      "Use Gurobi Instant Cloud with this \"accessID\".",
-          storedOptions_.cloudid_);
-  AddStoredOption("tech:cloudkey cloudkey",
-      "Use Gurobi Instant Cloud with this \"secretKey\". "
-      "Both cloudid and cloudkey are required.",
-          storedOptions_.cloudkey_);
-  AddStoredOption("tech:cloudpool cloudpool",
-      "Optional \"machine pool\" to use with Gurobi Instant Cloud.",
-          storedOptions_.cloudpool_);
-  AddStoredOption("tech:cloudpriority cloudpriority",
-      "Priority of Cloud job, an integer >= -100 and <= 100. "
-      "Default 0.  Jobs with priority 100 run immediately -- use "
-      "caution when specifying this value.",
-          storedOptions_.cloudpriority_, -100, 100);
+  AddSolverOption("mip:cutagg cutagg",
+    "Maximum number of constraint aggregation passes "
+    "during cut generation (-1 = default = no limit); "
+    "overrides \"cuts\".",
+    GRB_INT_PAR_CUTAGGPASSES, -1, GRB_MAXINT);
+
+  AddSolverOption("mip:cutoff cutoff",
+    "If the optimal objective value is no better than cutoff, "
+    "report \"objective cutoff\" and do not return a solution. "
+    "Default: -Infinity for minimizing, +Infinity for maximizing.",
+    GRB_DBL_PAR_CUTOFF, MinusInfinity(), Infinity());
+
+  AddSolverOption("mip:cutpasses cutpasses",
+    "Maximum number of cutting-plane passes "
+    "during root-cut generation; default = -1 ==> automatic choice.",
+    GRB_INT_PAR_CUTPASSES, -1, GRB_MAXINT);
+
+  AddSolverOption("mip:cuts cuts",
+    "Global cut generation control, valid unless overridden "
+    "by individual cut-type controls:"
+    "\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_CUTS, values_cuts, -1);
 
 
   AddSolverOption("mip:focus mipfocus",
@@ -1170,7 +1210,7 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("obj:multiobjpre multiobjpre",
     "How to apply Gurobi's presolve when doing multi-objective optimization:\n"
     "\n.. value-table::\n",
-    GRB_INT_PAR_MULTIOBJPRE, values_multiobjmethod, -1);
+    GRB_INT_PAR_MULTIOBJPRE, values_multiobjpre, -1);
 
 
 
@@ -1255,6 +1295,72 @@ void GurobiBackend::InitCustomOptions() {
       "Limit on solve time (in seconds; default: no limit).",
       GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
 
+
+
+  AddStoredOption("tech:cloudid cloudid",
+      "Use Gurobi Instant Cloud with this \"accessID\".",
+          storedOptions_.cloudid_);
+  AddStoredOption("tech:cloudkey cloudkey",
+      "Use Gurobi Instant Cloud with this \"secretKey\". "
+      "Both cloudid and cloudkey are required.",
+          storedOptions_.cloudkey_);
+  AddStoredOption("tech:cloudpool cloudpool",
+      "Optional \"machine pool\" to use with Gurobi Instant Cloud.",
+          storedOptions_.cloudpool_);
+  AddStoredOption("tech:cloudpriority cloudpriority",
+      "Priority of Cloud job, an integer >= -100 and <= 100. "
+      "Default 0.  Jobs with priority 100 run immediately -- use "
+      "caution when specifying this value.",
+          storedOptions_.cloudpriority_, -100, 100);
+
+
+  AddSolverOption("tech:concurrentmip concurrentmip",
+      "How many independent MIP solves to allow at once when multiple "
+      "threads are available. Optimization terminates when the first solve "
+      "completes. The available threads are divided as "
+      "evenly as possible among the concurrent solves.  Default = 1.\n"
+      "\n"
+      "See also \"tech:distmip\", \"tech:pooljobs\".",
+          GRB_INT_PAR_CONCURRENTMIP, 1, GRB_MAXINT);
+
+  AddSolverOption("tech:distmip pool_distmip distmip",
+      "Enables distributed MIP. A value of n causes the MIP solver "
+      "to divide the work of solving a MIP model among n machines. "
+      "Use the \"tech:server\" parameter to indicate the name of the "
+      "cluster where you would like your distributed MIP job to run "
+      "(or use \"tech:workerpool\" if your client machine will act as manager "
+      "and you just need a pool of workers). Default = 0.\n"
+      "\n"
+      "See also \"tech:concurrentmip\", \"tech:pooljobs\".",
+          GRB_INT_PAR_DISTRIBUTEDMIPJOBS, 0, GRB_MAXINT);
+
+  AddSolverOption("tech:pooljobs pool_jobs pooljobs",
+      "Enables distributed concurrent optimization, which can be used "
+      "to solve LP or MIP models on multiple machines. A value of n "
+      "causes the solver to create n independent models, using different "
+      "parameter settings for each. Each of these models is sent to a "
+      "distributed worker for processing. Optimization terminates when "
+      "the first solve completes. Use the \"tech:server\" parameter to "
+      "indicate the name of the cluster where you would like your "
+      "distributed concurrent job to run (or use \"tech:workerpool\" if your "
+      "client machine will act as manager and you just need a pool of "
+      "workers). Default = 0.\n"
+      "\n"
+      "See also \"tech:concurrentmip\", \"tech:distmip\".",
+          GRB_INT_PAR_CONCURRENTJOBS, 0, GRB_MAXINT);
+
+
+  AddSolverOption("tech:tunejobs pool_tunejobs tunejobs",
+      "Enables distributed parallel tuning, which can significantly "
+      "increase the performance of the tuning tool. A value of n "
+      "causes the tuning tool to distribute tuning work among n "
+      "parallel jobs. These jobs are distributed among a set of "
+      "machines. Use the \"tech:workerpool\" parameter to provide a distributed "
+      "worker cluster. Default = 0.\n"
+      "\n"
+      "Note that distributed tuning is most effective when the worker "
+      "machines have similar performance.",
+          GRB_INT_PAR_TUNEJOBS, 0, GRB_MAXINT);
 
   AddSolverOption("tech:outlev outlev",
       "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.",
