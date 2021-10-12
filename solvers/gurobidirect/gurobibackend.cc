@@ -1079,6 +1079,66 @@ void GurobiBackend::InitCustomOptions() {
     0.0, 1.0);
 
 
+  /////////////////////// CUTS /////////////////////////
+  AddSolverOption("cut:bqp bqpcuts",
+    "Whether to enable Boolean Quadric Polytope cut generation:\n"
+    "\n.. value-table::\n"
+    "Overrides the \"cuts\" keyword.",
+    GRB_INT_PAR_BQPCUTS, values_bqpcuts, -1);
+
+  AddSolverOption("cut:clique cliquecuts",
+    "Overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_CLIQUECUTS, PrmCutsMin, PrmCutsMax);
+
+  AddSolverOption("cut:cover covercuts",
+    "Overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_COVERCUTS, PrmCutsMin, PrmCutsMax);
+
+  AddSolverOption("cut:agg cutagg cut:aggpasses",
+    "Maximum number of constraint aggregation passes "
+    "during cut generation (-1 = default = no limit); "
+    "overrides \"cuts\".",
+    GRB_INT_PAR_CUTAGGPASSES, -1, GRB_MAXINT);
+
+  AddSolverOption("cut:passes cutpasses",
+    "Maximum number of cutting-plane passes "
+    "during root-cut generation; default = -1 ==> automatic choice.",
+    GRB_INT_PAR_CUTPASSES, -1, GRB_MAXINT);
+
+  AddSolverOption("cut:cuts cuts",
+    "Global cut generation control, valid unless overridden "
+    "by individual cut-type controls:"
+    "\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_CUTS, values_cuts, -1);
+
+  AddSolverOption("cut:flowcover flowcover",
+    "Flowcover cuts: overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_FLOWCOVERCUTS, PrmCutsMin, PrmCutsMax);
+  AddSolverOption("cut:flowpath flowpath",
+    "Overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_COVERCUTS, PrmCutsMin, PrmCutsMax);
+  AddSolverOption("cut:gomory gomory",
+    "Maximum number of Gomory cut passes during cut generation "
+        "(-1 = default = no limit); overrides \"cuts\".",
+    GRB_INT_PAR_GOMORYPASSES, -1, GRB_MAXINT);
+  AddSolverOption("cut:gubcover gubcover",
+    "Overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_GUBCOVERCUTS, PrmCutsMin, PrmCutsMax);
+  AddSolverOption("cut:implied implied",
+    "Implied cuts: overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_IMPLIEDCUTS, PrmCutsMin, PrmCutsMax);
+
+  AddSolverOption("cut:infproof infproofcuts",
+    "Whether to generate infeasibility proof cuts:"
+    "\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_INFPROOFCUTS, values_infproofcuts, -1);
+
+
+
+  ////////////////////////// LP //////////////////////////
+
   AddSolverOption("lp:degenmoves degenmoves",
     "Limit on the number of degenerate simplex moves -- for use "
         "when too much time is taken after solving the initial root "
@@ -1087,6 +1147,7 @@ void GurobiBackend::InitCustomOptions() {
     GRB_INT_PAR_DEGENMOVES, -1, GRB_MAXINT);
 
 
+  ////////////////////////// MIP /////////////////////////
 
   AddSolverOption("mip:bestbndstop bestbndstop",
     "Stop once the best bound on the objective value "
@@ -1098,42 +1159,11 @@ void GurobiBackend::InitCustomOptions() {
     "at least as good as this value has been found.",
     GRB_DBL_PAR_BESTOBJSTOP, MinusInfinity(), Infinity());
 
-  AddSolverOption("mip:bqpcuts bqpcuts",
-    "Whether to enable Boolean Quadric Polytope cut generation:\n"
-    "\n.. value-table::\n"
-    "Overrides the \"cuts\" keyword.",
-    GRB_INT_PAR_BQPCUTS, values_bqpcuts, -1);
-
   AddSolverOption("mip:branchdir branchdir",
     "Which child node to explore first when branching:\n"
     "\n.. value-table::",
     GRB_INT_PAR_BRANCHDIR, values_branchdir, 0);
 
-  AddSolverOption("mip:cliquecuts cliquecuts",
-    "Overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_CLIQUECUTS, PrmCutsMin, PrmCutsMax);
-
-  AddSolverOption("mip:covercuts covercuts",
-    "Overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_COVERCUTS, PrmCutsMin, PrmCutsMax);
-
-  AddSolverOption("mip:cutagg cutagg",
-    "Maximum number of constraint aggregation passes "
-    "during cut generation (-1 = default = no limit); "
-    "overrides \"cuts\".",
-    GRB_INT_PAR_CUTAGGPASSES, -1, GRB_MAXINT);
-
-  AddSolverOption("mip:cutpasses cutpasses",
-    "Maximum number of cutting-plane passes "
-    "during root-cut generation; default = -1 ==> automatic choice.",
-    GRB_INT_PAR_CUTPASSES, -1, GRB_MAXINT);
-
-  AddSolverOption("mip:cuts cuts",
-    "Global cut generation control, valid unless overridden "
-    "by individual cut-type controls:"
-    "\n"
-    "\n.. value-table::\n",
-    GRB_INT_PAR_CUTS, values_cuts, -1);
 
   AddSolverOption("mip:disconnected disconnected",
     "Whether to exploit independent MIP sub-models:"
@@ -1146,21 +1176,6 @@ void GurobiBackend::InitCustomOptions() {
           "when \"mip:basis=1\". Default: if \"method\" is 0 or 1 "
           "then \"method\" else 1.",
           storedOptions_.nFixedMethod_);
-
-
-  AddSolverOption("mip:flowcover flowcover",
-    "Flowcover cuts: overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_FLOWCOVERCUTS, PrmCutsMin, PrmCutsMax);
-  AddSolverOption("mip:flowpath flowpath",
-    "Overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_COVERCUTS, PrmCutsMin, PrmCutsMax);
-  AddSolverOption("mip:gomory gomory",
-    "Maximum number of Gomory cut passes during cut generation "
-        "(-1 = default = no limit); overrides \"cuts\".",
-    GRB_INT_PAR_GOMORYPASSES, -1, GRB_MAXINT);
-  AddSolverOption("mip:gubcover gubcover",
-    "Overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_GUBCOVERCUTS, PrmCutsMin, PrmCutsMax);
 
 
   AddSolverOption("mip:focus mipfocus",
@@ -1186,10 +1201,6 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     GRB_INT_PAR_IISMETHOD, values_iismethod, -1);
 
-  AddSolverOption("mip:implied implied",
-    "Implied cuts: overrides \"cuts\"; choices as for \"cuts\".",
-    GRB_INT_PAR_IMPLIEDCUTS, PrmCutsMin, PrmCutsMax);
-
 
   AddSolverOption("mip:improvegap improvegap",
     "Optimality gap below which the MIP solver switches from "
@@ -1206,12 +1217,6 @@ void GurobiBackend::InitCustomOptions() {
                       "will change from improving the best bound to finding better "
                       "feasible solutions (default Infinity).",
     GRB_DBL_PAR_IMPROVESTARTNODES, 0.0, DBL_MAX);
-
-  AddSolverOption("mip:infproofcuts infproofcuts",
-    "Whether to generate infeasibility proof cuts:"
-    "\n"
-    "\n.. value-table::\n",
-    GRB_INT_PAR_INFPROOFCUTS, values_infproofcuts, -1);
 
   AddSolverOption("mip:intfeastol intfeastol",
     "Feasibility tolerance for integer variables (default 1e-05).",
