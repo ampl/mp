@@ -1013,6 +1013,12 @@ void GurobiBackend::InitCustomOptions() {
       "alg:basis=0 is assumed quietly unless qcp:dual=1 "
       "is specified.");
 
+  AddSolverOption("alg:cutoff cutoff",
+    "If the optimal objective value is worse than cutoff, "
+    "report \"objective cutoff\" and do not return a solution. "
+    "Default: Infinity for minimizing, -Infinity for maximizing.",
+    GRB_DBL_PAR_CUTOFF, MinusInfinity(), Infinity());
+
   AddToOptionDescription("alg:sens",
                          "For problems with both integer variables and quadratic constraints, "
                          "alg:sens=0 is assumed quietly.");
@@ -1116,12 +1122,6 @@ void GurobiBackend::InitCustomOptions() {
     "during cut generation (-1 = default = no limit); "
     "overrides \"cuts\".",
     GRB_INT_PAR_CUTAGGPASSES, -1, GRB_MAXINT);
-
-  AddSolverOption("mip:cutoff cutoff",
-    "If the optimal objective value is no better than cutoff, "
-    "report \"objective cutoff\" and do not return a solution. "
-    "Default: -Infinity for minimizing, +Infinity for maximizing.",
-    GRB_DBL_PAR_CUTOFF, MinusInfinity(), Infinity());
 
   AddSolverOption("mip:cutpasses cutpasses",
     "Maximum number of cutting-plane passes "
