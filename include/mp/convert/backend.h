@@ -370,11 +370,11 @@ public:
           obj_value = MP_DISPATCH(ObjectiveValue());
           writer.write("; ");
           if (feasrelax_IOdata())
-            writer.write("feastol ");
+            writer.write("feasrelax ");
           writer.write("objective {}",
             MP_DISPATCH(FormatObjValue(obj_value)));
           if (feasrelax_IOdata().origObjAvailable_)
-            writer.write("\nfeasrelax objective = {}",
+            writer.write("\nOriginal objective = {}",
                          feasrelax_IOdata().origObjValue_);
         }
       }

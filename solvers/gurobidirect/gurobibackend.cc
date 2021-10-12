@@ -871,11 +871,25 @@ static const mp::OptionValueInfo values_cuts[] = {
 };
 static constexpr int PrmCutsMin=-1, PrmCutsMax=3;
 
+static const mp::OptionValueInfo values_disconnected[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "No", 0},
+    { "1", "Moderate effort", 1},
+    { "2", "Aggressive effort.", 2},
+};
+
 static const mp::OptionValueInfo values_iismethod[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Often faster than method 1", 0},
     { "1", "Can find a smaller IIS than method 0", 1},
     { "2", "Ignore the bound constraints.", 2},
+};
+
+static const mp::OptionValueInfo values_infproofcuts[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "No", 0},
+    { "1", "Moderate cut generation", 1},
+    { "2", "Aggressive cut generation.", 2},
 };
 
 static const mp::OptionValueInfo values_method[] = {
@@ -911,7 +925,7 @@ static const mp::OptionValueInfo values_multiobjmethod[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Primal simplex", 0},
     { "1", "Dual simplex", 1},
-    {"2", "Ignore warm-start information; use the algorithm "
+    { "2", "Ignore warm-start information; use the algorithm "
         "specified by the method keyword.", 2}
 };
 
@@ -919,14 +933,14 @@ static const mp::OptionValueInfo values_multiobjpre[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Do not use Gurobi's presolve", 0},
     { "1", "Conservative presolve", 1},
-    {"2", "Aggressive presolve, which may degrade lower priority objectives.", 2}
+    { "2", "Aggressive presolve, which may degrade lower priority objectives.", 2}
 };
 
 static const mp::OptionValueInfo values_nodemethod[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Primal simplex", 0},
     { "1", "Dual simplex", 1},
-    {"2", "Barrier.", 2}
+    { "2", "Barrier.", 2}
 };
 
 static const mp::OptionValueInfo values_nonconvex[] = {
@@ -953,7 +967,7 @@ static const mp::OptionValueInfo values_predual[] = {
 };
 
 static const mp::OptionValueInfo values_pool_mode[] = {
-    {"0", "Just collect solutions during normal solve, and sort them best-first", 0},
+    { "0", "Just collect solutions during normal solve, and sort them best-first", 0},
     { "1", "Make some effort at finding additional solutions", 1},
     { "2", "Seek \"poollimit\" best solutions (default)."
       "'Best solutions' are defined by the poolgap(abs) parameters.", 2}
@@ -1014,6 +1028,10 @@ void GurobiBackend::InitCustomOptions() {
                   "a feasibility relaxation.  Default = 1e6.",
                   GRB_DBL_PAR_FEASRELAXBIGM, 0.0, DBL_MAX);
 
+  AddSolverOption("alg:feastol feastol",
+                  "Primal feasibility tolerance (default 1e-6).",
+                  GRB_DBL_PAR_FEASIBILITYTOL, 0.0, DBL_MAX);
+
   AddSolverOption("bar:convtol barconvtol",
     "Tolerance on the relative difference between the primal and dual objectives "
     "for stopping the barrier algorithm "
@@ -1044,13 +1062,23 @@ void GurobiBackend::InitCustomOptions() {
     "Limit on the number of barrier iterations (default 1000).",
     GRB_INT_PAR_BARITERLIMIT, 0, GRB_MAXINT);
 
-  AddSolverOption("bar:order barorder", "Ordering used to reduce fill in sparse-matrix factorizations during the barrier algorithm. Possible values:\n"
+  AddSolverOption("bar:order barorder",
+    "Ordering used to reduce fill in sparse-matrix factorizations "
+    "during the barrier algorithm. Possible values:\n"
     "\n.. value-table::\n", GRB_INT_PAR_BARORDER, values_barorder, -1);
 
   AddSolverOption("bar:qcptol barqcptol",
     "Convergence tolerance on the relative difference between primal and dual objective values for barrier algorithms when solving problems "
     "with quadratic constraints (default 1e-6).", GRB_DBL_PAR_BARQCPCONVTOL,
     0.0, 1.0);
+
+
+  AddSolverOption("lp:degenmoves degenmoves",
+    "Limit on the number of degenerate simplex moves -- for use "
+        "when too much time is taken after solving the initial root "
+        "relaxation of a MIP problem and before cut generation or root "
+        "heuristics have started.  Default -1 ==> automatic choice.",
+    GRB_INT_PAR_DEGENMOVES, -1, GRB_MAXINT);
 
 
 
@@ -1107,10 +1135,46 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     GRB_INT_PAR_CUTS, values_cuts, -1);
 
+  AddSolverOption("mip:disconnected disconnected",
+    "Whether to exploit independent MIP sub-models:"
+    "\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_DISCONNECTED, values_disconnected, -1);
+
+  AddStoredOption("mip:fixedmethod fixedmethod",
+          "Value of \"method\" to use when seeking a basis for MIP problems "
+          "when \"mip:basis=1\". Default: if \"method\" is 0 or 1 "
+          "then \"method\" else 1.",
+          storedOptions_.nFixedMethod_);
+
+
+  AddSolverOption("mip:flowcover flowcover",
+    "Flowcover cuts: overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_FLOWCOVERCUTS, PrmCutsMin, PrmCutsMax);
+  AddSolverOption("mip:flowpath flowpath",
+    "Overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_COVERCUTS, PrmCutsMin, PrmCutsMax);
+  AddSolverOption("mip:gomory gomory",
+    "Maximum number of Gomory cut passes during cut generation "
+        "(-1 = default = no limit); overrides \"cuts\".",
+    GRB_INT_PAR_GOMORYPASSES, -1, GRB_MAXINT);
+  AddSolverOption("mip:gubcover gubcover",
+    "Overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_GUBCOVERCUTS, PrmCutsMin, PrmCutsMax);
+
 
   AddSolverOption("mip:focus mipfocus",
     "MIP solution strategy:\n" "\n.. value-table::\n",
     GRB_INT_PAR_MIPFOCUS, values_mipfocus, 0);
+
+
+  AddSolverOption("mip:gap mipgap",
+    "Max relative MIP optimality gap (default 1e-4).",
+    GRB_DBL_PAR_MIPGAP, 1e-4, DBL_MAX);
+
+  AddSolverOption("mip:gapabs mipgapabs",
+    "Max absolute MIP optimality gap (default 1e-10).",
+    GRB_DBL_PAR_MIPGAPABS, 1e-10, DBL_MAX);
 
   AddSolverOption("mip:heurfrac heurfrac",
     "Fraction of time to spend in MIP heuristics (default 0.05).",
@@ -1122,29 +1186,37 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     GRB_INT_PAR_IISMETHOD, values_iismethod, -1);
 
-  AddStoredOption("mip:start mipstart intstart",
-    "Whether to use initial guesses in problems with "
-    "integer variables:\n"   "\n.. value-table::\n",
-    storedOptions_.nMIPStart_, values_mipstart_);
+  AddSolverOption("mip:implied implied",
+    "Implied cuts: overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_IMPLIEDCUTS, PrmCutsMin, PrmCutsMax);
 
-  AddToOptionDescription("alg:start",
-                         "MIP-specific options can be tuned via mip:start.");
 
-  AddSolverOption("mip:maxmipsub maxmipsub",
-    "Maximum number of nodes for RIMS heuristic to explore on MIP problems (default 500).",
-      GRB_INT_PAR_SUBMIPNODES, 500, GRB_MAXINT);
+  AddSolverOption("mip:improvegap improvegap",
+    "Optimality gap below which the MIP solver switches from "
+        "trying to improve the best bound to trying to find better "
+        "feasible solutions (default 0).",
+    GRB_DBL_PAR_IMPROVESTARTGAP, 0.0, DBL_MAX);
+  AddSolverOption("mip:improvetime improvetime",
+    "Execution seconds after which the MIP solver switches from "
+        "trying to improve the best bound to trying to find better "
+        "feasible solutions (default Infinity).",
+    GRB_DBL_PAR_IMPROVESTARTTIME, 0.0, DBL_MAX);
+  AddSolverOption("mip:impstartnodes impstartnodes",
+                  "Number of MIP nodes after which the solution strategy "
+                      "will change from improving the best bound to finding better "
+                      "feasible solutions (default Infinity).",
+    GRB_DBL_PAR_IMPROVESTARTNODES, 0.0, DBL_MAX);
 
-  AddSolverOption("mip:gap mipgap",
-    "Max relative MIP optimality gap (default 1e-4)",
-    GRB_DBL_PAR_MIPGAP, 1e-4, DBL_MAX);
+  AddSolverOption("mip:infproofcuts infproofcuts",
+    "Whether to generate infeasibility proof cuts:"
+    "\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_INFPROOFCUTS, values_infproofcuts, -1);
 
-  AddSolverOption("mip:gapabs mipgapabs",
-    "Max absolute MIP optimality gap (default 1e-10).",
-    GRB_DBL_PAR_MIPGAPABS, 1e-10, DBL_MAX);
+  AddSolverOption("mip:intfeastol intfeastol",
+    "Feasibility tolerance for integer variables (default 1e-05).",
+    GRB_DBL_PAR_INTFEASTOL, 0.0, DBL_MAX);
 
-  AddSolverOption("mip:opttol opttol optimalitytolerance",
-      "Dual feasibility tolerance.",
-      GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
 
   AddSolverOption("mip:intfocus integralityfocus intfocus",
                   "Setting this parameter to 1 requests the solver to work "
@@ -1152,19 +1224,16 @@ void GurobiBackend::InitCustomOptions() {
                   "when all integer variables are rounded to exact integral "
                   "values to avoid numerical issues such as trickle flow:\n"
                   "\n.. value-table::\n",
-      GRB_INT_PAR_INTEGRALITYFOCUS, values_01_noyes_0default_, 0);
-
+                  GRB_INT_PAR_INTEGRALITYFOCUS, values_01_noyes_0default_, 0);
   AddToOptionDescription("mip:round",
                          "For problems with numerical issues such as trickle flow, "
                          "option \"mip:intfocus\" can be more reliable.");
 
 
+  AddSolverOption("mip:maxmipsub maxmipsub",
+    "Maximum number of nodes for RIMS heuristic to explore on MIP problems (default 500).",
+      GRB_INT_PAR_SUBMIPNODES, 500, GRB_MAXINT);
 
-  AddStoredOption("mip:fixedmethod fixedmethod",
-          "Value of \"method\" to use when seeking a basis for MIP problems "
-          "when \"mip:basis=1\". Default: if \"method\" is 0 or 1 "
-          "then \"method\" else 1.",
-          storedOptions_.nFixedMethod_);
 
   AddSolverOption("mip:minrelnodes minrelnodes",
     "Number of nodes for the Minimum Relaxation heuristic to "
@@ -1175,6 +1244,19 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("mip:nodemethod nodemethod",
     "Algorithm used to solve relaxed MIP node problems:\n"
     "\n.. value-table::\n", GRB_INT_PAR_NODEMETHOD, values_nodemethod, -1);
+
+
+  AddSolverOption("mip:opttol opttol optimalitytolerance",
+      "Dual feasibility tolerance.",
+      GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
+
+  AddStoredOption("mip:start mipstart intstart",
+    "Whether to use initial guesses in problems with "
+    "integer variables:\n"   "\n.. value-table::\n",
+    storedOptions_.nMIPStart_, values_mipstart_);
+  AddToOptionDescription("alg:start",
+                         "MIP-specific options can be tuned via mip:start.");
+
 
   AddSolverOption("mip:varbranch varbranch",
     "MIP branch variable selection strategy:\n"
@@ -1230,6 +1312,13 @@ void GurobiBackend::InitCustomOptions() {
     "Whether Gurobi's presolve should form the dual of a "
     "continuous model:\n" "\n.. value-table::\n",
     GRB_INT_PAR_PREDUAL, values_predual, -1);
+
+  AddSolverOption("pre:dualreductions dualreductions",
+    "Whether Gurobi's presolve should use dual reductions, which "
+        "may be useful on a well-posed problem but can prevent "
+        "distinguishing whether a problem is infeasible or unbounded:\n"
+        "\n.. value-table::\n",
+    GRB_INT_PAR_DUALREDUCTIONS, values_01_noyes_1default_, 1);
 
 
   AddSolverOption("qp:nonconvex nonconvex",
