@@ -71,6 +71,13 @@ public:
   **/
   ALLOW_STD_FEATURE( MULTISOL, true )
   /**
+  * Set lazy/user cut attributes
+  * Negative suffix values are "user cuts"
+  * Check lazy_/user_cuts() to see which kinds are allowed
+  **/
+  ALLOW_STD_FEATURE( LAZY_USER_CUTS, true )
+  void MarkLazyOrUserCuts(ArrayRef<int> );
+  /**
   * Get/Set AMPL var/con statii
   **/
   ALLOW_STD_FEATURE( BASIS, true )

@@ -1,7 +1,7 @@
 /*
  Abstract MIP solver backend wrapper.
 
- Copyright (C) 2020 AMPL Optimization Inc
+ Copyright (C) 2022 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -56,6 +56,15 @@ public:
   /////////// and implement the relevant methods /////////////
   ////////////////////////////////////////////////////////////
   USING_STD_FEATURES;
+  /**
+  * Set lazy/user cut attributes
+  * Negative suffix values are "user cuts"
+  * Check lazy_/user_cuts() to see which kinds are allowed
+  **/
+  DEFINE_STD_FEATURE( LAZY_USER_CUTS )
+  ALLOW_STD_FEATURE( LAZY_USER_CUTS, false )
+  void MarkLazyOrUserCuts(ArrayRef<int> )
+  { UNSUPPORTED("MIPBackend::LazyUserCuts"); }
   /**
   * Get/Set AMPL var/con statii
   **/
@@ -153,7 +162,11 @@ public:
   //////////////////////// STANDARD MIP SUFFIXES //////////////////////////
   ////////////////////////         INPUT         //////////////////////////
   using BaseBackend::ReadSuffix;
+  using BaseBackend::ReadIntSuffix;
+  using BaseBackend::ReadDblSuffix;
   using BaseBackend::ReportSuffix;
+  using BaseBackend::ReportIntSuffix;
+  using BaseBackend::ReportDblSuffix;
 
   void InputStdExtras() {
     BasicBackend<Impl>::InputStdExtras();
@@ -161,9 +174,23 @@ public:
   }
 
   void InputMIPExtras() {
+    if (lazy_user_cuts())
+      MP_DISPATCH( InputLazyUserCuts() );
     MP_DISPATCH( InputStartValues() );
     if (priorities())
       MP_DISPATCH( VarPriorities( ReadSuffix(suf_varpriority) ) );
+  }
+
+  void InputLazyUserCuts() {
+    auto sufLazyVal = ReadIntSuffix( {"lazy", suf::CON} );
+    if (sufLazyVal)
+      MP_DISPATCH( MarkLazyOrUserCuts(sufLazyVal) );
+  }
+
+  /// Testing API
+  void ReportFirstLinearConstraintLazySuffix(int val) {
+    if (debug_mode())
+      ReportIntSuffix({"test_lin_constr_lazy", suf::PROBLEM}, {{val}});
   }
 
   void InputStartValues() {
@@ -253,7 +280,7 @@ public:
 
   void CalculateAndReportIIS() {
     if (MP_DISPATCH( IsProblemInfOrUnb() ) &&
-        mipStoredOptions_.exportIIS_) {
+        GetMIPOptions().exportIIS_) {
       MP_DISPATCH( ComputeIIS() );
 
       ReportSuffix(sufIISCon, MP_DISPATCH(ConsIIS()));
@@ -264,12 +291,12 @@ public:
   void CalculateAndReportMIPGap() {
     if (0 < MP_DISPATCH(NumberOfObjectives()) ) {
       std::vector<double> dbl(1);
-      if (1 & mipStoredOptions_.returnMipGap_) {
+      if (1 & GetMIPOptions().returnMipGap_) {
         dbl[0] = MP_DISPATCH( MIPGap() );
         ReportSuffix(sufRelMipGapObj, dbl);
         ReportSuffix(sufRelMipGapProb, dbl);
       }
-      if (2 & mipStoredOptions_.returnMipGap_) {
+      if (2 & GetMIPOptions().returnMipGap_) {
         dbl[0] = MP_DISPATCH( MIPGapAbs() );
         ReportSuffix(sufAbsMipGapObj, dbl);
         ReportSuffix(sufAbsMipGapProb, dbl);
@@ -278,7 +305,7 @@ public:
   }
 
   void ReportBestDualBound() {
-    if (mipStoredOptions_.returnBestDualBound_ &&
+    if (GetMIPOptions().returnBestDualBound_ &&
         0 < MP_DISPATCH(NumberOfObjectives()) ) {
       std::vector<double> dbl(1, MP_DISPATCH( BestDualBound() ));
       ReportSuffix(sufBestBoundObj, dbl);
@@ -310,6 +337,7 @@ public:
   ////////////////////////////////////////////////////////////
 private:
   struct Options {
+    int lazy_user_cuts_ = 3;
     int basis_=3;
     int warmstart_=1;
     int importPriorities_=1;
@@ -324,6 +352,16 @@ private:
 
 protected:
   const Options& GetMIPOptions() const { return mipStoredOptions_; }
+  Options& GetMIPOptions() { return mipStoredOptions_; }
+
+  int lazy_user_cuts() const {
+    return IMPL_HAS_STD_FEATURE(LAZY_USER_CUTS) ?
+                GetMIPOptions().lazy_user_cuts_ : 0;
+  }
+  /// Whether we need to mark .lazy>0 cuts as 'lazy'
+  bool lazy_cuts() const { return 1 & lazy_user_cuts(); }
+  /// Whether we need to mark .lazy<0 cuts as 'user'
+  bool user_cuts() const { return 2 & lazy_user_cuts(); }
 
   int basis() const
   { return IMPL_HAS_STD_FEATURE(BASIS) ? GetMIPOptions().basis_ : 0; }
@@ -335,7 +373,7 @@ protected:
 
   int priorities() const {
     return IMPL_HAS_STD_FEATURE(VAR_PRIORITIES) ?
-          mipStoredOptions_.importPriorities_ : 0;
+          GetMIPOptions().importPriorities_ : 0;
   }
 
   int rays() const
@@ -343,13 +381,16 @@ protected:
   bool need_ray_primal() const { return 1 & rays(); }
   bool need_ray_dual() const { return 2 & rays(); }
 
-  int sensitivity() const { return mipStoredOptions_.solnSens_; }
+  int sensitivity() const {
+      return IMPL_HAS_STD_FEATURE(SENSITIVITY_ANALYSIS) ?
+                  GetMIPOptions().solnSens_ : 0;
+  }
 
   /// Whether need duals/basis/sens from MIP
   /// Need at least duals when this option is on
   int need_fixed_MIP() const {
     return IMPL_HAS_STD_FEATURE( FIX_MODEL ) ?
-          mipStoredOptions_.fixModel_ : 0;
+          GetMIPOptions().fixModel_ : 0;
   }
 
 
@@ -396,11 +437,22 @@ protected:
 
   ////////////////////////////////////////////////////////////////
   void InitMIPOptions() {
+      if (IMPL_HAS_STD_FEATURE( RETURN_MIP_GAP ))
+        AddStoredOption("mip:lazy lazy",
+          "Whether to recognize suffix .lazy on constraints: "
+          "sum of\n"
+          "\n"
+          "|  1 - accept .lazy>0 values (true lazy constraints, if supported)\n"
+          "|  2 - accept .lazy<0 values (user cuts, if supported)\n"
+          "\n"
+          "Default lazy = 3 ==> accept both.",
+          GetMIPOptions().lazy_user_cuts_);
+
     if (IMPL_HAS_STD_FEATURE( BASIS ))
       AddStoredOption("alg:basis basis",
                       "Whether to use or return a basis:\n "
                       "\n.. value-table::\n",
-                      mipStoredOptions_.basis_, values_basis_);
+                      GetMIPOptions().basis_, values_basis_);
 
     if (IMPL_HAS_STD_FEATURE( WARMSTART ))
       AddStoredOption("alg:start warmstart",
@@ -408,13 +460,13 @@ protected:
                       "in a warmstart:\n "
                       "\n.. value-table::\n"
                       "Note that for LP, \"alg:basis\" is usually more efficient.",
-                      mipStoredOptions_.warmstart_, values_warmstart_);
+                      GetMIPOptions().warmstart_, values_warmstart_);
 
     if (IMPL_HAS_STD_FEATURE( VAR_PRIORITIES ))
       AddStoredOption("mip:priorities priorities",
         "0/1*: Whether to read the branch and bound priorities from the"
         " .priority suffix.",
-        mipStoredOptions_.importPriorities_);
+        GetMIPOptions().importPriorities_);
 
 
     if (IMPL_HAS_STD_FEATURE( RAYS ))
@@ -422,13 +474,13 @@ protected:
                       "Whether to return suffix .unbdd if the objective is unbounded "
                       "or suffix .dunbdd if the constraints are infeasible:\n"
                       "\n.. value-table::\n",
-                      mipStoredOptions_.rays_, values_rays_);
+                      GetMIPOptions().rays_, values_rays_);
 
     if (IMPL_HAS_STD_FEATURE( IIS ))
       AddStoredOption("alg:iisfind iisfind",
                       "Whether to find and export the IIS. "
                       "Default = 0 (don't export).",
-                      mipStoredOptions_.exportIIS_);
+                      GetMIPOptions().exportIIS_);
 
     if (IMPL_HAS_STD_FEATURE( RETURN_MIP_GAP ))
       AddStoredOption("mip:return_gap return_mipgap",
@@ -443,7 +495,7 @@ protected:
     "Returned suffix values are +Infinity if no integer-feasible "
     "solution has been found, in which case no mipgap values are "
     "reported in the solve_message.",
-        mipStoredOptions_.returnMipGap_);
+        GetMIPOptions().returnMipGap_);
 
     if (IMPL_HAS_STD_FEATURE( RETURN_BEST_DUAL_BOUND ))
       AddStoredOption("mip:bestbound bestbound return_bound",
@@ -454,7 +506,7 @@ protected:
         "for minimization problems and +Infinity for maximization "
         "problems if there are no integer variables or if a dual bound "
         "is not available.",
-          mipStoredOptions_.returnBestDualBound_, values_01_noyes_0default_);
+          GetMIPOptions().returnBestDualBound_, values_01_noyes_0default_);
 
     if (IMPL_HAS_STD_FEATURE( SENSITIVITY_ANALYSIS ))
       AddStoredOption("alg:sens solnsens sensitivity",
@@ -472,13 +524,13 @@ protected:
                               " suffixes for constraints are\n"
                         "|    .sensrhslo = smallest right-hand side value\n"
                         "|    .sensrhshi = greatest right-hand side value.",
-                    mipStoredOptions_.solnSens_);
+                    GetMIPOptions().solnSens_);
 
     if (IMPL_HAS_STD_FEATURE( FIX_MODEL ))
       AddStoredOption("mip:basis fixmodel mip:fix",
                       "Whether to compute duals / basis / sensitivity for MIP models:\n"
                       "\n.. value-table::\n",
-                    mipStoredOptions_.fixModel_, values_01_noyes_0default_);
+                    GetMIPOptions().fixModel_, values_01_noyes_0default_);
   }
 
 

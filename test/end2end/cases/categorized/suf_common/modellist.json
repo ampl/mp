@@ -59,5 +59,14 @@
     "tags": [ "linear", "integer" ],
     "options": { "ANYSOLVER_options": "sos=0" },
     "objective": 37.5
+  },
+  {
+    "name": "mip_lazy_01",
+    "tags": [ "linear", "integer" ],
+    "options": { "ANYSOLVER_options": "debug=1" },
+    "objective": 1,
+    "values": {
+      "Initial.test_lin_constr_lazy": 1
+    }
   }
 ]

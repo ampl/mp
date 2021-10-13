@@ -200,6 +200,23 @@ double GurobiBackend::CurrentGrbPoolObjectiveValue() const {
 }
 
 
+void GurobiBackend::MarkLazyOrUserCuts(ArrayRef<int> lazyVals) {
+  const auto& lcs = GetIndexesOfLinearConstraintsWithSuffixes();
+  const auto nlc = NumberOfConstraints(); // N linear constraints TODO
+  for (size_t ilc=0; ilc<std::min(lcs.size(), (size_t)nlc); ++ilc) {
+    size_t i=lcs[ilc];
+    int val;
+    if (i<lazyVals.size() && (val = lazyVals[i])) {
+      if ((val>0 && lazy_cuts()) ||
+          (val<0 && user_cuts()))
+      GRB_CALL( GRBsetintattrelement(model_,
+                                     GRB_INT_ATTR_LAZY, ilc, val) );
+      if (0==ilc)   // Testing API
+        ReportFirstLinearConstraintLazySuffix(val);
+    }
+  }
+}
+
 ArrayRef<int> GurobiBackend::VarStatii() {
   auto stt =
     GrbGetIntAttrArray(model_fixed_,
@@ -473,6 +490,10 @@ void GurobiBackend::PrepareGurobiSolve() {
     GrbSetIntParam(GRB_INT_PAR_INFUNBDINFO, 1);
   if (feasrelax_IOdata())
     DoGurobiFeasRelax();
+  /// After all attributes applied
+  if (!storedOptions_.exportFile_.empty()) {
+    ExportModel(storedOptions_.exportFile_);
+  }
 }
 
 void GurobiBackend::ReportGurobiPool() {
@@ -811,10 +832,6 @@ void GurobiBackend::AddConstraint(const PLConstraint& plc) {
 void GurobiBackend::FinishProblemModificationPhase() {
   // Update before adding statuses etc
   GRB_CALL( GRBupdatemodel(model_) );
-
-  if (!storedOptions_.exportFile_.empty()) {
-    ExportModel(storedOptions_.exportFile_);
-  }
 }
 
 
@@ -1009,9 +1026,9 @@ void GurobiBackend::InitCustomOptions() {
                          "this might hurt performance."
       "\n\n"
       "For problems with "
-      "integer variables and quadratic constraints, "
-      "alg:basis=0 is assumed quietly unless qcp:dual=1 "
-      "is specified.");
+      "integer variables or quadratic constraints, "
+      "alg:basis=0 is assumed quietly unless mip:basis=1 or qcp:dual=1 "
+      "is specified, respectively.");
 
   AddSolverOption("alg:cutoff cutoff",
     "If the optimal objective value is worse than cutoff, "
@@ -1020,7 +1037,7 @@ void GurobiBackend::InitCustomOptions() {
     GRB_DBL_PAR_CUTOFF, MinusInfinity(), Infinity());
 
   AddToOptionDescription("alg:sens",
-                         "For problems with both integer variables and quadratic constraints, "
+                         "For problems with integer variables or quadratic constraints, "
                          "alg:sens=0 is assumed quietly.");
 
 
@@ -1074,7 +1091,8 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n", GRB_INT_PAR_BARORDER, values_barorder, -1);
 
   AddSolverOption("bar:qcptol barqcptol",
-    "Convergence tolerance on the relative difference between primal and dual objective values for barrier algorithms when solving problems "
+    "Convergence tolerance on the relative difference between primal "
+    "and dual objective values for barrier algorithms when solving problems "
     "with quadratic constraints (default 1e-6).", GRB_DBL_PAR_BARQCPCONVTOL,
     0.0, 1.0);
 
@@ -1231,8 +1249,28 @@ void GurobiBackend::InitCustomOptions() {
                   "\n.. value-table::\n",
                   GRB_INT_PAR_INTEGRALITYFOCUS, values_01_noyes_0default_, 0);
   AddToOptionDescription("mip:round",
-                         "For problems with numerical issues such as trickle flow, "
+                         "With Gurobi, for problems with numerical issues such as trickle flow, "
                          "option \"mip:intfocus\" can be more reliable.");
+
+
+  AddToOptionDescription("mip:lazy",
+                         "For Gurobi, lazy/user constraints are indicated with .lazy values of "
+    "-1, "
+    "1, 2, "
+    "or 3 and are ignored until a solution feasible to the "
+    "remaining constraints is found.  What happens next depends "
+    "on the value of .lazy:\n"
+    "\n"
+    "|  -1 - treat the constraint as a user cut; the "
+            "constraint must be redundant with respect to the "
+            "rest of the model, although it can cut off LP "
+            "solutions;\n"
+    "|  1 - the constraint may still be ignored if another "
+            "lazy constraint cuts off the current solution;\n"
+    "|  2 - the constraint will henceforth be enforced if it "
+            "is violated by the current solution;\n"
+    "|  3 - the constraint will henceforth be enforced."
+  );
 
 
   AddSolverOption("mip:maxmipsub maxmipsub",
@@ -1260,6 +1298,7 @@ void GurobiBackend::InitCustomOptions() {
     "integer variables:\n"   "\n.. value-table::\n",
     storedOptions_.nMIPStart_, values_mipstart_);
   AddToOptionDescription("alg:start",
+                         "For Gurobi, "
                          "MIP-specific options can be tuned via mip:start.");
 
 
@@ -1327,8 +1366,8 @@ void GurobiBackend::InitCustomOptions() {
 
 
   AddSolverOption("qp:nonconvex nonconvex",
-                  "How to handle non-convex quadratic objectives and constraints:\n"
-                  "\n.. value-table::\n",
+                  "How to handle non-convex quadratic objectives "
+                  "and constraints:\n"  "\n.. value-table::\n",
     GRB_INT_PAR_NONCONVEX, values_nonconvex, -1);
 
   AddSolverOption("qcp:dual qcpdual",

@@ -200,11 +200,13 @@ public:
           con.lb(), con.ub() };
       if (nullptr==con.p_extra_info()) {
         MP_DISPATCH( AddConstraint( lc ) );
+        orig_lin_constr_.push_back(n_alg_constr_);
       } else {
         auto qt = con.p_extra_info()->qt_;
         assert(!qt.empty());
         MP_DISPATCH( AddConstraint( QuadraticConstraint{std::move(lc), std::move(qt)} ) );
       }
+      ++n_alg_constr_;
     }
   }
 
@@ -941,6 +943,17 @@ protected:
     return qcpi;
   }
 
+  /// Gurobi handles linear constraints as a separate class.
+  /// AMPL provides suffixes for all constraints together.
+  /// The method returns the indexes of linear constraints
+  /// which have suffixes, in the overall constraints list.
+  const std::vector<size_t>& GetIndexesOfLinearConstraintsWithSuffixes() const
+  { return orig_lin_constr_; }
+
+private:
+  /// Indices of NL original linear constr in the total constr ordering
+  std::vector<size_t> orig_lin_constr_;
+  size_t n_alg_constr_=0;
 
 public:
   BasicBackend() :
