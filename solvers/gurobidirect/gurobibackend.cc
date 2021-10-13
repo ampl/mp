@@ -938,6 +938,12 @@ static const mp::OptionValueInfo values_mipstart_[4] = {
           "variable.", 3}
 };
 
+static const mp::OptionValueInfo values_miqcpmethod[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "Solve continuous QCP relaxations at each node", 0},
+    { "1", "Use linearized outer approximations.", 1}
+};
+
 static const mp::OptionValueInfo values_multiobjmethod[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Primal simplex", 0},
@@ -1055,6 +1061,13 @@ void GurobiBackend::InitCustomOptions() {
                   "Primal feasibility tolerance (default 1e-6).",
                   GRB_DBL_PAR_FEASIBILITYTOL, 0.0, DBL_MAX);
 
+  AddSolverOption("alg:numericfocus numericfocus",
+                  "How much to try detecting and managing numerical issues:\n"
+                  "\n"
+      "| 0 - automatic choice (default)\n"
+      "| 1-3 - increasing focus on more stable computations.",
+                  GRB_INT_PAR_NUMERICFOCUS, 0, 3);
+
   AddSolverOption("bar:convtol barconvtol",
     "Tolerance on the relative difference between the primal and dual objectives "
     "for stopping the barrier algorithm "
@@ -1153,6 +1166,18 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     GRB_INT_PAR_INFPROOFCUTS, values_infproofcuts, -1);
 
+  AddSolverOption("cut:mipsep mipsep",
+    "MIPsep cuts: overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_MIPSEPCUTS, PrmCutsMin, PrmCutsMax);
+  AddSolverOption("cut:mir mircuts",
+    "MIR cuts: overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_MIRCUTS, PrmCutsMin, PrmCutsMax);
+  AddSolverOption("cut:modk modkcuts",
+    "Mod-k cuts: overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_MODKCUTS, PrmCutsMin, PrmCutsMax);
+  AddSolverOption("cut:network networkcuts",
+    "Network cuts: overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_NETWORKCUTS, PrmCutsMin, PrmCutsMax);
 
 
   ////////////////////////// LP //////////////////////////
@@ -1163,6 +1188,15 @@ void GurobiBackend::InitCustomOptions() {
         "relaxation of a MIP problem and before cut generation or root "
         "heuristics have started.  Default -1 ==> automatic choice.",
     GRB_INT_PAR_DEGENMOVES, -1, GRB_MAXINT);
+
+  AddSolverOption("lp:multprice_norm multprice_norm normadjust",
+    "Choice of norm used in multiple pricing:\n"
+    "\n"
+      "|  -1 - Automatic choice (default)\n"
+      "|  0, 1, 2, 3 - Specific choices:  hard to describe, "
+        "but sometimes a specific choice will perform "
+        "much better than the automatic choice.",
+    GRB_INT_PAR_NORMADJUST, -1, 3);
 
 
   ////////////////////////// MIP /////////////////////////
@@ -1202,11 +1236,11 @@ void GurobiBackend::InitCustomOptions() {
 
 
   AddSolverOption("mip:gap mipgap",
-    "Max relative MIP optimality gap (default 1e-4).",
+    "Max. relative MIP optimality gap (default 1e-4).",
     GRB_DBL_PAR_MIPGAP, 1e-4, DBL_MAX);
 
   AddSolverOption("mip:gapabs mipgapabs",
-    "Max absolute MIP optimality gap (default 1e-10).",
+    "Max. absolute MIP optimality gap (default 1e-10).",
     GRB_DBL_PAR_MIPGAPABS, 1e-10, DBL_MAX);
 
   AddSolverOption("mip:heurfrac heurfrac",
@@ -1273,10 +1307,6 @@ void GurobiBackend::InitCustomOptions() {
   );
 
 
-  AddSolverOption("mip:maxmipsub maxmipsub",
-    "Maximum number of nodes for RIMS heuristic to explore on MIP problems (default 500).",
-      GRB_INT_PAR_SUBMIPNODES, 500, GRB_MAXINT);
-
 
   AddSolverOption("mip:minrelnodes minrelnodes",
     "Number of nodes for the Minimum Relaxation heuristic to "
@@ -1287,6 +1317,21 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("mip:nodemethod nodemethod",
     "Algorithm used to solve relaxed MIP node problems:\n"
     "\n.. value-table::\n", GRB_INT_PAR_NODEMETHOD, values_nodemethod, -1);
+
+  AddSolverOption("mip:norelheurtime norelheurtime",
+    "Limits the amount of time (in seconds) spent in the NoRel heuristic; "
+    "see the description of \"norelheurwork\" for details.  This "
+    "parameter will introduce nondeterminism; use \"norelheurwork\" "
+    "for deterministic results.  Default 0.",
+    GRB_DBL_PAR_NORELHEURTIME, 0.0, DBL_MAX);
+
+  AddSolverOption("mip:norelheurwork norelheurwork",
+    "Limits the amount of work spent in the NoRel heuristic. "
+    "This heuristic searches for high-quality feasible solutions "
+    "before solving the root relaxation.  The work metrix is hard "
+    "to define precisely, as it depends on the machine.  Default 0.",
+    GRB_DBL_PAR_NORELHEURWORK, 0.0, DBL_MAX);
+
 
 
   AddSolverOption("mip:opttol opttol optimalitytolerance",
@@ -1301,11 +1346,20 @@ void GurobiBackend::InitCustomOptions() {
                          "For Gurobi, "
                          "MIP-specific options can be tuned via mip:start.");
 
+  AddSolverOption("mip:submipnodes submipnodes",
+    "Limit on nodes explored by MIP-based heuristics, e.g., RINS. "
+    "Default = 500.",
+      GRB_INT_PAR_SUBMIPNODES, 0, GRB_MAXINT);
 
   AddSolverOption("mip:varbranch varbranch",
     "MIP branch variable selection strategy:\n"
     "\n.. value-table::\n", GRB_INT_PAR_VARBRANCH, values_varbranch, -1);
 
+
+  AddSolverOption("miqcp:method miqcpmethod",
+    "Method for solving mixed-integer quadratically constrained "
+    "(MIQCP) problems:\n"  "\n.. value-table::\n",
+    GRB_INT_PAR_MIQCPMETHOD, values_miqcpmethod, -1);
 
 
   /// Option "multiobj" is created internally if
@@ -1337,6 +1391,15 @@ void GurobiBackend::InitCustomOptions() {
     "How to apply Gurobi's presolve when doing multi-objective optimization:\n"
     "\n.. value-table::\n",
     GRB_INT_PAR_MULTIOBJPRE, values_multiobjpre, -1);
+
+  AddSolverOption("obj:scale objscale",
+    "How to scale the objective:\n"
+    "\n"
+      "| 0 - Automatic choice (default)\n"
+      "| -1..0 - Divide by max abs. coefficient "
+             "raised to this power\n"
+      "| >0 - Divide by this value.",
+    GRB_DBL_PAR_OBJSCALE, -1.0, DBL_MAX);
 
 
 
@@ -1495,10 +1558,6 @@ void GurobiBackend::InitCustomOptions() {
       "machines have similar performance.",
           GRB_INT_PAR_TUNEJOBS, 0, GRB_MAXINT);
 
-  AddSolverOption("tech:outlev outlev",
-      "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.",
-    GRB_INT_PAR_OUTPUTFLAG, 0, 1);
-
   AddSolverOption("tech:logfreq logfreq outfreq",
       "Interval in seconds between log lines (default 5).",
     GRB_INT_PAR_DISPLAYINTERVAL, 1, GRB_MAXINT);
@@ -1506,6 +1565,31 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("tech:logfile logfile",
       "Log file name.",
       GRB_STR_PAR_LOGFILE);
+
+  AddSolverOption("tech:nodefiledir nodefiledir",
+      "Directory where MIP tree nodes are written after memory "
+      "for them exceeds \"nodefilestart\"; default \".\"",
+    GRB_STR_PAR_NODEFILEDIR);
+
+  AddSolverOption("tech:nodefilestart nodefilestart",
+      "Gigabytes of memory to use for MIP tree nodes; "
+      "default = Infinity (no limit, i.e., no node files written).",
+    GRB_DBL_PAR_NODEFILESTART, 0.0, DBL_MAX);
+
+
+
+  AddSolverOption("tech:outlev outlev",
+      "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.",
+    GRB_INT_PAR_OUTPUTFLAG, 0, 1);
+
+  AddSolverOption("tech:param param",
+                  "General way to specify values of both documented and "
+    "undocumented Gurobi parameters; value should be a quoted "
+    "string (delimited by ' or \") containing a parameter name, a "
+    "space, and the value to be assigned to the parameter.  Can "
+    "appear more than once.  Cannot be used to query current "
+    "parameter values.",
+                  "Dummy");
 
   AddSolverOption("tech:threads threads",
       "How many threads to use when using the barrier algorithm\n"
