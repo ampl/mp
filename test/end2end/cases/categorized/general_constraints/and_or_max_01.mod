@@ -22,6 +22,6 @@ subj to IMPL:
     b==1 ==> y<=0;
 
 subj to logical1:
-    (x<=0 or y>=2)  ==>
+    (x<=0 or y!=2)  ==>
           (x<=-5 or
               (max(x,y)<=3 and b==0));

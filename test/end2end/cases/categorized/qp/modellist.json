@@ -48,5 +48,18 @@
       "_var[1].test_ini_mip": 0.5,
       "_var[2].test_ini_mip": 1
     }
+  },
+  {
+    "name" : "ellipse_nonconvex_abs testMIPstart",
+    "objective" : 3.6,
+    "tags" : ["quadraticnonsdp"],
+    "options": {
+      "gurobi_options": "nonconvex=2",
+      "gurobidirect_options": "nonconvex=2 debug=1"
+    },
+    "values": {
+      "_var[1].test_ini_mip": 0.5,
+      "_var[2].test_ini_mip": 1
+    }
   }
 ]
