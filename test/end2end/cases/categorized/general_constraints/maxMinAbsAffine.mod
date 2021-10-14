@@ -1,8 +1,7 @@
 
 # -------------------------------------------------------------
-# MAXIMUM AND MINIMUM
-# maxAndMin1.mod: using <=3 integer expressions
-# with "max" and "min" operators
+# MAX, MIN, ABS, and affine expressions nested
+# maxMinAbsAffine.mod
 # -------------------------------------------------------------
 
 param n integer := 2;
@@ -17,5 +16,5 @@ maximize TotalCost:
     x[1]-x[2];
 
 subj to MAXIMUM: 
-    maxValue = max (x[1]-3, x[2]-2) + 
-                    min (x[1]-5, x[2]-6, x[1]-x[2]);
+    maxValue = max (x[1]-3, x[2]-2,
+                    min (x[1]-5, abs(x[2]-6), x[1]-x[2]));

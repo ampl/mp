@@ -25,8 +25,8 @@
     "tags" : ["logical"]
   },
   {
-    "name" : "maxAndMin1",
-    "objective" : 3,
+    "name" : "maxMinAbsAffine",
+    "objective" : 0,
     "tags" : ["logical"]
   },
   {

@@ -1,7 +1,8 @@
 
 # -------------------------------------------------------------
 # IMPLICATION
-# impl4.mod: two implications reusing a common subexpression
+# impl4.mod: two implications into the same expression,
+#            currenlty not reusing a common subexpression
 # -------------------------------------------------------------
 
 param ub integer := 10;

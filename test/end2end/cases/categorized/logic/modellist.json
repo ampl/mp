@@ -1,0 +1,20 @@
+[
+  {
+    "name" : "assign1 [if, alldiff]",
+    "files": ["assign1.mod", "assign.dat"],
+    "tags" : ["logical"],
+    "objective" : 6
+  },
+  {
+    "name" : "flowshp1 [or]",
+    "files": ["flowshp1.mod", "flowshp.dat"],
+    "tags" : ["logical"],
+    "objective" : 22
+  },
+  {
+    "name" : "flowshp2 [or, ==>]",
+    "files": ["flowshp2.mod", "flowshp.dat"],
+    "tags" : ["logical"],
+    "objective" : 22
+  }
+]
