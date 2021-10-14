@@ -816,6 +816,7 @@ class Solver : private ErrorHandler,
   /// Both multiobj and objno are used in NLReader to select
   /// the objective(s), solvers should not use these options.
   int objno() const { return std::abs(objno_); }
+  bool objno_specified() const { return objno_>=0; }
 
   /// Returns true if multiobjective optimization is enabled.
   /// Both multiobj and objno are used in NLReader to select
@@ -1270,7 +1271,7 @@ class SolverNLHandler : public Solver::NLProblemBuilder {
 template <typename Solver>
 void SolverNLHandler<Solver>::OnHeader(const NLHeader &h) {
   int objno = solver_.objno();
-  if (objno > h.num_objs)
+  if (objno > h.num_objs && solver_.objno_specified())
     throw InvalidOptionValue("objno", objno,
                              fmt::format("expected value between 0 and {}", h.num_objs));
   num_options_ = h.num_ampl_options;

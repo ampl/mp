@@ -51,5 +51,29 @@
       "_sobj[1]": 1,
       "_sobj[2]": 1
     }
+  },
+  {
+    "name" : "obj_none_01",
+    "tags" : ["linear", "continuous"],
+    "options": { "ANYSOLVER_options": "multiobj=1" },
+    "values": {
+      "z": 1
+    }
+  },
+  {
+    "name" : "obj_none_01 objno=0",
+    "tags" : ["linear", "continuous"],
+    "options": { "ANYSOLVER_options": "objno=0" },
+    "values": {
+      "z": 1
+    }
+  },
+  {
+    "name" : "obj_none_01 multiobj=1",
+    "tags" : ["linear", "continuous"],
+    "options": { "ANYSOLVER_options": "multiobj=1" },
+    "values": {
+      "z": 1
+    }
   }
 ]
