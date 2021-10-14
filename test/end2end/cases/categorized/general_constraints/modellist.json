@@ -40,7 +40,7 @@
     "tags" : ["logical"]
   },
   {
-    "name" : "impl3__1and2",
+    "name" : "and_or_max_01",
     "objective" : -40,
     "tags" : ["logical"]
   },

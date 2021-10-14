@@ -1,7 +1,9 @@
 
 # -------------------------------------------------------------
-# IMPLICATION
-# impl3.mod: two implications reusing a common subexpression
+# Or, And, Max, Impl, CommonSubExp
+# and_or_max_01.mod:
+# Two implications reusing a common subexpression
+# Nested logical
 # -------------------------------------------------------------
 
 param ub integer := 10;
@@ -18,3 +20,8 @@ subj to RIMPL:
     
 subj to IMPL:
     b==1 ==> y<=0;
+
+subj to logical1:
+    (x<=0 or y>=2)  ==>
+          (x<=-5 or
+              (max(x,y)<=3 and b==0));
