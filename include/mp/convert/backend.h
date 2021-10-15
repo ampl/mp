@@ -127,7 +127,9 @@ protected:
   /**
   * FeasRelax
   * No API to overload,
-  * Impl should check feasrelax_IOdata()
+  * Impl should check:
+  * - feasrelax() returns feasrelax mode
+  * - feasrelax().<methods> give the API
   **/
   DEFINE_STD_FEATURE( FEAS_RELAX )
   ALLOW_STD_FEATURE( FEAS_RELAX, false )
@@ -259,7 +261,7 @@ public:
       MP_DISPATCH( ObjAbsTol( ReadSuffix(suf_objabstol) ) );
       MP_DISPATCH( ObjRelTol( ReadSuffix(suf_objreltol) ) );
     }
-    if (feasrelaxMode())
+    if (feasrelax())
       MP_DISPATCH( InputFeasRelaxData() );
   }
   void InputCustomExtras() { }
@@ -293,12 +295,11 @@ public:
     if (suf_lbpen.empty() && suf_ubpen.empty() && suf_rhspen.empty() &&
         0.0>lbpen() && 0.0>ubpen() && 0.0>rhspen())
       return;
-    feasrelax_IOdata().mode_ = feasrelaxMode();
-    feasrelax_IOdata().lbpen = FillFeasRelaxPenalty(suf_lbpen, lbpen(),
+    feasrelax().lbpen_ = FillFeasRelaxPenalty(suf_lbpen, lbpen(),
                 MP_DISPATCH( NumberOfVariables() ));
-    feasrelax_IOdata().ubpen = FillFeasRelaxPenalty(suf_ubpen, ubpen(),
+    feasrelax().ubpen_ = FillFeasRelaxPenalty(suf_ubpen, ubpen(),
                 MP_DISPATCH( NumberOfVariables() ));
-    feasrelax_IOdata().rhspen = FillFeasRelaxPenalty(suf_rhspen, rhspen(),
+    feasrelax().rhspen_ = FillFeasRelaxPenalty(suf_rhspen, rhspen(),
                 MP_DISPATCH( NumberOfConstraints() ));
   }
 
@@ -371,13 +372,13 @@ public:
         else {
           obj_value = MP_DISPATCH(ObjectiveValue());
           writer.write("; ");
-          if (feasrelax_IOdata())
+          if (feasrelax())
             writer.write("feasrelax ");
           writer.write("objective {}",
             MP_DISPATCH(FormatObjValue(obj_value)));
-          if (feasrelax_IOdata().origObjAvailable_)
+          if (feasrelax().orig_obj_available_)
             writer.write("\nOriginal objective = {}",
-                         feasrelax_IOdata().origObjValue_);
+                         feasrelax().orig_obj_value_);
         }
       }
     }
@@ -751,7 +752,7 @@ private:
   struct Options {
     int exportKappa_ = 0;
 
-    int feasRelax_=0;
+    /// feasrelax penalty options
     double lbpen_=1.0, ubpen_=1.0, rhspen_=1.0;
 
     int round_=0;
@@ -759,21 +760,29 @@ private:
   } storedOptions_;
 
   /// Once Impl allows FEASRELAX,
-  /// it should check this via feasrelax_IOdata()
-  struct FeasrelaxIO {
-    /// Whether feasrelax should be done
-    operator bool() const { return mode_; }
+  /// it should check this via feasrelax()
+  class FeasrelaxIO {
+  public:
+    /// Mode!=1: if & how feasrelax should be done
+    operator int() const { return mode_; }
+    ArrayRef<double> lbpen() const { return lbpen_; }
+    ArrayRef<double> ubpen() const { return ubpen_; }
+    ArrayRef<double> rhspen() const { return rhspen_; }
+    /// Call me if orig_obj_value() will be set
+    void flag_orig_obj_available() { orig_obj_available_=true; }
+    double& orig_obj_value() { return orig_obj_value_; }
+    friend class BasicBackend;
+  private:
     /// --------------------- INPUT ----------------------
     int mode_=0;  // whether Impl should do it and which mode,
                   // can be redefined by Impl if cannot map
                   // from standard options
-    int mode() const { return mode_; }
     /// Empty vector means +inf penalties
-    std::vector<double> lbpen, ubpen, rhspen;
+    std::vector<double> lbpen_, ubpen_, rhspen_;
 
     /// --------------------- OUTPUT, filled by Impl -----
-    bool origObjAvailable_ = false;
-    double origObjValue_ = 0.0;
+    bool orig_obj_available_ = false;
+    double orig_obj_value_ = 0.0;
   } feasRelaxIO_;
 
 
@@ -781,8 +790,7 @@ protected:  //////////// Option accessors ////////////////
   int exportKappa() const { return storedOptions_.exportKappa_; }
 
   /// Feasrelax I/O data
-  FeasrelaxIO& feasrelax_IOdata() { return feasRelaxIO_; }
-  int feasrelaxMode() const { return storedOptions_.feasRelax_; }
+  FeasrelaxIO& feasrelax() { return feasRelaxIO_; }
   double lbpen() const { return storedOptions_.lbpen_; }
   double ubpen() const { return storedOptions_.ubpen_; }
   double rhspen() const { return storedOptions_.rhspen_; }
@@ -821,7 +829,7 @@ protected:
                       "and .rhspen on constraints (when nonnegative), else by keywords "
                       "alg:lbpen, alg:ubpen, and alg:rhspen, respectively (default values = 1). "
                       "Weights < 0 are treated as Infinity, allowing no violation.",
-          storedOptions_.feasRelax_);
+          feasrelax().mode_);
       AddStoredOption("alg:lbpen lbpen", "See alg:feasrelax.",
           storedOptions_.lbpen_);
       AddStoredOption("alg:ubpen ubpen", "See alg:feasrelax.",

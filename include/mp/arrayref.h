@@ -124,7 +124,7 @@ ArrayRef<T> MakeArrayRef(const T *data, std::size_t size) {
 
 /// std::vector::data() might not return nullptr when empty
 template <class Vec> inline
-const typename Vec::value_type* data_or_null(const Vec& v) {
+auto data_or_null(const Vec& v) -> decltype(v.data()) {
   return v.empty() ? nullptr : v.data();
 }
 

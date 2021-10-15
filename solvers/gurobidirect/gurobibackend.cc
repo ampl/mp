@@ -488,7 +488,7 @@ void GurobiBackend::PrepareGurobiSolve() {
     GrbSetIntParam(GRB_INT_PAR_POOLSEARCHMODE, storedOptions_.nPoolMode_);
   if (need_ray_primal() || need_ray_dual())
     GrbSetIntParam(GRB_INT_PAR_INFUNBDINFO, 1);
-  if (feasrelax_IOdata())
+  if (feasrelax())
     DoGurobiFeasRelax();
   SetPartitionValues();
   /// After all attributes applied
@@ -590,18 +590,18 @@ std::string GurobiBackend::DoGurobiFixedModel() {
 }
 
 void GurobiBackend::DoGurobiFeasRelax() {
-  int reltype = feasrelax_IOdata().mode()-1,
+  int reltype = feasrelax()-1,
       minrel = 0;
   if (reltype >= 3) {
     reltype -= 3;
     minrel = 1;
-    feasrelax_IOdata().origObjAvailable_ = true;
+    feasrelax().flag_orig_obj_available();
   }
   GRB_CALL( GRBfeasrelax(model_, reltype, minrel,
-                         (double*)data_or_null( feasrelax_IOdata().lbpen ),
-                         (double*)data_or_null( feasrelax_IOdata().ubpen ),
-                         (double*)data_or_null( feasrelax_IOdata().rhspen ),
-                         &feasrelax_IOdata().origObjValue_) );
+                         (double*)data_or_null( feasrelax().lbpen() ),
+                         (double*)data_or_null( feasrelax().ubpen() ),
+                         (double*)data_or_null( feasrelax().rhspen() ),
+                         &feasrelax().orig_obj_value()) );
 }
 
 void GurobiBackend::SetPartitionValues() {
