@@ -53,5 +53,19 @@
     "name" : "impl5_commonExpr",
     "objective" : -40,
     "tags" : ["logical"]
+  },
+  {
+    "name" : "poly_01",
+    "tags" : ["logical"],
+    "options": { "ANYSOLVER_options": "nonconvex=2" },
+    "values": {
+      "x": 0.1663127474012448
+    }
+  },
+  {
+    "name" : "and_or_max_poly_01",
+    "tags" : ["logical", "quadraticnonsdp"],
+    "options": { "ANYSOLVER_options": "nonconvex=2" },
+    "objective" : -40
   }
 ]

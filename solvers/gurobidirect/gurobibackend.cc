@@ -695,8 +695,8 @@ void GurobiBackend::SetQuadraticObjective(int iobj, const QuadraticObjective &qo
     SetLinearObjective(iobj, qo);                         // add the linear part
     const auto& qt = qo.GetQPTerms();
     GRB_CALL( GRBaddqpterms(model_, qt.num_terms(),
-                                (int*)qt.vars1(), (int*)qt.vars2(),
-                            (double*)qt.coefs()) );
+                                (int*)qt.vars1_ptr(), (int*)qt.vars2_ptr(),
+                            (double*)qt.coefs_ptr()) );
   } else {
     throw std::runtime_error("Multiple quadratic objectives not supported");
   }
@@ -717,18 +717,18 @@ void GurobiBackend::AddConstraint( const QuadraticConstraint& qc ) {
   const auto& qt = qc.GetQPTerms();
   if (qc.lb()==qc.ub())
     GRB_CALL( GRBaddqconstr(model_, qc.nnz(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-                            qt.num_terms(), (int*)qt.vars1(), (int*)qt.vars2(),
-                            (double*)qt.coefs(), GRB_EQUAL, qc.lb(), NULL) );
+                            qt.num_terms(), (int*)qt.vars1_ptr(), (int*)qt.vars2_ptr(),
+                            (double*)qt.coefs_ptr(), GRB_EQUAL, qc.lb(), NULL) );
   else {            // Let solver deal with lb>~ub etc.
     if (qc.lb()>MinusInfinity()) {
       GRB_CALL( GRBaddqconstr(model_, qc.nnz(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-                              qt.num_terms(), (int*)qt.vars1(), (int*)qt.vars2(),
-                              (double*)qt.coefs(), GRB_GREATER_EQUAL, qc.lb(), NULL) );
+                              qt.num_terms(), (int*)qt.vars1_ptr(), (int*)qt.vars2_ptr(),
+                              (double*)qt.coefs_ptr(), GRB_GREATER_EQUAL, qc.lb(), NULL) );
     }
     if (qc.ub()<Infinity()) {
       GRB_CALL( GRBaddqconstr(model_, qc.nnz(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-                              qt.num_terms(), (int*)qt.vars1(), (int*)qt.vars2(),
-                              (double*)qt.coefs(), GRB_LESS_EQUAL, qc.ub(), NULL) );
+                              qt.num_terms(), (int*)qt.vars1_ptr(), (int*)qt.vars2_ptr(),
+                              (double*)qt.coefs_ptr(), GRB_LESS_EQUAL, qc.ub(), NULL) );
     }
   }
 }

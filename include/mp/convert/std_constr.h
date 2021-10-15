@@ -214,14 +214,15 @@ public:
   }
   const QuadExpr& GetQuadExpr() const { return quad_expr_; }
   const Arguments& GetArguments() const { return GetQuadExpr(); }
-  LinearConstraint to_quad_constraint() const {
+  QuadraticConstraint to_quadratic_constraint() const {
     const auto& qe = GetQuadExpr();
     const auto& ae = qe.GetAE();
     LinearExprUnzipper aeu(ae);
     aeu.AddTerm(DefiningConstraint::GetResultVar(), -1.0);
-    throw 0; // TODO
-    return LinearConstraint(std::move(aeu.c_), std::move(aeu.v_),
-                            -ae.constant_term(), -ae.constant_term());
+    auto qt = qe.GetQT();
+    return {LinearConstraint(std::move(aeu.c_), std::move(aeu.v_),
+                             -ae.constant_term(), -ae.constant_term()),
+            std::move(qt)};
   }
 };
 

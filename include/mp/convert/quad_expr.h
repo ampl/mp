@@ -26,9 +26,13 @@ public:
   int num_terms() const { return static_cast<int>(coefs_.size()); }
   int capacity() const { return static_cast<int>(coefs_.capacity()); }
 
-  const double* coefs() const { return coefs_.data(); }
-  const int* vars1() const { return vars1_.data(); }
-  const int* vars2() const { return vars2_.data(); }
+  const double* coefs_ptr() const { return coefs_.data(); }
+  const int* vars1_ptr() const { return vars1_.data(); }
+  const int* vars2_ptr() const { return vars2_.data(); }
+
+  const std::vector<double>& coefs() const { return coefs_; }
+  const std::vector<int>& vars1() const { return vars1_; }
+  const std::vector<int>& vars2() const { return vars2_; }
 
   double coef(int i) const { return coefs_[i]; }
   void set_coef(int i, double c) { coefs_[i] = c; }

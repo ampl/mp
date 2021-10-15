@@ -834,23 +834,33 @@ public:
   }
 
   void PropagateResult(LinearConstraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
-    for (const auto& v: con.vars())
+    internal::Unused(lb, ub, ctx);
+    for (const auto v: con.vars())
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+  }
+
+  void PropagateResult(QuadraticConstraint& con, double lb, double ub, Context ctx) {
+    internal::Unused(lb, ub, ctx);
+    for (const auto v: con.vars())
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+    for (const auto v: con.GetQPTerms().vars1())
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+    for (const auto v: con.GetQPTerms().vars2())
       PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
   void PropagateResult(IndicatorConstraintLinLE& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
+    internal::Unused(lb, ub, ctx);
     PropagateResultOfInitExpr(con.get_binary_var(),
                               this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-    for (const auto& v: con.get_lin_vars())
+    for (const auto v: con.get_lin_vars())
       PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
   template <int type>
   void PropagateResult(SOS_1or2_Constraint<type>& con, double lb, double ub, Context ctx) {
     internal::Unused(con, lb, ub, ctx);
-    for (const auto& v: con.get_vars())
+    for (const auto v: con.get_vars())
       PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
@@ -921,6 +931,11 @@ public:
   /// If backend does not like LDC, we can redefine it
   void Convert(const LinearDefiningConstraint& ldc) {
     this->AddConstraint(ldc.to_linear_constraint());
+  }
+
+  /// If backend does not like QDC, we can redefine it
+  void Convert(const QuadraticDefiningConstraint& qdc) {
+    this->AddConstraint(qdc.to_quadratic_constraint());
   }
 
 public:
