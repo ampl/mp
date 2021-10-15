@@ -696,9 +696,14 @@ void GurobiBackend::SetQuadraticObjective(int iobj, const QuadraticObjective &qo
 }
 
 void GurobiBackend::AddConstraint( const LinearConstraint& lc ) {
-  GRB_CALL( GRBaddrangeconstr(model_, lc.nnz(),
-                              (int*)lc.pvars(), (double*)lc.pcoefs(),
-                              lc.lb(), lc.ub(), NULL) );
+  if (lc.lb()==lc.ub()) // For range, Gurobi 9.1.2 adds extra var ==0
+    GRB_CALL( GRBaddconstr(model_, lc.nnz(),
+                           (int*)lc.pvars(), (double*)lc.pcoefs(),
+                           GRB_EQUAL, lc.ub(), NULL) );
+  else
+    GRB_CALL( GRBaddrangeconstr(model_, lc.nnz(),
+                                (int*)lc.pvars(), (double*)lc.pcoefs(),
+                                lc.lb(), lc.ub(), NULL) );
 }
 
 void GurobiBackend::AddConstraint( const QuadraticConstraint& qc ) {
