@@ -279,6 +279,7 @@ protected:
 
   void PrepareGurobiSolve();
   void DoGurobiFeasRelax();
+  void SetPartitionValues();
   void ReportGurobiPool();
   /// Creates and solves, marks model_fixed to be used for duals/basis/sens
   void ConsiderGurobiFixedModel();

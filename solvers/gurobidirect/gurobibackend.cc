@@ -490,6 +490,7 @@ void GurobiBackend::PrepareGurobiSolve() {
     GrbSetIntParam(GRB_INT_PAR_INFUNBDINFO, 1);
   if (feasrelax_IOdata())
     DoGurobiFeasRelax();
+  SetPartitionValues();
   /// After all attributes applied
   if (!storedOptions_.exportFile_.empty()) {
     ExportModel(storedOptions_.exportFile_);
@@ -583,7 +584,7 @@ std::string GurobiBackend::DoGurobiFixedModel() {
     if (f)
       AddToSolverMessage( fmt::format(
             "Fixed MIP for mip:basis: {} simplex iteration{}",
-            f, "s" + (f == 1.)) );
+            f, "s"[f == 1.]) );
   }
   return {};
 }
@@ -601,6 +602,12 @@ void GurobiBackend::DoGurobiFeasRelax() {
                          (double*)data_or_null( feasrelax_IOdata().ubpen ),
                          (double*)data_or_null( feasrelax_IOdata().rhspen ),
                          &feasrelax_IOdata().origObjValue_) );
+}
+
+void GurobiBackend::SetPartitionValues() {
+  if (auto part = ReadIntSuffix( {"partition", suf::Kind::VAR} )) {
+    GrbSetIntAttrArray(GRB_INT_ATTR_PARTITION, part);
+  }
 }
 
 
@@ -1342,6 +1349,28 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("mip:opttol opttol optimalitytolerance",
       "Dual feasibility tolerance.",
       GRB_DBL_PAR_OPTIMALITYTOL, 1e-9, 1e-2);
+
+  AddSolverOption("mip:partition partitionplace",
+      "Whether and how to use the .partition suffix on variables "
+    "in the partition heuristic for MIP problems: sum of\n"
+    "\n"
+    "|      1 ==> when the branch-and-cut search ends\n"
+    "|      2 ==> at nodes in the branch-and-cut search\n"
+    "|      4 ==> after the root-cut loop\n"
+    "|      8 ==> at the start of the root-cut loop\n"
+    "|     16 ==> before solving the root relaxation.\n"
+    "\n"
+    "Default = 15.  Values of .parition determine how variables "
+    "participate in the partition heuristic.  Variables with\n"
+    "\n"
+    "|     .partition = -1 are always held fixed;\n"
+    "|     .partition = 0 can vary in all sub-MIP models;\n"
+    "|     .partition > 0 can vary only in in that sub-MIP model.\n"
+    "\n"
+    "The partition heuristic is only run when partition_place is "
+    "between 1 and 31 and some variables have suitable .partition "
+    "suffix values.",
+      GRB_INT_PAR_PARTITIONPLACE, 0, 31);
 
   AddStoredOption("mip:start mipstart intstart",
     "Whether to use initial guesses in problems with "
