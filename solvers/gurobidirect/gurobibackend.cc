@@ -1001,6 +1001,28 @@ static const mp::OptionValueInfo values_predual[] = {
            "choose heuristically between them.", 2}
 };
 
+static const mp::OptionValueInfo values_premiqcpform[] = {
+    { "-1", "Automatic choice (default)", -1},
+    { "0", "Retain MIQCP form", 0},
+    { "1", "Transform to second-order cone contraints", 1},
+    { "2", "Transform to rotated cone constraints.", 2}
+};
+
+static const mp::OptionValueInfo values_preqlinearize[] = {
+    { "-1", "Automatic choice (default)", -1},
+    { "0", "Do not modify the quadratic part(s)\n"
+           "\t\t\t 1 or 2 = try to linearize quadratic parts:", 0},
+    { "1", "Focus on a strong LP relaxation", 1},
+    { "2", "Focus on a compact LP relaxation.", 2}
+};
+
+static const mp::OptionValueInfo values_presolve[] = {
+    { "-1", "Automatic choice (default)", -1},
+    { "0", "No", 0},
+    { "1", "Conservative", 1},
+    { "2", "Aggressive.", 2}
+};
+
 static const mp::OptionValueInfo values_pool_mode[] = {
     { "0", "Just collect solutions during normal solve, and sort them best-first", 0},
     { "1", "Make some effort at finding additional solutions", 1},
@@ -1076,8 +1098,8 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("alg:numericfocus numericfocus",
                   "How much to try detecting and managing numerical issues:\n"
                   "\n"
-      "| 0 - automatic choice (default)\n"
-      "| 1-3 - increasing focus on more stable computations.",
+      "| 0 - Automatic choice (default)\n"
+      "| 1-3 - Increasing focus on more stable computations.",
                   GRB_INT_PAR_NUMERICFOCUS, 0, 3);
 
   AddSolverOption("bar:convtol barconvtol",
@@ -1210,6 +1232,14 @@ void GurobiBackend::InitCustomOptions() {
         "much better than the automatic choice.",
     GRB_INT_PAR_NORMADJUST, -1, 3);
 
+  AddSolverOption("lp:perturb perturb",
+    "Magnitude of simplex perturbation (when needed; default 2e-4).",
+    GRB_DBL_PAR_PERTURBVALUE, 0.0, DBL_MAX);
+
+  AddSolverOption("lp:pivtol pivtol markowitztol",
+    "Markowitz pivot tolerance (default 7.8125e-3).",
+    GRB_DBL_PAR_MARKOWITZTOL, 1e-4, 0.999);
+
 
   ////////////////////////// MIP /////////////////////////
 
@@ -1307,15 +1337,15 @@ void GurobiBackend::InitCustomOptions() {
     "remaining constraints is found.  What happens next depends "
     "on the value of .lazy:\n"
     "\n"
-    "|  -1 - treat the constraint as a user cut; the "
+    "|  -1 - Treat the constraint as a user cut; the "
             "constraint must be redundant with respect to the "
             "rest of the model, although it can cut off LP "
             "solutions;\n"
-    "|  1 - the constraint may still be ignored if another "
+    "|  1  - The constraint may still be ignored if another "
             "lazy constraint cuts off the current solution;\n"
-    "|  2 - the constraint will henceforth be enforced if it "
+    "|  2  - The constraint will henceforth be enforced if it "
             "is violated by the current solution;\n"
-    "|  3 - the constraint will henceforth be enforced."
+    "|  3  - The constraint will henceforth be enforced."
   );
 
 
@@ -1354,11 +1384,11 @@ void GurobiBackend::InitCustomOptions() {
       "Whether and how to use the .partition suffix on variables "
     "in the partition heuristic for MIP problems: sum of\n"
     "\n"
-    "|      1 ==> when the branch-and-cut search ends\n"
-    "|      2 ==> at nodes in the branch-and-cut search\n"
-    "|      4 ==> after the root-cut loop\n"
-    "|      8 ==> at the start of the root-cut loop\n"
-    "|     16 ==> before solving the root relaxation.\n"
+    "|      1 ==> When the branch-and-cut search ends\n"
+    "|      2 ==> At nodes in the branch-and-cut search\n"
+    "|      4 ==> After the root-cut loop\n"
+    "|      8 ==> At the start of the root-cut loop\n"
+    "|     16 ==> Before solving the root relaxation.\n"
     "\n"
     "Default = 15.  Values of .parition determine how variables "
     "participate in the partition heuristic.  Variables with\n"
@@ -1461,7 +1491,58 @@ void GurobiBackend::InitCustomOptions() {
         "\n.. value-table::\n",
     GRB_INT_PAR_DUALREDUCTIONS, values_01_noyes_1default_, 1);
 
+  AddSolverOption("pre:miqcpform premiqcpform",
+    "For mixed-integer quadratically constrained (MIQCP) problems, "
+    "how Gurobi should transform quadratic constraints:\n"
+        "\n.. value-table::\n\n"
+    "Choices 0 and 1 work with general quadratic constraints. "
+    "Choices 1 and 2 only work with constraints of suitable forms.",
+    GRB_INT_PAR_PREMIQCPFORM, values_premiqcpform, -1);
 
+  AddSolverOption("pre:passes prepasses",
+    "Limit on the number of Gurobi presolve passes:\n"
+    "\n"
+    "| -1 - Automatic choice (default)\n"
+    "| n>=0 - At most n passes.",
+    GRB_INT_PAR_PREPASSES, -1, GRB_MAXINT);
+
+  AddSolverOption("pre:qlinearize preqlinearize preqlin",
+    "How Gurobi's presolve should treat quadratic problems:\n"
+        "\n.. value-table::\n",
+    GRB_INT_PAR_PREQLINEARIZE, values_preqlinearize, -1);
+
+  AddSolverOption("pre:solve presolve",
+    "Whether to use Gurobi's presolve:\n"
+        "\n.. value-table::\n",
+    GRB_INT_PAR_PRESOLVE, values_presolve, -1);
+
+  AddSolverOption("pre:sos1bigm presos1bigm",
+    "Big-M for converting SOS1 constraints to binary form:\n"
+    "\n"
+    "| -1 - Automatic choice (default)\n"
+    "|  0  - No conversion\n"
+    "\n"
+    "Large values (e.g., 1e8) may cause numeric trouble.",
+    GRB_DBL_PAR_PRESOS1BIGM, -1.0, 1e10);
+
+  AddSolverOption("pre:sos2bigm presos2bigm",
+    "Big-M for converting SOS2 constraints to binary form:\n"
+    "\n"
+    "| -1 - Automatic choice (default)\n"
+    "|  0  - No conversion\n"
+    "\n"
+    "Large values (e.g., 1e8) may cause numeric trouble.",
+    GRB_DBL_PAR_PRESOS2BIGM, -1.0, 1e10);
+
+  AddSolverOption("pre:sparsify presparsify",
+    "Whether Gurobi's presolve should use its \"sparsify reduction\", "
+    "which sometimes gives significant problem-size reductions:\n"
+        "\n.. value-table::\n",
+    GRB_INT_PAR_PRESPARSIFY, values_autonoyes_, -1);
+
+
+
+  ///////////////////////// Q(C)P //////////////////////////////
   AddSolverOption("qp:nonconvex nonconvex",
                   "How to handle non-convex quadratic objectives "
                   "and constraints:\n"  "\n.. value-table::\n",
@@ -1629,6 +1710,29 @@ void GurobiBackend::InitCustomOptions() {
       "How many threads to use when using the barrier algorithm\n"
       "or solving MIP problems; default 0 ==> automatic choice.",
       GRB_INT_PAR_THREADS, 0, GRB_MAXINT);
+
+
+  AddSolverOption("tech:workerpool pool_servers",
+      "When using a distributed algorithm (distributed MIP, "
+      "distributed concurrent, or distributed tuning), this "
+      "parameter allows you to specify a Remote Services "
+      "cluster that will provide distributed workers. You "
+      "should also specify the access password for that "
+      "cluster, if there is one, in the \"workerpassword\" "
+      "parameter. Note that you don't need to set either "
+      "of these parameters if your job is running on a "
+      "Compute Server node and you want to use the same "
+      "cluster for the distributed workers.\n"
+      "\n"
+      "You can provide a comma-separated list of machines "
+      "for added robustness.",
+      GRB_STR_PAR_WORKERPOOL);
+
+  AddSolverOption("tech:workerpassword pool_password",
+      "Password for the worker pool (if needed).",
+      GRB_STR_PAR_WORKERPASSWORD);
+
+
 
   AddStoredOption("tech:writeprob writeprob exportfile",
       "Specifies the name of a file where to export the model before "

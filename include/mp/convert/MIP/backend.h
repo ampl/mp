@@ -406,33 +406,39 @@ public:
   ////////////////////////////////////////////////////////////////
 protected:
   const mp::OptionValueInfo values_01_noyes_0default_[2] = {
-      {     "0", "no (default)", 0 },
-      {     "1", "yes.", 1}
+    {     "0", "No (default)", 0 },
+    {     "1", "Yes.", 1}
   };
 
   const mp::OptionValueInfo values_01_noyes_1default_[2] = {
-      {     "0", "no", 0 },
-      {     "1", "yes (default.)", 1}
+    {     "0", "No", 0 },
+    {     "1", "Yes (default.)", 1}
+  };
+
+  const mp::OptionValueInfo values_autonoyes_[3] = {
+    {     "-1", "Automatic choice (default)", 0 },
+    {     "0", "No", 0 },
+    {     "1", "Yes (default.)", 1}
   };
 
   const mp::OptionValueInfo values_basis_[4] = {
-      {     "0", "no", 0 },
-      {     "1", "use incoming basis (if provided)", 1},
-      {     "2", "return final basis", 2},
-      {     "3", "both (1 + 2 = default.)", 3}
+    {     "0", "No", 0 },
+    {     "1", "Use incoming basis (if provided)", 1},
+    {     "2", "Return final basis", 2},
+    {     "3", "Both (1 + 2 = default.)", 3}
   };
 
   const mp::OptionValueInfo values_warmstart_[3] = {
-      {     "0", "no", 0 },
-      {     "1", "yes (for LP: if there is no incoming alg:basis) (default)", 1},
-      {     "2", "yes (for LP: ignoring the incoming alg:basis, if any.)", 2}
+    {     "0", "No", 0 },
+    {     "1", "Yes (for LP: if there is no incoming alg:basis) (default)", 1},
+    {     "2", "Yes (for LP: ignoring the incoming alg:basis, if any.)", 2}
   };
 
   const mp::OptionValueInfo values_rays_[4] = {
-      {     "0", "neither", 0 },
-      {     "1", "just .unbdd", 1},
-      {     "2", "just .dunbdd", 2},
-      {     "3", "both (default).", 3}
+    {     "0", "Neither", 0 },
+    {     "1", "Just .unbdd", 1},
+    {     "2", "Just .dunbdd", 2},
+    {     "3", "Both (default).", 3}
   };
 
   ////////////////////////////////////////////////////////////////
@@ -442,8 +448,8 @@ protected:
           "Whether to recognize suffix .lazy on constraints: "
           "sum of\n"
           "\n"
-          "|  1 - accept .lazy>0 values (true lazy constraints, if supported)\n"
-          "|  2 - accept .lazy<0 values (user cuts, if supported)\n"
+          "|  1 - Accept .lazy>0 values (true lazy constraints, if supported)\n"
+          "|  2 - Accept .lazy<0 values (user cuts, if supported)\n"
           "\n"
           "Default lazy = 3 ==> accept both.",
           GetMIPOptions().lazy_user_cuts_);
@@ -487,9 +493,9 @@ protected:
         "Whether to return mipgap suffixes or include mipgap values "
     "(|objectve - .bestbound|) in the solve_message:  sum of\n"
     "\n"
-    "| 1 - return .relmipgap suffix (relative to |obj|)\n"
-    "| 2 - return .absmipgap suffix (absolute mipgap)\n"
-    "| 4 - suppress mipgap values in solve_message.\n"
+    "| 1 - Return .relmipgap suffix (relative to |obj|)\n"
+    "| 2 - Return .absmipgap suffix (absolute mipgap)\n"
+    "| 4 - Suppress mipgap values in solve_message.\n"
     "\n"
     "Default = 0.  The suffixes are on the objective and problem. "
     "Returned suffix values are +Infinity if no integer-feasible "
@@ -513,8 +519,8 @@ protected:
                       "Whether to return suffixes for solution sensitivities, i.e., "
                       "ranges of values for which the optimal basis remains optimal:\n"
                         "\n"
-                        "|  0 - no (default)\n"
-                        "|  1 - yes:  suffixes return on variables are\n"
+                        "|  0 - No (default)\n"
+                        "|  1 - Yes:  suffixes return on variables are\n"
                         "|    .sensobjlo = smallest objective coefficient\n"
                         "|    .sensobjhi = greatest objective coefficient\n"
                         "|    .senslblo = smallest variable lower bound\n"

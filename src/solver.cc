@@ -566,19 +566,19 @@ Solver::Solver(
         "In a stand-alone invocation (no ``-AMPL`` on the command line), "
         "what solution information to write.  Sum of\n"
         "\n"
-        "| 1 - write ``.sol`` file\n"
-        "| 2 - primal variables to stdout\n"
-        "| 4 - dual variables to stdout\n"
-        "| 8 - suppress solution message.",
+        "| 1 - Write ``.sol`` file\n"
+        "| 2 - Primal variables to stdout\n"
+        "| 4 - Dual variables to stdout\n"
+        "| 8 - Suppress solution message.",
         &Solver::GetWantSol, &Solver::SetWantSol);
 
   AddIntOption(
         "obj:no objno",
         "Objective to optimize:\n"
         "\n"
-        "| 0 - none\n"
-        "| 1 - first (default, if available)\n"
-        "| 2 - second (if available), etc.\n",
+        "| 0 - None\n"
+        "| 1 - First (default, if available)\n"
+        "| 2 - Second (if available), etc.\n",
         &Solver::GetObjNo, &Solver::SetObjNo);
 
   struct BoolOption : TypedSolverOption<int> {
