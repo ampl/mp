@@ -17,11 +17,13 @@
     "name": "infeas_int_02_vars iisfind=1",
     "tags": [ "linear"],
     "options": {
-        "ANYSOLVER_options": "iisfind=1"
+        "ANYSOLVER_options": "iisfind=1",
+        "presolve": 0,
+        "comment": "Disable presolve, otherwise var bounds too tight"
     },
     "values": {
-      "x.iis": "non",
-      "y.iis": "upp",
+      "x.iis": "upp",
+      "y.iis": "non",
       "C1.iis": "mem",
       "C2.iis": "mem",
       "C3.iis": "non"
