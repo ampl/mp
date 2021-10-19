@@ -327,7 +327,7 @@ private:
         options_.sos_);
     this->AddOption("alg:relax relax",
         "Whether to relax integrality: \n" "\n.. value-table::",
-        options_.relax_);
+        options_.relax_, values_relax_);
   }
 
 };

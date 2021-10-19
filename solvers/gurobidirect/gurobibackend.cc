@@ -899,6 +899,12 @@ static const mp::OptionValueInfo values_cuts[] = {
     { "3", "Very aggressive cut generation.", 3}
 };
 static constexpr int PrmCutsMin=-1, PrmCutsMax=3;
+static const mp::OptionValueInfo values_cuts_upto2[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "No cuts", 0},
+    { "1", "Conservative cut generation", 1},
+    { "2", "Aggressive cut generation.", 2}
+};
 
 static const mp::OptionValueInfo values_disconnected[] = {
     {"-1", "Automatic choice (default)", -1},
@@ -1220,6 +1226,26 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("cut:network networkcuts",
     "Network cuts: overrides \"cuts\"; choices as for \"cuts\".",
     GRB_INT_PAR_NETWORKCUTS, PrmCutsMin, PrmCutsMax);
+  AddSolverOption("cut:relaxliftcuts relaxliftcuts",
+    "Whether to enable relax-and-lift cut generation:\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_RELAXLIFTCUTS, values_cuts_upto2, -1);
+
+
+
+
+  AddSolverOption("lim:iter iterlim iterlimit",
+    "Iteration limit (default: no limit).",
+    GRB_DBL_PAR_ITERATIONLIMIT, 0.0, DBL_MAX);
+
+  AddSolverOption("lim:nodes nodelim nodelimit",
+    "Maximum MIP nodes to explore (default: no limit).",
+    GRB_DBL_PAR_NODELIMIT, 0.0, DBL_MAX);
+
+  AddSolverOption("lim:time timelim timelimit",
+      "Limit on solve time (in seconds; default: no limit).",
+      GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
+
 
 
   ////////////////////////// LP //////////////////////////
@@ -1426,6 +1452,14 @@ void GurobiBackend::InitCustomOptions() {
     "Default -1 = automatic choice.",
     GRB_INT_PAR_PUMPPASSES, -1, GRB_MAXINT);
 
+  AddSolverOption("mip:rins rins",
+    "How often to apply the RINS heuristic for MIP problems:\n"
+    "\n"
+    "| -1  - Automatic choice (default)\n"
+    "| 0   - never\n"
+    "| n > 0  - every n-th node.",
+    GRB_INT_PAR_RINS, -1, GRB_MAXINT);
+
   AddStoredOption("mip:start mipstart intstart",
     "Whether to use initial guesses in problems with "
     "integer variables:\n"   "\n.. value-table::\n",
@@ -1619,21 +1653,6 @@ void GurobiBackend::InitCustomOptions() {
                            "and return it in the ``.nsol`` problem suffix. "
                            "The number and kind of solutions are controlled by the "
                            "sol:pool... parameters. Value 1 implied by sol:stub.");
-
-
-
-  AddSolverOption("lim:iter iterlim iterlimit",
-    "Iteration limit (default: no limit).",
-    GRB_DBL_PAR_ITERATIONLIMIT, 0.0, DBL_MAX);
-
-  AddSolverOption("lim:nodes nodelim nodelimit",
-    "Maximum MIP nodes to explore (default: no limit).",
-    GRB_DBL_PAR_NODELIMIT, 0.0, DBL_MAX);
-
-  AddSolverOption("lim:time timelim timelimit",
-      "Limit on solve time (in seconds; default: no limit).",
-      GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
-
 
 
   AddStoredOption("tech:cloudid cloudid",
