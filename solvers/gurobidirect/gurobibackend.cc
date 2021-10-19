@@ -1029,6 +1029,13 @@ static const mp::OptionValueInfo values_presolve[] = {
     { "2", "Aggressive.", 2}
 };
 
+static const mp::OptionValueInfo values_prescale[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "No", 0},
+    { "1", "Yes", 1},
+    { "2", "Yes, more aggressively", 2},
+    { "3", "Yes, even more aggressively.", 3}
+};
 static const mp::OptionValueInfo values_pricing[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "Partial pricing", 0},
@@ -1230,6 +1237,11 @@ void GurobiBackend::InitCustomOptions() {
     "Whether to enable relax-and-lift cut generation:\n"
     "\n.. value-table::\n",
     GRB_INT_PAR_RELAXLIFTCUTS, values_cuts_upto2, -1);
+  AddSolverOption("cut:rltcuts rltcuts",
+    "Whether to enable generation of cuts by the Relaxation "
+    "Linearization Technique (RLT):\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_RLTCUTS, values_cuts_upto2, -1);
 
 
 
@@ -1569,6 +1581,16 @@ void GurobiBackend::InitCustomOptions() {
         "\n.. value-table::\n",
     GRB_INT_PAR_PREQLINEARIZE, values_preqlinearize, -1);
 
+  AddSolverOption("pre:scale scale",
+    "Whether to scale the problem:\n"
+        "\n.. value-table::\n"
+    "Scaling typically reduces solution times, but it may lead "
+    "to larger constraint violations in the original, unscaled "
+    "model. Choosing a different scaling option can sometimes "
+    "improve performance for particularly numerically difficult "
+    "models.",
+    GRB_INT_PAR_SCALEFLAG, values_prescale, -1);
+
   AddSolverOption("pre:solve presolve",
     "Whether to use Gurobi's presolve:\n"
         "\n.. value-table::\n",
@@ -1753,8 +1775,30 @@ void GurobiBackend::InitCustomOptions() {
     "parameter values.",
                   "Dummy");
 
+  AddSolverOption("tech:resultfile resultfile",
+      "Name of a file of extra information written after "
+      "completion of optimization.  The name's suffix determines what "
+      "is written:\n"
+      "\n"
+      "| .sol - Solution vector\n"
+      "| .bas - Simplex basis\n"
+      "| .mst - Integer variable solution vector\n"
+      "| .ilp - IIS for an infeasible model\n"
+      "| .mps, .rew, .lp, or .rlp - To capture the original model.\n"
+      "\n"
+      "The file suffix may optionally be followed by .gz, .bz2, or .7z, "
+      "which produces a compressed result.",
+      GRB_STR_PAR_RESULTFILE);
+
+
+  AddSolverOption("tech:seed seed",
+      "Random number seed (default 0), affecting perturbations that "
+      "may influence the solution path.",
+      GRB_INT_PAR_SEED, 0, GRB_MAXINT);
+
+
   AddSolverOption("tech:threads threads",
-      "How many threads to use when using the barrier algorithm\n"
+      "How many threads to use when using the barrier algorithm "
       "or solving MIP problems; default 0 ==> automatic choice.",
       GRB_INT_PAR_THREADS, 0, GRB_MAXINT);
 
