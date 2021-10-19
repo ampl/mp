@@ -250,6 +250,8 @@ protected:
   }
 
   void PushWholeModelToBackend() {
+    if (relax())
+      GetModel().RelaxIntegrality();
     GetModel().PushModelTo(GetBackend());
   }
 
@@ -294,14 +296,21 @@ private:
   struct Options {
     int sos_ = 1;
     int sos2_ = 1;
+    int relax_ = 0;
   };
   Options options_;
 
 protected:
   int sos() const { return options_.sos_; }
   int sos2_ampl_pl() const { return options_.sos2_; }
+  int relax() const { return options_.relax_; }
 
 private:
+  const mp::OptionValueInfo values_relax_[2] = {
+    {     "0", "No (default)", 0 },
+    {     "1", "Yes: treat integer and binary variables as continuous.", 1}
+  };
+
   void InitOptions() {
     this->AddOption("cvt:sos sos",
         "0/1*: Whether to honor declared suffixes .sosno and .ref describing "
@@ -316,6 +325,9 @@ private:
         "piecewise-linear terms, using suffixes .sos and .sosref "
         "provided by AMPL.",
         options_.sos_);
+    this->AddOption("alg:relax relax",
+        "Whether to relax integrality: \n" "\n.. value-table::",
+        options_.relax_);
   }
 
 };

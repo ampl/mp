@@ -1023,6 +1023,14 @@ static const mp::OptionValueInfo values_presolve[] = {
     { "2", "Aggressive.", 2}
 };
 
+static const mp::OptionValueInfo values_pricing[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "Partial pricing", 0},
+    { "1", "Steepest edge", 1},
+    { "2", "Devex", 2},
+    { "3", "Quick-start steepest edge.", 3}
+};
+
 static const mp::OptionValueInfo values_pool_mode[] = {
     { "0", "Just collect solutions during normal solve, and sort them best-first", 0},
     { "1", "Make some effort at finding additional solutions", 1},
@@ -1240,6 +1248,16 @@ void GurobiBackend::InitCustomOptions() {
     "Markowitz pivot tolerance (default 7.8125e-3).",
     GRB_DBL_PAR_MARKOWITZTOL, 1e-4, 0.999);
 
+  AddSolverOption("lp:pricing pricing",
+    "Pricing strategy:\n"
+    "\n.. value-table::",
+    GRB_INT_PAR_SIMPLEXPRICING, values_pricing, -1);
+
+  AddSolverOption("lp:quad quad",
+    "Whether simplex should use quad-precision:\n"
+    "\n.. value-table::",
+    GRB_INT_PAR_QUAD, values_autonoyes_, -1);
+
 
   ////////////////////////// MIP /////////////////////////
 
@@ -1402,6 +1420,12 @@ void GurobiBackend::InitCustomOptions() {
     "suffix values.",
       GRB_INT_PAR_PARTITIONPLACE, 0, 31);
 
+  AddSolverOption("mip:pumppasses pumppasses",
+    "Number of feasibility-pump passes to do after the MIP root "
+    "when no other root heuristoc found a feasible solution. "
+    "Default -1 = automatic choice.",
+    GRB_INT_PAR_PUMPPASSES, -1, GRB_MAXINT);
+
   AddStoredOption("mip:start mipstart intstart",
     "Whether to use initial guesses in problems with "
     "integer variables:\n"   "\n.. value-table::\n",
@@ -1554,6 +1578,10 @@ void GurobiBackend::InitCustomOptions() {
                   "\n.. value-table::\n",
     GRB_INT_PAR_QCPDUAL, values_01_noyes_0default_, 0);
 
+  AddSolverOption("qp:psdtol psdtol",
+                  "Maximum diagonal perturbation to correct indefiniteness "
+                  "in quadratic objectives (default 1e-6).",
+    GRB_DBL_PAR_PSDTOL, 0.0, DBL_MAX);
 
 
   /// Solution pool parameters

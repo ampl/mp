@@ -1077,6 +1077,9 @@ public:
     return AddSuffix<double>(name, kind);
   }
 
+  void RelaxIntegrality() {
+    std::fill(is_var_int_.begin(), is_var_int_.end(), false);
+  }
 
   ///////////////////////////////////////////////////////////////////////
   // Sets problem information and reserves memory for problem elements.

@@ -25,5 +25,11 @@
       "x": 0.0,
       "b": 0
     }
+  },
+  {
+    "name": "mip_relax_01 alg:relax=1",
+    "tags": [ "linear"],
+    "options": { "ANYSOLVER_options": "relax=1" },
+    "objective": 28.730911869283286
   }
 ]
