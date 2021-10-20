@@ -78,10 +78,45 @@ void GurobiBackend::OpenGurobiModel() {
 }
 
 void GurobiBackend::FinishOptionParsing() {
-  if (cloudid().size() && cloudkey().size()) {
+  if (servers().size()) {
+    OpenGurobiComputeServer();
+  }
+  else if (cloudid().size() && cloudkey().size()) {
     OpenGurobiCloud();
   }
 }
+
+void GurobiBackend::OpenGurobiComputeServer() {
+  assert(servers().size());
+  auto logf = GrbGetStrParam(GRB_STR_PAR_LOGFILE);
+  if (env_) {
+    CloseGurobi();
+  }
+  if (int i = GRBloadclientenv(&env_, logf.c_str(),
+                               servers().c_str(), server_router().c_str(),
+                               server_password().c_str(), server_group().c_str(),
+                               server_insecure(), server_priority(),
+                               server_timeout() )) {
+    switch(i) {
+    case GRB_ERROR_NETWORK:
+      Abort(601, "Could not talk to Gurobi Compute Server(s).");
+      break;
+    case GRB_ERROR_JOB_REJECTED:
+      Abort(602, "Job rejected by Gurobi Compute Server(s).");
+      break;
+    case GRB_ERROR_NO_LICENSE:
+      Abort(603, "No license for specified Gurobi Compute Server(s).");
+      break;
+    default:
+      Abort(604, fmt::format(
+              "Surprise return {} from GRBloadclientenv().", i));
+    }
+  }
+  OpenGurobiModel();
+  ReplaySolverOptions();
+}
+
+
 
 void GurobiBackend::OpenGurobiCloud() {
   assert(cloudid().size() && cloudkey().size());
@@ -1795,6 +1830,36 @@ void GurobiBackend::InitCustomOptions() {
       "Random number seed (default 0), affecting perturbations that "
       "may influence the solution path.",
       GRB_INT_PAR_SEED, 0, GRB_MAXINT);
+
+
+  AddStoredOption("tech:server server servers",
+      "Comma-separated list of Gurobi Compute Servers, specified "
+      "either by name or by IP address.  Default: run Gurobi locally "
+      "(i.e., do not use a remote Gurobi server).",
+          storedOptions_.servers_);
+  AddStoredOption("tech:server_group server_group",
+      "Name of Compute Server Group, if any.",
+          storedOptions_.server_group_);
+  AddStoredOption("tech:server_router server_router",
+      "Name or IP address of router for Compute Server, if any.",
+          storedOptions_.server_router_);
+  AddStoredOption("tech:server_insecure server_insecure",
+      "Whether to user \"insecure mode\" with the Gurobi Compute "
+      "Server.  Should be left at default value (0) unless an "
+      "administrator specifies another value.",
+          storedOptions_.server_insecure_, -GRB_MAXINT, GRB_MAXINT);
+  AddStoredOption("tech:server_password server_password",
+      "Password (if needed) for specified Guruobi compute server(s).",
+          storedOptions_.server_password_);
+  AddStoredOption("tech:server_priority server_priority",
+      "Priority for Gurobi compute server(s).  Default = 0. "
+      "Highest priority = 100.",
+          storedOptions_.server_priority_, -100, 100);
+  AddStoredOption("tech:server_timeout server_timeout",
+      "Report job as rejected by Gurobi compute server if the "
+      "job is not started within server_timeout seconds. "
+      "Default = -1 (no limit).",
+          storedOptions_.server_timeout_, -1.0, DBL_MAX);
 
 
   AddSolverOption("tech:threads threads",

@@ -275,6 +275,7 @@ protected:
   void OpenGurobiModel();
   void CloseGurobi();
 
+  void OpenGurobiComputeServer();
   void OpenGurobiCloud();
 
   void PrepareGurobiSolve();
@@ -356,6 +357,10 @@ private:
 
     std::string cloudid_, cloudkey_, cloudpool_;
     int cloudpriority_;
+
+    std::string servers_, server_password_, server_group_, server_router_;
+    int server_priority_=0, server_insecure_=0;
+    double server_timeout_=-1.0;
   } storedOptions_;
 
 
@@ -366,6 +371,14 @@ protected:  //////////// Option accessors ////////////////
   const std::string& cloudkey() const { return storedOptions_.cloudkey_; }
   const std::string& cloudpool() const { return storedOptions_.cloudpool_; }
   int cloudpriority() const { return storedOptions_.cloudpriority_; }
+
+  const std::string& servers() const { return storedOptions_.servers_; }
+  const std::string& server_password() const { return storedOptions_.server_password_; }
+  const std::string& server_group() const { return storedOptions_.server_group_; }
+  const std::string& server_router() const { return storedOptions_.server_router_; }
+  int server_priority() const { return storedOptions_.server_priority_; }
+  int server_insecure() const { return storedOptions_.server_insecure_; }
+  int server_timeout() const { return storedOptions_.server_timeout_; }
 
 private: /////////// Suffixes ///////////
   const SuffixDef<int> sufHintPri = { "hintpri", suf::VAR | suf::INPUT };
