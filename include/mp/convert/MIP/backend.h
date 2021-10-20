@@ -418,7 +418,21 @@ protected:
   const mp::OptionValueInfo values_autonoyes_[3] = {
     {     "-1", "Automatic choice (default)", 0 },
     {     "0", "No", 0 },
-    {     "1", "Yes (default.)", 1}
+    {     "1", "Yes.", 1}
+  };
+
+  const mp::OptionValueInfo values_autonomodaggr_[4] = {
+    {     "-1", "Automatic choice (default)", 0 },
+    {     "0", "No", 0 },
+    {     "1", "Yes, moderate", 1},
+    {     "2", "Yes, aggressive.", 2}
+  };
+
+  const mp::OptionValueInfo values_autonoconsaggr_[4] = {
+      { "-1", "Automatic choice (default)", -1},
+      { "0", "No", 0},
+      { "1", "Conservative", 1},
+      { "2", "Aggressive.", 2}
   };
 
   const mp::OptionValueInfo values_basis_[4] = {
@@ -464,8 +478,7 @@ protected:
       AddStoredOption("alg:start warmstart",
                       "Whether to use incoming primal (and dual, for LP) variable values "
                       "in a warmstart:\n "
-                      "\n.. value-table::\n"
-                      "Note that for LP, \"alg:basis\" is usually more efficient.",
+                      "\n.. value-table::",
                       GetMIPOptions().warmstart_, values_warmstart_);
 
     if (IMPL_HAS_STD_FEATURE( VAR_PRIORITIES ))

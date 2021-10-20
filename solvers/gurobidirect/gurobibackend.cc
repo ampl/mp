@@ -1057,13 +1057,6 @@ static const mp::OptionValueInfo values_preqlinearize[] = {
     { "2", "Focus on a compact LP relaxation.", 2}
 };
 
-static const mp::OptionValueInfo values_presolve[] = {
-    { "-1", "Automatic choice (default)", -1},
-    { "0", "No", 0},
-    { "1", "Conservative", 1},
-    { "2", "Aggressive.", 2}
-};
-
 static const mp::OptionValueInfo values_prescale[] = {
     {"-1", "Automatic choice (default)", -1},
     { "0", "No", 0},
@@ -1084,6 +1077,13 @@ static const mp::OptionValueInfo values_pool_mode[] = {
     { "1", "Make some effort at finding additional solutions", 1},
     { "2", "Seek \"poollimit\" best solutions (default)."
       "'Best solutions' are defined by the poolgap(abs) parameters.", 2}
+};
+
+static const mp::OptionValueInfo values_siftmethod_[] = {
+    {"-1", "Automatic choice (default)", -1},
+    { "0", "Primal simplex", 0},
+    { "1", "Dual simplex", 1},
+    { "2", "Barrier.", 2}
 };
 
 static const mp::OptionValueInfo values_varbranch[] = {
@@ -1277,6 +1277,9 @@ void GurobiBackend::InitCustomOptions() {
     "Linearization Technique (RLT):\n"
     "\n.. value-table::\n",
     GRB_INT_PAR_RLTCUTS, values_cuts_upto2, -1);
+  AddSolverOption("cut:submip submipcuts",
+    "Sub-MIP cuts: overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_SUBMIPCUTS, PrmCutsMin, PrmCutsMax);
 
 
 
@@ -1285,9 +1288,31 @@ void GurobiBackend::InitCustomOptions() {
     "Iteration limit (default: no limit).",
     GRB_DBL_PAR_ITERATIONLIMIT, 0.0, DBL_MAX);
 
+  AddSolverOption("lim:minrelnodes minrelnodes",
+    "Number of nodes for the Minimum Relaxation heuristic to "
+    "explore at the MIP root node when a feasible solution has not "
+    "been found by any other heuristic; default -1 ==> automatic choice.",
+    GRB_INT_PAR_MINRELNODES, -1, GRB_MAXINT);
+
   AddSolverOption("lim:nodes nodelim nodelimit",
     "Maximum MIP nodes to explore (default: no limit).",
     GRB_DBL_PAR_NODELIMIT, 0.0, DBL_MAX);
+
+  AddSolverOption("lim:startnodes startnodelimit startnodes",
+    "Limit on how many branch-and-bound nodes to explore when "
+    "doing a partial MIP start:\n"
+    "\n"
+    "| -3 - Suppress MIP start processing\n"
+    "| -2 - Only check full MIP starts for feasibility and "
+            "ignore partial MIP starts\n"
+    "| -1 - Use \"submipnodes\" (default)\n"
+    "| >=0 - Specific node limit.",
+    GRB_INT_PAR_STARTNODELIMIT, -3, GRB_MAXINT);
+
+  AddSolverOption("lim:submipnodes submipnodes maxmipsub",
+    "Limit on nodes explored by MIP-based heuristics, e.g., RINS. "
+    "Default = 500.",
+      GRB_INT_PAR_SUBMIPNODES, 0, GRB_MAXINT);
 
   AddSolverOption("lim:time timelim timelimit",
       "Limit on solve time (in seconds; default: no limit).",
@@ -1330,6 +1355,18 @@ void GurobiBackend::InitCustomOptions() {
     "Whether simplex should use quad-precision:\n"
     "\n.. value-table::",
     GRB_INT_PAR_QUAD, values_autonoyes_, -1);
+
+  AddSolverOption("lp:sifting sifting",
+    "Whether to use sifting within the dual simplex algorithm, "
+    "which can be useful when there are many more variables than "
+    "constraints:\n"
+    "\n.. value-table::",
+    GRB_INT_PAR_SIFTING, values_autonomodaggr_, -1);
+
+  AddSolverOption("lp:siftmethod siftmethod",
+    "Algorithm to use for sifting with the dual simplex method:\n"
+    "\n.. value-table::",
+    GRB_INT_PAR_SIFTMETHOD, values_siftmethod_, -1);
 
 
   ////////////////////////// MIP /////////////////////////
@@ -1441,12 +1478,6 @@ void GurobiBackend::InitCustomOptions() {
 
 
 
-  AddSolverOption("mip:minrelnodes minrelnodes",
-    "Number of nodes for the Minimum Relaxation heuristic to "
-    "explore at the MIP root node when a feasible solution has not "
-    "been found by any other heuristic; default -1 ==> automatic choice.",
-    GRB_INT_PAR_MINRELNODES, -1, GRB_MAXINT);
-
   AddSolverOption("mip:nodemethod nodemethod",
     "Algorithm used to solve relaxed MIP node problems:\n"
     "\n.. value-table::\n", GRB_INT_PAR_NODEMETHOD, values_nodemethod, -1);
@@ -1512,13 +1543,13 @@ void GurobiBackend::InitCustomOptions() {
     "integer variables:\n"   "\n.. value-table::\n",
     storedOptions_.nMIPStart_, values_mipstart_);
   AddToOptionDescription("alg:start",
+                         "Note that for LP, \"alg:basis\" is usually more efficient.\n"
                          "For Gurobi, "
-                         "MIP-specific options can be tuned via mip:start.");
+                         "MIP-specific options can be tuned via \"mip:start\".");
 
-  AddSolverOption("mip:submipnodes submipnodes",
-    "Limit on nodes explored by MIP-based heuristics, e.g., RINS. "
-    "Default = 500.",
-      GRB_INT_PAR_SUBMIPNODES, 0, GRB_MAXINT);
+  AddSolverOption("mip:symmetry symmetry",
+    "MIP symmetry detection:\n"   "\n.. value-table::\n",
+    GRB_INT_PAR_SYMMETRY, values_autonoconsaggr_, -1);
 
   AddSolverOption("mip:varbranch varbranch",
     "MIP branch variable selection strategy:\n"
@@ -1629,7 +1660,7 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("pre:solve presolve",
     "Whether to use Gurobi's presolve:\n"
         "\n.. value-table::\n",
-    GRB_INT_PAR_PRESOLVE, values_presolve, -1);
+    GRB_INT_PAR_PRESOLVE, values_autonoconsaggr_, -1);
 
   AddSolverOption("pre:sos1bigm presos1bigm",
     "Big-M for converting SOS1 constraints to binary form:\n"
@@ -1765,18 +1796,6 @@ void GurobiBackend::InitCustomOptions() {
           GRB_INT_PAR_CONCURRENTJOBS, 0, GRB_MAXINT);
 
 
-  AddSolverOption("tech:tunejobs pool_tunejobs tunejobs",
-      "Enables distributed parallel tuning, which can significantly "
-      "increase the performance of the tuning tool. A value of n "
-      "causes the tuning tool to distribute tuning work among n "
-      "parallel jobs. These jobs are distributed among a set of "
-      "machines. Use the \"tech:workerpool\" parameter to provide a distributed "
-      "worker cluster. Default = 0.\n"
-      "\n"
-      "Note that distributed tuning is most effective when the worker "
-      "machines have similar performance.",
-          GRB_INT_PAR_TUNEJOBS, 0, GRB_MAXINT);
-
   AddSolverOption("tech:logfreq logfreq outfreq",
       "Interval in seconds between log lines (default 5).",
     GRB_INT_PAR_DISPLAYINTERVAL, 1, GRB_MAXINT);
@@ -1849,14 +1868,14 @@ void GurobiBackend::InitCustomOptions() {
       "administrator specifies another value.",
           storedOptions_.server_insecure_, -GRB_MAXINT, GRB_MAXINT);
   AddStoredOption("tech:server_password server_password",
-      "Password (if needed) for specified Guruobi compute server(s).",
+      "Password (if needed) for specified Gurobi Compute Server(s).",
           storedOptions_.server_password_);
   AddStoredOption("tech:server_priority server_priority",
-      "Priority for Gurobi compute server(s).  Default = 0. "
+      "Priority for Gurobi Compute Server(s).  Default = 0. "
       "Highest priority = 100.",
           storedOptions_.server_priority_, -100, 100);
   AddStoredOption("tech:server_timeout server_timeout",
-      "Report job as rejected by Gurobi compute server if the "
+      "Report job as rejected by Gurobi Compute Server if the "
       "job is not started within server_timeout seconds. "
       "Default = -1 (no limit).",
           storedOptions_.server_timeout_, -1.0, DBL_MAX);
@@ -1866,6 +1885,19 @@ void GurobiBackend::InitCustomOptions() {
       "How many threads to use when using the barrier algorithm "
       "or solving MIP problems; default 0 ==> automatic choice.",
       GRB_INT_PAR_THREADS, 0, GRB_MAXINT);
+
+  AddSolverOption("tech:tunejobs pool_tunejobs tunejobs",
+      "Enables distributed parallel tuning, which can significantly "
+      "increase the performance of the tuning tool. A value of n "
+      "causes the tuning tool to distribute tuning work among n "
+      "parallel jobs. These jobs are distributed among a set of "
+      "machines. Use the \"tech:workerpool\" parameter to provide a distributed "
+      "worker cluster. Default = 0.\n"
+      "\n"
+      "Note that distributed tuning is most effective when the worker "
+      "machines have similar performance.",
+          GRB_INT_PAR_TUNEJOBS, 0, GRB_MAXINT);
+
 
 
   AddSolverOption("tech:workerpool pool_servers",
