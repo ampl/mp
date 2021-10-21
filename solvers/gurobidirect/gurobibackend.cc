@@ -4,8 +4,15 @@
 
 #include "gurobibackend.h"
 
+#define GRB_CALL_MSG( call, msg ) do { if (int e=call) MP_RAISE( \
+    fmt::format( \
+      "Call failed: '{}' with code {},\n" \
+      "Gurobi message: {}, hint: {}", #call, e, \
+           GRBgeterrormsg(env_), msg ) \
+  ); } while (0)
 #define GRB_CALL( call ) do { if (int e=call) MP_RAISE( \
-    fmt::format("  Call failed: '{}' with code {}, message: {}", #call, \
+    fmt::format( \
+      "Call failed: '{}' with code {}, Gurobi message: {}", #call, \
         e, GRBgeterrormsg(env_) ) \
   ); } while (0)
 
@@ -527,9 +534,37 @@ void GurobiBackend::PrepareGurobiSolve() {
     DoGurobiFeasRelax();
   SetPartitionValues();
   /// After all attributes applied
-  if (!storedOptions_.exportFile_.empty()) {
+  if (!storedOptions_.exportFile_.empty())
     ExportModel(storedOptions_.exportFile_);
+  if (tunebase().size())
+    DoGurobiTune();
+}
+
+void GurobiBackend::DoGurobiTune() {
+  assert(tunebase().size());
+  GRB_CALL( GRBtunemodel(model_) );
+//		TODO? solve_result_num = 532;
+  auto n_results = GrbGetIntAttr(GRB_INT_ATTR_TUNE_RESULTCOUNT);
+  if (n_results<=0)
+    MP_RAISE("No tuning results!");
+  auto tbc = tunebase();
+  if (tbc.size()>=4 &&
+      0==tbc.compare(tbc.size()-4, 4, ".prm"))
+    tbc.resize(tbc.size()-4);
+  tbc += "_{}_";
+  tbc += ".prm";
+  std::string tfn;
+  for (int k=n_results; k--;) {
+    GRB_CALL_MSG( GRBgettuneresult(model_, k),
+      fmt::format(
+        "Surprize return from GRBgettuneresult({})", k+1));
+    tfn = fmt::format(tbc.c_str(), k+1);
+    GRB_CALL_MSG( GRBwriteparams(GRBgetenv(model_), tfn.c_str()),
+      fmt::format(
+        "Surprize return from GRBwriteparams({})", tfn));
   }
+  AddToSolverMessage(
+        fmt::format("Tuning: wrote {} parameter files, best file: '{}'", n_results, tfn));
 }
 
 void GurobiBackend::ReportGurobiPool() {
@@ -888,29 +923,29 @@ void GurobiBackend::FinishProblemModificationPhase() {
 // static possible values with descriptions
 
 static const mp::OptionValueInfo values_barcrossover[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "None: return an interior solution", 0},
-    { "1", "Push dual vars first, finish with primal simplex", 1},
-    { "2", "Push dual vars first, finish with dual simplex", 2},
-    { "3", "Push primal vars first, finish with primal simplex", 3},
-    { "4", "Push primal vars first, finish with dual simplex.", 4}
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "None: return an interior solution", 0},
+  { "1", "Push dual vars first, finish with primal simplex", 1},
+  { "2", "Push dual vars first, finish with dual simplex", 2},
+  { "3", "Push primal vars first, finish with primal simplex", 3},
+  { "4", "Push primal vars first, finish with dual simplex.", 4}
 };
 
 static const mp::OptionValueInfo values_barcrossoverbasis[] = {
-    { "0", "Favor speed (default)", 0},
-    { "1", "Favor numerical stability.", 1}
+  { "0", "Favor speed (default)", 0},
+  { "1", "Favor numerical stability.", 1}
 };
 
 static const mp::OptionValueInfo values_barhomogeneous[] = {
-    {"-1", "Only when solving a MIP node relaxation (default)", -1},
-    { "0", "Never", 0},
-    { "1", "Always.", 1}
+  {"-1", "Only when solving a MIP node relaxation (default)", -1},
+  { "0", "Never", 0},
+  { "1", "Always.", 1}
 };
 
 static const mp::OptionValueInfo values_barorder[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "Approximate minimum degree", 0},
-    { "1", "Nested dissection.", 1}
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Approximate minimum degree", 0},
+  { "1", "Nested dissection.", 1}
 };
 
 static const mp::OptionValueInfo values_bqpcuts[] = {
@@ -921,177 +956,184 @@ static const mp::OptionValueInfo values_bqpcuts[] = {
 };
 
 static const mp::OptionValueInfo values_branchdir[] = {
-    {"-1", "Explore \"down\" branch first", -1},
-    { "0", "Explore \"most promising\" branch first (default)", 0},
-    { "1", "Explore \"up\" branch first.", 1}
+  {"-1", "Explore \"down\" branch first", -1},
+  { "0", "Explore \"most promising\" branch first (default)", 0},
+  { "1", "Explore \"up\" branch first.", 1}
 };
 
 static const mp::OptionValueInfo values_cuts[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "No cuts", 0},
-    { "1", "Conservative cut generation", 1},
-    { "2", "Aggressive cut generation", 2},
-    { "3", "Very aggressive cut generation.", 3}
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "No cuts", 0},
+  { "1", "Conservative cut generation", 1},
+  { "2", "Aggressive cut generation", 2},
+  { "3", "Very aggressive cut generation.", 3}
 };
 static constexpr int PrmCutsMin=-1, PrmCutsMax=3;
 static const mp::OptionValueInfo values_cuts_upto2[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "No cuts", 0},
-    { "1", "Conservative cut generation", 1},
-    { "2", "Aggressive cut generation.", 2}
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "No cuts", 0},
+  { "1", "Conservative cut generation", 1},
+  { "2", "Aggressive cut generation.", 2}
 };
 
 static const mp::OptionValueInfo values_disconnected[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "No", 0},
-    { "1", "Moderate effort", 1},
-    { "2", "Aggressive effort.", 2},
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "No", 0},
+  { "1", "Moderate effort", 1},
+  { "2", "Aggressive effort.", 2},
 };
 
 static const mp::OptionValueInfo values_iismethod[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "Often faster than method 1", 0},
-    { "1", "Can find a smaller IIS than method 0", 1},
-    { "2", "Ignore the bound constraints.", 2},
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Often faster than method 1", 0},
+  { "1", "Can find a smaller IIS than method 0", 1},
+  { "2", "Ignore the bound constraints.", 2},
 };
 
 static const mp::OptionValueInfo values_infproofcuts[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "No", 0},
-    { "1", "Moderate cut generation", 1},
-    { "2", "Aggressive cut generation.", 2},
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "No", 0},
+  { "1", "Moderate cut generation", 1},
+  { "2", "Aggressive cut generation.", 2},
 };
 
 static const mp::OptionValueInfo values_method[] = {
-    { "-1", "Automatic (default): 3 for LP, 2 for QP, 1 for MIP", -1},
-    { "0", "Primal simplex", 0},
-    { "1", "Dual simplex", 1},
-    { "2", "Barrier", 2},
-    { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
-    { "4", "Deterministic concurrent", 4},
-    { "5", "Deterministic concurrent simplex.", 5}
+  { "-1", "Automatic (default): 3 for LP, 2 for QP, 1 for MIP", -1},
+  { "0", "Primal simplex", 0},
+  { "1", "Dual simplex", 1},
+  { "2", "Barrier", 2},
+  { "3", "Nondeterministic concurrent (several solves in parallel)", 3},
+  { "4", "Deterministic concurrent", 4},
+  { "5", "Deterministic concurrent simplex.", 5}
 };
 
 static const mp::OptionValueInfo values_mipfocus[] = {
-    { "0", "Balance finding good feasible solutions and "
-          "proving optimality (default)", 0},
-    { "1", "Favor finding feasible solutions", 1},
-    { "2", "Favor providing optimality", 2},
-    { "3", "Focus on improving the best objective bound.", 3},
+  { "0", "Balance finding good feasible solutions and "
+    "proving optimality (default)", 0},
+  { "1", "Favor finding feasible solutions", 1},
+  { "2", "Favor providing optimality", 2},
+  { "3", "Focus on improving the best objective bound.", 3},
 };
 
 static const mp::OptionValueInfo values_mipstart_[4] = {
-    {     "0", "No (overrides alg:start)", 0 },
-    {     "1", "Yes (default)", 1},
-    {     "2", "No, but use the incoming primal "
-          "values as hints (VARHINTVAL), ignoring the .hintpri suffix", 2},
-    {     "3", "Similar to 2, but use the .hintpri suffix on "
-          "variables:  larger (integer) values give greater "
-          "priority to the initial value of the associated "
-          "variable.", 3}
+  {     "0", "No (overrides alg:start)", 0 },
+  {     "1", "Yes (default)", 1},
+  {     "2", "No, but use the incoming primal "
+        "values as hints (VARHINTVAL), ignoring the .hintpri suffix", 2},
+  {     "3", "Similar to 2, but use the .hintpri suffix on "
+        "variables:  larger (integer) values give greater "
+        "priority to the initial value of the associated "
+        "variable.", 3}
 };
 
 static const mp::OptionValueInfo values_miqcpmethod[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "Solve continuous QCP relaxations at each node", 0},
-    { "1", "Use linearized outer approximations.", 1}
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Solve continuous QCP relaxations at each node", 0},
+  { "1", "Use linearized outer approximations.", 1}
 };
 
 static const mp::OptionValueInfo values_multiobjmethod[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "Primal simplex", 0},
-    { "1", "Dual simplex", 1},
-    { "2", "Ignore warm-start information; use the algorithm "
-        "specified by the method keyword.", 2}
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Primal simplex", 0},
+  { "1", "Dual simplex", 1},
+  { "2", "Ignore warm-start information; use the algorithm "
+    "specified by the method keyword.", 2}
 };
 
 static const mp::OptionValueInfo values_multiobjpre[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "Do not use Gurobi's presolve", 0},
-    { "1", "Conservative presolve", 1},
-    { "2", "Aggressive presolve, which may degrade lower priority objectives.", 2}
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Do not use Gurobi's presolve", 0},
+  { "1", "Conservative presolve", 1},
+  { "2", "Aggressive presolve, which may degrade lower priority objectives.", 2}
 };
 
 static const mp::OptionValueInfo values_nodemethod[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "Primal simplex", 0},
-    { "1", "Dual simplex", 1},
-    { "2", "Barrier.", 2}
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Primal simplex", 0},
+  { "1", "Dual simplex", 1},
+  { "2", "Barrier.", 2}
 };
 
 static const mp::OptionValueInfo values_nonconvex[] = {
-    { "-1", "Default choice (currently the same as 1)", -1},
-    { "0", "Complain about nonquadratic terms", 0},
-    { "1", "Complain if Gurobi's presolve cannot discard or "
-           "eliminate nonquadratic terms", 1},
-    { "2", "Translate quadratic forms to bilinear form and use "
-           "spatial branching.", 2}
+  { "-1", "Default choice (currently the same as 1)", -1},
+  { "0", "Complain about nonquadratic terms", 0},
+  { "1", "Complain if Gurobi's presolve cannot discard or "
+    "eliminate nonquadratic terms", 1},
+  { "2", "Translate quadratic forms to bilinear form and use "
+    "spatial branching.", 2}
 };
 
 static const mp::OptionValueInfo values_predeprow[] = {
-    { "-1", "Only for continuous models (default)", -1},
-    { "0", "Never", 0},
-    { "1", "For all models.", 1}
+  { "-1", "Only for continuous models (default)", -1},
+  { "0", "Never", 0},
+  { "1", "For all models.", 1}
 };
 
 static const mp::OptionValueInfo values_predual[] = {
-    { "-1", "Automatic choice (default)", -1},
-    { "0", "No", 0},
-    { "1", "Yes", 1},
-    { "2", "Form both primal and dual and use two threads to "
-           "choose heuristically between them.", 2}
+  { "-1", "Automatic choice (default)", -1},
+  { "0", "No", 0},
+  { "1", "Yes", 1},
+  { "2", "Form both primal and dual and use two threads to "
+    "choose heuristically between them.", 2}
 };
 
 static const mp::OptionValueInfo values_premiqcpform[] = {
-    { "-1", "Automatic choice (default)", -1},
-    { "0", "Retain MIQCP form", 0},
-    { "1", "Transform to second-order cone contraints", 1},
-    { "2", "Transform to rotated cone constraints.", 2}
+  { "-1", "Automatic choice (default)", -1},
+  { "0", "Retain MIQCP form", 0},
+  { "1", "Transform to second-order cone contraints", 1},
+  { "2", "Transform to rotated cone constraints.", 2}
 };
 
 static const mp::OptionValueInfo values_preqlinearize[] = {
-    { "-1", "Automatic choice (default)", -1},
-    { "0", "Do not modify the quadratic part(s)\n"
-           "\t\t\t 1 or 2 = try to linearize quadratic parts:", 0},
-    { "1", "Focus on a strong LP relaxation", 1},
-    { "2", "Focus on a compact LP relaxation.", 2}
+  { "-1", "Automatic choice (default)", -1},
+  { "0", "Do not modify the quadratic part(s)\n"
+    "\t\t\t 1 or 2 = try to linearize quadratic parts:", 0},
+  { "1", "Focus on a strong LP relaxation", 1},
+  { "2", "Focus on a compact LP relaxation.", 2}
 };
 
 static const mp::OptionValueInfo values_prescale[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "No", 0},
-    { "1", "Yes", 1},
-    { "2", "Yes, more aggressively", 2},
-    { "3", "Yes, even more aggressively.", 3}
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "No", 0},
+  { "1", "Yes", 1},
+  { "2", "Yes, more aggressively", 2},
+  { "3", "Yes, even more aggressively.", 3}
 };
 static const mp::OptionValueInfo values_pricing[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "Partial pricing", 0},
-    { "1", "Steepest edge", 1},
-    { "2", "Devex", 2},
-    { "3", "Quick-start steepest edge.", 3}
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Partial pricing", 0},
+  { "1", "Steepest edge", 1},
+  { "2", "Devex", 2},
+  { "3", "Quick-start steepest edge.", 3}
 };
 
 static const mp::OptionValueInfo values_pool_mode[] = {
-    { "0", "Just collect solutions during normal solve, and sort them best-first", 0},
-    { "1", "Make some effort at finding additional solutions", 1},
-    { "2", "Seek \"poollimit\" best solutions (default)."
-      "'Best solutions' are defined by the poolgap(abs) parameters.", 2}
+  { "0", "Just collect solutions during normal solve, and sort them best-first", 0},
+  { "1", "Make some effort at finding additional solutions", 1},
+  { "2", "Seek \"poollimit\" best solutions (default)."
+    "'Best solutions' are defined by the poolgap(abs) parameters.", 2}
 };
 
 static const mp::OptionValueInfo values_siftmethod_[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "Primal simplex", 0},
-    { "1", "Dual simplex", 1},
-    { "2", "Barrier.", 2}
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Primal simplex", 0},
+  { "1", "Dual simplex", 1},
+  { "2", "Barrier.", 2}
+};
+
+static const mp::OptionValueInfo values_tuneoutput_[] = {
+  { "0", "None", 0},
+  { "1", "Summarize each new best parameter set", 1},
+  { "2", "Summarize each set tried (default)", 2},
+  { "3", "Summary plus detailed solver output for each trial.", 3}
 };
 
 static const mp::OptionValueInfo values_varbranch[] = {
-    {"-1", "Automatic choice (default)", -1},
-    { "0", "Pseudo reduced - cost branching", 0},
-    { "1", "Pseudo shadow - price branching", 1},
-    { "2", "Maximum infeasibility branching", 2},
-    { "3", "Strong branching.", 3}
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Pseudo reduced - cost branching", 0},
+  { "1", "Pseudo shadow - price branching", 1},
+  { "2", "Maximum infeasibility branching", 2},
+  { "3", "Strong branching.", 3}
 };
 
 
@@ -1280,6 +1322,9 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("cut:submip submipcuts",
     "Sub-MIP cuts: overrides \"cuts\"; choices as for \"cuts\".",
     GRB_INT_PAR_SUBMIPCUTS, PrmCutsMin, PrmCutsMax);
+  AddSolverOption("cut:zerohalf zerohalfcuts",
+    "Zero-half cuts: overrides \"cuts\"; choices as for \"cuts\".",
+    GRB_INT_PAR_ZEROHALFCUTS, PrmCutsMin, PrmCutsMax);
 
 
 
@@ -1318,6 +1363,17 @@ void GurobiBackend::InitCustomOptions() {
       "Limit on solve time (in seconds; default: no limit).",
       GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
 
+  AddSolverOption("lim:zeroobjnodes zeroobjnodes",
+    "Number of nodes to explore in the zero objective heuristic. "
+    "Note that this heuristic is only applied at the end of the "
+    "MIP root, and only when no other root heuristic finds a "
+    "feasible solution.\n"
+    "\n"
+    "This heuristic is quite expensive, and generally produces "
+    "poor quality solutions. You should generally only use it if "
+    "other means, including exploration of the tree with default "
+    "settings, fail to produce a feasible solution.",
+      GRB_INT_PAR_ZEROOBJNODES, -1, GRB_MAXINT);
 
 
   ////////////////////////// LP //////////////////////////
@@ -1721,8 +1777,7 @@ void GurobiBackend::InitCustomOptions() {
       GRB_INT_PAR_POOLSOLUTIONS, 1, 2000000000);
   AddStoredOption("sol:poolmode ams_mode poolmode",
       "Search mode for MIP solutions when sol:stub/sol:count are specified "
-                        "to request finding several alternative solutions:\n"
-                        "\n.. value-table::\n",
+                        "to request finding several alternative solutions:\n",
           storedOptions_.nPoolMode_, values_pool_mode);
   AddOptionSynonymsFront("ams_stub", "sol:stub");
 
@@ -1886,6 +1941,18 @@ void GurobiBackend::InitCustomOptions() {
       "or solving MIP problems; default 0 ==> automatic choice.",
       GRB_INT_PAR_THREADS, 0, GRB_MAXINT);
 
+  AddStoredOption("tech:tunebase tunebase",
+                  "Base name for results of running Gurobi's search for best "
+                  "parameter settings.  The search is run only when tunebase "
+                  "is specified.  Results are written to files with names derived "
+                  "from tunebase by appending \".prm\" if \".prm\" does not occur in "
+                  "tunebase and inserting _1_, _2_, ... (for the first, second, "
+                  "... set of parameter settings) before the right-most \".prm\". "
+                  "The file with _1_ inserted is the best set and the solve "
+                  "results returned are for this set.  In a subsequent \"solve;\", "
+                  "you can use paramfile=... to apply the settings in results "
+                  "file ... .",
+                  storedOptions_.tunebase_);
   AddSolverOption("tech:tunejobs pool_tunejobs tunejobs",
       "Enables distributed parallel tuning, which can significantly "
       "increase the performance of the tuning tool. A value of n "
@@ -1897,6 +1964,24 @@ void GurobiBackend::InitCustomOptions() {
       "Note that distributed tuning is most effective when the worker "
       "machines have similar performance.",
           GRB_INT_PAR_TUNEJOBS, 0, GRB_MAXINT);
+  AddSolverOption("tech:tuneoutput tuneoutput",
+      "Amount of tuning output when tunebase is specified:\n"
+                        "\n.. value-table::\n",
+          GRB_INT_PAR_TUNEOUTPUT, values_tuneoutput_, 2);
+  AddSolverOption("tech:tuneresults tuneresults",
+      "Limit on the number of tuning result files to write "
+      "when tunerbase is specified.  The default (-1) is to write "
+      "results for all parameter sets on the efficient frontier.",
+          GRB_INT_PAR_TUNERESULTS, -1, GRB_MAXINT);
+  AddSolverOption("tech:tunetimelim tunetimelim lim:tunetime",
+      "Time limit (in seconds) on tuning when tunebase "
+      "is specified.  Default -1 ==> automatic choice of time limit.",
+          GRB_DBL_PAR_TUNETIMELIMIT, -1.0, DBL_MAX);
+  AddSolverOption("tech:tunetrials tunetrials",
+      "Number of trials for each parameter set when tunebase "
+      "is specified, each with a different random seed value. "
+      "Default = 3.",
+          GRB_INT_PAR_TUNETRIALS, 1, GRB_MAXINT);
 
 
 

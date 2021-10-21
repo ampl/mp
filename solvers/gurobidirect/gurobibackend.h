@@ -281,6 +281,9 @@ protected:
   void PrepareGurobiSolve();
   void DoGurobiFeasRelax();
   void SetPartitionValues();
+
+  void DoGurobiTune();
+
   void ReportGurobiPool();
   /// Creates and solves, marks model_fixed to be used for duals/basis/sens
   void ConsiderGurobiFixedModel();
@@ -361,6 +364,8 @@ private:
     std::string servers_, server_password_, server_group_, server_router_;
     int server_priority_=0, server_insecure_=0;
     double server_timeout_=-1.0;
+
+    std::string tunebase_;
   } storedOptions_;
 
 
@@ -379,6 +384,8 @@ protected:  //////////// Option accessors ////////////////
   int server_priority() const { return storedOptions_.server_priority_; }
   int server_insecure() const { return storedOptions_.server_insecure_; }
   int server_timeout() const { return storedOptions_.server_timeout_; }
+
+  const std::string& tunebase() const { return storedOptions_.tunebase_; }
 
 private: /////////// Suffixes ///////////
   const SuffixDef<int> sufHintPri = { "hintpri", suf::VAR | suf::INPUT };
