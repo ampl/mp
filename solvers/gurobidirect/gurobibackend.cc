@@ -91,6 +91,14 @@ void GurobiBackend::FinishOptionParsing() {
   else if (cloudid().size() && cloudkey().size()) {
     OpenGurobiCloud();
   }
+  if (paramfile_read().size())
+    GRB_CALL(
+          GRBreadparams(GRBgetenv(model_),
+                        paramfile_read().c_str() ));
+  if (paramfile_write().size())
+    GRB_CALL(
+          GRBwriteparams(GRBgetenv(model_),
+                         paramfile_write().c_str() ));
 }
 
 void GurobiBackend::OpenGurobiComputeServer() {
@@ -1884,6 +1892,20 @@ void GurobiBackend::InitCustomOptions() {
     "parameter values.",
                   "Dummy");
 
+  AddStoredOption("tech:param:read param:read paramfile",
+      "Name of Gurobi parameter file (surrounded by 'single' or "
+      "\"double\" quotes if the name contains blanks). "
+      "The suffix on a parameter file should be .prm, optionally followed "
+      "by .zip, .gz, .bz2, or .7z.\n"
+      "\n"
+      "Lines that start with # are ignored.  Otherwise, each nonempty "
+      "line should contain a name and a value, separated by a space.",
+          storedOptions_.paramRead_);
+  AddStoredOption("tech:param:write param:write",
+      "Name of Gurobi parameter file (surrounded by 'single' or \"double\" quotes if the "
+      "name contains blanks) to be written.",
+          storedOptions_.paramWrite_);
+
   AddSolverOption("tech:resultfile resultfile",
       "Name of a file of extra information written after "
       "completion of optimization.  The name's suffix determines what "
@@ -1950,7 +1972,7 @@ void GurobiBackend::InitCustomOptions() {
                   "... set of parameter settings) before the right-most \".prm\". "
                   "The file with _1_ inserted is the best set and the solve "
                   "results returned are for this set.  In a subsequent \"solve;\", "
-                  "you can use paramfile=... to apply the settings in results "
+                  "you can use \"tech:param:read=...\" to apply the settings in results "
                   "file ... .",
                   storedOptions_.tunebase_);
   AddSolverOption("tech:tunejobs pool_tunejobs tunejobs",

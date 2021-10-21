@@ -351,7 +351,7 @@ private:
   /// These options are stored in the class as variables
   /// for direct access
   struct Options {
-    std::string exportFile_;
+    std::string exportFile_, paramRead_, paramWrite_;
 
     int nMIPStart_=1;
     int nPoolMode_=2;
@@ -371,6 +371,9 @@ private:
 
 protected:  //////////// Option accessors ////////////////
   int Gurobi_mipstart() const { return storedOptions_.nMIPStart_; }
+
+  const std::string& paramfile_read() const { return storedOptions_.paramRead_; }
+  const std::string& paramfile_write() const { return storedOptions_.paramWrite_; }
 
   const std::string& cloudid() const { return storedOptions_.cloudid_; }
   const std::string& cloudkey() const { return storedOptions_.cloudkey_; }
