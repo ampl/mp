@@ -1,7 +1,7 @@
 /*
  A mathematical optimization solver.
 
- Copyright (C) 2012 AMPL Optimization Inc
+ Copyright (C) 2012-2021 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -369,28 +369,33 @@ class TypedSolverOption : public SolverOption {
   }
 };
 
-// A mathematical optimization solver.
-//
-// Example:
-//
-// class MySolver : public Solver {
-//  public:
-//   void GetTestOption(const char *name, int value, int info) {
-//     // Returns the option value; info is an arbitrary value passed as
-//     // the last argument to AddIntOption. It can be useful if the same
-//     // function handles multiple options.
-//     ...
-//   }
-//   void SetTestOption(const char *name, int value, int info) {
-//     // Set the option value; info is the same as in GetTestOption.
-//     ...
-//   }
-//
-//   MySolver()  {
-//     AddIntOption("test", "This is a test option",
-//                  &MySolver::GetTestOption, &MySolver::SetTestOption, 42);
-//   }
-// };
+
+/** 
+  A mathematical optimization solver. Example:
+
+  \rst
+  .. code-block:: cpp
+
+       class MySolver : public Solver {
+        public:
+         void GetTestOption(const char *name, int value, int info) {
+           // Returns the option value; info is an arbitrary value passed as
+           // the last argument to AddIntOption. It can be useful if the same
+           // function handles multiple options.
+           ...
+         }
+         void SetTestOption(const char *name, int value, int info) {
+           // Set the option value; info is the same as in GetTestOption.
+           ...
+         }
+
+         MySolver()  {
+           AddIntOption("test", "This is a test option",
+                        &MySolver::GetTestOption, &MySolver::SetTestOption, 42);
+         }
+       }
+  \endrst
+  */
 class Solver : private ErrorHandler,
     private OutputHandler, private Interrupter {
  private:

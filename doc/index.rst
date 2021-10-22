@@ -4,11 +4,12 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   common
-   nl-reader
-   problem
-   amplgsl/index
-   tables/index
+   rst/nl-reader
+   rst/problem
+   rst/backend
+   rst/reference
+
+
 
 Indices and tables
 ==================

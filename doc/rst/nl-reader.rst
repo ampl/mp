@@ -39,6 +39,9 @@ This section describes the C++ API of an NL reader which is
 `nl-example.cc <https://github.com/ampl/mp/blob/master/src/nl-example.cc>`_
 gives a few examples of how to use the NL reader.
 
+Easy to use functions
+---------------------
+
 The ``mp/nl.h`` header only contains declarations of `mp::ReadNLString` and
 `mp::ReadNLFile`, and can be used to read standard optimization problem objects,
 for example:
@@ -55,9 +58,17 @@ If you want to provide a custom NL handler, include ``mp/nl-reader.h`` instead.
 Note that ``mp/nl.h`` is a much smaller header than ``mp/nl-reader.h`` so prefer
 it unless you need access to the full NL reader API.
 
-.. doxygenfunction:: ReadNLFile(fmt::StringRef, Handler &)
 
-.. doxygenfunction:: ReadNLString(fmt::StringRef, Handler &, fmt::StringRef)
+.. doxygenfunction:: ReadNLFile(fmt::CStringRef, Handler &, int)
+
+.. doxygenfunction:: ReadNLString(NLStringRef, Handler &, fmt::CStringRef, int)
+
+
+Full NL-reader API
+------------------
+
+The following classes describe the full NL reader API, can be imported
+from ``mp/nl-reader.h``.
 
 .. doxygenclass:: mp::NLStringRef
    :members:
