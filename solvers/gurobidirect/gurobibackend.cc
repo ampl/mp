@@ -506,9 +506,14 @@ double GurobiBackend::NodeCount() const {
   return GrbGetDblAttr(GRB_DBL_ATTR_NODECOUNT, &f);
 }
 
-double GurobiBackend::NumberOfIterations() const {
+double GurobiBackend::SimplexIterations() const {
   bool f;
   return GrbGetDblAttr(GRB_DBL_ATTR_ITERCOUNT, &f);
+}
+
+int GurobiBackend::BarrierIterations() const {
+  bool f;
+  return GrbGetIntAttr(GRB_INT_ATTR_BARITERCOUNT, &f);
 }
 
 void GurobiBackend::ExportModel(const std::string &file) {
@@ -547,10 +552,23 @@ void GurobiBackend::PrepareGurobiSolve() {
 
 void GurobiBackend::WindupGurobiSolve() {
   SetStatus( ConvertGurobiStatus() );
+  AddGurobiMessage();
   if (need_multiple_solutions())
     ReportGurobiPool();
   if (need_fixed_MIP())
     ConsiderGurobiFixedModel();
+}
+
+void GurobiBackend::AddGurobiMessage() {
+  if (auto ni = SimplexIterations())
+    AddToSolverMessage(
+          fmt::format("{} simplex iterations\n", ni));
+  if (auto nbi = BarrierIterations())
+    AddToSolverMessage(
+          fmt::format("{} barrier iterations\n", nbi));
+  if (auto nnd = NodeCount())
+    AddToSolverMessage(
+          fmt::format("{} branching nodes\n", nnd));
 }
 
 void GurobiBackend::DoGurobiTune() {

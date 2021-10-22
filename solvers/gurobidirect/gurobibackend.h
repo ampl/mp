@@ -48,7 +48,7 @@ public:
   static const char* GetSolverName() { return "Gurobi"; }
   static std::string GetSolverVersion();
   static const char* GetSolverInvocationName();
-  static const char* GetAMPLSolverLongName() { return nullptr; }
+  static const char* GetAMPLSolverLongName() { return "AMPLGurobi"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
@@ -250,7 +250,8 @@ public:
   ArrayRef<double> DualSolution();
 
   double NodeCount() const;
-  double NumberOfIterations() const;
+  double SimplexIterations() const;
+  int BarrierIterations() const;
 
   /// Public option API.
   /// These methods access Gurobi options. Used by AddSolverOption()
@@ -283,8 +284,8 @@ protected:
   void DoGurobiTune();
 
   void WindupGurobiSolve();
-
   std::pair<int, std::string> ConvertGurobiStatus() const;
+  void AddGurobiMessage();
 
   void ReportGurobiPool();
   /// Creates and solves, marks model_fixed to be used for duals/basis/sens

@@ -84,7 +84,8 @@ public:
 
   /// Solution attributes
   double NodeCount() const;
-  double NumberOfIterations() const;
+  double SimplexIterations() const;
+  int BarrierIterations() const;
 
 
   //////////////////// [[ Implementation details ]] //////////////////////
@@ -106,6 +107,7 @@ protected:
   void WindupCPLEXSolve();
 
   std::pair<int, std::string> ConvertCPLEXStatus();
+  void AddCPLEXMessages();
 
 private:
   /// These options are stored in the class

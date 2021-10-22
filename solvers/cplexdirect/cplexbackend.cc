@@ -119,8 +119,13 @@ double CplexBackend::NodeCount() const {
   return CPXgetnodecnt (env, lp);
 }
 
-double CplexBackend::NumberOfIterations() const {
-  return CPXgetmipitcnt (env, lp);
+double CplexBackend::SimplexIterations() const {
+  return std::max(
+        CPXgetmipitcnt (env, lp), CPXgetitcnt (env, lp));
+}
+
+int CplexBackend::BarrierIterations() const {
+  return CPXgetbaritcnt (env, lp);
 }
 
 void CplexBackend::ExportModel(const std::string &file) {
@@ -141,6 +146,19 @@ void CplexBackend::SolveAndReportIntermediateResults() {
 
 void CplexBackend::WindupCPLEXSolve() {
   SetStatus( ConvertCPLEXStatus() );
+  AddCPLEXMessages();
+}
+
+void CplexBackend::AddCPLEXMessages() {
+  if (auto ni = SimplexIterations())
+    AddToSolverMessage(
+          fmt::format("{} simplex iterations\n", ni));
+  if (auto nbi = BarrierIterations())
+    AddToSolverMessage(
+          fmt::format("{} barrier iterations\n", nbi));
+  if (auto nnd = NodeCount())
+    AddToSolverMessage(
+          fmt::format("{} branching nodes\n", nnd));
 }
 
 std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {

@@ -351,7 +351,7 @@ public:
     double obj_value = std::numeric_limits<double>::quiet_NaN();
     
     fmt::MemoryWriter writer;
-    writer.write("{}: {}", MP_DISPATCH( long_name() ), MP_DISPATCH( SolveCode() ));
+    writer.write("{}: {}", MP_DISPATCH( long_name() ), MP_DISPATCH( SolveStatus() ));
     if (IsProblemSolvedOrFeasible()) {
       if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
         if(multiobj() && MP_DISPATCH(NumberOfObjectives()) > 1)
@@ -378,10 +378,6 @@ public:
     }
     if (exportKappa() && 1)
       writer.write("\nkappa value: {}", MP_DISPATCH(Kappa()));
-    if (auto ni = MP_DISPATCH( NumberOfIterations() ))
-      writer.write("\n{} simplex iterations", ni);
-    if (auto nnd = MP_DISPATCH( NodeCount() ))
-      writer.write("\n{} branching nodes", nnd);
     writer.write("\n");
     if (solver_msg_extra_.size()) {
       writer.write(solver_msg_extra_);
