@@ -50,7 +50,7 @@ public:
     for (const auto& con: constr_) {
       oss << con.GetConstraintName() << ' ' << (i++)
           << ":  ";
-      con.print(oss);
+//      con.print(oss);
       oss << std::endl;
     }
     return oss.str();

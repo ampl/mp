@@ -241,16 +241,7 @@ class SolverOption {
   // description: option description
   // values:      information about possible option values
   SolverOption(const char *names_list, const char *description,
-      ValueArrayRef values = ValueArrayRef(), bool is_flag = false)
-  : description_(description),
-    values_(values), is_flag_(is_flag) {
-    auto synonyms = split_str(names_list);
-    if (synonyms.empty())
-      throw std::logic_error("Empty option name list");
-    name_ = synonyms.front();
-    for (size_t i=1; i<synonyms.size(); ++i)
-      inline_synonyms_.push_back(synonyms[i]);
-  }
+      ValueArrayRef values = ValueArrayRef(), bool is_flag = false);
 
   virtual ~SolverOption() {}
 
@@ -332,8 +323,6 @@ class SolverOption {
   virtual std::string echo() {
     return name();
   }
-
-  static std::vector<std::string> split_str(const char* str);
 };
 
 
@@ -419,6 +408,8 @@ class Solver : private ErrorHandler,
 
   enum {SHOW_VERSION = 1, AMPL_FLAG = 2};
   int bool_options_;
+  int option_flag_save_ = 0;
+  std::string option_file_save_;
 
   // The filename stub for returning multiple solutions.
   std::string solution_stub_;
@@ -444,6 +435,10 @@ class Solver : private ErrorHandler,
   OutputHandler *output_handler_;
   ErrorHandler *error_handler_;
   Interrupter *interrupter_;
+
+  std::string GetOptionFile(const SolverOption &) const
+  { return option_file_save_; }
+  void UseOptionFile(const SolverOption &, fmt::StringRef value);
 
   int GetWantSol(const SolverOption &) const { return wantsol_; }
   void SetWantSol(const SolverOption &, int value) {
@@ -628,15 +623,15 @@ class Solver : private ErrorHandler,
 
   void AddOption(OptionPtr opt);
 
-  /// Add "online" option synonyms
+  /// Add "inline" option synonyms
   /// The _Front version puts them in the front of the synonyms list
   /// and the 1st of them is used in the -a output for sorting
-  void AddOptionSynonymsFront(const char* names_list, const char* realName);
-  void AddOptionSynonymsBack(const char* names_list, const char* realName);
+  void AddOptionSynonyms_Inline_Front(const char* names_list, const char* realName);
+  void AddOptionSynonyms_Inline_Back(const char* names_list, const char* realName);
 
   /// Add an "out-of-line" synonym
   /// Creates extra entry under -=
-  void AddOptionSynonym_OutOfLine(const char* name, const char* realName);
+  void AddOptionSynonyms_OutOfLine(const char* name, const char* realName);
 
   // Adds an integer option.
   // The option stores pointers to the name and the description so make

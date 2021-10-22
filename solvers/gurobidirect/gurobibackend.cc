@@ -1787,7 +1787,7 @@ void GurobiBackend::InitCustomOptions() {
       "Search mode for MIP solutions when sol:stub/sol:count are specified "
                         "to request finding several alternative solutions:\n",
           storedOptions_.nPoolMode_, values_pool_mode);
-  AddOptionSynonymsFront("ams_stub", "sol:stub");
+  AddOptionSynonyms_Inline_Front("ams_stub", "sol:stub");
 
   /// Option "solutionstub" is created internally if
   /// std feature MULTISOL is set.
@@ -1933,6 +1933,7 @@ void GurobiBackend::InitCustomOptions() {
       "either by name or by IP address.  Default: run Gurobi locally "
       "(i.e., do not use a remote Gurobi server).",
           storedOptions_.servers_);
+  AddOptionSynonyms_OutOfLine("tech:server_lic serverlic server_lic", "tech:option:read");
   AddStoredOption("tech:server_group server_group",
       "Name of Compute Server Group, if any.",
           storedOptions_.server_group_);

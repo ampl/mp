@@ -673,9 +673,9 @@ protected:
 
 public:
   using Solver::AddOption;
-  using Solver::AddOptionSynonymsFront;
-  using Solver::AddOptionSynonymsBack;
-  using Solver::AddOptionSynonym_OutOfLine;
+  using Solver::AddOptionSynonyms_Inline_Front;
+  using Solver::AddOptionSynonyms_Inline_Back;
+  using Solver::AddOptionSynonyms_OutOfLine;
   using Solver::FindOption;
 
 

@@ -17,21 +17,18 @@
  action of contract, negligence or other tortious action, arising out
  of or in connection with the use or performance of this software.
 
- Author: Victor Zverovich
+ Authors: Victor Zverovich, Gleb Belov
  */
-
-#include "mp/common.h"
-#include "mp/solver.h"
 
 #include <cctype>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 
 #include <algorithm>
 #include <stack>
-#include <sstream>
 
 #ifndef _WIN32
 # include <strings.h>
@@ -46,6 +43,11 @@
 # undef max
 #endif
 
+#include "mp/common.h"
+#include "mp/solver.h"
+
+#include "mp/utils_file.h"
+#include "mp/utils_string.h"
 #include "mp/clock.h"
 #include "mp/rstparser.h"
 
@@ -561,6 +563,15 @@ Solver::Solver(
   };
   AddOption(OptionPtr(new VersionOption(*this)));
 
+  AddStrOption(
+        "tech:option:read optionfile option:read",
+        "Name of solver option file (surrounded by 'single' or "
+      "\"double\" quotes if the name contains blanks). "
+      "Lines that start with # are ignored.  Otherwise, each nonempty "
+      "line should contain \"name=value\".",
+        &Solver::GetOptionFile, &Solver::UseOptionFile);
+
+
   AddIntOption(
         "tech:wantsol wantsol",
         "In a stand-alone invocation (no ``-AMPL`` on the command line), "
@@ -629,6 +640,18 @@ Solver::Solver(
   }
 }
 
+void Solver::UseOptionFile(const SolverOption &, fmt::StringRef value) {
+  option_file_save_ = value;
+  std::ifstream ifs(value);
+  if (ifs.good())
+    ProcessLines_AvoidComments(ifs,
+                               [this](const char* s)
+    { ParseOptionString(s, option_flag_save_); });
+  if (!ifs.good() && !ifs.eof())
+    MP_RAISE(fmt::format("Failed to read option file '{}': {}",
+                         value, std::strerror(errno)));
+}
+
 Solver::~Solver() {
   std::for_each(options_.begin(), options_.end(), Deleter());
 }
@@ -664,6 +687,21 @@ bool Solver::ShowVersion() {
   return false;
 }
 #endif
+
+SolverOption::SolverOption(
+    const char *names_list, const char *description,
+    ValueArrayRef values, bool is_flag)
+: description_(description),
+  values_(values), is_flag_(is_flag) {
+  auto synonyms = split_string(names_list);
+  if (synonyms.empty())
+    throw std::logic_error("Empty option name list");
+  name_ = synonyms.front();
+  for (size_t i=1; i<synonyms.size(); ++i)
+    inline_synonyms_.push_back(synonyms[i]);
+}
+
+
 
 SolverOption *Solver::FindOption(const char *name) const {
   struct DummyOption : SolverOption {
@@ -772,6 +810,7 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
 bool Solver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) {
   has_errors_ = false;
   bool_options_ &= ~SHOW_VERSION;
+  option_flag_save_ = flags;
   if (const char *s = std::getenv((name_ + "_options").c_str()))
     ParseOptionString(s, flags);
   while (const char *s = *argv++)
@@ -792,28 +831,17 @@ Solver::DoubleFormatter Solver::FormatObjValue(double value) {
   return formatter;
 }
 
-std::vector<std::string> SolverOption::split_str(const char *str) {
-  std::vector<std::string> result;
-  std::string word;
-  std::istringstream iss(str);
-  while (iss >> word) {
-    if (!word.empty())
-      result.push_back(word);
-  }
-  return result;
-}
-
 const char* SolverOption::name_ASL() const {
   return inline_synonyms_.size() == 0 ? name() :
     inline_synonyms_[0].c_str();
 }
 void SolverOption::add_synonyms_front(const char* names_list) {
-  auto synonyms = split_str(names_list);
+  auto synonyms = split_string(names_list);
   inline_synonyms_.insert(inline_synonyms_.begin(),
                           synonyms.begin(), synonyms.end());
 }
 void SolverOption::add_synonyms_back(const char* names_list) {
-  auto synonyms = split_str(names_list);
+  auto synonyms = split_string(names_list);
   inline_synonyms_.insert(inline_synonyms_.end(),
                           synonyms.begin(), synonyms.end());
 }
@@ -827,7 +855,7 @@ void Solver::AddOption(OptionPtr opt) {
   opt.release();
 }
 
-void Solver::AddOptionSynonymsFront(const char* names_list, const char* realName)
+void Solver::AddOptionSynonyms_Inline_Front(const char* names_list, const char* realName)
 {
   SolverOption* real = FindOption(realName);
   if (!real)
@@ -837,7 +865,7 @@ void Solver::AddOptionSynonymsFront(const char* names_list, const char* realName
   real->add_synonyms_front(names_list);
 }
 
-void Solver::AddOptionSynonymsBack(const char* names_list, const char* realName)
+void Solver::AddOptionSynonyms_Inline_Back(const char* names_list, const char* realName)
 {
   SolverOption* real = FindOption(realName);
   if (!real)
@@ -854,7 +882,7 @@ class SolverOptionSynonym : public SolverOption
   std::string desc_;
 public:
   SolverOptionSynonym(const char* names, SolverOption& real) :
-    SolverOption(names, NULL), real_(&real) {
+    SolverOption(names, ""), real_(&real) {
     desc_ = fmt::sprintf("Synonym for %s.", real_->name());
     set_description( desc_.c_str() );
   }
@@ -872,7 +900,7 @@ public:
   }
 };
 
-void Solver::AddOptionSynonym_OutOfLine(const char* name, const char* realName)
+void Solver::AddOptionSynonyms_OutOfLine(const char* name, const char* realName)
 {
   SolverOption* real = FindOption(realName);
   if (!real)

@@ -307,7 +307,7 @@ add_to_folder(${MP_FOLDER_PREFIX}util gen-expr-info)
 add_prefix(MP_HEADERS include/mp/
   arrayref.h basic-expr-visitor.h clock.h common.h error.h expr.h
   expr-visitor.h nl.h nl-reader.h option.h os.h problem.h problem-builder.h
-  rstparser.h safeint.h sol.h solver.h suffix.h)
+  rstparser.h safeint.h sol.h solver.h suffix.h utils_file.h utils_string.h)
 
 add_prefix(MP_CONVERT_HEADERS include/mp/convert/
   affine_expr.h backend.h basic_constr.h basic_converters.h
@@ -322,7 +322,8 @@ add_prefix(MP_CONVERT_MIP_HEADERS include/mp/convert/MIP/
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
   clock.cc expr.cc expr-writer.h nl-reader.cc option.cc os.cc
-  problem.cc rstparser.cc sol.cc solver.cc solver-c.h sp.h sp.cc)
+  problem.cc rstparser.cc sol.cc solver.cc solver-c.h sp.h sp.cc
+  utils_file.cc utils_string.cc)
 
 set(MP_CONVERT_SOURCES )
 add_prefix(MP_CONVERT_SOURCES src/mp/convert/

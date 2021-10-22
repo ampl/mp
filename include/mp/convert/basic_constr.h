@@ -12,7 +12,7 @@ namespace mp {
 class BasicConstraint {
 public:
   static const char* GetConstraintName() { return "BasicConstraint"; }
-  void print(std::ostream& ) const { }
+//  void print(std::ostream& ) const { }
   /// Whether context is meaningful here
   static constexpr bool HasContext() { return false; }
   void SetContext(Context ) const { }
