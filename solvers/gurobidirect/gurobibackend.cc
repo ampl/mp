@@ -527,10 +527,7 @@ void GurobiBackend::SolveAndReportIntermediateResults() {
 
   GRB_CALL( GRBoptimize(model_) );
 
-  if (need_multiple_solutions())
-    ReportGurobiPool();
-  if (need_fixed_MIP())
-    ConsiderGurobiFixedModel();
+  WindupGurobiSolve();
 }
 
 void GurobiBackend::PrepareGurobiSolve() {
@@ -546,6 +543,17 @@ void GurobiBackend::PrepareGurobiSolve() {
     ExportModel(storedOptions_.exportFile_);
   if (tunebase().size())
     DoGurobiTune();
+}
+
+void GurobiBackend::WindupGurobiSolve() {
+  auto status = ConvertGurobiStatus();
+  solve_code_ = status.first;
+  solve_status_ = status.second;
+
+  if (need_multiple_solutions())
+    ReportGurobiPool();
+  if (need_fixed_MIP())
+    ConsiderGurobiFixedModel();
 }
 
 void GurobiBackend::DoGurobiTune() {
@@ -692,41 +700,32 @@ void GurobiBackend::SetPartitionValues() {
 //////////////////////////////////////////////////////////////////////
 ////////////////////////// Solution Status ///////////////////////////
 //////////////////////////////////////////////////////////////////////
-std::string GurobiBackend::ConvertSolutionStatus(
-    const mp::Interrupter &interrupter, int &solve_code) {
+std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
   namespace sol = mp::sol;
   int optimstatus;
   GRB_CALL( GRBgetintattr(model_, GRB_INT_ATTR_STATUS, &optimstatus) );
   switch (optimstatus) {
   default:
     // Fall through.
-    if (interrupter.Stop()) {
-      solve_code = sol::INTERRUPTED;
-      return "interrupted";
+    if (interrupter()->Stop()) {
+      return { sol::INTERRUPTED, "interrupted" };
     }
     int solcount;
     GRB_CALL( GRBgetintattr(model_, GRB_INT_ATTR_SOLCOUNT, &solcount) );
     if (solcount>0) {
-      solve_code = sol::UNCERTAIN;
-      return "feasible solution";
+      return { sol::UNCERTAIN, "feasible solution" };
     }
-    solve_code = sol::FAILURE + 1;
-    return "unknown solution status";
+    return { sol::UNKNOWN, "unknown solution status" };
   case GRB_OPTIMAL:
-    solve_code = sol::SOLVED;
-    return "optimal solution";
+    return { sol::SOLVED, "optimal solution" };
   case GRB_INFEASIBLE:
-    solve_code = sol::INFEASIBLE;
-    return "infeasible problem";
-  case GRB_UNBOUNDED:
-    solve_code = sol::UNBOUNDED;
-    return "unbounded problem";
+    return { sol::INFEASIBLE, "infeasible problem" };
   case GRB_INF_OR_UNBD:
-    solve_code = sol::INFEASIBLE + 1;
-    return "infeasible or unbounded problem";
+    return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
+  case GRB_UNBOUNDED:
+    return { sol::UNBOUNDED, "unbounded problem" };
   case GRB_NUMERIC:
-    solve_code = sol::FAILURE;
-    return "error";
+    return { sol::NUMERIC, "feasible or optimal but numeric issue" };
   }
 }
 

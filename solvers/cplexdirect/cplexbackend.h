@@ -76,8 +76,8 @@ public:
   //////////////////////////// SOLVING ///////////////////////////////
   void SetInterrupter(mp::Interrupter* inter);
   void SolveAndReportIntermediateResults();
-  std::string ConvertSolutionStatus(
-      const mp::Interrupter &interrupter, int &solve_code);
+  int SolveCode() const { return solve_code_; }
+  const char* SolveStatus() const { return solve_status_.c_str(); }
 
   /// Solution values. The vectors are emptied if not available
   ArrayRef<double> PrimalSolution();
@@ -95,6 +95,11 @@ private:
   CPXENVptr     env = NULL;
   CPXLPptr      lp = NULL;
 
+  ///////////////////////// STORING SOLUTON STATUS //////////////////////
+private:
+  int solve_code_=sol::NOT_SET;
+  std::string solve_status_;
+
 public:  // public for static polymorphism
   void OpenSolver();
   void CloseSolver();
@@ -102,6 +107,12 @@ public:  // public for static polymorphism
 
   static double Infinity() { return CPX_INFBOUND; }
   static double MinusInfinity() { return -CPX_INFBOUND; }
+
+protected:
+
+  void WindupCPLEXSolve();
+
+  std::pair<int, std::string> ConvertCPLEXStatus();
 
 private:
   /// These options are stored in the class

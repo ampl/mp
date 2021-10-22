@@ -81,6 +81,9 @@ public:
   static const char* GetBackendLongName() { return nullptr; }
   static long Date() { return MP_DATE; }
 
+  int SolveCode() const { return sol::NOT_SET; }
+  const char* SolveStatus() const { return "not set"; }
+
   ArrayRef<double> PrimalSolution()
   { UNSUPPORTED("PrimalSolution()"); return {}; }
   double ObjectiveValue() const
@@ -243,7 +246,6 @@ public:
     MP_DISPATCH( SolveAndReportIntermediateResults() );
     MP_DISPATCH( RecordSolveTime() );
 
-    MP_DISPATCH( ObtainSolutionStatus() );
     MP_DISPATCH( ReportResults() );
     if (MP_DISPATCH( timing() ))
       MP_DISPATCH( PrintTimingInfo() );
@@ -281,11 +283,6 @@ public:
 
   void RecordSolveTime() {
     stats.solution_time = GetTimeAndReset(stats.time);
-  }
-
-  void ObtainSolutionStatus() {
-    solve_status_ = MP_DISPATCH(
-          ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code_) );
   }
 
   void InputFeasRelaxData() {
@@ -357,8 +354,8 @@ public:
     double obj_value = std::numeric_limits<double>::quiet_NaN();
     
     fmt::MemoryWriter writer;
-    writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status_);
-    if (solve_code_ < sol::INFEASIBLE) {
+    writer.write("{}: {}", MP_DISPATCH( long_name() ), MP_DISPATCH( SolveCode() ));
+    if (IsProblemSolvedOrFeasible()) {
       if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
         if(multiobj() && MP_DISPATCH(NumberOfObjectives()) > 1)
         {
@@ -396,7 +393,7 @@ public:
     if (round() && MP_DISPATCH(IsMIP()))
       RoundSolution(sol, writer);
     auto dual_solution = MP_DISPATCH( DualSolution() );  // Try in any case
-    HandleSolution(solve_code_, writer.c_str(),
+    HandleSolution(MP_DISPATCH( SolveCode() ), writer.c_str(),
                    sol.empty() ? 0 : sol.data(),
                    dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
   }
@@ -448,7 +445,7 @@ public:
   void ModifySolveCodeAndMessageAfterRounding(
         std::pair<int, double> rndres, fmt::MemoryWriter& writer) {
     if (round() & 2 && IsSolStatusRetrieved()) {
-      solve_code_ = 3 - (round() & 1);
+      // TODO solve_code_ = 3 - (round() & 1);
     }
     if (round() & 4) {
       auto sc = rndres.first > 1 ? "s" : "";
@@ -465,29 +462,31 @@ public:
       satisfaction problem */
   bool IsProblemSolved() const {
     assert(IsSolStatusRetrieved());
-    return solve_code_ == sol::SOLVED;
+    return sol::SOLVED==MP_CONST_DISPATCH( SolveCode() );
 
+  }
+  bool IsProblemSolvedOrFeasible() const {
+    assert( IsSolStatusRetrieved() );
+    return sol::INFEASIBLE > MP_CONST_DISPATCH( SolveCode() ) &&
+        sol::UNKNOWN < MP_CONST_DISPATCH( SolveCode() );
   }
   bool IsProblemInfOrUnb() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<=solve_code_ &&
-        sol::UNBOUNDED>=solve_code_;
+    return sol::INFEASIBLE<=MP_CONST_DISPATCH( SolveCode() ) &&
+        sol::UNBOUNDED_LAST>=MP_CONST_DISPATCH( SolveCode() );
   }
-
   bool IsProblemInfeasible() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<=solve_code_ &&
-        sol::UNBOUNDED>solve_code_;
+    return sol::INFEASIBLE<=MP_CONST_DISPATCH( SolveCode() ) &&
+        sol::INF_OR_UNB>MP_CONST_DISPATCH( SolveCode() );
   }
-
   bool IsProblemUnbounded() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<solve_code_ &&
-        sol::UNBOUNDED>=solve_code_;
+    return sol::UNBOUNDED<=MP_CONST_DISPATCH( SolveCode() ) &&
+        sol::UNBOUNDED_LAST>=MP_CONST_DISPATCH( SolveCode() );
   }
-
   bool IsSolStatusRetrieved() const {
-    return sol::NOT_CHECKED!=solve_code_;
+    return sol::NOT_SET!=MP_CONST_DISPATCH( SolveCode() );
   }
 
   struct Stats {
@@ -584,10 +583,6 @@ protected:
     return GetCQ().IsVarInt();
   }
 
-  ///////////////////////// STORING SOLUTON STATUS //////////////////////
-private:
-  int solve_code_=sol::NOT_CHECKED;
-  std::string solve_status_;
 
   ///////////////////////// STORING SOLVER MESSAGES //////////////////////
 private:
@@ -926,6 +921,9 @@ public:
   MPUtils& GetMPUtils() { return *this; }
 
   using MPSolverBase::debug_mode;
+
+protected:
+  using MPSolverBase::interrupter;
 
 protected:
   /// Returns {} if these penalties are +inf

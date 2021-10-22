@@ -565,8 +565,9 @@ Solver::Solver(
 
   AddStrOption(
         "tech:option:read optionfile option:read",
-        "Name of solver option file (surrounded by 'single' or "
-      "\"double\" quotes if the name contains blanks). "
+        "Name of solver option file. "
+//      " (surrounded by 'single' or "
+//      "\"double\" quotes if the name contains blanks). "
       "Lines that start with # are ignored.  Otherwise, each nonempty "
       "line should contain \"name=value\".",
         &Solver::GetOptionFile, &Solver::UseOptionFile);

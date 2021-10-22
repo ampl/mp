@@ -135,47 +135,56 @@ void CplexBackend::SetInterrupter(mp::Interrupter *inter) {
 
 void CplexBackend::SolveAndReportIntermediateResults() {
   CPLEX_CALL( CPXmipopt(env, lp) );
+
+  WindupCPLEXSolve();
 }
 
-std::string CplexBackend::ConvertSolutionStatus(
-    const mp::Interrupter &interrupter, int &solve_code) {
+void CplexBackend::WindupCPLEXSolve() {
+  auto status = ConvertCPLEXStatus();
+  solve_code_ = status.first;
+  solve_status_ = status.second;
+}
+
+std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
   namespace sol = mp::sol;
   int optimstatus = CPXgetstat(env, lp);
   switch (optimstatus) {
   default:
     // Fall through.
-    if (interrupter.Stop()) {
-      solve_code = sol::INTERRUPTED;
-      return "interrupted";
+    if (interrupter()->Stop()) {
+      return { sol::INTERRUPTED, "interrupted" };
     }
     int solcount;
     solcount = CPXgetsolnpoolnumsolns (env, lp);  // Can we use it without CPXpopulate?
     if (solcount>0) {
-      solve_code = sol::UNCERTAIN;
-      return "feasible solution";
+      return { sol::UNCERTAIN, "feasible solution" };
     }
-    solve_code = sol::FAILURE + 1;
-    return "unknown solution status";
+    return { sol::UNKNOWN, "unknown solution status" };
   case CPX_STAT_OPTIMAL:
   case CPXMIP_OPTIMAL:
   case CPX_STAT_MULTIOBJ_OPTIMAL:
-    solve_code = sol::SOLVED;
-    return "optimal solution";
+    return { sol::SOLVED, "optimal solution" };
   case CPX_STAT_INFEASIBLE:
   case CPXMIP_INFEASIBLE:
   case CPX_STAT_MULTIOBJ_INFEASIBLE:
-    solve_code = sol::INFEASIBLE;
-    return "infeasible problem";
-  case CPX_STAT_UNBOUNDED:
-  case CPXMIP_UNBOUNDED:
-  case CPX_STAT_MULTIOBJ_UNBOUNDED:
-    solve_code = sol::UNBOUNDED;
-    return "unbounded problem";
+    return { sol::INFEASIBLE, "infeasible problem" };
   case CPX_STAT_INForUNBD:
   case CPXMIP_INForUNBD:
   case CPX_STAT_MULTIOBJ_INForUNBD:
-    solve_code = sol::INFEASIBLE + 1;
-    return "infeasible or unbounded problem";
+    return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
+  case CPX_STAT_UNBOUNDED:
+  case CPXMIP_UNBOUNDED:
+  case CPX_STAT_MULTIOBJ_UNBOUNDED:
+    return { sol::UNBOUNDED, "unbounded problem" };
+  case CPX_STAT_FEASIBLE_RELAXED_INF:
+  case CPX_STAT_FEASIBLE_RELAXED_QUAD:
+  case CPX_STAT_FEASIBLE_RELAXED_SUM:
+  case CPX_STAT_NUM_BEST:
+  case CPX_STAT_OPTIMAL_INFEAS:
+  case CPX_STAT_OPTIMAL_RELAXED_INF:
+  case CPX_STAT_OPTIMAL_RELAXED_QUAD:
+  case CPX_STAT_OPTIMAL_RELAXED_SUM:
+    return { sol::NUMERIC, "feasible or optimal but numeric issue" };
   }
 }
 
