@@ -76,8 +76,6 @@ public:
   //////////////////////////// SOLVING ///////////////////////////////
   void SetInterrupter(mp::Interrupter* inter);
   void SolveAndReportIntermediateResults();
-  int SolveCode() const { return solve_code_; }
-  const char* SolveStatus() const { return solve_status_.c_str(); }
 
   /// Solution values. The vectors are emptied if not available
   ArrayRef<double> PrimalSolution();
@@ -94,11 +92,6 @@ public:
 private:
   CPXENVptr     env = NULL;
   CPXLPptr      lp = NULL;
-
-  ///////////////////////// STORING SOLUTON STATUS //////////////////////
-private:
-  int solve_code_=sol::NOT_SET;
-  std::string solve_status_;
 
 public:  // public for static polymorphism
   void OpenSolver();

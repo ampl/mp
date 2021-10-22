@@ -242,8 +242,6 @@ public:
 
   void SetInterrupter(mp::Interrupter* inter);
   void SolveAndReportIntermediateResults();
-  int SolveCode() const { return solve_code_; }
-  const char* SolveStatus() const { return solve_status_.c_str(); }
 
   /// Various solution attribute getters.
   ArrayRef<double> PrimalSolution();
@@ -350,11 +348,6 @@ private:
 
   /// The sense of the main objective
   obj::Type main_obj_sense_;
-
-  ///////////////////////// STORING SOLUTON STATUS //////////////////////
-private:
-  int solve_code_=sol::NOT_SET;
-  std::string solve_status_;
 
 private:
   /// These options are stored in the class as variables

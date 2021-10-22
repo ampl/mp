@@ -81,9 +81,6 @@ public:
   static const char* GetBackendLongName() { return nullptr; }
   static long Date() { return MP_DATE; }
 
-  int SolveCode() const { return sol::NOT_SET; }
-  const char* SolveStatus() const { return "not set"; }
-
   ArrayRef<double> PrimalSolution()
   { UNSUPPORTED("PrimalSolution()"); return {}; }
   double ObjectiveValue() const
@@ -456,6 +453,11 @@ public:
     }
   }
 
+  //////////////////////// SOLUTION STATUS ACCESS ///////////////////////////////
+  int SolveCode() const { return status_.first; }
+  const char* SolveStatus() const { return status_.second.c_str(); }
+  void SetStatus(std::pair<int, std::string> stt) { status_=stt; }
+
   //////////////////////// SOLUTION STATUS ADAPTERS ///////////////////////////////
   /** Following the taxonomy of the enum sol, returns true if
       we have an optimal solution or a feasible solution for a 
@@ -583,6 +585,10 @@ protected:
     return GetCQ().IsVarInt();
   }
 
+
+  ///////////////////////// STORING SOLUTON STATUS //////////////////////
+private:
+  std::pair<int, std::string> status_{ sol::NOT_SET, "status not set" };
 
   ///////////////////////// STORING SOLVER MESSAGES //////////////////////
 private:

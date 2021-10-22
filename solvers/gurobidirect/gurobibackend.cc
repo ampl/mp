@@ -546,10 +546,7 @@ void GurobiBackend::PrepareGurobiSolve() {
 }
 
 void GurobiBackend::WindupGurobiSolve() {
-  auto status = ConvertGurobiStatus();
-  solve_code_ = status.first;
-  solve_status_ = status.second;
-
+  SetStatus( ConvertGurobiStatus() );
   if (need_multiple_solutions())
     ReportGurobiPool();
   if (need_fixed_MIP())

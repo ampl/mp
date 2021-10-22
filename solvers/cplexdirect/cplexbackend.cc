@@ -140,9 +140,7 @@ void CplexBackend::SolveAndReportIntermediateResults() {
 }
 
 void CplexBackend::WindupCPLEXSolve() {
-  auto status = ConvertCPLEXStatus();
-  solve_code_ = status.first;
-  solve_status_ = status.second;
+  SetStatus( ConvertCPLEXStatus() );
 }
 
 std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
