@@ -1,7 +1,10 @@
 #ifndef CONSTRAINT_KEEPER_H
 #define CONSTRAINT_KEEPER_H
 
-#include "mp/convert/basic_constr.h"
+#include <limits>
+
+#include "mp/common.h"
+#include "mp/convert/constraint_adder.h"
 
 namespace mp {
 
@@ -43,41 +46,10 @@ public:
   using BaseConverter::MapFind; \
   using BaseConverter::MapInsert;
 
-
   static constexpr double Infty() { return std::numeric_limits<double>::infinity(); }
   static constexpr double MinusInfty() { return -std::numeric_limits<double>::infinity(); }
 };
 
-/// Level of acceptance of a constraint by a backend
-enum ConstraintAcceptanceLevel {
-  NotAccepted,
-  AcceptedButNotRecommended,
-  Recommended
-};
-
-/// Backends handling custom constraints should derive from
-class BasicConstraintAdder {
-public:
-  template <class Constraint>
-  void AddConstraint(const Constraint& ) {
-    throw std::logic_error(
-          std::string("Not handling constraint ") + Constraint::GetConstraintName());
-  }
-  /// Derived backends have to tell C++ to use default handlers if they are needed
-  /// when they overload AddConstraint(), due to C++ name hiding
-#define USE_BASE_CONSTRAINT_HANDLERS(BaseBackend) \
-  using BaseBackend::AddConstraint; \
-  using BaseBackend::AcceptanceLevel;
-  /// By default, we say constraint XYZ is not accepted but...
-  static constexpr ConstraintAcceptanceLevel AcceptanceLevel(const BasicConstraint*) {
-    return NotAccepted;
-  }
-};
-
-/// ... then for a certain constraint it can be specified
-#define ACCEPT_CONSTRAINT(ConstrType, level) \
-  static constexpr mp::ConstraintAcceptanceLevel \
-    AcceptanceLevel(const ConstrType*) { return level; }
 
 /// Manages constraints in the Converter
 class BasicConstraintKeeper {

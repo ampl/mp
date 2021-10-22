@@ -156,18 +156,8 @@ public:
 
 
   /////////////////////////////////////////////////////////////////////////////
-  //////////////////////////// MODELING API        ////////////////////////////
+  //////////////////////////// MODELING ACCESSORS /////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
-
-  /// Chance for the Backend to init solver environment, etc
-  void InitOptionParsing();
-  /// Chance to consider options immediately (open cloud, etc)
-  void FinishOptionParsing();
-
-  /// This is called before model is pushed to the Backend
-  void InitProblemModificationPhase();
-  /// Chance to call GRBupdatemodel()
-  void FinishProblemModificationPhase();
 
   static constexpr double Infinity() { return GRB_INFINITY; }
   static constexpr double MinusInfinity() { return -GRB_INFINITY; }
@@ -234,13 +224,41 @@ public:
   int NumberOfObjectives() const;
   int ModelSense() const;
 
-  void ExportModel(const std::string& file);
 
+  /////////////////////////////////////////////////////////////////////////////
+  //////////////////////////// OPTION ACCESSORS ///////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
 
-  //////////////////////////// SOLVING ///////////////////////////////
+  /// Gurobi-specific options
   void InitCustomOptions();
 
+  /// Chance for the Backend to init solver environment, etc
+  void InitOptionParsing();
+  /// Chance to consider options immediately (open cloud, etc)
+  void FinishOptionParsing();
+
+  /// Public option API.
+  /// These methods access Gurobi options. Used by AddSolverOption()
+  void GetSolverOption(const char* key, int& value) const;
+  void SetSolverOption(const char* key, int value);
+  void GetSolverOption(const char* key, double& value) const;
+  void SetSolverOption(const char* key, double value);
+  void GetSolverOption(const char* key, std::string& value) const;
+  void SetSolverOption(const char* key, const std::string& value);
+
+
+
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////// SOLVING ACCESSORS ///////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+
   void SetInterrupter(mp::Interrupter* inter);
+
+  /// This is called before model is pushed to the Backend
+  void InitProblemModificationPhase();
+  /// Chance to call GRBupdatemodel()
+  void FinishProblemModificationPhase();
+
   void SolveAndReportIntermediateResults();
 
   /// Various solution attribute getters.
@@ -248,20 +266,6 @@ public:
   double ObjectiveValue() const;
   /// Return empty vector if not available
   ArrayRef<double> DualSolution();
-
-  double NodeCount() const;
-  double SimplexIterations() const;
-  int BarrierIterations() const;
-
-  /// Public option API.
-  /// These methods access Gurobi options. Used by AddSolverOption()
-public:
-  void GetSolverOption(const char* key, int& value) const;
-  void SetSolverOption(const char* key, int value);
-  void GetSolverOption(const char* key, double& value) const;
-  void SetSolverOption(const char* key, double value);
-  void GetSolverOption(const char* key, std::string& value) const;
-  void SetSolverOption(const char* key, const std::string& value);
 
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -276,6 +280,8 @@ protected:
 
   void OpenGurobiComputeServer();
   void OpenGurobiCloud();
+
+  void ExportModel(const std::string& file);
 
   void PrepareGurobiSolve();
   void DoGurobiFeasRelax();
@@ -301,6 +307,9 @@ protected:
   std::vector<double> GurobiDualSolution_LP();
   std::vector<double> GurobiDualSolution_QCP();
 
+  double NodeCount() const;
+  double SimplexIterations() const;
+  int BarrierIterations() const;
 
   /// REMEMBER Gurobi does not update attributes before calling optimize() etc
   /// Scalar attributes. If (flag), set *flag <-> success,

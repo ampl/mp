@@ -27,7 +27,7 @@
 
 #include "mp/clock.h"
 #include "mp/convert/converter_query.h"
-#include "mp/convert/constraint_keeper.h"
+#include "mp/convert/constraint_adder.h"
 #include "mp/convert/std_constr.h"
 #include "mp/convert/std_obj.h"
 #include "mp/convert/model.h"
@@ -148,13 +148,6 @@ public:
   using Model = BasicModel<>;
   using Variable = typename Model::Variable;
 
-  /// Chance for the Backend to init solver environment, etc
-  void InitOptionParsing() { }
-  /// Chance to consider options immediately (open cloud, etc)
-  void FinishOptionParsing() { }
-
-  void InitProblemModificationPhase() { }
-  void FinishProblemModificationPhase() { }
   void AddVariable(Variable var) {
     throw MakeUnsupportedError("BasicBackend::AddVariable");
   }
@@ -236,6 +229,15 @@ public:
   ////////////////////////////////////////////////////////////////////////////
   /////////////////////////// BASIC PROCESS LOGIC ////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
+
+  /// Chance for the Backend to init solver environment, etc
+  void InitOptionParsing() { }
+  /// Chance to consider options immediately (open cloud, etc)
+  void FinishOptionParsing() { }
+
+  void InitProblemModificationPhase() { }
+  void FinishProblemModificationPhase() { }
+
   void SolveAndReport() {
     MP_DISPATCH( InputExtras() );
 

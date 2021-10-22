@@ -46,7 +46,7 @@ public:
   /// Always add MIP start if supported:
   /// Gurobi 9.1.2 solves non-convex Q(C)P as MIP
   /// But model attributes don't work before solve
-  /// TODO count non-linear stuff in the model
+  /// Count non-linear stuff in the model?
   bool CanBeMIP() const { return true; }
 
   ////////////////////////////////////////////////////////////
