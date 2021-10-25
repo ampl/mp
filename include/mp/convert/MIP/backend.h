@@ -31,11 +31,12 @@ namespace mp {
 /// The MIP wrapper provides common functionality relative to MIP solvers;
 /// it implements the common suffixes and the logic shared across all MIP
 /// solvers
-template <class Impl>
+template <class Impl,
+          class BaseBackend = BasicBackend<Impl>>  // parameter for base class
+                                                   // could allow chaining up
 class MIPBackend :
   public BasicBackend<Impl>
 {
-  using BaseBackend = BasicBackend<Impl>;
   using BaseBackend::debug_mode;
 
 public:
