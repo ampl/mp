@@ -27,7 +27,8 @@ extern "C" {
 
 namespace mp {
 
-class CplexBackend : public BasicBackend<CplexBackend>
+class CplexBackend :
+    public BasicBackend<CplexBackend>
 {
   using BaseBackend = BasicBackend<CplexBackend>;
 

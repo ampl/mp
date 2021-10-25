@@ -4,7 +4,7 @@
 #include <limits>
 
 #include "mp/common.h"
-#include "mp/convert/constraint_adder.h"
+#include "mp/convert/flat_model_api_basic.h"
 
 namespace mp {
 
@@ -67,9 +67,9 @@ public:
   virtual void ConvertWith(BasicConstraintConverter& cvt) = 0;
   /// Checks backend's acceptance level for the constraint
   virtual ConstraintAcceptanceLevel BackendAcceptance(
-      const BasicConstraintAdder& ) const = 0;
+      const BasicFlatModelAPI& ) const = 0;
   /// This adds the constraint to the backend without conversion
-  virtual void AddToBackend(BasicConstraintAdder& be) const = 0;
+  virtual void AddToBackend(BasicFlatModelAPI& be) const = 0;
 };
 
 template <class Converter, class Backend, class Constraint>
@@ -113,10 +113,10 @@ public:
     }
   }
   ConstraintAcceptanceLevel BackendAcceptance(
-      const BasicConstraintAdder& ba) const override {
+      const BasicFlatModelAPI& ba) const override {
     return static_cast<const Backend&>( ba ).AcceptanceLevel(&cons_);
   }
-  void AddToBackend(BasicConstraintAdder& be) const override {
+  void AddToBackend(BasicFlatModelAPI& be) const override {
     try {
       static_cast<Backend&>(be).AddConstraint(cons_);
     } catch (const std::exception& exc) {

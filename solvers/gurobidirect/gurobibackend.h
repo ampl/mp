@@ -27,7 +27,8 @@ extern "C" {
 
 namespace mp {
 
-class GurobiBackend : public MIPBackend<GurobiBackend>
+class GurobiBackend :
+    public MIPBackend<GurobiBackend>
 {
   using BaseBackend = MIPBackend<GurobiBackend>;
 
