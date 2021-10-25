@@ -79,20 +79,20 @@ bool CplexBackend::IsQCP() const {
   return probtype >= 5;
 }
 
-int CplexBackend::NumberOfConstraints() const {
+int CplexBackend::NumLinCons() const {
   return CPXgetnumrows (env, lp);
 }
 
-int CplexBackend::NumberOfVariables() const {
+int CplexBackend::NumVars() const {
   return CPXgetnumcols (env, lp);
 }
 
-int CplexBackend::NumberOfObjectives() const {
+int CplexBackend::NumObjs() const {
   return CPXgetnumobjs (env, lp);
 }
 
 ArrayRef<double> CplexBackend::PrimalSolution() {
-  int num_vars = NumberOfVariables();
+  int num_vars = NumVars();
   std::vector<double> x(num_vars);
   int error = CPXgetx (env, lp, x.data(), 0, num_vars-1);
   if (error)
@@ -101,7 +101,7 @@ ArrayRef<double> CplexBackend::PrimalSolution() {
 }
 
 ArrayRef<double> CplexBackend::DualSolution() {
-  int num_cons = NumberOfConstraints();
+  int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
   int error = CPXgetpi (env, lp, pi.data(), 0, num_cons-1);
   if (error)
@@ -249,7 +249,7 @@ void CplexBackend::AddConstraint(const LinearConstraint& lc) {
                           &sense, rmatbeg, lc.pvars(), lc.pcoefs(),
                           NULL, NULL) );
   if ('R'==sense) {
-    int indices = NumberOfConstraints()-1;
+    int indices = NumLinCons()-1;
     double range = lc.ub()-lc.lb();
     CPLEX_CALL( CPXchgrngval (env, lp, 1, &indices, &range) );
   }

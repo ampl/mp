@@ -22,6 +22,8 @@
 #ifndef FLAT_MODEL_API_H_
 #define FLAT_MODEL_API_H_
 
+#include <type_traits>
+
 #include "mp/convert/flat_model_api_basic.h"
 #include "mp/convert/std_constr.h"
 #include "mp/convert/std_obj.h"
@@ -92,6 +94,7 @@ public:
         auto qt = con.p_extra_info()->qt_;
         assert(!qt.empty());
         MP_DISPATCH( AddConstraint( QuadraticConstraint{std::move(lc), std::move(qt)} ) );
+        orig_qp_constr_.push_back(n_alg_constr_);
       }
       ++n_alg_constr_;
     }
@@ -118,26 +121,66 @@ public:
   }
 
 
-  /// Convenience method
-  /// Gurobi reports duals separately for linear and QCP constraints
-  /// We rely on QCP ones coming first in NL
-  static
-      std::vector<double> MakeDualsFromLPAndQCPDuals(
-        std::vector<double> pi, std::vector<double> qcpi) {
-    qcpi.insert(qcpi.end(), pi.begin(), pi.end());
-    return qcpi;
+  /// Convenience methods
+  /// Gurobi reports duals etc separately for linear and QCP constraints
+  template <class Vec>
+  auto MakeConstrValuesFromLPAndQCP(
+        const Vec& pi, const Vec& qcpi) ->
+          std::vector<
+            typename std::decay< decltype(*pi.data()) >::type>
+  {
+    std::vector<typename std::decay< decltype(*pi.data()) >::type>
+        result(NumValuedAlgConstr());
+    FillByIndex(result, pi, GetIndexesOfValuedLinearConstraints());
+    FillByIndex(result, qcpi, GetIndexesOfValuedQPConstraints());
+    return result;
+  }
+  template <class Vec>
+  auto ExtractLinConValues(Vec allval) ->
+  std::vector<typename std::decay< decltype(*allval.data()) >::type>
+  {
+    return ExtractByIndex(allval, GetIndexesOfValuedLinearConstraints());
+  }
+  template <class Vec>
+  auto ExtractQCValues(Vec allval) ->
+  std::vector<typename std::decay< decltype(*allval.data()) >::type>
+  {
+    return ExtractByIndex(allval, GetIndexesOfValuedQPConstraints());
   }
 
+  template <class Vec1, class Vec2, class Vec3>
+  static void FillByIndex(Vec1& dest, const Vec2& src, const Vec3& idx) {
+    for (size_t ii=0; ii<src.size() && ii<idx.size(); ++ii)
+      dest.at(idx[ii]) = src[ii];
+  }
+  template <class Vec2, class Vec3>
+  static auto ExtractByIndex(const Vec2& src, const Vec3& idx) ->
+  std::vector<typename std::decay< decltype(*src.data()) >::type>
+  {
+    std::vector<typename std::decay< decltype(*src.data()) >::type> rsl(idx.size());
+    for (size_t ii=0; ii<idx.size(); ++ii)
+      if (idx[ii] < src.size())
+        rsl[ii] = src[idx[ii]];
+    return rsl;
+  }
+
+  size_t NumValuedAlgConstr() const { return n_alg_constr_; }
   /// Gurobi handles linear constraints as a separate class.
   /// AMPL provides suffixes for all constraints together.
   /// The method returns the indexes of linear constraints
-  /// which have suffixes, in the overall constraints list.
-  const std::vector<size_t>& GetIndexesOfLinearConstraintsWithSuffixes() const
+  /// which are relevant for suffix / dual value exchange,
+  /// in the overall constraints list.
+  const std::vector<size_t>& GetIndexesOfValuedLinearConstraints() const
   { return orig_lin_constr_; }
+  /// Same for QP constraints
+  const std::vector<size_t>& GetIndexesOfValuedQPConstraints() const
+  { return orig_qp_constr_; }
 
 private:
   /// Indices of NL original linear constr in the total constr ordering
   std::vector<size_t> orig_lin_constr_;
+  /// Indices of NL original QP constr in the total constr ordering
+  std::vector<size_t> orig_qp_constr_;
   size_t n_alg_constr_=0;
 
 };

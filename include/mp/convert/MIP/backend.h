@@ -289,7 +289,7 @@ public:
   }
 
   void CalculateAndReportMIPGap() {
-    if (0 < MP_DISPATCH(NumberOfObjectives()) ) {
+    if (0 < MP_DISPATCH(NumObjs()) ) {
       std::vector<double> dbl(1);
       if (1 & GetMIPOptions().returnMipGap_) {
         dbl[0] = MP_DISPATCH( MIPGap() );
@@ -306,7 +306,7 @@ public:
 
   void ReportBestDualBound() {
     if (GetMIPOptions().returnBestDualBound_ &&
-        0 < MP_DISPATCH(NumberOfObjectives()) ) {
+        0 < MP_DISPATCH(NumObjs()) ) {
       std::vector<double> dbl(1, MP_DISPATCH( BestDualBound() ));
       ReportSuffix(sufBestBoundObj, dbl);
       ReportSuffix(sufBestBoundProb, dbl);

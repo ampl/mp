@@ -220,9 +220,10 @@ public:
   bool IsQCP() const;
 
   /// TODO Gurobi separates constraint classes
-  int NumberOfConstraints() const;
-  int NumberOfVariables() const;
-  int NumberOfObjectives() const;
+  int NumLinCons() const;
+  int NumQPCons() const;
+  int NumVars() const;
+  int NumObjs() const;
   int ModelSense() const;
 
 

@@ -207,11 +207,11 @@ public:
         0.0>lbpen() && 0.0>ubpen() && 0.0>rhspen())
       return;
     feasrelax().lbpen_ = FillFeasRelaxPenalty(suf_lbpen, lbpen(),
-                MP_DISPATCH( NumberOfVariables() ));
+                MP_DISPATCH( NumVars() ));
     feasrelax().ubpen_ = FillFeasRelaxPenalty(suf_ubpen, ubpen(),
-                MP_DISPATCH( NumberOfVariables() ));
+                MP_DISPATCH( NumVars() ));
     feasrelax().rhspen_ = FillFeasRelaxPenalty(suf_rhspen, rhspen(),
-                MP_DISPATCH( NumberOfConstraints() ));
+                MP_DISPATCH( NumValuedAlgConstr() ));
   }
 
   using Solver::need_multiple_solutions;
@@ -250,7 +250,7 @@ public:
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ),
                  "Alternative solution");
-    if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
+    if (MP_DISPATCH( NumObjs() ) > 0) {
       writer.write("; objective {}",
                    MP_DISPATCH( FormatObjValue(obj_value) ));
     }
@@ -270,8 +270,8 @@ public:
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ), MP_DISPATCH( SolveStatus() ));
     if (IsProblemSolvedOrFeasible()) {
-      if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
-        if(multiobj() && MP_DISPATCH(NumberOfObjectives()) > 1)
+      if (MP_DISPATCH( NumObjs() ) > 0) {
+        if(multiobj() && MP_DISPATCH(NumObjs()) > 1)
         {
           auto obj_values = MP_DISPATCH(ObjectiveValues());
           writer.write("; objective {}", MP_DISPATCH(FormatObjValue(obj_values[0])));

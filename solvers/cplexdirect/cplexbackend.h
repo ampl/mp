@@ -67,9 +67,9 @@ public:
   bool IsMIP() const;
   bool IsQCP() const;
 
-  int NumberOfConstraints() const;
-  int NumberOfVariables() const;
-  int NumberOfObjectives() const;
+  int NumLinCons() const;
+  int NumVars() const;
+  int NumObjs() const;
 
   void ExportModel(const std::string& file);
 
