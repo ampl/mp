@@ -27,7 +27,7 @@
 
 #include "mp/clock.h"
 #include "mp/convert/converter_query.h"
-#include "mp/convert/constraint_keeper.h"
+#include "mp/convert/flat_model_api.h"
 #include "mp/convert/std_constr.h"
 #include "mp/convert/std_obj.h"
 #include "mp/convert/model.h"
@@ -65,7 +65,7 @@ namespace mp {
 /// and placeholders for solver API
 template <class Impl>
 class BasicBackend :
-    public BasicConstraintAdder,
+    public FlatModelAPI<Impl>,
     private SolverImpl< ModelAdapter< BasicModel<> > >   // mp::Solver stuff, hidden
 {
   ////////////////////////////////////////////////////////////////////////////
@@ -141,13 +141,10 @@ protected:
       ALLOW_STD_FEATURE( WANT_ROUNDING, true )
 
 
-  ////////////////////////////////////////////////////////////////////////
-  ///////////////////////////// MODEL MANIP //////////////////////////////
-  ////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
+  /////////////////////////// BASIC PROCESS LOGIC ////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
 public:
-  using Model = BasicModel<>;
-  using Variable = typename Model::Variable;
-
   /// Chance for the Backend to init solver environment, etc
   void InitOptionParsing() { }
   /// Chance to consider options immediately (open cloud, etc)
@@ -155,87 +152,7 @@ public:
 
   void InitProblemModificationPhase() { }
   void FinishProblemModificationPhase() { }
-  void AddVariable(Variable var) {
-    throw MakeUnsupportedError("BasicBackend::AddVariable");
-  }
-  void AddCommonExpression(Problem::CommonExpr cexpr) {
-    throw MakeUnsupportedError("BasicBackend::AddCommonExpressions");
-  }
-  void AddLogicalConstraint(Problem::LogicalCon lcon) {
-    throw MakeUnsupportedError("BasicBackend::AddLogicalConstraints");
-  }
 
-  void AddObjective(typename Model::Objective obj) {
-    if (obj.nonlinear_expr()) {
-      MP_DISPATCH( AddGeneralObjective( obj ) );
-    } else {
-      LinearExprUnzipper leu(obj.linear_expr());
-      LinearObjective lo { obj.type(),
-            std::move(leu.c_), std::move(leu.v_) };
-      if (nullptr==obj.p_extra_info()) {
-        MP_DISPATCH( SetLinearObjective( obj.index(), lo ) );
-      } else {
-        auto qt = obj.p_extra_info()->qt_;
-        assert(!qt.empty());
-        MP_DISPATCH( SetQuadraticObjective( obj.index(),
-                       QuadraticObjective{std::move(lo), std::move(qt)} ) );
-      }
-    }
-  }
-  void AddGeneralObjective(typename Model::Objective ) {
-    throw MakeUnsupportedError("BasicBackend::AddGeneralObjective");
-  }
-  void SetLinearObjective( int, const LinearObjective& ) {
-    throw MakeUnsupportedError("BasicBackend::AddLinearObjective");
-  }
-  void SetQuadraticObjective( int, const QuadraticObjective& ) {
-    throw MakeUnsupportedError("BasicBackend::AddQuadraticObjective");
-  }
-
-  void AddAlgebraicConstraint(typename Model::AlgebraicCon con) {
-    if (con.nonlinear_expr()) {
-      MP_DISPATCH( AddGeneralConstraint( con ) );
-    } else {
-      LinearExprUnzipper leu(con.linear_expr());
-      auto lc = LinearConstraint{
-          std::move(leu.c_), std::move(leu.v_),
-          con.lb(), con.ub() };
-      if (nullptr==con.p_extra_info()) {
-        MP_DISPATCH( AddConstraint( lc ) );
-        orig_lin_constr_.push_back(n_alg_constr_);
-      } else {
-        auto qt = con.p_extra_info()->qt_;
-        assert(!qt.empty());
-        MP_DISPATCH( AddConstraint( QuadraticConstraint{std::move(lc), std::move(qt)} ) );
-      }
-      ++n_alg_constr_;
-    }
-  }
-
-  void AddGeneralConstraint(typename Model::AlgebraicCon ) {
-    throw MakeUnsupportedError("BasicBackend::AddGeneralConstraint");
-  }
-
-  ////////////////// Some basic custom constraints /////////////////
-  USE_BASE_CONSTRAINT_HANDLERS(BasicConstraintAdder)
-
-  /// Optionally exclude LDCs from being posted,
-  /// then all those are converted to LinearConstraint's first
-  ACCEPT_CONSTRAINT(LinearDefiningConstraint, NotAccepted)
-  void AddConstraint(const LinearDefiningConstraint& ldc) {
-    MP_DISPATCH( AddConstraint(ldc.to_linear_constraint()) );
-  }
-
-  ACCEPT_CONSTRAINT(LinearConstraint, Recommended)
-  /// TODO Attributes (lazy/user cut, etc)
-  void AddConstraint(const LinearConstraint& ) {
-    throw MakeUnsupportedError("BasicBackend::AddLinearConstraint");
-  }
-
-
-  ////////////////////////////////////////////////////////////////////////////
-  /////////////////////////// BASIC PROCESS LOGIC ////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////
   void SolveAndReport() {
     MP_DISPATCH( InputExtras() );
 
@@ -243,7 +160,6 @@ public:
     MP_DISPATCH( SolveAndReportIntermediateResults() );
     MP_DISPATCH( RecordSolveTime() );
 
-    MP_DISPATCH( ObtainSolutionStatus() );
     MP_DISPATCH( ReportResults() );
     if (MP_DISPATCH( timing() ))
       MP_DISPATCH( PrintTimingInfo() );
@@ -283,11 +199,6 @@ public:
     stats.solution_time = GetTimeAndReset(stats.time);
   }
 
-  void ObtainSolutionStatus() {
-    solve_status_ = MP_DISPATCH(
-          ConvertSolutionStatus(*MP_DISPATCH( interrupter() ), solve_code_) );
-  }
-
   void InputFeasRelaxData() {
     auto suf_lbpen = ReadDblSuffix( {"lbpen", suf::VAR} );
     auto suf_ubpen = ReadDblSuffix( {"ubpen", suf::VAR} );
@@ -296,11 +207,11 @@ public:
         0.0>lbpen() && 0.0>ubpen() && 0.0>rhspen())
       return;
     feasrelax().lbpen_ = FillFeasRelaxPenalty(suf_lbpen, lbpen(),
-                MP_DISPATCH( NumberOfVariables() ));
+                MP_DISPATCH( NumVars() ));
     feasrelax().ubpen_ = FillFeasRelaxPenalty(suf_ubpen, ubpen(),
-                MP_DISPATCH( NumberOfVariables() ));
+                MP_DISPATCH( NumVars() ));
     feasrelax().rhspen_ = FillFeasRelaxPenalty(suf_rhspen, rhspen(),
-                MP_DISPATCH( NumberOfConstraints() ));
+                MP_DISPATCH( NumValuedAlgConstr() ));
   }
 
   using Solver::need_multiple_solutions;
@@ -339,7 +250,7 @@ public:
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ),
                  "Alternative solution");
-    if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
+    if (MP_DISPATCH( NumObjs() ) > 0) {
       writer.write("; objective {}",
                    MP_DISPATCH( FormatObjValue(obj_value) ));
     }
@@ -357,10 +268,10 @@ public:
     double obj_value = std::numeric_limits<double>::quiet_NaN();
     
     fmt::MemoryWriter writer;
-    writer.write("{}: {}", MP_DISPATCH( long_name() ), solve_status_);
-    if (solve_code_ < sol::INFEASIBLE) {
-      if (MP_DISPATCH( NumberOfObjectives() ) > 0) {
-        if(multiobj() && MP_DISPATCH(NumberOfObjectives()) > 1)
+    writer.write("{}: {}", MP_DISPATCH( long_name() ), MP_DISPATCH( SolveStatus() ));
+    if (IsProblemSolvedOrFeasible()) {
+      if (MP_DISPATCH( NumObjs() ) > 0) {
+        if(multiobj() && MP_DISPATCH(NumObjs()) > 1)
         {
           auto obj_values = MP_DISPATCH(ObjectiveValues());
           writer.write("; objective {}", MP_DISPATCH(FormatObjValue(obj_values[0])));
@@ -384,10 +295,6 @@ public:
     }
     if (exportKappa() && 1)
       writer.write("\nkappa value: {}", MP_DISPATCH(Kappa()));
-    if (auto ni = MP_DISPATCH( NumberOfIterations() ))
-      writer.write("\n{} simplex iterations", ni);
-    if (auto nnd = MP_DISPATCH( NodeCount() ))
-      writer.write("\n{} branching nodes", nnd);
     writer.write("\n");
     if (solver_msg_extra_.size()) {
       writer.write(solver_msg_extra_);
@@ -396,7 +303,7 @@ public:
     if (round() && MP_DISPATCH(IsMIP()))
       RoundSolution(sol, writer);
     auto dual_solution = MP_DISPATCH( DualSolution() );  // Try in any case
-    HandleSolution(solve_code_, writer.c_str(),
+    HandleSolution(MP_DISPATCH( SolveCode() ), writer.c_str(),
                    sol.empty() ? 0 : sol.data(),
                    dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
   }
@@ -448,7 +355,7 @@ public:
   void ModifySolveCodeAndMessageAfterRounding(
         std::pair<int, double> rndres, fmt::MemoryWriter& writer) {
     if (round() & 2 && IsSolStatusRetrieved()) {
-      solve_code_ = 3 - (round() & 1);
+      // TODO solve_code_ = 3 - (round() & 1);
     }
     if (round() & 4) {
       auto sc = rndres.first > 1 ? "s" : "";
@@ -459,35 +366,42 @@ public:
     }
   }
 
+  //////////////////////// SOLUTION STATUS ACCESS ///////////////////////////////
+  int SolveCode() const { return status_.first; }
+  const char* SolveStatus() const { return status_.second.c_str(); }
+  void SetStatus(std::pair<int, std::string> stt) { status_=stt; }
+
   //////////////////////// SOLUTION STATUS ADAPTERS ///////////////////////////////
   /** Following the taxonomy of the enum sol, returns true if
       we have an optimal solution or a feasible solution for a 
       satisfaction problem */
   bool IsProblemSolved() const {
     assert(IsSolStatusRetrieved());
-    return solve_code_ == sol::SOLVED;
+    return sol::SOLVED==MP_CONST_DISPATCH( SolveCode() );
 
+  }
+  bool IsProblemSolvedOrFeasible() const {
+    assert( IsSolStatusRetrieved() );
+    return sol::INFEASIBLE > MP_CONST_DISPATCH( SolveCode() ) &&
+        sol::UNKNOWN < MP_CONST_DISPATCH( SolveCode() );
   }
   bool IsProblemInfOrUnb() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<=solve_code_ &&
-        sol::UNBOUNDED>=solve_code_;
+    return sol::INFEASIBLE<=MP_CONST_DISPATCH( SolveCode() ) &&
+        sol::UNBOUNDED_LAST>=MP_CONST_DISPATCH( SolveCode() );
   }
-
   bool IsProblemInfeasible() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<=solve_code_ &&
-        sol::UNBOUNDED>solve_code_;
+    return sol::INFEASIBLE<=MP_CONST_DISPATCH( SolveCode() ) &&
+        sol::INF_OR_UNB>MP_CONST_DISPATCH( SolveCode() );
   }
-
   bool IsProblemUnbounded() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<solve_code_ &&
-        sol::UNBOUNDED>=solve_code_;
+    return sol::UNBOUNDED<=MP_CONST_DISPATCH( SolveCode() ) &&
+        sol::UNBOUNDED_LAST>=MP_CONST_DISPATCH( SolveCode() );
   }
-
   bool IsSolStatusRetrieved() const {
-    return sol::NOT_CHECKED!=solve_code_;
+    return sol::NOT_SET!=MP_CONST_DISPATCH( SolveCode() );
   }
 
   struct Stats {
@@ -584,10 +498,10 @@ protected:
     return GetCQ().IsVarInt();
   }
 
+
   ///////////////////////// STORING SOLUTON STATUS //////////////////////
 private:
-  int solve_code_=sol::NOT_CHECKED;
-  std::string solve_status_;
+  std::pair<int, std::string> status_{ sol::NOT_SET, "status not set" };
 
   ///////////////////////// STORING SOLVER MESSAGES //////////////////////
 private:
@@ -928,6 +842,9 @@ public:
   using MPSolverBase::debug_mode;
 
 protected:
+  using MPSolverBase::interrupter;
+
+protected:
   /// Returns {} if these penalties are +inf
   std::vector<double> FillFeasRelaxPenalty(
       ArrayRef<double> suf_pen, double pen, int n) {
@@ -940,28 +857,6 @@ protected:
     }
     return result;
   }
-
-  /// Convenience method
-  /// Gurobi reports duals separately for linear and QCP constraints
-  /// We rely on QCP ones coming first in NL
-  static
-      std::vector<double> MakeDualsFromLPAndQCPDuals(
-        std::vector<double> pi, std::vector<double> qcpi) {
-    qcpi.insert(qcpi.end(), pi.begin(), pi.end());
-    return qcpi;
-  }
-
-  /// Gurobi handles linear constraints as a separate class.
-  /// AMPL provides suffixes for all constraints together.
-  /// The method returns the indexes of linear constraints
-  /// which have suffixes, in the overall constraints list.
-  const std::vector<size_t>& GetIndexesOfLinearConstraintsWithSuffixes() const
-  { return orig_lin_constr_; }
-
-private:
-  /// Indices of NL original linear constr in the total constr ordering
-  std::vector<size_t> orig_lin_constr_;
-  size_t n_alg_constr_=0;
 
 public:
   BasicBackend() :

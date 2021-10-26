@@ -22,7 +22,7 @@ include(init)
 
 project(MP)
 
-# Set the c++14 flag without GNU extensions.
+# Set the c++11 flag without GNU extensions.
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -311,7 +311,8 @@ add_prefix(MP_HEADERS include/mp/
 
 add_prefix(MP_CONVERT_HEADERS include/mp/convert/
   affine_expr.h backend.h basic_constr.h basic_converters.h
-  constraint_keeper.h  context.h converter_flat.h converter_flat_query.h
+  constraint_keeper.h flat_model_api_basic.h flat_model_api.h
+  context.h converter_flat.h converter_flat_query.h
   converter_query.h convert_functional.h eexpr.h interface_app.h
   model.h model_adapter.h preprocess.h
   quad_expr.h std_constr.h std_obj.h suffix.h)

@@ -27,7 +27,8 @@ extern "C" {
 
 namespace mp {
 
-class CplexBackend : public BasicBackend<CplexBackend>
+class CplexBackend :
+    public BasicBackend<CplexBackend>
 {
   using BaseBackend = BasicBackend<CplexBackend>;
 
@@ -66,9 +67,9 @@ public:
   bool IsMIP() const;
   bool IsQCP() const;
 
-  int NumberOfConstraints() const;
-  int NumberOfVariables() const;
-  int NumberOfObjectives() const;
+  int NumLinCons() const;
+  int NumVars() const;
+  int NumObjs() const;
 
   void ExportModel(const std::string& file);
 
@@ -76,8 +77,6 @@ public:
   //////////////////////////// SOLVING ///////////////////////////////
   void SetInterrupter(mp::Interrupter* inter);
   void SolveAndReportIntermediateResults();
-  std::string ConvertSolutionStatus(
-      const mp::Interrupter &interrupter, int &solve_code);
 
   /// Solution values. The vectors are emptied if not available
   ArrayRef<double> PrimalSolution();
@@ -86,7 +85,8 @@ public:
 
   /// Solution attributes
   double NodeCount() const;
-  double NumberOfIterations() const;
+  double SimplexIterations() const;
+  int BarrierIterations() const;
 
 
   //////////////////// [[ Implementation details ]] //////////////////////
@@ -102,6 +102,13 @@ public:  // public for static polymorphism
 
   static double Infinity() { return CPX_INFBOUND; }
   static double MinusInfinity() { return -CPX_INFBOUND; }
+
+protected:
+
+  void WindupCPLEXSolve();
+
+  std::pair<int, std::string> ConvertCPLEXStatus();
+  void AddCPLEXMessages();
 
 private:
   /// These options are stored in the class

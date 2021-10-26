@@ -27,7 +27,8 @@ extern "C" {
 
 namespace mp {
 
-class GurobiBackend : public MIPBackend<GurobiBackend>
+class GurobiBackend :
+    public MIPBackend<GurobiBackend>
 {
   using BaseBackend = MIPBackend<GurobiBackend>;
 
@@ -48,7 +49,7 @@ public:
   static const char* GetSolverName() { return "Gurobi"; }
   static std::string GetSolverVersion();
   static const char* GetSolverInvocationName();
-  static const char* GetAMPLSolverLongName() { return nullptr; }
+  static const char* GetAMPLSolverLongName() { return "AMPLGurobi"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
@@ -156,18 +157,8 @@ public:
 
 
   /////////////////////////////////////////////////////////////////////////////
-  //////////////////////////// MODELING API        ////////////////////////////
+  //////////////////////////// MODELING ACCESSORS /////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
-
-  /// Chance for the Backend to init solver environment, etc
-  void InitOptionParsing();
-  /// Chance to consider options immediately (open cloud, etc)
-  void FinishOptionParsing();
-
-  /// This is called before model is pushed to the Backend
-  void InitProblemModificationPhase();
-  /// Chance to call GRBupdatemodel()
-  void FinishProblemModificationPhase();
 
   static constexpr double Infinity() { return GRB_INFINITY; }
   static constexpr double MinusInfinity() { return -GRB_INFINITY; }
@@ -229,40 +220,54 @@ public:
   bool IsQCP() const;
 
   /// TODO Gurobi separates constraint classes
-  int NumberOfConstraints() const;
-  int NumberOfVariables() const;
-  int NumberOfObjectives() const;
+  int NumLinCons() const;
+  int NumQPCons() const;
+  int NumVars() const;
+  int NumObjs() const;
   int ModelSense() const;
 
-  void ExportModel(const std::string& file);
 
+  /////////////////////////////////////////////////////////////////////////////
+  //////////////////////////// OPTION ACCESSORS ///////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
 
-  //////////////////////////// SOLVING ///////////////////////////////
+  /// Gurobi-specific options
   void InitCustomOptions();
 
-  void SetInterrupter(mp::Interrupter* inter);
-  void SolveAndReportIntermediateResults();
-  std::string ConvertSolutionStatus(
-      const mp::Interrupter &interrupter, int &solve_code);
-
-  /// Various solution attribute getters.
-  ArrayRef<double> PrimalSolution();
-  double ObjectiveValue() const;
-  /// Return empty vector if not available
-  ArrayRef<double> DualSolution();
-
-  double NodeCount() const;
-  double NumberOfIterations() const;
+  /// Chance for the Backend to init solver environment, etc
+  void InitOptionParsing();
+  /// Chance to consider options immediately (open cloud, etc)
+  void FinishOptionParsing();
 
   /// Public option API.
   /// These methods access Gurobi options. Used by AddSolverOption()
-public:
   void GetSolverOption(const char* key, int& value) const;
   void SetSolverOption(const char* key, int value);
   void GetSolverOption(const char* key, double& value) const;
   void SetSolverOption(const char* key, double value);
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);
+
+
+
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////// SOLVING ACCESSORS ///////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+
+  void SetInterrupter(mp::Interrupter* inter);
+
+  /// This is called before model is pushed to the Backend
+  void InitProblemModificationPhase();
+  /// Chance to call GRBupdatemodel()
+  void FinishProblemModificationPhase();
+
+  void SolveAndReportIntermediateResults();
+
+  /// Various solution attribute getters.
+  ArrayRef<double> PrimalSolution();
+  double ObjectiveValue() const;
+  /// Return empty vector if not available
+  ArrayRef<double> DualSolution();
 
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -278,11 +283,17 @@ protected:
   void OpenGurobiComputeServer();
   void OpenGurobiCloud();
 
+  void ExportModel(const std::string& file);
+
   void PrepareGurobiSolve();
   void DoGurobiFeasRelax();
   void SetPartitionValues();
 
   void DoGurobiTune();
+
+  void WindupGurobiSolve();
+  std::pair<int, std::string> ConvertGurobiStatus() const;
+  void AddGurobiMessage();
 
   void ReportGurobiPool();
   /// Creates and solves, marks model_fixed to be used for duals/basis/sens
@@ -298,6 +309,9 @@ protected:
   std::vector<double> GurobiDualSolution_LP();
   std::vector<double> GurobiDualSolution_QCP();
 
+  double NodeCount() const;
+  double SimplexIterations() const;
+  int BarrierIterations() const;
 
   /// REMEMBER Gurobi does not update attributes before calling optimize() etc
   /// Scalar attributes. If (flag), set *flag <-> success,

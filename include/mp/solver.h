@@ -838,6 +838,7 @@ class Solver : private ErrorHandler,
   // Sets the output handler.
   void set_output_handler(OutputHandler *oh) { output_handler_ = oh; }
 
+  const Interrupter *interrupter() const { return interrupter_; }
   Interrupter *interrupter() { return interrupter_; }
   void set_interrupter(Interrupter *interrupter) {
     interrupter_ = interrupter ? interrupter : this;

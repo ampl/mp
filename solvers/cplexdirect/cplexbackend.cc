@@ -79,20 +79,20 @@ bool CplexBackend::IsQCP() const {
   return probtype >= 5;
 }
 
-int CplexBackend::NumberOfConstraints() const {
+int CplexBackend::NumLinCons() const {
   return CPXgetnumrows (env, lp);
 }
 
-int CplexBackend::NumberOfVariables() const {
+int CplexBackend::NumVars() const {
   return CPXgetnumcols (env, lp);
 }
 
-int CplexBackend::NumberOfObjectives() const {
+int CplexBackend::NumObjs() const {
   return CPXgetnumobjs (env, lp);
 }
 
 ArrayRef<double> CplexBackend::PrimalSolution() {
-  int num_vars = NumberOfVariables();
+  int num_vars = NumVars();
   std::vector<double> x(num_vars);
   int error = CPXgetx (env, lp, x.data(), 0, num_vars-1);
   if (error)
@@ -101,7 +101,7 @@ ArrayRef<double> CplexBackend::PrimalSolution() {
 }
 
 ArrayRef<double> CplexBackend::DualSolution() {
-  int num_cons = NumberOfConstraints();
+  int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
   int error = CPXgetpi (env, lp, pi.data(), 0, num_cons-1);
   if (error)
@@ -119,8 +119,13 @@ double CplexBackend::NodeCount() const {
   return CPXgetnodecnt (env, lp);
 }
 
-double CplexBackend::NumberOfIterations() const {
-  return CPXgetmipitcnt (env, lp);
+double CplexBackend::SimplexIterations() const {
+  return std::max(
+        CPXgetmipitcnt (env, lp), CPXgetitcnt (env, lp));
+}
+
+int CplexBackend::BarrierIterations() const {
+  return CPXgetbaritcnt (env, lp);
 }
 
 void CplexBackend::ExportModel(const std::string &file) {
@@ -135,47 +140,67 @@ void CplexBackend::SetInterrupter(mp::Interrupter *inter) {
 
 void CplexBackend::SolveAndReportIntermediateResults() {
   CPLEX_CALL( CPXmipopt(env, lp) );
+
+  WindupCPLEXSolve();
 }
 
-std::string CplexBackend::ConvertSolutionStatus(
-    const mp::Interrupter &interrupter, int &solve_code) {
+void CplexBackend::WindupCPLEXSolve() {
+  SetStatus( ConvertCPLEXStatus() );
+  AddCPLEXMessages();
+}
+
+void CplexBackend::AddCPLEXMessages() {
+  if (auto ni = SimplexIterations())
+    AddToSolverMessage(
+          fmt::format("{} simplex iterations\n", ni));
+  if (auto nbi = BarrierIterations())
+    AddToSolverMessage(
+          fmt::format("{} barrier iterations\n", nbi));
+  if (auto nnd = NodeCount())
+    AddToSolverMessage(
+          fmt::format("{} branching nodes\n", nnd));
+}
+
+std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
   namespace sol = mp::sol;
   int optimstatus = CPXgetstat(env, lp);
   switch (optimstatus) {
   default:
     // Fall through.
-    if (interrupter.Stop()) {
-      solve_code = sol::INTERRUPTED;
-      return "interrupted";
+    if (interrupter()->Stop()) {
+      return { sol::INTERRUPTED, "interrupted" };
     }
     int solcount;
     solcount = CPXgetsolnpoolnumsolns (env, lp);  // Can we use it without CPXpopulate?
     if (solcount>0) {
-      solve_code = sol::UNCERTAIN;
-      return "feasible solution";
+      return { sol::UNCERTAIN, "feasible solution" };
     }
-    solve_code = sol::FAILURE + 1;
-    return "unknown solution status";
+    return { sol::UNKNOWN, "unknown solution status" };
   case CPX_STAT_OPTIMAL:
   case CPXMIP_OPTIMAL:
   case CPX_STAT_MULTIOBJ_OPTIMAL:
-    solve_code = sol::SOLVED;
-    return "optimal solution";
+    return { sol::SOLVED, "optimal solution" };
   case CPX_STAT_INFEASIBLE:
   case CPXMIP_INFEASIBLE:
   case CPX_STAT_MULTIOBJ_INFEASIBLE:
-    solve_code = sol::INFEASIBLE;
-    return "infeasible problem";
-  case CPX_STAT_UNBOUNDED:
-  case CPXMIP_UNBOUNDED:
-  case CPX_STAT_MULTIOBJ_UNBOUNDED:
-    solve_code = sol::UNBOUNDED;
-    return "unbounded problem";
+    return { sol::INFEASIBLE, "infeasible problem" };
   case CPX_STAT_INForUNBD:
   case CPXMIP_INForUNBD:
   case CPX_STAT_MULTIOBJ_INForUNBD:
-    solve_code = sol::INFEASIBLE + 1;
-    return "infeasible or unbounded problem";
+    return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
+  case CPX_STAT_UNBOUNDED:
+  case CPXMIP_UNBOUNDED:
+  case CPX_STAT_MULTIOBJ_UNBOUNDED:
+    return { sol::UNBOUNDED, "unbounded problem" };
+  case CPX_STAT_FEASIBLE_RELAXED_INF:
+  case CPX_STAT_FEASIBLE_RELAXED_QUAD:
+  case CPX_STAT_FEASIBLE_RELAXED_SUM:
+  case CPX_STAT_NUM_BEST:
+  case CPX_STAT_OPTIMAL_INFEAS:
+  case CPX_STAT_OPTIMAL_RELAXED_INF:
+  case CPX_STAT_OPTIMAL_RELAXED_QUAD:
+  case CPX_STAT_OPTIMAL_RELAXED_SUM:
+    return { sol::NUMERIC, "feasible or optimal but numeric issue" };
   }
 }
 
@@ -224,7 +249,7 @@ void CplexBackend::AddConstraint(const LinearConstraint& lc) {
                           &sense, rmatbeg, lc.pvars(), lc.pcoefs(),
                           NULL, NULL) );
   if ('R'==sense) {
-    int indices = NumberOfConstraints()-1;
+    int indices = NumLinCons()-1;
     double range = lc.ub()-lc.lb();
     CPLEX_CALL( CPXchgrngval (env, lp, 1, &indices, &range) );
   }

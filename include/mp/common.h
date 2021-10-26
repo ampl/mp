@@ -127,7 +127,7 @@ namespace sol {
 /** Solution status. */
 enum Status {
 
-  NOT_CHECKED = -200,
+  NOT_SET = -200,
 
   /** Unknown status. */
   UNKNOWN     =  -1,
@@ -144,14 +144,21 @@ enum Status {
   /** Problem is infeasible. */
   INFEASIBLE  = 200,
 
+  /** Problem is infeasible or unbounded. */
+  INF_OR_UNB  = 250,
+
   /** Problem is unbounded. */
   UNBOUNDED   = 300,
+  UNBOUNDED_LAST = 349,
 
   /** Stopped by a limit, e.g. on iterations or time. */
   LIMIT       = 400,
 
   /** A solver error. */
   FAILURE     = 500,
+
+  /** A numeric issue. */
+  NUMERIC     = 550,
 
   /** Interrupted by the user. */
   INTERRUPTED = 600

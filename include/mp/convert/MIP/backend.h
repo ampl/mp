@@ -31,11 +31,12 @@ namespace mp {
 /// The MIP wrapper provides common functionality relative to MIP solvers;
 /// it implements the common suffixes and the logic shared across all MIP
 /// solvers
-template <class Impl>
+template <class Impl,
+          class BaseBackend = BasicBackend<Impl>>  // parameter for base class
+                                                   // could allow chaining up
 class MIPBackend :
   public BasicBackend<Impl>
 {
-  using BaseBackend = BasicBackend<Impl>;
   using BaseBackend::debug_mode;
 
 public:
@@ -46,7 +47,7 @@ public:
   /// Always add MIP start if supported:
   /// Gurobi 9.1.2 solves non-convex Q(C)P as MIP
   /// But model attributes don't work before solve
-  /// TODO count non-linear stuff in the model
+  /// Count non-linear stuff in the model?
   bool CanBeMIP() const { return true; }
 
   ////////////////////////////////////////////////////////////
@@ -289,7 +290,7 @@ public:
   }
 
   void CalculateAndReportMIPGap() {
-    if (0 < MP_DISPATCH(NumberOfObjectives()) ) {
+    if (0 < MP_DISPATCH(NumObjs()) ) {
       std::vector<double> dbl(1);
       if (1 & GetMIPOptions().returnMipGap_) {
         dbl[0] = MP_DISPATCH( MIPGap() );
@@ -306,7 +307,7 @@ public:
 
   void ReportBestDualBound() {
     if (GetMIPOptions().returnBestDualBound_ &&
-        0 < MP_DISPATCH(NumberOfObjectives()) ) {
+        0 < MP_DISPATCH(NumObjs()) ) {
       std::vector<double> dbl(1, MP_DISPATCH( BestDualBound() ));
       ReportSuffix(sufBestBoundObj, dbl);
       ReportSuffix(sufBestBoundProb, dbl);
