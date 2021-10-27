@@ -87,6 +87,7 @@ public:
   }
 
   const SolutionHandler& GetSolH() const { assert(p_sol_h_); return *p_sol_h_; }
+  bool HaveSolH() const { return p_sol_h_; }
   SolutionHandler& GetSolH() { assert(p_sol_h_); return *p_sol_h_; }
   void SetSolHandler(SolutionHandler& sh) { assert(&sh); p_sol_h_ = &sh; }
   void RemoveSolHandler() { p_sol_h_=nullptr; }

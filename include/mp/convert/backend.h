@@ -308,11 +308,9 @@ public:
                    dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
   }
 
-  void Abort(int /*solve_code_now*/, std::string msg) {
-    /// TODO: need a SolutionHandler in Converter even before NL
-    /// - for example, when cloud env fails
-//    HandleSolution(solve_code_now, msg, 0, 0, 0.0);
-    MP_RAISE(msg);
+  void Abort(int solve_code_now, std::string msg) {
+    HandleSolution(solve_code_now, msg, 0, 0, 0.0);
+    MP_RAISE_WITH_CODE(0, msg);  // exit code 0
   }
 
   void PrintTimingInfo() {

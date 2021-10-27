@@ -1033,7 +1033,10 @@ public:
 public:
   void HandleSolution(int status, fmt::CStringRef msg,
       const double *x, const double *y, double obj) {
-    MP_DISPATCH( GetSolH() ).HandleSolution(status, msg, x, y, obj);
+    if ( MPD( HaveSolH() ) )
+      MP_DISPATCH( GetSolH() ).HandleSolution(status, msg, x, y, obj);
+    else
+      MP_RAISE_WITH_CODE(0, msg);
   }
 
   void HandleFeasibleSolution(fmt::CStringRef msg,
