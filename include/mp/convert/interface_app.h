@@ -32,18 +32,6 @@ namespace mp {
 
 template <typename Interface>
 class InterfaceApp {
- private:
-  int result_code_ = 0;
-  unsigned banner_size = 0;
-
-  Interface interface_;
-
-  std::string nl_filename, filename_no_ext;
-  typename Interface::Converter::NLReadResult nl_read_result;
-
-  std::unique_ptr<internal::SignalHandler> p_sig_handler_;
-  std::unique_ptr<internal::SolverAppOptionParser> p_option_parser_;
-
  protected:
   int GetResultCode() const { return result_code_; }
   const Interface& GetInterface() const { return interface_; }
@@ -66,6 +54,20 @@ class InterfaceApp {
   using MPUtils = typename Interface::MPUtils;
   const MPUtils& GetMPUtils() const { return GetInterface().GetMPUtils(); }
   MPUtils& GetMPUtils() { return GetInterface().GetMPUtils(); }
+
+private:
+ int result_code_ = 0;
+ unsigned banner_size = 0;
+
+ Interface interface_;
+
+ std::string nl_filename, filename_no_ext;
+ typename Interface::Converter::NLReadResult nl_read_result;
+
+ std::unique_ptr<internal::SignalHandler> p_sig_handler_;
+ std::unique_ptr<internal::SolverAppOptionParser> p_option_parser_;
+ std::unique_ptr<internal::AppSolutionHandler<MPUtils> > sol_handler_tmp_;
+
 
  private:
   struct AppOutputHandler : OutputHandler {
@@ -140,6 +142,14 @@ bool InterfaceApp<Interface>::Init(char **argv, int nl_reader_flags) {
   else
     filename_no_ext.resize(filename_no_ext.size() - 3);
   internal::SetBasename(interface_, &filename_no_ext);
+
+  /// Make up sol handler for error reporting
+  ArrayRef<int> options({0, 1, 0});
+  sol_handler_tmp_.reset(new internal::AppSolutionHandler<MPUtils>(
+                           filename_no_ext, GetMPUtils(), GetOutputModel(),
+                           options,
+                           output_handler_.has_output ? 0 : banner_size));
+  interface_.SetSolHandler(*sol_handler_tmp_);
 
   // Parse solver options.
   unsigned flags =

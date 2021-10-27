@@ -271,16 +271,21 @@ public:
   }
 
   void ReportRays() {
-    if ( need_ray_primal() && MP_DISPATCH( IsProblemUnbounded() )) {
+    if ( need_ray_primal() &&
+         ( MPCD( IsProblemUnbounded() ) ||
+           MPCD( IsProblemIndiffInfOrUnb() ) )) {
       ReportSuffix(suf_unbdd, MP_DISPATCH( Ray() ));
     }
-    if ( need_ray_dual() && MP_DISPATCH( IsProblemInfeasible() )) {
+    if ( need_ray_dual() &&
+         ( MPCD( IsProblemInfeasible() ) ||
+           MPCD( IsProblemIndiffInfOrUnb() ) )) {
       ReportSuffix(suf_dunbdd, MP_DISPATCH( DRay() ));
     }
   }
 
   void CalculateAndReportIIS() {
-    if (MP_DISPATCH( IsProblemInfOrUnb() ) &&
+    if ((MPCD( IsProblemInfOrUnb() ) ||
+               MPCD( IsProblemIndiffInfOrUnb() )) &&
         GetMIPOptions().exportIIS_) {
       MP_DISPATCH( ComputeIIS() );
 

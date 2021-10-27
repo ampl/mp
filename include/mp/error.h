@@ -23,6 +23,8 @@
 #ifndef MP_ERROR_H_
 #define MP_ERROR_H_
 
+#include <cstdlib>
+
 #include "mp/format.h"
 
 namespace mp {
@@ -32,10 +34,12 @@ namespace mp {
 #endif
 
 #define MP_RAISE(msg) throw std::runtime_error(msg)
+#define MP_RAISE_WITH_CODE(exit_code, msg) throw mp::Error(msg, exit_code)
 #define MP_WARNING(msg) Print(msg)
 
 // A general error.
 class Error : public fmt::internal::RuntimeError {
+  int exit_code_ = EXIT_FAILURE;
  protected:
   Error() {}
 
@@ -50,7 +54,11 @@ class Error : public fmt::internal::RuntimeError {
 
  public:
   FMT_VARIADIC_(char, , Error, init, fmt::CStringRef)
+  Error(fmt::CStringRef msg, int c) : exit_code_(c)
+  { SetMessage(msg.c_str()); }
   ~Error() throw() {}
+
+  int exit_code() const { return exit_code_; }
 };
 
 // The operation is not supported by the object.

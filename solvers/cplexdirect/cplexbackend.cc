@@ -200,7 +200,7 @@ std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
   case CPX_STAT_OPTIMAL_RELAXED_INF:
   case CPX_STAT_OPTIMAL_RELAXED_QUAD:
   case CPX_STAT_OPTIMAL_RELAXED_SUM:
-    return { sol::NUMERIC, "feasible or optimal but numeric issue" };
+    return { sol::UNCERTAIN, "feasible or optimal but numeric issue" };
   }
 }
 

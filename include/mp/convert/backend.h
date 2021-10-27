@@ -308,11 +308,9 @@ public:
                    dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
   }
 
-  void Abort(int /*solve_code_now*/, std::string msg) {
-    /// TODO: need a SolutionHandler in Converter even before NL
-    /// - for example, when cloud env fails
-//    HandleSolution(solve_code_now, msg, 0, 0, 0.0);
-    MP_RAISE(msg);
+  void Abort(int solve_code_now, std::string msg) {
+    HandleSolution(solve_code_now, msg, 0, 0, 0.0);
+    MP_RAISE_WITH_CODE(0, msg);  // exit code 0
   }
 
   void PrintTimingInfo() {
@@ -385,20 +383,25 @@ public:
     return sol::INFEASIBLE > MP_CONST_DISPATCH( SolveCode() ) &&
         sol::UNKNOWN < MP_CONST_DISPATCH( SolveCode() );
   }
+  bool IsProblemIndiffInfOrUnb() const {
+    assert( IsSolStatusRetrieved() );
+    return sol::INF_OR_UNB==MP_CONST_DISPATCH( SolveCode() );
+  }
   bool IsProblemInfOrUnb() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<=MP_CONST_DISPATCH( SolveCode() ) &&
-        sol::UNBOUNDED_LAST>=MP_CONST_DISPATCH( SolveCode() );
+    auto sc = MP_CONST_DISPATCH( SolveCode() );
+    return sol::INFEASIBLE<=sc && sol::LIMIT>sc;
   }
   bool IsProblemInfeasible() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<=MP_CONST_DISPATCH( SolveCode() ) &&
-        sol::INF_OR_UNB>MP_CONST_DISPATCH( SolveCode() );
+    auto sc = MP_CONST_DISPATCH( SolveCode() );
+    return sol::INFEASIBLE<=sc && sol::UNBOUNDED>sc;
   }
   bool IsProblemUnbounded() const {
     assert( IsSolStatusRetrieved() );
-    return sol::UNBOUNDED<=MP_CONST_DISPATCH( SolveCode() ) &&
-        sol::UNBOUNDED_LAST>=MP_CONST_DISPATCH( SolveCode() );
+    auto sc = MP_CONST_DISPATCH( SolveCode() );
+    return sol::UNBOUNDED==sc ||
+        (sol::UNBOUNDED+2<=sc && sol::LIMIT>sc);
   }
   bool IsSolStatusRetrieved() const {
     return sol::NOT_SET!=MP_CONST_DISPATCH( SolveCode() );
