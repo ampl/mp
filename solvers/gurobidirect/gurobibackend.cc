@@ -745,6 +745,20 @@ std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
     return { sol::UNBOUNDED, "unbounded problem" };
   case GRB_NUMERIC:
     return { sol::NUMERIC, "feasible or optimal but numeric issue" };
+  case GRB_CUTOFF:
+    return { sol::LIMIT, "objective cutoff" };
+  case GRB_ITERATION_LIMIT:
+    return { sol::LIMIT+1, "iteration limit" };
+  case GRB_NODE_LIMIT:
+    return { sol::LIMIT+2, "node limit" };
+  case GRB_TIME_LIMIT:
+    return { sol::LIMIT+3, "time limit" };
+  case GRB_SOLUTION_LIMIT:
+    return { sol::LIMIT+4, "solution limit" };
+  case GRB_SUBOPTIMAL:
+    return { sol::UNCERTAIN, "suboptimal" };
+  case GRB_USER_OBJ_LIMIT:
+    return { sol::UNCERTAIN+3, "bestobjstop or bestbndstop reached" };
   }
 }
 
