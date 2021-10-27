@@ -385,20 +385,25 @@ public:
     return sol::INFEASIBLE > MP_CONST_DISPATCH( SolveCode() ) &&
         sol::UNKNOWN < MP_CONST_DISPATCH( SolveCode() );
   }
+  bool IsProblemIndiffInfOrUnb() const {
+    assert( IsSolStatusRetrieved() );
+    return sol::INF_OR_UNB==MP_CONST_DISPATCH( SolveCode() );
+  }
   bool IsProblemInfOrUnb() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<=MP_CONST_DISPATCH( SolveCode() ) &&
-        sol::UNBOUNDED_LAST>=MP_CONST_DISPATCH( SolveCode() );
+    auto sc = MP_CONST_DISPATCH( SolveCode() );
+    return sol::INFEASIBLE<=sc && sol::LIMIT>sc;
   }
   bool IsProblemInfeasible() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE<=MP_CONST_DISPATCH( SolveCode() ) &&
-        sol::INF_OR_UNB>MP_CONST_DISPATCH( SolveCode() );
+    auto sc = MP_CONST_DISPATCH( SolveCode() );
+    return sol::INFEASIBLE<=sc && sol::UNBOUNDED>sc;
   }
   bool IsProblemUnbounded() const {
     assert( IsSolStatusRetrieved() );
-    return sol::UNBOUNDED<=MP_CONST_DISPATCH( SolveCode() ) &&
-        sol::UNBOUNDED_LAST>=MP_CONST_DISPATCH( SolveCode() );
+    auto sc = MP_CONST_DISPATCH( SolveCode() );
+    return sol::UNBOUNDED==sc ||
+        (sol::UNBOUNDED+2<=sc && sol::LIMIT>sc);
   }
   bool IsSolStatusRetrieved() const {
     return sol::NOT_SET!=MP_CONST_DISPATCH( SolveCode() );

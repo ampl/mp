@@ -144,12 +144,11 @@ enum Status {
   /** Problem is infeasible. */
   INFEASIBLE  = 200,
 
-  /** Problem is infeasible or unbounded. */
-  INF_OR_UNB  = 250,
-
   /** Problem is unbounded. */
   UNBOUNDED   = 300,
-  UNBOUNDED_LAST = 349,
+
+  /** Problem is infeasible or unbounded. */
+  INF_OR_UNB  = UNBOUNDED+1,
 
   /** Stopped by a limit, e.g. on iterations or time. */
   LIMIT       = 400,
@@ -882,8 +881,11 @@ int nl_opcode(expr::Kind kind);
 }  // namespace expr
 
 #define MP_CONST_DISPATCH(call) static_cast<const Impl*>(this)->call
+#define MPCD(call) MP_CONST_DISPATCH(call)
 #define MP_DISPATCH(call) static_cast<Impl*>(this)->call
+#define MPD(call) MP_DISPATCH(call)
 #define MP_DISPATCH_STATIC(call) Impl::call
+#define MPDS(call) MP_DISPATCH_STATIC(call)
 
 namespace internal {
 
