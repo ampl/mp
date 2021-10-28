@@ -534,7 +534,7 @@ protected:
           GetMIPOptions().returnBestDualBound_, values_01_noyes_0default_);
 
     if (IMPL_HAS_STD_FEATURE( SENSITIVITY_ANALYSIS ))
-      AddStoredOption("alg:sens solnsens sensitivity",
+      AddStoredOption("alg:sens sens solnsens sensitivity",
                       "Whether to return suffixes for solution sensitivities, i.e., "
                       "ranges of values for which the optimal basis remains optimal:\n"
                         "\n"

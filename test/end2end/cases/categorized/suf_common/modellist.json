@@ -45,6 +45,32 @@
     }
   },
   {
+    "name" : "diet_max solnsens=1",
+    "files" : ["diet_max.mod", "diet.dat"],
+    "options": { "ANYSOLVER_options": "solnsens=1" },
+    "tags" : ["linear", "continuous"],
+    "objective" : 1128.642,
+    "values": {
+      "Diet['A'].sensrhslo": 7850,
+      "Diet['A'].sensrhshi": 11600,
+      "Diet['C'].sensrhslo": 9466.66666666666666,
+      "Diet['C'].sensrhshi": 11500
+    }
+  },
+  {
+    "name" : "diet_nonrng_max solnsens=1",
+    "files" : ["diet_nonrng_max.mod", "diet.dat"],
+    "options": { "ANYSOLVER_options": "solnsens=1" },
+    "tags" : ["linear", "continuous"],
+    "objective" : 1128.642,
+    "values": {
+      "Diet_Max['A'].sensrhslo": 7850,
+      "Diet_Max['A'].sensrhshi": 11600,
+      "Diet_Max['C'].sensrhslo": 9466.66666666666666,
+      "Diet_Max['C'].sensrhshi": 11500
+    }
+  },
+  {
     "name": "sos_01",
     "tags": [ "linear", "integer"],
     "objective": 32,
