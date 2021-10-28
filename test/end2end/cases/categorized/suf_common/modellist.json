@@ -54,7 +54,11 @@
       "Diet['A'].sensrhslo": 7850,
       "Diet['A'].sensrhshi": 11600,
       "Diet['C'].sensrhslo": 9466.66666666666666,
-      "Diet['C'].sensrhshi": 11500
+      "Diet['C'].sensrhshi": 11500,
+      "Diet['A']": 0.04788,
+      "Diet['B1']": 0,
+      "Diet['B2']": 0,
+      "Diet['C']": 0.01586
     }
   },
   {
@@ -67,7 +71,15 @@
       "Diet_Max['A'].sensrhslo": 7850,
       "Diet_Max['A'].sensrhshi": 11600,
       "Diet_Max['C'].sensrhslo": 9466.66666666666666,
-      "Diet_Max['C'].sensrhshi": 11500
+      "Diet_Max['C'].sensrhshi": 11500,
+      "Diet_Min['A']": 0,
+      "Diet_Min['B1']": 0,
+      "Diet_Min['B2']": 0,
+      "Diet_Min['C']": 0,
+      "Diet_Max['A']": 0.04788,
+      "Diet_Max['B1']": 0,
+      "Diet_Max['B2']": 0,
+      "Diet_Max['C']": 0.01586
     }
   },
   {
