@@ -820,14 +820,14 @@ public:
   }
 
   void PropagateResult(LinearDefiningConstraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     for (const auto& term: con.GetAffineExpr())
       PropagateResultOfInitExpr(term.var_index(), this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
   void PropagateResult(QuadraticDefiningConstraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     const auto& args = con.GetArguments();
     for (const auto& term: args.GetAE())
@@ -865,35 +865,35 @@ public:
   }
 
   template <int type>
-  void PropagateResult(SOS_1or2_Constraint<type>& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
+  void PropagateResult(SOS_1or2_Constraint<type>& con, double lb, double ub, Context ) {
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     for (const auto v: con.get_vars())
       PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
   void PropagateResult(NotConstraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
       PropagateResultOfInitExpr(a, 1.0-ub, 1.0-lb, -ctx);
   }
 
   void PropagateResult(ConjunctionConstraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
       PropagateResultOfInitExpr(a, lb, 1.0, +ctx);
   }
 
   void PropagateResult(DisjunctionConstraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
       PropagateResultOfInitExpr(a, 0.0, ub, +ctx);
   }
 
   void PropagateResult(IfThenConstraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     auto& args = con.GetArguments();
     PropagateResultOfInitExpr(args[0], 0.0, 1.0, Context::CTX_MIX);
@@ -902,18 +902,18 @@ public:
   }
 
   void PropagateResult(AllDiffConstraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     // TODO go into arguments
   }
 
   void PropagateResult(LE0Constraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
   }
 
   void PropagateResult(EQ0Constraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
   }
 

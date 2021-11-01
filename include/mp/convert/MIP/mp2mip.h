@@ -106,7 +106,7 @@ public:
   }
 
   double ComparisonEps(int var) const {
-    return (MP_DISPATCH( GetModel() ).is_integer_var(var)) ? 1.0 : 1e-6; // TODO param
+    return MPCD(is_var_integer(var)) ? 1.0 : 1e-6; // TODO param
   }
   double ComparisonEps(var::Type vartype) const {
     return var::INTEGER==vartype ? 1.0 : 1e-6; // TODO param
@@ -114,16 +114,17 @@ public:
 
   void Convert(const EQ0Constraint& eq0c) {
     assert(!eq0c.GetContext().IsNone());
-    if (MPD( is_fixed(eq0c.GetResultVar()) ) ||
-        /// TODO for var==const rest done by result propagation
-        /// When bounds available (using unary encoding)
-        1<eq0c.GetArguments().num_terms()) {
-      if (eq0c.GetContext().HasPositive())
+    const auto& args = eq0c.GetArguments();
+    if (1<args.num_terms() ||
+        !IfUseEqualityEncodingForVar(
+          args.var_index(0))) {
+      auto ctx = eq0c.GetContext();
+      if (ctx.HasPositive())
         ConvertImplied(eq0c);
-      if (eq0c.GetContext().HasNegative())
+      if (ctx.HasNegative())
         ConvertReverseImplied(eq0c);
-    }
-  }
+    } // else, using unary encoding whose flags are,
+  }   // in the fixed case, fixed by PropagateResult()
 
   /// resvar==1 => c'x==d
   void ConvertImplied(const EQ0Constraint& eq0c) {
@@ -379,8 +380,17 @@ public:
 
   void ConvertEqVarConstMaps() {
     for (const auto& m: map_vars_eq_const_) {
-      ConvertEqVarConstMap(m.first, m.second);
-    }
+      if (IfUseEqualityEncodingForVar(m.first))
+        ConvertEqVarConstMap(m.first, m.second);
+    } // Otherwise, indicators / big-Ms should have been applied
+  }
+
+  bool IfUseEqualityEncodingForVar(int var) const {
+    if (!MPCD(is_var_integer(var)))
+      return false;
+    const auto lb_dbl = this->lb(var);
+    const auto ub_dbl = this->ub(var);
+    return (ub_dbl-lb_dbl <= 100000);      // TODO param
   }
 
   void ConvertEqVarConstMap(int var, const SingleVarEqConstMap& map) {

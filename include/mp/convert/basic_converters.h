@@ -279,6 +279,8 @@ public:
       newVars[i] = AddVar(lb, ub, type);
     return newVars;
   }
+  bool is_var_integer(int var) const
+  { return MPCD( GetModel() ).is_integer_var(var); }
 
   ////////////////////////////// OPTIONS ////////////////////////////////
 protected:

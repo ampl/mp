@@ -58,5 +58,15 @@
     "name" : "int_ne_02__vnec",
     "objective" : 4,
     "tags" : ["logical"]
+  },
+  {
+    "name" : "int_ne_03__vnec__amplebnd",
+    "objective" : 4,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "float_ne_01__vnec",
+    "objective" : 3,
+    "tags" : ["logical"]
   }
 ]
