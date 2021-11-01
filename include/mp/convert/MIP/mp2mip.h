@@ -113,16 +113,16 @@ public:
   }
 
   void Convert(const EQ0Constraint& eq0c) {
-    if (MPD( is_fixed(eq0c.GetResultVar()) ))
-      MP_RAISE("EQ0Constraint: result fixed, not implemented");
     assert(!eq0c.GetContext().IsNone());
-    if (1<eq0c.GetArguments().num_terms()) {
+    if (MPD( is_fixed(eq0c.GetResultVar()) ) ||
+        /// TODO for var==const rest done by result propagation
+        /// When bounds available (using unary encoding)
+        1<eq0c.GetArguments().num_terms()) {
       if (eq0c.GetContext().HasPositive())
         ConvertImplied(eq0c);
       if (eq0c.GetContext().HasNegative())
         ConvertReverseImplied(eq0c);
     }
-    /// Stop here, for var==const rest done by postprocessing
   }
 
   /// resvar==1 => c'x==d

@@ -1,17 +1,16 @@
 
 # -------------------------------------------------------------
-# IMPLICATION
-# impl3_vтev_lhs.mod: x!=y ==> ....
+# x!=y for integer variables
 # -------------------------------------------------------------
 
 param ub integer := 10;
 
 var b logical;
-var x integer >= -41, <= ub-1;
+var x integer >= -41, <= ub;
 var y integer >= -41, <= ub;
 
 maximize TotalSum:
-    100*b+x + y;
+    x+y;
 
-subj to IMPL:
-    x!=y ==> b<=0;
+subj to NE:
+    x!=y;

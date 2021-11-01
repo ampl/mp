@@ -48,5 +48,15 @@
     "name" : "impl5_commonExpr",
     "objective" : -40,
     "tags" : ["logical"]
+  },
+  {
+    "name" : "int_ne_01",
+    "objective" : 19,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "int_ne_02__vnec",
+    "objective" : 4,
+    "tags" : ["logical"]
   }
 ]
