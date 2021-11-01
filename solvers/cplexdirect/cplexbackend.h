@@ -61,6 +61,8 @@ public:
   /// but not recommended otherwise --- may be slow
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended)
+  void AddConstraint(const IndicatorConstraintLinEQ& mc);
 
 
   /////////////////////////// Model attributes /////////////////////////

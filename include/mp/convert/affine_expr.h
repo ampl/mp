@@ -28,6 +28,10 @@ public:
   using Variable = ConstructorHelper<int>;
   AffineExpr(Constant c) : constant_term_(c.v) {}
   AffineExpr(Variable i) { AddTerm(i.v, 1.0); }
+  AffineExpr& operator+=(std::pair< std::pair<double, int>, double > a) {
+    AddTerm(a.first.second, a.first.first); add_to_constant(a.second);
+    return *this;
+  }
 
   bool is_constant() const { return 0==num_terms(); }
   /// true when constant=0 and 1 variable with coef 1.0

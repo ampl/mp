@@ -1,0 +1,52 @@
+[
+  {
+    "name" : "eqVarConst01",
+    "objective" : -43,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "impl1",
+    "objective" : 10,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "impl2",
+    "objective" : -40,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "impl3_var_EQ_var",
+    "objective" : 100,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "impl3_var_LE_var",
+    "objective" : 51,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "impl3_var_LE_var__extra",
+    "objective" : 51,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "impl3_vev_lhs",
+    "objective" : 29,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "impl3_vnev_lhs",
+    "objective" : 118,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "impl4__reuseLEInSameCtx",
+    "objective" : 2,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "impl5_commonExpr",
+    "objective" : -40,
+    "tags" : ["logical"]
+  }
+]

@@ -100,9 +100,17 @@ public:
   }
 
   void PropagateResultOfInitExpr(int var, double lb, double ub, Context ctx) {
-    this->GetModel().narrow_var_bounds(var, lb, ub);
+    NarrowVarBounds(var, lb, ub);
     if (HasInitExpression(var))
       GetInitExpression(var)->PropagateResult(*this, lb, ub, ctx);
+  }
+
+  void NarrowVarBounds(int var, double lb, double ub) {
+    auto vv = MPD(GetModel()).var(var);
+    vv.set_lb(std::max(vv.lb(), lb));
+    vv.set_ub(std::min(vv.ub(), ub));
+    if (vv.lb()>vv.ub())             // TODO write .sol, report .iis
+      throw std::logic_error("infeasibility: empty variable domain");
   }
 
 
@@ -774,15 +782,13 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       LogConstraint& c, PreprocessInfo& ) {
-    MP_DISPATCH( GetModel() ).narrow_var_bounds(
-          c.GetArguments()[0], 0.0, this->Infty());
+    NarrowVarBounds(c.GetArguments()[0], 0.0, this->Infty());
   }
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
       LogAConstraint& c, PreprocessInfo& ) {
-    MP_DISPATCH( GetModel() ).narrow_var_bounds(
-          c.GetArguments()[0], 0.0, this->Infty());
+    NarrowVarBounds(c.GetArguments()[0], 0.0, this->Infty());
   }
 
   template <class PreprocessInfo>
@@ -849,7 +855,8 @@ public:
       PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
-  void PropagateResult(IndicatorConstraintLinLE& con, double lb, double ub, Context ctx) {
+  template <int sens>
+  void PropagateResult(IndicatorConstraintLin<sens>& con, double lb, double ub, Context ctx) {
     internal::Unused(lb, ub, ctx);
     PropagateResultOfInitExpr(con.get_binary_var(),
                               this->MinusInfty(), this->Infty(), Context::CTX_MIX);

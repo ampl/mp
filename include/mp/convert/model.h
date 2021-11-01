@@ -121,14 +121,6 @@ public:
     return this->var(v).lb();
   }
 
-  void narrow_var_bounds(int v, double lb, double ub) {
-    auto vv = this->var(v);
-    vv.set_lb(std::max(vv.lb(), lb));
-    vv.set_ub(std::min(vv.ub(), ub));
-    if (vv.lb()>vv.ub())
-      throw std::logic_error("infeasibility: empty variable domain");
-  }
-
   bool is_integer_var(int v) const {
     auto vv = this->var(v);
     return var::Type::INTEGER==vv.type();

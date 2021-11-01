@@ -884,6 +884,11 @@ void GurobiBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
                                ic.b_, ic.bv_, (int)ic.c_.size(),
                                ic.v_.data(), ic.c_.data(), GRB_LESS_EQUAL, ic.rhs_ ) );
 }
+void GurobiBackend::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
+  GRB_CALL( GRBaddgenconstrIndicator(model_, NULL,
+                               ic.b_, ic.bv_, (int)ic.c_.size(),
+                               ic.v_.data(), ic.c_.data(), GRB_EQUAL, ic.rhs_ ) );
+}
 
 //////////////////// General constraints /////////////////////
 void GurobiBackend::AddConstraint(const SOS1Constraint &sos)  {

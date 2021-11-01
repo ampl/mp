@@ -314,8 +314,9 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( TanConstraint, VarArray1,
 
 
 ////////////////////////////////////////////////////////////////////////
-/// Indicator: b==bv -> c'x <= rhs
-class IndicatorConstraintLinLE: public BasicConstraint {
+/// Indicator: b==bv -> c'x ? rhs
+template <int sens>
+class IndicatorConstraintLin: public BasicConstraint {
 public:
   static const char* GetConstraintName() { return "IndicatorConstraint"; }
   const int b_=-1;                            // the indicator variable
@@ -330,19 +331,23 @@ public:
   const std::vector<double>& get_lin_coefs() const { return c_; }
   const std::vector<int>& get_lin_vars() const { return v_; }
   double get_lin_rhs() const { return rhs_; }
+  constexpr int get_sense() const { return sens; }
   /// Produces affine expr ae so that the inequality is equivalent to ae<=0.0
   AffineExpr to_lhs_affine_expr() const {
     return {get_lin_coefs(), get_lin_vars(), -get_lin_rhs()};
   }
   /// Constructor
   template <class CV=std::vector<double>, class VV=std::vector<int> >
-  IndicatorConstraintLinLE(int b, int bv,
+  IndicatorConstraintLin(int b, int bv,
                            CV&& c, VV&& v,
                            double rhs) noexcept :
     b_(b), bv_(bv), c_(std::forward<CV>(c)), v_(std::forward<VV>(v)), rhs_(rhs)
   { assert(check()); }
   bool check() const { return (b_>=0) && (bv_==0 || bv_==1); }
 };
+
+using IndicatorConstraintLinLE = IndicatorConstraintLin<-1>;
+using IndicatorConstraintLinEQ = IndicatorConstraintLin<0>;
 
 ////////////////////////////////////////////////////////////////////////
 /// AMPL represents PWL by a list of slopes

@@ -28,6 +28,7 @@ struct PreprocessInfo {
     lb_ = std::max(lb_, l);
     ub_ = std::min(ub_, u);
   }
+  void NegateBounds() { std::swap(lb_, ub_); lb_=-lb_; ub_=-ub_; }
   var::Type get_result_type() const { return type_; }
   var::Type type() const { return get_result_type(); }
   void set_result_type(var::Type t) { type_=t; }

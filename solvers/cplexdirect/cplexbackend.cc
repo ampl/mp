@@ -260,6 +260,10 @@ void CplexBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
   CPLEX_CALL( CPXaddindconstr (env, lp, ic.b_, !ic.bv_, (int)ic.c_.size(),
                                ic.rhs_, 'L', ic.v_.data(), ic.c_.data(), NULL) );
 }
+void CplexBackend::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
+  CPLEX_CALL( CPXaddindconstr (env, lp, ic.b_, !ic.bv_, (int)ic.c_.size(),
+                               ic.rhs_, 'E', ic.v_.data(), ic.c_.data(), NULL) );
+}
 
 void CplexBackend::FinishProblemModificationPhase() {
   if (!storedOptions_.exportFile_.empty()) {

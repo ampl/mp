@@ -1,10 +1,5 @@
 [
   {
-    "name" : "eqVarConst01",
-    "objective" : -43,
-    "tags" : ["logical"]
-  },
-  {
     "name" : "logA_1",
     "objective" : 0.796515,
     "tags" : ["log"]
@@ -30,27 +25,7 @@
     "tags" : ["logical"]
   },
   {
-    "name" : "impl1",
-    "objective" : 10,
-    "tags" : ["logical"]
-  },
-  {
-    "name" : "impl2",
-    "objective" : -40,
-    "tags" : ["logical"]
-  },
-  {
     "name" : "and_or_max_01",
-    "objective" : -40,
-    "tags" : ["logical"]
-  },
-  {
-    "name" : "impl4__reuseLEInSameCtx",
-    "objective" : 2,
-    "tags" : ["logical"]
-  },
-  {
-    "name" : "impl5_commonExpr",
     "objective" : -40,
     "tags" : ["logical"]
   },

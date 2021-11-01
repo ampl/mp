@@ -258,13 +258,22 @@ protected:
 
 public:
   /// These methods to be used by converter helper objects
-  static constexpr double Infty() { return std::numeric_limits<double>::infinity(); }
-  static constexpr double MinusInfty() { return -std::numeric_limits<double>::infinity(); }
-  int AddVar(double lb=MinusInfty(), double ub=Infty(), var::Type type = var::CONTINUOUS) {
+  /// +inf
+  static constexpr double Infty()
+  { return std::numeric_limits<double>::infinity(); }
+  /// -inf
+  static constexpr double MinusInfty()
+  { return -std::numeric_limits<double>::infinity(); }
+  /// Add variable. Type: var::CONTINUOUS by default
+  int AddVar(double lb=MinusInfty(), double ub=Infty(),
+             var::Type type = var::CONTINUOUS) {
     auto var = GetModel().AddVar(lb, ub, type);
     return var.index();
   }
-  std::vector<int> AddVars(std::size_t nvars, double lb, double ub, var::Type type = var::CONTINUOUS) {
+  /// Add vector of variables. Type: var::CONTINUOUS by default
+  std::vector<int> AddVars(std::size_t nvars,
+                           double lb=MinusInfty(), double ub=Infty(),
+                           var::Type type = var::CONTINUOUS) {
     std::vector<int> newVars(nvars);
     for (std::size_t  i=0; i<nvars; ++i)
       newVars[i] = AddVar(lb, ub, type);

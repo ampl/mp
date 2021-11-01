@@ -66,8 +66,7 @@ public:
   }
 
   void Convert(const LE0Constraint& le0c) {
-    auto& m = this->GetModel();
-    if (m.is_fixed(le0c.GetResultVar()))
+    if (MPD(is_fixed(le0c.GetResultVar())))
       throw std::logic_error("LE0Constraint: result fixed, not implemented");
     assert(!le0c.GetContext().IsNone());
     if (le0c.GetContext().HasPositive())
@@ -77,11 +76,10 @@ public:
   }
 
   void ConvertImplied(const LE0Constraint& le0c) {
-    auto& m = this->GetModel();
     const auto& ae = le0c.GetArguments();
     if (ae.is_constant()) {
       if (ae.constant_term() > 0.0)
-        m.narrow_var_bounds(le0c.GetResultVar(), 0.0, 0.0);
+        MPD( NarrowVarBounds(le0c.GetResultVar(), 0.0, 0.0) );
     } else {
       LinearExprUnzipper le(ae);
       MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
@@ -91,13 +89,12 @@ public:
   }
 
   void ConvertReverseImplied(const LE0Constraint& le0c) {
-    auto& m = this->GetModel();
     auto ae = le0c.GetArguments();
-    ae.Negate();
     if (ae.is_constant()) {
-      if (ae.constant_term() >= 0.0)
-        m.narrow_var_bounds(le0c.GetResultVar(), 1.0, 1.0);
+      if (ae.constant_term() <= 0.0)
+        MPD( NarrowVarBounds(le0c.GetResultVar(), 1.0, 1.0) );
     } else {
+      ae.Negate();
       auto bNt = MP_DISPATCH( ComputeBoundsAndType(ae) );
       double cmpEps = var::INTEGER==bNt.get_result_type() ? 1.0 : 1e-6;
       double d = ae.constant_term() + cmpEps;
@@ -108,34 +105,105 @@ public:
     }
   }
 
-  double ComparisonEpsilon(int var) {
+  double ComparisonEps(int var) const {
     return (MP_DISPATCH( GetModel() ).is_integer_var(var)) ? 1.0 : 1e-6; // TODO param
+  }
+  double ComparisonEps(var::Type vartype) const {
+    return var::INTEGER==vartype ? 1.0 : 1e-6; // TODO param
   }
 
   void Convert(const EQ0Constraint& eq0c) {
-    auto& m = this->GetModel();
-    if (m.is_fixed(eq0c.GetResultVar()))
-      throw std::logic_error("EQ0Constraint: result fixed, not implemented");
-    /// TODO assert(!eq0c.GetContext().IsNone());
+    if (MPD( is_fixed(eq0c.GetResultVar()) ))
+      MP_RAISE("EQ0Constraint: result fixed, not implemented");
+    assert(!eq0c.GetContext().IsNone());
     if (1<eq0c.GetArguments().num_terms()) {
-      throw std::logic_error("MIP conversion of linexp==0 comparison not implemented");
+      if (eq0c.GetContext().HasPositive())
+        ConvertImplied(eq0c);
+      if (eq0c.GetContext().HasNegative())
+        ConvertReverseImplied(eq0c);
     }
     /// Stop here, for var==const rest done by postprocessing
   }
 
+  /// resvar==1 => c'x==d
+  void ConvertImplied(const EQ0Constraint& eq0c) {
+    const auto& ae = eq0c.GetArguments();
+    if (ae.is_constant()) {
+      if (std::fabs(ae.constant_term()) != 0.0)
+        MPD( NarrowVarBounds(eq0c.GetResultVar(), 0.0, 0.0) );
+    } else {
+      LinearExprUnzipper le(ae);
+      MP_DISPATCH( AddConstraint(IndicatorConstraintLinEQ(
+                   eq0c.GetResultVar(), 1,
+                   le.coefs(), le.var_indexes(), -ae.constant_term())) );
+    }
+  }
+
+  /// resvar==0 ==> c'x!=d
+  void ConvertReverseImplied(const EQ0Constraint& eq0c) {
+    auto ae = eq0c.GetArguments();
+    if (ae.is_constant()) {
+      if (std::fabs(ae.constant_term()) != 0.0)
+        MPD( NarrowVarBounds(eq0c.GetResultVar(), 1.0, 1.0) );
+    } else {    // We are in MIP so doing algebra, not DisjunctiveConstr
+      auto newvars = MPD( AddVars(2, 0.0, 1.0, var::INTEGER) );
+      newvars.push_back( eq0c.GetResultVar() );
+      MPD( AddConstraint( LinearConstraint(   // b1+b2+resvar >= 1
+                            {1.0, 1.0, 1.0},
+                            newvars, 1.0, MPCD(Infty())) ) );
+      auto bNt = MP_DISPATCH( ComputeBoundsAndType(ae) );
+      double cmpEps = MPD( ComparisonEps( bNt.get_result_type() ) ); {
+        LinearExprUnzipper le(ae);
+        MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
+                                     newvars[0], 1,
+                                     le.coefs(), le.var_indexes(),
+                                     -ae.constant_term() - cmpEps)) );
+      }
+      ae.Negate();
+      LinearExprUnzipper le(ae);
+      MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
+                                   newvars[1], 1,
+                                   le.coefs(), le.var_indexes(),
+                                   -ae.constant_term() - cmpEps)) );
+    }
+  }
+
+
+
   void Convert(const IndicatorConstraintLinLE& indc) {
     auto binvar=indc.get_binary_var();
-    if (indc.is_binary_value_1())                  /// If binval==1, complement the variable
-      binvar = this->MakeComplementVar(binvar);
-    /// Convert indc's linear inequality to 'cmpvar<=0'
-    /// Could use the full inequality instead of the new var
-    int cmpvar = MP_DISPATCH( Convert2Var(indc.to_lhs_affine_expr()) );
-    if (this->ub(cmpvar) >= this->Infty())
-      throw ConstraintConversionFailure("Cannot convert indicator constraint with variable " +
-                             std::to_string(cmpvar) + " having infinite upper bound."
-                             " Define finite upper bound or use solver built-in indicator");
-    MP_DISPATCH( AddConstraint(LinearConstraint(          /// Big-M constraint cmpvar <= ub(cmpvar)*binvar
-        {1.0, -this->ub(cmpvar)}, {cmpvar, binvar}, this->MinusInfty(), 0.0)) );
+    auto ae = indc.to_lhs_affine_expr();
+    auto bnds = MPD( ComputeBoundsAndType(ae) );
+    ConvertImplicationLE(binvar, indc.get_binary_value(), bnds, std::move(ae));
+  }
+
+  /// (b==val ==> ae<=0)
+  void ConvertImplicationLE(int b, int val,
+                   const PreprocessInfoStd& bnds, AffineExpr ae) {
+    /// TODO fail if lb>0 +report .iis if requested
+    /// TODO skip if ub<0
+    if (bnds.ub() >= this->Infty())
+      throw ConstraintConversionFailure("Cannot convert indicator constraint with "
+                             "an infinite upper bound. "
+                             "Define finite upper bound or use solver built-in indicator");
+    if (val)            // left condition is b==1
+      ae += {{bnds.ub(), b}, -bnds.ub()};
+    else
+      ae += {{-bnds.ub(), b}, 0.0};
+    LinearExprUnzipper leu(ae);
+    MP_DISPATCH( AddConstraint(LinearConstraint(     /// Big-M constraint
+        leu.coefs(), leu.var_indexes(), this->MinusInfty(), -ae.constant_term())) );
+  }
+
+  /// b==val ==> c'x==d
+  void Convert(const IndicatorConstraintLinEQ& indc) {
+    auto binvar=indc.get_binary_var();
+    auto ae = indc.to_lhs_affine_expr();
+    auto bnds = MPD( ComputeBoundsAndType(ae) );
+    ConvertImplicationLE(binvar, indc.get_binary_value(), bnds, ae);
+    ae.Negate();
+    bnds.NegateBounds();
+    ConvertImplicationLE(binvar, indc.get_binary_value(), bnds, std::move(ae));
   }
 
   void Convert(const ConjunctionConstraint& conj) {
