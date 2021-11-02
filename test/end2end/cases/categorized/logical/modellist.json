@@ -1,5 +1,12 @@
 [
   {
+    "name" : "mapcoloring",
+    "tags" : ["logical"],
+    "values": {
+      "solve_result_num": 0
+    }
+  },
+  {
     "name" : "eqVarConst01",
     "objective" : -43,
     "tags" : ["logical"]
