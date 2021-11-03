@@ -10,7 +10,7 @@ MP_VERSION = "20211021"
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '3.2.0'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
@@ -69,24 +69,19 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
-
-html_sidebars = {
-    '**': [
-        'about.html',
-        'navigation.html',
-        'relations.html',
-        'searchbox.html',
-        'donate.html',
-    ]
-}
+html_theme = 'pydata_sphinx_theme'
 html_theme_options = {
-    'logo': 'logo.png',
-    "github_banner": "true",
-    "github_user" :"ampl",
-    "github_repo" : "ampls-api",
-    "logo_name" : "true"
-    }
+ "logo_link": "index",
+ "icon_links": [{
+            "name": "GitHub",
+            "url": "https://github.com/ampl/mp",
+            "icon": "fab fa-github-square"}],
+"collapse_navigation": True,
+  "external_links": [
+      {"name": "Try AMPL", "url": "https://ampl.com"}
+      ]
+}
+
 html_static_path = ['_static']
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -94,6 +89,10 @@ html_title = "ampl::mp {} documentation".format(version)
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 html_short_title = "ampl::mp"
+
+# The name of an image file (relative to this directory) to place at the top
+# of the sidebar.
+html_logo = "_static/logo.png"
 
 # If true, links to the reST sources are added to the pages.
 html_show_sourcelink = False

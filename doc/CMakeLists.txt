@@ -30,9 +30,10 @@ add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
                   COMMENT "Generating documentation with Sphinx")
 
 # Named target so we can run the job easily
-add_custom_target(docs ALL DEPENDS ${SPHINX_INDEX_FILE}
+add_custom_target(mp-doc ALL DEPENDS ${SPHINX_INDEX_FILE}
 	SOURCES  ${mp_docs} ${doc_deps})
 
+add_to_folder(docs mp-doc)
 
 install(DIRECTORY ${DOC_OUTPUTDIR}
         DESTINATION docs OPTIONAL
