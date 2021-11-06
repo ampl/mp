@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import sys, os
+import sys
+import os
 import subprocess
 
 # Important: keep this as a string or sphinx will fail with
@@ -20,7 +21,7 @@ extensions = ['breathe', 'sphinx.ext.mathjax', 'sphinx.ext.graphviz']
 # When building with CMake, the path to doxyxml is passed via the command line.
 breathe_projects = {'mp': 'doxyxml'}
 breathe_default_project = 'mp'
-breathe_domain_by_extension = {'h' : 'cpp'}
+breathe_domain_by_extension = {'h': 'cpp'}
 
 highlight_language = 'c++'
 primary_domain = 'cpp'
@@ -71,18 +72,38 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 html_theme = 'pydata_sphinx_theme'
 html_theme_options = {
- "logo_link": "index",
- "icon_links": [{
+    "logo_link": "index",
+    "icon_links": [
+        {
             "name": "GitHub",
             "url": "https://github.com/ampl/mp",
-            "icon": "fab fa-github-square"}],
-"collapse_navigation": True,
-  "external_links": [
-      {"name": "Try AMPL", "url": "https://ampl.com"}
-      ]
+            "icon": "fab fa-github"
+        },
+        {
+            "name": "ampl.github.io",
+            "url": "https://ampl.github.io",
+            "icon": "fa fa-code",
+            "target": "_self",
+        },
+        {
+            "name": "ampl.com",
+            "url": "https://ampl.com",
+            "icon": "fa fa-home"
+        },
+    ],
+    "collapse_navigation": True,
+    "external_links": [
+        # {"name": "Try AMPL", "url": "https://ampl.com"}
+    ]
+}
+html_context = {
+    "theme_logo_text": "MP",
 }
 
 html_static_path = ['_static']
+html_css_files = [
+    'css/custom.css',
+]
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 html_title = "ampl::mp {} documentation".format(version)
@@ -92,7 +113,10 @@ html_short_title = "ampl::mp"
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = "_static/logo.png"
+html_logo = "_static/logo-inline-web-v4.png"
+
+# Add favicon
+html_favicon = "_static/cropped-favicon-raw-192x192.png"
 
 # If true, links to the reST sources are added to the pages.
 html_show_sourcelink = False
@@ -108,21 +132,21 @@ htmlhelp_basename = 'AMPLdoc'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    # 'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    # 'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    # 'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'MP.tex', u'MP Documentation',
-   u'Victor Zverovich', 'manual'),
+    ('index', 'MP.tex', u'MP Documentation',
+     u'Victor Zverovich', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -165,9 +189,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'AMPL', u'AMPL Documentation',
-   u'Victor Zverovich', 'AMPL', 'One line description of project.',
-   'Miscellaneous'),
+    ('index', 'AMPL', u'AMPL Documentation',
+     u'Victor Zverovich', 'AMPL', 'One line description of project.',
+     'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -178,6 +202,7 @@ texinfo_documents = [
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
+
 
 def run_doxygen(folder):
     """Run the doxygen make command in the designated folder"""
@@ -194,8 +219,9 @@ def run_doxygen(folder):
 def generate_doxygen_xml(app):
     """Run the doxygen make commands if we're on the ReadTheDocs server"""
     #read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
-    # We always build doxygen documentation 
+    # We always build doxygen documentation
     run_doxygen("./")
+
 
 def setup(app):
     # Add hook for building doxygen xml
