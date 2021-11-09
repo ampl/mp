@@ -178,7 +178,7 @@ public:
       MP_DISPATCH( ObjRelTol( ReadSuffix(suf_objreltol) ) );
     }
     if (feasrelax())
-      MP_DISPATCH( InputFeasRelaxData() );
+      MP_DISPATCH( InputFeasrelaxData() );
   }
   void InputCustomExtras() { }
 
@@ -199,18 +199,18 @@ public:
     stats.solution_time = GetTimeAndReset(stats.time);
   }
 
-  void InputFeasRelaxData() {
+  void InputFeasrelaxData() {
     auto suf_lbpen = ReadDblSuffix( {"lbpen", suf::VAR} );
     auto suf_ubpen = ReadDblSuffix( {"ubpen", suf::VAR} );
     auto suf_rhspen = ReadDblSuffix( {"lbpen", suf::CON} );
     if (suf_lbpen.empty() && suf_ubpen.empty() && suf_rhspen.empty() &&
         0.0>lbpen() && 0.0>ubpen() && 0.0>rhspen())
       return;
-    feasrelax().lbpen_ = FillFeasRelaxPenalty(suf_lbpen, lbpen(),
+    feasrelax().lbpen_ = FillFeasrelaxPenalty(suf_lbpen, lbpen(),
                 MP_DISPATCH( NumVars() ));
-    feasrelax().ubpen_ = FillFeasRelaxPenalty(suf_ubpen, ubpen(),
+    feasrelax().ubpen_ = FillFeasrelaxPenalty(suf_ubpen, ubpen(),
                 MP_DISPATCH( NumVars() ));
-    feasrelax().rhspen_ = FillFeasRelaxPenalty(suf_rhspen, rhspen(),
+    feasrelax().rhspen_ = FillFeasrelaxPenalty(suf_rhspen, rhspen(),
                 MP_DISPATCH( NumValuedAlgConstr() ));
   }
 
@@ -849,7 +849,7 @@ protected:
 
 protected:
   /// Returns {} if these penalties are +inf
-  std::vector<double> FillFeasRelaxPenalty(
+  std::vector<double> FillFeasrelaxPenalty(
       ArrayRef<double> suf_pen, double pen, int n) {
     if (suf_pen.empty() && pen<0.0)
       return {};

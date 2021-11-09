@@ -61,12 +61,12 @@ private:
 
  Interface interface_;
 
- std::string nl_filename, filename_no_ext;
- typename Interface::Converter::NLReadResult nl_read_result;
+ std::string nl_filename_, filename_no_ext_;
+ typename Interface::Converter::NLReadResult nl_read_result_;
 
  std::unique_ptr<internal::SignalHandler> p_sig_handler_;
  std::unique_ptr<internal::SolverAppOptionParser> p_option_parser_;
- std::unique_ptr<internal::AppSolutionHandler<MPUtils> > sol_handler_tmp_;
+ std::unique_ptr<internal::AppSolutionHandler<MPUtils> > p_sol_handler_tmp_;
 
 
  private:
@@ -134,22 +134,22 @@ bool InterfaceApp<Interface>::Init(char **argv, int nl_reader_flags) {
   // TODO: test output
 
   // Add .nl extension if necessary.
-  nl_filename = filename;
-  filename_no_ext = nl_filename;
+  nl_filename_ = filename;
+  filename_no_ext_ = nl_filename_;
   const char *ext = std::strrchr(filename, '.');
   if (!ext || std::strcmp(ext, ".nl") != 0)
-    nl_filename += ".nl";
+    nl_filename_ += ".nl";
   else
-    filename_no_ext.resize(filename_no_ext.size() - 3);
-  internal::SetBasename(interface_, &filename_no_ext);
+    filename_no_ext_.resize(filename_no_ext_.size() - 3);
+  internal::SetBasename(interface_, &filename_no_ext_);
 
   /// Make up sol handler for error reporting
   ArrayRef<int> options({0, 1, 0});
-  sol_handler_tmp_.reset(new internal::AppSolutionHandler<MPUtils>(
-                           filename_no_ext, GetMPUtils(), GetOutputModel(),
+  p_sol_handler_tmp_.reset(new internal::AppSolutionHandler<MPUtils>(
+                           filename_no_ext_, GetMPUtils(), GetOutputModel(),
                            options,
                            output_handler_.has_output ? 0 : banner_size));
-  interface_.SetSolHandler(*sol_handler_tmp_);
+  interface_.SetSolHandler(*p_sol_handler_tmp_);
 
   // Parse solver options.
   unsigned flags =
@@ -166,7 +166,7 @@ template <typename Interface>
 void InterfaceApp<Interface>::ReadNL(int nl_reader_flags) {
   steady_clock::time_point start = steady_clock::now();
 
-  nl_read_result = interface_.ReadNLFileAndUpdate(nl_filename, nl_reader_flags);
+  nl_read_result_ = interface_.ReadNLFileAndUpdate(nl_filename_, nl_reader_flags);
 
   double read_time = GetTimeAndReset(start);
   if (GetMPUtils().timing())      // TODO why print via backend? We are the app!
@@ -175,20 +175,20 @@ void InterfaceApp<Interface>::ReadNL(int nl_reader_flags) {
 
 template <typename Interface>
 void InterfaceApp<Interface>::Solve() {
-  ArrayRef<int> options(nl_read_result.handler_->options(),
-                        nl_read_result.handler_->num_options());
+  ArrayRef<int> options(nl_read_result_.handler_->options(),
+                        nl_read_result_.handler_->num_options());
   internal::AppSolutionHandler<MPUtils> sol_handler(
-        filename_no_ext, GetMPUtils(), GetOutputModel(), options,
+        filename_no_ext_, GetMPUtils(), GetOutputModel(), options,
         output_handler_.has_output ? 0 : banner_size);
   GetInterface().Solve(sol_handler);
 }
 
 template <typename Interface>
 void InterfaceApp<Interface>::Resolve() {
-  ArrayRef<int> options(nl_read_result.handler_->options(),
-                        nl_read_result.handler_->num_options());
+  ArrayRef<int> options(nl_read_result_.handler_->options(),
+                        nl_read_result_.handler_->num_options());
   internal::AppSolutionHandler<Interface> sol_handler(
-        filename_no_ext, GetInterface(), GetOutputModel(), options,
+        filename_no_ext_, GetInterface(), GetOutputModel(), options,
         output_handler_.has_output ? 0 : banner_size);
   throw 0;        // DON't USE THIS ONE
   GetInterface().Resolve(sol_handler);

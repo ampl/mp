@@ -390,7 +390,9 @@ public:
       return false;
     const auto lb_dbl = this->lb(var);
     const auto ub_dbl = this->ub(var);
-    return (ub_dbl-lb_dbl <= 100000);      // TODO param
+    return (lb_dbl>std::numeric_limits<int>::min() && // TODO enable outside
+            ub_dbl<std::numeric_limits<int>::max()) &&
+        (ub_dbl-lb_dbl <= 100000);      // TODO param
   }
 
   void ConvertEqVarConstMap(int var, const SingleVarEqConstMap& map) {
@@ -411,7 +413,7 @@ public:
     const int ub = (int)std::round(ub_dbl);
     std::vector<int> unaryEncVars(ub-lb+1);
     int nTaken=0;
-    for (int v=lb; v!=ub+1; ++v) {
+    for (int v=lb; v!=ub+1; ++v) { // TODO run thru the map first
       auto itV = map.find(v);
       if (map.end() != itV) {
         ++nTaken;

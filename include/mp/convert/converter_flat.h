@@ -335,13 +335,14 @@ public:
 
   EExpr VisitSum(typename BaseExprVisitor::SumExpr expr) {
     EExpr sum;
-    for (typename BaseExprVisitor::SumExpr::iterator i =
+    for (auto i =
          expr.begin(), end = expr.end(); i != end; ++i)
       sum.Add( MP_DISPATCH( Convert2EExpr(*i) ) );
     return sum;
   }
 
-  EExpr VisitMax(typename BaseExprVisitor::VarArgExpr e) {       // TODO why need Base:: here in g++ 9.2.1?
+  EExpr VisitMax(typename BaseExprVisitor::VarArgExpr e) {
+    // Why need BaseExprVisitor:: here in g++ 9.2.1?
     return VisitFunctionalExpression<MaximumConstraint>(e);
   }
 

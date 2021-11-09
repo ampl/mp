@@ -144,7 +144,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   struct Var {
     double lb;
     double ub;
-    Var(double lb, double ub) : lb(lb), ub(ub) {}
+    Var(double lb, double ub) : lb(lb), ub(ub) { assert(lb<=ub); }
   };
   std::vector<Var> vars_;
 
