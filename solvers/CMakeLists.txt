@@ -215,4 +215,5 @@ if (TARGET ilogcp)
   endif ()
 endif ()
 
-add_ampl_solver(sulum)
+### Removing on 10 Nov 2021: sulum seems discontinued
+# add_ampl_solver(sulum)
