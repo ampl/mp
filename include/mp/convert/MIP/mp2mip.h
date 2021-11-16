@@ -12,6 +12,9 @@ class MPToMIPConverter
     : public BasicMPFlatConverter<Impl, Backend, Model>
 {
 public:
+  static constexpr const char* name() { return "MIP Converter"; };
+
+public:
   using BaseConverter = BasicMPFlatConverter<Impl, Backend, Model>;
   template <class Constraint>
     using ConstraintKeeperType = typename
@@ -19,9 +22,7 @@ public:
 
 public:
   static const char* GetConverterName() { return "MPToMIPConverter"; }
-  MPToMIPConverter() {
-    InitOptions();
-  }
+  MPToMIPConverter() {  }
 
   ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
   USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter )           // reuse default ones
@@ -305,9 +306,8 @@ public:
     std::vector<int> flags(args.size());                // unary encoding flags
     for (int v=lba; v!=uba+1; ++v) {                    // for each value in the domain union
       for (size_t ivar = 0; ivar < args.size(); ++ivar) {
-        flags[ivar] = this->AssignResultToArguments(
-              EQ0Constraint( { {1.0}, {args[ivar]}, -double(v) } ) ).
-            get_representing_variable();
+        flags[ivar] = this->AssignResultVar2Args(
+              EQ0Constraint( { {1.0}, {args[ivar]}, -double(v) } ) );
       }
       this->AddConstraint( LinearConstraint(
           coefs, flags, this->MinusInfty(), 1.0 ) );
@@ -441,14 +441,10 @@ private:
   };
   Options options_;
 
-  void InitOptions() {
-    this->add_to_long_name(" with MIP Converter");
-    this->add_to_version("\nMIP Converter for AMPL");
-    this->add_to_option_header(
-          "\n"
-          "Including MIP Converter Options\n"
-          "-------------------------------------------\n"
-          );
+public:
+  template <class OptionManager>
+  void InitOptions(OptionManager& om) {
+    BaseConverter::InitOptions(om);
   }
 
 };

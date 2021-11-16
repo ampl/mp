@@ -27,13 +27,13 @@ TEST_F(InterfaceTester_QuadraticConstraint, QuadExprIsMultipliedOutAndInlined) {
   auto x = modeler.AddVars(3, -1.0, 11.0);
   modeler.AddAlgCon(5.0,
                     (5*x[0]+3) * (6*x[1]+2) + x[2],
-                    GetInterface().Infty());
+                    INFINITY);
   GetInterface().ConvertModelAndUpdateBackend();
   const auto xi = modeler.GetVarIndices(x);
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::QuadraticConstraint(
   { {10.0, xi[0]}, {18.0, xi[1]}, {1.0, xi[2]} },
     { {30.0, xi[0], xi[1]} },
-    -1.0, GetInterface().Infty() ) );
+    -1.0, INFINITY ) );
 }
 
 TEST_F(InterfaceTester_QuadraticConstraint, Pow2_isMultipliedOutAndInlined) {
@@ -42,13 +42,13 @@ TEST_F(InterfaceTester_QuadraticConstraint, Pow2_isMultipliedOutAndInlined) {
   modeler.AddAlgCon(5.0,
                     ((8*x[0] + 2*x[1] + 3)^2)            // C++ operator precedence
                       + 3.5*x[2],
-                    GetInterface().Infty());
+                    INFINITY);
   GetInterface().ConvertModelAndUpdateBackend();
   const auto xi = modeler.GetVarIndices(x);
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::QuadraticConstraint(
   { {48, xi[0]}, {12, xi[1]}, {3.5, xi[2]} },
     { {64, xi[0], xi[0]}, {4, xi[1], xi[1]}, {32, xi[0], xi[1]} },
-    -4.0, GetInterface().Infty() ) );
+    -4.0, INFINITY ) );
 }
 
 
@@ -57,7 +57,7 @@ TEST_F(InterfaceTester_QuadraticConstraint, QuadConstraintIsPassedToBackend__Old
   const auto args = GetInterface().AddVars(2, -1.0, 11.0);
   con.set_nonlinear_expr(GetModel().MakeBinary(mp::expr::MUL,
                                                GetModel().MakeVariable( args[0] ),
-                                               GetModel().MakeVariable( args[1]) ) );
+                                               GetModel().MakeVariable( args[1] ) ) );
   GetInterface().ConvertModelAndUpdateBackend();
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::QuadraticConstraint(
     {},

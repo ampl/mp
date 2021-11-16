@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 #include "mp/convert/backend.h"
-#include "mp/convert/basic_converters.h"
+#include "mp/convert/expr_flattener.h"
 #include "mp/convert/converter_flat.h"
 
 template <class Constraint>
@@ -59,7 +59,8 @@ public:
 
 template <template <class, class, class> class ConverterTemplate, class Constraint>
 using InterfaceWithBackendAcceptingConstraints =
-        mp::Interface<ConverterTemplate, TestBackendAcceptingConstraints<Constraint> >;
+        mp::NLSolverWithFlatBackend<
+          TestBackendAcceptingConstraints<Constraint>, ConverterTemplate>;
 
 
 ////////////////////////// SERVICE STUFF ////////////////////////////

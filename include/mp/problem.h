@@ -25,6 +25,7 @@
 
 #include <cstddef>  // for std::size_t
 #include <limits>
+#include <cmath>
 #include <vector>
 
 #include "mp/expr.h"
@@ -632,6 +633,16 @@ public:
       vars_.push_back(Var(lb[i], ub[i]));
       is_var_int_.push_back(type[i] != var::CONTINUOUS);
     }
+  }
+
+  /// Add vector of variables. Type: var::CONTINUOUS by default
+  std::vector<int> AddVars(std::size_t nvars,
+                           double lb=-INFINITY, double ub=INFINITY,
+                           var::Type type = var::CONTINUOUS) {
+    std::vector<int> newVars(nvars);
+    for (std::size_t  i=0; i<nvars; ++i)
+      newVars[i] = AddVar(lb, ub, type).index();
+    return newVars;
   }
 
   class LinearExprBuilder {

@@ -152,6 +152,7 @@ bool InterfaceApp<Interface>::Init(char **argv, int nl_reader_flags) {
   interface_.SetSolHandler(*p_sol_handler_tmp_);
 
   // Parse solver options.
+  GetInterface().InitOptions();
   unsigned flags =
       p_option_parser_->echo_solver_options() ? 0 : Solver::NO_OPTION_ECHO;
   if (!interface_.ParseOptions(argv, flags)) {

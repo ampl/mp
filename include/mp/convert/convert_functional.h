@@ -1,6 +1,9 @@
 #ifndef EXPR2CONSTRAINT_H
 #define EXPR2CONSTRAINT_H
 
+#include <utility>
+#include <cassert>
+
 #include "mp/convert/preprocess.h"
 
 namespace mp {
@@ -13,8 +16,8 @@ class BasicFCC {
   Converter& converter_;
   Constraint constr_;
 public:
-  using EExprType = typename Converter::EExprType;
   PreprocessInfo<Constraint> prepro_;
+  using Var = typename Converter::Var;
 protected:
   Converter& GetConverter() { return converter_; }
   Constraint& GetConstraint() { return constr_; }
@@ -38,19 +41,40 @@ protected:
 public:
   BasicFCC(Converter& cvt, Constraint&& fc) noexcept :
     converter_(cvt), constr_(std::move(fc)) { }
+  class VarOrConst {
+    const bool is_v_;
+    union {
+      double c_;
+      Var var_;
+    };
+    VarOrConst(bool isv, Var v) :
+      is_v_(isv), var_(v) { assert(is_var()); }
+    VarOrConst(bool isv, double c) :
+      is_v_(isv), c_(c) { assert(is_const()); }
+  public:
+    bool is_var() const { return is_v_; }
+    bool is_const() const { return !is_var(); }
+    double get_const() const { assert(is_const()); return c_; }
+    Var get_var() const { assert(is_var()); return var_; }
+    static VarOrConst MakeVar(Var v)
+    { assert(Converter::VoidVar()!=v); return VarOrConst(true, v); }
+    static VarOrConst MakeConst(double c)
+    { return VarOrConst(false, c); }
+  };
   /// Convert array of arguments into a result expression
-  /// possible adding extra constraint(s)
-  EExprType Convert() {
+  /// possible adding extra constraint(s).
+  /// Result is either a constant or a variable
+  VarOrConst Convert() {
     MP_DISPATCH( PreprocessArguments() );
     if (ResultIsConstant())
-      return typename EExprType::Constant{ lb() };
+      return VarOrConst::MakeConst( lb() );
     if (ResultVarIsKnown())
-      return typename EExprType::Variable{ GetResultVar() };
+      return VarOrConst::MakeVar( GetResultVar() );
     if (MapFind())
-      return typename EExprType::Variable{ GetResultVar() };
+      return VarOrConst::MakeVar( GetResultVar() );
     MP_DISPATCH( AddResultVariable() );
     MP_DISPATCH( AddConstraint() );
-    return typename EExprType::Variable{ GetResultVar() };
+    return VarOrConst::MakeVar( GetResultVar() );
   }
   void PreprocessArguments() {
     GetConverter().PreprocessConstraint(GetConstraint(), prepro_);

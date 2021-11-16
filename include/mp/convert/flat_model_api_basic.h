@@ -40,7 +40,9 @@ public:
   template <class Constraint>
   void AddConstraint(const Constraint& ) {
     throw std::logic_error(
-          std::string("Not handling constraint ") + Constraint::GetConstraintName());
+          std::string("Not handling constraint ") +
+          Constraint::GetConstraintName() +
+          ". Provide a handler or a converter method");
   }
   /// Derived backends have to tell C++ to use default handlers if they are needed
   /// when they overload AddConstraint(), due to C++ name hiding

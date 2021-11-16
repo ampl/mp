@@ -34,6 +34,8 @@ struct FlatConverterModelExraItemInfo : public DefaultExtraItemInfo {
 
 struct DefaultFlatConverterModelParams : public BasicProblemParams<> {
   using ExtraItemInfo = FlatConverterModelExraItemInfo;
+  using Var = int;
+  static constexpr Var VoidVar() { return -1; }
 };
 
 /// class Model extends Problem to store custom constraints
@@ -42,6 +44,9 @@ class BasicModel : public BasicProblem<ModelParams> {
   using BaseClass = BasicProblem<ModelParams>;
 public:
   using Params = ModelParams;
+  using Var = typename Params::Var;
+  static constexpr Var VoidVar() { return Params::VoidVar(); }
+
 protected:
   using PConstraintKeeper = std::unique_ptr<BasicConstraintKeeper>;
 

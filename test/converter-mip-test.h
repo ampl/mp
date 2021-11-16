@@ -3,7 +3,9 @@
 
 #include <vector>
 
+#include "mp/convert/expr_flattener.h"
 #include "mp/convert/MIP/mp2mip.h"
+#include "mp/convert/backend.h"
 
 namespace mip_converter_test {
 
@@ -130,7 +132,9 @@ public:
 
 /// Testing the default MIP interface layer
 class MIPConverterTester :
-    public mp::MPToMIPConverter<MIPConverterTester, MIPInstanceBackend>
+    public mp::ExprFlattenerImpl<mp::ExprFlattener,
+      mp::Interface<mp::MPToMIPConverter, MIPInstanceBackend> >
+//    public mp::MPToMIPConverter<MIPConverterTester, MIPInstanceBackend>
 {
 public:
   /// This is testing API

@@ -613,6 +613,12 @@ public:
                 new StoredOption<Value>(
                   name, description, value, ValueArrayRef())));
   }
+  /// Same: stored option referencing a variable, min, max (TODO)
+  template <class Value>
+  void AddOption(const char *name, const char *description,
+                       Value& value, Value lb, Value ub) {
+    AddStoredOption(name, description, value, lb, ub);
+  }
 
   /// Adding solver options of types int/double/string/...
   /// The type is deduced from the two last parameters min, max
@@ -824,18 +830,18 @@ public:
 
   /// Converter should provide this before Backend can run solving
   void ProvideConverterQueryObject(ConverterQuery* pCQ)
-  { p_converter_query_object = pCQ; }
+  { p_converter_query_object_ = pCQ; }
 
 private: // hiding this detail, it's not for the final backends
   const ConverterQuery& GetCQ() const {
-    assert(nullptr!=p_converter_query_object);
-    return *p_converter_query_object;
+    assert(nullptr!=p_converter_query_object_);
+    return *p_converter_query_object_;
   }
   ConverterQuery& GetCQ() {
-    assert(nullptr!=p_converter_query_object);
-    return *p_converter_query_object;
+    assert(nullptr!=p_converter_query_object_);
+    return *p_converter_query_object_;
   }
-  ConverterQuery *p_converter_query_object = nullptr;
+  ConverterQuery *p_converter_query_object_ = nullptr;
   using MPSolverBase = SolverImpl< ModelAdapter< BasicModel<> > >;
 public:
   using MPUtils = MPSolverBase;              // Allow Converter access the SolverImpl

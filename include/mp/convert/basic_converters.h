@@ -23,6 +23,8 @@
 #ifndef BASIC_CONVERTERS_H_
 #define BASIC_CONVERTERS_H_
 
+#include <cmath>
+
 #include "mp/problem.h"
 #include "mp/convert/model_adapter.h"
 #include "mp/convert/backend.h"
@@ -36,11 +38,8 @@ namespace mp {
 /// Backend access is hidden (the backend itself is a parameter)
 template <class Impl, class Backend,
           class Model = BasicProblem< > >
-class BasicMPConverter :
-    public BasicConstraintConverter {
+class BasicMPConverter {
 
-  ModelAdapter<Model> model_adapter_;
-  Backend backend_;
   /// This is to wrap some dependencies from MP
   using SolverAdapter = SolverImpl< ModelAdapter<Model> >;
 
@@ -68,11 +67,12 @@ public:
   const OutputModelType& GetInputModel() const { return GetOutputModel(); }
   OutputModelType& GetInputModel() { return GetOutputModel(); }
 
-  const OutputModelType& GetOutputModel() const { return model_adapter_; }   // TODO
-  OutputModelType& GetOutputModel() { return model_adapter_; }
+  const OutputModelType& GetOutputModel() const
+  { return MPCD( FlatCvt().GetOutputModel() ); }
+  OutputModelType& GetOutputModel() { return MPD( FlatCvt().GetOutputModel() ); }
 
-  const Backend& GetBackend() const { return backend_; }
-  Backend& GetBackend() { return backend_; }
+  const Backend& GetBackend() const { return MPCD( FlatCvt().GetBackend() ); }
+  Backend& GetBackend() { return MPD( FlatCvt().GetBackend() ); }
 
   const MPUtils& GetMPUtils() const { return GetBackend().GetMPUtils(); }
   MPUtils& GetMPUtils() { return GetBackend().GetMPUtils(); }
@@ -94,18 +94,11 @@ public:
 
 public:
 
-  BasicMPConverter() {
-    InitConverterQueryObject();
-    InitOptions();
-    GetBackend().InitMetaInfoAndOptions();
-  }
-
-  void InitConverterQueryObject() {
-    p_converter_query_ = MP_DISPATCH( MakeConverterQuery() );
-    GetBackend().ProvideConverterQueryObject( &MP_DISPATCH( GetCQ() ) );
-  }
+  BasicMPConverter() { }
 
   bool ParseOptions(char **argv, unsigned flags = 0) {
+    // So that Abort() works
+    InitConverterQueryObject();
     /// Chance for the Backend to init solver environment, etc
     GetBackend().InitOptionParsing();
     if (GetMPUtils().ParseOptions(argv, flags)) {
@@ -114,6 +107,11 @@ public:
       return true;
     }
     return false;
+  }
+
+  void InitConverterQueryObject() {
+    p_converter_query_ = MP_DISPATCH( MakeConverterQuery() );
+    GetBackend().ProvideConverterQueryObject( &MP_DISPATCH( GetCQ() ) );
   }
 
   struct NLReadResult {
@@ -139,6 +137,12 @@ public:
   /// Currently only used for testing
   void InputVariables(int n, const double* lb, const double* ub, const var::Type* ty) {
     GetModel().AddVars(n, lb, ub, ty);
+  }
+  /// Add vector of variables. Type: var::CONTINUOUS by default
+  std::vector<int> AddVars(std::size_t nvars,
+                           double lb=-INFINITY, double ub=INFINITY,
+                           var::Type type = var::CONTINUOUS) {
+    return GetModel().AddVars(nvars, lb, ub, type);
   }
   void InputObjective(obj::Type t,
                       int nnz, const double* c, const int* v, NumericExpr e=NumericExpr()) {
@@ -207,19 +211,19 @@ protected:
 
   void ConvertExtraItems() { }
 
-  void Convert(typename Model::MutCommonExpr e) {
+  void Convert(typename Model::MutCommonExpr ) {
     throw std::runtime_error("No common exprs conversion implemented");
   }
 
-  void Convert(typename Model::MutObjective obj) {
+  void Convert(typename Model::MutObjective ) {
     throw std::runtime_error("No objectives conversion implemented");
   }
 
-  void Convert(typename Model::MutAlgebraicCon con) {
+  void Convert(typename Model::MutAlgebraicCon ) {
     throw std::runtime_error("No algebraic constraints conversion implemented");
   }
 
-  void Convert(typename Model::MutLogicalCon e) {
+  void Convert(typename Model::MutLogicalCon ) {
     throw std::runtime_error("No logical constraints conversion implemented");
   }
 
@@ -256,31 +260,6 @@ protected:
     GetModel().PushModelTo(GetBackend());
   }
 
-public:
-  /// These methods to be used by converter helper objects
-  /// +inf
-  static constexpr double Infty()
-  { return std::numeric_limits<double>::infinity(); }
-  /// -inf
-  static constexpr double MinusInfty()
-  { return -std::numeric_limits<double>::infinity(); }
-  /// Add variable. Type: var::CONTINUOUS by default
-  int AddVar(double lb=MinusInfty(), double ub=Infty(),
-             var::Type type = var::CONTINUOUS) {
-    auto var = GetModel().AddVar(lb, ub, type);
-    return var.index();
-  }
-  /// Add vector of variables. Type: var::CONTINUOUS by default
-  std::vector<int> AddVars(std::size_t nvars,
-                           double lb=MinusInfty(), double ub=Infty(),
-                           var::Type type = var::CONTINUOUS) {
-    std::vector<int> newVars(nvars);
-    for (std::size_t  i=0; i<nvars; ++i)
-      newVars[i] = AddVar(lb, ub, type);
-    return newVars;
-  }
-  bool is_var_integer(int var) const
-  { return MPCD( GetModel() ).is_integer_var(var); }
 
   ////////////////////////////// OPTIONS ////////////////////////////////
 protected:
@@ -323,6 +302,7 @@ private:
     {     "1", "Yes: treat integer and binary variables as continuous.", 1}
   };
 
+public:
   void InitOptions() {
     this->AddOption("cvt:sos sos",
         "0/1*: Whether to honor declared suffixes .sosno and .ref describing "
@@ -361,15 +341,6 @@ class ConverterImpl :
 template <template <typename, typename, typename> class Converter,
           class Backend, class Model = BasicModel< > >
 using Interface = ConverterImpl<Converter, Backend, Model>;
-
-/// Conversion failure helper
-class ConstraintConversionFailure {
-  const std::string msg_;
-public:
-  ConstraintConversionFailure(std::string&& msg) noexcept :
-    msg_(std::move(msg)) { }
-  const std::string& message() const { return msg_; }
-};
 
 }  // namespace mp
 

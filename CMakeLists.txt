@@ -312,6 +312,7 @@ add_prefix(MP_HEADERS include/mp/
 add_prefix(MP_CONVERT_HEADERS include/mp/convert/
   affine_expr.h backend.h basic_constr.h basic_converters.h
   constraint_keeper.h flat_model_api_basic.h flat_model_api.h
+  expr_flattener.h
   context.h converter_flat.h converter_flat_query.h
   converter_query.h convert_functional.h eexpr.h interface_app.h
   model.h model_adapter.h preprocess.h

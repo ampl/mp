@@ -1,4 +1,5 @@
 #include "mp/convert/interface_app.h"
+#include "mp/convert/expr_flattener.h"
 #include "mp/convert/MIP/mp2mip.h"
 #include "mp/convert/backend.h"
 
@@ -6,9 +7,10 @@
 
 extern "C" int main1(int, char **argv) {
   try {
-    using CplexInterface =
-        mp::Interface<mp::MPToMIPConverter, mp::CplexBackend>;
-    using CplexInterfaceApp = mp::InterfaceApp<CplexInterface>;
+    using CplexNLSolverWithFlatConversion =
+        mp::NLSolverWithFlatBackend<mp::CplexBackend, mp::MPToMIPConverter>;
+    using CplexInterfaceApp =
+      mp::InterfaceApp<CplexNLSolverWithFlatConversion>;
     CplexInterfaceApp s;
     return s.RunFromNLFile(argv);
   } catch (const std::exception &e) {

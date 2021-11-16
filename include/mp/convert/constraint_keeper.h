@@ -50,6 +50,16 @@ public:
   static constexpr double MinusInfty() { return -std::numeric_limits<double>::infinity(); }
 };
 
+/// Conversion failure helper
+class ConstraintConversionFailure {
+  const std::string msg_;
+public:
+  ConstraintConversionFailure(std::string msg) noexcept :
+    msg_(std::move(msg)) { }
+  const std::string& message() const { return msg_; }
+};
+
+
 
 /// Manages constraints in the Converter
 class BasicConstraintKeeper {

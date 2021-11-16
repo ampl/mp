@@ -3,15 +3,15 @@
 
 #include <unordered_map>
 #include <map>
+#include <cstdio>
 #include <cmath>
 
+#include "mp/format.h"
 #include "mp/convert/preprocess.h"
-#include "mp/convert/basic_converters.h"
 #include "mp/convert/converter_flat_query.h"
-#include "mp/expr-visitor.h"
-#include "mp/convert/eexpr.h"
 #include "mp/convert/convert_functional.h"
 #include "mp/convert/model.h"
+#include "mp/convert/model_adapter.h" // TODO separate In/Working/Out models
 #include "mp/convert/std_constr.h"
 
 namespace mp {
@@ -22,83 +22,64 @@ namespace mp {
 /// handled by overloaded methods in derived classes
 template <class Impl, class Backend,
           class Model = BasicModel< > >
-class BasicMPFlatConverter
-    : public BasicMPConverter<Impl, Backend, Model>,
-      public ExprVisitor<Impl, EExpr>
-{
+class BasicMPFlatConverter :
+    public BasicConstraintConverter {
 public:
-  using BackendType = Backend;
-  using ModelType = Model;
+  static constexpr const char* name() { return "Flat Converter"; };
 
 public:
-  using EExprType = EExpr;
+  using ModelType = Model;  // TODO clarify names
+  using OutputModelType = ModelAdapter<Model>;
+  using BackendType = Backend;
+
+private:
+  OutputModelType model_adapter_;
+  Backend backend_;
+
+public:
+  /// We store backend in the converter for speed
+  const Backend& GetBackend() const { return backend_; }
+  Backend& GetBackend() { return backend_; }
+
+  /// The working model
+  const Model& GetModel() const { return model_adapter_.GetModel(); }
+  /// The working model
+  Model& GetModel() { return model_adapter_.GetModel(); }
+
+  const OutputModelType& GetOutputModel() const { return model_adapter_; }   // TODO
+  OutputModelType& GetOutputModel() { return model_adapter_; }
+
+  using Var = typename Model::Var;
+  static constexpr Var VoidVar() { return Model::VoidVar(); }
+
+public:
   using VarArray = std::vector<int>;
   template <class Constraint>
     using ConstraintKeeperType = ConstraintKeeper<Impl, Backend, Constraint>;
 
 protected:
   using ClassName = BasicMPFlatConverter<Impl, Backend, Model>;
-  using BaseConverter = BasicMPConverter<Impl, Backend, Model>;
-  using BaseExprVisitor = ExprVisitor<Impl, EExpr>;
-
-  using EExprArray = std::vector<EExpr>;
+  using BaseConverter = BasicConstraintConverter;
 
 
 public:
   static const char* GetConverterName() { return "BasicMPFlatConverter"; }
 
-  BasicMPFlatConverter() {
-    InitOptions();
-  }
-
-  std::unique_ptr<ConverterQuery> MakeConverterQuery() {
-      return std::unique_ptr<FlatConverterQuery<Impl>>(
-          new FlatConverterQuery<Impl>(*(Impl*)this));
-  }
+  BasicMPFlatConverter() { }
 
 
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
   ///
   ///////////////////////////////////////////////////////////////////////////////////////////
 public:
-  void Convert(typename Model::MutCommonExpr ) {
-    /// Converting on demand, see VisitCommonExpr
-  }
-
-  void Convert(typename Model::MutObjective obj) {
-    if (NumericExpr e = obj.nonlinear_expr()) {
-      LinearExpr &linear = obj.linear_expr();
-      const auto eexpr=MP_DISPATCH( Visit(e) );
-      linear.AddTerms(eexpr.GetAE());
-      if (std::fabs(eexpr.constant_term())!=0.0) {   // TODO use constant (in the extra info)
-        linear.AddTerm(MakeFixedVar(eexpr.constant_term()), 1.0);
-      }
-      if (!eexpr.is_affine())                     // higher-order terms
-        obj.set_extra_info(
-              typename Model::Params::ExtraItemInfo::ObjExtraInfo{
-                0.0, std::move(eexpr.GetQT()) } );
-      obj.unset_nonlinear_expr();
-    } // Modifying the original objective by replacing the expr
-  }
-
-  void Convert(typename Model::MutAlgebraicCon con) {
-    if (NumericExpr e = con.nonlinear_expr()) {
-      LinearExpr &linear = con.linear_expr();
-      const auto ee=MP_DISPATCH( Visit(e) );
-      linear.AddTerms(ee.GetAE());
-      if (!ee.is_affine())                       // higher-order terms
-        con.set_extra_info( std::move(ee.GetQT()) );
-      con.set_lb(con.lb() - ee.constant_term());
-      con.set_ub(con.ub() - ee.constant_term());
-      con.unset_nonlinear_expr();                  // delete the non-linear expr
-    } // Modifying the original constraint by replacing the expr
-  }
-
-  void Convert(typename Model::MutLogicalCon e) {
-    const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
+  /// Fix a resulting variable of a logical expression as true
+  /// and propagate +Ctx
+  /// TODO avoid creating resvar for root logical constraints
+  void FixAsTrue(int resvar) {
     PropagateResultOfInitExpr(resvar, 1.0, 1.0, +Context());
   }
 
+protected:
   void PropagateResultOfInitExpr(int var, double lb, double ub, Context ctx) {
     NarrowVarBounds(var, lb, ub);
     if (HasInitExpression(var))
@@ -117,17 +98,9 @@ public:
 public:
   //////////////////////////////////// VISITOR ADAPTERS /////////////////////////////////////////
 
-  /// Convert an expression to an EExpr
-  EExpr Convert2EExpr(Expr e) {
-    return MP_DISPATCH(Visit(e));
-  }
-
   /// From an expression:
   /// Adds a result variable r and constraint r == expr
-  int Convert2Var(Expr e) {
-    return Convert2Var( Convert2EExpr(e) );
-  }
-  int Convert2Var(EExpr&& ee) {
+  int Convert2Var(QuadExpr&& ee) {
     if (ee.is_variable())
       return ee.get_representing_variable();
     if (ee.is_constant())
@@ -139,16 +112,6 @@ public:
     else
       AddConstraint(QuadraticDefiningConstraint(r, std::move(ee)));
     return r;
-  }
-  /// Makes an affine expr representing just one variable
-  AffineExpr Convert2VarAsAffineExpr(EExpr&& ee) {
-    return AffineExpr::Variable{Convert2Var(std::move(ee))};
-  }
-
-  AffineExpr Convert2AffineExpr(EExpr&& ee) {
-    if (ee.is_affine())
-      return std::move(ee.GetAE());
-    return Convert2VarAsAffineExpr(std::move(ee));           // just simple, whole QuadExpr
   }
 
   PreprocessInfoStd ComputeBoundsAndType(const QuadExpr& ee) {
@@ -220,313 +183,28 @@ public:
             var::INTEGER : var::CONTINUOUS};
   }
 
-  /// Generic functional expression array visitor
-  /// Can produce a new variable/expression and specified constraints on it
-  template <class FuncConstraint, class ExprArray=std::initializer_list<Expr> >
-  EExpr VisitFunctionalExpression(ExprArray ea) {
-    FuncConstraint fc;
-    Exprs2Vars(ea, fc.GetArguments());
-    return AssignResultToArguments( std::move(fc) );
-  }
-
-  template <class ExprArray>
-  void Exprs2Vars(const ExprArray& ea, std::vector<int>& result) {
-    assert(result.empty());
-    result.reserve(ea.num_args());
-    for (const auto& e: ea)
-      result.push_back( MP_DISPATCH( Convert2Var(e) ) );
-  }
-
-  template <class Expr>
-  void Exprs2Vars(const std::initializer_list<Expr>& ea, std::vector<int>& result) {
-    assert(result.empty());
-    result.reserve(ea.size());
-    for (const auto& e: ea)
-      result.push_back( MP_DISPATCH( Convert2Var(e) ) );
-  }
-
-  template <class ExprArray, size_t N>
-  void Exprs2Vars(const ExprArray& ea, std::array<int, N>& result) {
-    assert(ea.size() == result.size());
-    auto itea = ea.begin();
-    for (unsigned i=0; i<N; ++i, ++itea)
-      result[i] = MP_DISPATCH( Convert2Var(*itea) );
-  }
-
+  /// Take FuncConstraint with arguments
+  /// If the result of the function is known, return it
+  /// Otherwise, create a result variable and add the constraint
   template <class FuncConstraint>
-  EExpr AssignResultToArguments(FuncConstraint&& fc) {
+  typename FCC<Impl, FuncConstraint>::VarOrConst
+  AssignResult2Args(FuncConstraint&& fc) {
     auto fcc = MakeFuncConstrConverter<Impl, FuncConstraint>(
           *this, std::forward<FuncConstraint>(fc));
     return fcc.Convert();
   }
 
-  /// Generic relational expression visitor
-  /// Can produce a new variable/expression and specified constraints on it
-  template <class FuncConstraint, class ExprArray=std::initializer_list<Expr> >
-  EExpr VisitRelationalExpression(ExprArray ea) {
-    std::array<EExpr, 2> ee;
-    Exprs2EExprs(ea, ee);
-    ee[0].Subtract(std::move(ee[1]));
-    return AssignResultToArguments(
-          FuncConstraint(                  // comparison with linear expr only
-            Convert2AffineExpr( std::move(ee[0]) ) ) );
-  }
-
-  template <class ExprArray, size_t N>
-  void Exprs2EExprs(const ExprArray& ea, std::array<EExpr, N>& result) {
-    assert(ea.size() == result.size());
-    auto itea = ea.begin();
-    for (size_t i=0; i<N; ++i, ++itea)
-      result[i] = MP_DISPATCH( Convert2EExpr(*itea) );
-  }
-
-
-  ///////////////////////////////// EXPRESSION VISITORS ////////////////////////////////////
-  ///
-  //////////////////////////////////////////////////////////////////////////////////////////
-
-  EExpr VisitNumericConstant(NumericConstant n) {
-    return EExpr::Constant{ n.value() };
-  }
-
-  EExpr VisitVariable(Reference r) {
-    return EExpr::Variable{ r.index() };
-  }
-
-  EExpr VisitCommonExpr(Reference r) {
-    const auto index = r.index();
-    if (index >= (int)common_exprs_.size())
-      common_exprs_.resize(index+1, -1);          // init by -1, "no variable"
-    if (common_exprs_[index]<0) {                 // not yet converted
-      auto ce = MP_DISPATCH( GetModel() ).common_expr(index);
-      EExpr eexpr(ce.linear_expr());
-      if (ce.nonlinear_expr())
-        eexpr.Add( Convert2EExpr(ce.nonlinear_expr()) );
-      common_exprs_[index] = Convert2Var(std::move(eexpr));
-    }
-    return EExpr::Variable{ common_exprs_[index] };
-  }
-
-  EExpr VisitMinus(UnaryExpr e) {
-    auto ee = Convert2EExpr(e.arg());
-    ee.Negate();
-    return ee;
-  }
-
-  EExpr VisitAdd(BinaryExpr e) {
-    auto ee = Convert2EExpr(e.lhs());
-    ee.Add( Convert2EExpr(e.rhs()) );
-    return ee;
-  }
-
-  EExpr VisitSub(BinaryExpr e) {
-    auto el = Convert2EExpr(e.lhs());
-    auto er = Convert2EExpr(e.rhs());
-    er.Negate();
-    el.Add(er);
-    return el;
-  }
-
-  EExpr VisitMul(BinaryExpr e) {
-    auto el = Convert2EExpr(e.lhs());
-    auto er = Convert2EExpr(e.rhs());
-    return QuadratizeOrLinearize( el, er );
-  }
-
-  EExpr VisitSum(typename BaseExprVisitor::SumExpr expr) {
-    EExpr sum;
-    for (auto i =
-         expr.begin(), end = expr.end(); i != end; ++i)
-      sum.Add( MP_DISPATCH( Convert2EExpr(*i) ) );
-    return sum;
-  }
-
-  EExpr VisitMax(typename BaseExprVisitor::VarArgExpr e) {
-    // Why need BaseExprVisitor:: here in g++ 9.2.1?
-    return VisitFunctionalExpression<MaximumConstraint>(e);
-  }
-
-  EExpr VisitMin(typename BaseExprVisitor::VarArgExpr e) {
-    return VisitFunctionalExpression<MinimumConstraint>(e);
-  }
-
-  EExpr VisitAbs(UnaryExpr e) {
-    return VisitFunctionalExpression<AbsConstraint>({ e.arg() });
-  }
-
-  EExpr VisitEQ(RelationalExpr e) {
-    return VisitRelationalExpression<EQ0Constraint>({ e.lhs(), e.rhs() });
-  }
-
-  EExpr VisitNE(RelationalExpr e) {
-    auto EQ = this->GetModel().MakeRelational(expr::EQ, e.lhs(), e.rhs());
-    return VisitFunctionalExpression<NotConstraint>({ EQ });
-  }
-
-  EExpr VisitLE(RelationalExpr e) {
-    return VisitRelationalExpression<LE0Constraint>({ e.lhs(), e.rhs() });
-  }
-
-  EExpr VisitGE(RelationalExpr e) {
-    return VisitRelationalExpression<LE0Constraint>({ e.rhs(), e.lhs() });
-  }
-
-  EExpr VisitNot(NotExpr e) {
-    return VisitFunctionalExpression<NotConstraint>({ e.arg() });
-  }
-
-  EExpr VisitAnd(BinaryLogicalExpr e) {
-    return VisitFunctionalExpression<ConjunctionConstraint>({ e.lhs(), e.rhs() });
-  }
-
-  EExpr VisitOr(BinaryLogicalExpr e) {
-    return VisitFunctionalExpression<DisjunctionConstraint>({ e.lhs(), e.rhs() });
-  }
-
-  EExpr VisitIf(IfExpr e) {
-    return VisitFunctionalExpression<IfThenConstraint>({
-                e.condition(), e.then_expr(), e.else_expr() });
-  }
-
-  EExpr VisitAllDiff(PairwiseExpr e) {
-    if (expr::ALLDIFF != e.kind())
-      throw std::logic_error("NOT_ALLDIFF NOT IMPLEMENTED");
-    return VisitFunctionalExpression<AllDiffConstraint>(e);
-  }
-
-  EExpr VisitPLTerm(PLTerm e) {
-    int num_breakpoints = e.num_breakpoints();
-    std::vector<double> slopes(num_breakpoints+1), breakpoints(num_breakpoints);
-    for (int i = 0; i < num_breakpoints; ++i) {
-      slopes[i] = e.slope(i);
-      breakpoints[i] = e.breakpoint(i);
-    }
-    slopes.back() = e.slope(num_breakpoints);
-    return AssignResultToArguments( PLConstraint(
-          PLConstraint::Arguments{ Convert2Var(e.arg()) },
-          PLConstraint::Parameters{ breakpoints, slopes, 0.0, 0.0 } ) );
-  }
-
-
-  ////////////////////////////////////////////////////
-  /////////////// NONLINEAR FUNCTIONS ////////////////
-  ////////////////////////////////////////////////////
-  EExpr VisitPowConstExp(BinaryExpr e) {
-    auto c = Cast<NumericConstant>(e.rhs()).value();
-    if (2.0==c) {                            // Quadratic
-      auto el = Convert2EExpr(e.lhs());
-      return QuadratizeOrLinearize(el, el);
-    }
-    return AssignResultToArguments( PowConstraint(
-      PowConstraint::Arguments{ Convert2Var(e.lhs()) },
-      PowConstraint::Parameters{ c } ) );
-  }
-
-  EExpr VisitPow2(UnaryExpr e) {     // MIP could have better conversion for pow2
-    auto el = Convert2EExpr(e.arg());
-    return QuadratizeOrLinearize(el, el);
-    /* TODO Can do better for integer variables if we redefine pow:
-    return AssignResultToArguments( PowConstraint(
-      PowConstraint::Arguments{ Convert2Var(e.arg()) },
-      PowConstraint::Parameters{ 2.0 } ) ); */
-  }
-
-  EExpr VisitPow(BinaryExpr e) {
-    auto el = Convert2EExpr(e.lhs());
-    auto er = Convert2EExpr(e.rhs());
-    if (er.is_constant() && 2.0==er.constant_term())
-      return QuadratizeOrLinearize(el, el);
-    else
-      MP_RAISE("Unsupported: general ^");
-    /* TODO Can do better for integer variables if we redefine pow:
-    return AssignResultToArguments( PowConstraint(
-      PowConstraint::Arguments{ Convert2Var(e.arg()) },
-      PowConstraint::Parameters{ 2.0 } ) ); */
-  }
-
-  EExpr VisitSqrt(UnaryExpr e) {
-    return AssignResultToArguments( PowConstraint(
-      PowConstraint::Arguments{ Convert2Var(e.arg()) },
-      PowConstraint::Parameters{ 0.5 } ) );
-  }
-
-  EExpr VisitExp(UnaryExpr e) {
-    return VisitFunctionalExpression<ExpConstraint>({ e.arg() });
-  }
-
-  EExpr VisitPowConstBase(BinaryExpr e) {
-    return AssignResultToArguments( ExpAConstraint(
-      ExpAConstraint::Arguments{ Convert2Var(e.rhs()) },
-      ExpAConstraint::Parameters{ Cast<NumericConstant>(e.lhs()).value() } ) );
-  }
-
-  EExpr VisitLog(UnaryExpr e) {
-    return VisitFunctionalExpression<LogConstraint>({ e.arg() });
-  }
-
-  EExpr VisitLog10(UnaryExpr e) {
-    return AssignResultToArguments( LogAConstraint(
-      LogAConstraint::Arguments{ Convert2Var(e.arg()) },
-      LogAConstraint::Parameters{ 10.0 } ) );
-  }
-
-  EExpr VisitSin(UnaryExpr e) {
-    return VisitFunctionalExpression<SinConstraint>({ e.arg() });
-  }
-
-  EExpr VisitCos(UnaryExpr e) {
-    return VisitFunctionalExpression<CosConstraint>({ e.arg() });
-  }
-
-  EExpr VisitTan(UnaryExpr e) {
-    return VisitFunctionalExpression<TanConstraint>({ e.arg() });
-  }
-
-
-  /// Depending on the target backend
-  /// Currently only quadratize higher-order products
-  /// Can change arguments. They could point to the same
-  /// TODO multiply-out optional
-  /// CAUTION: allows &el==&er, needed from Pow2
-  EExpr QuadratizeOrLinearize(EExpr& el, EExpr& er) {
-    if (!el.is_affine() && !er.is_constant())
-      el = Convert2AffineExpr(std::move(el));      // will convert to a new var now
-    if (!er.is_affine() && !el.is_constant())
-      er = Convert2AffineExpr(std::move(er));
-    return MultiplyOut(el, er);
-  }
-
-  EExpr MultiplyOut(const EExpr& el, const EExpr& er) {
-    assert((el.is_affine() && er.is_affine()) ||
-           (el.is_constant() || er.is_constant()));
-    EExpr result;
-    if (0.0!=std::fabs(er.constant_term())) {
-      result.GetAE().Add(el.GetAE());
-      result.GetAE() *= er.constant_term();
-      result.GetQT().AddTerms(el.GetQT());
-      result.GetQT() *= er.constant_term();
-    }
-    if (0.0!=std::fabs(el.constant_term())) {
-      {
-        AffineExpr ae2 = er.GetAE();
-        ae2 *= el.constant_term();
-        result.GetAE().AddTerms(ae2);
-      }
-      result.GetQT().Add(er.GetQT());
-      result.GetQT() *= el.constant_term();
-    }
-    for (const auto& termL: el.GetAE()) {
-      for (const auto& termR: er.GetAE()) {
-        result.AddQuadraticTerm(termL.var_index(), termR.var_index(),
-                                termL.coef() * termR.coef());
-      }
-    }
-    result.SortTerms();
-    return result;
+  /// Same, but always return a variable
+  template <class FuncConstraint>
+  typename FCC<Impl, FuncConstraint>::Var
+  AssignResultVar2Args(FuncConstraint&& fc) {
+    auto vc = AssignResult2Args(std::move(fc));
+    if (vc.is_const())
+      return MPD( MakeFixedVar(vc.get_const()) );
+    return vc.get_var();
   }
 
 public:
-
   //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
   ///
   //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
@@ -561,44 +239,14 @@ public:
             pConstraint->ConvertWith(*this);
             pConstraint->Remove();
           } catch (const ConstraintConversionFailure& ccf) {
-            MP_DISPATCH( Print(
+            printf( fmt::format(
                            "WARNING: {}. Will pass the constraint "
                            "to the backend {}. Continuing\n",
                            ccf.message(),
-                           MP_DISPATCH( GetBackend() ).GetBackendName() ) );
+                           MP_DISPATCH( GetBackend() ).GetBackendName() ).c_str() );
           }
         }
       }
-    }
-  }
-
-  /// fAllSOS2: if false, only groups with sosno<0
-  void ConvertSOSCollection(ArrayRef<int> sosno, ArrayRef<double> ref,
-                            bool fAllSOS2) {
-    assert(sosno.size() == ref.size());
-    std::map< int, std::map< double, int > > sos_map;
-    for (auto i=ref.size(); i--; )
-      if (sosno[i]) {
-        auto& sos_group = sos_map[sosno[i]];
-        if (sos_group.end() != sos_group.find(ref[i]))
-          MP_RAISE(fmt::format(
-                     "In SOS group {}, repeated weight {}",
-                     sosno[i], ref[i]));
-        sos_group[ref[i]] = i;
-      }
-    for (const auto& group: sos_map) {
-      std::vector<int> vars;
-      vars.reserve(group.second.size());
-      std::vector<double> weights;
-      weights.reserve(group.second.size());
-      for (const auto& wv: group.second) {
-        weights.push_back(wv.first);
-        vars.push_back(wv.second);
-      }
-      if (group.first<0 || fAllSOS2)
-        AddConstraint(SOS2Constraint(vars, weights));
-      else
-        AddConstraint(SOS1Constraint(vars, weights));
     }
   }
 
@@ -645,10 +293,9 @@ public:
       prepro.set_result_var(argvar);
       return;
     } else if (ub<=0.0) {
-      prepro.set_result_var(                   // create newvar = -argvar
-            AssignResultToArguments(
-                  LinearDefiningConstraint({ {-1.0}, {argvar}, 0.0 })).
-                              get_representing_variable());
+      auto res = AssignResult2Args(   // create newvar = -argvar
+            LinearDefiningConstraint({ {-1.0}, {argvar}, 0.0 }));
+      prepro.set_result_var(res.get_var());
       return;
     }
     prepro.narrow_result_bounds(0.0, std::max(-lb, ub));
@@ -981,7 +628,7 @@ public:
     auto it = map_fixed_vars_.find(value);
     if (map_fixed_vars_.end()!=it)
       return it->second;
-    auto v = BaseConverter::AddVar(value, value);
+    auto v = MPD( DoAddVar(value, value) );
     map_fixed_vars_[value] = v;
     return v;
   }
@@ -989,7 +636,7 @@ public:
   /// Create or find a fixed variable
   int AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
     if (lb!=ub)
-      return BaseConverter::AddVar(lb, ub, type);
+      return DoAddVar(lb, ub, type);
     return MakeFixedVar(lb);
   }
 
@@ -1007,13 +654,39 @@ public:
     if (! (lb(bvar)==0.0 && ub(bvar)==1.0) )
       throw std::logic_error("Asked to complement variable with bounds "
                              + std::to_string(lb(bvar)) + ".." + std::to_string(ub(bvar)));
-    AffineExpr ae({-1.0}, {bvar}, 1.0);
+    AffineExpr ae({-1.0}, {bvar}, 1.0); // TODO use map / FCC?
     return MP_DISPATCH( Convert2Var(std::move(ae)) );
   }
 
   struct VarInfo {
     BasicConstraintKeeper *pInitExpr=nullptr;
   };
+
+  /// These methods to be used by converter helper objects
+  /// +inf
+  static constexpr double Infty()
+  { return std::numeric_limits<double>::infinity(); }
+  /// -inf
+  static constexpr double MinusInfty()
+  { return -std::numeric_limits<double>::infinity(); }
+  /// Add variable. Type: var::CONTINUOUS by default
+  int DoAddVar(double lb=MinusInfty(), double ub=Infty(),
+             var::Type type = var::CONTINUOUS) {
+    auto var = GetModel().AddVar(lb, ub, type);
+    return var.index();
+  }
+  /// Add vector of variables. Type: var::CONTINUOUS by default
+  std::vector<int> AddVars(std::size_t nvars,
+                           double lb=MinusInfty(), double ub=Infty(),
+                           var::Type type = var::CONTINUOUS) {
+    std::vector<int> newVars(nvars);
+    for (std::size_t  i=0; i<nvars; ++i)
+      newVars[i] = AddVar(lb, ub, type);
+    return newVars;
+  }
+  bool is_var_integer(int var) const
+  { return MPCD( GetModel() ).is_integer_var(var); }
+
 
 private:
   std::vector<VarInfo> var_info_;
@@ -1035,22 +708,6 @@ public:
   }
 
 
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////// SOLUTION REPORTING FROM BACKEND //////////////////
-  ///////////////////////////////////////////////////////////////////////
-public:
-  void HandleSolution(int status, fmt::CStringRef msg,
-      const double *x, const double *y, double obj) {
-    if ( MPD( HaveSolH() ) )
-      MP_DISPATCH( GetSolH() ).HandleSolution(status, msg, x, y, obj);
-    else
-      MP_RAISE_WITH_CODE(0, msg);
-  }
-
-  void HandleFeasibleSolution(fmt::CStringRef msg,
-      const double *x, const double *y, double obj) {
-    MP_DISPATCH( GetSolH() ).HandleFeasibleSolution(msg, x, y, obj);
-  }
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////
@@ -1063,16 +720,20 @@ private:
   };
   Options options_;
 
-  void InitOptions() {
-    this->AddOption("cvt:pre:all",
+public:
+  template <class OptionManager>
+  void InitOptions(OptionManager& opt) {
+    MPD( GetBackend() ).InitMetaInfoAndOptions();
+
+    opt.AddOption("cvt:pre:all",
         "0/1*: Set to 0 to disable all presolve in the converter.",
-        options_.preprocessAnything_);
-    this->AddOption("cvt:pre:eqresult",
+        options_.preprocessAnything_, 0, 1);
+    opt.AddOption("cvt:pre:eqresult",
         "0/1*: Preprocess reified equality comparison's boolean result bounds.",
-        options_.preprocessEqualityResultBounds_);
-    this->AddOption("cvt:pre:eqbinary",
+        options_.preprocessEqualityResultBounds_, 0, 1);
+    opt.AddOption("cvt:pre:eqbinary",
         "0/1*: Preprocess reified equality comparison with a binary variable.",
-        options_.preprocessEqualityBvar_);
+        options_.preprocessEqualityBvar_, 0, 1);
   }
 
 protected:
