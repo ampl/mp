@@ -208,8 +208,8 @@ public:
   void AddConstraint(const PowConstraint& cc);
   ACCEPT_CONSTRAINT(SinConstraint, Recommended)
   void AddConstraint(const SinConstraint& cc);
-  ACCEPT_CONSTRAINT(CosConstraint, Recommended)
-  void AddConstraint(const CosConstraint& cc);
+  ACCEPT_CONSTRAINT(CosConstraint, Recommended) // y = cos(x)
+  void AddConstraint(const CosConstraint& cc);  // GRBaddgenconstrCos(x, y);
   ACCEPT_CONSTRAINT(TanConstraint, Recommended)
   void AddConstraint(const TanConstraint& cc);
   ACCEPT_CONSTRAINT(PLConstraint, Recommended)
@@ -417,6 +417,24 @@ protected:  //////////// Wrappers for Get/SetSolverOption(). Assume model_ is se
   void GrbSetIntParam(const char* key, int value);
   void GrbSetDblParam(const char* key, double value);
   void GrbSetStrParam(const char* key, const std::string& value);
+
+  /// For "obj:*:method" etc
+  /// Should they be handled in the Converter?
+public:
+  using ObjNParamKey = std::pair< std::string, std::string >;
+  template <class T>
+  using ObjNParam = std::pair< ObjNParamKey, T >;
+private:
+  std::vector< ObjNParam<int> > objnparam_int_;
+  std::vector< ObjNParam<double> > objnparam_dbl_;
+protected:
+  /// Assume opt has the * info
+  void GrbSetObjIntParam(const SolverOption& opt, int val);
+  void GrbSetObjDblParam(const SolverOption& opt, double val);
+  int GrbGetObjIntParam(const SolverOption& opt) const;
+  double GrbGetObjDblParam(const SolverOption& opt) const;
+
+  void GrbPlayObjNParams();
 };
 
 } // namespace mp

@@ -564,7 +564,7 @@ Solver::Solver(
   AddOption(OptionPtr(new VersionOption(*this)));
 
   AddStrOption(
-        "tech:option:read optionfile option:read",
+        "tech:optionfile optionfile option:file",
         "Name of solver option file. "
 //      " (surrounded by 'single' or "
 //      "\"double\" quotes if the name contains blanks). "
@@ -700,11 +700,44 @@ SolverOption::SolverOption(
   name_ = synonyms.front();
   for (size_t i=1; i<synonyms.size(); ++i)
     inline_synonyms_.push_back(synonyms[i]);
+  /// Wildcards
+  auto wc_pos = name_.find_first_of('*');
+  if (std::string::npos != wc_pos) {
+    wc_headtails_.push_back(wc_split(name_));
+    for (const auto& syn: inline_synonyms_)
+      wc_headtails_.push_back(wc_split(syn));
+  }
 }
 
+SolverOption::WCHeadTail SolverOption::wc_split(
+    const std::string &name) {
+  assert(name.size()>1);
+  auto wc_pos = name.find_first_of('*');
+  assert((std::string::npos != wc_pos));
+  assert(wc_pos == name.find_last_of('*'));
+  return {
+    name.substr(0, wc_pos),
+    name.substr(wc_pos+1, std::string::npos)
+  };
+}
 
+bool SolverOption::wc_match(const std::string &key) {
+  for (const auto& wcht: wc_headtails_) {
+    if (0==key.rfind(wcht.first, 0) &&
+        key.size()>wcht.second.size() &&
+        key.size()-wcht.second.size() ==
+          key.rfind((wcht.second))) {
+      wc_key_last_ = key;
+      wc_body_last_ = key.substr(
+            wcht.first.size(), key.size()-wcht.second.size()-wcht.first.size());
+      return true;
+    }
+  }
+  return false;
+}
 
-SolverOption *Solver::FindOption(const char *name) const {
+SolverOption *Solver::FindOption(
+    const char *name, bool wildcardvalues) const {
   struct DummyOption : SolverOption {
     DummyOption(const char *name) : SolverOption(name, "") {}
     void Write(fmt::Writer &) {}
@@ -714,18 +747,25 @@ SolverOption *Solver::FindOption(const char *name) const {
   // find by name
   OptionSet::const_iterator i = options_.find(&option);
   if (i != options_.end()) {
+    if ((*i)->is_wildcard() && wildcardvalues)
+      return 0;
     return *i;
   }
 
-  // find by inline synonyms
+  // find by inline synonyms and wildcards
   std::string name_str {name};
   for (OptionSet::const_iterator i = options_.begin();
     i != options_.end(); ++i)
   {
-    if (std::find((*i)->inline_synonyms().begin(), (*i)->inline_synonyms().end(), name_str) !=
+    if (std::find((*i)->inline_synonyms().begin(),
+                  (*i)->inline_synonyms().end(),
+                  name_str) !=
         (*i)->inline_synonyms().end()) {
       return *i;
     }
+    /// Wildcards
+    if (wildcardvalues && (*i)->wc_match(name))
+      return *i;
   }
   return 0;
 }
@@ -755,7 +795,7 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
       equal_sign = true;
     }
 
-    SolverOption *opt = FindOption(&name[0]);
+    SolverOption *opt = FindOption(&name[0], true);
     if (!opt) {
       if (!skip)
         HandleUnknownOption(&name[0]);

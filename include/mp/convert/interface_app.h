@@ -119,6 +119,9 @@ template <typename Interface>
 bool InterfaceApp<Interface>::Init(char **argv, int nl_reader_flags) {
   internal::Unused(nl_reader_flags);
 
+  /// Init solver/converter options
+  GetInterface().InitOptions();
+
   // Parse command-line arguments.
   const char *filename = p_option_parser_->Parse(argv);
   if (!filename) return false;
@@ -152,7 +155,6 @@ bool InterfaceApp<Interface>::Init(char **argv, int nl_reader_flags) {
   interface_.SetSolHandler(*p_sol_handler_tmp_);
 
   // Parse solver options.
-  GetInterface().InitOptions();
   unsigned flags =
       p_option_parser_->echo_solver_options() ? 0 : Solver::NO_OPTION_ECHO;
   if (!interface_.ParseOptions(argv, flags)) {

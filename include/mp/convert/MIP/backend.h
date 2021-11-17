@@ -37,8 +37,6 @@ template <class Impl,
 class MIPBackend :
   public BasicBackend<Impl>
 {
-  using BaseBackend::debug_mode;
-
 public:
   // Properties
   bool IsMIP() const { return false; }
@@ -407,6 +405,8 @@ public:
   }
 
   using BaseBackend::AddStoredOption;
+
+  using BaseBackend::debug_mode;
 
 
   ////////////////////////////////////////////////////////////////

@@ -208,12 +208,21 @@ class Interrupter {
   virtual void SetHandler(InterruptHandler handler, void *data) = 0;
 };
 
-// A solver option.
+/// A solver option.
 class SolverOption {
  private:
   std::string name_ {};
   std::vector<std::string> inline_synonyms_ {};
   std::string description_;
+
+  /// Wildcard info
+  /// Standard name's head/tail
+  using WCHeadTail = std::pair<std::string, std::string>;
+  std::vector<WCHeadTail> wc_headtails_;
+  /// Last actual key parsed and it's '*' body
+  std::string wc_key_last_, wc_body_last_;
+  /// Assumes name constains '*'
+  static WCHeadTail wc_split(const std::string& name);
 
   ValueArrayRef values_;
   bool is_flag_;
@@ -238,6 +247,8 @@ class SolverOption {
   //   table of option values as given by the values array
   //
   // names_list:  option names list
+  //   names can be wildcarded, e.g., "obj:*:method"
+  //   then setter/getter can use wildcard_ accessors
   // description: option description
   // values:      information about possible option values
   SolverOption(const char *names_list, const char *description,
@@ -258,6 +269,20 @@ class SolverOption {
   /// Add additional "inline" synonyms
   void add_synonyms_front(const char* names_list);
   void add_synonyms_back(const char* names_list);
+
+  /// Wildcards
+  bool is_wildcard() const { return wc_headtails_.size(); }
+  /// Checks if matches, then saves key & body
+  bool wc_match(const std::string& key);
+  const std::string& wc_head() const
+  { assert(is_wildcard()); return wc_headtails_[0].first; }
+  const std::string& wc_tail() const
+  { assert(is_wildcard()); return wc_headtails_[0].second; }
+  const std::string& wc_key_last() const { return wc_key_last_; }
+  const std::string& wc_keybody_last() const { return wc_body_last_; }
+  /// Printing last parsed wc key in std form
+  std::string wc_key_last__std_form() const
+  { return wc_head() + wc_body_last_ + wc_tail(); }
 
   // Return/set the option description.
   const char *description() const { return description_.c_str(); }
@@ -321,6 +346,8 @@ class SolverOption {
   virtual void Parse(const char *&s) = 0;
 
   virtual std::string echo() {
+    if (is_wildcard())
+      return wc_key_last__std_form();
     return name();
   }
 };
@@ -508,6 +535,7 @@ class Solver : private ErrorHandler,
   // Parses an option string.
   void ParseOptionString(const char *s, unsigned flags);
 
+public:
   // Handler should be a class derived from Solver that will receive
   // notifications about parsed options.
   template <typename Handler, typename T, typename AccessorT = T>
@@ -533,7 +561,6 @@ class Solver : private ErrorHandler,
                        internal::OptionHelper<AccessorT>::CastArg(value));
     }
   };
-  public:
   template <typename Handler, typename T,
             typename Info, typename InfoArg = Info, typename AccessorT = T>
   class ConcreteOptionWithInfo : public TypedSolverOption<T> {
@@ -759,7 +786,7 @@ class Solver : private ErrorHandler,
   }
 
   virtual void HandleUnknownOption(const char *name) {
-    ReportError("Unknown option \"{}\"", name);
+    ReportError("Unknown option or invalid key \"{}\"", name);
   }
 
   // Adds a suffix.
@@ -853,8 +880,11 @@ class Solver : private ErrorHandler,
   // Returns the number of options.
   int num_options() const { return static_cast<int>(options_.size()); }
 
-  // Finds an option and returns a pointer to it if found or null otherwise.
-  SolverOption *FindOption(const char *name) const;
+  /// Finds an option and returns a pointer to it if found or null otherwise.
+  /// If wildcardvalues==true, wildcarded options should have values
+  /// (i.e., parsing real input)
+  SolverOption *FindOption(const char *name,
+                           bool wildcardvalues=false) const;
 
   // Option iterator.
   class option_iterator :

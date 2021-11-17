@@ -66,7 +66,7 @@ namespace mp {
 template <class Impl>
 class BasicBackend :
     public FlatModelAPI<Impl>,
-    private SolverImpl< ModelAdapter< BasicModel<> > >   // mp::Solver stuff, hidden
+    public SolverImpl< ModelAdapter< BasicModel<> > >   // mp::Solver stuff
 {
   ////////////////////////////////////////////////////////////////////////////
   ///////////////////// TO IMPLEMENT IN THE FINAL CLASS //////////////////////

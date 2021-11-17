@@ -1,6 +1,7 @@
 #include <vector>
 #include <climits>
 #include <cfloat>
+#include <stdexcept>
 
 #include "gurobibackend.h"
 
@@ -235,10 +236,10 @@ ArrayRef<double> GurobiBackend::ObjectiveValues() const {
     int objnumber = GrbGetIntParam(GRB_INT_PAR_OBJNUMBER);
     for (int i = 0; i < no; i++)
     {
-      GRBsetintparam(env, GRB_INT_PAR_OBJNUMBER, i);
+      GRB_CALL( GRBsetintparam(env, GRB_INT_PAR_OBJNUMBER, i) );
       objs[i] = GrbGetDblAttr(GRB_DBL_ATTR_OBJNVAL);
     }
-    GRBsetintparam(env, GRB_INT_PAR_OBJNUMBER, objnumber);
+    GRB_CALL( GRBsetintparam(env, GRB_INT_PAR_OBJNUMBER, objnumber) );
   }
   return objs;
 }
@@ -542,6 +543,7 @@ void GurobiBackend::PrepareGurobiSolve() {
     GrbSetIntParam(GRB_INT_PAR_POOLSEARCHMODE, storedOptions_.nPoolMode_);
   if (need_ray_primal() || need_ray_dual())
     GrbSetIntParam(GRB_INT_PAR_INFUNBDINFO, 1);
+  GrbPlayObjNParams();
   if (feasrelax())
     DoGurobiFeasRelax();
   SetPartitionValues();
@@ -1678,7 +1680,7 @@ void GurobiBackend::InitCustomOptions() {
                            "the .objabstol (absolute) and .objreltol (relative) limits. "
                            "The objectives must all be linear.  Objective-specific "
                            "convergence tolerances and method values may be assigned via "
-                           "keywords of the form obj_n_name, such as obj_1_method for the "
+                           "keywords of the form obj_n_<name>, such as obj_1_method for the "
                            "first objective.");
 
   AddSolverOption("obj:multiobjmethod multiobjmethod",
@@ -1702,6 +1704,23 @@ void GurobiBackend::InitCustomOptions() {
       "| >0 - Divide by this value.",
     GRB_DBL_PAR_OBJSCALE, -1.0, DBL_MAX);
 
+  /// Wildcard options
+  AddIntOption("obj:*:method obj_*_method", "Method for objective with index *",
+            &GurobiBackend::GrbGetObjIntParam,
+            &GurobiBackend::GrbSetObjIntParam);
+  AddIntOption("obj:*:priority obj_*_priority", "Priority for objective with index *",
+            &GurobiBackend::GrbGetObjIntParam,
+            &GurobiBackend::GrbSetObjIntParam);
+  AddDblOption("obj:*:weight obj_*_weight", "Weight for objective with index *",
+            &GurobiBackend::GrbGetObjDblParam,
+            &GurobiBackend::GrbSetObjDblParam);
+  AddDblOption("obj:*:reltol obj_*_reltol", "Relative tolerance for objective with index *",
+            &GurobiBackend::GrbGetObjDblParam,
+            &GurobiBackend::GrbSetObjDblParam);
+  AddDblOption("obj:*:abstol obj_*_abstol", "Absolute tolerance for objective with index *. "
+               "Can only be applied on a multi-objective problem with obj:multi=1",
+            &GurobiBackend::GrbGetObjDblParam,
+            &GurobiBackend::GrbSetObjDblParam);
 
 
   AddSolverOption("pre:aggfill aggfill", "Amount of fill allowed during aggregation in presolve"
@@ -1970,7 +1989,7 @@ void GurobiBackend::InitCustomOptions() {
       "either by name or by IP address.  Default: run Gurobi locally "
       "(i.e., do not use a remote Gurobi server).",
           storedOptions_.servers_);
-  AddOptionSynonyms_OutOfLine("tech:server_lic serverlic server_lic", "tech:option:read");
+  AddOptionSynonyms_OutOfLine("tech:server_lic serverlic server_lic", "tech:optionfile");
   AddStoredOption("tech:server_group server_group",
       "Name of Compute Server Group, if any.",
           storedOptions_.server_group_);
@@ -2099,11 +2118,116 @@ void GurobiBackend::GrbSetStrParam(const char *key, const std::string& value) {
   SetSolverOption(key, value);
 }
 
+
+void GurobiBackend::GrbSetObjIntParam(const SolverOption& opt, int val) {
+  objnparam_int_.push_back( { {opt.wc_tail(), opt.wc_keybody_last()}, val } );
+}
+void GurobiBackend::GrbSetObjDblParam(const SolverOption& opt, double val) {
+  objnparam_dbl_.push_back( { {opt.wc_tail(), opt.wc_keybody_last()}, val } );
+}
+int GurobiBackend::GrbGetObjIntParam(const SolverOption& opt) const {
+  auto it = std::find_if(objnparam_int_.rbegin(), objnparam_int_.rend(),
+                         [&](const ObjNParam<int>& prm){
+    return prm.first == std::make_pair(opt.wc_tail(), opt.wc_keybody_last());
+  });
+  if (objnparam_int_.rend()==it)
+    throw std::runtime_error("Failed to find recorded option " +
+                             opt.wc_key_last__std_form());
+  return it->second;
+}
+double GurobiBackend::GrbGetObjDblParam(const SolverOption& opt) const {
+  auto it = std::find_if(objnparam_dbl_.rbegin(), objnparam_dbl_.rend(),
+                         [&](const ObjNParam<int>& prm){
+    return prm.first == std::make_pair(opt.wc_tail(), opt.wc_keybody_last());
+  });
+  if (objnparam_dbl_.rend()==it)
+    throw std::runtime_error("Failed to find recorded option " +
+                             opt.wc_key_last__std_form());
+  return it->second;
+}
+
+/// What to do on certain "obj:*:..." option
+/// The bool=true means get multiobj env
+/// int is the obj number
+static std::tuple<bool, int, const char*>
+GrbGetObjParamAction(const GurobiBackend::ObjNParamKey& key) {
+  int n;
+  try {
+    n = std::stoi(key.second)-1;  // subtract 1 for 0-based indexing
+  }  catch (...) {
+    throw std::runtime_error("Could not parse index '" + key.second +
+                             "' of option 'obj:" + key.second + key.first + "'");
+  }
+  if (":method"==key.first)
+    return {true, n, GRB_INT_PAR_METHOD};
+  if (":priority"==key.first)
+    return {false, n, GRB_INT_ATTR_OBJNPRIORITY};
+  if (":weight"==key.first)
+    return {false, n, GRB_DBL_ATTR_OBJNWEIGHT};
+  if (":abstol"==key.first)
+    return {false, n, GRB_DBL_ATTR_OBJNABSTOL};
+  if (":reltol"==key.first)
+    return {false, n, GRB_DBL_ATTR_OBJNRELTOL};
+  throw std::runtime_error(
+        "Unknown wildcard option 'obj:" + key.second + key.first + "'");
+  return { false, -1, "" };
+}
+
+/// env_ is only for error reporting
+static void GrbDoSetObjParam(
+    const GurobiBackend::ObjNParam<int>& prm, GRBmodel* model, GRBenv* env_) {
+  auto action = GrbGetObjParamAction(prm.first);
+  auto iobj = std::get<1>(action);
+  auto prm_attr = std::get<2>(action);
+  if (std::get<0>(action)) {
+    auto envN = GRBgetmultiobjenv(model, iobj);
+    GRB_CALL( GRBsetintparam(envN, prm_attr, prm.second) );
+  } else {
+    GRB_CALL( GRBsetintparam(GRBgetenv(model),
+                             GRB_INT_PAR_OBJNUMBER, iobj) );
+    GRB_CALL( GRBsetintattr(model, prm_attr, prm.second) );
+  }
+}
+/// env_ is only for error reporting
+static void GrbDoSetObjParam(
+    const GurobiBackend::ObjNParam<double>& prm, GRBmodel* model, GRBenv* env_) {
+  auto action = GrbGetObjParamAction(prm.first);
+  auto iobj = std::get<1>(action);
+  auto prm_attr = std::get<2>(action);
+  if (std::get<0>(action)) {
+    auto envN = GRBgetmultiobjenv(model, iobj);
+    GRB_CALL( GRBsetdblparam(envN, prm_attr, prm.second) );
+  } else {
+    GRB_CALL( GRBsetintparam(GRBgetenv(model),
+                             GRB_INT_PAR_OBJNUMBER, iobj) );
+    GRB_CALL( GRBsetdblattr(model, prm_attr, prm.second) );
+  }
+}
+
+template <class T>
+static void DoPlayGrbObjNParams(
+    const std::vector< GurobiBackend::ObjNParam<T> >& objnp,
+    GRBmodel* model, GRBenv* env) {
+  for (const auto& p: objnp)
+    GrbDoSetObjParam(p, model, env);
+}
+
+void GurobiBackend::GrbPlayObjNParams() {
+  int nobj;
+  GRB_CALL( GRBgetintattr(model_, GRB_INT_ATTR_NUMOBJ, &nobj) );
+  if (debug_mode())
+    printf("Number of objectives: %d\n", nobj);
+  DoPlayGrbObjNParams(objnparam_int_, model_, env_);
+  DoPlayGrbObjNParams(objnparam_dbl_, model_, env_);
+}
+
 void GurobiBackend::GetSolverOption(const char *key, int &value) const {
   GRB_CALL( GRBgetintparam(GRBgetenv(model_), key, &value) );
 }
 
 void GurobiBackend::SetSolverOption(const char *key, int value) {
+  if (debug_mode())
+    printf("Setting param %s to %d\n", key, value);
   GRB_CALL( GRBsetintparam(GRBgetenv(model_), key, value) );
 }
 
@@ -2112,6 +2236,8 @@ void GurobiBackend::GetSolverOption(const char *key, double &value) const {
 }
 
 void GurobiBackend::SetSolverOption(const char *key, double value) {
+  if (debug_mode())
+    printf("Setting param %s to %f\n", key, value);
   GRB_CALL( GRBsetdblparam(GRBgetenv(model_), key, value) );
 }
 
@@ -2151,11 +2277,15 @@ double GurobiBackend::GrbGetDblAttr(const char* attr_id, bool *flag) const {
 
 void GurobiBackend::GrbSetIntAttr(
     const char *attr_id, int val) {
+  if (debug_mode())
+    printf("Setting attr %s to %d\n", attr_id, val);
   GRB_CALL( GRBsetintattr(model_, attr_id, val) );
 }
 
 void GurobiBackend::GrbSetDblAttr(
     const char *attr_id, double val) {
+  if (debug_mode())
+    printf("Setting attr %s to %f\n", attr_id, val);
   GRB_CALL( GRBsetdblattr(model_, attr_id, val) );
 }
 

@@ -33,6 +33,19 @@
     }
   },
   {
+    "name" : "dietobj multiobj=1 obj:2:priority=10",
+    "tags" : ["linear", "continuous"],
+    "files" : ["dietobj.mod", "dietobj.dat"],
+    "options": { "ANYSOLVER_options": "multiobj=1 obj:2:priority=10" },
+    "values": {
+      "total_cost[\"A&P\"]": 75.84538461538462,
+      "total_cost[\"JEWEL\"]": 74.3532967032967,
+      "total_cost[\"VONS\"]": 81.17197802197802,
+      "total_number": 32.604395604395606,
+      "_sobj[4]": 32.604395604395606
+    }
+  },
+  {
     "name" : "obj_suf_01 multiobj=0",
     "tags" : ["linear", "continuous"],
     "options": { "ANYSOLVER_options": "multiobj=0" },
