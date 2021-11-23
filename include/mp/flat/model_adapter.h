@@ -1,7 +1,7 @@
 #ifndef MODEL_ADAPTER_H
 #define MODEL_ADAPTER_H
 
-#include "mp/convert/converter_query.h"
+#include "mp/flat/converter_proxy_base.h"
 
 namespace mp {
 

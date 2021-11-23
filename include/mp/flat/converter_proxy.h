@@ -1,5 +1,5 @@
-#ifndef CONVERTER_FLAT_QUERY_H
-#define CONVERTER_FLAT_QUERY_H
+#ifndef CONVERTER_PROXY_H
+#define CONVERTER_PROXY_H
 
 /**
   * This is an implementation of a 'query class' for flat converters,
@@ -7,7 +7,7 @@
   * To be used by a backend
   */
 
-#include "mp/convert/converter_query.h"
+#include "mp/flat/converter_proxy_base.h"
 
 namespace mp {
 
@@ -66,4 +66,4 @@ public:
 
 } // namespace mp
 
-#endif // CONVERTER_FLAT_QUERY_H
+#endif // CONVERTER_PROXY_H

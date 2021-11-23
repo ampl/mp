@@ -4,7 +4,7 @@
 #include <utility>
 #include <cassert>
 
-#include "mp/convert/preprocess.h"
+#include "mp/flat/preprocess.h"
 
 namespace mp {
 

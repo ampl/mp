@@ -24,10 +24,10 @@
 
 #include <type_traits>
 
-#include "mp/convert/flat_model_api_basic.h"
-#include "mp/convert/std_constr.h"
-#include "mp/convert/std_obj.h"
-#include "mp/convert/model.h"
+#include "mp/flat/flat_model_api_basic.h"
+#include "mp/flat/std_constr.h"
+#include "mp/flat/std_obj.h"
+#include "mp/flat/model.h"
 
 namespace mp {
 

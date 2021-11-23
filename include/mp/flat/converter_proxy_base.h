@@ -1,5 +1,5 @@
-#ifndef CONVERTER_QUERY_H
-#define CONVERTER_QUERY_H
+#ifndef CONVERTER_PROXY_BASE_H
+#define CONVERTER_PROXY_BASE_H
 
 /**
   * This is an abstract interface to a 'query class'
@@ -8,8 +8,8 @@
   */
 
 #include "mp/solver.h"
-#include "mp/convert/model.h"
-#include "mp/convert/suffix.h"
+#include "mp/flat/model.h"
+#include "mp/flat/suffix.h"
 
 namespace mp {
 
@@ -43,4 +43,4 @@ public:
 
 } // namespace mp
 
-#endif // CONVERTER_QUERY_H
+#endif // CONVERTER_PROXY_BASE_H

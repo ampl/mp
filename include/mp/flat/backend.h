@@ -26,12 +26,12 @@
 #include <stdexcept>
 
 #include "mp/clock.h"
-#include "mp/convert/converter_query.h"
-#include "mp/convert/flat_model_api.h"
-#include "mp/convert/std_constr.h"
-#include "mp/convert/std_obj.h"
-#include "mp/convert/model.h"
-#include "mp/convert/model_adapter.h"
+#include "mp/flat/converter_proxy_base.h"
+#include "mp/flat/flat_model_api.h"
+#include "mp/flat/std_constr.h"
+#include "mp/flat/std_obj.h"
+#include "mp/flat/model.h"
+#include "mp/flat/model_adapter.h"
 
 /// Issue this if you redefine std feature switches
 #define USING_STD_FEATURES using BaseBackend::STD_FEATURE_QUERY_FN

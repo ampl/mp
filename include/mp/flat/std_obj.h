@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "mp/convert/model.h"
+#include "mp/flat/model.h"
 
 namespace mp {
 

@@ -3,9 +3,9 @@
 
 #include <vector>
 
-#include "mp/convert/expr_flattener.h"
-#include "mp/convert/MIP/mp2mip.h"
-#include "mp/convert/backend.h"
+#include "mp/flat/expr_flattener.h"
+#include "mp/flat/MIP/mp2mip.h"
+#include "mp/flat/backend.h"
 
 namespace mip_converter_test {
 

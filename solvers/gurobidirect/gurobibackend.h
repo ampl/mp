@@ -22,8 +22,8 @@ extern "C" {
 
 #include <string>
 
-#include "mp/convert/MIP/backend.h"
-#include "mp/convert/std_constr.h"
+#include "mp/flat/MIP/backend.h"
+#include "mp/flat/std_constr.h"
 
 namespace mp {
 

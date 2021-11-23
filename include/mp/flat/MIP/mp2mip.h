@@ -1,7 +1,7 @@
 #ifndef MP2MIP_H
 #define MP2MIP_H
 
-#include "mp/convert/converter_flat.h"
+#include "mp/flat/converter.h"
 
 namespace mp {
 

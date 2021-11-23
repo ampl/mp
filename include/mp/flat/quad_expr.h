@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include "mp/convert/affine_expr.h"
+#include "mp/flat/affine_expr.h"
 
 namespace mp {
 

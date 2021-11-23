@@ -1,8 +1,8 @@
 #include "mp/error.h"
-#include "mp/convert/interface_app.h"
-#include "mp/convert/expr_flattener.h"
-#include "mp/convert/MIP/mp2mip.h"
-#include "mp/convert/backend.h"
+#include "mp/flat/interface_app.h"
+#include "mp/flat/expr_flattener.h"
+#include "mp/flat/MIP/mp2mip.h"
+#include "mp/flat/backend.h"
 
 #include "gurobibackend.h"
 

@@ -22,7 +22,7 @@
 
 #include "mp/problem.h"
 #include "mp/problem-builder.h"
-#include "mp/convert/model.h"
+#include "mp/flat/model.h"
 
 namespace mp {
 
