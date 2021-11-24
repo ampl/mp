@@ -23,7 +23,7 @@
 #include <string>
 #include <stdexcept>
 
-#include "mp/convert/basic_constr.h"
+#include "mp/flat/basic_constr.h"
 
 namespace mp {
 

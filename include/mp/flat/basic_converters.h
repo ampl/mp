@@ -26,8 +26,8 @@
 #include <cmath>
 
 #include "mp/problem.h"
-#include "mp/convert/model_adapter.h"
-#include "mp/convert/backend.h"
+#include "mp/flat/model_adapter.h"
+#include "mp/flat/backend.h"
 #include "mp/solver.h"
 
 namespace mp {

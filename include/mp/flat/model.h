@@ -7,8 +7,8 @@
 #include <vector>
 
 #include "mp/problem.h"
-#include "mp/convert/quad_expr.h"
-#include "mp/convert/constraint_keeper.h"
+#include "mp/flat/quad_expr.h"
+#include "mp/flat/constraint_keeper.h"
 
 namespace mp {
 

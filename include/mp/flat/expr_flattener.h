@@ -6,14 +6,14 @@
 #include <map>
 #include <cmath>
 
-#include "mp/convert/preprocess.h"
-#include "mp/convert/basic_converters.h"
-#include "mp/convert/MIP/mp2mip.h"
+#include "mp/flat/preprocess.h"
+#include "mp/flat/basic_converters.h"
+#include "mp/flat/MIP/mp2mip.h"
 #include "mp/expr-visitor.h"
-#include "mp/convert/eexpr.h"
-#include "mp/convert/convert_functional.h"
-#include "mp/convert/model.h"
-#include "mp/convert/std_constr.h"
+#include "mp/flat/eexpr.h"
+#include "mp/flat/convert_functional.h"
+#include "mp/flat/model.h"
+#include "mp/flat/std_constr.h"
 
 namespace mp {
 

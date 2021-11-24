@@ -309,16 +309,16 @@ add_prefix(MP_HEADERS include/mp/
   expr-visitor.h nl.h nl-reader.h option.h os.h problem.h problem-builder.h
   rstparser.h safeint.h sol.h solver.h suffix.h utils_file.h utils_string.h)
 
-add_prefix(MP_CONVERT_HEADERS include/mp/convert/
+add_prefix(MP_CONVERT_HEADERS include/mp/flat/
   affine_expr.h backend.h basic_constr.h basic_converters.h
   constraint_keeper.h flat_model_api_basic.h flat_model_api.h
   expr_flattener.h
-  context.h converter_flat.h converter_flat_query.h
-  converter_query.h convert_functional.h eexpr.h interface_app.h
+  context.h converter.h converter_proxy.h
+  converter_proxy_base.h convert_functional.h eexpr.h interface_app.h
   model.h model_adapter.h preprocess.h
   quad_expr.h std_constr.h std_obj.h suffix.h)
 
-add_prefix(MP_CONVERT_MIP_HEADERS include/mp/convert/MIP/
+add_prefix(MP_CONVERT_MIP_HEADERS include/mp/flat/MIP/
   backend.h mp2mip.h)
 
 set(MP_SOURCES )
@@ -328,7 +328,7 @@ add_prefix(MP_SOURCES src/
   utils_file.cc utils_string.cc)
 
 set(MP_CONVERT_SOURCES )
-add_prefix(MP_CONVERT_SOURCES src/mp/convert/
+add_prefix(MP_CONVERT_SOURCES src/mp/flat/
   piecewise_linear.cpp)
 
 add_mp_library(mp ${MP_HEADERS} ${MP_CONVERT_HEADERS} ${MP_CONVERT_MIP_HEADERS}

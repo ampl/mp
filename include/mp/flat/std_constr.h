@@ -6,8 +6,8 @@
 #include <map>
 //#include <iostream>
 
-#include "mp/convert/basic_constr.h"
-#include "mp/convert/quad_expr.h"
+#include "mp/flat/basic_constr.h"
+#include "mp/flat/quad_expr.h"
 
 namespace mp {
 

@@ -4,7 +4,7 @@
 #include <limits>
 
 #include "mp/common.h"
-#include "mp/convert/flat_model_api_basic.h"
+#include "mp/flat/flat_model_api_basic.h"
 
 namespace mp {
 

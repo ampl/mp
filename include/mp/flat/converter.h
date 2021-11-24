@@ -7,12 +7,12 @@
 #include <cmath>
 
 #include "mp/format.h"
-#include "mp/convert/preprocess.h"
-#include "mp/convert/converter_flat_query.h"
-#include "mp/convert/convert_functional.h"
-#include "mp/convert/model.h"
-#include "mp/convert/model_adapter.h" // TODO separate In/Working/Out models
-#include "mp/convert/std_constr.h"
+#include "mp/flat/preprocess.h"
+#include "mp/flat/converter_proxy.h"
+#include "mp/flat/convert_functional.h"
+#include "mp/flat/model.h"
+#include "mp/flat/model_adapter.h" // TODO separate In/Working/Out models
+#include "mp/flat/std_constr.h"
 
 namespace mp {
 

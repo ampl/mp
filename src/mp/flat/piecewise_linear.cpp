@@ -20,7 +20,7 @@
  Author: Gleb Belov
  */
 
-#include "mp/convert/std_constr.h"
+#include "mp/flat/std_constr.h"
 
 mp::PLPoints::PLPoints(const PLSlopes &pls) {
   constexpr auto eps = 1.0;           // works?

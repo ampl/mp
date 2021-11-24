@@ -5,9 +5,9 @@
 
 #include "gtest/gtest.h"
 
-#include "mp/convert/backend.h"
-#include "mp/convert/expr_flattener.h"
-#include "mp/convert/converter_flat.h"
+#include "mp/flat/backend.h"
+#include "mp/flat/expr_flattener.h"
+#include "mp/flat/converter.h"
 
 template <class Constraint>
 class TestBackendAcceptingConstraints :
