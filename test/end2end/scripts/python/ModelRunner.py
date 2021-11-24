@@ -32,6 +32,7 @@ class ModelRunner(object):
             print("{0: <80}".format(msg), end="", flush=True)
             t = TimeMe()
             failedSome = False
+            lastModel = None
             with t:
                 for (i,r) in enumerate(cr):
                     self._runs[i].append({})

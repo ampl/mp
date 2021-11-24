@@ -38,8 +38,8 @@ class CSVTestExporter(Exporter):
     def _getHeader(self, mr: ModelRunner):
         hdr = "Name,\tExpected_Obj"
         for (i,r) in enumerate(mr.getRuns()):
-            hdr += ",\t{}-Obj,\t{}-Time,\t{}-TimeLimit".format(
-              r[-1]["solver"], r[-1]["solver"], r[-1]["solver"])
+            hdr += ",\t{}-Obj,\t{}-Time,\t{}-TimeLimit,\t{}-rss,\t{}-vms".format(
+              r[-1]["solver"], r[-1]["solver"], r[-1]["solver"], r[-1]["solver"], r[-1]["solver"])
         for (i,r) in enumerate(mr.getRuns()):
             hdr += ",\t{}-SolverMsg".format(r[-1]["solver"])
         return hdr
@@ -49,10 +49,13 @@ class CSVTestExporter(Exporter):
         m = mr._models[i-1]
         res = "{},\t{}".format(m.getName(), m.getExpectedObjective())
         for (i,r) in enumerate(mr.getRuns()):
-            res += ",\t{},\t{},\t{}".format(
+            res += ",\t{},\t{},\t{},\t{},\t{}".format(
               self._getDictMemberOrMissingStr(r[-1], "objective"),
               self._getDictMemberOrMissingStr(r[-1], "solutionTime"),
-              self._getDictMemberOrMissingStr(r[-1], "timelimit"))
+              self._getDictMemberOrMissingStr(r[-1], "timelimit"),
+              self._getDictMemberOrMissingStr(r[-1], "rss"),
+              self._getDictMemberOrMissingStr(r[-1], "vms"))
+
         for (i,r) in enumerate(mr.getRuns()):
             res += ",\t{}".format(
               self.sanifyString(

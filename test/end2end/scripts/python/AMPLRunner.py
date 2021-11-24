@@ -100,16 +100,20 @@ class AMPLRunner(object):
     def writeNL(self, model, outdir=None):
         """ Write an NL file corresponding to the specified model. 
             By default it writes in the model directory, unless outdir is specified"""
-        self._initAMPL()
-        mp = self.readModel(model)
+        print(f"Opening {model.getName()}.", end=" ", flush=True)
+        self.doInit(model)
+        self.setupOptions(model)
+        mp = self.doReadModel(model)
         if outdir:
             dir = str(Path(outdir).absolute().resolve())
         else:
             dir = str(mp.parent.resolve())
 
         self._ampl.cd(dir)
-        nlname = "g{}".format(mp.stem)
-        self._ampl.eval("write '{}';".format(nlname))
+        nlname = model.getName()
+        print(f"Writing NL file {nlname}.nl.", end=" ", flush=True)
+        self._ampl.eval("write 'g{}';".format(nlname))
+        print("Done.", flush=True)
         self._terminateAMPL()
 
     def setSolver(self, solver: Solver):
@@ -146,7 +150,7 @@ class AMPLRunner(object):
       return None
 
     def doInit(self, model: Model):
-        self.stats = { "solver": self._solver.getName() }
+        self.stats = { "solver": self._solver.getName() if  self._solver else "" }
         self._initAMPL()
         self._lastError = None
 

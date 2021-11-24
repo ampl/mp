@@ -7,9 +7,9 @@ from sys import platform
 from AMPLRunner import AMPLRunner
 from Model import ModelTags
 
-def writeNLFiles(directory, recursive=False):
+def writeNLFiles(directory, recursive=False, modelList=False):
     m = ModelsDiscovery()
-    modelList = m.FindModelsGeneral(directory, recursive=recursive)
+    modelList = m.FindModelsGeneral(directory, recursive=recursive, modellist=modelList)
     amplRunner = AMPLRunner()
     toGenerate = filter(lambda m: not m.isNL(), modelList)
     for m in toGenerate:

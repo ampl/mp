@@ -5,7 +5,9 @@ import subprocess
 
 from Model import Model, ModelTags
 from TimeMe import TimeMe
-
+import psutil
+import time
+from operator import itemgetter
 
 class Solver(object):
 
@@ -42,7 +44,7 @@ class Solver(object):
     def _getSolution(self, model, stdout=None):
         self._stats["outmsg"] = "No solution file"
         self._stats["timelimit"] = False
-        self._stats["solution"] = None
+        self._stats["objective"] = None
         sol = model.getSolFilePath()
         st = None
         if sol.exists():
@@ -53,7 +55,7 @@ class Solver(object):
         expsol = model.getExpectedObjective()
         if expsol is not None:
             self._stats["eval_done"] = True
-            self._assertAndRecord(expsol, self._stats["solution"],
+            self._assertAndRecord(expsol, self._stats["objective"],
                                   "objective")
 
     def _assertAndRecord(self, expval, val, msg):
@@ -68,7 +70,7 @@ class Solver(object):
 
     def runAndEvaluate(self, model: Model):
         t = TimeMe()
-        self._stats = { "solver": self.getExecutable() }
+        self._stats = { "solver": self.getName() }
         sol = model.getSolFilePath()
         if sol.exists():
             sol.unlink()
@@ -141,14 +143,47 @@ class AMPLSolver(Solver):
             toption = "{} {}".format(toption, self._otherOptions)
         try:
             if toption:
-                return subprocess.check_output([self._exePath, model.getFilePath(), "-AMPL", toption])
+                return self._runProcess([self._exePath, model.getFilePath(), "-AMPL", toption])
+                
             else:
-                return subprocess.check_output([self._exePath, model.getFilePath(), "-AMPL"],
+                return self._runProcess([self._exePath, model.getFilePath(), "-AMPL"],
                                                timeout=self._timeout)
         except subprocess.TimeoutExpired:
             pass
         except subprocess.CalledProcessError as e:
             print(str(e))
+
+    def _runProcess(self, args : list, vestigial=False, timeout=None):
+      # ritorna stdout
+      # throws if not successfull
+         if vestigial:
+           if timeout:
+              return subprocess.check_output(args, timeout=self._timeout)
+           else:
+              return subprocess.check_output(args)
+         else:
+              resultTable = []
+              SLICE_IN_SECONDS = 1
+              p = subprocess.Popen(args, universal_newlines=True, stdout=subprocess.PIPE)
+              try:
+                ps = psutil.Process(p.pid)
+              except:
+                ps = None
+              while p.poll() == None:
+                if ps:
+                  try:
+                    resultTable.append(ps.memory_info())
+                  except:
+                    pass
+                  time.sleep(SLICE_IN_SECONDS)
+              exit = p.poll()
+              (out,err) = p.communicate()
+              rss = max([p.rss for p in resultTable])
+              vms = max([p.vms for p in resultTable])
+              self._stats["rss"]= rss
+              self._stats["vms"]= vms
+              return out
+
 
     def getAMPLOptions(self):
         name = "{}_options".format(self._getAMPLOptionsName())
@@ -188,7 +223,7 @@ class LindoSolver(AMPLSolver):
                 if line.startswith(tag):
                     n = line[len(tag):]
                     self._stats["outmsg"] = prev
-                    self._stats["solution"] = float(n)
+                    self._stats["objective"] = float(n)
                     return
                 prev = line
         self._stats["outmsg"] = stdout
@@ -220,10 +255,10 @@ class GurobiSolver(AMPLSolver):
         if tag in st[0]:
             n = st[0][st[0].index(tag) + len(tag):]
             try:
-                self._stats["solution"] = float(n)
+                self._stats["objective"] = float(n)
             except:
                 print("No solution, string: {}".format(n))
-                self._stats["solution"] = None
+                self._stats["objective"] = None
 
 
 class GurobiDirectSolver(AMPLSolver):
@@ -252,10 +287,10 @@ class GurobiDirectSolver(AMPLSolver):
         if tag in st[0]:
             n = st[0][st[0].index(tag) + len(tag):]
             try:
-                self._stats["solution"] = float(n)
+                self._stats["objective"] = float(n)
             except:
                 print("No solution, string: {}".format(n))
-                self._stats["solution"] = None
+                self._stats["objective"] = None
 
 
 class CPLEXDirectSolver(GurobiDirectSolver):
@@ -288,10 +323,10 @@ class CPLEXSolver(AMPLSolver):
         if tag in st[0]:
             n = st[0][st[0].index(tag) + len(tag):]
             try:
-                self._stats["solution"] = float(n)
+                self._stats["objective"] = float(n)
             except:
                 print("No solution, string: {}".format(n))
-                self._stats["solution"] = None
+                self._stats["objective"] = None
 
 
 class BaronSolver(AMPLSolver):
@@ -318,10 +353,10 @@ class BaronSolver(AMPLSolver):
         if tag in st[0]:
             n = st[0][st[0].index(tag) + len(tag):]
             try:
-              self._stats["solution"] = float(n)
+              self._stats["objective"] = float(n)
             except:
               print("No solution, string: {}".format(n))
-              self._stats["solution"] = None
+              self._stats["objective"] = None
 
 class OcteractSolver(AMPLSolver):
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
@@ -368,7 +403,7 @@ class OcteractSolver(AMPLSolver):
                 if not self._stats["timelimit"]:
                     tag = "Objective value at global solution:"
                 n = l[l.index(tag) + len(tag):]
-                self._stats["solution"] = float(n)
+                self._stats["objective"] = float(n)
                 return
 
 
@@ -398,7 +433,7 @@ class COPTSolver(AMPLSolver):
         if tag in st[0]:
             n = st[0][st[0].index(tag) + len(tag):]
             try:
-              self._stats["solution"] = float(n)
+              self._stats["objective"] = float(n)
             except:
               print("No solution, string: {}".format(n))
-              self._stats["solution"] = None
+              self._stats["objective"] = None
