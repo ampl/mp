@@ -3,7 +3,8 @@
 
 #include <vector>
 
-#include "mp/flat/model.h"
+#include "mp/common.h"
+#include "mp/flat/quad_expr.h"
 
 namespace mp {
 

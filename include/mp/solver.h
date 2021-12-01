@@ -147,19 +147,22 @@ void CheckDemoVersion(const NLHeader &h);
 // An interface for receiving errors reported via Solver::ReportError.
 class ErrorHandler {
  protected:
-  ~ErrorHandler() {}
+  virtual ~ErrorHandler() {}
 
  public:
   virtual void HandleError(fmt::CStringRef message) = 0;
 };
 
-// An interface for receiving solver output.
+/// A default interface for receiving solver output.
 class OutputHandler {
- protected:
-  ~OutputHandler() {}
-
  public:
-  virtual void HandleOutput(fmt::CStringRef output) = 0;
+  virtual ~OutputHandler() {}
+  bool has_output = false;
+  size_t banner_size = 0;
+  virtual void HandleOutput(fmt::CStringRef output) {
+    has_output = true;
+    std::fputs(output.c_str(), stdout);
+  }
 };
 
 // An interface for receiving solutions.
@@ -604,6 +607,7 @@ public:
 #ifdef MP_USE_UNIQUE_PTR
   typedef std::unique_ptr<SolverOption> OptionPtr;
 #else
+  #error "Should be C++11. Wipe out and rerun CMake config?"
   typedef std::auto_ptr<SolverOption> OptionPtr;
   static OptionPtr move(OptionPtr p) { return p; }
 #endif
@@ -654,6 +658,61 @@ public:
   void add_to_option_header(const char *header_more) { option_header_ += header_more; }
 
   void AddOption(OptionPtr opt);
+
+public:
+  template <class Value>
+  class StoredOption : public mp::TypedSolverOption<Value> {
+    Value& value_;
+  public:
+    using value_type = Value;
+    StoredOption(const char *name_list, const char *description,
+                 Value& v, ValueArrayRef values = ValueArrayRef())
+      : mp::TypedSolverOption<Value>(name_list, description, values), value_(v) {}
+
+    void GetValue(Value &v) const override { v = value_; }
+    void SetValue(typename internal::OptionHelper<Value>::Arg v) override
+    { value_ = v; }
+  };
+
+  /// Simple stored option referencing a variable
+  template <class Value>
+  void AddStoredOption(const char *name, const char *description,
+                       Value& value, ValueArrayRef values = ValueArrayRef()) {
+    AddOption(Solver::OptionPtr(
+                new StoredOption<Value>(
+                  name, description, value, values)));
+  }
+
+  /// Simple stored option referencing a variable, min, max (TODO)
+  template <class Value>
+  void AddStoredOption(const char *name, const char *description,
+                       Value& value, Value , Value ) {
+    AddOption(Solver::OptionPtr(
+                new StoredOption<Value>(
+                  name, description, value, ValueArrayRef())));
+  }
+
+  /// Same: stored option referencing a variable, min, max (TODO)
+  template <class Value>
+  void AddOption(const char *name, const char *description,
+                       Value& value, Value lb, Value ub) {
+    AddStoredOption(name, description, value, lb, ub);
+  }
+
+  void ReplaceOptionDescription(const char* name, const char* desc) {
+    auto pOption = FindOption(name);
+    assert(pOption);
+    pOption->set_description(desc);
+  }
+
+  void AddToOptionDescription(const char* name, const char* desc_add) {
+    auto pOption = FindOption(name);
+    assert(pOption);
+    std::string to_add { "\n\n" };
+    to_add += desc_add;
+    pOption->add_to_description(to_add.c_str());
+  }
+
 
   /// Add "inline" option synonyms
   /// The _Front version puts them in the front of the synonyms list
@@ -861,6 +920,7 @@ public:
 
   // Returns the output handler.
   OutputHandler *output_handler() { return output_handler_; }
+  OutputHandler &get_output_handler() { return *output_handler_; }
 
   // Sets the output handler.
   void set_output_handler(OutputHandler *oh) { output_handler_ = oh; }

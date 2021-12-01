@@ -20,9 +20,10 @@
  Author: Victor Zverovich
  */
 
+#include <map>
+
 #include "mp/problem.h"
 #include "mp/problem-builder.h"
-#include "mp/flat/model.h"
 
 namespace mp {
 
@@ -49,8 +50,9 @@ int BasicProblem<Alloc>::GetSuffixSize(suf::Kind kind) {
     size = vars_.capacity();
     break;
   case suf::CON:
-    size = algebraic_cons_.capacity() + compl_vars_.capacity() +
-        nonlinear_cons_.capacity() + logical_cons_.capacity();
+    size = algebraic_cons_.capacity() +
+        compl_vars_.capacity() +
+        logical_cons_.capacity();
     break;
   case suf::OBJ:
     size = linear_objs_.capacity();
@@ -112,8 +114,6 @@ void BasicProblem<Alloc>::SetInfo(const ProblemInfo &info) {
 
 /// Instantiate
 template class BasicProblem< >;
-template class BasicModel< >;       // Why is this not enough in gcc 9.3?
-template class BasicProblem< DefaultFlatConverterModelParams >; // need this too
 
 template void ReadNLFile(fmt::CStringRef filename, Problem &p, int flags);
 

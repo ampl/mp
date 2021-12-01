@@ -26,12 +26,11 @@
 #include <stdexcept>
 
 #include "mp/clock.h"
-#include "mp/flat/converter_proxy_base.h"
+#include "mp/flat/backend_base.h"
 #include "mp/flat/flat_model_api.h"
 #include "mp/flat/std_constr.h"
 #include "mp/flat/std_obj.h"
-#include "mp/flat/model.h"
-#include "mp/flat/model_adapter.h"
+#include "mp/problem.h"
 
 /// Issue this if you redefine std feature switches
 #define USING_STD_FEATURES using BaseBackend::STD_FEATURE_QUERY_FN
@@ -60,13 +59,16 @@ DEFAULT_STD_FEATURES_TO( false )
 
 namespace mp {
 
-/// Basic backend wrapper.
-/// The basic wrapper provides common functionality: option handling
+/// Backend: solver API wrapper
+///
+/// The basic wrapper provides common functionality:
+/// standard option handling
 /// and placeholders for solver API
 template <class Impl>
-class BasicBackend :
-    public FlatModelAPI<Impl>,
-    public SolverImpl< ModelAdapter< BasicModel<> > >   // mp::Solver stuff
+class Backend :
+    public BasicBackend,
+    public FlatBackend<Impl>,
+    public SolverImpl< Problem >   ///< TODO remove Problem
 {
   ////////////////////////////////////////////////////////////////////////////
   ///////////////////// TO IMPLEMENT IN THE FINAL CLASS //////////////////////
@@ -76,7 +78,7 @@ public:
   static std::string GetSolverVersion() { return "1.0.0"; }
   /// Whatever the binary is called
   static const char* GetSolverInvocationName() { return "solverdirect"; }
-  static const char* GetAMPLSolverLongName() { return nullptr; }
+  static const char* GetSolverLongName() { return nullptr; }
   static const char* GetBackendName()    { return "BasicBackend"; }
   static const char* GetBackendLongName() { return nullptr; }
   static long Date() { return MP_DATE; }
@@ -153,7 +155,7 @@ public:
   void InitProblemModificationPhase() { }
   void FinishProblemModificationPhase() { }
 
-  void SolveAndReport() {
+  void SolveAndReport() override {
     MP_DISPATCH( InputExtras() );
 
     MP_DISPATCH( SetupTimerAndInterrupter() );
@@ -191,9 +193,13 @@ public:
     MP_DISPATCH( SetInterrupter(MP_DISPATCH( interrupter() )) );
   }
 
+  void SetInterrupter(Interrupter*) { }
+
   void SetupTimer() {
     stats.setup_time = GetTimeAndReset(stats.time);
   }
+
+  void SolveAndReportIntermediateResults() { }
 
   void RecordSolveTime() {
     stats.solution_time = GetTimeAndReset(stats.time);
@@ -308,6 +314,12 @@ public:
                    dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
   }
 
+  int NumObjs() { Abort(-1, "Backend: NumObjs() no implemented"); return 0; }
+  int NumVars() { Abort(-1, "Backend: NumVars() no implemented"); return 0; }
+
+  int IsMIP() { Abort(-1, "Backend: IsMIP() no implemented"); return 0; }
+
+  /// TODO move into Env?
   void Abort(int solve_code_now, std::string msg) {
     HandleSolution(solve_code_now, msg, 0, 0, 0.0);
     MP_RAISE_WITH_CODE(0, msg);  // exit code 0
@@ -408,7 +420,7 @@ public:
   }
 
   struct Stats {
-    steady_clock::time_point time;
+    steady_clock::time_point time = steady_clock::now();
     double setup_time;
     double solution_time;
   };
@@ -514,21 +526,12 @@ protected:
   { solver_msg_extra_ += msg; }
 
   ///////////////////////////// OPTIONS /////////////////////////////////
-protected:
-  template <class Value>
-  class StoredOption : public mp::TypedSolverOption<Value> {
-    Value& value_;
-  public:
-    using value_type = Value;
-    StoredOption(const char *name_list, const char *description,
-                 Value& v, ValueArrayRef values = ValueArrayRef())
-      : mp::TypedSolverOption<Value>(name_list, description, values), value_(v) {}
-
-    void GetValue(Value &v) const override { v = value_; }
-    void SetValue(typename internal::OptionHelper<Value>::Arg v) override
-    { value_ = v; }
-  };
-
+public:
+  using Solver::AddOption;
+  using Solver::AddOptionSynonyms_Inline_Front;
+  using Solver::AddOptionSynonyms_Inline_Back;
+  using Solver::AddOptionSynonyms_OutOfLine;
+  using Solver::FindOption;
 
 private:
   /// Recorded solver options
@@ -542,7 +545,6 @@ protected:
     for (auto f: slvOptionRecords_)
       f();
   }
-
 
   /// Solver options accessor, facilitates calling
   /// backend_.Get/SetSolverOption()
@@ -588,38 +590,6 @@ protected:
     { }
   };
 
-public:
-  using Solver::AddOption;
-  using Solver::AddOptionSynonyms_Inline_Front;
-  using Solver::AddOptionSynonyms_Inline_Back;
-  using Solver::AddOptionSynonyms_OutOfLine;
-  using Solver::FindOption;
-
-
-  /// Simple stored option referencing a variable
-  template <class Value>
-  void AddStoredOption(const char *name, const char *description,
-                       Value& value, ValueArrayRef values = ValueArrayRef()) {
-    AddOption(Solver::OptionPtr(
-                new StoredOption<Value>(
-                  name, description, value, values)));
-  }
-
-  /// Simple stored option referencing a variable, min, max (TODO)
-  template <class Value>
-  void AddStoredOption(const char *name, const char *description,
-                       Value& value, Value , Value ) {
-    AddOption(Solver::OptionPtr(
-                new StoredOption<Value>(
-                  name, description, value, ValueArrayRef())));
-  }
-  /// Same: stored option referencing a variable, min, max (TODO)
-  template <class Value>
-  void AddOption(const char *name, const char *description,
-                       Value& value, Value lb, Value ub) {
-    AddStoredOption(name, description, value, lb, ub);
-  }
-
   /// Adding solver options of types int/double/string/...
   /// The type is deduced from the two last parameters min, max
   /// (currently unused otherwise - TODO)
@@ -656,20 +626,6 @@ public:
         (Impl*)this, name_list, description, k, values)));
   }
 
-  void ReplaceOptionDescription(const char* name, const char* desc) {
-    auto pOption = FindOption(name);
-    assert(pOption);
-    pOption->set_description(desc);
-  }
-
-  void AddToOptionDescription(const char* name, const char* desc_add) {
-    auto pOption = FindOption(name);
-    assert(pOption);
-    std::string to_add = "\n\n";
-    to_add += desc_add;
-    pOption->add_to_description(to_add.c_str());
-  }
-
 
 private:
   struct Options {
@@ -694,7 +650,7 @@ private:
     /// Call me if orig_obj_value() will be set
     void flag_orig_obj_available() { orig_obj_available_=true; }
     double& orig_obj_value() { return orig_obj_value_; }
-    friend class BasicBackend;
+    friend class Backend;
   private:
     /// --------------------- INPUT ----------------------
     int mode_=0;  // whether Impl should do it and which mode,
@@ -829,20 +785,20 @@ public:
   }
 
   /// Converter should provide this before Backend can run solving
-  void ProvideConverterQueryObject(ConverterQuery* pCQ)
+  void ProvideNLSolverProxyObject(NLSolverProxy* pCQ) override
   { p_converter_query_object_ = pCQ; }
 
 private: // hiding this detail, it's not for the final backends
-  const ConverterQuery& GetCQ() const {
+  const NLSolverProxy& GetCQ() const {
     assert(nullptr!=p_converter_query_object_);
     return *p_converter_query_object_;
   }
-  ConverterQuery& GetCQ() {
+  NLSolverProxy& GetCQ() {
     assert(nullptr!=p_converter_query_object_);
     return *p_converter_query_object_;
   }
-  ConverterQuery *p_converter_query_object_ = nullptr;
-  using MPSolverBase = SolverImpl< ModelAdapter< BasicModel<> > >;
+  NLSolverProxy *p_converter_query_object_ = nullptr;
+  using MPSolverBase = SolverImpl< Problem >;
 public:
   using MPUtils = MPSolverBase;              // Allow Converter access the SolverImpl
   const MPUtils& GetMPUtils() const { return *this; }
@@ -868,13 +824,13 @@ protected:
   }
 
 public:
-  BasicBackend() :
+  Backend() :
     MPSolverBase(
       Impl::GetSolverInvocationName(),
-      Impl::GetAMPLSolverLongName(),
+      Impl::GetSolverLongName(),
       Impl::Date(), Impl::Flags())
   { }
-  virtual ~BasicBackend() { }
+  virtual ~Backend() { }
 };
 
 }  // namespace mp

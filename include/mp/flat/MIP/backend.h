@@ -27,15 +27,15 @@
 
 namespace mp {
 
-/// MIP backend wrapper.
+/// MIP backend wrapper
+///
 /// The MIP wrapper provides common functionality relative to MIP solvers;
 /// it implements the common suffixes and the logic shared across all MIP
 /// solvers
 template <class Impl,
-          class BaseBackend = BasicBackend<Impl>>  // parameter for base class
-                                                   // could allow chaining up
-class MIPBackend :
-  public BasicBackend<Impl>
+          class BaseBackend = Backend<Impl>>  ///< parameter for base class
+                                              ///< could allow chaining up, see #145
+class MIPBackend : public BaseBackend
 {
 public:
   // Properties
@@ -168,7 +168,7 @@ public:
   using BaseBackend::ReportDblSuffix;
 
   void InputStdExtras() {
-    BasicBackend<Impl>::InputStdExtras();
+    BaseBackend::InputStdExtras();
     InputMIPExtras();
   }
 

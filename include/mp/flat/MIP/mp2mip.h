@@ -7,15 +7,15 @@ namespace mp {
 
 /// MPToMIPConverter: one of the converters requiring a "minimal" output interface
 template <class Impl, class Backend,
-          class Model = BasicModel< > >
+          class Model = BasicFlatModel< > >  ///< TODO also param for a base class? #145
 class MPToMIPConverter
-    : public BasicMPFlatConverter<Impl, Backend, Model>
+    : public FlatConverter<Impl, Backend, Model>
 {
 public:
   static constexpr const char* name() { return "MIP Converter"; };
 
 public:
-  using BaseConverter = BasicMPFlatConverter<Impl, Backend, Model>;
+  using BaseConverter = FlatConverter<Impl, Backend, Model>;
   template <class Constraint>
     using ConstraintKeeperType = typename
       BaseConverter::template ConstraintKeeperType<Constraint>;
@@ -25,13 +25,13 @@ public:
   MPToMIPConverter() {  }
 
   ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
-  USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter )           // reuse default ones
+  USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter );        ///< reuse default ones
 
   template <int sense, class MinOrMaxConstraint>
   void ConvertMinOrMax(const MinOrMaxConstraint& mc) {
     const auto& args = mc.GetArguments();
     const std::size_t nargs = args.size();
-    const auto flags = this->AddVars(nargs, 0.0, 1.0, var::Type::INTEGER);   // binary flags
+    const auto flags = this->AddVars_returnIds(nargs, 0.0, 1.0, var::Type::INTEGER);   // binary flags
     MP_DISPATCH( AddConstraint(LinearConstraint(std::vector<double>(nargs, 1.0),    // sum of the flags >= 1
                         flags, 1.0, this->Infty())) );
     const auto resvar = mc.GetResultVar();
@@ -148,7 +148,7 @@ public:
       if (std::fabs(ae.constant_term()) != 0.0)
         MPD( NarrowVarBounds(eq0c.GetResultVar(), 1.0, 1.0) );
     } else {    // We are in MIP so doing algebra, not DisjunctiveConstr
-      auto newvars = MPD( AddVars(2, 0.0, 1.0, var::INTEGER) );
+      auto newvars = MPD( AddVars_returnIds(2, 0.0, 1.0, var::INTEGER) );
       newvars.push_back( eq0c.GetResultVar() );
       MPD( AddConstraint( LinearConstraint(   // b1+b2+resvar >= 1
                             {1.0, 1.0, 1.0},

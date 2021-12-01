@@ -152,17 +152,18 @@ struct LinearExprUnzipper {
   std::vector<double> c_;
   std::vector<int> v_;
   LinearExprUnzipper() { }
-  LinearExprUnzipper(const LinearExpr& e) {
-    Reserve(e.num_terms());
-    for (LinearExpr::const_iterator it=e.begin(); it!=e.end(); ++it) {
-      AddTerm(it->var_index(), it->coef());
-    }
-  }
+  LinearExprUnzipper(const LinearExpr& e) { AddTerms(e); }
   std::size_t num_terms() const { return c_.size(); }
   const std::vector<double>& coefs() const { return c_; }
   const std::vector<int>& var_indexes() const { return v_; }
   void Reserve(std::size_t s) { c_.reserve(s); v_.reserve(s); }
   void AddTerm(int v, double c) { c_.push_back(c); v_.push_back(v); }
+  void AddTerms(const LinearExpr& e) {
+    Reserve(num_terms() + e.num_terms());
+    for (LinearExpr::const_iterator it=e.begin(); it!=e.end(); ++it) {
+      AddTerm(it->var_index(), it->coef());
+    }
+  }
 };
 
 ////////////////////////////////////////////////////////////////////////

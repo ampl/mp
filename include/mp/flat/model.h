@@ -6,53 +6,163 @@
 #include <memory>
 #include <vector>
 
-#include "mp/problem.h"
-#include "mp/flat/quad_expr.h"
+#include "mp/flat/std_obj.h"
+#include "mp/flat/std_constr.h"
 #include "mp/flat/constraint_keeper.h"
 
 namespace mp {
 
 class BasicConstraintKeeper;
 
-/// Storing extra info in BasicModel's items
-struct FlatConverterModelExraItemInfo : public DefaultExtraItemInfo {
-  struct AlgConExtraInfo {
-    QuadTerms qt_;
-    AlgConExtraInfo() { }
-    template <class QT>
-    AlgConExtraInfo(QT&& qt) noexcept : qt_(std::forward<QT>(qt)) { }
-  };
-  struct ObjExtraInfo {
-    double obj_const_term_ = 0.0;
-    QuadTerms qt_;
-    ObjExtraInfo() { }
-    template <class QT>
-    ObjExtraInfo(double c, QT&& qt) noexcept :
-      obj_const_term_(c), qt_(std::forward<QT>(qt)) { }
-  };
-};
-
-struct DefaultFlatConverterModelParams : public BasicProblemParams<> {
-  using ExtraItemInfo = FlatConverterModelExraItemInfo;
+struct DefaultFlatModelParams {
   using Var = int;
   static constexpr Var VoidVar() { return -1; }
 };
 
-/// class Model extends Problem to store custom constraints
-template <class ModelParams = DefaultFlatConverterModelParams >
-class BasicModel : public BasicProblem<ModelParams> {
-  using BaseClass = BasicProblem<ModelParams>;
+/// Class BasicFlatModel stores vars, objs, custom constraints
+/// to be used internally in a FlatConverter
+template <class ModelParams = DefaultFlatModelParams>
+class BasicFlatModel {
 public:
   using Params = ModelParams;
   using Var = typename Params::Var;
   static constexpr Var VoidVar() { return Params::VoidVar(); }
 
+  using VarArray = std::vector<Var>;
+  using VarBndVec = std::vector<double>;
+  using VarTypeVec = std::vector<var::Type>;
+
+  ///////////////////////////// VARIABLES ////////////////////////////////
+  /// Add variable, return its index
+  Var AddVar(double lb=MinusInf(), double ub=Inf(),
+             var::Type type=var::CONTINUOUS) {
+    assert(check_vars());
+    var_lb_.push_back(lb);
+    var_ub_.push_back(ub);
+    var_type_.push_back(type);
+    return var_type_.size()-1;
+  }
+
+  void AddVars(const VarBndVec& lbs, const VarBndVec& ubs,
+               const VarTypeVec& types) {
+    assert(check_vars());
+    var_lb_.insert(var_lb_.end(), lbs.begin(), lbs.end());
+    var_ub_.insert(var_ub_.end(), ubs.begin(), ubs.end());
+    var_type_.insert(var_type_.end(), types.begin(), types.end());
+    assert(check_vars());
+  }
+
+  int num_vars() const
+  { assert(check_vars()); return (int)var_lb_.size(); }
+
+  double lb(Var v) const {
+    assert(0<=v && v<num_vars());
+    return var_lb_[v];
+  }
+
+  double ub(Var v) const {
+    assert(0<=v && v<num_vars());
+    return var_ub_[v];
+  }
+
+  var::Type var_type(Var v) const {
+    assert(0<=v && v<num_vars());
+    return var_type_[v];
+  }
+
+  template <class VarArray>
+  double lb_array(const VarArray& va) const {
+    double result = Inf();
+    for (auto v: va) {
+      result = std::min( result, lb(v) );
+    }
+    return result;
+  }
+
+  template <class VarArray>
+  double lb_max_array(const VarArray& va) const {
+    double result = MinusInf();
+    for (auto v: va) {
+      result = std::max( result, lb(v) );
+    }
+    return result;
+  }
+
+  template <class VarArray>
+  double ub_array(const VarArray& va) const {
+    double result = MinusInf();
+    for (auto v: va) {
+      result = std::max( result, ub(v) );
+    }
+    return result;
+  }
+
+  template <class VarArray>
+  double ub_min_array(const VarArray& va) const {
+    double result = Inf();
+    for (auto v: va) {
+      result = std::min( result, ub(v) );
+    }
+    return result;
+  }
+
+  bool is_fixed(int v) const {
+    return lb(v)==ub(v);
+  }
+
+  double fixed_value(int v) const {
+    assert(is_fixed(v));
+    return lb(v);
+  }
+
+  bool is_integer_var(int v) const {
+    return var::Type::INTEGER==var_type(v);
+  }
+
+  /// Returns true also when fixed
+  bool is_binary_var(int v) const {
+    return 0.0<=lb(v) && 1.0>=ub(v) && is_integer_var(v);
+  }
+
+  template <class VarArray=std::initializer_list<int> >
+  var::Type common_type(const VarArray& va) const {
+    auto type = var::Type::INTEGER;
+    for (auto v: va) {
+      if (!is_integer_var(v) &&
+          (!is_fixed(v) || !is_integer_value(fixed_value(v)))) {
+        type = var::Type::CONTINUOUS;
+        break;
+      }
+    }
+    return type;
+  }
+
+  void set_lb(int v, double l) {
+    assert(0<=v && v<num_vars());
+    var_lb_[v] = l;
+  }
+
+  void set_ub(int v, double u) {
+    assert(0<=v && v<num_vars());
+    var_ub_[v] = u;
+  }
+
+  ///////////////////////////// OBJECTIVES ////////////////////////////
+protected:
+  using ObjList = std::vector<QuadraticObjective>; // TODO just an item
+  const ObjList& get_objectives() const { return objs_; }
+  ObjList& get_objectives() { return objs_; }
+  int num_objs() const { return (int)objs_.size(); }
+  const QuadraticObjective& get_obj(int i) const
+  { return get_objectives().at(i); }
+
+public:
+  void AddObjective(QuadraticObjective&& obj)
+  { get_objectives().push_back(std::move(obj)); }
+
+  ///////////////////////////// FLAT CONSTRAINTS ////////////////////////////
 protected:
   using PConstraintKeeper = std::unique_ptr<BasicConstraintKeeper>;
-
-private:
-  std::vector<PConstraintKeeper> custom_constr_;
-
 
 public:
 
@@ -61,7 +171,7 @@ public:
 
   /** Returns custom constraint i */
   BasicConstraintKeeper* custom_con(int i) const {
-    internal::CheckIndex(i, num_custom_cons());
+    assert(0<=i && i<num_custom_cons());
     return custom_constr_[i].get();
   }
 
@@ -77,77 +187,14 @@ public:
 
 
   /////////////////////////////// UTILITIES //////////////////////////////////
-  static constexpr double PlusInfinity() { return std::numeric_limits<double>::infinity(); }
-  static constexpr double MinusInfinity() { return -std::numeric_limits<double>::infinity(); }
+  static constexpr double Inf()
+  { return std::numeric_limits<double>::infinity(); }
+
+  static constexpr double MinusInf()
+  { return -std::numeric_limits<double>::infinity(); }
+
   template <class Num>
   static bool is_integer_value(Num n) { return std::floor(n)==std::ceil(n); }
-
-  template <class VarArray>
-  double lb_array(const VarArray& va) const {
-    double result = PlusInfinity();
-    for (auto v: va) {
-      result = std::min( result, this->var(v).lb() );
-    }
-    return result;
-  }
-  template <class VarArray>
-  double lb_max_array(const VarArray& va) const {
-    double result = MinusInfinity();
-    for (auto v: va) {
-      result = std::max( result, this->var(v).lb() );
-    }
-    return result;
-  }
-  template <class VarArray>
-  double ub_array(const VarArray& va) const {
-    double result = MinusInfinity();
-    for (auto v: va) {
-      result = std::max( result, this->var(v).ub() );
-    }
-    return result;
-  }
-  template <class VarArray>
-  double ub_min_array(const VarArray& va) const {
-    double result = PlusInfinity();
-    for (auto v: va) {
-      result = std::min( result, this->var(v).ub() );
-    }
-    return result;
-  }
-
-  bool is_fixed(int v) const {
-    auto vv = this->var(v);
-    return vv.lb()==vv.ub();
-  }
-
-  double fixed_value(int v) const {
-    if (!is_fixed(v))
-      throw std::logic_error("Variable is not fixed");
-    return this->var(v).lb();
-  }
-
-  bool is_integer_var(int v) const {
-    auto vv = this->var(v);
-    return var::Type::INTEGER==vv.type();
-  }
-
-  bool is_binary_var(int v) const {
-    auto vv = this->var(v);
-    return 0.0==vv.lb() && 1.0==vv.ub() && var::Type::INTEGER==vv.type();
-  }
-
-  template <class VarArray=std::initializer_list<int> >
-  var::Type common_type(const VarArray& va) const {
-    auto type = var::Type::INTEGER;
-    for (auto v: va) {
-      auto vv = this->var(v);
-      if (var::Type::INTEGER!=vv.type() && (!is_fixed(v) || !is_integer_value(fixed_value(v)))) {
-        type = var::Type::CONTINUOUS;
-        break;
-      }
-    }
-    return type;
-  }
 
 
   //////////////////////////////// EXPORT INSTANCE TO A BACKEND ///////////////////////////////
@@ -156,15 +203,32 @@ public:
   /// A responsible backend should handle all essential items
   template <class Backend>
   void PushModelTo(Backend& backend) const {
-    this->InitProblemModificationPhase(backend);
-    this->PushVariablesTo(backend);
-    this->PushObjectivesTo(backend);
-    this->PushAlgebraicConstraintsTo(backend);
+    backend.InitProblemModificationPhase();
+    PushVariablesTo(backend);
+    PushObjectivesTo(backend);
     PushCustomConstraintsTo(backend);
-    this->FinishProblemModificationPhase(backend);
+    backend.FinishProblemModificationPhase();
   }
 
 protected:
+  template <class Backend>
+  void PushVariablesTo(Backend& backend) const {
+    backend.AddVariables( { var_lb_, var_ub_, var_type_ } );
+  }
+
+  template <class Backend>
+  void PushObjectivesTo(Backend& backend) const {
+    if (int n_objs = num_objs()) {
+      for (int i = 0; i < n_objs; ++i) {
+        const auto& obj = get_obj(i);
+        if (obj.GetQPTerms().num_terms())  // TODO make objectives just items
+          backend.SetQuadraticObjective(i, obj);
+        else
+          backend.SetLinearObjective(i, obj);
+      }
+    }
+  }
+
   template <class Backend>
   void PushCustomConstraintsTo(Backend& backend) const {
     if (int n_ccons = num_custom_cons()) {
@@ -176,7 +240,29 @@ protected:
     }
   }
 
+private:
+  /// Variables' bounds
+  VarBndVec var_lb_, var_ub_;
+  /// Variables' types
+  VarTypeVec var_type_;
 
+  /// Objectives
+  /// TODO storing QuadraticObjective now, make it just an item
+  ObjList objs_;
+
+  /// Flat constraints
+  std::vector<PConstraintKeeper> custom_constr_;
+
+public:
+  /// Check var arrays
+  bool check_vars() const {
+    return var_lb_.size() == var_ub_.size() &&
+        var_type_.size() == var_ub_.size();
+  }
+
+  void RelaxIntegrality() {
+    std::fill(var_type_.begin(), var_type_.end(), var::CONTINUOUS);
+  }
 };
 
 } // namespace mp

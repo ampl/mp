@@ -23,9 +23,40 @@
 #include <string>
 #include <stdexcept>
 
+#include "mp/arrayref.h"
+#include "mp/common.h"
 #include "mp/flat/basic_constr.h"
 
 namespace mp {
+
+/// Define an array of variables
+class VarArrayDef {
+  ArrayRef<double> lbs_;
+  ArrayRef<double> ubs_;
+  ArrayRef<var::Type> types_;
+public:
+  VarArrayDef() = default;
+  template <class BndVec, class TypeVec>
+  VarArrayDef(BndVec&& lbs, BndVec&& ubs, TypeVec&& tys) :
+    lbs_(std::forward<BndVec>(lbs)),
+    ubs_(std::forward<BndVec>(ubs)),
+    types_(std::forward<TypeVec>(tys)) { }
+  VarArrayDef(std::initializer_list<double> lbs,
+              std::initializer_list<double> ubs,
+              std::initializer_list<var::Type> tys) :
+    lbs_((lbs)), ubs_((ubs)), types_((tys)) { }
+  int size() const { assert(check()); return lbs_.size(); }
+  const double* plb() const { return lbs_.data(); }
+  const double* pub() const { return ubs_.data(); }
+  const var::Type* ptype() const { return types_.data(); }
+  void set_lb_ub_types(ArrayRef<double> lbs, ArrayRef<double> ubs,
+                       ArrayRef<var::Type> types) {
+    lbs_=lbs; ubs_=ubs; types_=types;
+    assert(check());
+  }
+  bool check() const
+  { return ubs_.size()==lbs_.size() && types_.size()==lbs_.size(); }
+};
 
 /// Level of acceptance of a constraint by a backend
 enum ConstraintAcceptanceLevel {
@@ -35,7 +66,7 @@ enum ConstraintAcceptanceLevel {
 };
 
 /// Backends handling custom flat constraints should derive from
-class BasicFlatModelAPI {
+class BasicFlatBackend {
 public:
   template <class Constraint>
   void AddConstraint(const Constraint& ) {

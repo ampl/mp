@@ -36,9 +36,9 @@ TEST(RedefsMIPTest, PureMILP__01__seemsPassedToBackendCorrectly) {
     { { minimize_,
         { { 1, 1, 2.5 },
           { 0, 1, 2 } } } },
-    { 0, 0, -1.2 },
-    { 1, 3, 5.2 },
-    { I_, F_, F_ },
+    { {  0.0,  0.0, -1.2 },
+      {  1.0,  3.0,  5.2 },
+      {  I_,   F_,   F_ } },
     {
       { { { 2, 0.0, 4 },
           { 0, 1,   2 } }, -infty_, 56.4 }
@@ -46,7 +46,7 @@ TEST(RedefsMIPTest, PureMILP__01__seemsPassedToBackendCorrectly) {
   };
   MIPConverterTester tester;
   feedInstance(tester, milp);
-  tester.ConvertModelAndUpdateBackend();
+  tester.ConvertModel();
   ASSERT_TRUE(tester.ObjsEqual(milp));
   ASSERT_TRUE(tester.VarBoundsEqual(milp));
   ASSERT_TRUE(tester.NConstrEqual(milp));

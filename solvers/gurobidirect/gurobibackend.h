@@ -49,7 +49,7 @@ public:
   static const char* GetSolverName() { return "Gurobi"; }
   static std::string GetSolverVersion();
   static const char* GetSolverInvocationName();
-  static const char* GetAMPLSolverLongName() { return "AMPLGurobi"; }
+  static const char* GetSolverLongName() { return "AMPLGurobi"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
@@ -163,7 +163,7 @@ public:
   static constexpr double Infinity() { return GRB_INFINITY; }
   static constexpr double MinusInfinity() { return -GRB_INFINITY; }
 
-  void AddVariable(Variable var);
+  void AddVariables(const VarArrayDef& );
   void SetLinearObjective( int iobj, const LinearObjective& lo );
   void SetQuadraticObjective( int iobj, const QuadraticObjective& qo );
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////

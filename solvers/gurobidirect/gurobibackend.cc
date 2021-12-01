@@ -255,19 +255,20 @@ double GurobiBackend::CurrentGrbPoolObjectiveValue() const {
 
 
 void GurobiBackend::MarkLazyOrUserCuts(ArrayRef<int> lazyVals) {
-  const auto& lcs = GetIndexesOfValuedLinearConstraints();
-  const auto nlc = NumLinCons();
-  for (size_t ilc=0; ilc<std::min(lcs.size(), (size_t)nlc); ++ilc) {
-    size_t i=lcs[ilc];
-    int val;
-    if (i<lazyVals.size() && (val = lazyVals[i])) {
-      if ((val>0 && lazy_cuts()) ||
-          (val<0 && user_cuts()))
-      GRB_CALL( GRBsetintattrelement(model_,
-                                     GRB_INT_ATTR_LAZY, ilc, val) );
-      if (0==ilc)   // Testing API
-        ReportFirstLinearConstraintLazySuffix(val);
+  auto lv_lin = ExtractLinConValues(lazyVals);
+  if (lv_lin.size()) {
+    for (size_t i=0; i<lv_lin.size(); ++i) {
+      if (auto& val = lv_lin[i]) {
+        if ((val>0 && !lazy_cuts()) ||
+            (val<0 && !user_cuts()))
+          val = 0;
+      }
     }
+    GRB_CALL( GRBsetintattrarray(model_,
+                                 GRB_INT_ATTR_LAZY,
+                                 0, (int)lv_lin.size(), (int*)lv_lin.data()) );
+    // Testing
+    ReportFirstLinearConstraintLazySuffix(lv_lin[0]);
   }
 }
 
@@ -773,17 +774,17 @@ void GurobiBackend::ComputeIIS() {
 //////////////////////////////////////////////////////////////////////////
 /////////////////////////// Modeling interface ///////////////////////////
 //////////////////////////////////////////////////////////////////////////
-void GurobiBackend::InitProblemModificationPhase() {
-  stats.time = steady_clock::now();
-}
+void GurobiBackend::InitProblemModificationPhase() { }
 
-void GurobiBackend::AddVariable(Variable var) {
-  char vtype = var::Type::CONTINUOUS==var.type() ?
-        GRB_CONTINUOUS : GRB_INTEGER;
-  auto lb=var.lb(), ub=var.ub();
-  GRB_CALL( GRBaddvars(model_, 1, 0,
-                       NULL, NULL, NULL, NULL,                  // placeholders, no matrix here
-                       &lb, &ub, &vtype, NULL) );
+void GurobiBackend::AddVariables(const VarArrayDef& v) {
+  std::vector<char> vtypes(v.size());
+  for (size_t i=v.size(); i--; )
+    vtypes[i] = var::Type::CONTINUOUS==v.ptype()[i] ?
+          GRB_CONTINUOUS : GRB_INTEGER;
+  GRB_CALL( GRBaddvars(model_, (int)v.size(), 0,
+                       NULL, NULL, NULL, NULL, // placeholders, no matrix here
+                       (double*)v.plb(), (double*)v.pub(),
+                                          vtypes.data(), NULL) );
 }
 
 void GurobiBackend::SetLinearObjective( int iobj, const LinearObjective& lo ) {

@@ -11,7 +11,7 @@ namespace mp {
 class BasicConstraintKeeper;
 
 /// Converters handling custom constraints should derive from
-class BasicConstraintConverter {
+class BasicFlatConverter {
 public:
   /// Default constraint prepro
   /// All parameters are 'in-out'
@@ -35,7 +35,7 @@ public:
 #define USE_BASE_CONSTRAINT_CONVERTERS(BaseConverter) \
   using BaseConverter::PreprocessConstraint; \
   using BaseConverter::PropagateResult; \
-  using BaseConverter::Convert;
+  using BaseConverter::Convert
 
 
   /// For Common Subexpression Elimination, we can use maps
@@ -69,17 +69,21 @@ public:
   virtual const BasicConstraint& GetBasicConstraint() const = 0;
   virtual bool IsRemoved() const = 0;
   virtual void Remove() = 0;
-  virtual void PropagateResult(BasicConstraintConverter& cvt,
+  virtual void PropagateResult(BasicFlatConverter& cvt,
                                double lb, double ub, Context ctx) = 0;
   /// Returns -1 if none
   virtual int GetResultVar() const = 0;
   /// This normally dispatches conversion (decomposition) to the Converter
-  virtual void ConvertWith(BasicConstraintConverter& cvt) = 0;
+  virtual void ConvertWith(BasicFlatConverter& cvt) = 0;
   /// Checks backend's acceptance level for the constraint
   virtual ConstraintAcceptanceLevel BackendAcceptance(
-      const BasicFlatModelAPI& ) const = 0;
+      const BasicFlatBackend& ) const = 0;
   /// This adds the constraint to the backend without conversion
-  virtual void AddToBackend(BasicFlatModelAPI& be) const = 0;
+  virtual void AddToBackend(BasicFlatBackend& be) const = 0;
+
+  /// Pre- / postsolve: elementary interface
+  /// 1: linear, 2: qcp
+  virtual int ConstraintClass() const = 0;
 };
 
 template <class Converter, class Backend, class Constraint>
@@ -102,7 +106,7 @@ public:
   Constraint& GetConstraint() { return cons_; }
   bool IsRemoved() const override { return is_removed_; }
   void Remove() override { is_removed_=true; }
-  void PropagateResult(BasicConstraintConverter& cvt,
+  void PropagateResult(BasicFlatConverter& cvt,
                        double lb, double ub, Context ctx) override {
     try {
       static_cast<Converter&>(cvt).PropagateResult(cons_, lb, ub, ctx);
@@ -114,7 +118,7 @@ public:
     }
   }
   virtual int GetResultVar() const { return cons_.GetResultVar(); }
-  void ConvertWith(BasicConstraintConverter& cvt) override {
+  void ConvertWith(BasicFlatConverter& cvt) override {
     try {
       static_cast<Converter&>(cvt).RunConversion(cons_);
     } catch (const std::exception& exc) {
@@ -123,10 +127,10 @@ public:
     }
   }
   ConstraintAcceptanceLevel BackendAcceptance(
-      const BasicFlatModelAPI& ba) const override {
+      const BasicFlatBackend& ba) const override {
     return static_cast<const Backend&>( ba ).AcceptanceLevel(&cons_);
   }
-  void AddToBackend(BasicFlatModelAPI& be) const override {
+  void AddToBackend(BasicFlatBackend& be) const override {
     try {
       static_cast<Backend&>(be).AddConstraint(cons_);
     } catch (const std::exception& exc) {
@@ -134,6 +138,8 @@ public:
                              exc.what());
     }
   }
+  int ConstraintClass() const
+  { return Converter::ConstraintClass((Constraint*)nullptr); }
 };
 
 /// Helper function constructing a constraint keeper

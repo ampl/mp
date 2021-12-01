@@ -7,12 +7,13 @@
 #include <cmath>
 
 #include "mp/format.h"
-#include "mp/flat/preprocess.h"
-#include "mp/flat/converter_proxy.h"
+#include "mp/flat/converter_proxy_base.h"
+#include "mp/flat/backend_base.h"
 #include "mp/flat/convert_functional.h"
+#include "mp/flat/constraint_keeper.h"
 #include "mp/flat/model.h"
-#include "mp/flat/model_adapter.h" // TODO separate In/Working/Out models
 #include "mp/flat/std_constr.h"
+#include "mp/flat/preprocess.h"
 
 namespace mp {
 
@@ -21,33 +22,14 @@ namespace mp {
 /// Such constraints might need to be converted to others, which is
 /// handled by overloaded methods in derived classes
 template <class Impl, class Backend,
-          class Model = BasicModel< > >
-class BasicMPFlatConverter :
-    public BasicConstraintConverter {
+          class Model = BasicFlatModel< > >
+class FlatConverter :
+    public FlatConverterProxy,
+    public BasicFlatConverter,
+    public Model
+{
 public:
   static constexpr const char* name() { return "Flat Converter"; };
-
-public:
-  using ModelType = Model;  // TODO clarify names
-  using OutputModelType = ModelAdapter<Model>;
-  using BackendType = Backend;
-
-private:
-  OutputModelType model_adapter_;
-  Backend backend_;
-
-public:
-  /// We store backend in the converter for speed
-  const Backend& GetBackend() const { return backend_; }
-  Backend& GetBackend() { return backend_; }
-
-  /// The working model
-  const Model& GetModel() const { return model_adapter_.GetModel(); }
-  /// The working model
-  Model& GetModel() { return model_adapter_.GetModel(); }
-
-  const OutputModelType& GetOutputModel() const { return model_adapter_; }   // TODO
-  OutputModelType& GetOutputModel() { return model_adapter_; }
 
   using Var = typename Model::Var;
   static constexpr Var VoidVar() { return Model::VoidVar(); }
@@ -58,14 +40,15 @@ public:
     using ConstraintKeeperType = ConstraintKeeper<Impl, Backend, Constraint>;
 
 protected:
-  using ClassName = BasicMPFlatConverter<Impl, Backend, Model>;
-  using BaseConverter = BasicConstraintConverter;
-
+  using ClassType = FlatConverter<Impl, Backend, Model>;
+  using BaseConverter = BasicFlatConverter;
+  using BaseFlatModel = Model;
 
 public:
   static const char* GetConverterName() { return "BasicMPFlatConverter"; }
 
-  BasicMPFlatConverter() { }
+  FlatConverter()
+  { GetBackend().ProvideFlatConverterProxyObject(this); }
 
 
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
@@ -87,10 +70,10 @@ protected:
   }
 
   void NarrowVarBounds(int var, double lb, double ub) {
-    auto vv = MPD(GetModel()).var(var);
-    vv.set_lb(std::max(vv.lb(), lb));
-    vv.set_ub(std::min(vv.ub(), ub));
-    if (vv.lb()>vv.ub())             // TODO write .sol, report .iis
+    auto& m = GetModel();
+    m.set_lb(var, std::max(m.lb(var), lb));
+    m.set_ub(var, std::min(m.ub(var), ub));
+    if (m.lb(var)>m.ub(var))             // TODO write .sol, report .iis
       throw std::logic_error("infeasibility: empty variable domain");
   }
 
@@ -127,15 +110,15 @@ public:
     result.linexp_type_ = var::INTEGER;
     auto& model = MP_DISPATCH( GetModel() );
     for (const auto& term: ae) {
-      auto v = model.var(term.var_index());
+      auto v = term.var_index();
       if (term.coef() >= 0.0) {
-        result.lb_ += term.coef() * v.lb();
-        result.ub_ += term.coef() * v.ub();
+        result.lb_ += term.coef() * model.lb(v);
+        result.ub_ += term.coef() * model.ub(v);
       } else {
-        result.lb_ += term.coef() * v.ub();
-        result.ub_ += term.coef() * v.lb();
+        result.lb_ += term.coef() * model.ub(v);
+        result.ub_ += term.coef() * model.lb(v);
       }
-      if (var::INTEGER!=v.type() || !is_integer(term.coef())) {
+      if (var::INTEGER!=model.var_type(v) || !is_integer(term.coef())) {
         result.type_=var::CONTINUOUS;
         result.linexp_type_=var::CONTINUOUS;
       }
@@ -151,8 +134,8 @@ public:
     auto& model = MP_DISPATCH( GetModel() );
     for (int i=0; i<qt.num_terms(); ++i) {
       auto coef = qt.coef(i);
-      auto v1 = model.var(qt.var1(i));
-      auto v2 = model.var(qt.var2(i));
+      auto v1 = qt.var1(i);
+      auto v2 = qt.var2(i);
       auto prodBnd = ProductBounds(v1, v2);
       if (coef >= 0.0) {
         result.lb_ += coef * prodBnd.first;
@@ -161,7 +144,9 @@ public:
         result.lb_ += coef * prodBnd.second;
         result.ub_ += coef * prodBnd.first;
       }
-      if (var::INTEGER!=v1.type() || var::INTEGER!=v2.type() || !is_integer(coef)) {
+      if (var::INTEGER!=model.var_type(v1) ||
+          var::INTEGER!=model.var_type(v2) ||
+          !is_integer(coef)) {
         result.type_=var::CONTINUOUS;
         result.linexp_type_=var::CONTINUOUS;
       }
@@ -171,7 +156,7 @@ public:
 
   template <class Var>
   std::pair<double, double> ProductBounds(Var x, Var y) const {
-    auto lx=x.lb(), ly=y.lb(), ux=x.ub(), uy=y.ub();
+    auto lx=lb(x), ly=lb(y), ux=ub(x), uy=ub(y);
     std::array<double, 4> pb{lx*ly, lx*uy, ux*ly, ux*uy};
     return {*std::min_element(pb.begin(), pb.end()), *std::max_element(pb.begin(), pb.end())};
   }
@@ -204,11 +189,12 @@ public:
     return vc.get_var();
   }
 
-public:
+
+protected:
   //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
   ///
   //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
-  void ConvertExtraItems() {
+  void ConvertItems() {
     try {
       for (int endConstraintsThisLoop = 0, endPrevious = 0;
            (endConstraintsThisLoop = this->GetModel().num_custom_cons()) > endPrevious;
@@ -239,7 +225,7 @@ public:
             pConstraint->ConvertWith(*this);
             pConstraint->Remove();
           } catch (const ConstraintConversionFailure& ccf) {
-            printf( fmt::format(
+            printf( fmt::format(      // TODO use Env
                            "WARNING: {}. Will pass the constraint "
                            "to the backend {}. Continuing\n",
                            ccf.message(),
@@ -262,6 +248,9 @@ public:
   ///
   //////////////////////////// CONSTRAINT PROPAGATORS ///////////////////////////////////
 
+  /// Allow FCC to access Preprocess methods
+  template <class Impl1, class Converter, class Constraint>
+  friend class BasicFCC;
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
@@ -458,6 +447,10 @@ public:
   //////////////////////////// SPECIFIC CONSTRAINT RESULT-TO-ARGUMENTS PROPAGATORS //////
   /// Currently we should propagate to all arguments, be it always the CTX_MIX.
 
+  /// Allow ConstraintKeeper to PropagateResult()
+  template <class , class , class >
+  friend class ConstraintKeeper;
+
   /// By default, declare mixed context
   template <class Constraint>
   void PropagateResult(Constraint& con, double lb, double ub, Context ctx) {
@@ -570,8 +563,9 @@ public:
   ///
   //////////////////////////// SPECIFIC CONSTRAINT CONVERTERS ///////////////////////////
 
-  USE_BASE_CONSTRAINT_CONVERTERS(BasicConstraintConverter)      // reuse default converters
+  USE_BASE_CONSTRAINT_CONVERTERS(BasicFlatConverter);      // reuse default converters
 
+public: // for ConstraintKeeper
   /// Assume mixed context if not set in the constraint
   /// TODO Make sure context is always propagated for all constraints and objectives
   template <class Constraint>
@@ -579,7 +573,7 @@ public:
     if (con.HasContext())
       if (con.GetContext().IsNone())
         con.SetContext(Context::CTX_MIX);
-    MP_DISPATCH(Convert(con););
+    MP_DISPATCH(Convert(con));
   }
 
 
@@ -600,7 +594,12 @@ public:
   void AddConstraint(Constraint&& con) {
     const auto pck = makeConstraintKeeper<Impl, Constraint>(std::forward<Constraint>(con));
     AddConstraintAndTryNoteResultVariable(pck);
+//    orig_lin_constr_.push_back(n_alg_constr_);
+//    orig_qp_constr_.push_back(n_alg_constr_);
+//    ++n_alg_constr_;
   }
+
+protected:
   template <class ConstraintKeeper>
   void AddConstraintAndTryNoteResultVariable(ConstraintKeeper* pbc) {
     MP_DISPATCH( GetModel() ).AddConstraint(pbc);
@@ -612,9 +611,58 @@ public:
                              pbc->GetDescription());
   }
 
+public:
+  void StartModelInput() { }
+
+  void FinishModelInput() {
+    MPD( ConvertModel() );
+    if (relax())              // TODO bridge?
+      GetModel().RelaxIntegrality();
+    GetModel().PushModelTo(GetBackend());
+  }
+
+protected:
+  void ConvertModel() {
+    MP_DISPATCH( PrepareConversion() );
+    MPD( ConvertItems() );
+  }
+
+  void PrepareConversion() {
+    MP_DISPATCH( MemorizeModelSize() );
+  }
+
+  /// TODO wrong, Visit() may have produced aux constraints
+  void MemorizeModelSize() {
+    n_constr_orig_ = GetModel().num_custom_cons();
+    for (size_t i=0; i<n_constr_orig_; ++i) {
+      auto cc = GetModel().custom_con(i)->ConstraintClass();
+      if (1==cc) {
+        orig_lin_constr_.push_back(i);
+      } else if (2==cc) {
+        orig_qp_constr_.push_back(i);
+      }
+    }
+  }
+
+  /// Elementary constraint classes
+  /// TODO generalize
+  static constexpr int ConstraintClass(BasicConstraint* )
+  { return 0; }
+  static constexpr int ConstraintClass(LinearConstraint* )
+  { return 1; }
+  static constexpr int ConstraintClass(LinearDefiningConstraint* )
+  { return 1; }
+  static constexpr int ConstraintClass(QuadraticConstraint* )
+  { return 2; }
+  static constexpr int ConstraintClass(QuadraticDefiningConstraint* )
+  { return 2; }
 
   //////////////////////////// UTILITIES /////////////////////////////////
   ///
+public:
+  /// Expose abstract Backend
+  const BasicBackend& GetBasicBackend() const { return backend_; }
+  BasicBackend& GetBasicBackend() { return backend_; }
 
 private:
   std::unordered_map<double, int> map_fixed_vars_;
@@ -640,13 +688,16 @@ public:
     return MakeFixedVar(lb);
   }
 
-  double lb(int var) const { return this->GetModel().var(var).lb(); }
-  double ub(int var) const { return this->GetModel().var(var).ub(); }
+  using BaseFlatModel::AddVars;
+
+protected:
+  double lb(int var) const { return this->GetModel().lb(var); }
+  double ub(int var) const { return this->GetModel().ub(var); }
   template <class VarArray>
   double lb_array(const VarArray& va) const { return this->GetModel().lb_array(va); }
   template <class VarArray>
   double ub_array(const VarArray& va) const { return this->GetModel().ub_array(va); }
-  var::Type var_type(int var) const { return this->GetModel().var(var).type(); }
+  var::Type var_type(int var) const { return this->GetModel().var_type(var); }
   bool is_fixed(int var) const { return this->GetModel().is_fixed(var); }
   double fixed_value(int var) const { return this->GetModel().fixed_value(var); }
 
@@ -662,21 +713,15 @@ public:
     BasicConstraintKeeper *pInitExpr=nullptr;
   };
 
-  /// These methods to be used by converter helper objects
-  /// +inf
-  static constexpr double Infty()
-  { return std::numeric_limits<double>::infinity(); }
-  /// -inf
-  static constexpr double MinusInfty()
-  { return -std::numeric_limits<double>::infinity(); }
   /// Add variable. Type: var::CONTINUOUS by default
   int DoAddVar(double lb=MinusInfty(), double ub=Infty(),
              var::Type type = var::CONTINUOUS) {
-    auto var = GetModel().AddVar(lb, ub, type);
-    return var.index();
+    return GetModel().AddVar(lb, ub, type);
   }
+
   /// Add vector of variables. Type: var::CONTINUOUS by default
-  std::vector<int> AddVars(std::size_t nvars,
+  /// @return vector of the Ids of the new vars
+  std::vector<int> AddVars_returnIds(std::size_t nvars,
                            double lb=MinusInfty(), double ub=Infty(),
                            var::Type type = var::CONTINUOUS) {
     std::vector<int> newVars(nvars);
@@ -684,6 +729,7 @@ public:
       newVars[i] = AddVar(lb, ub, type);
     return newVars;
   }
+
   bool is_var_integer(int var) const
   { return MPCD( GetModel() ).is_integer_var(var); }
 
@@ -691,7 +737,7 @@ public:
 private:
   std::vector<VarInfo> var_info_;
 
-public:
+protected:
   void AddInitExpression(int var, BasicConstraintKeeper* pie) {
     var_info_.resize(std::max(var_info_.size(), (size_t)var+1));
     var_info_[var].pInitExpr = pie;
@@ -707,6 +753,96 @@ public:
     return var_info_[var].pInitExpr;
   }
 
+protected:
+  /// Convenience methods
+  /// Gurobi reports duals etc separately for linear and QCP constraints
+  /// Implement FlatConverterProxy's interface
+
+  /////////////////////////////////////////////////////////////////////////
+  /// PRESOLVE ///
+  /////////////////////////////////////////////////////////////////////////
+
+  /// From original NL model's suffix or duals
+  std::vector<double>
+  ExtractLinConValues(ArrayRef<double> allval) override
+  { return ExtractLinConValues<>(allval); }
+
+  std::vector<int>
+  ExtractLinConValues(ArrayRef<int> allval) override
+  { return ExtractLinConValues<>(allval); }
+
+  std::vector<double> ExtractQCValues(ArrayRef<double> allval) override
+  { return ExtractQCValues<>(allval); }
+
+  /////////////////////////////////////////////////////////////////////////
+  /// POSTSOLVE ///
+  /////////////////////////////////////////////////////////////////////////
+
+  /// To original NL model's indexing
+  std::vector<double> MakeConstrValuesFromLPAndQCP(
+        ArrayRef<double> pi, ArrayRef<double> qcpi) override
+  { return MakeConstrValuesFromLPAndQCP<>(pi, qcpi); }
+  std::vector<int> MakeConstrValuesFromLPAndQCP(
+        ArrayRef<int> pi, ArrayRef<int> qcpi) override
+  { return MakeConstrValuesFromLPAndQCP<>(pi, qcpi); }
+
+  /////////////////////////////////////////////////////////////////////////
+  /// IMPLEMENTATIONS OF PRE- / POSTSOLVE ///
+  /////////////////////////////////////////////////////////////////////////
+
+  template <class Vec>
+  auto MakeConstrValuesFromLPAndQCP(
+        const Vec& pi, const Vec& qcpi) ->
+          std::vector<
+            typename std::decay< decltype(*pi.data()) >::type>
+  {
+    std::vector<typename std::decay< decltype(*pi.data()) >::type>
+        result(NumValuedOrigConstr());
+    FillByIndex(result, pi, GetIndexesOfValuedLinearConstraints());
+    FillByIndex(result, qcpi, GetIndexesOfValuedQPConstraints());
+    return result;
+  }
+  template <class Vec>
+  auto ExtractLinConValues(const Vec& allval) ->
+  std::vector<typename std::decay< decltype(*allval.data()) >::type>
+  {
+    return ExtractByIndex(allval, GetIndexesOfValuedLinearConstraints());
+  }
+  template <class Vec>
+  auto ExtractQCValues(const Vec& allval) ->
+  std::vector<typename std::decay< decltype(*allval.data()) >::type>
+  {
+    return ExtractByIndex(allval, GetIndexesOfValuedQPConstraints());
+  }
+
+  template <class Vec1, class Vec2, class Vec3>
+  static void FillByIndex(Vec1& dest, const Vec2& src, const Vec3& idx) {
+    for (size_t ii=0; ii<src.size() && ii<idx.size(); ++ii)
+      dest.at(idx[ii]) = src[ii];
+  }
+  template <class Vec2, class Vec3>
+  static auto ExtractByIndex(const Vec2& src, const Vec3& idx) ->
+  std::vector<typename std::decay< decltype(*src.data()) >::type>
+  {
+    std::vector<typename std::decay< decltype(*src.data()) >::type> rsl(idx.size());
+    for (size_t ii=0; ii<idx.size(); ++ii)
+      if (idx[ii] < src.size())
+        rsl[ii] = src[idx[ii]];
+    return rsl;
+  }
+
+  /// Number of original NL algebraic constraints relevant for suffixes
+  size_t NumValuedOrigConstr() const override { return n_constr_orig_; }
+  /// Gurobi handles linear constraints as a separate class.
+  /// AMPL provides suffixes for all constraints together.
+  /// The method returns the indexes of linear constraints
+  /// which are relevant for suffix / dual value exchange,
+  /// in the overall constraints list.
+  const std::vector<size_t>& GetIndexesOfValuedLinearConstraints() const
+  { return orig_lin_constr_; }
+  /// Same for QP constraints
+  const std::vector<size_t>& GetIndexesOfValuedQPConstraints() const
+  { return orig_qp_constr_; }
 
 
   ///////////////////////////////////////////////////////////////////////
@@ -717,23 +853,46 @@ private:
     int preprocessAnything_ = 1;
     int preprocessEqualityResultBounds_ = 1;
     int preprocessEqualityBvar_ = 1;
+    int relax_ = 0;
   };
   Options options_;
 
+protected:
+  int relax() const { return options_.relax_; }
+
 public:
+  /// Chance for the Backend to init solver environment, etc
+  void InitOptionParsing() { GetBackend().InitOptionParsing(); }
+  /// Chance to consider options immediately (open cloud, etc)
+  void FinishOptionParsing() { GetBackend().FinishOptionParsing(); }
+
   template <class OptionManager>
   void InitOptions(OptionManager& opt) {
     MPD( GetBackend() ).InitMetaInfoAndOptions();
+    InitOwnOptions(opt);
+  }
 
-    opt.AddOption("cvt:pre:all",
-        "0/1*: Set to 0 to disable all presolve in the converter.",
+protected:
+  const mp::OptionValueInfo values_relax_[2] = {
+    {     "0", "No (default)", 0 },
+    {     "1", "Yes: treat integer and binary variables as continuous.", 1}
+  };
+
+private:
+  template <class OptionManager>
+  void InitOwnOptions(OptionManager& opt) {
+    opt.AddOption("flat:pre:all",
+        "0/1*: Set to 0 to disable all presolve in the flat converter.",
         options_.preprocessAnything_, 0, 1);
-    opt.AddOption("cvt:pre:eqresult",
+    opt.AddOption("flat:pre:eqresult",
         "0/1*: Preprocess reified equality comparison's boolean result bounds.",
         options_.preprocessEqualityResultBounds_, 0, 1);
-    opt.AddOption("cvt:pre:eqbinary",
+    opt.AddOption("flat:pre:eqbinary",
         "0/1*: Preprocess reified equality comparison with a binary variable.",
         options_.preprocessEqualityBvar_, 0, 1);
+    opt.AddOption("alg:relax relax",
+        "0*/1: Whether to relax integrality of variables.",
+        options_.relax_, 0, 1);
   }
 
 protected:
@@ -741,7 +900,48 @@ protected:
     return 0!=options_.preprocessAnything_ && 0!=f;
   }
 
+  using ModelType = Model;
+
+public:  // for tests. TODO make friends
+  using BackendType = Backend;
+
+private:
+  BackendType backend_;
+
+  /// TODO replace by pre- / postsolve
+  /// Indices of NL original linear constr in the total constr ordering
+  std::vector<size_t> orig_lin_constr_;
+  /// Indices of NL original QP constr in the total constr ordering
+  std::vector<size_t> orig_qp_constr_;
+  size_t n_constr_orig_=0;
+
+protected:
+  /// We store backend in the converter for speed
+  const BackendType& GetBackend() const { return backend_; }
+  BackendType& GetBackend() { return backend_; }
+
+  /// The internal flat model
+  const ModelType& GetModel() const { return *this; }
+  ModelType& GetModel() { return *this; }
+
+public:
+  /// TODO use universal Env instead
+  /// (which can well use these "MPUtils",
+  /// but ideally an appr new base class of Solver)
+  using MPUtils = typename BackendType::MPUtils;
+  const MPUtils& GetMPUtils() const { return GetBackend().GetMPUtils(); }
+  MPUtils& GetMPUtils() { return GetBackend().GetMPUtils(); }
 };
+
+/// A 'final' converter in a hierarchy
+template <template <typename, typename, typename> class Converter,
+          class Backend, class Model = BasicFlatModel< > >
+class ConverterImpl :
+    public Converter<ConverterImpl<Converter, Backend, Model>, Backend, Model> { };
+
+template <template <typename, typename, typename> class Converter,
+          class Backend, class Model = BasicFlatModel< > >
+using Interface = ConverterImpl<Converter, Backend, Model>;
 
 } // namespace mp
 

@@ -5,6 +5,7 @@
 
 #include "mp/flat/expr_flattener.h"
 #include "mp/flat/MIP/mp2mip.h"
+#include "mp/flat/flat_model_api_basic.h"
 #include "mp/flat/backend.h"
 
 namespace mip_converter_test {
@@ -13,10 +14,8 @@ enum Sense {
   minimize_ = mp::obj::MIN,
   maximize_ = mp::obj::MAX
 };
-enum VarType {
-  I_ = mp::var::INTEGER,
-  F_ = mp::var::CONTINUOUS
-};
+constexpr auto I_ = mp::var::INTEGER;
+constexpr auto F_ = mp::var::CONTINUOUS;
 constexpr double infty_ = 1e100;
 
 struct MIPInstance {
@@ -55,8 +54,7 @@ struct MIPInstance {
   using ObjectivesContainer = std::vector<Objective>;
   ObjectivesContainer objs_;
   /// Variables
-  std::vector<double> varLBs_, varUBs_;
-  std::vector<VarType> varTypes_;
+  mp::VarArrayDef vars_;
 
   struct Constraint {
     SparseVec le_;
@@ -72,8 +70,11 @@ struct MIPInstance {
   }
   bool VarBoundsEqual(const MIPInstance& mip) const {
     return
-        varLBs_ == mip.varLBs_ &&
-        varUBs_ == mip.varUBs_;
+        vars_.size() == mip.vars_.size() &&
+        std::equal(vars_.plb(), vars_.plb()+vars_.size(),
+                   mip.vars_.plb()) &&
+        std::equal(vars_.pub(), vars_.pub()+vars_.size(),
+                   mip.vars_.pub());
   }
   bool NConstrEqual(const MIPInstance& mip) const {
     return
@@ -83,9 +84,9 @@ struct MIPInstance {
 
 template <class Interface>
 void feedInstance( Interface& interface, const MIPInstance& mip ) {
-  interface.InputVariables(mip.varLBs_.size(),
-                           mip.varLBs_.data(), mip.varUBs_.data(),
-                           (const mp::var::Type*)mip.varTypes_.data());
+  interface.InputVariables(mip.vars_.size(),
+                           mip.vars_.plb(), mip.vars_.pub(),
+                           mip.vars_.ptype());
   for (MIPInstance::ObjectivesContainer::const_iterator it = mip.objs_.begin();
        it!=mip.objs_.end(); ++it) {
     interface.InputObjective((mp::obj::Type)it->sense_,
@@ -100,7 +101,7 @@ void feedInstance( Interface& interface, const MIPInstance& mip ) {
 
 /// A toy backend using struct MIPInstance
 class MIPInstanceBackend :
-    public mp::BasicBackend<MIPInstanceBackend>
+    public mp::Backend<MIPInstanceBackend>
 {
   MIPInstance instance_;
 public:
@@ -108,10 +109,8 @@ public:
   MIPInstance& GetInstance() { return instance_; }
 
   /// These things the concrete interface currently has to define
-  void AddVariable(Variable var) {
-    instance_.varLBs_.push_back(var.lb());
-    instance_.varUBs_.push_back(var.ub());
-    instance_.varTypes_.push_back((VarType)var.type());
+  void AddVariables(const mp::VarArrayDef& v) {
+    instance_.vars_ = v;
   }
   void SetLinearObjective(int , const mp::LinearObjective& lo) {
     mip_converter_test::MIPInstance::SparseVec lin_part {lo.coefs(), lo.vars()};
@@ -120,7 +119,7 @@ public:
   }
 
   /// Allow all constraint types to be compiled
-  USE_BASE_CONSTRAINT_HANDLERS(mp::BasicBackend<MIPInstanceBackend>)
+  USE_BASE_CONSTRAINT_HANDLERS(mp::Backend<MIPInstanceBackend>)
 
   /// Specialize for LinearConstraint
   void AddConstraint(const mp::LinearConstraint& lc) {
@@ -132,7 +131,7 @@ public:
 
 /// Testing the default MIP interface layer
 class MIPConverterTester :
-    public mp::ExprFlattenerImpl<mp::ExprFlattener,
+    public mp::ExprFlattenerImpl<mp::ExprFlattener, mp::Problem,
       mp::Interface<mp::MPToMIPConverter, MIPInstanceBackend> >
 //    public mp::MPToMIPConverter<MIPConverterTester, MIPInstanceBackend>
 {
@@ -146,6 +145,10 @@ public:
   }
   bool NConstrEqual(const MIPInstance& mip) {
     return GetBackend().GetInstance().NConstrEqual( mip );
+  }
+protected:
+  MIPInstanceBackend& GetBackend() {
+    return dynamic_cast<MIPInstanceBackend&>(GetBasicBackend());
   }
 };
 

@@ -28,9 +28,9 @@ extern "C" {
 namespace mp {
 
 class CplexBackend :
-    public BasicBackend<CplexBackend>
+    public Backend<CplexBackend>
 {
-  using BaseBackend = BasicBackend<CplexBackend>;
+  using BaseBackend = Backend<CplexBackend>;
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:
@@ -41,7 +41,7 @@ public:
   static const char* GetSolverName() { return "IBM ILOG CPLEX"; }
   std::string GetSolverVersion();
   static const char* GetSolverInvocationName();
-  static const char* GetAMPLSolverLongName() { return nullptr; }
+  static const char* GetSolverLongName() { return nullptr; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
@@ -49,7 +49,7 @@ public:
   void InitProblemModificationPhase();
   void FinishProblemModificationPhase();
 
-  void AddVariable(Variable var);
+  void AddVariables(const VarArrayDef& );
   void SetLinearObjective( int iobj, const LinearObjective& lo );
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////

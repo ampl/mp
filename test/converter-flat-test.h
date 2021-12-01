@@ -11,21 +11,15 @@
 
 template <class Constraint>
 class TestBackendAcceptingConstraints :
-    public mp::BasicBackend<TestBackendAcceptingConstraints<Constraint> > {
-  using Base = mp::BasicBackend<TestBackendAcceptingConstraints<Constraint> >;
+    public mp::Backend< TestBackendAcceptingConstraints<Constraint> > {
+  using Base = mp::Backend< TestBackendAcceptingConstraints<Constraint> >;
   /// VARIABLES
-  struct Var {
-    double lb_, ub_;
-    mp::var::Type type_;
-  };
-  std::vector<Var> vars_;
+  mp::VarArrayDef vars_;
 
   std::vector<mp::LinearConstraint> lin_constr_;
 public:
   TestBackendAcceptingConstraints() { }
-  void AddVariable(typename Base::Variable var) {
-    vars_.push_back( {var.lb(), var.ub(), var.type()} );
-  }
+  void AddVariables(const mp::VarArrayDef& v) { vars_ = v; }
   int NumVars() const { return (int)vars_.size(); }
   void AddConstraint(const mp::LinearConstraint& lc) {
     lin_constr_.push_back( lc );
@@ -59,8 +53,9 @@ public:
 
 template <template <class, class, class> class ConverterTemplate, class Constraint>
 using InterfaceWithBackendAcceptingConstraints =
-        mp::NLSolverWithFlatBackend<
-          TestBackendAcceptingConstraints<Constraint>, ConverterTemplate>;
+        mp::ExprFlattenerImpl<mp::ExprFlattener, mp::Problem,
+          mp::ConverterImpl<ConverterTemplate,
+            TestBackendAcceptingConstraints<Constraint> > >;
 
 
 ////////////////////////// SERVICE STUFF ////////////////////////////
@@ -80,12 +75,14 @@ namespace {
 template <class Constraint>
 class InterfaceTesterWithBackendAcceptingConstraints : public ::testing::Test {
   using Interface = InterfaceWithBackendAcceptingConstraints<
-      mp::BasicMPFlatConverter, Constraint>;
+      mp::FlatConverter, Constraint>;
+  using Backend = TestBackendAcceptingConstraints<Constraint>;
   Interface interface_;
 public:
   Interface& GetInterface() { return interface_; }
   typename Interface::ModelType& GetModel() { return interface_.GetModel(); }
-  typename Interface::BackendType& GetBackend() { return interface_.GetBackend(); }
+  Backend& GetBackend()
+  { return dynamic_cast<Backend&>( interface_.GetBasicBackend() ); }
 };
 
 #define ASSERT_HAS_CONSTRAINT( backend, constr ) \

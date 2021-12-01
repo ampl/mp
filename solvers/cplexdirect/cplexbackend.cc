@@ -205,15 +205,15 @@ std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
 }
 
 
-void CplexBackend::InitProblemModificationPhase() {
-  stats.time = steady_clock::now();
-}
+void CplexBackend::InitProblemModificationPhase() { }
 
-void CplexBackend::AddVariable(Variable var) {
-  char vtype = var::Type::CONTINUOUS==var.type() ?
-        CPX_CONTINUOUS : CPX_INTEGER;
-  auto lb=var.lb(), ub=var.ub();
-  CPLEX_CALL( CPXnewcols (env, lp, 1, NULL, &lb, &ub, &vtype, NULL) );
+void CplexBackend::AddVariables(const VarArrayDef& v) {
+  std::vector<char> vtypes(v.size());
+  for (size_t i=v.size(); i--; )
+    vtypes[i] = var::Type::CONTINUOUS==v.ptype()[i] ?
+          CPX_CONTINUOUS : CPX_INTEGER;
+  CPLEX_CALL( CPXnewcols (env, lp, (int)v.size(), NULL,
+                          v.plb(), v.pub(), vtypes.data(), NULL) );
 }
 
 void CplexBackend::SetLinearObjective( int iobj, const LinearObjective& lo ) {

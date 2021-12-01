@@ -1,44 +1,49 @@
 #ifndef CONVERTER_PROXY_BASE_H
 #define CONVERTER_PROXY_BASE_H
 
-/**
-  * This is an abstract interface to a 'query class'
-  * which provides solution handling and suffixes, etc.
-  * To be used by a backend
-  */
+#include <vector>
 
-#include "mp/solver.h"
-#include "mp/flat/model.h"
-#include "mp/flat/suffix.h"
+#include "mp/arrayref.h"
 
 namespace mp {
 
-class ConverterQuery {
+/**
+  * A basic 'query class' for FlatConverters,
+  * providing pre- / postsolve
+  * To be used by a backend
+  */
+class FlatConverterProxy {
 public:
-  virtual ~ConverterQuery() { }
+  virtual ~FlatConverterProxy() = default;
 
-  using Model = BasicModel<>;
+  /// Convenience methods
+  /// E.g., Gurobi reports duals etc separately for linear and QCP constraints
 
-  virtual ArrayRef<double> InitialValues() = 0;
-  virtual ArrayRef<double> InitialDualValues() = 0;
+  /// For reporting constraint suffixes
+  virtual size_t NumValuedOrigConstr() const = 0;
 
-  virtual ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) = 0;
-  virtual ArrayRef<double> ReadSuffix(const SuffixDef<double>& suf) = 0;
+  /////////////////////////////////////////////////////////////////////////
+  /// PRESOLVE ///
+  /////////////////////////////////////////////////////////////////////////
 
-  virtual void ReportSuffix(const SuffixDef<int>& suf,
-                            ArrayRef<int> values) = 0;
-  virtual void ReportSuffix(const SuffixDef<double>& suf,
-                            ArrayRef<double> values) = 0;
+  /// From original NL model's suffix or duals
+  virtual std::vector<double>
+  ExtractLinConValues(ArrayRef<double> allval) = 0;
+  virtual std::vector<int>
+  ExtractLinConValues(ArrayRef<int> allval) = 0;
 
-  virtual void HandleSolution(int, fmt::CStringRef,
-                              const double *, const double *,
-                              double) = 0;
-  virtual void HandleFeasibleSolution(fmt::CStringRef,
-                              const double *, const double *,
-                              double) = 0;
+  virtual std::vector<double>
+  ExtractQCValues(ArrayRef<double> allval) = 0;
 
-  virtual const std::vector<bool>& IsVarInt() const = 0;
+  /////////////////////////////////////////////////////////////////////////
+  /// POSTSOLVE ///
+  /////////////////////////////////////////////////////////////////////////
 
+  /// To original NL model's indexing
+  virtual std::vector<double> MakeConstrValuesFromLPAndQCP(
+        ArrayRef<double> pi, ArrayRef<double> qcpi) = 0;
+  virtual std::vector<int> MakeConstrValuesFromLPAndQCP(
+        ArrayRef<int> pi, ArrayRef<int> qcpi) = 0;
 };
 
 } // namespace mp

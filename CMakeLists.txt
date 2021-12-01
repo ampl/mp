@@ -310,12 +310,12 @@ add_prefix(MP_HEADERS include/mp/
   rstparser.h safeint.h sol.h solver.h suffix.h utils_file.h utils_string.h)
 
 add_prefix(MP_CONVERT_HEADERS include/mp/flat/
-  affine_expr.h backend.h basic_constr.h basic_converters.h
+  nlsolver_app.h nlsolver.h expr_flattener.h
+  affine_expr.h backend_base.h backend.h basic_constr.h
   constraint_keeper.h flat_model_api_basic.h flat_model_api.h
-  expr_flattener.h
-  context.h converter.h converter_proxy.h
-  converter_proxy_base.h convert_functional.h eexpr.h interface_app.h
-  model.h model_adapter.h preprocess.h
+  context.h converter.h nlsolver_proxy_base.h
+  converter_proxy_base.h convert_functional.h eexpr.h
+  model.h preprocess.h
   quad_expr.h std_constr.h std_obj.h suffix.h)
 
 add_prefix(MP_CONVERT_MIP_HEADERS include/mp/flat/MIP/

@@ -12,7 +12,7 @@ TEST_F(InterfaceTester_MaxConstraint, MaximumConstraintIsPassedToBackend) {
   auto con=GetModel().AddCon(5.0, 5.0);
   const auto args = GetInterface().AddVars(3, -1.0, 11.0);
   con.set_nonlinear_expr(MakeIterated(GetModel(), mp::expr::MAX, args ));
-  GetInterface().ConvertModelAndUpdateBackend();
+  GetInterface().ConvertModel();
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::MaximumConstraint(3, args) );
 }
 
@@ -28,7 +28,7 @@ TEST_F(InterfaceTester_QuadraticConstraint, QuadExprIsMultipliedOutAndInlined) {
   modeler.AddAlgCon(5.0,
                     (5*x[0]+3) * (6*x[1]+2) + x[2],
                     INFINITY);
-  GetInterface().ConvertModelAndUpdateBackend();
+  GetInterface().ConvertModel();
   const auto xi = modeler.GetVarIndices(x);
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::QuadraticConstraint(
   { {10.0, xi[0]}, {18.0, xi[1]}, {1.0, xi[2]} },
@@ -43,7 +43,7 @@ TEST_F(InterfaceTester_QuadraticConstraint, Pow2_isMultipliedOutAndInlined) {
                     ((8*x[0] + 2*x[1] + 3)^2)            // C++ operator precedence
                       + 3.5*x[2],
                     INFINITY);
-  GetInterface().ConvertModelAndUpdateBackend();
+  GetInterface().ConvertModel();
   const auto xi = modeler.GetVarIndices(x);
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::QuadraticConstraint(
   { {48, xi[0]}, {12, xi[1]}, {3.5, xi[2]} },
@@ -58,7 +58,7 @@ TEST_F(InterfaceTester_QuadraticConstraint, QuadConstraintIsPassedToBackend__Old
   con.set_nonlinear_expr(GetModel().MakeBinary(mp::expr::MUL,
                                                GetModel().MakeVariable( args[0] ),
                                                GetModel().MakeVariable( args[1] ) ) );
-  GetInterface().ConvertModelAndUpdateBackend();
+  GetInterface().ConvertModel();
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::QuadraticConstraint(
     {},
     { {1.0, args[0], args[1]} },
