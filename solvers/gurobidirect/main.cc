@@ -9,7 +9,7 @@
 extern "C" int main1(int, char **argv) {
   try {
     using GurobiNLSolverWithFlatConversion =
-        mp::NLSolverWithFlatBackend<mp::GurobiBackend, mp::MPToMIPConverter>;
+        mp::NLSolverWithFlatBackend<mp::GurobiBackend, mp::MIPFlatConverter>;
     using GurobiNLSolverApp =
       mp::NLSolverApp<GurobiNLSolverWithFlatConversion>;
     GurobiNLSolverApp s;

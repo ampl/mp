@@ -1,78 +1,94 @@
 *mp* documentation
 ==================
 
+MP Library is a set of tools recommended to create new AMPL solver interfaces.
 
 Features
 --------
 
-* **Expression-based solver interface.**
-  For solvers with an expression API,
-  expression trees can be efficiently mapped. For example, AMPL expression
-  ``max(a, b)`` directly maps to IBM ILOG Concert's ``IloMax``. The library
-  has the following C++ interfaces of this kind, all of which support
-  `AMPL extensions for logic and constraint programming`__:
+* **Reusable building blocks for new interfaces.**
 
-  __ http://ampl.com/resources/logic-and-constraint-programming-extensions/
+  * High-performance `.nl file reader <https://amplmp.readthedocs.io/en/latest/rst/nl-reader.html>`_
+    which is up to `6x faster
+    <http://zverovich.net/slides/2015-01-11-ics/socp-reformulation.html#/14>`_
+    than the one provided by ASL. It can be used for most efficient translation of NL format into
+    solver API.
 
-  - `Ilogcp <solvers/ilogcp>`_:
-    IBM ILOG CPLEX and CPLEX CP Optimizer
+  * Classes `mp::Backend` and `mp::MIPBackend`
+    standardize solver behavior such as common options and suffixes
+    and are recommended for new interfaces.
 
-  - `Gecode <solvers/gecode>`_
+  * Classes `mp::FlatConverter` and `mp::MIPFlatConverter` facilitate conversion of
+    NL expressions which are not natively accepted by a solver into simpler forms.
+    For example, ``max(a, b)`` is translated into a construct meaning
+    ``<new var> = max(a, b)``, which is in turn redefined
+    into a MIP construct or passed to the solver (Gurobi: `GRBaddgenconstrMax`).
+    `Logical and CP constraints
+    <http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__
+    are supported.
 
-  - `JaCoP <solvers/jacop>`_
+    ..
+        `mp::BasicProblem` and `mp::ColProblem` can be used for intermediate storage of the NL model.
+        `mp::ExprVisitor` and `mp::ExprFlattener` walk NL forest top-down.
 
-  - `LocalSolver <solvers/localsolver>`_
+* **Concrete solver interfaces.**
 
-* **Conversion-based solver interface (WIP).**
-  For solvers with more traditional 'flat' APIs, a customizable conversion
-  layer translates expressions into constraints. For example, ``max(a, b)``
-  is translated into ``<new var> = max(a, b)``, which is in turn redefined
-  into a MIP construct or passed to the solver (Gurobi: ``GRBgenconstrMax``.)
-  `Logical and CP constraints
-  <http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__
-  are supported as well. For the solver API, an easy-to-adapt C++ wrapper class
-  is provided. Currently it's two experimental interfaces:
+  * Interfaces to solvers with **expression-based APIs.**
+    For solvers with an expression-based API,
+    NL forests can be efficiently mapped. For example, AMPL expression
+    ``max(a, b)`` directly maps to IBM ILOG Concert's ``IloMax``. The library
+    has the following C++ interfaces of this kind, all of which support
+    `AMPL extensions for logic and constraint programming`__:
+
+    __ http://ampl.com/resources/logic-and-constraint-programming-extensions/
+
+    - `Ilogcp <../../../solvers/ilogcp>`_:
+      IBM ILOG CPLEX and CPLEX CP Optimizer
+
+    - `Gecode <../../../solvers/gecode>`_
+
+    - `JaCoP <../../../solvers/jacop>`_
+
+    - `LocalSolver <../../../solvers/localsolver>`_
+
+  * Interfaces to solvers with **"flat" APIs** (WIP).
+    For solvers with more traditional "flat" APIs, class `mp::MIPFlatConverter`
+    translates many non-linear AMPL expressions.
+    Currently there are two experimental implementations:
   
-  - `Gurobi <solvers/gurobidirect>`_ ('gurobidirect')
+    - `Gurobi <../../../solvers/gurobidirect>`_
 
-  - `IBM ILOG CPLEX <solvers/cplexdirect>`_ ('cplexdirect')
+    - `IBM ILOG CPLEX <../../../solvers/cplexdirect>`_
 
-* **End-to-end solver testing script** for testing of various solver features.
-  `Documentation. <test/end2end>`_
+* **Other utilities.**
 
-* An efficient type-safe C++ **adapter for the previous ASL library** for connecting solvers to AMPL and other systems:
-  `source <src/asl>`_
+  * An efficient type-safe C++ **adapter for the previous ASL library** for
+    connecting solvers to AMPL and other systems:
+    `source <../../../src/asl>`_
 
-* Reusable high-performance `.nl file reader <https://amplmp.readthedocs.io/en/latest/rst/nl-reader.html>`_
-  which is up to `6x faster
-  <http://zverovich.net/slides/2015-01-11-ics/socp-reformulation.html#/14>`_
-  than the one provided by ASL. Documentation: https://amplmp.readthedocs.io/
+  * `SMPSWriter <../../../solvers/smpswriter>`_,
+    a converter from deterministic equivalent of a two-stage stochastic
+    programming (SP) problem written in AMPL to an SP problem in SMPS format.
 
-* Database support on Linux and MacOS X.
-  See `Database and spreadsheet connection guide`__.
-
-  __  http://ampl.github.io/tables/
-
-* `SMPSWriter <solvers/smpswriter>`_,
-  a converter from deterministic equivalent of a two-stage stochastic
-  programming (SP) problem written in AMPL to an SP problem in SMPS format.
+  * **End-to-end solver testing script** for testing of various solver features:
+    `source <../../../test/end2end>`_
 
 
 Contents
-========
+--------
 
 .. toctree::
    :maxdepth: 2
 
    rst/nl-reader
-   rst/problem
    rst/backend
+   rst/flatcvt
    rst/reference
 
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`search`

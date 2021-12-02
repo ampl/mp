@@ -8,7 +8,7 @@
 extern "C" int main1(int, char **argv) {
   try {
     using CplexNLSolverWithFlatConversion =
-        mp::NLSolverWithFlatBackend<mp::CplexBackend, mp::MPToMIPConverter>;
+        mp::NLSolverWithFlatBackend<mp::CplexBackend, mp::MIPFlatConverter>;
     using CplexNLSolverApp =
       mp::NLSolverApp<CplexNLSolverWithFlatConversion>;
     CplexNLSolverApp s;

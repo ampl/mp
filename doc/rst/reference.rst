@@ -23,7 +23,7 @@ Generic
 
 API
 ---
-.. doxygenclass:: mp::BasicBackend
+.. doxygenclass:: mp::Backend
    :members:
 
 |

@@ -5,10 +5,10 @@
 
 namespace mp {
 
-/// MPToMIPConverter: one of the converters requiring a "minimal" output interface
+/// MIPFlatConverter: converts flattened expressions for MIP
 template <class Impl, class Backend,
           class Model = BasicFlatModel< > >  ///< TODO also param for a base class? #145
-class MPToMIPConverter
+class MIPFlatConverter
     : public FlatConverter<Impl, Backend, Model>
 {
 public:
@@ -22,7 +22,7 @@ public:
 
 public:
   static const char* GetConverterName() { return "MPToMIPConverter"; }
-  MPToMIPConverter() {  }
+  MIPFlatConverter() {  }
 
   ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
   USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter );        ///< reuse default ones

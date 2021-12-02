@@ -1,22 +1,22 @@
 Backend
 =======
 
-Using the `BasicBackend` and the derived  classes is now the reccomended approach to building a new solver intercace.
-It provides a convenient API for problem reformulation.
+Using the `Backend` and the derived classes is now the recommended approach to building
+a new solver interface.
+It provides a convenient API for common solver options and suffixes.
+
 TODO description
 
 
-Reference
----------
+Backend
+-------------
 
-Header: :file:`mp/convert/backend.h`
-
-
-.. doxygenclass:: mp::BasicBackend
+.. doxygenclass:: mp::Backend
    :members:
 
 
-Header: :file:`mp/convert/MIP/backend.h`
+MIPBackend
+-------------
 
 .. doxygenclass:: mp::MIPBackend
    :members:

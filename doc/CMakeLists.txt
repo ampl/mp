@@ -18,7 +18,7 @@ set(DOC_BASEDIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(DOC_OUTPUTDIR ${CMAKE_CURRENT_BINARY_DIR}/html/)
 set(SPHINX_INDEX_FILE ${DOC_OUTPUTDIR}/index.html)
 
-add_prefix(mp_docs ${DOC_BASEDIR}/rst/ common.rst nl-reader.rst problem.rst reference.rst)
+add_prefix(mp_docs ${DOC_BASEDIR}/rst/ common.rst nl-reader.rst flatcvt.rst backend.rst reference.rst)
 set(mp_docs ${mp_docs} ${DOC_BASEDIR}/index.rst)
 add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
                   COMMAND

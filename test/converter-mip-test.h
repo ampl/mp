@@ -132,7 +132,7 @@ public:
 /// Testing the default MIP interface layer
 class MIPConverterTester :
     public mp::ExprFlattenerImpl<mp::ExprFlattener, mp::Problem,
-      mp::Interface<mp::MPToMIPConverter, MIPInstanceBackend> >
+      mp::Interface<mp::MIPFlatConverter, MIPInstanceBackend> >
 //    public mp::MPToMIPConverter<MIPConverterTester, MIPInstanceBackend>
 {
 public:
