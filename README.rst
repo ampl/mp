@@ -26,23 +26,21 @@ Features
 
   * Classes `mp::FlatConverter` and `mp::MIPFlatConverter` facilitate conversion of
     NL expressions which are not natively accepted by a solver into simpler forms.
-    For example, ``max(a, b)`` is translated into a construct meaning
-    ``<new var> = max(a, b)``, which is in turn redefined
-    into a MIP construct or passed to the solver (Gurobi: `GRBaddgenconstrMax`).
     `Logical and CP constraints
     <http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__
     are supported.
 
-    ..
-        `mp::BasicProblem` and `mp::ColProblem` can be used for intermediate storage of the NL model.
-        `mp::ExprVisitor` and `mp::ExprFlattener` walk NL forest top-down.
+  * Convenience classes `mp::BasicProblem` and `mp::ColProblem` can be used for
+    intermediate storage of the NL model.
+    `mp::ExprVisitor` and `mp::ExprFlattener` walk NL forest top-down.
+
 
 * **Concrete solver interfaces.**
 
   * Interfaces to solvers with **expression-based APIs.**
     For solvers with an expression-based API,
     NL forests can be efficiently mapped. For example, AMPL expression
-    ``max(a, b)`` directly maps to IBM ILOG Concert's ``IloMax``. The library
+    ``exp()`` directly maps to IBM ILOG Concert's ``IloExponent``. The library
     has the following C++ interfaces of this kind, all of which support
     `AMPL extensions for logic and constraint programming`__:
 
@@ -60,21 +58,26 @@ Features
   * Interfaces to solvers with **"flat" APIs** (WIP).
     For solvers with more traditional "flat" APIs, class `mp::MIPFlatConverter`
     translates many non-linear AMPL expressions.
+    For example, ``max(a, b)`` is translated into a construct meaning
+    ``<new var> = max(a, b)``, which is in turn redefined
+    into a MIP construct or passed to the solver (Gurobi: `GRBaddgenconstrMax`).
     Currently there are two experimental implementations:
 
     - `Gurobi <solvers/gurobidirect>`_
 
     - `IBM ILOG CPLEX <solvers/cplexdirect>`_
 
-* An efficient type-safe C++ **adapter for the previous ASL library** for connecting solvers to AMPL and other systems:
-  `source <src/asl>`_
+* Other utilities.
 
-* `SMPSWriter <solvers/smpswriter>`_,
-  a converter from deterministic equivalent of a two-stage stochastic
-  programming (SP) problem written in AMPL to an SP problem in SMPS format.
+  * An efficient type-safe C++ **adapter for the previous ASL library** for connecting solvers to AMPL and other systems:
+    `source <src/asl>`_
 
-* **End-to-end solver testing script** for testing of various solver features.
-  `Documentation. <test/end2end>`_
+  * `SMPSWriter <solvers/smpswriter>`_,
+    a converter from deterministic equivalent of a two-stage stochastic
+    programming (SP) problem written in AMPL to an SP problem in SMPS format.
+
+  * **End-to-end solver testing script** for testing of various solver features.
+    `Documentation. <test/end2end>`_
 
 
 Examples
@@ -166,6 +169,7 @@ For example, if you enable the ``ilogcp`` module, you should have
 
 __ http://www-03.ibm.com/software/products/en/ibmilogcpleoptistud
 
+
 Using Eclipse CDT
 `````````````````
 
@@ -179,21 +183,12 @@ To get rid of semantic errors reported by Indexer add preprocessor symbols
 in "Project Properties" / "C/C++ Include Files and Symbols" and rebuild
 the index.
 
+
 Building the documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To build the documentation you need the following software installed on your
-system:
-
-* `Python <https://www.python.org/>`_ with pip and virtualenv
-* `Doxygen <http://www.doxygen.org/>`_
-
-First generate makefiles or project files using CMake as described in
-the previous section. Then compile the ``doc`` target/project, for example::
-
-  make doc
-
-This will generate the HTML documenation in ``doc/ampl.github.io``.
+To build the documentation (automatically, via CMake) you need Python 3.7 with Sphinx and Breathe.
+The HTML output is located in (build folder)/doc/index.html.
 
 
 Links

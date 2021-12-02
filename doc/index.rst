@@ -11,7 +11,7 @@ Features
   * High-performance `.nl file reader <https://amplmp.readthedocs.io/en/latest/rst/nl-reader.html>`_
     which is up to `6x faster
     <http://zverovich.net/slides/2015-01-11-ics/socp-reformulation.html#/14>`_
-    than the one provided by ASL. It can be used for most efficient translation of NL format into
+    than the one provided by ASL. It can be customized for most efficient translation of NL format into
     solver API.
 
   * Classes `mp::Backend` and `mp::MIPBackend`
@@ -20,23 +20,20 @@ Features
 
   * Classes `mp::FlatConverter` and `mp::MIPFlatConverter` facilitate conversion of
     NL expressions which are not natively accepted by a solver into simpler forms.
-    For example, ``max(a, b)`` is translated into a construct meaning
-    ``<new var> = max(a, b)``, which is in turn redefined
-    into a MIP construct or passed to the solver (Gurobi: `GRBaddgenconstrMax`).
     `Logical and CP constraints
     <http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__
     are supported.
 
-    ..
-        `mp::BasicProblem` and `mp::ColProblem` can be used for intermediate storage of the NL model.
-        `mp::ExprVisitor` and `mp::ExprFlattener` walk NL forest top-down.
+  * Convenience classes `mp::BasicProblem` and `mp::ColProblem` can be used for
+    intermediate storage of the NL model.
+    `mp::ExprVisitor` and `mp::ExprFlattener` walk NL forest top-down.
 
 * **Concrete solver interfaces.**
 
   * Interfaces to solvers with **expression-based APIs.**
     For solvers with an expression-based API,
     NL forests can be efficiently mapped. For example, AMPL expression
-    ``max(a, b)`` directly maps to IBM ILOG Concert's ``IloMax``. The library
+    ``exp()`` directly maps to IBM ILOG Concert's ``IloExponent``. The library
     has the following C++ interfaces of this kind, all of which support
     `AMPL extensions for logic and constraint programming`__:
 
@@ -53,7 +50,10 @@ Features
 
   * Interfaces to solvers with **"flat" APIs** (WIP).
     For solvers with more traditional "flat" APIs, class `mp::MIPFlatConverter`
-    translates many non-linear AMPL expressions.
+    reformulates many non-linear AMPL expressions.
+    For example, ``max(a, b)`` is translated into a constraint meaning
+    ``<new var> = max(a, b)``, which is in turn reformulated for
+    MIP or passed to the solver natively (Gurobi: `GRBaddgenconstrMax`).
     Currently there are two experimental implementations:
   
     - `Gurobi <../../../solvers/gurobidirect>`_
