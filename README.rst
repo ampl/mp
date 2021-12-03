@@ -14,7 +14,7 @@ Features
 --------
 
 Reusable building blocks for new interfaces
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * High-performance `.nl file reader <https://amplmp.readthedocs.io/en/latest/rst/nl-reader.html>`_
   which is up to `6x faster
@@ -38,7 +38,7 @@ Reusable building blocks for new interfaces
 
 
 Concrete solver interfaces
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Interfaces to solvers with **expression-based APIs.**
   For solvers with an expression-based API,
@@ -71,7 +71,7 @@ Concrete solver interfaces
   - `IBM ILOG CPLEX <solvers/cplexdirect>`_
 
 Other utilities
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 * An efficient type-safe C++ **adapter for the previous ASL library** for connecting solvers to AMPL and other systems:
   `source <src/asl>`_
