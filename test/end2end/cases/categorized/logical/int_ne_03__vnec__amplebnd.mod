@@ -1,6 +1,6 @@
 
 # -------------------------------------------------------------
-# x!=const for integer variable with ampl bounds
+# x!=const for integer variable with ample bounds
 # so we use big-M or indicators
 # -------------------------------------------------------------
 
