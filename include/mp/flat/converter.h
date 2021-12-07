@@ -556,6 +556,12 @@ protected:
   void PropagateResult(EQ0Constraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
+    auto& args = con.GetArguments();
+    for (auto a: args) {
+      PropagateResultOfInitExpr(a.var_index(),
+                                this->MinusInfty(), this->Infty(),
+                                Context::CTX_MIX);
+    }
   }
 
 

@@ -75,5 +75,15 @@
     "name" : "float_ne_01__vnec",
     "objective" : 3,
     "tags" : ["logical"]
+  },
+  {
+    "name" : "booleq_01",
+    "objective" : 1,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "booleq_02",
+    "objective" : 1,
+    "tags" : ["logical"]
   }
 ]

@@ -370,6 +370,10 @@ public:
                 e.condition(), e.then_expr(), e.else_expr() });
   }
 
+  EExpr VisitIff(BinaryLogicalExpr e) {
+    return VisitRelationalExpression<EQ0Constraint>({ e.lhs(), e.rhs() });
+  }
+
   EExpr VisitAllDiff(PairwiseExpr e) {
     if (expr::ALLDIFF != e.kind())
       throw std::logic_error("NOT_ALLDIFF NOT IMPLEMENTED");

@@ -53,7 +53,7 @@ public:
 
   /// Parse solver options such as "outlev=1".
   /// @param flags: 0 or \a Solver::NO_OPTION_ECHO
-  bool ParseOptions(const char* filename_no_ext,
+  bool ParseSolverOptions(const char* filename_no_ext,
                     char **argv, unsigned flags = 0) {
     /// Chance e.g. for the Backend to init solver environment, etc
     InitOptionParsing(filename_no_ext);
