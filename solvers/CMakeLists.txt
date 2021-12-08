@@ -212,6 +212,9 @@ if (TARGET ilogcp)
     add_ampl_library(ssd ssdsolver/ssd.cc)
     target_include_directories(ssd PRIVATE . 
     ${CMAKE_SOURCE_DIR}/src/asl/solvers)
+    if (HAVE_UNIQUE_PTR)      ## Need because of nested target definition
+      target_compile_definitions(ssd PUBLIC MP_USE_UNIQUE_PTR)
+    endif()
   endif ()
 endif ()
 
