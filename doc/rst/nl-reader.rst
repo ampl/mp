@@ -5,7 +5,7 @@ Headers: :file:`mp/nl.h` and :file:`mp/nl-reader.h`
 
 `NL <https://en.wikipedia.org/wiki/Nl_(format)>`_ is a format for representing
 optimization problems in discrete or continuous variables. It is described in
-the technical report `Writing .nl Files <nlwrite.pdf>`_.
+the technical report `Writing .nl Files <https://ampl.github.io/nlwrite.pdf>`_.
 
 The NL format supports a wide range of problem types including but not limited
 to the following areas of optimization:
@@ -36,15 +36,13 @@ This section describes the C++ API of an NL reader which is
   AMPL Solver Library
 * Reliable: extensively and continuously tested on a variety of platforms
 
-`nl-example.cc <https://github.com/ampl/mp/blob/master/src/nl-example.cc>`_
-gives a few examples of how to use the NL reader.
 
-Easy to use functions
+Easy-to-use functions
 ---------------------
 
-The ``mp/nl.h`` header only contains declarations of `mp::ReadNLString` and
-`mp::ReadNLFile`, and can be used to read standard optimization problem objects,
-for example:
+The ``mp/nl.h`` header only contains declarations of
+`mp::ReadNLFile` and `mp::ReadNLString`, and can be used to read the standard optimization problem
+object of class `mp::Problem`, for example:
 
 .. code-block:: c++
 
@@ -52,44 +50,77 @@ for example:
    #include "mp/problem.h"
 
    mp::Problem p;
-   ReadNLProblem("diet.nl", p);
-
-If you want to provide a custom NL handler, include ``mp/nl-reader.h`` instead.
-Note that ``mp/nl.h`` is a much smaller header than ``mp/nl-reader.h`` so prefer
-it unless you need access to the full NL reader API.
-
-
-.. doxygenfunction:: ReadNLFile(fmt::CStringRef, Handler &, int)
-
-.. doxygenfunction:: ReadNLString(NLStringRef, Handler &, fmt::CStringRef, int)
+   ReadNLFile("diet.nl", p);
 
 
 Full NL-reader API
 ------------------
 
-The following classes describe the full NL reader API, can be imported
-from ``mp/nl-reader.h``.
+If you want to provide a custom NL handler, include ``mp/nl-reader.h`` instead.
+A few examples are in
+`nl-example.cc <https://github.com/ampl/mp/blob/master/src/nl-example.cc>`_.
+Note that ``mp/nl.h`` is a much smaller header than ``mp/nl-reader.h`` so prefer
+it unless you need access to the full NL reader API, described below.
 
-.. doxygenclass:: mp::NLStringRef
-   :members:
+
+ReadNLFile()
+^^^^^^^^^^^^
+
+.. doxygenfunction:: ReadNLFile(fmt::CStringRef, Handler &, int)
+
+ReadNLString()
+^^^^^^^^^^^^^^
+
+.. doxygenfunction:: ReadNLString(NLStringRef, Handler &, fmt::CStringRef, int)
+
+
+mp::NLHandler
+^^^^^^^^^^^^^^
 
 .. doxygenclass:: mp::NLHandler
    :members:
 
+mp::NullNLHandler
+^^^^
+
 .. doxygenclass:: mp::NullNLHandler
    :members:
+
+mp::NLHeader
+^^^^
 
 .. doxygenstruct:: mp::NLHeader
    :members:
 
+mp::ReadError
+^^^^
+
 .. doxygenclass:: mp::ReadError
    :members:
+
+mp::BinaryReadError
+^^^^^
 
 .. doxygenclass:: mp::BinaryReadError
    :members:
 
+mp::NLStringRef
+^^^^
+
+.. doxygenclass:: mp::NLStringRef
+   :members:
+
+mp::arith::Kind
+^^^^
+
 .. doxygenenum:: mp::arith::Kind
 
+mp::READ_BOUNDS_FIRST
+^^^^
+
 .. doxygenenumvalue:: mp::READ_BOUNDS_FIRST
+
+mp::MAX_AMPL_OPTIONS
+^^^^^
 
 .. doxygenenumvalue:: mp::MAX_AMPL_OPTIONS

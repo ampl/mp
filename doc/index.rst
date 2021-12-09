@@ -9,7 +9,7 @@ Features
 Reusable building blocks for new interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* High-performance `.nl file reader <https://amplmp.readthedocs.io/en/latest/rst/nl-reader.html>`_
+* High-performance :doc:`.nl file reader <rst/nl-reader>`
   which is up to `6x faster
   <http://zverovich.net/slides/2015-01-11-ics/socp-reformulation.html#/14>`_
   than the one provided by ASL. It can be customized for most efficient translation of NL format into
@@ -41,14 +41,14 @@ Concrete solver interfaces
 
   __ http://ampl.com/resources/logic-and-constraint-programming-extensions/
 
-  - `Ilogcp <../../../solvers/ilogcp>`_:
+  - `Ilogcp <https://github.com/ampl/mp/tree/master/solvers/ilogcp>`_:
     IBM ILOG CPLEX and CPLEX CP Optimizer
 
-  - `Gecode <../../../solvers/gecode>`_
+  - `Gecode <https://github.com/ampl/mp/tree/master/solvers/gecode>`_
 
-  - `JaCoP <../../../solvers/jacop>`_
+  - `JaCoP <https://github.com/ampl/mp/tree/master/solvers/jacop>`_
 
-  - `LocalSolver <../../../solvers/localsolver>`_
+  - `LocalSolver <https://github.com/ampl/mp/tree/master/solvers/localsolver>`_
 
 * Interfaces to solvers with **"flat" APIs** (WIP).
   For solvers with more traditional "flat" APIs, class `mp::MIPFlatConverter`
@@ -58,9 +58,9 @@ Concrete solver interfaces
   MIP or passed to the solver natively (Gurobi: `GRBaddgenconstrMax`).
   Currently there are two experimental implementations:
   
-  - `Gurobi <../../../solvers/gurobidirect>`_
+  - `Gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_
 
-  - `IBM ILOG CPLEX <../../../solvers/cplexdirect>`_
+  - `IBM ILOG CPLEX <https://github.com/ampl/mp/tree/master/solvers/cplexdirect>`_
 
 Other utilities
 ^^^^^^^^^^^^^^^
