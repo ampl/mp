@@ -23,7 +23,7 @@
     }
   },
   {
-    "name" : "diet con sstatus none",
+    "name" : "diet duals; con sstatus none",
     "objective" : 88.2,
     "tags" : ["linear", "continuous"],
     "files" : ["diet.mod", "diet.dat"],
@@ -31,7 +31,11 @@
       "Buy['BEEF'].sstatus": "low",
       "Buy['MCH'].sstatus":  "bas",
       "Buy['CHK'].sstatus":  "low",
-      "Diet['A'].sstatus": "none"
+      "Diet['A'].sstatus": "none",
+      "Diet['A']": 0.0,
+      "Diet['C']": 0.0,
+      "Diet['B1']": 0.0,
+      "Diet['B2']": 0.126
     }
   },
   {
@@ -49,7 +53,7 @@
     }
   },
   {
-    "name" : "dietu_mip mip:basis=0",
+    "name" : "dietu_mip mip:basis=0 (default for gurobidirect)",
     "objective" : 74.273820,
     "tags" : ["linear", "continuous"],
     "values": {
