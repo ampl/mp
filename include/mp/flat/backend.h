@@ -31,6 +31,7 @@
 #include "mp/flat/std_constr.h"
 #include "mp/flat/std_obj.h"
 #include "mp/problem.h"
+#include "mp/solver.h"
 
 /// Issue this if you redefine std feature switches
 #define USING_STD_FEATURES using BaseBackend::STD_FEATURE_QUERY_FN
@@ -193,7 +194,7 @@ public:
     MP_DISPATCH( SetInterrupter(MP_DISPATCH( interrupter() )) );
   }
 
-  void SetInterrupter(Interrupter*) { }
+  void SetInterrupter(mp::Interrupter*) { }
 
   void SetupTimer() {
     stats.setup_time = GetTimeAndReset(stats.time);
