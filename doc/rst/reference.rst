@@ -27,6 +27,8 @@ Can be converted into solver API by a subclassed `mp::ExprVisitor`.
 Expression forest walkers
 -------------------------
 
+Typesafe expression walkers for models stored in memory.
+
 * `mp::expr::Kind`, `mp::expr::str`, `mp::expr::nl_opcode`
 
 * `mp::BasicExprVisitor`, `mp::ExprVisitor`, `mp::ExprConverter`

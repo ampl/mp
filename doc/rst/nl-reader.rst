@@ -58,69 +58,22 @@ Full NL-reader API
 
 If you want to provide a custom NL handler, include ``mp/nl-reader.h`` instead.
 A few examples are in
-`nl-example.cc <https://github.com/ampl/mp/blob/master/src/nl-example.cc>`_.
+`nl-example.cc <https://github.com/ampl/mp/blob/master/src/nl-example.cc>`_, `mp::Problem`,
+`SCIP NL file reader <https://scipopt.org/>`_.
 Note that ``mp/nl.h`` is a much smaller header than ``mp/nl-reader.h`` so prefer
 it unless you need access to the full NL reader API, described below.
 
 
-ReadNLFile()
-^^^^^^^^^^^^
+* `mp::ReadNLFile`, `mp::ReadNLString` read NL model
 
-.. doxygenfunction:: ReadNLFile(fmt::CStringRef, Handler &, int)
+* `mp::NLHandler`, `mp::NullNLHandler` provide interface for a custom NL handler
 
-ReadNLString()
-^^^^^^^^^^^^^^
+* `mp::NLHeader` stores problem information
 
-.. doxygenfunction:: ReadNLString(NLStringRef, Handler &, fmt::CStringRef, int)
+* `mp::ReadError`, `mp::BinaryReadError`
 
+* `mp::arith::Kind`
 
-mp::NLHandler
-^^^^^^^^^^^^^^
+* `mp::READ_BOUNDS_FIRST` can be passed as a flag to `mp::ReadNLFile`
 
-.. doxygenclass:: mp::NLHandler
-   :members:
-
-mp::NullNLHandler
-^^^^^^^^^^^^^^^
-
-.. doxygenclass:: mp::NullNLHandler
-   :members:
-
-mp::NLHeader
-^^^^^^^^^^^^^^^
-
-.. doxygenstruct:: mp::NLHeader
-   :members:
-
-mp::ReadError
-^^^^^^^^^^^^^^^
-
-.. doxygenclass:: mp::ReadError
-   :members:
-
-mp::BinaryReadError
-^^^^^^^^^^^^^^^
-
-.. doxygenclass:: mp::BinaryReadError
-   :members:
-
-mp::NLStringRef
-^^^^^^^^^^^^^^^
-
-.. doxygenclass:: mp::NLStringRef
-   :members:
-
-mp::arith::Kind
-^^^^^^^^^^^^^^^
-
-.. doxygenenum:: mp::arith::Kind
-
-mp::READ_BOUNDS_FIRST
-^^^^^^^^^^^^^^^^^^^^^
-
-.. doxygenenumvalue:: mp::READ_BOUNDS_FIRST
-
-mp::MAX_AMPL_OPTIONS
-^^^^^^^^^^^^^^^^^^^^
-
-.. doxygenenumvalue:: mp::MAX_AMPL_OPTIONS
+* `mp::MAX_AMPL_OPTIONS` is the maximum number of options reserved for AMPL use in NL and SOL formats

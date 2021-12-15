@@ -118,6 +118,7 @@ void ReadNLString(NLStringRef str, Handler &handler,
  */
 template <typename Handler>
 void ReadNLFile(fmt::CStringRef filename, Handler &handler, int flags = 0);
-}  // namespace mp
+
+} // namespace mp
 
 #endif  // MP_NL_

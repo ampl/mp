@@ -8,7 +8,11 @@
 
 namespace mp {
 
+/// An array of constraints of a single type
 class BasicConstraintKeeper;
+
+/// A reference to a stored constraint
+class BasicConstraintRef;
 
 /// Converters handling custom constraints should derive from
 class BasicFlatConverter {
@@ -61,11 +65,11 @@ public:
 
 
 
-/// Manages constraints in the Converter
+/// A derived class stores an array of constraints of certain type
 class BasicConstraintKeeper {
 public:
   virtual ~BasicConstraintKeeper() { }
-  virtual std::string GetDescription() const = 0;
+  virtual const std::string& GetDescription() const = 0;
   virtual const BasicConstraint& GetBasicConstraint() const = 0;
   virtual bool IsRemoved() const = 0;
   virtual void Remove() = 0;
@@ -90,15 +94,17 @@ template <class Converter, class Backend, class Constraint>
 class ConstraintKeeper : public BasicConstraintKeeper {
   Constraint cons_;
   bool is_removed_ = false;
+  const std::string desc_ {
+    std::string("ConstraintKeeper< ") +
+        Converter::GetConverterName() + ", " +
+        Backend::GetBackendName() + ", " +
+        Constraint::GetConstraintName() + " >"};
 public:
   template <class... Args>
   ConstraintKeeper(Args&&... args) noexcept
     : cons_(std::move(args)...) { }
-  std::string GetDescription() const override {
-    return std::string("ConstraintKeeper< ") +
-        Converter::GetConverterName() + ", " +
-        Backend::GetBackendName() + ", " +
-        Constraint::GetConstraintName() + " >";
+  const std::string& GetDescription() const override {
+    return desc_.c_str();
   }
   const BasicConstraint& GetBasicConstraint() const override
   { return cons_; }

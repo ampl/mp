@@ -1,14 +1,12 @@
 FlatConverter
 =============
 
-FlatConverter
--------------
+FlatConverter and MIPFlatConverter
+----------------------------------
 
-.. doxygenclass:: mp::FlatConverter
-   :members:
+* `mp::FlatConverter`, `mp::MIPFlatConverter`
 
-MIPFlatConverter
--------------
+Internal API
+------------
 
-.. doxygenclass:: mp::MIPFlatConverter
-   :members:
+* `mp::ConstraintKeeper`

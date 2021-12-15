@@ -15,15 +15,16 @@ Reusable building blocks for new interfaces
   than the one provided by ASL. It can be customized for most efficient translation of NL format into
   solver API.
 
-* Classes `mp::Backend` and `mp::MIPBackend`
-  standardize solver behavior such as common options and suffixes
-  and are recommended for new interfaces.
-
 * Classes `mp::FlatConverter` and `mp::MIPFlatConverter` facilitate conversion of
   NL expressions which are not natively accepted by a solver into simpler forms.
-  `Logical and CP constraints
-  <http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__
-  are supported.
+
+  * `Logical and CP constraints
+    <http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__
+    are supported.
+
+* Classes `mp::SolverImpl`, `mp::Backend` and `mp::MIPBackend`
+  standardize solver behavior such as common options and suffixes
+  and are recommended for new interfaces.
 
 * Convenience classes `mp::Problem` and `mp::ColProblem` can be used for
   intermediate storage of the NL model.
@@ -65,16 +66,17 @@ Concrete solver interfaces
 Other utilities
 ^^^^^^^^^^^^^^^
 
-* An efficient type-safe C++ **adapter for the previous ASL library** for
-  connecting solvers to AMPL and other systems:
-  `source <../../../src/asl>`_
+* An efficient type-safe `C++ adapter for the previous ASL library
+  <https://github.com/ampl/mp/tree/master/src/asl>`_ for
+  connecting solvers to AMPL and other systems.
 
-* `SMPSWriter <../../../solvers/smpswriter>`_,
+* `SMPSWriter <https://github.com/ampl/mp/tree/master/solvers/smpswriter>`_,
   a converter from deterministic equivalent of a two-stage stochastic
   programming (SP) problem written in AMPL to an SP problem in SMPS format.
 
-* **End-to-end solver testing script** for testing of various solver features:
-  `source <../../../test/end2end>`_
+* `End-to-end solver testing script
+  <https://github.com/ampl/mp/tree/master/test/end2end>`_ for testing of
+  various solver features.
 
 
 Contents
@@ -84,8 +86,8 @@ Contents
    :maxdepth: 2
 
    rst/nl-reader
-   rst/backend
    rst/flatcvt
+   rst/backend
    rst/reference
 
 
