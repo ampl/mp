@@ -39,6 +39,8 @@
 
 namespace mp {
 
+/// Linear expression (not affine: no constant term)
+/// used in `mp::BasicProblem`
 class LinearExpr {
  private:
   class Term {
@@ -126,7 +128,7 @@ struct BasicProblemParams {
   using Alloc = A;
 };
 
-/** An optimization problem. */
+/// An optimization problem
 template <typename ProblemParams = BasicProblemParams<> >
 class BasicProblem : public ExprFactory, public SuffixManager {
  public:
@@ -1190,6 +1192,7 @@ public:
   BasicProblem &problem() { return *this; }
 };
 
+/// A BasicProblem<> with default parameters
 typedef BasicProblem< > Problem;
 }  // namespace mp
 

@@ -1120,6 +1120,7 @@ struct ProblemInfo {
   }
 };
 
+/// .iis suffix values
 enum class IISStatus {
   non = 0,
   low = 1,
@@ -1132,6 +1133,7 @@ enum class IISStatus {
   bug = 8
 };
 
+/// Basic status values (suffix .sstatus)
 enum class BasicStatus {
   none= 0,
   bas = 1,

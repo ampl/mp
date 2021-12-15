@@ -28,31 +28,31 @@
 
 namespace mp {
 
-// An expression visitor.
-//
-// To use ExprVisitor define a subclass that implements some or all of the
-// Visit* methods with the same signatures as the methods in ExprVisitor,
-// for example, VisitDiv(BinaryExpr).
-// Specify the subclass name as the Impl template parameter. Then calling
-// BasicExprVisitor::Visit for some expression will dispatch to a Visit*
-// method specific to the expression type. For example, if the expression is
-// a division then VisitDiv(BinaryExpr) method of a subclass will be called.
-// If the subclass doesn't contain a method with this signature, then
-// a corresponding method of BasicExprVisitor will be called.
-//
-// Example:
-//  class MyExprVisitor : public ExprVisitor<MyExprVisitor, double> {
-//   public:
-//    double VisitAdd(BinaryExpr e) { return Visit(e.lhs()) + Visit(e.rhs()); }
-//    double VisitConstant(NumericConstant n) { return n.value(); }
-//  };
+/// An expression visitor.
+///
+/// To use ExprVisitor define a subclass that implements some or all of the
+/// Visit* methods with the same signatures as the methods in ExprVisitor,
+/// for example, VisitDiv(BinaryExpr).
+/// Specify the subclass name as the Impl template parameter. Then calling
+/// BasicExprVisitor::Visit for some expression will dispatch to a Visit*
+/// method specific to the expression type. For example, if the expression is
+/// a division then VisitDiv(BinaryExpr) method of a subclass will be called.
+/// If the subclass doesn't contain a method with this signature, then
+/// a corresponding method of BasicExprVisitor will be called.
+///
+/// Example:
+///  class MyExprVisitor : public ExprVisitor<MyExprVisitor, double> {
+///   public:
+///    double VisitAdd(BinaryExpr e) { return Visit(e.lhs()) + Visit(e.rhs()); }
+///    double VisitConstant(NumericConstant n) { return n.value(); }
+///  };
 template <typename Impl, typename Result>
 class ExprVisitor :
     public BasicExprVisitor<Impl, Result, internal::ExprTypes> {};
 
-// Expression converter.
-// Converts logical count expressions to corresponding relational expressions.
-// For example "atleast" is converted to "<=".
+/// Expression converter.
+/// Converts logical count expressions to corresponding relational expressions.
+/// For example "atleast" is converted to "<=".
 template <typename Impl, typename Result>
 class ExprConverter : public ExprVisitor<Impl, Result> {
  private:

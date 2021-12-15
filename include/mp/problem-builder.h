@@ -36,7 +36,7 @@
 
 namespace mp {
 
-// A minimal implementation of the ProblemBuilder concept.
+/// A minimal implementation of the ProblemBuilder concept.
 template <typename Impl, typename ExprType>
 class ProblemBuilder : public SuffixManager {
  private:
@@ -415,7 +415,7 @@ class ProblemBuilder : public SuffixManager {
   }
 };
 
-// An optimization problem with a column-wise constraint matrix.
+/// An optimization problem with a column-wise constraint matrix.
 class ColProblem : public Problem {
  private:
   // Column-wise constraint matrix.

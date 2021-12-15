@@ -81,46 +81,46 @@ mp::NLHandler
    :members:
 
 mp::NullNLHandler
-^^^^
+^^^^^^^^^^^^^^^
 
 .. doxygenclass:: mp::NullNLHandler
    :members:
 
 mp::NLHeader
-^^^^
+^^^^^^^^^^^^^^^
 
 .. doxygenstruct:: mp::NLHeader
    :members:
 
 mp::ReadError
-^^^^
+^^^^^^^^^^^^^^^
 
 .. doxygenclass:: mp::ReadError
    :members:
 
 mp::BinaryReadError
-^^^^^
+^^^^^^^^^^^^^^^
 
 .. doxygenclass:: mp::BinaryReadError
    :members:
 
 mp::NLStringRef
-^^^^
+^^^^^^^^^^^^^^^
 
 .. doxygenclass:: mp::NLStringRef
    :members:
 
 mp::arith::Kind
-^^^^
+^^^^^^^^^^^^^^^
 
 .. doxygenenum:: mp::arith::Kind
 
 mp::READ_BOUNDS_FIRST
-^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 .. doxygenenumvalue:: mp::READ_BOUNDS_FIRST
 
 mp::MAX_AMPL_OPTIONS
-^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 .. doxygenenumvalue:: mp::MAX_AMPL_OPTIONS

@@ -321,6 +321,8 @@ add_prefix(MP_CONVERT_HEADERS include/mp/flat/
 add_prefix(MP_CONVERT_MIP_HEADERS include/mp/flat/MIP/
   backend.h mp2mip.h)
 
+set(MP_ALL_HEADERS ${MP_HEADERS} ${MP_CONVERT_HEADERS} ${MP_CONVERT_MIP_HEADERS})
+
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
   clock.cc expr.cc expr-writer.h nl-reader.cc option.cc os.cc
@@ -331,7 +333,7 @@ set(MP_CONVERT_SOURCES )
 add_prefix(MP_CONVERT_SOURCES src/mp/flat/
   piecewise_linear.cpp)
 
-add_mp_library(mp ${MP_HEADERS} ${MP_CONVERT_HEADERS} ${MP_CONVERT_MIP_HEADERS}
+add_mp_library(mp ${MP_ALL_HEADERS}
     ${MP_SOURCES} ${MP_CONVERT_SOURCES} ${MP_EXPR_INFO_FILE}
   COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"
   INCLUDE_DIRECTORIES src include OBJECT_LIBRARIES format)

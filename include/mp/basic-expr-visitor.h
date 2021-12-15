@@ -56,11 +56,11 @@
 
 namespace mp {
 
-// A basic expression visitor that can be used with different expression
-// hierarchies described by ExprTypes.
-//
-// BasicExprVisitor uses the curiously recurring template pattern:
-// http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
+/// A basic expression visitor that can be used with different expression
+/// hierarchies described by ExprTypes.
+///
+/// BasicExprVisitor uses the curiously recurring template pattern:
+/// http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
 template <typename Impl, typename Result, typename ExprTypes>
 class BasicExprVisitor {
  public:
@@ -181,7 +181,7 @@ class BasicExprVisitor {
     return MP_DISPATCH(VisitUnary(e));
   }
 
-  // Visits a binary expression or a function taking two arguments.
+  /// Visits a binary expression or a function taking two arguments.
   Result VisitBinary(BinaryExpr e) {
     return MP_DISPATCH(VisitNumeric(e));
   }

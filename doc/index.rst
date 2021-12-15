@@ -89,7 +89,6 @@ Contents
    rst/reference
 
 
-
 Indices and tables
 ------------------
 

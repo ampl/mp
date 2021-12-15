@@ -1,32 +1,58 @@
-.. _cppreference:
+More tools
+==========
 
-Reference
-=========
-
-This section contains the reference to all the classes and functions in mp.
+This section overviews most low-level classes and functions in namespace :cpp:any:`mp`.
 
 
 
-Common
-------
+Problem builders
+----------------
+
+* `mp::ProblemBuilder`
+
+* `mp::ColProblem`
 
 
+Problem representation
+----------------------
+
+A standard representation of a model, convenient for intermediate storage.
+Can be converted into solver API by a subclassed `mp::ExprVisitor`.
+
+* `mp::ProblemInfo`, `mp::var::Type`, `mp::obj::Type`, `mp::func::Type`, `mp::ComplInfo`
+
+* `mp::Problem`, `mp::BasicProblem`
 
 
-Generic
--------
+Expression forest walkers
+-------------------------
 
-.. doxygenclass:: mp::Solver
-   :members:
+* `mp::expr::Kind`, `mp::expr::str`, `mp::expr::nl_opcode`
 
-|
+* `mp::BasicExprVisitor`, `mp::ExprVisitor`, `mp::ExprConverter`
 
-API
----
-.. doxygenclass:: mp::Backend
-   :members:
+* `mp::ExprFlattener`
 
-|
 
-.. doxygenclass:: mp::MIPBackend
-   :members:
+Standard AMPL solver logic
+--------------------------
+
+* `mp::Solver`, `mp::SolverImpl`
+
+* `mp::Backend`, `mp::MIPBackend`
+
+
+Solution status
+---------------
+
+* `mp::sol::Status`
+
+
+Suffixes
+--------
+
+* `mp::suf::Kind`, `mp::SuffixDef`
+
+* Standard suffix value enums: `mp::IISStatus`, `mp::BasicStatus`
+
+
