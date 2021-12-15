@@ -213,17 +213,17 @@ protected:
   void ConvertExtraItemsInRange(int first, int after_last) {
     for (; first<after_last; ++first) {
       auto* pConstraint = this->GetModel().custom_con(first);
-      if (!pConstraint->IsRemoved()) {
+      if (!pConstraint->IsBridged()) {
         const auto acceptanceLevel =
             pConstraint->BackendAcceptance(this->GetBackend());
         if (NotAccepted == acceptanceLevel) {
           pConstraint->ConvertWith(*this);
-          pConstraint->Remove();
+          pConstraint->MarkAsBridged();    // TODO should this be marked in Convert()?
         }
         else if (AcceptedButNotRecommended == acceptanceLevel) {
           try {
             pConstraint->ConvertWith(*this);
-            pConstraint->Remove();
+            pConstraint->MarkAsBridged();  // TODO should this be marked in Convert()?
           } catch (const ConstraintConversionFailure& ccf) {
             printf( fmt::format(      // TODO use Env
                            "WARNING: {}. Will pass the constraint "

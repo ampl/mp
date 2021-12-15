@@ -8,3 +8,4 @@ Namespace mp
 ------------
 
 .. doxygennamespace:: mp
+   :members:

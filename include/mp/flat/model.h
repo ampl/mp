@@ -234,7 +234,7 @@ protected:
     if (int n_ccons = num_custom_cons()) {
       for (int i = 0; i < n_ccons; ++i) {
         const auto* pConstraint = custom_con(i);
-        if (!pConstraint->IsRemoved())
+        if (!pConstraint->IsBridged())
           pConstraint->AddToBackend(backend);
       }
     }

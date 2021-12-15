@@ -35,21 +35,21 @@ HOWTOs
   object is an array of test cases. Each element is a dictionary with the
   following items, where non-compulsory items are italicized:
   
-   * **"name": "<name>"**: <name> is the case name. Unless *"files"* is present
-     (see below), the first word of <name> must coincide with the
-     model / script stem. For example, test case using ``diet.mod`` could be
-     called ``diet objno=5``.
+  * **"name": "<name>"**: <name> is the case name. Unless *"files"* is present
+    (see below), the first word of <name> must coincide with the
+    model / script stem. For example, test case using ``diet.mod`` could be
+    called ``diet objno=5``.
 
-   * **"tags": ["linear", "continuous"]**: tags specifying model type, the case
-     is executed only if the tags are a subset of the solver's ones. Except the
-     tag **"run"** which means the test case is an AMPL script.
+  * **"tags": ["linear", "continuous"]**: tags specifying model type, the case
+    is executed only if the tags are a subset of the solver's ones. Except the
+    tag **"run"** which means the test case is an AMPL script.
 
-   * *"files": ["diet.mod", "diet.dat"]*
+  * *"files": ["diet.mod", "diet.dat"]*
 
-   * *"objective": value*: expected objective value.
+  * *"objective": value*: expected objective value.
 
-   * *"options": { "ANYSOLVER_options": "iisfind=1", "baron_options": "iisfind=12", "send_statuses": "0" }*.
-     Option key ending with ``SOLVER_options`` is for any solver, except when
-     a solver-specific key is present (like ``baron_options``.)
+  * *"options": { "ANYSOLVER_options": "iisfind=1", "baron_options": "iisfind=12", "send_statuses": "0" }*.
+    Option key ending with ``SOLVER_options`` is for any solver, except when
+    a solver-specific key is present (like ``baron_options``.)
 
-   * *"values": { "X[0].iis": "upp", ... }*. Expected values.
+  * *"values": { "X[0].iis": "upp", ... }*. Expected values.

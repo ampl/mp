@@ -11,8 +11,8 @@ namespace mp {
 /// An array of constraints of a single type
 class BasicConstraintKeeper;
 
-/// A reference to a stored constraint
-class BasicConstraintRef;
+/// A reference to a stored constraint of a known type
+using ConstraintKeeperId = int;
 
 /// Converters handling custom constraints should derive from
 class BasicFlatConverter {
@@ -24,6 +24,7 @@ public:
     // ... do nothing by default
     // Should at least derive bounds & type for the result
   }
+  /// TODO incapsulate parameters
   void PropagateResult(BasicConstraint& con, double lb, double ub, Context ctx) {
     internal::Unused(con, lb, ub, ctx);
     throw std::logic_error("This should not be called");
@@ -69,10 +70,13 @@ public:
 class BasicConstraintKeeper {
 public:
   virtual ~BasicConstraintKeeper() { }
+  /// Constraint keeper description
   virtual const std::string& GetDescription() const = 0;
-  virtual const BasicConstraint& GetBasicConstraint() const = 0;
-  virtual bool IsRemoved() const = 0;
-  virtual void Remove() = 0;
+  /// The item was bridged, don't pass it further
+  virtual bool IsBridged() const = 0;
+  /// Mark as bridged
+  virtual void MarkAsBridged() = 0;
+  /// Propagate expression result top-down
   virtual void PropagateResult(BasicFlatConverter& cvt,
                                double lb, double ub, Context ctx) = 0;
   /// Returns -1 if none
@@ -90,6 +94,8 @@ public:
   virtual int ConstraintClass() const = 0;
 };
 
+/// Specialize ConstraintKeeper for a given constraint type
+/// to store an array of such constraints
 template <class Converter, class Backend, class Constraint>
 class ConstraintKeeper : public BasicConstraintKeeper {
   Constraint cons_;
@@ -106,12 +112,10 @@ public:
   const std::string& GetDescription() const override {
     return desc_.c_str();
   }
-  const BasicConstraint& GetBasicConstraint() const override
-  { return cons_; }
   const Constraint& GetConstraint() const { return cons_; }
   Constraint& GetConstraint() { return cons_; }
-  bool IsRemoved() const override { return is_removed_; }
-  void Remove() override { is_removed_=true; }
+  bool IsBridged() const override { return is_removed_; }
+  void MarkAsBridged() override { is_removed_=true; }
   void PropagateResult(BasicFlatConverter& cvt,
                        double lb, double ub, Context ctx) override {
     try {
