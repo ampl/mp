@@ -1203,8 +1203,8 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
     int status, fmt::CStringRef message, const double *values,
     const double *dual_values, double) {
   if (solver_.need_multiple_solutions()) {
-    auto kindP = suf::PROBLEM | suf::OUTPUT | suf::OUTONLY;
-    auto kindO = suf::OBJ | suf::OUTPUT | suf::OUTONLY;
+    auto kindP = mp::suf::Kind( suf::PROBLEM | suf::OUTPUT | suf::OUTONLY );
+    auto kindO = mp::suf::Kind( suf::OBJ | suf::OUTPUT | suf::OUTONLY );
     builder_.AddIntSuffix("nsol", kindP, 0).
         SetValue(0, num_solutions_);
     builder_.AddIntSuffix("nsol", kindO, 0).

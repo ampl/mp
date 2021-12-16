@@ -298,7 +298,7 @@ struct IntBoundInfo {
   static var::Type type() { return var::INTEGER; }
   static int value() { return 42; }
   static Type get(const localsolver::LSParam &p) {
-    return p.getObjectiveBound(0);
+    return p.getIntObjectiveThreshold(0);
   }
   static mp::LSProblemBuilder::IntSuffixHandler AddSuffix(
       mp::LSProblemBuilder &pb) {
@@ -312,7 +312,7 @@ struct DblBoundInfo {
   static var::Type type() { return var::CONTINUOUS; }
   static Type value() { return 4.2; }
   static Type get(const localsolver::LSParam &p) {
-    return p.getDoubleObjectiveBound(0);
+    return p.getDoubleObjectiveThreshold(0);
   }
   static mp::LSProblemBuilder::DblSuffixHandler AddSuffix(
       mp::LSProblemBuilder &pb) {
