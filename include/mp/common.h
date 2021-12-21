@@ -1135,7 +1135,7 @@ enum class IISStatus {
 
 /// Basic status values (suffix .sstatus)
 enum class BasicStatus {
-  none= 0,
+  none= 0,  // 'not set'
   bas = 1,
   sup = 2,
   low = 3,

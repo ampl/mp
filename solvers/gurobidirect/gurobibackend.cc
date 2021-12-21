@@ -307,7 +307,7 @@ ArrayRef<int> GurobiBackend::ConStatii() {
       s = (int)BasicStatus::bas;
       break;
     case -1:
-      s = (int)BasicStatus::none;
+      s = (int)BasicStatus::sup;   // TODO exact value low/upp/equ??
       break;
     default:
       MP_RAISE(fmt::format("Unknown Gurobi CBasis value: {}", s));
@@ -348,16 +348,15 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
   for (auto& s: stt) {
     switch ((BasicStatus)s) {
     case BasicStatus::bas:
-      s = 0;
-      break;
-    case BasicStatus::none:
-      s = -1;
-      break;
+    case BasicStatus::none:   // for 'not set', it seems better
+      s = 0;                  // after adding new rows
+      break;                  // as Gurobi 9.5 does not accept partial basis
     case BasicStatus::upp:
     case BasicStatus::sup:
     case BasicStatus::low:
     case BasicStatus::equ:
     case BasicStatus::btw:
+      s = -1;
       break;
     default:
       MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
