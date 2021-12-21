@@ -26,6 +26,9 @@ breathe_domain_by_extension = {'h': 'cpp'}
 highlight_language = 'c++'
 primary_domain = 'cpp'
 
+# A list of prefixes that will be ignored when sorting C++ objects in the global index. For example ['awesome_lib::']
+cpp_index_common_prefix = ['mp::']
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
