@@ -16,9 +16,6 @@ public:
 
 public:
   using BaseConverter = FlatConverter<Impl, Backend, Model>;
-  template <class Constraint>
-    using ConstraintKeeperType = typename
-      BaseConverter::template ConstraintKeeperType<Constraint>;
 
 public:
   static const char* GetConverterName() { return "MPToMIPConverter"; }
@@ -319,54 +316,58 @@ public:
   ///
 private:
   /// For a single variable, map its equality comparisons
-  using SingleVarEqConstMap = std::unordered_map<double,
-                     const ConstraintKeeperType<EQ0Constraint>*>;
+  /// for the comparison value (double), map the EQ0Constraint index
+  using SingleVarEqConstMap = std::unordered_map<double, int>;
   /// A map keeping such maps for certain variables
   using VarsEqConstMap = std::unordered_map<int, SingleVarEqConstMap>;
 
   VarsEqConstMap map_vars_eq_const_;
 
 public:
-  ///////////////////////////////////////////////////////////////////////
+  //////////////////////////////// CONSTRAINT MAPS ///////////////////////////////////////
   ///
   USE_BASE_MAP_FINDERS( BaseConverter )
 
-  const BasicConstraintKeeper* MapFind(const EQ0Constraint& eq0c) const {
+  AbstractConstraintLocation MapFind(const EQ0Constraint& eq0c) {
     const auto isVCC = IsVarConstCmp( eq0c );
     if (isVCC.first) {                    // only var==const comparisons
       return MapFind__VarConstCmp(isVCC.second.first, isVCC.second.second);
     }
-    return nullptr;
+    return { };
   }
 
-  const BasicConstraintKeeper* MapFind__VarConstCmp(int var, double val) const {
+  AbstractConstraintLocation MapFind__VarConstCmp(int var, double val) {
     auto itVar = map_vars_eq_const_.find(var);
     if (map_vars_eq_const_.end() != itVar) {
       auto itCmp = itVar->second.find( val );
       if (itVar->second.end() != itCmp)
-        return itCmp->second;
+        /// Make sure we store the comparisons in EQ0Con's
+        return {&GET_CONSTRAINT_KEEPER(EQ0Constraint), itCmp->second};
     }
-    return nullptr;
+    return { };
   }
 
-  bool MapInsert(const ConstraintKeeperType<EQ0Constraint>* pck) {
-    const auto isVCC = IsVarConstCmp( pck->GetConstraint() );
+  bool MapInsert(ConstraintLocation<EQ0Constraint> ck) {
+    const auto isVCC = IsVarConstCmp( ck.GetConstraint() );
     if (isVCC.first) {                    // only var==const comparisons
-      return MapInsert__VarConstCmp(isVCC.second.first, isVCC.second.second, pck);
+      return MapInsert__VarConstCmp(isVCC.second.first, isVCC.second.second, ck);
     }
     return true;
   }
 
   bool MapInsert__VarConstCmp(int var, double val,
-                              const ConstraintKeeperType<EQ0Constraint>* pck) {
+                              ConstraintLocation<EQ0Constraint> ck) {
     auto result = map_vars_eq_const_[var].
-        insert( std::make_pair( val, pck ) );
+        insert( std::make_pair( val, ck.GetIndex() ) );
     return result.second;
   }
 
+  /// Result of IsVarConstCmp(): var, const
   using VarConstCmp = std::pair<int, double>;
-  static std::pair<bool, VarConstCmp> IsVarConstCmp(const EQ0Constraint& cons) {
-    const AffineExpr& args = cons.GetArguments();
+
+  /// Check if the eq0c is a var==const
+  static std::pair<bool, VarConstCmp> IsVarConstCmp(const EQ0Constraint& con) {
+    const AffineExpr& args = con.GetArguments();
     if (1==args.num_terms()) {
       assert(1.0==args.coef(0));
       return { true, { args.var_index(0), -args.constant_term() } };
@@ -417,7 +418,8 @@ public:
       auto itV = map.find(v);
       if (map.end() != itV) {
         ++nTaken;
-        unaryEncVars[v-lb] = itV->second->GetResultVar();
+        unaryEncVars[v-lb] =
+          GET_CONSTRAINT_KEEPER(EQ0Constraint).GetResultVar(itV->second);
       } else {
         unaryEncVars[v-lb] = this->AddVar(0.0, 1.0, var::INTEGER);
       }

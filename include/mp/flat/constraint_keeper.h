@@ -1,6 +1,8 @@
 #ifndef CONSTRAINT_KEEPER_H
 #define CONSTRAINT_KEEPER_H
 
+#include <deque>
+#include <map>
 #include <limits>
 
 #include "mp/common.h"
@@ -8,11 +10,76 @@
 
 namespace mp {
 
-/// An array of constraints of a single type
-class BasicConstraintKeeper;
+/// Converters handling custom constraints should derive from
+class BasicFlatConverter;
 
-/// A reference to a stored constraint of a known type
-using ConstraintKeeperId = int;
+/// Interface for an array of constraints of certain type
+class BasicConstraintKeeper {
+public:
+  virtual ~BasicConstraintKeeper() { }
+  /// Constraint type
+  using ConstraintType = BasicConstraint;
+  /// Constraint keeper description
+  virtual const std::string& GetDescription() const = 0;
+  /// Propagate expression result of constraint \a i top-down
+  virtual void PropagateResult(BasicFlatConverter& cvt,
+                               int i,
+                               double lb, double ub, Context ctx) = 0;
+  /// Result variable of constraint \a i. Returns -1 if none
+  virtual int GetResultVar(int i) const = 0;
+  /// Convert all new items of this constraint.
+  /// This normally dispatches conversion (decomposition) to the Converter
+  /// @return whether any converted
+  virtual bool ConvertAllNewWith(BasicFlatConverter& cvt) = 0;
+  /// Checks backend's acceptance level for the constraint
+  virtual ConstraintAcceptanceLevel BackendAcceptance(
+      const BasicFlatBackend& ) const = 0;
+  /// This adds all unbridged items to the backend (without conversion)
+  virtual void AddUnbridgedToBackend(BasicFlatBackend& be) const = 0;
+
+  /// Pre- / postsolve: elementary interface
+  /// 1: linear, 2: qcp
+  virtual int ConstraintClass() const = 0;
+};
+
+
+/// Full id of a constraint: CK + index
+/// This helper class is parameterized by the Keeper
+template <class ConstraintKeeper>
+struct ConstraintLocationHelper {
+  /// Default constructor: no valid Id
+  ConstraintLocationHelper() = default;
+  /// Normal constructor
+  ConstraintLocationHelper(ConstraintKeeper* pck, int i) noexcept :
+    pck_(pck), index_(i) { }
+
+  /// Checks if we store a constraint's location
+  operator bool() const { return HasId(); }
+  /// Checks if we store a constraint's location
+  bool HasId() const { return nullptr!=pck_; }
+  /// High-level getter
+  int GetResultVar() const { return GetCK()->GetResultVar(GetIndex()); }
+  /// High-level getter
+  const typename ConstraintKeeper::ConstraintType&
+  GetConstraint() const { return GetCK()->GetConstraint(GetIndex()); }
+  /// High-level getter
+  typename ConstraintKeeper::ConstraintType&
+  GetConstraint() { return GetCK()->GetConstraint(GetIndex()); }
+
+  /// Get/set data
+  ConstraintKeeper* GetCK() const { assert(HasId()); return pck_; }
+  int GetIndex() const { return index_; }
+
+  void SetCK(ConstraintKeeper* pck) { pck_ = pck; }
+  void SetIndex(int i) { index_ = i; }
+
+  ConstraintKeeper* pck_ = nullptr;
+  int index_ = 0;        // constraint index
+};
+
+/// Without constraint type
+using AbstractConstraintLocation =
+  ConstraintLocationHelper<BasicConstraintKeeper>;
 
 /// Converters handling custom constraints should derive from
 class BasicFlatConverter {
@@ -24,18 +91,25 @@ public:
     // ... do nothing by default
     // Should at least derive bounds & type for the result
   }
+
   /// TODO incapsulate parameters
   void PropagateResult(BasicConstraint& con, double lb, double ub, Context ctx) {
     internal::Unused(con, lb, ub, ctx);
     throw std::logic_error("This should not be called");
   }
+
+  /// Default conversion priority
+  static constexpr double ConstraintCvtPriority(BasicConstraint*) { return 1.0; }
+
   /// By default, we complain about someone trying to convert an unknown constraint
   template <class Constraint>
   void Convert(const Constraint& ) {
     throw std::logic_error(
           std::string("Not converting constraint ") + Constraint::GetConstraintName());
   }
-  /// Derived converter classes have to tell C++ to use default handlers if they need them
+
+  /// Derived converter classes have to tell C++ to use
+  /// default handlers if they need them
   /// when they overload Convert(), due to C++ name hiding
 #define USE_BASE_CONSTRAINT_CONVERTERS(BaseConverter) \
   using BaseConverter::PreprocessConstraint; \
@@ -44,12 +118,25 @@ public:
 
 
   /// For Common Subexpression Elimination, we can use maps
-  const BasicConstraintKeeper* MapFind(const BasicConstraint& ) const { return nullptr; }
+  /// This stub returns empty Id
+  AbstractConstraintLocation MapFind(const BasicConstraint& )
+  { return { }; }
+
   /// Returns false when we do have a map and entry duplicated
-  bool MapInsert(const BasicConstraintKeeper* ) { return true; }
+  /// (should not happen).
+  /// Can be conveniently overloaded for
+  /// ConstraintLocation<Constraint> defined in Converters
+  template <class CK>
+  bool MapInsert(ConstraintLocationHelper<CK> ) { return true; }
+
+  /// Similarly to Convert(), need to 'using' base class' map accessors
 #define USE_BASE_MAP_FINDERS(BaseConverter) \
   using BaseConverter::MapFind; \
-  using BaseConverter::MapInsert;
+  using BaseConverter::MapInsert; \
+  template <class Constraint> \
+  using ConstraintLocation = \
+    ConstraintLocationHelper< ConstraintKeeper< Impl, Backend, Constraint > >;
+
 
   static constexpr double Infty() { return std::numeric_limits<double>::infinity(); }
   static constexpr double MinusInfty() { return -std::numeric_limits<double>::infinity(); }
@@ -65,101 +152,201 @@ public:
 };
 
 
-
-/// A derived class stores an array of constraints of certain type
-class BasicConstraintKeeper {
-public:
-  virtual ~BasicConstraintKeeper() { }
-  /// Constraint keeper description
-  virtual const std::string& GetDescription() const = 0;
-  /// The item was bridged, don't pass it further
-  virtual bool IsBridged() const = 0;
-  /// Mark as bridged
-  virtual void MarkAsBridged() = 0;
-  /// Propagate expression result top-down
-  virtual void PropagateResult(BasicFlatConverter& cvt,
-                               double lb, double ub, Context ctx) = 0;
-  /// Returns -1 if none
-  virtual int GetResultVar() const = 0;
-  /// This normally dispatches conversion (decomposition) to the Converter
-  virtual void ConvertWith(BasicFlatConverter& cvt) = 0;
-  /// Checks backend's acceptance level for the constraint
-  virtual ConstraintAcceptanceLevel BackendAcceptance(
-      const BasicFlatBackend& ) const = 0;
-  /// This adds the constraint to the backend without conversion
-  virtual void AddToBackend(BasicFlatBackend& be) const = 0;
-
-  /// Pre- / postsolve: elementary interface
-  /// 1: linear, 2: qcp
-  virtual int ConstraintClass() const = 0;
-};
-
 /// Specialize ConstraintKeeper for a given constraint type
 /// to store an array of such constraints
 template <class Converter, class Backend, class Constraint>
 class ConstraintKeeper : public BasicConstraintKeeper {
-  Constraint cons_;
-  bool is_removed_ = false;
+public:
+  /// Constraint type
+  using ConstraintType = Constraint;
+  /// Constrint Keeper description
+  const std::string& GetDescription() const override
+  { return desc_; }
+  /// Assume Converter has the Backend
+  Backend& GetBackend(BasicFlatConverter& cvt)
+  { return static_cast<Converter&>(cvt).GetBackend(); }
+  /// Constructor, adds this CK to the provided CM
+  /// Requires the CM to be already constructed
+  template <class ConstraintManager>
+  ConstraintKeeper(ConstraintManager& cm) {
+    cm.AddConstraintKeeper(*this, ConversionPriority());
+  }
+  /// Add a pre-constructed constraint (or just arguments)
+  /// @return index of the new constraint
+  template <class... Args>
+  int AddConstraint(Args&&... args) noexcept
+  {
+    Container cnt{std::move(args)...};
+    cons_.emplace_back( std::move(cnt) );
+    return cons_.size()-1;
+  }
+  /// Get const constraint \a i
+  const Constraint& GetConstraint(int i) const
+  { assert(check_index(i)); return cons_[i].con_; }
+  /// Get constraint \a i
+  Constraint& GetConstraint(int i)
+  { assert(check_index(i)); return cons_[i].con_; }
+  /// Propagate expression result of constraint \a i top-down
+  void PropagateResult(BasicFlatConverter& cvt,
+                       int i,
+                       double lb, double ub, Context ctx) override {
+    try {
+      static_cast<Converter&>(cvt).PropagateResult(
+            GetConstraint(i), lb, ub, ctx);
+    } catch (const std::exception& exc) {
+      throw std::logic_error(Converter::GetConverterName() +
+                             std::string(": propagating result for constraint ") +
+                             std::to_string(i) + " of type" +
+                             Constraint::GetConstraintName() +
+                             ":  " + exc.what());
+    }
+  }
+  /// Result variable of constraint \a i. Returns -1 if none
+  int GetResultVar(int i) const override
+  { assert(check_index(i)); return cons_[i].con_.GetResultVar(); }
+  /// Conversion priority. Uses that from Converter
+  double ConversionPriority() const
+  { return Converter::ConstraintCvtPriority((Constraint*)nullptr); }
+  /// Convert all new items of this constraint.
+  /// This normally dispatches conversion (decomposition) to the Converter
+  /// @return whether any converted
+  bool ConvertAllNewWith(BasicFlatConverter& cvt) override {
+    try {
+      return ConvertAllFrom(i_cvt_last_, cvt);
+    } catch (const std::exception& exc) {
+      throw std::logic_error(Converter::GetConverterName() + std::string(": ")
+                             + exc.what());
+    }
+    return false;
+  }
+  ConstraintAcceptanceLevel BackendAcceptance(
+      const BasicFlatBackend& ba) const override {
+    return static_cast<const Backend&>( ba ).AcceptanceLevel((Constraint*)nullptr);
+  }
+  void AddUnbridgedToBackend(BasicFlatBackend& be) const override {
+    try {
+      AddAllUnbridged(be);
+    } catch (const std::exception& exc) {
+      throw std::logic_error(std::string("Adding constraint ") +
+                             Constraint::GetConstraintName() + " to " +
+                             Backend::GetBackendName() + std::string(": ") +
+                             exc.what());
+    }
+  }
+  int ConstraintClass() const override
+  { return Converter::ConstraintClass((Constraint*)nullptr); }
+
+protected:
+  bool check_index(int i) const { return i>=0 && i<(int)cons_.size(); }
+  /// Container for a single constraint
+  struct Container {
+    Container(Constraint&& c) noexcept : con_(std::move(c)) { }
+
+    bool IsBridged() const { return is_bridged_; }
+    void MarkAsBridged() { is_bridged_=true; }
+
+    Constraint con_;
+    bool is_bridged_ = false;
+  };
+  bool ConvertAllFrom(int& i_last, BasicFlatConverter& cvt) {
+    int i=i_last;
+    ++i;
+    const auto acceptanceLevel =
+        BackendAcceptance(GetBackend(cvt));
+    if (NotAccepted == acceptanceLevel) {       // Convert all
+      for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i)
+        if (!it->IsBridged())
+          ConvertConstraint(*it, cvt);
+    }
+    else if (AcceptedButNotRecommended == acceptanceLevel) {
+      for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i) {
+        if (!it->IsBridged()) {
+          try {
+            ConvertConstraint(*it, cvt);
+          } catch (const ConstraintConversionFailure& ccf) {
+            printf( fmt::format(      // TODO use Env's output facility
+                                      "WARNING: {}. Will pass constraint {}[{}]"
+                           "to the backend. Continuing\n",
+                                      ccf.message(), i,
+                                      Constraint::GetConstraintName() ).c_str() );
+          }
+        }
+      }
+    }
+    bool any_converted = i_last!=i-1;
+    i_last = i-1;
+    return any_converted;
+  }
+  void ConvertConstraint(Container& cnt, BasicFlatConverter& cvt) {
+    assert(!cnt.IsBridged());
+    static_cast<Converter&>(cvt).RunConversion(cnt.con_);
+    cnt.MarkAsBridged();    // TODO should this be marked in Convert()?
+  }
+  void AddAllUnbridged(BasicFlatBackend& be) const {
+    for (auto& cont: cons_)
+      if (!cont.IsBridged())
+        static_cast<Backend&>(be).AddConstraint(cont.con_);
+  }
+
+private:
+  std::deque<Container> cons_;        // TODO see if vector is faster
+  int i_cvt_last_ = -1;               // last converted constraint
   const std::string desc_ {
     std::string("ConstraintKeeper< ") +
         Converter::GetConverterName() + ", " +
         Backend::GetBackendName() + ", " +
         Constraint::GetConstraintName() + " >"};
-public:
-  template <class... Args>
-  ConstraintKeeper(Args&&... args) noexcept
-    : cons_(std::move(args)...) { }
-  const std::string& GetDescription() const override {
-    return desc_.c_str();
-  }
-  const Constraint& GetConstraint() const { return cons_; }
-  Constraint& GetConstraint() { return cons_; }
-  bool IsBridged() const override { return is_removed_; }
-  void MarkAsBridged() override { is_removed_=true; }
-  void PropagateResult(BasicFlatConverter& cvt,
-                       double lb, double ub, Context ctx) override {
-    try {
-      static_cast<Converter&>(cvt).PropagateResult(cons_, lb, ub, ctx);
-    } catch (const std::exception& exc) {
-      throw std::logic_error(Converter::GetConverterName() +
-                             std::string(": propagating result for constraint ") +
-                             + Constraint::GetConstraintName() +
-                             ":  " + exc.what());
-    }
-  }
-  virtual int GetResultVar() const { return cons_.GetResultVar(); }
-  void ConvertWith(BasicFlatConverter& cvt) override {
-    try {
-      static_cast<Converter&>(cvt).RunConversion(cons_);
-    } catch (const std::exception& exc) {
-      throw std::logic_error(Converter::GetConverterName() + std::string(": ")
-                             + exc.what());
-    }
-  }
-  ConstraintAcceptanceLevel BackendAcceptance(
-      const BasicFlatBackend& ba) const override {
-    return static_cast<const Backend&>( ba ).AcceptanceLevel(&cons_);
-  }
-  void AddToBackend(BasicFlatBackend& be) const override {
-    try {
-      static_cast<Backend&>(be).AddConstraint(cons_);
-    } catch (const std::exception& exc) {
-      throw std::logic_error(Backend::GetBackendName() + std::string(": ") +
-                             exc.what());
-    }
-  }
-  int ConstraintClass() const
-  { return Converter::ConstraintClass((Constraint*)nullptr); }
 };
 
-/// Helper function constructing a constraint keeper
-template <class Converter, class Constraint, class... Args>
-ConstraintKeeper<Converter, typename Converter::BackendType, Constraint>
-  *makeConstraintKeeper(Args... args) {
-  return
-    new ConstraintKeeper<Converter, typename Converter::BackendType, Constraint>(
-        std::forward<Args>(args)...);
-}
+/// Macros to define / access constraint keepers
+/// Assume ConstraintManager as public parent
+
+/// Use this to obtain a certain keeper
+#define GET_CONSTRAINT_KEEPER(Constraint) \
+  MPD( GetConstraintKeeper((Constraint*)nullptr) )
+
+/// Define a constraint keeper
+#define HANDLE_CONSTRAINT_TYPE(Constraint) \
+  ConstraintKeeper<Impl, Backend, Constraint> \
+    CONSTRAINT_KEEPER_VAR(Constraint){*this}; \
+  const ConstraintKeeper<Impl, Backend, Constraint>& \
+  GetConstraintKeeper(Constraint* ) const { \
+    return CONSTRAINT_KEEPER_VAR(Constraint); \
+  } \
+  ConstraintKeeper<Impl, Backend, Constraint>& \
+  GetConstraintKeeper(Constraint* ) { \
+    return CONSTRAINT_KEEPER_VAR(Constraint); \
+  }
+
+/// Internal use
+#define CONSTRAINT_KEEPER_VAR(Constraint) \
+  ck__ ## Constraint ## _
+
+
+/// Manage ConstraintKeepers for different constraint types
+class ConstraintManager {
+  std::multimap<double, BasicConstraintKeeper&> con_keepers_;
+public:
+  /// Add a new CKeeper with given conversion priority (smaller = sooner)
+  void AddConstraintKeeper(BasicConstraintKeeper& ck, double priority)
+  { con_keepers_.insert( { priority, ck } ); }
+
+  /// Convert all constraints (including any new appearing)
+  void ConvertAllConstraints(BasicFlatConverter& cvt) {
+    bool any_converted;
+    do {
+      any_converted = false;
+      for (auto& ck: con_keepers_)
+        any_converted = any_converted || ck.second.ConvertAllNewWith(cvt);
+    } while (any_converted);
+  }
+
+  /// Add all unbridged constraints to Backend
+  void AddUnbridgedConstraintsToBackend(BasicFlatBackend& be) const {
+    for (const auto& ck: con_keepers_)
+      ck.second.AddUnbridgedToBackend(be);
+  }
+};
 
 } // namespace mp
 

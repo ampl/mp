@@ -251,9 +251,12 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( DisjunctionConstraint, VarArray,
 /// \brief DEFINE_CUSTOM_DEFINING_CONSTRAINT
 /// Keep it with AffineExpr, indicators need that
 /// and we don't want quadratics with big-M's?
+/// Or, add QuadraticEq0Constraint?
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( EQ0Constraint, AffineExpr,
                                    "r = (expr == 0)");
 
+/// Not using: var1 != var2.
+/// Represented by Not { Eq0Constraint... }
 ////////////////////////////////////////////////////////////////////////
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( NEConstraint__unused, VarArray2,
                                    "r = (v1 != v2)");
