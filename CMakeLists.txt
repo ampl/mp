@@ -386,7 +386,13 @@ if (MP_VARIADIC_TEMPLATES)
   target_link_libraries(nl-example mp)
 endif ()
 
-add_subdirectory(doc)
+option(BUILD_DOC "Build documentation" ON)
+if(BUILD_DOC)
+  message(STATUS
+    "Building documentation (if the requirements are installed). "
+    "Set BUILD_DOC=off otherwise")
+  add_subdirectory(doc)
+endif()
 add_subdirectory(src/asl)
 add_subdirectory(src/amplsig)
 add_subdirectory(src/cp)
