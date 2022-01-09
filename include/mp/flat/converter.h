@@ -15,6 +15,7 @@
 #include "mp/flat/model.h"
 #include "mp/flat/std_constr.h"
 #include "mp/flat/preprocess.h"
+#include "mp/presolve.h"
 
 namespace mp {
 
