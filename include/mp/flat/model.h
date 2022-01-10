@@ -43,6 +43,7 @@ public:
     return var_type_.size()-1;
   }
 
+  /// Add several variables
   void AddVars(const VarBndVec& lbs, const VarBndVec& ubs,
                const VarTypeVec& types) {
     assert(check_vars());

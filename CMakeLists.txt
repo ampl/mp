@@ -306,8 +306,8 @@ add_to_folder(${MP_FOLDER_PREFIX}util gen-expr-info)
 
 add_prefix(MP_HEADERS include/mp/
   arrayref.h basic-expr-visitor.h clock.h common.h error.h expr.h
-  expr-visitor.h nl.h nl-reader.h option.h os.h
-  presolve_base.h presolve.h problem.h problem-builder.h
+  expr-visitor.h nl.h nl-reader.h option.h os.h problem.h problem-builder.h
+  presolve_base.h presolve_node.h presolve_bridge.h presolve.h
   rstparser.h safeint.h sol.h solver.h suffix.h utils_file.h utils_string.h)
 
 add_prefix(MP_CONVERT_HEADERS include/mp/flat/

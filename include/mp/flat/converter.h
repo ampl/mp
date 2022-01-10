@@ -676,6 +676,10 @@ public:
   const BasicBackend& GetBasicBackend() const { return backend_; }
   BasicBackend& GetBasicBackend() { return backend_; }
 
+  /// Expose Presolver
+  const pre::Presolver& GetPresolver() const { return presolver_; }
+  pre::Presolver& GetPresolver() { return presolver_; }
+
 private:
   std::unordered_map<double, int> map_fixed_vars_;
 
@@ -700,7 +704,17 @@ public:
     return MakeFixedVar(lb);
   }
 
-  using BaseFlatModel::AddVars;
+  /// Add several variables
+  /// @return value node range for them
+  pre::NodeRange AddVars(const typename BaseFlatModel::VarBndVec& lbs,
+               const typename BaseFlatModel::VarBndVec& ubs,
+               const typename BaseFlatModel::VarTypeVec& types) {
+    assert(0==BaseFlatModel::num_vars());                     // allow this only once
+    BaseFlatModel::AddVars(lbs, ubs, types);
+    return { GetPresolver().GetTargetNodes().
+          GetVarValues().MakeSingleKey(),  // reuse target nodes for all variables
+      {0, BaseFlatModel::num_vars()} };
+  }
 
 protected:
   double lb(int var) const { return this->GetModel().lb(var); }
@@ -916,6 +930,7 @@ public:  // for tests. TODO make friends
 
 private:
   BackendType backend_;
+  pre::Presolver presolver_;
 
   /// TODO replace by pre- / postsolve
   /// Indices of NL original linear constr in the total constr ordering

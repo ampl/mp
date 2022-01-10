@@ -125,7 +125,11 @@ protected:
       ubs[i] = mpvar.ub();
       types[i] = mpvar.type();
     }
-    GetFlatCvt().AddVars(lbs, ubs, types);
+    auto vnr = GetFlatCvt().AddVars(lbs, ubs, types);
+    GetCopyBridge().AddEntry({
+          {GetPresolver().GetSourceNodes().GetVarValues().MakeSingleKey(),
+            {0, lbs.size()}},
+          vnr });
   }
 
   void Convert(typename ModelType::MutCommonExpr ) {
@@ -572,11 +576,15 @@ protected:
 
   //////////////////////////// UTILITIES /////////////////////////////////
   ///
+protected:
+  pre::Presolver& GetPresolver() { return GetFlatCvt().GetPresolver(); }
 
 private:
   std::unordered_map<double, int> map_fixed_vars_;
 
   std::vector<int> common_exprs_;               // variables equal to the result
+
+  pre::CopyBridge copy_bridge_ { GetPresolver() };
 
 protected:
 
@@ -584,6 +592,7 @@ protected:
   int MakeFixedVar(double value) // TODO use proper const term in obj
   { return GetFlatCvt().MakeFixedVar(value); }
 
+  pre::CopyBridge& GetCopyBridge() { return copy_bridge_; }
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////

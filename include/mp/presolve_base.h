@@ -41,16 +41,20 @@ public:
       map_[a2.first] = a2.second;
   }
 
-  /// Check if we have only the single array
-  bool IfSingleArray() const
+  /// Check if we have only the single key
+  bool IfSingleKey() const
   { return 1==map_.size() && 0==map_.begin()->first; }
+
+  /// Make single key and return. Assumes empty map
+  Array& MakeSingleKey()
+  { assert(map_.empty()); return map_[0]; }
 
   /// Retrieve the single array, const
   const Array& operator()() const
-  { assert(IfSingleArray()); return map_.at(0); }
+  { assert(IfSingleKey()); return map_.at(0); }
   /// Retrieve the single array (create if need)
   Array& operator()()
-  { assert(map_.empty() || IfSingleArray()); return map_[0]; }
+  { assert(map_.empty() || IfSingleKey()); return map_[0]; }
 
   /// Retrieve the array with index i, const
   const Array& operator()(int i) const { return map_.at(i); }
@@ -68,6 +72,8 @@ private:
 template <class VMap>
 class ModelValues {
 public:
+  /// Default constructor
+  ModelValues() = default;
   /// Construct from values for vars, cons, objs
   /// (last 2 can be omitted)
   ModelValues(VMap v, VMap c = {}, VMap o = {}) :
@@ -121,6 +127,19 @@ public:
   /// Postsolve solution (primal + dual)
   virtual ModelValuesInt PostsolveBasis(const ModelValuesInt& ) = 0;
 };
+
+
+/// index range for some bridge or node
+struct IndexRange {
+  /// Construct, possibly from a single index
+  IndexRange(int b, int e=-1) : beg(b), end(e<0 ? b+1 : e) { }
+
+  /// Size()
+  int size() const { assert(end>beg); return end-beg; }
+
+  int beg=0, end=0;
+};
+
 
 } // namespace pre
 
