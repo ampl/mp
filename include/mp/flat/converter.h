@@ -568,8 +568,9 @@ public:
   //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
   //////////////////////// Takes ownership /////////////////////////////
   template <class Constraint>
-  void AddConstraint(Constraint&& con) {
-    AddConstraintAndTryNoteResultVariable( std::move(con) );
+  pre::NodeRange AddConstraint(Constraint&& con) {
+    auto node_range =
+        AddConstraintAndTryNoteResultVariable( std::move(con) );
     if (adding_orig_constr_) {                  // primitive bridging
       auto cc=ConstraintClass(&con);             // can use destroyed \a con
       if (1==cc) {
@@ -579,13 +580,14 @@ public:
       }
       ++i_constr_orig_;
     }
+    return node_range;
   }
 
 protected:
   USE_BASE_MAP_FINDERS( BaseConverter )
 
   template <class Constraint>
-  void AddConstraintAndTryNoteResultVariable(Constraint&& con) {
+  pre::NodeRange AddConstraintAndTryNoteResultVariable(Constraint&& con) {
     const auto resvar = con.GetResultVar();
     auto& ck = GET_CONSTRAINT_KEEPER( Constraint );
     auto i = ck.AddConstraint(std::move(con));
@@ -597,6 +599,7 @@ protected:
     if (! MP_DISPATCH( MapInsert( cl ) ))
       throw std::logic_error("Trying to map_insert() duplicated constraint: " +
                              ck.GetDescription());
+    return ck.GetValueNode().Select(i);
   }
 
   /// Define constraint keepers for all constraint types
@@ -712,8 +715,8 @@ public:
     assert(0==BaseFlatModel::num_vars());                     // allow this only once
     BaseFlatModel::AddVars(lbs, ubs, types);
     return { GetPresolver().GetTargetNodes().
-          GetVarValues().MakeSingleKey(),  // reuse target nodes for all variables
-      {0, BaseFlatModel::num_vars()} };
+          GetVarValues().MakeSingleKey().  // reuse target nodes for all variables
+      Add( BaseFlatModel::num_vars() ) };
   }
 
 protected:
@@ -767,6 +770,7 @@ protected:
     var_info_[var] = vi;
   }
 
+public:
   bool HasInitExpression(int var) const {
     return int(var_info_.size())>var && var_info_[var].HasId();
   }

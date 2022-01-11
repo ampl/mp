@@ -7,6 +7,7 @@
 
 #include "mp/common.h"
 #include "mp/flat/flat_model_api_basic.h"
+#include "mp/presolve_node.h"
 
 namespace mp {
 
@@ -40,6 +41,14 @@ public:
   /// Pre- / postsolve: elementary interface
   /// 1: linear, 2: qcp
   virtual int ConstraintClass() const = 0;
+
+  /// Value presolve node, const
+  const pre::ValueNode& GetValueNode() const { return value_node_; }
+  /// Value presolve node
+  pre::ValueNode& GetValueNode() { return value_node_; }
+
+private:
+  pre::ValueNode value_node_;
 };
 
 
@@ -176,8 +185,7 @@ public:
   template <class... Args>
   int AddConstraint(Args&&... args) noexcept
   {
-    Container cnt{std::move(args)...};
-    cons_.emplace_back( std::move(cnt) );
+    cons_.emplace_back( std::move(args)... );
     return cons_.size()-1;
   }
   /// Get const constraint \a i

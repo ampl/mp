@@ -86,8 +86,15 @@ public:
 
   /// Add entry
   void AddEntry(BridgeEntry be) {
-    entries_.push_back(be);
-    RegisterBridgeIndex(entries_.size()-1);
+    if (entries_.empty() ||
+        !entries_.back().first.ExtendableBy(be.first) ||
+        !entries_.back().second.ExtendableBy(be.second)) {
+      entries_.push_back(be);             // Add new entry
+      RegisterBridgeIndex(entries_.size()-1);
+    } else {                              // Extend last entry
+      entries_.back().first.ExtendBy(be.first);
+      entries_.back().second.ExtendBy(be.second);
+    }
   }
 
   /// Presolve solution (primal + dual)
@@ -109,16 +116,14 @@ protected:
   void CopySrcDest(BridgeIndexRange ir) {
     for (int i=ir.beg; i!=ir.end; ++i) {
       const auto& br = entries_[i];
-      assert(br.first.ir_.size() == br.second.ir_.size());
-      br.first.vn_.Copy(br.first.ir_, br.second.vn_, br.second.ir_.beg);
+      Copy(br.first, br.second);
     }
   }
   /// Copy src <- dest for index range ir
   void CopyDestSrc(BridgeIndexRange ir) {
     for (int i=ir.beg; i!=ir.end; ++i) {
       const auto& br = entries_[i];
-      assert(br.first.ir_.size() == br.second.ir_.size());
-      br.second.vn_.Copy(br.second.ir_, br.first.vn_, br.first.ir_.beg);
+      Copy(br.second, br.first);
     }
   }
 

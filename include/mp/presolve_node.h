@@ -11,11 +11,69 @@ namespace pre {
 /// Index range for a single node
 using NodeIndexRange = IndexRange;
 
+/// Declare ValueNode
+class ValueNode;
+
+/// Node range: range of node entries
+/// The node is specified as well
+class NodeRange {
+public:
+  /// Construct
+  NodeRange() = default;
+  /// Construct
+  NodeRange(const NodeRange& nr) noexcept : pvn_(nr.pvn_), ir_(nr.ir_) { }
+
+  /// Assign
+  NodeRange& operator=(const NodeRange& nr)
+  { pvn_=nr.pvn_; ir_=nr.ir_; return *this; }
+  /// Get pvn
+  ValueNode* GetValueNode() const { assert(pvn_); return pvn_; }
+  /// Get index range
+  NodeIndexRange GetIndexRange() const { assert(ir_.check()); return ir_; }
+
+  /// Check extendability
+  bool ExtendableBy(NodeRange nr) const
+  { return pvn_==nr.pvn_ && ir_.end==nr.ir_.beg; }
+  /// Extend
+  void ExtendBy(NodeRange nr)
+  { assert(ExtendableBy(nr)); ir_.end = nr.ir_.end; }
+
+protected:
+  /// Declare ValueNode
+  friend class ValueNode;
+  /// Assign members, only accessible to ValueNode
+  void Assign(ValueNode* pvn, NodeIndexRange ir) { pvn_=pvn; ir_=ir; }
+
+private:
+  ValueNode* pvn_ = nullptr;
+  NodeIndexRange ir_;
+};
+
 
 /// Value node, contains arrays of int's and double's
 /// corresponding to variables, or a constraint type, or objectives
 class ValueNode {
 public:
+  /// Declared size (what is being used by bridges)
+  size_t size() const { return sz_; }
+  /// Create entry (range) pointer: add n elements
+  NodeRange Add(int n=1) {
+    NodeRange nr;
+    nr.Assign(this, {(int)sz_, (int)sz_+n});
+    sz_ += n;
+    return nr;
+  }
+  /// Create entry (range) pointer: select n elements at certain pos
+  NodeRange Select(int pos, int n=1) {
+    NodeRange nr;
+    nr.Assign(this, {pos, pos+n});
+    if ((int)sz_<pos+n)
+      sz_ = pos+n;
+    return nr;
+  }
+
+  /////////////////////// Access value vectors ///////////////////////
+
   /// Assign from ArrayRef<int>
   ValueNode& operator=(ArrayRef<int> ai)
   { vi_ = ai.move_or_copy(); return *this; }
@@ -27,6 +85,8 @@ public:
   operator ArrayRef<int> () const { return vi_; }
   /// Retrieve whole ArrayRef<double>
   operator ArrayRef<double> () const { return vd_; }
+
+  /////////////////////// Access individual values ///////////////////////
 
   /// Retrieve int[i]
   int GetInt(size_t i) const { assert(i<vi_.size()); return vi_[i]; }
@@ -40,40 +100,46 @@ public:
   void SetDbl(size_t i, double v)
   { if (i>=vd_.size()) vd_.resize(i+1); vd_[i]=v; }
 
-  /// Copy to another node
-  void Copy(NodeIndexRange ir, ValueNode& dest, int index1) {
-    if (vi_.size()>=ir.end) {
-      if (dest.vi_.size() < index1 + ir.size())
-        dest.vi_.resize(index1 + ir.size());
-      std::copy(vi_.begin()+ir.beg, vi_.begin()+ir.end,
-                dest.vi_.begin()+index1);
-    }
-    if (vd_.size()>=ir.end) {
-      if (dest.vd_.size() < index1 + ir.size())
-        dest.vd_.resize(index1 + ir.size());
-      std::copy(vd_.begin()+ir.beg, vd_.begin()+ir.end,
-                dest.vd_.begin()+index1);
-    }
-  }
+  /// Copy node to another node
+  friend void Copy(NodeRange ir1, NodeRange ir2);
 
 private:
   std::vector<int> vi_;
   std::vector<double> vd_;
+  size_t sz_;
 };
+
+
+/// Copy int or double range only
+/// @return if anything copied
+template <class Vec> inline
+bool CopyRange(const Vec& src, Vec& dest, NodeIndexRange ir, int i1) {
+  if ((int)src.size()>=ir.end) {
+    if ((int)dest.size() < i1 + ir.size())
+      dest.resize(i1 + ir.size());
+    std::copy(src.begin()+ir.beg, src.begin()+ir.end,
+              dest.begin()+i1);
+    return true;
+  }
+  return false;
+}
+
+/// Copy node to another node
+inline
+void Copy(NodeRange ir1, NodeRange ir2) {
+  assert(ir1.GetIndexRange().size() == ir2.GetIndexRange().size());
+  auto fi = CopyRange(ir1.GetValueNode()->vi_, ir2.GetValueNode()->vi_,
+                      ir1.GetIndexRange(), ir2.GetIndexRange().beg);
+  auto fd = CopyRange(ir1.GetValueNode()->vd_, ir2.GetValueNode()->vd_,
+                      ir1.GetIndexRange(), ir2.GetIndexRange().beg);
+  assert(fi || fd);
+}
 
 
 /// Typedef map of nodes
 using NodeMap = ValueMap< ValueNode >;
 /// Typedef ModelValues stored in NodeMaps
 using ModelValuesTerminal = ModelValues< NodeMap >;
-
-
-/// Node range: range of node entries
-/// The node is specified as well
-struct NodeRange {
-  ValueNode& vn_;
-  NodeIndexRange ir_;
-};
 
 
 } // namespace pre

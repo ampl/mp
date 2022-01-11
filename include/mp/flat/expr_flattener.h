@@ -105,10 +105,10 @@ protected:
         MP_DISPATCH( Convert( GetModel().obj(i) ) );
     if (int n_cons = GetModel().num_algebraic_cons())
       for (int i = 0; i < n_cons; ++i)
-        MP_DISPATCH( Convert( GetModel().algebraic_con(i) ) );
+        MP_DISPATCH( ConvertAlgCon( i ) );
     if (int n_lcons = GetModel().num_logical_cons())
       for (int i = 0; i < n_lcons; ++i)
-        MP_DISPATCH( Convert( GetModel().logical_con(i) ) );
+        MP_DISPATCH( ConvertLogicalCon( i ) );
 
     ////////////////////////////////////////////////
     MP_DISPATCH( ConvertSOSConstraints() );
@@ -127,8 +127,8 @@ protected:
     }
     auto vnr = GetFlatCvt().AddVars(lbs, ubs, types);
     GetCopyBridge().AddEntry({
-          {GetPresolver().GetSourceNodes().GetVarValues().MakeSingleKey(),
-            {0, lbs.size()}},
+          GetPresolver().GetSourceNodes().GetVarValues().MakeSingleKey().
+                               Add(lbs.size()),
           vnr });
   }
 
@@ -155,7 +155,8 @@ protected:
                                std::move(eexpr.GetQT())});
   }
 
-  void Convert(typename ModelType::MutAlgebraicCon con) {
+  void ConvertAlgCon(int i) {
+    auto con = GetModel().algebraic_con(i);
     LinearExprUnzipper leu(con.linear_expr());
     EExpr ee;
     if (NumericExpr e = con.nonlinear_expr()) {
@@ -166,17 +167,30 @@ protected:
         std::move(leu.c_), std::move(leu.v_),
         con.lb() - ee.constant_term(),
         con.ub() - ee.constant_term() };
+    pre::NodeRange nr;
     if (ee.is_affine())
-      AddConstraint( std::move(lc) );
+      nr = AddConstraint( std::move(lc) );
     else                                   // higher-order terms
-      AddConstraint(
+      nr = AddConstraint(
           QuadraticConstraint{std::move(lc),
                               std::move(ee.GetQT())} );
+    GetCopyBridge().AddEntry( {
+            GetPresolver().GetSourceNodes().GetConValues()(0).Add(),
+            nr
+          } );
   }
 
-  void Convert(typename ModelType::MutLogicalCon e) {
+  void ConvertLogicalCon(int i) {
+    auto e = GetModel().logical_con(i);
     const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
-    GetFlatCvt().FixAsTrue(resvar);  // TODO avoid creting the variable
+    GetFlatCvt().FixAsTrue(resvar);            // TODO avoid creating the variable
+    assert(GetFlatCvt().HasInitExpression(resvar));
+    const auto& ie = GetFlatCvt().GetInitExpression(resvar);
+    /// TODO check that logical cons' values come after algebraic ones
+    GetCopyBridge().AddEntry( {
+            GetPresolver().GetSourceNodes().GetConValues()(0).Add(),
+            ie.GetCK()->GetValueNode().Select( ie.GetIndex() )
+          } );
   }
 
 public:
@@ -570,8 +584,8 @@ protected:
   //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
   //////////////////////// Takes ownership /////////////////////////////
   template <class Constraint>
-  void AddConstraint(Constraint&& con) {
-    GetFlatCvt().AddConstraint(std::move(con));
+  pre::NodeRange AddConstraint(Constraint&& con) {
+    return GetFlatCvt().AddConstraint(std::move(con));
   }
 
   //////////////////////////// UTILITIES /////////////////////////////////

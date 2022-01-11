@@ -112,6 +112,7 @@ using ModelValuesDbl = ModelValues< ValueMap< mp::ArrayRef<double> > >;
 
 
 /// Presolver interface
+/// Currently only addresses value pre- / postsolve (solutions, basis, ...)
 class BasicPresolver {
 public:
   /// Virtual destructor
@@ -132,10 +133,12 @@ public:
 /// index range for some bridge or node
 struct IndexRange {
   /// Construct, possibly from a single index
-  IndexRange(int b, int e=-1) : beg(b), end(e<0 ? b+1 : e) { }
+  IndexRange(int b=0, int e=-1) : beg(b), end(e<0 ? b+1 : e) { }
 
+  /// Validate
+  bool check() const { return end>beg; }
   /// Size()
-  int size() const { assert(end>beg); return end-beg; }
+  int size() const { assert(check()); return end-beg; }
 
   int beg=0, end=0;
 };
