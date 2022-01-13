@@ -598,15 +598,14 @@ private:
 
   std::vector<int> common_exprs_;               // variables equal to the result
 
-  pre::CopyBridge copy_bridge_ { GetPresolver() };
-
 protected:
 
   //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
   int MakeFixedVar(double value) // TODO use proper const term in obj
   { return GetFlatCvt().MakeFixedVar(value); }
 
-  pre::CopyBridge& GetCopyBridge() { return copy_bridge_; }
+  /// Presolve bridge copying values between model items
+  pre::CopyBridge& GetCopyBridge() { return GetFlatCvt().GetCopyBridge(); }
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////

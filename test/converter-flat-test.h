@@ -31,7 +31,7 @@ public:
 private:
   std::vector<Constraint> constr_;
 public:
-  ACCEPT_CONSTRAINT(Constraint, mp::Recommended)
+  ACCEPT_CONSTRAINT(Constraint, mp::Recommended, mp::CG_Default)
   void AddConstraint(const Constraint& con) {
     constr_.push_back(con);
   }

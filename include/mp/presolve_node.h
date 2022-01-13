@@ -74,12 +74,12 @@ public:
 
   /////////////////////// Access value vectors ///////////////////////
 
-  /// Assign from ArrayRef<int>
+  /// Assign from ArrayRef<int>.  Check that values fit the declared size?
   ValueNode& operator=(ArrayRef<int> ai)
   { vi_ = ai.move_or_copy(); return *this; }
   /// Assign from ArrayRef<double>
-  ValueNode& operator=(ArrayRef<double> ai)
-  { vd_ = ai.move_or_copy(); return *this; }
+  ValueNode& operator=(ArrayRef<double> ad)
+  { vd_ = ad.move_or_copy(); return *this; }
 
   /// Retrieve whole ArrayRef<int>
   operator ArrayRef<int> () const { return vi_; }
@@ -111,7 +111,7 @@ private:
 
 
 /// Copy int or double range only
-/// @return if anything copied
+/// @return always true currently
 template <class Vec> inline
 bool CopyRange(const Vec& src, Vec& dest, NodeIndexRange ir, int i1) {
   if ((int)src.size()>=ir.end) {
@@ -120,8 +120,9 @@ bool CopyRange(const Vec& src, Vec& dest, NodeIndexRange ir, int i1) {
     std::copy(src.begin()+ir.beg, src.begin()+ir.end,
               dest.begin()+i1);
     return true;
-  }
-  return false;
+  } else
+    assert(src.empty());             // attempt to process a smaller vector
+  return true;
 }
 
 /// Copy node to another node

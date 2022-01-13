@@ -28,6 +28,7 @@
 #include "mp/flat/std_constr.h"
 #include "mp/flat/std_obj.h"
 #include "mp/flat/converter_proxy_base.h"
+#include "mp/presolve_base.h"
 
 namespace mp {
 
@@ -52,18 +53,24 @@ public:
 
   /// Optionally exclude LDCs from being posted,
   /// then all those are converted to LinearConstraint's first
-  ACCEPT_CONSTRAINT(LinearDefiningConstraint, NotAccepted)
+  ACCEPT_CONSTRAINT(LinearDefiningConstraint, NotAccepted, CG_Linear)
   void AddConstraint(const LinearDefiningConstraint& ldc) {
     MP_DISPATCH( AddConstraint(ldc.to_linear_constraint()) );
   }
 
-  ACCEPT_CONSTRAINT(LinearConstraint, Recommended)
+  ACCEPT_CONSTRAINT(LinearConstraint, Recommended, CG_Linear)
   /// TODO Attributes (lazy/user cut, etc)
   void AddConstraint(const LinearConstraint& ) {
     throw MakeUnsupportedError("FlatBackend::AddConstraint(Linear)");
   }
 
-  /// FlatConverter should provide pCQ before FlatBackend can run solving
+  /// FlatConverter should provide pPre before FlatBackend can run solving
+  /// and request pre- / postsolving of suffix values etc
+  void ProvidePresolver(pre::BasicPresolver* pPre) {
+    pPresolver_ = pPre;
+  }
+
+  /// OLD: FlatConverter should provide pCQ before FlatBackend can run solving
   /// and request pre- / postsolving of suffix values etc
   void ProvideFlatConverterProxyObject(FlatConverterProxy* pCQ) {
     pFCPrx_ = pCQ;
@@ -103,8 +110,14 @@ protected:
   const FlatConverterProxy& GetFC() const { assert(pFCPrx_); return *pFCPrx_; }
   FlatConverterProxy& GetFC() { assert(pFCPrx_); return *pFCPrx_; }
 
+  const pre::BasicPresolver& GetPresolver() const
+  { assert(pPresolver_); return *pPresolver_; }
+  pre::BasicPresolver& GetPresolver()
+  { assert(pPresolver_); return *pPresolver_; }
+
 private:
   FlatConverterProxy* pFCPrx_ = nullptr;
+  pre::BasicPresolver* pPresolver_ = nullptr;
 };
 
 } // namespace mp

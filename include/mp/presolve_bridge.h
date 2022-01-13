@@ -119,9 +119,9 @@ protected:
       Copy(br.first, br.second);
     }
   }
-  /// Copy src <- dest for index range ir
+  /// Copy src <- dest for index range ir. Loop backwards
   void CopyDestSrc(BridgeIndexRange ir) {
-    for (int i=ir.beg; i!=ir.end; ++i) {
+    for (int i=ir.end; (i--)!=ir.beg; ) {
       const auto& br = entries_[i];
       Copy(br.second, br.first);
     }

@@ -23,7 +23,7 @@
     }
   },
   {
-    "name" : "diet duals; con sstatus none",
+    "name" : "diet duals; con sstatus sup",
     "objective" : 88.2,
     "tags" : ["linear", "continuous"],
     "files" : ["diet.mod", "diet.dat"],

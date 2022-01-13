@@ -29,16 +29,31 @@ public:
 
   /// Construct from a single SomeArray
   template <class SomeArray>
-  ValueMap(SomeArray r) { map_[0] = r; }
+  ValueMap(SomeArray r) { map_[0] = std::move(r); }
 
   /// Construct from the low-level MapType
-  ValueMap(MapType m) : map_{m} { }
+  ValueMap(MapType m) : map_{std::move(m)} { }
+
+  /// Construct from a low-level map<AnotherArray>
+  template <class Array2>
+  ValueMap(const std::map<int, Array2>& llm) {
+    for (const auto& a2: llm)
+      map_[a2.first] = a2.second;
+  }
 
   /// Construct from another map
   template <class Array2>
   ValueMap(const ValueMap<Array2>& m) {
     for (const auto& a2: m.GetMap())
       map_[a2.first] = a2.second;
+  }
+
+  /// Assign from another map
+  template <class Array2>
+  ValueMap& operator=(const ValueMap<Array2>& m) {
+    for (const auto& a2: m.GetMap())
+      map_[a2.first] = a2.second;
+    return *this;
   }
 
   /// Check if we have only the single key
@@ -63,6 +78,7 @@ public:
   { return map_[i]; }
 
   const MapType& GetMap() const { return map_; }
+
 private:
   MapType map_;
 };
@@ -77,13 +93,23 @@ public:
   /// Construct from values for vars, cons, objs
   /// (last 2 can be omitted)
   ModelValues(VMap v, VMap c = {}, VMap o = {}) :
-    vars_(v), cons_(c), objs_(o) { }
+    vars_(std::move(v)), cons_(std::move(c)), objs_(std::move(o)) { }
+
   /// Construct from ModelValues<AnotherVMap>
-  template <class MV2>
-  ModelValues(const MV2& vm) :
+  template <class VM2>
+  ModelValues(const ModelValues<VM2>& vm) :
     vars_(vm.GetVarValues()),
     cons_(vm.GetConValues()),
     objs_(vm.GetObjValues()) { }
+
+  /// Assign from ModelValues<AnotherVMap>
+  template <class VM2>
+  ModelValues& operator=(const ModelValues<VM2>& vm) {
+    vars_ = vm.GetVarValues();
+    cons_ = vm.GetConValues();
+    objs_ = vm.GetObjValues();
+    return *this;
+  }
 
   /// Retrieve vars map, const
   const VMap& GetVarValues() const { return vars_; }

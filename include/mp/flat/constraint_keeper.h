@@ -35,8 +35,10 @@ public:
   /// Checks backend's acceptance level for the constraint
   virtual ConstraintAcceptanceLevel BackendAcceptance(
       const BasicFlatBackend& ) const = 0;
+  /// Checks backend's group number for the constraint
+  virtual int BackendGroup(const BasicFlatBackend& ) const = 0;
   /// This adds all unbridged items to the backend (without conversion)
-  virtual void AddUnbridgedToBackend(BasicFlatBackend& be) const = 0;
+  virtual void AddUnbridgedToBackend(BasicFlatBackend& be) = 0;
 
   /// Pre- / postsolve: elementary interface
   /// 1: linear, 2: qcp
@@ -174,11 +176,10 @@ public:
   /// Assume Converter has the Backend
   Backend& GetBackend(BasicFlatConverter& cvt)
   { return static_cast<Converter&>(cvt).GetBackend(); }
-  /// Constructor, adds this CK to the provided CM
+  /// Constructor, adds this CK to the provided ConstraintManager
   /// Requires the CM to be already constructed
-  template <class ConstraintManager>
-  ConstraintKeeper(ConstraintManager& cm) {
-    cm.AddConstraintKeeper(*this, ConversionPriority());
+  ConstraintKeeper(Converter& cvt) : cvt_(cvt) {
+    GetConverter().AddConstraintKeeper(*this, ConversionPriority());
   }
   /// Add a pre-constructed constraint (or just arguments)
   /// @return index of the new constraint
@@ -231,7 +232,11 @@ public:
       const BasicFlatBackend& ba) const override {
     return static_cast<const Backend&>( ba ).AcceptanceLevel((Constraint*)nullptr);
   }
-  void AddUnbridgedToBackend(BasicFlatBackend& be) const override {
+  int BackendGroup(
+      const BasicFlatBackend& ba) const override {
+    return static_cast<const Backend&>( ba ).GroupNumber((Constraint*)nullptr);
+  }
+  void AddUnbridgedToBackend(BasicFlatBackend& be) override {
     try {
       AddAllUnbridged(be);
     } catch (const std::exception& exc) {
@@ -245,6 +250,12 @@ public:
   { return Converter::ConstraintClass((Constraint*)nullptr); }
 
 protected:
+  /// Retrieve the Converter, const
+  const Converter& GetConverter() const { return cvt_; }
+  /// Retrieve the Converter
+  Converter& GetConverter() { return cvt_; }
+
+  /// Check constraint index
   bool check_index(int i) const { return i>=0 && i<(int)cons_.size(); }
   /// Container for a single constraint
   struct Container {
@@ -290,13 +301,25 @@ protected:
     static_cast<Converter&>(cvt).RunConversion(cnt.con_);
     cnt.MarkAsBridged();    // TODO should this be marked in Convert()?
   }
-  void AddAllUnbridged(BasicFlatBackend& be) const {
-    for (auto& cont: cons_)
-      if (!cont.IsBridged())
+  void AddAllUnbridged(BasicFlatBackend& be) {
+    int con_index=0;
+    auto con_group = BackendGroup(be);
+    for (const auto& cont: cons_) {
+      if (!cont.IsBridged()) {
         static_cast<Backend&>(be).AddConstraint(cont.con_);
+        GetConverter().GetCopyBridge().
+            AddEntry({
+                       GetValueNode().Select(con_index),
+                       GetConverter().GetPresolver().GetTargetNodes().
+                         GetConValues()(con_group).Add()
+                     });
+      }
+      ++con_index;                      // increment index
+    }
   }
 
 private:
+  Converter& cvt_;
   std::deque<Container> cons_;        // TODO see if vector is faster
   int i_cvt_last_ = -1;               // last converted constraint
   const std::string desc_ {
@@ -316,7 +339,7 @@ private:
 /// Define a constraint keeper
 #define HANDLE_CONSTRAINT_TYPE(Constraint) \
   ConstraintKeeper<Impl, Backend, Constraint> \
-    CONSTRAINT_KEEPER_VAR(Constraint){*this}; \
+    CONSTRAINT_KEEPER_VAR(Constraint){*static_cast<Impl*>(this)}; \
   const ConstraintKeeper<Impl, Backend, Constraint>& \
   GetConstraintKeeper(Constraint* ) const { \
     return CONSTRAINT_KEEPER_VAR(Constraint); \

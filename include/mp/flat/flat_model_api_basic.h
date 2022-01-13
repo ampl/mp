@@ -65,6 +65,23 @@ enum ConstraintAcceptanceLevel {
   Recommended
 };
 
+/// Constraint groups
+///
+/// This is used to access constraint attributes (basis status, duals, ...)
+/// Convenient when the solver accesses constraint attributes in groups
+/// For example, Gurobi 9.5 has linear, quadratic, SOS, and general
+enum ConstraintGroup {
+  CG_Default,
+  CG_Linear,
+  CG_Quadratic,
+  CG_General,
+  CG_Piecewiselinear,
+  CG_SOS,
+  CG_SOS1,
+  CG_SOS2,
+  CG_Logical
+};
+
 /// Backends handling custom flat constraints should derive from
 class BasicFlatBackend {
 public:
@@ -79,7 +96,12 @@ public:
   /// when they overload AddConstraint(), due to C++ name hiding
 #define USE_BASE_CONSTRAINT_HANDLERS(BaseBackend) \
   using BaseBackend::AddConstraint; \
-  using BaseBackend::AcceptanceLevel;
+  using BaseBackend::AcceptanceLevel; \
+  using BaseBackend::GroupNumber;
+  /// Default constraint group
+  static constexpr ConstraintGroup GroupNumber(const BasicConstraint*) {
+    return CG_Default;
+  }
   /// By default, we say constraint XYZ is not accepted but...
   static constexpr ConstraintAcceptanceLevel AcceptanceLevel(const BasicConstraint*) {
     return NotAccepted;
@@ -87,9 +109,11 @@ public:
 };
 
 /// ... then for a certain constraint it can be specified
-#define ACCEPT_CONSTRAINT(ConstrType, level) \
+#define ACCEPT_CONSTRAINT(ConstrType, level, con_grp) \
   static constexpr mp::ConstraintAcceptanceLevel \
-    AcceptanceLevel(const ConstrType*) { return level; }
+    AcceptanceLevel(const ConstrType*) { return level; } \
+  static constexpr int \
+    GroupNumber(const ConstrType*) { return con_grp; }
 
 
 } // namespace mp

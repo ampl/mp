@@ -48,7 +48,10 @@ public:
   static const char* GetConverterName() { return "BasicMPFlatConverter"; }
 
   FlatConverter()
-  { GetBackend().ProvideFlatConverterProxyObject(this); }
+  {
+    GetBackend().ProvidePresolver(&GetPresolver());
+    GetBackend().ProvideFlatConverterProxyObject(this);     // OLD
+  }
 
 
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
@@ -571,7 +574,7 @@ public:
   pre::NodeRange AddConstraint(Constraint&& con) {
     auto node_range =
         AddConstraintAndTryNoteResultVariable( std::move(con) );
-    if (adding_orig_constr_) {                  // primitive bridging
+    if (adding_orig_constr_) {                   // primitive bridging
       auto cc=ConstraintClass(&con);             // can use destroyed \a con
       if (1==cc) {
         orig_lin_constr_.push_back(i_constr_orig_);
@@ -655,7 +658,7 @@ protected:
 
   /// TODO wrong, Visit() may have produced aux constraints
   void MemorizeModelSize() {
-    n_constr_orig_ = i_constr_orig_+1;
+    n_constr_orig_ = i_constr_orig_;
     adding_orig_constr_ = false;
   }
 
@@ -935,6 +938,7 @@ public:  // for tests. TODO make friends
 private:
   BackendType backend_;
   pre::Presolver presolver_;
+  pre::CopyBridge copy_bridge_ { GetPresolver() };
 
   /// TODO replace by pre- / postsolve
   /// Indices of NL original linear constr in the total constr ordering
@@ -963,6 +967,9 @@ public:
   using MPUtils = typename BackendType::MPUtils;
   const MPUtils& GetMPUtils() const { return GetBackend().GetMPUtils(); }
   MPUtils& GetMPUtils() { return GetBackend().GetMPUtils(); }
+
+  /// Presolve bridge copying values between model items
+  pre::CopyBridge& GetCopyBridge() { return copy_bridge_; }
 };
 
 /// A 'final' converter in a hierarchy
