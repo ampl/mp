@@ -2,7 +2,9 @@
 #define PRESOLVE_BRIDGE_H
 
 #include <vector>
+#include <array>
 
+#include "mp/common.h"
 #include "presolve_node.h"
 
 
@@ -15,6 +17,13 @@ using BridgeIndexRange = IndexRange;
 
 /// Declare Presolver
 class Presolver;
+
+/// Macro for a list of pre- / postsolve method definitions in a bridge
+/// Requires PRESOLVE_KIND defined to declare / define corr. methods
+#define LIST_PRESOLVE_METHODS \
+  PRESOLVE_KIND(Solution) \
+  PRESOLVE_KIND(Basis)
+// ...
 
 /// Bridge interface
 ///
@@ -30,15 +39,11 @@ public:
   /// The below pre- / postsolves work on a range of bridge entries
   /// Postsolves should usually loop the range backwards
 
-  /// Presolve solution (primal + dual)
-  virtual void PresolveSolution(BridgeIndexRange ) = 0;
-  /// Postsolve solution (primal + dual)
-  virtual void PostsolveSolution(BridgeIndexRange ) = 0;
+#define PRESOLVE_KIND(name) \
+  virtual void Presolve ## name (BridgeIndexRange ) = 0; \
+  virtual void Postsolve ## name(BridgeIndexRange ) = 0;
 
-  /// Presolve basis (primal + dual)
-  virtual void PresolveBasis(BridgeIndexRange ) = 0;
-  /// Postsolve solution (primal + dual)
-  virtual void PostsolveBasis(BridgeIndexRange ) = 0;
+  LIST_PRESOLVE_METHODS
 
 protected:
   /// Add a range of bridge entries to the Presolver's list
@@ -76,6 +81,9 @@ struct BridgeRange {
 
 
 /// A specific bridge: each entry just copies a range of values
+/// Useful to transfer values between NL and internal model,
+/// internal model and solver, and in conversions preserving
+/// all values
 class CopyBridge : public BasicBridge {
 public:
   /// Constructor
@@ -85,6 +93,8 @@ public:
   using BridgeEntry = std::pair<NodeRange, NodeRange>;
 
   /// Add entry
+  /// Instead of a new entry, tries to extend the last one
+  /// if exists
   void AddEntry(BridgeEntry be) {
     if (entries_.empty() ||
         !entries_.back().first.ExtendableBy(be.first) ||
@@ -97,19 +107,14 @@ public:
     }
   }
 
-  /// Presolve solution (primal + dual)
-  void PresolveSolution(BridgeIndexRange ir) override
-  { CopySrcDest(ir); }
-  /// Postsolve solution (primal + dual)
-  void PostsolveSolution(BridgeIndexRange ir) override
+#undef PRESOLVE_KIND
+#define PRESOLVE_KIND(name) \
+  void Presolve ## name (BridgeIndexRange ir) override \
+  { CopySrcDest(ir); } \
+  void Postsolve ## name(BridgeIndexRange ir) override \
   { CopyDestSrc(ir); }
 
-  /// Presolve basis (primal + dual)
-  void PresolveBasis(BridgeIndexRange ir) override
-  { CopySrcDest(ir); }
-  /// Postsolve solution (primal + dual)
-  void PostsolveBasis(BridgeIndexRange ir) override
-  { CopyDestSrc(ir); }
+  LIST_PRESOLVE_METHODS
 
 protected:
   /// Copy src -> dest for index range ir
@@ -129,6 +134,77 @@ protected:
 
 private:
   std::vector<BridgeEntry> entries_;
+};
+
+
+/// A stub for bridges which process each entry individually,
+/// in contrast to Presolve...(BridgeIndexRange ...)
+/// Some of such bridges could be optimized to store
+/// a range of transformations in each entry if that helps
+///
+/// Usage: a derived class should define types
+/// BridgeEntry and NodeList, and methods
+/// Presolve...(const BridgeEntry& ) and Postsolve...(const BridgeEntry&)
+///
+/// Using CRTP: https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
+template <class Impl>
+class BasicIndivEntryBridge : public BasicBridge {
+public:
+  /// Using Impl's BridgeEntry typedef
+  using BridgeEntry = typename Impl::BridgeEntry;
+
+  /// Constructor
+  BasicIndivEntryBridge(Presolver& pre) :
+    BasicBridge(pre) { }
+
+  /// Add entry
+  /// Instead of a new entry, tries to extend the last one
+  /// if exists
+  void AddEntry(BridgeEntry be) {
+    entries_.push_back(be);             // Add new entry
+    RegisterBridgeIndex(entries_.size()-1);
+  }
+
+#undef PRESOLVE_KIND
+#define PRESOLVE_KIND(name) \
+  void Presolve ## name (BridgeIndexRange ir) override { \
+    for (int i=ir.beg; i!=ir.end; ++i) \
+      MPD( Presolve ## name(entries_.at(i)) ); } \
+  void Postsolve ## name(BridgeIndexRange ir) override { \
+    for (int i=ir.end; i--!=ir.beg; ) \
+      MPD( Postsolve ## name(entries_.at(i)) ); }
+
+  LIST_PRESOLVE_METHODS
+
+private:
+  std::vector<BridgeEntry> entries_;
+};
+
+
+/// A static indiv entry bridge has a fixed number of ValueNodes
+/// and indexes into them
+template <class Impl, int NNodes, int NIndexes>
+class BasicStaticIndivEntryBridge : public BasicIndivEntryBridge<Impl> {
+public:
+  /// Base class
+  using Base = BasicIndivEntryBridge<Impl>;
+  /// Typedef for Base
+  using NodeList = std::array<ValueNode*, NNodes>;
+  /// Typedef for Base: a BridgeEntry is just an array if node indexes
+  using BridgeEntry = std::array<int, NIndexes>;
+
+  /// Constructor
+  BasicStaticIndivEntryBridge(Presolver& pre, const NodeList& ndl) :
+    Base(pre), ndl_(ndl) { }
+
+protected:
+  /// Access whole node at specific index, const
+  const ValueNode& GetNode(int i) const { return *ndl_.at(i); }
+  /// Access whole node at specific index
+  ValueNode& GetNode(int i) { return *ndl_.at(i); }
+
+private:
+  NodeList ndl_;
 };
 
 } // namespace pre

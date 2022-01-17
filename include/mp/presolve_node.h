@@ -74,12 +74,12 @@ public:
 
   /////////////////////// Access value vectors ///////////////////////
 
-  /// Assign from ArrayRef<int>.  Check that values fit the declared size?
+  /// Assign from ArrayRef<int>.  Check that values fit the declared size
   ValueNode& operator=(ArrayRef<int> ai)
-  { vi_ = ai.move_or_copy(); return *this; }
+  { assert(ai.size() <= size()); vi_ = ai.move_or_copy(); return *this; }
   /// Assign from ArrayRef<double>
   ValueNode& operator=(ArrayRef<double> ad)
-  { vd_ = ad.move_or_copy(); return *this; }
+  { assert(ad.size() <= size()); vd_ = ad.move_or_copy(); return *this; }
 
   /// Retrieve whole ArrayRef<int>
   operator ArrayRef<int> () const { return vi_; }

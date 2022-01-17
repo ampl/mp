@@ -16,6 +16,7 @@
 #include "mp/flat/std_constr.h"
 #include "mp/flat/preprocess.h"
 #include "mp/presolve.h"
+#include "mp/flat/convert/range_con.h"
 
 namespace mp {
 
@@ -567,6 +568,9 @@ public: // for ConstraintKeeper
     this->AddConstraint(qdc.to_quadratic_constraint());
   }
 
+  /// Convert range constraints, if necessary
+  RangeConstraintConverter<Impl> rng_con_cvt_ { *static_cast<Impl*>(this) };
+
 public:
   //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
   //////////////////////// Takes ownership /////////////////////////////
@@ -717,10 +721,18 @@ public:
                const typename BaseFlatModel::VarTypeVec& types) {
     assert(0==BaseFlatModel::num_vars());                     // allow this only once
     BaseFlatModel::AddVars(lbs, ubs, types);
-    return { GetPresolver().GetTargetNodes().
-          GetVarValues().MakeSingleKey().  // reuse target nodes for all variables
+    return { GetVarValueNode(). // reuse Presolver's target nodes for all variables
       Add( BaseFlatModel::num_vars() ) };
   }
+
+  /// Reuse Presolver's target nodes for all variables
+  pre::ValueNode& GetVarValueNode()
+  { return GetPresolver().GetTargetNodes().GetVarValues()(); }
+
+  /// Constraint type's Value Node
+  template <class Constraint>
+  pre::ValueNode& GetValueNode(Constraint*)
+  { return GET_CONSTRAINT_KEEPER(Constraint).GetValueNode(); }
 
 protected:
   double lb(int var) const { return this->GetModel().lb(var); }

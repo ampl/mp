@@ -220,8 +220,9 @@ public:
   /// This normally dispatches conversion (decomposition) to the Converter
   /// @return whether any converted
   bool ConvertAllNewWith(BasicFlatConverter& cvt) override {
+    assert(&cvt == &GetConverter());         // Using the same Converter
     try {
-      return ConvertAllFrom(i_cvt_last_, cvt);
+      return ConvertAllFrom(i_cvt_last_);
     } catch (const std::exception& exc) {
       throw std::logic_error(Converter::GetConverterName() + std::string(": ")
                              + exc.what());
@@ -267,21 +268,21 @@ protected:
     Constraint con_;
     bool is_bridged_ = false;
   };
-  bool ConvertAllFrom(int& i_last, BasicFlatConverter& cvt) {
+  bool ConvertAllFrom(int& i_last) {
     int i=i_last;
     ++i;
     const auto acceptanceLevel =
-        BackendAcceptance(GetBackend(cvt));
+        BackendAcceptance(GetBackend(GetConverter()));
     if (NotAccepted == acceptanceLevel) {       // Convert all
       for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i)
         if (!it->IsBridged())
-          ConvertConstraint(*it, cvt);
+          ConvertConstraint(*it);
     }
     else if (AcceptedButNotRecommended == acceptanceLevel) {
       for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i) {
         if (!it->IsBridged()) {
           try {
-            ConvertConstraint(*it, cvt);
+            ConvertConstraint(*it);
           } catch (const ConstraintConversionFailure& ccf) {
             printf( fmt::format(      // TODO use Env's output facility
                                       "WARNING: {}. Will pass constraint {}[{}]"
@@ -296,9 +297,9 @@ protected:
     i_last = i-1;
     return any_converted;
   }
-  void ConvertConstraint(Container& cnt, BasicFlatConverter& cvt) {
+  void ConvertConstraint(Container& cnt) {
     assert(!cnt.IsBridged());
-    static_cast<Converter&>(cvt).RunConversion(cnt.con_);
+    GetConverter().RunConversion(cnt.con_);
     cnt.MarkAsBridged();    // TODO should this be marked in Convert()?
   }
   void AddAllUnbridged(BasicFlatBackend& be) {
