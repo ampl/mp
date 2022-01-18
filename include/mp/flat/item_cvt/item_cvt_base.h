@@ -7,12 +7,12 @@ namespace mp {
 
 /// A base class for specific Converters, such as
 /// individual constraint converters.
-/// Template parameter ModelConverter should have GetPresolver() method.
+/// Template parameter ModelConverter should have a GetPresolver() method.
 template <class ModelConverter>
-class BasicConverter {
+class BasicItemConverter {
 public:
   /// Constructor
-  BasicConverter(ModelConverter& mc) : mdl_cvt_(mc) { }
+  BasicItemConverter(ModelConverter& mc) : mdl_cvt_(mc) { }
 
 protected:
   /// Access ModelConverter
@@ -31,6 +31,17 @@ private:
 /// To be used by descendants of BasiccOnverter
 #define GET_CONSTRAINT_VALUE_NODE(con_type) \
   this->GetMC().GetValueNode((con_type*)nullptr)
+
+/// In the ModelConverter: to use a specific item_cvt_type<>
+/// Assumes Impl is the final ModelConverter type
+#define INSTALL_ITEM_CONVERTER(item_cvt_type) \
+  item_cvt_type<Impl> item_cvt__ ## item_cvt_type ## _ \
+   { *static_cast<Impl*>(this) }; \
+  void Convert(const typename \
+      item_cvt_type<Impl>::ItemType& con, int i) { \
+    item_cvt__ ## item_cvt_type ## _ . Convert(con, i); \
+  }
+
 
 } // namespace mp
 

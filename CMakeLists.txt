@@ -322,14 +322,14 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
 add_prefix(MP_FLAT_MIP_HEADERS include/mp/flat/MIP/
   backend.h mp2mip.h)
 
-add_prefix(MP_FLAT_CONVERT_HEADERS include/mp/flat/convert/
-  base.h range_con.h)
+add_prefix(MP_FLAT_ITEMCVT_HEADERS include/mp/flat/item_cvt/
+  item_cvt_base.h range_con.h)
 
 add_prefix(MP_FLAT_BRIDGES_HEADERS include/mp/flat/bridges/
   range2slack.h)
 
 set(MP_ALL_HEADERS ${MP_HEADERS} ${MP_FLAT_HEADERS}
-  ${MP_FLAT_MIP_HEADERS} ${MP_FLAT_BRIDGES_HEADERS})
+  ${MP_FLAT_MIP_HEADERS} ${MP_FLAT_ITEMCVT_HEADERS} ${MP_FLAT_BRIDGES_HEADERS})
 
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/

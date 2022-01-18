@@ -170,8 +170,12 @@ public:
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
 
   /// TODO Attributes (lazy/user cut, etc)
-  ACCEPT_CONSTRAINT(LinearConstraint, Recommended, CG_Linear)
-  void AddConstraint(const LinearConstraint& lc);
+  ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
+  void AddConstraint(const LinConLE& lc);
+  ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
+  void AddConstraint(const LinConEQ& lc);
+  ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
+  void AddConstraint(const LinConGE& lc);
   ACCEPT_CONSTRAINT(QuadraticConstraint, Recommended, CG_Quadratic)
   void AddConstraint(const QuadraticConstraint& qc);
   ACCEPT_CONSTRAINT(MaximumConstraint, AcceptedButNotRecommended, CG_General)

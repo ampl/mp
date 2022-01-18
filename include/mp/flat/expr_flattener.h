@@ -163,10 +163,9 @@ protected:
       ee=MP_DISPATCH( Visit(e) );
       leu.AddTerms(ee.GetAE());
     }
-    auto lc = LinearConstraint{
+    auto lc = RangeLinCon{
         std::move(leu.c_), std::move(leu.v_),
-        con.lb() - ee.constant_term(),
-        con.ub() - ee.constant_term() };
+    { con.lb() - ee.constant_term(), con.ub() - ee.constant_term() } };
     pre::NodeRange nr;
     if (ee.is_affine())
       nr = AddConstraint( std::move(lc) );

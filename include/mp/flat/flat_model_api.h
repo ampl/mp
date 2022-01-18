@@ -58,12 +58,6 @@ public:
     MP_DISPATCH( AddConstraint(ldc.to_linear_constraint()) );
   }
 
-  ACCEPT_CONSTRAINT(LinearConstraint, Recommended, CG_Linear)
-  /// TODO Attributes (lazy/user cut, etc)
-  void AddConstraint(const LinearConstraint& ) {
-    throw MakeUnsupportedError("FlatBackend::AddConstraint(Linear)");
-  }
-
   /// FlatConverter should provide pPre before FlatBackend can run solving
   /// and request pre- / postsolving of suffix values etc
   void ProvidePresolver(pre::BasicPresolver* pPre) {

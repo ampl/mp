@@ -28,13 +28,15 @@ public:
   void ConvertMinOrMax(const MinOrMaxConstraint& mc) {
     const auto& args = mc.GetArguments();
     const std::size_t nargs = args.size();
-    const auto flags = this->AddVars_returnIds(nargs, 0.0, 1.0, var::Type::INTEGER);   // binary flags
-    MP_DISPATCH( AddConstraint(LinearConstraint(std::vector<double>(nargs, 1.0),    // sum of the flags >= 1
-                        flags, 1.0, this->Infty())) );
+    const auto flags =
+        this->AddVars_returnIds(nargs, 0.0, 1.0, var::Type::INTEGER);   // binary flags
+    MP_DISPATCH( AddConstraint(RangeLinCon(
+                                 std::vector<double>(nargs, 1.0),  // sum of the flags >= 1
+                                 flags, {1.0, this->Infty()})) );
     const auto resvar = mc.GetResultVar();
     for (size_t i=0; i<nargs; ++i) {
-      MP_DISPATCH( AddConstraint(LinearConstraint({1.0*sense, -1.0*sense},
-                          {args[i], resvar}, this->MinusInfty(), 0.0)) );
+      MP_DISPATCH( AddConstraint(RangeLinCon({1.0*sense, -1.0*sense},
+                          {args[i], resvar}, {this->MinusInfty(), 0.0})) );
       MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE{flags[i], 1,
                           {1.0*sense, -1.0*sense}, {resvar, args[i]}, 0.0}) );
     }
@@ -51,8 +53,8 @@ public:
   void Convert(const AbsConstraint& ac) {
     const int arg = ac.GetArguments()[0];
     const int res = ac.GetResultVar();
-    this->AddConstraint(LinearConstraint({1.0, 1.0}, {res, arg}, 0.0, this->Infty()));
-    this->AddConstraint(LinearConstraint({1.0, -1.0}, {res, arg}, 0.0, this->Infty()));
+    this->AddConstraint(RangeLinCon({1.0, 1.0}, {res, arg}, {0.0, this->Infty()}));
+    this->AddConstraint(RangeLinCon({1.0, -1.0}, {res, arg}, {0.0, this->Infty()}));
     const int flag = this->AddVar(0.0, 1.0, var::INTEGER);
     this->AddConstraint(IndicatorConstraintLinLE(flag, 1, {1.0, 1.0}, {res, arg}, 0.0));
     this->AddConstraint(IndicatorConstraintLinLE(flag, 0, {1.0, -1.0}, {res, arg}, 0.0));
@@ -147,9 +149,9 @@ public:
     } else {    // We are in MIP so doing algebra, not DisjunctiveConstr
       auto newvars = MPD( AddVars_returnIds(2, 0.0, 1.0, var::INTEGER) );
       newvars.push_back( eq0c.GetResultVar() );
-      MPD( AddConstraint( LinearConstraint(   // b1+b2+resvar >= 1
-                            {1.0, 1.0, 1.0},
-                            newvars, 1.0, MPCD(Infty())) ) );
+      MPD( AddConstraint( RangeLinCon(   // b1+b2+resvar >= 1
+                            {1.0, 1.0, 1.0}, newvars,
+                                         {1.0, MPCD(Infty())} ) ) );
       auto bNt = MP_DISPATCH( ComputeBoundsAndType(ae) );
       double cmpEps = MPD( ComparisonEps( bNt.get_result_type() ) ); {
         LinearExprUnzipper le(ae);
@@ -190,8 +192,10 @@ public:
     else
       ae += {{-bnds.ub(), b}, 0.0};
     LinearExprUnzipper leu(ae);
-    MP_DISPATCH( AddConstraint(LinearConstraint(     /// Big-M constraint
-        leu.coefs(), leu.var_indexes(), this->MinusInfty(), -ae.constant_term())) );
+    MP_DISPATCH( AddConstraint(RangeLinCon(     /// Big-M constraint
+        leu.coefs(), leu.var_indexes(),
+        {this->MinusInfty(), -ae.constant_term()}
+                                                )) );
   }
 
   /// b==val ==> c'x==d
@@ -220,8 +224,8 @@ public:
     std::vector<double> ones(args.size(), 1.0); // res+n-1 >= sum(args) in CTX-
     ones.push_back(-1.0);
     MP_DISPATCH( AddConstraint(
-                   LinearConstraint(ones, flags,
-                                    MP_DISPATCH( MinusInfty() ), args.size()-1)) );
+                   RangeLinCon(ones, flags,
+                               {MP_DISPATCH( MinusInfty() ), args.size()-1} )) );
   }
 
   void ConvertImplied(const ConjunctionConstraint& conj) {
@@ -229,7 +233,8 @@ public:
     std::array<int, 2> vars{-1, conj.GetResultVar()};
     for (auto arg: conj.GetArguments()) {       // res <= arg[i] in CTX+
       vars[0] = arg;
-      MP_DISPATCH( AddConstraint(LinearConstraint(coefs, vars, MP_DISPATCH( MinusInfty() ), 0.0)) );
+      MP_DISPATCH( AddConstraint(RangeLinCon(coefs, vars,
+                                             {MP_DISPATCH( MinusInfty() ), 0.0} )) );
     }
   }
 
@@ -247,7 +252,8 @@ public:
     flags.push_back(disj.GetResultVar());
     std::vector<double> ones(args.size(), 1.0);  // res <= sum(args) in CTX+
     ones.push_back(-1.0);
-    MP_DISPATCH( AddConstraint(LinearConstraint(ones, flags, 0.0, MP_DISPATCH( Infty() ))) );
+    MP_DISPATCH( AddConstraint(RangeLinCon(ones, flags,
+                                           {0.0, MP_DISPATCH( Infty() )} )) );
   }
 
   void ConvertReverseImplied(const DisjunctionConstraint& disj) {
@@ -255,7 +261,8 @@ public:
     std::array<int, 2> vars{-1, disj.GetResultVar()};
     for (auto arg: disj.GetArguments()) {        // res >= arg[i] in CTX-
       vars[0] = arg;
-      MP_DISPATCH( AddConstraint(LinearConstraint(coefs, vars, MP_DISPATCH( MinusInfty() ), 0.0)) );
+      MP_DISPATCH( AddConstraint(RangeLinCon(coefs, vars,
+                                             {MP_DISPATCH( MinusInfty() ), 0.0} )) );
     }
   }
 
@@ -306,8 +313,8 @@ public:
         flags[ivar] = this->AssignResultVar2Args(
               EQ0Constraint( { {1.0}, {args[ivar]}, -double(v) } ) );
       }
-      this->AddConstraint( LinearConstraint(
-          coefs, flags, this->MinusInfty(), 1.0 ) );
+      this->AddConstraint( RangeLinCon(
+          coefs, flags, {this->MinusInfty(), 1.0} ) );
     }
   }
 
@@ -426,13 +433,13 @@ public:
     }
     assert(map.size()==(size_t)nTaken);
     std::vector<double> coefs(ub_dbl-lb_dbl+1, 1.0);
-    this->AddConstraint(LinearConstraint(coefs, unaryEncVars, 1.0, 1.0));
+    this->AddConstraint(LinConEQ(coefs, unaryEncVars, {1.0}));
     unaryEncVars.push_back(var);
     for (int v=lb; v!=ub+1; ++v) {
       coefs[v-lb] = v;
     }
     coefs.push_back(-1.0);
-    this->AddConstraint(LinearConstraint(coefs, unaryEncVars, 0.0, 0.0));
+    this->AddConstraint(LinConEQ(coefs, unaryEncVars, {0.0}));
   }
 
   ///////////////////////////////////////////////////////////////////////

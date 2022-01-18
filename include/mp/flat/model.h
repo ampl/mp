@@ -34,7 +34,7 @@ public:
 
   ///////////////////////////// VARIABLES ////////////////////////////////
   /// Add variable, return its index
-  Var AddVar(double lb=MinusInf(), double ub=Inf(),
+  Var AddVar__basic(double lb=MinusInf(), double ub=Inf(),
              var::Type type=var::CONTINUOUS) {
     assert(check_vars());
     var_lb_.push_back(lb);
@@ -44,7 +44,7 @@ public:
   }
 
   /// Add several variables
-  void AddVars(const VarBndVec& lbs, const VarBndVec& ubs,
+  void AddVars__basic(const VarBndVec& lbs, const VarBndVec& ubs,
                const VarTypeVec& types) {
     assert(check_vars());
     var_lb_.insert(var_lb_.end(), lbs.begin(), lbs.end());

@@ -60,9 +60,9 @@ public:
   bool IfSingleKey() const
   { return 1==map_.size() && 0==map_.begin()->first; }
 
-  /// Make single key and return. Assumes empty map
+  /// Make single key, or check one, and return
   Array& MakeSingleKey()
-  { assert(map_.empty()); return map_[0]; }
+  { assert(map_.empty() || IfSingleKey()); return map_[0]; }
 
   /// Retrieve the single array, const
   const Array& operator()() const
@@ -165,6 +165,10 @@ struct IndexRange {
   bool check() const { return end>beg; }
   /// Size()
   int size() const { assert(check()); return end-beg; }
+  /// Represents just 1 index
+  bool IfSingleIndex() const { return beg==end-1; }
+  /// Return single index if it is
+  operator int() const { assert(IfSingleIndex()); return beg; }
 
   int beg=0, end=0;
 };

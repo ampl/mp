@@ -16,7 +16,7 @@
 #include "mp/flat/std_constr.h"
 #include "mp/flat/preprocess.h"
 #include "mp/presolve.h"
-#include "mp/flat/convert/range_con.h"
+#include "mp/flat/item_cvt/range_con.h"
 
 namespace mp {
 
@@ -455,12 +455,6 @@ protected:
     }
   }
 
-  void PropagateResult(LinearConstraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(lb, ub, ctx);
-    for (const auto v: con.vars())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-  }
-
   void PropagateResult(QuadraticConstraint& con, double lb, double ub, Context ctx) {
     internal::Unused(lb, ub, ctx);
     for (const auto v: con.vars())
@@ -550,13 +544,20 @@ public: // for ConstraintKeeper
   /// Assume mixed context if not set in the constraint
   /// TODO Make sure context is always propagated for all constraints and objectives
   template <class Constraint>
-  void RunConversion(const Constraint& con) {
+  void RunConversion(const Constraint& con, int i) {
     if (con.HasContext())
       if (con.GetContext().IsNone())
         con.SetContext(Context::CTX_MIX);
-    MP_DISPATCH(Convert(con));
+    MP_DISPATCH(Convert(con, i));
   }
 
+  /// Generic adapter for old non-bridged Convert() methods
+  ///
+  /// New way is to use the \a i parameter for bridging
+  template <class Constraint>
+  void Convert(const Constraint& con, int ) {
+    MPD( Convert(con) );
+  }
 
   /// If backend does not like LDC, we can redefine it
   void Convert(const LinearDefiningConstraint& ldc) {
@@ -568,8 +569,6 @@ public: // for ConstraintKeeper
     this->AddConstraint(qdc.to_quadratic_constraint());
   }
 
-  /// Convert range constraints, if necessary
-  RangeConstraintConverter<Impl> rng_con_cvt_ { *static_cast<Impl*>(this) };
 
 public:
   //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
@@ -609,36 +608,6 @@ protected:
     return ck.GetValueNode().Select(i);
   }
 
-  /// Define constraint keepers for all constraint types
-  HANDLE_CONSTRAINT_TYPE(LinearConstraint)
-  HANDLE_CONSTRAINT_TYPE(LinearDefiningConstraint)
-  HANDLE_CONSTRAINT_TYPE(QuadraticConstraint)
-  HANDLE_CONSTRAINT_TYPE(QuadraticDefiningConstraint)
-
-  HANDLE_CONSTRAINT_TYPE(MaximumConstraint)
-  HANDLE_CONSTRAINT_TYPE(MinimumConstraint)
-  HANDLE_CONSTRAINT_TYPE(AbsConstraint)
-  HANDLE_CONSTRAINT_TYPE(ConjunctionConstraint)
-  HANDLE_CONSTRAINT_TYPE(DisjunctionConstraint)
-  HANDLE_CONSTRAINT_TYPE(EQ0Constraint)
-  HANDLE_CONSTRAINT_TYPE(LE0Constraint)
-  HANDLE_CONSTRAINT_TYPE(NotConstraint)
-  HANDLE_CONSTRAINT_TYPE(IfThenConstraint)
-  HANDLE_CONSTRAINT_TYPE(AllDiffConstraint)
-
-  HANDLE_CONSTRAINT_TYPE(ExpConstraint)
-  HANDLE_CONSTRAINT_TYPE(ExpAConstraint)
-  HANDLE_CONSTRAINT_TYPE(LogConstraint)
-  HANDLE_CONSTRAINT_TYPE(LogAConstraint)
-  HANDLE_CONSTRAINT_TYPE(PowConstraint)
-  HANDLE_CONSTRAINT_TYPE(SinConstraint)
-  HANDLE_CONSTRAINT_TYPE(CosConstraint)
-  HANDLE_CONSTRAINT_TYPE(TanConstraint)
-  HANDLE_CONSTRAINT_TYPE(IndicatorConstraintLinLE)
-  HANDLE_CONSTRAINT_TYPE(IndicatorConstraintLinEQ)
-  HANDLE_CONSTRAINT_TYPE(PLConstraint)
-  HANDLE_CONSTRAINT_TYPE(SOS1Constraint)
-  HANDLE_CONSTRAINT_TYPE(SOS2Constraint)
 
 public:
   void StartModelInput() { }
@@ -670,7 +639,7 @@ protected:
   /// TODO parameterize by Backend
   static constexpr int ConstraintClass(BasicConstraint* )
   { return 0; }
-  static constexpr int ConstraintClass(LinearConstraint* )
+  static constexpr int ConstraintClass(RangeLinCon* )
   { return 1; }
   static constexpr int ConstraintClass(LinearDefiningConstraint* )
   { return 1; }
@@ -698,17 +667,17 @@ private:
 public:
 
   //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
-  int MakeFixedVar(double value) {
+  pre::NodeRange MakeFixedVar(double value) {
     auto it = map_fixed_vars_.find(value);
     if (map_fixed_vars_.end()!=it)
-      return it->second;
+      return GetVarValueNode().Select( it->second );
     auto v = MPD( DoAddVar(value, value) );
     map_fixed_vars_[value] = v;
-    return v;
+    return GetVarValueNode().Select( v );
   }
 
   /// Create or find a fixed variable
-  int AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
+  pre::NodeRange AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
     if (lb!=ub)
       return DoAddVar(lb, ub, type);
     return MakeFixedVar(lb);
@@ -720,14 +689,13 @@ public:
                const typename BaseFlatModel::VarBndVec& ubs,
                const typename BaseFlatModel::VarTypeVec& types) {
     assert(0==BaseFlatModel::num_vars());                     // allow this only once
-    BaseFlatModel::AddVars(lbs, ubs, types);
-    return { GetVarValueNode(). // reuse Presolver's target nodes for all variables
-      Add( BaseFlatModel::num_vars() ) };
+    BaseFlatModel::AddVars__basic(lbs, ubs, types);
+    return GetVarValueNode().Add( lbs.size() );
   }
 
   /// Reuse Presolver's target nodes for all variables
   pre::ValueNode& GetVarValueNode()
-  { return GetPresolver().GetTargetNodes().GetVarValues()(); }
+  { return GetPresolver().GetTargetNodes().GetVarValues().MakeSingleKey(); }
 
   /// Constraint type's Value Node
   template <class Constraint>
@@ -756,9 +724,10 @@ protected:
   using ConInfo = AbstractConstraintLocation;
 
   /// Add variable. Type: var::CONTINUOUS by default
-  int DoAddVar(double lb=MinusInfty(), double ub=Infty(),
+  pre::NodeRange DoAddVar(double lb=MinusInfty(), double ub=Infty(),
              var::Type type = var::CONTINUOUS) {
-    return GetModel().AddVar(lb, ub, type);
+    int v = GetModel().AddVar__basic(lb, ub, type);
+    return GetVarValueNode().Select( v );
   }
 
   /// Add vector of variables. Type: var::CONTINUOUS by default
@@ -971,6 +940,50 @@ protected:
   /// The internal flat model
   const ModelType& GetModel() const { return *this; }
   ModelType& GetModel() { return *this; }
+
+  /////////////////////// CONSTRAINT KEEPERS /////////////////////////
+  /// Constraint keepers and converters should be initialized after presolver_
+
+  /// Define constraint keepers for all constraint types
+  STORE_CONSTRAINT_TYPE(RangeLinCon)
+  STORE_CONSTRAINT_TYPE(LinConLE)
+  STORE_CONSTRAINT_TYPE(LinConEQ)
+  STORE_CONSTRAINT_TYPE(LinConGE)
+  STORE_CONSTRAINT_TYPE(LinearDefiningConstraint)
+
+  STORE_CONSTRAINT_TYPE(QuadraticConstraint)
+  STORE_CONSTRAINT_TYPE(QuadraticDefiningConstraint)
+
+  STORE_CONSTRAINT_TYPE(MaximumConstraint)
+  STORE_CONSTRAINT_TYPE(MinimumConstraint)
+  STORE_CONSTRAINT_TYPE(AbsConstraint)
+  STORE_CONSTRAINT_TYPE(ConjunctionConstraint)
+  STORE_CONSTRAINT_TYPE(DisjunctionConstraint)
+  STORE_CONSTRAINT_TYPE(EQ0Constraint)
+  STORE_CONSTRAINT_TYPE(LE0Constraint)
+  STORE_CONSTRAINT_TYPE(NotConstraint)
+  STORE_CONSTRAINT_TYPE(IfThenConstraint)
+  STORE_CONSTRAINT_TYPE(AllDiffConstraint)
+
+  STORE_CONSTRAINT_TYPE(ExpConstraint)
+  STORE_CONSTRAINT_TYPE(ExpAConstraint)
+  STORE_CONSTRAINT_TYPE(LogConstraint)
+  STORE_CONSTRAINT_TYPE(LogAConstraint)
+  STORE_CONSTRAINT_TYPE(PowConstraint)
+  STORE_CONSTRAINT_TYPE(SinConstraint)
+  STORE_CONSTRAINT_TYPE(CosConstraint)
+  STORE_CONSTRAINT_TYPE(TanConstraint)
+  STORE_CONSTRAINT_TYPE(IndicatorConstraintLinLE)
+  STORE_CONSTRAINT_TYPE(IndicatorConstraintLinEQ)
+  STORE_CONSTRAINT_TYPE(PLConstraint)
+  STORE_CONSTRAINT_TYPE(SOS1Constraint)
+  STORE_CONSTRAINT_TYPE(SOS2Constraint)
+
+  /////////////////////// CONSTRAINT CONVERTERS /////////////////////////
+  /// Constraint keepers and converters should be initialized after presolver_
+
+  /// Convert range constraints, if necessary
+  INSTALL_ITEM_CONVERTER(RangeConstraintConverter)
 
 public:
   /// TODO use universal Env instead

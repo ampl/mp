@@ -140,7 +140,8 @@ public:
   template <class CK>
   bool MapInsert(ConstraintLocationHelper<CK> ) { return true; }
 
-  /// Similarly to Convert(), need to 'using' base class' map accessors
+  /// Similarly to Convert(),
+  /// need to 'using' base class' map accessors in the Converter
 #define USE_BASE_MAP_FINDERS(BaseConverter) \
   using BaseConverter::MapFind; \
   using BaseConverter::MapInsert; \
@@ -276,13 +277,13 @@ protected:
     if (NotAccepted == acceptanceLevel) {       // Convert all
       for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i)
         if (!it->IsBridged())
-          ConvertConstraint(*it);
+          ConvertConstraint(*it, i);
     }
     else if (AcceptedButNotRecommended == acceptanceLevel) {
       for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i) {
         if (!it->IsBridged()) {
           try {
-            ConvertConstraint(*it);
+            ConvertConstraint(*it, i);
           } catch (const ConstraintConversionFailure& ccf) {
             printf( fmt::format(      // TODO use Env's output facility
                                       "WARNING: {}. Will pass constraint {}[{}]"
@@ -297,9 +298,14 @@ protected:
     i_last = i-1;
     return any_converted;
   }
-  void ConvertConstraint(Container& cnt) {
+  /// Call Converter's RunConversion() and mark as "bridged"
+  ///
+  /// @param cnt the constraint container
+  /// actually redundant as i is enough to find. But for speed
+  /// @param i constraint index, needed for bridging
+  void ConvertConstraint(Container& cnt, int i) {
     assert(!cnt.IsBridged());
-    GetConverter().RunConversion(cnt.con_);
+    GetConverter().RunConversion(cnt.con_, i);
     cnt.MarkAsBridged();    // TODO should this be marked in Convert()?
   }
   void AddAllUnbridged(BasicFlatBackend& be) {
@@ -338,7 +344,7 @@ private:
   MPD( GetConstraintKeeper((Constraint*)nullptr) )
 
 /// Define a constraint keeper
-#define HANDLE_CONSTRAINT_TYPE(Constraint) \
+#define STORE_CONSTRAINT_TYPE(Constraint) \
   ConstraintKeeper<Impl, Backend, Constraint> \
     CONSTRAINT_KEEPER_VAR(Constraint){*static_cast<Impl*>(this)}; \
   const ConstraintKeeper<Impl, Backend, Constraint>& \

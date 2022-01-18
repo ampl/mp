@@ -16,6 +16,17 @@ public:
   RangeLinearConstraint2Slack(Presolver& pre, const Base::NodeList& ndl) :
     Base(pre, ndl) { }
 
+  /// Define pre- / postsolve methods for individual bridge entries
+
+  /// Presolve solution (primal + dual)
+  void PresolveSolutionEntry(const BridgeEntry&) {}
+  /// Postsolve solution (primal + dual)
+  void PostsolveSolutionEntry(const BridgeEntry&) {}
+
+  /// Presolve basis
+  void PresolveBasisEntry(const BridgeEntry&) {}
+  /// Postsolve basis
+  void PostsolveBasisEntry(const BridgeEntry&) {}
 
 };
 

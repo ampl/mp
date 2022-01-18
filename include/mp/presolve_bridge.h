@@ -147,12 +147,9 @@ private:
 /// Presolve...(const BridgeEntry& ) and Postsolve...(const BridgeEntry&)
 ///
 /// Using CRTP: https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
-template <class Impl>
+template <class Impl, class BridgeEntry>
 class BasicIndivEntryBridge : public BasicBridge {
 public:
-  /// Using Impl's BridgeEntry typedef
-  using BridgeEntry = typename Impl::BridgeEntry;
-
   /// Constructor
   BasicIndivEntryBridge(Presolver& pre) :
     BasicBridge(pre) { }
@@ -169,10 +166,10 @@ public:
 #define PRESOLVE_KIND(name) \
   void Presolve ## name (BridgeIndexRange ir) override { \
     for (int i=ir.beg; i!=ir.end; ++i) \
-      MPD( Presolve ## name(entries_.at(i)) ); } \
+      MPD( Presolve ## name ## Entry(entries_.at(i)) ); } \
   void Postsolve ## name(BridgeIndexRange ir) override { \
     for (int i=ir.end; i--!=ir.beg; ) \
-      MPD( Postsolve ## name(entries_.at(i)) ); }
+      MPD( Postsolve ## name ## Entry(entries_.at(i)) ); }
 
   LIST_PRESOLVE_METHODS
 
@@ -184,13 +181,14 @@ private:
 /// A static indiv entry bridge has a fixed number of ValueNodes
 /// and indexes into them
 template <class Impl, int NNodes, int NIndexes>
-class BasicStaticIndivEntryBridge : public BasicIndivEntryBridge<Impl> {
+class BasicStaticIndivEntryBridge :
+    public BasicIndivEntryBridge<Impl, std::array<int, NIndexes> > {
 public:
   /// Base class
-  using Base = BasicIndivEntryBridge<Impl>;
-  /// Typedef for Base
+  using Base = BasicIndivEntryBridge<Impl, std::array<int, NIndexes> >;
+  /// Typedef NodeList
   using NodeList = std::array<ValueNode*, NNodes>;
-  /// Typedef for Base: a BridgeEntry is just an array if node indexes
+  /// Typedef: BridgeEntry is just an array if node indexes
   using BridgeEntry = std::array<int, NIndexes>;
 
   /// Constructor

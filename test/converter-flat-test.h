@@ -16,12 +16,12 @@ class TestBackendAcceptingConstraints :
   /// VARIABLES
   mp::VarArrayDef vars_;
 
-  std::vector<mp::LinearConstraint> lin_constr_;
+  std::vector<mp::RangeLinCon> lin_constr_;
 public:
   TestBackendAcceptingConstraints() { }
   void AddVariables(const mp::VarArrayDef& v) { vars_ = v; }
   int NumVars() const { return (int)vars_.size(); }
-  void AddConstraint(const mp::LinearConstraint& lc) {
+  void AddConstraint(const mp::RangeLinCon& lc) {
     lin_constr_.push_back( lc );
   }
 

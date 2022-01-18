@@ -30,6 +30,8 @@ public:
   ValueNode* GetValueNode() const { assert(pvn_); return pvn_; }
   /// Get index range
   NodeIndexRange GetIndexRange() const { assert(ir_.check()); return ir_; }
+  /// Get single index if it is
+  operator int() const { return ir_; }
 
   /// Check extendability
   bool ExtendableBy(NodeRange nr) const
@@ -76,10 +78,19 @@ public:
 
   /// Assign from ArrayRef<int>.  Check that values fit the declared size
   ValueNode& operator=(ArrayRef<int> ai)
-  { assert(ai.size() <= size()); vi_ = ai.move_or_copy(); return *this; }
+  {
+    /// Can be violated only if the solver adds more items of this kind
+    assert(ai.size() <= size());
+    vi_ = ai.move_or_copy();
+    return *this;
+  }
   /// Assign from ArrayRef<double>
   ValueNode& operator=(ArrayRef<double> ad)
-  { assert(ad.size() <= size()); vd_ = ad.move_or_copy(); return *this; }
+  {
+    assert(ad.size() <= size());
+    vd_ = ad.move_or_copy();
+    return *this;
+  }
 
   /// Retrieve whole ArrayRef<int>
   operator ArrayRef<int> () const { return vi_; }
