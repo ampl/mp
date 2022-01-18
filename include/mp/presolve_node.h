@@ -102,14 +102,22 @@ public:
   /// Retrieve int[i]
   int GetInt(size_t i) const { assert(i<vi_.size()); return vi_[i]; }
   /// Set int[i]
-  void SetInt(size_t i, int v)
-  { if (i>=vi_.size()) vi_.resize(i+1); vi_[i]=v; }
+  void SetInt(size_t i, int v) {
+    assert(i<size());
+    if (vi_.empty())
+      vi_.resize(size());
+    vi_[i]=v;
+  }
 
   /// Retrieve double[i]
   double GetDbl(size_t i) const { assert(i<vd_.size()); return vd_[i]; }
   /// Set double[i]
-  void SetDbl(size_t i, double v)
-  { if (i>=vd_.size()) vd_.resize(i+1); vd_[i]=v; }
+  void SetDbl(size_t i, double v) {
+    assert(i<size());
+    if (vd_.empty())
+      vd_.resize(size());
+    vd_[i]=v;
+  }
 
   /// Copy node to another node
   friend void Copy(NodeRange ir1, NodeRange ir2);

@@ -232,6 +232,10 @@ public:
       MP_DISPATCH( VarStatii(varstt) );
       MP_DISPATCH( ConStatii(constt) );
       if (debug_mode()) {                    // Report received statuses
+        auto mv = MPD( GetPresolver() ).PostsolveBasis(
+              { varstt, {{{ CG_Linear, constt }}} } );
+        varstt = mv.GetVarValues()();
+        constt = mv.GetConValues()();
         ReportSuffix(suf_testvarstatus, varstt); // Should we check that
         ReportSuffix(suf_testconstatus, constt); // Impl uses them?
       }

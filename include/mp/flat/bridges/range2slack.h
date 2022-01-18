@@ -17,16 +17,34 @@ public:
     Base(pre, ndl) { }
 
   /// Define pre- / postsolve methods for individual bridge entries
+  /// Typedef BridgeEntry is created in Base as std::array<int, 3>
+  /// (3 is the base class template parameter)
+  /// and means the following indexes: {range_con, lin_con, slack_index}
 
   /// Presolve solution (primal + dual)
-  void PresolveSolutionEntry(const BridgeEntry&) {}
+  /// Duals: just copy
+  /// Primals: compute slack TODO
+  void PresolveSolutionEntry(const BridgeEntry& be) {
+    SetDbl(be, 1, GetDbl(be, 0));
+  }
   /// Postsolve solution (primal + dual)
-  void PostsolveSolutionEntry(const BridgeEntry&) {}
+  void PostsolveSolutionEntry(const BridgeEntry& be) {
+    SetDbl(be, 0, GetDbl(be, 1));
+  }
 
   /// Presolve basis
-  void PresolveBasisEntry(const BridgeEntry&) {}
+  ///
+  /// From a range constraint's basis status,
+  /// transfer it to the slack
+  void PresolveBasisEntry(const BridgeEntry& be) {
+    SetInt(be, 2, GetInt(be, 0));
+  }
   /// Postsolve basis
-  void PostsolveBasisEntry(const BridgeEntry&) {}
+  ///
+  /// The reverse:
+  void PostsolveBasisEntry(const BridgeEntry& be) {
+    SetInt(be, 0, GetInt(be, 2));
+  }
 
 };
 

@@ -179,7 +179,8 @@ private:
 
 
 /// A static indiv entry bridge has a fixed number of ValueNodes
-/// and indexes into them
+/// and indexes into them.
+/// Generally NNodes==NIndexes
 template <class Impl, int NNodes, int NIndexes>
 class BasicStaticIndivEntryBridge :
     public BasicIndivEntryBridge<Impl, std::array<int, NIndexes> > {
@@ -197,9 +198,31 @@ public:
 
 protected:
   /// Access whole node at specific index, const
-  const ValueNode& GetNode(int i) const { return *ndl_.at(i); }
+  const ValueNode& GetNode(size_t i) const { return *ndl_.at(i); }
   /// Access whole node at specific index
-  ValueNode& GetNode(int i) { return *ndl_.at(i); }
+  ValueNode& GetNode(size_t i) { return *ndl_.at(i); }
+
+  /// Access int value at the node \a pos at the index
+  /// stored in \a be[pos]
+  ///
+  /// @param be: a BridgeEntry
+  /// @param pos: node number from 0..NNodes-1
+  int GetInt(const BridgeEntry& be, size_t pos) const
+  { return GetNode(pos).GetInt(be[pos]); }
+  /// SetInt
+  void SetInt(const BridgeEntry& be, size_t pos, int i)
+  { GetNode(pos).SetInt(be[pos], i); }
+
+  /// Access double value at the node \a pos at the index
+  /// stored in \a be[pos]
+  ///
+  /// @param be: a BridgeEntry
+  /// @param pos: node number from 0..NNodes-1
+  double GetDbl(const BridgeEntry& be, size_t pos) const
+  { return GetNode(pos).GetDbl(be[pos]); }
+  /// SetDbl
+  void SetDbl(const BridgeEntry& be, size_t pos, double i)
+  { GetNode(pos).SetDbl(be[pos], i); }
 
 private:
   NodeList ndl_;
