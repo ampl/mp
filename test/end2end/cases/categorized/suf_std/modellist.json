@@ -23,10 +23,25 @@
     }
   },
   {
-    "name" : "diet duals; con sstatus",
+    "name" : "diet duals; var/con sstatus",
     "objective" : 88.2,
     "tags" : ["linear", "continuous"],
     "files" : ["diet.mod", "diet.dat"],
+    "values": {
+      "Buy['BEEF'].sstatus": "low",
+      "Buy['MCH'].sstatus":  "bas",
+      "Buy['CHK'].sstatus":  "low",
+      "Diet['A'].sstatus": "bas",
+      "Diet['A']": 0.0,
+      "Diet['C']": 0.0,
+      "Diet['B1']": 0.0,
+      "Diet['B2']": 0.126
+    }
+  },
+  {
+    "name" : "diet_statuses preset sstatuses",
+    "objective" : 88.2,
+    "tags" : ["linear", "continuous"],
     "values": {
       "Buy['BEEF'].sstatus": "low",
       "Buy['MCH'].sstatus":  "bas",

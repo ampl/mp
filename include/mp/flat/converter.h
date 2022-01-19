@@ -942,7 +942,7 @@ protected:
   ModelType& GetModel() { return *this; }
 
   /////////////////////// CONSTRAINT KEEPERS /////////////////////////
-  /// Constraint keepers and converters should be initialized after presolver_
+  /// Constraint keepers and converters should be initialized after \a presolver_
 
   /// Define constraint keepers for all constraint types
   STORE_CONSTRAINT_TYPE(RangeLinCon)
@@ -980,7 +980,7 @@ protected:
   STORE_CONSTRAINT_TYPE(SOS2Constraint)
 
   /////////////////////// CONSTRAINT CONVERTERS /////////////////////////
-  /// Constraint keepers and converters should be initialized after presolver_
+  /// Constraint keepers and converters should be initialized after \a presolver_
 
   /// Convert range constraints, if necessary
   INSTALL_ITEM_CONVERTER(RangeConstraintConverter)

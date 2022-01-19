@@ -104,7 +104,7 @@ public:
   /// Set int[i]
   void SetInt(size_t i, int v) {
     assert(i<size());
-    if (vi_.empty())
+    if (vi_.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
       vi_.resize(size());
     vi_[i]=v;
   }
@@ -114,7 +114,7 @@ public:
   /// Set double[i]
   void SetDbl(size_t i, double v) {
     assert(i<size());
-    if (vd_.empty())
+    if (vd_.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
       vd_.resize(size());
     vd_[i]=v;
   }

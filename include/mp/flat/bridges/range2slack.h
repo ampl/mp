@@ -35,13 +35,15 @@ public:
   /// Presolve basis
   ///
   /// From a range constraint's basis status,
-  /// transfer it to the slack
+  /// transfer it to the slack.
+  /// Set the new constraint's status to 'equ'
   void PresolveBasisEntry(const BridgeEntry& be) {
     SetInt(be, 2, GetInt(be, 0));
+    SetInt(be, 1, (int)BasicStatus::equ);
   }
   /// Postsolve basis
   ///
-  /// The reverse:
+  /// The reverse (forget solver's constraint status)
   void PostsolveBasisEntry(const BridgeEntry& be) {
     SetInt(be, 0, GetInt(be, 2));
   }

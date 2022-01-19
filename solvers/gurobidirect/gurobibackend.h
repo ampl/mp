@@ -130,12 +130,12 @@ public:
   /**
   * Get basis condition value (kappa)
   **/
-  ALLOW_STD_FEATURE(KAPPA, true)
+  ALLOW_STD_FEATURE( KAPPA, true)
   double Kappa() const;
   /**
   * FeasRelax
   **/
-  ALLOW_STD_FEATURE(FEAS_RELAX, true)
+  ALLOW_STD_FEATURE( FEAS_RELAX, true)
   /**
   * Report sensitivity analysis suffixes
   **/
