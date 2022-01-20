@@ -186,6 +186,14 @@ int GurobiBackend::NumQPCons() const {
   return GrbGetIntAttr(GRB_INT_ATTR_NUMQCONSTRS);
 }
 
+int GurobiBackend::NumSOSCons() const {
+  return GrbGetIntAttr(GRB_INT_ATTR_NUMSOS);
+}
+
+int GurobiBackend::NumGenCons() const {
+  return GrbGetIntAttr(GRB_INT_ATTR_NUMGENCONSTRS);
+}
+
 int GurobiBackend::NumVars() const {
   return GrbGetIntAttr(GRB_INT_ATTR_NUMVARS);
 }
@@ -272,6 +280,32 @@ void GurobiBackend::MarkLazyOrUserCuts(ArrayRef<int> lazyVals) {
   }
 }
 
+SolutionBasis GurobiBackend::GetBasis() {
+  std::vector<int> varstt = VarStatii();
+  std::vector<int> constt = ConStatii();
+  if (varstt.size() && constt.size()) {
+    auto mv = GetPresolver().PostsolveBasis(
+          { std::move(varstt),
+            {{{ CG_Linear, std::move(constt) }}} } );
+    varstt = mv.GetVarValues()();
+    constt = mv.GetConValues()();
+    assert(varstt.size());
+    assert(constt.size());
+  }
+  return { std::move(varstt), std::move(constt) };
+}
+
+void GurobiBackend::SetBasis(SolutionBasis basis) {
+  auto mv = GetPresolver().PresolveBasis(
+        { basis.varstt, basis.constt } );
+  auto varstt = mv.GetVarValues()();
+  auto constt = mv.GetConValues()(CG_Linear);
+  assert(varstt.size());
+  assert(constt.size());
+  VarStatii(varstt);
+  ConStatii(constt);
+}
+
 ArrayRef<int> GurobiBackend::VarStatii() {
   auto stt =
     GrbGetIntAttrArray(model_fixed_,
@@ -313,7 +347,7 @@ ArrayRef<int> GurobiBackend::ConStatii() {
       MP_RAISE(fmt::format("Unknown Gurobi CBasis value: {}", s));
     }
   }
-  return MakeConstrValuesFromLPAndQCP(stt, {});
+  return stt;
 }
 
 void GurobiBackend::VarStatii(ArrayRef<int> vst) {
@@ -362,7 +396,7 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
       MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
     }
   }
-  GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, ExtractLinConValues( stt ));
+  GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, stt);
 }
 
 void GurobiBackend::InputPrimalDualStart(ArrayRef<double> x0, ArrayRef<double> pi0) {
@@ -435,6 +469,14 @@ ArrayRef<double> GurobiBackend::DRay() {
         {} );
 }
 
+IIS GurobiBackend::GetIIS() {
+  auto variis = VarsIIS();
+  auto coniis = ConsIIS();
+
+  auto mv = GetPresolver().PostsolveIIS(
+        { variis, coniis } );
+  return { mv.GetVarValues()(), mv.GetConValues()() };
+}
 
 ArrayRef<int> GurobiBackend::VarsIIS() {
   auto iis_lb =
@@ -457,17 +499,31 @@ ArrayRef<int> GurobiBackend::VarsIIS() {
   return iis_lb;
 }
 
-ArrayRef<int> GurobiBackend::ConsIIS() {
-  /// TODO General constraints, etc
-  auto iis_con =
-      MakeConstrValuesFromLPAndQCP(
-        GrbGetIntAttrArray(GRB_INT_ATTR_IIS_CONSTR, NumLinCons()),
-        GrbGetIntAttrArray(GRB_INT_ATTR_IIS_QCONSTR, NumQPCons()));
-  for (int i=iis_con.size(); i--; ) {
-    iis_con[i] = int(iis_con[i] ? IISStatus::mem : IISStatus::non);
+static void ConvertIIS2AMPL(std::vector<int>& ai) {
+  for (int i=ai.size(); i--; ) {
+    ai[i] = int(ai[i] ? IISStatus::mem : IISStatus::non);
   }
-  return iis_con;
 }
+
+pre::ValueMapInt GurobiBackend::ConsIIS() {
+  std::vector<int> iis_lincon =
+      GrbGetIntAttrArray(GRB_INT_ATTR_IIS_CONSTR, NumLinCons());
+  ConvertIIS2AMPL(iis_lincon);
+  std::vector<int> iis_qc =
+      GrbGetIntAttrArray(GRB_INT_ATTR_IIS_QCONSTR, NumQPCons());
+  ConvertIIS2AMPL(iis_qc);
+  std::vector<int> iis_soscon =
+      GrbGetIntAttrArray(GRB_INT_ATTR_IIS_SOS, NumSOSCons());
+  ConvertIIS2AMPL(iis_soscon);
+  std::vector<int> iis_gencon =
+      GrbGetIntAttrArray(GRB_INT_ATTR_IIS_GENCONSTR, NumGenCons());
+  ConvertIIS2AMPL(iis_gencon);
+  return {{{ CG_Linear, iis_lincon },
+        { CG_Quadratic, iis_qc },
+      { CG_SOS, iis_soscon },
+      { CG_General, iis_gencon }}};
+}
+
 double GurobiBackend::MIPGap() const {
   bool f;
   double g = GrbGetDblAttr(GRB_DBL_ATTR_MIPGAP, &f);

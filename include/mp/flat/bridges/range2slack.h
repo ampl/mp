@@ -48,6 +48,20 @@ public:
     SetInt(be, 0, GetInt(be, 2));
   }
 
+  /// Presolve IIS
+  void PresolveIISEntry(const BridgeEntry& ) {
+    /// Should not need
+  }
+  /// Postsolve IIS
+  ///
+  /// Take slack's if set, otherwise the constraint's
+  void PostsolveIISEntry(const BridgeEntry& be) {
+    if (auto slk_iis = GetInt(be, 2))
+      SetInt(be, 0, slk_iis);
+    else
+      SetInt(be, 0, GetInt(be, 1));
+  }
+
 };
 
 } // namespace pre
