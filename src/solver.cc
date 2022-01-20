@@ -35,6 +35,7 @@
 # include <unistd.h>
 # define MP_WRITE write
 #else
+#define NOMINMAX
 # include <io.h>
 # include <process.h>
 # include <windows.h>

@@ -349,6 +349,9 @@ check_cxx_source_compiles(
   int main() { std::unique_ptr<int> p; }" HAVE_UNIQUE_PTR)
 if (HAVE_UNIQUE_PTR)
   target_compile_definitions(mp PUBLIC MP_USE_UNIQUE_PTR)
+  if(TARGET mp-dynrt)
+    target_compile_definitions(mp-dynrt PUBLIC MP_USE_UNIQUE_PTR)
+  endif()
 endif ()
 
 check_cxx_source_compiles(
@@ -356,6 +359,9 @@ check_cxx_source_compiles(
   int main() { std::atomic<int> n; }" HAVE_ATOMIC)
 if (HAVE_ATOMIC)
   target_compile_definitions(mp PUBLIC MP_USE_ATOMIC)
+  if(TARGET mp-dynrt)
+    target_compile_definitions(mp-dynrt PUBLIC MP_USE_ATOMIC)
+  endif()
 endif ()
 
 check_cxx_source_compiles(
@@ -363,6 +369,9 @@ check_cxx_source_compiles(
   int main() { std::hash<int> h; }" HAVE_HASH)
 if (HAVE_HASH)
   target_compile_definitions(mp PUBLIC MP_USE_HASH)
+   if(TARGET mp-dynrt)
+    target_compile_definitions(mp-dynrt PUBLIC HAVE_HASH)
+  endif()
 endif ()
 
 set(CMAKE_REQUIRED_FLAGS )
