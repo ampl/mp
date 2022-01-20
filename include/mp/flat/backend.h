@@ -84,12 +84,12 @@ public:
   static const char* GetBackendLongName() { return nullptr; }
   static long Date() { return MP_DATE; }
   // Options handling
-  void GetSolverOption(const char* key, int& value) const;
-  void SetSolverOption(const char* key, int value);
-  void GetSolverOption(const char* key, double& value) const;
-  void SetSolverOption(const char* key, double value);
-  void GetSolverOption(const char* key, std::string& value) const;
-  void SetSolverOption(const char* key, const std::string& value);
+  void GetSolverOption(const char* key, int& value) const {};
+  void SetSolverOption(const char* key, int value) {};
+  void GetSolverOption(const char* key, double& value) const {};
+  void SetSolverOption(const char* key, double value) {};
+  void GetSolverOption(const char* key, std::string& value) const {};
+  void SetSolverOption(const char* key, const std::string& value) {};
   
   ArrayRef<double> PrimalSolution()
   { UNSUPPORTED("PrimalSolution()"); return {}; }

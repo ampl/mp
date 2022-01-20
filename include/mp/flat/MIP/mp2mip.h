@@ -225,7 +225,7 @@ public:
     ones.push_back(-1.0);
     MP_DISPATCH( AddConstraint(
                    RangeLinCon(ones, flags,
-                               {MP_DISPATCH( MinusInfty() ), args.size()-1} )) );
+                               {MP_DISPATCH( MinusInfty() ), (double)args.size()-1} )) );
   }
 
   void ConvertImplied(const ConjunctionConstraint& conj) {
