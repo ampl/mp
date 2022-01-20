@@ -429,7 +429,7 @@ protected:
   /// By default, declare mixed context
   template <class Constraint>
   void PropagateResult(Constraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
+    internal::Unused(&con, lb, ub, &ctx);
     con.SetContext(Context::CTX_MIX);
     for (const auto a: con.GetArguments())
       PropagateResultOfInitExpr(a, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
