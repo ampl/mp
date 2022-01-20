@@ -130,12 +130,12 @@ public:
   /**
   * Get basis condition value (kappa)
   **/
-  ALLOW_STD_FEATURE(KAPPA, true)
+  ALLOW_STD_FEATURE( KAPPA, true)
   double Kappa() const;
   /**
   * FeasRelax
   **/
-  ALLOW_STD_FEATURE(FEAS_RELAX, true)
+  ALLOW_STD_FEATURE( FEAS_RELAX, true)
   /**
   * Report sensitivity analysis suffixes
   **/
@@ -170,49 +170,53 @@ public:
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
 
   /// TODO Attributes (lazy/user cut, etc)
-  ACCEPT_CONSTRAINT(LinearConstraint, Recommended)
-  void AddConstraint(const LinearConstraint& lc);
-  ACCEPT_CONSTRAINT(QuadraticConstraint, Recommended)
+  ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
+  void AddConstraint(const LinConLE& lc);
+  ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
+  void AddConstraint(const LinConEQ& lc);
+  ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
+  void AddConstraint(const LinConGE& lc);
+  ACCEPT_CONSTRAINT(QuadraticConstraint, Recommended, CG_Quadratic)
   void AddConstraint(const QuadraticConstraint& qc);
-  ACCEPT_CONSTRAINT(MaximumConstraint, AcceptedButNotRecommended)
+  ACCEPT_CONSTRAINT(MaximumConstraint, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const MaximumConstraint& mc);
-  ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended)
+  ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const MinimumConstraint& mc);
-  ACCEPT_CONSTRAINT(AbsConstraint, AcceptedButNotRecommended)
+  ACCEPT_CONSTRAINT(AbsConstraint, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const AbsConstraint& absc);
-  ACCEPT_CONSTRAINT(ConjunctionConstraint, AcceptedButNotRecommended)
+  ACCEPT_CONSTRAINT(ConjunctionConstraint, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const ConjunctionConstraint& cc);
-  ACCEPT_CONSTRAINT(DisjunctionConstraint, AcceptedButNotRecommended)
+  ACCEPT_CONSTRAINT(DisjunctionConstraint, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const DisjunctionConstraint& mc);
   /// Enabling built-in indicator for infinite bounds,
   /// but not recommended otherwise --- may be slow
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
 
   /// General
-  ACCEPT_CONSTRAINT(SOS1Constraint, Recommended)
+  ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS1Constraint& cc);
-  ACCEPT_CONSTRAINT(SOS2Constraint, Recommended)
+  ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS2Constraint& cc);
-  ACCEPT_CONSTRAINT(ExpConstraint, Recommended)
+  ACCEPT_CONSTRAINT(ExpConstraint, Recommended, CG_General)
   void AddConstraint(const ExpConstraint& cc);
-  ACCEPT_CONSTRAINT(ExpAConstraint, Recommended)
+  ACCEPT_CONSTRAINT(ExpAConstraint, Recommended, CG_General)
   void AddConstraint(const ExpAConstraint& cc);
-  ACCEPT_CONSTRAINT(LogConstraint, Recommended)
+  ACCEPT_CONSTRAINT(LogConstraint, Recommended, CG_General)
   void AddConstraint(const LogConstraint& cc);
-  ACCEPT_CONSTRAINT(LogAConstraint, Recommended)
+  ACCEPT_CONSTRAINT(LogAConstraint, Recommended, CG_General)
   void AddConstraint(const LogAConstraint& cc);
-  ACCEPT_CONSTRAINT(PowConstraint, Recommended)
+  ACCEPT_CONSTRAINT(PowConstraint, Recommended, CG_General)
   void AddConstraint(const PowConstraint& cc);
-  ACCEPT_CONSTRAINT(SinConstraint, Recommended)
+  ACCEPT_CONSTRAINT(SinConstraint, Recommended, CG_General)
   void AddConstraint(const SinConstraint& cc);
-  ACCEPT_CONSTRAINT(CosConstraint, Recommended) // y = cos(x)
+  ACCEPT_CONSTRAINT(CosConstraint, Recommended, CG_General) // y = cos(x)
   void AddConstraint(const CosConstraint& cc);  // GRBaddgenconstrCos(x, y);
-  ACCEPT_CONSTRAINT(TanConstraint, Recommended)
+  ACCEPT_CONSTRAINT(TanConstraint, Recommended, CG_General)
   void AddConstraint(const TanConstraint& cc);
-  ACCEPT_CONSTRAINT(PLConstraint, Recommended)
+  ACCEPT_CONSTRAINT(PLConstraint, Recommended, CG_General)
   void AddConstraint(const PLConstraint& cc);
 
 

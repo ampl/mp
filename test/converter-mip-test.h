@@ -122,7 +122,7 @@ public:
   USE_BASE_CONSTRAINT_HANDLERS(mp::Backend<MIPInstanceBackend>)
 
   /// Specialize for LinearConstraint
-  void AddConstraint(const mp::LinearConstraint& lc) {
+  void AddConstraint(const mp::RangeLinCon& lc) {
     instance_.cons_.push_back({ { lc.nnz(), lc.pcoefs(), lc.pvars() },
                                 lc.lb(), lc.ub() });
   }

@@ -307,9 +307,10 @@ add_to_folder(${MP_FOLDER_PREFIX}util gen-expr-info)
 add_prefix(MP_HEADERS include/mp/
   arrayref.h basic-expr-visitor.h clock.h common.h error.h expr.h
   expr-visitor.h nl.h nl-reader.h option.h os.h problem.h problem-builder.h
+  presolve_base.h presolve_node.h presolve_bridge.h presolve.h
   rstparser.h safeint.h sol.h solver.h suffix.h utils_file.h utils_string.h)
 
-add_prefix(MP_CONVERT_HEADERS include/mp/flat/
+add_prefix(MP_FLAT_HEADERS include/mp/flat/
   nlsolver_app.h nlsolver.h expr_flattener.h
   affine_expr.h backend_base.h backend.h basic_constr.h
   constraint_keeper.h flat_model_api_basic.h flat_model_api.h
@@ -318,10 +319,17 @@ add_prefix(MP_CONVERT_HEADERS include/mp/flat/
   model.h preprocess.h
   quad_expr.h std_constr.h std_obj.h suffix.h)
 
-add_prefix(MP_CONVERT_MIP_HEADERS include/mp/flat/MIP/
+add_prefix(MP_FLAT_MIP_HEADERS include/mp/flat/MIP/
   backend.h mp2mip.h)
 
-set(MP_ALL_HEADERS ${MP_HEADERS} ${MP_CONVERT_HEADERS} ${MP_CONVERT_MIP_HEADERS})
+add_prefix(MP_FLAT_ITEMCVT_HEADERS include/mp/flat/item_cvt/
+  item_cvt_base.h range_con.h)
+
+add_prefix(MP_FLAT_BRIDGES_HEADERS include/mp/flat/bridges/
+  range2slack.h)
+
+set(MP_ALL_HEADERS ${MP_HEADERS} ${MP_FLAT_HEADERS}
+  ${MP_FLAT_MIP_HEADERS} ${MP_FLAT_ITEMCVT_HEADERS} ${MP_FLAT_BRIDGES_HEADERS})
 
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
@@ -329,12 +337,12 @@ add_prefix(MP_SOURCES src/
   problem.cc rstparser.cc sol.cc solver.cc solver-c.h sp.h sp.cc
   utils_file.cc utils_string.cc)
 
-set(MP_CONVERT_SOURCES )
-add_prefix(MP_CONVERT_SOURCES src/mp/flat/
+set(MP_FLAT_SOURCES )
+add_prefix(MP_FLAT_SOURCES src/mp/flat/
   piecewise_linear.cpp)
 
 add_mp_library(mp ${MP_ALL_HEADERS}
-    ${MP_SOURCES} ${MP_CONVERT_SOURCES} ${MP_EXPR_INFO_FILE}
+    ${MP_SOURCES} ${MP_FLAT_SOURCES} ${MP_EXPR_INFO_FILE}
   COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"
   INCLUDE_DIRECTORIES src include OBJECT_LIBRARIES format)
 set_target_properties(mp PROPERTIES
@@ -395,7 +403,13 @@ if (MP_VARIADIC_TEMPLATES)
   target_link_libraries(nl-example mp)
 endif ()
 
-add_subdirectory(doc)
+option(BUILD_DOC "Build documentation" ON)
+if(BUILD_DOC)
+  message(STATUS
+    "Building documentation (if the requirements are installed). "
+    "Set BUILD_DOC=off otherwise")
+  add_subdirectory(doc)
+endif()
 add_subdirectory(src/asl)
 add_subdirectory(src/amplsig)
 add_subdirectory(src/cp)

@@ -13,22 +13,25 @@ namespace mp {
 
 ////////////////////////////////////////////////////////////////////////
 /// Standard linear constraint
-class LinearConstraint : public BasicConstraint {
+template <class RhsOrRange>
+class LinearConstraint : public BasicConstraint, public RhsOrRange {
   std::vector<double> coefs_;
   std::vector<int> vars_;
-  double lb_, ub_;
 public:
-  static const char* GetConstraintName() { return "LinearConstraint"; }
+  static const std::string& GetConstraintName() {
+    static std::string name { "LinCon" + RhsOrRange::name() };
+    return name;
+  }
   template <class CV=std::vector<double>, class VV=std::vector<int> >
-  LinearConstraint(CV&& c, VV&& v, double l, double u) noexcept
-    : coefs_(std::forward<CV>(c)), vars_(std::forward<VV>(v)),
-      lb_(l), ub_(u) { assert(coefs_.size()==vars_.size()); preprocess(); }
+  LinearConstraint(CV&& c, VV&& v, RhsOrRange rr) noexcept
+    : RhsOrRange(rr), coefs_(std::forward<CV>(c)), vars_(std::forward<VV>(v))
+  { assert(coefs_.size()==vars_.size()); preprocess(); }
   template <size_t N>
-  LinearConstraint(std::array<double, N>& c, std::array<int, N>& v, double l, double u)
-    : coefs_(c.begin(), c.end()), vars_(v.begin(), v.end()),
-      lb_(l), ub_(u) { assert(coefs_.size()==vars_.size()); preprocess(); }
+  LinearConstraint(std::array<double, N>& c, std::array<int, N>& v, RhsOrRange rr)
+    : RhsOrRange(rr), coefs_(c.begin(), c.end()), vars_(v.begin(), v.end())
+  { assert(coefs_.size()==vars_.size()); preprocess(); }
   LinearConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
-                   double lb, double ub) : lb_(lb), ub_(ub) {
+                   RhsOrRange rr) : RhsOrRange (rr) {
     coefs_.reserve(lin_exp.size());
     vars_.reserve(lin_exp.size());
     for (const auto& term: lin_exp) {
@@ -42,8 +45,10 @@ public:
   const int* pvars() const { return vars_.data(); }
   const std::vector<double>& coefs() const { return coefs_; }
   const std::vector<int>& vars() const { return vars_; }
-  double lb() const { return lb_; }
-  double ub() const { return ub_; }
+  /// For PropagateResult()
+  const std::vector<int>& GetArguments() const { return vars_; }
+
+  void AddTerm(double c, int v) { coefs_.push_back(c); vars_.push_back(v); }
 
   void preprocess() { sort_terms(); /*eliminate_zeros();*/ }
   /// So Gurobi does not complain about 0 coefs and duplicate variables
@@ -85,7 +90,7 @@ public:
   /// Testing API
   bool operator==(const LinearConstraint& lc) const {
     return coefs_==lc.coefs_ && vars_==lc.vars_ &&
-        lb_==lc.lb_ && ub_==lc.ub_;
+        RhsOrRange::equals(lc);
   }
 //  void print(std::ostream& os) const {
 //    os << lb_ << " <= ";
@@ -98,20 +103,64 @@ public:
 //  }
 };
 
+class AlgConRange {
+public:
+  /// name
+  static std::string name() { return "Range"; }
+  /// Constructor
+  AlgConRange(double l, double u) : lb_(l), ub_(u) { }
+  /// range lb()
+  double lb() const { return lb_; }
+  /// range ub()
+  double ub() const { return ub_; }
+  /// operator==
+  bool equals(const AlgConRange& r) const
+  { return lb()==r.lb() && ub()==r.ub(); }
+private:
+  double lb_, ub_;
+};
+
+/// Kind: -1/0/1 for <= / == / >=
+template <int kind_>
+class AlgConRhs {
+  static constexpr const char* kind_str_[] =
+  { "LE", "EQ", "GE" };
+public:
+  /// name
+  static std::string name()
+  { return std::string(kind_str_[kind_+1]) + "Rhs"; }
+  /// Constructor
+  AlgConRhs(double r) : rhs_(r) { }
+  /// Kind
+  int kind() const { return kind_; }
+  /// rhs()
+  double rhs() const { return rhs_; }
+  /// operator==
+  bool equals(const AlgConRhs& r) const
+  { return rhs()==r.rhs(); }
+private:
+  double rhs_;
+};
+
+using RangeLinCon = LinearConstraint<AlgConRange>;
+using LinConLE = LinearConstraint< AlgConRhs<-1> >;
+using LinConEQ = LinearConstraint< AlgConRhs< 0> >;
+using LinConGE = LinearConstraint< AlgConRhs< 1> >;
+
 ////////////////////////////////////////////////////////////////////////
 /// Standard quadratic constraint
-class QuadraticConstraint : public LinearConstraint {
+class QuadraticConstraint : public RangeLinCon {
   QuadTerms qt_;
 public:
   static const char* GetConstraintName() { return "QuadraticConstraint"; }
-  QuadraticConstraint(LinearConstraint&& lc, QuadTerms&& qt) noexcept :
-    LinearConstraint(std::move(lc)), qt_(std::move(qt)) {
+  QuadraticConstraint(RangeLinCon&& lc, QuadTerms&& qt) noexcept :
+    RangeLinCon(std::move(lc)), qt_(std::move(qt)) {
     sort_qp_terms(); // LinearConstr sorts them itself
   }
   QuadraticConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
                       std::initializer_list<std::tuple<double, int, int>> quad_terms,
                       double lb, double ub) :
-    LinearConstraint(lin_exp, lb, ub), qt_(quad_terms) {
+    RangeLinCon(lin_exp, {lb, ub}), qt_(quad_terms) {
     sort_qp_terms();
   }
 
@@ -119,7 +168,7 @@ public:
 
   // To enable comparison. Also eliminates zeros
   void sort_terms() {
-    LinearConstraint::sort_terms();
+    RangeLinCon::sort_terms();
     sort_qp_terms();
   }
 
@@ -129,7 +178,7 @@ public:
 
   /// Testing API
   bool operator==(const QuadraticConstraint& qc) const {
-    return LinearConstraint::operator==(qc) && qt_==qc.qt_;
+    return RangeLinCon::operator==(qc) && qt_==qc.qt_;
   }
 //  void print(std::ostream& os) const {
 //    os << lb() << " <= ";
@@ -186,12 +235,12 @@ public:
   }
   const AffineExpr& GetAffineExpr() const { return affine_expr_; }
   const Arguments& GetArguments() const { return GetAffineExpr(); }
-  LinearConstraint to_linear_constraint() const {
+  RangeLinCon to_linear_constraint() const {
     const auto& ae = GetAffineExpr();
     LinearExprUnzipper aeu(ae);
     aeu.AddTerm(DefiningConstraint::GetResultVar(), -1.0);
-    return LinearConstraint(std::move(aeu.c_), std::move(aeu.v_),
-                            -ae.constant_term(), -ae.constant_term());
+    return RangeLinCon(std::move(aeu.c_), std::move(aeu.v_),
+                            {-ae.constant_term(), -ae.constant_term()});
   }
 };
 
@@ -221,8 +270,8 @@ public:
     LinearExprUnzipper aeu(ae);
     aeu.AddTerm(DefiningConstraint::GetResultVar(), -1.0);
     auto qt = qe.GetQT();
-    return {LinearConstraint(std::move(aeu.c_), std::move(aeu.v_),
-                             -ae.constant_term(), -ae.constant_term()),
+    return {RangeLinCon(std::move(aeu.c_), std::move(aeu.v_),
+                             {-ae.constant_term(), -ae.constant_term()}),
             std::move(qt)};
   }
 };
@@ -251,9 +300,12 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( DisjunctionConstraint, VarArray,
 /// \brief DEFINE_CUSTOM_DEFINING_CONSTRAINT
 /// Keep it with AffineExpr, indicators need that
 /// and we don't want quadratics with big-M's?
+/// Or, add QuadraticEq0Constraint?
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( EQ0Constraint, AffineExpr,
                                    "r = (expr == 0)");
 
+/// Not using: var1 != var2.
+/// Represented by Not { Eq0Constraint... }
 ////////////////////////////////////////////////////////////////////////
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( NEConstraint__unused, VarArray2,
                                    "r = (v1 != v2)");

@@ -23,7 +23,7 @@
     }
   },
   {
-    "name" : "diet duals; con sstatus none",
+    "name" : "diet duals; var/con sstatus",
     "objective" : 88.2,
     "tags" : ["linear", "continuous"],
     "files" : ["diet.mod", "diet.dat"],
@@ -31,7 +31,22 @@
       "Buy['BEEF'].sstatus": "low",
       "Buy['MCH'].sstatus":  "bas",
       "Buy['CHK'].sstatus":  "low",
-      "Diet['A'].sstatus": "none",
+      "Diet['A'].sstatus": "bas",
+      "Diet['A']": 0.0,
+      "Diet['C']": 0.0,
+      "Diet['B1']": 0.0,
+      "Diet['B2']": 0.126
+    }
+  },
+  {
+    "name" : "diet_statuses preset sstatuses",
+    "objective" : 88.2,
+    "tags" : ["linear", "continuous"],
+    "values": {
+      "Buy['BEEF'].sstatus": "low",
+      "Buy['MCH'].sstatus":  "bas",
+      "Buy['CHK'].sstatus":  "low",
+      "Diet['A'].sstatus": "bas",
       "Diet['A']": 0.0,
       "Diet['C']": 0.0,
       "Diet['B1']": 0.0,
@@ -47,8 +62,9 @@
       "Buy['BEEF'].sstatus": "low",
       "Buy['MTL'].sstatus":  "bas",
       "Buy['CHK'].sstatus":  "upp",
-      "Diet_Min['C']": 0.00670787,
-      "Diet_Min['CAL']": 0.00447191,
+      "Diet_Min['A']": 0.0,
+      "Diet_Min['C']": 0.0,
+      "Diet_Min['CAL']": 0.0,
       "Diet_Min['A'].sstatus": "bas"
     }
   },

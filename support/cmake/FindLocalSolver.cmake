@@ -6,7 +6,7 @@
 
 if (UNIX)
   set(INSTALL_DIRS /opt)
-  set(LOCALSOLVER_LIB_NAME localsolver)
+  set(LOCALSOLVER_LIB_NAME_STEM localsolver)
 else ()
   set(PROGRAM_FILES_DIR "C:/Program Files")
   set(PROGRAM_FILES_X86_DIR "${PROGRAM_FILES_DIR} (x86)")
@@ -14,7 +14,7 @@ else ()
     set(PROGRAM_FILES_DIR ${PROGRAM_FILES_X86_DIR})
   endif ()
   set(INSTALL_DIRS ${PROGRAM_FILES_DIR} "C:")
-  set(LOCALSOLVER_LIB_NAME localsolver.dll)
+  set(LOCALSOLVER_LIB_NAME_STEM localsolver.dll)
 endif ()
 
 foreach (dir ${INSTALL_DIRS})
@@ -33,7 +33,8 @@ endforeach ()
 find_path(LOCALSOLVER_INCLUDE_DIR
   localsolver.h PATHS ${LOCALSOLVER_DIR}/include)
 find_library(LOCALSOLVER_LIBRARY
-  ${LOCALSOLVER_LIB_NAME} PATHS ${LOCALSOLVER_DIR}/bin)
+  NAMES ${LOCALSOLVER_LIB_NAME_STEM}105
+  PATHS ${LOCALSOLVER_DIR}/bin)
 
 include(FindPackageHandleStandardArgs)
 # Handle the QUIETLY and REQUIRED arguments and set LOCALSOLVER_FOUND to TRUE

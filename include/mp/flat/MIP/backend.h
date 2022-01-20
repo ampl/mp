@@ -206,6 +206,14 @@ public:
       varstt = ReadSuffix(suf_varstatus);
       constt = ReadSuffix(suf_constatus);
       useBasis = varstt.size() && constt.size();
+      if (useBasis) {              // Presolve. TODO in Impl?
+        auto mv = MPD( GetPresolver() ).PresolveBasis(
+              { varstt, constt } );
+        varstt = mv.GetVarValues()();
+        constt = mv.GetConValues()(CG_Linear);
+        assert(varstt);
+        assert(constt);
+      }
     }
     auto X0 = MP_DISPATCH( InitialValues() );
     auto pi0 = MP_DISPATCH( InitialDualValues() );
@@ -224,6 +232,10 @@ public:
       MP_DISPATCH( VarStatii(varstt) );
       MP_DISPATCH( ConStatii(constt) );
       if (debug_mode()) {                    // Report received statuses
+        auto mv = MPD( GetPresolver() ).PostsolveBasis(
+              { varstt, {{{ CG_Linear, constt }}} } );
+        varstt = mv.GetVarValues()();
+        constt = mv.GetConValues()();
         ReportSuffix(suf_testvarstatus, varstt); // Should we check that
         ReportSuffix(suf_testconstatus, constt); // Impl uses them?
       }
@@ -262,10 +274,18 @@ public:
   }
 
   void ReportBasis() {
-    ReportSuffix(suf_varstatus,
-                              MP_DISPATCH( VarStatii() ));
-    ReportSuffix(suf_constatus,
-                              MP_DISPATCH( ConStatii() ));
+    auto varstt = MP_DISPATCH( VarStatii() );
+    auto constt = MP_DISPATCH( ConStatii() );
+    if (varstt && constt) {
+      auto mv = MPD( GetPresolver() ).PostsolveBasis(
+            { varstt, {{{ CG_Linear, constt }}} } );
+      varstt = mv.GetVarValues()();
+      constt = mv.GetConValues()();
+      assert(varstt);
+      assert(constt);
+    }
+    ReportSuffix(suf_varstatus, varstt);
+    ReportSuffix(suf_constatus, constt);
   }
 
   void ReportRays() {

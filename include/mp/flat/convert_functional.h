@@ -29,8 +29,8 @@ protected:
   bool ResultVarIsKnown() const { return prepro_.is_result_var_known(); }
   bool MapFind() {
     const auto pck = GetConverter().MapFind(GetConstraint());
-    if (nullptr!=pck) {
-      SetResultVar(pck->GetResultVar());
+    if (pck) {
+      SetResultVar(pck.GetResultVar());
       return true;
     }
     return false;
@@ -41,6 +41,7 @@ protected:
 public:
   BasicFCC(Converter& cvt, Constraint&& fc) noexcept :
     converter_(cvt), constr_(std::move(fc)) { }
+  /// Holder for the conversion result of an expression
   class VarOrConst {
     const bool is_v_;
     union {
@@ -61,9 +62,9 @@ public:
     static VarOrConst MakeConst(double c)
     { return VarOrConst(false, c); }
   };
-  /// Convert array of arguments into a result expression
-  /// possible adding extra constraint(s).
-  /// Result is either a constant or a variable
+  /// Convert array of arguments into a result (var or const),
+  /// possibly adding extra constraint(s).
+  /// @return either a constant or a variable
   VarOrConst Convert() {
     MP_DISPATCH( PreprocessArguments() );
     if (ResultIsConstant())

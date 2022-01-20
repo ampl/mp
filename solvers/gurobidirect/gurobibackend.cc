@@ -307,7 +307,7 @@ ArrayRef<int> GurobiBackend::ConStatii() {
       s = (int)BasicStatus::bas;
       break;
     case -1:
-      s = (int)BasicStatus::none;
+      s = (int)BasicStatus::sup;   // TODO exact value low/upp/equ??
       break;
     default:
       MP_RAISE(fmt::format("Unknown Gurobi CBasis value: {}", s));
@@ -348,16 +348,15 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
   for (auto& s: stt) {
     switch ((BasicStatus)s) {
     case BasicStatus::bas:
-      s = 0;
-      break;
-    case BasicStatus::none:
-      s = -1;
-      break;
+    case BasicStatus::none:   // for 'not set', it seems better
+      s = 0;                  // after adding new rows
+      break;                  // as Gurobi 9.5 does not accept partial basis
     case BasicStatus::upp:
     case BasicStatus::sup:
     case BasicStatus::low:
     case BasicStatus::equ:
     case BasicStatus::btw:
+      s = -1;
       break;
     default:
       MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
@@ -815,15 +814,20 @@ void GurobiBackend::SetQuadraticObjective(int iobj, const QuadraticObjective &qo
   }
 }
 
-void GurobiBackend::AddConstraint( const LinearConstraint& lc ) {
-  if (lc.lb()==lc.ub()) // For range, Gurobi 9.1.2 adds extra var ==0
-    GRB_CALL( GRBaddconstr(model_, lc.nnz(),
-                           (int*)lc.pvars(), (double*)lc.pcoefs(),
-                           GRB_EQUAL, lc.ub(), NULL) );
-  else
-    GRB_CALL( GRBaddrangeconstr(model_, lc.nnz(),
-                                (int*)lc.pvars(), (double*)lc.pcoefs(),
-                                lc.lb(), lc.ub(), NULL) );
+void GurobiBackend::AddConstraint( const LinConLE& lc ) {
+  GRB_CALL( GRBaddconstr(model_, lc.nnz(),
+                         (int*)lc.pvars(), (double*)lc.pcoefs(),
+                         GRB_LESS_EQUAL, lc.rhs(), NULL) );
+}
+void GurobiBackend::AddConstraint( const LinConEQ& lc ) {
+  GRB_CALL( GRBaddconstr(model_, lc.nnz(),
+                         (int*)lc.pvars(), (double*)lc.pcoefs(),
+                         GRB_EQUAL, lc.rhs(), NULL) );
+}
+void GurobiBackend::AddConstraint( const LinConGE& lc ) {
+  GRB_CALL( GRBaddconstr(model_, lc.nnz(),
+                         (int*)lc.pvars(), (double*)lc.pcoefs(),
+                         GRB_GREATER_EQUAL, lc.rhs(), NULL) );
 }
 
 void GurobiBackend::AddConstraint( const QuadraticConstraint& qc ) {

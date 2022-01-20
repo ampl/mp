@@ -22,7 +22,7 @@ struct DefaultFlatModelParams {
 /// Class BasicFlatModel stores vars, objs, custom constraints
 /// to be used internally in a FlatConverter
 template <class ModelParams = DefaultFlatModelParams>
-class BasicFlatModel {
+class BasicFlatModel : public ConstraintManager {
 public:
   using Params = ModelParams;
   using Var = typename Params::Var;
@@ -34,7 +34,7 @@ public:
 
   ///////////////////////////// VARIABLES ////////////////////////////////
   /// Add variable, return its index
-  Var AddVar(double lb=MinusInf(), double ub=Inf(),
+  Var AddVar__basic(double lb=MinusInf(), double ub=Inf(),
              var::Type type=var::CONTINUOUS) {
     assert(check_vars());
     var_lb_.push_back(lb);
@@ -43,7 +43,8 @@ public:
     return var_type_.size()-1;
   }
 
-  void AddVars(const VarBndVec& lbs, const VarBndVec& ubs,
+  /// Add several variables
+  void AddVars__basic(const VarBndVec& lbs, const VarBndVec& ubs,
                const VarTypeVec& types) {
     assert(check_vars());
     var_lb_.insert(var_lb_.end(), lbs.begin(), lbs.end());
@@ -160,33 +161,14 @@ public:
   void AddObjective(QuadraticObjective&& obj)
   { get_objectives().push_back(std::move(obj)); }
 
+
   ///////////////////////////// FLAT CONSTRAINTS ////////////////////////////
 protected:
-  using PConstraintKeeper = std::unique_ptr<BasicConstraintKeeper>;
 
 public:
 
-  /** Returns the number of custom constraints. */
-  int num_custom_cons() const { return static_cast<int>(custom_constr_.size()); }
-
-  /** Returns custom constraint i */
-  BasicConstraintKeeper* custom_con(int i) const {
-    assert(0<=i && i<num_custom_cons());
-    return custom_constr_[i].get();
-  }
-
-  /// Add custom constraint. Takes ownership
-  void AddConstraint(BasicConstraintKeeper* pbc) {
-    PConstraintKeeper pc;
-    pc.reset(pbc);
-    AddConstraint(std::move(pc));
-  }
-  void AddConstraint(PConstraintKeeper pc) {
-    custom_constr_.push_back(std::move(pc));
-  }
-
-
   /////////////////////////////// UTILITIES //////////////////////////////////
+public:
   static constexpr double Inf()
   { return std::numeric_limits<double>::infinity(); }
 
@@ -231,13 +213,7 @@ protected:
 
   template <class Backend>
   void PushCustomConstraintsTo(Backend& backend) const {
-    if (int n_ccons = num_custom_cons()) {
-      for (int i = 0; i < n_ccons; ++i) {
-        const auto* pConstraint = custom_con(i);
-        if (!pConstraint->IsBridged())
-          pConstraint->AddToBackend(backend);
-      }
-    }
+    this->AddUnbridgedConstraintsToBackend(backend);
   }
 
 private:
@@ -250,8 +226,6 @@ private:
   /// TODO storing QuadraticObjective now, make it just an item
   ObjList objs_;
 
-  /// Flat constraints
-  std::vector<PConstraintKeeper> custom_constr_;
 
 public:
   /// Check var arrays

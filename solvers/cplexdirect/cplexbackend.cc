@@ -226,7 +226,7 @@ void CplexBackend::SetLinearObjective( int iobj, const LinearObjective& lo ) {
 //    TODO
   }
 }
-void CplexBackend::AddConstraint(const LinearConstraint& lc) {
+void CplexBackend::AddConstraint(const RangeLinCon& lc) {
   char sense = 'E';                     // good to initialize things
   double rhs = lc.lb();
   if (lc.lb()==lc.ub())

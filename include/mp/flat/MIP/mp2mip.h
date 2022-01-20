@@ -16,9 +16,6 @@ public:
 
 public:
   using BaseConverter = FlatConverter<Impl, Backend, Model>;
-  template <class Constraint>
-    using ConstraintKeeperType = typename
-      BaseConverter::template ConstraintKeeperType<Constraint>;
 
 public:
   static const char* GetConverterName() { return "MPToMIPConverter"; }
@@ -31,13 +28,15 @@ public:
   void ConvertMinOrMax(const MinOrMaxConstraint& mc) {
     const auto& args = mc.GetArguments();
     const std::size_t nargs = args.size();
-    const auto flags = this->AddVars_returnIds(nargs, 0.0, 1.0, var::Type::INTEGER);   // binary flags
-    MP_DISPATCH( AddConstraint(LinearConstraint(std::vector<double>(nargs, 1.0),    // sum of the flags >= 1
-                        flags, 1.0, this->Infty())) );
+    const auto flags =
+        this->AddVars_returnIds(nargs, 0.0, 1.0, var::Type::INTEGER);   // binary flags
+    MP_DISPATCH( AddConstraint(RangeLinCon(
+                                 std::vector<double>(nargs, 1.0),  // sum of the flags >= 1
+                                 flags, {1.0, this->Infty()})) );
     const auto resvar = mc.GetResultVar();
     for (size_t i=0; i<nargs; ++i) {
-      MP_DISPATCH( AddConstraint(LinearConstraint({1.0*sense, -1.0*sense},
-                          {args[i], resvar}, this->MinusInfty(), 0.0)) );
+      MP_DISPATCH( AddConstraint(RangeLinCon({1.0*sense, -1.0*sense},
+                          {args[i], resvar}, {this->MinusInfty(), 0.0})) );
       MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE{flags[i], 1,
                           {1.0*sense, -1.0*sense}, {resvar, args[i]}, 0.0}) );
     }
@@ -54,8 +53,8 @@ public:
   void Convert(const AbsConstraint& ac) {
     const int arg = ac.GetArguments()[0];
     const int res = ac.GetResultVar();
-    this->AddConstraint(LinearConstraint({1.0, 1.0}, {res, arg}, 0.0, this->Infty()));
-    this->AddConstraint(LinearConstraint({1.0, -1.0}, {res, arg}, 0.0, this->Infty()));
+    this->AddConstraint(RangeLinCon({1.0, 1.0}, {res, arg}, {0.0, this->Infty()}));
+    this->AddConstraint(RangeLinCon({1.0, -1.0}, {res, arg}, {0.0, this->Infty()}));
     const int flag = this->AddVar(0.0, 1.0, var::INTEGER);
     this->AddConstraint(IndicatorConstraintLinLE(flag, 1, {1.0, 1.0}, {res, arg}, 0.0));
     this->AddConstraint(IndicatorConstraintLinLE(flag, 0, {1.0, -1.0}, {res, arg}, 0.0));
@@ -150,9 +149,9 @@ public:
     } else {    // We are in MIP so doing algebra, not DisjunctiveConstr
       auto newvars = MPD( AddVars_returnIds(2, 0.0, 1.0, var::INTEGER) );
       newvars.push_back( eq0c.GetResultVar() );
-      MPD( AddConstraint( LinearConstraint(   // b1+b2+resvar >= 1
-                            {1.0, 1.0, 1.0},
-                            newvars, 1.0, MPCD(Infty())) ) );
+      MPD( AddConstraint( RangeLinCon(   // b1+b2+resvar >= 1
+                            {1.0, 1.0, 1.0}, newvars,
+                                         {1.0, MPCD(Infty())} ) ) );
       auto bNt = MP_DISPATCH( ComputeBoundsAndType(ae) );
       double cmpEps = MPD( ComparisonEps( bNt.get_result_type() ) ); {
         LinearExprUnzipper le(ae);
@@ -193,8 +192,10 @@ public:
     else
       ae += {{-bnds.ub(), b}, 0.0};
     LinearExprUnzipper leu(ae);
-    MP_DISPATCH( AddConstraint(LinearConstraint(     /// Big-M constraint
-        leu.coefs(), leu.var_indexes(), this->MinusInfty(), -ae.constant_term())) );
+    MP_DISPATCH( AddConstraint(RangeLinCon(     /// Big-M constraint
+        leu.coefs(), leu.var_indexes(),
+        {this->MinusInfty(), -ae.constant_term()}
+                                                )) );
   }
 
   /// b==val ==> c'x==d
@@ -223,8 +224,8 @@ public:
     std::vector<double> ones(args.size(), 1.0); // res+n-1 >= sum(args) in CTX-
     ones.push_back(-1.0);
     MP_DISPATCH( AddConstraint(
-                   LinearConstraint(ones, flags,
-                                    MP_DISPATCH( MinusInfty() ), args.size()-1)) );
+                   RangeLinCon(ones, flags,
+                               {MP_DISPATCH( MinusInfty() ), args.size()-1} )) );
   }
 
   void ConvertImplied(const ConjunctionConstraint& conj) {
@@ -232,7 +233,8 @@ public:
     std::array<int, 2> vars{-1, conj.GetResultVar()};
     for (auto arg: conj.GetArguments()) {       // res <= arg[i] in CTX+
       vars[0] = arg;
-      MP_DISPATCH( AddConstraint(LinearConstraint(coefs, vars, MP_DISPATCH( MinusInfty() ), 0.0)) );
+      MP_DISPATCH( AddConstraint(RangeLinCon(coefs, vars,
+                                             {MP_DISPATCH( MinusInfty() ), 0.0} )) );
     }
   }
 
@@ -250,7 +252,8 @@ public:
     flags.push_back(disj.GetResultVar());
     std::vector<double> ones(args.size(), 1.0);  // res <= sum(args) in CTX+
     ones.push_back(-1.0);
-    MP_DISPATCH( AddConstraint(LinearConstraint(ones, flags, 0.0, MP_DISPATCH( Infty() ))) );
+    MP_DISPATCH( AddConstraint(RangeLinCon(ones, flags,
+                                           {0.0, MP_DISPATCH( Infty() )} )) );
   }
 
   void ConvertReverseImplied(const DisjunctionConstraint& disj) {
@@ -258,7 +261,8 @@ public:
     std::array<int, 2> vars{-1, disj.GetResultVar()};
     for (auto arg: disj.GetArguments()) {        // res >= arg[i] in CTX-
       vars[0] = arg;
-      MP_DISPATCH( AddConstraint(LinearConstraint(coefs, vars, MP_DISPATCH( MinusInfty() ), 0.0)) );
+      MP_DISPATCH( AddConstraint(RangeLinCon(coefs, vars,
+                                             {MP_DISPATCH( MinusInfty() ), 0.0} )) );
     }
   }
 
@@ -309,8 +313,8 @@ public:
         flags[ivar] = this->AssignResultVar2Args(
               EQ0Constraint( { {1.0}, {args[ivar]}, -double(v) } ) );
       }
-      this->AddConstraint( LinearConstraint(
-          coefs, flags, this->MinusInfty(), 1.0 ) );
+      this->AddConstraint( RangeLinCon(
+          coefs, flags, {this->MinusInfty(), 1.0} ) );
     }
   }
 
@@ -319,54 +323,58 @@ public:
   ///
 private:
   /// For a single variable, map its equality comparisons
-  using SingleVarEqConstMap = std::unordered_map<double,
-                     const ConstraintKeeperType<EQ0Constraint>*>;
+  /// for the comparison value (double), map the EQ0Constraint index
+  using SingleVarEqConstMap = std::unordered_map<double, int>;
   /// A map keeping such maps for certain variables
   using VarsEqConstMap = std::unordered_map<int, SingleVarEqConstMap>;
 
   VarsEqConstMap map_vars_eq_const_;
 
 public:
-  ///////////////////////////////////////////////////////////////////////
+  //////////////////////////////// CONSTRAINT MAPS ///////////////////////////////////////
   ///
   USE_BASE_MAP_FINDERS( BaseConverter )
 
-  const BasicConstraintKeeper* MapFind(const EQ0Constraint& eq0c) const {
+  AbstractConstraintLocation MapFind(const EQ0Constraint& eq0c) {
     const auto isVCC = IsVarConstCmp( eq0c );
     if (isVCC.first) {                    // only var==const comparisons
       return MapFind__VarConstCmp(isVCC.second.first, isVCC.second.second);
     }
-    return nullptr;
+    return { };
   }
 
-  const BasicConstraintKeeper* MapFind__VarConstCmp(int var, double val) const {
+  AbstractConstraintLocation MapFind__VarConstCmp(int var, double val) {
     auto itVar = map_vars_eq_const_.find(var);
     if (map_vars_eq_const_.end() != itVar) {
       auto itCmp = itVar->second.find( val );
       if (itVar->second.end() != itCmp)
-        return itCmp->second;
+        /// Make sure we store the comparisons in EQ0Con's
+        return {&GET_CONSTRAINT_KEEPER(EQ0Constraint), itCmp->second};
     }
-    return nullptr;
+    return { };
   }
 
-  bool MapInsert(const ConstraintKeeperType<EQ0Constraint>* pck) {
-    const auto isVCC = IsVarConstCmp( pck->GetConstraint() );
+  bool MapInsert(ConstraintLocation<EQ0Constraint> ck) {
+    const auto isVCC = IsVarConstCmp( ck.GetConstraint() );
     if (isVCC.first) {                    // only var==const comparisons
-      return MapInsert__VarConstCmp(isVCC.second.first, isVCC.second.second, pck);
+      return MapInsert__VarConstCmp(isVCC.second.first, isVCC.second.second, ck);
     }
     return true;
   }
 
   bool MapInsert__VarConstCmp(int var, double val,
-                              const ConstraintKeeperType<EQ0Constraint>* pck) {
+                              ConstraintLocation<EQ0Constraint> ck) {
     auto result = map_vars_eq_const_[var].
-        insert( std::make_pair( val, pck ) );
+        insert( std::make_pair( val, ck.GetIndex() ) );
     return result.second;
   }
 
+  /// Result of IsVarConstCmp(): var, const
   using VarConstCmp = std::pair<int, double>;
-  static std::pair<bool, VarConstCmp> IsVarConstCmp(const EQ0Constraint& cons) {
-    const AffineExpr& args = cons.GetArguments();
+
+  /// Check if the eq0c is a var==const
+  static std::pair<bool, VarConstCmp> IsVarConstCmp(const EQ0Constraint& con) {
+    const AffineExpr& args = con.GetArguments();
     if (1==args.num_terms()) {
       assert(1.0==args.coef(0));
       return { true, { args.var_index(0), -args.constant_term() } };
@@ -417,20 +425,21 @@ public:
       auto itV = map.find(v);
       if (map.end() != itV) {
         ++nTaken;
-        unaryEncVars[v-lb] = itV->second->GetResultVar();
+        unaryEncVars[v-lb] =
+          GET_CONSTRAINT_KEEPER(EQ0Constraint).GetResultVar(itV->second);
       } else {
         unaryEncVars[v-lb] = this->AddVar(0.0, 1.0, var::INTEGER);
       }
     }
     assert(map.size()==(size_t)nTaken);
     std::vector<double> coefs(ub_dbl-lb_dbl+1, 1.0);
-    this->AddConstraint(LinearConstraint(coefs, unaryEncVars, 1.0, 1.0));
+    this->AddConstraint(LinConEQ(coefs, unaryEncVars, {1.0}));
     unaryEncVars.push_back(var);
     for (int v=lb; v!=ub+1; ++v) {
       coefs[v-lb] = v;
     }
     coefs.push_back(-1.0);
-    this->AddConstraint(LinearConstraint(coefs, unaryEncVars, 0.0, 0.0));
+    this->AddConstraint(LinConEQ(coefs, unaryEncVars, {0.0}));
   }
 
   ///////////////////////////////////////////////////////////////////////

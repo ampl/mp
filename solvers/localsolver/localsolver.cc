@@ -21,6 +21,7 @@
  */
 
 #include "localsolver/localsolver.h"
+#include <lscallback.h>
 
 #include <cmath>
 #include <limits>
@@ -604,9 +605,9 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
        i = obj_bounds.begin(), e = obj_bounds.end(); i != e; ++i) {
     int index = i->index();
     if (model.getObjective(index).isDouble())
-      param.setDoubleObjectiveBound(index, i->dbl_value());
+      param.setDoubleObjectiveThreshold(index, i->dbl_value());
     else
-      param.setObjectiveBound(index, i->int_value());
+      param.setIntObjectiveThreshold(index, i->int_value());
   }
 
   struct Callback {
@@ -663,7 +664,17 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
       }
     }
   } callback(*this, solver, custom_output);
-  solver.addCallback(ls::CT_Ticked, &Callback::Call, &callback);
+
+  /// Adapting to LS 10.5 API. 16/12/2021
+  class LSTimeTickedCallBack : public ls::LSCallback {
+    Callback& cb_;
+  public:
+    LSTimeTickedCallBack(Callback& cb) : cb_(cb) { }
+    void callback(ls::LocalSolver& , ls::LSCallbackType ) override
+    { cb_.Call(); }
+  } lsttcb(callback);
+
+  solver.addCallback(ls::CT_TimeTicked, &lsttcb);
 
   if (!envfile_.empty())
     solver.saveEnvironment(envfile_);

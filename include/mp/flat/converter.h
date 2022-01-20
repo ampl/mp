@@ -5,6 +5,7 @@
 #include <map>
 #include <cstdio>
 #include <cmath>
+#include <utility>
 
 #include "mp/format.h"
 #include "mp/flat/converter_proxy_base.h"
@@ -14,6 +15,8 @@
 #include "mp/flat/model.h"
 #include "mp/flat/std_constr.h"
 #include "mp/flat/preprocess.h"
+#include "mp/presolve.h"
+#include "mp/flat/item_cvt/range_con.h"
 
 namespace mp {
 
@@ -36,8 +39,6 @@ public:
 
 public:
   using VarArray = std::vector<int>;
-  template <class Constraint>
-    using ConstraintKeeperType = ConstraintKeeper<Impl, Backend, Constraint>;
 
 protected:
   using ClassType = FlatConverter<Impl, Backend, Model>;
@@ -48,7 +49,10 @@ public:
   static const char* GetConverterName() { return "BasicMPFlatConverter"; }
 
   FlatConverter()
-  { GetBackend().ProvideFlatConverterProxyObject(this); }
+  {
+    GetBackend().ProvidePresolver(&GetPresolver());
+    GetBackend().ProvideFlatConverterProxyObject(this);     // OLD
+  }
 
 
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
@@ -65,8 +69,10 @@ public:
 protected:
   void PropagateResultOfInitExpr(int var, double lb, double ub, Context ctx) {
     NarrowVarBounds(var, lb, ub);
-    if (HasInitExpression(var))
-      GetInitExpression(var)->PropagateResult(*this, lb, ub, ctx);
+    if (HasInitExpression(var)) {
+      const auto& ckid = GetInitExpression(var);
+      ckid.GetCK()->PropagateResult(*this, ckid.GetIndex(), lb, ub, ctx);
+    }
   }
 
   void NarrowVarBounds(int var, double lb, double ub) {
@@ -196,46 +202,18 @@ protected:
   //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
   void ConvertItems() {
     try {
-      for (int endConstraintsThisLoop = 0, endPrevious = 0;
-           (endConstraintsThisLoop = this->GetModel().num_custom_cons()) > endPrevious;
-           endPrevious = endConstraintsThisLoop
-           ) {
-        MP_DISPATCH( PreprocessIntermediate() );                        // preprocess before each level
-        ConvertExtraItemsInRange(endPrevious, endConstraintsThisLoop);
-      }
-      MP_DISPATCH( ConvertMaps(); );
-      MP_DISPATCH( PreprocessFinal() );                                 // final prepro
+      MP_DISPATCH( ConvertAllConstraints() );
+      // MP_DISPATCH( PreprocessIntermediate() );     // preprocess after each level
+      MP_DISPATCH( ConvertMaps() );
+      MP_DISPATCH( PreprocessFinal() );               // final prepro
     } catch (const ConstraintConversionFailure& cff) {
       throw std::logic_error(cff.message());
     }
   }
 
-  void ConvertExtraItemsInRange(int first, int after_last) {
-    for (; first<after_last; ++first) {
-      auto* pConstraint = this->GetModel().custom_con(first);
-      if (!pConstraint->IsBridged()) {
-        const auto acceptanceLevel =
-            pConstraint->BackendAcceptance(this->GetBackend());
-        if (NotAccepted == acceptanceLevel) {
-          pConstraint->ConvertWith(*this);
-          pConstraint->MarkAsBridged();    // TODO should this be marked in Convert()?
-        }
-        else if (AcceptedButNotRecommended == acceptanceLevel) {
-          try {
-            pConstraint->ConvertWith(*this);
-            pConstraint->MarkAsBridged();  // TODO should this be marked in Convert()?
-          } catch (const ConstraintConversionFailure& ccf) {
-            printf( fmt::format(      // TODO use Env
-                           "WARNING: {}. Will pass the constraint "
-                           "to the backend {}. Continuing\n",
-                           ccf.message(),
-                           MP_DISPATCH( GetBackend() ).GetBackendName() ).c_str() );
-          }
-        }
-      }
-    }
+  void ConvertAllConstraints() {
+    GetModel(). ConvertAllConstraints(*this);
   }
-
 
   //////////////////////// WHOLE-MODEL PREPROCESSING /////////////////////////
   void PreprocessIntermediate() { }
@@ -243,9 +221,6 @@ protected:
   void PreprocessFinal() { }
 
 
-
-  //////////////////////////// CUSTOM CONSTRAINTS ////////////////////////////
-  ///
   //////////////////////////// CONSTRAINT PROPAGATORS ///////////////////////////////////
 
   /// Allow FCC to access Preprocess methods
@@ -480,12 +455,6 @@ protected:
     }
   }
 
-  void PropagateResult(LinearConstraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(lb, ub, ctx);
-    for (const auto v: con.vars())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-  }
-
   void PropagateResult(QuadraticConstraint& con, double lb, double ub, Context ctx) {
     internal::Unused(lb, ub, ctx);
     for (const auto v: con.vars())
@@ -575,13 +544,20 @@ public: // for ConstraintKeeper
   /// Assume mixed context if not set in the constraint
   /// TODO Make sure context is always propagated for all constraints and objectives
   template <class Constraint>
-  void RunConversion(const Constraint& con) {
+  void RunConversion(const Constraint& con, int i) {
     if (con.HasContext())
       if (con.GetContext().IsNone())
         con.SetContext(Context::CTX_MIX);
-    MP_DISPATCH(Convert(con));
+    MP_DISPATCH(Convert(con, i));
   }
 
+  /// Generic adapter for old non-bridged Convert() methods
+  ///
+  /// New way is to use the \a i parameter for bridging
+  template <class Constraint>
+  void Convert(const Constraint& con, int ) {
+    MPD( Convert(con) );
+  }
 
   /// If backend does not like LDC, we can redefine it
   void Convert(const LinearDefiningConstraint& ldc) {
@@ -593,29 +569,45 @@ public: // for ConstraintKeeper
     this->AddConstraint(qdc.to_quadratic_constraint());
   }
 
+
 public:
   //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
   //////////////////////// Takes ownership /////////////////////////////
   template <class Constraint>
-  void AddConstraint(Constraint&& con) {
-    const auto pck = makeConstraintKeeper<Impl, Constraint>(std::forward<Constraint>(con));
-    AddConstraintAndTryNoteResultVariable(pck);
-//    orig_lin_constr_.push_back(n_alg_constr_);
-//    orig_qp_constr_.push_back(n_alg_constr_);
-//    ++n_alg_constr_;
+  pre::NodeRange AddConstraint(Constraint&& con) {
+    auto node_range =
+        AddConstraintAndTryNoteResultVariable( std::move(con) );
+    if (adding_orig_constr_) {                   // primitive bridging
+      auto cc=ConstraintClass(&con);             // can use destroyed \a con
+      if (1==cc) {
+        orig_lin_constr_.push_back(i_constr_orig_);
+      } else if (2==cc) {
+        orig_qp_constr_.push_back(i_constr_orig_);
+      }
+      ++i_constr_orig_;
+    }
+    return node_range;
   }
 
 protected:
-  template <class ConstraintKeeper>
-  void AddConstraintAndTryNoteResultVariable(ConstraintKeeper* pbc) {
-    MP_DISPATCH( GetModel() ).AddConstraint(pbc);
-    const auto resvar = pbc->GetResultVar();
+  USE_BASE_MAP_FINDERS( BaseConverter )
+
+  template <class Constraint>
+  pre::NodeRange AddConstraintAndTryNoteResultVariable(Constraint&& con) {
+    const auto resvar = con.GetResultVar();
+    auto& ck = GET_CONSTRAINT_KEEPER( Constraint );
+    auto i = ck.AddConstraint(std::move(con));
+    ConInfo ci{&ck, i};
     if (resvar>=0)
-      AddInitExpression(resvar, pbc);
-    if (! MP_DISPATCH( MapInsert(pbc) ))
+      AddInitExpression(resvar, ci);
+    /// Can also cache non-defining constraints
+    ConstraintLocation<Constraint> cl{&ck, i};
+    if (! MP_DISPATCH( MapInsert( cl ) ))
       throw std::logic_error("Trying to map_insert() duplicated constraint: " +
-                             pbc->GetDescription());
+                             ck.GetDescription());
+    return ck.GetValueNode().Select(i);
   }
+
 
 public:
   void StartModelInput() { }
@@ -639,22 +631,15 @@ protected:
 
   /// TODO wrong, Visit() may have produced aux constraints
   void MemorizeModelSize() {
-    n_constr_orig_ = GetModel().num_custom_cons();
-    for (size_t i=0; i<n_constr_orig_; ++i) {
-      auto cc = GetModel().custom_con(i)->ConstraintClass();
-      if (1==cc) {
-        orig_lin_constr_.push_back(i);
-      } else if (2==cc) {
-        orig_qp_constr_.push_back(i);
-      }
-    }
+    n_constr_orig_ = i_constr_orig_;
+    adding_orig_constr_ = false;
   }
 
   /// Elementary constraint classes
-  /// TODO generalize
+  /// TODO parameterize by Backend
   static constexpr int ConstraintClass(BasicConstraint* )
   { return 0; }
-  static constexpr int ConstraintClass(LinearConstraint* )
+  static constexpr int ConstraintClass(RangeLinCon* )
   { return 1; }
   static constexpr int ConstraintClass(LinearDefiningConstraint* )
   { return 1; }
@@ -670,6 +655,10 @@ public:
   const BasicBackend& GetBasicBackend() const { return backend_; }
   BasicBackend& GetBasicBackend() { return backend_; }
 
+  /// Expose Presolver
+  const pre::Presolver& GetPresolver() const { return presolver_; }
+  pre::Presolver& GetPresolver() { return presolver_; }
+
 private:
   std::unordered_map<double, int> map_fixed_vars_;
 
@@ -678,23 +667,40 @@ private:
 public:
 
   //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
-  int MakeFixedVar(double value) {
+  pre::NodeRange MakeFixedVar(double value) {
     auto it = map_fixed_vars_.find(value);
     if (map_fixed_vars_.end()!=it)
-      return it->second;
+      return GetVarValueNode().Select( it->second );
     auto v = MPD( DoAddVar(value, value) );
     map_fixed_vars_[value] = v;
-    return v;
+    return GetVarValueNode().Select( v );
   }
 
   /// Create or find a fixed variable
-  int AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
+  pre::NodeRange AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
     if (lb!=ub)
       return DoAddVar(lb, ub, type);
     return MakeFixedVar(lb);
   }
 
-  using BaseFlatModel::AddVars;
+  /// Add several variables
+  /// @return value node range for them
+  pre::NodeRange AddVars(const typename BaseFlatModel::VarBndVec& lbs,
+               const typename BaseFlatModel::VarBndVec& ubs,
+               const typename BaseFlatModel::VarTypeVec& types) {
+    assert(0==BaseFlatModel::num_vars());                     // allow this only once
+    BaseFlatModel::AddVars__basic(lbs, ubs, types);
+    return GetVarValueNode().Add( lbs.size() );
+  }
+
+  /// Reuse Presolver's target nodes for all variables
+  pre::ValueNode& GetVarValueNode()
+  { return GetPresolver().GetTargetNodes().GetVarValues().MakeSingleKey(); }
+
+  /// Constraint type's Value Node
+  template <class Constraint>
+  pre::ValueNode& GetValueNode(Constraint*)
+  { return GET_CONSTRAINT_KEEPER(Constraint).GetValueNode(); }
 
 protected:
   double lb(int var) const { return this->GetModel().lb(var); }
@@ -715,14 +721,13 @@ protected:
     return MP_DISPATCH( Convert2Var(std::move(ae)) );
   }
 
-  struct VarInfo {
-    BasicConstraintKeeper *pInitExpr=nullptr;
-  };
+  using ConInfo = AbstractConstraintLocation;
 
   /// Add variable. Type: var::CONTINUOUS by default
-  int DoAddVar(double lb=MinusInfty(), double ub=Infty(),
+  pre::NodeRange DoAddVar(double lb=MinusInfty(), double ub=Infty(),
              var::Type type = var::CONTINUOUS) {
-    return GetModel().AddVar(lb, ub, type);
+    int v = GetModel().AddVar__basic(lb, ub, type);
+    return GetVarValueNode().Select( v );
   }
 
   /// Add vector of variables. Type: var::CONTINUOUS by default
@@ -741,22 +746,22 @@ protected:
 
 
 private:
-  std::vector<VarInfo> var_info_;
+  std::vector<ConInfo> var_info_;
 
 protected:
-  void AddInitExpression(int var, BasicConstraintKeeper* pie) {
+  void AddInitExpression(int var, const ConInfo& vi) {
     var_info_.resize(std::max(var_info_.size(), (size_t)var+1));
-    var_info_[var].pInitExpr = pie;
+    var_info_[var] = vi;
   }
 
+public:
   bool HasInitExpression(int var) const {
-    return int(var_info_.size())>var &&
-        nullptr!=var_info_[var].pInitExpr;
+    return int(var_info_.size())>var && var_info_[var].HasId();
   }
 
-  BasicConstraintKeeper* GetInitExpression(int var) {
+  const ConInfo& GetInitExpression(int var) const {
     assert(HasInitExpression(var));
-    return var_info_[var].pInitExpr;
+    return var_info_[var];
   }
 
 protected:
@@ -913,12 +918,18 @@ public:  // for tests. TODO make friends
 
 private:
   BackendType backend_;
+  pre::Presolver presolver_;
+  pre::CopyBridge copy_bridge_ { GetPresolver() };
 
   /// TODO replace by pre- / postsolve
   /// Indices of NL original linear constr in the total constr ordering
   std::vector<size_t> orig_lin_constr_;
   /// Indices of NL original QP constr in the total constr ordering
   std::vector<size_t> orig_qp_constr_;
+  /// Whether we are adding original constraints
+  bool adding_orig_constr_{true};
+  /// Index of original constraint being added
+  size_t i_constr_orig_=0;
   size_t n_constr_orig_=0;
 
 protected:
@@ -930,6 +941,50 @@ protected:
   const ModelType& GetModel() const { return *this; }
   ModelType& GetModel() { return *this; }
 
+  /////////////////////// CONSTRAINT KEEPERS /////////////////////////
+  /// Constraint keepers and converters should be initialized after \a presolver_
+
+  /// Define constraint keepers for all constraint types
+  STORE_CONSTRAINT_TYPE(RangeLinCon)
+  STORE_CONSTRAINT_TYPE(LinConLE)
+  STORE_CONSTRAINT_TYPE(LinConEQ)
+  STORE_CONSTRAINT_TYPE(LinConGE)
+  STORE_CONSTRAINT_TYPE(LinearDefiningConstraint)
+
+  STORE_CONSTRAINT_TYPE(QuadraticConstraint)
+  STORE_CONSTRAINT_TYPE(QuadraticDefiningConstraint)
+
+  STORE_CONSTRAINT_TYPE(MaximumConstraint)
+  STORE_CONSTRAINT_TYPE(MinimumConstraint)
+  STORE_CONSTRAINT_TYPE(AbsConstraint)
+  STORE_CONSTRAINT_TYPE(ConjunctionConstraint)
+  STORE_CONSTRAINT_TYPE(DisjunctionConstraint)
+  STORE_CONSTRAINT_TYPE(EQ0Constraint)
+  STORE_CONSTRAINT_TYPE(LE0Constraint)
+  STORE_CONSTRAINT_TYPE(NotConstraint)
+  STORE_CONSTRAINT_TYPE(IfThenConstraint)
+  STORE_CONSTRAINT_TYPE(AllDiffConstraint)
+
+  STORE_CONSTRAINT_TYPE(ExpConstraint)
+  STORE_CONSTRAINT_TYPE(ExpAConstraint)
+  STORE_CONSTRAINT_TYPE(LogConstraint)
+  STORE_CONSTRAINT_TYPE(LogAConstraint)
+  STORE_CONSTRAINT_TYPE(PowConstraint)
+  STORE_CONSTRAINT_TYPE(SinConstraint)
+  STORE_CONSTRAINT_TYPE(CosConstraint)
+  STORE_CONSTRAINT_TYPE(TanConstraint)
+  STORE_CONSTRAINT_TYPE(IndicatorConstraintLinLE)
+  STORE_CONSTRAINT_TYPE(IndicatorConstraintLinEQ)
+  STORE_CONSTRAINT_TYPE(PLConstraint)
+  STORE_CONSTRAINT_TYPE(SOS1Constraint)
+  STORE_CONSTRAINT_TYPE(SOS2Constraint)
+
+  /////////////////////// CONSTRAINT CONVERTERS /////////////////////////
+  /// Constraint keepers and converters should be initialized after \a presolver_
+
+  /// Convert range constraints, if necessary
+  INSTALL_ITEM_CONVERTER(RangeConstraintConverter)
+
 public:
   /// TODO use universal Env instead
   /// (which can well use these "MPUtils",
@@ -937,6 +992,9 @@ public:
   using MPUtils = typename BackendType::MPUtils;
   const MPUtils& GetMPUtils() const { return GetBackend().GetMPUtils(); }
   MPUtils& GetMPUtils() { return GetBackend().GetMPUtils(); }
+
+  /// Presolve bridge copying values between model items
+  pre::CopyBridge& GetCopyBridge() { return copy_bridge_; }
 };
 
 /// A 'final' converter in a hierarchy

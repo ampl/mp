@@ -331,7 +331,7 @@ TEST(SuffixManager, VirtualDtor) {
     ~Test() { called = true; }
   };
   bool called = false;
-  std::auto_ptr<mp::SuffixManager>(new Test(called));
+  std::unique_ptr<mp::SuffixManager>(new Test(called));
   EXPECT_TRUE(called);
 }
 

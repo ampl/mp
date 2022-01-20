@@ -55,13 +55,13 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
 
-  ACCEPT_CONSTRAINT(LinearConstraint, Recommended)
-  void AddConstraint(const LinearConstraint& lc);
+  ACCEPT_CONSTRAINT(RangeLinCon, Recommended, CG_Linear)
+  void AddConstraint(const RangeLinCon& lc);
   /// Enabling built-in indicator for infinite bounds,
   /// but not recommended otherwise --- may be slow
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
 
 
