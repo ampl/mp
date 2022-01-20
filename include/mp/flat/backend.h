@@ -83,7 +83,14 @@ public:
   static const char* GetBackendName()    { return "BasicBackend"; }
   static const char* GetBackendLongName() { return nullptr; }
   static long Date() { return MP_DATE; }
-
+  // Options handling
+  void GetSolverOption(const char* key, int& value) const;
+  void SetSolverOption(const char* key, int value);
+  void GetSolverOption(const char* key, double& value) const;
+  void SetSolverOption(const char* key, double value);
+  void GetSolverOption(const char* key, std::string& value) const;
+  void SetSolverOption(const char* key, const std::string& value);
+  
   ArrayRef<double> PrimalSolution()
   { UNSUPPORTED("PrimalSolution()"); return {}; }
   double ObjectiveValue() const
@@ -513,7 +520,6 @@ protected:
   const std::vector<bool>& IsVarInt() const {
     return GetCQ().IsVarInt();
   }
-
 
   ///////////////////////// STORING SOLUTON STATUS //////////////////////
 private:
