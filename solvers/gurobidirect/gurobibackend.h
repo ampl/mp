@@ -82,10 +82,8 @@ public:
   * Get/Set AMPL var/con statii
   **/
   ALLOW_STD_FEATURE( BASIS, true )
-  ArrayRef<int> VarStatii();
-  ArrayRef<int> ConStatii();
-  void VarStatii(ArrayRef<int> );
-  void ConStatii(ArrayRef<int> );
+  SolutionBasis GetBasis();
+  void SetBasis(SolutionBasis );
   /**
   * General warm start, e.g.,
   * set primal/dual initial guesses for continuous case
@@ -108,10 +106,10 @@ public:
   * Compute the IIS and obtain relevant values
   **/
   ALLOW_STD_FEATURE( IIS, true )
+  /// Compute IIS
   void ComputeIIS();
-  /// Elements correspond to IISStatus
-  ArrayRef<int> VarsIIS();
-  ArrayRef<int> ConsIIS();
+  /// Retrieve IIS. Elements correspond to IISStatus
+  IIS GetIIS();
   /**
   * Get MIP Gap
   **/
@@ -225,9 +223,11 @@ public:
   bool IsQP() const;
   bool IsQCP() const;
 
-  /// TODO Gurobi separates constraint classes
+  /// Gurobi separates constraint classes
   int NumLinCons() const;
   int NumQPCons() const;
+  int NumSOSCons() const;
+  int NumGenCons() const;
   int NumVars() const;
   int NumObjs() const;
   int ModelSense() const;
@@ -314,6 +314,14 @@ protected:
 
   std::vector<double> GurobiDualSolution_LP();
   std::vector<double> GurobiDualSolution_QCP();
+
+  ArrayRef<int> VarStatii();
+  ArrayRef<int> ConStatii();
+  void VarStatii(ArrayRef<int> );
+  void ConStatii(ArrayRef<int> );
+
+  ArrayRef<int> VarsIIS();
+  pre::ValueMapInt ConsIIS();
 
   double NodeCount() const;
   double SimplexIterations() const;

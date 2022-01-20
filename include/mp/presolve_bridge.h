@@ -18,11 +18,13 @@ using BridgeIndexRange = IndexRange;
 /// Declare Presolver
 class Presolver;
 
-/// Macro for a list of pre- / postsolve method definitions in a bridge
+/// Macro for a list of pre- / postsolve method definitions
+/// in a bridge.
 /// Requires PRESOLVE_KIND defined to declare / define corr. methods
 #define LIST_PRESOLVE_METHODS \
   PRESOLVE_KIND(Solution) \
-  PRESOLVE_KIND(Basis)
+  PRESOLVE_KIND(Basis) \
+  PRESOLVE_KIND(IIS)
 // ...
 
 /// Bridge interface

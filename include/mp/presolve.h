@@ -72,12 +72,19 @@ public:
   ModelValuesDbl PostsolveSolution(const ModelValuesDbl& mvd) override
   { return RunPostsolve(&BasicBridge::PostsolveSolution, mvd); }
 
-  /// Presolve basis (primal + dual)
+  /// Presolve basis (vars + cons)
   ModelValuesInt PresolveBasis(const ModelValuesInt& mvi) override
   { return RunPresolve(&BasicBridge::PresolveBasis, mvi); }
-  /// Postsolve solution (primal + dual)
+  /// Postsolve solution (vars + cons)
   ModelValuesInt PostsolveBasis(const ModelValuesInt& mvi) override
   { return RunPostsolve(&BasicBridge::PostsolveBasis, mvi); }
+
+  /// Presolve IIS (vars + cons)
+  ModelValuesInt PresolveIIS(const ModelValuesInt& mvi) override
+  { return RunPresolve(&BasicBridge::PresolveIIS, mvi); }
+  /// Postsolve IIS (vars + cons)
+  ModelValuesInt PostsolveIIS(const ModelValuesInt& mvi) override
+  { return RunPostsolve(&BasicBridge::PostsolveIIS, mvi); }
 
 protected:
   /// Helper type: virtual member function pointer

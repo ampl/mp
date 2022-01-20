@@ -83,6 +83,10 @@ private:
   MapType map_;
 };
 
+/// Convenience typedef
+using ValueMapInt = ValueMap< std::vector<int> >;
+/// Convenience typedef
+using ValueMapDbl = ValueMap< std::vector<double> >;
 
 /// Group of values for variables, constraints, and objectives
 template <class VMap>
@@ -132,9 +136,9 @@ private:
 
 
 /// Specialize ModelValues<> for int
-using ModelValuesInt = ModelValues< ValueMap< mp::ArrayRef<int> > >;
+using ModelValuesInt = ModelValues< ValueMapInt >;
 /// Specialize ModelValues<> for double
-using ModelValuesDbl = ModelValues< ValueMap< mp::ArrayRef<double> > >;
+using ModelValuesDbl = ModelValues< ValueMapDbl >;
 
 
 /// Presolver interface
@@ -149,10 +153,15 @@ public:
   /// Postsolve solution (primal + dual)
   virtual ModelValuesDbl PostsolveSolution(const ModelValuesDbl& ) = 0;
 
-  /// Presolve basis (primal + dual)
+  /// Presolve basis (vars + cons)
   virtual ModelValuesInt PresolveBasis(const ModelValuesInt& ) = 0;
-  /// Postsolve solution (primal + dual)
+  /// Postsolve solution (vars + cons)
   virtual ModelValuesInt PostsolveBasis(const ModelValuesInt& ) = 0;
+
+  /// Presolve IIS (vars + cons)
+  virtual ModelValuesInt PresolveIIS(const ModelValuesInt& ) = 0;
+  /// Postsolve IIS (vars + cons)
+  virtual ModelValuesInt PostsolveIIS(const ModelValuesInt& ) = 0;
 };
 
 

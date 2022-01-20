@@ -79,7 +79,9 @@ class ArrayRef {
     return *this;
   }
 
+  // operator bool()
   operator bool() const { return !empty(); }
+  // bool empty()
   bool empty() const { return 0==size(); }
 
   /// Move the saved vector if any, otherwise copy
@@ -91,6 +93,8 @@ class ArrayRef {
     }
     return {begin(), end()};
   }
+
+  operator std::vector<T>() { return move_or_copy(); }
 
   const T *data() const { return data_; }
   std::size_t size() const { return size_; }

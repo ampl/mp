@@ -27,14 +27,28 @@
 
 namespace mp {
 
+/// Basis status values of a solution (unpresolved)
+struct SolutionBasis {
+  /// Check if has both vars and cons' statuses
+  operator bool() const { return varstt.size() && constt.size(); }
+  /// Var and con statuses
+  std::vector<int> varstt, constt;
+};
+
+/// IIS (unpresolved).
+/// Elements correspond to IISStatus
+struct IIS {
+  /// Var and con IIS statuses
+  std::vector<int> variis, coniis;
+};
+
 /// MIP backend wrapper
 ///
 /// The MIP wrapper provides common functionality relative to MIP solvers;
 /// it implements the common suffixes and the logic shared across all MIP
 /// solvers
 template <class Impl,
-          class BaseBackend = Backend<Impl>>  ///< parameter for base class
-                                              ///< could allow chaining up, see #145
+          class BaseBackend = Backend<Impl> >  ///< parameter for base class
 class MIPBackend : public BaseBackend
 {
 public:
@@ -69,12 +83,13 @@ public:
   **/
   DEFINE_STD_FEATURE( BASIS )
   ALLOW_STD_FEATURE( BASIS, false )
-  ArrayRef<int> VarStatii() { return {}; }
-  void VarStatii(ArrayRef<int> )
-  { UNSUPPORTED("MIPBackend::VarStatii"); }
-  ArrayRef<int> ConStatii() { return {}; }
-  void ConStatii(ArrayRef<int> )
-  { UNSUPPORTED("MIPBackend::ConStatii"); }
+  /// The basis statuses of vars and cons.
+  /// MIPBackend handles them in postsolved form (for the NL model)
+  /// Impl has to perform value pre- / postsolve if needed
+  /// Getter (unpresolved)
+  SolutionBasis GetBasis() { return {}; }
+  /// Setter (unpresolved)
+  void SetBasis(SolutionBasis ) { UNSUPPORTED("MIPBackend::SetBasis"); }
   /**
   * General warm start, e.g.,
   * set primal/dual initial guesses for continuous case
@@ -111,9 +126,7 @@ public:
   DEFINE_STD_FEATURE( IIS )
   ALLOW_STD_FEATURE( IIS, false )
   void ComputeIIS() {}
-  /// Elements correspond to IISStatus
-  ArrayRef<int> ConsIIS() { return {}; }
-  ArrayRef<int> VarsIIS() { return {}; }
+  IIS GetIIS() { return {}; }
   /**
   * Get MIP Gap
   **/
@@ -201,19 +214,11 @@ public:
 
   void InputPrimalDualStartOrBasis() {
     bool useBasis = need_basis_in();
-    ArrayRef<int> varstt, constt;
+    SolutionBasis basis;
     if (useBasis) {
-      varstt = ReadSuffix(suf_varstatus);
-      constt = ReadSuffix(suf_constatus);
-      useBasis = varstt.size() && constt.size();
-      if (useBasis) {              // Presolve. TODO in Impl?
-        auto mv = MPD( GetPresolver() ).PresolveBasis(
-              { varstt, constt } );
-        varstt = mv.GetVarValues()();
-        constt = mv.GetConValues()(CG_Linear);
-        assert(varstt);
-        assert(constt);
-      }
+      basis.varstt = ReadSuffix(suf_varstatus);
+      basis.constt = ReadSuffix(suf_constatus);
+      useBasis = bool(basis);
     }
     auto X0 = MP_DISPATCH( InitialValues() );
     auto pi0 = MP_DISPATCH( InitialDualValues() );
@@ -229,15 +234,10 @@ public:
       }
     }
     if (useBasis) {
-      MP_DISPATCH( VarStatii(varstt) );
-      MP_DISPATCH( ConStatii(constt) );
+      MP_DISPATCH( SetBasis(basis) );
       if (debug_mode()) {                    // Report received statuses
-        auto mv = MPD( GetPresolver() ).PostsolveBasis(
-              { varstt, {{{ CG_Linear, constt }}} } );
-        varstt = mv.GetVarValues()();
-        constt = mv.GetConValues()();
-        ReportSuffix(suf_testvarstatus, varstt); // Should we check that
-        ReportSuffix(suf_testconstatus, constt); // Impl uses them?
+        ReportSuffix(suf_testvarstatus, basis.varstt); // Should we check that
+        ReportSuffix(suf_testconstatus, basis.constt); // Impl uses them?
       }
     }
   }
@@ -274,18 +274,11 @@ public:
   }
 
   void ReportBasis() {
-    auto varstt = MP_DISPATCH( VarStatii() );
-    auto constt = MP_DISPATCH( ConStatii() );
-    if (varstt && constt) {
-      auto mv = MPD( GetPresolver() ).PostsolveBasis(
-            { varstt, {{{ CG_Linear, constt }}} } );
-      varstt = mv.GetVarValues()();
-      constt = mv.GetConValues()();
-      assert(varstt);
-      assert(constt);
+    /// Rely on solver reporting both vectors only if valid basis exists
+    if (auto basis = MPD( GetBasis() )) {
+      ReportSuffix(suf_varstatus, basis.varstt);
+      ReportSuffix(suf_constatus, basis.constt);
     }
-    ReportSuffix(suf_varstatus, varstt);
-    ReportSuffix(suf_constatus, constt);
   }
 
   void ReportRays() {
@@ -307,8 +300,10 @@ public:
         GetMIPOptions().exportIIS_) {
       MP_DISPATCH( ComputeIIS() );
 
-      ReportSuffix(sufIISCon, MP_DISPATCH(ConsIIS()));
-      ReportSuffix(sufIISVar, MP_DISPATCH(VarsIIS()));
+      auto iis = MPD( GetIIS() );
+
+      ReportSuffix(sufIISCon, iis.coniis);
+      ReportSuffix(sufIISVar, iis.variis);
     }
   }
 

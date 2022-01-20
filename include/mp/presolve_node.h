@@ -76,26 +76,27 @@ public:
 
   /////////////////////// Access value vectors ///////////////////////
 
-  /// Assign from ArrayRef<int>.  Check that values fit the declared size
-  ValueNode& operator=(ArrayRef<int> ai)
+  /// Assign from ArrayRef<int>. Always copy the values.
+  /// Check that values fit the declared size
+  ValueNode& operator=(std::vector<int> ai)
   {
     /// Can be violated only if the solver adds more items of this kind
     assert(ai.size() <= size());
-    vi_ = ai.move_or_copy();
+    vi_ = std::move(ai);
     return *this;
   }
-  /// Assign from ArrayRef<double>
-  ValueNode& operator=(ArrayRef<double> ad)
+  /// Assign from vector. Always copy
+  ValueNode& operator=(std::vector<double> ad)
   {
     assert(ad.size() <= size());
-    vd_ = ad.move_or_copy();
+    vd_ = std::move(ad);
     return *this;
   }
 
   /// Retrieve whole ArrayRef<int>
-  operator ArrayRef<int> () const { return vi_; }
+  operator std::vector<int> () const { return vi_; }
   /// Retrieve whole ArrayRef<double>
-  operator ArrayRef<double> () const { return vd_; }
+  operator std::vector<double> () const { return vd_; }
 
   /////////////////////// Access individual values ///////////////////////
 
