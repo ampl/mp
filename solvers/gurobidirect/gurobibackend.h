@@ -270,10 +270,9 @@ public:
   void SolveAndReportIntermediateResults();
 
   /// Various solution attribute getters.
-  ArrayRef<double> PrimalSolution();
+  Solution GetSolution();
+  /// Obj value
   double ObjectiveValue() const;
-  /// Return empty vector if not available
-  ArrayRef<double> DualSolution();
 
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -311,6 +310,9 @@ protected:
   obj::Type GetGurobiMainObjSense() const;
   ArrayRef<double> CurrentGrbPoolPrimalSolution();
   double CurrentGrbPoolObjectiveValue() const;
+
+  std::vector<double> PrimalSolution();
+  pre::ValueMapDbl DualSolution();
 
   std::vector<double> GurobiDualSolution_LP();
   std::vector<double> GurobiDualSolution_QCP();

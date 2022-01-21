@@ -589,6 +589,11 @@ public:
     return node_range;
   }
 
+  template <class Constraint>
+  const Constraint& GetConstraint(int i) const {
+    return GET_CONST_CONSTRAINT_KEEPER(Constraint).GetConstraint(i);
+  }
+
 protected:
   USE_BASE_MAP_FINDERS( BaseConverter )
 

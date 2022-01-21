@@ -15,7 +15,7 @@ namespace mp {
 /// Standard linear constraint
 template <class RhsOrRange>
 class LinearConstraint : public BasicConstraint, public RhsOrRange {
-  std::vector<double> coefs_;
+  std::vector<double> coefs_;      /// TODO use new LinExp
   std::vector<int> vars_;
 public:
   static const std::string& GetConstraintName() {
@@ -87,6 +87,14 @@ public:
     }
   }
 
+  /// Compute lower slack
+  double ComputeLowerSlack(ArrayRef<double> x) const {
+    double s=0.0;
+    for (size_t i=coefs_.size(); i--; )
+      s += coefs_[i] * x[vars_[i]];
+    return s - RhsOrRange::lb();
+  }
+
   /// Testing API
   bool operator==(const LinearConstraint& lc) const {
     return coefs_==lc.coefs_ && vars_==lc.vars_ &&
@@ -135,6 +143,14 @@ public:
   int kind() const { return kind_; }
   /// rhs()
   double rhs() const { return rhs_; }
+  /// lb(): this is a specialization of the range constraint
+  double lb() const {
+    return kind_<0 ? -std::numeric_limits<double>::infinity() : rhs();
+  }
+  /// ub(): this is a specialization of the range constraint
+  double ub() const {
+    return kind_>0 ? std::numeric_limits<double>::infinity() : rhs();
+  }
   /// operator==
   bool equals(const AlgConRhs& r) const
   { return rhs()==r.rhs(); }

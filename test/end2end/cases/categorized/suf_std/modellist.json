@@ -63,8 +63,8 @@
       "Buy['MTL'].sstatus":  "bas",
       "Buy['CHK'].sstatus":  "upp",
       "Diet_Min['A']": 0.0,
-      "Diet_Min['C']": 0.0,
-      "Diet_Min['CAL']": 0.0,
+      "Diet_Min['C']": 0.006707865168539329,
+      "Diet_Min['CAL']": 0.00447191011235955,
       "Diet_Min['A'].sstatus": "bas"
     }
   },

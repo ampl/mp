@@ -339,6 +339,9 @@ private:
 /// Macros to define / access constraint keepers
 /// Assume ConstraintManager as public parent
 
+/// Use this to obtain a certain keeper, const
+#define GET_CONST_CONSTRAINT_KEEPER(Constraint) \
+  MPCD( GetConstraintKeeper((Constraint*)nullptr) )
 /// Use this to obtain a certain keeper
 #define GET_CONSTRAINT_KEEPER(Constraint) \
   MPD( GetConstraintKeeper((Constraint*)nullptr) )

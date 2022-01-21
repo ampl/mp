@@ -60,6 +60,12 @@ DEFAULT_STD_FEATURES_TO( false )
 
 namespace mp {
 
+/// Basis status values of a solution (unpresolved)
+struct Solution {
+  /// primal, dual
+  std::vector<double> primal, dual;
+};
+
 /// Backend: solver API wrapper
 ///
 /// The basic wrapper provides common functionality:
@@ -83,16 +89,16 @@ public:
   static const char* GetBackendName()    { return "BasicBackend"; }
   static const char* GetBackendLongName() { return nullptr; }
   static long Date() { return MP_DATE; }
-  // Options handling
-  void GetSolverOption(const char* key, int& value) const {};
-  void SetSolverOption(const char* key, int value) {};
-  void GetSolverOption(const char* key, double& value) const {};
-  void SetSolverOption(const char* key, double value) {};
-  void GetSolverOption(const char* key, std::string& value) const {};
-  void SetSolverOption(const char* key, const std::string& value) {};
+  /// Options handling. Here for MSVC 2022
+  void GetSolverOption(const char* , int& ) const {}
+  void SetSolverOption(const char* , int ) {}
+  void GetSolverOption(const char* , double& ) const {}
+  void SetSolverOption(const char* , double ) {}
+  void GetSolverOption(const char* , std::string& ) const {}
+  void SetSolverOption(const char* , const std::string& ) {}
   
-  ArrayRef<double> PrimalSolution()
-  { UNSUPPORTED("PrimalSolution()"); return {}; }
+  Solution GetSolution()
+  { UNSUPPORTED("GetSolution()"); return {}; }
   double ObjectiveValue() const
   { UNSUPPORTED("ObjectiveValue()"); return 0.0; }
 
@@ -102,8 +108,6 @@ public:
   /////////////// PLACEHOLDERS FOR CORR. API /////////////////
   ////////////////////////////////////////////////////////////
 protected:
-  /// Dual solution. Returns empty if not available
-  ArrayRef<double> DualSolution() { return {}; }
   /**
    * MULTIOBJ support
    */
@@ -260,7 +264,7 @@ public:
   /// Callback
   void ReportIntermediateSolution(
         double obj_value,
-        ArrayRef<double> solution, ArrayRef<double> dual_solution) {
+        Solution sol) {
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ),
                  "Alternative solution");
@@ -269,12 +273,11 @@ public:
                    MP_DISPATCH( FormatObjValue(obj_value) ));
     }
     writer.write("\n");
-    auto sol = solution.move_or_copy();
     if (round() && MP_DISPATCH(IsMIP()))
-      RoundSolution(sol, writer);
+      RoundSolution(sol.primal, writer);
     HandleFeasibleSolution(writer.c_str(),
-                   sol.empty() ? 0 : sol.data(),
-                   dual_solution.empty() ? 0 : dual_solution.data(),
+                   sol.primal.empty() ? 0 : sol.primal.data(),
+                   sol.dual.empty() ? 0 : sol.dual.data(),
                    obj_value);
   }
 
@@ -313,13 +316,12 @@ public:
     if (solver_msg_extra_.size()) {
       writer.write(solver_msg_extra_);
     }
-    auto sol = MP_DISPATCH( PrimalSolution() ).move_or_copy();
+    auto sol = MP_DISPATCH( GetSolution() );
     if (round() && MP_DISPATCH(IsMIP()))
-      RoundSolution(sol, writer);
-    auto dual_solution = MP_DISPATCH( DualSolution() );  // Try in any case
+      RoundSolution(sol.primal, writer);
     HandleSolution(MP_DISPATCH( SolveCode() ), writer.c_str(),
-                   sol.empty() ? 0 : sol.data(),
-                   dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
+                   sol.primal.empty() ? 0 : sol.primal.data(),
+                   sol.dual.empty() ? 0 : sol.dual.data(), obj_value);
   }
 
   int NumObjs() { Abort(-1, "Backend: NumObjs() no implemented"); return 0; }

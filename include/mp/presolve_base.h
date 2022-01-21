@@ -94,6 +94,10 @@ class ModelValues {
 public:
   /// Default constructor
   ModelValues() = default;
+  /// Default move-copy
+  ModelValues(ModelValues&& ) = default;
+  /// Default move-assign
+  ModelValues& operator=(ModelValues&& ) = default;
   /// Construct from values for vars, cons, objs
   /// (last 2 can be omitted)
   ModelValues(VMap v, VMap c = {}, VMap o = {}) :

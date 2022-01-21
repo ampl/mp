@@ -69,11 +69,12 @@ protected:
           { GET_CONSTRAINT_VALUE_NODE(ItemType).Select(i), nr });
   }
 
-  pre::RangeLinearConstraint2Slack& GetSlackBridge() { return bridge_rng2slk_; }
+  using SlackBridge = pre::RangeLinearConstraint2Slack<ModelConverter>;
+  SlackBridge& GetSlackBridge() { return bridge_rng2slk_; }
 
 private:
-  pre::RangeLinearConstraint2Slack bridge_rng2slk_ {
-    this->GetPresolver(), {
+  SlackBridge bridge_rng2slk_ {
+    GetMC(), {
           &GET_CONSTRAINT_VALUE_NODE(ItemType), // just some constraints for now
           &GET_CONSTRAINT_VALUE_NODE(LinConEQ),
           &this->GetMC().GetVarValueNode()

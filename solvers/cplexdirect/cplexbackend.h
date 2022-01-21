@@ -80,9 +80,7 @@ public:
   void SetInterrupter(mp::Interrupter* inter);
   void SolveAndReportIntermediateResults();
 
-  /// Solution values. The vectors are emptied if not available
-  ArrayRef<double> PrimalSolution();
-  ArrayRef<double> DualSolution();
+  Solution GetSolution();
   double ObjectiveValue() const;
 
   /// Solution attributes
@@ -93,10 +91,6 @@ public:
 
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
-private:
-  CPXENVptr     env = NULL;
-  CPXLPptr      lp = NULL;
-
 public:  // public for static polymorphism
   void OpenSolver();
   void CloseSolver();
@@ -106,6 +100,10 @@ public:  // public for static polymorphism
   static double MinusInfinity() { return -CPX_INFBOUND; }
 
 protected:
+  /// Solution values. The vectors are emptied if not available
+  ArrayRef<double> PrimalSolution();
+  pre::ValueMapDbl DualSolution();
+  ArrayRef<double> DualSolution_LP();
 
   void WindupCPLEXSolve();
 
@@ -113,6 +111,9 @@ protected:
   void AddCPLEXMessages();
 
 private:
+  CPXENVptr     env = NULL;
+  CPXLPptr      lp = NULL;
+
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;

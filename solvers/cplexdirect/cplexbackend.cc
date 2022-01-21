@@ -91,6 +91,12 @@ int CplexBackend::NumObjs() const {
   return CPXgetnumobjs (env, lp);
 }
 
+Solution CplexBackend::GetSolution() {
+  auto mv = GetPresolver().PostsolveSolution(
+        { PrimalSolution(), DualSolution() } );
+  return { mv.GetVarValues()(), mv.GetConValues()() };
+}
+
 ArrayRef<double> CplexBackend::PrimalSolution() {
   int num_vars = NumVars();
   std::vector<double> x(num_vars);
@@ -100,7 +106,12 @@ ArrayRef<double> CplexBackend::PrimalSolution() {
   return x;
 }
 
-ArrayRef<double> CplexBackend::DualSolution() {
+pre::ValueMapDbl CplexBackend::DualSolution() {
+  return {{
+      { CG_Linear, DualSolution_LP() } }};
+}
+
+ArrayRef<double> CplexBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
   int error = CPXgetpi (env, lp, pi.data(), 0, num_cons-1);

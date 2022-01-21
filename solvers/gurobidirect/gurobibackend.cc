@@ -206,14 +206,21 @@ int GurobiBackend::ModelSense() const {
   return GrbGetIntAttr(GRB_INT_ATTR_MODELSENSE);
 }
 
-ArrayRef<double> GurobiBackend::PrimalSolution() {
+std::vector<double> GurobiBackend::PrimalSolution() {
   return
     GrbGetDblAttrArray(GRB_DBL_ATTR_X, NumVars());
 }
 
-ArrayRef<double> GurobiBackend::DualSolution() {
-  return MakeConstrValuesFromLPAndQCP(
-        GurobiDualSolution_LP(), GurobiDualSolution_QCP());
+Solution GurobiBackend::GetSolution() {
+  auto mv = GetPresolver().PostsolveSolution(
+        { PrimalSolution(), DualSolution() } );
+  return { mv.GetVarValues()(), mv.GetConValues()() };
+}
+
+pre::ValueMapDbl GurobiBackend::DualSolution() {
+  return {{
+      { CG_Linear, GurobiDualSolution_LP() },
+      { CG_Quadratic, GurobiDualSolution_QCP() } }};
 }
 
 std::vector<double> GurobiBackend::GurobiDualSolution_LP() {
@@ -666,8 +673,7 @@ void GurobiBackend::ReportGurobiPool() {
     GrbSetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, iPoolSolution);
     ReportIntermediateSolution(
           CurrentGrbPoolObjectiveValue(),
-          CurrentGrbPoolPrimalSolution(),
-          {});
+          { CurrentGrbPoolPrimalSolution(), {} });
   }
 }
 

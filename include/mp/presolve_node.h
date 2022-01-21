@@ -77,26 +77,31 @@ public:
   /////////////////////// Access value vectors ///////////////////////
 
   /// Assign from ArrayRef<int>. Always copy the values.
-  /// Check that values fit the declared size
+  /// TODO Check that values fit the declared size?
+  /// Problematic since e.g. Gurobi adds more variables in feasrelax
   ValueNode& operator=(std::vector<int> ai)
   {
-    /// Can be violated only if the solver adds more items of this kind
-    assert(ai.size() <= size());
+    // assert(ai.size() <= size());
     vi_ = std::move(ai);
     return *this;
   }
   /// Assign from vector. Always copy
   ValueNode& operator=(std::vector<double> ad)
   {
-    assert(ad.size() <= size());
+    // assert(ad.size() <= size());
     vd_ = std::move(ad);
     return *this;
   }
 
   /// Retrieve whole ArrayRef<int>
-  operator std::vector<int> () const { return vi_; }
+  operator ArrayRef<int> () const { return vi_; }
   /// Retrieve whole ArrayRef<double>
-  operator std::vector<double> () const { return vd_; }
+  operator ArrayRef<double> () const { return vd_; }
+
+  /// Retrieve whole vector<int>&
+  operator const std::vector<int>& () const { return vi_; }
+  /// Retrieve whole vector<double>&
+  operator const std::vector<double>& () const { return vd_; }
 
   /////////////////////// Access individual values ///////////////////////
 
