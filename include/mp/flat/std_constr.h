@@ -13,25 +13,23 @@ namespace mp {
 
 ////////////////////////////////////////////////////////////////////////
 /// Standard linear constraint
-template <class RhsOrRange>
-class LinearConstraint : public BasicConstraint, public RhsOrRange {
+
+class LinearConstraint : public BasicConstraint {
   std::vector<double> coefs_;
   std::vector<int> vars_;
 public:
-  static const std::string& GetConstraintName() {
-    static std::string name { "LinCon" + RhsOrRange::name() };
+  static const std::string& name() {
+    static std::string name { "LinCon" };
     return name;
   }
   template <class CV=std::vector<double>, class VV=std::vector<int> >
-  LinearConstraint(CV&& c, VV&& v, RhsOrRange rr) noexcept
-    : RhsOrRange(rr), coefs_(std::forward<CV>(c)), vars_(std::forward<VV>(v))
+  LinearConstraint(CV&& c, VV&& v) noexcept : coefs_(std::forward<CV>(c)), vars_(std::forward<VV>(v))
   { assert(coefs_.size()==vars_.size()); preprocess(); }
   template <size_t N>
-  LinearConstraint(std::array<double, N>& c, std::array<int, N>& v, RhsOrRange rr)
-    : RhsOrRange(rr), coefs_(c.begin(), c.end()), vars_(v.begin(), v.end())
+  LinearConstraint(std::array<double, N>& c, std::array<int, N>& v) :
+     coefs_(c.begin(), c.end()), vars_(v.begin(), v.end())
   { assert(coefs_.size()==vars_.size()); preprocess(); }
-  LinearConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
-                   RhsOrRange rr) : RhsOrRange (rr) {
+  LinearConstraint(std::initializer_list<std::pair<double, int>> lin_exp)  {
     coefs_.reserve(lin_exp.size());
     vars_.reserve(lin_exp.size());
     for (const auto& term: lin_exp) {
@@ -86,12 +84,16 @@ public:
       }
     }
   }
-
+  
   /// Testing API
   bool operator==(const LinearConstraint& lc) const {
-    return coefs_==lc.coefs_ && vars_==lc.vars_ &&
-        RhsOrRange::equals(lc);
+      return this->equal_to(lc);
   }
+protected:
+    virtual bool equal_to(LinearConstraint const& lc) const {
+        return coefs_ == lc.coefs_ && vars_ == lc.vars_;
+   }
+   //TODO
 //  void print(std::ostream& os) const {
 //    os << lb_ << " <= ";
 //    for (int i=0; i<nnz(); ++i) {
@@ -103,49 +105,82 @@ public:
 //  }
 };
 
-class AlgConRange {
-public:
-  /// name
-  static std::string name() { return "Range"; }
-  /// Constructor
-  AlgConRange(double l, double u) : lb_(l), ub_(u) { }
-  /// range lb()
-  double lb() const { return lb_; }
-  /// range ub()
-  double ub() const { return ub_; }
-  /// operator==
-  bool equals(const AlgConRange& r) const
-  { return lb()==r.lb() && ub()==r.ub(); }
-private:
-  double lb_, ub_;
-};
 
+class RangeLinCon : public LinearConstraint {
+public:
+    template <class CV = std::vector<double>, class VV = std::vector<int> >
+    RangeLinCon(CV&& c, VV&& v, std::initializer_list<double> r) noexcept
+        : LinearConstraint(c, v) {
+        // Of course here i wouldn't use std::initializer_list but simply
+        // RangeLinCon(CV&& c, VV&& v, double lb, double ub) noexcept
+        // This was just to have the code compiling without refactoring all the calls to these constructors
+        auto it = r.begin();
+        lb_ = *it++;
+        ub_ = *it;
+    }
+    template <size_t N>
+    RangeLinCon(std::array<double, N>& c, std::array<int, N>& v, std::initializer_list<double> r)
+        : LinearConstraint(c, v) {
+        auto it = r.begin();
+        lb_ = *it++;
+        ub_ = *it;
+    }
+    RangeLinCon(std::initializer_list<std::pair<double, int>> lin_exp,
+        std::initializer_list<double> r) : LinearConstraint(lin_exp) {
+        auto it = r.begin();
+        lb_ = *it++;
+        ub_ = *it;
+    }
+
+    /// name
+    static std::string name() { return  LinearConstraint::name() + "Range"; }
+    /// Constructor
+    /// range lb()
+    double lb() const { return lb_; }
+    /// range ub()
+    double ub() const { return ub_; }
+    /// operator==
+    bool equals(const RangeLinCon& r) const
+    {
+        return equal_to(r) && lb() == r.lb() && ub() == r.ub();
+    }
+private:
+    double lb_ = std::numeric_limits<double>::min(), ub_ = std::numeric_limits<double>::max();
+};
 /// Kind: -1/0/1 for <= / == / >=
-template <int kind_>
-class AlgConRhs {
-  static constexpr const char* kind_str_[] =
-  { "LE", "EQ", "GE" };
+template <int kind_> class RHSLinCon : public LinearConstraint {
+    static constexpr const char* kind_str_[] =
+    { "LE", "EQ", "GE" };
 public:
-  /// name
-  static std::string name()
-  { return std::string(kind_str_[kind_+1]) + "Rhs"; }
-  /// Constructor
-  AlgConRhs(double r) : rhs_(r) { }
-  /// Kind
-  int kind() const { return kind_; }
-  /// rhs()
-  double rhs() const { return rhs_; }
-  /// operator==
-  bool equals(const AlgConRhs& r) const
-  { return rhs()==r.rhs(); }
+    template <class CV = std::vector<double>, class VV = std::vector<int> >
+    RHSLinCon(CV&& c, VV&& v, double rhs) noexcept
+        : LinearConstraint(c, v), rhs_(rhs) { }
+    template <size_t N>
+    RHSLinCon(std::array<double, N>& c, std::array<int, N>& v, double rhs)
+        : LinearConstraint(c, v), rhs_(rhs) {}
+    RHSLinCon(std::initializer_list<std::pair<double, int>> lin_exp,
+        double rhs) : LinearConstraint(lin_exp), rhs_(rhs) {}
+    /// name
+    static std::string name()
+    {
+        return LinearConstraint::name() + std::string(kind_str_[kind_ + 1]) + "Rhs";
+    }
+    /// Kind
+    int kind() const { return kind_; }
+    /// rhs()
+    double rhs() const { return rhs_; }
+    /// operator==
+    bool equals(const RHSLinCon& r) const
+    {
+        return equal_to(r) && rhs() == r.rhs();
+    }
 private:
-  double rhs_;
+    double rhs_;
 };
 
-using RangeLinCon = LinearConstraint<AlgConRange>;
-using LinConLE = LinearConstraint< AlgConRhs<-1> >;
-using LinConEQ = LinearConstraint< AlgConRhs< 0> >;
-using LinConGE = LinearConstraint< AlgConRhs< 1> >;
+using LinConLE = RHSLinCon< -1>;
+using LinConEQ = RHSLinCon< 0>;
+using LinConGE = RHSLinCon<  1>;
 
 ////////////////////////////////////////////////////////////////////////
 /// Standard quadratic constraint
@@ -160,7 +195,7 @@ public:
   QuadraticConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
                       std::initializer_list<std::tuple<double, int, int>> quad_terms,
                       double lb, double ub) :
-    RangeLinCon(lin_exp, {lb, ub}), qt_(quad_terms) {
+      RangeLinCon(lin_exp, { lb, ub }), qt_(quad_terms) {
     sort_qp_terms();
   }
 
@@ -236,11 +271,11 @@ public:
   const AffineExpr& GetAffineExpr() const { return affine_expr_; }
   const Arguments& GetArguments() const { return GetAffineExpr(); }
   RangeLinCon to_linear_constraint() const {
-    const auto& ae = GetAffineExpr();
-    LinearExprUnzipper aeu(ae);
-    aeu.AddTerm(DefiningConstraint::GetResultVar(), -1.0);
-    return RangeLinCon(std::move(aeu.c_), std::move(aeu.v_),
-                            {-ae.constant_term(), -ae.constant_term()});
+      const auto& ae = GetAffineExpr();
+      LinearExprUnzipper aeu(ae);
+      aeu.AddTerm(DefiningConstraint::GetResultVar(), -1.0);
+      return RangeLinCon(std::move(aeu.c_), std::move(aeu.v_),
+          { -ae.constant_term(), -ae.constant_term() });
   }
 };
 
@@ -271,7 +306,7 @@ public:
     aeu.AddTerm(DefiningConstraint::GetResultVar(), -1.0);
     auto qt = qe.GetQT();
     return {RangeLinCon(std::move(aeu.c_), std::move(aeu.v_),
-                             {-ae.constant_term(), -ae.constant_term()}),
+        {-ae.constant_term(), -ae.constant_term()}),
             std::move(qt)};
   }
 };
