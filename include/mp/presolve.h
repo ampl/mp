@@ -109,7 +109,8 @@ protected:
   }
 
 private:
-  mutable ModelValuesTerminal src_, dest_;
+  mutable ModelValuesTerminal src_{std::string("src")},
+    dest_{std::string("dest")};
   BridgeRangeList brl_;
 };
 

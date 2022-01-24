@@ -56,6 +56,10 @@ private:
 /// corresponding to variables, or a constraint type, or objectives
 class ValueNode {
 public:
+  /// Default constructor
+  ValueNode() = default;
+  /// Constructor
+  ValueNode(std::string nm) : name_(nm) { }
   /// Declared size (what is being used by bridges)
   size_t size() const { return sz_; }
   /// Create entry (range) pointer: add n elements
@@ -128,25 +132,34 @@ public:
   /// Copy node to another node
   friend void Copy(NodeRange ir1, NodeRange ir2);
 
+  /// SetName
+  void SetName(std::string s) { name_ = std::move(s); }
+
 private:
   std::vector<int> vi_;
   std::vector<double> vd_;
   size_t sz_;
+  std::string name_ = "default_value_node";
 };
+
+/// Spec for ValueNode
+void SetValueNodeName(ValueNode& vn, std::string nm) { vn.SetName(nm); }
 
 
 /// Copy int or double range only
 /// @return always true currently
 template <class Vec> inline
-bool CopyRange(const Vec& src, Vec& dest, NodeIndexRange ir, int i1) {
-  if ((int)src.size()>=ir.end) {
-    if ((int)dest.size() < i1 + ir.size())
-      dest.resize(i1 + ir.size());
-    std::copy(src.begin()+ir.beg, src.begin()+ir.end,
-              dest.begin()+i1);
-    return true;
-  } else
-    assert(src.empty());             // attempt to process a smaller vector
+bool CopyRange(Vec& src, Vec& dest, NodeIndexRange ir, int i1) {
+  if ((int)src.size() < ir.end) {
+    src.resize(ir.end);
+    // assert(src.empty());      // attempt to process a smaller vector
+    /// We cannot do this as long there exist "rootless" constraints
+    /// No value is copied into them
+  }
+  if ((int)dest.size() < i1 + ir.size())
+    dest.resize(i1 + ir.size());
+  std::copy(src.begin()+ir.beg, src.begin()+ir.end,
+            dest.begin()+i1);
   return true;
 }
 

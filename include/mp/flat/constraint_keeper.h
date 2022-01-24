@@ -17,7 +17,11 @@ class BasicFlatConverter;
 /// Interface for an array of constraints of certain type
 class BasicConstraintKeeper {
 public:
+  /// Destructor
   virtual ~BasicConstraintKeeper() { }
+  /// Constructor
+  BasicConstraintKeeper(const char* nm) :
+    value_node_(nm), constr_name_(nm) { }
   /// Constraint type
   using ConstraintType = BasicConstraint;
   /// Constraint keeper description
@@ -51,6 +55,7 @@ public:
 
 private:
   pre::ValueNode value_node_;
+  const char* constr_name_;
 };
 
 
@@ -179,7 +184,8 @@ public:
   { return static_cast<Converter&>(cvt).GetBackend(); }
   /// Constructor, adds this CK to the provided ConstraintManager
   /// Requires the CM to be already constructed
-  ConstraintKeeper(Converter& cvt) : cvt_(cvt) {
+  ConstraintKeeper(Converter& cvt, const char* nm) :
+    BasicConstraintKeeper(nm), cvt_(cvt) {
     GetConverter().AddConstraintKeeper(*this, ConversionPriority());
   }
   /// Add a pre-constructed constraint (or just arguments)
@@ -286,7 +292,7 @@ protected:
             ConvertConstraint(*it, i);
           } catch (const ConstraintConversionFailure& ccf) {
             printf( fmt::format(      // TODO use Env's output facility
-                                      "WARNING: {}. Will pass constraint {}[{}]"
+                                      "WARNING: {}. Will pass constraint {} [{}] "
                            "to the backend. Continuing\n",
                                       ccf.message(), i,
                                       Constraint::GetConstraintName() ).c_str() );
@@ -349,7 +355,8 @@ private:
 /// Define a constraint keeper
 #define STORE_CONSTRAINT_TYPE(Constraint) \
   ConstraintKeeper<Impl, Backend, Constraint> \
-    CONSTRAINT_KEEPER_VAR(Constraint){*static_cast<Impl*>(this)}; \
+    CONSTRAINT_KEEPER_VAR(Constraint) \
+      {*static_cast<Impl*>(this), #Constraint}; \
   const ConstraintKeeper<Impl, Backend, Constraint>& \
   GetConstraintKeeper(Constraint* ) const { \
     return CONSTRAINT_KEEPER_VAR(Constraint); \

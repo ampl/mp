@@ -8,6 +8,7 @@
   */
 
 #include <map>
+#include <string>
 #include <cassert>
 
 #include "mp/arrayref.h"
@@ -15,6 +16,10 @@
 namespace mp {
 
 namespace pre {
+
+/// Debugging template
+template <class Any>
+void SetValueNodeName(Any& , std::string ) { }
 
 
 /// Value map, contains a map of arrays of int's and/or double's
@@ -29,7 +34,10 @@ public:
 
   /// Construct from a single SomeArray
   template <class SomeArray>
-  ValueMap(SomeArray r) { map_[0] = std::move(r); }
+  ValueMap(SomeArray r) {
+    map_[0] = std::move(r);
+    SetValueNodeName(map_[0], name_ + std::to_string(0));
+  }
 
   /// Construct from the low-level MapType
   ValueMap(MapType m) : map_{std::move(m)} { }
@@ -61,27 +69,38 @@ public:
   { return 1==map_.size() && 0==map_.begin()->first; }
 
   /// Make single key, or check one, and return
-  Array& MakeSingleKey()
-  { assert(map_.empty() || IfSingleKey()); return map_[0]; }
+  Array& MakeSingleKey() { return operator()(); }
 
   /// Retrieve the single array, const
   const Array& operator()() const
   { assert(IfSingleKey()); return map_.at(0); }
   /// Retrieve the single array (create if need)
-  Array& operator()()
-  { assert(map_.empty() || IfSingleKey()); return map_[0]; }
+  Array& operator()() {
+    if (map_.empty())
+      SetValueNodeName(map_[0], name_ + std::to_string(0));
+    else
+      assert(IfSingleKey());
+    return map_[0];
+  }
 
   /// Retrieve the array with index i, const
   const Array& operator()(int i) const { return map_.at(i); }
   /// Retrieve the array with index i (create if need)
-  Array& operator()(int i)
-  { return map_[i]; }
+  Array& operator()(int i) {
+    if (map_.end() == map_.find(i))
+      SetValueNodeName(map_[i], name_ + std::to_string(i));
+    return map_[i];
+  }
 
   const MapType& GetMap() const { return map_; }
 
+  void SetName(std::string s) { name_ = std::move(s); }
+
 private:
+  std::string name_ { "default_value_map" };
   MapType map_;
 };
+
 
 /// Convenience typedef
 using ValueMapInt = ValueMap< std::vector<int> >;
@@ -92,8 +111,12 @@ using ValueMapDbl = ValueMap< std::vector<double> >;
 template <class VMap>
 class ModelValues {
 public:
-  /// Default constructor
-  ModelValues() = default;
+  /// Constructor
+  ModelValues(std::string nm) : name_{nm} {
+    vars_.SetName(nm+"_vars");
+    cons_.SetName(nm+"_cons");
+    objs_.SetName(nm+"_objs");
+  }
   /// Default move-copy
   ModelValues(ModelValues&& ) = default;
   /// Default move-assign
@@ -135,6 +158,7 @@ public:
   VMap& GetObjValues() { return objs_; }
 
 private:
+  std::string name_;
   VMap vars_, cons_, objs_;
 };
 
