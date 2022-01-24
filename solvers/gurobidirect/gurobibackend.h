@@ -89,8 +89,7 @@ public:
   * set primal/dual initial guesses for continuous case
   **/
   ALLOW_STD_FEATURE( WARMSTART, true )
-  void InputPrimalDualStart(ArrayRef<double> x0,
-                         ArrayRef<double> pi0);
+  void AddPrimalDualStart(Solution sol0);
   /**
   * Specifically, MIP warm start
   **/

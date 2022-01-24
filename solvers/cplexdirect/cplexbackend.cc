@@ -107,8 +107,7 @@ ArrayRef<double> CplexBackend::PrimalSolution() {
 }
 
 pre::ValueMapDbl CplexBackend::DualSolution() {
-  return {{
-      { CG_Linear, DualSolution_LP() } }};
+  return {{ { CG_Linear, DualSolution_LP() } }};
 }
 
 ArrayRef<double> CplexBackend::DualSolution_LP() {

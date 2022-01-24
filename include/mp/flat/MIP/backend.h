@@ -91,14 +91,13 @@ public:
   /// Setter (unpresolved)
   void SetBasis(SolutionBasis ) { UNSUPPORTED("MIPBackend::SetBasis"); }
   /**
-  * General warm start, e.g.,
+  * General LP warm start, e.g.,
   * set primal/dual initial guesses for continuous case
   **/
   DEFINE_STD_FEATURE( WARMSTART )
   ALLOW_STD_FEATURE( WARMSTART, false )
-  void InputPrimalDualStart(ArrayRef<double> x0,
-                       ArrayRef<double> pi0)
-  { UNSUPPORTED("MIPBackend::InputPrimalDualStart"); }
+  void AddPrimalDualStart(Solution )
+  { UNSUPPORTED("MIPBackend::AddPrimalDualStart"); }
   /**
   * Specifically, MIP warm start
   **/
@@ -220,17 +219,18 @@ public:
       basis.constt = ReadSuffix(suf_constatus);
       useBasis = bool(basis);
     }
-    auto X0 = MP_DISPATCH( InitialValues() );
-    auto pi0 = MP_DISPATCH( InitialDualValues() );
-    bool haveInis = X0.size() && pi0.size();
+    Solution sol0;           // initial guesses
+    sol0.primal = MP_DISPATCH( InitialValues() );
+    sol0.dual = MP_DISPATCH( InitialDualValues() );
+    bool haveInis = sol0.primal.size() && sol0.dual.size();
     if (haveInis && (
           2==warmstart() ||
           (1==warmstart() && !useBasis))) {
-      MP_DISPATCH( InputPrimalDualStart(X0, pi0) );
+      MP_DISPATCH( AddPrimalDualStart(sol0) );
       useBasis = false;
       if (debug_mode()) {                 // Report received initials
-        ReportSuffix(suf_testvarini, X0); // Should we check that
-        ReportSuffix(suf_testconini, pi0); // Impl uses them?
+        ReportSuffix(suf_testvarini, sol0.primal); // Should we check that
+        ReportSuffix(suf_testconini, sol0.dual);   // Impl uses them?
       }
     }
     if (useBasis) {

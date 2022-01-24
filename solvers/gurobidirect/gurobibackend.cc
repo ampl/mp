@@ -406,10 +406,13 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
   GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, stt);
 }
 
-void GurobiBackend::InputPrimalDualStart(ArrayRef<double> x0, ArrayRef<double> pi0) {
+void GurobiBackend::AddPrimalDualStart(Solution sol0) {
+  auto mv = GetPresolver().PresolveSolution(
+        { sol0.primal, sol0.dual } );
+  auto x0 = mv.GetVarValues()();
+  auto pi0 = mv.GetConValues()(CG_Linear);
   GrbSetDblAttrArray(GRB_DBL_ATTR_PSTART, x0);
-  if (!IsQCP())
-    GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, ExtractLinConValues( pi0 ));
+  GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, pi0);
 }
 
 void GurobiBackend::AddMIPStart(ArrayRef<double> x0) {
