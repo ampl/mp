@@ -433,6 +433,7 @@ class COPTSolver(AMPLSolver):
         if tag in st[0]:
             n = st[0][st[0].index(tag) + len(tag):]
             try:
+              n = n.split(",")[0]
               self._stats["objective"] = float(n)
             except:
               print("No solution, string: {}".format(n))
