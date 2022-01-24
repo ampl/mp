@@ -16,5 +16,17 @@
     "files": ["flowshp2.mod", "flowshp.dat"],
     "tags" : ["logical"],
     "objective" : 22
+  },
+  {
+    "name" : "balassign0 [linear]",
+    "files": ["balassign0.mod", "balassign0.dat"],
+    "tags" : ["linear"],
+    "objective" : 14
+  },
+  {
+    "name" : "balassign1 [numberof]",
+    "files": ["balassign1.mod", "balassign1.dat"],
+    "tags" : ["logical"],
+    "objective" : 14
   }
 ]
