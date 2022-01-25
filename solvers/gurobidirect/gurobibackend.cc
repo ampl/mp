@@ -376,6 +376,7 @@ void GurobiBackend::VarStatii(ArrayRef<int> vst) {
     case BasicStatus::none:
     case BasicStatus::equ:
     case BasicStatus::btw:
+      /// This should leave the value at 0 (bas) for new vars
       break;
     default:
       MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));

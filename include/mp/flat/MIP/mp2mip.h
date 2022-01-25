@@ -66,8 +66,6 @@ public:
   }
 
   void Convert(const LE0Constraint& le0c) {
-    if (MPD(is_fixed(le0c.GetResultVar())))
-      throw std::logic_error("LE0Constraint: result fixed, not implemented");
     assert(!le0c.GetContext().IsNone());
     if (le0c.GetContext().HasPositive())
       ConvertImplied(le0c);
@@ -81,27 +79,46 @@ public:
       if (ae.constant_term() > 0.0)
         MPD( NarrowVarBounds(le0c.GetResultVar(), 0.0, 0.0) );
     } else {
-      LinearExprUnzipper le(ae);
-      MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
-                   le0c.GetResultVar(), 1,
-                   le.coefs(), le.var_indexes(), -ae.constant_term())) );
+      if (MPD(is_fixed(le0c.GetResultVar()))) {
+        if (MPD(fixed_value(le0c.GetResultVar()))) {      // fixed to 1
+          LinearExprUnzipper le(ae);
+          MP_DISPATCH( AddConstraint(LinConLE(
+                                       le.coefs(), le.var_indexes(),
+                                       -ae.constant_term())) );
+        }
+      } else {
+        LinearExprUnzipper le(ae);
+        MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
+                                     le0c.GetResultVar(), 1,
+                                     le.coefs(), le.var_indexes(), -ae.constant_term())) );
+      }
     }
   }
 
+  /// b==0 --> c'x > d
   void ConvertReverseImplied(const LE0Constraint& le0c) {
     auto ae = le0c.GetArguments();
     if (ae.is_constant()) {
       if (ae.constant_term() <= 0.0)
         MPD( NarrowVarBounds(le0c.GetResultVar(), 1.0, 1.0) );
     } else {
-      ae.Negate();
-      auto bNt = MP_DISPATCH( ComputeBoundsAndType(ae) );
-      double cmpEps = var::INTEGER==bNt.get_result_type() ? 1.0 : 1e-6;
-      double d = ae.constant_term() + cmpEps;
-      LinearExprUnzipper le(ae);
-      MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
-                   le0c.GetResultVar(), 0,
-                   le.coefs(), le.var_indexes(), -d)) );
+      if (MPD(is_fixed(le0c.GetResultVar()))) {
+        if (!MPD(fixed_value(le0c.GetResultVar()))) {      // fixed to 0
+          LinearExprUnzipper le(ae);
+          MP_DISPATCH( AddConstraint(LinConGE(
+                                       le.coefs(), le.var_indexes(),
+                                       -ae.constant_term()+1)) );
+        }
+      } else {
+        ae.Negate();
+        auto bNt = MP_DISPATCH( ComputeBoundsAndType(ae) );
+        double cmpEps = var::INTEGER==bNt.get_result_type() ? 1.0 : 1e-6;
+        double d = ae.constant_term() + cmpEps;
+        LinearExprUnzipper le(ae);
+        MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
+                                     le0c.GetResultVar(), 0,
+                                     le.coefs(), le.var_indexes(), -d)) );
+      }
     }
   }
 
@@ -134,6 +151,13 @@ public:
         MPD( NarrowVarBounds(eq0c.GetResultVar(), 0.0, 0.0) );
     } else {
       LinearExprUnzipper le(ae);
+      if (MPD(is_fixed(eq0c.GetResultVar()))) {
+        if (MPD(fixed_value(eq0c.GetResultVar()))) {     // fixed to 1
+          MP_DISPATCH( AddConstraint(LinConEQ(
+                                     le.coefs(), le.var_indexes(),
+                                     -ae.constant_term())) );
+        } // else, skip
+      }
       MP_DISPATCH( AddConstraint(IndicatorConstraintLinEQ(
                    eq0c.GetResultVar(), 1,
                    le.coefs(), le.var_indexes(), -ae.constant_term())) );
@@ -146,14 +170,17 @@ public:
     if (ae.is_constant()) {
       if (std::fabs(ae.constant_term()) != 0.0)
         MPD( NarrowVarBounds(eq0c.GetResultVar(), 1.0, 1.0) );
-    } else {    // We are in MIP so doing algebra, not DisjunctiveConstr
+    } else if ( !MPD(is_fixed(eq0c.GetResultVar())) ||       // not fixed, or
+                !MPD(fixed_value(eq0c.GetResultVar())) )     // fixed to 0
+    {    // We are in MIP so doing algebra, not DisjunctiveConstr
       auto newvars = MPD( AddVars_returnIds(2, 0.0, 1.0, var::INTEGER) );
       newvars.push_back( eq0c.GetResultVar() );
       MPD( AddConstraint( LinConGE(   // b1+b2+resvar >= 1
                             {1.0, 1.0, 1.0}, newvars,
                                          {1.0} ) ) );
       auto bNt = MP_DISPATCH( ComputeBoundsAndType(ae) );
-      double cmpEps = MPD( ComparisonEps( bNt.get_result_type() ) ); {
+      double cmpEps = MPD( ComparisonEps( bNt.get_result_type() ) );
+      {
         LinearExprUnzipper le(ae);
         MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
                                      newvars[0], 1,
@@ -166,7 +193,7 @@ public:
                                    newvars[1], 1,
                                    le.coefs(), le.var_indexes(),
                                    -ae.constant_term() - cmpEps)) );
-    }
+    } // else, skip
   }
 
 
@@ -183,7 +210,7 @@ public:
                    const PreprocessInfoStd& bnds, AffineExpr ae) {
     /// TODO fail if lb>0 +report .iis if requested
     /// TODO skip if ub<0
-    if (bnds.ub() >= this->Infty())
+    if (bnds.ub() >= this->PracticallyInfty())
       throw ConstraintConversionFailure("Cannot convert indicator constraint with "
                              "an infinite upper bound. "
                              "Define finite upper bound or use solver built-in indicator");
@@ -287,16 +314,20 @@ public:
 
   //////////////////// ALLDIFF ///////////////////////
   void Convert(const AllDiffConstraint& alld) {
-    if (!this->is_fixed(alld.GetResultVar()) ||
-        1.0!=this->fixed_value(alld.GetResultVar()))
-      throw std::logic_error("MP2MIP: only static alldifferent implemented.");
-    else
-      Convert_staticAllDiff(alld);
+    if (alld.GetContext().HasNegative() && (
+      !MPD(is_fixed(alld.GetResultVar())) ||
+          !MPD(fixed_value(alld.GetResultVar())))) {  // fixed to 0
+        throw std::logic_error(
+            "MP2MIP: fully reified alldiff not implemented.");
+    }
+    if (alld.GetContext().HasPositive() && (
+      !MPD(is_fixed(alld.GetResultVar())) ||
+          MPD(fixed_value(alld.GetResultVar())))) {   // fixed to 1
+      Convert_static_or_implied_AllDiff(alld);
+    }  // else skip
   }
 
-  void Convert_staticAllDiff(const AllDiffConstraint& alld) {
-    assert (this->is_fixed(alld.GetResultVar()) &&
-        1.0==this->fixed_value(alld.GetResultVar()));
+  void Convert_static_or_implied_AllDiff(const AllDiffConstraint& alld) {
     const auto& args = alld.GetArguments();
     const auto lba_dbl = this->lb_array(args);
     const auto uba_dbl = this->ub_array(args);
@@ -308,12 +339,18 @@ public:
     const int uba = (int)std::round(uba_dbl);
     std::vector<double> coefs(args.size(), 1.0);
     std::vector<int> flags(args.size());                // unary encoding flags
+    double rhs = 1.0;
+    if (!this->is_fixed(alld.GetResultVar())) {         // b -> alldiff
+      coefs.push_back(args.size()-1.0);
+      flags.push_back(alld.GetResultVar());
+      rhs = (double)args.size();
+    }
     for (int v=lba; v!=uba+1; ++v) {                    // for each value in the domain union
       for (size_t ivar = 0; ivar < args.size(); ++ivar) {
         flags[ivar] = this->AssignResultVar2Args(
               EQ0Constraint( { {1.0}, {args[ivar]}, -double(v) } ) );
       }
-      this->AddConstraint( LinConLE( coefs, flags, {1.0} ) );
+      this->AddConstraint( LinConLE( coefs, flags, {rhs} ) );
     }
   }
 

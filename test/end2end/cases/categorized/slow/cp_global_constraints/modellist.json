@@ -1,0 +1,14 @@
+[
+  {
+    "name" : "party1 [if, alldiff, atmost]",
+    "files": ["party1.mod", "party1.dat"],
+    "tags" : ["logical"],
+    "solve_result_num" : 0
+  },
+  {
+    "name" : "party2 [if, ->forall, -> alldiff, -> atmost]",
+    "files": ["party2.mod", "party2.dat"],
+    "tags" : ["logical"],
+    "objective" : 16
+  }
+]

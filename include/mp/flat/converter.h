@@ -363,14 +363,30 @@ protected:
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
+      AllDiffConstraint& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
       NumberofConstConstraint& con, PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, con.GetArguments().size());
+    prepro.set_result_type( var::INTEGER );
   }
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
       NumberofVarConstraint& con, PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, con.GetArguments().size());
+    prepro.set_result_type( var::INTEGER );
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      CountConstraint& con, PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(0.0, con.GetArguments().size());
+    prepro.set_result_type( var::INTEGER );
   }
 
   template <class PreprocessInfo>

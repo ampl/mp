@@ -157,6 +157,8 @@ public:
 
   static constexpr double Infty() { return std::numeric_limits<double>::infinity(); }
   static constexpr double MinusInfty() { return -std::numeric_limits<double>::infinity(); }
+  static constexpr double PracticallyInfty() { return 1e20; }  // TODO options
+  static constexpr double PracticallyMinusInfty() { return -1e20; }
 };
 
 /// Conversion failure helper
