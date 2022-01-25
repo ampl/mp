@@ -29,7 +29,8 @@ namespace mp {
 /// Such constraints might need to be converted to others, which is
 /// handled by overloaded methods in FlatConverter.
 template <class Impl, class Model, class FlatConverter>
-class ExprFlattener : public ExprVisitor<Impl, EExpr>
+class ExprFlattener :
+    public ExprConverter<Impl, EExpr>
 {
 public:
   using ModelType = Model;
@@ -377,9 +378,15 @@ public:
   EExpr VisitAnd(BinaryLogicalExpr e) {
     return VisitFunctionalExpression<ConjunctionConstraint>({ e.lhs(), e.rhs() });
   }
+  EExpr VisitForAll(IteratedLogicalExpr e) {
+    return VisitFunctionalExpression<ConjunctionConstraint>(e);
+  }
 
   EExpr VisitOr(BinaryLogicalExpr e) {
     return VisitFunctionalExpression<DisjunctionConstraint>({ e.lhs(), e.rhs() });
+  }
+  EExpr VisitExists(IteratedLogicalExpr e) {
+    return VisitFunctionalExpression<DisjunctionConstraint>(e);
   }
 
   EExpr VisitIf(IfExpr e) {
