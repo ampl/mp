@@ -378,7 +378,7 @@ check_cxx_source_compiles(
 if (HAVE_HASH)
   target_compile_definitions(mp PUBLIC MP_USE_HASH)
    if(TARGET mp-dynrt)
-    target_compile_definitions(mp-dynrt PUBLIC HAVE_HASH)
+    target_compile_definitions(mp-dynrt PUBLIC MP_USE_HASH)
   endif()
 endif ()
 
