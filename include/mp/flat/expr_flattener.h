@@ -397,11 +397,11 @@ public:
     return VisitFunctionalExpression<AllDiffConstraint>(e);
   }
 
+  /// Numberof: const, var
   EExpr VisitNumberOf(typename BaseExprVisitor::NumberOfExpr e) {
     VarArray va;
     va.reserve(e.num_args());
-    NumericExpr value = e.arg(0);
-    EExpr valexpr = Convert2EExpr(value);
+    EExpr valexpr = Convert2EExpr(e.arg(0));
     if (valexpr.is_constant()) {
       for (int i=1; i<e.num_args(); ++i)
         va.push_back(Convert2Var(e.arg(i)));
@@ -414,6 +414,10 @@ public:
         va.push_back(Convert2Var(e.arg(i)));
       return AssignResult2Args( NumberofVarConstraint{ va } );
     }
+  }
+
+  EExpr VisitCount(CountExpr ce) {
+    return VisitFunctionalExpression<CountConstraint>(ce);
   }
 
   EExpr VisitPLTerm(PLTerm e) {

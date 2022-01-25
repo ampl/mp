@@ -352,6 +352,10 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS( NumberofConstConstraint,
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( NumberofVarConstraint, VarArray,
                                   "numberof_var(x0, {x1...xn})");
 
+////////////////////////////////////////////////////////////////////////
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( CountConstraint, VarArray,
+                                   "count({x0...xn})");
+
 
 //////////////////// NONLINEAR FUNCTIONS //////////////////////
 ////////////////////////////////////////////////////////////////////////

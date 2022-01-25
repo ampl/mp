@@ -324,13 +324,43 @@ public:
     std::vector<double> coefs(args.size()+1, 1.0);
     std::vector<int> flags(args.size()+1, nocc.GetResultVar());
     for (size_t ivar = 0; ivar < args.size(); ++ivar) {
-      flags[ivar] = this->AssignResultVar2Args(
-            EQ0Constraint( { {1.0}, {args[ivar]}, -k } ) ); // flag = (args[i]==k)
+      flags[ivar] = this->AssignResultVar2Args(   // flag = (args[i]==k)
+            EQ0Constraint( { {1.0}, {args[ivar]}, -k } ) );
     }
     coefs.back() = -1.0;
     this->AddConstraint( LinConEQ( coefs, flags, {0.0} ) );
   }
 
+  //////////////////// NUMBEROF VAR ///////////////////////
+  /// Very basic, could be improved
+  void Convert(const NumberofVarConstraint& novc) {
+    const auto& args = novc.GetArguments();
+    std::vector<double> coefs(args.size(), 1.0);
+    coefs.front() = -1.0;
+    std::vector<int> flags(args.size(), novc.GetResultVar());
+    for (size_t ivar = 1; ivar < args.size(); ++ivar) {
+      flags[ivar] = this->AssignResultVar2Args(   // flag = (args[i]==args[0])
+            EQ0Constraint( { {1.0, -1.0},
+                             {args[ivar], args[0]}, 0.0 } ) );
+    }
+    this->AddConstraint( LinConEQ( coefs, flags, {0.0} ) );
+  }
+
+  void Convert(const CountConstraint& cc) {
+    const auto& args = cc.GetArguments();
+    std::vector<double> coefs(args.size()+1, 1.0);
+    coefs.back() = -1.0;
+    std::vector<int> flags(args.size()+1, cc.GetResultVar());
+    for (size_t ivar = 0; ivar < args.size(); ++ivar) {
+      flags[ivar] = args[ivar];
+      /// Force booleanize
+      /// Either reify !=0 or constrain to 0..1
+      if (!MPD( is_binary_var(args[ivar]) ))
+        flags[ivar] = this->AssignResultVar2Args(   // flag = (args[i]!=0)
+            EQ0Constraint( { {1.0}, {args[ivar]}, 0.0 } ) );
+    }
+    this->AddConstraint( LinConEQ( coefs, flags, {0.0} ) );
+  }
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////////// MAPS //////////////////////////

@@ -995,6 +995,7 @@ protected:
   STORE_CONSTRAINT_TYPE(AllDiffConstraint)
   STORE_CONSTRAINT_TYPE(NumberofConstConstraint)
   STORE_CONSTRAINT_TYPE(NumberofVarConstraint)
+  STORE_CONSTRAINT_TYPE(CountConstraint)
 
   STORE_CONSTRAINT_TYPE(ExpConstraint)
   STORE_CONSTRAINT_TYPE(ExpAConstraint)

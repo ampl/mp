@@ -28,5 +28,23 @@
     "files": ["balassign1.mod", "balassign1.dat"],
     "tags" : ["logical"],
     "objective" : 14
+  },
+  {
+    "name" : "sched0 [linear]",
+    "files": ["sched0.mod", "sched.dat"],
+    "tags" : ["linear"],
+    "objective" : 5
+  },
+  {
+    "name" : "sched1 [count, if]",
+    "files": ["sched1.mod", "sched.dat"],
+    "tags" : ["logical"],
+    "objective" : 5
+  },
+  {
+    "name" : "sched2 [numberof, if]",
+    "files": ["sched2.mod", "sched.dat"],
+    "tags" : ["logical"],
+    "objective" : 5
   }
 ]
