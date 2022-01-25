@@ -363,6 +363,18 @@ protected:
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
+      NumberofConstConstraint& con, PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(0.0, con.GetArguments().size());
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      NumberofVarConstraint& con, PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(0.0, con.GetArguments().size());
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
       NotConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
@@ -512,6 +524,18 @@ protected:
   }
 
   void PropagateResult(AllDiffConstraint& con, double lb, double ub, Context ctx) {
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
+    con.AddContext(ctx);
+    // TODO go into arguments
+  }
+
+  void PropagateResult(NumberofConstConstraint& con, double lb, double ub, Context ctx) {
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
+    con.AddContext(ctx);
+    // TODO go into arguments
+  }
+
+  void PropagateResult(NumberofVarConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     // TODO go into arguments
@@ -969,6 +993,9 @@ protected:
   STORE_CONSTRAINT_TYPE(NotConstraint)
   STORE_CONSTRAINT_TYPE(IfThenConstraint)
   STORE_CONSTRAINT_TYPE(AllDiffConstraint)
+  STORE_CONSTRAINT_TYPE(NumberofConstConstraint)
+  STORE_CONSTRAINT_TYPE(NumberofVarConstraint)
+  STORE_CONSTRAINT_TYPE(CountConstraint)
 
   STORE_CONSTRAINT_TYPE(ExpConstraint)
   STORE_CONSTRAINT_TYPE(ExpAConstraint)

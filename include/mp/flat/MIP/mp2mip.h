@@ -30,13 +30,13 @@ public:
     const std::size_t nargs = args.size();
     const auto flags =
         this->AddVars_returnIds(nargs, 0.0, 1.0, var::Type::INTEGER);   // binary flags
-    MP_DISPATCH( AddConstraint(RangeLinCon(
+    MP_DISPATCH( AddConstraint(LinConGE(
                                  std::vector<double>(nargs, 1.0),  // sum of the flags >= 1
-                                 flags, {1.0, this->Infty()})) );
+                                 flags, {1.0})) );
     const auto resvar = mc.GetResultVar();
     for (size_t i=0; i<nargs; ++i) {
-      MP_DISPATCH( AddConstraint(RangeLinCon({1.0*sense, -1.0*sense},
-                          {args[i], resvar}, {this->MinusInfty(), 0.0})) );
+      MP_DISPATCH( AddConstraint(LinConLE({1.0*sense, -1.0*sense},
+                          {args[i], resvar}, {0.0})) );
       MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE{flags[i], 1,
                           {1.0*sense, -1.0*sense}, {resvar, args[i]}, 0.0}) );
     }
@@ -53,8 +53,8 @@ public:
   void Convert(const AbsConstraint& ac) {
     const int arg = ac.GetArguments()[0];
     const int res = ac.GetResultVar();
-    this->AddConstraint(RangeLinCon({1.0, 1.0}, {res, arg}, {0.0, this->Infty()}));
-    this->AddConstraint(RangeLinCon({1.0, -1.0}, {res, arg}, {0.0, this->Infty()}));
+    this->AddConstraint(LinConGE({1.0, 1.0}, {res, arg}, {0.0}));
+    this->AddConstraint(LinConGE({1.0, -1.0}, {res, arg}, {0.0}));
     const int flag = this->AddVar(0.0, 1.0, var::INTEGER);
     this->AddConstraint(IndicatorConstraintLinLE(flag, 1, {1.0, 1.0}, {res, arg}, 0.0));
     this->AddConstraint(IndicatorConstraintLinLE(flag, 0, {1.0, -1.0}, {res, arg}, 0.0));
@@ -149,9 +149,9 @@ public:
     } else {    // We are in MIP so doing algebra, not DisjunctiveConstr
       auto newvars = MPD( AddVars_returnIds(2, 0.0, 1.0, var::INTEGER) );
       newvars.push_back( eq0c.GetResultVar() );
-      MPD( AddConstraint( RangeLinCon(   // b1+b2+resvar >= 1
+      MPD( AddConstraint( LinConGE(   // b1+b2+resvar >= 1
                             {1.0, 1.0, 1.0}, newvars,
-                                         {1.0, MPCD(Infty())} ) ) );
+                                         {1.0} ) ) );
       auto bNt = MP_DISPATCH( ComputeBoundsAndType(ae) );
       double cmpEps = MPD( ComparisonEps( bNt.get_result_type() ) ); {
         LinearExprUnzipper le(ae);
@@ -192,9 +192,9 @@ public:
     else
       ae += {{-bnds.ub(), b}, 0.0};
     LinearExprUnzipper leu(ae);
-    MP_DISPATCH( AddConstraint(RangeLinCon(     /// Big-M constraint
+    MP_DISPATCH( AddConstraint(LinConLE(     /// Big-M constraint
         leu.coefs(), leu.var_indexes(),
-        {this->MinusInfty(), -ae.constant_term()}
+        {-ae.constant_term()}
                                                 )) );
   }
 
@@ -224,8 +224,8 @@ public:
     std::vector<double> ones(args.size(), 1.0); // res+n-1 >= sum(args) in CTX-
     ones.push_back(-1.0);
     MP_DISPATCH( AddConstraint(
-                   RangeLinCon(ones, flags,
-                               {MP_DISPATCH( MinusInfty() ), (double)args.size()-1} )) );
+                   LinConLE(ones, flags,
+                               {(double)args.size()-1} )) );
   }
 
   void ConvertImplied(const ConjunctionConstraint& conj) {
@@ -233,8 +233,8 @@ public:
     std::array<int, 2> vars{-1, conj.GetResultVar()};
     for (auto arg: conj.GetArguments()) {       // res <= arg[i] in CTX+
       vars[0] = arg;
-      MP_DISPATCH( AddConstraint(RangeLinCon(coefs, vars,
-                                             {MP_DISPATCH( MinusInfty() ), 0.0} )) );
+      MP_DISPATCH( AddConstraint(
+                     LinConLE(coefs, vars, {0.0} )) );
     }
   }
 
@@ -252,8 +252,8 @@ public:
     flags.push_back(disj.GetResultVar());
     std::vector<double> ones(args.size(), 1.0);  // res <= sum(args) in CTX+
     ones.push_back(-1.0);
-    MP_DISPATCH( AddConstraint(RangeLinCon(ones, flags,
-                                           {0.0, MP_DISPATCH( Infty() )} )) );
+    MP_DISPATCH( AddConstraint(
+                   LinConGE(ones, flags, {0.0} )) );
   }
 
   void ConvertReverseImplied(const DisjunctionConstraint& disj) {
@@ -261,8 +261,8 @@ public:
     std::array<int, 2> vars{-1, disj.GetResultVar()};
     for (auto arg: disj.GetArguments()) {        // res >= arg[i] in CTX-
       vars[0] = arg;
-      MP_DISPATCH( AddConstraint(RangeLinCon(coefs, vars,
-                                             {MP_DISPATCH( MinusInfty() ), 0.0} )) );
+      MP_DISPATCH( AddConstraint(
+                     LinConLE(coefs, vars, {0.0} )) );
     }
   }
 
@@ -313,9 +313,53 @@ public:
         flags[ivar] = this->AssignResultVar2Args(
               EQ0Constraint( { {1.0}, {args[ivar]}, -double(v) } ) );
       }
-      this->AddConstraint( RangeLinCon(
-          coefs, flags, {this->MinusInfty(), 1.0} ) );
+      this->AddConstraint( LinConLE( coefs, flags, {1.0} ) );
     }
+  }
+
+  //////////////////// NUMBEROF CONST ///////////////////////
+  void Convert(const NumberofConstConstraint& nocc) {
+    const auto& args = nocc.GetArguments();
+    const double k = nocc.GetParameters()[0];
+    std::vector<double> coefs(args.size()+1, 1.0);
+    std::vector<int> flags(args.size()+1, nocc.GetResultVar());
+    for (size_t ivar = 0; ivar < args.size(); ++ivar) {
+      flags[ivar] = this->AssignResultVar2Args(   // flag = (args[i]==k)
+            EQ0Constraint( { {1.0}, {args[ivar]}, -k } ) );
+    }
+    coefs.back() = -1.0;
+    this->AddConstraint( LinConEQ( coefs, flags, {0.0} ) );
+  }
+
+  //////////////////// NUMBEROF VAR ///////////////////////
+  /// Very basic, could be improved
+  void Convert(const NumberofVarConstraint& novc) {
+    const auto& args = novc.GetArguments();
+    std::vector<double> coefs(args.size(), 1.0);
+    coefs.front() = -1.0;
+    std::vector<int> flags(args.size(), novc.GetResultVar());
+    for (size_t ivar = 1; ivar < args.size(); ++ivar) {
+      flags[ivar] = this->AssignResultVar2Args(   // flag = (args[i]==args[0])
+            EQ0Constraint( { {1.0, -1.0},
+                             {args[ivar], args[0]}, 0.0 } ) );
+    }
+    this->AddConstraint( LinConEQ( coefs, flags, {0.0} ) );
+  }
+
+  void Convert(const CountConstraint& cc) {
+    const auto& args = cc.GetArguments();
+    std::vector<double> coefs(args.size()+1, 1.0);
+    coefs.back() = -1.0;
+    std::vector<int> flags(args.size()+1, cc.GetResultVar());
+    for (size_t ivar = 0; ivar < args.size(); ++ivar) {
+      flags[ivar] = args[ivar];
+      /// Force booleanize
+      /// Either reify !=0 or constrain to 0..1
+      if (!MPD( is_binary_var(args[ivar]) ))
+        flags[ivar] = this->AssignResultVar2Args(   // flag = (args[i]!=0)
+            EQ0Constraint( { {1.0}, {args[ivar]}, 0.0 } ) );
+    }
+    this->AddConstraint( LinConEQ( coefs, flags, {0.0} ) );
   }
 
   ///////////////////////////////////////////////////////////////////////

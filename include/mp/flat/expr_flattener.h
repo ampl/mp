@@ -397,6 +397,29 @@ public:
     return VisitFunctionalExpression<AllDiffConstraint>(e);
   }
 
+  /// Numberof: const, var
+  EExpr VisitNumberOf(typename BaseExprVisitor::NumberOfExpr e) {
+    VarArray va;
+    va.reserve(e.num_args());
+    EExpr valexpr = Convert2EExpr(e.arg(0));
+    if (valexpr.is_constant()) {
+      for (int i=1; i<e.num_args(); ++i)
+        va.push_back(Convert2Var(e.arg(i)));
+      return AssignResult2Args( NumberofConstConstraint{
+                                  va, { valexpr.constant_term() }
+                                } );
+    } else {
+      va.push_back(Convert2Var(std::move(valexpr)));
+      for (int i=1; i<e.num_args(); ++i)
+        va.push_back(Convert2Var(e.arg(i)));
+      return AssignResult2Args( NumberofVarConstraint{ va } );
+    }
+  }
+
+  EExpr VisitCount(CountExpr ce) {
+    return VisitFunctionalExpression<CountConstraint>(ce);
+  }
+
   EExpr VisitPLTerm(PLTerm e) {
     int num_breakpoints = e.num_breakpoints();
     std::vector<double> slopes(num_breakpoints+1), breakpoints(num_breakpoints);
