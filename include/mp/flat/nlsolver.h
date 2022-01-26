@@ -255,6 +255,9 @@ protected:
                     ArrayRef<double> values) override {
     GetModel().ReportSuffix(suf, values);
   }
+  size_t GetSuffixSize(int kind) override {
+    return GetModel().GetSuffixSize((suf::Kind)kind);
+  }
 
   void HandleSolution(int status, fmt::CStringRef msg,
       const double *x, const double *y, double obj) override {

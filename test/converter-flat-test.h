@@ -49,6 +49,14 @@ public:
     }
     return oss.str();
   }
+
+public:
+  /// Have to define a few abstract methods
+  mp::Solution GetSolution() override { return {}; }
+  mp::ArrayRef<double> GetObjectiveValues() override { return {}; }
+  bool IsMIP() const override { return false; }
+  void SetInterrupter(mp::Interrupter*) override { }
+  void SolveAndReportIntermediateResults() override { }
 };
 
 template <template <class, class, class> class ConverterTemplate, class Constraint>

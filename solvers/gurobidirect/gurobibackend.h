@@ -61,11 +61,11 @@ public:
    * MULTIOBJ
   **/
   ALLOW_STD_FEATURE( MULTIOBJ, true )
-  ArrayRef<double> ObjectiveValues() const;
-  void ObjPriorities(ArrayRef<int>);
-  void ObjWeights(ArrayRef<double>);
-  void ObjAbsTol(ArrayRef<double>);
-  void ObjRelTol(ArrayRef<double>);
+  ArrayRef<double> GetObjectiveValues() override;
+  void ObjPriorities(ArrayRef<int>) override;
+  void ObjWeights(ArrayRef<double>) override;
+  void ObjAbsTol(ArrayRef<double>) override;
+  void ObjRelTol(ArrayRef<double>) override;
   /**
    * MULTISOL support
    * No API, use ReportIntermediateSolution()
@@ -77,58 +77,59 @@ public:
   * Check lazy_/user_cuts() to see which kinds are allowed
   **/
   ALLOW_STD_FEATURE( LAZY_USER_CUTS, true )
-  void MarkLazyOrUserCuts(ArrayRef<int> );
+  void MarkLazyOrUserCuts(ArrayRef<int> ) override;
   /**
   * Get/Set AMPL var/con statii
   **/
   ALLOW_STD_FEATURE( BASIS, true )
-  SolutionBasis GetBasis();
-  void SetBasis(SolutionBasis );
+  SolutionBasis GetBasis() override;
+  void SetBasis(SolutionBasis ) override;
   /**
   * General warm start, e.g.,
   * set primal/dual initial guesses for continuous case
   **/
   ALLOW_STD_FEATURE( WARMSTART, true )
-  void AddPrimalDualStart(Solution sol0);
+  void AddPrimalDualStart(Solution sol0) override;
   /**
   * Specifically, MIP warm start
   **/
   ALLOW_STD_FEATURE( MIPSTART, true )
-  void AddMIPStart(ArrayRef<double> x0);
+  void AddMIPStart(ArrayRef<double> x0) override;
   /**
   * Obtain inf/unbounded rays
   **/
   ALLOW_STD_FEATURE( RAYS, true )
-  ArrayRef<double> Ray();
-  ArrayRef<double> DRay();
+  ArrayRef<double> Ray() override;
+  ArrayRef<double> DRay() override;
   /**
   * Compute the IIS and obtain relevant values
   **/
   ALLOW_STD_FEATURE( IIS, true )
   /// Compute IIS
-  void ComputeIIS();
+  void ComputeIIS() override;
   /// Retrieve IIS. Elements correspond to IISStatus
-  IIS GetIIS();
+  IIS GetIIS() override;
   /**
   * Get MIP Gap
   **/
   ALLOW_STD_FEATURE( RETURN_MIP_GAP, true )
-  double MIPGap() const;
+  double MIPGap() override;
+  double MIPGapAbs() override;
   /**
   * Get MIP dual bound
   **/
   ALLOW_STD_FEATURE( RETURN_BEST_DUAL_BOUND, true )
-  double BestDualBound() const;
+  double BestDualBound() override;
   /**
   * Set branch and bound priorities
   **/
   ALLOW_STD_FEATURE( VAR_PRIORITIES, true )
-  void VarPriorities(ArrayRef<int> );
+  void VarPriorities(ArrayRef<int> ) override;
   /**
   * Get basis condition value (kappa)
   **/
   ALLOW_STD_FEATURE( KAPPA, true)
-  double Kappa() const;
+  double Kappa() override;
   /**
   * FeasRelax
   **/
@@ -137,14 +138,14 @@ public:
   * Report sensitivity analysis suffixes
   **/
   ALLOW_STD_FEATURE( SENSITIVITY_ANALYSIS, true )
-  ArrayRef<double> Senslbhi() const;
-  ArrayRef<double> Senslblo() const;
-  ArrayRef<double> Sensobjhi() const;
-  ArrayRef<double> Sensobjlo() const;
-  ArrayRef<double> Sensrhshi() const;
-  ArrayRef<double> Sensrhslo() const;
-  ArrayRef<double> Sensubhi() const;
-  ArrayRef<double> Sensublo() const;
+  ArrayRef<double> Senslbhi() const override;
+  ArrayRef<double> Senslblo() const override;
+  ArrayRef<double> Sensobjhi() const override;
+  ArrayRef<double> Sensobjlo() const override;
+  ArrayRef<double> Sensrhshi() const override;
+  ArrayRef<double> Sensrhslo() const override;
+  ArrayRef<double> Sensubhi() const override;
+  ArrayRef<double> Sensublo() const override;
   /**
   * FixModel - duals, basis, and sensitivity for MIP
   * No API to overload,
@@ -218,18 +219,9 @@ public:
 
 
   ///////////////////// Model attributes /////////////////////
-  bool IsMIP() const;
-  bool IsQP() const;
-  bool IsQCP() const;
-
-  /// Gurobi separates constraint classes
-  int NumLinCons() const;
-  int NumQPCons() const;
-  int NumSOSCons() const;
-  int NumGenCons() const;
-  int NumVars() const;
-  int NumObjs() const;
-  int ModelSense() const;
+  bool IsMIP() const override;
+  bool IsQP() const override;
+  bool IsQCP() const override;
 
 
   /////////////////////////////////////////////////////////////////////////////
@@ -237,12 +229,12 @@ public:
   /////////////////////////////////////////////////////////////////////////////
 
   /// Gurobi-specific options
-  void InitCustomOptions();
+  void InitCustomOptions() override;
 
   /// Chance for the Backend to init solver environment, etc
-  void InitOptionParsing();
+  void InitOptionParsing() override;
   /// Chance to consider options immediately (open cloud, etc)
-  void FinishOptionParsing();
+  void FinishOptionParsing() override;
 
   /// Public option API.
   /// These methods access Gurobi options. Used by AddSolverOption()
@@ -259,19 +251,17 @@ public:
   /////////////////////////// SOLVING ACCESSORS ///////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
 
-  void SetInterrupter(mp::Interrupter* inter);
+  void SetInterrupter(mp::Interrupter* inter) override;
 
   /// This is called before model is pushed to the Backend
-  void InitProblemModificationPhase();
+  void InitProblemModificationPhase() override;
   /// Chance to call GRBupdatemodel()
-  void FinishProblemModificationPhase();
+  void FinishProblemModificationPhase() override;
 
-  void SolveAndReportIntermediateResults();
+  void SolveAndReportIntermediateResults() override;
 
   /// Various solution attribute getters.
-  Solution GetSolution();
-  /// Obj value
-  double ObjectiveValue() const;
+  Solution GetSolution() override;
 
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -286,6 +276,15 @@ protected:
 
   void OpenGurobiComputeServer();
   void OpenGurobiCloud();
+
+  /// Gurobi separates constraint classes
+  int NumLinCons() const;
+  int NumQPCons() const;
+  int NumSOSCons() const;
+  int NumGenCons() const;
+  int NumVars() const;
+  int NumObjs() const;
+  int ModelSense() const;
 
   void ExportModel(const std::string& file);
 
@@ -310,6 +309,7 @@ protected:
   ArrayRef<double> CurrentGrbPoolPrimalSolution();
   double CurrentGrbPoolObjectiveValue() const;
 
+  double ObjectiveValue() const;
   std::vector<double> PrimalSolution();
   pre::ValueMapDbl DualSolution();
 

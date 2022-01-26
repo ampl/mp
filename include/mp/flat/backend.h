@@ -64,6 +64,8 @@ namespace mp {
 struct Solution {
   /// primal, dual
   std::vector<double> primal, dual;
+  /// objective values
+  std::vector<double> objvals;
 };
 
 /// Backend: solver API wrapper
@@ -97,10 +99,14 @@ public:
   void GetSolverOption(const char* , std::string& ) const {}
   void SetSolverOption(const char* , const std::string& ) {}
   
-  Solution GetSolution()
-  { UNSUPPORTED("GetSolution()"); return {}; }
-  double ObjectiveValue() const
-  { UNSUPPORTED("ObjectiveValue()"); return 0.0; }
+  /// Using virtual methods for convenience (CRTP not essential)
+
+  /// Placeholder for solution getter (unpresolved, final solution)
+  virtual Solution GetSolution() = 0;
+  /// Placeholder for objective values getter (unpresolved, final solution)
+  /// Needed only if we don't want the whole solution,
+  /// otherwise GetSolution() provides this
+  virtual ArrayRef<double> GetObjectiveValues() = 0;
 
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
@@ -113,21 +119,20 @@ protected:
    */
   DEFINE_STD_FEATURE( MULTIOBJ )
   ALLOW_STD_FEATURE( MULTIOBJ, false )
-  ArrayRef<double> ObjectiveValues() const
-  { UNSUPPORTED("ObjectiveValues()"); return {}; }
-  void ObjPriorities(ArrayRef<int>)
-  { UNSUPPORTED("BasicBackend::ObjPriorities"); }
-  void ObjWeights(ArrayRef<double>)
-  { UNSUPPORTED("BasicBackend::ObjWeights"); }
-  void ObjAbsTol(ArrayRef<double>)
-  { UNSUPPORTED("BasicBackend::ObjAbsTol"); }
-  void ObjRelTol(ArrayRef<double>)
-  { UNSUPPORTED("BasicBackend::ObjRelTol"); }
+  /// Placeholder: set objective priorities
+  virtual void ObjPriorities(ArrayRef<int>)
+  { UNSUPPORTED("Backend::ObjPriorities"); }
+  /// Placeholder: set objective weights
+  virtual void ObjWeights(ArrayRef<double>) { }
+  /// Placeholder: set objective abs tol
+  virtual void ObjAbsTol(ArrayRef<double>) { }
+  /// Placeholder: set objective rel tol
+  virtual void ObjRelTol(ArrayRef<double>) { }
   /**
    * MULTISOL support
    * No API to overload,
    *  Impl should check need_multiple_solutions()
-   *  and call ReportIntermediateSolution(obj, x, pi) for each
+   *  and call ReportIntermediateSolution({x, pi, objvals}) for each
    **/
   DEFINE_STD_FEATURE( MULTISOL )
   ALLOW_STD_FEATURE( MULTISOL, false )
@@ -136,8 +141,8 @@ protected:
   **/
   DEFINE_STD_FEATURE( KAPPA )
   ALLOW_STD_FEATURE( KAPPA, false )
-  double Kappa()
-  { UNSUPPORTED("BasicBackend::Kappa"); }
+  /// Placeholder: retrieve Kappa
+  virtual double Kappa() { return 0.0; }
   /**
   * FeasRelax
   * No API to overload,
@@ -147,128 +152,159 @@ protected:
   **/
   DEFINE_STD_FEATURE( FEAS_RELAX )
   ALLOW_STD_FEATURE( FEAS_RELAX, false )
-      /**
-      * MIP solution rounding
-      * Nothing to do for the Impl, enabled by default
-      **/
-      DEFINE_STD_FEATURE( WANT_ROUNDING )
-      ALLOW_STD_FEATURE( WANT_ROUNDING, true )
+  /**
+  * MIP solution rounding
+  * Nothing to do for the Impl, enabled by default
+  **/
+  DEFINE_STD_FEATURE( WANT_ROUNDING )
+  ALLOW_STD_FEATURE( WANT_ROUNDING, true )
 
+
+  ////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////// MODEL QUERY //////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
+
+  /// Helps to choose input infos
+  virtual bool IsMIP() const = 0;
 
   ////////////////////////////////////////////////////////////////////////////
   /////////////////////////// BASIC PROCESS LOGIC ////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
 public:
   /// Chance for the Backend to init solver environment, etc
-  void InitOptionParsing() { }
+  virtual void InitOptionParsing() { }
   /// Chance to consider options immediately (open cloud, etc)
-  void FinishOptionParsing() { }
+  virtual void FinishOptionParsing() { }
 
-  void InitProblemModificationPhase() { }
-  void FinishProblemModificationPhase() { }
+  /// Placeholder: notify about start of problem feed-in
+  virtual void InitProblemModificationPhase() { }
+  /// Placeholder: notify of the end of problem feed-in
+  virtual void FinishProblemModificationPhase() { }
 
+  /// Standard SolveAndReport() logic
   void SolveAndReport() override {
-    MP_DISPATCH( InputExtras() );
+    InputExtras();
 
-    MP_DISPATCH( SetupTimerAndInterrupter() );
-    MP_DISPATCH( SolveAndReportIntermediateResults() );
-    MP_DISPATCH( RecordSolveTime() );
+    SetupTimerAndInterrupter();
+    SolveAndReportIntermediateResults();
+    RecordSolveTime();
 
-    MP_DISPATCH( ReportResults() );
-    if (MP_DISPATCH( timing() ))
-      MP_DISPATCH( PrintTimingInfo() );
+    ReportResults();
+    if ( timing() )
+      PrintTimingInfo();
   }
 
-  void InputExtras() {
-    MP_DISPATCH( InputStdExtras() );
-    MP_DISPATCH( InputCustomExtras() );
+
+protected:
+  /// Input warm start, suffixes
+  virtual void InputExtras() {
+    InputStdExtras();
+    InputCustomExtras();
   }
 
-  void InputStdExtras() {
+  /// Standard extras
+  virtual void InputStdExtras() {
     if (multiobj()) {
-      MP_DISPATCH( ObjPriorities( ReadSuffix(suf_objpriority) ) );
-      MP_DISPATCH( ObjWeights( ReadSuffix(suf_objweight) ) );
-      MP_DISPATCH( ObjAbsTol( ReadSuffix(suf_objabstol) ) );
-      MP_DISPATCH( ObjRelTol( ReadSuffix(suf_objreltol) ) );
+      ObjPriorities( ReadSuffix(suf_objpriority) );
+      ObjWeights( ReadSuffix(suf_objweight) );
+      ObjAbsTol( ReadSuffix(suf_objabstol) );
+      ObjRelTol( ReadSuffix(suf_objreltol) );
     }
     if (feasrelax())
-      MP_DISPATCH( InputFeasrelaxData() );
-  }
-  void InputCustomExtras() { }
-
-  void SetupTimerAndInterrupter() {
-    MP_DISPATCH( SetupInterrupter() );
-    MP_DISPATCH( SetupTimer() );
+      InputFeasrelaxData();
   }
 
-  void SetupInterrupter() {
-    MP_DISPATCH( SetInterrupter(MP_DISPATCH( interrupter() )) );
+  /// Custom extras, Impl can override
+  virtual void InputCustomExtras() { }
+
+  /// Timer, interrupter
+  virtual void SetupTimerAndInterrupter() {
+    SetupInterrupter();
+    RecordSetupTime();
   }
 
-  void SetInterrupter(mp::Interrupter*) { }
-
-  void SetupTimer() {
-    stats.setup_time = GetTimeAndReset(stats.time);
+  /// Call SetInterrupter() which can be defined in Impl
+  virtual void SetupInterrupter() {
+    SetInterrupter( interrupter() );
   }
 
-  void SolveAndReportIntermediateResults() { }
+  /// Placeholder for interrupt notifier in Impl
+  virtual void SetInterrupter(mp::Interrupter*) = 0;
 
-  void RecordSolveTime() {
-    stats.solution_time = GetTimeAndReset(stats.time);
+  /// Record setup time
+  virtual void RecordSetupTime() {
+    stats_.setup_time = GetTimeAndReset(stats_.time);
   }
 
-  void InputFeasrelaxData() {
+  /// Placeholder for Impl's solve routine
+  virtual void SolveAndReportIntermediateResults() = 0;
+
+  /// Record solve time
+  virtual void RecordSolveTime() {
+    stats_.solution_time = GetTimeAndReset(stats_.time);
+  }
+
+  /// Input feasrelax data
+  /// Impl should presolve it if needed
+  virtual void InputFeasrelaxData() {
     auto suf_lbpen = ReadDblSuffix( {"lbpen", suf::VAR} );
     auto suf_ubpen = ReadDblSuffix( {"ubpen", suf::VAR} );
-    auto suf_rhspen = ReadDblSuffix( {"lbpen", suf::CON} );
+    auto suf_rhspen = ReadDblSuffix( {"rhspen", suf::CON} );
     if (suf_lbpen.empty() && suf_ubpen.empty() && suf_rhspen.empty() &&
         0.0>lbpen() && 0.0>ubpen() && 0.0>rhspen())
       return;
     feasrelax().lbpen_ = FillFeasrelaxPenalty(suf_lbpen, lbpen(),
-                MP_DISPATCH( NumVars() ));
+                GetSuffixSize(suf::VAR));
     feasrelax().ubpen_ = FillFeasrelaxPenalty(suf_ubpen, ubpen(),
-                MP_DISPATCH( NumVars() ));
+                GetSuffixSize(suf::VAR));
     feasrelax().rhspen_ = FillFeasrelaxPenalty(suf_rhspen, rhspen(),
-                MP_DISPATCH( NumValuedAlgConstr() ));
+                GetSuffixSize(suf::CON));
   }
 
+  /// For Impl to check if user wants multiple solutions reported
   using Solver::need_multiple_solutions;
 
-  void ReportResults() {
-    MP_DISPATCH( ReportSuffixes() );
-    MP_DISPATCH( ReportSolution() );
+  /// Report results
+  virtual void ReportResults() {
+    ReportSuffixes();
+    ReportSolution();
   }
 
-  void ReportSuffixes() {
-    MP_DISPATCH( ReportStandardSuffixes() );
-    MP_DISPATCH( ReportCustomSuffixes() );
+  /// Report suffixes
+  virtual void ReportSuffixes() {
+    ReportStandardSuffixes();
+    ReportCustomSuffixes();
   }
 
-  void ReportStandardSuffixes() {
-    if (MP_DISPATCH(IsProblemSolved()) &&
-      exportKappa()) {
-      MP_DISPATCH(ReportKappa());
+  /// Report standard suffixes
+  virtual void ReportStandardSuffixes() {
+    if (IsProblemSolved() && exportKappa()) {
+      ReportKappa();
     }
   }
-  void ReportKappa() {
+
+  /// Report Kappa
+  virtual void ReportKappa() {
     if (exportKappa() && 2)
     {
-      double value = MP_DISPATCH(Kappa());
+      double value = Kappa();
       ReportSingleSuffix(suf_objkappa, value);
       ReportSingleSuffix(suf_probkappa, value);
     }
   }
 
-  void ReportCustomSuffixes() { }
+  /// Placeholder: report custom suffixes
+  virtual void ReportCustomSuffixes() { }
 
-  /// Callback
-  void ReportIntermediateSolution(
-        double obj_value,
-        Solution sol) {
+  /// Callback.
+  /// @param sol: unpresolved solution
+  void ReportIntermediateSolution(Solution sol) {
     fmt::MemoryWriter writer;
     writer.write("{}: {}", MP_DISPATCH( long_name() ),
                  "Alternative solution");
-    if (MP_DISPATCH( NumObjs() ) > 0) {
+    double obj_value = std::numeric_limits<double>::quiet_NaN();
+    if (sol.objvals.size()) {
+      obj_value = sol.objvals[0];
       writer.write("; objective {}",
                    MP_DISPATCH( FormatObjValue(obj_value) ));
     }
@@ -281,68 +317,65 @@ public:
                    obj_value);
   }
 
-  void ReportSolution() {
+  /// Report final solution
+  virtual void ReportSolution() {
     double obj_value = std::numeric_limits<double>::quiet_NaN();
-    
+    auto sol = GetSolution();             // even if just dual
     fmt::MemoryWriter writer;
-    writer.write("{}: {}", MP_DISPATCH( long_name() ), MP_DISPATCH( SolveStatus() ));
+    writer.write("{}: {}", MP_DISPATCH( long_name() ), SolveStatus());
     if (IsProblemSolvedOrFeasible()) {
-      if (MP_DISPATCH( NumObjs() ) > 0) {
-        if(multiobj() && MP_DISPATCH(NumObjs()) > 1)
+      if (sol.objvals.size()) {
+        if (sol.objvals.size() > 1)
         {
-          auto obj_values = MP_DISPATCH(ObjectiveValues());
-          writer.write("; objective {}", MP_DISPATCH(FormatObjValue(obj_values[0])));
+          writer.write("; objective {}", FormatObjValue(sol.objvals[0]));
           writer.write("\nIndividual objective values:");
-          for (size_t i = 0; i < obj_values.size(); i++)
+          for (size_t i = 0; i < sol.objvals.size(); i++)
             writer.write("\n\t_sobj[{}] = {}", i+1, // indexing of _sobj starts from 1
-              MP_DISPATCH(FormatObjValue(obj_values[i])));
+              FormatObjValue(sol.objvals[i]));
         }
         else {
-          obj_value = MP_DISPATCH(ObjectiveValue());
+          obj_value = sol.objvals[0];
           writer.write("; ");
           if (feasrelax())
             writer.write("feasrelax ");
           writer.write("objective {}",
-            MP_DISPATCH(FormatObjValue(obj_value)));
+            FormatObjValue(obj_value));
           if (feasrelax().orig_obj_available_)
             writer.write("\nOriginal objective = {}",
-                         feasrelax().orig_obj_value_);
+                         FormatObjValue(feasrelax().orig_obj_value_));
         }
       }
+      if (round() && IsMIP())
+        RoundSolution(sol.primal, writer);
     }
     if (exportKappa() && 1)
-      writer.write("\nkappa value: {}", MP_DISPATCH(Kappa()));
+      writer.write("\nkappa value: {}", Kappa());
     writer.write("\n");
     if (solver_msg_extra_.size()) {
       writer.write(solver_msg_extra_);
     }
-    auto sol = MP_DISPATCH( GetSolution() );
-    if (round() && MP_DISPATCH(IsMIP()))
-      RoundSolution(sol.primal, writer);
-    HandleSolution(MP_DISPATCH( SolveCode() ), writer.c_str(),
+    /// Even without a feasible solution, we can have duals/suffixes
+    HandleSolution(SolveCode(), writer.c_str(),
                    sol.primal.empty() ? 0 : sol.primal.data(),
                    sol.dual.empty() ? 0 : sol.dual.data(), obj_value);
   }
 
-  int NumObjs() { Abort(-1, "Backend: NumObjs() no implemented"); return 0; }
-  int NumVars() { Abort(-1, "Backend: NumVars() no implemented"); return 0; }
-
-  int IsMIP() { Abort(-1, "Backend: IsMIP() no implemented"); return 0; }
-
   /// TODO move into Env?
-  void Abort(int solve_code_now, std::string msg) {
+  virtual void Abort(int solve_code_now, std::string msg) {
     HandleSolution(solve_code_now, msg, 0, 0, 0.0);
     MP_RAISE_WITH_CODE(0, msg);  // exit code 0
   }
 
-  void PrintTimingInfo() {
-    double output_time = GetTimeAndReset(stats.time);
+  /// Final timing info
+  virtual void PrintTimingInfo() {
+    double output_time = GetTimeAndReset(stats_.time);
     MP_DISPATCH( Print("Setup time = {:.6f}s\n"
                        "Solution time = {:.6f}s\n"
                        "Output time = {:.6f}s\n",
-                       stats.setup_time, stats.solution_time, output_time) );
+                       stats_.setup_time, stats_.solution_time, output_time) );
   }
 
+  /// MIP solution rounding. Better use solver's capabilities
   void RoundSolution(std::vector<double>& sol,
                      fmt::MemoryWriter& writer) {
     auto rndres = DoRound(sol);
@@ -387,54 +420,58 @@ public:
   }
 
   //////////////////////// SOLUTION STATUS ACCESS ///////////////////////////////
-  int SolveCode() const { return status_.first; }
+
+  /// Solve result number
+  virtual int SolveCode() const { return status_.first; }
+  /// Solver result message
   const char* SolveStatus() const { return status_.second.c_str(); }
+  /// Set solve result
   void SetStatus(std::pair<int, std::string> stt) { status_=stt; }
 
   //////////////////////// SOLUTION STATUS ADAPTERS ///////////////////////////////
   /** Following the taxonomy of the enum sol, returns true if
       we have an optimal solution or a feasible solution for a 
       satisfaction problem */
-  bool IsProblemSolved() const {
+  virtual bool IsProblemSolved() const {
     assert(IsSolStatusRetrieved());
-    return sol::SOLVED==MP_CONST_DISPATCH( SolveCode() );
-
+    return sol::SOLVED==SolveCode();
   }
-  bool IsProblemSolvedOrFeasible() const {
+  /// Solved or feasible
+  virtual bool IsProblemSolvedOrFeasible() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INFEASIBLE > MP_CONST_DISPATCH( SolveCode() ) &&
-        sol::UNKNOWN < MP_CONST_DISPATCH( SolveCode() );
+    return sol::INFEASIBLE > SolveCode() &&
+        sol::UNKNOWN < SolveCode();
   }
-  bool IsProblemIndiffInfOrUnb() const {
+  virtual bool IsProblemIndiffInfOrUnb() const {
     assert( IsSolStatusRetrieved() );
-    return sol::INF_OR_UNB==MP_CONST_DISPATCH( SolveCode() );
+    return sol::INF_OR_UNB==SolveCode();
   }
-  bool IsProblemInfOrUnb() const {
+  virtual bool IsProblemInfOrUnb() const {
     assert( IsSolStatusRetrieved() );
-    auto sc = MP_CONST_DISPATCH( SolveCode() );
+    auto sc = SolveCode();
     return sol::INFEASIBLE<=sc && sol::LIMIT>sc;
   }
-  bool IsProblemInfeasible() const {
+  virtual bool IsProblemInfeasible() const {
     assert( IsSolStatusRetrieved() );
-    auto sc = MP_CONST_DISPATCH( SolveCode() );
+    auto sc = SolveCode();
     return sol::INFEASIBLE<=sc && sol::UNBOUNDED>sc;
   }
-  bool IsProblemUnbounded() const {
+  virtual bool IsProblemUnbounded() const {
     assert( IsSolStatusRetrieved() );
-    auto sc = MP_CONST_DISPATCH( SolveCode() );
+    auto sc = SolveCode();
     return sol::UNBOUNDED==sc ||
         (sol::UNBOUNDED+2<=sc && sol::LIMIT>sc);
   }
-  bool IsSolStatusRetrieved() const {
-    return sol::NOT_SET!=MP_CONST_DISPATCH( SolveCode() );
+  virtual bool IsSolStatusRetrieved() const {
+    return sol::NOT_SET!=SolveCode();
   }
 
   struct Stats {
     steady_clock::time_point time = steady_clock::now();
-    double setup_time;
-    double solution_time;
+    double setup_time = 0.0;
+    double solution_time = 0.0;
   };
-  Stats stats;
+  Stats stats_;
 
 
   /////////////////////////////// SOME MATHS ////////////////////////////////
@@ -456,24 +493,25 @@ public:
   using Solver::set_option_header;
   using Solver::add_to_option_header;
 
+
 protected:
-  void HandleSolution(int status, fmt::CStringRef msg,
+  virtual void HandleSolution(int status, fmt::CStringRef msg,
       const double *x, const double *y, double obj) {
     GetCQ().HandleSolution(status, msg, x, y, obj);
   }
 
-  void HandleFeasibleSolution(fmt::CStringRef msg,
+  virtual void HandleFeasibleSolution(fmt::CStringRef msg,
       const double *x, const double *y, double obj) {
     GetCQ().HandleFeasibleSolution(msg, x, y, obj);
   }
 
   /// Variables' initial values
-  ArrayRef<double> InitialValues() {
+  virtual ArrayRef<double> InitialValues() {
     return GetCQ().InitialValues();
   }
 
   /// Initial dual values
-  ArrayRef<double> InitialDualValues() {
+  virtual ArrayRef<double> InitialDualValues() {
     return GetCQ().InitialDualValues();
   }
 
@@ -483,30 +521,34 @@ protected:
     return GetCQ().ReadSuffix(suf);
   }
 
-  ArrayRef<int> ReadIntSuffix(const SuffixDef<int>& suf) {
+  virtual ArrayRef<int> ReadIntSuffix(const SuffixDef<int>& suf) {
     return GetCQ().ReadSuffix(suf);
   }
 
-  ArrayRef<double> ReadDblSuffix(const SuffixDef<double>& suf) {
+  virtual ArrayRef<double> ReadDblSuffix(const SuffixDef<double>& suf) {
     return GetCQ().ReadSuffix(suf);
+  }
+
+  virtual size_t GetSuffixSize(int kind) {
+    return GetCQ().GetSuffixSize(kind);
   }
 
   /// Record suffix values which are written into .sol
   /// by HandleSolution()
   /// Does nothing if vector empty
-  void ReportSuffix(const SuffixDef<int>& suf,
+  virtual void ReportSuffix(const SuffixDef<int>& suf,
                     ArrayRef<int> values) {
     GetCQ().ReportSuffix(suf, values);
   }
-  void ReportSuffix(const SuffixDef<double>& suf,
+  virtual void ReportSuffix(const SuffixDef<double>& suf,
                     ArrayRef<double> values) {
     GetCQ().ReportSuffix(suf, values);
   }
-  void ReportIntSuffix(const SuffixDef<int>& suf,
+  virtual void ReportIntSuffix(const SuffixDef<int>& suf,
                        ArrayRef<int> values) {
     GetCQ().ReportSuffix(suf, values);
   }
-  void ReportDblSuffix(const SuffixDef<double>& suf,
+  virtual void ReportDblSuffix(const SuffixDef<double>& suf,
                        ArrayRef<double> values) {
     GetCQ().ReportSuffix(suf, values);
   }
@@ -525,7 +567,7 @@ protected:
 
   ///////////////////////// STORING SOLUTON STATUS //////////////////////
 private:
-  std::pair<int, std::string> status_{ sol::NOT_SET, "status not set" };
+  std::pair<int, std::string> status_ { sol::NOT_SET, "status not set" };
 
   ///////////////////////// STORING SOLVER MESSAGES //////////////////////
 private:
@@ -653,11 +695,13 @@ private:
   public:
     /// Mode!=1: if & how feasrelax should be done
     operator int() const { return mode_; }
+    /// Penalty vectors
     ArrayRef<double> lbpen() const { return lbpen_; }
     ArrayRef<double> ubpen() const { return ubpen_; }
     ArrayRef<double> rhspen() const { return rhspen_; }
     /// Call me if orig_obj_value() will be set
     void flag_orig_obj_available() { orig_obj_available_=true; }
+    /// Access original objective value
     double& orig_obj_value() { return orig_obj_value_; }
     friend class Backend;
   private:
@@ -691,7 +735,7 @@ protected:  //////////// Option accessors ////////////////
 
 
 protected:
-  void InitStandardOptions() {
+  virtual void InitStandardOptions() {
     if (IMPL_HAS_STD_FEATURE(KAPPA))
       AddStoredOption("alg:kappa kappa basis_cond",  
         "Whether to return the estimated condition number (kappa) of "
@@ -748,7 +792,7 @@ protected:
 
   }
 
-  void InitCustomOptions() { }
+  virtual void InitCustomOptions() { }
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -780,12 +824,12 @@ public:
   }
 
   void InitMetaInfoAndOptions() {
-    MP_DISPATCH( InitNamesAndVersion() );
-    MP_DISPATCH( InitStandardOptions() );
-    MP_DISPATCH( InitCustomOptions() );
+    InitNamesAndVersion();
+    InitStandardOptions();
+    InitCustomOptions();
   }
 
-  void InitNamesAndVersion() {
+  virtual void InitNamesAndVersion() {
     auto name = MP_DISPATCH( GetSolverName() );
     auto version = MP_DISPATCH( GetSolverVersion() );
     this->set_long_name( fmt::format("{} {}", name, version ) );
@@ -796,6 +840,7 @@ public:
   /// Converter should provide this before Backend can run solving
   void ProvideNLSolverProxyObject(NLSolverProxy* pCQ) override
   { p_converter_query_object_ = pCQ; }
+
 
 private: // hiding this detail, it's not for the final backends
   const NLSolverProxy& GetCQ() const {
@@ -808,6 +853,8 @@ private: // hiding this detail, it's not for the final backends
   }
   NLSolverProxy *p_converter_query_object_ = nullptr;
   using MPSolverBase = SolverImpl< Problem >;
+
+
 public:
   using MPUtils = MPSolverBase;              // Allow Converter access the SolverImpl
   const MPUtils& GetMPUtils() const { return *this; }
@@ -815,8 +862,10 @@ public:
 
   using MPSolverBase::debug_mode;
 
+
 protected:
   using MPSolverBase::interrupter;
+
 
 protected:
   /// Returns {} if these penalties are +inf
@@ -831,6 +880,7 @@ protected:
     }
     return result;
   }
+
 
 public:
   Backend() :

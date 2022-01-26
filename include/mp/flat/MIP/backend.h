@@ -52,15 +52,15 @@ template <class Impl,
 class MIPBackend : public BaseBackend
 {
 public:
-  // Properties
-  bool IsMIP() const { return false; }
-  bool IsQP() const { return false; }
-  bool IsQCP() const { return false; }
+  /// Properties
+  bool IsMIP() const override { return false; }
+  virtual bool IsQP() const { return false; }
+  virtual bool IsQCP() const { return false; }
   /// Always add MIP start if supported:
   /// Gurobi 9.1.2 solves non-convex Q(C)P as MIP
   /// But model attributes don't work before solve
   /// Count non-linear stuff in the model?
-  bool CanBeMIP() const { return true; }
+  virtual bool CanBeMIP() const { return true; }
 
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
@@ -76,8 +76,7 @@ public:
   **/
   DEFINE_STD_FEATURE( LAZY_USER_CUTS )
   ALLOW_STD_FEATURE( LAZY_USER_CUTS, false )
-  void MarkLazyOrUserCuts(ArrayRef<int> )
-  { UNSUPPORTED("MIPBackend::LazyUserCuts"); }
+  virtual void MarkLazyOrUserCuts(ArrayRef<int> ) { }
   /**
   * Get/Set AMPL var/con statii
   **/
@@ -87,76 +86,72 @@ public:
   /// MIPBackend handles them in postsolved form (for the NL model)
   /// Impl has to perform value pre- / postsolve if needed
   /// Getter (unpresolved)
-  SolutionBasis GetBasis() { return {}; }
+  virtual SolutionBasis GetBasis() { return {}; }
   /// Setter (unpresolved)
-  void SetBasis(SolutionBasis ) { UNSUPPORTED("MIPBackend::SetBasis"); }
+  virtual void SetBasis(SolutionBasis ) { UNSUPPORTED("MIPBackend::SetBasis"); }
   /**
   * General LP warm start, e.g.,
   * set primal/dual initial guesses for continuous case
   **/
   DEFINE_STD_FEATURE( WARMSTART )
   ALLOW_STD_FEATURE( WARMSTART, false )
-  void AddPrimalDualStart(Solution )
+  virtual void AddPrimalDualStart(Solution )
   { UNSUPPORTED("MIPBackend::AddPrimalDualStart"); }
   /**
   * Specifically, MIP warm start
   **/
   DEFINE_STD_FEATURE( MIPSTART )
   ALLOW_STD_FEATURE( MIPSTART, false )
-  void AddMIPStart(ArrayRef<double> x0)
+  virtual void AddMIPStart(ArrayRef<double> )
   { UNSUPPORTED("MIPBackend::AddMIPStart"); }
   /**
   * Set branch and bound priority
   **/
   DEFINE_STD_FEATURE( VAR_PRIORITIES )
   ALLOW_STD_FEATURE( VAR_PRIORITIES, false )
-  void VarPriorities(ArrayRef<int>)
+  virtual void VarPriorities(ArrayRef<int>)
   { UNSUPPORTED("MIPBackend::VarPriorities"); }
   /**
   * Obtain unbounded/inf rays
   **/
   DEFINE_STD_FEATURE( RAYS )
   ALLOW_STD_FEATURE( RAYS, false )
-  ArrayRef<double> Ray() { return {}; }
-  ArrayRef<double> DRay() { return {}; }
+  virtual ArrayRef<double> Ray() { return {}; }
+  virtual ArrayRef<double> DRay() { return {}; }
   /**
   * Compute the IIS and obtain relevant values
   **/
   DEFINE_STD_FEATURE( IIS )
   ALLOW_STD_FEATURE( IIS, false )
-  void ComputeIIS() {}
-  IIS GetIIS() { return {}; }
+  virtual void ComputeIIS() {}
+  virtual IIS GetIIS() { return {}; }
   /**
   * Get MIP Gap
   **/
   DEFINE_STD_FEATURE( RETURN_MIP_GAP )
   ALLOW_STD_FEATURE( RETURN_MIP_GAP, false )
-  double MIPGap() const { return MP_DISPATCH( Infinity() ); }
-  double MIPGapAbs() const {
-    return std::fabs(
-          MP_CONST_DISPATCH(ObjectiveValue()) -
-          MP_CONST_DISPATCH(BestDualBound()) );
-  }
+  virtual double MIPGap() { return MP_DISPATCH( Infinity() ); }
+  virtual double MIPGapAbs() { return MP_DISPATCH( Infinity() ); }
   /**
   * Get MIP dual bound
   **/
   DEFINE_STD_FEATURE( RETURN_BEST_DUAL_BOUND )
   ALLOW_STD_FEATURE( RETURN_BEST_DUAL_BOUND, false )
-  double BestDualBound() const
-  { UNSUPPORTED("BestDualBound()"); return 0; }
+  virtual double BestDualBound()
+  { UNSUPPORTED("BestDualBound()"); return 0.0; }
   /**
   * Report sensitivity analysis suffixes
   **/
   DEFINE_STD_FEATURE( SENSITIVITY_ANALYSIS )
   ALLOW_STD_FEATURE( SENSITIVITY_ANALYSIS, false )
-  ArrayRef<double> Senslbhi() const { return {}; }
-  ArrayRef<double> Senslblo() const { return {}; }
-  ArrayRef<double> Sensobjhi() const { return {}; }
-  ArrayRef<double> Sensobjlo() const { return {}; }
-  ArrayRef<double> Sensrhshi() const { return {}; }
-  ArrayRef<double> Sensrhslo() const { return {}; }
-  ArrayRef<double> Sensubhi() const { return {}; }
-  ArrayRef<double> Sensublo() const { return {}; }
+  virtual ArrayRef<double> Senslbhi() const { return {}; }
+  virtual ArrayRef<double> Senslblo() const { return {}; }
+  virtual ArrayRef<double> Sensobjhi() const { return {}; }
+  virtual ArrayRef<double> Sensobjlo() const { return {}; }
+  virtual ArrayRef<double> Sensrhshi() const { return {}; }
+  virtual ArrayRef<double> Sensrhslo() const { return {}; }
+  virtual ArrayRef<double> Sensubhi() const { return {}; }
+  virtual ArrayRef<double> Sensublo() const { return {}; }
   /**
   * FixModel - duals, basis, and sensitivity for MIP
   * No API to overload,
@@ -179,39 +174,39 @@ public:
   using BaseBackend::ReportIntSuffix;
   using BaseBackend::ReportDblSuffix;
 
-  void InputStdExtras() {
+  void InputStdExtras() override {
     BaseBackend::InputStdExtras();
     InputMIPExtras();
   }
 
-  void InputMIPExtras() {
+  virtual void InputMIPExtras() {
     if (lazy_user_cuts())
-      MP_DISPATCH( InputLazyUserCuts() );
-    MP_DISPATCH( InputStartValues() );
+      InputLazyUserCuts();
+    InputStartValues();
     if (priorities())
-      MP_DISPATCH( VarPriorities( ReadSuffix(suf_varpriority) ) );
+      VarPriorities( ReadSuffix(suf_varpriority) );
   }
 
-  void InputLazyUserCuts() {
+  virtual void InputLazyUserCuts() {
     auto sufLazyVal = ReadIntSuffix( {"lazy", suf::CON} );
     if (sufLazyVal)
-      MP_DISPATCH( MarkLazyOrUserCuts(sufLazyVal) );
+      MarkLazyOrUserCuts(sufLazyVal);
   }
 
   /// Testing API
-  void ReportFirstLinearConstraintLazySuffix(int val) {
+  virtual void ReportFirstLinearConstraintLazySuffix(int val) {
     if (debug_mode())
       ReportIntSuffix({"test_lin_constr_lazy", suf::PROBLEM}, {{val}});
   }
 
-  void InputStartValues() {
-    MP_DISPATCH( InputPrimalDualStartOrBasis() ); /// Always
-    if ( MP_DISPATCH( CanBeMIP() )) {
-      MP_DISPATCH( InputMIPStart() );
+  virtual void InputStartValues() {
+    InputPrimalDualStartOrBasis(); /// Always
+    if ( CanBeMIP() ) {
+      InputMIPStart();
     }
   }
 
-  void InputPrimalDualStartOrBasis() {
+  virtual void InputPrimalDualStartOrBasis() {
     bool useBasis = need_basis_in();
     SolutionBasis basis;
     if (useBasis) {
@@ -220,13 +215,13 @@ public:
       useBasis = bool(basis);
     }
     Solution sol0;           // initial guesses
-    sol0.primal = MP_DISPATCH( InitialValues() );
-    sol0.dual = MP_DISPATCH( InitialDualValues() );
+    sol0.primal = this->InitialValues();
+    sol0.dual = this->InitialDualValues();
     bool haveInis = sol0.primal.size() && sol0.dual.size();
     if (haveInis && (
           2==warmstart() ||
           (1==warmstart() && !useBasis))) {
-      MP_DISPATCH( AddPrimalDualStart(sol0) );
+      AddPrimalDualStart(sol0);
       useBasis = false;
       if (debug_mode()) {                 // Report received initials
         ReportSuffix(suf_testvarini, sol0.primal); // Should we check that
@@ -234,7 +229,7 @@ public:
       }
     }
     if (useBasis) {
-      MP_DISPATCH( SetBasis(basis) );
+      SetBasis(basis);
       if (debug_mode()) {                    // Report received statuses
         ReportSuffix(suf_testvarstatus, basis.varstt); // Should we check that
         ReportSuffix(suf_testconstatus, basis.constt); // Impl uses them?
@@ -242,14 +237,13 @@ public:
     }
   }
 
-  void InputMIPStart() {
+  virtual void InputMIPStart() {
     if (warmstart() &&
         IMPL_HAS_STD_FEATURE( MIPSTART )) {
-      MP_DISPATCH( AddMIPStart(
-                     MP_DISPATCH( InitialValues() ) ) );
+      AddMIPStart( this->InitialValues() );
       if (debug_mode()) {                    // Report received initials
         ReportSuffix(suf_testMIPini,         // Should we check that
-                     MP_DISPATCH( InitialValues() ));
+                     this->InitialValues());
       }                                      // Impl uses them?
     }
   }
@@ -257,82 +251,79 @@ public:
 
   //////////////////////// STANDARD MIP SUFFIXES //////////////////////////
   ////////////////////////         OUtPUT        //////////////////////////
-  void ReportStandardSuffixes() {
+  virtual void ReportStandardSuffixes() {
     BaseBackend::ReportStandardSuffixes();
     ReportStandardMIPSuffixes();
   }
 
-  void ReportStandardMIPSuffixes() {
+  virtual void ReportStandardMIPSuffixes() {
     if (need_basis_out())
-      MP_DISPATCH( ReportBasis() );
-    MP_DISPATCH( ReportRays() );
-    MP_DISPATCH( CalculateAndReportIIS() );
-    MP_DISPATCH( CalculateAndReportMIPGap() );
-    MP_DISPATCH( ReportBestDualBound() );
+      ReportBasis();
+    ReportRays();
+    CalculateAndReportIIS();
+    CalculateAndReportMIPGap();
+    ReportBestDualBound();
     if (sensitivity())
-      MP_DISPATCH( ReportSensitivity() );
+      ReportSensitivity();
   }
 
-  void ReportBasis() {
+  virtual void ReportBasis() {
     /// Rely on solver reporting both vectors only if valid basis exists
-    if (auto basis = MPD( GetBasis() )) {
+    if (auto basis = GetBasis()) {
       ReportSuffix(suf_varstatus, basis.varstt);
       ReportSuffix(suf_constatus, basis.constt);
     }
   }
 
-  void ReportRays() {
+  virtual void ReportRays() {
     if ( need_ray_primal() &&
-         ( MPCD( IsProblemUnbounded() ) ||
-           MPCD( IsProblemIndiffInfOrUnb() ) )) {
-      ReportSuffix(suf_unbdd, MP_DISPATCH( Ray() ));
+         ( this->IsProblemUnbounded() ||
+           this->IsProblemIndiffInfOrUnb() )) {
+      ReportSuffix(suf_unbdd, Ray() );
     }
     if ( need_ray_dual() &&
-         ( MPCD( IsProblemInfeasible() ) ||
-           MPCD( IsProblemIndiffInfOrUnb() ) )) {
-      ReportSuffix(suf_dunbdd, MP_DISPATCH( DRay() ));
+         ( this->IsProblemInfeasible() ||
+           this->IsProblemIndiffInfOrUnb() )) {
+      ReportSuffix(suf_dunbdd, DRay() );
     }
   }
 
-  void CalculateAndReportIIS() {
-    if ((MPCD( IsProblemInfOrUnb() ) ||
-               MPCD( IsProblemIndiffInfOrUnb() )) &&
+  virtual void CalculateAndReportIIS() {
+    if (( this->IsProblemInfOrUnb() ||
+               this->IsProblemIndiffInfOrUnb() ) &&
         GetMIPOptions().exportIIS_) {
-      MP_DISPATCH( ComputeIIS() );
+      ComputeIIS();
 
-      auto iis = MPD( GetIIS() );
+      auto iis = GetIIS();
 
       ReportSuffix(sufIISCon, iis.coniis);
       ReportSuffix(sufIISVar, iis.variis);
     }
   }
 
-  void CalculateAndReportMIPGap() {
-    if (0 < MP_DISPATCH(NumObjs()) ) {
-      std::vector<double> dbl(1);
-      if (1 & GetMIPOptions().returnMipGap_) {
-        dbl[0] = MP_DISPATCH( MIPGap() );
-        ReportSuffix(sufRelMipGapObj, dbl);
-        ReportSuffix(sufRelMipGapProb, dbl);
-      }
-      if (2 & GetMIPOptions().returnMipGap_) {
-        dbl[0] = MP_DISPATCH( MIPGapAbs() );
-        ReportSuffix(sufAbsMipGapObj, dbl);
-        ReportSuffix(sufAbsMipGapProb, dbl);
-      }
+  virtual void CalculateAndReportMIPGap() {
+    std::vector<double> dbl(1);
+    if (1 & GetMIPOptions().returnMipGap_) {
+      dbl[0] = MP_DISPATCH( MIPGap() );
+      ReportSuffix(sufRelMipGapObj, dbl);
+      ReportSuffix(sufRelMipGapProb, dbl);
+    }
+    if (2 & GetMIPOptions().returnMipGap_) {
+      dbl[0] = MP_DISPATCH( MIPGapAbs() );
+      ReportSuffix(sufAbsMipGapObj, dbl);
+      ReportSuffix(sufAbsMipGapProb, dbl);
     }
   }
 
-  void ReportBestDualBound() {
-    if (GetMIPOptions().returnBestDualBound_ &&
-        0 < MP_DISPATCH(NumObjs()) ) {
+  virtual void ReportBestDualBound() {
+    if (GetMIPOptions().returnBestDualBound_) {
       std::vector<double> dbl(1, MP_DISPATCH( BestDualBound() ));
       ReportSuffix(sufBestBoundObj, dbl);
       ReportSuffix(sufBestBoundProb, dbl);
     }
   }
 
-  void ReportSensitivity() {
+  virtual void ReportSensitivity() {
     ReportSuffix( {"senslbhi", suf::Kind::VAR},
                      MP_DISPATCH( Senslbhi() ) );
     ReportSuffix( {"senslblo", suf::Kind::VAR},
@@ -414,9 +405,9 @@ protected:
 
 
 public:
-  void InitStandardOptions() {
+  virtual void InitStandardOptions() {
     BaseBackend::InitStandardOptions();
-    MP_DISPATCH( InitMIPOptions() );
+    InitMIPOptions();
   }
 
   using BaseBackend::AddStoredOption;
@@ -477,7 +468,7 @@ protected:
   };
 
   ////////////////////////////////////////////////////////////////
-  void InitMIPOptions() {
+  virtual void InitMIPOptions() {
       if (IMPL_HAS_STD_FEATURE( RETURN_MIP_GAP ))
         AddStoredOption("mip:lazy lazy",
           "Whether to recognize suffix .lazy on constraints: "
@@ -517,7 +508,7 @@ protected:
                       GetMIPOptions().rays_, values_rays_);
 
     if (IMPL_HAS_STD_FEATURE( IIS ))
-      AddStoredOption("alg:iisfind iisfind",
+      AddStoredOption("alg:iisfind iisfind iis",
                       "Whether to find and export the IIS. "
                       "Default = 0 (don't export).",
                       GetMIPOptions().exportIIS_);

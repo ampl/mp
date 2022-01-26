@@ -22,15 +22,15 @@ extern "C" {
 
 #include <string>
 
-#include "mp/flat/backend.h"
+#include "mp/flat/MIP/backend.h"
 #include "mp/flat/std_constr.h"
 
 namespace mp {
 
 class CplexBackend :
-    public Backend<CplexBackend>
+    public MIPBackend<CplexBackend>
 {
-  using BaseBackend = Backend<CplexBackend>;
+  using BaseBackend = MIPBackend<CplexBackend>;
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:
@@ -46,8 +46,8 @@ public:
   static const char* GetBackendLongName() { return nullptr; }
 
   /// [[ Prototype the incremental interface ]]
-  void InitProblemModificationPhase();
-  void FinishProblemModificationPhase();
+  void InitProblemModificationPhase() override;
+  void FinishProblemModificationPhase() override;
 
   void AddVariables(const VarArrayDef& );
   void SetLinearObjective( int iobj, const LinearObjective& lo );
@@ -66,27 +66,18 @@ public:
 
 
   /////////////////////////// Model attributes /////////////////////////
-  bool IsMIP() const;
-  bool IsQCP() const;
+  bool IsMIP() const override;
+  bool IsQCP() const override;
 
-  int NumLinCons() const;
-  int NumVars() const;
-  int NumObjs() const;
-
-  void ExportModel(const std::string& file);
 
 
   //////////////////////////// SOLVING ///////////////////////////////
-  void SetInterrupter(mp::Interrupter* inter);
-  void SolveAndReportIntermediateResults();
+  void SetInterrupter(mp::Interrupter* inter) override;
+  void SolveAndReportIntermediateResults() override;
 
-  Solution GetSolution();
-  double ObjectiveValue() const;
-
-  /// Solution attributes
-  double NodeCount() const;
-  double SimplexIterations() const;
-  int BarrierIterations() const;
+  Solution GetSolution() override;
+  ArrayRef<double> GetObjectiveValues() override
+  { return std::vector<double>{ObjectiveValue()}; } // TODO
 
 
   //////////////////// [[ Implementation details ]] //////////////////////
@@ -100,12 +91,26 @@ public:  // public for static polymorphism
   static double MinusInfinity() { return -CPX_INFBOUND; }
 
 protected:
+
+  int NumLinCons() const;
+  int NumVars() const;
+  int NumObjs() const;
+
+  void ExportModel(const std::string& file);
+
+  double ObjectiveValue() const;
+
   /// Solution values. The vectors are emptied if not available
   ArrayRef<double> PrimalSolution();
   pre::ValueMapDbl DualSolution();
   ArrayRef<double> DualSolution_LP();
 
   void WindupCPLEXSolve();
+
+  /// Solution attributes
+  double NodeCount() const;
+  double SimplexIterations() const;
+  int BarrierIterations() const;
 
   std::pair<int, std::string> ConvertCPLEXStatus();
   void AddCPLEXMessages();

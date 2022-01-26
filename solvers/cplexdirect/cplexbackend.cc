@@ -94,7 +94,8 @@ int CplexBackend::NumObjs() const {
 Solution CplexBackend::GetSolution() {
   auto mv = GetPresolver().PostsolveSolution(
         { PrimalSolution(), DualSolution() } );
-  return { mv.GetVarValues()(), mv.GetConValues()() };
+  return { mv.GetVarValues()(), mv.GetConValues()(),
+    GetObjectiveValues() };   // TODO postsolve obj values
 }
 
 ArrayRef<double> CplexBackend::PrimalSolution() {
@@ -120,8 +121,8 @@ ArrayRef<double> CplexBackend::DualSolution_LP() {
 }
 
 double CplexBackend::ObjectiveValue() const {
-  double objval;
-  CPLEX_CALL( CPXgetobjval (env, lp, &objval ) );
+  double objval = -1e308;
+  CPXgetobjval (env, lp, &objval );   // failsafe
   return objval;
 }
 

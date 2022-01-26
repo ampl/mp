@@ -1,7 +1,7 @@
 #ifndef CONVERTERMIPTEST_H
 #define CONVERTERMIPTEST_H
 
-#include <vector>
+#include "mp/arrayref.h"
 
 #include "mp/flat/expr_flattener.h"
 #include "mp/flat/MIP/mp2mip.h"
@@ -127,6 +127,14 @@ public:
                                 lc.lb(), lc.ub() });
   }
 
+
+public:
+  /// Have to define a few abstract methods
+  mp::Solution GetSolution() override { return {}; }
+  mp::ArrayRef<double> GetObjectiveValues() override { return {}; }
+  bool IsMIP() const override { return false; }
+  void SetInterrupter(mp::Interrupter*) override { }
+  void SolveAndReportIntermediateResults() override { }
 };
 
 /// Testing the default MIP interface layer

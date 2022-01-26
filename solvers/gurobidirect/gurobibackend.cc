@@ -214,7 +214,8 @@ std::vector<double> GurobiBackend::PrimalSolution() {
 Solution GurobiBackend::GetSolution() {
   auto mv = GetPresolver().PostsolveSolution(
         { PrimalSolution(), DualSolution() } );
-  return { mv.GetVarValues()(), mv.GetConValues()() };
+  return { mv.GetVarValues()(), mv.GetConValues()(),
+    GetObjectiveValues() };    // TODO postsolve obj values
 }
 
 pre::ValueMapDbl GurobiBackend::DualSolution() {
@@ -237,22 +238,22 @@ double GurobiBackend::ObjectiveValue() const {
   return GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL);
 }
 
-ArrayRef<double> GurobiBackend::ObjectiveValues() const {
+ArrayRef<double> GurobiBackend::GetObjectiveValues() {
   int no = NumObjs();
   if(no==0)
-    return std::vector<double>();
+    return { };
   std::vector<double> objs(no,
                            std::numeric_limits<double>::quiet_NaN());
-
+  bool fOk = true;
   if (NumObjs() == 1)
-    objs[0] = GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL);
+    objs[0] = GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL, &fOk); // failsafe
   else {
     GRBenv* env = GRBgetenv(model_);
     int objnumber = GrbGetIntParam(GRB_INT_PAR_OBJNUMBER);
     for (int i = 0; i < no; i++)
     {
       GRB_CALL( GRBsetintparam(env, GRB_INT_PAR_OBJNUMBER, i) );
-      objs[i] = GrbGetDblAttr(GRB_DBL_ATTR_OBJNVAL);
+      objs[i] = GrbGetDblAttr(GRB_DBL_ATTR_OBJNVAL, &fOk);
     }
     GRB_CALL( GRBsetintparam(env, GRB_INT_PAR_OBJNUMBER, objnumber) );
   }
@@ -535,19 +536,24 @@ pre::ValueMapInt GurobiBackend::ConsIIS() {
       { CG_General, iis_gencon }}};
 }
 
-double GurobiBackend::MIPGap() const {
+double GurobiBackend::MIPGap() {
   bool f;
   double g = GrbGetDblAttr(GRB_DBL_ATTR_MIPGAP, &f);
   return f ? g : Infinity();
 }
 
-double GurobiBackend::BestDualBound() const {
+double GurobiBackend::MIPGapAbs() {
+    return std::fabs(
+          ObjectiveValue() - BestDualBound() );
+}
+
+double GurobiBackend::BestDualBound() {
   bool f;
   double g = GrbGetDblAttr(GRB_DBL_ATTR_OBJBOUND, &f);
   return f ? g : -ModelSense() * Infinity();
 }
 
-double GurobiBackend::Kappa() const {
+double GurobiBackend::Kappa() {
   return GrbGetDblAttr(GRB_DBL_ATTR_KAPPA);
 }
 
@@ -676,8 +682,8 @@ void GurobiBackend::ReportGurobiPool() {
   while (++iPoolSolution < GrbGetIntAttr(GRB_INT_ATTR_SOLCOUNT)) {
     GrbSetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, iPoolSolution);
     ReportIntermediateSolution(
-          CurrentGrbPoolObjectiveValue(),
-          { CurrentGrbPoolPrimalSolution(), {} });
+          { CurrentGrbPoolPrimalSolution(),
+            {}, { CurrentGrbPoolObjectiveValue() } });
   }
 }
 

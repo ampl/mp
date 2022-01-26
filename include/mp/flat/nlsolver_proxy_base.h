@@ -28,6 +28,9 @@ public:
   virtual void ReportSuffix(const SuffixDef<double>& suf,
                             ArrayRef<double> values) = 0;
 
+  /// Length of a suffix vector
+  virtual size_t GetSuffixSize(int kind) = 0;
+
   virtual void HandleSolution(int, fmt::CStringRef,
                               const double *, const double *,
                               double) = 0;
