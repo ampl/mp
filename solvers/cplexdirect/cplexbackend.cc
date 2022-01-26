@@ -256,7 +256,7 @@ void CplexBackend::AddConstraint(const RangeLinCon& lc) {
     }
   }
   int rmatbeg[] = { 0 };
-  CPLEX_CALL( CPXaddrows (env, lp, 0, 1, lc.nnz(), &rhs,
+  CPLEX_CALL( CPXaddrows (env, lp, 0, 1, lc.size(), &rhs,
                           &sense, rmatbeg, lc.pvars(), lc.pcoefs(),
                           NULL, NULL) );
   if ('R'==sense) {
@@ -268,12 +268,20 @@ void CplexBackend::AddConstraint(const RangeLinCon& lc) {
 
 
 void CplexBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
-  CPLEX_CALL( CPXaddindconstr (env, lp, ic.b_, !ic.bv_, (int)ic.c_.size(),
-                               ic.rhs_, 'L', ic.v_.data(), ic.c_.data(), NULL) );
+  CPLEX_CALL( CPXaddindconstr (env, lp,
+                               ic.get_binary_var(), !ic.get_binary_value(),
+                               (int)ic.get_constraint().size(),
+                               ic.get_constraint().rhs(), 'L',
+                               ic.get_constraint().pvars(),
+                               ic.get_constraint().pcoefs(), NULL) );
 }
 void CplexBackend::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
-  CPLEX_CALL( CPXaddindconstr (env, lp, ic.b_, !ic.bv_, (int)ic.c_.size(),
-                               ic.rhs_, 'E', ic.v_.data(), ic.c_.data(), NULL) );
+  CPLEX_CALL( CPXaddindconstr (env, lp,
+                               ic.get_binary_var(), !ic.get_binary_value(),
+                               (int)ic.get_constraint().size(),
+                               ic.get_constraint().rhs(), 'E',
+                               ic.get_constraint().pvars(),
+                               ic.get_constraint().pcoefs(), NULL) );
 }
 
 void CplexBackend::FinishProblemModificationPhase() {

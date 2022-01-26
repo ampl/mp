@@ -6,6 +6,7 @@
 #include <map>
 #include <cmath>
 
+#include "mp/problem.h"
 #include "mp/flat/preprocess.h"
 #include "mp/flat/MIP/mp2mip.h"
 #include "mp/expr-visitor.h"
@@ -16,11 +17,15 @@
 
 namespace mp {
 
-/// TODO: BasicProblemConverter? As follows:
-/// ------
-/// /// An abstract Converter for mp::Problem -
-/// only complains, all conversions need to be redefined
-/// in derived classes.
+/// Convert mp::LinearExpr
+LinExp ToLinExp(const LinearExpr& e) {
+  LinExp le;
+  le.reserve(e.num_terms());
+  for (auto it=e.begin(); it!=e.end(); ++it) {
+    le.add_term(it->coef(), it->var_index());
+  }
+  return le;
+}
 
 
 /// ExprFlattener: it walks and "flattens" most expressions
@@ -138,19 +143,19 @@ protected:
   }
 
   void Convert(typename ModelType::MutObjective obj) {
-      LinearExprUnzipper leu(obj.linear_expr());
+      auto le = ToLinExp(obj.linear_expr());
       NumericExpr e = obj.nonlinear_expr();
       EExpr eexpr;
       if (e) {
         eexpr=MP_DISPATCH( Visit(e) );
-        leu.AddTerms(eexpr.GetAE());
+        le.add_lin_exp(eexpr.GetAE());
         if (std::fabs(eexpr.constant_term())!=0.0) {
           /// TODO use constant (in the extra info)
-          leu.AddTerm(MakeFixedVar(eexpr.constant_term()), 1.0);
+          le.add_term(1.0, MakeFixedVar(eexpr.constant_term()));
         }
       }
       LinearObjective lo { obj.type(),
-            std::move(leu.c_), std::move(leu.v_) };
+            std::move(le.coefs()), std::move(le.vars()) };
       GetFlatCvt().AddObjective( // TODO save & convert different types
             QuadraticObjective{std::move(lo),
                                std::move(eexpr.GetQT())});
@@ -158,15 +163,16 @@ protected:
 
   void ConvertAlgCon(int i) {
     auto con = GetModel().algebraic_con(i);
-    LinearExprUnzipper leu(con.linear_expr());
+    auto le = ToLinExp(con.linear_expr());
     EExpr ee;
     if (NumericExpr e = con.nonlinear_expr()) {
       ee=MP_DISPATCH( Visit(e) );
-      leu.AddTerms(ee.GetAE());
+      le.add_lin_exp(ee.GetAE());
     }
     auto lc = RangeLinCon{
-        std::move(leu.c_), std::move(leu.v_),
+    { std::move(le.coefs()), std::move(le.vars()) },
     { con.lb() - ee.constant_term(), con.ub() - ee.constant_term() } };
+    lc.sort_terms();
     pre::NodeRange nr;
     if (ee.is_affine())
       nr = AddConstraint( std::move(lc) );
@@ -210,10 +216,10 @@ public:
     return GetFlatCvt().Convert2Var(std::move(ee));
   }
   /// Makes an affine expr representing just one variable
-  AffineExpr Convert2VarAsAffineExpr(EExpr&& ee) {
-    return AffineExpr::Variable{Convert2Var(std::move(ee))};
+  AffExp Convert2VarAsAffineExpr(EExpr&& ee) {
+    return AffExp::Variable{Convert2Var(std::move(ee))};
   }
-  AffineExpr Convert2AffineExpr(EExpr&& ee) {
+  AffExp Convert2AffineExpr(EExpr&& ee) {
     if (ee.is_affine())
       return std::move(ee.GetAE());
     return Convert2VarAsAffineExpr(std::move(ee)); // just simple, whole QuadExpr
@@ -266,7 +272,7 @@ public:
   EExpr VisitRelationalExpression(ExprArray ea) {
     std::array<EExpr, 2> ee;
     Exprs2EExprs(ea, ee);
-    ee[0].Subtract(std::move(ee[1]));
+    ee[0].subtract(std::move(ee[1]));
     return AssignResult2Args(
           FuncConstraint(                  // comparison with linear expr only
             Convert2AffineExpr( std::move(ee[0]) ) ) );
@@ -299,9 +305,9 @@ public:
       common_exprs_.resize(index+1, -1);          // init by -1, "no variable"
     if (common_exprs_[index]<0) {                 // not yet converted
       auto ce = MP_DISPATCH( GetModel() ).common_expr(index);
-      EExpr eexpr(ce.linear_expr());
+      EExpr eexpr(ToLinExp(ce.linear_expr()));
       if (ce.nonlinear_expr())
-        eexpr.Add( Convert2EExpr(ce.nonlinear_expr()) );
+        eexpr.add( Convert2EExpr(ce.nonlinear_expr()) );
       common_exprs_[index] = Convert2Var(std::move(eexpr));
     }
     return EExpr::Variable{ common_exprs_[index] };
@@ -309,21 +315,21 @@ public:
 
   EExpr VisitMinus(UnaryExpr e) {
     auto ee = Convert2EExpr(e.arg());
-    ee.Negate();
+    ee.negate();
     return ee;
   }
 
   EExpr VisitAdd(BinaryExpr e) {
     auto ee = Convert2EExpr(e.lhs());
-    ee.Add( Convert2EExpr(e.rhs()) );
+    ee.add( Convert2EExpr(e.rhs()) );
     return ee;
   }
 
   EExpr VisitSub(BinaryExpr e) {
     auto el = Convert2EExpr(e.lhs());
     auto er = Convert2EExpr(e.rhs());
-    er.Negate();
-    el.Add(er);
+    er.negate();
+    el.add(er);
     return el;
   }
 
@@ -337,7 +343,7 @@ public:
     EExpr sum;
     for (auto i =
          expr.begin(), end = expr.end(); i != end; ++i)
-      sum.Add( MP_DISPATCH( Convert2EExpr(*i) ) );
+      sum.add( MP_DISPATCH( Convert2EExpr(*i) ) );
     return sum;
   }
 
@@ -584,27 +590,29 @@ public:
            (el.is_constant() || er.is_constant()));
     EExpr result;
     if (0.0!=std::fabs(er.constant_term())) {
-      result.GetAE().Add(el.GetAE());
+      result.GetAE().add_lin_exp(el.GetAE());  // no const here
       result.GetAE() *= er.constant_term();
-      result.GetQT().AddTerms(el.GetQT());
+      result.GetQT().add(el.GetQT());
       result.GetQT() *= er.constant_term();
     }
     if (0.0!=std::fabs(el.constant_term())) {
       {
-        AffineExpr ae2 = er.GetAE();
+        AffExp ae2 = er.GetAE();
         ae2 *= el.constant_term();
-        result.GetAE().AddTerms(ae2);
+        result.GetAE().add_aff_exp(ae2);
       }
-      result.GetQT().Add(er.GetQT());
+      result.GetQT().add(er.GetQT());
       result.GetQT() *= el.constant_term();
     }
-    for (const auto& termL: el.GetAE()) {
-      for (const auto& termR: er.GetAE()) {
-        result.AddQuadraticTerm(termL.var_index(), termR.var_index(),
-                                termL.coef() * termR.coef());
+    const auto& ae1 = el.GetAE();
+    const auto& ae2 = er.GetAE();
+    for (auto i1 = ae1.size(); i1--; ) {
+      for (auto i2 = ae2.size(); i2--; ) {
+        result.add_qp_term(ae1.coef(i1) * ae2.coef(i2),
+                           ae1.var(i1), ae2.var(i2) );
       }
     }
-    result.SortTerms();
+    result.sort_terms();      // eliminate 0's and duplicates
     return result;
   }
 

@@ -4,8 +4,8 @@
 #include <vector>
 #include <algorithm>
 #include <map>
-//#include <iostream>
 
+#include "mp/arrayref.h"
 #include "mp/flat/basic_constr.h"
 #include "mp/flat/quad_expr.h"
 
@@ -13,91 +13,33 @@ namespace mp {
 
 ////////////////////////////////////////////////////////////////////////
 /// Standard linear constraint
-template <class RhsOrRange>
-class LinearConstraint : public BasicConstraint, public RhsOrRange {
-  std::vector<double> coefs_;      /// TODO use new LinExp
-  std::vector<int> vars_;
+template <class LinExp, class RhsOrRange>
+class LinearConstraint :
+    public BasicConstraint, public LinExp, public RhsOrRange {
 public:
   static const std::string& GetConstraintName() {
     static std::string name { "LinCon" + RhsOrRange::name() };
     return name;
   }
-  template <class CV=std::vector<double>, class VV=std::vector<int> >
-  LinearConstraint(CV&& c, VV&& v, RhsOrRange rr) noexcept
-    : RhsOrRange(rr), coefs_(std::forward<CV>(c)), vars_(std::forward<VV>(v))
-  { assert(coefs_.size()==vars_.size()); preprocess(); }
-  template <size_t N>
-  LinearConstraint(std::array<double, N>& c, std::array<int, N>& v, RhsOrRange rr)
-    : RhsOrRange(rr), coefs_(c.begin(), c.end()), vars_(v.begin(), v.end())
-  { assert(coefs_.size()==vars_.size()); preprocess(); }
-  LinearConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
-                   RhsOrRange rr) : RhsOrRange (rr) {
-    coefs_.reserve(lin_exp.size());
-    vars_.reserve(lin_exp.size());
-    for (const auto& term: lin_exp) {
-      coefs_.push_back(term.first);
-      vars_.push_back(term.second);
-    }
-    preprocess();
-  }
-  int nnz() const { return (int)coefs_.size(); }
-  const double* pcoefs() const { return coefs_.data(); }
-  const int* pvars() const { return vars_.data(); }
-  const std::vector<double>& coefs() const { return coefs_; }
-  const std::vector<int>& vars() const { return vars_; }
+  LinearConstraint(LinExp le, RhsOrRange rr) noexcept
+    : LinExp(std::move(le)), RhsOrRange(std::move(rr))
+  { /* preprocess(); */ }
+
   /// For PropagateResult()
-  const std::vector<int>& GetArguments() const { return vars_; }
-
-  void AddTerm(double c, int v) { coefs_.push_back(c); vars_.push_back(v); }
-
-  void preprocess() { sort_terms(); /*eliminate_zeros();*/ }
-  /// So Gurobi does not complain about 0 coefs and duplicate variables
-  void eliminate_zeros() {
-    auto ic1 = std::find_if(coefs_.begin(), coefs_.end(),
-                            [](double c){return 0.0==std::fabs(c);});
-    if (coefs_.end()!=ic1) {
-      auto iv1 = vars_.begin() + (ic1-coefs_.begin());
-      auto iv = iv1;
-      auto ic = ic1;
-      for( ; ++iv, ++ic != coefs_.end(); )
-        if (0.0!=std::fabs(*ic)) {
-          *ic1++ = *ic;
-          *iv1++ = *iv;
-        }
-      coefs_.resize(ic1-coefs_.begin());
-      vars_.resize(ic1-coefs_.begin());
-      assert(coefs_.size()==vars_.size());
-    }
-  }
-  /// Add same variables, eliminate 0's
-  void sort_terms() {
-    std::map<int, double> var_coef_map;
-    for (int i=0; i<nnz(); ++i)
-      if (0.0!=std::fabs(coefs_[i]))
-        var_coef_map[vars_[i]] += coefs_[i];
-    if (true) {                                  // would check size if using hash map
-      coefs_.clear();
-      vars_.clear();
-      for (const auto& vc: var_coef_map) {
-        if (0.0!=std::fabs(vc.second)) {         // Need tolerance?
-          coefs_.push_back(vc.second);
-          vars_.push_back(vc.first);
-        }
-      }
-    }
-  }
+  const std::vector<int>& GetArguments() const
+  { return LinExp::vars(); }
 
   /// Compute lower slack
   double ComputeLowerSlack(ArrayRef<double> x) const {
     double s=0.0;
-    for (size_t i=coefs_.size(); i--; )
-      s += coefs_[i] * x[vars_[i]];
+    for (size_t i=LinExp::coefs().size(); i--; )
+      s += LinExp::coefs()[i] * x[LinExp::vars()[i]];
     return s - RhsOrRange::lb();
   }
 
   /// Testing API
   bool operator==(const LinearConstraint& lc) const {
-    return coefs_==lc.coefs_ && vars_==lc.vars_ &&
+    return LinExp::coefs()==lc.coefs() && LinExp::vars()==lc.vars() &&
         RhsOrRange::equals(lc);
   }
 //  void print(std::ostream& os) const {
@@ -158,25 +100,45 @@ private:
   double rhs_;
 };
 
-using RangeLinCon = LinearConstraint<AlgConRange>;
-using LinConLE = LinearConstraint< AlgConRhs<-1> >;
-using LinConEQ = LinearConstraint< AlgConRhs< 0> >;
-using LinConGE = LinearConstraint< AlgConRhs< 1> >;
+/// Range linear constraint
+using RangeLinCon = LinearConstraint<LinExp, AlgConRange>;
+/// Convenience typedef
+template <int sens>
+using LinConRhs = LinearConstraint< LinExp, AlgConRhs<sens> >;
+/// Linear constraint c'x <= d
+using LinConLE = LinConRhs<-1>;
+/// Linear constraint c'x == d
+using LinConEQ = LinConRhs< 0>;
+/// Linear constraint c'x >= d
+using LinConGE = LinConRhs< 1>;
+
+/// Where applicable, produces expr
+/// so that the constraint is equivalent to expr<=>0.0
+template <int sens>
+AffExp ToLhsExpr(
+    const LinConRhs<sens>& lc) {
+  return { LinExp(lc), -lc.rhs() };
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 /// Standard quadratic constraint
+/// TODO make range/rhs versions
 class QuadraticConstraint : public RangeLinCon {
   QuadTerms qt_;
 public:
   static const char* GetConstraintName() { return "QuadraticConstraint"; }
+  /// Construct from a linear constraint and QP terms
   QuadraticConstraint(RangeLinCon&& lc, QuadTerms&& qt) noexcept :
     RangeLinCon(std::move(lc)), qt_(std::move(qt)) {
     sort_qp_terms(); // LinearConstr sorts them itself
   }
+  /// Constructor for testing
   QuadraticConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
                       std::initializer_list<std::tuple<double, int, int>> quad_terms,
                       double lb, double ub) :
-    RangeLinCon(lin_exp, {lb, ub}), qt_(quad_terms) {
+    RangeLinCon({}, {lb, ub}), qt_(quad_terms) {
+    RangeLinCon::add_terms(lin_exp);
     sort_qp_terms();
   }
 
@@ -189,7 +151,7 @@ public:
   }
 
   void sort_qp_terms() {
-    qt_.SortTerms();
+    qt_.sort_terms();
   }
 
   /// Testing API
@@ -211,52 +173,32 @@ public:
 //  }
 };
 
-////////////////////////////////////////////////////////////////////////
-/// Converting linear expr to 2 vectors.
-struct LinearExprUnzipper {
-  std::vector<double> c_;
-  std::vector<int> v_;
-  LinearExprUnzipper() { }
-  LinearExprUnzipper(const LinearExpr& e) { AddTerms(e); }
-  std::size_t num_terms() const { return c_.size(); }
-  const std::vector<double>& coefs() const { return c_; }
-  const std::vector<int>& var_indexes() const { return v_; }
-  void Reserve(std::size_t s) { c_.reserve(s); v_.reserve(s); }
-  void AddTerm(int v, double c) { c_.push_back(c); v_.push_back(v); }
-  void AddTerms(const LinearExpr& e) {
-    Reserve(num_terms() + e.num_terms());
-    for (LinearExpr::const_iterator it=e.begin(); it!=e.end(); ++it) {
-      AddTerm(it->var_index(), it->coef());
-    }
-  }
-};
 
 ////////////////////////////////////////////////////////////////////////
 /// Linear Defining Constraint: r = affine_expr
 class LinearDefiningConstraint :
     public DefiningConstraint {
-  AffineExpr affine_expr_;
+  AffExp affine_expr_;
 public:
   static const char* GetConstraintName() { return "LinearDefiningConstraint"; }
-  using Arguments = AffineExpr;
+  using Arguments = AffExp;
   using DefiningConstraint::GetResultVar;
   /// A constructor ignoring result variable: use AssignResultToArguments() then
-  LinearDefiningConstraint(AffineExpr&& ae) noexcept :
-    affine_expr_(std::move(ae)) {
-    /// TODO sort+merge elements
+  LinearDefiningConstraint(AffExp&& ae) noexcept :
+    affine_expr_(std::move(ae)) {  // TODO sort+merge elements?
   }
-  LinearDefiningConstraint(int r, AffineExpr&& ae) noexcept :
+  LinearDefiningConstraint(int r, AffExp&& ae) noexcept :
     DefiningConstraint(r), affine_expr_(std::move(ae)) {
     /// TODO sort+merge elements
   }
-  const AffineExpr& GetAffineExpr() const { return affine_expr_; }
+  const AffExp& GetAffineExpr() const { return affine_expr_; }
   const Arguments& GetArguments() const { return GetAffineExpr(); }
-  RangeLinCon to_linear_constraint() const {
+  LinConEQ to_linear_constraint() const {
     const auto& ae = GetAffineExpr();
-    LinearExprUnzipper aeu(ae);
-    aeu.AddTerm(DefiningConstraint::GetResultVar(), -1.0);
-    return RangeLinCon(std::move(aeu.c_), std::move(aeu.v_),
-                            {-ae.constant_term(), -ae.constant_term()});
+    auto le = ae.get_lin_exp();
+    le.add_term(-1.0, DefiningConstraint::GetResultVar());
+    LinConEQ lc { le, -ae.constant_term() };
+    return lc;
   }
 };
 
@@ -264,29 +206,29 @@ public:
 /// Quadratic Defining Constraint: r = quad_expr
 class QuadraticDefiningConstraint :
     public DefiningConstraint {
-  QuadExpr quad_expr_;
+  QuadExp quad_expr_;
 public:
   static const char* GetConstraintName() { return "QuadraticDefiningConstraint"; }
-  using Arguments = QuadExpr;
+  using Arguments = QuadExp;
   using DefiningConstraint::GetResultVar;
   /// A constructor ignoring result variable: use AssignResultToArguments() then
-  QuadraticDefiningConstraint(QuadExpr&& qe) noexcept :
+  QuadraticDefiningConstraint(QuadExp&& qe) noexcept :
     quad_expr_(std::move(qe)) {
     /// TODO sort+merge elements
   }
-  QuadraticDefiningConstraint(int r, QuadExpr&& qe) noexcept :
+  QuadraticDefiningConstraint(int r, QuadExp&& qe) noexcept :
     DefiningConstraint(r), quad_expr_(std::move(qe)) {
     /// TODO sort+merge elements
   }
-  const QuadExpr& GetQuadExpr() const { return quad_expr_; }
+  const QuadExp& GetQuadExpr() const { return quad_expr_; }
   const Arguments& GetArguments() const { return GetQuadExpr(); }
   QuadraticConstraint to_quadratic_constraint() const {
     const auto& qe = GetQuadExpr();
     const auto& ae = qe.GetAE();
-    LinearExprUnzipper aeu(ae);
-    aeu.AddTerm(DefiningConstraint::GetResultVar(), -1.0);
+    auto le = ae.get_lin_exp();
+    le.add_term(-1.0, DefiningConstraint::GetResultVar());
     auto qt = qe.GetQT();
-    return {RangeLinCon(std::move(aeu.c_), std::move(aeu.v_),
+    return {RangeLinCon(std::move(le),
                              {-ae.constant_term(), -ae.constant_term()}),
             std::move(qt)};
   }
@@ -313,11 +255,30 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( DisjunctionConstraint, VarArray,
                                    "r = exists({vi})");
 
 ////////////////////////////////////////////////////////////////////////
+/// Storing AffExp instead of LinConEQ because big-M is straightforwardly
+/// computed for (aff_exp) <= 0:
+/// b -> ae<=0 is linearized as ae <= ub(ae)*(1-b).
+/// If we stored LinConEQ:
+/// b -> lin_exp<=d would be linearized as
+/// le <= d + (ub(le)-d)*(1-b)  <==>
+/// le <= d + ub_le - d - ub_le*b + d*b  <==>
+/// le <= ub_le + (d-ub_le)*b.  Not too complex.
 /// Keep it with AffineExpr, indicators need that
 /// and we don't want quadratics with big-M's?
 /// Or, add QuadraticEq0Constraint?
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( EQ0Constraint, AffineExpr,
+/// TODO Use LinConEq / QuadConEQ ?
+/// TODO Have the actual conditional constraint as a template parameter?
+/// TODO Diff to Indicator?
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( EQ0Constraint, AffExp,
                                    "r = (expr == 0)");
+
+/// Extract underlying constraint.
+/// Can be done more general if using something like
+/// ConditionalConstraint<> instead if EQ0C / LE0C
+inline LinConEQ ExtractConstraint(const EQ0Constraint& eq0c) {
+  const auto& ae=eq0c.GetArguments();
+  return { (LinExp)ae, -ae.constant_term() };
+}
 
 /// Not using: var1 != var2.
 /// Represented by Not { Eq0Constraint... }
@@ -328,8 +289,16 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( NEConstraint__unused, VarArray2,
 ////////////////////////////////////////////////////////////////////////
 ////// Keep it with AffineExpr, indicators need that
 /// and we don't want quadratics with big-M's?
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( LE0Constraint, AffineExpr,
+DEFINE_CUSTOM_DEFINING_CONSTRAINT( LE0Constraint, AffExp,
                                    "r = (expr <= 0)");
+
+/// Extract underlying constraint.
+/// Can be done more general if using something like
+/// ConditionalConstraint<> instead if EQ0C / LE0C
+inline LinConLE ExtractConstraint(const LE0Constraint& le0c) {
+  const auto& ae=le0c.GetArguments();
+  return { (LinExp)ae, -ae.constant_term() };
+}
 
 ////////////////////////////////////////////////////////////////////////
 DEFINE_CUSTOM_DEFINING_CONSTRAINT( NotConstraint, VarArray1,
@@ -391,42 +360,45 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( TanConstraint, VarArray1,
                                    "r = tan(v)");
 
 
+/// Where applicable, produces expr
+/// so that the constraint is equivalent to expr<=>0.0
+template <class Constraint>
+int ToLhsExpr(const Constraint& ) {
+  throw std::runtime_error(
+        std::string("Cannot produce a lhs expr from ") +
+          typeid (Constraint).name());
+  return 0;
+}
 
 ////////////////////////////////////////////////////////////////////////
-/// Indicator: b==bv -> c'x ? rhs
-template <int sens>
-class IndicatorConstraintLin: public BasicConstraint {
+/// Indicator: b==bv -> [constraint]
+template <class Con>
+class IndicatorConstraint: public BasicConstraint {
 public:
   static const char* GetConstraintName() { return "IndicatorConstraint"; }
-  const int b_=-1;                            // the indicator variable
-  const int bv_=1;                            // the value, 0/1
-  const std::vector<double> c_;
-  const std::vector<int> v_;
-  const double rhs_;
   /// Getters
   int get_binary_var() const { return b_; }
   int get_binary_value() const { return bv_; }
   bool is_binary_value_1() const { return 1==get_binary_value(); }
-  const std::vector<double>& get_lin_coefs() const { return c_; }
-  const std::vector<int>& get_lin_vars() const { return v_; }
-  double get_lin_rhs() const { return rhs_; }
-  constexpr int get_sense() const { return sens; }
-  /// Produces affine expr ae so that the inequality is equivalent to ae<=0.0
-  AffineExpr to_lhs_affine_expr() const {
-    return {get_lin_coefs(), get_lin_vars(), -get_lin_rhs()};
+  const Con& get_constraint() const { return con_; }
+  /// Where applicable, produces expr
+  /// so that the constraint is equivalent to expr<=>0.0
+  auto to_lhs_expr() const ->decltype (ToLhsExpr(get_constraint())) {
+    return ToLhsExpr(get_constraint());
   }
   /// Constructor
-  template <class CV=std::vector<double>, class VV=std::vector<int> >
-  IndicatorConstraintLin(int b, int bv,
-                           CV&& c, VV&& v,
-                           double rhs) noexcept :
-    b_(b), bv_(bv), c_(std::forward<CV>(c)), v_(std::forward<VV>(v)), rhs_(rhs)
-  { assert(check()); }
+  IndicatorConstraint(int b, int bv, Con con) noexcept :
+    b_(b), bv_(bv), con_(std::move(con)) { assert(check()); }
   bool check() const { return (b_>=0) && (bv_==0 || bv_==1); }
+
+private:
+  const int b_=-1;                            // the indicator variable
+  const int bv_=1;                            // the value, 0/1
+  const Con con_;
 };
 
-using IndicatorConstraintLinLE = IndicatorConstraintLin<-1>;
-using IndicatorConstraintLinEQ = IndicatorConstraintLin<0>;
+using IndicatorConstraintLinLE = IndicatorConstraint<LinConLE>;
+using IndicatorConstraintLinEQ = IndicatorConstraint<LinConEQ>;
 
 ////////////////////////////////////////////////////////////////////////
 /// AMPL represents PWL by a list of slopes

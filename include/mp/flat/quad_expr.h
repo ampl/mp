@@ -7,28 +7,25 @@
 
 namespace mp {
 
+/// Quadratic terms
 class QuadTerms {
-private:
-  std::vector<double> coefs_;
-  std::vector<int> vars1_;
-  std::vector<int> vars2_;
-
 public:
   QuadTerms() { }
-  QuadTerms(std::initializer_list<std::tuple<double, int, int>> quad_terms) {
-    Reserve(quad_terms.size());
+  QuadTerms(std::initializer_list
+            <std::tuple<double, int, int> > quad_terms) {
+    reserve(quad_terms.size());
     for (const auto& term: quad_terms)
-      AddTerm(std::get<0>(term), std::get<1>(term), std::get<2>(term));
-    SortTerms();
+      add_term(std::get<0>(term), std::get<1>(term), std::get<2>(term));
+    sort_terms();
   }
 
   bool empty() const { return coefs_.empty(); }
-  int num_terms() const { return static_cast<int>(coefs_.size()); }
-  int capacity() const { return static_cast<int>(coefs_.capacity()); }
+  size_t size() const { return coefs_.size(); }
+  size_t capacity() const { return coefs_.capacity(); }
 
-  const double* coefs_ptr() const { return coefs_.data(); }
-  const int* vars1_ptr() const { return vars1_.data(); }
-  const int* vars2_ptr() const { return vars2_.data(); }
+  const double* pcoefs() const { return coefs_.data(); }
+  const int* pvars1() const { return vars1_.data(); }
+  const int* pvars2() const { return vars2_.data(); }
 
   const std::vector<double>& coefs() const { return coefs_; }
   const std::vector<int>& vars1() const { return vars1_; }
@@ -39,38 +36,35 @@ public:
   int var1(int i) const { return vars1_[i]; }
   int var2(int i) const { return vars2_[i]; }
 
-  void AddTerm(double coef, int var1, int var2) {
+  void add_term(double coef, int var1, int var2) {
     coefs_.push_back(coef);
     vars1_.push_back(var1);
     vars2_.push_back(var2);
   }
 
-  void AddTerms(const QuadTerms& li) {
-    coefs_.insert(coefs_.end(), li.coefs_.begin(), li.coefs_.end());
-    vars1_.insert(vars1_.end(), li.vars1_.begin(), li.vars1_.end());
-    vars2_.insert(vars2_.end(), li.vars2_.begin(), li.vars2_.end());
-  }
-
-  void Reserve(std::size_t num_terms) {
+  void reserve(std::size_t num_terms) {
     coefs_.reserve(num_terms);
     vars1_.reserve(num_terms);
     vars2_.reserve(num_terms);
   }
 
   /// Arithmetic
-  void Negate() {
+  void negate() {
     for (auto& cf: coefs_)
       cf = -cf;
   }
 
-  void Add(const QuadTerms& ae) {
-    this->Reserve(this->num_terms() + ae.num_terms());
-    this->AddTerms(ae); // eliminate duplicates when?
+  void add(const QuadTerms& li) {
+    this->reserve(size() + li.size());
+    /// eliminate duplicates when?
+    coefs_.insert(coefs_.end(), li.coefs_.begin(), li.coefs_.end());
+    vars1_.insert(vars1_.end(), li.vars1_.begin(), li.vars1_.end());
+    vars2_.insert(vars2_.end(), li.vars2_.begin(), li.vars2_.end());
   }
 
-  void Subtract(QuadTerms&& ae) {
-    ae.Negate();
-    Add(ae);
+  void subtract(QuadTerms&& ae) {
+    ae.negate();
+    add(ae);
   }
 
   void operator*=(double n) {
@@ -79,21 +73,21 @@ public:
   }
 
 
-  void SortTerms() {
+  void sort_terms() {
     auto sort_pair = [](int a, int b) {
       return a<b ? std::pair<int, int>(a, b) : std::pair<int, int>(b, a);
     };
     std::map<std::pair<int, int>, double> var_coef_map;
-    for (int i=0; i<num_terms(); ++i)
+    for (size_t i=0; i<size(); ++i)
       if (0.0!=std::fabs(coefs_[i]))
         var_coef_map[sort_pair(vars1_[i], vars2_[i])] += coefs_[i];
-    if (true) {                                // would check size if using hash map
+    if (true) {
       coefs_.clear();
       vars1_.clear();
       vars2_.clear();
       for (const auto& vc: var_coef_map) {
         if (0.0!=std::fabs(vc.second))         // Need tolerance?
-          AddTerm(vc.second, vc.first.first, vc.first.second);
+          add_term(vc.second, vc.first.first, vc.first.second);
       }
     }
   }
@@ -102,15 +96,25 @@ public:
   bool operator==(const QuadTerms& qt) const {
     return coefs_==qt.coefs_ && vars1_==qt.vars1_ && vars2_==qt.vars2_;
   }
+
+private:
+  std::vector<double> coefs_;
+  std::vector<int> vars1_;
+  std::vector<int> vars2_;
 };
 
-class QuadExpr {
-public:
-  QuadExpr() { }
-  QuadExpr(AffineExpr&& ae) noexcept : ae_(std::move(ae)) { }
 
-  using Constant = AffineExpr::Constant;
-  using Variable = AffineExpr::Variable;
+/// Quadratic expression
+class QuadExp {
+public:
+  /// Default constructor
+  QuadExp() { }
+  /// Construct from AE [+QT]
+  QuadExp(AffExp ae, QuadTerms qt={}) noexcept :
+    ae_(std::move(ae)), qt_(std::move(qt)) { }
+
+  using Constant = AffExp::Constant;
+  using Variable = AffExp::Variable;
 
   /// Getters
   bool is_constant() const { return is_affine() && GetAE().is_constant(); }
@@ -120,47 +124,52 @@ public:
     assert(is_affine());
     return GetAE().get_representing_variable();
   }
-
+  /// Check if affine
   bool is_affine() const { return GetQT().empty(); }
-  const AffineExpr& GetAE() const { return ae_; }
-  AffineExpr& GetAE() { return ae_; }
+  /// Get affine expr, const
+  const AffExp& GetAE() const { return ae_; }
+  /// Get affine expr
+  AffExp& GetAE() { return ae_; }
+  /// Is quadratic?
   bool is_quadratic() const { return !is_affine(); }
+  /// Get quadratic terms, const
   const QuadTerms& GetQT() const { return qt_; }
+  /// Get quadratic terms
   QuadTerms& GetQT() { return qt_; }
 
 
   /// Modifiers
   void constant_term(double v) { GetAE().constant_term(v); }
   void add_to_constant(double a) { GetAE().add_to_constant(a); }
-  void AddLinearTerm(int var_index, double coef) {
-    GetAE().AddTerm(var_index, coef);
+  void add_linear_term(double c, int v) {
+    GetAE().add_term(c, v);
   }
-  void AddQuadraticTerm(int v1, int v2, double coef) {
-    GetQT().AddTerm(coef, v1, v2);
-  }
-
-  void Add(const QuadExpr& qe) {
-    GetAE().Add(qe.GetAE());
-    GetQT().Add(qe.GetQT());
+  void add_qp_term(double coef, int v1, int v2) {
+    GetQT().add_term(coef, v1, v2);
   }
 
-  void Subtract(QuadExpr&& qe) {
-    GetAE().Subtract(std::move(qe.GetAE()));
-    GetQT().Subtract(std::move(qe.GetQT()));
+  void add(const QuadExp& qe) {
+    GetAE().add_aff_exp(qe.GetAE());
+    GetQT().add(qe.GetQT());
   }
 
-  void Negate() {
-    GetAE().Negate();
-    GetQT().Negate();
+  void subtract(QuadExp&& qe) {
+    GetAE().subtract(std::move(qe.GetAE()));
+    GetQT().subtract(std::move(qe.GetQT()));
   }
 
-  void SortTerms() {
-    GetAE().SortTerms();
-    GetQT().SortTerms();
+  void negate() {
+    GetAE().negate();
+    GetQT().negate();
+  }
+
+  void sort_terms() {
+    GetAE().sort_terms();
+    GetQT().sort_terms();
   }
 
 private:
-  AffineExpr ae_;
+  AffExp ae_;
   QuadTerms qt_;
 };
 

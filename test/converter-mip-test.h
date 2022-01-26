@@ -123,7 +123,7 @@ public:
 
   /// Specialize for LinearConstraint
   void AddConstraint(const mp::RangeLinCon& lc) {
-    instance_.cons_.push_back({ { lc.nnz(), lc.pcoefs(), lc.pvars() },
+    instance_.cons_.push_back({ { (int)lc.size(), lc.pcoefs(), lc.pvars() },
                                 lc.lb(), lc.ub() });
   }
 

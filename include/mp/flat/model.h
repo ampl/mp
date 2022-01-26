@@ -203,7 +203,7 @@ protected:
     if (int n_objs = num_objs()) {
       for (int i = 0; i < n_objs; ++i) {
         const auto& obj = get_obj(i);
-        if (obj.GetQPTerms().num_terms())  // TODO make objectives just items
+        if (obj.GetQPTerms().size())  // TODO make objectives just items
           backend.SetQuadraticObjective(i, obj);
         else
           backend.SetLinearObjective(i, obj);

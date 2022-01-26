@@ -45,31 +45,6 @@ struct PreprocessInfo {
 /// Typical preprocess info
 using PreprocessInfoStd = PreprocessInfo<int>;
 
-template <class Model>
-PreprocessInfoStd ComputeBoundsAndType(Model& model, AffineExpr& ae) {
-  PreprocessInfoStd result;
-  ComputeBoundsAndType(model, ae, result);
-  return result;
-}
-
-template <class Model>
-void ComputeBoundsAndType(Model& model, AffineExpr& ae, PreprocessInfoStd& result) {
-  result.lb_ = result.ub_ = ae.constant_term();           // TODO reuse bounds if supplied
-  result.type_ = var::INTEGER;
-  for (const auto& term: ae) {
-    auto v = model.var(term.var_index());
-    if (term.coef() >= 0.0) {
-      result.lb_ += term.coef() * v.lb();
-      result.ub_ += term.coef() * v.ub();
-    } else {
-      result.lb_ += term.coef() * v.ub();
-      result.ub_ += term.coef() * v.lb();
-    }
-    if (var::INTEGER!=v.type() || !is_integer(term.coef()))
-      result.type_=var::CONTINUOUS;
-  }
-}
-
 
 } // namespace mp
 

@@ -89,7 +89,7 @@ public:
 
   /// From an expression:
   /// Adds a result variable r and constraint r == expr
-  int Convert2Var(QuadExpr&& ee) {
+  int Convert2Var(QuadExp&& ee) {
     if (ee.is_variable())
       return ee.get_representing_variable();
     if (ee.is_constant())
@@ -103,28 +103,29 @@ public:
     return r;
   }
 
-  PreprocessInfoStd ComputeBoundsAndType(const QuadExpr& ee) {
+  PreprocessInfoStd ComputeBoundsAndType(const QuadExp& ee) {
     auto bntAE = ComputeBoundsAndType(ee.GetAE());
     auto bntQT = ComputeBoundsAndType(ee.GetQT());
     return AddBoundsAndType(bntAE, bntQT);
   }
 
-  PreprocessInfoStd ComputeBoundsAndType(const AffineExpr& ae) {
+  PreprocessInfoStd ComputeBoundsAndType(const AffExp& ae) {
     PreprocessInfoStd result;
     result.lb_ = result.ub_ = ae.constant_term();    // TODO reuse bounds if supplied
     result.type_ = is_integer(result.lb_) ? var::INTEGER : var::CONTINUOUS;
     result.linexp_type_ = var::INTEGER;
     auto& model = MP_DISPATCH( GetModel() );
-    for (const auto& term: ae) {
-      auto v = term.var_index();
-      if (term.coef() >= 0.0) {
-        result.lb_ += term.coef() * model.lb(v);
-        result.ub_ += term.coef() * model.ub(v);
+    for (auto i=ae.size(); i--; ) {
+      auto v = ae.var(i);
+      auto c = ae.coef(i);
+      if (c >= 0.0) {
+        result.lb_ += c * model.lb(v);
+        result.ub_ += c * model.ub(v);
       } else {
-        result.lb_ += term.coef() * model.ub(v);
-        result.ub_ += term.coef() * model.lb(v);
+        result.lb_ += c * model.ub(v);
+        result.ub_ += c * model.lb(v);
       }
-      if (var::INTEGER!=model.var_type(v) || !is_integer(term.coef())) {
+      if (var::INTEGER!=model.var_type(v) || !is_integer(c)) {
         result.type_=var::CONTINUOUS;
         result.linexp_type_=var::CONTINUOUS;
       }
@@ -138,7 +139,7 @@ public:
     result.type_ = var::INTEGER;
     result.linexp_type_ = var::INTEGER;
     auto& model = MP_DISPATCH( GetModel() );
-    for (int i=0; i<qt.num_terms(); ++i) {
+    for (auto i=qt.size(); i--; ) {
       auto coef = qt.coef(i);
       auto v1 = qt.var1(i);
       auto v2 = qt.var2(i);
@@ -258,7 +259,7 @@ protected:
       return;
     } else if (ub<=0.0) {
       auto res = AssignResult2Args(   // create newvar = -argvar
-            LinearDefiningConstraint({ {-1.0}, {argvar}, 0.0 }));
+            LinearDefiningConstraint({ {{-1.0}, {argvar}}, 0.0 }));
       prepro.set_result_var(res.get_var());
       return;
     }
@@ -283,23 +284,27 @@ protected:
   template <class PreprocessInfo>
   bool FixEqualityResult(
       EQ0Constraint& c, PreprocessInfo& prepro) {
-    AffineExpr& ae = c.GetArguments();
-    if (ae.is_constant()) {                  // const==0
+    AffExp& ae = c.GetArguments();
+    if (ae.is_constant()) {               // const==0
       auto res = (double)int(0.0==ae.constant_term());
+      /// TODO this depends on context???
       prepro.narrow_result_bounds(res, res);
       return true;
     }
     auto bndsNType = ComputeBoundsAndType(ae);
     if (bndsNType.lb() > 0.0 || bndsNType.ub() < 0.0) {
+      /// TODO this depends on context???
       prepro.narrow_result_bounds(0.0, 0.0);
       return true;
     }
     if (bndsNType.lb()==0.0 && bndsNType.ub()==0.0) {
+      /// TODO this depends on context???
       prepro.narrow_result_bounds(1.0, 1.0);
       return true;
     }
     if (var::INTEGER==bndsNType.linexp_type_ &&
         !is_integer(ae.constant_term())) {
+      /// TODO this depends on context???
       prepro.narrow_result_bounds(0.0, 0.0);
       return true;
     }
@@ -307,12 +312,12 @@ protected:
   }
 
   static void PreprocessEqVarConst__unifyCoef(EQ0Constraint& c) {
-    AffineExpr& ae = c.GetArguments();
-    if (1==ae.num_terms()) {
-      const double coef = ae.coef(0);
-      if (1.0!=coef) {
-        assert(0.0!=std::fabs(coef));
-        ae.constant_term(ae.constant_term() / coef);
+    AffExp& ae = c.GetArguments();
+    if (1==ae.size()) {
+      const double c = ae.coef(0);
+      if (1.0!=c) {
+        assert(0.0!=std::fabs(c));
+        ae.constant_term(ae.constant_term() / c);
         ae.set_coef(0, 1.0);
       }
     }
@@ -322,10 +327,10 @@ protected:
   bool ReuseEqualityBinaryVar(
       EQ0Constraint& c, PreprocessInfo& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
-    AffineExpr& ae = c.GetArguments();
-    if (1==ae.num_terms()) {                           // var==const
+    AffExp& ae = c.GetArguments();
+    if (1==ae.size()) {                           // var==const
       assert( 1.0==ae.coef(0) );
-      int var = ae.var_index(0);
+      int var = ae.var(0);
       if (m.is_binary_var(var)) {            // See if this is binary var==const
         const double rhs = -ae.constant_term();
         if (1.0==rhs)
@@ -460,46 +465,60 @@ protected:
     internal::Unused(&con, lb, ub, &ctx);
     con.SetContext(Context::CTX_MIX);
     for (const auto a: con.GetArguments())
-      PropagateResultOfInitExpr(a, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+      PropagateResultOfInitExpr(a, this->MinusInfty(), this->Infty(),
+                                Context::CTX_MIX);
   }
 
-  void PropagateResult(LinearDefiningConstraint& con, double lb, double ub, Context ctx) {
+  void PropagateResult(LinearDefiningConstraint& con, double lb, double ub,
+                       Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    for (const auto& term: con.GetAffineExpr())
-      PropagateResultOfInitExpr(term.var_index(), this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+    for (auto v: con.GetAffineExpr().vars())
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
+                                Context::CTX_MIX);
   }
 
-  void PropagateResult(QuadraticDefiningConstraint& con, double lb, double ub, Context ctx) {
+  void PropagateResult(QuadraticDefiningConstraint& con, double lb, double ub,
+                       Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     const auto& args = con.GetArguments();
-    for (const auto& term: args.GetAE())
-      PropagateResultOfInitExpr(term.var_index(), this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+    for (auto v: args.GetAE().vars())
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
+                                Context::CTX_MIX);
     const auto& qt = args.GetQT();
-    for (int i=0; i<qt.num_terms(); ++i) {
-      PropagateResultOfInitExpr(qt.var1(i), this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-      PropagateResultOfInitExpr(qt.var2(i), this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+    for (auto i=qt.size(); i--; ) {
+      PropagateResultOfInitExpr(qt.var1(i), this->MinusInfty(), this->Infty(),
+                                Context::CTX_MIX);
+      PropagateResultOfInitExpr(qt.var2(i), this->MinusInfty(), this->Infty(),
+                                Context::CTX_MIX);
     }
   }
 
-  void PropagateResult(QuadraticConstraint& con, double lb, double ub, Context ctx) {
+  void PropagateResult(QuadraticConstraint& con, double lb, double ub,
+                       Context ctx) {
     internal::Unused(lb, ub, ctx);
     for (const auto v: con.vars())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
+                                Context::CTX_MIX);
     for (const auto v: con.GetQPTerms().vars1())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
+                                Context::CTX_MIX);
     for (const auto v: con.GetQPTerms().vars2())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
+                                Context::CTX_MIX);
   }
 
   template <int sens>
-  void PropagateResult(IndicatorConstraintLin<sens>& con, double lb, double ub, Context ctx) {
+  void PropagateResult(IndicatorConstraint< LinConRhs<sens> >& con,
+                       double lb, double ub, Context ctx) {
     internal::Unused(lb, ub, ctx);
     PropagateResultOfInitExpr(con.get_binary_var(),
-                              this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-    for (const auto v: con.get_lin_vars())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+                              this->MinusInfty(), this->Infty(),
+                              Context::CTX_MIX);
+    for (const auto v: con.get_constraint().vars())
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
+                                Context::CTX_MIX);
   }
 
   template <int type>
@@ -565,10 +584,9 @@ protected:
   void PropagateResult(EQ0Constraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    auto& args = con.GetArguments();
-    for (auto a: args) {
-      PropagateResultOfInitExpr(a.var_index(),
-                                this->MinusInfty(), this->Infty(),
+    auto& args = con.GetArguments().vars();
+    for (auto v: args) {
+      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
                                 Context::CTX_MIX);
     }
   }
@@ -762,7 +780,7 @@ protected:
     if (! (lb(bvar)==0.0 && ub(bvar)==1.0) )
       throw std::logic_error("Asked to complement variable with bounds "
                              + std::to_string(lb(bvar)) + ".." + std::to_string(ub(bvar)));
-    AffineExpr ae({-1.0}, {bvar}, 1.0); // TODO use map / FCC?
+    AffExp ae({{-1.0}, {bvar}}, 1.0); // TODO use map / FCC?
     return MP_DISPATCH( Convert2Var(std::move(ae)) );
   }
 

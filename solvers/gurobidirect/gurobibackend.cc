@@ -878,26 +878,26 @@ void GurobiBackend::SetQuadraticObjective(int iobj, const QuadraticObjective &qo
   if (1>iobj) {
     SetLinearObjective(iobj, qo);                         // add the linear part
     const auto& qt = qo.GetQPTerms();
-    GRB_CALL( GRBaddqpterms(model_, qt.num_terms(),
-                                (int*)qt.vars1_ptr(), (int*)qt.vars2_ptr(),
-                            (double*)qt.coefs_ptr()) );
+    GRB_CALL( GRBaddqpterms(model_, qt.size(),
+                                (int*)qt.pvars1(), (int*)qt.pvars2(),
+                            (double*)qt.pcoefs()) );
   } else {
     throw std::runtime_error("Multiple quadratic objectives not supported");
   }
 }
 
 void GurobiBackend::AddConstraint( const LinConLE& lc ) {
-  GRB_CALL( GRBaddconstr(model_, lc.nnz(),
+  GRB_CALL( GRBaddconstr(model_, lc.size(),
                          (int*)lc.pvars(), (double*)lc.pcoefs(),
                          GRB_LESS_EQUAL, lc.rhs(), NULL) );
 }
 void GurobiBackend::AddConstraint( const LinConEQ& lc ) {
-  GRB_CALL( GRBaddconstr(model_, lc.nnz(),
+  GRB_CALL( GRBaddconstr(model_, lc.size(),
                          (int*)lc.pvars(), (double*)lc.pcoefs(),
                          GRB_EQUAL, lc.rhs(), NULL) );
 }
 void GurobiBackend::AddConstraint( const LinConGE& lc ) {
-  GRB_CALL( GRBaddconstr(model_, lc.nnz(),
+  GRB_CALL( GRBaddconstr(model_, lc.size(),
                          (int*)lc.pvars(), (double*)lc.pcoefs(),
                          GRB_GREATER_EQUAL, lc.rhs(), NULL) );
 }
@@ -905,19 +905,19 @@ void GurobiBackend::AddConstraint( const LinConGE& lc ) {
 void GurobiBackend::AddConstraint( const QuadraticConstraint& qc ) {
   const auto& qt = qc.GetQPTerms();
   if (qc.lb()==qc.ub())
-    GRB_CALL( GRBaddqconstr(model_, qc.nnz(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-                            qt.num_terms(), (int*)qt.vars1_ptr(), (int*)qt.vars2_ptr(),
-                            (double*)qt.coefs_ptr(), GRB_EQUAL, qc.lb(), NULL) );
+    GRB_CALL( GRBaddqconstr(model_, qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
+                            qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                            (double*)qt.pcoefs(), GRB_EQUAL, qc.lb(), NULL) );
   else {            // Let solver deal with lb>~ub etc.
     if (qc.lb()>MinusInfinity()) {
-      GRB_CALL( GRBaddqconstr(model_, qc.nnz(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-                              qt.num_terms(), (int*)qt.vars1_ptr(), (int*)qt.vars2_ptr(),
-                              (double*)qt.coefs_ptr(), GRB_GREATER_EQUAL, qc.lb(), NULL) );
+      GRB_CALL( GRBaddqconstr(model_, qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
+                              qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                              (double*)qt.pcoefs(), GRB_GREATER_EQUAL, qc.lb(), NULL) );
     }
     if (qc.ub()<Infinity()) {
-      GRB_CALL( GRBaddqconstr(model_, qc.nnz(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-                              qt.num_terms(), (int*)qt.vars1_ptr(), (int*)qt.vars2_ptr(),
-                              (double*)qt.coefs_ptr(), GRB_LESS_EQUAL, qc.ub(), NULL) );
+      GRB_CALL( GRBaddqconstr(model_, qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
+                              qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                              (double*)qt.pcoefs(), GRB_LESS_EQUAL, qc.ub(), NULL) );
     }
   }
 }
@@ -960,13 +960,21 @@ void GurobiBackend::AddConstraint(const DisjunctionConstraint &dc)  {
 
 void GurobiBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
   GRB_CALL( GRBaddgenconstrIndicator(model_, NULL,
-                               ic.b_, ic.bv_, (int)ic.c_.size(),
-                               ic.v_.data(), ic.c_.data(), GRB_LESS_EQUAL, ic.rhs_ ) );
+                               ic.get_binary_var(), ic.get_binary_value(),
+                                     (int)ic.get_constraint().size(),
+                               ic.get_constraint().pvars(),
+                                     ic.get_constraint().pcoefs(),
+                                     GRB_LESS_EQUAL,
+                                     ic.get_constraint().rhs() ) );
 }
 void GurobiBackend::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
   GRB_CALL( GRBaddgenconstrIndicator(model_, NULL,
-                               ic.b_, ic.bv_, (int)ic.c_.size(),
-                               ic.v_.data(), ic.c_.data(), GRB_EQUAL, ic.rhs_ ) );
+                                     ic.get_binary_var(), ic.get_binary_value(),
+                                           (int)ic.get_constraint().size(),
+                                     ic.get_constraint().pvars(),
+                                           ic.get_constraint().pcoefs(),
+                                           GRB_EQUAL,
+                                           ic.get_constraint().rhs() ) );
 }
 
 //////////////////// General constraints /////////////////////

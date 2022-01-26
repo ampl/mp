@@ -46,8 +46,8 @@ protected:
   }
   void ConvertRange(const ItemType& item, int i) {
     auto slk = GetMC().AddVar(0.0, item.ub()-item.lb());
-    LinConEQ lceq {item.coefs(), item.vars(), item.ub()};
-    lceq.AddTerm(1.0, slk);
+    LinConEQ lceq { {item.coefs(), item.vars()}, item.ub() };
+    lceq.add_term(1.0, slk);
     int i1 = GetMC().AddConstraint(std::move(lceq));
     GetSlackBridge().AddEntry({i, i1, slk});
   }
@@ -55,15 +55,15 @@ protected:
     pre::NodeRange nr;              // target node+index
     if (rr[1] && !rr[2]) {
       nr = GetMC().AddConstraint(
-              LinConGE(item.coefs(), item.vars(), {item.lb()}) );
+              LinConGE( {item.coefs(), item.vars()}, item.lb() ) );
     } else if (!rr[1] && rr[2]) {
       nr = GetMC().AddConstraint(
-              LinConLE(item.coefs(), item.vars(), {item.ub()}) );
+              LinConLE( {item.coefs(), item.vars()}, item.ub() ) );
     } else if (rr[1] && rr[2]) {
       assert(item.lb()>=item.ub()); // TODO have an option for eps tolerance
       nr = GetMC().AddConstraint(
-            LinConEQ(item.coefs(), item.vars(),
-                     {(item.lb()+item.ub()) / 2.0}) );
+            LinConEQ( {item.coefs(), item.vars()},
+                      (item.lb()+item.ub()) / 2.0 ) );
     } // else, both are inf, forget
     GetMC().GetCopyBridge().AddEntry(
           { GET_CONSTRAINT_VALUE_NODE(ItemType).Select(i), nr });

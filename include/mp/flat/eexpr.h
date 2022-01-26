@@ -6,13 +6,13 @@
 namespace mp {
 
 /// Result expression type for expression conversions
-class EExpr : public QuadExpr {
+class EExpr : public QuadExp {
 public:
   EExpr() = default;
-  EExpr(AffineExpr&& ae) noexcept : QuadExpr(std::move(ae)) { }
-  EExpr(Constant c) : QuadExpr(c) {}
-  EExpr(Variable v) : QuadExpr(v) {}
-  EExpr(int i, double c) { AddLinearTerm(i, c); }
+  EExpr(AffExp ae) noexcept : QuadExp(std::move(ae)) { }
+  EExpr(Constant c) : QuadExp(c) {}
+  EExpr(Variable v) : QuadExp(v) {}
+  EExpr(int i, double c) { add_linear_term(i, c); }
 };
 
 } // namespace mp
