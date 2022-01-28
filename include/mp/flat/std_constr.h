@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <map>
+#include <string>
 
 #include "mp/arrayref.h"
 #include "mp/flat/basic_constr.h"
