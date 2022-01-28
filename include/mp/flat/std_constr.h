@@ -13,33 +13,33 @@ namespace mp {
 
 ////////////////////////////////////////////////////////////////////////
 /// Standard linear constraint
-template <class LinExp, class RhsOrRange>
+template <class LinTerms, class RhsOrRange>
 class LinearConstraint :
-    public BasicConstraint, public LinExp, public RhsOrRange {
+    public BasicConstraint, public LinTerms, public RhsOrRange {
 public:
   static const std::string& GetConstraintName() {
     static std::string name { "LinCon" + RhsOrRange::name() };
     return name;
   }
-  LinearConstraint(LinExp le, RhsOrRange rr) noexcept
-    : LinExp(std::move(le)), RhsOrRange(std::move(rr))
+  LinearConstraint(LinTerms le, RhsOrRange rr) noexcept
+    : LinTerms(std::move(le)), RhsOrRange(std::move(rr))
   { /* preprocess(); */ }
 
   /// For PropagateResult()
   const std::vector<int>& GetArguments() const
-  { return LinExp::vars(); }
+  { return LinTerms::vars(); }
 
   /// Compute lower slack
   double ComputeLowerSlack(ArrayRef<double> x) const {
     double s=0.0;
-    for (size_t i=LinExp::coefs().size(); i--; )
-      s += LinExp::coefs()[i] * x[LinExp::vars()[i]];
+    for (size_t i=LinTerms::coefs().size(); i--; )
+      s += LinTerms::coefs()[i] * x[LinTerms::vars()[i]];
     return s - RhsOrRange::lb();
   }
 
   /// Testing API
   bool operator==(const LinearConstraint& lc) const {
-    return LinExp::coefs()==lc.coefs() && LinExp::vars()==lc.vars() &&
+    return LinTerms::coefs()==lc.coefs() && LinTerms::vars()==lc.vars() &&
         RhsOrRange::equals(lc);
   }
 //  void print(std::ostream& os) const {
@@ -101,10 +101,10 @@ private:
 };
 
 /// Range linear constraint
-using RangeLinCon = LinearConstraint<LinExp, AlgConRange>;
+using RangeLinCon = LinearConstraint<LinTerms, AlgConRange>;
 /// Convenience typedef
 template <int sens>
-using LinConRhs = LinearConstraint< LinExp, AlgConRhs<sens> >;
+using LinConRhs = LinearConstraint< LinTerms, AlgConRhs<sens> >;
 /// Linear constraint c'x <= d
 using LinConLE = LinConRhs<-1>;
 /// Linear constraint c'x == d
@@ -117,7 +117,7 @@ using LinConGE = LinConRhs< 1>;
 template <int sens>
 AffExp ToLhsExpr(
     const LinConRhs<sens>& lc) {
-  return { LinExp(lc), -lc.rhs() };
+  return { LinTerms(lc), -lc.rhs() };
 }
 
 
@@ -277,7 +277,7 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( EQ0Constraint, AffExp,
 /// ConditionalConstraint<> instead if EQ0C / LE0C
 inline LinConEQ ExtractConstraint(const EQ0Constraint& eq0c) {
   const auto& ae=eq0c.GetArguments();
-  return { (LinExp)ae, -ae.constant_term() };
+  return { (LinTerms)ae, -ae.constant_term() };
 }
 
 /// Not using: var1 != var2.
@@ -297,7 +297,7 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( LE0Constraint, AffExp,
 /// ConditionalConstraint<> instead if EQ0C / LE0C
 inline LinConLE ExtractConstraint(const LE0Constraint& le0c) {
   const auto& ae=le0c.GetArguments();
-  return { (LinExp)ae, -ae.constant_term() };
+  return { (LinTerms)ae, -ae.constant_term() };
 }
 
 ////////////////////////////////////////////////////////////////////////

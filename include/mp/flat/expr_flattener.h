@@ -17,9 +17,9 @@
 
 namespace mp {
 
-/// Convert mp::LinearExpr
-LinExp ToLinExp(const LinearExpr& e) {
-  LinExp le;
+/// Convert mp::LinearExpr to LinTerms
+LinTerms ToLinTerms(const LinearExpr& e) {
+  LinTerms le;
   le.reserve(e.num_terms());
   for (auto it=e.begin(); it!=e.end(); ++it) {
     le.add_term(it->coef(), it->var_index());
@@ -143,7 +143,7 @@ protected:
   }
 
   void Convert(typename ModelType::MutObjective obj) {
-      auto le = ToLinExp(obj.linear_expr());
+      auto le = ToLinTerms(obj.linear_expr());
       NumericExpr e = obj.nonlinear_expr();
       EExpr eexpr;
       if (e) {
@@ -163,7 +163,7 @@ protected:
 
   void ConvertAlgCon(int i) {
     auto con = GetModel().algebraic_con(i);
-    auto le = ToLinExp(con.linear_expr());
+    auto le = ToLinTerms(con.linear_expr());
     EExpr ee;
     if (NumericExpr e = con.nonlinear_expr()) {
       ee=MP_DISPATCH( Visit(e) );
@@ -305,7 +305,7 @@ public:
       common_exprs_.resize(index+1, -1);          // init by -1, "no variable"
     if (common_exprs_[index]<0) {                 // not yet converted
       auto ce = MP_DISPATCH( GetModel() ).common_expr(index);
-      EExpr eexpr(ToLinExp(ce.linear_expr()));
+      EExpr eexpr(ToLinTerms(ce.linear_expr()));
       if (ce.nonlinear_expr())
         eexpr.add( Convert2EExpr(ce.nonlinear_expr()) );
       common_exprs_[index] = Convert2Var(std::move(eexpr));

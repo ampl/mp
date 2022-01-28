@@ -9,20 +9,20 @@
 
 namespace mp {
 
-/// Linear expression: c'x
+/// Linear terms: c'x
 /// TODO use SSO
-class LinExp {
+class LinTerms {
 public:
   /// Default constructor
-  LinExp() = default;
+  LinTerms() = default;
   /// Construct from 2 vectors
   template <class CV=std::vector<double>, class VV=std::vector<int> >
-  LinExp(CV&& c, VV&& v) noexcept
+  LinTerms(CV&& c, VV&& v) noexcept
     : coefs_(std::forward<CV>(c)), vars_(std::forward<VV>(v))
   { assert(check()); }
   /// Construct from 2 std::array's
   template <size_t N>
-  LinExp(std::array<double, N>& c, std::array<int, N>& v)
+  LinTerms(std::array<double, N>& c, std::array<int, N>& v)
     : coefs_(c.begin(), c.end()), vars_(v.begin(), v.end())
   { assert(check()); }
 
@@ -60,8 +60,8 @@ public:
   /// Add linear term
   void add_term(double c, int v)
   { coefs_.push_back(c); vars_.push_back(v); }
-  /// Add another LinExp
-  void add_lin_exp(const LinExp& le) {
+  /// Add another LinTerms
+  void add_lin_exp(const LinTerms& le) {
     reserve(size() + le.size());
     for (size_t i=0; i<le.size(); ++i)
       add_term(le.coefs_[i], le.vars_[i]);
@@ -113,16 +113,16 @@ private:
   std::vector<int> vars_;
 };
 
-class AffExp : public LinExp {
+class AffExp : public LinTerms {
 public:
   /// Default constructor
   AffExp() = default;
-  /// from const LinExp&
-  AffExp(const LinExp& ae, double ct=0.0) :
-    LinExp(ae), constant_term_(ct) { }
-  /// From LinExp&&
-  AffExp(LinExp&& ae, double ct=0.0) noexcept :
-    LinExp(std::move(ae)), constant_term_(ct) { }
+  /// from const LinTerms&
+  AffExp(const LinTerms& ae, double ct=0.0) :
+    LinTerms(ae), constant_term_(ct) { }
+  /// From LinTerms&&
+  AffExp(LinTerms&& ae, double ct=0.0) noexcept :
+    LinTerms(std::move(ae)), constant_term_(ct) { }
   /// From const AE&
   AffExp(const AffExp& ae) = default;
   /// From AE&&
@@ -159,7 +159,7 @@ public:
   }
 
   /// Get the lin exp, const
-  const LinExp& get_lin_exp() const { return (const LinExp&)(*this); }
+  const LinTerms& get_lin_exp() const { return (const LinTerms&)(*this); }
 
   /// The constant term
   double constant_term() const { return constant_term_; }
@@ -170,7 +170,7 @@ public:
 
   /// Negate the ae
   void negate() {
-    LinExp::negate();
+    LinTerms::negate();
     constant_term(-constant_term());
   }
   /// Add another ae
@@ -185,7 +185,7 @@ public:
   }
   /// Multiply by const
   void operator*=(double n) {
-    ((LinExp&)(*this)) *= n;
+    ((LinTerms&)(*this)) *= n;
     constant_term_ *= n;
   }
 private:

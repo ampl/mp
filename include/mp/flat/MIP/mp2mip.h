@@ -105,7 +105,7 @@ public:
       if (MPD(is_fixed(le0c.GetResultVar()))) {
         if (!MPD(fixed_value(le0c.GetResultVar()))) {      // fixed to 0
           MP_DISPATCH( AddConstraint(LinConGE(
-                                       LinExp(ae),
+                                       LinTerms(ae),
                                        -ae.constant_term()+1)) );
         }
       } else {
@@ -115,7 +115,7 @@ public:
         double d = ae.constant_term() + cmpEps;
         MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
                                      le0c.GetResultVar(), 0,
-                                     { LinExp(ae), -d })) );
+                                     { LinTerms(ae), -d })) );
       }
     }
   }
@@ -213,7 +213,7 @@ public:
     else
       ae += {{-bnds.ub(), b}, 0.0};
     MP_DISPATCH( AddConstraint(LinConLE(     /// Big-M constraint
-        (LinExp&&)ae, -ae.constant_term() )) );
+        (LinTerms&&)ae, -ae.constant_term() )) );
   }
 
   /// b==val ==> c'x==d
