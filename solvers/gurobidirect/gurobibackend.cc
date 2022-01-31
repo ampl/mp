@@ -1054,6 +1054,12 @@ void GurobiBackend::FinishProblemModificationPhase() {
 
 // static possible values with descriptions
 
+static const mp::OptionValueInfo values_item_acceptance[] = {
+  { "0", "Not accepted natively, automatic redefinition will be attempted", 0},
+  { "1", "Accepted but automatic redefinition will be used where possible", 1},
+  { "2", "Accepted natively and preferred", 2}
+};
+
 static const mp::OptionValueInfo values_barcrossover[] = {
   {"-1", "Automatic choice (default)", -1},
   { "0", "None: return an interior solution", 0},
@@ -1284,6 +1290,30 @@ void GurobiBackend::InitCustomOptions() {
       "  ampl: option {0}_options 'opttol=1e-6';\n",
                   GetSolverInvocationName()).c_str());
 
+
+  /// Constraint acceptance
+  AddStoredOption("acc:abs",
+                  "Acceptance level for 'abs' expression, default 1:\n"
+                  "\n.. value-table::\n",
+                  storedOptions_.acc_abs_, values_item_acceptance);
+  AddStoredOption("acc:min",
+                  "Acceptance level for 'min' expression, default 1.",
+                  storedOptions_.acc_min_);
+  AddStoredOption("acc:max",
+                  "Acceptance level for 'max' expression, default 1.",
+                  storedOptions_.acc_max_);
+  AddStoredOption("acc:and",
+                  "Acceptance level for 'and'/'forall' expressions, default 1.",
+                  storedOptions_.acc_and_);
+  AddStoredOption("acc:or",
+                  "Acceptance level for 'or'/'exists' expressions, default 1.",
+                  storedOptions_.acc_or_);
+  AddStoredOption("acc:ind:le acc_ind_le",
+                  "Acceptance level for 'implied-less-equal' expression, default 1.",
+                  storedOptions_.acc_ind_le_);
+  AddStoredOption("acc:ind:eq acc_ind_eq",
+                  "Acceptance level for 'implied-equal' expression, default 1.",
+                  storedOptions_.acc_ind_eq_);
 
   /// Options basis, sens are created internally if
   /// std features BASIS / SENSITIVITY are set.

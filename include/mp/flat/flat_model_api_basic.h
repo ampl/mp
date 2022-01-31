@@ -60,9 +60,9 @@ public:
 
 /// Level of acceptance of a constraint by a backend
 enum ConstraintAcceptanceLevel {
-  NotAccepted,
-  AcceptedButNotRecommended,
-  Recommended
+  NotAccepted=0,
+  AcceptedButNotRecommended=1,
+  Recommended=2
 };
 
 /// Constraint groups
@@ -110,8 +110,9 @@ public:
 
 /// ... then for a certain constraint it can be specified
 #define ACCEPT_CONSTRAINT(ConstrType, level, con_grp) \
-  static constexpr mp::ConstraintAcceptanceLevel \
-    AcceptanceLevel(const ConstrType*) { return level; } \
+  mp::ConstraintAcceptanceLevel \
+    AcceptanceLevel(const ConstrType*) const \
+  { return (mp::ConstraintAcceptanceLevel)level; } \
   static constexpr int \
     GroupNumber(const ConstrType*) { return con_grp; }
 

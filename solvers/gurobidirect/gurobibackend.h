@@ -167,7 +167,7 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
 
-  /// TODO Attributes (lazy/user cut, etc)
+  /// TODO Linear constraint attributes (lazy/user cut, etc)
   ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
   void AddConstraint(const LinConLE& lc);
   ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
@@ -176,21 +176,21 @@ public:
   void AddConstraint(const LinConGE& lc);
   ACCEPT_CONSTRAINT(QuadraticConstraint, Recommended, CG_Quadratic)
   void AddConstraint(const QuadraticConstraint& qc);
-  ACCEPT_CONSTRAINT(MaximumConstraint, AcceptedButNotRecommended, CG_General)
+  ACCEPT_CONSTRAINT(MaximumConstraint, acc_max(), CG_General)
   void AddConstraint(const MaximumConstraint& mc);
-  ACCEPT_CONSTRAINT(MinimumConstraint, AcceptedButNotRecommended, CG_General)
+  ACCEPT_CONSTRAINT(MinimumConstraint, acc_min(), CG_General)
   void AddConstraint(const MinimumConstraint& mc);
-  ACCEPT_CONSTRAINT(AbsConstraint, AcceptedButNotRecommended, CG_General)
+  ACCEPT_CONSTRAINT(AbsConstraint, acc_abs(), CG_General)
   void AddConstraint(const AbsConstraint& absc);
-  ACCEPT_CONSTRAINT(ConjunctionConstraint, AcceptedButNotRecommended, CG_General)
+  ACCEPT_CONSTRAINT(ConjunctionConstraint, acc_and(), CG_General)
   void AddConstraint(const ConjunctionConstraint& cc);
-  ACCEPT_CONSTRAINT(DisjunctionConstraint, AcceptedButNotRecommended, CG_General)
+  ACCEPT_CONSTRAINT(DisjunctionConstraint, acc_or(), CG_General)
   void AddConstraint(const DisjunctionConstraint& mc);
   /// Enabling built-in indicator for infinite bounds,
   /// but not recommended otherwise --- may be slow
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, acc_ind_le(), CG_General)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, acc_ind_eq(), CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
 
   /// General
@@ -382,6 +382,9 @@ private:
   struct Options {
     std::string exportFile_, paramRead_, paramWrite_;
 
+    int acc_min_=1, acc_max_=1, acc_abs_=1, acc_and_=1, acc_or_=1,
+      acc_ind_le_=1, acc_ind_eq_=1;
+
     int nMIPStart_=1;
     int nPoolMode_=2;
 
@@ -400,6 +403,14 @@ private:
 
 protected:  //////////// Option accessors ////////////////
   int Gurobi_mipstart() const { return storedOptions_.nMIPStart_; }
+
+  int acc_abs() const { return storedOptions_.acc_abs_; }
+  int acc_min() const { return storedOptions_.acc_min_; }
+  int acc_max() const { return storedOptions_.acc_max_; }
+  int acc_and() const { return storedOptions_.acc_and_; }
+  int acc_or() const { return storedOptions_.acc_or_; }
+  int acc_ind_le() const { return storedOptions_.acc_ind_le_; }
+  int acc_ind_eq() const { return storedOptions_.acc_ind_eq_; }
 
   const std::string& paramfile_read() const { return storedOptions_.paramRead_; }
   const std::string& paramfile_write() const { return storedOptions_.paramWrite_; }

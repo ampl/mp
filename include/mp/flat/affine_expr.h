@@ -117,11 +117,8 @@ class AffExp : public LinTerms {
 public:
   /// Default constructor
   AffExp() = default;
-  /// from const LinTerms&
-  AffExp(const LinTerms& ae, double ct=0.0) :
-    LinTerms(ae), constant_term_(ct) { }
   /// From LinTerms&&
-  AffExp(LinTerms&& ae, double ct=0.0) noexcept :
+  AffExp(LinTerms ae, double ct=0.0) noexcept :
     LinTerms(std::move(ae)), constant_term_(ct) { }
   /// From const AE&
   AffExp(const AffExp& ae) = default;
