@@ -427,6 +427,8 @@ class ColProblem : public Problem {
 
  public:
   ColProblem() {}
+
+  template <class Solver>
   explicit ColProblem(const Solver &) {}
 
   int col_start(int col_index) const { return col_starts_[col_index]; }

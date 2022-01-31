@@ -1069,6 +1069,8 @@ public:
   DoubleFormatter FormatObjValue(double value);
 };
 
+/// Convenience template used by some APIs
+/// to provide [NL]ProblemBuilderType
 template <typename ProblemBuilderT>
 class SolverImpl : public Solver {
  public:
@@ -1080,7 +1082,9 @@ class SolverImpl : public Solver {
     : Solver(name, long_name, date, flags) {}
 };
 
-// Adapts a solution for WriteSol.
+
+
+/// Adapts a solution for WriteSol.
 template <typename ProblemBuilder>
 class SolutionAdapter {
  private:
@@ -1140,16 +1144,18 @@ class SolFileWriter {
   }
 };
 
-// A solution writer.
-// Solver: optimization solver class
-// Writer: .sol writer
-template <typename Solver, typename Writer = SolFileWriter>
-class SolutionWriter : private Writer, public SolutionHandler {
+/// A solution writer.
+/// @param Solver: optimization solver class
+/// @param ProblemBuilder: suffix handler
+/// @param Writer: .sol writer
+template <typename Solver,
+          typename ProblemBuilder,
+          typename Writer = SolFileWriter>
+class SolutionWriterImpl :
+    private Writer, public SolutionHandler {
  private:
   std::string stub_;
   Solver &solver_;
-
-  typedef typename Solver::ProblemBuilder ProblemBuilder;
   ProblemBuilder &builder_;
 
   ArrayRef<int> options_;
@@ -1163,7 +1169,7 @@ class SolutionWriter : private Writer, public SolutionHandler {
   const std::string &stub() const { return stub_; }
 
  public:
-  SolutionWriter(fmt::StringRef stub, Solver &s, ProblemBuilder &b,
+  SolutionWriterImpl(fmt::StringRef stub, Solver &s, ProblemBuilder &b,
                  ArrayRef<int> options = mp::ArrayRef<int>(0, 0))
     : stub_(stub.to_string()), solver_(s), builder_(b),
       options_(options), num_solutions_(0) {}
@@ -1179,15 +1185,22 @@ class SolutionWriter : private Writer, public SolutionHandler {
         const double *values, const double *dual_values, double);
 };
 
-template <typename Solver, typename Writer>
-void SolutionWriter<Solver, Writer>::HandleFeasibleSolution(
+/// Convenience typedef for APIs using SolverImpl<> or similar
+template <class Solver, class Writer = SolFileWriter>
+using SolutionWriter = SolutionWriterImpl<
+                           Solver,
+                           typename Solver::ProblemBuilder,
+                           Writer>;
+
+template <typename Solver, typename PB, typename Writer>
+void SolutionWriterImpl<Solver, PB, Writer>::HandleFeasibleSolution(
     fmt::CStringRef message, const double *values,
     const double *dual_values, double) {
   ++num_solutions_;
   const char *solution_stub = solver_.solution_stub();
   if (!*solution_stub)
     return;
-  SolutionAdapter<ProblemBuilder> sol(
+  SolutionAdapter<PB> sol(
         sol::UNCERTAIN, &builder_, message.c_str(), ArrayRef<int>(0, 0),
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values,
@@ -1198,8 +1211,8 @@ void SolutionWriter<Solver, Writer>::HandleFeasibleSolution(
   this->Write(filename.c_str(), sol);
 }
 
-template <typename Solver, typename Writer>
-void SolutionWriter<Solver, Writer>::HandleSolution(
+template <typename Solver, typename PB, typename Writer>
+void SolutionWriterImpl<Solver, PB, Writer>::HandleSolution(
     int status, fmt::CStringRef message, const double *values,
     const double *dual_values, double) {
   if (solver_.need_multiple_solutions()) {
@@ -1214,7 +1227,7 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
     builder_.AddIntSuffix("npool", kindO, 0).
         SetValue(0, num_solutions_);
   }
-  SolutionAdapter<ProblemBuilder> sol(
+  SolutionAdapter<PB> sol(
         status, &builder_, message.c_str(), options_,
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values,
@@ -1225,8 +1238,9 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
 
 namespace internal {
 
-// Command-line option parser for a solver application.
-// Not to be mistaken with solver option parser built into the Solver class.
+/// Command-line option parser for a solver application.
+/// Not to be mistaken with solver option parser
+/// built into the Solver class.
 class SolverAppOptionParser {
  private:
 
@@ -1336,18 +1350,22 @@ class SignalHandler : public Interrupter {
   void SetHandler(InterruptHandler handler, void *data);
 };
 
-// An .nl handler for SolverApp.
-template <typename Solver>
-class SolverNLHandler : public Solver::NLProblemBuilder {
+/// An .nl handler for SolverApp.
+/// The full definition separates parameters
+/// Solver, ProblemBuilder, and NLProblemBuilder.
+template <typename Solver,
+          typename ProblemBuilder,
+          typename NLProblemBuilder>
+class SolverNLHandlerImpl : public NLProblemBuilder {
  private:
   Solver &solver_;
   int num_options_;
   int options_[MAX_AMPL_OPTIONS];
 
-  typedef typename Solver::NLProblemBuilder Base;
+  typedef NLProblemBuilder Base;
 
  public:
-  SolverNLHandler(typename Solver::ProblemBuilder &pb, Solver &s)
+  SolverNLHandlerImpl(ProblemBuilder &pb, Solver &s)
     : Base(pb), solver_(s), num_options_(0) {}
 
   int num_options() const { return num_options_; }
@@ -1359,8 +1377,15 @@ class SolverNLHandler : public Solver::NLProblemBuilder {
   void OnHeader(const NLHeader &h);
 };
 
-template <typename Solver>
-void SolverNLHandler<Solver>::OnHeader(const NLHeader &h) {
+/// A shorthand typedef for APIs using SolverImpl or similar
+template <class Solver>
+using SolverNLHandler = SolverNLHandlerImpl<
+                              Solver,
+                              typename Solver::ProblemBuilder,
+                              typename Solver::NLProblemBuilder>;
+
+template <typename Solver, typename PB, typename NLPB>
+void SolverNLHandlerImpl<Solver, PB, NLPB>::OnHeader(const NLHeader &h) {
   int objno = solver_.objno();
   if (objno > h.num_objs && solver_.objno_specified())
     throw InvalidOptionValue("objno", objno,
@@ -1389,29 +1414,41 @@ class NameProvider {
   fmt::StringRef name(std::size_t index);
 };
 
-// Prints a solution to stdout.
+/// Prints a solution to stdout.
 void PrintSolution(const double *values, int num_values, const char *name_col,
                    const char *value_col, NameProvider &np);
 
-// Solution handler for a solver application.
-template <typename Solver, typename Writer = SolFileWriter>
-class AppSolutionHandler : public SolutionWriter<Solver, Writer> {
+/// Solution handler for a solver application.
+template <typename Solver,
+          typename ProblemBuilder,
+          typename Writer = SolFileWriter>
+class AppSolutionHandlerImpl :
+    public SolutionWriterImpl<Solver, ProblemBuilder, Writer> {
  private:
   unsigned banner_size_;
 
  public:
-  AppSolutionHandler(fmt::StringRef stub, Solver &s,
-                    typename Solver::ProblemBuilder &b,
+  AppSolutionHandlerImpl(fmt::StringRef stub, Solver &s,
+                    ProblemBuilder &b,
                     ArrayRef<int> options, unsigned banner_size)
-  : SolutionWriter<Solver, Writer>(stub, s, b, options),
-    banner_size_(banner_size) {}
+  : SolutionWriterImpl<Solver, ProblemBuilder, Writer>
+      (stub, s, b, options),  banner_size_(banner_size) {}
 
   void HandleSolution(int status, fmt::CStringRef message, const double *values,
                       const double *dual_values, double obj_value);
 };
 
-template <typename Solver, typename Writer>
-void AppSolutionHandler<Solver, Writer>::HandleSolution(
+
+/// Convenience typedef for APIs using SolverImpl<> or similar
+template <class Solver, class Writer = SolFileWriter>
+using AppSolutionHandler = AppSolutionHandlerImpl<
+                             Solver,
+                             typename Solver::ProblemBuilder,
+                             Writer>;
+
+
+template <typename Solver, typename PB, typename Writer>
+void AppSolutionHandlerImpl<Solver, PB, Writer>::HandleSolution(
     int status, fmt::CStringRef message, const double *values,
     const double *dual_values, double obj_value) {
   Solver &solver = this->solver();
@@ -1424,7 +1461,7 @@ void AppSolutionHandler<Solver, Writer>::HandleSolution(
       w << fmt::pad("", banner_size_, '\b');
       solver.Print("{}", w.c_str());
     }
-    SolutionWriter<Solver, Writer>::HandleSolution(
+    SolutionWriterImpl<Solver, PB, Writer>::HandleSolution(
           status, message, values, dual_values, obj_value);
   }
   if (solver.ampl_flag())

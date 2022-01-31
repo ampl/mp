@@ -77,7 +77,7 @@ template <class Impl>
 class Backend :
     public BasicBackend,
     public FlatBackend<Impl>,
-    public SolverImpl< Problem >   ///< TODO remove Problem
+    public Solver
 {
   ////////////////////////////////////////////////////////////////////////////
   ///////////////////// TO IMPLEMENT IN THE FINAL CLASS //////////////////////
@@ -852,7 +852,7 @@ private: // hiding this detail, it's not for the final backends
     return *p_converter_query_object_;
   }
   NLSolverProxy *p_converter_query_object_ = nullptr;
-  using MPSolverBase = SolverImpl< Problem >;
+  using MPSolverBase = Solver;
 
 
 public:

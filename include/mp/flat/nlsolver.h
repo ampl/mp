@@ -88,7 +88,7 @@ protected:
   /// for error reporting
   void MakeUpTemporarySolHandler(const std::string& filename_no_ext) {
     ArrayRef<int> options({1, 1, 0});        ///< 'Default' NL options
-    SetSolHandler(new internal::AppSolutionHandler<MPUtils>(
+    SetSolHandler(new internal::AppSolutionHandlerImpl<MPUtils, ModelType>(
                              filename_no_ext, GetMPUtils(), GetModelBuilder(),
                              options,
                              GetMPUtils().get_output_handler().has_output ?
@@ -117,8 +117,7 @@ protected:
 
   void ReadNLFile(const std::string& nl_filename, int nl_reader_flags) {
     set_nl_read_result_handler(
-          new internal::SolverNLHandler<
-            SolverAdapter>(GetModelBuilder(), GetMPUtils()));
+          new SolverNLHandlerType(GetModelBuilder(), GetMPUtils()));
     internal::NLFileReader<> reader;
     reader.Read(nl_filename, *nl_read_result_.handler_, nl_reader_flags);
   }
@@ -127,7 +126,8 @@ protected:
   void MakeProperSolutionHandler(const std::string& filename_no_ext) {
     ArrayRef<int> options(get_nl_read_result_handler().options(),
                           get_nl_read_result_handler().num_options());
-    SetSolHandler(new internal::AppSolutionHandler<MPUtils>(
+    SetSolHandler(
+          new internal::AppSolutionHandlerImpl<MPUtils, ModelType>(
           filename_no_ext, GetMPUtils(), GetModelBuilder(), options,
           GetMPUtils().get_output_handler().has_output ?
             0 :
@@ -206,10 +206,14 @@ protected:
 
   /// This is to wrap some dependencies from MP
   /// TODO hide
-  using SolverAdapter = SolverImpl< ModelType >;
+  using SolverAdapter = Solver;
 
-  struct NLReadResult {     // TODO decouple from SolverAdapter
-    using HandlerType = internal::SolverNLHandler<SolverAdapter>;
+  using SolverNLHandlerType =
+    internal::SolverNLHandlerImpl<Solver, ModelType,
+                                  internal::NLProblemBuilder<ModelType>>;
+
+  struct NLReadResult {
+    using HandlerType = SolverNLHandlerType;
     std::unique_ptr<HandlerType> handler_;
   };
 

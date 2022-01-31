@@ -40,7 +40,7 @@
 namespace mp {
 
 /// Linear expression (not affine: no constant term)
-/// used in `mp::BasicProblem`
+/// used in `mp::BasicProblem<>`
 class LinearExpr {
  private:
   class Term {
@@ -112,9 +112,6 @@ class LinearExpr {
 
   void SortTerms();
 };
-
-class Solver;
-
 
 /// Optionally adding extra info to some items
 struct EmptyStruct { };
@@ -421,6 +418,9 @@ public:
   /** Constructs an empty optimization problem. */
   BasicProblem() {}
 
+  /** Placeholder, some APIs assume
+   *  a ProblemBuilder to use a Solver */
+  template <class Solver>
   explicit BasicProblem(const Solver &) {}
 
   /** Returns the number of variables. */
