@@ -25,9 +25,10 @@
 
 #include <cmath>
 
+#include "mp/clock.h"
 #include "mp/flat/expr_flattener.h"
 #include "mp/flat/backend_base.h"
-#include "mp/solver.h"
+#include "mp/solver-io.h"
 
 namespace mp {
 
@@ -51,7 +52,9 @@ public:
 
   BasicNLSolverWithFlatBackend() { }
 
-  /// Parse solver options such as "outlev=1".
+  /// Parse solver options such as "outlev=1" from env and argv.
+  /// @param filename_no_ext: basname of the .nl file
+  /// @param argv: (remaining part of) vector of cmdline strings
   /// @param flags: 0 or \a Solver::NO_OPTION_ECHO
   bool ParseSolverOptions(const char* filename_no_ext,
                     char **argv, unsigned flags = 0) {
@@ -204,12 +207,9 @@ protected:
   BasicBackend& GetBasicBackend()
   { return GetExprFlattener().GetBasicBackend(); }
 
-  /// This is to wrap some dependencies from MP
-  /// TODO hide
-  using SolverAdapter = Solver;
 
   using SolverNLHandlerType =
-    internal::SolverNLHandlerImpl<Solver, ModelType,
+    internal::SolverNLHandlerImpl<BasicSolver, ModelType,
                                   internal::NLProblemBuilder<ModelType>>;
 
   struct NLReadResult {

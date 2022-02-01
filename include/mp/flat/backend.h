@@ -31,7 +31,7 @@
 #include "mp/flat/std_constr.h"
 #include "mp/flat/std_obj.h"
 #include "mp/problem.h"
-#include "mp/solver.h"
+#include "mp/solver-base.h"
 
 /// Issue this if you redefine std feature switches
 #define USING_STD_FEATURES using BaseBackend::STD_FEATURE_QUERY_FN
@@ -77,7 +77,7 @@ template <class Impl>
 class Backend :
     public BasicBackend,
     public FlatBackend<Impl>,
-    public Solver
+    public BasicSolver
 {
   ////////////////////////////////////////////////////////////////////////////
   ///////////////////// TO IMPLEMENT IN THE FINAL CLASS //////////////////////
@@ -262,7 +262,7 @@ protected:
   }
 
   /// For Impl to check if user wants multiple solutions reported
-  using Solver::need_multiple_solutions;
+  using BasicSolver::need_multiple_solutions;
 
   /// Report results
   virtual void ReportResults() {
@@ -487,11 +487,11 @@ protected:
 
 
 public:
-  using Solver::Print;
-  using Solver::add_to_long_name;
-  using Solver::add_to_version;
-  using Solver::set_option_header;
-  using Solver::add_to_option_header;
+  using BasicSolver::Print;
+  using BasicSolver::add_to_long_name;
+  using BasicSolver::add_to_version;
+  using BasicSolver::set_option_header;
+  using BasicSolver::add_to_option_header;
 
 
 protected:
@@ -578,11 +578,11 @@ protected:
 
   ///////////////////////////// OPTIONS /////////////////////////////////
 public:
-  using Solver::AddOption;
-  using Solver::AddOptionSynonyms_Inline_Front;
-  using Solver::AddOptionSynonyms_Inline_Back;
-  using Solver::AddOptionSynonyms_OutOfLine;
-  using Solver::FindOption;
+  using BasicSolver::AddOption;
+  using BasicSolver::AddOptionSynonyms_Inline_Front;
+  using BasicSolver::AddOptionSynonyms_Inline_Back;
+  using BasicSolver::AddOptionSynonyms_OutOfLine;
+  using BasicSolver::FindOption;
 
 private:
   /// Recorded solver options
@@ -625,10 +625,10 @@ protected:
 
   template <class ValueType, class KeyType>
   class ConcreteOptionWrapper :
-      public Solver::ConcreteOptionWithInfo<
+      public SolverOptionManager::ConcreteOptionWithInfo<
       SolverOptionAccessor<ValueType, KeyType>, ValueType, KeyType> {
 
-    using COType = Solver::ConcreteOptionWithInfo<
+    using COType = SolverOptionManager::ConcreteOptionWithInfo<
     SolverOptionAccessor<ValueType, KeyType>, ValueType, KeyType>;
     using SOAType = SolverOptionAccessor<ValueType, KeyType>;
 
@@ -650,7 +650,7 @@ protected:
   void AddSolverOption(const char *name_list, const char *description,
                        KeyType k,
                        ValueType , ValueType ) {
-    AddOption(Solver::OptionPtr(
+    AddOption(SolverOptionManager::OptionPtr(
                 new ConcreteOptionWrapper<
                 ValueType, KeyType>(
                   (Impl*)this, name_list, description, k)));
@@ -659,7 +659,7 @@ protected:
   template <class KeyType, class ValueType = std::string>
   void AddSolverOption(const char* name_list, const char* description,
     KeyType k) {
-    AddOption(Solver::OptionPtr(
+    AddOption(SolverOptionManager::OptionPtr(
       new ConcreteOptionWrapper<
       ValueType, KeyType>(
         (Impl*)this, name_list, description, k)));
@@ -671,7 +671,7 @@ protected:
   void AddSolverOption(const char* name_list, const char* description,
       KeyType k, ValueArrayRef values, ValueType defaultValue) {
     internal::Unused(defaultValue);
-    AddOption(Solver::OptionPtr(
+    AddOption(SolverOptionManager::OptionPtr(
       new ConcreteOptionWrapper<
       ValueType, KeyType>(
         (Impl*)this, name_list, description, k, values)));
@@ -817,9 +817,9 @@ public:
   static int Flags() {
     int flg=0;
     if ( IMPL_HAS_STD_FEATURE(MULTISOL) )
-      flg |= Solver::MULTIPLE_SOL;
+      flg |= BasicSolver::MULTIPLE_SOL;
     if ( IMPL_HAS_STD_FEATURE(MULTIOBJ) )
-      flg |= Solver::MULTIPLE_OBJ;
+      flg |= BasicSolver::MULTIPLE_OBJ;
     return flg;
   }
 
@@ -852,7 +852,7 @@ private: // hiding this detail, it's not for the final backends
     return *p_converter_query_object_;
   }
   NLSolverProxy *p_converter_query_object_ = nullptr;
-  using MPSolverBase = Solver;
+  using MPSolverBase = BasicSolver;
 
 
 public:

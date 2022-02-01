@@ -26,7 +26,7 @@
 #include <string>
 #include <memory>
 
-#include "mp/solver.h"   // for namespace internal::
+#include "mp/solver-app-base.h"
 
 namespace mp {
 
@@ -121,8 +121,10 @@ bool NLSolverApp<Interface>::Init(char **argv) {
 
   // Parse solver options.
   unsigned flags =
-      p_option_parser_->echo_solver_options() ? 0 : Solver::NO_OPTION_ECHO;
-  if (!nlsolver_.ParseSolverOptions(filename_no_ext_.c_str(), argv, flags)) {
+      p_option_parser_->echo_solver_options() ?
+        0 : BasicSolver::NO_OPTION_ECHO;
+  if (!nlsolver_.ParseSolverOptions(
+        filename_no_ext_.c_str(), argv, flags)) {
     result_code_ = 1;
     return false;
   }

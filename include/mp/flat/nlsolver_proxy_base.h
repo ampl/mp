@@ -7,7 +7,6 @@
   * To be used by a backend
   */
 
-#include "mp/solver.h"
 #include "mp/flat/suffix.h" // TODO merge with normal suffix defs
 
 namespace mp {

@@ -29,12 +29,7 @@
 
 namespace mp {
 
-// An option error.
-class OptionError : public Error {
-public:
-  explicit OptionError(fmt::CStringRef message) : Error(message) {}
-};
-
+/// Command-line option.
 struct Option {
   char name;
   const char *description;
@@ -42,7 +37,7 @@ struct Option {
   bool (*on_option)(void *);
 };
 
-// A list of options.
+/// A list of options.
 class OptionList {
  private:
   typedef std::vector<Option> OptionContainer;
@@ -72,9 +67,9 @@ class OptionList {
     Builder(OptionList &options, Handler &h)
       : options_(options), handler_(h) {}
 
-    // Adds an option.
-    // on_option: method called when option has been parsed; returns true
-    //            to continue parsing, false to stop
+    /// Adds an option.
+    /// on_option: method called when option has been parsed; returns true
+    ///            to continue parsing, false to stop
     template <bool (Handler::*on_option)()>
     void Add(char name, const char *description) {
       options_.Add<Handler, on_option>(name, description, handler_);
@@ -90,18 +85,19 @@ class OptionList {
 
   bool sorted() const { return sorted_; }
 
-  // Sorts the option list.
+  /// Sorts the option list.
   void Sort();
 
-  // Finds an option with the specified name in the list.
-  // Requires list to be sorted.
+  /// Finds an option with the specified name in the list.
+  /// Requires list to be sorted.
   const Option *Find(char name) const;
 };
 
-// Parses command-line options until the first argument that doesn't
-// start with '-'. Returns the option that terminated parsing or 0 if
-// parsing continued till the end.
+/// Parses command-line options until the first argument that doesn't
+/// start with '-'. Returns the option that terminated parsing or 0 if
+/// parsing continued till the end.
 char ParseOptions(char **&args, OptionList &options);
+
 }  // namespace mp
 
 #endif  // MP_OPTION_H_

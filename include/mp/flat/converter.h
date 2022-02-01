@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "mp/format.h"
+#include "mp/solver-base.h"
 #include "mp/flat/converter_proxy_base.h"
 #include "mp/flat/backend_base.h"
 #include "mp/flat/convert_functional.h"

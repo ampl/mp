@@ -73,6 +73,13 @@ inline UnsupportedError MakeUnsupportedError(
   return UnsupportedError("unsupported: {}", fmt::format(format_str, args));
 }
 FMT_VARIADIC(UnsupportedError, MakeUnsupportedError, fmt::CStringRef)
+
+/// An option error.
+class OptionError : public Error {
+public:
+  explicit OptionError(fmt::CStringRef message) : Error(message) {}
+};
+
 }  // namespace mp
 
 #endif  // MP_ERROR_H_

@@ -264,7 +264,7 @@ std::string OptionHelper<std::string>::Parse(const char *&s) {
   return std::string(start, s - start);
 }
 
-SolverAppOptionParser::SolverAppOptionParser(Solver &s)
+SolverAppOptionParser::SolverAppOptionParser(BasicSolver &s)
   : solver_(s), echo_solver_options_(true) {
   // Add standard command-line options.
   OptionList::Builder<SolverAppOptionParser> app_options(options_, *this);
@@ -279,8 +279,8 @@ SolverAppOptionParser::SolverAppOptionParser(Solver &s)
         'e', "suppress echoing of assignments");
   app_options.Add<&SolverAppOptionParser::WantSol>(
         's', "write .sol file (without -AMPL)");
-  OptionList::Builder<mp::Solver> options(options_, s);
-  options.Add<&mp::Solver::ShowVersion>('v', "show version and exit");
+  OptionList::Builder<mp::BasicSolver> options(options_, s);
+  options.Add<&mp::BasicSolver::ShowVersion>('v', "show version and exit");
   // TODO: if solver supports functions add options -ix and -u
   // "ix", "import user-defined functions from x; -i? gives details",
   // "u",  "just show available user-defined functions"
@@ -332,6 +332,7 @@ bool SolverAppOptionParser::ShowSolverOptionsASL() {
   }
   return false;
 }
+
 bool SolverAppOptionParser::ShowSolverOptions() {
   fmt::MemoryWriter writer;
   const char* option_header = solver_.option_header();
@@ -447,7 +448,7 @@ mp::internal::SignalRepeater::SignalRepeater(const char *s) : in_(0), out_(0) {
 }
 #endif
 
-SignalHandler::SignalHandler(Solver &s)
+SignalHandler::SignalHandler(BasicSolver &s)
   : solver_(s), message_(fmt::format("\n<BREAK> ({})\n", s.name())),
     repeater_(std::getenv("SW_sigpipe")) {
   solver_.set_interrupter(this);
@@ -539,7 +540,7 @@ bool Solver::OptionNameLess::operator()(
 
 
 
-Solver::Solver(
+BasicSolver::BasicSolver(
     fmt::CStringRef name, fmt::CStringRef long_name, long date, int flags)
 : name_(name.c_str()),
   long_name_((long_name.c_str() ? long_name : name).c_str()),
@@ -554,8 +555,8 @@ Solver::Solver(
   interrupter_ = this;
 
   struct VersionOption : SolverOption {
-    Solver &s;
-    VersionOption(Solver &s) : SolverOption("tech:version version",
+    BasicSolver &s;
+    VersionOption(BasicSolver &s) : SolverOption("tech:version version",
         "Single-word phrase: report version details "
         "before solving the problem.", ValueArrayRef(), true), s(s) {}
 
@@ -624,7 +625,6 @@ Solver::Solver(
       "0*/1: Whether to display timings for the run.")));
 
   if ((flags & MULTIPLE_SOL) != 0) {
-    AddSuffix("nsol", 0, suf::PROBLEM | suf::OUTPUT | suf::OUTONLY);
 
     AddOption(OptionPtr(new BoolOption(count_solutions_, "sol:count countsolutions",
         "0*/1: Whether to count the number of solutions "
@@ -642,7 +642,7 @@ Solver::Solver(
   }
 }
 
-void Solver::UseOptionFile(const SolverOption &, fmt::StringRef value) {
+void BasicSolver::UseOptionFile(const SolverOption &, fmt::StringRef value) {
   option_file_save_ = value;
   std::ifstream ifs(value);
   if (ifs.good())
@@ -654,12 +654,12 @@ void Solver::UseOptionFile(const SolverOption &, fmt::StringRef value) {
                          value, std::strerror(errno)));
 }
 
-Solver::~Solver() {
+SolverOptionManager::~SolverOptionManager() {
   std::for_each(options_.begin(), options_.end(), Deleter());
 }
 
 #ifdef MP_DATE
-bool Solver::ShowVersion() {
+bool BasicSolver::ShowVersion() {
   Print("{} ({})", version_, MP_SYSINFO);
   if (date_ > 0)
     Print(", driver({})", date_);
@@ -737,7 +737,7 @@ bool SolverOption::wc_match(const std::string &key) {
   return false;
 }
 
-SolverOption *Solver::FindOption(
+SolverOption *SolverOptionManager::FindOption(
     const char *name, bool wildcardvalues) const {
   struct DummyOption : SolverOption {
     DummyOption(const char *name) : SolverOption(name, "") {}
@@ -771,7 +771,8 @@ SolverOption *Solver::FindOption(
   return 0;
 }
 
-void Solver::ParseOptionString(const char *s, unsigned flags) {
+void BasicSolver::ParseOptionString(
+    const char *s, unsigned flags) {
   bool skip = false;
   for (;;) {
     if (!*(s = SkipSpaces(s)))
@@ -849,7 +850,7 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
   }
 }
 
-bool Solver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) {
+bool BasicSolver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) {
   has_errors_ = false;
   bool_options_ &= ~SHOW_VERSION;
   option_flag_save_ = flags;
@@ -862,7 +863,7 @@ bool Solver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) {
   return !has_errors_;
 }
 
-Solver::DoubleFormatter Solver::FormatObjValue(double value) {
+BasicSolver::DoubleFormatter BasicSolver::FormatObjValue(double value) {
   if (obj_precision_ < 0) {
     const char *s =  std::getenv("objective_precision");
     obj_precision_ = s ? std::atoi(s) : 0;
@@ -888,7 +889,7 @@ void SolverOption::add_synonyms_back(const char* names_list) {
                           synonyms.begin(), synonyms.end());
 }
 
-void Solver::AddOption(OptionPtr opt) {
+void SolverOptionManager::AddOption(OptionPtr opt) {
   // First insert the option, then release a pointer to it. Doing the other
   // way around may lead to a memory leak if insertion throws an exception.
   if (!options_.insert(opt.get()).second)
@@ -897,7 +898,8 @@ void Solver::AddOption(OptionPtr opt) {
   opt.release();
 }
 
-void Solver::AddOptionSynonyms_Inline_Front(const char* names_list, const char* realName)
+void SolverOptionManager::AddOptionSynonyms_Inline_Front(
+    const char* names_list, const char* realName)
 {
   SolverOption* real = FindOption(realName);
   if (!real)
@@ -907,7 +909,8 @@ void Solver::AddOptionSynonyms_Inline_Front(const char* names_list, const char* 
   real->add_synonyms_front(names_list);
 }
 
-void Solver::AddOptionSynonyms_Inline_Back(const char* names_list, const char* realName)
+void SolverOptionManager::AddOptionSynonyms_Inline_Back(
+    const char* names_list, const char* realName)
 {
   SolverOption* real = FindOption(realName);
   if (!real)
@@ -942,7 +945,8 @@ public:
   }
 };
 
-void Solver::AddOptionSynonyms_OutOfLine(const char* name, const char* realName)
+void SolverOptionManager::AddOptionSynonyms_OutOfLine(
+    const char* name, const char* realName)
 {
   SolverOption* real = FindOption(realName);
   if (!real)
