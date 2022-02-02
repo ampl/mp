@@ -362,24 +362,36 @@ ArrayRef<int> GurobiBackend::ConStatii() {
 
 void GurobiBackend::VarStatii(ArrayRef<int> vst) {
   std::vector<int> stt(vst.data(), vst.data()+vst.size());
-  for (auto& s: stt) {
+  for (auto j=stt.size(); j--; ) {
+    auto& s = stt[j];
     switch ((BasicStatus)s) {
     case BasicStatus::bas:
       s = 0;
       break;
     case BasicStatus::low:
+    case BasicStatus::equ:
       s = -1;
       break;
     case BasicStatus::upp:
       s = -2;
       break;
     case BasicStatus::sup:
+    case BasicStatus::btw:
       s = -3;
       break;
     case BasicStatus::none:
-    case BasicStatus::equ:
-    case BasicStatus::btw:
-      /// This should leave the value at 0 (bas) for new vars
+      /// This happens to new variables. Compute low/upp/sup:
+      /// Depending on where 0.0 is between bounds
+      double lb, ub;
+      if (!GRBgetdblattrelement(model_, GRB_DBL_ATTR_LB, j, &lb) &&
+          !GRBgetdblattrelement(model_, GRB_DBL_ATTR_UB, j, &ub)) {
+        if (lb >= -1e-6)
+          s = -1;
+        else if (ub <= 1e-6)
+          s = -2;
+        else
+          s = -3;  // or, leave at 0?
+      }
       break;
     default:
       MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
