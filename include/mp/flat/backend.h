@@ -83,11 +83,16 @@ class Backend :
   ///////////////////// TO IMPLEMENT IN THE FINAL CLASS //////////////////////
   ////////////////////////////////////////////////////////////////////////////
 public:
+  /// Underlying solver's name
   static const char* GetSolverName() { return "SomeSolver"; }
+  /// And version
   static std::string GetSolverVersion() { return "1.0.0"; }
-  /// Whatever the binary is called
-  static const char* GetSolverInvocationName() { return "solverdirect"; }
-  static const char* GetSolverLongName() { return nullptr; }
+  /// AMPL solver name is used to parse solver options
+  /// for the <name>_options environment variable.
+  /// This is only done if the <executable_name>_options
+  /// variable is not provided.
+  static const char* GetAMPLSolverName() { return "solver"; }
+  static const char* GetAMPLSolverLongName() { return nullptr; }
   static const char* GetBackendName()    { return "BasicBackend"; }
   static const char* GetBackendLongName() { return nullptr; }
   static long Date() { return MP_DATE; }
@@ -885,8 +890,8 @@ protected:
 public:
   Backend() :
     MPSolverBase(
-      Impl::GetSolverInvocationName(),
-      Impl::GetSolverLongName(),
+      Impl::GetAMPLSolverName(),
+      Impl::GetAMPLSolverLongName(),
       Impl::Date(), Impl::Flags())
   { }
   virtual ~Backend() { }

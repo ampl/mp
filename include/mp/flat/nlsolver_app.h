@@ -82,7 +82,8 @@ protected:
 };
 
 template <typename Interface>
-int NLSolverApp<Interface>::Run(char **argv, int nl_reader_flags) {
+int NLSolverApp<Interface>::Run(
+    char **argv, int nl_reader_flags) {
   if (!Init(argv))
     return result_code_;
   GetNLSolver().RunFromNLFile(
@@ -93,7 +94,7 @@ int NLSolverApp<Interface>::Run(char **argv, int nl_reader_flags) {
 template <typename Interface>
 bool NLSolverApp<Interface>::Init(char **argv) {
   /// Init solver/converter options
-  GetNLSolver().InitOptions();
+  GetNLSolver().InitOptions(argv);
 
   // Parse command-line arguments.
   const char *filename = p_option_parser_->Parse(argv);

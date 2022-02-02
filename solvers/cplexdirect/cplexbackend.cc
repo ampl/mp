@@ -28,8 +28,10 @@ CplexBackend::~CplexBackend() {
   CloseSolver();
 }
 
-const char* CplexBackend::GetSolverInvocationName() { return "cplexdirect"; }
-const char* CplexBackend::GetBackendName() { return "CplexBackend"; }
+const char* CplexBackend::GetAMPLSolverName()
+  { return "cplex"; }
+const char* CplexBackend::GetBackendName()
+  { return "CplexBackend"; }
 
 std::string CplexBackend::GetSolverVersion() {
   int version;

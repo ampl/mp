@@ -40,8 +40,8 @@ public:
   /// Metadata
   static const char* GetSolverName() { return "IBM ILOG CPLEX"; }
   std::string GetSolverVersion();
-  static const char* GetSolverInvocationName();
-  static const char* GetSolverLongName() { return nullptr; }
+  static const char* GetAMPLSolverName();
+  static const char* GetAMPLSolverLongName() { return "AMPL-CPLEX"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 

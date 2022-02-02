@@ -171,7 +171,10 @@ protected:
   }
 
 public:
-  void InitOptions() {
+  /// Initialize solver options
+  /// @param argv: the command-line arguments
+  void InitOptions(char** argv) {
+    GetMPUtils().set_exe_path(*argv);
     GetExprFlattener().InitOptions();
     InitOwnOptions();
   }

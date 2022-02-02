@@ -137,11 +137,17 @@ public:
   }
 
   /// Returns the solver name.
+  /// This is used to extract solver options from
+  /// the env variable <name>_options.
   const char *name() const { return name_.c_str(); }
 
   /// Returns the long solver name.
   /// This name is used in startup "banner".
   const char *long_name() const { return long_name_.c_str(); }
+
+  /// Returns the executable path.
+  const char *exe_path() const { return exe_path_.c_str(); }
+  void set_exe_path(const char* p) { exe_path_ = p; }
 
   /// Returns the solver version.
   const char *version() const { return version_.c_str(); }
@@ -330,6 +336,7 @@ protected:
 private:
   std::string name_;
   std::string long_name_;
+  std::string exe_path_;
   std::string version_;
   std::string license_info_;
   long date_;

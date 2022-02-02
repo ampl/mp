@@ -28,8 +28,10 @@ bool InterruptGurobi(void *model) {
 
 namespace mp {
 
-const char* GurobiBackend::GetSolverInvocationName() { return "gurobidirect"; }
-const char* GurobiBackend::GetBackendName() { return "GurobiBackend"; }
+const char* GurobiBackend::GetAMPLSolverName()
+  { return "gurobi"; }  // so we reuse gurobi_options
+const char* GurobiBackend::GetBackendName()
+  { return "GurobiBackend"; }
 
 std::string GurobiBackend::GetSolverVersion() {
   int a,b,c;
@@ -1288,7 +1290,7 @@ void GurobiBackend::InitCustomOptions() {
       "AMPL option ``{0}_options``. For example::\n"
       "\n"
       "  ampl: option {0}_options 'opttol=1e-6';\n",
-                  GetSolverInvocationName()).c_str());
+                  GetSolverName()).c_str());
 
 
   /// Constraint acceptance

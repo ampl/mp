@@ -48,8 +48,8 @@ public:
   ////////////////////////////////////////////////////////////
   static const char* GetSolverName() { return "Gurobi"; }
   static std::string GetSolverVersion();
-  static const char* GetSolverInvocationName();
-  static const char* GetSolverLongName() { return "AMPLGurobi"; }
+  static const char* GetAMPLSolverName();
+  static const char* GetAMPLSolverLongName() { return "AMPL-Gurobi"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 

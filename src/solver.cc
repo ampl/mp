@@ -47,6 +47,7 @@
 #include "mp/common.h"
 #include "mp/solver.h"
 
+#include "mp/os.h"
 #include "mp/utils_file.h"
 #include "mp/utils_string.h"
 #include "mp/clock.h"
@@ -854,8 +855,28 @@ bool BasicSolver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) 
   has_errors_ = false;
   bool_options_ &= ~SHOW_VERSION;
   option_flag_save_ = flags;
-  if (const char *s = std::getenv((name_ + "_options").c_str()))
+  bool had_exe_name_option_var = false;
+  /// Look for a <solver name>_options env var.
+  /// First try the executable name.
+  if (const char *s = exe_path()) {
+    path p(s);
+    auto exe_basename = p.filename().string();
+    auto pt = exe_basename.rfind('.');
+    if (std::string::npos != pt) {
+      auto ext = exe_basename.substr(pt);
+      if (".exe"==ext || ".app"==ext)
+        exe_basename = exe_basename.substr(0, pt);
+    }
+    if (const char *s = std::getenv((exe_basename + "_options").c_str())) {
+      ParseOptionString(s, flags);
+      had_exe_name_option_var = true;
+    }
+  }
+  // Otherwise try "standard"
+  if (!had_exe_name_option_var)
+  if (const char *s = std::getenv((name_ + "_options").c_str())) {
     ParseOptionString(s, flags);
+  }
   while (const char *s = *argv++)
     ParseOptionString(s, flags);
   if ((bool_options_ & SHOW_VERSION) != 0)

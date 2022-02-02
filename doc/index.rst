@@ -59,9 +59,9 @@ Concrete solver interfaces
   MIP or passed to the solver natively (Gurobi: `GRBaddgenconstrMax`).
   Currently there are two experimental implementations:
   
-  - `Gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_
+  - `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_
 
-  - `IBM ILOG CPLEX <https://github.com/ampl/mp/tree/master/solvers/cplexdirect>`_
+  - `x-cplex <https://github.com/ampl/mp/tree/master/solvers/cplexdirect>`_
 
 Other utilities
 ^^^^^^^^^^^^^^^
