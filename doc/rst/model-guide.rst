@@ -9,12 +9,11 @@ the enhanced AMPL-Gurobi interface.
 Summary
 -------
 
-- Full support of logical expressions and constraints, see
-  `AMPL extensions for logic and constraint programming`__.
-
-  __ http://ampl.com/resources/logic-and-constraint-programming-extensions/.
-
-- Algebraic expressions beyond linear / quadratic.
+- Full support of logical expressions and constraints, as described in the
+  AMPL page on `Logic and Constraint Programming Extensions
+  <https://ampl.com/resources/logic-and-constraint-programming-extensions/>`_.
+  
+- Algebraic expressions beyond linear and quadratic.
 
 - Choice between conversions in the driver vs. native solver support.
 
@@ -36,14 +35,13 @@ Expressions supported
 
         minimize TotalCost:
             sum {j in JOBS, k in MACHINES}
-                        if MachineForJob[j] = k then cost[j,k];
+                if MachineForJob[j] = k then cost[j,k];
 
         subj to OneJobPerMachine:
             alldiff {j in JOBS} MachineForJob[j];
 
         subj to CapacityOfMachine {k in MACHINES}:
-            numberof k in ({j in JOBS} MachineForJob[j])
-                <= cap[k];
+            numberof k in ({j in JOBS} MachineForJob[j]) <= cap[k];
 
         subj to VisitOnce {j in BOATS}:
             isH[j] = 0 ==> alldiff {t in TIMES} H[j,t];
