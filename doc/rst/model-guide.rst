@@ -1,8 +1,9 @@
-Modeling Guide
-==============
+x-Gurobi Modeling Guide
+=======================
 
-Modeling guide for experimental driver
-`x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_.
+A guide to using the beta test release of
+`x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_,
+the enhanced AMPL-Gurobi interface.
 
 
 Summary
