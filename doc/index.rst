@@ -1,10 +1,49 @@
 *mp* documentation
 ==================
 
-MP Library is a set of tools recommended to create new AMPL solver interfaces.
+MP Library is a set of solver drivers and tools
+recommended to create new AMPL solver drivers.
 
 Features
 --------
+
+Solver drivers and a modeling guide
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* Drivers for solvers with **expression-based APIs.**
+  In this case,
+  NL forests can be efficiently mapped to the solver API.
+  For example, AMPL expression
+  ``exp()`` maps to IBM ILOG Concert's ``IloExponent``. The library
+  has the following C++ drivers of this kind, all of which support
+  `AMPL extensions for logic and constraint programming`__:
+
+  __ http://ampl.com/resources/logic-and-constraint-programming-extensions/
+
+  - `Ilogcp <https://github.com/ampl/mp/tree/master/solvers/ilogcp>`_:
+    IBM ILOG CPLEX and CPLEX CP Optimizer
+
+  - `Gecode <https://github.com/ampl/mp/tree/master/solvers/gecode>`_
+
+  - `JaCoP <https://github.com/ampl/mp/tree/master/solvers/jacop>`_
+
+  - `LocalSolver <https://github.com/ampl/mp/tree/master/solvers/localsolver>`_
+
+* Drivers for solvers with traditional **"flat" APIs**.
+  For solvers with "flat" APIs, non-linear AMPL expressions need
+  to be reformulated.
+  For example, ``max(a, b)`` is translated into a constraint meaning
+  ``<new var> = max(a, b)``, which is in turn reformulated for
+  MIP or passed to the solver natively (Gurobi: `GRBaddgenconstrMax`).
+  Currently there are two experimental implementations:
+
+  - `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_
+    (available in the AMPL distribution bundle)
+
+  - `x-cplex <https://github.com/ampl/mp/tree/master/solvers/cplexdirect>`_
+
+* A :doc:`summary guide for efficient modeling for x-gurobi and x-cplex <rst/model-guide>`.
+
 
 Reusable building blocks for new interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -22,46 +61,13 @@ Reusable building blocks for new interfaces
     <http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__
     are supported.
 
-* Classes `mp::SolverImpl`, `mp::Backend` and `mp::MIPBackend`
+* Classes `mp::BasicSolver`, `mp::Backend` and `mp::MIPBackend`
   standardize solver behavior such as common options and suffixes
   and are recommended for new interfaces.
 
 * Convenience classes `mp::Problem` and `mp::ColProblem` can be used for
   intermediate storage of the NL model.
-  `mp::ExprVisitor` and `mp::ExprFlattener` walk NL forest top-down.
-
-Concrete solver interfaces
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-* Interfaces to solvers with **expression-based APIs.**
-  For solvers with an expression-based API,
-  NL forests can be efficiently mapped. For example, AMPL expression
-  ``exp()`` maps to IBM ILOG Concert's ``IloExponent``. The library
-  has the following C++ interfaces of this kind, all of which support
-  `AMPL extensions for logic and constraint programming`__:
-
-  __ http://ampl.com/resources/logic-and-constraint-programming-extensions/
-
-  - `Ilogcp <https://github.com/ampl/mp/tree/master/solvers/ilogcp>`_:
-    IBM ILOG CPLEX and CPLEX CP Optimizer
-
-  - `Gecode <https://github.com/ampl/mp/tree/master/solvers/gecode>`_
-
-  - `JaCoP <https://github.com/ampl/mp/tree/master/solvers/jacop>`_
-
-  - `LocalSolver <https://github.com/ampl/mp/tree/master/solvers/localsolver>`_
-
-* Interfaces to solvers with **"flat" APIs** (WIP).
-  For solvers with more traditional "flat" APIs, class `mp::MIPFlatConverter`
-  reformulates many non-linear AMPL expressions.
-  For example, ``max(a, b)`` is translated into a constraint meaning
-  ``<new var> = max(a, b)``, which is in turn reformulated for
-  MIP or passed to the solver natively (Gurobi: `GRBaddgenconstrMax`).
-  Currently there are two experimental implementations:
-  
-  - `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_
-
-  - `x-cplex <https://github.com/ampl/mp/tree/master/solvers/cplexdirect>`_
+  From there, `mp::ExprVisitor` and `mp::ExprFlattener` walk NL forest top-down.
 
 Other utilities
 ^^^^^^^^^^^^^^^
@@ -85,6 +91,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   rst/model-guide
    rst/nl-reader
    rst/flatcvt
    rst/backend
