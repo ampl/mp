@@ -96,6 +96,7 @@ Contents
    rst/flatcvt
    rst/backend
    rst/reference
+   rst/troublesh
 
 
 Indices and tables
