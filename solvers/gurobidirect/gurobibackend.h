@@ -46,9 +46,12 @@ public:
   ////////////////////////////////////////////////////////////
   //////////////////////// Metadata //////////////////////////
   ////////////////////////////////////////////////////////////
-  static const char* GetSolverName() { return "Gurobi"; }
+
+  /// Name displayed in messages
+  static const char* GetSolverName() { return "x-Gurobi"; }
   static std::string GetSolverVersion();
-  static const char* GetAMPLSolverName();
+  /// Reuse gurobi_options:
+  static const char* GetAMPLSolverName() { return "gurobi"; }
   static const char* GetAMPLSolverLongName() { return "AMPL-Gurobi"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }

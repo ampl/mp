@@ -37,10 +37,11 @@ public:
   CplexBackend();
   ~CplexBackend();
 
-  /// Metadata
-  static const char* GetSolverName() { return "IBM ILOG CPLEX"; }
+  /// Name displayed in messages
+  static const char* GetSolverName() { return "x-CPLEX"; }
   std::string GetSolverVersion();
-  static const char* GetAMPLSolverName();
+  /// Reuse cplex_options:
+  static const char* GetAMPLSolverName() { return "cplex"; }
   static const char* GetAMPLSolverLongName() { return "AMPL-CPLEX"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }

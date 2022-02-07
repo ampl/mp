@@ -83,13 +83,13 @@ class Backend :
   ///////////////////// TO IMPLEMENT IN THE FINAL CLASS //////////////////////
   ////////////////////////////////////////////////////////////////////////////
 public:
-  /// Underlying solver's name
+  /// Name displayed in messages
   static const char* GetSolverName() { return "SomeSolver"; }
   /// And version
   static std::string GetSolverVersion() { return "1.0.0"; }
   /// AMPL solver name is used to parse solver options
-  /// for the <name>_options environment variable.
-  /// This is only done if the <executable_name>_options
+  /// for the [name]_options environment variable.
+  /// This is only done if the [executable_name]_options
   /// variable is not provided.
   static const char* GetAMPLSolverName() { return "solver"; }
   static const char* GetAMPLSolverLongName() { return nullptr; }

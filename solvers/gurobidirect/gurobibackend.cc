@@ -28,8 +28,6 @@ bool InterruptGurobi(void *model) {
 
 namespace mp {
 
-const char* GurobiBackend::GetAMPLSolverName()
-  { return "gurobi"; }  // so we reuse gurobi_options
 const char* GurobiBackend::GetBackendName()
   { return "GurobiBackend"; }
 

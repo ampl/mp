@@ -28,8 +28,6 @@ CplexBackend::~CplexBackend() {
   CloseSolver();
 }
 
-const char* CplexBackend::GetAMPLSolverName()
-  { return "cplex"; }
 const char* CplexBackend::GetBackendName()
   { return "CplexBackend"; }
 
