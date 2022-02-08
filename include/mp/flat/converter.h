@@ -685,12 +685,24 @@ public:
 
 protected:
   void ConvertModel() {
-    MP_DISPATCH( PrepareConversion() );
+    MPD( PrepareConversion() );
     MPD( ConvertItems() );
+    MPD( WindupConversion() );
   }
 
   void PrepareConversion() {
     MP_DISPATCH( MemorizeModelSize() );
+  }
+
+  void WindupConversion() {
+    if (GetConvFailures().size()) {     // TODO and verbose=1
+      printf("WARNING: the following redefinitions failed"
+        " so the model items had to be passed to the solver:\n");
+      for (const auto& e: GetConvFailures())
+        printf("-   %s:  %d\n    --  %s\n",
+               e.first.c_str(), e.second.first,
+               e.second.second);
+    }
   }
 
   /// TODO wrong, Visit() may have produced aux constraints
@@ -977,13 +989,24 @@ protected:
 
   using ModelType = Model;
 
-public:  // for tests. TODO make friends
+public:
+  /// for tests. TODO make friends
   using BackendType = Backend;
+
+  /// Map to count conversion failures
+  using ConvFailMap =
+    std::unordered_map< std::string,
+      std::pair<int, const char*> >;
+  /// Get conv failures map
+  ConvFailMap& GetConvFailures() { return conv_failures_; }
 
 private:
   BackendType backend_;
   pre::Presolver presolver_;
   pre::CopyBridge copy_bridge_ { GetPresolver() };
+
+  /// Conversion failure warnings
+  ConvFailMap conv_failures_;
 
   /// TODO replace by pre- / postsolve
   /// Indices of NL original linear constr in the total constr ordering

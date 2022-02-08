@@ -205,9 +205,9 @@ public:
     /// TODO fail if lb>0 +report .iis if requested
     /// TODO skip if ub<0
     if (bnds.ub() >= this->PracticallyInfty())
-      throw ConstraintConversionFailure("Cannot convert indicator constraint with "
-                             "an infinite upper bound. "
-                             "Define finite upper bound or use solver built-in indicator");
+      throw ConstraintConversionFailure( "IndicatorInfBound",
+          "Provide tight bounds on variables entering logical expressions, "
+          "or set acc:ind_..=2");
     if (val)            // left condition is b==1
       ae += {{bnds.ub(), b}, -bnds.ub()};
     else

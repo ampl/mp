@@ -376,7 +376,11 @@ int ToLhsExpr(const Constraint& ) {
 template <class Con>
 class IndicatorConstraint: public BasicConstraint {
 public:
-  static const char* GetConstraintName() { return "IndicatorConstraint"; }
+  static const std::string& GetConstraintName() {
+    static std::string name
+      { "IndicatorConstraint[" + Con::name() + ']' };
+    return name;
+  }
   /// Getters
   int get_binary_var() const { return b_; }
   int get_binary_value() const { return bv_; }

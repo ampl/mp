@@ -163,11 +163,14 @@ public:
 
 /// Conversion failure helper
 class ConstraintConversionFailure {
-  const std::string msg_;
+  const char *key_, *msg_;
 public:
-  ConstraintConversionFailure(std::string msg) noexcept :
-    msg_(std::move(msg)) { }
-  const std::string& message() const { return msg_; }
+  ConstraintConversionFailure(const char* key, const char* msg) noexcept :
+    key_(key), msg_(msg) { }
+  /// Failure type, used to display infos about failures
+  const char* key() const { return key_; }
+  /// Detailed message, should help improve model
+  const char* message() const { return msg_; }
 };
 
 
@@ -293,11 +296,12 @@ protected:
           try {
             ConvertConstraint(*it, i);
           } catch (const ConstraintConversionFailure& ccf) {
-            printf( fmt::format(      // TODO use Env's output facility
-                                      "WARNING: {}. Will pass constraint {} [{}] "
-                           "to the backend. Continuing\n",
-                                      ccf.message(), i,
-                                      Constraint::GetConstraintName() ).c_str() );
+            auto& v = GetConverter().GetConvFailures()[
+                  std::string(ccf.key()) + '['
+                    + Constraint::GetConstraintName() + ']'
+                ];
+            ++v.first;
+            v.second = ccf.message();
           }
         }
       }
