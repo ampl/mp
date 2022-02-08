@@ -699,9 +699,8 @@ protected:
       printf("WARNING: the following redefinitions failed"
         " so the model items had to be passed to the solver:\n");
       for (const auto& e: GetConvFailures())
-        printf("-   %s:  %d\n    --  %s\n",
-               e.first.c_str(), e.second.first,
-               e.second.second);
+        printf("-   %d cases of \"%s\":\n    --  %s\n",
+               e.second.first, e.first, e.second.second);
     }
   }
 
@@ -994,9 +993,11 @@ public:
   using BackendType = Backend;
 
   /// Map to count conversion failures
+  /// Stores char* to names / descriptions for speed
+  /// Indexed by pointers to names, not values
   using ConvFailMap =
-    std::unordered_map< std::string,
-      std::pair<int, const char*> >;
+    std::unordered_map< const char*,    // failure name
+      std::pair<int, const char*> >;    // number, description
   /// Get conv failures map
   ConvFailMap& GetConvFailures() { return conv_failures_; }
 

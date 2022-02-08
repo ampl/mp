@@ -296,10 +296,8 @@ protected:
           try {
             ConvertConstraint(*it, i);
           } catch (const ConstraintConversionFailure& ccf) {
-            auto& v = GetConverter().GetConvFailures()[
-                  std::string(ccf.key()) + '['
-                    + Constraint::GetConstraintName() + ']'
-                ];
+            auto& v = GetConverter().
+                GetConvFailures()[ ccf.key() ];
             ++v.first;
             v.second = ccf.message();
           }
