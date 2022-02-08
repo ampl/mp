@@ -695,7 +695,7 @@ protected:
   }
 
   void WindupConversion() {
-    if (GetConvFailures().size()) {     // TODO and verbose=1
+    if (GetBackend().verbose_mode() && GetConvFailures().size()) {
       printf("WARNING: the following redefinitions failed"
         " so the model items had to be passed to the solver:\n");
       for (const auto& e: GetConvFailures())

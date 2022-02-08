@@ -100,6 +100,8 @@ void GurobiBackend::FinishOptionParsing() {
     GRB_CALL(
           GRBwriteparams(GRBgetenv(model_),
                          paramfile_write().c_str() ));
+  /// Tell the base class our verbosity
+  set_verbose_mode(GrbGetIntParam(GRB_INT_PAR_OUTPUTFLAG));
 }
 
 void GurobiBackend::OpenGurobiComputeServer() {

@@ -178,6 +178,13 @@ public:
       bool_options_ &= ~AMPL_FLAG;
   }
 
+  /// True if verbose mode
+  /// Should be set by the implementation,
+  /// otherwise it's true
+  bool verbose_mode() const { return verbose_; }
+  /// Set verbosity, by the impl
+  void set_verbose_mode(bool f) { verbose_=f; }
+
   /// True if need to debug
   /// Outputs test infos etc
   bool debug_mode() const { return debug_; }
@@ -360,6 +367,7 @@ private:
 
   unsigned read_flags_;  // flags passed to Problem::Read
 
+  bool verbose_=true;
   bool debug_;
   bool timing_;
   bool multiobj_;

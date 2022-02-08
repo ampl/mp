@@ -216,6 +216,12 @@ std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
 }
 
 
+void CplexBackend::FinishOptionParsing() {
+  int v=-1;
+  GetSolverOption(CPXPARAM_MIP_Display, v);
+  set_verbose_mode(v>0);
+}
+
 void CplexBackend::InitProblemModificationPhase() { }
 
 void CplexBackend::AddVariables(const VarArrayDef& v) {
@@ -265,6 +271,30 @@ void CplexBackend::AddConstraint(const RangeLinCon& lc) {
     CPLEX_CALL( CPXchgrngval (env, lp, 1, &indices, &range) );
   }
 }
+void CplexBackend::AddConstraint(const LinConLE& lc) {
+  char sense = 'L';                     // good to initialize things
+  double rhs = lc.rhs();
+  int rmatbeg[] = { 0 };
+  CPLEX_CALL( CPXaddrows (env, lp, 0, 1, lc.size(), &rhs,
+                          &sense, rmatbeg, lc.pvars(), lc.pcoefs(),
+                          NULL, NULL) );
+}
+void CplexBackend::AddConstraint(const LinConEQ& lc) {
+  char sense = 'E';                     // good to initialize things
+  double rhs = lc.rhs();
+  int rmatbeg[] = { 0 };
+  CPLEX_CALL( CPXaddrows (env, lp, 0, 1, lc.size(), &rhs,
+                          &sense, rmatbeg, lc.pvars(), lc.pcoefs(),
+                          NULL, NULL) );
+}
+void CplexBackend::AddConstraint(const LinConGE& lc) {
+  char sense = 'G';                     // good to initialize things
+  double rhs = lc.rhs();
+  int rmatbeg[] = { 0 };
+  CPLEX_CALL( CPXaddrows (env, lp, 0, 1, lc.size(), &rhs,
+                          &sense, rmatbeg, lc.pvars(), lc.pcoefs(),
+                          NULL, NULL) );
+}
 
 
 void CplexBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
@@ -304,7 +334,7 @@ void CplexBackend::InitCustomOptions() {
       "\n"
       "  ampl: option cplexdirect_options 'mipgap=1e-6';\n");
 
-  AddSolverOption("tech:outlev",
+  AddSolverOption("tech:outlev outlev",
       "0-5: output logging verbosity. "
       "Default = 0 (no logging).",
       CPXPARAM_MIP_Display, 0, 5);

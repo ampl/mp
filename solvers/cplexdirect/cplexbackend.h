@@ -46,6 +46,11 @@ public:
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
+  /// Chance for the Backend to init solver environment, etc
+  void InitOptionParsing() override { }
+  /// Chance to consider options immediately (open cloud, etc)
+  void FinishOptionParsing() override;
+
   /// [[ Prototype the incremental interface ]]
   void InitProblemModificationPhase() override;
   void FinishProblemModificationPhase() override;
@@ -58,6 +63,12 @@ public:
 
   ACCEPT_CONSTRAINT(RangeLinCon, Recommended, CG_Linear)
   void AddConstraint(const RangeLinCon& lc);
+  ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
+  void AddConstraint(const LinConLE& lc);
+  ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
+  void AddConstraint(const LinConEQ& lc);
+  ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
+  void AddConstraint(const LinConGE& lc);
   /// Enabling built-in indicator for infinite bounds,
   /// but not recommended otherwise --- may be slow
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended, CG_General)
