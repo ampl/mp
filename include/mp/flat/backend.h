@@ -96,15 +96,9 @@ public:
   static const char* GetBackendName()    { return "BasicBackend"; }
   static const char* GetBackendLongName() { return nullptr; }
   static long Date() { return MP_DATE; }
-  /// Options handling. Here for MSVC 2022
-  void GetSolverOption(const char* , int& ) const {}
-  void SetSolverOption(const char* , int ) {}
-  void GetSolverOption(const char* , double& ) const {}
-  void SetSolverOption(const char* , double ) {}
-  void GetSolverOption(const char* , std::string& ) const {}
-  void SetSolverOption(const char* , const std::string& ) {}
+
   
-  /// Using virtual methods for convenience (CRTP not essential)
+  /// Further, using virtual methods for convenience (CRTP not essential)
 
   /// Placeholder for solution getter (unpresolved, final solution)
   virtual Solution GetSolution() = 0;
@@ -606,12 +600,11 @@ protected:
   /// backend_.Get/SetSolverOption()
   template <class Value, class Index>
   class SolverOptionAccessor {
-    using Backend = Impl;
-    Backend& backend_;
+    Impl& backend_;
   public:
     using value_type = Value;
     using index_type = Index;
-    SolverOptionAccessor(Backend& b) : backend_(b) { }
+    SolverOptionAccessor(Impl& b) : backend_(b) { }
     /// Options setup
     Value get(const SolverOption& , Index i) const {
       Value v;
