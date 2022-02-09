@@ -380,7 +380,7 @@ void GurobiBackend::VarStatii(ArrayRef<int> vst) {
       s = -3;
       break;
     case BasicStatus::none:
-      /// This happens to new variables. Compute low/upp/sup:
+      /// 'none' is assigned to new variables. Compute low/upp/sup:
       /// Depending on where 0.0 is between bounds
       double lb, ub;
       if (!GRBgetdblattrelement(model_, GRB_DBL_ATTR_LB, j, &lb) &&
@@ -405,14 +405,14 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
   for (auto& s: stt) {
     switch ((BasicStatus)s) {
     case BasicStatus::bas:
-    case BasicStatus::none:   // for 'not set', it seems better
-      s = 0;                  // after adding new rows
-      break;                  // as Gurobi 9.5 does not accept partial basis
-    case BasicStatus::upp:
-    case BasicStatus::sup:
-    case BasicStatus::low:
-    case BasicStatus::equ:
-    case BasicStatus::btw:
+      s = 0;
+      break;
+    case BasicStatus::none:   // for 'none', which is the status
+    case BasicStatus::upp:    // assigned to new rows, it seems good to guess
+    case BasicStatus::sup:    // a valid status,
+    case BasicStatus::low:    // as Gurobi 9.5 does not accept partial basis.
+    case BasicStatus::equ:    // For active constraints, it is usually 'sup'.
+    case BasicStatus::btw:    // We could compute slack to decide though.
       s = -1;
       break;
     default:
