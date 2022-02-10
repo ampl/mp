@@ -86,6 +86,10 @@ public:
   ModelValuesInt PostsolveIIS(const ModelValuesInt& mvi) override
   { return RunPostsolve(&BasicBridge::PostsolveIIS, mvi); }
 
+  /// Presolve LazyUserCutFlags (vars + cons)
+  ModelValuesInt PresolveLazyUserCutFlags(const ModelValuesInt& mvi) override
+  { return RunPresolve(&BasicBridge::PresolveLazyUserCutFlags, mvi); }
+
 protected:
   /// Helper type: virtual member function pointer
   using BridgeFn = void (BasicBridge::*)(BridgeIndexRange);

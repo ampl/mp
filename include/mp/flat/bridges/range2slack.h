@@ -72,6 +72,14 @@ public:
       SetInt(be, 0, GetInt(be, 1));
   }
 
+  /// Mark Lazy/user cut: copy flag
+  void PresolveLazyUserCutFlagsEntry(const typename Base::BridgeEntry& be) {
+    SetInt(be, 1, GetInt(be, 0));
+  }
+  void PostsolveLazyUserCutFlagsEntry(const typename Base::BridgeEntry& ) {
+    /// Should not need
+  }
+
 protected:
   ModelConverter& GetMC() { return cvt_; }
 

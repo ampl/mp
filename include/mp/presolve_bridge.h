@@ -24,7 +24,8 @@ class Presolver;
 #define LIST_PRESOLVE_METHODS \
   PRESOLVE_KIND(Solution) \
   PRESOLVE_KIND(Basis) \
-  PRESOLVE_KIND(IIS)
+  PRESOLVE_KIND(IIS) \
+  PRESOLVE_KIND(LazyUserCutFlags)
 // ...
 
 /// Bridge interface
@@ -145,8 +146,11 @@ private:
 /// a range of transformations in each entry if that helps
 ///
 /// Usage: a derived class should define types
-/// BridgeEntry and NodeList, and methods
-/// Presolve...(const BridgeEntry& ) and Postsolve...(const BridgeEntry&)
+/// BridgeEntry and NodeList, and some methods
+/// Presolve...(const BridgeEntry& ) and Postsolve...(const BridgeEntry&).
+/// TODO: Those methods which are not defined, just copy values
+/// (which might be correct in _some_ cases).
+/// Need a "default copy" method.
 ///
 /// Using CRTP: https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
 template <class Impl, class BridgeEntry>
@@ -174,6 +178,7 @@ public:
       MPD( Postsolve ## name ## Entry(entries_.at(i)) ); }
 
   LIST_PRESOLVE_METHODS
+
 
 private:
   std::vector<BridgeEntry> entries_;

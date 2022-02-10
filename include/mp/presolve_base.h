@@ -190,6 +190,9 @@ public:
   virtual ModelValuesInt PresolveIIS(const ModelValuesInt& ) = 0;
   /// Postsolve IIS (vars + cons)
   virtual ModelValuesInt PostsolveIIS(const ModelValuesInt& ) = 0;
+
+  /// Presolve LazyUserCutFlags
+  virtual ModelValuesInt PresolveLazyUserCutFlags(const ModelValuesInt& ) = 0;
 };
 
 

@@ -317,7 +317,7 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   affine_expr.h backend_base.h backend.h basic_constr.h
   constraint_keeper.h flat_model_api_basic.h flat_model_api.h
   context.h converter.h nlsolver_proxy_base.h
-  converter_proxy_base.h convert_functional.h eexpr.h
+  convert_functional.h eexpr.h
   model.h preprocess.h
   quad_expr.h std_constr.h std_obj.h suffix.h)
 

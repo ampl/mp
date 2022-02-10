@@ -44,10 +44,6 @@ public:
   /// This adds all unbridged items to the backend (without conversion)
   virtual void AddUnbridgedToBackend(BasicFlatBackend& be) = 0;
 
-  /// Pre- / postsolve: elementary interface
-  /// 1: linear, 2: qcp
-  virtual int ConstraintClass() const = 0;
-
   /// Value presolve node, const
   const pre::ValueNode& GetValueNode() const { return value_node_; }
   /// Value presolve node
@@ -259,8 +255,6 @@ public:
                              exc.what());
     }
   }
-  int ConstraintClass() const override
-  { return Converter::ConstraintClass((Constraint*)nullptr); }
 
 protected:
   /// Retrieve the Converter, const

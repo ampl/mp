@@ -199,6 +199,12 @@ public:
       ReportIntSuffix({"test_lin_constr_lazy", suf::PROBLEM}, {{val}});
   }
 
+  /// Testing API
+  virtual void ReportFirstQCLazySuffix(int val) {
+    if (debug_mode())
+      ReportIntSuffix({"test_quad_constr_lazy", suf::PROBLEM}, {{val}});
+  }
+
   virtual void InputStartValues() {
     InputPrimalDualStartOrBasis(); /// Always
     if ( CanBeMIP() ) {

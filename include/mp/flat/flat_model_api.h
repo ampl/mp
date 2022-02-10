@@ -27,14 +27,15 @@
 #include "mp/flat/flat_model_api_basic.h"
 #include "mp/flat/std_constr.h"
 #include "mp/flat/std_obj.h"
-#include "mp/flat/converter_proxy_base.h"
 #include "mp/presolve_base.h"
 
 namespace mp {
 
 /// FlatBackend: Backends receiving flat constraints
-/// and receiving/sending suffixes for flattened models
+/// and handling Presolver (typycally, flat-API backends)
 /// should derive from this
+/// TODO rename into BackendWithPresolver
+/// TODO move the model manip methods into FlatModelAPI
 template <class Impl>
 class FlatBackend : public BasicFlatBackend {
 public:
@@ -64,53 +65,13 @@ public:
     pPresolver_ = pPre;
   }
 
-  /// OLD: FlatConverter should provide pCQ before FlatBackend can run solving
-  /// and request pre- / postsolving of suffix values etc
-  void ProvideFlatConverterProxyObject(FlatConverterProxy* pCQ) {
-    pFCPrx_ = pCQ;
-  }
-
 protected:
-  /// Primitive pre- / postsolve API
-  /// TODO deprecated
-  size_t NumValuedAlgConstr() const { return GetFC().NumValuedOrigConstr(); }
-
-  /////////////////////////////////////////////////////////////////////////
-  /// PRESOLVE ///
-  /////////////////////////////////////////////////////////////////////////
-
-  /// From original NL model's suffix or duals
-  std::vector<double> ExtractLinConValues(ArrayRef<double> allval)
-  { return GetFC().ExtractLinConValues(allval); }
-  std::vector<int> ExtractLinConValues(ArrayRef<int> allval)
-  { return GetFC().ExtractLinConValues(allval); }
-
-  std::vector<double> ExtractQCValues(ArrayRef<double> allval)
-  { return GetFC().ExtractQCValues(allval); }
-
-  /////////////////////////////////////////////////////////////////////////
-  /// POSTSOLVE ///
-  /////////////////////////////////////////////////////////////////////////
-
-  /// To original NL model's indexing
-  std::vector<double> MakeConstrValuesFromLPAndQCP(
-        ArrayRef<double> pi, ArrayRef<double> qcpi)
-  { return GetFC().MakeConstrValuesFromLPAndQCP(pi, qcpi); }
-  std::vector<int> MakeConstrValuesFromLPAndQCP(
-        ArrayRef<int> pi, ArrayRef<int> qcpi)
-  { return GetFC().MakeConstrValuesFromLPAndQCP(pi, qcpi); }
-
-
-  const FlatConverterProxy& GetFC() const { assert(pFCPrx_); return *pFCPrx_; }
-  FlatConverterProxy& GetFC() { assert(pFCPrx_); return *pFCPrx_; }
-
   const pre::BasicPresolver& GetPresolver() const
   { assert(pPresolver_); return *pPresolver_; }
   pre::BasicPresolver& GetPresolver()
   { assert(pPresolver_); return *pPresolver_; }
 
 private:
-  FlatConverterProxy* pFCPrx_ = nullptr;
   pre::BasicPresolver* pPresolver_ = nullptr;
 };
 

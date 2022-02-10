@@ -273,7 +273,10 @@ double GurobiBackend::CurrentGrbPoolObjectiveValue() const {
 
 
 void GurobiBackend::MarkLazyOrUserCuts(ArrayRef<int> lazyVals) {
-  auto lv_lin = ExtractLinConValues(lazyVals);
+  auto vm = GetPresolver().PresolveLazyUserCutFlags({
+                                                      {}, lazyVals
+                                                    });
+  std::vector<int> lv_lin = vm.GetConValues()(CG_Linear);
   if (lv_lin.size()) {
     for (size_t i=0; i<lv_lin.size(); ++i) {
       if (auto& val = lv_lin[i]) {
@@ -288,6 +291,10 @@ void GurobiBackend::MarkLazyOrUserCuts(ArrayRef<int> lazyVals) {
     // Testing
     ReportFirstLinearConstraintLazySuffix(lv_lin[0]);
   }
+  // Testing
+  const auto& lv_quad = vm.GetConValues()(CG_Quadratic);
+  if (lv_quad.size())
+    ReportFirstQCLazySuffix(lv_quad[0]);
 }
 
 SolutionBasis GurobiBackend::GetBasis() {
@@ -489,10 +496,12 @@ ArrayRef<double> GurobiBackend::Ray() {
 }
 
 ArrayRef<double> GurobiBackend::DRay() {
-  return
-      MakeConstrValuesFromLPAndQCP(
-        GrbGetDblAttrArray(GRB_DBL_ATTR_FARKASDUAL, NumLinCons()),
-        {} );
+  auto fd = GrbGetDblAttrArray(GRB_DBL_ATTR_FARKASDUAL, NumLinCons());
+  auto vm = GetPresolver().PostsolveSolution({
+                                               {},
+                                               {{{CG_Linear, std::move(fd)}}}
+                                             });
+  return vm.GetConValues()();
 }
 
 IIS GurobiBackend::GetIIS() {
@@ -788,11 +797,22 @@ void GurobiBackend::DoGurobiFeasRelax() {
     minrel = 1;
     feasrelax().flag_orig_obj_available();
   }
-  /// Gurobi 9.1 only relaxes linear constraints
-  auto rhspen = ExtractLinConValues( feasrelax().rhspen() );
+  /// Gurobi 9.5 only relaxes linear constraints
+  auto mv = GetPresolver().PresolveSolution({
+                                              {},
+                                              feasrelax().rhspen()
+                                            });
+  const auto& rhspen = mv.GetConValues()(CG_Linear);
+  /// Account for new variables (TODO: proper presolve)
+  std::vector<double> lbpen = feasrelax().lbpen();
+  if (lbpen.size() && lbpen.size()<(size_t)NumVars())
+    lbpen.resize(NumVars());
+  std::vector<double> ubpen = feasrelax().ubpen();
+  if (ubpen.size() && ubpen.size()<(size_t)NumVars())
+    ubpen.resize(NumVars());
   GRB_CALL( GRBfeasrelax(model_, reltype, minrel,
-                         (double*)data_or_null( feasrelax().lbpen() ),
-                         (double*)data_or_null( feasrelax().ubpen() ),
+                         (double*)data_or_null( lbpen ),
+                         (double*)data_or_null( ubpen ),
                          (double*)data_or_null( rhspen ),
                          &feasrelax().orig_obj_value()) );
 }

@@ -9,7 +9,6 @@
 
 #include "mp/format.h"
 #include "mp/solver-base.h"
-#include "mp/flat/converter_proxy_base.h"
 #include "mp/flat/backend_base.h"
 #include "mp/flat/convert_functional.h"
 #include "mp/flat/constraint_keeper.h"
@@ -28,7 +27,6 @@ namespace mp {
 template <class Impl, class Backend,
           class Model = BasicFlatModel< > >
 class FlatConverter :
-    public FlatConverterProxy,
     public BasicFlatConverter,
     public Model
 {
@@ -52,7 +50,6 @@ public:
   FlatConverter()
   {
     GetBackend().ProvidePresolver(&GetPresolver());
-    GetBackend().ProvideFlatConverterProxyObject(this);     // OLD
   }
 
 
@@ -636,15 +633,6 @@ public:
   pre::NodeRange AddConstraint(Constraint&& con) {
     auto node_range =
         AddConstraintAndTryNoteResultVariable( std::move(con) );
-    if (adding_orig_constr_) {                   // primitive bridging
-      auto cc=ConstraintClass(&con);             // can use destroyed \a con
-      if (1==cc) {
-        orig_lin_constr_.push_back(i_constr_orig_);
-      } else if (2==cc) {
-        orig_qp_constr_.push_back(i_constr_orig_);
-      }
-      ++i_constr_orig_;
-    }
     return node_range;
   }
 
@@ -691,7 +679,6 @@ protected:
   }
 
   void PrepareConversion() {
-    MP_DISPATCH( MemorizeModelSize() );
   }
 
   void WindupConversion() {
@@ -704,24 +691,6 @@ protected:
     }
   }
 
-  /// TODO wrong, Visit() may have produced aux constraints
-  void MemorizeModelSize() {
-    n_constr_orig_ = i_constr_orig_;
-    adding_orig_constr_ = false;
-  }
-
-  /// Elementary constraint classes
-  /// TODO parameterize by Backend
-  static constexpr int ConstraintClass(BasicConstraint* )
-  { return 0; }
-  static constexpr int ConstraintClass(RangeLinCon* )
-  { return 1; }
-  static constexpr int ConstraintClass(LinearDefiningConstraint* )
-  { return 1; }
-  static constexpr int ConstraintClass(QuadraticConstraint* )
-  { return 2; }
-  static constexpr int ConstraintClass(QuadraticDefiningConstraint* )
-  { return 2; }
 
   //////////////////////////// UTILITIES /////////////////////////////////
   ///
@@ -839,97 +808,6 @@ public:
     return var_info_[var];
   }
 
-protected:
-  /// Convenience methods
-  /// Gurobi reports duals etc separately for linear and QCP constraints
-  /// Implement FlatConverterProxy's interface
-
-  /////////////////////////////////////////////////////////////////////////
-  /// PRESOLVE ///
-  /////////////////////////////////////////////////////////////////////////
-
-  /// From original NL model's suffix or duals
-  std::vector<double>
-  ExtractLinConValues(ArrayRef<double> allval) override
-  { return ExtractLinConValues<>(allval); }
-
-  std::vector<int>
-  ExtractLinConValues(ArrayRef<int> allval) override
-  { return ExtractLinConValues<>(allval); }
-
-  std::vector<double> ExtractQCValues(ArrayRef<double> allval) override
-  { return ExtractQCValues<>(allval); }
-
-  /////////////////////////////////////////////////////////////////////////
-  /// POSTSOLVE ///
-  /////////////////////////////////////////////////////////////////////////
-
-  /// To original NL model's indexing
-  std::vector<double> MakeConstrValuesFromLPAndQCP(
-        ArrayRef<double> pi, ArrayRef<double> qcpi) override
-  { return MakeConstrValuesFromLPAndQCP<>(pi, qcpi); }
-  std::vector<int> MakeConstrValuesFromLPAndQCP(
-        ArrayRef<int> pi, ArrayRef<int> qcpi) override
-  { return MakeConstrValuesFromLPAndQCP<>(pi, qcpi); }
-
-  /////////////////////////////////////////////////////////////////////////
-  /// IMPLEMENTATIONS OF PRE- / POSTSOLVE ///
-  /////////////////////////////////////////////////////////////////////////
-
-  template <class Vec>
-  auto MakeConstrValuesFromLPAndQCP(
-        const Vec& pi, const Vec& qcpi) ->
-          std::vector<
-            typename std::decay< decltype(*pi.data()) >::type>
-  {
-    std::vector<typename std::decay< decltype(*pi.data()) >::type>
-        result(NumValuedOrigConstr());
-    FillByIndex(result, pi, GetIndexesOfValuedLinearConstraints());
-    FillByIndex(result, qcpi, GetIndexesOfValuedQPConstraints());
-    return result;
-  }
-  template <class Vec>
-  auto ExtractLinConValues(const Vec& allval) ->
-  std::vector<typename std::decay< decltype(*allval.data()) >::type>
-  {
-    return ExtractByIndex(allval, GetIndexesOfValuedLinearConstraints());
-  }
-  template <class Vec>
-  auto ExtractQCValues(const Vec& allval) ->
-  std::vector<typename std::decay< decltype(*allval.data()) >::type>
-  {
-    return ExtractByIndex(allval, GetIndexesOfValuedQPConstraints());
-  }
-
-  template <class Vec1, class Vec2, class Vec3>
-  static void FillByIndex(Vec1& dest, const Vec2& src, const Vec3& idx) {
-    for (size_t ii=0; ii<src.size() && ii<idx.size(); ++ii)
-      dest.at(idx[ii]) = src[ii];
-  }
-  template <class Vec2, class Vec3>
-  static auto ExtractByIndex(const Vec2& src, const Vec3& idx) ->
-  std::vector<typename std::decay< decltype(*src.data()) >::type>
-  {
-    std::vector<typename std::decay< decltype(*src.data()) >::type> rsl(idx.size());
-    for (size_t ii=0; ii<idx.size(); ++ii)
-      if (idx[ii] < src.size())
-        rsl[ii] = src[idx[ii]];
-    return rsl;
-  }
-
-  /// Number of original NL algebraic constraints relevant for suffixes
-  size_t NumValuedOrigConstr() const override { return n_constr_orig_; }
-  /// Gurobi handles linear constraints as a separate class.
-  /// AMPL provides suffixes for all constraints together.
-  /// The method returns the indexes of linear constraints
-  /// which are relevant for suffix / dual value exchange,
-  /// in the overall constraints list.
-  const std::vector<size_t>& GetIndexesOfValuedLinearConstraints() const
-  { return orig_lin_constr_; }
-  /// Same for QP constraints
-  const std::vector<size_t>& GetIndexesOfValuedQPConstraints() const
-  { return orig_qp_constr_; }
-
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////
@@ -1009,16 +887,6 @@ private:
   /// Conversion failure warnings
   ConvFailMap conv_failures_;
 
-  /// TODO replace by pre- / postsolve
-  /// Indices of NL original linear constr in the total constr ordering
-  std::vector<size_t> orig_lin_constr_;
-  /// Indices of NL original QP constr in the total constr ordering
-  std::vector<size_t> orig_qp_constr_;
-  /// Whether we are adding original constraints
-  bool adding_orig_constr_{true};
-  /// Index of original constraint being added
-  size_t i_constr_orig_=0;
-  size_t n_constr_orig_=0;
 
 protected:
   /// We store backend in the converter for speed

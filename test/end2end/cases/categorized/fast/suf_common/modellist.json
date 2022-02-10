@@ -104,7 +104,7 @@
     "options": { "ANYSOLVER_options": "debug=1" },
     "objective": 1,
     "values": {
-      "Initial.test_lin_constr_lazy": 1
+      "Initial.test_quad_constr_lazy": 2
     }
   }
 ]
