@@ -34,23 +34,23 @@ namespace mp {
 /// Reads command-line parameters like -AMPL and NL filename,
 /// handles screen output and signals,
 /// and calls solver class
-template <typename NLSolver>
-class NLSolverApp {
+template <typename Backend>
+class BackendApp {
  protected:
   int GetResultCode() const { return result_code_; }
-  const NLSolver& GetNLSolver() const { return nlsolver_; }
-  NLSolver& GetNLSolver() { return nlsolver_; }
+  const Backend& GetBackend() const { return backend_; }
+  Backend& GetBackend() { return backend_; }
 
   /// TODO use Env
-  using MPUtils = typename NLSolver::MPUtils;
-  const MPUtils& GetMPUtils() const { return GetNLSolver().GetMPUtils(); }
-  MPUtils& GetMPUtils() { return GetNLSolver().GetMPUtils(); }
+  using MPUtils = typename Backend::MPUtils;
+  const MPUtils& GetMPUtils() const { return GetBackend().GetMPUtils(); }
+  MPUtils& GetMPUtils() { return GetBackend().GetMPUtils(); }
 
 private:
   int result_code_ = 0;
   unsigned banner_size_ = 0;
 
-  NLSolver nlsolver_;
+  Backend backend_;
 
   std::string nl_filename_, filename_no_ext_;
 
@@ -61,7 +61,7 @@ private:
   OutputHandler output_handler_;
 
  public:
-  NLSolverApp() {
+  BackendApp() {
     p_sig_handler_ = std::unique_ptr<internal::SignalHandler>(
             new internal::SignalHandler(GetMPUtils()));
     p_option_parser_ = std::unique_ptr<internal::SolverAppOptionParser>(
@@ -75,26 +75,25 @@ private:
   /// @param argv: an array of command-line arguments terminated by a null pointer
   /// @param nl_reader_flags: currently can be 0 or \a READ_BOUNDS_FIRST, see nl.h
   /// @return app exit code
-  int Run(char **argv, int nl_reader_flags = 0);
+  int Run(char **argv);
 
 protected:
   bool Init(char** argv);
 };
 
-template <typename Interface>
-int NLSolverApp<Interface>::Run(
-    char **argv, int nl_reader_flags) {
+template <typename Backend>
+int BackendApp<Backend>::Run(char **argv) {
   if (!Init(argv))
     return result_code_;
-  GetNLSolver().RunFromNLFile(
-        nl_filename_, filename_no_ext_, nl_reader_flags);
+  GetBackend().RunFromNLFile(
+        nl_filename_, filename_no_ext_);
   return 0;
 }
 
-template <typename Interface>
-bool NLSolverApp<Interface>::Init(char **argv) {
+template <typename Backend>
+bool BackendApp<Backend>::Init(char **argv) {
   /// Init solver/converter options
-  GetNLSolver().InitOptions(argv);
+  GetBackend().InitOptions(argv);
 
   // Parse command-line arguments.
   const char *filename = p_option_parser_->Parse(argv);
@@ -118,13 +117,13 @@ bool NLSolverApp<Interface>::Init(char **argv) {
     nl_filename_ += ".nl";
   else
     filename_no_ext_.resize(filename_no_ext_.size() - 3);
-  internal::SetBasename(nlsolver_, &filename_no_ext_);
+  internal::SetBasename(backend_, &filename_no_ext_);
 
   // Parse solver options.
   unsigned flags =
       p_option_parser_->echo_solver_options() ?
         0 : BasicSolver::NO_OPTION_ECHO;
-  if (!nlsolver_.ParseSolverOptions(
+  if (!backend_.ParseSolverOptions(
         filename_no_ext_.c_str(), argv, flags)) {
     result_code_ = 1;
     return false;

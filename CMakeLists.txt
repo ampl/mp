@@ -313,7 +313,7 @@ add_prefix(MP_HEADERS include/mp/
   suffix.h utils_file.h utils_string.h)
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/
-  nlsolver_app.h nlsolver.h expr_flattener.h
+  backend_app.h nlsolver.h expr_flattener.h
   affine_expr.h backend_base.h backend.h basic_constr.h
   constraint_keeper.h flat_model_api_basic.h flat_model_api.h
   context.h converter.h nlsolver_proxy_base.h

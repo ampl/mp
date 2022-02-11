@@ -70,9 +70,8 @@ public:
 
   /// Runs Solver given the NL file name.
   void RunFromNLFile(const std::string& nl_filename,
-                     const std::string& filename_no_ext,
-                     int nl_flags) {
-    ReadNLFileAndUpdate(nl_filename, filename_no_ext, nl_flags);
+                     const std::string& filename_no_ext) {
+    ReadNLFileAndUpdate(nl_filename, filename_no_ext);
     Solve();
   }
 
@@ -100,11 +99,10 @@ protected:
   }
 
   void ReadNLFileAndUpdate(const std::string& nl_filename,
-                           const std::string& filename_no_ext,
-                           int nl_reader_flags) {
+                           const std::string& filename_no_ext) {
     steady_clock::time_point start = steady_clock::now();
 
-    ReadNLFile(nl_filename, nl_reader_flags);
+    ReadNLFile(nl_filename);
 
     double read_time = GetTimeAndReset(start);
     if (GetMPUtils().timing())
@@ -118,11 +116,11 @@ protected:
       GetMPUtils().Print("NL model conversion time = {:.6f}s\n", cvt_time);
   }
 
-  void ReadNLFile(const std::string& nl_filename, int nl_reader_flags) {
+  void ReadNLFile(const std::string& nl_filename) {
     set_nl_read_result_handler(
           new SolverNLHandlerType(GetModelBuilder(), GetMPUtils()));
     internal::NLFileReader<> reader;
-    reader.Read(nl_filename, *nl_read_result_.handler_, nl_reader_flags);
+    reader.Read(nl_filename, *nl_read_result_.handler_, 0);
   }
 
   /// Once NL is read

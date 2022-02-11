@@ -1,5 +1,5 @@
 #include "mp/error.h"
-#include "mp/flat/nlsolver_app.h"
+#include "mp/flat/backend_app.h"
 #include "mp/flat/nlsolver.h"
 #include "mp/flat/MIP/mp2mip.h"
 #include "mp/flat/backend.h"
@@ -10,9 +10,9 @@ extern "C" int main1(int, char **argv) {
   try {
     using GurobiNLSolverWithFlatConversion =
         mp::NLSolverWithFlatBackend<mp::GurobiBackend, mp::MIPFlatConverter>;
-    using GurobiNLSolverApp =
-      mp::NLSolverApp<GurobiNLSolverWithFlatConversion>;
-    GurobiNLSolverApp s;
+    using GurobiBackendApp =
+      mp::BackendApp<GurobiNLSolverWithFlatConversion>;
+    GurobiBackendApp s;
     return s.Run(argv);
   } catch (const mp::Error &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
