@@ -4,8 +4,8 @@
 /// Backend with a Model Manager
 #include <memory>
 
-#include "mp/backend_base.h"
-#include "mp/model_mgr_base.h"
+#include "mp/backend-base.h"
+#include "mp/model-mgr-base.h"
 
 namespace mp {
 

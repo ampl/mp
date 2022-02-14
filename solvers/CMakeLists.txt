@@ -178,6 +178,7 @@ add_ampl_solver(gurobidirect DLL_RUNTIME MODULE GUROBI
   gurobibackend.cc gurobibackend.h
   gurobimodelapi.cc gurobimodelapi.h
   gurobicommon.cc gurobicommon.h
+  model-mgr-with-std-pb.cc
   LIBRARIES ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS})
 if (TARGET gurobidirect)
   target_compile_definitions(gurobidirect PRIVATE main1=main)

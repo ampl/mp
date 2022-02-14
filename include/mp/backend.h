@@ -26,7 +26,7 @@
 #include <stdexcept>
 
 #include "mp/clock.h"
-#include "mp/backend_with_mm.h"
+#include "mp/backend-with-mm.h"
 
 /// Issue this if you redefine std feature switches
 #define USING_STD_FEATURES using BaseBackend::STD_FEATURE_QUERY_FN

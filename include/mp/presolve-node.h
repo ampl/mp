@@ -1,7 +1,7 @@
 #ifndef PRESOLVE_NODE_H
 #define PRESOLVE_NODE_H
 
-#include "presolve_base.h"
+#include "presolve-base.h"
 
 
 namespace mp {

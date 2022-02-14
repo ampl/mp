@@ -306,14 +306,14 @@ add_to_folder(${MP_FOLDER_PREFIX}util gen-expr-info)
 
 add_prefix(MP_HEADERS include/mp/
   arrayref.h basic-expr-visitor.h
-  backend_app.h backend_base.h backend_with_mm.h backend.h backend_mip.h
+  backend-app.h backend-base.h backend-with-mm.h backend.h backend-mip.h
   clock.h common.h env.h error.h expr.h expr-visitor.h
-  model_mgr_base.h model_mgr_std_prob.h
+  model-mgr-base.h model-mgr-with-pb.h
   nl.h nl-reader.h option.h os.h problem.h problem-builder.h
-  presolve_base.h presolve_node.h presolve_bridge.h presolve.h
+  presolve-base.h presolve-node.h presolve-bridge.h presolve.h
   rstparser.h safeint.h sol.h
   solver.h solver-opt.h solver-base.h solver-io.h solver-app-base.h solver-app.h
-  suffix.h utils_file.h utils_string.h)
+  suffix.h utils-file.h utils-string.h)
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/
   affine_expr.h basic_constr.h

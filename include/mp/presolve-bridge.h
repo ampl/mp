@@ -5,7 +5,7 @@
 #include <array>
 
 #include "mp/common.h"
-#include "presolve_node.h"
+#include "presolve-node.h"
 
 
 namespace mp {

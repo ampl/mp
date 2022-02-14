@@ -48,8 +48,8 @@
 #include "mp/solver.h"
 
 #include "mp/os.h"
-#include "mp/utils_file.h"
-#include "mp/utils_string.h"
+#include "mp/utils-file.h"
+#include "mp/utils-string.h"
 #include "mp/clock.h"
 #include "mp/rstparser.h"
 

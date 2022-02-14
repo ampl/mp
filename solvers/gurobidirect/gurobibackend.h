@@ -19,8 +19,8 @@
 #include <string>
 
 #include "gurobicommon.h"
-#include "mp/backend_mip.h"
-#include "mp/backend_with_pre.h"
+#include "mp/backend-mip.h"
+#include "mp/backend-with-pre.h"
 
 namespace mp {
 

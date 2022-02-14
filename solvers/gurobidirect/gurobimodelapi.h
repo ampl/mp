@@ -5,7 +5,7 @@
 
 #include "mp/env.h"
 #include "gurobicommon.h"
-#include "mp/model_mgr_std_prob.h"
+#include "mp/flat/std_constr.h"
 
 namespace mp {
 

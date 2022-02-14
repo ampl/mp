@@ -8,8 +8,8 @@
 
 #include <deque>
 
-#include "presolve_node.h"
-#include "presolve_bridge.h"
+#include "presolve-node.h"
+#include "presolve-bridge.h"
 
 
 namespace mp {

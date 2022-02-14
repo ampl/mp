@@ -2,7 +2,7 @@
 #define RANGE2SLACK_H
 
 #include "mp/flat/std_constr.h"
-#include "mp/presolve_bridge.h"
+#include "mp/presolve-bridge.h"
 
 namespace mp {
 

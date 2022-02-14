@@ -22,7 +22,7 @@
 
 #include <sstream>
 
-#include "mp/utils_string.h"
+#include "mp/utils-string.h"
 
 namespace mp {
 

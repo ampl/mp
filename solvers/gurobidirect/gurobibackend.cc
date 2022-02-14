@@ -1,10 +1,6 @@
-#include <vector>
-#include <climits>
 #include <cfloat>
-#include <stdexcept>
 
 #include "gurobibackend.h"
-#include "gurobicommon.h"
 
 namespace {
 

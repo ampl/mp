@@ -7,7 +7,7 @@
 
 #include "mp/common.h"
 #include "mp/flat/model_api_base.h"
-#include "mp/presolve_node.h"
+#include "mp/presolve-node.h"
 
 namespace mp {
 

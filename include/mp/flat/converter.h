@@ -823,11 +823,6 @@ protected:
   int relax() const { return options_.relax_; }
 
 public:
-  /// Chance for the Backend to init solver environment, etc
-  void InitOptionParsing() { }
-  /// Chance to consider options immediately (open cloud, etc)
-  void FinishOptionParsing() { }
-
   void InitOptions() {
     InitOwnOptions();
   }

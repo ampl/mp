@@ -27,7 +27,7 @@
 #include <memory>
 
 #include "mp/solver-app-base.h"
-#include "mp/backend_base.h"
+#include "mp/backend-base.h"
 
 namespace mp {
 

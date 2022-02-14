@@ -7,6 +7,7 @@
 #include <cmath>
 
 #include "mp/problem.h"
+#include "mp/converter-base.h"
 #include "mp/flat/preprocess.h"
 #include "mp/flat/MIP/mp2mip.h"
 #include "mp/expr-visitor.h"
@@ -36,7 +37,7 @@ LinTerms ToLinTerms(const LinearExpr& e) {
 template <class Impl, class Model, class FlatConverter>
 class ExprFlattener :
     public ExprConverter<Impl, EExpr>,
-    public EnvKeeper
+    public BasicConverter<Model>
 {
 public:
   using ModelType = Model;
@@ -50,14 +51,16 @@ public:
 protected:
   using ClassName = ExprFlattener;
   using BaseExprVisitor = ExprVisitor<Impl, EExpr>;
+  using BaseConverter = BasicConverter<Model>;
 
   using EExprArray = std::vector<EExpr>;
 
+  using BaseConverter::GetEnv;
 
 public:
   static const char* GetName() { return "ExprFlattener"; }
 
-  ExprFlattener(Env& e) : EnvKeeper(e), flat_cvt_(e) { }
+  ExprFlattener(Env& e) : BaseConverter(e), flat_cvt_(e) { }
 
 public:
   /// INCREMENTAL INTERFACE
@@ -682,18 +685,6 @@ private:
         options_.sos2_, 0, 1);
   }
 
-public:
-  /// Chance for FlatCvt / Backend to init solver environment, etc
-  void InitOptionParsing() {
-    GetFlatCvt().InitOptionParsing();
-  }
-
-  /// Chance to consider options immediately (open cloud, etc)
-  void FinishOptionParsing() { GetFlatCvt().FinishOptionParsing(); }
-
-private:
-  ModelType model_;
-  FlatConverter flat_cvt_;
 
 public:
   /// The model as input from NL
@@ -707,6 +698,11 @@ public:
 
   const FlatConverter& GetFlatCvt() const { return flat_cvt_; }
   FlatConverter& GetFlatCvt() { return flat_cvt_; }
+
+
+private:
+  ModelType model_;
+  FlatConverter flat_cvt_;
 
 };
 

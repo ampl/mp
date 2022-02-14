@@ -4,13 +4,9 @@
 #include <memory>
 
 #include "cplexcommon.h"
-#include "mp/model_mgr_std_prob.h"
+#include "mp/flat/std_constr.h"
 
 namespace mp {
-
-/// Create Cplex Model Manager from a Backend
-std::unique_ptr<BasicModelManager>
-CreateCplexModelMgr(CplexCommon&);
 
 class CplexModelAPI : public CplexCommon
 {

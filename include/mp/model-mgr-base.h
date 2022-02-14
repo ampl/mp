@@ -2,9 +2,8 @@
 #define MODEL_MANAGER_BASE_H
 
 /**
-  * This is an abstract interface to a 'query class'
-  * which provides solution handling and suffixes, etc.
-  * To be used by a backend
+  * This is an abstract interface to a Model Manager
+  * which provides model IO, solution handling and suffixes, etc.
   */
 
 #include "mp/arrayref.h"

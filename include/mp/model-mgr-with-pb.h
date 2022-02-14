@@ -27,47 +27,48 @@
 
 #include "mp/env.h"
 #include "mp/clock.h"
-#include "mp/model_mgr_base.h"
-#include "mp/flat/expr_flattener.h"
+#include "mp/model-mgr-base.h"
 #include "mp/solver-io.h"
 
 namespace mp {
 
-/// Model Manager with mp::Problem as intermediate instance storage.
+/// Model Manager with a given ProblemBuilder as intermediate instance storage.
 ///
-/// Reads a problem from an .nl file, writes
-/// solution(s).
+/// Reads a problem from an .nl file, writes solution(s).
 ///
-/// ModelManagerWithStdProblem uses ExprWalker to walk the NL tree
-/// stored in mp::Problem.
+/// ModelManagerWithProblemBuilder uses Converter to convert the instance,
+/// e.g., walk the NL tree stored in a given ProblemBuilder which can be,
+/// e.g., mp::Problem.
+/// The Converter must implement the BasicConverter<> interface.
+///
 /// TODO consider walking the tree while reading
-template <class ExprWalker>
-class ModelManagerWithStdProblem :
+template <class Converter>
+class ModelManagerWithProblemBuilder :
     public BasicModelManager,
     public EnvKeeper
 {
 protected:
-  using ExprWalkerType = ExprWalker;
+  using ConverterType = Converter;
 
 public:
   /// Class name
   static const char* GetName() { return "ModelManagerWithFlatBackend TODO"; }
 
-  ModelManagerWithStdProblem(Env& e) : EnvKeeper(e), expr_flt_(e) { }
+  ModelManagerWithProblemBuilder(std::unique_ptr<Converter> pc)
+    : EnvKeeper(pc->GetEnv()), pcvt_(std::move(pc)) { }
 
 
 protected:
   void SetBasename(const std::string& filename_no_ext) override {
     MakeUpTemporarySolHandler(filename_no_ext); ///< So that Abort() works
-    GetExprFlattener().InitOptionParsing();
   }
 
   /// Before reading the NL file, a generic solution handler
   /// for error reporting
   void MakeUpTemporarySolHandler(const std::string& filename_no_ext) {
     ArrayRef<int> options({1, 1, 0});        ///< 'Default' NL options
-    SetSolHandler(new internal::AppSolutionHandlerImpl<MPUtils, ModelType>(
-                             filename_no_ext, GetEnv(), GetModelBuilder(),
+    SetSolHandler(new internal::AppSolutionHandlerImpl<SolverType, ModelType>(
+                             filename_no_ext, GetEnv(), GetModel(),
                              options,
                              GetEnv().get_output_handler().has_output ?
                                  0 :
@@ -104,7 +105,7 @@ protected:
     ArrayRef<int> options(get_nl_read_result_handler().options(),
                           get_nl_read_result_handler().num_options());
     SetSolHandler(
-          new internal::AppSolutionHandlerImpl<MPUtils, ModelType>(
+          new internal::AppSolutionHandlerImpl<SolverType, ModelType>(
           filename_no_ext, GetEnv(), GetModelBuilder(), options,
           GetEnv().get_output_handler().has_output ?
             0 :
@@ -114,7 +115,7 @@ protected:
   /// Says we finished problem modification,
   /// so we run model conversion and communicate the result into the backend
   void ConvertModelAndUpdateBackend() {
-    GetExprFlattener().ConvertModel();
+    GetCvt().ConvertModel();
   }
 
 
@@ -143,7 +144,7 @@ protected:
 public:
   /// Initialize solver options
   void InitOptions() override {
-    GetExprFlattener().InitOptions();
+    GetCvt().InitOptions();
     InitOwnOptions();
   }
 
@@ -152,19 +153,21 @@ private:
   }
 
 public:
-  using MPUtils = BasicSolver;
+  /// SolverType, needed by SolutionHandler
+  using SolverType = BasicSolver;
 
-  using ModelType = typename ExprWalkerType::ModelType;
+  /// ModelType, needed by NL readers and solution handler
+  using ModelType = typename ConverterType::ModelType;
 
   const ModelType& GetModelBuilder() const { return GetModel(); }
   ModelType& GetModelBuilder() { return GetModel(); }
 
   const ModelType& GetModel() const
-  { return GetExprFlattener().GetModel(); }
-  ModelType& GetModel() { return GetExprFlattener().GetModel(); }
+  { return GetCvt().GetModel(); }
+  ModelType& GetModel() { return GetCvt().GetModel(); }
 
-  const ExprWalker& GetExprFlattener() const { return expr_flt_; }
-  ExprWalker& GetExprFlattener() { return expr_flt_; }
+  const Converter& GetCvt() const { return *pcvt_; }
+  Converter& GetCvt() { return *pcvt_; }
 
 
 protected:
@@ -244,18 +247,10 @@ protected:
 
 
 private:
-  ExprWalker expr_flt_;
+  std::unique_ptr<Converter> pcvt_;
   NLReadResult nl_read_result_;
   std::unique_ptr<SolutionHandler> p_sol_handler_;
 };
-
-/// TODO invert
-template <class Backend,
-          template <typename, typename, typename> class Converter,
-          class Model = Problem >
-using ModelManagerWithStdProblemImpl = ModelManagerWithStdProblem<
-                                  ExprFlattenerImpl<ExprFlattener, Model,
-                                    Interface<Converter, Backend> > >;
 
 }  // namespace mp
 

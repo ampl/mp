@@ -8,6 +8,7 @@ extern "C" {
 }
 
 #include "mp/flat/model_api_base.h"
+#include "mp/model-mgr-base.h"
 
 namespace mp {
 
@@ -46,6 +47,11 @@ private:
   CPXLPptr      lp_ = NULL;
 
 };
+
+
+/// Create Cplex Model Manager from a Backend
+std::unique_ptr<BasicModelManager>
+CreateCplexModelMgr(CplexCommon&);
 
 
 #define CPLEX_CALL( call ) do { if (int e=call) \

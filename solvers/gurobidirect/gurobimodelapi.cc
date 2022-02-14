@@ -1,21 +1,23 @@
 #include "gurobimodelapi.h"
+#include "mp/model-mgr-with-std-pb.h"
 #include "mp/flat/expr_flattener.h"
-#include "mp/flat/model_api_base.h"
 
 namespace mp {
 
 GurobiModelAPIData
 CreateGurobiModelMgr(GurobiCommon& gc, Env& e) {
   GurobiModelAPIData res;
-  auto pmm = new ModelManagerWithStdProblemImpl<
-      GurobiModelAPI, MIPFlatConverter>(e);
-  res.pmm_.reset(pmm);
+  using FlatCvtType = Interface<MIPFlatConverter, GurobiModelAPI>;
+  using ConverterType = mp::ExprFlattenerImpl<
+    mp::ExprFlattener, mp::Problem, FlatCvtType>;
+  auto pcvt = new ConverterType(e);
+  res.pmm_ = CreateModelManagerWithStdBuilder(
+        std::unique_ptr<BasicConverter<mp::Problem> >{ pcvt } );
   /// TODO make Gurobi derive from Cvt
-  pmm->GetExprFlattener().GetFlatCvt().GetBasicBackend().
-      set_other_gurobi(&gc);
+  pcvt->GetFlatCvt().GetBasicBackend().set_other_gurobi(&gc);
   gc.set_other_gurobi(
-        &pmm->GetExprFlattener().GetFlatCvt().GetBasicBackend());
-  res.pre_ = &pmm->GetExprFlattener().GetFlatCvt().GetPresolver();
+        &pcvt->GetFlatCvt().GetBasicBackend());
+  res.pre_ = &pcvt->GetFlatCvt().GetPresolver();
   return res;
 }
 

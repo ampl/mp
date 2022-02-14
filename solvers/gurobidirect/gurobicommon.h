@@ -14,8 +14,8 @@ extern "C" {
 #include "mp/format.h"
 #include "mp/error.h"
 #include "mp/flat/model_api_base.h"
-#include "mp/model_mgr_base.h"
-#include "mp/presolve_base.h"
+#include "mp/model-mgr-base.h"
+#include "mp/presolve-base.h"
 
 namespace mp {
 
