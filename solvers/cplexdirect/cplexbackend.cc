@@ -15,6 +15,10 @@ bool InterruptCplex(void *) {
 
 }  // namespace
 
+std::unique_ptr<mp::BasicBackend> CreateCplexBackend() {
+  return std::unique_ptr<mp::BasicBackend>{new mp::CplexBackend()};
+}
+
 namespace mp {
 
 CplexBackend::CplexBackend() {

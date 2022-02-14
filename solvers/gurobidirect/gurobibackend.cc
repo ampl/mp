@@ -15,6 +15,10 @@ bool InterruptGurobi(void *model) {
 
 }  // namespace {}
 
+std::unique_ptr<mp::BasicBackend> CreateGurobiBackend() {
+  return std::unique_ptr<mp::BasicBackend>{new mp::GurobiBackend()};
+}
+
 namespace mp {
 
 GurobiBackend::GurobiBackend() {

@@ -27,39 +27,39 @@
 #include <memory>
 
 #include "mp/solver-app-base.h"
+#include "mp/backend_base.h"
 
 namespace mp {
 
-/// NL solver app.
+/// Backend app.
 /// Reads command-line parameters like -AMPL and NL filename,
-/// handles screen output and signals,
-/// and calls solver class
-template <typename Backend>
+/// installs handlers for screen output and signals,
+/// and calls backend class
 class BackendApp {
 public:
-  BackendApp() { InitHandlers(); }
+  BackendApp(std::unique_ptr<BasicBackend> pb)
+    : pb_(std::move(pb)) { InitHandlers(); }
 
   /// Runs the application.
   /// It processes command-line arguments and, if the file name (stub) is
   /// specified, calls NLSolver class.
   /// @param argv: an array of command-line arguments terminated by a null pointer
   /// @return app exit code
-  int Run(char **argv);
+  virtual int Run(char **argv);
+
 
 protected:
-  bool Init(char** argv);
-protected:
+  virtual bool Init(char** argv);
+  virtual void InitHandlers();
+
   int GetResultCode() const { return result_code_; }
-  const Backend& GetBackend() const { return backend_; }
-  Backend& GetBackend() { return backend_; }
+  const BasicBackend& GetBackend() const { return *pb_; }
+  BasicBackend& GetBackend() { return *pb_; }
 
-  void InitHandlers();
 
 private:
+  std::unique_ptr<BasicBackend> pb_;
   int result_code_ = 0;
-  unsigned banner_size_ = 0;
-
-  Backend backend_;
 
   std::string nl_filename_, filename_no_ext_;
 
@@ -69,8 +69,7 @@ private:
   OutputHandler output_handler_;
 };
 
-template <typename Backend>
-int BackendApp<Backend>::Run(char **argv) {
+int BackendApp::Run(char **argv) {
   if (!Init(argv))
     return result_code_;
   GetBackend().RunFromNLFile(
@@ -78,8 +77,7 @@ int BackendApp<Backend>::Run(char **argv) {
   return 0;
 }
 
-template <typename Backend>
-bool BackendApp<Backend>::Init(char **argv) {
+bool BackendApp::Init(char **argv) {
   /// Init solver/converter options
   GetBackend().Init(argv);
 
@@ -105,7 +103,7 @@ bool BackendApp<Backend>::Init(char **argv) {
     nl_filename_ += ".nl";
   else
     filename_no_ext_.resize(filename_no_ext_.size() - 3);
-  internal::SetBasename(backend_, &filename_no_ext_);
+  internal::SetBasename(GetBackend(), &filename_no_ext_);
 
   // Parse solver options.
   unsigned flags =
@@ -120,8 +118,7 @@ bool BackendApp<Backend>::Init(char **argv) {
   return true;
 }
 
-template <class Backend>
-void BackendApp<Backend>::InitHandlers() {
+void BackendApp::InitHandlers() {
   p_sig_handler_ = std::unique_ptr<internal::SignalHandler>(
         new internal::SignalHandler(GetBackend()));
   p_option_parser_ = std::unique_ptr<internal::SolverAppOptionParser>(
