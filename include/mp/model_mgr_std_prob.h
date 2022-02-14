@@ -1,7 +1,7 @@
 /*
- NL Solver control class
+ Model Manager with Std Problem Representation (mp::Problem)
 
- Copyright (C) 2020-2021 AMPL Optimization Inc
+ Copyright (C) 2020-2022 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -20,70 +20,46 @@
  Author: Gleb Belov <gleb.belov@monash.edu>
  */
 
-#ifndef BASIC_CONVERTERS_H_
-#define BASIC_CONVERTERS_H_
+#ifndef MODEL_MANAGER_STD_H_
+#define MODEL_MANAGER_STD_H_
 
 #include <cmath>
 
+#include "mp/env.h"
 #include "mp/clock.h"
+#include "mp/model_mgr_base.h"
 #include "mp/flat/expr_flattener.h"
-#include "mp/flat/backend_base.h"
 #include "mp/solver-io.h"
 
 namespace mp {
 
-/// NL solver control class.
+/// Model Manager with mp::Problem as intermediate instance storage.
 ///
-/// Reads a problem from an .nl file, parses solver options
-/// from argv and environment variables, solves the problem and writes
-/// solution(s)
+/// Reads a problem from an .nl file, writes
+/// solution(s).
 ///
-/// BasicNLSolverWithFlatBackend uses ExprFlattener to flatten the NL tree
+/// ModelManagerWithStdProblem uses ExprWalker to walk the NL tree
+/// stored in mp::Problem.
 /// TODO consider walking the tree while reading
-template <class ExprFlattener>
-class BasicNLSolverWithFlatBackend :
-    public NLSolverProxy
+template <class ExprWalker>
+class ModelManagerWithStdProblem :
+    public BasicModelManager,
+    public EnvKeeper
 {
 protected:
-  using ExprFlattenerType = ExprFlattener;
+  using ExprWalkerType = ExprWalker;
 
 public:
-  static const char* GetName() { return "BasicNLSolverWithFlatBackend"; }
+  /// Class name
+  static const char* GetName() { return "ModelManagerWithFlatBackend TODO"; }
 
-  BasicNLSolverWithFlatBackend() { }
+  ModelManagerWithStdProblem(Env& e) : EnvKeeper(e), expr_flt_(e) { }
 
-  /// Parse solver options such as "outlev=1" from env and argv.
-  /// @param filename_no_ext: basname of the .nl file
-  /// @param argv: (remaining part of) vector of cmdline strings
-  /// @param flags: 0 or \a Solver::NO_OPTION_ECHO
-  bool ParseSolverOptions(const char* filename_no_ext,
-                    char **argv, unsigned flags = 0) {
-    /// Chance e.g. for the Backend to init solver environment, etc
-    InitOptionParsing(filename_no_ext);
-    if (GetMPUtils().ParseOptions(argv, flags)) {
-      /// Chance to consider options immediately (open cloud, etc)
-      GetExprFlattener().FinishOptionParsing();
-      return true;
-    }
-    return false;
-  }
-
-  /// Runs Solver given the NL file name.
-  void RunFromNLFile(const std::string& nl_filename,
-                     const std::string& filename_no_ext) {
-    ReadNLFileAndUpdate(nl_filename, filename_no_ext);
-    Solve();
-  }
 
 protected:
-  void InitOptionParsing(const std::string& filename_no_ext) {
-    InitConverterQueryObject();                 ///< For the Backend
+  void SetBasename(const std::string& filename_no_ext) override {
     MakeUpTemporarySolHandler(filename_no_ext); ///< So that Abort() works
     GetExprFlattener().InitOptionParsing();
-  }
-
-  void InitConverterQueryObject() {
-    GetBasicBackend().ProvideNLSolverProxyObject( &GetCQ() );
   }
 
   /// Before reading the NL file, a generic solution handler
@@ -91,34 +67,34 @@ protected:
   void MakeUpTemporarySolHandler(const std::string& filename_no_ext) {
     ArrayRef<int> options({1, 1, 0});        ///< 'Default' NL options
     SetSolHandler(new internal::AppSolutionHandlerImpl<MPUtils, ModelType>(
-                             filename_no_ext, GetMPUtils(), GetModelBuilder(),
+                             filename_no_ext, GetEnv(), GetModelBuilder(),
                              options,
-                             GetMPUtils().get_output_handler().has_output ?
+                             GetEnv().get_output_handler().has_output ?
                                  0 :
-                                 GetMPUtils().get_output_handler().banner_size));
+                                 GetEnv().get_output_handler().banner_size));
   }
 
   void ReadNLFileAndUpdate(const std::string& nl_filename,
-                           const std::string& filename_no_ext) {
+                           const std::string& filename_no_ext) override {
     steady_clock::time_point start = steady_clock::now();
 
     ReadNLFile(nl_filename);
 
     double read_time = GetTimeAndReset(start);
-    if (GetMPUtils().timing())
-      GetMPUtils().Print("NL model read time = {:.6f}s\n", read_time);
+    if (GetEnv().timing())
+      GetEnv().Print("NL model read time = {:.6f}s\n", read_time);
 
     MakeProperSolutionHandler(filename_no_ext);
     ConvertModelAndUpdateBackend();
 
     double cvt_time = GetTimeAndReset(start);
-    if (GetMPUtils().timing())
-      GetMPUtils().Print("NL model conversion time = {:.6f}s\n", cvt_time);
+    if (GetEnv().timing())
+      GetEnv().Print("NL model conversion time = {:.6f}s\n", cvt_time);
   }
 
   void ReadNLFile(const std::string& nl_filename) {
     set_nl_read_result_handler(
-          new SolverNLHandlerType(GetModelBuilder(), GetMPUtils()));
+          new SolverNLHandlerType(GetModelBuilder(), GetEnv()));
     internal::NLFileReader<> reader;
     reader.Read(nl_filename, *nl_read_result_.handler_, 0);
   }
@@ -129,10 +105,10 @@ protected:
                           get_nl_read_result_handler().num_options());
     SetSolHandler(
           new internal::AppSolutionHandlerImpl<MPUtils, ModelType>(
-          filename_no_ext, GetMPUtils(), GetModelBuilder(), options,
-          GetMPUtils().get_output_handler().has_output ?
+          filename_no_ext, GetEnv(), GetModelBuilder(), options,
+          GetEnv().get_output_handler().has_output ?
             0 :
-            GetMPUtils().get_output_handler().banner_size));
+            GetEnv().get_output_handler().banner_size));
   }
 
   /// Says we finished problem modification,
@@ -141,38 +117,32 @@ protected:
     GetExprFlattener().ConvertModel();
   }
 
-  void Solve() {
-    GetBasicBackend().SolveAndReport();
-  }
-
 
   ////////////////////////////// OPTIONS ////////////////////////////////
 protected:
   // Add more text to be displayed before option descriptions.
-  void add_to_long_name(fmt::StringRef name) { GetMPUtils().add_to_long_name(name); }
-  void add_to_version(fmt::StringRef version) { GetMPUtils().add_to_version(version); }
+  void add_to_long_name(fmt::StringRef name) { GetEnv().add_to_long_name(name); }
+  void add_to_version(fmt::StringRef version) { GetEnv().add_to_version(version); }
   void add_to_option_header(const char* header_more) {
-    GetMPUtils().add_to_option_header(header_more);
+    GetEnv().add_to_option_header(header_more);
   }
 
   /// Simple stored option referencing a variable
   template <class Value>
   void AddOption(const char *name_list, const char *description,
                  Value& value, ValueArrayRef values = ValueArrayRef()) {
-    GetMPUtils().AddStoredOption(name_list, description, value, values);
+    GetEnv().AddStoredOption(name_list, description, value, values);
   }
 
   ////////////////////////////// UTILITIES //////////////////////////////
   template <typename... Args> \
   void Print(fmt::CStringRef format, const Args & ... args) {
-    GetMPUtils().Print(format, args...);
+    GetEnv().Print(format, args...);
   }
 
 public:
   /// Initialize solver options
-  /// @param argv: the command-line arguments
-  void InitOptions(char** argv) {
-    GetMPUtils().set_exe_path(*argv);
+  void InitOptions() override {
     GetExprFlattener().InitOptions();
     InitOwnOptions();
   }
@@ -182,15 +152,9 @@ private:
   }
 
 public:
-  /// TODO use universal Env instead
-  /// (which can well use these "MPUtils",
-  /// but ideally an appr new base class of Solver)
-  using MPUtils = typename ExprFlattenerType::MPUtils;
-  const MPUtils& GetMPUtils() const { return GetExprFlattener().GetMPUtils(); }
-  MPUtils& GetMPUtils() { return GetExprFlattener().GetMPUtils(); }
+  using MPUtils = BasicSolver;
 
-protected:
-  using ModelType = typename ExprFlattenerType::ModelType;
+  using ModelType = typename ExprWalkerType::ModelType;
 
   const ModelType& GetModelBuilder() const { return GetModel(); }
   ModelType& GetModelBuilder() { return GetModel(); }
@@ -199,16 +163,11 @@ protected:
   { return GetExprFlattener().GetModel(); }
   ModelType& GetModel() { return GetExprFlattener().GetModel(); }
 
-  const ExprFlattener& GetExprFlattener() const { return expr_flt_; }
-  ExprFlattener& GetExprFlattener() { return expr_flt_; }
-
-  /// Expose abstract Backend from FlatCvt
-  const BasicBackend& GetBasicBackend() const
-  { return GetExprFlattener().GetBasicBackend(); }
-  BasicBackend& GetBasicBackend()
-  { return GetExprFlattener().GetBasicBackend(); }
+  const ExprWalker& GetExprFlattener() const { return expr_flt_; }
+  ExprWalker& GetExprFlattener() { return expr_flt_; }
 
 
+protected:
   using SolverNLHandlerType =
     internal::SolverNLHandlerImpl<BasicSolver, ModelType,
                                   internal::NLProblemBuilder<ModelType>>;
@@ -234,8 +193,8 @@ protected:
   { assert(psh); p_sol_handler_.reset(psh); }
   void RemoveSolHandler() { p_sol_handler_.reset(nullptr); }
 
-  const NLSolverProxy& GetCQ() const { return *this; }
-  NLSolverProxy& GetCQ() { return *this; }
+  const BasicModelManager& GetCQ() const { return *this; }
+  BasicModelManager& GetCQ() { return *this; }
 
   /// Define original model access from BasicOriginalModelProxy
   ArrayRef<double> InitialValues() override {
@@ -285,18 +244,19 @@ protected:
 
 
 private:
-  ExprFlattener expr_flt_;
+  ExprWalker expr_flt_;
   NLReadResult nl_read_result_;
   std::unique_ptr<SolutionHandler> p_sol_handler_;
 };
 
+/// TODO invert
 template <class Backend,
           template <typename, typename, typename> class Converter,
           class Model = Problem >
-using NLSolverWithFlatBackend = BasicNLSolverWithFlatBackend<
+using ModelManagerWithStdProblemImpl = ModelManagerWithStdProblem<
                                   ExprFlattenerImpl<ExprFlattener, Model,
                                     Interface<Converter, Backend> > >;
 
 }  // namespace mp
 
-#endif  // BASIC_CONVERTERS_H_
+#endif  // MODEL_MANAGER_STD_H_

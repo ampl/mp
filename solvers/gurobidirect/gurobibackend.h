@@ -10,10 +10,6 @@
 # pragma warning(disable: 4244)
 #endif
 
-extern "C" {
-  #include "gurobi_c.h"
-}
-
 #if __clang__
 # pragma clang diagnostic pop
 #elif _MSC_VER
@@ -22,13 +18,16 @@ extern "C" {
 
 #include <string>
 
-#include "mp/flat/MIP/backend.h"
-#include "mp/flat/std_constr.h"
+#include "gurobicommon.h"
+#include "mp/backend_mip.h"
+#include "mp/backend_with_pre.h"
 
 namespace mp {
 
 class GurobiBackend :
-    public MIPBackend<GurobiBackend>
+    public MIPBackend<GurobiBackend>,
+    public BackendWithPresolver,
+    public GurobiCommon
 {
   using BaseBackend = MIPBackend<GurobiBackend>;
 
@@ -43,18 +42,14 @@ public:
   /// of them override placeholders from base classes.   /////
   ////////////////////////////////////////////////////////////
 
-  ////////////////////////////////////////////////////////////
-  //////////////////////// Metadata //////////////////////////
-  ////////////////////////////////////////////////////////////
-
   /// Name displayed in messages
   static const char* GetSolverName() { return "x-Gurobi"; }
+  /// Version
   static std::string GetSolverVersion();
   /// Reuse gurobi_options:
   static const char* GetAMPLSolverName() { return "gurobi"; }
+  /// In long messages
   static const char* GetAMPLSolverLongName() { return "AMPL-Gurobi"; }
-  static const char* GetBackendName();
-  static const char* GetBackendLongName() { return nullptr; }
 
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
@@ -157,70 +152,6 @@ public:
   ALLOW_STD_FEATURE( FIX_MODEL, true )
 
 
-  /////////////////////////////////////////////////////////////////////////////
-  //////////////////////////// MODELING ACCESSORS /////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-
-  static constexpr double Infinity() { return GRB_INFINITY; }
-  static constexpr double MinusInfinity() { return -GRB_INFINITY; }
-
-  void AddVariables(const VarArrayDef& );
-  void SetLinearObjective( int iobj, const LinearObjective& lo );
-  void SetQuadraticObjective( int iobj, const QuadraticObjective& qo );
-  //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
-  USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
-
-  /// TODO Linear constraint attributes (lazy/user cut, etc)
-  ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
-  void AddConstraint(const LinConLE& lc);
-  ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
-  void AddConstraint(const LinConEQ& lc);
-  ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
-  void AddConstraint(const LinConGE& lc);
-  ACCEPT_CONSTRAINT(QuadraticConstraint, Recommended, CG_Quadratic)
-  void AddConstraint(const QuadraticConstraint& qc);
-  ACCEPT_CONSTRAINT(MaximumConstraint, acc_max(), CG_General)
-  void AddConstraint(const MaximumConstraint& mc);
-  ACCEPT_CONSTRAINT(MinimumConstraint, acc_min(), CG_General)
-  void AddConstraint(const MinimumConstraint& mc);
-  ACCEPT_CONSTRAINT(AbsConstraint, acc_abs(), CG_General)
-  void AddConstraint(const AbsConstraint& absc);
-  ACCEPT_CONSTRAINT(ConjunctionConstraint, acc_and(), CG_General)
-  void AddConstraint(const ConjunctionConstraint& cc);
-  ACCEPT_CONSTRAINT(DisjunctionConstraint, acc_or(), CG_General)
-  void AddConstraint(const DisjunctionConstraint& mc);
-  /// Enabling built-in indicator for infinite bounds,
-  /// but not recommended otherwise --- may be slow
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, acc_ind_le(), CG_General)
-  void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, acc_ind_eq(), CG_General)
-  void AddConstraint(const IndicatorConstraintLinEQ& mc);
-
-  /// General
-  ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
-  void AddConstraint(const SOS1Constraint& cc);
-  ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
-  void AddConstraint(const SOS2Constraint& cc);
-  ACCEPT_CONSTRAINT(ExpConstraint, Recommended, CG_General)
-  void AddConstraint(const ExpConstraint& cc);
-  ACCEPT_CONSTRAINT(ExpAConstraint, Recommended, CG_General)
-  void AddConstraint(const ExpAConstraint& cc);
-  ACCEPT_CONSTRAINT(LogConstraint, Recommended, CG_General)
-  void AddConstraint(const LogConstraint& cc);
-  ACCEPT_CONSTRAINT(LogAConstraint, Recommended, CG_General)
-  void AddConstraint(const LogAConstraint& cc);
-  ACCEPT_CONSTRAINT(PowConstraint, Recommended, CG_General)
-  void AddConstraint(const PowConstraint& cc);
-  ACCEPT_CONSTRAINT(SinConstraint, Recommended, CG_General)
-  void AddConstraint(const SinConstraint& cc);
-  ACCEPT_CONSTRAINT(CosConstraint, Recommended, CG_General) // y = cos(x)
-  void AddConstraint(const CosConstraint& cc);  // GRBaddgenconstrCos(x, y);
-  ACCEPT_CONSTRAINT(TanConstraint, Recommended, CG_General)
-  void AddConstraint(const TanConstraint& cc);
-  ACCEPT_CONSTRAINT(PLConstraint, Recommended, CG_General)
-  void AddConstraint(const PLConstraint& cc);
-
-
   ///////////////////// Model attributes /////////////////////
   bool IsMIP() const override;
   bool IsQP() const override;
@@ -239,27 +170,12 @@ public:
   /// Chance to consider options immediately (open cloud, etc)
   void FinishOptionParsing() override;
 
-  /// Public option API.
-  /// These methods access Gurobi options. Used by AddSolverOption()
-  void GetSolverOption(const char* key, int& value) const;
-  void SetSolverOption(const char* key, int value);
-  void GetSolverOption(const char* key, double& value) const;
-  void SetSolverOption(const char* key, double value);
-  void GetSolverOption(const char* key, std::string& value) const;
-  void SetSolverOption(const char* key, const std::string& value);
-
-
 
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////// SOLVING ACCESSORS ///////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
 
   void SetInterrupter(mp::Interrupter* inter) override;
-
-  /// This is called before model is pushed to the Backend
-  void InitProblemModificationPhase() override;
-  /// Chance to call GRBupdatemodel()
-  void FinishProblemModificationPhase() override;
 
   void SolveAndReportIntermediateResults() override;
 
@@ -280,14 +196,6 @@ protected:
   void OpenGurobiComputeServer();
   void OpenGurobiCloud();
 
-  /// Gurobi separates constraint classes
-  int NumLinCons() const;
-  int NumQPCons() const;
-  int NumSOSCons() const;
-  int NumGenCons() const;
-  int NumVars() const;
-  int NumObjs() const;
-  int ModelSense() const;
 
   void ExportModel(const std::string& file);
 
@@ -306,9 +214,6 @@ protected:
   void ConsiderGurobiFixedModel();
   /// Return error message if any
   std::string DoGurobiFixedModel();
-  /// First objective's sense
-  void NoteGurobiMainObjSense(obj::Type s);
-  obj::Type GetGurobiMainObjSense() const;
   ArrayRef<double> CurrentGrbPoolPrimalSolution();
   double CurrentGrbPoolObjectiveValue() const;
 
@@ -331,62 +236,14 @@ protected:
   double SimplexIterations() const;
   int BarrierIterations() const;
 
-  /// REMEMBER Gurobi does not update attributes before calling optimize() etc
-  /// Scalar attributes. If (flag), set *flag <-> success,
-  /// otherwise fail on error
-  int GrbGetIntAttr(const char* attr_id, bool *flag=nullptr) const;
-  /// If (flag), set *flag <-> success, otherwise fail on error
-  double GrbGetDblAttr(const char* attr_id, bool *flag=nullptr) const;
-  /// Vector attributes. Return empty vector on failure
-  std::vector<int> GrbGetIntAttrArray(const char* attr_id,
-    std::size_t size, std::size_t offset=0) const;
-  std::vector<double> GrbGetDblAttrArray(const char* attr_id,
-    std::size_t size, std::size_t offset=0) const;
-  std::vector<int> GrbGetIntAttrArray(GRBmodel* mdl, const char* attr_id,
-    std::size_t size, std::size_t offset=0) const;
-  std::vector<double> GrbGetDblAttrArray(GRBmodel* mdl, const char* attr_id,
-    std::size_t size, std::size_t offset=0) const;
-
-  /// varcon: 0 - vars, 1 - constraints
-  std::vector<double> GrbGetDblAttrArray_VarCon(
-      const char* attr, int varcon) const;
-  /// varcon: 0 - vars, 1 - constraints
-  std::vector<double> GrbGetDblAttrArray_VarCon(GRBmodel* mdl,
-      const char* attr, int varcon) const;
-
-  /// Set attributes.
-  /// Return false on failure
-  void GrbSetIntAttr(const char* attr_id, int val);
-  void GrbSetDblAttr(const char* attr_id, double val);
-  ///  Silently ignore empty vector arguments.
-  void GrbSetIntAttrArray(const char* attr_id,
-                               ArrayRef<int> values, std::size_t start=0);
-  void GrbSetDblAttrArray(const char* attr_id,
-                               ArrayRef<double> values, std::size_t start=0);
-  ///  Silently ignore empty vector arguments.
-  void GrbSetIntAttrList(const char* attr_id,
-                         const std::vector<int>& idx, const std::vector<int>& val);
-  void GrbSetDblAttrList(const char* attr_id,
-                         const std::vector<int>& idx, const std::vector<double>& val);
-
-
 
 private:
-  GRBenv   *env_   = nullptr;
-  GRBmodel *model_ = nullptr;
   GRBmodel *model_fixed_ = nullptr;
 
-  /// The sense of the main objective
-  obj::Type main_obj_sense_;
-
-private:
   /// These options are stored in the class as variables
   /// for direct access
   struct Options {
     std::string exportFile_, paramRead_, paramWrite_;
-
-    int acc_min_=1, acc_max_=1, acc_abs_=1, acc_and_=1, acc_or_=1,
-      acc_ind_le_=1, acc_ind_eq_=1;
 
     int nMIPStart_=1;
     int nPoolMode_=2;
@@ -406,14 +263,6 @@ private:
 
 protected:  //////////// Option accessors ////////////////
   int Gurobi_mipstart() const { return storedOptions_.nMIPStart_; }
-
-  int acc_abs() const { return storedOptions_.acc_abs_; }
-  int acc_min() const { return storedOptions_.acc_min_; }
-  int acc_max() const { return storedOptions_.acc_max_; }
-  int acc_and() const { return storedOptions_.acc_and_; }
-  int acc_or() const { return storedOptions_.acc_or_; }
-  int acc_ind_le() const { return storedOptions_.acc_ind_le_; }
-  int acc_ind_eq() const { return storedOptions_.acc_ind_eq_; }
 
   const std::string& paramfile_read() const { return storedOptions_.paramRead_; }
   const std::string& paramfile_write() const { return storedOptions_.paramWrite_; }
@@ -436,14 +285,6 @@ protected:  //////////// Option accessors ////////////////
 private: /////////// Suffixes ///////////
   const SuffixDef<int> sufHintPri = { "hintpri", suf::VAR | suf::INPUT };
 
-
-protected:  //////////// Wrappers for Get/SetSolverOption(). Assume model_ is set
-  int GrbGetIntParam(const char* key) const;
-  double GrbGetDblParam(const char* key) const;
-  std::string GrbGetStrParam(const char* key) const;
-  void GrbSetIntParam(const char* key, int value);
-  void GrbSetDblParam(const char* key, double value);
-  void GrbSetStrParam(const char* key, const std::string& value);
 
   /// For "obj:*:method" etc
   /// Should they be handled in the Converter?

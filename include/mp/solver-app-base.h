@@ -25,15 +25,15 @@ class SolverAppOptionParser {
   std::string currentOptionString;
   BasicSolver &solver_;
 
-  // Command-line options.
+  /// Command-line options.
   OptionList options_;
 
   bool echo_solver_options_;
 
-  // Prints usage information and stops processing options.
+  /// Prints usage information and stops processing options.
   bool ShowUsage();
 
-  // Prints information about solver options.
+  /// Prints information about solver options.
   bool ShowSolverOptions();
   bool ShowSolverOptionsASL();
 
@@ -48,7 +48,7 @@ class SolverAppOptionParser {
     return true;
   }
 
-  // Stops processing options.
+  /// Stops processing options.
   bool EndOptions() { return false; }
 
  public:
@@ -56,10 +56,10 @@ class SolverAppOptionParser {
 
   OptionList &options() { return options_; }
 
-  // Retruns true if assignments of solver options should be echoed.
+  /// Retruns true if assignments of solver options should be echoed.
   bool echo_solver_options() const { return echo_solver_options_; }
 
-  // Parses command-line options.
+  /// Parses command-line options.
   const char *Parse(char **&argv);
 };
 

@@ -540,6 +540,8 @@ bool Solver::OptionNameLess::operator()(
 }
 
 
+BasicSolver::BasicSolver() :
+  BasicSolver("dummy", "long_dummy", 0, 0) { }
 
 BasicSolver::BasicSolver(
     fmt::CStringRef name, fmt::CStringRef long_name, long date, int flags)

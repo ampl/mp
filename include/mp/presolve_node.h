@@ -143,7 +143,8 @@ private:
 };
 
 /// Spec for ValueNode
-void SetValueNodeName(ValueNode& vn, std::string nm) { vn.SetName(nm); }
+inline void
+SetValueNodeName(ValueNode& vn, std::string nm) { vn.SetName(nm); }
 
 
 /// Copy int or double range only

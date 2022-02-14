@@ -7,9 +7,9 @@
 #include <cmath>
 #include <utility>
 
+#include "mp/env.h"
 #include "mp/format.h"
 #include "mp/solver-base.h"
-#include "mp/flat/backend_base.h"
 #include "mp/flat/convert_functional.h"
 #include "mp/flat/constraint_keeper.h"
 #include "mp/flat/model.h"
@@ -28,7 +28,8 @@ template <class Impl, class Backend,
           class Model = BasicFlatModel< > >
 class FlatConverter :
     public BasicFlatConverter,
-    public Model
+    public Model,
+    public EnvKeeper
 {
 public:
   static constexpr const char* name() { return "Flat Converter"; };
@@ -47,10 +48,7 @@ protected:
 public:
   static const char* GetConverterName() { return "BasicMPFlatConverter"; }
 
-  FlatConverter()
-  {
-    GetBackend().ProvidePresolver(&GetPresolver());
-  }
+  FlatConverter(Env& e) : EnvKeeper(e), backend_(e) { }
 
 
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
@@ -682,7 +680,7 @@ protected:
   }
 
   void WindupConversion() {
-    if (GetBackend().verbose_mode() && GetConvFailures().size()) {
+    if (GetEnv().verbose_mode() && GetConvFailures().size()) {
       printf("WARNING: the following redefinitions failed"
         " so the model items had to be passed to the solver:\n");
       for (const auto& e: GetConvFailures())
@@ -696,8 +694,8 @@ protected:
   ///
 public:
   /// Expose abstract Backend
-  const BasicBackend& GetBasicBackend() const { return backend_; }
-  BasicBackend& GetBasicBackend() { return backend_; }
+  const Backend& GetBasicBackend() const { return backend_; }
+  Backend& GetBasicBackend() { return backend_; }
 
   /// Expose Presolver
   const pre::Presolver& GetPresolver() const { return presolver_; }
@@ -826,14 +824,12 @@ protected:
 
 public:
   /// Chance for the Backend to init solver environment, etc
-  void InitOptionParsing() { GetBackend().InitOptionParsing(); }
+  void InitOptionParsing() { }
   /// Chance to consider options immediately (open cloud, etc)
-  void FinishOptionParsing() { GetBackend().FinishOptionParsing(); }
+  void FinishOptionParsing() { }
 
-  template <class OptionManager>
-  void InitOptions(OptionManager& opt) {
-    MPD( GetBackend() ).InitMetaInfoAndOptions();
-    InitOwnOptions(opt);
+  void InitOptions() {
+    InitOwnOptions();
   }
 
 protected:
@@ -843,18 +839,17 @@ protected:
   };
 
 private:
-  template <class OptionManager>
-  void InitOwnOptions(OptionManager& opt) {
-    opt.AddOption("flat:pre:all",
+  void InitOwnOptions() {
+    GetEnv().AddOption("flat:pre:all",
         "0/1*: Set to 0 to disable all presolve in the flat converter.",
         options_.preprocessAnything_, 0, 1);
-    opt.AddOption("flat:pre:eqresult",
+    GetEnv().AddOption("flat:pre:eqresult",
         "0/1*: Preprocess reified equality comparison's boolean result bounds.",
         options_.preprocessEqualityResultBounds_, 0, 1);
-    opt.AddOption("flat:pre:eqbinary",
+    GetEnv().AddOption("flat:pre:eqbinary",
         "0/1*: Preprocess reified equality comparison with a binary variable.",
         options_.preprocessEqualityBvar_, 0, 1);
-    opt.AddOption("alg:relax relax",
+    GetEnv().AddOption("alg:relax relax",
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
   }
@@ -945,22 +940,20 @@ protected:
   INSTALL_ITEM_CONVERTER(RangeConstraintConverter)
 
 public:
-  /// TODO use universal Env instead
-  /// (which can well use these "MPUtils",
-  /// but ideally an appr new base class of Solver)
-  using MPUtils = typename BackendType::MPUtils;
-  const MPUtils& GetMPUtils() const { return GetBackend().GetMPUtils(); }
-  MPUtils& GetMPUtils() { return GetBackend().GetMPUtils(); }
-
   /// Presolve bridge copying values between model items
   pre::CopyBridge& GetCopyBridge() { return copy_bridge_; }
 };
 
 /// A 'final' converter in a hierarchy
+/// TODO Make BackendModelAPI derive from
 template <template <typename, typename, typename> class Converter,
           class Backend, class Model = BasicFlatModel< > >
 class ConverterImpl :
-    public Converter<ConverterImpl<Converter, Backend, Model>, Backend, Model> { };
+    public Converter<ConverterImpl<Converter, Backend, Model>, Backend, Model> {
+public:
+  using Base = Converter<ConverterImpl<Converter, Backend, Model>, Backend, Model>;
+  ConverterImpl(Env& e) : Base(e) { }
+};
 
 template <template <typename, typename, typename> class Converter,
           class Backend, class Model = BasicFlatModel< > >

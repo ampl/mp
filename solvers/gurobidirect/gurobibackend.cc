@@ -4,18 +4,7 @@
 #include <stdexcept>
 
 #include "gurobibackend.h"
-
-#define GRB_CALL_MSG( call, msg ) do { if (int e=call) MP_RAISE( \
-    fmt::format( \
-      "Call failed: '{}' with code {},\n" \
-      "Gurobi message: {}, hint: {}", #call, e, \
-           GRBgeterrormsg(env_), msg ) \
-  ); } while (0)
-#define GRB_CALL( call ) do { if (int e=call) MP_RAISE( \
-    fmt::format( \
-      "Call failed: '{}' with code {}, Gurobi message: {}", #call, \
-        e, GRBgeterrormsg(env_) ) \
-  ); } while (0)
+#include "gurobicommon.h"
 
 namespace {
 
@@ -24,12 +13,19 @@ bool InterruptGurobi(void *model) {
   return true;
 }
 
-}  // namespace
+}  // namespace {}
 
 namespace mp {
 
-const char* GurobiBackend::GetBackendName()
-  { return "GurobiBackend"; }
+GurobiBackend::GurobiBackend() {
+  auto data = CreateGurobiModelMgr(*this, *this);
+  SetMM( std::move( data.pmm_ ) );
+  SetPresolver(data.pre_);
+}
+
+GurobiBackend::~GurobiBackend() {
+  CloseGurobi();
+}
 
 std::string GurobiBackend::GetSolverVersion() {
   int a,b,c;
@@ -37,31 +33,25 @@ std::string GurobiBackend::GetSolverVersion() {
   return fmt::format("{}.{}.{}", a, b, c);
 }
 
-GurobiBackend::GurobiBackend() {}
-
-GurobiBackend::~GurobiBackend() {
-  CloseGurobi();
-}
-
 void GurobiBackend::CloseGurobi() {
   /* Free the fixed model */
-  if (model_ != model_fixed_) {
-    assert(model_);
+  if (model() != model_fixed_) {
+    assert(model());
     assert(model_fixed_);
     GRBfreemodel(model_fixed_);
   }
   model_fixed_ = nullptr;
 
   /* Free model */
-  if (model_) {
-    GRBfreemodel(model_);
-    model_ = nullptr;
+  if (model()) {
+    GRBfreemodel(model());
+    model_ref() = nullptr;
   }
 
   /* Free environment */
-  if (env_) {
-    GRBfreeenv(env_);
-    env_ = nullptr;
+  if (env()) {
+    GRBfreeenv(env());
+    env_ref() = nullptr;
   }
 }
 
@@ -70,19 +60,21 @@ void GurobiBackend::InitOptionParsing() {
 }
 
 void GurobiBackend::OpenGurobi() {
-  GRB_CALL( GRBloadenv(&env_, NULL) );
+  GRB_CALL( GRBloadenv(&env_ref(), NULL) );
   OpenGurobiModel();
 }
 
 void GurobiBackend::OpenGurobiModel() {
   /* Set default parameters */
-  GRBsetintparam(env_, GRB_INT_PAR_OUTPUTFLAG, 0);
+  GRBsetintparam(env(), GRB_INT_PAR_OUTPUTFLAG, 0);
   /* Create an empty model */
-  GRB_CALL( GRBnewmodel(env_, &model_, "amplgurobi", 0,
+  GRB_CALL( GRBnewmodel(env(), &model_ref(), "amplgurobi", 0,
                         NULL, NULL, NULL, NULL, NULL) );
-  assert(model_);
+  assert(model());
   /* Init fixed model */
-  model_fixed_ = model_;
+  model_fixed_ = model();
+
+  copy_handlers_to_other_gurobi();
 }
 
 void GurobiBackend::FinishOptionParsing() {
@@ -94,11 +86,11 @@ void GurobiBackend::FinishOptionParsing() {
   }
   if (paramfile_read().size())
     GRB_CALL(
-          GRBreadparams(GRBgetenv(model_),
+          GRBreadparams(GRBgetenv(model()),
                         paramfile_read().c_str() ));
   if (paramfile_write().size())
     GRB_CALL(
-          GRBwriteparams(GRBgetenv(model_),
+          GRBwriteparams(GRBgetenv(model()),
                          paramfile_write().c_str() ));
   /// Tell the base class our verbosity
   set_verbose_mode(GrbGetIntParam(GRB_INT_PAR_OUTPUTFLAG));
@@ -107,10 +99,10 @@ void GurobiBackend::FinishOptionParsing() {
 void GurobiBackend::OpenGurobiComputeServer() {
   assert(servers().size());
   auto logf = GrbGetStrParam(GRB_STR_PAR_LOGFILE);
-  if (env_) {
+  if (env()) {
     CloseGurobi();
   }
-  if (int i = GRBloadclientenv(&env_, logf.c_str(),
+  if (int i = GRBloadclientenv(&env_ref(), logf.c_str(),
                                servers().c_str(), server_router().c_str(),
                                server_password().c_str(), server_group().c_str(),
                                server_insecure(), server_priority(),
@@ -139,10 +131,10 @@ void GurobiBackend::OpenGurobiComputeServer() {
 void GurobiBackend::OpenGurobiCloud() {
   assert(cloudid().size() && cloudkey().size());
   auto logf = GrbGetStrParam(GRB_STR_PAR_LOGFILE);
-  if (env_) {
+  if (env()) {
     CloseGurobi();
   }
-  if (int i = GRBloadcloudenv(&env_, logf.c_str(),
+  if (int i = GRBloadcloudenv(&env_ref(), logf.c_str(),
                               cloudid().c_str(), cloudkey().c_str(),
                               cloudpool().c_str(), cloudpriority()
                               )) {
@@ -180,33 +172,6 @@ bool GurobiBackend::IsQCP() const {
   return 1 == GrbGetIntAttr(GRB_INT_ATTR_IS_QCP);
 }
 
-int GurobiBackend::NumLinCons() const {
-  return GrbGetIntAttr(GRB_INT_ATTR_NUMCONSTRS);
-}
-
-int GurobiBackend::NumQPCons() const {
-  return GrbGetIntAttr(GRB_INT_ATTR_NUMQCONSTRS);
-}
-
-int GurobiBackend::NumSOSCons() const {
-  return GrbGetIntAttr(GRB_INT_ATTR_NUMSOS);
-}
-
-int GurobiBackend::NumGenCons() const {
-  return GrbGetIntAttr(GRB_INT_ATTR_NUMGENCONSTRS);
-}
-
-int GurobiBackend::NumVars() const {
-  return GrbGetIntAttr(GRB_INT_ATTR_NUMVARS);
-}
-
-int GurobiBackend::NumObjs() const {
-  return GrbGetIntAttr(GRB_INT_ATTR_NUMOBJ);
-}
-
-int GurobiBackend::ModelSense() const {
-  return GrbGetIntAttr(GRB_INT_ATTR_MODELSENSE);
-}
 
 std::vector<double> GurobiBackend::PrimalSolution() {
   return
@@ -250,14 +215,14 @@ ArrayRef<double> GurobiBackend::GetObjectiveValues() {
   if (NumObjs() == 1)
     objs[0] = GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL, &fOk); // failsafe
   else {
-    GRBenv* env = GRBgetenv(model_);
+    GRBenv* mdlenv = GRBgetenv(model());
     int objnumber = GrbGetIntParam(GRB_INT_PAR_OBJNUMBER);
     for (int i = 0; i < no; i++)
     {
-      GRB_CALL( GRBsetintparam(env, GRB_INT_PAR_OBJNUMBER, i) );
+      GRB_CALL( GRBsetintparam(mdlenv, GRB_INT_PAR_OBJNUMBER, i) );
       objs[i] = GrbGetDblAttr(GRB_DBL_ATTR_OBJNVAL, &fOk);
     }
-    GRB_CALL( GRBsetintparam(env, GRB_INT_PAR_OBJNUMBER, objnumber) );
+    GRB_CALL( GRBsetintparam(mdlenv, GRB_INT_PAR_OBJNUMBER, objnumber) );
   }
   return objs;
 }
@@ -285,7 +250,7 @@ void GurobiBackend::MarkLazyOrUserCuts(ArrayRef<int> lazyVals) {
           val = 0;
       }
     }
-    GRB_CALL( GRBsetintattrarray(model_,
+    GRB_CALL( GRBsetintattrarray(model(),
                                  GRB_INT_ATTR_LAZY,
                                  0, (int)lv_lin.size(), (int*)lv_lin.data()) );
     // Testing
@@ -390,8 +355,8 @@ void GurobiBackend::VarStatii(ArrayRef<int> vst) {
       /// 'none' is assigned to new variables. Compute low/upp/sup:
       /// Depending on where 0.0 is between bounds
       double lb, ub;
-      if (!GRBgetdblattrelement(model_, GRB_DBL_ATTR_LB, j, &lb) &&
-          !GRBgetdblattrelement(model_, GRB_DBL_ATTR_UB, j, &ub)) {
+      if (!GRBgetdblattrelement(model(), GRB_DBL_ATTR_LB, j, &lb) &&
+          !GRBgetdblattrelement(model(), GRB_DBL_ATTR_UB, j, &ub)) {
         if (lb >= -1e-6)
           s = -1;
         else if (ub <= 1e-6)
@@ -616,12 +581,12 @@ int GurobiBackend::BarrierIterations() const {
 }
 
 void GurobiBackend::ExportModel(const std::string &file) {
-  GRB_CALL( GRBwrite(model_, file.c_str()) );
+  GRB_CALL( GRBwrite(model(), file.c_str()) );
 }
 
 
 void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
-  inter->SetHandler(InterruptGurobi, model_);
+  inter->SetHandler(InterruptGurobi, model());
 }
 
 
@@ -629,7 +594,7 @@ void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
 void GurobiBackend::SolveAndReportIntermediateResults() {
   PrepareGurobiSolve();
 
-  GRB_CALL( GRBoptimize(model_) );
+  GRB_CALL( GRBoptimize(model()) );
 
   WindupGurobiSolve();
 }
@@ -673,7 +638,7 @@ void GurobiBackend::AddGurobiMessage() {
 
 void GurobiBackend::DoGurobiTune() {
   assert(tunebase().size());
-  GRB_CALL( GRBtunemodel(model_) );
+  GRB_CALL( GRBtunemodel(model()) );
 //		TODO? solve_result_num = 532;
   auto n_results = GrbGetIntAttr(GRB_INT_ATTR_TUNE_RESULTCOUNT);
   if (n_results<=0)
@@ -686,11 +651,11 @@ void GurobiBackend::DoGurobiTune() {
   tbc += ".prm";
   std::string tfn;
   for (int k=n_results; k--;) {
-    GRB_CALL_MSG( GRBgettuneresult(model_, k),
+    GRB_CALL_MSG( GRBgettuneresult(model(), k),
       fmt::format(
         "Surprize return from GRBgettuneresult({})", k+1));
     tfn = fmt::format(tbc.c_str(), k+1);
-    GRB_CALL_MSG( GRBwriteparams(GRBgetenv(model_), tfn.c_str()),
+    GRB_CALL_MSG( GRBwriteparams(GRBgetenv(model()), tfn.c_str()),
       fmt::format(
         "Surprize return from GRBwriteparams({})", tfn));
   }
@@ -715,10 +680,10 @@ void GurobiBackend::ConsiderGurobiFixedModel() {
     return;
   if (IsQCP()) {
     int i=0;
-    if (GRBgetintparam(env_, GRB_INT_PAR_QCPDUAL, &i) || i == 0)
+    if (GRBgetintparam(env(), GRB_INT_PAR_QCPDUAL, &i) || i == 0)
       return;
   }
-  if (GRBmodel* mdl = GRBfixedmodel(model_))
+  if (GRBmodel* mdl = GRBfixedmodel(model()))
     model_fixed_ = mdl;
   else
     return;
@@ -727,7 +692,7 @@ void GurobiBackend::ConsiderGurobiFixedModel() {
     AddToSolverMessage( msg +
                         " failed in DoGurobiFixedModel()." );
     GRBfreemodel(model_fixed_);
-    model_fixed_ = model_;
+    model_fixed_ = model();
   }
 }
 
@@ -810,7 +775,7 @@ void GurobiBackend::DoGurobiFeasRelax() {
   std::vector<double> ubpen = feasrelax().ubpen();
   if (ubpen.size() && ubpen.size()<(size_t)NumVars())
     ubpen.resize(NumVars());
-  GRB_CALL( GRBfeasrelax(model_, reltype, minrel,
+  GRB_CALL( GRBfeasrelax(model(), reltype, minrel,
                          (double*)data_or_null( lbpen ),
                          (double*)data_or_null( ubpen ),
                          (double*)data_or_null( rhspen ),
@@ -830,7 +795,7 @@ void GurobiBackend::SetPartitionValues() {
 std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
   namespace sol = mp::sol;
   int optimstatus;
-  GRB_CALL( GRBgetintattr(model_, GRB_INT_ATTR_STATUS, &optimstatus) );
+  GRB_CALL( GRBgetintattr(model(), GRB_INT_ATTR_STATUS, &optimstatus) );
   switch (optimstatus) {
   default:
     // Fall through.
@@ -838,7 +803,7 @@ std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
       return { sol::INTERRUPTED, "interrupted" };
     }
     int solcount;
-    GRB_CALL( GRBgetintattr(model_, GRB_INT_ATTR_SOLCOUNT, &solcount) );
+    GRB_CALL( GRBgetintattr(model(), GRB_INT_ATTR_SOLCOUNT, &solcount) );
     if (solcount>0) {
       return { sol::UNCERTAIN, "feasible solution" };
     }
@@ -872,227 +837,15 @@ std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
 
 
 void GurobiBackend::ComputeIIS() {
-  GRB_CALL(GRBcomputeIIS(model_));
+  GRB_CALL(GRBcomputeIIS(model()));
 }
 
-
-//////////////////////////////////////////////////////////////////////////
-/////////////////////////// Modeling interface ///////////////////////////
-//////////////////////////////////////////////////////////////////////////
-void GurobiBackend::InitProblemModificationPhase() { }
-
-void GurobiBackend::AddVariables(const VarArrayDef& v) {
-  std::vector<char> vtypes(v.size());
-  for (size_t i=v.size(); i--; )
-    vtypes[i] = var::Type::CONTINUOUS==v.ptype()[i] ?
-          GRB_CONTINUOUS : GRB_INTEGER;
-  GRB_CALL( GRBaddvars(model_, (int)v.size(), 0,
-                       NULL, NULL, NULL, NULL, // placeholders, no matrix here
-                       (double*)v.plb(), (double*)v.pub(),
-                                          vtypes.data(), NULL) );
-}
-
-void GurobiBackend::SetLinearObjective( int iobj, const LinearObjective& lo ) {
-  if (1>iobj) {
-    GrbSetIntAttr( GRB_INT_ATTR_MODELSENSE,
-                  obj::Type::MAX==lo.obj_sense() ? GRB_MAXIMIZE : GRB_MINIMIZE);
-    NoteGurobiMainObjSense(lo.obj_sense());
-    GrbSetDblAttrList( GRB_DBL_ATTR_OBJ, lo.vars(), lo.coefs() );
-  } else {
-    GRB_CALL( GRBsetobjectiven(model_, iobj, 0,           // default priority 0
-                               /// Gurobi allows opposite sense by weight sign
-                               lo.obj_sense()==GetGurobiMainObjSense() ? 1.0 : -1.0,
-                               0.0, 0.0, nullptr,
-                               0.0, lo.num_terms(),
-                               (int*)lo.vars().data(), (double*)lo.coefs().data()) );
-  }
-}
-
-void GurobiBackend::SetQuadraticObjective(int iobj, const QuadraticObjective &qo) {
-  if (1>iobj) {
-    SetLinearObjective(iobj, qo);                         // add the linear part
-    const auto& qt = qo.GetQPTerms();
-    GRB_CALL( GRBaddqpterms(model_, qt.size(),
-                                (int*)qt.pvars1(), (int*)qt.pvars2(),
-                            (double*)qt.pcoefs()) );
-  } else {
-    throw std::runtime_error("Multiple quadratic objectives not supported");
-  }
-}
-
-void GurobiBackend::AddConstraint( const LinConLE& lc ) {
-  GRB_CALL( GRBaddconstr(model_, lc.size(),
-                         (int*)lc.pvars(), (double*)lc.pcoefs(),
-                         GRB_LESS_EQUAL, lc.rhs(), NULL) );
-}
-void GurobiBackend::AddConstraint( const LinConEQ& lc ) {
-  GRB_CALL( GRBaddconstr(model_, lc.size(),
-                         (int*)lc.pvars(), (double*)lc.pcoefs(),
-                         GRB_EQUAL, lc.rhs(), NULL) );
-}
-void GurobiBackend::AddConstraint( const LinConGE& lc ) {
-  GRB_CALL( GRBaddconstr(model_, lc.size(),
-                         (int*)lc.pvars(), (double*)lc.pcoefs(),
-                         GRB_GREATER_EQUAL, lc.rhs(), NULL) );
-}
-
-void GurobiBackend::AddConstraint( const QuadraticConstraint& qc ) {
-  const auto& qt = qc.GetQPTerms();
-  if (qc.lb()==qc.ub())
-    GRB_CALL( GRBaddqconstr(model_, qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-                            qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                            (double*)qt.pcoefs(), GRB_EQUAL, qc.lb(), NULL) );
-  else {            // Let solver deal with lb>~ub etc.
-    if (qc.lb()>MinusInfinity()) {
-      GRB_CALL( GRBaddqconstr(model_, qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-                              qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                              (double*)qt.pcoefs(), GRB_GREATER_EQUAL, qc.lb(), NULL) );
-    }
-    if (qc.ub()<Infinity()) {
-      GRB_CALL( GRBaddqconstr(model_, qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-                              qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                              (double*)qt.pcoefs(), GRB_LESS_EQUAL, qc.ub(), NULL) );
-    }
-  }
-}
-
-void GurobiBackend::AddConstraint(const MaximumConstraint &mc)  {
-  const auto& args = mc.GetArguments();
-  GRB_CALL( GRBaddgenconstrMax(model_, NULL,
-                               mc.GetResultVar(),
-                               (int)args.size(), args.data(),
-                               MinusInfinity()) );
-}
-
-void GurobiBackend::AddConstraint(const MinimumConstraint &mc)  {
-  const auto& args = mc.GetArguments();
-  GRB_CALL( GRBaddgenconstrMin(model_, NULL,
-                               mc.GetResultVar(),
-                               (int)args.size(), args.data(),
-                               Infinity()) );
-}
-
-void GurobiBackend::AddConstraint(const AbsConstraint &absc)  {
-  const auto& args = absc.GetArguments();
-  GRB_CALL( GRBaddgenconstrAbs(model_, NULL,
-                               absc.GetResultVar(), args[0]) );
-}
-
-void GurobiBackend::AddConstraint(const ConjunctionConstraint &cc)  {
-  const auto& args = cc.GetArguments();
-  GRB_CALL( GRBaddgenconstrAnd(model_, NULL,
-                               cc.GetResultVar(),
-                               (int)args.size(), args.data()) );
-}
-
-void GurobiBackend::AddConstraint(const DisjunctionConstraint &dc)  {
-  const auto& args = dc.GetArguments();
-  GRB_CALL( GRBaddgenconstrOr(model_, NULL,
-                               dc.GetResultVar(),
-                               (int)args.size(), args.data()) );
-}
-
-void GurobiBackend::AddConstraint(const IndicatorConstraintLinLE &ic)  {
-  GRB_CALL( GRBaddgenconstrIndicator(model_, NULL,
-                               ic.get_binary_var(), ic.get_binary_value(),
-                                     (int)ic.get_constraint().size(),
-                               ic.get_constraint().pvars(),
-                                     ic.get_constraint().pcoefs(),
-                                     GRB_LESS_EQUAL,
-                                     ic.get_constraint().rhs() ) );
-}
-void GurobiBackend::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
-  GRB_CALL( GRBaddgenconstrIndicator(model_, NULL,
-                                     ic.get_binary_var(), ic.get_binary_value(),
-                                           (int)ic.get_constraint().size(),
-                                     ic.get_constraint().pvars(),
-                                           ic.get_constraint().pcoefs(),
-                                           GRB_EQUAL,
-                                           ic.get_constraint().rhs() ) );
-}
-
-//////////////////// General constraints /////////////////////
-void GurobiBackend::AddConstraint(const SOS1Constraint &sos)  {
-  int type = GRB_SOS_TYPE1;
-  int beg = 0;
-  GRB_CALL( GRBaddsos(model_, 1, sos.size(), &type, &beg,
-              (int*)sos.get_vars().data(),
-                      (double*)sos.get_weights().data()) );
-}
-
-void GurobiBackend::AddConstraint(const SOS2Constraint &sos)  {
-  int type = GRB_SOS_TYPE2;
-  int beg = 0;
-  GRB_CALL( GRBaddsos(model_, 1, sos.size(), &type, &beg,
-              (int*)sos.get_vars().data(),
-                      (double*)sos.get_weights().data()) );
-}
-
-void GurobiBackend::AddConstraint(const ExpConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrExp(model_, NULL,
-              cc.GetArguments()[0], cc.GetResultVar(), "") );
-}
-
-void GurobiBackend::AddConstraint(const ExpAConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrExpA(model_, NULL,
-              cc.GetArguments()[0], cc.GetResultVar(), cc.GetParameters()[0], "") );
-}
-
-void GurobiBackend::AddConstraint(const LogConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrLog(model_, NULL,
-              cc.GetArguments()[0], cc.GetResultVar(), "") );
-}
-
-void GurobiBackend::AddConstraint(const LogAConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrLogA(model_, NULL,
-              cc.GetArguments()[0], cc.GetResultVar(), cc.GetParameters()[0], "") );
-}
-
-void GurobiBackend::AddConstraint(const PowConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrPow(model_, NULL,
-              cc.GetArguments()[0], cc.GetResultVar(), cc.GetParameters()[0], "") );
-}
-
-void GurobiBackend::AddConstraint(const SinConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrSin(model_, NULL,
-              cc.GetArguments()[0], cc.GetResultVar(), "") );
-}
-
-void GurobiBackend::AddConstraint(const CosConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrCos(model_, NULL,
-              cc.GetArguments()[0], cc.GetResultVar(), "") );
-}
-
-void GurobiBackend::AddConstraint(const TanConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrTan(model_, NULL,
-              cc.GetArguments()[0], cc.GetResultVar(), "") );
-}
-
-void GurobiBackend::AddConstraint(const PLConstraint& plc) {
-  PLPoints plp(plc.GetParameters());
-  GRB_CALL( GRBaddgenconstrPWL(model_, NULL,
-              plc.GetArguments()[0], plc.GetResultVar(),
-              plp.x_.size(), plp.x_.data(), plp.y_.data()) );
-}
-
-
-///////////////////////////////////////////////////////
-void GurobiBackend::FinishProblemModificationPhase() {
-  // Update before adding statuses etc
-  GRB_CALL( GRBupdatemodel(model_) );
-}
 
 
 ///////////////////////////////////////////////////////////////
 ////////////////////////// OPTIONS ////////////////////////////
 
 // static possible values with descriptions
-
-static const mp::OptionValueInfo values_item_acceptance[] = {
-  { "0", "Not accepted natively, automatic redefinition will be attempted", 0},
-  { "1", "Accepted but automatic redefinition will be used where possible", 1},
-  { "2", "Accepted natively and preferred", 2}
-};
 
 static const mp::OptionValueInfo values_barcrossover[] = {
   {"-1", "Automatic choice (default)", -1},
@@ -1324,30 +1077,6 @@ void GurobiBackend::InitCustomOptions() {
       "  ampl: option {0}_options 'opttol=1e-6';\n",
                   GetSolverName()).c_str());
 
-
-  /// Constraint acceptance
-  AddStoredOption("acc:abs",
-                  "Acceptance level for 'abs' expression, default 1:\n"
-                  "\n.. value-table::\n",
-                  storedOptions_.acc_abs_, values_item_acceptance);
-  AddStoredOption("acc:min",
-                  "Acceptance level for 'min' expression, default 1.",
-                  storedOptions_.acc_min_);
-  AddStoredOption("acc:max",
-                  "Acceptance level for 'max' expression, default 1.",
-                  storedOptions_.acc_max_);
-  AddStoredOption("acc:and",
-                  "Acceptance level for 'and'/'forall' expressions, default 1.",
-                  storedOptions_.acc_and_);
-  AddStoredOption("acc:or",
-                  "Acceptance level for 'or'/'exists' expressions, default 1.",
-                  storedOptions_.acc_or_);
-  AddStoredOption("acc:ind:le acc_ind_le",
-                  "Acceptance level for 'implied-less-equal' expression, default 1.",
-                  storedOptions_.acc_ind_le_);
-  AddStoredOption("acc:ind:eq acc_ind_eq",
-                  "Acceptance level for 'implied-equal' expression, default 1.",
-                  storedOptions_.acc_ind_eq_);
 
   /// Options basis, sens are created internally if
   /// std features BASIS / SENSITIVITY are set.
@@ -2242,31 +1971,6 @@ void GurobiBackend::InitCustomOptions() {
       storedOptions_.exportFile_);
 }
 
-int GurobiBackend::GrbGetIntParam(const char *key) const {
-  int v;
-  GetSolverOption(key, v);
-  return v;
-}
-double GurobiBackend::GrbGetDblParam(const char *key) const {
-  double v;
-  GetSolverOption(key, v);
-  return v;
-}
-std::string GurobiBackend::GrbGetStrParam(const char *key) const {
-  std::string v;
-  GetSolverOption(key, v);
-  return v;
-}
-void GurobiBackend::GrbSetIntParam(const char *key, int value) {
-  SetSolverOption(key, value);
-}
-void GurobiBackend::GrbSetDblParam(const char *key, double value) {
-  SetSolverOption(key, value);
-}
-void GurobiBackend::GrbSetStrParam(const char *key, const std::string& value) {
-  SetSolverOption(key, value);
-}
-
 
 void GurobiBackend::GrbSetObjIntParam(const SolverOption& opt, int val) {
   objnparam_int_.push_back( { {opt.wc_tail(), opt.wc_keybody_last()}, val } );
@@ -2322,12 +2026,13 @@ GrbGetObjParamAction(const GurobiBackend::ObjNParamKey& key) {
   return { false, -1, "" };
 }
 
-/// env_ is only for error reporting
+/// env() is only for error reporting
 static void GrbDoSetObjParam(
     const GurobiBackend::ObjNParam<int>& prm, GRBmodel* model, GRBenv* env_) {
   auto action = GrbGetObjParamAction(prm.first);
   auto iobj = std::get<1>(action);
   auto prm_attr = std::get<2>(action);
+  auto env = [env_]() { return env_; };            // for GRB_CALL
   if (std::get<0>(action)) {
     auto envN = GRBgetmultiobjenv(model, iobj);
     GRB_CALL( GRBsetintparam(envN, prm_attr, prm.second) );
@@ -2337,12 +2042,13 @@ static void GrbDoSetObjParam(
     GRB_CALL( GRBsetintattr(model, prm_attr, prm.second) );
   }
 }
-/// env_ is only for error reporting
+/// env() is only for error reporting
 static void GrbDoSetObjParam(
     const GurobiBackend::ObjNParam<double>& prm, GRBmodel* model, GRBenv* env_) {
   auto action = GrbGetObjParamAction(prm.first);
   auto iobj = std::get<1>(action);
   auto prm_attr = std::get<2>(action);
+  auto env = [env_]() { return env_; };            // for GRB_CALL
   if (std::get<0>(action)) {
     auto envN = GRBgetmultiobjenv(model, iobj);
     GRB_CALL( GRBsetdblparam(envN, prm_attr, prm.second) );
@@ -2363,158 +2069,12 @@ static void DoPlayGrbObjNParams(
 
 void GurobiBackend::GrbPlayObjNParams() {
   int nobj;
-  GRB_CALL( GRBgetintattr(model_, GRB_INT_ATTR_NUMOBJ, &nobj) );
+  GRB_CALL( GRBgetintattr(model(), GRB_INT_ATTR_NUMOBJ, &nobj) );
   if (debug_mode())
     printf("Number of objectives: %d\n", nobj);
-  DoPlayGrbObjNParams(objnparam_int_, model_, env_);
-  DoPlayGrbObjNParams(objnparam_dbl_, model_, env_);
+  DoPlayGrbObjNParams(objnparam_int_, model(), env());
+  DoPlayGrbObjNParams(objnparam_dbl_, model(), env());
 }
 
-void GurobiBackend::GetSolverOption(const char *key, int &value) const {
-  GRB_CALL( GRBgetintparam(GRBgetenv(model_), key, &value) );
-}
-
-void GurobiBackend::SetSolverOption(const char *key, int value) {
-  if (debug_mode())
-    printf("Setting param %s to %d\n", key, value);
-  GRB_CALL( GRBsetintparam(GRBgetenv(model_), key, value) );
-}
-
-void GurobiBackend::GetSolverOption(const char *key, double &value) const {
-  GRB_CALL( GRBgetdblparam(GRBgetenv(model_), key, &value) );
-}
-
-void GurobiBackend::SetSolverOption(const char *key, double value) {
-  if (debug_mode())
-    printf("Setting param %s to %f\n", key, value);
-  GRB_CALL( GRBsetdblparam(GRBgetenv(model_), key, value) );
-}
-
-void GurobiBackend::GetSolverOption(const char *key, std::string &value) const {
-  char buffer[GRB_MAX_STRLEN];
-  GRB_CALL( GRBgetstrparam(GRBgetenv(model_), key, buffer) );
-  value = buffer;
-}
-
-void GurobiBackend::SetSolverOption(const char *key, const std::string& value) {
-  GRB_CALL( GRBsetstrparam(GRBgetenv(model_), key, value.c_str()) );
-}
-
-
-/// Shortcuts for attributes
-int GurobiBackend::GrbGetIntAttr(const char* attr_id, bool *flag) const {
-  int tmp=0;
-  int error = GRBgetintattr(model_, attr_id, &tmp);
-  if (flag)
-    *flag = (0==error);
-  else if (error)
-    MP_RAISE( fmt::format("Failed to obtain attribute {}, error code {}",
-                       attr_id, error ) );
-  return tmp;
-}
-
-double GurobiBackend::GrbGetDblAttr(const char* attr_id, bool *flag) const {
-  double tmp=0.0;
-  int error = GRBgetdblattr(model_, attr_id, &tmp);
-  if (flag)
-    *flag = (0==error);
-  else if (error)
-    MP_RAISE( fmt::format("Failed to obtain attribute {}, error code {}",
-                       attr_id, error ) );
-  return tmp;
-}
-
-void GurobiBackend::GrbSetIntAttr(
-    const char *attr_id, int val) {
-  if (debug_mode())
-    printf("Setting attr %s to %d\n", attr_id, val);
-  GRB_CALL( GRBsetintattr(model_, attr_id, val) );
-}
-
-void GurobiBackend::GrbSetDblAttr(
-    const char *attr_id, double val) {
-  if (debug_mode())
-    printf("Setting attr %s to %f\n", attr_id, val);
-  GRB_CALL( GRBsetdblattr(model_, attr_id, val) );
-}
-
-std::vector<int> GurobiBackend::GrbGetIntAttrArray(const char* attr_id,
-    std::size_t size, std::size_t offset) const
-{ return GrbGetIntAttrArray(model_, attr_id, size, offset); }
-
-std::vector<int> GurobiBackend::GrbGetIntAttrArray(
-    GRBmodel* mdl, const char* attr_id,
-    std::size_t size, std::size_t offset) const {
-  std::vector<int> res(size);
-  int error = GRBgetintattrarray(mdl, attr_id,
-    0, (int)(size-offset), res.data()+offset);
-  if (error)
-    res.clear();
-  return res;
-}
-
-std::vector<double> GurobiBackend::GrbGetDblAttrArray(const char* attr_id,
-    std::size_t size, std::size_t offset) const
-{ return GrbGetDblAttrArray(model_, attr_id, size, offset); }
-
-std::vector<double> GurobiBackend::GrbGetDblAttrArray(
-    GRBmodel* mdl, const char* attr_id,
-    std::size_t size, std::size_t offset ) const {
-  std::vector<double> res(size);
-  int error = GRBgetdblattrarray(mdl, attr_id,
-    0, (int)(size-offset), res.data()+offset);
-  if (error)
-    res.clear();
-  return res;
-}
-
-std::vector<double> GurobiBackend::GrbGetDblAttrArray_VarCon(
-    const char* attr, int varcon) const
-{ return GrbGetDblAttrArray_VarCon(model_, attr, varcon); }
-
-std::vector<double> GurobiBackend::GrbGetDblAttrArray_VarCon(
-    GRBmodel* mdl, const char* attr, int varcon) const {
-  return GrbGetDblAttrArray(mdl, attr,
-                            varcon ? NumLinCons() :
-                                     NumVars());
-}
-
-
-void GurobiBackend::GrbSetIntAttrArray(
-    const char *attr_id, ArrayRef<int> values, std::size_t start) {
-  if (values)
-    GRB_CALL( GRBsetintattrarray(model_, attr_id,
-              (int)start, (int)values.size(), (int*)values.data()) );
-}
-
-void GurobiBackend::GrbSetDblAttrArray(
-    const char *attr_id, ArrayRef<double> values, std::size_t start) {
-  if (values)
-    GRB_CALL( GRBsetdblattrarray(model_, attr_id,
-              (int)start, (int)values.size(), (double*)values.data()) );
-}
-
-void GurobiBackend::GrbSetIntAttrList(const char *attr_id,
-                                      const std::vector<int> &idx,
-                                      const std::vector<int> &val) {
-  assert(idx.size()==val.size());
-  if (idx.size())
-    GRB_CALL( GRBsetintattrlist(model_, attr_id,
-                (int)idx.size(), (int*)idx.data(), (int*)val.data()) );
-}
-
-void GurobiBackend::GrbSetDblAttrList(const char *attr_id,
-                                      const std::vector<int> &idx,
-                                      const std::vector<double> &val) {
-  assert(idx.size()==val.size());
-  if (idx.size())
-    GRB_CALL( GRBsetdblattrlist(model_, attr_id,
-                                (int)idx.size(),
-                                (int*)idx.data(), (double*)val.data()) );
-}
-
-void GurobiBackend::NoteGurobiMainObjSense(obj::Type s) { main_obj_sense_ = s; }
-
-obj::Type GurobiBackend::GetGurobiMainObjSense() const { return main_obj_sense_; }
 
 } // namespace mp

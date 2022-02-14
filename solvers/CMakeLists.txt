@@ -167,6 +167,8 @@ endif ()
 
 add_ampl_solver(cplexdirect DLL_RUNTIME MODULE CPLEX
   cplexbackend.cc cplexbackend.h
+  cplexcommon.cc cplexcommon.h
+  cplexmodelapi.cc cplexmodelapi.h
   LIBRARIES cplex-library ${CMAKE_DL_LIBS})
 if (TARGET cplexdirect)
   target_compile_definitions(cplexdirect PRIVATE main1=main)
@@ -174,6 +176,8 @@ endif ()
 
 add_ampl_solver(gurobidirect DLL_RUNTIME MODULE GUROBI
   gurobibackend.cc gurobibackend.h
+  gurobimodelapi.cc gurobimodelapi.h
+  gurobicommon.cc gurobicommon.h
   LIBRARIES ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS})
 if (TARGET gurobidirect)
   target_compile_definitions(gurobidirect PRIVATE main1=main)

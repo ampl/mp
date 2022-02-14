@@ -5,20 +5,24 @@
 
 #include "gtest/gtest.h"
 
-#include "mp/flat/backend.h"
+#include "mp/flat/model_api_base.h"
 #include "mp/flat/expr_flattener.h"
 #include "mp/flat/converter.h"
 
 template <class Constraint>
 class TestBackendAcceptingConstraints :
-    public mp::Backend< TestBackendAcceptingConstraints<Constraint> > {
-  using Base = mp::Backend< TestBackendAcceptingConstraints<Constraint> >;
+    public mp::BasicFlatModelAPI {
+  using Base = mp::BasicFlatModelAPI;
   /// VARIABLES
   mp::VarArrayDef vars_;
 
   std::vector<mp::RangeLinCon> lin_constr_;
 public:
   TestBackendAcceptingConstraints() { }
+  TestBackendAcceptingConstraints(mp::Env& ) { }
+
+  static constexpr const char* GetBackendName() { return "tester"; }
+
   void AddVariables(const mp::VarArrayDef& v) { vars_ = v; }
   int NumVars() const { return (int)vars_.size(); }
   void AddConstraint(const mp::RangeLinCon& lc) {
@@ -51,12 +55,6 @@ public:
   }
 
 public:
-  /// Have to define a few abstract methods
-  mp::Solution GetSolution() override { return {}; }
-  mp::ArrayRef<double> GetObjectiveValues() override { return {}; }
-  bool IsMIP() const override { return false; }
-  void SetInterrupter(mp::Interrupter*) override { }
-  void SolveAndReportIntermediateResults() override { }
 };
 
 template <template <class, class, class> class ConverterTemplate, class Constraint>
@@ -86,11 +84,16 @@ class InterfaceTesterWithBackendAcceptingConstraints : public ::testing::Test {
       mp::FlatConverter, Constraint>;
   using Backend = TestBackendAcceptingConstraints<Constraint>;
   Interface interface_;
+  mp::Env env_;
 public:
+  InterfaceTesterWithBackendAcceptingConstraints() :
+    interface_(env_) { }
+  InterfaceTesterWithBackendAcceptingConstraints(mp::Env& e) :
+    interface_(e) { }
   Interface& GetInterface() { return interface_; }
   typename Interface::ModelType& GetModel() { return interface_.GetModel(); }
   Backend& GetBackend()
-  { return dynamic_cast<Backend&>( interface_.GetBasicBackend() ); }
+  { return interface_.GetFlatCvt().GetBasicBackend(); }
 };
 
 #define ASSERT_HAS_CONSTRAINT( backend, constr ) \

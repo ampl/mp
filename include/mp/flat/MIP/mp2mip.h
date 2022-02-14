@@ -19,7 +19,7 @@ public:
 
 public:
   static const char* GetConverterName() { return "MPToMIPConverter"; }
-  MIPFlatConverter() {  }
+  MIPFlatConverter(Env& e) : BaseConverter(e) {  }
 
   ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
   USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter );        ///< reuse default ones
@@ -523,9 +523,8 @@ private:
   Options options_;
 
 public:
-  template <class OptionManager>
-  void InitOptions(OptionManager& om) {
-    BaseConverter::InitOptions(om);
+  void InitOptions() {
+    BaseConverter::InitOptions();
   }
 
 };

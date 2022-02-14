@@ -17,8 +17,8 @@
  action of contract, negligence or other tortious action, arising out
  of or in connection with the use or performance of this software.
 */
-#ifndef FLAT_MODEL_API_BASIC_H_
-#define FLAT_MODEL_API_BASIC_H_
+#ifndef FLAT_MODEL_API_BASE_H_
+#define FLAT_MODEL_API_BASE_H_
 
 #include <string>
 #include <stdexcept>
@@ -26,6 +26,7 @@
 #include "mp/arrayref.h"
 #include "mp/common.h"
 #include "mp/flat/basic_constr.h"
+#include "mp/flat/std_obj.h"
 
 namespace mp {
 
@@ -83,8 +84,27 @@ enum ConstraintGroup {
 };
 
 /// Backends handling custom flat constraints should derive from
-class BasicFlatBackend {
+class BasicFlatModelAPI {
 public:
+  /// Placeholder
+  static const char* GetBackendName()    { return "BasicFlatModelAPI"; }
+  /// Placeholder
+  static const char* GetBackendLongName() { return nullptr; }
+
+  /// Chance to prepare problem update
+  void InitProblemModificationPhase() {  }
+  /// Chance to end problem update
+  void FinishProblemModificationPhase() {  }
+
+  ////////////////// Some standard items /////////////////
+  void SetLinearObjective(int , const LinearObjective& ) {
+    throw MakeUnsupportedError("FlatBackend::SetLinearObjective()");
+  }
+
+  void SetQuadraticObjective(int , const QuadraticObjective& ) {
+    throw MakeUnsupportedError("FlatBackend::SetQuadraticObjective()");
+  }
+
   template <class Constraint>
   void AddConstraint(const Constraint& ) {
     throw std::logic_error(
@@ -119,4 +139,4 @@ public:
 
 } // namespace mp
 
-#endif // FLAT_MODEL_API_BASIC_H_
+#endif // FLAT_MODEL_API_BASE_H_

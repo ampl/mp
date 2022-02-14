@@ -28,7 +28,6 @@
 #include <functional>
 
 #include "mp/problem.h"
-#include "mp/flat/backend.h"
 
 #ifndef M_PI
 # define M_PI 3.14159265358979323846

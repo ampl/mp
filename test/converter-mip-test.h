@@ -5,8 +5,7 @@
 
 #include "mp/flat/expr_flattener.h"
 #include "mp/flat/MIP/mp2mip.h"
-#include "mp/flat/flat_model_api_basic.h"
-#include "mp/flat/backend.h"
+#include "mp/flat/model_api_base.h"
 
 namespace mip_converter_test {
 
@@ -101,11 +100,15 @@ void feedInstance( Interface& interface, const MIPInstance& mip ) {
 
 /// A toy backend using struct MIPInstance
 class MIPInstanceBackend :
-    public mp::Backend<MIPInstanceBackend>
+    public mp::BasicFlatModelAPI,
+    public mp::EnvKeeper
 {
   MIPInstance instance_;
 public:
-  MIPInstanceBackend() { }
+  MIPInstanceBackend(mp::Env& e) : mp::EnvKeeper(e) { }
+
+  static constexpr const char* GetBackendName() { return "tester"; }
+
   MIPInstance& GetInstance() { return instance_; }
 
   /// These things the concrete interface currently has to define
@@ -119,22 +122,13 @@ public:
   }
 
   /// Allow all constraint types to be compiled
-  USE_BASE_CONSTRAINT_HANDLERS(mp::Backend<MIPInstanceBackend>)
+  USE_BASE_CONSTRAINT_HANDLERS(mp::BasicFlatModelAPI)
 
   /// Specialize for LinearConstraint
   void AddConstraint(const mp::RangeLinCon& lc) {
     instance_.cons_.push_back({ { (int)lc.size(), lc.pcoefs(), lc.pvars() },
                                 lc.lb(), lc.ub() });
   }
-
-
-public:
-  /// Have to define a few abstract methods
-  mp::Solution GetSolution() override { return {}; }
-  mp::ArrayRef<double> GetObjectiveValues() override { return {}; }
-  bool IsMIP() const override { return false; }
-  void SetInterrupter(mp::Interrupter*) override { }
-  void SolveAndReportIntermediateResults() override { }
 };
 
 /// Testing the default MIP interface layer
@@ -143,7 +137,11 @@ class MIPConverterTester :
       mp::Interface<mp::MIPFlatConverter, MIPInstanceBackend> >
 //    public mp::MPToMIPConverter<MIPConverterTester, MIPInstanceBackend>
 {
+  using Base = mp::ExprFlattenerImpl<mp::ExprFlattener, mp::Problem,
+    mp::Interface<mp::MIPFlatConverter, MIPInstanceBackend> >;
 public:
+  /// Construct
+  MIPConverterTester(mp::Env& e) : Base(e) { }
   /// This is testing API
   bool ObjsEqual(const MIPInstance& mip) {
     return GetBackend().GetInstance().ObjsEqual( mip );
@@ -156,7 +154,7 @@ public:
   }
 protected:
   MIPInstanceBackend& GetBackend() {
-    return dynamic_cast<MIPInstanceBackend&>(GetBasicBackend());
+    return GetFlatCvt().GetBasicBackend();
   }
 };
 

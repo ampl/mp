@@ -23,7 +23,7 @@
 #define MIPBACKEND_H_
 
 #include "mp/common.h"
-#include "mp/flat/backend.h"
+#include "mp/backend.h"
 
 namespace mp {
 

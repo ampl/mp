@@ -35,7 +35,8 @@ LinTerms ToLinTerms(const LinearExpr& e) {
 /// handled by overloaded methods in FlatConverter.
 template <class Impl, class Model, class FlatConverter>
 class ExprFlattener :
-    public ExprConverter<Impl, EExpr>
+    public ExprConverter<Impl, EExpr>,
+    public EnvKeeper
 {
 public:
   using ModelType = Model;
@@ -56,7 +57,7 @@ protected:
 public:
   static const char* GetName() { return "ExprFlattener"; }
 
-  ExprFlattener() { }
+  ExprFlattener(Env& e) : EnvKeeper(e), flat_cvt_(e) { }
 
 public:
   /// INCREMENTAL INTERFACE
@@ -660,14 +661,13 @@ protected:
 
 public:
   void InitOptions() {
-    InitOwnOptions( MPD(GetMPUtils()) );
-    GetFlatCvt().InitOptions( MPD(GetMPUtils()) );
+    InitOwnOptions( );
+    GetFlatCvt().InitOptions( );
   }
 
 private:
-  template <class OptionManager>
-  void InitOwnOptions(OptionManager& opt) {
-    opt.AddOption("cvt:sos sos",
+  void InitOwnOptions() {
+    GetEnv().AddOption("cvt:sos sos",
         "0/1*: Whether to honor declared suffixes .sosno and .ref describing "
         "SOS sets. Each distinct nonzero .sosno "
         "value designates an SOS set, of type 1 for "
@@ -675,7 +675,7 @@ private:
         "negative values.  The .ref suffix contains "
         "corresponding reference values used to order the variables.",
         options_.sos_, 0, 1);
-    opt.AddOption("cvt:sos2 sos2",
+    GetEnv().AddOption("cvt:sos2 sos2",
         "0/1*: Whether to honor SOS2 constraints for nonconvex "
         "piecewise-linear terms, using suffixes .sos and .sosref "
         "provided by AMPL.",
@@ -708,18 +708,6 @@ public:
   const FlatConverter& GetFlatCvt() const { return flat_cvt_; }
   FlatConverter& GetFlatCvt() { return flat_cvt_; }
 
-  /// Expose abstract Backend from FlatCvt
-  const BasicBackend& GetBasicBackend() const
-  { return GetFlatCvt().GetBasicBackend(); }
-  BasicBackend& GetBasicBackend()
-  { return GetFlatCvt().GetBasicBackend(); }
-
-  /// TODO use universal Env instead
-  /// (which can well use these "MPUtils",
-  /// but ideally an appr new base class of Solver)
-  using MPUtils = typename FlatConverterType::MPUtils;
-  const MPUtils& GetMPUtils() const { return GetFlatCvt().GetMPUtils(); }
-  MPUtils& GetMPUtils() { return GetFlatCvt().GetMPUtils(); }
 };
 
 /// A 'final' ExprFlattener in a hierarchy
@@ -727,7 +715,12 @@ template <template <typename, typename, typename> class ExprFlattener,
           class Model, class FlatCvt>
 class ExprFlattenerImpl :
     public ExprFlattener<ExprFlattenerImpl<ExprFlattener, Model, FlatCvt>,
-        Model, FlatCvt> { };
+        Model, FlatCvt> {
+  using Base = ExprFlattener<ExprFlattenerImpl<ExprFlattener, Model, FlatCvt>,
+    Model, FlatCvt>;
+public:
+  ExprFlattenerImpl(Env& e) : Base(e) { }
+};
 
 } // namespace mp
 

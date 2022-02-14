@@ -10,10 +10,6 @@
 # pragma warning(disable: 4244)
 #endif
 
-extern "C" {
-  #include <ilcplex/cplex.h>
-}
-
 #if __clang__
 # pragma clang diagnostic pop
 #elif _MSC_VER
@@ -22,13 +18,16 @@ extern "C" {
 
 #include <string>
 
-#include "mp/flat/MIP/backend.h"
-#include "mp/flat/std_constr.h"
+#include "mp/backend_mip.h"
+#include "mp/backend_with_pre.h"
+#include "cplexcommon.h"
 
 namespace mp {
 
 class CplexBackend :
-    public MIPBackend<CplexBackend>
+    public MIPBackend<CplexBackend>,
+    public BackendWithPresolver,
+    public CplexCommon
 {
   using BaseBackend = MIPBackend<CplexBackend>;
 
@@ -51,31 +50,6 @@ public:
   /// Chance to consider options immediately (open cloud, etc)
   void FinishOptionParsing() override;
 
-  /// [[ Prototype the incremental interface ]]
-  void InitProblemModificationPhase() override;
-  void FinishProblemModificationPhase() override;
-
-  void AddVariables(const VarArrayDef& );
-  void SetLinearObjective( int iobj, const LinearObjective& lo );
-
-  //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
-  USE_BASE_CONSTRAINT_HANDLERS(BaseBackend)
-
-  ACCEPT_CONSTRAINT(RangeLinCon, Recommended, CG_Linear)
-  void AddConstraint(const RangeLinCon& lc);
-  ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
-  void AddConstraint(const LinConLE& lc);
-  ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
-  void AddConstraint(const LinConEQ& lc);
-  ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
-  void AddConstraint(const LinConGE& lc);
-  /// Enabling built-in indicator for infinite bounds,
-  /// but not recommended otherwise --- may be slow
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended, CG_General)
-  void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)
-  void AddConstraint(const IndicatorConstraintLinEQ& mc);
-
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
@@ -95,18 +69,9 @@ public:
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 public:  // public for static polymorphism
-  void OpenSolver();
-  void CloseSolver();
-  void InitCustomOptions();
-
-  static double Infinity() { return CPX_INFBOUND; }
-  static double MinusInfinity() { return -CPX_INFBOUND; }
+  void InitCustomOptions() override;
 
 protected:
-
-  int NumLinCons() const;
-  int NumVars() const;
-  int NumObjs() const;
 
   void ExportModel(const std::string& file);
 
@@ -128,23 +93,12 @@ protected:
   void AddCPLEXMessages();
 
 private:
-  CPXENVptr     env = NULL;
-  CPXLPptr      lp = NULL;
-
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;
   };
   Options storedOptions_;
 
-public:
-  /// These methods access CPLEX options. Used by AddSolverOption()
-  void GetSolverOption(int key, int& value) const;
-  void SetSolverOption(int key, int value);
-  void GetSolverOption(int key, double& value) const;
-  void SetSolverOption(int key, double value);
-  void GetSolverOption(int key, std::string& value) const;
-  void SetSolverOption(int key, const std::string& value);
 
 };
 

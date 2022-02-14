@@ -26,12 +26,7 @@
 #include <stdexcept>
 
 #include "mp/clock.h"
-#include "mp/flat/backend_base.h"
-#include "mp/flat/flat_model_api.h"
-#include "mp/flat/std_constr.h"
-#include "mp/flat/std_obj.h"
-#include "mp/problem.h"
-#include "mp/solver-base.h"
+#include "mp/backend_with_mm.h"
 
 /// Issue this if you redefine std feature switches
 #define USING_STD_FEATURES using BaseBackend::STD_FEATURE_QUERY_FN
@@ -62,8 +57,10 @@ namespace mp {
 
 /// Basis status values of a solution (unpresolved)
 struct Solution {
-  /// primal, dual
-  std::vector<double> primal, dual;
+  /// primal
+  std::vector<double> primal;
+  /// dual
+  std::vector<double> dual;
   /// objective values
   std::vector<double> objvals;
 };
@@ -75,9 +72,7 @@ struct Solution {
 /// and placeholders for solver API
 template <class Impl>
 class Backend :
-    public BasicBackend,
-    public FlatBackend<Impl>,
-    public BasicSolver
+    public BackendWithModelManager
 {
   ////////////////////////////////////////////////////////////////////////////
   ///////////////////// TO IMPLEMENT IN THE FINAL CLASS //////////////////////
@@ -92,12 +87,12 @@ public:
   /// This is only done if the [executable_name]_options
   /// variable is not provided.
   static const char* GetAMPLSolverName() { return "solver"; }
+  /// Unused
   static const char* GetAMPLSolverLongName() { return nullptr; }
-  static const char* GetBackendName()    { return "BasicBackend"; }
-  static const char* GetBackendLongName() { return nullptr; }
+  /// Unused
   static long Date() { return MP_DATE; }
 
-  
+
   /// Further, using virtual methods for convenience (CRTP not essential)
 
   /// Placeholder for solution getter (unpresolved, final solution)
@@ -170,18 +165,17 @@ protected:
   /////////////////////////// BASIC PROCESS LOGIC ////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
 public:
-  /// Chance for the Backend to init solver environment, etc
-  virtual void InitOptionParsing() { }
-  /// Chance to consider options immediately (open cloud, etc)
-  virtual void FinishOptionParsing() { }
+  /// Runs Solver given the NL file name.
+  void RunFromNLFile(const std::string& nl_filename,
+                     const std::string& filename_no_ext) override {
+    GetMM().ReadNLFileAndUpdate(nl_filename, filename_no_ext);
+    SolveAndReport();
+  }
 
-  /// Placeholder: notify about start of problem feed-in
-  virtual void InitProblemModificationPhase() { }
-  /// Placeholder: notify of the end of problem feed-in
-  virtual void FinishProblemModificationPhase() { }
 
+protected:
   /// Standard SolveAndReport() logic
-  void SolveAndReport() override {
+  virtual void SolveAndReport() {
     InputExtras();
 
     SetupTimerAndInterrupter();
@@ -193,8 +187,6 @@ public:
       PrintTimingInfo();
   }
 
-
-protected:
   /// Input warm start, suffixes
   virtual void InputExtras() {
     InputStdExtras();
@@ -479,11 +471,6 @@ protected:
         n<MP_DISPATCH( Infinity() );
   }
 
-  static constexpr double Infinity()
-  { return std::numeric_limits<double>::infinity(); }
-
-  static constexpr double MinusInfinity() { return -Infinity(); }
-
 
 public:
   using BasicSolver::Print;
@@ -496,40 +483,40 @@ public:
 protected:
   virtual void HandleSolution(int status, fmt::CStringRef msg,
       const double *x, const double *y, double obj) {
-    GetCQ().HandleSolution(status, msg, x, y, obj);
+    GetMM().HandleSolution(status, msg, x, y, obj);
   }
 
   virtual void HandleFeasibleSolution(fmt::CStringRef msg,
       const double *x, const double *y, double obj) {
-    GetCQ().HandleFeasibleSolution(msg, x, y, obj);
+    GetMM().HandleFeasibleSolution(msg, x, y, obj);
   }
 
   /// Variables' initial values
   virtual ArrayRef<double> InitialValues() {
-    return GetCQ().InitialValues();
+    return GetMM().InitialValues();
   }
 
   /// Initial dual values
   virtual ArrayRef<double> InitialDualValues() {
-    return GetCQ().InitialDualValues();
+    return GetMM().InitialDualValues();
   }
 
 
   template <class N>
   ArrayRef<N> ReadSuffix(const SuffixDef<N>& suf) {
-    return GetCQ().ReadSuffix(suf);
+    return GetMM().ReadSuffix(suf);
   }
 
   virtual ArrayRef<int> ReadIntSuffix(const SuffixDef<int>& suf) {
-    return GetCQ().ReadSuffix(suf);
+    return GetMM().ReadSuffix(suf);
   }
 
   virtual ArrayRef<double> ReadDblSuffix(const SuffixDef<double>& suf) {
-    return GetCQ().ReadSuffix(suf);
+    return GetMM().ReadSuffix(suf);
   }
 
   virtual size_t GetSuffixSize(int kind) {
-    return GetCQ().GetSuffixSize(kind);
+    return GetMM().GetSuffixSize(kind);
   }
 
   /// Record suffix values which are written into .sol
@@ -537,31 +524,31 @@ protected:
   /// Does nothing if vector empty
   virtual void ReportSuffix(const SuffixDef<int>& suf,
                     ArrayRef<int> values) {
-    GetCQ().ReportSuffix(suf, values);
+    GetMM().ReportSuffix(suf, values);
   }
   virtual void ReportSuffix(const SuffixDef<double>& suf,
                     ArrayRef<double> values) {
-    GetCQ().ReportSuffix(suf, values);
+    GetMM().ReportSuffix(suf, values);
   }
   virtual void ReportIntSuffix(const SuffixDef<int>& suf,
                        ArrayRef<int> values) {
-    GetCQ().ReportSuffix(suf, values);
+    GetMM().ReportSuffix(suf, values);
   }
   virtual void ReportDblSuffix(const SuffixDef<double>& suf,
                        ArrayRef<double> values) {
-    GetCQ().ReportSuffix(suf, values);
+    GetMM().ReportSuffix(suf, values);
   }
 
   template <class N>
   void ReportSingleSuffix(const SuffixDef<N>& suf,
                           N value) {
     std::vector<N> values(1, value);
-    GetCQ().ReportSuffix(suf, values);
+    GetMM().ReportSuffix(suf, values);
   }
 
   /// Access underlying model instance
   const std::vector<bool>& IsVarInt() const {
-    return GetCQ().IsVarInt();
+    return GetMM().IsVarInt();
   }
 
   ///////////////////////// STORING SOLUTON STATUS //////////////////////
@@ -821,7 +808,7 @@ public:
     return flg;
   }
 
-  void InitMetaInfoAndOptions() {
+  void InitMetaInfoAndOptions() override {
     InitNamesAndVersion();
     InitStandardOptions();
     InitCustomOptions();
@@ -835,22 +822,7 @@ public:
                                    name, version ) );
   }
 
-  /// Converter should provide this before Backend can run solving
-  void ProvideNLSolverProxyObject(NLSolverProxy* pCQ) override
-  { p_converter_query_object_ = pCQ; }
-
-
-private: // hiding this detail, it's not for the final backends
-  const NLSolverProxy& GetCQ() const {
-    assert(nullptr!=p_converter_query_object_);
-    return *p_converter_query_object_;
-  }
-  NLSolverProxy& GetCQ() {
-    assert(nullptr!=p_converter_query_object_);
-    return *p_converter_query_object_;
-  }
-  NLSolverProxy *p_converter_query_object_ = nullptr;
-  using MPSolverBase = BasicSolver;
+  using MPSolverBase = BackendWithModelManager;
 
 
 public:

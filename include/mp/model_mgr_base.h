@@ -1,5 +1,5 @@
-#ifndef NLSOLVER_PROXY_BASE_H
-#define NLSOLVER_PROXY_BASE_H
+#ifndef MODEL_MANAGER_BASE_H
+#define MODEL_MANAGER_BASE_H
 
 /**
   * This is an abstract interface to a 'query class'
@@ -7,14 +7,27 @@
   * To be used by a backend
   */
 
-#include "mp/flat/suffix.h" // TODO merge with normal suffix defs
+#include "mp/arrayref.h"
+#include "mp/solver-base.h"
+#include "mp/suffix.h"
 
 namespace mp {
 
+/// Input the model
 /// Access/provide the original model solution/suffixes
-class NLSolverProxy {
+class BasicModelManager {
 public:
-  virtual ~NLSolverProxy() { }
+  virtual ~BasicModelManager() { }
+
+  /// Setup Model Manager's solver options
+  virtual void InitOptions() = 0;
+
+  /// IO file basename, ideal to know this before option parsing
+  virtual void SetBasename(const std::string& filename_no_ext) = 0;
+
+  /// Read NL model
+  virtual void ReadNLFileAndUpdate(const std::string& nl_filename,
+                                   const std::string& filename_no_ext) = 0;
 
   virtual ArrayRef<double> InitialValues() = 0;
   virtual ArrayRef<double> InitialDualValues() = 0;
@@ -37,10 +50,11 @@ public:
                               const double *, const double *,
                               double) = 0;
 
-  /// TODO remove
+  /// Integrality flags of the variables in the original instance
+  /// We use this for rounding
   virtual const std::vector<bool>& IsVarInt() const = 0;
 };
 
 } // namespace mp
 
-#endif // NLSOLVER_PROXY_BASE_H
+#endif // MODEL_MANAGER_BASE_H

@@ -44,7 +44,8 @@ TEST(RedefsMIPTest, PureMILP__01__seemsPassedToBackendCorrectly) {
           { 0, 1,   2 } }, -infty_, 56.4 }
     }
   };
-  MIPConverterTester tester;
+  mp::Env e;
+  MIPConverterTester tester(e);
   feedInstance(tester, milp);
   tester.ConvertModel();
   ASSERT_TRUE(tester.ObjsEqual(milp));

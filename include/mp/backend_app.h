@@ -36,15 +36,24 @@ namespace mp {
 /// and calls solver class
 template <typename Backend>
 class BackendApp {
- protected:
+public:
+  BackendApp() { InitHandlers(); }
+
+  /// Runs the application.
+  /// It processes command-line arguments and, if the file name (stub) is
+  /// specified, calls NLSolver class.
+  /// @param argv: an array of command-line arguments terminated by a null pointer
+  /// @return app exit code
+  int Run(char **argv);
+
+protected:
+  bool Init(char** argv);
+protected:
   int GetResultCode() const { return result_code_; }
   const Backend& GetBackend() const { return backend_; }
   Backend& GetBackend() { return backend_; }
 
-  /// TODO use Env
-  using MPUtils = typename Backend::MPUtils;
-  const MPUtils& GetMPUtils() const { return GetBackend().GetMPUtils(); }
-  MPUtils& GetMPUtils() { return GetBackend().GetMPUtils(); }
+  void InitHandlers();
 
 private:
   int result_code_ = 0;
@@ -57,28 +66,7 @@ private:
   std::unique_ptr<internal::SignalHandler> p_sig_handler_;
   std::unique_ptr<internal::SolverAppOptionParser> p_option_parser_;
 
-private:
   OutputHandler output_handler_;
-
- public:
-  BackendApp() {
-    p_sig_handler_ = std::unique_ptr<internal::SignalHandler>(
-            new internal::SignalHandler(GetMPUtils()));
-    p_option_parser_ = std::unique_ptr<internal::SolverAppOptionParser>(
-        new internal::SolverAppOptionParser(GetMPUtils()));
-    GetMPUtils().set_output_handler(&output_handler_);
-  }
-
-  /// Runs the application.
-  /// It processes command-line arguments and, if the file name (stub) is
-  /// specified, calls NLSolver class.
-  /// @param argv: an array of command-line arguments terminated by a null pointer
-  /// @param nl_reader_flags: currently can be 0 or \a READ_BOUNDS_FIRST, see nl.h
-  /// @return app exit code
-  int Run(char **argv);
-
-protected:
-  bool Init(char** argv);
 };
 
 template <typename Backend>
@@ -93,15 +81,15 @@ int BackendApp<Backend>::Run(char **argv) {
 template <typename Backend>
 bool BackendApp<Backend>::Init(char **argv) {
   /// Init solver/converter options
-  GetBackend().InitOptions(argv);
+  GetBackend().Init(argv);
 
   // Parse command-line arguments.
   const char *filename = p_option_parser_->Parse(argv);
   if (!filename) return false;
 
-  if (GetMPUtils().ampl_flag()) {
+  if (GetBackend().ampl_flag()) {
     fmt::MemoryWriter banner;
-    banner.write("{}: ", GetMPUtils().long_name());
+    banner.write("{}: ", GetBackend().long_name());
     std::fputs(banner.c_str(), stdout);
     std::fflush(stdout);
     output_handler_.banner_size = banner.size();
@@ -123,13 +111,22 @@ bool BackendApp<Backend>::Init(char **argv) {
   unsigned flags =
       p_option_parser_->echo_solver_options() ?
         0 : BasicSolver::NO_OPTION_ECHO;
-  if (!backend_.ParseSolverOptions(
+  if (!GetBackend().ParseSolverOptions(
         filename_no_ext_.c_str(), argv, flags)) {
     result_code_ = 1;
     return false;
   }
 
   return true;
+}
+
+template <class Backend>
+void BackendApp<Backend>::InitHandlers() {
+  p_sig_handler_ = std::unique_ptr<internal::SignalHandler>(
+        new internal::SignalHandler(GetBackend()));
+  p_option_parser_ = std::unique_ptr<internal::SolverAppOptionParser>(
+        new internal::SolverAppOptionParser(GetBackend()));
+  GetBackend().set_output_handler(&output_handler_);
 }
 
 }  // namespace mp

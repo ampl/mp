@@ -305,24 +305,26 @@ endif ()
 add_to_folder(${MP_FOLDER_PREFIX}util gen-expr-info)
 
 add_prefix(MP_HEADERS include/mp/
-  arrayref.h basic-expr-visitor.h clock.h common.h error.h expr.h
-  expr-visitor.h nl.h nl-reader.h option.h os.h problem.h problem-builder.h
+  arrayref.h basic-expr-visitor.h
+  backend_app.h backend_base.h backend_with_mm.h backend.h backend_mip.h
+  clock.h common.h env.h error.h expr.h expr-visitor.h
+  model_mgr_base.h model_mgr_std_prob.h
+  nl.h nl-reader.h option.h os.h problem.h problem-builder.h
   presolve_base.h presolve_node.h presolve_bridge.h presolve.h
   rstparser.h safeint.h sol.h
   solver.h solver-opt.h solver-base.h solver-io.h solver-app-base.h solver-app.h
   suffix.h utils_file.h utils_string.h)
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/
-  backend_app.h nlsolver.h expr_flattener.h
-  affine_expr.h backend_base.h backend.h basic_constr.h
-  constraint_keeper.h flat_model_api_basic.h flat_model_api.h
-  context.h converter.h nlsolver_proxy_base.h
-  convert_functional.h eexpr.h
-  model.h preprocess.h
-  quad_expr.h std_constr.h std_obj.h suffix.h)
+  affine_expr.h basic_constr.h
+  constraint_keeper.h
+  context.h converter.h
+  convert_functional.h eexpr.h expr_flattener.h
+  model.h model_api_base.h preprocess.h
+  quad_expr.h std_constr.h std_obj.h)
 
 add_prefix(MP_FLAT_MIP_HEADERS include/mp/flat/MIP/
-  backend.h mp2mip.h)
+  mp2mip.h)
 
 add_prefix(MP_FLAT_ITEMCVT_HEADERS include/mp/flat/item_cvt/
   item_cvt_base.h range_con.h)

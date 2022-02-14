@@ -314,6 +314,8 @@ public:
     MULTIPLE_OBJ = 2
   };
 
+  /// Testing constructor
+  explicit BasicSolver();
 
 protected:
   /// Constructs a BasicSolver object.
@@ -378,6 +380,7 @@ private:
   Interrupter *interrupter_;
 };
 
+
 namespace internal {
 
 template<typename T, T> struct Check {
@@ -395,6 +398,7 @@ template <typename Solver>
 inline void SetBasename(Solver &, ...) {}
 
 } // namespace internal
+
 
 } // namespace mp
 
