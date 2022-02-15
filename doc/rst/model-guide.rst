@@ -33,21 +33,34 @@ Expressions supported
 
   .. code-block:: ampl
 
+        ## if-then
         minimize TotalCost:
             sum {j in JOBS, k in MACHINES}
                 if MachineForJob[j] = k then cost[j,k];
 
+        ## implied forall
+        subj to HostNever {j in BOATS}:
+            isH[j] = 1 ==> forall {t in TIMES} H[j,t] = j;
+
+        ## alldiff global constraint
         subj to OneJobPerMachine:
             alldiff {j in JOBS} MachineForJob[j];
 
-        subj to CapacityOfMachine {k in MACHINES}:
-            numberof k in ({j in JOBS} MachineForJob[j]) <= cap[k];
-
+        ## implied alldiff
         subj to VisitOnce {j in BOATS}:
             isH[j] = 0 ==> alldiff {t in TIMES} H[j,t];
 
-        subj to HostNever {j in BOATS}:
-            isH[j] = 1 ==> forall {t in TIMES} H[j,t] = j;
+        ## numberof operator
+        subj to CapacityOfMachine {k in MACHINES}:
+            numberof k in ({j in JOBS} MachineForJob[j]) <= cap[k];
+
+        ## count operator
+        subj to CapacityOfMachine {k in MACHINES}:
+            count {j in JOBS} (MachineForJob[j] = k) <= cap[k];
+
+        ## implied atmost
+        subj to VisitHosts {i in BOATS}:
+           isH[i] = 0 ==> atmost 0 {j in BOATS, t in TIMES} (H[j,t] = i);
 
 
 - QP:
