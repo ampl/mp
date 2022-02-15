@@ -382,10 +382,13 @@ public:
     for (size_t ivar = 0; ivar < args.size(); ++ivar) {
       flags[ivar] = args[ivar];
       /// Force booleanize
-      /// Either reify !=0 or constrain to 0..1
-      if (!MPD( is_binary_var(args[ivar]) ))
-        flags[ivar] = this->AssignResultVar2Args(   // flag = (args[i]!=0)
+      /// Either reify !=0 or constrain to 0..1? TODO param? TODO warning?
+      if (!MPD( is_binary_var(args[ivar]) )) {
+        auto feq0 = this->AssignResultVar2Args(   // feq0 = (args[i]==0)
             EQ0Constraint( { {{1.0}, {args[ivar]}}, 0.0 } ) );
+        flags[ivar] = this->AssignResultVar2Args(   // flag = (args[i]!=0)
+            NotConstraint( {feq0} ));
+      }
     }
     this->AddConstraint( LinConEQ( {coefs, flags}, 0.0 ) );
   }
