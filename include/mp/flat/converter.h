@@ -681,8 +681,7 @@ protected:
 
   void WindupConversion() {
     if (GetEnv().verbose_mode() && GetConvFailures().size()) {
-      printf("WARNING: the following redefinitions failed"
-        " so the model items had to be passed to the solver:\n");
+      printf("WARNINGS:\n");
       for (const auto& e: GetConvFailures())
         printf("-   %d cases of \"%s\":\n    --  %s\n",
                e.second.first, e.first, e.second.second);
@@ -860,6 +859,14 @@ public:
   /// for tests. TODO make friends
   using BackendType = Backend;
 
+  /// TODO in Env?
+  void AddWarning(const char* key, const char* msg) {
+    auto& v = GetConvFailures()[ key ];
+    ++v.first;
+    v.second = msg;
+  }
+
+protected:
   /// Map to count conversion failures
   /// Stores char* to names / descriptions for speed
   /// Indexed by pointers to names, not values

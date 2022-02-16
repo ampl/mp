@@ -206,8 +206,10 @@ public:
     /// TODO skip if ub<0
     if (bnds.ub() >= this->PracticallyInfty())
       throw ConstraintConversionFailure( "IndicatorInfBound",
-          "Provide tight bounds on variables entering logical expressions, "
-          "or set acc:ind_..=2");
+          "The redefinition of a (possibly auxiliary) indicator constraint failed"
+          " so it had to be passed to the solver."
+          " Provide tight bounds on variables entering logical expressions, "
+          "or set acc:ind_le=2");
     if (val)            // left condition is b==1
       ae += {{bnds.ub(), b}, -bnds.ub()};
     else

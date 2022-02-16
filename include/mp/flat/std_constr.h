@@ -13,7 +13,7 @@
 namespace mp {
 
 ////////////////////////////////////////////////////////////////////////
-/// Standard linear constraint
+/// Generic linear constraint
 template <class LinTerms, class RhsOrRange>
 class LinearConstraint :
     public BasicConstraint, public LinTerms, public RhsOrRange {

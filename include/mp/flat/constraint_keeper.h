@@ -290,10 +290,7 @@ protected:
           try {
             ConvertConstraint(*it, i);
           } catch (const ConstraintConversionFailure& ccf) {
-            auto& v = GetConverter().
-                GetConvFailures()[ ccf.key() ];
-            ++v.first;
-            v.second = ccf.message();
+            GetConverter().AddWarning( ccf.key(), ccf.message() );
           }
         }
       }

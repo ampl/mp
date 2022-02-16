@@ -545,19 +545,20 @@ public:
     }
   }
 
-  /// fAllSOS2: if false, only groups with sosno<0
+  /// fAllSOS2: if false, only groups with sosno<0 are treated as SOS2
   void ConvertSOSCollection(ArrayRef<int> sosno, ArrayRef<double> ref,
                             bool fAllSOS2) {
     assert(sosno.size() == ref.size());
-    std::map< int, std::map< double, int > > sos_map;
+    std::map< int, std::multimap< double, int > > sos_map;
     for (auto i=ref.size(); i--; )
       if (sosno[i]) {
         auto& sos_group = sos_map[sosno[i]];
-        if (sos_group.end() != sos_group.find(ref[i]))
-          MP_RAISE(fmt::format(
-                     "In SOS group {}, repeated weight {}",
-                     sosno[i], ref[i]));
-        sos_group[ref[i]] = i;
+        if (sos_group.end() != sos_group.find(ref[i])) {
+          GetFlatCvt().AddWarning( "SOS_repeated_weight",
+                                   "An SOS constraint has repeated weights, "
+                                   "solver might reject it" );
+        }
+        sos_group.insert( {ref[i], i} );
       }
     for (const auto& group: sos_map) {
       std::vector<int> vars;
