@@ -2,19 +2,12 @@ Summary of recent updates to x-gurobi for AMPL
 ==============================================
 
 ### 20220216
-- *Improved warnings (#161, #163)*:
-    In verbose mode, warning summary is printed before and after solving
-    
-- *Fixed solver option parsing in Windows (#160)*
+- *See also MP Library changes 20220216*
 
 - *Assume new constraints are active (#152)*:
     Gurobi requires a complete basis for hotstart and we have to guess the
     statuses of new variables and constraints
     
-- *Reworked Backend / ModelAPI class hierarchy (#162)*:
-    In particular, also generalized old MP hierarchy
-    (Solver / ProblemBuilder / AppSolutionHandler / SolverNLHandler)
-
 - *Allowing SOS constraints with repeated weights (#163)*:
     Although Gurobi states SOS weights should be unique, it accepts them repeated.
     This happens when AMPL linearizes a PL function with redundant (repeated) slopes.
