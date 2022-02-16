@@ -661,6 +661,21 @@ SolverOptionManager::~SolverOptionManager() {
   std::for_each(options_.begin(), options_.end(), Deleter());
 }
 
+void BasicSolver::AddWarning(const char *key, const char *msg) {
+  auto& v = GetWarnings()[ key ];
+  ++v.first;
+  v.second = msg;
+}
+
+void BasicSolver::PrintWarnings() {
+  if (GetWarnings().size()) {
+    Print("WARNINGS:\n");
+    for (const auto& e: GetWarnings())
+      Print("-   {} cases of \"{}\":\n    --  {}\n",
+             e.second.first, e.first, e.second.second);
+  }
+}
+
 #ifdef MP_DATE
 bool BasicSolver::ShowVersion() {
   Print("{} ({})", version_, MP_SYSINFO);

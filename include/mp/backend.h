@@ -183,6 +183,8 @@ protected:
     RecordSolveTime();
 
     ReportResults();
+    if (verbose_mode())
+      PrintWarnings();
     if ( timing() )
       PrintTimingInfo();
   }

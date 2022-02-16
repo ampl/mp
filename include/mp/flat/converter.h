@@ -680,12 +680,8 @@ protected:
   }
 
   void WindupConversion() {
-    if (GetEnv().verbose_mode() && GetConvFailures().size()) {
-      printf("WARNINGS:\n");
-      for (const auto& e: GetConvFailures())
-        printf("-   %d cases of \"%s\":\n    --  %s\n",
-               e.second.first, e.first, e.second.second);
-    }
+    if (GetEnv().verbose_mode())
+      GetEnv().PrintWarnings();
   }
 
 
@@ -859,30 +855,16 @@ public:
   /// for tests. TODO make friends
   using BackendType = Backend;
 
-  /// TODO in Env?
+  /// AddWarning
   void AddWarning(const char* key, const char* msg) {
-    auto& v = GetConvFailures()[ key ];
-    ++v.first;
-    v.second = msg;
+    GetEnv().AddWarning(key, msg);
   }
 
-protected:
-  /// Map to count conversion failures
-  /// Stores char* to names / descriptions for speed
-  /// Indexed by pointers to names, not values
-  using ConvFailMap =
-    std::unordered_map< const char*,    // failure name
-      std::pair<int, const char*> >;    // number, description
-  /// Get conv failures map
-  ConvFailMap& GetConvFailures() { return conv_failures_; }
 
 private:
   BackendType backend_;
   pre::Presolver presolver_;
   pre::CopyBridge copy_bridge_ { GetPresolver() };
-
-  /// Conversion failure warnings
-  ConvFailMap conv_failures_;
 
 
 protected:
