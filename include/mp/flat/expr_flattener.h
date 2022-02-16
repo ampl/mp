@@ -708,13 +708,15 @@ private:
 };
 
 /// A 'final' ExprFlattener in a hierarchy
-template <template <typename, typename, typename> class ExprFlattener,
+template <template <typename, typename, typename> class ExprFlattenerTemplate,
           class Model, class FlatCvt>
 class ExprFlattenerImpl :
-    public ExprFlattener<ExprFlattenerImpl<ExprFlattener, Model, FlatCvt>,
+    public ExprFlattenerTemplate<
+      ExprFlattenerImpl<ExprFlattenerTemplate, Model, FlatCvt>,
         Model, FlatCvt> {
-  using Base = ExprFlattener<ExprFlattenerImpl<ExprFlattener, Model, FlatCvt>,
-    Model, FlatCvt>;
+  using Base = ExprFlattenerTemplate<
+    ExprFlattenerImpl<ExprFlattenerTemplate, Model, FlatCvt>,
+      Model, FlatCvt>;
 public:
   ExprFlattenerImpl(Env& e) : Base(e) { }
 };
