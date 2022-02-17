@@ -168,7 +168,9 @@ public:
       // TODO use resvar + context
     } else if ( !MPD(is_fixed(eq0c.GetResultVar())) ||       // not fixed, or
                 !MPD(fixed_value(eq0c.GetResultVar())) )     // fixed to 0
-    {    // TODO We are in MIP so doing algebra, not DisjunctiveConstr. Why?
+    { // TODO We are in MIP so doing algebra, not DisjunctiveConstr. Why?
+      // Well in party1.mod, although this results in more fixed variables,
+      // Gurobi 9.5 runs 31s vs 91s.
       auto newvars = MPD( AddVars_returnIds(2, 0.0, 1.0, var::INTEGER) );
       newvars.push_back( eq0c.GetResultVar() );
       MPD( AddConstraint( LinConGE(   // b1+b2+resvar >= 1

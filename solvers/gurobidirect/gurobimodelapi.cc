@@ -246,33 +246,29 @@ static const mp::OptionValueInfo values_item_acceptance[] = {
 void GurobiModelAPI::InitOptions() {
   /// Constraint acceptance
   GetEnv().AddStoredOption("acc:abs",
-                  "Acceptance level for 'abs' expression, default 1:\n"
+                  "Acceptance level for 'abs' expression, default 2:\n"
                   "\n.. value-table::\n"
                   "\n"
                   "It is advisable to experiment with the acceptance levels"
                   " to find best-performing settings.",
                   storedOptions_.acc_abs_, values_item_acceptance);
   GetEnv().AddStoredOption("acc:min",
-                  "Acceptance level for 'min' expression, default 1.",
+                  "Acceptance level for 'min' expression, default 2.",
                   storedOptions_.acc_min_);
   GetEnv().AddStoredOption("acc:max",
-                  "Acceptance level for 'max' expression, default 1.",
+                  "Acceptance level for 'max' expression, default 2.",
                   storedOptions_.acc_max_);
   GetEnv().AddStoredOption("acc:and",
-                  "Acceptance level for 'and'/'forall' expressions, default 1.",
+                  "Acceptance level for 'and'/'forall' expressions, default 2.",
                   storedOptions_.acc_and_);
   GetEnv().AddStoredOption("acc:or",
-                  "Acceptance level for 'or'/'exists' expressions, default 1.",
+                  "Acceptance level for 'or'/'exists' expressions, default 2.",
                   storedOptions_.acc_or_);
   GetEnv().AddStoredOption("acc:ind:le acc:ind_le",
-                  "Acceptance level for 'implied-less-equal' expression."
-                  " The default is 1 because 'native' handling of indicators"
-                  " is only recommended when no tight bounds are known for variables.",
+                  "Acceptance level for 'implied-less-equal' expression, default 2.",
                   storedOptions_.acc_ind_le_);
   GetEnv().AddStoredOption("acc:ind:eq acc:ind_eq",
-                  "Acceptance level for 'implied-equal' expression."
-                  " The default is 1 because 'native' handling of indicators"
-                  " is only recommended when no tight bounds are known for variables.",
+                  "Acceptance level for 'implied-equal' expression, default 2.",
                   storedOptions_.acc_ind_eq_);
 
 }

@@ -99,8 +99,8 @@ private:
   /// These options are stored in the class as variables
   /// for direct access
   struct Options {
-    int acc_min_=1, acc_max_=1, acc_abs_=1, acc_and_=1, acc_or_=1,
-      acc_ind_le_=1, acc_ind_eq_=1;
+    int acc_min_=2, acc_max_=2, acc_abs_=2, acc_and_=2, acc_or_=2,
+      acc_ind_le_=2, acc_ind_eq_=2;
   } storedOptions_;
 
 

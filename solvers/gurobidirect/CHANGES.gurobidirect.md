@@ -1,7 +1,7 @@
 Summary of recent updates to x-gurobi for AMPL
 ==============================================
 
-### 20220216
+### 20220217
 - *See also MP Library changes 20220216*
 
 - *Assume new constraints are active (#152)*:
@@ -12,6 +12,13 @@ Summary of recent updates to x-gurobi for AMPL
     Although Gurobi states SOS weights should be unique, it accepts them repeated.
     This happens when AMPL linearizes a PL function with redundant (repeated) slopes.
     It seems better to use PL functions natively (*option pl_linearize 0;*).
+    
+- *Native handling of abs, min/max, and/or, and indicators by default*:
+    For the general constraints abs, min/max, and/or, Gurobi 9.5 seems to use
+    tight MIP reformulations, matching the performance of MIPConverter redfinitions.
+    In contrast, indicator constraints behave differently to MIP reformulations
+    (accessible by acc:ind_..=1): better primal and worse dual bounds.
+    Setting acc:* = 2 as default (native handling).
 
 ### 20220202
 - *Basis status low/upp/sup for new variables*:
