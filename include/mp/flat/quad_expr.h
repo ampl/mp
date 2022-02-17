@@ -1,7 +1,7 @@
 #ifndef QUAD_EXPR_H
 #define QUAD_EXPR_H
 
-#include <map>
+#include <tuple>
 
 #include "mp/flat/affine_expr.h"
 
@@ -72,25 +72,8 @@ public:
       c *= n;
   }
 
-
-  void sort_terms() {
-    auto sort_pair = [](int a, int b) {
-      return a<b ? std::pair<int, int>(a, b) : std::pair<int, int>(b, a);
-    };
-    std::map<std::pair<int, int>, double> var_coef_map;
-    for (size_t i=0; i<size(); ++i)
-      if (0.0!=std::fabs(coefs_[i]))
-        var_coef_map[sort_pair(vars1_[i], vars2_[i])] += coefs_[i];
-    if (true) {
-      coefs_.clear();
-      vars1_.clear();
-      vars2_.clear();
-      for (const auto& vc: var_coef_map) {
-        if (0.0!=std::fabs(vc.second))         // Need tolerance?
-          add_term(vc.second, vc.first.first, vc.first.second);
-      }
-    }
-  }
+  /// Sort and eliminate duplicates
+  void sort_terms();
 
   /// Testing API
   bool operator==(const QuadTerms& qt) const {

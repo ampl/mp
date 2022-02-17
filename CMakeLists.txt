@@ -339,6 +339,7 @@ set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
   clock.cc expr.cc expr-writer.h nl-reader.cc option.cc os.cc
   problem.cc rstparser.cc sol.cc solver.cc solver-c.h sp.h sp.cc
+  std_constr.cc
   utils_file.cc utils_string.cc)
 
 set(MP_FLAT_SOURCES )

@@ -1,10 +1,10 @@
 #ifndef AFFINE_EXPR_H
 #define AFFINE_EXPR_H
 
-#include <map>
+#include <array>
 #include <vector>
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <cassert>
 
 namespace mp {
@@ -91,23 +91,9 @@ public:
   /// Can be used by LinCon's etc
   /// Gurobi complains when 0's / repeated entries.
   /// TODO use hash map when sorting not needed?
-  void sort_terms(bool force_sort=false) {
-    std::map<int, double> var_coef_map;
-    for (size_t i=0; i<size(); ++i)
-      if (0.0!=std::fabs(coefs_[i]))
-        var_coef_map[vars_[i]] += coefs_[i];
-    if (force_sort ||                    // force sorting for tests
-        var_coef_map.size() < size()) {
-      coefs_.clear();
-      vars_.clear();
-      for (const auto& vc: var_coef_map) {
-        if (0.0!=std::fabs(vc.second)) {         // Need tolerance?
-          coefs_.push_back(vc.second);
-          vars_.push_back(vc.first);
-        }
-      }
-    }
-  }
+  void sort_terms(bool force_sort=false);
+
+
 private:
   std::vector<double> coefs_;
   std::vector<int> vars_;
