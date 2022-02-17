@@ -91,6 +91,9 @@ public:
   /// Placeholder
   static const char* GetBackendLongName() { return nullptr; }
 
+  /// Placeholder
+  void InitOptions() { }
+
   /// Chance to prepare problem update
   void InitProblemModificationPhase() {  }
   /// Chance to end problem update

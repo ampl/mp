@@ -90,7 +90,7 @@ public:
   ACCEPT_CONSTRAINT(PLConstraint, Recommended, CG_General)
   void AddConstraint(const PLConstraint& cc);
 
-  void InitCustomOptions();
+  void InitOptions();
 
 private:
   /// The sense of the main objective

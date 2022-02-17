@@ -820,6 +820,7 @@ protected:
 public:
   void InitOptions() {
     InitOwnOptions();
+    GetBackend().InitOptions();
   }
 
 protected:
