@@ -169,6 +169,7 @@ add_ampl_solver(cplexdirect DLL_RUNTIME MODULE CPLEX
   cplexbackend.cc cplexbackend.h
   cplexcommon.cc cplexcommon.h
   cplexmodelapi.cc cplexmodelapi.h
+  model-mgr-with-std-pb.cc
   LIBRARIES cplex-library ${CMAKE_DL_LIBS})
 if (TARGET cplexdirect)
   target_compile_definitions(cplexdirect PRIVATE main1=main)

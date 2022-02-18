@@ -17,9 +17,9 @@ class GurobiModelAPI :
 
 public:
   /// Model API name
-  static const char* GetBackendName();
+  static const char* GetName();
   /// Unused
-  static const char* GetBackendLongName() { return nullptr; }
+  static const char* GetLongName() { return nullptr; }
 
   /// Construct
   GurobiModelAPI(Env& e) : EnvKeeper(e) { }

@@ -2,8 +2,6 @@
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
-#include "mp/model-mgr-base.h"
-#include "mp/presolve-base.h"
 
 #include "gurobibackend.h"
 

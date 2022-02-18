@@ -21,7 +21,7 @@ public:
   TestBackendAcceptingConstraints() { }
   TestBackendAcceptingConstraints(mp::Env& ) { }
 
-  static constexpr const char* GetBackendName() { return "tester"; }
+  static constexpr const char* GetName() { return "tester"; }
 
   void AddVariables(const mp::VarArrayDef& v) { vars_ = v; }
   int NumVars() const { return (int)vars_.size(); }

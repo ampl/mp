@@ -3,17 +3,25 @@
 
 #include <memory>
 
+#include "mp/env.h"
 #include "cplexcommon.h"
+#include "mp/flat/model_api_base.h"
 #include "mp/flat/std_constr.h"
 
 namespace mp {
 
-class CplexModelAPI : public CplexCommon
+class CplexModelAPI :
+    public CplexCommon, public EnvKeeper,
+    public BasicFlatModelAPI
 {
   using BaseModelAPI = BasicFlatModelAPI;
 
 public:
-  CplexModelAPI();
+  /// Construct
+  CplexModelAPI(Env& e) : EnvKeeper(e) { }
+
+  /// Class name
+  static const char* GetName() { return "CplexModelAPI"; }
 
   /// Called before problem input
   void InitProblemModificationPhase();

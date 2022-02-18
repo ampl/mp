@@ -87,9 +87,9 @@ enum ConstraintGroup {
 class BasicFlatModelAPI {
 public:
   /// Placeholder
-  static const char* GetBackendName()    { return "BasicFlatModelAPI"; }
+  static const char* GetName()    { return "BasicFlatModelAPI"; }
   /// Placeholder
-  static const char* GetBackendLongName() { return nullptr; }
+  static const char* GetLongName() { return nullptr; }
 
   /// Placeholder
   void InitOptions() { }

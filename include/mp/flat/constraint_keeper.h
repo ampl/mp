@@ -251,7 +251,7 @@ public:
     } catch (const std::exception& exc) {
       throw std::logic_error(std::string("Adding constraint ") +
                              Constraint::GetConstraintName() + " to " +
-                             Backend::GetBackendName() + std::string(": ") +
+                             Backend::GetName() + std::string(": ") +
                              exc.what());
     }
   }
@@ -333,7 +333,7 @@ private:
   const std::string desc_ {
     std::string("ConstraintKeeper< ") +
         Converter::GetConverterName() + ", " +
-        Backend::GetBackendName() + ", " +
+        Backend::GetName() + ", " +
         Constraint::GetConstraintName() + " >"};
 };
 

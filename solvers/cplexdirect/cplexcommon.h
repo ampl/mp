@@ -7,13 +7,12 @@ extern "C" {
   #include <ilcplex/cplex.h>
 }
 
-#include "mp/flat/model_api_base.h"
-#include "mp/model-mgr-base.h"
+#include "mp/format.h"
 
 namespace mp {
 
 // Common ancestor for Cplex classes
-class CplexCommon : public BasicFlatModelAPI
+class CplexCommon
 {
 public:
   /// These methods access CPLEX options. Used by AddSolverOption()
@@ -26,6 +25,11 @@ public:
 
   static constexpr double Infinity() { return CPX_INFBOUND; }
   static constexpr double MinusInfinity() { return -CPX_INFBOUND; }
+
+  /// Connection between Backend and ModelAPI
+  CplexCommon *other_cplex() { return other_; }
+  /// Set connection
+  void set_other_cplex(CplexCommon* o) { other_ = o; }
 
 
 protected:
@@ -42,18 +46,19 @@ protected:
   CPXLPptr lp() const { return lp_; }
   void set_lp(CPXLPptr lp) { lp_ = lp; }
 
+  void copy_handlers_from_other_cplex();
+  void copy_handlers_to_other_cplex();
+
+
 private:
   CPXENVptr     env_ = NULL;
   CPXLPptr      lp_ = NULL;
+  CplexCommon *other_ = nullptr;
 
 };
 
 
-/// Create Cplex Model Manager from a Backend
-std::unique_ptr<BasicModelManager>
-CreateCplexModelMgr(CplexCommon&);
-
-
+/// Convenience macro
 #define CPLEX_CALL( call ) do { if (int e=call) \
   throw std::runtime_error( \
     fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)

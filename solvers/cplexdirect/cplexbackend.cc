@@ -2,6 +2,8 @@
 #include <climits>
 #include <cfloat>
 
+#include "mp/env.h"
+#include "mp/flat/model_api_base.h"
 #include "cplexbackend.h"
 
 
@@ -13,16 +15,34 @@ bool InterruptCplex(void *) {
   return true;
 }
 
-}  // namespace
+}  // namespace {}
 
 std::unique_ptr<mp::BasicBackend> CreateCplexBackend() {
   return std::unique_ptr<mp::BasicBackend>{new mp::CplexBackend()};
 }
 
+
 namespace mp {
+
+/// Create Cplex Model Manager
+/// @param gc: the Cplex Backend
+/// @param e: environment
+/// @param pre: presolver to be returned,
+/// need it to convert solution data
+/// @return GurobiModelMgr
+std::unique_ptr<BasicModelManager>
+CreateCplexModelMgr(CplexCommon&, Env&, pre::BasicPresolver*&);
+
 
 CplexBackend::CplexBackend() {
   OpenSolver();
+
+  pre::BasicPresolver* pPre;
+  auto data = CreateCplexModelMgr(*this, *this, pPre);
+  SetMM( std::move( data ) );
+  SetPresolver(pPre);
+
+  copy_handlers_to_other_cplex();
 }
 
 CplexBackend::~CplexBackend() {

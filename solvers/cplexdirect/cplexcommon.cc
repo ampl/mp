@@ -12,7 +12,7 @@ void CplexCommon::OpenSolver() {
      char  errmsg[CPXMESSAGEBUFSIZE];
      CPXgeterrorstring (env(), status, errmsg);
      throw std::runtime_error(
-       fmt::format("Could not open CPLEX env()ironment.\n{}", errmsg ) );
+       fmt::format("Could not open CPLEX environment.\n{}", errmsg ) );
   }
 
   CPLEX_CALL( CPXsetintparam (env(), CPXPARAM_ScreenOutput, CPX_ON) );
@@ -21,7 +21,7 @@ void CplexCommon::OpenSolver() {
   set_lp( CPXcreateprob (env(), &status, "amplcplex") );
   if (status)
     throw std::runtime_error( fmt::format(
-          "Failed to create lp(), error code {}.", status ) );
+          "Failed to create problem, error code {}.", status ) );
 }
 
 void CplexCommon::CloseSolver() {
@@ -32,6 +32,18 @@ void CplexCommon::CloseSolver() {
   if ( env() != NULL ) {
      CPLEX_CALL( CPXcloseCPLEX (&env_) );
   }
+}
+
+void CplexCommon::copy_handlers_from_other_cplex() {
+  assert(other_cplex());
+  env_ = other_cplex()->env();
+  lp_ = other_cplex()->lp();
+}
+
+void CplexCommon::copy_handlers_to_other_cplex() {
+  assert(other_cplex());
+  other_cplex()->set_env(env_);
+  other_cplex()->set_lp(lp_);
 }
 
 

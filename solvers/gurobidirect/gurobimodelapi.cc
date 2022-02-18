@@ -22,7 +22,7 @@ CreateGurobiModelMgr(GurobiCommon& gc, Env& e,
 }
 
 
-const char* GurobiModelAPI::GetBackendName()
+const char* GurobiModelAPI::GetName()
   { return "GurobiModelAPI"; }
 
 

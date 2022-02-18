@@ -3,6 +3,7 @@
 namespace mp {
 
 void GurobiCommon::copy_handlers_from_other_gurobi() {
+  assert(other_gurobi());
   env_ = other_gurobi()->env();
   model_ = other_gurobi()->model();
 }

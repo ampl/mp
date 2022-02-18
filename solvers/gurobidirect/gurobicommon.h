@@ -91,7 +91,9 @@ public:
   void GrbSetDblParam(const char* key, double value);
   void GrbSetStrParam(const char* key, const std::string& value);
 
+  /// Connection between Backend and ModelAPI
   GurobiCommon *other_gurobi() { return other_; }
+  /// Set connection
   void set_other_gurobi(GurobiCommon* o) { other_ = o; }
 
 
