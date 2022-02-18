@@ -9,18 +9,14 @@ extern "C" {
   #include "gurobi_c.h"
 }
 
-#include "mp/env.h"
 #include "mp/arrayref.h"
 #include "mp/format.h"
 #include "mp/error.h"
-#include "mp/flat/model_api_base.h"
-#include "mp/model-mgr-base.h"
-#include "mp/presolve-base.h"
 
 namespace mp {
 
 /// Common ancestor for GurobiBackend and GurobiModelAPI
-class GurobiCommon : public BasicFlatModelAPI {
+class GurobiCommon {
 public:
   ////////////////////////////////////////////////////////////
   //////////////////////// Metadata //////////////////////////
@@ -116,26 +112,17 @@ private:
   GurobiCommon *other_ = nullptr;
 };
 
-
-/// Data from creating a GurobiModelAPI
-struct GurobiModelAPIData {
-  std::unique_ptr<BasicModelManager> pmm_;
-  pre::BasicPresolver* pre_;
-};
-
-/// Create Gurobi Model Manager
-/// @param gc the Gurobi Backend
-GurobiModelAPIData
-CreateGurobiModelMgr(GurobiCommon& gc, Env& e);
-
 } // namespace mp
 
+
+/// Convenience macro
 #define GRB_CALL_MSG( call, msg ) do { if (int e=call) MP_RAISE( \
     fmt::format( \
       "Call failed: '{}' with code {},\n" \
       "Gurobi message: {}, hint: {}", #call, e, \
            GRBgeterrormsg(env()), msg ) \
   ); } while (0)
+/// Convenience macro
 #define GRB_CALL( call ) do { if (int e=call) MP_RAISE( \
     fmt::format( \
       "Call failed: '{}' with code {}, Gurobi message: {}", #call, \

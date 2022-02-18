@@ -1,5 +1,10 @@
 #include <cfloat>
 
+#include "mp/env.h"
+#include "mp/flat/model_api_base.h"
+#include "mp/model-mgr-base.h"
+#include "mp/presolve-base.h"
+
 #include "gurobibackend.h"
 
 namespace {
@@ -17,10 +22,22 @@ std::unique_ptr<mp::BasicBackend> CreateGurobiBackend() {
 
 namespace mp {
 
+/// Create Gurobi Model Manager
+/// @param gc: the Gurobi Backend
+/// @param e: environment
+/// @param pre: presolver to be returned,
+/// need it to convert solution data
+/// @return GurobiModelMgr
+std::unique_ptr<BasicModelManager>
+CreateGurobiModelMgr(GurobiCommon& gc,
+                     Env& e, pre::BasicPresolver*& pPre);
+
+
 GurobiBackend::GurobiBackend() {
-  auto data = CreateGurobiModelMgr(*this, *this);
-  SetMM( std::move( data.pmm_ ) );
-  SetPresolver(data.pre_);
+  pre::BasicPresolver* pPre;
+  auto data = CreateGurobiModelMgr(*this, *this, pPre);
+  SetMM( std::move( data ) );
+  SetPresolver(pPre);
 }
 
 GurobiBackend::~GurobiBackend() {

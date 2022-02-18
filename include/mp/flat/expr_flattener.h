@@ -6,15 +6,13 @@
 #include <map>
 #include <cmath>
 
-#include "mp/problem.h"
+#include "mp/problem.h"    // for ToLinTerms()
 #include "mp/converter-base.h"
-#include "mp/flat/preprocess.h"
-#include "mp/flat/MIP/mp2mip.h"
 #include "mp/expr-visitor.h"
 #include "mp/flat/eexpr.h"
-#include "mp/flat/convert_functional.h"
-#include "mp/flat/model.h"
 #include "mp/flat/std_constr.h"
+#include "mp/flat/std_obj.h"
+#include "mp/presolve.h"
 
 namespace mp {
 

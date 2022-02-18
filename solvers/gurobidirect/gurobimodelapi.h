@@ -4,13 +4,15 @@
 #include <memory>
 
 #include "mp/env.h"
-#include "gurobicommon.h"
+#include "mp/flat/model_api_base.h"
 #include "mp/flat/std_constr.h"
+
+#include "gurobicommon.h"
 
 namespace mp {
 
-
-class GurobiModelAPI : public GurobiCommon, public EnvKeeper {
+class GurobiModelAPI :
+    public GurobiCommon, public EnvKeeper, public BasicFlatModelAPI {
   using BaseModelAPI = BasicFlatModelAPI;
 
 public:
