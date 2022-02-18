@@ -1,6 +1,6 @@
 #include "gurobimodelapi.h"
 #include "mp/model-mgr-with-std-pb.h"
-#include "mp/flat/expr_flattener.h"
+#include "mp/flat/model_flattener.h"
 #include "mp/flat/MIP/mp2mip.h"
 
 namespace mp {
@@ -8,12 +8,12 @@ namespace mp {
 std::unique_ptr<BasicModelManager>
 CreateGurobiModelMgr(GurobiCommon& gc, Env& e,
                      pre::BasicPresolver*& pPre) {
-  using FlatCvtType = Interface<MIPFlatConverter, GurobiModelAPI>;
-  using ConverterType = mp::ExprFlattenerImpl<
-    mp::ExprFlattener, mp::Problem, FlatCvtType>;
-  auto pcvt = new ConverterType(e);
+  using GurobiFlatCvt = FlatCvtImpl<MIPFlatConverter, GurobiModelAPI>;
+  using GurobiProblemFlattener = mp::ModelFltImpl<
+    mp::ModelFlattener, mp::Problem, GurobiFlatCvt>;
+  auto pcvt = new GurobiProblemFlattener(e);
   auto res = CreateModelManagerWithStdBuilder(
-        std::unique_ptr<BasicConverter<mp::Problem> >{ pcvt } );
+        std::unique_ptr< BasicConverter<mp::Problem> >{ pcvt } );
   pcvt->GetFlatCvt().GetBasicBackend().set_other_gurobi(&gc);
   gc.set_other_gurobi(
         &pcvt->GetFlatCvt().GetBasicBackend());

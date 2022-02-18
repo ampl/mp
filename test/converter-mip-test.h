@@ -3,7 +3,7 @@
 
 #include "mp/arrayref.h"
 
-#include "mp/flat/expr_flattener.h"
+#include "mp/flat/model_flattener.h"
 #include "mp/flat/MIP/mp2mip.h"
 #include "mp/flat/model_api_base.h"
 
@@ -124,8 +124,10 @@ public:
   /// Allow all constraint types to be compiled
   USE_BASE_CONSTRAINT_HANDLERS(mp::BasicFlatModelAPI)
 
+  ACCEPT_CONSTRAINT(mp::LinConEQ, mp::Recommended, mp::CG_Default)
+
   /// Specialize for LinearConstraint
-  void AddConstraint(const mp::RangeLinCon& lc) {
+  void AddConstraint(const mp::LinConEQ& lc) {
     instance_.cons_.push_back({ { (int)lc.size(), lc.pcoefs(), lc.pvars() },
                                 lc.lb(), lc.ub() });
   }
@@ -133,12 +135,12 @@ public:
 
 /// Testing the default MIP interface layer
 class MIPConverterTester :
-    public mp::ExprFlattenerImpl<mp::ExprFlattener, mp::Problem,
-      mp::Interface<mp::MIPFlatConverter, MIPInstanceBackend> >
+    public mp::ModelFltImpl<mp::ModelFlattener, mp::Problem,
+      mp::FlatCvtImpl<mp::MIPFlatConverter, MIPInstanceBackend> >
 //    public mp::MPToMIPConverter<MIPConverterTester, MIPInstanceBackend>
 {
-  using Base = mp::ExprFlattenerImpl<mp::ExprFlattener, mp::Problem,
-    mp::Interface<mp::MIPFlatConverter, MIPInstanceBackend> >;
+  using Base = mp::ModelFltImpl<mp::ModelFlattener, mp::Problem,
+    mp::FlatCvtImpl<mp::MIPFlatConverter, MIPInstanceBackend> >;
 public:
   /// Construct
   MIPConverterTester(mp::Env& e) : Base(e) { }

@@ -7,18 +7,18 @@ namespace mp {
 
 /// MIPFlatConverter: converts flattened expressions for MIP
 template <class Impl, class Backend,
-          class Model = BasicFlatModel< > >  ///< TODO also param for a base class? #145
+          class Model = BasicFlatModel< > >
 class MIPFlatConverter
     : public FlatConverter<Impl, Backend, Model>
 {
 public:
-  static constexpr const char* name() { return "MIP Converter"; };
+  static constexpr const char* name() { return "MIPFlatConverter"; };
 
 public:
   using BaseConverter = FlatConverter<Impl, Backend, Model>;
 
 public:
-  static const char* GetConverterName() { return "MPToMIPConverter"; }
+  static const char* GetConverterName() { return "MIPFlatConverter"; }
   MIPFlatConverter(Env& e) : BaseConverter(e) {  }
 
   ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////

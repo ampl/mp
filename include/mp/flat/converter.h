@@ -19,10 +19,12 @@
 
 namespace mp {
 
-/// BasicMPFlatConverter: it "flattens" most expressions
-/// by replacing them by a result variable and constraints.
+/// FlatConverter: preprocesses and manages flat constraints.
 /// Such constraints might need to be converted to others, which is
 /// handled by overloaded methods in derived classes
+/// @param Impl: the final CRTP class
+/// @param Backend: the solver's model API wrapper
+/// @param Model: internal representation of a flat model
 template <class Impl, class Backend,
           class Model = BasicFlatModel< > >
 class FlatConverter :
@@ -31,7 +33,7 @@ class FlatConverter :
     public EnvKeeper
 {
 public:
-  static constexpr const char* name() { return "Flat Converter"; };
+  static constexpr const char* name() { return "FlatConverter"; };
 
   using Var = typename Model::Var;
   static constexpr Var VoidVar() { return Model::VoidVar(); }
@@ -45,7 +47,7 @@ protected:
   using BaseFlatModel = Model;
 
 public:
-  static const char* GetConverterName() { return "BasicMPFlatConverter"; }
+  static const char* GetConverterName() { return "FlatConverter"; }
 
   FlatConverter(Env& e) : EnvKeeper(e), backend_(e) { }
 
@@ -928,20 +930,16 @@ public:
   pre::CopyBridge& GetCopyBridge() { return copy_bridge_; }
 };
 
-/// A 'final' converter in a hierarchy
-/// TODO Make BackendModelAPI derive from
-template <template <typename, typename, typename> class Converter,
+/// A 'final' flat converter in a hierarchy
+template <template <typename, typename, typename> class FlatCvt,
           class Backend, class Model = BasicFlatModel< > >
-class ConverterImpl :
-    public Converter<ConverterImpl<Converter, Backend, Model>, Backend, Model> {
+class FlatCvtImpl :
+    public FlatCvt<FlatCvtImpl<FlatCvt, Backend, Model>, Backend, Model> {
 public:
-  using Base = Converter<ConverterImpl<Converter, Backend, Model>, Backend, Model>;
-  ConverterImpl(Env& e) : Base(e) { }
+  using Base = FlatCvt<FlatCvtImpl<FlatCvt, Backend, Model>, Backend, Model>;
+  FlatCvtImpl(Env& e) : Base(e) { }
 };
 
-template <template <typename, typename, typename> class Converter,
-          class Backend, class Model = BasicFlatModel< > >
-using Interface = ConverterImpl<Converter, Backend, Model>;
 
 } // namespace mp
 

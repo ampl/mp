@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 #include "mp/flat/model_api_base.h"
-#include "mp/flat/expr_flattener.h"
+#include "mp/flat/model_flattener.h"
 #include "mp/flat/converter.h"
 
 template <class Constraint>
@@ -16,7 +16,7 @@ class TestBackendAcceptingConstraints :
   /// VARIABLES
   mp::VarArrayDef vars_;
 
-  std::vector<mp::RangeLinCon> lin_constr_;
+  std::vector<mp::LinConEQ> lin_constr_;
 public:
   TestBackendAcceptingConstraints() { }
   TestBackendAcceptingConstraints(mp::Env& ) { }
@@ -25,7 +25,7 @@ public:
 
   void AddVariables(const mp::VarArrayDef& v) { vars_ = v; }
   int NumVars() const { return (int)vars_.size(); }
-  void AddConstraint(const mp::RangeLinCon& lc) {
+  void AddConstraint(const mp::LinConEQ& lc) {
     lin_constr_.push_back( lc );
   }
 
@@ -36,6 +36,7 @@ private:
   std::vector<Constraint> constr_;
 public:
   ACCEPT_CONSTRAINT(Constraint, mp::Recommended, mp::CG_Default)
+  ACCEPT_CONSTRAINT(mp::LinConEQ, mp::Recommended, mp::CG_Default)
   void AddConstraint(const Constraint& con) {
     constr_.push_back(con);
   }
@@ -59,8 +60,8 @@ public:
 
 template <template <class, class, class> class ConverterTemplate, class Constraint>
 using InterfaceWithBackendAcceptingConstraints =
-        mp::ExprFlattenerImpl<mp::ExprFlattener, mp::Problem,
-          mp::ConverterImpl<ConverterTemplate,
+        mp::ModelFltImpl<mp::ModelFlattener, mp::Problem,
+          mp::FlatCvtImpl<ConverterTemplate,
             TestBackendAcceptingConstraints<Constraint> > >;
 
 

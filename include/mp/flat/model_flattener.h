@@ -1,5 +1,5 @@
-#ifndef EXPR_FLATTENER_H
-#define EXPR_FLATTENER_H
+#ifndef MODEL_FLATTENER_H
+#define MODEL_FLATTENER_H
 
 #include <utility>
 #include <unordered_map>
@@ -14,6 +14,7 @@
 #include "mp/flat/std_obj.h"
 #include "mp/presolve.h"
 
+
 namespace mp {
 
 /// Convert mp::LinearExpr to LinTerms
@@ -27,13 +28,16 @@ LinTerms ToLinTerms(const LinearExpr& e) {
 }
 
 
-/// ExprFlattener: it walks and "flattens" most expressions
+/// ModelFlattener: it walks and "flattens" most expressions
 /// by replacing them by a result variable and constraints.
 /// Such replacement is performed by a FlatConverter object.
 /// Such constraints might need to be converted to others, which is
-/// handled by overloaded methods in FlatConverter.
+/// handled by overloaded methods in descendants of FlatConverter.
+/// @param Impl: final CRTP class
+/// @param Model: the model class representing the input instance
+/// @param FlatConverter: the FlatConverter type
 template <class Impl, class Model, class FlatConverter>
-class ExprFlattener :
+class ModelFlattener :
     public ExprConverter<Impl, EExpr>,
     public BasicConverter<Model>
 {
@@ -47,7 +51,7 @@ public:
   using VarArray = std::vector<Var>;
 
 protected:
-  using ClassName = ExprFlattener;
+  using ClassName = ModelFlattener;
   using BaseExprVisitor = ExprVisitor<Impl, EExpr>;
   using BaseConverter = BasicConverter<Model>;
 
@@ -58,7 +62,7 @@ protected:
 public:
   static const char* GetName() { return "ExprFlattener"; }
 
-  ExprFlattener(Env& e) : BaseConverter(e), flat_cvt_(e) { }
+  ModelFlattener(Env& e) : BaseConverter(e), flat_cvt_(e) { }
 
 public:
   /// INCREMENTAL INTERFACE
@@ -705,20 +709,19 @@ private:
 
 };
 
-/// A 'final' ExprFlattener in a hierarchy
-template <template <typename, typename, typename> class ExprFlattenerTemplate,
+/// A 'final' ModelFlattener in a hierarchy
+template <template <typename, typename, typename> class ModelFlt,
           class Model, class FlatCvt>
-class ExprFlattenerImpl :
-    public ExprFlattenerTemplate<
-      ExprFlattenerImpl<ExprFlattenerTemplate, Model, FlatCvt>,
-        Model, FlatCvt> {
-  using Base = ExprFlattenerTemplate<
-    ExprFlattenerImpl<ExprFlattenerTemplate, Model, FlatCvt>,
-      Model, FlatCvt>;
+class ModelFltImpl :
+    public ModelFlt<
+      ModelFltImpl<ModelFlt, Model, FlatCvt>, Model, FlatCvt> {
+  using Base = ModelFlt<
+    ModelFltImpl<ModelFlt, Model, FlatCvt>, Model, FlatCvt>;
 public:
-  ExprFlattenerImpl(Env& e) : Base(e) { }
+  ModelFltImpl(Env& e) : Base(e) { }
 };
+
 
 } // namespace mp
 
-#endif // EXPR_FLATTENER_H
+#endif // MODEL_FLATTENER_H

@@ -319,8 +319,8 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   affine_expr.h basic_constr.h
   constraint_keeper.h
   context.h converter.h
-  convert_functional.h eexpr.h expr_flattener.h
-  model.h model_api_base.h preprocess.h
+  convert_functional.h eexpr.h
+  model.h model_api_base.h model_flattener preprocess.h
   quad_expr.h std_constr.h std_obj.h)
 
 add_prefix(MP_FLAT_MIP_HEADERS include/mp/flat/MIP/
