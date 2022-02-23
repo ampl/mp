@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <map>
 #include <string>
-#include <limits>
+#include <cmath>
 
 #include "mp/arrayref.h"
 #include "mp/flat/basic_constr.h"
@@ -80,11 +80,11 @@ public:
   double rhs() const { return rhs_; }
   /// lb(): this is a specialization of the range constraint
   double lb() const {
-    return kind_<0 ? -std::numeric_limits<double>::infinity() : rhs();
+    return kind_<0 ? -INFINITY : rhs();
   }
   /// ub(): this is a specialization of the range constraint
   double ub() const {
-    return kind_>0 ? std::numeric_limits<double>::infinity() : rhs();
+    return kind_>0 ? INFINITY : rhs();
   }
   /// operator==
   bool equals(const AlgConRhs& r) const
@@ -215,23 +215,23 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( MaximumConstraint, VarArray,
+DEF_NUMERIC_FUNC_CONSTR( MaximumConstraint, VarArray,
                                    "r = max(v1, v2, ..., vn)");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( MinimumConstraint, VarArray,
+DEF_NUMERIC_FUNC_CONSTR( MinimumConstraint, VarArray,
                                    "r = min(v1, v2, ..., vn)");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( AbsConstraint, VarArray1,
+DEF_NUMERIC_FUNC_CONSTR( AbsConstraint, VarArray1,
                                    "r = abs(v)");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( ConjunctionConstraint, VarArray,
+DEF_LOGICAL_FUNC_CONSTR( ConjunctionConstraint, VarArray,
                                    "r = forall({vi})");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( DisjunctionConstraint, VarArray,
+DEF_LOGICAL_FUNC_CONSTR( DisjunctionConstraint, VarArray,
                                    "r = exists({vi})");
 
 ////////////////////////////////////////////////////////////////////////
@@ -249,7 +249,7 @@ DEF_CUSTOM_FUNC_CONSTR( DisjunctionConstraint, VarArray,
 /// TODO Use LinConEq / QuadConEQ ?
 /// TODO Have the actual conditional constraint as a template parameter?
 /// TODO Diff to Indicator?
-DEF_CUSTOM_FUNC_CONSTR( EQ0Constraint, AffExp,
+DEF_LOGICAL_FUNC_CONSTR( EQ0Constraint, AffExp,
                                    "r = (expr == 0)");
 
 /// Extract underlying constraint.
@@ -263,13 +263,13 @@ inline LinConEQ ExtractConstraint(const EQ0Constraint& eq0c) {
 /// Not using: var1 != var2.
 /// Represented by Not { Eq0Constraint... }
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( NEConstraint__unused, VarArray2,
+DEF_LOGICAL_FUNC_CONSTR( NEConstraint__unused, VarArray2,
                                    "r = (v1 != v2)");
 
 ////////////////////////////////////////////////////////////////////////
 ////// Keep it with AffineExpr, indicators need that
 /// and we don't want quadratics with big-M's?
-DEF_CUSTOM_FUNC_CONSTR( LE0Constraint, AffExp,
+DEF_LOGICAL_FUNC_CONSTR( LE0Constraint, AffExp,
                                    "r = (expr <= 0)");
 
 /// Extract underlying constraint.
@@ -281,62 +281,62 @@ inline LinConLE ExtractConstraint(const LE0Constraint& le0c) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( NotConstraint, VarArray1,
+DEF_LOGICAL_FUNC_CONSTR( NotConstraint, VarArray1,
                                    "r = !v");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( IfThenConstraint, VarArrayN<3>,
+DEF_LOGICAL_FUNC_CONSTR( IfThenConstraint, VarArrayN<3>,
                                   "if (cond) then (expr1) else (expr2)");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( AllDiffConstraint, VarArray,
+DEF_LOGICAL_FUNC_CONSTR( AllDiffConstraint, VarArray,
                                   "alldiff({})");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR_WITH_PRM( NumberofConstConstraint,
+DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( NumberofConstConstraint,
                                   VarArray, DblParamArray1,
                                   "numberof_const(k (=x0), {x1...xn})");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( NumberofVarConstraint, VarArray,
+DEF_NUMERIC_FUNC_CONSTR( NumberofVarConstraint, VarArray,
                                   "numberof_var(x0, {x1...xn})");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( CountConstraint, VarArray,
+DEF_NUMERIC_FUNC_CONSTR( CountConstraint, VarArray,
                                    "count({x0...xn})");
 
 
 //////////////////// NONLINEAR FUNCTIONS //////////////////////
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( ExpConstraint, VarArray1,
+DEF_NUMERIC_FUNC_CONSTR( ExpConstraint, VarArray1,
                                    "r = exp(v)");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR_WITH_PRM( ExpAConstraint,
+DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( ExpAConstraint,
                   VarArray1, DblParamArray1, "r = a**v");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( LogConstraint, VarArray1,
+DEF_NUMERIC_FUNC_CONSTR( LogConstraint, VarArray1,
                                    "r = log(v)");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR_WITH_PRM( LogAConstraint,
+DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( LogAConstraint,
                   VarArray1, DblParamArray1, "r = log(v)/log(a)");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR_WITH_PRM( PowConstraint,
+DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( PowConstraint,
                   VarArray1, DblParamArray1, "r = v ** a");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( SinConstraint, VarArray1,
+DEF_NUMERIC_FUNC_CONSTR( SinConstraint, VarArray1,
                                    "r = sin(v)");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( CosConstraint, VarArray1,
+DEF_NUMERIC_FUNC_CONSTR( CosConstraint, VarArray1,
                                    "r = cos(v)");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_CUSTOM_FUNC_CONSTR( TanConstraint, VarArray1,
+DEF_NUMERIC_FUNC_CONSTR( TanConstraint, VarArray1,
                                    "r = tan(v)");
 
 
@@ -410,7 +410,7 @@ struct PLPoints {
   PLPoints(const PLSlopes& pls);
 };
 
-DEF_CUSTOM_FUNC_CONSTR_WITH_PRM( PLConstraint,
+DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( PLConstraint,
                   VarArray1, PLSlopes, "r = piecewise_linear(x)");
 
 

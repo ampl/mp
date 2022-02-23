@@ -1,10 +1,10 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include <algorithm>
-#include <limits>
 #include <memory>
 #include <vector>
+#include <algorithm>
+#include <cmath>
 
 #include "mp/flat/std_obj.h"
 #include "mp/flat/std_constr.h"
@@ -170,10 +170,10 @@ public:
   /////////////////////////////// UTILITIES //////////////////////////////////
 public:
   static constexpr double Inf()
-  { return std::numeric_limits<double>::infinity(); }
+  { return INFINITY; }
 
   static constexpr double MinusInf()
-  { return -std::numeric_limits<double>::infinity(); }
+  { return -INFINITY; }
 
   template <class Num>
   static bool is_integer_value(Num n) { return std::floor(n)==std::ceil(n); }

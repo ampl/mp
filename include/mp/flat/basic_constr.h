@@ -3,6 +3,8 @@
 
 #include <array>
 #include <vector>
+#include <cmath>
+#include <utility>
 
 #include "mp/flat/context.h"
 
@@ -79,10 +81,11 @@ using DblParamArray1 = ParamArrayN<double, 1>;
 /// and further info as parameters
 /// @param Args: arguments type
 /// @param Params: parameters type
+/// @param NumOrLogic: base class defining a numeric or logic constraint
 /// @param Id: a struct with name_
-template <class Args, class Params, class Id>
+template <class Args, class Params, class NumOrLogic, class Id>
 class CustomFunctionalConstraint :
-  public FunctionalConstraint, public Id {
+  public FunctionalConstraint, public NumOrLogic, public Id {
   Args args_;
   Params params_;
 
@@ -129,19 +132,56 @@ public:
   }
 };
 
+
+/// A base class for numerical functional constraint.
+/// It provides default properties of such a constraint
+class NumericFunctionalConstraint {
+public:
+  /// Whether the constraint is logical
+  static constexpr bool IsLogical() { return false; }
+  /// Apriori bounds on the result
+  static constexpr std::pair<double, double>
+  GetAprioriResultBounds() { return {-INFINITY, INFINITY}; }
+};
+
+
+/// A base class for logical functional constraint.
+/// It provides default properties of such a constraint
+class LogicalFunctionalConstraint {
+public:
+  /// Whether the constraint is logical
+  static constexpr bool IsLogical() { return true; }
+  /// Apriori bounds on the result
+  static constexpr std::pair<double, double>
+  GetAprioriResultBounds() { return {0.0, 1.0}; }
+};
+
+
 ////////////////////////////////////////////////////////////////////////
 /// Args is the argument type, e.g., array of variables, or an expression
 /// Params is the parameter type, e.g., array of numbers. Can be empty
-#define DEF_CUSTOM_FUNC_CONSTR_WITH_PRM(Name, Args, Params, Descr) \
+#define DEF_CUSTOM_FUNC_CONSTR_WITH_PRM(Name, Args, Params, NumLogic, Descr) \
 struct Name ## Id { \
   static constexpr auto description_ = Descr; \
   static constexpr auto name_        = #Name; \
 }; \
-using Name = CustomFunctionalConstraint<Args, Params, Name ## Id>
+using Name = CustomFunctionalConstraint<Args, Params, NumLogic, Name ## Id>
 
-/// Functional constraint without fixed parameters
-#define DEF_CUSTOM_FUNC_CONSTR(Name, Args, Descr) \
-    DEF_CUSTOM_FUNC_CONSTR_WITH_PRM(Name, Args, ParamArray0, Descr)
+/// Custom numeric constraint without fixed parameters
+#define DEF_NUMERIC_FUNC_CONSTR(Name, Args, Descr) \
+    DEF_NUMERIC_FUNC_CONSTR_WITH_PRM(Name, Args, ParamArray0, Descr)
+/// Custom logical constraint without fixed parameters
+#define DEF_LOGICAL_FUNC_CONSTR(Name, Args, Descr) \
+    DEF_LOGICAL_FUNC_CONSTR_WITH_PRM(Name, Args, ParamArray0, Descr)
+
+/// Custom numeric constraint with parameter data
+#define DEF_NUMERIC_FUNC_CONSTR_WITH_PRM(Name, Args, Params, Descr) \
+  DEF_CUSTOM_FUNC_CONSTR_WITH_PRM(Name, Args, Params, \
+    NumericFunctionalConstraint, Descr)
+/// Custom logical constraint with parameter data
+#define DEF_LOGICAL_FUNC_CONSTR_WITH_PRM(Name, Args, Params, Descr) \
+  DEF_CUSTOM_FUNC_CONSTR_WITH_PRM(Name, Args, Params, \
+    NumericFunctionalConstraint, Descr)
 
 } // namespace mp
 

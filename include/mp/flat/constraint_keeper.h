@@ -3,7 +3,7 @@
 
 #include <deque>
 #include <map>
-#include <limits>
+#include <cmath>
 
 #include "mp/common.h"
 #include "mp/flat/model_api_base.h"
@@ -151,8 +151,8 @@ public:
     ConstraintLocationHelper< ConstraintKeeper< Impl, Backend, Constraint > >;
 
 
-  static constexpr double Infty() { return std::numeric_limits<double>::infinity(); }
-  static constexpr double MinusInfty() { return -std::numeric_limits<double>::infinity(); }
+  static constexpr double Infty() { return INFINITY; }
+  static constexpr double MinusInfty() { return -INFINITY; }
   static constexpr double PracticallyInfty() { return 1e20; }  // TODO options
   static constexpr double PracticallyMinusInfty() { return -1e20; }
 };
