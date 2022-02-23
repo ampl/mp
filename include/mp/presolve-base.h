@@ -2,7 +2,6 @@
 #define PRESOLVE_BASE_H
 
 /**
-  @file presolve_base.h
   Interface for value presolver: transforms solutions etc.
   between original and presolved model
   */
@@ -27,6 +26,8 @@ void SetValueNodeName(Any& , std::string ) { }
 template <class Array>
 class ValueMap {
 public:
+  /// Typedef to map item type number to value array
+  /// For example, distinguish values for linear constraints etc
   using MapType = std::map< int, Array >;
 
   /// Default constructor

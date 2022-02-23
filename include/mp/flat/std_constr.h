@@ -155,20 +155,20 @@ public:
 
 
 ////////////////////////////////////////////////////////////////////////
-/// Linear Defining Constraint: r = affine_expr
-class LinearDefiningConstraint :
-    public DefiningConstraint {
+/// Linear Functional Constraint: r = affine_expr
+class LinearFunctionalConstraint :
+    public FunctionalConstraint {
   AffExp affine_expr_;
 public:
-  static const char* GetConstraintName() { return "LinearDefiningConstraint"; }
+  static const char* GetConstraintName() { return "LinearFunctionalConstraint"; }
   using Arguments = AffExp;
-  using DefiningConstraint::GetResultVar;
+  using FunctionalConstraint::GetResultVar;
   /// A constructor ignoring result variable: use AssignResultToArguments() then
-  LinearDefiningConstraint(AffExp&& ae) noexcept :
+  LinearFunctionalConstraint(AffExp&& ae) noexcept :
     affine_expr_(std::move(ae)) {  // TODO sort+merge elements?
   }
-  LinearDefiningConstraint(int r, AffExp&& ae) noexcept :
-    DefiningConstraint(r), affine_expr_(std::move(ae)) {
+  LinearFunctionalConstraint(int r, AffExp&& ae) noexcept :
+    FunctionalConstraint(r), affine_expr_(std::move(ae)) {
     /// TODO sort+merge elements
   }
   const AffExp& GetAffineExpr() const { return affine_expr_; }
@@ -176,28 +176,28 @@ public:
   LinConEQ to_linear_constraint() const {
     const auto& ae = GetAffineExpr();
     auto le = ae.get_lin_exp();
-    le.add_term(-1.0, DefiningConstraint::GetResultVar());
+    le.add_term(-1.0, FunctionalConstraint::GetResultVar());
     LinConEQ lc { le, -ae.constant_term() };
     return lc;
   }
 };
 
 ////////////////////////////////////////////////////////////////////////
-/// Quadratic Defining Constraint: r = quad_expr
-class QuadraticDefiningConstraint :
-    public DefiningConstraint {
+/// Quadratic Functional Constraint: r = quad_expr
+class QuadraticFunctionalConstraint :
+    public FunctionalConstraint {
   QuadExp quad_expr_;
 public:
-  static const char* GetConstraintName() { return "QuadraticDefiningConstraint"; }
+  static const char* GetConstraintName() { return "QuadraticFunctionalConstraint"; }
   using Arguments = QuadExp;
-  using DefiningConstraint::GetResultVar;
+  using FunctionalConstraint::GetResultVar;
   /// A constructor ignoring result variable: use AssignResultToArguments() then
-  QuadraticDefiningConstraint(QuadExp&& qe) noexcept :
+  QuadraticFunctionalConstraint(QuadExp&& qe) noexcept :
     quad_expr_(std::move(qe)) {
     /// TODO sort+merge elements
   }
-  QuadraticDefiningConstraint(int r, QuadExp&& qe) noexcept :
-    DefiningConstraint(r), quad_expr_(std::move(qe)) {
+  QuadraticFunctionalConstraint(int r, QuadExp&& qe) noexcept :
+    FunctionalConstraint(r), quad_expr_(std::move(qe)) {
     /// TODO sort+merge elements
   }
   const QuadExp& GetQuadExpr() const { return quad_expr_; }
@@ -206,7 +206,7 @@ public:
     const auto& qe = GetQuadExpr();
     const auto& ae = qe.GetAE();
     auto le = ae.get_lin_exp();
-    le.add_term(-1.0, DefiningConstraint::GetResultVar());
+    le.add_term(-1.0, FunctionalConstraint::GetResultVar());
     auto qt = qe.GetQT();
     return {RangeLinCon(std::move(le),
                              {-ae.constant_term(), -ae.constant_term()}),
@@ -215,23 +215,23 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( MaximumConstraint, VarArray,
+DEF_CUSTOM_FUNC_CONSTR( MaximumConstraint, VarArray,
                                    "r = max(v1, v2, ..., vn)");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( MinimumConstraint, VarArray,
+DEF_CUSTOM_FUNC_CONSTR( MinimumConstraint, VarArray,
                                    "r = min(v1, v2, ..., vn)");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( AbsConstraint, VarArray1,
+DEF_CUSTOM_FUNC_CONSTR( AbsConstraint, VarArray1,
                                    "r = abs(v)");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( ConjunctionConstraint, VarArray,
+DEF_CUSTOM_FUNC_CONSTR( ConjunctionConstraint, VarArray,
                                    "r = forall({vi})");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( DisjunctionConstraint, VarArray,
+DEF_CUSTOM_FUNC_CONSTR( DisjunctionConstraint, VarArray,
                                    "r = exists({vi})");
 
 ////////////////////////////////////////////////////////////////////////
@@ -249,7 +249,7 @@ DEFINE_CUSTOM_DEFINING_CONSTRAINT( DisjunctionConstraint, VarArray,
 /// TODO Use LinConEq / QuadConEQ ?
 /// TODO Have the actual conditional constraint as a template parameter?
 /// TODO Diff to Indicator?
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( EQ0Constraint, AffExp,
+DEF_CUSTOM_FUNC_CONSTR( EQ0Constraint, AffExp,
                                    "r = (expr == 0)");
 
 /// Extract underlying constraint.
@@ -263,13 +263,13 @@ inline LinConEQ ExtractConstraint(const EQ0Constraint& eq0c) {
 /// Not using: var1 != var2.
 /// Represented by Not { Eq0Constraint... }
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( NEConstraint__unused, VarArray2,
+DEF_CUSTOM_FUNC_CONSTR( NEConstraint__unused, VarArray2,
                                    "r = (v1 != v2)");
 
 ////////////////////////////////////////////////////////////////////////
 ////// Keep it with AffineExpr, indicators need that
 /// and we don't want quadratics with big-M's?
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( LE0Constraint, AffExp,
+DEF_CUSTOM_FUNC_CONSTR( LE0Constraint, AffExp,
                                    "r = (expr <= 0)");
 
 /// Extract underlying constraint.
@@ -281,62 +281,62 @@ inline LinConLE ExtractConstraint(const LE0Constraint& le0c) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( NotConstraint, VarArray1,
+DEF_CUSTOM_FUNC_CONSTR( NotConstraint, VarArray1,
                                    "r = !v");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( IfThenConstraint, VarArrayN<3>,
+DEF_CUSTOM_FUNC_CONSTR( IfThenConstraint, VarArrayN<3>,
                                   "if (cond) then (expr1) else (expr2)");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( AllDiffConstraint, VarArray,
+DEF_CUSTOM_FUNC_CONSTR( AllDiffConstraint, VarArray,
                                   "alldiff({})");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS( NumberofConstConstraint,
+DEF_CUSTOM_FUNC_CONSTR_WITH_PRM( NumberofConstConstraint,
                                   VarArray, DblParamArray1,
                                   "numberof_const(k (=x0), {x1...xn})");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( NumberofVarConstraint, VarArray,
+DEF_CUSTOM_FUNC_CONSTR( NumberofVarConstraint, VarArray,
                                   "numberof_var(x0, {x1...xn})");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( CountConstraint, VarArray,
+DEF_CUSTOM_FUNC_CONSTR( CountConstraint, VarArray,
                                    "count({x0...xn})");
 
 
 //////////////////// NONLINEAR FUNCTIONS //////////////////////
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( ExpConstraint, VarArray1,
+DEF_CUSTOM_FUNC_CONSTR( ExpConstraint, VarArray1,
                                    "r = exp(v)");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS( ExpAConstraint,
+DEF_CUSTOM_FUNC_CONSTR_WITH_PRM( ExpAConstraint,
                   VarArray1, DblParamArray1, "r = a**v");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( LogConstraint, VarArray1,
+DEF_CUSTOM_FUNC_CONSTR( LogConstraint, VarArray1,
                                    "r = log(v)");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS( LogAConstraint,
+DEF_CUSTOM_FUNC_CONSTR_WITH_PRM( LogAConstraint,
                   VarArray1, DblParamArray1, "r = log(v)/log(a)");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS( PowConstraint,
+DEF_CUSTOM_FUNC_CONSTR_WITH_PRM( PowConstraint,
                   VarArray1, DblParamArray1, "r = v ** a");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( SinConstraint, VarArray1,
+DEF_CUSTOM_FUNC_CONSTR( SinConstraint, VarArray1,
                                    "r = sin(v)");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( CosConstraint, VarArray1,
+DEF_CUSTOM_FUNC_CONSTR( CosConstraint, VarArray1,
                                    "r = cos(v)");
 
 ////////////////////////////////////////////////////////////////////////
-DEFINE_CUSTOM_DEFINING_CONSTRAINT( TanConstraint, VarArray1,
+DEF_CUSTOM_FUNC_CONSTR( TanConstraint, VarArray1,
                                    "r = tan(v)");
 
 
@@ -410,7 +410,7 @@ struct PLPoints {
   PLPoints(const PLSlopes& pls);
 };
 
-DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS( PLConstraint,
+DEF_CUSTOM_FUNC_CONSTR_WITH_PRM( PLConstraint,
                   VarArray1, PLSlopes, "r = piecewise_linear(x)");
 
 

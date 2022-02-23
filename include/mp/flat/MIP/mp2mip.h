@@ -65,7 +65,7 @@ public:
   }
 
   void Convert(const NotConstraint& nc) {
-    MP_DISPATCH( AddConstraint(LinearDefiningConstraint(
+    MP_DISPATCH( AddConstraint(LinearFunctionalConstraint(
       nc.GetResultVar(), {{{-1.0}, {nc.GetArguments()[0]}}, 1.0})) );
   }
 
@@ -302,7 +302,7 @@ public:
     assert((this->is_fixed(args[1]) && this->is_fixed(args[2])));
     const double const1 = this->fixed_value(args[1]);
     const double const2 = this->fixed_value(args[2]);
-    this->AddConstraint( LinearDefiningConstraint(
+    this->AddConstraint( LinearFunctionalConstraint(
                            itc.GetResultVar(),
     { {{const1-const2}, {args[0]}}, const2 } ) );
   }

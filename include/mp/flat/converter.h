@@ -94,9 +94,9 @@ public:
     PreprocessInfoStd bnt = ComputeBoundsAndType(ee);
     auto r = MP_DISPATCH( AddVar(bnt.lb_, bnt.ub_, bnt.type_) );
     if (ee.is_affine())
-      AddConstraint(LinearDefiningConstraint(r, std::move(ee.GetAE())));
+      AddConstraint(LinearFunctionalConstraint(r, std::move(ee.GetAE())));
     else
-      AddConstraint(QuadraticDefiningConstraint(r, std::move(ee)));
+      AddConstraint(QuadraticFunctionalConstraint(r, std::move(ee)));
     return r;
   }
 
@@ -256,7 +256,7 @@ protected:
       return;
     } else if (ub<=0.0) {
       auto res = AssignResult2Args(   // create newvar = -argvar
-            LinearDefiningConstraint({ {{-1.0}, {argvar}}, 0.0 }));
+            LinearFunctionalConstraint({ {{-1.0}, {argvar}}, 0.0 }));
       prepro.set_result_var(res.get_var());
       return;
     }
@@ -466,7 +466,7 @@ protected:
                                 Context::CTX_MIX);
   }
 
-  void PropagateResult(LinearDefiningConstraint& con, double lb, double ub,
+  void PropagateResult(LinearFunctionalConstraint& con, double lb, double ub,
                        Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
@@ -475,7 +475,7 @@ protected:
                                 Context::CTX_MIX);
   }
 
-  void PropagateResult(QuadraticDefiningConstraint& con, double lb, double ub,
+  void PropagateResult(QuadraticFunctionalConstraint& con, double lb, double ub,
                        Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
@@ -615,12 +615,12 @@ public: // for ConstraintKeeper
   }
 
   /// If backend does not like LDC, we can redefine it
-  void Convert(const LinearDefiningConstraint& ldc) {
+  void Convert(const LinearFunctionalConstraint& ldc) {
     this->AddConstraint(ldc.to_linear_constraint());
   }
 
   /// If backend does not like QDC, we can redefine it
-  void Convert(const QuadraticDefiningConstraint& qdc) {
+  void Convert(const QuadraticFunctionalConstraint& qdc) {
     this->AddConstraint(qdc.to_quadratic_constraint());
   }
 
@@ -651,7 +651,7 @@ protected:
     ConInfo ci{&ck, i};
     if (resvar>=0)
       AddInitExpression(resvar, ci);
-    /// Can also cache non-defining constraints
+    /// Can also cache non-functional constraints
     ConstraintLocation<Constraint> cl{&ck, i};
     if (! MP_DISPATCH( MapInsert( cl ) ))
       throw std::logic_error("Trying to map_insert() duplicated constraint: " +
@@ -886,10 +886,10 @@ protected:
   STORE_CONSTRAINT_TYPE(LinConLE)
   STORE_CONSTRAINT_TYPE(LinConEQ)
   STORE_CONSTRAINT_TYPE(LinConGE)
-  STORE_CONSTRAINT_TYPE(LinearDefiningConstraint)
+  STORE_CONSTRAINT_TYPE(LinearFunctionalConstraint)
 
   STORE_CONSTRAINT_TYPE(QuadraticConstraint)
-  STORE_CONSTRAINT_TYPE(QuadraticDefiningConstraint)
+  STORE_CONSTRAINT_TYPE(QuadraticFunctionalConstraint)
 
   STORE_CONSTRAINT_TYPE(MaximumConstraint)
   STORE_CONSTRAINT_TYPE(MinimumConstraint)

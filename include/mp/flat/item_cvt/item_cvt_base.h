@@ -18,10 +18,10 @@ protected:
   /// Access ModelConverter
   ModelConverter& GetMC() { return mdl_cvt_; }
   /// Access Presolver
-  pre::Presolver& GetPresolver() { return GetMC().GetPresolver(); }
-  /// Access specific constraint's ValueNode
-  template <class Constraint>
-  pre::ValueNode& GetValueNode(Constraint* pc)
+  pre::Presolver& GetPre() { return GetMC().GetPresolver(); }
+  /// Access specific item's ValueNode
+  template <class Item>
+  pre::ValueNode& GetVN(Item* pc)
   { return GetMC().GetConstraintKeeper(pc).GetValueNode(); }
 
 private:

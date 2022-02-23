@@ -11,81 +11,118 @@ namespace mp {
 /// Custom constraints to derive from, so that overloaded default settings work
 class BasicConstraint {
 public:
-  static const char* GetConstraintName() { return "BasicConstraint"; }
-//  void print(std::ostream& ) const { }
+  /// Name for messages
+  static constexpr const char* GetConstraintName()
+  { return "BasicConstraint"; }
   /// Whether context is meaningful here
   static constexpr bool HasContext() { return false; }
-  void SetContext(Context ) const { }
+  /// Get context, if meaningful
   Context GetContext() const { return Context::CTX_NONE; }
+  /// Set context, if meaningful
+  void SetContext(Context ) const { }
+  /// For functional constraints, result variable index
   int GetResultVar() const { return -1; }
 };
 
 /// A special constraint 'var=...', which defines a result variable
-class DefiningConstraint : public BasicConstraint {
-  int result_var_=-1;                // defined var can be optional
-  mutable Context ctx;
+class FunctionalConstraint : public BasicConstraint {
+  int result_var_=-1;                // defined var is optional
+  mutable Context ctx;               // always store context
 public:
-  static const char* GetConstraintName() { return "DefiningConstraint"; }
-  DefiningConstraint(int v=-1) : result_var_(v) {}
-  bool operator==(const DefiningConstraint& dc) const {
+  /// Name for messages
+  static constexpr const char* GetConstraintName()
+  { return "FunctionalConstraint"; }
+  /// Constructor
+  /// @param v: result variable
+  FunctionalConstraint(int v=-1) : result_var_(v) {}
+  /// Basic operator==
+  bool operator==(const FunctionalConstraint& dc) const {
     return result_var_==dc.result_var_;
   }
-  void SetResultVar(int v) { result_var_=v; }
+  /// Get result variable
   int GetResultVar() const { return result_var_; }
+  /// Set result variable
+  void SetResultVar(int v) { result_var_=v; }
+  /// Whether context is meaningful
   static constexpr bool HasContext() { return true; }
-  void SetContext(Context c) const { ctx=c; }
-  void AddContext(Context c) { ctx.Add(c); }
+  /// Get it
   Context GetContext() const { return ctx; }
+  /// Set it
+  void SetContext(Context c) const { ctx=c; }
+  /// Add context
+  void AddContext(Context c) { ctx.Add(c); }
 };
 
-/// Possible argument arrays for CustomDefiningConstraint
+/// Possible argument arrays for CustomFunctionalConstraint
+
+/// Fixed argument array of 1 element
 using VarArray1 = std::array<int, 1>;
+/// Fixed argument array of 2 elements
 using VarArray2 = std::array<int, 2>;
+/// Fixed argument array of N elements
 template <int N>
 using VarArrayN = std::array<int, N>;
+/// Variable-size argument array
 using VarArray = std::vector<int>;
 
 /// Possible parameter arrays
+
+/// Fixed parameter array of N elements
 template <class Num, size_t N>
   using ParamArrayN = std::array<Num, N>;
+/// Empty parameter array
 using ParamArray0 = ParamArrayN<int, 0>;
+/// Fixed parameter array of 1 double
 using DblParamArray1 = ParamArrayN<double, 1>;
 
-/// A defining constraint with the arguments and further info as parameters
+/// A functional constraint with given arguments
+/// and further info as parameters
+/// @param Args: arguments type
+/// @param Params: parameters type
+/// @param Id: a struct with name_
 template <class Args, class Params, class Id>
-class CustomDefiningConstraint :
-  public DefiningConstraint, public Id {
+class CustomFunctionalConstraint :
+  public FunctionalConstraint, public Id {
   Args args_;
   Params params_;
+
 public:
-  static const char* GetConstraintName() { return Id::name_; }
-  CustomDefiningConstraint() { }
+  /// Constraint name for messages
+  static constexpr const char* GetConstraintName() { return Id::name_; }
+  /// Default constructor
+  CustomFunctionalConstraint() = default;
+  /// Arguments typedef
   using Arguments = Args;
+  /// Parameters typedef
   using Parameters = Params;
   /// Construct from arguments only
-  CustomDefiningConstraint(const Arguments& args) : args_(args) { }
-  CustomDefiningConstraint(Arguments&& args) noexcept :
+  CustomFunctionalConstraint(Arguments args) noexcept :
     args_(std::move(args)) { }
   /// Construct from arguments and parameters
   /// Might need to use explicit types when using initializer lists,
   /// in order to distinguish from the next 2 constructors
-  CustomDefiningConstraint(const Arguments& args, const Parameters& prm) :
-    args_(args), params_(prm) { }
-  CustomDefiningConstraint(Arguments&& args, Parameters&& prm) noexcept :
+  CustomFunctionalConstraint(Arguments args, Parameters prm) noexcept :
     args_(std::move(args)), params_(std::move(prm)) { }
-  /// From resvar and arguments
-  CustomDefiningConstraint(int varr, const Arguments& args) :
-     DefiningConstraint(varr), args_(args) { }
-  CustomDefiningConstraint(int varr, Arguments&& args) noexcept :
-     DefiningConstraint(varr), args_(std::move(args)) { }
+  /// Construct from resvar and arguments
+  CustomFunctionalConstraint(int varr, Arguments args) noexcept :
+     FunctionalConstraint(varr), args_(std::move(args)) { }
+
   /////////////////////////////////////////////////////////////////////
-  using DefiningConstraint::GetResultVar;
+
+  /// Reuse GetResultVar()
+  using FunctionalConstraint::GetResultVar;
+  /// Get const Arguments&
   const Arguments& GetArguments() const { return args_; }
+  /// Get Arguments&
   Arguments& GetArguments() { return args_; }
+  /// Get const Parameters&
   const Parameters& GetParameters() const { return params_; }
+  /// Get Parameters&
   Parameters& GetParameters() { return params_; }
+
   /////////////////////////////////////////////////////////////////////
-  bool operator ==(const CustomDefiningConstraint& mc) const {
+  /// Specific operator==
+  bool operator ==(const CustomFunctionalConstraint& mc) const {
     return this->GetResultVar()==mc.GetResultVar() &&
         this->GetArguments()==mc.GetArguments() &&
         this->GetParameters()==mc.GetParameters();
@@ -95,15 +132,16 @@ public:
 ////////////////////////////////////////////////////////////////////////
 /// Args is the argument type, e.g., array of variables, or an expression
 /// Params is the parameter type, e.g., array of numbers. Can be empty
-#define DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS(Name, Args, Params, Descr) \
+#define DEF_CUSTOM_FUNC_CONSTR_WITH_PRM(Name, Args, Params, Descr) \
 struct Name ## Id { \
   static constexpr auto description_ = Descr; \
   static constexpr auto name_        = #Name; \
 }; \
-using Name = CustomDefiningConstraint<Args, Params, Name ## Id>
+using Name = CustomFunctionalConstraint<Args, Params, Name ## Id>
 
-#define DEFINE_CUSTOM_DEFINING_CONSTRAINT(Name, Args, Descr) \
-    DEFINE_CUSTOM_DEFINING_CONSTRAINT_WITH_PARAMS(Name, Args, ParamArray0, Descr)
+/// Functional constraint without fixed parameters
+#define DEF_CUSTOM_FUNC_CONSTR(Name, Args, Descr) \
+    DEF_CUSTOM_FUNC_CONSTR_WITH_PRM(Name, Args, ParamArray0, Descr)
 
 } // namespace mp
 
