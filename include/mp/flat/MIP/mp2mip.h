@@ -3,6 +3,8 @@
 
 #include "mp/flat/converter.h"
 
+#include "mp/flat/MIP/redef/alldiff.h"
+
 namespace mp {
 
 /// MIPFlatConverter: converts flattened expressions for MIP
@@ -307,48 +309,6 @@ public:
     { {{const1-const2}, {args[0]}}, const2 } ) );
   }
 
-  //////////////////// ALLDIFF ///////////////////////
-  void Convert(const AllDiffConstraint& alld) {
-    if (alld.GetContext().HasNegative() && (
-      !MPD(is_fixed(alld.GetResultVar())) ||
-          !MPD(fixed_value(alld.GetResultVar())))) {  // fixed to 0
-        throw std::logic_error(
-            "MP2MIP: fully reified alldiff not implemented.");
-    }
-    if (alld.GetContext().HasPositive() && (
-      !MPD(is_fixed(alld.GetResultVar())) ||
-          MPD(fixed_value(alld.GetResultVar())))) {   // fixed to 1
-      Convert_static_or_implied_AllDiff(alld);
-    }  // else skip
-  }
-
-  void Convert_static_or_implied_AllDiff(const AllDiffConstraint& alld) {
-    const auto& args = alld.GetArguments();
-    const auto lba_dbl = this->lb_array(args);
-    const auto uba_dbl = this->ub_array(args);
-    if (lba_dbl==this->MinusInfty() || uba_dbl==this->Infty())
-      throw std::logic_error("MP2MIP: AllDiff on unbounded variables not implemented");
-    if (lba_dbl<std::numeric_limits<int>::min() || uba_dbl>std::numeric_limits<int>::max())
-      throw std::logic_error("MP2MIP: AllDiff on variables with domain out of integer range not implemented");
-    const int lba = (int)std::round(lba_dbl);
-    const int uba = (int)std::round(uba_dbl);
-    std::vector<double> coefs(args.size(), 1.0);
-    std::vector<int> flags(args.size());                // unary encoding flags
-    double rhs = 1.0;
-    if (!this->is_fixed(alld.GetResultVar())) {         // b -> alldiff
-      coefs.push_back(args.size()-1.0);
-      flags.push_back(alld.GetResultVar());
-      rhs = (double)args.size();
-    }
-    for (int v=lba; v!=uba+1; ++v) {                    // for each value in the domain union
-      for (size_t ivar = 0; ivar < args.size(); ++ivar) {
-        flags[ivar] = this->AssignResultVar2Args(
-              EQ0Constraint( { {{1.0}, {args[ivar]}}, -double(v) } ) );
-      }
-      this->AddConstraint( LinConLE( {coefs, flags}, {rhs} ) );
-    }
-  }
-
   //////////////////// NUMBEROF CONST ///////////////////////
   void Convert(const NumberofConstConstraint& nocc) {
     const auto& args = nocc.GetArguments();
@@ -521,14 +481,16 @@ public:
     this->AddConstraint(LinConEQ({coefs, unaryEncVars}, 0.0));
   }
 
+public:
+  /////////////////////// CONSTRAINT CONVERTERS /////////////////////////
+
+  /// AllDiff
+  INSTALL_ITEM_CONVERTER(AllDiffConverter_MIP)
+
+
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////
   ///
-private:
-  struct Options {
-  };
-  Options options_;
-
 public:
   void InitOptions() {
     BaseConverter::InitOptions();

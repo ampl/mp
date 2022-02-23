@@ -47,7 +47,7 @@ public:
     std::ostringstream oss;
     int i=0;
     for (const auto& con: constr_) {
-      oss << con.GetConstraintName() << ' ' << (i++)
+      oss << con.GetName() << ' ' << (i++)
           << ":  ";
 //      con.print(oss);
       oss << std::endl;

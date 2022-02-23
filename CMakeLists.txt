@@ -316,24 +316,29 @@ add_prefix(MP_HEADERS include/mp/
   suffix.h utils-file.h utils-string.h)
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/
-  affine_expr.h basic_constr.h
-  constraint_keeper.h
-  context.h converter.h
-  convert_functional.h eexpr.h
-  model.h model_api_base.h model_flattener preprocess.h
-  quad_expr.h std_constr.h std_obj.h)
+  constraint_base.h constraints_std.h constraint_keeper.h context.h
+  converter.h convert_functional.h
+  eexpr.h expr_affine.h expr_quadratic.h
+  model.h model_api_base.h model_flattener
+  obj_std.h preprocess.h redef_base.h)
+
+add_prefix(MP_FLAT_STD_REDEF_HEADERS include/mp/flat/std/redef/
+  range_con.h)
+
+add_prefix(MP_FLAT_STD_BRIDGES_HEADERS include/mp/flat/std/bridges/
+  range2slack.h)
 
 add_prefix(MP_FLAT_MIP_HEADERS include/mp/flat/MIP/
   mp2mip.h)
 
-add_prefix(MP_FLAT_ITEMCVT_HEADERS include/mp/flat/item_cvt/
-  item_cvt_base.h range_con.h)
+add_prefix(MP_FLAT_MIP_REDEF_HEADERS include/mp/flat/MIP/redef/
+  alldiff.h)
 
-add_prefix(MP_FLAT_BRIDGES_HEADERS include/mp/flat/bridges/
-  range2slack.h)
 
 set(MP_ALL_HEADERS ${MP_HEADERS} ${MP_FLAT_HEADERS}
-  ${MP_FLAT_MIP_HEADERS} ${MP_FLAT_ITEMCVT_HEADERS} ${MP_FLAT_BRIDGES_HEADERS})
+  ${MP_FLAT_STD_REDEF_HEADERS} ${MP_FLAT_STD_BRIDGES_HEADERS}
+  ${MP_FLAT_MIP_HEADERS} ${MP_FLAT_MIP_REDEF_HEADERS})
+
 
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/

@@ -25,8 +25,8 @@
 
 #include "mp/arrayref.h"
 #include "mp/common.h"
-#include "mp/flat/basic_constr.h"
-#include "mp/flat/std_obj.h"
+#include "mp/flat/constraint_base.h"
+#include "mp/flat/obj_std.h"
 
 namespace mp {
 
@@ -111,9 +111,9 @@ public:
   template <class Constraint>
   void AddConstraint(const Constraint& ) {
     throw std::logic_error(
-          std::string("Not handling constraint ") +
-          Constraint::GetConstraintName() +
-          ". Provide a handler or a converter method");
+          std::string("Not handling constraint '") +
+          Constraint::GetName() +
+          "'. Provide a handler or a converter method");
   }
   /// Derived backends have to tell C++ to use default handlers if they are needed
   /// when they overload AddConstraint(), due to C++ name hiding

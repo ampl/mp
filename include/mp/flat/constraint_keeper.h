@@ -117,7 +117,7 @@ public:
   template <class Constraint>
   void Convert(const Constraint& ) {
     throw std::logic_error(
-          std::string("Not converting constraint ") + Constraint::GetConstraintName());
+          std::string("Not converting constraint ") + Constraint::GetName());
   }
 
   /// Derived converter classes have to tell C++ to use
@@ -213,9 +213,9 @@ public:
     } catch (const std::exception& exc) {
       throw std::logic_error(Converter::GetConverterName() +
                              std::string(": propagating result for constraint ") +
-                             std::to_string(i) + " of type" +
-                             Constraint::GetConstraintName() +
-                             ":  " + exc.what());
+                             std::to_string(i) + " of type '" +
+                             Constraint::GetName() +
+                             "':  " + exc.what());
     }
   }
   /// Result variable of constraint \a i. Returns -1 if none
@@ -249,8 +249,8 @@ public:
     try {
       AddAllUnbridged(be);
     } catch (const std::exception& exc) {
-      throw std::logic_error(std::string("Adding constraint ") +
-                             Constraint::GetConstraintName() + " to " +
+      throw std::logic_error(std::string("Adding constraint '") +
+                             Constraint::GetName() + "' to " +
                              Backend::GetName() + std::string(": ") +
                              exc.what());
     }
@@ -334,7 +334,7 @@ private:
     std::string("ConstraintKeeper< ") +
         Converter::GetConverterName() + ", " +
         Backend::GetName() + ", " +
-        Constraint::GetConstraintName() + " >"};
+        Constraint::GetName() + " >"};
 };
 
 /// Macros to define / access constraint keepers

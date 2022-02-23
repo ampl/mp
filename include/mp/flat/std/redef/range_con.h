@@ -5,9 +5,9 @@
  * Convert range constraints
  */
 
-#include "mp/flat/item_cvt/item_cvt_base.h"
-#include "mp/flat/bridges/range2slack.h"
-#include "mp/flat/std_constr.h"
+#include "mp/flat/redef_base.h"
+#include "mp/flat/std/bridges/range2slack.h"
+#include "mp/flat/constraints_std.h"
 
 namespace mp {
 

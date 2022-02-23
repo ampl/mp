@@ -12,10 +12,10 @@
 #include "mp/solver-base.h"
 #include "mp/flat/convert_functional.h"
 #include "mp/flat/constraint_keeper.h"
+#include "mp/flat/constraints_std.h"
 #include "mp/flat/model.h"
-#include "mp/flat/std_constr.h"
 #include "mp/presolve.h"
-#include "mp/flat/item_cvt/range_con.h"
+#include "mp/flat/std/redef/range_con.h"
 
 namespace mp {
 
@@ -245,13 +245,15 @@ protected:
     prepro.set_result_type( m.common_type(args) );
   }
 
+  /// When the result variable is set,
+  /// the constraint is skipped
   template <class PreprocessInfo>
   void PreprocessConstraint(
       AbsConstraint& c, PreprocessInfo& prepro) {
     const auto argvar = c.GetArguments()[0];
     const auto lb = this->lb(argvar),
         ub = this->ub(argvar);
-    if (lb>=0.0) {
+    if (lb>=0.0) {  // When result var is set, \a c is skipped
       prepro.set_result_var(argvar);
       return;
     } else if (ub<=0.0) {
@@ -740,7 +742,7 @@ public:
   pre::ValueNode& GetValueNode(Constraint*)
   { return GET_CONSTRAINT_KEEPER(Constraint).GetValueNode(); }
 
-protected:
+public:
   double lb(int var) const { return this->GetModel().lb(var); }
   double ub(int var) const { return this->GetModel().ub(var); }
   template <class VarArray>

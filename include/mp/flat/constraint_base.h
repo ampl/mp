@@ -14,7 +14,7 @@ namespace mp {
 class BasicConstraint {
 public:
   /// Name for messages
-  static constexpr const char* GetConstraintName()
+  static constexpr const char* GetName()
   { return "BasicConstraint"; }
   /// Whether context is meaningful here
   static constexpr bool HasContext() { return false; }
@@ -32,7 +32,7 @@ class FunctionalConstraint : public BasicConstraint {
   mutable Context ctx;               // always store context
 public:
   /// Name for messages
-  static constexpr const char* GetConstraintName()
+  static constexpr const char* GetName()
   { return "FunctionalConstraint"; }
   /// Constructor
   /// @param v: result variable
@@ -91,7 +91,7 @@ class CustomFunctionalConstraint :
 
 public:
   /// Constraint name for messages
-  static constexpr const char* GetConstraintName() { return Id::name_; }
+  static constexpr const char* GetName() { return Id::name_; }
   /// Default constructor
   CustomFunctionalConstraint() = default;
   /// Arguments typedef
@@ -141,7 +141,7 @@ public:
   static constexpr bool IsLogical() { return false; }
   /// Apriori bounds on the result
   static constexpr std::pair<double, double>
-  GetAprioriResultBounds() { return {-INFINITY, INFINITY}; }
+  GetAprioriBounds() { return {-INFINITY, INFINITY}; }
 };
 
 
@@ -153,7 +153,7 @@ public:
   static constexpr bool IsLogical() { return true; }
   /// Apriori bounds on the result
   static constexpr std::pair<double, double>
-  GetAprioriResultBounds() { return {0.0, 1.0}; }
+  GetAprioriBounds() { return {0.0, 1.0}; }
 };
 
 

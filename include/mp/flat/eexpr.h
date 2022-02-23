@@ -1,7 +1,7 @@
 #ifndef EEXPR_H
 #define EEXPR_H
 
-#include "mp/flat/quad_expr.h"
+#include "mp/flat/expr_quadratic.h"
 
 namespace mp {
 

@@ -1,6 +1,6 @@
 #include <map>
 
-#include "mp/flat/quad_expr.h"
+#include "mp/flat/expr_quadratic.h"
 
 namespace mp {
 

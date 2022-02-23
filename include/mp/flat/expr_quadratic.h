@@ -3,7 +3,7 @@
 
 #include <tuple>
 
-#include "mp/flat/affine_expr.h"
+#include "mp/flat/expr_affine.h"
 
 namespace mp {
 

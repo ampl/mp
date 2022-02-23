@@ -5,7 +5,6 @@
 #include <cmath>
 
 #include "mp/problem.h"
-#include "mp/flat/std_constr.h"
 
 namespace mp {
 

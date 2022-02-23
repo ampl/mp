@@ -8,8 +8,8 @@
 #include <cmath>
 
 #include "mp/arrayref.h"
-#include "mp/flat/basic_constr.h"
-#include "mp/flat/quad_expr.h"
+#include "mp/flat/constraint_base.h"
+#include "mp/flat/expr_quadratic.h"
 
 namespace mp {
 
@@ -19,7 +19,7 @@ template <class LinTerms, class RhsOrRange>
 class LinearConstraint :
     public BasicConstraint, public LinTerms, public RhsOrRange {
 public:
-  static const std::string& GetConstraintName() {
+  static const std::string& GetName() {
     static std::string name { "LinCon" + RhsOrRange::name() };
     return name;
   }
@@ -120,7 +120,7 @@ AffExp ToLhsExpr(
 class QuadraticConstraint : public RangeLinCon {
   QuadTerms qt_;
 public:
-  static const char* GetConstraintName() { return "QuadraticConstraint"; }
+  static const char* GetName() { return "QuadraticConstraint"; }
   /// Construct from a linear constraint and QP terms
   QuadraticConstraint(RangeLinCon&& lc, QuadTerms&& qt) noexcept :
     RangeLinCon(std::move(lc)), qt_(std::move(qt)) {
@@ -160,7 +160,7 @@ class LinearFunctionalConstraint :
     public FunctionalConstraint {
   AffExp affine_expr_;
 public:
-  static const char* GetConstraintName() { return "LinearFunctionalConstraint"; }
+  static const char* GetName() { return "LinearFunctionalConstraint"; }
   using Arguments = AffExp;
   using FunctionalConstraint::GetResultVar;
   /// A constructor ignoring result variable: use AssignResultToArguments() then
@@ -188,7 +188,7 @@ class QuadraticFunctionalConstraint :
     public FunctionalConstraint {
   QuadExp quad_expr_;
 public:
-  static const char* GetConstraintName() { return "QuadraticFunctionalConstraint"; }
+  static const char* GetName() { return "QuadraticFunctionalConstraint"; }
   using Arguments = QuadExp;
   using FunctionalConstraint::GetResultVar;
   /// A constructor ignoring result variable: use AssignResultToArguments() then
@@ -355,7 +355,7 @@ int ToLhsExpr(const Constraint& ) {
 template <class Con>
 class IndicatorConstraint: public BasicConstraint {
 public:
-  static const std::string& GetConstraintName() {
+  static const std::string& GetName() {
     static std::string name
       { "IndicatorConstraint[" + Con::name() + ']' };
     return name;
@@ -424,7 +424,7 @@ class SOS_1or2_Constraint: public BasicConstraint {
   const std::vector<int> v_;
   const std::vector<double> w_;
 public:
-  static const char* GetConstraintName()
+  static const char* GetName()
   { return 1==type ? name1_ : name2_; }
 
   int get_sos_type() const { return type; }
