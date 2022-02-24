@@ -16,7 +16,6 @@ public:
   /// Constructor
   BasicItemConverter(ModelConverter& mc) : mdl_cvt_(mc) { }
 
-protected:
   /// Access ModelConverter
   ModelConverter& GetMC() { return mdl_cvt_; }
   /// Access Presolver
@@ -34,8 +33,7 @@ private:
 /// A functional constraint converter
 /// @param Impl: the final converter
 /// @param ModelConverter
-/// @param Item
-template <class Impl, class ModelConverter, class Item>
+template <class Impl, class ModelConverter>
 class BasicFuncConstrCvt :
     public BasicItemConverter<ModelConverter> {
 public:
@@ -43,8 +41,6 @@ public:
   using Base = BasicItemConverter<ModelConverter>;
   /// Constructor
   BasicFuncConstrCvt(ModelConverter& mc) : Base(mc) { }
-  /// Item type
-  using ItemType = Item;
 
   /// Generic Convert(), distinguishes context & result variable
   ///
@@ -53,6 +49,7 @@ public:
   /// @param i: item index, used to create a presolve bridge
   ///
   /// The Impl can reimplement
+  template <class ItemType>
   void Convert(const ItemType& item, int i) {
     auto ctx = item.GetContext();
     auto rv = item.GetResultVar();
@@ -68,12 +65,14 @@ public:
   }
 
   /// Convert in negative context
+  template <class ItemType>
   void ConvertCtxNeg(const ItemType& item, int ) {
     MP_RAISE( fmt::format(
                 "Conversion of '{}' in negative context "
                 "not implemented", item.GetName() ) );
   }
   /// Convert in positive context
+  template <class ItemType>
   void ConvertCtxPos(const ItemType& item, int ) {
     MP_RAISE( fmt::format(
                 "Conversion of '{}' in positive context "
