@@ -4,6 +4,7 @@
 #include "mp/flat/converter.h"
 
 #include "mp/flat/redef/MIP/alldiff.h"
+#include "mp/flat/redef/MIP/min_max.h"
 
 namespace mp {
 
@@ -25,34 +26,6 @@ public:
 
   ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
   USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter );        ///< reuse default ones
-
-  template <int sense, class MinOrMaxConstraint>
-  void ConvertMinOrMax(const MinOrMaxConstraint& mc) {
-    const auto& args = mc.GetArguments();
-    const std::size_t nargs = args.size();
-    const auto flags =
-        this->AddVars_returnIds(nargs, 0.0, 1.0, var::Type::INTEGER);   // binary flags
-    MP_DISPATCH( AddConstraint(LinConGE(
-                                 { std::vector<double>(nargs, 1.0),  // sum of the flags >= 1
-                                   flags }, 1.0)) );
-    const auto resvar = mc.GetResultVar();
-    for (size_t i=0; i<nargs; ++i) {
-      MP_DISPATCH( AddConstraint(LinConLE(
-                         { {1.0*sense, -1.0*sense},
-                           {args[i], resvar} }, 0.0)) );
-      MP_DISPATCH( AddConstraint(
-                     IndicatorConstraintLinLE{flags[i], 1,
-                         { { {1.0*sense, -1.0*sense}, {resvar, args[i]} }, 0.0 }}) );
-    }
-  }
-
-  void Convert(const MaximumConstraint& mc) {
-    ConvertMinOrMax<1>(mc);
-  }
-
-  void Convert(const MinimumConstraint& mc) {
-    ConvertMinOrMax<-1>(mc);
-  }
 
   void Convert(const AbsConstraint& ac) {
     const int arg = ac.GetArguments()[0];
@@ -486,6 +459,10 @@ public:
 
   /// AllDiff
   INSTALL_ITEM_CONVERTER(AllDiffConverter_MIP)
+  /// Min
+  INSTALL_ITEM_CONVERTER(MinConverter_MIP)
+  /// Max
+  INSTALL_ITEM_CONVERTER(MaxConverter_MIP)
 
 
   ///////////////////////////////////////////////////////////////////////

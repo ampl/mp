@@ -10,8 +10,7 @@
 
 namespace mp {
 
-/// Converts proper range linear constraints to c'x-slack=ub,
-/// otherwise to c'x ? rhs.
+/// Converts alldiff for MIP
 template <class ModelConverter>
 class AllDiffConverter_MIP :
     public BasicFuncConstrCvt<
