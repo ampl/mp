@@ -317,27 +317,20 @@ add_prefix(MP_HEADERS include/mp/
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/
   constraint_base.h constraints_std.h constraint_keeper.h context.h
-  converter.h convert_functional.h
+  converter.h converter_mip.h convert_functional.h
   eexpr.h expr_affine.h expr_quadratic.h
   model.h model_api_base.h model_flattener
   obj_std.h preprocess.h redef_base.h)
 
-add_prefix(MP_FLAT_STD_REDEF_HEADERS include/mp/flat/std/redef/
+add_prefix(MP_FLAT_REDEF_STD_HEADERS include/mp/flat/redef/std/
   range_con.h)
 
-add_prefix(MP_FLAT_STD_BRIDGES_HEADERS include/mp/flat/std/bridges/
-  range2slack.h)
-
-add_prefix(MP_FLAT_MIP_HEADERS include/mp/flat/MIP/
-  mp2mip.h)
-
-add_prefix(MP_FLAT_MIP_REDEF_HEADERS include/mp/flat/MIP/redef/
+add_prefix(MP_FLAT_REDEF_MIP_HEADERS include/mp/flat/redef/MIP/
   alldiff.h)
 
 
 set(MP_ALL_HEADERS ${MP_HEADERS} ${MP_FLAT_HEADERS}
-  ${MP_FLAT_STD_REDEF_HEADERS} ${MP_FLAT_STD_BRIDGES_HEADERS}
-  ${MP_FLAT_MIP_HEADERS} ${MP_FLAT_MIP_REDEF_HEADERS})
+  ${MP_FLAT_REDEF_STD_HEADERS} ${MP_FLAT_REDEF_MIP_HEADERS})
 
 
 set(MP_SOURCES )

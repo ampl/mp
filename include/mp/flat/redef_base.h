@@ -62,6 +62,7 @@ public:
          GetMC().ub(rv) > bnd00.first ) {   // Need the positive direction
       MPD( ConvertCtxPos(item, i) );
     }
+    // TODO infeasible cases?
   }
 
   /// Convert in negative context

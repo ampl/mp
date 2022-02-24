@@ -4,7 +4,7 @@
 #include "mp/arrayref.h"
 
 #include "mp/flat/model_flattener.h"
-#include "mp/flat/MIP/mp2mip.h"
+#include "mp/flat/converter_mip.h"
 #include "mp/flat/model_api_base.h"
 
 namespace mip_converter_test {

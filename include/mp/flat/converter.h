@@ -15,7 +15,7 @@
 #include "mp/flat/constraints_std.h"
 #include "mp/flat/model.h"
 #include "mp/presolve.h"
-#include "mp/flat/std/redef/range_con.h"
+#include "mp/flat/redef/std/range_con.h"
 
 namespace mp {
 

@@ -3,7 +3,7 @@
 
 #include "mp/flat/converter.h"
 
-#include "mp/flat/MIP/redef/alldiff.h"
+#include "mp/flat/redef/MIP/alldiff.h"
 
 namespace mp {
 
