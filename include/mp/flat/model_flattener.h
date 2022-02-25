@@ -709,6 +709,7 @@ private:
 
 };
 
+
 /// A 'final' ModelFlattener in a hierarchy
 template <template <typename, typename, typename> class ModelFlt,
           class Model, class FlatCvt>

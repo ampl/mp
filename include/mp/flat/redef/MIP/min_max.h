@@ -5,7 +5,7 @@
  * Convert Min and Max for MIP
  */
 
-#include "mp/flat/redef_base.h"
+#include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constraints_std.h"
 
 namespace mp {

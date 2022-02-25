@@ -37,7 +37,7 @@ struct Option {
   bool (*on_option)(void *);
 };
 
-/// A list of options.
+/// A list of command-line options.
 class OptionList {
  private:
   typedef std::vector<Option> OptionContainer;

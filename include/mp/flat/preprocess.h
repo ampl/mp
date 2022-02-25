@@ -3,14 +3,19 @@
 
 #include <limits>
 #include <cmath>
+#include <algorithm>
 
-#include "mp/problem.h"
+#include "mp/common.h"
 
 namespace mp {
 
+/// Short check for integrality
 template <class Num>
 bool is_integer(Num n) { return std::floor(n)==std::ceil(n); }
 
+/// Information about initial preprocessing of a constraint:
+/// bounds, result type, linexp_type (only used for linexp),
+/// result_var if known
 template <class FuncConstraint>
 struct PreprocessInfo {
   double lb_=-std::numeric_limits<double>::max(),
@@ -43,7 +48,6 @@ struct PreprocessInfo {
 
 /// Typical preprocess info
 using PreprocessInfoStd = PreprocessInfo<int>;
-
 
 } // namespace mp
 

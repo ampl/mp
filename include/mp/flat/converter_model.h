@@ -1,5 +1,5 @@
-#ifndef MODEL_H
-#define MODEL_H
+#ifndef CONVERTER_MODEL_H
+#define CONVERTER_MODEL_H
 
 #include <memory>
 #include <vector>
@@ -241,4 +241,4 @@ public:
 
 } // namespace mp
 
-#endif // MODEL_H
+#endif // CONVERTER_MODEL_H

@@ -1,7 +1,7 @@
 #include "gurobimodelapi.h"
 #include "mp/model-mgr-with-std-pb.h"
 #include "mp/flat/model_flattener.h"
-#include "mp/flat/converter_mip.h"
+#include "mp/flat/redef/MIP/converter_mip.h"
 
 namespace mp {
 

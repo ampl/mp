@@ -5,14 +5,14 @@
 
 #include "gtest/gtest.h"
 
-#include "mp/flat/model_api_base.h"
+#include "mp/flat/backend_model_api_base.h"
 #include "mp/flat/model_flattener.h"
 #include "mp/flat/converter.h"
 
 template <class Constraint>
 class TestBackendAcceptingConstraints :
-    public mp::BasicFlatModelAPI {
-  using Base = mp::BasicFlatModelAPI;
+    public mp::BasicBackendFlatModelAPI {
+  using Base = mp::BasicBackendFlatModelAPI;
   /// VARIABLES
   mp::VarArrayDef vars_;
 

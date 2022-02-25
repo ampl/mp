@@ -44,8 +44,8 @@ class ValueArrayRef {
 
 namespace internal {
 
-/// Formats the string s containing the reStructuredText (RST) markup
-/// and writes it to w.
+/// Formats the string \a s containing the reStructuredText (RST) markup
+/// and writes it to \a w.
 /// @param w:      stream writer used for output
 /// @param indent: indentation to use for the formatted text
 /// @param s:      string containing reStructuredText to format

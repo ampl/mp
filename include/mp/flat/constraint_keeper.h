@@ -6,7 +6,7 @@
 #include <cmath>
 
 #include "mp/common.h"
-#include "mp/flat/model_api_base.h"
+#include "mp/flat/backend_model_api_base.h"
 #include "mp/presolve-node.h"
 
 namespace mp {
@@ -38,11 +38,11 @@ public:
   virtual bool ConvertAllNewWith(BasicFlatConverter& cvt) = 0;
   /// Checks backend's acceptance level for the constraint
   virtual ConstraintAcceptanceLevel BackendAcceptance(
-      const BasicFlatModelAPI& ) const = 0;
+      const BasicBackendFlatModelAPI& ) const = 0;
   /// Checks backend's group number for the constraint
-  virtual int BackendGroup(const BasicFlatModelAPI& ) const = 0;
+  virtual int BackendGroup(const BasicBackendFlatModelAPI& ) const = 0;
   /// This adds all unbridged items to the backend (without conversion)
-  virtual void AddUnbridgedToBackend(BasicFlatModelAPI& be) = 0;
+  virtual void AddUnbridgedToBackend(BasicBackendFlatModelAPI& be) = 0;
 
   /// Value presolve node, const
   const pre::ValueNode& GetValueNode() const { return value_node_; }
@@ -238,14 +238,14 @@ public:
     return false;
   }
   ConstraintAcceptanceLevel BackendAcceptance(
-      const BasicFlatModelAPI& ba) const override {
+      const BasicBackendFlatModelAPI& ba) const override {
     return static_cast<const Backend&>( ba ).AcceptanceLevel((Constraint*)nullptr);
   }
   int BackendGroup(
-      const BasicFlatModelAPI& ba) const override {
+      const BasicBackendFlatModelAPI& ba) const override {
     return static_cast<const Backend&>( ba ).GroupNumber((Constraint*)nullptr);
   }
-  void AddUnbridgedToBackend(BasicFlatModelAPI& be) override {
+  void AddUnbridgedToBackend(BasicBackendFlatModelAPI& be) override {
     try {
       AddAllUnbridged(be);
     } catch (const std::exception& exc) {
@@ -309,7 +309,7 @@ protected:
     GetConverter().RunConversion(cnt.con_, i);
     cnt.MarkAsBridged();    // TODO should this be marked in Convert()?
   }
-  void AddAllUnbridged(BasicFlatModelAPI& be) {
+  void AddAllUnbridged(BasicBackendFlatModelAPI& be) {
     int con_index=0;
     auto con_group = BackendGroup(be);
     for (const auto& cont: cons_) {
@@ -385,7 +385,7 @@ public:
   }
 
   /// Add all unbridged constraints to Backend
-  void AddUnbridgedConstraintsToBackend(BasicFlatModelAPI& be) const {
+  void AddUnbridgedConstraintsToBackend(BasicBackendFlatModelAPI& be) const {
     for (const auto& ck: con_keepers_)
       ck.second.AddUnbridgedToBackend(be);
   }

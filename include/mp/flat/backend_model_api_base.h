@@ -17,8 +17,8 @@
  action of contract, negligence or other tortious action, arising out
  of or in connection with the use or performance of this software.
 */
-#ifndef FLAT_MODEL_API_BASE_H_
-#define FLAT_MODEL_API_BASE_H_
+#ifndef BACKEND_FLAT_MODEL_API_BASE_H_
+#define BACKEND_FLAT_MODEL_API_BASE_H_
 
 #include <string>
 #include <stdexcept>
@@ -83,11 +83,11 @@ enum ConstraintGroup {
   CG_Logical
 };
 
-/// Backends handling custom flat constraints should derive from
-class BasicFlatModelAPI {
+/// BackendModelAPIs handling custom flat constraints should derive from
+class BasicBackendFlatModelAPI {
 public:
   /// Placeholder
-  static const char* GetName()    { return "BasicFlatModelAPI"; }
+  static const char* GetName()    { return "BasicBackendFlatModelAPI"; }
   /// Placeholder
   static const char* GetLongName() { return nullptr; }
 
@@ -142,4 +142,4 @@ public:
 
 } // namespace mp
 
-#endif // FLAT_MODEL_API_BASE_H_
+#endif // BACKEND_FLAT_MODEL_API_BASE_H_

@@ -316,20 +316,25 @@ add_prefix(MP_HEADERS include/mp/
   suffix.h utils-file.h utils-string.h)
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/
+  backend_model_api_base.h
   constraint_base.h constraints_std.h constraint_keeper.h context.h
-  converter.h converter_mip.h convert_functional.h
+  converter.h converter_model.h convert_functional.h
   eexpr.h expr_affine.h expr_quadratic.h
-  model.h model_api_base.h model_flattener
-  obj_std.h preprocess.h redef_base.h)
+  model_flattener.h
+  obj_std.h preprocess.h)
+
+add_prefix(MP_FLAT_REDEF_HEADERS include/mp/flat/redef/
+  redef_base.h)
 
 add_prefix(MP_FLAT_REDEF_STD_HEADERS include/mp/flat/redef/std/
   range_con.h)
 
 add_prefix(MP_FLAT_REDEF_MIP_HEADERS include/mp/flat/redef/MIP/
-  alldiff.h)
+  converter_mip.h alldiff.h)
 
 
 set(MP_ALL_HEADERS ${MP_HEADERS} ${MP_FLAT_HEADERS}
+  ${MP_FLAT_REDEF_HEADERS}
   ${MP_FLAT_REDEF_STD_HEADERS} ${MP_FLAT_REDEF_MIP_HEADERS})
 
 
