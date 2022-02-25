@@ -42,13 +42,16 @@ public:
   /// Constructor
   BasicFuncConstrCvt(ModelConverter& mc) : Base(mc) { }
 
-  /// Generic Convert(), distinguishes context & result variable
+  /// Generic Convert(), distinguishes context & result variable.
+  /// Distinguish positive and negative context because
+  /// if only one of these is necessary, significant model reduction
+  /// can be achieved in certain cases.
   ///
   /// Responsible for adding presolve bridges, if any
   /// @param item: the item to be converted
   /// @param i: item index, used to create a presolve bridge
   ///
-  /// The Impl can reimplement
+  /// The Impl can reimplement this
   template <class ItemType>
   void Convert(const ItemType& item, int i) {
     auto ctx = item.GetContext();

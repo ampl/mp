@@ -3,8 +3,7 @@
 
 #include "mp/flat/converter.h"
 
-#include "mp/flat/redef/MIP/alldiff.h"
-#include "mp/flat/redef/MIP/min_max.h"
+#include "mp/flat/redef/MIP/redefs_mip_std.h"
 
 namespace mp {
 
@@ -26,23 +25,6 @@ public:
 
   ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
   USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter );        ///< reuse default ones
-
-  void Convert(const AbsConstraint& ac) {
-    const int arg = ac.GetArguments()[0];
-    const int res = ac.GetResultVar();
-    this->AddConstraint(LinConGE({{1.0, 1.0}, {res, arg}}, {0.0}));
-    this->AddConstraint(LinConGE({{1.0, -1.0}, {res, arg}}, {0.0}));
-    const int flag = this->AddVar(0.0, 1.0, var::INTEGER);
-    this->AddConstraint(
-          IndicatorConstraintLinLE(flag, 1, {{{1.0, 1.0}, {res, arg}}, 0.0}));
-    this->AddConstraint(
-          IndicatorConstraintLinLE(flag, 0, {{{1.0, -1.0}, {res, arg}}, 0.0}));
-  }
-
-  void Convert(const NotConstraint& nc) {
-    MP_DISPATCH( AddConstraint(LinearFunctionalConstraint(
-      nc.GetResultVar(), {{{-1.0}, {nc.GetArguments()[0]}}, 1.0})) );
-  }
 
   void Convert(const LE0Constraint& le0c) {
     assert(!le0c.GetContext().IsNone());
@@ -457,12 +439,16 @@ public:
 public:
   /////////////////////// CONSTRAINT CONVERTERS /////////////////////////
 
+  /// Abs
+  INSTALL_ITEM_CONVERTER(AbsConverter_MIP)
   /// AllDiff
   INSTALL_ITEM_CONVERTER(AllDiffConverter_MIP)
   /// Min
   INSTALL_ITEM_CONVERTER(MinConverter_MIP)
   /// Max
   INSTALL_ITEM_CONVERTER(MaxConverter_MIP)
+  /// Not
+  INSTALL_ITEM_CONVERTER(NotConverter_MIP)
 
 
   ///////////////////////////////////////////////////////////////////////
