@@ -26,129 +26,12 @@ public:
   ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
   USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter );        ///< reuse default ones
 
-  void Convert(const LE0Constraint& le0c) {
-    assert(!le0c.GetContext().IsNone());
-    if (le0c.GetContext().HasPositive())
-      ConvertImplied(le0c);
-    if (le0c.GetContext().HasNegative())
-      ConvertReverseImplied(le0c);
-  }
-
-  void ConvertImplied(const LE0Constraint& le0c) {
-    const auto& ae = le0c.GetArguments();
-    if (ae.is_constant()) {
-      if (ae.constant_term() > 0.0)
-        MPD( NarrowVarBounds(le0c.GetResultVar(), 0.0, 0.0) );
-    } else {
-      if (MPD(is_fixed(le0c.GetResultVar()))) {
-        if (MPD(fixed_value(le0c.GetResultVar()))) {      // fixed to 1
-          MP_DISPATCH( AddConstraint( ExtractConstraint(le0c) ) );
-        }
-      } else {
-        MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
-                                     le0c.GetResultVar(), 1,
-                                     ExtractConstraint(le0c))) );
-      }
-    }
-  }
-
-  /// b==0 --> c'x > d
-  void ConvertReverseImplied(const LE0Constraint& le0c) {
-    auto ae = le0c.GetArguments();
-    if (ae.is_constant()) {
-      if (ae.constant_term() <= 0.0)
-        MPD( NarrowVarBounds(le0c.GetResultVar(), 1.0, 1.0) );
-    } else {
-      if (MPD(is_fixed(le0c.GetResultVar()))) {
-        if (!MPD(fixed_value(le0c.GetResultVar()))) {      // fixed to 0
-          MP_DISPATCH( AddConstraint(LinConGE(
-                                       LinTerms(ae),
-                                       -ae.constant_term()+1)) );
-        }
-      } else {
-        ae.negate();
-        auto bNt = MP_DISPATCH( ComputeBoundsAndType(ae) );
-        double cmpEps = var::INTEGER==bNt.get_result_type() ? 1.0 : 1e-6;
-        double d = ae.constant_term() + cmpEps;
-        MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
-                                     le0c.GetResultVar(), 0,
-                                     { LinTerms(ae), -d })) );
-      }
-    }
-  }
-
   double ComparisonEps(int var) const {
     return MPCD(is_var_integer(var)) ? 1.0 : 1e-6; // TODO param
   }
   double ComparisonEps(var::Type vartype) const {
     return var::INTEGER==vartype ? 1.0 : 1e-6; // TODO param
   }
-
-  void Convert(const EQ0Constraint& eq0c) {
-    assert(!eq0c.GetContext().IsNone());
-    const auto& args = eq0c.GetArguments();
-    if (1<args.size() ||
-        !IfUseEqualityEncodingForVar(
-          args.var(0))) {
-      auto ctx = eq0c.GetContext();
-      if (ctx.HasPositive())
-        ConvertImplied(eq0c);
-      if (ctx.HasNegative())
-        ConvertReverseImplied(eq0c);
-    } // else, using unary encoding whose flags are,
-  }   // in the fixed case, fixed by PropagateResult()
-
-  /// resvar==1 => c'x==d
-  void ConvertImplied(const EQ0Constraint& eq0c) {
-    const auto& ae = eq0c.GetArguments();
-    if (ae.is_constant()) {         // TODO consider resvar+context
-      if (std::fabs(ae.constant_term()) != 0.0)
-        MPD( NarrowVarBounds(eq0c.GetResultVar(), 0.0, 0.0) );
-    } else {
-      if (MPD(is_fixed(eq0c.GetResultVar()))) {
-        if (MPD(fixed_value(eq0c.GetResultVar()))) {     // fixed to 1
-          MP_DISPATCH( AddConstraint( ExtractConstraint(eq0c) ) );
-        } // else, skip
-      }
-      MP_DISPATCH( AddConstraint(IndicatorConstraintLinEQ(
-                   eq0c.GetResultVar(), 1,
-                   ExtractConstraint(eq0c))) );
-    }
-  }
-
-  /// resvar==0 ==> c'x!=d
-  void ConvertReverseImplied(const EQ0Constraint& eq0c) {
-    auto ae = eq0c.GetArguments();
-    if (ae.is_constant()) {
-      if (std::fabs(ae.constant_term()) != 0.0)
-        MPD( NarrowVarBounds(eq0c.GetResultVar(), 1.0, 1.0) );
-      // TODO use resvar + context
-    } else if ( !MPD(is_fixed(eq0c.GetResultVar())) ||       // not fixed, or
-                !MPD(fixed_value(eq0c.GetResultVar())) )     // fixed to 0
-    { // TODO We are in MIP so doing algebra, not DisjunctiveConstr. Why?
-      // Well in party1.mod, although this results in more fixed variables,
-      // Gurobi 9.5 runs 31s vs 91s.
-      auto newvars = MPD( AddVars_returnIds(2, 0.0, 1.0, var::INTEGER) );
-      newvars.push_back( eq0c.GetResultVar() );
-      MPD( AddConstraint( LinConGE(   // b1+b2+resvar >= 1
-                            {{1.0, 1.0, 1.0}, newvars},
-                                         1.0 ) ) );
-      auto bNt = MP_DISPATCH( ComputeBoundsAndType(ae) );
-      double cmpEps = MPD( ComparisonEps( bNt.get_result_type() ) );
-      {
-        MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
-                                     newvars[0], 1,
-                                     { {ae.coefs(), ae.vars()},
-                                       -ae.constant_term() - cmpEps })) );
-      }
-      ae.negate();
-      MP_DISPATCH( AddConstraint(IndicatorConstraintLinLE(
-                                   newvars[1], 1,
-                                   { {ae.coefs(), ae.vars()},
-                                     -ae.constant_term() - cmpEps })) );
-    } // else, skip
-  }
-
 
 
   void Convert(const IndicatorConstraintLinLE& indc) {
@@ -443,6 +326,10 @@ public:
   INSTALL_ITEM_CONVERTER(AbsConverter_MIP)
   /// AllDiff
   INSTALL_ITEM_CONVERTER(AllDiffConverter_MIP)
+  /// EQ0
+  INSTALL_ITEM_CONVERTER(EQ0Converter_MIP)
+  /// LE0
+  INSTALL_ITEM_CONVERTER(LE0Converter_MIP)
   /// Min
   INSTALL_ITEM_CONVERTER(MinConverter_MIP)
   /// Max

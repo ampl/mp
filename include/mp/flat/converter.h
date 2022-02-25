@@ -72,12 +72,14 @@ protected:
     }
   }
 
+
+public:
   void NarrowVarBounds(int var, double lb, double ub) {
     auto& m = GetModel();
     m.set_lb(var, std::max(m.lb(var), lb));
     m.set_ub(var, std::min(m.ub(var), ub));
     if (m.lb(var)>m.ub(var))             // TODO write .sol, report .iis
-      throw std::logic_error("infeasibility: empty variable domain");
+      MP_INFEAS("empty variable domain");
   }
 
 

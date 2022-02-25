@@ -253,7 +253,7 @@ DEF_LOGICAL_FUNC_CONSTR( EQ0Constraint, AffExp,
                                    "r = (expr == 0)");
 
 /// Extract underlying constraint.
-/// Can be done more general if using something like
+/// TODO Can be done more general if using something like
 /// ConditionalConstraint<> instead if EQ0C / LE0C
 inline LinConEQ ExtractConstraint(const EQ0Constraint& eq0c) {
   const auto& ae=eq0c.GetArguments();

@@ -55,6 +55,7 @@ public:
   template <class ItemType>
   void Convert(const ItemType& item, int i) {
     auto ctx = item.GetContext();
+    assert(!ctx.IsNone());
     auto rv = item.GetResultVar();
     auto bnd00 = item.GetAprioriBounds();   // TODO use current bounds?
     if ( ctx.HasNegative() &&

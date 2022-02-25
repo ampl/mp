@@ -36,6 +36,8 @@ namespace mp {
 #define MP_RAISE(msg) throw std::runtime_error(msg)
 #define MP_RAISE_WITH_CODE(exit_code, msg) throw mp::Error(msg, exit_code)
 #define MP_WARNING(msg) Print(msg)
+/// TODO dedicated class
+#define MP_INFEAS(msg) MP_RAISE(std::string("Infeasibility: ") + msg)
 
 // A general error.
 class Error : public fmt::internal::RuntimeError {
