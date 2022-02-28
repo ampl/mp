@@ -274,14 +274,16 @@ public:
 
   /// Generic relational expression visitor
   /// Can produce a new variable/expression and specified constraints on it
+  /// Produces a conditional linear constraint b==1 <=/=> c'x <=/= d.
+  /// @param FuncConstraint: EQ0Constraint, LE0Constraint
   template <class FuncConstraint, class ExprArray=std::initializer_list<Expr> >
   EExpr VisitRelationalExpression(ExprArray ea) {
     std::array<EExpr, 2> ee;
     Exprs2EExprs(ea, ee);
     ee[0].subtract(std::move(ee[1]));
-    return AssignResult2Args(
-          FuncConstraint(                  // comparison with linear expr only
-            Convert2AffineExpr( std::move(ee[0]) ) ) );
+    auto ae = Convert2AffineExpr( std::move(ee[0]) );
+    ae.sort_terms();                   // to catch duplicates also
+    return AssignResult2Args( FuncConstraint{ std::move(ae) } );
   }
 
   template <class ExprArray, size_t N>

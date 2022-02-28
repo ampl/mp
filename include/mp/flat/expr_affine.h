@@ -143,6 +143,8 @@ public:
 
   /// Get the lin exp, const
   const LinTerms& get_lin_exp() const { return (const LinTerms&)(*this); }
+  /// Move out the lin exp
+  LinTerms move_lin_exp() { return (LinTerms&&)(*this); }
 
   /// The constant term
   double constant_term() const { return constant_term_; }

@@ -246,16 +246,13 @@ DEF_LOGICAL_FUNC_CONSTR( OrConstraint, VarArray,
 /// le <= ub_le + (d-ub_le)*b.  Not too complex.
 /// Keep it with AffineExpr, indicators need that
 /// and we don't want quadratics with big-M's?
-/// Or, add QuadraticEq0Constraint?
-/// TODO Use LinConEq / QuadConEQ ?
-/// TODO Have the actual conditional constraint as a template parameter?
 /// TODO Diff to Indicator?
 DEF_LOGICAL_FUNC_CONSTR( EQ0Constraint, AffExp,
                                    "r = (expr == 0)");
 
 /// Extract underlying constraint.
 /// TODO Can be done more general if using something like
-/// ConditionalConstraint<> instead if EQ0C / LE0C
+/// LOGICAL_FUNC_CONSTRAINT(LinConEQ) instead if EQ0C / LE0C
 inline LinConEQ ExtractConstraint(const EQ0Constraint& eq0c) {
   const auto& ae=eq0c.GetArguments();
   return { (LinTerms)ae, -ae.constant_term() };
