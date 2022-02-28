@@ -215,11 +215,11 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////
-DEF_NUMERIC_FUNC_CONSTR( MaximumConstraint, VarArray,
+DEF_NUMERIC_FUNC_CONSTR( MaxConstraint, VarArray,
                                    "r = max(v1, v2, ..., vn)");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_NUMERIC_FUNC_CONSTR( MinimumConstraint, VarArray,
+DEF_NUMERIC_FUNC_CONSTR( MinConstraint, VarArray,
                                    "r = min(v1, v2, ..., vn)");
 
 ////////////////////////////////////////////////////////////////////////
@@ -227,17 +227,18 @@ DEF_NUMERIC_FUNC_CONSTR( AbsConstraint, VarArray1,
                                    "r = abs(v)");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_LOGICAL_FUNC_CONSTR( ConjunctionConstraint, VarArray,
+DEF_LOGICAL_FUNC_CONSTR( AndConstraint, VarArray,
                                    "r = forall({vi})");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_LOGICAL_FUNC_CONSTR( DisjunctionConstraint, VarArray,
+DEF_LOGICAL_FUNC_CONSTR( OrConstraint, VarArray,
                                    "r = exists({vi})");
 
 ////////////////////////////////////////////////////////////////////////
 /// Storing AffExp instead of LinConEQ because big-M is straightforwardly
 /// computed for (aff_exp) <= 0:
-/// b -> ae<=0 is linearized as ae <= ub(ae)*(1-b).
+/// b -> ae<=0 is linearized as ae <= ub(ae)*(1-b) <==> le-d <= (ub(le)-d)*(1-b)
+/// <==> le <= d + ub(le) - d + (d-ub(le))*b
 /// If we stored LinConEQ:
 /// b -> lin_exp<=d would be linearized as
 /// le <= d + (ub(le)-d)*(1-b)  <==>

@@ -6,14 +6,14 @@
 namespace {
 
 using InterfaceTester_MaxConstraint =
-             InterfaceTesterWithBackendAcceptingConstraints<mp::MaximumConstraint>;
+             InterfaceTesterWithBackendAcceptingConstraints<mp::MaxConstraint>;
 
 TEST_F(InterfaceTester_MaxConstraint, MaximumConstraintIsPassedToBackend) {
   auto con=GetModel().AddCon(5.0, 5.0);
   const auto args = GetInterface().AddVars(3, -1.0, 11.0);
   con.set_nonlinear_expr(MakeIterated(GetModel(), mp::expr::MAX, args ));
   GetInterface().ConvertModel();
-  ASSERT_HAS_CONSTRAINT( GetBackend(), mp::MaximumConstraint(3, args) );
+  ASSERT_HAS_CONSTRAINT( GetBackend(), mp::MaxConstraint(3, args) );
 }
 
 

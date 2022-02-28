@@ -229,7 +229,7 @@ protected:
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      MinimumConstraint& c, PreprocessInfo& prepro) {
+      MinConstraint& c, PreprocessInfo& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
     auto& args = c.GetArguments();
     prepro.narrow_result_bounds( m.lb_array(args),
@@ -239,7 +239,7 @@ protected:
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      MaximumConstraint& c, PreprocessInfo& prepro) {
+      MaxConstraint& c, PreprocessInfo& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
     auto& args = c.GetArguments();
     prepro.narrow_result_bounds( m.lb_max_array(args),
@@ -355,14 +355,14 @@ protected:
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      ConjunctionConstraint& , PreprocessInfo& prepro) {
+      AndConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
   }
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      DisjunctionConstraint& , PreprocessInfo& prepro) {
+      OrConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
   }
@@ -536,14 +536,14 @@ protected:
       PropagateResultOfInitExpr(a, 1.0-ub, 1.0-lb, -ctx);
   }
 
-  void PropagateResult(ConjunctionConstraint& con, double lb, double ub, Context ctx) {
+  void PropagateResult(AndConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
       PropagateResultOfInitExpr(a, lb, 1.0, +ctx);
   }
 
-  void PropagateResult(DisjunctionConstraint& con, double lb, double ub, Context ctx) {
+  void PropagateResult(OrConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     for (const auto a: con.GetArguments())
@@ -895,11 +895,11 @@ protected:
   STORE_CONSTRAINT_TYPE(QuadraticConstraint)
   STORE_CONSTRAINT_TYPE(QuadraticFunctionalConstraint)
 
-  STORE_CONSTRAINT_TYPE(MaximumConstraint)
-  STORE_CONSTRAINT_TYPE(MinimumConstraint)
+  STORE_CONSTRAINT_TYPE(MaxConstraint)
+  STORE_CONSTRAINT_TYPE(MinConstraint)
   STORE_CONSTRAINT_TYPE(AbsConstraint)
-  STORE_CONSTRAINT_TYPE(ConjunctionConstraint)
-  STORE_CONSTRAINT_TYPE(DisjunctionConstraint)
+  STORE_CONSTRAINT_TYPE(AndConstraint)
+  STORE_CONSTRAINT_TYPE(OrConstraint)
   STORE_CONSTRAINT_TYPE(EQ0Constraint)
   STORE_CONSTRAINT_TYPE(LE0Constraint)
   STORE_CONSTRAINT_TYPE(NotConstraint)

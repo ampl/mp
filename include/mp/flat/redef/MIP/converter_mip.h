@@ -71,7 +71,7 @@ public:
     ConvertImplicationLE(binvar, indc.get_binary_value(), bnds, std::move(ae));
   }
 
-  void Convert(const ConjunctionConstraint& conj) {
+  void Convert(const AndConstraint& conj) {
     assert(!conj.GetContext().IsNone());
     if (conj.GetContext().HasPositive())
       ConvertImplied(conj);
@@ -79,7 +79,7 @@ public:
       ConvertReverseImplied(conj);
   }
 
-  void ConvertReverseImplied(const ConjunctionConstraint& conj) {
+  void ConvertReverseImplied(const AndConstraint& conj) {
     const auto& args = conj.GetArguments();
     auto flags = args;
     flags.push_back(conj.GetResultVar());
@@ -90,7 +90,7 @@ public:
                                {(double)args.size()-1} )) );
   }
 
-  void ConvertImplied(const ConjunctionConstraint& conj) {
+  void ConvertImplied(const AndConstraint& conj) {
     std::array<double, 2> coefs{-1.0, 1.0};
     std::array<int, 2> vars{-1, conj.GetResultVar()};
     for (auto arg: conj.GetArguments()) {       // res <= arg[i] in CTX+
@@ -100,7 +100,7 @@ public:
     }
   }
 
-  void Convert(const DisjunctionConstraint& disj) {
+  void Convert(const OrConstraint& disj) {
     assert(!disj.GetContext().IsNone());
     if (disj.GetContext().HasPositive())
       ConvertImplied(disj);
@@ -108,7 +108,7 @@ public:
       ConvertReverseImplied(disj);
   }
 
-  void ConvertImplied(const DisjunctionConstraint& disj) {
+  void ConvertImplied(const OrConstraint& disj) {
     const auto& args = disj.GetArguments();
     auto flags = args;
     flags.push_back(disj.GetResultVar());
@@ -118,7 +118,7 @@ public:
                    LinConGE({ones, flags}, {0.0} )) );
   }
 
-  void ConvertReverseImplied(const DisjunctionConstraint& disj) {
+  void ConvertReverseImplied(const OrConstraint& disj) {
     std::array<double, 2> coefs{1.0, -1.0};
     std::array<int, 2> vars{-1, disj.GetResultVar()};
     for (auto arg: disj.GetArguments()) {        // res >= arg[i] in CTX-

@@ -118,7 +118,7 @@ void GurobiModelAPI::AddConstraint( const QuadraticConstraint& qc ) {
   }
 }
 
-void GurobiModelAPI::AddConstraint(const MaximumConstraint &mc)  {
+void GurobiModelAPI::AddConstraint(const MaxConstraint &mc)  {
   const auto& args = mc.GetArguments();
   GRB_CALL( GRBaddgenconstrMax(model(), NULL,
                                mc.GetResultVar(),
@@ -126,7 +126,7 @@ void GurobiModelAPI::AddConstraint(const MaximumConstraint &mc)  {
                                MinusInfinity()) );
 }
 
-void GurobiModelAPI::AddConstraint(const MinimumConstraint &mc)  {
+void GurobiModelAPI::AddConstraint(const MinConstraint &mc)  {
   const auto& args = mc.GetArguments();
   GRB_CALL( GRBaddgenconstrMin(model(), NULL,
                                mc.GetResultVar(),
@@ -140,14 +140,14 @@ void GurobiModelAPI::AddConstraint(const AbsConstraint &absc)  {
                                absc.GetResultVar(), args[0]) );
 }
 
-void GurobiModelAPI::AddConstraint(const ConjunctionConstraint &cc)  {
+void GurobiModelAPI::AddConstraint(const AndConstraint &cc)  {
   const auto& args = cc.GetArguments();
   GRB_CALL( GRBaddgenconstrAnd(model(), NULL,
                                cc.GetResultVar(),
                                (int)args.size(), args.data()) );
 }
 
-void GurobiModelAPI::AddConstraint(const DisjunctionConstraint &dc)  {
+void GurobiModelAPI::AddConstraint(const OrConstraint &dc)  {
   const auto& args = dc.GetArguments();
   GRB_CALL( GRBaddgenconstrOr(model(), NULL,
                                dc.GetResultVar(),

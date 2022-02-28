@@ -51,16 +51,16 @@ public:
   void AddConstraint(const LinConGE& lc);
   ACCEPT_CONSTRAINT(QuadraticConstraint, Recommended, CG_Quadratic)
   void AddConstraint(const QuadraticConstraint& qc);
-  ACCEPT_CONSTRAINT(MaximumConstraint, acc_max(), CG_General)
-  void AddConstraint(const MaximumConstraint& mc);
-  ACCEPT_CONSTRAINT(MinimumConstraint, acc_min(), CG_General)
-  void AddConstraint(const MinimumConstraint& mc);
+  ACCEPT_CONSTRAINT(MaxConstraint, acc_max(), CG_General)
+  void AddConstraint(const MaxConstraint& mc);
+  ACCEPT_CONSTRAINT(MinConstraint, acc_min(), CG_General)
+  void AddConstraint(const MinConstraint& mc);
   ACCEPT_CONSTRAINT(AbsConstraint, acc_abs(), CG_General)
   void AddConstraint(const AbsConstraint& absc);
-  ACCEPT_CONSTRAINT(ConjunctionConstraint, acc_and(), CG_General)
-  void AddConstraint(const ConjunctionConstraint& cc);
-  ACCEPT_CONSTRAINT(DisjunctionConstraint, acc_or(), CG_General)
-  void AddConstraint(const DisjunctionConstraint& mc);
+  ACCEPT_CONSTRAINT(AndConstraint, acc_and(), CG_General)
+  void AddConstraint(const AndConstraint& cc);
+  ACCEPT_CONSTRAINT(OrConstraint, acc_or(), CG_General)
+  void AddConstraint(const OrConstraint& mc);
   /// Enabling built-in indicator for infinite bounds,
   /// but not recommended otherwise --- may be slow
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, acc_ind_le(), CG_General)

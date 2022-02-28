@@ -15,10 +15,10 @@ template <int sense>
 struct MaxOrMinConstraint { };
 /// MinConstraint
 template <>
-struct MaxOrMinConstraint<-1> { using ItemType = MinimumConstraint; };
-/// MinConstraint
+struct MaxOrMinConstraint<-1> { using ItemType = MinConstraint; };
+/// MaxConstraint
 template <>
-struct MaxOrMinConstraint< 1> { using ItemType = MaximumConstraint; };
+struct MaxOrMinConstraint< 1> { using ItemType = MaxConstraint; };
 
 
 /// Convert Min and Max for MIP

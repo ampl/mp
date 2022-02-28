@@ -355,11 +355,11 @@ public:
 
   EExpr VisitMax(typename BaseExprVisitor::VarArgExpr e) {
     // Why need BaseExprVisitor:: here in g++ 9.2.1?
-    return VisitFunctionalExpression<MaximumConstraint>(e);
+    return VisitFunctionalExpression<MaxConstraint>(e);
   }
 
   EExpr VisitMin(typename BaseExprVisitor::VarArgExpr e) {
-    return VisitFunctionalExpression<MinimumConstraint>(e);
+    return VisitFunctionalExpression<MinConstraint>(e);
   }
 
   EExpr VisitAbs(UnaryExpr e) {
@@ -388,17 +388,17 @@ public:
   }
 
   EExpr VisitAnd(BinaryLogicalExpr e) {
-    return VisitFunctionalExpression<ConjunctionConstraint>({ e.lhs(), e.rhs() });
+    return VisitFunctionalExpression<AndConstraint>({ e.lhs(), e.rhs() });
   }
   EExpr VisitForAll(IteratedLogicalExpr e) {
-    return VisitFunctionalExpression<ConjunctionConstraint>(e);
+    return VisitFunctionalExpression<AndConstraint>(e);
   }
 
   EExpr VisitOr(BinaryLogicalExpr e) {
-    return VisitFunctionalExpression<DisjunctionConstraint>({ e.lhs(), e.rhs() });
+    return VisitFunctionalExpression<OrConstraint>({ e.lhs(), e.rhs() });
   }
   EExpr VisitExists(IteratedLogicalExpr e) {
-    return VisitFunctionalExpression<DisjunctionConstraint>(e);
+    return VisitFunctionalExpression<OrConstraint>(e);
   }
 
   EExpr VisitIf(IfExpr e) {
