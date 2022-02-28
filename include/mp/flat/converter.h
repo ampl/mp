@@ -164,7 +164,8 @@ public:
   std::pair<double, double> ProductBounds(Var x, Var y) const {
     auto lx=lb(x), ly=lb(y), ux=ub(x), uy=ub(y);
     std::array<double, 4> pb{lx*ly, lx*uy, ux*ly, ux*uy};
-    return {*std::min_element(pb.begin(), pb.end()), *std::max_element(pb.begin(), pb.end())};
+    return { *std::min_element(pb.begin(), pb.end()),
+          *std::max_element(pb.begin(), pb.end()) };
   }
 
   PreprocessInfoStd AddBoundsAndType(const PreprocessInfoStd& bnt1,

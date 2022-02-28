@@ -7,6 +7,7 @@
 
 #include "mp/common.h"
 #include "mp/flat/backend_model_api_base.h"
+#include "mp/flat/redef/redef_base.h"
 #include "mp/presolve-node.h"
 
 namespace mp {
@@ -155,18 +156,6 @@ public:
   static constexpr double MinusInfty() { return -INFINITY; }
   static constexpr double PracticallyInfty() { return 1e20; }  // TODO options
   static constexpr double PracticallyMinusInfty() { return -1e20; }
-};
-
-/// Conversion failure helper
-class ConstraintConversionFailure {
-  const char *key_, *msg_;
-public:
-  ConstraintConversionFailure(const char* key, const char* msg) noexcept :
-    key_(key), msg_(msg) { }
-  /// Failure type, used to display infos about failures
-  const char* key() const { return key_; }
-  /// Detailed message, should help improve model
-  const char* message() const { return msg_; }
 };
 
 

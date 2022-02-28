@@ -104,6 +104,19 @@ public:
   }
 
 
+/// Conversion failure helper
+class ConstraintConversionFailure {
+  const char *key_, *msg_;
+public:
+  ConstraintConversionFailure(const char* key, const char* msg) noexcept :
+    key_(key), msg_(msg) { }
+  /// Failure type, used to display infos about failures
+  const char* key() const { return key_; }
+  /// Detailed message, should help improve model
+  const char* message() const { return msg_; }
+};
+
+
 } // namespace mp
 
 #endif // REDEF_BASE_H

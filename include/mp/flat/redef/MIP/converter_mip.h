@@ -34,43 +34,6 @@ public:
   }
 
 
-  void Convert(const IndicatorConstraintLinLE& indc) {
-    auto binvar=indc.get_binary_var();
-    auto ae = indc.to_lhs_expr();
-    auto bnds = MPD( ComputeBoundsAndType(ae) );
-    ConvertImplicationLE(binvar, indc.get_binary_value(), bnds, std::move(ae));
-  }
-
-  /// (b==val ==> ae<=0)
-  void ConvertImplicationLE(int b, int val,
-                   const PreprocessInfoStd& bnds, AffExp ae) {
-    /// TODO fail if lb>0 +report .iis if requested
-    /// TODO skip if ub<0
-    if (bnds.ub() >= this->PracticallyInfty())
-      throw ConstraintConversionFailure( "IndicatorInfBound",
-          "The redefinition of a (possibly auxiliary) indicator constraint failed"
-          " so it had to be passed to the solver."
-          " Provide tight bounds on variables entering logical expressions, "
-          "or set acc:ind_le=2");
-    if (val)            // left condition is b==1
-      ae += {{bnds.ub(), b}, -bnds.ub()};
-    else
-      ae += {{-bnds.ub(), b}, 0.0};
-    MP_DISPATCH( AddConstraint(LinConLE(     /// Big-M constraint
-        (LinTerms&&)ae, -ae.constant_term() )) );
-  }
-
-  /// b==val ==> c'x==d
-  void Convert(const IndicatorConstraintLinEQ& indc) {
-    auto binvar=indc.get_binary_var();
-    auto ae = indc.to_lhs_expr();
-    auto bnds = MPD( ComputeBoundsAndType(ae) );
-    ConvertImplicationLE(binvar, indc.get_binary_value(), bnds, ae);
-    ae.negate();
-    bnds.NegateBounds();
-    ConvertImplicationLE(binvar, indc.get_binary_value(), bnds, std::move(ae));
-  }
-
   void Convert(const AndConstraint& conj) {
     assert(!conj.GetContext().IsNone());
     if (conj.GetContext().HasPositive())
@@ -328,6 +291,10 @@ public:
   INSTALL_ITEM_CONVERTER(AllDiffConverter_MIP)
   /// EQ0
   INSTALL_ITEM_CONVERTER(EQ0Converter_MIP)
+  /// ImplLE0
+  INSTALL_ITEM_CONVERTER(IndicatorLinLEConverter_MIP)
+  /// ImplEQ0
+  INSTALL_ITEM_CONVERTER(IndicatorLinEQConverter_MIP)
   /// LE0
   INSTALL_ITEM_CONVERTER(LE0Converter_MIP)
   /// Min
