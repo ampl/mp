@@ -6,10 +6,11 @@ from TimeMe import TimeMe
 class ModelRunner(object):
     """Class to run a set of models and capture their outputs"""
 
-    def __init__(self, runners):
+    def __init__(self, runners, optionsExtra=None):
         self._runners = runners
         self._amplRunners = None
         self._runs = [ list() for r in self._runners ]
+        self._optionsExtra = optionsExtra
         
     def getRuns(self):
         return self._runs
@@ -26,7 +27,8 @@ class ModelRunner(object):
                 msg = "{}. Solving as NL: '{}'".format(n, m.getName())
             else:
                 if not self._amplRunners:
-                    self._amplRunners = [ AMPLRunner(r) for r in self._runners ]
+                    self._amplRunners = [
+                        AMPLRunner(r, self._optionsExtra) for r in self._runners ]
                 cr = self._amplRunners
                 msg = "{}. Solving with AMPL: '{}'".format(n, m.getName())
             print("{0: <80}".format(msg), end="", flush=True)

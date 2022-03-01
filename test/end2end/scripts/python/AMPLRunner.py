@@ -35,7 +35,7 @@ class InnerErrorHandler(ErrorHandler):
 
 class AMPLRunner(object):
 
-    def __init__(self, solver=None, writeSolverName = False,
+    def __init__(self, solver=None, optionsExtra=None, writeSolverName = False,
                  keepAMPLOutput = False):
         if solver:
             self.setSolver(solver)
@@ -44,6 +44,7 @@ class AMPLRunner(object):
         self._writeSolverName = writeSolverName
         self._amplInitialized = False
         self._keepAMPLOutput = keepAMPLOutput
+        self._optionsExtra = optionsExtra;
 
     def _initAMPL(self):
         if self._amplInitialized:
@@ -209,18 +210,21 @@ class AMPLRunner(object):
       return
 
     def setupOptions(self, model: Model):
+        (slvname, slvval) = self._solver.getAMPLOptions()
         if model.hasOptions():
             optmap = model.getOptions()
             for name, val in optmap.items():
-                (slvname, slvval) = self._solver.getAMPLOptions()
                 if name.endswith("SOLVER_options"):               # Any-solver option
                     if not slvname in optmap:
                         name = slvname
                     else:
                         continue                                  # Skip as solver-specific given
                 if slvname==name:
-                    val = slvval + ' ' + val                      # Prepend 'desired' options like nthreads
-                self._ampl.setOption(name, val)
+                    slvval = slvval + ' ' + val                      # Prepend 'desired' options like nthreads
+        if self._optionsExtra:
+            slvval = slvval + ' ' + self._optionsExtra
+        if (len(slvval)>0):
+            self._ampl.setOption(slvname, slvval)
 
     def _evaluateRun(self, model: Model):
         expsol = model.getExpectedObjective()

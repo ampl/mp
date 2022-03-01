@@ -21,6 +21,8 @@ class Tester:
     def parseOptions(self):
         self._parser.add_argument('solvers', metavar='solver', type=str, nargs='+',
                             help='a solver to test')
+        self._parser.add_argument('--options', type=str, metavar='', default="",
+                            help='extra solver options')
         self._parser.add_argument('--binPath', type=str, metavar='', default="",
                             help='default path to look for solver executables')
         self._parser.add_argument('--reportstub', type=str, metavar='', default="report",
@@ -63,6 +65,7 @@ class Tester:
     def collectAndRunCases(self):
         runModels(self._args.dir,
                   self._solvers.getSolversByNames(self._args.solvers),
+                  solverOptions=self._args.options,
                   exportFile=self._args.reportstub,
                   recursive=not self._args.nonrecursive,
                   modellist=not self._args.allfiles,

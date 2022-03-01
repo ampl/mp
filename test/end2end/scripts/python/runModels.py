@@ -17,6 +17,7 @@ def writeNLFiles(directory, recursive=False, modelList=False):
 
 
 def runModels(directory, solvers : list,
+              solverOptions=None,
               exporter=None, exportFile=None, modellist=True, justNL=False,
               recursive=False, preferAMPLModels=False):
     """Convenient wrapper function for testing.
@@ -45,7 +46,7 @@ def runModels(directory, solvers : list,
     exportFile += "-{}-{}-{}.csv".format(Path(directory).stem, platform, ename)
     if not exporter:
         exporter = CSVTestExporter(exportFile)
-    runner = ModelRunner(solvers)
+    runner = ModelRunner(solvers, solverOptions)
 
     m = ModelsDiscovery()
     modelList = m.FindModelsGeneral(directory, recursive=recursive,
