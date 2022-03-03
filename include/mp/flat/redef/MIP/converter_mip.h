@@ -27,10 +27,11 @@ public:
   USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter );        ///< reuse default ones
 
   double ComparisonEps(int var) const {
-    return MPCD(is_var_integer(var)) ? 1.0 : 1e-6; // TODO param
+    return MPCD(is_var_integer(var)) ? 1.0 : cmpEpsContinuous();
+    // Need a big eps to avoid misinterpretation
   }
   double ComparisonEps(var::Type vartype) const {
-    return var::INTEGER==vartype ? 1.0 : 1e-6; // TODO param
+    return var::INTEGER==vartype ? 1.0 : cmpEpsContinuous();
   }
 
 
@@ -311,8 +312,24 @@ public:
 public:
   void InitOptions() {
     BaseConverter::InitOptions();
+    InitOwnOptions();
   }
 
+protected:
+  double cmpEpsContinuous() const { return options_.cmpEps_; }
+
+private:
+  struct Options {
+    double cmpEps_ = 1e-3;
+  };
+  Options options_;
+
+  void InitOwnOptions() {
+    this->GetEnv().AddOption("cvt:mip:eps",
+                       "Tolerance for strict comparison of continuous variables for MIP. "
+                       "Ensure larger than the solver's feasibility tolerance.",
+                       options_.cmpEps_, 0.0, 1e100);
+  }
 };
 
 } // namespace mp

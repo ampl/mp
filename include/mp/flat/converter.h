@@ -229,7 +229,7 @@ protected:
   friend class BasicFCC;
 
   template <class PreprocessInfo>
-  void PreprocessConstraint(
+  void PreprocessConstraint(     // PropagateUpwards
       MinConstraint& c, PreprocessInfo& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
     auto& args = c.GetArguments();
@@ -837,13 +837,13 @@ protected:
 
 private:
   void InitOwnOptions() {
-    GetEnv().AddOption("flat:pre:all",
+    GetEnv().AddOption("cvt:pre:all",
         "0/1*: Set to 0 to disable all presolve in the flat converter.",
         options_.preprocessAnything_, 0, 1);
-    GetEnv().AddOption("flat:pre:eqresult",
+    GetEnv().AddOption("cvt:pre:eqresult",
         "0/1*: Preprocess reified equality comparison's boolean result bounds.",
         options_.preprocessEqualityResultBounds_, 0, 1);
-    GetEnv().AddOption("flat:pre:eqbinary",
+    GetEnv().AddOption("cvt:pre:eqbinary",
         "0/1*: Preprocess reified equality comparison with a binary variable.",
         options_.preprocessEqualityBvar_, 0, 1);
     GetEnv().AddOption("alg:relax relax",

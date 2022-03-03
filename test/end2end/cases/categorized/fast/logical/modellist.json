@@ -73,7 +73,7 @@
   },
   {
     "name" : "float_ne_01__vnec",
-    "objective" : 3,
+    "objective" : 3.00099980,
     "tags" : ["logical"]
   },
   {

@@ -218,9 +218,9 @@ void CplexBackend::InitCustomOptions() {
       "--------------------------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to the "
-      "AMPL option ``cplexdirect_options``. For example::\n"
+      "AMPL option ``cplex_options``. For example::\n"
       "\n"
-      "  ampl: option cplexdirect_options 'mipgap=1e-6';\n");
+      "  ampl: option cplex_options 'mipgap=1e-6';\n");
 
   AddSolverOption("tech:outlev outlev",
       "0-5: output logging verbosity. "

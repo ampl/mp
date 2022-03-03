@@ -1090,7 +1090,7 @@ void GurobiBackend::InitCustomOptions() {
       "AMPL option ``{0}_options``. For example::\n"
       "\n"
       "  ampl: option {0}_options 'opttol=1e-6';\n",
-                  GetSolverName()).c_str());
+                  GetAMPLSolverName()).c_str());
 
 
   /// Options basis, sens are created internally if
