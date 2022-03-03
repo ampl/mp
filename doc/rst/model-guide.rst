@@ -77,11 +77,10 @@ Expressions supported
         (x+1)*(x+2)*(x+3) + exp(y) == 8;
 
 
-- Gurobi “general constraints” `and`, `or`, `max`, `min`, `abs` which
-  have good MIP redefinitions, as well as `indicator (==>)`, are converted to
-  MIP if finite bounds available, with tight or big-*M* constraints.
-  This behavior can be changed by solver options **acc:abs** etc.
-  to use Gurobi native constraints instead.
+- Gurobi “general constraints” `and`, `or`, `max`, `min`, `abs`,
+  as well as indicator (`==>`), are passed to Gurobi natively.
+  This behavior can be changed with solver options **acc:abs** etc.
+  to use big-M constraints instead.
 
 - Nonlinear “generals” are passed to Gurobi:
 

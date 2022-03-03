@@ -1,12 +1,16 @@
 Summary of recent updates to x-gurobi for AMPL
 ==============================================
 
+### 20220303
+- *Fix strict comparison tolerance*
+    Option *cvt:mip:eps*, default 1e-3.
+
 ### 20220217
 - *See also MP Library changes 20220216*
 
 - *Assume new constraints are active (#152)*:
     Gurobi requires a complete basis for hotstart and we have to guess the
-    statuses of new variables and constraints
+    statuses of new variables and constraints.
     
 - *Allowing SOS constraints with repeated weights (#163)*:
     Although Gurobi states SOS weights should be unique, it accepts them repeated.
@@ -24,7 +28,7 @@ Summary of recent updates to x-gurobi for AMPL
 - *Basis status low/upp/sup for new variables*:
     when new variables are added, AMPL assigns .sstatus *none* while Gurobi 9.5 
     needs a complete basis so we automatically set Gurobi var status to *low*/*upp*/*sup*
-    depending on where 0.0 is relative to the bounds
+    depending on where 0.0 is relative to the bounds.
 
 ### 20220128
 - First eXperimental release, linked with Gurobi 9.5.
