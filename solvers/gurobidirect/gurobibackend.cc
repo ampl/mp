@@ -853,6 +853,7 @@ std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
 
 void GurobiBackend::ComputeIIS() {
   GRB_CALL(GRBcomputeIIS(model()));
+  SetStatus( ConvertGurobiStatus() );   // could be new information
 }
 
 
