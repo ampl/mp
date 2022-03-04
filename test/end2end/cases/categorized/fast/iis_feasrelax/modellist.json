@@ -14,7 +14,7 @@
     }
   },
   {
-    "name": "infeas_int_02_vars iisfind=1",
+    "name": "infeas_int_02_vars iisfind=1 presolve 0",
     "tags": [ "linear"],
     "options": {
         "ANYSOLVER_options": "iisfind=1",
