@@ -2,7 +2,6 @@
 #define MP2MIP_H
 
 #include "mp/flat/converter.h"
-
 #include "mp/flat/redef/MIP/redefs_mip_std.h"
 
 namespace mp {
@@ -14,83 +13,32 @@ class MIPFlatConverter
     : public FlatConverter<Impl, Backend, Model>
 {
 public:
-  static constexpr const char* name() { return "MIPFlatConverter"; };
+  /// Class name for diagnostics
+  static constexpr const char* GetConverterName() { return "MIPFlatConverter"; }
 
-public:
+  /// BaseConverter typedef
   using BaseConverter = FlatConverter<Impl, Backend, Model>;
 
-public:
-  static const char* GetConverterName() { return "MIPFlatConverter"; }
+  /// Constructor
   MIPFlatConverter(Env& e) : BaseConverter(e) {  }
 
-  ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
-  USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter );        ///< reuse default ones
 
+  ///////////////////// SPECIALIZED CONSTRAINT CONVERTERS //////////////////
+  /// Reuse default (empty) ones
+  USE_BASE_CONSTRAINT_CONVERTERS( BaseConverter );
+
+
+  /// Strict comparison tolerance.
+  /// Need a big eps to avoid misinterpretation,
+  /// at least the solver's feasibility tolerance
   double ComparisonEps(int var) const {
     return MPCD(is_var_integer(var)) ? 1.0 : cmpEpsContinuous();
-    // Need a big eps to avoid misinterpretation
   }
+  /// Strict comparison tolerance
   double ComparisonEps(var::Type vartype) const {
     return var::INTEGER==vartype ? 1.0 : cmpEpsContinuous();
   }
 
-
-  void Convert(const AndConstraint& conj) {
-    assert(!conj.GetContext().IsNone());
-    if (conj.GetContext().HasPositive())
-      ConvertImplied(conj);
-    if (conj.GetContext().HasNegative())
-      ConvertReverseImplied(conj);
-  }
-
-  void ConvertReverseImplied(const AndConstraint& conj) {
-    const auto& args = conj.GetArguments();
-    auto flags = args;
-    flags.push_back(conj.GetResultVar());
-    std::vector<double> ones(args.size(), 1.0); // res+n-1 >= sum(args) in CTX-
-    ones.push_back(-1.0);
-    MP_DISPATCH( AddConstraint(
-                   LinConLE({ones, flags},
-                               {(double)args.size()-1} )) );
-  }
-
-  void ConvertImplied(const AndConstraint& conj) {
-    std::array<double, 2> coefs{-1.0, 1.0};
-    std::array<int, 2> vars{-1, conj.GetResultVar()};
-    for (auto arg: conj.GetArguments()) {       // res <= arg[i] in CTX+
-      vars[0] = arg;
-      MP_DISPATCH( AddConstraint(
-                     LinConLE({coefs, vars}, {0.0} )) );
-    }
-  }
-
-  void Convert(const OrConstraint& disj) {
-    assert(!disj.GetContext().IsNone());
-    if (disj.GetContext().HasPositive())
-      ConvertImplied(disj);
-    if (disj.GetContext().HasNegative())
-      ConvertReverseImplied(disj);
-  }
-
-  void ConvertImplied(const OrConstraint& disj) {
-    const auto& args = disj.GetArguments();
-    auto flags = args;
-    flags.push_back(disj.GetResultVar());
-    std::vector<double> ones(args.size(), 1.0);  // res <= sum(args) in CTX+
-    ones.push_back(-1.0);
-    MP_DISPATCH( AddConstraint(
-                   LinConGE({ones, flags}, {0.0} )) );
-  }
-
-  void ConvertReverseImplied(const OrConstraint& disj) {
-    std::array<double, 2> coefs{1.0, -1.0};
-    std::array<int, 2> vars{-1, disj.GetResultVar()};
-    for (auto arg: disj.GetArguments()) {        // res >= arg[i] in CTX-
-      vars[0] = arg;
-      MP_DISPATCH( AddConstraint(
-                     LinConLE({coefs, vars}, {0.0} )) );
-    }
-  }
 
   void Convert(const IfThenConstraint& itc) {
     assert(!itc.GetContext().IsNone());
@@ -288,6 +236,8 @@ public:
 
   /// Abs
   INSTALL_ITEM_CONVERTER(AbsConverter_MIP)
+  /// And
+  INSTALL_ITEM_CONVERTER(AndConverter_MIP)
   /// AllDiff
   INSTALL_ITEM_CONVERTER(AllDiffConverter_MIP)
   /// EQ0
@@ -304,6 +254,8 @@ public:
   INSTALL_ITEM_CONVERTER(MaxConverter_MIP)
   /// Not
   INSTALL_ITEM_CONVERTER(NotConverter_MIP)
+  /// Or
+  INSTALL_ITEM_CONVERTER(OrConverter_MIP)
 
 
   ///////////////////////////////////////////////////////////////////////

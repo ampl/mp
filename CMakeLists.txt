@@ -330,9 +330,9 @@ add_prefix(MP_FLAT_REDEF_STD_HEADERS include/mp/flat/redef/std/
   range_con.h)
 
 add_prefix(MP_FLAT_REDEF_MIP_HEADERS include/mp/flat/redef/MIP/
-  converter_mip.h redefs_mip_std.h abs.h alldiff.h eq0.h
+  converter_mip.h redefs_mip_std.h abs.h alldiff.h and.h eq0.h
   impl_eq0.h impl_le0.h le0.h
-  min_max.h not.h)
+  min_max.h not.h or.h)
 
 
 set(MP_ALL_HEADERS ${MP_HEADERS} ${MP_FLAT_HEADERS}
