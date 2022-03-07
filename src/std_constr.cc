@@ -4,7 +4,7 @@
 
 namespace mp {
 
-void LinTerms::sort_terms(bool force_sort)  {
+void LinTerms::sort_terms(bool force_sort) {
   std::map<int, double> var_coef_map;
   for (size_t i=0; i<size(); ++i)
     if (0.0!=std::fabs(coefs_[i]))

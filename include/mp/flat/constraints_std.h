@@ -23,9 +23,15 @@ public:
     static std::string name { "LinCon" + RhsOrRange::name() };
     return name;
   }
-  LinearConstraint(LinTerms le, RhsOrRange rr) noexcept
+  /// Constructor.
+  /// By default (\a fSort = true), it sorts terms.
+  /// Pass \a fSort = false to skip if you complement the terms list
+  /// but do it in the end.
+  /// @param le: linaer terms
+  /// @param rr: rhs or range
+  LinearConstraint(LinTerms le, RhsOrRange rr, bool fSort=true)
     : LinTerms(std::move(le)), RhsOrRange(std::move(rr))
-  { /* preprocess(); */ }
+  { if (fSort) sort_terms(); }
 
   /// For PropagateResult()
   const std::vector<int>& GetArguments() const
@@ -38,6 +44,9 @@ public:
       s += LinTerms::coefs()[i] * x[LinTerms::vars()[i]];
     return s - RhsOrRange::lb();
   }
+
+  /// Sorting and merging terms, some solvers require
+  void sort_terms() { LinTerms::sort_terms(); }
 
   /// Testing API
   bool operator==(const LinearConstraint& lc) const {
@@ -121,12 +130,14 @@ class QuadraticConstraint : public RangeLinCon {
   QuadTerms qt_;
 public:
   static const char* GetName() { return "QuadraticConstraint"; }
-  /// Construct from a linear constraint and QP terms
-  QuadraticConstraint(RangeLinCon&& lc, QuadTerms&& qt) noexcept :
+  /// Construct from a linear constraint and QP terms.
+  /// Always sort terms.
+  QuadraticConstraint(RangeLinCon&& lc, QuadTerms&& qt) :
     RangeLinCon(std::move(lc)), qt_(std::move(qt)) {
-    sort_qp_terms(); // LinearConstr sorts them itself
+    sort_qp_terms();         // LinearConstr sorts them itself
   }
-  /// Constructor for testing
+  /// Constructor for testing.
+  /// Always sort terms.
   QuadraticConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
                       std::initializer_list<std::tuple<double, int, int>> quad_terms,
                       double lb, double ub) :
