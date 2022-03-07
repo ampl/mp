@@ -248,6 +248,8 @@ public:
   INSTALL_ITEM_CONVERTER(IndicatorLinEQConverter_MIP)
   /// LE0
   INSTALL_ITEM_CONVERTER(LE0Converter_MIP)
+  /// LT0
+  INSTALL_ITEM_CONVERTER(LT0Converter_MIP)
   /// Min
   INSTALL_ITEM_CONVERTER(MinConverter_MIP)
   /// Max

@@ -583,6 +583,11 @@ protected:
     con.AddContext(ctx);
   }
 
+  void PropagateResult(LT0Constraint& con, double lb, double ub, Context ctx) {
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
+    con.AddContext(ctx);
+  }
+
   void PropagateResult(EQ0Constraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
@@ -903,6 +908,7 @@ protected:
   STORE_CONSTRAINT_TYPE(OrConstraint)
   STORE_CONSTRAINT_TYPE(EQ0Constraint)
   STORE_CONSTRAINT_TYPE(LE0Constraint)
+  STORE_CONSTRAINT_TYPE(LT0Constraint)
   STORE_CONSTRAINT_TYPE(NotConstraint)
   STORE_CONSTRAINT_TYPE(IfThenConstraint)
   STORE_CONSTRAINT_TYPE(AllDiffConstraint)

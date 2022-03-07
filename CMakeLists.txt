@@ -331,7 +331,7 @@ add_prefix(MP_FLAT_REDEF_STD_HEADERS include/mp/flat/redef/std/
 
 add_prefix(MP_FLAT_REDEF_MIP_HEADERS include/mp/flat/redef/MIP/
   converter_mip.h redefs_mip_std.h abs.h alldiff.h and.h eq0.h
-  impl_eq0.h impl_le0.h le0.h
+  impl_eq0.h impl_le0.h le0.h lt0.h
   min_max.h not.h or.h)
 
 

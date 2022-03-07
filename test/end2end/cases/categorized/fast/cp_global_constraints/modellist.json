@@ -59,5 +59,20 @@
     "tags" : ["logical"],
     "options": { "ANYSOLVER_options": "cvt:mip:eps=1e-2 acc:ind_le=1" },
     "objective" : 235625
+  },
+  {
+    "name" : "x-multmip1 [if, >]",
+    "files": ["x-multmip1.mod", "multmip1.dat"],
+    "tags" : ["logical"],
+    "options": { "ANYSOLVER_options": "acc:ind_le=1" },
+    "objective" : 218125
+  },
+  {
+    "name" : "sudoku easy [alldiff, repeated vars in LinCon]",
+    "files": ["sudoku.mod", "sudokuVeryEasy.dat"],
+    "tags" : ["logical"],
+    "values": {
+      "X[1, 1]": 6
+    }
   }
 ]

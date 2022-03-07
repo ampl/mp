@@ -284,9 +284,23 @@ DEF_LOGICAL_FUNC_CONSTR( LE0Constraint, AffExp,
 /// Extract underlying constraint.
 /// Can be done more general if using something like
 /// ConditionalConstraint<> instead if EQ0C / LE0C
-inline LinConLE ExtractConstraint(const LE0Constraint& le0c) {
+inline LinConLE ExtractConstraint(
+    const LE0Constraint& le0c, double ) {
   const auto& ae=le0c.GetArguments();
   return { (LinTerms)ae, -ae.constant_term() };
+}
+
+/// Strict inequality
+DEF_LOGICAL_FUNC_CONSTR( LT0Constraint, AffExp,
+                                   "r = (expr < 0)");
+
+/// Extract underlying constraint.
+/// Can be done more general if using something like
+/// ConditionalConstraint<> instead if EQ0C / LE0C
+inline LinConLE ExtractConstraint(
+    const LT0Constraint& le0c, double eps) {
+  const auto& ae=le0c.GetArguments();
+  return { (LinTerms)ae, -ae.constant_term()-eps };
 }
 
 ////////////////////////////////////////////////////////////////////////

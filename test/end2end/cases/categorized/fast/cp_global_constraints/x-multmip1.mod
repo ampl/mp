@@ -1,0 +1,35 @@
+set ORIG;   # origins
+set DEST;   # destinations
+set PROD;   # products
+
+param supply {ORIG,PROD} >= 0;  # amounts available at origins
+param demand {DEST,PROD} >= 0;  # amounts required at destinations
+
+   check {p in PROD}:
+      sum {i in ORIG} supply[i,p] = sum {j in DEST} demand[j,p];
+
+param limit {ORIG,DEST} >= 0;   # maximum shipments on routes
+
+param vcost {ORIG,DEST,PROD} >= 0; # variable shipment cost on routes
+var Trans {ORIG,DEST,PROD} >= 0;   # units to be shipped
+
+param fcost {ORIG,DEST} >= 0;      # fixed cost for using a route
+var Ship {i in ORIG, j in DEST} = sum {p in PROD} Trans[i,j,p];
+
+minimize Total_Cost:
+   sum {i in ORIG, j in DEST, p in PROD} vcost[i,j,p] * Trans[i,j,p]
+ + sum {i in ORIG, j in DEST} (if Ship[i,j] > 0 then fcost[i,j]);
+/*
+minimize Total_Cost:
+   sum {i in ORIG, j in DEST, p in PROD} vcost[i,j,p] * Trans[i,j,p]
+ + sum {i in ORIG, j in DEST} (if Ship[i,j] > 0 then fcost[i,j] else 0);
+
+minimize Total_Cost:
+   sum {i in ORIG, j in DEST, p in PROD} vcost[i,j,p] * Trans[i,j,p]
+ + sum {i in ORIG, j in DEST} (if Ship[i,j] = 0 then 0 else fcost[i,j]);
+*/
+subject to Supply {i in ORIG, p in PROD}:
+   sum {j in DEST} Trans[i,j,p] = supply[i,p];
+
+subject to Demand {j in DEST, p in PROD}:
+   sum {i in ORIG} Trans[i,j,p] = demand[j,p];

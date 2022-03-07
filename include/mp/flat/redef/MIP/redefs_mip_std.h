@@ -12,6 +12,7 @@
 #include "mp/flat/redef/MIP/impl_le0.h"
 #include "mp/flat/redef/MIP/impl_eq0.h"
 #include "mp/flat/redef/MIP/le0.h"
+#include "mp/flat/redef/MIP/lt0.h"
 #include "mp/flat/redef/MIP/min_max.h"
 #include "mp/flat/redef/MIP/not.h"
 #include "mp/flat/redef/MIP/or.h"
