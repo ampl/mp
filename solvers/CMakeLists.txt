@@ -104,7 +104,7 @@ function(add_ampl_solver name)
     PUBLIC ${include_dirs} ${MP_BASE_DIR}/solvers)
   target_link_libraries(${static_lib} PUBLIC ${libraries})
   target_compile_options(${static_lib} PUBLIC ${definitions})
-
+  set_property(TARGET ${static_lib}  PROPERTY CXX_STANDARD 14)
   if (use_dll_runtime)
     target_link_libraries(${static_lib} PUBLIC mp-dynrt)
   else ()
