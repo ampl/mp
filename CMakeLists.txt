@@ -236,6 +236,7 @@ function (add_mp_library name)
     PUBLIC ${add_mp_library_COMPILE_DEFINITIONS})
   target_include_directories(${name}
     PUBLIC ${add_mp_library_INCLUDE_DIRECTORIES})
+  set_property(TARGET ${name}  PROPERTY CXX_STANDARD 14)
   if (add_mp_library_DEPENDS)
     add_dependencies(${name} ${add_mp_library_DEPENDS})
   endif ()
