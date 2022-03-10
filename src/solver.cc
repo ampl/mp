@@ -53,6 +53,8 @@
 #include "mp/clock.h"
 #include "mp/rstparser.h"
 
+#include "mp/ampls-cpp-api.h"
+
 namespace {
 
 const char *SkipSpaces(const char *s) {
@@ -669,11 +671,16 @@ void BasicSolver::AddWarning(const char *key, const char *msg) {
 
 void BasicSolver::PrintWarnings() {
   if (GetWarnings().size()) {
-    Print("WARNINGS:\n");
     for (const auto& e: GetWarnings())
-      Print("-   {} cases of \"{}\":\n    --  {}\n",
-             e.second.first, e.first, e.second.second);
+      Print(ToString(e));
   }
+}
+
+std::string BasicSolver::ToString(
+    const WarningsMap::value_type& wrn) {
+  return fmt::format(
+        "WARNING:   {} cases of \"{}\":\n    --  {}\n",
+        wrn.second.first, wrn.first, wrn.second.second);
 }
 
 #ifdef MP_DATE
@@ -997,3 +1004,119 @@ void SolverOptionManager::AddOptionSynonyms_OutOfLine(
 
 
 }  // namespace mp
+
+
+//// AMPLS C/C++ API
+
+
+/// Internal AMPLS API Infos
+typedef struct AMPLS_MP__internal_T {
+  /// The Backend
+  std::unique_ptr<mp::BasicBackend> p_be_;
+  /// An output handler. Can be a parameter
+  mp::OutputHandler output_h_;
+  /// Messages from Env::GetWarnings()
+  std::vector<std::string> msg_wrn_;
+  /// Messages in addition to Env::GetWarnings()
+  std::vector<std::string> msg_extra_;
+  /// The 0-terminated char*'s to the messages,
+  /// filled by AMPLSGetMessages()
+  std::vector<const char*> msg_pchar_;
+} AMPLS_MP__internal;
+
+
+int AMPLS__internal__Open(AMPLS_MP_Solver* slv,
+                          std::unique_ptr<mp::BasicBackend> p_be,
+                          const char* slv_opt) {
+  return AMPLS__internal__TryCatchWrapper( slv, [&]() {
+    auto ii = new AMPLS_MP__internal();
+    slv->internal_info_ = ii;
+    ii->p_be_ = std::move(p_be);
+    auto be = ii->p_be_.get();
+
+    be->set_output_handler(&ii->output_h_);
+
+    char* argv[] = {(char*)"ampls-driver", nullptr};
+    be->Init(argv);
+
+    be->set_wantsol(1);       // user can still modify by 'wantsol=...'
+
+    be->InitOptionParsing();
+    if (slv_opt)
+      be->ParseOptionString(slv_opt, 0);  // no echo
+    be->FinishOptionParsing();
+
+    return 0;
+  } );
+}
+
+void AMPLS__internal__Close(AMPLS_MP_Solver* slv) {
+  assert(slv->internal_info_);
+  delete (AMPLS_MP__internal*)slv->internal_info_;
+}
+
+mp::BasicBackend* AMPLSGetBackend(AMPLS_MP_Solver* slv) {
+  assert(slv->internal_info_);
+  return ((AMPLS_MP__internal*)(slv->internal_info_))->p_be_.get();
+}
+
+/// Load model incl. suffixes
+int AMPLSLoadNLModel(AMPLS_MP_Solver* slv,
+                     const char* nl_filename) {
+  return AMPLS__internal__TryCatchWrapper( slv, [=]() {
+    std::string nl_filename_ = nl_filename;
+    auto filename_no_ext_ = nl_filename_;
+    const char *ext = std::strrchr(nl_filename, '.');
+    if (!ext || std::strcmp(ext, ".nl") != 0)
+      nl_filename_ += ".nl";
+    else
+      filename_no_ext_.resize(filename_no_ext_.size() - 3);
+
+    auto be = AMPLSGetBackend(slv);
+    mp::internal::SetBasename(*be,
+                              &filename_no_ext_);
+
+    be->ReadNL(nl_filename, filename_no_ext_);
+    be->InputExtras();
+  } );
+}
+
+int AMPLSReportResults(AMPLS_MP_Solver* slv) {
+  return AMPLS__internal__TryCatchWrapper( slv, [=]() {
+    auto be = AMPLSGetBackend(slv);
+    be->ReportResults();
+  } );
+}
+
+void AMPLSAddMessage(AMPLS_MP_Solver* slv, const char* msg) {
+  assert(slv->internal_info_);
+  assert(msg);
+  ((AMPLS_MP__internal*)(slv->internal_info_))->msg_extra_.
+      push_back(msg);
+}
+
+const char* const * AMPLSGetMessages(AMPLS_MP_Solver* slv) {
+  auto be = AMPLSGetBackend(slv);
+  auto ii = ((AMPLS_MP__internal*)(slv->internal_info_));
+  auto& msg_wrn = ii->msg_wrn_;
+  msg_wrn.clear();
+  const auto& msg_extra = ii->msg_extra_;
+  auto& pchar_vec = ii->msg_pchar_;
+  pchar_vec.clear();
+
+  /// Add Backend warnings
+  for (const auto& wrn: be->GetWarnings())
+    msg_wrn.push_back(mp::BasicSolver::ToString(wrn));
+
+  /// Add Backend warnings
+  for (const auto& wrn: msg_wrn)
+    pchar_vec.push_back(wrn.c_str());
+
+  /// Add extra messages
+  for (const auto& msg: msg_extra)
+    pchar_vec.push_back(msg.c_str());
+
+  pchar_vec.push_back(nullptr);                // final 0
+  return pchar_vec.data();
+}
+

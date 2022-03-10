@@ -21,7 +21,7 @@ endfunction ()
 # libraries. If it is omitted, add_ampl_solver looks in support/cmake for
 # a module with a name matching Find<name>.cmake (case-insensitive).
 #
-# Sources are relative to the solver diretory. If no sources are passed to
+# Sources are relative to the solver directory. If no sources are passed to
 # add_ampl_solver, it uses the default list of sources <name>.cc, <name>.h.
 #
 # INCLUDE_DIRS gives a list of solver include directories. If omitted,
@@ -176,6 +176,7 @@ if (TARGET cplexdirect)
 endif ()
 
 add_ampl_solver(gurobidirect DLL_RUNTIME MODULE GUROBI
+  gurobi-ampls-c-api.h
   gurobibackend.cc gurobibackend.h
   gurobimodelapi.cc gurobimodelapi.h
   gurobicommon.cc gurobicommon.h
@@ -183,7 +184,14 @@ add_ampl_solver(gurobidirect DLL_RUNTIME MODULE GUROBI
   LIBRARIES ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS})
 if (TARGET gurobidirect)
   target_compile_definitions(gurobidirect PRIVATE main1=main)
-endif ()
+endif()
+
+## A simple Gurobi driver to test AMPLS C API
+add_ampl_solver(gurobi_ampls DLL_RUNTIME
+  gurobi-ampls.c
+  INCLUDE_DIRS ${include_dirs} ${MP_BASE_DIR}/solvers
+  LIBRARIES amplgurobidirect-static)
+
 
 # Copy CPLEX DLL to the target directory.
 if (CPLEX_DLL AND (TARGET ilogcp))

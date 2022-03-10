@@ -326,6 +326,22 @@ public:
   /// Testing constructor
   explicit BasicSolver();
 
+  /// Parses a solver option string.
+  void ParseOptionString(const char *s, unsigned flags);
+
+  /// Map to count warnings by types.
+  /// Stores char* to names / descriptions for speed
+  /// Indexed by pointers to names, not values
+  using WarningsMap =
+    std::unordered_map< const char*,    // failure name
+      std::pair<int, const char*> >;    // number, description
+
+  /// Get warnings map
+  WarningsMap& GetWarnings() { return warnings_; }
+
+  /// Stringify a WarningsMap entry
+  static std::string ToString(const WarningsMap::value_type& wrn);
+
 protected:
   /// Constructs a BasicSolver object.
   /// date:  The solver date in YYYYMMDD format.
@@ -346,19 +362,6 @@ protected:
 
   /// Sets the flags for Problem::Read.
   void set_read_flags(unsigned flags) { read_flags_ = flags; }
-
-  /// Parses a solver option string.
-  void ParseOptionString(const char *s, unsigned flags);
-
-
-  /// Map to count warnings by types.
-  /// Stores char* to names / descriptions for speed
-  /// Indexed by pointers to names, not values
-  using WarningsMap =
-    std::unordered_map< const char*,    // failure name
-      std::pair<int, const char*> >;    // number, description
-  /// Get warnings map
-  WarningsMap& GetWarnings() { return warnings_; }
 
 
 private:

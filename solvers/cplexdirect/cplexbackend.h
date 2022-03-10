@@ -58,8 +58,14 @@ public:
 
 
   //////////////////////////// SOLVING ///////////////////////////////
+
+  /// Note the interrupt notifier
   void SetInterrupter(mp::Interrupter* inter) override;
-  void SolveAndReportIntermediateResults() override;
+
+  /// Solve, no model modification any more.
+  /// Can report intermediate results via HandleFeasibleSolution() during this,
+  /// otherwise in ReportResults()
+  void Solve() override;
 
   Solution GetSolution() override;
   ArrayRef<double> GetObjectiveValues() override
@@ -83,6 +89,9 @@ protected:
   ArrayRef<double> DualSolution_LP();
 
   void WindupCPLEXSolve();
+
+  void ReportResults() override;
+  void ReportCPLEXResults();
 
   /// Solution attributes
   double NodeCount() const;

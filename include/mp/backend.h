@@ -95,9 +95,9 @@ public:
 
   /// Further, using virtual methods for convenience (CRTP not essential)
 
-  /// Placeholder for solution getter (unpresolved, final solution)
+  /// Placeholder for solution getter (postsolved, final solution)
   virtual Solution GetSolution() = 0;
-  /// Placeholder for objective values getter (unpresolved, final solution)
+  /// Placeholder for objective values getter (postsolved, final solution)
   /// Needed only if we don't want the whole solution,
   /// otherwise GetSolution() provides this
   virtual ArrayRef<double> GetObjectiveValues() = 0;
@@ -168,31 +168,50 @@ public:
   /// Runs Solver given the NL file name.
   void RunFromNLFile(const std::string& nl_filename,
                      const std::string& filename_no_ext) override {
-    GetMM().ReadNLFileAndUpdate(nl_filename, filename_no_ext);
-    SolveAndReport();
+    ReadNL(nl_filename, filename_no_ext);
+    InputExtras();
+
+    SetupTimerAndInterrupter();
+    Solve();
+    RecordSolveTime();
+
+    Report();
+  }
+
+  /// Detailed steps for AMPLS C API
+
+  /// Read NL
+  void ReadNL(const std::string& nl_filename,
+              const std::string& filename_no_ext) override {
+    GetMM().ReadNLModel(nl_filename, filename_no_ext);
+  }
+
+  /// Input warm start, suffixes, and all that can modify the model.
+  /// This is used by the AMPLS C API
+  void InputExtras() override {
+    InputStdExtras();
+  }
+
+  /// Report results
+  void ReportResults() override {
+    ReportSuffixes();
+    ReportSolution();
   }
 
 
 protected:
-  /// Standard SolveAndReport() logic
-  virtual void SolveAndReport() {
-    InputExtras();
+  /// Solve, no model modification any more.
+  /// Can report intermediate results via HandleFeasibleSolution() during this,
+  /// otherwise in ReportResults()
+  virtual void Solve() = 0;
 
-    SetupTimerAndInterrupter();
-    SolveAndReportIntermediateResults();
-    RecordSolveTime();
-
+  /// Report
+  virtual void Report() {
     ReportResults();
     if (verbose_mode())
       PrintWarnings();
     if ( timing() )
       PrintTimingInfo();
-  }
-
-  /// Input warm start, suffixes
-  virtual void InputExtras() {
-    InputStdExtras();
-    InputCustomExtras();
   }
 
   /// Standard extras
@@ -206,9 +225,6 @@ protected:
     if (feasrelax())
       InputFeasrelaxData();
   }
-
-  /// Custom extras, Impl can override
-  virtual void InputCustomExtras() { }
 
   /// Timer, interrupter
   virtual void SetupTimerAndInterrupter() {
@@ -228,9 +244,6 @@ protected:
   virtual void RecordSetupTime() {
     stats_.setup_time = GetTimeAndReset(stats_.time);
   }
-
-  /// Placeholder for Impl's solve routine
-  virtual void SolveAndReportIntermediateResults() = 0;
 
   /// Record solve time
   virtual void RecordSolveTime() {
@@ -256,12 +269,6 @@ protected:
 
   /// For Impl to check if user wants multiple solutions reported
   using BasicSolver::need_multiple_solutions;
-
-  /// Report results
-  virtual void ReportResults() {
-    ReportSuffixes();
-    ReportSolution();
-  }
 
   /// Report suffixes
   virtual void ReportSuffixes() {

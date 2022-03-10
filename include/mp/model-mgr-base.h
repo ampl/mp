@@ -25,7 +25,7 @@ public:
   virtual void SetBasename(const std::string& filename_no_ext) = 0;
 
   /// Read NL model
-  virtual void ReadNLFileAndUpdate(const std::string& nl_filename,
+  virtual void ReadNLModel(const std::string& nl_filename,
                                    const std::string& filename_no_ext) = 0;
 
   virtual ArrayRef<double> InitialValues() = 0;

@@ -96,15 +96,17 @@ public:
   /// Set connection
   void set_other_gurobi(GurobiCommon* o) { other_ = o; }
 
+  /// GRBenv*
+  GRBenv *env() const { return env_; }
+  /// GRBmodel*
+  GRBmodel *model() const { return model_; }
 
 protected:
   void copy_handlers_from_other_gurobi();
   void copy_handlers_to_other_gurobi();
 
-  GRBenv *env() const { return env_; }
   GRBenv *&env_ref() { return env_; }
   void set_env(GRBenv* e) { env_ = e; }
-  GRBmodel *model() const { return model_; }
   GRBmodel *&model_ref() { return model_; }
   void set_model(GRBmodel* m) { model_ = m; }
 

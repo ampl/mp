@@ -40,7 +40,7 @@ protected:
     if (bnds.ub() >= GetMC().PracticallyInfty())
       throw ConstraintConversionFailure( "IndicatorInfBound",
           "The redefinition of a (possibly auxiliary) indicator constraint failed"
-          " so it had to be passed to the solver."
+          " so it had to be passed to the solver natively."
           " Provide tight bounds on variables entering logical expressions, "
           "or set acc:ind_le=2");
     if (val)                                     // left condition is b==1

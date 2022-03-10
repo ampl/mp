@@ -5,6 +5,11 @@
 
 #include "gurobibackend.h"
 
+extern "C" {
+  #include "gurobi-ampls-c-api.h"    // Gurobi AMPLS C API
+}
+#include "mp/ampls-cpp-api.h"
+
 namespace {
 
 bool InterruptGurobi(void *model) {
@@ -599,22 +604,12 @@ void GurobiBackend::ExportModel(const std::string &file) {
   GRB_CALL( GRBwrite(model(), file.c_str()) );
 }
 
-
-void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
-  inter->SetHandler(InterruptGurobi, model());
+void GurobiBackend::InputExtras() {
+  BaseBackend::InputExtras();
+  InputGurobiExtras();
 }
 
-
-///////////////////////////////////// SOLVE /////////////////////////////////////////
-void GurobiBackend::SolveAndReportIntermediateResults() {
-  PrepareGurobiSolve();
-
-  GRB_CALL( GRBoptimize(model()) );
-
-  WindupGurobiSolve();
-}
-
-void GurobiBackend::PrepareGurobiSolve() {
+void GurobiBackend::InputGurobiExtras() {
   if (need_multiple_solutions())
     GrbSetIntParam(GRB_INT_PAR_POOLSEARCHMODE, storedOptions_.nPoolMode_);
   if (need_ray_primal() || need_ray_dual())
@@ -623,6 +618,23 @@ void GurobiBackend::PrepareGurobiSolve() {
   if (feasrelax())
     DoGurobiFeasRelax();
   SetPartitionValues();
+}
+
+void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
+  inter->SetHandler(InterruptGurobi, model());
+}
+
+
+///////////////////////////////////// SOLVE /////////////////////////////////////////
+void GurobiBackend::Solve() {
+  PrepareGurobiSolve();
+
+  GRB_CALL( GRBoptimize(model()) );
+
+  WindupGurobiSolve();
+}
+
+void GurobiBackend::PrepareGurobiSolve() {
   /// After all attributes applied
   if (!storedOptions_.exportFile_.empty())
     ExportModel(storedOptions_.exportFile_);
@@ -630,7 +642,14 @@ void GurobiBackend::PrepareGurobiSolve() {
     DoGurobiTune();
 }
 
-void GurobiBackend::WindupGurobiSolve() {
+void GurobiBackend::WindupGurobiSolve() { }
+
+void GurobiBackend::ReportResults() {
+  ReportGurobiResults();
+  BaseBackend::ReportResults();
+}
+
+void GurobiBackend::ReportGurobiResults() {
   SetStatus( ConvertGurobiStatus() );
   AddGurobiMessage();
   if (need_multiple_solutions())
@@ -2094,3 +2113,20 @@ void GurobiBackend::GrbPlayObjNParams() {
 
 
 } // namespace mp
+
+
+int AMPLSOpenGurobi(AMPLS_MP_Solver* slv,
+                    const char* slv_opt) {
+  return AMPLS__internal__Open(slv,
+           std::unique_ptr<mp::BasicBackend>{new mp::GurobiBackend()},
+                               slv_opt);
+}
+
+void AMPLSCloseGurobi(AMPLS_MP_Solver* slv) {
+  AMPLS__internal__Close(slv);
+}
+
+GRBmodel* GetGRBmodel(AMPLS_MP_Solver* slv) {
+  return
+    dynamic_cast<mp::GurobiBackend*>(AMPLSGetBackend(slv))->model();
+}

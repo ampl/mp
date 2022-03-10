@@ -75,7 +75,7 @@ protected:
                                  GetEnv().get_output_handler().banner_size));
   }
 
-  void ReadNLFileAndUpdate(const std::string& nl_filename,
+  void ReadNLModel(const std::string& nl_filename,
                            const std::string& filename_no_ext) override {
     steady_clock::time_point start = steady_clock::now();
 

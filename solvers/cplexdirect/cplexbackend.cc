@@ -131,7 +131,7 @@ void CplexBackend::SetInterrupter(mp::Interrupter *inter) {
   CPLEX_CALL( CPXsetterminate (env(), &terminate_flag) );
 }
 
-void CplexBackend::SolveAndReportIntermediateResults() {
+void CplexBackend::Solve() {
   if (!storedOptions_.exportFile_.empty()) {
     ExportModel(storedOptions_.exportFile_);
   }
@@ -141,7 +141,14 @@ void CplexBackend::SolveAndReportIntermediateResults() {
   WindupCPLEXSolve();
 }
 
-void CplexBackend::WindupCPLEXSolve() {
+void CplexBackend::WindupCPLEXSolve() { }
+
+void CplexBackend::ReportResults() {
+  ReportCPLEXResults();
+  BaseBackend::ReportResults();
+}
+
+void CplexBackend::ReportCPLEXResults() {
   SetStatus( ConvertCPLEXStatus() );
   AddCPLEXMessages();
 }

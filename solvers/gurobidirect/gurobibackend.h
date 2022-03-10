@@ -46,7 +46,7 @@ public:
   static const char* GetSolverName() { return "x-Gurobi"; }
   /// Version
   static std::string GetSolverVersion();
-  /// Reuse gurobi_options:
+  /// Use 'gurobi_options'
   static const char* GetAMPLSolverName() { return "gurobi"; }
   /// In long messages
   static const char* GetAMPLSolverLongName() { return "AMPL-Gurobi"; }
@@ -153,8 +153,12 @@ public:
 
 
   ///////////////////// Model attributes /////////////////////
+
+  /// IsMIP()
   bool IsMIP() const override;
+  /// IsQP()
   bool IsQP() const override;
+  /// IsQCP()
   bool IsQCP() const override;
 
 
@@ -175,11 +179,18 @@ public:
   /////////////////////////// SOLVING ACCESSORS ///////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
 
+  /// This can actually modify the model
+  void InputExtras() override;
+
+  /// Note the interrupt notifier
   void SetInterrupter(mp::Interrupter* inter) override;
 
-  void SolveAndReportIntermediateResults() override;
+  /// Solve, no model modification any more.
+  /// Can report intermediate results via HandleFeasibleSolution() during this,
+  /// otherwise in ReportResults()
+  void Solve() override;
 
-  /// Various solution attribute getters.
+  /// Obtain solution
   Solution GetSolution() override;
 
 
@@ -196,6 +207,7 @@ protected:
   void OpenGurobiComputeServer();
   void OpenGurobiCloud();
 
+  void InputGurobiExtras();
 
   void ExportModel(const std::string& file);
 
@@ -206,6 +218,10 @@ protected:
   void DoGurobiTune();
 
   void WindupGurobiSolve();
+
+  void ReportResults() override;
+  void ReportGurobiResults();
+
   std::pair<int, std::string> ConvertGurobiStatus() const;
   void AddGurobiMessage();
 

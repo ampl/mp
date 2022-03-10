@@ -53,8 +53,21 @@ public:
   void RunFromNLFile(const std::string& nl_filename,
                      const std::string& filename_no_ext) = 0;
 
+  /// Detailed steps for AMPLS C API
 
-protected:
+  /// Read NL.
+  /// This is used by the AMPLS C API
+  virtual void ReadNL(const std::string& nl_filename,
+                      const std::string& filename_no_ext) = 0;
+
+  /// Input warm start, suffixes, and all that can modify the model.
+  /// This is used by the AMPLS C API
+  virtual void InputExtras() = 0;
+
+  /// Report results.
+  /// This is used by the AMPLS C API
+  virtual void ReportResults() = 0;
+
   /// Chance for the Backend to note base IO filename
   virtual void SetBasename(const std::string& ) { }
   /// Chance for the Backend to init solver environment, etc

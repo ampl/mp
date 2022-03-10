@@ -174,8 +174,8 @@ public:
   using BaseBackend::ReportIntSuffix;
   using BaseBackend::ReportDblSuffix;
 
-  void InputStdExtras() override {
-    BaseBackend::InputStdExtras();
+  void InputExtras() override {
+    BaseBackend::InputExtras();
     InputMIPExtras();
   }
 
