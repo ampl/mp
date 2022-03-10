@@ -1,7 +1,12 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
-### 20220216
+## unreleased
+- *AMPLS C API*
+    C API allowing access to underlying solver.
+    Toy driver `gurobi_ampls` exemplifies API usage.
+
+## 20220216
 - *Improved warnings (#161, #163)*:
     In verbose mode, FlatConverter / Backend print warning summary
     before and after solving

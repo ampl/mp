@@ -54,7 +54,7 @@ function(add_mp_test name)
   cmake_parse_arguments(add_mp_test "" "" LIBS ${ARGN})
   add_executable(${name} ${add_mp_test_UNPARSED_ARGUMENTS})
   set_target_properties(${name} PROPERTIES OUTPUT_NAME ${name})
-  set_property(TARGET ${name}  PROPERTY CXX_STANDARD 14)
+  set_property(TARGET ${name}  PROPERTY CXX_STANDARD 11)
   if (MINGW)
     set_target_properties(${name} PROPERTIES
       LINK_FLAGS "-static-libgcc -static-libstdc++")

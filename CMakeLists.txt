@@ -209,7 +209,7 @@ endmacro()
 include_directories(include)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-set(MP_DATE 20220202)
+set(MP_DATE 20220303)
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
 function (add_mp_library name)
@@ -236,7 +236,7 @@ function (add_mp_library name)
     PUBLIC ${add_mp_library_COMPILE_DEFINITIONS})
   target_include_directories(${name}
     PUBLIC ${add_mp_library_INCLUDE_DIRECTORIES})
-  set_property(TARGET ${name}  PROPERTY CXX_STANDARD 14)
+  set_property(TARGET ${name}  PROPERTY CXX_STANDARD 11)
   if (add_mp_library_DEPENDS)
     add_dependencies(${name} ${add_mp_library_DEPENDS})
   endif ()
