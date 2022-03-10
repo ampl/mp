@@ -49,6 +49,8 @@ class AMPLRunner(object):
     def _initAMPL(self):
         if self._amplInitialized:
           self._ampl.reset()
+          self._ampl.eval("reset options;")
+          self._setSolverInAMPL()
           return
         self._ampl = AMPL()
         self._outputHandler = InnerOutputHandler(storeOutput = self._keepAMPLOutput)
@@ -177,7 +179,7 @@ class AMPLRunner(object):
         # Todo: check bug in the API (or in amplpy) by which old objectives are 
         # reported after reset. Terminating AMPL each time takes care of the problem
         # but it's hardly efficient
-        self._terminateAMPL()
+        # self._terminateAMPL()
 
     def _run(self, model: Model):
       self.doInit(model)
