@@ -21,13 +21,15 @@ Summary
 Expressions supported
 ---------------------
 
-- Logical, relational, and general including higher-degree polynomials:
+- Arbitrary trees of logical, relational, and general non-linear expressions
+  including higher-degree polynomials:
 
   .. code-block:: ampl
 
         (x<=0 or y!=2)  ==>
                 (x<=-5 or
-                        (max((x+1)*(x+2)*(y+3), y)<=3 and b==0));
+                        (max((x+1)*(x+2)*(y+3), y)<=3 and
+                                exp((x+18)*y)<=12));
 
 - Constraint programming high-level constraints and expressions, for example:
 
@@ -63,24 +65,17 @@ Expressions supported
            isH[i] = 0 ==> atmost 0 {j in BOATS, t in TIMES} (H[j,t] = i);
 
 
-- QP:
+- QP expressions are multiplied out:
 
   .. code-block:: ampl
 
         -5 * (abs(x[1])-0.7)^2 + x[2]
 
-
-- General non-linear:
-
-  .. code-block:: ampl
-
-        (x+1)*(x+2)*(x+3) + exp(y) == 8;
-
-
 - Gurobi “general constraints” `and`, `or`, `max`, `min`, `abs`,
   as well as indicator (`==>`), are passed to Gurobi natively.
   This behavior can be changed with solver options **acc:abs** etc.
-  to use big-M constraints instead.
+  to use big-M constraints instead (when the variables have
+  finite bounds).
 
 - Nonlinear “generals” are passed to Gurobi:
 
