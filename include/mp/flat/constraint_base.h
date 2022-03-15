@@ -152,7 +152,7 @@ public:
   /// Whether the constraint is logical
   static constexpr bool IsLogical() { return true; }
   /// Apriori bounds on the result
-  static constexpr std::pair<double, double>
+  static std::pair<double, double>
   GetAprioriBounds() { return {0.0, 1.0}; }
 };
 
