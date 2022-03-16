@@ -102,3 +102,7 @@ and knowing that  `-15 <= x-y-z <= 30`, reformulate:
         var t >=-15, <=30;
         subj to: t == x-y-z;
         subj to: log(x+2)<=y^2  or  t>=0;
+
+In many cases, integer variables are more meaningful and efficient
+in logical constraints
+than continuous variables, for example in disequalities.

@@ -40,73 +40,6 @@ public:
   }
 
 
-  void Convert(const IfThenConstraint& itc) {
-    assert(!itc.GetContext().IsNone());
-    const auto& args = itc.GetArguments();
-    if (!this->is_fixed(args[1]) || !this->is_fixed(args[2]))
-      throw std::logic_error("MP2MIP: IfThen with variable then/else arguments not implemented");
-    else
-      ConvertIfThen_constantThenElse(itc);
-  }
-
-  void ConvertIfThen_constantThenElse(const IfThenConstraint& itc) {
-    const auto& args = itc.GetArguments();
-    assert((this->is_fixed(args[1]) && this->is_fixed(args[2])));
-    const double const1 = this->fixed_value(args[1]);
-    const double const2 = this->fixed_value(args[2]);
-    this->AddConstraint( LinearFunctionalConstraint(
-                           itc.GetResultVar(),
-    { {{const1-const2}, {args[0]}}, const2 } ) );
-  }
-
-  //////////////////// NUMBEROF CONST ///////////////////////
-  void Convert(const NumberofConstConstraint& nocc) {
-    const auto& args = nocc.GetArguments();
-    const double k = nocc.GetParameters()[0];
-    std::vector<double> coefs(args.size()+1, 1.0);
-    std::vector<int> flags(args.size()+1, nocc.GetResultVar());
-    for (size_t ivar = 0; ivar < args.size(); ++ivar) {
-      flags[ivar] = this->AssignResultVar2Args(   // flag = (args[i]==k)
-            EQ0Constraint( { {{1.0}, {args[ivar]}}, -k } ) );
-    }
-    coefs.back() = -1.0;
-    this->AddConstraint( LinConEQ( {coefs, flags}, {0.0} ) );
-  }
-
-  //////////////////// NUMBEROF VAR ///////////////////////
-  /// Very basic, could be improved
-  void Convert(const NumberofVarConstraint& novc) {
-    const auto& args = novc.GetArguments();
-    std::vector<double> coefs(args.size(), 1.0);
-    coefs.front() = -1.0;
-    std::vector<int> flags(args.size(), novc.GetResultVar());
-    for (size_t ivar = 1; ivar < args.size(); ++ivar) {
-      flags[ivar] = this->AssignResultVar2Args(   // flag = (args[i]==args[0])
-            EQ0Constraint(
-                 { { {1.0, -1.0}, {args[ivar], args[0]} }, 0.0 } ) );
-    }
-    this->AddConstraint( LinConEQ( {coefs, flags}, {0.0} ) );
-  }
-
-  void Convert(const CountConstraint& cc) {
-    const auto& args = cc.GetArguments();
-    std::vector<double> coefs(args.size()+1, 1.0);
-    coefs.back() = -1.0;
-    std::vector<int> flags(args.size()+1, cc.GetResultVar());
-    for (size_t ivar = 0; ivar < args.size(); ++ivar) {
-      flags[ivar] = args[ivar];
-      /// Force booleanize
-      /// Either reify !=0 or constrain to 0..1? TODO param? TODO warning?
-      if (!MPD( is_binary_var(args[ivar]) )) {
-        auto feq0 = this->AssignResultVar2Args(   // feq0 = (args[i]==0)
-            EQ0Constraint( { {{1.0}, {args[ivar]}}, 0.0 } ) );
-        flags[ivar] = this->AssignResultVar2Args(   // flag = (args[i]!=0)
-            NotConstraint( {feq0} ));
-      }
-    }
-    this->AddConstraint( LinConEQ( {coefs, flags}, 0.0 ) );
-  }
-
   ///////////////////////////////////////////////////////////////////////
   /////////////////////////// MAPS //////////////////////////
   ///
@@ -240,8 +173,12 @@ public:
   INSTALL_ITEM_CONVERTER(AndConverter_MIP)
   /// AllDiff
   INSTALL_ITEM_CONVERTER(AllDiffConverter_MIP)
+  /// Count
+  INSTALL_ITEM_CONVERTER(CountConverter_MIP)
   /// EQ0
   INSTALL_ITEM_CONVERTER(EQ0Converter_MIP)
+  /// IfThenElse
+  INSTALL_ITEM_CONVERTER(IfThenElseConverter_MIP)
   /// ImplLE0
   INSTALL_ITEM_CONVERTER(IndicatorLinLEConverter_MIP)
   /// ImplEQ0
@@ -256,6 +193,10 @@ public:
   INSTALL_ITEM_CONVERTER(MaxConverter_MIP)
   /// Not
   INSTALL_ITEM_CONVERTER(NotConverter_MIP)
+  /// NumberofConst
+  INSTALL_ITEM_CONVERTER(NumberofConstConverter_MIP)
+  /// NumberofVar
+  INSTALL_ITEM_CONVERTER(NumberofVarConverter_MIP)
   /// Or
   INSTALL_ITEM_CONVERTER(OrConverter_MIP)
 

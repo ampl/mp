@@ -48,8 +48,8 @@ protected:
     else
       ae += {{-bnds.ub(), b}, 0.0};
     GetMC().AddConstraint(LinConLE(              // Big-M constraint
-        (LinTerms&&)ae,               // skip the constant
-        -ae.constant_term() ));       // and use it here
+        ae.get_lin_exp(),                      // skip the constant
+        -ae.constant_term() ));                // and use it here
   }
 
 };
