@@ -4,7 +4,10 @@
 /**
  * Generate ModelManagerWithPB<mp::Problem>
  *
- * Include this in a separate .cc to improve compilation speed
+ * Separate compiling NLHandler from Converter
+ * to improve compilation speed
+ *
+ * Include this in a separate .cc
  */
 #include "mp/model-mgr-with-std-pb.h"
 #include "mp/model-mgr-with-pb.h"
@@ -16,7 +19,7 @@ using ModelMgrWithStdPB =
 
 std::unique_ptr<BasicModelManager>
 CreateModelManagerWithStdBuilder(
-    std::unique_ptr<BasicConverter<mp::Problem> > pcvt) {
+    std::unique_ptr< BasicConverter<mp::Problem> > pcvt) {
   return std::unique_ptr<BasicModelManager>
     { new ModelMgrWithStdPB(std::move(pcvt)) };
 }

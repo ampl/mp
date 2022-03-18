@@ -2205,10 +2205,16 @@ class NLProblemBuilder {
   }
 
  public:
+  /// Constructor
   explicit NLProblemBuilder(ProblemBuilder &builder): builder_(builder) {}
 
+  /// Destructor. We have virtual functions
+  virtual ~NLProblemBuilder() = default;
+
+  /// Get builder
   ProblemBuilder &builder() { return builder_; }
 
+  /// OnHeader event
   void OnHeader(const NLHeader &h) {
     builder_.SetInfo(h);
 
@@ -2233,16 +2239,24 @@ class NLProblemBuilder {
       builder_.AddFunctions(h.num_funcs);
   }
 
+  /// objno(). virtual, so that SolverNLHandler can override
   virtual int objno() const { return 1; }
+
+  /// multiobj(). virtual, so that SolverNLHandler can override
   virtual bool multiobj() const { return true; }
 
+  /// Actual N objectives
   int resulting_nobj(int nobj_header) const {
     return multiobj() ? nobj_header :
                         std::min( (objno()>0), (nobj_header>0) );
   }
+
+  /// Whether need this objective
   bool NeedObj(int obj_index) const {
     return multiobj() || objno()-1==obj_index;
   }
+
+  /// Final obj index for a given original index
   int resulting_obj_index(int index) const {
     if (multiobj())
       return index;

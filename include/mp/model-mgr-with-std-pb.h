@@ -3,6 +3,8 @@
 
 /**
  * Generate ModelManagerWithPB<mp::Problem>, header file
+ *
+ * Separates compiling NLHandler from Converter
  */
 #include <memory>
 
@@ -12,10 +14,10 @@
 
 namespace mp {
 
-/// Declare an ModelManager factory
+/// Declare a ModelManager factory
 std::unique_ptr<BasicModelManager>
 CreateModelManagerWithStdBuilder(
-    std::unique_ptr<BasicConverter<mp::Problem> > pcvt);
+    std::unique_ptr< BasicConverter<mp::Problem> > pcvt);
 
 }
 

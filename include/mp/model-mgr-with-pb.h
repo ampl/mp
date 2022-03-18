@@ -32,14 +32,18 @@
 
 namespace mp {
 
-/// Model Manager with a given ProblemBuilder as intermediate instance storage.
+/// Model Manager with a ProblemBuilder.
 ///
 /// Reads a problem from an .nl file, writes solution(s).
 ///
+/// ProblemBuilder is defined by the Converter
+/// and used as an intermediate instance storage.
+///
 /// ModelManagerWithProblemBuilder uses Converter to convert the instance,
-/// e.g., walk the NL tree stored in a given ProblemBuilder which can be,
-/// e.g., mp::Problem.
-/// The Converter must implement the BasicConverter<> interface.
+/// e.g., walk the NL tree and convert other constraints
+/// stored in a given ProblemBuilder which can be, e.g., mp::Problem.
+///
+/// The Converter must implement the BasicConverter<ProblemBuilder> interface.
 ///
 /// TODO consider walking the tree while reading
 template <class Converter>
@@ -48,7 +52,16 @@ class ModelManagerWithProblemBuilder :
     public EnvKeeper
 {
 protected:
+  /// Convenience typedef
   using ConverterType = Converter;
+
+  /// SolverType, needed by SolutionHandler
+  using SolverType = BasicSolver;
+
+  /// ProblemBuilder, needed by NL readers and solution handler.
+  /// Converter does not have to know this is a ProblemBuilder.
+  using ProblemBuilder = typename ConverterType::ModelType;
+
 
 public:
   /// Class name
@@ -59,20 +72,16 @@ public:
 
 
 protected:
-  void SetBasename(const std::string& filename_no_ext) override {
-    MakeUpTemporarySolHandler(filename_no_ext); ///< So that Abort() works
+  /// Initialize solver options
+  void InitOptions() override {
+    GetCvt().InitOptions();
+    InitOwnOptions();
   }
 
-  /// Before reading the NL file, a generic solution handler
-  /// for error reporting
-  void MakeUpTemporarySolHandler(const std::string& filename_no_ext) {
-    ArrayRef<int> options({1, 1, 0});        ///< 'Default' NL options
-    SetSolHandler(new internal::AppSolutionHandlerImpl<SolverType, ModelType>(
-                             filename_no_ext, GetEnv(), GetModel(),
-                             options,
-                             GetEnv().get_output_handler().has_output ?
-                                 0 :
-                                 GetEnv().get_output_handler().banner_size));
+  void SetBasename(const std::string& filename_no_ext) override {
+     /// So that Abort() + sol writing work
+     /// before we have parsed the NL file
+     MakeUpTemporarySolHandler(filename_no_ext);
   }
 
   void ReadNLModel(const std::string& nl_filename,
@@ -95,9 +104,21 @@ protected:
 
   void ReadNLFile(const std::string& nl_filename) {
     set_nl_read_result_handler(
-          new SolverNLHandlerType(GetModelBuilder(), GetEnv()));
+          new SolverNLHandlerType(GetPB(), GetEnv()));
     internal::NLFileReader<> reader;
     reader.Read(nl_filename, *nl_read_result_.handler_, 0);
+  }
+
+  /// Before reading the NL file, a generic solution handler
+  /// for error reporting
+  void MakeUpTemporarySolHandler(const std::string& filename_no_ext) {
+    ArrayRef<int> options({1, 1, 0});        ///< 'Default' NL options
+    SetSolHandler(new internal::AppSolutionHandlerImpl<SolverType, ProblemBuilder>(
+                             filename_no_ext, GetEnv(), GetModel(),
+                             options,
+                             GetEnv().get_output_handler().has_output ?
+                                 0 :
+                                 GetEnv().get_output_handler().banner_size));
   }
 
   /// Once NL is read
@@ -105,8 +126,8 @@ protected:
     ArrayRef<int> options(get_nl_read_result_handler().options(),
                           get_nl_read_result_handler().num_options());
     SetSolHandler(
-          new internal::AppSolutionHandlerImpl<SolverType, ModelType>(
-          filename_no_ext, GetEnv(), GetModelBuilder(), options,
+          new internal::AppSolutionHandlerImpl<SolverType, ProblemBuilder>(
+          filename_no_ext, GetEnv(), GetPB(), options,
           GetEnv().get_output_handler().has_output ?
             0 :
             GetEnv().get_output_handler().banner_size));
@@ -119,61 +140,20 @@ protected:
   }
 
 
-  ////////////////////////////// OPTIONS ////////////////////////////////
 protected:
-  // Add more text to be displayed before option descriptions.
-  void add_to_long_name(fmt::StringRef name) { GetEnv().add_to_long_name(name); }
-  void add_to_version(fmt::StringRef version) { GetEnv().add_to_version(version); }
-  void add_to_option_header(const char* header_more) {
-    GetEnv().add_to_option_header(header_more);
-  }
+  const ProblemBuilder& GetPB() const { return GetModel(); }
+  ProblemBuilder& GetPB() { return GetModel(); }
 
-  /// Simple stored option referencing a variable
-  template <class Value>
-  void AddOption(const char *name_list, const char *description,
-                 Value& value, ValueArrayRef values = ValueArrayRef()) {
-    GetEnv().AddStoredOption(name_list, description, value, values);
-  }
-
-  ////////////////////////////// UTILITIES //////////////////////////////
-  template <typename... Args> \
-  void Print(fmt::CStringRef format, const Args & ... args) {
-    GetEnv().Print(format, args...);
-  }
-
-public:
-  /// Initialize solver options
-  void InitOptions() override {
-    GetCvt().InitOptions();
-    InitOwnOptions();
-  }
-
-private:
-  void InitOwnOptions() {
-  }
-
-public:
-  /// SolverType, needed by SolutionHandler
-  using SolverType = BasicSolver;
-
-  /// ModelType, needed by NL readers and solution handler
-  using ModelType = typename ConverterType::ModelType;
-
-  const ModelType& GetModelBuilder() const { return GetModel(); }
-  ModelType& GetModelBuilder() { return GetModel(); }
-
-  const ModelType& GetModel() const
+  const ProblemBuilder& GetModel() const
   { return GetCvt().GetModel(); }
-  ModelType& GetModel() { return GetCvt().GetModel(); }
+  ProblemBuilder& GetModel() { return GetCvt().GetModel(); }
 
   const Converter& GetCvt() const { return *pcvt_; }
   Converter& GetCvt() { return *pcvt_; }
 
-
-protected:
   using SolverNLHandlerType =
-    internal::SolverNLHandlerImpl<BasicSolver, ModelType,
-                                  internal::NLProblemBuilder<ModelType>>;
+    internal::SolverNLHandlerImpl< BasicSolver, ProblemBuilder,
+                                   internal::NLProblemBuilder<ProblemBuilder> >;
 
   struct NLReadResult {
     using HandlerType = SolverNLHandlerType;
@@ -195,9 +175,6 @@ protected:
   void SetSolHandler(SolutionHandler* psh)
   { assert(psh); p_sol_handler_.reset(psh); }
   void RemoveSolHandler() { p_sol_handler_.reset(nullptr); }
-
-  const BasicModelManager& GetCQ() const { return *this; }
-  BasicModelManager& GetCQ() { return *this; }
 
   /// Define original model access from BasicOriginalModelProxy
   ArrayRef<double> InitialValues() override {
@@ -243,6 +220,11 @@ protected:
   /// TODO Why here?
   const std::vector<bool>& IsVarInt() const override {
     return GetModel().IsVarInt();
+  }
+
+
+private:
+  void InitOwnOptions() {
   }
 
 

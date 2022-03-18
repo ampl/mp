@@ -6,9 +6,10 @@
 namespace mp {
 
 /// BasicConverter<> is an interface for a class that takes
-/// a ProblemBuilder and translates it into the solver API.
-/// The ProblemBuilder can be used by NLHandler for NL input.
-template <class ProblemBuilder>
+/// a Model and translates it into the solver API.
+/// Model can be a ProblemBuilder used by NLHandler for NL input,
+/// as done by ModelManagerWithProblemBuilder.
+template <class Model>
 class BasicConverter : public EnvKeeper {
 public:
   /// Constructor
@@ -17,7 +18,7 @@ public:
   virtual ~BasicConverter() = default;
 
   /// The ProblemBuilder a.k.a. Model type
-  using ModelType = ProblemBuilder;
+  using ModelType = Model;
 
   /// Access the model instance, const
   virtual const ModelType& GetModel() const = 0;

@@ -350,7 +350,7 @@ private:
     return CONSTRAINT_KEEPER_VAR(Constraint); \
   }
 
-/// Internal use
+/// Internal use. Name of the constraint container
 #define CONSTRAINT_KEEPER_VAR(Constraint) \
   ck__ ## Constraint ## _
 
