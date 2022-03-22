@@ -1,5 +1,3 @@
-#include <stdexcept>
-
 #include "mp/format.h"
 #include "cplexcommon.h"
 

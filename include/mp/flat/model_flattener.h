@@ -423,7 +423,7 @@ public:
 
   EExpr VisitAllDiff(PairwiseExpr e) {
     if (expr::ALLDIFF != e.kind())
-      throw std::logic_error("NOT_ALLDIFF NOT IMPLEMENTED");
+      MP_RAISE("NOT_ALLDIFF NOT IMPLEMENTED");
     return VisitFunctionalExpression<AllDiffConstraint>(e);
   }
 

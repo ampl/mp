@@ -28,9 +28,11 @@ protected:
   bool ResultIsConstant() const { return prepro_.is_constant(); }
   bool ResultVarIsKnown() const { return prepro_.is_result_var_known(); }
   bool MapFind() {
-    const auto pck = GetConverter().MapFind(GetConstraint());
-    if (pck) {
-      SetResultVar(pck.GetResultVar());
+    const auto i = GetConverter().MapFind(GetConstraint());
+    if (i>=0) {
+      SetResultVar(GetConverter().
+                   template GetConstraint<Constraint>(i).
+                   GetResultVar());
       return true;
     }
     return false;

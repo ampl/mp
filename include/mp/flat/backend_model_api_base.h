@@ -21,7 +21,6 @@
 #define BACKEND_FLAT_MODEL_API_BASE_H_
 
 #include <string>
-#include <stdexcept>
 
 #include "mp/arrayref.h"
 #include "mp/common.h"
@@ -101,16 +100,16 @@ public:
 
   ////////////////// Some standard items /////////////////
   void SetLinearObjective(int , const LinearObjective& ) {
-    throw MakeUnsupportedError("FlatBackend::SetLinearObjective()");
+    MP_UNSUPPORTED("FlatBackend::SetLinearObjective()");
   }
 
   void SetQuadraticObjective(int , const QuadraticObjective& ) {
-    throw MakeUnsupportedError("FlatBackend::SetQuadraticObjective()");
+    MP_UNSUPPORTED("FlatBackend::SetQuadraticObjective()");
   }
 
   template <class Constraint>
   void AddConstraint(const Constraint& ) {
-    throw std::logic_error(
+    MP_RAISE(
           std::string("Not handling constraint '") +
           Constraint::GetName() +
           "'. Provide a handler or a converter method");

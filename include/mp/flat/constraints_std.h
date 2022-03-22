@@ -7,6 +7,7 @@
 #include <string>
 #include <cmath>
 
+#include "mp/error.h"
 #include "mp/arrayref.h"
 #include "mp/flat/constraint_base.h"
 #include "mp/flat/expr_quadratic.h"
@@ -367,7 +368,7 @@ DEF_NUMERIC_FUNC_CONSTR( TanConstraint, VarArray1,
 /// so that the constraint is equivalent to expr<=>0.0
 template <class Constraint>
 int ToLhsExpr(const Constraint& ) {
-  throw std::runtime_error(
+  MP_RAISE(
         std::string("Cannot produce a lhs expr from ") +
           typeid (Constraint).name());
   return 0;

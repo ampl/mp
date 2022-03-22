@@ -122,14 +122,6 @@ public:
   const Parameters& GetParameters() const { return params_; }
   /// Get Parameters&
   Parameters& GetParameters() { return params_; }
-
-  /////////////////////////////////////////////////////////////////////
-  /// Specific operator==
-  bool operator ==(const CustomFunctionalConstraint& mc) const {
-    return this->GetResultVar()==mc.GetResultVar() &&
-        this->GetArguments()==mc.GetArguments() &&
-        this->GetParameters()==mc.GetParameters();
-  }
 };
 
 

@@ -35,6 +35,7 @@
 #include "mp/error.h"
 #include "mp/format.h"
 #include "mp/safeint.h"
+#include "mp/utils-hash.h"
 
 namespace mp {
 
@@ -60,6 +61,7 @@ inline void CheckIndex(int index, std::size_t size) {
   internal::Unused(index, size);
 }
 
+/// ExprBase
 class ExprBase {
  protected:
   // The following members are protected rather than private because
@@ -598,7 +600,7 @@ typedef BasicIfExpr<Expr, expr::IFSYM> SymbolicIfExpr;
 
 namespace internal {
 
-// Expression types.
+/// Expression types.
 struct ExprTypes {
   typedef mp::Expr Expr;
   typedef mp::NumericExpr NumericExpr;
@@ -641,14 +643,14 @@ struct ExprTypes {
 };
 }  // namespace internal
 
-// An expression factory.
-// Alloc: a memory allocator.
-// Allocator requirements:
-// 1. The allocate function should return a pointer suitably aligned to hold
-//    an object of any fundamental alignment like ::operator new(std::size_t)
-//    does.
-// 2. The deallocate function should be able to handle 0 passed as the
-//    second argument.
+/// An expression factory.
+/// Alloc: a memory allocator.
+/// Allocator requirements:
+/// 1. The allocate function should return a pointer suitably aligned to hold
+///    an object of any fundamental alignment like ::operator new(std::size_t)
+///    does.
+/// 2. The deallocate function should be able to handle 0 passed as the
+///    second argument.
 template <typename Alloc>
 class BasicExprFactory : private Alloc {
  private:
@@ -1104,15 +1106,8 @@ bool Equal(Expr e1, Expr e2);
 }  // namespace mp
 
 #ifdef MP_USE_HASH
-namespace mp {
-namespace internal {
-template <class T>
-inline std::size_t HashCombine(std::size_t seed, const T &v) {
-  return seed ^ (std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
-}
-}
-}
 namespace std {
+/// Specialize std::hash<> for mp::Expr
 template <>
 struct hash<mp::Expr> {
   std::size_t operator()(mp::Expr e) const;

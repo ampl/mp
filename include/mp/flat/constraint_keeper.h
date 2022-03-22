@@ -3,10 +3,13 @@
 
 #include <deque>
 #include <map>
+#include <unordered_map>
+#include <functional>
 #include <cmath>
 
 #include "mp/common.h"
 #include "mp/flat/backend_model_api_base.h"
+#include "mp/flat/constraint_hash.h"
 #include "mp/flat/redef/redef_base.h"
 #include "mp/presolve-node.h"
 
@@ -20,35 +23,48 @@ class BasicConstraintKeeper {
 public:
   /// Destructor
   virtual ~BasicConstraintKeeper() { }
+
   /// Constructor
   BasicConstraintKeeper(const char* nm) :
     value_node_(nm), constr_name_(nm) { }
+
   /// Constraint type
   using ConstraintType = BasicConstraint;
+
   /// Constraint keeper description
   virtual const std::string& GetDescription() const = 0;
+
   /// Propagate expression result of constraint \a i top-down
   virtual void PropagateResult(BasicFlatConverter& cvt,
                                int i,
                                double lb, double ub, Context ctx) = 0;
+
   /// Result variable of constraint \a i. Returns -1 if none
   virtual int GetResultVar(int i) const = 0;
+
   /// Convert all new items of this constraint.
   /// This normally dispatches conversion (decomposition) to the Converter
   /// @return whether any converted
   virtual bool ConvertAllNewWith(BasicFlatConverter& cvt) = 0;
-  /// Checks backend's acceptance level for the constraint
+
+  /// Backend's acceptance level for the constraint type
   virtual ConstraintAcceptanceLevel BackendAcceptance(
       const BasicBackendFlatModelAPI& ) const = 0;
-  /// Checks backend's group number for the constraint
+
+  /// Backend's group number for the constraint type
   virtual int BackendGroup(const BasicBackendFlatModelAPI& ) const = 0;
+
   /// This adds all unbridged items to the backend (without conversion)
   virtual void AddUnbridgedToBackend(BasicBackendFlatModelAPI& be) = 0;
 
   /// Value presolve node, const
   const pre::ValueNode& GetValueNode() const { return value_node_; }
+
   /// Value presolve node
   pre::ValueNode& GetValueNode() { return value_node_; }
+
+  /// Constraint name
+  const char* GetConstraintName() const { return constr_name_; }
 
 private:
   pre::ValueNode value_node_;
@@ -79,11 +95,14 @@ struct ConstraintLocationHelper {
   typename ConstraintKeeper::ConstraintType&
   GetConstraint() { return GetCK()->GetConstraint(GetIndex()); }
 
-  /// Get/set data
+  /// Get Keeper
   ConstraintKeeper* GetCK() const { assert(HasId()); return pck_; }
+  /// Get index
   int GetIndex() const { return index_; }
 
+  /// Set Keeper
   void SetCK(ConstraintKeeper* pck) { pck_ = pck; }
+  /// Set index
   void SetIndex(int i) { index_ = i; }
 
   ConstraintKeeper* pck_ = nullptr;
@@ -108,7 +127,7 @@ public:
   /// TODO incapsulate parameters
   void PropagateResult(BasicConstraint& con, double lb, double ub, Context ctx) {
     internal::Unused(con, lb, ub, ctx);
-    throw std::logic_error("This should not be called");
+    MP_RAISE("This should not be called");
   }
 
   /// Default conversion priority
@@ -117,7 +136,7 @@ public:
   /// By default, we complain about someone trying to convert an unknown constraint
   template <class Constraint>
   void Convert(const Constraint& ) {
-    throw std::logic_error(
+    MP_RAISE(
           std::string("Not converting constraint ") + Constraint::GetName());
   }
 
@@ -132,15 +151,13 @@ public:
 
   /// For Common Subexpression Elimination, we can use maps
   /// This stub returns empty Id
-  AbstractConstraintLocation MapFind(const BasicConstraint& )
-  { return { }; }
+  int MapFind(const BasicConstraint& ) { return -1; }
 
   /// Returns false when we do have a map and entry duplicated
   /// (should not happen).
-  /// Can be conveniently overloaded for
-  /// ConstraintLocation<Constraint> defined in Converters
-  template <class CK>
-  bool MapInsert(ConstraintLocationHelper<CK> ) { return true; }
+  /// Can be conveniently overloaded
+  template <class Con>
+  bool MapInsert(const Con& , int ) { return true; }
 
   /// Similarly to Convert(),
   /// need to 'using' base class' map accessors in the Converter
@@ -166,32 +183,39 @@ class ConstraintKeeper : public BasicConstraintKeeper {
 public:
   /// Constraint type
   using ConstraintType = Constraint;
+
   /// Constrint Keeper description
   const std::string& GetDescription() const override
   { return desc_; }
+
   /// Assume Converter has the Backend
   Backend& GetBackend(BasicFlatConverter& cvt)
   { return static_cast<Converter&>(cvt).GetBackend(); }
+
   /// Constructor, adds this CK to the provided ConstraintManager
   /// Requires the CM to be already constructed
   ConstraintKeeper(Converter& cvt, const char* nm) :
     BasicConstraintKeeper(nm), cvt_(cvt) {
     GetConverter().AddConstraintKeeper(*this, ConversionPriority());
   }
+
   /// Add a pre-constructed constraint (or just arguments)
   /// @return index of the new constraint
   template <class... Args>
-  int AddConstraint(Args&&... args) noexcept
+  int AddConstraint(Args&&... args)
   {
     cons_.emplace_back( std::move(args)... );
     return cons_.size()-1;
   }
+
   /// Get const constraint \a i
   const Constraint& GetConstraint(int i) const
   { assert(check_index(i)); return cons_[i].con_; }
+
   /// Get constraint \a i
   Constraint& GetConstraint(int i)
   { assert(check_index(i)); return cons_[i].con_; }
+
   /// Propagate expression result of constraint \a i top-down
   void PropagateResult(BasicFlatConverter& cvt,
                        int i,
@@ -200,19 +224,22 @@ public:
       static_cast<Converter&>(cvt).PropagateResult(
             GetConstraint(i), lb, ub, ctx);
     } catch (const std::exception& exc) {
-      throw std::logic_error(Converter::GetConverterName() +
+      MP_RAISE(Converter::GetConverterName() +
                              std::string(": propagating result for constraint ") +
                              std::to_string(i) + " of type '" +
                              Constraint::GetName() +
                              "':  " + exc.what());
     }
   }
+
   /// Result variable of constraint \a i. Returns -1 if none
   int GetResultVar(int i) const override
   { assert(check_index(i)); return cons_[i].con_.GetResultVar(); }
+
   /// Conversion priority. Uses that from Converter
   double ConversionPriority() const
   { return Converter::ConstraintCvtPriority((Constraint*)nullptr); }
+
   /// Convert all new items of this constraint.
   /// This normally dispatches conversion (decomposition) to the Converter
   /// @return whether any converted
@@ -221,24 +248,31 @@ public:
     try {
       return ConvertAllFrom(i_cvt_last_);
     } catch (const std::exception& exc) {
-      throw std::logic_error(Converter::GetConverterName() + std::string(": ")
+      MP_RAISE(Converter::GetConverterName() + std::string(": ")
                              + exc.what());
     }
     return false;
   }
+
+  /// Acceptance level of this constraint type in the Backend
   ConstraintAcceptanceLevel BackendAcceptance(
       const BasicBackendFlatModelAPI& ba) const override {
     return static_cast<const Backend&>( ba ).AcceptanceLevel((Constraint*)nullptr);
   }
+
+  /// Group number of this constraint type in the Backend.
+  /// This is needed for pre- / postsolve to group solution values
   int BackendGroup(
       const BasicBackendFlatModelAPI& ba) const override {
     return static_cast<const Backend&>( ba ).GroupNumber((Constraint*)nullptr);
   }
+
+  /// Add remaining constraints to Backend
   void AddUnbridgedToBackend(BasicBackendFlatModelAPI& be) override {
     try {
       AddAllUnbridged(be);
     } catch (const std::exception& exc) {
-      throw std::logic_error(std::string("Adding constraint '") +
+      MP_RAISE(std::string("Adding constraint '") +
                              Constraint::GetName() + "' to " +
                              Backend::GetName() + std::string(": ") +
                              exc.what());
@@ -336,8 +370,16 @@ private:
 #define GET_CONSTRAINT_KEEPER(Constraint) \
   MPD( GetConstraintKeeper((Constraint*)nullptr) )
 
+/// Use this to obtain a certain map, const
+#define GET_CONST_CONSTRAINT_MAP(Constraint) \
+  MPCD( GetConstraintMap((Constraint*)nullptr) )
+/// Use this to obtain a certain map
+#define GET_CONSTRAINT_MAP(Constraint) \
+  MPD( GetConstraintMap((Constraint*)nullptr) )
+
 /// Define a constraint keeper
-#define STORE_CONSTRAINT_TYPE(Constraint) \
+/// without a subexpression map
+#define STORE_CONSTRAINT_TYPE__INTERNAL(Constraint) \
   ConstraintKeeper<Impl, Backend, Constraint> \
     CONSTRAINT_KEEPER_VAR(Constraint) \
       {*static_cast<Impl*>(this), #Constraint}; \
@@ -350,9 +392,71 @@ private:
     return CONSTRAINT_KEEPER_VAR(Constraint); \
   }
 
+/// Define a constraint keeper
+/// without a subexpression map.
+/// Provide empty MapFind (returns -1) / MapInsert
+#define STORE_CONSTRAINT_TYPE__NO_MAP(Constraint) \
+  STORE_CONSTRAINT_TYPE__INTERNAL(Constraint) \
+  int MapFind__Impl(const Constraint& ) { return -1; } \
+  bool MapInsert__Impl(const Constraint&, int ) \
+    { return true; }
+
+
+/// Define a constraint keeper
+/// with a subexpression map.
+/// The Converter storing the Constraint
+/// should define MapFind / MapInsert accessing
+/// the GET_(CONST_)CONSTRAINT_MAP(Constraint)
+#define STORE_CONSTRAINT_TYPE__WITH_MAP(Constraint) \
+  STORE_CONSTRAINT_TYPE__INTERNAL(Constraint) \
+  STORE_CONSTRAINT_MAP(Constraint)
+
 /// Internal use. Name of the constraint container
 #define CONSTRAINT_KEEPER_VAR(Constraint) \
   ck__ ## Constraint ## _
+
+/// Create constraint map. Normally internal use
+#define STORE_CONSTRAINT_MAP(Constraint) \
+  ConstraintMap<Constraint> CONSTRAINT_MAP_VAR(Constraint); \
+  const ConstraintMap<Constraint>& \
+  GetConstraintMap(Constraint* ) const { \
+    return CONSTRAINT_MAP_VAR(Constraint); \
+  } \
+  ConstraintMap<Constraint>& \
+  GetConstraintMap(Constraint* ) { \
+    return CONSTRAINT_MAP_VAR(Constraint); \
+  }
+
+/// Internal use. Name of the constraint map
+#define CONSTRAINT_MAP_VAR(Constraint) \
+  map__ ## Constraint ## _
+
+
+/// Subexpression map
+///
+/// Indexes constraint location
+template <class Constraint>
+using ConstraintMap = std::unordered_map<
+    std::reference_wrapper< const Constraint >, int >;
+
+/// Subexpression map requires operator==(refwrap, refwrap)
+///
+/// The below one is for CustomFunctionalConstraint<>
+template <class Args, class Params, class NumOrLogic, class Id>
+bool operator==(std::reference_wrapper<
+                  const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id> > c1,
+                std::reference_wrapper<
+                  const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id> > c2) {
+  return c1.get().GetArguments() == c2.get().GetArguments() &&
+      c1.get().GetParameters() == c2.get().GetParameters();
+}
+
+/// operator==(AffExp, AffExp)
+bool operator==(const AffExp& ae1, const AffExp& ae2) {
+  return ae1.vars()==ae2.vars() &&   // Best if sorted
+      ae1.coefs()==ae2.coefs() &&
+      ae1.constant_term()==ae2.constant_term();
+}
 
 
 /// Manage ConstraintKeepers for different constraint types

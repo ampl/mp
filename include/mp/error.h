@@ -33,6 +33,9 @@ namespace mp {
 # define MP_ASSERT(condition, message) assert((condition) && message)
 #endif
 
+#define MP_UNSUPPORTED(name) \
+  throw MakeUnsupportedError( name )
+
 #define MP_RAISE(msg) throw std::runtime_error(msg)
 #define MP_RAISE_WITH_CODE(exit_code, msg) throw mp::Error(msg, exit_code)
 #define MP_WARNING(msg) Print(msg)

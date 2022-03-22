@@ -318,11 +318,12 @@ add_prefix(MP_HEADERS include/mp/
   presolve-base.h presolve-node.h presolve-bridge.h presolve.h
   rstparser.h safeint.h sol.h
   solver.h solver-opt.h solver-base.h solver-io.h solver-app-base.h solver-app.h
-  suffix.h utils-file.h utils-string.h)
+  suffix.h utils-file.h utils-hash.h utils-hash-stream.h utils-string.h)
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/
   backend_model_api_base.h
-  constraint_base.h constraints_std.h constraint_keeper.h context.h
+  constraint_base.h constraint_keeper.h constraint_hash.h
+  constraints_std.h context.h
   converter.h converter_model.h convert_functional.h
   eexpr.h expr_affine.h expr_quadratic.h
   model_flattener.h

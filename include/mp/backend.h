@@ -23,7 +23,6 @@
 
 #include <cmath>
 #include <functional>
-#include <stdexcept>
 
 #include "mp/clock.h"
 #include "mp/backend-with-mm.h"
@@ -48,9 +47,6 @@ DEFAULT_STD_FEATURES_TO( false )
     STD_FEATURE_STRUCT_NM( name )() ) )
 #define STD_FEATURE_QUERY_FN AllowStdFeature__func
 #define STD_FEATURE_STRUCT_NM( name ) StdFeatureDesc__ ## name
-
-#define UNSUPPORTED(name) \
-  throw MakeUnsupportedError( name )
 
 
 namespace mp {
@@ -115,7 +111,7 @@ protected:
   ALLOW_STD_FEATURE( MULTIOBJ, false )
   /// Placeholder: set objective priorities
   virtual void ObjPriorities(ArrayRef<int>)
-  { UNSUPPORTED("Backend::ObjPriorities"); }
+  { MP_UNSUPPORTED("Backend::ObjPriorities"); }
   /// Placeholder: set objective weights
   virtual void ObjWeights(ArrayRef<double>) { }
   /// Placeholder: set objective abs tol

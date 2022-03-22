@@ -88,7 +88,8 @@ public:
   /// Getter (unpresolved)
   virtual SolutionBasis GetBasis() { return {}; }
   /// Setter (unpresolved)
-  virtual void SetBasis(SolutionBasis ) { UNSUPPORTED("MIPBackend::SetBasis"); }
+  virtual void SetBasis(SolutionBasis )
+  { MP_UNSUPPORTED("MIPBackend::SetBasis"); }
   /**
   * General LP warm start, e.g.,
   * set primal/dual initial guesses for continuous case
@@ -96,21 +97,21 @@ public:
   DEFINE_STD_FEATURE( WARMSTART )
   ALLOW_STD_FEATURE( WARMSTART, false )
   virtual void AddPrimalDualStart(Solution )
-  { UNSUPPORTED("MIPBackend::AddPrimalDualStart"); }
+  { MP_UNSUPPORTED("MIPBackend::AddPrimalDualStart"); }
   /**
   * Specifically, MIP warm start
   **/
   DEFINE_STD_FEATURE( MIPSTART )
   ALLOW_STD_FEATURE( MIPSTART, false )
   virtual void AddMIPStart(ArrayRef<double> )
-  { UNSUPPORTED("MIPBackend::AddMIPStart"); }
+  { MP_UNSUPPORTED("MIPBackend::AddMIPStart"); }
   /**
   * Set branch and bound priority
   **/
   DEFINE_STD_FEATURE( VAR_PRIORITIES )
   ALLOW_STD_FEATURE( VAR_PRIORITIES, false )
   virtual void VarPriorities(ArrayRef<int>)
-  { UNSUPPORTED("MIPBackend::VarPriorities"); }
+  { MP_UNSUPPORTED("MIPBackend::VarPriorities"); }
   /**
   * Obtain unbounded/inf rays
   **/
@@ -138,7 +139,7 @@ public:
   DEFINE_STD_FEATURE( RETURN_BEST_DUAL_BOUND )
   ALLOW_STD_FEATURE( RETURN_BEST_DUAL_BOUND, false )
   virtual double BestDualBound()
-  { UNSUPPORTED("BestDualBound()"); return 0.0; }
+  { MP_UNSUPPORTED("BestDualBound()"); return 0.0; }
   /**
   * Report sensitivity analysis suffixes
   **/

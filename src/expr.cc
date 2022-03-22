@@ -30,7 +30,7 @@ using mp::Cast;
 
 namespace {
 
-// Compares expressions for equality.
+/// Compares expressions for equality.
 class ExprComparator : public mp::ExprVisitor<ExprComparator, bool> {
  private:
   mp::Expr expr_;
@@ -165,7 +165,8 @@ inline size_t HashCombine(size_t seed, mp::BasicExpr<FIRST, LAST> e) {
 }
 
 namespace {
-// Computes a hash value for an expression.
+
+/// Computes a hash value for an expression.
 class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
  private:
   static size_t Hash(Expr e) {

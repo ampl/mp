@@ -33,12 +33,19 @@ class FlatConverter :
     public EnvKeeper
 {
 public:
-  static constexpr const char* name() { return "FlatConverter"; };
+  /// Class name
+  static const char* GetConverterName() { return "FlatConverter"; }
 
+  /// Construct with Env&
+  FlatConverter(Env& e) : EnvKeeper(e), backend_(e) { }
+
+  /// Trying to use 'Var' instead of bare 'int'
   using Var = typename Model::Var;
+
+  /// 'Invalid' var id
   static constexpr Var VoidVar() { return Model::VoidVar(); }
 
-public:
+  /// Array of variable Id's
   using VarArray = std::vector<int>;
 
 protected:
@@ -46,18 +53,12 @@ protected:
   using BaseConverter = BasicFlatConverter;
   using BaseFlatModel = Model;
 
-public:
-  static const char* GetConverterName() { return "FlatConverter"; }
-
-  FlatConverter(Env& e) : EnvKeeper(e), backend_(e) { }
-
 
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
-  ///
   ///////////////////////////////////////////////////////////////////////////////////////////
 public:
   /// Fix a resulting variable of a logical expression as true
-  /// and propagate +Ctx
+  /// and propagate positive ctx
   /// TODO avoid creating resvar for root logical constraints
   void FixAsTrue(int resvar) {
     PropagateResultOfInitExpr(resvar, 1.0, 1.0, +Context());
@@ -74,6 +75,7 @@ protected:
 
 
 public:
+  /// Narrow variable domain range
   void NarrowVarBounds(int var, double lb, double ub) {
     auto& m = GetModel();
     m.set_lb(var, std::max(m.lb(var), lb));
@@ -208,7 +210,7 @@ protected:
       MP_DISPATCH( ConvertMaps() );
       MP_DISPATCH( PreprocessFinal() );               // final prepro
     } catch (const ConstraintConversionFailure& cff) {
-      throw std::logic_error(cff.message());
+      MP_RAISE(cff.message());
     }
   }
 
@@ -216,9 +218,11 @@ protected:
     GetModel(). ConvertAllConstraints(*this);
   }
 
+  /// Default map conversions. Currently empty
+  void ConvertMaps() { }
+
   //////////////////////// WHOLE-MODEL PREPROCESSING /////////////////////////
   void PreprocessIntermediate() { }
-  void ConvertMaps() { }
   void PreprocessFinal() { }
 
 
@@ -662,9 +666,9 @@ protected:
     if (resvar>=0)
       AddInitExpression(resvar, ci);
     /// Can also cache non-functional constraints
-    ConstraintLocation<Constraint> cl{&ck, i};
-    if (! MP_DISPATCH( MapInsert( cl ) ))
-      throw std::logic_error("Trying to map_insert() duplicated constraint: " +
+    if (! MP_DISPATCH( MapInsert(
+                         MPD(template GetConstraint<Constraint>(i)), i ) ))
+      MP_RAISE("Trying to MapInsert() duplicated constraint: " +
                              ck.GetDescription());
     return ck.GetValueNode().Select(i);
   }
@@ -751,24 +755,35 @@ public:
   { return GET_CONSTRAINT_KEEPER(Constraint).GetValueNode(); }
 
 public:
+  /// Shortcut lb(var)
   double lb(int var) const { return this->GetModel().lb(var); }
+  /// Shortcut ub(var)
   double ub(int var) const { return this->GetModel().ub(var); }
+  /// lb_array()
   template <class VarArray>
-  double lb_array(const VarArray& va) const { return this->GetModel().lb_array(va); }
+  double lb_array(const VarArray& va) const
+  { return this->GetModel().lb_array(va); }
+  /// ub_array()
   template <class VarArray>
-  double ub_array(const VarArray& va) const { return this->GetModel().ub_array(va); }
+  double ub_array(const VarArray& va) const
+  { return this->GetModel().ub_array(va); }
+  /// var_type()
   var::Type var_type(int var) const { return this->GetModel().var_type(var); }
+  /// is_fixed()
   bool is_fixed(int var) const { return this->GetModel().is_fixed(var); }
+  /// fixed_value()
   double fixed_value(int var) const { return this->GetModel().fixed_value(var); }
 
+  /// MakeComplementVar()
   int MakeComplementVar(int bvar) {
     if (! (lb(bvar)==0.0 && ub(bvar)==1.0) )
-      throw std::logic_error("Asked to complement variable with bounds "
+      MP_RAISE("Asked to complement variable with bounds "
                              + std::to_string(lb(bvar)) + ".." + std::to_string(ub(bvar)));
     AffExp ae({{-1.0}, {bvar}}, 1.0); // TODO use map / FCC?
     return MP_DISPATCH( Convert2Var(std::move(ae)) );
   }
 
+  /// Typedef ConInfo
   using ConInfo = AbstractConstraintLocation;
 
   /// Add variable. Type: var::CONTINUOUS by default
@@ -829,6 +844,7 @@ protected:
   int relax() const { return options_.relax_; }
 
 public:
+  /// Init FlatConverter options
   void InitOptions() {
     InitOwnOptions();
     GetBackend().InitOptions();
@@ -867,7 +883,7 @@ public:
   /// for tests. TODO make friends
   using BackendType = Backend;
 
-  /// AddWarning
+  /// AddWarning. Strings should remain valid
   void AddWarning(const char* key, const char* msg) {
     GetEnv().AddWarning(key, msg);
   }
@@ -892,43 +908,97 @@ protected:
   /// Constraint keepers and converters should be initialized after \a presolver_
 
   /// Define constraint keepers for all constraint types
-  STORE_CONSTRAINT_TYPE(RangeLinCon)
-  STORE_CONSTRAINT_TYPE(LinConLE)
-  STORE_CONSTRAINT_TYPE(LinConEQ)
-  STORE_CONSTRAINT_TYPE(LinConGE)
-  STORE_CONSTRAINT_TYPE(LinearFunctionalConstraint)
+  STORE_CONSTRAINT_TYPE__NO_MAP(RangeLinCon)
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConLE)
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConEQ)
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConGE)
+  /// No map, assume the higher-level constraints have maps.
+  /// LFC and QFC are only added manually anyway,
+  /// FunctionalConstraintConverter is not used
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinearFunctionalConstraint)
 
-  STORE_CONSTRAINT_TYPE(QuadraticConstraint)
-  STORE_CONSTRAINT_TYPE(QuadraticFunctionalConstraint)
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadraticConstraint)
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadraticFunctionalConstraint)
 
-  STORE_CONSTRAINT_TYPE(MaxConstraint)
-  STORE_CONSTRAINT_TYPE(MinConstraint)
-  STORE_CONSTRAINT_TYPE(AbsConstraint)
-  STORE_CONSTRAINT_TYPE(AndConstraint)
-  STORE_CONSTRAINT_TYPE(OrConstraint)
-  STORE_CONSTRAINT_TYPE(EQ0Constraint)
-  STORE_CONSTRAINT_TYPE(LE0Constraint)
-  STORE_CONSTRAINT_TYPE(LT0Constraint)
-  STORE_CONSTRAINT_TYPE(NotConstraint)
-  STORE_CONSTRAINT_TYPE(IfThenConstraint)
-  STORE_CONSTRAINT_TYPE(AllDiffConstraint)
-  STORE_CONSTRAINT_TYPE(NumberofConstConstraint)
-  STORE_CONSTRAINT_TYPE(NumberofVarConstraint)
-  STORE_CONSTRAINT_TYPE(CountConstraint)
+  /// With maps we store flattened NL expressions
+  /// (functional constraints)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(MaxConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(MinConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AbsConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AndConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(OrConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(EQ0Constraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(LE0Constraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(LT0Constraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(NotConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(IfThenConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AllDiffConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(NumberofConstConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(NumberofVarConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CountConstraint)
 
-  STORE_CONSTRAINT_TYPE(ExpConstraint)
-  STORE_CONSTRAINT_TYPE(ExpAConstraint)
-  STORE_CONSTRAINT_TYPE(LogConstraint)
-  STORE_CONSTRAINT_TYPE(LogAConstraint)
-  STORE_CONSTRAINT_TYPE(PowConstraint)
-  STORE_CONSTRAINT_TYPE(SinConstraint)
-  STORE_CONSTRAINT_TYPE(CosConstraint)
-  STORE_CONSTRAINT_TYPE(TanConstraint)
-  STORE_CONSTRAINT_TYPE(IndicatorConstraintLinLE)
-  STORE_CONSTRAINT_TYPE(IndicatorConstraintLinEQ)
-  STORE_CONSTRAINT_TYPE(PLConstraint)
-  STORE_CONSTRAINT_TYPE(SOS1Constraint)
-  STORE_CONSTRAINT_TYPE(SOS2Constraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(ExpConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(ExpAConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(LogConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(LogAConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(SinConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CosConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(TanConstraint)
+
+  /// No maps for static constraints
+  STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintLinLE)
+  STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintLinEQ)
+  STORE_CONSTRAINT_TYPE__NO_MAP(PLConstraint)
+  STORE_CONSTRAINT_TYPE__NO_MAP(SOS1Constraint)
+  STORE_CONSTRAINT_TYPE__NO_MAP(SOS2Constraint)
+
+  ////////////////////// Default map accessors /////////////////////////
+  /// Constraints without map should overload these by empty methods ///
+
+  /// MapFind.
+  /// Can be overloaded for more complex behavior.
+  /// @param con: constraint reference
+  /// @return constraint index, or -1
+  template <class Constraint>
+  int MapFind(const Constraint& con) {
+    return MPD( MapFind__Impl(con) );
+  }
+
+  /// MapInsert.
+  /// Can be overloaded for more complex behavior.
+  /// @param con: the constraint
+  /// @param i: ConstraintKeeper index
+  /// @return false when inserted a duplicate (should not happen)
+  template <class Constraint>
+  bool MapInsert(const Constraint& con, int i) {
+    return MPD( MapInsert__Impl(con, i) );
+  }
+
+
+  /// MapFind__Impl.
+  /// Default version for functional constraints with a map.
+  /// @param con: constraint reference
+  /// @return constraint index, or -1
+  template <class Constraint>
+  int MapFind__Impl(const Constraint& con) {
+    const auto& map = GET_CONST_CONSTRAINT_MAP(Constraint);
+    auto it = map.find( con );
+    return (map.end() != it) ? it->second : -1;
+  }
+
+  /// MapInsert.
+  /// Default version for functional constraints with a map.
+  /// @param con: the constraint
+  /// @param i: ConstraintKeeper index
+  /// @return false when inserted a duplicate (should not happen)
+  template <class Constraint>
+  bool MapInsert__Impl(const Constraint& con, int i) {
+    auto& map = GET_CONSTRAINT_MAP(Constraint);
+    auto result = map.insert( { con, i } );
+    return result.second;
+  }
+
 
   /////////////////////// CONSTRAINT CONVERTERS /////////////////////////
   /// Constraint keepers and converters should be initialized after \a presolver_
