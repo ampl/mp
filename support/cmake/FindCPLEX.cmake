@@ -23,7 +23,7 @@ if (UNIX)
     set(CPLEX_ARCH x86)
   endif ()
   if (APPLE)
-    set(CPLEX_ILOG_DIRS $ENV{HOME}/Applications/IBM/ILOG ${CPLEX_ILOG_DIRS})
+    set(CPLEX_ILOG_DIRS /Applications ${CPLEX_ILOG_DIRS})
     foreach (suffix "osx" "darwin9_gcc4.0")
       set(CPLEX_LIB_PATH_SUFFIXES
           ${CPLEX_LIB_PATH_SUFFIXES} lib/${CPLEX_ARCH}_${suffix}/static_pic)
@@ -82,6 +82,9 @@ if (NOT CPLEX_STUDIO_DIR)
   endif ()
   set(CPLEX_STUDIO_DIR ${CPLEX_STUDIO_DIR_} CACHE PATH
     "Path to the CPLEX Studio directory")
+else()
+    set(CPLEX_STUDIO_DIR_ ${CPLEX_STUDIO_DIR} CACHE PATH
+      "Path to the CPLEX Studio directory")
 endif ()
 
 # On windows, CPLEX 12.10 brought a big semplification in terms of libraries:
@@ -174,7 +177,7 @@ macro(find_cplex_library var name paths)
   endif ()
 endmacro()
 
-set(CPLEX_CONCERT_DIR ${CPLEX_STUDIO_DIR}/concert)
+set(CPLEX_CONCERT_DIR ${CPLEX_STUDIO_DIR_}/concert)
 
 # Find the Concert include directory.
 find_path(CPLEX_CONCERT_INCLUDE_DIR ilconcert/ilosys.h
@@ -242,7 +245,7 @@ endif ()
 # ----------------------------------------------------------------------------
 # CP Optimizer - depends on Concert
 
-set(CPLEX_CP_DIR ${CPLEX_STUDIO_DIR}/cpoptimizer)
+set(CPLEX_CP_DIR ${CPLEX_STUDIO_DIR_}/cpoptimizer)
 
 # Find the CP Optimizer include directory.
 find_path(CPLEX_CP_INCLUDE_DIR ilcp/cp.h PATHS ${CPLEX_CP_DIR}/include)

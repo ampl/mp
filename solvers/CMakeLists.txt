@@ -17,6 +17,9 @@ endfunction ()
 # If DLL_RUNTIME option is given the solver is linked with DLL MSVC runtime
 # on Windows.
 #
+# If DI option is given then the solver is assumed to be a 'direct interface'
+# only and is not linked to solver-c.cc which assumes create_<solver> function.
+#
 # The MODULE option specifies the CMake module name used to check for solver
 # libraries. If it is omitted, add_ampl_solver looks in support/cmake for
 # a module with a name matching Find<name>.cmake (case-insensitive).
@@ -31,7 +34,7 @@ endfunction ()
 # uses <module>_LIBRARIES.
 function(add_ampl_solver name)
   cmake_parse_arguments(add_ampl_solver "DLL_RUNTIME;EXTERNAL;DI"
-    "MODULE" "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS;FLAGS" ${ARGN})
+    "MODULE" "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS" ${ARGN})
 
   get_property(MP_BASE_DIR GLOBAL PROPERTY MP_BASE_DIR)
 
@@ -126,7 +129,7 @@ function(add_ampl_solver name)
     target_link_libraries(${shared_lib} PRIVATE ${static_lib})
   else()
     set(shared_lib ${name}-lib)
-    add_library(${shared_lib} SHARED ${MP_BASE_DIR}/solvers/${name}/${name}-lib.c)
+    add_library(${shared_lib} SHARED ${MP_BASE_DIR}/src/sol.cc)
     target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name})
     target_link_libraries(${shared_lib} PRIVATE ${static_lib})
 
@@ -163,7 +166,7 @@ endfunction()
 
 set(GECODE_DISABLE_WARNINGS TRUE)
 set(GECODE_USE_QT FALSE)
-add_ampl_solver(gecode EXTERNAL LIBRARIES
+add_ampl_solver(gecode EXTERNAL DI LIBRARIES
   gecodeminimodel gecodesupport gecodekernel gecodeint gecodesearch)
 # Exclude unused Gecode targets from the build.
 exclude_from_build(fzn-gecode gecodeflatzinc gecode-test)
@@ -199,7 +202,7 @@ if (TARGET cplexdirect)
   target_compile_definitions(cplexdirect PRIVATE main1=main)
 endif ()
 
-add_ampl_solver(gurobidirect DLL_RUNTIME MODULE GUROBI
+add_ampl_solver(gurobidirect DLL_RUNTIME DI MODULE GUROBI
   gurobi-ampls-c-api.h
   gurobibackend.cc gurobibackend.h
   gurobimodelapi.cc gurobimodelapi.h
@@ -211,7 +214,7 @@ if (TARGET gurobidirect)
 endif()
 
 ## A simple Gurobi driver to test AMPLS C API
-add_ampl_solver(gurobi_ampls DLL_RUNTIME
+add_ampl_solver(gurobi_ampls DLL_RUNTIME DI
   gurobi-ampls.c
   INCLUDE_DIRS ${include_dirs} ${MP_BASE_DIR}/solvers
   LIBRARIES amplgurobidirect-static)
@@ -242,6 +245,7 @@ if (LOCALSOLVER_DLL)
     "${LOCALSOLVER_DLL}"
     "$<TARGET_FILE_DIR:localsolver>/${LOCALSOLVER_DLL_NAME}")
 endif ()
+
 add_ampl_solver(smpswriter)
 
 if (TARGET ilogcp)

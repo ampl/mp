@@ -122,13 +122,17 @@ workflow starts with::
   cd mp
   git submodule init
   git submodule update
-  mkdir build  # Create a directory to hold the build output.
+  mkdir build  # Create a directory to hold the build output
   cd build
-  cmake -DBUILD=all ..  # Generate native build scripts.
+  cmake -DBUILD=ilogcp,gecode ..         # Generate native build scripts
+      -DCMAKE_OSX_ARCHITECTURES="x86_64" # Select x86_64 architecture on Apple M1,
+                                         # required for IBM CPLEX-based drivers
+                                         # as of CPLEX Studio 22.1
 
 Note: If the ``arith.h`` file used by default does not match the target architecture,
 or if the compiler is not sufficiently compatible with gcc or Microsoft C/C++,
-run ``cmake -DBUILD=all -DGENERATE_ARITH=true ..`` to generate an architecture-specific ``arith.h`` file with ``arithchk``.
+run ``cmake -DBUILD=all -DGENERATE_ARITH=true ..`` to generate an
+architecture-specific ``arith.h`` file with ``arithchk``.
 
 If you are on a \*nix system, you should now see a Makefile in the
 current directory. Now you can build MP by running ``make``.
@@ -148,7 +152,7 @@ AMPL/MP allows building only parts of the project you are interested in,
 for example you can choose to build only a single solver interface.
 This is done with the help of modules which are optional components that
 can be built separately. Each solver interface and function library is
-a module.
+a module. See `solvers/CMakeLists.txt` for module definitions.
 
 By default all modules are disabled and only the main MP libraries are built.
 To enable modules, pass their names as a comma-separated list in the ``BUILD``
@@ -192,7 +196,8 @@ Building the documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To build the documentation (automatically, via CMake) you need Python 3.7 with Sphinx and Breathe.
-The HTML output is located in (build folder)/doc/index.html.
+The HTML output is located in (build folder)/doc/index.html. Configure CMake with -DBUILD_DOC=off
+to switch off.
 
 
 Links
