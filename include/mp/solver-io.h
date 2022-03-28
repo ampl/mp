@@ -57,7 +57,7 @@ class SolutionAdapter {
   }
 };
 
-// The default .sol file writer.
+/// The default .sol file writer.
 class SolFileWriter {
  public:
   template <typename Solution>
@@ -188,6 +188,11 @@ class SolverNLHandlerImpl : public NLProblemBuilder {
   void OnHeader(const NLHeader &h);
 };
 
+
+/// Perform demo version checks if necessary.
+void CheckDemoVersion(const NLHeader &h);
+
+
 /// A shorthand typedef for APIs using SolverImpl or similar
 template <class Solver>
 using SolverNLHandler = SolverNLHandlerImpl<
@@ -205,14 +210,12 @@ void SolverNLHandlerImpl<Solver, PB, NLPB>::OnHeader(const NLHeader &h) {
   std::copy(h.ampl_options, h.ampl_options + num_options_, options_);
   Base::OnHeader(h);
 #ifndef MP_DATE
-  internal::CheckDemoVersion(h);
+  CheckDemoVersion(h);
 #endif
-
-/// Perform demo version checks if necessary.
-void CheckDemoVersion(const NLHeader &h);
 }
 
-// A variable or constraint name provider.
+
+/// A variable or constraint name provider.
 class NameProvider {
  private:
   std::vector<const char *> names_;
