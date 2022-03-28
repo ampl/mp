@@ -272,28 +272,50 @@ void CoptBackend::InitCustomOptions() {
   AddSolverOption("tech:outlev outlev",
       "0-1: output logging verbosity. "
       "Default = 0 (no logging).",
-    COPT_INTPARAM_LOGGING, 0, 1);
-  SetSolverOption(COPT_INTPARAM_LOGGING, 0);
+    COPT_INTPARAM_LOGTOCONSOLE, 0, 1);
+  SetSolverOption(COPT_INTPARAM_LOGTOCONSOLE, 0);
 
   AddStoredOption("tech:exportfile writeprob",
       "Specifies the name of a file where to export the model before "
       "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
-  /*
+  
   AddSolverOption("mip:gap mipgap",
       "Relative optimality gap |bestbound-bestinteger|/(1e-10+|bestinteger|).",
-      CPXPARAM_MIP_Tolerances_MIPGap, 0.0, 1.0);
+        COPT_DBLPARAM_RELGAP, 0.0, 1.0);
 
   AddSolverOption("tech:threads threads",
-      "How many threads to use when using the barrier algorithm\n"
-      "or solving MIP problems; default 0 ==> automatic choice.",
-      CPXPARAM_Threads, 0, INT_MAX);
+    "Number of threads to use;\n"
+    "default -1 ==> automatic.",
+    COPT_INTPARAM_BARTHREADS, -1, 128);
+
+  AddSolverOption("tech:barrierthreads barthreads",
+      "Number of threads used by the barrier algorithm;\n"
+      "default -1 ==> see use value in tech:threads.",
+    COPT_INTPARAM_BARTHREADS, -1, 128);
+
+  AddSolverOption("tech:crossoverthreads crossoverthreads",
+    "Number of threads used by crossover;\n"
+    "default -1 ==> see use value in tech:threads.",
+    COPT_INTPARAM_CROSSOVERTHREADS, -1, 128);
+
+  AddSolverOption("tech:simplexthreads simplexthreads",
+    "Number of threads used by dual simplex;\n"
+    "default -1 ==> see use value in tech:threads.",
+    COPT_INTPARAM_SIMPLEXTHREADS, -1, 128);
+
+
+  AddSolverOption("tech:miptasks miptasks",
+    "Number of MIP tasks in parallel;\n"
+    "default -1 ==> automatic.",
+    COPT_INTPARAM_MIPTASKS, -1, 255);
+
 
   AddSolverOption("lim:time timelim timelimit",
       "limit on solve time (in seconds; default: no limit).",
-      CPXPARAM_TimeLimit, 0.0, DBL_MAX);
-      */
+      COPT_DBLPARAM_TIMELIMIT, 0.0, DBL_MAX);
+      
 }
 
 
