@@ -31,7 +31,7 @@ endfunction ()
 # uses <module>_LIBRARIES.
 function(add_ampl_solver name)
   cmake_parse_arguments(add_ampl_solver "DLL_RUNTIME;EXTERNAL;DI"
-    "MODULE" "INCLUDE_DIRS;LIBRARIES;DEFINITIONS" ${ARGN})
+    "MODULE" "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS;FLAGS" ${ARGN})
 
   get_property(MP_BASE_DIR GLOBAL PROPERTY MP_BASE_DIR)
 
@@ -95,7 +95,12 @@ function(add_ampl_solver name)
     set(sources ${source_names})
     set(dir )
   endif ()
-
+  # Add additional sources, if present
+  if(add_ampl_solver_ADDITIONAL_SOURCES)
+    foreach(s ${add_ampl_solver_ADDITIONAL_SOURCES})
+      set(sources ${sources} ${s})
+    endforeach() 
+  endif()
   # Add a solver static library to be linked with the shared library and
   # the executable.
   set(static_lib ampl${name}-static)
@@ -169,6 +174,19 @@ add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
 if (TARGET ilogcp)
   target_compile_definitions(amplilogcp-static PRIVATE ILOGCP_NO_VERS)
   target_compile_definitions(ilogcp PRIVATE main1=main)
+endif ()
+
+add_ampl_solver(coptdirect DLL_RUNTIME MODULE COPT
+  coptbackend.cc coptbackend.h
+  coptcommon.cc coptcommon.h
+  coptmodelapi.cc coptmodelapi.h
+  model-mgr-with-std-pb.cc
+  LIBRARIES copt-library ${CMAKE_DL_LIBS})
+if (TARGET coptdirect)
+  target_compile_definitions(coptdirect PRIVATE main1=main)
+  if(WIN32)
+    target_compile_options(coptdirect_static PUBLIC /bigobj)
+  endif()
 endif ()
 
 add_ampl_solver(cplexdirect DLL_RUNTIME MODULE CPLEX
