@@ -1103,14 +1103,14 @@ static const mp::OptionValueInfo values_varbranch[] = {
 void GurobiBackend::InitCustomOptions() {
 
   set_option_header(
-      fmt::format("Gurobi Optimizer Options for AMPL\n"
-                  "---------------------------------\n"
+      fmt::format("{0} Optimizer Options for AMPL\n"
+                  "-----------------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to the "
-      "AMPL option ``{0}_options``. For example::\n"
+      "AMPL option ``{1}_options``. For example::\n"
       "\n"
-      "  ampl: option {0}_options 'opttol=1e-6';\n",
-                  GetAMPLSolverName()).c_str());
+      "  ampl: option {1}_options 'opttol=1e-6';\n",
+                  GetSolverName(), GetAMPLSolverName()).c_str());
 
 
   /// Options basis, sens are created internally if

@@ -37,6 +37,9 @@ extern "C" {
 # endif
 #endif  // _WIN32
 
+/// DEPRECATED
+/// Use ampls_c_api.h and related files
+
 /**
  * An error.
  */
