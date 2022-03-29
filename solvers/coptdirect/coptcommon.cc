@@ -78,6 +78,17 @@ int CoptCommon::NumObjs() const {
   //return CPXgetnumobjs (env_, lp_);
 }
 
+int CoptCommon::NumQPCons() const {
+  return getIntAttr(COPT_INTATTR_QCONSTRS);
+}
+
+int CoptCommon::NumSOSCons() const {
+  return getIntAttr(COPT_INTATTR_SOSS);
+}
+
+int CoptCommon::NumIndicatorCons() const {
+  return getIntAttr(COPT_INTATTR_INDICATORS);
+}
 
 void CoptCommon::GetSolverOption(const char* key, int &value) const {
   COPT_CCALL( COPT_GetIntParam(lp_, key, &value) );

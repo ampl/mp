@@ -418,8 +418,7 @@ class COPTSolver(AMPLSolver):
         return "copt"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        utagss = [ModelTags.nonlinear, ModelTags.log, ModelTags.logical,
-                  ModelTags.plinear]
+        utagss = [ModelTags.nonlinear, ModelTags.log]
         super().__init__(exeName, timeout, nthreads, otherOptions, utagss)
 
     def _doParseSolution(self, st, stdout=None):

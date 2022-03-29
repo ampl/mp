@@ -478,5 +478,76 @@ void CoptBackend::SetBasis(SolutionBasis basis) {
 }
 
 
+void CoptBackend::ComputeIIS() {
+  COPT_CCALL(COPT_ComputeIIS(lp()));
+  SetStatus(ConvertCOPTStatus());   // could be new information
+}
+
+IIS CoptBackend::GetIIS() {
+  auto variis = VarsIIS();
+  auto coniis = ConsIIS();
+  // TODO: This can be moved to a parent class?
+  auto mv = GetPresolver().PostsolveIIS(
+    { variis, coniis });
+  return { mv.GetVarValues()(), mv.GetConValues()() };
+}
+
+
+std::vector<int> getIIS(copt_prob* prob, int num, 
+    int(*getlb)(copt_prob*, int, const int*, int*),
+  int(*getub)(copt_prob*, int, const int*, int*)) {
+  std::vector<int> iis_lb(num);
+  std::vector<int> iis_ub(num);
+  COPT_CCALL(getlb(prob, num, NULL, iis_lb.data()));
+  COPT_CCALL(getub(prob, num, NULL, iis_ub.data()));
+  for (size_t i = iis_lb.size(); i--; ) {
+    if (iis_ub[i]) {
+      if (iis_lb[i])
+        iis_lb[i] = (int)IISStatus::fix;
+      else
+        iis_lb[i] = (int)IISStatus::upp;
+    }
+    else {
+      if (iis_lb[i])
+        iis_lb[i] = (int)IISStatus::low;
+      else
+        iis_lb[i] = (int)IISStatus::non;
+    }
+  }
+  return iis_lb;
+}
+
+static void ConvertIIS2AMPL(std::vector<int>& ai) {
+  for (int i = ai.size(); i--; ) {
+    ai[i] = int(ai[i] ? IISStatus::mem : IISStatus::non);
+  }
+}
+
+
+ArrayRef<int> CoptBackend::VarsIIS() {
+  return getIIS(lp(), NumVars(), COPT_GetColLowerIIS, COPT_GetColUpperIIS);
+}
+pre::ValueMapInt CoptBackend::ConsIIS() {
+  auto iis_lincon =  getIIS(lp(), NumLinCons(), COPT_GetRowLowerIIS, COPT_GetRowUpperIIS);
+
+  std::vector<int> iis_soscon(NumSOSCons());
+  COPT_GetSOSIIS(lp(), NumSOSCons(), NULL, iis_soscon.data());
+  ConvertIIS2AMPL(iis_soscon);
+
+  std::vector<int> iis_indicon(NumIndicatorCons());
+  COPT_GetIndicatorIIS(lp(), NumIndicatorCons(), NULL, iis_indicon.data());
+  ConvertIIS2AMPL(iis_indicon);
+
+  return { {{ CG_Linear, iis_lincon },
+      { CG_SOS, iis_soscon },
+      { CG_Logical, iis_indicon }} };
+
+}
+
+void CoptBackend::AddMIPStart(ArrayRef<double> x0) {
+  COPT_CCALL(COPT_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
+
+}
+
 
 } // namespace mp

@@ -92,36 +92,65 @@ void CoptModelAPI::AddConstraint(const LinConGE& lc) {
     sense, lc.rhs(), 0, NULL));
 }
 
-// int COPT_AddIndicator(copt_prob *prob, int binColIdx, int binColVal,
-//int nRowMatCnt, const int* rowMatIdx, const double* rowMatElem, char
-//cRowSense, double dRowBound)
-
 void CoptModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
-  /*
   COPT_CCALL(COPT_AddIndicator(lp(),
-                               ic.get_binary_var(), !ic.get_binary_value(),
-                               (int)ic.get_constraint().size(),
-                               ic.get_constraint().rhs(), 'L',
-                               ic.get_constraint().pvars(),
-                               ic.get_constraint().pcoefs(), NULL) );
-                               */
+    ic.get_binary_var(), ic.get_binary_value(),
+    (int)ic.get_constraint().size(),
+    ic.get_constraint().pvars(),
+    ic.get_constraint().pcoefs(),
+    COPT_LESS_EQUAL,
+    ic.get_constraint().rhs()));
+                               
 }
 void CoptModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
-  /*
-  COPT_CCALL( CPXaddindconstr (env(), lp(),
-                               ic.get_binary_var(), !ic.get_binary_value(),
-                               (int)ic.get_constraint().size(),
-                               ic.get_constraint().rhs(), 'E',
-                               ic.get_constraint().pvars(),
-                               ic.get_constraint().pcoefs(), NULL) );
-                               */
+  COPT_CCALL(COPT_AddIndicator(lp(),
+    ic.get_binary_var(), ic.get_binary_value(),
+    (int)ic.get_constraint().size(),
+    ic.get_constraint().pvars(),
+    ic.get_constraint().pcoefs(),
+    COPT_EQUAL,
+    ic.get_constraint().rhs()));
 }
 
 void CoptModelAPI::AddConstraint(const QuadraticConstraint& qc) {
-
-
+  const auto& qt = qc.GetQPTerms();
+  if (qc.lb() == qc.ub())
+    COPT_CCALL(COPT_AddQConstr(lp(), qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
+      qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+      (double*)qt.pcoefs(), COPT_EQUAL, qc.lb(), NULL));
+  else {            // Let solver deal with lb>~ub etc.
+    if (qc.lb() > MinusInfinity()) {
+      COPT_CCALL(COPT_AddQConstr(lp(), qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
+        qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+        (double*)qt.pcoefs(), COPT_GREATER_EQUAL, qc.lb(), NULL));
+    }
+    if (qc.ub() < Infinity()) {
+      COPT_CCALL(COPT_AddQConstr(lp(), qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
+        qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+        (double*)qt.pcoefs(), COPT_LESS_EQUAL, qc.ub(), NULL));
+    }
+  }
 
 }
+
+void CoptModelAPI::AddConstraint(const SOS1Constraint& sos) {
+  int type = COPT_SOS_TYPE1;
+  int beg = 0;
+  const int size = sos.size();
+  COPT_CCALL(COPT_AddSOSs(lp(), 1, &type, &beg,
+    &size, (int*)sos.get_vars().data(),
+    (double*)sos.get_weights().data()));
+}
+
+void CoptModelAPI::AddConstraint(const SOS2Constraint& sos) {
+  int type = COPT_SOS_TYPE2;
+  int beg = 0;
+  const int size = sos.size();
+  COPT_CCALL(COPT_AddSOSs(lp(), 1, &type, &beg,
+    &size, (int*)sos.get_vars().data(),
+    (double*)sos.get_weights().data()));
+}
+
 
 void CoptModelAPI::FinishProblemModificationPhase() {
 }

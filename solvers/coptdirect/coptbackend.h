@@ -64,6 +64,13 @@ public:
   SolutionBasis GetBasis() override;
   void SetBasis(SolutionBasis) override;
 
+  /**
+* MIP warm start
+**/
+  ALLOW_STD_FEATURE(MIPSTART, true)
+  void AddMIPStart(ArrayRef<double> x0) override;
+
+
  /**
   * Get MIP Gap
   **/
@@ -75,6 +82,15 @@ public:
   **/
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
     double BestDualBound() override;
+
+  /**
+* Compute the IIS and obtain relevant values
+**/
+  ALLOW_STD_FEATURE(IIS, true)
+  /// Compute IIS
+  void ComputeIIS() override;
+  /// Retrieve IIS. Elements correspond to IISStatus
+  IIS GetIIS() override;
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
@@ -128,6 +144,10 @@ protected:
   ArrayRef<int> ConStatii();
   void VarStatii(ArrayRef<int>);
   void ConStatii(ArrayRef<int>);
+
+  ArrayRef<int> VarsIIS();
+  pre::ValueMapInt ConsIIS();
+
 
 private:
   /// These options are stored in the class

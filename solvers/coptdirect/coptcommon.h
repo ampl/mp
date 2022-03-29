@@ -47,7 +47,9 @@ protected:
   int NumLinCons() const;
   int NumVars() const;
   int NumObjs() const;
-
+  int NumQPCons() const;
+  int NumSOSCons() const;
+  int NumIndicatorCons() const;
 
   copt_env* env() const { return env_; }
   void set_env(copt_env* e) { env_ = e; }

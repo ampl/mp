@@ -52,6 +52,11 @@ public:
   ACCEPT_CONSTRAINT(QuadraticConstraint, Recommended, CG_Quadratic)
   void AddConstraint(const QuadraticConstraint& qc);
 
+  ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
+  void AddConstraint(const SOS1Constraint& cc);
+  ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
+  void AddConstraint(const SOS2Constraint& cc);
+
 };
 
 } // namespace mp
