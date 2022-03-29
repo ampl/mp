@@ -116,10 +116,7 @@ double CoptBackend::NodeCount() const {
 }
 
 double CoptBackend::SimplexIterations() const {
-  // TODO check
   return getIntAttr(COPT_INTATTR_SIMPLEXITER);
-//  return std::max(
-  //      CPXgetmipitcnt (env(), lp()), CPXgetitcnt (env(), lp()));
 }
 
 int CoptBackend::BarrierIterations() const {
@@ -311,12 +308,175 @@ void CoptBackend::InitCustomOptions() {
     "default -1 ==> automatic.",
     COPT_INTPARAM_MIPTASKS, -1, 255);
 
-
   AddSolverOption("lim:time timelim timelimit",
       "limit on solve time (in seconds; default: no limit).",
       COPT_DBLPARAM_TIMELIMIT, 0.0, DBL_MAX);
       
 }
+
+
+double CoptBackend::MIPGap() {
+  // TODO Check what happens if not solved
+  return getDblAttr(COPT_DBLATTR_BESTGAP);
+}
+double CoptBackend::BestDualBound() {
+  // TODO Check what happens if not solved
+  return getDblAttr(COPT_DBLATTR_BESTBND);
+}
+
+double CoptBackend::MIPGapAbs() {
+  return std::fabs(
+    ObjectiveValue() - BestDualBound());
+}
+
+
+ArrayRef<int> CoptBackend::VarStatii() {
+  std::vector<int> vars(NumVars());
+  COPT_GetBasis(lp(), vars.data(), NULL);
+  for (auto& s : vars) {
+    switch (s) {
+    case COPT_BASIS_BASIC:
+      s = (int)BasicStatus::bas;
+      break;
+    case COPT_BASIS_LOWER:
+      s = (int)BasicStatus::low;
+      break;
+    case COPT_BASIS_UPPER:
+      s = (int)BasicStatus::upp;
+      break;
+    case COPT_BASIS_SUPERBASIC:
+      s = (int)BasicStatus::sup;
+      break;
+    case COPT_BASIS_FIXED:
+      s = (int)BasicStatus::equ;
+      break;
+    default:
+      MP_RAISE(fmt::format("Unknown Gurobi VBasis value: {}", s));
+    }
+  }
+  return vars;
+}
+
+ArrayRef<int> CoptBackend::ConStatii() {
+  std::vector<int> cons(NumLinCons());
+  COPT_GetBasis(lp(), NULL, cons.data());
+  for (auto& s : cons) {
+    switch (s) {
+    case COPT_BASIS_BASIC:
+      s = (int)BasicStatus::bas;
+      break;
+    case COPT_BASIS_LOWER:
+      s = (int)BasicStatus::low;
+      break;
+    case COPT_BASIS_UPPER:
+      s = (int)BasicStatus::upp;
+      break;
+    case COPT_BASIS_SUPERBASIC:
+      s = (int)BasicStatus::sup;
+      break;
+    case COPT_BASIS_FIXED:
+      s = (int)BasicStatus::equ;
+      break;
+    default:
+      MP_RAISE(fmt::format("Unknown Gurobi VBasis value: {}", s));
+    }
+  }
+  return cons;
+}
+
+void CoptBackend::VarStatii(ArrayRef<int> vst) {
+  int index[1];
+  std::vector<int> stt(vst.data(), vst.data() + vst.size());
+  for (auto j = stt.size(); j--; ) {
+    auto& s = stt[j];
+    switch ((BasicStatus)s) {
+    case BasicStatus::bas:
+      s = COPT_BASIS_BASIC;
+      break;
+    case BasicStatus::low:
+      s = COPT_BASIS_LOWER;
+      break;
+    case BasicStatus::equ:
+      s = COPT_BASIS_FIXED;
+      break;
+    case BasicStatus::upp:
+      s = COPT_BASIS_UPPER;
+      break;
+    case BasicStatus::sup:
+    case BasicStatus::btw:
+      s = COPT_BASIS_SUPERBASIC;
+      break;
+    case BasicStatus::none:
+      /// 'none' is assigned to new variables. Compute low/upp/sup:
+      /// Depending on where 0.0 is between bounds
+      double lb, ub;
+      index[0] = (int)j;
+      if(!COPT_GetColInfo(lp(), COPT_DBLINFO_LB, 1, index, &lb) && 
+        !COPT_GetColInfo(lp(), COPT_DBLINFO_UB, 1, index, &ub))
+      { 
+        if (lb >= -1e-6)
+          s = -1;
+        else if (ub <= 1e-6)
+          s = -2;
+        else
+          s = -3;  // or, leave at 0?
+      }
+      break;
+    default:
+      MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
+    }
+  }
+  COPT_SetBasis(lp(), stt.data(), NULL);
+}
+
+void CoptBackend::ConStatii(ArrayRef<int> cst) {
+  std::vector<int> stt(cst.data(), cst.data() + cst.size());
+  for (auto& s : stt) {
+    switch ((BasicStatus)s) {
+    case BasicStatus::bas:
+      s = COPT_BASIS_BASIC;
+      break;
+    case BasicStatus::none:   // for 'none', which is the status
+    case BasicStatus::upp:    // assigned to new rows, it seems good to guess
+    case BasicStatus::sup:    // a valid status,
+    case BasicStatus::low:    // as Gurobi 9.5 does not accept partial basis.
+    case BasicStatus::equ:    // For active constraints, it is usually 'sup'.
+    case BasicStatus::btw:    // We could compute slack to decide though.
+      s = COPT_BASIS_SUPERBASIC;
+      break;
+    default:
+      MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
+    }
+  }
+  COPT_SetBasis(lp(), NULL, stt.data());
+}
+
+SolutionBasis CoptBackend::GetBasis() {
+  std::vector<int> varstt = VarStatii();
+  std::vector<int> constt = ConStatii();
+  if (varstt.size() && constt.size()) {
+    auto mv = GetPresolver().PostsolveBasis(
+      { std::move(varstt),
+        {{{ CG_Linear, std::move(constt) }}} });
+    varstt = mv.GetVarValues()();
+    constt = mv.GetConValues()();
+    assert(varstt.size());
+    assert(constt.size());
+  }
+  return { std::move(varstt), std::move(constt) };
+}
+
+void CoptBackend::SetBasis(SolutionBasis basis) {
+  auto mv = GetPresolver().PresolveBasis(
+    { basis.varstt, basis.constt });
+  auto varstt = mv.GetVarValues()();
+  auto constt = mv.GetConValues()(CG_Linear);
+  assert(varstt.size());
+  assert(constt.size());
+  VarStatii(varstt);
+  ConStatii(constt);
+}
+
 
 
 } // namespace mp

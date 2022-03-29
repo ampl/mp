@@ -51,6 +51,31 @@ public:
   void FinishOptionParsing() override;
 
 
+
+  ////////////////////////////////////////////////////////////
+  /////////////// OPTIONAL STANDARD FEATURES /////////////////
+  ////////////////////////////////////////////////////////////
+  USING_STD_FEATURES;
+
+  /**
+* Get/Set AMPL var/con statii
+**/
+  ALLOW_STD_FEATURE(BASIS, true)
+  SolutionBasis GetBasis() override;
+  void SetBasis(SolutionBasis) override;
+
+ /**
+  * Get MIP Gap
+  **/
+  ALLOW_STD_FEATURE(RETURN_MIP_GAP, true)
+  double MIPGap() override;
+  double MIPGapAbs() override;
+  /**
+  * Get MIP dual bound
+  **/
+  ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
+    double BestDualBound() override;
+
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
   bool IsQCP() const override;
@@ -98,6 +123,11 @@ protected:
 
   std::pair<int, std::string> ConvertCOPTStatus();
   void AddCOPTMessages();
+
+  ArrayRef<int> VarStatii();
+  ArrayRef<int> ConStatii();
+  void VarStatii(ArrayRef<int>);
+  void ConStatii(ArrayRef<int>);
 
 private:
   /// These options are stored in the class

@@ -29,10 +29,12 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.LindoSolver(path.join(binPath, "lindoglobal")))
     solvers.addSolver(Solver.OcteractSolver(path.join(binPath, "octeract-engine")))
     solvers.addSolver(Solver.GurobiSolver(path.join(binPath,"gurobi")))
-    solvers.addSolver(Solver.GurobiDirectSolver(path.join(binPath,"gurobidirect")))
+    solvers.addSolver(Solver.GurobiDirectSolver(path.join(binPath,"x-gurobi")))
     solvers.addSolver(Solver.CPLEXSolver(path.join(binPath,"cplex")))
     solvers.addSolver(Solver.CPLEXDirectSolver(path.join(binPath,"cplexdirect")))
+    
     solvers.addSolver(Solver.BaronSolver(path.join(binPath,"baron")))
     solvers.addSolver(Solver.COPTSolver(path.join(binPath,"copt")))
+    solvers.addSolver(Solver.COPTSolver(path.join(binPath,"coptdirect")))
 # if __name__ == "__main__":
 #     pass

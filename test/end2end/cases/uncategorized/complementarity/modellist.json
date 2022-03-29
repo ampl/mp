@@ -36,7 +36,7 @@
   }, {
     "name" : "kojshin",
     "tags" : ["quadratic", "continuous", "complementarity"],
-    "files" : ["kojshin.mod", "kojshin.dat"]
+    "files" : ["kojshin.mod"]
   }, {
     "name" : "munson1",
     "tags" : ["linear", "continuous", "complementarity"],

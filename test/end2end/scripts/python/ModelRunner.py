@@ -44,6 +44,7 @@ class ModelRunner(object):
                         ss = r
                     if m.hasAnyTag(ss.getUnsupportedTags()):
                         self._runs[i][-1]["outmsg"] = "Skipped, unsupported tags"
+                        self._runs[i][-1]["solver"] = ss
                         print("Skipped due to unsupported tags")
                         continue
                     r.runAndEvaluate(m)
