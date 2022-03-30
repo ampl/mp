@@ -461,27 +461,26 @@ protected:
   //////////////////////////// SPECIFIC CONSTRAINT RESULT-TO-ARGUMENTS PROPAGATORS //////
   /// Currently we should propagate to all arguments, be it always the CTX_MIX.
 
-  /// Allow ConstraintKeeper to PropagateResult()
+  /// Allow ConstraintKeeper to PropagateResult(), use GetBackend() etc
   template <class , class , class >
   friend class ConstraintKeeper;
 
+public:
   /// By default, declare mixed context
   template <class Constraint>
   void PropagateResult(Constraint& con, double lb, double ub, Context ctx) {
     internal::Unused(&con, lb, ub, &ctx);
     con.SetContext(Context::CTX_MIX);
-    for (const auto a: con.GetArguments())
-      PropagateResultOfInitExpr(a, this->MinusInfty(), this->Infty(),
-                                Context::CTX_MIX);
+    PropagateResult2Vars(con.GetArguments(),
+                         this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
   void PropagateResult(LinearFunctionalConstraint& con, double lb, double ub,
                        Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    for (auto v: con.GetAffineExpr().vars())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
-                                Context::CTX_MIX);
+    PropagateResult2LinTerms(con.GetAffineExpr(),
+                             this->MinusInfty(), this->Infty(), +ctx);
   }
 
   void PropagateResult(QuadraticFunctionalConstraint& con, double lb, double ub,
@@ -489,30 +488,19 @@ protected:
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     const auto& args = con.GetArguments();
-    for (auto v: args.GetAE().vars())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
-                                Context::CTX_MIX);
-    const auto& qt = args.GetQT();
-    for (auto i=qt.size(); i--; ) {
-      PropagateResultOfInitExpr(qt.var1(i), this->MinusInfty(), this->Infty(),
-                                Context::CTX_MIX);
-      PropagateResultOfInitExpr(qt.var2(i), this->MinusInfty(), this->Infty(),
-                                Context::CTX_MIX);
-    }
+    PropagateResult2LinTerms(args.GetAE(),
+                             this->MinusInfty(), this->Infty(), +ctx);
+    PropagateResult2QuadTerms(args.GetQT(),
+                              this->MinusInfty(), this->Infty(), +ctx);
   }
 
   void PropagateResult(QuadraticConstraint& con, double lb, double ub,
                        Context ctx) {
     internal::Unused(lb, ub, ctx);
-    for (const auto v: con.vars())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
-                                Context::CTX_MIX);
-    for (const auto v: con.GetQPTerms().vars1())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
-                                Context::CTX_MIX);
-    for (const auto v: con.GetQPTerms().vars2())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
-                                Context::CTX_MIX);
+    PropagateResult2LinTerms(con,              // TODO sense dep. on bounds
+                             this->MinusInfty(), this->Infty(), ctx);
+    PropagateResult2QuadTerms(con.GetQPTerms(), // TODO bounds?
+                              this->MinusInfty(), this->Infty(), ctx);
   }
 
   template <int sens>
@@ -521,44 +509,43 @@ protected:
     internal::Unused(lb, ub, ctx);
     PropagateResultOfInitExpr(con.get_binary_var(),
                               this->MinusInfty(), this->Infty(),
-                              Context::CTX_MIX);
-    for (const auto v: con.get_constraint().vars())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
-                                Context::CTX_MIX);
+                              Context::CTX_NEG);
+    PropagateResult2LinTerms(con.get_constraint(),
+                             this->MinusInfty(), this->Infty(),
+                             0==sens ? Context::CTX_MIX :
+                                       1==sens ? +ctx : -ctx);
   }
 
   template <int type>
   void PropagateResult(SOS_1or2_Constraint<type>& con, double lb, double ub, Context ) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    for (const auto v: con.get_vars())
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+    PropagateResult2Vars(con.get_vars(),
+                         this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
   void PropagateResult(NotConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    for (const auto a: con.GetArguments())
-      PropagateResultOfInitExpr(a, 1.0-ub, 1.0-lb, -ctx);
+    PropagateResultOfInitExpr(con.GetArguments()[0], 1.0-ub, 1.0-lb, -ctx);
   }
 
   void PropagateResult(AndConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    for (const auto a: con.GetArguments())
-      PropagateResultOfInitExpr(a, lb, 1.0, +ctx);
+    PropagateResult2Vars(con.GetArguments(), lb, 1.0, +ctx);
   }
 
   void PropagateResult(OrConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    for (const auto a: con.GetArguments())
-      PropagateResultOfInitExpr(a, 0.0, ub, +ctx);
+    PropagateResult2Vars(con.GetArguments(), 0.0, ub, +ctx);
   }
 
   void PropagateResult(IfThenConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     auto& args = con.GetArguments();
+    /// TODO consider bounds for then/else for the context:
     PropagateResultOfInitExpr(args[0], 0.0, 1.0, Context::CTX_MIX);
     PropagateResultOfInitExpr(args[1], this->MinusInfty(), this->Infty(), +ctx);
     PropagateResultOfInitExpr(args[2], this->MinusInfty(), this->Infty(), -ctx);
@@ -567,38 +554,68 @@ protected:
   void PropagateResult(AllDiffConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    // TODO go into arguments
+    PropagateResult2Vars(con.GetArguments(), this->MinusInfty(), this->Infty(),
+                         Context::CTX_MIX);
   }
 
   void PropagateResult(NumberofConstConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    // TODO go into arguments
+    PropagateResult2Vars(con.GetArguments(), this->MinusInfty(), this->Infty(),
+                         Context::CTX_MIX);
   }
 
   void PropagateResult(NumberofVarConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    // TODO go into arguments
+    PropagateResult2Vars(con.GetArguments(), this->MinusInfty(), this->Infty(),
+                         Context::CTX_MIX);
   }
 
   void PropagateResult(LE0Constraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
+    PropagateResult2LinTerms(con.GetArguments(), lb, ub, -ctx);
   }
 
   void PropagateResult(LT0Constraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
+    PropagateResult2LinTerms(con.GetArguments(), lb, ub, -ctx);
   }
 
   void PropagateResult(EQ0Constraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    auto& args = con.GetArguments().vars();
-    for (auto v: args) {
-      PropagateResultOfInitExpr(v, this->MinusInfty(), this->Infty(),
-                                Context::CTX_MIX);
+    PropagateResult2Vars(con.GetArguments().vars(), this->MinusInfty(), this->Infty(),
+                         Context::CTX_MIX);
+  }
+
+  /// Propagate given bounds & context into a vector of variables
+  /// @param lb, ub: bounds for each variable
+  template <class Vec>
+  void PropagateResult2Vars(const Vec& vars, double lb, double ub, Context ctx) {
+    for (auto v: vars) {
+      PropagateResultOfInitExpr(v, lb, ub, ctx);
+    }
+  }
+
+  /// Propagate result into LinTerms
+  void PropagateResult2LinTerms(const LinTerms& lint, double , double , Context ctx) {
+    for (auto i=lint.size(); i--; ) {
+      PropagateResultOfInitExpr(lint.var(i),      /// TODO bounds as well
+                                this->MinusInfty(), this->Infty(),
+                                (lint.coef(i)>=0.0) ? +ctx : -ctx);
+    }
+  }
+
+  /// Propagate result into QuadTerms
+  void PropagateResult2QuadTerms(const QuadTerms& quadt, double , double , Context ) {
+    for (auto i=quadt.size(); i--; ) {             /// TODO context for special cases
+      PropagateResultOfInitExpr(quadt.var1(i),     /// TODO bounds as well
+                                this->MinusInfty(), this->Infty(), Context::CTX_MIX);
+      PropagateResultOfInitExpr(quadt.var2(i),
+                                this->MinusInfty(), this->Infty(), Context::CTX_MIX);
     }
   }
 

@@ -160,9 +160,18 @@ protected:
           le.add_term(1.0, MakeFixedVar(eexpr.constant_term()));
         }
       }
+      /// Propagate context
+      auto ctx = obj::MAX==obj.type() ? Context::CTX_POS : Context::CTX_NEG;
+      GetFlatCvt().PropagateResult2LinTerms(le,
+                                            GetFlatCvt().MinusInfty(),
+                                            GetFlatCvt().Infty(), ctx);
+      GetFlatCvt().PropagateResult2QuadTerms(eexpr.GetQT(),
+                                            GetFlatCvt().MinusInfty(),
+                                            GetFlatCvt().Infty(), ctx);
+      /// TODO save & convert different types
       LinearObjective lo { obj.type(),
             std::move(le.coefs()), std::move(le.vars()) };
-      GetFlatCvt().AddObjective( // TODO save & convert different types
+      GetFlatCvt().AddObjective(
             QuadraticObjective{std::move(lo),
                                std::move(eexpr.GetQT())});
   }

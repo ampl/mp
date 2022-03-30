@@ -54,7 +54,7 @@ public:
 
   /// Add (merge) new context
   Context& Add(Context ct) {
-    switch (value_) {
+    switch (value_) {          // Consider already stored value
     case CTX_NONE:
       value_ = ct.value_;
       break;
