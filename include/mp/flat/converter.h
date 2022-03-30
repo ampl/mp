@@ -509,7 +509,8 @@ public:
     internal::Unused(lb, ub, ctx);
     PropagateResultOfInitExpr(con.get_binary_var(),
                               this->MinusInfty(), this->Infty(),
-                              Context::CTX_NEG);
+                              1==con.get_binary_value() ?  // b==1 means b in CTX_NEG
+                                Context::CTX_NEG : Context::CTX_POS);
     PropagateResult2LinTerms(con.get_constraint(),
                              this->MinusInfty(), this->Infty(),
                              0==sens ? Context::CTX_MIX :
