@@ -30,7 +30,10 @@
 namespace mp {
 
 #ifndef MP_ASSERT
-# define MP_ASSERT(condition, message) assert((condition) && message)
+  #define MP_ASSERT(condition, message) assert((condition) && message)
+  /// Assert even for Release
+  #define MP_ASSERT_ALWAYS(condition, message) \
+    do { if (!(condition)) MP_RAISE(message); } while(0)
 #endif
 
 #define MP_UNSUPPORTED(name) \

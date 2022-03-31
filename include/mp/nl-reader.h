@@ -2262,14 +2262,14 @@ class NLProblemBuilder {
                 var::INTEGER, k);
       }
     }
-    assert(num_nl_vars == k);
+    MP_ASSERT_ALWAYS(num_nl_vars == k, "NLProblemBuilder: num_nl_vars mismatch");
     DoAddVars(h.num_vars -
             (num_nl_vars +
              h.num_linear_integer_vars + h.num_linear_binary_vars),
             var::CONTINUOUS, k);
     DoAddVars(h.num_linear_integer_vars + h.num_linear_binary_vars,
             var::INTEGER, k);
-    assert(h.num_vars == k);
+    MP_ASSERT_ALWAYS(h.num_vars == k, "NLProblemBuilder: num_vars mismatch");
   }
 
   /// DoAddVars: update counter \a k

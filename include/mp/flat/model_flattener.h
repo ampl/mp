@@ -490,23 +490,22 @@ public:
   EExpr VisitPow2(UnaryExpr e) {     // MIP could have better conversion for pow2
     auto el = Convert2EExpr(e.arg());
     return QuadratizeOrLinearize(el, el);
-    /* TODO Can do better for integer variables if we redefine pow:
-    return AssignResultToArguments( PowConstraint(
-      PowConstraint::Arguments{ Convert2Var(e.arg()) },
-      PowConstraint::Parameters{ 2.0 } ) ); */
+    /* TODO For non-QP solvers, can efficiently redefine */
   }
 
   EExpr VisitPow(BinaryExpr e) {
     auto el = Convert2EExpr(e.lhs());
     auto er = Convert2EExpr(e.rhs());
-    if (er.is_constant() && 2.0==er.constant_term())
-      return QuadratizeOrLinearize(el, el);
+    if (er.is_constant()) {
+      if (2.0==er.constant_term())
+        return QuadratizeOrLinearize(el, el);
+      else
+        return AssignResult2Args( PowConstraint(
+          PowConstraint::Arguments{ Convert2Var(std::move(el)) },
+          PowConstraint::Parameters{ er.constant_term() } ) );
+    }
     else
-      MP_RAISE("Unsupported: general ^");
-    /* TODO Can do better for integer variables if we redefine pow:
-    return AssignResultToArguments( PowConstraint(
-      PowConstraint::Arguments{ Convert2Var(e.arg()) },
-      PowConstraint::Parameters{ 2.0 } ) ); */
+      MP_RAISE("Unsupported: operator ^ with variable exponent");
   }
 
   EExpr VisitSqrt(UnaryExpr e) {
