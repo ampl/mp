@@ -258,7 +258,7 @@ public:
 
   //////////////////////// STANDARD MIP SUFFIXES //////////////////////////
   ////////////////////////         OUtPUT        //////////////////////////
-  virtual void ReportStandardSuffixes() {
+  void ReportStandardSuffixes() override {
     BaseBackend::ReportStandardSuffixes();
     ReportStandardMIPSuffixes();
   }
@@ -412,7 +412,7 @@ protected:
 
 
 public:
-  virtual void InitStandardOptions() {
+  void InitStandardOptions() override {
     BaseBackend::InitStandardOptions();
     InitMIPOptions();
   }

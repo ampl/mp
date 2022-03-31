@@ -57,6 +57,11 @@
     "tags" : ["logical"]
   },
   {
+    "name" : "impl6_if",
+    "objective" : -2,
+    "tags" : ["logical"]
+  },
+  {
     "name" : "int_ne_01",
     "objective" : 19,
     "tags" : ["logical"]
