@@ -2,6 +2,11 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 ## unreleased
+- *Fix NL input variable order*
+
+- *Reduce default strict comparison tolerance*
+    Change *cvt:mip:eps* default value to 1e-4.
+
 - *Build on MacOS 12.3, in particular on Apple M1*
     Fixed linking on MacOS 12.3 and FindCPLEX.cmake.
     For Apple M1, manually set -DCMAKE_OSX_ARCHITECTURES="x86_64" in CMake when building

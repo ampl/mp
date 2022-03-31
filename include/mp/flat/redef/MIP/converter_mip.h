@@ -213,12 +213,12 @@ protected:
 
 private:
   struct Options {
-    double cmpEps_ = 1e-3;
+    double cmpEps_ = 1e-4;
   };
   Options options_;
 
   void InitOwnOptions() {
-    this->GetEnv().AddOption("cvt:mip:eps",
+    this->GetEnv().AddOption("cvt:mip:eps cvt:cmp:eps",
                        "Tolerance for strict comparison of continuous variables for MIP. "
                        "Ensure larger than the solver's feasibility tolerance.",
                        options_.cmpEps_, 0.0, 1e100);

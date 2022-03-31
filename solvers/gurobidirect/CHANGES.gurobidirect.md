@@ -6,8 +6,6 @@ Summary of recent updates to x-gurobi for AMPL
     Option *cvt:mip:eps*, default 1e-3.
 
 ### 20220217
-- *See also MP Library changes 20220216*
-
 - *Assume new constraints are active (#152)*:
     Gurobi requires a complete basis for hotstart and we have to guess the
     statuses of new variables and constraints.
