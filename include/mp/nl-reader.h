@@ -2220,12 +2220,9 @@ class NLProblemBuilder {
 
     // As nl-benchmark shows, adding problem components at once and then
     // updating them is faster than adding them incrementally. The latter
-    // requires additional checks to make sure that prolbem components are
+    // requires additional checks to make sure that problem components are
     // in the correct order.
-    if (int n = h.num_continuous_vars())
-      builder_.AddVars(n, var::CONTINUOUS);
-    if (int n = h.num_integer_vars())
-      builder_.AddVars(n, var::INTEGER);
+    AddVariables(h);
     if (int n = h.num_common_exprs())
       builder_.AddCommonExprs(n);
     int n_objs = resulting_nobj( h.num_objs );
@@ -2237,6 +2234,48 @@ class NLProblemBuilder {
       builder_.AddLogicalCons(h.num_logical_cons);
     if (h.num_funcs != 0)
       builder_.AddFunctions(h.num_funcs);
+  }
+
+  /// Add variables
+  void AddVariables(const NLHeader& h) {
+    // Distinguish NL variable order
+    // See D.M.Gay, Hooking Your Solver to AMPL
+    int k=0;                             // current block position
+    const int num_nl_vars = std::max(h.num_nl_vars_in_cons,
+                                     h.num_nl_vars_in_objs);
+    if (num_nl_vars) {
+      DoAddVars(h.num_nl_vars_in_both - h.num_nl_integer_vars_in_both,
+              var::CONTINUOUS, k);
+      DoAddVars(h.num_nl_integer_vars_in_both,
+              var::INTEGER, k);
+      DoAddVars(h.num_nl_vars_in_cons -
+              (h.num_nl_vars_in_both + h.num_nl_integer_vars_in_cons),
+              var::CONTINUOUS, k);
+      DoAddVars(h.num_nl_integer_vars_in_cons,
+              var::INTEGER, k);
+      int num_nl_vars_in_objs_only =
+          std::max(0, h.num_nl_vars_in_objs - h.num_nl_vars_in_cons);
+      if (num_nl_vars_in_objs_only) {
+        DoAddVars(num_nl_vars_in_objs_only - h.num_nl_integer_vars_in_objs,
+                var::CONTINUOUS, k);
+        DoAddVars(h.num_nl_integer_vars_in_objs,
+                var::INTEGER, k);
+      }
+    }
+    assert(num_nl_vars == k);
+    DoAddVars(h.num_vars -
+            (num_nl_vars +
+             h.num_linear_integer_vars + h.num_linear_binary_vars),
+            var::CONTINUOUS, k);
+    DoAddVars(h.num_linear_integer_vars + h.num_linear_binary_vars,
+            var::INTEGER, k);
+    assert(h.num_vars == k);
+  }
+
+  /// DoAddVars: update counter \a k
+  void DoAddVars(int n, var::Type t, int& k) {
+    builder_.AddVars(n, t);
+    k += n;
   }
 
   /// objno(). virtual, so that SolverNLHandler can override
