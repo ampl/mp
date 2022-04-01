@@ -9,6 +9,7 @@
 #include "mp/flat/redef/MIP/alldiff.h"
 #include "mp/flat/redef/MIP/and.h"
 #include "mp/flat/redef/MIP/count.h"
+#include "mp/flat/redef/MIP/div.h"
 #include "mp/flat/redef/MIP/eq0.h"
 #include "mp/flat/redef/MIP/ifthenelse.h"
 #include "mp/flat/redef/MIP/impl_le0.h"

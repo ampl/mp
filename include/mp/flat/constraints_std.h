@@ -139,11 +139,11 @@ public:
   }
   /// Constructor for testing.
   /// Always sort terms.
-  QuadraticConstraint(std::initializer_list<std::pair<double, int>> lin_exp,
+  QuadraticConstraint(std::initializer_list<std::pair<double, int>> lin_terms,
                       std::initializer_list<std::tuple<double, int, int>> quad_terms,
                       double lb, double ub) :
     RangeLinCon({}, {lb, ub}), qt_(quad_terms) {
-    RangeLinCon::add_terms(lin_exp);
+    RangeLinCon::add_terms(lin_terms);
     sort_qp_terms();
   }
 

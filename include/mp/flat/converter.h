@@ -716,7 +716,7 @@ public: // for ConstraintKeeper
   template <class Constraint>
   void Convert(const Constraint& ) {
     MP_RAISE(
-          std::string("BasicFlatConverter: convertion of constraint ") +
+          std::string("Convertion of constraint ") +
             Constraint::GetName() + " not implemented");
   }
 

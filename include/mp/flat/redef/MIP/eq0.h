@@ -59,9 +59,11 @@ public:
     if (ae.is_constant()) {
       if (std::fabs(ae.constant_term()) != 0.0)
         GetMC().NarrowVarBounds(res, 1.0, 1.0);
-      // TODO use resvar + context
     } else if ( !GetMC().is_fixed(res) ||   // not fixed, or
                 !GetMC().fixed_value(res) ) // fixed to 0
+      // TODO use resvar + context
+      // TODO consider special cases lb==0 or ub==0
+
     { // TODO We are in MIP so doing algebra, not DisjunctiveConstr. Why?
       // Well in party1.mod, although this results in more fixed variables,
       // Gurobi 9.5 runs 31s vs 91s.

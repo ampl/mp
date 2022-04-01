@@ -35,6 +35,8 @@ public:
   INSTALL_ITEM_CONVERTER(AllDiffConverter_MIP)
   /// Count
   INSTALL_ITEM_CONVERTER(CountConverter_MIP)
+  /// Div
+  INSTALL_ITEM_CONVERTER(DivConverter_MIP)
   /// EQ0
   INSTALL_ITEM_CONVERTER(EQ0Converter_MIP)
   /// IfThenElse

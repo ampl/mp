@@ -2,6 +2,10 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 ## unreleased
+- *DivConstraint and DivConverter_MIP*
+    ModelFlattener now receives the Div expression
+    and MIPFlatConverter handles it via quadratics.
+
 - *Fix NL input variable order*
 
 - *Reduce default strict comparison tolerance*
