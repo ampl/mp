@@ -116,29 +116,8 @@ using AbstractConstraintLocation =
 /// Converters handling custom constraints should derive from
 class BasicFlatConverter {
 public:
-  /// Default constraint prepro
-  /// All parameters are 'in-out'
-  template <class Constraint, class PreproInfo>
-  void PreprocessConstraint( Constraint&, PreproInfo& ) {
-    // ... do nothing by default
-    // Should at least derive bounds & type for the result
-  }
-
-  /// TODO incapsulate parameters
-  void PropagateResult(BasicConstraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(con, lb, ub, ctx);
-    MP_RAISE("This should not be called");
-  }
-
   /// Default conversion priority
   static constexpr double ConstraintCvtPriority(BasicConstraint*) { return 1.0; }
-
-  /// By default, we complain about someone trying to convert an unknown constraint
-  template <class Constraint>
-  void Convert(const Constraint& ) {
-    MP_RAISE(
-          std::string("Not converting constraint ") + Constraint::GetName());
-  }
 
   /// Derived converter classes have to tell C++ to use
   /// default handlers if they need them

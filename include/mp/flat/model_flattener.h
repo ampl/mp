@@ -240,8 +240,10 @@ public:
     return Convert2VarAsAffineExpr(std::move(ee)); // just simple, whole QuadExpr
   }
 
-  /// Generic functional expression array visitor
-  /// Can produce a new variable/expression and specified constraints on it
+  /// Generic functional expression array visitor.
+  /// Assumes the arguments should be converted to variables.
+  /// Can produce a new result variable/expression and
+  /// specified constraints (normally, \a FuncConstraint) on it.
   template <class FuncConstraint, class ExprArray=std::initializer_list<Expr> >
   EExpr VisitFunctionalExpression(ExprArray ea) {
     FuncConstraint fc;
@@ -357,8 +359,13 @@ public:
     return QuadratizeOrLinearize( el, er );
   }
 
+  EExpr VisitDiv(BinaryExpr e) {
+    return VisitFunctionalExpression<DivConstraint>(
+          { e.lhs(), e.rhs() });
+  }
+
   EExpr VisitSum(typename BaseExprVisitor::SumExpr expr) {
-    EExpr sum;
+    EExpr sum;              // Add up the elements' AffExpressions
     for (auto i =
          expr.begin(), end = expr.end(); i != end; ++i)
       sum.add( MP_DISPATCH( Convert2EExpr(*i) ) );

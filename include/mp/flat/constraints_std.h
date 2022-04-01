@@ -309,6 +309,12 @@ DEF_LOGICAL_FUNC_CONSTR( NotConstraint, VarArray1,
                                    "r = !v");
 
 ////////////////////////////////////////////////////////////////////////
+/// \brief DivConstraint
+/// TODO Keep the full expression of v1, or use it in MIP to multiply out
+DEF_NUMERIC_FUNC_CONSTR( DivConstraint, VarArray2,
+                                  "r = v1 / v2 and v2!=0");
+
+////////////////////////////////////////////////////////////////////////
 DEF_LOGICAL_FUNC_CONSTR( IfThenConstraint, VarArrayN<3>,
                                   "if (cond) then (expr1) else (expr2)");
 

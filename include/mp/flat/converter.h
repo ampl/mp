@@ -232,8 +232,38 @@ protected:
   template <class Impl1, class Converter, class Constraint>
   friend class BasicFCC;
 
+  /// PreprocessConstraint
+  /// TODO rename 'PropagateUp' and define together with the constraint
+
   template <class PreprocessInfo>
-  void PreprocessConstraint(     // PropagateUpwards
+  void PreprocessConstraint(
+      LinearFunctionalConstraint& c, PreprocessInfo& prepro) {
+    auto pre = ComputeBoundsAndType(c.GetAffineExpr());
+    prepro.narrow_result_bounds( pre.lb(), pre.ub() );
+    prepro.set_result_type( pre.type() );
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      PowConstraint& c, PreprocessInfo& prepro) {
+    auto& m = MP_DISPATCH( GetModel() );
+    auto arg = c.GetArguments()[0];
+    auto prm = c.GetParameters()[0];
+    auto lb = std::pow(m.lb(arg), prm),
+        ub = std::pow(m.ub(arg), prm);
+    prepro.narrow_result_bounds( std::min(lb, ub),
+                          std::max(lb, ub) );
+    prepro.set_result_type( m.var_type(arg) );
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      TanConstraint& , PreprocessInfo& ) {
+    // TODO improve
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
       MinConstraint& c, PreprocessInfo& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
     auto& args = c.GetArguments();
@@ -360,6 +390,13 @@ protected:
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
+      LT0Constraint& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
       AndConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
@@ -389,7 +426,8 @@ protected:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       NumberofVarConstraint& con, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, con.GetArguments().size());
+    prepro.narrow_result_bounds(0.0,     // size()-1: 1st arg is the ref var
+                                con.GetArguments().size()-1);
     prepro.set_result_type( var::INTEGER );
   }
 
@@ -405,6 +443,33 @@ protected:
       NotConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      DivConstraint& c, PreprocessInfo& prepro) {
+    auto& m = MPD( GetModel() );
+    auto v1 = c.GetArguments()[0], v2 = c.GetArguments()[1];
+    const auto l1=m.lb(v1), u1=m.ub(v1), l2=m.lb(v2), u2=m.ub(v2);
+    if (l1 > this->PracticallyMinusInfty() &&
+        u1 < this->PracticallyInfty() &&
+        l2 > this->PracticallyMinusInfty() &&
+        u2 < this->PracticallyInfty() &&
+        l2 * u2 > 0.0) {
+      auto l0 = std::numeric_limits<double>::max();
+      auto u0 = std::numeric_limits<double>::min();
+      {
+        l0 = std::min(l0, l1 / l2);
+        l0 = std::min(l0, l1 / u2);
+        l0 = std::min(l0, u1 / l2);
+        l0 = std::min(l0, u1 / u2);
+        u0 = std::max(u0, l1 / l2);
+        u0 = std::max(u0, l1 / u2);
+        u0 = std::max(u0, u1 / l2);
+        u0 = std::max(u0, u1 / u2);
+      }
+      prepro.narrow_result_bounds( l0, u0 );
+    }
   }
 
   template <class PreprocessInfo>
@@ -454,6 +519,11 @@ protected:
     prepro.narrow_result_bounds(-1.0, 1.0);
   }
 
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      PLConstraint& , PreprocessInfo& ) {
+  }
+
 
 
   //////////////////////////// CUSTOM CONSTRAINTS //////////////////////
@@ -466,11 +536,11 @@ protected:
   friend class ConstraintKeeper;
 
 public:
-  /// By default, declare mixed context
+  /// By default, set mixed context for argument variables
   template <class Constraint>
   void PropagateResult(Constraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(&con, lb, ub, &ctx);
-    con.SetContext(Context::CTX_MIX);
+    internal::Unused(&con, lb, ub, ctx);
+    con.SetContext(ctx);
     PropagateResult2Vars(con.GetArguments(),
                          this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
@@ -623,10 +693,6 @@ public:
 
   //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
   ///
-  //////////////////////////// SPECIFIC CONSTRAINT CONVERTERS ///////////////////////////
-
-  USE_BASE_CONSTRAINT_CONVERTERS(BasicFlatConverter);      // reuse default converters
-
 public: // for ConstraintKeeper
   /// Assume mixed context if not set in the constraint
   /// TODO Make sure context is always propagated for all constraints and objectives
@@ -645,6 +711,17 @@ public: // for ConstraintKeeper
   void Convert(const Constraint& con, int ) {
     MPD( Convert(con) );
   }
+
+  /// By default, we complain about someone trying to convert an unknown constraint
+  template <class Constraint>
+  void Convert(const Constraint& ) {
+    MP_RAISE(
+          std::string("BasicFlatConverter: convertion of constraint ") +
+            Constraint::GetName() + " not implemented");
+  }
+
+  //////////////////////////// SOME SPECIFIC CONSTRAINT CONVERTERS
+  /// ///////////////////////////////////// ///////////////////////////
 
   /// If backend does not like LDC, we can redefine it
   void Convert(const LinearFunctionalConstraint& ldc) {
@@ -949,6 +1026,7 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(LE0Constraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(LT0Constraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(NotConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(DivConstraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(IfThenConstraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(AllDiffConstraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(NumberofConstConstraint)
