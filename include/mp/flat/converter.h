@@ -95,13 +95,11 @@ public:
       return ee.get_representing_variable();
     if (ee.is_constant())
       return MakeFixedVar(ee.constant_term());
-    PreprocessInfoStd bnt = ComputeBoundsAndType(ee);
-    auto r = MP_DISPATCH( AddVar(bnt.lb_, bnt.ub_, bnt.type_) );
     if (ee.is_affine())
-      AddConstraint(LinearFunctionalConstraint(r, std::move(ee.GetAE())));
-    else
-      AddConstraint(QuadraticFunctionalConstraint(r, std::move(ee)));
-    return r;
+      return AssignResultVar2Args(
+            LinearFunctionalConstraint(std::move(ee.GetAE())));
+    return AssignResultVar2Args(
+        QuadraticFunctionalConstraint(std::move(ee)));
   }
 
   PreprocessInfoStd ComputeBoundsAndType(const QuadExp& ee) {
@@ -239,6 +237,14 @@ protected:
   void PreprocessConstraint(
       LinearFunctionalConstraint& c, PreprocessInfo& prepro) {
     auto pre = ComputeBoundsAndType(c.GetAffineExpr());
+    prepro.narrow_result_bounds( pre.lb(), pre.ub() );
+    prepro.set_result_type( pre.type() );
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      QuadraticFunctionalConstraint& c, PreprocessInfo& prepro) {
+    auto pre = ComputeBoundsAndType(c.GetQuadExpr());
     prepro.narrow_result_bounds( pre.lb(), pre.ub() );
     prepro.set_result_type( pre.type() );
   }
@@ -1007,13 +1013,12 @@ protected:
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConLE)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConEQ)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConGE)
-  /// No map, assume the higher-level constraints have maps.
-  /// LFC and QFC are only added manually anyway,
-  /// FunctionalConstraintConverter is not used
-  STORE_CONSTRAINT_TYPE__NO_MAP(LinearFunctionalConstraint)
 
   STORE_CONSTRAINT_TYPE__NO_MAP(QuadraticConstraint)
-  STORE_CONSTRAINT_TYPE__NO_MAP(QuadraticFunctionalConstraint)
+
+  /// TODO Use FunctionalConstraintConverter with LFC, QFC
+  STORE_CONSTRAINT_TYPE__WITH_MAP(LinearFunctionalConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(QuadraticFunctionalConstraint)
 
   /// With maps we store flattened NL expressions
   /// (functional constraints)

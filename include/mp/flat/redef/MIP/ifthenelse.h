@@ -37,9 +37,14 @@ protected:
     assert((GetMC().is_fixed(args[1]) && GetMC().is_fixed(args[2])));
     const double const1 = GetMC().fixed_value(args[1]);
     const double const2 = GetMC().fixed_value(args[2]);
-    GetMC().AddConstraint( LinearFunctionalConstraint(
-                           itc.GetResultVar(),
-    { {{const1-const2}, {args[0]}}, const2 } ) );
+    /// Obtain negation variable via map
+    int var_res_lin = GetMC().AssignResultVar2Args(
+          LinearFunctionalConstraint(
+            { {{const1-const2}, {args[0]}}, const2 } ));
+    GetMC().AddConstraint(LinConEQ{
+                            { {-1.0, 1.0},
+                              {itc.GetResultVar(), var_res_lin} },
+                            {0.0}});
   }
 
   /// Reuse the stored ModelConverter

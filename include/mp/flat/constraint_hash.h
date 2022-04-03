@@ -8,10 +8,13 @@
 #include <vector>
 
 #include "mp/utils-hash-stream.h"
-#include "mp/flat/constraint_base.h"
+#include "mp/flat/constraints_std.h"
 #include "mp/flat/expr_affine.h"
 
 namespace std {
+
+/// Specialize std::hash<> for various expressions and constraints
+/// Remember we also need operator== for std::reference_wrapper<>
 
 /// Specialize std::hash<> for CustomFunctionalConstraint<>
 ///
@@ -88,6 +91,65 @@ struct hash< mp::AffExp >
     hs.Add(std::hash<mp::LinTerms>{}(x.get_lin_exp()));
     hs.Add(x.constant_term());
     return hs.FinalizeHashValue();
+  }
+};
+
+
+/// Specialize std::hash<> for mp::QuadTerms
+template <>
+struct hash< mp::QuadTerms >
+{
+  size_t operator()(
+      const mp::QuadTerms& qt) const
+  {
+    mp::HashStreamer hs;
+    hs.Add(qt.vars1());
+    hs.Add(qt.vars2());
+    hs.Add(qt.coefs());
+    return hs.FinalizeHashValue();
+  }
+};
+
+
+/// Specialize std::hash<> for mp::QuadExp
+template <>
+struct hash< mp::QuadExp >
+{
+  size_t operator()(
+      const mp::QuadExp& qe) const
+  {
+    mp::HashStreamer hs;
+    hs.Add(std::hash<mp::AffExp>{}(qe.GetAE()));
+    hs.Add(std::hash<mp::QuadTerms>{}(qe.GetQT()));
+    return hs.FinalizeHashValue();
+  }
+};
+
+
+/// Specialize std::hash<> for mp::LinearFunctionalCon
+template <>
+struct hash<
+    std::reference_wrapper< const mp::LinearFunctionalConstraint > >
+{
+  size_t operator()(
+      std::reference_wrapper<
+        const mp::LinearFunctionalConstraint> lfc) const
+  {
+    return std::hash<mp::AffExp>{}(lfc.get().GetAffineExpr());
+  }
+};
+
+
+/// Specialize std::hash<> for mp::QuadraticFunctionalCon
+template <>
+struct hash<
+    std::reference_wrapper< const mp::QuadraticFunctionalConstraint > >
+{
+  size_t operator()(
+      std::reference_wrapper<
+        const mp::QuadraticFunctionalConstraint > qfc) const
+  {
+    return std::hash<mp::QuadExp>{}(qfc.get().GetQuadExpr());
   }
 };
 

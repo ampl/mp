@@ -437,6 +437,26 @@ bool operator==(const AffExp& ae1, const AffExp& ae2) {
       ae1.constant_term()==ae2.constant_term();
 }
 
+/// operator==(QuadExp, QuadExp)
+bool operator==(const QuadExp& qe1, const QuadExp& qe2) {
+  return qe1.GetAE()==qe2.GetAE() &&
+      qe1.GetQT()==qe2.GetQT();
+}
+
+bool operator==(std::reference_wrapper<
+                  const LinearFunctionalConstraint > c1,
+                std::reference_wrapper<
+                  const LinearFunctionalConstraint > c2) {
+  return c1.get().GetAffineExpr() == c2.get().GetAffineExpr();
+}
+
+bool operator==(std::reference_wrapper<
+                  const QuadraticFunctionalConstraint > c1,
+                std::reference_wrapper<
+                  const QuadraticFunctionalConstraint > c2) {
+  return c1.get().GetQuadExpr() == c2.get().GetQuadExpr();
+}
+
 
 /// Manage ConstraintKeepers for different constraint types
 class ConstraintManager {
