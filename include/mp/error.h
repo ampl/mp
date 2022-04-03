@@ -30,22 +30,28 @@
 namespace mp {
 
 #ifndef MP_ASSERT
+  /// Debug assert
   #define MP_ASSERT(condition, message) assert((condition) && message)
-  /// Assert even for Release
-  #define MP_ASSERT_ALWAYS(condition, message) \
-    do { if (!(condition)) MP_RAISE(message); } while(0)
 #endif
 
+/// Assert even for Release
+#define MP_ASSERT_ALWAYS(condition, message) \
+  do { if (!(condition)) MP_RAISE(message); } while(0)
+
+/// Use this to raise UnsupportedError
 #define MP_UNSUPPORTED(name) \
   throw MakeUnsupportedError( name )
 
+/// Raise error
 #define MP_RAISE(msg) throw std::runtime_error(msg)
+
+/// Raise with exit code
 #define MP_RAISE_WITH_CODE(exit_code, msg) throw mp::Error(msg, exit_code)
-#define MP_WARNING(msg) Print(msg)
-/// TODO dedicated class
+
+/// Raise infeasibility: TODO dedicated class
 #define MP_INFEAS(msg) MP_RAISE(std::string("Infeasibility: ") + msg)
 
-// A general error.
+/// A general error.
 class Error : public fmt::internal::RuntimeError {
   int exit_code_ = EXIT_FAILURE;
  protected:
@@ -69,20 +75,21 @@ class Error : public fmt::internal::RuntimeError {
   int exit_code() const { return exit_code_; }
 };
 
-// The operation is not supported by the object.
+/// The operation is not supported by the object.
 class UnsupportedError : public Error {
  public:
   FMT_VARIADIC_(char, , UnsupportedError, init, fmt::CStringRef)
 };
 
-// Makes UnsupportedError with prefix "unsupported: ".
+/// Makes UnsupportedError with prefix "unsupported: ".
+/// Use via macro MP_UNSUPPORTED
 inline UnsupportedError MakeUnsupportedError(
     fmt::CStringRef format_str, fmt::ArgList args) {
   return UnsupportedError("unsupported: {}", fmt::format(format_str, args));
 }
 FMT_VARIADIC(UnsupportedError, MakeUnsupportedError, fmt::CStringRef)
 
-/// An option error.
+/// An option error
 class OptionError : public Error {
 public:
   explicit OptionError(fmt::CStringRef message) : Error(message) {}
