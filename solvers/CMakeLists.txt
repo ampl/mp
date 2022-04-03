@@ -192,7 +192,7 @@ if (TARGET coptdirect)
   endif()
 endif ()
 
-add_ampl_solver(cplexdirect DLL_RUNTIME MODULE CPLEX
+add_ampl_solver(cplexdirect DLL_RUNTIME DI MODULE CPLEX
   cplexbackend.cc cplexbackend.h
   cplexcommon.cc cplexcommon.h
   cplexmodelapi.cc cplexmodelapi.h
