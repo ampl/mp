@@ -1,7 +1,7 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
-## unreleased
+## 20220403
 - *DivConstraint and DivConverter_MIP*
     ModelFlattener now receives the Div expression
     and MIPFlatConverter handles it via quadratics.
@@ -19,7 +19,8 @@ Summary of recent updates to the AMPL MP Library
 - *Expression maps*
     FlatConverter eliminates subexpressions of all types.
     A subexpression means here a duplicate expression, such as
-    abs(x+2) occurring several times in the model.
+    abs(x+2) occurring several times in the model (here x+2
+    is a nested subexpression).
 
 - *AMPLS C API*
     C API allowing access to underlying solver API.
