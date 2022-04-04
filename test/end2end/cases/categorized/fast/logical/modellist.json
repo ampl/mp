@@ -12,6 +12,11 @@
     "tags" : ["logical"]
   },
   {
+    "name" : "ifthen_var",
+    "objective" : -5,
+    "tags" : ["logical"]
+  },
+  {
     "name" : "impl1",
     "objective" : 10,
     "tags" : ["logical"]

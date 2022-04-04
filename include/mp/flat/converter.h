@@ -176,8 +176,13 @@ public:
   }
 
   /// Take FuncConstraint with arguments
-  /// If the result of the function is known, return it
-  /// Otherwise, create a result variable and add the constraint
+  ///
+  /// Prefer this over AddConstraint() for mapped functional
+  /// constraints.
+  /// If the result of the function can be presolved or
+  /// is known via map, return it.
+  /// Otherwise, create a result variable and add the constraint.
+  /// @return VarOrConst
   template <class FuncConstraint>
   typename FCC<Impl, FuncConstraint>::VarOrConst
   AssignResult2Args(FuncConstraint&& fc) {
@@ -741,8 +746,13 @@ public: // for ConstraintKeeper
 
 
 public:
-  //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
-  //////////////////////// Takes ownership /////////////////////////////
+  /// ADD CUSTOM CONSTRAINT
+  ///
+  /// Use only for non-mapped constraints. For functional constraints
+  /// stored __WITH_MAP, use AssignResult(Var)2Args().
+  /// TODO non-functional constraints __WITH_MAP.
+  /// Takes ownership.
+  /// @return Node reference for the stored constraint
   template <class Constraint>
   pre::NodeRange AddConstraint(Constraint&& con) {
     auto node_range =

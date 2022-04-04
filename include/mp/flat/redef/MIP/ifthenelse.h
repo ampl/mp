@@ -25,8 +25,7 @@ public:
     assert(!itc.GetContext().IsNone());
     const auto& args = itc.GetArguments();
     if (!GetMC().is_fixed(args[1]) || !GetMC().is_fixed(args[2]))
-      MP_RAISE("MP2MIP: IfThen with variable then/else "
-               "arguments not implemented");
+      ConvertIfThen_variableThenElse(itc);
     else
       ConvertIfThen_constantThenElse(itc);
   }
@@ -37,7 +36,7 @@ protected:
     assert((GetMC().is_fixed(args[1]) && GetMC().is_fixed(args[2])));
     const double const1 = GetMC().fixed_value(args[1]);
     const double const2 = GetMC().fixed_value(args[2]);
-    /// Obtain negation variable via map
+    /// Obtain result variable via map
     int var_res_lin = GetMC().AssignResultVar2Args(
           LinearFunctionalConstraint(
             { {{const1-const2}, {args[0]}}, const2 } ));
@@ -45,6 +44,21 @@ protected:
                             { {-1.0, 1.0},
                               {itc.GetResultVar(), var_res_lin} },
                             {0.0}});
+  }
+
+  void ConvertIfThen_variableThenElse(const IfThenConstraint& itc) {
+    const auto& args = itc.GetArguments();
+    assert((!GetMC().is_fixed(args[1]) || !GetMC().is_fixed(args[2])));
+    GetMC().AddConstraint(IndicatorConstraintLinEQ{
+                            args[0], 1,
+                            { { {-1.0, 1.0},  // arg0==1 ==> result==arg1
+                              {itc.GetResultVar(), args[1]} },
+                              {0.0} } });
+    GetMC().AddConstraint(IndicatorConstraintLinEQ{
+                            args[0], 0,
+                            { { {-1.0, 1.0},  // arg0==0 ==> result==arg2
+                              {itc.GetResultVar(), args[2]} },
+                              {0.0} } });
   }
 
   /// Reuse the stored ModelConverter
