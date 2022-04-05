@@ -1,9 +1,13 @@
-x-Gurobi Modeling Guide
+.. _modeling_guide:
+
+x-Gurobi modeling guide
 =======================
 
 A guide to using the beta test release of
 `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_,
 the enhanced AMPL-Gurobi interface.
+`x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_
+can be compiled from source or downloaded in the AMPL distribution bundle.
 
 
 Summary
@@ -71,15 +75,15 @@ Expressions supported
 
         -5 * (abs(x[1])-0.7)^2 + x[2]
 
-- Gurobi “general constraints” `and`, `or`, `max`, `min`, `abs`,
-  as well as indicator (`==>`), are passed to Gurobi natively.
+- Gurobi “general constraints” ``and``, ``or``, ``max``, ``min``, ``abs``,
+  as well as indicator (``==>``), are passed to Gurobi natively.
   This behavior can be changed with solver options **acc:abs** etc.
-  to use big-M constraints instead (when the variables have
+  to use big-*M* constraints instead (when the variables have
   finite bounds).
 
 - Nonlinear “generals” are passed to Gurobi:
 
-  `exp`, `log`, `sin`, `cos`, `tan`, `pow`, `pl`, `SOS1/2`.
+  ``exp``, ``log``, ``sin``, ``cos``, ``tan``, ``pow``, ``pl``, ``SOS1/2``.
 
 General modeling hints
 ----------------------
@@ -95,7 +99,7 @@ For example, given a disjunction
 
         subj to: log(x+2)<=y^2  or  x-y>=z;
 
-and knowing that  `-15 <= x-y-z <= 30`, reformulate:
+and knowing that ``-15 <= x-y-z <= 30``, reformulate:
 
 .. code-block:: ampl
 

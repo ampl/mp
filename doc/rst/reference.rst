@@ -1,5 +1,5 @@
-More Tools
-==========
+Reference
+=========
 
 This section overviews most low-level classes and functions in namespace :cpp:any:`mp`.
 
