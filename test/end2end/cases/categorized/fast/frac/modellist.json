@@ -4,7 +4,7 @@
     "objective" : 437.5,
     "tags" : ["quadratic"],
     "options": {
-      "gurobi_options": "nonconvex=2"
+      "gurobidirect_options": "nonconvex=2"
     }
   }
 ]

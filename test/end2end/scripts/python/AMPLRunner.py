@@ -216,7 +216,7 @@ class AMPLRunner(object):
         if model.hasOptions():
             optmap = model.getOptions()
             for name, val in optmap.items():
-                if name.endswith("ANYSOLVER_options"):            # Any-solver option
+                if name.endswith("SOLVER_options"):            # Any-solver option
                     if not slvname in optmap:                     # When no 'gurobi_options'
                         name = slvname
                     else:
