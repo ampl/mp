@@ -818,7 +818,7 @@ public:
     algebraic_cons_.resize(num_cons);
   }
 
-  // A logical constraint.
+  /// A logical constraint.
   template <typename Item>
   class BasicLogicalCon : private Item {
    private:
@@ -884,13 +884,13 @@ public:
    */
   LogicalConRange logical_cons() const { return LogicalConRange(this); }
 
-  // Returns the logical constraint at the specified index.
+  /// Returns the logical constraint at the specified index.
   LogicalCon logical_con(int index) const {
     internal::CheckIndex(index, num_logical_cons());
     return LogicalCon(this, index);
   }
 
-  // Returns the mutable logical constraint at the specified index.
+  /// Returns the mutable logical constraint at the specified index.
   MutLogicalCon logical_con(int index) {
     internal::CheckIndex(index, num_logical_cons());
     return MutLogicalCon(this, index);
@@ -916,12 +916,12 @@ public:
     BasicCommonExpr(typename Item::Problem *p, int index) : Item(p, index) {}
 
    public:
-    // Returns the linear part of the common expression.
+    /// Returns the linear part of the common expression.
     const LinearExpr &linear_expr() const {
       return this->problem_->linear_exprs_[this->index_];
     }
 
-    // Returns the nonlinear part of the common expression.
+    /// Returns the nonlinear part of the common expression.
     NumericExpr nonlinear_expr() const {
       std::size_t index = this->index_;
       return index < this->problem_->nonlinear_exprs_.size() ?
@@ -964,7 +964,7 @@ public:
     void set_position(int) const {}
   };
 
-  // Returns the common expression at the specified index.
+  /// Returns the common expression at the specified index.
   CommonExpr common_expr(int index) const {
     internal::CheckIndex(index, num_common_exprs());
     return CommonExpr(this, index);
@@ -974,7 +974,7 @@ public:
     return MutCommonExpr(this, index);
   }
 
-  // Adds a common expression (defined variable).
+  /// Adds a common expression (defined variable).
   MutCommonExpr AddCommonExpr(NumericExpr expr) {
     std::size_t num_exprs = linear_exprs_.size();
     MP_ASSERT(num_exprs < MP_MAX_PROBLEM_ITEMS, "too many expressions");
@@ -990,11 +990,18 @@ public:
     nonlinear_exprs_.resize(new_size, NumericExpr());
   }
 
-  // Sets a complementarity condition.
+  /// Sets a complementarity condition.
   void SetComplementarity(int con_index, int var_index, ComplInfo info);
 
-  // Returns true if the problem has complementarity conditions.
+  /// Returns true if the problem has complementarity conditions.
   bool HasComplementarity() const { return !compl_vars_.empty(); }
+
+  /// Returns complementarity variable for algebraic constraint \a i.
+  /// Result > 0 means constraint \a i complements variable
+  /// Result - 1.
+  int GetComplementarityVariable(int i) const {
+    return compl_vars_.size()>(size_t)i ? compl_vars_.at(i) : -1;
+  }
 
   /// Variables' initial values
   ArrayRef<double> InitialValues() const { return initial_values_; }

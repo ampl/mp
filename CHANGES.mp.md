@@ -1,7 +1,11 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
-## 20220403
+## 20220408
+- *Linear complementarity: 1st go*
+    Conversion to MIP of linear complementarity constraints
+    with 1 inequality on each side.
+
 - *DivConstraint and DivConverter_MIP*
     ModelFlattener now receives the Div expression
     and MIPFlatConverter handles it via quadratics.

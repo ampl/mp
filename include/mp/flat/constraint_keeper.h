@@ -339,6 +339,8 @@ private:
         Constraint::GetName() + " >"};
 };
 
+
+////////////////////////////////////////////////////////////////////////////////////
 /// Macros to define / access constraint keepers
 /// Assume ConstraintManager as public parent
 
@@ -411,6 +413,8 @@ private:
   map__ ## Constraint ## _
 
 
+
+/////////////////////////////////////////////////////////////////////////////
 /// Subexpression map
 ///
 /// Indexes constraint location
@@ -458,6 +462,7 @@ bool operator==(std::reference_wrapper<
 }
 
 
+////////////////////////////////////////////////////////////////////////////////////
 /// Manage ConstraintKeepers for different constraint types
 class ConstraintManager {
   std::multimap<double, BasicConstraintKeeper&> con_keepers_;

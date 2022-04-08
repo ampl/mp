@@ -1,6 +1,11 @@
 Summary of recent updates to x-gurobi for AMPL
 ==============================================
 
+### 20220408
+- *Linear complementarity in MP: 1st go*
+
+- *Other changes in MP*
+
 ### 20220303
 - *Fix strict comparison tolerance*
     Option *cvt:mip:eps*, default 1e-3.

@@ -90,7 +90,8 @@ class ComplInfo {
 
   /** Constraint upper bound. */
   double con_ub() const {
-    return (flags_ & INF_UB) != 0 ? std::numeric_limits<double>::infinity() : 0;
+    return (flags_ & INF_UB) != 0 ?
+          std::numeric_limits<double>::infinity() : 0;
   }
 };
 

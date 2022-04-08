@@ -20,29 +20,38 @@ class NodeRange {
 public:
   /// Construct
   NodeRange() = default;
+
   /// Construct
   NodeRange(const NodeRange& nr) noexcept : pvn_(nr.pvn_), ir_(nr.ir_) { }
 
   /// Assign
   NodeRange& operator=(const NodeRange& nr)
   { pvn_=nr.pvn_; ir_=nr.ir_; return *this; }
+
   /// Get pvn
   ValueNode* GetValueNode() const { assert(pvn_); return pvn_; }
+
   /// Get index range
   NodeIndexRange GetIndexRange() const { assert(ir_.check()); return ir_; }
+
+  /// Get the single index if range is just that
+  int GetSingleIndex() const { return ir_; }
+
   /// Get single index if it is
   operator int() const { return ir_; }
 
   /// Check extendability
   bool ExtendableBy(NodeRange nr) const
   { return pvn_==nr.pvn_ && ir_.end==nr.ir_.beg; }
-  /// Extend
+
+  /// Extend the range by another one
   void ExtendBy(NodeRange nr)
   { assert(ExtendableBy(nr)); ir_.end = nr.ir_.end; }
 
 protected:
   /// Declare ValueNode
   friend class ValueNode;
+
   /// Assign members, only accessible to ValueNode
   void Assign(ValueNode* pvn, NodeIndexRange ir) { pvn_=pvn; ir_=ir; }
 
@@ -58,10 +67,13 @@ class ValueNode {
 public:
   /// Default constructor
   ValueNode() = default;
+
   /// Constructor
   ValueNode(std::string nm) : name_(nm) { }
+
   /// Declared size (what is being used by bridges)
   size_t size() const { return sz_; }
+
   /// Create entry (range) pointer: add n elements
   NodeRange Add(int n=1) {
     NodeRange nr;
@@ -69,6 +81,7 @@ public:
     sz_ += n;
     return nr;
   }
+
   /// Create entry (range) pointer: select n elements at certain pos
   NodeRange Select(int pos, int n=1) {
     NodeRange nr;
@@ -89,6 +102,7 @@ public:
     vi_ = std::move(ai);
     return *this;
   }
+
   /// Assign from vector. Always copy
   ValueNode& operator=(std::vector<double> ad)
   {
@@ -99,11 +113,13 @@ public:
 
   /// Retrieve whole ArrayRef<int>
   operator ArrayRef<int> () const { return vi_; }
+
   /// Retrieve whole ArrayRef<double>
   operator ArrayRef<double> () const { return vd_; }
 
   /// Retrieve whole vector<int>&
   operator const std::vector<int>& () const { return vi_; }
+
   /// Retrieve whole vector<double>&
   operator const std::vector<double>& () const { return vd_; }
 
@@ -111,6 +127,7 @@ public:
 
   /// Retrieve int[i]
   int GetInt(size_t i) const { assert(i<vi_.size()); return vi_[i]; }
+
   /// Set int[i]
   void SetInt(size_t i, int v) {
     assert(i<size());
@@ -121,6 +138,7 @@ public:
 
   /// Retrieve double[i]
   double GetDbl(size_t i) const { assert(i<vd_.size()); return vd_[i]; }
+
   /// Set double[i]
   void SetDbl(size_t i, double v) {
     assert(i<size());
@@ -178,6 +196,7 @@ void Copy(NodeRange ir1, NodeRange ir2) {
 
 /// Typedef map of nodes
 using NodeMap = ValueMap< ValueNode >;
+
 /// Typedef ModelValues stored in NodeMaps
 using ModelValuesTerminal = ModelValues< NodeMap >;
 

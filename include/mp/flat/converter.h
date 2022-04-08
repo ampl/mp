@@ -605,6 +605,20 @@ public:
                          this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
+  void PropagateResult(ComplementarityLinRange& con, double lb, double ub,
+                       Context ctx) {
+    internal::Unused(lb, ub, ctx);
+    PropagateResult(con.GetConstraint(), lb, ub, Context::CTX_MIX);
+    PropagateResultOfInitExpr(con.GetVariable(), lb, ub, Context::CTX_MIX);
+  }
+
+  void PropagateResult(ComplementarityQuadRange& con, double lb, double ub,
+                       Context ctx) {
+    internal::Unused(lb, ub, ctx);
+    PropagateResult(con.GetConstraint(), lb, ub, Context::CTX_MIX);
+    PropagateResultOfInitExpr(con.GetVariable(), lb, ub, Context::CTX_MIX);
+  }
+
   void PropagateResult(NotConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
@@ -1063,6 +1077,8 @@ protected:
   STORE_CONSTRAINT_TYPE__NO_MAP(PLConstraint)
   STORE_CONSTRAINT_TYPE__NO_MAP(SOS1Constraint)
   STORE_CONSTRAINT_TYPE__NO_MAP(SOS2Constraint)
+  STORE_CONSTRAINT_TYPE__NO_MAP(ComplementarityLinRange)
+  STORE_CONSTRAINT_TYPE__NO_MAP(ComplementarityQuadRange)
 
   ////////////////////// Default map accessors /////////////////////////
   /// Constraints without map should overload these by empty methods ///

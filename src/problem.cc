@@ -51,7 +51,6 @@ int BasicProblem<Alloc>::GetSuffixSize(suf::Kind kind) {
     break;
   case suf::CON:
     size = algebraic_cons_.capacity() +
-        compl_vars_.capacity() +
         logical_cons_.capacity();
     break;
   case suf::OBJ:

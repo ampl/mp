@@ -88,6 +88,9 @@ Expressions supported
 General modeling hints
 ----------------------
 
+For general modeling hints, refer to Guidelines for Numerical Issues
+and modeling webinars on the `Gurobi website <http://www.gurobi.com>`_.
+
 For logical expressions, it proves best to supply tight bounds on
 all participating variables.
 For any intermediate expressions which are known to have tighter bounds

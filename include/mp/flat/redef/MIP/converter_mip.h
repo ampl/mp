@@ -33,6 +33,10 @@ public:
   INSTALL_ITEM_CONVERTER(AndConverter_MIP)
   /// AllDiff
   INSTALL_ITEM_CONVERTER(AllDiffConverter_MIP)
+  /// Complementarity linear
+  INSTALL_ITEM_CONVERTER(ComplCvtLin_MIP)
+  /// Complementarity quadratic
+  INSTALL_ITEM_CONVERTER(ComplCvtQuad_MIP)
   /// Count
   INSTALL_ITEM_CONVERTER(CountConverter_MIP)
   /// Div

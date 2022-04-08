@@ -95,6 +95,9 @@ public:
   /// Single bridge entry
   using BridgeEntry = std::pair<NodeRange, NodeRange>;
 
+  /// Collection of entries
+  using CollectionOfEntries = std::vector<BridgeEntry>;
+
   /// Add entry
   /// Instead of a new entry, tries to extend the last one
   /// if exists
@@ -109,6 +112,9 @@ public:
       entries_.back().second.ExtendBy(be.second);
     }
   }
+
+  /// Retrieve entries
+  const CollectionOfEntries& GetEntries() const { return entries_; }
 
 #undef PRESOLVE_KIND
 #define PRESOLVE_KIND(name) \
@@ -136,7 +142,7 @@ protected:
   }
 
 private:
-  std::vector<BridgeEntry> entries_;
+  CollectionOfEntries entries_;
 };
 
 

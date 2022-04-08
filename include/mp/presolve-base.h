@@ -204,10 +204,13 @@ struct IndexRange {
 
   /// Validate
   bool check() const { return end>beg; }
+
   /// Size()
   int size() const { assert(check()); return end-beg; }
+
   /// Represents just 1 index
   bool IfSingleIndex() const { return beg==end-1; }
+
   /// Return single index if it is
   operator int() const { assert(IfSingleIndex()); return beg; }
 

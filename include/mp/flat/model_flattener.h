@@ -108,21 +108,30 @@ public:
 
 protected:
   void ConvertStandardItems() {
+    ////////////////////////// Variables
     ConvertVars();
+
+    ////////////////////////// Common exprs
     int num_common_exprs = GetModel().num_common_exprs();
     for (int i = 0; i < num_common_exprs; ++i)
       MP_DISPATCH( Convert( GetModel().common_expr(i) ) );
+
+    ////////////////////////// Objectives
     if (int num_objs = GetModel().num_objs())
       for (int i = 0; i < num_objs; ++i)
         MP_DISPATCH( Convert( GetModel().obj(i) ) );
+
+    ////////////////////////// Algebraic constraints
     if (int n_cons = GetModel().num_algebraic_cons())
       for (int i = 0; i < n_cons; ++i)
         MP_DISPATCH( ConvertAlgCon( i ) );
+
+    ////////////////////////// Logical constraints
     if (int n_lcons = GetModel().num_logical_cons())
       for (int i = 0; i < n_lcons; ++i)
         MP_DISPATCH( ConvertLogicalCon( i ) );
 
-    ////////////////////////////////////////////////
+    ////////////////////// SOS constraints //////////////////////////
     MP_DISPATCH( ConvertSOSConstraints() );
   }
 
@@ -189,12 +198,23 @@ protected:
     { con.lb() - ee.constant_term(), con.ub() - ee.constant_term() } };
     lc.sort_terms();
     pre::NodeRange nr;
-    if (ee.is_affine())
-      nr = AddConstraint( std::move(lc) );
-    else                                   // higher-order terms
-      nr = AddConstraint(
-          QuadraticConstraint{std::move(lc),
-                              std::move(ee.GetQT())} );
+    auto compl_var = GetModel().GetComplementarityVariable(i)-1;  // -1
+    if (ee.is_affine()) {
+      if (compl_var<0)
+        nr = AddConstraint( std::move(lc) );
+      else
+        nr = AddConstraint(
+              ComplementarityLinRange{ std::move(lc), compl_var } );
+    } else {
+      auto qc = QuadraticConstraint{
+          std::move(lc),
+          std::move(ee.GetQT())};                        // quadratic terms
+      if (compl_var<0)
+        nr = AddConstraint( std::move(qc) );
+      else
+        nr = AddConstraint(
+              ComplementarityQuadRange{ std::move(qc), compl_var } );
+    }
     GetCopyBridge().AddEntry( {
             GetPresolver().GetSourceNodes().GetConValues()(0).Add(),
             nr
@@ -213,6 +233,7 @@ protected:
             ie.GetCK()->GetValueNode().Select( ie.GetIndex() )
           } );
   }
+
 
 public:
   //////////////////////////////////// VISITOR ADAPTERS /////////////////////////////////////////
@@ -732,7 +753,6 @@ public:
 private:
   ModelType model_;
   FlatConverter flat_cvt_;
-
 };
 
 

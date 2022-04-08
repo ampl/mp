@@ -34,6 +34,9 @@ public:
     : LinTerms(std::move(le)), RhsOrRange(std::move(rr))
   { if (fSort) sort_terms(); }
 
+  /// Body: linear terms
+  const LinTerms& GetBody() const { return (const LinTerms&)(*this); }
+
   /// For PropagateResult()
   const std::vector<int>& GetArguments() const
   { return LinTerms::vars(); }
@@ -411,7 +414,10 @@ private:
   const Con con_;
 };
 
+/// Typedef indicator<LinConLE>
 using IndicatorConstraintLinLE = IndicatorConstraint<LinConLE>;
+
+/// Typedef indicator<LinConEQ>
 using IndicatorConstraintLinEQ = IndicatorConstraint<LinConEQ>;
 
 ////////////////////////////////////////////////////////////////////////
@@ -471,8 +477,49 @@ public:
                      v_.size()==w_.size(); }
 };
 
+/// Typedef SOS1Constraint
 using SOS1Constraint = SOS_1or2_Constraint<1>;
+
+/// Typedef SOS2Constraint
 using SOS2Constraint = SOS_1or2_Constraint<2>;
+
+////////////////////////////////////////////////////////////////////////
+/// Complementarity constraint.
+/// <RangeCon> complements a variable.
+/// @param RangeCon: a linear or quadratic range constraint
+template <class RangeCon>
+class ComplementarityConstraint : public BasicConstraint {
+public:
+  /// The algebraic constraint
+  using ConType = RangeCon;
+
+  /// Name
+  static const std::string& GetName() {
+    static std::string name
+      { "ComplementarityConstraint[" + RangeCon::name() + ']' };
+    return name;
+  }
+
+  /// Constructor
+  ComplementarityConstraint(ConType con, int var) :
+    compl_con_(std::move(con)), compl_var_(var) { }
+
+  /// Get constraint
+  const ConType& GetConstraint() const { return compl_con_; }
+
+  /// Get variable
+  int GetVariable() const { return compl_var_; }
+
+private:
+  ConType compl_con_;
+  int compl_var_;
+};
+
+/// Typedef ComplementarityLinRange
+using ComplementarityLinRange = ComplementarityConstraint<RangeLinCon>;
+
+/// Typedef ComplementarityQuadRange
+using ComplementarityQuadRange = ComplementarityConstraint<QuadraticConstraint>;
 
 } // namespace mp
 
