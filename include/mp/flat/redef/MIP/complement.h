@@ -71,6 +71,36 @@ public:
       GetMC().FixAsTrue(res_disj);
       /// Add the algebraic constraint
       GetMC().AddConstraint( std::move(alg_con) );
+    } else {                                    // double-bounded variable vs constraint body
+      assert(fin_var_lb && fin_var_ub);
+      /// res1 = (var <= lb && con >= 0)
+      auto lt = alg_con.GetBody();
+      auto neg_lt = lt;
+      neg_lt.negate();
+      auto res1 = GetMC().AssignResultVar2Args(
+            AndConstraint{ {
+                GetMC().AssignResultVar2Args(
+                             LE0Constraint{ { {{1.0}, {compl_var}}, -var_lb } }),
+                GetMC().AssignResultVar2Args(        // TODO wrong for QuadCon
+                             LE0Constraint{ { std::move(neg_lt), 0.0 } })
+                           } });
+      /// res2 = (body==0)
+      auto res2 = GetMC().AssignResultVar2Args(        // TODO wrong for QuadCon
+            EQ0Constraint{ { std::move(lt), 0.0 } });
+      /// res3 = (var >= ub && con <= 0)
+      auto lt3 = alg_con.GetBody();
+      auto res3 = GetMC().AssignResultVar2Args(
+            AndConstraint{ {
+                GetMC().AssignResultVar2Args(
+                             LE0Constraint{ { {{-1.0}, {compl_var}}, var_ub } }),
+                GetMC().AssignResultVar2Args(        // TODO wrong for QuadCon
+                             LE0Constraint{ { std::move(lt3), 0.0 } })
+                           } });
+      /// res4 = (res1 \/ res2 \/ res3)
+      auto res4 = GetMC().AssignResultVar2Args(
+            OrConstraint{ { res1, res2, res3 } });
+      GetMC().FixAsTrue(res4);
+      /// Not adding any static algebraic constraint
     }
 
   }
