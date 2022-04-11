@@ -6,7 +6,7 @@
 #define APIEXPORT  __attribute__((visibility("default")))
 #endif
 
-APIEXPORT GRBmodel* AMPLloadmodel(int argc, char** argv, void* slvout) {
+APIEXPORT GRBmodel* AMPLdirectloadmodel(int argc, char** argv, void* slvout) {
   const char* nl_filename = argv[1];
   const char *slv_opt= argv[2];
   AMPLS_MP_Solver slv;
@@ -18,10 +18,10 @@ APIEXPORT GRBmodel* AMPLloadmodel(int argc, char** argv, void* slvout) {
   return mdl;
 }
 
-APIEXPORT void AMPLwritesolution(AMPLS_MP_Solver* slv) {
+APIEXPORT void AMPLdirectwritesolution(AMPLS_MP_Solver* slv) {
   AMPLSReportResults(&slv);
 }
 
-APIEXPORT void AMPLclosesolver(AMPLS_MP_Solver* slv) {
+APIEXPORT void AMPLdirectclosesolver(AMPLS_MP_Solver* slv) {
   AMPLSCloseGurobi(&slv);
 }

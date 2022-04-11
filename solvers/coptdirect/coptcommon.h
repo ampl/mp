@@ -31,15 +31,12 @@ public:
   /// Set connection
   void set_other_copt(CoptCommon* o) { other_ = o; }
 
-  void setEnvCreate(int (*createEnvFunction) (copt_env**)) {
-    createEnv = createEnvFunction;
-  }
+  copt_env* env() const { return env_; }
+  copt_prob* lp() const { return lp_; }
 
 protected:
   void OpenSolver();
   void CloseSolver();
-
-  // TODO check if here it makes sense
 
   int getIntAttr(const char* name) const;
   double getDblAttr(const char* name) const;
@@ -51,9 +48,7 @@ protected:
   int NumSOSCons() const;
   int NumIndicatorCons() const;
 
-  copt_env* env() const { return env_; }
   void set_env(copt_env* e) { env_ = e; }
-  copt_prob* lp() const { return lp_; }
   void set_lp(copt_prob* lp) { lp_ = lp; }
 
   void copy_handlers_from_other_copt();

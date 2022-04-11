@@ -129,7 +129,7 @@ function(add_ampl_solver name)
     target_link_libraries(${shared_lib} PRIVATE ${static_lib})
   else()
     set(shared_lib ${name}-lib)
-    add_library(${shared_lib} SHARED ${MP_BASE_DIR}/src/sol.cc)
+    add_library(${shared_lib} SHARED ${MP_BASE_DIR}/src/sol.cc ${MP_BASE_DIR}/solvers/${name}/${name}-lib.c)
     target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name})
     target_link_libraries(${shared_lib} PRIVATE ${static_lib})
 

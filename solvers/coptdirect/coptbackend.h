@@ -58,6 +58,12 @@ public:
   USING_STD_FEATURES;
 
   /**
+ * MULTISOL support
+ * No API, use ReportIntermediateSolution()
+**/
+  ALLOW_STD_FEATURE(MULTISOL, true)
+
+  /**
 * Get/Set AMPL var/con statii
 **/
   ALLOW_STD_FEATURE(BASIS, true)
@@ -131,6 +137,11 @@ protected:
 
   void ReportResults() override;
   void ReportCOPTResults();
+
+  void ReportCOPTPool();
+
+  std::vector<double> getPoolSolution(int i);
+  double getPoolObjective(int i);
 
   /// Solution attributes
   double NodeCount() const;

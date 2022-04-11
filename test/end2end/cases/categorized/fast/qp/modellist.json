@@ -61,5 +61,10 @@
       "_var[1].test_ini_mip": 0.5,
       "_var[2].test_ini_mip": 1
     }
+  },
+  {
+    "name" : "quadratic_obj",
+    "objective" : -0.002380385,
+    "tags" : ["quadratic"]
   }
 ]

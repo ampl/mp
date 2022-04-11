@@ -6,6 +6,10 @@
 #include "mp/flat/backend_model_api_base.h"
 #include "coptbackend.h"
 
+extern "C" {
+  #include "copt-ampls-c-api.h"    // Copt AMPLS C API
+}
+#include "mp/ampls-cpp-api.h"
 
 namespace {
 
@@ -153,7 +157,34 @@ void CoptBackend::ReportResults() {
 void CoptBackend::ReportCOPTResults() {
   SetStatus( ConvertCOPTStatus() );
   AddCOPTMessages();
+  if (need_multiple_solutions())
+    ReportCOPTPool();
 }
+std::vector<double> CoptBackend::getPoolSolution(int i)
+{
+  std::vector<double> vars(NumVars());
+  COPT_CCALL(COPT_GetPoolSolution(lp(), i, NumVars(), NULL, vars.data()));
+  return vars;
+}
+double CoptBackend::getPoolObjective(int i)
+{
+  double obj;
+  COPT_CCALL(COPT_GetPoolObjVal(lp(), i, &obj));
+  return obj;
+}
+void CoptBackend::ReportCOPTPool() {
+  if (!IsMIP())
+    return;
+  int iPoolSolution = -1;
+  int nsolutions;
+  
+  while (++iPoolSolution < getIntAttr(COPT_INTATTR_POOLSOLS)) {
+    ReportIntermediateSolution(
+      { getPoolSolution(iPoolSolution),
+        {}, { getPoolObjective(iPoolSolution) } });
+  }
+}
+
 
 void CoptBackend::AddCOPTMessages() {
   if (auto ni = SimplexIterations())
@@ -255,10 +286,40 @@ void CoptBackend::FinishOptionParsing() {
 
 ////////////////////////////// OPTIONS /////////////////////////////////
 
+
+static const mp::OptionValueInfo lp_values_method[] = {
+  { "-1", "Automatic (default)", -1},
+  { "1", "Dual simplex", 1},
+  { "2", "Barrier", 2},
+  { "3", "Crossover", 3},
+  { "4", "Concurrent (simplex and barrier simultaneously)", 4},
+};
+
+
+static const mp::OptionValueInfo alg_values_level[] = {
+  { "-1", "Automatic (default)", -1},
+  { "0", "Off", 0},
+  { "1", "Fast", 1},
+  { "2", "Normal", 2},
+  { "3", "Aggressive", 3}
+}; 
+
+static const mp::OptionValueInfo lp_dualprices_values_[] = {
+  { "-1", "Choose automatically (default)", -1},
+  { "0", "Use Devex pricing algorithm", 0},
+  { "1", "Using dual steepest-edge pricing algorithm", 1}
+};
+
+static const mp::OptionValueInfo lp_barorder_values_[] = {
+  { "-1", "Choose automatically (default)", -1},
+  { "0", "Approximate Minimum Degree (AMD)", 0},
+  { "1", "Nested Dissection (ND)", 1}
+};
+
 void CoptBackend::InitCustomOptions() {
 
   set_option_header(
-      "IBM ILOG COPT Optimizer Options for AMPL\n"
+      "COPT Optimizer Options for AMPL\n"
       "--------------------------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to the "
@@ -277,10 +338,111 @@ void CoptBackend::InitCustomOptions() {
       "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
-  
+
+  AddSolverOption("lp:dualprice dualprice",
+    "Specifies the dual simplex pricing algorithm:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_DUALPRICE,
+    lp_dualprices_values_, -1);
+
+  AddSolverOption("lp:dualperturb dualperturb",
+    "Whether to allow the objective function perturbation when using "
+    "the dual simplex method:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_DUALPERTURB,
+    values_autonoyes_, -1);
+
+  AddSolverOption("lp:barhomogeneous barhomogeneous",
+    "Whether to use homogeneous self-dual form in barrier:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_BARHOMOGENEOUS,
+    values_autonoyes_, -1);
+
+  AddSolverOption("lp:barorder barorder",
+    "Barrier ordering algorithm:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_BARORDER,
+    lp_barorder_values_, -1);
+
+  AddSolverOption("mip:cutlevel cutlevel",
+    "Level of cutting-planes generation:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_CUTLEVEL,
+    alg_values_level, -1);
+
+  AddSolverOption("mip:intfeastol intfeastol",
+    "Feasibility tolerance for integer variables (default 1e-05).",
+    COPT_DBLPARAM_INTTOL, 1e-9, 0.1);
+
+  AddSolverOption("mip:rootcutlevel rootcutlevel",
+    "Level of cutting-planes generation of root node:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_ROOTCUTLEVEL,
+    alg_values_level, -1);
+
+  AddSolverOption("mip:treecutlevel treecutlevel",
+    "Level of cutting-planes generation of search tree:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_TREECUTLEVEL,
+    alg_values_level, -1);
+
+  AddSolverOption("mip:rootcutrounds rootcutrounds",
+    "Rounds of cutting-planes generation of root node;\n" 
+    "default -1 ==> automatic.",
+    COPT_INTPARAM_ROOTCUTROUNDS, -1, INT_MAX);
+
+  AddSolverOption("mip:nodecutrounds nodecutrounds",
+    "Rounds of cutting-planes generation of search tree node;\n"
+    "default -1 ==> automatic.",
+    COPT_INTPARAM_ROOTCUTROUNDS, -1, INT_MAX);
+
+  AddSolverOption("mip:heurlevel heurlevel",
+    "Level of heuristics:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_HEURLEVEL,
+    alg_values_level, -1);
+
+  AddSolverOption("mip:roundingheurlevel roundingheurlevel",
+    "Level of rounding heuristics:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_ROUNDINGHEURLEVEL,
+    alg_values_level, -1);
+
+  AddSolverOption("mip:divingheurlevel divingheurlevel",
+    "Level of diving heuristics:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_DIVINGHEURLEVEL,
+    alg_values_level, -1);
+
+  AddSolverOption("mip:submipheurlevel submipheurlevel",
+    "Level of Sub-MIP heuristics:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_SUBMIPHEURLEVEL,
+    alg_values_level, -1);
+
+
+  AddSolverOption("mip:strongbranching strongbranching",
+    "Level of strong branching:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_SUBMIPHEURLEVEL,
+    alg_values_level, -1); 
+
+    AddSolverOption("mip:conflictanalysis conflictanalysis",
+      "Whether to perform conflict analysis:\n"
+      "\n.. value-table::\n", COPT_INTPARAM_CONFLICTANALYSIS,
+      values_autonoyes_, -1);
+
   AddSolverOption("mip:gap mipgap",
-      "Relative optimality gap |bestbound-bestinteger|/(1e-10+|bestinteger|).",
-        COPT_DBLPARAM_RELGAP, 0.0, 1.0);
+      "Relative optimality gap, default 1e-4.\n",
+        COPT_DBLPARAM_RELGAP, 0.0, DBL_MAX);
+
+  AddSolverOption("pre:dualize dualize",
+    "Whether to dualize the problem before solving it:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_DUALIZE,
+    values_autonoyes_, -1);
+
+  AddSolverOption("pre:solve presolve",
+    "Whether to perform presolving before solving the problem:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_PRESOLVE, 
+    values_autonoyes_, -1);
+
+  AddSolverOption("pre:scale scale",
+    "Whether to scale the problem:\n"
+    "\n.. value-table::\n"
+    "Scaling typically reduces solution times, but it may lead "
+    "to larger constraint violations in the original, unscaled "
+    "model. Choosing a different scaling option can sometimes "
+    "improve performance for particularly numerically difficult "
+    "models.",
+    COPT_INTPARAM_SCALING, values_autonoyes_, -1);
 
   AddSolverOption("tech:threads threads",
     "Number of threads to use;\n"
@@ -289,17 +451,17 @@ void CoptBackend::InitCustomOptions() {
 
   AddSolverOption("tech:barrierthreads barthreads",
       "Number of threads used by the barrier algorithm;\n"
-      "default -1 ==> see use value in tech:threads.",
+      "default -1 ==> use value in tech:threads.",
     COPT_INTPARAM_BARTHREADS, -1, 128);
 
   AddSolverOption("tech:crossoverthreads crossoverthreads",
     "Number of threads used by crossover;\n"
-    "default -1 ==> see use value in tech:threads.",
+    "default -1 ==> use value in tech:threads.",
     COPT_INTPARAM_CROSSOVERTHREADS, -1, 128);
 
   AddSolverOption("tech:simplexthreads simplexthreads",
     "Number of threads used by dual simplex;\n"
-    "default -1 ==> see use value in tech:threads.",
+    "default -1 ==> use value in tech:threads.",
     COPT_INTPARAM_SIMPLEXTHREADS, -1, 128);
 
 
@@ -311,6 +473,25 @@ void CoptBackend::InitCustomOptions() {
   AddSolverOption("lim:time timelim timelimit",
       "limit on solve time (in seconds; default: no limit).",
       COPT_DBLPARAM_TIMELIMIT, 0.0, DBL_MAX);
+
+
+  AddSolverOption("lp:method method lpmethod",
+    "Which algorithm to use for non-MIP problems:\n"
+    "\n.. value-table::\n", COPT_INTPARAM_LPMETHOD, 
+    lp_values_method, -1);
+
+  AddSolverOption("alg:feastol feastol",
+    "Primal feasibility tolerance (default 1e-6).",
+    COPT_DBLPARAM_FEASTOL, 1e-9, 1e-4);
+
+  AddSolverOption("alg:dualfeastol dualfeastol",
+    "Tolerance for dual solutions and reduced cost (default 1e-6).",
+    COPT_DBLPARAM_DUALTOL, 1e-6, 1e-4);
+
+  AddSolverOption("alg:matrixtol matrixtol",
+    "nput matrix coefficient tolerance (default 1e-10).",
+    COPT_DBLPARAM_FEASTOL, 0.0, 1e-7);
+
       
 }
 
@@ -351,7 +532,7 @@ ArrayRef<int> CoptBackend::VarStatii() {
       s = (int)BasicStatus::equ;
       break;
     default:
-      MP_RAISE(fmt::format("Unknown Gurobi VBasis value: {}", s));
+      MP_RAISE(fmt::format("Unknown Copt VBasis value: {}", s));
     }
   }
   return vars;
@@ -378,7 +559,7 @@ ArrayRef<int> CoptBackend::ConStatii() {
       s = (int)BasicStatus::equ;
       break;
     default:
-      MP_RAISE(fmt::format("Unknown Gurobi VBasis value: {}", s));
+      MP_RAISE(fmt::format("Unknown Copt VBasis value: {}", s));
     }
   }
   return cons;
@@ -438,8 +619,8 @@ void CoptBackend::ConStatii(ArrayRef<int> cst) {
       break;
     case BasicStatus::none:   // for 'none', which is the status
     case BasicStatus::upp:    // assigned to new rows, it seems good to guess
-    case BasicStatus::sup:    // a valid status,
-    case BasicStatus::low:    // as Gurobi 9.5 does not accept partial basis.
+    case BasicStatus::sup:    // a valid status.
+    case BasicStatus::low:    // 
     case BasicStatus::equ:    // For active constraints, it is usually 'sup'.
     case BasicStatus::btw:    // We could compute slack to decide though.
       s = COPT_BASIS_SUPERBASIC;
@@ -551,3 +732,22 @@ void CoptBackend::AddMIPStart(ArrayRef<double> x0) {
 
 
 } // namespace mp
+
+
+// AMPLs
+
+int AMPLSOpenCopt(AMPLS_MP_Solver* slv,
+  const char* slv_opt) {
+  return AMPLS__internal__Open(slv,
+    std::unique_ptr<mp::BasicBackend>{new mp::CoptBackend()},
+    slv_opt);
+}
+
+void AMPLSCloseCopt(AMPLS_MP_Solver* slv) {
+  AMPLS__internal__Close(slv);
+}
+
+copt_prob* GetCoptmodel(AMPLS_MP_Solver* slv) {
+  return
+    dynamic_cast<mp::CoptBackend*>(AMPLSGetBackend(slv))->lp();
+}

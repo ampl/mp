@@ -37,7 +37,7 @@ void CoptModelAPI::AddVariables(const VarArrayDef& v) {
 }
 
 void CoptModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
-  if (1>iobj) {
+  if (iobj<1) {
     COPT_CCALL(COPT_SetObjSense(lp(), 
                     obj::Type::MAX==lo.obj_sense() ? COPT_MAXIMIZE : COPT_MINIMIZE) );
     COPT_CCALL(COPT_SetColObj(lp(), lo.num_terms(),
@@ -46,36 +46,25 @@ void CoptModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
 //    TODO
   }
 }
-void CoptModelAPI::AddConstraint(const RangeLinCon& lc) {
-  /*char sense = COPT_EQUAL;                     // good to initialize things
-  double rhs = lc.lb();
-  if (lc.lb()==lc.ub())
-    sense = COPT_EQUAL;
-  else {                                // Let solver deal with lb>~ub etc.
-    if (lc.lb()>MinusInfinity()) {
-      sense = COPT_GREATER_EQUAL;
-    }
-    if (lc.ub()<Infinity()) {
-      if (COPT_GREATER_EQUAL == sense)
-        sense = 0;
-      else {
-        sense = COPT_LESS_EQUAL;
-        rhs = lc.ub();
-      }
-    }
+
+
+void CoptModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
+  if (1 > iobj) {
+    SetLinearObjective(iobj, qo);                         // add the linear part
+    const auto& qt = qo.GetQPTerms();
+    COPT_CCALL(COPT_SetQuadObj(lp(), qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+      (double*)qt.pcoefs()));
   }
-  */
+  else {
+    throw std::runtime_error("Multiple quadratic objectives not supported");
+  }
+}
+
+void CoptModelAPI::AddConstraint(const RangeLinCon& lc) {
   COPT_CCALL(COPT_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(), 
     NULL, lc.lb(), lc.ub(), NULL));
-  /*
-  if ('R'==sense) {
-    int indices = NumLinCons()-1;
-    double range = lc.ub()-lc.lb();
-    COPT_CCALL( CPXchgrngval (env(), lp(), 1, &indices, &range) );
-  }
-  */
 }
-// TODO Check if the following make sense, they are not reccomended
+
 void CoptModelAPI::AddConstraint(const LinConLE& lc) {
   char sense = COPT_LESS_EQUAL;
   COPT_CCALL(COPT_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
