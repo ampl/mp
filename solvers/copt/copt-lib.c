@@ -1,4 +1,4 @@
-#include "coptdirect/copt-ampls-c-api.h"
+#include "copt/copt-ampls-c-api.h"
 
 #ifdef _WIN32
 #define APIEXPORT __declspec(dllexport)

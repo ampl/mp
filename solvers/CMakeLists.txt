@@ -179,16 +179,16 @@ if (TARGET ilogcp)
   target_compile_definitions(ilogcp PRIVATE main1=main)
 endif ()
 
-add_ampl_solver(coptdirect DLL_RUNTIME MODULE COPT
+add_ampl_solver(copt DLL_RUNTIME MODULE COPT
   coptbackend.cc coptbackend.h
   coptcommon.cc coptcommon.h
   coptmodelapi.cc coptmodelapi.h
   model-mgr-with-std-pb.cc
   LIBRARIES copt-library ${CMAKE_DL_LIBS})
-if (TARGET coptdirect)
-  target_compile_definitions(coptdirect PRIVATE main1=main)
+if (TARGET copt)
+  target_compile_definitions(copt PRIVATE main1=main)
   if(WIN32)
-    target_compile_options(coptdirect_static PUBLIC /bigobj)
+    target_compile_options(copt_static PUBLIC /bigobj)
   endif()
 endif ()
 
