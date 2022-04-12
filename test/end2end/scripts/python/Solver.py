@@ -405,7 +405,7 @@ class OcteractSolver(AMPLSolver):
                 n = l[l.index(tag) + len(tag):]
                 self._stats["objective"] = float(n)
                 return
-
+            
 
 class COPTSolver(AMPLSolver):
     def _setTimeLimit(self, seconds):
@@ -431,6 +431,38 @@ class COPTSolver(AMPLSolver):
         tag = "objective "
         if tag in st[0]:
             n = st[0][st[0].index(tag) + len(tag):]
+            try:
+              n = n.split(",")[0]
+              self._stats["objective"] = float(n)
+            except:
+              print("No solution, string: {}".format(n))
+              self._stats["objective"] = None
+
+
+class MindoptSolver(AMPLSolver):
+    def _setTimeLimit(self, seconds):
+        return "max_time={}".format(seconds)
+
+    def _setNThreads(self, threads):
+        return "num_threads={}".format(threads)
+
+    def _getAMPLOptionsName(self):
+        return "mindopt"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        utagss = [ModelTags.nonlinear, ModelTags.log, ModelTags.integer]
+        super().__init__(exeName, timeout, nthreads, otherOptions, utagss)
+
+    def _doParseSolution(self, st, stdout=None):
+        if not st:
+            self._stats["outmsg"] = "Solution file empty"
+            self._stats["timelimit"] = False
+            return None
+        self._stats["outmsg"] = st[1]
+        self._stats["timelimit"] = "time limit" in st[0]
+        tag = "objective"
+        if tag in st[1]:
+            n = st[1][st[1].index(tag) + len(tag):]
             try:
               n = n.split(",")[0]
               self._stats["objective"] = float(n)
