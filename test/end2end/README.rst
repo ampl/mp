@@ -52,4 +52,15 @@ HOWTOs
     Option key ending with ``SOLVER_options`` is for any solver, except when
     a solver-specific key is present (like ``baron_options``.)
 
-  * *"values": { "X[0].iis": "upp", ... }*. Expected values.
+  * *"values": { "X[0].iis": "upp", ... }*. Expected values or expressions,
+    in the form AMPL ``display`` command would accept.
+
+    * For example, to check *logical expressions*, use if/then:
+
+      .. code-block:: json
+
+          "values": {
+            "if color['Belgium'] != color['France'] then 1 else 0": 1,
+            "solve_result_num": 0
+          }
+
