@@ -258,3 +258,20 @@ void CplexBackend::InitCustomOptions() {
 
 
 } // namespace mp
+
+
+int AMPLSOpenCPLEX(AMPLS_MP_Solver* slv,
+  const char* slv_opt) {
+  return AMPLS__internal__Open(slv,
+    std::unique_ptr<mp::BasicBackend>{new mp::GurobiBackend()},
+    slv_opt);
+}
+
+void AMPLSCloseCPLEX(AMPLS_MP_Solver* slv) {
+  AMPLS__internal__Close(slv);
+}
+
+GRBmodel* GetGRBmodel(AMPLS_MP_Solver* slv) {
+  return
+    dynamic_cast<mp::GurobiBackend*>(AMPLSGetBackend(slv))->model();
+}

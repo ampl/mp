@@ -18,15 +18,13 @@ extern "C" {
 /// To be used by Init<Gurobi>(AMPLS_MP_Solver*, char*) etc.
 /// This function is not for the user.
 ///
-/// @param slv: pointer to struct AMPLS_MP_Solver to be populated.
 /// @param p_be: GurobiBackend etc.
 /// @param slv_opt: a string of solver options
 /// (normally provided in the <solver>_options variable).
 /// Can be \a nullptr.
-/// @return 0 on success, otherwise use AMPLSGetMessages()
+/// @return slv on success, otherwise NULL and use AMPLSGetMessages()
 /// (well they can contain warnings in any case).
-int AMPLS__internal__Open(AMPLS_MP_Solver* slv,
-                          std::unique_ptr<mp::BasicBackend> p_be,
+AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
                           const char* slv_opt);
 
 /// Shut down solver instance. Internal only.

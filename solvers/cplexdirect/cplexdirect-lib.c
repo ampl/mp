@@ -1,4 +1,4 @@
-#include "gurobidirect/gurobi-ampls-c-api.h"
+#include "cplexdirect/cplex-ampls-c-api.h"
 
 #ifdef _WIN32
 #define APIEXPORT __declspec(dllexport)
@@ -6,14 +6,14 @@
 #define APIEXPORT  __attribute__((visibility("default")))
 #endif
 
-APIEXPORT GRBmodel* AMPLloadmodel(int argc, char** argv, void* slvout) {
+APIEXPORT CPXLPptr AMPLloadmodel(int argc, char** argv, void* slvout) {
   const char* nl_filename = argv[1];
   const char *slv_opt= argv[2];
   AMPLS_MP_Solver slv;
   int ret = -1;
-  ret = AMPLSOpenGurobi(&slv, slv_opt);
+  ret = AMPLSOpenCPLEX(&slv, slv_opt);
   ret = AMPLSLoadNLModel(&slv, nl_filename);
-  GRBmodel* mdl = GetGRBmodel(&slv);
+  CPXLPptr* mdl = GetCPLEXmodel(&slv);
   slvout = &slv;
   return mdl;
 }
@@ -23,5 +23,5 @@ APIEXPORT void AMPLwritesolution(AMPLS_MP_Solver* slv) {
 }
 
 APIEXPORT void AMPLclosesolver(AMPLS_MP_Solver* slv) {
-  AMPLSCloseGurobi(&slv);
+  AMPLSCloseCPLEX(&slv);
 }

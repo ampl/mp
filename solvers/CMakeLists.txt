@@ -67,10 +67,18 @@ function(add_ampl_solver name)
   endif ()
   string(TOUPPER "${module}" module_upper)
   if (module)
-    find_package(${module})
-    if (NOT ${module_upper}_FOUND)
-      return ()
-    endif ()
+    if( (NOT ${module_upper}_INCLUDE_DIRS) AND (NOT ${module_upper}_LIBS))
+      find_package(${module})
+      if (NOT ${module_upper}_FOUND)
+        return ()
+      endif ()
+    else()
+      add_library(${module}-library SHARED  IMPORTED)
+      set_property(TARGET ${module}-library PROPERTY
+      IMPORTED_IMPLIB ${${module_upper}_LIBS})
+      target_include_directories(${module}-library INTERFACE ${${module_upper}_INCLUDE_DIRS})
+
+    endif()
   endif ()
 
   # Handle arguments.
@@ -86,7 +94,6 @@ function(add_ampl_solver name)
   if (add_ampl_solver_DLL_RUNTIME AND MSVC)
     set(use_dll_runtime True)
   endif ()
-
   if (EXISTS ${MP_BASE_DIR}/solvers/${name})
     # Add directory name to sources.
     set(sources )
@@ -179,20 +186,20 @@ if (TARGET ilogcp)
   target_compile_definitions(ilogcp PRIVATE main1=main)
 endif ()
 
-add_ampl_solver(copt DLL_RUNTIME MODULE COPT
+add_ampl_solver(copt DLL_RUNTIME DI MODULE COPT
   coptbackend.cc coptbackend.h
   coptcommon.cc coptcommon.h
   coptmodelapi.cc coptmodelapi.h
   model-mgr-with-std-pb.cc
-  LIBRARIES copt-library ${CMAKE_DL_LIBS})
+  LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
 if (TARGET copt)
   target_compile_definitions(copt PRIVATE main1=main)
   if(WIN32)
-    target_compile_options(copt_static PUBLIC /bigobj)
+    target_compile_options(amplcopt-static PUBLIC /bigobj)
   endif()
 endif ()
 
-add_ampl_solver(cplexdirect DLL_RUNTIME DI MODULE CPLEX
+add_ampl_solver(cplexdirect DLL_RUNTIME DI MODULE cplex
   cplexbackend.cc cplexbackend.h
   cplexcommon.cc cplexcommon.h
   cplexmodelapi.cc cplexmodelapi.h
@@ -200,6 +207,9 @@ add_ampl_solver(cplexdirect DLL_RUNTIME DI MODULE CPLEX
   LIBRARIES cplex-library ${CMAKE_DL_LIBS})
 if (TARGET cplexdirect)
   target_compile_definitions(cplexdirect PRIVATE main1=main)
+  if(WIN32)
+    target_compile_options(amplcplexdirect-static PUBLIC /bigobj)
+  endif()
 endif ()
 
 add_ampl_solver(gurobidirect DLL_RUNTIME DI MODULE GUROBI
@@ -211,6 +221,9 @@ add_ampl_solver(gurobidirect DLL_RUNTIME DI MODULE GUROBI
   LIBRARIES ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS})
 if (TARGET gurobidirect)
   target_compile_definitions(gurobidirect PRIVATE main1=main)
+  if(WIN32)
+    target_compile_options(amplgurobidirect-static PUBLIC /bigobj)
+  endif()
 endif()
 
 ## A simple Gurobi driver to test AMPLS C API

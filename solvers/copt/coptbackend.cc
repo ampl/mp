@@ -736,11 +736,9 @@ void CoptBackend::AddMIPStart(ArrayRef<double> x0) {
 
 // AMPLs
 
-int AMPLSOpenCopt(AMPLS_MP_Solver* slv,
-  const char* slv_opt) {
+int AMPLSOpenCopt(AMPLS_MP_Solver* slv, const char* slv_opt) {
   return AMPLS__internal__Open(slv,
-    std::unique_ptr<mp::BasicBackend>{new mp::CoptBackend()},
-    slv_opt);
+    std::unique_ptr<mp::BasicBackend>{new mp::CoptBackend()}, slv_opt);
 }
 
 void AMPLSCloseCopt(AMPLS_MP_Solver* slv) {
@@ -748,6 +746,5 @@ void AMPLSCloseCopt(AMPLS_MP_Solver* slv) {
 }
 
 copt_prob* GetCoptmodel(AMPLS_MP_Solver* slv) {
-  return
-    dynamic_cast<mp::CoptBackend*>(AMPLSGetBackend(slv))->lp();
+  return dynamic_cast<mp::CoptBackend*>(AMPLSGetBackend(slv))->lp();
 }
