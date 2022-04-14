@@ -31,6 +31,9 @@ public:
   /// Set connection
   void set_other_cplex(CplexCommon* o) { other_ = o; }
 
+  CPXENVptr env() const { return env_; }
+  CPXLPptr lp() const { return lp_; }
+
 
 protected:
   void OpenSolver();
@@ -41,9 +44,8 @@ protected:
   int NumObjs() const;
 
 
-  CPXENVptr env() const { return env_; }
+  
   void set_env(CPXENVptr e) { env_ = e; }
-  CPXLPptr lp() const { return lp_; }
   void set_lp(CPXLPptr lp) { lp_ = lp; }
 
   void copy_handlers_from_other_cplex();

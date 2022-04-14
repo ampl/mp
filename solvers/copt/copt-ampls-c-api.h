@@ -14,12 +14,11 @@
  */
 
 /// Initialize AMPLS copt.
-/// @param slv: pointer to struct AMPLS_MP_Solver to be populated.
 /// @param slv_opt: a string of solver options
 /// (normally provided in the <solver>_options string).
 /// Can be NULL.
-/// @return 0 on success, otherwise see slv->warnings_and_or_errors_
-int AMPLSOpenCopt(AMPLS_MP_Solver* slv, const char* slv_opt);
+/// @return pointer to populated AMPLS_MP_Solver struct, or NULL
+AMPLS_MP_Solver* AMPLSOpenCopt(const char* slv_opt);
 
 /// Shut down solver instance
 void AMPLSCloseCopt(AMPLS_MP_Solver* slv);

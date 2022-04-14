@@ -6,6 +6,10 @@
 #include "mp/flat/backend_model_api_base.h"
 #include "cplexbackend.h"
 
+extern "C" {
+#include "cplex-ampls-c-api.h"    // Gurobi AMPLS C API
+}
+#include "mp/ampls-cpp-api.h"
 
 namespace {
 
@@ -260,18 +264,23 @@ void CplexBackend::InitCustomOptions() {
 } // namespace mp
 
 
-int AMPLSOpenCPLEX(AMPLS_MP_Solver* slv,
-  const char* slv_opt) {
-  return AMPLS__internal__Open(slv,
-    std::unique_ptr<mp::BasicBackend>{new mp::GurobiBackend()},
+AMPLS_MP_Solver* AMPLSOpenCPLEX(const char* slv_opt) {
+  AMPLS_MP_Solver* slv = 
+    AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::CplexBackend()},
     slv_opt);
+  return slv;
 }
 
 void AMPLSCloseCPLEX(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-GRBmodel* GetGRBmodel(AMPLS_MP_Solver* slv) {
+CPXLPptr GetCPLEXmodel(AMPLS_MP_Solver* slv) {
   return
-    dynamic_cast<mp::GurobiBackend*>(AMPLSGetBackend(slv))->model();
+    dynamic_cast<mp::CplexBackend*>(AMPLSGetBackend(slv))->lp();
+}
+
+CPXENVptr GetCPLEXenv(AMPLS_MP_Solver* slv) {
+  return
+    dynamic_cast<mp::CplexBackend*>(AMPLSGetBackend(slv))->env();
 }

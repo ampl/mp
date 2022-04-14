@@ -6,15 +6,14 @@
 #define APIEXPORT  __attribute__((visibility("default")))
 #endif
 
-APIEXPORT CPXLPptr AMPLloadmodel(int argc, char** argv, void* slvout) {
+APIEXPORT CPXLPptr AMPLloadmodel(int argc, char** argv, void** slvout) {
   const char* nl_filename = argv[1];
   const char *slv_opt= argv[2];
-  AMPLS_MP_Solver slv;
+  AMPLS_MP_Solver* slv= AMPLSOpenCPLEX(slv_opt);
   int ret = -1;
-  ret = AMPLSOpenCPLEX(&slv, slv_opt);
-  ret = AMPLSLoadNLModel(&slv, nl_filename);
-  CPXLPptr* mdl = GetCPLEXmodel(&slv);
-  slvout = &slv;
+  ret = AMPLSLoadNLModel(slv, nl_filename);
+  CPXLPptr mdl = GetCPLEXmodel(slv);
+  *slvout = slv;
   return mdl;
 }
 
