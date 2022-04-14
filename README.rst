@@ -177,6 +177,14 @@ For example, if you enable the ``ilogcp`` module, you should have
 
 __ http://www-03.ibm.com/software/products/en/ibmilogcpleoptistud
 
+It is possible to override the automatic detection of dependencies by 
+adding variables to cmake command line when configuring the project.
+The variables to be defined are of the form depname_LIBS 
+and depname_INCLUDE_DIRS. For example, to build the solver copt (which
+does not have automatic dependency detection), you can use the following::
+
+  cmake .. -DBUILD=copt -DCOPT_LIBS=d:/copt/libs/win64/copt.lib -DCOPT_INCLUDE_DIRS=d:/copt/include
+
 
 Using Eclipse CDT
 `````````````````
