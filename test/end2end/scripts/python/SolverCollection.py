@@ -33,6 +33,7 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.GurobiDirectSolver(path.join(binPath,"gurobidirect")))
     solvers.addSolver(Solver.CPLEXSolver(path.join(binPath,"cplex")))
     solvers.addSolver(Solver.CPLEXDirectSolver(path.join(binPath,"x-cplex")))
+    solvers.addSolver(Solver.CPLEXDirectSolver(path.join(binPath,"cplexdirect")))
     solvers.addSolver(Solver.BaronSolver(path.join(binPath,"baron")))
     solvers.addSolver(Solver.COPTSolver(path.join(binPath,"copt")))
     solvers.addSolver(Solver.MindoptSolver(path.join(binPath,"mindoptampl")))

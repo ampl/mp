@@ -8,20 +8,20 @@
 void AMPLSPrintMessages(AMPLS_MP_Solver* slv);
 
 int RunGurobiAMPLS(const char* nl_filename, const char* slv_opt) {
-  AMPLS_MP_Solver slv;
+  AMPLS_MP_Solver* pslv;
   int ret=-1;
-  if (!(ret = AMPLSOpenGurobi(&slv, slv_opt)))
-    if (!(ret = AMPLSLoadNLModel(&slv, nl_filename))) {
-      GRBmodel* mdl = GetGRBmodel(&slv);
+  if (!(pslv = AMPLSOpenGurobi(slv_opt)))
+    if (!(ret = AMPLSLoadNLModel(pslv, nl_filename))) {
+      GRBmodel* mdl = GetGRBmodel(pslv);
       if (!(ret = GRBoptimize(mdl))) {  // Optimize: doing ourselves
-        ret = AMPLSReportResults(&slv);
+        ret = AMPLSReportResults(pslv);
       } else {
-        AMPLSAddMessage(&slv, GRBgeterrormsg(GRBgetenv(mdl)));
+        AMPLSAddMessage(pslv, GRBgeterrormsg(GRBgetenv(mdl)));
       }
     }
 
-  AMPLSPrintMessages(&slv);
-  AMPLSCloseGurobi(&slv);
+  AMPLSPrintMessages(pslv);
+  AMPLSCloseGurobi(pslv);
   return ret;
 }
 

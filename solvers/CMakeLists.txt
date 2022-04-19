@@ -17,8 +17,12 @@ endfunction ()
 # If DLL_RUNTIME option is given the solver is linked with DLL MSVC runtime
 # on Windows.
 #
-# If DI option is given then the solver is assumed to be a 'direct interface'
-# only and is not linked to solver-c.cc which assumes create_<solver> function.
+# If SHARED_LIB option is given then the solver is linked to <solver>-lib.c
+# to export an AMPLS C interface.
+#
+# If, alternatively, OLD_SHARED_LIB is given, the solver is
+# linked to solver-c.cc which assumes create_<solver> function.
+# This is deprecated.
 #
 # The MODULE option specifies the CMake module name used to check for solver
 # libraries. If it is omitted, add_ampl_solver looks in support/cmake for
@@ -33,8 +37,11 @@ endfunction ()
 # LIBRARIES gives a list of solver libraries. If omitted, add_ampl_solver
 # uses <module>_LIBRARIES.
 function(add_ampl_solver name)
-  cmake_parse_arguments(add_ampl_solver "DLL_RUNTIME;EXTERNAL;DI"
-    "MODULE" "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS" ${ARGN})
+  cmake_parse_arguments(add_ampl_solver
+    "DLL_RUNTIME;EXTERNAL;SHARED_LIB;OLD_SHARED_LIB"
+    "MODULE"
+    "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS"
+    ${ARGN})
 
   get_property(MP_BASE_DIR GLOBAL PROPERTY MP_BASE_DIR)
 
@@ -126,21 +133,26 @@ function(add_ampl_solver name)
     target_link_libraries(${static_lib} PUBLIC mp)
   endif ()
 
-  if(NOT ${add_ampl_solver_DI})
-  # Add a solver shared library if we are not building a directinterface 
-  # solver. In which case, skip the shared library as we still are to define
-  # a proper interface.
+  if(${add_ampl_solver_SHARED_LIB})
+    set(shared_lib ${name}-lib)
+    add_library(${shared_lib} SHARED ${MP_BASE_DIR}/solvers/${name}/${name}-lib.c)
+    target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name})
+    target_link_libraries(${shared_lib} PRIVATE ${static_lib})
+  elseif(${add_ampl_solver_OLD_SHARED_LIB})     ## DEPRECATED
+    # Old-style shared library if we are not building a directinterface
+    # solver. In which case, skip the shared library as we still are to define
+    # a proper interface.
     set(shared_lib ampl${name})
     add_library(${shared_lib} SHARED ${MP_BASE_DIR}/src/solver-c.cc)
     target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name})
     target_link_libraries(${shared_lib} PRIVATE ${static_lib})
   else()
     set(shared_lib ${name}-lib)
-    add_library(${shared_lib} SHARED ${MP_BASE_DIR}/src/sol.cc ${MP_BASE_DIR}/solvers/${name}/${name}-lib.c)
+    add_library(${shared_lib} SHARED ${MP_BASE_DIR}/src/sol.cc)   ## Dummy file
     target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name})
     target_link_libraries(${shared_lib} PRIVATE ${static_lib})
-
   endif()
+
   # Add a solver executable.
   add_executable(${name} ${dir}main.cc)
   target_link_libraries(${name} PRIVATE ${static_lib})
@@ -173,7 +185,7 @@ endfunction()
 
 set(GECODE_DISABLE_WARNINGS TRUE)
 set(GECODE_USE_QT FALSE)
-add_ampl_solver(gecode EXTERNAL DI LIBRARIES
+add_ampl_solver(gecode EXTERNAL LIBRARIES
   gecodeminimodel gecodesupport gecodekernel gecodeint gecodesearch)
 # Exclude unused Gecode targets from the build.
 exclude_from_build(fzn-gecode gecodeflatzinc gecode-test)
@@ -186,7 +198,7 @@ if (TARGET ilogcp)
   target_compile_definitions(ilogcp PRIVATE main1=main)
 endif ()
 
-add_ampl_solver(copt DLL_RUNTIME DI MODULE COPT
+add_ampl_solver(copt DLL_RUNTIME SHARED_LIB MODULE COPT
   coptbackend.cc coptbackend.h
   coptcommon.cc coptcommon.h
   coptmodelapi.cc coptmodelapi.h
@@ -199,7 +211,7 @@ if (TARGET copt)
   endif()
 endif ()
 
-add_ampl_solver(cplexdirect DLL_RUNTIME DI MODULE cplex
+add_ampl_solver(cplexdirect DLL_RUNTIME SHARED_LIB MODULE CPLEX
   cplexbackend.cc cplexbackend.h
   cplexcommon.cc cplexcommon.h
   cplexmodelapi.cc cplexmodelapi.h
@@ -212,7 +224,7 @@ if (TARGET cplexdirect)
   endif()
 endif ()
 
-add_ampl_solver(gurobidirect DLL_RUNTIME DI MODULE GUROBI
+add_ampl_solver(gurobidirect DLL_RUNTIME SHARED_LIB MODULE GUROBI
   gurobi-ampls-c-api.h
   gurobibackend.cc gurobibackend.h
   gurobimodelapi.cc gurobimodelapi.h
@@ -227,7 +239,7 @@ if (TARGET gurobidirect)
 endif()
 
 ## A simple Gurobi driver to test AMPLS C API
-add_ampl_solver(gurobi_ampls DLL_RUNTIME DI
+add_ampl_solver(gurobi_ampls DLL_RUNTIME
   gurobi-ampls.c
   INCLUDE_DIRS ${include_dirs} ${MP_BASE_DIR}/solvers
   LIBRARIES amplgurobidirect-static)

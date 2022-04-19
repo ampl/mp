@@ -15,7 +15,7 @@ Contents
    rst/model-guide
    rst/intro
    Solver drivers <rst/drivers>
-   API <rst/components>
+   The API <rst/components>
    rst/howto
    rst/more
 
