@@ -56,7 +56,6 @@ function(add_ampl_solver name)
   endif ()
 
   string(TOUPPER ${name} name_upper)
-
   # Check if the solver is installed.
   if (add_ampl_solver_MODULE)
     set(module ${add_ampl_solver_MODULE})
@@ -84,7 +83,6 @@ function(add_ampl_solver name)
       set_property(TARGET ${module}-library PROPERTY
       IMPORTED_IMPLIB ${${module_upper}_LIBS})
       target_include_directories(${module}-library INTERFACE ${${module_upper}_INCLUDE_DIRS})
-
     endif()
   endif ()
 
@@ -198,31 +196,24 @@ if (TARGET ilogcp)
   target_compile_definitions(ilogcp PRIVATE main1=main)
 endif ()
 
-add_ampl_solver(copt DLL_RUNTIME SHARED_LIB MODULE COPT
-  coptbackend.cc coptbackend.h
-  coptcommon.cc coptcommon.h
-  coptmodelapi.cc coptmodelapi.h
-  model-mgr-with-std-pb.cc
-  LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
-if (TARGET copt)
-  target_compile_definitions(copt PRIVATE main1=main)
-  if(WIN32)
-    target_compile_options(amplcopt-static PUBLIC /bigobj)
-  endif()
-endif ()
 
-add_ampl_solver(cplexdirect DLL_RUNTIME SHARED_LIB MODULE CPLEX
-  cplexbackend.cc cplexbackend.h
-  cplexcommon.cc cplexcommon.h
-  cplexmodelapi.cc cplexmodelapi.h
-  model-mgr-with-std-pb.cc
-  LIBRARIES cplex-library ${CMAKE_DL_LIBS})
-if (TARGET cplexdirect)
-  target_compile_definitions(cplexdirect PRIVATE main1=main)
-  if(WIN32)
-    target_compile_options(amplcplexdirect-static PUBLIC /bigobj)
-  endif()
-endif ()
+function(add_direct_solver name)
+    set(SRC ${name}backend.cc ${name}backend.h
+            ${name}common.cc ${name}common.h
+            ${name}modelapi.cc ${name}modelapi.h
+            model-mgr-with-std-pb.cc)
+    add_ampl_solver(${name} ${SRC} ${ARGN})
+    if (TARGET ${name})
+      target_compile_definitions(${name} PRIVATE main1=main)
+      if(WIN32)
+        target_compile_options(ampl${name}-static PUBLIC /bigobj)
+      endif()
+    endif()
+endfunction()
+
+add_direct_solver(visitor DLL_RUNTIME)
+add_direct_solver(copt DLL_RUNTIME SHARED_LIB MODULE COPT LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
+add_direct_solver(cplexdirect DLL_RUNTIME SHARED_LIB MODULE CPLEX LIBRARIES cplex-library ${CMAKE_DL_LIBS})
 
 add_ampl_solver(gurobidirect DLL_RUNTIME SHARED_LIB MODULE GUROBI
   gurobi-ampls-c-api.h

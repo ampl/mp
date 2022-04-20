@@ -31,10 +31,12 @@ to be reformulated.
 For example, ``max(a, b)`` is translated into a constraint meaning
 ``<new var> = max(a, b)``, which is in turn reformulated for
 MIP or passed to the solver natively (Gurobi: `GRBaddgenconstrMax`).
-Currently there are two experimental implementations:
+Currently there are three experimental implementations:
 
 - `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_
   (available in the AMPL distribution bundle; see the :ref:`modeling_guide`)
 
 - `x-cplex <https://github.com/ampl/mp/tree/master/solvers/cplexdirect>`_
+
+- 'copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_
 

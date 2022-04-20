@@ -109,10 +109,6 @@ double CoptBackend::ObjectiveValue() const {
     return getDblAttr(COPT_DBLATTR_BESTOBJ);
   else
     return getDblAttr(COPT_DBLATTR_LPOBJVAL);
-  // TODO Why failsafe below ?
-  //double objval = -1e308;
-  //CPXgetobjval (env(), lp(), &objval );   // failsafe
-  //return objval;
 }
 
 double CoptBackend::NodeCount() const {
@@ -135,8 +131,6 @@ void CoptBackend::ExportModel(const std::string &file) {
 
 void CoptBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptCopt, lp());
-  // TODO Check interrupter
-  //COPT_CCALL( CPXsetterminate (env(), &terminate_flag) );
 }
 
 void CoptBackend::Solve() {
@@ -233,47 +227,6 @@ std::pair<int, std::string> CoptBackend::ConvertCOPTStatus() {
       return { sol::UNKNOWN, "unfinished" };
     }
   }
-    /*
-  int optimstatus = CPXgetstat(env(), lp());
-  switch (optimstatus) {
-  default:
-    // Fall through.
-    if (interrupter()->Stop()) {
-      return { sol::INTERRUPTED, "interrupted" };
-    }
-    int solcount;
-    solcount = CPXgetsolnpoolnumsolns (env(), lp());  // Can we use it without CPXpopulate?
-    if (solcount>0) {
-      return { sol::UNCERTAIN, "feasible solution" };
-    }
-    return { sol::UNKNOWN, "unknown solution status" };
-  case CPX_STAT_OPTIMAL:
-  case CPXMIP_OPTIMAL:
-  case CPX_STAT_MULTIOBJ_OPTIMAL:
-    return { sol::SOLVED, "optimal solution" };
-  case CPX_STAT_INFEASIBLE:
-  case CPXMIP_INFEASIBLE:
-  case CPX_STAT_MULTIOBJ_INFEASIBLE:
-    return { sol::INFEASIBLE, "infeasible problem" };
-  case CPX_STAT_INForUNBD:
-  case CPXMIP_INForUNBD:
-  case CPX_STAT_MULTIOBJ_INForUNBD:
-    return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
-  case CPX_STAT_UNBOUNDED:
-  case CPXMIP_UNBOUNDED:
-  case CPX_STAT_MULTIOBJ_UNBOUNDED:
-    return { sol::UNBOUNDED, "unbounded problem" };
-  case CPX_STAT_FEASIBLE_RELAXED_INF:
-  case CPX_STAT_FEASIBLE_RELAXED_QUAD:
-  case CPX_STAT_FEASIBLE_RELAXED_SUM:
-  case CPX_STAT_NUM_BEST:
-  case CPX_STAT_OPTIMAL_INFEAS:
-  case CPX_STAT_OPTIMAL_RELAXED_INF:
-  case CPX_STAT_OPTIMAL_RELAXED_QUAD:
-  case CPX_STAT_OPTIMAL_RELAXED_SUM:
-    return { sol::UNCERTAIN, "feasible or optimal but numeric issue" };
-  }
-  */
 }
 
 

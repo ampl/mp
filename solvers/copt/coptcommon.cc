@@ -12,8 +12,6 @@ void CoptCommon::OpenSolver() {
     status = createEnv(&env_p);
   set_env(env_p);
   if ( env() == NULL ) {
-    // char  errmsg[CPXMESSAGEBUFSIZE]; TODO
-    // CPXgeterrorstring (env(), status, errmsg);
      throw std::runtime_error(
        fmt::format("Could not open COPT environment.\n{}", status) );
   }
@@ -75,7 +73,6 @@ int CoptCommon::NumVars() const {
 
 int CoptCommon::NumObjs() const {
   return 1;
-  //return CPXgetnumobjs (env_, lp_);
 }
 
 int CoptCommon::NumQPCons() const {
