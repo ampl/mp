@@ -273,7 +273,7 @@ class GurobiDirectSolver(AMPLSolver):
         return "gurobidirect"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        utags = [ModelTags.nonlinear, ModelTags.complementarity]
+        utags = [ModelTags.nonlinear]    ## unsupported
         super().__init__(exeName, timeout, nthreads, otherOptions,utags)
 
     def _doParseSolution(self, st, stdout=None):

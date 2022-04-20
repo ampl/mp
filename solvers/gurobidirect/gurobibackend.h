@@ -36,7 +36,6 @@ public:
   ~GurobiBackend();
 
   ////////////////////////////////////////////////////////////
-  //////////////////// PART 1. Accessor API //////////////////
   /// Standard and optional methods to provide or retrieve ///
   /// information to/from or manipulate the solver. Most  ////
   /// of them override placeholders from base classes.   /////

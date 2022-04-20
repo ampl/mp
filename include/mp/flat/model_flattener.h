@@ -193,12 +193,18 @@ protected:
       ee=MP_DISPATCH( Visit(e) );
       le.add_lin_exp(ee.GetAE());
     }
+    auto compl_var = GetModel().GetComplementarityVariable(i)-1;  // -1
+    auto rng = (compl_var<0 ||             // no complementarity
+                       std::isfinite(con.lb()) || // or one bound is finite
+                       std::isfinite(con.ub())) ?
+      AlgConRange{ con.lb() - ee.constant_term(), con.ub() - ee.constant_term() } :
+      AlgConRange{ -ee.constant_term(), -ee.constant_term() };
+      // storing the constant.
+      // Actually in the latter case, both lb and ub are inf for the constraint.
     auto lc = RangeLinCon{
-    { std::move(le.coefs()), std::move(le.vars()) },
-    { con.lb() - ee.constant_term(), con.ub() - ee.constant_term() } };
+    { std::move(le.coefs()), std::move(le.vars()) }, rng };
     lc.sort_terms();
     pre::NodeRange nr;
-    auto compl_var = GetModel().GetComplementarityVariable(i)-1;  // -1
     if (ee.is_affine()) {
       if (compl_var<0)
         nr = AddConstraint( std::move(lc) );

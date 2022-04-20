@@ -33,12 +33,13 @@ public:
   //////////////////////////// MODELING ACCESSORS /////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
 
+  //////////////////////////// VARIABLES //////////////////////////////////////
   void AddVariables(const VarArrayDef& );
+
+  //////////////////////////// OBJECTIVES /////////////////////////////////////
   void SetLinearObjective( int iobj, const LinearObjective& lo );
   void SetQuadraticObjective( int iobj, const QuadraticObjective& qo );
-  /// First objective's sense
-  void NoteGurobiMainObjSense(obj::Type s);
-  obj::Type GetGurobiMainObjSense() const;
+
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
 
@@ -61,14 +62,12 @@ public:
   void AddConstraint(const AndConstraint& cc);
   ACCEPT_CONSTRAINT(OrConstraint, acc_or(), CG_General)
   void AddConstraint(const OrConstraint& mc);
-  /// Enabling built-in indicator for infinite bounds,
-  /// but not recommended otherwise --- may be slow
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, acc_ind_le(), CG_General)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, acc_ind_eq(), CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
 
-  /// General
+  /// Gurobi Generals
   ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS1Constraint& cc);
   ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
@@ -94,6 +93,24 @@ public:
 
   void InitOptions();
 
+
+protected:
+  /// First objective's sense
+  void NoteGurobiMainObjSense(obj::Type s);
+  obj::Type GetGurobiMainObjSense() const;
+
+
+  //////////// Option accessors ////////////////
+protected:
+  int acc_abs() const { return storedOptions_.acc_abs_; }
+  int acc_min() const { return storedOptions_.acc_min_; }
+  int acc_max() const { return storedOptions_.acc_max_; }
+  int acc_and() const { return storedOptions_.acc_and_; }
+  int acc_or() const { return storedOptions_.acc_or_; }
+  int acc_ind_le() const { return storedOptions_.acc_ind_le_; }
+  int acc_ind_eq() const { return storedOptions_.acc_ind_eq_; }
+
+
 private:
   /// The sense of the main objective
   obj::Type main_obj_sense_;
@@ -104,16 +121,6 @@ private:
     int acc_min_=2, acc_max_=2, acc_abs_=2, acc_and_=2, acc_or_=2,
       acc_ind_le_=2, acc_ind_eq_=2;
   } storedOptions_;
-
-
-protected:  //////////// Option accessors ////////////////
-  int acc_abs() const { return storedOptions_.acc_abs_; }
-  int acc_min() const { return storedOptions_.acc_min_; }
-  int acc_max() const { return storedOptions_.acc_max_; }
-  int acc_and() const { return storedOptions_.acc_and_; }
-  int acc_or() const { return storedOptions_.acc_or_; }
-  int acc_ind_le() const { return storedOptions_.acc_ind_le_; }
-  int acc_ind_eq() const { return storedOptions_.acc_ind_eq_; }
 };
 
 } // namespace mp

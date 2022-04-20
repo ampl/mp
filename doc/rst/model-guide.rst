@@ -17,7 +17,8 @@ Summary
   AMPL page on `Logic and Constraint Programming Extensions
   <https://ampl.com/resources/logic-and-constraint-programming-extensions/>`_.
   
-- Algebraic expressions beyond linear and quadratic.
+- Algebraic expressions beyond linear and quadratic, including
+  complementarity constraints.
 
 - Choice between conversions in the driver vs. native solver support.
 
@@ -34,6 +35,18 @@ Expressions supported
                 (x<=-5 or
                         (max((x+1)*(x+2)*(y+3), y)<=3 and
                                 exp((x+18)*y)<=12));
+
+- Complementarity constraints:
+
+  .. code-block:: ampl
+
+        subject to Pri_Compl {i in PROD}:
+            max(500.0, Price[i]) >= 0 complements
+                sum {j in ACT} io[i,j] * Level[j] >= demand[i];
+
+        subject to Lev_Compl {j in ACT}:
+            level_min[j] <= Level[j] <= level_max[j] complements
+                cost[j] - sum {i in PROD} Price[i] * io[i,j];
 
 - Constraint programming high-level constraints and expressions, for example:
 
@@ -69,11 +82,19 @@ Expressions supported
            isH[i] = 0 ==> atmost 0 {j in BOATS, t in TIMES} (H[j,t] = i);
 
 
-- QP expressions are multiplied out:
+- QP expressions are multiplied out. Example:
 
   .. code-block:: ampl
 
         -5 * (abs(x[1])-0.7)^2 + x[2]
+
+  is converted as follows:
+
+  .. code-block:: ampl
+
+      -5*t^2 + 7*t - 2.45 + x[2]
+
+      s.t. t = abs(x[1]);
 
 - Gurobi “general constraints” ``and``, ``or``, ``max``, ``min``, ``abs``,
   as well as indicator (``==>``), are passed to Gurobi natively.
