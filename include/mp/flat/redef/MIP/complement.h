@@ -41,8 +41,8 @@ public:
         fin_var_lb = std::isfinite(var_lb),
         fin_var_ub = std::isfinite(var_ub);
 
-    if (fin_con_lb) {
-      assert(!fin_con_ub && fin_var_lb && !fin_var_ub);
+    if (!fin_con_ub) {
+      assert(fin_con_lb && fin_var_lb && !fin_var_ub);
       /// res1 = (var <= var_lb)
       auto res_neg_var_lb = GetMC().AssignResultVar2Args(
             LE0Constraint{ { {{1.0}, {compl_var}}, -var_lb } });
@@ -55,8 +55,8 @@ public:
       GetMC().FixAsTrue(res_disj);
       /// Add the algebraic constraint
       GetMC().AddConstraint( std::move(alg_con) );
-    } else if (fin_con_ub) {
-      assert(!fin_con_lb && fin_var_ub && !fin_var_lb);
+    } else if (!fin_con_lb) {
+      assert(fin_con_ub && fin_var_ub && !fin_var_lb);
       /// res1 = (var >= var_ub)
       auto res_neg_var_ub = GetMC().AssignResultVar2Args(
             LE0Constraint{ { {{-1.0}, {compl_var}}, var_ub } });
@@ -71,8 +71,11 @@ public:
       GetMC().FixAsTrue(res_disj);
       /// Add the algebraic constraint
       GetMC().AddConstraint( std::move(alg_con) );
-    } else {                                    // double-bounded variable vs constraint body
+    } else {
       assert(fin_var_lb && fin_var_ub);
+      /// We pass the contant term here, see ConvertAlgCon()
+      assert(fin_con_lb && fin_con_ub);
+      assert(con_lb == con_ub);
       /// res1 = (var <= lb && con >= 0)
       auto lt = alg_con.GetBody();
       auto neg_lt = lt;
@@ -82,11 +85,11 @@ public:
                 GetMC().AssignResultVar2Args(
                              LE0Constraint{ { {{1.0}, {compl_var}}, -var_lb } }),
                 GetMC().AssignResultVar2Args(        // TODO wrong for QuadCon
-                             LE0Constraint{ { std::move(neg_lt), 0.0 } })
+                             LE0Constraint{ { std::move(neg_lt), con_lb } })
                            } });
       /// res2 = (body==0)
       auto res2 = GetMC().AssignResultVar2Args(        // TODO wrong for QuadCon
-            EQ0Constraint{ { std::move(lt), 0.0 } });
+            EQ0Constraint{ { std::move(lt), -con_lb } });
       /// res3 = (var >= ub && con <= 0)
       auto lt3 = alg_con.GetBody();
       auto res3 = GetMC().AssignResultVar2Args(
@@ -94,7 +97,7 @@ public:
                 GetMC().AssignResultVar2Args(
                              LE0Constraint{ { {{-1.0}, {compl_var}}, var_ub } }),
                 GetMC().AssignResultVar2Args(        // TODO wrong for QuadCon
-                             LE0Constraint{ { std::move(lt3), 0.0 } })
+                             LE0Constraint{ { std::move(lt3), -con_lb } })
                            } });
       /// res4 = (res1 \/ res2 \/ res3)
       auto res4 = GetMC().AssignResultVar2Args(
@@ -102,7 +105,6 @@ public:
       GetMC().FixAsTrue(res4);
       /// Not adding any static algebraic constraint
     }
-
   }
 
   /// Reuse the stored ModelConverter

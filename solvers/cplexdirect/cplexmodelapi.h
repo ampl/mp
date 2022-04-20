@@ -43,7 +43,7 @@ public:
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
   /// Enabling built-in indicator for infinite bounds,
-  /// but not recommended otherwise --- may be slow
+  /// but not recommended otherwise --- may be slow as of 12.10
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)

@@ -1,0 +1,23 @@
+[
+  {
+    "name" : "econ2 compl_range",
+    "files" : ["econ2.mod", "econ2.dat"],
+    "tags" : ["linear", "continuous", "complementarity"],
+    "values": {
+      "Price['AA1']": 0.0,
+      "Price['AC1']": 0.0,
+      "Price['BC1']": 105.7142857142857,
+      "Price['BC2']": 0.0,
+      "Price['NA2']": 0.0,
+      "Price['NA3']": 0.0,
+      "Level['P1']": 240,
+      "Level['P1a']": 1000,
+      "Level['P2']": 220,
+      "Level['P2a']": 680,
+      "Level['P2b']": 200,
+      "Level['P3']": 260,
+      "Level['P3c']": 1000,
+      "Level['P4']": 240
+    }
+  }
+]
