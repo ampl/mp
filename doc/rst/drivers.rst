@@ -1,3 +1,5 @@
+.. _solver_drivers:
+
 Solver drivers
 ==============
 
@@ -31,12 +33,29 @@ to be reformulated.
 For example, ``max(a, b)`` is translated into a constraint meaning
 ``<new var> = max(a, b)``, which is in turn reformulated for
 MIP or passed to the solver natively (Gurobi: `GRBaddgenconstrMax`).
+See the :ref:`modeling_guide`.
+
 Currently there are three experimental implementations:
 
 - `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_
-  (available in the AMPL distribution bundle; see the :ref:`modeling_guide`)
+  (available in the AMPL distribution bundle)
 
 - `x-cplex <https://github.com/ampl/mp/tree/master/solvers/cplexdirect>`_
 
-- 'copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_
+- `copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_
+  (available in the AMPL distribution bundle)
 
+
+
+Specialized drivers
+-------------------
+
+- `SOCP solver <https://github.com/ampl/mp/tree/master/solvers/cplex>`_
+  uses IBM ILOG CPLEX to solve problems convertable to SOCP form.
+
+- `SSD solver <https://github.com/ampl/mp/tree/master/solvers/ssdsolver>`_
+  is a solver for problems with second-order stochastic dominance constraints.
+
+- `SMPSWriter <https://github.com/ampl/mp/tree/master/solvers/smpswriter>`_,
+  a converter from deterministic equivalent of a two-stage stochastic
+  programming (SP) problem written in AMPL to an SP problem in SMPS format.

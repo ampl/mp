@@ -12,10 +12,11 @@ Backend, MIPBackend
   solver messages and status reporting, simplex basis statuses, and suffix I/O
 
 
-Solver, SolverImpl
-------------------
+Solver, SolverImpl [deprecated]
+-------------------------------
 
-* `mp::Solver` and `mp::SolverImpl` enable very basic standard behaviour (e.g., multiobj, solution output)
+* `mp::Solver` and `mp::SolverImpl` enable very basic standard behaviour
+  (e.g., multiobj, solution output)
 
 
 Internal API

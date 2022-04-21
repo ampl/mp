@@ -24,7 +24,7 @@ solver API using the `mp::ProblemBuilder` concept.
 NL model management
 -------------------
 
-* Class `mp::ModelManager` standardizes model input and results output.
+* Class `mp::BasicModelManager` standardizes model input and results output.
 
 
 Model conversion and presolve

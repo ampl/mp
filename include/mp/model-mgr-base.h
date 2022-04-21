@@ -12,8 +12,10 @@
 
 namespace mp {
 
-/// Input the model
-/// Access/provide the original model solution/suffixes
+/// Anstract Model Manager.
+/// Standardizes the following tasks:
+/// - Input the model;
+/// - Access/report the original model solution/suffixes
 class BasicModelManager {
 public:
   virtual ~BasicModelManager() { }
