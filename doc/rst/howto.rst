@@ -8,7 +8,12 @@ How to...
 Create a new driver
 -------------------
 
-The easiest way to getting started developing a new solver driver using ``mp`` is by
+
+Mock template driver 'visitor'
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The easiest way to getting started developing a new solver driver using
+`mp <https://github.com/ampl/mp>`_ is by
 looking at the `visitor <https://github.com/ampl/mp/tree/master/solvers/visitor>`_ mock 
 driver.
 
@@ -30,14 +35,27 @@ The visitor source code can be used as a template to create a new driver,
 as described in the section below.
 
 
-Then either:
+Copying a driver template
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. Copy all the directory visitor into a new directory - and change its name.
-2. Rename all occurrences of the word "visitor"
+* First, clone the mp repository.
+  Then either:
 
-or:
+  #. Copy all the directory :file:`visitor` (or any other exiting driver files)
+     into a new directory - and change its name.
 
-1. Use the file createDriver.py, which does the two items above automatically
+  #. Rename all occurrences of the word "visitor".
+
+
+  Or:
+
+  #. Use the file createDriver.py, which does the two items above automatically
+
+
+* Create and regularly use tests for essential functionality.
+  See :ref:`howto-test`.
+
+* Create a pull request.
 
 
 .. _howto-test:

@@ -5,7 +5,7 @@ AMPL/MP
 MP Library is a set of tools recommended to create new AMPL solver interfaces.
 See `documentation <https://amplmp.readthedocs.io/en/latest/>`_.
 
-If the above link is not accessible, see documentation sources in folder :file:`doc`.
+If the above link is not accessible, see documentation sources in folder ``doc``.
 
 
 Links
