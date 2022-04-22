@@ -14,7 +14,7 @@ class MIPFlatConverter
 {
 public:
   /// Class name for diagnostics
-  static constexpr const char* GetConverterName() { return "MIPFlatConverter"; }
+  static constexpr const char* GetTypeName() { return "MIPFlatConverter"; }
 
   /// BaseConverter typedef
   using BaseConverter = FlatConverter<Impl, Backend, Model>;

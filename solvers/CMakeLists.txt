@@ -11,17 +11,18 @@ endfunction ()
 # Adds an AMPL solver.
 #
 # Usage:
-#   add_ampl_solver(<name> [DLL_RUNTIME] [MODULE module]
+#   add_ampl_solver(<name> [DLL_RUNTIME] [SHARED_LIB] [OLD_SHARED_LIB]
+#     [MODULE module]
 #     [source...] [INCLUDE_DIRS dir...] [LIBRARIES lib...] [EXTERNAL])
 #
 # If DLL_RUNTIME option is given the solver is linked with DLL MSVC runtime
 # on Windows.
 #
-# If SHARED_LIB option is given then the solver is linked to <solver>-lib.c
+# If SHARED_LIB option is given then the solver is linked to <name>-lib.c
 # to export an AMPLS C interface.
 #
 # If, alternatively, OLD_SHARED_LIB is given, the solver is
-# linked to solver-c.cc which assumes create_<solver> function.
+# linked to mp/solver-c.cc which assumes create_<solver> function.
 # This is deprecated.
 #
 # The MODULE option specifies the CMake module name used to check for solver
@@ -197,7 +198,8 @@ if (TARGET ilogcp)
 endif ()
 
 
-function(add_direct_solver name)
+## Add a solver assuming the Backend/ModelAPI architecture
+function(add_ampl_backend name)
     set(SRC ${name}backend.cc ${name}backend.h
             ${name}common.cc ${name}common.h
             ${name}modelapi.cc ${name}modelapi.h
@@ -211,10 +213,26 @@ function(add_direct_solver name)
     endif()
 endfunction()
 
-add_direct_solver(visitor DLL_RUNTIME)
-add_direct_solver(copt DLL_RUNTIME SHARED_LIB MODULE COPT LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
-add_direct_solver(cplexdirect DLL_RUNTIME SHARED_LIB MODULE CPLEX LIBRARIES cplex-library ${CMAKE_DL_LIBS})
+add_ampl_backend(visitor DLL_RUNTIME)
+add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
+## add_ampl_backend(cplexdirect DLL_RUNTIME SHARED_LIB MODULE CPLEX LIBRARIES cplex-library ${CMAKE_DL_LIBS})
 
+## TODO Cannot use 'add_ampl_backend' because of the -direct name suffix
+add_ampl_solver(cplexdirect DLL_RUNTIME SHARED_LIB MODULE CPLEX
+  cplex-ampls-c-api.h
+  cplexbackend.cc cplexbackend.h
+  cplexmodelapi.cc cplexmodelapi.h
+  cplexcommon.cc cplexcommon.h
+  model-mgr-with-std-pb.cc
+  LIBRARIES cplex-library ${CMAKE_DL_LIBS})
+if (TARGET cplexdirect)
+  target_compile_definitions(cplexdirect PRIVATE main1=main)
+  if(WIN32)
+    target_compile_options(amplcplexdirect-static PUBLIC /bigobj)
+  endif()
+endif()
+
+## TODO Cannot use 'add_ampl_backend' because of the -direct name suffix
 add_ampl_solver(gurobidirect DLL_RUNTIME SHARED_LIB MODULE GUROBI
   gurobi-ampls-c-api.h
   gurobibackend.cc gurobibackend.h

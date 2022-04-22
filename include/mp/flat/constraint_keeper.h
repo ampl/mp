@@ -203,7 +203,7 @@ public:
       static_cast<Converter&>(cvt).PropagateResult(
             GetConstraint(i), lb, ub, ctx);
     } catch (const std::exception& exc) {
-      MP_RAISE(Converter::GetConverterName() +
+      MP_RAISE(Converter::GetTypeName() +
                              std::string(": propagating result for constraint ") +
                              std::to_string(i) + " of type '" +
                              Constraint::GetTypeName() +
@@ -227,7 +227,7 @@ public:
     try {
       return ConvertAllFrom(i_cvt_last_);
     } catch (const std::exception& exc) {
-      MP_RAISE(Converter::GetConverterName() + std::string(": ")
+      MP_RAISE(Converter::GetTypeName() + std::string(": ")
                              + exc.what());
     }
     return false;
