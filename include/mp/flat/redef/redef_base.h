@@ -74,14 +74,14 @@ public:
   void ConvertCtxNeg(const ItemType& item, int ) {
     MP_RAISE( fmt::format(
                 "Conversion of '{}' in negative context "
-                "not implemented", item.GetName() ) );
+                "not implemented", item.GetTypeName() ) );
   }
   /// Convert in positive context
   template <class ItemType>
   void ConvertCtxPos(const ItemType& item, int ) {
     MP_RAISE( fmt::format(
                 "Conversion of '{}' in positive context "
-                "not implemented", item.GetName() ) );
+                "not implemented", item.GetTypeName() ) );
   }
 
   /// Reuse the stored ModelConverter

@@ -86,7 +86,7 @@ enum ConstraintGroup {
 class BasicBackendFlatModelAPI {
 public:
   /// Placeholder
-  static const char* GetName()    { return "BasicBackendFlatModelAPI"; }
+  static const char* GetTypeName()    { return "BasicBackendFlatModelAPI"; }
   /// Placeholder
   static const char* GetLongName() { return nullptr; }
 
@@ -110,8 +110,8 @@ public:
   template <class Constraint>
   void AddConstraint(const Constraint& ) {
     MP_RAISE(
-          std::string("Not handling constraint '") +
-          Constraint::GetName() +
+          std::string("Not handling constraint type '") +
+          Constraint::GetTypeName() +
           "'. Provide a handler or a converter method");
   }
   /// Derived backends have to tell C++ to use default handlers if they are needed

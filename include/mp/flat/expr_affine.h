@@ -3,6 +3,7 @@
 
 #include <array>
 #include <vector>
+#include <string>
 #include <algorithm>
 #include <cmath>
 #include <cassert>
@@ -13,6 +14,8 @@ namespace mp {
 /// TODO use SSO
 class LinTerms {
 public:
+  /// Name
+  static std::string GetTypeName() { return "LinTerms"; }
   /// Default constructor
   LinTerms() = default;
   /// Construct from 2 vectors

@@ -21,7 +21,7 @@ public:
   CoptModelAPI(Env& e) : EnvKeeper(e) { }
 
   /// Class name
-  static const char* GetName() { return "CoptModelAPI"; }
+  static const char* GetTypeName() { return "CoptModelAPI"; }
 
   /// Called before problem input
   void InitProblemModificationPhase();

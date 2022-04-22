@@ -206,7 +206,7 @@ public:
       MP_RAISE(Converter::GetConverterName() +
                              std::string(": propagating result for constraint ") +
                              std::to_string(i) + " of type '" +
-                             Constraint::GetName() +
+                             Constraint::GetTypeName() +
                              "':  " + exc.what());
     }
   }
@@ -251,9 +251,9 @@ public:
     try {
       AddAllUnbridged(be);
     } catch (const std::exception& exc) {
-      MP_RAISE(std::string("Adding constraint '") +
-                             Constraint::GetName() + "' to " +
-                             Backend::GetName() + std::string(": ") +
+      MP_RAISE(std::string("Adding constraint of type '") +
+                             Constraint::GetTypeName() + "' to " +
+                             Backend::GetTypeName() + std::string(": ") +
                              exc.what());
     }
   }
@@ -334,9 +334,9 @@ private:
   int i_cvt_last_ = -1;               // last converted constraint
   const std::string desc_ {
     std::string("ConstraintKeeper< ") +
-        Converter::GetConverterName() + ", " +
-        Backend::GetName() + ", " +
-        Constraint::GetName() + " >"};
+        Converter::GetTypeName() + ", " +
+        Backend::GetTypeName() + ", " +
+        Constraint::GetTypeName() + " >"};
 };
 
 

@@ -14,7 +14,7 @@ namespace mp {
 class BasicConstraint {
 public:
   /// Name for messages
-  static constexpr const char* GetName()
+  static constexpr const char* GetTypeName()
   { return "BasicConstraint"; }
   /// Whether context is meaningful here
   static constexpr bool HasContext() { return false; }
@@ -32,7 +32,7 @@ class FunctionalConstraint : public BasicConstraint {
   mutable Context ctx;               // always store context
 public:
   /// Name for messages
-  static constexpr const char* GetName()
+  static constexpr const char* GetTypeName()
   { return "FunctionalConstraint"; }
   /// Constructor
   /// @param v: result variable
@@ -91,7 +91,7 @@ class CustomFunctionalConstraint :
 
 public:
   /// Constraint name for messages
-  static constexpr const char* GetName() { return Id::name_; }
+  static constexpr const char* GetTypeName() { return Id::name_; }
   /// Default constructor
   CustomFunctionalConstraint() = default;
   /// Arguments typedef

@@ -17,7 +17,7 @@ class GurobiModelAPI :
 
 public:
   /// Model API name
-  static const char* GetName();
+  static const char* GetTypeName();
   /// Unused
   static const char* GetLongName() { return nullptr; }
 
