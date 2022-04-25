@@ -197,6 +197,15 @@ class AMPLRunner(object):
          self.stats["timelimit"] = True
          return
 
+      ncontvars = self._ampl.getValue("_nvars - _snbvars - _snivars")
+      nintvars = self._ampl.getValue("_snbvars  + _snivars")
+      nconstr =  self._ampl.getValue("_ncons")
+      nnz  = self._ampl.getValue("_snzcons")
+
+      self.stats["modelStats"] = {"nvars" : int(ncontvars),
+                                   "nintvars" : int(nintvars),
+                                   "nconstr" : int(nconstr),
+                                   "nnz" : int(nnz)}
       if not model.isScript():
           self._ampl.solve()
       interval = self._ampl.getValue("_solve_elapsed_time")

@@ -36,18 +36,34 @@ class CSVTestExporter(Exporter):
           return s
 
     def _getHeader(self, mr: ModelRunner):
-        hdr = "Name,\tExpected_Obj"
+        hdr = "Name,\tExpected_Obj,\tVariables,\tInt_Variables,\tConstraints,\tNnz"
         for (i,r) in enumerate(mr.getRuns()):
             hdr += ",\t{}-Obj,\t{}-Time,\t{}-TimeLimit,\t{}-rss,\t{}-vms".format(
               r[-1]["solver"], r[-1]["solver"], r[-1]["solver"], r[-1]["solver"], r[-1]["solver"])
         for (i,r) in enumerate(mr.getRuns()):
             hdr += ",\t{}-SolverMsg".format(r[-1]["solver"])
         return hdr
-            
+    def getModelsStats(run):
+        if not "modelStats" in run[-1]:
+            return None
+        stats = run[-1]["modelStats"]
+        res = ",\t{},\t{},\t{},\t{}".format(
+            stats["nvars"], stats["nintvars"], stats["nconstr"], stats["nnz"])
+        return res
     def _getLastResultLine(self, mr: ModelRunner):
         i = len( mr.getRuns()[0] )
         m = mr._models[i-1]
         res = "{},\t{}".format(m.getName(), m.getExpectedObjective())
+        # try writing stats - works only for AMPL runners
+        writtenStats = False
+        for (i,r) in enumerate(mr.getRuns()):
+            stats = CSVTestExporter.getModelsStats(r)
+            if stats != None:
+                writtenStats = True
+                res += stats
+                break
+        if not writtenStats:
+            res += ",\t-,\t-,\t-,\t-"
         for (i,r) in enumerate(mr.getRuns()):
             res += ",\t{},\t{},\t{},\t{},\t{}".format(
               self._getDictMemberOrMissingStr(r[-1], "objective"),

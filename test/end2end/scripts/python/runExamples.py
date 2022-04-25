@@ -21,6 +21,10 @@ class Tester:
     def parseOptions(self):
         self._parser.add_argument('solvers', metavar='solver', type=str, nargs='+',
                             help='a solver to test')
+
+        self._parser.add_argument('--lpmethod', type=str, metavar='', default="",
+                            help='algorithm for lp: SIMPLEX or BARRIER')
+
         self._parser.add_argument('--options', type=str, metavar='', default="",
                             help='extra solver options')
         self._parser.add_argument('--binPath', type=str, metavar='', default="",
@@ -57,6 +61,8 @@ class Tester:
         for name, slv in self._solvers.getSolvers():
             slv.setTimeout(self._args.timeout)
             slv.setNThreads(self._args.nthreads)
+            if self._args.lpmethod:
+                slv.setLPMethod(self._args.lpmethod)
 
     def printSolvers(self):
         print("Available solvers:\n  * ", end='')

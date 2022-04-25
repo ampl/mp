@@ -24,10 +24,14 @@ class Solver(object):
             return name
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None,
-                 writeSolverName=False, unsupportedTags=None):
+                 writeSolverName=False, unsupportedTags=None, lpmethod = None):
         self._exePath = Solver.getExecutableName(exeName)
         self._timeout = timeout
         self._nthreads = nthreads
+        if lpmethod:
+            if not lpmethod in ["BARRIER", "SIMPLEX"]:
+                raise Exception("Valid methods to be forced are BARRIER and SIMPLEX")
+        self._lpmethod = lpmethod
         self._otherOptions = otherOptions
         self._writeSolverName = writeSolverName
         self._unsupportedTags = unsupportedTags
@@ -93,6 +97,11 @@ class Solver(object):
     def setNThreads(self, nt):
         self._nthreads = nt
 
+    def setLPMethod(self, lpmethod):
+        if not lpmethod in ["BARRIER", "SIMPLEX"]:
+                raise Exception("Valid methods to be forced are BARRIER and SIMPLEX")
+        self._lpmethod = lpmethod
+
     def getNThreads(self):
         return self._nthreads
 
@@ -118,6 +127,9 @@ class AMPLSolver(Solver):
                  otherOptions=None, unsupportedTags=None):
         super().__init__(exeName, timeout, nthreads, otherOptions, unsupportedTags=unsupportedTags)
 
+    def _setLPMethod(self, method : str):
+        raise Exception("Not implemented in base class")
+
     def _setTimeLimit(self, seconds):
         raise Exception("Not implemented in base class")
 
@@ -139,6 +151,8 @@ class AMPLSolver(Solver):
                 pass
         if self._nthreads:
             toption = "{} {}".format(toption, self._setNThreads(self._nthreads))
+        if self._lpmethod:
+            toption = "{} {}".format(toption, self._setLPMethod(self._lpmethod))
         if self._otherOptions:
             toption = "{} {}".format(toption, self._otherOptions)
         try:
@@ -193,6 +207,9 @@ class AMPLSolver(Solver):
         if self._nthreads:
             value += " "
             value += self._setNThreads(self._nthreads)
+        if self._lpmethod:
+            value += " "
+            value += self._setLPMethod(self._lpmethod)
         if self._otherOptions:
             value += " "
             value += self._otherOptions
@@ -210,6 +227,9 @@ class LindoSolver(AMPLSolver):
 
     def _getAMPLOptionsName(self):
         return "lindoglobal"
+
+    def _setLPMethod(self, method : str):
+        return ""
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         super().__init__(exeName, timeout, nthreads, otherOptions)
@@ -237,6 +257,10 @@ class GurobiSolver(AMPLSolver):
     def _setNThreads(self, threads):
         return "threads={}".format(threads)
 
+    def _setLPMethod(self, method : str):
+        m  = "1" if method == "SIMPLEX" else "2"
+        return f"lpmethod {m}"
+
     def _getAMPLOptionsName(self):
         return "gurobi"
 
@@ -263,6 +287,10 @@ class GurobiSolver(AMPLSolver):
 
 class GurobiDirectSolver(AMPLSolver):
 
+    def _setLPMethod(self, method : str):
+        m  = "0" if method == "SIMPLEX" else "2"
+        return f"alg:method {m} outlev=1"
+
     def _setTimeLimit(self, seconds):
         return "timelim={}".format(seconds)
 
@@ -270,7 +298,7 @@ class GurobiDirectSolver(AMPLSolver):
         return "threads={}".format(threads)
 
     def _getAMPLOptionsName(self):
-        return "gurobidirect"
+        return "gurobi"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         utags = [ModelTags.nonlinear]    ## unsupported
@@ -299,6 +327,9 @@ class CPLEXDirectSolver(GurobiDirectSolver):
 
 
 class CPLEXSolver(AMPLSolver):
+    def _setLPMethod(self, method : str):
+        return "" if method == "SIMPLEX" else "baropt"
+
     def _setTimeLimit(self, seconds):
         return "time={}".format(seconds)
 
@@ -330,6 +361,10 @@ class CPLEXSolver(AMPLSolver):
 
 
 class BaronSolver(AMPLSolver):
+
+    def _setLPMethod(self, method : str):
+        return "" 
+
     def _setTimeLimit(self, seconds):
         return "maxtime={}".format(seconds)
 
@@ -361,6 +396,9 @@ class BaronSolver(AMPLSolver):
 class OcteractSolver(AMPLSolver):
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         super().__init__(exeName, timeout, nthreads, otherOptions)
+
+    def _setLPMethod(self, method : str):
+        return "" 
 
     def _doRun(self,  model: Model):
         optionFile = model.getSolFilePath().parent.joinpath("octeract.opt")
@@ -408,6 +446,12 @@ class OcteractSolver(AMPLSolver):
             
 
 class COPTSolver(AMPLSolver):
+
+
+    def _setLPMethod(self, method : str):
+        m  = "1" if method == "SIMPLEX" else "2"
+        return f"lp:method {m}"
+
     def _setTimeLimit(self, seconds):
         return "timelimit={}".format(seconds)
 
@@ -440,6 +484,11 @@ class COPTSolver(AMPLSolver):
 
 
 class MindoptSolver(AMPLSolver):
+
+    def _setLPMethod(self, method : str):
+        m  = "1" if method == "SIMPLEX" else "2"
+        return f"method {m}"
+
     def _setTimeLimit(self, seconds):
         return "max_time={}".format(seconds)
 
