@@ -21,7 +21,7 @@ public:
   CplexModelAPI(Env& e) : EnvKeeper(e) { }
 
   /// Class name
-  static const char* GetName() { return "CplexModelAPI"; }
+  static const char* GetTypeName() { return "CplexModelAPI"; }
 
   /// Called before problem input
   void InitProblemModificationPhase();

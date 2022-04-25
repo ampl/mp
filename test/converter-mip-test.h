@@ -107,7 +107,7 @@ class MIPInstanceBackend :
 public:
   MIPInstanceBackend(mp::Env& e) : mp::EnvKeeper(e) { }
 
-  static constexpr const char* GetName() { return "tester"; }
+  static constexpr const char* GetTypeName() { return "tester"; }
 
   MIPInstance& GetInstance() { return instance_; }
 

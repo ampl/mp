@@ -2063,7 +2063,8 @@ GrbGetObjParamAction(const GurobiBackend::ObjNParamKey& key) {
 
 /// env() is only for error reporting
 static void GrbDoSetObjParam(
-    const GurobiBackend::ObjNParam<int>& prm, GRBmodel* model, GRBenv* env_) {
+    const GurobiBackend::ObjNParam<int>& prm,
+    GRBmodel* model, GRBenv* env_) {
   auto action = GrbGetObjParamAction(prm.first);
   auto iobj = std::get<1>(action);
   auto prm_attr = std::get<2>(action);
@@ -2079,7 +2080,8 @@ static void GrbDoSetObjParam(
 }
 /// env() is only for error reporting
 static void GrbDoSetObjParam(
-    const GurobiBackend::ObjNParam<double>& prm, GRBmodel* model, GRBenv* env_) {
+    const GurobiBackend::ObjNParam<double>& prm,
+    GRBmodel* model, GRBenv* env_) {
   auto action = GrbGetObjParamAction(prm.first);
   auto iobj = std::get<1>(action);
   auto prm_attr = std::get<2>(action);
@@ -2116,8 +2118,10 @@ void GurobiBackend::GrbPlayObjNParams() {
 
 
 AMPLS_MP_Solver* AMPLSOpenGurobi(const char* slv_opt) {
-  AMPLS_MP_Solver* slv = AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::GurobiBackend()},
-                               slv_opt);
+  AMPLS_MP_Solver* slv =
+      AMPLS__internal__Open(
+        std::unique_ptr<mp::BasicBackend>{new mp::GurobiBackend()},
+        slv_opt);
   return slv;
 }
 

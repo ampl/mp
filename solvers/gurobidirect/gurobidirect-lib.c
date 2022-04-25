@@ -7,7 +7,8 @@
 #endif
 
 
-APIEXPORT GRBmodel* AMPLdirectloadmodel(int argc, char** argv, void** slvout) {
+APIEXPORT GRBmodel* AMPLdirectloadmodel(
+    int argc, char** argv, void** slvout) {
   const char* nl_filename = argv[1];
   const char *slv_opt= NULL;
   AMPLS_MP_Solver *slv = AMPLSOpenGurobi(slv_opt);

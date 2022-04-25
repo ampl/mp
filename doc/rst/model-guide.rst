@@ -1,12 +1,14 @@
 .. _modeling_guide:
 
-x-Gurobi modeling guide
-=======================
+Modeling guide
+==============
 
 A guide to using the beta test release of
 `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_,
-the enhanced AMPL-Gurobi interface.
-`x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_
+the enhanced AMPL-Gurobi interface, and
+`copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_, an interface
+to `Cardinal Optimizer <https://www.shanshu.ai/copt>`_.
+Both
 can be compiled from source or downloaded in the AMPL distribution bundle.
 
 
@@ -35,6 +37,13 @@ Expressions supported
                 (x<=-5 or
                         (max((x+1)*(x+2)*(y+3), y)<=3 and
                                 exp((x+18)*y)<=12));
+
+- Piecewise-linear expressions are natively supported by Gurobi.
+  To pass them that way, set the following AMPL option:
+
+  .. code-block:: ampl
+
+        option pl_linearize 0;
 
 - Complementarity constraints:
 
@@ -110,7 +119,8 @@ General modeling hints
 ----------------------
 
 For general modeling hints, refer to Guidelines for Numerical Issues
-and modeling webinars on the `Gurobi website <http://www.gurobi.com>`_.
+and modeling webinars on the `Gurobi website <http://www.gurobi.com>`_;
+the MOSEK Modeling Cookbook at `www.mosek.com <https://www.mosek.com/>`_.
 
 For logical expressions, it proves best to supply tight bounds on
 all participating variables.

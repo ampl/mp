@@ -60,7 +60,7 @@ protected:
   using BaseConverter::GetEnv;
 
 public:
-  static const char* GetName() { return "ExprFlattener"; }
+  static const char* GetTypeName() { return "ExprFlattener"; }
 
   ModelFlattener(Env& e) : BaseConverter(e), flat_cvt_(e) { }
 

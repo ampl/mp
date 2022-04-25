@@ -34,7 +34,7 @@ class FlatConverter :
 {
 public:
   /// Class name
-  static const char* GetConverterName() { return "FlatConverter"; }
+  static const char* GetTypeName() { return "FlatConverter"; }
 
   /// Construct with Env&
   FlatConverter(Env& e) : EnvKeeper(e), backend_(e) { }
@@ -552,7 +552,7 @@ public:
   void PropagateResult(Constraint& con, double lb, double ub, Context ctx) {
     internal::Unused(&con, lb, ub, ctx);
     con.SetContext(ctx);
-    PropagateResult2Vars(con.GetArguments(),
+    PropagateResult2Args(con.GetArguments(),
                          this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
@@ -687,13 +687,17 @@ public:
                          Context::CTX_MIX);
   }
 
-  /// Propagate given bounds & context into a vector of variables
+  /// Propagate given bounds & context into arguments of a constraint.
+  /// The default template assumes it just a vector of variables.
   /// @param lb, ub: bounds for each variable
-  template <class Vec>
-  void PropagateResult2Vars(const Vec& vars, double lb, double ub, Context ctx) {
-    for (auto v: vars) {
-      PropagateResultOfInitExpr(v, lb, ub, ctx);
-    }
+  template <class Args>
+  void PropagateResult2Args(const Args& vars, double lb, double ub, Context ctx) {
+    PropagateResult2Vars(vars, lb, ub, ctx);
+  }
+
+  /// Specialize: propagate result into LinTerms
+  void PropagateResult2Args(const LinTerms& lint, double lb, double ub, Context ctx) {
+    PropagateResult2LinTerms(lint, lb, ub, ctx);
   }
 
   /// Propagate result into LinTerms
@@ -702,6 +706,15 @@ public:
       PropagateResultOfInitExpr(lint.var(i),      /// TODO bounds as well
                                 this->MinusInfty(), this->Infty(),
                                 (lint.coef(i)>=0.0) ? +ctx : -ctx);
+    }
+  }
+
+  /// Propagate given bounds & context into a vector of variables
+  /// @param lb, ub: bounds for each variable
+  template <class Vec>
+  void PropagateResult2Vars(const Vec& vars, double lb, double ub, Context ctx) {
+    for (auto v: vars) {
+      PropagateResultOfInitExpr(v, lb, ub, ctx);
     }
   }
 
@@ -741,8 +754,8 @@ public: // for ConstraintKeeper
   template <class Constraint>
   void Convert(const Constraint& ) {
     MP_RAISE(
-          std::string("Convertion of constraint ") +
-            Constraint::GetName() + " not implemented");
+          std::string("Convertion of constraint type '") +
+            Constraint::GetTypeName() + "' not implemented");
   }
 
   //////////////////////////// SOME SPECIFIC CONSTRAINT CONVERTERS

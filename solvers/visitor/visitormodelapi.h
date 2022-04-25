@@ -21,7 +21,7 @@ public:
   VisitorModelAPI(Env& e) : EnvKeeper(e) { }
 
   /// Class name
-  static const char* GetName() { return "VisitorModelAPI"; }
+  static const char* GetTypeName() { return "VisitorModelAPI"; }
 
   /// Called before problem input
   void InitProblemModificationPhase();

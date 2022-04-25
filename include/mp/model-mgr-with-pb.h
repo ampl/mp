@@ -65,7 +65,7 @@ protected:
 
 public:
   /// Class name
-  static const char* GetName() { return "ModelManagerWithFlatBackend TODO"; }
+  static const char* GetTypeName() { return "ModelManagerWithProblemBuilder"; }
 
   ModelManagerWithProblemBuilder(std::unique_ptr<Converter> pc)
     : EnvKeeper(pc->GetEnv()), pcvt_(std::move(pc)) { }
