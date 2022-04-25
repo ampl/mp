@@ -197,13 +197,15 @@ class AMPLRunner(object):
          self.stats["timelimit"] = True
          return
       try:
-          ncontvars = self._ampl.getValue("_nvars")
+          ncontvars = self._ampl.getValue("_nvars - _snbvars - _snivars")
+          nintvars = self._ampl.getValue("_snbvars  + _snivars")
+          nconstr =  self._ampl.getValue("_ncons")
+          nnz  = self._ampl.getValue("_snzcons")
       except:
-          pass
-      ncontvars = self._ampl.getValue("_nvars - _snbvars - _snivars")
-      nintvars = self._ampl.getValue("_snbvars  + _snivars")
-      nconstr =  self._ampl.getValue("_ncons")
-      nnz  = self._ampl.getValue("_snzcons")
+          ncontvars = 0
+          nintvars = 0
+          nconstr =  0
+          nnz  = 0
       
       self.stats["modelStats"] = {"nvars" : int(ncontvars),
                                    "nintvars" : int(nintvars),
