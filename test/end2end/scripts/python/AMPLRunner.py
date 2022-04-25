@@ -196,12 +196,15 @@ class AMPLRunner(object):
            self.stats["outmsg"] = "Script ran out of time"
          self.stats["timelimit"] = True
          return
-
+      try:
+          ncontvars = self._ampl.getValue("_nvars")
+      except:
+          pass
       ncontvars = self._ampl.getValue("_nvars - _snbvars - _snivars")
       nintvars = self._ampl.getValue("_snbvars  + _snivars")
       nconstr =  self._ampl.getValue("_ncons")
       nnz  = self._ampl.getValue("_snzcons")
-
+      
       self.stats["modelStats"] = {"nvars" : int(ncontvars),
                                    "nintvars" : int(nintvars),
                                    "nconstr" : int(nconstr),
