@@ -77,7 +77,7 @@ void VisitorModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& 
   }
 }
 
-void VisitorModelAPI::AddConstraint(const RangeLinCon& lc) {
+void VisitorModelAPI::AddConstraint(const LinConRange& lc) {
   fmt::print("Adding range linear constraint {}\n", lc.GetTypeName());
   fmt::print("{} <=", lc.lb());
   for (size_t i = 0; i < lc.size(); i++)
@@ -132,7 +132,7 @@ void VisitorModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
     ic.get_constraint().rhs()));*/
 }
 
-void VisitorModelAPI::AddConstraint(const QuadraticConstraint& qc) {
+void VisitorModelAPI::AddConstraint(const QuadConRange& qc) {
   fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
   /*
   const auto& qt = qc.GetQPTerms();

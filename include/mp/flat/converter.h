@@ -575,7 +575,7 @@ public:
                               this->MinusInfty(), this->Infty(), +ctx);
   }
 
-  void PropagateResult(QuadraticConstraint& con, double lb, double ub,
+  void PropagateResult(QuadConRange& con, double lb, double ub,
                        Context ctx) {
     internal::Unused(lb, ub, ctx);
     PropagateResult2LinTerms(con,              // TODO sense dep. on bounds
@@ -1046,12 +1046,12 @@ protected:
   /// Constraint keepers and converters should be initialized after \a presolver_
 
   /// Define constraint keepers for all constraint types
-  STORE_CONSTRAINT_TYPE__NO_MAP(RangeLinCon)
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConRange)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConLE)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConEQ)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConGE)
 
-  STORE_CONSTRAINT_TYPE__NO_MAP(QuadraticConstraint)
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConRange)
 
   /// TODO Use FunctionalConstraintConverter with LFC, QFC
   STORE_CONSTRAINT_TYPE__WITH_MAP(LinearFunctionalConstraint)

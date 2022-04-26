@@ -48,7 +48,7 @@ public:
   /// Body: linear or linear + higher-order terms
   const Body& GetBody() const { return (const Body&)(*this); }
 
-  /// For PropagateResult()
+  /// Synonym, For PropagateResult()
   const Body& GetArguments() const { return GetBody(); }
 
   /// Compute lower slack
@@ -120,7 +120,7 @@ private:
 };
 
 /// Range linear constraint
-using RangeLinCon = AlgebraicConstraint<LinTerms, AlgConRange>;
+using LinConRange = AlgebraicConstraint<LinTerms, AlgConRange>;
 /// Convenience typedef
 template <int sens>
 using LinConRhs = AlgebraicConstraint< LinTerms, AlgConRhs<sens> >;
@@ -143,25 +143,25 @@ AffExp ToLhsExpr(
 ////////////////////////////////////////////////////////////////////////
 /// Standard quadratic constraint
 /// TODO make range/rhs versions
-class QuadraticConstraint : public RangeLinCon {
+class QuadConRange : public LinConRange {
   QuadTerms qt_;
 public:
   static std::string GetTypeName() { return "QuadraticConstraint"; }
 
   /// Construct from a linear constraint and QP terms.
   /// Always sort terms.
-  QuadraticConstraint(RangeLinCon&& lc, QuadTerms&& qt) :
-    RangeLinCon(std::move(lc)), qt_(std::move(qt)) {
+  QuadConRange(LinConRange&& lc, QuadTerms&& qt) :
+    LinConRange(std::move(lc)), qt_(std::move(qt)) {
     sort_qp_terms();         // LinearConstr sorts them itself
   }
 
   /// Constructor for testing.
   /// Always sort terms.
-  QuadraticConstraint(std::initializer_list<std::pair<double, int>> lin_terms,
+  QuadConRange(std::initializer_list<std::pair<double, int>> lin_terms,
                       std::initializer_list<std::tuple<double, int, int>> quad_terms,
                       double lb, double ub) :
-    RangeLinCon({}, {lb, ub}), qt_(quad_terms) {
-    RangeLinCon::add_terms(lin_terms);
+    LinConRange({}, {lb, ub}), qt_(quad_terms) {
+    LinConRange::add_terms(lin_terms);
     sort_qp_terms();
   }
 
@@ -169,7 +169,7 @@ public:
 
   // To enable comparison. Also eliminates zeros
   void sort_terms() {
-    RangeLinCon::sort_terms();
+    LinConRange::sort_terms();
     sort_qp_terms();
   }
 
@@ -178,8 +178,8 @@ public:
   }
 
   /// Testing API
-  bool operator==(const QuadraticConstraint& qc) const {
-    return RangeLinCon::operator==(qc) && qt_==qc.qt_;
+  bool operator==(const QuadConRange& qc) const {
+    return LinConRange::operator==(qc) && qt_==qc.qt_;
   }
 };
 
@@ -321,10 +321,10 @@ private:
 };
 
 /// Typedef ComplementarityLinRange
-using ComplementarityLinRange = ComplementarityConstraint<RangeLinCon>;
+using ComplementarityLinRange = ComplementarityConstraint<LinConRange>;
 
 /// Typedef ComplementarityQuadRange
-using ComplementarityQuadRange = ComplementarityConstraint<QuadraticConstraint>;
+using ComplementarityQuadRange = ComplementarityConstraint<QuadConRange>;
 
 } // namespace mp
 

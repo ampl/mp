@@ -216,13 +216,13 @@ public:
   }
   const QuadExp& GetQuadExpr() const { return quad_expr_; }
   const Arguments& GetArguments() const { return GetQuadExpr(); }
-  QuadraticConstraint to_quadratic_constraint() const {
+  QuadConRange to_quadratic_constraint() const {
     const auto& qe = GetQuadExpr();
     const auto& ae = qe.GetAE();
     auto le = ae.get_lin_exp();
     le.add_term(-1.0, FunctionalConstraint::GetResultVar());
     auto qt = qe.GetQT();
-    return {RangeLinCon(std::move(le),
+    return {LinConRange(std::move(le),
                              {-ae.constant_term(), -ae.constant_term()}),
             std::move(qt)};
   }

@@ -35,8 +35,10 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
 
-  ACCEPT_CONSTRAINT(RangeLinCon, Recommended, CG_Linear)
-  void AddConstraint(const RangeLinCon& lc);
+  ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Linear)
+  void AddConstraint(const LinConRange& lc);
+  /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends
+  /// and have an implementation
   ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
   void AddConstraint(const LinConLE& lc);
   ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
@@ -48,8 +50,8 @@ public:
   ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
 
-  ACCEPT_CONSTRAINT(QuadraticConstraint, Recommended, CG_Quadratic)
-  void AddConstraint(const QuadraticConstraint& qc);
+  ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Quadratic)
+  void AddConstraint(const QuadConRange& qc);
 
   ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS1Constraint& cc);

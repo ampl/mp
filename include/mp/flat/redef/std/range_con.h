@@ -42,7 +42,7 @@ public:
   void PresolveSolutionEntry(const typename Base::BridgeEntry& be) {
     SetDbl(be, 1, GetDbl(be, 0));
     const auto& orig_cons =
-        GetMC().template GetConstraint<RangeLinCon>(be[0]);
+        GetMC().template GetConstraint<LinConRange>(be[0]);
     SetDbl(be, 2, orig_cons.ComputeLowerSlack(GetNode(2)));
   }
   /// Postsolve solution (primal + dual)
@@ -116,7 +116,7 @@ public:
   /// Constructor
   RangeConstraintConverter(ModelConverter& mc) : Base(mc) { }
   /// Converted item type
-  using ItemType = RangeLinCon;
+  using ItemType = LinConRange;
 
   /// Conversion
   ///

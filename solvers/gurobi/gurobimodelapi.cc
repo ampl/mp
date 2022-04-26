@@ -98,7 +98,7 @@ void GurobiModelAPI::AddConstraint( const LinConGE& lc ) {
                          GRB_GREATER_EQUAL, lc.rhs(), NULL) );
 }
 
-void GurobiModelAPI::AddConstraint( const QuadraticConstraint& qc ) {
+void GurobiModelAPI::AddConstraint( const QuadConRange& qc ) {
   const auto& qt = qc.GetQPTerms();
   if (qc.lb()==qc.ub())
     GRB_CALL( GRBaddqconstr(model(), qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),

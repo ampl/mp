@@ -25,7 +25,7 @@ public:
     auto r = dc.GetResultVar();
     const auto& args = dc.GetArguments();
     /// r = arg0 / arg1,    arg0 = arg1 * r;
-    GetMC().AddConstraint(QuadraticConstraint(
+    GetMC().AddConstraint(QuadConRange(
                             { {-1.0, args[0] } },
                             { { 1.0, args[1], r} }, 0.0, 0.0 ));
     /// arg1 != 0 if need

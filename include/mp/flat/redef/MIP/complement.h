@@ -113,11 +113,11 @@ public:
 
 /// Typedef linear compl cvt
 template <class MC>
-using ComplCvtLin_MIP = ComplementarityConverter_MIP<MC, RangeLinCon>;
+using ComplCvtLin_MIP = ComplementarityConverter_MIP<MC, LinConRange>;
 
 /// Typedef quadratic compl cvt
 template <class MC>
-using ComplCvtQuad_MIP = ComplementarityConverter_MIP<MC, QuadraticConstraint>;
+using ComplCvtQuad_MIP = ComplementarityConverter_MIP<MC, QuadConRange>;
 
 } // namespace mp
 

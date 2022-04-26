@@ -201,7 +201,7 @@ protected:
       AlgConRange{ -ee.constant_term(), -ee.constant_term() };
       // storing the constant.
       // Actually in the latter case, both lb and ub are inf for the constraint.
-    auto lc = RangeLinCon{
+    auto lc = LinConRange{
     { std::move(le.coefs()), std::move(le.vars()) }, rng };
     lc.sort_terms();
     pre::NodeRange nr;
@@ -212,7 +212,7 @@ protected:
         nr = AddConstraint(
               ComplementarityLinRange{ std::move(lc), compl_var } );
     } else {
-      auto qc = QuadraticConstraint{
+      auto qc = QuadConRange{
           std::move(lc),
           std::move(ee.GetQT())};                        // quadratic terms
       if (compl_var<0)

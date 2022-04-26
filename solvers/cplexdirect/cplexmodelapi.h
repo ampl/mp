@@ -34,8 +34,8 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
 
-  ACCEPT_CONSTRAINT(RangeLinCon, Recommended, CG_Linear)
-  void AddConstraint(const RangeLinCon& lc);
+  ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Linear)
+  void AddConstraint(const LinConRange& lc);
   ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
   void AddConstraint(const LinConLE& lc);
   ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)

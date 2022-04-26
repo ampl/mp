@@ -60,7 +60,7 @@ void CoptModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo)
   }
 }
 
-void CoptModelAPI::AddConstraint(const RangeLinCon& lc) {
+void CoptModelAPI::AddConstraint(const LinConRange& lc) {
   COPT_CCALL(COPT_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(), 
     NULL, lc.lb(), lc.ub(), NULL));
 }
@@ -101,7 +101,7 @@ void CoptModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
     ic.get_constraint().rhs()));
 }
 
-void CoptModelAPI::AddConstraint(const QuadraticConstraint& qc) {
+void CoptModelAPI::AddConstraint(const QuadConRange& qc) {
   const auto& qt = qc.GetQPTerms();
   if (qc.lb() == qc.ub())
     COPT_CCALL(COPT_AddQConstr(lp(), qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),

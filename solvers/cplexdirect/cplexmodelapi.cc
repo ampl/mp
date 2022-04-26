@@ -46,7 +46,7 @@ void CplexModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
 //    TODO
   }
 }
-void CplexModelAPI::AddConstraint(const RangeLinCon& lc) {
+void CplexModelAPI::AddConstraint(const LinConRange& lc) {
   char sense = 'E';                     // good to initialize things
   double rhs = lc.lb();
   if (lc.lb()==lc.ub())
