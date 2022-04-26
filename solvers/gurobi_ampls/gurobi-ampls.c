@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "gurobi-ampls.h"
-#include "gurobidirect/gurobi-ampls-c-api.h"
+#include "gurobi/gurobi-ampls-c-api.h"
 
 /// Print warnings and/or errors
 void AMPLSPrintMessages(AMPLS_MP_Solver* slv);

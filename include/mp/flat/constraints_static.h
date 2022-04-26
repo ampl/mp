@@ -21,6 +21,8 @@ namespace mp {
 
 ////////////////////////////////////////////////////////////////////////
 /// Generic algebraic constraint
+/// @param Body: linear / higher-order terms
+/// @param RhsOrRange: rhs or range
 template <class Body, class RhsOrRange>
 class AlgebraicConstraint :
     public BasicConstraint, public Body, public RhsOrRange {
@@ -32,17 +34,18 @@ public:
       RhsOrRange::GetTypeName() };
     return name;
   }
+
   /// Constructor.
   /// By default (\a fSort = true), it sorts terms.
   /// Pass \a fSort = false to skip if you complement the terms list
-  /// but do it in the end.
-  /// @param le: linaer terms
+  /// but do sorting later.
+  /// @param le: linear / linear + higher-order terms
   /// @param rr: rhs or range
   AlgebraicConstraint(Body le, RhsOrRange rr, bool fSort=true)
     : Body(std::move(le)), RhsOrRange(std::move(rr))
   { if (fSort) sort_terms(); }
 
-  /// Body: linear terms
+  /// Body: linear or linear + higher-order terms
   const Body& GetBody() const { return (const Body&)(*this); }
 
   /// For PropagateResult()
@@ -57,12 +60,11 @@ public:
   }
 
   /// Sorting and merging terms, some solvers require
-  void sort_terms() { LinTerms::sort_terms(); }
+  void sort_terms() { Body::sort_terms(); }
 
   /// Testing API
   bool operator==(const AlgebraicConstraint& lc) const {
-    return LinTerms::coefs()==lc.coefs() && LinTerms::vars()==lc.vars() &&
-        RhsOrRange::equals(lc);
+    return Body::equals(lc) && RhsOrRange::equals(lc);
   }
 };
 
@@ -145,12 +147,14 @@ class QuadraticConstraint : public RangeLinCon {
   QuadTerms qt_;
 public:
   static std::string GetTypeName() { return "QuadraticConstraint"; }
+
   /// Construct from a linear constraint and QP terms.
   /// Always sort terms.
   QuadraticConstraint(RangeLinCon&& lc, QuadTerms&& qt) :
     RangeLinCon(std::move(lc)), qt_(std::move(qt)) {
     sort_qp_terms();         // LinearConstr sorts them itself
   }
+
   /// Constructor for testing.
   /// Always sort terms.
   QuadraticConstraint(std::initializer_list<std::pair<double, int>> lin_terms,
@@ -190,20 +194,24 @@ public:
       { "IndicatorConstraint[" + Con::GetTypeName() + ']' };
     return name;
   }
+
   /// Getters
   int get_binary_var() const { return b_; }
   int get_binary_value() const { return bv_; }
   bool is_binary_value_1() const { return 1==get_binary_value(); }
   const Con& get_constraint() const { return con_; }
+
   /// Where applicable, produces expr
   /// so that the constraint is equivalent to expr<=>0.0
   auto to_lhs_expr() const ->decltype (ToLhsExpr(get_constraint())) {
     return ToLhsExpr(get_constraint());
   }
+
   /// Constructor
   IndicatorConstraint(int b, int bv, Con con) noexcept :
     b_(b), bv_(bv), con_(std::move(con)) { assert(check()); }
   bool check() const { return (b_>=0) && (bv_==0 || bv_==1); }
+
 
 private:
   const int b_=-1;                            // the indicator variable

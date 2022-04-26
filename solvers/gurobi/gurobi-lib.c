@@ -1,4 +1,4 @@
-#include "gurobidirect/gurobi-ampls-c-api.h"
+#include "gurobi/gurobi-ampls-c-api.h"
 
 #ifdef _WIN32
 #define APIEXPORT __declspec(dllexport)

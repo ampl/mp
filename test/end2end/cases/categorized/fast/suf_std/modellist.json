@@ -69,7 +69,7 @@
     }
   },
   {
-    "name" : "dietu_mip mip:basis=0 (default for gurobidirect)",
+    "name" : "dietu_mip mip:basis=0 (default for x-gurobi)",
     "objective" : 74.273820,
     "tags" : ["linear", "continuous"],
     "values": {

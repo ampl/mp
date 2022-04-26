@@ -230,13 +230,13 @@ class AMPLRunner(object):
         if model.hasOptions():
             optmap = model.getOptions()
             for name, val in optmap.items():
-                if name.endswith("SOLVER_options"):            # Any-solver option
+                if name.endswith("SOLVER_options"):               # Any-solver option
                     if not slvname in optmap:                     # When no 'gurobi_options'
                         name = slvname
                     else:
                         continue                                  # Skip as solver-specific given
                 if slvname==name:
-                    slvval = slvval + ' ' + val                   # Prepend 'desired' options like nthreads
+                    slvval = slvval + ' ' + val                   # Prepend 'default' options like nthreads
                 else:
                     self._ampl.setOption(name, val)
         if self._optionsExtra:

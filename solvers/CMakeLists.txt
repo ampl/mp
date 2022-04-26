@@ -233,17 +233,17 @@ if (TARGET cplexdirect)
 endif()
 
 ## TODO Cannot use 'add_ampl_backend' because of the -direct name suffix
-add_ampl_solver(gurobidirect DLL_RUNTIME SHARED_LIB MODULE GUROBI
+add_ampl_solver(gurobi DLL_RUNTIME SHARED_LIB MODULE GUROBI
   gurobi-ampls-c-api.h
   gurobibackend.cc gurobibackend.h
   gurobimodelapi.cc gurobimodelapi.h
   gurobicommon.cc gurobicommon.h
   model-mgr-with-std-pb.cc
   LIBRARIES ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS})
-if (TARGET gurobidirect)
-  target_compile_definitions(gurobidirect PRIVATE main1=main)
+if (TARGET gurobi)
+  target_compile_definitions(gurobi PRIVATE main1=main)
   if(WIN32)
-    target_compile_options(amplgurobidirect-static PUBLIC /bigobj)
+    target_compile_options(amplgurobi-static PUBLIC /bigobj)
   endif()
 endif()
 
@@ -251,7 +251,7 @@ endif()
 add_ampl_solver(gurobi_ampls DLL_RUNTIME
   gurobi-ampls.c
   INCLUDE_DIRS ${include_dirs} ${MP_BASE_DIR}/solvers
-  LIBRARIES amplgurobidirect-static)
+  LIBRARIES amplgurobi-static)
 
 
 # Copy CPLEX DLL to the target directory.

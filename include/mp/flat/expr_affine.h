@@ -11,7 +11,6 @@
 namespace mp {
 
 /// Linear terms: c'x
-/// TODO use SSO
 class LinTerms {
 public:
   /// Name
@@ -96,12 +95,19 @@ public:
   /// TODO use hash map when sorting not needed?
   void sort_terms(bool force_sort=false);
 
+  /// Equality. Assumes being sorted
+  bool equals(const LinTerms& lt) const {
+    return coefs_==lt.coefs_ && vars_==lt.vars_;
+  }
+
 
 private:
   std::vector<double> coefs_;
   std::vector<int> vars_;
 };
 
+
+/// Affine expression: LinTerms + constant term
 class AffExp : public LinTerms {
 public:
   /// Default constructor
