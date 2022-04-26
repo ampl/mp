@@ -10,17 +10,31 @@ namespace mp {
 /// Quadratic terms
 class QuadTerms {
 public:
+  /// Default constructor
   QuadTerms() { }
-  QuadTerms(std::initializer_list
-            <std::tuple<double, int, int> > quad_terms) {
-    reserve(quad_terms.size());
-    for (const auto& term: quad_terms)
-      add_term(std::get<0>(term), std::get<1>(term), std::get<2>(term));
-    sort_terms();
+
+  /// Construct from 3 vectors
+  QuadTerms(std::vector<double> c,
+           std::vector<int> v1, std::vector<int> v2) noexcept
+    : coefs_(std::move(c)), vars1_(std::move(v1)), vars2_(std::move(v2))
+  { assert(check()); }
+
+  /// Validate
+  bool check() const {
+    return
+        coefs_.size()==vars1_.size() &&
+        coefs_.size()==vars2_.size() &&
+        (!size() || 0<=*std::min_element(vars1_.begin(), vars1_.end())) &&
+        (!size() || 0<=*std::min_element(vars2_.begin(), vars2_.end()));
   }
 
+  /// Empty?
   bool empty() const { return coefs_.empty(); }
+
+  /// Size
   size_t size() const { return coefs_.size(); }
+
+  /// Capacity
   size_t capacity() const { return coefs_.capacity(); }
 
   const double* pcoefs() const { return coefs_.data(); }
@@ -35,6 +49,14 @@ public:
   void set_coef(int i, double c) { coefs_[i] = c; }
   int var1(int i) const { return vars1_[i]; }
   int var2(int i) const { return vars2_[i]; }
+
+  /// Compute value given a dense vector of variable values
+  double ComputeValue(ArrayRef<double> x) const {
+    double s=0.0;
+    for (size_t i=coefs().size(); i--; )
+      s += coefs()[i] * x[vars1()[i]] * x[vars2()[i]];
+    return s;
+  }
 
   void add_term(double coef, int var1, int var2) {
     coefs_.push_back(coef);
@@ -75,10 +97,16 @@ public:
   /// Sort and eliminate duplicates
   void sort_terms();
 
+  /// Test equality
+  bool equals(const QuadTerms& qt) const {
+    return *this == qt;
+  }
+
   /// Testing API
   bool operator==(const QuadTerms& qt) const {
     return coefs_==qt.coefs_ && vars1_==qt.vars1_ && vars2_==qt.vars2_;
   }
+
 
 private:
   std::vector<double> coefs_;

@@ -194,32 +194,34 @@ protected:
       le.add_lin_exp(ee.GetAE());
     }
     auto compl_var = GetModel().GetComplementarityVariable(i)-1;  // -1
-    auto rng = (compl_var<0 ||             // no complementarity
+    /// The range
+    auto rng = (compl_var<0 ||                    // if no complementarity
                        std::isfinite(con.lb()) || // or one bound is finite
                        std::isfinite(con.ub())) ?
       AlgConRange{ con.lb() - ee.constant_term(), con.ub() - ee.constant_term() } :
       AlgConRange{ -ee.constant_term(), -ee.constant_term() };
       // storing the constant.
       // Actually in the latter case, both lb and ub are inf for the constraint.
-    auto lc = LinConRange{
-    { std::move(le.coefs()), std::move(le.vars()) }, rng };
-    lc.sort_terms();
-    pre::NodeRange nr;
+    le.sort_terms();
+    auto& qt = ee.GetQT();                        // quadratic terms, if any
+    qt.sort_terms();
+    pre::NodeRange nr;                            // presolve bridge
     if (ee.is_affine()) {
       if (compl_var<0)
-        nr = AddConstraint( std::move(lc) );
+        nr = AddConstraint( LinConRange{ std::move(le), rng } );
       else
         nr = AddConstraint(
-              ComplementarityLinRange{ std::move(lc), compl_var } );
+              ComplementarityLinRange{     // TODO store aff expr only
+                LinConRange{ std::move(le), rng }, compl_var } );
     } else {
-      auto qc = QuadConRange{
-          std::move(lc),
-          std::move(ee.GetQT())};                        // quadratic terms
       if (compl_var<0)
-        nr = AddConstraint( std::move(qc) );
+        nr = AddConstraint( QuadConRange{
+                              { std::move(le), std::move(qt) }, rng } );
       else
         nr = AddConstraint(
-              ComplementarityQuadRange{ std::move(qc), compl_var } );
+              ComplementarityQuadRange{
+                QuadConRange{
+                  { std::move(le), std::move(qt) }, rng }, compl_var } );
     }
     GetCopyBridge().AddEntry( {
             GetPresolver().GetSourceNodes().GetConValues()(0).Add(),

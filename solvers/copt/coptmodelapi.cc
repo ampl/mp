@@ -102,19 +102,20 @@ void CoptModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
 }
 
 void CoptModelAPI::AddConstraint(const QuadConRange& qc) {
+  const auto& lt = qc.GetLinTerms();
   const auto& qt = qc.GetQPTerms();
   if (qc.lb() == qc.ub())
-    COPT_CCALL(COPT_AddQConstr(lp(), qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
+    COPT_CCALL(COPT_AddQConstr(lp(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
       qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
       (double*)qt.pcoefs(), COPT_EQUAL, qc.lb(), NULL));
   else {            // Let solver deal with lb>~ub etc.
     if (qc.lb() > MinusInfinity()) {
-      COPT_CCALL(COPT_AddQConstr(lp(), qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
+      COPT_CCALL(COPT_AddQConstr(lp(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
         qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
         (double*)qt.pcoefs(), COPT_GREATER_EQUAL, qc.lb(), NULL));
     }
     if (qc.ub() < Infinity()) {
-      COPT_CCALL(COPT_AddQConstr(lp(), qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
+      COPT_CCALL(COPT_AddQConstr(lp(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
         qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
         (double*)qt.pcoefs(), COPT_LESS_EQUAL, qc.ub(), NULL));
     }

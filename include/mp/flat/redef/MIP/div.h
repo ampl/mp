@@ -25,9 +25,10 @@ public:
     auto r = dc.GetResultVar();
     const auto& args = dc.GetArguments();
     /// r = arg0 / arg1,    arg0 = arg1 * r;
-    GetMC().AddConstraint(QuadConRange(
-                            { {-1.0, args[0] } },
-                            { { 1.0, args[1], r} }, 0.0, 0.0 ));
+    auto lt = LinTerms{ {-1.0}, {args[0]} };
+    auto qt = QuadTerms{ { 1.0 }, {args[1]}, {r} };
+    auto qlt = QuadAndLinTerms{ std::move(lt), std::move(qt) };
+    GetMC().AddConstraint(QuadConRange( std::move(qlt), { 0.0, 0.0 } ));
     /// arg1 != 0 if need
     if (GetMC().lb(args[1])*GetMC().ub(args[1]) <= 0.0) {
       auto arg1is0 = GetMC().AssignResultVar2Args(// arg1is0 = (arg1==0)

@@ -8,6 +8,8 @@
 #include <cmath>
 #include <cassert>
 
+#include "mp/arrayref.h"
+
 namespace mp {
 
 /// Linear terms: c'x
@@ -15,13 +17,15 @@ class LinTerms {
 public:
   /// Name
   static std::string GetTypeName() { return "LinTerms"; }
+
   /// Default constructor
   LinTerms() = default;
+
   /// Construct from 2 vectors
-  template <class CV=std::vector<double>, class VV=std::vector<int> >
-  LinTerms(CV&& c, VV&& v) noexcept
-    : coefs_(std::forward<CV>(c)), vars_(std::forward<VV>(v))
+  LinTerms(std::vector<double> c, std::vector<int> v) noexcept
+    : coefs_(std::move(c)), vars_(std::move(v))
   { assert(check()); }
+
   /// Construct from 2 std::array's
   template <size_t N>
   LinTerms(std::array<double, N>& c, std::array<int, N>& v)
@@ -48,6 +52,14 @@ public:
   const double* pcoefs() const { return coefs_.data(); }
   /// Ptr to vars
   const int* pvars() const { return vars_.data(); }
+
+  /// Compute value given a dense vector of variable values
+  double ComputeValue(ArrayRef<double> x) const {
+    double s=0.0;
+    for (size_t i=coefs().size(); i--; )
+      s += coefs()[i] * x[vars()[i]];
+    return s;
+  }
 
   /// Set coef
   void set_coef(size_t i, double c)

@@ -12,7 +12,6 @@
 #include <cmath>
 
 #include "mp/error.h"
-#include "mp/arrayref.h"
 #include "mp/flat/constraint_base.h"
 #include "mp/flat/expr_quadratic.h"
 
@@ -53,10 +52,7 @@ public:
 
   /// Compute lower slack
   double ComputeLowerSlack(ArrayRef<double> x) const {
-    double s=0.0;
-    for (size_t i=LinTerms::coefs().size(); i--; )
-      s += LinTerms::coefs()[i] * x[LinTerms::vars()[i]];
-    return s - RhsOrRange::lb();
+    return Body::ComputeValue(x) - RhsOrRange::lb();
   }
 
   /// Sorting and merging terms, some solvers require
@@ -119,8 +115,11 @@ private:
   double rhs_;
 };
 
-/// Range linear constraint
+
+////////////////////////////////////////////////////////////////////////
+/// Linear range constraint
 using LinConRange = AlgebraicConstraint<LinTerms, AlgConRange>;
+
 /// Convenience typedef
 template <int sens>
 using LinConRhs = AlgebraicConstraint< LinTerms, AlgConRhs<sens> >;
@@ -141,47 +140,68 @@ AffExp ToLhsExpr(
 
 
 ////////////////////////////////////////////////////////////////////////
-/// Standard quadratic constraint
-/// TODO make range/rhs versions
-class QuadConRange : public LinConRange {
-  QuadTerms qt_;
+/// Quadratic and linear terms.
+/// Body of a quadratic constraint
+class QuadAndLinTerms :
+    protected LinTerms, protected QuadTerms {
 public:
-  static std::string GetTypeName() { return "QuadraticConstraint"; }
+  /// Name
+  static std::string GetTypeName() { return "QuadAndLinTerms"; }
 
-  /// Construct from a linear constraint and QP terms.
-  /// Always sort terms.
-  QuadConRange(LinConRange&& lc, QuadTerms&& qt) :
-    LinConRange(std::move(lc)), qt_(std::move(qt)) {
-    sort_qp_terms();         // LinearConstr sorts them itself
+  /// Construct from linear + QP terms
+  template <class LT, class QT>
+  QuadAndLinTerms(LT lt, QT qt) :
+    LinTerms(std::move(lt)), QuadTerms(std::move(qt)) {
+    sort_terms();
   }
 
-  /// Constructor for testing.
-  /// Always sort terms.
-  QuadConRange(std::initializer_list<std::pair<double, int>> lin_terms,
-                      std::initializer_list<std::tuple<double, int, int>> quad_terms,
-                      double lb, double ub) :
-    LinConRange({}, {lb, ub}), qt_(quad_terms) {
-    LinConRange::add_terms(lin_terms);
-    sort_qp_terms();
+  /// Get LinTerms
+  const LinTerms& GetLinTerms() const { return (const LinTerms&)(*this); }
+
+  /// Get QuadTerms
+  const QuadTerms& GetQPTerms() const { return (const QuadTerms&)(*this); }
+
+  /// Value at given variable vector
+  double ComputeValue(ArrayRef<double> x) const {
+    return LinTerms::ComputeValue(x) + QuadTerms::ComputeValue(x);
   }
 
-  const QuadTerms& GetQPTerms() const { return qt_; }
-
-  // To enable comparison. Also eliminates zeros
+  /// Sort terms
   void sort_terms() {
-    LinConRange::sort_terms();
-    sort_qp_terms();
+    LinTerms::sort_terms();
+    QuadTerms::sort_terms();
   }
 
-  void sort_qp_terms() {
-    qt_.sort_terms();
+  /// Negate
+  void negate() {
+    LinTerms::negate();
+    QuadTerms::negate();
   }
 
-  /// Testing API
-  bool operator==(const QuadConRange& qc) const {
-    return LinConRange::operator==(qc) && qt_==qc.qt_;
+  /// Test equality
+  bool equals(const QuadAndLinTerms& qlc) const {
+    return LinTerms::equals(qlc.GetLinTerms()) &&
+        QuadTerms::equals(qlc.GetQPTerms());
   }
+
+  /// Test equality
+  bool operator==(const QuadAndLinTerms& qlc) const { return equals(qlc); }
 };
+
+
+////////////////////////////////////////////////////////////////////////
+/// Quadratic range constraint
+using QuadConRange = AlgebraicConstraint<QuadAndLinTerms, AlgConRange>;
+
+/// Convenience typedef
+template <int sens>
+using QuadConRhs = AlgebraicConstraint< QuadAndLinTerms, AlgConRhs<sens> >;
+/// Quadratic constraint c'x <= d
+using QuadConLE = QuadConRhs<-1>;
+/// Quadratic constraint c'x == d
+using QuadConEQ = QuadConRhs< 0>;
+/// Quadratic constraint c'x >= d
+using QuadConGE = QuadConRhs< 1>;
 
 
 ////////////////////////////////////////////////////////////////////////

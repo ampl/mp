@@ -578,7 +578,7 @@ public:
   void PropagateResult(QuadConRange& con, double lb, double ub,
                        Context ctx) {
     internal::Unused(lb, ub, ctx);
-    PropagateResult2LinTerms(con,              // TODO sense dep. on bounds
+    PropagateResult2LinTerms(con.GetLinTerms(), // TODO sense dep. on bounds
                              this->MinusInfty(), this->Infty(), ctx);
     PropagateResult2QuadTerms(con.GetQPTerms(), // TODO bounds?
                               this->MinusInfty(), this->Infty(), ctx);
@@ -698,6 +698,12 @@ public:
   /// Specialize: propagate result into LinTerms
   void PropagateResult2Args(const LinTerms& lint, double lb, double ub, Context ctx) {
     PropagateResult2LinTerms(lint, lb, ub, ctx);
+  }
+
+  /// Specialize: propagate result into QuadAndLinTerms
+  void PropagateResult2Args(const QuadAndLinTerms& qlt, double lb, double ub, Context ctx) {
+    PropagateResult2LinTerms(qlt.GetLinTerms(), lb, ub, ctx);
+    PropagateResult2QuadTerms(qlt.GetQPTerms(), lb, ub, ctx);
   }
 
   /// Propagate result into LinTerms

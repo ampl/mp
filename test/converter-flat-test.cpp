@@ -30,10 +30,11 @@ TEST_F(InterfaceTester_QuadraticConstraint, QuadExprIsMultipliedOutAndInlined) {
                     INFINITY);
   GetInterface().ConvertModel();
   const auto xi = modeler.GetVarIndices(x);
+  auto lt = mp::LinTerms{ {10.0, 18.0, 1.0}, {xi[0], xi[1], xi[2]} };
+  auto qt = mp::QuadTerms{ {30.0}, {xi[0]}, {xi[1]} };
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::QuadConRange(
-  { {10.0, xi[0]}, {18.0, xi[1]}, {1.0, xi[2]} },
-    { {30.0, xi[0], xi[1]} },
-    -1.0, INFINITY ) );
+    { std::move(lt), std::move(qt) },
+    {-1.0, INFINITY} ) );
 }
 
 TEST_F(InterfaceTester_QuadraticConstraint, Pow2_isMultipliedOutAndInlined) {
@@ -45,10 +46,11 @@ TEST_F(InterfaceTester_QuadraticConstraint, Pow2_isMultipliedOutAndInlined) {
                     INFINITY);
   GetInterface().ConvertModel();
   const auto xi = modeler.GetVarIndices(x);
+  auto lt = mp::LinTerms{ {48, 12, 3.5}, {xi[0], xi[1], xi[2]} };
+  auto qt = mp::QuadTerms{ {64, 4, 32}, {xi[0], xi[1], xi[0]}, {xi[0], xi[1], xi[1]} };
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::QuadConRange(
-  { {48, xi[0]}, {12, xi[1]}, {3.5, xi[2]} },
-    { {64, xi[0], xi[0]}, {4, xi[1], xi[1]}, {32, xi[0], xi[1]} },
-    -4.0, INFINITY ) );
+    { std::move(lt), std::move(qt) },
+    {-4.0, INFINITY} ) );
 }
 
 
@@ -59,10 +61,10 @@ TEST_F(InterfaceTester_QuadraticConstraint, QuadConstraintIsPassedToBackend__Old
                                                GetModel().MakeVariable( args[0] ),
                                                GetModel().MakeVariable( args[1] ) ) );
   GetInterface().ConvertModel();
+  auto qt = mp::QuadTerms{ {1.0}, {args[0]}, {args[1]} };
   ASSERT_HAS_CONSTRAINT( GetBackend(), mp::QuadConRange(
-    {},
-    { {1.0, args[0], args[1]} },
-    5.0, 5.0 ) );
+                           { mp::LinTerms{}, std::move(qt) },
+    {5.0, 5.0} ) );
 }
 
 } // namespace
