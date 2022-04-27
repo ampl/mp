@@ -135,24 +135,45 @@ void VisitorModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
 void VisitorModelAPI::AddConstraint(const QuadConRange& qc) {
   fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
   /*
+  const auto& lt = qc.GetLinTerms();
   const auto& qt = qc.GetQPTerms();
-  if (qc.lb() == qc.ub())
-    VISITOR_CCALL(VISITOR_AddQConstr(lp(), qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-      qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-      (double*)qt.pcoefs(), VISITOR_EQUAL, qc.lb(), NULL));
-  else {            // Let solver deal with lb>~ub etc.
-    if (qc.lb() > MinusInfinity()) {
-      VISITOR_CCALL(VISITOR_AddQConstr(lp(), qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-        qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-        (double*)qt.pcoefs(), VISITOR_GREATER_EQUAL, qc.lb(), NULL));
-    }
-    if (qc.ub() < Infinity()) {
-      VISITOR_CCALL(VISITOR_AddQConstr(lp(), qc.size(), (int*)qc.pvars(), (double*)qc.pcoefs(),
-        qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-        (double*)qt.pcoefs(), VISITOR_LESS_EQUAL, qc.ub(), NULL));
-    }
-  }
+  GRB_CALL( GRBaddqrangeconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
+                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                          (double*)qt.pcoefs(), qc.lb(), qc.ub(), NULL) );
   */
+}
+
+void VisitorModelAPI::AddConstraint( const QuadConLE& qc ) {
+  fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
+  /*
+  const auto& lt = qc.GetLinTerms();
+  const auto& qt = qc.GetQPTerms();
+  GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
+                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                          (double*)qt.pcoefs(), GRB_LESS_EQUAL, qc.rhs(), NULL) );
+                          */
+}
+
+void VisitorModelAPI::AddConstraint( const QuadConEQ& qc ) {
+  fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
+  /*
+  const auto& lt = qc.GetLinTerms();
+  const auto& qt = qc.GetQPTerms();
+  GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
+                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                          (double*)qt.pcoefs(), GRB_EQUAL, qc.rhs(), NULL) );
+                          */
+}
+
+void VisitorModelAPI::AddConstraint( const QuadConGE& qc ) {
+  fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
+  /*
+  const auto& lt = qc.GetLinTerms();
+  const auto& qt = qc.GetQPTerms();
+  GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
+                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                          (double*)qt.pcoefs(), GRB_GREATER_EQUAL, qc.rhs(), NULL) );
+                          */
 }
 
 void VisitorModelAPI::AddConstraint(const SOS1Constraint& sos) {
