@@ -43,6 +43,10 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
 
+  /// Gurobi does not properly support range linear constraints.
+  /// Gurobi 9.5: GRBaddrangeconstr() creates a slack variable but
+  /// does not account for it in the basis information, etc.
+
   /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends
   /// and have an implementation.
   /// TODO Linear constraint attributes (lazy/user cut, etc)
@@ -53,8 +57,12 @@ public:
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
 
-  ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Quadratic)
-  void AddConstraint(const QuadConRange& qc);
+  ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Quadratic)
+  void AddConstraint(const QuadConLE& qc);
+  ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Quadratic)
+  void AddConstraint(const QuadConEQ& qc);
+  ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Quadratic)
+  void AddConstraint(const QuadConGE& qc);
 
   ACCEPT_CONSTRAINT(MaxConstraint, acc_max(), CG_General)
   void AddConstraint(const MaxConstraint& mc);

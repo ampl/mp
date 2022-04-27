@@ -62,7 +62,7 @@ void CoptModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo)
 
 void CoptModelAPI::AddConstraint(const LinConRange& lc) {
   COPT_CCALL(COPT_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(), 
-    NULL, lc.lb(), lc.ub(), NULL));
+    0, lc.lb(), lc.ub(), NULL));
 }
 
 void CoptModelAPI::AddConstraint(const LinConLE& lc) {
@@ -80,6 +80,32 @@ void CoptModelAPI::AddConstraint(const LinConGE& lc) {
   COPT_CCALL(COPT_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
     sense, lc.rhs(), 0, NULL));
 }
+
+void CoptModelAPI::AddConstraint(const QuadConLE& qc) {
+  const auto& lt = qc.GetLinTerms();
+  const auto& qt = qc.GetQPTerms();
+  COPT_CCALL(COPT_AddQConstr(lp(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
+                             qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                             (double*)qt.pcoefs(), COPT_LESS_EQUAL, qc.rhs(), NULL));
+}
+
+void CoptModelAPI::AddConstraint(const QuadConEQ& qc) {
+  const auto& lt = qc.GetLinTerms();
+  const auto& qt = qc.GetQPTerms();
+  COPT_CCALL(COPT_AddQConstr(lp(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
+                             qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                             (double*)qt.pcoefs(), COPT_EQUAL, qc.rhs(), NULL));
+}
+
+void CoptModelAPI::AddConstraint(const QuadConGE& qc) {
+  const auto& lt = qc.GetLinTerms();
+  const auto& qt = qc.GetQPTerms();
+  COPT_CCALL(COPT_AddQConstr(lp(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
+                             qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                             (double*)qt.pcoefs(), COPT_GREATER_EQUAL, qc.rhs(), NULL));
+}
+
+
 
 void CoptModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
   COPT_CCALL(COPT_AddIndicator(lp(),
@@ -99,28 +125,6 @@ void CoptModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
     ic.get_constraint().pcoefs(),
     COPT_EQUAL,
     ic.get_constraint().rhs()));
-}
-
-void CoptModelAPI::AddConstraint(const QuadConRange& qc) {
-  const auto& lt = qc.GetLinTerms();
-  const auto& qt = qc.GetQPTerms();
-  if (qc.lb() == qc.ub())
-    COPT_CCALL(COPT_AddQConstr(lp(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-      qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-      (double*)qt.pcoefs(), COPT_EQUAL, qc.lb(), NULL));
-  else {            // Let solver deal with lb>~ub etc.
-    if (qc.lb() > MinusInfinity()) {
-      COPT_CCALL(COPT_AddQConstr(lp(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-        qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-        (double*)qt.pcoefs(), COPT_GREATER_EQUAL, qc.lb(), NULL));
-    }
-    if (qc.ub() < Infinity()) {
-      COPT_CCALL(COPT_AddQConstr(lp(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-        qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-        (double*)qt.pcoefs(), COPT_LESS_EQUAL, qc.ub(), NULL));
-    }
-  }
-
 }
 
 void CoptModelAPI::AddConstraint(const SOS1Constraint& sos) {

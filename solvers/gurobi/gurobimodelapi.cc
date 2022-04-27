@@ -98,26 +98,30 @@ void GurobiModelAPI::AddConstraint( const LinConGE& lc ) {
                          GRB_GREATER_EQUAL, lc.rhs(), NULL) );
 }
 
-void GurobiModelAPI::AddConstraint( const QuadConRange& qc ) {
+void GurobiModelAPI::AddConstraint( const QuadConLE& qc ) {
   const auto& lt = qc.GetLinTerms();
   const auto& qt = qc.GetQPTerms();
-  if (qc.lb()==qc.ub())
-    GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-                            qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                            (double*)qt.pcoefs(), GRB_EQUAL, qc.lb(), NULL) );
-  else {            // Let solver deal with lb>~ub etc.
-    if (qc.lb()>MinusInfinity()) {
-      GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-                              qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                              (double*)qt.pcoefs(), GRB_GREATER_EQUAL, qc.lb(), NULL) );
-    }
-    if (qc.ub()<Infinity()) {
-      GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-                              qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                              (double*)qt.pcoefs(), GRB_LESS_EQUAL, qc.ub(), NULL) );
-    }
-  }
+  GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
+                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                          (double*)qt.pcoefs(), GRB_LESS_EQUAL, qc.rhs(), NULL) );
 }
+
+void GurobiModelAPI::AddConstraint( const QuadConEQ& qc ) {
+  const auto& lt = qc.GetLinTerms();
+  const auto& qt = qc.GetQPTerms();
+  GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
+                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                          (double*)qt.pcoefs(), GRB_EQUAL, qc.rhs(), NULL) );
+}
+
+void GurobiModelAPI::AddConstraint( const QuadConGE& qc ) {
+  const auto& lt = qc.GetLinTerms();
+  const auto& qt = qc.GetQPTerms();
+  GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
+                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+                          (double*)qt.pcoefs(), GRB_GREATER_EQUAL, qc.rhs(), NULL) );
+}
+
 
 void GurobiModelAPI::AddConstraint(const MaxConstraint &mc)  {
   const auto& args = mc.GetArguments();

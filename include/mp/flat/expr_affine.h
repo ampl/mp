@@ -74,12 +74,14 @@ public:
   /// Add linear term
   void add_term(double c, int v)
   { coefs_.push_back(c); vars_.push_back(v); }
+
   /// Add another LinTerms
   void add_lin_exp(const LinTerms& le) {
     reserve(size() + le.size());
     for (size_t i=0; i<le.size(); ++i)
       add_term(le.coefs_[i], le.vars_[i]);
   }
+
   /// Add terms from a vector of pairs {c, v}
   template <class Vec>
   void add_terms(const Vec& v2) {
@@ -87,11 +89,13 @@ public:
     for (const auto& term: v2)
       add_term(term.first, term.second);
   }
+
   /// Negate
   void negate() {
     for (auto& c: coefs_)
       c = -c;
   }
+
   /// Multiply by const
   void operator*=(double n) {
     for (auto& c: coefs_)

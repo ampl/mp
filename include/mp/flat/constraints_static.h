@@ -155,11 +155,23 @@ public:
     sort_terms();
   }
 
-  /// Get LinTerms
+  /// Get LinTerms, const
   const LinTerms& GetLinTerms() const { return (const LinTerms&)(*this); }
 
-  /// Get QuadTerms
+  /// Get QuadTerms, const
   const QuadTerms& GetQPTerms() const { return (const QuadTerms&)(*this); }
+
+  /// add_term(c, v)
+  using LinTerms::add_term;
+
+  /// add_term(c, v1, v2)
+  using QuadTerms::add_term;
+
+  /// Negate
+  void negate() {
+    LinTerms::negate();
+    QuadTerms::negate();
+  }
 
   /// Value at given variable vector
   double ComputeValue(ArrayRef<double> x) const {
@@ -170,12 +182,6 @@ public:
   void sort_terms() {
     LinTerms::sort_terms();
     QuadTerms::sort_terms();
-  }
-
-  /// Negate
-  void negate() {
-    LinTerms::negate();
-    QuadTerms::negate();
   }
 
   /// Test equality
@@ -191,16 +197,18 @@ public:
 
 ////////////////////////////////////////////////////////////////////////
 /// Quadratic range constraint
-using QuadConRange = AlgebraicConstraint<QuadAndLinTerms, AlgConRange>;
+using QuadConRange =
+    AlgebraicConstraint<QuadAndLinTerms, AlgConRange>;
 
 /// Convenience typedef
 template <int sens>
-using QuadConRhs = AlgebraicConstraint< QuadAndLinTerms, AlgConRhs<sens> >;
-/// Quadratic constraint c'x <= d
+using QuadConRhs =
+    AlgebraicConstraint< QuadAndLinTerms, AlgConRhs<sens> >;
+/// Quadratic constraint c'x+x'Qx <= d
 using QuadConLE = QuadConRhs<-1>;
-/// Quadratic constraint c'x == d
+/// Quadratic constraint c'x+x`Qx == d
 using QuadConEQ = QuadConRhs< 0>;
-/// Quadratic constraint c'x >= d
+/// Quadratic constraint c'x+x`Qx >= d
 using QuadConGE = QuadConRhs< 1>;
 
 

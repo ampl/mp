@@ -13,38 +13,40 @@ namespace mp {
 
 namespace pre {
 
-/// Presolve bridge between RangeLinCon and LinCon+Slack.
+/// Presolve bridge between RangeCon and Con(LE/EQ/GE)+Slack.
 /// TODO dependency inversion #164
 /// (FlatConverter needs just a BasicBridge*? Entry type?)
-template <class ModelConverter>
-class RangeLinearConstraint2Slack :
+template <class ModelConverter, class RangeCon>
+class RangeCon2Slack :
     public BasicStaticIndivEntryBridge<
-      RangeLinearConstraint2Slack<ModelConverter>, 3, 3> {
+      RangeCon2Slack<ModelConverter, RangeCon>, 3, 3> {
 public:
   /// Base class
   using Base = BasicStaticIndivEntryBridge<
-    RangeLinearConstraint2Slack<ModelConverter>, 3, 3>;
+    RangeCon2Slack<ModelConverter, RangeCon>, 3, 3>;
+
   /// Constructor
-  RangeLinearConstraint2Slack(ModelConverter& cvt,
+  RangeCon2Slack(ModelConverter& cvt,
                               const typename Base::NodeList& ndl) :
     Base(cvt.GetPresolver(), ndl), cvt_(cvt) { }
 
-  /// Define pre- / postsolve methods for individual bridge entries
+  /// Define pre- / postsolve methods for individual bridge entries.
   /// Typedef BridgeEntry is created in Base as std::array<int, 3>
   /// (3 is the base class template parameter)
   /// and means the following indexes: {range_con, lin_con, slack_index}
 
-  /// Presolve solution (primal + dual)
-  /// Duals: just copy
+  /// Presolve solution (primal + dual).
+  /// Duals: just copy.
   /// Primals: compute slack.
-  /// Slacks are probably only needed for Gurobi LP warmstart
-  /// Who does not need them, can use unpresolved primal solution
+  /// Slacks are probably only needed for Gurobi LP warmstart.
+  /// Who does not need them, can use unpresolved primal solution.
   void PresolveSolutionEntry(const typename Base::BridgeEntry& be) {
     SetDbl(be, 1, GetDbl(be, 0));
     const auto& orig_cons =
-        GetMC().template GetConstraint<LinConRange>(be[0]);
+        GetMC().template GetConstraint<RangeCon>(be[0]);
     SetDbl(be, 2, orig_cons.ComputeLowerSlack(GetNode(2)));
   }
+
   /// Postsolve solution (primal + dual)
   void PostsolveSolutionEntry(const typename Base::BridgeEntry& be) {
     SetDbl(be, 0, GetDbl(be, 1));
@@ -54,7 +56,7 @@ public:
   ///
   /// From a range constraint's basis status,
   /// transfer it to the slack.
-  /// Set the new constraint's status to 'equ'
+  /// Set the new constraint's status to 'equ'.
   void PresolveBasisEntry(const typename Base::BridgeEntry& be) {
     SetInt(be, 2, GetInt(be, 0));
     SetInt(be, 1, (int)BasicStatus::equ);
@@ -70,6 +72,7 @@ public:
   void PresolveIISEntry(const typename Base::BridgeEntry& ) {
     /// Should not need
   }
+
   /// Postsolve IIS
   ///
   /// Take slack's if set, otherwise the constraint's
@@ -84,6 +87,7 @@ public:
   void PresolveLazyUserCutFlagsEntry(const typename Base::BridgeEntry& be) {
     SetInt(be, 1, GetInt(be, 0));
   }
+
   void PostsolveLazyUserCutFlagsEntry(const typename Base::BridgeEntry& ) {
     /// Should not need
   }
@@ -102,12 +106,24 @@ private:
   ModelConverter& cvt_;
 };
 
+
+/// Typedef RangeLinCon2Slack
+template <class MC>
+using RangeLinCon2Slack = RangeCon2Slack<MC, LinConRange>;
+
+/// Typedef RangeQuadCon2Slack
+template <class MC>
+using RangeQuadCon2Slack = RangeCon2Slack<MC, QuadConRange>;
+
 } // namespace pre
 
 
-/// Converts proper range linear constraints to c'x-slack=ub,
-/// otherwise to c'x ? rhs.
-template <class ModelConverter>
+/// Converts proper range constraints to <body>+slack=ub,
+/// otherwise to <body> </=/> rhs.
+/// @param ModelConverter: the main converter class
+/// @param AlgConBody: The \a Body argument of the
+/// \a AlgebraicConstraint
+template <class ModelConverter, class AlgConBody>
 class RangeConstraintConverter :
     public BasicItemConverter<ModelConverter> {
 public:
@@ -116,7 +132,13 @@ public:
   /// Constructor
   RangeConstraintConverter(ModelConverter& mc) : Base(mc) { }
   /// Converted item type
-  using ItemType = LinConRange;
+  using ItemType = AlgebraicConstraint<AlgConBody, AlgConRange>;
+  /// Resulting constraint type: LE
+  using AlgConLE = AlgebraicConstraint< AlgConBody, AlgConRhs<-1> >;
+  /// Resulting constraint type: equality
+  using AlgConEQ = AlgebraicConstraint< AlgConBody, AlgConRhs<0> >;
+  /// Resulting constraint type: GE
+  using AlgConGE = AlgebraicConstraint< AlgConBody, AlgConRhs<1> >;
 
   /// Conversion
   ///
@@ -135,12 +157,13 @@ protected:
   using Base::GetMC;
   using RangeRelations = std::array<bool, 3>;
   RangeRelations Relate(double lb, double ub) {
-    return {lb<ub, lb>GetMC().MinusInfty(), ub<GetMC().Infty()};
+    return {lb!=ub, lb>GetMC().MinusInfty(), ub<GetMC().Infty()};
   }
   void ConvertRange(const ItemType& item, int i) {
     auto slk = GetMC().AddVar(0.0, item.ub()-item.lb());
-    LinConEQ lceq { {item.coefs(), item.vars()}, item.ub() };
-    lceq.add_term(1.0, slk);
+    auto body = item.GetBody();
+    body.add_term(1.0, slk);
+    AlgConEQ lceq { std::move(body), item.ub() };
     int i1 = GetMC().AddConstraint(std::move(lceq));
     GetSlackBridge().AddEntry({i, i1, slk});
   }
@@ -148,31 +171,42 @@ protected:
     pre::NodeRange nr;              // target node+index
     if (rr[1] && !rr[2]) {
       nr = GetMC().AddConstraint(
-              LinConGE( {item.coefs(), item.vars()}, item.lb() ) );
+              AlgConGE( item.GetBody(), item.lb() ) );
     } else if (!rr[1] && rr[2]) {
       nr = GetMC().AddConstraint(
-              LinConLE( {item.coefs(), item.vars()}, item.ub() ) );
+              AlgConLE( item.GetBody(), item.ub() ) );
     } else if (rr[1] && rr[2]) {
       assert(item.lb()>=item.ub()); // TODO have an option for eps tolerance
       nr = GetMC().AddConstraint(
-            LinConEQ( {item.coefs(), item.vars()},
+            AlgConEQ( item.GetBody(),
                       (item.lb()+item.ub()) / 2.0 ) );
     } // else, both are inf, forget
     GetMC().GetCopyBridge().AddEntry(
           { GET_CONSTRAINT_VALUE_NODE(ItemType).Select(i), nr });
   }
 
-  using SlackBridge = pre::RangeLinearConstraint2Slack<ModelConverter>;
+  using SlackBridge = pre::RangeLinCon2Slack<ModelConverter>;
   SlackBridge& GetSlackBridge() { return bridge_rng2slk_; }
 
 private:
   SlackBridge bridge_rng2slk_ {
     GetMC(), {
-          &GET_CONSTRAINT_VALUE_NODE(ItemType), // just some constraints for now
-          &GET_CONSTRAINT_VALUE_NODE(LinConEQ),
+          &GET_CONSTRAINT_VALUE_NODE(ItemType),
+          &GET_CONSTRAINT_VALUE_NODE(AlgConEQ),
           &this->GetMC().GetVarValueNode()
     } };
 };
+
+
+/// Typedef RangeLinearConstraintConverter
+template <class MC>
+using RangeLinearConstraintConverter =
+    RangeConstraintConverter<MC, LinTerms>;
+
+/// Typedef RangeQuadraticConstraintConverter
+template <class MC>
+using RangeQuadraticConstraintConverter =
+    RangeConstraintConverter<MC, QuadAndLinTerms>;
 
 } // namespace mp
 

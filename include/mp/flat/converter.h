@@ -1058,6 +1058,9 @@ protected:
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConGE)
 
   STORE_CONSTRAINT_TYPE__NO_MAP(QuadConRange)
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConLE)
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConEQ)
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConGE)
 
   /// TODO Use FunctionalConstraintConverter with LFC, QFC
   STORE_CONSTRAINT_TYPE__WITH_MAP(LinearFunctionalConstraint)
@@ -1149,8 +1152,10 @@ protected:
   /////////////////////// CONSTRAINT CONVERTERS /////////////////////////
   /// Constraint keepers and converters should be initialized after \a presolver_
 
-  /// Convert range constraints, if necessary
-  INSTALL_ITEM_CONVERTER(RangeConstraintConverter)
+  /// Convert linear range constraints, if not accepted by ModelAPI
+  INSTALL_ITEM_CONVERTER(RangeLinearConstraintConverter)
+  /// Convert quadratic range constraints, if necessary
+  INSTALL_ITEM_CONVERTER(RangeQuadraticConstraintConverter)
 
 public:
   /// Presolve bridge copying values between model items

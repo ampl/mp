@@ -35,8 +35,10 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
 
+  /// COPT prefers linear ranges
   ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Linear)
   void AddConstraint(const LinConRange& lc);
+
   /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends
   /// and have an implementation
   ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
@@ -45,13 +47,18 @@ public:
   void AddConstraint(const LinConEQ& lc);
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
+
+  ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Quadratic)
+  void AddConstraint(const QuadConLE& qc);
+  ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Quadratic)
+  void AddConstraint(const QuadConEQ& qc);
+  ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Quadratic)
+  void AddConstraint(const QuadConGE& qc);
+
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
-
-  ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Quadratic)
-  void AddConstraint(const QuadConRange& qc);
 
   ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS1Constraint& cc);
