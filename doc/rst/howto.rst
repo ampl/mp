@@ -14,8 +14,8 @@ Mock template driver 'visitor'
 
 The easiest way to getting started developing a new solver driver using
 `mp <https://github.com/ampl/mp>`_ is by
-looking at the `visitor <https://github.com/ampl/mp/tree/master/solvers/visitor>`_ mock 
-driver.
+looking at the `visitor <https://github.com/ampl/mp/tree/develop/solvers/visitor>`_ mock
+driver on branch ``develop``.
 
 To build it, you can configure the build system of your choice and specify
 the cmake variable `BUILD` appropriately::

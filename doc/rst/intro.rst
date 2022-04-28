@@ -7,9 +7,11 @@ What is MP library?
 -------------------
 
 MP Library is a set of solver drivers and tools recommended to create
-new AMPL solver drivers.
-It enables type-safe and flexible interfaces, and replaces the previous
+new AMPL solver drivers. It provides type-safe and flexible interfaces
+suitable for linear and mixed-integer, non-linear, and
+Constraint Programming solvers. MP replaces the previous
 `AMPL Solver Library`__ for solvers not requiring automatic differentiation.
+It is implemented in C++, parts of the API are exported in C.
 
 __ https://github.com/ampl/asl
 
@@ -17,8 +19,9 @@ __ https://github.com/ampl/asl
 Why MP library?
 ---------------
 
-MP library tries to provide efficient, simple-to-use and highly configurable solver drivers and tools.
-It is implemented in C++, parts of the API are exported in C.
+MP library aims to provide efficient, simple-to-use and highly
+configurable solver drivers and tools.
+For a typical MIP solver, a few days are enough to code a driver.
 
 
 Download and Installation
@@ -58,6 +61,7 @@ workflow starts as follows:
 
   git clone https://github.com/ampl/mp.git
   cd mp
+  git checkout develop               # For newest code (but possibly work-in-progress)
   git submodule init
   git submodule update
   mkdir build                        # Create a directory to hold the build output
@@ -161,7 +165,9 @@ FAQ
 Contributing
 ------------
 
-See :ref:`howto-create-new-driver`.
+Use the ``develop`` branch for new code.
+
+As an example workflow, see :ref:`howto-create-new-driver`.
 
 
 Troubleshooting

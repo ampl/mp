@@ -5,7 +5,9 @@ Modeling guide
 
 A guide to using the beta test release of
 `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_,
-the enhanced AMPL-Gurobi interface, and
+the enhanced
+`AMPL-Gurobi <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_
+interface, and
 `copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_, an interface
 to `Cardinal Optimizer <https://www.shanshu.ai/copt>`_.
 Both
@@ -88,7 +90,7 @@ Expressions supported
 
         ## implied atmost
         subj to VisitHosts {i in BOATS}:
-           isH[i] = 0 ==> atmost 0 {j in BOATS, t in TIMES} (H[j,t] = i);
+            isH[i] = 0 ==> atmost 0 {j in BOATS, t in TIMES} (H[j,t] = i);
 
 
 - QP expressions are multiplied out. Example:
@@ -120,6 +122,8 @@ General modeling hints
 
 For general modeling hints, refer to Guidelines for Numerical Issues
 and modeling webinars on the `Gurobi website <http://www.gurobi.com>`_;
+Practical Considerations for Integer Programming in the
+`AMPL Book <https://ampl.com/resources/the-ampl-book/>`_, and
 the MOSEK Modeling Cookbook at `www.mosek.com <https://www.mosek.com/>`_.
 
 For logical expressions, it proves best to supply tight bounds on

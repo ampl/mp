@@ -1,6 +1,17 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## unreleased
+- *Branch develop is used for new code*
+    The active development branch is now *develop*.
+
+- *Convert quadratic range constraints to QuadCon(LE/EQ/GE)*
+    Gurobi and COPT do not support quadratic range constraints.
+    (Gurobi's linear ranges are not feature-complete).
+    Conversion of linear range constraints into one-side rhs
+    constraints has been generalized for any algebraic ones.
+
+
 ## 20220408
 - *Complementarity constraints: 1st go*
     Conversion to MIP of complementarity constraints
@@ -17,8 +28,9 @@ Summary of recent updates to the AMPL MP Library
 
 - *Build on MacOS 12.3, in particular on Apple M1*
     Fixed linking on MacOS 12.3 and FindCPLEX.cmake.
-    For Apple M1, manually set -DCMAKE_OSX_ARCHITECTURES="x86_64" in CMake when building
-    with CPLEX 22.1 because it contains only Intel libraries.
+    For Apple M1, manually set -DCMAKE_OSX_ARCHITECTURES="x86_64"
+    in CMake when building with CPLEX 22.1 because
+    it contains only Intel libraries.
 
 - *Expression maps*
     FlatConverter eliminates subexpressions of all types.
@@ -30,6 +42,7 @@ Summary of recent updates to the AMPL MP Library
     C API allowing access to underlying solver API.
     Replaces the previous Solver C API (solver-c.cc).
     Toy driver `gurobi_ampls` exemplifies API usage.
+
 
 ## 20220216
 - *Improved warnings (#161, #163)*:
@@ -46,4 +59,3 @@ Summary of recent updates to the AMPL MP Library
     Although Gurobi states SOS weights should be unique, it accepts them repeated.
     This happens when AMPL linearizes a PL function with redundant (repeated) slopes.
     It seems better to use PL functions natively (*option pl_linearize 0;*).
- for all
