@@ -226,6 +226,8 @@ class AMPLRunner(object):
       return
 
     def setupOptions(self, model: Model):
+        if not self._solver: # useful for writeNL
+            return
         (slvname, slvval) = self._solver.getAMPLOptions()         # slvname = 'gurobi_options' e.g.
         if model.hasOptions():
             optmap = model.getOptions()
