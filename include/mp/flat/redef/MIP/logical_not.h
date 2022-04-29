@@ -1,5 +1,5 @@
-#ifndef NOT_H
-#define NOT_H
+#ifndef LOGICAL_NOT_H
+#define LOGICAL_NOT_H
 
 #include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constraints_std.h"
@@ -38,4 +38,4 @@ public:
 
 } // namespace mp
 
-#endif // NOT_H
+#endif // LOGICAL_NOT_H

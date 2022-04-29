@@ -1,5 +1,5 @@
-#ifndef OR_H
-#define OR_H
+#ifndef LOGICAL_OR_H
+#define LOGICAL_OR_H
 
 #include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constraints_std.h"
@@ -48,4 +48,4 @@ public:
 
 } // namespace mp
 
-#endif // OR_H
+#endif // LOGICAL_OR_H

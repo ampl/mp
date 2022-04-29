@@ -31,63 +31,6 @@ DEF_LOGICAL_FUNC_CONSTR( AndConstraint, VarArray,
 DEF_LOGICAL_FUNC_CONSTR( OrConstraint, VarArray,
                                    "r = exists({vi})");
 
-////////////////////////////////////////////////////////////////////////
-/// Storing AffExp instead of LinConEQ because big-M is straightforwardly
-/// computed for (aff_exp) <= 0:
-/// b -> ae<=0 is linearized as ae <= ub(ae)*(1-b) <==> le-d <= (ub(le)-d)*(1-b)
-/// <==> le <= d + ub(le) - d + (d-ub(le))*b
-/// If we stored LinConEQ:
-/// b -> lin_exp<=d would be linearized as
-/// le <= d + (ub(le)-d)*(1-b)  <==>
-/// le <= d + ub_le - d - ub_le*b + d*b  <==>
-/// le <= ub_le + (d-ub_le)*b.  Not too complex.
-/// Keep it with AffineExpr, indicators need that
-/// and we don't want quadratics with big-M's?
-/// TODO Diff to Indicator?
-DEF_LOGICAL_FUNC_CONSTR( EQ0Constraint, AffExp,
-                                   "r = (expr == 0)");
-
-/// Extract underlying constraint.
-/// TODO Can be done more general if using something like
-/// LOGICAL_FUNC_CONSTRAINT(LinConEQ) instead if EQ0C / LE0C
-inline LinConEQ ExtractConstraint(const EQ0Constraint& eq0c) {
-  const auto& ae=eq0c.GetArguments();
-  return { (LinTerms)ae, -ae.constant_term() };
-}
-
-/// Not using: var1 != var2.
-/// Represented by Not { Eq0Constraint... }
-////////////////////////////////////////////////////////////////////////
-DEF_LOGICAL_FUNC_CONSTR( NEConstraint__unused, VarArray2,
-                                   "r = (v1 != v2)");
-
-////////////////////////////////////////////////////////////////////////
-////// Keep it with AffineExpr, indicators need that
-/// and we don't want quadratics with big-M's?
-DEF_LOGICAL_FUNC_CONSTR( LE0Constraint, AffExp,
-                                   "r = (expr <= 0)");
-
-/// Extract underlying constraint.
-/// Can be done more general if using something like
-/// ConditionalConstraint<> instead if EQ0C / LE0C
-inline LinConLE ExtractConstraint(
-    const LE0Constraint& le0c, double ) {
-  const auto& ae=le0c.GetArguments();
-  return { (LinTerms)ae, -ae.constant_term() };
-}
-
-/// Strict inequality
-DEF_LOGICAL_FUNC_CONSTR( LT0Constraint, AffExp,
-                                   "r = (expr < 0)");
-
-/// Extract underlying constraint.
-/// Can be done more general if using something like
-/// ConditionalConstraint<> instead if EQ0C / LE0C
-inline LinConLE ExtractConstraint(
-    const LT0Constraint& le0c, double eps) {
-  const auto& ae=le0c.GetArguments();
-  return { (LinTerms)ae, -ae.constant_term()-eps };
-}
 
 ////////////////////////////////////////////////////////////////////////
 DEF_LOGICAL_FUNC_CONSTR( NotConstraint, VarArray1,
@@ -155,6 +98,47 @@ DEF_NUMERIC_FUNC_CONSTR( TanConstraint, VarArray1,
                                    "r = tan(v)");
 
 
+////////////////////////////////////////////////////////////////////////
+/// OLD: Storing AffExp instead of LinConEQ because big-M is straightforwardly
+/// computed for (aff_exp) <= 0:
+/// b -> ae<=0 is linearized as ae <= ub(ae)*(1-b) <==> le-d <= (ub(le)-d)*(1-b)
+/// <==> le <= d + ub(le) - d + (d-ub(le))*b
+/// If we stored LinConEQ:
+/// b -> lin_exp<=d would be linearized as
+/// le <= d + (ub(le)-d)*(1-b)  <==>
+/// le <= d + ub_le - d - ub_le*b + d*b  <==>
+/// le <= ub_le + (d-ub_le)*b.  Not too complex.
+/// Keep it with AffineExpr, indicators need that
+/// and we don't want quadratics with big-M's?
+/// TODO Diff to Indicator?
+
+/// Not using: var1 != var2.
+/// Represented by Not { Eq0Constraint... }
+////////////////////////////////////////////////////////////////////////
+// DEF_LOGICAL_FUNC_CONSTR( NEConstraint__unused, VarArray2,
+//                                   "r = (v1 != v2)");
+
+
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondLinConLT, LinConLT);
+
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondLinConLE, LinConLE);
+
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondLinConEQ, LinConEQ);
+
+
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConLT, QuadConLT);
+
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConLE, QuadConLE);
+
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConEQ, QuadConEQ);
+
+
 /// Where applicable, produces expr
 /// so that the constraint is equivalent to expr<=>0.0
 template <class Constraint>
@@ -166,7 +150,7 @@ int ToLhsExpr(const Constraint& ) {
 }
 
 
-/// TODO use macros too?
+/// TODO use macros for FLC / FQC too?
 
 ////////////////////////////////////////////////////////////////////////
 /// Linear Functional Constraint: r = affine_expr
@@ -234,6 +218,36 @@ public:
   }
 };
 
+
+////////////////////////////////////////////////////////////////////////
+/// AMPL represents PWL by a list of slopes
+/// and breakpoints between them, assuming (X0,Y0) is on the line
+class PLSlopes {
+  const std::vector<double> breakpoints_, slopes_;
+  const double X0_, Y0_;                        // some point on the PWL
+public:
+  template <class Vec>
+  PLSlopes(Vec&& bp, Vec&& sl, double x, double y) noexcept :
+    breakpoints_(std::forward<Vec>(bp)), slopes_(std::forward<Vec>(sl)),
+    X0_(x), Y0_(y) { assert(check()); }
+  const std::vector<double>& GetBP() const { return breakpoints_; }
+  const std::vector<double>& GetSlopes() const { return slopes_; }
+  double GetX0() const { return X0_; }
+  double GetY0() const { return Y0_; }
+  int GetNBP() const { return GetBP().size(); }
+  int GetNSlopes() const { return GetSlopes().size(); }
+  bool check() const { return GetNBP()>0 && GetNSlopes()==GetNBP()+1; }
+};
+
+
+/// Representing a PWL by points
+struct PLPoints {
+  std::vector<double> x_, y_;
+  PLPoints(const PLSlopes& pls);
+};
+
+DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( PLConstraint,
+                  VarArray1, PLSlopes, "r = piecewise_linear(x)");
 
 } // namespace mp
 

@@ -28,7 +28,7 @@ public:
     std::vector<int> flags(args.size()+1, nocc.GetResultVar());
     for (size_t ivar = 0; ivar < args.size(); ++ivar) {
       flags[ivar] = GetMC().AssignResultVar2Args(  // flag = (args[i]==k)
-            EQ0Constraint( { {{1.0}, {args[ivar]}}, -k } ) );
+            CondLinConEQ( { {{1.0}, {args[ivar]}}, k } ) );
     }
     coefs.back() = -1.0;
     GetMC().AddConstraint( LinConEQ( {coefs, flags}, {0.0} ) );

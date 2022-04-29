@@ -1,5 +1,5 @@
-#ifndef AND_H
-#define AND_H
+#ifndef LOGICAL_AND_H
+#define LOGICAL_AND_H
 
 #include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constraints_std.h"
@@ -49,4 +49,4 @@ public:
 
 } // namespace mp
 
-#endif // AND_H
+#endif // LOGICAL_AND_H

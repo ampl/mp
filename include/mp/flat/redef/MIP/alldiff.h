@@ -50,7 +50,7 @@ public:
     for (int v=lba; v!=uba+1; ++v) {            // for each value in the domain union
       for (size_t ivar = 0; ivar < args.size(); ++ivar) {
         flags[ivar] = GetMC().AssignResultVar2Args(
-              EQ0Constraint( { {{1.0}, {args[ivar]}}, -double(v) } ) );
+              CondLinConEQ( { {{1.0}, {args[ivar]}}, double(v) } ) );
       }
       GetMC().AddConstraint( LinConLE( {coefs, flags}, {rhs} ) );
     }

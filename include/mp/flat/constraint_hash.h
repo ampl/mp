@@ -13,10 +13,12 @@
 
 namespace std {
 
-/// Specialize std::hash<> for various expressions and constraints
-/// Remember we also need operator== for std::reference_wrapper<>
+/// Specialize std::hash<> for various expressions and constraints.
+/// Remember we also need operator== for [std::reference_wrapper<> of]
+/// the compared types. Operator=='s are class memebrs, or
+/// defined in ``constraint_keeper.h``.
 
-/// Specialize std::hash<> for CustomFunctionalConstraint<>
+/// Partially specialize std::hash<> for CustomFunctionalConstraint<>
 ///
 /// Assumes that std::hash<> is specialized
 /// for Arguments and Parameters
@@ -61,6 +63,55 @@ struct hash< std::vector<Element, Allocator> >
       const std::vector<Element, Allocator>& x) const
   {
     return mp::HashStreamer::HashArray(0, x);
+  }
+};
+
+
+/// Partially specialize std::hash<> for ConditionalConstraint<>
+///
+/// Assumes that std::hash<> is specialized
+/// for \a Con
+template <class Con>
+struct hash<
+    std::reference_wrapper< const
+      mp::ConditionalConstraint<Con> > >
+{
+  size_t operator()( std::reference_wrapper<
+        const mp::ConditionalConstraint<Con> > x) const
+  {
+    return std::hash<Con>{}(x.get().GetConstraint());
+  }
+};
+
+
+/// ... which happens here:
+/// Partially specialize std::hash<> for AlgebraicConstraint<>
+///
+/// Assumes that std::hash<> is specialized
+/// for \a Body and \a RangeOrRhs
+template <class Body, class RangeOrRhs>
+struct hash<
+      mp::AlgebraicConstraint<Body, RangeOrRhs> >
+{
+  size_t operator()(
+        const mp::AlgebraicConstraint<Body, RangeOrRhs>& x) const
+  {
+    mp::HashStreamer hs;
+    hs.Add(std::hash<Body>{}(x.GetBody()));
+    hs.Add(std::hash<RangeOrRhs>{}(x.GetRhsOrRange()));
+    return hs.FinalizeHashValue();
+  }
+};
+
+
+/// Partially specialize std::hash<> for mp::AlgConRhs<>
+template <int kind>
+struct hash< mp::AlgConRhs<kind> >
+{
+  size_t operator()(
+      mp::AlgConRhs<kind> x) const
+  {
+    return std::hash<double>{}(x.rhs());
   }
 };
 
@@ -121,6 +172,21 @@ struct hash< mp::QuadExp >
     mp::HashStreamer hs;
     hs.Add(std::hash<mp::AffExp>{}(qe.GetAE()));
     hs.Add(std::hash<mp::QuadTerms>{}(qe.GetQT()));
+    return hs.FinalizeHashValue();
+  }
+};
+
+
+/// Specialize std::hash<> for mp::QuadAndLinTerms
+template <>
+struct hash< mp::QuadAndLinTerms >
+{
+  size_t operator()(
+      const mp::QuadAndLinTerms& qe) const
+  {
+    mp::HashStreamer hs;
+    hs.Add(std::hash<mp::LinTerms>{}(qe.GetLinTerms()));
+    hs.Add(std::hash<mp::QuadTerms>{}(qe.GetQPTerms()));
     return hs.FinalizeHashValue();
   }
 };

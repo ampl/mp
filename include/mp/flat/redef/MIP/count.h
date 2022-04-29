@@ -32,7 +32,7 @@ public:
       /// Either reify !=0 or constrain to 0..1? TODO param? TODO warning?
       if ( !GetMC().is_binary_var(args[ivar]) ) {
         auto feq0 = GetMC().AssignResultVar2Args(   // feq0 = (args[i]==0)
-            EQ0Constraint( { {{1.0}, {args[ivar]}}, 0.0 } ) );
+            CondLinConEQ( { {{1.0}, {args[ivar]}}, 0.0 } ) );
         flags[ivar] = GetMC().AssignResultVar2Args(   // flag = (args[i]!=0)
             NotConstraint( {feq0} ));
       }

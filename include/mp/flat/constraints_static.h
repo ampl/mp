@@ -20,7 +20,7 @@ namespace mp {
 
 ////////////////////////////////////////////////////////////////////////
 /// Generic algebraic constraint
-/// @param Body: linear / higher-order terms
+/// @param Body: linear or linear and higher-order terms
 /// @param RhsOrRange: rhs or range
 template <class Body, class RhsOrRange>
 class AlgebraicConstraint :
@@ -28,11 +28,17 @@ class AlgebraicConstraint :
 public:
   static const std::string& GetTypeName() {
     static std::string name {
-      "AlgebraicConstraint:" +
+      std::string("AlgebraicConstraint:") +
       Body::GetTypeName() + "::" +
       RhsOrRange::GetTypeName() };
     return name;
   }
+
+  /// BodyType
+  using BodyType = Body;
+
+  /// RhsOrRangeType
+  using RhsOrRangeType = RhsOrRange;
 
   /// Constructor.
   /// By default (\a fSort = true), it sorts terms.
@@ -44,11 +50,20 @@ public:
     : Body(std::move(le)), RhsOrRange(std::move(rr))
   { if (fSort) sort_terms(); }
 
-  /// Body: linear or linear + higher-order terms
+  /// Body: linear or linear + higher-order terms, const
   const Body& GetBody() const { return (const Body&)(*this); }
+
+  /// Body: linear or linear + higher-order terms
+  Body& GetBody() { return (Body&)(*this); }
+
+  /// Range or RHS. Used for hash<>
+  RhsOrRange GetRhsOrRange() const { return (RhsOrRange)(*this); }
 
   /// Synonym, For PropagateResult()
   const Body& GetArguments() const { return GetBody(); }
+
+  /// If no variable terms in the body
+  bool empty() const { return Body::empty(); }
 
   /// Compute lower slack
   double ComputeLowerSlack(ArrayRef<double> x) const {
@@ -57,6 +72,9 @@ public:
 
   /// Sorting and merging terms, some solvers require
   void sort_terms() { Body::sort_terms(); }
+
+  /// Negate
+  void negate() { Body::negate(); RhsOrRange::negate(); }
 
   /// Testing API
   bool operator==(const AlgebraicConstraint& lc) const {
@@ -69,13 +87,15 @@ public:
 class AlgConRange {
 public:
   /// Class name
-  static std::string GetTypeName() { return "Range"; }
+  static constexpr const char* GetTypeName() { return "Range"; }
   /// Constructor
   AlgConRange(double l, double u) : lb_(l), ub_(u) { }
   /// range lb()
   double lb() const { return lb_; }
   /// range ub()
   double ub() const { return ub_; }
+  /// negate
+  void negate() { auto tmp=ub_; ub_=-lb_; lb_=-tmp; }
   /// operator==
   bool equals(const AlgConRange& r) const
   { return lb()==r.lb() && ub()==r.ub(); }
@@ -85,15 +105,15 @@ private:
 
 
 /// Algebraic constraint right-hand side (template parameter).
-/// Kind: -1/0/1 for <= / == / >=
+/// Kind: -2/-1/0/1 for <= / == / >=
 template <int kind_>
 class AlgConRhs {
   static constexpr const char* kind_str_[] =
-  { "LE", "EQ", "GE" };
+  { "LT", "LE", "EQ", "GE", "GT" };
 public:
   /// name
   static std::string GetTypeName()
-  { return std::string(kind_str_[kind_+1]) + "Rhs"; }
+  { return std::string("Rhs") + kind_str_[kind_+2]; }
   /// Constructor
   AlgConRhs(double r) : rhs_(r) { }
   /// Kind
@@ -108,6 +128,10 @@ public:
   double ub() const {
     return kind_>0 ? INFINITY : rhs();
   }
+  /// Set rhs
+  void set_rhs(double v) { rhs_ = v; }
+  /// negate
+  void negate() { rhs_ = -rhs_; }
   /// operator==
   bool equals(const AlgConRhs& r) const
   { return rhs()==r.rhs(); }
@@ -123,6 +147,8 @@ using LinConRange = AlgebraicConstraint<LinTerms, AlgConRange>;
 /// Convenience typedef
 template <int sens>
 using LinConRhs = AlgebraicConstraint< LinTerms, AlgConRhs<sens> >;
+/// Linear constraint c'x <  d
+using LinConLT = LinConRhs<-2>;
 /// Linear constraint c'x <= d
 using LinConLE = LinConRhs<-1>;
 /// Linear constraint c'x == d
@@ -146,7 +172,7 @@ class QuadAndLinTerms :
     protected LinTerms, protected QuadTerms {
 public:
   /// Name
-  static std::string GetTypeName() { return "QuadAndLinTerms"; }
+  static constexpr const char* GetTypeName() { return "QuadAndLinTerms"; }
 
   /// Construct from linear + QP terms
   template <class LT, class QT>
@@ -160,6 +186,9 @@ public:
 
   /// Get QuadTerms, const
   const QuadTerms& GetQPTerms() const { return (const QuadTerms&)(*this); }
+
+  /// empty()
+  bool empty() const { return GetLinTerms().empty() && GetQPTerms().empty(); }
 
   /// add_term(c, v)
   using LinTerms::add_term;
@@ -204,6 +233,8 @@ using QuadConRange =
 template <int sens>
 using QuadConRhs =
     AlgebraicConstraint< QuadAndLinTerms, AlgConRhs<sens> >;
+/// Quadratic constraint c'x+x'Qx <  d
+using QuadConLT = QuadConRhs<-2>;
 /// Quadratic constraint c'x+x'Qx <= d
 using QuadConLE = QuadConRhs<-1>;
 /// Quadratic constraint c'x+x`Qx == d
@@ -253,34 +284,11 @@ using IndicatorConstraintLinLE = IndicatorConstraint<LinConLE>;
 /// Typedef indicator<LinConEQ>
 using IndicatorConstraintLinEQ = IndicatorConstraint<LinConEQ>;
 
-////////////////////////////////////////////////////////////////////////
-/// AMPL represents PWL by a list of slopes
-/// and breakpoints between them, assuming (X0,Y0) is on the line
-class PLSlopes {
-  const std::vector<double> breakpoints_, slopes_;
-  const double X0_, Y0_;                        // some point on the PWL
-public:
-  template <class Vec>
-  PLSlopes(Vec&& bp, Vec&& sl, double x, double y) noexcept :
-    breakpoints_(std::forward<Vec>(bp)), slopes_(std::forward<Vec>(sl)),
-    X0_(x), Y0_(y) { assert(check()); }
-  const std::vector<double>& GetBP() const { return breakpoints_; }
-  const std::vector<double>& GetSlopes() const { return slopes_; }
-  double GetX0() const { return X0_; }
-  double GetY0() const { return Y0_; }
-  int GetNBP() const { return GetBP().size(); }
-  int GetNSlopes() const { return GetSlopes().size(); }
-  bool check() const { return GetNBP()>0 && GetNSlopes()==GetNBP()+1; }
-};
+/// Typedef indicator<QuadConLE>
+using IndicatorConstraintQuadLE = IndicatorConstraint<QuadConLE>;
 
-/// Representing a PWL by points
-struct PLPoints {
-  std::vector<double> x_, y_;
-  PLPoints(const PLSlopes& pls);
-};
-
-DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( PLConstraint,
-                  VarArray1, PLSlopes, "r = piecewise_linear(x)");
+/// Typedef indicator<QuadConEQ>
+using IndicatorConstraintQuadEQ = IndicatorConstraint<QuadConEQ>;
 
 
 ////////////////////////////////////////////////////////////////////////

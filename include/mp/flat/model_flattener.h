@@ -312,21 +312,31 @@ public:
                          EExpr{ EExpr::Constant{ vc.get_const() } };
   }
 
-  /// Generic relational expression visitor
-  /// Can produce a new variable/expression and specified constraints on it
-  /// Produces a conditional linear constraint b==1 <=/=> c'x <=/= d.
-  /// @param FuncConstraint: EQ0Constraint, LE0Constraint
-  /// @param ea: array of 2 expressions
-  template <class FuncConstraint, class ExprArray=std::initializer_list<Expr> >
+  /// Generic relational expression visitor.
+  /// Can produce a new variable/expression and specified constraints on it.
+  /// Produces a conditional linear/quadratic constraint
+  /// b==1 <=/=> c'x [+ x'Qx] <=/= d.
+  /// @param comp_kind: < (-2), <= (-1), == (0)
+  /// @param ea: array of 2 expressions (comparison arguments lhs, rhs)
+  template <int comp_kind, class ExprArray=std::initializer_list<Expr> >
   EExpr VisitRelationalExpression(ExprArray ea) {
     std::array<EExpr, 2> ee;
     Exprs2EExprs(ea, ee);
     ee[0].subtract(std::move(ee[1]));
-    auto ae = Convert2AffineExpr( std::move(ee[0]) );
-    ae.sort_terms();                                // to catch duplicates
-    return AssignResult2Args( FuncConstraint{ std::move(ae) } );
+    auto& lhs = ee[0];
+    lhs.sort_terms();                             // to catch duplicates
+    if (lhs.is_affine())                          // no QP terms
+      return AssignResult2Args(                   // add conditional linear constraint
+            ConditionalConstraint< LinConRhs<comp_kind> >
+            { { std::move(lhs.GetAE().get_lin_exp()),
+                -lhs.GetAE().constant_term() } } );
+    return AssignResult2Args(                     // add conditional quadratic constraint
+            ConditionalConstraint< QuadConRhs<comp_kind> >
+            { { { std::move(lhs.GetAE().get_lin_exp()), std::move(lhs.GetQT()) },
+                -lhs.GetAE().constant_term() } } );
   }
 
+  /// Convert array of Expr's to array of EExpr's
   template <class ExprArray, size_t N>
   void Exprs2EExprs(const ExprArray& ea, std::array<EExpr, N>& result) {
     assert(ea.size() == result.size());
@@ -354,7 +364,7 @@ public:
       common_exprs_.resize(index+1, -1);          // init by -1, "no variable"
     if (common_exprs_[index]<0) {                 // not yet converted
       auto ce = MP_DISPATCH( GetModel() ).common_expr(index);
-      EExpr eexpr(ToLinTerms(ce.linear_expr()));
+      EExpr eexpr( { ToLinTerms(ce.linear_expr()), 0.0 } );
       if (ce.nonlinear_expr())
         eexpr.add( Convert2EExpr(ce.nonlinear_expr()) );
       common_exprs_[index] = Convert2Var(std::move(eexpr));
@@ -415,7 +425,7 @@ public:
   }
 
   EExpr VisitEQ(RelationalExpr e) {
-    return VisitRelationalExpression<EQ0Constraint>({ e.lhs(), e.rhs() });
+    return VisitRelationalExpression<0>({ e.lhs(), e.rhs() });
   }
 
   EExpr VisitNE(RelationalExpr e) {
@@ -424,19 +434,19 @@ public:
   }
 
   EExpr VisitLE(RelationalExpr e) {
-    return VisitRelationalExpression<LE0Constraint>({ e.lhs(), e.rhs() });
+    return VisitRelationalExpression<-1>({ e.lhs(), e.rhs() });
   }
 
   EExpr VisitLT(RelationalExpr e) {
-    return VisitRelationalExpression<LT0Constraint>({ e.lhs(), e.rhs() });
+    return VisitRelationalExpression<-2>({ e.lhs(), e.rhs() });
   }
 
   EExpr VisitGE(RelationalExpr e) {
-    return VisitRelationalExpression<LE0Constraint>({ e.rhs(), e.lhs() });
+    return VisitRelationalExpression<-1>({ e.rhs(), e.lhs() });
   }
 
   EExpr VisitGT(RelationalExpr e) {
-    return VisitRelationalExpression<LT0Constraint>({ e.rhs(), e.lhs() });
+    return VisitRelationalExpression<-2>({ e.rhs(), e.lhs() });
   }
 
   EExpr VisitNot(NotExpr e) {
@@ -463,7 +473,7 @@ public:
   }
 
   EExpr VisitIff(BinaryLogicalExpr e) {
-    return VisitRelationalExpression<EQ0Constraint>({ e.lhs(), e.rhs() });
+    return VisitRelationalExpression<0>({ e.lhs(), e.rhs() });
   }
 
   EExpr VisitAllDiff(PairwiseExpr e) {

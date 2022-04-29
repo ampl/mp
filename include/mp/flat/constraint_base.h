@@ -3,8 +3,10 @@
 
 #include <array>
 #include <vector>
+#include <string>
 #include <cmath>
 #include <utility>
+#include <typeinfo>
 
 #include "mp/flat/context.h"
 
@@ -91,7 +93,7 @@ class CustomFunctionalConstraint :
 
 public:
   /// Constraint name for messages
-  static constexpr const char* GetTypeName() { return Id::name_; }
+  static const char* GetTypeName() { return Id::name(); }
   /// Default constructor
   CustomFunctionalConstraint() = default;
   /// Arguments typedef
@@ -127,7 +129,7 @@ public:
 
 /// A base class for numerical functional constraint.
 /// It provides default properties of such a constraint
-class NumericFunctionalConstraint {
+class NumericFunctionalConstraintTraits {
 public:
   /// Whether the constraint is logical
   static constexpr bool IsLogical() { return false; }
@@ -139,7 +141,7 @@ public:
 
 /// A base class for logical functional constraint.
 /// It provides default properties of such a constraint
-class LogicalFunctionalConstraint {
+class LogicalFunctionalConstraintTraits {
 public:
   /// Whether the constraint is logical
   static constexpr bool IsLogical() { return true; }
@@ -149,15 +151,79 @@ public:
 };
 
 
+/// Helper, conditional constraint Id
+template <class Con>
+struct CondConId {
+  static const char* description() {
+    static std::string descr =
+      std::string("Conditional wrapper for constraint type ") +
+      typeid(Con).name();
+    return descr.c_str();
+  }
+  static const char* name() {
+    static std::string nm =
+      std::string("Conditional< ") +
+      typeid(Con).name() + " >";
+    return nm.c_str();
+  }
+};
+
+
+/// A wrapper on a static constraint \a Con making it conditional
+template <class Con>
+class ConditionalConstraint :
+    public CustomFunctionalConstraint<
+    Con,
+    ParamArray0,
+    LogicalFunctionalConstraintTraits,
+    CondConId<Con> > {
+public:
+  /// ConType
+  using ConType = Con;
+
+  /// Arguments
+  using Arguments = ConType;
+
+  /// Base class
+  using Base = CustomFunctionalConstraint<
+    Con, ParamArray0, LogicalFunctionalConstraintTraits, CondConId<Con> >;
+
+  /// Default constructor
+  ConditionalConstraint() = default;
+
+  /// Construct from arguments only
+  ConditionalConstraint(Arguments args) noexcept :
+    Base(std::move(args)) { }
+
+  /// Construct from resvar and arguments
+  ConditionalConstraint(int varr, Arguments args) noexcept :
+     Base(varr, std::move(args)) { }
+
+  /// Get the wrapped constraint, const
+  const ConType& GetConstraint() const { return Base::GetArguments(); }
+
+  /// Get the wrapped constraint
+  ConType& GetConstraint() { return Base::GetArguments(); }
+
+  /// Reuse GetResultVar()
+  using Base::GetResultVar;
+
+  /// Equality
+  bool operator==(const ConditionalConstraint& cc) const {
+    return GetConstraint()==cc.GetConstraint();
+  }
+
+};
+
 ////////////////////////////////////////////////////////////////////////
 /// Args is the argument type, e.g., array of variables, or an expression
 /// Params is the parameter type, e.g., array of numbers. Can be empty
 #define DEF_CUSTOM_FUNC_CONSTR_WITH_PRM(Name, Args, Params, NumLogic, Descr) \
-struct Name ## Id { \
-  static constexpr auto description_ = Descr; \
-  static constexpr auto name_        = #Name; \
-}; \
-using Name = CustomFunctionalConstraint<Args, Params, NumLogic, Name ## Id>
+  struct Name ## Id { \
+    static constexpr const char* description() { return Descr; } \
+    static constexpr const char* name()        { return #Name; } \
+  }; \
+  using Name = CustomFunctionalConstraint<Args, Params, NumLogic, Name ## Id>
 
 /// Custom numeric constraint without fixed parameters
 #define DEF_NUMERIC_FUNC_CONSTR(Name, Args, Descr) \
@@ -169,11 +235,15 @@ using Name = CustomFunctionalConstraint<Args, Params, NumLogic, Name ## Id>
 /// Custom numeric constraint with parameter data
 #define DEF_NUMERIC_FUNC_CONSTR_WITH_PRM(Name, Args, Params, Descr) \
   DEF_CUSTOM_FUNC_CONSTR_WITH_PRM(Name, Args, Params, \
-    NumericFunctionalConstraint, Descr)
+    NumericFunctionalConstraintTraits, Descr)
 /// Custom logical constraint with parameter data
 #define DEF_LOGICAL_FUNC_CONSTR_WITH_PRM(Name, Args, Params, Descr) \
   DEF_CUSTOM_FUNC_CONSTR_WITH_PRM(Name, Args, Params, \
-    NumericFunctionalConstraint, Descr)
+    LogicalFunctionalConstraintTraits, Descr)
+
+/// A wrapper on a static constraint making it conditional
+#define DEF_CONDITIONAL_CONSTRAINT_WRAPPER(Name, StaticConName) \
+  using Name = ConditionalConstraint< StaticConName >
 
 } // namespace mp
 

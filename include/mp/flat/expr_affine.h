@@ -16,7 +16,7 @@ namespace mp {
 class LinTerms {
 public:
   /// Name
-  static std::string GetTypeName() { return "LinTerms"; }
+  static constexpr const char* GetTypeName() { return "LinTerms"; }
 
   /// Default constructor
   LinTerms() = default;
@@ -38,6 +38,8 @@ public:
         (!size() || 0<=*std::min_element(vars_.begin(), vars_.end()));
   }
 
+  /// empty()
+  bool empty() const { return coefs_.empty(); }
   /// size()
   size_t size() const { return coefs_.size(); }
   /// coef[i]
@@ -116,6 +118,11 @@ public:
     return coefs_==lt.coefs_ && vars_==lt.vars_;
   }
 
+  /// operator== for hashing and testing
+  bool operator==(const LinTerms& lt) const {
+    return equals(lt);
+  }
+
 
 private:
   std::vector<double> coefs_;
@@ -128,8 +135,8 @@ class AffExp : public LinTerms {
 public:
   /// Default constructor
   AffExp() = default;
-  /// From LinTerms&&
-  AffExp(LinTerms ae, double ct=0.0) noexcept :
+  /// From LinTerms&& and const_term
+  AffExp(LinTerms ae, double ct) noexcept :
     LinTerms(std::move(ae)), constant_term_(ct) { }
   /// From const AE&
   AffExp(const AffExp& ae) = default;
@@ -168,8 +175,8 @@ public:
 
   /// Get the lin exp, const
   const LinTerms& get_lin_exp() const { return (const LinTerms&)(*this); }
-  /// Move out the lin exp
-  LinTerms move_lin_exp() { return (LinTerms&&)(*this); }
+  /// Get the lin exp
+  LinTerms& get_lin_exp() { return (LinTerms&)(*this); }
 
   /// The constant term
   double constant_term() const { return constant_term_; }

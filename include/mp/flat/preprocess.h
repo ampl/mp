@@ -14,14 +14,13 @@ template <class Num>
 bool is_integer(Num n) { return std::floor(n)==std::ceil(n); }
 
 /// Information about initial preprocessing of a constraint:
-/// bounds, result type, linexp_type (only used for linexp),
+/// bounds, result var type,
 /// result_var if known
 template <class FuncConstraint>
 struct PreprocessInfo {
   double lb_=-std::numeric_limits<double>::max(),
     ub_=std::numeric_limits<double>::max();
-  var::Type type_=var::CONTINUOUS,
-     linexp_type_=var::CONTINUOUS;
+  var::Type type_=var::CONTINUOUS;
   int result_var_ = -1;
 
   PreprocessInfo() { }

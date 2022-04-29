@@ -422,7 +422,8 @@ template <class Constraint>
 using ConstraintMap = std::unordered_map<
     std::reference_wrapper< const Constraint >, int >;
 
-/// Subexpression map requires operator==(refwrap, refwrap)
+/// Subexpression maps for an expression require
+/// operator==(refwrap<expr>, refwrap<expr>).
 ///
 /// The below one is for CustomFunctionalConstraint<>
 template <class Args, class Params, class NumOrLogic, class Id>
@@ -432,6 +433,15 @@ bool operator==(std::reference_wrapper<
                   const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id> > c2) {
   return c1.get().GetArguments() == c2.get().GetArguments() &&
       c1.get().GetParameters() == c2.get().GetParameters();
+}
+
+/// operator==(refwrap<ConditionalConstraint<> >)
+template <class Con>
+bool operator==(std::reference_wrapper<
+                  const ConditionalConstraint<Con> > c1,
+                std::reference_wrapper<
+                  const ConditionalConstraint<Con> > c2) {
+  return c1.get().GetConstraint() == c2.get().GetConstraint();
 }
 
 /// operator==(AffExp, AffExp)
@@ -447,6 +457,7 @@ bool operator==(const QuadExp& qe1, const QuadExp& qe2) {
       qe1.GetQT()==qe2.GetQT();
 }
 
+/// operator==(LFC)
 bool operator==(std::reference_wrapper<
                   const LinearFunctionalConstraint > c1,
                 std::reference_wrapper<
@@ -454,6 +465,7 @@ bool operator==(std::reference_wrapper<
   return c1.get().GetAffineExpr() == c2.get().GetAffineExpr();
 }
 
+/// operator==(QFC)
 bool operator==(std::reference_wrapper<
                   const QuadraticFunctionalConstraint > c1,
                 std::reference_wrapper<

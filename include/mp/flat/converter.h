@@ -102,21 +102,15 @@ public:
         QuadraticFunctionalConstraint(std::move(ee)));
   }
 
-  PreprocessInfoStd ComputeBoundsAndType(const QuadExp& ee) {
-    auto bntAE = ComputeBoundsAndType(ee.GetAE());
-    auto bntQT = ComputeBoundsAndType(ee.GetQT());
-    return AddBoundsAndType(bntAE, bntQT);
-  }
-
-  PreprocessInfoStd ComputeBoundsAndType(const AffExp& ae) {
+  /// ComputeBoundsAndType(LinTerms)
+  PreprocessInfoStd ComputeBoundsAndType(const LinTerms& lt) {
     PreprocessInfoStd result;
-    result.lb_ = result.ub_ = ae.constant_term();    // TODO reuse bounds if supplied
-    result.type_ = is_integer(result.lb_) ? var::INTEGER : var::CONTINUOUS;
-    result.linexp_type_ = var::INTEGER;
+    result.lb_ = result.ub_ = 0.0;    // TODO reuse bounds if supplied
+    result.type_ = var::INTEGER;
     auto& model = MP_DISPATCH( GetModel() );
-    for (auto i=ae.size(); i--; ) {
-      auto v = ae.var(i);
-      auto c = ae.coef(i);
+    for (auto i=lt.size(); i--; ) {
+      auto v = lt.var(i);
+      auto c = lt.coef(i);
       if (c >= 0.0) {
         result.lb_ += c * model.lb(v);
         result.ub_ += c * model.ub(v);
@@ -126,17 +120,26 @@ public:
       }
       if (var::INTEGER!=model.var_type(v) || !is_integer(c)) {
         result.type_=var::CONTINUOUS;
-        result.linexp_type_=var::CONTINUOUS;
       }
     }
     return result;
   }
 
+  /// ComputeBoundsAndType(AffExp)
+  PreprocessInfoStd ComputeBoundsAndType(const AffExp& ae) {
+    PreprocessInfoStd result = ComputeBoundsAndType(ae.get_lin_exp());
+    result.lb_ += ae.constant_term();    // TODO reuse bounds if supplied
+    result.ub_ += ae.constant_term();
+    if (!is_integer(ae.constant_term()))
+      result.type_ = var::CONTINUOUS;
+    return result;
+  }
+
+  /// ComputeBoundsAndType(QuadTerms)
   PreprocessInfoStd ComputeBoundsAndType(const QuadTerms& qt) {
     PreprocessInfoStd result;
     result.lb_ = result.ub_ = 0.0;
     result.type_ = var::INTEGER;
-    result.linexp_type_ = var::INTEGER;
     auto& model = MP_DISPATCH( GetModel() );
     for (auto i=qt.size(); i--; ) {
       auto coef = qt.coef(i);
@@ -154,12 +157,27 @@ public:
           var::INTEGER!=model.var_type(v2) ||
           !is_integer(coef)) {
         result.type_=var::CONTINUOUS;
-        result.linexp_type_=var::CONTINUOUS;
       }
     }
     return result;
   }
 
+  /// ComputeBoundsAndType(QuadAndLinearTerms)
+  PreprocessInfoStd ComputeBoundsAndType(const QuadAndLinTerms& qlt) {
+    auto bntLT = ComputeBoundsAndType(qlt.GetLinTerms());
+    auto bntQT = ComputeBoundsAndType(qlt.GetQPTerms());
+    return AddBoundsAndType(bntLT, bntQT);
+  }
+
+  /// ComputeBoundsAndType(QuadExp)
+  PreprocessInfoStd ComputeBoundsAndType(const QuadExp& ee) {
+    auto bntAE = ComputeBoundsAndType(ee.GetAE());
+    auto bntQT = ComputeBoundsAndType(ee.GetQT());
+    return AddBoundsAndType(bntAE, bntQT);
+  }
+
+
+  /// Product bounds
   template <class Var>
   std::pair<double, double> ProductBounds(Var x, Var y) const {
     auto lx=lb(x), ly=lb(y), ux=ub(x), uy=ub(y);
@@ -168,6 +186,7 @@ public:
           *std::max_element(pb.begin(), pb.end()) };
   }
 
+  /// Add / merge bounds and type
   PreprocessInfoStd AddBoundsAndType(const PreprocessInfoStd& bnt1,
                                      const PreprocessInfoStd& bnt2) {
     return {bnt1.lb()+bnt2.lb(), bnt1.ub()+bnt2.ub(),
@@ -314,9 +333,10 @@ protected:
     prepro.set_result_type( var_type(argvar) );
   }
 
+  /// Preprocess CondLinConEQ
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      EQ0Constraint& c, PreprocessInfo& prepro) {
+      CondLinConEQ& c, PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
     if (0!=CanPreprocess( options_.preprocessEqualityResultBounds_ ))
@@ -328,29 +348,39 @@ protected:
         return;
   }
 
+  /// Preprocess CondQuadConEQ
   template <class PreprocessInfo>
+  void PreprocessConstraint(
+      CondQuadConEQ& c, PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+    if (0!=CanPreprocess( options_.preprocessEqualityResultBounds_ ))
+      if (FixEqualityResult(c, prepro))
+        return;
+  }
+
+  /// Try and fix conditional equality result
+  /// @return true if success
+  template <class PreprocessInfo, class CondAlgCon>
   bool FixEqualityResult(
-      EQ0Constraint& c, PreprocessInfo& prepro) {
-    AffExp& ae = c.GetArguments();
-    if (ae.is_constant()) {               // const==0
-      auto res = (double)int(0.0==ae.constant_term());
-      /// TODO this depends on context???
-      prepro.narrow_result_bounds(res, res);
-      return true;
-    }
-    auto bndsNType = ComputeBoundsAndType(ae);
-    if (bndsNType.lb() > 0.0 || bndsNType.ub() < 0.0) {
+      CondAlgCon& c, PreprocessInfo& prepro) {
+    const auto& con = c.GetConstraint();
+    const auto& body = con.GetBody();
+    const auto rhs = con.rhs();
+    // TODO expr is empty. Possible?
+    auto bndsNType = ComputeBoundsAndType(body);
+    if (bndsNType.lb() > rhs || bndsNType.ub() < rhs) {
       /// TODO this depends on context???
       prepro.narrow_result_bounds(0.0, 0.0);
       return true;
     }
-    if (bndsNType.lb()==0.0 && bndsNType.ub()==0.0) {
+    if (bndsNType.lb()==rhs && bndsNType.ub()==rhs) {
       /// TODO this depends on context???
       prepro.narrow_result_bounds(1.0, 1.0);
       return true;
     }
-    if (var::INTEGER==bndsNType.linexp_type_ &&
-        !is_integer(ae.constant_term())) {
+    if (var::INTEGER==bndsNType.type_ &&
+        !is_integer(con.rhs())) {
       /// TODO this depends on context???
       prepro.narrow_result_bounds(0.0, 0.0);
       return true;
@@ -358,31 +388,36 @@ protected:
     return false;
   }
 
-  static void PreprocessEqVarConst__unifyCoef(EQ0Constraint& c) {
-    AffExp& ae = c.GetArguments();
-    if (1==ae.size()) {
-      const double c = ae.coef(0);
-      if (1.0!=c) {
-        assert(0.0!=std::fabs(c));
-        ae.constant_term(ae.constant_term() / c);
-        ae.set_coef(0, 1.0);
+  /// Normalize conditional equality coef * var == const
+  static void PreprocessEqVarConst__unifyCoef(CondLinConEQ& c) {
+    auto& con = c.GetConstraint();
+    auto& body = con.GetBody();
+    if (1==body.size()) {
+      const double coef = body.coef(0);
+      if (1.0!=coef) {
+        assert(0.0!=std::fabs(coef));
+        con.set_rhs(con.rhs() / coef);
+        body.set_coef(0, 1.0);
       }
     }
   }
 
+  /// Simplify conditional equality bin_var==0/1
+  /// by reusing bin_var or its complement
   template <class PreprocessInfo>
   bool ReuseEqualityBinaryVar(
-      EQ0Constraint& c, PreprocessInfo& prepro) {
+      CondLinConEQ& c, PreprocessInfo& prepro) {
     auto& m = MP_DISPATCH( GetModel() );
-    AffExp& ae = c.GetArguments();
-    if (1==ae.size()) {                           // var==const
-      assert( 1.0==ae.coef(0) );
-      int var = ae.var(0);
+    const auto& con = c.GetConstraint();
+    const auto& body = con.GetBody();
+    if (1==body.size()) {                           // var==const
+      assert( 1.0==body.coef(0) );                  // is normalized
+      int var = body.var(0);
       if (m.is_binary_var(var)) {            // See if this is binary var==const
-        const double rhs = -ae.constant_term();
+        const double rhs = con.rhs();
         if (1.0==rhs)
-          prepro.set_result_var( var );
-        else if (0.0==rhs)
+          prepro.set_result_var( var );      // TODO need to know var is a result var?
+        else if (0.0==std::fabs(rhs))
           prepro.set_result_var( MakeComplementVar(var) );
         else
           prepro.narrow_result_bounds(0.0, 0.0);    // not 0/1 value, result false
@@ -394,14 +429,28 @@ protected:
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      LE0Constraint& , PreprocessInfo& prepro) {
+      CondLinConLE& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
   }
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      LT0Constraint& , PreprocessInfo& prepro) {
+      CondQuadConLE& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      CondLinConLT& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0);
+    prepro.set_result_type( var::INTEGER );
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      CondQuadConLT& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
   }
@@ -584,18 +633,19 @@ public:
                               this->MinusInfty(), this->Infty(), ctx);
   }
 
-  template <int sens>
-  void PropagateResult(IndicatorConstraint< LinConRhs<sens> >& con,
+  template <class Body, int sens>
+  void PropagateResult(IndicatorConstraint<
+                         AlgebraicConstraint< Body, AlgConRhs<sens> > >& con,
                        double lb, double ub, Context ctx) {
     internal::Unused(lb, ub, ctx);
     PropagateResultOfInitExpr(con.get_binary_var(),
                               this->MinusInfty(), this->Infty(),
                               1==con.get_binary_value() ?  // b==1 means b in CTX_NEG
                                 Context::CTX_NEG : Context::CTX_POS);
-    PropagateResult2LinTerms(con.get_constraint(),
+    PropagateResult2Args(con.get_constraint().GetBody(),   // Assume Con::BodyType is handled
                              this->MinusInfty(), this->Infty(),
                              0==sens ? Context::CTX_MIX :
-                                       1==sens ? +ctx : -ctx);
+                                       0<sens ? +ctx : -ctx);
   }
 
   template <int type>
@@ -668,40 +718,71 @@ public:
                          Context::CTX_MIX);
   }
 
-  void PropagateResult(LE0Constraint& con, double lb, double ub, Context ctx) {
+  void PropagateResult(CondLinConEQ& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    PropagateResult2LinTerms(con.GetArguments(), lb, ub, -ctx);
+    PropagateResult2LinTerms(con.GetConstraint().GetBody(),
+                         lb, ub, Context::CTX_MIX);
   }
 
-  void PropagateResult(LT0Constraint& con, double lb, double ub, Context ctx) {
+  void PropagateResult(CondQuadConEQ& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    PropagateResult2LinTerms(con.GetArguments(), lb, ub, -ctx);
+    PropagateResult2QuadAndLinTerms(con.GetConstraint().GetBody(),
+                         lb, ub, Context::CTX_MIX);
   }
 
-  void PropagateResult(EQ0Constraint& con, double lb, double ub, Context ctx) {
+  void PropagateResult(CondLinConLE& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    PropagateResult2Vars(con.GetArguments().vars(), this->MinusInfty(), this->Infty(),
-                         Context::CTX_MIX);
+    PropagateResult2LinTerms(con.GetConstraint().GetBody(), lb, ub, -ctx);
   }
+
+  void PropagateResult(CondQuadConLE& con, double lb, double ub, Context ctx) {
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
+    con.AddContext(ctx);
+    PropagateResult2QuadAndLinTerms(
+          con.GetConstraint().GetBody(), lb, ub, -ctx);
+  }
+
+  void PropagateResult(CondLinConLT& con, double lb, double ub, Context ctx) {
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
+    con.AddContext(ctx);
+    PropagateResult2LinTerms(con.GetConstraint().GetBody(), lb, ub, -ctx);
+  }
+
+  void PropagateResult(CondQuadConLT& con, double lb, double ub, Context ctx) {
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
+    con.AddContext(ctx);
+    PropagateResult2QuadAndLinTerms(
+          con.GetConstraint().GetBody(), lb, ub, -ctx);
+  }
+
 
   /// Propagate given bounds & context into arguments of a constraint.
   /// The default template assumes it just a vector of variables.
   /// @param lb, ub: bounds for each variable
   template <class Args>
-  void PropagateResult2Args(const Args& vars, double lb, double ub, Context ctx) {
+  void PropagateResult2Args(
+      const Args& vars, double lb, double ub, Context ctx) {
     PropagateResult2Vars(vars, lb, ub, ctx);
   }
 
   /// Specialize: propagate result into LinTerms
-  void PropagateResult2Args(const LinTerms& lint, double lb, double ub, Context ctx) {
+  void PropagateResult2Args(
+      const LinTerms& lint, double lb, double ub, Context ctx) {
     PropagateResult2LinTerms(lint, lb, ub, ctx);
   }
 
   /// Specialize: propagate result into QuadAndLinTerms
-  void PropagateResult2Args(const QuadAndLinTerms& qlt, double lb, double ub, Context ctx) {
+  void PropagateResult2Args(
+      const QuadAndLinTerms& qlt, double lb, double ub, Context ctx) {
+    PropagateResult2QuadAndLinTerms(qlt, lb, ub, ctx);
+  }
+
+  /// Propagate result into QuadAndLinTerms
+  void PropagateResult2QuadAndLinTerms(
+      const QuadAndLinTerms& qlt, double lb, double ub, Context ctx) {
     PropagateResult2LinTerms(qlt.GetLinTerms(), lb, ub, ctx);
     PropagateResult2QuadTerms(qlt.GetQPTerms(), lb, ub, ctx);
   }
@@ -787,7 +868,7 @@ public:
   /// Takes ownership.
   /// @return Node reference for the stored constraint
   template <class Constraint>
-  pre::NodeRange AddConstraint(Constraint&& con) {
+  pre::NodeRange AddConstraint(Constraint con) {
     auto node_range =
         AddConstraintAndTryNoteResultVariable( std::move(con) );
     return node_range;
@@ -1073,9 +1154,15 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(AbsConstraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(AndConstraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(OrConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(EQ0Constraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(LE0Constraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(LT0Constraint)
+
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConEQ)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConLE)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConLT)
+
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConEQ)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConLE)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConLT)
+
   STORE_CONSTRAINT_TYPE__WITH_MAP(NotConstraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(DivConstraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(IfThenConstraint)
@@ -1096,6 +1183,8 @@ protected:
   /// No maps for static constraints
   STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintLinLE)
   STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintLinEQ)
+  STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintQuadLE)
+  STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintQuadEQ)
   STORE_CONSTRAINT_TYPE__NO_MAP(PLConstraint)
   STORE_CONSTRAINT_TYPE__NO_MAP(SOS1Constraint)
   STORE_CONSTRAINT_TYPE__NO_MAP(SOS2Constraint)

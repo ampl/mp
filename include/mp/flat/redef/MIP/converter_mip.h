@@ -41,18 +41,24 @@ public:
   INSTALL_ITEM_CONVERTER(CountConverter_MIP)
   /// Div
   INSTALL_ITEM_CONVERTER(DivConverter_MIP)
-  /// EQ0
-  INSTALL_ITEM_CONVERTER(EQ0Converter_MIP)
+  /// CondLinEQ
+  INSTALL_ITEM_CONVERTER(CondLinEQConverter_MIP)
+  /// CondQuadEQ
+  INSTALL_ITEM_CONVERTER(CondQuadEQConverter_MIP)
+  /// CondLinLE
+  INSTALL_ITEM_CONVERTER(CondLinLEConverter_MIP)
+  /// CondQuadLE
+  INSTALL_ITEM_CONVERTER(CondQuadLEConverter_MIP)
+  /// CondLinLT
+  INSTALL_ITEM_CONVERTER(CondLinLTConverter_MIP)
+  /// CondQuadLT
+  INSTALL_ITEM_CONVERTER(CondQuadLTConverter_MIP)
   /// IfThenElse
   INSTALL_ITEM_CONVERTER(IfThenElseConverter_MIP)
   /// ImplLE0
   INSTALL_ITEM_CONVERTER(IndicatorLinLEConverter_MIP)
   /// ImplEQ0
   INSTALL_ITEM_CONVERTER(IndicatorLinEQConverter_MIP)
-  /// LE0
-  INSTALL_ITEM_CONVERTER(LE0Converter_MIP)
-  /// LT0
-  INSTALL_ITEM_CONVERTER(LT0Converter_MIP)
   /// Min
   INSTALL_ITEM_CONVERTER(MinConverter_MIP)
   /// Max
@@ -83,16 +89,17 @@ public:
 public:
   USE_BASE_MAP_FINDERS( BaseConverter )
 
-  /// Specialize MapFind for EQ0
-  int MapFind(const EQ0Constraint& eq0c) {
+  /// Specialize MapFind for CondLinConEQ.
+  /// We distinguish the case var==const
+  int MapFind(const CondLinConEQ& eq0c) {
     const auto isVCC = IsVarConstCmp( eq0c );
     if (isVCC.first)                    // only var==const comparisons
       return MapFind__VarConstCmp(isVCC.second.first, isVCC.second.second);
     return MPD( MapFind__Impl(eq0c) );
   }
 
-  /// Specialize MapInsert for EQ0
-  bool MapInsert(const EQ0Constraint& eq0c, int i) {
+  /// Specialize MapInsert for CondLiConEQ
+  bool MapInsert(const CondLinConEQ& eq0c, int i) {
     const auto isVCC = IsVarConstCmp( eq0c );
     if (isVCC.first)                    // only var==const comparisons
       return MapInsert__VarConstCmp(isVCC.second.first, isVCC.second.second, i);
@@ -133,7 +140,7 @@ protected:
     if (map_vars_eq_const_.end() != itVar) {
       auto itCmp = itVar->second.find( val );
       if (itVar->second.end() != itCmp)
-        /// Make sure we store the comparisons in EQ0Con's
+        /// Make sure we store the comparisons in CondConEQ's
         return itCmp->second;
     }
     return -1;
@@ -148,12 +155,13 @@ protected:
   /// Result of IsVarConstCmp(): var, const
   using VarConstCmp = std::pair<int, double>;
 
-  /// Check if the eq0c is a var==const
-  static std::pair<bool, VarConstCmp> IsVarConstCmp(const EQ0Constraint& con) {
-    const AffExp& args = con.GetArguments();
-    if (1==args.size()) {
-      assert(1.0==args.coef(0));
-      return { true, { args.var(0), -args.constant_term() } };
+  /// Check if \a con is a conditional var==const
+  static std::pair<bool, VarConstCmp>
+  IsVarConstCmp(const CondLinConEQ& con) {
+    const auto& linEQ = con.GetConstraint();
+    if (1==linEQ.size()) {
+      assert(1.0==linEQ.coef(0));
+      return { true, { linEQ.var(0), linEQ.rhs() } };
     }
     return { false, {} };
   }
@@ -162,8 +170,8 @@ protected:
     for (const auto& m: map_vars_eq_const_) {
       if (IfUseEqualityEncodingForVar(m.first))
         ConvertEqVarConstMap(m.first, m.second);
-    } // Otherwise, indicators / big-Ms should have been applied
-  }
+    } // Otherwise, indicators / big-Ms should have been applied.
+  }   // But why the map then?
 
   void ConvertEqVarConstMap(int var, const SingleVarEqConstMap& map) {
     CreateUnaryEncoding(var, map);
@@ -174,7 +182,7 @@ protected:
     if (!model.is_integer_var(var))
       MP_RAISE("MP2MIP: Equality encoding: comparing non-integer variables not implemented");
     const auto lb_dbl = this->lb(var);
-    const auto ub_dbl = this->ub(var);                 // TODO why not check this before?
+    const auto ub_dbl = this->ub(var);        // TODO why not check this before?
     if (lb_dbl==this->MinusInfty() || ub_dbl==this->Infty())
       MP_RAISE("MP2MIP: Equality-comparing unbounded variables not implemented");
     if (lb_dbl<std::numeric_limits<int>::min() || ub_dbl>std::numeric_limits<int>::max())
@@ -183,12 +191,12 @@ protected:
     const int ub = (int)std::round(ub_dbl);
     std::vector<int> unaryEncVars(ub-lb+1);
     int nTaken=0;
-    for (int v=lb; v!=ub+1; ++v) { // TODO run thru the map first
+    for (int v=lb; v!=ub+1; ++v) {            // TODO run thru the map first
       auto itV = map.find(v);
       if (map.end() != itV) {
         ++nTaken;
         unaryEncVars[v-lb] =
-          GET_CONSTRAINT_KEEPER(EQ0Constraint).GetResultVar(itV->second);
+          GET_CONSTRAINT_KEEPER(CondLinConEQ).GetResultVar(itV->second);
       } else {
         unaryEncVars[v-lb] = this->AddVar(0.0, 1.0, var::INTEGER);
       }

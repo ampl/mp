@@ -1,7 +1,7 @@
-#ifndef IMPL_EQ0_H
-#define IMPL_EQ0_H
+#ifndef INDICATOR_EQ_H
+#define INDICATOR_EQ_H
 
-#include "mp/flat/redef/MIP/impl_le0.h"
+#include "mp/flat/redef/MIP/indicator_le.h"
 
 namespace mp {
 
@@ -38,4 +38,4 @@ protected:
 
 } // namespace mp
 
-#endif // IMPL_EQ0_H
+#endif // INDICATOR_EQ_H

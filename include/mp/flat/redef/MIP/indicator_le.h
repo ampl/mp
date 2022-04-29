@@ -1,5 +1,5 @@
-#ifndef IMPL_LE0_H
-#define IMPL_LE0_H
+#ifndef INDICATOR_LE_H
+#define INDICATOR_LE_H
 
 #include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constraints_std.h"
@@ -56,4 +56,4 @@ protected:
 
 } // namespace mp
 
-#endif // IMPL_LE0_H
+#endif // INDICATOR_LE_H
