@@ -184,6 +184,8 @@ class AMPLRunner(object):
     def _run(self, model: Model):
       self.doInit(model)
       self.setupOptions(model)
+      if self.isBenchmark:
+         print("\n\t\t{0: <20}: Reading... ".format(self._solver.getName()), flush=True, end="")
       mp = self.doReadModel(model)
 
       if model.isScript() and mp == None: # if a script ran out of time (had to kill AMPL)
@@ -212,6 +214,8 @@ class AMPLRunner(object):
                                    "nconstr" : int(nconstr),
                                    "nnz" : int(nnz)}
       if not model.isScript():
+          if self.isBenchmark:
+            print("Solving... ", end="")
           self._ampl.solve()
       interval = self._ampl.getValue("_solve_elapsed_time")
       self.stats["solutionTime"] = interval
