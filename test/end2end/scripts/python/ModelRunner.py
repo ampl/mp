@@ -37,6 +37,7 @@ class ModelRunner(object):
             lastModel = None
             with t:
                 for (i,r) in enumerate(cr):
+                    r.isBenchmark = len(cr) > 1
                     self._runs[i].append({})
                     if isinstance(r, AMPLRunner):
                         ss = r.getSolver()
@@ -45,7 +46,10 @@ class ModelRunner(object):
                     if m.hasAnyTag(ss.getUnsupportedTags()):
                         self._runs[i][-1]["outmsg"] = "Skipped, unsupported tags"
                         self._runs[i][-1]["solver"] = ss
-                        print("Skipped due to unsupported tags")
+                        if r.isBenchmark:
+                            print("\n\t\tSkipped due to unsupported tags", flush=True)
+                        else:
+                            print("Skipped due to unsupported tags", flush=True)
                         continue
                     r.runAndEvaluate(m)
                     stats = r.getSolutionStats()
