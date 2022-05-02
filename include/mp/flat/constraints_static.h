@@ -324,43 +324,46 @@ using SOS1Constraint = SOS_1or2_Constraint<1>;
 /// Typedef SOS2Constraint
 using SOS2Constraint = SOS_1or2_Constraint<2>;
 
+
 ////////////////////////////////////////////////////////////////////////
 /// Complementarity constraint.
-/// <RangeCon> complements a variable.
-/// @param RangeCon: a linear or quadratic range constraint
-template <class RangeCon>
+/// <Expr> complements a variable.
+/// @param Expr: an affine or quadratic functional expression
+template <class Expr>
 class ComplementarityConstraint : public BasicConstraint {
 public:
-  /// The algebraic constraint
-  using ConType = RangeCon;
+  /// The expression type
+  using ExprType = Expr;
 
   /// Name
   static const std::string& GetTypeName() {
     static std::string name
-      { "ComplementarityConstraint[" + RangeCon::GetTypeName() + ']' };
+      { std::string("ComplementarityConstraint[") +
+          Expr::GetTypeName() + ']' };
     return name;
   }
 
   /// Constructor
-  ComplementarityConstraint(ConType con, int var) :
-    compl_con_(std::move(con)), compl_var_(var) { }
+  ComplementarityConstraint(ExprType expr, int var) :
+    compl_expr_(std::move(expr)), compl_var_(var) { }
 
   /// Get constraint
-  const ConType& GetConstraint() const { return compl_con_; }
+  const ExprType& GetExpression() const { return compl_expr_; }
 
   /// Get variable
   int GetVariable() const { return compl_var_; }
 
+
 private:
-  ConType compl_con_;
+  ExprType compl_expr_;
   int compl_var_;
 };
 
 /// Typedef ComplementarityLinRange
-using ComplementarityLinRange = ComplementarityConstraint<LinConRange>;
+using ComplementarityLinear = ComplementarityConstraint<AffExp>;
 
 /// Typedef ComplementarityQuadRange
-using ComplementarityQuadRange = ComplementarityConstraint<QuadConRange>;
+using ComplementarityQuadratic = ComplementarityConstraint<QuadExp>;
 
 } // namespace mp
 

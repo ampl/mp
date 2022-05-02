@@ -194,34 +194,41 @@ protected:
       le.add_lin_exp(ee.GetAE());
     }
     auto compl_var = GetModel().GetComplementarityVariable(i)-1;  // -1
-    /// The range
-    auto rng = (compl_var<0 ||                    // if no complementarity
-                       std::isfinite(con.lb()) || // or one bound is finite
-                       std::isfinite(con.ub())) ?
-      AlgConRange{ con.lb() - ee.constant_term(), con.ub() - ee.constant_term() } :
-      AlgConRange{ -ee.constant_term(), -ee.constant_term() };
-      // storing the constant.
-      // Actually in the latter case, both lb and ub are inf for the constraint.
+    auto const_term = ee.constant_term();
+    if (compl_var>=0) {                // we have complementarity
+      if (std::isfinite(con.lb())) {
+        assert(!std::isfinite(con.ub()));
+        const_term -= con.lb();
+      } else if (std::isfinite(con.ub())) {
+        assert(!std::isfinite(con.lb()));
+        const_term -= con.ub();
+      }
+    }
     le.sort_terms();
     auto& qt = ee.GetQT();                        // quadratic terms, if any
     qt.sort_terms();
     pre::NodeRange nr;                            // presolve bridge
     if (ee.is_affine()) {
       if (compl_var<0)
-        nr = AddConstraint( LinConRange{ std::move(le), rng } );
+        nr = AddConstraint( LinConRange{ std::move(le),
+                            { con.lb() - const_term,
+                              con.ub() - const_term }} );
       else
         nr = AddConstraint(
-              ComplementarityLinRange{     // TODO store aff expr only
-                LinConRange{ std::move(le), rng }, compl_var } );
+              ComplementarityLinear{
+                AffExp(std::move(le), const_term), compl_var } );
     } else {
       if (compl_var<0)
         nr = AddConstraint( QuadConRange{
-                              { std::move(le), std::move(qt) }, rng } );
+                              { std::move(le), std::move(qt) },
+                              { con.lb() - const_term,
+                                con.ub() - const_term }} );
       else
         nr = AddConstraint(
-              ComplementarityQuadRange{
-                QuadConRange{
-                  { std::move(le), std::move(qt) }, rng }, compl_var } );
+              ComplementarityQuadratic{
+                QuadExp
+                { { std::move(le), const_term }, std::move(qt) },
+                compl_var } );
     }
     GetCopyBridge().AddEntry( {
             GetPresolver().GetSourceNodes().GetConValues()(0).Add(),

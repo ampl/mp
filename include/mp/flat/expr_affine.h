@@ -133,17 +133,25 @@ private:
 /// Affine expression: LinTerms + constant term
 class AffExp : public LinTerms {
 public:
+  /// Name
+  static constexpr const char* GetTypeName() { return "AffineExpr"; }
+
   /// Default constructor
   AffExp() = default;
+
   /// From LinTerms&& and const_term
   AffExp(LinTerms ae, double ct) noexcept :
     LinTerms(std::move(ae)), constant_term_(ct) { }
+
   /// From const AE&
   AffExp(const AffExp& ae) = default;
+
   /// From AE&&
   AffExp(AffExp&& ae) = default;
+
   /// Assign AE&&
   AffExp& operator= (AffExp&& ae) = default;
+
 
   /// Helper to construct AffExp from something special
   template <class Value>
@@ -178,6 +186,9 @@ public:
   /// Get the lin exp
   LinTerms& get_lin_exp() { return (LinTerms&)(*this); }
 
+  /// Get the body (variable terms) of a corresponding algebraic constraint
+  const LinTerms& GetAlgConBody() const { return get_lin_exp(); }
+
   /// The constant term
   double constant_term() const { return constant_term_; }
   /// Set constant term
@@ -205,6 +216,8 @@ public:
     ((LinTerms&)(*this)) *= n;
     constant_term_ *= n;
   }
+
+
 private:
   double constant_term_ = 0.0;
 };

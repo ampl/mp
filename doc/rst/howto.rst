@@ -42,7 +42,7 @@ as described in the section below.
 
 
 Copying a driver template
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * First, clone the mp repository.
   Then either:
@@ -57,6 +57,7 @@ Copying a driver template
 
   #. Use the file createDriver.py, which does the two items above automatically
 
+* Add the new target in :file:`solvers/CMakeLists.txt`.
 
 * Create and regularly use tests for essential functionality.
   See :ref:`howto-test`.

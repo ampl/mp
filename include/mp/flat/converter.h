@@ -655,17 +655,21 @@ public:
                          this->MinusInfty(), this->Infty(), Context::CTX_MIX);
   }
 
-  void PropagateResult(ComplementarityLinRange& con, double lb, double ub,
+  void PropagateResult(ComplementarityLinear& con, double lb, double ub,
                        Context ctx) {
     internal::Unused(lb, ub, ctx);
-    PropagateResult(con.GetConstraint(), lb, ub, Context::CTX_MIX);
+    PropagateResult2LinTerms(con.GetExpression().get_lin_exp(),
+                         lb, ub, Context::CTX_MIX);
     PropagateResultOfInitExpr(con.GetVariable(), lb, ub, Context::CTX_MIX);
   }
 
-  void PropagateResult(ComplementarityQuadRange& con, double lb, double ub,
+  void PropagateResult(ComplementarityQuadratic& con, double lb, double ub,
                        Context ctx) {
     internal::Unused(lb, ub, ctx);
-    PropagateResult(con.GetConstraint(), lb, ub, Context::CTX_MIX);
+    PropagateResult2LinTerms(con.GetExpression().GetAE().get_lin_exp(),
+                    lb, ub, Context::CTX_MIX);
+    PropagateResult2QuadTerms(con.GetExpression().GetQT(),
+                              lb, ub, Context::CTX_MIX);
     PropagateResultOfInitExpr(con.GetVariable(), lb, ub, Context::CTX_MIX);
   }
 
@@ -1188,8 +1192,8 @@ protected:
   STORE_CONSTRAINT_TYPE__NO_MAP(PLConstraint)
   STORE_CONSTRAINT_TYPE__NO_MAP(SOS1Constraint)
   STORE_CONSTRAINT_TYPE__NO_MAP(SOS2Constraint)
-  STORE_CONSTRAINT_TYPE__NO_MAP(ComplementarityLinRange)
-  STORE_CONSTRAINT_TYPE__NO_MAP(ComplementarityQuadRange)
+  STORE_CONSTRAINT_TYPE__NO_MAP(ComplementarityLinear)
+  STORE_CONSTRAINT_TYPE__NO_MAP(ComplementarityQuadratic)
 
   ////////////////////// Default map accessors /////////////////////////
   /// Constraints without map should overload these by empty methods ///

@@ -10,8 +10,11 @@ namespace mp {
 /// Quadratic terms
 class QuadTerms {
 public:
+  /// Name
+  static constexpr const char* GetTypeName() { return "QuadTerms"; }
+
   /// Default constructor
-  QuadTerms() { }
+  QuadTerms() = default;
 
   /// Construct from 3 vectors
   QuadTerms(std::vector<double> c,
@@ -118,8 +121,12 @@ private:
 /// Quadratic expression
 class QuadExp {
 public:
+  /// Name
+  static constexpr const char* GetTypeName() { return "QuadExp"; }
+
   /// Default constructor
-  QuadExp() { }
+  QuadExp() = default;
+
   /// Construct from AE [+QT]
   QuadExp(AffExp ae, QuadTerms qt={}) noexcept :
     ae_(std::move(ae)), qt_(std::move(qt)) { }
@@ -178,6 +185,7 @@ public:
     GetAE().sort_terms();
     GetQT().sort_terms();
   }
+
 
 private:
   AffExp ae_;
