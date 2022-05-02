@@ -166,65 +166,6 @@ AffExp ToLhsExpr(
 
 
 ////////////////////////////////////////////////////////////////////////
-/// Quadratic and linear terms.
-/// Body of a quadratic constraint
-class QuadAndLinTerms :
-    protected LinTerms, protected QuadTerms {
-public:
-  /// Name
-  static constexpr const char* GetTypeName() { return "QuadAndLinTerms"; }
-
-  /// Construct from linear + QP terms
-  template <class LT, class QT>
-  QuadAndLinTerms(LT lt, QT qt) :
-    LinTerms(std::move(lt)), QuadTerms(std::move(qt)) {
-    sort_terms();
-  }
-
-  /// Get LinTerms, const
-  const LinTerms& GetLinTerms() const { return (const LinTerms&)(*this); }
-
-  /// Get QuadTerms, const
-  const QuadTerms& GetQPTerms() const { return (const QuadTerms&)(*this); }
-
-  /// empty()
-  bool empty() const { return GetLinTerms().empty() && GetQPTerms().empty(); }
-
-  /// add_term(c, v)
-  using LinTerms::add_term;
-
-  /// add_term(c, v1, v2)
-  using QuadTerms::add_term;
-
-  /// Negate
-  void negate() {
-    LinTerms::negate();
-    QuadTerms::negate();
-  }
-
-  /// Value at given variable vector
-  double ComputeValue(ArrayRef<double> x) const {
-    return LinTerms::ComputeValue(x) + QuadTerms::ComputeValue(x);
-  }
-
-  /// Sort terms
-  void sort_terms() {
-    LinTerms::sort_terms();
-    QuadTerms::sort_terms();
-  }
-
-  /// Test equality
-  bool equals(const QuadAndLinTerms& qlc) const {
-    return LinTerms::equals(qlc.GetLinTerms()) &&
-        QuadTerms::equals(qlc.GetQPTerms());
-  }
-
-  /// Test equality
-  bool operator==(const QuadAndLinTerms& qlc) const { return equals(qlc); }
-};
-
-
-////////////////////////////////////////////////////////////////////////
 /// Quadratic range constraint
 using QuadConRange =
     AlgebraicConstraint<QuadAndLinTerms, AlgConRange>;

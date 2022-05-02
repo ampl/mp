@@ -186,7 +186,8 @@ public:
   /// Get the lin exp
   LinTerms& get_lin_exp() { return (LinTerms&)(*this); }
 
-  /// Get the body (variable terms) of a corresponding algebraic constraint
+  /// Get the body (variable terms)
+  /// of a corresponding algebraic constraint
   const LinTerms& GetAlgConBody() const { return get_lin_exp(); }
 
   /// The constant term

@@ -36,7 +36,7 @@ public:
   /// Complementarity linear
   INSTALL_ITEM_CONVERTER(ComplCvtLin_MIP)
   /// Complementarity quadratic
-//  INSTALL_ITEM_CONVERTER(ComplCvtQuad_MIP)
+  INSTALL_ITEM_CONVERTER(ComplCvtQuad_MIP)
   /// Count
   INSTALL_ITEM_CONVERTER(CountConverter_MIP)
   /// Div

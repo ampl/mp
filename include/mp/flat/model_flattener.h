@@ -186,50 +186,78 @@ protected:
   }
 
   void ConvertAlgCon(int i) {
+    auto pr = PrepareAlgConstraint(i);
+    auto nr = AddAlgebraicConstraint(pr);
+    AddCopyBridgeFromSource(nr);
+  }
+
+  /// Preparation info
+  struct AlgConPrepare {
+    LinTerms lt;
+    QuadTerms qt;
+    double lb, ub;
+    /// Complementarity
+    double const_term;
+    int compl_var;
+  };
+
+  /// Prepare alg constraint for moving into FlatCvt
+  AlgConPrepare PrepareAlgConstraint(int i) {
+    AlgConPrepare pre_result;
     auto con = GetModel().algebraic_con(i);
-    auto le = ToLinTerms(con.linear_expr());
+    pre_result.lt = ToLinTerms(con.linear_expr());
     EExpr ee;
     if (NumericExpr e = con.nonlinear_expr()) {
       ee=MP_DISPATCH( Visit(e) );
-      le.add_lin_exp(ee.GetAE());
+      pre_result.lt.add_lin_exp(ee.GetAE());
     }
-    auto compl_var = GetModel().GetComplementarityVariable(i)-1;  // -1
-    auto const_term = ee.constant_term();
-    if (compl_var>=0) {                // we have complementarity
+    pre_result.compl_var = GetModel().GetComplementarityVariable(i)-1;  // -1
+    pre_result.const_term = ee.constant_term();
+    if (pre_result.compl_var<0) {                // no complementarity
+      pre_result.lb = con.lb() - pre_result.const_term;
+      pre_result.ub = con.ub() - pre_result.const_term;
+    } else {
       if (std::isfinite(con.lb())) {
         assert(!std::isfinite(con.ub()));
-        const_term -= con.lb();
+        pre_result.const_term -= con.lb();
       } else if (std::isfinite(con.ub())) {
         assert(!std::isfinite(con.lb()));
-        const_term -= con.ub();
+        pre_result.const_term -= con.ub();
       }
     }
-    le.sort_terms();
-    auto& qt = ee.GetQT();                        // quadratic terms, if any
-    qt.sort_terms();
+    pre_result.lt.sort_terms();
+    pre_result.qt = std::move(ee.GetQT());        // quadratic terms, if any
+    pre_result.qt.sort_terms();
+    return pre_result;
+  }
+
+  /// Add algebraic constraint to FlatCvt
+  pre::NodeRange AddAlgebraicConstraint(const AlgConPrepare& pr) {
     pre::NodeRange nr;                            // presolve bridge
-    if (ee.is_affine()) {
-      if (compl_var<0)
-        nr = AddConstraint( LinConRange{ std::move(le),
-                            { con.lb() - const_term,
-                              con.ub() - const_term }} );
+    if (pr.qt.empty()) {
+      if (pr.compl_var<0)
+        nr = AddConstraint( LinConRange{ std::move(pr.lt),
+                            { pr.lb, pr.ub }} );
       else
         nr = AddConstraint(
               ComplementarityLinear{
-                AffExp(std::move(le), const_term), compl_var } );
+                AffExp(std::move(pr.lt), pr.const_term), pr.compl_var } );
     } else {
-      if (compl_var<0)
+      if (pr.compl_var<0)
         nr = AddConstraint( QuadConRange{
-                              { std::move(le), std::move(qt) },
-                              { con.lb() - const_term,
-                                con.ub() - const_term }} );
+                              { std::move(pr.lt), std::move(pr.qt) },
+                              { pr.lb, pr.ub }} );
       else
         nr = AddConstraint(
               ComplementarityQuadratic{
                 QuadExp
-                { { std::move(le), const_term }, std::move(qt) },
-                compl_var } );
+                { { std::move(pr.lt), pr.const_term }, std::move(pr.qt) },
+                pr.compl_var } );
     }
+    return nr;
+  }
+
+  void AddCopyBridgeFromSource(pre::NodeRange nr) {
     GetCopyBridge().AddEntry( {
             GetPresolver().GetSourceNodes().GetConValues()(0).Add(),
             nr
@@ -243,10 +271,8 @@ protected:
     assert(GetFlatCvt().HasInitExpression(resvar));
     const auto& ie = GetFlatCvt().GetInitExpression(resvar);
     /// TODO check that logical cons' values come after algebraic ones
-    GetCopyBridge().AddEntry( {
-            GetPresolver().GetSourceNodes().GetConValues()(0).Add(),
-            ie.GetCK()->GetValueNode().Select( ie.GetIndex() )
-          } );
+    AddCopyBridgeFromSource(
+          ie.GetCK()->GetValueNode().Select( ie.GetIndex() ));
   }
 
 
