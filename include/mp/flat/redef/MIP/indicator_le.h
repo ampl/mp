@@ -23,33 +23,33 @@ public:
   /// Conversion
   void Convert(const ItemType& indc, int ) {
     auto binvar=indc.get_binary_var();
-    auto ae = indc.to_lhs_expr();
-    auto bnds = GetMC().ComputeBoundsAndType(ae);
+    auto bnds = GetMC().ComputeBoundsAndType(
+          indc.get_constraint().GetBody());
     ConvertImplicationLE(binvar, indc.get_binary_value(),
-                         bnds, std::move(ae));
+                         bnds.ub(), indc.get_constraint());
   }
 
 protected:
   using Base::GetMC;
 
-  /// Linearize (b==val ==> ae<=0) via big-M
+  /// Linearize (b==val ==> c'x<=d) via big-M
   void ConvertImplicationLE(int b, int val,
-                   const PreprocessInfoStd& bnds, AffExp ae) {
+                   double body_ub, LinConLE con) {
     /// TODO fail if lb>0 +report .iis if requested
     /// TODO skip if ub<0
-    if (bnds.ub() >= GetMC().PracticallyInfty())
+    if (body_ub >= GetMC().PracticallyInfty())
       throw ConstraintConversionFailure( "IndicatorInfBound",
           "The redefinition of a (possibly auxiliary) indicator constraint failed"
-          " so it had to be passed to the solver natively."
-          " Provide tight bounds on variables entering logical expressions, "
-          "or set acc:ind_le=2");
-    if (val)                                     // left condition is b==1
-      ae += {{bnds.ub(), b}, -bnds.ub()};
-    else
-      ae += {{-bnds.ub(), b}, 0.0};
-    GetMC().AddConstraint(LinConLE(              // Big-M constraint
-        ae.get_lin_exp(),                      // skip the constant
-        -ae.constant_term() ));                // and use it here
+          " so it will be passed to the solver natively if supported."
+          " Provide tight bounds on variables entering logical expressions,"
+          " or set acc:ind_le=2 for native handling");
+    if (0==val)                                // left condition is b==0
+      con.GetBody().add_term(-body_ub+con.rhs(), b);
+    else {
+      con.GetBody().add_term(body_ub-con.rhs(), b);
+      con.set_rhs(body_ub);
+    }
+    GetMC().AddConstraint(con);                // Big-M constraint
   }
 
 };

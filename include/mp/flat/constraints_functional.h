@@ -38,7 +38,8 @@ DEF_LOGICAL_FUNC_CONSTR( NotConstraint, VarArray1,
 
 ////////////////////////////////////////////////////////////////////////
 /// \brief DivConstraint
-/// TODO Keep the full expression of v1, or use it in MIP to multiply out
+/// TODO Keep the full expression of v1/2,
+/// or use it in MIP to multiply out
 DEF_NUMERIC_FUNC_CONSTR( DivConstraint, VarArray2,
                                   "r = v1 / v2 and v2!=0");
 
@@ -138,16 +139,6 @@ DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConLE, QuadConLE);
 ////////////////////////////////////////////////////////////////////////
 DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConEQ, QuadConEQ);
 
-
-/// Where applicable, produces expr
-/// so that the constraint is equivalent to expr<=>0.0
-template <class Constraint>
-int ToLhsExpr(const Constraint& ) {
-  MP_RAISE(
-        std::string("Cannot produce a lhs expr from ") +
-          typeid (Constraint).name());
-  return 0;
-}
 
 
 /// TODO use macros for FLC / FQC too?

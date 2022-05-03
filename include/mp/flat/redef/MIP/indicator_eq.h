@@ -21,14 +21,19 @@ public:
   /// Conversion
   void Convert(const ItemType& indc, int ) {
     auto binvar=indc.get_binary_var();
-    auto ae = indc.to_lhs_expr();
-    auto bnds = GetMC().ComputeBoundsAndType(ae);
+    auto bnds = GetMC().ComputeBoundsAndType(
+          indc.get_constraint().GetBody());
+    /// Converting b==val ==> c'x==d to
+    ///   ==> c'x <= d and
+    ///   ==> c'x >= d
+    auto con = LinConLE{ indc.get_constraint().GetBody(),
+        indc.get_constraint().rhs() };
     ConvertImplicationLE(binvar, indc.get_binary_value(),
-                         bnds, ae);
-    ae.negate();
+                         bnds.ub(), con);
+    con.negate();
     bnds.NegateBounds();
     ConvertImplicationLE(binvar, indc.get_binary_value(),
-                         bnds, std::move(ae));
+                         bnds.ub(), std::move(con));
   }
 
 protected:

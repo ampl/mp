@@ -324,6 +324,7 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   backend_model_api_base.h
   constraint_base.h constraint_keeper.h constraint_hash.h
   constraints_std.h constraints_static.h constraints_functional.h
+  constraints_algebraic.h constraints_general.h
   context.h
   converter.h converter_model.h convert_functional.h
   eexpr.h expr_affine.h expr_quadratic.h
