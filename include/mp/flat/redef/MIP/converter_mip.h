@@ -59,6 +59,10 @@ public:
   INSTALL_ITEM_CONVERTER(IndicatorLinLEConverter_MIP)
   /// ImplEQ0
   INSTALL_ITEM_CONVERTER(IndicatorLinEQConverter_MIP)
+  /// ImplQuadLE0
+  INSTALL_ITEM_CONVERTER(IndicatorQuadLEConverter_MIP)
+  /// ImplQuadEQ0
+  INSTALL_ITEM_CONVERTER(IndicatorQuadEQConverter_MIP)
   /// Min
   INSTALL_ITEM_CONVERTER(MinConverter_MIP)
   /// Max
