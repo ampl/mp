@@ -38,7 +38,8 @@ public:
     auto body = indc.get_constraint().GetBody();
     assert(!body.GetQPTerms().empty());
     auto auxvar = GetMC().AssignResultVar2Args(
-          QuadraticFunctionalConstraint{{ {}, std::move(body.GetQPTerms()) }} );
+          QuadraticFunctionalConstraint{
+            { { {}, std::move(body.GetQPTerms()) }, 0.0} } );
     auto lt = body.GetLinTerms();
     lt.add_term(1.0, auxvar);
     GetMC().AddConstraint( IndicatorLin{binvar, indc.get_binary_value(),

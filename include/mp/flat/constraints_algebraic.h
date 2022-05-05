@@ -152,14 +152,6 @@ using LinConEQ = LinConRhs< 0>;
 /// Linear constraint c'x >= d
 using LinConGE = LinConRhs< 1>;
 
-/// Where applicable, produces expr
-/// so that the constraint is equivalent to expr<=>0.0
-template <int sens>
-AffExp ToLhsExpr(
-    const LinConRhs<sens>& lc) {
-  return { LinTerms(lc), -lc.rhs() };
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 /// Quadratic range constraint

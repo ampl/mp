@@ -60,10 +60,13 @@ public:
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
 
-  /// Use either QuadConRange or QuadCon(Le/EQ/GE)
+  /// QuadConRange is optional.
   ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Quadratic)
   void AddConstraint(const QuadConRange& qc);
 
+  /// If using quadratics,
+  /// QuadCon(LE/EQ/GE) should have 'Recommended'
+  /// and have an implementation.
   ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Quadratic)
   void AddConstraint(const QuadConLE& qc);
   ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Quadratic)

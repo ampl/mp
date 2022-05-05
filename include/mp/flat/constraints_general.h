@@ -127,10 +127,10 @@ private:
 
 
 /// Typedef ComplementarityLinRange
-using ComplementarityLinear = ComplementarityConstraint<AffExp>;
+using ComplementarityLinear = ComplementarityConstraint<AffineExpr>;
 
 /// Typedef ComplementarityQuadRange
-using ComplementarityQuadratic = ComplementarityConstraint<QuadExp>;
+using ComplementarityQuadratic = ComplementarityConstraint<QuadraticExpr>;
 
 
 } // namespace mp

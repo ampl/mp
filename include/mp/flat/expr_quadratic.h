@@ -7,7 +7,7 @@
 
 namespace mp {
 
-/// Quadratic terms
+/// Quadratic terms x'Qx
 class QuadTerms {
 public:
   /// Name
@@ -127,21 +127,44 @@ public:
   /// Name
   static constexpr const char* GetTypeName() { return "QuadAndLinTerms"; }
 
+  /// Default constructor
+  QuadAndLinTerms() = default;
+
   /// Construct from linear + QP terms
-  template <class LT, class QT>
-  QuadAndLinTerms(LT lt, QT qt) :
+  QuadAndLinTerms(LinTerms lt, QuadTerms qt) :
     LinTerms(std::move(lt)), QuadTerms(std::move(qt)) {
     sort_terms();
   }
 
   /// Get LinTerms, const
-  const LinTerms& GetLinTerms() const { return (const LinTerms&)(*this); }
+  const LinTerms& GetLinTerms() const { return *this; }
+  /// Get LinTerms
+  LinTerms& GetLinTerms() { return *this; }
 
   /// Get QuadTerms, const
-  const QuadTerms& GetQPTerms() const { return (const QuadTerms&)(*this); }
+  const QuadTerms& GetQPTerms() const { return *this; }
+  /// Get QuadTerms
+  QuadTerms& GetQPTerms() { return *this; }
 
-  /// empty()
+  /// empty?
   bool empty() const { return GetLinTerms().empty() && GetQPTerms().empty(); }
+
+  /// is linear?
+  bool is_linear() const { return GetQPTerms().empty(); }
+
+  /// Is quadratic?
+  bool is_quadratic() const { return !is_linear(); }
+
+  /// true when 1 linear variable with coef 1.0
+  bool is_variable() const {
+    return is_linear() && GetLinTerms().is_variable();
+  }
+
+  /// return the single variable assuming true==is_variable()
+  int get_representing_variable() const {
+    assert(is_variable());
+    return GetLinTerms().get_representing_variable();
+  }
 
   /// add_term(c, v)
   using LinTerms::add_term;
@@ -153,6 +176,12 @@ public:
   void negate() {
     LinTerms::negate();
     QuadTerms::negate();
+  }
+
+  /// add body
+  void add(const QuadAndLinTerms& qlt) {
+    LinTerms::add(qlt.GetLinTerms());
+    QuadTerms::add(qlt.GetQPTerms());
   }
 
   /// Value at given variable vector
@@ -177,86 +206,15 @@ public:
 };
 
 
-/////////////////////////////////////////////////////////////////////////
-/// Quadratic expression
-class QuadExp {
-public:
-  /// Name
-  static constexpr const char* GetTypeName() { return "QuadExp"; }
-
-  /// Default constructor
-  QuadExp() = default;
-
-  /// Construct from AE [+QT]
-  QuadExp(AffExp ae, QuadTerms qt={}) noexcept :
-    ae_(std::move(ae)), qt_(std::move(qt)) { }
-
-  using Constant = AffExp::Constant;
-  using Variable = AffExp::Variable;
-
-  /// Getters
-  bool is_constant() const { return is_affine() && GetAE().is_constant(); }
-  double constant_term() const { return GetAE().constant_term(); }
-  bool is_variable() const { return is_affine() && GetAE().is_variable(); }
-  int get_representing_variable() const {
-    assert(is_affine());
-    return GetAE().get_representing_variable();
-  }
-  /// Check if affine
-  bool is_affine() const { return GetQT().empty(); }
-  /// Get affine expr, const
-  const AffExp& GetAE() const { return ae_; }
-  /// Get affine expr
-  AffExp& GetAE() { return ae_; }
-  /// Is quadratic?
-  bool is_quadratic() const { return !is_affine(); }
-  /// Get quadratic terms, const
-  const QuadTerms& GetQT() const { return qt_; }
-  /// Get quadratic terms
-  QuadTerms& GetQT() { return qt_; }
-
-  /// Get the body (variable terms)
-  /// of a corresponding algebraic constraint
-  QuadAndLinTerms GetAlgConBody() const {
-    return { GetAE().get_lin_exp(), GetQT() };
-  }
-
-  /// Modifiers
-  void constant_term(double v) { GetAE().constant_term(v); }
-  void add_to_constant(double a) { GetAE().add_to_constant(a); }
-  void add_linear_term(double c, int v) {
-    GetAE().add_term(c, v);
-  }
-  void add_qp_term(double coef, int v1, int v2) {
-    GetQT().add_term(coef, v1, v2);
-  }
-
-  void add(const QuadExp& qe) {
-    GetAE().add_aff_exp(qe.GetAE());
-    GetQT().add(qe.GetQT());
-  }
-
-  void subtract(QuadExp&& qe) {
-    GetAE().subtract(std::move(qe.GetAE()));
-    GetQT().subtract(std::move(qe.GetQT()));
-  }
-
-  void negate() {
-    GetAE().negate();
-    GetQT().negate();
-  }
-
-  void sort_terms() {
-    GetAE().sort_terms();
-    GetQT().sort_terms();
-  }
+/// Typedef QuadraticExpr
+using QuadraticExpr = AlgebraicExpression<QuadAndLinTerms>;
 
 
-private:
-  AffExp ae_;
-  QuadTerms qt_;
-};
-
+/// Extract (move out) affine expr
+inline AffineExpr MoveOutAffineExpr(QuadraticExpr&& qe) {
+  return { std::move(qe.GetLinTerms()), qe.constant_term() };
 }
+
+} // namespace mp
 
 #endif // QUAD_EXPR_H

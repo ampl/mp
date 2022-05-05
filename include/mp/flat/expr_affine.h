@@ -4,11 +4,11 @@
 #include <array>
 #include <vector>
 #include <string>
-#include <algorithm>
 #include <cmath>
 #include <cassert>
 
 #include "mp/arrayref.h"
+#include "mp/flat/expr_algebraic.h"
 
 namespace mp {
 
@@ -55,6 +55,23 @@ public:
   /// Ptr to vars
   const int* pvars() const { return vars_.data(); }
 
+  /// true when 1 variable with coef 1.0
+  bool is_variable() const {
+    return 1==size() && 1.0==this->coef(0);
+  }
+
+  /// return the single variable assuming true==is_variable()
+  int get_representing_variable() const {
+    assert(is_variable());
+    return this->var(0);
+  }
+
+  /// Always linear
+  static constexpr bool is_linear() { return true; }
+
+  /// Produce itself
+  const LinTerms& GetLinTerms() const { return *this; }
+
   /// Compute value given a dense vector of variable values
   double ComputeValue(ArrayRef<double> x) const {
     double s=0.0;
@@ -78,7 +95,7 @@ public:
   { coefs_.push_back(c); vars_.push_back(v); }
 
   /// Add another LinTerms
-  void add_lin_exp(const LinTerms& le) {
+  void add(const LinTerms& le) {
     reserve(size() + le.size());
     for (size_t i=0; i<le.size(); ++i)
       add_term(le.coefs_[i], le.vars_[i]);
@@ -130,98 +147,8 @@ private:
 };
 
 
-/// Affine expression: LinTerms + constant term
-class AffExp : public LinTerms {
-public:
-  /// Name
-  static constexpr const char* GetTypeName() { return "AffineExpr"; }
-
-  /// Default constructor
-  AffExp() = default;
-
-  /// From LinTerms&& and const_term
-  AffExp(LinTerms ae, double ct) noexcept :
-    LinTerms(std::move(ae)), constant_term_(ct) { }
-
-  /// From const AE&
-  AffExp(const AffExp& ae) = default;
-
-  /// From AE&&
-  AffExp(AffExp&& ae) = default;
-
-  /// Assign AE&&
-  AffExp& operator= (AffExp&& ae) = default;
-
-
-  /// Helper to construct AffExp from something special
-  template <class Value>
-  struct ConstructorHelper {
-    Value v;
-  };
-  using Constant = ConstructorHelper<double>;
-  using Variable = ConstructorHelper<int>;
-  AffExp(Constant c) : constant_term_(c.v) { }
-  AffExp(Variable i) { add_term(1.0, i.v); }
-  AffExp& operator+=(std::pair< std::pair<double, int>, double > a) {
-    add_term(a.first.first, a.first.second);
-    add_to_constant(a.second);
-    return *this;
-  }
-
-  /// Whether AffExp represents a constant
-  bool is_constant() const { return 0==size(); }
-  /// true when constant=0 and 1 variable with coef 1.0
-  bool is_variable() const {
-    return 0.0==std::fabs(constant_term()) && 1==size() &&
-        1.0==this->coefs()[0];
-  }
-  /// return the single variable assuming true==is_variable()
-  int get_representing_variable() const {
-    assert(is_variable());
-    return this->vars()[0];
-  }
-
-  /// Get the lin exp, const
-  const LinTerms& get_lin_exp() const { return (const LinTerms&)(*this); }
-  /// Get the lin exp
-  LinTerms& get_lin_exp() { return (LinTerms&)(*this); }
-
-  /// Get the body (variable terms)
-  /// of a corresponding algebraic constraint
-  const LinTerms& GetAlgConBody() const { return get_lin_exp(); }
-
-  /// The constant term
-  double constant_term() const { return constant_term_; }
-  /// Set constant term
-  void constant_term(double v) { constant_term_ = v; }
-  /// Add to constant
-  void add_to_constant(double a) { constant_term_ += a; }
-
-  /// Negate the ae
-  void negate() {
-    LinTerms::negate();
-    constant_term(-constant_term());
-  }
-  /// Add another ae
-  void add_aff_exp(const AffExp& ae) {
-    add_lin_exp(ae);                // eliminate duplicates when?
-    this->add_to_constant(ae.constant_term());
-  }
-  /// Subtract another ae
-  void subtract(AffExp ae) {
-    ae.negate();
-    add_aff_exp(ae);
-  }
-  /// Multiply by const
-  void operator*=(double n) {
-    ((LinTerms&)(*this)) *= n;
-    constant_term_ *= n;
-  }
-
-
-private:
-  double constant_term_ = 0.0;
-};
+/// Typedef AffineExpr
+using AffineExpr = AlgebraicExpression<LinTerms>;
 
 } // namepsace mp
 

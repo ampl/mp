@@ -33,7 +33,7 @@ public:
 class QuadraticObjective : public LinearObjective {
   QuadTerms qt_;
 public:
-  QuadraticObjective(LinearObjective&& lc, QuadTerms&& qt) noexcept :
+  QuadraticObjective(LinearObjective&& lc, QuadTerms&& qt) :
     LinearObjective(std::move(lc)), qt_(std::move(qt)) { sort_qp_terms(); }
 
   const QuadTerms& GetQPTerms() const { return qt_; }

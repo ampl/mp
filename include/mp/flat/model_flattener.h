@@ -163,7 +163,7 @@ protected:
       EExpr eexpr;
       if (e) {
         eexpr=MP_DISPATCH( Visit(e) );
-        le.add_lin_exp(eexpr.GetAE());
+        le.add(eexpr.GetLinTerms());
         if (std::fabs(eexpr.constant_term())!=0.0) {
           /// TODO use constant (in the extra info)
           le.add_term(1.0, MakeFixedVar(eexpr.constant_term()));
@@ -174,7 +174,7 @@ protected:
       GetFlatCvt().PropagateResult2LinTerms(le,
                                             GetFlatCvt().MinusInfty(),
                                             GetFlatCvt().Infty(), ctx);
-      GetFlatCvt().PropagateResult2QuadTerms(eexpr.GetQT(),
+      GetFlatCvt().PropagateResult2QuadTerms(eexpr.GetQPTerms(),
                                             GetFlatCvt().MinusInfty(),
                                             GetFlatCvt().Infty(), ctx);
       /// TODO save & convert different types
@@ -182,7 +182,7 @@ protected:
             std::move(le.coefs()), std::move(le.vars()) };
       GetFlatCvt().AddObjective(
             QuadraticObjective{std::move(lo),
-                               std::move(eexpr.GetQT())});
+                               std::move(eexpr.GetQPTerms())});
   }
 
   void ConvertAlgCon(int i) {
@@ -209,7 +209,7 @@ protected:
     EExpr ee;
     if (NumericExpr e = con.nonlinear_expr()) {
       ee=MP_DISPATCH( Visit(e) );
-      pre_result.lt.add_lin_exp(ee.GetAE());
+      pre_result.lt.add(ee.GetLinTerms());
     }
     pre_result.compl_var = GetModel().GetComplementarityVariable(i)-1;  // -1
     pre_result.const_term = ee.constant_term();
@@ -226,7 +226,7 @@ protected:
       }
     }
     pre_result.lt.sort_terms();
-    pre_result.qt = std::move(ee.GetQT());        // quadratic terms, if any
+    pre_result.qt = std::move(ee.GetQPTerms());        // quadratic terms, if any
     pre_result.qt.sort_terms();
     return pre_result;
   }
@@ -241,7 +241,7 @@ protected:
       else
         nr = AddConstraint(
               ComplementarityLinear{
-                AffExp(std::move(pr.lt), pr.const_term), pr.compl_var } );
+                AffineExpr(std::move(pr.lt), pr.const_term), pr.compl_var } );
     } else {
       if (pr.compl_var<0)
         nr = AddConstraint( QuadConRange{
@@ -250,8 +250,8 @@ protected:
       else
         nr = AddConstraint(
               ComplementarityQuadratic{
-                QuadExp
-                { { std::move(pr.lt), pr.const_term }, std::move(pr.qt) },
+                QuadraticExpr
+                { { std::move(pr.lt), std::move(pr.qt) }, pr.const_term },
                 pr.compl_var } );
     }
     return nr;
@@ -293,13 +293,13 @@ public:
     return GetFlatCvt().Convert2Var(std::move(ee));
   }
   /// Makes an affine expr representing just one variable
-  AffExp Convert2VarAsAffineExpr(EExpr&& ee) {
-    return AffExp::Variable{Convert2Var(std::move(ee))};
+  AffineExpr Convert2VarAsAffineExpr(EExpr&& ee) {
+    return AffineExpr::Variable{Convert2Var(std::move(ee))};
   }
-  AffExp Convert2AffineExpr(EExpr&& ee) {
+  AffineExpr Convert2AffineExpr(EExpr&& ee) {
     if (ee.is_affine())
-      return std::move(ee.GetAE());
-    return Convert2VarAsAffineExpr(std::move(ee)); // just simple, whole QuadExpr
+      return MoveOutAffineExpr(std::move(ee));
+    return Convert2VarAsAffineExpr(std::move(ee));
   }
 
   /// Generic functional expression array visitor.
@@ -361,12 +361,12 @@ public:
     if (lhs.is_affine())                          // no QP terms
       return AssignResult2Args(                   // add conditional linear constraint
             ConditionalConstraint< LinConRhs<comp_kind> >
-            { { std::move(lhs.GetAE().get_lin_exp()),
-                -lhs.GetAE().constant_term() } } );
+            { { std::move(lhs.GetLinTerms()),
+                -lhs.constant_term() } } );
     return AssignResult2Args(                     // add conditional quadratic constraint
             ConditionalConstraint< QuadConRhs<comp_kind> >
-            { { { std::move(lhs.GetAE().get_lin_exp()), std::move(lhs.GetQT()) },
-                -lhs.GetAE().constant_term() } } );
+            { { std::move(lhs.GetAlgConBody()),
+                -lhs.constant_term() } } );
   }
 
   /// Convert array of Expr's to array of EExpr's
@@ -397,7 +397,7 @@ public:
       common_exprs_.resize(index+1, -1);          // init by -1, "no variable"
     if (common_exprs_[index]<0) {                 // not yet converted
       auto ce = MP_DISPATCH( GetModel() ).common_expr(index);
-      EExpr eexpr( { ToLinTerms(ce.linear_expr()), 0.0 } );
+      EExpr eexpr( ToLinTerms(ce.linear_expr()) );
       if (ce.nonlinear_expr())
         eexpr.add( Convert2EExpr(ce.nonlinear_expr()) );
       common_exprs_[index] = Convert2Var(std::move(eexpr));
@@ -695,25 +695,27 @@ public:
            (el.is_constant() || er.is_constant()));
     EExpr result;
     if (0.0!=std::fabs(er.constant_term())) {
-      result.GetAE().add_lin_exp(el.GetAE());  // no const here
-      result.GetAE() *= er.constant_term();
-      result.GetQT().add(el.GetQT());
-      result.GetQT() *= er.constant_term();
+      result.GetLinTerms().add(el.GetLinTerms());  // no const here
+      result.GetLinTerms() *= er.constant_term();
+      result.GetQPTerms().add(el.GetQPTerms());
+      result.GetQPTerms() *= er.constant_term();
     }
     if (0.0!=std::fabs(el.constant_term())) {
       {
-        AffExp ae2 = er.GetAE();
+        auto ae2 = er.GetLinTerms();
         ae2 *= el.constant_term();
-        result.GetAE().add_aff_exp(ae2);
+        result.GetLinTerms().add(ae2);
+        result.constant_term(
+              er.constant_term() * el.constant_term());
       }
-      result.GetQT().add(er.GetQT());
-      result.GetQT() *= el.constant_term();
+      result.GetQPTerms().add(er.GetQPTerms());
+      result.GetQPTerms() *= el.constant_term();
     }
-    const auto& ae1 = el.GetAE();
-    const auto& ae2 = er.GetAE();
+    const auto& ae1 = el.GetLinTerms();
+    const auto& ae2 = er.GetLinTerms();
     for (auto i1 = ae1.size(); i1--; ) {
       for (auto i2 = ae2.size(); i2--; ) {
-        result.add_qp_term(ae1.coef(i1) * ae2.coef(i2),
+        result.add_term(ae1.coef(i1) * ae2.coef(i2),
                            ae1.var(i1), ae2.var(i2) );
       }
     }

@@ -90,16 +90,23 @@ public:
 
   /// From an expression:
   /// Adds a result variable r and constraint r == expr
-  int Convert2Var(QuadExp&& ee) {
+  int Convert2Var(QuadraticExpr&& ee) {
     if (ee.is_variable())
       return ee.get_representing_variable();
     if (ee.is_constant())
       return MakeFixedVar(ee.constant_term());
     if (ee.is_affine())
       return AssignResultVar2Args(
-            LinearFunctionalConstraint(std::move(ee.GetAE())));
+            LinearFunctionalConstraint(
+              MoveOutAffineExpr(std::move(ee))));
     return AssignResultVar2Args(
         QuadraticFunctionalConstraint(std::move(ee)));
+  }
+
+  /// Convenience wrapper
+  int Convert2Var(AffineExpr&& ae) {
+    return Convert2Var({{std::move(ae.GetBody()), {}},
+                       ae.constant_term()});
   }
 
   /// ComputeBoundsAndType(LinTerms)
@@ -125,9 +132,11 @@ public:
     return result;
   }
 
-  /// ComputeBoundsAndType(AffExp)
-  PreprocessInfoStd ComputeBoundsAndType(const AffExp& ae) {
-    PreprocessInfoStd result = ComputeBoundsAndType(ae.get_lin_exp());
+  /// ComputeBoundsAndType(AlgebraicExpr<>)
+  template <class Body>
+  PreprocessInfoStd ComputeBoundsAndType(
+      const AlgebraicExpression<Body>& ae) {
+    PreprocessInfoStd result = ComputeBoundsAndType(ae.GetBody());
     result.lb_ += ae.constant_term();    // TODO reuse bounds if supplied
     result.ub_ += ae.constant_term();
     if (!is_integer(ae.constant_term()))
@@ -168,14 +177,6 @@ public:
     auto bntQT = ComputeBoundsAndType(qlt.GetQPTerms());
     return AddBoundsAndType(bntLT, bntQT);
   }
-
-  /// ComputeBoundsAndType(QuadExp)
-  PreprocessInfoStd ComputeBoundsAndType(const QuadExp& ee) {
-    auto bntAE = ComputeBoundsAndType(ee.GetAE());
-    auto bntQT = ComputeBoundsAndType(ee.GetQT());
-    return AddBoundsAndType(bntAE, bntQT);
-  }
-
 
   /// Product bounds
   template <class Var>
@@ -618,9 +619,9 @@ public:
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     const auto& args = con.GetArguments();
-    PropagateResult2LinTerms(args.GetAE(),
+    PropagateResult2LinTerms(args.GetLinTerms(),
                              this->MinusInfty(), this->Infty(), +ctx);
-    PropagateResult2QuadTerms(args.GetQT(),
+    PropagateResult2QuadTerms(args.GetQPTerms(),
                               this->MinusInfty(), this->Infty(), +ctx);
   }
 
@@ -658,7 +659,7 @@ public:
   void PropagateResult(ComplementarityLinear& con, double lb, double ub,
                        Context ctx) {
     internal::Unused(lb, ub, ctx);
-    PropagateResult2LinTerms(con.GetExpression().get_lin_exp(),
+    PropagateResult2LinTerms(con.GetExpression().GetLinTerms(),
                          lb, ub, Context::CTX_MIX);
     PropagateResultOfInitExpr(con.GetVariable(), lb, ub, Context::CTX_MIX);
   }
@@ -666,9 +667,9 @@ public:
   void PropagateResult(ComplementarityQuadratic& con, double lb, double ub,
                        Context ctx) {
     internal::Unused(lb, ub, ctx);
-    PropagateResult2LinTerms(con.GetExpression().GetAE().get_lin_exp(),
+    PropagateResult2LinTerms(con.GetExpression().GetLinTerms(),
                     lb, ub, Context::CTX_MIX);
-    PropagateResult2QuadTerms(con.GetExpression().GetQT(),
+    PropagateResult2QuadTerms(con.GetExpression().GetQPTerms(),
                               lb, ub, Context::CTX_MIX);
     PropagateResultOfInitExpr(con.GetVariable(), lb, ub, Context::CTX_MIX);
   }
@@ -1008,7 +1009,7 @@ public:
     if (! (lb(bvar)==0.0 && ub(bvar)==1.0) )
       MP_RAISE("Asked to complement variable with bounds "
                              + std::to_string(lb(bvar)) + ".." + std::to_string(ub(bvar)));
-    AffExp ae({{-1.0}, {bvar}}, 1.0); // TODO use map / FCC?
+    AffineExpr ae({{-1.0}, {bvar}}, 1.0); // TODO use map / FCC?
     return MP_DISPATCH( Convert2Var(std::move(ae)) );
   }
 

@@ -147,27 +147,26 @@ DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConEQ, QuadConEQ);
 /// Linear Functional Constraint: r = affine_expr
 class LinearFunctionalConstraint :
     public FunctionalConstraint {
-  AffExp affine_expr_;
+  AffineExpr affine_expr_;
 public:
   static const char* GetName() { return "LinearFunctionalConstraint"; }
-  using Arguments = AffExp;
+  using Arguments = AffineExpr;
   using FunctionalConstraint::GetResultVar;
   /// A constructor ignoring result variable: use AssignResultToArguments() then
-  LinearFunctionalConstraint(AffExp&& ae) noexcept :
+  LinearFunctionalConstraint(AffineExpr&& ae) noexcept :
     affine_expr_(std::move(ae)) {  // TODO sort+merge elements?
   }
-  LinearFunctionalConstraint(int r, AffExp&& ae) noexcept :
+  LinearFunctionalConstraint(int r, AffineExpr&& ae) noexcept :
     FunctionalConstraint(r), affine_expr_(std::move(ae)) {
     /// TODO sort+merge elements
   }
-  const AffExp& GetAffineExpr() const { return affine_expr_; }
+  const AffineExpr& GetAffineExpr() const { return affine_expr_; }
   const Arguments& GetArguments() const { return GetAffineExpr(); }
   LinConEQ to_linear_constraint() const {
     const auto& ae = GetAffineExpr();
-    auto le = ae.get_lin_exp();
+    auto le = ae.GetLinTerms();
     le.add_term(-1.0, FunctionalConstraint::GetResultVar());
-    LinConEQ lc { le, -ae.constant_term() };
-    return lc;
+    return { std::move(le), -ae.constant_term() };
   }
 };
 
@@ -175,37 +174,35 @@ public:
 /// Quadratic Functional Constraint: r = quad_expr
 class QuadraticFunctionalConstraint :
     public FunctionalConstraint {
-  QuadExp quad_expr_;
+  QuadraticExpr quad_expr_;
 public:
   static const char* GetName() { return "QuadraticFunctionalConstraint"; }
-  using Arguments = QuadExp;
+  using Arguments = QuadraticExpr;
   using FunctionalConstraint::GetResultVar;
 
   /// A constructor ignoring result variable: use AssignResultToArguments() then
-  QuadraticFunctionalConstraint(QuadExp&& qe) noexcept :
+  QuadraticFunctionalConstraint(QuadraticExpr&& qe) noexcept :
     quad_expr_(std::move(qe)) {
     /// TODO sort+merge elements
   }
 
   /// Constructor: result var + body
-  QuadraticFunctionalConstraint(int r, QuadExp&& qe) noexcept :
+  QuadraticFunctionalConstraint(int r, QuadraticExpr&& qe) noexcept :
     FunctionalConstraint(r), quad_expr_(std::move(qe)) {
     /// TODO sort+merge elements
   }
 
   /// Getters
-  const QuadExp& GetQuadExpr() const { return quad_expr_; }
+  const QuadraticExpr& GetQuadExpr() const { return quad_expr_; }
   const Arguments& GetArguments() const { return GetQuadExpr(); }
 
   /// produce respective static constraint
-  QuadConRange to_quadratic_constraint() const {
-    const auto& qe = GetQuadExpr();
-    const auto& ae = qe.GetAE();
-    auto le = ae.get_lin_exp();
+  QuadConEQ to_quadratic_constraint() const {
+    auto le = GetQuadExpr().GetLinTerms();
     le.add_term(-1.0, FunctionalConstraint::GetResultVar());
-    auto qt = qe.GetQT();
+    auto qt = GetQuadExpr().GetQPTerms();
     return { { std::move(le), std::move(qt) },
-      {-ae.constant_term(), -ae.constant_term()} };
+      -GetQuadExpr().constant_term() };
   }
 };
 

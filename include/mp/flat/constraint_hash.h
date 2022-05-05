@@ -131,15 +131,15 @@ struct hash< mp::LinTerms >
 };
 
 
-/// Specialize std::hash<> for mp::AffExp
-template <>
-struct hash< mp::AffExp >
+/// Partially specialize std::hash<> for mp::AlgebraicExpr
+template <class Body>
+struct hash< mp::AlgebraicExpression<Body> >
 {
   size_t operator()(
-      const mp::AffExp& x) const
+      const mp::AlgebraicExpression<Body>& x) const
   {
     mp::HashStreamer hs;
-    hs.Add(std::hash<mp::LinTerms>{}(x.get_lin_exp()));
+    hs.Add(std::hash<Body>{}(x.GetBody()));
     hs.Add(x.constant_term());
     return hs.FinalizeHashValue();
   }
@@ -157,21 +157,6 @@ struct hash< mp::QuadTerms >
     hs.Add(qt.vars1());
     hs.Add(qt.vars2());
     hs.Add(qt.coefs());
-    return hs.FinalizeHashValue();
-  }
-};
-
-
-/// Specialize std::hash<> for mp::QuadExp
-template <>
-struct hash< mp::QuadExp >
-{
-  size_t operator()(
-      const mp::QuadExp& qe) const
-  {
-    mp::HashStreamer hs;
-    hs.Add(std::hash<mp::AffExp>{}(qe.GetAE()));
-    hs.Add(std::hash<mp::QuadTerms>{}(qe.GetQT()));
     return hs.FinalizeHashValue();
   }
 };
@@ -201,7 +186,7 @@ struct hash<
       std::reference_wrapper<
         const mp::LinearFunctionalConstraint> lfc) const
   {
-    return std::hash<mp::AffExp>{}(lfc.get().GetAffineExpr());
+    return std::hash<mp::AffineExpr>{}(lfc.get().GetAffineExpr());
   }
 };
 
@@ -215,7 +200,7 @@ struct hash<
       std::reference_wrapper<
         const mp::QuadraticFunctionalConstraint > qfc) const
   {
-    return std::hash<mp::QuadExp>{}(qfc.get().GetQuadExpr());
+    return std::hash<mp::QuadraticExpr>{}(qfc.get().GetQuadExpr());
   }
 };
 
