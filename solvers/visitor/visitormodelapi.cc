@@ -131,6 +131,17 @@ void VisitorModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
     VISITOR_EQUAL,
     ic.get_constraint().rhs()));*/
 }
+void VisitorModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
+  fmt::print("Adding indicator constraint {}\n", ic.GetTypeName());
+  /*VISITOR_CCALL(VISITOR_AddIndicator(lp(),
+    ic.get_binary_var(), ic.get_binary_value(),
+    (int)ic.get_constraint().size(),
+    ic.get_constraint().pvars(),
+    ic.get_constraint().pcoefs(),
+    VISITOR_GREATER_EQUAL,
+    ic.get_constraint().rhs()));*/
+
+}
 
 void VisitorModelAPI::AddConstraint(const QuadConRange& qc) {
   fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());

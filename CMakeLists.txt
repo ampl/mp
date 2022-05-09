@@ -324,9 +324,10 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   backend_model_api_base.h
   constraint_base.h constraint_keeper.h constraint_hash.h
   constraints_std.h constraints_static.h constraints_functional.h
+  constraints_algebraic.h constraints_general.h
   context.h
   converter.h converter_model.h convert_functional.h
-  eexpr.h expr_affine.h expr_quadratic.h
+  eexpr.h expr_algebraic.h expr_affine.h expr_quadratic.h
   model_flattener.h
   obj_std.h preprocess.h)
 
@@ -338,8 +339,9 @@ add_prefix(MP_FLAT_REDEF_STD_HEADERS include/mp/flat/redef/std/
 
 add_prefix(MP_FLAT_REDEF_MIP_HEADERS include/mp/flat/redef/MIP/
   converter_mip.h redefs_mip_std.h abs.h alldiff.h
-  cond_eq.h cond_le.h cond_lt.h complement.h count.h
-  ifthenelse.h indicator_eq.h indicator_le.h
+  cond_eq.h cond_cmp.h complement.h count.h
+  ifthenelse.h indicator_eq.h indicator_le.h indicator_ge.h
+  indicator_quad.h
   logical_and.h logical_or.h logical_not.h
   min_max.h numberof_const.h numberof_var.h)
 

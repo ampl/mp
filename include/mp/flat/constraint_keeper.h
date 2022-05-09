@@ -444,19 +444,6 @@ bool operator==(std::reference_wrapper<
   return c1.get().GetConstraint() == c2.get().GetConstraint();
 }
 
-/// operator==(AffExp, AffExp)
-bool operator==(const AffExp& ae1, const AffExp& ae2) {
-  return ae1.vars()==ae2.vars() &&   // Best if sorted
-      ae1.coefs()==ae2.coefs() &&
-      ae1.constant_term()==ae2.constant_term();
-}
-
-/// operator==(QuadExp, QuadExp)
-bool operator==(const QuadExp& qe1, const QuadExp& qe2) {
-  return qe1.GetAE()==qe2.GetAE() &&
-      qe1.GetQT()==qe2.GetQT();
-}
-
 /// operator==(LFC)
 bool operator==(std::reference_wrapper<
                   const LinearFunctionalConstraint > c1,

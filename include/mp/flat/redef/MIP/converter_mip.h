@@ -53,12 +53,28 @@ public:
   INSTALL_ITEM_CONVERTER(CondLinLTConverter_MIP)
   /// CondQuadLT
   INSTALL_ITEM_CONVERTER(CondQuadLTConverter_MIP)
+  /// CondLinGE
+  INSTALL_ITEM_CONVERTER(CondLinGEConverter_MIP)
+  /// CondQuadGE
+  INSTALL_ITEM_CONVERTER(CondQuadGEConverter_MIP)
+  /// CondLinGT
+  INSTALL_ITEM_CONVERTER(CondLinGTConverter_MIP)
+  /// CondQuadGT
+  INSTALL_ITEM_CONVERTER(CondQuadGTConverter_MIP)
   /// IfThenElse
   INSTALL_ITEM_CONVERTER(IfThenElseConverter_MIP)
-  /// ImplLE0
+  /// ImplLE
   INSTALL_ITEM_CONVERTER(IndicatorLinLEConverter_MIP)
-  /// ImplEQ0
+  /// ImplEQ
   INSTALL_ITEM_CONVERTER(IndicatorLinEQConverter_MIP)
+  /// ImplGE
+  INSTALL_ITEM_CONVERTER(IndicatorLinGEConverter_MIP)
+  /// ImplQuadLE
+  INSTALL_ITEM_CONVERTER(IndicatorQuadLEConverter_MIP)
+  /// ImplQuadEQ
+  INSTALL_ITEM_CONVERTER(IndicatorQuadEQConverter_MIP)
+  /// ImplQuadGE
+  INSTALL_ITEM_CONVERTER(IndicatorQuadGEConverter_MIP)
   /// Min
   INSTALL_ITEM_CONVERTER(MinConverter_MIP)
   /// Max

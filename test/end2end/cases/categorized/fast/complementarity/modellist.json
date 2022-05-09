@@ -19,5 +19,40 @@
       "Level['P3c']": 1000,
       "Level['P4']": 240
     }
+  },
+  {
+    "name" : "compl_quad_01 compl with obj",
+    "tags" : ["quadratic", "continuous", "complementarity"],
+    "options": {
+      "gurobi_options": "nonconvex=2"
+    },
+    "objective": 0.417424305,
+    "values": {
+      "x": 0.791288,
+      "y": -0.3738635434445156
+    }
+  },
+  {
+    "name" : "compl_quad_02",
+    "tags" : ["quadratic", "continuous", "complementarity"],
+    "options": {
+      "gurobi_options": "nonconvex=2"
+    },
+    "values": {
+      "x": 1.0,
+      "y": 1.0
+    }
+  },
+  {
+    "name" : "compl_quad_02 presolve 0",
+    "tags" : ["quadratic", "continuous", "complementarity"],
+    "options": {
+      "presolve": 0,
+      "gurobi_options": "nonconvex=2"
+    },
+    "values": {
+      "x": 1.0,
+      "y": 1.0
+    }
   }
 ]

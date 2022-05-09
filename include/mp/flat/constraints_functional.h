@@ -38,7 +38,8 @@ DEF_LOGICAL_FUNC_CONSTR( NotConstraint, VarArray1,
 
 ////////////////////////////////////////////////////////////////////////
 /// \brief DivConstraint
-/// TODO Keep the full expression of v1, or use it in MIP to multiply out
+/// TODO Keep the full expression of v1/2,
+/// or use it in MIP to multiply out
 DEF_NUMERIC_FUNC_CONSTR( DivConstraint, VarArray2,
                                   "r = v1 / v2 and v2!=0");
 
@@ -128,6 +129,12 @@ DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondLinConLE, LinConLE);
 ////////////////////////////////////////////////////////////////////////
 DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondLinConEQ, LinConEQ);
 
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondLinConGE, LinConGE);
+
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondLinConGT, LinConGT);
+
 
 ////////////////////////////////////////////////////////////////////////
 DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConLT, QuadConLT);
@@ -138,16 +145,12 @@ DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConLE, QuadConLE);
 ////////////////////////////////////////////////////////////////////////
 DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConEQ, QuadConEQ);
 
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConGE, QuadConGE);
 
-/// Where applicable, produces expr
-/// so that the constraint is equivalent to expr<=>0.0
-template <class Constraint>
-int ToLhsExpr(const Constraint& ) {
-  MP_RAISE(
-        std::string("Cannot produce a lhs expr from ") +
-          typeid (Constraint).name());
-  return 0;
-}
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConGT, QuadConGT);
+
 
 
 /// TODO use macros for FLC / FQC too?
@@ -155,66 +158,66 @@ int ToLhsExpr(const Constraint& ) {
 ////////////////////////////////////////////////////////////////////////
 /// Linear Functional Constraint: r = affine_expr
 class LinearFunctionalConstraint :
-    public FunctionalConstraint {
-  AffExp affine_expr_;
+    public FunctionalConstraint,
+    public NumericFunctionalConstraintTraits {
+  AffineExpr affine_expr_;
 public:
   static const char* GetName() { return "LinearFunctionalConstraint"; }
-  using Arguments = AffExp;
+  using Arguments = AffineExpr;
   using FunctionalConstraint::GetResultVar;
   /// A constructor ignoring result variable: use AssignResultToArguments() then
-  LinearFunctionalConstraint(AffExp&& ae) noexcept :
+  LinearFunctionalConstraint(AffineExpr&& ae) noexcept :
     affine_expr_(std::move(ae)) {  // TODO sort+merge elements?
   }
-  LinearFunctionalConstraint(int r, AffExp&& ae) noexcept :
+  LinearFunctionalConstraint(int r, AffineExpr&& ae) noexcept :
     FunctionalConstraint(r), affine_expr_(std::move(ae)) {
-    /// TODO sort+merge elements
+    /// TODO sort+merge elements?
   }
-  const AffExp& GetAffineExpr() const { return affine_expr_; }
+  const AffineExpr& GetAffineExpr() const { return affine_expr_; }
   const Arguments& GetArguments() const { return GetAffineExpr(); }
   LinConEQ to_linear_constraint() const {
     const auto& ae = GetAffineExpr();
-    auto le = ae.get_lin_exp();
+    auto le = ae.GetLinTerms();
     le.add_term(-1.0, FunctionalConstraint::GetResultVar());
-    LinConEQ lc { le, -ae.constant_term() };
-    return lc;
+    return { std::move(le), -ae.constant_term() };
   }
 };
 
 ////////////////////////////////////////////////////////////////////////
 /// Quadratic Functional Constraint: r = quad_expr
 class QuadraticFunctionalConstraint :
-    public FunctionalConstraint {
-  QuadExp quad_expr_;
+    public FunctionalConstraint,
+    public NumericFunctionalConstraintTraits {
+  QuadraticExpr quad_expr_;
 public:
   static const char* GetName() { return "QuadraticFunctionalConstraint"; }
-  using Arguments = QuadExp;
+  using Arguments = QuadraticExpr;
   using FunctionalConstraint::GetResultVar;
 
   /// A constructor ignoring result variable: use AssignResultToArguments() then
-  QuadraticFunctionalConstraint(QuadExp&& qe) noexcept :
+  QuadraticFunctionalConstraint(QuadraticExpr&& qe) noexcept :
     quad_expr_(std::move(qe)) {
-    /// TODO sort+merge elements
+    /// TODO sort+merge elements?
   }
 
   /// Constructor: result var + body
-  QuadraticFunctionalConstraint(int r, QuadExp&& qe) noexcept :
+  QuadraticFunctionalConstraint(int r, QuadraticExpr&& qe) noexcept :
     FunctionalConstraint(r), quad_expr_(std::move(qe)) {
-    /// TODO sort+merge elements
+    /// TODO sort+merge elements?
   }
 
   /// Getters
-  const QuadExp& GetQuadExpr() const { return quad_expr_; }
+  const QuadraticExpr& GetQuadExpr() const { return quad_expr_; }
   const Arguments& GetArguments() const { return GetQuadExpr(); }
 
   /// produce respective static constraint
-  QuadConRange to_quadratic_constraint() const {
-    const auto& qe = GetQuadExpr();
-    const auto& ae = qe.GetAE();
-    auto le = ae.get_lin_exp();
+  /// TODO only use >=< depending on context?
+  QuadConEQ to_quadratic_constraint() const {
+    auto le = GetQuadExpr().GetLinTerms();
     le.add_term(-1.0, FunctionalConstraint::GetResultVar());
-    auto qt = qe.GetQT();
+    auto qt = GetQuadExpr().GetQPTerms();
     return { { std::move(le), std::move(qt) },
-      {-ae.constant_term(), -ae.constant_term()} };
+      -GetQuadExpr().constant_term() };
   }
 };
 

@@ -126,6 +126,15 @@ void CoptModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
     COPT_EQUAL,
     ic.get_constraint().rhs()));
 }
+void CoptModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
+  COPT_CCALL(COPT_AddIndicator(lp(),
+    ic.get_binary_var(), ic.get_binary_value(),
+    (int)ic.get_constraint().size(),
+    ic.get_constraint().pvars(),
+    ic.get_constraint().pcoefs(),
+    COPT_GREATER_EQUAL,
+    ic.get_constraint().rhs()));
+}
 
 void CoptModelAPI::AddConstraint(const SOS1Constraint& sos) {
   int type = COPT_SOS_TYPE1;
