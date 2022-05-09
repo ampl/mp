@@ -95,11 +95,10 @@ public:
                               { con.GetBody(),
                                 con.rhs() - cmpEps }));
       }
-      con.negate();
-      GetMC().AddConstraint(IndicatorConstraint< AlgCon<-1> >(
+      GetMC().AddConstraint(IndicatorConstraint< AlgCon<1> >(
                               newvars[1], 1,
                             { con.GetBody(),
-                              con.rhs() - cmpEps }));
+                              con.rhs() + cmpEps }));
     } // else, skip
   }
 

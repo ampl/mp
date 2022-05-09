@@ -4,6 +4,7 @@
 #include <array>
 #include <vector>
 #include <string>
+#include <algorithm>
 #include <cmath>
 #include <cassert>
 

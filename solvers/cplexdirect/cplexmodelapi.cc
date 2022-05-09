@@ -116,6 +116,14 @@ void CplexModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
                                ic.get_constraint().pvars(),
                                ic.get_constraint().pcoefs(), NULL) );
 }
+void CplexModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
+  CPLEX_CALL( CPXaddindconstr (env(), lp(),
+                               ic.get_binary_var(), !ic.get_binary_value(),
+                               (int)ic.get_constraint().size(),
+                               ic.get_constraint().rhs(), 'G',
+                               ic.get_constraint().pvars(),
+                               ic.get_constraint().pcoefs(), NULL) );
+}
 
 void CplexModelAPI::FinishProblemModificationPhase() {
 }

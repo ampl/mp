@@ -60,6 +60,10 @@ using IndicatorQuadLEConverter_MIP = IndicatorQuadConverter_MIP<MC, -1>;
 template <class MC>
 using IndicatorQuadEQConverter_MIP = IndicatorQuadConverter_MIP<MC, 0>;
 
+/// Typedef IndicatorQuadGEConverter_MIP
+template <class MC>
+using IndicatorQuadGEConverter_MIP = IndicatorQuadConverter_MIP<MC, 1>;
+
 } // namespace mp
 
 #endif // INDICATOR_QUAD_H

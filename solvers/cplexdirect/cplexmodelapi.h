@@ -48,6 +48,8 @@ public:
   void AddConstraint(const IndicatorConstraintLinLE& mc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, AcceptedButNotRecommended, CG_General)
+  void AddConstraint(const IndicatorConstraintLinGE& mc);
 
 
 };

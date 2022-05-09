@@ -129,6 +129,12 @@ DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondLinConLE, LinConLE);
 ////////////////////////////////////////////////////////////////////////
 DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondLinConEQ, LinConEQ);
 
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondLinConGE, LinConGE);
+
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondLinConGT, LinConGT);
+
 
 ////////////////////////////////////////////////////////////////////////
 DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConLT, QuadConLT);
@@ -139,6 +145,12 @@ DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConLE, QuadConLE);
 ////////////////////////////////////////////////////////////////////////
 DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConEQ, QuadConEQ);
 
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConGE, QuadConGE);
+
+////////////////////////////////////////////////////////////////////////
+DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConGT, QuadConGT);
+
 
 
 /// TODO use macros for FLC / FQC too?
@@ -146,7 +158,8 @@ DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConEQ, QuadConEQ);
 ////////////////////////////////////////////////////////////////////////
 /// Linear Functional Constraint: r = affine_expr
 class LinearFunctionalConstraint :
-    public FunctionalConstraint {
+    public FunctionalConstraint,
+    public NumericFunctionalConstraintTraits {
   AffineExpr affine_expr_;
 public:
   static const char* GetName() { return "LinearFunctionalConstraint"; }
@@ -158,7 +171,7 @@ public:
   }
   LinearFunctionalConstraint(int r, AffineExpr&& ae) noexcept :
     FunctionalConstraint(r), affine_expr_(std::move(ae)) {
-    /// TODO sort+merge elements
+    /// TODO sort+merge elements?
   }
   const AffineExpr& GetAffineExpr() const { return affine_expr_; }
   const Arguments& GetArguments() const { return GetAffineExpr(); }
@@ -173,7 +186,8 @@ public:
 ////////////////////////////////////////////////////////////////////////
 /// Quadratic Functional Constraint: r = quad_expr
 class QuadraticFunctionalConstraint :
-    public FunctionalConstraint {
+    public FunctionalConstraint,
+    public NumericFunctionalConstraintTraits {
   QuadraticExpr quad_expr_;
 public:
   static const char* GetName() { return "QuadraticFunctionalConstraint"; }
@@ -183,13 +197,13 @@ public:
   /// A constructor ignoring result variable: use AssignResultToArguments() then
   QuadraticFunctionalConstraint(QuadraticExpr&& qe) noexcept :
     quad_expr_(std::move(qe)) {
-    /// TODO sort+merge elements
+    /// TODO sort+merge elements?
   }
 
   /// Constructor: result var + body
   QuadraticFunctionalConstraint(int r, QuadraticExpr&& qe) noexcept :
     FunctionalConstraint(r), quad_expr_(std::move(qe)) {
-    /// TODO sort+merge elements
+    /// TODO sort+merge elements?
   }
 
   /// Getters

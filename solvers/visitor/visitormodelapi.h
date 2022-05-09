@@ -40,8 +40,8 @@ public:
   /// and the relative AddConstraint function.
   /// Below some typical constraint handlers of a MIP solver.
   /// Further constraint types which could be handled natively by some solvers:
-  /// - IndicatorConstraintQuadLE/EQ
-  /// - Multidirectional indicators Cond(Lin/Quad)Con(LT/LE/EQ), where
+  /// - IndicatorConstraint(Lin/Quad)(LE/EQ/GE)
+  /// - Multidirectional indicators Cond(Lin/Quad)Con(LT/LE/EQ/GE/GT), where
   ///   the implication direction (</==/>) depends in the context
   /// - Complementarity
   /// - Logical, counting, piecewise-linear constraints.
@@ -82,6 +82,8 @@ public:
   void AddConstraint(const IndicatorConstraintLinLE& mc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, AcceptedButNotRecommended, CG_General)
+  void AddConstraint(const IndicatorConstraintLinGE& mc);
 
   /// SOS constraints can be used by AMPL for redefinition of
   /// piecewise-linear expressions.

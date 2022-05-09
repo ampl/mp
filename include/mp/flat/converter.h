@@ -1188,8 +1188,10 @@ protected:
   /// No maps for static constraints
   STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintLinLE)
   STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintLinEQ)
+  STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintLinGE)
   STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintQuadLE)
   STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintQuadEQ)
+  STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintQuadGE)
   STORE_CONSTRAINT_TYPE__NO_MAP(PLConstraint)
   STORE_CONSTRAINT_TYPE__NO_MAP(SOS1Constraint)
   STORE_CONSTRAINT_TYPE__NO_MAP(SOS2Constraint)

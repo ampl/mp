@@ -151,6 +151,8 @@ using LinConLE = LinConRhs<-1>;
 using LinConEQ = LinConRhs< 0>;
 /// Linear constraint c'x >= d
 using LinConGE = LinConRhs< 1>;
+/// Linear constraint c'x >  d
+using LinConGT = LinConRhs< 2>;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -170,6 +172,8 @@ using QuadConLE = QuadConRhs<-1>;
 using QuadConEQ = QuadConRhs< 0>;
 /// Quadratic constraint c'x+x`Qx >= d
 using QuadConGE = QuadConRhs< 1>;
+/// Quadratic constraint c'x+x`Qx >  d
+using QuadConGT = QuadConRhs< 2>;
 
 } // namespace mp
 

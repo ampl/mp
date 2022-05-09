@@ -60,6 +60,7 @@ public:
   /// If using quadratics,
   /// QuadCon(LE/EQ/GE) should have 'Recommended'
   /// and have an implementation.
+  /// QuadConRange is optional.
   ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Quadratic)
   void AddConstraint(const QuadConLE& qc);
   ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Quadratic)
@@ -67,6 +68,7 @@ public:
   ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Quadratic)
   void AddConstraint(const QuadConGE& qc);
 
+  /// Discrete general constraints
   ACCEPT_CONSTRAINT(MaxConstraint, acc_max(), CG_General)
   void AddConstraint(const MaxConstraint& mc);
   ACCEPT_CONSTRAINT(MinConstraint, acc_min(), CG_General)
@@ -81,6 +83,10 @@ public:
   void AddConstraint(const IndicatorConstraintLinLE& mc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, acc_ind_eq(), CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, acc_ind_le(), CG_General)
+  void AddConstraint(const IndicatorConstraintLinGE& mc);
+  ACCEPT_CONSTRAINT(PLConstraint, Recommended, CG_General)
+  void AddConstraint(const PLConstraint& cc);
 
   /// Gurobi Generals
   ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
@@ -103,8 +109,6 @@ public:
   void AddConstraint(const CosConstraint& cc);  // GRBaddgenconstrCos(x, y);
   ACCEPT_CONSTRAINT(TanConstraint, Recommended, CG_General)
   void AddConstraint(const TanConstraint& cc);
-  ACCEPT_CONSTRAINT(PLConstraint, Recommended, CG_General)
-  void AddConstraint(const PLConstraint& cc);
 
   void InitOptions();
 

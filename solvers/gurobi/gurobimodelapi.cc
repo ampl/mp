@@ -177,6 +177,15 @@ void GurobiModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
                                            GRB_EQUAL,
                                            ic.get_constraint().rhs() ) );
 }
+void GurobiModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
+  GRB_CALL( GRBaddgenconstrIndicator(model(), NULL,
+                               ic.get_binary_var(), ic.get_binary_value(),
+                                     (int)ic.get_constraint().size(),
+                               ic.get_constraint().pvars(),
+                                     ic.get_constraint().pcoefs(),
+                                     GRB_GREATER_EQUAL,
+                                     ic.get_constraint().rhs() ) );
+}
 
 //////////////////// General constraints /////////////////////
 void GurobiModelAPI::AddConstraint(const SOS1Constraint &sos)  {
@@ -269,8 +278,9 @@ void GurobiModelAPI::InitOptions() {
   GetEnv().AddStoredOption("acc:or",
                   "Acceptance level for 'or'/'exists' expressions, default 2.",
                   storedOptions_.acc_or_);
-  GetEnv().AddStoredOption("acc:ind:le acc:ind_le",
-                  "Acceptance level for 'implied-less-equal' expression, default 2.",
+  GetEnv().AddStoredOption("acc:ind:le acc:ind_le acc:ind:ge acc:ind_ge",
+                  "Acceptance level for 'implied-less-equal' and "
+                  "'implied-greater-equal' expressions, default 2.",
                   storedOptions_.acc_ind_le_);
   GetEnv().AddStoredOption("acc:ind:eq acc:ind_eq",
                   "Acceptance level for 'implied-equal' expression, default 2.",

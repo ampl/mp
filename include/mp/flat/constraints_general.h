@@ -49,11 +49,17 @@ using IndicatorConstraintLinLE = IndicatorConstraint<LinConLE>;
 /// Typedef indicator<LinConEQ>
 using IndicatorConstraintLinEQ = IndicatorConstraint<LinConEQ>;
 
+/// Typedef indicator<LinConGE>
+using IndicatorConstraintLinGE = IndicatorConstraint<LinConGE>;
+
 /// Typedef indicator<QuadConLE>
 using IndicatorConstraintQuadLE = IndicatorConstraint<QuadConLE>;
 
 /// Typedef indicator<QuadConEQ>
 using IndicatorConstraintQuadEQ = IndicatorConstraint<QuadConEQ>;
+
+/// Typedef indicator<QuadConGE>
+using IndicatorConstraintQuadGE = IndicatorConstraint<QuadConGE>;
 
 
 ////////////////////////////////////////////////////////////////////////
