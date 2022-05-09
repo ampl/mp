@@ -475,11 +475,11 @@ public:
   }
 
   EExpr VisitGE(RelationalExpr e) {
-    return VisitRelationalExpression<-1>({ e.rhs(), e.lhs() });
+    return VisitRelationalExpression<1>({ e.lhs(), e.rhs() });
   }
 
   EExpr VisitGT(RelationalExpr e) {
-    return VisitRelationalExpression<-2>({ e.rhs(), e.lhs() });
+    return VisitRelationalExpression<2>({ e.lhs(), e.rhs() });
   }
 
   EExpr VisitNot(NotExpr e) {

@@ -211,6 +211,7 @@ public:
   const Arguments& GetArguments() const { return GetQuadExpr(); }
 
   /// produce respective static constraint
+  /// TODO only use >=< depending on context?
   QuadConEQ to_quadratic_constraint() const {
     auto le = GetQuadExpr().GetLinTerms();
     le.add_term(-1.0, FunctionalConstraint::GetResultVar());

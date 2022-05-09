@@ -113,7 +113,7 @@ public:
   /// Constructor
   AlgConRhs(double r) : rhs_(r) { }
   /// Kind
-  int kind() const { return kind_; }
+  static constexpr int kind() { return kind_; }
   /// rhs()
   double rhs() const { return rhs_; }
   /// lb(): this is a specialization of the range constraint

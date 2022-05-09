@@ -428,30 +428,12 @@ protected:
     return false;
   }
 
-  template <class PreprocessInfo>
+  /// Preprocess other conditional comparisons TODO
+  template <class PreprocessInfo, class Body, int kind>
   void PreprocessConstraint(
-      CondLinConLE& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      CondQuadConLE& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      CondLinConLT& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      CondQuadConLT& , PreprocessInfo& prepro) {
+      ConditionalConstraint<
+        AlgebraicConstraint< Body, AlgConRhs<kind> > >& ,
+      PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
   }
@@ -737,30 +719,15 @@ public:
                          lb, ub, Context::CTX_MIX);
   }
 
-  void PropagateResult(CondLinConLE& con, double lb, double ub, Context ctx) {
+  template <class Body, int kind>
+  void PropagateResult(
+      ConditionalConstraint<
+        AlgebraicConstraint< Body, AlgConRhs<kind> > >& con,
+      double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
-    PropagateResult2LinTerms(con.GetConstraint().GetBody(), lb, ub, -ctx);
-  }
-
-  void PropagateResult(CondQuadConLE& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2QuadAndLinTerms(
-          con.GetConstraint().GetBody(), lb, ub, -ctx);
-  }
-
-  void PropagateResult(CondLinConLT& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2LinTerms(con.GetConstraint().GetBody(), lb, ub, -ctx);
-  }
-
-  void PropagateResult(CondQuadConLT& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2QuadAndLinTerms(
-          con.GetConstraint().GetBody(), lb, ub, -ctx);
+    PropagateResult2Args(con.GetConstraint().GetBody(), lb, ub,
+                             kind>0 ? ctx : -ctx);
   }
 
 
@@ -1163,10 +1130,14 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConEQ)
   STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConLE)
   STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConLT)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConGE)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConGT)
 
   STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConEQ)
   STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConLE)
   STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConLT)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConGE)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConGT)
 
   STORE_CONSTRAINT_TYPE__WITH_MAP(NotConstraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(DivConstraint)

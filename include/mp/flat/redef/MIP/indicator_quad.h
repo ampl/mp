@@ -10,11 +10,11 @@
 
 namespace mp {
 
-/// Convert IndicatorQuad(LE/EQ)
-/// b==val ==> c'x + x'Qx (<=/==) d.
+/// Convert IndicatorQuad(LE/EQ/GE)
+/// b==val ==> c'x + x'Qx (<=/==/>=) d.
 /// The quadratic part is moved into a separate constraint,
 /// thus producing a linear indicator of the respective type.
-/// TODO make sure the quadratic part is an inequality for LE
+/// TODO make sure the quadratic part is an inequality for LE/GE
 template <class ModelConverter, int sens>
 class IndicatorQuadConverter_MIP :
     public BasicItemConverter<ModelConverter> {
@@ -32,18 +32,17 @@ public:
   /// Resulting linear indicator
   using IndicatorLin = IndicatorConstraint<LinCon>;
 
-  /// Conversion
+  /// Conversion.
+  /// Substitute constraint body by a new variable.
   void Convert(const ItemType& indc, int ) {
     auto binvar=indc.get_binary_var();
-    auto body = indc.get_constraint().GetBody();
-    assert(!body.GetQPTerms().empty());
-    auto auxvar = GetMC().AssignResultVar2Args(
-          QuadraticFunctionalConstraint{
-            { { {}, std::move(body.GetQPTerms()) }, 0.0} } );
-    auto lt = body.GetLinTerms();
-    lt.add_term(1.0, auxvar);
+    const auto& body = indc.get_constraint().GetBody();
+    assert(body.is_quadratic());
+    auto auxvar = GetMC().AssignResultVar2Args(  // auxvar = body + 0.0
+          QuadraticFunctionalConstraint{ {body, 0.0} } );
     GetMC().AddConstraint( IndicatorLin{binvar, indc.get_binary_value(),
-                                        {lt, indc.get_constraint().rhs()}} );
+                                        LinCon{ { {1.0}, {auxvar} },
+                                          indc.get_constraint().rhs() }} );
   }
 
 protected:

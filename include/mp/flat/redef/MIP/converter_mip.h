@@ -53,6 +53,14 @@ public:
   INSTALL_ITEM_CONVERTER(CondLinLTConverter_MIP)
   /// CondQuadLT
   INSTALL_ITEM_CONVERTER(CondQuadLTConverter_MIP)
+  /// CondLinGE
+  INSTALL_ITEM_CONVERTER(CondLinGEConverter_MIP)
+  /// CondQuadGE
+  INSTALL_ITEM_CONVERTER(CondQuadGEConverter_MIP)
+  /// CondLinGT
+  INSTALL_ITEM_CONVERTER(CondLinGTConverter_MIP)
+  /// CondQuadGT
+  INSTALL_ITEM_CONVERTER(CondQuadGTConverter_MIP)
   /// IfThenElse
   INSTALL_ITEM_CONVERTER(IfThenElseConverter_MIP)
   /// ImplLE
