@@ -2,7 +2,7 @@
 set assets ordered;
 
 ###  PARAMETERS        ###
-param lambda default 0;
+param lambda default 0.5;
 param coVar{a in assets, b in assets} default 0;
 param expectedReturns{a in assets} default 0;
 

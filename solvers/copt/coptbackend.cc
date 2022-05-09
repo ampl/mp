@@ -66,7 +66,7 @@ bool CoptBackend::IsMIP() const {
 }
 
 bool CoptBackend::IsQCP() const {
-  return getIntAttr(COPT_INTATTR_QELEMS) > 0;
+  return getIntAttr(COPT_INTATTR_QCONSTRS) > 0;
 }
 
 Solution CoptBackend::GetSolution() {
@@ -210,6 +210,8 @@ std::pair<int, std::string> CoptBackend::ConvertCOPTStatus() {
     case COPT_MIPSTATUS_NODELIMIT:
     case COPT_MIPSTATUS_INTERRUPTED:
       return { sol::INTERRUPTED, "interrupted" };
+    default:
+      return { sol::UNKNOWN, "unknown" };
     }
   }
   else {
@@ -224,7 +226,7 @@ std::pair<int, std::string> CoptBackend::ConvertCOPTStatus() {
     case COPT_LPSTATUS_TIMEOUT:
       return { sol::INTERRUPTED, "interrupted" };
     default:
-      return { sol::UNKNOWN, "unfinished" };
+      return { sol::UNKNOWN, "unknown" };
     }
   }
 }
@@ -283,8 +285,8 @@ void CoptBackend::InitCustomOptions() {
   AddSolverOption("tech:outlev outlev",
       "0-1: output logging verbosity. "
       "Default = 0 (no logging).",
-    COPT_INTPARAM_LOGTOCONSOLE, 0, 1);
-  SetSolverOption(COPT_INTPARAM_LOGTOCONSOLE, 0);
+    COPT_INTPARAM_LOGGING, 0, 1);
+  SetSolverOption(COPT_INTPARAM_LOGGING, 0);
 
   AddStoredOption("tech:exportfile writeprob",
       "Specifies the name of a file where to export the model before "
@@ -340,7 +342,7 @@ void CoptBackend::InitCustomOptions() {
   AddSolverOption("mip:nodecutrounds nodecutrounds",
     "Rounds of cutting-planes generation of search tree node;\n"
     "default -1 ==> automatic.",
-    COPT_INTPARAM_ROOTCUTROUNDS, -1, INT_MAX);
+    COPT_INTPARAM_NODECUTROUNDS, -1, INT_MAX);
 
   AddSolverOption("mip:heurlevel heurlevel",
     "Level of heuristics:\n"
@@ -400,7 +402,7 @@ void CoptBackend::InitCustomOptions() {
   AddSolverOption("tech:threads threads",
     "Number of threads to use;\n"
     "default -1 ==> automatic.",
-    COPT_INTPARAM_BARTHREADS, -1, 128);
+    COPT_INTPARAM_THREADS, -1, 128);
 
   AddSolverOption("tech:barrierthreads barthreads",
       "Number of threads used by the barrier algorithm;\n"
@@ -443,7 +445,7 @@ void CoptBackend::InitCustomOptions() {
 
   AddSolverOption("alg:matrixtol matrixtol",
     "nput matrix coefficient tolerance (default 1e-10).",
-    COPT_DBLPARAM_FEASTOL, 0.0, 1e-7);
+    COPT_DBLPARAM_MATRIXTOL, 0.0, 1e-7);
 
       
 }
