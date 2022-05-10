@@ -62,7 +62,7 @@
   },
   {
     "name" : "quadratic_obj",
-    "objective" : -0.002380385,
+    "objective" : -0.0007554896303344439,
     "tags" : ["quadratic"]
   }
 ]
