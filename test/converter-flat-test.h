@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 #include "mp/flat/backend_model_api_base.h"
-#include "mp/flat/model_flattener.h"
+#include "mp/flat/problem_flattener.h"
 #include "mp/flat/converter.h"
 
 template <class Constraint>
@@ -60,7 +60,7 @@ public:
 
 template <template <class, class, class> class ConverterTemplate, class Constraint>
 using InterfaceWithBackendAcceptingConstraints =
-        mp::ModelFltImpl<mp::ModelFlattener, mp::Problem,
+        mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
           mp::FlatCvtImpl<ConverterTemplate,
             TestBackendAcceptingConstraints<Constraint> > >;
 

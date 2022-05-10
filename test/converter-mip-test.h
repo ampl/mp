@@ -3,7 +3,7 @@
 
 #include "mp/arrayref.h"
 
-#include "mp/flat/model_flattener.h"
+#include "mp/flat/problem_flattener.h"
 #include "mp/flat/redef/MIP/converter_mip.h"
 #include "mp/flat/backend_model_api_base.h"
 
@@ -135,11 +135,11 @@ public:
 
 /// Testing the default MIP interface layer
 class MIPConverterTester :
-    public mp::ModelFltImpl<mp::ModelFlattener, mp::Problem,
+    public mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
       mp::FlatCvtImpl<mp::MIPFlatConverter, MIPInstanceBackend> >
 //    public mp::MPToMIPConverter<MIPConverterTester, MIPInstanceBackend>
 {
-  using Base = mp::ModelFltImpl<mp::ModelFlattener, mp::Problem,
+  using Base = mp::ProblemFltImpl<mp::ProblemFlattener, mp::Problem,
     mp::FlatCvtImpl<mp::MIPFlatConverter, MIPInstanceBackend> >;
 public:
   /// Construct

@@ -1,7 +1,7 @@
 #include "cplexmodelapi.h"
 
 #include "mp/model-mgr-with-std-pb.h"
-#include "mp/flat/model_flattener.h"
+#include "mp/flat/problem_flattener.h"
 #include "mp/flat/redef/MIP/converter_mip.h"
 
 
@@ -12,8 +12,8 @@ std::unique_ptr<BasicModelManager>
 CreateCplexModelMgr(CplexCommon& cc, Env& e,
                      pre::BasicPresolver*& pPre) {
   using CplexFlatCvt = FlatCvtImpl<MIPFlatConverter, CplexModelAPI>;
-  using CplexProblemFlattener = mp::ModelFltImpl<
-    mp::ModelFlattener, mp::Problem, CplexFlatCvt>;
+  using CplexProblemFlattener = mp::ProblemFltImpl<
+    mp::ProblemFlattener, mp::Problem, CplexFlatCvt>;
   auto pcvt = new CplexProblemFlattener(e);
   auto res = CreateModelManagerWithStdBuilder(
         std::unique_ptr< BasicConverter<mp::Problem> >{ pcvt } );

@@ -1,7 +1,9 @@
+#include <cmath>
+
 #include "highsmodelapi.h"
 
 #include "mp/model-mgr-with-std-pb.h"
-#include "mp/flat/model_flattener.h"
+#include "mp/flat/problem_flattener.h"
 #include "mp/flat/redef/MIP/converter_mip.h"
 
 
@@ -12,8 +14,8 @@ std::unique_ptr<BasicModelManager>
 CreateHighsModelMgr(HighsCommon& cc, Env& e,
                      pre::BasicPresolver*& pPre) {
   using HighsFlatCvt = FlatCvtImpl<MIPFlatConverter, HighsModelAPI>;
-  using HighsProblemFlattener = mp::ModelFltImpl<
-    mp::ModelFlattener, mp::Problem, HighsFlatCvt>;
+  using HighsProblemFlattener = mp::ProblemFltImpl<
+    mp::ProblemFlattener, mp::Problem, HighsFlatCvt>;
   auto pcvt = new HighsProblemFlattener(e);
   auto res = CreateModelManagerWithStdBuilder(
         std::unique_ptr< BasicConverter<mp::Problem> >{ pcvt } );
@@ -36,8 +38,8 @@ void HighsModelAPI::AddVariables(const VarArrayDef& v) {
   std::vector<double> ubs(v.size());
   for (size_t i = 0; i < v.size(); i++) {
     if (var::Type::INTEGER == v.ptype()[i]) intIndices.push_back(i);
-    lbs[i] = isinf(v.plb()[i]) ? MinusInfinity() : v.plb()[i];
-    ubs[i] = isinf(v.pub()[i]) ?  Infinity() : v.pub()[i];
+    lbs[i] = std::isinf(v.plb()[i]) ? MinusInfinity() : v.plb()[i];
+    ubs[i] = std::isinf(v.pub()[i]) ?  Infinity() : v.pub()[i];
 
   }
   HIGHS_CCALL(Highs_addVars(lp(), v.size(), lbs.data(), ubs.data()));

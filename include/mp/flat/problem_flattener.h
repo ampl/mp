@@ -1,5 +1,5 @@
-#ifndef MODEL_FLATTENER_H
-#define MODEL_FLATTENER_H
+#ifndef PROBLEM_FLATTENER_H
+#define PROBLEM_FLATTENER_H
 
 #include <utility>
 #include <unordered_map>
@@ -28,21 +28,22 @@ LinTerms ToLinTerms(const LinearExpr& e) {
 }
 
 
-/// ModelFlattener: it walks and "flattens" most expressions
+/// ProblemFlattener: it walks and "flattens" most expressions
 /// by replacing them by a result variable and constraints.
 /// Such replacement is performed by a FlatConverter object.
 /// Such constraints might need to be converted to others, which is
 /// handled by overloaded methods in descendants of FlatConverter.
 /// @param Impl: final CRTP class
-/// @param Model: the model class representing the input instance
+/// @param Problem: the model class representing the input instance.
+/// Should implement the `mp::BasicProblem` interface.
 /// @param FlatConverter: the FlatConverter type
-template <class Impl, class Model, class FlatConverter>
-class ModelFlattener :
+template <class Impl, class Problem, class FlatConverter>
+class ProblemFlattener :
     public ExprConverter<Impl, EExpr>,
-    public BasicConverter<Model>
+    public BasicConverter<Problem>
 {
 public:
-  using ModelType = Model;
+  using ProblemType = Problem;
   using FlatConverterType = FlatConverter;
 
 public:
@@ -51,18 +52,18 @@ public:
   using VarArray = std::vector<Var>;
 
 protected:
-  using ClassName = ModelFlattener;
+  using ClassName = ProblemFlattener;
   using BaseExprVisitor = ExprVisitor<Impl, EExpr>;
-  using BaseConverter = BasicConverter<Model>;
+  using BaseConverter = BasicConverter<Problem>;
 
   using EExprArray = std::vector<EExpr>;
 
   using BaseConverter::GetEnv;
 
 public:
-  static const char* GetTypeName() { return "ExprFlattener"; }
+  static const char* GetTypeName() { return "ProblemFlattener"; }
 
-  ModelFlattener(Env& e) : BaseConverter(e), flat_cvt_(e) { }
+  ProblemFlattener(Env& e) : BaseConverter(e), flat_cvt_(e) { }
 
 public:
   /// INCREMENTAL INTERFACE
@@ -80,15 +81,15 @@ public:
   }
   void InputObjective(obj::Type t,
                       int nnz, const double* c, const int* v, NumericExpr e=NumericExpr()) {
-    typename Model::LinearObjBuilder lob = GetModel().AddObj(t, e);
+    typename Problem::LinearObjBuilder lob = GetModel().AddObj(t, e);
     for (int i=0; i!=nnz; ++i) {
       lob.AddTerm(v[i], c[i]);
     }
   }
   void InputAlgebraicCon(int nnz, const double* c, const int* v,
                          double lb, double ub, NumericExpr e=NumericExpr()) {
-    typename Model::MutAlgebraicCon mac = GetModel().AddCon(lb, ub);
-    typename Model::LinearConBuilder lcb = mac.set_linear_expr(nnz);
+    typename Problem::MutAlgebraicCon mac = GetModel().AddCon(lb, ub);
+    typename Problem::LinearConBuilder lcb = mac.set_linear_expr(nnz);
     for (int i=0; i!=nnz; ++i)
       lcb.AddTerm(v[i], c[i]);
     mac.set_nonlinear_expr(e);
@@ -153,11 +154,11 @@ protected:
           vnr });
   }
 
-  void Convert(typename ModelType::MutCommonExpr ) {
+  void Convert(typename ProblemType::MutCommonExpr ) {
     /// Converting on demand, see VisitCommonExpr
   }
 
-  void Convert(typename ModelType::MutObjective obj) {
+  void Convert(typename ProblemType::MutObjective obj) {
       auto le = ToLinTerms(obj.linear_expr());
       NumericExpr e = obj.nonlinear_expr();
       EExpr eexpr;
@@ -791,37 +792,37 @@ private:
 
 public:
   /// The model as input from NL
-  const ModelType& GetModel() const { return model_; }
+  const ProblemType& GetModel() const { return model_; }
   /// The model as input from NL
-  ModelType& GetModel() { return model_; }
+  ProblemType& GetModel() { return model_; }
   /// The model as input from NL
-  const ModelType& GetInputModel() const { return GetModel(); }
+  const ProblemType& GetInputModel() const { return GetModel(); }
   /// The model as input from NL
-  ModelType& GetInputModel() { return GetModel(); }
+  ProblemType& GetInputModel() { return GetModel(); }
 
   const FlatConverter& GetFlatCvt() const { return flat_cvt_; }
   FlatConverter& GetFlatCvt() { return flat_cvt_; }
 
 
 private:
-  ModelType model_;
+  ProblemType model_;
   FlatConverter flat_cvt_;
 };
 
 
-/// A 'final' ModelFlattener in a hierarchy
-template <template <typename, typename, typename> class ModelFlt,
-          class Model, class FlatCvt>
-class ModelFltImpl :
-    public ModelFlt<
-      ModelFltImpl<ModelFlt, Model, FlatCvt>, Model, FlatCvt> {
-  using Base = ModelFlt<
-    ModelFltImpl<ModelFlt, Model, FlatCvt>, Model, FlatCvt>;
+/// A 'final' ProblemFlattener in a hierarchy
+template <template <typename, typename, typename> class ProblemFlt,
+          class Problem, class FlatCvt>
+class ProblemFltImpl :
+    public ProblemFlt<
+      ProblemFltImpl<ProblemFlt, Problem, FlatCvt>, Problem, FlatCvt> {
+  using Base = ProblemFlt<
+    ProblemFltImpl<ProblemFlt, Problem, FlatCvt>, Problem, FlatCvt>;
 public:
-  ModelFltImpl(Env& e) : Base(e) { }
+  ProblemFltImpl(Env& e) : Base(e) { }
 };
 
 
 } // namespace mp
 
-#endif // MODEL_FLATTENER_H
+#endif // PROBLEM_FLATTENER_H

@@ -1,7 +1,7 @@
 #include "coptmodelapi.h"
 
 #include "mp/model-mgr-with-std-pb.h"
-#include "mp/flat/model_flattener.h"
+#include "mp/flat/problem_flattener.h"
 #include "mp/flat/redef/MIP/converter_mip.h"
 
 
@@ -12,8 +12,8 @@ std::unique_ptr<BasicModelManager>
 CreateCoptModelMgr(CoptCommon& cc, Env& e,
                      pre::BasicPresolver*& pPre) {
   using CoptFlatCvt = FlatCvtImpl<MIPFlatConverter, CoptModelAPI>;
-  using CoptProblemFlattener = mp::ModelFltImpl<
-    mp::ModelFlattener, mp::Problem, CoptFlatCvt>;
+  using CoptProblemFlattener = mp::ProblemFltImpl<
+    mp::ProblemFlattener, mp::Problem, CoptFlatCvt>;
   auto pcvt = new CoptProblemFlattener(e);
   auto res = CreateModelManagerWithStdBuilder(
         std::unique_ptr< BasicConverter<mp::Problem> >{ pcvt } );

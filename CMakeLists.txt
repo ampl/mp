@@ -328,8 +328,7 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   context.h
   converter.h converter_model.h convert_functional.h
   eexpr.h expr_algebraic.h expr_affine.h expr_quadratic.h
-  model_flattener.h
-  obj_std.h preprocess.h)
+  obj_std.h preprocess.h problem_flattener.h)
 
 add_prefix(MP_FLAT_REDEF_HEADERS include/mp/flat/redef/
   redef_base.h)

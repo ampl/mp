@@ -235,7 +235,7 @@ if (TARGET cplexdirect)
   endif()
 endif()
 
-## TODO Cannot use 'add_ampl_backend' because of the -direct name suffix
+
 add_ampl_solver(gurobi DLL_RUNTIME SHARED_LIB MODULE GUROBI
   gurobi-ampls-c-api.h
   gurobibackend.cc gurobibackend.h

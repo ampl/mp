@@ -1,7 +1,7 @@
 #include "visitormodelapi.h"
 
 #include "mp/model-mgr-with-std-pb.h"
-#include "mp/flat/model_flattener.h"
+#include "mp/flat/problem_flattener.h"
 #include "mp/flat/redef/MIP/converter_mip.h"
 
 
@@ -12,8 +12,8 @@ std::unique_ptr<BasicModelManager>
 CreateVisitorModelMgr(VisitorCommon& cc, Env& e,
                      pre::BasicPresolver*& pPre) {
   using VisitorFlatCvt = FlatCvtImpl<MIPFlatConverter, VisitorModelAPI>;
-  using VisitorProblemFlattener = mp::ModelFltImpl<
-    mp::ModelFlattener, mp::Problem, VisitorFlatCvt>;
+  using VisitorProblemFlattener = mp::ProblemFltImpl<
+    mp::ProblemFlattener, mp::Problem, VisitorFlatCvt>;
   auto pcvt = new VisitorProblemFlattener(e);
   auto res = CreateModelManagerWithStdBuilder(
         std::unique_ptr< BasicConverter<mp::Problem> >{ pcvt } );

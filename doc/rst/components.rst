@@ -16,7 +16,7 @@ solver API using the `mp::ProblemBuilder` concept.
 
 * Alternatively, convenience classes `mp::Problem` and `mp::ColProblem`
   can be used for intermediate storage of the NL model. From there,
-  `mp::ExprVisitor` and `mp::ModelFlattener` walk the NL forest.
+  `mp::ExprVisitor` and `mp::ProblemFlattener` walk the NL forest.
 
 :doc:`More info on NL Reader <nl-reader>`
 
