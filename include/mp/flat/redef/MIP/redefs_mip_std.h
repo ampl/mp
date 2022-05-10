@@ -8,7 +8,7 @@
 #include "mp/flat/redef/MIP/abs.h"
 #include "mp/flat/redef/MIP/alldiff.h"
 #include "mp/flat/redef/MIP/cond_eq.h"
-#include "mp/flat/redef/MIP/cond_cmp.h"
+#include "mp/flat/redef/MIP/cond_ineq.h"
 #include "mp/flat/redef/MIP/complement.h"
 #include "mp/flat/redef/MIP/count.h"
 #include "mp/flat/redef/MIP/div.h"

@@ -1,5 +1,5 @@
-#ifndef COND_CMP_H
-#define COND_CMP_H
+#ifndef COND_INEQ_H
+#define COND_INEQ_H
 
 #include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constraints_std.h"
@@ -127,4 +127,4 @@ using CondQuadGTConverter_MIP = Cond_LE_LT_GT_GE_Converter_MIP<MC, QuadConGT>;
 
 } // namespace mp
 
-#endif // COND_CMP_H
+#endif // COND_INEQ_H

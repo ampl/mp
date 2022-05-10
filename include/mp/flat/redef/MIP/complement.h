@@ -8,7 +8,7 @@
 
 namespace mp {
 
-/// Converts Complementatrity for MIP
+/// Converts Complementarity for MIP
 template <class ModelConverter, class ComplCon>
 class ComplementarityConverter_MIP :
     public BasicFuncConstrCvt<
@@ -19,8 +19,10 @@ public:
   using Base = BasicFuncConstrCvt<
     ComplementarityConverter_MIP<ModelConverter, ComplCon>,
     ModelConverter>;
+
   /// Constructor
   ComplementarityConverter_MIP(ModelConverter& mc) : Base(mc) { }
+
   /// Converted item type
   using ItemType = ComplCon;
 
@@ -37,17 +39,11 @@ public:
         fin_var_lb = std::isfinite(var_lb),
         fin_var_ub = std::isfinite(var_ub);
 
-    using AlgConBodyType = typename
-        std::decay< decltype (expr.GetAlgConBody()) >::type;
-    using AlgConLE = AlgebraicConstraint<
-        AlgConBodyType, AlgConRhs<-1> >;
-    using AlgConEQ = AlgebraicConstraint<
-        AlgConBodyType, AlgConRhs<0> >;
-    using AlgConGE = AlgebraicConstraint<
-        AlgConBodyType, AlgConRhs<1> >;
-
-    using CondConLE = ConditionalConstraint< AlgConLE >;
-    using CondConEQ = ConditionalConstraint< AlgConEQ >;
+    /// Using algebraic expression (expr.body + 0.0)
+    auto expr_var = GetMC().Convert2Var(
+          AlgebraicExpression<typename ComplCon::ExprType::BodyType>{
+            expr.GetBody(), 0.0} );
+    double con_rhs = -expr.constant_term();
 
     if (fin_var_lb && !fin_var_ub) {
       /// res1 = (var <= var_lb)
@@ -55,54 +51,46 @@ public:
             CondLinConLE{ { {{1.0}, {compl_var}}, var_lb } });
       /// res2 = (body <= lb)
       auto res_neg_con_lb = GetMC().AssignResultVar2Args(
-            CondConLE{ { expr.GetAlgConBody(), -expr.constant_term() } });
+            CondLinConLE{ { {{1.0}, {expr_var}}, con_rhs } });
       /// res3 = (res1 \/ res2)
       auto res_disj = GetMC().AssignResultVar2Args(
             OrConstraint{ { res_neg_var_lb, res_neg_con_lb } });
       GetMC().FixAsTrue(res_disj);
-      /// Add the algebraic constraint
-      GetMC().AddConstraint(
-            AlgConGE{ expr.GetAlgConBody(), -expr.constant_term() } );
+      /// Add the algebraic constraint via the representing variable
+      GetMC().set_var_lb(expr_var, con_rhs);
     } else if (fin_var_ub && !fin_var_lb) {
       /// res1 = (var >= var_ub)
       auto res_neg_var_ub = GetMC().AssignResultVar2Args(
-            CondLinConLE{ { {{-1.0}, {compl_var}}, -var_ub } });
+            CondLinConGE{ { {{1.0}, {compl_var}}, var_ub } });
       /// res2 = (body >= ub)
-      auto expr = cc.GetExpression();                         // copy
-      expr.negate();
       auto res_neg_con_ub = GetMC().AssignResultVar2Args(
-            CondConLE{ { expr.GetAlgConBody(), -expr.constant_term() } });
+            CondLinConGE{ { {{1.0}, {expr_var}}, con_rhs } });
       /// res3 = (res1 \/ res2)
       auto res_disj = GetMC().AssignResultVar2Args(
             OrConstraint{ { res_neg_var_ub, res_neg_con_ub } });
       GetMC().FixAsTrue(res_disj);
-      /// Add the algebraic constraint
-      GetMC().AddConstraint(
-            AlgConGE{ expr.GetAlgConBody(), -expr.constant_term() } );
+      /// Add the algebraic constraint via the representing variable
+      GetMC().set_var_ub(expr_var, con_rhs);
     } else {
       assert(fin_var_lb && fin_var_ub);
       /// res1 = (var <= lb && con >= 0)
-      auto expr_neg = expr;
-      expr_neg.negate();
       auto res1 = GetMC().AssignResultVar2Args(
             AndConstraint{ {
                 GetMC().AssignResultVar2Args(
                              CondLinConLE{ { {{1.0}, {compl_var}}, var_lb } }),
-                GetMC().AssignResultVar2Args(        // TODO wrong for QuadCon
-                             CondConLE{ { expr_neg.GetAlgConBody(),
-                                             -expr_neg.constant_term() } })
+                GetMC().AssignResultVar2Args(
+                             CondLinConGE{ { {{1.0}, {expr_var}},  con_rhs } })
                            } });
       /// res2 = (body==0)
-      auto res2 = GetMC().AssignResultVar2Args(      // TODO wrong for QuadCon
-            CondConEQ{ { expr.GetAlgConBody(), -expr.constant_term() } });
+      auto res2 = GetMC().AssignResultVar2Args(
+            CondLinConEQ{ { {{1.0}, {expr_var}}, con_rhs } });
       /// res3 = (var >= ub && con <= 0)
       auto res3 = GetMC().AssignResultVar2Args(
             AndConstraint{ {
                 GetMC().AssignResultVar2Args(
-                             CondLinConLE{ { {{-1.0}, {compl_var}}, -var_ub } }),
-                GetMC().AssignResultVar2Args(        // TODO wrong for QuadCon
-                             CondConLE{ { expr.GetAlgConBody(),
-                                             -expr.constant_term() } })
+                             CondLinConGE{ { {{1.0}, {compl_var}}, var_ub } }),
+                GetMC().AssignResultVar2Args(
+                             CondLinConLE{ { {{1.0}, {expr_var}}, con_rhs } })
                            } });
       /// res4 = (res1 \/ res2 \/ res3)
       auto res4 = GetMC().AssignResultVar2Args(

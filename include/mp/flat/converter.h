@@ -88,7 +88,18 @@ public:
 public:
   //////////////////////////////////// VISITOR ADAPTERS /////////////////////////////////////////
 
-  /// From an expression:
+  /// From am affine expression:
+  /// Adds a result variable r and constraint r == expr
+  int Convert2Var(AffineExpr&& ee) {
+    if (ee.is_variable())
+      return ee.get_representing_variable();
+    if (ee.is_constant())
+      return MakeFixedVar(ee.constant_term());
+    return AssignResultVar2Args(
+            LinearFunctionalConstraint(std::move(ee)));
+  }
+
+  /// From a quadratic expression:
   /// Adds a result variable r and constraint r == expr
   int Convert2Var(QuadraticExpr&& ee) {
     if (ee.is_variable())
@@ -101,12 +112,6 @@ public:
               MoveOutAffineExpr(std::move(ee))));
     return AssignResultVar2Args(
         QuadraticFunctionalConstraint(std::move(ee)));
-  }
-
-  /// Convenience wrapper
-  int Convert2Var(AffineExpr&& ae) {
-    return Convert2Var({{std::move(ae.GetBody()), {}},
-                       ae.constant_term()});
   }
 
   /// ComputeBoundsAndType(LinTerms)
@@ -964,6 +969,10 @@ public:
   template <class VarArray>
   double ub_array(const VarArray& va) const
   { return this->GetModel().ub_array(va); }
+  /// Shortcut lb(var)
+  void set_var_lb(int var, double lb) { this->GetModel().set_lb(var, lb); }
+  /// Shortcut ub(var)
+  void set_var_ub(int var, double ub) { this->GetModel().set_ub(var, ub); }
   /// var_type()
   var::Type var_type(int var) const { return this->GetModel().var_type(var); }
   /// is_fixed()
@@ -1015,10 +1024,12 @@ protected:
   }
 
 public:
+  /// Variable has an init expr?
   bool HasInitExpression(int var) const {
     return int(var_info_.size())>var && var_info_[var].HasId();
   }
 
+  /// Get the init expr
   const ConInfo& GetInitExpression(int var) const {
     assert(HasInitExpression(var));
     return var_info_[var];
