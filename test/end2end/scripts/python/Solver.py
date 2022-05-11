@@ -157,7 +157,8 @@ class AMPLSolver(Solver):
             toption = "{} {}".format(toption, self._otherOptions)
         try:
             if toption:
-                return self._runProcess([self._exePath, model.getFilePath(), "-AMPL", toption])
+                return self._runProcess([self._exePath, model.getFilePath(), "-AMPL", toption],
+                                        vestigial=True)
                 
             else:
                 return self._runProcess([self._exePath, model.getFilePath(), "-AMPL"],
@@ -487,7 +488,7 @@ class MindoptSolver(AMPLSolver):
 
     def _setLPMethod(self, method : str):
         m  = "1" if method == "SIMPLEX" else "2"
-        return f"method {m}"
+        return f"method={m}"
 
     def _setTimeLimit(self, seconds):
         return "max_time={}".format(seconds)
