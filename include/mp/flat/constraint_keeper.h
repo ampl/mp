@@ -8,7 +8,7 @@
 #include <cmath>
 
 #include "mp/common.h"
-#include "mp/flat/backend_model_api_base.h"
+#include "mp/flat/model_api_base.h"
 #include "mp/flat/constraint_hash.h"
 #include "mp/flat/redef/redef_base.h"
 #include "mp/presolve-node.h"
@@ -49,13 +49,13 @@ public:
 
   /// Backend's acceptance level for the constraint type
   virtual ConstraintAcceptanceLevel BackendAcceptance(
-      const BasicBackendFlatModelAPI& ) const = 0;
+      const BasicFlatModelAPI& ) const = 0;
 
   /// Backend's group number for the constraint type
-  virtual int BackendGroup(const BasicBackendFlatModelAPI& ) const = 0;
+  virtual int BackendGroup(const BasicFlatModelAPI& ) const = 0;
 
   /// This adds all unbridged items to the backend (without conversion)
-  virtual void AddUnbridgedToBackend(BasicBackendFlatModelAPI& be) = 0;
+  virtual void AddUnbridgedToBackend(BasicFlatModelAPI& be) = 0;
 
   /// Value presolve node, const
   const pre::ValueNode& GetValueNode() const { return value_node_; }
@@ -145,7 +145,8 @@ public:
   using BaseConverter::MapInsert; \
   template <class Constraint> \
   using ConstraintLocation = \
-    ConstraintLocationHelper< ConstraintKeeper< Impl, Backend, Constraint > >;
+    ConstraintLocationHelper< \
+      ConstraintKeeper< Impl, ModelAPI, Constraint > >;
 
 
   static constexpr double Infty() { return INFINITY; }
@@ -169,7 +170,7 @@ public:
 
   /// Assume Converter has the Backend
   Backend& GetBackend(BasicFlatConverter& cvt)
-  { return static_cast<Converter&>(cvt).GetBackend(); }
+  { return static_cast<Converter&>(cvt).GetModelAPI(); }
 
   /// Constructor, adds this CK to the provided ConstraintManager
   /// Requires the CM to be already constructed
@@ -235,19 +236,19 @@ public:
 
   /// Acceptance level of this constraint type in the Backend
   ConstraintAcceptanceLevel BackendAcceptance(
-      const BasicBackendFlatModelAPI& ba) const override {
+      const BasicFlatModelAPI& ba) const override {
     return static_cast<const Backend&>( ba ).AcceptanceLevel((Constraint*)nullptr);
   }
 
   /// Group number of this constraint type in the Backend.
   /// This is needed for pre- / postsolve to group solution values
   int BackendGroup(
-      const BasicBackendFlatModelAPI& ba) const override {
+      const BasicFlatModelAPI& ba) const override {
     return static_cast<const Backend&>( ba ).GroupNumber((Constraint*)nullptr);
   }
 
   /// Add remaining constraints to Backend
-  void AddUnbridgedToBackend(BasicBackendFlatModelAPI& be) override {
+  void AddUnbridgedToBackend(BasicFlatModelAPI& be) override {
     try {
       AddAllUnbridged(be);
     } catch (const std::exception& exc) {
@@ -311,7 +312,7 @@ protected:
     GetConverter().RunConversion(cnt.con_, i);
     cnt.MarkAsBridged();    // TODO should this be marked in Convert()?
   }
-  void AddAllUnbridged(BasicBackendFlatModelAPI& be) {
+  void AddAllUnbridged(BasicFlatModelAPI& be) {
     int con_index=0;
     auto con_group = BackendGroup(be);
     for (const auto& cont: cons_) {
@@ -361,14 +362,14 @@ private:
 /// Define a constraint keeper
 /// without a subexpression map
 #define STORE_CONSTRAINT_TYPE__INTERNAL(Constraint) \
-  ConstraintKeeper<Impl, Backend, Constraint> \
+  ConstraintKeeper<Impl, ModelAPI, Constraint> \
     CONSTRAINT_KEEPER_VAR(Constraint) \
       {*static_cast<Impl*>(this), #Constraint}; \
-  const ConstraintKeeper<Impl, Backend, Constraint>& \
+  const ConstraintKeeper<Impl, ModelAPI, Constraint>& \
   GetConstraintKeeper(Constraint* ) const { \
     return CONSTRAINT_KEEPER_VAR(Constraint); \
   } \
-  ConstraintKeeper<Impl, Backend, Constraint>& \
+  ConstraintKeeper<Impl, ModelAPI, Constraint>& \
   GetConstraintKeeper(Constraint* ) { \
     return CONSTRAINT_KEEPER_VAR(Constraint); \
   }
@@ -427,6 +428,7 @@ using ConstraintMap = std::unordered_map<
 ///
 /// The below one is for CustomFunctionalConstraint<>
 template <class Args, class Params, class NumOrLogic, class Id>
+inline
 bool operator==(std::reference_wrapper<
                   const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id> > c1,
                 std::reference_wrapper<
@@ -437,6 +439,7 @@ bool operator==(std::reference_wrapper<
 
 /// operator==(refwrap<ConditionalConstraint<> >)
 template <class Con>
+inline
 bool operator==(std::reference_wrapper<
                   const ConditionalConstraint<Con> > c1,
                 std::reference_wrapper<
@@ -445,6 +448,7 @@ bool operator==(std::reference_wrapper<
 }
 
 /// operator==(LFC)
+inline
 bool operator==(std::reference_wrapper<
                   const LinearFunctionalConstraint > c1,
                 std::reference_wrapper<
@@ -453,6 +457,7 @@ bool operator==(std::reference_wrapper<
 }
 
 /// operator==(QFC)
+inline
 bool operator==(std::reference_wrapper<
                   const QuadraticFunctionalConstraint > c1,
                 std::reference_wrapper<
@@ -481,7 +486,7 @@ public:
   }
 
   /// Add all unbridged constraints to Backend
-  void AddUnbridgedConstraintsToBackend(BasicBackendFlatModelAPI& be) const {
+  void AddUnbridgedConstraintsToBackend(BasicFlatModelAPI& be) const {
     for (const auto& ck: con_keepers_)
       ck.second.AddUnbridgedToBackend(be);
   }

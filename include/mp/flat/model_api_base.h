@@ -17,8 +17,12 @@
  action of contract, negligence or other tortious action, arising out
  of or in connection with the use or performance of this software.
 */
-#ifndef BACKEND_FLAT_MODEL_API_BASE_H_
-#define BACKEND_FLAT_MODEL_API_BASE_H_
+#ifndef FLAT_MODEL_API_BASE_H_
+#define FLAT_MODEL_API_BASE_H_
+
+/**
+  * Basic definitions for a FlatModelAPI
+  */
 
 #include <string>
 
@@ -82,8 +86,8 @@ enum ConstraintGroup {
   CG_Logical
 };
 
-/// BackendModelAPIs handling custom flat constraints should derive from
-class BasicBackendFlatModelAPI {
+/// ModelAPIs handling custom flat constraints should derive from
+class BasicFlatModelAPI {
 public:
   /// Placeholder
   static const char* GetTypeName()    { return "BasicBackendFlatModelAPI"; }
@@ -130,6 +134,7 @@ public:
   }
 };
 
+
 /// ... then for a certain constraint it can be specified
 #define ACCEPT_CONSTRAINT(ConstrType, level, con_grp) \
   mp::ConstraintAcceptanceLevel \
@@ -138,7 +143,6 @@ public:
   static constexpr int \
     GroupNumber(const ConstrType*) { return con_grp; }
 
-
 } // namespace mp
 
-#endif // BACKEND_FLAT_MODEL_API_BASE_H_
+#endif // FLAT_MODEL_API_BASE_H_

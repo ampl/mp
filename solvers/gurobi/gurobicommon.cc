@@ -2,18 +2,6 @@
 
 namespace mp {
 
-void GurobiCommon::copy_handlers_from_other_gurobi() {
-  assert(other_gurobi());
-  env_ = other_gurobi()->env();
-  model_ = other_gurobi()->model();
-}
-
-void GurobiCommon::copy_handlers_to_other_gurobi() {
-  assert(other_gurobi());
-  other_gurobi()->set_env(env_);
-  other_gurobi()->set_model(model_);
-}
-
 int GurobiCommon::NumLinCons() const {
   return GrbGetIntAttr(GRB_INT_ATTR_NUMCONSTRS);
 }
@@ -44,36 +32,36 @@ int GurobiCommon::ModelSense() const {
 
 
 void GurobiCommon::GetSolverOption(const char *key, int &value) const {
-  GRB_CALL( GRBgetintparam(GRBgetenv(model_), key, &value) );
+  GRB_CALL( GRBgetintparam(GRBgetenv(model()), key, &value) );
 }
 
 void GurobiCommon::SetSolverOption(const char *key, int value) {
-  GRB_CALL( GRBsetintparam(GRBgetenv(model_), key, value) );
+  GRB_CALL( GRBsetintparam(GRBgetenv(model()), key, value) );
 }
 
 void GurobiCommon::GetSolverOption(const char *key, double &value) const {
-  GRB_CALL( GRBgetdblparam(GRBgetenv(model_), key, &value) );
+  GRB_CALL( GRBgetdblparam(GRBgetenv(model()), key, &value) );
 }
 
 void GurobiCommon::SetSolverOption(const char *key, double value) {
-  GRB_CALL( GRBsetdblparam(GRBgetenv(model_), key, value) );
+  GRB_CALL( GRBsetdblparam(GRBgetenv(model()), key, value) );
 }
 
 void GurobiCommon::GetSolverOption(const char *key, std::string &value) const {
   char buffer[GRB_MAX_STRLEN];
-  GRB_CALL( GRBgetstrparam(GRBgetenv(model_), key, buffer) );
+  GRB_CALL( GRBgetstrparam(GRBgetenv(model()), key, buffer) );
   value = buffer;
 }
 
 void GurobiCommon::SetSolverOption(const char *key, const std::string& value) {
-  GRB_CALL( GRBsetstrparam(GRBgetenv(model_), key, value.c_str()) );
+  GRB_CALL( GRBsetstrparam(GRBgetenv(model()), key, value.c_str()) );
 }
 
 
 /// Shortcuts for attributes
 int GurobiCommon::GrbGetIntAttr(const char* attr_id, bool *flag) const {
   int tmp=0;
-  int error = GRBgetintattr(model_, attr_id, &tmp);
+  int error = GRBgetintattr(model(), attr_id, &tmp);
   if (flag)
     *flag = (0==error);
   else if (error)
@@ -84,7 +72,7 @@ int GurobiCommon::GrbGetIntAttr(const char* attr_id, bool *flag) const {
 
 double GurobiCommon::GrbGetDblAttr(const char* attr_id, bool *flag) const {
   double tmp=0.0;
-  int error = GRBgetdblattr(model_, attr_id, &tmp);
+  int error = GRBgetdblattr(model(), attr_id, &tmp);
   if (flag)
     *flag = (0==error);
   else if (error)
@@ -95,17 +83,17 @@ double GurobiCommon::GrbGetDblAttr(const char* attr_id, bool *flag) const {
 
 void GurobiCommon::GrbSetIntAttr(
     const char *attr_id, int val) {
-  GRB_CALL( GRBsetintattr(model_, attr_id, val) );
+  GRB_CALL( GRBsetintattr(model(), attr_id, val) );
 }
 
 void GurobiCommon::GrbSetDblAttr(
     const char *attr_id, double val) {
-  GRB_CALL( GRBsetdblattr(model_, attr_id, val) );
+  GRB_CALL( GRBsetdblattr(model(), attr_id, val) );
 }
 
 std::vector<int> GurobiCommon::GrbGetIntAttrArray(const char* attr_id,
     std::size_t size, std::size_t offset) const
-{ return GrbGetIntAttrArray(model_, attr_id, size, offset); }
+{ return GrbGetIntAttrArray(model(), attr_id, size, offset); }
 
 std::vector<int> GurobiCommon::GrbGetIntAttrArray(
     GRBmodel* mdl, const char* attr_id,
@@ -120,7 +108,7 @@ std::vector<int> GurobiCommon::GrbGetIntAttrArray(
 
 std::vector<double> GurobiCommon::GrbGetDblAttrArray(const char* attr_id,
     std::size_t size, std::size_t offset) const
-{ return GrbGetDblAttrArray(model_, attr_id, size, offset); }
+{ return GrbGetDblAttrArray(model(), attr_id, size, offset); }
 
 std::vector<double> GurobiCommon::GrbGetDblAttrArray(
     GRBmodel* mdl, const char* attr_id,
@@ -135,7 +123,7 @@ std::vector<double> GurobiCommon::GrbGetDblAttrArray(
 
 std::vector<double> GurobiCommon::GrbGetDblAttrArray_VarCon(
     const char* attr, int varcon) const
-{ return GrbGetDblAttrArray_VarCon(model_, attr, varcon); }
+{ return GrbGetDblAttrArray_VarCon(model(), attr, varcon); }
 
 std::vector<double> GurobiCommon::GrbGetDblAttrArray_VarCon(
     GRBmodel* mdl, const char* attr, int varcon) const {
@@ -148,14 +136,14 @@ std::vector<double> GurobiCommon::GrbGetDblAttrArray_VarCon(
 void GurobiCommon::GrbSetIntAttrArray(
     const char *attr_id, ArrayRef<int> values, std::size_t start) {
   if (values)
-    GRB_CALL( GRBsetintattrarray(model_, attr_id,
+    GRB_CALL( GRBsetintattrarray(model(), attr_id,
               (int)start, (int)values.size(), (int*)values.data()) );
 }
 
 void GurobiCommon::GrbSetDblAttrArray(
     const char *attr_id, ArrayRef<double> values, std::size_t start) {
   if (values)
-    GRB_CALL( GRBsetdblattrarray(model_, attr_id,
+    GRB_CALL( GRBsetdblattrarray(model(), attr_id,
               (int)start, (int)values.size(), (double*)values.data()) );
 }
 
@@ -164,7 +152,7 @@ void GurobiCommon::GrbSetIntAttrList(const char *attr_id,
                                       const std::vector<int> &val) {
   assert(idx.size()==val.size());
   if (idx.size())
-    GRB_CALL( GRBsetintattrlist(model_, attr_id,
+    GRB_CALL( GRBsetintattrlist(model(), attr_id,
                 (int)idx.size(), (int*)idx.data(), (int*)val.data()) );
 }
 
@@ -173,7 +161,7 @@ void GurobiCommon::GrbSetDblAttrList(const char *attr_id,
                                       const std::vector<double> &val) {
   assert(idx.size()==val.size());
   if (idx.size())
-    GRB_CALL( GRBsetdblattrlist(model_, attr_id,
+    GRB_CALL( GRBsetdblattrlist(model(), attr_id,
                                 (int)idx.size(),
                                 (int*)idx.data(), (double*)val.data()) );
 }

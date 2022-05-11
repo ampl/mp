@@ -17,9 +17,9 @@ CreateCoptModelMgr(CoptCommon& cc, Env& e,
   auto pcvt = new CoptProblemFlattener(e);
   auto res = CreateModelManagerWithStdBuilder(
         std::unique_ptr< BasicConverter<mp::Problem> >{ pcvt } );
-  pcvt->GetFlatCvt().GetBasicBackend().set_other_copt(&cc);
+  pcvt->GetFlatCvt().GetModelAPI().set_other_copt(&cc);
   cc.set_other_copt(
-        &pcvt->GetFlatCvt().GetBasicBackend());
+        &pcvt->GetFlatCvt().GetModelAPI());
   pPre = &pcvt->GetFlatCvt().GetPresolver();
   return res;
 }

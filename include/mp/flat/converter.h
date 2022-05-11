@@ -23,13 +23,13 @@ namespace mp {
 /// Such constraints might need to be converted to others, which is
 /// handled by overloaded methods in derived classes
 /// @param Impl: the final CRTP class
-/// @param Backend: the solver's model API wrapper
-/// @param Model: internal representation of a flat model
-template <class Impl, class Backend,
-          class Model = BasicFlatModel< > >
+/// @param ModelAPI: the solver's model API wrapper
+/// @param FlatModel: internal representation of a flat model
+template <class Impl, class ModelAPI,
+          class FlatModel = BasicFlatModel< > >
 class FlatConverter :
     public BasicFlatConverter,
-    public Model,
+    public FlatModel,
     public EnvKeeper
 {
 public:
@@ -37,21 +37,21 @@ public:
   static const char* GetTypeName() { return "FlatConverter"; }
 
   /// Construct with Env&
-  FlatConverter(Env& e) : EnvKeeper(e), backend_(e) { }
+  FlatConverter(Env& e) : EnvKeeper(e), modelapi_(e) { }
 
   /// Trying to use 'Var' instead of bare 'int'
-  using Var = typename Model::Var;
+  using Var = typename FlatModel::Var;
 
   /// 'Invalid' var id
-  static constexpr Var VoidVar() { return Model::VoidVar(); }
+  static constexpr Var VoidVar() { return FlatModel::VoidVar(); }
 
   /// Array of variable Id's
   using VarArray = std::vector<int>;
 
 protected:
-  using ClassType = FlatConverter<Impl, Backend, Model>;
+  using ClassType = FlatConverter<Impl, ModelAPI, FlatModel>;
   using BaseConverter = BasicFlatConverter;
-  using BaseFlatModel = Model;
+  using BaseFlatModel = FlatModel;
 
 
   //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
@@ -883,7 +883,7 @@ public:
     MPD( ConvertModel() );
     if (relax())              // TODO bridge?
       GetModel().RelaxIntegrality();
-    GetModel().PushModelTo(GetBackend());
+    GetModel().PushModelTo(GetModelAPI());
   }
 
 protected:
@@ -906,8 +906,8 @@ protected:
   ///
 public:
   /// Expose abstract Backend
-  const Backend& GetBasicBackend() const { return backend_; }
-  Backend& GetBasicBackend() { return backend_; }
+  const ModelAPI& GetModelAPI() const { return modelapi_; }
+  ModelAPI& GetModelAPI() { return modelapi_; }
 
   /// Expose Presolver
   const pre::Presolver& GetPresolver() const { return presolver_; }
@@ -1055,7 +1055,7 @@ public:
   /// Init FlatConverter options
   void InitOptions() {
     InitOwnOptions();
-    GetBackend().InitOptions();
+    GetModelAPI().InitOptions();
   }
 
 protected:
@@ -1085,11 +1085,11 @@ protected:
     return 0!=options_.preprocessAnything_ && 0!=f;
   }
 
-  using ModelType = Model;
+  using ModelType = FlatModel;
 
 public:
   /// for tests. TODO make friends
-  using BackendType = Backend;
+  using ModelAPIType = ModelAPI;
 
   /// AddWarning. Strings should remain valid
   void AddWarning(const char* key, const char* msg) {
@@ -1098,16 +1098,12 @@ public:
 
 
 private:
-  BackendType backend_;
+  ModelAPIType modelapi_;      // We store modelapi in the converter for speed
   pre::Presolver presolver_;
   pre::CopyBridge copy_bridge_ { GetPresolver() };
 
 
 protected:
-  /// We store backend in the converter for speed
-  const BackendType& GetBackend() const { return backend_; }
-  BackendType& GetBackend() { return backend_; }
-
   /// The internal flat model
   const ModelType& GetModel() const { return *this; }
   ModelType& GetModel() { return *this; }
@@ -1240,7 +1236,8 @@ public:
   pre::CopyBridge& GetCopyBridge() { return copy_bridge_; }
 };
 
-/// A 'final' flat converter in a hierarchy
+
+/// A 'final' flat converter in a CRTP hierarchy
 template <template <typename, typename, typename> class FlatCvt,
           class Backend, class Model = BasicFlatModel< > >
 class FlatCvtImpl :
@@ -1249,7 +1246,6 @@ public:
   using Base = FlatCvt<FlatCvtImpl<FlatCvt, Backend, Model>, Backend, Model>;
   FlatCvtImpl(Env& e) : Base(e) { }
 };
-
 
 } // namespace mp
 

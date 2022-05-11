@@ -18,6 +18,7 @@
 namespace mp {
 
 /// Convert mp::LinearExpr to LinTerms
+inline
 LinTerms ToLinTerms(const LinearExpr& e) {
   LinTerms le;
   le.reserve(e.num_terms());

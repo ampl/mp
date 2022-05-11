@@ -17,9 +17,9 @@ CreateVisitorModelMgr(VisitorCommon& cc, Env& e,
   auto pcvt = new VisitorProblemFlattener(e);
   auto res = CreateModelManagerWithStdBuilder(
         std::unique_ptr< BasicConverter<mp::Problem> >{ pcvt } );
-  pcvt->GetFlatCvt().GetBasicBackend().set_other_visitor(&cc);
+  pcvt->GetFlatCvt().GetModelAPI().set_other_visitor(&cc);
   cc.set_other_visitor(
-        &pcvt->GetFlatCvt().GetBasicBackend());
+        &pcvt->GetFlatCvt().GetModelAPI());
   pPre = &pcvt->GetFlatCvt().GetPresolver();
   return res;
 }

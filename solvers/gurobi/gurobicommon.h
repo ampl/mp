@@ -9,14 +9,38 @@ extern "C" {
   #include "gurobi_c.h"
 }
 
+#include "mp/backend-to-model-api.h"
 #include "mp/arrayref.h"
 #include "mp/format.h"
 #include "mp/error.h"
 
 namespace mp {
 
-/// Common ancestor for GurobiBackend and GurobiModelAPI
-class GurobiCommon {
+/// Information inherited by both
+/// `GurobiBackend` and `GurobiModelAPI`
+struct GurobiCommonInfo {
+  /// GRBenv*
+  GRBenv *env() const { assert(env_); return env_; }
+  /// If has a model pointer
+  bool has_model() const { return model_!=nullptr; }
+  /// GRBmodel*
+  GRBmodel *model() const { assert(model_); return model_; }
+
+protected:
+  GRBenv *&env_ref() { return env_; }
+  void set_env(GRBenv* e) { env_ = e; }
+  GRBmodel *&model_ref() { return model_; }
+  void set_model(GRBmodel* m) { model_ = m; }
+
+private:
+  GRBenv *env_ = nullptr;
+  GRBmodel *model_ = nullptr;
+};
+
+
+/// Common API for GurobiBackend and GurobiModelAPI
+class GurobiCommon :
+    public Backend2ModelAPIConnector<GurobiCommonInfo> {
 public:
   ////////////////////////////////////////////////////////////
   //////////////////////// Metadata //////////////////////////
@@ -90,30 +114,6 @@ public:
   void GrbSetIntParam(const char* key, int value);
   void GrbSetDblParam(const char* key, double value);
   void GrbSetStrParam(const char* key, const std::string& value);
-
-  /// Connection between Backend and ModelAPI
-  GurobiCommon *other_gurobi() { return other_; }
-  /// Set connection
-  void set_other_gurobi(GurobiCommon* o) { other_ = o; }
-
-  /// GRBenv*
-  GRBenv *env() const { return env_; }
-  /// GRBmodel*
-  GRBmodel *model() const { return model_; }
-
-protected:
-  void copy_handlers_from_other_gurobi();
-  void copy_handlers_to_other_gurobi();
-
-  GRBenv *&env_ref() { return env_; }
-  void set_env(GRBenv* e) { env_ = e; }
-  GRBmodel *&model_ref() { return model_; }
-  void set_model(GRBmodel* m) { model_ = m; }
-
-private:
-  GRBenv *env_ = nullptr;
-  GRBmodel *model_ = nullptr;
-  GurobiCommon *other_ = nullptr;
 };
 
 } // namespace mp

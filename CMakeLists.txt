@@ -308,7 +308,7 @@ add_to_folder(${MP_FOLDER_PREFIX}util gen-expr-info)
 add_prefix(MP_HEADERS include/mp/
   ampls-c-api.h ampls-cpp-api.h arrayref.h basic-expr-visitor.h
   backend.h backend-app.h backend-base.h backend-mip.h
-  backend-with-mm.h backend-with-pre.h
+  backend-with-mm.h backend-with-pre.h backend-to-model-api.h
   clock.h common.h converter-base.h
   easy-modeler.h
   env.h error.h expr.h expr-visitor.h
@@ -321,13 +321,13 @@ add_prefix(MP_HEADERS include/mp/
   suffix.h utils-file.h utils-hash.h utils-hash-stream.h utils-string.h)
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/
-  backend_model_api_base.h
   constraint_base.h constraint_keeper.h constraint_hash.h
   constraints_std.h constraints_static.h constraints_functional.h
   constraints_algebraic.h constraints_general.h
   context.h
   converter.h converter_model.h convert_functional.h
   eexpr.h expr_algebraic.h expr_affine.h expr_quadratic.h
+  model_api_base.h model_api_connect.h
   obj_std.h preprocess.h problem_flattener.h)
 
 add_prefix(MP_FLAT_REDEF_HEADERS include/mp/flat/redef/

@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "mp/env.h"
-#include "mp/flat/backend_model_api_base.h"
+#include "mp/flat/model_api_base.h"
 #include "mp/flat/constraints_std.h"
 
 #include "gurobicommon.h"
@@ -12,8 +12,10 @@
 namespace mp {
 
 class GurobiModelAPI :
-    public GurobiCommon, public EnvKeeper, public BasicBackendFlatModelAPI {
-  using BaseModelAPI = BasicBackendFlatModelAPI;
+    public GurobiCommon,
+    public EnvKeeper,
+    public BasicFlatModelAPI {
+  using BaseModelAPI = BasicFlatModelAPI;
 
 public:
   /// Model API name

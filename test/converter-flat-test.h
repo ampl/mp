@@ -5,14 +5,14 @@
 
 #include "gtest/gtest.h"
 
-#include "mp/flat/backend_model_api_base.h"
+#include "mp/flat/model_api_base.h"
 #include "mp/flat/problem_flattener.h"
 #include "mp/flat/converter.h"
 
 template <class Constraint>
 class TestBackendAcceptingConstraints :
-    public mp::BasicBackendFlatModelAPI {
-  using Base = mp::BasicBackendFlatModelAPI;
+    public mp::BasicFlatModelAPI {
+  using Base = mp::BasicFlatModelAPI;
   /// VARIABLES
   mp::VarArrayDef vars_;
 
@@ -94,7 +94,7 @@ public:
   Interface& GetInterface() { return interface_; }
   typename Interface::ModelType& GetModel() { return interface_.GetModel(); }
   Backend& GetBackend()
-  { return interface_.GetFlatCvt().GetBasicBackend(); }
+  { return interface_.GetFlatCvt().GetModelAPI(); }
 };
 
 #define ASSERT_HAS_CONSTRAINT( backend, constr ) \

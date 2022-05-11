@@ -5,7 +5,7 @@
 
 #include "mp/flat/problem_flattener.h"
 #include "mp/flat/redef/MIP/converter_mip.h"
-#include "mp/flat/backend_model_api_base.h"
+#include "mp/flat/model_api_base.h"
 
 namespace mip_converter_test {
 
@@ -100,7 +100,7 @@ void feedInstance( Interface& interface, const MIPInstance& mip ) {
 
 /// A toy backend using struct MIPInstance
 class MIPInstanceBackend :
-    public mp::BasicBackendFlatModelAPI,
+    public mp::BasicFlatModelAPI,
     public mp::EnvKeeper
 {
   MIPInstance instance_;
@@ -122,7 +122,7 @@ public:
   }
 
   /// Allow all constraint types to be compiled
-  USE_BASE_CONSTRAINT_HANDLERS(mp::BasicBackendFlatModelAPI)
+  USE_BASE_CONSTRAINT_HANDLERS(mp::BasicFlatModelAPI)
 
   ACCEPT_CONSTRAINT(mp::LinConEQ, mp::Recommended, mp::CG_Default)
 
@@ -156,7 +156,7 @@ public:
   }
 protected:
   MIPInstanceBackend& GetBackend() {
-    return GetFlatCvt().GetBasicBackend();
+    return GetFlatCvt().GetModelAPI();
   }
 };
 

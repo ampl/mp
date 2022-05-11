@@ -1,7 +1,7 @@
 #include <cfloat>
 
 #include "mp/env.h"
-#include "mp/flat/backend_model_api_base.h"
+#include "mp/flat/model_api_base.h"
 
 #include "gurobibackend.h"
 
@@ -55,15 +55,14 @@ std::string GurobiBackend::GetSolverVersion() {
 
 void GurobiBackend::CloseGurobi() {
   /* Free the fixed model */
-  if (model() != model_fixed_) {
-    assert(model());
+  if (has_model() && model() != model_fixed_) {
     assert(model_fixed_);
     GRBfreemodel(model_fixed_);
   }
   model_fixed_ = nullptr;
 
   /* Free model */
-  if (model()) {
+  if (has_model()) {
     GRBfreemodel(model());
     model_ref() = nullptr;
   }
@@ -94,7 +93,8 @@ void GurobiBackend::OpenGurobiModel() {
   /* Init fixed model */
   model_fixed_ = model();
 
-  copy_handlers_to_other_gurobi();
+  /* Copy handlers to ModelAPI */
+  copy_common_info_to_other();
 }
 
 void GurobiBackend::FinishOptionParsing() {

@@ -3,7 +3,7 @@
 #include <cfloat>
 
 #include "mp/env.h"
-#include "mp/flat/backend_model_api_base.h"
+#include "mp/flat/model_api_base.h"
 #include "visitorbackend.h"
 
 extern "C" {

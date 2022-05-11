@@ -5,16 +5,16 @@
 
 #include "mp/env.h"
 #include "coptcommon.h"
-#include "mp/flat/backend_model_api_base.h"
+#include "mp/flat/model_api_base.h"
 #include "mp/flat/constraints_std.h"
 
 namespace mp {
 
 class CoptModelAPI :
     public CoptCommon, public EnvKeeper,
-    public BasicBackendFlatModelAPI
+    public BasicFlatModelAPI
 {
-  using BaseModelAPI = BasicBackendFlatModelAPI;
+  using BaseModelAPI = BasicFlatModelAPI;
 
 public:
   /// Construct

@@ -19,9 +19,9 @@ CreateHighsModelMgr(HighsCommon& cc, Env& e,
   auto pcvt = new HighsProblemFlattener(e);
   auto res = CreateModelManagerWithStdBuilder(
         std::unique_ptr< BasicConverter<mp::Problem> >{ pcvt } );
-  pcvt->GetFlatCvt().GetBasicBackend().set_other_highs(&cc);
+  pcvt->GetFlatCvt().GetModelAPI().set_other_highs(&cc);
   cc.set_other_highs(
-        &pcvt->GetFlatCvt().GetBasicBackend());
+        &pcvt->GetFlatCvt().GetModelAPI());
   pPre = &pcvt->GetFlatCvt().GetPresolver();
   return res;
 }

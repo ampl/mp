@@ -17,9 +17,9 @@ CreateCplexModelMgr(CplexCommon& cc, Env& e,
   auto pcvt = new CplexProblemFlattener(e);
   auto res = CreateModelManagerWithStdBuilder(
         std::unique_ptr< BasicConverter<mp::Problem> >{ pcvt } );
-  pcvt->GetFlatCvt().GetBasicBackend().set_other_cplex(&cc);
+  pcvt->GetFlatCvt().GetModelAPI().set_other_cplex(&cc);
   cc.set_other_cplex(
-        &pcvt->GetFlatCvt().GetBasicBackend());
+        &pcvt->GetFlatCvt().GetModelAPI());
   pPre = &pcvt->GetFlatCvt().GetPresolver();
   return res;
 }

@@ -7,17 +7,17 @@
 namespace mp {
 
 /// MIPFlatConverter: converts flattened expressions for MIP
-template <class Impl, class Backend,
+template <class Impl, class ModelAPI,
           class Model = BasicFlatModel< > >
 class MIPFlatConverter
-    : public FlatConverter<Impl, Backend, Model>
+    : public FlatConverter<Impl, ModelAPI, Model>
 {
 public:
   /// Class name for diagnostics
   static constexpr const char* GetTypeName() { return "MIPFlatConverter"; }
 
   /// BaseConverter typedef
-  using BaseConverter = FlatConverter<Impl, Backend, Model>;
+  using BaseConverter = FlatConverter<Impl, ModelAPI, Model>;
 
   /// Constructor
   MIPFlatConverter(Env& e) : BaseConverter(e) {  }

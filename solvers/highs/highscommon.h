@@ -4,7 +4,7 @@
 #include <string>
 
 extern "C" {
-  #include "highs_c_api.h"
+  #include "interfaces/highs_c_api.h"
 }
 
 #include "mp/format.h"
