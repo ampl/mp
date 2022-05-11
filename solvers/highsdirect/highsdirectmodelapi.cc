@@ -30,10 +30,8 @@ CreateHighsModelMgr(HighsCommon& cc, Env& e,
 void HighsModelAPI::InitProblemModificationPhase() { }
 
 void HighsModelAPI::AddVariables(const VarArrayDef& v) {
-
-
   std::vector<int> intIndices;
- 
+  std::vector<double> costs(v.size(), 0);
   std::vector<double> lbs(v.size());
   std::vector<double> ubs(v.size());
   for (size_t i = 0; i < v.size(); i++) {
@@ -42,7 +40,7 @@ void HighsModelAPI::AddVariables(const VarArrayDef& v) {
     ubs[i] = std::isinf(v.pub()[i]) ?  Infinity() : v.pub()[i];
 
   }
-  HIGHS_CCALL(Highs_addVars(lp(), v.size(), lbs.data(), ubs.data()));
+  HIGHS_CCALL(Highs_addCols(lp(), v.size(), costs.data(), lbs.data(), ubs.data(), 0, NULL, NULL, NULL));
   std::vector<int> types(intIndices.size(), 1); // TODO get the 1 from solver API?
   HIGHS_CCALL(Highs_changeColsIntegralityBySet(lp(), intIndices.size(),
     intIndices.data(), types.data()));
