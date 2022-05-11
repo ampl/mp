@@ -29,37 +29,24 @@ void CoptCommon::OpenSolver() {
 
 void CoptCommon::CloseSolver() {
   if ( lp() != NULL ) {
-    COPT_CCALL(COPT_DeleteProb(&lp_) );
+    COPT_CCALL(COPT_DeleteProb(&lp_ref()) );
   }
   /* Free up the COPT env()ironment, if necessary */
   if ( env() != NULL ) {
-    COPT_CCALL(COPT_DeleteEnv(&env_) );
+    COPT_CCALL(COPT_DeleteEnv(&env_ref()) );
   }
 }
-
-void CoptCommon::copy_handlers_from_other_copt() {
-  assert(other_copt());
-  env_ = other_copt()->env();
-  lp_ = other_copt()->lp();
-}
-
-void CoptCommon::copy_handlers_to_other_copt() {
-  assert(other_copt());
-  other_copt()->set_env(env_);
-  other_copt()->set_lp(lp_);
-}
-
 
 
 
 int CoptCommon::getIntAttr(const char* name)  const {
   int value;
-  COPT_CCALL(COPT_GetIntAttr(lp_, name, &value));
+  COPT_CCALL(COPT_GetIntAttr(lp(), name, &value));
   return value;
 }
 double CoptCommon::getDblAttr(const char* name) const  {
   double value;
-  COPT_CCALL(COPT_GetDblAttr(lp_, name, &value));
+  COPT_CCALL(COPT_GetDblAttr(lp(), name, &value));
   return value;
 }
 
@@ -88,19 +75,19 @@ int CoptCommon::NumIndicatorCons() const {
 }
 
 void CoptCommon::GetSolverOption(const char* key, int &value) const {
-  COPT_CCALL( COPT_GetIntParam(lp_, key, &value) );
+  COPT_CCALL( COPT_GetIntParam(lp(), key, &value) );
 }
 
 void CoptCommon::SetSolverOption(const char* key, int value) {
-  COPT_CCALL(COPT_SetIntParam(lp_, key, value));
+  COPT_CCALL(COPT_SetIntParam(lp(), key, value));
 }
 
 void CoptCommon::GetSolverOption(const char* key, double &value) const {
-  COPT_CCALL(COPT_GetDblParam(lp_, key, &value) );
+  COPT_CCALL(COPT_GetDblParam(lp(), key, &value) );
 }
 
 void CoptCommon::SetSolverOption(const char* key, double value) {
-  COPT_CCALL(COPT_SetDblParam(lp_, key, value) );
+  COPT_CCALL(COPT_SetDblParam(lp(), key, value) );
 }
 
 void CoptCommon::GetSolverOption(const char* key, std::string &value) const {

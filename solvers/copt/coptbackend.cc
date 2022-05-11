@@ -45,7 +45,7 @@ CoptBackend::CoptBackend() {
   SetMM( std::move( data ) );
   SetPresolver(pPre);
 
-  copy_handlers_to_other_copt();
+  copy_common_info_to_other();
 }
 
 CoptBackend::~CoptBackend() {

@@ -46,7 +46,7 @@ VisitorBackend::VisitorBackend() {
   SetMM( std::move( data ) );
   SetPresolver(pPre);
 
-  copy_handlers_to_other_visitor();
+  copy_common_info_to_other();
 }
 
 VisitorBackend::~VisitorBackend() {

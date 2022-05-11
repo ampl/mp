@@ -3,10 +3,14 @@
 
 #include <string>
 
+#include "mp/backend-to-model-api.h"
+
 extern "C" {
 // TODO Typically import here the solver's C API headers
 //  #include "visitor.h"
 }
+
+/// Fake/typical solver namespace and defs
 namespace Solver {
   enum TYPE {
     VARS = 0,
@@ -41,14 +45,35 @@ namespace Solver {
 }
 
 
+/// The below would go into actual ...common.h:
 
 #include "mp/format.h"
 
 namespace mp {
 
-// Common ancestor for Visitor classes
-class VisitorCommon
-{
+/// Information inherited by both
+/// `VisitorBackend` and `VisitorModelAPI`
+struct VisitorCommonInfo {
+  // TODO provide accessors to the solver's in-memory model/environment
+  //visitor_env* env() const { return env_; }
+  Solver::SolverModel* lp() const { return lp_; }
+
+  // TODO provide accessors to the solver's in-memory model/environment
+  //void set_env(visitor_env* e) { env_ = e; }
+  void set_lp(Solver::SolverModel* lp) { lp_ = lp; }
+
+
+private:
+  // TODO provide accessors to the solver's in-memory model/environment
+  //visitor_env*      env_ = NULL;
+  Solver::SolverModel*      lp_ = NULL;
+
+};
+
+
+/// Common API for Visitor classes
+class VisitorCommon :
+    public Backend2ModelAPIConnector<VisitorCommonInfo> {
 public:
   /// These methods access Visitor options. Used by AddSolverOption()
   void GetSolverOption(const char* key, int& value) const;
@@ -61,14 +86,6 @@ public:
   // TODO Typically solvers define their own infinity; use them here
   static constexpr double Infinity() { return INFINITY;  }
   static constexpr double MinusInfinity() { return -INFINITY; }
-
-  /// Connection between Backend and ModelAPI
-  VisitorCommon *other_visitor() { return other_; }
-  void set_other_visitor(VisitorCommon* o) { other_ = o; }
-
-  // TODO provide accessors to the solver's in-memory model/environment
-  //visitor_env* env() const { return env_; }
-  Solver::SolverModel* lp() const { return lp_; }
 
 protected:
   void OpenSolver();
@@ -84,24 +101,10 @@ protected:
   int NumSOSCons() const;
   int NumIndicatorCons() const;
 
-  // TODO provide accessors to the solver's in-memory model/environment
-  //void set_env(visitor_env* e) { env_ = e; }
-  void set_lp(Solver::SolverModel* lp) { lp_ = lp; }
-
-  void copy_handlers_from_other_visitor();
-  void copy_handlers_to_other_visitor();
-
-
-private:
-  // TODO provide accessors to the solver's in-memory model/environment
-  //visitor_env*      env_ = NULL;
-  Solver::SolverModel*      lp_ = NULL;
-  VisitorCommon *other_ = nullptr;
-
+protected:
   // TODO if desirable, provide function to create the solver's environment
   //int (*createEnv) (solver_env**) = nullptr;
   
-
 };
 
 
