@@ -27,14 +27,6 @@ public:
   /// Typically after initializing solver env/model
   void copy_common_info_to_other() { *get_other() = (CommonInfo&)(*this); }
 
-protected:
-  /// Call this in Backend constructor to create
-  /// a ModelManager with ModelAPI.
-  /// For recompilation speed, define the template
-  /// in <solver>modelapi.cc.
-  template <class MMInfo>
-  static void CreateModelManager(MMInfo& );
-
 private:
   CommonInfo* other_ = nullptr;
 };

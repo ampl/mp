@@ -79,21 +79,6 @@ void VisitorCommon::CloseSolver() {
   */
 }
 
-void VisitorCommon::copy_handlers_from_other_visitor() {
-  assert(other_visitor());
-  /* TODO Implement the following
-  env_ = other_visitor()->env();
-  lp_ = other_visitor()->lp(); */
-}
-
-void VisitorCommon::copy_handlers_to_other_visitor() {
-  assert(other_visitor());
-  /* TODO Implement the following
-  other_visitor()->set_env(env_);
-  other_visitor()->set_lp(lp_); */
-}
-
-
 
 
 int VisitorCommon::getIntAttr(int name)  const {

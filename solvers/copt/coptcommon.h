@@ -7,13 +7,32 @@ extern "C" {
   #include "copt.h"
 }
 
+#include "mp/backend-to-model-api.h"
 #include "mp/format.h"
 
 namespace mp {
 
-// Common ancestor for Copt classes
-class CoptCommon
-{
+/// Information inherited by both
+/// `CoptBackend` and `CoptModelAPI`
+struct CoptCommonInfo {
+  copt_env* env() const { return env_; }
+  copt_env*& env_ref() { return env_; }
+  copt_prob* lp() const { return lp_; }
+  copt_prob*& lp_ref() { return lp_; }
+
+  void set_env(copt_env* e) { env_ = e; }
+  void set_lp(copt_prob* lp) { lp_ = lp; }
+
+
+private:
+  copt_env*      env_ = NULL;
+  copt_prob*      lp_ = NULL;
+};
+
+
+/// Common API for Copt classes
+class CoptCommon :
+    public Backend2ModelAPIConnector<CoptCommonInfo> {
 public:
   /// These methods access Copt options. Used by AddSolverOption()
   void GetSolverOption(const char* key, int& value) const;
@@ -25,14 +44,6 @@ public:
 
   static constexpr double Infinity() { return COPT_INFINITY; }
   static constexpr double MinusInfinity() { return -COPT_INFINITY; }
-
-  /// Connection between Backend and ModelAPI
-  CoptCommon *other_copt() { return other_; }
-  /// Set connection
-  void set_other_copt(CoptCommon* o) { other_ = o; }
-
-  copt_env* env() const { return env_; }
-  copt_prob* lp() const { return lp_; }
 
 protected:
   void OpenSolver();
@@ -48,21 +59,10 @@ protected:
   int NumSOSCons() const;
   int NumIndicatorCons() const;
 
-  void set_env(copt_env* e) { env_ = e; }
-  void set_lp(copt_prob* lp) { lp_ = lp; }
-
-  void copy_handlers_from_other_copt();
-  void copy_handlers_to_other_copt();
-
 
 private:
-  copt_env*      env_ = NULL;
-  copt_prob*      lp_ = NULL;
-  CoptCommon *other_ = nullptr;
 
   int (*createEnv) (copt_env**) = nullptr;
-  
-
 };
 
 

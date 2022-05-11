@@ -4,6 +4,8 @@
 
 namespace mp {
 
+/// Defining the function in ...modelapi.cc
+/// for recompilation speed
 std::unique_ptr<BasicModelManager>
 CreateGurobiModelMgr(GurobiCommon& gc, Env& e,
                      pre::BasicPresolver*& pPre) {
