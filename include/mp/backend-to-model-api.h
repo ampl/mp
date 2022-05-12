@@ -20,10 +20,7 @@ public:
   /// This is standardly called from CreateModelManagerWithModelAPI()
   void set_other(CommonInfo* other) { other_ = other; }
 
-  /// Copy shared info from the other object.
-  /// Typically after initializing solver env/model
-  void copy_common_info_from_other() { (CommonInfo&)(*this) = *get_other(); }
-  /// Copy into.
+  /// Copy into the other object.
   /// Typically after initializing solver env/model
   void copy_common_info_to_other() { *get_other() = (CommonInfo&)(*this); }
 

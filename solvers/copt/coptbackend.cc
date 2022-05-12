@@ -40,11 +40,13 @@ CreateCoptModelMgr(CoptCommon&, Env&, pre::BasicPresolver*&);
 CoptBackend::CoptBackend() {
   OpenSolver();
 
+  /// Create a ModelManager
   pre::BasicPresolver* pPre;
   auto data = CreateCoptModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
   SetPresolver(pPre);
 
+  /// Copy env/lp to ModelAPI
   copy_common_info_to_other();
 }
 

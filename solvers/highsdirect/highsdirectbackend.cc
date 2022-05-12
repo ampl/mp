@@ -46,7 +46,8 @@ HighsBackend::HighsBackend() {
   SetMM( std::move( data ) );
   SetPresolver(pPre);
 
-  copy_handlers_to_other_highs();
+  /// Copy env/lp to ModelAPI
+  copy_common_info_to_other();
 }
 
 HighsBackend::~HighsBackend() {

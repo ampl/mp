@@ -10,7 +10,7 @@ extern "C" {
 //  #include "visitor.h"
 }
 
-/// Fake/typical solver namespace and defs
+/// Instead, faking a typical solver namespace and defs:
 namespace Solver {
   enum TYPE {
     VARS = 0,
@@ -51,7 +51,7 @@ namespace Solver {
 
 namespace mp {
 
-/// Information inherited by both
+/// Information shared by both
 /// `VisitorBackend` and `VisitorModelAPI`
 struct VisitorCommonInfo {
   // TODO provide accessors to the solver's in-memory model/environment

@@ -7,13 +7,28 @@ extern "C" {
   #include "interfaces/highs_c_api.h"
 }
 
+#include "mp/backend-to-model-api.h"
 #include "mp/format.h"
 
 namespace mp {
 
-// Common ancestor for Highs classes
-class HighsCommon
-{
+/// Information shared by both
+/// `HighsBackend` and `HighsModelAPI`
+struct HighsCommonInfo {
+  // TODO provide accessors to the solver's in-memory model/environment
+  //highs_env* env() const { return env_; }
+  void* lp() const { return lp_; }
+
+  void set_lp(void* lp) { lp_ = lp; }
+
+private:
+  void*      lp_ = NULL;
+};
+
+
+/// Common API for Highs classes
+class HighsCommon :
+    public Backend2ModelAPIConnector<HighsCommonInfo> {
 public:
   /// These methods access Highs options. Used by AddSolverOption()
   void GetSolverOption(const char* key, int& value) const;
@@ -30,14 +45,6 @@ public:
   }
   double MinusInfinity() { return -Infinity(); }
 
-  /// Connection between Backend and ModelAPI
-  HighsCommon *other_highs() { return other_; }
-  void set_other_highs(HighsCommon* o) { other_ = o; }
-
-  // TODO provide accessors to the solver's in-memory model/environment
-  //highs_env* env() const { return env_; }
-  void* lp() const { return lp_; }
-
 protected:
   void OpenSolver();
   void CloseSolver();
@@ -53,19 +60,9 @@ protected:
   int NumSOSCons() const;
   int NumIndicatorCons() const;
 
-  void set_lp(void* lp) { lp_ = lp; }
-
-  void copy_handlers_from_other_highs();
-  void copy_handlers_to_other_highs();
-
-
-private:
-  void*      lp_ = NULL;
-  HighsCommon *other_ = nullptr;
-
   // TODO if desirable, provide function to create the solver's environment
   //int (*createEnv) (solver_env**) = nullptr;
-  
+
 
 };
 

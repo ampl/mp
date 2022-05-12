@@ -47,12 +47,14 @@ public:
   /// - Logical, counting, piecewise-linear constraints.
   /// See \a constraints_std.h and other drivers.
 
-  /// The linear range constraint, if supported with basis info etc.
+
+  /// The linear range constraint, if fully supported with basis info etc.
   ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Linear)
   void AddConstraint(const LinConRange& lc);
 
   /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends
-  /// and have an implementation
+  /// and have an implementation,
+  /// or a conversion rule is needed in a derived FlatConverter
   ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
   void AddConstraint(const LinConLE& lc);
   ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)

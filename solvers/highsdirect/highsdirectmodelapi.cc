@@ -5,25 +5,17 @@
 #include "mp/model-mgr-with-std-pb.h"
 #include "mp/flat/problem_flattener.h"
 #include "mp/flat/redef/MIP/converter_mip.h"
-
+#include "mp/flat/model_api_connect.h"
 
 namespace mp {
 
-
+/// Defining the function in ...modelapi.cc
+/// for recompilation speed
 std::unique_ptr<BasicModelManager>
 CreateHighsModelMgr(HighsCommon& cc, Env& e,
                      pre::BasicPresolver*& pPre) {
-  using HighsFlatCvt = FlatCvtImpl<MIPFlatConverter, HighsModelAPI>;
-  using HighsProblemFlattener = mp::ProblemFltImpl<
-    mp::ProblemFlattener, mp::Problem, HighsFlatCvt>;
-  auto pcvt = new HighsProblemFlattener(e);
-  auto res = CreateModelManagerWithStdBuilder(
-        std::unique_ptr< BasicConverter<mp::Problem> >{ pcvt } );
-  pcvt->GetFlatCvt().GetModelAPI().set_other_highs(&cc);
-  cc.set_other_highs(
-        &pcvt->GetFlatCvt().GetModelAPI());
-  pPre = &pcvt->GetFlatCvt().GetPresolver();
-  return res;
+  return CreateModelMgrWithFlatConverter<
+      HighsModelAPI, MIPFlatConverter >(cc, e, pPre);
 }
 
 

@@ -24,64 +24,52 @@ void CplexCommon::OpenSolver() {
 
 void CplexCommon::CloseSolver() {
   if ( lp() != NULL ) {
-     CPLEX_CALL( CPXfreeprob (env(), &lp_) );
+     CPLEX_CALL( CPXfreeprob (env(), &lp_ref()) );
   }
   /* Free up the CPLEX env()ironment, if necessary */
   if ( env() != NULL ) {
-     CPLEX_CALL( CPXcloseCPLEX (&env_) );
+     CPLEX_CALL( CPXcloseCPLEX (&env_ref()) );
   }
-}
-
-void CplexCommon::copy_handlers_from_other_cplex() {
-  assert(other_cplex());
-  env_ = other_cplex()->env();
-  lp_ = other_cplex()->lp();
-}
-
-void CplexCommon::copy_handlers_to_other_cplex() {
-  assert(other_cplex());
-  other_cplex()->set_env(env_);
-  other_cplex()->set_lp(lp_);
 }
 
 
 int CplexCommon::NumLinCons() const {
-  return CPXgetnumrows (env_, lp_);
+  return CPXgetnumrows (env(), lp());
 }
 
 int CplexCommon::NumVars() const {
-  return CPXgetnumcols (env_, lp_);
+  return CPXgetnumcols (env(), lp());
 }
 
 int CplexCommon::NumObjs() const {
-  return CPXgetnumobjs (env_, lp_);
+  return CPXgetnumobjs (env(), lp());
 }
 
 
 void CplexCommon::GetSolverOption(int key, int &value) const {
-  CPLEX_CALL( CPXgetintparam(env_, key, &value) );
+  CPLEX_CALL( CPXgetintparam(env(), key, &value) );
 }
 
 void CplexCommon::SetSolverOption(int key, int value) {
-  CPLEX_CALL( CPXsetintparam(env_, key, value) );
+  CPLEX_CALL( CPXsetintparam(env(), key, value) );
 }
 
 void CplexCommon::GetSolverOption(int key, double &value) const {
-  CPLEX_CALL( CPXgetdblparam(env_, key, &value) );
+  CPLEX_CALL( CPXgetdblparam(env(), key, &value) );
 }
 
 void CplexCommon::SetSolverOption(int key, double value) {
-  CPLEX_CALL( CPXsetdblparam(env_, key, value) );
+  CPLEX_CALL( CPXsetdblparam(env(), key, value) );
 }
 
 void CplexCommon::GetSolverOption(int key, std::string &value) const {
   char buffer[CPX_STR_PARAM_MAX];
-  CPLEX_CALL( CPXgetstrparam(env_, key, buffer) );
+  CPLEX_CALL( CPXgetstrparam(env(), key, buffer) );
   value = buffer;
 }
 
 void CplexCommon::SetSolverOption(int key, const std::string& value) {
-  CPLEX_CALL( CPXsetstrparam(env_, key, value.c_str()) );
+  CPLEX_CALL( CPXsetstrparam(env(), key, value.c_str()) );
 }
 
 

@@ -16,7 +16,7 @@ extern "C" {
 
 namespace mp {
 
-/// Information inherited by both
+/// Information shared by both
 /// `GurobiBackend` and `GurobiModelAPI`
 struct GurobiCommonInfo {
   /// GRBenv*

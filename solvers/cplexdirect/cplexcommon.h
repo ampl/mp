@@ -7,13 +7,31 @@ extern "C" {
   #include <ilcplex/cplex.h>
 }
 
+#include "mp/backend-to-model-api.h"
 #include "mp/format.h"
 
 namespace mp {
 
-// Common ancestor for Cplex classes
-class CplexCommon
-{
+/// Information shared by both
+/// `CplexBackend` and `CplexModelAPI`
+struct CplexCommonInfo {
+  CPXENVptr env() const { return env_; }
+  CPXENVptr& env_ref() { return env_; }
+  CPXLPptr lp() const { return lp_; }
+  CPXLPptr& lp_ref() { return lp_; }
+
+  void set_env(CPXENVptr e) { env_ = e; }
+  void set_lp(CPXLPptr lp) { lp_ = lp; }
+
+private:
+  CPXENVptr     env_ = NULL;
+  CPXLPptr      lp_ = NULL;
+};
+
+
+/// Common API for Cplex classes
+class CplexCommon :
+    public Backend2ModelAPIConnector<CplexCommonInfo> {
 public:
   /// These methods access CPLEX options. Used by AddSolverOption()
   void GetSolverOption(int key, int& value) const;
@@ -26,14 +44,6 @@ public:
   static constexpr double Infinity() { return CPX_INFBOUND; }
   static constexpr double MinusInfinity() { return -CPX_INFBOUND; }
 
-  /// Connection between Backend and ModelAPI
-  CplexCommon *other_cplex() { return other_; }
-  /// Set connection
-  void set_other_cplex(CplexCommon* o) { other_ = o; }
-
-  CPXENVptr env() const { return env_; }
-  CPXLPptr lp() const { return lp_; }
-
 
 protected:
   void OpenSolver();
@@ -42,20 +52,6 @@ protected:
   int NumLinCons() const;
   int NumVars() const;
   int NumObjs() const;
-
-
-  
-  void set_env(CPXENVptr e) { env_ = e; }
-  void set_lp(CPXLPptr lp) { lp_ = lp; }
-
-  void copy_handlers_from_other_cplex();
-  void copy_handlers_to_other_cplex();
-
-
-private:
-  CPXENVptr     env_ = NULL;
-  CPXLPptr      lp_ = NULL;
-  CplexCommon *other_ = nullptr;
 
 };
 

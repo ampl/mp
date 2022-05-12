@@ -66,7 +66,6 @@ public:
   ALLOW_STD_FEATURE(MULTISOL, false)
 
   /**
-   /**
   * Get/Set AMPL var/con statii
   **/
   ALLOW_STD_FEATURE(BASIS, true)
