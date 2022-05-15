@@ -28,7 +28,6 @@ public:
   /// After
   void FinishProblemModificationPhase();
 
-  /// TODO Implement the following functions using the solver's API
   void AddVariables(const VarArrayDef& );
   void SetLinearObjective( int iobj, const LinearObjective& lo );
   void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);

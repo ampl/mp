@@ -55,7 +55,7 @@ protected:
 
   bool isMIP_ = false;
   bool isMIP() const { return isMIP_; }
-  void setIsMIP(bool value) { isMIP_ = value; };
+  void isMIP(bool value) { isMIP_ = value; };
   int NumLinCons() const;
   int NumVars() const;
   int NumObjs() const;
