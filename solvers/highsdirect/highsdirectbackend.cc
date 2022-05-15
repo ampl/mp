@@ -58,20 +58,17 @@ const char* HighsBackend::GetBackendName()
   { return "HighsBackend"; }
 
 std::string HighsBackend::GetSolverVersion() {
-  // TODO Return version from solver API
-  return "0.0.0";
-  //return fmt::format("{}.{}.{}", HIGHS_VERSION_MAJOR, 
-  //  HIGHS_VERSION_MINOR, HIGHS_VERSION_TECHNICAL);
+  return fmt::format("{}.{}.{}", HIGHS_VERSION_MAJOR, 
+    HIGHS_VERSION_MINOR, HIGHS_VERSION_PATCH);
 }
 
 
 bool HighsBackend::IsMIP() const {
-  // TODO
-  return false;
+  return isMIP(); // from backend
 }
 
 bool HighsBackend::IsQCP() const {
-  return false; // TODO
+  return false; 
 }
 
 Solution HighsBackend::GetSolution() {
@@ -126,8 +123,6 @@ void HighsBackend::ExportModel(const std::string &file) {
 
 void HighsBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptHighs, lp());
-  // TODO Check interrupter
-  //HIGHS_CCALL( CPXsetterminate (env(), &terminate_flag) );
 }
 
 void HighsBackend::Solve() {

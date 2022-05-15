@@ -36,12 +36,53 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
 
-  /// TODO For each suppoted constraint type, add the ACCEPT_CONSTRAINT macro
-  /// and the relative AddConstraint function
+
+  struct AccConstraints{
+      /* This is to accumulate the constraints in a format suitable for
+      Highs_addRows(...). Adding them one by one was killing performance
+      unacceptably. */
+      std::vector<double> lb, ub, coeffs;
+      std::vector<HighsInt> starts, indices;
+
+      void add(const LinConRange& lc)
+      {
+        lb.push_back(lc.lb());
+        ub.push_back(lc.ub());
+        coeffs.insert(coeffs.end(), lc.coefs().begin(), lc.coefs().end());
+        indices.insert(indices.end(), lc.vars().begin(), lc.vars().end());
+        starts.push_back(indices.size());
+      }
+      void add(const LinConLE& lc)
+      {
+        lb.push_back(lc.lb());
+        ub.push_back(lc.ub());
+        coeffs.insert(coeffs.end(), lc.coefs().begin(), lc.coefs().end());
+        indices.insert(indices.end(), lc.vars().begin(), lc.vars().end());
+        starts.push_back(indices.size());
+      }
+      void add(const LinConEQ& lc)
+      {
+        lb.push_back(lc.lb());
+        ub.push_back(lc.ub());
+        coeffs.insert(coeffs.end(), lc.coefs().begin(), lc.coefs().end());
+        indices.insert(indices.end(), lc.vars().begin(), lc.vars().end());
+        starts.push_back(indices.size());
+      }
+      void add(const LinConGE& lc)
+      {
+        lb.push_back(lc.lb());
+        ub.push_back(lc.ub());
+        coeffs.insert(coeffs.end(), lc.coefs().begin(), lc.coefs().end());
+        indices.insert(indices.end(), lc.vars().begin(), lc.vars().end());
+        starts.push_back(indices.size());
+      }
+      AccConstraints() {
+        starts.push_back(0);
+      }
+  } AccConstraints;
+
   ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Linear)
   void AddConstraint(const LinConRange& lc);
-  /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends
-  /// and have an implementation
   ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
   void AddConstraint(const LinConLE& lc);
   ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)

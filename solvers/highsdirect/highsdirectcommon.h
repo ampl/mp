@@ -53,6 +53,9 @@ protected:
   int getIntAttr(const char* name) const;
   double getDblAttr(const char* name) const;
 
+  bool isMIP_ = false;
+  bool isMIP() const { return isMIP_; }
+  void setIsMIP(bool value) { isMIP_ = value; };
   int NumLinCons() const;
   int NumVars() const;
   int NumObjs() const;

@@ -33,9 +33,12 @@ void HighsModelAPI::AddVariables(const VarArrayDef& v) {
 
   }
   HIGHS_CCALL(Highs_addCols(lp(), v.size(), costs.data(), lbs.data(), ubs.data(), 0, NULL, NULL, NULL));
-  std::vector<int> types(intIndices.size(), 1); // TODO get the 1 from solver API?
-  HIGHS_CCALL(Highs_changeColsIntegralityBySet(lp(), intIndices.size(),
-    intIndices.data(), types.data()));
+  if (intIndices.size() > 0) {
+    isMIP(true);
+    std::vector<int> types(intIndices.size(), 1); // TODO get the 1 from solver API?
+    HIGHS_CCALL(Highs_changeColsIntegralityBySet(lp(), intIndices.size(),
+      intIndices.data(), types.data()));
+  }
 }
 
 void HighsModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
@@ -47,15 +50,14 @@ void HighsModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
                     obj::Type::MAX==lo.obj_sense() ? 
       kHighsObjSenseMaximize : kHighsObjSenseMinimize) );
   } else {
-//    TODO If we support mutiple objectives, pass them to the solver
-    fmt::format("Setting {}-th linear objective: {} terms.\n", iobj, lo.num_terms());
+      throw std::runtime_error("HighS does not support multiple objectives.");
   }
 }
 
 
 void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
   if (1 > iobj) {
-    SetLinearObjective(iobj, qo);                         // add the linear part
+    SetLinearObjective(iobj, qo);
     const auto& qt = qo.GetQPTerms();
     int nv = NumVars();
     std::vector<int> startCols(nv);
@@ -86,23 +88,26 @@ void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
 }
 
 void HighsModelAPI::AddConstraint(const LinConRange& lc) {
-  HIGHS_CCALL(Highs_addRow(lp(), lc.lb(), lc.ub(), lc.size(), lc.pvars(), lc.pcoefs()));
+  AccConstraints.add(lc);
 }
 void HighsModelAPI::AddConstraint(const LinConLE& lc) {
-  HIGHS_CCALL(Highs_addRow(lp(), lc.lb(), lc.ub(), lc.size(), lc.pvars(), lc.pcoefs()));
+  AccConstraints.add(lc);
 }
 void HighsModelAPI::AddConstraint(const LinConEQ& lc) {
-  HIGHS_CCALL(Highs_addRow(lp(), lc.lb(), lc.ub(), lc.size(), lc.pvars(), lc.pcoefs()));
+  AccConstraints.add(lc);
 }
 void HighsModelAPI::AddConstraint(const LinConGE& lc) {
-  HIGHS_CCALL(Highs_addRow(lp(), lc.lb(), lc.ub(), lc.size(), lc.pvars(), lc.pcoefs()));
+  AccConstraints.add(lc);
 }
-
 
 void HighsModelAPI::FinishProblemModificationPhase() {
-  Highs_writeModel(lp(), "d:/highsout.lp");
+  HIGHS_CCALL(Highs_addRows(lp(),
+    AccConstraints.lb.size(),
+    AccConstraints.lb.data(),
+    AccConstraints.ub.data(),
+    AccConstraints.coeffs.size(),
+    AccConstraints.starts.data(),
+    AccConstraints.indices.data(),
+    AccConstraints.coeffs.data()));
 }
-
-
-
 } // namespace mp
