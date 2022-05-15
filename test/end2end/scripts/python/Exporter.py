@@ -36,10 +36,22 @@ class CSVTestExporter(Exporter):
           return s
 
     def _getHeader(self, mr: ModelRunner):
+        hasModelStats= False
+        hasDriverStats=False
+        for r in mr.getRuns():
+            if "modelStats" in r[-1]:
+                hasModelStats=True
+                break
+        for r in mr.getRuns():
+            if "AMPLstats" in r[-1]:
+                hasDriverStats=True
+                break
         hdr = "Name,\tExpected_Obj,\tVariables,\tInt_Variables,\tConstraints,\tNnz"
         for (i,r) in enumerate(mr.getRuns()):
-            hdr += ",\t{}-Obj,\t{}-Time,\t{}-TimeLimit,\t{}-rss,\t{}-vms".format(
-              r[-1]["solver"], r[-1]["solver"], r[-1]["solver"], r[-1]["solver"], r[-1]["solver"])
+            sname = r[-1]["solver"]
+            hdr += f",\t{sname}-Obj,\t{sname}-Time,\t{sname}-TimeLimit,\t{sname}-rss,\t{sname}-vms"
+            if hasDriverStats:
+                hdr += f",\t{sname}-AMPLreadtime,\t{sname}-AMPLgenerationtime,\t{sname}-AMPLsolvetime"
         for (i,r) in enumerate(mr.getRuns()):
             hdr += ",\t{}-SolverMsg".format(r[-1]["solver"])
         return hdr
@@ -50,6 +62,14 @@ class CSVTestExporter(Exporter):
         res = ",\t{},\t{},\t{},\t{}".format(
             stats["nvars"], stats["nintvars"], stats["nconstr"], stats["nnz"])
         return res
+    def getAMPLStats(run):
+        if not "AMPLstats" in run[-1]:
+            return ",\t-,\t-,\t-"
+        stats = run[-1]["AMPLstats"]
+        res = ",\t{},\t{},\t{}".format(
+            stats["AMPLreadTime"], stats["AMPLgenerationTime"], stats["AMPLsolveTime"])
+        return res
+
     def _getLastResultLine(self, mr: ModelRunner):
         i = len( mr.getRuns()[0] )
         m = mr._models[i-1]
@@ -71,6 +91,7 @@ class CSVTestExporter(Exporter):
               self._getDictMemberOrMissingStr(r[-1], "timelimit"),
               self._getDictMemberOrMissingStr(r[-1], "rss"),
               self._getDictMemberOrMissingStr(r[-1], "vms"))
+            res += CSVTestExporter.getAMPLStats(r)
 
         for (i,r) in enumerate(mr.getRuns()):
             res += ",\t{}".format(

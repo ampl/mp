@@ -60,12 +60,22 @@ int HighsCommon::NumIndicatorCons() const {
   return 0;
 }
 
-void HighsCommon::GetSolverOption(const char* key, int &value) const {
-  HIGHS_CCALL(Highs_getIntOptionValue(lp(), key, &value) );
+void HighsCommon::GetSolverOption(const char* key, int& value) const {
+  int type;
+  Highs_getOptionType(lp(), key, &type);
+  if (type == kHighsOptionTypeBool)
+    HIGHS_CCALL(Highs_getBoolOptionValue(lp(), key, &value));
+  else
+    HIGHS_CCALL(Highs_getIntOptionValue(lp(), key, &value));
 }
 
 void HighsCommon::SetSolverOption(const char* key, int value) {
-  HIGHS_CCALL(Highs_setIntOptionValue(lp(), key, value));
+  int type;
+  Highs_getOptionType(lp(), key, &type);
+  if (type == kHighsOptionTypeBool)
+    HIGHS_CCALL(Highs_setBoolOptionValue(lp(), key, value));
+  else
+    HIGHS_CCALL(Highs_setIntOptionValue(lp(), key, value));
 }
 
 void HighsCommon::GetSolverOption(const char* key, double &value) const {

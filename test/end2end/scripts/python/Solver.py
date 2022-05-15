@@ -285,12 +285,11 @@ class GurobiSolver(AMPLSolver):
                 print("No solution, string: {}".format(n))
                 self._stats["objective"] = None
 
-
-class GurobiDirectSolver(AMPLSolver):
-
+class MPDirectSolver(AMPLSolver):
     def _setLPMethod(self, method : str):
+        # typically have to reimplement this
         m  = "0" if method == "SIMPLEX" else "2"
-        return f"alg:method {m} outlev=1"
+        return f"alg:method {m}"
 
     def _setTimeLimit(self, seconds):
         return "timelim={}".format(seconds)
@@ -299,10 +298,9 @@ class GurobiDirectSolver(AMPLSolver):
         return "threads={}".format(threads)
 
     def _getAMPLOptionsName(self):
-        return "gurobi"
+        raise Exception("Not implemented in base class")
 
-    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        utags = [ModelTags.nonlinear]    ## unsupported
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None, utags=None):
         super().__init__(exeName, timeout, nthreads, otherOptions,utags)
 
     def _doParseSolution(self, st, stdout=None):
@@ -322,9 +320,6 @@ class GurobiDirectSolver(AMPLSolver):
                 self._stats["objective"] = None
 
 
-class CPLEXDirectSolver(GurobiDirectSolver):
-    def _getAMPLOptionsName(self):
-        return "cplexdirect"
 
 
 class CPLEXSolver(AMPLSolver):
@@ -446,42 +441,7 @@ class OcteractSolver(AMPLSolver):
                 return
             
 
-class COPTSolver(AMPLSolver):
 
-
-    def _setLPMethod(self, method : str):
-        m  = "1" if method == "SIMPLEX" else "2"
-        return f"lp:method {m}"
-
-    def _setTimeLimit(self, seconds):
-        return "timelimit={}".format(seconds)
-
-    def _setNThreads(self, threads):
-        return "threads={}".format(threads)
-
-    def _getAMPLOptionsName(self):
-        return "copt"
-
-    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        utagss = [ModelTags.nonlinear, ModelTags.log]
-        super().__init__(exeName, timeout, nthreads, otherOptions, utagss)
-
-    def _doParseSolution(self, st, stdout=None):
-        if not st:
-            self._stats["outmsg"] = "Solution file empty"
-            self._stats["timelimit"] = False
-            return None
-        self._stats["outmsg"] = st[0]
-        self._stats["timelimit"] = "time limit" in st[0]
-        tag = "objective "
-        if tag in st[0]:
-            n = st[0][st[0].index(tag) + len(tag):]
-            try:
-              n = n.split(",")[0]
-              self._stats["objective"] = float(n)
-            except:
-              print("No solution, string: {}".format(n))
-              self._stats["objective"] = None
 
 
 class MindoptSolver(AMPLSolver):
@@ -519,3 +479,82 @@ class MindoptSolver(AMPLSolver):
             except:
               print("No solution, string: {}".format(n))
               self._stats["objective"] = None
+
+
+class XpressSolver(AMPLSolver):
+
+    def _setLPMethod(self, method : str):
+        return "" if method == "SIMPLEX" else "barrier"
+
+    def _setTimeLimit(self, seconds):
+        return "maxtime={}".format(seconds)
+
+    def _setNThreads(self, threads):
+        return "threads={}".format(threads)
+
+    def _getAMPLOptionsName(self):
+        return "xpress"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        utags = [ModelTags.nonlinear]    ## unsupported
+        super().__init__(exeName, timeout, nthreads, otherOptions,utags)
+
+    def _doParseSolution(self, st, stdout=None):
+        if not st:
+            self._stats["outmsg"] = "Solution file empty"
+            self._stats["timelimit"] = False
+            return None
+        self._stats["outmsg"] = st[0]
+        self._stats["timelimit"] = "time limit" in st[0]
+        tag = "objective "
+        if tag in st[0]:
+            n = st[0][st[0].index(tag) + len(tag):]
+            try:
+                self._stats["objective"] = float(n)
+            except:
+                print("No solution, string: {}".format(n))
+                self._stats["objective"] = None
+
+
+class GurobiDirectSolver(MPDirectSolver):
+
+    def _setLPMethod(self, method : str):
+        m  = "0" if method == "SIMPLEX" else "2"
+        return f"alg:method {m}"
+
+    def _getAMPLOptionsName(self):
+        return "gurobi"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        utags = [ModelTags.nonlinear]    ## unsupported
+        super().__init__(exeName, timeout, nthreads, otherOptions,utags)
+
+class CPLEXDirectSolver(MPDirectSolver):
+    def _getAMPLOptionsName(self):
+        return "cplexdirect"
+
+
+
+class HighsSolver(MPDirectSolver):
+    def _setLPMethod(self, method : str):
+        m  = "simplex" if method == "SIMPLEX" else "ipm"
+        return f"alg:method {m}"
+
+    def _getAMPLOptionsName(self):
+        return "highs"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        utags = [ModelTags.nonlinear]   
+        super().__init__(exeName, timeout, nthreads, otherOptions, utags)
+
+class COPTSolver(MPDirectSolver):
+    def _setLPMethod(self, method : str):
+        m  = "1" if method == "SIMPLEX" else "2"
+        return f"lp:method {m}"
+
+    def _getAMPLOptionsName(self):
+        return "copt"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        utagss = [ModelTags.nonlinear, ModelTags.log]
+        super().__init__(exeName, timeout, nthreads, otherOptions, utagss)

@@ -4,9 +4,11 @@ from pathlib import Path
 from shutil import which
 
 from Solver import Solver
-from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, Runnable
+from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, Runnable, ampl
 from Model import Model
-
+import time
+from TimeMe import TimeMe
+from scripts.python.Solver import AMPLSolver
 
 class InnerOutputHandler(OutputHandler):
     def __init__(self, storeOutput = False):
@@ -52,6 +54,8 @@ class AMPLRunner(object):
           self._ampl.eval("reset options;")
           self._setSolverInAMPL()
           return
+        if self.isBenchmark: # must be some issues when closing big AMPL models
+            time.sleep(.5)   # by which amplpy does not exit the constructor
         self._ampl = AMPL()
         self._outputHandler = InnerOutputHandler(storeOutput = self._keepAMPLOutput)
         self._ampl.setOutputHandler(self._outputHandler)
@@ -186,8 +190,15 @@ class AMPLRunner(object):
       self.setupOptions(model)
       if self.isBenchmark:
          print("\n\t\t{0: <20}: Reading... ".format(self._solver.getName()), flush=True, end="")
+      amplStats = { "AMPLreadTime" : "-",
+                   "AMPLgenerationTime" : "-",
+                   "AMPLsolveTime" : "-"
+                   }
+      self.stats["AMPLstats"] = amplStats
+      t = TimeMe()
+      t.tick()
       mp = self.doReadModel(model)
-
+      amplStats["AMPLreadTime"]= t.toc()
       if model.isScript() and mp == None: # if a script ran out of time (had to kill AMPL)
          self._terminateAMPL()
          self.stats["solutionTime"] = self._solver.getTimeout()
@@ -198,7 +209,10 @@ class AMPLRunner(object):
            self.stats["outmsg"] = "Script ran out of time"
          self.stats["timelimit"] = True
          return
+      t.tick()
       try:
+          if self.isBenchmark:
+                print("Generating... ", flush=True, end="")
           ncontvars = self._ampl.getValue("_nvars - _snbvars - _snivars")
           nintvars = self._ampl.getValue("_snbvars  + _snivars")
           nconstr =  self._ampl.getValue("_ncons")
@@ -209,6 +223,7 @@ class AMPLRunner(object):
           nconstr =  0
           nnz  = 0
       
+      amplStats["AMPLgenerationTime"] = t.toc()
       self.stats["modelStats"] = {"nvars" : int(ncontvars),
                                    "nintvars" : int(nintvars),
                                    "nconstr" : int(nconstr),
@@ -216,7 +231,10 @@ class AMPLRunner(object):
       if not model.isScript():
           if self.isBenchmark:
             print("Solving... ", end="")
+          t.tick()
           self._ampl.solve()
+          amplStats["AMPLsolveTime"]= t.toc()
+      self.stats["AMPLstats"] = amplStats
       interval = self._ampl.getValue("_solve_elapsed_time")
       self.stats["solutionTime"] = interval
       v = self.tryGetObjective()
@@ -227,6 +245,7 @@ class AMPLRunner(object):
       else:
         self.stats["outmsg"] = self._ampl.getValue("solve_message")
         self.stats["timelimit"] = self._ampl.getValue("solve_result")
+      self._terminateAMPL()
       return
 
     def setupOptions(self, model: Model):
