@@ -9,7 +9,7 @@
 
 namespace mp {
 
-/// Defining the function in ...modelapi.cc
+/// Defining the function in.modelapi.cc
 /// for recompilation speed
 std::unique_ptr<BasicModelManager>
 CreateHighsModelMgr(HighsCommon& cc, Env& e,

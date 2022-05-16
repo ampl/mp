@@ -15,12 +15,8 @@ namespace mp {
 /// Information shared by both
 /// `HighsBackend` and `HighsModelAPI`
 struct HighsCommonInfo {
-  // TODO provide accessors to the solver's in-memory model/environment
-  //highs_env* env() const { return env_; }
   void* lp() const { return lp_; }
-
   void set_lp(void* lp) { lp_ = lp; }
-
 private:
   void*      lp_ = NULL;
 };
@@ -38,7 +34,6 @@ public:
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);
   double myinf = 0;
-  // TODO Typically solvers define their own infinity; use them here
   double Infinity() {
      if (!myinf) myinf = Highs_getInfinity(lp());
      return myinf;
@@ -62,11 +57,6 @@ protected:
   int NumQPCons() const;
   int NumSOSCons() const;
   int NumIndicatorCons() const;
-
-  // TODO if desirable, provide function to create the solver's environment
-  //int (*createEnv) (solver_env**) = nullptr;
-
-
 };
 
 

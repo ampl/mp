@@ -31,6 +31,7 @@ class HighsBackend :
 {
   using BaseBackend = MIPBackend<HighsBackend>;
 
+  std::vector<int> conStatiii_;
   //////////////////// [[ The public interface ]] //////////////////////
 public:
   HighsBackend();
@@ -60,40 +61,21 @@ public:
   USING_STD_FEATURES;
 
   /**
- * MULTISOL support
- * No API, see ReportIntermediateSolution()
-**/
-  ALLOW_STD_FEATURE(MULTISOL, false)
-
-  /**
   * Get/Set AMPL var/con statii
   **/
   ALLOW_STD_FEATURE(BASIS, true)
   SolutionBasis GetBasis() override;
   void SetBasis(SolutionBasis) override;
 
-  /**
-  * MIP warm start
-  **/
-  // TODO If MIP warm start is supported, implement the function below
-  // to set a non-presolved starting solution
-  ALLOW_STD_FEATURE(MIPSTART, false)
-  void AddMIPStart(ArrayRef<double> x0) override;
-
-
  /**
   * Get MIP Gap
   **/
-  // TODO Implement to return MIP gap
-  // (adds option mip:return_gap)
   ALLOW_STD_FEATURE(RETURN_MIP_GAP, false)
   double MIPGap() override;
   double MIPGapAbs() override;
   /**
   * Get MIP dual bound
   **/
-  // TODO Implement to return the best dual bound value
-  // (adds option mip:bestbound)
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, false)
   double BestDualBound() override;
 
