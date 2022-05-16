@@ -2,7 +2,7 @@
   {
     "name" : "div01 nonconvex=2",
     "objective" : 437.5,
-    "tags" : ["quadratic"],
+    "tags" : ["quadraticnonconvex"],
     "options": {
       "gurobi_options": "nonconvex=2"
     }

@@ -245,7 +245,7 @@ class AMPLRunner(object):
       else:
         self.stats["outmsg"] = self._ampl.getValue("solve_message")
         self.stats["timelimit"] = self._ampl.getValue("solve_result")
-      self._terminateAMPL()
+      # self._terminateAMPL()          ## This breaks end2end tests
       return
 
     def setupOptions(self, model: Model):

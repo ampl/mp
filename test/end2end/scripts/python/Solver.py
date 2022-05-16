@@ -24,7 +24,10 @@ class Solver(object):
             return name
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None,
-                 writeSolverName=False, unsupportedTags=None, lpmethod = None):
+                 writeSolverName=False,
+                 supportedTags=None,
+                 unsupportedTags=None,
+                 lpmethod = None):
         self._exePath = Solver.getExecutableName(exeName)
         self._timeout = timeout
         self._nthreads = nthreads
@@ -34,6 +37,7 @@ class Solver(object):
         self._lpmethod = lpmethod
         self._otherOptions = otherOptions
         self._writeSolverName = writeSolverName
+        self._supportedTags = supportedTags
         self._unsupportedTags = unsupportedTags
 
 
@@ -111,8 +115,12 @@ class Solver(object):
     def getTimeout(self):
         return self._timeout
 
+    def getSupportedTags(self):
+        return self._supportedTags
+
     def getUnsupportedTags(self):
         return self._unsupportedTags
+
 
 class AMPLSolver(Solver):
     """ Main class to inherit from when adding a new solver.
@@ -124,8 +132,11 @@ class AMPLSolver(Solver):
     """
 
     def __init__(self, exeName, timeout=None, nthreads=None,
-                 otherOptions=None, unsupportedTags=None):
-        super().__init__(exeName, timeout, nthreads, otherOptions, unsupportedTags=unsupportedTags)
+                 otherOptions=None,
+                 supportedTags=None, unsupportedTags=None):
+        super().__init__(exeName, timeout, nthreads, otherOptions,
+                         supportedTags=supportedTags,
+                         unsupportedTags=unsupportedTags)
 
     def _setLPMethod(self, method : str):
         raise Exception("Not implemented in base class")
@@ -238,6 +249,7 @@ class LindoSolver(AMPLSolver):
     def _doParseSolution(self, st, stdout=None):
         if st:
             tag = "OBJECTIVE VALUE:"
+            prev = ""
             for line in st:
                 if "LOCAL" in line:
                     self._stats["timelimit"] = True
@@ -266,8 +278,10 @@ class GurobiSolver(AMPLSolver):
         return "gurobi"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        utags = [ModelTags.nonlinear, ModelTags.complementarity]
-        super().__init__(exeName, timeout, nthreads, otherOptions,utags)
+        stags = {
+                 ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.linear, ModelTags.quadratic}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
     def _doParseSolution(self, st, stdout=None):
         if not st:
@@ -285,6 +299,8 @@ class GurobiSolver(AMPLSolver):
                 print("No solution, string: {}".format(n))
                 self._stats["objective"] = None
 
+
+# Mp Direct / FlatConverter drivers
 class MPDirectSolver(AMPLSolver):
     def _setLPMethod(self, method : str):
         # typically have to reimplement this
@@ -300,8 +316,22 @@ class MPDirectSolver(AMPLSolver):
     def _getAMPLOptionsName(self):
         raise Exception("Not implemented in base class")
 
-    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None, utags=None):
-        super().__init__(exeName, timeout, nthreads, otherOptions,utags)
+    def __init__(self, exeName, timeout=None, nthreads=None,
+                 otherOptions=None, stags=None):
+        sDefault = {ModelTags.continuous,
+                    ModelTags.linear,
+                    ModelTags.script}
+        if stags is None:
+            stags = sDefault
+        else:
+            stags = stags | sDefault
+            # Direct/FlatConverter drivers with integer vars:
+            if ModelTags.integer in stags or ModelTags.binary in stags:
+                stags = stags | {ModelTags.complementarity, ModelTags.logical}
+            # Direct/FlatConverter drivers with non-convex quadratics:
+            if ModelTags.quadraticnonconvex in stags:
+                stags = stags | {ModelTags.polynomial}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
     def _doParseSolution(self, st, stdout=None):
         if not st:
@@ -323,7 +353,7 @@ class MPDirectSolver(AMPLSolver):
 
 
 class CPLEXSolver(AMPLSolver):
-    def _setLPMethod(self, method : str):
+    def _setLPMethod(self, method: str):
         return "" if method == "SIMPLEX" else "baropt"
 
     def _setTimeLimit(self, seconds):
@@ -336,8 +366,9 @@ class CPLEXSolver(AMPLSolver):
         return "cplex"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        utags = [ModelTags.nonlinear, ModelTags.complementarity]
-        super().__init__(exeName, timeout, nthreads, otherOptions,utags)
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.quadratic}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
     def _doParseSolution(self, st, stdout=None):
         if not st:
@@ -439,8 +470,6 @@ class OcteractSolver(AMPLSolver):
                 n = l[l.index(tag) + len(tag):]
                 self._stats["objective"] = float(n)
                 return
-            
-
 
 
 
@@ -460,8 +489,7 @@ class MindoptSolver(AMPLSolver):
         return "mindopt"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        utagss = [ModelTags.nonlinear, ModelTags.log, ModelTags.integer]
-        super().__init__(exeName, timeout, nthreads, otherOptions, utagss)
+        super().__init__(exeName, timeout, nthreads, otherOptions)
 
     def _doParseSolution(self, st, stdout=None):
         if not st:
@@ -496,8 +524,9 @@ class XpressSolver(AMPLSolver):
         return "xpress"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        utags = [ModelTags.nonlinear]    ## unsupported
-        super().__init__(exeName, timeout, nthreads, otherOptions,utags)
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.quadratic}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
     def _doParseSolution(self, st, stdout=None):
         if not st:
@@ -518,21 +547,37 @@ class XpressSolver(AMPLSolver):
 
 class GurobiDirectSolver(MPDirectSolver):
 
-    def _setLPMethod(self, method : str):
-        m  = "0" if method == "SIMPLEX" else "2"
+    def _setLPMethod(self, method: str):
+        m = "0" if method == "SIMPLEX" else "2"
         return f"alg:method {m}"
 
     def _getAMPLOptionsName(self):
         return "gurobi"
 
-    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        utags = [ModelTags.nonlinear]    ## unsupported
-        super().__init__(exeName, timeout, nthreads, otherOptions,utags)
+    def __init__(self, exeName, timeout=None, nthreads=None,
+                 otherOptions=None):
+        stags = {
+                 ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.plinear,
+                 ModelTags.quadratic, ModelTags.quadraticnonconvex,
+                 ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
 
 class CPLEXDirectSolver(MPDirectSolver):
     def _getAMPLOptionsName(self):
         return "cplexdirect"
 
+
+    def __init__(self, exeName, timeout=None, nthreads=None,
+                 otherOptions=None):
+        stags = {
+                 ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 # ModelTags.plinear,
+                 # ModelTags.quadratic, ModelTags.quadraticnonconvex,
+                 # ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric
+                 }
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
 class HighsSolver(MPDirectSolver):
@@ -544,8 +589,9 @@ class HighsSolver(MPDirectSolver):
         return "highs"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        utags = [ModelTags.nonlinear]   
-        super().__init__(exeName, timeout, nthreads, otherOptions, utags)
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.quadratic}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 class COPTSolver(MPDirectSolver):
     def _setLPMethod(self, method : str):
@@ -556,5 +602,6 @@ class COPTSolver(MPDirectSolver):
         return "copt"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        utagss = [ModelTags.nonlinear, ModelTags.log]
-        super().__init__(exeName, timeout, nthreads, otherOptions, utagss)
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.quadratic}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
