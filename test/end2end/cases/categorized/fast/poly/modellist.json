@@ -2,7 +2,7 @@
   {
     "name" : "power5 nonconvex=2",
     "objective" : 43559.71572,
-    "tags" : ["quadratic"],
+    "tags" : ["quadraticnonconvex"],
     "options": {
       "gurobi_options": "nonconvex=2"
     }

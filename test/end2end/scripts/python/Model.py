@@ -4,35 +4,36 @@ from collections.abc import Iterable
 
 
 class ModelTags(enum.Enum):
-    NA = 0,
+    NA = 0
 
     linear = 1
     quadratic = 2
-    socp = 3
-    nonlinear = 4
-    quadraticnonsdp = 5,
-    complementarity = 6,
-    arc = 7,
+    quadraticnonconvex = 3
+    socp = 4
+    nonlinear = 5
+    complementarity = 6
+    arc = 7
     plinear = 8
 
-    continuous = 10,
-    integer = 11,
-    binary = 12,
+    continuous = 10
+    integer = 11
+    binary = 12         # For name only, AMPL does not distinguish
 
-    logical = 13,
+    logical = 13
+    polynomial = 14
 
-    trigonometric = 100,
-    htrigonometric = 101,
-    log = 102,
+    trigonometric = 100
+    htrigonometric = 101
+    log = 102
 
-    script = 1000,
+    script = 1000
 
 
     @staticmethod
     def fromString(l):
-        ret = list()
+        ret = set()
         for s in l:
-            ret.append(ModelTags[s])
+            ret = ret | {ModelTags[s]}
         return ret
 
 
@@ -40,7 +41,8 @@ class Model(object):
 
     """Represents a model"""
 
-    def __init__(self, filename, expsolution, tags, otherFiles=None, overrideName=None,description=None):
+    def __init__(self, filename, expsolution, tags, otherFiles=None,
+                 overrideName=None, description=None):
         if isinstance(filename, str):
             filename = Path(filename)
         self._filename = filename
@@ -89,27 +91,38 @@ class Model(object):
     def getAdditionalFiles(self):
         return self._otherFiles
 
-    def hasTag(self, tag : ModelTags):
-      if isinstance(self._tags , Iterable):
-        return tag in self._tags
-      else:
-        return tag == self._tags
+    def hasTag(self, tag: ModelTags):
+        if isinstance(self._tags, Iterable):
+            return tag in self._tags
+        else:
+            return tag == self._tags
 
-    def hasAnyTag(self, tags : list):
-      if tags is None:
+    def hasAnyTag(self, tags: set):
+        if tags is None:
+            return False
+        for tag in tags:
+            if self.hasTag(tag):
+                return True
         return False
-      for tag in tags:
-        if self.hasTag(tag):
-          return True
-      return False
+
+    # Whether this model's tags are a subset of the solver's
+    def isSubsetOfTags(self, tags: set):
+        if tags is None:
+            return False
+        for tag in self._tags:
+            if tag not in tags:
+                return False
+        return True
 
     def isScript(self):
         return self.hasTag(ModelTags.script)
 
     @staticmethod
-    def LINEAR(filename, expsolution, vars: ModelTags = ModelTags.continuous):
+    def LINEAR(filename, expsolution,
+               vars: ModelTags = ModelTags.continuous):
         return Model(filename, expsolution, [ModelTags.linear, vars])
 
     @staticmethod
-    def QUADRATIC(filename, expsolution, vars: ModelTags = ModelTags.continuous):
+    def QUADRATIC(filename, expsolution,
+                  vars: ModelTags = ModelTags.continuous):
         return Model(filename, expsolution, [ModelTags.quadratic, vars])

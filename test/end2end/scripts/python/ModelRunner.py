@@ -43,7 +43,8 @@ class ModelRunner(object):
                         ss = r.getSolver()
                     else:
                         ss = r
-                    if m.hasAnyTag(ss.getUnsupportedTags()):
+                    if not m.isSubsetOfTags(ss.getSupportedTags()) or \
+                            m.hasAnyTag(ss.getUnsupportedTags()):
                         self._runs[i][-1]["outmsg"] = "Skipped, unsupported tags"
                         self._runs[i][-1]["solver"] = ss
                         if r.isBenchmark:
