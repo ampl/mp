@@ -238,6 +238,7 @@ class LindoSolver(AMPLSolver):
     def _doParseSolution(self, st, stdout=None):
         if st:
             tag = "OBJECTIVE VALUE:"
+            prev = ""
             for line in st:
                 if "LOCAL" in line:
                     self._stats["timelimit"] = True
