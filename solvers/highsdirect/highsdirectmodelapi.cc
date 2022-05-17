@@ -59,16 +59,15 @@ void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
   if (1 > iobj) {
     SetLinearObjective(iobj, qo);
     const auto& qt = qo.GetQPTerms();
-    int nv = NumVars();
-    std::vector<int> startCols(nv);
-    int currentCol = 0;
+    std::vector<int> startCols(NumVars());
+    std::vector<double> coeffs(qt.size());
+    int currentCol = 0, newCol = 0;
     startCols[0] = 0;
-    int newCol;
-
-    // Convert to Highs Hessian format
+    // Convert to Highs Hessian upper triangular format
     for (int i = 0; i < qt.size(); i++)
     {
       newCol = qt.vars1()[i];
+      coeffs[i] = (qt.vars2()[i] == newCol) ? qt.coefs()[i]*2 : qt.coefs()[i];
       if (newCol == currentCol)
         continue;
       else if (newCol < currentCol)
@@ -80,7 +79,7 @@ void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
       }
     }
     HIGHS_CCALL(Highs_passHessian(lp(), NumVars(), qt.size(), kHighsHessianFormatTriangular,
-      startCols.data(), qt.pvars2(), qt.pcoefs()));
+      startCols.data(), qt.pvars2(), coeffs.data()));
   }
   else {
     throw std::runtime_error("Multiple quadratic objectives not supported");
