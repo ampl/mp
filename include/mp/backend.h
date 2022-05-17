@@ -655,18 +655,15 @@ protected:
         (Impl*)this, name_list, description, k)));
   }
 
-  /// TODO use vmin/vmax or rely on solver raising error?
-  /// TODO also with ValueTable, deduce type from it
-  template <class KeyType, class ValueType = std::string>
-  void AddSolverOption(const char* name_list, const char* description,
+  template <class KeyType, class ValueType = const char*>
+    void AddSolverOption(const char* name_list, const char* description,
       KeyType k, ValueArrayRef values, ValueType defaultValue) {
     internal::Unused(defaultValue);
     AddOption(SolverOptionManager::OptionPtr(
       new ConcreteOptionWrapper<
-      ValueType, KeyType>(
+      std::string, KeyType>(
         (Impl*)this, name_list, description, k, values)));
   }
-
 
 private:
   struct Options {

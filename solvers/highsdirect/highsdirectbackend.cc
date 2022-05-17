@@ -391,7 +391,7 @@ void HighsBackend::InitCustomOptions() {
     "0*/1: Whether to write HighS log lines (chatter) to stdout and to file.",
     "output_flag", 0, 1);
 
-  std::string c = "choose";
+  const char* c = "choose";
   AddSolverOption("alg:method method lpmethod",
     "Which algorithm to use :\n"
     "\n.. value-table::\n", "solver", lp_values_method, c);
