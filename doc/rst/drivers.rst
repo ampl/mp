@@ -45,7 +45,8 @@ Currently there are three experimental implementations:
 - `copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_
   (available in the AMPL distribution bundle)
 
-
+- `HiGHS <https://github.com/ampl/mp/tree/develop/solvers/highsdirect>`_
+  (see the `repository <https://github.com/ERGO-Code/HiGHS>`_)
 
 Specialized drivers
 -------------------
