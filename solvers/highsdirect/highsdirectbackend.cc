@@ -291,13 +291,16 @@ void HighsBackend::ConStatii(ArrayRef<int> cst) {
 }
 
 void HighsBackend::AddHIGHSMessages() {
-  if (auto ni = SimplexIterations())
+  auto ni = SimplexIterations();
+  if (ni > -1)
     AddToSolverMessage(
           fmt::format("{} simplex iterations\n", ni));
-  if (auto nbi = BarrierIterations())
+  auto nbi = BarrierIterations();
+  if (nbi > -1)
     AddToSolverMessage(
-          fmt::format("{} barrier iterations\n", nbi));
-  if (auto nnd = NodeCount())
+      fmt::format("{} barrier iterations\n", nbi));
+  auto nnd = NodeCount();
+  if (nnd > -1)
     AddToSolverMessage(
           fmt::format("{} branching nodes\n", nnd));
 }

@@ -60,6 +60,12 @@ int HighsCommon::NumIndicatorCons() const {
   return 0;
 }
 
+
+void checkOption(int retvalue, const char* key) {
+  if (retvalue != HIGHS_RETCODE_OK)
+    throw std::runtime_error(fmt::format("while setting option '{}'", key));
+  
+}
 void HighsCommon::GetSolverOption(const char* key, int& value) const {
   int type;
   Highs_getOptionType(lp(), key, &type);
@@ -71,11 +77,13 @@ void HighsCommon::GetSolverOption(const char* key, int& value) const {
 
 void HighsCommon::SetSolverOption(const char* key, int value) {
   int type;
+  int ret;
   Highs_getOptionType(lp(), key, &type);
   if (type == kHighsOptionTypeBool)
-    HIGHS_CCALL(Highs_setBoolOptionValue(lp(), key, value));
+    ret = Highs_setBoolOptionValue(lp(), key, value);
   else
-    HIGHS_CCALL(Highs_setIntOptionValue(lp(), key, value));
+    ret =Highs_setIntOptionValue(lp(), key, value);
+  checkOption(ret, key);
 }
 
 void HighsCommon::GetSolverOption(const char* key, double &value) const {
@@ -83,7 +91,8 @@ void HighsCommon::GetSolverOption(const char* key, double &value) const {
 }
 
 void HighsCommon::SetSolverOption(const char* key, double value) {
-  HIGHS_CCALL(Highs_setDoubleOptionValue(lp(), key, value));
+  int ret = Highs_setDoubleOptionValue(lp(), key, value);
+  checkOption(ret, key);
 }
 
 void HighsCommon::GetSolverOption(const char* key, std::string &value) const {
@@ -93,7 +102,8 @@ void HighsCommon::GetSolverOption(const char* key, std::string &value) const {
 }
 
 void HighsCommon::SetSolverOption(const char* key, const std::string& value) {
-  HIGHS_CCALL(Highs_setStringOptionValue(lp(), key, value.data()));
+  int ret = Highs_setStringOptionValue(lp(), key, value.data());
+  checkOption(ret, key);
 }
 
 
