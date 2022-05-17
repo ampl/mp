@@ -134,7 +134,7 @@ function(add_ampl_solver name)
 
   if(${add_ampl_solver_SHARED_LIB})
     set(shared_lib ${name}-lib)
-    add_library(${shared_lib} SHARED ${MP_BASE_DIR}/solvers/${name}/${name}-lib.c)
+    add_library(${shared_lib} SHARED ${MP_BASE_DIR}/solvers/${name}/${name}-lib.c ${MP_BASE_DIR}/src/solver.cc)
     target_compile_definitions(${shared_lib} PRIVATE MP_SOLVER=${name})
     target_link_libraries(${shared_lib} PRIVATE ${static_lib})
   elseif(${add_ampl_solver_OLD_SHARED_LIB})     ## DEPRECATED

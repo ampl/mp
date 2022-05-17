@@ -33,6 +33,7 @@ public:
   void SetSolverOption(const char* key, double value);
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);
+
   double myinf = 0;
   double Infinity() {
      if (!myinf) myinf = Highs_getInfinity(lp());

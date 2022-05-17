@@ -19,7 +19,7 @@
 /// (normally provided in the <solver>_options string).
 /// Can be NULL.
 /// @return 0 on success, otherwise see slv->warnings_and_or_errors_
-int AMPLSOpenHighs(AMPLS_MP_Solver* slv, const char* slv_opt);
+AMPLS_MP_Solver* AMPLSOpenHighs(const char* slv_opt);
 
 /// Shut down solver instance
 void AMPLSCloseHighs(AMPLS_MP_Solver* slv);
