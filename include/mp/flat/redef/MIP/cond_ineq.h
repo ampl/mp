@@ -73,7 +73,7 @@ protected:
         GetMC().NarrowVarBounds(res, !value, !value);    // fix result
     } else {
       if (GetMC().is_fixed(res)) {
-        if (value==GetMC().fixed_value(res)) { // rsult already fixed,
+        if (value==GetMC().fixed_value(res)) { // result already fixed,
           GetMC().AddConstraint(               // add static constraint
                 AlgConOutput{ con.GetBody(), con.rhs()+eps } );
         }                                      // otherwise, forget

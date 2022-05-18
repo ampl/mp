@@ -102,7 +102,7 @@ void HighsCommon::GetSolverOption(const char* key, std::string &value) const {
 }
 
 void HighsCommon::SetSolverOption(const char* key, const std::string& value) {
-  int ret = Highs_setStringOptionValue(lp(), key, value.data());
+  int ret = Highs_setStringOptionValue(lp(), key, value.c_str());
   checkOption(ret, key);
 }
 

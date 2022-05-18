@@ -12,6 +12,7 @@ endfunction ()
 #
 # Usage:
 #   add_ampl_solver(<name> [DLL_RUNTIME] [SHARED_LIB] [OLD_SHARED_LIB]
+#     [EXENAME exe_name]
 #     [MODULE module]
 #     [source...] [INCLUDE_DIRS dir...] [LIBRARIES lib...] [EXTERNAL])
 #
@@ -40,7 +41,7 @@ endfunction ()
 function(add_ampl_solver name)
   cmake_parse_arguments(add_ampl_solver
     "DLL_RUNTIME;EXTERNAL;SHARED_LIB;OLD_SHARED_LIB"
-    "MODULE"
+    "MODULE;EXENAME"
     "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS"
     ${ARGN})
 
@@ -153,10 +154,17 @@ function(add_ampl_solver name)
   endif()
 
   # Add a solver executable.
-  add_executable(${name} ${dir}main.cc)
-  target_link_libraries(${name} PRIVATE ${static_lib})
+  if(add_ampl_solver_EXENAME)
+    set(exename ${add_ampl_solver_EXENAME})
+    message("Setting exe " ${add_ampl_solver_EXENAME})
+  else()
+    set(exename ${name})
+    message("Setting exe " ${name})
+  endif()
+  add_executable(${exename} ${dir}main.cc)
+  target_link_libraries(${exename} PRIVATE ${static_lib})
 
-  install(TARGETS ${name} DESTINATION bin)
+  install(TARGETS ${exename} DESTINATION bin)
 
   add_to_folder(${name} ampl${name}-static ${shared_lib} ${name})
 endfunction()
@@ -242,9 +250,10 @@ add_ampl_solver(gurobi DLL_RUNTIME SHARED_LIB MODULE GUROBI
   gurobimodelapi.cc gurobimodelapi.h
   gurobicommon.cc gurobicommon.h
   model-mgr-with-std-pb.cc
+  EXENAME x-gurobi
   LIBRARIES ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS})
-if (TARGET gurobi)
-  target_compile_definitions(gurobi PRIVATE main1=main)
+if (TARGET x-gurobi)
+  target_compile_definitions(x-gurobi PRIVATE main1=main)
   if(WIN32)
     target_compile_options(amplgurobi-static PUBLIC /bigobj)
   endif()
