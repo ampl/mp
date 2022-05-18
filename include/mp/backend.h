@@ -179,7 +179,8 @@ public:
   /// Read NL
   void ReadNL(const std::string& nl_filename,
               const std::string& filename_no_ext) override {
-    GetMM().ReadNLModel(nl_filename, filename_no_ext);
+    GetMM().ReadNLModel(nl_filename, filename_no_ext,
+                        GetCallbacks().cb_checkmodel_);
   }
 
   /// Input warm start, suffixes, and all that can modify the model.

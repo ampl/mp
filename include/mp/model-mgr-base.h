@@ -6,6 +6,8 @@
   * which provides model IO, solution handling and suffixes, etc.
   */
 
+#include <functional>
+
 #include "mp/arrayref.h"
 #include "mp/solver-base.h"
 #include "mp/suffix.h"
@@ -28,7 +30,9 @@ public:
 
   /// Read NL model
   virtual void ReadNLModel(const std::string& nl_filename,
-                                   const std::string& filename_no_ext) = 0;
+                           const std::string& filename_no_ext,
+                           std::function<void (size_t, size_t, size_t)>
+                             cb_checkmodel) = 0;
 
   virtual ArrayRef<double> InitialValues() = 0;
   virtual ArrayRef<double> InitialDualValues() = 0;

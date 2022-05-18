@@ -79,7 +79,11 @@ void GurobiBackend::InitOptionParsing() {
 }
 
 void GurobiBackend::OpenGurobi() {
-  GRB_CALL( GRBloadenv(&env_ref(), NULL) );
+  const auto& create_fn = GetCallbacks().cb_initsolver_;
+  if (create_fn)
+    set_env((GRBenv*)create_fn());
+  else
+    GRB_CALL( GRBloadenv(&env_ref(), NULL) );
   OpenGurobiModel();
 }
 

@@ -85,10 +85,17 @@ protected:
   }
 
   void ReadNLModel(const std::string& nl_filename,
-                           const std::string& filename_no_ext) override {
+                   const std::string& filename_no_ext,
+                   std::function<void (size_t, size_t, size_t)>
+                     cb_checkmodel) override {
     steady_clock::time_point start = steady_clock::now();
 
     ReadNLFile(nl_filename);
+
+    if (cb_checkmodel)
+      cb_checkmodel(GetPB().num_vars(),
+                    GetPB().num_algebraic_cons(),
+                    GetPB().num_logical_cons());
 
     double read_time = GetTimeAndReset(start);
     if (GetEnv().timing())

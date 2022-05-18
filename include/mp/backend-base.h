@@ -2,6 +2,7 @@
 #define BACKEND_BASE_H
 
 #include <string>
+#include <functional>
 
 #include "mp/solver-base.h"
 
@@ -74,6 +75,21 @@ public:
   virtual void InitOptionParsing() { }
   /// Chance to consider options immediately (open cloud, etc)
   virtual void FinishOptionParsing() { }
+
+  /// Callbacks
+  struct Callbacks {
+    /// If given, has the custom solver GetEnv() method
+    std::function<void*()> cb_initsolver_;
+    /// If given, should be called after reading the NL (header)
+    /// with n_vars, n_algebraic_constr, n_logical_constr
+    std::function<void (size_t, size_t, size_t)> cb_checkmodel_;
+  };
+
+  /// Obtain callbacks
+  Callbacks& GetCallbacks() { return callbacks_; }
+
+private:
+  Callbacks callbacks_;
 };
 
 } // namespace mp

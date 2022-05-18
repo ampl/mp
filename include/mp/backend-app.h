@@ -24,10 +24,12 @@
 #define INTERFACE_APP_H_
 
 #include <string>
+#include <functional>
 #include <memory>
 
 #include "mp/solver-app-base.h"
 #include "mp/backend-base.h"
+#include "mp/error.h"
 
 namespace mp {
 
@@ -47,14 +49,19 @@ public:
   /// @return app exit code
   virtual int Run(char **argv);
 
+  /// Get result code
+  int GetResultCode() const { return result_code_; }
+
+  /// Get backend, const
+  const BasicBackend& GetBackend() const { return *pb_; }
+
+  /// Get backend
+  BasicBackend& GetBackend() { return *pb_; }
+
 
 protected:
   virtual bool Init(char** argv);
   virtual void InitHandlers();
-
-  int GetResultCode() const { return result_code_; }
-  const BasicBackend& GetBackend() const { return *pb_; }
-  BasicBackend& GetBackend() { return *pb_; }
 
 
 private:
@@ -126,7 +133,31 @@ void BackendApp::InitHandlers() {
   GetBackend().set_output_handler(&output_handler_);
 }
 
-}  // namespace mp
 
+/// Create and run a backend.
+/// @param argv: command-line arguments, null-terminated vector
+/// @param be_creator: backend factory
+/// @param callbacks: special callbacks
+///
+/// @return application exit value
+inline
+int RunBackendApp(char** argv,
+                        std::function<
+                          std::unique_ptr<mp::BasicBackend>() > be_creator,
+                        BasicBackend::Callbacks callbacks = {}) {
+  try {
+    mp::BackendApp s(be_creator());
+    s.GetBackend().GetCallbacks() = callbacks;
+    return s.Run(argv);
+  } catch (const mp::Error &e) {
+    fmt::print(stderr, "Error: {}\n", e.what());
+    return e.exit_code();                // can deliver exit code
+  } catch (const std::exception &e) {
+    fmt::print(stderr, "Error: {}\n", e.what());
+  }
+  return 0;
+}
+
+}  // namespace mp
 
 #endif  // INTERFACE_APP_H_
