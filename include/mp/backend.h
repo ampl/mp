@@ -426,7 +426,7 @@ protected:
 
   //////////////////////// SOLUTION STATUS ADAPTERS ///////////////////////////////
   /** Following the taxonomy of the enum sol, returns true if
-      we have an optimal solution or a feasible solution for a 
+      we have an optimal solution or a feasible solution for a
       satisfaction problem */
   virtual bool IsProblemSolved() const {
     assert(IsSolStatusRetrieved());
@@ -646,6 +646,7 @@ protected:
                   (Impl*)this, name_list, description, k)));
   }
 
+  /// String-valued option
   template <class KeyType, class ValueType = std::string>
   void AddSolverOption(const char* name_list, const char* description,
     KeyType k) {
@@ -655,15 +656,31 @@ protected:
         (Impl*)this, name_list, description, k)));
   }
 
-  template <class KeyType, class ValueType = const char*>
-    void AddSolverOption(const char* name_list, const char* description,
+  /// With value table.
+  /// Type deduced from \a defaultValue
+  template <class KeyType, class ValueType = std::string>
+  void AddSolverOption(const char* name_list, const char* description,
       KeyType k, ValueArrayRef values, ValueType defaultValue) {
     internal::Unused(defaultValue);
     AddOption(SolverOptionManager::OptionPtr(
       new ConcreteOptionWrapper<
-      std::string, KeyType>(
+      ValueType, KeyType>(
         (Impl*)this, name_list, description, k, values)));
   }
+
+
+  /// With value table: specialize for const char*.
+  template <class KeyType>
+  void AddSolverOption(const char* name_list, const char* description,
+                       KeyType k, ValueArrayRef values,
+                       const char* defaultValue) {
+    internal::Unused(defaultValue);
+    AddOption(SolverOptionManager::OptionPtr(
+                new ConcreteOptionWrapper<
+                std::string, KeyType>(
+                  (Impl*)this, name_list, description, k, values)));
+  }
+
 
 private:
   struct Options {
@@ -724,7 +741,7 @@ protected:  //////////// Option accessors ////////////////
 protected:
   virtual void InitStandardOptions() {
     if (IMPL_HAS_STD_FEATURE(KAPPA))
-      AddStoredOption("alg:kappa kappa basis_cond",  
+      AddStoredOption("alg:kappa kappa basis_cond",
         "Whether to return the estimated condition number (kappa) of "
         "the optimal basis (default 0): sum of 1 = report kappa in the result message; "
         "2 = return kappa in the solver-defined suffix kappa on the objective and "
@@ -790,7 +807,7 @@ private:
   const SuffixDef<double> suf_objweight = { "objweight", suf::OBJ | suf::INPUT };
   const SuffixDef<double> suf_objabstol = { "objabstol", suf::OBJ | suf::INPUT };
   const SuffixDef<double> suf_objreltol = { "objreltol", suf::OBJ | suf::INPUT };
-  
+
   const SuffixDef<double> suf_objkappa = { "kappa", suf::OBJ | suf::OUTONLY };
   const SuffixDef<double> suf_probkappa = { "kappa", suf::PROBLEM | suf::OUTONLY };
 
