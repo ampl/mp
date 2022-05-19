@@ -490,7 +490,7 @@ ArrayRef<double> GurobiBackend::DRay() {
                                                {},
                                                {{{CG_Linear, std::move(fd)}}}
                                              });
-  return vm.GetConValues()();
+  return vm.GetConValues().MoveOut(0);   // need the vector itself
 }
 
 IIS GurobiBackend::GetIIS() {

@@ -72,10 +72,12 @@ public:
   /// Make single key, or check one, and return
   Array& MakeSingleKey() { return operator()(); }
 
-  /// Retrieve the single array, const
+  /// Retrieve the single array, const.
+  /// When returning array from a temporary map, use MoveOut()
   const Array& operator()() const
   { assert(IfSingleKey()); return map_.at(0); }
-  /// Retrieve the single array (create if need)
+
+  /// Retrieve the single array (creating if need)
   Array& operator()() {
     if (map_.empty())
       SetValueNodeName(map_[0], name_ + std::to_string(0));
@@ -84,17 +86,24 @@ public:
     return map_[0];
   }
 
-  /// Retrieve the array with index i, const
+  /// Retrieve the array with index \a i, const.
+  /// When returning array from a temporary map, use MoveOut()
   const Array& operator()(int i) const { return map_.at(i); }
-  /// Retrieve the array with index i (create if need)
+
+  /// Retrieve the array with index \a i (creating if need)
   Array& operator()(int i) {
     if (map_.end() == map_.find(i))
       SetValueNodeName(map_[i], name_ + std::to_string(i));
     return map_[i];
   }
 
+  /// Move out array \a i
+  Array MoveOut(int i) { return std::move(map_.at(i)); }
+
+  /// Retrieve the whole map
   const MapType& GetMap() const { return map_; }
 
+  /// Set map name
   void SetName(std::string s) { name_ = std::move(s); }
 
 private:
