@@ -19,6 +19,8 @@ namespace mp {
 /// Information shared by both
 /// `GurobiBackend` and `GurobiModelAPI`
 struct GurobiCommonInfo {
+  /// If has env
+  bool has_env() const { return nullptr!=env_; }
   /// GRBenv*
   GRBenv *env() const { assert(env_); return env_; }
   /// If has a model pointer

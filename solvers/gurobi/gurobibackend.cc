@@ -68,7 +68,7 @@ void GurobiBackend::CloseGurobi() {
   }
 
   /* Free environment */
-  if (env()) {
+  if (has_env()) {
     GRBfreeenv(env());
     env_ref() = nullptr;
   }
