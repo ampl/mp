@@ -770,7 +770,7 @@ class BasicExprFactory : private Alloc {
   explicit BasicExprFactory(Alloc alloc = Alloc()) : Alloc(alloc) {}
 
   virtual ~BasicExprFactory() {
-    Deallocate(exprs_);
+    // Deallocate(exprs_);                                  WORKAROUND. See #174
     Deallocate(funcs_);
   }
 

@@ -326,6 +326,9 @@ public:
   /// Testing constructor
   explicit BasicSolver();
 
+  /// Virtual destructor
+  ~BasicSolver() = default;
+
   /// Parses a solver option string.
   void ParseOptionString(const char *s, unsigned flags);
 
