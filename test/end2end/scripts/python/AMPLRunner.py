@@ -8,7 +8,6 @@ from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, Runnable, ampl
 from Model import Model
 import time
 from TimeMe import TimeMe
-from scripts.python.Solver import AMPLSolver
 
 class InnerOutputHandler(OutputHandler):
     def __init__(self, storeOutput = False):
@@ -20,6 +19,7 @@ class InnerOutputHandler(OutputHandler):
       if self._storeOutput:
         self._kinds.append(kind)
         self._msgs.append(msg)
+        print(msg, flush=True)
       pass
     def getMessages(self):
       return self._msgs
@@ -39,6 +39,7 @@ class AMPLRunner(object):
 
     def __init__(self, solver=None, optionsExtra=None, writeSolverName = False,
                  keepAMPLOutput = False):
+        self.isBenchmark = False
         if solver:
             self.setSolver(solver)
         else:
@@ -54,13 +55,14 @@ class AMPLRunner(object):
           self._ampl.eval("reset options;")
           self._setSolverInAMPL()
           return
-        if self.isBenchmark: # must be some issues when closing big AMPL models
-            time.sleep(.5)   # by which amplpy does not exit the constructor
+        if self.isBenchmark: # Issues with non-server licenses
+            time.sleep(.5)   # so wait until the license is released
         self._ampl = AMPL()
-        self._outputHandler = InnerOutputHandler(storeOutput = self._keepAMPLOutput)
+        doLogs = self._logFile is not None
+        self._outputHandler = InnerOutputHandler(storeOutput = doLogs)
         self._ampl.setOutputHandler(self._outputHandler)
         self._ampl.setErrorHandler(InnerErrorHandler(self.appendError))
-        self._ampl.setOption("solver_msg", 0)
+        self._ampl.setOption("solver_msg", 1 if doLogs else 0)
         if self._solver:
           self._setSolverInAMPL()
         self._amplInitialized = True
@@ -177,15 +179,16 @@ class AMPLRunner(object):
             self._ampl.cd(mp)
         return self.readModel(model)
 
-    def runAndEvaluate(self, model: Model):
-        self._run(model)
+    def runAndEvaluate(self, model: Model, logFile : str):
+        self._run(model, logFile)
         self._evaluateRun(model)
         # Todo: check bug in the API (or in amplpy) by which old objectives are 
         # reported after reset. Terminating AMPL each time takes care of the problem
         # but it's hardly efficient
         # self._terminateAMPL()
 
-    def _run(self, model: Model):
+    def _run(self, model: Model,  logFile : str = None):
+      self._logFile = logFile
       self.doInit(model)
       self.setupOptions(model)
       if self.isBenchmark:
@@ -208,6 +211,10 @@ class AMPLRunner(object):
          else:
            self.stats["outmsg"] = "Script ran out of time"
          self.stats["timelimit"] = True
+         if logFile is not None:
+             logs = self._outputHandler.getMessages(self)
+             with open(logFile, 'w') as f:
+                f.write(logs)
          return
       t.tick()
       try:

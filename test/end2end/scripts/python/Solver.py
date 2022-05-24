@@ -7,7 +7,7 @@ from Model import Model, ModelTags
 from TimeMe import TimeMe
 import psutil
 import time
-from operator import itemgetter
+from threading import Timer  
 
 class Solver(object):
 
@@ -76,14 +76,17 @@ class Solver(object):
                 ": value " + str(val) + \
                 ", expected " + str(expval)
 
-    def runAndEvaluate(self, model: Model):
+    def runAndEvaluate(self, model: Model, logFile : str = None):
         t = TimeMe()
         self._stats = { "solver": self.getName() }
         sol = model.getSolFilePath()
         if sol.exists():
             sol.unlink()
         with t:
-            stdout = self._doRun(model)
+            stdout = self._doRun(model, logFile = logFile)
+            if logFile is not None:
+                with open(logFile, 'w') as f:
+                    f.write(stdout)
         self._stats["solutionTime"] = t.interval
         self._getSolution(model, stdout)
         self._evaluateRun(model)
@@ -153,7 +156,7 @@ class AMPLSolver(Solver):
     def _doParseSolution(self, st, stdout=None):
         raise Exception("Not implemented in base class")
 
-    def _doRun(self,  model: Model,):
+    def _doRun(self,  model: Model, logFile : str):
         toption = ""
         if self._timeout:
             try:
@@ -169,17 +172,22 @@ class AMPLSolver(Solver):
         try:
             if toption:
                 return self._runProcess([self._exePath, model.getFilePath(), "-AMPL", toption],
-                                        vestigial=True)
+                                        timeout=self._timeout, logFile = logFile)
                 
             else:
                 return self._runProcess([self._exePath, model.getFilePath(), "-AMPL"],
-                                               timeout=self._timeout)
+                                               timeout=self._timeout, logFile = logFile)
         except subprocess.TimeoutExpired:
             pass
         except subprocess.CalledProcessError as e:
             print(str(e))
 
-    def _runProcess(self, args : list, vestigial=False, timeout=None):
+    def stopProcess(p):
+        # forcefully terminate solvers that do not terminate automatically 
+        # after timeout
+        p.terminate()
+
+    def _runProcess(self, args : list, vestigial=False, timeout=None, logFile = None):
       # ritorna stdout
       # throws if not successfull
          if vestigial:
@@ -191,6 +199,9 @@ class AMPLSolver(Solver):
               resultTable = []
               SLICE_IN_SECONDS = 1
               p = subprocess.Popen(args, universal_newlines=True, stdout=subprocess.PIPE)
+              if self._timeout:
+                  t = Timer(self._timeout+5, AMPLSolver.stopProcess, [p])
+                  t.start()
               try:
                 ps = psutil.Process(p.pid)
               except:
@@ -202,8 +213,10 @@ class AMPLSolver(Solver):
                   except:
                     pass
                   time.sleep(SLICE_IN_SECONDS)
-              exit = p.poll()
               (out,err) = p.communicate()
+              if logFile is not None:
+                print(out, flush=True)
+                print(err, flush=True)
               rss = max([p.rss for p in resultTable])
               vms = max([p.vms for p in resultTable])
               self._stats["rss"]= rss

@@ -1,7 +1,7 @@
 from Solver import Solver
 from AMPLRunner import AMPLRunner
 from TimeMe import TimeMe
-
+from Model import Model
 
 class ModelRunner(object):
     """Class to run a set of models and capture their outputs"""
@@ -11,11 +11,14 @@ class ModelRunner(object):
         self._amplRunners = None
         self._runs = [ list() for r in self._runners ]
         self._optionsExtra = optionsExtra
-        
+
     def getRuns(self):
         return self._runs
 
-    def run(self, modelList: list, exporter=None):
+    def getLogFileName(m : Model, s : Solver):
+        return f"{m.getName()}.{s.getName()}.log"
+
+    def run(self, modelList: list, exporter=None, keepLogs = False):
         """Run the models in this instance. If exporter != None, it exports the results as it goes"""
         self._models = modelList
         n = 0
@@ -34,7 +37,6 @@ class ModelRunner(object):
             print("{0: <80}".format(msg), end="", flush=True)
             t = TimeMe()
             failedSome = False
-            lastModel = None
             with t:
                 for (i,r) in enumerate(cr):
                     r.isBenchmark = len(cr) > 1
@@ -52,7 +54,10 @@ class ModelRunner(object):
                         else:
                             print("Skipped due to unsupported tags", flush=True)
                         continue
-                    r.runAndEvaluate(m)
+                    if keepLogs:
+                        r.runAndEvaluate(m, logFile=ModelRunner.getLogFileName(m, ss))
+                    else:
+                        r.runAndEvaluate(m)
                     stats = r.getSolutionStats()
                     self._runs[i][-1] = stats
                     if exporter:

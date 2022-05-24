@@ -49,6 +49,8 @@ class Tester:
                         help='prefer NL models if both AMPL and NL are present')
         self._parser.add_argument('--justNL', action="store_true",
                         help='only run NL models. Useful when AMPL executable is not available')
+        self._parser.add_argument('--keepLogs', action="store_true",
+                        help='keep log files for each run')
 
         self._args = self._parser.parse_args()
 
@@ -76,7 +78,8 @@ class Tester:
                   recursive=not self._args.nonrecursive,
                   modellist=not self._args.allfiles,
                   preferAMPLModels=not self._args.preferNL,
-                  justNL=self._args.justNL)
+                  justNL=self._args.justNL,
+                  keepLogs=self._args.keepLogs)
 
 
 def runTester():
