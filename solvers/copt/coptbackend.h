@@ -123,6 +123,8 @@ public:  // public for static polymorphism
   void InitCustomOptions() override;
 
 protected:
+  void OpenSolver();
+  void CloseSolver();
 
   void ExportModel(const std::string& file);
 

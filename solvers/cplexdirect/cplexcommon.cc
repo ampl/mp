@@ -3,36 +3,6 @@
 
 namespace mp {
 
-void CplexCommon::OpenSolver() {
-  int status;
-  set_env( CPXopenCPLEX (&status) );
-  if ( env() == NULL ) {
-     char  errmsg[CPXMESSAGEBUFSIZE];
-     CPXgeterrorstring (env(), status, errmsg);
-     throw std::runtime_error(
-       fmt::format("Could not open CPLEX environment.\n{}", errmsg ) );
-  }
-
-  CPLEX_CALL( CPXsetintparam (env(), CPXPARAM_ScreenOutput, CPX_ON) );
-
-  /* Create an empty model */
-  set_lp( CPXcreateprob (env(), &status, "amplcplex") );
-  if (status)
-    throw std::runtime_error( fmt::format(
-          "Failed to create problem, error code {}.", status ) );
-}
-
-void CplexCommon::CloseSolver() {
-  if ( lp() != NULL ) {
-     CPLEX_CALL( CPXfreeprob (env(), &lp_ref()) );
-  }
-  /* Free up the CPLEX env()ironment, if necessary */
-  if ( env() != NULL ) {
-     CPLEX_CALL( CPXcloseCPLEX (&env_ref()) );
-  }
-}
-
-
 int CplexCommon::NumLinCons() const {
   return CPXgetnumrows (env(), lp());
 }

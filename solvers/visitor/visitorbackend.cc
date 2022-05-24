@@ -55,6 +55,56 @@ VisitorBackend::~VisitorBackend() {
   CloseSolver();
 }
 
+void VisitorBackend::OpenSolver() {
+  int status = 0;
+  // TODO Typically this function creates an instance of the solver environment
+  // and an empty model
+  void* env_p;
+  // Typically try the registered function first;
+  // if not available call the solver's API function directly
+  /*
+  const auto& create_fn = GetCallbacks().cb_initsolver_;
+  if (create_fn)
+    set_env((GRBenv*)create_fn());
+  else
+    status = createEnv(&env_p);
+    */
+  // set_env(env_p);
+
+  /* Todo catch errors
+  if ( env() == NULL ) {
+    // char  errmsg[CPXMESSAGEBUFSIZE];
+    // CPXgeterrorstring (env(), status, errmsg);
+     throw std::runtime_error(
+       fmt::format("Could not open VISITOR environment.\n{}", status) );
+  }
+  */
+
+  /* TODO Create problem instance
+  visitor_prob* prob;
+  status = VISITOR_CreateProb(env_p, &prob);
+ */
+  Solver::SolverModel* prob = Solver::CreateSolverModel();
+  set_lp(prob); // Assign it
+  if (status)
+    throw std::runtime_error( fmt::format(
+          "Failed to create problem, error code {}.", status ) );
+  /* TODO Typically check call */
+  // VISITOR_CCALL(VISITOR_SetIntParam(prob, "Logging", 0));
+
+}
+
+void VisitorBackend::CloseSolver() {
+  /* TODO Cleanup: close problem and environment
+  if ( lp() != NULL ) {
+    VISITOR_CCALL(VISITOR_DeleteProb(&lp_) );
+  }
+  if ( env() != NULL ) {
+    VISITOR_CCALL(VISITOR_DeleteEnv(&env_) );
+  }
+  */
+}
+
 const char* VisitorBackend::GetBackendName()
   { return "VisitorBackend"; }
 

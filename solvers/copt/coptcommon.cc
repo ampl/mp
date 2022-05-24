@@ -3,42 +3,6 @@
 
 namespace mp {
 
-void CoptCommon::OpenSolver() {
-  int status = 0;
-  copt_env* env_p;
-  if (createEnv == nullptr)
-    status = COPT_CreateEnv(&env_p);
-  else
-    status = createEnv(&env_p);
-  set_env(env_p);
-  if ( env() == NULL ) {
-     throw std::runtime_error(
-       fmt::format("Could not open COPT environment.\n{}", status) );
-  }
-  copt_prob* prob;
-  status = COPT_CreateProb(env_p, &prob);
- 
-  /* Create an empty model */
-  set_lp(prob);
-  if (status)
-    throw std::runtime_error( fmt::format(
-          "Failed to create problem, error code {}.", status ) );
-  COPT_CCALL(COPT_SetIntParam(prob, "Logging", 0));
-
-}
-
-void CoptCommon::CloseSolver() {
-  if ( lp() != NULL ) {
-    COPT_CCALL(COPT_DeleteProb(&lp_ref()) );
-  }
-  /* Free up the COPT env()ironment, if necessary */
-  if ( env() != NULL ) {
-    COPT_CCALL(COPT_DeleteEnv(&env_ref()) );
-  }
-}
-
-
-
 int CoptCommon::getIntAttr(const char* name)  const {
   int value;
   COPT_CCALL(COPT_GetIntAttr(lp(), name, &value));

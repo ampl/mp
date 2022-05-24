@@ -79,6 +79,8 @@ void GurobiBackend::InitOptionParsing() {
 }
 
 void GurobiBackend::OpenGurobi() {
+  // Typically try the registered function first;
+  // if not available call the solver's API function directly
   const auto& create_fn = GetCallbacks().cb_initsolver_;
   if (create_fn)
     set_env((GRBenv*)create_fn());
