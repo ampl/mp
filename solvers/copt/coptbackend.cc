@@ -37,17 +37,44 @@ std::unique_ptr<BasicModelManager>
 CreateCoptModelMgr(CoptCommon&, Env&, pre::BasicPresolver*&);
 
 
-CoptBackend::CoptBackend() {
-  OpenSolver();
+void CoptBackend::OpenSolver() {
+  int status = 0;
+  const auto& create_fn = GetCallbacks().cb_initsolver_;
+  if (create_fn)
+    set_env((copt_env*)create_fn());
+  else
+    COPT_CCALL(COPT_CreateEnv(&env_ref()));
+  if (env() == NULL) {
+    throw std::runtime_error(
+      fmt::format("Could not open COPT environment.\n{}", status));
+  }
+  
+  /* Create an empty model */
+  status = COPT_CreateProb(env(), &lp_ref());
+  if (status)
+    throw std::runtime_error(fmt::format(
+      "Failed to create problem, error code {}.", status));
+  COPT_CCALL(COPT_SetIntParam(lp(), "Logging", 0));
+  /* Copy handlers to ModelAPI */
+  copy_common_info_to_other();
+  SetSolverOption(COPT_INTPARAM_LOGGING, 0);
+}
 
+void CoptBackend::CloseSolver() {
+  if (lp() != NULL) {
+    COPT_CCALL(COPT_DeleteProb(&lp_ref()));
+  }
+  if (env() != NULL) {
+    COPT_CCALL(COPT_DeleteEnv(&env_ref()));
+  }
+}
+
+CoptBackend::CoptBackend() {
   /// Create a ModelManager
   pre::BasicPresolver* pPre;
   auto data = CreateCoptModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
   SetPresolver(pPre);
-
-  /// Copy env/lp to ModelAPI
-  copy_common_info_to_other();
 }
 
 CoptBackend::~CoptBackend() {
@@ -69,6 +96,9 @@ bool CoptBackend::IsMIP() const {
 
 bool CoptBackend::IsQCP() const {
   return getIntAttr(COPT_INTATTR_QCONSTRS) > 0;
+}
+void CoptBackend::InitOptionParsing() {
+  OpenSolver();
 }
 
 Solution CoptBackend::GetSolution() {
@@ -288,7 +318,6 @@ void CoptBackend::InitCustomOptions() {
       "0-1: output logging verbosity. "
       "Default = 0 (no logging).",
     COPT_INTPARAM_LOGGING, 0, 1);
-  SetSolverOption(COPT_INTPARAM_LOGGING, 0);
 
   AddStoredOption("tech:exportfile writeprob",
       "Specifies the name of a file where to export the model before "

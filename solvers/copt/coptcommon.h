@@ -46,9 +46,6 @@ public:
   static constexpr double MinusInfinity() { return -COPT_INFINITY; }
 
 protected:
-  void OpenSolver();
-  void CloseSolver();
-
   int getIntAttr(const char* name) const;
   double getDblAttr(const char* name) const;
 

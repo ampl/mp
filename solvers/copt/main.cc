@@ -13,3 +13,10 @@ extern "C" int main1(int, char **argv) {
   }
   return 0;
 }
+
+
+extern "C" int main2(int, char** argv,
+  void* (*init)(), void (*check)(size_t, size_t, size_t)) {
+  mp::BasicBackend::Callbacks callbacks = { init, check };
+  return mp::RunBackendApp(argv, CreateCoptBackend, callbacks);
+}

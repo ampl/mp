@@ -46,7 +46,7 @@ public:
   static const char* GetBackendLongName() { return nullptr; }
 
   /// Chance for the Backend to init solver environment, etc
-  void InitOptionParsing() override { }
+  void InitOptionParsing() override;
   /// Chance to consider options immediately (open cloud, etc)
   void FinishOptionParsing() override;
 
@@ -102,6 +102,7 @@ public:
   bool IsMIP() const override;
   bool IsQCP() const override;
   
+
   //////////////////////////// SOLVING ///////////////////////////////
 
   /// Note the interrupt notifier
@@ -121,6 +122,8 @@ public:
   ///////////////////////////////////////////////////////////////////////////////
 public:  // public for static polymorphism
   void InitCustomOptions() override;
+  void OpenSolver();
+  void CloseSolver();
 
 protected:
 
