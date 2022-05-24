@@ -38,11 +38,11 @@ public:
   ~HighsBackend();
 
   /// Name displayed in messages
-  static const char* GetSolverName() { return "x-HIGHS"; }
+  static const char* GetSolverName() { return "HiGHS"; }
   std::string GetSolverVersion();
   
   static const char* GetAMPLSolverName() { return "highs"; }
-  static const char* GetAMPLSolverLongName() { return "AMPL-HIGHS"; }
+  static const char* GetAMPLSolverLongName() { return "AMPL-HiGHS"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 

@@ -41,7 +41,7 @@ endfunction ()
 function(add_ampl_solver name)
   cmake_parse_arguments(add_ampl_solver
     "DLL_RUNTIME;EXTERNAL;SHARED_LIB;OLD_SHARED_LIB"
-    "MODULE;EXENAME"
+    "MODULE;EXENAME;VERSION"
     "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS"
     ${ARGN})
 
@@ -118,6 +118,7 @@ function(add_ampl_solver name)
       set(sources ${sources} ${s})
     endforeach() 
   endif()
+
   # Add a solver static library to be linked with the shared library and
   # the executable.
   set(static_lib ampl${name}-static)
@@ -126,6 +127,9 @@ function(add_ampl_solver name)
     PUBLIC ${include_dirs} ${MP_BASE_DIR}/solvers)
   target_link_libraries(${static_lib} PUBLIC ${libraries})
   target_compile_options(${static_lib} PUBLIC ${definitions})
+  if(add_ampl_solver_VERSION)
+      target_compile_definitions(${static_lib} PUBLIC DRIVER_DATE=${add_ampl_solver_VERSION})
+  endif()
   set_property(TARGET ${static_lib}  PROPERTY CXX_STANDARD 11)
   if (use_dll_runtime)
     target_link_libraries(${static_lib} PUBLIC mp-dynrt)

@@ -48,6 +48,12 @@ DEFAULT_STD_FEATURES_TO( false )
 #define STD_FEATURE_QUERY_FN AllowStdFeature__func
 #define STD_FEATURE_STRUCT_NM( name ) StdFeatureDesc__ ## name
 
+// Enable driver-by-driver versioning without breaking compatibility
+#ifndef DRIVER_DATE
+  #define DRIVER_DATE MP_DATE
+#endif
+
+
 
 namespace mp {
 
@@ -86,7 +92,7 @@ public:
   /// Unused
   static const char* GetAMPLSolverLongName() { return nullptr; }
   /// Unused
-  static long Date() { return MP_DATE; }
+  static long Date() { return DRIVER_DATE; }
 
 
   /// Further, using virtual methods for convenience (CRTP not essential)
