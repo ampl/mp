@@ -30,57 +30,6 @@ namespace Solver {
 }
 namespace mp {
 
-void VisitorCommon::OpenSolver() {
-  int status = 0;
-  // TODO Typically this function creates an instance of the solver environment
-  // and an empty model
-  void* env_p;
-  // Typically try the registered function first (see visitorcommon.h);
-  // if not available call the solver's API function directly
-  /*
-  if (createEnv == nullptr)
-    status = VISITOR_CreateEnv(&env_p);
-  else
-    status = createEnv(&env_p);
-    */
-  // set_env(env_p); // TODO Set the environment in the VisitorCommon class
-
-  /* Todo catch errors 
-  if ( env() == NULL ) {
-    // char  errmsg[CPXMESSAGEBUFSIZE]; 
-    // CPXgeterrorstring (env(), status, errmsg);
-     throw std::runtime_error(
-       fmt::format("Could not open VISITOR environment.\n{}", status) );
-  }
-  */
-
-  /* TODO Create problem instance 
-  visitor_prob* prob;
-  status = VISITOR_CreateProb(env_p, &prob);
- */
-  Solver::SolverModel* prob = Solver::CreateSolverModel();
-  set_lp(prob); // Assign it
-  if (status)
-    throw std::runtime_error( fmt::format(
-          "Failed to create problem, error code {}.", status ) );
-  /* TODO Typically check call */
-  // VISITOR_CCALL(VISITOR_SetIntParam(prob, "Logging", 0));
-
-}
-
-void VisitorCommon::CloseSolver() {
-  /* TODO Cleanup: close problem and environment 
-  if ( lp() != NULL ) {
-    VISITOR_CCALL(VISITOR_DeleteProb(&lp_) );
-  }
-  if ( env() != NULL ) {
-    VISITOR_CCALL(VISITOR_DeleteEnv(&env_) );
-  }
-  */
-}
-
-
-
 int VisitorCommon::getIntAttr(int name)  const {
   int value = 0;
   /* TODO Utility function to get the value of an integer attribute 

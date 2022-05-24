@@ -606,6 +606,7 @@ class HighsSolver(MPDirectSolver):
                  ModelTags.quadratic}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
+
 class COPTSolver(MPDirectSolver):
     def _setLPMethod(self, method : str):
         m  = "1" if method == "SIMPLEX" else "2"

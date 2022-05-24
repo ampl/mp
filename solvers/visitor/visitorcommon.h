@@ -88,9 +88,6 @@ public:
   static constexpr double MinusInfinity() { return -INFINITY; }
 
 protected:
-  void OpenSolver();
-  void CloseSolver();
-
   int getIntAttr(int name) const;
   double getDblAttr(const char* name) const;
 

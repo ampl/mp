@@ -46,9 +46,6 @@ public:
 
 
 protected:
-  void OpenSolver();
-  void CloseSolver();
-
   int NumLinCons() const;
   int NumVars() const;
   int NumObjs() const;
