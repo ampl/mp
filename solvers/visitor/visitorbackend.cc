@@ -90,6 +90,7 @@ void VisitorBackend::OpenSolver() {
     throw std::runtime_error( fmt::format(
           "Failed to create problem, error code {}.", status ) );
   /* TODO Typically check call */
+  /// Turn off verbosity by default
   // VISITOR_CCALL(VISITOR_SetIntParam(prob, "Logging", 0));
 
 }

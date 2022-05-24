@@ -10,8 +10,7 @@ void HighsCommon::OpenSolver() {
   if (status)
     throw std::runtime_error( fmt::format(
           "Failed to create problem, error code {}.", status ) );
-  // HIGHS_CCALL(HIGHS_SetIntParam(prob, "Logging", 0));
-
+  SetSolverOption("output_flag", 0);
 }
 
 void HighsCommon::CloseSolver() {
