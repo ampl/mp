@@ -81,44 +81,6 @@ CoptBackend::~CoptBackend() {
   CloseSolver();
 }
 
-void CoptBackend::OpenSolver() {
-  int status = 0;
-  copt_env* env_p;
-  // Typically try the registered function first;
-  // if not available call the solver's API function directly
-  const auto& create_fn = GetCallbacks().cb_initsolver_;
-  if (create_fn)
-    env_p = (copt_env*)create_fn();
-  else
-    status = COPT_CreateEnv(&env_p);
-  set_env(env_p);
-  if ( env() == NULL ) {
-     throw std::runtime_error(
-       fmt::format("Could not open COPT environment.\n{}", status) );
-  }
-  copt_prob* prob;
-  status = COPT_CreateProb(env_p, &prob);
-
-  /* Create an empty model */
-  set_lp(prob);
-  if (status)
-    throw std::runtime_error( fmt::format(
-          "Failed to create problem, error code {}.", status ) );
-  COPT_CCALL(COPT_SetIntParam(prob, "Logging", 0));
-
-}
-
-void CoptBackend::CloseSolver() {
-  if ( lp() != NULL ) {
-    COPT_CCALL(COPT_DeleteProb(&lp_ref()) );
-  }
-  /* Free up the COPT env()ironment, if necessary */
-  if ( env() != NULL ) {
-    COPT_CCALL(COPT_DeleteEnv(&env_ref()) );
-  }
-}
-
-
 const char* CoptBackend::GetBackendName()
   { return "CoptBackend"; }
 

@@ -126,9 +126,6 @@ public:  // public for static polymorphism
   void CloseSolver();
 
 protected:
-  void OpenSolver();
-  void CloseSolver();
-
   void ExportModel(const std::string& file);
 
   double ObjectiveValue() const;
