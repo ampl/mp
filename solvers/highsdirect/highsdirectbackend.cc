@@ -394,6 +394,9 @@ void HighsBackend::InitCustomOptions() {
     "0*/1: Whether to write HighS log lines (chatter) to stdout and to file.",
     "output_flag", 0, 1);
 
+  AddSolverOption("tech:logfile logfile",
+    "Log file name.", "log_file");
+
   const char* c = "choose";
   AddSolverOption("alg:method method lpmethod",
     "Which algorithm to use :\n"

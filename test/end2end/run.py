@@ -9,7 +9,7 @@ sys.path.insert(1, str(libpath))
 from runExamples import runTester
 runTester()
 #from runModels import writeNLFiles
-#writeNLFiles("E:\\OneDrive\\Documents\\Benchmarks\\models\\lpmodels-mps\\non-mm-mps")
+#writeNLFiles("E:\\OneDrive\\Documents\\Benchmarks\\models\\lpmodels-mps\\mm-lpsimp-mps")
 
 # DLR2 mindopt
 #Interior point method terminated. Time : 3307.930s

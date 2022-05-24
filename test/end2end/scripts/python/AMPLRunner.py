@@ -59,7 +59,7 @@ class AMPLRunner(object):
             time.sleep(.5)   # so wait until the license is released
         self._ampl = AMPL()
         doLogs = self._logFile is not None
-        self._outputHandler = InnerOutputHandler(storeOutput = doLogs)
+        self._outputHandler = InnerOutputHandler()
         self._ampl.setOutputHandler(self._outputHandler)
         self._ampl.setErrorHandler(InnerErrorHandler(self.appendError))
         self._ampl.setOption("solver_msg", 1 if doLogs else 0)
@@ -136,7 +136,12 @@ class AMPLRunner(object):
         sp = self._solver.getExecutable()
         self._ampl.setOption("solver", sp)
         (name, value) = self._solver.getAMPLOptions()
+        if self._logFile is not None:
+            logOption = self._solver.setLogFile(self._logfile)
+            if logOption:
+                value += f" {logOption}"
         self._ampl.setOption(name, value)
+        
 
     def tryGetObjective(self):
       try: 

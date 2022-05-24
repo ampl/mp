@@ -163,9 +163,9 @@ protected:
 
 
 private:
-  /// These options are stored in the class
   struct Options {
     std::string exportFile_;
+    std::string logFile_;
   };
   Options storedOptions_;
 

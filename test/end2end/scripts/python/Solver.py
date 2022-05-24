@@ -153,6 +153,9 @@ class AMPLSolver(Solver):
     def _getAMPLOptionsName(self):
         raise Exception("Not implemented in base class")
 
+    def setLogFile(self, name):
+        return None
+
     def _doParseSolution(self, st, stdout=None):
         raise Exception("Not implemented in base class")
 
@@ -167,6 +170,8 @@ class AMPLSolver(Solver):
             toption = "{} {}".format(toption, self._setNThreads(self._nthreads))
         if self._lpmethod:
             toption = "{} {}".format(toption, self._setLPMethod(self._lpmethod))
+        if logFile is not None:
+            toption = "{} {} outlev=1".format(toption, self.setLogFile(logFile))
         if self._otherOptions:
             toption = "{} {}".format(toption, self._otherOptions)
         try:
@@ -215,8 +220,9 @@ class AMPLSolver(Solver):
                   time.sleep(SLICE_IN_SECONDS)
               (out,err) = p.communicate()
               if logFile is not None:
-                print(out, flush=True)
-                print(err, flush=True)
+                if self.setLogFile(logFile) is None: # if not handled via option
+                    print(out, flush=True)
+                    print(err, flush=True)
               rss = max([p.rss for p in resultTable])
               vms = max([p.vms for p in resultTable])
               self._stats["rss"]= rss
@@ -277,6 +283,9 @@ class LindoSolver(AMPLSolver):
 
 class GurobiSolver(AMPLSolver):
 
+    def setLogFile(self, name):
+        return f"logfile=\"{name}\""
+
     def _setTimeLimit(self, seconds):
         return "timelim={}".format(seconds)
 
@@ -325,6 +334,9 @@ class MPDirectSolver(AMPLSolver):
 
     def _setNThreads(self, threads):
         return "threads={}".format(threads)
+    
+    def setLogFile(self, name):
+        return f"logfile=\"{name}\""
 
     def _getAMPLOptionsName(self):
         raise Exception("Not implemented in base class")
@@ -375,6 +387,9 @@ class CPLEXSolver(AMPLSolver):
     def _setNThreads(self, threads):
         return "threads={}".format(threads)
 
+    def setLogFile(self, name):
+        return f"logfile=\"{name}\""
+
     def _getAMPLOptionsName(self):
         return "cplex"
 
@@ -398,7 +413,6 @@ class CPLEXSolver(AMPLSolver):
             except:
                 print("No solution, string: {}".format(n))
                 self._stats["objective"] = None
-
 
 class BaronSolver(AMPLSolver):
 
@@ -484,8 +498,6 @@ class OcteractSolver(AMPLSolver):
                 self._stats["objective"] = float(n)
                 return
 
-
-
 class MindoptSolver(AMPLSolver):
 
     def _setLPMethod(self, method : str):
@@ -521,7 +533,6 @@ class MindoptSolver(AMPLSolver):
               print("No solution, string: {}".format(n))
               self._stats["objective"] = None
 
-
 class XpressSolver(AMPLSolver):
 
     def _setLPMethod(self, method : str):
@@ -529,6 +540,9 @@ class XpressSolver(AMPLSolver):
 
     def _setTimeLimit(self, seconds):
         return "maxtime={}".format(seconds)
+
+    def setLogFile(self, name):
+        return f"logfile=\"{name}\""
 
     def _setNThreads(self, threads):
         return "threads={}".format(threads)
@@ -556,7 +570,6 @@ class XpressSolver(AMPLSolver):
             except:
                 print("No solution, string: {}".format(n))
                 self._stats["objective"] = None
-
 
 class GurobiDirectSolver(MPDirectSolver):
 
@@ -600,6 +613,10 @@ class HighsSolver(MPDirectSolver):
 
     def _getAMPLOptionsName(self):
         return "highs"
+
+    def _setNThreads(self, threads):
+        parallel="parallel=on" if threads!=1 else ""
+        return f"threads={threads} {parallel}"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,

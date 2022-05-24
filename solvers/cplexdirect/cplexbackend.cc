@@ -251,9 +251,15 @@ std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
 
 
 void CplexBackend::FinishOptionParsing() {
-  int v=-1;
-  GetSolverOption(CPXPARAM_MIP_Display, v);
-  set_verbose_mode(v>0);
+  int v=1;
+  if (!storedOptions_.logFile_.empty())
+  {
+    SetSolverOption(CPXPARAM_MIP_Display, 1);
+    CPLEX_CALL(CPXsetlogfilename(env(), storedOptions_.logFile_.data(), "w"));
+  }
+  else
+    GetSolverOption(CPXPARAM_MIP_Display, v);
+  set_verbose_mode(v > 0);
 }
 
 
@@ -275,6 +281,9 @@ void CplexBackend::InitCustomOptions() {
       "Default = 0 (no logging).",
       CPXPARAM_MIP_Display, 0, 5);
   SetSolverOption(CPXPARAM_MIP_Display, 0);
+
+  AddStoredOption("tech:logfile logfile",
+    "Log file name.", storedOptions_.logFile_);
 
   AddStoredOption("tech:exportfile writeprob",
       "Specifies the name of a file where to export the model before "

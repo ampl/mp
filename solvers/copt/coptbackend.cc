@@ -265,9 +265,16 @@ std::pair<int, std::string> CoptBackend::ConvertCOPTStatus() {
 
 
 void CoptBackend::FinishOptionParsing() {
-  int v=-1;
-  GetSolverOption(COPT_INTPARAM_LOGGING, v);
+  int v = 1;
+  if (!storedOptions_.logFile_.empty())
+  {
+    SetSolverOption(COPT_INTPARAM_LOGGING, 1);
+    COPT_CCALL(COPT_SetLogFile(lp(), storedOptions_.logFile_.data()));
+  }
+  else
+    GetSolverOption(COPT_INTPARAM_LOGGING, v);
   set_verbose_mode(v>0);
+  
 }
 
 
@@ -318,6 +325,9 @@ void CoptBackend::InitCustomOptions() {
       "0-1: output logging verbosity. "
       "Default = 0 (no logging).",
     COPT_INTPARAM_LOGGING, 0, 1);
+
+  AddStoredOption("tech:logfile logfile",
+    "Log file name.", storedOptions_.logFile_);
 
   AddStoredOption("tech:exportfile writeprob",
       "Specifies the name of a file where to export the model before "
