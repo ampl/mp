@@ -129,7 +129,7 @@ void HighsBackend::Solve() {
   if (!storedOptions_.exportFile_.empty()) {
     ExportModel(storedOptions_.exportFile_);
   }
-  HIGHS_CCALL(Highs_run(lp()));
+  Highs_run(lp());
   WindupHIGHSSolve();
 }
 
@@ -434,7 +434,7 @@ void HighsBackend::InitCustomOptions() {
 
   AddSolverOption("lim:time timelim timelimit time_limit",
     "Limit on solve time (in seconds; default: no limit).",
-    "time_limit", 0, INT_MAX);
+    "time_limit", 0.0, DBL_MAX);
 
   AddSolverOption("lim:simplexiterationlimit simplexiterationlimit simplex_iteration_limit",
     "Limit on simplex iterations (default: no limit).",

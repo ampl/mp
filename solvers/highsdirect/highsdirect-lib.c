@@ -21,9 +21,9 @@ APIEXPORT void* AMPLloadmodel(int argc, char** argv, void** slvout) {
 }
 
 APIEXPORT void AMPLwritesolution(AMPLS_MP_Solver* slv) {
-  AMPLSReportResults(&slv);
+  AMPLSReportResults(slv);
 }
 
 APIEXPORT void AMPLclosesolver(AMPLS_MP_Solver* slv) {
-  AMPLSCloseHighs(&slv);
+  AMPLSCloseHighs(slv);
 }
