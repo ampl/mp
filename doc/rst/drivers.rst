@@ -3,7 +3,6 @@
 Solver drivers
 ==============
 
-
 Expression-based APIs
 ---------------------
 
@@ -24,6 +23,7 @@ __ http://ampl.com/resources/logic-and-constraint-programming-extensions/
 - `JaCoP <https://github.com/ampl/mp/tree/master/solvers/jacop>`_
 
 - `LocalSolver <https://github.com/ampl/mp/tree/master/solvers/localsolver>`_
+
 
 Flat APIs
 ---------
@@ -46,7 +46,8 @@ Currently there are three experimental implementations:
   (available in the AMPL distribution bundle)
 
 - `HiGHS <https://github.com/ampl/mp/tree/develop/solvers/highsdirect>`_
-  (see the `repository <https://github.com/ERGO-Code/HiGHS>`_)
+  (see the `HiGHS website <https://highs.dev/>`_)
+
 
 Specialized drivers
 -------------------

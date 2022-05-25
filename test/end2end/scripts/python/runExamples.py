@@ -49,8 +49,8 @@ class Tester:
                         help='prefer NL models if both AMPL and NL are present')
         self._parser.add_argument('--justNL', action="store_true",
                         help='only run NL models. Useful when AMPL executable is not available')
-        self._parser.add_argument('--keepLogs', action="store_true",
-                        help='keep log files for each run')
+        self._parser.add_argument('-k', '--keepLogs', action="store_true",
+                        help='keep log files for each run, filenames: {model}.{solver}.log')
 
         self._args = self._parser.parse_args()
 

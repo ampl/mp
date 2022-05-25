@@ -20,10 +20,14 @@ give the AMPL commands
      option solver highs;
      solve;
 
-You can control gurobi by setting the environment variable highs_options
-appropriately (either by using ampl's option command, or by using the
-shell's set and export commands before you invoke ampl).  You can put
-one or more (white-space separated) phrases in $highs_options.  To see
-the possibilities, invoke
+You can control highs either by setting the environment variable
+highs_options appropriately (either by using ampl's option command,
+or by using the shell's set and export commands before you invoke ampl),
+or by passing the options on the command line:
 
-        x-gurobi -= 
+     highs stub [-AMPL] option1=value option2=value ...
+
+You can put one or more (white-space separated) phrases in $highs_options.
+To see the possibilities, invoke
+
+     highs -=

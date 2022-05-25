@@ -48,6 +48,7 @@ class AMPLRunner(object):
         self._amplInitialized = False
         self._keepAMPLOutput = keepAMPLOutput
         self._optionsExtra = optionsExtra;
+        self._logFile = None
 
     def _initAMPL(self):
         if self._amplInitialized:
@@ -137,7 +138,7 @@ class AMPLRunner(object):
         self._ampl.setOption("solver", sp)
         (name, value) = self._solver.getAMPLOptions()
         if self._logFile is not None:
-            logOption = self._solver.setLogFile(self._logfile)
+            logOption = self._solver.setLogFile(self._logFile)
             if logOption:
                 value += f" {logOption}"
         self._ampl.setOption(name, value)

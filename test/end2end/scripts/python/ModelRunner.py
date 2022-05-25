@@ -57,7 +57,7 @@ class ModelRunner(object):
                     if keepLogs:
                         r.runAndEvaluate(m, logFile=ModelRunner.getLogFileName(m, ss))
                     else:
-                        r.runAndEvaluate(m)
+                        r.runAndEvaluate(m, logFile=None)
                     stats = r.getSolutionStats()
                     self._runs[i][-1] = stats
                     if exporter:

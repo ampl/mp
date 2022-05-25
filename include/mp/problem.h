@@ -1078,11 +1078,22 @@ public:
     return suf.get_values();
   }
 
-  /// Allow calling ReadIntSuffix( {"sosno", suf::Kind::VAR} )
+  /// Read integer suffix
   ArrayRef<int> ReadIntSuffix(const SuffixDef<int>& sufdef)
   { return ReadSuffix(sufdef); }
-  ArrayRef<double> ReadDblSuffix(const SuffixDef<double>& sufdef)
-  { return ReadSuffix(sufdef); }
+
+  /// Read double suffix.
+  /// If absent but an integer suffix with the same name exists,
+  /// take that
+  ArrayRef<double> ReadDblSuffix(const SuffixDef<double>& sufdef) {
+    auto suf_dbl = ReadSuffix(sufdef);
+    if (!suf_dbl) {
+      auto suf_int = ReadSuffix(sufdef.to_type<int>());
+      if (suf_int)
+        return std::vector<double>(suf_int.begin(), suf_int.end());
+    }
+    return suf_dbl;
+  }
 
   template <class T>
   BasicMutSuffix<T> FindSuffix(const SuffixDef<T>& sufdef) {

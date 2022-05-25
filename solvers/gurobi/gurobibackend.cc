@@ -2005,7 +2005,7 @@ void GurobiBackend::InitCustomOptions() {
 
 
 
-  AddStoredOption("tech:writeprob writeprob exportfile",
+  AddStoredOption("tech:exportfile writeprob writemodel exportfile",
       "Specifies the name of a file where to export the model before "
       "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",

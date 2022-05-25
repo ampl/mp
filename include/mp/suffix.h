@@ -521,6 +521,10 @@ public:
   fmt::StringRef name() const { return name_; }
   int kind() const { return kind_; }
   const SuffixTable& table() const { return tab_; }
+
+  /// Convert type
+  template <class T2>
+  SuffixDef<T2> to_type() const { return { name_, kind_, tab_ }; }
 };
 
 }  // namespace mp

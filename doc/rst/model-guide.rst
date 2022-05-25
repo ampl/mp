@@ -13,11 +13,12 @@ A guide to using the beta test release of
 `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_,
 the enhanced
 `AMPL-Gurobi <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_
-interface, and
+interface,
 `copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_, an interface
-to `Cardinal Optimizer <https://www.shanshu.ai/copt>`_.
-Both
-can be downloaded in the `AMPL distribution bundle <https://portal.ampl.com>`_
+to `Cardinal Optimizer <https://www.shanshu.ai/copt>`_, and
+`highs <https://github.com/ampl/mp/tree/master/solvers/highsdirect>`_, an interface
+to `HiGHS <https://highs.dev/>`_.
+They can be downloaded in the `AMPL distribution bundle <https://portal.ampl.com>`_
 or compiled from source.
 
 

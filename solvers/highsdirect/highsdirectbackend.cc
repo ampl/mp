@@ -384,7 +384,7 @@ void HighsBackend::InitCustomOptions() {
       "\n"
       "  ampl: option highs_options 'relgaptol=1e-6';\n");
 
-  AddStoredOption("tech:exportfile writeprob",
+  AddStoredOption("tech:exportfile writeprob writemodel",
       "Specifies the name of a file where to export the model before "
       "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
