@@ -117,6 +117,8 @@ enum {
 };
 }
 
+
+/// MP low-level stuff
 namespace internal {
 enum {
   SUFFIX_KIND_MASK = 3,  // Mask for suffix kinds.

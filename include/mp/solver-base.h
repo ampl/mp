@@ -140,7 +140,7 @@ public:
 
   /// Returns the solver name.
   /// This is used to extract solver options from
-  /// the env variable <name>_options.
+  /// the env variable (solver_name)_options.
   const char *name() const { return name_.c_str(); }
 
   /// Returns the long solver name.

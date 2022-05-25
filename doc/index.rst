@@ -14,11 +14,11 @@ Contents
    :maxdepth: 2
 
    rst/model-guide
-   Library introduction <rst/intro>
+   Introduction <rst/intro>
    Solver drivers <rst/drivers>
-   The API <rst/components>
+   API <rst/components>
    rst/howto
-   rst/more
+   rst/testing
 
 
 Indices and tables

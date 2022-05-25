@@ -20,9 +20,7 @@ set(SPHINX_INDEX_FILE ${DOC_OUTPUTDIR}/index.html)
 
 add_prefix(mp_docs ${DOC_BASEDIR}/rst/
     model-guide.rst intro.rst components.rst drivers.rst
-    howto.rst more.rst
-    nl-reader.rst flatcvt.rst backend.rst
-    reference.rst
+    howto.rst testing.rst
     details.rst
   )
 set(mp_docs ${mp_docs} ${DOC_BASEDIR}/index.rst)

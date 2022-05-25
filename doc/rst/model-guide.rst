@@ -1,16 +1,10 @@
-.. _modeling_guide:
-
-.. role:: ampl(code)
-   :language: ampl
-
-.. - For :ampl:`inline text`.
-
+.. _modeling-guide:
 
 Modeling guide
 ==============
 
 A guide to using the beta test release of
-`x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_,
+`x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobi>`_,
 the enhanced
 `AMPL-Gurobi <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_
 interface,
@@ -60,7 +54,7 @@ to the solvers.
 Conditional expressions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-AMPL already provides an :ampl:`if-then-else` operator that returns a value
+AMPL already provides an ``if-then-else`` operator that returns a value
 that can be used in expressions:
 
 - if *logical-expr* then *object-expr1*
@@ -169,6 +163,10 @@ and AMPL’s iterated forms of the binary logical operators:
 - forall {indexing} *constraint-expr*
     Satisfied iff the operand is satisfied for all members of
     the indexing set (the iterated form of ``and``).
+- forall ( {indexing} *constraint-expr1*, {indexing} *constraint-expr2*, ...)
+    Example of compound indexing. Each {indexing} may be any AMPL
+    indexing-expression, or may be omitted to specify a single
+    item in the list.
 
 .. Meaning of the below?
   Constraint expressions can also be grouped by parentheses:

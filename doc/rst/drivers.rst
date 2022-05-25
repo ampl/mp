@@ -3,8 +3,32 @@
 Solver drivers
 ==============
 
-Expression-based APIs
----------------------
+'Flat API' solvers
+------------------
+
+For solvers with traditional "flat" APIs, non-linear AMPL expressions need
+to be reformulated.
+For example, ``max(a, b)`` is translated into a constraint meaning
+``<new var> = max(a, b)``, which is in turn reformulated for
+MIP or passed to the solver natively (Gurobi: `GRBaddgenconstrMax`).
+See the :ref:`modeling-guide`.
+
+There are several experimental implementations:
+
+- `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobi>`_
+  (available in the AMPL distribution bundle)
+
+- `x-cplex <https://github.com/ampl/mp/tree/master/solvers/cplexdirect>`_
+
+- `copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_
+  (available in the AMPL distribution bundle)
+
+- `highs <https://github.com/ampl/mp/tree/master/solvers/highsdirect>`_
+  (see the `HiGHS website <https://highs.dev/>`_)
+
+
+Expression-based solvers
+------------------------
 
 Expression-based solver APIs can efficiently map
 NL forests.
@@ -23,30 +47,6 @@ __ http://ampl.com/resources/logic-and-constraint-programming-extensions/
 - `JaCoP <https://github.com/ampl/mp/tree/master/solvers/jacop>`_
 
 - `LocalSolver <https://github.com/ampl/mp/tree/master/solvers/localsolver>`_
-
-
-Flat APIs
----------
-
-For solvers with traditional "flat" APIs, non-linear AMPL expressions need
-to be reformulated.
-For example, ``max(a, b)`` is translated into a constraint meaning
-``<new var> = max(a, b)``, which is in turn reformulated for
-MIP or passed to the solver natively (Gurobi: `GRBaddgenconstrMax`).
-See the :ref:`modeling_guide`.
-
-Currently there are three experimental implementations:
-
-- `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobidirect>`_
-  (available in the AMPL distribution bundle)
-
-- `x-cplex <https://github.com/ampl/mp/tree/master/solvers/cplexdirect>`_
-
-- `copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_
-  (available in the AMPL distribution bundle)
-
-- `HiGHS <https://github.com/ampl/mp/tree/develop/solvers/highsdirect>`_
-  (see the `HiGHS website <https://highs.dev/>`_)
 
 
 Specialized drivers

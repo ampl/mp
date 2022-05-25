@@ -38,9 +38,10 @@ namespace mp {
 
 namespace internal {
 
+/// Write message into a fmt::BufferedFile
 void WriteMessage(fmt::BufferedFile &file, const char *message);
 
-// Suffix value visitor that counts values.
+/// Suffix value visitor that counts values
 class SuffixValueCounter {
  private:
   int num_values_;
@@ -54,7 +55,7 @@ class SuffixValueCounter {
   void Visit(int, T) { ++num_values_; }
 };
 
-// Suffix value visitor that writes values to a file.
+/// Suffix value visitor that writes values to a file
 class SuffixValueWriter {
  private:
   fmt::BufferedFile &file_;
@@ -69,6 +70,7 @@ class SuffixValueWriter {
   { file_.print("{} {:.16}\n", index, value); }
 };
 
+/// Write suffixes to a file
 template <typename SuffixMap>
 void WriteSuffixes(fmt::BufferedFile &file, const SuffixMap *suffixes) {
   if (!suffixes)
@@ -97,7 +99,7 @@ void WriteSuffixes(fmt::BufferedFile &file, const SuffixMap *suffixes) {
 }
 }  // namespace internal
 
-// Writes a solution to a .sol file.
+/// Writes a solution to a .sol file
 template <typename Solution>
 void WriteSolFile(fmt::CStringRef filename, const Solution &sol) {
   fmt::BufferedFile file(filename, "w");

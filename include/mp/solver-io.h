@@ -236,6 +236,9 @@ void PrintSolution(const double *values, int num_values, const char *name_col,
                    const char *value_col, NameProvider &np);
 
 /// Solution handler for a solver application.
+/// Extends SolutionWriterImpl by conideration of
+/// the -AMPL switch and the \a wantsol option.
+/// TODO specialize minimal interfaces for the parameters
 template <typename Solver,
           typename ProblemBuilder,
           typename Writer = SolFileWriter>
@@ -251,6 +254,7 @@ class AppSolutionHandlerImpl :
   : SolutionWriterImpl<Solver, ProblemBuilder, Writer>
       (stub, s, b, options),  banner_size_(banner_size) {}
 
+  /// Specialize HandleSolution()
   void HandleSolution(int status, fmt::CStringRef message, const double *values,
                       const double *dual_values, double obj_value);
 };
