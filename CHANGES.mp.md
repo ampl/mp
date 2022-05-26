@@ -1,6 +1,12 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## 20220526
+-*Special ordered sets*
+    Fixed: SOS are now recognized even if the suffix '.ref' 
+    value is integer
+
+
 ## 20220511
 - *Complementarity constraints: also quadratics*
     Complementarity constraints now handle quadratics.
