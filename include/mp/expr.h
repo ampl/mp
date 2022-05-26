@@ -42,37 +42,38 @@ namespace mp {
 template <expr::Kind, expr::Kind>
 class BasicExpr;
 
+/// Typedef Expr
 typedef BasicExpr<expr::FIRST_EXPR, expr::LAST_EXPR> Expr;
 
 template <typename Alloc>
 class BasicExprFactory;
 
 namespace internal {
-// Casts an expression to type ExprType which must be a valid expression type.
-// If assertions are enabled, it generates an assertion failure when e is
-// not convertible to ExprType. Otherwise no runtime check is performed.
+/// Casts an expression to type ExprType which must be a valid expression type.
+/// If assertions are enabled, it generates an assertion failure when e is
+/// not convertible to ExprType. Otherwise no runtime check is performed.
 template <typename ExprType>
 ExprType UncheckedCast(Expr e);
 
-// Checks if index is in the range [0, size).
+/// Checks if index is in the range [0, size).
 inline void CheckIndex(int index, std::size_t size) {
   MP_ASSERT(0 <= index && static_cast<std::size_t>(index) < size,
             "invalid index");
   internal::Unused(index, size);
 }
 
-/// ExprBase
+/// Class ExprBase
 class ExprBase {
  protected:
-  // The following members are protected rather than private because
-  // they have to be accessible in subclasses, instances of BasicExpr.
-  // This doesn't violate encapsulation because this class is inherited
-  // privately and can be thought of as a part of BasicExpr that doesn't
-  // depend on template parameters.
+  /// The following members are protected rather than private because
+  /// they have to be accessible in subclasses, instances of BasicExpr.
+  /// This doesn't violate encapsulation because this class is inherited
+  /// privately and can be thought of as a part of BasicExpr that doesn't
+  /// depend on template parameters.
 
   class Impl {
    private:
-    // Only ExprFactory should be able to set Impl::kind_.
+    /// Only ExprFactory should be able to set Impl::kind_.
     expr::Kind kind_;
 
     template <typename Alloc>
@@ -84,8 +85,8 @@ class ExprBase {
 
   const Impl *impl_;
 
-  // Returns a pointer to the implementation.
-  // BasicExpr exposes impl() as a protected member while impl_ becomes private.
+  /// Returns a pointer to the implementation.
+  /// BasicExpr exposes impl() as a protected member while impl_ becomes private.
   const Impl *impl() const { return impl_; }
 
   ExprBase() : impl_() {}
@@ -93,7 +94,7 @@ class ExprBase {
   template <typename ExprType>
   ExprBase(ExprType e) : impl_(e.impl_) {}
 
-  // Creates an expression from an implementation.
+  /// Creates an expression from an implementation.
   template <typename TargetExpr>
   static TargetExpr Create(const ExprBase::Impl *impl) {
     MP_ASSERT((!impl || internal::Is<TargetExpr>(impl->kind())),
@@ -103,44 +104,44 @@ class ExprBase {
     return expr;
   }
 
-  // Safe bool type.
+  /// Safe bool type.
   typedef void (ExprBase::*SafeBool)() const;
 
-  // ExprIterator is a friend because it should have access to the
-  // Create function.
+  /// ExprIterator is a friend because it should have access to the
+  /// Create function.
   template <typename ExprType>
   friend class ExprIterator;
 
  private:
-  // A member function representing the true value of SafeBool.
+  /// A member function representing the true value of SafeBool.
   void True() const {}
 
  public:
-  // Returns the expression kind.
+  /// Returns the expression kind.
   expr::Kind kind() const { return impl_->kind(); }
 
-  // Returns a value convertible to bool that can be used in conditions but not
-  // in comparisons and evaluates to "true" if this expression is not null
-  // and "false" otherwise.
-  // Example:
-  //   if (e) {
-  //     // Do something if e is not null.
-  //   }
+  /// Returns a value convertible to bool that can be used in conditions but not
+  /// in comparisons and evaluates to "true" if this expression is not null
+  /// and "false" otherwise.
+  /// Example:
+  ///   if (e) {
+  ///     /// Do something if e is not null.
+  ///   }
   operator SafeBool() const { return impl_ != 0 ? &ExprBase::True : 0; }
 };
-}  // namespace internal
+}  /// namespace internal
 
-// An expression.
-// A BasicExpr object represents a reference to an expression so
-// it is cheap to construct and pass by value. A type safe way to
-// process expressions of different types is by using ExprVisitor.
-// Although this class is not intended for use in the client code,
-// it is not placed in the internal namespace to enable argument-
-// dependent lookup.
+/// An expression.
+/// A BasicExpr object represents a reference to an expression so
+/// it is cheap to construct and pass by value. A type safe way to
+/// process expressions of different types is by using ExprVisitor.
+/// Although this class is not intended for use in the client code,
+/// it is not placed in the internal namespace to enable argument-
+/// dependent lookup.
 template <expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicExpr : private internal::ExprBase {
-  // internal::UnecheckCast & ExprBase::Create are friends because they need
-  // access to ExprBase::impl_ via a private base class.
+  /// internal::UnecheckCast & ExprBase::Create are friends because they need
+  /// access to ExprBase::impl_ via a private base class.
   template <typename ExprType>
   friend ExprType internal::UncheckedCast(Expr e);
   friend class internal::ExprBase;
@@ -149,19 +150,22 @@ class BasicExpr : private internal::ExprBase {
   friend class BasicExprFactory;
 
  protected:
+  /// Reuse ExprBase::Impl
   typedef ExprBase::Impl Impl;
   using ExprBase::impl;
   using ExprBase::Create;
+  /// Base = BasicExpr
   typedef BasicExpr Base;
 
  public:
   enum { FIRST_KIND = FIRST, LAST_KIND = LAST };
 
-  // Constructs a BasicExpr object representing a null reference to an
-  // expression. The only operation permitted for such object is copying,
-  // assignment and check whether it is null using operator SafeBool.
+  /// Constructs a BasicExpr object representing a null reference to an
+  /// expression. The only operation permitted for such object is copying,
+  /// assignment and check whether it is null using operator SafeBool.
   BasicExpr() {}
 
+  /// Construct from another expression
   template <typename Expr>
   BasicExpr(
       Expr other,
@@ -186,8 +190,8 @@ inline ExprType internal::UncheckedCast(Expr e) {
   return expr;
 }
 
-// Casts an expression to type ExprType which must be a valid expression type.
-// Returns a null expression if e is not convertible to ExprType.
+/// Casts an expression to type ExprType which must be a valid expression type.
+/// Returns a null expression if e is not convertible to ExprType.
 template <typename ExprType>
 inline ExprType Cast(Expr e) {
   return internal::Is<ExprType>(e.kind()) ?
@@ -201,14 +205,14 @@ inline ExprType Cast(Expr e) {
   template <typename Alloc> \
   friend class BasicExprFactory
 
-// A numeric expression.
+/// A numeric expression.
 typedef BasicExpr<expr::FIRST_NUMERIC, expr::LAST_NUMERIC> NumericExpr;
 
-// A logical expression.
+/// A logical expression.
 typedef BasicExpr<expr::FIRST_LOGICAL, expr::LAST_LOGICAL> LogicalExpr;
 
-// A numeric constant.
-// Examples: 42, -1.23e-4
+/// A numeric constant.
+/// Examples: 42, -1.23e-4
 class NumericConstant : public BasicExpr<expr::NUMBER> {
  private:
   struct Impl : Base::Impl {
@@ -217,12 +221,12 @@ class NumericConstant : public BasicExpr<expr::NUMBER> {
   MP_EXPR(Base);
 
  public:
-  // Returns the value of this constant.
+  /// Returns the value of this constant.
   double value() const { return impl()->value; }
 };
 
-// A reference to a variable or a common expression.
-// Example: x
+/// A reference to a variable or a common expression.
+/// Example: x
 class Reference :
   public BasicExpr<expr::FIRST_REFERENCE, expr::LAST_REFERENCE> {
  private:
@@ -232,12 +236,12 @@ class Reference :
   MP_EXPR(Base);
 
  public:
-  // Returns the index of the referenced object.
+  /// Returns the index of the referenced object.
   int index() const { return impl()->index; }
 };
 
-// A unary expression.
-// Base: base expression class.
+/// A unary expression.
+/// Base: base expression class.
 template <typename Arg, expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicUnaryExpr : public BasicExpr<FIRST, LAST> {
  private:
@@ -248,18 +252,18 @@ class BasicUnaryExpr : public BasicExpr<FIRST, LAST> {
   MP_EXPR(Base);
 
  public:
-  // Returns the argument of this expression.
+  /// Returns the argument of this expression.
   Arg arg() const { return Base::template Create<Arg>(impl()->arg); }
 };
 
-// A unary numeric expression.
-// Examples: -x, sin(x), where x is a variable.
+/// A unary numeric expression.
+/// Examples: -x, sin(x), where x is a variable.
 typedef BasicUnaryExpr<
   NumericExpr, expr::FIRST_UNARY, expr::LAST_UNARY> UnaryExpr;
 
-// A binary expression.
-// Base: base expression class.
-// Arg: argument expression class.
+/// A binary expression.
+/// Base: base expression class.
+/// Arg: argument expression class.
 template <typename Arg, expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicBinaryExpr : public BasicExpr<FIRST, LAST> {
  private:
@@ -271,15 +275,15 @@ class BasicBinaryExpr : public BasicExpr<FIRST, LAST> {
   MP_EXPR(Base);
 
  public:
-  // Returns the left-hand side (the first argument) of this expression.
+  /// Returns the left-hand side (the first argument) of this expression.
   Arg lhs() const { return Base::template Create<Arg>(impl()->lhs); }
 
-  // Returns the right-hand side (the second argument) of this expression.
+  /// Returns the right-hand side (the second argument) of this expression.
   Arg rhs() const { return Base::template Create<Arg>(impl()->rhs); }
 };
 
-// A binary numeric expression.
-// Examples: x / y, atan2(x, y), where x and y are variables.
+/// A binary numeric expression.
+/// Examples: x / y, atan2(x, y), where x and y are variables.
 typedef BasicBinaryExpr<
   NumericExpr, expr::FIRST_BINARY, expr::LAST_BINARY> BinaryExpr;
 
@@ -309,12 +313,12 @@ class BasicIfExpr : public BasicExpr<K> {
   }
 };
 
-// An if-then-else expression.
-// Example: if x != 0 then y else z, where x, y and z are variables.
+/// An if-then-else expression.
+/// Example: if x != 0 then y else z, where x, y and z are variables.
 typedef BasicIfExpr<NumericExpr, expr::IF> IfExpr;
 
-// A piecewise-linear term.
-// Example: <<0; -1, 1>> x, where x is a variable.
+/// A piecewise-linear term.
+/// Example: <<0; -1, 1>> x, where x is a variable.
 class PLTerm : public BasicExpr<expr::PLTERM> {
  private:
   struct Impl : Base::Impl {
@@ -325,29 +329,29 @@ class PLTerm : public BasicExpr<expr::PLTERM> {
   MP_EXPR(Base);
 
  public:
-  // Returns the number of breakpoints in this term.
+  /// Returns the number of breakpoints in this term.
   int num_breakpoints() const { return impl()->num_breakpoints; }
 
-  // Returns the number of slopes in this term.
+  /// Returns the number of slopes in this term.
   int num_slopes() const { return num_breakpoints() + 1; }
 
-  // Returns a breakpoint with the specified index.
+  /// Returns a breakpoint with the specified index.
   double breakpoint(int index) const {
     MP_ASSERT(index >= 0 && index < num_breakpoints(), "index out of bounds");
     return impl()->data[2 * index + 1];
   }
 
-  // Returns a slope with the specified index.
+  /// Returns a slope with the specified index.
   double slope(int index) const {
     MP_ASSERT(index >= 0 && index < num_slopes(), "index out of bounds");
     return impl()->data[2 * index];
   }
 
-  // Returns the argument (variable or common expression reference).
+  /// Returns the argument (variable or common expression reference).
   Reference arg() const { return Create<Reference>(impl()->arg); }
 };
 
-// A reference to a function.
+/// A reference to a function.
 class Function {
  private:
   struct Impl {
@@ -358,10 +362,10 @@ class Function {
 
   const Impl *impl_;
 
-  // A member function representing the true value of SafeBool.
+  /// A member function representing the true value of SafeBool.
   void True() const {}
 
-  // Safe bool type.
+  /// Safe bool type.
   typedef void (Function::*SafeBool)() const;
 
   explicit Function(const Impl *impl) : impl_(impl) {}
@@ -372,42 +376,44 @@ class Function {
   friend class BasicExprFactory;
 
  public:
-  // Constructs a Function object representing a null reference to a
-  // function. The only operation permitted for such object is copying,
-  // assignment and check whether it is null using operator SafeBool.
+  /// Constructs a Function object representing a null reference to a
+  /// function. The only operation permitted for such object is copying,
+  /// assignment and check whether it is null using operator SafeBool.
   Function() : impl_(0) {}
 
-  // Returns a value convertible to bool that can be used in conditions but not
-  // in comparisons and evaluates to "true" if this function is not null
-  // and "false" otherwise.
-  // Example:
-  //   if (f) {
-  //     // Do something if f is not null.
-  //   }
+  /// Returns a value convertible to bool that can be used in conditions but not
+  /// in comparisons and evaluates to "true" if this function is not null
+  /// and "false" otherwise.
+  /// Example:
+  ///   if (f) {
+  ///     /// Do something if f is not null.
+  ///   }
   operator SafeBool() const { return impl_ != 0 ? &Function::True : 0; }
 
-  // Returns the name of this function.
+  /// Returns the name of this function.
   const char *name() const { return impl_->name; }
 
-  // Returns the number of arguments.
+  /// Returns the number of arguments.
   int num_args() const { return impl_->num_args; }
 
-  // Returns the type of this function.
+  /// Returns the type of this function.
   func::Type type() const { return impl_->type; }
 
+  /// Function::operator==
   bool operator==(Function other) const { return impl_ == other.impl_; }
+  /// Function::operator!=
   bool operator!=(Function other) const { return impl_ != other.impl_; }
 };
 
 namespace internal {
-// An expression iterator.
+/// An expression iterator
 template <typename ExprType>
 class ExprIterator :
     public std::iterator<std::forward_iterator_tag, ExprType> {
  private:
   const ExprBase::Impl *const *ptr_;
 
-  // An expression proxy used for implementing operator->.
+  /// An expression proxy used for implementing operator->.
   class Proxy {
    private:
     ExprType expr_;
@@ -440,10 +446,10 @@ class ExprIterator :
   bool operator==(ExprIterator other) const { return ptr_ == other.ptr_; }
   bool operator!=(ExprIterator other) const { return ptr_ != other.ptr_; }
 };
-}  // namespace internal
+}  /// namespace internal
 
-// A function call expression.
-// Example: f(x), where f is a function and x is a variable.
+/// A function call expression.
+/// Example: f(x), where f is a function and x is a variable.
 class CallExpr : public BasicExpr<expr::CALL> {
  private:
   struct Impl : Base::Impl {
@@ -454,26 +460,32 @@ class CallExpr : public BasicExpr<expr::CALL> {
   MP_EXPR(Base);
 
  public:
+  /// Query the function type
   Function function() const { return Function(impl()->func); }
 
+  /// Argument type
   typedef Expr Arg;
 
-  // Returns the number of arguments.
+  /// Returns the number of arguments
   int num_args() const { return impl()->num_args; }
 
-  // Returns an argument with the specified index.
+  /// Returns an argument with the specified index
   Expr arg(int index) {
     MP_ASSERT(index >= 0 && index < num_args(), "index out of bounds");
     return Create<Expr>(impl()->args[index]);
   }
 
-  // An argument iterator.
+  /// An argument iterator
   typedef internal::ExprIterator<Expr> iterator;
 
+  /// begin()
   iterator begin() const { return iterator(impl()->args); }
+  /// end()
   iterator end() const { return iterator(impl()->args + num_args()); }
 };
 
+
+/// BasicIteratedExpr<ArgType>
 template <typename ArgType, expr::Kind FIRST, expr::Kind LAST = FIRST>
 class BasicIteratedExpr : public BasicExpr<FIRST, LAST> {
  private:
@@ -485,44 +497,47 @@ class BasicIteratedExpr : public BasicExpr<FIRST, LAST> {
   MP_EXPR(Base);
 
  public:
+  /// Typedef Arg
   typedef ArgType Arg;
 
-  // Returns the number of arguments.
+  /// Returns the number of arguments.
   int num_args() const { return impl()->num_args; }
 
-  // Returns an argument with the specified index.
+  /// Returns an argument with the specified index.
   Arg arg(int index) {
     MP_ASSERT(index >= 0 && index < num_args(), "index out of bounds");
     return Base::template Create<Arg>(impl()->args[index]);
   }
 
-  // An argument iterator.
+  /// An argument iterator.
   typedef internal::ExprIterator<Arg> iterator;
 
+  /// begin()
   iterator begin() const { return iterator(impl()->args); }
+  /// end()
   iterator end() const { return iterator(impl()->args + num_args()); }
 };
 
-// A numeric iterated expression such as min, max, sum or numberof.
-// Examples:
-//   min{i in I} x[i],
-//   sum{i in I} x[i],
-//   numberof 42 in ({i in I} x[i]),
-//   where I is a set and x is a variable.
+/// A numeric iterated expression such as min, max, sum or numberof.
+/// Examples:
+///   min{i in I} x[i],
+///   sum{i in I} x[i],
+///   numberof 42 in ({i in I} x[i]),
+///   where I is a set and x is a variable.
 typedef BasicIteratedExpr<
   NumericExpr, expr::FIRST_ITERATED, expr::LAST_ITERATED> IteratedExpr;
 
-// A symbolic numberof expression.
-// Example: numberof (if x then 'a' else 'b') in ('a', 'b', 'c'),
-// where x is a variable.
+/// A symbolic numberof expression.
+/// Example: numberof (if x then 'a' else 'b') in ('a', 'b', 'c'),
+/// where x is a variable.
 typedef BasicIteratedExpr<Expr, expr::NUMBEROF_SYM> SymbolicNumberOfExpr;
 
-// A count expression.
-// Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
+/// A count expression.
+/// Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
 typedef BasicIteratedExpr<LogicalExpr, expr::COUNT> CountExpr;
 
-// A logical constant.
-// Examples: 0, 1
+/// A logical constant.
+/// Examples: 0, 1
 class LogicalConstant : public BasicExpr<expr::BOOL> {
  private:
   struct Impl : Base::Impl {
@@ -531,26 +546,26 @@ class LogicalConstant : public BasicExpr<expr::BOOL> {
   MP_EXPR(Base);
 
  public:
-  // Returns the value of this constant.
+  /// Returns the value of this constant.
   bool value() const { return impl()->value; }
 };
 
-// A logical NOT expression.
-// Example: not a, where a is a logical expression.
+/// A logical NOT expression.
+/// Example: not a, where a is a logical expression.
 typedef BasicUnaryExpr<LogicalExpr, expr::NOT> NotExpr;
 
-// A binary logical expression.
-// Examples: a || b, a && b, where a and b are logical expressions.
+/// A binary logical expression.
+/// Examples: a || b, a && b, where a and b are logical expressions.
 typedef BasicBinaryExpr<LogicalExpr,
   expr::FIRST_BINARY_LOGICAL, expr::LAST_BINARY_LOGICAL> BinaryLogicalExpr;
 
-// A relational expression.
-// Examples: x < y, x != y, where x and y are variables.
+/// A relational expression.
+/// Examples: x < y, x != y, where x and y are variables.
 typedef BasicBinaryExpr<
   NumericExpr, expr::FIRST_RELATIONAL, expr::LAST_RELATIONAL> RelationalExpr;
 
-// A logical count expression.
-// Examples: atleast 1 (x < y, x != y), where x and y are variables.
+/// A logical count expression.
+/// Examples: atleast 1 (x < y, x != y), where x and y are variables.
 class LogicalCountExpr :
   public BasicExpr<expr::FIRST_LOGICAL_COUNT, expr::LAST_LOGICAL_COUNT> {
  private:
@@ -561,28 +576,30 @@ class LogicalCountExpr :
   MP_EXPR(Base);
 
  public:
-  // Returns the left-hand side (the first argument) of this expression.
+  /// Returns the left-hand side (the first argument) of this expression.
   NumericExpr lhs() const { return Create<NumericExpr>(impl()->lhs); }
 
-  // Returns the right-hand side (the second argument) of this expression.
+  /// Returns the right-hand side (the second argument) of this expression.
   CountExpr rhs() const { return Create<CountExpr>(impl()->rhs); }
 };
 
-// An implication expression.
-// Example: a ==> b else c, where a, b and c are logical expressions.
+/// An implication expression.
+/// Example: a ==> b else c, where a, b and c are logical expressions.
 typedef BasicIfExpr<LogicalExpr, expr::IMPLICATION> ImplicationExpr;
 
-// An iterated logical expression.
-// Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
+/// An iterated logical expression.
+/// Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
 typedef BasicIteratedExpr<
   LogicalExpr, expr::FIRST_ITERATED_LOGICAL, expr::LAST_ITERATED_LOGICAL>
   IteratedLogicalExpr;
 
-// A pairwise expression (alldiff or !alldiff).
-// Example: alldiff{i in I} x[i], where I is a set and x is a variable.
+/// A pairwise expression (alldiff or !alldiff).
+/// Example: alldiff{i in I} x[i], where I is a set and x is a variable.
 typedef BasicIteratedExpr<
   NumericExpr, expr::FIRST_PAIRWISE, expr::LAST_PAIRWISE> PairwiseExpr;
 
+
+/// String Literal
 class StringLiteral : public BasicExpr<expr::STRING> {
  private:
   struct Impl : Base::Impl {
@@ -591,16 +608,17 @@ class StringLiteral : public BasicExpr<expr::STRING> {
   MP_EXPR(Base);
 
  public:
+  /// String literal value
   const char *value() const { return impl()->value; }
 };
 
-// A symbolic if-then-else expression.
-// Example: if x != 0 then 'a' else 0, where x is a variable.
+/// A symbolic if-then-else expression.
+/// Example: if x != 0 then 'a' else 0, where x is a variable.
 typedef BasicIfExpr<Expr, expr::IFSYM> SymbolicIfExpr;
 
 namespace internal {
 
-/// Expression types.
+//// Expression types.
 struct ExprTypes {
   typedef mp::Expr Expr;
   typedef mp::NumericExpr NumericExpr;
@@ -629,25 +647,25 @@ struct ExprTypes {
   typedef mp::StringLiteral StringLiteral;
   typedef mp::SymbolicIfExpr SymbolicIfExpr;
 
-  // Checked cast. See mp::Cast.
+  /// Checked cast. See mp::Cast.
   template <typename ExprType>
   static ExprType Cast(Expr e) {
     return mp::Cast<ExprType>(e);
   }
 
-  // Unchecked cast. See mp::internal::Cast.
+  /// Unchecked cast. See mp::internal::Cast.
   template <typename ExprType>
   static ExprType UncheckedCast(Expr e) {
     return mp::internal::UncheckedCast<ExprType>(e);
   }
 };
-}  // namespace internal
+}  /// namespace internal
 
 /// An expression factory.
 /// Alloc: a memory allocator.
 /// Allocator requirements:
 /// 1. The allocate function should return a pointer suitably aligned to hold
-///    an object of any fundamental alignment like ::operator new(std::size_t)
+///    an object of any fundamental alignment like operator new(std::size_t)
 ///    does.
 /// 2. The deallocate function should be able to handle 0 passed as the
 ///    second argument.
@@ -659,15 +677,15 @@ class BasicExprFactory : private Alloc {
 
   FMT_DISALLOW_COPY_AND_ASSIGN(BasicExprFactory);
 
-  // Allocates memory for an object of type ExprType::Impl.
-  // extra_bytes: extra bytes to allocate at the end (can be negative).
+  /// Allocates memory for an object of type ExprType::Impl.
+  /// extra_bytes: extra bytes to allocate at the end (can be negative).
   template <typename ExprType>
   typename ExprType::Impl *Allocate(expr::Kind kind, int extra_bytes = 0) {
-    // Call push_back first to make sure that the impl pointer doesn't leak
-    // if push_back throws an exception.
+    /// Call push_back first to make sure that the impl pointer doesn't leak
+    /// if push_back throws an exception.
     exprs_.push_back(0);
     typedef typename ExprType::Impl Impl;
-    // The following cannot overflow.
+    /// The following cannot overflow.
     Impl *impl = reinterpret_cast<Impl*>(
           this->allocate(sizeof(Impl) + extra_bytes));
     impl->kind_ = kind;
@@ -678,7 +696,7 @@ class BasicExprFactory : private Alloc {
   template <typename T>
   void Deallocate(const std::vector<T> &data);
 
-  // Makes a reference expression.
+  /// Makes a reference expression.
   Reference MakeReference(expr::Kind kind, int index) {
     typename Reference::Impl *impl = Allocate<Reference>(kind);
     impl->index = index;
@@ -705,7 +723,7 @@ class BasicExprFactory : private Alloc {
 
   template <typename ExprType, typename Arg>
   ExprType MakeIf(LogicalExpr condition, Arg then_expr, Arg else_expr) {
-    // else_expr can be null.
+    /// else_expr can be null.
     MP_ASSERT(condition != 0 && then_expr != 0, "invalid argument");
     typename ExprType::Impl *impl = Allocate<ExprType>(ExprType::KIND);
     impl->condition = condition.impl_;
@@ -714,7 +732,7 @@ class BasicExprFactory : private Alloc {
     return Expr::Create<ExprType>(impl);
   }
 
-  // A variable argument expression builder.
+  /// A variable argument expression builder.
   template <typename ExprType>
   class BasicIteratedExprBuilder {
    private:
@@ -748,14 +766,14 @@ class BasicExprFactory : private Alloc {
   template <typename ExprType>
   ExprType EndIterated(BasicIteratedExprBuilder<ExprType> builder) {
     typename ExprType::Impl *impl = builder.impl_;
-    // Check that all arguments provided.
+    /// Check that all arguments provided.
     MP_ASSERT(builder.arg_index_ == impl->num_args, "too few arguments");
     return Expr::Create<ExprType>(impl);
   }
 
-  // Copies a string.
-  // src: Reference to a source string that may not be null-terminated
-  //      (.nl reader can generate such strings)
+  /// Copies a string.
+  /// src: Reference to a source string that may not be null-terminated
+  ///      (.nl reader can generate such strings)
   static void Copy(fmt::StringRef src, char *dst) {
     const char *s = src.data();
     std::size_t size = src.size();
@@ -770,38 +788,38 @@ class BasicExprFactory : private Alloc {
   explicit BasicExprFactory(Alloc alloc = Alloc()) : Alloc(alloc) {}
 
   virtual ~BasicExprFactory() {
-    // Deallocate(exprs_);                                  WORKAROUND. See #174
+    /// Deallocate(exprs_);                                  WORKAROUND. See #174
     Deallocate(funcs_);
   }
 
-  // Returns the number of functions.
+  /// Returns the number of functions.
   int num_functions() const {
     return static_cast<int>(this->funcs_.size());
   }
 
-  // Returns the function at the specified index.
+  /// Returns the function at the specified index.
   Function function(int index) const {
     internal::CheckIndex(index, this->funcs_.size());
     return Function(this->funcs_[index]);
   }
 
-  // Adds a function.
-  // name: Function name that may not be null-terminated.
+  /// Adds a function.
+  /// name: Function name that may not be null-terminated.
   Function AddFunction(fmt::StringRef name, int num_args,
                        func::Type type = func::NUMERIC) {
-    // Call push_back first to make sure that the impl pointer doesn't leak
-    // if push_back throws an exception.
+    /// Call push_back first to make sure that the impl pointer doesn't leak
+    /// if push_back throws an exception.
     funcs_.push_back(0);
     return CreateFunction(funcs_.back(), name, num_args, type);
   }
 
-  // Adds a function that will be defined later.
+  /// Adds a function that will be defined later.
   void AddFunctions(int num_funcs) {
     MP_ASSERT(num_funcs >= 0, "invalid size");
     funcs_.resize(val(SafeInt<int>(funcs_.size()) + num_funcs));
   }
 
-  // Defines a function.
+  /// Defines a function.
   Function DefineFunction(int index, fmt::StringRef name,
                           int num_args, func::Type type) {
     internal::CheckIndex(index, funcs_.size());
@@ -811,41 +829,41 @@ class BasicExprFactory : private Alloc {
     return CreateFunction(impl, name, num_args, type);
   }
 
-  // Makes a numeric constant.
+  /// Makes a numeric constant.
   NumericConstant MakeNumericConstant(double value) {
     NumericConstant::Impl *impl = Allocate<NumericConstant>(expr::NUMBER);
     impl->value = value;
     return Expr::Create<NumericConstant>(impl);
   }
 
-  // Makes a variable reference.
+  /// Makes a variable reference.
   Reference MakeVariable(int index) {
     return MakeReference(expr::VARIABLE, index);
   }
 
-  // Makes a common expression reference.
+  /// Makes a common expression reference.
   Reference MakeCommonExpr(int index) {
     return MakeReference(expr::COMMON_EXPR, index);
   }
 
-  // Makes a unary expression.
+  /// Makes a unary expression.
   UnaryExpr MakeUnary(expr::Kind kind, NumericExpr arg) {
     MP_ASSERT(internal::Is<UnaryExpr>(kind), "invalid expression kind");
     return MakeUnary<UnaryExpr>(kind, arg);
   }
 
-  // Makes a binary expression.
+  /// Makes a binary expression.
   BinaryExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     return MakeBinary<BinaryExpr>(kind, lhs, rhs);
   }
 
-  // Makes an if expression.
+  /// Makes an if expression.
   IfExpr MakeIf(LogicalExpr condition,
                 NumericExpr then_expr, NumericExpr else_expr) {
     return MakeIf<IfExpr>(condition, then_expr, else_expr);
   }
 
-  // A piecewise-linear term builder.
+  /// A piecewise-linear term builder.
   class PLTermBuilder {
    private:
     PLTerm::Impl *impl_;
@@ -872,7 +890,7 @@ class BasicExprFactory : private Alloc {
     }
   };
 
-  // Begins building a piecewise-linear term.
+  /// Begins building a piecewise-linear term.
   PLTermBuilder BeginPLTerm(int num_breakpoints) {
     MP_ASSERT(num_breakpoints > 0, "invalid number of breakpoints");
     SafeInt<int> size = sizeof(double) * 2;
@@ -882,11 +900,11 @@ class BasicExprFactory : private Alloc {
     return PLTermBuilder(impl);
   }
 
-  // Ends building a piecewise-linear term.
-  // arg: argument that should be either a variable or a common expression.
+  /// Ends building a piecewise-linear term.
+  /// arg: argument that should be either a variable or a common expression.
   PLTerm EndPLTerm(PLTermBuilder builder, Reference arg) {
     PLTerm::Impl *impl = builder.impl_;
-    // Check that all slopes and breakpoints provided.
+    /// Check that all slopes and breakpoints provided.
     MP_ASSERT(builder.slope_index_ == impl->num_breakpoints + 1,
               "too few slopes");
     MP_ASSERT(builder.breakpoint_index_ == impl->num_breakpoints,
@@ -898,7 +916,7 @@ class BasicExprFactory : private Alloc {
 
   typedef BasicIteratedExprBuilder<CallExpr> CallExprBuilder;
 
-  // Begins building a call expression.
+  /// Begins building a call expression.
   CallExprBuilder BeginCall(Function func, int num_args) {
     MP_ASSERT(func != 0, "invalid function");
     CallExprBuilder builder = BeginIterated<CallExpr>(expr::CALL, num_args);
@@ -906,20 +924,20 @@ class BasicExprFactory : private Alloc {
     return builder;
   }
 
-  // Ends building a call expression.
+  /// Ends building a call expression.
   CallExpr EndCall(CallExprBuilder builder) {
     return EndIterated<CallExpr>(builder);
   }
 
   typedef BasicIteratedExprBuilder<IteratedExpr> IteratedExprBuilder;
 
-  // Begins building an iterated expression.
+  /// Begins building an iterated expression.
   IteratedExprBuilder BeginIterated(expr::Kind kind, int num_args) {
     MP_ASSERT(internal::Is<IteratedExpr>(kind), "invalid expression kind");
     return BeginIterated<IteratedExpr>(kind, num_args);
   }
 
-  // Ends building an iterated expression.
+  /// Ends building an iterated expression.
   IteratedExpr EndIterated(IteratedExprBuilder builder) {
     return EndIterated<IteratedExpr>(builder);
   }
@@ -933,7 +951,7 @@ class BasicExprFactory : private Alloc {
 
   typedef IteratedExprBuilder NumberOfExprBuilder;
 
-  // Begins building a numberof expression.
+  /// Begins building a numberof expression.
   NumberOfExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
     MP_ASSERT(num_args >= 1, "invalid number of arguments");
     IteratedExprBuilder builder =
@@ -942,7 +960,7 @@ class BasicExprFactory : private Alloc {
     return builder;
   }
 
-  // Ends building a numberof expression.
+  /// Ends building a numberof expression.
   IteratedExpr EndNumberOf(NumberOfExprBuilder builder) {
     return EndIterated(builder);
   }
@@ -950,7 +968,7 @@ class BasicExprFactory : private Alloc {
   typedef BasicIteratedExprBuilder<SymbolicNumberOfExpr>
           SymbolicNumberOfExprBuilder;
 
-  // Begins building a numberof expression.
+  /// Begins building a numberof expression.
   SymbolicNumberOfExprBuilder BeginSymbolicNumberOf(int num_args, Expr arg0) {
     MP_ASSERT(num_args >= 1, "invalid number of arguments");
     SymbolicNumberOfExprBuilder builder =
@@ -959,7 +977,7 @@ class BasicExprFactory : private Alloc {
     return builder;
   }
 
-  // Ends building a numberof expression.
+  /// Ends building a numberof expression.
   SymbolicNumberOfExpr EndSymbolicNumberOf(
       SymbolicNumberOfExprBuilder builder) {
     return EndIterated<SymbolicNumberOfExpr>(builder);
@@ -967,47 +985,47 @@ class BasicExprFactory : private Alloc {
 
   typedef BasicIteratedExprBuilder<CountExpr> CountExprBuilder;
 
-  // Begins building a count expression.
+  /// Begins building a count expression.
   CountExprBuilder BeginCount(int num_args) {
     return BeginIterated<CountExpr>(expr::COUNT, num_args);
   }
 
-  // Ends building a count expression.
+  /// Ends building a count expression.
   CountExpr EndCount(CountExprBuilder builder) {
     return EndIterated<CountExpr>(builder);
   }
 
-  // Makes a logical constant.
+  /// Makes a logical constant.
   LogicalConstant MakeLogicalConstant(bool value) {
     LogicalConstant::Impl *impl = Allocate<LogicalConstant>(expr::BOOL);
     impl->value = value;
     return Expr::Create<LogicalConstant>(impl);
   }
 
-  // Makes a logical NOT expression.
+  /// Makes a logical NOT expression.
   NotExpr MakeNot(LogicalExpr arg) {
     return MakeUnary<NotExpr>(expr::NOT, arg);
   }
 
-  // Makes a binary logical expression.
+  /// Makes a binary logical expression.
   BinaryLogicalExpr MakeBinaryLogical(
         expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {
     return MakeBinary<BinaryLogicalExpr>(kind, lhs, rhs);
   }
 
-  // Makes a relational expression.
+  /// Makes a relational expression.
   RelationalExpr MakeRelational(
         expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     return MakeBinary<RelationalExpr>(kind, lhs, rhs);
   }
 
-  // Makes a logical count expression.
+  /// Makes a logical count expression.
   LogicalCountExpr MakeLogicalCount(
         expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
     return MakeBinary<LogicalCountExpr>(kind, lhs, rhs);
   }
 
-  // Makes an implication expression.
+  /// Makes an implication expression.
   ImplicationExpr MakeImplication(LogicalExpr condition, LogicalExpr then_expr,
                                   LogicalExpr else_expr) {
     return MakeIf<ImplicationExpr>(condition, then_expr, else_expr);
@@ -1016,7 +1034,7 @@ class BasicExprFactory : private Alloc {
   typedef BasicIteratedExprBuilder<IteratedLogicalExpr>
       IteratedLogicalExprBuilder;
 
-  // Begins building an iterated logical expression.
+  /// Begins building an iterated logical expression.
   IteratedLogicalExprBuilder BeginIteratedLogical(
         expr::Kind kind, int num_args) {
     MP_ASSERT(internal::Is<IteratedLogicalExpr>(kind),
@@ -1024,34 +1042,34 @@ class BasicExprFactory : private Alloc {
     return BeginIterated<IteratedLogicalExpr>(kind, num_args);
   }
 
-  // Ends building an iterated logical expression.
+  /// Ends building an iterated logical expression.
   IteratedLogicalExpr EndIteratedLogical(IteratedLogicalExprBuilder builder) {
     return EndIterated<IteratedLogicalExpr>(builder);
   }
 
   typedef BasicIteratedExprBuilder<PairwiseExpr> PairwiseExprBuilder;
 
-  // Begins building a pairwise expression.
+  /// Begins building a pairwise expression.
   PairwiseExprBuilder BeginPairwise(expr::Kind kind, int num_args) {
     return BeginIterated<PairwiseExpr>(kind, num_args);
   }
 
-  // Ends building a pairwise expression.
+  /// Ends building a pairwise expression.
   PairwiseExpr EndPairwise(PairwiseExprBuilder builder) {
     return EndIterated<PairwiseExpr>(builder);
   }
 
-  // Makes a string literal.
+  /// Makes a string literal.
   StringLiteral MakeStringLiteral(fmt::StringRef value) {
-    // StringLiteral::Impl already has space for terminating null char so
-    // we need to allocate extra size chars only.
+    /// StringLiteral::Impl already has space for terminating null char so
+    /// we need to allocate extra size chars only.
     StringLiteral::Impl *impl =
         Allocate<StringLiteral>(expr::STRING, val(SafeInt<int>(value.size())));
     Copy(value, impl->value);
     return Expr::Create<StringLiteral>(impl);
   }
 
-  // Makes a symbolic if expression.
+  /// Makes a symbolic if expression.
   SymbolicIfExpr MakeSymbolicIf(LogicalExpr condition,
                                 Expr then_expr, Expr else_expr) {
     return MakeIf<SymbolicIfExpr>(condition, then_expr, else_expr);
@@ -1071,8 +1089,8 @@ template <typename Alloc>
 Function BasicExprFactory<Alloc>::CreateFunction(
     const Function::Impl *&impl, fmt::StringRef name,
     int num_args, func::Type type) {
-  // Function::Impl already has space for terminating null char so
-  // we need to allocate extra size chars only.
+  /// Function::Impl already has space for terminating null char so
+  /// we need to allocate extra size chars only.
   typedef Function::Impl Impl;
   SafeInt<std::size_t> size = sizeof(Impl);
   Impl *new_impl = reinterpret_cast<Impl*>(
@@ -1095,15 +1113,15 @@ inline void format(fmt::BasicFormatter<char> &f,
   return format(f, format_str, n);
 }
 
-// Returns true iff e is a zero constant.
+/// Returns true iff e is a zero constant.
 inline bool IsZero(NumericExpr e) {
   NumericConstant c = Cast<NumericConstant>(e);
   return c && c.value() == 0;
 }
 
-// Recursively compares two expressions and returns true if they are equal.
+/// Recursively compares two expressions and returns true if they are equal.
 bool Equal(Expr e1, Expr e2);
-}  // namespace mp
+}  /// namespace mp
 
 #ifdef MP_USE_HASH
 namespace std {
@@ -1115,4 +1133,4 @@ struct hash<mp::Expr> {
 }
 #endif
 
-#endif  // MP_EXPR_H_
+#endif  /// MP_EXPR_H_

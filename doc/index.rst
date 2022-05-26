@@ -19,6 +19,7 @@ Contents
    API <rst/components>
    rst/howto
    rst/testing
+   rst/details
 
 
 Indices and tables

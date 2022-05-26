@@ -226,8 +226,26 @@ struct IndexRange {
   int beg=0, end=0;
 };
 
-
 } // namespace pre
+
+
+/// Some backends need presolver
+/// for pre- / postsolving of suffix values etc
+class BasicPresolverKeeper {
+protected:
+  void SetPresolver(pre::BasicPresolver* pPre) {
+    pPresolver_ = pPre;
+  }
+
+  const pre::BasicPresolver& GetPresolver() const
+  { assert(pPresolver_); return *pPresolver_; }
+  pre::BasicPresolver& GetPresolver()
+  { assert(pPresolver_); return *pPresolver_; }
+
+
+private:
+  pre::BasicPresolver* pPresolver_ = nullptr;
+};
 
 } // namespace mp
 
