@@ -87,6 +87,10 @@ public:
 
     /// If given, provides the license description
     std::function<const char*()> cb_license_text_;
+
+    /// If given, the function is called to provide additional
+    // diagnostics if a solver environment cannot be created
+    std::function<void()> cb_diagnostics_;
   };
 
   /// Obtain callbacks

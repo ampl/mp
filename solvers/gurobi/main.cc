@@ -9,7 +9,7 @@ extern "C" int main1(int, char **argv) {
 
 extern "C" int main2(int, char** argv,
   void* (*init)(), void (*check)(size_t, size_t, size_t),
-  const char* (*text)()) {
-  mp::BasicBackend::Callbacks callbacks = { init, check, text };
+  const char* (*text)(), void(*diag)()) {
+  mp::BasicBackend::Callbacks callbacks = { init, check, text, diag };
   return mp::RunBackendApp(argv, CreateGurobiBackend, callbacks);
 }

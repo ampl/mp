@@ -85,7 +85,7 @@ void GurobiBackend::OpenGurobi() {
   const auto& create_fn = GetCallbacks().cb_initsolver_;
   if (create_fn)
     set_env((GRBenv*)create_fn());
-  else
+  else 
     GRB_CALL(GRBemptyenv(&env_ref()));
 }
 
@@ -114,7 +114,16 @@ void GurobiBackend::FinishOptionParsing() {
     // If a user defined function had been provided, the environment is assumed
     // as already started
     if (!GetCallbacks().cb_initsolver_)
-      GRB_CALL(GRBstartenv(env_ref()));
+    {
+      int res = GRBstartenv(env_ref());
+      if (res)
+      {
+        const auto& diag = GetCallbacks().cb_diagnostics_;
+        if (diag)
+          diag();
+        exit(res);
+      }
+    }
   }
   OpenGurobiModel();
   if (paramfile_read().size())
