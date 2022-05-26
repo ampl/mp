@@ -121,6 +121,10 @@ void GurobiBackend::FinishOptionParsing() {
         const auto& diag = GetCallbacks().cb_diagnostics_;
         if (diag)
           diag();
+        else {
+          fmt::print("Start environment failed with code {}, Gurobi message:\n{}",
+            res, GRBgeterrormsg(env()));
+        }
         exit(res);
       }
     }
