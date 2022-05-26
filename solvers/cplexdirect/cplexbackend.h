@@ -19,14 +19,14 @@
 #include <string>
 
 #include "mp/backend-mip.h"
-#include "mp/backend-with-pre.h"
+#include "mp/presolve-base.h"
 #include "cplexcommon.h"
 
 namespace mp {
 
 class CplexBackend :
     public MIPBackend<CplexBackend>,
-    public BackendWithPresolver,
+    public BasicPresolverKeeper,
     public CplexCommon
 {
   using BaseBackend = MIPBackend<CplexBackend>;

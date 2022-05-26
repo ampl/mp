@@ -7,6 +7,8 @@ ranging from basic building blocks necessary for any AMPL driver,
 to more advanced utilities.
 
 
+.. _NL-SOL-files:
+
 NL and SOL files
 ----------------
 
@@ -24,12 +26,25 @@ than the one provided by the traditional
 `AMPL Solver Library (ASL)
 <https://ampl.com/resources/learn-more/hooking-your-solver-to-ampl/>`_.
 
+This section describes the C++ API of an NL reader which is
+
+* Reusable: the reader can be used to process NL files in different ways
+  and not limited to a single problem representation
+* High performance: fast `mmap <http://en.wikipedia.org/wiki/Mmap>`_-based reader
+  with `SAX <http://en.wikipedia.org/wiki/Simple_API_for_XML>`_-like API and no
+  dynamic memory allocations in the common case
+* Easy to use: clean, modern code base and simple API
+* Complete: supports all NL constructs including extensions implemented in
+  AMPL Solver Library
+* Reliable: extensively and continuously tested on a variety of platforms
+
 
 NL format
 ^^^^^^^^^
 
 `NL <https://en.wikipedia.org/wiki/Nl_(format)>`_ is a format for representing
-optimization problems in discrete or continuous variables. It is described in
+optimization problems in discrete or continuous variables. The format provides
+linear constraints, as well as non-linear expression trees. It is described in
 the technical report `Writing .nl Files <https://ampl.github.io/nlwrite.pdf>`_.
 
 The NL format supports a wide range of problem types including but not limited
@@ -48,18 +63,6 @@ to the following areas of optimization:
 * `Complementarity problems <http://en.wikipedia.org/wiki/Complementarity_theory>`_
   (MPECs) in discrete or continuous variables
 * `Constraint programming <http://en.wikipedia.org/wiki/Constraint_programming>`_
-
-This section describes the C++ API of an NL reader which is
-
-* Reusable: the reader can be used to process NL files in different ways
-  and not limited to a single problem representation
-* High performance: fast `mmap <http://en.wikipedia.org/wiki/Mmap>`_-based reader
-  with `SAX <http://en.wikipedia.org/wiki/Simple_API_for_XML>`_-like API and no
-  dynamic memory allocations in the common case
-* Easy to use: clean, modern code base and simple API
-* Complete: supports all NL constructs including extensions implemented in
-  AMPL Solver Library
-* Reliable: extensively and continuously tested on a variety of platforms
 
 
 Easy-to-use functions
@@ -83,15 +86,8 @@ Full NL-reader API
 
 If you want to provide a custom NL handler, include ``mp/nl-reader.h`` instead.
 Class `mp::NLHandler` can be customized for most efficient translation of NL format into
-solver API using the `mp::ProblemBuilder` concept.
+solver API using the :ref:`ProblemBuilder concept <problem-builders>`.
 
-* Alternatively, convenience classes `mp::Problem` and `mp::ColProblem`
-  can be used for intermediate storage of the NL model. From there,
-  `mp::ExprVisitor` and `mp::ProblemFlattener` walk the NL forest.
-
-A few examples are in
-`nl-example.cc <https://github.com/ampl/mp/blob/master/src/nl-example.cc>`_, `mp::Problem`,
-`SCIP NL file reader <https://scipopt.org/>`_.
 Note that ``mp/nl.h`` is a much smaller header than ``mp/nl-reader.h`` so prefer
 it unless you need access to the full NL reader API, described below.
 
@@ -124,44 +120,120 @@ templates by minimal implementations of the `mp::BasicSolver` and
 Driver logic
 ------------
 
-Using the `mp::Backend` and the derived classes is now the
+Using the :ref:`mp::Backend and the derived classes <backend-classes>` is now the
 recommended approach to building a new solver interface.
-They provides a convenient API for common solver driver actions,
+They provide a convenient API for common solver driver actions,
 options and suffixes.
+The high-level application structure is suggested as follows:
+
+- `mp::BackendApp` --> CustomBackend --> Solver.
+
+Creating such driver from a template is
+:ref:`described in the HowTo <howto-create-new-driver>`.
 
 
-Backend, MIPBackend
+BackendApp
+~~~~~~~~~~
+
+`mp::BackendApp` supports basic application functions, such as screen output
+and interrupts handling. It calls a CustomBackend which should implement
+the `mp::BasicBackend` interface.
+
+
+.. _backend-classes:
+
+The Backend classes
 ~~~~~~~~~~~~~~~~~~~
 
-* `mp::Backend`, `mp::MIPBackend` standardize some common AMPL app behaviour, such as
-  solver messages and status reporting, simplex basis statuses, and suffix I/O
+`mp::Backend`, `mp::MIPBackend` standardize some common AMPL app behaviour, such as
+solver messages and status reporting,
+simplex basis statuses, and other suffix I/O.
+Their solver-specific subclasses can be customized for a particular solver.
+They rely on an implementation of the `mp::BasicModelManager` interface
+for :ref:`model and solution I/O <model-manager>`. See the classes' documentation
+for details.
 
+
+.. _solver-classes:
 
 Solver, SolverImpl [deprecated]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* `mp::Solver` and `mp::SolverImpl` enable very basic standard behaviour
-  (e.g., multiobj, solution output)
-
-
-* Classes `mp::BasicSolver`, `mp::Backend` and `mp::MIPBackend`
-  standardize solver behavior such as common options and suffixes
-  and are recommended for new interfaces.
+Classes `mp::SolverApp`, `mp::Solver` and `mp::SolverImpl` enable very basic
+standard behaviour (e.g., multiobj, solution output). They are deprecated
+in favor of the :ref:`BackendApp/Backend classes <backend-classes>` and
+can be discontinued in future.
 
 
 
-Model/solution conversions
---------------------------
+Model/solution I/O and conversions
+----------------------------------
 
-* Class `mp::BasicModelManager` standardizes the workflow of
-  model input and results output.
+The tools presented in  this section standardize
+model/solution I/O
+(currently relying on :ref:`NL file input and SOL file output <NL-SOL-files>`)
+and conversion for a particular solver.
 
-* Classes `mp::FlatConverter` and `mp::MIPFlatConverter` facilitate conversion of
-  NL expressions which are not natively accepted by a solver into simpler forms.
+.. _model-manager:
 
-  * :ref:`Logical and CP constraints <modeling-guide>` are supported.
+Model Manager
+~~~~~~~~~~~~~
 
-* Class `mp::pre::Presolver` pre- and postsolves solutions and suffixes.
+Class `mp::BasicModelManager` standardizes the interface for
+model input and results output. This interface is used by the
+:ref:`Backend classes <backend-classes>`.
+
+* Current suggested implementations rely on `mp::ModelManagerWithProblemBuilder`
+  which uses :ref:`NL file input and SOL file output <NL-SOL-files>` as well as
+  a model converter. The model converter should implement the `mp::BasicConverter`
+  interface.
+
+
+.. _problem-builders:
+
+Problem builders
+~~~~~~~~~~~~~~~~
+
+:ref:`Model/solution I/O <NL-SOL-files>` and
+:ref:`model managers <model-manager>` rely on a `mp::ProblemBuilder` concept.
+
+* A custom builder can pass the NL model directly into the solver. A few examples are in
+  `nl-example.cc <https://github.com/ampl/mp/blob/master/src/nl-example.cc>`_, `mp::Problem`,
+  `SCIP 8.0 NL file reader <https://scipopt.org/>`_.
+
+* Alternatively, `mp::Problem` and `mp::ColProblem` provide intermediate
+  storage for a problem instance. From `mp::Problem`,
+  :ref:`conversion tools <problem-converters>`
+  can be customized to transform the instance for a particular solver.
+
+
+.. _problem-converters:
+
+Problem converters
+~~~~~~~~~~~~~~~~~~
+
+Given a problem instance in standard format `mp::Problem`, several
+tools can be adapted to convert the instance for a particular solver.
+
+* For :ref:`'flat' (expression-less) solvers <flat-solvers>`,
+  `mp::ProblemFlattener` can walk the NL forest, passing flattened expressions as
+  constraints to `mp::FlatConverter` and `mp::MIPFlatConverter`. In turn, these
+  facilitate conversion of flat constraints which are not natively accepted by a
+  solver into simpler forms. `mp::FlatConverter` and its subclasses
+  can be flexibly adapted for a particular solver, preferably
+  via the solver's modeling API wrapper:
+
+  * `mp::FlatConverter` addresses the underlying solver via a wrapper
+    implementing the `mp::BasicFlatModelAPI` interface. A subclassed wrapper
+    can allow flexible control of model conversions.
+
+  * Class `mp::pre::Presolver` transforms solutions and suffixes between the
+    original NL model and the flat model.
+
+* For :ref:`expression-tree supporting solvers <expression-solvers>`,
+  `mp::ExprVisitor` and `mp::ExprConverter` are efficient type-safe templates
+  which can be customized to transform instances for a particular expression-based
+  solver API.
 
 
 
@@ -179,28 +251,18 @@ such as writing NL files and automatic differentiation.
 More details
 ------------
 
-This section overviews the common API components in more detail.
+This section overviews some more details of the API.
 
 For a complete API reference, see the :ref:`index <genindex>`.
 
-
-Problem builders
-~~~~~~~~~~~~~~~~
-
-* `mp::ProblemBuilder`
-
-* `mp::ColProblem`
 
 
 Problem representation
 ~~~~~~~~~~~~~~~~~~~~~~
 
 A standard representation of a model, convenient for intermediate storage.
-Can be converted into solver API by a subclassed `mp::ExprVisitor`.
 
 * `mp::ProblemInfo`, `mp::var::Type`, `mp::obj::Type`, `mp::func::Type`, `mp::ComplInfo`
-
-* `mp::Problem`, `mp::BasicProblem`
 
 
 Expression forest walkers
@@ -214,32 +276,6 @@ Typesafe expression walkers for models stored in memory.
 
 * `mp::ProblemFlattener`
 
-
-Model and solution management
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* Class `mp::BasicModelManager` standardizes the workflow of
-  model input and results output.
-
-
-Model conversion and presolve
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* Classes `mp::FlatConverter` and `mp::MIPFlatConverter` facilitate conversion of
-  NL expressions which are not natively accepted by a solver into simpler forms.
-
-  * `mp::ConstraintKeeper` stores constraints in FlatConverter.
-
-* Class `mp::pre::Presolver` pre- and postsolves solutions and suffixes.
-
-
-
-Standard AMPL driver logic
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* `mp::Backend`, `mp::MIPBackend`
-
-* `mp::Solver`, `mp::SolverImpl` [deprecated]
 
 
 Solution status

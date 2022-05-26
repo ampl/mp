@@ -1,7 +1,13 @@
 .. _cppreference:
 
-Details
-=======
+Reference
+=========
+
+
+Index
+-----
+
+For alphabetic index, see the :ref:`genindex`.
 
 
 Namespace mp

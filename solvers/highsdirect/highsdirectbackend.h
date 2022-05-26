@@ -19,14 +19,14 @@
 #include <string>
 
 #include "mp/backend-mip.h"
-#include "mp/backend-with-pre.h"
+#include "mp/presolve-base.h"
 #include "highsdirectcommon.h"
 
 namespace mp {
 
 class HighsBackend :
     public MIPBackend<HighsBackend>,
-    public BackendWithPresolver,
+    public BasicPresolverKeeper,
     public HighsCommon
 {
   using BaseBackend = MIPBackend<HighsBackend>;

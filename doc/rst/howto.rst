@@ -74,12 +74,19 @@ Solver driver setups
 A minimal setup
 ~~~~~~~~~~~~~~~
 
-To write a minimal AMPL solver driver, it requires an NL file reader
-and .sol file writer.
+To write a minimal AMPL solver driver, it requires an
+:ref:`NL file reader and .sol file writer <NL-SOL-files>`.
 
 The recommended setup
 ~~~~~~~~~~~~~~~~~~~~~
 
+The recommended driver structure is to use the
+:ref:`Backend class hierarchy <backend-classes>`.
+Creating such driver from a template is
+:ref:`described here <howto-create-new-driver>`.
+
 A legacy setup
 ~~~~~~~~~~~~~~
 
+A legacy setup used :ref:`Solver classes <solver-classes>`.
+Their support may be discontinued.

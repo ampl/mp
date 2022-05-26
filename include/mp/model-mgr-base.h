@@ -14,10 +14,11 @@
 
 namespace mp {
 
-/// Anstract Model Manager.
+/// Abstract Model Manager.
 /// Standardizes the following tasks:
 /// - Input the model;
-/// - Access/report the original model solution/suffixes
+/// - Access user-provided solution/suffixes;
+/// - Report solutions/suffixes.
 class BasicModelManager {
 public:
   virtual ~BasicModelManager() { }
@@ -34,29 +35,37 @@ public:
                            std::function<void (size_t, size_t, size_t)>
                              cb_checkmodel) = 0;
 
+  /// User-provided primal solution
   virtual ArrayRef<double> InitialValues() = 0;
+  /// User-provided dual solution
   virtual ArrayRef<double> InitialDualValues() = 0;
 
+  /// Read integer suffix
   virtual ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) = 0;
+  /// Read double suffix
   virtual ArrayRef<double> ReadSuffix(const SuffixDef<double>& suf) = 0;
 
+  /// Report integer suffix
   virtual void ReportSuffix(const SuffixDef<int>& suf,
                             ArrayRef<int> values) = 0;
+  /// Report double suffix
   virtual void ReportSuffix(const SuffixDef<double>& suf,
                             ArrayRef<double> values) = 0;
 
-  /// Length of a suffix vector
+  /// Length of a suffix vector of given kind
   virtual size_t GetSuffixSize(int kind) = 0;
 
+  /// Report final solution
   virtual void HandleSolution(int, fmt::CStringRef,
                               const double *, const double *,
                               double) = 0;
+  /// Report intermediate solution
   virtual void HandleFeasibleSolution(fmt::CStringRef,
                               const double *, const double *,
                               double) = 0;
 
-  /// Integrality flags of the variables in the original instance
-  /// We use this for rounding
+  /// Integrality flags of the variables in the original instance.
+  /// Used for solution rounding
   virtual const std::vector<bool>& IsVarInt() const = 0;
 };
 

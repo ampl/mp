@@ -3,11 +3,14 @@
 Solver drivers
 ==============
 
+
+.. _flat-solvers:
+
 'Flat API' solvers
 ------------------
 
-For solvers with traditional "flat" APIs, non-linear AMPL expressions need
-to be reformulated.
+For solvers with traditional 'flat' (no expression trees) APIs,
+non-linear AMPL expressions need to be reformulated.
 For example, ``max(a, b)`` is translated into a constraint meaning
 ``<new var> = max(a, b)``, which is in turn reformulated for
 MIP or passed to the solver natively (Gurobi: `GRBaddgenconstrMax`).
@@ -26,6 +29,8 @@ There are several experimental implementations:
 - `highs <https://github.com/ampl/mp/tree/master/solvers/highsdirect>`_
   (see the `HiGHS website <https://highs.dev/>`_)
 
+
+.. _expression-solvers:
 
 Expression-based solvers
 ------------------------

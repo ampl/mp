@@ -19,14 +19,14 @@
 #include <string>
 
 #include "mp/backend-mip.h"
-#include "mp/backend-with-pre.h"
+#include "mp/presolve-base.h"
 #include "coptcommon.h"
 
 namespace mp {
 
 class CoptBackend :
     public MIPBackend<CoptBackend>,
-    public BackendWithPresolver,
+    public BasicPresolverKeeper,
     public CoptCommon
 {
   using BaseBackend = MIPBackend<CoptBackend>;
