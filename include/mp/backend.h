@@ -846,6 +846,9 @@ public:
     this->set_long_name( fmt::format("{} {}", name, version ) );
     this->set_version( fmt::format("AMPL/{} Optimizer [{}]",
                                    name, version ) );
+    auto lic_cb = GetCallbacks().cb_license_text_;
+    if (lic_cb)
+      this->set_license_info(lic_cb());
   }
 
   using MPSolverBase = BackendWithModelManager;
