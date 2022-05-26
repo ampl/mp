@@ -80,13 +80,13 @@ void GurobiBackend::InitOptionParsing() {
 
 void GurobiBackend::OpenGurobi() {
   // Typically try the registered function first;
-  // if not available call the solver's API function directly
+  // if not available call the solver's API function to create
+  // an empty environment. Will be started later.
   const auto& create_fn = GetCallbacks().cb_initsolver_;
   if (create_fn)
     set_env((GRBenv*)create_fn());
   else
-    GRB_CALL( GRBloadenv(&env_ref(), NULL) );
-  OpenGurobiModel();
+    GRB_CALL(GRBemptyenv(&env_ref()));
 }
 
 void GurobiBackend::OpenGurobiModel() {
@@ -110,6 +110,13 @@ void GurobiBackend::FinishOptionParsing() {
   else if (cloudid().size() && cloudkey().size()) {
     OpenGurobiCloud();
   }
+  else {
+    // If a user defined function had been provided, the environment is assumed
+    // as already started
+    if (!GetCallbacks().cb_initsolver_)
+      GRB_CALL(GRBstartenv(env_ref()));
+  }
+  OpenGurobiModel();
   if (paramfile_read().size())
     GRB_CALL(
           GRBreadparams(GRBgetenv(model()),
@@ -124,16 +131,16 @@ void GurobiBackend::FinishOptionParsing() {
 
 void GurobiBackend::OpenGurobiComputeServer() {
   assert(servers().size());
-  auto logf = GrbGetStrParam(GRB_STR_PAR_LOGFILE);
-  if (env()) {
-    CloseGurobi();
-  }
-  if (int i = GRBloadclientenv(&env_ref(), logf.c_str(),
-                               servers().c_str(), server_router().c_str(),
-                               server_password().c_str(), server_group().c_str(),
-                               server_insecure(), server_priority(),
-                               server_timeout() )) {
-    switch(i) {
+  SetSolverOption(GRB_STR_PAR_COMPUTESERVER, servers().c_str());
+  SetSolverOption(GRB_STR_PAR_SERVERPASSWORD, server_password().c_str());
+  SetSolverOption(GRB_STR_PAR_CSROUTER, server_router().c_str());
+  SetSolverOption(GRB_STR_PAR_CSGROUP, server_group().c_str());
+  SetSolverOption(GRB_INT_PAR_CSTLSINSECURE, server_insecure());
+  SetSolverOption(GRB_INT_PAR_CSPRIORITY, server_priority());
+  SetSolverOption(GRB_INT_PAR_SERVERTIMEOUT, server_timeout());
+
+  if (int i = GRBstartenv(env()))
+    switch (i) {
     case GRB_ERROR_NETWORK:
       Abort(601, "Could not talk to Gurobi Compute Server(s).");
       break;
@@ -145,25 +152,19 @@ void GurobiBackend::OpenGurobiComputeServer() {
       break;
     default:
       Abort(604, fmt::format(
-              "Surprise return {} from GRBloadclientenv().", i));
+        "Surprise return {} while starting the compute server environment.", i));
     }
-  }
-  OpenGurobiModel();
-  ReplaySolverOptions();
 }
-
 
 
 void GurobiBackend::OpenGurobiCloud() {
   assert(cloudid().size() && cloudkey().size());
-  auto logf = GrbGetStrParam(GRB_STR_PAR_LOGFILE);
-  if (env()) {
-    CloseGurobi();
-  }
-  if (int i = GRBloadcloudenv(&env_ref(), logf.c_str(),
-                              cloudid().c_str(), cloudkey().c_str(),
-                              cloudpool().c_str(), cloudpriority()
-                              )) {
+  SetSolverOption(GRB_STR_PAR_CLOUDACCESSID, cloudid().c_str());
+  SetSolverOption(GRB_STR_PAR_CLOUDSECRETKEY, cloudkey().c_str());
+  SetSolverOption(GRB_STR_PAR_CLOUDPOOL, cloudpool().c_str());
+  SetSolverOption(GRB_INT_PAR_CSPRIORITY, cloudpriority());
+
+  if (int i = GRBstartenv(env())) {
     switch(i) {
     case GRB_ERROR_NETWORK:
       Abort(601, "Could not talk to Gurobi Instant Cloud.");
@@ -179,11 +180,9 @@ void GurobiBackend::OpenGurobiCloud() {
       break;
     default:
       Abort(604, fmt::format(
-              "Surprise return {} from GRBloadcloudenv().", i));
+              "Surprise return {} while starting the cloud environment", i));
     }
   }
-  OpenGurobiModel();
-  ReplaySolverOptions();
 }
 
 bool GurobiBackend::IsMIP() const {

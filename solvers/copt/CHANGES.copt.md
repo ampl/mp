@@ -1,6 +1,10 @@
 Summary of recent updates to COPT for AMPL
 ==========================================
 
+## 20220526
+- *SOS constraints* are now detected also if the .ref suffix is integer
+- Minor changes to option names
+
 ## 20220511
 - *Complementarity constraints: also quadratics*
     Complementarity constraints now handle quadratics.
