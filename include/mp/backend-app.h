@@ -154,6 +154,7 @@ int RunBackendApp(char** argv,
     return e.exit_code();                // can deliver exit code
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
+    return -1;
   }
   return 0;
 }

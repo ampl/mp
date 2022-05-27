@@ -23,6 +23,11 @@ struct GurobiCommonInfo {
   bool has_env() const { return nullptr!=env_; }
   /// GRBenv*
   GRBenv *env() const { assert(env_); return env_; }
+  /// Get env for options: if model present, use its env,
+  /// otherwise env()
+  GRBenv *model_or_global_env() const {
+    return has_model() ? GRBgetenv(model()) : env();
+  }
   /// If has a model pointer
   bool has_model() const { return model_!=nullptr; }
   /// GRBmodel*

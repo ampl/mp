@@ -43,7 +43,7 @@ namespace mp {
   throw MakeUnsupportedError( name )
 
 /// Raise error
-#define MP_RAISE(msg) throw std::runtime_error(msg)
+#define MP_RAISE(msg) throw mp::Error(msg)
 
 /// Raise with exit code
 #define MP_RAISE_WITH_CODE(exit_code, msg) throw mp::Error(msg, exit_code)
@@ -67,11 +67,14 @@ class Error : public fmt::internal::RuntimeError {
   }
 
  public:
+  /// Costruct from message formatting arguments?
   FMT_VARIADIC_(char, , Error, init, fmt::CStringRef)
-  Error(fmt::CStringRef msg, int c) : exit_code_(c)
-  { SetMessage(msg.c_str()); }
-  ~Error() throw() {}
 
+  /// Construct from message and optional exit code
+  Error(fmt::CStringRef msg, int c=-1) : exit_code_(c)
+  { SetMessage(msg.c_str()); }
+
+  /// The exit code
   int exit_code() const { return exit_code_; }
 };
 

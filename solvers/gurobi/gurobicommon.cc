@@ -32,29 +32,29 @@ int GurobiCommon::ModelSense() const {
 
 
 void GurobiCommon::GetSolverOption(const char *key, int &value) const {
-  GRB_CALL( GRBgetintparam(GRBgetenv(model()), key, &value) );
+  GRB_CALL( GRBgetintparam(model_or_global_env(), key, &value) );
 }
 
 void GurobiCommon::SetSolverOption(const char *key, int value) {
-  GRB_CALL( GRBsetintparam(GRBgetenv(model()), key, value) );
+  GRB_CALL( GRBsetintparam(model_or_global_env(), key, value) );
 }
 
 void GurobiCommon::GetSolverOption(const char *key, double &value) const {
-  GRB_CALL( GRBgetdblparam(GRBgetenv(model()), key, &value) );
+  GRB_CALL( GRBgetdblparam(model_or_global_env(), key, &value) );
 }
 
 void GurobiCommon::SetSolverOption(const char *key, double value) {
-  GRB_CALL( GRBsetdblparam(GRBgetenv(model()), key, value) );
+  GRB_CALL( GRBsetdblparam(model_or_global_env(), key, value) );
 }
 
 void GurobiCommon::GetSolverOption(const char *key, std::string &value) const {
   char buffer[GRB_MAX_STRLEN];
-  GRB_CALL( GRBgetstrparam(GRBgetenv(model()), key, buffer) );
+  GRB_CALL( GRBgetstrparam(model_or_global_env(), key, buffer) );
   value = buffer;
 }
 
 void GurobiCommon::SetSolverOption(const char *key, const std::string& value) {
-  GRB_CALL( GRBsetstrparam(GRBgetenv(model()), key, value.c_str()) );
+  GRB_CALL( GRBsetstrparam(model_or_global_env(), key, value.c_str()) );
 }
 
 

@@ -253,6 +253,7 @@ protected:
 
 
 private:
+  /// Fixed model to produce duals for MIP if requested
   GRBmodel *model_fixed_ = nullptr;
 
   /// These options are stored in the class as variables
@@ -270,7 +271,7 @@ private:
 
     std::string servers_, server_password_, server_group_, server_router_;
     int server_priority_=0, server_insecure_=0;
-    double server_timeout_=-1.0;
+    double server_timeout_=10.0;
 
     std::string tunebase_;
   } storedOptions_;

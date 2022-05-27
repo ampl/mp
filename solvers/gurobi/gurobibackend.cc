@@ -87,11 +87,11 @@ void GurobiBackend::OpenGurobi() {
     set_env((GRBenv*)create_fn());
   else 
     GRB_CALL(GRBemptyenv(&env_ref()));
+  /* Set default parameters */
+  GRBsetintparam(env(), GRB_INT_PAR_OUTPUTFLAG, 0);
 }
 
 void GurobiBackend::OpenGurobiModel() {
-  /* Set default parameters */
-  GRBsetintparam(env(), GRB_INT_PAR_OUTPUTFLAG, 0);
   /* Create an empty model */
   GRB_CALL( GRBnewmodel(env(), &model_ref(), "amplgurobi", 0,
                         NULL, NULL, NULL, NULL, NULL) );
@@ -122,8 +122,9 @@ void GurobiBackend::FinishOptionParsing() {
         if (diag)
           diag();
         else {
-          fmt::print("Start environment failed with code {}, Gurobi message:\n{}",
-            res, GRBgeterrormsg(env()));
+          MP_RAISE(
+            fmt::format("Start environment failed with code {}, Gurobi message:\n{}",
+              res, GRBgeterrormsg(env())));
         }
         exit(res);
       }
@@ -1942,8 +1943,8 @@ void GurobiBackend::InitCustomOptions() {
   AddStoredOption("tech:server_timeout server_timeout",
       "Report job as rejected by Gurobi Compute Server if the "
       "job is not started within server_timeout seconds. "
-      "Default = -1 (no limit).",
-          storedOptions_.server_timeout_, -1.0, DBL_MAX);
+      "Default = 10.",
+          storedOptions_.server_timeout_, 1.0, DBL_MAX);
 
 
   AddSolverOption("tech:threads threads",
