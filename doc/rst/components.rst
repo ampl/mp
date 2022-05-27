@@ -111,7 +111,10 @@ it unless you need access to the full NL reader API, described below.
 SOL file writer
 ~~~~~~~~~~~~~~~
 
-A minimal .sol file writer can be implemented by parameterizing the
+Writing solution/results output is easiest as part of the general workflow,
+see :ref:`model-manager`.
+
+A standalone .sol file writer could be implemented by parameterizing the
 `internal::AppSolutionHandlerImpl` (or `internal::SolutionWriterImpl`)
 templates by minimal implementations of the `mp::BasicSolver` and
 `mp::ProblemBuilder` interfaces.
@@ -126,11 +129,13 @@ They provide a convenient API for common solver driver actions,
 options and suffixes.
 The high-level application structure is suggested as follows:
 
-- `mp::BackendApp` --> CustomBackend --> Solver.
+- :ref:`backend-app` --> :ref:`Custom Backend <backend-classes>` --> Solver.
 
 Creating such driver from a template is
 :ref:`described in the HowTo <howto-create-new-driver>`.
 
+
+.. _backend-app:
 
 BackendApp
 ~~~~~~~~~~
@@ -145,12 +150,13 @@ the `mp::BasicBackend` interface.
 The Backend classes
 ~~~~~~~~~~~~~~~~~~~
 
-`mp::Backend`, `mp::MIPBackend` standardize some common AMPL app behaviour, such as
+`mp::Backend` and `mp::MIPBackend` implement the `mp::BasicBackend` interface and
+standardize some common AMPL app behaviour, such as
 solver messages and status reporting,
 simplex basis statuses, and other suffix I/O.
 Their solver-specific subclasses can be customized for a particular solver.
-They rely on an implementation of the `mp::BasicModelManager` interface
-for :ref:`model and solution I/O <model-manager>`. See the classes' documentation
+They rely on the :ref:`model-manager` interface
+for model and solution I/O. See the classes' documentation
 for details.
 
 
@@ -186,7 +192,7 @@ model input and results output. This interface is used by the
 * Current suggested implementations rely on `mp::ModelManagerWithProblemBuilder`
   which uses :ref:`NL file input and SOL file output <NL-SOL-files>` as well as
   a model converter. The model converter should implement the `mp::BasicConverter`
-  interface.
+  interface and provide a :ref:`Problem Builder <problem-builders>`.
 
 
 .. _problem-builders:
@@ -194,14 +200,14 @@ model input and results output. This interface is used by the
 Problem builders
 ~~~~~~~~~~~~~~~~
 
-:ref:`Model/solution I/O <NL-SOL-files>` and
+Basic :ref:`Model/solution I/O <NL-SOL-files>` and
 :ref:`model managers <model-manager>` rely on a `mp::ProblemBuilder` concept.
 
 * A custom builder can pass the NL model directly into the solver. A few examples are in
   `nl-example.cc <https://github.com/ampl/mp/blob/master/src/nl-example.cc>`_, `mp::Problem`,
   `SCIP 8.0 NL file reader <https://scipopt.org/>`_.
 
-* Alternatively, `mp::Problem` and `mp::ColProblem` provide intermediate
+* Alternatively, standard classes `mp::Problem` and `mp::ColProblem` provide intermediate
   storage for a problem instance. From `mp::Problem`,
   :ref:`conversion tools <problem-converters>`
   can be customized to transform the instance for a particular solver.
@@ -212,29 +218,52 @@ Problem builders
 Problem converters
 ~~~~~~~~~~~~~~~~~~
 
-Given a problem instance in standard format `mp::Problem`, several
+Given a problem instance in the standard format `mp::Problem`, several
 tools can be adapted to convert the instance for a particular solver.
 
 * For :ref:`'flat' (expression-less) solvers <flat-solvers>`,
   `mp::ProblemFlattener` can walk the NL forest, passing flattened expressions as
-  constraints to `mp::FlatConverter` and `mp::MIPFlatConverter`. In turn, these
+  constraints to :ref:`flat-converters`. In turn, these
   facilitate conversion of flat constraints which are not natively accepted by a
-  solver into simpler forms. `mp::FlatConverter` and its subclasses
-  can be flexibly adapted for a particular solver, preferably
-  via the solver's modeling API wrapper:
-
-  * `mp::FlatConverter` addresses the underlying solver via a wrapper
-    implementing the `mp::BasicFlatModelAPI` interface. A subclassed wrapper
-    can allow flexible control of model conversions.
-
-  * Class `mp::pre::Presolver` transforms solutions and suffixes between the
-    original NL model and the flat model.
+  solver into simpler forms.
 
 * For :ref:`expression-tree supporting solvers <expression-solvers>`,
   `mp::ExprVisitor` and `mp::ExprConverter` are efficient type-safe templates
   which can be customized to transform instances for a particular expression-based
   solver API.
 
+
+.. _flat-converters:
+
+Flat Model Converters
+~~~~~~~~~~~~~~~~~~~~~
+
+`mp::FlatConverter` and `mp::MIPFlatConverter`
+facilitate conversion of flat models (i.e., models without expression trees).
+Constraints which are not natively accepted by a
+solver, are transformed into simpler forms. `mp::FlatConverter` and its subclasses
+can be flexibly parameterized for a particular solver, preferably
+via the solver's modeling API wrapper:
+
+* `mp::BasicFlatModelAPI` is the interface via which `mp::FlatConverter` addresses
+  the underlying solver. A subclassed wrapper, such as `mp::GurobiModelAPI`,
+  signals its accepted constraints and which model conversions are preferable.
+
+* :ref:`value-presolver` transforms solutions and suffixes between the
+  original NL model and the flat model.
+
+
+.. _value-presolver:
+
+Value Presolver
+~~~~~~~~~~~~~~~
+
+Class `mp::pre::Presolver` manages transformations of solutions and suffixes
+between the original NL model and the converted model. For driver architectures
+with :ref:`model-manager`, the value presolver object should be shared between
+the model converter and the :ref:`Backend <backend-classes>` to enable
+solution/suffix transformations corresponding to those on the model, see
+`mp::CreateGurobiModelMgr` as an example.
 
 
 C++ ASL adapter

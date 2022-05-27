@@ -7,7 +7,7 @@ Reference
 Index
 -----
 
-For alphabetic index, see the :ref:`genindex`.
+See the :ref:`alphabetic index <genindex>`.
 
 
 Namespace mp
