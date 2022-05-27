@@ -686,8 +686,8 @@ class BasicExprFactory : private Alloc {
     exprs_.push_back(0);
     typedef typename ExprType::Impl Impl;
     /// The following cannot overflow.
-    Impl *impl = reinterpret_cast<Impl*>(
-          this->allocate(sizeof(Impl) + extra_bytes));
+    /// Using malloc due to #174
+    Impl *impl = (Impl*)std::malloc(sizeof(Impl) + extra_bytes);
     impl->kind_ = kind;
     exprs_.back() = impl;
     return impl;
@@ -788,7 +788,7 @@ class BasicExprFactory : private Alloc {
   explicit BasicExprFactory(Alloc alloc = Alloc()) : Alloc(alloc) {}
 
   virtual ~BasicExprFactory() {
-    /// Deallocate(exprs_);                                  WORKAROUND. See #174
+    Deallocate(exprs_);
     Deallocate(funcs_);
   }
 
@@ -1081,7 +1081,7 @@ template <typename T>
 void BasicExprFactory<Alloc>::Deallocate(const std::vector<T> &data) {
   for (typename std::vector<T>::const_iterator
        i = data.begin(), end = data.end(); i != end; ++i) {
-    this->deallocate(const_cast<char*>(reinterpret_cast<const char*>(*i)), 0);
+    std::free((void*)*i);
   }
 }
 

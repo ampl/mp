@@ -443,10 +443,9 @@ class BasicSuffixSet : private Alloc {
 
 template <typename Alloc>
 BasicSuffixSet<Alloc>::~BasicSuffixSet() {
-  return;                                     // WORKAROUND. See #174
   // Deallocate names and values.
   for (typename Set::iterator i = set_.begin(), e = set_.end(); i != e; ++i) {
-    Deallocate(const_cast<char*>(i->name.data()), i->name.size());
+    Deallocate(const_cast<char*>(i->name.data()), i->name.size()+1);
     if ((i->kind & suf::FLOAT) != 0)
       Deallocate(i->dbl_values, i->num_values);
     else
