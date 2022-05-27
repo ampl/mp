@@ -96,7 +96,7 @@ inline int fmt_snprintf(char *buffer, size_t size, const char *format, ...) {
   va_end(args);
   return result;
 }
-# define FMT_SNPRINTF fmt_snprintf
+# define FMT_SNPRINTF fmt::fmt_snprintf
 #endif  // _MSC_VER
 
 #if defined(_WIN32) && defined(__MINGW32__) && !defined(__NO_ISOCEXT)
@@ -752,7 +752,7 @@ unsigned fmt::internal::PrintfFormatter<Char>::parse_header(
     spec.width_ = parse_nonnegative_int(s);
   } else if (*s == '*') {
     ++s;
-    spec.width_ = WidthHandler(spec).visit(get_arg(s));
+    spec.width_ = fmt::WidthHandler(spec).visit(get_arg(s));
   }
   return arg_index;
 }
@@ -785,12 +785,12 @@ void fmt::internal::PrintfFormatter<Char>::format(
         spec.precision_ = static_cast<int>(parse_nonnegative_int(s));
       } else if (*s == '*') {
         ++s;
-        spec.precision_ = PrecisionHandler().visit(get_arg(s));
+        spec.precision_ = fmt::PrecisionHandler().visit(get_arg(s));
       }
     }
 
     Arg arg = get_arg(s, arg_index);
-    if (spec.flag(HASH_FLAG) && IsZeroInt().visit(arg))
+    if (spec.flag(HASH_FLAG) && fmt::IsZeroInt().visit(arg))
       spec.flags_ &= ~to_unsigned<int>(HASH_FLAG);
     if (spec.fill_ == '0') {
       if (arg.type <= Arg::LAST_NUMERIC_TYPE)
@@ -803,24 +803,24 @@ void fmt::internal::PrintfFormatter<Char>::format(
     switch (*s++) {
     case 'h':
       if (*s == 'h')
-        ArgConverter<signed char>(arg, *++s).visit(arg);
+        fmt::ArgConverter<signed char>(arg, *++s).visit(arg);
       else
-        ArgConverter<short>(arg, *s).visit(arg);
+        fmt::ArgConverter<short>(arg, *s).visit(arg);
       break;
     case 'l':
       if (*s == 'l')
-        ArgConverter<fmt::LongLong>(arg, *++s).visit(arg);
+        fmt::ArgConverter<fmt::LongLong>(arg, *++s).visit(arg);
       else
-        ArgConverter<long>(arg, *s).visit(arg);
+        fmt::ArgConverter<long>(arg, *s).visit(arg);
       break;
     case 'j':
-      ArgConverter<intmax_t>(arg, *s).visit(arg);
+      fmt::ArgConverter<intmax_t>(arg, *s).visit(arg);
       break;
     case 'z':
-      ArgConverter<std::size_t>(arg, *s).visit(arg);
+      fmt::ArgConverter<std::size_t>(arg, *s).visit(arg);
       break;
     case 't':
-      ArgConverter<std::ptrdiff_t>(arg, *s).visit(arg);
+      fmt::ArgConverter<std::ptrdiff_t>(arg, *s).visit(arg);
       break;
     case 'L':
       // printf produces garbage when 'L' is omitted for long double, no
@@ -828,7 +828,7 @@ void fmt::internal::PrintfFormatter<Char>::format(
       break;
     default:
       --s;
-      ArgConverter<void>(arg, *s).visit(arg);
+      fmt::ArgConverter<void>(arg, *s).visit(arg);
     }
 
     // Parse type.
@@ -843,7 +843,7 @@ void fmt::internal::PrintfFormatter<Char>::format(
         break;
       case 'c':
         // TODO: handle wchar_t
-        CharConverter(arg).visit(arg);
+        fmt::CharConverter(arg).visit(arg);
         break;
       }
     }
