@@ -44,5 +44,14 @@ AMPLS_C_EXPORT void AMPLSAddMessage(AMPLS_MP_Solver* slv, const char* msg);
 /// Retrieve messages, 0-terminated array
 const char* const * AMPLSGetMessages(AMPLS_MP_Solver* slv);
 
-
+typedef struct CCallbacks_T {
+  // Return solver environment
+  void* (*init)(); 
+  // Check if model sizes are allowed; throw if not
+  void (*check)(size_t, size_t, size_t);
+  // Return additional text to be displayed on '-v' output
+  const char* (*additionalText)();
+  // Function called after failures to provide additional diagnostics
+  void (*diagnostics)();
+} CCallbacks;
 #endif // AMPLS_C_INTERFACE_H

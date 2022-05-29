@@ -1,5 +1,5 @@
 #include "mp/backend-app.h"
-
+#include "mp/ampls-c-api.h" // for CCallbacks
 /// Declare a backend factory
 std::unique_ptr<mp::BasicBackend> CreateCoptBackend();
 
@@ -8,9 +8,8 @@ extern "C" int main1(int, char **argv) {
       mp::RunBackendApp(argv, CreateCoptBackend);
 }
 
-extern "C" int main2(int, char** argv,
-  void* (*init)(), void (*check)(size_t, size_t, size_t),
-  const char* (*text)()) {
-  mp::BasicBackend::Callbacks callbacks = { init, check, text };
+extern "C" int main2(int, char** argv, CCallbacks cb) {
+  mp::BasicBackend::Callbacks callbacks = { cb.init,
+    cb.check, cb.additionalText, cb.diagnostics };
   return mp::RunBackendApp(argv, CreateCoptBackend, callbacks);
 }
