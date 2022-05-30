@@ -1,4 +1,4 @@
-#include "ortoolsmodelapi.h"
+#include "ortoolsmpmodelapi.h"
 
 #include "mp/model-mgr-with-std-pb.h"
 #include "mp/flat/problem_flattener.h"
@@ -11,7 +11,7 @@ namespace mp {
 /// for recompilation speed
 std::unique_ptr<BasicModelManager>
 CreateOrtoolsModelMgr(OrtoolsCommon& cc, Env& e,
-                     pre::BasicPresolver*& pPre) {
+                     pre::BasicValuePresolver*& pPre) {
   return CreateModelMgrWithFlatConverter<
       OrtoolsModelAPI, MIPFlatConverter >(cc, e, pPre);
 }

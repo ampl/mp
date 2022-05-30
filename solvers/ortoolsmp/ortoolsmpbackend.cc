@@ -4,10 +4,10 @@
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
-#include "ortoolsbackend.h"
+#include "ortoolsmpbackend.h"
 
 extern "C" {
-  #include "ortools-ampls-c-api.h"    // Ortools AMPLS C API
+  #include "ortoolsmp-ampls-c-api.h"    // Ortools AMPLS C API
 }
 #include "mp/ampls-cpp-api.h"
 
@@ -35,17 +35,17 @@ namespace mp {
 /// need it to convert solution data
 /// @return OrtoolsModelMgr
 std::unique_ptr<BasicModelManager>
-CreateOrtoolsModelMgr(OrtoolsCommon&, Env&, pre::BasicPresolver*&);
+CreateOrtoolsModelMgr(OrtoolsCommon&, Env&, pre::BasicValuePresolver*&);
 
 
 OrtoolsBackend::OrtoolsBackend() {
   OpenSolver();
 
   /// Create a ModelManager
-  pre::BasicPresolver* pPre;
+  pre::BasicValuePresolver* pPre;
   auto data = CreateOrtoolsModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
-  SetPresolver(pPre);
+  SetValuePresolver(pPre);
 
   /// Copy env/lp to ModelAPI
   copy_common_info_to_other();
@@ -86,7 +86,7 @@ bool OrtoolsBackend::IsQCP() const {
 }
 
 Solution OrtoolsBackend::GetSolution() {
-  auto mv = GetPresolver().PostsolveSolution(
+  auto mv = GetValuePresolver().PostsolveSolution(
         { PrimalSolution(), DualSolution() } );
   return { mv.GetVarValues()(), mv.GetConValues()(),
     GetObjectiveValues() };   

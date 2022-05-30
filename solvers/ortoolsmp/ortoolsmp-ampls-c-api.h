@@ -4,8 +4,6 @@
  * C API for MP/Ortools
  */
 
-//#include "ortools.h"
-
 #include "mp/ampls-c-api.h"
 
 /*

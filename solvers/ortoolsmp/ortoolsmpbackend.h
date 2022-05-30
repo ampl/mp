@@ -19,14 +19,14 @@
 #include <string>
 
 #include "mp/backend-mip.h"
-#include "mp/presolve-base.h"
-#include "ortoolscommon.h"
+#include "mp/valcvt-base.h"
+#include "ortoolsmpcommon.h"
 
 namespace mp {
 
 class OrtoolsBackend :
     public MIPBackend<OrtoolsBackend>,
-    public BasicPresolverKeeper,
+    public BasicValuePresolverKeeper,
     public OrtoolsCommon
 {
   using BaseBackend = MIPBackend<OrtoolsBackend>;
