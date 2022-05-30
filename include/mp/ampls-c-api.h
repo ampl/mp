@@ -1,6 +1,8 @@
 #ifndef AMPLS_C_INTERFACE_H
 #define AMPLS_C_INTERFACE_H
 
+#include <stddef.h>
+
 /*
  * A generic C API for MP
  */
