@@ -34,12 +34,12 @@ namespace mp {
 /// need it to convert solution data
 /// @return CoptModelMgr
 std::unique_ptr<BasicModelManager>
-CreateCoptModelMgr(CoptCommon&, Env&, pre::BasicPresolver*&);
+CreateCoptModelMgr(CoptCommon&, Env&, pre::BasicValuePresolver*&);
 
 
 void CoptBackend::OpenSolver() {
   int status = 0;
-  const auto& create_fn = GetCallbacks().cb_initsolver_;
+  const auto create_fn = GetCallbacks().init;
   if (create_fn)
     set_env((copt_env*)create_fn());
   else
@@ -71,10 +71,10 @@ void CoptBackend::CloseSolver() {
 
 CoptBackend::CoptBackend() {
   /// Create a ModelManager
-  pre::BasicPresolver* pPre;
+  pre::BasicValuePresolver* pPre;
   auto data = CreateCoptModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
-  SetPresolver(pPre);
+  SetValuePresolver(pPre);
 }
 
 CoptBackend::~CoptBackend() {
@@ -102,7 +102,7 @@ void CoptBackend::InitOptionParsing() {
 }
 
 Solution CoptBackend::GetSolution() {
-  auto mv = GetPresolver().PostsolveSolution(
+  auto mv = GetValuePresolver().PostsolveSolution(
         { PrimalSolution(), DualSolution() } );
   return { mv.GetVarValues()(), mv.GetConValues()(),
     GetObjectiveValues() };   // TODO postsolve obj values
@@ -632,7 +632,7 @@ SolutionBasis CoptBackend::GetBasis() {
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
-    auto mv = GetPresolver().PostsolveBasis(
+    auto mv = GetValuePresolver().PostsolveBasis(
       { std::move(varstt),
         {{{ CG_Linear, std::move(constt) }}} });
     varstt = mv.GetVarValues()();
@@ -644,7 +644,7 @@ SolutionBasis CoptBackend::GetBasis() {
 }
 
 void CoptBackend::SetBasis(SolutionBasis basis) {
-  auto mv = GetPresolver().PresolveBasis(
+  auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
   auto varstt = mv.GetVarValues()();
   auto constt = mv.GetConValues()(CG_Linear);
@@ -664,7 +664,7 @@ IIS CoptBackend::GetIIS() {
   auto variis = VarsIIS();
   auto coniis = ConsIIS();
   // TODO: This can be moved to a parent class?
-  auto mv = GetPresolver().PostsolveIIS(
+  auto mv = GetValuePresolver().PostsolveIIS(
     { variis, coniis });
   return { mv.GetVarValues()(), mv.GetConValues()() };
 }

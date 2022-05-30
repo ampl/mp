@@ -11,7 +11,7 @@ namespace mp {
 /// for recompilation speed
 std::unique_ptr<BasicModelManager>
 CreateCplexModelMgr(CplexCommon& cc, Env& e,
-                     pre::BasicPresolver*& pPre) {
+                     pre::BasicValuePresolver*& pPre) {
   return CreateModelMgrWithFlatConverter<
       CplexModelAPI, MIPFlatConverter >(cc, e, pPre);
 }

@@ -6,7 +6,7 @@
   * flat constraints
   */
 
-#include "mp/flat/constraints_static.h"
-#include "mp/flat/constraints_functional.h"
+#include "mp/flat/constr_static.h"
+#include "mp/flat/constr_functional.h"
 
 #endif // STD_CONSTR_H
