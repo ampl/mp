@@ -1,7 +1,7 @@
-#ifndef VALUE_PRESOLVE_NODE_H
-#define VALUE_PRESOLVE_NODE_H
+#ifndef PRESOLVE_NODE_H
+#define PRESOLVE_NODE_H
 
-#include "valcvt-base.h"
+#include "presolve-base.h"
 
 
 namespace mp {
@@ -71,7 +71,7 @@ public:
   /// Constructor
   ValueNode(std::string nm) : name_(nm) { }
 
-  /// Declared size (what is being used by links)
+  /// Declared size (what is being used by bridges)
   size_t size() const { return sz_; }
 
   /// Create entry (range) pointer: add n elements
@@ -95,7 +95,7 @@ public:
 
   /// Assign from ArrayRef<int>. Always copy the values.
   /// TODO Check that values fit the declared size?
-  /// Problematic since, e.g., Gurobi adds more variables in feasrelax
+  /// Problematic since e.g. Gurobi adds more variables in feasrelax
   ValueNode& operator=(std::vector<int> ai)
   {
     // assert(ai.size() <= size());
@@ -206,4 +206,4 @@ using ModelValuesTerminal = ModelValues< NodeMap >;
 } // namespace mp
 
 
-#endif // VALUE_PRESOLVE_NODE_H
+#endif // PRESOLVE_NODE_H

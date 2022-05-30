@@ -19,14 +19,14 @@
 #include <string>
 
 #include "mp/backend-mip.h"
-#include "mp/valcvt-base.h"
+#include "mp/presolve-base.h"
 #include "visitorcommon.h"
 
 namespace mp {
 
 class VisitorBackend :
     public MIPBackend<VisitorBackend>,
-    public BasicValuePresolverKeeper,
+    public BasicPresolverKeeper,
     public VisitorCommon
 {
   using BaseBackend = MIPBackend<VisitorBackend>;

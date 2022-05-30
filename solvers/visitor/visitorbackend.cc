@@ -35,17 +35,17 @@ namespace mp {
 /// need it to convert solution data
 /// @return VisitorModelMgr
 std::unique_ptr<BasicModelManager>
-CreateVisitorModelMgr(VisitorCommon&, Env&, pre::BasicValuePresolver*&);
+CreateVisitorModelMgr(VisitorCommon&, Env&, pre::BasicPresolver*&);
 
 
 VisitorBackend::VisitorBackend() {
   OpenSolver();
 
   /// Create a ModelManager
-  pre::BasicValuePresolver* pPre;
+  pre::BasicPresolver* pPre;
   auto data = CreateVisitorModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
-  SetValuePresolver(pPre);
+  SetPresolver(pPre);
 
   /// Copy env/lp to ModelAPI
   copy_common_info_to_other();
@@ -129,7 +129,7 @@ bool VisitorBackend::IsQCP() const {
 }
 
 Solution VisitorBackend::GetSolution() {
-  auto mv = GetValuePresolver().PostsolveSolution(
+  auto mv = GetPresolver().PostsolveSolution(
         { PrimalSolution(), DualSolution() } );
   return { mv.GetVarValues()(), mv.GetConValues()(),
     GetObjectiveValues() };   // TODO postsolve obj values
@@ -511,7 +511,7 @@ SolutionBasis VisitorBackend::GetBasis() {
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
-    auto mv = GetValuePresolver().PostsolveBasis(
+    auto mv = GetPresolver().PostsolveBasis(
       { std::move(varstt),
         {{{ CG_Linear, std::move(constt) }}} });
     varstt = mv.GetVarValues()();
@@ -523,7 +523,7 @@ SolutionBasis VisitorBackend::GetBasis() {
 }
 
 void VisitorBackend::SetBasis(SolutionBasis basis) {
-  auto mv = GetValuePresolver().PresolveBasis(
+  auto mv = GetPresolver().PresolveBasis(
     { basis.varstt, basis.constt });
   auto varstt = mv.GetVarValues()();
   auto constt = mv.GetConValues()(CG_Linear);
@@ -543,7 +543,7 @@ IIS VisitorBackend::GetIIS() {
   auto variis = VarsIIS();
   auto coniis = ConsIIS();
   // TODO: This can be moved to a parent class?
-  auto mv = GetValuePresolver().PostsolveIIS(
+  auto mv = GetPresolver().PostsolveIIS(
     { variis, coniis });
   return { mv.GetVarValues()(), mv.GetConValues()() };
 }

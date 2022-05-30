@@ -6,7 +6,7 @@
  */
 
 #include "mp/flat/redef/redef_base.h"
-#include "mp/flat/constr_std.h"
+#include "mp/flat/constraints_std.h"
 
 namespace mp {
 
@@ -25,7 +25,7 @@ public:
   using ItemType = AllDiffConstraint;
 
   /// Convert in positive context
-  /// TODO add presolve link?
+  /// TODO add presolve bridge?
   void ConvertCtxPos(const ItemType& alld, int ) {
     const auto& args = alld.GetArguments();
     const auto lba_dbl = GetMC().lb_array(args);
