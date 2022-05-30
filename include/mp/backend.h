@@ -57,7 +57,7 @@ DEFAULT_STD_FEATURES_TO( false )
 
 namespace mp {
 
-/// Basis status values of a solution (unpresolved)
+/// Solution (normally unpresolved)
 struct Solution {
   /// primal
   std::vector<double> primal;

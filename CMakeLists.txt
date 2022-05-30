@@ -316,7 +316,7 @@ add_prefix(MP_HEADERS include/mp/
   model-mgr-base.h model-mgr-with-pb.h
   model-mgr-with-std-pb.h model-mgr-with-std-pb.hpp
   nl.h nl-reader.h option.h os.h problem.h problem-builder.h
-  presolve-base.h presolve-node.h presolve-bridge.h presolve.h
+  valcvt-base.h valcvt-node.h valcvt-link.h valcvt.h
   rstparser.h safeint.h sol.h
   solver.h solver-opt.h solver-base.h solver-io.h solver-app-base.h solver-app.h
   suffix.h utils-file.h utils-hash.h utils-hash-stream.h utils-string.h)

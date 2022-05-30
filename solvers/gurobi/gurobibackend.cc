@@ -33,14 +33,14 @@ namespace mp {
 /// @return GurobiModelMgr
 std::unique_ptr<BasicModelManager>
 CreateGurobiModelMgr(GurobiCommon& gc,
-                     Env& e, pre::BasicPresolver*& pPre);
+                     Env& e, pre::BasicValuePresolver*& pPre);
 
 
 GurobiBackend::GurobiBackend() {
-  pre::BasicPresolver* pPre;
+  pre::BasicValuePresolver* pPre;
   auto data = CreateGurobiModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
-  SetPresolver(pPre);
+  SetValuePresolver(pPre);
 }
 
 GurobiBackend::~GurobiBackend() {
@@ -218,7 +218,7 @@ std::vector<double> GurobiBackend::PrimalSolution() {
 }
 
 Solution GurobiBackend::GetSolution() {
-  auto mv = GetPresolver().PostsolveSolution(
+  auto mv = GetValuePresolver().PostsolveSolution(
         { PrimalSolution(), DualSolution() } );
   return { mv.GetVarValues()(), mv.GetConValues()(),
     GetObjectiveValues() };    // TODO postsolve obj values
@@ -277,7 +277,7 @@ double GurobiBackend::CurrentGrbPoolObjectiveValue() const {
 
 
 void GurobiBackend::MarkLazyOrUserCuts(ArrayRef<int> lazyVals) {
-  auto vm = GetPresolver().PresolveLazyUserCutFlags({
+  auto vm = GetValuePresolver().PresolveLazyUserCutFlags({
                                                       {}, lazyVals
                                                     });
   std::vector<int> lv_lin = vm.GetConValues()(CG_Linear);
@@ -305,7 +305,7 @@ SolutionBasis GurobiBackend::GetBasis() {
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
-    auto mv = GetPresolver().PostsolveBasis(
+    auto mv = GetValuePresolver().PostsolveBasis(
           { std::move(varstt),
             {{{ CG_Linear, std::move(constt) }}} } );
     varstt = mv.GetVarValues()();
@@ -317,7 +317,7 @@ SolutionBasis GurobiBackend::GetBasis() {
 }
 
 void GurobiBackend::SetBasis(SolutionBasis basis) {
-  auto mv = GetPresolver().PresolveBasis(
+  auto mv = GetValuePresolver().PresolveBasis(
         { basis.varstt, basis.constt } );
   auto varstt = mv.GetVarValues()();
   auto constt = mv.GetConValues()(CG_Linear);
@@ -434,7 +434,7 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
 }
 
 void GurobiBackend::AddPrimalDualStart(Solution sol0) {
-  auto mv = GetPresolver().PresolveSolution(
+  auto mv = GetValuePresolver().PresolveSolution(
         { sol0.primal, sol0.dual } );
   auto x0 = mv.GetVarValues()();
   auto pi0 = mv.GetConValues()(CG_Linear);
@@ -501,7 +501,7 @@ ArrayRef<double> GurobiBackend::Ray() {
 
 ArrayRef<double> GurobiBackend::DRay() {
   auto fd = GrbGetDblAttrArray(GRB_DBL_ATTR_FARKASDUAL, NumLinCons());
-  auto vm = GetPresolver().PostsolveSolution({
+  auto vm = GetValuePresolver().PostsolveSolution({
                                                {},
                                                {{{CG_Linear, std::move(fd)}}}
                                              });
@@ -512,7 +512,7 @@ IIS GurobiBackend::GetIIS() {
   auto variis = VarsIIS();
   auto coniis = ConsIIS();
 
-  auto mv = GetPresolver().PostsolveIIS(
+  auto mv = GetValuePresolver().PostsolveIIS(
         { variis, coniis } );
   return { mv.GetVarValues()(), mv.GetConValues()() };
 }
@@ -816,7 +816,7 @@ void GurobiBackend::DoGurobiFeasRelax() {
     feasrelax().flag_orig_obj_available();
   }
   /// Gurobi 9.5 only relaxes linear constraints
-  auto mv = GetPresolver().PresolveSolution({
+  auto mv = GetValuePresolver().PresolveSolution({
                                               {},
                                               feasrelax().rhspen()
                                             });

@@ -258,7 +258,7 @@ via the solver's modeling API wrapper:
 Value Presolver
 ~~~~~~~~~~~~~~~
 
-Class `mp::pre::Presolver` manages transformations of solutions and suffixes
+Class `mp::pre::ValuePresolver` manages transformations of solutions and suffixes
 between the original NL model and the converted model. For driver architectures
 with :ref:`model-manager`, the value presolver object should be shared between
 the model converter and the :ref:`Backend <backend-classes>` to enable

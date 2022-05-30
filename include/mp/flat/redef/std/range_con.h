@@ -6,32 +6,32 @@
  */
 
 #include "mp/flat/redef/redef_base.h"
-#include "mp/presolve-bridge.h"
+#include "mp/valcvt-link.h"
 #include "mp/flat/constr_std.h"
 
 namespace mp {
 
 namespace pre {
 
-/// Presolve bridge between RangeCon and Con(LE/EQ/GE)+Slack.
+/// Presolve link between RangeCon and Con(LE/EQ/GE)+Slack.
 /// TODO dependency inversion #164
-/// (FlatConverter needs just a BasicBridge*? Entry type?)
+/// (FlatConverter needs just a BasicLink*? Entry type?)
 template <class ModelConverter, class RangeCon>
 class RangeCon2Slack :
-    public BasicStaticIndivEntryBridge<
+    public BasicStaticIndivEntryLink<
       RangeCon2Slack<ModelConverter, RangeCon>, 3, 3> {
 public:
   /// Base class
-  using Base = BasicStaticIndivEntryBridge<
+  using Base = BasicStaticIndivEntryLink<
     RangeCon2Slack<ModelConverter, RangeCon>, 3, 3>;
 
   /// Constructor
   RangeCon2Slack(ModelConverter& cvt,
                               const typename Base::NodeList& ndl) :
-    Base(cvt.GetPresolver(), ndl), cvt_(cvt) { }
+    Base(cvt.GetValuePresolver(), ndl), cvt_(cvt) { }
 
-  /// Define pre- / postsolve methods for individual bridge entries.
-  /// Typedef BridgeEntry is created in Base as std::array<int, 3>
+  /// Define pre- / postsolve methods for individual link entries.
+  /// Typedef LinkEntry is created in Base as std::array<int, 3>
   /// (3 is the base class template parameter)
   /// and means the following indexes: {range_con, lin_con, slack_index}
 
@@ -40,7 +40,7 @@ public:
   /// Primals: compute slack.
   /// Slacks are probably only needed for Gurobi LP warmstart.
   /// Who does not need them, can use unpresolved primal solution.
-  void PresolveSolutionEntry(const typename Base::BridgeEntry& be) {
+  void PresolveSolutionEntry(const typename Base::LinkEntry& be) {
     SetDbl(be, 1, GetDbl(be, 0));
     const auto& orig_cons =
         GetMC().template GetConstraint<RangeCon>(be[0]);
@@ -48,7 +48,7 @@ public:
   }
 
   /// Postsolve solution (primal + dual)
-  void PostsolveSolutionEntry(const typename Base::BridgeEntry& be) {
+  void PostsolveSolutionEntry(const typename Base::LinkEntry& be) {
     SetDbl(be, 0, GetDbl(be, 1));
   }
 
@@ -57,26 +57,26 @@ public:
   /// From a range constraint's basis status,
   /// transfer it to the slack.
   /// Set the new constraint's status to 'equ'.
-  void PresolveBasisEntry(const typename Base::BridgeEntry& be) {
+  void PresolveBasisEntry(const typename Base::LinkEntry& be) {
     SetInt(be, 2, GetInt(be, 0));
     SetInt(be, 1, (int)BasicStatus::equ);
   }
   /// Postsolve basis
   ///
   /// The reverse (forget solver's constraint status)
-  void PostsolveBasisEntry(const typename Base::BridgeEntry& be) {
+  void PostsolveBasisEntry(const typename Base::LinkEntry& be) {
     SetInt(be, 0, GetInt(be, 2));
   }
 
   /// Presolve IIS
-  void PresolveIISEntry(const typename Base::BridgeEntry& ) {
+  void PresolveIISEntry(const typename Base::LinkEntry& ) {
     /// Should not need
   }
 
   /// Postsolve IIS
   ///
   /// Take slack's if set, otherwise the constraint's
-  void PostsolveIISEntry(const typename Base::BridgeEntry& be) {
+  void PostsolveIISEntry(const typename Base::LinkEntry& be) {
     if (auto slk_iis = GetInt(be, 2))
       SetInt(be, 0, slk_iis);
     else
@@ -84,11 +84,11 @@ public:
   }
 
   /// Mark Lazy/user cut: copy flag
-  void PresolveLazyUserCutFlagsEntry(const typename Base::BridgeEntry& be) {
+  void PresolveLazyUserCutFlagsEntry(const typename Base::LinkEntry& be) {
     SetInt(be, 1, GetInt(be, 0));
   }
 
-  void PostsolveLazyUserCutFlagsEntry(const typename Base::BridgeEntry& ) {
+  void PostsolveLazyUserCutFlagsEntry(const typename Base::LinkEntry& ) {
     /// Should not need
   }
 
@@ -142,9 +142,9 @@ public:
 
   /// Conversion
   ///
-  /// Responsible for adding presolve bridges
+  /// Responsible for adding presolve links
   /// @param item: the item to be converted
-  /// @param i: item index, used to create a presolve bridge
+  /// @param i: item index, used to create a presolve link
   void Convert(const ItemType& item, int i) {
     auto rr = Relate(item.lb(), item.ub());
     if (rr[0] && rr[1] && rr[2])
@@ -165,7 +165,7 @@ protected:
     body.add_term(1.0, slk);
     AlgConEQ lceq { std::move(body), item.ub() };
     int i1 = GetMC().AddConstraint(std::move(lceq));
-    GetSlackBridge().AddEntry({i, i1, slk});
+    GetSlackLink().AddEntry({i, i1, slk});
   }
   void ConvertWithRhs(const ItemType& item, int i, RangeRelations rr) {
     pre::NodeRange nr;              // target node+index
@@ -181,15 +181,15 @@ protected:
             AlgConEQ( item.GetBody(),
                       (item.lb()+item.ub()) / 2.0 ) );
     } // else, both are inf, forget
-    GetMC().GetCopyBridge().AddEntry(
+    GetMC().GetCopyLink().AddEntry(
           { GET_CONSTRAINT_VALUE_NODE(ItemType).Select(i), nr });
   }
 
-  using SlackBridge = pre::RangeLinCon2Slack<ModelConverter>;
-  SlackBridge& GetSlackBridge() { return bridge_rng2slk_; }
+  using SlackLink = pre::RangeLinCon2Slack<ModelConverter>;
+  SlackLink& GetSlackLink() { return link_rng2slk_; }
 
 private:
-  SlackBridge bridge_rng2slk_ {
+  SlackLink link_rng2slk_ {
     GetMC(), {
           &GET_CONSTRAINT_VALUE_NODE(ItemType),
           &GET_CONSTRAINT_VALUE_NODE(AlgConEQ),
