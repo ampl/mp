@@ -2,7 +2,7 @@
 #define REDEF_BASE_H
 
 #include "mp/format.h"
-#include "mp/presolve.h"
+#include "mp/valcvt.h"
 
 namespace mp {
 
@@ -19,7 +19,7 @@ public:
   /// Access ModelConverter
   ModelConverter& GetMC() { return mdl_cvt_; }
   /// Access Presolver
-  pre::Presolver& GetPre() { return GetMC().GetPresolver(); }
+  pre::ValuePresolver& GetPre() { return GetMC().GetPresolver(); }
   /// Access specific item's ValueNode
   template <class Item>
   pre::ValueNode& GetVN(Item* pc)
@@ -47,9 +47,9 @@ public:
   /// if only one of these is necessary, significant model reduction
   /// can be achieved in certain cases.
   ///
-  /// Responsible for adding presolve bridges, if any
+  /// Responsible for adding presolve links, if any
   /// @param item: the item to be converted
-  /// @param i: item index, used to create a presolve bridge
+  /// @param i: item index, used to create a presolve link
   ///
   /// The Impl can reimplement this
   template <class ItemType>

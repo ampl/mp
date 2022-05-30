@@ -1,15 +1,15 @@
-#ifndef PRESOLVE_H
-#define PRESOLVE_H
+#ifndef VALUE_PRESOLVE_H
+#define VALUE_PRESOLVE_H
 
 /**
-  @file presolve.h
+  @file valcvt.h.
   Implementation of value presolver
   */
 
 #include <deque>
 
-#include "presolve-node.h"
-#include "presolve-bridge.h"
+#include "valcvt-node.h"
+#include "valcvt-link.h"
 
 
 namespace mp {
@@ -17,17 +17,17 @@ namespace mp {
 namespace pre {
 
 
-/// Array of bridge ranges
+/// Array of link ranges
 ///
 /// This defines a chain of transformations
-class BridgeRangeList : private std::deque<BridgeRange> {
+class LinkRangeList : private std::deque<LinkRange> {
 public:
   /// Base class typedef
-  using Base = std::deque<BridgeRange>;
+  using Base = std::deque<LinkRange>;
 
   /// Add another range to the list,
   /// tries to extend the last range if possible
-  void Add(BridgeRange br) {
+  void Add(LinkRange br) {
     if (empty() || !back().ExtendRange(br))
       push_back(br);
   }
@@ -49,8 +49,10 @@ protected:
 };
 
 
-/// Value presolver implementation
-class Presolver : public BasicPresolver {
+/// Value presolver implementation.
+/// A ValuePresolver converts solutions and suffixes
+/// between the original model and the presolved one.
+class ValuePresolver : public BasicValuePresolver {
 public:
   /// Source nodes for model items
   const ModelValuesTerminal& GetSourceNodes() const { return src_; }
@@ -60,43 +62,43 @@ public:
   const ModelValuesTerminal& GetTargetNodes() const { return dest_; }
   ModelValuesTerminal& GetTargetNodes() { return dest_; }
 
-  /// Add (register) a bridge range
-  /// This is normally called automatically from a bridge
+  /// Add (register) a link range
+  /// This is normally called automatically from a link
   /// when an entry is added
-  void Add(BridgeRange br) { brl_.Add(br); }
+  void Add(LinkRange br) { brl_.Add(br); }
 
   /// Presolve solution (primal + dual)
   ModelValuesDbl PresolveSolution(const ModelValuesDbl& mvd) override
-  { return RunPresolve(&BasicBridge::PresolveSolution, mvd); }
+  { return RunPresolve(&BasicValcvtLink::PresolveSolution, mvd); }
   /// Postsolve solution (primal + dual)
   ModelValuesDbl PostsolveSolution(const ModelValuesDbl& mvd) override
-  { return RunPostsolve(&BasicBridge::PostsolveSolution, mvd); }
+  { return RunPostsolve(&BasicValcvtLink::PostsolveSolution, mvd); }
 
   /// Presolve basis (vars + cons)
   ModelValuesInt PresolveBasis(const ModelValuesInt& mvi) override
-  { return RunPresolve(&BasicBridge::PresolveBasis, mvi); }
+  { return RunPresolve(&BasicValcvtLink::PresolveBasis, mvi); }
   /// Postsolve solution (vars + cons)
   ModelValuesInt PostsolveBasis(const ModelValuesInt& mvi) override
-  { return RunPostsolve(&BasicBridge::PostsolveBasis, mvi); }
+  { return RunPostsolve(&BasicValcvtLink::PostsolveBasis, mvi); }
 
   /// Presolve IIS (vars + cons)
   ModelValuesInt PresolveIIS(const ModelValuesInt& mvi) override
-  { return RunPresolve(&BasicBridge::PresolveIIS, mvi); }
+  { return RunPresolve(&BasicValcvtLink::PresolveIIS, mvi); }
   /// Postsolve IIS (vars + cons)
   ModelValuesInt PostsolveIIS(const ModelValuesInt& mvi) override
-  { return RunPostsolve(&BasicBridge::PostsolveIIS, mvi); }
+  { return RunPostsolve(&BasicValcvtLink::PostsolveIIS, mvi); }
 
   /// Presolve LazyUserCutFlags (vars + cons)
   ModelValuesInt PresolveLazyUserCutFlags(const ModelValuesInt& mvi) override
-  { return RunPresolve(&BasicBridge::PresolveLazyUserCutFlags, mvi); }
+  { return RunPresolve(&BasicValcvtLink::PresolveLazyUserCutFlags, mvi); }
 
 protected:
   /// Helper type: virtual member function pointer
-  using BridgeFn = void (BasicBridge::*)(BridgeIndexRange);
+  using LinkFn = void (BasicValcvtLink::*)(ValcvtLinkIndexRange);
 
   /// Generic value presolve loop: forward
   template <class ModelValues>
-  ModelValues RunPresolve(BridgeFn fn, const ModelValues& mv) const {
+  ModelValues RunPresolve(LinkFn fn, const ModelValues& mv) const {
     src_ = mv;
     for (const auto& br: brl_)
       (br.b_.*fn)(br.ir_);
@@ -105,7 +107,7 @@ protected:
 
   /// Generic value postsolve loop: backward
   template <class ModelValues>
-  ModelValues RunPostsolve(BridgeFn fn, const ModelValues& mv) const {
+  ModelValues RunPostsolve(LinkFn fn, const ModelValues& mv) const {
     dest_ = mv;
     for (auto rit=brl_.rbegin(); rit!=brl_.rend(); ++rit)
       (rit->b_.*fn)(rit->ir_);
@@ -115,17 +117,17 @@ protected:
 private:
   mutable ModelValuesTerminal src_{std::string("src")},
     dest_{std::string("dest")};
-  BridgeRangeList brl_;
+  LinkRangeList brl_;
 };
 
 
-/// Implement bridge range registration in global Presolver
+/// Implement link range registration in global Presolver
 inline void
-BasicBridge::RegisterBridgeIndexRange(BridgeIndexRange bir)
-{ presolver_.Add( { *this, bir } ); }
+BasicValcvtLink::RegisterLinkIndexRange(ValcvtLinkIndexRange bir)
+{ vsalue_presolver_.Add( { *this, bir } ); }
 
 } // namespace pre
 
 } // namespace mp
 
-#endif // PRESOLVE_H
+#endif // VALUE_PRESOLVE_H

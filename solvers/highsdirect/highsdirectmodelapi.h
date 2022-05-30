@@ -6,7 +6,7 @@
 #include "mp/env.h"
 #include "highsdirectcommon.h"
 #include "mp/flat/model_api_base.h"
-#include "mp/flat/constraints_std.h"
+#include "mp/flat/constr_std.h"
 
 namespace mp {
 

@@ -57,7 +57,7 @@ DEFAULT_STD_FEATURES_TO( false )
 
 namespace mp {
 
-/// Basis status values of a solution (unpresolved)
+/// Solution (normally unpresolved)
 struct Solution {
   /// primal
   std::vector<double> primal;
@@ -186,7 +186,7 @@ public:
   void ReadNL(const std::string& nl_filename,
               const std::string& filename_no_ext) override {
     GetMM().ReadNLModel(nl_filename, filename_no_ext,
-                        GetCallbacks().cb_checkmodel_);
+                        GetCallbacks().check);
   }
 
   /// Input warm start, suffixes, and all that can modify the model.
@@ -846,7 +846,7 @@ public:
     this->set_long_name( fmt::format("{} {}", name, version ) );
     this->set_version( fmt::format("AMPL/{} Optimizer [{}]",
                                    name, version ) );
-    auto lic_cb = GetCallbacks().cb_license_text_;
+    auto lic_cb = GetCallbacks().additionalText;
     if (lic_cb)
       this->set_license_info(lic_cb());
   }
