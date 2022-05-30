@@ -5,7 +5,7 @@
   * Functional flat constraints
   */
 
-#include "mp/flat/constr_static.h"
+#include "mp/flat/constraints_static.h"
 
 
 namespace mp {

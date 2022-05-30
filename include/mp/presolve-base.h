@@ -1,8 +1,9 @@
-#ifndef VALUE_PRESOLVE_BASE_H
-#define VALUE_PRESOLVE_BASE_H
+#ifndef PRESOLVE_BASE_H
+#define PRESOLVE_BASE_H
 
 /**
-  Interface for value presolver:
+  Interface for value presolver: transforms solutions etc.
+  between original and presolved model
   */
 
 #include <map>
@@ -13,10 +14,6 @@
 
 namespace mp {
 
-
-/// Namespace mp::pre: value presolve methods.
-/// They transform solutions, etc.,
-/// between the original and presolved models
 namespace pre {
 
 /// Debugging template
@@ -182,12 +179,12 @@ using ModelValuesInt = ModelValues< ValueMapInt >;
 using ModelValuesDbl = ModelValues< ValueMapDbl >;
 
 
-/// ValuePresolver interface.
-/// Addresses value pre- / postsolve (solutions, basis, etc)
-class BasicValuePresolver {
+/// Presolver interface
+/// Currently only addresses value pre- / postsolve (solutions, basis, ...)
+class BasicPresolver {
 public:
   /// Virtual destructor
-  virtual ~BasicValuePresolver() = default;
+  virtual ~BasicPresolver() = default;
 
   /// Presolve solution (primal + dual)
   virtual ModelValuesDbl PresolveSolution(const ModelValuesDbl& ) = 0;
@@ -209,7 +206,7 @@ public:
 };
 
 
-/// index range for some link or node
+/// index range for some bridge or node
 struct IndexRange {
   /// Construct, possibly from a single index
   IndexRange(int b=0, int e=-1) : beg(b), end(e<0 ? b+1 : e) { }
@@ -234,22 +231,22 @@ struct IndexRange {
 
 /// Some backends need presolver
 /// for pre- / postsolving of suffix values etc
-class BasicValuePresolverKeeper {
+class BasicPresolverKeeper {
 protected:
-  void SetValuePresolver(pre::BasicValuePresolver* pPre) {
+  void SetPresolver(pre::BasicPresolver* pPre) {
     pPresolver_ = pPre;
   }
 
-  const pre::BasicValuePresolver& GetValuePresolver() const
+  const pre::BasicPresolver& GetPresolver() const
   { assert(pPresolver_); return *pPresolver_; }
-  pre::BasicValuePresolver& GetValuePresolver()
+  pre::BasicPresolver& GetPresolver()
   { assert(pPresolver_); return *pPresolver_; }
 
 
 private:
-  pre::BasicValuePresolver* pPresolver_ = nullptr;
+  pre::BasicPresolver* pPresolver_ = nullptr;
 };
 
 } // namespace mp
 
-#endif // VALUE_PRESOLVE_BASE_H
+#endif // PRESOLVE_BASE_H

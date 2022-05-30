@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "mp/utils-hash-stream.h"
-#include "mp/flat/constr_std.h"
+#include "mp/flat/constraints_std.h"
 #include "mp/flat/expr_affine.h"
 
 namespace std {
