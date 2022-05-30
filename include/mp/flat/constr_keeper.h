@@ -9,7 +9,7 @@
 
 #include "mp/common.h"
 #include "mp/flat/model_api_base.h"
-#include "mp/flat/constraint_hash.h"
+#include "mp/flat/constr_hash.h"
 #include "mp/flat/redef/redef_base.h"
 #include "mp/presolve-node.h"
 

@@ -10,7 +10,7 @@
 #include "mp/converter-base.h"
 #include "mp/expr-visitor.h"
 #include "mp/flat/eexpr.h"
-#include "mp/flat/constraints_std.h"
+#include "mp/flat/constr_std.h"
 #include "mp/flat/obj_std.h"
 #include "mp/presolve.h"
 

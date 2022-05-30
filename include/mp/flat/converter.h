@@ -12,8 +12,8 @@
 #include "mp/solver-base.h"
 #include "mp/flat/converter_model.h"
 #include "mp/flat/convert_functional.h"
-#include "mp/flat/constraint_keeper.h"
-#include "mp/flat/constraints_std.h"
+#include "mp/flat/constr_keeper.h"
+#include "mp/flat/constr_std.h"
 #include "mp/presolve.h"
 #include "mp/flat/redef/std/range_con.h"
 
