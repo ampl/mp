@@ -1,5 +1,5 @@
 #include "mp/format.h"
-#include "highsdirectcommon.h"
+#include "highsmpcommon.h"
 
 namespace mp {
 

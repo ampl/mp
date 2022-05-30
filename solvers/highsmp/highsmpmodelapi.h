@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "mp/env.h"
-#include "highsdirectcommon.h"
+#include "highsmpcommon.h"
 #include "mp/flat/model_api_base.h"
 #include "mp/flat/constr_std.h"
 

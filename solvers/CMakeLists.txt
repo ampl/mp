@@ -226,32 +226,18 @@ function(add_ampl_backend name)
 endfunction()
 
 add_ampl_backend(visitor DLL_RUNTIME)
-add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
-## add_ampl_backend(cplexdirect DLL_RUNTIME SHARED_LIB MODULE CPLEX LIBRARIES cplex-library ${CMAKE_DL_LIBS})
 
+add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT 
+  LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
 
-add_ampl_backend(highsdirect DLL_RUNTIME SHARED_LIB
-  MODULE HIGHS LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})
+add_ampl_backend(highsmp DLL_RUNTIME SHARED_LIB MODULE HIGHS 
+  LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})
 
+add_ampl_backend(ortoolsmp DLL_RUNTIME SHARED_LIB MODULE ortoolsmp 
+  LIBRARIES ${ortoolsmp_LIBS} ${CMAKE_DL_LIBS})
 
-add_ampl_backend(ortoolsmp DLL_RUNTIME SHARED_LIB
-  MODULE ortoolsmp LIBRARIES ${ortoolsmp_LIBS} ${CMAKE_DL_LIBS})
-
-## TODO Cannot use 'add_ampl_backend' because of the -direct name suffix
-add_ampl_solver(cplexdirect DLL_RUNTIME SHARED_LIB MODULE CPLEX
-  cplex-ampls-c-api.h
-  cplexbackend.cc cplexbackend.h
-  cplexmodelapi.cc cplexmodelapi.h
-  cplexcommon.cc cplexcommon.h
-  model-mgr-with-std-pb.cc
-  LIBRARIES cplex-library ${CMAKE_DL_LIBS})
-if (TARGET cplexdirect)
-  target_compile_definitions(cplexdirect PRIVATE main1=main)
-  if(WIN32)
-    target_compile_options(amplcplexdirect-static PUBLIC /bigobj)
-  endif()
-endif()
-
+add_ampl_backend(cplexmp DLL_RUNTIME SHARED_LIB MODULE CPLEX
+                      LIBRARIES cplex-library ${CMAKE_DL_LIBS})
 
 add_ampl_solver(gurobi DLL_RUNTIME SHARED_LIB MODULE GUROBI
   gurobi-ampls-c-api.h

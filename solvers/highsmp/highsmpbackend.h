@@ -1,5 +1,5 @@
-#ifndef MP_CPLEX_BACKEND_H_
-#define MP_CPLEX_BACKEND_H_
+#ifndef MP_HIGHS_BACKEND_H_
+#define MP_HIGHS_BACKEND_H_
 
 #if __clang__
 # pragma clang diagnostic push
@@ -20,28 +20,29 @@
 
 #include "mp/backend-mip.h"
 #include "mp/valcvt-base.h"
-#include "cplexcommon.h"
+#include "highsmpcommon.h"
 
 namespace mp {
 
-class CplexBackend :
-    public MIPBackend<CplexBackend>,
+class HighsBackend :
+    public MIPBackend<HighsBackend>,
     public BasicValuePresolverKeeper,
-    public CplexCommon
+    public HighsCommon
 {
-  using BaseBackend = MIPBackend<CplexBackend>;
+  using BaseBackend = MIPBackend<HighsBackend>;
 
+  std::vector<int> conStatiii_;
   //////////////////// [[ The public interface ]] //////////////////////
 public:
-  CplexBackend();
-  ~CplexBackend();
+  HighsBackend();
+  ~HighsBackend();
 
   /// Name displayed in messages
-  static const char* GetSolverName() { return "x-CPLEX"; }
+  static const char* GetSolverName() { return "HiGHS"; }
   std::string GetSolverVersion();
-  /// Reuse cplex_options:
-  static const char* GetAMPLSolverName() { return "cplex"; }
-  static const char* GetAMPLSolverLongName() { return "AMPL-CPLEX"; }
+  
+  static const char* GetAMPLSolverName() { return "highs"; }
+  static const char* GetAMPLSolverLongName() { return "AMPL-HiGHS"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
@@ -51,12 +52,38 @@ public:
   void FinishOptionParsing() override;
 
 
+
+  ////////////////////////////////////////////////////////////
+  /////////////// OPTIONAL STANDARD FEATURES /////////////////
+  ////////////////////////////////////////////////////////////
+  // Use this section to declare and implement some standard features
+  // that may or may not need additional functions. 
+  USING_STD_FEATURES;
+
+  /**
+  * Get/Set AMPL var/con statii
+  **/
+  ALLOW_STD_FEATURE(BASIS, true)
+  SolutionBasis GetBasis() override;
+  void SetBasis(SolutionBasis) override;
+
+ /**
+  * Get MIP Gap
+  **/
+  ALLOW_STD_FEATURE(RETURN_MIP_GAP, false)
+  double MIPGap() override;
+  double MIPGapAbs() override;
+  /**
+  * Get MIP dual bound
+  **/
+  ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, false)
+  double BestDualBound() override;
+
+
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
   bool IsQCP() const override;
-
-
-
+  
   //////////////////////////// SOLVING ///////////////////////////////
 
   /// Note the interrupt notifier
@@ -69,7 +96,7 @@ public:
 
   Solution GetSolution() override;
   ArrayRef<double> GetObjectiveValues() override
-  { return std::vector<double>{ObjectiveValue()}; } // TODO
+  { return std::vector<double>{ObjectiveValue()}; } 
 
 
   //////////////////// [[ Implementation details ]] //////////////////////
@@ -78,8 +105,6 @@ public:  // public for static polymorphism
   void InitCustomOptions() override;
 
 protected:
-  void OpenSolver();
-  void CloseSolver();
 
   void ExportModel(const std::string& file);
 
@@ -90,24 +115,33 @@ protected:
   pre::ValueMapDbl DualSolution();
   ArrayRef<double> DualSolution_LP();
 
-  void WindupCPLEXSolve();
+  void WindupHIGHSSolve();
 
   void ReportResults() override;
-  void ReportCPLEXResults();
+  void ReportHIGHSResults();
+
+  void ReportHIGHSPool();
+
+  std::vector<double> getPoolSolution(int i);
+  double getPoolObjective(int i);
 
   /// Solution attributes
   double NodeCount() const;
   double SimplexIterations() const;
   int BarrierIterations() const;
 
-  std::pair<int, std::string> ConvertCPLEXStatus();
-  void AddCPLEXMessages();
+  std::pair<int, std::string> ConvertHIGHSStatus();
+  void AddHIGHSMessages();
+  
+  ArrayRef<int> VarStatii();
+  ArrayRef<int> ConStatii();
+  void VarStatii(ArrayRef<int>);
+  void ConStatii(ArrayRef<int>);
 
 private:
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;
-    std::string logFile_;
   };
   Options storedOptions_;
 
@@ -116,4 +150,4 @@ private:
 
 }  // namespace mp
 
-#endif  // MP_CPLEX_BACKEND_H_
+#endif  // MP_HIGHS_BACKEND_H_

@@ -4,10 +4,10 @@
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
-#include "cplexbackend.h"
+#include "cplexmpbackend.h"
 
 extern "C" {
-#include "cplex-ampls-c-api.h"    // Gurobi AMPLS C API
+#include "cplexmp-ampls-c-api.h"    // Gurobi AMPLS C API
 }
 #include "mp/ampls-cpp-api.h"
 

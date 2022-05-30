@@ -4,10 +4,10 @@
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
-#include "highsdirectbackend.h"
+#include "highsmpbackend.h"
 
 extern "C" {
-  #include "highsdirect-ampls-c-api.h"    // Highs AMPLS C API
+  #include "highsmp-ampls-c-api.h"    // Highs AMPLS C API
 }
 #include "mp/ampls-cpp-api.h"
 

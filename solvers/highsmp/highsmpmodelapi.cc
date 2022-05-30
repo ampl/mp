@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include "highsdirectmodelapi.h"
+#include "highsmpmodelapi.h"
 
 #include "mp/model-mgr-with-std-pb.h"
 #include "mp/flat/problem_flattener.h"

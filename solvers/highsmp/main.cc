@@ -1,5 +1,5 @@
 #include "mp/backend-app.h"
-#include "highsdirectbackend.h"
+#include "highsmpbackend.h"
 
 /// Declare a backend factory
 std::unique_ptr<mp::BasicBackend> CreateHighsBackend();
