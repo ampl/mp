@@ -4,6 +4,9 @@
 /*
  * A generic C API for MP
  */
+
+#include <stddef.h>    // for size_t
+
 #ifdef _WIN32
 #define AMPLS_C_EXPORT __declspec(dllexport)
 #else
@@ -44,14 +47,19 @@ AMPLS_C_EXPORT void AMPLSAddMessage(AMPLS_MP_Solver* slv, const char* msg);
 /// Retrieve messages, 0-terminated array
 const char* const * AMPLSGetMessages(AMPLS_MP_Solver* slv);
 
+
+/// Set of callbacks provided to a driver for licensing issues
 typedef struct CCallbacks_T {
-  // Return solver environment
+  /// If provided, replacement function to create solver environment
+  /// for a given solver.
   void* (*init)(); 
-  // Check if model sizes are allowed; throw if not
+  /// Check if model sizes are allowed; throw if not.
+  /// Parameters: n_vars, n_alg_con, n_log_con
   void (*check)(size_t, size_t, size_t);
-  // Return additional text to be displayed on '-v' output
+  /// Return additional text to be displayed on '-v' output
   const char* (*additionalText)();
-  // Function called after failures to provide additional diagnostics
+  /// Function called after failures to provide additional diagnostics
   void (*diagnostics)();
 } CCallbacks;
+
 #endif // AMPLS_C_INTERFACE_H

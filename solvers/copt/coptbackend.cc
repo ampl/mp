@@ -39,7 +39,7 @@ CreateCoptModelMgr(CoptCommon&, Env&, pre::BasicPresolver*&);
 
 void CoptBackend::OpenSolver() {
   int status = 0;
-  const auto& create_fn = GetCallbacks().cb_initsolver_;
+  const auto create_fn = GetCallbacks().init;
   if (create_fn)
     set_env((copt_env*)create_fn());
   else

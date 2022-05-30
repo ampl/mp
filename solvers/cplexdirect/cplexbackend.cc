@@ -58,7 +58,7 @@ void CplexBackend::OpenSolver() {
   int status;
   // Typically try the registered function first;
   // if not available call the solver's API function directly
-  const auto& create_fn = GetCallbacks().cb_initsolver_;
+  const auto create_fn = GetCallbacks().init;
   if (create_fn)
     set_env((CPXENVptr)create_fn());
   else

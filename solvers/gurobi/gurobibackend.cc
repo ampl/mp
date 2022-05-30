@@ -82,7 +82,7 @@ void GurobiBackend::OpenGurobi() {
   // Typically try the registered function first;
   // if not available call the solver's API function to create
   // an empty environment. Will be started later.
-  const auto& create_fn = GetCallbacks().cb_initsolver_;
+  const auto create_fn = GetCallbacks().init;
   if (create_fn)
     set_env((GRBenv*)create_fn());
   else 
@@ -113,12 +113,12 @@ void GurobiBackend::FinishOptionParsing() {
   else {
     // If a user defined function had been provided, the environment is assumed
     // as already started
-    if (!GetCallbacks().cb_initsolver_)
+    if (!GetCallbacks().init)
     {
       int res = GRBstartenv(env_ref());
       if (res)
       {
-        const auto& diag = GetCallbacks().cb_diagnostics_;
+        const auto diag = GetCallbacks().diagnostics;
         if (diag)
           diag();
         else {
