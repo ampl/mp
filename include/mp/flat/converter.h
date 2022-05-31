@@ -14,6 +14,7 @@
 #include "mp/flat/convert_functional.h"
 #include "mp/flat/constr_keeper.h"
 #include "mp/flat/constr_std.h"
+#include "mp/flat/expr_bounds.h"
 #include "mp/valcvt.h"
 #include "mp/flat/redef/std/range_con.h"
 
@@ -30,6 +31,7 @@ template <class Impl, class ModelAPI,
 class FlatConverter :
     public BasicFlatConverter,
     public FlatModel,
+    public BoundComputations<Impl>,
     public EnvKeeper
 {
 public:
@@ -64,6 +66,7 @@ public:
     PropagateResultOfInitExpr(resvar, 1.0, 1.0, +Context());
   }
 
+
 protected:
   void PropagateResultOfInitExpr(int var, double lb, double ub, Context ctx) {
     NarrowVarBounds(var, lb, ub);
@@ -75,18 +78,9 @@ protected:
 
 
 public:
-  /// Narrow variable domain range
-  void NarrowVarBounds(int var, double lb, double ub) {
-    auto& m = GetModel();
-    m.set_lb(var, std::max(m.lb(var), lb));
-    m.set_ub(var, std::min(m.ub(var), ub));
-    if (m.lb(var)>m.ub(var))             // TODO write .sol, report .iis
-      MP_INFEAS("empty variable domain");
-  }
-
-
-public:
   //////////////////////////////////// VISITOR ADAPTERS /////////////////////////////////////////
+  /// These are called to transform expressions, either by FlatCvt itself,
+  /// or when flattening NL model
 
   /// From am affine expression:
   /// Adds a result variable r and constraint r == expr
@@ -114,91 +108,6 @@ public:
         QuadraticFunctionalConstraint(std::move(ee)));
   }
 
-  /// ComputeBoundsAndType(LinTerms)
-  PreprocessInfoStd ComputeBoundsAndType(const LinTerms& lt) {
-    PreprocessInfoStd result;
-    result.lb_ = result.ub_ = 0.0;    // TODO reuse bounds if supplied
-    result.type_ = var::INTEGER;
-    auto& model = MP_DISPATCH( GetModel() );
-    for (auto i=lt.size(); i--; ) {
-      auto v = lt.var(i);
-      auto c = lt.coef(i);
-      if (c >= 0.0) {
-        result.lb_ += c * model.lb(v);
-        result.ub_ += c * model.ub(v);
-      } else {
-        result.lb_ += c * model.ub(v);
-        result.ub_ += c * model.lb(v);
-      }
-      if (var::INTEGER!=model.var_type(v) || !is_integer(c)) {
-        result.type_=var::CONTINUOUS;
-      }
-    }
-    return result;
-  }
-
-  /// ComputeBoundsAndType(AlgebraicExpr<>)
-  template <class Body>
-  PreprocessInfoStd ComputeBoundsAndType(
-      const AlgebraicExpression<Body>& ae) {
-    PreprocessInfoStd result = ComputeBoundsAndType(ae.GetBody());
-    result.lb_ += ae.constant_term();    // TODO reuse bounds if supplied
-    result.ub_ += ae.constant_term();
-    if (!is_integer(ae.constant_term()))
-      result.type_ = var::CONTINUOUS;
-    return result;
-  }
-
-  /// ComputeBoundsAndType(QuadTerms)
-  PreprocessInfoStd ComputeBoundsAndType(const QuadTerms& qt) {
-    PreprocessInfoStd result;
-    result.lb_ = result.ub_ = 0.0;
-    result.type_ = var::INTEGER;
-    auto& model = MP_DISPATCH( GetModel() );
-    for (auto i=qt.size(); i--; ) {
-      auto coef = qt.coef(i);
-      auto v1 = qt.var1(i);
-      auto v2 = qt.var2(i);
-      auto prodBnd = ProductBounds(v1, v2);
-      if (coef >= 0.0) {
-        result.lb_ += coef * prodBnd.first;
-        result.ub_ += coef * prodBnd.second;
-      } else {
-        result.lb_ += coef * prodBnd.second;
-        result.ub_ += coef * prodBnd.first;
-      }
-      if (var::INTEGER!=model.var_type(v1) ||
-          var::INTEGER!=model.var_type(v2) ||
-          !is_integer(coef)) {
-        result.type_=var::CONTINUOUS;
-      }
-    }
-    return result;
-  }
-
-  /// ComputeBoundsAndType(QuadAndLinearTerms)
-  PreprocessInfoStd ComputeBoundsAndType(const QuadAndLinTerms& qlt) {
-    auto bntLT = ComputeBoundsAndType(qlt.GetLinTerms());
-    auto bntQT = ComputeBoundsAndType(qlt.GetQPTerms());
-    return AddBoundsAndType(bntLT, bntQT);
-  }
-
-  /// Product bounds
-  template <class Var>
-  std::pair<double, double> ProductBounds(Var x, Var y) const {
-    auto lx=lb(x), ly=lb(y), ux=ub(x), uy=ub(y);
-    std::array<double, 4> pb{lx*ly, lx*uy, ux*ly, ux*uy};
-    return { *std::min_element(pb.begin(), pb.end()),
-          *std::max_element(pb.begin(), pb.end()) };
-  }
-
-  /// Add / merge bounds and type
-  PreprocessInfoStd AddBoundsAndType(const PreprocessInfoStd& bnt1,
-                                     const PreprocessInfoStd& bnt2) {
-    return {bnt1.lb()+bnt2.lb(), bnt1.ub()+bnt2.ub(),
-      var::INTEGER==bnt1.type() && var::INTEGER==bnt2.type() ?
-            var::INTEGER : var::CONTINUOUS};
-  }
 
   /// Take FuncConstraint with arguments
   ///
@@ -266,7 +175,7 @@ protected:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       LinearFunctionalConstraint& c, PreprocessInfo& prepro) {
-    auto pre = ComputeBoundsAndType(c.GetAffineExpr());
+    auto pre = MPD( ComputeBoundsAndType(c.GetAffineExpr()) );
     prepro.narrow_result_bounds( pre.lb(), pre.ub() );
     prepro.set_result_type( pre.type() );
   }
@@ -274,7 +183,7 @@ protected:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       QuadraticFunctionalConstraint& c, PreprocessInfo& prepro) {
-    auto pre = ComputeBoundsAndType(c.GetQuadExpr());
+    auto pre = MPD( ComputeBoundsAndType(c.GetQuadExpr()) );
     prepro.narrow_result_bounds( pre.lb(), pre.ub() );
     prepro.set_result_type( pre.type() );
   }
@@ -374,7 +283,7 @@ protected:
     const auto& body = con.GetBody();
     const auto rhs = con.rhs();
     // TODO expr is empty. Possible?
-    auto bndsNType = ComputeBoundsAndType(body);
+    auto bndsNType = MPD( ComputeBoundsAndType(body) );
     if (bndsNType.lb() > rhs || bndsNType.ub() < rhs) {
       /// TODO this depends on context???
       prepro.narrow_result_bounds(0.0, 0.0);
@@ -973,12 +882,23 @@ public:
   void set_var_lb(int var, double lb) { this->GetModel().set_lb(var, lb); }
   /// Shortcut ub(var)
   void set_var_ub(int var, double ub) { this->GetModel().set_ub(var, ub); }
+
+  /// Narrow variable domain range
+  void NarrowVarBounds(int var, double lb, double ub) {
+    auto& m = GetModel();
+    m.set_lb(var, std::max(m.lb(var), lb));
+    m.set_ub(var, std::min(m.ub(var), ub));
+    if (m.lb(var)>m.ub(var))             // TODO write .sol, report .iis
+      MP_INFEAS("empty variable domain");
+  }
+
   /// var_type()
   var::Type var_type(int var) const { return this->GetModel().var_type(var); }
   /// is_fixed()
   bool is_fixed(int var) const { return this->GetModel().is_fixed(var); }
   /// fixed_value()
-  double fixed_value(int var) const { return this->GetModel().fixed_value(var); }
+  double fixed_value(int var) const
+  { assert(is_fixed(var)); return this->GetModel().fixed_value(var); }
 
   /// MakeComplementVar()
   int MakeComplementVar(int bvar) {
@@ -1035,6 +955,13 @@ public:
     return var_info_[var];
   }
 
+  /// The internal flat model type
+  using ModelType = FlatModel;
+  /// The internal flat model object, const ref
+  const ModelType& GetModel() const { return *this; }
+  /// The internal flat model object, ref
+  ModelType& GetModel() { return *this; }
+
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////
@@ -1085,8 +1012,6 @@ protected:
     return 0!=options_.preprocessAnything_ && 0!=f;
   }
 
-  using ModelType = FlatModel;
-
 public:
   /// for tests. TODO make friends
   using ModelAPIType = ModelAPI;
@@ -1104,10 +1029,6 @@ private:
 
 
 protected:
-  /// The internal flat model
-  const ModelType& GetModel() const { return *this; }
-  ModelType& GetModel() { return *this; }
-
   /////////////////////// CONSTRAINT KEEPERS /////////////////////////
   /// Constraint keepers and converters should be initialized after \a presolver_
 
