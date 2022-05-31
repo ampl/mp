@@ -1,5 +1,4 @@
 #include "mp/backend-app.h"
-#include "visitorbackend.h"
 
 /// Declare a backend factory
 std::unique_ptr<mp::BasicBackend> CreateVisitorBackend();

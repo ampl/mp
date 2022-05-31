@@ -21,7 +21,7 @@ namespace mp {
 
 /// FlatConverter: preprocesses and manages flat constraints.
 /// Such constraints might need to be converted to others, which is
-/// handled by overloaded methods in derived classes
+/// handled by overloaded methods in derived classes.
 /// @param Impl: the final CRTP class
 /// @param ModelAPI: the solver's model API wrapper
 /// @param FlatModel: internal representation of a flat model
@@ -54,11 +54,11 @@ protected:
   using BaseFlatModel = FlatModel;
 
 
-  //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
+  //////////////////////////// CONVERTERS OF STANDARD MP ITEMS //////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////////////
 public:
   /// Fix a resulting variable of a logical expression as true
-  /// and propagate positive ctx
+  /// and propagate positive ctx.
   /// TODO avoid creating resvar for root logical constraints
   void FixAsTrue(int resvar) {
     PropagateResultOfInitExpr(resvar, 1.0, 1.0, +Context());

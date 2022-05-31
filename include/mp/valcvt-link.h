@@ -13,7 +13,7 @@ namespace mp {
 namespace pre {
 
 /// Index range in a link
-using ValcvtLinkIndexRange = IndexRange;
+using LinkIndexRange = IndexRange;
 
 /// Declare ValuePresolver
 class ValuePresolver;
@@ -33,20 +33,20 @@ class ValuePresolver;
 ///
 /// A link is an array of value converters between nodes.
 /// All converters are of the same type
-class BasicValcvtLink {
+class BasicLink {
 public:
   /// Constructor
-  BasicValcvtLink(ValuePresolver& pre) : vsalue_presolver_(pre) { }
+  BasicLink(ValuePresolver& pre) : value_presolver_(pre) { }
   /// Virtual destructor
-  virtual ~BasicValcvtLink() = default;
+  virtual ~BasicLink() = default;
 
   /// The below pre- / postsolve methods
   /// work on a range of link entries
   /// Postsolves should usually loop the range backwards
 
 #define PRESOLVE_KIND(name) \
-  virtual void Presolve ## name (ValcvtLinkIndexRange ) = 0; \
-  virtual void Postsolve ## name(ValcvtLinkIndexRange ) = 0;
+  virtual void Presolve ## name (LinkIndexRange ) = 0; \
+  virtual void Postsolve ## name(LinkIndexRange ) = 0;
 
   LIST_PRESOLVE_METHODS
 
@@ -58,10 +58,10 @@ protected:
   void RegisterLinkIndex(int i)
   { RegisterLinkIndexRange( {i, i+1} ); }
   /// Version 2: add a range of links
-  void RegisterLinkIndexRange(ValcvtLinkIndexRange );
+  void RegisterLinkIndexRange(LinkIndexRange );
 
 private:
-  ValuePresolver& vsalue_presolver_;
+  ValuePresolver& value_presolver_;
 };
 
 
@@ -82,8 +82,10 @@ struct LinkRange {
     return false;
   }
 
-  BasicValcvtLink& b_;
-  ValcvtLinkIndexRange ir_;
+  /// Reference to BasicLink
+  BasicLink& b_;
+  /// Link index range
+  LinkIndexRange ir_;
 };
 
 
@@ -91,10 +93,10 @@ struct LinkRange {
 /// Useful to transfer values between NL and internal model,
 /// internal model and solver, and in conversions preserving
 /// all values
-class CopyLink : public BasicValcvtLink {
+class CopyLink : public BasicLink {
 public:
   /// Constructor
-  CopyLink(ValuePresolver& pre) : BasicValcvtLink(pre) { }
+  CopyLink(ValuePresolver& pre) : BasicLink(pre) { }
 
   /// Single link entry
   using LinkEntry = std::pair<NodeRange, NodeRange>;
@@ -122,23 +124,23 @@ public:
 
 #undef PRESOLVE_KIND
 #define PRESOLVE_KIND(name) \
-  void Presolve ## name (ValcvtLinkIndexRange ir) override \
+  void Presolve ## name (LinkIndexRange ir) override \
   { CopySrcDest(ir); } \
-  void Postsolve ## name(ValcvtLinkIndexRange ir) override \
+  void Postsolve ## name(LinkIndexRange ir) override \
   { CopyDestSrc(ir); }
 
   LIST_PRESOLVE_METHODS
 
 protected:
   /// Copy src -> dest for index range ir
-  void CopySrcDest(ValcvtLinkIndexRange ir) {
+  void CopySrcDest(LinkIndexRange ir) {
     for (int i=ir.beg; i!=ir.end; ++i) {
       const auto& br = entries_[i];
       Copy(br.first, br.second);
     }
   }
   /// Copy src <- dest for index range ir. Loop backwards
-  void CopyDestSrc(ValcvtLinkIndexRange ir) {
+  void CopyDestSrc(LinkIndexRange ir) {
     for (int i=ir.end; (i--)!=ir.beg; ) {
       const auto& br = entries_[i];
       Copy(br.second, br.first);
@@ -151,7 +153,7 @@ private:
 
 
 /// A stub for links which process each entry individually,
-/// in contrast to Presolve...(ValcvtLinkIndexRange ...).
+/// in contrast to Presolve...(LinkIndexRange ...).
 /// Some of such links could be optimized to store
 /// a range of transformations in each entry if that helps
 /// (but this could be an overoptimization?)
@@ -164,13 +166,14 @@ private:
 /// (which might be correct in _some_ cases).
 /// Then, need a "default copy" method.
 ///
-/// Using CRTP: https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
+/// Using CRTP:
+/// https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
 template <class Impl, class LinkEntry>
-class BasicIndivEntryLink : public BasicValcvtLink {
+class BasicIndivEntryLink : public BasicLink {
 public:
   /// Constructor
   BasicIndivEntryLink(ValuePresolver& pre) :
-    BasicValcvtLink(pre) { }
+    BasicLink(pre) { }
 
   /// Add entry
   /// Instead of a new entry, tries to extend the last one
@@ -182,10 +185,10 @@ public:
 
 #undef PRESOLVE_KIND
 #define PRESOLVE_KIND(name) \
-  void Presolve ## name (ValcvtLinkIndexRange ir) override { \
+  void Presolve ## name (LinkIndexRange ir) override { \
     for (int i=ir.beg; i!=ir.end; ++i) \
       MPD( Presolve ## name ## Entry(entries_.at(i)) ); } \
-  void Postsolve ## name(ValcvtLinkIndexRange ir) override { \
+  void Postsolve ## name(LinkIndexRange ir) override { \
     for (int i=ir.end; i--!=ir.beg; ) \
       MPD( Postsolve ## name ## Entry(entries_.at(i)) ); }
 
@@ -197,8 +200,8 @@ private:
 };
 
 
-/// A static indiv entry link has a fixed number of ValueNodes
-/// and indexes into them.
+/// A static indiv entry link has a fixed number (\a NNodes)
+/// of ValueNodes and indexes (\a NIndexes) into them.
 /// Generally NNodes==NIndexes
 template <class Impl, int NNodes, int NIndexes>
 class BasicStaticIndivEntryLink :

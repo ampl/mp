@@ -164,18 +164,18 @@ namespace internal {
 /// An .nl handler for an application using BasicSolver.
 /// The full definition separates parameters
 /// Solver, ProblemBuilder, and NLProblemBuilder.
-template <typename Solver,
-          typename ProblemBuilder,
-          typename NLProblemBuilder>
+template <class Solver,
+          class ProblemBuilder,
+          class NLProblemBuilder>
 class SolverNLHandlerImpl : public NLProblemBuilder {
- private:
+private:
   Solver &solver_;
   int num_options_;
   int options_[MAX_AMPL_OPTIONS];
 
   typedef NLProblemBuilder Base;
 
- public:
+public:
   SolverNLHandlerImpl(ProblemBuilder &pb, Solver &s)
     : Base(pb), solver_(s), num_options_(0) {}
 
@@ -238,10 +238,10 @@ void PrintSolution(const double *values, int num_values, const char *name_col,
 /// Solution handler for a solver application.
 /// Extends SolutionWriterImpl by conideration of
 /// the -AMPL switch and the \a wantsol option.
-/// TODO specialize minimal interfaces for the parameters
-template <typename Solver,
-          typename ProblemBuilder,
-          typename Writer = SolFileWriter>
+/// TODO specify minimal interfaces for the parameters
+template <class Solver,
+          class ProblemBuilder,
+          class Writer = SolFileWriter>
 class AppSolutionHandlerImpl :
     public SolutionWriterImpl<Solver, ProblemBuilder, Writer> {
  private:

@@ -9,6 +9,8 @@ Index
 
 See the :ref:`alphabetic index <genindex>`.
 
+Alternatively, use the :ref:`search` or look below.
+
 
 Namespace mp
 ------------
@@ -21,6 +23,13 @@ Namespace mp::pre
 -----------------
 
 .. doxygennamespace:: mp::pre
+   :members:
+
+
+Namespace mp::internal
+----------------------
+
+.. doxygennamespace:: mp::internal
    :members:
 
 

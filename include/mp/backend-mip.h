@@ -52,12 +52,15 @@ template <class Impl,
 class MIPBackend : public BaseBackend
 {
 public:
-  /// Properties
+  /// IsMIP()
   bool IsMIP() const override { return false; }
+  /// IsQP()
   virtual bool IsQP() const { return false; }
+  /// IsQCP()
   virtual bool IsQCP() const { return false; }
+
   /// Always add MIP start if supported:
-  /// Gurobi 9.1.2 solves non-convex Q(C)P as MIP
+  /// Gurobi 9.1.2 solves non-convex Q(C)P as MIP.
   /// But model attributes don't work before solve
   /// Count non-linear stuff in the model?
   virtual bool CanBeMIP() const { return true; }

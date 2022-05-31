@@ -54,12 +54,14 @@ protected:
 /// between the original model and the presolved one.
 class ValuePresolver : public BasicValuePresolver {
 public:
-  /// Source nodes for model items
+  /// Source nodes of the conversion graph, const
   const ModelValuesTerminal& GetSourceNodes() const { return src_; }
+  /// Source nodes of the conversion graph
   ModelValuesTerminal& GetSourceNodes() { return src_; }
 
-  /// Target nodes for model items
+  /// Target nodes of the conversion graph, const
   const ModelValuesTerminal& GetTargetNodes() const { return dest_; }
+  /// Target nodes of the conversion graph
   ModelValuesTerminal& GetTargetNodes() { return dest_; }
 
   /// Add (register) a link range
@@ -69,32 +71,32 @@ public:
 
   /// Presolve solution (primal + dual)
   ModelValuesDbl PresolveSolution(const ModelValuesDbl& mvd) override
-  { return RunPresolve(&BasicValcvtLink::PresolveSolution, mvd); }
+  { return RunPresolve(&BasicLink::PresolveSolution, mvd); }
   /// Postsolve solution (primal + dual)
   ModelValuesDbl PostsolveSolution(const ModelValuesDbl& mvd) override
-  { return RunPostsolve(&BasicValcvtLink::PostsolveSolution, mvd); }
+  { return RunPostsolve(&BasicLink::PostsolveSolution, mvd); }
 
   /// Presolve basis (vars + cons)
   ModelValuesInt PresolveBasis(const ModelValuesInt& mvi) override
-  { return RunPresolve(&BasicValcvtLink::PresolveBasis, mvi); }
+  { return RunPresolve(&BasicLink::PresolveBasis, mvi); }
   /// Postsolve solution (vars + cons)
   ModelValuesInt PostsolveBasis(const ModelValuesInt& mvi) override
-  { return RunPostsolve(&BasicValcvtLink::PostsolveBasis, mvi); }
+  { return RunPostsolve(&BasicLink::PostsolveBasis, mvi); }
 
   /// Presolve IIS (vars + cons)
   ModelValuesInt PresolveIIS(const ModelValuesInt& mvi) override
-  { return RunPresolve(&BasicValcvtLink::PresolveIIS, mvi); }
+  { return RunPresolve(&BasicLink::PresolveIIS, mvi); }
   /// Postsolve IIS (vars + cons)
   ModelValuesInt PostsolveIIS(const ModelValuesInt& mvi) override
-  { return RunPostsolve(&BasicValcvtLink::PostsolveIIS, mvi); }
+  { return RunPostsolve(&BasicLink::PostsolveIIS, mvi); }
 
   /// Presolve LazyUserCutFlags (vars + cons)
   ModelValuesInt PresolveLazyUserCutFlags(const ModelValuesInt& mvi) override
-  { return RunPresolve(&BasicValcvtLink::PresolveLazyUserCutFlags, mvi); }
+  { return RunPresolve(&BasicLink::PresolveLazyUserCutFlags, mvi); }
 
 protected:
   /// Helper type: virtual member function pointer
-  using LinkFn = void (BasicValcvtLink::*)(ValcvtLinkIndexRange);
+  using LinkFn = void (BasicLink::*)(LinkIndexRange);
 
   /// Generic value presolve loop: forward
   template <class ModelValues>
@@ -123,8 +125,8 @@ private:
 
 /// Implement link range registration in global Presolver
 inline void
-BasicValcvtLink::RegisterLinkIndexRange(ValcvtLinkIndexRange bir)
-{ vsalue_presolver_.Add( { *this, bir } ); }
+BasicLink::RegisterLinkIndexRange(LinkIndexRange bir)
+{ value_presolver_.Add( { *this, bir } ); }
 
 } // namespace pre
 
