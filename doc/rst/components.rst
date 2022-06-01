@@ -115,7 +115,7 @@ Writing solution/results output is easiest as part of the general workflow,
 see :ref:`model-manager`.
 
 A standalone .sol file writer could be implemented by parameterizing the
-`internal::AppSolutionHandlerImpl` (or `internal::SolutionWriterImpl`)
+`mp::internal::AppSolutionHandlerImpl` (or `mp::internal::SolutionWriterImpl`)
 templates by minimal implementations of the `mp::BasicSolver` and
 `mp::ProblemBuilder` interfaces.
 
