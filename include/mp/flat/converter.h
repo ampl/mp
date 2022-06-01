@@ -16,6 +16,7 @@
 #include "mp/flat/constr_std.h"
 #include "mp/flat/expr_bounds.h"
 #include "mp/flat/constr_prepro.h"
+#include "mp/flat/constr_prop_down.h"
 #include "mp/valcvt.h"
 #include "mp/flat/redef/std/range_con.h"
 
@@ -34,6 +35,7 @@ class FlatConverter :
     public FlatModel,
     public BoundComputations<Impl>,
     public ConstraintPreprocessors<Impl>,
+    public ConstraintPropagatorsDown<Impl>,
     public EnvKeeper
 {
 public:
@@ -69,7 +71,7 @@ public:
   }
 
 
-protected:
+public:
   void PropagateResultOfInitExpr(int var, double lb, double ub, Context ctx) {
     NarrowVarBounds(var, lb, ub);
     if (HasInitExpression(var)) {
@@ -171,224 +173,12 @@ protected:
   template <class Impl1, class Converter, class Constraint>
   friend class BasicFCC;
 
-
-  //////////////////////////// CUSTOM CONSTRAINTS //////////////////////
-  ///
   //////////////////////////// SPECIFIC CONSTRAINT RESULT-TO-ARGUMENTS PROPAGATORS //////
   /// Currently we should propagate to all arguments, be it always the CTX_MIX.
 
   /// Allow ConstraintKeeper to PropagateResult(), use GetBackend() etc
   template <class , class , class >
   friend class ConstraintKeeper;
-
-public:
-  /// By default, set mixed context for argument variables
-  template <class Constraint>
-  void PropagateResult(Constraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(&con, lb, ub, ctx);
-    con.SetContext(ctx);
-    PropagateResult2Args(con.GetArguments(),
-                         this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-  }
-
-  void PropagateResult(LinearFunctionalConstraint& con, double lb, double ub,
-                       Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2LinTerms(con.GetAffineExpr(),
-                             this->MinusInfty(), this->Infty(), +ctx);
-  }
-
-  void PropagateResult(QuadraticFunctionalConstraint& con, double lb, double ub,
-                       Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    const auto& args = con.GetArguments();
-    PropagateResult2LinTerms(args.GetLinTerms(),
-                             this->MinusInfty(), this->Infty(), +ctx);
-    PropagateResult2QuadTerms(args.GetQPTerms(),
-                              this->MinusInfty(), this->Infty(), +ctx);
-  }
-
-  void PropagateResult(QuadConRange& con, double lb, double ub,
-                       Context ctx) {
-    internal::Unused(lb, ub, ctx);
-    PropagateResult2LinTerms(con.GetLinTerms(), // TODO sense dep. on bounds
-                             this->MinusInfty(), this->Infty(), ctx);
-    PropagateResult2QuadTerms(con.GetQPTerms(), // TODO bounds?
-                              this->MinusInfty(), this->Infty(), ctx);
-  }
-
-  template <class Body, int sens>
-  void PropagateResult(IndicatorConstraint<
-                         AlgebraicConstraint< Body, AlgConRhs<sens> > >& con,
-                       double lb, double ub, Context ctx) {
-    internal::Unused(lb, ub, ctx);
-    PropagateResultOfInitExpr(con.get_binary_var(),
-                              this->MinusInfty(), this->Infty(),
-                              1==con.get_binary_value() ?  // b==1 means b in CTX_NEG
-                                Context::CTX_NEG : Context::CTX_POS);
-    PropagateResult2Args(con.get_constraint().GetBody(),   // Assume Con::BodyType is handled
-                             this->MinusInfty(), this->Infty(),
-                             0==sens ? Context::CTX_MIX :
-                                       0<sens ? +ctx : -ctx);
-  }
-
-  template <int type>
-  void PropagateResult(SOS_1or2_Constraint<type>& con, double lb, double ub, Context ) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    PropagateResult2Vars(con.get_vars(),
-                         this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-  }
-
-  void PropagateResult(ComplementarityLinear& con, double lb, double ub,
-                       Context ctx) {
-    internal::Unused(lb, ub, ctx);
-    PropagateResult2LinTerms(con.GetExpression().GetLinTerms(),
-                         lb, ub, Context::CTX_MIX);
-    PropagateResultOfInitExpr(con.GetVariable(), lb, ub, Context::CTX_MIX);
-  }
-
-  void PropagateResult(ComplementarityQuadratic& con, double lb, double ub,
-                       Context ctx) {
-    internal::Unused(lb, ub, ctx);
-    PropagateResult2LinTerms(con.GetExpression().GetLinTerms(),
-                    lb, ub, Context::CTX_MIX);
-    PropagateResult2QuadTerms(con.GetExpression().GetQPTerms(),
-                              lb, ub, Context::CTX_MIX);
-    PropagateResultOfInitExpr(con.GetVariable(), lb, ub, Context::CTX_MIX);
-  }
-
-  void PropagateResult(NotConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResultOfInitExpr(con.GetArguments()[0], 1.0-ub, 1.0-lb, -ctx);
-  }
-
-  void PropagateResult(AndConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2Vars(con.GetArguments(), lb, 1.0, +ctx);
-  }
-
-  void PropagateResult(OrConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2Vars(con.GetArguments(), 0.0, ub, +ctx);
-  }
-
-  void PropagateResult(IfThenConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    auto& args = con.GetArguments();
-    /// TODO consider bounds for then/else for the context:
-    PropagateResultOfInitExpr(args[0], 0.0, 1.0, Context::CTX_MIX);
-    PropagateResultOfInitExpr(args[1], this->MinusInfty(), this->Infty(), +ctx);
-    PropagateResultOfInitExpr(args[2], this->MinusInfty(), this->Infty(), -ctx);
-  }
-
-  void PropagateResult(AllDiffConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2Vars(con.GetArguments(), this->MinusInfty(), this->Infty(),
-                         Context::CTX_MIX);
-  }
-
-  void PropagateResult(NumberofConstConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2Vars(con.GetArguments(), this->MinusInfty(), this->Infty(),
-                         Context::CTX_MIX);
-  }
-
-  void PropagateResult(NumberofVarConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2Vars(con.GetArguments(), this->MinusInfty(), this->Infty(),
-                         Context::CTX_MIX);
-  }
-
-  void PropagateResult(CondLinConEQ& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2LinTerms(con.GetConstraint().GetBody(),
-                         lb, ub, Context::CTX_MIX);
-  }
-
-  void PropagateResult(CondQuadConEQ& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2QuadAndLinTerms(con.GetConstraint().GetBody(),
-                         lb, ub, Context::CTX_MIX);
-  }
-
-  template <class Body, int kind>
-  void PropagateResult(
-      ConditionalConstraint<
-        AlgebraicConstraint< Body, AlgConRhs<kind> > >& con,
-      double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2Args(con.GetConstraint().GetBody(), lb, ub,
-                             kind>0 ? ctx : -ctx);
-  }
-
-
-  /// Propagate given bounds & context into arguments of a constraint.
-  /// The default template assumes it just a vector of variables.
-  /// @param lb, ub: bounds for each variable
-  template <class Args>
-  void PropagateResult2Args(
-      const Args& vars, double lb, double ub, Context ctx) {
-    PropagateResult2Vars(vars, lb, ub, ctx);
-  }
-
-  /// Specialize: propagate result into LinTerms
-  void PropagateResult2Args(
-      const LinTerms& lint, double lb, double ub, Context ctx) {
-    PropagateResult2LinTerms(lint, lb, ub, ctx);
-  }
-
-  /// Specialize: propagate result into QuadAndLinTerms
-  void PropagateResult2Args(
-      const QuadAndLinTerms& qlt, double lb, double ub, Context ctx) {
-    PropagateResult2QuadAndLinTerms(qlt, lb, ub, ctx);
-  }
-
-  /// Propagate result into QuadAndLinTerms
-  void PropagateResult2QuadAndLinTerms(
-      const QuadAndLinTerms& qlt, double lb, double ub, Context ctx) {
-    PropagateResult2LinTerms(qlt.GetLinTerms(), lb, ub, ctx);
-    PropagateResult2QuadTerms(qlt.GetQPTerms(), lb, ub, ctx);
-  }
-
-  /// Propagate result into LinTerms
-  void PropagateResult2LinTerms(const LinTerms& lint, double , double , Context ctx) {
-    for (auto i=lint.size(); i--; ) {
-      PropagateResultOfInitExpr(lint.var(i),      /// TODO bounds as well
-                                this->MinusInfty(), this->Infty(),
-                                (lint.coef(i)>=0.0) ? +ctx : -ctx);
-    }
-  }
-
-  /// Propagate given bounds & context into a vector of variables
-  /// @param lb, ub: bounds for each variable
-  template <class Vec>
-  void PropagateResult2Vars(const Vec& vars, double lb, double ub, Context ctx) {
-    for (auto v: vars) {
-      PropagateResultOfInitExpr(v, lb, ub, ctx);
-    }
-  }
-
-  /// Propagate result into QuadTerms
-  void PropagateResult2QuadTerms(const QuadTerms& quadt, double , double , Context ) {
-    for (auto i=quadt.size(); i--; ) {             /// TODO context for special cases
-      PropagateResultOfInitExpr(quadt.var1(i),     /// TODO bounds as well
-                                this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-      PropagateResultOfInitExpr(quadt.var2(i),
-                                this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-    }
-  }
 
 
   //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
@@ -710,6 +500,7 @@ public:
   /// Whether preprocess conditional equality of a binary variable
   bool IfPreproEqBinVar() const
   { return MPCD( CanPreprocess(options_.preprocessEqualityBvar_) ); }
+
 
 public:
   /// for tests. TODO make friends
