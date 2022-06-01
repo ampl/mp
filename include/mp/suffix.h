@@ -30,7 +30,7 @@
 #include <iterator>
 #include <set>
 #include <string>      // for std::char_traits
-
+#include <memory>
 #include "mp/common.h"
 #include "mp/error.h"  // for MP_ASSERT
 #include "mp/format.h"
@@ -352,12 +352,14 @@ class BasicSuffixSet : private Alloc {
 
   template <typename T>
   T *Allocate(std::size_t size) {
-    return typename Alloc::template rebind<T>::other(*this).allocate(size);
+    return typename std::allocator_traits<Alloc>::template rebind_alloc<T>(*this)
+        .allocate(size);
   }
 
   template <typename T>
   void Deallocate(T *values, std::size_t size) {
-    typename Alloc::template rebind<T>::other(*this).deallocate(values, size);
+      typename std::allocator_traits<Alloc>::template rebind_alloc <T>
+        (*this).deallocate(values, size);
   }
 
  public:
