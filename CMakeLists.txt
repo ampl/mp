@@ -325,9 +325,11 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   constr_base.h constr_keeper.h constr_hash.h
   constr_std.h constr_static.h constr_functional.h
   constr_algebraic.h constr_general.h
+  constr_prepro.h
   context.h
   converter.h converter_model.h convert_functional.h
   eexpr.h expr_algebraic.h expr_affine.h expr_quadratic.h
+  expr_bounds.h
   model_api_base.h model_api_connect.h
   obj_std.h preprocess.h problem_flattener.h)
 

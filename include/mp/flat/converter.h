@@ -15,6 +15,7 @@
 #include "mp/flat/constr_keeper.h"
 #include "mp/flat/constr_std.h"
 #include "mp/flat/expr_bounds.h"
+#include "mp/flat/constr_prepro.h"
 #include "mp/valcvt.h"
 #include "mp/flat/redef/std/range_con.h"
 
@@ -32,6 +33,7 @@ class FlatConverter :
     public BasicFlatConverter,
     public FlatModel,
     public BoundComputations<Impl>,
+    public ConstraintPreprocessors<Impl>,
     public EnvKeeper
 {
 public:
@@ -168,319 +170,6 @@ protected:
   /// Allow FCC to access Preprocess methods
   template <class Impl1, class Converter, class Constraint>
   friend class BasicFCC;
-
-  /// PreprocessConstraint
-  /// TODO rename 'PropagateUp' and define together with the constraint
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      LinearFunctionalConstraint& c, PreprocessInfo& prepro) {
-    auto pre = MPD( ComputeBoundsAndType(c.GetAffineExpr()) );
-    prepro.narrow_result_bounds( pre.lb(), pre.ub() );
-    prepro.set_result_type( pre.type() );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      QuadraticFunctionalConstraint& c, PreprocessInfo& prepro) {
-    auto pre = MPD( ComputeBoundsAndType(c.GetQuadExpr()) );
-    prepro.narrow_result_bounds( pre.lb(), pre.ub() );
-    prepro.set_result_type( pre.type() );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      PowConstraint& c, PreprocessInfo& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
-    auto arg = c.GetArguments()[0];
-    auto prm = c.GetParameters()[0];
-    auto lb = std::pow(m.lb(arg), prm),
-        ub = std::pow(m.ub(arg), prm);
-    prepro.narrow_result_bounds( std::min(lb, ub),
-                          std::max(lb, ub) );
-    prepro.set_result_type( m.var_type(arg) );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      TanConstraint& , PreprocessInfo& ) {
-    // TODO improve
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      MinConstraint& c, PreprocessInfo& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
-    auto& args = c.GetArguments();
-    prepro.narrow_result_bounds( m.lb_array(args),
-                          m.ub_min_array(args) );
-    prepro.set_result_type( m.common_type(args) );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      MaxConstraint& c, PreprocessInfo& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
-    auto& args = c.GetArguments();
-    prepro.narrow_result_bounds( m.lb_max_array(args),
-                          m.ub_array(args) );
-    prepro.set_result_type( m.common_type(args) );
-  }
-
-  /// When the result variable is set,
-  /// the constraint is skipped
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      AbsConstraint& c, PreprocessInfo& prepro) {
-    const auto argvar = c.GetArguments()[0];
-    const auto lb = this->lb(argvar),
-        ub = this->ub(argvar);
-    if (lb>=0.0) {  // When result var is set, \a c is skipped
-      prepro.set_result_var(argvar);
-      return;
-    } else if (ub<=0.0) {
-      auto res = AssignResult2Args(   // create newvar = -argvar
-            LinearFunctionalConstraint({ {{-1.0}, {argvar}}, 0.0 }));
-      prepro.set_result_var(res.get_var());
-      return;
-    }
-    prepro.narrow_result_bounds(0.0, std::max(-lb, ub));
-    prepro.set_result_type( var_type(argvar) );
-  }
-
-  /// Preprocess CondLinConEQ
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      CondLinConEQ& c, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-    if (0!=CanPreprocess( options_.preprocessEqualityResultBounds_ ))
-      if (FixEqualityResult(c, prepro))
-        return;
-    PreprocessEqVarConst__unifyCoef(c);
-    if (0!=CanPreprocess( options_.preprocessEqualityBvar_ ))
-      if (ReuseEqualityBinaryVar(c, prepro))
-        return;
-  }
-
-  /// Preprocess CondQuadConEQ
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      CondQuadConEQ& c, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-    if (0!=CanPreprocess( options_.preprocessEqualityResultBounds_ ))
-      if (FixEqualityResult(c, prepro))
-        return;
-  }
-
-  /// Try and fix conditional equality result
-  /// @return true if success
-  template <class PreprocessInfo, class CondAlgCon>
-  bool FixEqualityResult(
-      CondAlgCon& c, PreprocessInfo& prepro) {
-    const auto& con = c.GetConstraint();
-    const auto& body = con.GetBody();
-    const auto rhs = con.rhs();
-    // TODO expr is empty. Possible?
-    auto bndsNType = MPD( ComputeBoundsAndType(body) );
-    if (bndsNType.lb() > rhs || bndsNType.ub() < rhs) {
-      /// TODO this depends on context???
-      prepro.narrow_result_bounds(0.0, 0.0);
-      return true;
-    }
-    if (bndsNType.lb()==rhs && bndsNType.ub()==rhs) {
-      /// TODO this depends on context???
-      prepro.narrow_result_bounds(1.0, 1.0);
-      return true;
-    }
-    if (var::INTEGER==bndsNType.type_ &&
-        !is_integer(con.rhs())) {
-      /// TODO this depends on context???
-      prepro.narrow_result_bounds(0.0, 0.0);
-      return true;
-    }
-    return false;
-  }
-
-  /// Normalize conditional equality coef * var == const
-  static void PreprocessEqVarConst__unifyCoef(CondLinConEQ& c) {
-    auto& con = c.GetConstraint();
-    auto& body = con.GetBody();
-    if (1==body.size()) {
-      const double coef = body.coef(0);
-      if (1.0!=coef) {
-        assert(0.0!=std::fabs(coef));
-        con.set_rhs(con.rhs() / coef);
-        body.set_coef(0, 1.0);
-      }
-    }
-  }
-
-  /// Simplify conditional equality bin_var==0/1
-  /// by reusing bin_var or its complement
-  template <class PreprocessInfo>
-  bool ReuseEqualityBinaryVar(
-      CondLinConEQ& c, PreprocessInfo& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
-    const auto& con = c.GetConstraint();
-    const auto& body = con.GetBody();
-    if (1==body.size()) {                           // var==const
-      assert( 1.0==body.coef(0) );                  // is normalized
-      int var = body.var(0);
-      if (m.is_binary_var(var)) {            // See if this is binary var==const
-        const double rhs = con.rhs();
-        if (1.0==rhs)
-          prepro.set_result_var( var );      // TODO need to know var is a result var?
-        else if (0.0==std::fabs(rhs))
-          prepro.set_result_var( MakeComplementVar(var) );
-        else
-          prepro.narrow_result_bounds(0.0, 0.0);    // not 0/1 value, result false
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /// Preprocess other conditional comparisons TODO
-  template <class PreprocessInfo, class Body, int kind>
-  void PreprocessConstraint(
-      ConditionalConstraint<
-        AlgebraicConstraint< Body, AlgConRhs<kind> > >& ,
-      PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      AndConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      OrConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      AllDiffConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      NumberofConstConstraint& con, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, con.GetArguments().size());
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      NumberofVarConstraint& con, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0,     // size()-1: 1st arg is the ref var
-                                con.GetArguments().size()-1);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      CountConstraint& con, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, con.GetArguments().size());
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      NotConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      DivConstraint& c, PreprocessInfo& prepro) {
-    auto& m = MPD( GetModel() );
-    auto v1 = c.GetArguments()[0], v2 = c.GetArguments()[1];
-    const auto l1=m.lb(v1), u1=m.ub(v1), l2=m.lb(v2), u2=m.ub(v2);
-    if (l1 > this->PracticallyMinusInfty() &&
-        u1 < this->PracticallyInfty() &&
-        l2 > this->PracticallyMinusInfty() &&
-        u2 < this->PracticallyInfty() &&
-        l2 * u2 > 0.0) {
-      auto l0 = std::numeric_limits<double>::max();
-      auto u0 = std::numeric_limits<double>::min();
-      {
-        l0 = std::min(l0, l1 / l2);
-        l0 = std::min(l0, l1 / u2);
-        l0 = std::min(l0, u1 / l2);
-        l0 = std::min(l0, u1 / u2);
-        u0 = std::max(u0, l1 / l2);
-        u0 = std::max(u0, l1 / u2);
-        u0 = std::max(u0, u1 / l2);
-        u0 = std::max(u0, u1 / u2);
-      }
-      prepro.narrow_result_bounds( l0, u0 );
-    }
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      IfThenConstraint& c, PreprocessInfo& prepro) {
-    const auto& args = c.GetArguments();
-    prepro.narrow_result_bounds(std::min(lb(args[1]), lb(args[2])),
-        std::max(ub(args[1]), ub(args[2])));
-    prepro.set_result_type( MP_DISPATCH(GetModel()).
-                            common_type( { args[1], args[2] } ) );
-  }
-
-  ////////////////////// NONLINEAR FUNCTIONS //////////////////////
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      ExpConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, this->Infty());
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      ExpAConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, this->Infty());
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      LogConstraint& c, PreprocessInfo& ) {
-    NarrowVarBounds(c.GetArguments()[0], 0.0, this->Infty());
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      LogAConstraint& c, PreprocessInfo& ) {
-    NarrowVarBounds(c.GetArguments()[0], 0.0, this->Infty());
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      SinConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(-1.0, 1.0);
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      CosConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(-1.0, 1.0);
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      PLConstraint& , PreprocessInfo& ) {
-  }
-
 
 
   //////////////////////////// CUSTOM CONSTRAINTS //////////////////////
@@ -1007,10 +696,20 @@ private:
         options_.relax_, 0, 1);
   }
 
-protected:
+public:
+  /// Wrapper about a specific preprocess option:
+  /// checks whether \a preprocessAnything_ is on.
   bool CanPreprocess(int f) const {
     return 0!=options_.preprocessAnything_ && 0!=f;
   }
+
+  /// Whether preprocess equality result bounds
+  bool IfPreproEqResBounds() const
+  { return MPCD( CanPreprocess(options_.preprocessEqualityResultBounds_) ); }
+
+  /// Whether preprocess conditional equality of a binary variable
+  bool IfPreproEqBinVar() const
+  { return MPCD( CanPreprocess(options_.preprocessEqualityBvar_) ); }
 
 public:
   /// for tests. TODO make friends
