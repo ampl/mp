@@ -84,12 +84,13 @@ public:
 public:  // public for static polymorphism
   void InitCustomOptions() override;
 
+
 protected:
   void OpenSolver();
   void CloseSolver();
 
   void ExportModel(const std::string& file);
-
+  
   double ObjectiveValue() const;
 
   /// Solution values. The vectors are emptied if not available
@@ -119,6 +120,10 @@ private:
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;
+    std::string solver_ = "cbc";
+    int outlev_ = 0;
+    int threads_ = 0;
+    double timelimit_ = 0;
   };
   Options storedOptions_;
 

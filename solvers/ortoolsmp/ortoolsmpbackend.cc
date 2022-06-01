@@ -1,7 +1,8 @@
 #include <vector>
 #include <climits>
 #include <cfloat>
-
+#include <iostream> // for file output
+#include <fstream>
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
 #include "ortoolsmpbackend.h"
@@ -14,11 +15,9 @@ extern "C" {
 namespace {
 
 
-bool InterruptOrtools(void* prob) {
-  //return ORTOOLS_Interrupt((ortools_prob*)prob);
-  return true;
+bool InterruptOrtools(void* prob) { 
+  return static_cast < operations_research::MPSolver*>(prob)->InterruptSolve();
 }
-
 }  // namespace {}
 
 std::unique_ptr<mp::BasicBackend> CreateOrtoolsBackend() {
@@ -38,30 +37,27 @@ std::unique_ptr<BasicModelManager>
 CreateOrtoolsModelMgr(OrtoolsCommon&, Env&, pre::BasicValuePresolver*&);
 
 
-OrtoolsBackend::OrtoolsBackend() {
-  OpenSolver();
-
+OrtoolsBackend::OrtoolsBackend() : 
+  status_(operations_research::MPSolver::NOT_SOLVED) {
+  onlyRecordOptions_ = true;
   /// Create a ModelManager
   pre::BasicValuePresolver* pPre;
   auto data = CreateOrtoolsModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
   SetValuePresolver(pPre);
-
-  /// Copy env/lp to ModelAPI
-  copy_common_info_to_other();
 }
 
 OrtoolsBackend::~OrtoolsBackend() {
   CloseSolver();
 }
 
-void OrtoolsBackend::OpenSolver() {
+  void OrtoolsBackend::OpenSolver() {
   int status = 0;
-  std::string solver = "SCIP";
-  auto lp = operations_research::MPSolver::CreateSolver(solver);
+  //getenv("ortools_solver")
+  auto lp = operations_research::MPSolver::CreateSolver(storedOptions_.solver_);
   if (!lp)
     throw std::runtime_error(fmt::format(
-      "Failed to create solver {}", solver));
+      "Failed to create solver {}", storedOptions_.solver_));
   set_lp(lp); // Assign it
 }
 
@@ -73,7 +69,8 @@ const char* OrtoolsBackend::GetBackendName()
   { return "OrtoolsBackend"; }
 
 std::string OrtoolsBackend::GetSolverVersion() {
-  return lp()->SolverVersion();
+  return "20220601";
+  //return lp()->SolverVersion();
 }
 
 
@@ -115,21 +112,37 @@ double OrtoolsBackend::ObjectiveValue() const {
   return lp()->Objective().Value();
 }
 
-double OrtoolsBackend::NodeCount() const {
-  return 0;
-}
+double OrtoolsBackend::NodeCount() const { 
+  return lp()->nodes(); }
 
-double OrtoolsBackend::SimplexIterations() const {
-  return 0;
-}
+double OrtoolsBackend::SimplexIterations() const { 
+  return lp()->iterations(); }
 
 int OrtoolsBackend::BarrierIterations() const {
   return 0;
 }
 
+bool endsWith(std::string str, std::string const& suffix) {
+  std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+  if (str.length() < suffix.length()) {
+    return false;
+  }
+  return str.compare(str.length() - suffix.length(), suffix.length(), suffix) ==
+         0;
+}
+
 void OrtoolsBackend::ExportModel(const std::string &file) {
-  // TODO export proper by file extension
-  //ORTOOLS_CCALL(ORTOOLS_WriteLp(lp(), file.data()));
+  std::string output;
+  if (endsWith(file, "mps"))
+    lp()->ExportModelAsMpsFormat(false, false, &output);
+  else if (endsWith(file, "lp"))
+    lp()->ExportModelAsLpFormat(false, &output);
+  else
+    throw std::runtime_error("Output file should be either .mps or .lp");
+
+  std::ofstream outputFile;
+  outputFile.open(file);
+  outputFile << output;
 }
 
 
@@ -222,42 +235,21 @@ std::pair<int, std::string> OrtoolsBackend::ConvertORTOOLSStatus() {
 
 
 void OrtoolsBackend::FinishOptionParsing() {
-  int v=-1;
-  set_verbose_mode(v>0);
+  OpenSolver();
+  ReplaySolverOptions();
+  /// Copy env/lp to ModelAPI
+  copy_common_info_to_other();
+  set_verbose_mode(storedOptions_.outlev_ > 0);
+  // Set stored options
+  if (storedOptions_.outlev_ > 0) lp()->EnableOutput();
+  if (storedOptions_.timelimit_ > 0)
+    lp()->SetTimeLimit(absl::Seconds(storedOptions_.timelimit_));
+  if (storedOptions_.threads_ > 0) lp()->SetNumThreads(storedOptions_.threads_);
 }
 
 
 ////////////////////////////// OPTIONS /////////////////////////////////
 
-
-static const mp::OptionValueInfo lp_values_method[] = {
-  { "-1", "Automatic (default)", -1},
-  { "1", "Dual simplex", 1},
-  { "2", "Barrier", 2},
-  { "3", "Crossover", 3},
-  { "4", "Concurrent (simplex and barrier simultaneously)", 4},
-};
-
-
-static const mp::OptionValueInfo alg_values_level[] = {
-  { "-1", "Automatic (default)", -1},
-  { "0", "Off", 0},
-  { "1", "Fast", 1},
-  { "2", "Normal", 2},
-  { "3", "Aggressive", 3}
-}; 
-
-static const mp::OptionValueInfo lp_dualprices_values_[] = {
-  { "-1", "Choose automatically (default)", -1},
-  { "0", "Use Devex pricing algorithm", 0},
-  { "1", "Using dual steepest-edge pricing algorithm", 1}
-};
-
-static const mp::OptionValueInfo lp_barorder_values_[] = {
-  { "-1", "Choose automatically (default)", -1},
-  { "0", "Approximate Minimum Degree (AMD)", 0},
-  { "1", "Nested Dissection (ND)", 1}
-};
 
 void OrtoolsBackend::InitCustomOptions() {
 
@@ -268,13 +260,37 @@ void OrtoolsBackend::InitCustomOptions() {
       "To set these options, assign a string specifying their values to the "
       "AMPL option ``ortools_options``. For example::\n"
       "\n"
-      "  ampl: option ortools_options 'mipgap=1e-6';\n");
+      "  ampl: option ortools_options 'solver=scip';\n");
 
   AddStoredOption("tech:exportfile writeprob writemodel",
       "Specifies the name of a file where to export the model before "
       "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
+
+  AddStoredOption(
+      "tech:solver solver",
+      "Specifies the name of the solver to be used. Available options are: "
+      "glop (default), cbc, scip",
+      storedOptions_.solver_);
+  
+    AddStoredOption("tech:outlev outlev",
+                  "0*/1: Whether to write log lines (chatter) to stdout",
+                  storedOptions_.outlev_, 0, 1);
+
+      AddStoredOption("tech:threads threads",
+                    "How many threads to use when using the barrier algorithm "
+                    "or solving MIP problems; default 0 ==> automatic choice.",
+                    storedOptions_.threads_, 0,
+                    std::numeric_limits<int>::max());
+
+    AddStoredOption("lim:time timelim timelimit",
+                    "Limit on solve time (in seconds; default: no limit).",
+                      storedOptions_.timelimit_, 0.0,
+                      std::numeric_limits<double>::max());
+      
+
+
 
 }
 
