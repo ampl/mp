@@ -60,6 +60,15 @@ public:
   // that may or may not need additional functions. 
   USING_STD_FEATURES;
 
+  ALLOW_STD_FEATURE(MULTISOL, true)
+
+    /**
+   * Get/Set AMPL var/con statii
+   **/
+  ALLOW_STD_FEATURE(BASIS, true)
+  SolutionBasis GetBasis() override;
+  void SetBasis(SolutionBasis) override;
+
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
   bool IsQCP() const override;
@@ -77,6 +86,8 @@ public:
   Solution GetSolution() override;
   ArrayRef<double> GetObjectiveValues() override
   { return std::vector<double>{ObjectiveValue()}; } 
+
+
 
 
   //////////////////// [[ Implementation details ]] //////////////////////
@@ -104,9 +115,6 @@ protected:
   void ReportORTOOLSResults();
   void ReportORTOOLSPool();
 
-  std::vector<double> getPoolSolution(int i);
-  double getPoolObjective(int i);
-
   /// Solution attributes
   double NodeCount() const;
   double SimplexIterations() const;
@@ -115,6 +123,9 @@ protected:
   std::pair<int, std::string> ConvertORTOOLSStatus();
   void AddORTOOLSMessages();
 
+  // For basis
+  ArrayRef<int> VarStatii();
+  ArrayRef<int> ConStatii();
 
 private:
   /// These options are stored in the class
