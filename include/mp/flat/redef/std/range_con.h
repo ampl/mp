@@ -13,7 +13,8 @@ namespace mp {
 
 namespace pre {
 
-/// Presolve link between RangeCon and Con(LE/EQ/GE)+Slack.
+/// Presolve link between RangeCon and either
+/// Con(LE/GE) or ConEQ+Slack.
 /// TODO dependency inversion #164
 /// (FlatConverter needs just a BasicLink*? Entry type?)
 template <class ModelConverter, class RangeCon>
@@ -118,8 +119,8 @@ using RangeQuadCon2Slack = RangeCon2Slack<MC, QuadConRange>;
 } // namespace pre
 
 
-/// Converts proper range constraints to <body>+slack=ub,
-/// otherwise to <body> </=/> rhs.
+/// Converts proper range constraints to body+slack=ub,
+/// otherwise to body </=/> rhs.
 /// @param ModelConverter: the main converter class
 /// @param AlgConBody: The \a Body argument of the
 /// \a AlgebraicConstraint

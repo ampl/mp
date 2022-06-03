@@ -2,7 +2,7 @@
 #define VALUE_PRESOLVE_BASE_H
 
 /**
-  Interface for value presolver:
+  Value presolver: namespace mp::pre
   */
 
 #include <map>
@@ -24,8 +24,15 @@ template <class Any>
 void SetValueNodeName(Any& , std::string ) { }
 
 
-/// Value map, contains a map of arrays of int's and/or double's
-/// corresponding to variables, or a constraint type, or objectives
+/// Value map, contains a map of either:
+///
+/// - concrete arrays of int's and/or double's (ValueMapInt/Dbl), or
+/// - ValueNode's (conversion graph nodes) which manage such arrays.
+///
+/// The data in a single map corresponds to variables, constraints,
+/// or objectives,
+/// and map keys correspond to different item subcategories (e.g., linear vs
+/// quadratic constraints)
 template <class Array>
 class ValueMap {
 public:
@@ -120,7 +127,8 @@ using ValueMapInt = ValueMap< std::vector<int> >;
 /// Convenience typedef
 using ValueMapDbl = ValueMap< std::vector<double> >;
 
-/// Group of values for variables, constraints, and objectives
+/// Group of values or value nodes
+/// for variables, constraints, and objectives
 template <class VMap>
 class ModelValues {
 public:
@@ -176,9 +184,9 @@ private:
 };
 
 
-/// Specialize ModelValues<> for int
+/// Specialize ModelValues<> for concrete int data
 using ModelValuesInt = ModelValues< ValueMapInt >;
-/// Specialize ModelValues<> for double
+/// Specialize ModelValues<> for concrete double data
 using ModelValuesDbl = ModelValues< ValueMapDbl >;
 
 
@@ -232,8 +240,8 @@ struct IndexRange {
 } // namespace pre
 
 
-/// Some backends need presolver
-/// for pre- / postsolving of suffix values etc
+/// Some backends need to keep reference to the value presolver
+/// for pre- / postsolving of suffix values etc.
 class BasicValuePresolverKeeper {
 protected:
   void SetValuePresolver(pre::BasicValuePresolver* pPre) {

@@ -17,7 +17,7 @@
 /// (normally provided in the <solver>_options string).
 /// Can be NULL.
 /// @return 0 on success, otherwise see slv->warnings_and_or_errors_
-int AMPLSOpenOrtools(AMPLS_MP_Solver* slv, const char* slv_opt);
+AMPLS_MP_Solver* AMPLSOpenOrtools(const char* slv_opt);
 
 /// Shut down solver instance
 void AMPLSCloseOrtools(AMPLS_MP_Solver* slv);

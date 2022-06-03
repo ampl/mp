@@ -115,7 +115,7 @@ Writing solution/results output is easiest as part of the general workflow,
 see :ref:`model-manager`.
 
 A standalone .sol file writer could be implemented by parameterizing the
-`internal::AppSolutionHandlerImpl` (or `internal::SolutionWriterImpl`)
+`mp::internal::AppSolutionHandlerImpl` (or `mp::internal::SolutionWriterImpl`)
 templates by minimal implementations of the `mp::BasicSolver` and
 `mp::ProblemBuilder` interfaces.
 
@@ -285,10 +285,69 @@ Value Presolver
 
 Class `mp::pre::ValuePresolver` manages transformations of solutions and suffixes
 between the original NL model and the converted model. For driver architectures
-with :ref:`model-manager`, the value presolver object should be shared between
+with :ref:`model-manager`, the value presolver object must be shared between
 the model converter and the :ref:`Backend <backend-classes>` to enable
 solution/suffix transformations corresponding to those on the model, see
 `mp::CreateGurobiModelMgr` as an example.
+
+
+Invocation API
+^^^^^^^^^^^^^^
+
+To use the ValuePresolver API, the following classes are needed:
+
+- `mp::pre::BasicValuePresolver` defines an interface for `mp::pre::ValuePresolver`.
+
+- `mp::pre::ValueNode` temporarily stores values corresponding to a single type of
+  model item (variables, constraints, objectives).
+
+- `mp::pre::ValueMap` is a map of node values, where the key usually corresponds to
+  an item subcategory. For example, Gurobi distinguishes attributes for the
+  following constraint categories: linear, quadratic, SOS, general. Thus, the
+  conversion graph needs to have these four types of target nodes for constraint
+  values:
+
+  .. code-block:: c++
+
+    pre::ValueMapInt GurobiBackend::ConsIIS() {
+      ......
+      return {{{ CG_Linear, iis_lincon },
+        { CG_Quadratic, iis_qc },
+        { CG_SOS, iis_soscon },
+        { CG_General, iis_gencon }}};
+    }
+
+
+- `mp::pre::ModelValues` is a class joining value maps for variables, constraints,
+  and objectives. It is useful when the conversions connect items of different types:
+  for example, when converting an algebraic range constraint to an equality
+  constraint with a bounded slack variable, the constraint's basis status is mapped
+  to that of the slack. Similarly, the range constraint should be reported infeasible
+  if either the slack's bounds or the equality are:
+
+  .. code-block:: c++
+
+    IIS GurobiBackend::GetIIS() {
+      pre::ModelValuesInt mv = GetValuePresolver().
+        PostsolveIIS( pre::ModelValuesInt{ VarsIIS(), ConsIIS() } );
+      return { mv.GetVarValues()(), mv.GetConValues()() };
+    }
+
+
+Implementation API
+^^^^^^^^^^^^^^^^^^
+
+To implement value pre- / postsolving, the following API is used:
+
+- `mp::pre::ValuePresolver` implements the interface of
+  `mp::pre::BasicValuePresolver`. It calls the individual pre- and postsolve
+  routines.
+
+- `mp::pre::BasicLink` is the interface to various implementations of links
+  between nodes, such as
+  `mp::pre::CopyLink`. Templates `mp::pre::BasicIndivEntryLink` and
+  `mp::pre::BasicStaticIndivEntryLink` are base classes for links such as
+  `mp::pre::RangeCon2Slack`.
 
 
 C++ ASL adapter

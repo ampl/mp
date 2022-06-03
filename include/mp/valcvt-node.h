@@ -14,7 +14,7 @@ using NodeIndexRange = IndexRange;
 /// Declare ValueNode
 class ValueNode;
 
-/// Node range: range of node entries
+/// Node range: range of node entries.
 /// The node is specified as well
 class NodeRange {
 public:
@@ -61,8 +61,10 @@ private:
 };
 
 
-/// Value node, contains arrays of int's and double's
-/// corresponding to variables, or a constraint type, or objectives
+/// Value node, a node of the conversion graph.
+/// Stores arrays of int's and double's
+/// corresponding to variables, or a constraint type, or objectives.
+/// The data is stored temporarily during a conversion run.
 class ValueNode {
 public:
   /// Default constructor
@@ -160,7 +162,8 @@ private:
   std::string name_ = "default_value_node";
 };
 
-/// Spec for ValueNode
+
+/// Specialize for ValueNode
 inline void
 SetValueNodeName(ValueNode& vn, std::string nm) { vn.SetName(nm); }
 
@@ -197,7 +200,7 @@ void Copy(NodeRange ir1, NodeRange ir2) {
 /// Typedef map of nodes
 using NodeMap = ValueMap< ValueNode >;
 
-/// Typedef ModelValues stored in NodeMaps
+/// Terminal nodes of a conversion graph
 using ModelValuesTerminal = ModelValues< NodeMap >;
 
 

@@ -1,7 +1,6 @@
 #include "ortoolsmpmodelapi.h"
 
 #include "mp/model-mgr-with-std-pb.h"
-#include "mp/flat/problem_flattener.h"
 #include "mp/flat/redef/MIP/converter_mip.h"
 #include "mp/flat/model_api_connect.h"
 
@@ -20,7 +19,7 @@ CreateOrtoolsModelMgr(OrtoolsCommon& cc, Env& e,
 void OrtoolsModelAPI::InitProblemModificationPhase() { }
 
 void OrtoolsModelAPI::AddVariables(const VarArrayDef& v) {
-  for (size_t i = 0; i < v.size(); ++i) {
+  for (int i = 0; i < v.size(); ++i) {
     lp()->MakeVar(v.plb()[i], v.pub()[i], 
       v.ptype()[i] == var::Type::INTEGER, "");
   }

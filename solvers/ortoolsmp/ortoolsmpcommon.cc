@@ -1,5 +1,6 @@
 #include "mp/format.h"
 #include "ortoolsmpcommon.h"
+#include <string>
 
 namespace mp {
 
@@ -43,19 +44,25 @@ int OrtoolsCommon::NumIndicatorCons() const {
 }
 
 void OrtoolsCommon::GetSolverOption(const char* key, int &value) const {
-  //ORTOOLS_CCALL( ORTOOLS_GetIntParam(lp_, key, &value) );
+    value = params_.GetIntegerParam(
+      static_cast<orr::MPSolverParameters::IntegerParam>(paramNames_.at(key)));
 }
+
 
 void OrtoolsCommon::SetSolverOption(const char* key, int value) {
-  //ORTOOLS_CCALL(ORTOOLS_SetIntParam(lp_, key, value));
+    params_.SetIntegerParam(
+      static_cast<orr::MPSolverParameters::IntegerParam>(paramNames_.at(key)),
+      value);
 }
-
 void OrtoolsCommon::GetSolverOption(const char* key, double &value) const {
-  //ORTOOLS_CCALL(ORTOOLS_GetDblParam(lp_, key, &value) );
+    value = params_.GetDoubleParam(
+      static_cast<orr::MPSolverParameters::DoubleParam>(paramNames_.at(key)));
 }
 
 void OrtoolsCommon::SetSolverOption(const char* key, double value) {
- // ORTOOLS_CCALL(ORTOOLS_SetDblParam(lp_, key, value) );
+    params_.SetDoubleParam(
+      static_cast<orr::MPSolverParameters::DoubleParam>(paramNames_[key]),
+      value);
 }
 
 void OrtoolsCommon::GetSolverOption(const char* key, std::string &value) const {

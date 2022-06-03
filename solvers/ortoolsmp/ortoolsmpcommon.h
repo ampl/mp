@@ -7,7 +7,7 @@
 #include "mp/backend-to-model-api.h"
 
 #include "ortools/linear_solver/linear_solver.h"
-
+namespace orr = operations_research;
 
 /// The below would go into actual ...common.h:
 
@@ -17,10 +17,11 @@ namespace mp {
 /// Information shared by both
 /// `OrtoolsBackend` and `OrtoolsModelAPI`
 struct OrtoolsCommonInfo {
-  operations_research::MPSolver* lp() const { return lp_; }
-  void set_lp(operations_research::MPSolver* lp) { lp_ = lp; }
-private:
-  operations_research::MPSolver*      lp_ = NULL;
+  orr::MPSolver* lp() const { return lp_; }
+  void set_lp(orr::MPSolver* lp) { lp_ = lp; }
+
+ private:
+  orr::MPSolver* lp_ = NULL;
 };
 
 
@@ -36,11 +37,26 @@ public:
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);
 
-  // TODO Typically solvers define their own infinity; use them here
-  static constexpr double Infinity() { return std::numeric_limits<double>::infinity();  }
-  static constexpr double MinusInfinity() { return -std::numeric_limits<double>::infinity(); }
+  double Infinity() { return lp()->infinity(); }
+  double MinusInfinity() { return -Infinity(); }
 
 protected:
+  std::map<std::string, int> paramNames_ = {
+      {"RELATIVE_MIP_GAP",
+       orr::MPSolverParameters::RELATIVE_MIP_GAP},
+      {"PRIMAL_TOLERANCE",
+       orr::MPSolverParameters::PRIMAL_TOLERANCE},
+      {"DUAL_TOLERANCE",
+       orr::MPSolverParameters::DUAL_TOLERANCE},
+
+      {"PRESOLVE", orr::MPSolverParameters::PRESOLVE},
+      {"LP_ALGORITHM", orr::MPSolverParameters::LP_ALGORITHM},
+      {"INCREMENTALITY",
+       orr::MPSolverParameters::INCREMENTALITY},
+      {"SCALING", orr::MPSolverParameters::SCALING}};
+
+  orr::MPSolverParameters params_;
+
   int getIntAttr(int name) const;
   double getDblAttr(const char* name) const;
 
@@ -50,16 +66,10 @@ protected:
   int NumQPCons() const;
   int NumSOSCons() const;
   int NumIndicatorCons() const;
-
-protected:
-  // TODO if desirable, provide function to create the solver's environment
-  //int (*createEnv) (solver_env**) = nullptr;
-  
 };
 
 
-/// Convenience macro
-// TODO This macro is useful to automatically throw an error if a function in the 
+// This macro is useful to automatically throw an error if a function in the 
 // solver API does not return a valid errorcode. In this mock driver, we define it 
 // ourselves, normally this constant would be defined in the solver's API.
 #define ORTOOLS_RETCODE_OK 0

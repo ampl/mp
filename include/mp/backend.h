@@ -588,6 +588,13 @@ private:
   std::vector< SlvOptionRecord > slvOptionRecords_;
 
 protected:
+  // set to true in constructor to disable setting options 
+  // while parsing them. They can be set later with ReplaySolverOptions
+  bool onlyRecordOptions_ = false; 
+  // Accessed from SolverOptionAccessor to decide if to skip
+  // setting options
+  bool onlyRecordOptions() { return onlyRecordOptions_; }
+
   void RecordSolverOption(SlvOptionRecord sor)
   { slvOptionRecords_.push_back(sor); }
   void ReplaySolverOptions() {

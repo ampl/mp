@@ -60,6 +60,15 @@ public:
   // that may or may not need additional functions. 
   USING_STD_FEATURES;
 
+  ALLOW_STD_FEATURE(MULTISOL, true)
+
+    /**
+   * Get/Set AMPL var/con statii
+   **/
+  ALLOW_STD_FEATURE(BASIS, true)
+  SolutionBasis GetBasis() override;
+  void SetBasis(SolutionBasis) override;
+
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
   bool IsQCP() const override;
@@ -79,17 +88,20 @@ public:
   { return std::vector<double>{ObjectiveValue()}; } 
 
 
+
+
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 public:  // public for static polymorphism
   void InitCustomOptions() override;
+
 
 protected:
   void OpenSolver();
   void CloseSolver();
 
   void ExportModel(const std::string& file);
-
+  
   double ObjectiveValue() const;
 
   /// Solution values. The vectors are emptied if not available
@@ -103,9 +115,6 @@ protected:
   void ReportORTOOLSResults();
   void ReportORTOOLSPool();
 
-  std::vector<double> getPoolSolution(int i);
-  double getPoolObjective(int i);
-
   /// Solution attributes
   double NodeCount() const;
   double SimplexIterations() const;
@@ -114,11 +123,18 @@ protected:
   std::pair<int, std::string> ConvertORTOOLSStatus();
   void AddORTOOLSMessages();
 
+  // For basis
+  ArrayRef<int> VarStatii();
+  ArrayRef<int> ConStatii();
 
 private:
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;
+    std::string solver_ = "cbc";
+    int outlev_ = 0;
+    int threads_ = 0;
+    double timelimit_ = 0;
   };
   Options storedOptions_;
 

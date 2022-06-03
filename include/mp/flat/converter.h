@@ -14,6 +14,9 @@
 #include "mp/flat/convert_functional.h"
 #include "mp/flat/constr_keeper.h"
 #include "mp/flat/constr_std.h"
+#include "mp/flat/expr_bounds.h"
+#include "mp/flat/constr_prepro.h"
+#include "mp/flat/constr_prop_down.h"
 #include "mp/valcvt.h"
 #include "mp/flat/redef/std/range_con.h"
 
@@ -21,7 +24,7 @@ namespace mp {
 
 /// FlatConverter: preprocesses and manages flat constraints.
 /// Such constraints might need to be converted to others, which is
-/// handled by overloaded methods in derived classes
+/// handled by overloaded methods in derived classes.
 /// @param Impl: the final CRTP class
 /// @param ModelAPI: the solver's model API wrapper
 /// @param FlatModel: internal representation of a flat model
@@ -30,6 +33,9 @@ template <class Impl, class ModelAPI,
 class FlatConverter :
     public BasicFlatConverter,
     public FlatModel,
+    public BoundComputations<Impl>,
+    public ConstraintPreprocessors<Impl>,
+    public ConstraintPropagatorsDown<Impl>,
     public EnvKeeper
 {
 public:
@@ -54,17 +60,18 @@ protected:
   using BaseFlatModel = FlatModel;
 
 
-  //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
+  //////////////////////////// CONVERTERS OF STANDARD MP ITEMS //////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////////////
 public:
   /// Fix a resulting variable of a logical expression as true
-  /// and propagate positive ctx
+  /// and propagate positive ctx.
   /// TODO avoid creating resvar for root logical constraints
   void FixAsTrue(int resvar) {
     PropagateResultOfInitExpr(resvar, 1.0, 1.0, +Context());
   }
 
-protected:
+
+public:
   void PropagateResultOfInitExpr(int var, double lb, double ub, Context ctx) {
     NarrowVarBounds(var, lb, ub);
     if (HasInitExpression(var)) {
@@ -75,18 +82,9 @@ protected:
 
 
 public:
-  /// Narrow variable domain range
-  void NarrowVarBounds(int var, double lb, double ub) {
-    auto& m = GetModel();
-    m.set_lb(var, std::max(m.lb(var), lb));
-    m.set_ub(var, std::min(m.ub(var), ub));
-    if (m.lb(var)>m.ub(var))             // TODO write .sol, report .iis
-      MP_INFEAS("empty variable domain");
-  }
-
-
-public:
   //////////////////////////////////// VISITOR ADAPTERS /////////////////////////////////////////
+  /// These are called to transform expressions, either by FlatCvt itself,
+  /// or when flattening NL model
 
   /// From am affine expression:
   /// Adds a result variable r and constraint r == expr
@@ -114,91 +112,6 @@ public:
         QuadraticFunctionalConstraint(std::move(ee)));
   }
 
-  /// ComputeBoundsAndType(LinTerms)
-  PreprocessInfoStd ComputeBoundsAndType(const LinTerms& lt) {
-    PreprocessInfoStd result;
-    result.lb_ = result.ub_ = 0.0;    // TODO reuse bounds if supplied
-    result.type_ = var::INTEGER;
-    auto& model = MP_DISPATCH( GetModel() );
-    for (auto i=lt.size(); i--; ) {
-      auto v = lt.var(i);
-      auto c = lt.coef(i);
-      if (c >= 0.0) {
-        result.lb_ += c * model.lb(v);
-        result.ub_ += c * model.ub(v);
-      } else {
-        result.lb_ += c * model.ub(v);
-        result.ub_ += c * model.lb(v);
-      }
-      if (var::INTEGER!=model.var_type(v) || !is_integer(c)) {
-        result.type_=var::CONTINUOUS;
-      }
-    }
-    return result;
-  }
-
-  /// ComputeBoundsAndType(AlgebraicExpr<>)
-  template <class Body>
-  PreprocessInfoStd ComputeBoundsAndType(
-      const AlgebraicExpression<Body>& ae) {
-    PreprocessInfoStd result = ComputeBoundsAndType(ae.GetBody());
-    result.lb_ += ae.constant_term();    // TODO reuse bounds if supplied
-    result.ub_ += ae.constant_term();
-    if (!is_integer(ae.constant_term()))
-      result.type_ = var::CONTINUOUS;
-    return result;
-  }
-
-  /// ComputeBoundsAndType(QuadTerms)
-  PreprocessInfoStd ComputeBoundsAndType(const QuadTerms& qt) {
-    PreprocessInfoStd result;
-    result.lb_ = result.ub_ = 0.0;
-    result.type_ = var::INTEGER;
-    auto& model = MP_DISPATCH( GetModel() );
-    for (auto i=qt.size(); i--; ) {
-      auto coef = qt.coef(i);
-      auto v1 = qt.var1(i);
-      auto v2 = qt.var2(i);
-      auto prodBnd = ProductBounds(v1, v2);
-      if (coef >= 0.0) {
-        result.lb_ += coef * prodBnd.first;
-        result.ub_ += coef * prodBnd.second;
-      } else {
-        result.lb_ += coef * prodBnd.second;
-        result.ub_ += coef * prodBnd.first;
-      }
-      if (var::INTEGER!=model.var_type(v1) ||
-          var::INTEGER!=model.var_type(v2) ||
-          !is_integer(coef)) {
-        result.type_=var::CONTINUOUS;
-      }
-    }
-    return result;
-  }
-
-  /// ComputeBoundsAndType(QuadAndLinearTerms)
-  PreprocessInfoStd ComputeBoundsAndType(const QuadAndLinTerms& qlt) {
-    auto bntLT = ComputeBoundsAndType(qlt.GetLinTerms());
-    auto bntQT = ComputeBoundsAndType(qlt.GetQPTerms());
-    return AddBoundsAndType(bntLT, bntQT);
-  }
-
-  /// Product bounds
-  template <class Var>
-  std::pair<double, double> ProductBounds(Var x, Var y) const {
-    auto lx=lb(x), ly=lb(y), ux=ub(x), uy=ub(y);
-    std::array<double, 4> pb{lx*ly, lx*uy, ux*ly, ux*uy};
-    return { *std::min_element(pb.begin(), pb.end()),
-          *std::max_element(pb.begin(), pb.end()) };
-  }
-
-  /// Add / merge bounds and type
-  PreprocessInfoStd AddBoundsAndType(const PreprocessInfoStd& bnt1,
-                                     const PreprocessInfoStd& bnt2) {
-    return {bnt1.lb()+bnt2.lb(), bnt1.ub()+bnt2.ub(),
-      var::INTEGER==bnt1.type() && var::INTEGER==bnt2.type() ?
-            var::INTEGER : var::CONTINUOUS};
-  }
 
   /// Take FuncConstraint with arguments
   ///
@@ -260,537 +173,12 @@ protected:
   template <class Impl1, class Converter, class Constraint>
   friend class BasicFCC;
 
-  /// PreprocessConstraint
-  /// TODO rename 'PropagateUp' and define together with the constraint
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      LinearFunctionalConstraint& c, PreprocessInfo& prepro) {
-    auto pre = ComputeBoundsAndType(c.GetAffineExpr());
-    prepro.narrow_result_bounds( pre.lb(), pre.ub() );
-    prepro.set_result_type( pre.type() );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      QuadraticFunctionalConstraint& c, PreprocessInfo& prepro) {
-    auto pre = ComputeBoundsAndType(c.GetQuadExpr());
-    prepro.narrow_result_bounds( pre.lb(), pre.ub() );
-    prepro.set_result_type( pre.type() );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      PowConstraint& c, PreprocessInfo& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
-    auto arg = c.GetArguments()[0];
-    auto prm = c.GetParameters()[0];
-    auto lb = std::pow(m.lb(arg), prm),
-        ub = std::pow(m.ub(arg), prm);
-    prepro.narrow_result_bounds( std::min(lb, ub),
-                          std::max(lb, ub) );
-    prepro.set_result_type( m.var_type(arg) );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      TanConstraint& , PreprocessInfo& ) {
-    // TODO improve
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      MinConstraint& c, PreprocessInfo& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
-    auto& args = c.GetArguments();
-    prepro.narrow_result_bounds( m.lb_array(args),
-                          m.ub_min_array(args) );
-    prepro.set_result_type( m.common_type(args) );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      MaxConstraint& c, PreprocessInfo& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
-    auto& args = c.GetArguments();
-    prepro.narrow_result_bounds( m.lb_max_array(args),
-                          m.ub_array(args) );
-    prepro.set_result_type( m.common_type(args) );
-  }
-
-  /// When the result variable is set,
-  /// the constraint is skipped
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      AbsConstraint& c, PreprocessInfo& prepro) {
-    const auto argvar = c.GetArguments()[0];
-    const auto lb = this->lb(argvar),
-        ub = this->ub(argvar);
-    if (lb>=0.0) {  // When result var is set, \a c is skipped
-      prepro.set_result_var(argvar);
-      return;
-    } else if (ub<=0.0) {
-      auto res = AssignResult2Args(   // create newvar = -argvar
-            LinearFunctionalConstraint({ {{-1.0}, {argvar}}, 0.0 }));
-      prepro.set_result_var(res.get_var());
-      return;
-    }
-    prepro.narrow_result_bounds(0.0, std::max(-lb, ub));
-    prepro.set_result_type( var_type(argvar) );
-  }
-
-  /// Preprocess CondLinConEQ
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      CondLinConEQ& c, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-    if (0!=CanPreprocess( options_.preprocessEqualityResultBounds_ ))
-      if (FixEqualityResult(c, prepro))
-        return;
-    PreprocessEqVarConst__unifyCoef(c);
-    if (0!=CanPreprocess( options_.preprocessEqualityBvar_ ))
-      if (ReuseEqualityBinaryVar(c, prepro))
-        return;
-  }
-
-  /// Preprocess CondQuadConEQ
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      CondQuadConEQ& c, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-    if (0!=CanPreprocess( options_.preprocessEqualityResultBounds_ ))
-      if (FixEqualityResult(c, prepro))
-        return;
-  }
-
-  /// Try and fix conditional equality result
-  /// @return true if success
-  template <class PreprocessInfo, class CondAlgCon>
-  bool FixEqualityResult(
-      CondAlgCon& c, PreprocessInfo& prepro) {
-    const auto& con = c.GetConstraint();
-    const auto& body = con.GetBody();
-    const auto rhs = con.rhs();
-    // TODO expr is empty. Possible?
-    auto bndsNType = ComputeBoundsAndType(body);
-    if (bndsNType.lb() > rhs || bndsNType.ub() < rhs) {
-      /// TODO this depends on context???
-      prepro.narrow_result_bounds(0.0, 0.0);
-      return true;
-    }
-    if (bndsNType.lb()==rhs && bndsNType.ub()==rhs) {
-      /// TODO this depends on context???
-      prepro.narrow_result_bounds(1.0, 1.0);
-      return true;
-    }
-    if (var::INTEGER==bndsNType.type_ &&
-        !is_integer(con.rhs())) {
-      /// TODO this depends on context???
-      prepro.narrow_result_bounds(0.0, 0.0);
-      return true;
-    }
-    return false;
-  }
-
-  /// Normalize conditional equality coef * var == const
-  static void PreprocessEqVarConst__unifyCoef(CondLinConEQ& c) {
-    auto& con = c.GetConstraint();
-    auto& body = con.GetBody();
-    if (1==body.size()) {
-      const double coef = body.coef(0);
-      if (1.0!=coef) {
-        assert(0.0!=std::fabs(coef));
-        con.set_rhs(con.rhs() / coef);
-        body.set_coef(0, 1.0);
-      }
-    }
-  }
-
-  /// Simplify conditional equality bin_var==0/1
-  /// by reusing bin_var or its complement
-  template <class PreprocessInfo>
-  bool ReuseEqualityBinaryVar(
-      CondLinConEQ& c, PreprocessInfo& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
-    const auto& con = c.GetConstraint();
-    const auto& body = con.GetBody();
-    if (1==body.size()) {                           // var==const
-      assert( 1.0==body.coef(0) );                  // is normalized
-      int var = body.var(0);
-      if (m.is_binary_var(var)) {            // See if this is binary var==const
-        const double rhs = con.rhs();
-        if (1.0==rhs)
-          prepro.set_result_var( var );      // TODO need to know var is a result var?
-        else if (0.0==std::fabs(rhs))
-          prepro.set_result_var( MakeComplementVar(var) );
-        else
-          prepro.narrow_result_bounds(0.0, 0.0);    // not 0/1 value, result false
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /// Preprocess other conditional comparisons TODO
-  template <class PreprocessInfo, class Body, int kind>
-  void PreprocessConstraint(
-      ConditionalConstraint<
-        AlgebraicConstraint< Body, AlgConRhs<kind> > >& ,
-      PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      AndConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      OrConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      AllDiffConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      NumberofConstConstraint& con, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, con.GetArguments().size());
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      NumberofVarConstraint& con, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0,     // size()-1: 1st arg is the ref var
-                                con.GetArguments().size()-1);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      CountConstraint& con, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, con.GetArguments().size());
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      NotConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, 1.0);
-    prepro.set_result_type( var::INTEGER );
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      DivConstraint& c, PreprocessInfo& prepro) {
-    auto& m = MPD( GetModel() );
-    auto v1 = c.GetArguments()[0], v2 = c.GetArguments()[1];
-    const auto l1=m.lb(v1), u1=m.ub(v1), l2=m.lb(v2), u2=m.ub(v2);
-    if (l1 > this->PracticallyMinusInfty() &&
-        u1 < this->PracticallyInfty() &&
-        l2 > this->PracticallyMinusInfty() &&
-        u2 < this->PracticallyInfty() &&
-        l2 * u2 > 0.0) {
-      auto l0 = std::numeric_limits<double>::max();
-      auto u0 = std::numeric_limits<double>::min();
-      {
-        l0 = std::min(l0, l1 / l2);
-        l0 = std::min(l0, l1 / u2);
-        l0 = std::min(l0, u1 / l2);
-        l0 = std::min(l0, u1 / u2);
-        u0 = std::max(u0, l1 / l2);
-        u0 = std::max(u0, l1 / u2);
-        u0 = std::max(u0, u1 / l2);
-        u0 = std::max(u0, u1 / u2);
-      }
-      prepro.narrow_result_bounds( l0, u0 );
-    }
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      IfThenConstraint& c, PreprocessInfo& prepro) {
-    const auto& args = c.GetArguments();
-    prepro.narrow_result_bounds(std::min(lb(args[1]), lb(args[2])),
-        std::max(ub(args[1]), ub(args[2])));
-    prepro.set_result_type( MP_DISPATCH(GetModel()).
-                            common_type( { args[1], args[2] } ) );
-  }
-
-  ////////////////////// NONLINEAR FUNCTIONS //////////////////////
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      ExpConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, this->Infty());
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      ExpAConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, this->Infty());
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      LogConstraint& c, PreprocessInfo& ) {
-    NarrowVarBounds(c.GetArguments()[0], 0.0, this->Infty());
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      LogAConstraint& c, PreprocessInfo& ) {
-    NarrowVarBounds(c.GetArguments()[0], 0.0, this->Infty());
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      SinConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(-1.0, 1.0);
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      CosConstraint& , PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(-1.0, 1.0);
-  }
-
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      PLConstraint& , PreprocessInfo& ) {
-  }
-
-
-
-  //////////////////////////// CUSTOM CONSTRAINTS //////////////////////
-  ///
   //////////////////////////// SPECIFIC CONSTRAINT RESULT-TO-ARGUMENTS PROPAGATORS //////
   /// Currently we should propagate to all arguments, be it always the CTX_MIX.
 
   /// Allow ConstraintKeeper to PropagateResult(), use GetBackend() etc
   template <class , class , class >
   friend class ConstraintKeeper;
-
-public:
-  /// By default, set mixed context for argument variables
-  template <class Constraint>
-  void PropagateResult(Constraint& con, double lb, double ub, Context ctx) {
-    internal::Unused(&con, lb, ub, ctx);
-    con.SetContext(ctx);
-    PropagateResult2Args(con.GetArguments(),
-                         this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-  }
-
-  void PropagateResult(LinearFunctionalConstraint& con, double lb, double ub,
-                       Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2LinTerms(con.GetAffineExpr(),
-                             this->MinusInfty(), this->Infty(), +ctx);
-  }
-
-  void PropagateResult(QuadraticFunctionalConstraint& con, double lb, double ub,
-                       Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    const auto& args = con.GetArguments();
-    PropagateResult2LinTerms(args.GetLinTerms(),
-                             this->MinusInfty(), this->Infty(), +ctx);
-    PropagateResult2QuadTerms(args.GetQPTerms(),
-                              this->MinusInfty(), this->Infty(), +ctx);
-  }
-
-  void PropagateResult(QuadConRange& con, double lb, double ub,
-                       Context ctx) {
-    internal::Unused(lb, ub, ctx);
-    PropagateResult2LinTerms(con.GetLinTerms(), // TODO sense dep. on bounds
-                             this->MinusInfty(), this->Infty(), ctx);
-    PropagateResult2QuadTerms(con.GetQPTerms(), // TODO bounds?
-                              this->MinusInfty(), this->Infty(), ctx);
-  }
-
-  template <class Body, int sens>
-  void PropagateResult(IndicatorConstraint<
-                         AlgebraicConstraint< Body, AlgConRhs<sens> > >& con,
-                       double lb, double ub, Context ctx) {
-    internal::Unused(lb, ub, ctx);
-    PropagateResultOfInitExpr(con.get_binary_var(),
-                              this->MinusInfty(), this->Infty(),
-                              1==con.get_binary_value() ?  // b==1 means b in CTX_NEG
-                                Context::CTX_NEG : Context::CTX_POS);
-    PropagateResult2Args(con.get_constraint().GetBody(),   // Assume Con::BodyType is handled
-                             this->MinusInfty(), this->Infty(),
-                             0==sens ? Context::CTX_MIX :
-                                       0<sens ? +ctx : -ctx);
-  }
-
-  template <int type>
-  void PropagateResult(SOS_1or2_Constraint<type>& con, double lb, double ub, Context ) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    PropagateResult2Vars(con.get_vars(),
-                         this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-  }
-
-  void PropagateResult(ComplementarityLinear& con, double lb, double ub,
-                       Context ctx) {
-    internal::Unused(lb, ub, ctx);
-    PropagateResult2LinTerms(con.GetExpression().GetLinTerms(),
-                         lb, ub, Context::CTX_MIX);
-    PropagateResultOfInitExpr(con.GetVariable(), lb, ub, Context::CTX_MIX);
-  }
-
-  void PropagateResult(ComplementarityQuadratic& con, double lb, double ub,
-                       Context ctx) {
-    internal::Unused(lb, ub, ctx);
-    PropagateResult2LinTerms(con.GetExpression().GetLinTerms(),
-                    lb, ub, Context::CTX_MIX);
-    PropagateResult2QuadTerms(con.GetExpression().GetQPTerms(),
-                              lb, ub, Context::CTX_MIX);
-    PropagateResultOfInitExpr(con.GetVariable(), lb, ub, Context::CTX_MIX);
-  }
-
-  void PropagateResult(NotConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResultOfInitExpr(con.GetArguments()[0], 1.0-ub, 1.0-lb, -ctx);
-  }
-
-  void PropagateResult(AndConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2Vars(con.GetArguments(), lb, 1.0, +ctx);
-  }
-
-  void PropagateResult(OrConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2Vars(con.GetArguments(), 0.0, ub, +ctx);
-  }
-
-  void PropagateResult(IfThenConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    auto& args = con.GetArguments();
-    /// TODO consider bounds for then/else for the context:
-    PropagateResultOfInitExpr(args[0], 0.0, 1.0, Context::CTX_MIX);
-    PropagateResultOfInitExpr(args[1], this->MinusInfty(), this->Infty(), +ctx);
-    PropagateResultOfInitExpr(args[2], this->MinusInfty(), this->Infty(), -ctx);
-  }
-
-  void PropagateResult(AllDiffConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2Vars(con.GetArguments(), this->MinusInfty(), this->Infty(),
-                         Context::CTX_MIX);
-  }
-
-  void PropagateResult(NumberofConstConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2Vars(con.GetArguments(), this->MinusInfty(), this->Infty(),
-                         Context::CTX_MIX);
-  }
-
-  void PropagateResult(NumberofVarConstraint& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2Vars(con.GetArguments(), this->MinusInfty(), this->Infty(),
-                         Context::CTX_MIX);
-  }
-
-  void PropagateResult(CondLinConEQ& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2LinTerms(con.GetConstraint().GetBody(),
-                         lb, ub, Context::CTX_MIX);
-  }
-
-  void PropagateResult(CondQuadConEQ& con, double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2QuadAndLinTerms(con.GetConstraint().GetBody(),
-                         lb, ub, Context::CTX_MIX);
-  }
-
-  template <class Body, int kind>
-  void PropagateResult(
-      ConditionalConstraint<
-        AlgebraicConstraint< Body, AlgConRhs<kind> > >& con,
-      double lb, double ub, Context ctx) {
-    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
-    con.AddContext(ctx);
-    PropagateResult2Args(con.GetConstraint().GetBody(), lb, ub,
-                             kind>0 ? ctx : -ctx);
-  }
-
-
-  /// Propagate given bounds & context into arguments of a constraint.
-  /// The default template assumes it just a vector of variables.
-  /// @param lb, ub: bounds for each variable
-  template <class Args>
-  void PropagateResult2Args(
-      const Args& vars, double lb, double ub, Context ctx) {
-    PropagateResult2Vars(vars, lb, ub, ctx);
-  }
-
-  /// Specialize: propagate result into LinTerms
-  void PropagateResult2Args(
-      const LinTerms& lint, double lb, double ub, Context ctx) {
-    PropagateResult2LinTerms(lint, lb, ub, ctx);
-  }
-
-  /// Specialize: propagate result into QuadAndLinTerms
-  void PropagateResult2Args(
-      const QuadAndLinTerms& qlt, double lb, double ub, Context ctx) {
-    PropagateResult2QuadAndLinTerms(qlt, lb, ub, ctx);
-  }
-
-  /// Propagate result into QuadAndLinTerms
-  void PropagateResult2QuadAndLinTerms(
-      const QuadAndLinTerms& qlt, double lb, double ub, Context ctx) {
-    PropagateResult2LinTerms(qlt.GetLinTerms(), lb, ub, ctx);
-    PropagateResult2QuadTerms(qlt.GetQPTerms(), lb, ub, ctx);
-  }
-
-  /// Propagate result into LinTerms
-  void PropagateResult2LinTerms(const LinTerms& lint, double , double , Context ctx) {
-    for (auto i=lint.size(); i--; ) {
-      PropagateResultOfInitExpr(lint.var(i),      /// TODO bounds as well
-                                this->MinusInfty(), this->Infty(),
-                                (lint.coef(i)>=0.0) ? +ctx : -ctx);
-    }
-  }
-
-  /// Propagate given bounds & context into a vector of variables
-  /// @param lb, ub: bounds for each variable
-  template <class Vec>
-  void PropagateResult2Vars(const Vec& vars, double lb, double ub, Context ctx) {
-    for (auto v: vars) {
-      PropagateResultOfInitExpr(v, lb, ub, ctx);
-    }
-  }
-
-  /// Propagate result into QuadTerms
-  void PropagateResult2QuadTerms(const QuadTerms& quadt, double , double , Context ) {
-    for (auto i=quadt.size(); i--; ) {             /// TODO context for special cases
-      PropagateResultOfInitExpr(quadt.var1(i),     /// TODO bounds as well
-                                this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-      PropagateResultOfInitExpr(quadt.var2(i),
-                                this->MinusInfty(), this->Infty(), Context::CTX_MIX);
-    }
-  }
 
 
   //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
@@ -973,12 +361,23 @@ public:
   void set_var_lb(int var, double lb) { this->GetModel().set_lb(var, lb); }
   /// Shortcut ub(var)
   void set_var_ub(int var, double ub) { this->GetModel().set_ub(var, ub); }
+
+  /// Narrow variable domain range
+  void NarrowVarBounds(int var, double lb, double ub) {
+    auto& m = GetModel();
+    m.set_lb(var, std::max(m.lb(var), lb));
+    m.set_ub(var, std::min(m.ub(var), ub));
+    if (m.lb(var)>m.ub(var))             // TODO write .sol, report .iis
+      MP_INFEAS("empty variable domain");
+  }
+
   /// var_type()
   var::Type var_type(int var) const { return this->GetModel().var_type(var); }
   /// is_fixed()
   bool is_fixed(int var) const { return this->GetModel().is_fixed(var); }
   /// fixed_value()
-  double fixed_value(int var) const { return this->GetModel().fixed_value(var); }
+  double fixed_value(int var) const
+  { assert(is_fixed(var)); return this->GetModel().fixed_value(var); }
 
   /// MakeComplementVar()
   int MakeComplementVar(int bvar) {
@@ -1035,6 +434,13 @@ public:
     return var_info_[var];
   }
 
+  /// The internal flat model type
+  using ModelType = FlatModel;
+  /// The internal flat model object, const ref
+  const ModelType& GetModel() const { return *this; }
+  /// The internal flat model object, ref
+  ModelType& GetModel() { return *this; }
+
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////
@@ -1080,12 +486,21 @@ private:
         options_.relax_, 0, 1);
   }
 
-protected:
+public:
+  /// Wrapper about a specific preprocess option:
+  /// checks whether \a preprocessAnything_ is on.
   bool CanPreprocess(int f) const {
     return 0!=options_.preprocessAnything_ && 0!=f;
   }
 
-  using ModelType = FlatModel;
+  /// Whether preprocess equality result bounds
+  bool IfPreproEqResBounds() const
+  { return MPCD( CanPreprocess(options_.preprocessEqualityResultBounds_) ); }
+
+  /// Whether preprocess conditional equality of a binary variable
+  bool IfPreproEqBinVar() const
+  { return MPCD( CanPreprocess(options_.preprocessEqualityBvar_) ); }
+
 
 public:
   /// for tests. TODO make friends
@@ -1104,10 +519,6 @@ private:
 
 
 protected:
-  /// The internal flat model
-  const ModelType& GetModel() const { return *this; }
-  ModelType& GetModel() { return *this; }
-
   /////////////////////// CONSTRAINT KEEPERS /////////////////////////
   /// Constraint keepers and converters should be initialized after \a presolver_
 

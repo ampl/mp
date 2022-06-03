@@ -280,6 +280,7 @@ endfunction ()
 add_mp_library(format OBJECT
   include/mp/format.h include/mp/posix.h src/format.cc src/posix.cc)
 
+# gen-expr-info
 set(MP_EXPR_INFO_FILE ${MP_SOURCE_DIR}/src/expr-info.cc)
 add_executable(gen-expr-info EXCLUDE_FROM_ALL
   src/gen-expr-info.cc $<TARGET_OBJECTS:format>)
@@ -298,7 +299,7 @@ if (CMAKE_CROSSCOMPILING)
   # re-generated because we are cross compiling.
   add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE}
     COMMAND ${CMAKE_COMMAND} -E echo
-      "warning: cannot re-generate ${MP_EXPR_INFO_FILE}")
+    "warning: cannot re-generate ${MP_EXPR_INFO_FILE}")
 else ()
   add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE}
     COMMAND ${WINE} $<TARGET_FILE:gen-expr-info> ${MP_EXPR_INFO_FILE}
@@ -306,6 +307,8 @@ else ()
 endif ()
 add_to_folder(${MP_FOLDER_PREFIX}util gen-expr-info)
 
+
+# HEADER LISTS
 add_prefix(MP_HEADERS include/mp/
   ampls-c-api.h ampls-cpp-api.h arrayref.h basic-expr-visitor.h
   backend.h backend-app.h backend-base.h backend-mip.h
@@ -325,9 +328,11 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   constr_base.h constr_keeper.h constr_hash.h
   constr_std.h constr_static.h constr_functional.h
   constr_algebraic.h constr_general.h
+  constr_prepro.h constr_prop_down.h
   context.h
   converter.h converter_model.h convert_functional.h
   eexpr.h expr_algebraic.h expr_affine.h expr_quadratic.h
+  expr_bounds.h
   model_api_base.h model_api_connect.h
   obj_std.h preprocess.h problem_flattener.h)
 
@@ -418,7 +423,10 @@ check_cxx_source_compiles("
   struct S { typedef typename S<Types...>::type type; };
   int main() {}" MP_VARIADIC_TEMPLATES)
 
-if (MP_VARIADIC_TEMPLATES)
+# Option BUILD_EXAMPLES
+option(BUILD_EXAMPLES "Build nl-example" ON)
+
+if (MP_VARIADIC_TEMPLATES AND BUILD_EXAMPLES)
   add_executable(nl-example src/nl-example.cc)
   add_to_folder(${MP_FOLDER_PREFIX}util nl-example)
   target_link_libraries(nl-example mp)

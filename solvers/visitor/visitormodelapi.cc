@@ -1,7 +1,6 @@
 #include "visitormodelapi.h"
 
 #include "mp/model-mgr-with-std-pb.h"
-#include "mp/flat/problem_flattener.h"
 #include "mp/flat/redef/MIP/converter_mip.h"
 #include "mp/flat/model_api_connect.h"
 
@@ -23,7 +22,7 @@ void VisitorModelAPI::AddVariables(const VarArrayDef& v) {
   // TODO Add variables using solver API; typically, first convert the variable
   // type to the appropriate solver-defined type, then add them as a bunch
   int nInteger = 0, nContinuous = 0;
-  for (size_t i = v.size(); i--; )
+  for (auto i = v.size(); i--; )
     if (var::Type::CONTINUOUS == v.ptype()[i])
       nContinuous++;
     else

@@ -1,7 +1,6 @@
 #include "coptmodelapi.h"
 
 #include "mp/model-mgr-with-std-pb.h"
-#include "mp/flat/problem_flattener.h"
 #include "mp/flat/redef/MIP/converter_mip.h"
 #include "mp/flat/model_api_connect.h"
 
