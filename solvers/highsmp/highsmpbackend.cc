@@ -167,8 +167,7 @@ void HighsBackend::SetBasis(SolutionBasis basis) {
   auto constt = mv.GetConValues()(CG_Linear);
   assert(varstt.size());
   assert(constt.size());
-  VarStatii(varstt);
-  ConStatii(constt);
+  VarConStatii(varstt, constt);
 }
 
 ArrayRef<int> HighsBackend::VarStatii() {
@@ -219,7 +218,7 @@ ArrayRef<int> HighsBackend::ConStatii() {
   return conStatiii_;
 }
 
-void HighsBackend::VarStatii(ArrayRef<int> vst) {
+void HighsBackend::VarConStatii(ArrayRef<int> vst, ArrayRef<int> cst) {
   std::vector<int> stt(vst.data(), vst.data() + vst.size());
   std::vector<int> indicesOfMissing;
   for (auto j = stt.size(); j--; ) {
@@ -265,29 +264,25 @@ void HighsBackend::VarStatii(ArrayRef<int> vst) {
           stt[indicesOfMissing[i]] = kHighsBasisStatusNonbasic;
       }
   }
- HIGHS_CCALL(Highs_setBasis(lp(), stt.data(), NULL));
-}
-
-void HighsBackend::ConStatii(ArrayRef<int> cst) {
-  std::vector<int> stt(cst.data(), cst.data() + cst.size());
-  for (auto& s : stt) {
+  std::vector<int> cstt(cst.data(), cst.data() + cst.size());
+  for (auto& s : cstt) {
     switch ((BasicStatus)s) {
     case BasicStatus::bas:
       s = kHighsBasisStatusBasic;
       break;
-    case BasicStatus::none:   // for 'none', which is the status
-    case BasicStatus::upp:    // assigned to new rows, it seems good to guess
-    case BasicStatus::sup:    // a valid status,
-    case BasicStatus::low:    // as Gurobi 9.5 does not accept partial basis.
-    case BasicStatus::equ:    // For active constraints, it is usually 'sup'.
-    case BasicStatus::btw:    // We could compute slack to decide though.
+    case BasicStatus::none:
+    case BasicStatus::upp:   
+    case BasicStatus::sup:   
+    case BasicStatus::low:    
+    case BasicStatus::equ:    
+    case BasicStatus::btw:    
       s = kHighsBasisStatusNonbasic;
       break;
     default:
       MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
     }
   }
-  HIGHS_CCALL(Highs_setBasis(lp(), NULL, stt.data()));
+  HIGHS_CCALL(Highs_setBasis(lp(), stt.data(), cstt.data()));
 }
 
 void HighsBackend::AddHIGHSMessages() {

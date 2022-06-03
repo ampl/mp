@@ -135,8 +135,7 @@ protected:
   
   ArrayRef<int> VarStatii();
   ArrayRef<int> ConStatii();
-  void VarStatii(ArrayRef<int>);
-  void ConStatii(ArrayRef<int>);
+  void VarConStatii(ArrayRef<int>, ArrayRef<int>);
 
 private:
   /// These options are stored in the class
