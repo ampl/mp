@@ -3,6 +3,7 @@
 
 #include <string>
 #include <limits>
+#include <memory> // for auto_ptr
 
 #include "mp/backend-to-model-api.h"
 
@@ -66,6 +67,75 @@ protected:
   int NumQPCons() const;
   int NumSOSCons() const;
   int NumIndicatorCons() const;
+
+  class OrtoolsOptionsManager {
+
+  public:
+    struct Param {
+      std::string id_;
+      const std::string& id() const { return id_; }
+      Param() : id_() {}
+      Param(const std::string& id) : id_(id) {}
+      virtual std::string value() { throw std::runtime_error("Not implemented in base class."); }
+      virtual std::string toString() { return fmt::format("{}={}", id(), value()); }
+    };
+
+    struct IntParam : public Param {
+      IntParam(const std::string& id, int value) : Param(id), value_(value) { }
+      int value_;
+      std::string value() {
+        return fmt::format("{}", value_);
+      }
+    };
+    struct DoubleParam : public Param {
+      DoubleParam(const std::string& id, double value) : Param(id), value_(value) { }
+      double value_;
+      std::string value() {
+        return fmt::format("{}", value_);
+      }
+    };
+    struct StringParam : public Param {
+      StringParam(const std::string& id, const std::string& value) : Param(id), value_(value) { }
+      std::string value_;
+      std::string value() {
+        return value_;
+      }
+    };
+
+
+    void set(const std::string& id, int value) {
+      params_[id]=std::make_unique<IntParam>(id, value);
+    }
+    void set(const std::string& id, double value) {
+      params_[id] = std::make_unique<DoubleParam>(id, value);
+    }
+    void set(const std::string& id, const std::string& value) {
+      params_[id] = std::make_unique<StringParam>(id, value);
+    }
+    int getIntValue(const std::string& id) const {
+     return dynamic_cast<IntParam*>(params_.at(id).get())->value_;
+    }
+    double getDoubleValue(const std::string& id) const {
+      return dynamic_cast<DoubleParam* > (params_.at(id).get())->value_;
+    }
+    const std::string& getStringValue(const std::string& id) const {
+      return dynamic_cast<StringParam*> (params_.at(id).get())->value_;
+    }
+    const Param* get(const std::string& id) const {
+      return params_.at(id).get();
+    }
+    bool hasParams() { return params_.size() > 0; }
+
+    const std::map<std::string, std::unique_ptr <Param>>& params() const {
+      return params_;
+    };
+
+
+  
+  private:
+    std::map<std::string, std::unique_ptr <Param>> params_;
+  };
+  OrtoolsOptionsManager optionsManager_;
 };
 
 

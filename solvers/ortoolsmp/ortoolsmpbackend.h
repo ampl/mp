@@ -135,6 +135,7 @@ private:
     int outlev_ = 0;
     int threads_ = 0;
     double timelimit_ = 0;
+    std::string solverParams_;
   };
   Options storedOptions_;
 

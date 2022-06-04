@@ -57,6 +57,9 @@ OrtoolsBackend::~OrtoolsBackend() {
     throw std::runtime_error(fmt::format(
       "Failed to create solver {}", storedOptions_.solver_));
   set_lp(lp); // Assign it to the underling "common" object
+
+
+
 }
 
 void OrtoolsBackend::CloseSolver() {
@@ -103,6 +106,8 @@ pre::ValueMapDbl OrtoolsBackend::DualSolution() {
 ArrayRef<double> OrtoolsBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
+  if (storedOptions_.solver_ == "scip")
+    return pi;
   for (std::size_t i = 0; i < num_cons; i++)
     pi[i] = lp()->constraint(i)->dual_value();
   return pi;
@@ -188,9 +193,12 @@ void OrtoolsBackend::AddORTOOLSMessages() {
   if (auto nbi = BarrierIterations())
     AddToSolverMessage(
           fmt::format("{} barrier iterations\n", nbi));
-  if (auto nnd = NodeCount())
-    AddToSolverMessage(
-          fmt::format("{} branching nodes\n", nnd));
+  if (IsMIP())
+  {
+    if (auto nnd = NodeCount())
+      AddToSolverMessage(
+        fmt::format("{} branching nodes\n", nnd));
+  }
 }
 
 std::pair<int, std::string> OrtoolsBackend::ConvertORTOOLSStatus() {
@@ -228,11 +236,16 @@ void OrtoolsBackend::FinishOptionParsing() {
   if (storedOptions_.timelimit_ > 0)
     lp()->SetTimeLimit(absl::Seconds(storedOptions_.timelimit_));
   if (storedOptions_.threads_ > 0) lp()->SetNumThreads(storedOptions_.threads_);
+
+  for (auto& p : optionsManager_.params())
+     lp()->SetSolverSpecificParametersAsString(p.second->toString());
 }
 
 // LP Basis
 
 SolutionBasis OrtoolsBackend::GetBasis() {
+  if (storedOptions_.solver_ == "scip")
+    return { std::vector<int>(), std::vector<int>() };
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
@@ -330,6 +343,15 @@ void OrtoolsBackend::InitCustomOptions() {
                   "0*/1: Whether to write log lines (chatter) to stdout",
                   storedOptions_.outlev_, 0, 1);
 
+  AddStoredOption("scip:branching:lpgainnormalize scip_lpgainnormalize",
+    "Params for scip",
+    storedOptions_.solverParams_);
+
+
+
+  AddStoredOption("scip:conflict:useprop  scip_useprop",
+    "Params for scip",
+    storedOptions_.solverParams_);
   AddStoredOption("tech:threads threads",
                     "How many threads to use when using the barrier algorithm "
                     "or solving MIP problems; default 0 ==> automatic choice.",
@@ -357,6 +379,16 @@ void OrtoolsBackend::InitCustomOptions() {
                   "Whether to use presolve:\n"
                   "\n.. value-table::\n",
                   "PRESOLVE", values_01_noyes_1default_, 0);
+
+
+
+  AddSolverOption("scip:lp:presolving",
+    "presolve scip description", 
+    "lp/presolving", 0, 1);
+
+  AddSolverOption("scip:lp:scaling",
+    "scaling scip description",
+    "lp/scaling", 0, 1);
 
   AddSolverOption("alg:method method lpmethod simplex",
                   "Which algorithm to use for non-MIP problems or for the root "
