@@ -227,8 +227,8 @@ Basic :ref:`Model/solution I/O <NL-SOL-files>` and
 
 .. _problem-converters:
 
-Problem converters
-~~~~~~~~~~~~~~~~~~
+`mp::Problem` converters
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Given a problem instance in the standard format `mp::Problem`, several
 tools can be adapted to convert the instance for a particular solver.
@@ -250,10 +250,12 @@ tools can be adapted to convert the instance for a particular solver.
 Flat Model Converters
 ~~~~~~~~~~~~~~~~~~~~~
 
-`mp::FlatConverter` and `mp::MIPFlatConverter`
-facilitate conversion of flat models (i.e., models without expression trees).
-Constraints which are not natively accepted by a
-solver, are transformed into simpler forms. `mp::FlatConverter` and its subclasses
+`mp::FlatConverter` and `mp::MIPFlatConverter` represent and
+convert flat models (i.e., models :ref:`without expression trees <flat-solvers>`).
+Typically, a flat model
+is produced from an NL model by :ref:`Problem Flattener <problem-converters>`.
+As a next step, constraints which are not natively accepted by a
+solver, are transformed into simpler forms. This behavior
 can be flexibly parameterized for a particular solver, preferably
 via the solver's modeling API wrapper:
 

@@ -234,7 +234,11 @@ struct IndexRange {
   /// Return single index if it is
   operator int() const { assert(IfSingleIndex()); return beg; }
 
-  int beg=0, end=0;
+  /// begin index
+  int beg=0;
+
+  /// end (= last+1) index
+  int end=0;
 };
 
 } // namespace pre

@@ -2170,7 +2170,7 @@ class NameReader {
   }
 };
 
-// An NL handler that constructs an optimization problem using ProblemBuilder.
+/// An NL handler that constructs an optimization problem using ProblemBuilder.
 template <typename ProblemBuilder>
 class NLProblemBuilder {
  public:

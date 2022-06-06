@@ -18,16 +18,6 @@ class ValueNode;
 /// The node is specified as well
 class NodeRange {
 public:
-  /// Construct
-  NodeRange() = default;
-
-  /// Construct
-  NodeRange(const NodeRange& nr) noexcept : pvn_(nr.pvn_), ir_(nr.ir_) { }
-
-  /// Assign
-  NodeRange& operator=(const NodeRange& nr)
-  { pvn_=nr.pvn_; ir_=nr.ir_; return *this; }
-
   /// Get pvn
   ValueNode* GetValueNode() const { assert(pvn_); return pvn_; }
 
@@ -48,12 +38,14 @@ public:
   void ExtendBy(NodeRange nr)
   { assert(ExtendableBy(nr)); ir_.end = nr.ir_.end; }
 
+
 protected:
-  /// Declare ValueNode
+  /// Friend ValueNode
   friend class ValueNode;
 
   /// Assign members, only accessible to ValueNode
   void Assign(ValueNode* pvn, NodeIndexRange ir) { pvn_=pvn; ir_=ir; }
+
 
 private:
   ValueNode* pvn_ = nullptr;
