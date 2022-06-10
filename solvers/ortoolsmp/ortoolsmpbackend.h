@@ -88,8 +88,8 @@ public:
   { return std::vector<double>{ObjectiveValue()}; } 
 
 
-
-
+  void InitGlopOptions();
+  void InitScipOptions();
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 public:  // public for static polymorphism
@@ -135,7 +135,6 @@ private:
     int outlev_ = 0;
     int threads_ = 0;
     double timelimit_ = 0;
-    std::string solverParams_;
   };
   Options storedOptions_;
 

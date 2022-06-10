@@ -315,7 +315,39 @@ static const mp::OptionValueInfo values_method[] = {
   {"11", "Primal simplex", 1}, 
   {"12", "Barrier", 2}};
 
+static const mp::OptionValueInfo values_scaling_method[] = {
+  {"0", "Default", 0},
+  {"1", "Equilibration", 1},
+  {"2", "Linear program", 2} };
 
+void OrtoolsBackend::InitGlopOptions() {
+  AddSolverOption("glop:lp:solution_feasibility_tolerance feas_tolerance ",
+    "feasibility glop description (default 1e-6)",
+    "solution_feasibility_tolerance", 0.0, DBL_MAX);
+
+    AddSolverOption("glop:pre:use_preprocessing use_preprocessing",
+      "Whether or not we use advanced preprocessing techniques (default 1)",
+      "use_preprocessing", 0, 1);
+
+    AddSolverOption("glop:pre:scaling_method scaling_method",
+      "Scaling method to use (default 0):\n"
+      "Whether to scale the problem:\n"
+      "\n.. value-table::\n",
+      "scaling_method", values_scaling_method, 0);
+
+  AddSolverOption("glop:alg:num_omp_threads num_omp_threads",
+    "Number of threads in the OMP parallel sections (default 1)",
+    "num_omp_threads", 1, INT_MAX);
+}
+void OrtoolsBackend::InitScipOptions() {
+  AddSolverOption("scip:lp:presolving",
+    "presolve scip description",
+    "lp/presolving", 0, 1);
+
+  AddSolverOption("scip:lp:scaling",
+    "scaling scip description",
+    "lp/scaling", 0, 1);
+}
 
 void OrtoolsBackend::InitCustomOptions() {
 
@@ -342,16 +374,7 @@ void OrtoolsBackend::InitCustomOptions() {
   AddStoredOption("tech:outlev outlev",
                   "0*/1: Whether to write log lines (chatter) to stdout",
                   storedOptions_.outlev_, 0, 1);
-
-  AddStoredOption("scip:branching:lpgainnormalize scip_lpgainnormalize",
-    "Params for scip",
-    storedOptions_.solverParams_);
-
-
-
-  AddStoredOption("scip:conflict:useprop  scip_useprop",
-    "Params for scip",
-    storedOptions_.solverParams_);
+  
   AddStoredOption("tech:threads threads",
                     "How many threads to use when using the barrier algorithm "
                     "or solving MIP problems; default 0 ==> automatic choice.",
@@ -379,17 +402,7 @@ void OrtoolsBackend::InitCustomOptions() {
                   "Whether to use presolve:\n"
                   "\n.. value-table::\n",
                   "PRESOLVE", values_01_noyes_1default_, 0);
-
-
-
-  AddSolverOption("scip:lp:presolving",
-    "presolve scip description", 
-    "lp/presolving", 0, 1);
-
-  AddSolverOption("scip:lp:scaling",
-    "scaling scip description",
-    "lp/scaling", 0, 1);
-
+  
   AddSolverOption("alg:method method lpmethod simplex",
                   "Which algorithm to use for non-MIP problems or for the root "
                   "node of MIP problems:\n"
@@ -405,7 +418,10 @@ void OrtoolsBackend::InitCustomOptions() {
         "model. Choosing a different scaling option can sometimes "
         "improve performance for particularly numerically difficult "
         "models.", "SCALING", values_01_noyes_1default_, 1);
-}
+
+  InitScipOptions();
+  InitGlopOptions();
+  }
 
 } // namespace mp
 

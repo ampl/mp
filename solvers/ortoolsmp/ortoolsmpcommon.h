@@ -77,7 +77,7 @@ protected:
       Param() : id_() {}
       Param(const std::string& id) : id_(id) {}
       virtual std::string value() { throw std::runtime_error("Not implemented in base class."); }
-      virtual std::string toString() { return fmt::format("{}={}", id(), value()); }
+      virtual std::string toString() { return fmt::format("{}:{}", id(), value()); }
     };
 
     struct IntParam : public Param {

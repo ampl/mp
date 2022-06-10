@@ -274,7 +274,7 @@ SolverAppOptionParser::SolverAppOptionParser(BasicSolver &s)
   app_options.Add<&SolverAppOptionParser::ShowUsage>(
         '?', "show usage and exit");
   app_options.Add<&SolverAppOptionParser::EndOptions>('-', "end of options");
-  app_options.Add<&SolverAppOptionParser::ShowSolverOptions>(
+  app_options.AddWithParam<&SolverAppOptionParser::ShowSolverOptions>(
         '=', "show solver options and exit");
   app_options.Add<&SolverAppOptionParser::ShowSolverOptionsASL>(
     'a', "show solver options (ASL style, 1st synonyms if provided) and exit");
@@ -335,18 +335,29 @@ bool SolverAppOptionParser::ShowSolverOptionsASL() {
   }
   return false;
 }
+bool contains(const char* name, const char* substr) {
+  std::string n(name);
+  std::string sub = fmt::format("{}:", substr);
+  return n.find(sub) != std::string::npos;
 
-bool SolverAppOptionParser::ShowSolverOptions() {
+
+}
+bool SolverAppOptionParser::ShowSolverOptions(const char* param) {
   fmt::MemoryWriter writer;
   const char* option_header = solver_.option_header();
   internal::FormatRST(writer, option_header);
   if (*option_header)
     writer << '\n';
   solver_.Print("{}", writer.c_str());
+  if(param)
+    solver_.Print("{} ", param);
   solver_.Print("Options:\n");
   const int DESC_INDENT = 6;
   for (Solver::option_iterator
     i = solver_.option_begin(), end = solver_.option_end(); i != end; ++i) {
+    if (param)
+      if (!contains(i->name(), param))
+        continue;
     writer.clear();
     writer << '\n' << i->name();
     const auto& syns = i->inline_synonyms();
