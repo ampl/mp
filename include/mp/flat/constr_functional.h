@@ -5,6 +5,7 @@
   * Functional flat constraints
   */
 
+#include "mp/error.h"
 #include "mp/flat/constr_static.h"
 
 
@@ -210,14 +211,24 @@ public:
   const QuadraticExpr& GetQuadExpr() const { return quad_expr_; }
   const Arguments& GetArguments() const { return GetQuadExpr(); }
 
-  /// produce respective static constraint
-  /// TODO only use >=< depending on context?
-  QuadConEQ to_quadratic_constraint() const {
+  /// add respective static constraint.
+  /// Use >=< depending on context.
+  template <class Converter>
+  void AddQuadraticConstraint(Converter& cvt) const {
     auto le = GetQuadExpr().GetLinTerms();
     le.add_term(-1.0, FunctionalConstraint::GetResultVar());
     auto qt = GetQuadExpr().GetQPTerms();
-    return { { std::move(le), std::move(qt) },
-      -GetQuadExpr().constant_term() };
+    if (GetContext().IsMixed())
+      cvt.AddConstraint( QuadConEQ{ { std::move(le), std::move(qt) },
+      -GetQuadExpr().constant_term() } );
+    else if (GetContext().HasPositive())
+      cvt.AddConstraint( QuadConGE{ { std::move(le), std::move(qt) },
+      -GetQuadExpr().constant_term() } );
+    else if (GetContext().HasNegative())
+      cvt.AddConstraint( QuadConLE{ { std::move(le), std::move(qt) },
+      -GetQuadExpr().constant_term() } );
+    else
+      MP_RAISE("QuadraticFuncCon: no context");
   }
 };
 

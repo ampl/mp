@@ -242,19 +242,19 @@ protected:
     pre::NodeRange nr;                                 // value presolve link
     if (pr.qt.empty()) {
       if (pr.compl_var<0)
-        nr = AddConstraint( LinConRange{ std::move(pr.lt),
+        nr = AddConstraint_AS_ROOT( LinConRange{ std::move(pr.lt),
                             { pr.lb, pr.ub }} );
       else
-        nr = AddConstraint(
+        nr = AddConstraint_AS_ROOT(
               ComplementarityLinear{
                 AffineExpr(std::move(pr.lt), pr.const_term), pr.compl_var } );
     } else {
       if (pr.compl_var<0)
-        nr = AddConstraint( QuadConRange{
+        nr = AddConstraint_AS_ROOT( QuadConRange{
                               { std::move(pr.lt), std::move(pr.qt) },
                               { pr.lb, pr.ub }} );
       else
-        nr = AddConstraint(
+        nr = AddConstraint_AS_ROOT(
               ComplementarityQuadratic{
                 QuadraticExpr
                 { { std::move(pr.lt), std::move(pr.qt) }, pr.const_term },
@@ -735,6 +735,16 @@ public:
 protected:
   //////////////////////// ADD CUSTOM CONSTRAINT ///////////////////////
   //////////////////////// Takes ownership /////////////////////////////
+
+  /// Add constraint and propagate result into arguments.
+  /// Use this when any variables can be the result of an expression
+  /// (flat constraint)
+  template <class Constraint>
+  pre::NodeRange AddConstraint_AS_ROOT(Constraint&& con) {
+    return GetFlatCvt().AddConstraint_AS_ROOT(std::move(con));
+  }
+
+  /// Add constraint, do not propagate result into arguments
   template <class Constraint>
   pre::NodeRange AddConstraint(Constraint&& con) {
     return GetFlatCvt().AddConstraint(std::move(con));

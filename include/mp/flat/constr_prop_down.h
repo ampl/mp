@@ -46,6 +46,17 @@ public:
                               MPD( MinusInfty() ), MPD( Infty() ), +ctx);
   }
 
+  /// Propagate a root algebraic range constraint
+  template <class Body>
+  void PropagateResult(AlgebraicConstraint<Body, AlgConRange>& con) {
+    /// Distinguish bounds' finiteness for context
+    auto ctx = con.lb()<=MPD( PracticallyMinusInfty() ) ?
+          Context::CTX_NEG : con.ub()>=MPD( PracticallyInfty() ) ?
+            Context::CTX_POS : Context::CTX_MIX;
+    PropagateResult2Args(con.GetBody(), con.lb(), con.ub(), ctx);
+  }
+
+  /// Not used?
   void PropagateResult(QuadConRange& con, double lb, double ub,
                        Context ctx) {
     internal::Unused(lb, ub, ctx);
@@ -77,21 +88,20 @@ public:
                         MPD( MinusInfty() ), MPD( Infty() ), Context::CTX_MIX) );
   }
 
-  void PropagateResult(ComplementarityLinear& con, double lb, double ub,
-                       Context ctx) {
-    internal::Unused(lb, ub, ctx);
-    MPD( PropagateResult2LinTerms(con.GetExpression().GetLinTerms(),
-                         lb, ub, Context::CTX_MIX) );
-    MPD( PropagateResultOfInitExpr(con.GetVariable(), lb, ub, Context::CTX_MIX) );
+  /// Propagate root complementarity constraint
+  template <class ExprBody>
+  void PropagateResult(ComplementarityConstraint<ExprBody>& con) {
+    MPD( PropagateResult(con,
+                         MPD(MinusInfty()), MPD(Infty()), Context::CTX_MIX) );
   }
 
-  void PropagateResult(ComplementarityQuadratic& con, double lb, double ub,
-                       Context ctx) {
+  /// Not used?
+  template <class ExprBody>
+  void PropagateResult(ComplementarityConstraint<ExprBody>& con,
+                       double lb, double ub, Context ctx) {
     internal::Unused(lb, ub, ctx);
-    MPD( PropagateResult2LinTerms(con.GetExpression().GetLinTerms(),
-                    lb, ub, Context::CTX_MIX) );
-    MPD( PropagateResult2QuadTerms(con.GetExpression().GetQPTerms(),
-                              lb, ub, Context::CTX_MIX) );
+    MPD( PropagateResult2Args(con.GetExpression().GetBody(),
+                         lb, ub, Context::CTX_MIX) );
     MPD( PropagateResultOfInitExpr(con.GetVariable(), lb, ub, Context::CTX_MIX) );
   }
 
@@ -165,8 +175,9 @@ public:
       double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
+    auto ctx_new = kind>0 ? ctx : kind<0 ? -ctx : Context::CTX_MIX;
     MPD( PropagateResult2Args(con.GetConstraint().GetBody(), lb, ub,
-                             kind>0 ? ctx : -ctx) );
+                             ctx_new) );
   }
 
 

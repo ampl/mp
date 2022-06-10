@@ -29,6 +29,9 @@ public:
   /// Has CTX_MIX?
   bool IsMixed() const { return CTX_MIX==value_; }
 
+  /// Get value
+  CtxVal GetValue() const { return value_; }
+
   /// Positivize
   Context operator+() {
     switch (value_) {
@@ -74,7 +77,7 @@ public:
 
 
 private:
-  CtxVal value_;
+  CtxVal value_=CTX_NONE;
 };
 
 } // namespace mp
