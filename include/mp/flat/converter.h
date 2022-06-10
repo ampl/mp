@@ -72,6 +72,12 @@ public:
 
 
 public:
+  /// Reverse propagate result variable of an expression
+  void PropagateResultOfInitExpr(int var, Context ctx) {
+    PropagateResultOfInitExpr(var, lb(var), ub(var), ctx);
+  }
+
+  /// Reverse propagate result variable of an expression
   void PropagateResultOfInitExpr(int var, double lb, double ub, Context ctx) {
     NarrowVarBounds(var, lb, ub);
     if (HasInitExpression(var)) {
@@ -184,7 +190,8 @@ protected:
   //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
   ///
 public: // for ConstraintKeeper
-  /// Assume mixed context if not set in the constraint
+  /// RunConversion() of a constraint:
+  /// Assume mixed context if not set.
   /// TODO Make sure context is always propagated for all constraints and objectives
   template <class Constraint>
   void RunConversion(const Constraint& con, int i) {
@@ -213,19 +220,20 @@ public: // for ConstraintKeeper
   //////////////////////////// SOME SPECIFIC CONSTRAINT CONVERTERS
   /// ///////////////////////////////////// ///////////////////////////
 
-  /// If backend does not like LDC, we can redefine it
+  /// If backend does not like LFC, we redefine it here
   void Convert(const LinearFunctionalConstraint& ldc) {
     this->AddConstraint(ldc.to_linear_constraint());
   }
 
-  /// If backend does not like QDC, we can redefine it
+  /// If backend does not like QFC, we redefine it
   void Convert(const QuadraticFunctionalConstraint& qdc) {
-    this->AddConstraint(qdc.to_quadratic_constraint());
+    qdc.AddQuadraticConstraint(*(Impl*)this);
   }
 
 
 public:
-  /// ADD CUSTOM CONSTRAINT
+  /// ADD CUSTOM CONSTRAINT, does not propagate result
+  /// (use AddConstraint_AS_ROOT() otherwise).
   ///
   /// Use only for non-mapped constraints. For functional constraints
   /// stored __WITH_MAP, use AssignResult(Var)2Args().
@@ -237,6 +245,20 @@ public:
     auto node_range =
         AddConstraintAndTryNoteResultVariable( std::move(con) );
     return node_range;
+  }
+
+  /// ADD CUSTOM CONSTRAINT and propagate result
+  /// (use AddConstraint() otherwise).
+  ///
+  /// Use only for non-mapped constraints. For functional constraints
+  /// stored __WITH_MAP, use AssignResult(Var)2Args().
+  /// TODO non-functional constraints __WITH_MAP.
+  /// Takes ownership.
+  /// @return Node reference for the stored constraint
+  template <class Constraint>
+  pre::NodeRange AddConstraint_AS_ROOT(Constraint con) {
+    MPD( PropagateResult(con) );
+    return AddConstraint( std::move(con) );
   }
 
   template <class Constraint>
@@ -357,10 +379,26 @@ public:
   template <class VarArray>
   double ub_array(const VarArray& va) const
   { return this->GetModel().ub_array(va); }
-  /// Shortcut lb(var)
+  /// Set lb(var)
   void set_var_lb(int var, double lb) { this->GetModel().set_lb(var, lb); }
-  /// Shortcut ub(var)
+  /// Set ub(var)
   void set_var_ub(int var, double ub) { this->GetModel().set_ub(var, ub); }
+  /// Set lb(var), propagate context if functional result
+  void set_var_lb_context(int var, double lb, Context ctx) {
+    set_var_lb(var, lb);
+    PropagateResultOfInitExpr(var, ctx);
+  }
+  /// Set ub(var), propagate context
+  void set_var_ub_context(int var, double ub, Context ctx) {
+    set_var_ub(var, ub);
+    PropagateResultOfInitExpr(var, ctx);
+  }
+  /// Set bounds(var), propagate context
+  void set_var_bounds_context(int var, double lb, double ub, Context ctx) {
+    set_var_lb(var, lb);
+    set_var_ub(var, ub);
+    PropagateResultOfInitExpr(var, ctx);
+  }
 
   /// Narrow variable domain range
   void NarrowVarBounds(int var, double lb, double ub) {
