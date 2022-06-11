@@ -45,5 +45,5 @@ if __name__ == "__main__":
     destDir = copyAllFiles(solversDir, baseName, newName)
 
     print(f"\n\nNew driver files created in {destDir}")
-    print(f"\nAdd the following line to ${os.path.join(solversDir, 'CMakeLists.txt')}:\n  add_direct_solver({newName})")
+    print(f"\nAdd the following line to ${os.path.join(solversDir, 'CMakeLists.txt')}:\n  add_ampl_backend({newName})")
     print("Solver libraries to link with are probably needed, find the relevant section in the documentation")
