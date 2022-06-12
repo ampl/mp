@@ -230,6 +230,8 @@ endfunction()
 
 add_ampl_backend(visitor DLL_RUNTIME)
 
+add_ampl_backend(mosek DLL_RUNTIME MODULE MOSEK 
+  LIBRARIES ${MOSEK_LIBS} ${CMAKE_DL_LIBS})
 add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT 
   LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
 
