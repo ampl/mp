@@ -1,7 +1,7 @@
 [
   {
     "name": "warmstart_01 warmstart=2",
-    "tags": [ "linear"],
+    "tags": [ "linear", "warmstart"],
     "options": { "ANYSOLVER_options": "warmstart=2 debug=1" },
     "values": {
       "Buy['BEEF'].test_ini_pri": -10,
@@ -11,7 +11,7 @@
   },
  {
     "name": "mipstart_01",
-    "tags": [ "linear"],
+    "tags": [ "linear", "mipstart"],
     "options": { "ANYSOLVER_options": "warmstart=1 debug=1" },
     "objective": 1,
     "values": {

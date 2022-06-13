@@ -24,7 +24,7 @@ public:
   static const char* GetTypeName() { return "CplexModelAPI"; }
 
   /// Called before problem input
-  void InitProblemModificationPhase();
+  void InitProblemModificationPhase(const FlatModelInfo*);
   /// After
   void FinishProblemModificationPhase();
 

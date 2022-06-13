@@ -163,19 +163,27 @@ class LinearFunctionalConstraint :
     public NumericFunctionalConstraintTraits {
   AffineExpr affine_expr_;
 public:
-  static const char* GetName() { return "LinearFunctionalConstraint"; }
+  /// Constraint type name
+  static const char* GetTypeName()
+  { return "LinearFunctionalConstraint"; }
+  /// Typedef Arguments
   using Arguments = AffineExpr;
+  /// using GetResultVar()
   using FunctionalConstraint::GetResultVar;
   /// A constructor ignoring result variable: use AssignResultToArguments() then
   LinearFunctionalConstraint(AffineExpr&& ae) noexcept :
     affine_expr_(std::move(ae)) {  // TODO sort+merge elements?
   }
+  /// Constructor with result variable known
   LinearFunctionalConstraint(int r, AffineExpr&& ae) noexcept :
     FunctionalConstraint(r), affine_expr_(std::move(ae)) {
     /// TODO sort+merge elements?
   }
+  /// Get the affine expr
   const AffineExpr& GetAffineExpr() const { return affine_expr_; }
+  /// Get the arguments (affine expr)
   const Arguments& GetArguments() const { return GetAffineExpr(); }
+  /// Produce corresp linear constraint
   LinConEQ to_linear_constraint() const {
     const auto& ae = GetAffineExpr();
     auto le = ae.GetLinTerms();
@@ -191,8 +199,11 @@ class QuadraticFunctionalConstraint :
     public NumericFunctionalConstraintTraits {
   QuadraticExpr quad_expr_;
 public:
-  static const char* GetName() { return "QuadraticFunctionalConstraint"; }
+  /// Constraint type name
+  static const char* GetTypeName() { return "QuadraticFunctionalConstraint"; }
+  /// Typedef Arguments
   using Arguments = QuadraticExpr;
+  /// using GetResultVar()
   using FunctionalConstraint::GetResultVar;
 
   /// A constructor ignoring result variable: use AssignResultToArguments() then
@@ -201,17 +212,18 @@ public:
     /// TODO sort+merge elements?
   }
 
-  /// Constructor: result var + body
+  /// Constructor: known result var + body
   QuadraticFunctionalConstraint(int r, QuadraticExpr&& qe) noexcept :
     FunctionalConstraint(r), quad_expr_(std::move(qe)) {
     /// TODO sort+merge elements?
   }
 
-  /// Getters
+  /// Getter: quad expr
   const QuadraticExpr& GetQuadExpr() const { return quad_expr_; }
+  /// GetArguments(): get quad expr
   const Arguments& GetArguments() const { return GetQuadExpr(); }
 
-  /// add respective static constraint.
+  /// add respective static constraint to a converter.
   /// Use >=< depending on context.
   template <class Converter>
   void AddQuadraticConstraint(Converter& cvt) const {

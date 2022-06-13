@@ -27,7 +27,7 @@ public:
   GurobiModelAPI(Env& e) : EnvKeeper(e) { }
 
   /// This is called before model is pushed to the Backend
-  void InitProblemModificationPhase();
+  void InitProblemModificationPhase(const FlatModelInfo*);
   /// Chance to call GRBupdatemodel()
   void FinishProblemModificationPhase();
 

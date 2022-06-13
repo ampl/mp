@@ -17,7 +17,7 @@ CreateCplexModelMgr(CplexCommon& cc, Env& e,
 }
 
 
-void CplexModelAPI::InitProblemModificationPhase() { }
+void CplexModelAPI::InitProblemModificationPhase(const FlatModelInfo*) { }
 
 void CplexModelAPI::AddVariables(const VarArrayDef& v) {
   std::vector<char> vtypes(v.size());

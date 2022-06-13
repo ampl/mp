@@ -1,7 +1,7 @@
 [
   {
     "name": "infeas_int_01 iisfind=1",
-    "tags": [ "linear"],
+    "tags": [ "linear", "iis"],
     "options": {
         "ANYSOLVER_options": "iisfind=1"
     },
@@ -15,7 +15,7 @@
   },
   {
     "name": "infeas_int_02_vars iisfind=1 presolve 0",
-    "tags": [ "linear"],
+    "tags": [ "linear", "iis"],
     "options": {
         "ANYSOLVER_options": "iisfind=1",
         "presolve": 0,
@@ -31,7 +31,7 @@
   },
   {
     "name": "infeas_int_02_vars feasrelax=4 ubpen=300",
-    "tags": [ "linear"],
+    "tags": [ "linear", "feasrelax"],
     "options": {
         "ANYSOLVER_options": "feasrelax=4 ubpen=300"
     },
@@ -39,7 +39,7 @@
   },
   {
     "name": "infeas_int_01 feasrelax=5",
-    "tags": [ "linear"],
+    "tags": [ "linear", "feasrelax"],
     "options": {
         "ANYSOLVER_options": "feasrelax=5"
     },
@@ -47,7 +47,7 @@
   },
   {
     "name": "infeas_int_01 feasrelax=6",
-    "tags": [ "linear"],
+    "tags": [ "linear", "feasrelax"],
     "options": {
         "ANYSOLVER_options": "feasrelax=6"
     },

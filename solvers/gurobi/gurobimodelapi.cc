@@ -21,7 +21,7 @@ const char* GurobiModelAPI::GetTypeName()
 //////////////////////////////////////////////////////////////////////////
 /////////////////////////// Modeling interface ///////////////////////////
 //////////////////////////////////////////////////////////////////////////
-void GurobiModelAPI::InitProblemModificationPhase() { }
+void GurobiModelAPI::InitProblemModificationPhase(const FlatModelInfo*) { }
 
 ///////////////////////////////////////////////////////
 void GurobiModelAPI::FinishProblemModificationPhase() {
@@ -38,7 +38,7 @@ void GurobiModelAPI::AddVariables(const VarArrayDef& v) {
   GRB_CALL( GRBaddvars(model(), (int)v.size(), 0,
                        NULL, NULL, NULL, NULL, // placeholders, no matrix here
                        (double*)v.plb(), (double*)v.pub(),
-                                          vtypes.data(), NULL) );
+                       vtypes.data(), (char**)v.pnames()) );
 }
 
 void GurobiModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
@@ -51,7 +51,7 @@ void GurobiModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
     GRB_CALL( GRBsetobjectiven(model(), iobj, 0,           // default priority 0
                                /// Gurobi allows opposite sense by weight sign
                                lo.obj_sense()==GetGurobiMainObjSense() ? 1.0 : -1.0,
-                               0.0, 0.0, nullptr,
+                               0.0, 0.0, lo.name(),
                                0.0, lo.num_terms(),
                                (int*)lo.vars().data(), (double*)lo.coefs().data()) );
   }
@@ -77,17 +77,17 @@ obj::Type GurobiModelAPI::GetGurobiMainObjSense() const { return main_obj_sense_
 void GurobiModelAPI::AddConstraint( const LinConLE& lc ) {
   GRB_CALL( GRBaddconstr(model(), lc.size(),
                          (int*)lc.pvars(), (double*)lc.pcoefs(),
-                         GRB_LESS_EQUAL, lc.rhs(), NULL) );
+                         GRB_LESS_EQUAL, lc.rhs(), lc.name()) );
 }
 void GurobiModelAPI::AddConstraint( const LinConEQ& lc ) {
   GRB_CALL( GRBaddconstr(model(), lc.size(),
                          (int*)lc.pvars(), (double*)lc.pcoefs(),
-                         GRB_EQUAL, lc.rhs(), NULL) );
+                         GRB_EQUAL, lc.rhs(), lc.name()) );
 }
 void GurobiModelAPI::AddConstraint( const LinConGE& lc ) {
   GRB_CALL( GRBaddconstr(model(), lc.size(),
                          (int*)lc.pvars(), (double*)lc.pcoefs(),
-                         GRB_GREATER_EQUAL, lc.rhs(), NULL) );
+                         GRB_GREATER_EQUAL, lc.rhs(), lc.name()) );
 }
 
 void GurobiModelAPI::AddConstraint( const QuadConLE& qc ) {
@@ -95,7 +95,7 @@ void GurobiModelAPI::AddConstraint( const QuadConLE& qc ) {
   const auto& qt = qc.GetQPTerms();
   GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
                           qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                          (double*)qt.pcoefs(), GRB_LESS_EQUAL, qc.rhs(), NULL) );
+                          (double*)qt.pcoefs(), GRB_LESS_EQUAL, qc.rhs(), qc.name()) );
 }
 
 void GurobiModelAPI::AddConstraint( const QuadConEQ& qc ) {
@@ -103,7 +103,7 @@ void GurobiModelAPI::AddConstraint( const QuadConEQ& qc ) {
   const auto& qt = qc.GetQPTerms();
   GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
                           qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                          (double*)qt.pcoefs(), GRB_EQUAL, qc.rhs(), NULL) );
+                          (double*)qt.pcoefs(), GRB_EQUAL, qc.rhs(), qc.name()) );
 }
 
 void GurobiModelAPI::AddConstraint( const QuadConGE& qc ) {
@@ -111,13 +111,13 @@ void GurobiModelAPI::AddConstraint( const QuadConGE& qc ) {
   const auto& qt = qc.GetQPTerms();
   GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
                           qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                          (double*)qt.pcoefs(), GRB_GREATER_EQUAL, qc.rhs(), NULL) );
+                          (double*)qt.pcoefs(), GRB_GREATER_EQUAL, qc.rhs(), qc.name()) );
 }
 
 
 void GurobiModelAPI::AddConstraint(const MaxConstraint &mc)  {
   const auto& args = mc.GetArguments();
-  GRB_CALL( GRBaddgenconstrMax(model(), NULL,
+  GRB_CALL( GRBaddgenconstrMax(model(), mc.name(),
                                mc.GetResultVar(),
                                (int)args.size(), args.data(),
                                MinusInfinity()) );

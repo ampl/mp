@@ -15,9 +15,15 @@ namespace mp {
 /// Custom constraints to derive from, so that overloaded default settings work
 class BasicConstraint {
 public:
-  /// Name for messages
+  /// Constraint type name for messages
   static constexpr const char* GetTypeName()
   { return "BasicConstraint"; }
+  /// Constraint name
+  const char* GetName() const { return name_.c_str(); }
+  /// Constraint name
+  const char* name() const { return GetName(); }
+  /// Set constraint name
+  void SetName(std::string nm) { name_ = std::move(nm); }
   /// Whether context is meaningful here
   static constexpr bool HasContext() { return false; }
   /// Get context, if meaningful
@@ -26,6 +32,10 @@ public:
   void SetContext(Context ) const { }
   /// For functional constraints, result variable index
   int GetResultVar() const { return -1; }
+
+
+private:
+  std::string name_;
 };
 
 /// A special constraint 'var=...', which defines a result variable
@@ -33,7 +43,7 @@ class FunctionalConstraint : public BasicConstraint {
   int result_var_=-1;                // defined var is optional
   mutable Context ctx;               // always store context
 public:
-  /// Name for messages
+  /// Constraint type name for messages
   static constexpr const char* GetTypeName()
   { return "FunctionalConstraint"; }
   /// Constructor
@@ -84,7 +94,7 @@ using DblParamArray1 = ParamArrayN<double, 1>;
 /// @param Args: arguments type
 /// @param Params: parameters type
 /// @param NumOrLogic: base class defining a numeric or logic constraint
-/// @param Id: a struct with name_
+/// @param Id: a struct with GetTypeName()
 template <class Args, class Params, class NumOrLogic, class Id>
 class CustomFunctionalConstraint :
   public FunctionalConstraint, public NumOrLogic, public Id {
@@ -92,8 +102,8 @@ class CustomFunctionalConstraint :
   Params params_;
 
 public:
-  /// Constraint name for messages
-  static const char* GetTypeName() { return Id::name(); }
+  /// Constraint type name for messages
+  static const char* GetTypeName() { return Id::GetTypeName(); }
   /// Default constructor
   CustomFunctionalConstraint() = default;
   /// Arguments typedef
@@ -160,7 +170,7 @@ struct CondConId {
       typeid(Con).name();
     return descr.c_str();
   }
-  static const char* name() {
+  static const char* GetTypeName() {
     static std::string nm =
       std::string("Conditional< ") +
       typeid(Con).name() + " >";
@@ -221,7 +231,7 @@ public:
 #define DEF_CUSTOM_FUNC_CONSTR_WITH_PRM(Name, Args, Params, NumLogic, Descr) \
   struct Name ## Id { \
     static constexpr const char* description() { return Descr; } \
-    static constexpr const char* name()        { return #Name; } \
+    static constexpr const char* GetTypeName() { return #Name; } \
   }; \
   using Name = CustomFunctionalConstraint<Args, Params, NumLogic, Name ## Id>
 

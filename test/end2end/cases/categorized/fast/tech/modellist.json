@@ -1,7 +1,7 @@
 [
   {
     "name" : "dietu_stt server=sc",
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "gurobi_server"],
     "options": { "ANYSOLVER_options": "server=sc" },
     "values": {
       "solve_result_num": 601
@@ -9,7 +9,7 @@
   },
   {
     "name" : "dietu_stt cloudid=sc cloudkey=sck",
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "gurobi_cloud"],
     "options": { "ANYSOLVER_options": "cloudid=sc cloudkey=sck" },
     "values": {
       "solve_result_num": 604

@@ -213,8 +213,11 @@ public: // for ConstraintKeeper
   template <class Constraint>
   void Convert(const Constraint& ) {
     MP_RAISE(
-          std::string("Convertion of constraint type '") +
-            Constraint::GetTypeName() + "' not implemented");
+          std::string("Constraint type '") +
+            Constraint::GetTypeName() +
+            "' is neither accepted by '" +
+            ModelAPI::GetTypeName() +
+            "', not is conversion implemented");
   }
 
   //////////////////////////// SOME SPECIFIC CONSTRAINT CONVERTERS
