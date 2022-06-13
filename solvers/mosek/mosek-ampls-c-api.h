@@ -25,7 +25,7 @@ int AMPLSOpenMosek(AMPLS_MP_Solver* slv, const char* slv_opt);
 void AMPLSCloseMosek(AMPLS_MP_Solver* slv);
 
 /// Extract the Mosek model handle
-Solver::SolverModel* GetMosekmodel(AMPLS_MP_Solver* slv);
+MSKtask_t GetMosekmodel(AMPLS_MP_Solver* slv);
 
 
 #endif // MOSEKAMPLSCAPI_H

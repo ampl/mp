@@ -16,36 +16,44 @@ CreateMosekModelMgr(MosekCommon& cc, Env& e,
 }
 
 
-void MosekModelAPI::InitProblemModificationPhase() { }
+void MosekModelAPI::InitProblemModificationPhase(const FlatModelInfo* info) { }
 
 void MosekModelAPI::AddVariables(const VarArrayDef& v) {
-  // TODO Add variables using solver API; typically, first convert the variable
-  // type to the appropriate solver-defined type, then add them as a bunch
-  int nInteger = 0, nContinuous = 0;
-  for (auto i = v.size(); i--; )
-    if (var::Type::CONTINUOUS == v.ptype()[i])
-      nContinuous++;
-    else
-      nInteger++;
-  fmt::print("Adding {} continuous and {} integer variables.\n", nContinuous, nInteger);
-
-  /* Typical implementation
-  for (size_t i=v.size(); i--; )
-    vtypes[i] = var::Type::CONTINUOUS == v.ptype()[i] ?
-          MOSEK_CONTINUOUS : MOSEK_INTEGER;
-  MOSEK_CCALL(MOSEK_AddCols(lp(), (int)v.size(), NULL, NULL,
-    NULL, NULL, NULL, vtypes.data(), v.plb(), v.pub(),  NULL)); */
+  MOSEK_CCALL(MSK_appendvars(lp(), v.size()));
+  for (size_t i = v.size(); i--; ) {
+    MSKboundkeye k;
+    bool freelb = v.plb()[i] == -std::numeric_limits<double>::infinity();
+    bool freeub = v.pub()[i] == std::numeric_limits<double>::infinity();
+    if (freelb && freeub)
+      k = MSK_BK_FR;
+    else if (freelb == freeub)
+    {
+      if (v.plb()[i] == v.pub()[i])
+        k = MSK_BK_FX;
+      else
+        k = MSK_BK_RA;
+    } else {
+      if (freelb)
+        k = MSK_BK_UP;
+      else
+        k = MSK_BK_LO;
+    }
+    MOSEK_CCALL(MSK_putvarbound(lp(), i, k, v.plb()[i], v.pub()[i]));
+    MOSEK_CCALL(MSK_putvartype(lp(), i,
+      var::Type::CONTINUOUS == v.ptype()[i] ? MSK_VAR_TYPE_CONT :
+      MSK_VAR_TYPE_INT));
+  }
 }
 
 void MosekModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
-  if (iobj<1) {
-    fmt::format("Setting first linear objective: {} terms.\n", lo.num_terms());
-    /*
-    MOSEK_CCALL(MOSEK_SetObjSense(lp(), 
-                    obj::Type::MAX==lo.obj_sense() ? MOSEK_MAXIMIZE : MOSEK_MINIMIZE) );
-    MOSEK_CCALL(MOSEK_SetColObj(lp(), lo.num_terms(),
-                           lo.vars().data(), lo.coefs().data()) ); */
-  } else {
+  if (iobj < 1) {
+    MOSEK_CCALL(MSK_putobjsense(lp(),
+      obj::Type::MAX == lo.obj_sense() ? MSK_OBJECTIVE_SENSE_MAXIMIZE : MSK_OBJECTIVE_SENSE_MINIMIZE));
+    for (size_t i = 0; i < lo.num_terms(); i++) {
+      MOSEK_CCALL(MSK_putcj(lp(), lo.vars()[i], lo.coefs()[i]));
+    }
+  }
+  else {
 //    TODO If we support mutiple objectives, pass them to the solver
     fmt::format("Setting {}-th linear objective: {} terms.\n", iobj, lo.num_terms());
   }
@@ -58,84 +66,59 @@ void MosekModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
     SetLinearObjective(iobj, qo);                         // add the linear part
     const auto& qt = qo.GetQPTerms();
     fmt::format("Quadratic part is made of {} terms\n", qt.size());
-
-    // Typical implementation
-    //MOSEK_CCALL(MOSEK_SetQuadObj(lp(), qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-    //  (double*)qt.pcoefs()));
+    // TODO
   }
   else {
     throw std::runtime_error("Multiple quadratic objectives not supported");
   }
 }
 
+
 void MosekModelAPI::AddConstraint(const LinConRange& lc) {
-  fmt::print("Adding range linear constraint {}\n", lc.GetTypeName());
-  fmt::print("{} <=", lc.lb());
-  for (size_t i = 0; i < lc.size(); i++)
-  {
-    fmt::print(" {}", lc.pcoefs()[i] >= 0 ? '+' : '-');
-    if (std::fabs(lc.pcoefs()[i]) != 1.0)
-      fmt::print("{}*", lc.pcoefs()[i]);
-    fmt::print("x{}", lc.pvars()[i]);
-  }
-  fmt::print(" <= {}\n", lc.ub());
-//  MOSEK_CCALL(MOSEK_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(), 
- //   NULL, lc.lb(), lc.ub(), NULL));
+  MOSEK_CCALL(MSK_appendcons(lp(), 1));
+  int nc;
+  MSK_getnumcon(lp(), &nc);
+  MOSEK_CCALL(MSK_putarow(lp(), nc, lc.size(), lc.pvars(), lc.pcoefs()));
+  MOSEK_CCALL(MSK_putconbound(lp(), nc, MSK_BK_RA, lc.lb(), lc.ub()));
 }
 void MosekModelAPI::AddConstraint(const LinConLE& lc) {
-  fmt::print("Adding <= linear constraint {}\n", lc.GetTypeName());
- // char sense = MOSEK_LESS_EQUAL;
- // MOSEK_CCALL(MOSEK_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
-  //  sense, lc.rhs(), 0, NULL));
+  MOSEK_CCALL(MSK_appendcons(lp(), 1));
+  int nc;
+  MSK_getnumcon(lp(), &nc);
+  MOSEK_CCALL(MSK_putarow(lp(), nc, lc.size(), lc.pvars(), lc.pcoefs()));
+  MOSEK_CCALL(MSK_putconbound(lp(), nc, MSK_BK_UP, lc.lb(), lc.ub()));
 }
 void MosekModelAPI::AddConstraint(const LinConEQ& lc) {
-  fmt::print("Adding == linear constraint {}\n", lc.GetTypeName());
-//  char sense = MOSEK_EQUAL;
-// MOSEK_CCALL(MOSEK_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
-//   sense, lc.rhs(), 0, NULL));
+  MOSEK_CCALL(MSK_appendcons(lp(), 1));
+  int nc;
+  MSK_getnumcon(lp(), &nc);
+  MOSEK_CCALL(MSK_putarow(lp(), nc, lc.size(), lc.pvars(), lc.pcoefs()));
+  MOSEK_CCALL(MSK_putconbound(lp(), nc, MSK_BK_FX, lc.lb(), lc.ub()));
 }
 void MosekModelAPI::AddConstraint(const LinConGE& lc) {
-  fmt::print("Adding >= linear constraint {}\n", lc.GetTypeName());
-  //char sense = MOSEK_GREATER_EQUAL;
-  //MOSEK_CCALL(MOSEK_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
-  //  sense, lc.rhs(), 0, NULL));
+  MOSEK_CCALL(MSK_appendcons(lp(), 1));
+  int nc;
+  MSK_getnumcon(lp(), &nc);
+  MOSEK_CCALL(MSK_putarow(lp(), nc, lc.size(), lc.pvars(), lc.pcoefs()));
+  MOSEK_CCALL(MSK_putconbound(lp(), nc, MSK_BK_LO, lc.lb(), lc.ub()));
 }
 
 void MosekModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
   fmt::print("Adding indicator constraint {}\n", ic.GetTypeName());
-  /*MOSEK_CCALL(MOSEK_AddIndicator(lp(),
-    ic.get_binary_var(), ic.get_binary_value(),
-    (int)ic.get_constraint().size(),
-    ic.get_constraint().pvars(),
-    ic.get_constraint().pcoefs(),
-    MOSEK_LESS_EQUAL,
-    ic.get_constraint().rhs()));*/
-                               
+  // TODO
 }
 void MosekModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
   fmt::print("Adding indicator constraint {}\n", ic.GetTypeName());
-  /*MOSEK_CCALL(MOSEK_AddIndicator(lp(),
-    ic.get_binary_var(), ic.get_binary_value(),
-    (int)ic.get_constraint().size(),
-    ic.get_constraint().pvars(),
-    ic.get_constraint().pcoefs(),
-    MOSEK_EQUAL,
-    ic.get_constraint().rhs()));*/
+  // TODO
 }
 void MosekModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
   fmt::print("Adding indicator constraint {}\n", ic.GetTypeName());
-  /*MOSEK_CCALL(MOSEK_AddIndicator(lp(),
-    ic.get_binary_var(), ic.get_binary_value(),
-    (int)ic.get_constraint().size(),
-    ic.get_constraint().pvars(),
-    ic.get_constraint().pcoefs(),
-    MOSEK_GREATER_EQUAL,
-    ic.get_constraint().rhs()));*/
-
+  // TODO
 }
 
 void MosekModelAPI::AddConstraint(const QuadConRange& qc) {
   fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
+  // TODO
   /*
   const auto& lt = qc.GetLinTerms();
   const auto& qt = qc.GetQPTerms();
@@ -147,6 +130,7 @@ void MosekModelAPI::AddConstraint(const QuadConRange& qc) {
 
 void MosekModelAPI::AddConstraint( const QuadConLE& qc ) {
   fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
+  // TODO
   /*
   const auto& lt = qc.GetLinTerms();
   const auto& qt = qc.GetQPTerms();
@@ -158,6 +142,7 @@ void MosekModelAPI::AddConstraint( const QuadConLE& qc ) {
 
 void MosekModelAPI::AddConstraint( const QuadConEQ& qc ) {
   fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
+  // TODO
   /*
   const auto& lt = qc.GetLinTerms();
   const auto& qt = qc.GetQPTerms();
@@ -169,6 +154,7 @@ void MosekModelAPI::AddConstraint( const QuadConEQ& qc ) {
 
 void MosekModelAPI::AddConstraint( const QuadConGE& qc ) {
   fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
+  // TODO
   /*
   const auto& lt = qc.GetLinTerms();
   const auto& qt = qc.GetQPTerms();
@@ -180,6 +166,7 @@ void MosekModelAPI::AddConstraint( const QuadConGE& qc ) {
 
 void MosekModelAPI::AddConstraint(const SOS1Constraint& sos) {
   fmt::print("Adding SOS1 constraint {}\n", sos.GetTypeName());
+  // TODO
 /*  int type = MOSEK_SOS_TYPE1;
   int beg = 0;
   const int size = sos.size();
@@ -190,6 +177,7 @@ void MosekModelAPI::AddConstraint(const SOS1Constraint& sos) {
 
 void MosekModelAPI::AddConstraint(const SOS2Constraint& sos) {
   fmt::print("Adding SOS1 constraint {}\n", sos.GetTypeName());
+  // TODO
   /*int type = MOSEK_SOS_TYPE2;
   int beg = 0;
   const int size = sos.size();

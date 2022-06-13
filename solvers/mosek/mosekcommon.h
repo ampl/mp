@@ -53,24 +53,16 @@ protected:
 protected:
 };
 
-
-//MSKrescodee(MSKAPI MSK_getresponseclass) (
-  //MSKrescodee r,
- // MSKrescodetypee * rc);
-
-
-
-/// Convenience macro
-#define MOSEK_RETCODE_OK MSK_RES_ERR_LICENSE
+#define MOSEK_RETCODE_OK MSK_RES_OK
 #define MOSEK_CCALL( call ) do { MSKrescodee e= call;\
 if (e != MOSEK_RETCODE_OK) {\
 MSKrescodee e2; MSKrescodetypee et;\
 e2 = MSK_getresponseclass(e, &et);\
 if(e2 != MOSEK_RETCODE_OK) MP_RAISE(\
-    fmt::format("  Call failed: '{}' with code {}, unknown type", #call, e ));\
+    fmt::format("Call failed: '{}' with code {}, unknown type. Error in getresponseclass: {}", #call, e,e2 ));\
 if ((int)e2 > (int)MSK_RESPONSE_TRM) MP_RAISE(\
-    fmt::format("  Call failed: '{}' with code {}, type {}", #call, e, e2));\
-fmt::print("  Warning {} while calling '{}'", #call, e);\
+    fmt::format("Call failed: '{}' with code {}, type {}", #call, e, e2));\
+fmt::print("\nWarning {} while calling '{}'", e, #call);\
   }} while (0)
 
 } // namespace mp

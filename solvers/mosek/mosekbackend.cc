@@ -58,7 +58,7 @@ MosekBackend::~MosekBackend() {
 void MosekBackend::OpenSolver() {
   int status = MSK_RES_OK;
   MSKtask_t task;
-  status = MSK_makeemptytask(NULL, &task);
+  status = MSK_maketask(NULL, 0, 0, &task);
   if (status)
     throw std::runtime_error( fmt::format(
           "Failed to create task, error code {}.", status ) );
@@ -88,6 +88,7 @@ bool MosekBackend::IsMIP() const {
 bool MosekBackend::IsQCP() const {
   // TODO
 // return getIntAttr(MOSEK_INTATTR_QELEMS) > 0;
+  return false;
 }
 
 Solution MosekBackend::GetSolution() {
@@ -458,49 +459,6 @@ void MosekBackend::SetBasis(SolutionBasis basis) {
   ConStatii(constt);
 }
 
-
-void MosekBackend::ComputeIIS() {
-  //MOSEK_CCALL(MOSEK_ComputeIIS(lp()));
-  SetStatus(ConvertMOSEKStatus());   // could be new information
-}
-
-IIS MosekBackend::GetIIS() {
-  auto variis = VarsIIS();
-  auto coniis = ConsIIS();
-  // TODO: This can be moved to a parent class?
-  auto mv = GetValuePresolver().PostsolveIIS(
-    { variis, coniis });
-  return { mv.GetVarValues()(), mv.GetConValues()() };
-}
-
-ArrayRef<int> MosekBackend::VarsIIS() {
-  return ArrayRef<int>();
-//  return getIIS(lp(), NumVars(), MOSEK_GetColLowerIIS, MOSEK_GetColUpperIIS);
-}
-pre::ValueMapInt MosekBackend::ConsIIS() {
-  /*auto iis_lincon = getIIS(lp(), NumLinCons(), MOSEK_GetRowLowerIIS, MOSEK_GetRowUpperIIS);
-
-  std::vector<int> iis_soscon(NumSOSCons());
-  MOSEK_GetSOSIIS(lp(), NumSOSCons(), NULL, iis_soscon.data());
-  ConvertIIS2AMPL(iis_soscon);
-
-  std::vector<int> iis_indicon(NumIndicatorCons());
-  MOSEK_GetIndicatorIIS(lp(), NumIndicatorCons(), NULL, iis_indicon.data());
-  ConvertIIS2AMPL(iis_indicon);
-
-  return { {{ CG_Linear, iis_lincon },
-      { CG_SOS, iis_soscon },
-      { CG_Logical, iis_indicon }} };
-      */
-  return { {{ 0, std::vector<int>()}} };
-}
-
-void MosekBackend::AddMIPStart(ArrayRef<double> x0) {
-  //MOSEK_CCALL(MOSEK_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
-
-}
-
-
 } // namespace mp
 
 
@@ -516,7 +474,7 @@ void AMPLSCloseMosek(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-Solver::SolverModel* GetMosekmodel(AMPLS_MP_Solver* slv) {
+MSKtask_t GetMosekmodel(AMPLS_MP_Solver* slv) {
   return
     dynamic_cast<mp::MosekBackend*>(AMPLSGetBackend(slv))->lp();
 }
