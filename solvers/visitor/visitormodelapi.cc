@@ -18,6 +18,7 @@ CreateVisitorModelMgr(VisitorCommon& cc, Env& e,
 
 void VisitorModelAPI::InitProblemModificationPhase(
     const FlatModelInfo*) {
+  // Allocate storage if needed:
   // auto n_linear_cons =
   //   flat_model_info->GetNumberOfConstraintsOfGroup(CG_LINEAR);
   // preallocate_linear_cons( n_linear_cons );
@@ -41,12 +42,13 @@ void VisitorModelAPI::AddVariables(const VarArrayDef& v) {
     vtypes[i] = var::Type::CONTINUOUS == v.ptype()[i] ?
           VISITOR_CONTINUOUS : VISITOR_INTEGER;
   VISITOR_CCALL(VISITOR_AddCols(lp(), (int)v.size(), NULL, NULL,
-    NULL, NULL, NULL, vtypes.data(), v.plb(), v.pub(),  NULL)); */
+    NULL, NULL, NULL, vtypes.data(), v.plb(), v.pub(), v.pnames())); */
 }
 
 void VisitorModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   if (iobj<1) {
-    fmt::format("Setting first linear objective: {} terms.\n", lo.num_terms());
+    fmt::format("Setting first linear objective \"{}\": {} terms.\n",
+                lo.name(), lo.num_terms());
     /*
     VISITOR_CCALL(VISITOR_SetObjSense(lp(), 
                     obj::Type::MAX==lo.obj_sense() ? VISITOR_MAXIMIZE : VISITOR_MINIMIZE) );
@@ -67,7 +69,8 @@ void VisitorModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& 
     fmt::format("Quadratic part is made of {} terms\n", qt.size());
 
     // Typical implementation
-    //VISITOR_CCALL(VISITOR_SetQuadObj(lp(), qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
+    //VISITOR_CCALL(VISITOR_SetQuadObj(lp(), qt.size(),
+    //  (int*)qt.pvars1(), (int*)qt.pvars2(),
     //  (double*)qt.pcoefs()));
   }
   else {
@@ -76,7 +79,7 @@ void VisitorModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& 
 }
 
 void VisitorModelAPI::AddConstraint(const LinConRange& lc) {
-  fmt::print("Adding range linear constraint {}\n", lc.GetTypeName());
+  fmt::print("Adding range linear constraint {}\n", lc.name());
   fmt::print("{} <=", lc.lb());
   for (size_t i = 0; i < lc.size(); i++)
   {
@@ -87,29 +90,29 @@ void VisitorModelAPI::AddConstraint(const LinConRange& lc) {
   }
   fmt::print(" <= {}\n", lc.ub());
 //  VISITOR_CCALL(VISITOR_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(), 
- //   NULL, lc.lb(), lc.ub(), NULL));
+ //   NULL, lc.lb(), lc.ub(), lc.name()));
 }
 void VisitorModelAPI::AddConstraint(const LinConLE& lc) {
-  fmt::print("Adding <= linear constraint {}\n", lc.GetTypeName());
+  fmt::print("Adding <= linear constraint {}\n", lc.GetName());
  // char sense = VISITOR_LESS_EQUAL;
  // VISITOR_CCALL(VISITOR_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
   //  sense, lc.rhs(), 0, NULL));
 }
 void VisitorModelAPI::AddConstraint(const LinConEQ& lc) {
-  fmt::print("Adding == linear constraint {}\n", lc.GetTypeName());
+  fmt::print("Adding == linear constraint {}\n", lc.GetName());
 //  char sense = VISITOR_EQUAL;
 // VISITOR_CCALL(VISITOR_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
 //   sense, lc.rhs(), 0, NULL));
 }
 void VisitorModelAPI::AddConstraint(const LinConGE& lc) {
-  fmt::print("Adding >= linear constraint {}\n", lc.GetTypeName());
+  fmt::print("Adding >= linear constraint {}\n", lc.GetName());
   //char sense = VISITOR_GREATER_EQUAL;
   //VISITOR_CCALL(VISITOR_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
   //  sense, lc.rhs(), 0, NULL));
 }
 
 void VisitorModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
-  fmt::print("Adding indicator constraint {}\n", ic.GetTypeName());
+  fmt::print("Adding indicator constraint {}\n", ic.GetName());
   /*VISITOR_CCALL(VISITOR_AddIndicator(lp(),
     ic.get_binary_var(), ic.get_binary_value(),
     (int)ic.get_constraint().size(),
@@ -120,7 +123,7 @@ void VisitorModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
                                
 }
 void VisitorModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
-  fmt::print("Adding indicator constraint {}\n", ic.GetTypeName());
+  fmt::print("Adding indicator constraint {}\n", ic.GetName());
   /*VISITOR_CCALL(VISITOR_AddIndicator(lp(),
     ic.get_binary_var(), ic.get_binary_value(),
     (int)ic.get_constraint().size(),
@@ -130,7 +133,7 @@ void VisitorModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
     ic.get_constraint().rhs()));*/
 }
 void VisitorModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
-  fmt::print("Adding indicator constraint {}\n", ic.GetTypeName());
+  fmt::print("Adding indicator constraint {}\n", ic.GetName());
   /*VISITOR_CCALL(VISITOR_AddIndicator(lp(),
     ic.get_binary_var(), ic.get_binary_value(),
     (int)ic.get_constraint().size(),
@@ -142,7 +145,7 @@ void VisitorModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
 }
 
 void VisitorModelAPI::AddConstraint(const QuadConRange& qc) {
-  fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
+  fmt::print("Adding quadratic constraint {}\n", qc.GetName());
   /*
   const auto& lt = qc.GetLinTerms();
   const auto& qt = qc.GetQPTerms();
@@ -153,7 +156,7 @@ void VisitorModelAPI::AddConstraint(const QuadConRange& qc) {
 }
 
 void VisitorModelAPI::AddConstraint( const QuadConLE& qc ) {
-  fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
+  fmt::print("Adding quadratic constraint {}\n", qc.GetName());
   /*
   const auto& lt = qc.GetLinTerms();
   const auto& qt = qc.GetQPTerms();
@@ -164,7 +167,7 @@ void VisitorModelAPI::AddConstraint( const QuadConLE& qc ) {
 }
 
 void VisitorModelAPI::AddConstraint( const QuadConEQ& qc ) {
-  fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
+  fmt::print("Adding quadratic constraint {}\n", qc.GetName());
   /*
   const auto& lt = qc.GetLinTerms();
   const auto& qt = qc.GetQPTerms();
@@ -175,7 +178,7 @@ void VisitorModelAPI::AddConstraint( const QuadConEQ& qc ) {
 }
 
 void VisitorModelAPI::AddConstraint( const QuadConGE& qc ) {
-  fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
+  fmt::print("Adding quadratic constraint {}\n", qc.GetName());
   /*
   const auto& lt = qc.GetLinTerms();
   const auto& qt = qc.GetQPTerms();
@@ -186,7 +189,7 @@ void VisitorModelAPI::AddConstraint( const QuadConGE& qc ) {
 }
 
 void VisitorModelAPI::AddConstraint(const SOS1Constraint& sos) {
-  fmt::print("Adding SOS1 constraint {}\n", sos.GetTypeName());
+  fmt::print("Adding SOS1 constraint {}\n", sos.GetName());
 /*  int type = VISITOR_SOS_TYPE1;
   int beg = 0;
   const int size = sos.size();
@@ -196,7 +199,7 @@ void VisitorModelAPI::AddConstraint(const SOS1Constraint& sos) {
 }
 
 void VisitorModelAPI::AddConstraint(const SOS2Constraint& sos) {
-  fmt::print("Adding SOS1 constraint {}\n", sos.GetTypeName());
+  fmt::print("Adding SOS1 constraint {}\n", sos.GetName());
   /*int type = VISITOR_SOS_TYPE2;
   int beg = 0;
   const int size = sos.size();

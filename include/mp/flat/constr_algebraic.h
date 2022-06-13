@@ -22,6 +22,7 @@ template <class Body, class RhsOrRange>
 class AlgebraicConstraint :
     public BasicConstraint, public Body, public RhsOrRange {
 public:
+  /// Constraint type name
   static const std::string& GetTypeName() {
     static std::string name {
       std::string("AlgebraicConstraint:") +

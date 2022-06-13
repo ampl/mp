@@ -18,6 +18,7 @@ namespace mp {
 template <class Con>
 class IndicatorConstraint: public BasicConstraint {
 public:
+  /// Constraint type name
   static const std::string& GetTypeName() {
     static std::string name
       { "IndicatorConstraint[" + Con::GetTypeName() + ']' };
@@ -72,6 +73,7 @@ class SOS_1or2_Constraint: public BasicConstraint {
   const std::vector<int> v_;
   const std::vector<double> w_;
 public:
+  /// Constraint type name
   static const char* GetTypeName()
   { return 1==type ? name1_ : name2_; }
 
@@ -107,7 +109,7 @@ public:
   /// The expression type
   using ExprType = Expr;
 
-  /// Name
+  /// Constraint type name
   static const std::string& GetTypeName() {
     static std::string name
       { std::string("ComplementarityConstraint[") +
