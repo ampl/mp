@@ -25,9 +25,9 @@ public:
   /// Constraint type name
   static const std::string& GetTypeName() {
     static std::string name {
-      std::string("AlgebraicConstraint:") +
-      Body::GetTypeName() + "::" +
-      RhsOrRange::GetTypeName() };
+      std::string("AlgebraicConstraint< ") +
+      Body::GetTypeName() + ", " +
+      RhsOrRange::GetTypeName() + " >" };
     return name;
   }
 

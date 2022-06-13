@@ -2,7 +2,7 @@
   {
     "name" : "dietobj",
     "objective" : 74.273820,
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "multiobj"],
     "files" : ["dietobj.mod", "dietobj.dat"]
   },
   {
@@ -21,7 +21,7 @@
   },
   {
     "name" : "dietobj multiobj=1",
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "multiobj"],
     "files" : ["dietobj.mod", "dietobj.dat"],
     "options": { "ANYSOLVER_options": "multiobj=1" },
     "values": {
@@ -34,7 +34,7 @@
   },
   {
     "name" : "dietobj multiobj=1 obj:2:priority=10",
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "multiobj", "obj_priority"],
     "files" : ["dietobj.mod", "dietobj.dat"],
     "options": { "ANYSOLVER_options": "multiobj=1 obj:2:priority=10" },
     "values": {
@@ -55,7 +55,7 @@
   },
   {
     "name" : "obj_suf_01 multiobj=1",
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "multiobj"],
     "options": { "ANYSOLVER_options": "multiobj=1" },
     "values": {
       "x": 0,

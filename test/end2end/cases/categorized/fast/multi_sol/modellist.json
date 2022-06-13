@@ -6,7 +6,7 @@
   },
   {
     "name": "multi_sol_01 countsolutions=1, check .nsol",
-    "tags": [ "linear"],
+    "tags": [ "linear", "multisol"],
     "objective": 1,
     "options": { "ANYSOLVER_options": "countsolutions=1" },
     "values": {
@@ -15,7 +15,7 @@
   },
   {
     "name": "multi_sol_01 poolgap=0.1 solutionstub=stub",
-    "tags": [ "linear"],
+    "tags": [ "linear", "multisol"],
     "objective": 1,
     "options": { "ANYSOLVER_options": "poolgap=0.1 solutionstub=stub" },
     "values": {
@@ -24,7 +24,7 @@
   },
   {
     "name": "multi_sol_01 poolgapabs=0.1 solutionstub=stub poolmode=2",
-    "tags": [ "linear"],
+    "tags": [ "linear", "multisol"],
     "objective": 1,
     "options": { "ANYSOLVER_options": "poolgapabs=0.1 solutionstub=stub poolmode=2" },
     "values": {
@@ -33,7 +33,7 @@
   },
   {
     "name": "multi_sol_01 poollimit=2 solutionstub=stub",
-    "tags": [ "linear"],
+    "tags": [ "linear", "multisol"],
     "objective": 1,
     "options": { "ANYSOLVER_options": "poollimit=2 solutionstub=stub" },
     "values": {
@@ -42,7 +42,7 @@
   },
   {
     "name": "multi_sol_01 sol:count=1, check .npool",
-    "tags": [ "linear"],
+    "tags": [ "linear", "multisol"],
     "objective": 1,
     "options": { "ANYSOLVER_options": "countsolutions=1" },
     "values": {
@@ -51,7 +51,7 @@
   },
   {
     "name": "multi_sol_01 poolgap=0.1 ams_stub=stub",
-    "tags": [ "linear"],
+    "tags": [ "linear", "multisol"],
     "objective": 1,
     "options": { "ANYSOLVER_options": "poolgap=0.1 ams_stub=stub" },
     "values": {

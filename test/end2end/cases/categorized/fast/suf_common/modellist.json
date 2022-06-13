@@ -1,7 +1,7 @@
 [
   {
     "name": "unbdd_01__solvers_pri_iss28",
-    "tags": [ "linear"],
+    "tags": [ "linear", "unbdd"],
     "values": {
       "u1": 0,
       "u2": 3,
@@ -11,7 +11,7 @@
   },
   {
     "name": "mipbound_01 bestbound=1 return_mipgap=3",
-    "tags": [ "linear"],
+    "tags": [ "linear", "return_mipgap"],
     "options": { "ANYSOLVER_options": "bestbound=1 return_mipgap=3" },
     "objective": 1,
     "values": {
@@ -25,14 +25,14 @@
   },
   {
     "name": "mipbound_01 bestbound=1 return_mipgap=3 objno=0",
-    "tags": [ "linear"],
+    "tags": [ "linear", "return_mipgap"],
     "options": { "ANYSOLVER_options": "bestbound=1 return_mipgap=3 objno=0" }
   },
   {
     "name" : "dietu_stt sensitivity=1",
     "objective" : 74.273820,
     "options": { "ANYSOLVER_options": "solnsens=1" },
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "sens"],
     "values": {
       "Buy['BEEF'].senslbhi": 7.129251700680272,
       "Buy['MCH'].senslblo": -7.274725274725274,
@@ -48,7 +48,7 @@
     "name" : "diet_max solnsens=1",
     "files" : ["diet_max.mod", "diet.dat"],
     "options": { "ANYSOLVER_options": "solnsens=1" },
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "sens"],
     "objective" : 1128.642,
     "values": {
       "Diet['A'].sensrhslo": 7850,
@@ -65,7 +65,7 @@
     "name" : "diet_nonrng_max solnsens=1",
     "files" : ["diet_nonrng_max.mod", "diet.dat"],
     "options": { "ANYSOLVER_options": "solnsens=1" },
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "sens"],
     "objective" : 1128.642,
     "values": {
       "Diet_Max['A'].sensrhslo": 7850,
@@ -84,7 +84,7 @@
   },
   {
     "name": "sos_01",
-    "tags": [ "linear", "integer"],
+    "tags": [ "linear", "integer", "sos"],
     "objective": 32,
     "values": {
       "x[2]": 3,
@@ -94,18 +94,18 @@
   },
   {
     "name": "sos_01 sos=0",
-    "tags": [ "linear", "integer" ],
+    "tags": [ "linear", "integer", "sos" ],
     "options": { "ANYSOLVER_options": "sos=0" },
     "objective": 37.5
   },
   {
     "name": "sos_02_intref",
-    "tags": [ "linear", "integer" ],
+    "tags": [ "linear", "integer", "sos" ],
     "objective": 9
   },
   {
     "name": "mip_lazy_01",
-    "tags": [ "linear", "integer" ],
+    "tags": [ "linear", "integer", "lazy_user_cuts" ],
     "options": { "ANYSOLVER_options": "debug=1" },
     "objective": 1,
     "values": {

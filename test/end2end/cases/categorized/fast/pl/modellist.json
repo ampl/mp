@@ -44,7 +44,7 @@
   {
     "name" : "steelpl1 pl_linearize=0",
     "objective" :  457572.8571,
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "plinear"],
     "options": {
         "pl_linearize": 0
     },
@@ -53,7 +53,7 @@
   {
     "name" : "steelpl2 pl_linearize=0",
     "objective" :  -1576814.857,
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "plinear"],
     "options": {
         "pl_linearize": 0
     },
@@ -62,7 +62,7 @@
   {
     "name" : "steelpl3 pl_linearize=0",
     "objective" :  -293856347,
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "plinear"],
     "options": {
         "pl_linearize": 0
     },
@@ -71,7 +71,7 @@
   {
     "name" : "steelpl4 pl_linearize=0",
     "objective" :  1194250,
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "plinear"],
     "options": {
         "pl_linearize": 0
     },
@@ -80,7 +80,7 @@
   {
     "name" : "steelpl5 pl_linearize=0",
     "objective" :  370752.8571,
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "plinear"],
     "options": {
         "pl_linearize": 0
     },
@@ -89,7 +89,7 @@
   {
     "name" : "transpl1 pl_linearize=0",
     "objective" :   199100,
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "plinear"],
     "options": {
         "pl_linearize": 0
     },
@@ -98,7 +98,7 @@
   {
     "name" : "transpl2 pl_linearize=0",
     "objective" :   193300,
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "plinear"],
     "options": {
         "pl_linearize": 0
     },

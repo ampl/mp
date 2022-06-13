@@ -586,7 +586,20 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.plinear,
                  ModelTags.quadratic, ModelTags.quadraticnonconvex,
-                 ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric}
+                 ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+
+                 ModelTags.unbdd, ModelTags.return_mipgap,
+                 ModelTags.sos, ModelTags.sens,
+                 ModelTags.lazy_user_cuts,
+
+                 ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+
+                 ModelTags.multiobj, ModelTags.obj_priority,
+                 ModelTags.multisol, ModelTags.sstatus,
+                 ModelTags.iis, ModelTags.feasrelax,
+
+                 ModelTags.gurobi_cloud, ModelTags.gurobi_server,
+                }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
@@ -602,6 +615,9 @@ class CPLEXDirectSolver(MPDirectSolver):
                  # ModelTags.plinear,
                  # ModelTags.quadratic, ModelTags.quadraticnonconvex,
                  # ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric
+
+                 ModelTags.relax,
+                 ModelTags.multiobj
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
