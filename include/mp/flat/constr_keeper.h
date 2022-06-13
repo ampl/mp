@@ -2,7 +2,6 @@
 #define CONSTRAINT_KEEPER_H
 
 #include <deque>
-#include <map>
 #include <unordered_map>
 #include <functional>
 #include <cmath>
@@ -17,6 +16,7 @@ namespace mp {
 
 /// Converters handling custom constraints should derive from
 class BasicFlatConverter;
+
 
 /// Interface for an array of constraints of certain type
 class BasicConstraintKeeper {
@@ -48,11 +48,17 @@ public:
   virtual bool ConvertAllNewWith(BasicFlatConverter& cvt) = 0;
 
   /// Backend's acceptance level for the constraint type
-  virtual ConstraintAcceptanceLevel BackendAcceptance(
+  virtual ConstraintAcceptanceLevel GetBackendAcceptance(
       const BasicFlatModelAPI& ) const = 0;
 
+  /// Constraint type_info
+  virtual const std::type_info& GetTypeInfo() const =0;
+
   /// Backend's group number for the constraint type
-  virtual int BackendGroup(const BasicFlatModelAPI& ) const = 0;
+  virtual int GetConstraintGroup(const BasicFlatModelAPI& ) const = 0;
+
+  /// Report how many will be added to Backend
+  virtual int GetNumberOfAddable() const = 0;
 
   /// This adds all unbridged items to the backend (without conversion)
   virtual void AddUnbridgedToBackend(BasicFlatModelAPI& be) = 0;
@@ -235,16 +241,25 @@ public:
   }
 
   /// Acceptance level of this constraint type in the Backend
-  ConstraintAcceptanceLevel BackendAcceptance(
+  ConstraintAcceptanceLevel GetBackendAcceptance(
       const BasicFlatModelAPI& ba) const override {
     return static_cast<const Backend&>( ba ).AcceptanceLevel((Constraint*)nullptr);
   }
 
+  /// Constraint type_info
+  const std::type_info& GetTypeInfo() const override
+  { return typeid(ConstraintType); }
+
+  /// Report how many will be added to Backend
+  int GetNumberOfAddable() const override {
+    return (int)cons_.size()-n_bridged_;
+  }
+
   /// Group number of this constraint type in the Backend.
   /// This is needed for pre- / postsolve to group solution values
-  int BackendGroup(
-      const BasicFlatModelAPI& ba) const override {
-    return static_cast<const Backend&>( ba ).GroupNumber((Constraint*)nullptr);
+  int GetConstraintGroup(const BasicFlatModelAPI& ba) const override {
+    return static_cast<const Backend&>( ba ).
+        GroupNumber((Constraint*)nullptr);
   }
 
   /// Add remaining constraints to Backend
@@ -281,7 +296,7 @@ protected:
     int i=i_last;
     ++i;
     const auto acceptanceLevel =
-        BackendAcceptance(GetBackend(GetConverter()));
+        GetBackendAcceptance(GetBackend(GetConverter()));
     if (NotAccepted == acceptanceLevel) {       // Convert all
       for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i)
         if (!it->IsBridged())
@@ -290,7 +305,7 @@ protected:
     else if (AcceptedButNotRecommended == acceptanceLevel) {
       for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i) {
         if (!it->IsBridged()) {
-          try {
+          try {       // Try to convert all but allow failure
             ConvertConstraint(*it, i);
           } catch (const ConstraintConversionFailure& ccf) {
             GetConverter().AddWarning( ccf.key(), ccf.message() );
@@ -310,11 +325,12 @@ protected:
   void ConvertConstraint(Container& cnt, int i) {
     assert(!cnt.IsBridged());
     GetConverter().RunConversion(cnt.con_, i);
-    cnt.MarkAsBridged();    // TODO should this be marked in Convert()?
+    cnt.MarkAsBridged();
+    ++n_bridged_;
   }
   void AddAllUnbridged(BasicFlatModelAPI& be) {
     int con_index=0;
-    auto con_group = BackendGroup(be);
+    auto con_group = GetConstraintGroup(be);
     for (const auto& cont: cons_) {
       if (!cont.IsBridged()) {
         static_cast<Backend&>(be).AddConstraint(cont.con_);
@@ -333,6 +349,8 @@ private:
   Converter& cvt_;
   std::deque<Container> cons_;        // TODO see if vector is faster
   int i_cvt_last_ = -1;               // last converted constraint
+  int n_bridged_ = 0;                  // number of converted items,
+                                      // They won't go to Backend
   const std::string desc_ {
     std::string("ConstraintKeeper< ") +
         Converter::GetTypeName() + ", " +
@@ -470,6 +488,8 @@ bool operator==(std::reference_wrapper<
 /// Manage ConstraintKeepers for different constraint types
 class ConstraintManager {
   std::multimap<double, BasicConstraintKeeper&> con_keepers_;
+
+
 public:
   /// Add a new CKeeper with given conversion priority (smaller = sooner)
   void AddConstraintKeeper(BasicConstraintKeeper& ck, double priority)
@@ -485,8 +505,21 @@ public:
     } while (any_converted);
   }
 
+  /// Fill counters of unbridged constraints
+  void FillConstraintCounters(
+      const BasicFlatModelAPI& mapi, FlatModelInfo& fmi) const {
+    fmi.InitConstraintCount();
+    for (const auto& ck: con_keepers_) {
+      fmi.AddNumberOfConstraints(
+        ck.second.GetTypeInfo(),
+            ck.second.GetConstraintGroup(mapi),
+            ck.second.GetNumberOfAddable());
+    }
+  }
+
   /// Add all unbridged constraints to Backend
-  void AddUnbridgedConstraintsToBackend(BasicFlatModelAPI& be) const {
+  void AddUnbridgedConstraintsToBackend(
+      BasicFlatModelAPI& be) const {
     for (const auto& ck: con_keepers_)
       ck.second.AddUnbridgedToBackend(be);
   }

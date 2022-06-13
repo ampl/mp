@@ -2,6 +2,8 @@
 
 #include "mp/flat/expr_quadratic.h"
 
+#include "mp/flat/model_info.hpp"
+
 namespace mp {
 
 void LinTerms::sort_terms(bool force_sort) {

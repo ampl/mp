@@ -16,7 +16,7 @@ CreateCoptModelMgr(CoptCommon& cc, Env& e,
 }
 
 
-void CoptModelAPI::InitProblemModificationPhase() { }
+void CoptModelAPI::InitProblemModificationPhase(const FlatModelInfo*) { }
 
 void CoptModelAPI::AddVariables(const VarArrayDef& v) {
   std::vector<char> vtypes(v.size());

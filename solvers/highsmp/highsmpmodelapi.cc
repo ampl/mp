@@ -18,7 +18,7 @@ CreateHighsModelMgr(HighsCommon& cc, Env& e,
 }
 
 
-void HighsModelAPI::InitProblemModificationPhase() { }
+void HighsModelAPI::InitProblemModificationPhase(const FlatModelInfo*) { }
 
 void HighsModelAPI::AddVariables(const VarArrayDef& v) {
   std::vector<int> intIndices;

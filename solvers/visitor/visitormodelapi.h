@@ -23,8 +23,9 @@ public:
   /// Class name
   static const char* GetTypeName() { return "VisitorModelAPI"; }
 
-  /// Called before problem input
-  void InitProblemModificationPhase();
+  /// Called before problem input.
+  /// Chanve to allocate storage
+  void InitProblemModificationPhase(const FlatModelInfo*);
   /// After
   void FinishProblemModificationPhase();
 

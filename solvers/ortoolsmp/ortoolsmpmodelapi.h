@@ -23,8 +23,9 @@ public:
   /// Class name
   static const char* GetTypeName() { return "OrtoolsModelAPI"; }
 
-  /// Called before problem input
-  void InitProblemModificationPhase();
+  /// Called before problem input.
+  /// Chance to alocate storage
+  void InitProblemModificationPhase(const FlatModelInfo*);
   /// After
   void FinishProblemModificationPhase();
 

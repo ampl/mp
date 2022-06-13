@@ -30,6 +30,7 @@
 #include "mp/common.h"
 #include "mp/flat/constr_base.h"
 #include "mp/flat/obj_std.h"
+#include "mp/flat/model_info.h"
 
 namespace mp {
 
@@ -97,8 +98,9 @@ public:
   /// Placeholder
   void InitOptions() { }
 
-  /// Chance to prepare problem update
-  void InitProblemModificationPhase() {  }
+  /// Chance to prepare problem update,
+  /// e.g., allocate storage
+  void InitProblemModificationPhase(const FlatModelInfo*) {  }
   /// Chance to end problem update
   void FinishProblemModificationPhase() {  }
 

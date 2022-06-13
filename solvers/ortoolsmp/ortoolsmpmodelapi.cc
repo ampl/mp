@@ -16,7 +16,8 @@ CreateOrtoolsModelMgr(OrtoolsCommon& cc, Env& e,
 }
 
 
-void OrtoolsModelAPI::InitProblemModificationPhase() { }
+void OrtoolsModelAPI::InitProblemModificationPhase(
+    const FlatModelInfo*) { }
 
 void OrtoolsModelAPI::AddVariables(const VarArrayDef& v) {
   for (int i = 0; i < v.size(); ++i) {

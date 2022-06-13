@@ -185,7 +185,8 @@ public:
   /// A responsible backend should handle all essential items
   template <class Backend>
   void PushModelTo(Backend& backend) const {
-    backend.InitProblemModificationPhase();
+    auto fmi = CreateFlatModelInfo();
+    backend.InitProblemModificationPhase(fmi.get());
     PushVariablesTo(backend);
     PushObjectivesTo(backend);
     PushCustomConstraintsTo(backend);

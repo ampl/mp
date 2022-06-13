@@ -16,11 +16,18 @@ CreateVisitorModelMgr(VisitorCommon& cc, Env& e,
 }
 
 
-void VisitorModelAPI::InitProblemModificationPhase() { }
+void VisitorModelAPI::InitProblemModificationPhase(
+    const FlatModelInfo*) {
+  // auto n_linear_cons =
+  //   flat_model_info->GetNumberOfConstraintsOfGroup(CG_LINEAR);
+  // preallocate_linear_cons( n_linear_cons );
+}
 
 void VisitorModelAPI::AddVariables(const VarArrayDef& v) {
-  // TODO Add variables using solver API; typically, first convert the variable
-  // type to the appropriate solver-defined type, then add them as a bunch
+  // TODO Add variables using solver API; typically,
+  // first convert the variable
+  // type to the appropriate solver-defined type,
+  // then add them as a bunch
   int nInteger = 0, nContinuous = 0;
   for (auto i = v.size(); i--; )
     if (var::Type::CONTINUOUS == v.ptype()[i])
