@@ -55,6 +55,13 @@ MosekBackend::~MosekBackend() {
   CloseSolver();
 }
 
+static void MSKAPI printstr(void* handle,
+  const char* str)
+{
+  fmt::print("{}", str);
+  fflush(stdout);
+}
+
 void MosekBackend::OpenSolver() {
   int status = MSK_RES_OK;
   MSKtask_t task;
@@ -65,6 +72,11 @@ void MosekBackend::OpenSolver() {
   set_lp(task); // Assign it
   /// Turn off verbosity by default
   MOSEK_CCALL(MSK_putintparam(task, MSK_IPAR_LOG, 0));
+
+  // Register callback for console logging (controlled by the outlev param
+  // in all AMPL solver drivers
+  MSK_linkfunctotaskstream(lp(), MSK_STREAM_LOG, NULL, printstr);
+
 }
 
 void MosekBackend::CloseSolver() {
@@ -141,15 +153,13 @@ int MosekBackend::BarrierIterations() const {
 }
 
 void MosekBackend::ExportModel(const std::string &file) {
-  // TODO export proper by file extension
-  //MOSEK_CCALL(MOSEK_WriteLp(lp(), file.data()));
+  MOSEK_CCALL(MSK_writedata(lp(), file.data()));
 }
 
 
 void MosekBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptMosek, lp());
   // TODO Check interrupter
-  //MOSEK_CCALL( CPXsetterminate (env(), &terminate_flag) );
 }
 
 void MosekBackend::Solve() {
@@ -157,7 +167,7 @@ void MosekBackend::Solve() {
     ExportModel(storedOptions_.exportFile_);
   }
   MOSEK_CCALL(MSK_optimizetrm(lp(), &termcode));
-  MSK_getsolsta(lp(), MSK_SOL_ITG, &solsta);
+  MSK_getsolsta(lp(), MSK_SOL_BAS, &solsta); // TODO appropriate sol
   WindupMOSEKSolve();
 }
 
@@ -273,26 +283,36 @@ void MosekBackend::InitCustomOptions() {
 
   set_option_header(
       "MOSEK Optimizer Options for AMPL\n"
-      "--------------------------------------------\n"
-      "\n"
+      "--------------------------------\n\n"
       "To set these options, assign a string specifying their values to the "
       "AMPL option ``mosek_options``. For example::\n"
       "\n"
-      "  ampl: option mosek_options 'mipgap=1e-6';\n");
+      "  ampl: option mosek_options 'threads=3';\n");
 
+  // Example of stored option, to be acted upon in the driver code
   AddStoredOption("tech:exportfile writeprob writemodel",
       "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
+      "solving it. This file name can have extension ``..task``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
 
-}
+  // Example of direct solver option (set directly by the framework)
+  AddSolverOption("tech:threads threads",
+    "Controls the number of threads employed by the optimizer. "
+    "Default 0 ==> number of threads used will be equal to the number "
+    "of cores detected on the machine.",
+    MSK_IPAR_NUM_THREADS, 0, INT_MAX);
 
+  AddSolverOption("tech:outlev outlev",
+    "0*/1: Whether to write mosek log lines to stdout.",
+    MSK_IPAR_LOG, 0, 1);
+}
 
 double MosekBackend::MIPGap() {
   return getDblAttr(MSK_DINF_MIO_OBJ_ABS_GAP);
 }
 double MosekBackend::BestDualBound() {
+  // TODO
   return 0;
   //return getDblAttr(MOSEK_DBLATTR_BESTBND);
 }
@@ -304,7 +324,7 @@ double MosekBackend::MIPGapAbs() {
 
 
 ArrayRef<int> MosekBackend::VarStatii() {
-  
+  // TODO 
   std::vector<int> vars(NumVars());
   /*
   MOSEK_GetBasis(lp(), vars.data(), NULL);
@@ -334,7 +354,7 @@ ArrayRef<int> MosekBackend::VarStatii() {
 }
 
 ArrayRef<int> MosekBackend::ConStatii() {
-
+  // TODO
   std::vector<int> cons(NumLinCons());
   /*
   MOSEK_GetBasis(lp(), NULL, cons.data());
@@ -363,6 +383,7 @@ ArrayRef<int> MosekBackend::ConStatii() {
 }
 
 void MosekBackend::VarStatii(ArrayRef<int> vst) {
+  // TODO
   int index[1];
   std::vector<int> stt(vst.data(), vst.data() + vst.size());
   /*
@@ -410,6 +431,7 @@ void MosekBackend::VarStatii(ArrayRef<int> vst) {
 }
 
 void MosekBackend::ConStatii(ArrayRef<int> cst) {
+  // TODO
   /*
   std::vector<int> stt(cst.data(), cst.data() + cst.size());
   for (auto& s : stt) {

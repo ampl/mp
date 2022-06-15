@@ -16,7 +16,8 @@ CreateMosekModelMgr(MosekCommon& cc, Env& e,
 }
 
 
-void MosekModelAPI::InitProblemModificationPhase(const FlatModelInfo* info) { }
+void MosekModelAPI::InitProblemModificationPhase(const FlatModelInfo* info) { 
+}
 
 void MosekModelAPI::AddVariables(const VarArrayDef& v) {
   MOSEK_CCALL(MSK_appendvars(lp(), v.size()));
@@ -42,7 +43,10 @@ void MosekModelAPI::AddVariables(const VarArrayDef& v) {
     MOSEK_CCALL(MSK_putvartype(lp(), i,
       var::Type::CONTINUOUS == v.ptype()[i] ? MSK_VAR_TYPE_CONT :
       MSK_VAR_TYPE_INT));
-  }
+   }
+  if (v.pnames()) 
+    for (size_t i = v.size(); i--; )
+      MOSEK_CCALL(MSK_putvarname(lp(), i, v.pnames()[i]));
 }
 
 void MosekModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
@@ -72,35 +76,38 @@ void MosekModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
     throw std::runtime_error("Multiple quadratic objectives not supported");
   }
 }
+void addLinearConstraint(MSKtask_t lp, size_t size, MSKboundkey_enum key, double lb, double ub,
+  const int* vindex, const double* values, const char* name) {
 
+  MOSEK_CCALL(MSK_appendcons(lp, 1));
+  int nc;
+  MSK_getnumcon(lp, &nc);
+  if (lb == -std::numeric_limits<double>::infinity())
+    lb = -MSK_DPAR_DATA_TOL_BOUND_INF;
+  if (ub == std::numeric_limits<double>::infinity())
+    ub = MSK_DPAR_DATA_TOL_BOUND_INF;
+
+  MOSEK_CCALL(MSK_putarow(lp, --nc, size, vindex, values));
+  MOSEK_CCALL(MSK_putconbound(lp, nc, key, lb, ub));
+  MOSEK_CCALL(MSK_putconname(lp, nc, name));
+
+}
 
 void MosekModelAPI::AddConstraint(const LinConRange& lc) {
-  MOSEK_CCALL(MSK_appendcons(lp(), 1));
-  int nc;
-  MSK_getnumcon(lp(), &nc);
-  MOSEK_CCALL(MSK_putarow(lp(), nc, lc.size(), lc.pvars(), lc.pcoefs()));
-  MOSEK_CCALL(MSK_putconbound(lp(), nc, MSK_BK_RA, lc.lb(), lc.ub()));
+  addLinearConstraint(lp(), lc.size(), MSK_BK_RA, lc.lb(), lc.ub(),
+    lc.pvars(), lc.pcoefs(), lc.name());
 }
 void MosekModelAPI::AddConstraint(const LinConLE& lc) {
-  MOSEK_CCALL(MSK_appendcons(lp(), 1));
-  int nc;
-  MSK_getnumcon(lp(), &nc);
-  MOSEK_CCALL(MSK_putarow(lp(), nc, lc.size(), lc.pvars(), lc.pcoefs()));
-  MOSEK_CCALL(MSK_putconbound(lp(), nc, MSK_BK_UP, lc.lb(), lc.ub()));
+  addLinearConstraint(lp(), lc.size(), MSK_BK_UP, lc.lb(), lc.ub(),
+    lc.pvars(), lc.pcoefs(), lc.name());
 }
 void MosekModelAPI::AddConstraint(const LinConEQ& lc) {
-  MOSEK_CCALL(MSK_appendcons(lp(), 1));
-  int nc;
-  MSK_getnumcon(lp(), &nc);
-  MOSEK_CCALL(MSK_putarow(lp(), nc, lc.size(), lc.pvars(), lc.pcoefs()));
-  MOSEK_CCALL(MSK_putconbound(lp(), nc, MSK_BK_FX, lc.lb(), lc.ub()));
+  addLinearConstraint(lp(), lc.size(), MSK_BK_FX, lc.lb(), lc.ub(),
+    lc.pvars(), lc.pcoefs(), lc.name());
 }
 void MosekModelAPI::AddConstraint(const LinConGE& lc) {
-  MOSEK_CCALL(MSK_appendcons(lp(), 1));
-  int nc;
-  MSK_getnumcon(lp(), &nc);
-  MOSEK_CCALL(MSK_putarow(lp(), nc, lc.size(), lc.pvars(), lc.pcoefs()));
-  MOSEK_CCALL(MSK_putconbound(lp(), nc, MSK_BK_LO, lc.lb(), lc.ub()));
+  addLinearConstraint(lp(), lc.size(), MSK_BK_LO, lc.lb(), lc.ub(),
+    lc.pvars(), lc.pcoefs(), lc.name());
 }
 
 void MosekModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
