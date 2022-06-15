@@ -580,7 +580,6 @@ void VisitorBackend::AddMIPStart(ArrayRef<double> x0) {
 
 
 // AMPLs
-
 AMPLS_MP_Solver* AMPLSOpenVisitor(
   const char* slv_opt) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::VisitorBackend()},
