@@ -144,10 +144,15 @@ protected:
   ArrayRef<int> VarsIIS();
   pre::ValueMapInt ConsIIS();
 
+  // utility function used to decide which solution to fetch after optimization
+  // sets member solToFetch_ as side effect
+  MSKsoltypee GetSolutionTypeToFetch();
 
 private:
-  MSKrescodee termcode;
-  MSKsolstae solsta;
+  MSKsoltypee solToFetch_;
+  MSKrescodee termCode_;
+  MSKsolstae solSta_;
+
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;

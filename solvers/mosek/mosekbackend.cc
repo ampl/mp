@@ -115,7 +115,7 @@ ArrayRef<double> MosekBackend::PrimalSolution() {
   int error;
   std::vector<double> x(num_vars);
   // TODO get appropriate solution
-  MSK_getxx(lp(), MSK_SOL_BAS, x.data());
+  MSK_getxx(lp(), solToFetch_, x.data());
   return x;
 }
 
@@ -127,7 +127,7 @@ ArrayRef<double> MosekBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
   // TODO get appropriate solution
-  MSKrescodee error = MSK_gety(lp(), MSK_SOL_BAS, pi.data());
+  MSKrescodee error = MSK_gety(lp(), solToFetch_, pi.data());
   if (error != MSK_RESPONSE_OK)
     pi.clear();
   return pi;
@@ -136,7 +136,7 @@ ArrayRef<double> MosekBackend::DualSolution_LP() {
 double MosekBackend::ObjectiveValue() const {
   double v;
   // TODO get appropriate solution
-  MOSEK_CCALL(MSK_getprimalobj(lp(), MSK_SOL_BAS, &v));
+  MOSEK_CCALL(MSK_getprimalobj(lp(), solToFetch_, &v));
   return v;
 }
 
@@ -162,12 +162,46 @@ void MosekBackend::SetInterrupter(mp::Interrupter *inter) {
   // TODO Check interrupter
 }
 
+MSKsoltypee MosekBackend::GetSolutionTypeToFetch() {
+  MSKproblemtypee type;
+  MSK_getprobtype(lp(), &type);
+  int optimizer;
+  GetSolverOption(MSK_IPAR_OPTIMIZER, optimizer);
+  MSKoptimizertypee optype = (MSKoptimizertypee)optimizer;
+
+  // TODO Implement proper logic here
+  if (IsMIP())
+    return MSK_SOL_ITG;
+
+  if (optype == MSK_OPTIMIZER_FREE) { // decide by problem type
+    switch (type) {
+      case MSK_PROBTYPE_LO:
+        return MSK_SOL_BAS;
+      default:
+        return MSK_SOL_ITR;
+    }
+  }
+  else { // if algorithm is specifically chosen
+    switch(optype)
+    {
+    case MSK_OPTIMIZER_CONIC:
+    case MSK_OPTIMIZER_INTPNT:
+      return MSK_SOL_ITR;
+    case MSK_OPTIMIZER_MIXED_INT:
+      return MSK_SOL_ITG;
+    default: // all simplex
+      return MSK_SOL_BAS;
+    }
+  }
+
+}
 void MosekBackend::Solve() {
   if (!storedOptions_.exportFile_.empty()) {
     ExportModel(storedOptions_.exportFile_);
   }
-  MOSEK_CCALL(MSK_optimizetrm(lp(), &termcode));
-  MSK_getsolsta(lp(), MSK_SOL_BAS, &solsta); // TODO appropriate sol
+  MOSEK_CCALL(MSK_optimizetrm(lp(), &termCode_));
+  solToFetch_ = GetSolutionTypeToFetch();
+  MSK_getsolsta(lp(), solToFetch_, &solSta_); 
   WindupMOSEKSolve();
 }
 
@@ -227,9 +261,9 @@ void MosekBackend::AddMOSEKMessages() {
 std::pair<int, std::string> MosekBackend::ConvertMOSEKStatus() {
   namespace sol = mp::sol;
   // TODO check the logic here
-  switch (termcode) {
+  switch (termCode_) {
   case MSK_RES_OK:
-    switch (solsta) {
+    switch (solSta_) {
     case MSK_SOL_STA_OPTIMAL:
     case MSK_SOL_STA_INTEGER_OPTIMAL:
       return { sol::SOLVED, "optimal" };
@@ -271,12 +305,14 @@ void MosekBackend::FinishOptionParsing() {
 ////////////////////////////// OPTIONS /////////////////////////////////
 
 
-static const mp::OptionValueInfo lp_values_method[] = {
-  { "-1", "Automatic (default)", -1},
+static const mp::OptionValueInfo alg_values_method[] = {
+  { "0", "Optimizer for conic constraints", 0},
   { "1", "Dual simplex", 1},
-  { "2", "Barrier", 2},
-  { "3", "Crossover", 3},
-  { "4", "Concurrent (simplex and barrier simultaneously)", 4},
+  { "2", "Automatic (default)", 2},
+  { "3", "Free simplex", 3},
+  { "4", "Interior-poit method", 4},
+  { "5", "Mixed-integer optimizer", 5},
+  { "6", "Primal simplex", 6},
 };
 
 void MosekBackend::InitCustomOptions() {
@@ -288,6 +324,10 @@ void MosekBackend::InitCustomOptions() {
       "AMPL option ``mosek_options``. For example::\n"
       "\n"
       "  ampl: option mosek_options 'threads=3';\n");
+
+  AddSolverOption("alg:method method lpmethod simplex",
+    "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
+    "\n.. value-table::\n", MSK_IPAR_OPTIMIZER, alg_values_method, 2);
 
   // Example of stored option, to be acted upon in the driver code
   AddStoredOption("tech:exportfile writeprob writemodel",
