@@ -104,7 +104,7 @@ public:
   /// Collection of entries
   using CollectionOfEntries = std::vector<LinkEntry>;
 
-  /// Add entry
+  /// Add entry.
   /// Instead of a new entry, tries to extend the last one
   /// if exists
   void AddEntry(LinkEntry be) {
@@ -209,7 +209,9 @@ class BasicStaticIndivEntryLink :
 public:
   /// Base class
   using Base = BasicIndivEntryLink<Impl, std::array<int, NIndexes> >;
-  /// Typedef NodeList
+  /// Typedef NodeList.
+  /// Remember, a node is a node of the transformation graph
+  /// and can store arrays of values for a list of model items
   using NodeList = std::array<ValueNode*, NNodes>;
   /// Typedef: LinkEntry is just an array if node indexes
   using LinkEntry = std::array<int, NIndexes>;
