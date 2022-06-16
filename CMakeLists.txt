@@ -316,15 +316,15 @@ add_prefix(MP_HEADERS include/mp/
   model-mgr-base.h model-mgr-with-pb.h
   model-mgr-with-std-pb.h model-mgr-with-std-pb.hpp
   nl.h nl-reader.h option.h os.h problem.h problem-builder.h
-  presolve-base.h presolve-node.h presolve-bridge.h presolve.h
+  valcvt-base.h valcvt-node.h valcvt-link.h valcvt.h
   rstparser.h safeint.h sol.h
   solver.h solver-opt.h solver-base.h solver-io.h solver-app-base.h solver-app.h
   suffix.h utils-file.h utils-hash.h utils-hash-stream.h utils-string.h)
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/
-  constraint_base.h constraint_keeper.h constraint_hash.h
-  constraints_std.h constraints_static.h constraints_functional.h
-  constraints_algebraic.h constraints_general.h
+  constr_base.h constr_keeper.h constr_hash.h
+  constr_std.h constr_static.h constr_functional.h
+  constr_algebraic.h constr_general.h
   context.h
   converter.h converter_model.h convert_functional.h
   eexpr.h expr_algebraic.h expr_affine.h expr_quadratic.h

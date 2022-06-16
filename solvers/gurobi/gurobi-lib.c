@@ -14,7 +14,7 @@ APIEXPORT GRBmodel* AMPLdirectloadmodel(
   AMPLS_MP_Solver *slv = AMPLSOpenGurobi(slv_opt);
   if (!slv)
     return NULL;
-  int ret = AMPLSLoadNLModel(slv, nl_filename);
+  AMPLSLoadNLModel(slv, nl_filename);
   GRBmodel* mdl = GetGRBmodel(slv);
   *slvout = slv;
   return mdl;

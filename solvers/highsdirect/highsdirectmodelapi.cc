@@ -13,7 +13,7 @@ namespace mp {
 /// for recompilation speed
 std::unique_ptr<BasicModelManager>
 CreateHighsModelMgr(HighsCommon& cc, Env& e,
-                     pre::BasicPresolver*& pPre) {
+                     pre::BasicValuePresolver*& pPre) {
   return CreateModelMgrWithFlatConverter<
       HighsModelAPI, MIPFlatConverter >(cc, e, pPre);
 }
@@ -26,7 +26,7 @@ void HighsModelAPI::AddVariables(const VarArrayDef& v) {
   std::vector<double> costs(v.size(), 0);
   std::vector<double> lbs(v.size());
   std::vector<double> ubs(v.size());
-  for (size_t i = 0; i < v.size(); i++) {
+  for (int i = 0; i < v.size(); i++) {
     if (var::Type::INTEGER == v.ptype()[i]) intIndices.push_back(i);
     lbs[i] = std::isinf(v.plb()[i]) ? MinusInfinity() : v.plb()[i];
     ubs[i] = std::isinf(v.pub()[i]) ?  Infinity() : v.pub()[i];
@@ -64,7 +64,7 @@ void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
     int currentCol = 0, newCol = 0;
     startCols[0] = 0;
     // Convert to Highs Hessian upper triangular format
-    for (int i = 0; i < qt.size(); i++)
+    for (size_t i = 0; i < qt.size(); i++)
     {
       newCol = qt.vars1()[i];
       coeffs[i] = (qt.vars2()[i] == newCol) ? qt.coefs()[i]*2 : qt.coefs()[i];

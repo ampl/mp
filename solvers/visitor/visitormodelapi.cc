@@ -11,7 +11,7 @@ namespace mp {
 /// for recompilation speed
 std::unique_ptr<BasicModelManager>
 CreateVisitorModelMgr(VisitorCommon& cc, Env& e,
-                     pre::BasicPresolver*& pPre) {
+                     pre::BasicValuePresolver*& pPre) {
   return CreateModelMgrWithFlatConverter<
       VisitorModelAPI, MIPFlatConverter >(cc, e, pPre);
 }

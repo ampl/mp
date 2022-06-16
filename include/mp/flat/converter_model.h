@@ -7,8 +7,8 @@
 #include <cmath>
 
 #include "mp/flat/obj_std.h"
-#include "mp/flat/constraints_std.h"
-#include "mp/flat/constraint_keeper.h"
+#include "mp/flat/constr_std.h"
+#include "mp/flat/constr_keeper.h"
 
 namespace mp {
 

@@ -28,6 +28,9 @@ AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
                           const char* slv_opt);
 
 /// Shut down solver instance. Internal only.
+/// Deallocate the mp-related info and the structure itself.
+/// Before calling this function, a solver-specific implementation should
+/// delete solver_info_ and user_info_ if allocated.
 void AMPLS__internal__Close(AMPLS_MP_Solver* slv);
 
 /// Retrieve the Backend
