@@ -652,3 +652,18 @@ class COPTSolver(MPDirectSolver):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.quadratic}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
+class MosekSolver(MPDirectSolver):
+    def _setLPMethod(self, method : str):
+        m  = "1" if method == "SIMPLEX" else "2"
+        return f"lp:method {m}"
+
+    def _getAMPLOptionsName(self):
+        return "mosek"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.quadratic
+                 }
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)

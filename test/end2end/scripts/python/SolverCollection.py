@@ -38,6 +38,8 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.HighsSolver(path.join(binPath,"highs")))
     solvers.addSolver(Solver.HighsSolver(path.join(binPath,"highsdirect")))
     solvers.addSolver(Solver.XpressSolver(path.join(binPath,"xpress")))
+    solvers.addSolver(Solver.MosekSolver(path.join(binPath,"mosek")))
+
 
 # if __name__ == "__main__":
 #     pass
