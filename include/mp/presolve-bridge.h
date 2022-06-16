@@ -1,25 +1,25 @@
-#ifndef VALUE_PRESOLVE_LINK_H
-#define VALUE_PRESOLVE_LINK_H
+#ifndef PRESOLVE_BRIDGE_H
+#define PRESOLVE_BRIDGE_H
 
 #include <vector>
 #include <array>
 
 #include "mp/common.h"
-#include "valcvt-node.h"
+#include "presolve-node.h"
 
 
 namespace mp {
 
 namespace pre {
 
-/// Index range in a link
-using ValcvtLinkIndexRange = IndexRange;
+/// Index range in a bridge
+using BridgeIndexRange = IndexRange;
 
-/// Declare ValuePresolver
-class ValuePresolver;
+/// Declare Presolver
+class Presolver;
 
 /// Macro for a list of pre- / postsolve method definitions
-/// in a link.
+/// in a bridge.
 /// Requires PRESOLVE_KIND defined to declare / define corr. methods
 #define LIST_PRESOLVE_METHODS \
   PRESOLVE_KIND(Solution) \
@@ -28,53 +28,49 @@ class ValuePresolver;
   PRESOLVE_KIND(LazyUserCutFlags)
 // ...
 
-
-/// ValuePresolveLink interface
+/// Bridge interface
 ///
-/// A link is an array of value converters between nodes.
+/// A bridge is an array of value converters between nodes.
 /// All converters are of the same type
-class BasicValcvtLink {
+class BasicBridge {
 public:
   /// Constructor
-  BasicValcvtLink(ValuePresolver& pre) : vsalue_presolver_(pre) { }
+  BasicBridge(Presolver& pre) : presolver_(pre) { }
   /// Virtual destructor
-  virtual ~BasicValcvtLink() = default;
+  virtual ~BasicBridge() = default;
 
-  /// The below pre- / postsolve methods
-  /// work on a range of link entries
+  /// The below pre- / postsolves work on a range of bridge entries
   /// Postsolves should usually loop the range backwards
 
 #define PRESOLVE_KIND(name) \
-  virtual void Presolve ## name (ValcvtLinkIndexRange ) = 0; \
-  virtual void Postsolve ## name(ValcvtLinkIndexRange ) = 0;
+  virtual void Presolve ## name (BridgeIndexRange ) = 0; \
+  virtual void Postsolve ## name(BridgeIndexRange ) = 0;
 
   LIST_PRESOLVE_METHODS
 
 protected:
-  /// Add a range of link entries to the Presolver's list.
-  /// Every derived link should call either of the next two methods
-  /// whenever adding a link entry.
-  /// Version 1: add single link
-  void RegisterLinkIndex(int i)
-  { RegisterLinkIndexRange( {i, i+1} ); }
-  /// Version 2: add a range of links
-  void RegisterLinkIndexRange(ValcvtLinkIndexRange );
+  /// Add a range of bridge entries to the Presolver's list
+  /// Every derived bridge should call either of the next two
+  /// whenever adding a bridge entry
+  void RegisterBridgeIndex(int i)
+  { RegisterBridgeIndexRange( {i, i+1} ); }
+  void RegisterBridgeIndexRange(BridgeIndexRange );
 
 private:
-  ValuePresolver& vsalue_presolver_;
+  Presolver& presolver_;
 };
 
 
-/// Link range: range of conversion specifiers of certain type.
-/// The link is specified as well
-struct LinkRange {
+/// Bridge range: range of conversion specifiers of certain type
+/// The bridge is specified as well
+struct BridgeRange {
   /// Try & extend the range
   /// @return true iff extension worked,
   /// otherwise the caller would have to add the new range
   /// separately
-  bool ExtendRange(LinkRange br) {
-    if (&b_ == &br.b_) {                  // same link?
-      if (ir_.end == br.ir_.beg) {        // and consecutive ranges?
+  bool ExtendRange(BridgeRange br) {
+    if (&b_ == &br.b_) {                  // same bridge
+      if (ir_.end == br.ir_.beg) {        // and consecutive ranges
         ir_.end = br.ir_.end;
         return true;
       }
@@ -82,35 +78,35 @@ struct LinkRange {
     return false;
   }
 
-  BasicValcvtLink& b_;
-  ValcvtLinkIndexRange ir_;
+  BasicBridge& b_;
+  BridgeIndexRange ir_;
 };
 
 
-/// A specific link: each entry just copies a range of values/
+/// A specific bridge: each entry just copies a range of values
 /// Useful to transfer values between NL and internal model,
 /// internal model and solver, and in conversions preserving
 /// all values
-class CopyLink : public BasicValcvtLink {
+class CopyBridge : public BasicBridge {
 public:
   /// Constructor
-  CopyLink(ValuePresolver& pre) : BasicValcvtLink(pre) { }
+  CopyBridge(Presolver& pre) : BasicBridge(pre) { }
 
-  /// Single link entry
-  using LinkEntry = std::pair<NodeRange, NodeRange>;
+  /// Single bridge entry
+  using BridgeEntry = std::pair<NodeRange, NodeRange>;
 
   /// Collection of entries
-  using CollectionOfEntries = std::vector<LinkEntry>;
+  using CollectionOfEntries = std::vector<BridgeEntry>;
 
   /// Add entry
   /// Instead of a new entry, tries to extend the last one
   /// if exists
-  void AddEntry(LinkEntry be) {
+  void AddEntry(BridgeEntry be) {
     if (entries_.empty() ||
         !entries_.back().first.ExtendableBy(be.first) ||
         !entries_.back().second.ExtendableBy(be.second)) {
       entries_.push_back(be);             // Add new entry
-      RegisterLinkIndex(entries_.size()-1);
+      RegisterBridgeIndex(entries_.size()-1);
     } else {                              // Extend last entry
       entries_.back().first.ExtendBy(be.first);
       entries_.back().second.ExtendBy(be.second);
@@ -122,23 +118,23 @@ public:
 
 #undef PRESOLVE_KIND
 #define PRESOLVE_KIND(name) \
-  void Presolve ## name (ValcvtLinkIndexRange ir) override \
+  void Presolve ## name (BridgeIndexRange ir) override \
   { CopySrcDest(ir); } \
-  void Postsolve ## name(ValcvtLinkIndexRange ir) override \
+  void Postsolve ## name(BridgeIndexRange ir) override \
   { CopyDestSrc(ir); }
 
   LIST_PRESOLVE_METHODS
 
 protected:
   /// Copy src -> dest for index range ir
-  void CopySrcDest(ValcvtLinkIndexRange ir) {
+  void CopySrcDest(BridgeIndexRange ir) {
     for (int i=ir.beg; i!=ir.end; ++i) {
       const auto& br = entries_[i];
       Copy(br.first, br.second);
     }
   }
   /// Copy src <- dest for index range ir. Loop backwards
-  void CopyDestSrc(ValcvtLinkIndexRange ir) {
+  void CopyDestSrc(BridgeIndexRange ir) {
     for (int i=ir.end; (i--)!=ir.beg; ) {
       const auto& br = entries_[i];
       Copy(br.second, br.first);
@@ -150,42 +146,40 @@ private:
 };
 
 
-/// A stub for links which process each entry individually,
-/// in contrast to Presolve...(ValcvtLinkIndexRange ...).
-/// Some of such links could be optimized to store
+/// A stub for bridges which process each entry individually,
+/// in contrast to Presolve...(BridgeIndexRange ...)
+/// Some of such bridges could be optimized to store
 /// a range of transformations in each entry if that helps
-/// (but this could be an overoptimization?)
 ///
-/// Usage: a derived class should define some methods
-/// Presolve...(const LinkEntry& ) and Postsolve...(const LinkEntry&).
-///
-/// TODO: we could default as follows:
-/// Those methods which are not defined, just copy values
+/// Usage: a derived class should define types
+/// BridgeEntry and NodeList, and some methods
+/// Presolve...(const BridgeEntry& ) and Postsolve...(const BridgeEntry&).
+/// TODO: Those methods which are not defined, just copy values
 /// (which might be correct in _some_ cases).
-/// Then, need a "default copy" method.
+/// Need a "default copy" method.
 ///
 /// Using CRTP: https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
-template <class Impl, class LinkEntry>
-class BasicIndivEntryLink : public BasicValcvtLink {
+template <class Impl, class BridgeEntry>
+class BasicIndivEntryBridge : public BasicBridge {
 public:
   /// Constructor
-  BasicIndivEntryLink(ValuePresolver& pre) :
-    BasicValcvtLink(pre) { }
+  BasicIndivEntryBridge(Presolver& pre) :
+    BasicBridge(pre) { }
 
   /// Add entry
   /// Instead of a new entry, tries to extend the last one
   /// if exists
-  void AddEntry(LinkEntry be) {
+  void AddEntry(BridgeEntry be) {
     entries_.push_back(be);             // Add new entry
-    RegisterLinkIndex(entries_.size()-1);
+    RegisterBridgeIndex(entries_.size()-1);
   }
 
 #undef PRESOLVE_KIND
 #define PRESOLVE_KIND(name) \
-  void Presolve ## name (ValcvtLinkIndexRange ir) override { \
+  void Presolve ## name (BridgeIndexRange ir) override { \
     for (int i=ir.beg; i!=ir.end; ++i) \
       MPD( Presolve ## name ## Entry(entries_.at(i)) ); } \
-  void Postsolve ## name(ValcvtLinkIndexRange ir) override { \
+  void Postsolve ## name(BridgeIndexRange ir) override { \
     for (int i=ir.end; i--!=ir.beg; ) \
       MPD( Postsolve ## name ## Entry(entries_.at(i)) ); }
 
@@ -193,26 +187,26 @@ public:
 
 
 private:
-  std::vector<LinkEntry> entries_;
+  std::vector<BridgeEntry> entries_;
 };
 
 
-/// A static indiv entry link has a fixed number of ValueNodes
+/// A static indiv entry bridge has a fixed number of ValueNodes
 /// and indexes into them.
 /// Generally NNodes==NIndexes
 template <class Impl, int NNodes, int NIndexes>
-class BasicStaticIndivEntryLink :
-    public BasicIndivEntryLink<Impl, std::array<int, NIndexes> > {
+class BasicStaticIndivEntryBridge :
+    public BasicIndivEntryBridge<Impl, std::array<int, NIndexes> > {
 public:
   /// Base class
-  using Base = BasicIndivEntryLink<Impl, std::array<int, NIndexes> >;
+  using Base = BasicIndivEntryBridge<Impl, std::array<int, NIndexes> >;
   /// Typedef NodeList
   using NodeList = std::array<ValueNode*, NNodes>;
-  /// Typedef: LinkEntry is just an array if node indexes
-  using LinkEntry = std::array<int, NIndexes>;
+  /// Typedef: BridgeEntry is just an array if node indexes
+  using BridgeEntry = std::array<int, NIndexes>;
 
   /// Constructor
-  BasicStaticIndivEntryLink(ValuePresolver& pre, const NodeList& ndl) :
+  BasicStaticIndivEntryBridge(Presolver& pre, const NodeList& ndl) :
     Base(pre), ndl_(ndl) { }
 
 protected:
@@ -224,23 +218,23 @@ protected:
   /// Access int value at the node \a pos at the index
   /// stored in \a be[pos]
   ///
-  /// @param be: a LinkEntry
+  /// @param be: a BridgeEntry
   /// @param pos: node number from 0..NNodes-1
-  int GetInt(const LinkEntry& be, size_t pos) const
+  int GetInt(const BridgeEntry& be, size_t pos) const
   { return GetNode(pos).GetInt(be[pos]); }
   /// SetInt
-  void SetInt(const LinkEntry& be, size_t pos, int i)
+  void SetInt(const BridgeEntry& be, size_t pos, int i)
   { GetNode(pos).SetInt(be[pos], i); }
 
   /// Access double value at the node \a pos at the index
   /// stored in \a be[pos]
   ///
-  /// @param be: a LinkEntry
+  /// @param be: a BridgeEntry
   /// @param pos: node number from 0..NNodes-1
-  double GetDbl(const LinkEntry& be, size_t pos) const
+  double GetDbl(const BridgeEntry& be, size_t pos) const
   { return GetNode(pos).GetDbl(be[pos]); }
   /// SetDbl
-  void SetDbl(const LinkEntry& be, size_t pos, double i)
+  void SetDbl(const BridgeEntry& be, size_t pos, double i)
   { GetNode(pos).SetDbl(be[pos], i); }
 
 private:
@@ -251,4 +245,4 @@ private:
 
 } // namespace mp
 
-#endif // VALUE_PRESOLVE_LINK_H
+#endif // PRESOLVE_BRIDGE_H

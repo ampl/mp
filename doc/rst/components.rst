@@ -156,20 +156,8 @@ solver messages and status reporting,
 simplex basis statuses, and other suffix I/O.
 Their solver-specific subclasses can be customized for a particular solver.
 They rely on the :ref:`model-manager` interface
-for model and solution I/O.
-
-As an example, if the driver should read and write simplex basis status suffixes,
-the derived Backend class can declare
-
-.. code-block:: c++
-
-    ALLOW_STD_FEATURE( BASIS, true )
-    SolutionBasis GetBasis() override;
-    void SetBasis(SolutionBasis ) override;
-
-and define the `GetBasis`, `SetBasis` methods.
-See the classes' documentation
-for further details.
+for model and solution I/O. See the classes' documentation
+for details.
 
 
 .. _solver-classes:
@@ -260,19 +248,6 @@ via the solver's modeling API wrapper:
 * `mp::BasicFlatModelAPI` is the interface via which `mp::FlatConverter` addresses
   the underlying solver. A subclassed wrapper, such as `mp::GurobiModelAPI`,
   signals its accepted constraints and which model conversions are preferable.
-  For example, `GurobiModelAPI` declares the following in order to natively
-  receive the logical OR constraint:
-
-  .. code-block:: c++
-
-      ACCEPT_CONSTRAINT(OrConstraint,
-        Recommended,                       // Driver recommends native form
-        CG_General)                        // Constraint group for suffix exchange
-      void AddConstraint(const OrConstraint& );
-
-  By default, if the driver does not mark a constraint as acceptable,
-  `mp::FlatConverter` and its descendants attempt to simplify it. See the
-  classes' documentation for further details.
 
 * :ref:`value-presolver` transforms solutions and suffixes between the
   original NL model and the flat model.
@@ -283,7 +258,7 @@ via the solver's modeling API wrapper:
 Value Presolver
 ~~~~~~~~~~~~~~~
 
-Class `mp::pre::ValuePresolver` manages transformations of solutions and suffixes
+Class `mp::pre::Presolver` manages transformations of solutions and suffixes
 between the original NL model and the converted model. For driver architectures
 with :ref:`model-manager`, the value presolver object should be shared between
 the model converter and the :ref:`Backend <backend-classes>` to enable

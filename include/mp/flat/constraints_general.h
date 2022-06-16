@@ -8,7 +8,7 @@
 #include <vector>
 #include <string>
 
-#include "mp/flat/constr_algebraic.h"
+#include "mp/flat/constraints_algebraic.h"
 
 
 namespace mp {

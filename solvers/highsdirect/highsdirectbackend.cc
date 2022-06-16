@@ -35,16 +35,16 @@ namespace mp {
 /// need it to convert solution data
 /// @return HighsModelMgr
 std::unique_ptr<BasicModelManager>
-CreateHighsModelMgr(HighsCommon&, Env&, pre::BasicValuePresolver*&);
+CreateHighsModelMgr(HighsCommon&, Env&, pre::BasicPresolver*&);
 
 
 HighsBackend::HighsBackend() {
   OpenSolver();
 
-  pre::BasicValuePresolver* pPre;
+  pre::BasicPresolver* pPre;
   auto data = CreateHighsModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
-  SetValuePresolver(pPre);
+  SetPresolver(pPre);
 
   /// Copy env/lp to ModelAPI
   copy_common_info_to_other();
@@ -72,7 +72,7 @@ bool HighsBackend::IsQCP() const {
 }
 
 Solution HighsBackend::GetSolution() {
-  auto mv = GetValuePresolver().PostsolveSolution(
+  auto mv = GetPresolver().PostsolveSolution(
         { PrimalSolution(), DualSolution() } );
   return { mv.GetVarValues()(), mv.GetConValues()(),
     GetObjectiveValues() };   // TODO postsolve obj values
@@ -149,7 +149,7 @@ SolutionBasis HighsBackend::GetBasis() {
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
-    auto mv = GetValuePresolver().PostsolveBasis(
+    auto mv = GetPresolver().PostsolveBasis(
       { std::move(varstt),
         {{{ CG_Linear, std::move(constt) }}} });
     varstt = mv.GetVarValues()();
@@ -161,7 +161,7 @@ SolutionBasis HighsBackend::GetBasis() {
 }
 
 void HighsBackend::SetBasis(SolutionBasis basis) {
-  auto mv = GetValuePresolver().PresolveBasis(
+  auto mv = GetPresolver().PresolveBasis(
     { basis.varstt, basis.constt });
   auto varstt = mv.GetVarValues()();
   auto constt = mv.GetConValues()(CG_Linear);
