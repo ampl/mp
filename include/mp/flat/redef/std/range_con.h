@@ -26,9 +26,12 @@ public:
   using Base = BasicStaticIndivEntryLink<
     RangeCon2Slack<ModelConverter, RangeCon>, 3, 3>;
 
-  /// Constructor
+  /// Constructor.
+  /// @param cvt: the model converter
+  /// @param ndl: list of 3 value nodes
+  /// (orig ranges, new constraints, new slacks)
   RangeCon2Slack(ModelConverter& cvt,
-                              const typename Base::NodeList& ndl) :
+                 const typename Base::NodeList& ndl) :
     Base(cvt.GetValuePresolver(), ndl), cvt_(cvt) { }
 
   /// Define pre- / postsolve methods for individual link entries.

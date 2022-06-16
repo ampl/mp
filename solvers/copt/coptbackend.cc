@@ -361,8 +361,8 @@ void CoptBackend::InitCustomOptions() {
     "\n.. value-table::\n", COPT_INTPARAM_CUTLEVEL,
     alg_values_level, -1);
 
-  AddSolverOption("mip:intfeastol intfeastol",
-    "Feasibility tolerance for integer variables (default 1e-05).",
+  AddSolverOption("mip:intfeastol intfeastol inttol",
+    "Feasibility tolerance for integer variables (default 1e-06).",
     COPT_DBLPARAM_INTTOL, 1e-9, 0.1);
 
   AddSolverOption("mip:rootcutlevel rootcutlevel",
@@ -408,7 +408,7 @@ void CoptBackend::InitCustomOptions() {
 
   AddSolverOption("mip:strongbranching strongbranching",
     "Level of strong branching:\n"
-    "\n.. value-table::\n", COPT_INTPARAM_SUBMIPHEURLEVEL,
+    "\n.. value-table::\n", COPT_INTPARAM_STRONGBRANCHING,
     alg_values_level, -1); 
 
     AddSolverOption("mip:conflictanalysis conflictanalysis",
@@ -488,7 +488,9 @@ void CoptBackend::InitCustomOptions() {
     "nput matrix coefficient tolerance (default 1e-10).",
     COPT_DBLPARAM_MATRIXTOL, 0.0, 1e-7);
 
-      
+  AddSolverOption("bar:crossover crossover",
+    "Execute crossover to transform a barrier solution to a basic one (default 1).",
+    "Crossover", 0, 1);
 }
 
 

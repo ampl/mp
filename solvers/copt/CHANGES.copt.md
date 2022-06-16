@@ -1,9 +1,13 @@
 Summary of recent updates to COPT for AMPL
 ==========================================
 
+## 20220615
+- New parameter: *crossover*
+- Minor changes to parmeter names
+
 ## 20220526
 - *SOS constraints* are now detected also if the .ref suffix is integer
-- Minor changes to option names
+- Minor changes to parmeter names
 
 ## 20220511
 - *Complementarity constraints: also quadratics*
