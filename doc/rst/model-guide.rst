@@ -205,8 +205,8 @@ to the solver natively
 (if supported; e.g., Gurobi options *acc:and*, *acc:or*).
 
 
-SOS constraints and non-contiguous variable domains
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+SOS variable domains
+~~~~~~~~~~~~~~~~~~~~
 
 SOS1 is mainly relevant for models that restrict some variables to take a
 value from an arbitrary list of values. A simple example:
@@ -218,11 +218,8 @@ value from an arbitrary list of values. A simple example:
 An appropriate SOS1 representation will be
 automatically generated from this declaration.
 
-SOS2 are one of the two ways to linearize
-:ref:`piecewise-linear expressions <piecewize-linear-expr>` by AMPL.
-
 It is possible to specify SOS1 or SOS2 variables and corresponding "reference rows"
-explicitly using AMPL suffixes .sos(no) and .(sos)ref,
+explicitly using AMPL suffixes .sosno and .ref,
 as described in the solver documentation.
 However this requires some study to understand whether SOS1/2 is appropriate
 and how to apply it, and we don't recommend going to that trouble unless you
@@ -245,8 +242,6 @@ Functions ``min``, ``max``, ``abs`` can be linearized with big-*M* constraints
 or passed to the solver natively
 (if supported; e.g., Gurobi options *acc:min*, *acc:max*, *acc:abs*).
 
-
-.. _piecewize-linear-expr:
 
 Piecewise-linear expressions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

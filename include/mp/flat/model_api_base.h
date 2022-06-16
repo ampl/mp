@@ -28,7 +28,7 @@
 
 #include "mp/arrayref.h"
 #include "mp/common.h"
-#include "mp/flat/constr_base.h"
+#include "mp/flat/constraint_base.h"
 #include "mp/flat/obj_std.h"
 
 namespace mp {

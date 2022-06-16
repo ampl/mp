@@ -11,7 +11,7 @@ namespace mp {
 /// for recompilation speed
 std::unique_ptr<BasicModelManager>
 CreateCoptModelMgr(CoptCommon& cc, Env& e,
-                     pre::BasicValuePresolver*& pPre) {
+                     pre::BasicPresolver*& pPre) {
   return CreateModelMgrWithFlatConverter<
       CoptModelAPI, MIPFlatConverter >(cc, e, pPre);
 }
