@@ -194,7 +194,7 @@ and conversion for a particular solver.
 
 .. _model-manager:
 
-Model Manager
+Model manager
 ~~~~~~~~~~~~~
 
 Class `mp::BasicModelManager` standardizes the interface for
@@ -247,7 +247,7 @@ tools can be adapted to convert the instance for a particular solver.
 
 .. _flat-converters:
 
-Flat Model Converters
+Flat model converters
 ~~~~~~~~~~~~~~~~~~~~~
 
 `mp::FlatConverter` and `mp::MIPFlatConverter` represent and
@@ -259,30 +259,63 @@ solver, are transformed into simpler forms. This behavior
 can be flexibly parameterized for a particular solver, preferably
 via the solver's modeling API wrapper:
 
-* `mp::BasicFlatModelAPI` is the interface via which `mp::FlatConverter` addresses
-  the underlying solver. A subclassed wrapper, such as `mp::GurobiModelAPI`,
-  signals its accepted constraints and which model conversions are preferable.
-  For example, `GurobiModelAPI` declares the following in order to natively
-  receive the logical OR constraint:
+* :ref:`flat-model-api` is the interface via which `mp::FlatConverter` addresses
+  the underlying solver.
 
-  .. code-block:: c++
+* :ref:`value-presolver` transforms solutions and suffixes between the
+  original NL model and the flat model.
+
+
+.. _flat-model-api:
+
+Flat model API
+~~~~~~~~~~~~~~
+
+`mp::BasicFlatModelAPI` is the interface via which :ref:`flat-converters` address
+the underlying solver.
+
+
+Constraint acceptance
+^^^^^^^^^^^^^^^^^^^^^
+
+A subclassed wrapper, such as `mp::GurobiModelAPI`,
+signals its accepted constraints and which model conversions are preferable.
+For example, `GurobiModelAPI` declares the following in order to natively
+receive the logical OR constraint:
+
+.. code-block:: c++
 
       ACCEPT_CONSTRAINT(OrConstraint,
         Recommended,                       // Driver recommends native form
         CG_General)                        // Constraint group for suffix exchange
       void AddConstraint(const OrConstraint& );
 
-  By default, if the driver does not mark a constraint as acceptable,
-  `mp::FlatConverter` and its descendants attempt to simplify it. See the
-  classes' documentation for further details.
+By default, if the driver does not mark a constraint as acceptable,
+`mp::FlatConverter` and its descendants attempt to simplify it. See the
+classes' documentation for further details.
 
-* :ref:`value-presolver` transforms solutions and suffixes between the
-  original NL model and the flat model.
+
+Problem sizes and preallocation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To preallocate memory for a class of constraints, the implementation can
+redefine method `mp::BasicFlatModelAPI::InitProblemModificationPhase`:
+
+.. code-block:: c++
+
+    void MosekModelAPI::InitProblemModificationPhase(const FlatModelInfo* info) {
+      /// Preallocate linear and quadratic constraints.
+      /// CG_Linear, CG_Quadratic, etc. are the constraint group indexes
+      /// provided in ACCEPT_CONSTRAINT macros.
+      MOSEK_CCALL(MSK_appendcons(lp(),
+                             info->GetNumberOfConstraintsOfGroup(CG_Linear) +
+                             info->GetNumberOfConstraintsOfGroup(CG_Quadratic)));
+    }
 
 
 .. _value-presolver:
 
-Value Presolver
+Value presolver
 ~~~~~~~~~~~~~~~
 
 Class `mp::pre::ValuePresolver` manages transformations of solutions and suffixes

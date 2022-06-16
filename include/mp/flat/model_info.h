@@ -33,7 +33,7 @@ public:
 
 
 /// FlatModelInfo factory
-std::unique_ptr<const FlatModelInfo> CreateFlatModelInfo();
+std::unique_ptr<FlatModelInfo> CreateFlatModelInfo();
 
 } // namespace mp
 

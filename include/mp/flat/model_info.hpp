@@ -76,8 +76,8 @@ private:
 
 
 /// FlatModelInfo factory
-std::unique_ptr<const FlatModelInfo> CreateFlatModelInfo() {
-  return std::unique_ptr<const FlatModelInfo>{new FlatModelInfoImpl()};
+std::unique_ptr<FlatModelInfo> CreateFlatModelInfo() {
+  return std::unique_ptr<FlatModelInfo>{new FlatModelInfoImpl()};
 }
 
 } // namespace mp

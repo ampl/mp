@@ -16,7 +16,13 @@ CreateMosekModelMgr(MosekCommon& cc, Env& e,
 }
 
 
-void MosekModelAPI::InitProblemModificationPhase(const FlatModelInfo* info) { 
+void MosekModelAPI::InitProblemModificationPhase(const FlatModelInfo* info) {
+  /// Preallocate linear and quadratic constraints.
+  /// CG_Linear, CG_Quadratic, etc. are the constraint group indexes
+  /// provided in ACCEPT_CONSTRAINT macros.
+  MOSEK_CCALL(MSK_appendcons(lp(),
+                             info->GetNumberOfConstraintsOfGroup(CG_Linear) +
+                             info->GetNumberOfConstraintsOfGroup(CG_Quadratic)));
 }
 
 void MosekModelAPI::AddVariables(const VarArrayDef& v) {
@@ -53,7 +59,7 @@ void MosekModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   if (iobj < 1) {
     MOSEK_CCALL(MSK_putobjsense(lp(),
       obj::Type::MAX == lo.obj_sense() ? MSK_OBJECTIVE_SENSE_MAXIMIZE : MSK_OBJECTIVE_SENSE_MINIMIZE));
-    for (size_t i = 0; i < lo.num_terms(); i++) {
+    for (int i = 0; i < lo.num_terms(); i++) {
       MOSEK_CCALL(MSK_putcj(lp(), lo.vars()[i], lo.coefs()[i]));
     }
   }
@@ -76,37 +82,39 @@ void MosekModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
     throw std::runtime_error("Multiple quadratic objectives not supported");
   }
 }
-void addLinearConstraint(MSKtask_t lp, size_t size, MSKboundkey_enum key, double lb, double ub,
-  const int* vindex, const double* values, const char* name) {
+void MosekModelAPI::AddLinearConstraint(
+    MSKtask_t lp, size_t size, MSKboundkey_enum key,
+    double lb, double ub,
+    const int* vindex, const double* values, const char* name) {
 
-  MOSEK_CCALL(MSK_appendcons(lp, 1));
-  int nc;
-  MSK_getnumcon(lp, &nc);
   if (lb == -std::numeric_limits<double>::infinity())
     lb = -MSK_DPAR_DATA_TOL_BOUND_INF;
   if (ub == std::numeric_limits<double>::infinity())
     ub = MSK_DPAR_DATA_TOL_BOUND_INF;
 
-  MOSEK_CCALL(MSK_putarow(lp, --nc, size, vindex, values));
-  MOSEK_CCALL(MSK_putconbound(lp, nc, key, lb, ub));
-  MOSEK_CCALL(MSK_putconname(lp, nc, name));
+  /* Linear + quadratic constraints are preallocated in
+     InitProblemModificationPhase() */
+  MOSEK_CCALL(MSK_putarow(lp, n_alg_cons_, size, vindex, values));
+  MOSEK_CCALL(MSK_putconbound(lp, n_alg_cons_, key, lb, ub));
+  MOSEK_CCALL(MSK_putconname(lp, n_alg_cons_, name));
 
+  ++n_alg_cons_;
 }
 
 void MosekModelAPI::AddConstraint(const LinConRange& lc) {
-  addLinearConstraint(lp(), lc.size(), MSK_BK_RA, lc.lb(), lc.ub(),
+  AddLinearConstraint(lp(), lc.size(), MSK_BK_RA, lc.lb(), lc.ub(),
     lc.pvars(), lc.pcoefs(), lc.name());
 }
 void MosekModelAPI::AddConstraint(const LinConLE& lc) {
-  addLinearConstraint(lp(), lc.size(), MSK_BK_UP, lc.lb(), lc.ub(),
+  AddLinearConstraint(lp(), lc.size(), MSK_BK_UP, lc.lb(), lc.ub(),
     lc.pvars(), lc.pcoefs(), lc.name());
 }
 void MosekModelAPI::AddConstraint(const LinConEQ& lc) {
-  addLinearConstraint(lp(), lc.size(), MSK_BK_FX, lc.lb(), lc.ub(),
+  AddLinearConstraint(lp(), lc.size(), MSK_BK_FX, lc.lb(), lc.ub(),
     lc.pvars(), lc.pcoefs(), lc.name());
 }
 void MosekModelAPI::AddConstraint(const LinConGE& lc) {
-  addLinearConstraint(lp(), lc.size(), MSK_BK_LO, lc.lb(), lc.ub(),
+  AddLinearConstraint(lp(), lc.size(), MSK_BK_LO, lc.lb(), lc.ub(),
     lc.pvars(), lc.pcoefs(), lc.name());
 }
 

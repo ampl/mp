@@ -96,6 +96,17 @@ public:
   ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS2Constraint& cc);
 
+
+protected:
+  /// internal, add linear constraint
+  void AddLinearConstraint(
+      MSKtask_t lp, size_t size, MSKboundkey_enum key,
+      double lb, double ub,
+      const int* vindex, const double* values, const char* name);
+
+
+private:
+  int n_alg_cons_ = 0;
 };
 
 } // namespace mp

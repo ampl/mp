@@ -186,7 +186,9 @@ public:
   template <class Backend>
   void PushModelTo(Backend& backend) const {
     auto fmi = CreateFlatModelInfo();
+    FillConstraintCounters(backend, *fmi.get());
     backend.InitProblemModificationPhase(fmi.get());
+
     PushVariablesTo(backend);
     PushObjectivesTo(backend);
     PushCustomConstraintsTo(backend);

@@ -97,12 +97,12 @@ enum ConstraintGroup {
 /// ModelAPIs handling custom flat constraints should derive from
 class BasicFlatModelAPI {
 public:
-  /// Placeholder
+  /// Placeholder for GetTypeName()
   static const char* GetTypeName()    { return "BasicBackendFlatModelAPI"; }
-  /// Placeholder
+  /// Placeholder for GetLongName()
   static const char* GetLongName() { return nullptr; }
 
-  /// Placeholder
+  /// Placeholder for InitOptions()
   void InitOptions() { }
 
   /// Chance to prepare problem update,
