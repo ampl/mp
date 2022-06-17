@@ -201,6 +201,20 @@ public: // for ConstraintKeeper
     MP_DISPATCH(Convert(con, i));
   }
 
+  /// Query if a constraint needs to be converted,
+  /// despite being accepted by the ModelAPI.
+  template <class Constraint>
+  bool IfNeedsConversion(const Constraint& con, int i) {
+    return MPD( IfNeedsCvt_impl(con, i) );
+  }
+
+  /// Generic query if a constraint needs to be converted,
+  /// despite being accepted by the ModelAPI.
+  template <class Constraint>
+  bool IfNeedsCvt_impl(const Constraint& , int ) {
+    return false;
+  }
+
   /// Generic adapter for old non-bridged Convert() methods
   ///
   /// New way is to use the \a i parameter for bridging

@@ -5,6 +5,9 @@
  * Preprocess flat constraints before adding
  */
 
+#include <cmath>
+#include <algorithm>
+
 #include "mp/flat/preprocess.h"
 #include "mp/flat/constr_std.h"
 
@@ -41,14 +44,34 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       PowConstraint& c, PreprocessInfo& prepro) {
-    auto& m = MP_DISPATCH( GetModel() );
+    auto pwr = c.GetParameters()[0];
+    if (0.0==std::fabs(pwr)) {              // decidable case
+      prepro.narrow_result_bounds(1.0, 1.0);
+      return;
+    }
     auto arg = c.GetArguments()[0];
-    auto prm = c.GetParameters()[0];
-    auto lb = std::pow(m.lb(arg), prm),
-        ub = std::pow(m.ub(arg), prm);
+    if (1.0==pwr) {                         // decidable case
+      prepro.set_result_var(arg);
+      return;
+    }
+    auto& m = MP_DISPATCH( GetModel() );
+    auto lb = std::pow(m.lb(arg), pwr),
+        ub = std::pow(m.ub(arg), pwr);
+    if (MPD( is_integer_value(pwr) ) && pwr>=0.0) {
+      // result integer if arg is and integer, >=0 exponent
+      prepro.set_result_type( m.var_type(arg) );
+      if (MPD( is_integer_value(pwr / 2.0) )) {  // exponent is even, >=0
+        bool lb_neg = m.lb(arg)<0.0;
+        bool ub_pos = m.ub(arg)>0.0;
+        if (lb_neg && ub_pos) {
+          ub = std::max(lb, ub); lb = 0.0;
+        } else if (lb_neg) {
+          std::swap(lb, ub);
+        }
+      }
+    }
     prepro.narrow_result_bounds( std::min(lb, ub),
                           std::max(lb, ub) );
-    prepro.set_result_type( m.var_type(arg) );
   }
 
   /// Preprocess Tan

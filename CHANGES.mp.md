@@ -1,7 +1,14 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
-## unreleased
+## 20220617
+- *PowConstraint is reduced to quadratics in some cases*
+    For constant non-negative integer exponent and base variables
+    with negative lower bound, PowConstraint
+    is reduced to quadratics (possibly ewith auxiliary variables).
+    Reason: Gurobi's GRBaddgenconstrPow
+    not accepting negative bases.
+
 - *Context for algebraic constraints*
     Context is now propagated for algebraic constraints.
     For example, 3x + max(y, z) <= 6 will result in 3 linear

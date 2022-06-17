@@ -131,6 +131,7 @@ public:
 #define USE_BASE_CONSTRAINT_CONVERTERS(BaseConverter) \
   using BaseConverter::PreprocessConstraint; \
   using BaseConverter::PropagateResult; \
+  using BaseConverter::IfNeedsCvt_impl; \
   using BaseConverter::Convert
 
 
@@ -297,7 +298,7 @@ protected:
     ++i;
     const auto acceptanceLevel =
         GetBackendAcceptance(GetBackend(GetConverter()));
-    if (NotAccepted == acceptanceLevel) {       // Convert all
+    if (NotAccepted == acceptanceLevel) {
       for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i)
         if (!it->IsBridged())
           ConvertConstraint(*it, i);
@@ -312,6 +313,11 @@ protected:
           }
         }
       }
+    } else { // Recommended == acceptanceLevel &&
+      for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i)
+        if (!it->IsBridged() &&
+            GetConverter().IfNeedsConversion(it->con_, i))
+          ConvertConstraint(*it, i);
     }
     bool any_converted = i_last!=i-1;
     i_last = i-1;

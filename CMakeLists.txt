@@ -348,7 +348,7 @@ add_prefix(MP_FLAT_REDEF_MIP_HEADERS include/mp/flat/redef/MIP/
   ifthenelse.h indicator_eq.h indicator_le.h indicator_ge.h
   indicator_quad.h
   logical_and.h logical_or.h logical_not.h
-  min_max.h numberof_const.h numberof_var.h)
+  min_max.h numberof_const.h numberof_var.h power_const.h)
 
 
 set(MP_ALL_HEADERS ${MP_HEADERS} ${MP_FLAT_HEADERS}

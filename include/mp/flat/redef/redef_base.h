@@ -16,6 +16,15 @@ public:
   /// Constructor
   BasicItemConverter(ModelConverter& mc) : mdl_cvt_(mc) { }
 
+  /// Generic check whether the constraint
+  /// needs to be converted despite being recommended by ModelAPI.
+  /// Example: PowConstraint(x, ...) with lb(x)<0.
+  /// Default false.
+  template <class ItemType>
+  bool IfNeedsConversion(const ItemType& , int ) {
+    return false;
+  }
+
   /// Access ModelConverter
   ModelConverter& GetMC() { return mdl_cvt_; }
   /// Access Presolver
@@ -98,6 +107,11 @@ public:
 #define INSTALL_ITEM_CONVERTER(item_cvt_type) \
   item_cvt_type<Impl> item_cvt__ ## item_cvt_type ## _ \
    { *static_cast<Impl*>(this) }; \
+  bool IfNeedsCvt_impl(const typename \
+      item_cvt_type<Impl>::ItemType& con, int i) { \
+    return item_cvt__ ## item_cvt_type ## _ . \
+      IfNeedsConversion(con, i); \
+  } \
   void Convert(const typename \
       item_cvt_type<Impl>::ItemType& con, int i) { \
     item_cvt__ ## item_cvt_type ## _ . Convert(con, i); \

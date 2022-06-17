@@ -23,6 +23,7 @@
 #include "mp/flat/redef/MIP/min_max.h"
 #include "mp/flat/redef/MIP/numberof_const.h"
 #include "mp/flat/redef/MIP/numberof_var.h"
+#include "mp/flat/redef/MIP/power_const.h"
 
 
 #endif // REDEFS_MIP_STD_H
