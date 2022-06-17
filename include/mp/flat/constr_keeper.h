@@ -9,9 +9,9 @@
 
 #include "mp/common.h"
 #include "mp/flat/model_api_base.h"
-#include "mp/flat/constraint_hash.h"
+#include "mp/flat/constr_hash.h"
 #include "mp/flat/redef/redef_base.h"
-#include "mp/presolve-node.h"
+#include "mp/valcvt-node.h"
 
 namespace mp {
 
@@ -318,10 +318,10 @@ protected:
     for (const auto& cont: cons_) {
       if (!cont.IsBridged()) {
         static_cast<Backend&>(be).AddConstraint(cont.con_);
-        GetConverter().GetCopyBridge().
+        GetConverter().GetCopyLink().
             AddEntry({
                        GetValueNode().Select(con_index),
-                       GetConverter().GetPresolver().GetTargetNodes().
+                       GetConverter().GetValuePresolver().GetTargetNodes().
                          GetConValues()(con_group).Add()
                      });
       }
