@@ -17,13 +17,6 @@ Namespace mp
    :members:
 
 
-Namespace mp::pre
------------------
-
-.. doxygennamespace:: mp::pre
-   :members:
-
-
 Namespace fmt
 -------------
 

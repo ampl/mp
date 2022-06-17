@@ -2,10 +2,7 @@
 #define BACKEND_BASE_H
 
 #include <string>
-
-extern "C" {
-  #include "mp/ampls-c-api.h" // for CCallbacks
-}
+#include <functional>
 
 #include "mp/solver-base.h"
 
@@ -79,12 +76,25 @@ public:
   /// Chance to consider options immediately (open cloud, etc)
   virtual void FinishOptionParsing() { }
 
-  /// Callbacks typedef
-  using Callbacks = CCallbacks;
+  /// Callbacks, e.g., for licensing information
+  struct Callbacks {
+    /// If given, has the custom solver GetEnv() method
+    std::function<void*()> cb_initsolver_;
+
+    /// If given, should be called after reading the NL (header)
+    /// with n_vars, n_algebraic_constr, n_logical_constr
+    std::function<void (size_t, size_t, size_t)> cb_checkmodel_;
+
+    /// If given, provides the license description
+    std::function<const char*()> cb_license_text_;
+
+    /// If given, the function is called to provide additional
+    // diagnostics if a solver environment cannot be created
+    std::function<void()> cb_diagnostics_;
+  };
 
   /// Obtain callbacks
   Callbacks& GetCallbacks() { return callbacks_; }
-
 
 private:
   Callbacks callbacks_;
