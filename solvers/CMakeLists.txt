@@ -233,6 +233,10 @@ add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT LIBRARIES ${COPT_LIBS} 
 add_ampl_backend(highsdirect DLL_RUNTIME SHARED_LIB
   MODULE HIGHS LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})
 
+
+add_ampl_backend(ortoolsmp DLL_RUNTIME SHARED_LIB
+  MODULE ortoolsmp LIBRARIES ${ortoolsmp_LIBS} ${CMAKE_DL_LIBS})
+
 ## TODO Cannot use 'add_ampl_backend' because of the -direct name suffix
 add_ampl_solver(cplexdirect DLL_RUNTIME SHARED_LIB MODULE CPLEX
   cplex-ampls-c-api.h

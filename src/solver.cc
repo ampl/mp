@@ -1028,7 +1028,7 @@ typedef struct AMPLS_MP__internal_T {
 AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
                           const char* slv_opt) {
   AMPLS_MP_Solver* slv = new AMPLS_MP_Solver();
-  int ret =  AMPLS__internal__TryCatchWrapper( slv, [&]() {
+  AMPLS__internal__TryCatchWrapper( slv, [&]() {
     auto ii = new AMPLS_MP__internal();
     slv->internal_info_ = ii;
     ii->p_be_ = std::move(p_be);
@@ -1050,10 +1050,7 @@ AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
   } );
   return slv;
 }
-/** Deallocate the mp-related info and the structure itself.
-* Before calling this function, a solver-specific implementation should
-* delete solver_info_ and user_info_ if allocated.
-*/
+
 void AMPLS__internal__Close(AMPLS_MP_Solver* slv) {
   assert(slv->internal_info_);
   delete (AMPLS_MP__internal*)slv->internal_info_;

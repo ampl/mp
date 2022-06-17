@@ -32,8 +32,7 @@ public:
   /// Read NL model
   virtual void ReadNLModel(const std::string& nl_filename,
                            const std::string& filename_no_ext,
-                           std::function<void (size_t, size_t, size_t)>
-                             cb_checkmodel) = 0;
+                           void (*cb_checkmodel)(size_t, size_t, size_t)) = 0;
 
   /// User-provided primal solution
   virtual ArrayRef<double> InitialValues() = 0;
