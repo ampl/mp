@@ -12,9 +12,9 @@
 #include "mp/solver-base.h"
 #include "mp/flat/converter_model.h"
 #include "mp/flat/convert_functional.h"
-#include "mp/flat/constraint_keeper.h"
-#include "mp/flat/constraints_std.h"
-#include "mp/presolve.h"
+#include "mp/flat/constr_keeper.h"
+#include "mp/flat/constr_std.h"
+#include "mp/valcvt.h"
 #include "mp/flat/redef/std/range_con.h"
 
 namespace mp {
@@ -881,7 +881,7 @@ public:
 
   void FinishModelInput() {
     MPD( ConvertModel() );
-    if (relax())              // TODO bridge?
+    if (relax())              // TODO value presolve link?
       GetModel().RelaxIntegrality();
     GetModel().PushModelTo(GetModelAPI());
   }
@@ -909,9 +909,9 @@ public:
   const ModelAPI& GetModelAPI() const { return modelapi_; }
   ModelAPI& GetModelAPI() { return modelapi_; }
 
-  /// Expose Presolver
-  const pre::Presolver& GetPresolver() const { return presolver_; }
-  pre::Presolver& GetPresolver() { return presolver_; }
+  /// Expose ValuePresolver
+  const pre::ValuePresolver& GetValuePresolver() const { return value_presolver_; }
+  pre::ValuePresolver& GetValuePresolver() { return value_presolver_; }
 
 private:
   std::unordered_map<double, int> map_fixed_vars_;
@@ -949,7 +949,7 @@ public:
 
   /// Reuse Presolver's target nodes for all variables
   pre::ValueNode& GetVarValueNode()
-  { return GetPresolver().GetTargetNodes().GetVarValues().MakeSingleKey(); }
+  { return GetValuePresolver().GetTargetNodes().GetVarValues().MakeSingleKey(); }
 
   /// Constraint type's Value Node
   template <class Constraint>
@@ -1067,7 +1067,7 @@ protected:
 private:
   void InitOwnOptions() {
     GetEnv().AddOption("cvt:pre:all",
-        "0/1*: Set to 0 to disable all presolve in the flat converter.",
+        "0/1*: Set to 0 to disable most presolve in the flat converter.",
         options_.preprocessAnything_, 0, 1);
     GetEnv().AddOption("cvt:pre:eqresult",
         "0/1*: Preprocess reified equality comparison's boolean result bounds.",
@@ -1099,8 +1099,8 @@ public:
 
 private:
   ModelAPIType modelapi_;      // We store modelapi in the converter for speed
-  pre::Presolver presolver_;
-  pre::CopyBridge copy_bridge_ { GetPresolver() };
+  pre::ValuePresolver value_presolver_;
+  pre::CopyLink copy_link_ { GetValuePresolver() };
 
 
 protected:
@@ -1232,8 +1232,8 @@ protected:
   INSTALL_ITEM_CONVERTER(RangeQuadraticConstraintConverter)
 
 public:
-  /// Presolve bridge copying values between model items
-  pre::CopyBridge& GetCopyBridge() { return copy_bridge_; }
+  /// Presolve link copying values between model items
+  pre::CopyLink& GetCopyLink() { return copy_link_; }
 };
 
 

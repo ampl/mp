@@ -8,7 +8,7 @@ namespace mp {
 /// for recompilation speed
 std::unique_ptr<BasicModelManager>
 CreateGurobiModelMgr(GurobiCommon& gc, Env& e,
-                     pre::BasicPresolver*& pPre) {
+                     pre::BasicValuePresolver*& pPre) {
   return CreateModelMgrWithFlatConverter<
       GurobiModelAPI, MIPFlatConverter >(gc, e, pPre);
 }

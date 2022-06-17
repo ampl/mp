@@ -26,7 +26,7 @@ template <class ModelAPI,
           class Backend>
 std::unique_ptr<BasicModelManager>
 CreateModelMgrWithFlatConverter(Backend& gc, Env& e,
-                     pre::BasicPresolver*& pPre) {
+                     pre::BasicValuePresolver*& pPre) {
   using SolverFlatCvt = FlatCvtImpl<FlatConverter, ModelAPI>;
   using SolverProblemFlattener = mp::ProblemFltImpl<
     mp::ProblemFlattener, mp::Problem, SolverFlatCvt>;
@@ -36,7 +36,7 @@ CreateModelMgrWithFlatConverter(Backend& gc, Env& e,
   pcvt->GetFlatCvt().GetModelAPI().set_other(&gc);
   gc.set_other(
         &pcvt->GetFlatCvt().GetModelAPI());
-  pPre = &pcvt->GetFlatCvt().GetPresolver();
+  pPre = &pcvt->GetFlatCvt().GetValuePresolver();
   return res;
 }
 
