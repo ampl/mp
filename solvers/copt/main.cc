@@ -8,6 +8,9 @@ extern "C" int main1(int, char **argv) {
       mp::RunBackendApp(argv, CreateCoptBackend);
 }
 
-extern "C" int main2(int, char** argv, CCallbacks cb) {
-  return mp::RunBackendApp(argv, CreateCoptBackend, cb);
+extern "C" int main2(int, char** argv,
+  void* (*init)(), void (*check)(size_t, size_t, size_t),
+  const char* (*text)()) {
+  mp::BasicBackend::Callbacks callbacks = { init, check, text };
+  return mp::RunBackendApp(argv, CreateCoptBackend, callbacks);
 }

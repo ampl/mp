@@ -10,9 +10,9 @@
 #include "mp/converter-base.h"
 #include "mp/expr-visitor.h"
 #include "mp/flat/eexpr.h"
-#include "mp/flat/constr_std.h"
+#include "mp/flat/constraints_std.h"
 #include "mp/flat/obj_std.h"
-#include "mp/valcvt.h"
+#include "mp/presolve.h"
 
 
 namespace mp {
@@ -109,7 +109,6 @@ public:
   }
 
 protected:
-  /// Convert problem items
   void ConvertStandardItems() {
     ////////////////////////// Variables
     ConvertVars();
@@ -150,18 +149,16 @@ protected:
       types[i] = mpvar.type();
     }
     auto vnr = GetFlatCvt().AddVars(lbs, ubs, types);
-    GetCopyLink().AddEntry({
-          GetValuePresolver().GetSourceNodes().GetVarValues().MakeSingleKey().
+    GetCopyBridge().AddEntry({
+          GetPresolver().GetSourceNodes().GetVarValues().MakeSingleKey().
                                Add(lbs.size()),
           vnr });
   }
 
-  /// Convert a common expr
   void Convert(typename ProblemType::MutCommonExpr ) {
     /// Converting on demand, see VisitCommonExpr
   }
 
-  /// Convert an objective
   void Convert(typename ProblemType::MutObjective obj) {
       auto le = ToLinTerms(obj.linear_expr());
       NumericExpr e = obj.nonlinear_expr();
@@ -190,11 +187,10 @@ protected:
                                std::move(eexpr.GetQPTerms())});
   }
 
-  /// Convert an algebraic constraint
   void ConvertAlgCon(int i) {
     auto pr = PrepareAlgConstraint(i);
     auto nr = AddAlgebraicConstraint(pr);
-    AddCopyLinkFromSource(nr);
+    AddCopyBridgeFromSource(nr);
   }
 
   /// Preparation info
@@ -239,7 +235,7 @@ protected:
 
   /// Add algebraic constraint to FlatCvt
   pre::NodeRange AddAlgebraicConstraint(const AlgConPrepare& pr) {
-    pre::NodeRange nr;                                 // value presolve link
+    pre::NodeRange nr;                            // presolve bridge
     if (pr.qt.empty()) {
       if (pr.compl_var<0)
         nr = AddConstraint( LinConRange{ std::move(pr.lt),
@@ -263,15 +259,13 @@ protected:
     return nr;
   }
 
-  /// Add a copy link from a source item
-  void AddCopyLinkFromSource(pre::NodeRange nr) {
-    GetCopyLink().AddEntry( {
-            GetValuePresolver().GetSourceNodes().GetConValues()(0).Add(),
+  void AddCopyBridgeFromSource(pre::NodeRange nr) {
+    GetCopyBridge().AddEntry( {
+            GetPresolver().GetSourceNodes().GetConValues()(0).Add(),
             nr
           } );
   }
 
-  /// Convert a logical constraint
   void ConvertLogicalCon(int i) {
     auto e = GetModel().logical_con(i);
     const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
@@ -279,7 +273,7 @@ protected:
     assert(GetFlatCvt().HasInitExpression(resvar));
     const auto& ie = GetFlatCvt().GetInitExpression(resvar);
     /// TODO check that logical cons' values come after algebraic ones
-    AddCopyLinkFromSource(
+    AddCopyBridgeFromSource(
           ie.GetCK()->GetValueNode().Select( ie.GetIndex() ));
   }
 
@@ -633,7 +627,7 @@ public:
     return VisitFunctionalExpression<TanConstraint>({ e.arg() });
   }
 
-  /// TODO how to link them if they are no real items in NL?
+  /// TODO how to bridge them if they are no real items in NL?
   void ConvertSOSConstraints() {
     if (sos()) {
       auto sosno = GetModel().
@@ -743,8 +737,7 @@ protected:
   //////////////////////////// UTILITIES /////////////////////////////////
   ///
 protected:
-  pre::ValuePresolver& GetValuePresolver()
-  { return GetFlatCvt().GetValuePresolver(); }
+  pre::Presolver& GetPresolver() { return GetFlatCvt().GetPresolver(); }
 
 private:
   std::unordered_map<double, int> map_fixed_vars_;
@@ -757,8 +750,8 @@ protected:
   int MakeFixedVar(double value) // TODO use proper const term in obj
   { return GetFlatCvt().MakeFixedVar(value); }
 
-  /// Presolve link just copying values between model items
-  pre::CopyLink& GetCopyLink() { return GetFlatCvt().GetCopyLink(); }
+  /// Presolve bridge copying values between model items
+  pre::CopyBridge& GetCopyBridge() { return GetFlatCvt().GetCopyBridge(); }
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////
