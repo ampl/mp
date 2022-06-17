@@ -86,8 +86,8 @@ protected:
 
   void ReadNLModel(const std::string& nl_filename,
                    const std::string& filename_no_ext,
-                   std::function<void (size_t, size_t, size_t)>
-                     cb_checkmodel) override {
+                   void (*cb_checkmodel)(size_t, size_t, size_t))
+  override {
     steady_clock::time_point start = steady_clock::now();
 
     ReadNLFile(nl_filename);

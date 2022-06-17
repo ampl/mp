@@ -1,5 +1,5 @@
-#ifndef MP_CPLEX_BACKEND_H_
-#define MP_CPLEX_BACKEND_H_
+#ifndef MP_ORTOOLS_BACKEND_H_
+#define MP_ORTOOLS_BACKEND_H_
 
 #if __clang__
 # pragma clang diagnostic push
@@ -20,28 +20,29 @@
 
 #include "mp/backend-mip.h"
 #include "mp/valcvt-base.h"
-#include "cplexcommon.h"
+#include "ortoolsmpcommon.h"
 
 namespace mp {
 
-class CplexBackend :
-    public MIPBackend<CplexBackend>,
+class OrtoolsBackend :
+    public MIPBackend<OrtoolsBackend>,
     public BasicValuePresolverKeeper,
-    public CplexCommon
+    public OrtoolsCommon
 {
-  using BaseBackend = MIPBackend<CplexBackend>;
+  using BaseBackend = MIPBackend<OrtoolsBackend>;
+
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:
-  CplexBackend();
-  ~CplexBackend();
+  OrtoolsBackend();
+  ~OrtoolsBackend();
 
   /// Name displayed in messages
-  static const char* GetSolverName() { return "x-CPLEX"; }
+  static const char* GetSolverName() { return "ortools"; }
   std::string GetSolverVersion();
-  /// Reuse cplex_options:
-  static const char* GetAMPLSolverName() { return "cplex"; }
-  static const char* GetAMPLSolverLongName() { return "AMPL-CPLEX"; }
+  
+  static const char* GetAMPLSolverName() { return "ortools"; }
+  static const char* GetAMPLSolverLongName() { return "AMPL-ortools"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
@@ -51,12 +52,18 @@ public:
   void FinishOptionParsing() override;
 
 
+
+  ////////////////////////////////////////////////////////////
+  /////////////// OPTIONAL STANDARD FEATURES /////////////////
+  ////////////////////////////////////////////////////////////
+  // Use this section to declare and implement some standard features
+  // that may or may not need additional functions. 
+  USING_STD_FEATURES;
+
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
   bool IsQCP() const override;
-
-
-
+  
   //////////////////////////// SOLVING ///////////////////////////////
 
   /// Note the interrupt notifier
@@ -69,7 +76,7 @@ public:
 
   Solution GetSolution() override;
   ArrayRef<double> GetObjectiveValues() override
-  { return std::vector<double>{ObjectiveValue()}; } // TODO
+  { return std::vector<double>{ObjectiveValue()}; } 
 
 
   //////////////////// [[ Implementation details ]] //////////////////////
@@ -90,30 +97,35 @@ protected:
   pre::ValueMapDbl DualSolution();
   ArrayRef<double> DualSolution_LP();
 
-  void WindupCPLEXSolve();
+  void WindupORTOOLSSolve();
 
   void ReportResults() override;
-  void ReportCPLEXResults();
+  void ReportORTOOLSResults();
+  void ReportORTOOLSPool();
+
+  std::vector<double> getPoolSolution(int i);
+  double getPoolObjective(int i);
 
   /// Solution attributes
   double NodeCount() const;
   double SimplexIterations() const;
   int BarrierIterations() const;
 
-  std::pair<int, std::string> ConvertCPLEXStatus();
-  void AddCPLEXMessages();
+  std::pair<int, std::string> ConvertORTOOLSStatus();
+  void AddORTOOLSMessages();
+
 
 private:
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;
-    std::string logFile_;
   };
   Options storedOptions_;
 
+  operations_research::MPSolver::ResultStatus status_;
 
 };
 
 }  // namespace mp
 
-#endif  // MP_CPLEX_BACKEND_H_
+#endif  // MP_ORTOOLS_BACKEND_H_

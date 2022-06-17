@@ -20,13 +20,13 @@
 
 #include "gurobicommon.h"
 #include "mp/backend-mip.h"
-#include "mp/presolve-base.h"
+#include "mp/valcvt-base.h"
 
 namespace mp {
 
 class GurobiBackend :
     public MIPBackend<GurobiBackend>,
-    public BasicPresolverKeeper,
+    public BasicValuePresolverKeeper,
     public GurobiCommon
 {
   using BaseBackend = MIPBackend<GurobiBackend>;

@@ -8,7 +8,7 @@
 #include <string>
 #include <cmath>
 
-#include "mp/flat/constraint_base.h"
+#include "mp/flat/constr_base.h"
 #include "mp/flat/expr_quadratic.h"
 
 
