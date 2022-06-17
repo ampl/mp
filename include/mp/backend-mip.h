@@ -85,9 +85,9 @@ public:
   /// The basis statuses of vars and cons.
   /// MIPBackend handles them in postsolved form (for the NL model)
   /// Impl has to perform value pre- / postsolve if needed
-  /// Getter (returns unpresolved basis)
+  /// Getter (unpresolved)
   virtual SolutionBasis GetBasis() { return {}; }
-  /// Setter (takes unpresolved basis)
+  /// Setter (unpresolved)
   virtual void SetBasis(SolutionBasis )
   { MP_UNSUPPORTED("MIPBackend::SetBasis"); }
   /**

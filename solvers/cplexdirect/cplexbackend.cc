@@ -35,16 +35,16 @@ namespace mp {
 /// need it to convert solution data
 /// @return GurobiModelMgr
 std::unique_ptr<BasicModelManager>
-CreateCplexModelMgr(CplexCommon&, Env&, pre::BasicValuePresolver*&);
+CreateCplexModelMgr(CplexCommon&, Env&, pre::BasicPresolver*&);
 
 
 CplexBackend::CplexBackend() {
   OpenSolver();
 
-  pre::BasicValuePresolver* pPre;
+  pre::BasicPresolver* pPre;
   auto data = CreateCplexModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
-  SetValuePresolver(pPre);
+  SetPresolver(pPre);
 
   /// Copy env/lp to ModelAPI
   copy_common_info_to_other();
@@ -58,7 +58,7 @@ void CplexBackend::OpenSolver() {
   int status;
   // Typically try the registered function first;
   // if not available call the solver's API function directly
-  const auto create_fn = GetCallbacks().init;
+  const auto& create_fn = GetCallbacks().cb_initsolver_;
   if (create_fn)
     set_env((CPXENVptr)create_fn());
   else
@@ -115,7 +115,7 @@ bool CplexBackend::IsQCP() const {
 
 
 Solution CplexBackend::GetSolution() {
-  auto mv = GetValuePresolver().PostsolveSolution(
+  auto mv = GetPresolver().PostsolveSolution(
         { PrimalSolution(), DualSolution() } );
   return { mv.GetVarValues()(), mv.GetConValues()(),
     GetObjectiveValues() };   // TODO postsolve obj values
