@@ -26,6 +26,16 @@ public:
   using Base = BasicStaticIndivEntryLink<
     RangeCon2Slack<ModelConverter, RangeCon>, 3, 3>;
 
+  /// Names for indexes in a Base::LinkEntry
+  enum LinkEntryIndexes {
+    /// Source range constraint index
+    CON_SRC = 0,
+    /// Target equality constraint index
+    CON_TARGET = 1,
+    /// Target slack index
+    VAR_SLK = 2
+  };
+
   /// Constructor.
   /// @param cvt: the model converter
   /// @param ndl: list of 3 value nodes
@@ -45,15 +55,15 @@ public:
   /// Slacks are probably only needed for Gurobi LP warmstart.
   /// Who does not need them, can use unpresolved primal solution.
   void PresolveSolutionEntry(const typename Base::LinkEntry& be) {
-    SetDbl(be, 1, GetDbl(be, 0));
+    SetDbl(be, CON_TARGET, GetDbl(be, CON_SRC));
     const auto& orig_cons =
-        GetMC().template GetConstraint<RangeCon>(be[0]);
-    SetDbl(be, 2, orig_cons.ComputeLowerSlack(GetNode(2)));
+        GetMC().template GetConstraint<RangeCon>(be[CON_SRC]);
+    SetDbl(be, VAR_SLK, orig_cons.ComputeLowerSlack(GetNode(VAR_SLK)));
   }
 
   /// Postsolve solution (primal + dual)
   void PostsolveSolutionEntry(const typename Base::LinkEntry& be) {
-    SetDbl(be, 0, GetDbl(be, 1));
+    SetDbl(be, CON_SRC, GetDbl(be, CON_TARGET));
   }
 
   /// Presolve basis
@@ -62,14 +72,14 @@ public:
   /// transfer it to the slack.
   /// Set the new constraint's status to 'equ'.
   void PresolveBasisEntry(const typename Base::LinkEntry& be) {
-    SetInt(be, 2, GetInt(be, 0));
-    SetInt(be, 1, (int)BasicStatus::equ);
+    SetInt(be, VAR_SLK, GetInt(be, CON_SRC));
+    SetInt(be, CON_TARGET, (int)BasicStatus::equ);
   }
   /// Postsolve basis
   ///
   /// The reverse (forget solver's constraint status)
   void PostsolveBasisEntry(const typename Base::LinkEntry& be) {
-    SetInt(be, 0, GetInt(be, 2));
+    SetInt(be, CON_SRC, GetInt(be, VAR_SLK));
   }
 
   /// Presolve IIS
@@ -81,15 +91,15 @@ public:
   ///
   /// Take slack's if set, otherwise the constraint's
   void PostsolveIISEntry(const typename Base::LinkEntry& be) {
-    if (auto slk_iis = GetInt(be, 2))
-      SetInt(be, 0, slk_iis);
+    if (auto slk_iis = GetInt(be, VAR_SLK))
+      SetInt(be, CON_SRC, slk_iis);
     else
-      SetInt(be, 0, GetInt(be, 1));
+      SetInt(be, CON_SRC, GetInt(be, CON_TARGET));
   }
 
   /// Mark Lazy/user cut: copy flag
   void PresolveLazyUserCutFlagsEntry(const typename Base::LinkEntry& be) {
-    SetInt(be, 1, GetInt(be, 0));
+    SetInt(be, CON_TARGET, GetInt(be, CON_SRC));
   }
 
   void PostsolveLazyUserCutFlagsEntry(const typename Base::LinkEntry& ) {

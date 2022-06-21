@@ -14,7 +14,7 @@ using NodeIndexRange = IndexRange;
 /// Declare ValueNode
 class ValueNode;
 
-/// Node range: range of node entries.
+/// Node range: range of node entries in a specific value node.
 /// The node is specified as well
 class NodeRange {
 public:

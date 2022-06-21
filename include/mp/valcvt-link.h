@@ -31,8 +31,11 @@ class ValuePresolver;
 
 /// ValuePresolveLink interface
 ///
-/// A link is an array of value converters between nodes.
-/// All converters are of the same type
+/// A link is a node of the structural conversion graph.
+/// It contains an array of concrete nodes,
+/// each describes a transformation from
+/// some source vars+cons+objs values into/from some target ones.
+/// All concrete nodes are of the same type.
 class BasicLink {
 public:
   /// Constructor
@@ -41,14 +44,57 @@ public:
   virtual ~BasicLink() = default;
 
   /// The below pre- / postsolve methods
-  /// work on a range of link entries
+  /// work on a range of link entries.
   /// Postsolves should usually loop the range backwards
-
 #define PRESOLVE_KIND(name) \
   virtual void Presolve ## name (LinkIndexRange ) = 0; \
   virtual void Postsolve ## name(LinkIndexRange ) = 0;
 
   LIST_PRESOLVE_METHODS
+
+  /// Get source/target nodes.
+  /// BasicLink only defines an interface for this.
+
+  /// Typedef variable container
+  using VarList = ArrayRef<int>;
+
+  /// Typedef constraint container
+  using ConList = ArrayRef<NodeRange>;
+
+  /// Typedef objective container
+  using ObjList = ArrayRef<int>;
+
+  /// Get source variables
+  virtual VarList GetSrcVars() const { return {}; }
+  /// Get source constraint
+  virtual ConList GetSrcCon() const { return {}; }
+  /// Get source objective
+  virtual ObjList GetSrcObj() const { return {}; }
+
+  /// Get target variables
+  virtual VarList GetTargetVars() const { return {}; }
+  /// Get target constraint
+  virtual ConList GetTargetCon() const { return {}; }
+  /// Get target objective
+  virtual ObjList GetTargetObj() const { return {}; }
+
+  /// Add source/target nodes.
+  /// BasicLink only defines an interface for this.
+
+  /// Add source variables
+  virtual void AddSrcVars(ArrayRef<int> ) { }
+  /// Add source constraint
+  virtual void AddSrcCon(NodeRange ) { }
+  /// Add source objective
+  virtual void AddSrcObj(ArrayRef<int> ) { }
+
+  /// Add target variables
+  virtual void AddTargetVars(ArrayRef<int> ) { }
+  /// Add target constraint
+  virtual void AddTargetCon(NodeRange ) { }
+  /// Add target objective
+  virtual void AddTargetObj(ArrayRef<int> ) { }
+
 
 protected:
   /// Add a range of link entries to the Presolver's list.
@@ -89,7 +135,7 @@ struct LinkRange {
 };
 
 
-/// A specific link: each entry just copies a range of values/
+/// A specific link: each entry just copies a range of values.
 /// Useful to transfer values between NL and internal model,
 /// internal model and solver, and in conversions preserving
 /// all values
@@ -98,7 +144,8 @@ public:
   /// Constructor
   CopyLink(ValuePresolver& pre) : BasicLink(pre) { }
 
-  /// Single link entry
+  /// Single link entry,
+  /// stores src + dest ranges
   using LinkEntry = std::pair<NodeRange, NodeRange>;
 
   /// Collection of entries
