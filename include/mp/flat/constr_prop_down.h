@@ -18,12 +18,12 @@ template <class Impl>
 class ConstraintPropagatorsDown {
 public:
 
-  /// By default, set mixed context for argument variables
+  /// By default, add mixed context for argument variables
   template <class Constraint>
   void PropagateResult(Constraint& con, double lb, double ub, Context ctx) {
     internal::Unused(&con, lb, ub, ctx);
-    con.SetContext(ctx);
-    PropagateResult2Args(con.GetArguments(),
+    con.AddContext(ctx);           // merge context
+    PropagateResult2Args(con.GetArguments(),     // we don't know the constraint
                          MPD( MinusInfty() ), MPD( Infty() ), Context::CTX_MIX);
   }
 
@@ -154,6 +154,48 @@ public:
                          Context::CTX_MIX) );
   }
 
+
+  //////////////////////////// NONLINEAR /////////////////////////////
+
+  void PropagateResult(PowConstraint& con, double , double , Context ctx) {
+    con.AddContext(ctx);           // merge context
+    auto pwr = con.GetParameters()[0];
+    auto ctx_new = (pwr>=0.0 &&    // some monotone cases
+                    MPD( is_integer_value(pwr) ) &&
+                    !MPD( is_integer_value(pwr / 2.0) )) ||
+        MPD( lb(con.GetArguments()[0])>=0.0 ) ? ctx : Context::CTX_MIX;
+    PropagateResult2Args(con.GetArguments(),
+                         MPD( MinusInfty() ), MPD( Infty() ), ctx_new);
+  }
+
+  void PropagateResult(LogConstraint& con, double , double , Context ctx) {
+    con.AddContext(ctx);           // merge context
+    PropagateResult2Args(con.GetArguments(),     // monotone
+                         MPD( MinusInfty() ), MPD( Infty() ), ctx);
+  }
+
+  void PropagateResult(LogAConstraint& con, double , double , Context ctx) {
+    con.AddContext(ctx);           // merge context
+    auto ctx_new = (con.GetParameters()[0]>=0.0) ? ctx : -ctx;
+    PropagateResult2Args(con.GetArguments(),     // monotone
+                         MPD( MinusInfty() ), MPD( Infty() ), ctx_new);
+  }
+
+  void PropagateResult(ExpConstraint& con, double , double , Context ctx) {
+    con.AddContext(ctx);           // merge context
+    PropagateResult2Args(con.GetArguments(),     // monotone
+                         MPD( MinusInfty() ), MPD( Infty() ), ctx);
+  }
+
+  void PropagateResult(ExpAConstraint& con, double , double , Context ctx) {
+    con.AddContext(ctx);           // merge context
+    PropagateResult2Args(con.GetArguments(),     // monotone
+                         MPD( MinusInfty() ), MPD( Infty() ), ctx);
+  }
+
+
+  //////////////////////////// ALGEBRAIC /////////////////////////////
+
   void PropagateResult(CondLinConEQ& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
@@ -212,9 +254,11 @@ public:
   /// Propagate result into LinTerms
   void PropagateResult2LinTerms(const LinTerms& lint, double , double , Context ctx) {
     for (auto i=lint.size(); i--; ) {
-      MPD( PropagateResultOfInitExpr(lint.var(i),      /// TODO bounds as well
+      if (0.0!=std::fabs(lint.coef(i))) {
+        MPD( PropagateResultOfInitExpr(lint.var(i),      /// TODO bounds as well
                                 MPD( MinusInfty() ), MPD( Infty() ),
                                 (lint.coef(i)>=0.0) ? +ctx : -ctx) );
+      }
     }
   }
 
@@ -228,12 +272,22 @@ public:
   }
 
   /// Propagate result into QuadTerms
-  void PropagateResult2QuadTerms(const QuadTerms& quadt, double , double , Context ) {
-    for (auto i=quadt.size(); i--; ) {             /// TODO context for special cases
-      MPD( PropagateResultOfInitExpr(quadt.var1(i),     /// TODO bounds as well
-                                MPD( MinusInfty() ), MPD( Infty() ), Context::CTX_MIX) );
-      MPD( PropagateResultOfInitExpr(quadt.var2(i),
-                                MPD( MinusInfty() ), MPD( Infty() ), Context::CTX_MIX) );
+  void PropagateResult2QuadTerms(const QuadTerms& quadt, double , double , Context ctx) {
+    for (auto i=quadt.size(); i--; ) {
+      if (0.0!=std::fabs(quadt.coef(i))) {
+        // Propagate context in some cases.
+        auto var1 = quadt.var1(i), var2 = quadt.var2(i);
+        auto ctx12 = ctx;
+        if (MPD( lb(var1) ) >= 0.0 && MPD( lb(var2) ) >= 0.0) {
+          // leave as is
+        } else if (MPD( ub(var1) ) <= 0.0 && MPD( ub(var2) ) <= 0.0) {
+          ctx12 = -ctx12;
+        } else // Propagate mixed if not decidable, otherwise we miss some cases
+          ctx12 = Context::CTX_MIX;   // TODO when just 1 var fixed sign
+        MPD( PropagateResultOfInitExpr(var1, ctx12) );
+        if (var1!=var2)               // TODO result bounds as well
+          MPD( PropagateResultOfInitExpr(var2, ctx12) );
+      }
     }
   }
 

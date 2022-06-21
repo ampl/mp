@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cmath>
 #include <utility>
+#include <cassert>
 
 #include "mp/env.h"
 #include "mp/format.h"
@@ -143,6 +144,17 @@ public:
     if (vc.is_const())
       return MPD( MakeFixedVar(vc.get_const()) );
     return vc.get_var();
+  }
+
+  /// Replace functional expression defining a given variable
+  template <class FuncConstraint>
+  void RedefineVariable(int res_var, FuncConstraint&& fc) {
+    assert( MPD( HasInitExpression(res_var) ) );
+    fc.SetResultVar(res_var);
+    auto i = MPD( AddConstraint(std::move(fc) ) );
+    auto& ck = GET_CONSTRAINT_KEEPER( FuncConstraint );
+    ConInfo ci{&ck, i};
+    ReplaceInitExpression(res_var, ci);
   }
 
 
@@ -471,11 +483,19 @@ public:
 private:
   std::vector<ConInfo> var_info_;
 
+
 protected:
+  /// Add init expr for \a var
   void AddInitExpression(int var, const ConInfo& vi) {
     var_info_.resize(std::max(var_info_.size(), (size_t)var+1));
     var_info_[var] = vi;
   }
+
+  /// Replace init expression for \a var
+  void ReplaceInitExpression(int var, const ConInfo& vi) {
+    var_info_.at(var) = vi;
+  }
+
 
 public:
   /// Variable has an init expr?
@@ -489,6 +509,8 @@ public:
     return var_info_[var];
   }
 
+
+public:
   /// The internal flat model type
   using ModelType = FlatModel;
   /// The internal flat model object, const ref

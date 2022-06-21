@@ -30,6 +30,8 @@ public:
   Context GetContext() const { return Context::CTX_NONE; }
   /// Set context, if meaningful
   void SetContext(Context ) const { }
+  /// Add (merge) context, if meaningful
+  void AddContext(Context ) const { }
   /// For functional constraints, result variable index
   int GetResultVar() const { return -1; }
 
@@ -37,6 +39,7 @@ public:
 private:
   std::string name_;
 };
+
 
 /// A special constraint 'var=...', which defines a result variable
 class FunctionalConstraint : public BasicConstraint {
@@ -66,6 +69,7 @@ public:
   /// Add context
   void AddContext(Context c) { ctx.Add(c); }
 };
+
 
 /// Possible argument arrays for CustomFunctionalConstraint
 

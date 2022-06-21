@@ -90,6 +90,7 @@ public:
   /// PowConstExp
   INSTALL_ITEM_CONVERTER(PowConstExponentConverter_MIP)
 
+
   /// Strict comparison tolerance.
   /// Need a big eps to avoid misinterpretation,
   /// at least the solver's feasibility tolerance

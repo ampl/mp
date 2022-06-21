@@ -53,15 +53,13 @@ public:
       arg2 = GetMC().AssignResultVar2Args(
             PowConstraint{ {arg}, DblParamArray1{pwr2} });
     }
-    QuadAndLinTerms qlt;
-    qlt.add_term(1.0, arg1, arg2);
-    qlt.add_term(-1.0, con.GetResultVar());
-    if (con.GetContext().IsMixed())
-      GetMC().AddConstraint( QuadConEQ{ qlt, 0.0 } );
-    else if (con.GetContext().HasPositive())
-      GetMC().AddConstraint( QuadConGE{ qlt, 0.0 } );
-    else                   // CTX_NEG
-      GetMC().AddConstraint( QuadConLE{ qlt, 0.0 } );
+    GetMC().RedefineVariable(con.GetResultVar(),
+          QuadraticFunctionalConstraint(
+            QuadraticExpr(
+              QuadAndLinTerms( { }, { {1.0}, {arg1}, {arg2} } ),
+              0.0) ));
+    GetMC(). PropagateResultOfInitExpr(     // propagate ctx into new constr
+          con.GetResultVar(), con.GetContext());
   }
 
 protected:
