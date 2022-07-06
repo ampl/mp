@@ -90,13 +90,18 @@ public:
     double BestDualBound() override;
 
   /**
-* Compute the IIS and obtain relevant values
-**/
+  * Compute the IIS and obtain relevant values
+  **/
   ALLOW_STD_FEATURE(IIS, true)
   /// Compute IIS
   void ComputeIIS() override;
   /// Retrieve IIS. Elements correspond to IISStatus
   IIS GetIIS() override;
+
+  /**
+  * FeasRelax
+  **/
+  ALLOW_STD_FEATURE(FEAS_RELAX, true)
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
@@ -112,6 +117,9 @@ public:
   /// Can report intermediate results via HandleFeasibleSolution() during this,
   /// otherwise in ReportResults()
   void Solve() override;
+
+  /// This can modify the model
+  void InputExtras() override;
 
   Solution GetSolution() override;
   ArrayRef<double> GetObjectiveValues() override
@@ -135,6 +143,8 @@ protected:
   pre::ValueMapDbl DualSolution();
   ArrayRef<double> DualSolution_LP();
 
+
+  void InputCOPTExtras();
   void WindupCOPTSolve();
 
   void ReportResults() override;

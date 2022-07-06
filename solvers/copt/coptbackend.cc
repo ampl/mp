@@ -101,6 +101,49 @@ void CoptBackend::InitOptionParsing() {
   OpenSolver();
 }
 
+
+void CoptBackend::InputExtras() {
+  MIPBackend::InputExtras();
+  InputCOPTExtras();
+}
+
+
+void CoptBackend::InputCOPTExtras() {
+  if (feasrelax())
+    DoCOPTFeasRelax();
+}
+
+
+void CoptBackend::DoCOPTFeasRelax() {
+  int reltype = feasrelax() - 1,
+    minrel = 0;
+  if (reltype >= 3) {
+    reltype -= 3;
+    minrel = 1;
+    feasrelax().flag_orig_obj_available();
+  }
+  /// only relax linear constraints
+  auto mv = GetValuePresolver().PresolveSolution({
+                                              {},
+                                              feasrelax().rhspen()
+    });
+  const auto& rhspen = mv.GetConValues()(CG_Linear);
+  /// Account for new variables (TODO: proper presolve)
+  std::vector<double> lbpen = feasrelax().lbpen();
+  if (lbpen.size() && lbpen.size() < (size_t)NumVars())
+    lbpen.resize(NumVars());
+  std::vector<double> ubpen = feasrelax().ubpen();
+  if (ubpen.size() && ubpen.size() < (size_t)NumVars())
+    ubpen.resize(NumVars());
+
+  COPT_CCALL(COPT_FeasRelax(lp(),
+    (double*)data_or_null(lbpen),
+    (double*)data_or_null(ubpen),
+    (double*)data_or_null(rhspen),
+    (double*)data_or_null(rhspen)));
+    //&feasrelax().orig_obj_value()));
+}
+
 Solution CoptBackend::GetSolution() {
   auto mv = GetValuePresolver().PostsolveSolution(
         { PrimalSolution(), DualSolution() } );
@@ -356,6 +399,12 @@ void CoptBackend::InitCustomOptions() {
     "\n.. value-table::\n", COPT_INTPARAM_BARORDER,
     lp_barorder_values_, -1);
 
+  
+
+  AddSolverOption("bar:iterlim BarIterLimit",
+    "Limit on the number of barrier iterations (default 500).",
+    COPT_INTPARAM_BARITERLIMIT, 0, INT_MAX);
+
   AddSolverOption("mip:cutlevel cutlevel",
     "Level of cutting-planes generation:\n"
     "\n.. value-table::\n", COPT_INTPARAM_CUTLEVEL,
@@ -470,6 +519,9 @@ void CoptBackend::InitCustomOptions() {
       "limit on solve time (in seconds; default: no limit).",
       COPT_DBLPARAM_TIMELIMIT, 0.0, DBL_MAX);
 
+  AddSolverOption("lim:nodes nodelim nodelimit",
+    "Maximum MIP nodes to explore (default: no limit).",
+    COPT_INTPARAM_NODELIMIT, 0, INT_MAX);
 
   AddSolverOption("lp:method method lpmethod",
     "Which algorithm to use for non-MIP problems:\n"
