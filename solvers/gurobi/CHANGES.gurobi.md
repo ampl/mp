@@ -1,6 +1,9 @@
 Summary of recent updates to x-gurobi for AMPL
 ==============================================
 
+## 20220706
+- Relinked with Gurobi 9.5.2, which contains bug fixes
+
 ## 20220511
 - *Complementarity constraints: also quadratics*
     Complementarity constraints now handle quadratics.

@@ -145,6 +145,8 @@ protected:
 
 
   void InputCOPTExtras();
+
+  void DoCOPTFeasRelax();
   void WindupCOPTSolve();
 
   void ReportResults() override;
