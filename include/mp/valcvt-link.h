@@ -24,7 +24,7 @@ class ValuePresolver;
 /// Macro for a list of pre- / postsolve method definitions
 /// in a link.
 /// Requires PRESOLVE_KIND defined to declare / define corr. methods.
-/// MaxAmongNon0Dbl/Int is generic: maximizes suffix value among non-0.
+/// Generic(Dbl/Int): maximizes suffix value among non-0.
 /// Example 1 (presolve): expression exp(y) is used in various places
 /// and marked with different values of .funcpieces.
 /// The largest is chosen.
@@ -32,8 +32,8 @@ class ValuePresolver;
 /// high-level constraint can be reported as the maximum of those
 /// for its low-level representation.
 #define LIST_PRESOLVE_METHODS \
-  PRESOLVE_KIND(MaxAmongNon0Dbl, double) \
-  PRESOLVE_KIND(MaxAmongNon0Int, int) \
+  PRESOLVE_KIND(GenericDbl, double) \
+  PRESOLVE_KIND(GenericInt, int) \
   PRESOLVE_KIND(Solution, double) \
   PRESOLVE_KIND(Basis, int) \
   PRESOLVE_KIND(IIS, int) \

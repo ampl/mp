@@ -114,17 +114,10 @@ public:
   /// Retrieve whole ArrayRef<double>
   operator ArrayRef<double> () const { return vd_; }
 
-  /// Retrieve vec<T>&
+  /// Retrieve vec<T>& - dummy version
   template <class T>
-  std::vector<T>& GetValVec() { assert(false); return {}; }
-
-  /// Retrieve vec<double>&
-  template <>
-  std::vector<double>& GetValVec<double>() { return vd_; }
-
-  /// Retrieve vec<int>&
-  template <>
-  std::vector<int>& GetValVec<int>() { return vi_; }
+  std::vector<T>& GetValVec()
+  { assert(false); static std::vector<T> dum; return dum; }
 
   /// Retrieve whole const vector<int>&
   operator const std::vector<int>& () const { return vi_; }
@@ -135,19 +128,9 @@ public:
 
   /////////////////////// Access individual values ///////////////////////
 
-  /// Retrieve T
+  /// Retrieve T, dummy version
   template <class T>
-  T GetVal(size_t i) const { return {}; }
-
-  /// Retrieve double
-  template <>
-  double GetVal<double>(size_t i) const { return GetDbl(i); }
-
-  /// Retrieve int
-  template <>
-  int GetVal<int>(size_t i) const { return GetInt(i); }
-
-
+  T GetVal(size_t ) const { return {}; }
 
   /// Retrieve int[i]
   int GetInt(size_t i) const { assert(i<vi_.size()); return vi_[i]; }
@@ -182,14 +165,32 @@ private:
 };
 
 
-/// Specialize for ValueNode
+/// Retrieve vec<double>&
+template <>
+std::vector<double>& ValueNode::GetValVec<double>() { return vd_; }
+
+/// Retrieve vec<int>&
+template <>
+std::vector<int>& ValueNode::GetValVec<int>() { return vi_; }
+
+/// Retrieve double
+template <>
+double ValueNode::GetVal<double>(size_t i) const { return GetDbl(i); }
+
+/// Retrieve int
+template <>
+int ValueNode::GetVal<int>(size_t i) const { return GetInt(i); }
+
+
+/// Specialize SetValueNodeName() for ValueNode
 inline void
 SetValueNodeName(ValueNode& vn, std::string nm) { vn.SetName(nm); }
 
 
 /// Copy int or double range only
 /// @return always true currently
-template <class Vec> inline
+template <class Vec>
+inline
 bool CopyRange(Vec& src, Vec& dest, NodeIndexRange ir, int i1) {
   if ((int)src.size() < ir.end) {
     src.resize(ir.end);

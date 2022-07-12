@@ -127,6 +127,7 @@ using ValueMapInt = ValueMap< std::vector<int> >;
 /// Convenience typedef
 using ValueMapDbl = ValueMap< std::vector<double> >;
 
+
 /// Group of values or value nodes
 /// for variables, constraints, and objectives
 template <class VMap>
