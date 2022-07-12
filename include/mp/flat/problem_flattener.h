@@ -67,7 +67,7 @@ public:
   ProblemFlattener(Env& e) : BaseConverter(e), flat_cvt_(e) { }
 
 public:
-  /// INCREMENTAL INTERFACE
+  /// INCREMENTAL INTERFACE.
   /// These guys used from outside to feed a model to be converted
   /// and forwarded to a backend
   /// Currently only used for testing
@@ -197,7 +197,7 @@ protected:
     AddCopyLinkFromSource(nr);
   }
 
-  /// Preparation info
+  /// Algebraic constraint flattening preparation info
   struct AlgConPrepare {
     LinTerms lt;
     QuadTerms qt;

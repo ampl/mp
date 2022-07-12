@@ -49,6 +49,36 @@ public:
   /// (3 is the base class template parameter)
   /// and means the following indexes: {range_con, lin_con, slack_index}
 
+  /// MaxAmongNon0 double: a generic value presolve method.
+  /// Assume we don't meet another value.
+  void PresolveMaxAmongNon0DblEntry(const typename Base::LinkEntry& be) {
+    auto src_val = GetDbl(be, CON_SRC);
+    SetDbl(be, CON_TARGET, src_val);
+    SetDbl(be, VAR_SLK, src_val);
+  }
+
+  /// MaxAmongNon0 double: a generic value postsolve method.
+  /// Assume we don't meet another value.
+  void PostsolveMaxAmongNon0DblEntry(const typename Base::LinkEntry& be) {
+    SetDbl(be, CON_SRC, std::max(
+             GetDbl(be, CON_TARGET), GetDbl(be, VAR_SLK)));
+  }
+
+  /// MaxAmongNon0 int: a generic value presolve method.
+  /// Assume we don't meet another value.
+  void PresolveMaxAmongNon0IntEntry(const typename Base::LinkEntry& be) {
+    auto src_val = GetInt(be, CON_SRC);
+    SetInt(be, CON_TARGET, src_val);
+    SetInt(be, VAR_SLK, src_val);
+  }
+
+  /// MaxAmongNon0 int: a generic value postsolve method.
+  /// Assume we don't meet another value.
+  void PostsolveMaxAmongNon0IntEntry(const typename Base::LinkEntry& be) {
+    SetInt(be, CON_SRC, std::max(
+             GetInt(be, CON_TARGET), GetInt(be, VAR_SLK)));
+  }
+
   /// Presolve solution (primal + dual).
   /// Duals: just copy.
   /// Primals: compute slack.

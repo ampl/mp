@@ -698,7 +698,7 @@ protected:
     return (map.end() != it) ? it->second : -1;
   }
 
-  /// MapInsert.
+  /// MapInsert__Impl.
   /// Default version for functional constraints with a map.
   /// @param con: the constraint
   /// @param i: ConstraintKeeper index

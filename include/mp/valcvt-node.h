@@ -24,6 +24,9 @@ public:
   /// Get index range
   NodeIndexRange GetIndexRange() const { assert(ir_.check()); return ir_; }
 
+  /// check if the range represents just 1 index
+  bool IsSingleIndex() const { return ir_.IfSingleIndex(); }
+
   /// Get the single index if range is just that
   int GetSingleIndex() const { return ir_; }
 
@@ -111,13 +114,40 @@ public:
   /// Retrieve whole ArrayRef<double>
   operator ArrayRef<double> () const { return vd_; }
 
-  /// Retrieve whole vector<int>&
+  /// Retrieve vec<T>&
+  template <class T>
+  std::vector<T>& GetValVec() { assert(false); return {}; }
+
+  /// Retrieve vec<double>&
+  template <>
+  std::vector<double>& GetValVec<double>() { return vd_; }
+
+  /// Retrieve vec<int>&
+  template <>
+  std::vector<int>& GetValVec<int>() { return vi_; }
+
+  /// Retrieve whole const vector<int>&
   operator const std::vector<int>& () const { return vi_; }
 
   /// Retrieve whole vector<double>&
   operator const std::vector<double>& () const { return vd_; }
 
+
   /////////////////////// Access individual values ///////////////////////
+
+  /// Retrieve T
+  template <class T>
+  T GetVal(size_t i) const { return {}; }
+
+  /// Retrieve double
+  template <>
+  double GetVal<double>(size_t i) const { return GetDbl(i); }
+
+  /// Retrieve int
+  template <>
+  int GetVal<int>(size_t i) const { return GetInt(i); }
+
+
 
   /// Retrieve int[i]
   int GetInt(size_t i) const { assert(i<vi_.size()); return vi_[i]; }
@@ -140,9 +170,6 @@ public:
       vd_.resize(size());
     vd_[i]=v;
   }
-
-  /// Copy node to another node
-  friend void Copy(NodeRange ir1, NodeRange ir2);
 
   /// SetName
   void SetName(std::string s) { name_ = std::move(s); }
@@ -168,6 +195,7 @@ bool CopyRange(Vec& src, Vec& dest, NodeIndexRange ir, int i1) {
     src.resize(ir.end);
     // assert(src.empty());      // attempt to process a smaller vector
     /// We cannot do this as long there exist "rootless" constraints
+    /// (SOS?)
     /// No value is copied into them
   }
   if ((int)dest.size() < i1 + ir.size())
@@ -177,15 +205,15 @@ bool CopyRange(Vec& src, Vec& dest, NodeIndexRange ir, int i1) {
   return true;
 }
 
-/// Copy node to another node
+/// Copy range of node entries to another node
+template <class T>
 inline
 void Copy(NodeRange ir1, NodeRange ir2) {
   assert(ir1.GetIndexRange().size() == ir2.GetIndexRange().size());
-  auto fi = CopyRange(ir1.GetValueNode()->vi_, ir2.GetValueNode()->vi_,
+  auto fd = CopyRange(ir1.GetValueNode()->GetValVec<T>(),
+                      ir2.GetValueNode()->GetValVec<T>(),
                       ir1.GetIndexRange(), ir2.GetIndexRange().beg);
-  auto fd = CopyRange(ir1.GetValueNode()->vd_, ir2.GetValueNode()->vd_,
-                      ir1.GetIndexRange(), ir2.GetIndexRange().beg);
-  assert(fi || fd);
+  assert(fd);
 }
 
 
