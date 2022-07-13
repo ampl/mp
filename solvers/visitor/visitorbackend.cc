@@ -35,17 +35,17 @@ namespace mp {
 /// need it to convert solution data
 /// @return VisitorModelMgr
 std::unique_ptr<BasicModelManager>
-CreateVisitorModelMgr(VisitorCommon&, Env&, pre::BasicPresolver*&);
+CreateVisitorModelMgr(VisitorCommon&, Env&, pre::BasicValuePresolver*&);
 
 
 VisitorBackend::VisitorBackend() {
   OpenSolver();
 
   /// Create a ModelManager
-  pre::BasicPresolver* pPre;
+  pre::BasicValuePresolver* pPre;
   auto data = CreateVisitorModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
-  SetPresolver(pPre);
+  SetValuePresolver(pPre);
 
   /// Copy env/lp to ModelAPI
   copy_common_info_to_other();
@@ -129,7 +129,7 @@ bool VisitorBackend::IsQCP() const {
 }
 
 Solution VisitorBackend::GetSolution() {
-  auto mv = GetPresolver().PostsolveSolution(
+  auto mv = GetValuePresolver().PostsolveSolution(
         { PrimalSolution(), DualSolution() } );
   return { mv.GetVarValues()(), mv.GetConValues()(),
     GetObjectiveValues() };   // TODO postsolve obj values
@@ -511,7 +511,7 @@ SolutionBasis VisitorBackend::GetBasis() {
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
-    auto mv = GetPresolver().PostsolveBasis(
+    auto mv = GetValuePresolver().PostsolveBasis(
       { std::move(varstt),
         {{{ CG_Linear, std::move(constt) }}} });
     varstt = mv.GetVarValues()();
@@ -523,7 +523,7 @@ SolutionBasis VisitorBackend::GetBasis() {
 }
 
 void VisitorBackend::SetBasis(SolutionBasis basis) {
-  auto mv = GetPresolver().PresolveBasis(
+  auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
   auto varstt = mv.GetVarValues()();
   auto constt = mv.GetConValues()(CG_Linear);
@@ -543,7 +543,7 @@ IIS VisitorBackend::GetIIS() {
   auto variis = VarsIIS();
   auto coniis = ConsIIS();
   // TODO: This can be moved to a parent class?
-  auto mv = GetPresolver().PostsolveIIS(
+  auto mv = GetValuePresolver().PostsolveIIS(
     { variis, coniis });
   return { mv.GetVarValues()(), mv.GetConValues()() };
 }
@@ -580,7 +580,6 @@ void VisitorBackend::AddMIPStart(ArrayRef<double> x0) {
 
 
 // AMPLs
-
 AMPLS_MP_Solver* AMPLSOpenVisitor(
   const char* slv_opt) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::VisitorBackend()},

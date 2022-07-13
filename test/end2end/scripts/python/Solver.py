@@ -586,7 +586,20 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.plinear,
                  ModelTags.quadratic, ModelTags.quadraticnonconvex,
-                 ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric}
+                 ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
+
+                 ModelTags.unbdd, ModelTags.return_mipgap,
+                 ModelTags.sos, ModelTags.sens,
+                 ModelTags.lazy_user_cuts,
+
+                 ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
+
+                 ModelTags.multiobj, ModelTags.obj_priority,
+                 ModelTags.multisol, ModelTags.sstatus,
+                 ModelTags.iis, ModelTags.feasrelax,
+
+                 ModelTags.gurobi_cloud, ModelTags.gurobi_server,
+                }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
@@ -602,6 +615,9 @@ class CPLEXDirectSolver(MPDirectSolver):
                  # ModelTags.plinear,
                  # ModelTags.quadratic, ModelTags.quadraticnonconvex,
                  # ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric
+
+                 ModelTags.relax,
+                 ModelTags.multiobj
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
@@ -635,4 +651,19 @@ class COPTSolver(MPDirectSolver):
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.quadratic}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
+class MosekSolver(MPDirectSolver):
+    def _setLPMethod(self, method : str):
+        m  = "1" if method == "SIMPLEX" else "2"
+        return f"lp:method {m}"
+
+    def _getAMPLOptionsName(self):
+        return "mosek"
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.quadratic
+                 }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)

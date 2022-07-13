@@ -34,7 +34,7 @@ class SolverAppOptionParser {
   bool ShowUsage();
 
   /// Prints information about solver options.
-  bool ShowSolverOptions();
+  bool ShowSolverOptions(const char*);
   bool ShowSolverOptionsASL();
 
 

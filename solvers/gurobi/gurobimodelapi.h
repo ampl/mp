@@ -5,7 +5,7 @@
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
-#include "mp/flat/constraints_std.h"
+#include "mp/flat/constr_std.h"
 
 #include "gurobicommon.h"
 
@@ -27,7 +27,7 @@ public:
   GurobiModelAPI(Env& e) : EnvKeeper(e) { }
 
   /// This is called before model is pushed to the Backend
-  void InitProblemModificationPhase();
+  void InitProblemModificationPhase(const FlatModelInfo*);
   /// Chance to call GRBupdatemodel()
   void FinishProblemModificationPhase();
 

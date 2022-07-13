@@ -274,7 +274,7 @@ SolverAppOptionParser::SolverAppOptionParser(BasicSolver &s)
   app_options.Add<&SolverAppOptionParser::ShowUsage>(
         '?', "show usage and exit");
   app_options.Add<&SolverAppOptionParser::EndOptions>('-', "end of options");
-  app_options.Add<&SolverAppOptionParser::ShowSolverOptions>(
+  app_options.AddWithParam<&SolverAppOptionParser::ShowSolverOptions>(
         '=', "show solver options and exit");
   app_options.Add<&SolverAppOptionParser::ShowSolverOptionsASL>(
     'a', "show solver options (ASL style, 1st synonyms if provided) and exit");
@@ -335,18 +335,29 @@ bool SolverAppOptionParser::ShowSolverOptionsASL() {
   }
   return false;
 }
+bool contains(const char* name, const char* substr) {
+  std::string n(name);
+  std::string sub = fmt::format("{}:", substr);
+  return n.find(sub) != std::string::npos;
 
-bool SolverAppOptionParser::ShowSolverOptions() {
+
+}
+bool SolverAppOptionParser::ShowSolverOptions(const char* param) {
   fmt::MemoryWriter writer;
   const char* option_header = solver_.option_header();
   internal::FormatRST(writer, option_header);
   if (*option_header)
     writer << '\n';
   solver_.Print("{}", writer.c_str());
+  if(param)
+    solver_.Print("{} ", param);
   solver_.Print("Options:\n");
   const int DESC_INDENT = 6;
   for (Solver::option_iterator
     i = solver_.option_begin(), end = solver_.option_end(); i != end; ++i) {
+    if (param)
+      if (!contains(i->name(), param))
+        continue;
     writer.clear();
     writer << '\n' << i->name();
     const auto& syns = i->inline_synonyms();
@@ -1028,7 +1039,7 @@ typedef struct AMPLS_MP__internal_T {
 AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
                           const char* slv_opt) {
   AMPLS_MP_Solver* slv = new AMPLS_MP_Solver();
-  int ret =  AMPLS__internal__TryCatchWrapper( slv, [&]() {
+  AMPLS__internal__TryCatchWrapper( slv, [&]() {
     auto ii = new AMPLS_MP__internal();
     slv->internal_info_ = ii;
     ii->p_be_ = std::move(p_be);
@@ -1050,10 +1061,7 @@ AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
   } );
   return slv;
 }
-/** Deallocate the mp-related info and the structure itself.
-* Before calling this function, a solver-specific implementation should
-* delete solver_info_ and user_info_ if allocated.
-*/
+
 void AMPLS__internal__Close(AMPLS_MP_Solver* slv) {
   assert(slv->internal_info_);
   delete (AMPLS_MP__internal*)slv->internal_info_;

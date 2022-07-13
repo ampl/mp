@@ -6,6 +6,7 @@ from collections.abc import Iterable
 class ModelTags(enum.Enum):
     NA = 0
 
+    ## Modeling features
     linear = 1
     quadratic = 2
     quadraticnonconvex = 3
@@ -13,7 +14,7 @@ class ModelTags(enum.Enum):
     nonlinear = 5
     complementarity = 6
     arc = 7
-    plinear = 8
+    plinear = 8         # Requires native handling of pl constraints
 
     continuous = 10
     integer = 11
@@ -26,7 +27,32 @@ class ModelTags(enum.Enum):
     htrigonometric = 101
     log = 102
 
+    ## Execution mode
     script = 1000
+
+    ## Driver features
+    unbdd = 10001
+    return_mipgap = 10002
+    sens = 10003
+    lazy_user_cuts = 10004
+    sos = 10005
+
+    relax=10006
+    warmstart=10007
+    mipstart=10008
+
+    multiobj=10009
+    obj_priority=10010
+
+    multisol = 10011
+    sstatus = 10012              # Basis I/O
+    iis = 10013
+    feasrelax = 10014
+
+
+    ## Solver-specific
+    gurobi_cloud = 100000
+    gurobi_server=100001
 
 
     @staticmethod

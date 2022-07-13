@@ -40,7 +40,7 @@ endfunction ()
 # uses <module>_LIBRARIES.
 function(add_ampl_solver name)
   cmake_parse_arguments(add_ampl_solver
-    "DLL_RUNTIME;EXTERNAL;SHARED_LIB;OLD_SHARED_LIB"
+    "DLL_RUNTIME;EXTERNAL;SHARED_LIB;OLD_SHARED_LIB;OVERRIDELIBS"
     "MODULE;EXENAME;VERSION"
     "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS"
     ${ARGN})
@@ -57,37 +57,40 @@ function(add_ampl_solver name)
     return ()
   endif ()
 
-  string(TOUPPER ${name} name_upper)
-  # Check if the solver is installed.
-  if (add_ampl_solver_MODULE)
-    set(module ${add_ampl_solver_MODULE})
-  else ()
-    set(module )
-    file(GLOB modules ${MP_CMAKE_MODULE_DIR}/Find*.cmake)
-    foreach (m ${modules})
-      string(REGEX REPLACE ".*Find(.*).cmake" "\\1" m ${m})
-      string(TOUPPER ${m} module_upper)
-      if (module_upper STREQUAL ${name_upper})
-        set(module ${m})
-        break ()
+  if(add_ampl_solver_OVERRIDELIBS)
+     message("Overriding libs detection, using ${libraries} directly")
+  else()
+      string(TOUPPER ${name} name_upper)
+      # Check if the solver is installed.
+      if (add_ampl_solver_MODULE)
+        set(module ${add_ampl_solver_MODULE})
+      else ()
+        set(module )
+        file(GLOB modules ${MP_CMAKE_MODULE_DIR}/Find*.cmake)
+        foreach (m ${modules})
+          string(REGEX REPLACE ".*Find(.*).cmake" "\\1" m ${m})
+          string(TOUPPER ${m} module_upper)
+          if (module_upper STREQUAL ${name_upper})
+            set(module ${m})
+            break ()
+          endif ()
+        endforeach ()
       endif ()
-    endforeach ()
-  endif ()
-  string(TOUPPER "${module}" module_upper)
-  if (module)
-    if( (NOT ${module_upper}_INCLUDE_DIRS) AND (NOT ${module_upper}_LIBS))
-      find_package(${module})
-      if (NOT ${module_upper}_FOUND)
-        return ()
+      string(TOUPPER "${module}" module_upper)
+      if (module)
+        if( (NOT ${module_upper}_INCLUDE_DIRS) AND (NOT ${module_upper}_LIBS))
+          find_package(${module})
+          if (NOT ${module_upper}_FOUND)
+            return ()
+          endif ()
+        else()
+          add_library(${module}-library SHARED  IMPORTED)
+          set_property(TARGET ${module}-library PROPERTY
+          IMPORTED_IMPLIB ${${module_upper}_LIBS})
+          target_include_directories(${module}-library INTERFACE ${${module_upper}_INCLUDE_DIRS})
+        endif()
       endif ()
-    else()
-      add_library(${module}-library SHARED  IMPORTED)
-      set_property(TARGET ${module}-library PROPERTY
-      IMPORTED_IMPLIB ${${module_upper}_LIBS})
-      target_include_directories(${module}-library INTERFACE ${${module_upper}_INCLUDE_DIRS})
-    endif()
-  endif ()
-
+  endif()
   # Handle arguments.
   get_var(source_names add_ampl_solver_UNPARSED_ARGUMENTS ${name}.cc ${name}.h)
   get_var(include_dirs
@@ -226,28 +229,20 @@ function(add_ampl_backend name)
 endfunction()
 
 add_ampl_backend(visitor DLL_RUNTIME)
-add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
-## add_ampl_backend(cplexdirect DLL_RUNTIME SHARED_LIB MODULE CPLEX LIBRARIES cplex-library ${CMAKE_DL_LIBS})
 
+add_ampl_backend(mosek DLL_RUNTIME MODULE MOSEK 
+  LIBRARIES ${MOSEK_LIBS} ${CMAKE_DL_LIBS})
+add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT 
+  LIBRARIES ${COPT_LIBS} ${CMAKE_DL_LIBS})
 
-add_ampl_backend(highsdirect DLL_RUNTIME SHARED_LIB
-  MODULE HIGHS LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})
+add_ampl_backend(highsmp DLL_RUNTIME SHARED_LIB MODULE HIGHS 
+  LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})
 
-## TODO Cannot use 'add_ampl_backend' because of the -direct name suffix
-add_ampl_solver(cplexdirect DLL_RUNTIME SHARED_LIB MODULE CPLEX
-  cplex-ampls-c-api.h
-  cplexbackend.cc cplexbackend.h
-  cplexmodelapi.cc cplexmodelapi.h
-  cplexcommon.cc cplexcommon.h
-  model-mgr-with-std-pb.cc
-  LIBRARIES cplex-library ${CMAKE_DL_LIBS})
-if (TARGET cplexdirect)
-  target_compile_definitions(cplexdirect PRIVATE main1=main)
-  if(WIN32)
-    target_compile_options(amplcplexdirect-static PUBLIC /bigobj)
-  endif()
-endif()
+add_ampl_backend(ortoolsmp DLL_RUNTIME SHARED_LIB MODULE ortoolsmp 
+  LIBRARIES ${ortoolsmp_LIBS} ${CMAKE_DL_LIBS})
 
+add_ampl_backend(cplexmp DLL_RUNTIME SHARED_LIB MODULE CPLEX
+                      LIBRARIES cplex-library ${CMAKE_DL_LIBS})
 
 add_ampl_solver(gurobi DLL_RUNTIME SHARED_LIB MODULE GUROBI
   gurobi-ampls-c-api.h

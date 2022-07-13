@@ -1,7 +1,6 @@
 #include "coptmodelapi.h"
 
 #include "mp/model-mgr-with-std-pb.h"
-#include "mp/flat/problem_flattener.h"
 #include "mp/flat/redef/MIP/converter_mip.h"
 #include "mp/flat/model_api_connect.h"
 
@@ -11,13 +10,13 @@ namespace mp {
 /// for recompilation speed
 std::unique_ptr<BasicModelManager>
 CreateCoptModelMgr(CoptCommon& cc, Env& e,
-                     pre::BasicPresolver*& pPre) {
+                     pre::BasicValuePresolver*& pPre) {
   return CreateModelMgrWithFlatConverter<
       CoptModelAPI, MIPFlatConverter >(cc, e, pPre);
 }
 
 
-void CoptModelAPI::InitProblemModificationPhase() { }
+void CoptModelAPI::InitProblemModificationPhase(const FlatModelInfo*) { }
 
 void CoptModelAPI::AddVariables(const VarArrayDef& v) {
   std::vector<char> vtypes(v.size());

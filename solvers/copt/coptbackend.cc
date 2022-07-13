@@ -34,12 +34,12 @@ namespace mp {
 /// need it to convert solution data
 /// @return CoptModelMgr
 std::unique_ptr<BasicModelManager>
-CreateCoptModelMgr(CoptCommon&, Env&, pre::BasicPresolver*&);
+CreateCoptModelMgr(CoptCommon&, Env&, pre::BasicValuePresolver*&);
 
 
 void CoptBackend::OpenSolver() {
   int status = 0;
-  const auto& create_fn = GetCallbacks().cb_initsolver_;
+  const auto create_fn = GetCallbacks().init;
   if (create_fn)
     set_env((copt_env*)create_fn());
   else
@@ -71,10 +71,10 @@ void CoptBackend::CloseSolver() {
 
 CoptBackend::CoptBackend() {
   /// Create a ModelManager
-  pre::BasicPresolver* pPre;
+  pre::BasicValuePresolver* pPre;
   auto data = CreateCoptModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
-  SetPresolver(pPre);
+  SetValuePresolver(pPre);
 }
 
 CoptBackend::~CoptBackend() {
@@ -101,8 +101,51 @@ void CoptBackend::InitOptionParsing() {
   OpenSolver();
 }
 
+
+void CoptBackend::InputExtras() {
+  MIPBackend::InputExtras();
+  InputCOPTExtras();
+}
+
+
+void CoptBackend::InputCOPTExtras() {
+  if (feasrelax())
+    DoCOPTFeasRelax();
+}
+
+
+void CoptBackend::DoCOPTFeasRelax() {
+  int reltype = feasrelax() - 1,
+    minrel = 0;
+  if (reltype >= 3) {
+    reltype -= 3;
+    minrel = 1;
+    feasrelax().flag_orig_obj_available();
+  }
+  /// only relax linear constraints
+  auto mv = GetValuePresolver().PresolveSolution({
+                                              {},
+                                              feasrelax().rhspen()
+    });
+  const auto& rhspen = mv.GetConValues()(CG_Linear);
+  /// Account for new variables (TODO: proper presolve)
+  std::vector<double> lbpen = feasrelax().lbpen();
+  if (lbpen.size() && lbpen.size() < (size_t)NumVars())
+    lbpen.resize(NumVars());
+  std::vector<double> ubpen = feasrelax().ubpen();
+  if (ubpen.size() && ubpen.size() < (size_t)NumVars())
+    ubpen.resize(NumVars());
+
+  COPT_CCALL(COPT_FeasRelax(lp(),
+    (double*)data_or_null(lbpen),
+    (double*)data_or_null(ubpen),
+    (double*)data_or_null(rhspen),
+    (double*)data_or_null(rhspen)));
+    //&feasrelax().orig_obj_value()));
+}
+
 Solution CoptBackend::GetSolution() {
-  auto mv = GetPresolver().PostsolveSolution(
+  auto mv = GetValuePresolver().PostsolveSolution(
         { PrimalSolution(), DualSolution() } );
   return { mv.GetVarValues()(), mv.GetConValues()(),
     GetObjectiveValues() };   // TODO postsolve obj values
@@ -356,13 +399,19 @@ void CoptBackend::InitCustomOptions() {
     "\n.. value-table::\n", COPT_INTPARAM_BARORDER,
     lp_barorder_values_, -1);
 
+  
+
+  AddSolverOption("bar:iterlim BarIterLimit",
+    "Limit on the number of barrier iterations (default 500).",
+    COPT_INTPARAM_BARITERLIMIT, 0, INT_MAX);
+
   AddSolverOption("mip:cutlevel cutlevel",
     "Level of cutting-planes generation:\n"
     "\n.. value-table::\n", COPT_INTPARAM_CUTLEVEL,
     alg_values_level, -1);
 
-  AddSolverOption("mip:intfeastol intfeastol",
-    "Feasibility tolerance for integer variables (default 1e-05).",
+  AddSolverOption("mip:intfeastol intfeastol inttol",
+    "Feasibility tolerance for integer variables (default 1e-06).",
     COPT_DBLPARAM_INTTOL, 1e-9, 0.1);
 
   AddSolverOption("mip:rootcutlevel rootcutlevel",
@@ -408,7 +457,7 @@ void CoptBackend::InitCustomOptions() {
 
   AddSolverOption("mip:strongbranching strongbranching",
     "Level of strong branching:\n"
-    "\n.. value-table::\n", COPT_INTPARAM_SUBMIPHEURLEVEL,
+    "\n.. value-table::\n", COPT_INTPARAM_STRONGBRANCHING,
     alg_values_level, -1); 
 
     AddSolverOption("mip:conflictanalysis conflictanalysis",
@@ -470,6 +519,9 @@ void CoptBackend::InitCustomOptions() {
       "limit on solve time (in seconds; default: no limit).",
       COPT_DBLPARAM_TIMELIMIT, 0.0, DBL_MAX);
 
+  AddSolverOption("lim:nodes nodelim nodelimit",
+    "Maximum MIP nodes to explore (default: no limit).",
+    COPT_INTPARAM_NODELIMIT, 0, INT_MAX);
 
   AddSolverOption("lp:method method lpmethod",
     "Which algorithm to use for non-MIP problems:\n"
@@ -488,7 +540,9 @@ void CoptBackend::InitCustomOptions() {
     "nput matrix coefficient tolerance (default 1e-10).",
     COPT_DBLPARAM_MATRIXTOL, 0.0, 1e-7);
 
-      
+  AddSolverOption("bar:crossover crossover",
+    "Execute crossover to transform a barrier solution to a basic one (default 1).",
+    "Crossover", 0, 1);
 }
 
 
@@ -632,7 +686,7 @@ SolutionBasis CoptBackend::GetBasis() {
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
-    auto mv = GetPresolver().PostsolveBasis(
+    auto mv = GetValuePresolver().PostsolveBasis(
       { std::move(varstt),
         {{{ CG_Linear, std::move(constt) }}} });
     varstt = mv.GetVarValues()();
@@ -644,7 +698,7 @@ SolutionBasis CoptBackend::GetBasis() {
 }
 
 void CoptBackend::SetBasis(SolutionBasis basis) {
-  auto mv = GetPresolver().PresolveBasis(
+  auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
   auto varstt = mv.GetVarValues()();
   auto constt = mv.GetConValues()(CG_Linear);
@@ -664,7 +718,7 @@ IIS CoptBackend::GetIIS() {
   auto variis = VarsIIS();
   auto coniis = ConsIIS();
   // TODO: This can be moved to a parent class?
-  auto mv = GetPresolver().PostsolveIIS(
+  auto mv = GetValuePresolver().PostsolveIIS(
     { variis, coniis });
   return { mv.GetVarValues()(), mv.GetConValues()() };
 }

@@ -6,7 +6,7 @@
 #include "mp/env.h"
 #include "visitorcommon.h"
 #include "mp/flat/model_api_base.h"
-#include "mp/flat/constraints_std.h"
+#include "mp/flat/constr_std.h"
 
 namespace mp {
 
@@ -23,8 +23,9 @@ public:
   /// Class name
   static const char* GetTypeName() { return "VisitorModelAPI"; }
 
-  /// Called before problem input
-  void InitProblemModificationPhase();
+  /// Called before problem input.
+  /// Chanve to allocate storage
+  void InitProblemModificationPhase(const FlatModelInfo*);
   /// After
   void FinishProblemModificationPhase();
 

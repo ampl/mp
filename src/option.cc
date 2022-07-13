@@ -52,6 +52,12 @@ const Option *mp::OptionList::Find(char name) const {
   return it != options_.end() && it->name == name ? &*it : 0;
 }
 
+const char* SkipNonSpaces(const char* s) {
+  while (*s && !isspace(*s))
+    ++s;
+  return s;
+}
+
 char mp::ParseOptions(char **&args, OptionList &options) {
   options.Sort();
   while (const char *arg = *args) {
@@ -60,12 +66,34 @@ char mp::ParseOptions(char **&args, OptionList &options) {
     ++args;
     const Option *opt = 0;
     char name = arg[1];
-    if (name && !arg[2])
+    std::string param;
+    if (name)
       opt = options.Find(name);
+    if (opt)
+    {
+      if (!opt->hasParam)
+      {
+        if (arg[2]) // wrong option format
+          opt = NULL;
+      }
+      else {
+        const char* end = arg;
+        while (*end && !isspace(*end))
+          ++end;
+        param = std::string(arg + 2, end);
+      }
+    }
     if (!opt)
       throw OptionError(fmt::format("invalid option '{}'", arg));
-    if (!opt->on_option(opt->handler))
-      return name;
+    if (opt->hasParam)
+    {
+      if (!opt->on_optionWithParam(opt->handler, param.c_str()))
+        return name;
+    }
+    else {
+      if (!opt->on_option(opt->handler))
+        return name;
+    }
   }
   return 0;
 }

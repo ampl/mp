@@ -152,7 +152,9 @@ Building the documentation
 
 To build the documentation (automatically, via CMake) you need Python 3.x with Sphinx and Breathe,
 see :file:`doc/requirements.txt` (install automatically by :code:`pip install -r requirements.txt`).
-The HTML output is located in :file:`(build folder)/doc/index.html`. Configure CMake with
+The HTML output is located in :file:`(build folder)/doc/index.html`. To have the alphabetic index
+automatically generated, install `pandoc`.
+Configure CMake with
 :code:`-DBUILD_DOC=off` to switch off.
 
 

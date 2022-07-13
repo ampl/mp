@@ -4,7 +4,7 @@
 #include <cmath>
 
 #include "mp/flat/redef/redef_base.h"
-#include "mp/flat/constraints_std.h"
+#include "mp/flat/constr_std.h"
 
 namespace mp {
 
@@ -57,7 +57,8 @@ public:
             OrConstraint{ { res_neg_var_lb, res_neg_con_lb } });
       GetMC().FixAsTrue(res_disj);
       /// Add the algebraic constraint via the representing variable
-      GetMC().set_var_lb(expr_var, con_rhs);
+      /// Propagate mixed context (logical constraint would set CTX_NEG)
+      GetMC().set_var_lb_context(expr_var, con_rhs, Context::CTX_MIX);
     } else if (fin_var_ub && !fin_var_lb) {
       /// res1 = (var >= var_ub)
       auto res_neg_var_ub = GetMC().AssignResultVar2Args(
@@ -70,7 +71,8 @@ public:
             OrConstraint{ { res_neg_var_ub, res_neg_con_ub } });
       GetMC().FixAsTrue(res_disj);
       /// Add the algebraic constraint via the representing variable
-      GetMC().set_var_ub(expr_var, con_rhs);
+      /// Propagate mixed context (logical constraint would set CTX_POS)
+      GetMC().set_var_ub_context(expr_var, con_rhs, Context::CTX_MIX);
     } else {
       assert(fin_var_lb && fin_var_ub);
       /// res1 = (var <= lb && con >= 0)

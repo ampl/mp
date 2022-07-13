@@ -28,8 +28,9 @@
 
 #include "mp/arrayref.h"
 #include "mp/common.h"
-#include "mp/flat/constraint_base.h"
+#include "mp/flat/constr_base.h"
 #include "mp/flat/obj_std.h"
+#include "mp/flat/model_info.h"
 
 namespace mp {
 
@@ -38,17 +39,22 @@ class VarArrayDef {
   ArrayRef<double> lbs_;
   ArrayRef<double> ubs_;
   ArrayRef<var::Type> types_;
+  ArrayRef<const char*> names_;
 public:
   VarArrayDef() = default;
-  template <class BndVec, class TypeVec>
-  VarArrayDef(BndVec&& lbs, BndVec&& ubs, TypeVec&& tys) :
+  template <class BndVec, class TypeVec,
+            class NameVec=ArrayRef<const char*> >
+  VarArrayDef(BndVec&& lbs, BndVec&& ubs,
+              TypeVec&& tys, NameVec&& nms={}) :
     lbs_(std::forward<BndVec>(lbs)),
     ubs_(std::forward<BndVec>(ubs)),
-    types_(std::forward<TypeVec>(tys)) { }
+    types_(std::forward<TypeVec>(tys)),
+    names_(std::forward<NameVec>(nms)) { }
   VarArrayDef(std::initializer_list<double> lbs,
               std::initializer_list<double> ubs,
-              std::initializer_list<var::Type> tys) :
-    lbs_((lbs)), ubs_((ubs)), types_((tys)) { }
+              std::initializer_list<var::Type> tys,
+              std::initializer_list<const char*> nms = {}) :
+    lbs_((lbs)), ubs_((ubs)), types_((tys)), names_(nms) { }
   int size() const { assert(check()); return lbs_.size(); }
   const double* plb() const { return lbs_.data(); }
   const double* pub() const { return ubs_.data(); }
@@ -58,8 +64,10 @@ public:
     lbs_=lbs; ubs_=ubs; types_=types;
     assert(check());
   }
+  const char* const* pnames() const { return names_.data(); }
   bool check() const
-  { return ubs_.size()==lbs_.size() && types_.size()==lbs_.size(); }
+  { return ubs_.size()==lbs_.size() &&
+        types_.size()==lbs_.size(); }
 };
 
 /// Level of acceptance of a constraint by a backend
@@ -89,16 +97,17 @@ enum ConstraintGroup {
 /// ModelAPIs handling custom flat constraints should derive from
 class BasicFlatModelAPI {
 public:
-  /// Placeholder
+  /// Placeholder for GetTypeName()
   static const char* GetTypeName()    { return "BasicBackendFlatModelAPI"; }
-  /// Placeholder
+  /// Placeholder for GetLongName()
   static const char* GetLongName() { return nullptr; }
 
-  /// Placeholder
+  /// Placeholder for InitOptions()
   void InitOptions() { }
 
-  /// Chance to prepare problem update
-  void InitProblemModificationPhase() {  }
+  /// Chance to prepare problem update,
+  /// e.g., allocate storage
+  void InitProblemModificationPhase(const FlatModelInfo*) {  }
   /// Chance to end problem update
   void FinishProblemModificationPhase() {  }
 

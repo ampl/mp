@@ -7,8 +7,8 @@
 #include <cmath>
 
 #include "mp/flat/obj_std.h"
-#include "mp/flat/constraints_std.h"
-#include "mp/flat/constraint_keeper.h"
+#include "mp/flat/constr_std.h"
+#include "mp/flat/constr_keeper.h"
 
 namespace mp {
 
@@ -185,7 +185,11 @@ public:
   /// A responsible backend should handle all essential items
   template <class Backend>
   void PushModelTo(Backend& backend) const {
-    backend.InitProblemModificationPhase();
+    auto fmi = CreateFlatModelInfo();
+    FillConstraintCounters(backend, *fmi.get());
+    backend.InitProblemModificationPhase(
+          (const FlatModelInfo*)fmi.get());
+
     PushVariablesTo(backend);
     PushObjectivesTo(backend);
     PushCustomConstraintsTo(backend);

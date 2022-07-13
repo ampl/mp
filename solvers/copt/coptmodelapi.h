@@ -6,7 +6,7 @@
 #include "mp/env.h"
 #include "coptcommon.h"
 #include "mp/flat/model_api_base.h"
-#include "mp/flat/constraints_std.h"
+#include "mp/flat/constr_std.h"
 
 namespace mp {
 
@@ -24,7 +24,7 @@ public:
   static const char* GetTypeName() { return "CoptModelAPI"; }
 
   /// Called before problem input
-  void InitProblemModificationPhase();
+  void InitProblemModificationPhase(const FlatModelInfo*);
   /// After
   void FinishProblemModificationPhase();
 

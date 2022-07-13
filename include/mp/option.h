@@ -35,6 +35,8 @@ struct Option {
   const char *description;
   void *handler;
   bool (*on_option)(void *);
+  bool (*on_optionWithParam)(void*, const char*);
+  bool hasParam;
 };
 
 /// A list of command-line options.
@@ -49,12 +51,27 @@ class OptionList {
     return (static_cast<Handler*>(handler)->*on_option)();
   }
 
+  template <typename Handler, bool (Handler::* on_optionWithParam)(const char* param)>
+  static bool OnOptionParam(void* handler, const char* param) {
+    return (static_cast<Handler*>(handler)->*on_optionWithParam)(param);
+  }
+
+
+
   template <typename Handler, bool (Handler::*on_option)()>
   void Add(char name, const char *description, Handler &h) {
-    Option option = {name, description, &h, OnOption<Handler, on_option>};
+    Option option = {name, description, &h, OnOption<Handler, on_option>, NULL, false};
     options_.push_back(option);
     sorted_ = false;
   }
+
+  template <typename Handler, bool (Handler::* on_optionWithParam)(const char*)>
+  void AddWithParam(char name, const char* description, Handler& h) {
+    Option option = { name, description, &h, NULL,OnOptionParam<Handler, on_optionWithParam>, true };
+    options_.push_back(option);
+    sorted_ = false;
+  }
+
 
  public:
   template <typename Handler>
@@ -73,6 +90,13 @@ class OptionList {
     template <bool (Handler::*on_option)()>
     void Add(char name, const char *description) {
       options_.Add<Handler, on_option>(name, description, handler_);
+    }
+    /// Adds an option.
+  /// on_option: method called when option has been parsed; returns true
+  ///            to continue parsing, false to stop
+    template <bool (Handler::* on_option)(const char*)>
+    void AddWithParam(char name, const char* description) {
+      options_.AddWithParam<Handler, on_option>(name, description, handler_);
     }
   };
 

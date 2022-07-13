@@ -115,7 +115,7 @@ Writing solution/results output is easiest as part of the general workflow,
 see :ref:`model-manager`.
 
 A standalone .sol file writer could be implemented by parameterizing the
-`internal::AppSolutionHandlerImpl` (or `internal::SolutionWriterImpl`)
+`mp::internal::AppSolutionHandlerImpl` (or `mp::internal::SolutionWriterImpl`)
 templates by minimal implementations of the `mp::BasicSolver` and
 `mp::ProblemBuilder` interfaces.
 
@@ -156,8 +156,20 @@ solver messages and status reporting,
 simplex basis statuses, and other suffix I/O.
 Their solver-specific subclasses can be customized for a particular solver.
 They rely on the :ref:`model-manager` interface
-for model and solution I/O. See the classes' documentation
-for details.
+for model and solution I/O.
+
+As an example, if the driver should read and write simplex basis status suffixes,
+the derived Backend class can declare
+
+.. code-block:: c++
+
+    ALLOW_STD_FEATURE( BASIS, true )
+    SolutionBasis GetBasis() override;
+    void SetBasis(SolutionBasis ) override;
+
+and define the `GetBasis`, `SetBasis` methods.
+See the classes' documentation
+for further details.
 
 
 .. _solver-classes:
@@ -182,7 +194,7 @@ and conversion for a particular solver.
 
 .. _model-manager:
 
-Model Manager
+Model manager
 ~~~~~~~~~~~~~
 
 Class `mp::BasicModelManager` standardizes the interface for
@@ -215,8 +227,8 @@ Basic :ref:`Model/solution I/O <NL-SOL-files>` and
 
 .. _problem-converters:
 
-Problem converters
-~~~~~~~~~~~~~~~~~~
+`mp::Problem` converters
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Given a problem instance in the standard format `mp::Problem`, several
 tools can be adapted to convert the instance for a particular solver.
@@ -235,35 +247,142 @@ tools can be adapted to convert the instance for a particular solver.
 
 .. _flat-converters:
 
-Flat Model Converters
+Flat model converters
 ~~~~~~~~~~~~~~~~~~~~~
 
-`mp::FlatConverter` and `mp::MIPFlatConverter`
-facilitate conversion of flat models (i.e., models without expression trees).
-Constraints which are not natively accepted by a
-solver, are transformed into simpler forms. `mp::FlatConverter` and its subclasses
+`mp::FlatConverter` and `mp::MIPFlatConverter` represent and
+convert flat models (i.e., models :ref:`without expression trees <flat-solvers>`).
+Typically, a flat model
+is produced from an NL model by :ref:`Problem Flattener <problem-converters>`.
+As a next step, constraints which are not natively accepted by a
+solver, are transformed into simpler forms. This behavior
 can be flexibly parameterized for a particular solver, preferably
 via the solver's modeling API wrapper:
 
-* `mp::BasicFlatModelAPI` is the interface via which `mp::FlatConverter` addresses
-  the underlying solver. A subclassed wrapper, such as `mp::GurobiModelAPI`,
-  signals its accepted constraints and which model conversions are preferable.
+* :ref:`flat-model-api` is the interface via which `mp::FlatConverter` addresses
+  the underlying solver.
 
 * :ref:`value-presolver` transforms solutions and suffixes between the
   original NL model and the flat model.
 
 
+.. _flat-model-api:
+
+Flat model API
+~~~~~~~~~~~~~~
+
+`mp::BasicFlatModelAPI` is the interface via which :ref:`flat-converters` address
+the underlying solver.
+
+
+Constraint acceptance
+^^^^^^^^^^^^^^^^^^^^^
+
+A subclassed wrapper, such as `mp::GurobiModelAPI`,
+signals its accepted constraints and which model conversions are preferable.
+For example, `GurobiModelAPI` declares the following in order to natively
+receive the logical OR constraint:
+
+.. code-block:: c++
+
+      ACCEPT_CONSTRAINT(OrConstraint,
+        Recommended,                       // Driver recommends native form
+        CG_General)                        // Constraint group for suffix exchange
+      void AddConstraint(const OrConstraint& );
+
+By default, if the driver does not mark a constraint as acceptable,
+`mp::FlatConverter` and its descendants attempt to simplify it. See the
+classes' documentation for further details.
+
+
+Problem sizes and preallocation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To preallocate memory for a class of constraints, the implementation can
+redefine method `mp::BasicFlatModelAPI::InitProblemModificationPhase`:
+
+.. code-block:: c++
+
+    void MosekModelAPI::InitProblemModificationPhase(const FlatModelInfo* info) {
+      /// Preallocate linear and quadratic constraints.
+      /// CG_Linear, CG_Quadratic, etc. are the constraint group indexes
+      /// provided in ACCEPT_CONSTRAINT macros.
+      MOSEK_CCALL(MSK_appendcons(lp(),
+                             info->GetNumberOfConstraintsOfGroup(CG_Linear) +
+                             info->GetNumberOfConstraintsOfGroup(CG_Quadratic)));
+    }
+
+
 .. _value-presolver:
 
-Value Presolver
+Value presolver
 ~~~~~~~~~~~~~~~
 
-Class `mp::pre::Presolver` manages transformations of solutions and suffixes
+Class `mp::pre::ValuePresolver` manages transformations of solutions and suffixes
 between the original NL model and the converted model. For driver architectures
-with :ref:`model-manager`, the value presolver object should be shared between
+with :ref:`model-manager`, the value presolver object must be shared between
 the model converter and the :ref:`Backend <backend-classes>` to enable
 solution/suffix transformations corresponding to those on the model, see
 `mp::CreateGurobiModelMgr` as an example.
+
+
+Invocation API
+^^^^^^^^^^^^^^
+
+To use the ValuePresolver API, the following classes are needed:
+
+- `mp::pre::BasicValuePresolver` defines an interface for `mp::pre::ValuePresolver`.
+
+- `mp::pre::ValueNode` temporarily stores values corresponding to a single type of
+  model item (variables, constraints, objectives).
+
+- `mp::pre::ValueMap` is a map of node values, where the key usually corresponds to
+  an item subcategory. For example, Gurobi distinguishes attributes for the
+  following constraint categories: linear, quadratic, SOS, general. Thus, the
+  conversion graph needs to have these four types of target nodes for constraint
+  values:
+
+  .. code-block:: c++
+
+    pre::ValueMapInt GurobiBackend::ConsIIS() {
+      ......
+      return {{{ CG_Linear, iis_lincon },
+        { CG_Quadratic, iis_qc },
+        { CG_SOS, iis_soscon },
+        { CG_General, iis_gencon }}};
+    }
+
+
+- `mp::pre::ModelValues` is a class joining value maps for variables, constraints,
+  and objectives. It is useful when the conversions connect items of different types:
+  for example, when converting an algebraic range constraint to an equality
+  constraint with a bounded slack variable, the constraint's basis status is mapped
+  to that of the slack. Similarly, the range constraint should be reported infeasible
+  if either the slack's bounds or the equality are:
+
+  .. code-block:: c++
+
+    IIS GurobiBackend::GetIIS() {
+      pre::ModelValuesInt mv = GetValuePresolver().
+        PostsolveIIS( pre::ModelValuesInt{ VarsIIS(), ConsIIS() } );
+      return { mv.GetVarValues()(), mv.GetConValues()() };
+    }
+
+
+Implementation API
+^^^^^^^^^^^^^^^^^^
+
+To implement value pre- / postsolving, the following API is used:
+
+- `mp::pre::ValuePresolver` implements the interface of
+  `mp::pre::BasicValuePresolver`. It calls the individual pre- and postsolve
+  routines.
+
+- `mp::pre::BasicLink` is the interface to various implementations of links
+  between nodes, such as
+  `mp::pre::CopyLink`. Templates `mp::pre::BasicIndivEntryLink` and
+  `mp::pre::BasicStaticIndivEntryLink` are base classes for links such as
+  `mp::pre::RangeCon2Slack`.
 
 
 C++ ASL adapter
