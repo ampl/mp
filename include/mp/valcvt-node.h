@@ -1,6 +1,8 @@
 #ifndef VALUE_PRESOLVE_NODE_H
 #define VALUE_PRESOLVE_NODE_H
 
+#include <cmath>
+
 #include "valcvt-base.h"
 
 
@@ -132,30 +134,44 @@ public:
   template <class T>
   T GetVal(size_t ) const { return {}; }
 
+  /// Set T, dummy version
+  template <class T>
+  void SetVal(size_t i, T ) { assert(i<size()); }
+
   /// Retrieve int[i]
   int GetInt(size_t i) const { assert(i<vi_.size()); return vi_[i]; }
 
-  /// Set int[i]
-  void SetInt(size_t i, int v) {
-    assert(i<size());
-    if (vi_.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
-      vi_.resize(size());
-    vi_[i]=v;
-  }
+  /// Set int[i].
+  /// If existing value non-0, only allow larger value.
+  void SetInt(size_t i, int v) { SetNum(vi_, i, v); }
 
   /// Retrieve double[i]
   double GetDbl(size_t i) const { assert(i<vd_.size()); return vd_[i]; }
 
-  /// Set double[i]
-  void SetDbl(size_t i, double v) {
-    assert(i<size());
-    if (vd_.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
-      vd_.resize(size());
-    vd_[i]=v;
-  }
+  /// Set double[i].
+  /// If existing value non-0, only allow larger value.
+  void SetDbl(size_t i, double v) { SetNum(vd_, i, v); }
 
   /// SetName
   void SetName(std::string s) { name_ = std::move(s); }
+
+
+protected:
+  /// Set int[i] or dbl[i].
+  /// If existing value non-0, only allow larger value.
+  template <class Vec>
+  void SetNum(Vec& vec, size_t i, typename Vec::value_type v) {
+    assert(i<size());   // index into the originally declared suffix size
+    if (vec.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
+      vec.resize(size());
+    if (FP_ZERO != std::fpclassify( vec[i] )) {
+      if (v>vec[i])
+        vec[i]=v;
+      // TODO warning for unequal values
+    } else
+      vec[i]=v;
+  }
+
 
 private:
   std::vector<int> vi_;
@@ -165,21 +181,23 @@ private:
 };
 
 
-/// Retrieve vec<double>&
 template <>
 std::vector<double>& ValueNode::GetValVec<double>() { return vd_; }
 
-/// Retrieve vec<int>&
 template <>
 std::vector<int>& ValueNode::GetValVec<int>() { return vi_; }
 
-/// Retrieve double
 template <>
 double ValueNode::GetVal<double>(size_t i) const { return GetDbl(i); }
 
-/// Retrieve int
 template <>
 int ValueNode::GetVal<int>(size_t i) const { return GetInt(i); }
+
+template <>
+void ValueNode::SetVal<double>(size_t i, double v) { SetDbl(i, v); }
+
+template <>
+void ValueNode::SetVal<int>(size_t i, int v) { SetInt(i, v); }
 
 
 /// Specialize SetValueNodeName() for ValueNode

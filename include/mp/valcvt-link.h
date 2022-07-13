@@ -267,10 +267,9 @@ protected:
     assert(nr1.IsSingleIndex());
     auto val = nr1.GetValueNode()->
         GetVal<T>(nr1.GetSingleIndex());
-    auto& vec = nr2.GetValueNode()->GetValVec<T>();
     for (auto i=nr2.GetIndexRange().beg;
          i!=nr2.GetIndexRange().end; ++i)
-      vec.at(i) = std::max(vec.at(i), val);
+      nr2.GetValueNode()->SetVal(i, val);
   }
 
   /// Collect values of type T from nr2 to nr1
@@ -278,12 +277,10 @@ protected:
   void Collect(NodeRange nr1, NodeRange nr2) {
     assert(nr1.IsSingleIndex());
     auto nr1_idx = nr1.GetSingleIndex();
-    auto& vec1 = nr1.GetValueNode()->GetValVec<T>();
-    auto& nr1_val = vec1.at(nr1_idx);
     auto& vec2 = nr2.GetValueNode()->GetValVec<T>();
     for (auto i=nr2.GetIndexRange().beg;
          i!=nr2.GetIndexRange().end; ++i)
-      nr1_val = std::max(vec2.at(i), nr1_val);
+      nr1.GetValueNode()->SetVal(nr1_idx, vec2.at(i));
   }
 
   /// Src -> dest for the entries index range ir
