@@ -591,7 +591,7 @@ public:
 
 private:
   ModelAPIType modelapi_;      // We store modelapi in the converter for speed
-  pre::ValuePresolver value_presolver_;
+  pre::ValuePresolver value_presolver_;   // should be init before constraint keepers
   pre::CopyLink copy_link_ { GetValuePresolver() };
 
 
@@ -698,7 +698,7 @@ protected:
     return (map.end() != it) ? it->second : -1;
   }
 
-  /// MapInsert.
+  /// MapInsert__Impl.
   /// Default version for functional constraints with a map.
   /// @param con: the constraint
   /// @param i: ConstraintKeeper index

@@ -1,6 +1,8 @@
 #ifndef VALUE_PRESOLVE_NODE_H
 #define VALUE_PRESOLVE_NODE_H
 
+#include <cmath>
+
 #include "valcvt-base.h"
 
 
@@ -23,6 +25,9 @@ public:
 
   /// Get index range
   NodeIndexRange GetIndexRange() const { assert(ir_.check()); return ir_; }
+
+  /// check if the range represents just 1 index
+  bool IsSingleIndex() const { return ir_.IfSingleIndex(); }
 
   /// Get the single index if range is just that
   int GetSingleIndex() const { return ir_; }
@@ -59,11 +64,31 @@ private:
 /// The data is stored temporarily during a conversion run.
 class ValueNode {
 public:
-  /// Default constructor
-  ValueNode() = default;
+  /// Destructor
+  ~ValueNode() { DeregisterMe(); }
 
-  /// Constructor
-  ValueNode(std::string nm) : name_(nm) { }
+  /// Constructor.
+  /// Need ValuePresolver to register itself.
+  ValueNode(BasicValuePresolver& pre, std::string nm={}) :
+    pre_(pre), name_(nm) { RegisterMe(); }
+
+  /// Move constructor
+  ValueNode(ValueNode&& vn) : pre_(vn.pre_) {
+    vi_ = std::move(vn.vi_);
+    vd_ = std::move(vn.vd_);
+    sz_ = std::move(vn.sz_);
+    name_ = std::move(vn.name_);
+    RegisterMe();
+  }
+
+  /// Copy constructor
+  ValueNode(const ValueNode& vn) : pre_(vn.pre_) {
+    vi_ = (vn.vi_);
+    vd_ = (vn.vd_);
+    sz_ = (vn.sz_);
+    name_ = (vn.name_);
+    RegisterMe();
+  }
 
   /// Declared size (what is being used by links)
   size_t size() const { return sz_; }
@@ -111,63 +136,126 @@ public:
   /// Retrieve whole ArrayRef<double>
   operator ArrayRef<double> () const { return vd_; }
 
-  /// Retrieve whole vector<int>&
+  /// Retrieve vec<T>& - dummy version
+  template <class T>
+  std::vector<T>& GetValVec()
+  { assert(false); static std::vector<T> dum; return dum; }
+
+  /// Retrieve whole const vector<int>&
   operator const std::vector<int>& () const { return vi_; }
 
   /// Retrieve whole vector<double>&
   operator const std::vector<double>& () const { return vd_; }
 
+
   /////////////////////// Access individual values ///////////////////////
+
+  /// Retrieve T, dummy version
+  template <class T>
+  T GetVal(size_t ) const { return {}; }
+
+  /// Set T, dummy version
+  template <class T>
+  void SetVal(size_t i, T ) { assert(i<size()); }
 
   /// Retrieve int[i]
   int GetInt(size_t i) const { assert(i<vi_.size()); return vi_[i]; }
 
-  /// Set int[i]
-  void SetInt(size_t i, int v) {
-    assert(i<size());
-    if (vi_.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
-      vi_.resize(size());
-    vi_[i]=v;
-  }
+  /// Set int[i].
+  /// If existing value non-0, only allow larger value.
+  void SetInt(size_t i, int v) { SetNum(vi_, i, v); }
 
   /// Retrieve double[i]
   double GetDbl(size_t i) const { assert(i<vd_.size()); return vd_[i]; }
 
-  /// Set double[i]
-  void SetDbl(size_t i, double v) {
-    assert(i<size());
-    if (vd_.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
-      vd_.resize(size());
-    vd_[i]=v;
-  }
-
-  /// Copy node to another node
-  friend void Copy(NodeRange ir1, NodeRange ir2);
+  /// Set double[i].
+  /// If existing value non-0, only allow larger value.
+  void SetDbl(size_t i, double v) { SetNum(vd_, i, v); }
 
   /// SetName
   void SetName(std::string s) { name_ = std::move(s); }
 
+  /// Clean up
+  void CleanUp() { vi_.clear(); vd_.clear(); }
+
+protected:
+  /// Set int[i] or dbl[i].
+  /// If existing value non-0, only allow larger value,
+  /// BUT only if that is non-0 too.
+  /// This way, the order of propagations is irrelevant.
+  template <class Vec>
+  void SetNum(Vec& vec, size_t i, typename Vec::value_type v) {
+    assert(i<size());   // index into the originally declared suffix size
+    if (vec.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
+      vec.resize(size());
+    if (FP_ZERO != std::fpclassify( vec[i] )) {
+      if (v>vec[i] &&
+          FP_ZERO != std::fpclassify( v ))
+        vec[i]=v;
+      // TODO warning for unequal values
+    } else
+      vec[i]=v;
+  }
+
+  /// Register with the ValuePresolver
+  void RegisterMe() {
+    pre_.Register(this);
+  }
+
+  /// Deregister with the ValuePresolver
+  void DeregisterMe() {
+    pre_.Deregister(this);
+  }
+
 private:
+  // Move & copy constructors should copy all members!
+  BasicValuePresolver& pre_;
   std::vector<int> vi_;
   std::vector<double> vd_;
-  size_t sz_;
+  size_t sz_=0;
   std::string name_ = "default_value_node";
 };
 
 
-/// Specialize for ValueNode
+template <>
+std::vector<double>& ValueNode::GetValVec<double>() { return vd_; }
+
+template <>
+std::vector<int>& ValueNode::GetValVec<int>() { return vi_; }
+
+template <>
+double ValueNode::GetVal<double>(size_t i) const { return GetDbl(i); }
+
+template <>
+int ValueNode::GetVal<int>(size_t i) const { return GetInt(i); }
+
+template <>
+void ValueNode::SetVal<double>(size_t i, double v) { SetDbl(i, v); }
+
+template <>
+void ValueNode::SetVal<int>(size_t i, int v) { SetInt(i, v); }
+
+
+/// Specialize SetValueNodeName() for ValueNode
 inline void
 SetValueNodeName(ValueNode& vn, std::string nm) { vn.SetName(nm); }
 
 
+/// Default CreateArray() for ValueNode
+template <>
+ValueNode CreateArray(BasicValuePresolver& vp) { return ValueNode{vp}; }
+
+
 /// Copy int or double range only
 /// @return always true currently
-template <class Vec> inline
+template <class Vec>
+inline
 bool CopyRange(Vec& src, Vec& dest, NodeIndexRange ir, int i1) {
   if ((int)src.size() < ir.end) {
     src.resize(ir.end);
     // assert(src.empty());      // attempt to process a smaller vector
     /// We cannot do this as long there exist "rootless" constraints
+    /// (SOS?)
     /// No value is copied into them
   }
   if ((int)dest.size() < i1 + ir.size())
@@ -177,20 +265,23 @@ bool CopyRange(Vec& src, Vec& dest, NodeIndexRange ir, int i1) {
   return true;
 }
 
-/// Copy node to another node
+/// Copy range of node entries to another node
+template <class T>
 inline
 void Copy(NodeRange ir1, NodeRange ir2) {
   assert(ir1.GetIndexRange().size() == ir2.GetIndexRange().size());
-  auto fi = CopyRange(ir1.GetValueNode()->vi_, ir2.GetValueNode()->vi_,
+  auto fd = CopyRange(ir1.GetValueNode()->GetValVec<T>(),
+                      ir2.GetValueNode()->GetValVec<T>(),
                       ir1.GetIndexRange(), ir2.GetIndexRange().beg);
-  auto fd = CopyRange(ir1.GetValueNode()->vd_, ir2.GetValueNode()->vd_,
-                      ir1.GetIndexRange(), ir2.GetIndexRange().beg);
-  assert(fi || fd);
+  assert(fd);
 }
 
 
+/// Typedef BasicValuePresolverRef
+using BasicValuePresolverRef = BasicValuePresolver&;
+
 /// Typedef map of nodes
-using NodeMap = ValueMap< ValueNode >;
+using NodeMap = ValueMap< ValueNode, BasicValuePresolverRef >;
 
 /// Terminal nodes of a conversion graph
 using ModelValuesTerminal = ModelValues< NodeMap >;

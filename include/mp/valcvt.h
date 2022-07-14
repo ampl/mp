@@ -7,6 +7,7 @@
   */
 
 #include <deque>
+#include <unordered_set>
 
 #include "valcvt-node.h"
 #include "valcvt-link.h"
@@ -94,6 +95,14 @@ public:
   ModelValuesInt PresolveLazyUserCutFlags(const ModelValuesInt& mvi) override
   { return RunPresolve(&BasicLink::PresolveLazyUserCutFlags, mvi); }
 
+  /// Register a ValueNode*
+  void Register(ValueNode* pvn) override
+  { assert(val_nodes_.insert(pvn).second); }
+
+  /// Deregister a ValueNode*
+  void Deregister(ValueNode* pvn) override { assert(val_nodes_.erase(pvn)); }
+
+
 protected:
   /// Helper type: virtual member function pointer
   using LinkFn = void (BasicLink::*)(LinkIndexRange);
@@ -101,6 +110,7 @@ protected:
   /// Generic value presolve loop: forward
   template <class ModelValues>
   ModelValues RunPresolve(LinkFn fn, const ModelValues& mv) const {
+    CleanUpValueNodes();
     src_ = mv;
     for (const auto& br: brl_)
       (br.b_.*fn)(br.ir_);
@@ -110,15 +120,26 @@ protected:
   /// Generic value postsolve loop: backward
   template <class ModelValues>
   ModelValues RunPostsolve(LinkFn fn, const ModelValues& mv) const {
+    CleanUpValueNodes();
     dest_ = mv;
     for (auto rit=brl_.rbegin(); rit!=brl_.rend(); ++rit)
       (rit->b_.*fn)(rit->ir_);
     return src_;
   }
 
+  /// Clean up value nodes for new propagation
+  void CleanUpValueNodes() const {
+    for (auto pvn: val_nodes_)
+      pvn->CleanUp();
+  }
+
 private:
-  mutable ModelValuesTerminal src_{std::string("src")},
-    dest_{std::string("dest")};
+  /// val_nodes_ should be before src_ / dest_
+  std::unordered_set<ValueNode*> val_nodes_;
+  /// val_nodes_ should be before src_ / dest_
+  mutable ModelValuesTerminal
+    src_{*this, "source_item_nodes__"},
+    dest_{*this, "target_item_nodes__"};
   LinkRangeList brl_;
 };
 

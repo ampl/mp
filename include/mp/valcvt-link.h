@@ -1,8 +1,11 @@
 #ifndef VALUE_PRESOLVE_LINK_H
 #define VALUE_PRESOLVE_LINK_H
 
-#include <vector>
 #include <array>
+#include <vector>
+#include <deque>
+#include <algorithm>
+#include <mp/arrayref.h>
 
 #include "mp/common.h"
 #include "valcvt-node.h"
@@ -20,12 +23,21 @@ class ValuePresolver;
 
 /// Macro for a list of pre- / postsolve method definitions
 /// in a link.
-/// Requires PRESOLVE_KIND defined to declare / define corr. methods
+/// Requires PRESOLVE_KIND defined to declare / define corr. methods.
+/// Generic(Dbl/Int): maximizes suffix value among non-0.
+/// Example 1 (presolve): expression exp(y) is used in various places
+/// and marked with different values of .funcpieces.
+/// The largest is chosen.
+/// Example 2 (postsolve): IIS membership value for a converted
+/// high-level constraint can be reported as the maximum of those
+/// for its low-level representation.
 #define LIST_PRESOLVE_METHODS \
-  PRESOLVE_KIND(Solution) \
-  PRESOLVE_KIND(Basis) \
-  PRESOLVE_KIND(IIS) \
-  PRESOLVE_KIND(LazyUserCutFlags)
+  PRESOLVE_KIND(GenericDbl, double) \
+  PRESOLVE_KIND(GenericInt, int) \
+  PRESOLVE_KIND(Solution, double) \
+  PRESOLVE_KIND(Basis, int) \
+  PRESOLVE_KIND(IIS, int) \
+  PRESOLVE_KIND(LazyUserCutFlags, int)
 // ...
 
 
@@ -46,7 +58,7 @@ public:
   /// The below pre- / postsolve methods
   /// work on a range of link entries.
   /// Postsolves should usually loop the range backwards
-#define PRESOLVE_KIND(name) \
+#define PRESOLVE_KIND(name, ValType) \
   virtual void Presolve ## name (LinkIndexRange ) = 0; \
   virtual void Postsolve ## name(LinkIndexRange ) = 0;
 
@@ -66,16 +78,16 @@ public:
 
   /// Get source variables
   virtual VarList GetSrcVars() const { return {}; }
-  /// Get source constraint
+  /// Get source constraints
   virtual ConList GetSrcCon() const { return {}; }
-  /// Get source objective
+  /// Get source objectives
   virtual ObjList GetSrcObj() const { return {}; }
 
   /// Get target variables
   virtual VarList GetTargetVars() const { return {}; }
-  /// Get target constraint
+  /// Get target constraints
   virtual ConList GetTargetCon() const { return {}; }
-  /// Get target objective
+  /// Get target objectives
   virtual ObjList GetTargetObj() const { return {}; }
 
   /// Add source/target nodes.
@@ -149,7 +161,7 @@ public:
   using LinkEntry = std::pair<NodeRange, NodeRange>;
 
   /// Collection of entries
-  using CollectionOfEntries = std::vector<LinkEntry>;
+  using CollectionOfEntries = std::deque<LinkEntry>;
 
   /// Add entry.
   /// Instead of a new entry, tries to extend the last one
@@ -169,30 +181,126 @@ public:
   /// Retrieve entries
   const CollectionOfEntries& GetEntries() const { return entries_; }
 
+  /// Copy everything, MaxAmongNon0 should not apply
 #undef PRESOLVE_KIND
-#define PRESOLVE_KIND(name) \
+#define PRESOLVE_KIND(name, ValType) \
   void Presolve ## name (LinkIndexRange ir) override \
-  { CopySrcDest(ir); } \
+  { CopySrcDest <ValType>(ir); } \
   void Postsolve ## name(LinkIndexRange ir) override \
-  { CopyDestSrc(ir); }
+  { CopyDestSrc <ValType>(ir); }
 
   LIST_PRESOLVE_METHODS
 
 protected:
   /// Copy src -> dest for index range ir
+  template <class T>
   void CopySrcDest(LinkIndexRange ir) {
     for (int i=ir.beg; i!=ir.end; ++i) {
       const auto& br = entries_[i];
-      Copy(br.first, br.second);
+      Copy<T>(br.first, br.second);
     }
   }
   /// Copy src <- dest for index range ir. Loop backwards
+  template <class T>
   void CopyDestSrc(LinkIndexRange ir) {
     for (int i=ir.end; (i--)!=ir.beg; ) {
       const auto& br = entries_[i];
-      Copy(br.second, br.first);
+      Copy<T>(br.second, br.first);
     }
   }
+
+private:
+  CollectionOfEntries entries_;
+};
+
+
+/// A specific link: each entry just copies from 1 source value
+/// into a range of values.
+/// Useful to transfer values into expression subtree,
+/// in conversions, e.g., form 1 var / constraint / objective
+/// into several new ones
+class One2ManyLink : public BasicLink {
+public:
+  /// Constructor
+  One2ManyLink(ValuePresolver& pre) : BasicLink(pre) { }
+
+  /// Single link entry,
+  /// stores src + dest ranges.
+  /// HOWEVER the source range keeps just 1 node.
+  using LinkEntry = std::pair<NodeRange, NodeRange>;
+
+  /// Collection of entries
+  using CollectionOfEntries = std::deque<LinkEntry>;
+
+  /// Add entry.
+  /// Instead of a new entry, tries to extend the last one
+  /// if exists
+  void AddEntry(LinkEntry be) {
+    assert(be.first.IsSingleIndex());
+    if (entries_.empty() ||
+        entries_.back().first!=be.first ||
+        !entries_.back().second.ExtendableBy(be.second)) {
+      entries_.push_back(be);             // Add new entry
+      RegisterLinkIndex(entries_.size()-1);
+    } else {                              // Extend last entry
+      entries_.back().second.ExtendBy(be.second);
+    }
+  }
+
+  /// Retrieve entries
+  const CollectionOfEntries& GetEntries() const { return entries_; }
+
+  /// All pre- / postsolves just take max from non-0
+#undef PRESOLVE_KIND
+#define PRESOLVE_KIND(name, ValType) \
+  void Presolve ## name (LinkIndexRange ir) override \
+  { DistributeFromSrc2Dest <ValType>(ir); } \
+  void Postsolve ## name(LinkIndexRange ir) override \
+  { CollectFromDest2Src <ValType>(ir); }
+
+  LIST_PRESOLVE_METHODS
+
+protected:
+  /// Distribute values of type T from nr1 to nr2
+  template <class T>
+  void Distr(NodeRange nr1, NodeRange nr2) {
+    assert(nr1.IsSingleIndex());
+    auto val = nr1.GetValueNode()->
+        GetVal<T>(nr1.GetSingleIndex());
+    for (auto i=nr2.GetIndexRange().beg;
+         i!=nr2.GetIndexRange().end; ++i)
+      nr2.GetValueNode()->SetVal(i, val);
+  }
+
+  /// Collect values of type T from nr2 to nr1
+  template <class T>
+  void Collect(NodeRange nr1, NodeRange nr2) {
+    assert(nr1.IsSingleIndex());
+    auto nr1_idx = nr1.GetSingleIndex();
+    auto& vec2 = nr2.GetValueNode()->GetValVec<T>();
+    for (auto i=nr2.GetIndexRange().beg;
+         i!=nr2.GetIndexRange().end; ++i)
+      nr1.GetValueNode()->SetVal(nr1_idx, vec2.at(i));
+  }
+
+  /// Src -> dest for the entries index range ir
+  template <class T>
+  void DistributeFromSrc2Dest(LinkIndexRange ir) {
+    for (int i=ir.beg; i!=ir.end; ++i) {
+      const auto& br = entries_[i];
+      Distr<T>(br.first, br.second);
+    }
+  }
+
+  /// Collect src <- dest for index range ir. Loop backwards
+  template <class T>
+  void CollectFromDest2Src(LinkIndexRange ir) {
+    for (int i=ir.end; (i--)!=ir.beg; ) {
+      const auto& br = entries_[i];
+      Collect<T>(br.first, br.second);
+    }
+  }
+
 
 private:
   CollectionOfEntries entries_;
@@ -230,8 +338,10 @@ public:
     RegisterLinkIndex(entries_.size()-1);
   }
 
+  /// Pre- / postsolve loops over link entries
+  /// and calls the derived class' method for each.
 #undef PRESOLVE_KIND
-#define PRESOLVE_KIND(name) \
+#define PRESOLVE_KIND(name, ValType) \
   void Presolve ## name (LinkIndexRange ir) override { \
     for (int i=ir.beg; i!=ir.end; ++i) \
       MPD( Presolve ## name ## Entry(entries_.at(i)) ); } \
@@ -243,7 +353,7 @@ public:
 
 
 private:
-  std::vector<LinkEntry> entries_;
+  std::deque<LinkEntry> entries_;
 };
 
 

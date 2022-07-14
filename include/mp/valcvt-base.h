@@ -19,35 +19,52 @@ namespace mp {
 /// between the original and presolved models
 namespace pre {
 
-/// Debugging template
+/// Default SetValueNodeName().
+/// For std::vector<> it does nothing.
 template <class Any>
 void SetValueNodeName(Any& , std::string ) { }
 
+/// Default CreateArray().
+/// For std::vector<> it does not use the Param.
+template <class Array, class Param>
+Array CreateArray(Param ) { return Array{}; }
 
-/// Value map, contains a map of either:
+
+/// Value(Node) map.
 ///
+/// Contains a map of either:
 /// - concrete arrays of int's and/or double's (ValueMapInt/Dbl), or
 /// - ValueNode's (conversion graph nodes) which manage such arrays.
 ///
-/// The data in a single map corresponds to variables, constraints,
+/// The data in a single map corresponds to either variables, constraints,
 /// or objectives,
 /// and map keys correspond to different item subcategories (e.g., linear vs
-/// quadratic constraints)
-template <class Array>
+/// quadratic constraints).
+/// When IsSingleKey(), the map only has a single array (at key 0),
+/// accessible via ().
+///
+/// @param Array: the type of array stored (std::vector<int> / <double>),
+///         or ValueNode.
+/// @param Param: type of parameter to call CreateArray<Array>(Param)
+///         when we need to create a mapped value.
+template <class Array, class Param=int>
 class ValueMap {
 public:
+  /// Typedef ParamType
+  using ParamType =Param;
+
   /// Typedef to map item type number to value array
   /// For example, distinguish values for linear constraints etc
   using MapType = std::map< int, Array >;
 
-  /// Default constructor
-  ValueMap() = default;
+  /// Constructor
+  ValueMap(Param p={}) : prm_(p) { }
 
   /// Construct from a single SomeArray
   template <class SomeArray>
-  ValueMap(SomeArray r) {
-    map_[0] = std::move(r);
-    SetValueNodeName(map_[0], name_ + std::to_string(0));
+  ValueMap(SomeArray r) :
+      map_{ {0, std::move(r) } } {
+    SetValueNodeName(map_.at(0), name_ + "[0]");
   }
 
   /// Construct from the low-level MapType
@@ -56,56 +73,76 @@ public:
   /// Construct from a low-level map<AnotherArray>
   template <class Array2>
   ValueMap(const std::map<int, Array2>& llm) {
-    for (const auto& a2: llm)
-      map_[a2.first] = a2.second;
+    for (const auto& a2: llm) {
+      map_.insert({ a2.first, CreateArray<Array>(prm_) }).first->second =
+          a2.second;
+    }
   }
 
   /// Construct from another map
-  template <class Array2>
-  ValueMap(const ValueMap<Array2>& m) {
+  template <class Array2, class Param2>
+  ValueMap(const ValueMap<Array2, Param2>& m) {
     for (const auto& a2: m.GetMap())
-      map_[a2.first] = a2.second;
+      map_.insert({ a2.first, CreateArray<Array>(prm_) }).first->second =
+          a2.second;
   }
 
   /// Assign from another map
   template <class Array2>
   ValueMap& operator=(const ValueMap<Array2>& m) {
     for (const auto& a2: m.GetMap())
-      map_[a2.first] = a2.second;
+      map_.insert({
+                    a2.first, CreateArray<Array, Param>(prm_)
+                  }).first->second =
+          a2.second;
     return *this;
   }
 
   /// Check if we have only the single key
-  bool IfSingleKey() const
+  bool IsSingleKey() const
   { return 1==map_.size() && 0==map_.begin()->first; }
 
   /// Make single key, or check one, and return
   Array& MakeSingleKey() { return operator()(); }
 
   /// Retrieve the single array, const.
-  /// When returning array from a temporary map, use MoveOut()
+  /// WARNING:
+  /// When returning the single array from a temporary map,
+  /// use MoveOut()
   const Array& operator()() const
-  { assert(IfSingleKey()); return map_.at(0); }
+  { assert(IsSingleKey()); return map_.at(0); }
 
   /// Retrieve the single array (creating if need)
   Array& operator()() {
     if (map_.empty())
-      SetValueNodeName(map_[0], name_ + std::to_string(0));
+      SetValueNodeName(
+            *map_.insert({ 0,
+                           CreateArray<Array, Param>(prm_) }).first,
+            name_ + "[0]");
     else
-      assert(IfSingleKey());
-    return map_[0];
+      assert(IsSingleKey());
+    return map_.at(0);
   }
 
-  /// Retrieve the array with index \a i, const.
-  /// When returning array from a temporary map, use MoveOut()
+  /// Retrieve the array with key \a i, const.
+  /// WARNING:
+  /// When returning array from a temporary map, use MoveOut(i)
   const Array& operator()(int i) const { return map_.at(i); }
 
-  /// Retrieve the array with index \a i (creating if need)
+  /// Retrieve the array with key \a i (creating if need)
   Array& operator()(int i) {
-    if (map_.end() == map_.find(i))
-      SetValueNodeName(map_[i], name_ + std::to_string(i));
-    return map_[i];
+    if (map_.end() == map_.find(i)) {
+      Array arr = CreateArray<Array, Param>(prm_);
+      SetValueNodeName(
+            *map_.insert({ i, std::move(arr) }).first,
+            name_ + std::to_string(i));
+    }
+    return map_.at(i);
   }
+
+  /// Move out the single array
+  Array MoveOut()
+  { assert(IsSingleKey()); return std::move(map_.at(0)); }
 
   /// Move out array \a i
   Array MoveOut(int i) { return std::move(map_.at(i)); }
@@ -116,7 +153,9 @@ public:
   /// Set map name
   void SetName(std::string s) { name_ = std::move(s); }
 
+
 private:
+  Param prm_;
   std::string name_ { "default_value_map" };
   MapType map_;
 };
@@ -127,21 +166,29 @@ using ValueMapInt = ValueMap< std::vector<int> >;
 /// Convenience typedef
 using ValueMapDbl = ValueMap< std::vector<double> >;
 
+
 /// Group of values or value nodes
 /// for variables, constraints, and objectives
 template <class VMap>
 class ModelValues {
 public:
+  /// The extra parameter type, taken from VMap
+  using ParamType = typename VMap::ParamType;
+
   /// Constructor
-  ModelValues(std::string nm) : name_{nm} {
+  ModelValues(ParamType prm, std::string nm) :
+      name_{nm}, vars_(prm), cons_(prm), objs_(prm) {
     vars_.SetName(nm+"_vars");
     cons_.SetName(nm+"_cons");
     objs_.SetName(nm+"_objs");
   }
+
   /// Default move-copy
   ModelValues(ModelValues&& ) = default;
+
   /// Default move-assign
   ModelValues& operator=(ModelValues&& ) = default;
+
   /// Construct from values for vars, cons, objs
   /// (last 2 can be omitted)
   ModelValues(VMap v, VMap c = {}, VMap o = {}) :
@@ -190,6 +237,8 @@ using ModelValuesInt = ModelValues< ValueMapInt >;
 using ModelValuesDbl = ModelValues< ValueMapDbl >;
 
 
+class ValueNode;
+
 /// ValuePresolver interface.
 /// Addresses value pre- / postsolve (solutions, basis, etc)
 class BasicValuePresolver {
@@ -214,6 +263,12 @@ public:
 
   /// Presolve LazyUserCutFlags
   virtual ModelValuesInt PresolveLazyUserCutFlags(const ModelValuesInt& ) = 0;
+
+  /// Register a ValueNode*
+  virtual void Register(ValueNode* ) = 0;
+
+  /// Deregister a ValueNode*
+  virtual void Deregister(ValueNode* ) = 0;
 };
 
 
