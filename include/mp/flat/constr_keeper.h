@@ -25,8 +25,8 @@ public:
   virtual ~BasicConstraintKeeper() { }
 
   /// Constructor
-  BasicConstraintKeeper(const char* nm) :
-    value_node_(nm), constr_name_(nm) { }
+  BasicConstraintKeeper(pre::BasicValuePresolver& pres, const char* nm) :
+    value_node_(pres, nm), constr_name_(nm) { }
 
   /// Constraint type
   using ConstraintType = BasicConstraint;
@@ -182,7 +182,7 @@ public:
   /// Constructor, adds this CK to the provided ConstraintManager
   /// Requires the CM to be already constructed
   ConstraintKeeper(Converter& cvt, const char* nm) :
-    BasicConstraintKeeper(nm), cvt_(cvt) {
+      BasicConstraintKeeper(cvt.GetValuePresolver(), nm), cvt_(cvt) {
     GetConverter().AddConstraintKeeper(*this, ConversionPriority());
   }
 

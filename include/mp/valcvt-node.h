@@ -64,11 +64,31 @@ private:
 /// The data is stored temporarily during a conversion run.
 class ValueNode {
 public:
-  /// Default constructor
-  ValueNode() = default;
+  /// Destructor
+  ~ValueNode() { DeregisterMe(); }
 
-  /// Constructor
-  ValueNode(std::string nm) : name_(nm) { }
+  /// Constructor.
+  /// Need ValuePresolver to register itself.
+  ValueNode(BasicValuePresolver& pre, std::string nm={}) :
+    pre_(pre), name_(nm) { RegisterMe(); }
+
+  /// Move constructor
+  ValueNode(ValueNode&& vn) : pre_(vn.pre_) {
+    vi_ = std::move(vn.vi_);
+    vd_ = std::move(vn.vd_);
+    sz_ = std::move(vn.sz_);
+    name_ = std::move(vn.name_);
+    RegisterMe();
+  }
+
+  /// Copy constructor
+  ValueNode(const ValueNode& vn) : pre_(vn.pre_) {
+    vi_ = (vn.vi_);
+    vd_ = (vn.vd_);
+    sz_ = (vn.sz_);
+    name_ = (vn.name_);
+    RegisterMe();
+  }
 
   /// Declared size (what is being used by links)
   size_t size() const { return sz_; }
@@ -155,28 +175,44 @@ public:
   /// SetName
   void SetName(std::string s) { name_ = std::move(s); }
 
+  /// Clean up
+  void CleanUp() { vi_.clear(); vd_.clear(); }
 
 protected:
   /// Set int[i] or dbl[i].
-  /// If existing value non-0, only allow larger value.
+  /// If existing value non-0, only allow larger value,
+  /// BUT only if that is non-0 too.
+  /// This way, the order of propagations is irrelevant.
   template <class Vec>
   void SetNum(Vec& vec, size_t i, typename Vec::value_type v) {
     assert(i<size());   // index into the originally declared suffix size
     if (vec.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
       vec.resize(size());
     if (FP_ZERO != std::fpclassify( vec[i] )) {
-      if (v>vec[i])
+      if (v>vec[i] &&
+          FP_ZERO != std::fpclassify( v ))
         vec[i]=v;
       // TODO warning for unequal values
     } else
       vec[i]=v;
   }
 
+  /// Register with the ValuePresolver
+  void RegisterMe() {
+    pre_.Register(this);
+  }
+
+  /// Deregister with the ValuePresolver
+  void DeregisterMe() {
+    pre_.Deregister(this);
+  }
 
 private:
+  // Move & copy constructors should copy all members!
+  BasicValuePresolver& pre_;
   std::vector<int> vi_;
   std::vector<double> vd_;
-  size_t sz_;
+  size_t sz_=0;
   std::string name_ = "default_value_node";
 };
 
@@ -203,6 +239,11 @@ void ValueNode::SetVal<int>(size_t i, int v) { SetInt(i, v); }
 /// Specialize SetValueNodeName() for ValueNode
 inline void
 SetValueNodeName(ValueNode& vn, std::string nm) { vn.SetName(nm); }
+
+
+/// Default CreateArray() for ValueNode
+template <>
+ValueNode CreateArray(BasicValuePresolver& vp) { return ValueNode{vp}; }
 
 
 /// Copy int or double range only
@@ -236,8 +277,11 @@ void Copy(NodeRange ir1, NodeRange ir2) {
 }
 
 
+/// Typedef BasicValuePresolverRef
+using BasicValuePresolverRef = BasicValuePresolver&;
+
 /// Typedef map of nodes
-using NodeMap = ValueMap< ValueNode >;
+using NodeMap = ValueMap< ValueNode, BasicValuePresolverRef >;
 
 /// Terminal nodes of a conversion graph
 using ModelValuesTerminal = ModelValues< NodeMap >;

@@ -78,16 +78,16 @@ public:
 
   /// Get source variables
   virtual VarList GetSrcVars() const { return {}; }
-  /// Get source constraint
+  /// Get source constraints
   virtual ConList GetSrcCon() const { return {}; }
-  /// Get source objective
+  /// Get source objectives
   virtual ObjList GetSrcObj() const { return {}; }
 
   /// Get target variables
   virtual VarList GetTargetVars() const { return {}; }
-  /// Get target constraint
+  /// Get target constraints
   virtual ConList GetTargetCon() const { return {}; }
-  /// Get target objective
+  /// Get target objectives
   virtual ObjList GetTargetObj() const { return {}; }
 
   /// Add source/target nodes.

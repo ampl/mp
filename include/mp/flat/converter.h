@@ -591,7 +591,7 @@ public:
 
 private:
   ModelAPIType modelapi_;      // We store modelapi in the converter for speed
-  pre::ValuePresolver value_presolver_;
+  pre::ValuePresolver value_presolver_;   // should be init before constraint keepers
   pre::CopyLink copy_link_ { GetValuePresolver() };
 
 
