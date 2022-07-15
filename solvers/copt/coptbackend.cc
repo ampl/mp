@@ -115,13 +115,9 @@ void CoptBackend::InputCOPTExtras() {
 
 
 void CoptBackend::DoCOPTFeasRelax() {
-  int reltype = feasrelax() - 1,
-    minrel = 0;
-  if (reltype >= 3) {
-    reltype -= 3;
-    minrel = 1;
-    feasrelax().flag_orig_obj_available();
-  }
+  int copttype;
+  int map[] = { 0, 4, 2, 1, 5, 3 };
+  copttype = map[feasrelax()-1];
   /// only relax linear constraints
   auto mv = GetValuePresolver().PresolveSolution({
                                               {},
@@ -140,8 +136,7 @@ void CoptBackend::DoCOPTFeasRelax() {
     (double*)data_or_null(lbpen),
     (double*)data_or_null(ubpen),
     (double*)data_or_null(rhspen),
-    (double*)data_or_null(rhspen)));
-    //&feasrelax().orig_obj_value()));
+    NULL));
 }
 
 Solution CoptBackend::GetSolution() {
@@ -353,6 +348,12 @@ static const mp::OptionValueInfo lp_barorder_values_[] = {
   { "1", "Nested Dissection (ND)", 1}
 };
 
+static const mp::OptionValueInfo values_iismethod[] = {
+  {"-1", "Automatic choice (default)", -1},
+  { "0", "Find smaller IIS", 0},
+  { "1", "Find IIS quickly", 1},
+};
+
 void CoptBackend::InitCustomOptions() {
 
   set_option_header(
@@ -540,9 +541,58 @@ void CoptBackend::InitCustomOptions() {
     "nput matrix coefficient tolerance (default 1e-10).",
     COPT_DBLPARAM_MATRIXTOL, 0.0, 1e-7);
 
+  AddSolverOption("alg:iismethod iismethod",
+    "Which method to use when finding an IIS (irreducible infeasible "
+    "set of constraints, including variable bounds):\n"
+    "\n.. value-table::\n",
+    COPT_INTPARAM_IISMETHOD, values_iismethod, -1);
+
   AddSolverOption("bar:crossover crossover",
     "Execute crossover to transform a barrier solution to a basic one (default 1).",
     "Crossover", 0, 1);
+
+  ReplaceOptionDescription("alg:feasrelax",
+    "Whether to modify the problem into a feasibility "
+    "relaxation problem:\n"
+    "\n"
+    "| 0 = No (default)\n"
+    "| 1 = Yes, minimizing the weighted sum of violations\n"
+    "| 2 = Yes, minimizing the weighted sum of squared violations\n"
+    "| 3 = Yes, minimizing the weighted count of violations\n"
+    "| 4-6 = Same objective as 1-3, but also optimize the "
+    "original objective, subject to the violation "
+    "objective being minimized.\n"
+    "\n"
+    "Weights are given by suffixes .lbpen and .ubpen on variables "
+    "and .rhspen on constraints (when nonnegative), else by keywords "
+    "alg:lbpen, alg:ubpen, and alg:rhspen, respectively (default values = 1). "
+    "Weights < 0 are treated as Infinity, allowing no violation.");
+
+    /*
+          AddStoredOption("alg:feasrelax feasrelax",
+                      "Whether to modify the problem into a feasibility "
+                          "relaxation problem:\n"
+                          "\n"
+                          "| 0 = No (default)\n"
+                          "| 1 = Yes, minimizing the weighted sum of violations\n"
+                          "| 2 = Yes, minimizing the weighted sum of squared violations\n"
+                          "| 3 = Yes, minimizing the weighted count of violations\n"
+                          "| 4-6 = Same objective as 1-3, but also optimize the "
+                             "original objective, subject to the violation "
+                             "objective being minimized.\n"
+                      "\n"
+                      "Weights are given by suffixes .lbpen and .ubpen on variables "
+                      "and .rhspen on constraints (when nonnegative), else by keywords "
+                      "alg:lbpen, alg:ubpen, and alg:rhspen, respectively (default values = 1). "
+                      "Weights < 0 are treated as Infinity, allowing no violation.",
+          feasrelax().mode_);
+      AddStoredOption("alg:lbpen lbpen", "See alg:feasrelax.",
+          storedOptions_.lbpen_);
+      AddStoredOption("alg:ubpen ubpen", "See alg:feasrelax.",
+          storedOptions_.ubpen_);
+      AddStoredOption("alg:rhspen rhspen", "See alg:feasrelax.",
+          storedOptions_.rhspen_);
+          */
 }
 
 

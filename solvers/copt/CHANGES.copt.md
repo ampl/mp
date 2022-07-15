@@ -1,6 +1,11 @@
 Summary of recent updates to COPT for AMPL
 ==========================================
 
+## 20220715
+- Updated to Copt 5.0.1, which includes many performance improvements
+- Added feasibility relaxation (see *alg:feasrelax*)
+- New parameters: *alg:iismethod*
+
 ## 20220615
 - New parameter: *crossover*
 - Minor changes to parmeter names
