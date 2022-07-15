@@ -188,15 +188,22 @@ protected:
     assert(i<size());   // index into the originally declared suffix size
     if (vec.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
       vec.resize(size());
-    if (FP_ZERO != std::fpclassify( vec[i] )) {
-      if (v>vec[i] &&
-          FP_ZERO != std::fpclassify( v ))
+    if (!notZero(vec[i])) {
+      if (v>vec[i] && notZero(v))
         vec[i]=v;
       // TODO warning for unequal values
     } else
       vec[i]=v;
   }
-
+  // The following wrappers are to allow compilation on windows
+  // due to https://developercommunity.visualstudio.com/t/stdsignbit-misses-overloads-for-integer-types/923187
+  // (it applies to fpclassify also)
+  bool notZero(double d) {
+    return FP_ZERO != std::fpclassify(d);
+  }
+  bool notZero(int i) {
+    return i != 0;
+  }
   /// Register with the ValuePresolver
   void RegisterMe() {
     pre_.Register(this);
