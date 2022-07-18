@@ -29,7 +29,7 @@ public:
   /// Add another range to the list,
   /// tries to extend the last range if possible
   void Add(LinkRange br) {
-    if (empty() || !back().ExtendRange(br))
+    if (empty() || !back().TryExtendBy(br))
       push_back(br);
   }
 
@@ -70,30 +70,24 @@ public:
   /// when an entry is added
   void Add(LinkRange br) { brl_.Add(br); }
 
-  /// Presolve solution (primal + dual)
-  ModelValuesDbl PresolveSolution(const ModelValuesDbl& mvd) override
-  { return RunPresolve(&BasicLink::PresolveSolution, mvd); }
-  /// Postsolve solution (primal + dual)
-  ModelValuesDbl PostsolveSolution(const ModelValuesDbl& mvd) override
-  { return RunPostsolve(&BasicLink::PostsolveSolution, mvd); }
 
-  /// Presolve basis (vars + cons)
-  ModelValuesInt PresolveBasis(const ModelValuesInt& mvi) override
-  { return RunPresolve(&BasicLink::PresolveBasis, mvi); }
-  /// Postsolve solution (vars + cons)
-  ModelValuesInt PostsolveBasis(const ModelValuesInt& mvi) override
-  { return RunPostsolve(&BasicLink::PostsolveBasis, mvi); }
+  /// Pre- / postsolve loops over link entries
+  /// and calls the link's method for each.
+#undef PRESOLVE_KIND
+#define PRESOLVE_KIND(name, ValType) \
+  MVOverEl<ValType> \
+    Presolve ## name ( \
+      const MVOverEl<ValType> & mv) override { \
+    return RunPresolve(&BasicLink::Presolve ## name, mv); \
+  } \
+  MVOverEl<ValType> \
+    Postsolve ## name ( \
+      const MVOverEl<ValType> & mv) override { \
+    return RunPostsolve(&BasicLink::Postsolve ## name, mv); \
+  }
 
-  /// Presolve IIS (vars + cons)
-  ModelValuesInt PresolveIIS(const ModelValuesInt& mvi) override
-  { return RunPresolve(&BasicLink::PresolveIIS, mvi); }
-  /// Postsolve IIS (vars + cons)
-  ModelValuesInt PostsolveIIS(const ModelValuesInt& mvi) override
-  { return RunPostsolve(&BasicLink::PostsolveIIS, mvi); }
+  LIST_PRESOLVE_METHODS
 
-  /// Presolve LazyUserCutFlags (vars + cons)
-  ModelValuesInt PresolveLazyUserCutFlags(const ModelValuesInt& mvi) override
-  { return RunPresolve(&BasicLink::PresolveLazyUserCutFlags, mvi); }
 
   /// Register a ValueNode*
   void Register(ValueNode* pvn) override
@@ -136,10 +130,13 @@ protected:
 private:
   /// val_nodes_ should be before src_ / dest_
   std::unordered_set<ValueNode*> val_nodes_;
+
   /// val_nodes_ should be before src_ / dest_
   mutable ModelValuesTerminal
-    src_{*this, "source_item_nodes__"},
-    dest_{*this, "target_item_nodes__"};
+    src_{*this, "src__"},
+    dest_{*this, "dest__"};
+
+  /// The link ranges
   LinkRangeList brl_;
 };
 

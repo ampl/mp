@@ -161,10 +161,15 @@ private:
 };
 
 
-/// Convenience typedef
-using ValueMapInt = ValueMap< std::vector<int> >;
-/// Convenience typedef
-using ValueMapDbl = ValueMap< std::vector<double> >;
+/// ValueMap typedef template over the element type
+template <class El>
+using VMapOverElement = ValueMap< std::vector<El> >;
+
+
+/// Specialize ValueMap storing int's
+using ValueMapInt = VMapOverElement< int >;
+/// Specialize ValueMap storing double's
+using ValueMapDbl = VMapOverElement< double >;
 
 
 /// Group of values or value nodes
@@ -231,13 +236,41 @@ private:
 };
 
 
+/// ModelValues typedef template over the element type
+template <class El>
+using MVOverEl = ModelValues< VMapOverElement<El> >;
+
+
 /// Specialize ModelValues<> for concrete int data
-using ModelValuesInt = ModelValues< ValueMapInt >;
+using ModelValuesInt = MVOverEl< int >;
 /// Specialize ModelValues<> for concrete double data
-using ModelValuesDbl = ModelValues< ValueMapDbl >;
+using ModelValuesDbl = MVOverEl< double >;
 
 
+/// Declare ValueNode
 class ValueNode;
+
+
+/// Macro for a list of pre- / postsolve method definitions
+/// in a ValuePresolver or a link.
+/// Requires PRESOLVE_KIND defined to declare / define
+/// corr. pre- and postsolve methods.
+/// Generic(Dbl/Int): maximizes suffix value among non-0.
+/// Example 1 (presolve): expression exp(y) is used in various places
+/// and marked with different values of .funcpieces.
+/// The largest is chosen.
+/// Example 2 (postsolve): IIS membership value for a converted
+/// high-level constraint can be reported as the maximum of those
+/// for its low-level representation.
+#define LIST_PRESOLVE_METHODS \
+  PRESOLVE_KIND(GenericDbl, double) \
+  PRESOLVE_KIND(GenericInt, int) \
+  PRESOLVE_KIND(Solution, double) \
+  PRESOLVE_KIND(Basis, int) \
+  PRESOLVE_KIND(IIS, int) \
+  PRESOLVE_KIND(LazyUserCutFlags, int)
+// etc...
+
 
 /// ValuePresolver interface.
 /// Addresses value pre- / postsolve (solutions, basis, etc)
@@ -246,23 +279,19 @@ public:
   /// Virtual destructor
   virtual ~BasicValuePresolver() = default;
 
-  /// Presolve solution (primal + dual)
-  virtual ModelValuesDbl PresolveSolution(const ModelValuesDbl& ) = 0;
-  /// Postsolve solution (primal + dual)
-  virtual ModelValuesDbl PostsolveSolution(const ModelValuesDbl& ) = 0;
 
-  /// Presolve basis (vars + cons)
-  virtual ModelValuesInt PresolveBasis(const ModelValuesInt& ) = 0;
-  /// Postsolve solution (vars + cons)
-  virtual ModelValuesInt PostsolveBasis(const ModelValuesInt& ) = 0;
+  /// Pre- / postsolve method declarations
+#undef PRESOLVE_KIND
+#define PRESOLVE_KIND(name, ValType) \
+  virtual MVOverEl<ValType> \
+    Presolve ## name ( \
+      const MVOverEl<ValType> & mv) = 0; \
+  virtual MVOverEl<ValType> \
+    Postsolve ## name ( \
+      const MVOverEl<ValType> & mv) = 0;
 
-  /// Presolve IIS (vars + cons)
-  virtual ModelValuesInt PresolveIIS(const ModelValuesInt& ) = 0;
-  /// Postsolve IIS (vars + cons)
-  virtual ModelValuesInt PostsolveIIS(const ModelValuesInt& ) = 0;
+  LIST_PRESOLVE_METHODS
 
-  /// Presolve LazyUserCutFlags
-  virtual ModelValuesInt PresolveLazyUserCutFlags(const ModelValuesInt& ) = 0;
 
   /// Register a ValueNode*
   virtual void Register(ValueNode* ) = 0;

@@ -36,18 +36,19 @@ class ModelTags(enum.Enum):
     sens = 10003
     lazy_user_cuts = 10004
     sos = 10005
+    funcpieces = 10006
 
-    relax=10006
-    warmstart=10007
-    mipstart=10008
+    relax=20006
+    warmstart=20007
+    mipstart=20008
 
-    multiobj=10009
-    obj_priority=10010
+    multiobj=30009
+    obj_priority=30010
 
-    multisol = 10011
-    sstatus = 10012              # Basis I/O
-    iis = 10013
-    feasrelax = 10014
+    multisol = 40011
+    sstatus = 40012              # Basis I/O
+    iis = 40013
+    feasrelax = 40014
 
 
     ## Solver-specific

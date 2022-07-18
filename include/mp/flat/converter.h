@@ -642,6 +642,7 @@ public:
 private:
   ModelAPIType modelapi_;      // We store modelapi in the converter for speed
   pre::ValuePresolver value_presolver_;   // should be init before constraint keepers
+                                          // and links
   pre::CopyLink copy_link_ { GetValuePresolver() }; // the copy links
   pre::One2ManyLink one2many_link_ { GetValuePresolver() }; // the 1-to-many links
   pre::NodeRange auto_link_src_item_;   // the source item for autolinking

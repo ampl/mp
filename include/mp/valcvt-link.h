@@ -21,30 +21,11 @@ using LinkIndexRange = IndexRange;
 /// Declare ValuePresolver
 class ValuePresolver;
 
-/// Macro for a list of pre- / postsolve method definitions
-/// in a link.
-/// Requires PRESOLVE_KIND defined to declare / define corr. methods.
-/// Generic(Dbl/Int): maximizes suffix value among non-0.
-/// Example 1 (presolve): expression exp(y) is used in various places
-/// and marked with different values of .funcpieces.
-/// The largest is chosen.
-/// Example 2 (postsolve): IIS membership value for a converted
-/// high-level constraint can be reported as the maximum of those
-/// for its low-level representation.
-#define LIST_PRESOLVE_METHODS \
-  PRESOLVE_KIND(GenericDbl, double) \
-  PRESOLVE_KIND(GenericInt, int) \
-  PRESOLVE_KIND(Solution, double) \
-  PRESOLVE_KIND(Basis, int) \
-  PRESOLVE_KIND(IIS, int) \
-  PRESOLVE_KIND(LazyUserCutFlags, int)
-// ...
-
 
 /// ValuePresolveLink interface
 ///
 /// A link is a node of the structural conversion graph.
-/// It contains an array of concrete nodes,
+/// It contains an array of concrete nodes ('link entries'),
 /// each describes a transformation from
 /// some source vars+cons+objs values into/from some target ones.
 /// All concrete nodes are of the same type.
@@ -64,48 +45,19 @@ public:
 
   LIST_PRESOLVE_METHODS
 
-  /// Get source/target nodes.
-  /// BasicLink only defines an interface for this.
 
-  /// Typedef variable container
-  using VarList = ArrayRef<int>;
+  /// Typedef item container
+  using ItemRangeList = std::vector<NodeRange>;
 
-  /// Typedef constraint container
-  using ConList = ArrayRef<NodeRange>;
+  /// Container of source and target items
+  /// for a certain link entry
+  struct EntryItems {
+    ItemRangeList src_items_, dest_items_;
+  };
 
-  /// Typedef objective container
-  using ObjList = ArrayRef<int>;
-
-  /// Get source variables
-  virtual VarList GetSrcVars() const { return {}; }
-  /// Get source constraints
-  virtual ConList GetSrcCon() const { return {}; }
-  /// Get source objectives
-  virtual ObjList GetSrcObj() const { return {}; }
-
-  /// Get target variables
-  virtual VarList GetTargetVars() const { return {}; }
-  /// Get target constraints
-  virtual ConList GetTargetCon() const { return {}; }
-  /// Get target objectives
-  virtual ObjList GetTargetObj() const { return {}; }
-
-  /// Add source/target nodes.
-  /// BasicLink only defines an interface for this.
-
-  /// Add source variables
-  virtual void AddSrcVars(ArrayRef<int> ) { }
-  /// Add source constraint
-  virtual void AddSrcCon(NodeRange ) { }
-  /// Add source objective
-  virtual void AddSrcObj(ArrayRef<int> ) { }
-
-  /// Add target variables
-  virtual void AddTargetVars(ArrayRef<int> ) { }
-  /// Add target constraint
-  virtual void AddTargetCon(NodeRange ) { }
-  /// Add target objective
-  virtual void AddTargetObj(ArrayRef<int> ) { }
+  /// Get source/target nodes for a given link entry.
+  /// This is used for graph export
+  virtual void FillEntryItems(EntryItems& ei, int i) = 0;
 
 
 protected:
@@ -115,8 +67,10 @@ protected:
   /// Version 1: add single link
   void RegisterLinkIndex(int i)
   { RegisterLinkIndexRange( {i, i+1} ); }
+
   /// Version 2: add a range of links
   void RegisterLinkIndexRange(LinkIndexRange );
+
 
 private:
   ValuePresolver& value_presolver_;
@@ -126,13 +80,13 @@ private:
 /// Link range: range of conversion specifiers of certain type.
 /// The link is specified as well
 struct LinkRange {
-  /// Try & extend the range
+  /// Try & extend the range.
   /// @return true iff extension worked,
-  /// otherwise the caller would have to add the new range
+  /// otherwise the caller would have to record the new range
   /// separately
-  bool ExtendRange(LinkRange br) {
+  bool TryExtendBy(LinkRange br) {
     if (&b_ == &br.b_) {                  // same link?
-      if (ir_.end_ == br.ir_.beg_) {        // and consecutive ranges?
+      if (ir_.end_ == br.ir_.beg_) {      // and consecutive ranges?
         ir_.end_ = br.ir_.end_;
         return true;
       }
@@ -142,6 +96,7 @@ struct LinkRange {
 
   /// Reference to BasicLink
   BasicLink& b_;
+
   /// Link index range
   LinkIndexRange ir_;
 };
@@ -178,8 +133,15 @@ public:
     }
   }
 
-  /// Retrieve entries
-  const CollectionOfEntries& GetEntries() const { return entries_; }
+  /// Get source/target nodes for a given link entry.
+  /// This is used for graph export
+  void FillEntryItems(EntryItems& ei, int i) override {
+    const auto& en = entries_.at(i);
+    ei.src_items_.clear();
+    ei.src_items_.push_back(en.first);
+    ei.dest_items_.clear();
+    ei.dest_items_.push_back(en.second);
+  }
 
   /// Copy everything, MaxAmongNon0 should not apply
 #undef PRESOLVE_KIND
@@ -239,16 +201,21 @@ public:
     assert(be.first.IsSingleIndex());
     if (entries_.empty() ||
         entries_.back().first!=be.first ||
-        !entries_.back().second.ExtendableBy(be.second)) {
+        !entries_.back().second.TryExtendBy(be.second)) {
       entries_.push_back(be);             // Add new entry
       RegisterLinkIndex(entries_.size()-1);
-    } else {                              // Extend last entry
-      entries_.back().second.ExtendBy(be.second);
     }
   }
 
-  /// Retrieve entries
-  const CollectionOfEntries& GetEntries() const { return entries_; }
+  /// Get source/target nodes for a given link entry.
+  /// This is used for graph export
+  void FillEntryItems(EntryItems& ei, int i) override {
+    const auto& en = entries_.at(i);
+    ei.src_items_.clear();
+    ei.src_items_.push_back(en.first);
+    ei.dest_items_.clear();
+    ei.dest_items_.push_back(en.second);
+  }
 
   /// All pre- / postsolves just take max from non-0
 #undef PRESOLVE_KIND
@@ -338,6 +305,13 @@ public:
     RegisterLinkIndex(entries_.size()-1);
   }
 
+  /// Get source/target nodes for a given link entry.
+  /// This is used for graph export
+  void FillEntryItems(EntryItems& ei, int i) override {
+    MPD( FillEntryItems( ei, entries_.at(i) ) );
+  }
+
+
   /// Pre- / postsolve loops over link entries
   /// and calls the derived class' method for each.
 #undef PRESOLVE_KIND
@@ -359,23 +333,41 @@ private:
 
 /// A static indiv entry link has a fixed number (\a NNodes)
 /// of ValueNodes and indexes (\a NIndexes) into them.
-/// Generally NNodes==NIndexes
-template <class Impl, int NNodes, int NIndexes>
+/// Generally \a NNodes==\a NIndexes.
+/// \a NSources < \a NIndexes is the number of source nodes/indexes
+/// (coming first in each LinkEntry, this is used for export).
+template <class Impl, int NNodes, int NIndexes, int NSources>
 class BasicStaticIndivEntryLink :
     public BasicIndivEntryLink<Impl, std::array<int, NIndexes> > {
 public:
   /// Base class
   using Base = BasicIndivEntryLink<Impl, std::array<int, NIndexes> >;
-  /// Typedef NodeList.
-  /// Remember, a node is a node of the transformation graph
+
+  /// Typedef NodeList: list of ValueNode pointers.
+  /// A ValueNode is a node of the (structural) transformation graph
   /// and can store arrays of values for a list of model items
   using NodeList = std::array<ValueNode*, NNodes>;
+
   /// Typedef: LinkEntry is just an array if node indexes
   using LinkEntry = std::array<int, NIndexes>;
 
   /// Constructor
   BasicStaticIndivEntryLink(ValuePresolver& pre, const NodeList& ndl) :
     Base(pre), ndl_(ndl) { }
+
+  /// Get source/target nodes for a given link entry.
+  /// This is used for graph export
+  void FillEntryItems(typename Base::EntryItems& ei,
+                      const LinkEntry& en) {
+    ei.src_items_.clear();
+    int i=0;
+    for ( ; i<NSources; ++i)
+      ei.src_items_.push_back({ndl_.at(i), en.at(i)});
+    ei.dest_items_.clear();
+    for ( ; i<NIndexes; ++i)
+      ei.dest_items_.push_back({ndl_.at(i), en.at(i)});
+  }
+
 
 protected:
   /// Access whole node at specific index, const
@@ -417,7 +409,9 @@ private:
 template <class ModelConverter>
 class AutoLinkScope {
 public:
-  /// Constructor
+  /// Constructor.
+  /// @param cvt: the ModelConverter doing the autolinking
+  /// @param src: the source node for the links
   AutoLinkScope(ModelConverter& cvt, NodeRange src) : cvt_(cvt) {
     assert(src.IsSingleIndex());
     cvt_.SetAutoLinkSource(src);

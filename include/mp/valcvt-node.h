@@ -20,6 +20,10 @@ class ValueNode;
 /// The node is specified as well
 class NodeRange {
 public:
+  /// Constructor
+  NodeRange(ValueNode* pvn=nullptr, NodeIndexRange ir={}) :
+    pvn_(pvn), ir_(ir) { }
+
   /// Valid?
   bool IsValid() const { return pvn_ && ir_.IsValid(); }
 

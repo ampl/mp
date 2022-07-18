@@ -31,6 +31,7 @@ class GurobiBackend :
 {
   using BaseBackend = MIPBackend<GurobiBackend>;
 
+
 public:
   GurobiBackend();
   ~GurobiBackend();
@@ -207,11 +208,14 @@ protected:
   void OpenGurobiCloud();
 
   void InputGurobiExtras();
+  /// .funcpieces etc.
+  /// Override the corresponding Gurobi options.
+  void InputGurobiFuncApproxParams();
+  void DoGurobiFeasRelax();
 
   void ExportModel(const std::string& file);
 
   void PrepareGurobiSolve();
-  void DoGurobiFeasRelax();
   void SetPartitionValues();
 
   void DoGurobiTune();
@@ -298,6 +302,7 @@ protected:  //////////// Option accessors ////////////////
 
   const std::string& tunebase() const { return storedOptions_.tunebase_; }
 
+
 private: /////////// Suffixes ///////////
   const SuffixDef<int> sufHintPri = { "hintpri", suf::VAR | suf::INPUT };
 
@@ -308,9 +313,13 @@ public:
   using ObjNParamKey = std::pair< std::string, std::string >;
   template <class T>
   using ObjNParam = std::pair< ObjNParamKey, T >;
+
+
 private:
   std::vector< ObjNParam<int> > objnparam_int_;
   std::vector< ObjNParam<double> > objnparam_dbl_;
+
+
 protected:
   /// Assume opt has the * info
   void GrbSetObjIntParam(const SolverOption& opt, int val);

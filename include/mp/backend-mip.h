@@ -197,16 +197,10 @@ public:
       MarkLazyOrUserCuts(sufLazyVal);
   }
 
-  /// Testing API
-  virtual void ReportFirstLinearConstraintLazySuffix(int val) {
-    if (debug_mode())
-      ReportIntSuffix({"test_lin_constr_lazy", suf::PROBLEM}, {{val}});
-  }
-
-  /// Testing API
-  virtual void ReportFirstQCLazySuffix(int val) {
-    if (debug_mode())
-      ReportIntSuffix({"test_quad_constr_lazy", suf::PROBLEM}, {{val}});
+  /// Report a suffix on the problem.
+  /// Mainly used for testing.
+  virtual void ReportProblemSuffix(const char* suf_name, int val) {
+    ReportIntSuffix({suf_name, suf::PROBLEM}, {{val}});
   }
 
   virtual void InputStartValues() {

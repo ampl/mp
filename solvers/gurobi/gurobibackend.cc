@@ -293,12 +293,13 @@ void GurobiBackend::MarkLazyOrUserCuts(ArrayRef<int> lazyVals) {
                                  GRB_INT_ATTR_LAZY,
                                  0, (int)lv_lin.size(), (int*)lv_lin.data()) );
     // Testing
-    ReportFirstLinearConstraintLazySuffix(lv_lin[0]);
+    if (debug_mode())
+      ReportProblemSuffix("test_lin_constr_lazy", lv_lin[0]);
   }
   // Testing
   const auto& lv_quad = vm.GetConValues()(CG_Quadratic);
-  if (lv_quad.size())
-    ReportFirstQCLazySuffix(lv_quad[0]);
+  if (lv_quad.size() && debug_mode())
+    ReportProblemSuffix("test_quad_constr_lazy", lv_quad[0]);
 }
 
 SolutionBasis GurobiBackend::GetBasis() {
@@ -633,10 +634,41 @@ void GurobiBackend::InputGurobiExtras() {
     GrbSetIntParam(GRB_INT_PAR_POOLSEARCHMODE, storedOptions_.nPoolMode_);
   if (need_ray_primal() || need_ray_dual())
     GrbSetIntParam(GRB_INT_PAR_INFUNBDINFO, 1);
+  InputGurobiFuncApproxParams();
   GrbPlayObjNParams();
   if (feasrelax())
     DoGurobiFeasRelax();
   SetPartitionValues();
+}
+
+/// TODO make these suffixes standard so converters can use them
+void GurobiBackend::InputGurobiFuncApproxParams() {
+  if (auto funcp = ReadIntSuffix( {"funcpieces", suf::Kind::CON} )) {
+    auto mv = GetValuePresolver().PresolveGenericInt(
+        { {}, funcp } );
+    const auto& fp_gen = mv.GetConValues()(CG_General);
+    GrbSetIntAttrArray(GRB_INT_ATTR_FUNCPIECES, fp_gen);
+    if (fp_gen.size() && debug_mode())
+      ReportProblemSuffix("test_funcpieces_presolved", fp_gen[0]);
+  }
+  if (auto funcp = ReadDblSuffix( {"funcpieceratio", suf::Kind::CON} )) {
+    auto mv = GetValuePresolver().PresolveGenericDbl(
+        { {}, funcp } );
+    GrbSetDblAttrArray(GRB_DBL_ATTR_FUNCPIECERATIO,
+                       mv.GetConValues()(CG_General));
+  }
+  if (auto funcp = ReadDblSuffix( {"funcpiecelength", suf::Kind::CON} )) {
+    auto mv = GetValuePresolver().PresolveGenericDbl(
+        { {}, funcp } );
+    GrbSetDblAttrArray(GRB_DBL_ATTR_FUNCPIECELENGTH,
+                       mv.GetConValues()(CG_General));
+  }
+  if (auto funcp = ReadDblSuffix( {"funcpieceerror", suf::Kind::CON} )) {
+    auto mv = GetValuePresolver().PresolveGenericDbl(
+        { {}, funcp } );
+    GrbSetDblAttrArray(GRB_DBL_ATTR_FUNCPIECEERROR,
+                       mv.GetConValues()(CG_General));
+  }
 }
 
 void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
@@ -722,9 +754,11 @@ void GurobiBackend::ReportGurobiPool() {
   int iPoolSolution = -1;
   while (++iPoolSolution < GrbGetIntAttr(GRB_INT_ATTR_SOLCOUNT)) {
     GrbSetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, iPoolSolution);
+    auto mv = GetValuePresolver().PostsolveSolution( {
+          CurrentGrbPoolPrimalSolution() } );   // TODO obj values
     ReportIntermediateSolution(
-          { CurrentGrbPoolPrimalSolution(),
-            {}, { CurrentGrbPoolObjectiveValue() } });
+          { mv.GetVarValues()(), mv.GetConValues()(),
+            { CurrentGrbPoolObjectiveValue() } });
   }
 }
 
@@ -1178,6 +1212,9 @@ void GurobiBackend::InitCustomOptions() {
       "| 0 - Automatic choice (default)\n"
       "| 1-3 - Increasing focus on more stable computations.",
                   GRB_INT_PAR_NUMERICFOCUS, 0, 3);
+
+
+
 
   AddSolverOption("bar:convtol barconvtol",
     "Tolerance on the relative difference between the primal and dual objectives "
@@ -1679,6 +1716,51 @@ void GurobiBackend::InitCustomOptions() {
         "\n.. value-table::\n",
     GRB_INT_PAR_DUALREDUCTIONS, values_01_noyes_1default_, 1);
 
+
+  AddSolverOption("pre:funcpieceerror funcpieceerror",
+      "For 'funcpieces=-1' or -2, this "
+      "option provides the maximum allowed error (absolute for -1, "
+      "relative for -2) in the piecewise-linear approximation.\n\n"
+      "The "
+      "value can be overridden by suffix .funcpieceerror of the "
+      "individual constraints.",
+                  GRB_DBL_PAR_FUNCPIECEERROR, 0.0, GRB_INFINITY);
+
+  AddSolverOption("pre:funcpiecelength funcpiecelength",
+      "If 'funcpieces=1', this option or suffix "
+      "provide the length of each piece of the piecewise-linear "
+      "approximation.",
+                  GRB_DBL_PAR_FUNCPIECELENGTH, 0.0, GRB_INFINITY);
+
+  AddSolverOption("pre:funcpieceratio funcpieceratio",
+      "This option (and suffix) control whether the piecewise-linear "
+      "approximation "
+      "of a function constraint is an underestimate of the function, an "
+      "overestimate, or somewhere in between. A value of 0.0 will always "
+      "underestimate, while a value of 1.0 will always overestimate. A "
+      "value in between will interpolate between the underestimate and "
+      "the overestimate. A special value of -1 chooses points that are "
+      "on the original function.",
+                  GRB_DBL_PAR_FUNCPIECERATIO, -1.0, 1.0);
+
+  AddSolverOption("pre:funcpieces funcpieces",
+                  "This option (and suffix) set the strategy used for "
+                  "performing a piecewise-linear approximation of "
+                  "a function constraint. They have the following "
+                  "meaning:\n"
+                  "\n"
+      "| 0 - Automatic choice (default)\n"
+      "| >=2 - Sets the number of pieces; pieces are equal width\n"
+      "| 1 - Uses a fixed width for each piece; the actual width is "
+      "     provided in the 'funcpiecelength' option/suffix\n"
+      "| -1 - Bounds the absolute error of the approximation; the "
+      "     error bound is provided in the 'funcpieceerror' option/suffix\n"
+      "| -2 - Bounds the relative error of the approximation; the "
+      "     error bound is provided in the 'funcpieceerror' option/suffix.",
+                  GRB_INT_PAR_FUNCPIECES, -2, GRB_MAXINT);
+
+
+
   AddSolverOption("pre:miqcpform premiqcpform",
     "For mixed-integer quadratically constrained (MIQCP) problems, "
     "how Gurobi should transform quadratic constraints:\n"
@@ -2097,6 +2179,7 @@ static void GrbDoSetObjParam(
     GRB_CALL( GRBsetintattr(model, prm_attr, prm.second) );
   }
 }
+
 /// env() is only for error reporting
 static void GrbDoSetObjParam(
     const GurobiBackend::ObjNParam<double>& prm,

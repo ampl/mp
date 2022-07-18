@@ -15,16 +15,18 @@ namespace pre {
 
 /// Presolve link between RangeCon and either
 /// Con(LE/GE) or ConEQ+Slack.
+/// Parameters of the base class: self, N value nodes (3),
+/// N indexes (3), N source nodes / indexes in the list (1).
 /// TODO dependency inversion #164
 /// (FlatConverter needs just a BasicLink*? Entry type?)
 template <class ModelConverter, class RangeCon>
 class RangeCon2Slack :
     public BasicStaticIndivEntryLink<
-      RangeCon2Slack<ModelConverter, RangeCon>, 3, 3> {
+      RangeCon2Slack<ModelConverter, RangeCon>, 3, 3, 1> {
 public:
   /// Base class
   using Base = BasicStaticIndivEntryLink<
-    RangeCon2Slack<ModelConverter, RangeCon>, 3, 3>;
+    RangeCon2Slack<ModelConverter, RangeCon>, 3, 3, 1>;
 
   /// Names for indexes in a Base::LinkEntry
   enum LinkEntryIndexes {
