@@ -33,6 +33,13 @@ protected:
       SetResultVar(GetConverter().
                    template GetConstraint<Constraint>(i).
                    GetResultVar());
+      if (GetConverter().DoingAutoLinking()) {  // Autolink known targets
+        auto& varvn = GetConverter().GetVarValueNode();
+        GetConverter().AutoLink( varvn.Select(GetResultVar()) );
+        auto& ck = GetConverter().template GetConstraintKeeper(
+              (Constraint*)0 );
+        GetConverter().AutoLink( ck.SelectValueNodeRange(i) );
+      }
       return true;
     }
     return false;

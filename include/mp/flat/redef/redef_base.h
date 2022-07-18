@@ -98,7 +98,7 @@ public:
 };
 
 
-/// To be used by descendants of BasiccOnverter
+/// To be used by descendants of BasicConverter
 #define GET_CONSTRAINT_VALUE_NODE(con_type) \
   this->GetMC().GetValueNode((con_type*)nullptr)
 

@@ -192,9 +192,12 @@ protected:
 
   /// Convert an algebraic constraint
   void ConvertAlgCon(int i) {
-    auto pr = PrepareAlgConstraint(i);
-    auto nr = AddAlgebraicConstraint(pr);
-    AddCopyLinkFromSource(nr);
+    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
+      GetFlatCvt(),
+      GetValuePresolver().GetSourceNodes().GetConValues()().
+          Add()           // Just add next node -
+    };                    // assume the constraint order in NL
+    AddAlgebraicConstraint( PrepareAlgConstraint(i) );
   }
 
   /// Algebraic constraint flattening preparation info
@@ -238,49 +241,40 @@ protected:
   }
 
   /// Add algebraic constraint to FlatCvt
-  pre::NodeRange AddAlgebraicConstraint(const AlgConPrepare& pr) {
-    pre::NodeRange nr;                                 // value presolve link
+  void AddAlgebraicConstraint(AlgConPrepare&& pr) {
     if (pr.qt.empty()) {
       if (pr.compl_var<0)
-        nr = AddConstraint_AS_ROOT( LinConRange{ std::move(pr.lt),
+        AddConstraint_AS_ROOT( LinConRange{ std::move(pr.lt),
                             { pr.lb, pr.ub }} );
       else
-        nr = AddConstraint_AS_ROOT(
+        AddConstraint_AS_ROOT(
               ComplementarityLinear{
                 AffineExpr(std::move(pr.lt), pr.const_term), pr.compl_var } );
     } else {
       if (pr.compl_var<0)
-        nr = AddConstraint_AS_ROOT( QuadConRange{
+        AddConstraint_AS_ROOT( QuadConRange{
                               { std::move(pr.lt), std::move(pr.qt) },
                               { pr.lb, pr.ub }} );
       else
-        nr = AddConstraint_AS_ROOT(
+        AddConstraint_AS_ROOT(
               ComplementarityQuadratic{
                 QuadraticExpr
                 { { std::move(pr.lt), std::move(pr.qt) }, pr.const_term },
                 pr.compl_var } );
     }
-    return nr;
-  }
-
-  /// Add a copy link from a source item
-  void AddCopyLinkFromSource(pre::NodeRange nr) {
-    GetCopyLink().AddEntry( {
-            GetValuePresolver().GetSourceNodes().GetConValues()(0).Add(),
-            nr
-          } );
   }
 
   /// Convert a logical constraint
   void ConvertLogicalCon(int i) {
+    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
+      GetFlatCvt(),
+      GetValuePresolver().GetSourceNodes().GetConValues()().
+          Add()           // Just add next node -
+    };                    // assume the constraint order in NL
     auto e = GetModel().logical_con(i);
     const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
-    GetFlatCvt().FixAsTrue(resvar);            // TODO avoid creating the variable
+    GetFlatCvt().FixAsTrue(resvar);       // TODO avoid creating the variable
     assert(GetFlatCvt().HasInitExpression(resvar));
-    const auto& ie = GetFlatCvt().GetInitExpression(resvar);
-    /// TODO check that logical cons' values come after algebraic ones
-    AddCopyLinkFromSource(
-          ie.GetCK()->GetValueNode().Select( ie.GetIndex() ));
   }
 
 

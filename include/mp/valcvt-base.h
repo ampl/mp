@@ -275,25 +275,28 @@ public:
 /// index range for some link or node
 struct IndexRange {
   /// Construct, possibly from a single index
-  IndexRange(int b=0, int e=-1) : beg(b), end(e<0 ? b+1 : e) { }
+  IndexRange(int b=0, int e=-1) : beg_(b), end_(e<0 ? b+1 : e) { }
 
   /// Validate
-  bool check() const { return end>beg; }
+  bool IsValid() const { return end_>beg_; }
+
+  /// Invalidate
+  void Invalidate() { beg_=end_=0; }
 
   /// Size()
-  int size() const { assert(check()); return end-beg; }
+  int Size() const { assert(IsValid()); return end_-beg_; }
 
   /// Represents just 1 index
-  bool IfSingleIndex() const { return beg==end-1; }
+  bool IsSingleIndex() const { return beg_==end_-1; }
 
   /// Return single index if it is
-  operator int() const { assert(IfSingleIndex()); return beg; }
+  operator int() const { assert(IsSingleIndex()); return beg_; }
 
   /// begin index
-  int beg=0;
+  int beg_=0;
 
   /// end (= last+1) index
-  int end=0;
+  int end_=0;
 };
 
 } // namespace pre

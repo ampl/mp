@@ -130,7 +130,7 @@ protected:
   /// Clean up value nodes for new propagation
   void CleanUpValueNodes() const {
     for (auto pvn: val_nodes_)
-      pvn->CleanUp();
+      pvn->CleanUpAndRealloc();
   }
 
 private:

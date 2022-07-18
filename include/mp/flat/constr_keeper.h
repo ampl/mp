@@ -69,6 +69,14 @@ public:
   /// Value presolve node
   pre::ValueNode& GetValueNode() { return value_node_; }
 
+  /// Create ValueNode range pointer: add n elements
+  pre::NodeRange AddValueNodeRange(int n=1)
+  { return GetValueNode().Add(n); }
+
+  /// Create ValueNode range pointer: select n elements at certain pos
+  pre::NodeRange SelectValueNodeRange(int pos, int n=1)
+  { return GetValueNode().Select(pos, n); }
+
   /// Constraint name
   const char* GetConstraintName() const { return constr_name_; }
 

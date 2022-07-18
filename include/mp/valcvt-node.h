@@ -20,14 +20,20 @@ class ValueNode;
 /// The node is specified as well
 class NodeRange {
 public:
+  /// Valid?
+  bool IsValid() const { return pvn_ && ir_.IsValid(); }
+
+  /// invalidate
+  void Invalidate() { pvn_=nullptr; ir_.Invalidate(); }
+
   /// Get pvn
   ValueNode* GetValueNode() const { assert(pvn_); return pvn_; }
 
   /// Get index range
-  NodeIndexRange GetIndexRange() const { assert(ir_.check()); return ir_; }
+  NodeIndexRange GetIndexRange() const { assert(ir_.IsValid()); return ir_; }
 
   /// check if the range represents just 1 index
-  bool IsSingleIndex() const { return ir_.IfSingleIndex(); }
+  bool IsSingleIndex() const { return ir_.IsSingleIndex(); }
 
   /// Get the single index if range is just that
   int GetSingleIndex() const { return ir_; }
@@ -37,11 +43,19 @@ public:
 
   /// Check extendability
   bool ExtendableBy(NodeRange nr) const
-  { return pvn_==nr.pvn_ && ir_.end==nr.ir_.beg; }
+  { return pvn_==nr.pvn_ && ir_.end_==nr.ir_.beg_; }
+
+  /// Try & extend the range by another one
+  bool TryExtendBy(NodeRange nr) {
+    if (!ExtendableBy(nr))
+      return false;
+    ExtendBy(nr);
+    return true;
+  }
 
   /// Extend the range by another one
   void ExtendBy(NodeRange nr)
-  { assert(ExtendableBy(nr)); ir_.end = nr.ir_.end; }
+  { assert(ExtendableBy(nr)); ir_.end_ = nr.ir_.end_; }
 
 
 protected:
@@ -91,7 +105,7 @@ public:
   }
 
   /// Declared size (what is being used by links)
-  size_t size() const { return sz_; }
+  size_t Size() const { return sz_; }
 
   /// Create entry (range) pointer: add n elements
   NodeRange Add(int n=1) {
@@ -113,12 +127,13 @@ public:
   /////////////////////// Access value vectors ///////////////////////
 
   /// Assign from ArrayRef<int>. Always copy the values.
-  /// TODO Check that values fit the declared size?
-  /// Problematic since, e.g., Gurobi adds more variables in feasrelax
+  /// Some (target) node assignments can be longer vectors:
+  /// e.g., Gurobi  adds variables for FeasRelax.
   ValueNode& operator=(std::vector<int> ai)
   {
     // assert(ai.size() <= size());
     vi_ = std::move(ai);
+    vi_.resize(Size());       // cut off / complement values
     return *this;
   }
 
@@ -127,6 +142,7 @@ public:
   {
     // assert(ad.size() <= size());
     vd_ = std::move(ad);
+    vd_.resize(Size());       // cut off / complement values
     return *this;
   }
 
@@ -156,7 +172,7 @@ public:
 
   /// Set T, dummy version
   template <class T>
-  void SetVal(size_t i, T ) { assert(i<size()); }
+  void SetVal(size_t i, T ) { assert(i<Size()); }
 
   /// Retrieve int[i]
   int GetInt(size_t i) const { assert(i<vi_.size()); return vi_[i]; }
@@ -175,8 +191,11 @@ public:
   /// SetName
   void SetName(std::string s) { name_ = std::move(s); }
 
-  /// Clean up
-  void CleanUp() { vi_.clear(); vd_.clear(); }
+  /// Clean up and realloc with current size, fill by 0's
+  void CleanUpAndRealloc() {
+    vi_.clear(); vd_.clear();
+    vi_.resize(Size()); vd_.resize(Size());
+  }
 
 protected:
   /// Set int[i] or dbl[i].
@@ -185,25 +204,19 @@ protected:
   /// This way, the order of propagations is irrelevant.
   template <class Vec>
   void SetNum(Vec& vec, size_t i, typename Vec::value_type v) {
-    assert(i<size());   // index into the originally declared suffix size
+    assert(i<Size());   // index into the originally declared suffix size
     if (vec.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
-      vec.resize(size());
-    if (!notZero(vec[i])) {
-      if (v>vec[i] && notZero(v))
+      vec.resize(Size());
+    /// As we initialize vectors (by 0's), don't need std::fpclassify().
+    /// Moreover on Windows: https://github.com/microsoft/STL/issues/519
+    if ( vec[i] ) {
+      if (v>vec[i] && v)
         vec[i]=v;
       // TODO warning for unequal values
     } else
       vec[i]=v;
   }
-  // The following wrappers are to allow compilation on windows
-  // due to https://developercommunity.visualstudio.com/t/stdsignbit-misses-overloads-for-integer-types/923187
-  // (it applies to fpclassify also)
-  bool notZero(double d) {
-    return FP_ZERO != std::fpclassify(d);
-  }
-  bool notZero(int i) {
-    return i != 0;
-  }
+
   /// Register with the ValuePresolver
   void RegisterMe() {
     pre_.Register(this);
@@ -258,16 +271,9 @@ ValueNode CreateArray(BasicValuePresolver& vp) { return ValueNode{vp}; }
 template <class Vec>
 inline
 bool CopyRange(Vec& src, Vec& dest, NodeIndexRange ir, int i1) {
-  if ((int)src.size() < ir.end) {
-    src.resize(ir.end);
-    // assert(src.empty());      // attempt to process a smaller vector
-    /// We cannot do this as long there exist "rootless" constraints
-    /// (SOS?)
-    /// No value is copied into them
-  }
-  if ((int)dest.size() < i1 + ir.size())
-    dest.resize(i1 + ir.size());
-  std::copy(src.begin()+ir.beg, src.begin()+ir.end,
+  assert(ir.end_ <= (int)src.size());
+  assert(i1 + ir.Size() <= (int)dest.size());
+  std::copy(src.begin()+ir.beg_, src.begin()+ir.end_,
             dest.begin()+i1);
   return true;
 }
@@ -276,10 +282,10 @@ bool CopyRange(Vec& src, Vec& dest, NodeIndexRange ir, int i1) {
 template <class T>
 inline
 void Copy(NodeRange ir1, NodeRange ir2) {
-  assert(ir1.GetIndexRange().size() == ir2.GetIndexRange().size());
+  assert(ir1.GetIndexRange().Size() == ir2.GetIndexRange().Size());
   auto fd = CopyRange(ir1.GetValueNode()->GetValVec<T>(),
                       ir2.GetValueNode()->GetValVec<T>(),
-                      ir1.GetIndexRange(), ir2.GetIndexRange().beg);
+                      ir1.GetIndexRange(), ir2.GetIndexRange().beg_);
   assert(fd);
 }
 

@@ -194,7 +194,7 @@ public:
     if (rr[0] && rr[1] && rr[2])
       ConvertRange(item, i);
     else
-      ConvertWithRhs(item, i, rr);
+      ConvertWithRhs(item, rr);
   }
 
 protected:
@@ -204,6 +204,7 @@ protected:
     return {lb!=ub, lb>GetMC().MinusInfty(), ub<GetMC().Infty()};
   }
   void ConvertRange(const ItemType& item, int i) {
+    GetMC().TurnOffAutoLinking();     // for range only
     auto slk = GetMC().AddVar(0.0, item.ub()-item.lb());
     auto body = item.GetBody();
     body.add_term(1.0, slk);
@@ -211,22 +212,19 @@ protected:
     int i1 = GetMC().AddConstraint(std::move(lceq));
     GetSlackLink().AddEntry({i, i1, slk});
   }
-  void ConvertWithRhs(const ItemType& item, int i, RangeRelations rr) {
-    pre::NodeRange nr;              // target node+index
+  void ConvertWithRhs(const ItemType& item, RangeRelations rr) {
     if (rr[1] && !rr[2]) {
-      nr = GetMC().AddConstraint(
+      GetMC().AddConstraint(
               AlgConGE( item.GetBody(), item.lb() ) );
     } else if (!rr[1] && rr[2]) {
-      nr = GetMC().AddConstraint(
+      GetMC().AddConstraint(
               AlgConLE( item.GetBody(), item.ub() ) );
     } else if (rr[1] && rr[2]) {
       assert(item.lb()>=item.ub()); // TODO have an option for eps tolerance
-      nr = GetMC().AddConstraint(
+      GetMC().AddConstraint(
             AlgConEQ( item.GetBody(),
                       (item.lb()+item.ub()) / 2.0 ) );
     } // else, both are inf, forget
-    GetMC().GetCopyLink().AddEntry(
-          { GET_CONSTRAINT_VALUE_NODE(ItemType).Select(i), nr });
   }
 
   using SlackLink = pre::RangeLinCon2Slack<ModelConverter>;

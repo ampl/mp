@@ -207,9 +207,13 @@ public: // for ConstraintKeeper
   /// TODO Make sure context is always propagated for all constraints and objectives
   template <class Constraint>
   void RunConversion(const Constraint& con, int i) {
-    if (con.HasContext())
+    if (con.UsesContext())           // ensure we have context, mixed if none
       if (con.GetContext().IsNone())
         con.SetContext(Context::CTX_MIX);
+    pre::AutoLinkScope<Impl> auto_link_scope{
+      *static_cast<Impl*>(this),
+      GET_CONSTRAINT_KEEPER(Constraint).SelectValueNodeRange(i)
+    };
     MP_DISPATCH(Convert(con, i));
   }
 
@@ -251,7 +255,7 @@ public: // for ConstraintKeeper
 
   /// If backend does not like LFC, we redefine it here
   void Convert(const LinearFunctionalConstraint& ldc) {
-    this->AddConstraint(ldc.to_linear_constraint());
+    MPD( AddConstraint(ldc.to_linear_constraint()) );
   }
 
   /// If backend does not like QFC, we redefine it
@@ -273,7 +277,7 @@ public:
   pre::NodeRange AddConstraint(Constraint con) {
     auto node_range =
         AddConstraintAndTryNoteResultVariable( std::move(con) );
-    return node_range;
+    return AutoLink( node_range );
   }
 
   /// ADD CUSTOM CONSTRAINT and propagate result
@@ -306,12 +310,13 @@ protected:
     ConInfo ci{&ck, i};
     if (resvar>=0)
       AddInitExpression(resvar, ci);
-    /// Can also cache non-functional constraints
+    /// Can also cache non-functional constraints,
+    /// but then implement checking before
     if (! MP_DISPATCH( MapInsert(
                          MPD(template GetConstraint<Constraint>(i)), i ) ))
       MP_RAISE("Trying to MapInsert() duplicated constraint: " +
                              ck.GetDescription());
-    return ck.GetValueNode().Select(i);
+    return ck.SelectValueNodeRange(i);
   }
 
 
@@ -363,10 +368,10 @@ public:
   pre::NodeRange MakeFixedVar(double value) {
     auto it = map_fixed_vars_.find(value);
     if (map_fixed_vars_.end()!=it)
-      return GetVarValueNode().Select( it->second );
+      return AutoLink( GetVarValueNode().Select( it->second ) );
     auto v = MPD( DoAddVar(value, value) );
     map_fixed_vars_[value] = v;
-    return GetVarValueNode().Select( v );
+    return GetVarValueNode().Select( v );  // no autolink, done in DoAddVar()
   }
 
   /// Create or find a fixed variable
@@ -383,10 +388,10 @@ public:
                const typename BaseFlatModel::VarTypeVec& types) {
     assert(0==BaseFlatModel::num_vars());                     // allow this only once
     BaseFlatModel::AddVars__basic(lbs, ubs, types);
-    return GetVarValueNode().Add( lbs.size() );
+    return AutoLink( GetVarValueNode().Add( lbs.size() ) );
   }
 
-  /// Reuse Presolver's target nodes for all variables
+  /// Reuse ValuePresolver's target nodes for all variables
   pre::ValueNode& GetVarValueNode()
   { return GetValuePresolver().GetTargetNodes().GetVarValues().MakeSingleKey(); }
 
@@ -462,7 +467,7 @@ public:
   pre::NodeRange DoAddVar(double lb=MinusInfty(), double ub=Infty(),
              var::Type type = var::CONTINUOUS) {
     int v = GetModel().AddVar__basic(lb, ub, type);
-    return GetVarValueNode().Select( v );
+    return AutoLink( GetVarValueNode().Select( v ) );
   }
 
   /// Add vector of variables. Type: var::CONTINUOUS by default
@@ -510,6 +515,45 @@ public:
   }
 
 
+  /////////////////////// AUTO LINKING ////////////////////////////
+
+  /// Auto link node range \a nr.
+  /// The nodes of \a nr will be autolinked with \a auto_link_src_item_.
+  /// Means, a link is created automatically, without the
+  /// conversion/flattening code doing anything.
+  /// This is used to propagate values via flattened expression trees
+  /// and conversions, as well as to export the conversion tree.
+  pre::NodeRange AutoLink(pre::NodeRange nr) {
+    if (DoingAutoLinking()) {
+      if (auto_link_targ_items_.empty() ||
+          !auto_link_targ_items_.back().TryExtendBy(nr))
+        auto_link_targ_items_.push_back(nr);
+    }
+    return nr;
+  }
+
+  /// Whether we should auto-link new items
+  bool DoingAutoLinking() const
+  { return auto_link_src_item_.IsValid(); }
+
+  /// Turn off auto-linking for current conversion
+  void TurnOffAutoLinking() {
+    auto_link_src_item_.Invalidate();
+    auto_link_targ_items_.clear();
+  }
+
+  /// Get autolink source node range
+  pre::NodeRange GetAutoLinkSource() const
+  { return auto_link_src_item_; }
+
+  /// Set autolink source node range
+  void SetAutoLinkSource(pre::NodeRange nr)
+  { assert(nr.IsSingleIndex()); auto_link_src_item_=nr; }
+
+  /// Get autolink target node ranges
+  const std::vector<pre::NodeRange>& GetAutoLinkTargets() const
+  { return auto_link_targ_items_; }
+
 public:
   /// The internal flat model type
   using ModelType = FlatModel;
@@ -531,8 +575,11 @@ private:
   };
   Options options_;
 
+
 protected:
+  /// Whether we should relax integrality
   int relax() const { return options_.relax_; }
+
 
 public:
   /// Init FlatConverter options
@@ -541,11 +588,13 @@ public:
     GetModelAPI().InitOptions();
   }
 
+
 protected:
   const mp::OptionValueInfo values_relax_[2] = {
     {     "0", "No (default)", 0 },
     {     "1", "Yes: treat integer and binary variables as continuous.", 1}
   };
+
 
 private:
   void InitOwnOptions() {
@@ -562,6 +611,7 @@ private:
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
   }
+
 
 public:
   /// Wrapper about a specific preprocess option:
@@ -592,7 +642,10 @@ public:
 private:
   ModelAPIType modelapi_;      // We store modelapi in the converter for speed
   pre::ValuePresolver value_presolver_;   // should be init before constraint keepers
-  pre::CopyLink copy_link_ { GetValuePresolver() };
+  pre::CopyLink copy_link_ { GetValuePresolver() }; // the copy links
+  pre::One2ManyLink one2many_link_ { GetValuePresolver() }; // the 1-to-many links
+  pre::NodeRange auto_link_src_item_;   // the source item for autolinking
+  std::vector<pre::NodeRange> auto_link_targ_items_;
 
 
 protected:
@@ -719,9 +772,13 @@ protected:
   /// Convert quadratic range constraints, if necessary
   INSTALL_ITEM_CONVERTER(RangeQuadraticConstraintConverter)
 
+
 public:
-  /// Presolve link copying values between model items
+  /// ValuePresolve link copying values 1:1 between model items
   pre::CopyLink& GetCopyLink() { return copy_link_; }
+
+  /// ValuePresolve link copying values 1:many
+  pre::One2ManyLink& GetOne2ManyLink() { return one2many_link_; }
 };
 
 

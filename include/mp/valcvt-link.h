@@ -132,8 +132,8 @@ struct LinkRange {
   /// separately
   bool ExtendRange(LinkRange br) {
     if (&b_ == &br.b_) {                  // same link?
-      if (ir_.end == br.ir_.beg) {        // and consecutive ranges?
-        ir_.end = br.ir_.end;
+      if (ir_.end_ == br.ir_.beg_) {        // and consecutive ranges?
+        ir_.end_ = br.ir_.end_;
         return true;
       }
     }
@@ -195,7 +195,7 @@ protected:
   /// Copy src -> dest for index range ir
   template <class T>
   void CopySrcDest(LinkIndexRange ir) {
-    for (int i=ir.beg; i!=ir.end; ++i) {
+    for (int i=ir.beg_; i!=ir.end_; ++i) {
       const auto& br = entries_[i];
       Copy<T>(br.first, br.second);
     }
@@ -203,7 +203,7 @@ protected:
   /// Copy src <- dest for index range ir. Loop backwards
   template <class T>
   void CopyDestSrc(LinkIndexRange ir) {
-    for (int i=ir.end; (i--)!=ir.beg; ) {
+    for (int i=ir.end_; (i--)!=ir.beg_; ) {
       const auto& br = entries_[i];
       Copy<T>(br.second, br.first);
     }
@@ -267,8 +267,8 @@ protected:
     assert(nr1.IsSingleIndex());
     auto val = nr1.GetValueNode()->
         GetVal<T>(nr1.GetSingleIndex());
-    for (auto i=nr2.GetIndexRange().beg;
-         i!=nr2.GetIndexRange().end; ++i)
+    for (auto i=nr2.GetIndexRange().beg_;
+         i!=nr2.GetIndexRange().end_; ++i)
       nr2.GetValueNode()->SetVal(i, val);
   }
 
@@ -278,15 +278,15 @@ protected:
     assert(nr1.IsSingleIndex());
     auto nr1_idx = nr1.GetSingleIndex();
     auto& vec2 = nr2.GetValueNode()->GetValVec<T>();
-    for (auto i=nr2.GetIndexRange().beg;
-         i!=nr2.GetIndexRange().end; ++i)
+    for (auto i=nr2.GetIndexRange().beg_;
+         i!=nr2.GetIndexRange().end_; ++i)
       nr1.GetValueNode()->SetVal(nr1_idx, vec2.at(i));
   }
 
   /// Src -> dest for the entries index range ir
   template <class T>
   void DistributeFromSrc2Dest(LinkIndexRange ir) {
-    for (int i=ir.beg; i!=ir.end; ++i) {
+    for (int i=ir.beg_; i!=ir.end_; ++i) {
       const auto& br = entries_[i];
       Distr<T>(br.first, br.second);
     }
@@ -295,7 +295,7 @@ protected:
   /// Collect src <- dest for index range ir. Loop backwards
   template <class T>
   void CollectFromDest2Src(LinkIndexRange ir) {
-    for (int i=ir.end; (i--)!=ir.beg; ) {
+    for (int i=ir.end_; (i--)!=ir.beg_; ) {
       const auto& br = entries_[i];
       Collect<T>(br.first, br.second);
     }
@@ -343,10 +343,10 @@ public:
 #undef PRESOLVE_KIND
 #define PRESOLVE_KIND(name, ValType) \
   void Presolve ## name (LinkIndexRange ir) override { \
-    for (int i=ir.beg; i!=ir.end; ++i) \
+    for (int i=ir.beg_; i!=ir.end_; ++i) \
       MPD( Presolve ## name ## Entry(entries_.at(i)) ); } \
   void Postsolve ## name(LinkIndexRange ir) override { \
-    for (int i=ir.end; i--!=ir.beg; ) \
+    for (int i=ir.end_; i--!=ir.beg_; ) \
       MPD( Postsolve ## name ## Entry(entries_.at(i)) ); }
 
   LIST_PRESOLVE_METHODS
@@ -407,6 +407,44 @@ protected:
 
 private:
   NodeList ndl_;
+};
+
+
+/// A class providing autolinking in the destructor (RAII).
+/// Usage: create an object, and all conversions in its scope
+/// will be autolinked to the source node range (unless
+/// autolinking is switched off during the execution).
+template <class ModelConverter>
+class AutoLinkScope {
+public:
+  /// Constructor
+  AutoLinkScope(ModelConverter& cvt, NodeRange src) : cvt_(cvt) {
+    assert(src.IsSingleIndex());
+    cvt_.SetAutoLinkSource(src);
+    assert(cvt_.GetAutoLinkTargets().empty());
+  }
+
+  /// Destructor
+  ~AutoLinkScope() {
+    const auto& targets = cvt_.GetAutoLinkTargets();
+    if (auto sz = targets.size()) {
+      assert(cvt_.DoingAutoLinking());
+      if (1==sz && targets.front().IsSingleIndex()) {
+        cvt_.GetCopyLink().AddEntry(   // use CopyLink for 1:1
+              { cvt_.GetAutoLinkSource(), targets.front() } );
+      } else {
+        for (const auto& t: targets) {
+          assert(t.IsValid());
+          cvt_.GetOne2ManyLink().AddEntry(   // use One2ManyLink
+                { cvt_.GetAutoLinkSource(), targets.front() } );
+        }
+      }
+    }
+    cvt_.TurnOffAutoLinking();
+  }
+
+private:
+  ModelConverter& cvt_;
 };
 
 } // namespace pre

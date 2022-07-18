@@ -25,7 +25,7 @@ public:
   /// Set constraint name
   void SetName(std::string nm) { name_ = std::move(nm); }
   /// Whether context is meaningful here
-  static constexpr bool HasContext() { return false; }
+  static constexpr bool UsesContext() { return false; }
   /// Get context, if meaningful
   Context GetContext() const { return Context::CTX_NONE; }
   /// Set context, if meaningful
@@ -61,7 +61,7 @@ public:
   /// Set result variable
   void SetResultVar(int v) { result_var_=v; }
   /// Whether context is meaningful
-  static constexpr bool HasContext() { return true; }
+  static constexpr bool UsesContext() { return true; }
   /// Get it
   Context GetContext() const { return ctx; }
   /// Set it
