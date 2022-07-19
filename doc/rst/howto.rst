@@ -28,7 +28,7 @@ the cmake variable `BUILD` appropriately::
 For faster recompilation, install ``ccache`` and
 add the following CMake flags::
 
-  -DBUILD_TESTING=off -DBUILD_EXAMPLES=off -DBUILD_DOC=off
+  -DBUILD_TESTS=off -DBUILD_EXAMPLES=off -DBUILD_DOC=off
   -DCMAKE_BUILD_TYPE=Debug                     ## Linux/Unix way to set debug mode
 
 Once built, executing::

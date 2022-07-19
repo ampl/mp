@@ -658,6 +658,24 @@ BasicSolver::BasicSolver(
   }
 }
 
+/// Process lines with a custom line processor.
+/// Used to parse an options file.
+static void ProcessLines_AvoidComments(std::istream& stream,
+                  std::function<void(const char*)> processor) {
+  std::string line;
+  while (stream.good() && !stream.eof()) {
+    std::getline(stream, line);
+    if (line.size()) {
+      auto itfirstns = std::find_if(line.begin(), line.end(),
+                                  [](char c){ return !std::isspace(c); });
+      if (line.end()!=itfirstns &&
+              '#'!=*itfirstns) {                  // Skip commented line
+        processor(line.c_str()+(itfirstns-line.begin()));
+      }
+    }
+  }
+}
+
 void BasicSolver::UseOptionFile(const SolverOption &, fmt::StringRef value) {
   option_file_save_ = value;
   std::ifstream ifs(value);

@@ -23,25 +23,37 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
+#include <fstream>
 
 #include "mp/utils-file.h"
 
 namespace mp {
 
-void ProcessLines_AvoidComments(std::istream& stream,
-                  std::function<void(const char*)> processor) {
-  std::string line;
-  while (stream.good() && !stream.eof()) {
-    std::getline(stream, line);
-    if (line.size()) {
-      auto itfirstns = std::find_if(line.begin(), line.end(),
-                                  [](char c){ return !std::isspace(c); });
-      if (line.end()!=itfirstns &&
-              '#'!=*itfirstns) {                  // Skip commented line
-        processor(line.c_str()+(itfirstns-line.begin()));
-      }
-    }
+/// Class appending strings to file with given name
+class FileAppender__fstream : public BasicFileAppender {
+public:
+  /// Open file
+  bool Open(const std::string& fln, bool fErase=false) override {
+    fs_.open(fln,
+             fErase ? std::ios::app|std::ios::ate : std::ios::app);
+    return fs_.good();
   }
+
+  /// Close file
+  void Close() override { fs_.close(); }
+
+  /// Append string
+  bool Append(const char* s) override { fs_ << s; return fs_.good(); }
+
+
+private:
+  std::fstream fs_;
+};
+
+/// FileAppender maker
+std::unique_ptr<BasicFileAppender> MakeFileAppender() {
+  return std::unique_ptr<BasicFileAppender>
+  { new FileAppender__fstream() };
 }
 
 }  // namespace mp

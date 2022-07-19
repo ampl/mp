@@ -20,6 +20,7 @@
 #include "mp/flat/constr_prop_down.h"
 #include "mp/valcvt.h"
 #include "mp/flat/redef/std/range_con.h"
+#include "mp/utils-file.h"
 
 namespace mp {
 
@@ -164,12 +165,22 @@ protected:
   //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
   void ConvertItems() {
     try {
+      MPD( OpenGraphExporter() );
       MP_DISPATCH( ConvertAllConstraints() );
       // MP_DISPATCH( PreprocessIntermediate() );     // preprocess after each level
       MP_DISPATCH( ConvertMaps() );
       MP_DISPATCH( PreprocessFinal() );               // final prepro
+      MPD( CloseGraphExporter() );
     } catch (const ConstraintConversionFailure& cff) {
       MP_RAISE(cff.message());
+    }
+  }
+
+  void OpenGraphExporter() {
+    if (graph_export_file().size()) {
+      if (!graph_exporter_app_->Open(graph_export_file().c_str(), true))
+        MP_RAISE("Failed to open the graph export file.");
+      value_presolver_.SetExport(true);
     }
   }
 
@@ -179,6 +190,11 @@ protected:
 
   /// Default map conversions. Currently empty
   void ConvertMaps() { }
+
+  void CloseGraphExporter() {
+    value_presolver_.FinishExportingLinkEntries();
+    graph_exporter_app_->Close();
+  }
 
   //////////////////////// WHOLE-MODEL PREPROCESSING /////////////////////////
   void PreprocessIntermediate() { }
@@ -568,6 +584,7 @@ public:
   ///
 private:
   struct Options {
+    std::string file_graph_export_;
     int preprocessAnything_ = 1;
     int preprocessEqualityResultBounds_ = 1;
     int preprocessEqualityBvar_ = 1;
@@ -577,6 +594,10 @@ private:
 
 
 protected:
+  /// Graph export file
+  const std::string& graph_export_file() const
+  { return options_.file_graph_export_; }
+
   /// Whether we should relax integrality
   int relax() const { return options_.relax_; }
 
@@ -598,6 +619,9 @@ protected:
 
 private:
   void InitOwnOptions() {
+    GetEnv().AddStoredOption("cvt:writegraph writegraph exportgraph",
+        "File to export conversion graph.",
+        options_.file_graph_export_);
     GetEnv().AddOption("cvt:pre:all",
         "0/1*: Set to 0 to disable most presolve in the flat converter.",
         options_.preprocessAnything_, 0, 1);
@@ -641,8 +665,17 @@ public:
 
 private:
   ModelAPIType modelapi_;      // We store modelapi in the converter for speed
-  pre::ValuePresolver value_presolver_;   // should be init before constraint keepers
-                                          // and links
+  /// Conversion graph exporter file appender
+  std::unique_ptr<BasicFileAppender> graph_exporter_app_{MakeFileAppender()};
+  /// Conversion graph exporter functor
+  pre::ValuePresolver::ExporterFn graph_exporter_fn_{
+    [this](const char* s){
+      graph_exporter_app_->Append(s);
+    }
+  };
+  /// ValuePresolver: should be init before constraint keepers
+  /// and links
+  pre::ValuePresolver value_presolver_{graph_exporter_fn_};
   pre::CopyLink copy_link_ { GetValuePresolver() }; // the copy links
   pre::One2ManyLink one2many_link_ { GetValuePresolver() }; // the 1-to-many links
   pre::NodeRange auto_link_src_item_;   // the source item for autolinking

@@ -108,6 +108,9 @@ public:
     RegisterMe();
   }
 
+  /// Name
+  const char* GetName() const { return name_.c_str(); }
+
   /// Declared size (what is being used by links)
   size_t Size() const { return sz_; }
 

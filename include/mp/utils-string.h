@@ -20,8 +20,6 @@
  Author: Gleb Belov
  */
 
-/// #includes <iostream> so avoid #including this in a .h
-
 #ifndef MP_UTILS_STRING_H_
 #define MP_UTILS_STRING_H_
 

@@ -28,6 +28,18 @@ public:
   using Base = BasicStaticIndivEntryLink<
     RangeCon2Slack<ModelConverter, RangeCon>, 3, 3, 1>;
 
+  /// Constructor.
+  /// @param cvt: the model converter
+  /// @param ndl: list of 3 value nodes
+  /// (orig ranges, new constraints, new slacks)
+  RangeCon2Slack(ModelConverter& cvt,
+                 const typename Base::NodeList& ndl) :
+    Base(cvt.GetValuePresolver(), ndl), cvt_(cvt) { }
+
+  /// Type name
+  const char* GetTypeName() const override { return "Range2Slk<...>"; }
+
+
   /// Names for indexes in a Base::LinkEntry
   enum LinkEntryIndexes {
     /// Source range constraint index
@@ -37,14 +49,6 @@ public:
     /// Target slack index
     VAR_SLK = 2
   };
-
-  /// Constructor.
-  /// @param cvt: the model converter
-  /// @param ndl: list of 3 value nodes
-  /// (orig ranges, new constraints, new slacks)
-  RangeCon2Slack(ModelConverter& cvt,
-                 const typename Base::NodeList& ndl) :
-    Base(cvt.GetValuePresolver(), ndl), cvt_(cvt) { }
 
   /// Define pre- / postsolve methods for individual link entries.
   /// Typedef LinkEntry is created in Base as std::array<int, 3>

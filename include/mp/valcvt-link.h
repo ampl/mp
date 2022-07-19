@@ -33,12 +33,17 @@ class BasicLink {
 public:
   /// Constructor
   BasicLink(ValuePresolver& pre) : value_presolver_(pre) { }
+
   /// Virtual destructor
   virtual ~BasicLink() = default;
+
+  /// Type name
+  virtual const char* GetTypeName() const = 0;
 
   /// The below pre- / postsolve methods
   /// work on a range of link entries.
   /// Postsolves should usually loop the range backwards
+#undef PRESOLVE_KIND
 #define PRESOLVE_KIND(name, ValType) \
   virtual void Presolve ## name (LinkIndexRange ) = 0; \
   virtual void Postsolve ## name(LinkIndexRange ) = 0;
@@ -50,14 +55,14 @@ public:
   using ItemRangeList = std::vector<NodeRange>;
 
   /// Container of source and target items
-  /// for a certain link entry
+  /// for a certain link entry. Used for graph export
   struct EntryItems {
     ItemRangeList src_items_, dest_items_;
   };
 
   /// Get source/target nodes for a given link entry.
   /// This is used for graph export
-  virtual void FillEntryItems(EntryItems& ei, int i) = 0;
+  virtual void FillEntryItems(EntryItems& ei, int i) const = 0;
 
 
 protected:
@@ -111,6 +116,9 @@ public:
   /// Constructor
   CopyLink(ValuePresolver& pre) : BasicLink(pre) { }
 
+  /// Type name
+  const char* GetTypeName() const override { return "CopyLink"; }
+
   /// Single link entry,
   /// stores src + dest ranges
   using LinkEntry = std::pair<NodeRange, NodeRange>;
@@ -135,7 +143,7 @@ public:
 
   /// Get source/target nodes for a given link entry.
   /// This is used for graph export
-  void FillEntryItems(EntryItems& ei, int i) override {
+  void FillEntryItems(EntryItems& ei, int i) const override {
     const auto& en = entries_.at(i);
     ei.src_items_.clear();
     ei.src_items_.push_back(en.first);
@@ -186,6 +194,9 @@ public:
   /// Constructor
   One2ManyLink(ValuePresolver& pre) : BasicLink(pre) { }
 
+  /// Type name
+  const char* GetTypeName() const override { return "One2ManyLink"; }
+
   /// Single link entry,
   /// stores src + dest ranges.
   /// HOWEVER the source range keeps just 1 node.
@@ -209,7 +220,7 @@ public:
 
   /// Get source/target nodes for a given link entry.
   /// This is used for graph export
-  void FillEntryItems(EntryItems& ei, int i) override {
+  void FillEntryItems(EntryItems& ei, int i) const override {
     const auto& en = entries_.at(i);
     ei.src_items_.clear();
     ei.src_items_.push_back(en.first);
@@ -307,8 +318,8 @@ public:
 
   /// Get source/target nodes for a given link entry.
   /// This is used for graph export
-  void FillEntryItems(EntryItems& ei, int i) override {
-    MPD( FillEntryItems( ei, entries_.at(i) ) );
+  void FillEntryItems(EntryItems& ei, int i) const override {
+    MPCD( FillEntryItems( ei, entries_.at(i) ) );
   }
 
 
@@ -358,7 +369,7 @@ public:
   /// Get source/target nodes for a given link entry.
   /// This is used for graph export
   void FillEntryItems(typename Base::EntryItems& ei,
-                      const LinkEntry& en) {
+                      const LinkEntry& en) const {
     ei.src_items_.clear();
     int i=0;
     for ( ; i<NSources; ++i)

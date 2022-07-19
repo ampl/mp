@@ -8,6 +8,7 @@
 
 #include <deque>
 #include <unordered_set>
+#include <functional>
 
 #include "valcvt-node.h"
 #include "valcvt-link.h"
@@ -35,6 +36,10 @@ public:
 
   /// using Base::empty()
   using Base::empty;
+  /// using Base::size()
+  using Base::size;
+  /// using operator[]
+  using Base::operator[];
   /// iterator access: begin
   using Base::begin;
   /// iterator access: end
@@ -43,8 +48,6 @@ public:
   using Base::rbegin;
   /// iterator access: rend
   using Base::rend;
-
-protected:
   /// using Base::back()
   using Base::back;
 };
@@ -55,6 +58,12 @@ protected:
 /// between the original model and the presolved one.
 class ValuePresolver : public BasicValuePresolver {
 public:
+  /// Exporter functor type
+  using ExporterFn = std::function< void (const char*) >;
+
+  /// Constructor
+  ValuePresolver(ExporterFn bts={}) : bts_(bts) { }
+
   /// Source nodes of the conversion graph, const
   const ModelValuesTerminal& GetSourceNodes() const { return src_; }
   /// Source nodes of the conversion graph
@@ -65,10 +74,27 @@ public:
   /// Target nodes of the conversion graph
   ModelValuesTerminal& GetTargetNodes() { return dest_; }
 
-  /// Add (register) a link range
+  /// Add (register) a link range.
   /// This is normally called automatically from a link
-  /// when an entry is added
-  void Add(LinkRange br) { brl_.Add(br); }
+  /// when an entry is added.
+  /// Exports previous entries if exporter provided.
+  void Add(LinkRange br) {
+    if (brl_.empty() || !brl_.back().TryExtendBy(br)) {
+      ExportRemainingEntries();       // new entry, export existing
+      brl_.Add(br);
+    }
+  }
+
+  /// Switch exporting on/off.
+  void SetExport(bool onoff) { f_export_=onoff; }
+
+  /// Want Export?
+  bool GetExport() const { return f_export_; }
+
+  /// Finish exporting entries, if exporting=ON.
+  /// This should be called after model conversions are finished,
+  /// because the exports are lazy.
+  void FinishExportingLinkEntries() { ExportRemainingEntries(); }
 
 
   /// Pre- / postsolve loops over link entries
@@ -127,6 +153,57 @@ protected:
       pvn->CleanUpAndRealloc();
   }
 
+  /// Export unexported entries, if exporter provided
+  void ExportRemainingEntries() {
+    if (GetExport()) {
+      for ( ; i_exported_<(int)brl_.size(); ++i_exported_) {
+        const auto& ln_rng = brl_[i_exported_];
+        for (auto i_entry=ln_rng.ir_.beg_; i_entry!=ln_rng.ir_.end_;
+             ++i_entry) {
+          ExportLinkEntry(ln_rng.b_, i_entry);
+        }
+      }
+    }
+  }
+
+  /// Export certain link entry
+  void ExportLinkEntry(const BasicLink& ln, int i_entry) {
+    if (GetExport()) {
+      ln.FillEntryItems(entry_items_, i_entry);
+      /// TODO some "tree wrapper" interface
+      fmt::MemoryWriter wrt;
+      wrt.write("{} ", '{');
+      wrt.write("\"link_index\": [{}, {}], ", i_exported_, i_entry);
+      wrt.write("\"link_type\": {}, ", ln.GetTypeName());
+      wrt.write("\"source_nodes\": [");
+        WriteNodes(wrt, entry_items_.src_items_);
+      wrt.write(" ], ");                      // end source nodes
+      wrt.write("\"dest_nodes\": [ ");
+        WriteNodes(wrt, entry_items_.dest_items_);
+      wrt.write(" ]");                        // end dest nodes
+      wrt.write(" {}\n", '}');                      // with EOL
+      /// Export record
+      assert(bts_);
+      bts_(wrt.c_str());
+    }
+  }
+
+  /// Write a vector of nodes
+  void WriteNodes(fmt::MemoryWriter& wrt, const std::vector<NodeRange>& nodes) {
+    for (size_t i=0; i<nodes.size(); ++i) {
+      const auto& nd = nodes[i];
+      if (nd.IsSingleIndex())
+        wrt.write("{} \"{}\": {} {}",
+                  '{', nd.GetValueNode()->GetName(), (int)nd, '}');
+      else
+        wrt.write("{} \"{}\": [{}, {}] {}",
+                  '{', nd.GetValueNode()->GetName(),
+                  nd.GetIndexRange().beg_, nd.GetIndexRange().end_, '}');
+      if (i != nodes.size()-1)
+        wrt.write(",");
+    }
+  }
+
 private:
   /// val_nodes_ should be before src_ / dest_
   std::unordered_set<ValueNode*> val_nodes_;
@@ -138,6 +215,18 @@ private:
 
   /// The link ranges
   LinkRangeList brl_;
+
+  /// Export on/off
+  bool f_export_ { false };
+
+  /// Exporter functor
+  ExporterFn const bts_{};
+
+  /// 1-after-last exported entry
+  int i_exported_=0;
+
+  /// Link entry items temporary storage for exporting
+  BasicLink::EntryItems entry_items_;
 };
 
 

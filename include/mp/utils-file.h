@@ -20,18 +20,32 @@
  Author: Gleb Belov
  */
 
-/// #includes <iostream> so avoid #including this in a .h
-
 #ifndef MP_UTILS_FILE_H_
 #define MP_UTILS_FILE_H_
 
-#include <iostream>
-#include <functional>
+#include <string>
+#include <memory>
 
 namespace mp {
 
-void ProcessLines_AvoidComments(std::istream& stream,
-                  std::function<void(const char*)> processor);
+/// Class appending strings to file with given name
+class BasicFileAppender {
+public:
+  /// Destruct
+  ~BasicFileAppender() { }
+
+  /// Open file
+  virtual bool Open(const std::string& fln, bool fErase) = 0;
+
+  /// Close file
+  virtual void Close() = 0;
+
+  /// Append string
+  virtual bool Append(const char* ) = 0;
+};
+
+/// FileAppender maker
+std::unique_ptr<BasicFileAppender> MakeFileAppender();
 
 }  // namespace mp
 

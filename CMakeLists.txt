@@ -427,6 +427,8 @@ check_cxx_source_compiles("
 option(BUILD_EXAMPLES "Build nl-example" ON)
 
 if (MP_VARIADIC_TEMPLATES AND BUILD_EXAMPLES)
+  message(STATUS
+    "Building nl-example. Set -DBUILD_EXAMPLES=off to switch off.")
   add_executable(nl-example src/nl-example.cc)
   add_to_folder(${MP_FOLDER_PREFIX}util nl-example)
   target_link_libraries(nl-example mp)
@@ -436,7 +438,7 @@ option(BUILD_DOC "Build documentation" ON)
 if(BUILD_DOC)
   message(STATUS
     "Building documentation (if the requirements are installed). "
-    "Set BUILD_DOC=off otherwise")
+    "Set BUILD_DOC=off otherwise.")
   add_subdirectory(doc)
 endif()
 add_subdirectory(src/asl)
@@ -466,9 +468,12 @@ foreach (module ${MP_MODULES})
   endif ()
 endforeach ()
 
+# Option BUILD_TESTS
+option(BUILD_TESTS "Build unit tests" ON)
 include(CTest)
 enable_testing()
-if(BUILD_TESTING)
+if(BUILD_TESTS)
+  message(STATUS "Building unit tests. Set -DBUILD_TESTS=off to switch off.")
   add_subdirectory(test)
 endif()
 
