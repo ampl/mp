@@ -32,7 +32,7 @@ namespace mp {
 class BasicFileAppender {
 public:
   /// Destruct
-  ~BasicFileAppender() { }
+  virtual ~BasicFileAppender() { }
 
   /// Open file
   virtual bool Open(const std::string& fln, bool fErase) = 0;

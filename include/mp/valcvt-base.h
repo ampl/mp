@@ -64,7 +64,7 @@ public:
   template <class SomeArray>
   ValueMap(SomeArray r) :
       map_{ {0, std::move(r) } } {
-    SetValueNodeName(map_.at(0), name_ + "[0]");
+    SetValueNodeName(map_.at(0), name_ + "()");
   }
 
   /// Construct from the low-level MapType
@@ -116,9 +116,10 @@ public:
   Array& operator()() {
     if (map_.empty())
       SetValueNodeName(
-            *map_.insert({ 0,
-                           CreateArray<Array, Param>(prm_) }).first,
-            name_ + "[0]");
+            map_.insert({ 0,
+                           CreateArray<Array, Param>(prm_) }).
+            first->second,
+            name_ + "()");
     else
       assert(IsSingleKey());
     return map_.at(0);
@@ -134,8 +135,8 @@ public:
     if (map_.end() == map_.find(i)) {
       Array arr = CreateArray<Array, Param>(prm_);
       SetValueNodeName(
-            *map_.insert({ i, std::move(arr) }).first,
-            name_ + std::to_string(i));
+            map_.insert({ i, std::move(arr) }).first->second,
+            name_ + '(' + std::to_string(i) + ')');
     }
     return map_.at(i);
   }
@@ -156,7 +157,7 @@ public:
 
 private:
   Param prm_;
-  std::string name_ { "default_value_map" };
+  std::string name_ { "VMapName__unset" };
   MapType map_;
 };
 
@@ -181,7 +182,7 @@ public:
   using ParamType = typename VMap::ParamType;
 
   /// Constructor
-  ModelValues(ParamType prm, std::string nm) :
+  ModelValues(ParamType prm, const std::string& nm) :
       name_{nm}, vars_(prm), cons_(prm), objs_(prm) {
     vars_.SetName(nm+"_vars");
     cons_.SetName(nm+"_cons");

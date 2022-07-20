@@ -265,11 +265,13 @@ void ValueNode::SetVal<int>(size_t i, int v) { SetInt(i, v); }
 
 /// Specialize SetValueNodeName() for ValueNode
 inline void
-SetValueNodeName(ValueNode& vn, std::string nm) { vn.SetName(nm); }
+SetValueNodeName(ValueNode& vn, std::string nm)
+{ vn.SetName(std::move(nm)); }
 
 
-/// Default CreateArray() for ValueNode
+/// Specialize CreateArray() for ValueNode
 template <>
+inline
 ValueNode CreateArray(BasicValuePresolver& vp) { return ValueNode{vp}; }
 
 

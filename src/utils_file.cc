@@ -34,8 +34,10 @@ class FileAppender__fstream : public BasicFileAppender {
 public:
   /// Open file
   bool Open(const std::string& fln, bool fErase=false) override {
-    fs_.open(fln,
-             fErase ? std::ios::app|std::ios::ate : std::ios::app);
+    if (fErase) {
+      std::ofstream ofs(fln, std::ios::trunc | std::ios::out);
+    }
+    fs_.open(fln, std::ios::app | std::ios::out);
     return fs_.good();
   }
 
@@ -47,7 +49,7 @@ public:
 
 
 private:
-  std::fstream fs_;
+  std::ofstream fs_;
 };
 
 /// FileAppender maker

@@ -36,7 +36,7 @@ protected:
       if (GetConverter().DoingAutoLinking()) {  // Autolink known targets
         auto& varvn = GetConverter().GetVarValueNode();
         GetConverter().AutoLink( varvn.Select(GetResultVar()) );
-        auto& ck = GetConverter().template GetConstraintKeeper(
+        auto& ck = GetConverter().GetConstraintKeeper(
               (Constraint*)0 );
         GetConverter().AutoLink( ck.SelectValueNodeRange(i) );
       }

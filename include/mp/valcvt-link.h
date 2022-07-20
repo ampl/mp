@@ -441,7 +441,7 @@ public:
         for (const auto& t: targets) {
           assert(t.IsValid());
           cvt_.GetOne2ManyLink().AddEntry(   // use One2ManyLink
-                { cvt_.GetAutoLinkSource(), targets.front() } );
+                { cvt_.GetAutoLinkSource(), t } );
         }
       }
     }

@@ -1,8 +1,18 @@
 Summary of recent updates to x-gurobi for AMPL
 ==============================================
 
+## 20220720
+- *Options 'funcpieces', 'funcpiecelength', 'funcpieceratio', 'funcpieceerror'*
+    The above options (and corresponding suffixes) are passed to Gurobi. The
+    suffixes can specialize the values for individual constraints.
+
+    Subexpressions: note that if a subexpression is contained in several
+    constraints, for contradicting suffix values the maximum is taken.
+
+
 ## 20220706
-- Relinked with Gurobi 9.5.2, which contains bug fixes
+- *Relinked with Gurobi 9.5.2, which contains bug fixes*
+
 
 ## 20220511
 - *Complementarity constraints: also quadratics*

@@ -436,9 +436,6 @@ endif ()
 
 option(BUILD_DOC "Build documentation" ON)
 if(BUILD_DOC)
-  message(STATUS
-    "Building documentation (if the requirements are installed). "
-    "Set BUILD_DOC=off otherwise.")
   add_subdirectory(doc)
 endif()
 add_subdirectory(src/asl)

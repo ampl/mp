@@ -51,7 +51,10 @@ An included `CMake build script`__ can be used to build the MP library,
 solver interfaces and function libraries on a wide range of platforms.
 You can download CMake for free from http://www.cmake.org/download/.
 
-__ CMakeLists.txt
+__ https://github.com/ampl/mp/tree/master/CMakeLists.txt
+
+CMake workflow
+``````````````
 
 CMake works by generating native makefiles or project files that can
 be used in the compiler environment of your choice. The typical
@@ -151,12 +154,18 @@ the index.
 Building the documentation
 ``````````````````````````
 
-To build the documentation (automatically, via CMake) you need Python 3.x with Sphinx and Breathe,
-see :file:`doc/requirements.txt` (install automatically by :code:`pip install -r requirements.txt`).
-The HTML output is located in :file:`(build folder)/doc/index.html`. To have the alphabetic index
-automatically generated, install `pandoc`.
-Configure CMake with
-:code:`-DBUILD_DOC=off` to switch off.
+To build the documentation (automatically, via CMake) you need `Doxygen`__
+as well as Python 3.x with Sphinx and Breathe,
+see :file:`doc/requirements.txt` (install automatically by
+:code:`pip install -r requirements.txt`).
+The HTML output is located in :file:`(build folder)/doc/index.html`.
+To have the alphabetic index automatically generated, install `pandoc`.
+
+__ https://doxygen.nl/
+
+Configure CMake with :code:`-DBUILD_DOC=off` to switch documentation
+building off.
+
 
 
 

@@ -210,8 +210,8 @@ private:
 
   /// val_nodes_ should be before src_ / dest_
   mutable ModelValuesTerminal
-    src_{*this, "src__"},
-    dest_{*this, "dest__"};
+    src_{*this, "src"},
+    dest_{*this, "dest"};
 
   /// The link ranges
   LinkRangeList brl_;

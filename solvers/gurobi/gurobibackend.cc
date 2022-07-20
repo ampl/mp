@@ -2209,8 +2209,6 @@ static void DoPlayGrbObjNParams(
 void GurobiBackend::GrbPlayObjNParams() {
   int nobj;
   GRB_CALL( GRBgetintattr(model(), GRB_INT_ATTR_NUMOBJ, &nobj) );
-  if (debug_mode())
-    printf("Number of objectives: %d\n", nobj);
   DoPlayGrbObjNParams(objnparam_int_, model(), env());
   DoPlayGrbObjNParams(objnparam_dbl_, model(), env());
 }

@@ -1,16 +1,21 @@
 # Check requirements.
-# Use specific version of Sphinx which fixes local search and has
-# better C++ support.
+# Use the specific version of Sphinx (see requirements.txt)
+# which fixes local search and has better C++ support.
 find_program(DOXYGEN doxygen)
 if (NOT DOXYGEN)
   message(STATUS "Target doc disabled (requires doxygen)")
   return ()
 endif ()
+
 find_package(Sphinx)
 if(NOT SPHINX_EXECUTABLE)
   message(STATUS "Documentation generation disabled (requires sphinx)")
   return()
 endif()
+
+message(STATUS
+  "Documentation building configured. "
+  "Set BUILD_DOC=off otherwise.")
 
 add_prefix(doc_deps ../ ${MP_ALL_HEADERS})
 

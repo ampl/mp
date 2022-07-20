@@ -1,11 +1,24 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## 20220720
+- *Propagating suffixes via expression trees into flat constraints*
+    Partially implemented #184. x-gurobi accepts options
+    'funcpieces...' and corresponding suffixes which are passed into
+    GRBaddgenconstrExp etc.
+
+    Subexpressions: note that if a subexpression is contained in several
+    constraints, for contradicting suffix values the maximum is taken.
+
+- *Option 'cvt:writegraph'*
+   Exporting the flattening / conversion graph in JSON Lines format (WIP).
+
+
 ## 20220617
 - *PowConstraint is reduced to quadratics in some cases*
     For constant non-negative integer exponent and base variables
     with negative lower bound, PowConstraint
-    is reduced to quadratics (possibly ewith auxiliary variables).
+    is reduced to quadratics (possibly with auxiliary variables).
     Reason: Gurobi's GRBaddgenconstrPow
     not accepting negative bases.
 

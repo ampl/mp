@@ -265,6 +265,8 @@ via the solver's modeling API wrapper:
 * :ref:`value-presolver` transforms solutions and suffixes between the
   original NL model and the flat model.
 
+* :ref:`conversion-graph` discusses exporting of the flattening / conversion graph.
+
 
 .. _flat-model-api:
 
@@ -380,9 +382,27 @@ To implement value pre- / postsolving, the following API is used:
 
 - `mp::pre::BasicLink` is the interface to various implementations of links
   between nodes, such as
-  `mp::pre::CopyLink`. Templates `mp::pre::BasicIndivEntryLink` and
-  `mp::pre::BasicStaticIndivEntryLink` are base classes for links such as
+  `mp::pre::CopyLink`, `mp::pre::One2ManyLink`, and
   `mp::pre::RangeCon2Slack`.
+
+- Expression tree flattenings into new constraints and variables,
+  as well as subsequent conversions,
+  are by default automatically linked by `mp::pre::One2ManyLink`.
+  To implement a specific link, see the example of `mp::pre::RangeCon2Slack`.
+  In particular, autolinking should normally be turned off.
+
+
+.. _conversion-graph:
+
+Conversion graph
+~~~~~~~~~~~~~~~~
+
+The flattening and conversion graph can be exported by the `cvt:writegraph`
+option (WIP).
+
+At the moment only arcs are exported. Terminal nodes (variables, constraints,
+objectives) can be seen in the NL model (ampl: `expand`) and the
+final flat model (x-gurobi: option `writeprob`).
 
 
 C++ ASL adapter
