@@ -647,28 +647,56 @@ void GurobiBackend::InputGurobiFuncApproxParams() {
     auto mv = GetValuePresolver().PresolveGenericInt(
         { {}, funcp } );
     const auto& fp_gen = mv.GetConValues()(CG_General);
-    GrbSetIntAttrArray(GRB_INT_ATTR_FUNCPIECES, fp_gen);
-    if (fp_gen.size() && debug_mode())
-      ReportProblemSuffix("test_funcpieces_presolved", fp_gen[0]);
+    auto i1 = GurobiSetFuncConAttributes(GRB_INT_ATTR_FUNCPIECES, fp_gen);
+    if (i1>=0 && debug_mode())
+      ReportProblemSuffix("test_funcpieces_presolved", fp_gen[i1]);
   }
   if (auto funcp = ReadDblSuffix( {"funcpieceratio", suf::Kind::CON} )) {
     auto mv = GetValuePresolver().PresolveGenericDbl(
         { {}, funcp } );
-    GrbSetDblAttrArray(GRB_DBL_ATTR_FUNCPIECERATIO,
+    GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECERATIO,
                        mv.GetConValues()(CG_General));
   }
   if (auto funcp = ReadDblSuffix( {"funcpiecelength", suf::Kind::CON} )) {
     auto mv = GetValuePresolver().PresolveGenericDbl(
         { {}, funcp } );
-    GrbSetDblAttrArray(GRB_DBL_ATTR_FUNCPIECELENGTH,
+    GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECELENGTH,
                        mv.GetConValues()(CG_General));
   }
   if (auto funcp = ReadDblSuffix( {"funcpieceerror", suf::Kind::CON} )) {
     auto mv = GetValuePresolver().PresolveGenericDbl(
         { {}, funcp } );
-    GrbSetDblAttrArray(GRB_DBL_ATTR_FUNCPIECEERROR,
+    GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECEERROR,
                        mv.GetConValues()(CG_General));
   }
+}
+
+template <class T>
+int GurobiBackend::GurobiSetFuncConAttributes(
+    const char* attr, const std::vector<T> vals) {
+  int i_first = -1;
+  for (int i=0; i<(int)vals.size(); ++i) {
+    int con_type=GrbGetAttrElement<int>(GRB_INT_ATTR_GENCONSTRTYPE, i);
+    switch (con_type) {
+    case GRB_GENCONSTR_COS:   // TODO keep this list complete,
+    case GRB_GENCONSTR_EXP:   // or introduce suffix acceptance API
+    case GRB_GENCONSTR_EXPA:
+    case GRB_GENCONSTR_LOG:
+    case GRB_GENCONSTR_LOGA:
+    case GRB_GENCONSTR_NORM:
+    case GRB_GENCONSTR_POLY:
+    case GRB_GENCONSTR_POW:
+    case GRB_GENCONSTR_SIN:
+    case GRB_GENCONSTR_TAN:
+      GrbSetAttrElement(attr, i, vals[i]);
+      if (i_first<0)
+        i_first=i;
+      break;
+    default:
+      break;
+    }
+  }
+  return i_first;
 }
 
 void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {

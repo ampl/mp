@@ -92,6 +92,13 @@ public:
   std::vector<double> GrbGetDblAttrArray(GRBmodel* mdl, const char* attr_id,
     std::size_t size, std::size_t offset=0) const;
 
+  /// Vector attr element: get
+  template <class T>
+  T GrbGetAttrElement(const char* attr, int i);
+  /// Vector attr element: set
+  template <class T>
+  void GrbSetAttrElement(const char* attr, int i, T val);
+
   /// varcon: 0 - vars, 1 - constraints
   std::vector<double> GrbGetDblAttrArray_VarCon(
       const char* attr, int varcon) const;

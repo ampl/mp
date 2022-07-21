@@ -211,6 +211,11 @@ protected:
   /// .funcpieces etc.
   /// Override the corresponding Gurobi options.
   void InputGurobiFuncApproxParams();
+  /// Functional nonlinear cons attributes need a filter
+  /// @return the index of the first used value (-1 if none)
+  template <class T>
+  int GurobiSetFuncConAttributes(
+      const char* attr, const std::vector<T> vals);
   void DoGurobiFeasRelax();
 
   void ExportModel(const std::string& file);

@@ -198,7 +198,9 @@ protected:
       else
         wrt.write("{} \"{}\": [{}, {}] {}",
                   '{', nd.GetValueNode()->GetName(),
-                  nd.GetIndexRange().beg_, nd.GetIndexRange().end_, '}');
+                  nd.GetIndexRange().beg_,
+                  nd.GetIndexRange().end_-1,     // print the exact last value
+                  '}');
       if (i != nodes.size()-1)
         wrt.write(",");
     }

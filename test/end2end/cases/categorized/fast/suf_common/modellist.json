@@ -118,5 +118,13 @@
     "values": {
       "Initial.test_funcpieces_presolved": 38
     }
+  },
+  {
+    "name": "funcpieces_02",
+    "tags": [ "nonlinear", "funcpieces" ],
+    "options": { "ANYSOLVER_options": "debug=1" },
+    "values": {
+      "Initial.test_funcpieces_presolved": 50
+    }
   }
 ]

@@ -121,6 +121,31 @@ std::vector<double> GurobiCommon::GrbGetDblAttrArray(
   return res;
 }
 
+template <>
+int GurobiCommon::GrbGetAttrElement<int>(const char* attr, int i) {
+  int val;
+  GRBgetintattrelement(model(), attr, i, &val);
+  return val;
+}
+
+template <>
+double GurobiCommon::GrbGetAttrElement<double>(const char* attr, int i) {
+  double val;
+  GRBgetdblattrelement(model(), attr, i, &val);
+  return val;
+}
+
+template <>
+void GurobiCommon::GrbSetAttrElement(const char* attr, int i, int val) {
+  GRBsetintattrelement(model(), attr, i, val);
+}
+
+template <>
+void GurobiCommon::GrbSetAttrElement(const char* attr, int i, double val) {
+  GRBsetdblattrelement(model(), attr, i, val);
+}
+
+
 std::vector<double> GurobiCommon::GrbGetDblAttrArray_VarCon(
     const char* attr, int varcon) const
 { return GrbGetDblAttrArray_VarCon(model(), attr, varcon); }
