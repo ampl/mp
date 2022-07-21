@@ -62,7 +62,8 @@ public:
   using ExporterFn = std::function< void (const char*) >;
 
   /// Constructor
-  ValuePresolver(ExporterFn bts={}) : bts_(bts) { }
+  ValuePresolver(Env& env, ExporterFn bts={}) :
+    BasicValuePresolver(env), bts_(bts) { }
 
   /// Source nodes of the conversion graph, const
   const ModelValuesTerminal& GetSourceNodes() const { return src_; }

@@ -692,14 +692,15 @@ SolverOptionManager::~SolverOptionManager() {
   std::for_each(options_.begin(), options_.end(), Deleter());
 }
 
-void BasicSolver::AddWarning(const char *key, const char *msg) {
-  auto& v = GetWarnings()[ key ];
-  ++v.first;
-  v.second = msg;
+void BasicSolver::AddWarning(std::string key, std::string msg) {
+  auto& v = GetWarnings()[ std::move(key) ];
+  if (!v.first++)         // only remember the 1st detailed message
+    v.second = std::move(msg);
 }
 
 void BasicSolver::PrintWarnings() {
   if (GetWarnings().size()) {
+    Print("\n------------ WARNINGS ------------\n");
     for (const auto& e: GetWarnings())
       Print(ToString(e));
   }
@@ -708,7 +709,7 @@ void BasicSolver::PrintWarnings() {
 std::string BasicSolver::ToString(
     const WarningsMap::value_type& wrn) {
   return fmt::format(
-        "WARNING:   {} cases of \"{}\":\n    --  {}\n",
+        "WARNING.  {} cases of \"{}\". The first of them:\n  {}\n",
         wrn.second.first, wrn.first, wrn.second.second);
 }
 

@@ -1,7 +1,7 @@
 #ifndef SOLVERBASE_H
 #define SOLVERBASE_H
 
-#include <unordered_map>
+#include <map>
 
 #include "solver-opt.h"
 
@@ -270,8 +270,9 @@ public:
   FMT_VARIADIC(void, Print, fmt::CStringRef)
 
   /// Add a warning.
-  /// *key / *msg are not copied and should remain valid
-  void AddWarning(const char* key, const char* msg);
+  /// @param key: warning category
+  /// @param msg: detailed message
+  void AddWarning(std::string key, std::string msg);
 
   /// Print warnings
   void PrintWarnings();
@@ -336,8 +337,8 @@ public:
   /// Stores char* to names / descriptions for speed
   /// Indexed by pointers to names, not values
   using WarningsMap =
-    std::unordered_map< const char*,    // failure name
-      std::pair<int, const char*> >;    // number, description
+    std::map< std::string,    // warning category
+      std::pair<int, std::string> >;    // total number, description of the 1st
 
   /// Get warnings map
   WarningsMap& GetWarnings() { return warnings_; }

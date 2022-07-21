@@ -10,6 +10,7 @@
 #include <cassert>
 
 #include "mp/arrayref.h"
+#include "mp/env.h"
 
 namespace mp {
 
@@ -275,11 +276,13 @@ class ValueNode;
 
 /// ValuePresolver interface.
 /// Addresses value pre- / postsolve (solutions, basis, etc)
-class BasicValuePresolver {
+class BasicValuePresolver : public EnvKeeper {
 public:
   /// Virtual destructor
   virtual ~BasicValuePresolver() = default;
 
+  /// Constructor
+  BasicValuePresolver(Env& env) : EnvKeeper(env) { }
 
   /// Pre- / postsolve method declarations
 #undef PRESOLVE_KIND

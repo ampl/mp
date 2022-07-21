@@ -217,9 +217,9 @@ protected:
     /// As we initialize vectors (by 0's), don't need std::fpclassify().
     /// Moreover on Windows: https://github.com/microsoft/STL/issues/519
     if ( vec[i] ) {
+      /// TODO Warn on value conflict (v!=vec[i]) for relevant nodes
       if (v>vec[i] && v)
         vec[i]=v;
-      // TODO warning for unequal values
     } else
       vec[i]=v;
   }

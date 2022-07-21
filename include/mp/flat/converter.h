@@ -657,9 +657,11 @@ public:
   /// for tests. TODO make friends
   using ModelAPIType = ModelAPI;
 
-  /// AddWarning. Strings should remain valid
-  void AddWarning(const char* key, const char* msg) {
-    GetEnv().AddWarning(key, msg);
+  /// AddWarning.
+  /// @param key: warning category
+  /// @param msg: detailed message
+  void AddWarning(std::string key, std::string msg) {
+    GetEnv().AddWarning(std::move(key), std::move(msg));
   }
 
 
@@ -675,7 +677,7 @@ private:
   };
   /// ValuePresolver: should be init before constraint keepers
   /// and links
-  pre::ValuePresolver value_presolver_{graph_exporter_fn_};
+  pre::ValuePresolver value_presolver_{GetEnv(), graph_exporter_fn_};
   pre::CopyLink copy_link_ { GetValuePresolver() }; // the copy links
   pre::One2ManyLink one2many_link_ { GetValuePresolver() }; // the 1-to-many links
   pre::NodeRange auto_link_src_item_;   // the source item for autolinking

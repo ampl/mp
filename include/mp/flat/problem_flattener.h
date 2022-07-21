@@ -657,7 +657,7 @@ public:
         auto& sos_group = sos_map[sosno[i]];
         if (sos_group.end() != sos_group.find(ref[i])) {
           GetFlatCvt().AddWarning( "SOS_repeated_weight",
-                                   "An SOS constraint has repeated weights, "
+                                   "An SOS/SOS2 constraint has repeated weights, "
                                    "solver might reject it" );
         }
         sos_group.insert( {ref[i], i} );
