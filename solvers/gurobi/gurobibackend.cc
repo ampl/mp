@@ -141,6 +141,9 @@ void GurobiBackend::FinishOptionParsing() {
                          paramfile_write().c_str() ));
   /// Tell the base class our verbosity
   set_verbose_mode(GrbGetIntParam(GRB_INT_PAR_OUTPUTFLAG));
+  /// Set advanced parameters
+  if (storedOptions_.advancedParams_.size() > 0)
+    this->SetSolverOption("Dummy", storedOptions_.advancedParams_);
 }
 
 void GurobiBackend::OpenGurobiComputeServer() {
@@ -1981,14 +1984,14 @@ void GurobiBackend::InitCustomOptions() {
       "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.",
     GRB_INT_PAR_OUTPUTFLAG, 0, 1);
 
-  AddSolverOption("tech:param param",
+  AddStoredOption("tech:param param",
                   "General way to specify values of both documented and "
     "undocumented Gurobi parameters; value should be a quoted "
     "string (delimited by ' or \") containing a parameter name, a "
     "space, and the value to be assigned to the parameter.  Can "
     "appear more than once.  Cannot be used to query current "
     "parameter values.",
-                  "Dummy");
+    storedOptions_.advancedParams_);
 
   AddStoredOption("tech:param:read param:read paramfile",
       "Name of Gurobi parameter file (surrounded by 'single' or "

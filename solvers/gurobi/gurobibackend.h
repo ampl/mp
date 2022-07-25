@@ -268,7 +268,7 @@ private:
   /// These options are stored in the class as variables
   /// for direct access
   struct Options {
-    std::string exportFile_, paramRead_, paramWrite_;
+    std::string exportFile_, paramRead_, paramWrite_, advancedParams_;
 
     int nMIPStart_=1;
     int nPoolMode_=2;
