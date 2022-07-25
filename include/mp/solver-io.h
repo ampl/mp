@@ -123,7 +123,7 @@ void SolutionWriterImpl<Solver, PB, Writer>::HandleFeasibleSolution(
   if (!*solution_stub)
     return;
   SolutionAdapter<PB> sol(
-        sol::UNCERTAIN, &builder_, message.c_str(), ArrayRef<int>(0, 0),
+        sol::UNCERTAIN, &builder_, message.c_str(), options_,
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values,
                      dual_values ? builder_.num_algebraic_cons() : 0),

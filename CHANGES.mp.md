@@ -6,6 +6,8 @@ Summary of recent updates to the AMPL MP Library
     On windows now creates files with LF only to avoid issues when exporting
     suffixes to AMPL
 
+    Multiple solutions export file format amended
+
 ## 20220720
 - *Propagating suffixes via expression trees into flat constraints*
     Partially implemented #184. x-gurobi accepts options
