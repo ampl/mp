@@ -2,7 +2,7 @@ Summary of recent updates to x-gurobi for AMPL
 ==============================================
 
 ## 20220725
-- *Changes in MP* fixed suffixes export on Windows and multiple solutions export
+- *Changes in MP* fixed suffixes export on Windows and multiple solutions handling
 
 ## 20220720
 - *Options 'funcpieces', 'funcpiecelength', 'funcpieceratio', 'funcpieceerror'*
