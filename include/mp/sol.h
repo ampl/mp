@@ -102,7 +102,7 @@ void WriteSuffixes(fmt::BufferedFile &file, const SuffixMap *suffixes) {
 /// Writes a solution to a .sol file
 template <typename Solution>
 void WriteSolFile(fmt::CStringRef filename, const Solution &sol) {
-  fmt::BufferedFile file(filename, "w");
+  fmt::BufferedFile file(filename, "wb");
   internal::WriteMessage(file, sol.message());
   // Write options.
   file.print("Options\n");
