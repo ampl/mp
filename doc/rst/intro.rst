@@ -158,7 +158,7 @@ To build the documentation (automatically, via CMake) you need `Doxygen`__
 as well as Python 3.x with Sphinx and Breathe,
 see :file:`doc/requirements.txt` (install automatically by
 :code:`pip install -r requirements.txt`).
-The HTML output is located in :file:`(build folder)/doc/index.html`.
+The HTML output is located in :file:`(build folder)/doc/html/index.html`.
 To have the alphabetic index automatically generated, install `pandoc`.
 
 __ https://doxygen.nl/

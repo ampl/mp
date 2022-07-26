@@ -4,13 +4,13 @@ Modeling guide
 ==============
 
 A guide to using the beta test release of
-`x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobi>`_,
+`x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobi>`_ --
 the enhanced
 `AMPL-Gurobi <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_
 interface,
-`copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_, an interface
+`copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_ -- an interface
 to `Cardinal Optimizer <https://www.shanshu.ai/copt>`_, and
-`highs <https://github.com/ampl/mp/tree/master/solvers/highsdirect>`_, an interface
+`highs <https://github.com/ampl/mp/tree/master/solvers/highsdirect>`_ -- an interface
 to `HiGHS <https://highs.dev/>`_.
 They can be downloaded in the `AMPL distribution bundle <https://portal.ampl.com>`_
 or compiled from source.
@@ -28,6 +28,11 @@ Summary
 
 - Choice between conversions in the driver vs. native solver support.
 
+- Conversion of suffixes such as `.funcpieces` and `.iis` referring to subexpressions.
+
+- Export of the conversion graph corresponding to model transformations
+  from NL file to the solver form.
+
 Example models can be found in the
 `test suite <https://github.com/ampl/mp/tree/develop/test/end2end/cases>`_ and
 in the
@@ -38,8 +43,8 @@ See also an `overview talk <https://ampl.com/MEETINGS/TALKS/2022_04_Houston_Tuto
 Expressions supported
 ---------------------
 
-MP supports arbitrary trees of logical, relational, and general non-linear expressions
-including higher-degree polynomials:
+MP supports arbitrary trees of logical, relational, general combinatorial,
+and non-linear expressions including higher-degree polynomials:
 
 .. code-block:: ampl
 
@@ -49,6 +54,10 @@ including higher-degree polynomials:
 
 Below are details on the various kinds of expressions and how they are presented
 to the solvers.
+
+
+Conditional and logical expressions
+***********************************
 
 
 Conditional expressions
@@ -205,6 +214,42 @@ to the solver natively
 (if supported; e.g., Gurobi options *acc:and*, *acc:or*).
 
 
+Complementarity constraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+AMPL accepts two kinds of complementarity constraints.
+The first kind, inequality vs inequality, enforces both inequalities
+and makes sure at least one of them is tight:
+
+.. code-block:: ampl
+
+        subject to Pri_Compl {i in PROD}:
+            max(500.0, Price[i]) >= 0 complements
+                sum {j in ACT} io[i,j] * Level[j] >= demand[i];
+
+The second kind, range constraint vs expression,
+enforces one of the following 3 cases:
+
+1. range constraint at lower bound  and  expression >= 0;
+2. range constraint valid and expression == 0;
+3. range constraint at upper bound and expression <= 0, for example:
+
+.. code-block:: ampl
+
+        subject to Lev_Compl {j in ACT}:
+            level_min[j] <= Level[j] <= level_max[j] complements
+                cost[j] - sum {i in PROD} Price[i] * io[i,j];
+
+See the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_
+for more information.
+
+Quadratic expressions are allowed. For MIP solvers, complementarity
+conditions are represented by logical constraints.
+
+
+General combinatorial expressions
+*********************************
+
 SOS constraints and non-contiguous variable domains
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -274,38 +319,6 @@ To do so, switch off the corresponding AMPL option:
 
         option pl_linearize 0;
 
-
-Complementarity constraints
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-AMPL accepts two kinds of complementarity constraints.
-The first kind, inequality vs inequality, enforces both inequalities
-and makes sure at least one of them is tight:
-
-.. code-block:: ampl
-
-        subject to Pri_Compl {i in PROD}:
-            max(500.0, Price[i]) >= 0 complements
-                sum {j in ACT} io[i,j] * Level[j] >= demand[i];
-
-The second kind, range constraint vs expression,
-enforces one of the following 3 cases:
-
-1. range constraint at lower bound  and  expression >= 0;
-2. range constraint valid and expression == 0;
-3. range constraint at upper bound and expression <= 0, for example:
-
-.. code-block:: ampl
-
-        subject to Lev_Compl {j in ACT}:
-            level_min[j] <= Level[j] <= level_max[j] complements
-                cost[j] - sum {i in PROD} Price[i] * io[i,j];
-
-See the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_
-for more information.
-
-Quadratic expressions are allowed. For MIP solvers, complementarity
-conditions are represented by logical constraints.
 
 
 Counting operators
@@ -378,6 +391,11 @@ involving variables:
             isH[j] = 0 ==> alldiff {t in TIMES} H[j,t];
 
 
+
+Nonlinear expressions
+*********************
+
+
 QP and polynomials
 ~~~~~~~~~~~~~~~~~~
 
@@ -413,12 +431,97 @@ AMPL functions:
 
 ``exp``, ``log``, ``sin``, ``cos``, ``tan``, ``pow``.
 
+The piecewise-linear approximation is controlled by :ref:`Gurobi-FuncPieces`.
+
+
+Suffix conversions
+------------------
+
+MP converts suffixes between the original and transformed model
+('value presolve'), in particular *irreducible independent subsystem* (IIS)
+results and Gurobi `FuncPieces` and related attributes.
+
+
+IIS reporting
+*************
+
+As an example, for the following model:
+
+.. code-block:: ampl
+
+    var x;
+    var y;
+    var z;
+
+    subj to Con1:
+       x+y >= 1;
+
+    subj to Con2:
+       y + log(z + exp(x+3)) <= 1.83;
+
+    subj to Con3:
+       z + log(y + 3.8*exp(x+3)) >= -14.265;
+
+all constraints are reported as IIS members:
+
+.. code-block:: ampl
+
+    ampl: option gurobi_options 'iisfind=1';
+    ampl: solve;
+    ....
+    ampl: display _con.iis;
+    _con.iis [*] :=
+    1  mem
+    2  mem
+    3  mem
+    ;
+
+
+.. _Gurobi-FuncPieces:
+
+Gurobi `FuncPieces` and related parameters
+******************************************
+
+Gurobi functional constraint attributes `FuncPieces`, `FuncPieceLength`,
+`FuncPieceError`, and `FuncPieceRatio` determine the piecewise-linear
+approximation applied. The MP Gurobi driver defines the corresponding
+options relating to the whole model, but also suffixes for constraints,
+which are converted to Gurobi representation. Example: for the above
+IIS model, setting the `.funcpieces` suffix as follows:
+
+.. code-block:: ampl
+
+    suffix funcpieces IN;
+
+    let Con1.funcpieces := 12;
+    let Con2.funcpieces := 23;
+    let Con3.funcpieces := 38;
+
+results in the following Gurobi model (LP format, excerpt):
+
+.. code-block:: ampl
+
+    ...
+    General Constraints
+     GC0: ( FuncPieces=38 ) C4 = EXP ( C3 )
+     GC1: ( FuncPieces=23 ) C6 = LOG ( C5 )
+     GC2: ( FuncPieces=38 ) C8 = LOG ( C7 )
+    End
+
+
+
+Conversion graph export
+-----------------------
+
+The conversion graph can be exported using the `writegraph` option,
+currently in JSON Lines format.
 
 
 Efficient modeling
 ------------------
 
-For general modeling advice, refer to Guidelines for Numerical Issues
+For general modeling advice, refer to sources such as
+Guidelines for Numerical Issues
 and modeling webinars on the `Gurobi website <http://www.gurobi.com>`_,
 Practical Considerations for Integer Programming in the
 `AMPL Book <https://ampl.com/resources/the-ampl-book/>`_, and
@@ -426,7 +529,7 @@ the MOSEK Modeling Cookbook at `www.mosek.com <https://www.mosek.com/>`_.
 
 
 Reduce non-linearity
-~~~~~~~~~~~~~~~~~~~~
+********************
 
 In the following example:
 
@@ -452,7 +555,7 @@ of the library.
 
 
 Tight bounds
-~~~~~~~~~~~~
+************
 
 For logical expressions, it proves best to supply tight bounds on
 all participating variables.
