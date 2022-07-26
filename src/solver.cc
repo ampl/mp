@@ -264,10 +264,7 @@ double OptionHelper<double>::Parse(const char *&s) {
 std::string OptionHelper<std::string>::Parse(const char *&s) {
   const char *start = s;
   s = SkipNonSpaces(s);
-  if(s=='\0')
-    return std::string(start, s - start);
-  s = s + strlen(s);
-  return std::string(start); // if option value contains spaces
+  return std::string(start, s - start);
 }
 
 SolverAppOptionParser::SolverAppOptionParser(BasicSolver &s)
