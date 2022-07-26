@@ -619,8 +619,8 @@ protected:
 
 private:
   void InitOwnOptions() {
-    GetEnv().AddStoredOption("cvt:writegraph writegraph exportgraph",
-        "File to export conversion graph.",
+    GetEnv().AddStoredOption("tech:writegraph writegraph exportgraph",
+        "File to export conversion graph. Format: JSON Lines.",
         options_.file_graph_export_);
     GetEnv().AddOption("cvt:pre:all",
         "0/1*: Set to 0 to disable most presolve in the flat converter.",
