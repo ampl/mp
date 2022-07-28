@@ -1,21 +1,6 @@
 #ifndef MP_GUROBI_BACKEND_H_
 #define MP_GUROBI_BACKEND_H_
 
-#if __clang__
-# pragma clang diagnostic push
-# pragma clang diagnostic ignored "-Wunused-parameter"
-# pragma clang diagnostic ignored "-Wunused-private-field"
-#elif _MSC_VER
-# pragma warning(push)
-# pragma warning(disable: 4244)
-#endif
-
-#if __clang__
-# pragma clang diagnostic pop
-#elif _MSC_VER
-# pragma warning(pop)
-#endif
-
 #include <string>
 
 #include "gurobicommon.h"
@@ -33,7 +18,10 @@ class GurobiBackend :
 
 
 public:
+  /// Constructor
   GurobiBackend();
+
+  /// Destructor
   ~GurobiBackend();
 
   ////////////////////////////////////////////////////////////
@@ -65,12 +53,12 @@ public:
   void ObjAbsTol(ArrayRef<double>) override;
   void ObjRelTol(ArrayRef<double>) override;
   /**
-   * MULTISOL support
+   * MULTISOL support.
    * No API, use ReportIntermediateSolution()
   **/
   ALLOW_STD_FEATURE( MULTISOL, true )
   /**
-  * Set lazy/user cut attributes
+  * Set lazy/user cut attributes.
   * Negative suffix values are "user cuts"
   * Check lazy_/user_cuts() to see which kinds are allowed
   **/
@@ -145,7 +133,7 @@ public:
   ArrayRef<double> Sensubhi() const override;
   ArrayRef<double> Sensublo() const override;
   /**
-  * FixModel - duals, basis, and sensitivity for MIP
+  * FixModel - duals, basis, and sensitivity for MIP.
   * No API to overload,
   * Impl should check need_fixed_MIP()
   **/
@@ -166,7 +154,7 @@ public:
   //////////////////////////// OPTION ACCESSORS ///////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
 
-  /// Gurobi-specific options
+  /// GurobiBackend driver options
   void InitCustomOptions() override;
 
   /// Chance for the Backend to init solver environment, etc
@@ -179,10 +167,10 @@ public:
   /////////////////////////// SOLVING ACCESSORS ///////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
 
-  /// This can actually modify the model
+  /// This can actually modify the model -- e.g., suffixes
   void InputExtras() override;
 
-  /// Note the interrupt notifier
+  /// Set the interrupt notifier
   void SetInterrupter(mp::Interrupter* inter) override;
 
   /// Solve, no model modification any more.
@@ -195,8 +183,8 @@ public:
 
 
   ///////////////////////////////////////////////////////////////////////////////
-  //////////////////// PART 2. Implementation's internals ///////////////////////
-  //////////////////// Gurobi methods should include name Gurobi or similar /////
+  //////////////////// Implementation's internals ///////////////////////////////
+  //////////////////// Gurobi methods should contain 'Gurobi' or similar ////////
   //////////////////// to avoid name clashes with the base classes //////////////
   ///////////////////////////////////////////////////////////////////////////////
 protected:
@@ -313,7 +301,6 @@ private: /////////// Suffixes ///////////
 
 
   /// For "obj:*:method" etc
-  /// Should they be handled in the Converter?
 public:
   using ObjNParamKey = std::pair< std::string, std::string >;
   template <class T>
@@ -326,7 +313,6 @@ private:
 
 
 protected:
-  /// Assume opt has the * info
   void GrbSetObjIntParam(const SolverOption& opt, int val);
   void GrbSetObjDblParam(const SolverOption& opt, double val);
   int GrbGetObjIntParam(const SolverOption& opt) const;

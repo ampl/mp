@@ -20,7 +20,7 @@ class GurobiModelAPI :
 public:
   /// Model API name
   static const char* GetTypeName();
-  /// Unused
+  /// Reserved
   static const char* GetLongName() { return nullptr; }
 
   /// Construct
@@ -51,7 +51,6 @@ public:
 
   /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends
   /// and have an implementation.
-  /// TODO Linear constraint attributes (lazy/user cut, etc)
   ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
   void AddConstraint(const LinConLE& lc);
   ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
@@ -90,11 +89,13 @@ public:
   ACCEPT_CONSTRAINT(PLConstraint, Recommended, CG_General)
   void AddConstraint(const PLConstraint& cc);
 
-  /// Gurobi Generals
+  /// Gurobi SOS1/2
   ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS1Constraint& cc);
   ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS2Constraint& cc);
+
+  /// Gurobi nonlinear generals
   ACCEPT_CONSTRAINT(ExpConstraint, Recommended, CG_General)
   void AddConstraint(const ExpConstraint& cc);
   ACCEPT_CONSTRAINT(ExpAConstraint, Recommended, CG_General)
@@ -112,6 +113,7 @@ public:
   ACCEPT_CONSTRAINT(TanConstraint, Recommended, CG_General)
   void AddConstraint(const TanConstraint& cc);
 
+  /// Init GurobiModelAPI driver options
   void InitOptions();
 
 
@@ -121,8 +123,8 @@ protected:
   obj::Type GetGurobiMainObjSense() const;
 
 
-  //////////// Option accessors ////////////////
 protected:
+  //////////// Option accessors ////////////////
   int acc_abs() const { return storedOptions_.acc_abs_; }
   int acc_min() const { return storedOptions_.acc_min_; }
   int acc_max() const { return storedOptions_.acc_max_; }

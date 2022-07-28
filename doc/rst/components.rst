@@ -123,7 +123,7 @@ templates by minimal implementations of the `mp::BasicSolver` and
 Driver logic
 ------------
 
-Using the :ref:`mp::Backend and the derived classes <backend-classes>` is now the
+Using the :ref:`mp::StdBackend and the derived classes <backend-classes>` is now the
 recommended approach to building a new solver interface.
 They provide a convenient API for common solver driver actions,
 options and suffixes.
@@ -150,7 +150,7 @@ the `mp::BasicBackend` interface.
 The Backend classes
 ~~~~~~~~~~~~~~~~~~~
 
-`mp::Backend` and `mp::MIPBackend` implement the `mp::BasicBackend` interface and
+`mp::StdBackend` and `mp::MIPBackend` implement the `mp::BasicBackend` interface and
 standardize some common AMPL app behaviour, such as
 solver messages and status reporting,
 simplex basis statuses, and other suffix I/O.

@@ -23,7 +23,7 @@
 #define MIPBACKEND_H_
 
 #include "mp/common.h"
-#include "mp/backend.h"
+#include "mp/backend-std.h"
 
 namespace mp {
 
@@ -48,7 +48,7 @@ struct IIS {
 /// it implements the common suffixes and the logic shared across all MIP
 /// solvers
 template <class Impl,
-          class BaseBackend = Backend<Impl> >  ///< parameter for base class
+          class BaseBackend = StdBackend<Impl> >  ///< parameter for base class
 class MIPBackend : public BaseBackend
 {
 public:

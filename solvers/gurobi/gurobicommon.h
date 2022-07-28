@@ -76,7 +76,7 @@ public:
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);
 
-  /// REMEMBER Gurobi does not update attributes before calling optimize() etc
+  /// REMEMBER Gurobi does not update attributes before calling optimize() etc.
   /// Scalar attributes. If (flag), set *flag <-> success,
   /// otherwise fail on error
   int GrbGetIntAttr(const char* attr_id, bool *flag=nullptr) const;

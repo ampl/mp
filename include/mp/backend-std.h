@@ -67,13 +67,13 @@ struct Solution {
   std::vector<double> objvals;
 };
 
-/// Backend: solver API wrapper
+/// StdBackend: the standard solver API wrapper
 ///
-/// The basic wrapper provides common functionality:
+/// The standard wrapper provides common functionality:
 /// standard option handling
 /// and placeholders for solver API
 template <class Impl>
-class Backend :
+class StdBackend :
     public BackendWithModelManager
 {
   ////////////////////////////////////////////////////////////////////////////
@@ -721,7 +721,7 @@ private:
     void flag_orig_obj_available() { orig_obj_available_=true; }
     /// Access original objective value
     double& orig_obj_value() { return orig_obj_value_; }
-    friend class Backend;
+    friend class StdBackend;
   private:
     /// --------------------- INPUT ----------------------
     int mode_=0;  // whether Impl should do it and which mode,
@@ -889,13 +889,13 @@ protected:
 
 
 public:
-  Backend() :
+  StdBackend() :
     MPSolverBase(
       Impl::GetAMPLSolverName(),
       Impl::GetAMPLSolverLongName(),
       Impl::Date(), Impl::Flags())
   { }
-  virtual ~Backend() { }
+  virtual ~StdBackend() { }
 };
 
 }  // namespace mp
