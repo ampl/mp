@@ -165,12 +165,10 @@ protected:
   //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
   void ConvertItems() {
     try {
-      MPD( OpenGraphExporter() );
       MP_DISPATCH( ConvertAllConstraints() );
       // MP_DISPATCH( PreprocessIntermediate() );     // preprocess after each level
       MP_DISPATCH( ConvertMaps() );
       MP_DISPATCH( PreprocessFinal() );               // final prepro
-      MPD( CloseGraphExporter() );
     } catch (const ConstraintConversionFailure& cff) {
       MP_RAISE(cff.message());
     }
@@ -185,7 +183,7 @@ protected:
   }
 
   void ConvertAllConstraints() {
-    GetModel(). ConvertAllConstraints(*this);
+    GetModel().ConvertAllConstraints(*this);
   }
 
   /// Default map conversions. Currently empty
@@ -337,13 +335,20 @@ protected:
 
 
 public:
-  void StartModelInput() { }
+  void StartModelInput() {
+    MPD( OpenGraphExporter() );
+  }
 
   void FinishModelInput() {
     MPD( ConvertModel() );
     if (relax())              // TODO value presolve link?
       GetModel().RelaxIntegrality();
     GetModel().PushModelTo(GetModelAPI());
+    MPD( CloseGraphExporter() );
+    if (value_presolver_.GetExport())
+      assert( value_presolver_.AllEntriesExported() );
+    if (GetEnv().verbose_mode())
+      GetEnv().PrintWarnings();
   }
 
 protected:
@@ -357,8 +362,6 @@ protected:
   }
 
   void WindupConversion() {
-    if (GetEnv().verbose_mode())
-      GetEnv().PrintWarnings();
   }
 
 

@@ -97,6 +97,9 @@ public:
   /// because the exports are lazy.
   void FinishExportingLinkEntries() { ExportRemainingEntries(); }
 
+  /// Check that the whole entries list has been exported
+  bool AllEntriesExported() const { return brl_.size()==(size_t)i_exported_; }
+
 
   /// Pre- / postsolve loops over link entries
   /// and calls the link's method for each.
@@ -143,8 +146,9 @@ protected:
   ModelValues RunPostsolve(LinkFn fn, const ModelValues& mv) const {
     CleanUpValueNodes();
     dest_ = mv;
-    for (auto rit=brl_.rbegin(); rit!=brl_.rend(); ++rit)
+    for (auto rit=brl_.rbegin(); rit!=brl_.rend(); ++rit) {
       (rit->b_.*fn)(rit->ir_);
+    }
     return src_;
   }
 

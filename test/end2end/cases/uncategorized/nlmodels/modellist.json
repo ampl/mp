@@ -8,11 +8,6 @@
     "name" : "branin",
     "objective" : 0.3978873577,
     "tags" : ["nonlinear"]
-  },
-  {
-    "name" : "camel1",
-    "objective" : -1.03163,
-    "tags" : ["nonlinear"]
   }, {
     "name" : "chemeq",
     "objective" : -1910.87,

@@ -18,8 +18,8 @@
  of or in connection with the use or performance of this software.
 */
 
-#ifndef BACKEND_H_
-#define BACKEND_H_
+#ifndef STD_BACKEND_H_
+#define STD_BACKEND_H_
 
 #include <cmath>
 #include <functional>
@@ -900,4 +900,4 @@ public:
 
 }  // namespace mp
 
-#endif  // BACKEND_H_
+#endif  // STD_BACKEND_H_
