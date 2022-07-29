@@ -108,9 +108,6 @@ public:
     RegisterMe();
   }
 
-  /// Name
-  const char* GetName() const { return name_.c_str(); }
-
   /// Declared size (what is being used by links)
   size_t Size() const { return sz_; }
 
@@ -194,6 +191,9 @@ public:
   /// Set double[i].
   /// If existing value non-0, only allow larger value.
   void SetDbl(size_t i, double v) { SetNum(vd_, i, v); }
+
+  /// GetName
+  const std::string& GetName() const { return name_; }
 
   /// SetName
   void SetName(std::string s) { name_ = std::move(s); }

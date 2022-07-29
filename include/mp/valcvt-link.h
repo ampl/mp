@@ -62,7 +62,7 @@ public:
 
   /// Get source/target nodes for a given link entry.
   /// This is used for graph export
-  virtual void FillEntryItems(EntryItems& ei, int i) const = 0;
+  virtual void ExportEntryItems(EntryItems& ei, int i) const = 0;
 
 
 protected:
@@ -143,7 +143,7 @@ public:
 
   /// Get source/target nodes for a given link entry.
   /// This is used for graph export
-  void FillEntryItems(EntryItems& ei, int i) const override {
+  void ExportEntryItems(EntryItems& ei, int i) const override {
     const auto& en = entries_.at(i);
     ei.src_items_.clear();
     ei.src_items_.push_back(en.first);
@@ -220,7 +220,7 @@ public:
 
   /// Get source/target nodes for a given link entry.
   /// This is used for graph export
-  void FillEntryItems(EntryItems& ei, int i) const override {
+  void ExportEntryItems(EntryItems& ei, int i) const override {
     const auto& en = entries_.at(i);
     ei.src_items_.clear();
     ei.src_items_.push_back(en.first);
@@ -318,7 +318,7 @@ public:
 
   /// Get source/target nodes for a given link entry.
   /// This is used for graph export
-  void FillEntryItems(EntryItems& ei, int i) const override {
+  void ExportEntryItems(EntryItems& ei, int i) const override {
     MPCD( FillEntryItems( ei, entries_.at(i) ) );
   }
 

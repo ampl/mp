@@ -120,11 +120,16 @@ public:
 
 
   /// Register a ValueNode*
-  void Register(ValueNode* pvn) override
-  { assert(val_nodes_.insert(pvn).second); }
+  void Register(ValueNode* pvn) override {
+    auto res = val_nodes_.insert(pvn).second;
+    assert(res);
+  }
 
   /// Deregister a ValueNode*
-  void Deregister(ValueNode* pvn) override { assert(val_nodes_.erase(pvn)); }
+  void Deregister(ValueNode* pvn) override {
+    auto res = val_nodes_.erase(pvn);
+    assert(res);
+  }
 
 
 protected:
@@ -174,7 +179,7 @@ protected:
   /// Export certain link entry
   void ExportLinkEntry(const BasicLink& ln, int i_entry) {
     if (GetExport()) {
-      ln.FillEntryItems(entry_items_, i_entry);
+      ln.ExportEntryItems(entry_items_, i_entry);
       /// TODO some "tree wrapper" interface
       fmt::MemoryWriter wrt;
       wrt.write("{} ", '{');

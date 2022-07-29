@@ -55,8 +55,8 @@ namespace internal {
 class SuffixBase {
  protected:
   struct Impl {
-    // Name is stored as a StringRef rather than std::string to avoid
-    // dynamic memory allocation when using set::find.
+    /// Name is stored as a StringRef rather than std::string to avoid
+    /// dynamic memory allocation when using set::find.
     fmt::StringRef name;
     mutable int kind;
     int num_values;
@@ -103,18 +103,18 @@ class SuffixBase {
   void True() const {}
 
  public:
-  // Constructs a Suffix object representing a null reference to a
-  // suffix. The only operation permitted for such object is copying,
-  // assignment and check whether it is null using operator SafeBool.
+  /// Constructs a Suffix object representing a null reference to a
+  /// suffix. The only operation permitted for such object is copying,
+  /// assignment and check whether it is null using operator SafeBool.
   SuffixBase() : impl_() {}
 
-  // Returns the suffix name.
+  /// Returns the suffix name.
   const char *name() const { return impl_->name.data(); }
 
-  // Returns the suffix pure kind (var/con/prob/obj).
+  /// Returns the suffix pure kind (var/con/prob/obj).
   int kind_pure() const { return impl_->kind_pure(); }
 
-  // Returns the suffix kind.
+  /// Returns the suffix kind.
   int kind() const { return impl_->kind_full(); }
 
   /// Or's the kind with a given int argument
@@ -122,18 +122,19 @@ class SuffixBase {
 
   int num_values() const { return impl_->num_values; }
 
+  /// Don't use
   template <class T>
   ArrayRef<T> get_values() const { assert(0); return {}; }
 
   const SuffixTable& table() const { return impl_->table; }
 
-  // Returns a value convertible to bool that can be used in conditions but not
-  // in comparisons and evaluates to "true" if this suffix is not null
-  // and "false" otherwise.
-  // Example:
-  //   if (s) {
-  //     // Do something if s is not null.
-  //   }
+  /// Returns a value convertible to bool that can be used in conditions but not
+  /// in comparisons and evaluates to "true" if this suffix is not null
+  /// and "false" otherwise.
+  /// Example:
+  ///   if (s) {
+  ///     // Do something if s is not null.
+  ///   }
   operator SafeBool() const { return impl_ != 0 ? &SuffixBase::True : 0; }
 };
 
@@ -152,13 +153,13 @@ ArrayRef<double> SuffixBase::get_values<double>() const {
 
 }  // namespace internal
 
-// A suffix.
-// Suffixes are data that can be attached to variables, objectives,
-// constraints and problems.
+/// A suffix.
+/// Suffixes are data that can be attached to variables, objectives,
+/// constraints and problems.
 class Suffix : private internal::SuffixBase {
  private:
-  // SuffixBase is a friend because it needs access to SuffixBase::impl_ via
-  // a private base class.
+  /// SuffixBase is a friend because it needs access to SuffixBase::impl_ via
+  /// a private base class.
   friend class internal::SuffixBase;
   friend class MutSuffix;
 
@@ -180,7 +181,7 @@ class Suffix : private internal::SuffixBase {
   using SuffixBase::impl;
   using SuffixBase::operator SafeBool;
 
-  // Iterates over nonzero suffix values and sends them to the visitor.
+  /// Iterates over nonzero suffix values and sends them to the visitor.
   template <typename Visitor>
   void VisitValues(Visitor &v) const;
 };
@@ -199,8 +200,8 @@ class MutSuffix : public Suffix {
   MutSuffix(BasicMutSuffix<T> other) : Suffix(other) {}
 };
 
-// "inline" is used here instead of the definition to suppress bogus C4396
-// warnings in MSVC.
+/// "inline" is used here instead of the definition to suppress bogus C4396
+/// warnings in MSVC.
 template <typename SuffixType>
 inline SuffixType Cast(Suffix s);
 
@@ -210,8 +211,8 @@ inline SuffixType Cast(MutSuffix s);
 template <typename T>
 class BasicSuffix : private internal::SuffixBase {
  private:
-  // SuffixBase is a friend because it needs access to SuffixBase::impl_ via
-  // a private base class.
+  /// SuffixBase is a friend because it needs access to SuffixBase::impl_ via
+  /// a private base class.
   friend class internal::SuffixBase;
   friend class BasicMutSuffix<T>;
 
@@ -254,7 +255,7 @@ class BasicSuffix : private internal::SuffixBase {
   }
 };
 
-// A mutable suffix.
+/// A mutable suffix.
 template <typename T>
 class BasicMutSuffix : public BasicSuffix<T> {
  private:
@@ -297,15 +298,15 @@ struct SuffixInfo<double> {
   enum { KIND = suf::FLOAT };
 };
 
-// Returns true if s is of type SuffixType.
+/// Returns true if \a s is of type SuffixType.
 template <typename SuffixType>
 inline bool Is(Suffix s) {
   return (s.kind() & suf::FLOAT) == SuffixInfo<typename SuffixType::Type>::KIND;
 }
 }
 
-// Casts a suffix to type SuffixType which must be a valid suffix type.
-// Returns a null suffix if s is not convertible to SuffixType.
+/// Casts a suffix to type SuffixType which must be a valid suffix type.
+/// Returns a null suffix if s is not convertible to SuffixType.
 template <typename SuffixType>
 SuffixType Cast(Suffix s) {
   return internal::Is<SuffixType>(s) ? SuffixType(s) : SuffixType();
@@ -323,7 +324,7 @@ inline void Suffix::VisitValues(Visitor &v) const {
     Cast<DoubleSuffix>(*this).VisitValues(v);
 }
 
-// A set of suffixes.
+/// A set of suffixes.
 template <typename Alloc>
 class BasicSuffixSet : private Alloc {
  private:
@@ -366,8 +367,8 @@ class BasicSuffixSet : private Alloc {
   explicit BasicSuffixSet(Alloc alloc = Alloc()) : Alloc(alloc) {}
   ~BasicSuffixSet();
 
-  // Adds a suffix throwing Error if another suffix with the same name is
-  // in the set.
+  /// Adds a suffix throwing Error if another suffix with the same name is
+  /// in the set.
   template <typename T>
   BasicMutSuffix<T> Add(fmt::StringRef name, int kind, int num_values,
                         const SuffixTable& table = {}) {
@@ -384,7 +385,7 @@ class BasicSuffixSet : private Alloc {
     return BasicMutSuffix<T>(impl);
   }
 
-  // Finds a suffix with the specified name.
+  /// Finds a suffix with the specified name.
   Suffix Find(fmt::StringRef name) const {
     typename Set::iterator i = set_.find(SuffixImpl(name));
     return Suffix(i != set_.end() ? &*i : 0);
@@ -394,19 +395,19 @@ class BasicSuffixSet : private Alloc {
     return MutSuffix(i != set_.end() ? &*i : 0);
   }
 
-  // Finds a suffix with the specified name and value type.
+  /// Finds a suffix with the specified name and value type.
   template <typename T>
   BasicSuffix<T> Find(fmt::StringRef name) const {
     Suffix s = Find(name);
     return s ? Cast< BasicSuffix<T> >(s) : BasicSuffix<T>();
   }
 
-  // A suffix iterator.
+  /// A suffix iterator.
   class iterator : public std::iterator<std::forward_iterator_tag, Suffix> {
    private:
     typename Set::const_iterator it_;
 
-    // A suffix proxy used for implementing operator->.
+    /// A suffix proxy used for implementing operator->.
     class Proxy {
      private:
       Suffix suffix_;
@@ -445,7 +446,7 @@ class BasicSuffixSet : private Alloc {
 
 template <typename Alloc>
 BasicSuffixSet<Alloc>::~BasicSuffixSet() {
-  // Deallocate names and values.
+  /// Deallocate names and values.
   for (typename Set::iterator i = set_.begin(), e = set_.end(); i != e; ++i) {
     Deallocate(const_cast<char*>(i->name.data()), i->name.size()+1);
     if ((i->kind & suf::FLOAT) != 0)
@@ -464,7 +465,7 @@ typename BasicSuffixSet<Alloc>::SuffixImpl *BasicSuffixSet<Alloc>::DoAdd(
   if (!result.second)
     throw Error("duplicate suffix '{}'", name);
   Suffix::Impl *impl = const_cast<SuffixImpl*>(&*result.first);
-  // Set name to empty string so that it is not deleted if new throws.
+  /// Set name to empty string so that it is not deleted if new throws.
   std::size_t size = name.size();
   impl->name = fmt::StringRef(0, 0);
   char *name_copy = Allocate<char>(size + 1);
@@ -484,7 +485,7 @@ class SuffixManager {
   mp::SuffixSet suffixes_[internal::NUM_SUFFIX_KINDS];
 
   static void Check(suf::Kind kind) {
-    // Assign to an int variable to avoid warning about comparing enums.
+    /// Assign to an int variable to avoid warning about comparing enums.
     int num_kinds = internal::NUM_SUFFIX_KINDS;
     internal::Unused(kind, num_kinds);
     MP_ASSERT(kind >= 0 && kind < num_kinds, "invalid suffix kind");
@@ -497,7 +498,7 @@ class SuffixManager {
   typedef MutIntSuffix IntSuffix;
   typedef mp::SuffixSet SuffixSet;
 
-  // Returns a set of suffixes. TODO hide
+  /// Returns a set of suffixes. TODO hide
   SuffixSet &suffixes(suf::Kind kind) {
     Check(kind);
     return suffixes_[kind];

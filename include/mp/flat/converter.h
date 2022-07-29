@@ -400,7 +400,7 @@ public:
     return MakeFixedVar(lb);
   }
 
-  /// Add several variables
+  /// Add several variables once.
   /// @return value node range for them
   pre::NodeRange AddVars(const typename BaseFlatModel::VarBndVec& lbs,
                const typename BaseFlatModel::VarBndVec& ubs,
