@@ -56,16 +56,6 @@ public:
     PropagateResult2Args(con.GetBody(), con.lb(), con.ub(), ctx);
   }
 
-  /// Not used?
-  void PropagateResult(QuadConRange& con, double lb, double ub,
-                       Context ctx) {
-    internal::Unused(lb, ub, ctx);
-    PropagateResult2LinTerms(con.GetLinTerms(), // TODO sense dep. on bounds
-                             MPD( MinusInfty() ), MPD( Infty() ), ctx);
-    PropagateResult2QuadTerms(con.GetQPTerms(), // TODO bounds?
-                              MPD( MinusInfty() ), MPD( Infty() ), ctx);
-  }
-
   template <class Body, int sens>
   void PropagateResult(IndicatorConstraint<
                          AlgebraicConstraint< Body, AlgConRhs<sens> > >& con,
@@ -127,7 +117,6 @@ public:
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     auto& args = con.GetArguments();
-    /// TODO consider bounds for then/else for the context:
     MPD( PropagateResultOfInitExpr(args[0], 0.0, 1.0, Context::CTX_MIX) );
     MPD( PropagateResultOfInitExpr(args[1], MPD( MinusInfty() ), MPD( Infty() ), +ctx) );
     MPD( PropagateResultOfInitExpr(args[2], MPD( MinusInfty() ), MPD( Infty() ), -ctx) );
@@ -255,7 +244,7 @@ public:
   void PropagateResult2LinTerms(const LinTerms& lint, double , double , Context ctx) {
     for (auto i=lint.size(); i--; ) {
       if (0.0!=std::fabs(lint.coef(i))) {
-        MPD( PropagateResultOfInitExpr(lint.var(i),      /// TODO bounds as well
+        MPD( PropagateResultOfInitExpr(lint.var(i),
                                 MPD( MinusInfty() ), MPD( Infty() ),
                                 (lint.coef(i)>=0.0) ? +ctx : -ctx) );
       }
@@ -283,9 +272,9 @@ public:
         } else if (MPD( ub(var1) ) <= 0.0 && MPD( ub(var2) ) <= 0.0) {
           ctx12 = -ctx12;
         } else // Propagate mixed if not decidable, otherwise we miss some cases
-          ctx12 = Context::CTX_MIX;   // TODO when just 1 var fixed sign
+          ctx12 = Context::CTX_MIX;
         MPD( PropagateResultOfInitExpr(var1, ctx12) );
-        if (var1!=var2)               // TODO result bounds as well
+        if (var1!=var2)
           MPD( PropagateResultOfInitExpr(var2, ctx12) );
       }
     }

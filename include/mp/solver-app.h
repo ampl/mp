@@ -102,7 +102,6 @@ bool SolverApp<Solver, Reader>::Init(char **argv, int nl_reader_flags) {
     banner_size = static_cast<unsigned>(banner.size());
     output_handler_.has_output = false;
   }
-  // TODO: test output
 
   // Add .nl extension if necessary.
   nl_filename = filename;

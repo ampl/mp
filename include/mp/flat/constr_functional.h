@@ -39,8 +39,6 @@ DEF_LOGICAL_FUNC_CONSTR( NotConstraint, VarArray1,
 
 ////////////////////////////////////////////////////////////////////////
 /// \brief DivConstraint
-/// TODO Keep the full expression of v1/2,
-/// or use it in MIP to multiply out
 DEF_NUMERIC_FUNC_CONSTR( DivConstraint, VarArray2,
                                   "r = v1 / v2 and v2!=0");
 
@@ -100,20 +98,6 @@ DEF_NUMERIC_FUNC_CONSTR( TanConstraint, VarArray1,
                                    "r = tan(v)");
 
 
-////////////////////////////////////////////////////////////////////////
-/// OLD: Storing AffExp instead of LinConEQ because big-M is straightforwardly
-/// computed for (aff_exp) <= 0:
-/// b -> ae<=0 is linearized as ae <= ub(ae)*(1-b) <==> le-d <= (ub(le)-d)*(1-b)
-/// <==> le <= d + ub(le) - d + (d-ub(le))*b
-/// If we stored LinConEQ:
-/// b -> lin_exp<=d would be linearized as
-/// le <= d + (ub(le)-d)*(1-b)  <==>
-/// le <= d + ub_le - d - ub_le*b + d*b  <==>
-/// le <= ub_le + (d-ub_le)*b.  Not too complex.
-/// Keep it with AffineExpr, indicators need that
-/// and we don't want quadratics with big-M's?
-/// TODO Diff to Indicator?
-
 /// Not using: var1 != var2.
 /// Represented by Not { Eq0Constraint... }
 ////////////////////////////////////////////////////////////////////////
@@ -154,8 +138,6 @@ DEF_CONDITIONAL_CONSTRAINT_WRAPPER(CondQuadConGT, QuadConGT);
 
 
 
-/// TODO use macros for FLC / FQC too?
-
 ////////////////////////////////////////////////////////////////////////
 /// Linear Functional Constraint: r = affine_expr
 class LinearFunctionalConstraint :
@@ -170,15 +152,16 @@ public:
   using Arguments = AffineExpr;
   /// using GetResultVar()
   using FunctionalConstraint::GetResultVar;
-  /// A constructor ignoring result variable: use AssignResultToArguments() then
+  /// A constructor ignoring result variable:
+  /// use AssignResultToArguments() then.
+  /// Not sorting+merging
   LinearFunctionalConstraint(AffineExpr&& ae) noexcept :
-    affine_expr_(std::move(ae)) {  // TODO sort+merge elements?
+    affine_expr_(std::move(ae)) {
   }
-  /// Constructor with result variable known
+  /// Constructor with result variable known.
+  /// Not sorting+merging
   LinearFunctionalConstraint(int r, AffineExpr&& ae) noexcept :
-    FunctionalConstraint(r), affine_expr_(std::move(ae)) {
-    /// TODO sort+merge elements?
-  }
+    FunctionalConstraint(r), affine_expr_(std::move(ae)) { }
   /// Get the affine expr
   const AffineExpr& GetAffineExpr() const { return affine_expr_; }
   /// Get the arguments (affine expr)
@@ -206,17 +189,16 @@ public:
   /// using GetResultVar()
   using FunctionalConstraint::GetResultVar;
 
-  /// A constructor ignoring result variable: use AssignResultToArguments() then
+  /// A constructor ignoring result variable:
+  /// use AssignResultToArguments() then.
+  /// Not sorting+merging
   QuadraticFunctionalConstraint(QuadraticExpr&& qe) noexcept :
-    quad_expr_(std::move(qe)) {
-    /// TODO sort+merge elements?
-  }
+    quad_expr_(std::move(qe)) { }
 
-  /// Constructor: known result var + body
+  /// Constructor: known result var + body.
+  /// Not sorting+merging
   QuadraticFunctionalConstraint(int r, QuadraticExpr&& qe) noexcept :
-    FunctionalConstraint(r), quad_expr_(std::move(qe)) {
-    /// TODO sort+merge elements?
-  }
+    FunctionalConstraint(r), quad_expr_(std::move(qe)) { }
 
   /// Getter: quad expr
   const QuadraticExpr& GetQuadExpr() const { return quad_expr_; }

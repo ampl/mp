@@ -238,7 +238,6 @@ void PrintSolution(const double *values, int num_values, const char *name_col,
 /// Solution handler for a solver application.
 /// Extends SolutionWriterImpl by conideration of
 /// the -AMPL switch and the \a wantsol option.
-/// TODO specify minimal interfaces for the parameters
 template <class Solver,
           class ProblemBuilder,
           class Writer = SolFileWriter>

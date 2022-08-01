@@ -28,8 +28,7 @@ public:
     std::vector<int> flags(args.size()+1, cc.GetResultVar());
     for (size_t ivar = 0; ivar < args.size(); ++ivar) {
       flags[ivar] = args[ivar];
-      /// Force booleanize
-      /// Either reify !=0 or constrain to 0..1? TODO param? TODO warning?
+      /// Force booleanize: reify if we have a "!=0" expression
       if ( !GetMC().is_binary_var(args[ivar]) ) {
         auto feq0 = GetMC().AssignResultVar2Args(   // feq0 = (args[i]==0)
             CondLinConEQ( { {{1.0}, {args[ivar]}}, 0.0 } ) );

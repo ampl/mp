@@ -100,7 +100,6 @@ bool BackendApp::Init(char **argv) {
     output_handler_.banner_size = banner.size();
     output_handler_.has_output = false;
   }
-  // TODO: test output
 
   // Add .nl extension if necessary.
   nl_filename_ = filename;

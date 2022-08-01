@@ -180,7 +180,6 @@ protected:
   void ExportLinkEntry(const BasicLink& ln, int i_entry) {
     if (GetExport()) {
       ln.ExportEntryItems(entry_items_, i_entry);
-      /// TODO some "tree wrapper" interface
       fmt::MemoryWriter wrt;
       wrt.write("{} ", '{');
       wrt.write("\"link_index\": [{}, {}], ", i_exported_, i_entry);

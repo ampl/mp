@@ -28,7 +28,7 @@ public:
   bool IfNeedsConversion(const ItemType& con, int ) {
     auto pwr = con.GetParameters()[0];
     return GetMC().lb(con.GetArguments()[0]) < 0.0 &&
-        GetMC().is_integer_value(pwr) && pwr>=0.0;  // TODO also < 0
+        GetMC().is_integer_value(pwr) && pwr>=0.0;
   }
 
   /// Convert in any context

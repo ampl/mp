@@ -71,7 +71,7 @@ struct OptionHelper<fmt::LongLong> {
   typedef fmt::LongLong Arg;
   static void Write(fmt::Writer &w, Arg value) { w << value; }
   static fmt::LongLong Parse(const char *&s) {
-    return OptionHelper<int>::Parse(s); // TODO
+    return OptionHelper<int>::Parse(s);
   }
   static fmt::LongLong CastArg(fmt::LongLong value) { return value; }
 };
@@ -454,7 +454,8 @@ public:
                   name, description, value, values)));
   }
 
-  /// Simple stored option referencing a variable, min, max (TODO)
+  /// Simple stored option referencing a variable; min, max values
+  /// (currently unused)
   template <class Value>
   void AddStoredOption(const char *name, const char *description,
                        Value& value, Value , Value ) {
@@ -463,7 +464,7 @@ public:
                   name, description, value, ValueArrayRef())));
   }
 
-  /// Same: stored option referencing a variable, min, max (TODO)
+  /// Same: stored option referencing a variable; min, max values
   template <class Value>
   void AddOption(const char *name, const char *description,
                        Value& value, Value lb, Value ub) {

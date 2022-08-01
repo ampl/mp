@@ -16,8 +16,6 @@ namespace mp {
 /// A mix-in base class
 /// providing preprocessors of flat constraints.
 /// Currently used before adding a constraint (if not simplified to nothing).
-/// TODO rename methods to 'PropagateUp' and
-/// make them repeatable?
 template <class Impl>
 class ConstraintPreprocessors {
 public:
@@ -78,7 +76,6 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       TanConstraint& , PreprocessInfo& ) {
-    // TODO improve
   }
 
   /// Preprocess Min
@@ -158,21 +155,17 @@ public:
     const auto& con = c.GetConstraint();
     const auto& body = con.GetBody();
     const auto rhs = con.rhs();
-    // TODO expr is empty. Possible?
     auto bndsNType = MPD( ComputeBoundsAndType(body) );
     if (bndsNType.lb() > rhs || bndsNType.ub() < rhs) {
-      /// TODO this depends on context???
       prepro.narrow_result_bounds(0.0, 0.0);
       return true;
     }
     if (bndsNType.lb()==rhs && bndsNType.ub()==rhs) {
-      /// TODO this depends on context???
       prepro.narrow_result_bounds(1.0, 1.0);
       return true;
     }
     if (var::INTEGER==bndsNType.type_ &&
         !is_integer(con.rhs())) {
-      /// TODO this depends on context???
       prepro.narrow_result_bounds(0.0, 0.0);
       return true;
     }
@@ -207,7 +200,7 @@ public:
       if (m.is_binary_var(var)) {            // See if this is binary var==const
         const double rhs = con.rhs();
         if (1.0==rhs)
-          prepro.set_result_var( var );      // TODO need to know var is a result var?
+          prepro.set_result_var( var );
         else if (0.0==std::fabs(rhs))
           prepro.set_result_var( MPD( MakeComplementVar(var) ) );
         else
@@ -218,7 +211,6 @@ public:
     return false;
   }
 
-  /// Preprocess other conditional comparisons TODO
   template <class PreprocessInfo, class Body, int kind>
   void PreprocessConstraint(
       ConditionalConstraint<

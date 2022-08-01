@@ -20,7 +20,7 @@ public:
   /// ComputeBoundsAndType(LinTerms)
   PreprocessInfoStd ComputeBoundsAndType(const LinTerms& lt) {
     PreprocessInfoStd result;
-    result.lb_ = result.ub_ = 0.0;    // TODO reuse bounds if supplied
+    result.lb_ = result.ub_ = 0.0;
     result.type_ = var::INTEGER;
     auto& model = MP_DISPATCH( GetModel() );
     for (auto i=lt.size(); i--; ) {
@@ -45,7 +45,7 @@ public:
   PreprocessInfoStd ComputeBoundsAndType(
       const AlgebraicExpression<Body>& ae) {
     PreprocessInfoStd result = ComputeBoundsAndType(ae.GetBody());
-    result.lb_ += ae.constant_term();    // TODO reuse bounds if supplied
+    result.lb_ += ae.constant_term();
     result.ub_ += ae.constant_term();
     if (!is_integer(ae.constant_term()))
       result.type_ = var::CONTINUOUS;

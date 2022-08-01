@@ -14,7 +14,6 @@ namespace mp {
 /// b==val ==> c'x + x'Qx (<=/==/>=) d.
 /// The quadratic part is moved into a separate constraint,
 /// thus producing a linear indicator of the respective type.
-/// TODO make sure the quadratic part is an inequality for LE/GE
 template <class ModelConverter, int sens>
 class IndicatorQuadConverter_MIP :
     public BasicItemConverter<ModelConverter> {

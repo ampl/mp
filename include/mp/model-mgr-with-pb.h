@@ -44,8 +44,6 @@ namespace mp {
 /// stored in a given ProblemBuilder which can be, e.g., mp::Problem.
 ///
 /// The Converter must implement the BasicConverter<ProblemBuilder> interface.
-///
-/// TODO consider walking the tree while reading
 template <class Converter>
 class ModelManagerWithProblemBuilder :
     public BasicModelManager,
@@ -224,8 +222,6 @@ protected:
     GetSolH().HandleFeasibleSolution(msg, x, y, obj);
   }
 
-
-  /// TODO Why here?
   const std::vector<bool>& IsVarInt() const override {
     return GetModel().IsVarInt();
   }

@@ -24,8 +24,7 @@ public:
   /// Converted item type
   using ItemType = AllDiffConstraint;
 
-  /// Convert in positive context
-  /// TODO add presolve link?
+  /// Convert in positive context only
   void ConvertCtxPos(const ItemType& alld, int ) {
     const auto& args = alld.GetArguments();
     const auto lba_dbl = GetMC().lb_array(args);

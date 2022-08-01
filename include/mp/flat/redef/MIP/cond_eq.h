@@ -50,7 +50,7 @@ public:
   void ConvertCtxPos(const ItemType& eq0c, int ) {
     const auto& con = eq0c.GetConstraint();
     const auto res = eq0c.GetResultVar();
-    if (con.empty()) {              // TODO consider resvar+context
+    if (con.empty()) {
       if (std::fabs(con.rhs()) != 0.0)
         GetMC().NarrowVarBounds(res, 0.0, 0.0);
     } else {
@@ -74,12 +74,8 @@ public:
         GetMC().NarrowVarBounds(res, 1.0, 1.0);
     } else if ( !GetMC().is_fixed(res) ||   // not fixed, or
                 !GetMC().fixed_value(res) ) // fixed to 0
-      // TODO use resvar + context
-      // TODO consider special cases lb==0 or ub==0
 
-    { // TODO We are in MIP so doing algebra, not DisjunctiveConstr. Why?
-      // Well in party1.mod, although this results in more fixed variables,
-      // Gurobi 9.5 runs 31s vs 91s.
+    {
       auto con = eq0c.GetArguments();
       auto newvars = GetMC().AddVars_returnIds(2, 0.0, 1.0, var::INTEGER);
       newvars.push_back( res );
@@ -88,8 +84,7 @@ public:
                                          1.0 ) );
       auto bNt = GetMC().ComputeBoundsAndType(con.GetBody());
       double cmpEps = GetMC().ComparisonEps( bNt.get_result_type() );
-      { /// TODO reuse newvars[] from Cond...LE instead,
-        /// via AssignResult2Args()
+      {
         GetMC().AddConstraint(IndicatorConstraint< AlgCon<-1> >(
                                 newvars[0], 1,
                               { con.GetBody(),

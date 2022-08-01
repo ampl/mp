@@ -137,9 +137,9 @@ public:
       return false;
     const auto lb_dbl = this->lb(var);
     const auto ub_dbl = this->ub(var);
-    return (lb_dbl>std::numeric_limits<int>::min() &&   // TODO enable outside too
+    return (lb_dbl>std::numeric_limits<int>::min() &&
             ub_dbl<std::numeric_limits<int>::max()) &&
-        (ub_dbl-lb_dbl <= 100000);                      // TODO param
+        (ub_dbl-lb_dbl <= 100000);
   }
 
 
@@ -201,7 +201,7 @@ protected:
     if (!model.is_integer_var(var))
       MP_RAISE("MP2MIP: Equality encoding: comparing non-integer variables not implemented");
     const auto lb_dbl = this->lb(var);
-    const auto ub_dbl = this->ub(var);        // TODO why not check this before?
+    const auto ub_dbl = this->ub(var);
     if (lb_dbl==this->MinusInfty() || ub_dbl==this->Infty())
       MP_RAISE("MP2MIP: Equality-comparing unbounded variables not implemented");
     if (lb_dbl<std::numeric_limits<int>::min() || ub_dbl>std::numeric_limits<int>::max())
@@ -210,7 +210,7 @@ protected:
     const int ub = (int)std::round(ub_dbl);
     std::vector<int> unaryEncVars(ub-lb+1);
     int nTaken=0;
-    for (int v=lb; v!=ub+1; ++v) {            // TODO run thru the map first
+    for (int v=lb; v!=ub+1; ++v) {  // Running thru the map faster?
       auto itV = map.find(v);
       if (map.end() != itV) {
         ++nTaken;

@@ -138,7 +138,7 @@ protected:
     MP_DISPATCH( ConvertSOSConstraints() );
   }
 
-  /// TODO this can be slow
+  /// Convert variables
   void ConvertVars() {
     std::vector<double> lbs(GetModel().num_vars());
     std::vector<double> ubs(GetModel().num_vars());
@@ -152,7 +152,7 @@ protected:
     auto vnr = GetFlatCvt().AddVars(lbs, ubs, types);
     GetCopyLink().AddEntry({
           GetValuePresolver().GetSourceNodes().GetVarValues().MakeSingleKey().
-                               Add(lbs.size()),
+                             Add(lbs.size()),
           vnr });
   }
 
@@ -170,7 +170,7 @@ protected:
         eexpr=MP_DISPATCH( Visit(e) );
         le.add(eexpr.GetLinTerms());
         if (std::fabs(eexpr.constant_term())!=0.0) {
-          /// TODO use constant (in the extra info)
+          /// Not using objective constant, should we?
           le.add_term(1.0, MakeFixedVar(eexpr.constant_term()));
         }
       }
@@ -182,7 +182,7 @@ protected:
       GetFlatCvt().PropagateResult2QuadTerms(eexpr.GetQPTerms(),
                                             GetFlatCvt().MinusInfty(),
                                             GetFlatCvt().Infty(), ctx);
-      /// TODO save & convert different types
+      /// Add linear / quadratic obj
       LinearObjective lo { obj.type(),
             std::move(le.coefs()), std::move(le.vars()) };
       GetFlatCvt().AddObjective(
@@ -273,7 +273,7 @@ protected:
     };                    // assume the constraint order in NL
     auto e = GetModel().logical_con(i);
     const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
-    GetFlatCvt().FixAsTrue(resvar);       // TODO avoid creating the variable
+    GetFlatCvt().FixAsTrue(resvar);
     assert(GetFlatCvt().HasInitExpression(resvar));
   }
 
@@ -568,10 +568,9 @@ public:
       PowConstraint::Parameters{ c } ) );
   }
 
-  EExpr VisitPow2(UnaryExpr e) {     // MIP could have better conversion for pow2
+  EExpr VisitPow2(UnaryExpr e) {
     auto el = Convert2EExpr(e.arg());
     return QuadratizeOrLinearize(el, el);
-    /* TODO For non-QP solvers, can efficiently redefine */
   }
 
   EExpr VisitPow(BinaryExpr e) {
@@ -627,7 +626,6 @@ public:
     return VisitFunctionalExpression<TanConstraint>({ e.arg() });
   }
 
-  /// TODO how to link them if they are no real items in NL?
   void ConvertSOSConstraints() {
     if (sos()) {
       auto sosno = GetModel().
@@ -681,9 +679,7 @@ public:
   /// Depending on the target backend
   /// Currently only quadratize higher-order products
   /// Can change arguments. They could point to the same
-  /// TODO multiply-out optional
-  /// TODO Move to FlatCvt?
-  /// CAUTION: allows &el==&er, needed from Pow2
+  /// PERFORMANCE WARNING: allows &el==&er, needed from Pow2
   EExpr QuadratizeOrLinearize(EExpr& el, EExpr& er) {
     if (!el.is_affine() && !er.is_constant())
       el = Convert2AffineExpr(std::move(el));      // will convert to a new var now
@@ -758,7 +754,7 @@ private:
 protected:
 
   //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
-  int MakeFixedVar(double value) // TODO use proper const term in obj
+  int MakeFixedVar(double value)
   { return GetFlatCvt().MakeFixedVar(value); }
 
   /// Presolve link just copying values between model items

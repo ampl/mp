@@ -492,13 +492,14 @@ class SuffixManager {
   }
 
  public:
+  /// Virtual destructor
   virtual ~SuffixManager() {}
 
   typedef MutSuffix Suffix;
   typedef MutIntSuffix IntSuffix;
   typedef mp::SuffixSet SuffixSet;
 
-  /// Returns a set of suffixes. TODO hide
+  /// Returns a set of suffixes
   SuffixSet &suffixes(suf::Kind kind) {
     Check(kind);
     return suffixes_[kind];

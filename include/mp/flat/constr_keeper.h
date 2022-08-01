@@ -166,7 +166,7 @@ public:
 
   static constexpr double Infty() { return INFINITY; }
   static constexpr double MinusInfty() { return -INFINITY; }
-  static constexpr double PracticallyInfty() { return 1e20; }  // TODO options
+  static constexpr double PracticallyInfty() { return 1e20; }
   static constexpr double PracticallyMinusInfty() { return -1e20; }
 };
 
@@ -361,10 +361,10 @@ protected:
 
 private:
   Converter& cvt_;
-  std::deque<Container> cons_;        // TODO see if vector is faster
-  int i_cvt_last_ = -1;               // last converted constraint
-  int n_bridged_ = 0;                  // number of converted items,
-                                      // They won't go to Backend
+  std::deque<Container> cons_;
+  int i_cvt_last_ = -1;               // Last converted constraint.
+  int n_bridged_ = 0;                 // Number of converted items,
+                                      // they won't go to Backend
   const std::string desc_ {
     std::string("ConstraintKeeper< ") +
         Converter::GetTypeName() + ", " +

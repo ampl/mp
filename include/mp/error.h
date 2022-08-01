@@ -48,7 +48,7 @@ namespace mp {
 /// Raise with exit code
 #define MP_RAISE_WITH_CODE(exit_code, msg) throw mp::Error(msg, exit_code)
 
-/// Raise infeasibility: TODO dedicated class
+/// Raise infeasibility
 #define MP_INFEAS(msg) MP_RAISE(std::string("Infeasibility: ") + msg)
 
 /// A general error.

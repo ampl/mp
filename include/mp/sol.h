@@ -111,7 +111,6 @@ void WriteSolFile(fmt::CStringRef filename, const Solution &sol) {
     for (int i = 0; i < num_options; ++i)
       file.print("{}\n", sol.option(i));
   }
-  // TODO: check precision
   int num_values = sol.num_values(), num_dual_values = sol.num_dual_values(),
     num_vars = sol.num_vars(), num_constraints = sol.num_algebraic_cons();
   file.print("{0}\n{1}\n{2}\n{3}\n",
@@ -124,8 +123,8 @@ void WriteSolFile(fmt::CStringRef filename, const Solution &sol) {
   suf::Kind kinds[] = {suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM};
   for (std::size_t i = 0, n = sizeof(kinds) / sizeof(*kinds); i < n; ++i)
     internal::WriteSuffixes(file, sol.suffixes(kinds[i]));
-  // TODO: test
 }
+
 }  // namepace mp
 
 #endif  // MP_SOL_H_

@@ -150,7 +150,7 @@ public:
 
   ///////////////////////////// OBJECTIVES ////////////////////////////
 protected:
-  using ObjList = std::vector<QuadraticObjective>; // TODO just an item
+  using ObjList = std::vector<QuadraticObjective>;
   const ObjList& get_objectives() const { return objs_; }
   ObjList& get_objectives() { return objs_; }
   int num_objs() const { return (int)objs_.size(); }
@@ -207,7 +207,7 @@ protected:
     if (int n_objs = num_objs()) {
       for (int i = 0; i < n_objs; ++i) {
         const auto& obj = get_obj(i);
-        if (obj.GetQPTerms().size())  // TODO make objectives just items
+        if (obj.GetQPTerms().size())
           backend.SetQuadraticObjective(i, obj);
         else
           backend.SetLinearObjective(i, obj);
@@ -227,7 +227,6 @@ private:
   VarTypeVec var_type_;
 
   /// Objectives
-  /// TODO storing QuadraticObjective now, make it just an item
   ObjList objs_;
 
 

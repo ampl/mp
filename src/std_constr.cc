@@ -44,8 +44,6 @@ void QuadTerms::sort_terms()  {
   }
 }
 
-/// TODO modular printing of algebraic constraints
-
 //void print(std::ostream& os) const {
 //  os << lb_ << " <= ";
 //  for (int i=0; i<nnz(); ++i) {

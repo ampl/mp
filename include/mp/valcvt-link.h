@@ -294,7 +294,7 @@ private:
 /// Usage: a derived class should define some methods
 /// Presolve...(const LinkEntry& ) and Postsolve...(const LinkEntry&).
 ///
-/// TODO: we could default as follows:
+/// We could allow default methods as follows:
 /// Those methods which are not defined, just copy values
 /// (which might be correct in _some_ cases).
 /// Then, need a "default copy" method.

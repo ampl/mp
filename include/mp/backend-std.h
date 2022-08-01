@@ -363,7 +363,7 @@ protected:
                    sol.dual.empty() ? 0 : sol.dual.data(), obj_value);
   }
 
-  /// TODO move into Env?
+  /// Abort
   virtual void Abort(int solve_code_now, std::string msg) {
     HandleSolution(solve_code_now, msg, 0, 0, 0.0);
     MP_RAISE_WITH_CODE(0, msg);  // exit code 0
@@ -411,7 +411,7 @@ protected:
   void ModifySolveCodeAndMessageAfterRounding(
         std::pair<int, double> rndres, fmt::MemoryWriter& writer) {
     if (round() & 2 && IsSolStatusRetrieved()) {
-      // TODO solve_code_ = 3 - (round() & 1);
+      // old: solve_code_ = 3 - (round() & 1);
     }
     if (round() & 4) {
       auto sc = rndres.first > 1 ? "s" : "";
@@ -647,7 +647,7 @@ protected:
 
   /// Adding solver options of types int/double/string/...
   /// The type is deduced from the two last parameters min, max
-  /// (currently unused otherwise - TODO)
+  /// (currently unused otherwise.)
   /// If min/max omitted, assume ValueType=std::string
   /// Assumes existence of Impl::Get/SetSolverOption(KeyType, ValueType(&))
   template <class KeyType, class ValueType=std::string>

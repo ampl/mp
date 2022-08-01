@@ -65,9 +65,10 @@ protected:
   //////////////////////////// CONVERTERS OF STANDARD MP ITEMS //////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////////////
 public:
-  /// Fix a resulting variable of a logical expression as true
+  /// Fix the resulting variable of a logical expression as true
   /// and propagate positive ctx.
-  /// TODO avoid creating resvar for root logical constraints
+  /// Currently this happens for all root-context logical constraints,
+  /// i.e., we create an auxiliary variable which is later fixed to 1.
   void FixAsTrue(int resvar) {
     PropagateResultOfInitExpr(resvar, 1.0, 1.0, +Context());
   }
@@ -218,11 +219,10 @@ protected:
 public: // for ConstraintKeeper
   /// RunConversion() of a constraint:
   /// Assume mixed context if not set.
-  /// TODO Make sure context is always propagated for all constraints and objectives
   template <class Constraint>
   void RunConversion(const Constraint& con, int i) {
-    if (con.UsesContext())           // ensure we have context, mixed if none
-      if (con.GetContext().IsNone())
+    if (con.UsesContext())              // If context releant,
+      if (con.GetContext().IsNone())    // ensure we have context, mixed if none
         con.SetContext(Context::CTX_MIX);
     pre::AutoLinkScope<Impl> auto_link_scope{
       *static_cast<Impl*>(this),
@@ -284,7 +284,7 @@ public:
   ///
   /// Use only for non-mapped constraints. For functional constraints
   /// stored __WITH_MAP, use AssignResult(Var)2Args().
-  /// TODO non-functional constraints __WITH_MAP.
+  /// Non-functional constraints cannot be unified currently.
   /// Takes ownership.
   /// @return Node reference for the stored constraint
   template <class Constraint>
@@ -294,12 +294,11 @@ public:
     return AutoLink( node_range );
   }
 
-  /// ADD CUSTOM CONSTRAINT and propagate result
+  /// ADD CUSTOM CONSTRAINT and propagate root-ness
   /// (use AddConstraint() otherwise).
   ///
   /// Use only for non-mapped constraints. For functional constraints
   /// stored __WITH_MAP, use AssignResult(Var)2Args().
-  /// TODO non-functional constraints __WITH_MAP.
   /// Takes ownership.
   /// @return Node reference for the stored constraint
   template <class Constraint>
@@ -341,7 +340,7 @@ public:
 
   void FinishModelInput() {
     MPD( ConvertModel() );
-    if (relax())              // TODO value presolve link?
+    if (relax())
       GetModel().RelaxIntegrality();
     GetModel().PushModelTo(GetModelAPI());
     MPD( CloseGraphExporter() );
@@ -458,7 +457,7 @@ public:
     auto& m = GetModel();
     m.set_lb(var, std::max(m.lb(var), lb));
     m.set_ub(var, std::min(m.ub(var), ub));
-    if (m.lb(var)>m.ub(var))             // TODO write .sol, report .iis
+    if (m.lb(var)>m.ub(var))
       MP_INFEAS("empty variable domain");
   }
 
@@ -475,7 +474,7 @@ public:
     if (! (lb(bvar)==0.0 && ub(bvar)==1.0) )
       MP_RAISE("Asked to complement variable with bounds "
                              + std::to_string(lb(bvar)) + ".." + std::to_string(ub(bvar)));
-    AffineExpr ae({{-1.0}, {bvar}}, 1.0); // TODO use map / FCC?
+    AffineExpr ae({{-1.0}, {bvar}}, 1.0);
     return MP_DISPATCH( Convert2Var(std::move(ae)) );
   }
 
@@ -657,7 +656,7 @@ public:
 
 
 public:
-  /// for tests. TODO make friends
+  /// Typedef ModelAPIType. For tests
   using ModelAPIType = ModelAPI;
 
   /// AddWarning.
@@ -691,7 +690,8 @@ protected:
   /////////////////////// CONSTRAINT KEEPERS /////////////////////////
   /// Constraint keepers and converters should be initialized after \a presolver_
 
-  /// Define constraint keepers for all constraint types
+  /// Define constraint keepers for all constraint types.
+  /// No maps for static constraints
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConRange)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConLE)
   STORE_CONSTRAINT_TYPE__NO_MAP(LinConEQ)
@@ -702,12 +702,11 @@ protected:
   STORE_CONSTRAINT_TYPE__NO_MAP(QuadConEQ)
   STORE_CONSTRAINT_TYPE__NO_MAP(QuadConGE)
 
-  /// TODO Use FunctionalConstraintConverter with LFC, QFC
+  /// Our own functional constraints: LFC, QFC
   STORE_CONSTRAINT_TYPE__WITH_MAP(LinearFunctionalConstraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(QuadraticFunctionalConstraint)
 
-  /// With maps we store flattened NL expressions
-  /// (functional constraints)
+  /// Flattened NL expressions
   STORE_CONSTRAINT_TYPE__WITH_MAP(MaxConstraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(MinConstraint)
   STORE_CONSTRAINT_TYPE__WITH_MAP(AbsConstraint)
@@ -755,6 +754,7 @@ protected:
   STORE_CONSTRAINT_TYPE__NO_MAP(SOS2Constraint)
   STORE_CONSTRAINT_TYPE__NO_MAP(ComplementarityLinear)
   STORE_CONSTRAINT_TYPE__NO_MAP(ComplementarityQuadratic)
+
 
   ////////////////////// Default map accessors /////////////////////////
   /// Constraints without map should overload these by empty methods ///

@@ -66,7 +66,7 @@ public:
     auto ctx = item.GetContext();
     assert(!ctx.IsNone());
     auto rv = item.GetResultVar();
-    auto bnd00 = item.GetAprioriBounds();   // TODO use current bounds?
+    auto bnd00 = item.GetAprioriBounds();
     if ( ctx.HasNegative() &&
          GetMC().lb(rv) < bnd00.second ) {  // Need the negative direction
       MPD( ConvertCtxNeg(item, i) );
@@ -75,7 +75,6 @@ public:
          GetMC().ub(rv) > bnd00.first ) {   // Need the positive direction
       MPD( ConvertCtxPos(item, i) );
     }
-    // TODO infeasible cases?
   }
 
   /// Convert in negative context

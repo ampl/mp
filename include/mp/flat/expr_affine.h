@@ -128,7 +128,6 @@ public:
   /// Add same variables, eliminate 0's.
   /// Can be used by LinCon's etc
   /// Gurobi complains when 0's / repeated entries.
-  /// TODO use hash map when sorting not needed?
   void sort_terms(bool force_sort=false);
 
   /// Equality. Assumes being sorted

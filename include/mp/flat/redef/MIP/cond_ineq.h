@@ -69,7 +69,7 @@ protected:
     using AlgConOutput = AlgebraicConstraint<
       typename AlgCon::BodyType, AlgConRhs<kind> >;
     if (con.empty()) {                    // empty body
-      if (kind*(con.rhs() + eps) > 0.0)   // TODO option to switch off
+      if (kind*(con.rhs() + eps) > 0.0)
         GetMC().NarrowVarBounds(res, !value, !value);    // fix result
     } else {
       if (GetMC().is_fixed(res)) {

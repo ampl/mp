@@ -224,7 +224,7 @@ Solution GurobiBackend::GetSolution() {
   auto mv = GetValuePresolver().PostsolveSolution(
         { PrimalSolution(), DualSolution() } );
   return { mv.GetVarValues()(), mv.GetConValues()(),
-    GetObjectiveValues() };    // TODO postsolve obj values
+    GetObjectiveValues() };
 }
 
 pre::ValueMapDbl GurobiBackend::DualSolution() {
@@ -366,7 +366,7 @@ ArrayRef<int> GurobiBackend::ConStatii() {
       s = (int)BasicStatus::bas;
       break;
     case -1:
-      s = (int)BasicStatus::sup;   // TODO exact value low/upp/equ??
+      s = (int)BasicStatus::sup;   // need exact value low/upp/equ??
       break;
     default:
       MP_RAISE(fmt::format("Unknown Gurobi CBasis value: {}", s));
@@ -644,7 +644,6 @@ void GurobiBackend::InputGurobiExtras() {
   SetPartitionValues();
 }
 
-/// TODO make these suffixes standard so converters can use them
 void GurobiBackend::InputGurobiFuncApproxParams() {
   if (auto funcp = ReadIntSuffix( {"funcpieces", suf::Kind::CON} )) {
     auto mv = GetValuePresolver().PresolveGenericInt(
@@ -755,7 +754,6 @@ void GurobiBackend::AddGurobiMessage() {
 void GurobiBackend::DoGurobiTune() {
   assert(tunebase().size());
   GRB_CALL( GRBtunemodel(model()) );
-//		TODO? solve_result_num = 532;
   auto n_results = GrbGetIntAttr(GRB_INT_ATTR_TUNE_RESULTCOUNT);
   if (n_results<=0)
     MP_RAISE("No tuning results!");
@@ -786,10 +784,10 @@ void GurobiBackend::ReportGurobiPool() {
   while (++iPoolSolution < GrbGetIntAttr(GRB_INT_ATTR_SOLCOUNT)) {
     GrbSetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, iPoolSolution);
     auto mv = GetValuePresolver().PostsolveSolution( {
-          CurrentGrbPoolPrimalSolution() } );   // TODO obj values
+          CurrentGrbPoolPrimalSolution() } );
     ReportIntermediateSolution(
           { mv.GetVarValues()(), mv.GetConValues()(),
-            { CurrentGrbPoolObjectiveValue() } });
+            { CurrentGrbPoolObjectiveValue() } });   // not when multiobj
   }
 }
 
@@ -833,7 +831,6 @@ std::string GurobiBackend::DoGurobiFixedModel() {
     GRBsetintparam(env, GRB_INT_PAR_METHOD, k);
   if (!GRBgetintparam(env, GRB_INT_PAR_METHOD, &k) && k != fixedmethod)
     GRBsetintparam(env, GRB_INT_PAR_METHOD, fixedmethod);
-  /// TODO output model(s)
   if (GRBoptimize(model_fixed_))
     return "optimize()";
   int i;
@@ -886,7 +883,6 @@ void GurobiBackend::DoGurobiFeasRelax() {
                                               feasrelax().rhspen()
                                             });
   const auto& rhspen = mv.GetConValues()(CG_Linear);
-  /// Account for new variables (TODO: proper presolve)
   std::vector<double> lbpen = feasrelax().lbpen();
   if (lbpen.size() && lbpen.size()<(size_t)NumVars())
     lbpen.resize(NumVars());

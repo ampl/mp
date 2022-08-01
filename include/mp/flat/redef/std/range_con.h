@@ -17,8 +17,6 @@ namespace pre {
 /// Con(LE/GE) or ConEQ+Slack.
 /// Parameters of the base class: self, N value nodes (3),
 /// N indexes (3), N source nodes / indexes in the list (1).
-/// TODO dependency inversion #164
-/// (FlatConverter needs just a BasicLink*? Entry type?)
 template <class ModelConverter, class RangeCon>
 class RangeCon2Slack :
     public BasicStaticIndivEntryLink<
@@ -223,7 +221,7 @@ protected:
       GetMC().AddConstraint(
               AlgConLE( item.GetBody(), item.ub() ) );
     } else if (rr[1] && rr[2]) {
-      assert(item.lb()>=item.ub()); // TODO have an option for eps tolerance
+      assert(item.lb()>=item.ub());
       GetMC().AddConstraint(
             AlgConEQ( item.GetBody(),
                       (item.lb()+item.ub()) / 2.0 ) );
