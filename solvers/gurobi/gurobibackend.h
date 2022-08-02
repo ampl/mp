@@ -264,7 +264,7 @@ private:
     int nFixedMethod_=-2;
 
     std::string cloudid_, cloudkey_, cloudpool_;
-    int cloudpriority_;
+    int cloudpriority_ = 0;
 
     std::string servers_, server_password_, server_group_, server_router_;
     int server_priority_=0, server_insecure_=0;

@@ -70,7 +70,7 @@ const char *SkipNonSpaces(const char *s) {
 }
 
 const char* SkipToEnd(const char* s) {
-  while (*s)
+  while (*s && (*s != '\n')) 
     ++s;
   return s;
 }
