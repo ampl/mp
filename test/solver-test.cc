@@ -437,7 +437,7 @@ TEST(SolverTest, SolverOption) {
     : SolverOption(name, description, values, is_flag),
       formatted(false), parsed(false) {}
     void Write(fmt::Writer &) { formatted = true; }
-    void Parse(const char *&) { parsed = true; }
+    void Parse(const char *&, bool=false) { parsed = true; }
   };
   {
     TestOption opt("abc", "def");
@@ -617,7 +617,7 @@ TEST(SolverTest, AddOption) {
     TestOption() : SolverOption("testopt", "A test option."), value(0) {}
 
     void Write(fmt::Writer &) {}
-    void Parse(const char *&s) {
+    void Parse(const char *&s, bool=false) {
       char *end = 0;
       value = std::strtol(s, &end, 10);
       s = end;
@@ -771,7 +771,7 @@ struct FormatOption : SolverOption {
     w << "1";
     ++format_count;
   }
-  void Parse(const char *&) {}
+  void Parse(const char *&, bool) {}
 };
 
 TEST(SolverTest, FormatOption) {
@@ -821,7 +821,7 @@ TEST(SolverTest, ErrorOnKeywordOptionValue) {
     KeywordOption()
     : SolverOption("kwopt", "", mp::ValueArrayRef(), true), parsed(false) {}
     void Write(fmt::Writer &) {}
-    void Parse(const char *&) { parsed = true; }
+    void Parse(const char *&, bool=false) { parsed = true; }
   };
   TestSolver s;
   TestErrorHandler handler;
@@ -838,7 +838,7 @@ TEST(SolverTest, ParseOptionsHandlesOptionErrorsInParse) {
   struct TestOption : SolverOption {
     TestOption() : SolverOption("testopt", "") {}
     void Write(fmt::Writer &) {}
-    void Parse(const char *&s) {
+    void Parse(const char *&s, bool = false) {
       while (*s && !std::isspace(*s))
         ++s;
       throw OptionError("test message");

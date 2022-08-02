@@ -62,7 +62,7 @@ template <>
 struct OptionHelper<int> {
   typedef int Arg;
   static void Write(fmt::Writer &w, Arg value) { w << value; }
-  static int Parse(const char *&s, bool splitString);
+  static int Parse(const char *&s, bool splitString=false);
   static int CastArg(fmt::LongLong value) { return static_cast<int>(value); }
 };
 
@@ -70,7 +70,7 @@ template <>
 struct OptionHelper<fmt::LongLong> {
   typedef fmt::LongLong Arg;
   static void Write(fmt::Writer &w, Arg value) { w << value; }
-  static fmt::LongLong Parse(const char *&s, bool splitString) {
+  static fmt::LongLong Parse(const char *&s, bool splitString=false) {
     return OptionHelper<int>::Parse(s, splitString);
   }
   static fmt::LongLong CastArg(fmt::LongLong value) { return value; }
@@ -80,7 +80,7 @@ template <>
 struct OptionHelper<double> {
   typedef double Arg;
   static void Write(fmt::Writer &w, double value) { w << value; }
-  static double Parse(const char *&s, bool splitString);
+  static double Parse(const char *&s, bool splitString=false);
   static double CastArg(double value) { return value; }
 };
 
@@ -88,7 +88,7 @@ template <>
 struct OptionHelper<std::string> {
   typedef fmt::StringRef Arg;
   static void Write(fmt::Writer &w, const std::string &s) { w << s; }
-  static std::string Parse(const char *&s, bool splitString);
+  static std::string Parse(const char *&s, bool splitString=false);
   static fmt::StringRef CastArg(fmt::StringRef s) { return s; }
 };
 
@@ -219,7 +219,7 @@ public:
 
   /// Parses a string and sets the option value. Throws InvalidOptionValue
   /// if the value is invalid or OptionError in case of another error.
-  virtual void Parse(const char *&s, bool splitString) = 0;
+  virtual void Parse(const char *&s, bool splitString=false) = 0;
 
   virtual std::string echo() {
     if (is_wildcard())
@@ -286,7 +286,7 @@ class TypedSolverOption : public SolverOption {
   ///                     so it is now in the format of null terminated substrings.
   ///                     If parsed from the environment variable, the string is 
   ///                     monolithic, space separated and quotes have to be considered.
-  void Parse(const char *&s, bool splitString) {
+  void Parse(const char *&s, bool splitString=false) {
     const char *start = s;
     T value = internal::OptionHelper<T>::Parse(s, splitString);
     if (*s && !std::isspace(*s)) {
