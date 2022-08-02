@@ -589,7 +589,7 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
 
                  ModelTags.unbdd, ModelTags.return_mipgap,
-                 ModelTags.sos, ModelTags.sens,
+                 ModelTags.sos, ModelTags.presosenc, ModelTags.sens,
                  ModelTags.lazy_user_cuts, ModelTags.funcpieces,
 
                  ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,

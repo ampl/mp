@@ -98,6 +98,12 @@
     "objective": 37.5
   },
   {
+    "name": "sos_01 presosenc",
+    "tags": [ "linear", "integer", "sos", "presosenc"],
+    "options": { "ANYSOLVER_options": "presos1enc=3 presos2enc=2 presos1bigm=1e3 presos2bigm=1e4" },
+    "objective": 32
+  },
+  {
     "name": "sos_02_intref",
     "tags": [ "linear", "integer", "sos" ],
     "objective": 9

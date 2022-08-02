@@ -306,12 +306,12 @@ protected:
     const auto acceptanceLevel =
         GetBackendAcceptance(GetBackend(GetConverter()));
     if (NotAccepted == acceptanceLevel) {
-      for ( ; ++i!=cons_.size(); )
+      for ( ; ++i!=(int)cons_.size(); )
         if (!cons_[i].IsBridged())
           ConvertConstraint(cons_[i], i);
     }
     else if (AcceptedButNotRecommended == acceptanceLevel) {
-      for (; ++i != cons_.size(); ) {
+      for (; ++i != (int)cons_.size(); ) {
         if (!cons_[i].IsBridged()) {
           try {       // Try to convert all but allow failure
             ConvertConstraint(cons_[i], i);
@@ -321,7 +321,7 @@ protected:
         }
       }
     } else { // Recommended == acceptanceLevel &&
-      for (; ++i != cons_.size(); )
+      for (; ++i != (int)cons_.size(); )
         if (!cons_[i].IsBridged() &&
             GetConverter().IfNeedsConversion(cons_[i].con_, i))
           ConvertConstraint(cons_[i], i);

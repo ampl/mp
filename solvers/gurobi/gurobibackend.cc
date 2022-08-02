@@ -1827,19 +1827,39 @@ void GurobiBackend::InitCustomOptions() {
     "Big-M for converting SOS1 constraints to binary form:\n"
     "\n"
     "| -1 - Automatic choice (default)\n"
-    "|  0  - No conversion\n"
+    "|  0 - No conversion\n"
     "\n"
     "Large values (e.g., 1e8) may cause numeric trouble.",
-    GRB_DBL_PAR_PRESOS1BIGM, -1.0, 1e10);
+    GRB_DBL_PAR_PRESOS1BIGM, -1.0, 1e15);
 
   AddSolverOption("pre:sos2bigm presos2bigm",
     "Big-M for converting SOS2 constraints to binary form:\n"
     "\n"
     "| -1 - Automatic choice (default)\n"
-    "|  0  - No conversion\n"
+    "|  0 - No conversion\n"
     "\n"
     "Large values (e.g., 1e8) may cause numeric trouble.",
-    GRB_DBL_PAR_PRESOS2BIGM, -1.0, 1e10);
+    GRB_DBL_PAR_PRESOS2BIGM, -1.0, 1e15);
+
+  AddSolverOption("pre:sos1enc presos1enc",
+                  "Encoding used for SOS1 reformulation:\n"
+                  "\n"
+                  "| -1 - Automatic choice (default)\n"
+                  "|  0 - Multiple choice model, produces an LP relaxation "
+                  "       that is easy to solve\n"
+                  "|  1 - Incremental model, reduces the amount of branching\n"
+                  "|  2 - Formulation whose LP relaxation is easier to solve\n"
+                  "|  3 - Formulation with better branching behavior, "
+                  "       requires sum of the variables == 1.\n"
+                  "\n"
+                  "Options 0 and 1 produce reformulations that are linear in "
+                  "size; options 2 and 3 use reformulation logarithmic in size. "
+                  "Option 2 and 3 apply only when all the variables are >=0.",
+      GRB_INT_PAR_PRESOS1ENCODING, -1, 3);
+
+  AddSolverOption("pre:sos2enc presos2enc",
+    "Encoding used for SOS2 reformulation, see presos1enc.",
+    GRB_INT_PAR_PRESOS2ENCODING, -1, 3);
 
   AddSolverOption("pre:sparsify presparsify",
     "Whether Gurobi's presolve should use its \"sparsify reduction\", "

@@ -36,7 +36,8 @@ class ModelTags(enum.Enum):
     sens = 10003
     lazy_user_cuts = 10004
     sos = 10005
-    funcpieces = 10006
+    presosenc=10006
+    funcpieces = 10007
 
     relax=20006
     warmstart=20007

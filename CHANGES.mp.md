@@ -1,12 +1,17 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## unreleased
+- *Bug fixes*
+
+
 ## 20220725
 - *Solution file export* 
-    On windows now creates files with LF only to avoid issues when exporting
+    On Windows now creates files with LF only to avoid issues when exporting
     suffixes to AMPL
 
     Multiple solutions export file format amended
+
 
 ## 20220720
 - *Propagating suffixes via expression trees into flat constraints*
