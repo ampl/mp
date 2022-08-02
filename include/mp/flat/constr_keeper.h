@@ -303,29 +303,28 @@ protected:
   };
   bool ConvertAllFrom(int& i_last) {
     int i=i_last;
-    ++i;
     const auto acceptanceLevel =
         GetBackendAcceptance(GetBackend(GetConverter()));
     if (NotAccepted == acceptanceLevel) {
-      for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i)
-        if (!it->IsBridged())
-          ConvertConstraint(*it, i);
+      for ( ; ++i!=cons_.size(); )
+        if (!cons_[i].IsBridged())
+          ConvertConstraint(cons_[i], i);
     }
     else if (AcceptedButNotRecommended == acceptanceLevel) {
-      for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i) {
-        if (!it->IsBridged()) {
+      for (; ++i != cons_.size(); ) {
+        if (!cons_[i].IsBridged()) {
           try {       // Try to convert all but allow failure
-            ConvertConstraint(*it, i);
+            ConvertConstraint(cons_[i], i);
           } catch (const ConstraintConversionFailure& ccf) {
             GetConverter().AddWarning( ccf.key(), ccf.message() );
           }
         }
       }
     } else { // Recommended == acceptanceLevel &&
-      for (auto it=cons_.begin()+i; it!=cons_.end(); ++it, ++i)
-        if (!it->IsBridged() &&
-            GetConverter().IfNeedsConversion(it->con_, i))
-          ConvertConstraint(*it, i);
+      for (; ++i != cons_.size(); )
+        if (!cons_[i].IsBridged() &&
+            GetConverter().IfNeedsConversion(cons_[i].con_, i))
+          ConvertConstraint(cons_[i], i);
     }
     bool any_converted = i_last!=i-1;
     i_last = i-1;
