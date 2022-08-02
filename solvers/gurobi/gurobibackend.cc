@@ -104,12 +104,23 @@ void GurobiBackend::OpenGurobiModel() {
 }
 
 void GurobiBackend::FinishOptionParsing() {
-  if (servers().size()) {
-    OpenGurobiComputeServer();
+  bool cs = servers().size();
+  bool cloud = cloudid().size() && cloudkey().size();
+  if (cs || cloud)
+  {
+    const auto create_fn = GetCallbacks().init;
+    if (create_fn) {
+      // If environment has been created already with a custom initializer
+      // gurobi throws an error. Forget it and replay the options.
+      GRB_CALL(GRBemptyenv(&env_ref()));
+      this->ReplaySolverOptions();
+    }
+    if (cs) 
+      OpenGurobiComputeServer();
+    else 
+      OpenGurobiCloud();
   }
-  else if (cloudid().size() && cloudkey().size()) {
-    OpenGurobiCloud();
-  }
+  
   else {
     // If a user defined function had been provided, the environment is assumed
     // as already started
