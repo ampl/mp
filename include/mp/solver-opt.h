@@ -62,7 +62,7 @@ template <>
 struct OptionHelper<int> {
   typedef int Arg;
   static void Write(fmt::Writer &w, Arg value) { w << value; }
-  static int Parse(const char *&s);
+  static int Parse(const char *&s, bool splitString);
   static int CastArg(fmt::LongLong value) { return static_cast<int>(value); }
 };
 
@@ -70,8 +70,8 @@ template <>
 struct OptionHelper<fmt::LongLong> {
   typedef fmt::LongLong Arg;
   static void Write(fmt::Writer &w, Arg value) { w << value; }
-  static fmt::LongLong Parse(const char *&s) {
-    return OptionHelper<int>::Parse(s);
+  static fmt::LongLong Parse(const char *&s, bool splitString) {
+    return OptionHelper<int>::Parse(s, splitString);
   }
   static fmt::LongLong CastArg(fmt::LongLong value) { return value; }
 };
@@ -80,7 +80,7 @@ template <>
 struct OptionHelper<double> {
   typedef double Arg;
   static void Write(fmt::Writer &w, double value) { w << value; }
-  static double Parse(const char *&s);
+  static double Parse(const char *&s, bool splitString);
   static double CastArg(double value) { return value; }
 };
 
@@ -88,7 +88,7 @@ template <>
 struct OptionHelper<std::string> {
   typedef fmt::StringRef Arg;
   static void Write(fmt::Writer &w, const std::string &s) { w << s; }
-  static std::string Parse(const char *&s);
+  static std::string Parse(const char *&s, bool splitString);
   static fmt::StringRef CastArg(fmt::StringRef s) { return s; }
 };
 
@@ -219,7 +219,7 @@ public:
 
   /// Parses a string and sets the option value. Throws InvalidOptionValue
   /// if the value is invalid or OptionError in case of another error.
-  virtual void Parse(const char *&s) = 0;
+  virtual void Parse(const char *&s, bool splitString) = 0;
 
   virtual std::string echo() {
     if (is_wildcard())
@@ -278,9 +278,17 @@ class TypedSolverOption : public SolverOption {
 
   void Write(fmt::Writer &w) { w << GetValue<T>(); }
 
-  void Parse(const char *&s) {
+  /// Parses the string for an option value, throws an exception if the value
+  /// is invalid.
+  /// @param s:      string to be parsed
+  /// @param splitString: set to true to identify that the options string has
+  ///                     already been pre-parsed (by the command line interpreter)
+  ///                     so it is now in the format of null terminated substrings.
+  ///                     If parsed from the environment variable, the string is 
+  ///                     monolithic, space separated and quotes have to be considered.
+  void Parse(const char *&s, bool splitString) {
     const char *start = s;
-    T value = internal::OptionHelper<T>::Parse(s);
+    T value = internal::OptionHelper<T>::Parse(s, splitString);
     if (*s && !std::isspace(*s)) {
       do ++s;
       while (*s && !std::isspace(*s));
@@ -390,7 +398,10 @@ public:
   /// Flags for ParseOptions.
   enum {
     /// Don't echo options during parsing.
-    NO_OPTION_ECHO = 1
+    NO_OPTION_ECHO = 1,
+    /// When options are passed from command line (not via environment var) the quotes
+    /// are automatically removed and the input string split in substrings (accessible via argv)
+    FROM_COMMAND_LINE=2
   };
 
   /// Returns the value of an integer option.

@@ -69,6 +69,21 @@ const char *SkipNonSpaces(const char *s) {
   return s;
 }
 
+const char* SkipToEnd(const char* s) {
+  while (*s)
+    ++s;
+  return s;
+}
+
+const char* SkipToMatchingQuote(const char* s) {
+  assert((*s == '\'') || (*s == '"'));
+  char quote = s[0];
+  ++s;
+  while (*s != quote)
+    ++s;
+  return ++s;
+}
+
 struct Deleter {
   void operator()(mp::SolverOption* p) const { delete p; }
 };
@@ -247,24 +262,40 @@ void FormatRST(fmt::Writer &w,
   parser.Parse(s.c_str());
 }
 
-int OptionHelper<int>::Parse(const char *&s) {
+int OptionHelper<int>::Parse(const char *&s, bool) {
   char *end = 0;
   long value = std::strtol(s, &end, 10);
   s = end;
   return value;
 }
 
-double OptionHelper<double>::Parse(const char *&s) {
+double OptionHelper<double>::Parse(const char *&s, bool) {
   char *end = 0;
   double value = std::strtod(s, &end);
   s = end;
   return value;
 }
-
-std::string OptionHelper<std::string>::Parse(const char *&s) {
+bool quoted(const char* s) {
+  return (*s == '\'' || *s == '"');
+}
+std::string OptionHelper<std::string>::Parse(const char *&s, bool splitString) {
   const char *start = s;
-  s = SkipNonSpaces(s);
-  return std::string(start, s - start);
+  if (splitString) // if the string has been already split (by the command line parser)
+  {
+    s = SkipToEnd(s);
+    return std::string(start, s - start);
+  }
+  if (quoted(s))
+  {
+    s = SkipToMatchingQuote(s);
+    return std::string(start + 1, s - start - 1);
+  }
+  else
+  {
+    s = SkipNonSpaces(s);
+    return std::string(start, s - start);
+  }
+  
 }
 
 SolverAppOptionParser::SolverAppOptionParser(BasicSolver &s)
@@ -577,7 +608,7 @@ BasicSolver::BasicSolver(
         "before solving the problem.", ValueArrayRef(), true), s(s) {}
 
     void Write(fmt::Writer &w) { w << ((s.bool_options_ & SHOW_VERSION) != 0); }
-    void Parse(const char *&) { s.bool_options_ |= SHOW_VERSION; }
+    void Parse(const char *&, bool) { s.bool_options_ |= SHOW_VERSION; }
   };
   AddOption(OptionPtr(new VersionOption(*this)));
 
@@ -797,7 +828,7 @@ SolverOption *SolverOptionManager::FindOption(
   struct DummyOption : SolverOption {
     DummyOption(const char *name) : SolverOption(name, "") {}
     void Write(fmt::Writer &) {}
-    void Parse(const char *&) {}
+    void Parse(const char *&, bool) {}
   };
   DummyOption option(name);
   // find by name
@@ -890,7 +921,7 @@ void BasicSolver::ParseOptionString(
       continue;
     }
     try {
-      opt->Parse(s);
+      opt->Parse(s, flags & FROM_COMMAND_LINE);
     } catch (const OptionError &e) {
       ReportError("{}", e.what());
     }
@@ -931,6 +962,7 @@ bool BasicSolver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) 
   if (const char *s = std::getenv((name_ + "_options").c_str())) {
     ParseOptionString(s, flags);
   }
+  flags |= FROM_COMMAND_LINE;
   while (const char *s = *argv++)
     ParseOptionString(s, flags);
   if ((bool_options_ & SHOW_VERSION) != 0)
@@ -1011,8 +1043,8 @@ public:
   virtual void Write(fmt::Writer& w) {
     real_->Write(w);
   }
-  virtual void Parse(const char*& s) {
-    real_->Parse(s);
+  virtual void Parse(const char*& s, bool b) {
+    real_->Parse(s, b);
   }
 
   virtual std::string echo() {

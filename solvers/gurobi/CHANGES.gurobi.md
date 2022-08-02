@@ -1,6 +1,9 @@
 Summary of recent updates to x-gurobi for AMPL
 ==============================================
 
+## 20220802 
+- Added support for 'params' option from command line and environment variable
+
 ## 20220725
 - *Changes in MP* fixed suffixes export on Windows and multiple solutions handling
 
