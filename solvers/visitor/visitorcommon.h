@@ -83,7 +83,7 @@ public:
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);
 
-  // TODO Typically solvers define their own infinity; use them here
+  /// TODO Typically solvers define their own infinity; use them here
   static constexpr double Infinity() { return INFINITY;  }
   static constexpr double MinusInfinity() { return -INFINITY; }
 
@@ -100,7 +100,8 @@ protected:
 
 protected:
   // TODO if desirable, provide function to create the solver's environment
-  //int (*createEnv) (solver_env**) = nullptr;
+  // with own license
+  // int (*createEnv) (solver_env**) = nullptr;
   
 };
 

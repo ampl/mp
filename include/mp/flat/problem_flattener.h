@@ -163,31 +163,36 @@ protected:
 
   /// Convert an objective
   void Convert(typename ProblemType::MutObjective obj) {
-      auto le = ToLinTerms(obj.linear_expr());
-      NumericExpr e = obj.nonlinear_expr();
-      EExpr eexpr;
-      if (e) {
-        eexpr=MP_DISPATCH( Visit(e) );
-        le.add(eexpr.GetLinTerms());
-        if (std::fabs(eexpr.constant_term())!=0.0) {
-          /// Not using objective constant, should we?
-          le.add_term(1.0, MakeFixedVar(eexpr.constant_term()));
-        }
+    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
+      GetFlatCvt(),
+      GetValuePresolver().GetSourceNodes().GetObjValues()().
+          Add()           // Just add next node
+    };
+    auto le = ToLinTerms(obj.linear_expr());
+    NumericExpr e = obj.nonlinear_expr();
+    EExpr eexpr;
+    if (e) {
+      eexpr=MP_DISPATCH( Visit(e) );
+      le.add(eexpr.GetLinTerms());
+      if (std::fabs(eexpr.constant_term())!=0.0) {
+        /// Not using objective constant, should we?
+        le.add_term(1.0, MakeFixedVar(eexpr.constant_term()));
       }
-      /// Propagate context
-      auto ctx = obj::MAX==obj.type() ? Context::CTX_POS : Context::CTX_NEG;
-      GetFlatCvt().PropagateResult2LinTerms(le,
-                                            GetFlatCvt().MinusInfty(),
-                                            GetFlatCvt().Infty(), ctx);
-      GetFlatCvt().PropagateResult2QuadTerms(eexpr.GetQPTerms(),
-                                            GetFlatCvt().MinusInfty(),
-                                            GetFlatCvt().Infty(), ctx);
-      /// Add linear / quadratic obj
-      LinearObjective lo { obj.type(),
-            std::move(le.coefs()), std::move(le.vars()) };
-      GetFlatCvt().AddObjective(
-            QuadraticObjective{std::move(lo),
-                               std::move(eexpr.GetQPTerms())});
+    }
+    /// Propagate context
+    auto ctx = obj::MAX==obj.type() ? Context::CTX_POS : Context::CTX_NEG;
+    GetFlatCvt().PropagateResult2LinTerms(le,
+                                          GetFlatCvt().MinusInfty(),
+                                          GetFlatCvt().Infty(), ctx);
+    GetFlatCvt().PropagateResult2QuadTerms(eexpr.GetQPTerms(),
+                                           GetFlatCvt().MinusInfty(),
+                                           GetFlatCvt().Infty(), ctx);
+    /// Add linear / quadratic obj
+    LinearObjective lo { obj.type(),
+          std::move(le.coefs()), std::move(le.vars()) };
+    GetFlatCvt().AddObjective(
+          QuadraticObjective{std::move(lo),
+                             std::move(eexpr.GetQPTerms())});
   }
 
   /// Convert an algebraic constraint

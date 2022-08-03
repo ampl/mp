@@ -73,9 +73,8 @@ bool HighsBackend::IsQCP() const {
 
 Solution HighsBackend::GetSolution() {
   auto mv = GetValuePresolver().PostsolveSolution(
-        { PrimalSolution(), DualSolution() } );
-  return { mv.GetVarValues()(), mv.GetConValues()(),
-    GetObjectiveValues() };   // TODO postsolve obj values
+        { PrimalSolution(), DualSolution(), GetObjectiveValues() } );
+  return { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() };
 }
 
 ArrayRef<double> HighsBackend::PrimalSolution() {

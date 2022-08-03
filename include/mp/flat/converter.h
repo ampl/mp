@@ -279,6 +279,19 @@ public: // for ConstraintKeeper
 
 
 public:
+  /// Add objective.
+  ///
+  /// Currently handling quadratic objectives.
+  /// Its quadratic terms will be empty for linear objectives.
+  ///
+  /// Linking NL objectives straight into solver's objectives.
+  /// If any conversions are performed, need to have intermediate nodes,
+  /// as for constraints
+  pre::NodeRange AddObjective(QuadraticObjective&& qo) {
+    GetModel().AddObjective( std::move(qo) );
+    return AutoLink( GetObjValueNode().Add() );
+  }
+
   /// ADD CUSTOM CONSTRAINT, does not propagate result
   /// (use AddConstraint_AS_ROOT() otherwise).
   ///
@@ -417,6 +430,11 @@ public:
   template <class Constraint>
   pre::ValueNode& GetValueNode(Constraint*)
   { return GET_CONSTRAINT_KEEPER(Constraint).GetValueNode(); }
+
+  /// Reuse ValuePresolver's target nodes for all objectives
+  pre::ValueNode& GetObjValueNode()
+  { return GetValuePresolver().GetTargetNodes().GetObjValues().MakeSingleKey(); }
+
 
 public:
   /// Shortcut lb(var)

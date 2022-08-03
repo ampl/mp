@@ -233,9 +233,8 @@ std::vector<double> GurobiBackend::PrimalSolution() {
 
 Solution GurobiBackend::GetSolution() {
   auto mv = GetValuePresolver().PostsolveSolution(
-        { PrimalSolution(), DualSolution() } );
-  return { mv.GetVarValues()(), mv.GetConValues()(),
-    GetObjectiveValues() };
+        { PrimalSolution(), DualSolution(), GetObjectiveValues() } );
+  return { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() };
 }
 
 pre::ValueMapDbl GurobiBackend::DualSolution() {
@@ -794,11 +793,12 @@ void GurobiBackend::ReportGurobiPool() {
   int iPoolSolution = -1;
   while (++iPoolSolution < GrbGetIntAttr(GRB_INT_ATTR_SOLCOUNT)) {
     GrbSetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, iPoolSolution);
-    auto mv = GetValuePresolver().PostsolveSolution( {
-          CurrentGrbPoolPrimalSolution() } );
+    auto mv = GetValuePresolver().PostsolveSolution(  // only single-objective with pool
+          { { CurrentGrbPoolPrimalSolution() },
+            {},                                       // no duals
+            std::vector<double>{ CurrentGrbPoolObjectiveValue() } } );
     ReportIntermediateSolution(
-          { mv.GetVarValues()(), mv.GetConValues()(),
-            { CurrentGrbPoolObjectiveValue() } });   // not when multiobj
+          { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() });   // not when multiobj
   }
 }
 

@@ -130,9 +130,8 @@ bool VisitorBackend::IsQCP() const {
 
 Solution VisitorBackend::GetSolution() {
   auto mv = GetValuePresolver().PostsolveSolution(
-        { PrimalSolution(), DualSolution() } );
-  return { mv.GetVarValues()(), mv.GetConValues()(),
-    GetObjectiveValues() };   // TODO postsolve obj values
+        { PrimalSolution(), DualSolution(), GetObjectiveValues() } );
+  return { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() };
 }
 
 ArrayRef<double> VisitorBackend::PrimalSolution() {
@@ -542,7 +541,6 @@ void VisitorBackend::ComputeIIS() {
 IIS VisitorBackend::GetIIS() {
   auto variis = VarsIIS();
   auto coniis = ConsIIS();
-  // TODO: This can be moved to a parent class?
   auto mv = GetValuePresolver().PostsolveIIS(
     { variis, coniis });
   return { mv.GetVarValues()(), mv.GetConValues()() };
