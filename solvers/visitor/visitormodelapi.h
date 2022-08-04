@@ -46,7 +46,7 @@ public:
   ///   the implication direction (</==/>) depends in the context
   /// - Complementarity
   /// - Logical, counting, piecewise-linear constraints.
-  /// See \a constraints_std.h and other drivers.
+  /// See \a constr_std.h and other drivers.
 
 
   /// The linear range constraint, if fully supported with basis info etc.

@@ -72,6 +72,7 @@ protected:
 
   public:
     struct Param {
+      virtual ~Param() { }
       std::string id_;
       const std::string& id() const { return id_; }
       Param() : id_() {}
@@ -104,13 +105,13 @@ protected:
 
 
     void set(const std::string& id, int value) {
-      params_[id]=std::make_unique<IntParam>(id, value);
+      params_[id]=absl::make_unique<IntParam>(id, value);
     }
     void set(const std::string& id, double value) {
-      params_[id] = std::make_unique<DoubleParam>(id, value);
+      params_[id] = absl::make_unique<DoubleParam>(id, value);
     }
     void set(const std::string& id, const std::string& value) {
-      params_[id] = std::make_unique<StringParam>(id, value);
+      params_[id] = absl::make_unique<StringParam>(id, value);
     }
     int getIntValue(const std::string& id) const {
      return dynamic_cast<IntParam*>(params_.at(id).get())->value_;

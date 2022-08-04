@@ -86,7 +86,7 @@ function(add_ampl_solver name)
         else()
           add_library(${module}-library SHARED  IMPORTED)
           set_property(TARGET ${module}-library PROPERTY
-          IMPORTED_IMPLIB ${${module_upper}_LIBS})
+            IMPORTED_LOCATION ${${module_upper}_LIBS})
           target_include_directories(${module}-library INTERFACE ${${module_upper}_INCLUDE_DIRS})
         endif()
       endif ()

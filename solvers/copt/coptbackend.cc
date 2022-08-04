@@ -242,9 +242,12 @@ void CoptBackend::ReportCOPTPool() {
   int nsolutions;
   
   while (++iPoolSolution < getIntAttr(COPT_INTATTR_POOLSOLS)) {
+    auto mv = GetValuePresolver().PostsolveSolution(  // only single-objective with pool
+          { { getPoolSolution(iPoolSolution) },
+            {},                                       // no duals
+            std::vector<double>{ getPoolObjective(iPoolSolution) } } );
     ReportIntermediateSolution(
-      { getPoolSolution(iPoolSolution),
-        {}, { getPoolObjective(iPoolSolution) } });
+          { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() });
   }
 }
 
@@ -766,7 +769,6 @@ void CoptBackend::ComputeIIS() {
 IIS CoptBackend::GetIIS() {
   auto variis = VarsIIS();
   auto coniis = ConsIIS();
-  // TODO: This can be moved to a parent class?
   auto mv = GetValuePresolver().PostsolveIIS(
     { variis, coniis });
   return { mv.GetVarValues()(), mv.GetConValues()() };

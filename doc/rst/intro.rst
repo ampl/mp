@@ -135,6 +135,13 @@ does not have automatic dependency detection), you can use the following::
            -DCOPT_LIBS=d:/copt/libs/win64/copt.lib
            -DCOPT_INCLUDE_DIRS=d:/copt/include
 
+Similarly, for *ortoolsmp* (on MacOS) assuming *ortools* is installed in
+the standard location::
+
+cmake .. -DBUILD=ortoolsmp
+         -DORTOOLSMP_INCLUDE_DIRS=/usr/local/include
+         -DORTOOLSMP_LIBS=/usr/local/lib/libortools.dylib
+
 
 Using Eclipse CDT
 `````````````````

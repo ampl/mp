@@ -123,7 +123,7 @@ public:
 
   Solution GetSolution() override;
   ArrayRef<double> GetObjectiveValues() override
-  { return std::vector<double>{ObjectiveValue()}; } // TODO
+  { return std::vector<double>{ObjectiveValue()}; }
 
 
   //////////////////// [[ Implementation details ]] //////////////////////

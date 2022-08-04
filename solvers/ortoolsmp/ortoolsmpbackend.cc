@@ -87,9 +87,8 @@ bool OrtoolsBackend::IsQCP() const {
 
 Solution OrtoolsBackend::GetSolution() {
   auto mv = GetValuePresolver().PostsolveSolution(
-        { PrimalSolution(), DualSolution() } );
-  return { mv.GetVarValues()(), mv.GetConValues()(),
-    GetObjectiveValues() };   
+        { PrimalSolution(), DualSolution(), GetObjectiveValues() } );
+  return { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() };
 }
 
 ArrayRef<double> OrtoolsBackend::PrimalSolution() {
@@ -181,7 +180,12 @@ void OrtoolsBackend::ReportORTOOLSPool() {
   if (!IsMIP())
     return;
   do {
-    ReportIntermediateSolution({PrimalSolution(), {}, {ObjectiveValue()}});
+    auto mv = GetValuePresolver().PostsolveSolution(  // only single-objective with pool
+          { { PrimalSolution() },
+            {},                                       // no duals
+            std::vector<double>{ ObjectiveValue() } } );
+    ReportIntermediateSolution(
+          { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() });
   } while (lp()->NextSolution());
 }
 
@@ -232,10 +236,12 @@ void OrtoolsBackend::FinishOptionParsing() {
   copy_common_info_to_other();
   set_verbose_mode(storedOptions_.outlev_ > 0);
   // Set stored options
-  if (storedOptions_.outlev_ > 0) lp()->EnableOutput();
+  if (storedOptions_.outlev_ > 0)
+    lp()->EnableOutput();
   if (storedOptions_.timelimit_ > 0)
     lp()->SetTimeLimit(absl::Seconds(storedOptions_.timelimit_));
-  if (storedOptions_.threads_ > 0) lp()->SetNumThreads(storedOptions_.threads_);
+  if (storedOptions_.threads_ > 0)
+    lp()->SetNumThreads(storedOptions_.threads_);
 
   for (auto& p : optionsManager_.params())
      lp()->SetSolverSpecificParametersAsString(p.second->toString());
