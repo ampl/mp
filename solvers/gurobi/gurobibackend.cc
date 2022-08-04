@@ -655,31 +655,33 @@ void GurobiBackend::InputGurobiExtras() {
 }
 
 void GurobiBackend::InputGurobiFuncApproxParams() {
-  if (auto funcp = ReadIntSuffix( {"funcpieces", suf::Kind::CON} )) {
-    auto mv = GetValuePresolver().PresolveGenericInt(
-        { {}, funcp } );
-    const auto& fp_gen = mv.GetConValues()(CG_General);
-    auto i1 = GurobiSetFuncConAttributes(GRB_INT_ATTR_FUNCPIECES, fp_gen);
-    if (i1>=0 && debug_mode())
-      ReportProblemSuffix("test_funcpieces_presolved", fp_gen[i1]);
-  }
-  if (auto funcp = ReadDblSuffix( {"funcpieceratio", suf::Kind::CON} )) {
-    auto mv = GetValuePresolver().PresolveGenericDbl(
-        { {}, funcp } );
-    GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECERATIO,
-                       mv.GetConValues()(CG_General));
-  }
-  if (auto funcp = ReadDblSuffix( {"funcpiecelength", suf::Kind::CON} )) {
-    auto mv = GetValuePresolver().PresolveGenericDbl(
-        { {}, funcp } );
-    GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECELENGTH,
-                       mv.GetConValues()(CG_General));
-  }
-  if (auto funcp = ReadDblSuffix( {"funcpieceerror", suf::Kind::CON} )) {
-    auto mv = GetValuePresolver().PresolveGenericDbl(
-        { {}, funcp } );
-    GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECEERROR,
-                       mv.GetConValues()(CG_General));
+  if (funcpiecesuf()) {
+    if (auto funcp = ReadIntSuffix( {"funcpieces", suf::Kind::CON} )) {
+      auto mv = GetValuePresolver().PresolveGenericInt(
+            { {}, funcp } );
+      const auto& fp_gen = mv.GetConValues()(CG_General);
+      auto i1 = GurobiSetFuncConAttributes(GRB_INT_ATTR_FUNCPIECES, fp_gen);
+      if (i1>=0 && debug_mode())
+        ReportProblemSuffix("test_funcpieces_presolved", fp_gen[i1]);
+    }
+    if (auto funcp = ReadDblSuffix( {"funcpieceratio", suf::Kind::CON} )) {
+      auto mv = GetValuePresolver().PresolveGenericDbl(
+            { {}, funcp } );
+      GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECERATIO,
+                                 mv.GetConValues()(CG_General));
+    }
+    if (auto funcp = ReadDblSuffix( {"funcpiecelength", suf::Kind::CON} )) {
+      auto mv = GetValuePresolver().PresolveGenericDbl(
+            { {}, funcp } );
+      GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECELENGTH,
+                                 mv.GetConValues()(CG_General));
+    }
+    if (auto funcp = ReadDblSuffix( {"funcpieceerror", suf::Kind::CON} )) {
+      auto mv = GetValuePresolver().PresolveGenericDbl(
+            { {}, funcp } );
+      GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECEERROR,
+                                 mv.GetConValues()(CG_General));
+    }
   }
 }
 
@@ -1797,6 +1799,11 @@ void GurobiBackend::InitCustomOptions() {
       "     error bound is provided in the 'funcpieceerror' option/suffix.",
                   GRB_INT_PAR_FUNCPIECES, -2, GRB_MAXINT);
 
+  AddStoredOption("pre:funcpiecesuf funcpiecesuf funcpiecesuffixes",
+                  "0/1*: whether to consider the individual .funcpiece... "
+                  "suffixes in objectives and constraints, which impact "
+                  "Gurobi's approximation quality of nonlinear constraints",
+                  storedOptions_.fFuncPieceSuf_, 0, 1);
 
 
   AddSolverOption("pre:miqcpform premiqcpform",

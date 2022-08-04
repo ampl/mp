@@ -138,9 +138,9 @@ does not have automatic dependency detection), you can use the following::
 Similarly, for *ortoolsmp* (on MacOS) assuming *ortools* is installed in
 the standard location::
 
-cmake .. -DBUILD=ortoolsmp
-         -DORTOOLSMP_INCLUDE_DIRS=/usr/local/include
-         -DORTOOLSMP_LIBS=/usr/local/lib/libortools.dylib
+  cmake .. -DBUILD=ortoolsmp
+           -DORTOOLSMP_INCLUDE_DIRS=/usr/local/include
+           -DORTOOLSMP_LIBS=/usr/local/lib/libortools.dylib
 
 
 Using Eclipse CDT
