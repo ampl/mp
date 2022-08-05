@@ -99,6 +99,14 @@ public:
     return *this;
   }
 
+  /// Empty() if no values or all values empty()
+  bool Empty() const {
+    return map_.end() == std::find_if_not(
+          map_.begin(), map_.end(),
+          [](const typename MapType::value_type& mv) -> bool
+    { return mv.second.empty(); });
+  }
+
   /// Check if we have only the single key
   bool IsSingleKey() const
   { return 1==map_.size() && 0==map_.begin()->first; }
@@ -216,6 +224,13 @@ public:
     objs_ = vm.GetObjValues();
     return *this;
   }
+
+  /// operator bool
+  operator bool() const { return !Empty(); }
+
+  /// Empty(). True when all VMaps are
+  bool Empty() const
+  { return vars_.Empty() && cons_.Empty() && objs_.Empty(); }
 
   /// Retrieve vars map, const
   const VMap& GetVarValues() const { return vars_; }

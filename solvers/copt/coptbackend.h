@@ -1,32 +1,17 @@
 #ifndef MP_COPT_BACKEND_H_
 #define MP_COPT_BACKEND_H_
 
-#if __clang__
-# pragma clang diagnostic push
-# pragma clang diagnostic ignored "-Wunused-parameter"
-# pragma clang diagnostic ignored "-Wunused-private-field"
-#elif _MSC_VER
-# pragma warning(push)
-# pragma warning(disable: 4244)
-#endif
-
-#if __clang__
-# pragma clang diagnostic pop
-#elif _MSC_VER
-# pragma warning(pop)
-#endif
-
 #include <string>
 
 #include "mp/backend-mip.h"
-#include "mp/valcvt-base.h"
+#include "mp/flat/backend_flat.h"
 #include "coptcommon.h"
 
 namespace mp {
 
 class CoptBackend :
     public MIPBackend<CoptBackend>,
-    public BasicValuePresolverKeeper,
+    public BasicFlatBackend,
     public CoptCommon
 {
   using BaseBackend = MIPBackend<CoptBackend>;

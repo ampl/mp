@@ -113,11 +113,11 @@ public:
 
   ////////////////// Some standard items /////////////////
   void SetLinearObjective(int , const LinearObjective& ) {
-    MP_UNSUPPORTED("FlatBackend::SetLinearObjective()");
+    MP_UNSUPPORTED("FlatModelAPI::SetLinearObjective()");
   }
 
   void SetQuadraticObjective(int , const QuadraticObjective& ) {
-    MP_UNSUPPORTED("FlatBackend::SetQuadraticObjective()");
+    MP_UNSUPPORTED("FlatModelAPI::SetQuadraticObjective()");
   }
 
   template <class Constraint>

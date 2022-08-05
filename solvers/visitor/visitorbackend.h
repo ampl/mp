@@ -4,14 +4,14 @@
 #include <string>
 
 #include "mp/backend-mip.h"
-#include "mp/valcvt-base.h"
+#include "mp/flat/backend_flat.h"
 #include "visitorcommon.h"
 
 namespace mp {
 
 class VisitorBackend :
     public MIPBackend<VisitorBackend>,
-    public BasicValuePresolverKeeper,
+    public BasicFlatBackend,
     public VisitorCommon
 {
   using BaseBackend = MIPBackend<VisitorBackend>;

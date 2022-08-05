@@ -1,32 +1,17 @@
 #ifndef MP_CPLEX_BACKEND_H_
 #define MP_CPLEX_BACKEND_H_
 
-#if __clang__
-# pragma clang diagnostic push
-# pragma clang diagnostic ignored "-Wunused-parameter"
-# pragma clang diagnostic ignored "-Wunused-private-field"
-#elif _MSC_VER
-# pragma warning(push)
-# pragma warning(disable: 4244)
-#endif
-
-#if __clang__
-# pragma clang diagnostic pop
-#elif _MSC_VER
-# pragma warning(pop)
-#endif
-
 #include <string>
 
 #include "mp/backend-mip.h"
-#include "mp/valcvt-base.h"
+#include "mp/flat/backend_flat.h"
 #include "cplexmpcommon.h"
 
 namespace mp {
 
 class CplexBackend :
     public MIPBackend<CplexBackend>,
-    public BasicValuePresolverKeeper,
+    public BasicFlatBackend,
     public CplexCommon
 {
   using BaseBackend = MIPBackend<CplexBackend>;

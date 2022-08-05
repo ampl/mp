@@ -118,9 +118,9 @@
     }
   },
   {
-    "name": "funcpieces_01",
+    "name": "funcpieces_01 funcpiecesuf=1",
     "tags": [ "nonlinear", "funcpieces" ],
-    "options": { "ANYSOLVER_options": "debug=1" },
+    "options": { "ANYSOLVER_options": "debug=1 funcpiecesuf=1" },
     "values": {
       "Initial.test_funcpieces_presolved": 38
     }
@@ -131,6 +131,14 @@
     "options": { "ANYSOLVER_options": "debug=1" },
     "values": {
       "Initial.test_funcpieces_presolved": 50
+    }
+  },
+  {
+    "name": "funcpieces_01_01_obj",
+    "tags": [ "nonlinear", "funcpieces" ],
+    "options": { "ANYSOLVER_options": "debug=1" },
+    "values": {
+      "Initial.test_funcpieces_presolved": 58
     }
   }
 ]

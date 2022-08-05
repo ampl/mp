@@ -28,7 +28,7 @@ namespace mp {
 /// Create Gurobi Model Manager
 /// @param gc: the Gurobi Backend
 /// @param e: environment
-/// @param pre: presolver to be returned,
+/// @param pPre: presolver to be returned,
 /// need it to convert solution data
 /// @return GurobiModelMgr
 std::unique_ptr<BasicModelManager>
@@ -656,29 +656,27 @@ void GurobiBackend::InputGurobiExtras() {
 
 void GurobiBackend::InputGurobiFuncApproxParams() {
   if (funcpiecesuf()) {
-    if (auto funcp = ReadIntSuffix( {"funcpieces", suf::Kind::CON} )) {
-      auto mv = GetValuePresolver().PresolveGenericInt(
-            { {}, funcp } );
+    auto suf_mask = // not from variables but can from obj,
+        suf::Kind::CON_BIT | suf::Kind::OBJ_BIT; // see funcpieces_01_01_obj.mod
+    if (auto mv0 = ReadModelSuffixInt( {"funcpieces", suf_mask } )) {
+      auto mv = GetValuePresolver().PresolveGenericInt( mv0 );
       const auto& fp_gen = mv.GetConValues()(CG_General);
       auto i1 = GurobiSetFuncConAttributes(GRB_INT_ATTR_FUNCPIECES, fp_gen);
       if (i1>=0 && debug_mode())
         ReportProblemSuffix("test_funcpieces_presolved", fp_gen[i1]);
     }
-    if (auto funcp = ReadDblSuffix( {"funcpieceratio", suf::Kind::CON} )) {
-      auto mv = GetValuePresolver().PresolveGenericDbl(
-            { {}, funcp } );
+    if (auto mv0 = ReadModelSuffixDbl( {"funcpieceratio", suf_mask} )) {
+      auto mv = GetValuePresolver().PresolveGenericDbl( mv0 );
       GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECERATIO,
                                  mv.GetConValues()(CG_General));
     }
-    if (auto funcp = ReadDblSuffix( {"funcpiecelength", suf::Kind::CON} )) {
-      auto mv = GetValuePresolver().PresolveGenericDbl(
-            { {}, funcp } );
+    if (auto mv0 = ReadModelSuffixDbl( {"funcpiecelength", suf_mask} )) {
+      auto mv = GetValuePresolver().PresolveGenericDbl( mv0 );
       GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECELENGTH,
                                  mv.GetConValues()(CG_General));
     }
-    if (auto funcp = ReadDblSuffix( {"funcpieceerror", suf::Kind::CON} )) {
-      auto mv = GetValuePresolver().PresolveGenericDbl(
-            { {}, funcp } );
+    if (auto mv0 = ReadModelSuffixDbl( {"funcpieceerror", suf_mask} )) {
+      auto mv = GetValuePresolver().PresolveGenericDbl( mv0 );
       GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECEERROR,
                                  mv.GetConValues()(CG_General));
     }
@@ -1802,7 +1800,8 @@ void GurobiBackend::InitCustomOptions() {
   AddStoredOption("pre:funcpiecesuf funcpiecesuf funcpiecesuffixes",
                   "0/1*: whether to consider the individual .funcpiece... "
                   "suffixes in objectives and constraints, which impact "
-                  "Gurobi's approximation quality of nonlinear constraints",
+                  "Gurobi's approximation quality of nonlinear constraints, "
+                  "beyond the corresponding global options",
                   storedOptions_.fFuncPieceSuf_, 0, 1);
 
 

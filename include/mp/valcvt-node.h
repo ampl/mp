@@ -108,6 +108,14 @@ public:
     RegisterMe();
   }
 
+  /// bool Empty(). True when Size()==0
+  bool Empty() const { return !Size(); }
+
+  /// bool empty(). True when actual values are empty or 0.
+  bool empty() const {
+    return EmptyOr0(vi_) && EmptyOr0(vd_);
+  }
+
   /// Declared size (what is being used by links)
   size_t Size() const { return sz_; }
 
@@ -231,6 +239,14 @@ protected:
   /// Deregister with the ValuePresolver
   void DeregisterMe() {
     pre_.Deregister(this);
+  }
+
+  /// EmptyOr0 for a vector
+  template <class T>
+  static bool EmptyOr0(const std::vector<T>& v) {
+    return (v.end()==std::find_if(v.begin(), v.end(),
+                                  [](typename std::vector<T>::value_type v) -> bool
+            { return v; }));
   }
 
 private:

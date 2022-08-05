@@ -103,6 +103,11 @@ enum Kind {
   CON     =    1,  /**< Applies to constraints. */
   OBJ     =    2,  /**< Applies to objectives. */
   PROBLEM =    3   /**< Applies to problems. */
+  ,
+  VAR_BIT = 0x80, // for building a bit mask
+  CON_BIT = 0x100,
+  OBJ_BIT = 0x200,
+  PROB_BIT= 0x400
 };
 
 constexpr int KIND_MASK = Kind::VAR | Kind::CON | Kind::OBJ | Kind ::PROBLEM;

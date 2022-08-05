@@ -186,6 +186,8 @@ class Suffix : private internal::SuffixBase {
   void VisitValues(Visitor &v) const;
 };
 
+
+/// MutSuffix
 class MutSuffix : public Suffix {
  private:
   template <typename Alloc>
@@ -208,6 +210,8 @@ inline SuffixType Cast(Suffix s);
 template <typename SuffixType>
 inline SuffixType Cast(MutSuffix s);
 
+
+/// BasicSuffix.
 template <typename T>
 class BasicSuffix : private internal::SuffixBase {
  private:
@@ -305,6 +309,7 @@ inline bool Is(Suffix s) {
 }
 }
 
+
 /// Casts a suffix to type SuffixType which must be a valid suffix type.
 /// Returns a null suffix if s is not convertible to SuffixType.
 template <typename SuffixType>
@@ -323,6 +328,7 @@ inline void Suffix::VisitValues(Visitor &v) const {
   else
     Cast<DoubleSuffix>(*this).VisitValues(v);
 }
+
 
 /// A set of suffixes.
 template <typename Alloc>
@@ -478,8 +484,13 @@ typename BasicSuffixSet<Alloc>::SuffixImpl *BasicSuffixSet<Alloc>::DoAdd(
   return impl;
 }
 
+
+/// Typedef SuffixSet.
 typedef BasicSuffixSet< std::allocator<char> > SuffixSet;
 
+
+/// SuffixManager.
+/// Stores SuffixSet's for the 4 suffix kinds.
 class SuffixManager {
  private:
   mp::SuffixSet suffixes_[internal::NUM_SUFFIX_KINDS];
@@ -510,7 +521,9 @@ class SuffixManager {
   }
 };
 
-/// High-level suffix description
+
+/// High-level suffix description.
+/// This is a suffix of a specific kind - var/con/obj/prob.
 template <class T>
 class SuffixDef {
   fmt::StringRef name_;
@@ -529,6 +542,13 @@ public:
   template <class T2>
   SuffixDef<T2> to_type() const { return { name_, kind_, tab_ }; }
 };
+
+
+/// Description of a suffix that can exist for several itme types
+/// (vars, cons, objs, problem).
+/// The \a kind parameter should be a bitwise OR of suf::Kind::..._BIT's.
+template <class T>
+using ModelSuffixDef = SuffixDef<T>;
 
 }  // namespace mp
 

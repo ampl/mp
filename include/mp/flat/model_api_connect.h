@@ -20,7 +20,9 @@ namespace mp {
 ///   used by the ModelManager
 /// @param FlatConverter: the FlatConverter to be used
 ///
-/// @param Env: the MP environment
+/// @param gc: Backend object
+/// @param e: the MP environment
+/// @param pPre: return ValuePresolver for Backends that use it
 template <class ModelAPI,
           template <typename, typename, typename> class FlatConverter,
           class Backend>

@@ -2,14 +2,12 @@
 #define REDEF_BASE_H
 
 #include "mp/format.h"
-#include "mp/valcvt.h"
 
 namespace mp {
 
 /// A base class for specific Item Converters, such as
 /// individual constraint converters.
-/// @param ModelConverter: should have methods
-/// GetPresolver() and GetConstraintKeeper(Constraint*).
+/// @param ModelConverter
 template <class ModelConverter>
 class BasicItemConverter {
 public:
@@ -17,9 +15,10 @@ public:
   BasicItemConverter(ModelConverter& mc) : mdl_cvt_(mc) { }
 
   /// Generic check whether the constraint
-  /// needs to be converted despite being recommended by ModelAPI.
+  /// needs to be converted despite being recommended for
+  /// acceptance by ModelAPI.
   /// Example: PowConstraint(x, ...) with lb(x)<0.
-  /// Default false.
+  /// Default: false.
   template <class ItemType>
   bool IfNeedsConversion(const ItemType& , int ) {
     return false;
@@ -27,12 +26,6 @@ public:
 
   /// Access ModelConverter
   ModelConverter& GetMC() { return mdl_cvt_; }
-  /// Access Presolver
-  pre::ValuePresolver& GetPre() { return GetMC().GetPresolver(); }
-  /// Access specific item's ValueNode
-  template <class Item>
-  pre::ValueNode& GetVN(Item* pc)
-  { return GetMC().GetConstraintKeeper(pc).GetValueNode(); }
 
 private:
   ModelConverter& mdl_cvt_;
