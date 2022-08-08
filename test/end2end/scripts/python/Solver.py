@@ -596,7 +596,7 @@ class GurobiDirectSolver(MPDirectSolver):
 
                  ModelTags.multiobj, ModelTags.obj_priority,
                  ModelTags.multisol, ModelTags.sstatus,
-                 ModelTags.iis, ModelTags.feasrelax,
+                 ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
 
                  ModelTags.gurobi_cloud, ModelTags.gurobi_server,
                 }

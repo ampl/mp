@@ -513,7 +513,7 @@ protected:
 
     if (IMPL_HAS_STD_FEATURE( IIS ))
       AddStoredOption("alg:iisfind iisfind iis",
-                      "Whether to find and export the IIS. "
+                      "Whether to find and export an IIS. "
                       "Default = 0 (don't export).",
                       GetMIPOptions().exportIIS_);
 

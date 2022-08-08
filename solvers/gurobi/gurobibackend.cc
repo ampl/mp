@@ -648,6 +648,7 @@ void GurobiBackend::InputGurobiExtras() {
   if (need_ray_primal() || need_ray_dual())
     GrbSetIntParam(GRB_INT_PAR_INFUNBDINFO, 1);
   InputGurobiFuncApproxParams();
+  InputGurobiIISForceParams();
   GrbPlayObjNParams();
   if (feasrelax())
     DoGurobiFeasRelax();
@@ -679,6 +680,46 @@ void GurobiBackend::InputGurobiFuncApproxParams() {
       auto mv = GetValuePresolver().PresolveGenericDbl( mv0 );
       GurobiSetFuncConAttributes(GRB_DBL_ATTR_FUNCPIECEERROR,
                                  mv.GetConValues()(CG_General));
+    }
+  }
+}
+
+void GurobiBackend::InputGurobiIISForceParams() {
+  if (iisforce()) {
+    /// For each suffix, could have a mechanism
+    /// to avoid checking flattened constraints and
+    /// aux variables arising (only) from objectives.
+
+    /// IISForce: from constraints and objectives
+    if (auto mv0 = ReadModelSuffixInt(
+        {"iisforce", suf::Kind::CON_BIT | suf::Kind::OBJ_BIT } )) {
+      auto mv = GetValuePresolver().PresolveGenericInt( mv0 );
+      if (ArrayRef<int> iisf = mv.GetConValues()(CG_Linear))
+        GrbSetIntAttrArray(GRB_INT_ATTR_IIS_CONSTRFORCE, iisf);
+      if (ArrayRef<int> iisf = mv.GetConValues()(CG_Quadratic))
+        GrbSetIntAttrArray(GRB_INT_ATTR_IIS_QCONSTRFORCE, iisf);
+      if (ArrayRef<int> iisf = mv.GetConValues()(CG_SOS))
+        GrbSetIntAttrArray(GRB_INT_ATTR_IIS_SOSFORCE, iisf);
+      if (ArrayRef<int> iisf = mv.GetConValues()(CG_General))
+        GrbSetIntAttrArray(GRB_INT_ATTR_IIS_GENCONSTRFORCE, iisf);
+    }
+    /// IISLBForce: from vars, cons, and objectives (but only passed into vars)
+    if (auto mv0 = ReadModelSuffixInt( {
+                                       "iislbforce",
+                                       suf::Kind::VAR_BIT |
+                                       suf::Kind::CON_BIT | suf::Kind::OBJ_BIT } )) {
+      auto mv = GetValuePresolver().PresolveGenericInt( mv0 );
+      if (ArrayRef<int> iisf = mv.GetVarValues()())
+        GrbSetIntAttrArray(GRB_INT_ATTR_IIS_LBFORCE, iisf);
+    }
+    /// IISUBForce: from vars, cons, and objectives
+    if (auto mv0 = ReadModelSuffixInt( {
+                                       "iisubforce",
+                                       suf::Kind::VAR_BIT |
+                                       suf::Kind::CON_BIT | suf::Kind::OBJ_BIT } )) {
+      auto mv = GetValuePresolver().PresolveGenericInt( mv0 );
+      if (ArrayRef<int> iisf = mv.GetVarValues()())
+        GrbSetIntAttrArray(GRB_INT_ATTR_IIS_UBFORCE, iisf);
     }
   }
 }
@@ -1228,6 +1269,22 @@ void GurobiBackend::InitCustomOptions() {
   AddToOptionDescription("alg:sens",
                          "For problems with integer variables or quadratic constraints, "
                          "alg:sens=0 is assumed quietly.");
+
+
+  AddStoredOption("alg:iisforce iisforce",
+                  "0/1*: whether to consider the .iis(lb/ub)force "
+                  "suffixes on variables and range "
+                  "constraints, as well as "
+                  ".iisforce on other constraints. "
+                  "Suffix values mean the following "
+                  "(ATTENTION: different to Gurobi IIS...Force attribute!):\n"
+                  "\n"
+                  "  | 0 - No influence on this bound or constraint (default)\n"
+                  "  | -1 - This model item never to be in an IIS "
+                  "       (careful, the remaining constraints can be feasible)\n"
+                  "  | 1 - This model item always to be in the computed IIS.",
+                  storedOptions_.nIISForce_, 0, 1);
+
 
 
   AddSolverOption("alg:method method lpmethod simplex",

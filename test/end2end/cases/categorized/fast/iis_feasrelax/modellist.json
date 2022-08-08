@@ -30,6 +30,21 @@
     }
   },
   {
+    "name": "infeas_03__iisforce iisfind iisforce presolve 0",
+    "tags": [ "linear", "iis", "iisforce"],
+    "options": {
+        "ANYSOLVER_options": "iisfind=1 iisforce=1",
+        "presolve": 0,
+        "comment": "Disable presolve, otherwise var bounds too tight"
+    },
+    "values": {
+      "x.iis": "upp",
+      "y.iis": "low",
+      "Cx_y3.iis": "low",
+      "z.iis": "non"
+    }
+  },
+  {
     "name": "infeas_int_02_vars feasrelax=4 ubpen=300",
     "tags": [ "linear", "feasrelax"],
     "options": {

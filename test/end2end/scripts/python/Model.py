@@ -49,7 +49,8 @@ class ModelTags(enum.Enum):
     multisol = 40011
     sstatus = 40012              # Basis I/O
     iis = 40013
-    feasrelax = 40014
+    iisforce = 40014
+    feasrelax = 4010
 
 
     ## Solver-specific

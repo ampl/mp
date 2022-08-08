@@ -8,6 +8,7 @@
 #include "mp/flat/redef/redef_base.h"
 #include "mp/valcvt-link.h"
 #include "mp/flat/constr_std.h"
+#include "mp/common.h"
 
 namespace mp {
 
@@ -121,9 +122,21 @@ public:
   ///
   /// Take slack's if set, otherwise the constraint's
   void PostsolveIISEntry(const typename Base::LinkEntry& be) {
-    if (auto slk_iis = GetInt(be, VAR_SLK))
+    if (auto slk_iis = GetInt(be, VAR_SLK)) {
+      switch ((IISStatus)slk_iis) {
+        case IISStatus::low:
+          slk_iis = (int)IISStatus::upp;
+          break;
+        case IISStatus::upp:
+          slk_iis = (int)IISStatus::low;
+          break;
+        case IISStatus::fix:
+          break;
+        default:
+          MP_RAISE("Unknown IIS status for a rnage constraint slack");
+      }
       SetInt(be, CON_SRC, slk_iis);
-    else
+    } else
       SetInt(be, CON_SRC, GetInt(be, CON_TARGET));
   }
 

@@ -199,6 +199,8 @@ protected:
   /// .funcpieces etc.
   /// Override the corresponding Gurobi options.
   void InputGurobiFuncApproxParams();
+  /// .iisforce
+  void InputGurobiIISForceParams();
   /// Functional nonlinear cons attributes need a filter
   /// @return the index of the first used value (-1 if none)
   template <class T>
@@ -264,6 +266,7 @@ private:
     int nFixedMethod_=-2;
 
     int fFuncPieceSuf_ = 1;
+    int nIISForce_ = 1;
 
     std::string cloudid_, cloudkey_, cloudpool_;
     int cloudpriority_ = 0;
@@ -283,6 +286,7 @@ protected:  //////////// Option accessors ////////////////
   const std::string& paramfile_write() const { return storedOptions_.paramWrite_; }
 
   int funcpiecesuf() const { return storedOptions_.fFuncPieceSuf_; }
+  int iisforce() const { return storedOptions_.nIISForce_; }
 
   const std::string& cloudid() const { return storedOptions_.cloudid_; }
   const std::string& cloudkey() const { return storedOptions_.cloudkey_; }
