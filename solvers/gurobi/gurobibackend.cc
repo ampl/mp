@@ -703,21 +703,24 @@ void GurobiBackend::InputGurobiIISForceParams() {
       if (ArrayRef<int> iisf = mv.GetConValues()(CG_General))
         GrbSetIntAttrArray(GRB_INT_ATTR_IIS_GENCONSTRFORCE, iisf);
     }
-    /// IISLBForce: from vars, cons, and objectives (but only passed into vars)
-    if (auto mv0 = ReadModelSuffixInt( {
+    /// IIS(LB/UB)Force: from vars, cons, and objectives (but only passed into vars)
+    auto mv0lb = ReadModelSuffixInt( {
                                        "iislbforce",
                                        suf::Kind::VAR_BIT |
-                                       suf::Kind::CON_BIT | suf::Kind::OBJ_BIT } )) {
-      auto mv = GetValuePresolver().PresolveGenericInt( mv0 );
+                                       suf::Kind::CON_BIT | suf::Kind::OBJ_BIT } );
+    auto mv0ub = ReadModelSuffixInt( {
+                                       "iisubforce",
+                                       suf::Kind::VAR_BIT |
+                                       suf::Kind::CON_BIT | suf::Kind::OBJ_BIT } );
+    /// Swap (lb/ub)force for range constraints, compare to Range2SlkLink
+    std::swap(mv0lb.GetConValues()(), mv0ub.GetConValues()());
+    if (mv0lb) {
+      auto mv = GetValuePresolver().PresolveGenericInt( mv0lb );
       if (ArrayRef<int> iisf = mv.GetVarValues()())
         GrbSetIntAttrArray(GRB_INT_ATTR_IIS_LBFORCE, iisf);
     }
-    /// IISUBForce: from vars, cons, and objectives
-    if (auto mv0 = ReadModelSuffixInt( {
-                                       "iisubforce",
-                                       suf::Kind::VAR_BIT |
-                                       suf::Kind::CON_BIT | suf::Kind::OBJ_BIT } )) {
-      auto mv = GetValuePresolver().PresolveGenericInt( mv0 );
+    if (mv0ub) {
+      auto mv = GetValuePresolver().PresolveGenericInt( mv0ub );
       if (ArrayRef<int> iisf = mv.GetVarValues()())
         GrbSetIntAttrArray(GRB_INT_ATTR_IIS_UBFORCE, iisf);
     }
