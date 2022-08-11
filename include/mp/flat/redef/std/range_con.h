@@ -63,8 +63,9 @@ public:
 
   /// PostsolveGeneric double
   void PostsolveGenericDblEntry(const typename Base::LinkEntry& be) {
-    SetDbl(be, CON_SRC, std::max(
-             GetDbl(be, CON_TARGET), GetDbl(be, VAR_SLK)));
+    SetDbl(be, CON_SRC, GetDbl(be, CON_TARGET));
+    // Let the node's resolution deal with the possible value conflict
+    SetDbl(be, CON_SRC, GetDbl(be, VAR_SLK));
   }
 
   /// PresolveGeneric int
@@ -76,8 +77,9 @@ public:
 
   /// PostsolveGeneric int
   void PostsolveGenericIntEntry(const typename Base::LinkEntry& be) {
-    SetInt(be, CON_SRC, std::max(
-             GetInt(be, CON_TARGET), GetInt(be, VAR_SLK)));
+    SetInt(be, CON_SRC, GetInt(be, CON_TARGET));
+    // Let the node's resolution deal with the possible value conflict
+    SetInt(be, CON_SRC, GetInt(be, VAR_SLK));
   }
 
   /// Presolve solution (primal + dual).
