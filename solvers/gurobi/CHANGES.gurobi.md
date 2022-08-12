@@ -1,6 +1,16 @@
 Summary of recent updates to x-gurobi for AMPL
 ==============================================
 
+## unreleased
+- For range constraints x-gurobi reports nonbasic status low/upp,
+    for one-sided constraints low/upp/equ, consistent with ASL drivers
+
+- Sensitivity analysis: use constraint suffixes .sens(lb/ub)(lo/hi),
+    the old-style suffixes .sensrhs(lo/hi) meaningful only for one-sided constraints.
+
+- Suffixes .iis(lb/ub)force on constraints and variables
+
+
 ## 20220802 
 - Added support for 'params' option from command line and environment variable
 

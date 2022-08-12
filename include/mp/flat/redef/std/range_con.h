@@ -105,14 +105,14 @@ public:
   /// transfer it to the slack.
   /// Set the new constraint's status to 'equ'.
   void PresolveBasisEntry(const typename Base::LinkEntry& be) {
-    SetInt(be, VAR_SLK, GetInt(be, CON_SRC));   // TODO reverse
+    SetInt(be, VAR_SLK, ReverseBasisLowUpp( GetInt(be, CON_SRC)) );
     SetInt(be, CON_TARGET, (int)BasicStatus::equ);
   }
   /// Postsolve basis
   ///
   /// The reverse (forget solver's constraint status)
   void PostsolveBasisEntry(const typename Base::LinkEntry& be) {
-    SetInt(be, CON_SRC, GetInt(be, VAR_SLK));   // TODO reverse
+    SetInt(be, CON_SRC, ReverseBasisLowUpp( GetInt(be, VAR_SLK)) );
   }
 
   /// Presolve IIS
@@ -153,6 +153,15 @@ public:
 
 
 protected:
+  /// Reverse low/upp basis statuses
+  static int ReverseBasisLowUpp(int stt) {
+    if ((int)BasicStatus::low==stt)
+      return (int)BasicStatus::upp;
+    if ((int)BasicStatus::upp==stt)
+      return (int)BasicStatus::low;
+    return stt;
+  }
+
   /// Get the model converter
   ModelConverter& GetMC() { return cvt_; }
 

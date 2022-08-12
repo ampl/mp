@@ -370,16 +370,25 @@ ArrayRef<int> GurobiBackend::ConStatii() {
   auto stt =
     GrbGetIntAttrArray(model_fixed_,
         GRB_INT_ATTR_CBASIS, NumLinCons());
-  for (auto& s: stt) {
-    switch (s) {
+  std::vector<char> sense(stt.size());
+  auto status = GRBgetcharattrarray(model_fixed_, GRB_CHAR_ATTR_SENSE,
+                      0, (int)stt.size(), sense.data());
+  assert(!status);
+  for (auto i=stt.size(); i--; ) {
+    switch (stt[i]) {
     case 0:
-      s = (int)BasicStatus::bas;
+      stt[i] = (int)BasicStatus::bas;
       break;
     case -1:
-      s = (int)BasicStatus::sup;   // need exact value low/upp/equ??
+      if (GRB_LESS_EQUAL==sense[i])
+        stt[i] = (int)BasicStatus::upp;
+      else if (GRB_EQUAL==sense[i])
+        stt[i] = (int)BasicStatus::equ;
+      else
+        stt[i] = (int)BasicStatus::low;
       break;
     default:
-      MP_RAISE(fmt::format("Unknown Gurobi CBasis value: {}", s));
+      MP_RAISE(fmt::format("Unknown Gurobi CBasis value: {}", stt[i]));
     }
   }
   return stt;

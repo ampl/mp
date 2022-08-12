@@ -47,6 +47,7 @@
       "Buy['MCH'].sstatus":  "bas",
       "Buy['CHK'].sstatus":  "low",
       "Diet['A'].sstatus": "bas",
+      "Diet['B2'].sstatus": "low",
       "Diet['A']": 0.0,
       "Diet['C']": 0.0,
       "Diet['B1']": 0.0,
