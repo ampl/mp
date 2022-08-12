@@ -7,6 +7,7 @@
 
 #include <map>
 #include <string>
+#include <algorithm>
 #include <cassert>
 
 #include "mp/arrayref.h"

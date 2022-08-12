@@ -121,17 +121,10 @@ public:
   **/
   ALLOW_STD_FEATURE( FEAS_RELAX, true)
   /**
-  * Report sensitivity analysis suffixes
+  * Report sensitivity analysis suffixes (postsolved)
   **/
   ALLOW_STD_FEATURE( SENSITIVITY_ANALYSIS, true )
-  ArrayRef<double> Senslbhi() const override;
-  ArrayRef<double> Senslblo() const override;
-  ArrayRef<double> Sensobjhi() const override;
-  ArrayRef<double> Sensobjlo() const override;
-  ArrayRef<double> Sensrhshi() const override;
-  ArrayRef<double> Sensrhslo() const override;
-  ArrayRef<double> Sensubhi() const override;
-  ArrayRef<double> Sensublo() const override;
+  SensRanges GetSensRanges() override;
   /**
   * FixModel - duals, basis, and sensitivity for MIP.
   * No API to overload,
@@ -242,6 +235,15 @@ protected:
   ArrayRef<int> ConStatii();
   void VarStatii(ArrayRef<int> );
   void ConStatii(ArrayRef<int> );
+
+  ArrayRef<double> Senslbhi() const ;
+  ArrayRef<double> Senslblo() const ;
+  ArrayRef<double> Sensobjhi() const ;
+  ArrayRef<double> Sensobjlo() const ;
+  ArrayRef<double> Sensrhshi() const ;
+  ArrayRef<double> Sensrhslo() const ;
+  ArrayRef<double> Sensubhi() const ;
+  ArrayRef<double> Sensublo() const ;
 
   ArrayRef<int> VarsIIS();
   pre::ValueMapInt ConsIIS();

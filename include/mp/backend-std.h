@@ -58,7 +58,7 @@ DEFAULT_STD_FEATURES_TO( false )
 
 namespace mp {
 
-/// Solution (normally unpresolved)
+/// Solution (postsolved)
 struct Solution {
   /// primal
   std::vector<double> primal;
@@ -121,17 +121,21 @@ protected:
   /// Placeholder: set objective priorities
   virtual void ObjPriorities(ArrayRef<int>)
   { MP_UNSUPPORTED("Backend::ObjPriorities"); }
-  /// Placeholder: set objective weights
+  /// Placeholder: set objective weights.
+  /// Presolve the values if needed
   virtual void ObjWeights(ArrayRef<double>) { }
   /// Placeholder: set objective abs tol
+  /// Presolve the values if needed
   virtual void ObjAbsTol(ArrayRef<double>) { }
   /// Placeholder: set objective rel tol
+  /// Presolve the values if needed
   virtual void ObjRelTol(ArrayRef<double>) { }
   /**
    * MULTISOL support
    * No API to overload,
    *  Impl should check need_multiple_solutions()
    *  and call ReportIntermediateSolution({x, pi, objvals}) for each
+   *  (postsolve the values if needed)
    **/
   DEFINE_STD_FEATURE( MULTISOL )
   ALLOW_STD_FEATURE( MULTISOL, false )

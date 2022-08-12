@@ -27,7 +27,7 @@
 
 namespace mp {
 
-/// Basis status values of a solution (unpresolved)
+/// Basis status values of a solution (postsolved)
 struct SolutionBasis {
   /// Check if has both vars and cons' statuses
   operator bool() const { return varstt.size() && constt.size(); }
@@ -35,12 +35,24 @@ struct SolutionBasis {
   std::vector<int> varstt, constt;
 };
 
-/// IIS (unpresolved).
+
+/// IIS (postsolved).
 /// Elements correspond to IISStatus
 struct IIS {
   /// Var and con IIS statuses
   std::vector<int> variis, coniis;
 };
+
+
+/// Sensitivity ranges (postsolved)
+struct SensRanges {
+  std::vector<double>
+    varlblo, varlbhi, varublo, varubhi,
+    varobjlo, varobjhi,
+    conrhslo, conrhshi,                   // for rhs-constraints
+    conlblo, conlbhi, conublo, conubhi;   // for range constraints
+};
+
 
 /// MIP backend wrapper
 ///
@@ -73,9 +85,10 @@ public:
   ////////////////////////////////////////////////////////////
   USING_STD_FEATURES;
   /**
-  * Set lazy/user cut attributes
-  * Negative suffix values are "user cuts"
-  * Check lazy_/user_cuts() to see which kinds are allowed
+  * Set lazy/user cut attributes.
+  * Negative suffix values are "user cuts".
+  * Check lazy_/user_cuts() to see which kinds are allowed.
+  * Presolve the values if needed.
   **/
   DEFINE_STD_FEATURE( LAZY_USER_CUTS )
   ALLOW_STD_FEATURE( LAZY_USER_CUTS, false )
@@ -88,21 +101,23 @@ public:
   /// The basis statuses of vars and cons.
   /// MIPBackend handles them in postsolved form (for the NL model)
   /// Impl has to perform value pre- / postsolve if needed
-  /// Getter (returns unpresolved basis)
+  /// Getter (returns postsolved basis)
   virtual SolutionBasis GetBasis() { return {}; }
   /// Setter (takes unpresolved basis)
   virtual void SetBasis(SolutionBasis )
   { MP_UNSUPPORTED("MIPBackend::SetBasis"); }
   /**
   * General LP warm start, e.g.,
-  * set primal/dual initial guesses for continuous case
+  * set primal/dual initial guesses for continuous case.
+  * Presolve the values if needed
   **/
   DEFINE_STD_FEATURE( WARMSTART )
   ALLOW_STD_FEATURE( WARMSTART, false )
   virtual void AddPrimalDualStart(Solution )
   { MP_UNSUPPORTED("MIPBackend::AddPrimalDualStart"); }
   /**
-  * Specifically, MIP warm start
+  * Specifically, MIP warm start.
+  * Presolve the values if needed
   **/
   DEFINE_STD_FEATURE( MIPSTART )
   ALLOW_STD_FEATURE( MIPSTART, false )
@@ -123,7 +138,7 @@ public:
   virtual ArrayRef<double> Ray() { return {}; }
   virtual ArrayRef<double> DRay() { return {}; }
   /**
-  * Compute the IIS and obtain relevant values
+  * Compute the IIS and obtain relevant values (postsolved)
   **/
   DEFINE_STD_FEATURE( IIS )
   ALLOW_STD_FEATURE( IIS, false )
@@ -148,14 +163,7 @@ public:
   **/
   DEFINE_STD_FEATURE( SENSITIVITY_ANALYSIS )
   ALLOW_STD_FEATURE( SENSITIVITY_ANALYSIS, false )
-  virtual ArrayRef<double> Senslbhi() const { return {}; }
-  virtual ArrayRef<double> Senslblo() const { return {}; }
-  virtual ArrayRef<double> Sensobjhi() const { return {}; }
-  virtual ArrayRef<double> Sensobjlo() const { return {}; }
-  virtual ArrayRef<double> Sensrhshi() const { return {}; }
-  virtual ArrayRef<double> Sensrhslo() const { return {}; }
-  virtual ArrayRef<double> Sensubhi() const { return {}; }
-  virtual ArrayRef<double> Sensublo() const { return {}; }
+  virtual SensRanges GetSensRanges() { return {}; }
   /**
   * FixModel - duals, basis, and sensitivity for MIP
   * No API to overload,
@@ -328,22 +336,19 @@ public:
   }
 
   virtual void ReportSensitivity() {
-    ReportSuffix( {"senslbhi", suf::Kind::VAR},
-                     MP_DISPATCH( Senslbhi() ) );
-    ReportSuffix( {"senslblo", suf::Kind::VAR},
-                     MP_DISPATCH( Senslblo() ) );
-    ReportSuffix( {"sensobjhi", suf::Kind::VAR},
-                     MP_DISPATCH( Sensobjhi() ) );
-    ReportSuffix( {"sensobjlo", suf::Kind::VAR},
-                     MP_DISPATCH( Sensobjlo() ) );
-    ReportSuffix( {"sensrhshi", suf::Kind::CON},
-                     MP_DISPATCH( Sensrhshi() ) );
-    ReportSuffix( {"sensrhslo", suf::Kind::CON},
-                     MP_DISPATCH( Sensrhslo() ) );
-    ReportSuffix( {"sensubhi", suf::Kind::VAR},
-                     MP_DISPATCH( Sensubhi() ) );
-    ReportSuffix( {"sensublo", suf::Kind::VAR},
-                     MP_DISPATCH( Sensublo() ) );
+    SensRanges sensr = GetSensRanges();
+    ReportSuffix( {"senslbhi", suf::Kind::VAR}, sensr.varlbhi );
+    ReportSuffix( {"senslblo", suf::Kind::VAR}, sensr.varlblo );
+    ReportSuffix( {"sensubhi", suf::Kind::VAR}, sensr.varubhi );
+    ReportSuffix( {"sensublo", suf::Kind::VAR}, sensr.varublo );
+    ReportSuffix( {"sensobjhi", suf::Kind::VAR}, sensr.varobjhi );
+    ReportSuffix( {"sensobjlo", suf::Kind::VAR}, sensr.varobjlo );
+    ReportSuffix( {"sensrhshi", suf::Kind::CON}, sensr.conrhshi );
+    ReportSuffix( {"sensrhslo", suf::Kind::CON}, sensr.conrhslo );
+    ReportSuffix( {"senslbhi", suf::Kind::CON}, sensr.conlbhi );
+    ReportSuffix( {"senslblo", suf::Kind::CON}, sensr.conlblo );
+    ReportSuffix( {"sensubhi", suf::Kind::CON}, sensr.conubhi );
+    ReportSuffix( {"sensublo", suf::Kind::CON}, sensr.conublo );
   }
 
   ////////////////////////////////////////////////////////////
@@ -546,19 +551,26 @@ protected:
     if (IMPL_HAS_STD_FEATURE( SENSITIVITY_ANALYSIS ))
       AddStoredOption("alg:sens sens solnsens sensitivity",
                       "Whether to return suffixes for solution sensitivities, i.e., "
-                      "ranges of values for which the optimal basis remains optimal:\n"
+                      "ranges of values for which the optimal basis remains optimal "
+                      "(note that the variable and objective values can change):\n"
                         "\n"
                         "|  0 - No (default)\n"
-                        "|  1 - Yes:  suffixes return on variables are\n"
+                        "|  1 - Yes:  suffixes returned on variables are\n"
                         "|    .sensobjlo = smallest objective coefficient\n"
                         "|    .sensobjhi = greatest objective coefficient\n"
                         "|    .senslblo = smallest variable lower bound\n"
                         "|    .senslbhi = greatest variable lower bound\n"
                         "|    .sensublo = smallest variable upper bound\n"
-                        "|    .sensubhi = greatest variable upper bound;"
-                              " suffixes for constraints are\n"
-                        "|    .sensrhslo = smallest right-hand side value\n"
-                        "|    .sensrhshi = greatest right-hand side value.",
+                        "|    .sensubhi = greatest variable upper bound;\n\n"
+                      " suffixes for all constraints are\n"
+                      "|    .senslblo = smallest constraint lower bound\n"
+                      "|    .senslbhi = greatest constraint lower bound\n"
+                      "|    .sensublo = smallest constraint upper bound\n"
+                      "|    .sensubhi = greatest constraint upper bound;\n\n"
+                      " suffixes for one-sided constraints only:\n"
+                      "|    .sensrhslo = smallest right-hand side value\n"
+                      "|    .sensrhshi = greatest right-hand side value."
+                      ,
                     GetMIPOptions().solnSens_);
 
     if (IMPL_HAS_STD_FEATURE( FIX_MODEL ))

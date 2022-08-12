@@ -105,14 +105,14 @@ public:
   /// transfer it to the slack.
   /// Set the new constraint's status to 'equ'.
   void PresolveBasisEntry(const typename Base::LinkEntry& be) {
-    SetInt(be, VAR_SLK, GetInt(be, CON_SRC));
+    SetInt(be, VAR_SLK, GetInt(be, CON_SRC));   // TODO reverse
     SetInt(be, CON_TARGET, (int)BasicStatus::equ);
   }
   /// Postsolve basis
   ///
   /// The reverse (forget solver's constraint status)
   void PostsolveBasisEntry(const typename Base::LinkEntry& be) {
-    SetInt(be, CON_SRC, GetInt(be, VAR_SLK));
+    SetInt(be, CON_SRC, GetInt(be, VAR_SLK));   // TODO reverse
   }
 
   /// Presolve IIS
@@ -150,6 +150,7 @@ public:
   void PostsolveLazyUserCutFlagsEntry(const typename Base::LinkEntry& ) {
     /// Should not need
   }
+
 
 protected:
   /// Get the model converter

@@ -99,10 +99,10 @@ public:
   template <class T>
   void GrbSetAttrElement(const char* attr, int i, T val);
 
-  /// varcon: 0 - vars, 1 - constraints
+  /// varcon: 0 - vars, 1 - linear constraints
   std::vector<double> GrbGetDblAttrArray_VarCon(
       const char* attr, int varcon) const;
-  /// varcon: 0 - vars, 1 - constraints
+  /// varcon: 0 - vars, 1 - linear constraints
   std::vector<double> GrbGetDblAttrArray_VarCon(GRBmodel* mdl,
       const char* attr, int varcon) const;
 

@@ -599,6 +599,91 @@ double GurobiBackend::Kappa() {
 }
 
 
+SensRanges GurobiBackend::GetSensRanges() {
+  SensRanges sensr;
+
+  /// Should postsolve to obtain CON suffixes .sens(lb/ub)(lo/hi)
+  /// containing sens ranges for range constraints.
+  auto mvlbhi = GetValuePresolver().
+      PostsolveGenericDbl( { {Senslbhi()} } );
+  auto mvlblo = GetValuePresolver().
+      PostsolveGenericDbl( { {Senslblo()} } );
+  auto mvubhi = GetValuePresolver().
+      PostsolveGenericDbl( { {Sensubhi()} } );
+  auto mvublo = GetValuePresolver().
+      PostsolveGenericDbl( { {Sensublo()} } );
+  auto mvobjhi = GetValuePresolver().
+      PostsolveGenericDbl( { {Sensobjhi()} } );
+  auto mvobjlo = GetValuePresolver().
+      PostsolveGenericDbl( { {Sensobjlo()} } );
+  auto mvrhshi = GetValuePresolver().
+      PostsolveGenericDbl( { {},                   // no var values
+                             {{{ CG_Linear, Sensrhshi() }}} } );
+  auto mvrhslo = GetValuePresolver().
+      PostsolveGenericDbl( { {},
+                             {{{ CG_Linear, Sensrhslo() }}} } );
+
+  sensr.varlbhi = mvlbhi.GetVarValues()();
+  sensr.varlblo = mvlblo.GetVarValues()();
+  sensr.varubhi = mvubhi.GetVarValues()();
+  sensr.varublo = mvublo.GetVarValues()();
+  sensr.varobjhi = mvobjhi.GetVarValues()();
+  sensr.varobjlo = mvobjlo.GetVarValues()();
+  sensr.conrhshi = mvrhshi.GetConValues()();
+  sensr.conrhslo = mvrhslo.GetConValues()();
+
+  /// We rely on the RangeCon2Slack Converter and its specific
+  /// way: adding +slack to the body of the equality constraint.
+  /// This reliance is a bit of a hack.
+  /// Properly, this should be done in RangeCon2SlkLink
+
+  /// For range constraints, their slacks' sensitivities were
+  /// propagated into the following ValueNodes:
+  const auto& conlbhi = mvlbhi.GetConValues()();
+  const auto& conlblo = mvlblo.GetConValues()();
+  const auto& conubhi = mvubhi.GetConValues()();
+  const auto& conublo = mvublo.GetConValues()();
+
+  /// We need to convert them for the original constraints' domains:
+  auto rhs = GrbGetDblAttrArray_VarCon(model_fixed_, GRB_DBL_ATTR_RHS, 1);
+  std::vector<char> sense(rhs.size());
+  auto status = GRBgetcharattrarray(model_fixed_, GRB_CHAR_ATTR_SENSE,
+                      0, (int)rhs.size(), sense.data());
+  assert(!status);
+  if (rhs.size()==sensr.conrhshi.size() &&            // check for Release
+      !status &&
+      rhs.size()==conlbhi.size() &&
+      rhs.size()==conlblo.size() &&
+      rhs.size()==conubhi.size() &&
+      rhs.size()==conublo.size() ) {
+    sensr.conlbhi = sensr.conlblo = sensr.conubhi = sensr.conublo = rhs;
+    for (auto i=rhs.size(); i--; ) {
+      if (conubhi[i] != conlblo[i]) {                 // anythin' propagated?
+        sensr.conlblo[i] -= conubhi[i];               // then it's a range constraint
+        sensr.conlbhi[i] -= conublo[i];
+        sensr.conublo[i] -= conlbhi[i];
+        sensr.conubhi[i] -= conlblo[i];
+      } else {                                        // non-range constraints
+        sensr.conlblo[i] = -1e100;
+        sensr.conlbhi[i] = 1e100;
+        sensr.conublo[i] = -1e100;
+        sensr.conubhi[i] = 1e100;
+        if (sense[i] != GRB_GREATER_EQUAL) {
+          sensr.conublo[i] = sensr.conrhslo[i];
+          sensr.conubhi[i] = sensr.conrhshi[i];
+        }
+        if (sense[i] != GRB_LESS_EQUAL) {
+          sensr.conlblo[i] = sensr.conrhslo[i];
+          sensr.conlbhi[i] = sensr.conrhshi[i];
+        }
+      }
+    }
+  }
+
+  return sensr;
+}
+
+
 ArrayRef<double> GurobiBackend::Senslbhi() const
 { return GrbGetDblAttrArray_VarCon(model_fixed_, "SALBUp", 0); }
 ArrayRef<double> GurobiBackend::Senslblo() const
