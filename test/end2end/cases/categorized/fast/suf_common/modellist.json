@@ -41,7 +41,11 @@
       "Diet_Max['A'].sensrhslo": 0.0,
       "Diet_Max['A'].sensrhshi": 0.0,
       "Diet_Max['A'].senslbhi": 0.0,
-      "Diet_Max['CAL'].senslblo": 16000.0,
+      "Diet_Max['CAL'].senslblo": -1e100,
+      "Diet_Min['CAL'].senslblo": 15246.0,
+      "Diet_Min['CAL'].senslbhi": 16670.0,
+      "Diet_Max['CAL'].sensublo": 16000.0,
+      "Diet_Max['CAL'].sensubhi": 1e100,
       "Buy['CHK'].sensobjhi": 3.443370786516854,
       "Buy['MTL'].sensobjlo": 1.792727272727273
     }

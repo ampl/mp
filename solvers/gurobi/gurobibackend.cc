@@ -645,11 +645,18 @@ SensRanges GurobiBackend::GetSensRanges() {
   const auto& conublo = mvublo.GetConValues()();
 
   /// We need to convert them for the original constraints' domains:
-  auto rhs = GrbGetDblAttrArray_VarCon(model_fixed_, GRB_DBL_ATTR_RHS, 1);
-  std::vector<char> sense(rhs.size());
+  auto rhs_raw = GrbGetDblAttrArray_VarCon(model_fixed_, GRB_DBL_ATTR_RHS, 1);
+  auto mv_rhs = GetValuePresolver().PostsolveGenericDbl({ {},
+                                                      {{{ CG_Linear, rhs_raw }}} });
+  const auto& rhs = mv_rhs.GetConValues()();
+  std::vector<char> sense_raw(rhs_raw.size());
   auto status = GRBgetcharattrarray(model_fixed_, GRB_CHAR_ATTR_SENSE,
-                      0, (int)rhs.size(), sense.data());
+                      0, (int)rhs.size(), sense_raw.data());
   assert(!status);
+  std::vector<int> sense_raw_int(sense_raw.begin(), sense_raw.end());
+  auto mv_sense = GetValuePresolver().PostsolveGenericInt({ {},
+                                                            {{{ CG_Linear, sense_raw_int }}} });
+  const auto& sense = mv_sense.GetConValues()();
   if (rhs.size()==sensr.conrhshi.size() &&            // check for Release
       !status &&
       rhs.size()==conlbhi.size() &&
@@ -668,11 +675,11 @@ SensRanges GurobiBackend::GetSensRanges() {
         sensr.conlbhi[i] = 1e100;
         sensr.conublo[i] = -1e100;
         sensr.conubhi[i] = 1e100;
-        if (sense[i] != GRB_GREATER_EQUAL) {
+        if (sense[i] != (int)GRB_GREATER_EQUAL) {
           sensr.conublo[i] = sensr.conrhslo[i];
           sensr.conubhi[i] = sensr.conrhshi[i];
         }
-        if (sense[i] != GRB_LESS_EQUAL) {
+        if (sense[i] != (int)GRB_LESS_EQUAL) {
           sensr.conlblo[i] = sensr.conrhslo[i];
           sensr.conlbhi[i] = sensr.conrhshi[i];
         }
