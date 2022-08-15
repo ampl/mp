@@ -510,11 +510,11 @@ protected:
     assert(msd.kind() &
            (suf::Kind::VAR_BIT | suf::Kind::CON_BIT | suf::Kind::OBJ_BIT));
     return {
-      suf::Kind::VAR_BIT | msd.kind() ?
+      suf::Kind::VAR_BIT & msd.kind() ?
             ReadSuffix<T>( {msd.name(), suf::Kind::VAR} ) : ArrayRef<T>{},
-          suf::Kind::CON_BIT | msd.kind() ?
+          suf::Kind::CON_BIT & msd.kind() ?
                 ReadSuffix<T>( {msd.name(), suf::Kind::CON} ) : ArrayRef<T>{},
-          suf::Kind::OBJ_BIT | msd.kind() ?
+          suf::Kind::OBJ_BIT & msd.kind() ?
                 ReadSuffix<T>( {msd.name(), suf::Kind::OBJ} ) : ArrayRef<T>{},
     };
   }
