@@ -183,7 +183,7 @@ protected:
       fmt::MemoryWriter wrt;
       wrt.write("{} ", '{');
       wrt.write("\"link_index\": [{}, {}], ", i_exported_, i_entry);
-      wrt.write("\"link_type\": {}, ", ln.GetTypeName());
+      wrt.write("\"link_type\": \"{}\", ", ln.GetTypeName());
       wrt.write("\"source_nodes\": [");
         WriteNodes(wrt, entry_items_.src_items_);
       wrt.write(" ], ");                      // end source nodes
