@@ -16,8 +16,15 @@ namespace mp {
 struct XpressmpCommonInfo {
   XPRSprob lp() const { return lp_; }
   XPRSprob* lp_ref() { return &lp_; }
+  int numIntVars()  const { return numIntVars_; }
+  void numIntVars(int num) { numIntVars_= num; }
+  
+  int numQuadCons() const { return numQuadCons_; }
+  void numQuadCons(int num) { numQuadCons_ = num; }
 private:
   XPRSprob      lp_ = NULL;
+  int numIntVars_ = 0;
+  int numQuadCons_ = 0;
 };
 
 
@@ -47,8 +54,7 @@ protected:
   int NumSOSCons() const;
   int NumIndicatorCons() const;
 
-  int numIntVars_ = 0;
-  int numQuadCons_ = 0;
+
 
   std::string getErr()  const{
     char errmsg[512];

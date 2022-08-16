@@ -84,11 +84,11 @@ std::string XpressmpBackend::GetSolverVersion() {
 
 
 bool XpressmpBackend::IsMIP() const {
-  return numIntVars_ > 0;
+  return numIntVars() > 0;
 }
 
 bool XpressmpBackend::IsQCP() const {
-  return numQuadCons_ > 0;
+  return numQuadCons() > 0;
 }
 
 Solution XpressmpBackend::GetSolution() {
@@ -117,9 +117,11 @@ pre::ValueMapDbl XpressmpBackend::DualSolution() {
 ArrayRef<double> XpressmpBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  int error = XPRSgetlpsol(lp(), NULL, NULL, pi.data(), NULL);
-  if (error)
-    pi.clear();
+  if (!IsMIP()) {
+    int error = XPRSgetlpsol(lp(), NULL, NULL, pi.data(), NULL);
+    if (error)
+      pi.clear();
+  }
   return pi;
 }
 
@@ -286,7 +288,8 @@ void XpressmpBackend::CreateSolutionPoolEnvironment() {
   // Create solutions enumerator only if explicitly needed
   if (storedOptions_.nbest_ > 1) {
     XPRESSMP_CCALL(XPRS_mse_create(&mse_));
-    XPRESSMP_CCALL(XPRS_mse_addcbmsghandler(mse_, xp_mse_display, NULL, 0));
+    if(outlev_>0)
+      XPRESSMP_CCALL(XPRS_mse_addcbmsghandler(mse_, xp_mse_display, NULL, 0));
   }
 
   SetSolverOption(XPRS_HEURSTRATEGY, 0);
@@ -312,10 +315,8 @@ void XpressmpBackend::CreateSolutionPoolEnvironment() {
   }
 }
 void XpressmpBackend::FinishOptionParsing() {
-  int v=-1;
- // GetSolverOption(XPRESSMP_INTPARAM_LOGGING, v);
-  set_verbose_mode(v>0);
-  if (&outlev_ > 0)
+  set_verbose_mode(outlev_ >0);
+  if (outlev_ > 0)
     XPRSaddcbmessage(lp(), xpdisplay, NULL, 0);
   
   if (need_multiple_solutions())

@@ -32,12 +32,12 @@ void XpressmpModelAPI::AddVariables(const VarArrayDef& v) {
   for (auto i = 0; i < v.size(); i++)
     if (v.ptype()[i] == var::Type::INTEGER)
       intIndices.push_back(i);
-  numIntVars_ = intIndices.size();
-  if (numIntVars_ > 0)
+  get_other()->numIntVars(intIndices.size());
+  if (numIntVars() > 0)
   {
     std::vector<char> types(intIndices.size(), 'I');
-    XPRSchgcoltype(lp(), intIndices.size(),
-      intIndices.data(), types.data());
+    XPRESSMP_CCALL(XPRSchgcoltype(lp(), intIndices.size(),
+      intIndices.data(), types.data()));
   }
   
 }
@@ -115,7 +115,7 @@ void XpressmpModelAPI::AddLinTerms(XPRSprob lp, const LinTerms& lt, double rhsc,
     rhs, NULL, start, lt.pvars(), lt.pcoefs()));
 }
 
-#define addqp(type)    numQuadCons_++;\
+#define addqp(type)    numQuadCons(numQuadCons()+1);\
 const auto& lt = qc.GetLinTerms();\
 AddLinTerms(lp(), lt, qc.rhs(), type); \
 const auto& qt = qc.GetQPTerms();\
