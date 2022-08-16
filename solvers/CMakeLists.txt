@@ -56,7 +56,7 @@ function(add_ampl_solver name)
   if (NOT build_solver)
     return ()
   endif ()
-
+  
   if(add_ampl_solver_OVERRIDELIBS)
      message("Overriding libs detection, using ${libraries} directly")
   else()
@@ -96,8 +96,9 @@ function(add_ampl_solver name)
   get_var(include_dirs
     add_ampl_solver_INCLUDE_DIRS ${${module_upper}_INCLUDE_DIRS})
   get_var(libraries add_ampl_solver_LIBRARIES)
-  if (NOT libraries AND TARGET ${name}-library)
-    set(libraries ${name}-library)
+
+  if (TARGET ${module}-library)
+    set(libraries ${module}-library)
   endif ()
   get_var(definitions
     add_ampl_solver_DEFINITIONS ${${module_upper}_DEFINITIONS})
@@ -126,6 +127,7 @@ function(add_ampl_solver name)
   # the executable.
   set(static_lib ampl${name}-static)
   add_library(${static_lib} STATIC ${sources})
+  message("libs ${libraries}")
   target_include_directories(${static_lib}
     PUBLIC ${include_dirs} ${MP_BASE_DIR}/solvers)
   target_link_libraries(${static_lib} PUBLIC ${libraries})
@@ -243,6 +245,9 @@ add_ampl_backend(ortoolsmp DLL_RUNTIME SHARED_LIB MODULE ortoolsmp
 
 add_ampl_backend(cplexmp DLL_RUNTIME SHARED_LIB MODULE CPLEX
                       LIBRARIES cplex-library ${CMAKE_DL_LIBS})
+
+add_ampl_backend(xpressmp DLL_RUNTIME SHARED_LIB MODULE XPRESS
+                      LIBRARIES ${xpress_LIBS} ${CMAKE_DL_LIBS})
 
 add_ampl_solver(gurobi DLL_RUNTIME SHARED_LIB MODULE GUROBI
   gurobi-ampls-c-api.h

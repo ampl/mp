@@ -622,6 +622,27 @@ class CPLEXDirectSolver(MPDirectSolver):
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
+class XPRESSDirectSolver(MPDirectSolver):
+    def _getAMPLOptionsName(self):
+        return "xpress"
+
+
+    def __init__(self, exeName, timeout=None, nthreads=None,
+                 otherOptions=None):
+        stags = {
+                 ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.sos,  ModelTags.quadratic,
+
+                 ModelTags.return_mipgap,
+
+                 ModelTags.warmstart, ModelTags.mipstart,
+
+                 ModelTags.multisol, ModelTags.sstatus,
+                 ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax
+                 
+                 }
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
 class HighsSolver(MPDirectSolver):
     def _setLPMethod(self, method : str):
         m  = "simplex" if method == "SIMPLEX" else "ipm"
