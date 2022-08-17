@@ -456,36 +456,44 @@ void GurobiBackend::ConStatii(ArrayRef<int> cst) {
   GrbSetIntAttrArray(GRB_INT_ATTR_CBASIS, stt);
 }
 
-void GurobiBackend::AddPrimalDualStart(Solution sol0) {
+void GurobiBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution(
-        { sol0.primal, sol0.dual } );
+        { sol0_unpres.primal, sol0_unpres.dual } );
   auto x0 = mv.GetVarValues()();
   auto pi0 = mv.GetConValues()(CG_Linear);
   GrbSetDblAttrArray(GRB_DBL_ATTR_PSTART, x0);
   GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, pi0);
 }
 
-void GurobiBackend::AddMIPStart(ArrayRef<double> x0) {
-  switch (Gurobi_mipstart()) {
-  case 0: break;
-  case 1:
-    GrbSetDblAttrArray(GRB_DBL_ATTR_START, x0);
-    break;
-  case 3:
-    GrbSetIntAttrArray(GRB_INT_ATTR_VARHINTPRI,
-                         ReadSuffix(sufHintPri));
-    GrbSetDblAttrArray(GRB_DBL_ATTR_VARHINTVAL, x0);
-    break;
-  case 2:
-    GrbSetDblAttrArray(GRB_DBL_ATTR_VARHINTVAL, x0);
-    break;
-  default:
-    assert(0);
+void GurobiBackend::AddMIPStart(ArrayRef<double> x0_unpres) {
+  if (Gurobi_mipstart()) {
+    auto mv = GetValuePresolver().PresolveSolution( { x0_unpres } );
+    auto x0 = mv.GetVarValues()();
+    switch (Gurobi_mipstart()) {
+    case 1:
+      GrbSetDblAttrArray(GRB_DBL_ATTR_START, x0);
+      break;
+    case 3:
+      if (auto hints0_unpres = ReadIntSuffix(sufHintPri)) {
+        auto mv = GetValuePresolver().PresolveGenericInt( { hints0_unpres } );
+        auto hints0 = mv.GetVarValues()();
+        GrbSetIntAttrArray(GRB_INT_ATTR_VARHINTPRI, hints0);
+        GrbSetDblAttrArray(GRB_DBL_ATTR_VARHINTVAL, x0);
+      }
+      break;
+    case 2:
+      GrbSetDblAttrArray(GRB_DBL_ATTR_VARHINTVAL, x0);
+      break;
+    default:
+      assert(0);
+    }
   }
 }
 
-void GurobiBackend::VarPriorities(ArrayRef<int> priority) {
-  GrbSetIntAttrArray(GRB_INT_ATTR_BRANCHPRIORITY, priority);
+void GurobiBackend::VarPriorities(ArrayRef<int> pri_unpres) {
+  auto mv = GetValuePresolver().PresolveGenericInt( { pri_unpres } );
+  auto pri = mv.GetVarValues()();
+  GrbSetIntAttrArray(GRB_INT_ATTR_BRANCHPRIORITY, pri);
 }
 
 void GurobiBackend::ObjPriorities(ArrayRef<int> priority) {
@@ -518,8 +526,11 @@ void GurobiBackend::ObjRelTol(ArrayRef<double> val) {
 
 
 ArrayRef<double> GurobiBackend::Ray() {
-  return
+  auto uray_pres =
     GrbGetDblAttrArray(GRB_DBL_ATTR_UNBDRAY, NumVars());
+  auto mv = GetValuePresolver().PostsolveSolution( { uray_pres } );
+  auto uray = mv.GetVarValues()();
+  return uray;
 }
 
 ArrayRef<double> GurobiBackend::DRay() {
@@ -938,12 +949,13 @@ void GurobiBackend::ReportGurobiPool() {
   int iPoolSolution = -1;
   while (++iPoolSolution < GrbGetIntAttr(GRB_INT_ATTR_SOLCOUNT)) {
     GrbSetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, iPoolSolution);
-    auto mv = GetValuePresolver().PostsolveSolution(  // only single-objective with pool
+    auto mv = GetValuePresolver().PostsolveSolution(  // only single-obj with pool
           { { CurrentGrbPoolPrimalSolution() },
             {},                                       // no duals
             std::vector<double>{ CurrentGrbPoolObjectiveValue() } } );
     ReportIntermediateSolution(
-          { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() });   // not when multiobj
+          { mv.GetVarValues()(), mv.GetConValues()(),
+            mv.GetObjValues()() });   // not when multiobj
   }
 }
 
