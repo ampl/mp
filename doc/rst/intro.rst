@@ -142,6 +142,12 @@ the standard location::
            -DORTOOLSMP_INCLUDE_DIRS=/usr/local/include
            -DORTOOLSMP_LIBS=/usr/local/lib/libortools.dylib
 
+Sometimes the target name ends with *mp* but *depname* does not::
+
+  cmake .. -DBUILD=xpressmp
+           -DXPRESS_INCLUDE_DIRS=...
+           -DXPRESS_LIBS=...
+
 
 Using Eclipse CDT
 `````````````````
