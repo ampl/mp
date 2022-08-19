@@ -97,10 +97,11 @@ function(add_ampl_solver name)
     add_ampl_solver_INCLUDE_DIRS ${${module_upper}_INCLUDE_DIRS})
   get_var(libraries add_ampl_solver_LIBRARIES)
 
-  get_target_property(TRG_PROP_IMPRT_LOC ${module}-library IMPORTED_LOCATION)
-  if (TARGET ${module}-library AND (
-      NOT libraries OR TRG_PROP_IMPRT_LOC))
-    set(libraries ${module}-library)
+  if (TARGET ${module}-library)
+    get_target_property(TRG_PROP_IMPRT_LOC ${module}-library IMPORTED_LOCATION)
+    if (NOT libraries OR TRG_PROP_IMPRT_LOC)
+      set(libraries ${module}-library)
+    endif()
   endif ()
 
   get_var(definitions

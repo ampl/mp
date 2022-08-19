@@ -328,7 +328,7 @@ public:
   explicit BasicSolver();
 
   /// Virtual destructor
-  ~BasicSolver() = default;
+  virtual ~BasicSolver() { }
 
   /// Parses a solver option string.
   void ParseOptionString(const char *s, unsigned flags);
@@ -348,12 +348,23 @@ public:
 
 protected:
   /// Constructs a BasicSolver object.
-  /// date:  The solver date in YYYYMMDD format.
-  /// flags: Bitwise OR of zero or more of the following values
+  /// @param date:  The solver date in YYYYMMDD format.
+  /// @param flags: Bitwise OR of zero or more of the following values
   ///          MULTIPLE_SOL
   ///          MULTIPLE_OBJ
   BasicSolver(fmt::CStringRef name, fmt::CStringRef long_name,
               long date, int flags);
+
+  /// InitMetaInfoAndOptions.
+  /// Derived classes which want to provide the info after construction
+  /// can use the default constructor and call this.
+  /// @param date:  The solver date in YYYYMMDD format.
+  /// @param flags: Bitwise OR of zero or more of the following values
+  ///          MULTIPLE_SOL
+  ///          MULTIPLE_OBJ
+  void InitMetaInfoAndOptions(fmt::CStringRef name,
+                              fmt::CStringRef long_name,
+                              long date, int flags);
 
   void set_long_name(fmt::StringRef name)
   { long_name_ = name.to_string(); }
@@ -377,15 +388,15 @@ private:
   std::string version_;
   std::string license_info_;
   long date_;
-  int wantsol_;
-  int obj_precision_;
+  int wantsol_ {0};
+  int obj_precision_ {-1};
 
   /// Index of the objective to optimize starting from 1, 0 to ignore
   /// objective, or -1 to use the first objective if there is one.
-  int objno_;
+  int objno_ {-1};
 
   enum {SHOW_VERSION = 1, AMPL_FLAG = 2};
-  int bool_options_;
+  int bool_options_ {0};
   int option_flag_save_ = 0;
   std::string option_file_save_;
 
@@ -393,19 +404,19 @@ private:
   std::string solution_stub_;
 
   // Specifies whether to return the number of solutions in the .nsol suffix.
-  bool count_solutions_;
+  bool count_solutions_ {false};
 
-  unsigned read_flags_;  // flags passed to Problem::Read
+  unsigned read_flags_ {0};  // flags passed to Problem::Read
 
-  bool verbose_=true;
-  bool debug_;
-  bool timing_;
-  bool multiobj_;
+  bool verbose_ {true};
+  bool debug_ {false};
+  bool timing_ {false};
+  bool multiobj_ {false};
 
-  bool has_errors_;
-  OutputHandler *output_handler_;
-  ErrorHandler *error_handler_;
-  Interrupter *interrupter_;
+  bool has_errors_ {false};
+  OutputHandler *output_handler_ {this};
+  ErrorHandler *error_handler_ {this};
+  Interrupter *interrupter_ {this};
 
   /// Warnings
   WarningsMap warnings_;

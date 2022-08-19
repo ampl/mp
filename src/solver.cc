@@ -588,18 +588,17 @@ BasicSolver::BasicSolver() :
   BasicSolver("dummy", "long_dummy", 0, 0) { }
 
 BasicSolver::BasicSolver(
-    fmt::CStringRef name, fmt::CStringRef long_name, long date, int flags)
-: name_(name.c_str()),
-  long_name_((long_name.c_str() ? long_name : name).c_str()),
-  date_(date), wantsol_(0), obj_precision_(-1), objno_(-1), bool_options_(0),
-  count_solutions_(false), read_flags_(0),
-  debug_(false),
-  timing_(false), multiobj_(false),
-  has_errors_(false) {
+    fmt::CStringRef name, fmt::CStringRef long_name, long date, int flags) {
+  InitMetaInfoAndOptions(name, long_name, date, flags);
+}
+
+void BasicSolver::InitMetaInfoAndOptions(
+    fmt::CStringRef name, fmt::CStringRef long_name, long date, int flags) {
+  name_ = name.c_str();
+  long_name_ = (long_name.c_str() ? long_name : name).c_str();
+  date_ = date;
+
   version_ = long_name_;
-  error_handler_ = this;
-  output_handler_ = this;
-  interrupter_ = this;
 
   struct VersionOption : SolverOption {
     BasicSolver &s;
@@ -615,10 +614,10 @@ BasicSolver::BasicSolver(
   AddStrOption(
         "tech:optionfile optionfile option:file",
         "Name of solver option file. "
-//      " (surrounded by 'single' or "
-//      "\"double\" quotes if the name contains blanks). "
-      "Lines that start with # are ignored.  Otherwise, each nonempty "
-      "line should contain \"name=value\".",
+        " (surrounded by 'single' or "
+        "\"double\" quotes if the name contains blanks). "
+        "Lines that start with # are ignored.  Otherwise, each nonempty "
+        "line should contain \"name=value\".",
         &Solver::GetOptionFile, &Solver::UseOptionFile);
 
 

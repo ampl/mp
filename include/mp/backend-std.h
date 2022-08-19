@@ -860,6 +860,7 @@ public:
       Impl::GetAMPLSolverLongName(),
       Impl::Date(), Impl::Flags())
   { }
+
   virtual ~StdBackend() { }
 };
 

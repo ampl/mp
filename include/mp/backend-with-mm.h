@@ -14,9 +14,9 @@ namespace mp {
 class BackendWithModelManager
     : public BasicBackend {
 public:
-  /// Constructs a BasicBackend object.
-  /// date:  The solver date in YYYYMMDD format.
-  /// flags: Bitwise OR of zero or more of the following values
+  /// Constructor.
+  /// @param date:  The solver date in YYYYMMDD format.
+  /// @param flags: Bitwise OR of zero or more of the following values
   ///          MULTIPLE_SOL
   ///          MULTIPLE_OBJ
   BackendWithModelManager(fmt::CStringRef name, fmt::CStringRef long_name,
