@@ -807,6 +807,9 @@ public:
   }
 
   void InitMetaInfoAndOptions() override {
+    BasicSolver::InitMetaInfoAndOptions(MP_DISPATCH( GetAMPLSolverName() ),
+                                        "",             // Filled below
+                           Date(), Flags());
     InitNamesAndVersion();
     InitStandardOptions();
     InitCustomOptions();
@@ -854,13 +857,7 @@ protected:
 
 
 public:
-  StdBackend() :
-    MPSolverBase(
-      Impl::GetAMPLSolverName(),
-      Impl::GetAMPLSolverLongName(),
-      Impl::Date(), Impl::Flags())
-  { }
-
+  /// Virtual destructor
   virtual ~StdBackend() { }
 };
 

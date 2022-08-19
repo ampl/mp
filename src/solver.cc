@@ -70,7 +70,7 @@ const char *SkipNonSpaces(const char *s) {
 }
 
 const char* SkipToEnd(const char* s) {
-  while (*s && (*s != '\n')) 
+  while (*s && (*s != '\n'))
     ++s;
   return s;
 }
@@ -295,7 +295,7 @@ std::string OptionHelper<std::string>::Parse(const char *&s, bool splitString) {
     s = SkipNonSpaces(s);
     return std::string(start, s - start);
   }
-  
+
 }
 
 SolverAppOptionParser::SolverAppOptionParser(BasicSolver &s)
@@ -585,7 +585,7 @@ bool Solver::OptionNameLess::operator()(
 
 
 BasicSolver::BasicSolver() :
-  BasicSolver("dummy", "long_dummy", 0, 0) { }
+  name_("dummy"), long_name_("long_dummy") { }
 
 BasicSolver::BasicSolver(
     fmt::CStringRef name, fmt::CStringRef long_name, long date, int flags) {
@@ -940,7 +940,7 @@ bool BasicSolver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) 
   bool_options_ &= ~SHOW_VERSION;
   option_flag_save_ = flags;
   bool had_exe_name_option_var = false;
-  /// Look for a <solver name>_options env var.
+  /// Look for a <solver>_options env var.
   /// First try the executable name.
   if (const char *s = exe_path()) {
     path p(s);
@@ -956,14 +956,15 @@ bool BasicSolver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) 
       had_exe_name_option_var = true;
     }
   }
-  // Otherwise try "standard"
+  // Otherwise try '<solver_name>_options'
   if (!had_exe_name_option_var)
   if (const char *s = std::getenv((name_ + "_options").c_str())) {
     ParseOptionString(s, flags);
   }
-  flags |= FROM_COMMAND_LINE;
-  while (const char *s = *argv++)
+  flags |= FROM_COMMAND_LINE;        // proceed to command-line options
+  while (const char *s = *argv++) {
     ParseOptionString(s, flags);
+  }
   if ((bool_options_ & SHOW_VERSION) != 0)
     ShowVersion();
   return !has_errors_;
@@ -1182,4 +1183,3 @@ const char* const * AMPLSGetMessages(AMPLS_MP_Solver* slv) {
   pchar_vec.push_back(nullptr);                // final 0
   return pchar_vec.data();
 }
-

@@ -14,16 +14,8 @@ namespace mp {
 /// Abstract backend API
 class BasicBackend : public BasicSolver {
 public:
+  /// Virtual destructor
   virtual ~BasicBackend() = default;
-
-  /// Constructs a BasicBackend object.
-  /// date:  The solver date in YYYYMMDD format.
-  /// flags: Bitwise OR of zero or more of the following values
-  ///          MULTIPLE_SOL
-  ///          MULTIPLE_OBJ
-  BasicBackend(fmt::CStringRef name, fmt::CStringRef long_name,
-               long date, int flags) :
-    BasicSolver(name, long_name, date , flags) { }
 
   /// Initialize backend, incl. solver options.
   /// Not parse options yet, as we need to parse cmdline arguments first.

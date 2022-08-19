@@ -14,21 +14,12 @@ namespace mp {
 class BackendWithModelManager
     : public BasicBackend {
 public:
-  /// Constructor.
-  /// @param date:  The solver date in YYYYMMDD format.
-  /// @param flags: Bitwise OR of zero or more of the following values
-  ///          MULTIPLE_SOL
-  ///          MULTIPLE_OBJ
-  BackendWithModelManager(fmt::CStringRef name, fmt::CStringRef long_name,
-               long date, int flags) :
-    BasicBackend(name, long_name, date , flags) { }
-
   /// Initialize backend, incl. solver options
   /// @param argv: the command-line arguments, NULL-terminated
   void Init(char** argv) override {
     BasicBackend::Init(argv);
-    GetMM().InitOptions();
     InitMetaInfoAndOptions();
+    GetMM().InitOptions();
   }
 
 

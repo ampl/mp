@@ -324,7 +324,7 @@ public:
     MULTIPLE_OBJ = 2
   };
 
-  /// Testing constructor
+  /// Deafult / testing constructor
   explicit BasicSolver();
 
   /// Virtual destructor
@@ -387,7 +387,7 @@ private:
   std::string exe_path_;
   std::string version_;
   std::string license_info_;
-  long date_;
+  long date_{0};
   int wantsol_ {0};
   int obj_precision_ {-1};
 
