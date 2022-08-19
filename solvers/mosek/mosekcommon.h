@@ -18,8 +18,13 @@ struct MosekCommonInfo {
   MSKtask_t lp() const { return lp_; }
   void set_lp(MSKtask_t lp) { lp_ = lp; }
   MSKtask_t& lp_ref() { return lp_; }
+
+  MSKenv_t env() const { return env_; }
+  void set_env(MSKenv_t env) { env_ = env; }
+  MSKenv_t& env_ref() { return env_; }
 private:
   MSKtask_t      lp_ = NULL;
+  MSKenv_t       env_ = NULL;
 };
 
 /// Common API for Mosek classes

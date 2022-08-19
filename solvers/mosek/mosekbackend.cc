@@ -39,16 +39,11 @@ CreateMosekModelMgr(MosekCommon&, Env&, pre::BasicValuePresolver*&);
 
 
 MosekBackend::MosekBackend() {
-  OpenSolver();
-
   /// Create a ModelManager
   pre::BasicValuePresolver* pPre;
   auto data = CreateMosekModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
   SetValuePresolver(pPre);
-
-  /// Copy env/lp to ModelAPI
-  copy_common_info_to_other();
 }
 
 MosekBackend::~MosekBackend() {
@@ -64,15 +59,27 @@ static void MSKAPI printstr(void* handle,
 
 void MosekBackend::OpenSolver() {
   int status = MSK_RES_OK;
+  const auto& initialize = GetCallbacks().init;
+
+  MSKenv_t env = NULL;
   MSKtask_t task;
-  status = MSK_maketask(NULL, 0, 0, &task);
+  if (initialize) { // If an initialization callback is provided, 
+    // use it to create the environment
+    MOSEK_CCALL(MSK_makeenv(&env, NULL));
+    env = (MSKenv_t)initialize();
+    set_env(env);
+  }
+  status = MSK_maketask(env, 0, 0, &task);
   if (status)
-    throw std::runtime_error( fmt::format(
-          "Failed to create task, error code {}.", status ) );
+    throw std::runtime_error(fmt::format(
+      "Failed to create task, error code {}.", status));
   set_lp(task); // Assign it
+
+  /// Copy env/lp to ModelAPI
+  copy_common_info_to_other();
+
   /// Turn off verbosity by default
   MOSEK_CCALL(MSK_putintparam(task, MSK_IPAR_LOG, 0));
-
   // Register callback for console logging (controlled by the outlev param
   // in all AMPL solver drivers
   MSK_linkfunctotaskstream(lp(), MSK_STREAM_LOG, NULL, printstr);
@@ -81,6 +88,7 @@ void MosekBackend::OpenSolver() {
 
 void MosekBackend::CloseSolver() {
   if (lp()) MSK_deletetask(&lp_ref());
+  if (env()) MSK_deleteenv(&env_ref());
 }
 
 const char* MosekBackend::GetBackendName()
@@ -90,7 +98,9 @@ std::string MosekBackend::GetSolverVersion() {
   return fmt::format("{}.{}.{}", MSK_VERSION_MAJOR,
     MSK_VERSION_MINOR, MSK_VERSION_REVISION);
 }
-
+void MosekBackend::InitOptionParsing() {
+  OpenSolver();
+}
 
 bool MosekBackend::IsMIP() const {
   return getIntAttr(MSK_IINF_ANA_PRO_NUM_VAR_BIN)+
@@ -128,7 +138,7 @@ ArrayRef<double> MosekBackend::DualSolution_LP() {
   std::vector<double> pi(num_cons);
   // TODO get appropriate solution
   MSKrescodee error = MSK_gety(lp(), solToFetch_, pi.data());
-  if (error != MSK_RESPONSE_OK)
+  if (error != MSK_RES_OK)
     pi.clear();
   return pi;
 }
