@@ -84,7 +84,11 @@ std::string XpressmpBackend::GetSolverVersion() {
 
 
 bool XpressmpBackend::IsMIP() const {
-  return numIntVars() > 0;
+  auto types = IsVarInt();
+  for (auto a : types)
+    if (a)
+      return true;
+  return false;
 }
 
 bool XpressmpBackend::IsQCP() const {
@@ -569,21 +573,22 @@ void XpressmpBackend::ConStatii(ArrayRef<int> cst) {
 
 SolutionBasis XpressmpBackend::GetBasis() {
   // TODO: The following crashes 
- /*
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
     auto mv = GetValuePresolver().PostsolveBasis(
-      { std::move(varstt),
-        {{{ CG_Linear, std::move(constt) }}} });
+      { varstt,
+        {{{ CG_Linear, constt }}} });
     varstt = mv.GetVarValues()();
     constt = mv.GetConValues()();
     assert(varstt.size());
     assert(constt.size());
-  }*/
-  std::vector<int> varstt;
-  std::vector<int> constt;
-  return { std::move(varstt), std::move(constt) };
+  }
+  
+  
+  //std::vector<int> varstt;
+  //std::vector<int> constt;
+  return { varstt,constt };
 
 }
 
@@ -602,7 +607,6 @@ void XpressmpBackend::SetBasis(SolutionBasis basis) {
 void XpressmpBackend::ComputeIIS() {
   int status;
   XPRESSMP_CCALL(XPRSiisfirst(lp(), 1, &status));
-  SetStatus(ConvertXPRESSMPStatus());   // could add new information
 }
 
 IIS XpressmpBackend::GetIIS() {

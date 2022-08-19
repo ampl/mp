@@ -95,7 +95,7 @@ void XpressmpModelAPI::AddConstraint(const LinConGE& lc) {
 int rowindex[] = { NumLinCons() - 1 };\
 int colindex[] = { ic.get_binary_var() };\
 int complement[] = { ic.get_binary_value() };\
-XPRESSMP_CCALL(XPRSsetindicators(lp(), 1, rowindex, colindex, complement));\
+XPRESSMP_CCALL(XPRSsetindicators(lp(), 1, rowindex, colindex, complement));
 
 void XpressmpModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
   _addIndicator_mp
