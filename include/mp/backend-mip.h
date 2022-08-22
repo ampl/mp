@@ -65,7 +65,8 @@ class MIPBackend : public BaseBackend
 {
 public:
   /// IsMIP()
-  bool IsMIP() const override { return false; }
+  bool IsMIP() const override  // Basic, does not consider PL or SOS
+  { return BackendWithModelManager::HasIntVars(); }
   /// IsQP()
   virtual bool IsQP() const { return false; }
   /// IsQCP()
@@ -73,8 +74,7 @@ public:
 
   /// Always add MIP start if supported:
   /// Gurobi 9.1.2 solves non-convex Q(C)P as MIP.
-  /// But model attributes don't work before solve
-  /// Count non-linear stuff in the model?
+  /// But model attributes don't work before solve.
   virtual bool CanBeMIP() const { return true; }
 
   ////////////////////////////////////////////////////////////

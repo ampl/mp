@@ -107,7 +107,6 @@ public:
   IIS GetIIS() override;
 
   /////////////////////////// Model attributes /////////////////////////
-  bool IsMIP() const override;
   bool IsQCP() const override;
   
   //////////////////////////// SOLVING ///////////////////////////////

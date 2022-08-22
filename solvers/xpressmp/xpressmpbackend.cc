@@ -55,7 +55,7 @@ void XpressmpBackend::InitOptionParsing() {
 }
 void XpressmpBackend::OpenSolver() {
   int status = 0;
-  // Try the registered function first; if not available 
+  // Try the registered function first; if not available
   // call the solver's API function directly
   const auto& create_fn = GetCallbacks().init;
   if (create_fn)
@@ -82,15 +82,6 @@ std::string XpressmpBackend::GetSolverVersion() {
   return std::string(v);
 }
 
-
-bool XpressmpBackend::IsMIP() const {
-  auto types = IsVarInt();
-  for (auto a : types)
-    if (a)
-      return true;
-  return false;
-}
-
 bool XpressmpBackend::IsQCP() const {
   return numQuadCons() > 0;
 }
@@ -105,7 +96,7 @@ ArrayRef<double> XpressmpBackend::PrimalSolution() {
   int num_vars = NumVars();
   int error;
   std::vector<double> x(num_vars);
-  if (IsMIP()) 
+  if (IsMIP())
     error = XPRSgetmipsol(lp(), x.data(), NULL);
   else
     error = XPRSgetlpsol(lp(), x.data(), NULL, NULL, NULL);
@@ -159,7 +150,7 @@ void XpressmpBackend::ExportModel(const std::string &file) {
   }
   if (wpflags)
     XPRESSMP_CCALL(XPRSwriteprob(lp(), file.c_str(), wpflags));
-  else 
+  else
     throw std::runtime_error(fmt::format("Expected \"writeprob=...\" to specify a filename ending in \".lp\"\n"
       "or \".mps\"; got \"{}\".\n", file));
 }
@@ -176,7 +167,7 @@ void XpressmpBackend::Solve() {
   }
   if (IsMIP()) {
     if (need_multiple_solutions() && storedOptions_.nbest_ > 1)
-        XPRESSMP_CCALL(XPRS_mse_opt(mse_, lp(), 
+        XPRESSMP_CCALL(XPRS_mse_opt(mse_, lp(),
           msp_, XPRS_mse_defaulthandler, 0, &storedOptions_.nbest_));
     else
       XPRESSMP_CCALL(XPRSmipoptimize(lp(), NULL));
@@ -217,7 +208,7 @@ void XpressmpBackend::ReportXPRESSMPPool() {
   if (!IsMIP())
     return;
   int iPoolSolution = -1;
-  int nPool;  
+  int nPool;
   XPRS_msp_getintattrib(msp_, XPRS_MSP_SOLUTIONS, &nPool);
   auto sid = std::vector<int>(nPool);
   int nret, nsols;
@@ -322,7 +313,7 @@ void XpressmpBackend::FinishOptionParsing() {
   set_verbose_mode(outlev_ >0);
   if (outlev_ > 0)
     XPRSaddcbmessage(lp(), xpdisplay, NULL, 0);
-  
+
   if (need_multiple_solutions())
     CreateSolutionPoolEnvironment();
 }
@@ -399,7 +390,7 @@ void XpressmpBackend::InitCustomOptions() {
 
   AddStoredOption("sol:pooldupcol pooldupcol",
     "Whether to suppress duplicate variable removal when "
-		"poolstub is specified:\n"
+    "poolstub is specified:\n"
     "\n.. value-table::\n",
     storedOptions_.pooldupcol_, pool_values_);
 
@@ -411,12 +402,12 @@ void XpressmpBackend::InitCustomOptions() {
 
   AddSolverOption("sol:poolfeastol poolfeastol",
     "Zero tolerance for discrete variables in the solution "
-		"pool (default 1e-6)",
+    "pool (default 1e-6)",
     XPRS_MSP_SOL_FEASTOL, 0, 1);
 
   AddSolverOption("sol:poolmiptol poolmiptol",
     "Error (nonintegrality) allowed in discrete variables "
-		"in the solution pool (default 5e-6)",
+    "in the solution pool (default 5e-6)",
     XPRS_MSP_SOL_MIPTOL, 0, 1);
 
   AddStoredOption("sol:poolnbest poolnbest",
@@ -430,7 +421,7 @@ void XpressmpBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     XPRS_PRESOLVE, presolve_values_, 1);
 
-  AddSolverOption("pre:ops presolveops", 
+  AddSolverOption("pre:ops presolveops",
     "Reductions to use in XPRESS's presolve, sum of:\n"
     "\n.. value-table::\n(default 511 = bits 0-8 set)",
     XPRS_PRESOLVEOPS, presolveops_values_, 511);
@@ -454,7 +445,7 @@ double XpressmpBackend::MIPGapAbs() {
 
 
 ArrayRef<int> XpressmpBackend::VarStatii() {
-  
+
   std::vector<int> vars(NumVars());
   XPRESSMP_CCALL(XPRSgetbasis(lp(), vars.data(), NULL));
   for (auto& s : vars) {
@@ -540,7 +531,7 @@ void XpressmpBackend::VarStatii(ArrayRef<int> vst) {
       else if (ub[j] <= 1e-6)
         s = 2;
       else
-        s = 3;  
+        s = 3;
       break;
     default:
       MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
@@ -559,7 +550,7 @@ void XpressmpBackend::ConStatii(ArrayRef<int> cst) {
     case BasicStatus::none:   // for 'none', which is the status
     case BasicStatus::upp:    // assigned to new rows, it seems good to guess
     case BasicStatus::sup:    // a valid status.
-    case BasicStatus::low:    // 
+    case BasicStatus::low:    //
     case BasicStatus::equ:    // For active constraints, it is usually 'sup'.
     case BasicStatus::btw:    // We could compute slack to decide though.
       s = 3;
@@ -572,7 +563,7 @@ void XpressmpBackend::ConStatii(ArrayRef<int> cst) {
 }
 
 SolutionBasis XpressmpBackend::GetBasis() {
-  // TODO: The following crashes 
+  // TODO: The following crashes
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
@@ -584,8 +575,8 @@ SolutionBasis XpressmpBackend::GetBasis() {
     assert(varstt.size());
     assert(constt.size());
   }
-  
-  
+
+
   //std::vector<int> varstt;
   //std::vector<int> constt;
   return { varstt,constt };
@@ -651,7 +642,7 @@ ArrayRef<int> XpressmpBackend::VarsIIS() {
   XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, 0,
     vars.data(), 0, bounds.data(), 0, 0, 0, isolvars.data()));
   std::vector<int> iis(NumVars(), 0);
-  for (int i = 0; i < nvarsiis; i++) 
+  for (int i = 0; i < nvarsiis; i++)
     iis[i] = (int)IIS_VarToAMPL(bounds[i]);
   return iis;
 }
@@ -690,7 +681,7 @@ void XpressmpBackend::xpdisplay(XPRSprob prob, void* data, const char* ch, int n
     fmt::print("{}\n", ch);
 }
 
-int XpressmpBackend::xp_mse_display(XPRSobject o, void* context, void* thread, 
+int XpressmpBackend::xp_mse_display(XPRSobject o, void* context, void* thread,
   const char* ch, int msglvl, int msgnumber)
 {
   if (msglvl < 0)

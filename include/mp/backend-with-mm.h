@@ -2,6 +2,8 @@
 #define BACKEND_WITH_MM_H
 
 /// Backend with a Model Manager
+
+#include <algorithm>
 #include <memory>
 
 #include "mp/backend-base.h"
@@ -115,9 +117,15 @@ protected:
     GetMM().ReportSuffix(suf, values);
   }
 
-  /// Access underlying model instance
+  /// Access underlying model instance: integrality flags
   const std::vector<bool>& IsVarInt() const {
     return GetMM().IsVarInt();
+  }
+
+  /// Underlying instance info: has integer variables?
+  bool HasIntVars() const {
+    const auto& ivi=IsVarInt();
+    return ivi.end()!=std::find(ivi.begin(), ivi.end(), true);
   }
 
 
