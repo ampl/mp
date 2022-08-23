@@ -555,7 +555,9 @@ public:
     slopes.back() = e.slope(num_breakpoints);
     return AssignResult2Args( PLConstraint(
           PLConstraint::Arguments{ Convert2Var(e.arg()) },
-          PLConstraint::Parameters{ breakpoints, slopes, 0.0, 0.0 } ) );
+          PLConstraint::Parameters{
+                                  PLSlopes{
+                                    breakpoints, slopes, 0.0, 0.0 } } ) );
   }
 
 
