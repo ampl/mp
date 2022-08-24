@@ -741,9 +741,10 @@ protected:
                              "objective being minimized.\n"
                       "\n"
                       "Weights are given by suffixes .lbpen and .ubpen on variables "
-                      "and .rhspen on constraints (when nonnegative), else by keywords "
-                      "alg:lbpen, alg:ubpen, and alg:rhspen, respectively (default values = 1). "
-                      "Weights < 0 are treated as Infinity, allowing no violation.",
+                      "and .rhspen on constraints (when nonnegative, default values = 0), "
+                      "else by keywords alg:lbpen, alg:ubpen, and alg:rhspen, respectively "
+                      "(default values = 1). Weights < 0 are treated as Infinity, allowing "
+                      "no violation.",
           feasrelax().mode_);
       AddStoredOption("alg:lbpen lbpen", "See alg:feasrelax.",
           storedOptions_.lbpen_);

@@ -67,5 +67,27 @@
         "ANYSOLVER_options": "feasrelax=6"
     },
     "objective": -9.534910000000e+05
+  },
+
+  {
+    "name": "infeas_int_01_negsuffix feasrelax=1",
+    "tags": [ "linear", "feasrelax" ],
+    "options": {
+      "ANYSOLVER_options": "feasrelax=1"
+    },
+    "values": {
+      "C1.slack": -2,
+      "C2.slack": 1
+    }
+  },
+  {
+    "name": "infeas_int_01 feasrelax=1",
+    "tags": [ "linear", "feasrelax" ],
+    "options": {
+      "ANYSOLVER_options": "feasrelax=1"
+    },
+    "values": {
+      "C2.slack": -1
+    }
   }
 ]

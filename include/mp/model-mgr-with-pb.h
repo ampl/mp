@@ -191,10 +191,10 @@ protected:
   }
 
   ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) override {
-    return GetModel().ReadSuffix(suf);
+    return GetModel().ReadIntSuffix(suf);
   }
   ArrayRef<double> ReadSuffix(const SuffixDef<double>& suf) override {
-    return GetModel().ReadSuffix(suf);
+    return GetModel().ReadDblSuffix(suf);
   }
 
   void ReportSuffix(const SuffixDef<int>& suf,

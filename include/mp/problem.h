@@ -1071,7 +1071,7 @@ public:
   }
 
   template <class T>
-  ArrayRef<T> ReadSuffix(const SuffixDef<T>& sufdef) {
+  ArrayRef<T> ReadSuffix_OneTypeOnly(const SuffixDef<T>& sufdef) {
     auto suf = FindSuffix(sufdef);
     if (!suf)
       return {};
@@ -1080,15 +1080,15 @@ public:
 
   /// Read integer suffix
   ArrayRef<int> ReadIntSuffix(const SuffixDef<int>& sufdef)
-  { return ReadSuffix(sufdef); }
+  { return ReadSuffix_OneTypeOnly(sufdef); }
 
   /// Read double suffix.
   /// If absent but an integer suffix with the same name exists,
   /// take that
   ArrayRef<double> ReadDblSuffix(const SuffixDef<double>& sufdef) {
-    auto suf_dbl = ReadSuffix(sufdef);
+    auto suf_dbl = ReadSuffix_OneTypeOnly(sufdef);
     if (!suf_dbl) {
-      auto suf_int = ReadSuffix(sufdef.to_type<int>());
+      auto suf_int = ReadSuffix_OneTypeOnly(sufdef.to_type<int>());
       if (suf_int)
         return std::vector<double>(suf_int.begin(), suf_int.end());
     }
