@@ -447,7 +447,7 @@ double XpressmpBackend::MIPGapAbs() {
 ArrayRef<int> XpressmpBackend::VarStatii() {
 
   std::vector<int> vars(NumVars());
-  XPRESSMP_CCALL(XPRSgetbasis(lp(), vars.data(), NULL));
+  XPRESSMP_CCALL(XPRSgetbasis(lp(), NULL, vars.data()));
   for (auto& s : vars) {
     switch (s) {
     case 1:
@@ -472,7 +472,7 @@ ArrayRef<int> XpressmpBackend::VarStatii() {
 ArrayRef<int> XpressmpBackend::ConStatii() {
 
   std::vector<int> cons(NumLinCons());
-  XPRESSMP_CCALL(XPRSgetbasis(lp(), NULL, cons.data()));
+  XPRESSMP_CCALL(XPRSgetbasis(lp(), cons.data(), NULL));
   for (auto& s : cons) {
     switch (s) {
     case 1:
@@ -563,7 +563,6 @@ void XpressmpBackend::ConStatii(ArrayRef<int> cst) {
 }
 
 SolutionBasis XpressmpBackend::GetBasis() {
-  // TODO: The following crashes
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
@@ -575,11 +574,7 @@ SolutionBasis XpressmpBackend::GetBasis() {
     assert(varstt.size());
     assert(constt.size());
   }
-
-
-  //std::vector<int> varstt;
-  //std::vector<int> constt;
-  return { varstt,constt };
+  return { varstt,constt};
 
 }
 
