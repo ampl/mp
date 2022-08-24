@@ -17,6 +17,7 @@
 #include "mp/flat/redef/MIP/indicator_ge.h"
 #include "mp/flat/redef/MIP/indicator_eq.h"
 #include "mp/flat/redef/MIP/indicator_quad.h"
+#include "mp/flat/redef/MIP/lin_approx.h"
 #include "mp/flat/redef/MIP/logical_and.h"
 #include "mp/flat/redef/MIP/logical_or.h"
 #include "mp/flat/redef/MIP/logical_not.h"

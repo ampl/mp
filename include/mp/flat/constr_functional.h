@@ -231,31 +231,66 @@ public:
 /// AMPL represents PWL by a list of slopes
 /// and breakpoints between them, assuming (X0,Y0) is on the line
 class PLSlopes {
-  const std::vector<double> breakpoints_, slopes_;
-  const double X0_, Y0_;                        // some point on the PWL
 public:
+  /// Default constructor
+  PLSlopes() { }
+  /// Construct from breakpoints, slopes, and a sample point
   template <class Vec>
   PLSlopes(Vec&& bp, Vec&& sl, double x, double y) noexcept :
     breakpoints_(std::forward<Vec>(bp)), slopes_(std::forward<Vec>(sl)),
     X0_(x), Y0_(y) { assert(check()); }
+  /// Get breakpoints
   const std::vector<double>& GetBP() const { return breakpoints_; }
+  /// Get slopes
   const std::vector<double>& GetSlopes() const { return slopes_; }
+  /// Get sample point's X
   double GetX0() const { return X0_; }
+  /// Get sample poont's Y
   double GetY0() const { return Y0_; }
+  /// Get number of bp
   int GetNBP() const { return GetBP().size(); }
+  /// Get number slopes
   int GetNSlopes() const { return GetSlopes().size(); }
+  /// Validate
   bool check() const { return GetNBP()>0 && GetNSlopes()==GetNBP()+1; }
+
+private:
+  std::vector<double> breakpoints_, slopes_;
+  double X0_, Y0_;                             // some point on the PWL
 };
 
 
 /// Representing a PWL by points
 struct PLPoints {
+  /// Check if have information
+  bool empty() const { return x_.empty(); }
+  /// The x, y coordinates of the PL function
   std::vector<double> x_, y_;
+  /// Default construct
+  PLPoints() { }
+  /// Construct from PLSlopes
   PLPoints(const PLSlopes& pls);
 };
 
+
+/// Parameters of a PL constraint: keeps any or both of
+/// PLSlopes and PLPoints
+class PLConParams {
+public:
+  /// Construct from PLSlopes
+  PLConParams(PLSlopes pls) : pls_(std::move(pls)) { }
+  /// Construct from PLPoints
+  PLConParams(PLPoints plp) : plp_(std::move(plp)) { }
+  /// Produce PLPoints, either stored or from PLSlopes
+  operator PLPoints() const { return plp_.empty() ? pls_ : plp_; }
+
+private:
+  PLSlopes pls_;
+  PLPoints plp_;
+};
+
 DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( PLConstraint,
-                  VarArray1, PLSlopes, "r = piecewise_linear(x)");
+                  VarArray1, PLConParams, "r = piecewise_linear(x)");
 
 } // namespace mp
 

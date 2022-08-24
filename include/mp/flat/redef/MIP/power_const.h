@@ -62,8 +62,8 @@ public:
           con.GetResultVar(), con.GetContext());
   }
 
-protected:
 
+protected:
   /// Reuse the stored ModelConverter
   using Base::GetMC;
 };

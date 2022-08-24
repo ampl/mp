@@ -1,6 +1,7 @@
 #ifndef ABS_H
 #define ABS_H
 
+#include "mp/common.h"
 #include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constr_std.h"
 
