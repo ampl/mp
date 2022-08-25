@@ -478,7 +478,7 @@ protected:
 
   ////////////////////////////////////////////////////////////////
   virtual void InitMIPOptions() {
-      if (IMPL_HAS_STD_FEATURE( RETURN_MIP_GAP ))
+      if (IMPL_HAS_STD_FEATURE( LAZY_USER_CUTS ))
         AddStoredOption("mip:lazy lazy",
           "Whether to recognize suffix .lazy on constraints: "
           "sum of\n"
