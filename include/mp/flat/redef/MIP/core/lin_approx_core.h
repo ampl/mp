@@ -9,18 +9,27 @@
 
 namespace mp {
 
-/// Parameters for a generic piecewise-linear approximation
-struct LinApproxParams {
+/// Function graph domain
+struct FuncGraphDomain {
   double lbx, ubx, lby, uby;
+  void intersect(const FuncGraphDomain& grDom);
 };
 
-/// Do the approximation
+/// External parameters
+/// for piecewise-linear approximation
+struct LinApproxParams {
+  FuncGraphDomain grDom;
+  double ubErrAbs = 1e-2;
+};
+
+
+/// Do the approximation by calling
+/// the function-specific approximator
+/// @param laPrm: in-out parameter, e.g., bounds can be tightened
 /// @return the PL function
 template <class FuncCon>
 PLPoints PLApproximate(const FuncCon& con,
-                             LinApproxParams laParams) {
-  return {};
-}
+                             LinApproxParams& laPrm);
 
 }  // namespace mp
 

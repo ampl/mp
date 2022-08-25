@@ -278,6 +278,14 @@ void GurobiModelAPI::InitOptions() {
                   "Acceptance level for 'implied-equal' expression, default 2.",
                   storedOptions_.acc_ind_eq_);
 
+  GetEnv().AddStoredOption("acc:exp",
+                  "Acceptance level for exp(), default 2. For values "
+                  "0 or 1, own piecewise-linear approximation is performed, "
+                  "otherwise the expression is passed to Gurobi.",
+                  storedOptions_.acc_exp_);
+  GetEnv().AddStoredOption("acc:log",
+                  "Acceptance level for natural logarithm log(), default 2.",
+                  storedOptions_.acc_log_);
 }
 
 } // namespace mp

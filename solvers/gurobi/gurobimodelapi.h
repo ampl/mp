@@ -96,11 +96,11 @@ public:
   void AddConstraint(const SOS2Constraint& cc);
 
   /// Gurobi nonlinear generals
-  ACCEPT_CONSTRAINT(ExpConstraint, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(ExpConstraint, acc_exp(), CG_General)
   void AddConstraint(const ExpConstraint& cc);
   ACCEPT_CONSTRAINT(ExpAConstraint, Recommended, CG_General)
   void AddConstraint(const ExpAConstraint& cc);
-  ACCEPT_CONSTRAINT(LogConstraint, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(LogConstraint, acc_log(), CG_General)
   void AddConstraint(const LogConstraint& cc);
   ACCEPT_CONSTRAINT(LogAConstraint, Recommended, CG_General)
   void AddConstraint(const LogAConstraint& cc);
@@ -133,6 +133,8 @@ protected:
   int acc_ind_le() const { return storedOptions_.acc_ind_le_; }
   int acc_ind_eq() const { return storedOptions_.acc_ind_eq_; }
 
+  int acc_exp() const { return storedOptions_.acc_exp_; }
+  int acc_log() const { return storedOptions_.acc_log_; }
 
 private:
   /// The sense of the main objective
@@ -143,6 +145,7 @@ private:
   struct Options {
     int acc_min_=2, acc_max_=2, acc_abs_=2, acc_and_=2, acc_or_=2,
       acc_ind_le_=2, acc_ind_eq_=2;
+    int acc_exp_=2, acc_log_=2;
   } storedOptions_;
 };
 

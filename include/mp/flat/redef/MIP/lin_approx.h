@@ -33,10 +33,11 @@ public:
     auto x = con.GetArguments()[0];
     auto y = con.GetResultVar();
     LinApproxParams laPrm;
-    laPrm.lbx = std::max(GetMC().lb(x), -1e6);
-    laPrm.ubx = std::min(GetMC().ub(x), 1e6);
-    laPrm.lby = std::max(GetMC().lb(y), -1e6);
-    laPrm.uby = std::min(GetMC().ub(y), 1e6);
+    /// Narrow graph domain to +-1e6
+    laPrm.grDom.lbx = std::max(GetMC().lb(x), -1e6);
+    laPrm.grDom.ubx = std::min(GetMC().ub(x), 1e6);
+    laPrm.grDom.lby = std::max(GetMC().lb(y), -1e6);
+    laPrm.grDom.uby = std::min(GetMC().ub(y), 1e6);
     GetMC().RedefineVariable(con.GetResultVar(),
           PLConstraint({x}, PLApproximate(con, laPrm)));
     GetMC(). PropagateResultOfInitExpr(     // propagate ctx into new constr
@@ -48,6 +49,16 @@ protected:
   /// Reuse the stored ModelConverter
   using Base::GetMC;
 };
+
+
+/// Typedef FuncConConverter_MIP_Exp
+template <class MC>
+using FuncConConverter_MIP_Exp = FuncConConverter_MIP<MC, ExpConstraint>;
+
+/// Typedef FuncConConverter_MIP_Log
+template <class MC>
+using FuncConConverter_MIP_Log = FuncConConverter_MIP<MC, LogConstraint>;
+
 
 } // namespace mp
 

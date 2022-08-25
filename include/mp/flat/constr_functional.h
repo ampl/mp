@@ -268,8 +268,17 @@ struct PLPoints {
   std::vector<double> x_, y_;
   /// Default construct
   PLPoints() { }
+  /// Construct from 2 vectors
+  PLPoints(std::vector<double> x, std::vector<double> y) :
+    x_{x}, y_{y} { }
   /// Construct from PLSlopes
   PLPoints(const PLSlopes& pls);
+  /// Add point
+  void AddPoint(double x, double y) {
+    if (!empty())
+      assert(x > x_.back());
+    x_.push_back(x); y_.push_back(y);
+  }
 };
 
 
@@ -289,6 +298,8 @@ private:
   PLPoints plp_;
 };
 
+
+/// Define PLConstraint
 DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( PLConstraint,
                   VarArray1, PLConParams, "r = piecewise_linear(x)");
 

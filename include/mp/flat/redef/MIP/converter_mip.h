@@ -90,6 +90,13 @@ public:
   /// PowConstExp
   INSTALL_ITEM_CONVERTER(PowConstExponentConverter_MIP)
 
+  /// Smooth nonlinear
+
+  /// Exp
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Exp)
+  /// Log
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Log)
+
 
   /// Strict comparison tolerance.
   /// Need a big eps to avoid misinterpretation,
