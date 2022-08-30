@@ -30,6 +30,8 @@ add the following CMake flags::
 
   -DBUILD_TESTS=off -DBUILD_EXAMPLES=off -DBUILD_DOC=off
   -DCMAKE_BUILD_TYPE=Debug                     ## Linux/Unix way to set debug mode
+  -DUSE_SANITIZERS=on                          ## Linux/Unix way to use code sanitizers
+                                               ## (slow, for checking only)
 
 Once built, executing::
 
