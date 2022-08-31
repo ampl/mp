@@ -1,0 +1,71 @@
+[
+  {
+    "name" : "exp_01_check_obj",
+    "objective" : 1.6931555,
+    "tags" : ["continuous", "nonlinear"],
+    "options": { "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5" },
+    "comment": "Rel error bound 1e-5 for Gurobi, own plapprox for others"
+  },
+  {
+    "name" : "exp_01_check_obj ownplapprox",
+    "objective" : 1.6931555,
+    "tags" : ["continuous", "nonlinear", "ownplapprox"],
+    "options": { "ANYSOLVER_options": "acc:exp=1" },
+    "comment": "Own plapprox for Gurobi"
+  },
+  {
+    "name" : "exp_02_check_2con",
+    "tags" : ["continuous", "nonlinear"],
+    "options": { "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5" },
+    "comment": "Rel error bound 1e-5 for Gurobi, own plapprox for others",
+    "values": {
+      "if abs(y-exp(x))<=1e-5 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "exp_02_check_2con ownplapprox",
+    "tags" : ["continuous", "nonlinear", "ownplapprox"],
+    "options": { "ANYSOLVER_options": "acc:exp=1" },
+    "comment": "Own plapprox for Gurobi",
+    "values": {
+      "if abs(y-exp(x))<=1e-5 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "log_01_check_obj",
+    "tags" : ["continuous", "nonlinear"],
+    "options": { "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5" },
+    "comment": "Rel error bound 1e-5 for Gurobi, own plapprox for others",
+    "values": {
+      "if abs(Obj1+0.61371)<=1e-5 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "log_01_check_obj ownplapprox",
+    "tags" : ["continuous", "nonlinear", "ownplapprox"],
+    "options": { "ANYSOLVER_options": "acc:log=1" },
+    "comment": "Own plapprox for Gurobi (log)",
+    "values": {
+      "if abs(Obj1+0.61371)<=1e-5 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "log_02_check_2con_noncvx",
+    "tags" : ["continuous", "nonlinear"],
+    "options": { "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5" },
+    "comment": "Rel error bound 1e-5 for Gurobi, own plapprox for others",
+    "values": {
+      "if abs(y-log(x))<=1e-5 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "log_02_check_2con_noncvx ownplapprox",
+    "tags" : ["continuous", "nonlinear", "ownplapprox"],
+    "options": { "ANYSOLVER_options": "acc:log=1" },
+    "comment": "Own plapprox for Gurobi (log)",
+    "values": {
+      "if abs(y-log(x))<=1e-5 then 1 else 0": 1
+    }
+  }
+
+]

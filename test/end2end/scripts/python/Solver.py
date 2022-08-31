@@ -598,6 +598,8 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.multisol, ModelTags.sstatus,
                  ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
 
+                 ModelTags.ownplapprox,
+
                  ModelTags.gurobi_cloud, ModelTags.gurobi_server,
                 }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)

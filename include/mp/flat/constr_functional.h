@@ -277,7 +277,10 @@ struct PLPoints {
   void AddPoint(double x, double y) {
     if (!empty())
       assert(x > x_.back());
-    x_.push_back(x); y_.push_back(y);
+    if (empty() || x>x_.back()+1e-4) {   // skip near points for Gurobi
+      x_.push_back(x);
+      y_.push_back(y);
+    }
   }
 };
 
