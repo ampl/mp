@@ -52,23 +52,19 @@ Below are details on the various kinds of expressions and how they are presented
 to the solvers.
 
 
-Conditional and logical expressions
+Conditional operators
 ***********************************
-
-
-Conditional expressions
-~~~~~~~~~~~~~~~~~~~~~~~
 
 AMPL already provides an ``if-then-else`` operator that returns a value
 that can be used in expressions:
 
-- if *logical-expr* then *object-expr1*
+- if *logical-expr* then *object-expr*
+    Takes the value of *object-expr* when the *logical-expr* is true, 
+    and the value 0 when the *logical-expr* is false.
 
 - if *logical-expr* then *object-expr1* else *object-expr2*
-    Takes the value of object-expr1 when the *logical-expr* is true, and the value
-    of *object-expr2* (or 0 if omitted) when the *logical-expr* is false.
-    Both *object-expr*'s must be compatible, i.e., both numbers, strings, or sets.
-
+    Takes the value of *object-expr1* when the *logical-expr* is true, and the value
+    of *object-expr2* when the *logical-expr* is false.
 
 When this operator appears in a constraint, the *logical-expr*
 can contain variables, in which case AMPL handles the constraint like
@@ -83,8 +79,8 @@ In particular, the *logical-expr* may be any valid *constraint-expr*.
                 if MachineForJob[j] = k then cost[j,k];
 
 
-Logical relations
-~~~~~~~~~~~~~~~~~
+Logical operators
+***********************************
 
 AMPL also has a similar if-then form of indexing expression,
 which is used in the context of constraints as follows:
