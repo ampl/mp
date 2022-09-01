@@ -282,6 +282,19 @@ struct PLPoints {
       y_.push_back(y);
     }
   }
+  /// Get preslope
+  double PreSlope() const {
+    return (x_.size()<=1 || x_[0]>=x_[1]) ?
+        0.0 :
+        (y_[1]-y_[0]) / (x_[1]-x_[0]);
+  }
+  /// Get postslope
+  double PostSlope() const {
+    auto i1=x_.size()-1, i0=i1-1;
+    return (x_.size()<=1 || x_[i0]>=x_[i1]) ?
+        0.0 :
+        (y_[i1]-y_[i0]) / (x_[i1]-x_[i0]);
+  }
 };
 
 

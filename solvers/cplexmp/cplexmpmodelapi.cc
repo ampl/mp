@@ -117,6 +117,14 @@ void CplexModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
                                ic.get_constraint().pcoefs(), NULL) );
 }
 
+void CplexModelAPI::AddConstraint(const PLConstraint& plc) {
+  PLPoints plp(plc.GetParameters());
+  CPLEX_CALL( CPXaddpwl(env(), lp(),
+              plc.GetResultVar(), plc.GetArguments()[0],
+              plp.PreSlope(), plp.PostSlope(),
+              plp.x_.size(), plp.x_.data(), plp.y_.data(), NULL) );
+}
+
 void CplexModelAPI::FinishProblemModificationPhase() {
 }
 

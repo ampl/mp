@@ -607,16 +607,18 @@ class GurobiDirectSolver(MPDirectSolver):
 
 class CPLEXDirectSolver(MPDirectSolver):
     def _getAMPLOptionsName(self):
-        return "cplexdirect"
+        return "cplex"
 
 
     def __init__(self, exeName, timeout=None, nthreads=None,
                  otherOptions=None):
         stags = {
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 # ModelTags.plinear,
+                 ModelTags.plinear,
                  # ModelTags.quadratic, ModelTags.quadraticnonconvex,
-                 # ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric
+                 ModelTags.nonlinear,
+                 ModelTags.log,
+                 # ModelTags.trigonometric
 
                  ModelTags.relax,
                  ModelTags.multiobj
