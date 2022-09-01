@@ -50,7 +50,11 @@ class ModelTags(enum.Enum):
     sstatus = 40012              # Basis I/O
     iis = 40013
     iisforce = 40014
-    feasrelax = 4010
+    feasrelax = 40100
+
+    ownplapprox = 50000          # Solvers accepting general nonlinear constraints
+                                 # but providing acc:exp etc options so we apply
+                                 # own pl approximation
 
 
     ## Solver-specific

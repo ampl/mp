@@ -20,6 +20,9 @@
  Author: Gleb Belov
  */
 #include <cmath>
+#include <array>
+#include <vector>
+#include <algorithm>
 
 #include "mp/flat/constr_std.h"
 #include "mp/flat/redef/MIP/core/lin_approx_core.h"
@@ -33,7 +36,7 @@ class PLApproximator;
 /// Define generic approximation call
 template <class FuncCon>
 PLPoints PLApproximate(const FuncCon& con,
-                             LinApproxParams& laPrm) {
+                             PLApproxParams& laPrm) {
   PLApproximator<FuncCon> pla{con, laPrm};
   return pla.Run();
 }
@@ -42,12 +45,13 @@ PLPoints PLApproximate(const FuncCon& con,
 /// Interface class for univariate function's
 /// piecewise-linear smooth approximator:
 /// domain, periodicity, derivatives.
-/// The basic utilities assume monotonicity.
+/// The basic version assumes monotonicity
+/// of the function and the 1st derivative.
 template <class FuncCon>
 class BasicPLApproximator {
 public:
   /// Constructor
-  BasicPLApproximator(const FuncCon& con, LinApproxParams& laPrm) :
+  BasicPLApproximator(const FuncCon& con, PLApproxParams& laPrm) :
     con_(con), laPrm_(laPrm) { }
   /// Virtual destructor
   virtual ~BasicPLApproximator() { }
@@ -60,15 +64,37 @@ public:
 
 protected:
   /// Ample, but realistic, function graph domain
-  /// (values should not overflow when computeing (pre-)image)
+  /// (values should not overflow when computing (pre-)image)
   virtual FuncGraphDomain GetFuncGraphDomain() const = 0;
-  /// Function graph domain: clip user-provided domain
-  /// to provided rectangle
-  virtual void ClipFuncGraphDomain(
-      FuncGraphDomain& grDom) const {
-    grDom.intersect(GetFuncGraphDomain());
-    ClipWithFunctionValues(grDom);
+  /// Function graph domain: clip to the user-provided domain
+  virtual void ClipFuncGraphDomain() {
+    laPrm_.grDom.intersect(GetFuncGraphDomain());
+    ClipWithFunctionValues(laPrm_.grDom);
+    lbx_ = laPrm_.grDom.lbx;
+    ubx_ = laPrm_.grDom.ubx;
   }
+  /// Check domain, throw if infeas, or return trivial PL
+  /// @throw if infeasible
+  /// @return false iff trivial
+  /// @param result: the trivial PL
+  bool CheckDomainReturnFalseIfTrivial(PLPoints& result);
+  /// Provide initial step length to the right from
+  /// the current point, trying have the error nearly ok
+  virtual double ComputeInitialStepLength(double x0);
+  /// Increase step length while error small enough
+  /// @param dx0: in-out parameter, step length
+  virtual void IncreaseStepWhileErrorSmallEnough(
+      double x0, double f0, double& dx0);
+  /// Decrease step length while error too high
+  /// @param dx0: in-out parameter, step length
+  virtual void DecreaseStepWhileErrorTooBig(
+      double x0, double f0, double& dx0);
+  /// Compare error on the given linear segment
+  /// to the relevant upper bound.
+  /// The error can be relative or absolute.
+  /// @return -1, 0, 1 for <, ==, >
+  virtual int CompareError(
+      double x0, double y0, double x1, double y1);
 
   /// Evaluate function at \a x
   virtual double eval(double x) const = 0;
@@ -81,87 +107,188 @@ protected:
   /// Evaluate f'' at \a x
   virtual double eval_2nd(double x) const = 0;
 
-  /// Maximal error (along Y axis) to the linear segment
-  /// (x0, y0) - (x1, y1).
+  /// Maximal absolute error (along Y axis) to the linear segment
+  /// (x0, y0) -> (x1, y1).
   /// Standard implementation checks in the ends
   /// and in the middle value point
-  virtual double maxError(
-      double x0, double y0, double x1, double y1) {
-    auto f0 = eval(x0);
-    auto f1 = eval(x1);
-    auto errMax = std::max( std::fabs(f0-y0), std::fabs(f1-y1) );
-    MP_ASSERT_ALWAYS(x1>x0, "LinApprox maxErr: single point");
-    auto xMid = inverse_1st( (y1-y0)/(x1-x0) );
-    auto fMid = eval(xMid);
-    auto yMid = y0 + (y1-y0) * (xMid-x0) / (x1-x0);
-    errMax = std::max( errMax, std::fabs(fMid-yMid) );
-    return errMax;
-  }
+  virtual double maxErrorAbs(
+      double x0, double y0, double x1, double y1);
+  /// Maximal relative error (along Y axis) of the linear segment
+  /// (x0, y0) -> (x1, y1) to the function.
+  /// For function values between +-1, the error bound is taken
+  /// absolute
+  virtual double maxErrorRelAbove1(
+      double x0, double y0, double x1, double y1);
   /// Clip the graph domain, considering the actual function.
   virtual void ClipWithFunctionValues(FuncGraphDomain& grDom) const;
 
+  /// Function interval to approximate: lb
+  double lbx() const { return lbx_; }
+  /// Function interval to approximate: ub
+  double ubx() const { return ubx_; }
 
 private:
   const FuncCon& con_;
-  LinApproxParams& laPrm_;
+  PLApproxParams& laPrm_;
+  double lbx_ = -1e100, ubx_=1e100;
 };
 
 /// Approximation execution
 template <class FuncCon>
 PLPoints BasicPLApproximator<FuncCon>::Run() {
   PLPoints result;
-  ClipFuncGraphDomain(laPrm_.grDom);
-  const auto lbx = laPrm_.grDom.lbx, ubx = laPrm_.grDom.ubx;
-  if (lbx > ubx+1e-6)
-    MP_INFEAS(fmt::format("LinApprox {}: "
-                          "empty argument domain [{}, {}]",
-                          GetConTypeName(), lbx, ubx));
-  /// Domain ~ single point
-  if (lbx > ubx-1e-6)
-    return { {(lbx+ubx)/2.0}, {eval((lbx+ubx)/2.0)} };
-  auto x0 = lbx;                      // current left point
-  result.AddPoint(x0, eval(x0));
-  /// Simple: breakpoints on the function
-  do {
-    /// Quadratic approximation from current left point
-    const auto f0 = eval(x0);
-    auto f2 = eval_2nd(x0);             // f''(x0)
-    MP_ASSERT_ALWAYS(std::fabs(f2)>1e-100,
-                     fmt::format("LinApprox {}: f''(x0)==0",
-                                 GetConTypeName()));
-    /// Initial step
-    auto dx0 = std::sqrt(
-          std::fabs(laPrm_.ubErrAbs * 8.0 / 3.0 / f2) );
-    if (x0+dx0 > ubx)
-      dx0 = ubx-x0;
-    /// Increase step if actual error small
-    while ( maxError(x0, f0, x0+dx0, eval(x0+dx0))
-            < laPrm_.ubErrAbs ) {
-      dx0 *= 1.2;
-      if (x0+dx0 > ubx) {
-        dx0 = ubx-x0;
-        break;
-      }
-    }
-    /// Decrease step if actual error too big
-    while ( maxError(x0, f0, x0+dx0, eval(x0+dx0))
-            > laPrm_.ubErrAbs ) {
-      dx0 *= (1.0 / 1.1);
-    }
-    auto err00 = maxError(x0, f0, x0+dx0, eval(x0+dx0));
-    x0 += dx0;
-    result.AddPoint(x0, eval(x0));
-  } while (x0 < ubx);
+  ClipFuncGraphDomain();
+  if (CheckDomainReturnFalseIfTrivial(result)) {
+    auto x0 = lbx();                      // current left point
+    auto f0 = eval(x0);
+    result.AddPoint(x0, f0);
+    /// Simple: breakpoints on the function
+    do {
+      auto dx0 = ComputeInitialStepLength(x0);
+      assert(x0+dx0 <= ubx());
+      IncreaseStepWhileErrorSmallEnough(x0, f0, dx0);
+      DecreaseStepWhileErrorTooBig(x0, f0, dx0);
+      x0 += dx0;
+      result.AddPoint(x0, f0 = eval(x0));
+    } while (x0 < ubx());
+  }
   return result;
 }
 
+template <class FuncCon>
+bool BasicPLApproximator<FuncCon>::CheckDomainReturnFalseIfTrivial(
+    PLPoints& result) {
+  if (lbx() > ubx()+1e-6)
+    MP_INFEAS(fmt::format("PLApprox {}: "
+                          "empty argument domain [{}, {}]",
+                          GetConTypeName(), lbx(), ubx()));
+  /// Domain ~ single point
+  if (lbx() > ubx()-1e-6) {
+    result = { {(lbx()+ubx())/2.0}, {eval((lbx()+ubx())/2.0)} };
+    return false;
+  }
+  return true;
+}
+
+template <class FuncCon>
+double BasicPLApproximator<FuncCon>::ComputeInitialStepLength(
+    double x0) {
+  /// Quadratic approximation from current left point
+  auto f2 = eval_2nd(x0);             // f''(x0)
+  MP_ASSERT_ALWAYS(std::fabs(f2)>1e-100,
+                   fmt::format("PLApprox {}: f''(x0)==0",
+                               GetConTypeName()));
+  /// Initial step
+  auto dx0 = std::sqrt(
+        std::fabs(laPrm_.ubErr * 8.0 / 3.0 / f2) );
+  if (x0+dx0 > ubx())
+    dx0 = ubx()-x0;
+  return dx0;
+}
+
+template <class FuncCon>
+void BasicPLApproximator<FuncCon>::IncreaseStepWhileErrorSmallEnough(
+    double x0, double f0, double& dx0) {
+  while ( 0 > CompareError(x0, f0, x0+dx0, eval(x0+dx0)) ) {
+    dx0 *= 1.2;
+    if (x0+dx0 > ubx()) {
+      dx0 = ubx()-x0;
+      break;
+    }
+  }
+}
+
+template <class FuncCon>
+void BasicPLApproximator<FuncCon>::DecreaseStepWhileErrorTooBig(
+    double x0, double f0, double& dx0) {
+  while ( 0 < CompareError(x0, f0, x0+dx0, eval(x0+dx0)) ) {
+    dx0 *= (1.0 / 1.1);
+  }
+}
+
+template <class FuncCon>
+int BasicPLApproximator<FuncCon>::CompareError(
+    double x0, double y0, double x1, double y1) {
+//  auto err = maxErrorAbs(x0, y0, x1, y1);
+  auto err = maxErrorRelAbove1(x0, y0, x1, y1);
+  auto ub = laPrm_.ubErr;
+  if (err<ub)
+    return -1;
+  if (err>ub)
+    return 1;
+  return 0;
+}
+
+template <class FuncCon>
+double BasicPLApproximator<FuncCon>::maxErrorAbs(
+    double x0, double y0, double x1, double y1) {
+  MP_ASSERT_ALWAYS(x1>x0,
+                   "PLApprox maxErrAbs(): degenerate segment, x0>=x1");
+  auto f0 = eval(x0);
+  auto f1 = eval(x1);
+  auto errMax = std::max( std::fabs(f0-y0), std::fabs(f1-y1) );
+  auto xMid = inverse_1st( (y1-y0)/(x1-x0) );
+  auto fMid = eval(xMid);
+  auto yMid = y0 + (y1-y0) * (xMid-x0) / (x1-x0);
+  errMax = std::max( errMax, std::fabs(fMid-yMid) );
+  return errMax;
+}
+
+template <class FuncCon>
+double BasicPLApproximator<FuncCon>::maxErrorRelAbove1(
+    double x0, double y0, double x1, double y1) {
+  MP_ASSERT_ALWAYS(x1>x0,
+                   "PLApprox maxErrRel(): degenerate segment, x0>=x1");
+  MP_ASSERT_ALWAYS(laPrm_.ubErr>0.0,
+                   "PLApprox maxErrRel(): ubErr<=0");
+  std::vector< std::array<double, 2> > points;
+  auto f0 = eval(x0);
+  auto f1 = eval(x1);
+  points.push_back({f0, y0});
+  points.push_back({f1, y1});
+  auto slope = (y1-y0)/(x1-x0);        // segment slope
+  auto xMid = inverse_1st( slope );    // middle-value point
+  points.push_back( { eval(xMid), y0 + (xMid-x0) * slope } );
+  auto xMidUp = inverse_1st( slope / (1+laPrm_.ubErr) );
+  points.push_back( { eval(xMidUp), y0 + (xMidUp-x0) * slope } );
+  if (1.0!=laPrm_.ubErr) {
+    auto xMidDn = inverse_1st( slope / (1-laPrm_.ubErr) );
+    points.push_back( { eval(xMidDn), y0 + (xMidDn-x0) * slope } );
+  }
+  if (f0<1.0 && f1>1.0) {
+    auto x_preim_1 = inverse(1.0);
+    MP_ASSERT_ALWAYS(x0<x_preim_1 && x1>x_preim_1,
+                     "PLApprox maxErrRel(): preim(1.0) outside");
+    points.push_back( { 1.0, y0 + (x_preim_1-x0) * slope } );
+  }
+  if (f0<-1.0 && f1>-1.0) {
+    auto x_preim_1 = inverse(-1.0);
+    MP_ASSERT_ALWAYS(x0<x_preim_1 && x1>x_preim_1,
+                     "PLApprox maxErrRel(): preim(-1.0) outside");
+    points.push_back( { -1.0, y0 + (x_preim_1-x0) * slope } );
+  }
+  /// Check rel / abs errors in these points
+  double errMax=0.0;
+  for (const auto& pt: points) {
+    auto f=pt[0];
+    auto y=pt[1];
+    auto err = (f>=-1.0 && f<=1.0) ?
+          std::fabs(f-y) :                    // abs error in -1..1
+          std::fabs(f-y) / std::fabs(f);      // rel error otherwise
+    errMax = std::max(errMax, err);
+  }
+  return errMax;
+}
+
+
+////////////////// SPECIALIZED PLApproximators<> ////////////////////
 
 /// PLApproximator<ExpConstraint>
 template <>
 class PLApproximator<ExpConstraint> :
     public BasicPLApproximator<ExpConstraint> {
 public:
-  PLApproximator(const ExpConstraint& con, LinApproxParams& p) :
+  PLApproximator(const ExpConstraint& con, PLApproxParams& p) :
     BasicPLApproximator<ExpConstraint>(con, p) { }
   FuncGraphDomain GetFuncGraphDomain() const override
   { return { -230.2585, 230.2585, 1e-100, 1e100 }; }
@@ -175,7 +302,7 @@ public:
 /// Instantiate PLApproximate<ExpConstraint>
 template
 PLPoints PLApproximate<ExpConstraint>(
-    const ExpConstraint& con, LinApproxParams& laPrm);
+    const ExpConstraint& con, PLApproxParams& laPrm);
 
 
 /// PLApproximator<LogConstraint>
@@ -183,7 +310,7 @@ template <>
 class PLApproximator<LogConstraint> :
     public BasicPLApproximator<LogConstraint> {
 public:
-  PLApproximator(const LogConstraint& con, LinApproxParams& p) :
+  PLApproximator(const LogConstraint& con, PLApproxParams& p) :
     BasicPLApproximator<LogConstraint>(con, p) { }
   FuncGraphDomain GetFuncGraphDomain() const override
   { return { 1e-5, 1e100, -230.2585, 230.2585 }; }
@@ -197,7 +324,7 @@ public:
 /// Instantiate PLApproximate<LogConstraint>
 template
 PLPoints PLApproximate<LogConstraint>(
-    const LogConstraint& con, LinApproxParams& laPrm);
+    const LogConstraint& con, PLApproxParams& laPrm);
 
 
 void FuncGraphDomain::intersect(const FuncGraphDomain &grDom) {

@@ -1,43 +1,39 @@
 .. _modeling-guide:
 
-Modeling guide
-==============
+Modeling Guide for MP-based AMPL Solvers
+=========================
 
-A guide to using the beta test release of
-`x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobi>`_ --
-the enhanced
-`AMPL-Gurobi <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_
-interface,
-`copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_ -- an interface
-to `Cardinal Optimizer <https://www.shanshu.ai/copt>`_, and
-`highs <https://github.com/ampl/mp/tree/master/solvers/highsdirect>`_ -- an interface
-to `HiGHS <https://highs.dev/>`_.
-They can be downloaded in the `AMPL distribution bundle <https://portal.ampl.com>`_
-or compiled from source.
+AMPL's newly extended C++ solver interface library, MP, is publicly available in the `ampl/mp <https://github.com/ampl/mp>`_ repository. Solver interfaces built with MP are able to handle a significantly expanded range of model expressions. Currently available MP-based solvers include:
+
+- `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobi>`_, an enhanced interface to the `Gurobi <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_ solver
+
+- `copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_, an interface to `Cardinal Optimizer <https://ampl.com/products/solvers/solvers-we-sell/copt/>`_
+
+- `highs <https://github.com/ampl/mp/tree/master/solvers/highsdirect>`_, an interface to the open-source `HiGHS <https://highs.dev/>`_ solver
+
+Binaries for these solvers can be downloaded, in distribution bundles and individually, through the `AMPL Portal <https://portal.ampl.com>`_.
 
 
-Summary
--------
+Overview
+--------
 
-- Full support of logical expressions and constraints, as described in the
-  AMPL page on `Logic and Constraint Programming Extensions
-  <https://ampl.com/resources/logic-and-constraint-programming-extensions/>`_.
-  
-- Algebraic expressions beyond linear and quadratic, including
-  complementarity constraints.
+The expanded MP solver interface library offers new support for the following categories of operators and expressions:
 
-- Choice between conversions in the driver vs. native solver support.
+- Conditional operators: ``if-then-else``; ``==>``, ``<==``, ``<==>``
+- Logical operators: ``or``, ``and``, ``not``; ``exists``, ``forall``
+- Piecewise linear functions: ``abs``; ``min``, ``max``; ``<<breakpoints; slopes>>``
+- Counting operators: ``count``; ``atmost``, ``atleast``, ``exactly``; ``numberof``
+- Comparison operators: ``>``, ``<``, ``!=``; ``alldiff``
+- Complementarity operator: ``complements``
+- Nonlinear operators and functions: ``*``, ``/``, ``^``; ``exp``, ``log``; ``sin``, ``cos``, ``tan``
+- Set membership operator: ``in``
 
-- Conversion of suffixes such as `.funcpieces` and `.iis` referring to subexpressions.
+Details and examples are given in the *Expressions supported* section below. See also the individual solvers' documentation for details of solver-specific features:
 
-- Export of the conversion graph corresponding to model transformations
-  from NL file to the solver form.
+- Choice between linearization in the interface and native solver support for some operations
+- Handling of AMPL suffixes on constraints that are transformed by the interface
 
-Example models can be found in the
-`test suite <https://github.com/ampl/mp/tree/develop/test/end2end/cases>`_ and
-in the
-`ampl.github.io model collection <https://github.com/ampl/ampl.github.io/tree/master/models>`_.
-See also an `overview talk <https://ampl.com/MEETINGS/TALKS/2022_04_Houston_Tutorial.pdf>`_.
+The slides from our presentation on `Advances in Model-Based Optimization <https://ampl.com/MEETINGS/TALKS/2022_07_Bethlehem_Fourer.pdf>`_ provide overview of the MP interface library in the context of AMPL applications, including comments on implementation and efficiency issues. 
 
 
 Expressions supported

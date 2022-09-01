@@ -277,7 +277,23 @@ struct PLPoints {
   void AddPoint(double x, double y) {
     if (!empty())
       assert(x > x_.back());
-    x_.push_back(x); y_.push_back(y);
+    if (empty() || x>x_.back()+1e-4) {   // skip near points for Gurobi
+      x_.push_back(x);
+      y_.push_back(y);
+    }
+  }
+  /// Get preslope
+  double PreSlope() const {
+    return (x_.size()<=1 || x_[0]>=x_[1]) ?
+        0.0 :
+        (y_[1]-y_[0]) / (x_[1]-x_[0]);
+  }
+  /// Get postslope
+  double PostSlope() const {
+    auto i1=x_.size()-1, i0=i1-1;
+    return (x_.size()<=1 || x_[i0]>=x_[i1]) ?
+        0.0 :
+        (y_[i1]-y_[i0]) / (x_[i1]-x_[i0]);
   }
 };
 

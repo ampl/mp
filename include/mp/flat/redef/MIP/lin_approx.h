@@ -32,7 +32,7 @@ public:
     assert(1==con.GetArguments().size());          // 1 argument var
     auto x = con.GetArguments()[0];
     auto y = con.GetResultVar();
-    LinApproxParams laPrm;
+    PLApproxParams laPrm;
     /// Narrow graph domain to +-1e6
     laPrm.grDom.lbx = std::max(GetMC().lb(x), -1e6);
     laPrm.grDom.ubx = std::min(GetMC().ub(x), 1e6);

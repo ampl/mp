@@ -11,15 +11,19 @@ namespace mp {
 
 /// Function graph domain
 struct FuncGraphDomain {
+  /// Bounds for x, y
   double lbx, ubx, lby, uby;
+  /// Intersect the domain with another rectangle
   void intersect(const FuncGraphDomain& grDom);
 };
 
 /// External parameters
 /// for piecewise-linear approximation
-struct LinApproxParams {
+struct PLApproxParams {
+  /// The domain for approximation
   FuncGraphDomain grDom;
-  double ubErrAbs = 1e-2;
+  /// Error upper bound (relative or absolute)
+  double ubErr = 1e-5;
 };
 
 
@@ -29,7 +33,7 @@ struct LinApproxParams {
 /// @return the PL function
 template <class FuncCon>
 PLPoints PLApproximate(const FuncCon& con,
-                             LinApproxParams& laPrm);
+                             PLApproxParams& laPrm);
 
 }  // namespace mp
 
