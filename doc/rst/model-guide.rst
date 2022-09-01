@@ -39,8 +39,10 @@ The slides from our presentation on `Advances in Model-Based Optimization <https
 Expressions supported
 ---------------------
 
-MP supports arbitrary trees of logical, relational, general combinatorial,
-and non-linear expressions including higher-degree polynomials:
+The MP solver interface library works with existing AMPL syntaxes, but allows them to be used in more general ways, or with a greater variety of solvers. In many cases, an extension results from allowing variables to appear in more general contexts, such as with conditional, logical, or counting operators. Other extensions are enabled by providing more powerful transformations, particularly to linear or quadratic equivalents, and by providing support for extensions that are native to some solvers. A few extensions are already handled in the AMPL language translator, and are included here for completeness.
+
+.. MP supports arbitrary trees of logical, relational, general combinatorial,
+.. and non-linear expressions including higher-degree polynomials:
 
 .. code-block:: ampl
 
@@ -48,8 +50,8 @@ and non-linear expressions including higher-degree polynomials:
                 (x<=-5 or
                         (max((x+1)*(x+2)*(y+3), y)<=3 and exp((x+18)*y)<=12));
 
-Below are details on the various kinds of expressions and how they are presented
-to the solvers.
+.. Below are details on the various kinds of expressions and how they are presented
+.. to the solvers.
 
 
 Conditional operators
