@@ -246,6 +246,9 @@ class AMPLRunner(object):
             print("Solving... ", end="")
           t.tick()
           self._ampl.solve()
+          solve_result = self._ampl.get_value("solve_result")
+          if solve_result != "solved":
+              print("WARNING: not solved (solve_result: {})".format(solve_result))
           amplStats["AMPLsolveTime"]= t.toc()
       self.stats["AMPLstats"] = amplStats
       interval = self._ampl.getValue("_solve_elapsed_time")
