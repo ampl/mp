@@ -231,8 +231,30 @@ public: // for ConstraintKeeper
     MP_DISPATCH(Convert(con, i));
   }
 
-  /// Query if a constraint needs to be converted,
+  /// Query if the constraint typer
+  /// can be converted.
+  /// This method should not be redefined;
+  /// specialize IfNeedsCvt_impl instead.
+  template <class Constraint>
+  bool IfHasConversion(const Constraint* c) {
+    return MPD( IfHasCvt_impl(c) );
+  }
+
+  /// Generic query if a constraint type can be converted.
+  /// Specialize this method, but normally it's specialized
+  /// by INSTALL_CONSTRAINT_CONVERTER.
+  template <class Constraint>
+  bool IfHasCvt_impl(const Constraint* ) {
+    return false;
+  }
+
+  /// Query if the specific item of the constraint
+  /// needs to be converted,
   /// despite being accepted by the ModelAPI.
+  /// For example, Gurobi only accepts Pow with non-negative
+  /// argument.
+  /// This method should not be redefined;
+  /// specialize IfNeedsCvt_impl instead.
   template <class Constraint>
   bool IfNeedsConversion(const Constraint& con, int i) {
     return MPD( IfNeedsCvt_impl(con, i) );
@@ -240,6 +262,7 @@ public: // for ConstraintKeeper
 
   /// Generic query if a constraint needs to be converted,
   /// despite being accepted by the ModelAPI.
+  /// Specialize this method.
   template <class Constraint>
   bool IfNeedsCvt_impl(const Constraint& , int ) {
     return false;
@@ -639,6 +662,9 @@ protected:
 
 private:
   void InitOwnOptions() {
+    /// Should be called after adding all constraint keepers
+    FlatModel::ConsiderAcceptanceOptions(*this, GetModelAPI(), GetEnv());
+
     GetEnv().AddStoredOption("tech:writegraph writegraph exportgraph",
         "File to export conversion graph. Format: JSON Lines.",
         options_.file_graph_export_);
@@ -686,7 +712,9 @@ public:
 
 
 private:
-  ModelAPIType modelapi_;      // We store modelapi in the converter for speed
+  /// We store ModelApi in the converter for speed.
+  /// Should be before constraints
+  ModelAPIType modelapi_;
   /// Conversion graph exporter file appender
   std::unique_ptr<BasicFileAppender> graph_exporter_app_{MakeFileAppender()};
   /// Conversion graph exporter functor
@@ -709,69 +737,89 @@ protected:
   /// Constraint keepers and converters should be initialized after \a presolver_
 
   /// Define constraint keepers for all constraint types.
-  /// No maps for static constraints
-  STORE_CONSTRAINT_TYPE__NO_MAP(LinConRange)
-  STORE_CONSTRAINT_TYPE__NO_MAP(LinConLE)
-  STORE_CONSTRAINT_TYPE__NO_MAP(LinConEQ)
-  STORE_CONSTRAINT_TYPE__NO_MAP(LinConGE)
+  /// No maps for static constraints.
+  /// 2nd parameter: solver options for this constraint,
+  /// in case it is accepted by the solver natively and
+  /// is convertible by us.
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConRange,
+                                "acc:linrange acc:linrng")
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConLE, "acc:linle")
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConEQ, "acc:lineq")
+  STORE_CONSTRAINT_TYPE__NO_MAP(LinConGE, "acc:linge")
 
-  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConRange)
-  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConLE)
-  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConEQ)
-  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConGE)
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConRange,
+                                "acc:quadrange acc:quadrng")
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConLE, "acc:quadle")
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConEQ, "acc:quadeq")
+  STORE_CONSTRAINT_TYPE__NO_MAP(QuadConGE, "acc:quadge")
 
   /// Our own functional constraints: LFC, QFC
-  STORE_CONSTRAINT_TYPE__WITH_MAP(LinearFunctionalConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(QuadraticFunctionalConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(
+      LinearFunctionalConstraint, "acc:linfunccon")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(
+      QuadraticFunctionalConstraint, "acc:quadfunccon")
 
   /// Flattened NL expressions
-  STORE_CONSTRAINT_TYPE__WITH_MAP(MaxConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(MinConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(AbsConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(AndConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(OrConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(MaxConstraint, "acc:max")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(MinConstraint, "acc:min")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AbsConstraint, "acc:abs")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AndConstraint,
+                                  "acc:and acc:forall")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(OrConstraint,
+                                  "acc:or acc:exists")
 
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConEQ)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConLE)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConLT)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConGE)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConGT)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConEQ, "acc:condlineq")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConLE, "acc:condlinle")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConLT, "acc:condlinlt")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConGE, "acc:condlinge")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondLinConGT, "acc:condlingt")
 
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConEQ)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConLE)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConLT)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConGE)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConGT)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConEQ, "acc:condquadeq")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConLE, "acc:condquadle")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConLT, "acc:condquadlt")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConGE, "acc:condquadge")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CondQuadConGT, "acc:condquadgt")
 
-  STORE_CONSTRAINT_TYPE__WITH_MAP(NotConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(DivConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(IfThenConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(AllDiffConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(NumberofConstConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(NumberofVarConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CountConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(NotConstraint, "acc:not")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(DivConstraint, "acc:div")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(IfThenConstraint, "acc:ifthen")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AllDiffConstraint, "acc:alldiff")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(NumberofConstConstraint,
+                                  "acc:numberofconst")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(NumberofVarConstraint,
+                                  "acc:numberofvar")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CountConstraint, "acc:count")
 
-  STORE_CONSTRAINT_TYPE__WITH_MAP(ExpConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(ExpAConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(LogConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(LogAConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(SinConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(CosConstraint)
-  STORE_CONSTRAINT_TYPE__WITH_MAP(TanConstraint)
+  STORE_CONSTRAINT_TYPE__WITH_MAP(ExpConstraint, "acc:exp")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(ExpAConstraint, "acc:expa acc:expA")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(LogConstraint, "acc:log")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(LogAConstraint, "acc:loga acc:logA")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(PowConstraint, "acc:pow")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(SinConstraint, "acc:sin")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CosConstraint, "acc:cos")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(TanConstraint, "acc:tan")
 
   /// No maps for static constraints
-  STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintLinLE)
-  STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintLinEQ)
-  STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintLinGE)
-  STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintQuadLE)
-  STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintQuadEQ)
-  STORE_CONSTRAINT_TYPE__NO_MAP(IndicatorConstraintQuadGE)
-  STORE_CONSTRAINT_TYPE__NO_MAP(PLConstraint)
-  STORE_CONSTRAINT_TYPE__NO_MAP(SOS1Constraint)
-  STORE_CONSTRAINT_TYPE__NO_MAP(SOS2Constraint)
-  STORE_CONSTRAINT_TYPE__NO_MAP(ComplementarityLinear)
-  STORE_CONSTRAINT_TYPE__NO_MAP(ComplementarityQuadratic)
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      IndicatorConstraintLinLE, "acc:indle acc:indlinle")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      IndicatorConstraintLinEQ, "acc:indeq acc:indlineq")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      IndicatorConstraintLinGE, "acc:indge acc:indlinge")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      IndicatorConstraintQuadLE, "acc:indquadle")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      IndicatorConstraintQuadEQ, "acc:indquadeq")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      IndicatorConstraintQuadGE, "acc:indquadge")
+  STORE_CONSTRAINT_TYPE__NO_MAP(PLConstraint,
+                                "acc:pl acc:pwl acc:piecewise")
+  STORE_CONSTRAINT_TYPE__NO_MAP(SOS1Constraint, "acc:sos1")
+  STORE_CONSTRAINT_TYPE__NO_MAP(SOS2Constraint, "acc:sos2")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      ComplementarityLinear, "acc:compl acc:compllin")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      ComplementarityQuadratic, "acc:complquad")
 
 
   ////////////////////// Default map accessors /////////////////////////

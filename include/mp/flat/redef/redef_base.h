@@ -99,6 +99,10 @@ public:
 #define INSTALL_ITEM_CONVERTER(item_cvt_type) \
   item_cvt_type<Impl> item_cvt__ ## item_cvt_type ## _ \
    { *static_cast<Impl*>(this) }; \
+  bool IfHasCvt_impl(const typename \
+      item_cvt_type<Impl>::ItemType*) { \
+    return true; \
+  } \
   bool IfNeedsCvt_impl(const typename \
       item_cvt_type<Impl>::ItemType& con, int i) { \
     return item_cvt__ ## item_cvt_type ## _ . \

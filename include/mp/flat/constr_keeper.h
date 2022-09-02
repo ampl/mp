@@ -7,6 +7,8 @@
 #include <cmath>
 
 #include "mp/common.h"
+#include "mp/format.h"
+#include "mp/env.h"
 #include "mp/flat/model_api_base.h"
 #include "mp/flat/constr_hash.h"
 #include "mp/flat/redef/redef_base.h"
@@ -18,6 +20,12 @@ namespace mp {
 class BasicFlatConverter;
 
 
+static const mp::OptionValueInfo values_item_acceptance[] = {
+  { "0", "Not accepted natively, automatic redefinition will be attempted", 0},
+  { "1", "Accepted but automatic redefinition will be used where possible", 1},
+  { "2", "Accepted natively and preferred", 2}
+};
+
 /// Interface for an array of constraints of certain type
 class BasicConstraintKeeper {
 public:
@@ -25,8 +33,11 @@ public:
   virtual ~BasicConstraintKeeper() { }
 
   /// Constructor
-  BasicConstraintKeeper(pre::BasicValuePresolver& pres, const char* nm) :
-    value_node_(pres, nm), constr_name_(nm) { }
+  BasicConstraintKeeper(
+      pre::BasicValuePresolver& pres,
+      const char* nm, const char* optN) :
+    value_node_(pres, nm),
+    constr_name_(nm), solver_opt_nm_(optN) { }
 
   /// Constraint type
   using ConstraintType = BasicConstraint;
@@ -43,12 +54,26 @@ public:
   virtual int GetResultVar(int i) const = 0;
 
   /// Convert all new items of this constraint.
-  /// This normally dispatches conversion (decomposition) to the Converter
+  /// This normally dispatches conversion (decomposition)
+  ///  to the Converter
   /// @return whether any converted
   virtual bool ConvertAllNewWith(BasicFlatConverter& cvt) = 0;
 
-  /// Backend's acceptance level for the constraint type
-  virtual ConstraintAcceptanceLevel GetBackendAcceptance(
+  /// Query (user-chosen, if sensible) constraint acceptance level
+  virtual ConstraintAcceptanceLevel GetChosenAcceptanceLevel()
+  const {
+    assert(0<=acceptance_level_);       // has been initialized
+    return ConstraintAcceptanceLevel(acceptance_level_);
+  }
+
+  /// Converter's ability to convert the constraint type
+  virtual bool IfConverterConverts(
+      BasicFlatConverter& cvt ) const = 0;
+
+  /// ModelAPI's acceptance level for the constraint type.
+  /// This should not be used directly, instead:
+  /// GetChosenAcceptanceLevel()
+  virtual ConstraintAcceptanceLevel GetModelAPIAcceptance(
       const BasicFlatModelAPI& ) const = 0;
 
   /// Constraint type_info
@@ -80,9 +105,57 @@ public:
   /// Constraint name
   const char* GetConstraintName() const { return constr_name_; }
 
+  /// Acceptance option names
+  virtual const char* GetAcceptanceOptionNames() const
+  { return solver_opt_nm_; }
+
+  /// See what options are available for this constraint:
+  /// whether it is accepted natively by ModelAPI and/or can be
+  /// converted by the Converter.
+  /// If both, add constraint acceptance option.
+  /// This should be called before using the class.
+  virtual void ConsiderAcceptanceOptions(
+      BasicFlatConverter& cvt,
+      const BasicFlatModelAPI& ma,
+      Env& env) {
+    auto cancvt = IfConverterConverts(cvt);
+    SetChosenAcceptanceLevel( GetModelAPIAcceptance(ma) );
+    if (cancvt) {         // See if ModelAPI accepts too
+      if (ConstraintAcceptanceLevel::Recommended ==
+            GetChosenAcceptanceLevel()) {
+        env.AddStoredOption(GetAcceptanceOptionNames(),
+                            fmt::format(
+                              "Solver acceptance level for '{}', "
+                              "default 2:\n\n.. value-table::",
+                              GetConstraintName()).c_str(),
+                            GetAccLevRef(), values_item_acceptance);
+      } else
+        if (ConstraintAcceptanceLevel::AcceptedButNotRecommended ==
+                       GetChosenAcceptanceLevel()) {
+          env.AddStoredOption(GetAcceptanceOptionNames(),
+                              fmt::format(
+                                "Solver acceptance level for '{}', "
+                                "default 1:\n\n.. value-table::",
+                                GetConstraintName()).c_str(),
+                              GetAccLevRef(), values_item_acceptance);
+        }
+    }
+  }
+
+  /// Set user preferred acceptance level
+  virtual void SetChosenAcceptanceLevel(
+      ConstraintAcceptanceLevel acc) { acceptance_level_ = acc;}
+
+
+protected:
+  int& GetAccLevRef() { return acceptance_level_; }
+
+
 private:
   pre::ValueNode value_node_;
-  const char* constr_name_;
+  const char* const constr_name_;
+  const char* const solver_opt_nm_;
+  int acceptance_level_ {-1};
 };
 
 
@@ -135,10 +208,11 @@ public:
 
   /// Derived converter classes have to tell C++ to use
   /// default handlers if they need them
-  /// when they overload Convert(), due to C++ name hiding
+  /// when they overload Convert() etc, due to C++ name hiding
 #define USE_BASE_CONSTRAINT_CONVERTERS(BaseConverter) \
   using BaseConverter::PreprocessConstraint; \
   using BaseConverter::PropagateResult; \
+  using BaseConverter::IfHasCvt_impl; \
   using BaseConverter::IfNeedsCvt_impl; \
   using BaseConverter::Convert
 
@@ -176,6 +250,14 @@ public:
 template <class Converter, class Backend, class Constraint>
 class ConstraintKeeper : public BasicConstraintKeeper {
 public:
+  /// Constructor, adds this CK to the provided ConstraintManager
+  /// Requires the CM to be already constructed
+  ConstraintKeeper(Converter& cvt, const char* nm, const char* optnm) :
+      BasicConstraintKeeper(cvt.GetValuePresolver(), nm, optnm), cvt_(cvt)
+  {
+    GetConverter().AddConstraintKeeper(*this, ConversionPriority());
+  }
+
   /// Constraint type
   using ConstraintType = Constraint;
 
@@ -186,13 +268,6 @@ public:
   /// Assume Converter has the Backend
   Backend& GetBackend(BasicFlatConverter& cvt)
   { return static_cast<Converter&>(cvt).GetModelAPI(); }
-
-  /// Constructor, adds this CK to the provided ConstraintManager
-  /// Requires the CM to be already constructed
-  ConstraintKeeper(Converter& cvt, const char* nm) :
-      BasicConstraintKeeper(cvt.GetValuePresolver(), nm), cvt_(cvt) {
-    GetConverter().AddConstraintKeeper(*this, ConversionPriority());
-  }
 
   /// Add a pre-constructed constraint (or just arguments)
   /// @return index of the new constraint
@@ -249,10 +324,19 @@ public:
     return false;
   }
 
-  /// Acceptance level of this constraint type in the Backend
-  ConstraintAcceptanceLevel GetBackendAcceptance(
+  /// Converter's ability to convert the constraint type
+  bool IfConverterConverts(
+      BasicFlatConverter& cvt ) const override {
+    return static_cast<Converter&>(cvt).
+        IfHasConversion((const Constraint*)nullptr);
+  }
+
+  /// Acceptance level of this constraint type in the ModelAPI
+  ConstraintAcceptanceLevel GetModelAPIAcceptance(
       const BasicFlatModelAPI& ba) const override {
-    return static_cast<const Backend&>( ba ).AcceptanceLevel((Constraint*)nullptr);
+    return
+        static_cast<const Backend&>( ba ).
+        AcceptanceLevel((Constraint*)nullptr);
   }
 
   /// Constraint type_info
@@ -283,6 +367,7 @@ public:
     }
   }
 
+
 protected:
   /// Retrieve the Converter, const
   const Converter& GetConverter() const { return cvt_; }
@@ -304,7 +389,7 @@ protected:
   bool ConvertAllFrom(int& i_last) {
     int i=i_last;
     const auto acceptanceLevel =
-        GetBackendAcceptance(GetBackend(GetConverter()));
+        GetChosenAcceptanceLevel();
     if (NotAccepted == acceptanceLevel) {
       for ( ; ++i!=(int)cons_.size(); )
         if (!cons_[i].IsBridged())
@@ -358,6 +443,7 @@ protected:
     }
   }
 
+
 private:
   Converter& cvt_;
   std::deque<Container> cons_;
@@ -391,11 +477,16 @@ private:
   MPD( GetConstraintMap((Constraint*)nullptr) )
 
 /// Define a constraint keeper
-/// without a subexpression map
-#define STORE_CONSTRAINT_TYPE__INTERNAL(Constraint) \
+/// without a subexpression map.
+/// @param optionNames: name (or a few, space-separated)
+/// of the solver option(s) for acceptance of this
+/// constraint
+#define STORE_CONSTRAINT_TYPE__INTERNAL( \
+    Constraint, optionNames) \
   ConstraintKeeper<Impl, ModelAPI, Constraint> \
     CONSTRAINT_KEEPER_VAR(Constraint) \
-      {*static_cast<Impl*>(this), #Constraint}; \
+      {*static_cast<Impl*>(this), \
+       #Constraint, optionNames}; \
   const ConstraintKeeper<Impl, ModelAPI, Constraint>& \
   GetConstraintKeeper(Constraint* ) const { \
     return CONSTRAINT_KEEPER_VAR(Constraint); \
@@ -408,8 +499,10 @@ private:
 /// Define a constraint keeper
 /// without a subexpression map.
 /// Provide empty MapFind (returns -1) / MapInsert
-#define STORE_CONSTRAINT_TYPE__NO_MAP(Constraint) \
-  STORE_CONSTRAINT_TYPE__INTERNAL(Constraint) \
+#define STORE_CONSTRAINT_TYPE__NO_MAP( \
+    Constraint, optionNames) \
+  STORE_CONSTRAINT_TYPE__INTERNAL( \
+    Constraint, optionNames) \
   int MapFind__Impl(const Constraint& ) { return -1; } \
   bool MapInsert__Impl(const Constraint&, int ) \
     { return true; }
@@ -420,8 +513,10 @@ private:
 /// The Converter storing the Constraint
 /// should define MapFind / MapInsert accessing
 /// the GET_(CONST_)CONSTRAINT_MAP(Constraint)
-#define STORE_CONSTRAINT_TYPE__WITH_MAP(Constraint) \
-  STORE_CONSTRAINT_TYPE__INTERNAL(Constraint) \
+#define STORE_CONSTRAINT_TYPE__WITH_MAP( \
+    Constraint, optionNames) \
+  STORE_CONSTRAINT_TYPE__INTERNAL( \
+    Constraint, optionNames) \
   STORE_CONSTRAINT_MAP(Constraint)
 
 /// Internal use. Name of the constraint container
@@ -506,6 +601,15 @@ public:
   /// Add a new CKeeper with given conversion priority (smaller = sooner)
   void AddConstraintKeeper(BasicConstraintKeeper& ck, double priority)
   { con_keepers_.insert( { priority, ck } ); }
+
+  /// This should be called after adding all constraint keepers
+  void ConsiderAcceptanceOptions(
+      BasicFlatConverter& cvt,
+      const BasicFlatModelAPI& ma,
+      Env& env) {
+    for (auto& ck: con_keepers_)
+      ck.second.ConsiderAcceptanceOptions(cvt, ma, env);
+  }
 
   /// Convert all constraints (including any new appearing)
   void ConvertAllConstraints(BasicFlatConverter& cvt) {
