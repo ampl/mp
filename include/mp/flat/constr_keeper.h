@@ -140,6 +140,28 @@ public:
                               GetAccLevRef(), values_item_acceptance);
         }
     }
+    env.SetConstraintListHeader(
+          "List of flat constraints.\n"
+          "For each constraint the following are given:\n"
+          "\n"
+          "  - name,\n"
+          "  - convertibility into simpler forms,\n"
+          "  - solver acceptance natively,\n"
+          "  - driver option(s) to modify acceptance\n"
+          "    (enabled if both convertible and accepted).");
+    std::string con_descr = (cancvt) ? "Convertible" : "NonConvertible";
+    con_descr += "; ";
+    if (ConstraintAcceptanceLevel::Recommended ==
+          GetChosenAcceptanceLevel())
+      con_descr += "NativeRecommended";
+    else if (ConstraintAcceptanceLevel::AcceptedButNotRecommended ==
+          GetChosenAcceptanceLevel())
+      con_descr += "NativeAcceptedButNotRecommended";
+    else
+      con_descr += "NotAccepted";
+    con_descr += "; ";
+    con_descr += GetAcceptanceOptionNames();
+    env.AddConstraintDescr(GetConstraintName(), con_descr);
   }
 
   /// Set user preferred acceptance level

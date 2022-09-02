@@ -113,25 +113,34 @@ class BasicSolver : private ErrorHandler,
     private OutputHandler, private Interrupter,
     public SolverOptionManager {
 public:
+  /// Name of the file with option settings,
+  /// provided by tech:optionfile
   std::string GetOptionFile(const SolverOption &) const
   { return option_file_save_; }
+  /// Read otpions from option file
   void UseOptionFile(const SolverOption &, fmt::StringRef value);
 
+  /// wantsol value
   int GetWantSol(const SolverOption &) const { return wantsol_; }
+  /// set wantsol
   void SetWantSol(const SolverOption &, int value) {
     if ((value & ~0xf) != 0)
       throw InvalidOptionValue("wantsol", value);
     wantsol_ = value;
   }
 
+  /// solution output filename stub
   std::string GetSolutionStub(const SolverOption &) const {
     return solution_stub_;
   }
+  /// Set sol stub
   void SetSolutionStub(const SolverOption &, fmt::StringRef value) {
     solution_stub_ = value.to_string();
   }
 
+  /// Obj number
   int GetObjNo(const SolverOption &) const { return std::abs(objno_); }
+  /// Set obj number
   void SetObjNo(const SolverOption &opt, int value) {
     if (value < 0)
       throw InvalidOptionValue(opt, value);
@@ -180,14 +189,14 @@ public:
       bool_options_ &= ~AMPL_FLAG;
   }
 
-  /// True if verbose mode
+  /// True if verbose mode.
   /// Should be set by the implementation,
   /// otherwise it's true
   bool verbose_mode() const { return verbose_; }
   /// Set verbosity, by the impl
   void set_verbose_mode(bool f) { verbose_=f; }
 
-  /// True if need to debug
+  /// True if need to debug.
   /// Outputs test infos etc
   bool debug_mode() const { return debug_; }
 
@@ -203,30 +212,36 @@ public:
   /// the objective(s), solvers should not use these options.
   bool multiobj() const { return multiobj_ && objno_<0; }
 
-  /// Returns true if the timing is enabled.
+  /// Returns true if the timing is enabled
   bool timing() const { return timing_; }
 
-  /// Returns the error handler.
+  /// Return error handler
   ErrorHandler *error_handler() { return error_handler_; }
 
-  /// Sets the error handler.
+  /// Set the error handler
   void set_error_handler(ErrorHandler *eh) { error_handler_ = eh; }
 
-  /// Returns the output handler.
+  /// Return output handler
   OutputHandler *output_handler() { return output_handler_; }
+  /// Return output handler
   OutputHandler &get_output_handler() { return *output_handler_; }
 
-  /// Sets the output handler.
+  /// Sets the output handler
   void set_output_handler(OutputHandler *oh) { output_handler_ = oh; }
 
+  /// Interrupter, const
   const Interrupter *interrupter() const { return interrupter_; }
+  /// Interrupter
   Interrupter *interrupter() { return interrupter_; }
+  /// Set interrupter
   void set_interrupter(Interrupter *interrupter) {
     interrupter_ = interrupter ? interrupter : this;
   }
 
+  /// Sol stub as char*
   const char *solution_stub() const { return solution_stub_.c_str(); }
 
+  /// Need mutiple solutions
   bool need_multiple_solutions() const {
     return count_solutions_ || !solution_stub_.empty();
   }
@@ -237,6 +252,7 @@ public:
     std::fputs(output.c_str(), stdout);
   }
 
+  /// Handle error
   void HandleError(fmt::CStringRef message) override {
     std::fputs(message.c_str(), stderr);
     std::fputc('\n', stderr);
@@ -244,8 +260,10 @@ public:
 
   /// The default implementation of Interrupter does nothing.
   bool Stop() const override { return false; }
+  /// Set interrupt handler
   void SetHandler(InterruptHandler, void *) override {}
 
+  /// Handle unknown option
   virtual void HandleUnknownOption(const char *name) {
     ReportError("Unknown option or invalid key \"{}\"", name);
   }
@@ -258,6 +276,7 @@ public:
     w.write(format, args);
     error_handler_->HandleError(w.c_str());
   }
+  /// Variadic overload of ReportError()
   FMT_VARIADIC(void, ReportError, fmt::CStringRef)
 
   /// Formats a string and prints it to stdout or, if an output handler
@@ -267,6 +286,7 @@ public:
     w.write(format, args);
     output_handler_->HandleOutput(w.c_str());
   }
+  /// Variadic overload of Print()
   FMT_VARIADIC(void, Print, fmt::CStringRef)
 
   /// Add a warning.
@@ -300,6 +320,7 @@ public:
   ///   Print("objective {}", FormatObjValue(obj_value));
   DoubleFormatter FormatObjValue(double value);
 
+  /// Declare class ASLProblem as friend
   friend class ASLProblem;
 
   /// Parses solver options from the (solver)_options env variable
@@ -345,6 +366,17 @@ public:
 
   /// Stringify a WarningsMap entry
   static std::string ToString(const WarningsMap::value_type& wrn);
+
+  /// Set constraint list header (printed at the start of -c)
+  void SetConstraintListHeader(std::string clh)
+  { constr_descr_header_ = clh; }
+
+  /// Add constraint type description
+  void AddConstraintDescr(std::string cn, std::string cdescr)
+  { constr_descr_[cn] = cdescr; }
+
+  /// Show constraint descriptions
+  bool ShowConstraintDescriptions();
 
 protected:
   /// Constructs a BasicSolver object.
@@ -420,6 +452,10 @@ private:
 
   /// Warnings
   WarningsMap warnings_;
+
+  /// Constraint descriptions, printable by -c
+  std::string constr_descr_header_;
+  std::map<std::string, std::string> constr_descr_;
 };
 
 
