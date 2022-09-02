@@ -19,7 +19,7 @@ def writeNLFiles(directory, recursive=False, modelList=False):
 def runModels(directory, solvers : list,
               solverOptions=None,
               exporter=None, exportFile=None, modellist=True, justNL=False,
-              recursive=False, preferAMPLModels=False, keepLogs = False):
+              recursive=False, preferAMPLModels=False, keepLogs = False, verbose=False):
     """Convenient wrapper function for testing.
 
           With no optional argument specified, runs as:
@@ -39,6 +39,7 @@ def runModels(directory, solvers : list,
           recursive : bool - If True, finds models in the subdirectories also
           preferAMPLModels:bool - If True, executes the AMPL version of a model if both NL and AMPL versions are present.
           keepLogs: bool - If True, store the logs of all executions; useful for debugging or for benchmarking
+          verbose: bool - If True, print solver output
     """
     solvernames = [Path(slv.getExecutable()).stem for slv in solvers]
     if not exportFile:
@@ -63,4 +64,4 @@ def runModels(directory, solvers : list,
                 msg += " using {} threads".format( solvers[0].getNThreads() )
         msg += '.'
         print(msg)
-        runner.run(modelList, exporter, keepLogs)
+        runner.run(modelList, exporter, keepLogs, verbose)

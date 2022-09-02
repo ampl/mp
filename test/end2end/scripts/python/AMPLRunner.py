@@ -47,7 +47,7 @@ class AMPLRunner(object):
         self._writeSolverName = writeSolverName
         self._amplInitialized = False
         self._keepAMPLOutput = keepAMPLOutput
-        self._optionsExtra = optionsExtra;
+        self._optionsExtra = optionsExtra
         self._logFile = None
 
     def _initAMPL(self):
@@ -60,7 +60,7 @@ class AMPLRunner(object):
             time.sleep(.5)   # so wait until the license is released
         self._ampl = AMPL()
         doLogs = self._logFile is not None
-        self._outputHandler = InnerOutputHandler()
+        self._outputHandler = InnerOutputHandler(self._keepAMPLOutput)
         self._ampl.setOutputHandler(self._outputHandler)
         self._ampl.setErrorHandler(InnerErrorHandler(self.appendError))
         self._ampl.setOption("solver_msg", 1 if doLogs else 0)

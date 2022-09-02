@@ -51,6 +51,8 @@ class Tester:
                         help='only run NL models. Useful when AMPL executable is not available')
         self._parser.add_argument('-k', '--keepLogs', action="store_true",
                         help='keep log files for each run, filenames: {model}.{solver}.log')
+        self._parser.add_argument('-v', '--verbose', action="store_true",
+                        help='print solver output')
 
         self._args = self._parser.parse_args()
 
@@ -79,7 +81,8 @@ class Tester:
                   modellist=not self._args.allfiles,
                   preferAMPLModels=not self._args.preferNL,
                   justNL=self._args.justNL,
-                  keepLogs=self._args.keepLogs)
+                  keepLogs=self._args.keepLogs,
+                  verbose=self._args.verbose)
 
 
 def runTester():

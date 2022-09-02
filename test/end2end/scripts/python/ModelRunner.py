@@ -18,7 +18,7 @@ class ModelRunner(object):
     def getLogFileName(m : Model, s : Solver):
         return f"{m.getName()}.{s.getName()}.log"
 
-    def run(self, modelList: list, exporter=None, keepLogs = False):
+    def run(self, modelList: list, exporter=None, keepLogs = False, verbose=False):
         """Run the models in this instance. If exporter != None, it exports the results as it goes"""
         self._models = modelList
         n = 0
@@ -31,7 +31,8 @@ class ModelRunner(object):
             else:
                 if not self._amplRunners:
                     self._amplRunners = [
-                        AMPLRunner(r, self._optionsExtra) for r in self._runners ]
+                        AMPLRunner(r, self._optionsExtra, keepAMPLOutput=verbose)
+                        for r in self._runners ]
                 cr = self._amplRunners
                 msg = "{}. Solving with AMPL: '{}'".format(n, m.getName())
             print("{0: <80}".format(msg), end="", flush=True)
