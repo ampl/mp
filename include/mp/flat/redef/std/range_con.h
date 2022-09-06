@@ -135,7 +135,7 @@ public:
         case IISStatus::fix:
           break;
         default:
-          MP_RAISE("Unknown IIS status for a rnage constraint slack");
+          MP_RAISE("Unknown IIS status for a range constraint slack");
       }
       SetInt(be, CON_SRC, slk_iis);
     } else
