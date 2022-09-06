@@ -21,12 +21,19 @@ public:
   MosekBackend();
   ~MosekBackend();
 
+  /*----------------------------------------------------*\
+  | Standard and optional methods to provide or retrieve |
+  | information to/from or manipulate the solver. Most   |
+  | of them override placeholders from base classes.     |
+  \*----------------------------------------------------*/
+
   /// Name displayed in messages
   static const char* GetSolverName() { return "MOSEK"; }
   std::string GetSolverVersion();
   
   static const char* GetAMPLSolverName() { return "mosek"; }
   static const char* GetAMPLSolverLongName() { return "AMPL-MOSEK"; }
+
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
@@ -36,7 +43,6 @@ public:
   void FinishOptionParsing() override;
 
 
-
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
   ////////////////////////////////////////////////////////////
@@ -44,11 +50,15 @@ public:
   // that may or may not need additional functions. 
   USING_STD_FEATURES;
 
+  // LP basis info, status keys
   ALLOW_STD_FEATURE(BASIS, true)
-  // TODO If getting/setting a basis is supported, implement the 
-  // accessor and the setter below
   SolutionBasis GetBasis() override;
   void SetBasis(SolutionBasis) override;
+
+  // LP hotstart
+  // Set primal/dual initial guesses for continuous case
+  ALLOW_STD_FEATURE(WARMSTART, true)
+  void AddPrimalDualStart(Solution) override;
 
  /**
   * Get MIP Gap

@@ -13,4 +13,7 @@ Testing
 *.user
 *~
 
+.idea
+*.csv
+
 /src/expr-info.cc

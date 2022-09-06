@@ -56,11 +56,11 @@ public:
   /// and have an implementation,
   /// or a conversion rule is needed in a derived FlatConverter
   ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
-  void AddConstraint(const LinConLE& lc);
+  void AddConstraint(const LinConLE& lc) {}
   ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
-  void AddConstraint(const LinConEQ& lc);
+  void AddConstraint(const LinConEQ& lc) {}
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
-  void AddConstraint(const LinConGE& lc);
+  void AddConstraint(const LinConGE& lc) {}
 
   /// QuadConRange is optional.
   ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Quadratic)

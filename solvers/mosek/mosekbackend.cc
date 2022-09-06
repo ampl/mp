@@ -15,7 +15,7 @@ namespace {
 
 
 bool InterruptMosek(void* prob) {
-  // TODO 
+  // TODO
   return true;
 }
 
@@ -63,7 +63,7 @@ void MosekBackend::OpenSolver() {
 
   MSKenv_t env = NULL;
   MSKtask_t task;
-  if (initialize) { // If an initialization callback is provided, 
+  if (initialize) { // If an initialization callback is provided,
     // use it to create the environment
     MOSEK_CCALL(MSK_makeenv(&env, NULL));
     env = (MSKenv_t)initialize();
@@ -285,7 +285,7 @@ std::pair<int, std::string> MosekBackend::ConvertMOSEKStatus() {
       return { sol::UNCERTAIN, "feasible solution" };
     case MSK_SOL_STA_PRIM_INFEAS_CER:
     case MSK_SOL_STA_DUAL_INFEAS_CER:
-      return { sol::INFEASIBLE, "unfeasible solution" };
+      return { sol::INFEASIBLE, "infeasible solution" };
     case MSK_SOL_STA_UNKNOWN:
     case MSK_SOL_STA_PRIM_ILLPOSED_CER:
     case MSK_SOL_STA_DUAL_ILLPOSED_CER:
@@ -320,7 +320,7 @@ static const mp::OptionValueInfo alg_values_method[] = {
   { "1", "Dual simplex", 1},
   { "2", "Automatic (default)", 2},
   { "3", "Free simplex", 3},
-  { "4", "Interior-poit method", 4},
+  { "4", "Interior-point method", 4},
   { "5", "Mixed-integer optimizer", 5},
   { "6", "Primal simplex", 6},
 };
@@ -378,135 +378,174 @@ double MosekBackend::MIPGapAbs() {
 
 
 ArrayRef<int> MosekBackend::VarStatii() {
-  // TODO 
   std::vector<int> vars(NumVars());
-  /*
-  MOSEK_GetBasis(lp(), vars.data(), NULL);
-  for (auto& s : vars) {
-    switch (s) {
-    case MOSEK_BASIS_BASIC:
-      s = (int)BasicStatus::bas;
-      break;
-    case MOSEK_BASIS_LOWER:
-      s = (int)BasicStatus::low;
-      break;
-    case MOSEK_BASIS_UPPER:
-      s = (int)BasicStatus::upp;
-      break;
-    case MOSEK_BASIS_SUPERBASIC:
-      s = (int)BasicStatus::sup;
-      break;
-    case MOSEK_BASIS_FIXED:
-      s = (int)BasicStatus::equ;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown Mosek VBasis value: {}", s));
+  MOSEK_CCALL(MSK_getskx(lp(), MSK_SOL_BAS, (MSKstakeye *)vars.data()));
+
+  for (auto& s : vars)
+  {
+    switch (s)
+    {
+      case MSK_SK_BAS:
+        s = (int)BasicStatus::bas;
+        break;
+      case MSK_SK_LOW:
+        s = (int)BasicStatus::low;
+        break;
+      case MSK_SK_UPR:
+        s = (int)BasicStatus::upp;
+        break;
+      case MSK_SK_SUPBAS:
+        s = (int)BasicStatus::sup;
+        break;
+      case MSK_SK_FIX:
+        s = (int)BasicStatus::equ;
+        break;
+      default:
+        MP_RAISE(fmt::format("Unknown Mosek VBasis value: {}", s));
     }
   }
-  */
+
   return vars;
 }
 
 ArrayRef<int> MosekBackend::ConStatii() {
-  // TODO
   std::vector<int> cons(NumLinCons());
-  /*
-  MOSEK_GetBasis(lp(), NULL, cons.data());
-  for (auto& s : cons) {
-    switch (s) {
-    case MOSEK_BASIS_BASIC:
-      s = (int)BasicStatus::bas;
-      break;
-    case MOSEK_BASIS_LOWER:
-      s = (int)BasicStatus::low;
-      break;
-    case MOSEK_BASIS_UPPER:
-      s = (int)BasicStatus::upp;
-      break;
-    case MOSEK_BASIS_SUPERBASIC:
-      s = (int)BasicStatus::sup;
-      break;
-    case MOSEK_BASIS_FIXED:
-      s = (int)BasicStatus::equ;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown Mosek VBasis value: {}", s));
+  MOSEK_CCALL(MSK_getskc(lp(), MSK_SOL_BAS, (MSKstakeye *)cons.data()));
+
+  for (auto& s : cons)
+  {
+    switch (s)
+    {
+      case MSK_SK_BAS:
+        s = (int)BasicStatus::bas;
+        break;
+      case MSK_SK_LOW:
+        s = (int)BasicStatus::low;
+        break;
+      case MSK_SK_UPR:
+        s = (int)BasicStatus::upp;
+        break;
+      case MSK_SK_SUPBAS:
+        s = (int)BasicStatus::sup;
+        break;
+      case MSK_SK_FIX:
+        s = (int)BasicStatus::equ;
+        break;
+      default:
+        MP_RAISE(fmt::format("Unknown Mosek VBasis value: {}", s));
     }
-  }*/
+  }
   return cons;
 }
 
 void MosekBackend::VarStatii(ArrayRef<int> vst) {
-  // TODO
-  int index[1];
+  // BasicStatus enum values: from 0 to 6: none, bas, sup, low, upp, equ, btw
   std::vector<int> stt(vst.data(), vst.data() + vst.size());
-  /*
-  for (auto j = stt.size(); j--; ) {
-    auto& s = stt[j];
-    switch ((BasicStatus)s) {
-    case BasicStatus::bas:
-      s = MOSEK_BASIS_BASIC;
-      break;
-    case BasicStatus::low:
-      s = MOSEK_BASIS_LOWER;
-      break;
-    case BasicStatus::equ:
-      s = MOSEK_BASIS_FIXED;
-      break;
-    case BasicStatus::upp:
-      s = MOSEK_BASIS_UPPER;
-      break;
-    case BasicStatus::sup:
-    case BasicStatus::btw:
-      s = MOSEK_BASIS_SUPERBASIC;
-      break;
-    case BasicStatus::none:
-      /// 'none' is assigned to new variables. Compute low/upp/sup:
-      /// Depending on where 0.0 is between bounds
-      double lb, ub;
-      index[0] = (int)j;
-      if(!MOSEK_GetColInfo(lp(), MOSEK_DBLINFO_LB, 1, index, &lb) && 
-        !MOSEK_GetColInfo(lp(), MOSEK_DBLINFO_UB, 1, index, &ub))
-      { 
-        if (lb >= -1e-6)
-          s = -1;
-        else if (ub <= 1e-6)
-          s = -2;
-        else
-          s = -3;  // or, leave at 0?
-      }
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
+  int *skx = (int *) MSK_calloctask(lp(), stt.size(), sizeof(int));
+
+  // TODO: remove this if we are sure that it is the same.
+  MSKint32t numvar;
+  MOSEK_CCALL(MSK_getnumvar(lp(), &numvar));
+  assert(numvar == vst.size());
+
+  for (auto j = 0; j < stt.size(); j++)
+  {
+    skx[j] = MSK_SK_UNK;
+    switch ((BasicStatus)stt[j])
+    {
+      case BasicStatus::bas:
+        skx[j] = MSK_SK_BAS;
+        break;
+      case BasicStatus::low:
+        skx[j] = MSK_SK_LOW;
+        break;
+      case BasicStatus::equ:
+        skx[j] = MSK_SK_FIX;
+        break;
+      case BasicStatus::upp:
+        skx[j] = MSK_SK_UPR;
+        break;
+      case BasicStatus::sup:
+      case BasicStatus::btw:
+        skx[j] = MSK_SK_SUPBAS;
+        break;
+      case BasicStatus::none:
+        /// 'none' is assigned to new variables (added after solving).
+        /// Compute low/upp/fix/sup, depending on where initial value 0.0 is between the bounds
+        MSKboundkeye bk;
+        MSKrealt bl, bu, tolx;
+        MOSEK_CCALL(MSK_getvarbound(lp(), (MSKint32t)j, &bk, &bl, &bu));
+        MOSEK_CCALL(MSK_getdouparam(lp(), MSK_DPAR_DATA_TOL_X, &tolx));
+
+        if (0.0 < bl + tolx) skx[j] = MSK_SK_LOW;
+        else if (bu - tolx < 0.0) skx[j] = MSK_SK_UPR;
+        else if (bu - bl < tolx) skx[j] = MSK_SK_FIX;
+        else skx[j] = MSK_SK_SUPBAS;
+
+        break;
+      default:
+        MP_RAISE(fmt::format("Unknown AMPL var status value: {}", stt[j]));
     }
   }
-  MOSEK_SetBasis(lp(), stt.data(), NULL);
-  */
+
+  // Input the variable status keys
+  MOSEK_CCALL(MSK_putskx(lp(), MSK_SOL_BAS, (MSKstakeye *)skx));
 }
 
 void MosekBackend::ConStatii(ArrayRef<int> cst) {
-  // TODO
-  /*
   std::vector<int> stt(cst.data(), cst.data() + cst.size());
-  for (auto& s : stt) {
-    switch ((BasicStatus)s) {
-    case BasicStatus::bas:
-      s = MOSEK_BASIS_BASIC;
-      break;
-    case BasicStatus::none:   // for 'none', which is the status
-    case BasicStatus::upp:    // assigned to new rows, it seems good to guess
-    case BasicStatus::sup:    // a valid status.
-    case BasicStatus::low:    // 
-    case BasicStatus::equ:    // For active constraints, it is usually 'sup'.
-    case BasicStatus::btw:    // We could compute slack to decide though.
-      s = MOSEK_BASIS_SUPERBASIC;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
+  int *skc = (int *) MSK_calloctask(lp(), stt.size(), sizeof(int));
+
+  // TODO: remove this if we are sure that it is the same.
+  MSKint32t numcon;
+  MOSEK_CCALL(MSK_getnumcon(lp(), &numcon));
+  assert(numcon == cst.size());
+
+  // The status key of a constraint is the status key of the logical (slack) variable assigned to it.
+  // The slack is defined as: l <= a'x <= u rewritten as a'x - s = 0, l <= s <= u.
+  for (auto j = 0; j < stt.size(); j++)
+  {
+    skc[j] = MSK_SK_UNK;
+    switch ((BasicStatus)stt[j])
+    {
+      case BasicStatus::bas:
+        skc[j] = MSK_SK_BAS;
+        break;
+      case BasicStatus::sup:
+      case BasicStatus::btw:
+        skc[j] = MSK_SK_SUPBAS;
+        break;
+      case BasicStatus::low:
+        skc[j] = MSK_SK_LOW;
+        break;
+      case BasicStatus::upp:
+        skc[j] = MSK_SK_UPR;
+        break;
+      case BasicStatus::equ:
+        skc[j] = MSK_SK_FIX;
+        break;
+      case BasicStatus::none:
+        /// 'none' is assigned to new constraints (added after solving).
+        /// Compute low/upp/fix/sup, depending on where initial value 0.0 is between the bounds
+        MSKboundkeye bk;
+        MSKrealt bl, bu, tolx;
+        MOSEK_CCALL(MSK_getconbound(lp(), (MSKint32t)j, &bk, &bl, &bu));
+        // MSK_DPAR_DATA_TOL_X is both for variables and constraints
+        MOSEK_CCALL(MSK_getdouparam(lp(), MSK_DPAR_DATA_TOL_X, &tolx));
+
+        if (0.0 < bl + tolx) skc[j] = MSK_SK_LOW;
+        else if (bu - tolx < 0.0) skc[j] = MSK_SK_UPR;
+        else if (bu - bl < tolx) skc[j] = MSK_SK_FIX;
+        else skc[j] = MSK_SK_SUPBAS;
+
+        break;
+      default:
+        MP_RAISE(fmt::format("Unknown AMPL var status value: {}", stt[j]));
     }
   }
-  MOSEK_SetBasis(lp(), NULL, stt.data());
-  */
+
+  // Input the variable status keys
+  MOSEK_CCALL(MSK_putskc(lp(), MSK_SOL_BAS, (MSKstakeye *)skc));
 }
 
 SolutionBasis MosekBackend::GetBasis() {
@@ -535,13 +574,22 @@ void MosekBackend::SetBasis(SolutionBasis basis) {
   ConStatii(constt);
 }
 
+void MosekBackend::AddPrimalDualStart(Solution sol)
+{
+  auto mv = GetValuePresolver().PresolveSolution(
+        { sol.primal, sol.dual } );
+  auto x0 = mv.GetVarValues()();
+  auto pi0 = mv.GetConValues()(CG_Linear);
+  MOSEK_CCALL(MSK_putxx(lp(), MSK_SOL_ITR, (MSKrealt *)&x0));
+  MOSEK_CCALL(MSK_puty(lp(), MSK_SOL_ITR, (MSKrealt *)&pi0));
+}
+
 } // namespace mp
 
 
 // AMPLs
 
-AMPLS_MP_Solver* AMPLSOpenMosek(
-  const char* slv_opt) {
+AMPLS_MP_Solver* AMPLSOpenMosek(const char* slv_opt) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::MosekBackend()},
     slv_opt);
 }
@@ -551,6 +599,5 @@ void AMPLSCloseMosek(AMPLS_MP_Solver* slv) {
 }
 
 MSKtask_t GetMosekmodel(AMPLS_MP_Solver* slv) {
-  return
-    dynamic_cast<mp::MosekBackend*>(AMPLSGetBackend(slv))->lp();
+  return dynamic_cast<mp::MosekBackend*>(AMPLSGetBackend(slv))->lp();
 }

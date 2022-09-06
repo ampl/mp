@@ -4,8 +4,7 @@
 std::unique_ptr<mp::BasicBackend> CreateMosekBackend();
 
 extern "C" int main1(int, char **argv) {
-  return
-      mp::RunBackendApp(argv, CreateMosekBackend);
+  return mp::RunBackendApp(argv, CreateMosekBackend);
 }
 
 extern "C" int main2(int, char** argv, CCallbacks cb) {

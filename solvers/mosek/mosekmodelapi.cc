@@ -82,16 +82,11 @@ void MosekModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
     throw std::runtime_error("Multiple quadratic objectives not supported");
   }
 }
+
 void MosekModelAPI::AddLinearConstraint(
     MSKtask_t lp, size_t size, MSKboundkey_enum key,
     double lb, double ub,
     const int* vindex, const double* values, const char* name) {
-
-  if (lb == -std::numeric_limits<double>::infinity())
-    lb = -MSK_DPAR_DATA_TOL_BOUND_INF;
-  if (ub == std::numeric_limits<double>::infinity())
-    ub = MSK_DPAR_DATA_TOL_BOUND_INF;
-
   /* Linear + quadratic constraints are preallocated in
      InitProblemModificationPhase() */
   MOSEK_CCALL(MSK_putarow(lp, n_alg_cons_, size, vindex, values));
@@ -101,21 +96,32 @@ void MosekModelAPI::AddLinearConstraint(
   ++n_alg_cons_;
 }
 
-void MosekModelAPI::AddConstraint(const LinConRange& lc) {
-  AddLinearConstraint(lp(), lc.size(), MSK_BK_RA, lc.lb(), lc.ub(),
-    lc.pvars(), lc.pcoefs(), lc.name());
-}
-void MosekModelAPI::AddConstraint(const LinConLE& lc) {
-  AddLinearConstraint(lp(), lc.size(), MSK_BK_UP, lc.lb(), lc.ub(),
-    lc.pvars(), lc.pcoefs(), lc.name());
-}
-void MosekModelAPI::AddConstraint(const LinConEQ& lc) {
-  AddLinearConstraint(lp(), lc.size(), MSK_BK_FX, lc.lb(), lc.ub(),
-    lc.pvars(), lc.pcoefs(), lc.name());
-}
-void MosekModelAPI::AddConstraint(const LinConGE& lc) {
-  AddLinearConstraint(lp(), lc.size(), MSK_BK_LO, lc.lb(), lc.ub(),
-    lc.pvars(), lc.pcoefs(), lc.name());
+// Similar functions for constraints with other bound types are defined in the header, but not used.
+// We handle bound types here.
+void MosekModelAPI::AddConstraint(const LinConRange& lc)
+{
+  double lb = lc.lb();
+  double ub = lc.ub();
+  MSKboundkey_enum key;
+
+  if (lb == -std::numeric_limits<double>::infinity())
+  {
+    if (ub == std::numeric_limits<double>::infinity())
+      key = MSK_BK_FR;
+    else
+      key = MSK_BK_UP;
+  }
+  else
+  {
+    if (ub == std::numeric_limits<double>::infinity())
+      key = MSK_BK_LO;
+    else if (lb == ub)
+      key = MSK_BK_FX;
+    else
+      key = MSK_BK_RA;
+  }
+
+  AddLinearConstraint(lp(), lc.size(), key, lb, ub, lc.pvars(), lc.pcoefs(), lc.name());
 }
 
 void MosekModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
