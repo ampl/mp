@@ -1,7 +1,9 @@
 .. _modeling-guide:
 
-Modeling Guide for MP-based AMPL Solvers
+Modeling Guide 
 =========================
+for MP-based AMPL Solvers
+-------------------------
 
 AMPL's newly extended C++ solver interface library, MP, is publicly available in the `ampl/mp <https://github.com/ampl/mp>`_ repository. Solver interfaces built with MP are able to handle a significantly expanded range of model expressions. Currently available MP-based solvers include:
 
@@ -39,10 +41,19 @@ The slides from our presentation on `Advances in Model-Based Optimization <https
 Expressions supported
 ---------------------
 
-The MP solver interface library works with existing AMPL syntaxes, but allows them to be used in more general ways, or with a greater variety of solvers. In many cases, an extension results from allowing variables to appear in more general contexts, such as with conditional, logical, or counting operators. Other extensions are enabled by providing more powerful transformations, particularly to linear or quadratic equivalents, and by providing support for extensions that are native to some solvers. A few extensions are already handled in the AMPL language translator, and are included here for completeness.
+The MP solver interface library works with existing AMPL syntaxes, but allows them to be used in more general ways, or with a greater variety of solvers.
 
-.. MP supports arbitrary trees of logical, relational, general combinatorial,
-.. and non-linear expressions including higher-degree polynomials:
+In many cases, an extension results from allowing variables to appear in more general contexts, such as with conditional, logical, or counting operators. Other extensions are enabled by providing more powerful transformations, particularly to linear or quadratic equivalents, and by providing support for extensions that are native to some solvers. A few extensions are already handled in the AMPL language translator, and are included here for completeness.
+
+In the syntax summaries below, there are two main kinds of entities, representing *numerical expressions* and *constraints:*
+
+- **expr** 
+     represents any expression that evaluates to a number. Unless otherwise indicated, it may contain variables. It may be built from familiar arithmetic operators, but also from other operators or functions that return numerical values.
+
+- **constr** 
+     represents a constraint of the model, which may evaluate to true or false depending the values of variables that it contains. It may be built from the familiar relational operators ``>=``, ``<=``, and ``=``, but also from other operators such as ``or`` and ``alldiff`` that create constraints.
+
+Thus it is possible to build up complex combinations of numerical and logical operators; for example,
 
 .. code-block:: ampl
 
@@ -50,23 +61,16 @@ The MP solver interface library works with existing AMPL syntaxes, but allows th
                 (x<=-5 or
                         (max((x+1)*(x+2)*(y+3), y)<=3 and exp((x+18)*y)<=12));
 
-.. Below are details on the various kinds of expressions and how they are presented
-.. to the solvers.
+AMPL represents these as expression trees, which are sent to MP-based solver interfaces to be processed as particular solvers require.
 
 
 Conditional operators
 ***********************************
 
-AMPL already provides an ``if-then-else`` operator that returns a value
-that can be used in expressions:
-
-- if *logical-expr* then *object-expr*
-    Takes the value of *object-expr* when the *logical-expr* is true, 
-    and the value 0 when the *logical-expr* is false.
-
-- if *logical-expr* then *object-expr1* else *object-expr2*
-    Takes the value of *object-expr1* when the *logical-expr* is true, and the value
-    of *object-expr2* when the *logical-expr* is false.
+- if *constr* then *expr1* [else *expr2*]
+    When *constr* is satisfied, takes the value of *expr1*;  
+    when *constr* is not satisfied, takes the value of *expr2*,
+    or 0 if the `else` phrase is omitted.
 
 When this operator appears in a constraint, the *logical-expr*
 can contain variables, in which case AMPL handles the constraint like
