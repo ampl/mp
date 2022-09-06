@@ -313,7 +313,7 @@ public:
   PLApproximator(const LogConstraint& con, PLApproxParams& p) :
     BasicPLApproximator<LogConstraint>(con, p) { }
   FuncGraphDomain GetFuncGraphDomain() const override
-  { return { 1e-5, 1e100, -230.2585, 230.2585 }; }
+  { return { 1e-6, 1e100, -230.2585, 230.2585 }; }
   double eval(double x) const override { return std::log(x); }
   double inverse(double y) const override { return std::exp(y); }
   double eval_1st(double x) const override { return 1.0/x; }

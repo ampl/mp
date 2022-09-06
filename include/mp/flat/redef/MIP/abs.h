@@ -27,9 +27,11 @@ public:
     const int res = ac.GetResultVar();
     const int flag = GetMC().AddVar(0.0, 1.0, var::INTEGER);
     GetMC().AddConstraint(
-          IndicatorConstraintLinLE(flag, 1, {{{1.0, 1.0}, {res, arg}}, 0.0}));
+          IndicatorConstraintLinLE(flag, 1,
+                                   {{{1.0, 1.0}, {res, arg}}, 0.0}));
     GetMC().AddConstraint(
-          IndicatorConstraintLinLE(flag, 0, {{{1.0, -1.0}, {res, arg}}, 0.0}));
+          IndicatorConstraintLinLE(flag, 0,
+                                   {{{1.0, -1.0}, {res, arg}}, 0.0}));
   }
 
   /// Convert in negative context

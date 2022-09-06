@@ -598,7 +598,10 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.multisol, ModelTags.sstatus,
                  ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
 
-                 ModelTags.ownplapprox,
+                 ModelTags.check_pl_approx_exp,
+                 ModelTags.check_pl_approx_log,
+
+                 ModelTags.check_pl2sos2,
 
                  ModelTags.gurobi_cloud, ModelTags.gurobi_server,
                 }

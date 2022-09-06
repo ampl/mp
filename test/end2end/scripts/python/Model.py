@@ -52,9 +52,13 @@ class ModelTags(enum.Enum):
     iisforce = 40014
     feasrelax = 40100
 
-    ownplapprox = 50000          # Solvers accepting general nonlinear constraints
-                                 # but providing acc:exp etc options so we apply
-                                 # own pl approximation
+    check_pl_approx_exp = 50000          # Solvers natively accepting general
+    check_pl_approx_log = 50001          # nonlinear constraints.
+                                         # The automatic acc:exp etc options allow
+                                         # testing own pl approximation
+
+    check_pl2sos2 = 50500                # Solvers accepting PL constraints but wishing
+                                         # to test MP's PL -> SOS2 conversion, by acc:pl=1
 
 
     ## Solver-specific

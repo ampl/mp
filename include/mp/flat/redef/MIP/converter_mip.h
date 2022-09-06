@@ -87,6 +87,8 @@ public:
   INSTALL_ITEM_CONVERTER(NumberofVarConverter_MIP)
   /// Or
   INSTALL_ITEM_CONVERTER(OrConverter_MIP)
+  /// PLConstraint
+  INSTALL_ITEM_CONVERTER(PLConverter_MIP)
   /// PowConstExp
   INSTALL_ITEM_CONVERTER(PowConstExponentConverter_MIP)
 
