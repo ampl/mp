@@ -1,7 +1,8 @@
 #ifndef PIECEWISE_LINEAR_H
 #define PIECEWISE_LINEAR_H
 
-/** Redefinition of PL flat constraint into SOS2 + linear
+/**
+ *  Redefinition of PL flat constraint into SOS2 + linear
  */
 
 #include <algorithm>
@@ -84,7 +85,9 @@ protected:
     auto lambda = GetMC().AddVars_returnIds(i1-i0+1, 0.0, 1.0);
     std::vector<double> weights(i1-i0+1);
     std::iota(weights.begin(), weights.end(), 1.0);
-    GetMC().AddConstraint( SOS2Constraint(lambda, weights) );
+    GetMC().AddConstraint(      // indicate range of sum(lambda)
+          SOS2Constraint(lambda, weights,
+                         { {1.0, 1.0} }) );
     std::fill(weights.begin(), weights.end(), 1.0);
     GetMC().AddConstraint(
           LinConEQ{ {weights, lambda}, {1.0} });

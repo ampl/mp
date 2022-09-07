@@ -32,6 +32,16 @@
     }
   },
   {
+    "name" : "exp_02_check_2con check: approx, pl, sos2",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_exp",
+              "check_pl2sos2", "check_sos2_from_pl"],
+    "options": { "ANYSOLVER_options": "acc:exp=1 acc:pl=1 acc:sos2=1" },
+    "comment": "Own plapprox for Gurobi with PL encoding",
+    "values": {
+      "if abs(y-exp(x))<=1e-5 then 1 else 0": 1
+    }
+  },
+  {
     "name" : "log_01_check_obj",
     "tags" : ["continuous", "nonlinear"],
     "options": { "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5" },
@@ -62,16 +72,17 @@
     "name" : "log_02_check_2con_noncvx check_pl_approx_log",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_log"],
     "options": { "ANYSOLVER_options": "acc:log=1" },
-    "comment": "Own plapprox for Gurobi (log)",
+    "comment": "Own plapprox for log, e.g., for Gurobi",
     "values": {
       "if abs(y-log(x))<=1e-5 then 1 else 0": 1
     }
   },
   {
-    "name" : "log_02_check_2con_noncvx check_pl_approx_log check_pl2sos2",
-    "tags" : ["continuous", "nonlinear", "check_pl_approx_log", "check_pl2sos2"],
-    "options": { "ANYSOLVER_options": "acc:log=1 acc:pl=1" },
-    "comment": "Own plapprox for Gurobi (log), followed by pl->sos2 conversion",
+    "name" : "log_02_check_2con_noncvx check: approx, pl, sos2",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_log",
+              "check_pl2sos2", "check_sos2_from_pl"],
+    "options": { "ANYSOLVER_options": "acc:log=1 acc:pl=1 acc:sos2=1" },
+    "comment": "Own plapprox for log, followed by pl->sos2->MIP conversion",
     "values": {
       "if abs(y-log(x))<=1e-5 then 1 else 0": 1
     }
