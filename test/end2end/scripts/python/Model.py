@@ -60,6 +60,8 @@ class ModelTags(enum.Enum):
     check_pl2sos2 = 50500                # Solvers accepting PL constraints but wishing
                                          # to test MP's PL -> SOS2 conversion, by acc:pl=1
 
+    check_sos2_from_pl = 51000           # Solvers accepting SOS2 constraints but wishing
+                                         # to test SOS2 conversion, by acc:sos2=1
 
     ## Solver-specific
     gurobi_cloud = 100000

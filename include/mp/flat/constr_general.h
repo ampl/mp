@@ -7,7 +7,9 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
+#include "mp/error.h"
 #include "mp/flat/constr_algebraic.h"
 
 
@@ -65,13 +67,33 @@ using IndicatorConstraintQuadGE = IndicatorConstraint<QuadConGE>;
 
 ////////////////////////////////////////////////////////////////////////
 /// SOS1, SOS2
+
+/// SOS constraint extra info, supplied for better conversion
+struct SOSExtraInfo {
+  /// Bounds on the sum of variables
+  struct Bounds {
+    Bounds(double lb=-1e100, double ub=1e100) :
+      lb_(lb), ub_(ub) { }
+    double lb_, ub_;
+    bool operator==(const Bounds& b) const
+    { return lb_==b.lb_ && ub_==b.ub_; }
+  } bounds_;
+  /// Constructor
+  SOSExtraInfo(Bounds b={}) : bounds_(b) { }
+  /// operator==
+  bool operator==(const SOSExtraInfo& ei) const
+  { return bounds_==ei.bounds_; }
+};
+
+/// SOS1, SOS2 constraints
 template <int type>
 class SOS_1or2_Constraint: public BasicConstraint {
   static constexpr const char* name1_ = "SOS1Constraint";
   static constexpr const char* name2_ = "SOS2Constraint";
 
-  const std::vector<int> v_;
-  const std::vector<double> w_;
+  std::vector<int> v_;
+  std::vector<double> w_;
+  const SOSExtraInfo extra_info_;
 public:
   /// Constraint type name
   static const char* GetTypeName()
@@ -79,16 +101,42 @@ public:
 
   int get_sos_type() const { return type; }
   int size() const { return (int)v_.size(); }
+  /// Returns vector of variables, sorted by weights
   const std::vector<int>& get_vars() const { return v_; }
+  /// Returns weights, sorted
   const std::vector<double>& get_weights() const { return w_; }
+  /// SOS2 extra info
+  const SOSExtraInfo& get_extra_info() const { return extra_info_; }
+  /// Sum of vars range, extra info if supplied
+  SOSExtraInfo::Bounds get_sum_of_vars_range() const
+  { return extra_info_.bounds_; }
 
   /// Constructor
   template <class VV=std::vector<int>, class WV=std::vector<double> >
-  SOS_1or2_Constraint(VV&& v, WV&& w) noexcept :
-    v_(std::forward<VV>(v)), w_(std::forward<WV>(w))
-  { assert(check()); }
+  SOS_1or2_Constraint(VV v, WV w, SOSExtraInfo ei={}) :
+    v_(v), w_(w), extra_info_(ei) {
+    sort();
+    assert(check());
+  }
   bool check() const { return type>=1 && type<=2 &&
                      v_.size()==w_.size(); }
+
+
+protected:
+  /// Sort by weights
+  void sort() {
+    std::map<double, int> sorted;
+    for (auto i=v_.size(); i--; )
+      MP_ASSERT_ALWAYS(
+            sorted.insert({ w_.at(i), v_.at(i) }).second,
+            "SOS2: weights not unique");
+    v_.clear();
+    w_.clear();
+    for (const auto& wv: sorted) {
+      v_.push_back(wv.second);
+      w_.push_back(wv.first);
+    }
+  }
 };
 
 
