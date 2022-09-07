@@ -53,7 +53,7 @@ In the syntax summaries below, there are two main kinds of entities, representin
 - **constr** 
      represents a constraint of the model, which may evaluate to true or false depending the values of variables that it contains. It may be built from the familiar relational operators ``>=``, ``<=``, and ``=``, but also from other operators such as ``or`` and ``alldiff`` that create constraints.
 
-Thus it is possible to build up complex combinations of numerical and logical operators; for example,
+The return value of an operator or function is also either an *expr* or *constr*, as indicated. Thus it is possible to build up complex combinations of numerical and logical operators; for example,
 
 .. code-block:: ampl
 
@@ -68,21 +68,32 @@ Conditional operators
 ***********************************
 
 - if *constr* then *expr1* [else *expr2*]
-    When *constr* is satisfied, takes the value of *expr1*;  
-    when *constr* is not satisfied, takes the value of *expr2*,
-    or 0 if the `else` phrase is omitted.
+    *Returns expr:* When *constr* is true, takes the value of *expr1*.  
+    When *constr* is false, takes the value of *expr2*, or 0 if the `else` phrase is omitted.
 
-When this operator appears in a constraint, the *logical-expr*
-can contain variables, in which case AMPL handles the constraint like
-other nonlinear constraints, passing an expression tree to the solver.
-In particular, the *logical-expr* may be any valid *constraint-expr*.
+In the special case where there are no variables in the *constr*, the value of this expression can be determined as either *expr1* or *expr2* (or 0) before the problem is sent to the solver. But in general, the expression's value depends upon how the solver sets the variables in the *constr*, and so AMPL must send the entire expression to the solver interface for processing.
 
 .. code-block:: ampl
 
-        ## if-then
-        minimize TotalCost:
-            sum {j in JOBS, k in MACHINES}
-                if MachineForJob[j] = k then cost[j,k];
+       minimize TotalCost:
+          sum {j in JOBS, k in MACHINES}
+             if MachineForJob[j] = k then cost[j,k];
+
+.. code-block:: ampl
+
+       subject to Balance {p in PROD, t in TIME}:
+          Make[p,t] + (if t = 0 then inv0[p] else Inv[p,t-1])
+             = Sell[p,t] + Inv[p,t];
+
+- *constr1* ==> *constr2*
+- *constr2* <== *constr1*
+    *Returns constr:* Satistifed if *constr1* is true and *constr2* is true, 
+    or if *constr1* is false. 
+- *constr1* ==> *constr2* else *constr3*
+    *Returns constr:* Satistifed if *constr1* is true and *constr2* is true, 
+    or if *constr1* is false and *constr3* is true. 
+- *constr1* <==> *constr2*
+    *Returns constr:* Satisfied if *constr1* and *constr2* are both true or both false.
 
 
 Logical operators
