@@ -440,18 +440,16 @@ ArrayRef<int> MosekBackend::ConStatii() {
 
 void MosekBackend::VarStatii(ArrayRef<int> vst) {
   // BasicStatus enum values: from 0 to 6: none, bas, sup, low, upp, equ, btw
-  std::vector<int> stt(vst.data(), vst.data() + vst.size());
-  int *skx = (int *) MSK_calloctask(lp(), stt.size(), sizeof(int));
+  std::vector<int> skx(vst.data(), vst.data() + vst.size());
 
   // TODO: remove this if we are sure that it is the same.
   MSKint32t numvar;
   MOSEK_CCALL(MSK_getnumvar(lp(), &numvar));
   assert(numvar == vst.size());
 
-  for (auto j = 0; j < stt.size(); j++)
+  for (auto j = 0; j < skx.size(); j++)
   {
-    skx[j] = MSK_SK_UNK;
-    switch ((BasicStatus)stt[j])
+    switch ((BasicStatus)skx[j])
     {
       case BasicStatus::bas:
         skx[j] = MSK_SK_BAS;
@@ -484,17 +482,16 @@ void MosekBackend::VarStatii(ArrayRef<int> vst) {
 
         break;
       default:
-        MP_RAISE(fmt::format("Unknown AMPL var status value: {}", stt[j]));
+        MP_RAISE(fmt::format("Unknown AMPL var status value: {}", skx[j]));
     }
   }
 
   // Input the variable status keys
-  MOSEK_CCALL(MSK_putskx(lp(), MSK_SOL_BAS, (MSKstakeye *)skx));
+  MOSEK_CCALL(MSK_putskx(lp(), MSK_SOL_BAS, (MSKstakeye *)skx.data()));
 }
 
 void MosekBackend::ConStatii(ArrayRef<int> cst) {
-  std::vector<int> stt(cst.data(), cst.data() + cst.size());
-  int *skc = (int *) MSK_calloctask(lp(), stt.size(), sizeof(int));
+  std::vector<int> skc(cst.data(), cst.data() + cst.size());
 
   // TODO: remove this if we are sure that it is the same.
   MSKint32t numcon;
@@ -503,10 +500,10 @@ void MosekBackend::ConStatii(ArrayRef<int> cst) {
 
   // The status key of a constraint is the status key of the logical (slack) variable assigned to it.
   // The slack is defined as: l <= a'x <= u rewritten as a'x - s = 0, l <= s <= u.
-  for (auto j = 0; j < stt.size(); j++)
+  for (auto j = 0; j < skc.size(); j++)
   {
     skc[j] = MSK_SK_UNK;
-    switch ((BasicStatus)stt[j])
+    switch ((BasicStatus)skc[j])
     {
       case BasicStatus::bas:
         skc[j] = MSK_SK_BAS;
@@ -540,12 +537,12 @@ void MosekBackend::ConStatii(ArrayRef<int> cst) {
 
         break;
       default:
-        MP_RAISE(fmt::format("Unknown AMPL var status value: {}", stt[j]));
+        MP_RAISE(fmt::format("Unknown AMPL var status value: {}", skc[j]));
     }
   }
 
   // Input the variable status keys
-  MOSEK_CCALL(MSK_putskc(lp(), MSK_SOL_BAS, (MSKstakeye *)skc));
+  MOSEK_CCALL(MSK_putskc(lp(), MSK_SOL_BAS, (MSKstakeye *)skc.data()));
 }
 
 SolutionBasis MosekBackend::GetBasis() {
@@ -580,8 +577,8 @@ void MosekBackend::AddPrimalDualStart(Solution sol)
         { sol.primal, sol.dual } );
   auto x0 = mv.GetVarValues()();
   auto pi0 = mv.GetConValues()(CG_Linear);
-  MOSEK_CCALL(MSK_putxx(lp(), MSK_SOL_ITR, (MSKrealt *)&x0));
-  MOSEK_CCALL(MSK_puty(lp(), MSK_SOL_ITR, (MSKrealt *)&pi0));
+  MOSEK_CCALL(MSK_putxx(lp(), MSK_SOL_ITR, (MSKrealt *)x0.data()));
+  MOSEK_CCALL(MSK_puty(lp(), MSK_SOL_ITR, (MSKrealt *)pi0.data()));
 }
 
 } // namespace mp
