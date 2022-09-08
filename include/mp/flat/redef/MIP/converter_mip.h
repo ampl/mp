@@ -3,6 +3,7 @@
 
 #include "mp/flat/converter.h"
 #include "mp/flat/redef/MIP/redefs_mip_std.h"
+#include "mp/flat/redef/encodings.h"
 
 namespace mp {
 
@@ -87,15 +88,23 @@ public:
   INSTALL_ITEM_CONVERTER(NumberofVarConverter_MIP)
   /// Or
   INSTALL_ITEM_CONVERTER(OrConverter_MIP)
+  /// PLConstraint
+  INSTALL_ITEM_CONVERTER(PLConverter_MIP)
   /// PowConstExp
   INSTALL_ITEM_CONVERTER(PowConstExponentConverter_MIP)
+  /// SOS2
+  INSTALL_ITEM_CONVERTER(SOS2Converter_MIP)
 
   /// Smooth nonlinear
 
   /// Exp
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Exp)
+  /// ExpA
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_ExpA)
   /// Log
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Log)
+  /// LogA
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_LogA)
 
 
   /// Strict comparison tolerance.
@@ -149,6 +158,12 @@ public:
         (ub_dbl-lb_dbl <= 100000);
   }
 
+  /// Obtain extended column \a k of ZZI encoding C^r
+  std::vector<double>
+  GetZZIExtendedColumn(int r, int k, int v0, int v1) {
+    return GetExtendedColumn(*p_zzi_, r, k, v0, v1);
+  }
+
 
 private:
   /// For a single variable, map its equality comparisons
@@ -158,6 +173,8 @@ private:
   using VarsEqConstMap = std::unordered_map<int, SingleVarEqConstMap>;
 
   VarsEqConstMap map_vars_eq_const_;
+
+  P_ZZI_Encoding p_zzi_ { MakeZZIEncoding() };
 
 
 protected:
@@ -237,7 +254,6 @@ protected:
     coefs.push_back(-1.0);
     this->AddConstraint(LinConEQ({coefs, unaryEncVars}, 0.0));
   }
-
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////           ///

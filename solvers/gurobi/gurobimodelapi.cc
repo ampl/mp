@@ -243,49 +243,6 @@ void GurobiModelAPI::AddConstraint(const PLConstraint& plc) {
               plp.x_.size(), plp.x_.data(), plp.y_.data()) );
 }
 
-static const mp::OptionValueInfo values_item_acceptance[] = {
-  { "0", "Not accepted natively, automatic redefinition will be attempted", 0},
-  { "1", "Accepted but automatic redefinition will be used where possible", 1},
-  { "2", "Accepted natively and preferred", 2}
-};
-
-void GurobiModelAPI::InitOptions() {
-  /// Constraint acceptance
-  GetEnv().AddStoredOption("acc:abs",
-                  "Acceptance level for 'abs' expression, default 2:\n"
-                  "\n.. value-table::\n"
-                  "\n"
-                  "It is advisable to experiment with the acceptance levels"
-                  " to find best-performing settings.",
-                  storedOptions_.acc_abs_, values_item_acceptance);
-  GetEnv().AddStoredOption("acc:min",
-                  "Acceptance level for 'min' expression, default 2.",
-                  storedOptions_.acc_min_);
-  GetEnv().AddStoredOption("acc:max",
-                  "Acceptance level for 'max' expression, default 2.",
-                  storedOptions_.acc_max_);
-  GetEnv().AddStoredOption("acc:and",
-                  "Acceptance level for 'and'/'forall' expressions, default 2.",
-                  storedOptions_.acc_and_);
-  GetEnv().AddStoredOption("acc:or",
-                  "Acceptance level for 'or'/'exists' expressions, default 2.",
-                  storedOptions_.acc_or_);
-  GetEnv().AddStoredOption("acc:ind:le acc:ind_le acc:ind:ge acc:ind_ge",
-                  "Acceptance level for 'implied-less-equal' and "
-                  "'implied-greater-equal' expressions, default 2.",
-                  storedOptions_.acc_ind_le_);
-  GetEnv().AddStoredOption("acc:ind:eq acc:ind_eq",
-                  "Acceptance level for 'implied-equal' expression, default 2.",
-                  storedOptions_.acc_ind_eq_);
-
-  GetEnv().AddStoredOption("acc:exp",
-                  "Acceptance level for exp(), default 2. For values "
-                  "0 or 1, own piecewise-linear approximation is performed, "
-                  "otherwise the expression is passed to Gurobi.",
-                  storedOptions_.acc_exp_);
-  GetEnv().AddStoredOption("acc:log",
-                  "Acceptance level for natural logarithm log(), default 2.",
-                  storedOptions_.acc_log_);
-}
+void GurobiModelAPI::InitOptions() { }
 
 } // namespace mp

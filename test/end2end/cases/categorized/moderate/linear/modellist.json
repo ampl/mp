@@ -17,10 +17,22 @@
     "files" : ["cut2.run"]
   },
   {
-    "name" : "diet",
-    "objective" : 101.0133327,
-    "tags" : ["linear", "continuous"],
-    "files" : ["diet.mod", "diet2.dat"]
+    "name" : "diet2 iis",
+    "tags" : ["linear", "continuous", "iis"],
+    "files" : ["diet.mod", "diet2.dat"],
+    "options": {
+        "ANYSOLVER_options": "iisfind=1",
+        "presolve": 0,
+        "comment0": "Disable presolve, otherwise ",
+        "comment1": "no range constraints sent to solver"
+    },
+    "values": {
+      "Buy['BEEF'].iis": "low",
+      "Buy['HAM'].iis": "upp",
+      "Diet['A'].iis": "non",
+      "Diet['B2'].iis": "low",
+      "Diet['NA'].iis": "upp"
+    }
   },
   {
     "name" : "dietu",

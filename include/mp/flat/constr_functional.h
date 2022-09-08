@@ -264,6 +264,8 @@ private:
 struct PLPoints {
   /// Check if have information
   bool empty() const { return x_.empty(); }
+  /// size()
+  int size() const { return (int)x_.size(); }
   /// The x, y coordinates of the PL function
   std::vector<double> x_, y_;
   /// Default construct

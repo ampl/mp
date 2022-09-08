@@ -23,7 +23,7 @@ class ModelTags(enum.Enum):
     logical = 13
     polynomial = 14
 
-    trigonometric = 100
+    trigonometric = 100   # subcategories of nonlinear
     htrigonometric = 101
     log = 102
 
@@ -52,10 +52,16 @@ class ModelTags(enum.Enum):
     iisforce = 40014
     feasrelax = 40100
 
-    ownplapprox = 50000          # Solvers accepting general nonlinear constraints
-                                 # but providing acc:exp etc options so we apply
-                                 # own pl approximation
+    check_pl_approx_exp = 50000          # Solvers natively accepting general
+    check_pl_approx_expA = 50001         # nonlinear constraints.
+    check_pl_approx_log = 50002          # The automatic acc:exp etc options allow
+                                         # testing own pl approximation
 
+    check_pl2sos2 = 50500                # Solvers accepting PL constraints but wishing
+                                         # to test MP's PL -> SOS2 conversion, by acc:pl=1
+
+    check_sos2_from_pl = 51000           # Solvers accepting SOS2 constraints but wishing
+                                         # to test SOS2 conversion, by acc:sos2=1
 
     ## Solver-specific
     gurobi_cloud = 100000

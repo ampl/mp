@@ -326,13 +326,16 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       LogConstraint& c, PreprocessInfo& ) {
-    MPD( NarrowVarBounds(c.GetArguments()[0], 0.0, MPD( Infty() )) );
+    auto x = c.GetArguments()[0];  // if no positive lb,
+    if (MPD(lb(x))<=0.0)           // set (fixed) lb=1e-6
+      MPD( NarrowVarBounds(x, 1e-6, MPD( Infty() )) );
   }
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
       LogAConstraint& c, PreprocessInfo& ) {
-    MPD( NarrowVarBounds(c.GetArguments()[0], 0.0, MPD( Infty() )) );
+    MPD( NarrowVarBounds(
+           c.GetArguments()[0], 0.0, MPD( Infty() )) );
   }
 
   template <class PreprocessInfo>

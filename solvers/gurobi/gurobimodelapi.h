@@ -70,21 +70,21 @@ public:
   void AddConstraint(const QuadConGE& qc);
 
   /// Discrete general constraints
-  ACCEPT_CONSTRAINT(MaxConstraint, acc_max(), CG_General)
+  ACCEPT_CONSTRAINT(MaxConstraint, Recommended, CG_General)
   void AddConstraint(const MaxConstraint& mc);
-  ACCEPT_CONSTRAINT(MinConstraint, acc_min(), CG_General)
+  ACCEPT_CONSTRAINT(MinConstraint, Recommended, CG_General)
   void AddConstraint(const MinConstraint& mc);
-  ACCEPT_CONSTRAINT(AbsConstraint, acc_abs(), CG_General)
+  ACCEPT_CONSTRAINT(AbsConstraint, Recommended, CG_General)
   void AddConstraint(const AbsConstraint& absc);
-  ACCEPT_CONSTRAINT(AndConstraint, acc_and(), CG_General)
+  ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
   void AddConstraint(const AndConstraint& cc);
-  ACCEPT_CONSTRAINT(OrConstraint, acc_or(), CG_General)
+  ACCEPT_CONSTRAINT(OrConstraint, Recommended, CG_General)
   void AddConstraint(const OrConstraint& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, acc_ind_le(), CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, acc_ind_eq(), CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, acc_ind_le(), CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinGE& mc);
   ACCEPT_CONSTRAINT(PLConstraint, Recommended, CG_General)
   void AddConstraint(const PLConstraint& cc);
@@ -96,11 +96,11 @@ public:
   void AddConstraint(const SOS2Constraint& cc);
 
   /// Gurobi nonlinear generals
-  ACCEPT_CONSTRAINT(ExpConstraint, acc_exp(), CG_General)
+  ACCEPT_CONSTRAINT(ExpConstraint, Recommended, CG_General)
   void AddConstraint(const ExpConstraint& cc);
   ACCEPT_CONSTRAINT(ExpAConstraint, Recommended, CG_General)
   void AddConstraint(const ExpAConstraint& cc);
-  ACCEPT_CONSTRAINT(LogConstraint, acc_log(), CG_General)
+  ACCEPT_CONSTRAINT(LogConstraint, Recommended, CG_General)
   void AddConstraint(const LogConstraint& cc);
   ACCEPT_CONSTRAINT(LogAConstraint, Recommended, CG_General)
   void AddConstraint(const LogAConstraint& cc);
@@ -123,19 +123,6 @@ protected:
   obj::Type GetGurobiMainObjSense() const;
 
 
-protected:
-  //////////// Option accessors ////////////////
-  int acc_abs() const { return storedOptions_.acc_abs_; }
-  int acc_min() const { return storedOptions_.acc_min_; }
-  int acc_max() const { return storedOptions_.acc_max_; }
-  int acc_and() const { return storedOptions_.acc_and_; }
-  int acc_or() const { return storedOptions_.acc_or_; }
-  int acc_ind_le() const { return storedOptions_.acc_ind_le_; }
-  int acc_ind_eq() const { return storedOptions_.acc_ind_eq_; }
-
-  int acc_exp() const { return storedOptions_.acc_exp_; }
-  int acc_log() const { return storedOptions_.acc_log_; }
-
 private:
   /// The sense of the main objective
   obj::Type main_obj_sense_;
@@ -143,9 +130,6 @@ private:
   /// These options are stored in the class as variables
   /// for direct access
   struct Options {
-    int acc_min_=2, acc_max_=2, acc_abs_=2, acc_and_=2, acc_or_=2,
-      acc_ind_le_=2, acc_ind_eq_=2;
-    int acc_exp_=2, acc_log_=2;
   } storedOptions_;
 };
 

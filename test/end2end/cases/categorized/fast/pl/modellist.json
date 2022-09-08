@@ -103,5 +103,27 @@
         "pl_linearize": 0
     },
     "files" : ["transpl2.mod", "transpl2.dat"]
+  },
+  {
+    "name" : "steelpl2 pl_linearize=0 acc:pl=1 acc:sos2=1",
+    "objective" :  -1576814.857,
+    "tags" : ["linear", "continuous", "plinear",
+              "check_pl2sos2", "check_sos2_from_pl"],
+    "options": {
+        "pl_linearize": 0,
+        "ANYSOLVER_options": "acc:pl=1 acc:sos2=1"
+    },
+    "files" : ["steelpl2.mod", "steelpl2.dat"]
+  },
+  {
+    "name" : "steelpl3 pl_linearize=0 acc:pl=1 acc:sos2=1",
+    "objective" :  -293856347,
+    "tags" : ["linear", "continuous", "plinear",
+              "check_pl2sos2", "check_sos2_from_pl"],
+    "options": {
+        "pl_linearize": 0,
+        "ANYSOLVER_options": "acc:pl=1 acc:sos2=1"
+    },
+    "files" : ["steelpl3.mod", "steelpl2.dat"]
   }
 ]

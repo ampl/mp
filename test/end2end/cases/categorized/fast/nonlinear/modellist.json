@@ -1,5 +1,31 @@
 [
   {
+    "name" : "expA_1",
+    "objective" : 10,
+    "tags" : ["nonlinear"]
+  },
+  {
+    "name" : "expA_1 check_pl_approx_expA",
+    "objective" : 10,
+    "tags" : ["nonlinear", "check_pl_approx_expA"],
+    "options": { "ANYSOLVER_options": "acc:expa=1" }
+  },
+  {
+    "name" : "expA_2",
+    "objective" : 1.6160298824941304,
+    "tags" : ["nonlinear"]
+  },
+  {
+    "name" : "logA_1",
+    "objective" : 0.796515,
+    "tags" : ["log"]
+  },
+  {
+    "name" : "log_1",
+    "objective" : 1,
+    "tags" : ["log"]
+  },
+  {
     "name" : "exp_01_check_obj",
     "objective" : 1.6931555,
     "tags" : ["continuous", "nonlinear"],
@@ -7,9 +33,9 @@
     "comment": "Rel error bound 1e-5 for Gurobi, own plapprox for others"
   },
   {
-    "name" : "exp_01_check_obj ownplapprox",
+    "name" : "exp_01_check_obj check_pl_approx_exp",
     "objective" : 1.6931555,
-    "tags" : ["continuous", "nonlinear", "ownplapprox"],
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_exp"],
     "options": { "ANYSOLVER_options": "acc:exp=1" },
     "comment": "Own plapprox for Gurobi"
   },
@@ -23,10 +49,20 @@
     }
   },
   {
-    "name" : "exp_02_check_2con ownplapprox",
-    "tags" : ["continuous", "nonlinear", "ownplapprox"],
+    "name" : "exp_02_check_2con check_pl_approx_exp",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_exp"],
     "options": { "ANYSOLVER_options": "acc:exp=1" },
     "comment": "Own plapprox for Gurobi",
+    "values": {
+      "if abs(y-exp(x))<=1e-5 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "exp_02_check_2con check: approx, pl, sos2",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_exp",
+              "check_pl2sos2", "check_sos2_from_pl"],
+    "options": { "ANYSOLVER_options": "acc:exp=1 acc:pl=1 acc:sos2=1" },
+    "comment": "Own plapprox for Gurobi with PL encoding",
     "values": {
       "if abs(y-exp(x))<=1e-5 then 1 else 0": 1
     }
@@ -41,8 +77,8 @@
     }
   },
   {
-    "name" : "log_01_check_obj ownplapprox",
-    "tags" : ["continuous", "nonlinear", "ownplapprox"],
+    "name" : "log_01_check_obj check_pl_approx_log",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_log"],
     "options": { "ANYSOLVER_options": "acc:log=1" },
     "comment": "Own plapprox for Gurobi (log)",
     "values": {
@@ -59,13 +95,24 @@
     }
   },
   {
-    "name" : "log_02_check_2con_noncvx ownplapprox",
-    "tags" : ["continuous", "nonlinear", "ownplapprox"],
+    "name" : "log_02_check_2con_noncvx check_pl_approx_log",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_log"],
     "options": { "ANYSOLVER_options": "acc:log=1" },
-    "comment": "Own plapprox for Gurobi (log)",
+    "comment": "Own plapprox for log, e.g., for Gurobi",
+    "values": {
+      "if abs(y-log(x))<=1e-5 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "log_02_check_2con_noncvx check: approx, pl, sos2",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_log",
+              "check_pl2sos2", "check_sos2_from_pl"],
+    "options": { "ANYSOLVER_options": "acc:log=1 acc:pl=1 acc:sos2=1" },
+    "comment": "Own plapprox for log, followed by pl->sos2->MIP conversion",
     "values": {
       "if abs(y-log(x))<=1e-5 then 1 else 0": 1
     }
   }
+
 
 ]

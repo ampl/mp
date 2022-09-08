@@ -42,7 +42,7 @@ protected:
           " 'bin_var==value ==> c'x<=d' failed"
           " so it will be passed to the solver natively if supported."
           " Provide tight bounds on variables entering logical expressions,"
-          " or, if available, set acc:ind_le=2 for native handling");
+          " or, if available, set acc:indle=2 for native handling");
     if (0==val)                                // left condition is b==0
       con.GetBody().add_term(-body_ub+con.rhs(), b);
     else {

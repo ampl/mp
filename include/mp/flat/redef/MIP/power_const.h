@@ -58,7 +58,9 @@ public:
             QuadraticExpr(
               QuadAndLinTerms( { }, { {1.0}, {arg1}, {arg2} } ),
               0.0) ));
-    GetMC(). PropagateResultOfInitExpr(     // propagate ctx into new constr
+    /// propagate ctx into new constr,
+    /// particularly into the arguments which are new constraints
+    GetMC().PropagateResultOfInitExpr(
           con.GetResultVar(), con.GetContext());
   }
 

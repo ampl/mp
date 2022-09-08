@@ -59,6 +59,14 @@ using FuncConConverter_MIP_Exp = FuncConConverter_MIP<MC, ExpConstraint>;
 template <class MC>
 using FuncConConverter_MIP_Log = FuncConConverter_MIP<MC, LogConstraint>;
 
+/// Typedef FuncConConverter_MIP_Log
+template <class MC>
+using FuncConConverter_MIP_LogA = FuncConConverter_MIP<MC, LogAConstraint>;
+
+/// Typedef FuncConConverter_MIP_Log
+template <class MC>
+using FuncConConverter_MIP_ExpA = FuncConConverter_MIP<MC, ExpAConstraint>;
+
 
 } // namespace mp
 

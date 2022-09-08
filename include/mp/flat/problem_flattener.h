@@ -591,8 +591,10 @@ public:
           PowConstraint::Arguments{ Convert2Var(std::move(el)) },
           PowConstraint::Parameters{ er.constant_term() } ) );
     }
+    else if (el.is_constant())
+      return VisitPowConstBase(e);
     else
-      MP_RAISE("Unsupported: operator ^ with variable exponent");
+      MP_RAISE("Unsupported: operator ^ with variable base and exponent");
   }
 
   EExpr VisitSqrt(UnaryExpr e) {
@@ -653,6 +655,7 @@ public:
   }
 
   /// fAllSOS2: if false, only groups with sosno<0 are treated as SOS2
+  /// Moreover if true, we assume they are for linearized PL
   void ConvertSOSCollection(ArrayRef<int> sosno, ArrayRef<double> ref,
                             bool fAllSOS2) {
     assert(sosno.size() == ref.size());
@@ -677,7 +680,10 @@ public:
         vars.push_back(wv.second);
       }
       if (group.first<0 || fAllSOS2)
-        AddConstraint(SOS2Constraint(vars, weights));
+        AddConstraint(SOS2Constraint(vars, weights,
+                                     fAllSOS2 ?
+        SOSExtraInfo{{1.0, 1.0}} :   // for linearized PL
+        SOSExtraInfo{}));
       else
         AddConstraint(SOS1Constraint(vars, weights));
     }

@@ -65,10 +65,14 @@ protected:
 // TODO This macro is useful to automatically throw an error if a function in the 
 // solver API does not return a valid errorcode. In this mock driver, we define it 
 // ourselves, normally this constant would be defined in the solver's API.
-#define HIGHS_RETCODE_OK 0
-#define HIGHS_CCALL( call ) do { if (int e = (call) != HIGHS_RETCODE_OK) \
-  throw std::runtime_error( \
-    fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
+#define HIGHS_CCALL( call ) do { \
+  int e = (call); \
+  if (e != kHighsStatusOk && e != kHighsStatusWarning) \
+    throw std::runtime_error( \
+      fmt::format("  Call failed: '{}' with code {}", #call, e )); \
+  if (e == kHighsStatusWarning) \
+    std::printf( fmt::format("  MOSEK Warning: Call: '{}', warning code {}", #call, e ).c_str()); \
+} while (0)
 
 } // namespace mp
 

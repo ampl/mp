@@ -339,6 +339,10 @@ void MosekBackend::InitCustomOptions() {
     "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
     "\n.. value-table::\n", MSK_IPAR_OPTIMIZER, alg_values_method, 2);
 
+  AddSolverOption("lim:time timelim timelimit",
+      "Limit on solve time (in seconds; default: no limit).",
+      MSK_DPAR_OPTIMIZER_MAX_TIME, 0.0, DBL_MAX);
+
   // Example of stored option, to be acted upon in the driver code
   AddStoredOption("tech:exportfile writeprob writemodel",
       "Specifies the name of a file where to export the model before "

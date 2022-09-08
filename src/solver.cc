@@ -315,6 +315,8 @@ SolverAppOptionParser::SolverAppOptionParser(BasicSolver &s)
         's', "write .sol file (without -AMPL)");
   OptionList::Builder<mp::BasicSolver> options(options_, s);
   options.Add<&mp::BasicSolver::ShowVersion>('v', "show version and exit");
+  options.Add<&mp::BasicSolver::ShowConstraintDescriptions>('c',
+                                             "show constraint descriptions and exit");
   // TODO: if solver supports functions add options -ix and -u
   // "ix", "import user-defined functions from x; -i? gives details",
   // "u",  "just show available user-defined functions"
@@ -774,6 +776,19 @@ bool Solver::ShowVersion() {
   return false;
 }
 #endif
+
+bool BasicSolver::ShowConstraintDescriptions() {
+  Print("{}\n\n", constr_descr_header_);
+  if (constr_descr_.empty())
+    Print("No constraint descrptions filled.\n");
+  else {
+    int i=0;
+    for (const auto& cd: constr_descr_) {
+      Print("{:3}.  {:20}:  {}\n", ++i, cd.first, cd.second);
+    }
+  }
+  return false;
+}
 
 SolverOption::SolverOption(
     const char *names_list, const char *description,

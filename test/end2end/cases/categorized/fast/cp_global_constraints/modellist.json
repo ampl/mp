@@ -57,14 +57,14 @@
     "name" : "x-multmip3 [count, if] cmpEps",
     "files": ["x-multmip3.mod", "multmip3.dat"],
     "tags" : ["logical"],
-    "options": { "ANYSOLVER_options": "cvt:mip:eps=1e-2 acc:ind_le=1" },
+    "options": { "ANYSOLVER_options": "cvt:mip:eps=1e-2 acc:indle=1" },
     "objective" : 235625
   },
   {
     "name" : "x-multmip1 [if, >]",
     "files": ["x-multmip1.mod", "multmip1.dat"],
     "tags" : ["logical"],
-    "options": { "ANYSOLVER_options": "acc:ind_le=1" },
+    "options": { "ANYSOLVER_options": "acc:indle=1" },
     "objective" : 218125
   },
   {
