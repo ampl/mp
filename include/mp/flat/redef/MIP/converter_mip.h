@@ -99,8 +99,12 @@ public:
 
   /// Exp
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Exp)
+  /// ExpA
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_ExpA)
   /// Log
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Log)
+  /// LogA
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_LogA)
 
 
   /// Strict comparison tolerance.

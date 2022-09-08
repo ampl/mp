@@ -591,8 +591,10 @@ public:
           PowConstraint::Arguments{ Convert2Var(std::move(el)) },
           PowConstraint::Parameters{ er.constant_term() } ) );
     }
+    else if (el.is_constant())
+      return VisitPowConstBase(e);
     else
-      MP_RAISE("Unsupported: operator ^ with variable exponent");
+      MP_RAISE("Unsupported: operator ^ with variable base and exponent");
   }
 
   EExpr VisitSqrt(UnaryExpr e) {

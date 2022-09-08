@@ -23,7 +23,7 @@ class ModelTags(enum.Enum):
     logical = 13
     polynomial = 14
 
-    trigonometric = 100
+    trigonometric = 100   # subcategories of nonlinear
     htrigonometric = 101
     log = 102
 
@@ -53,8 +53,8 @@ class ModelTags(enum.Enum):
     feasrelax = 40100
 
     check_pl_approx_exp = 50000          # Solvers natively accepting general
-    check_pl_approx_log = 50001          # nonlinear constraints.
-                                         # The automatic acc:exp etc options allow
+    check_pl_approx_expA = 50001         # nonlinear constraints.
+    check_pl_approx_log = 50002          # The automatic acc:exp etc options allow
                                          # testing own pl approximation
 
     check_pl2sos2 = 50500                # Solvers accepting PL constraints but wishing

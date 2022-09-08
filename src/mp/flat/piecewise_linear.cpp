@@ -63,6 +63,10 @@ public:
 
 
 protected:
+  /// Constraint parameters, such as logarithm base
+  const typename FuncCon::Parameters& GetConParams() const {
+    return con_.GetParameters();
+  }
   /// Ample, but realistic, function graph domain
   /// (values should not overflow when computing (pre-)image)
   virtual FuncGraphDomain GetFuncGraphDomain() const = 0;
@@ -325,6 +329,64 @@ public:
 template
 PLPoints PLApproximate<LogConstraint>(
     const LogConstraint& con, PLApproxParams& laPrm);
+
+
+/// PLApproximator<ExpAConstraint>
+template <>
+class PLApproximator<ExpAConstraint> :
+    public BasicPLApproximator<ExpAConstraint> {
+public:
+  PLApproximator(const ExpAConstraint& con, PLApproxParams& p) :
+    BasicPLApproximator<ExpAConstraint>(con, p),
+    A_(GetConParams()[0]), logA_(std::log(A_)) { }
+  FuncGraphDomain GetFuncGraphDomain() const override
+  { return { -1e100, 1e100, 1e-100, 1e100 }; }
+  double eval(double x) const override { return std::pow(A_, x); }
+  double inverse(double y) const override { return std::log(y)/logA_; }
+  double eval_1st(double x) const override { return std::pow(A_, x)*logA_; }
+  double inverse_1st(double y) const override { return std::log(y/logA_)/logA_; }
+  double eval_2nd(double x) const override { return std::pow(A_, x)*logA_*logA_; }
+
+
+private:
+  double A_;
+  double logA_;
+};
+
+/// Instantiate PLApproximate<ExpAConstraint>
+template
+PLPoints PLApproximate<ExpAConstraint>(
+    const ExpAConstraint& con, PLApproxParams& laPrm);
+
+
+/// PLApproximator<LogAConstraint>
+template <>
+class PLApproximator<LogAConstraint> :
+    public BasicPLApproximator<LogAConstraint> {
+public:
+  PLApproximator(const LogAConstraint& con, PLApproxParams& p) :
+    BasicPLApproximator<LogAConstraint>(con, p),
+    A_(GetConParams()[0]), logA_(std::log(A_)) { }
+  FuncGraphDomain GetFuncGraphDomain() const override
+  { return { 1e-6, 1e100, -1e100, 1e100 }; }
+  double eval(double x) const override
+  { return std::log(x) / logA_; }
+  double inverse(double y) const override { return std::pow(A_, y); }
+  double eval_1st(double x) const override { return 1.0/(x*logA_); }
+  double inverse_1st(double y) const override { return 1.0/(y*logA_); }
+  double eval_2nd(double x) const override { return -1.0/(x*x*logA_); }
+
+
+private:
+  double A_;
+  double logA_;
+};
+
+/// Instantiate PLApproximate<LogConstraint>
+template
+PLPoints PLApproximate<LogAConstraint>(
+    const LogAConstraint& con, PLApproxParams& laPrm);
+
 
 
 void FuncGraphDomain::intersect(const FuncGraphDomain &grDom) {

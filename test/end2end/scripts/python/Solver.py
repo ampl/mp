@@ -352,7 +352,13 @@ class MPDirectSolver(AMPLSolver):
             stags = stags | sDefault
             # Direct/FlatConverter drivers with integer vars:
             if ModelTags.integer in stags or ModelTags.binary in stags:
-                stags = stags | {ModelTags.complementarity, ModelTags.logical}
+                stags = stags | {
+                    ModelTags.complementarity,
+                    ModelTags.logical,
+                    ModelTags.plinear,
+                    ModelTags.nonlinear,
+                    ModelTags.log
+                }
             # Direct/FlatConverter drivers with non-convex quadratics:
             if ModelTags.quadraticnonconvex in stags:
                 stags = stags | {ModelTags.polynomial}
@@ -599,6 +605,7 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
 
                  ModelTags.check_pl_approx_exp,
+                 ModelTags.check_pl_approx_expA,
                  ModelTags.check_pl_approx_log,
 
                  ModelTags.check_pl2sos2,

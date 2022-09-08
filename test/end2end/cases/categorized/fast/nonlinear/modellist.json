@@ -1,5 +1,31 @@
 [
   {
+    "name" : "expA_1",
+    "objective" : 10,
+    "tags" : ["nonlinear"]
+  },
+  {
+    "name" : "expA_1 check_pl_approx_expA",
+    "objective" : 10,
+    "tags" : ["nonlinear", "check_pl_approx_expA"],
+    "options": { "ANYSOLVER_options": "acc:expa=1" }
+  },
+  {
+    "name" : "expA_2",
+    "objective" : 1.6160298824941304,
+    "tags" : ["nonlinear"]
+  },
+  {
+    "name" : "logA_1",
+    "objective" : 0.796515,
+    "tags" : ["log"]
+  },
+  {
+    "name" : "log_1",
+    "objective" : 1,
+    "tags" : ["log"]
+  },
+  {
     "name" : "exp_01_check_obj",
     "objective" : 1.6931555,
     "tags" : ["continuous", "nonlinear"],
