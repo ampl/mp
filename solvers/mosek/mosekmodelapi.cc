@@ -96,8 +96,8 @@ void MosekModelAPI::AddLinearConstraint(
   ++n_alg_cons_;
 }
 
-// Similar functions for constraints with other bound types are defined in the header, but not used.
-// We handle bound types here.
+// Some linear constraints are processed as Range, so we set the bound keys here.
+// Sometimes the separate AddConstraint functions are also called (e.g. logical constraints), see below.
 void MosekModelAPI::AddConstraint(const LinConRange& lc)
 {
   double lb = lc.lb();
@@ -122,6 +122,19 @@ void MosekModelAPI::AddConstraint(const LinConRange& lc)
   }
 
   AddLinearConstraint(lp(), lc.size(), key, lb, ub, lc.pvars(), lc.pcoefs(), lc.name());
+}
+
+void MosekModelAPI::AddConstraint(const LinConLE& lc)
+{
+  AddLinearConstraint(lp(), lc.size(), MSK_BK_UP, lc.lb(), lc.ub(), lc.pvars(), lc.pcoefs(), lc.name());
+}
+void MosekModelAPI::AddConstraint(const LinConEQ& lc)
+{
+  AddLinearConstraint(lp(), lc.size(), MSK_BK_FX, lc.lb(), lc.ub(), lc.pvars(), lc.pcoefs(), lc.name());
+}
+void MosekModelAPI::AddConstraint(const LinConGE& lc)
+{
+  AddLinearConstraint(lp(), lc.size(), MSK_BK_LO, lc.lb(), lc.ub(), lc.pvars(), lc.pcoefs(), lc.name());
 }
 
 void MosekModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
