@@ -1,5 +1,7 @@
-How to...
-=========
+.. _getting-started:
+
+Getting started
+===============
 
 .. _howto-create-new-driver:
 
@@ -49,15 +51,20 @@ Copying a driver template
 * First, clone the mp repository.
   Then either:
 
-  #. Copy all the directory :file:`visitor` (or any other exiting driver files)
+  #. Copy all the directory :file:`solvers/visitor` (or any other exiting driver files)
      into a new directory - and change its name.
 
   #. Rename all occurrences of the word "visitor".
 
 
-  Or:
+  or:
 
-  #. Use the file createDriver.py, which does the two items above automatically
+  #. Use the script :file:`solvers/createDriver.py`, which does the two items above
+     automatically. The script expects a source driver and a new driver name. So,
+     to create a new driver named ``brandNewAMPLSolver`` based on ``visitor``, execute::
+
+        python3 createDriver.py visitor brandNewAMPLSolver
+
 
 * Add the new target in :file:`solvers/CMakeLists.txt`.
 

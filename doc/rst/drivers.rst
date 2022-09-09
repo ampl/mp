@@ -1,4 +1,4 @@
-.. _solver_drivers:
+.. _solver-drivers:
 
 Solver drivers
 ==============
