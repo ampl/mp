@@ -71,11 +71,7 @@ Developer documentation
 .. toctree::
    :maxdepth: 2
    
-   Library introduction <rst/intro>
-   rst/getting-started
-   API <rst/components>
-   rst/testing
-   rst/details
+   Developer docs <rst/developers>
 
 
 Indices and tables
