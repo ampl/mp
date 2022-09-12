@@ -24,8 +24,11 @@ set(DOC_OUTPUTDIR ${CMAKE_CURRENT_BINARY_DIR}/html/)
 set(SPHINX_INDEX_FILE ${DOC_OUTPUTDIR}/index.html)
 
 add_prefix(mp_docs ${DOC_BASEDIR}/rst/
-    model-guide.rst intro.rst components.rst drivers.rst
-    howto.rst testing.rst
+    model-guide.rst features-guide.rst
+    intro.rst components.rst drivers.rst
+    developers.rst
+    getting-started.rst
+    testing.rst
     details.rst
   )
 set(mp_docs ${mp_docs} ${DOC_BASEDIR}/index.rst)

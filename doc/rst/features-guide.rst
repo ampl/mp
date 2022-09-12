@@ -7,12 +7,12 @@ The mp framework defines standard solver *features* that solvers might support;
 these are usually characterized by a set of options used to control the feature,
 sometimes suffixes to pass required data and results, and may change the behaviour
 of the solution process.
-Much of the biolerplate code is written alrady, so that the behaviour becomes 
+Much of the biolerplate code is written already, so that the behaviour becomes
 automatically standardized across all solvers.
 
 This page presents the semantics of the most common solver features; for a development
 reference refer to the `Visitor driver
-<https://github.com/ampl/mp/tree/develop/solvers/visitor>`_. that shows how to
+<https://github.com/ampl/mp/tree/develop/solvers/visitor>`_ that shows how to
 declare that the solver driver supports a feature and how to implement it.
 
 

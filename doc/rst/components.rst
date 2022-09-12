@@ -399,12 +399,12 @@ To implement value pre- / postsolving, the following API is used:
 Conversion graph
 ~~~~~~~~~~~~~~~~
 
-The flattening and conversion graph can be exported by the `cvt:writegraph`
+The flattening and conversion graph can be exported by the ``cvt:writegraph``
 option (WIP).
 
 At the moment only arcs are exported. Terminal nodes (variables, constraints,
-objectives) can be seen in the NL model (ampl: `expand`) and the
-final flat model (x-gurobi: option `writeprob`).
+objectives) can be seen in the NL model (ampl: ``expand``) and the
+final flat model (x-gurobi: option ``writeprob``).
 
 
 C++ ASL adapter
