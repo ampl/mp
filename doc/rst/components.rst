@@ -1,3 +1,5 @@
+.. _components:
+
 Reusable components and solver driver API
 =========================================
 
@@ -19,7 +21,7 @@ Corresponding APIs are described below.
 NL file reader
 ~~~~~~~~~~~~~~
 
-MP provides a high-performance :doc:`.nl file reader <nl-reader>`
+MP provides a high-performance nl file reader
 which is up to `6x faster
 <http://zverovich.net/slides/2015-01-11-ics/socp-reformulation.html#/14>`_
 than the one provided by the traditional
