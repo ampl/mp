@@ -38,10 +38,17 @@ public:
     laPrm.grDom.ubx = std::min(GetMC().ub(x), 1e6);
     laPrm.grDom.lby = std::max(GetMC().lb(y), -1e6);
     laPrm.grDom.uby = std::min(GetMC().ub(y), 1e6);
-    GetMC().RedefineVariable(con.GetResultVar(),
-          PLConstraint({x}, PLApproximate(con, laPrm)));
-    GetMC(). PropagateResultOfInitExpr(     // propagate ctx into new constr
-          con.GetResultVar(), con.GetContext());
+
+    PLApproximate(con, laPrm);
+    if (!laPrm.fUsePeriod) {
+      GetMC().RedefineVariable(con.GetResultVar(),
+                               PLConstraint({x}, laPrm.plPoints));
+      GetMC(). PropagateResultOfInitExpr(
+            // propagate ctx into new constr
+            con.GetResultVar(), con.GetContext());
+    } else {
+      throw 0;
+    }
   }
 
 

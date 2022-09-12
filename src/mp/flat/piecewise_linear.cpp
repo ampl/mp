@@ -35,10 +35,10 @@ class PLApproximator;
 
 /// Define generic approximation call
 template <class FuncCon>
-PLPoints PLApproximate(const FuncCon& con,
+void PLApproximate(const FuncCon& con,
                              PLApproxParams& laPrm) {
   PLApproximator<FuncCon> pla{con, laPrm};
-  return pla.Run();
+  pla.Run();
 }
 
 
@@ -59,7 +59,7 @@ public:
   virtual const char* GetConTypeName() const
   { return con_.GetTypeName(); }
   /// Run the approximation
-  PLPoints Run();
+  void Run();
 
 
 protected:
@@ -70,10 +70,15 @@ protected:
   /// Ample, but realistic, function graph domain
   /// (values should not overflow when computing (pre-)image)
   virtual FuncGraphDomain GetFuncGraphDomain() const = 0;
+  /// Monotone? Then we can clip image range
+  virtual bool IsMonotone() const { return false; }
   /// Function graph domain: clip to the user-provided domain
+  /// and its function values.
+  /// This assumes the function is monotone
   virtual void ClipFuncGraphDomain() {
     laPrm_.grDom.intersect(GetFuncGraphDomain());
-    ClipWithFunctionValues(laPrm_.grDom);
+    if (IsMonotone())     // TODO in the reduced domain only
+      ClipWithFunctionValues(laPrm_.grDom);
     lbx_ = laPrm_.grDom.lbx;
     ubx_ = laPrm_.grDom.ubx;
   }
@@ -81,7 +86,21 @@ protected:
   /// @throw if infeasible
   /// @return false iff trivial
   /// @param result: the trivial PL
-  bool CheckDomainReturnFalseIfTrivial(PLPoints& result);
+  virtual bool CheckDomainReturnFalseIfTrivial(PLPoints& result);
+
+  /// Consider and initialize periodic approximation
+  /// @return Whether decided to do periodic
+  virtual bool InitPeriodic();
+  /// Initialize non-periodic approximation
+  virtual void InitNonPeriodic();
+  /// initialize loop through subintervals
+  virtual void InitSubintervalLoop();
+  /// init next subinterval
+  virtual bool NextSubinterval();
+  /// Approximate in the chosen subinterval
+  virtual void ApproximateSubinterval();
+
+
   /// Provide initial step length to the right from
   /// the current point, trying have the error nearly ok
   virtual double ComputeInitialStepLength(double x0);
@@ -131,32 +150,81 @@ protected:
   /// Function interval to approximate: ub
   double ubx() const { return ubx_; }
 
+  /// Subinterval to approximate: lb
+  double lb_sub() const { return breakpoints_[iSubIntv_]; }
+  /// Subinterval to approximate: ub
+  double ub_sub() const {
+    assert(iSubIntv_+1 < breakpoints_.size());
+    return breakpoints_[iSubIntv_+1];
+  }
+
+  /// Reference to the output PL, const
+  const PLPoints& GetPL() const { return laPrm_.plPoints; }
+  /// Reference to the output PL
+  PLPoints& GetPL() { return laPrm_.plPoints; }
+
+
 private:
   const FuncCon& con_;
   PLApproxParams& laPrm_;
   double lbx_ = -1e100, ubx_=1e100;
+  int iSubIntv_ { -100 };        // chosen subinterval
+  std::vector<double> breakpoints_;  // subintervals
 };
 
-/// Approximation execution
 template <class FuncCon>
-PLPoints BasicPLApproximator<FuncCon>::Run() {
-  PLPoints result;
-  ClipFuncGraphDomain();
-  if (CheckDomainReturnFalseIfTrivial(result)) {
-    auto x0 = lbx();                      // current left point
-    auto f0 = eval(x0);
-    result.AddPoint(x0, f0);
-    /// Simple: breakpoints on the function
-    do {
-      auto dx0 = ComputeInitialStepLength(x0);
-      assert(x0+dx0 <= ubx());
-      IncreaseStepWhileErrorSmallEnough(x0, f0, dx0);
-      DecreaseStepWhileErrorTooBig(x0, f0, dx0);
-      x0 += dx0;
-      result.AddPoint(x0, f0 = eval(x0));
-    } while (x0 < ubx());
-  }
-  return result;
+void BasicPLApproximator<FuncCon>::Run() {
+   ClipFuncGraphDomain();
+   if (CheckDomainReturnFalseIfTrivial(GetPL())) {
+     if (!InitPeriodic())
+       InitNonPeriodic();
+     InitSubintervalLoop();
+     while (NextSubinterval()) {
+       ApproximateSubinterval();
+     }
+   }
+ }
+
+template <class FuncCon>
+bool BasicPLApproximator<FuncCon>::InitPeriodic() {
+  return false;
+}
+
+template <class FuncCon>
+void BasicPLApproximator<FuncCon>::InitNonPeriodic() {
+  breakpoints_.push_back(lbx());
+  breakpoints_.push_back(ubx());
+}
+
+template <class FuncCon>
+void BasicPLApproximator<FuncCon>::InitSubintervalLoop() {
+  auto x0 = lbx();                      // current left point
+  auto f0 = eval(x0);
+  GetPL().AddPoint(x0, f0);
+  iSubIntv_ = -1;
+  assert(breakpoints_.size() >= 2);
+}
+
+template <class FuncCon>
+bool BasicPLApproximator<FuncCon>::NextSubinterval() {
+  return ++iSubIntv_+1 < (int)breakpoints_.size();
+}
+
+/// Approximate chosen subinterval
+template <class FuncCon>
+void BasicPLApproximator<FuncCon>::ApproximateSubinterval() {
+  assert(GetPL().size());
+  auto x0 = GetPL().x_.back();
+  auto f0 = GetPL().y_.back();    // can be != f(x0)
+  /// Simple: breakpoints on the function
+  do {
+    auto dx0 = ComputeInitialStepLength(x0);
+    assert(x0+dx0 <= ubx());
+    IncreaseStepWhileErrorSmallEnough(x0, f0, dx0);
+    DecreaseStepWhileErrorTooBig(x0, f0, dx0);
+    x0 += dx0;
+    GetPL().AddPoint(x0, f0 = eval(x0));
+  } while (x0 < ubx());
 }
 
 template <class FuncCon>
@@ -296,6 +364,7 @@ public:
     BasicPLApproximator<ExpConstraint>(con, p) { }
   FuncGraphDomain GetFuncGraphDomain() const override
   { return { -230.2585, 230.2585, 1e-100, 1e100 }; }
+  bool IsMonotone() const override { return true; }
   double eval(double x) const override { return std::exp(x); }
   double inverse(double y) const override { return std::log(y); }
   double eval_1st(double x) const override { return std::exp(x); }
@@ -305,7 +374,7 @@ public:
 
 /// Instantiate PLApproximate<ExpConstraint>
 template
-PLPoints PLApproximate<ExpConstraint>(
+void PLApproximate<ExpConstraint>(
     const ExpConstraint& con, PLApproxParams& laPrm);
 
 
@@ -318,6 +387,7 @@ public:
     BasicPLApproximator<LogConstraint>(con, p) { }
   FuncGraphDomain GetFuncGraphDomain() const override
   { return { 1e-6, 1e100, -230.2585, 230.2585 }; }
+  bool IsMonotone() const override { return true; }
   double eval(double x) const override { return std::log(x); }
   double inverse(double y) const override { return std::exp(y); }
   double eval_1st(double x) const override { return 1.0/x; }
@@ -327,7 +397,7 @@ public:
 
 /// Instantiate PLApproximate<LogConstraint>
 template
-PLPoints PLApproximate<LogConstraint>(
+void PLApproximate<LogConstraint>(
     const LogConstraint& con, PLApproxParams& laPrm);
 
 
@@ -341,6 +411,7 @@ public:
     A_(GetConParams()[0]), logA_(std::log(A_)) { }
   FuncGraphDomain GetFuncGraphDomain() const override
   { return { -1e100, 1e100, 1e-100, 1e100 }; }
+  bool IsMonotone() const override { return true; }
   double eval(double x) const override { return std::pow(A_, x); }
   double inverse(double y) const override { return std::log(y)/logA_; }
   double eval_1st(double x) const override { return std::pow(A_, x)*logA_; }
@@ -355,7 +426,7 @@ private:
 
 /// Instantiate PLApproximate<ExpAConstraint>
 template
-PLPoints PLApproximate<ExpAConstraint>(
+void PLApproximate<ExpAConstraint>(
     const ExpAConstraint& con, PLApproxParams& laPrm);
 
 
@@ -369,6 +440,7 @@ public:
     A_(GetConParams()[0]), logA_(std::log(A_)) { }
   FuncGraphDomain GetFuncGraphDomain() const override
   { return { 1e-6, 1e100, -1e100, 1e100 }; }
+  bool IsMonotone() const override { return true; }
   double eval(double x) const override
   { return std::log(x) / logA_; }
   double inverse(double y) const override { return std::pow(A_, y); }
@@ -384,7 +456,7 @@ private:
 
 /// Instantiate PLApproximate<LogConstraint>
 template
-PLPoints PLApproximate<LogAConstraint>(
+void PLApproximate<LogAConstraint>(
     const LogAConstraint& con, PLApproxParams& laPrm);
 
 

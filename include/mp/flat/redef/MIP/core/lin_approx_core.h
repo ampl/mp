@@ -17,23 +17,35 @@ struct FuncGraphDomain {
   void intersect(const FuncGraphDomain& grDom);
 };
 
-/// External parameters
+/// Range
+struct Range {
+  double lb{-1e100}, ub{1e100};
+};
+
+/// Input and output
 /// for piecewise-linear approximation
 struct PLApproxParams {
-  /// The domain for approximation
+  /////////// INPUT DATA //////////////
+  /// Graph domain for approximation
   FuncGraphDomain grDom;
   /// Error upper bound (relative or absolute)
   double ubErr = 1e-5;
+
+  /////////// OUTPUT: RESULT OF APPROXIMATION /////////////
+  FuncGraphDomain grDomOut;    // can be tighter
+  PLPoints plPoints; // the pl
+  bool fUsePeriod;  // whether the approximation is periodic
+  Range rng_periodic_factor;
+  Range period;
 };
 
 
 /// Do the approximation by calling
 /// the function-specific approximator
-/// @param laPrm: in-out parameter, e.g., bounds can be tightened
-/// @return the PL function
+/// @param laPrm: in-out parameter
 template <class FuncCon>
-PLPoints PLApproximate(const FuncCon& con,
-                             PLApproxParams& laPrm);
+void PLApproximate(const FuncCon& con,
+                   PLApproxParams& laPrm);
 
 }  // namespace mp
 
