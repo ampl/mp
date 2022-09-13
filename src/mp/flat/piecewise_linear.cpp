@@ -62,22 +62,21 @@ public:
   void Run();
 
 
+  ////////////////////// USER API ///////////////////////////
+  /// Typically, this is enough to define an approximator ///
+  ///////////////////////////////////////////////////////////
 protected:
-  /// Constraint parameters, such as logarithm base
-  const typename FuncCon::Parameters& GetConParams() const {
-    return con_.GetParameters();
-  }
   /// Ample, but realistic, function graph domain
   /// (values should not overflow when computing (pre-)image)
   virtual FuncGraphDomain GetFuncGraphDomain() const = 0;
   /// Monotone? Then we can clip image range
   virtual bool IsMonotone() const { return false; }
-  /// Periodic? We can still decide non-periodic if short piece
+  /// Normally periodic?
   virtual bool IsPeriodic() const { return false; }
   /// The period, if relevant
   virtual Range GetDefaultPeriod() const
   { return {-1e100, 1e100}; }
-  /// Breakpoint list
+  /// Breakpoint list container
   using BreakpointList = std::vector<double>;
   /// Default breakpoints. Include domain/period margins,
   /// either for the global domain,
@@ -85,6 +84,24 @@ protected:
   /// For example, [ -pi/2+eps, 0.0, pi/2-eps ]
   virtual BreakpointList GetDefaultBreakpoints() const
   { return {}; }
+  /// Evaluate function at \a x
+  virtual double eval(double x) const = 0;
+  /// Evaluate inv(f) at \a y. Consider lb_sub()..ub_sub()
+  virtual double inverse(double y) const = 0;
+  /// Evaluate f' at \a x
+  virtual double eval_1st(double x) const = 0;
+  /// Evaluate inv(f') at \a y. Consider lb_sub()..ub_sub()
+  virtual double inverse_1st(double y) const = 0;
+  /// Evaluate f'' at \a x
+  virtual double eval_2nd(double x) const = 0;
+
+
+  ////////////////// INTERNAL API /////////////////////
+
+  /// Constraint parameters, such as the logarithm base
+  const typename FuncCon::Parameters& GetConParams() const {
+    return con_.GetParameters();
+  }
   /// Function graph domain: clip to the user-provided domain
   /// and its function values.
   /// This assumes the function is monotone
@@ -102,7 +119,7 @@ protected:
   virtual bool CheckDomainReturnFalseIfTrivial(PLPoints& result);
 
   /// Consider and initialize periodic approximation
-  /// @return Whether decided to do periodic
+  /// @return Whether decided to go periodic
   virtual bool InitPeriodic();
   /// Initialize non-periodic approximation
   virtual void InitNonPeriodic();
@@ -132,17 +149,6 @@ protected:
   virtual int CompareError(
       double x0, double y0, double x1, double y1);
 
-  /// Evaluate function at \a x
-  virtual double eval(double x) const = 0;
-  /// Evaluate inv(f) at \a y. Consider lb_sub()
-  virtual double inverse(double y) const = 0;
-  /// Evaluate f' at \a x
-  virtual double eval_1st(double x) const = 0;
-  /// Evaluate inv(f') at \a y. Consider lb_sub()
-  virtual double inverse_1st(double y) const = 0;
-  /// Evaluate f'' at \a x
-  virtual double eval_2nd(double x) const = 0;
-
   /// Maximal absolute error (along Y axis) to the linear segment
   /// (x0, y0) -> (x1, y1).
   /// Standard implementation checks in the ends
@@ -157,6 +163,11 @@ protected:
       double x0, double y0, double x1, double y1);
   /// Clip the graph domain, considering the actual function.
   virtual void ClipWithFunctionValues(FuncGraphDomain& grDom) const;
+
+  /// Call inverse() and check result to be in lb_sub()..ub_sub()
+  virtual double inverse_with_check(double y) const;
+  /// Call inverse_1st and check result to be in lb_sub()..ub_sub()
+  virtual double inverse_1st_with_check(double y) const;
 
   /// Function interval to approximate: lb
   double lbx() const { return lbx_; }
@@ -210,8 +221,9 @@ bool BasicPLApproximator<FuncCon>::InitPeriodic() {
     breakpoints_ = GetDefaultBreakpoints();
 
     laPrm_.fUsePeriod = true;
-    laPrm_.period = GetDefaultPeriod();
-    laPrm_.rng_periodic_factor = {-1e100, 1e100};  // simple
+    laPrm_.period_remainder_range =
+      {breakpoints_.front(), breakpoints_.back()};
+    laPrm_.periodic_factor_range = {-1e100, 1e100};  // simple
 
     return true;
   }
@@ -328,7 +340,7 @@ double BasicPLApproximator<FuncCon>::maxErrorAbs(
   auto f0 = eval(x0);
   auto f1 = eval(x1);
   auto errMax = std::max( std::fabs(f0-y0), std::fabs(f1-y1) );
-  auto xMid = inverse_1st( (y1-y0)/(x1-x0) );
+  auto xMid = inverse_1st_with_check( (y1-y0)/(x1-x0) );
   auto fMid = eval(xMid);
   auto yMid = y0 + (y1-y0) * (xMid-x0) / (x1-x0);
   errMax = std::max( errMax, std::fabs(fMid-yMid) );
@@ -350,22 +362,22 @@ double BasicPLApproximator<FuncCon>::maxErrorRelAbove1(
   points.push_back({f0, y0});
   points.push_back({f1, y1});
   auto slope = (y1-y0)/(x1-x0);        // segment slope
-  auto xMid = inverse_1st( slope );    // middle-value point
+  auto xMid = inverse_1st_with_check( slope );    // middle-value point
   points.push_back( { eval(xMid), y0 + (xMid-x0) * slope } );
-  auto xMidUp = inverse_1st( slope / (1+laPrm_.ubErr) );
+  auto xMidUp = inverse_1st_with_check( slope / (1+laPrm_.ubErr) );
   points.push_back( { eval(xMidUp), y0 + (xMidUp-x0) * slope } );
   if (1.0!=laPrm_.ubErr) {
-    auto xMidDn = inverse_1st( slope / (1-laPrm_.ubErr) );
+    auto xMidDn = inverse_1st_with_check( slope / (1-laPrm_.ubErr) );
     points.push_back( { eval(xMidDn), y0 + (xMidDn-x0) * slope } );
   }
   if (f0<1.0 && f1>1.0) {
-    auto x_preim_1 = inverse(1.0);
+    auto x_preim_1 = inverse_with_check(1.0);
     MP_ASSERT_ALWAYS(x0<x_preim_1 && x1>x_preim_1,
                      "PLApprox maxErrRel(): preim(1.0) outside");
     points.push_back( { 1.0, y0 + (x_preim_1-x0) * slope } );
   }
   if (f0<-1.0 && f1>-1.0) {
-    auto x_preim_1 = inverse(-1.0);
+    auto x_preim_1 = inverse_with_check(-1.0);
     MP_ASSERT_ALWAYS(x0<x_preim_1 && x1>x_preim_1,
                      "PLApprox maxErrRel(): preim(-1.0) outside");
     points.push_back( { -1.0, y0 + (x_preim_1-x0) * slope } );
@@ -381,6 +393,22 @@ double BasicPLApproximator<FuncCon>::maxErrorRelAbove1(
     errMax = std::max(errMax, err);
   }
   return errMax;
+}
+
+template <class FuncCon>
+double BasicPLApproximator<FuncCon>::
+inverse_with_check(double y) const {
+  auto x = inverse(y);
+  assert(x >= lb_sub()-1e-6 && x <= ub_sub()+1e-6);
+  return x;
+}
+
+template <class FuncCon>
+double BasicPLApproximator<FuncCon>::
+inverse_1st_with_check(double y) const {
+  auto x = inverse_1st(y);
+  assert(x >= lb_sub()-1e-6 && x <= ub_sub()+1e-6);
+  return x;
 }
 
 
@@ -512,18 +540,27 @@ public:
   /// Distinguish subinterval (coord plane quarter):
   double inverse(double y) const override {
     assert(std::fabs(y) <= 1.0);
-    auto lb_mod = std::fmod(lb_sub(), 2*pi);
-    auto ub_mod = std::fmod(ub_sub(), 2*pi);
-    if (lb_mod >= pi*1.5 && ub_mod <= pi/2)
+    auto lb_mod = std::fmod(lb_sub()+pi/2, 2*pi);
+    auto ub_mod = std::fmod(ub_sub()+pi/2, 2*pi);
+    if (ub_mod <= pi+1e-10) {
+      assert(lb_mod >= -1e-10);
       return std::asin(y);
-    else
-    if (lb_mod >= pi/2 && ub_mod <= pi*1.5)
-      return pi*1.5 - std::asin(y);
-    MP_RAISE("PLApprox<Sin>: subinterval too big");
-    /// TODO check all inverse() return in the current subinterval
+    }
+    assert(lb_mod >= pi-1e-10);
+    return pi*1.5 - std::asin(y);
   }
   double eval_1st(double x) const override { return std::cos(x); }
-  double inverse_1st(double y) const override { return 1.0/(y*logA_); }
+  double inverse_1st(double y) const override {
+    assert(std::fabs(y) <= 1.0);
+    auto lb_mod = std::fmod(lb_sub(), 2*pi);
+    auto ub_mod = std::fmod(ub_sub(), 2*pi);
+    if (ub_mod <= pi+1e-10) {
+      assert(lb_mod >= -1e-10);
+      return std::acos(y);
+    }
+    assert(lb_mod >= pi-1e-10);
+    return pi*2 - std::acos(y);
+  }
   double eval_2nd(double x) const override { return -std::sin(x); }
 
 

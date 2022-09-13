@@ -5,6 +5,8 @@
  *  via piecewise-linear approximation
  */
 
+#include "mp/common.h"
+
 #include "mp/flat/redef/redef_base.h"
 #include "mp/flat/constr_std.h"
 #include "mp/flat/redef/MIP/core/lin_approx_core.h"
@@ -47,7 +49,18 @@ public:
             // propagate ctx into new constr
             con.GetResultVar(), con.GetContext());
     } else {
-      throw 0;
+      auto rmd = GetMC().AddVar(
+            laPrm.period_remainder_range.lb,
+            laPrm.period_remainder_range.ub);
+      auto factor = GetMC().AddVar(
+            laPrm.periodic_factor_range.lb,
+            laPrm.periodic_factor_range.ub,
+            var::INTEGER);
+      GetMC().RedefineVariable(con.GetResultVar(),
+                               PLConstraint({x}, laPrm.plPoints));
+      GetMC(). PropagateResultOfInitExpr(
+            // propagate ctx into new constr
+            con.GetResultVar(), con.GetContext());
     }
   }
 
@@ -66,13 +79,17 @@ using FuncConConverter_MIP_Exp = FuncConConverter_MIP<MC, ExpConstraint>;
 template <class MC>
 using FuncConConverter_MIP_Log = FuncConConverter_MIP<MC, LogConstraint>;
 
-/// Typedef FuncConConverter_MIP_Log
+/// Typedef FuncConConverter_MIP_LogA
 template <class MC>
 using FuncConConverter_MIP_LogA = FuncConConverter_MIP<MC, LogAConstraint>;
 
-/// Typedef FuncConConverter_MIP_Log
+/// Typedef FuncConConverter_MIP_ExpA
 template <class MC>
 using FuncConConverter_MIP_ExpA = FuncConConverter_MIP<MC, ExpAConstraint>;
+
+/// Typedef FuncConConverter_MIP_Sin
+template <class MC>
+using FuncConConverter_MIP_Sin = FuncConConverter_MIP<MC, SinConstraint>;
 
 
 } // namespace mp
