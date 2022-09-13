@@ -19,7 +19,10 @@ struct FuncGraphDomain {
 
 /// Range
 struct Range {
-  double lb{-1e100}, ub{1e100};
+  /// Construct
+  Range(double l=-1e100, double u=1e100) : lb(l), ub(u) { }
+  /// The bounds
+  double lb, ub;
 };
 
 /// Input and output

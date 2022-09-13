@@ -72,6 +72,19 @@ protected:
   virtual FuncGraphDomain GetFuncGraphDomain() const = 0;
   /// Monotone? Then we can clip image range
   virtual bool IsMonotone() const { return false; }
+  /// Periodic? We can still decide non-periodic if short piece
+  virtual bool IsPeriodic() const { return false; }
+  /// The period, if relevant
+  virtual Range GetDefaultPeriod() const
+  { return {-1e100, 1e100}; }
+  /// Breakpoint list
+  using BreakpointList = std::vector<double>;
+  /// Default breakpoints. Include domain/period margins,
+  /// either for the global domain,
+  /// or, if IsPeriodic(), in the default period.
+  /// For example, [ -pi/2+eps, 0.0, pi/2-eps ]
+  virtual BreakpointList GetDefaultBreakpoints() const
+  { return {}; }
   /// Function graph domain: clip to the user-provided domain
   /// and its function values.
   /// This assumes the function is monotone
@@ -121,11 +134,11 @@ protected:
 
   /// Evaluate function at \a x
   virtual double eval(double x) const = 0;
-  /// Evaluate inv(f) at \a y
+  /// Evaluate inv(f) at \a y. Consider lb_sub()
   virtual double inverse(double y) const = 0;
   /// Evaluate f' at \a x
   virtual double eval_1st(double x) const = 0;
-  /// Evaluate inv(f') at \a y
+  /// Evaluate inv(f') at \a y. Consider lb_sub()
   virtual double inverse_1st(double y) const = 0;
   /// Evaluate f'' at \a x
   virtual double eval_2nd(double x) const = 0;
@@ -154,7 +167,7 @@ protected:
   double lb_sub() const { return breakpoints_[iSubIntv_]; }
   /// Subinterval to approximate: ub
   double ub_sub() const {
-    assert(iSubIntv_+1 < breakpoints_.size());
+    assert(iSubIntv_+1 < (int)breakpoints_.size());
     return breakpoints_[iSubIntv_+1];
   }
 
@@ -169,8 +182,13 @@ private:
   PLApproxParams& laPrm_;
   double lbx_ = -1e100, ubx_=1e100;
   int iSubIntv_ { -100 };        // chosen subinterval
-  std::vector<double> breakpoints_;  // subintervals
+  BreakpointList breakpoints_;   // subintervals
 };
+
+
+/// Define value of \a pi
+constexpr double pi = 3.14159265358979323846;
+
 
 template <class FuncCon>
 void BasicPLApproximator<FuncCon>::Run() {
@@ -179,30 +197,41 @@ void BasicPLApproximator<FuncCon>::Run() {
      if (!InitPeriodic())
        InitNonPeriodic();
      InitSubintervalLoop();
-     while (NextSubinterval()) {
+     do {
        ApproximateSubinterval();
-     }
+     } while (NextSubinterval());
    }
  }
 
 template <class FuncCon>
 bool BasicPLApproximator<FuncCon>::InitPeriodic() {
+  if (IsPeriodic()) {
+
+    breakpoints_ = GetDefaultBreakpoints();
+
+    laPrm_.fUsePeriod = true;
+    laPrm_.period = GetDefaultPeriod();
+    laPrm_.rng_periodic_factor = {-1e100, 1e100};  // simple
+
+    return true;
+  }
   return false;
 }
 
 template <class FuncCon>
 void BasicPLApproximator<FuncCon>::InitNonPeriodic() {
   breakpoints_.push_back(lbx());
+  /// TODO non-periodic breakpoints, e.g., for x^(int exp)
   breakpoints_.push_back(ubx());
 }
 
 template <class FuncCon>
 void BasicPLApproximator<FuncCon>::InitSubintervalLoop() {
-  auto x0 = lbx();                      // current left point
+  iSubIntv_ = 0;
+  assert(breakpoints_.size() >= 2);
+  auto x0 = lb_sub();                   // current left point
   auto f0 = eval(x0);
   GetPL().AddPoint(x0, f0);
-  iSubIntv_ = -1;
-  assert(breakpoints_.size() >= 2);
 }
 
 template <class FuncCon>
@@ -219,12 +248,12 @@ void BasicPLApproximator<FuncCon>::ApproximateSubinterval() {
   /// Simple: breakpoints on the function
   do {
     auto dx0 = ComputeInitialStepLength(x0);
-    assert(x0+dx0 <= ubx());
+    assert(x0+dx0 <= ub_sub());
     IncreaseStepWhileErrorSmallEnough(x0, f0, dx0);
     DecreaseStepWhileErrorTooBig(x0, f0, dx0);
     x0 += dx0;
     GetPL().AddPoint(x0, f0 = eval(x0));
-  } while (x0 < ubx());
+  } while (x0 < ub_sub());
 }
 
 template <class FuncCon>
@@ -253,8 +282,8 @@ double BasicPLApproximator<FuncCon>::ComputeInitialStepLength(
   /// Initial step
   auto dx0 = std::sqrt(
         std::fabs(laPrm_.ubErr * 8.0 / 3.0 / f2) );
-  if (x0+dx0 > ubx())
-    dx0 = ubx()-x0;
+  if (x0+dx0 > ub_sub())
+    dx0 = ub_sub()-x0;
   return dx0;
 }
 
@@ -310,7 +339,9 @@ template <class FuncCon>
 double BasicPLApproximator<FuncCon>::maxErrorRelAbove1(
     double x0, double y0, double x1, double y1) {
   MP_ASSERT_ALWAYS(x1>x0,
-                   "PLApprox maxErrRel(): degenerate segment, x0>=x1");
+                   fmt::format(
+                     "PLApprox maxErrRel(): degenerate segment,"
+                     " x0>=x1: {}, {}", x0, x1));
   MP_ASSERT_ALWAYS(laPrm_.ubErr>0.0,
                    "PLApprox maxErrRel(): ubErr<=0");
   std::vector< std::array<double, 2> > points;
@@ -459,6 +490,52 @@ template
 void PLApproximate<LogAConstraint>(
     const LogAConstraint& con, PLApproxParams& laPrm);
 
+
+/// PLApproximator<SinConstraint>
+template <>
+class PLApproximator<SinConstraint> :
+    public BasicPLApproximator<SinConstraint> {
+public:
+  PLApproximator(const SinConstraint& con, PLApproxParams& p) :
+    BasicPLApproximator<SinConstraint>(con, p),
+    A_(GetConParams()[0]), logA_(std::log(A_)) { }
+  FuncGraphDomain GetFuncGraphDomain() const override
+  { return { -1e100, 1e100, -1.0, 1.0 }; }
+  bool IsMonotone() const override { return false; }
+  bool IsPeriodic() const override { return true; }
+  Range GetDefaultPeriod() const override { return {-pi/2.0, pi*1.5}; }
+  BreakpointList GetDefaultBreakpoints() const override
+  { return {-pi/2, 0.0, pi/2, pi, pi*1.5}; }
+
+  double eval(double x) const override
+  { return std::sin(x); }
+  /// Distinguish subinterval (coord plane quarter):
+  double inverse(double y) const override {
+    assert(std::fabs(y) <= 1.0);
+    auto lb_mod = std::fmod(lb_sub(), 2*pi);
+    auto ub_mod = std::fmod(ub_sub(), 2*pi);
+    if (lb_mod >= pi*1.5 && ub_mod <= pi/2)
+      return std::asin(y);
+    else
+    if (lb_mod >= pi/2 && ub_mod <= pi*1.5)
+      return pi*1.5 - std::asin(y);
+    MP_RAISE("PLApprox<Sin>: subinterval too big");
+    /// TODO check all inverse() return in the current subinterval
+  }
+  double eval_1st(double x) const override { return std::cos(x); }
+  double inverse_1st(double y) const override { return 1.0/(y*logA_); }
+  double eval_2nd(double x) const override { return -std::sin(x); }
+
+
+private:
+  double A_;
+  double logA_;
+};
+
+/// Instantiate PLApproximate<LogConstraint>
+template
+void PLApproximate<SinConstraint>(
+    const SinConstraint& con, PLApproxParams& laPrm);
 
 
 void FuncGraphDomain::intersect(const FuncGraphDomain &grDom) {
