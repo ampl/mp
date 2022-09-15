@@ -31,7 +31,7 @@ configurable solver drivers and tools. Benefits of MP include:
   are enough to code a driver
 
 
-On this documenatation
+On this documentation
 ----------------------
 
 The documentation is divided in two sections:
