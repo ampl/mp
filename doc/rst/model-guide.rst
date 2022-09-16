@@ -53,7 +53,7 @@ In the syntax summaries below, there are two main kinds of entities, representin
 - **constr** 
      represents a constraint of the model, which may evaluate to true or false depending the values of variables that it contains. It may be built from the familiar relational operators ``>=``, ``<=``, and ``=``, but also from other operators such as ``or`` and ``alldiff`` that create constraints.
 
-The return value of an operator or function is also either an *expr* or *constr*, as indicated. Thus it is possible to build up complex combinations of numerical and logical operators; for example,
+The return value of an operator or function is also either an *expr* or *constr*, as indicated. Thus it is possible to build up complex combinations of operators and functions of various kinds; for example,
 
 .. code-block:: ampl
 
@@ -61,7 +61,17 @@ The return value of an operator or function is also either an *expr* or *constr*
                 (x<=-5 or
                         (max((x+1)*(x+2)*(y+3), y)<=3 and exp((x+18)*y)<=12));
 
-AMPL represents these as expression trees, which are sent to MP-based solver interfaces to be processed as particular solvers require.
+AMPL represents these combinations as expression trees, which are sent to MP-based solver interfaces to be processed as solvers require.
+
+Due to the generality of the operators recognized by the MP interface, it is possible to express constraints that do not define a closed feasible region. For example,
+
+.. code-block:: ampl
+
+        x > 5
+        not (x >= 5 and y >= 15)
+        x = 0 ==> z = 0 else z = 1
+
+An optimum is not guaranteed to exist over a non-closed region. Thus where necessary, the MP interface constructs an approximate closed region by use of a small tolerance. For example, if x is minimized subject to x > 5, then any x value greater than 5 is not minimal, and any x value less than or equal to 5 is not feasible. Thus, to insure that a minimum is well defined, the constraint must be changed to x >= 5 + eps for some small constant eps. Each solver has its own default value of eps that can be adjusted through an option setting. 
 
 
 Conditional operators
@@ -71,7 +81,7 @@ Conditional operators
     *Returns expr:* When *constr* is true, takes the value of *expr1*.  
     When *constr* is false, takes the value of *expr2*, or 0 if the `else` phrase is omitted.
 
-In the special case where there are no variables in the *constr*, the value of this expression can be determined as either *expr1* or *expr2* (or 0) before the problem is sent to the solver. But in general, the expression's value depends upon how the solver sets the variables in the *constr*, and so AMPL must send the entire expression to the solver interface for processing.
+In the special case where there are no variables in the *constr*, the value of this expression can be determined as either *expr1* or *expr2* (or 0) before the problem is sent to the solver. But in general, the value of expression depends upon how the solver assigns values to the variables in the *constr*, and so AMPL must send the entire expression to the solver interface for processing.
 
 .. code-block:: ampl
 
@@ -85,146 +95,73 @@ In the special case where there are no variables in the *constr*, the value of t
           Make[p,t] + (if t = 0 then inv0[p] else Inv[p,t-1])
              = Sell[p,t] + Inv[p,t];
 
-- *constr1* ==> *constr2*
+- *constr1* ==> *constr2* [else *constr3*]
+    *Returns constr:* Satistifed when *constr1* is true and *constr2* is true, 
+    or when *constr1* is false [and also *constr3* is true, if present].
 - *constr2* <== *constr1*
-    *Returns constr:* Satistifed if *constr1* is true and *constr2* is true, 
-    or if *constr1* is false. 
-- *constr1* ==> *constr2* else *constr3*
-    *Returns constr:* Satistifed if *constr1* is true and *constr2* is true, 
-    or if *constr1* is false and *constr3* is true. 
+    *Returns constr:* Satistifed when *constr1* is true and *constr2* is true, 
+    or when *constr1* is false. 
 - *constr1* <==> *constr2*
     *Returns constr:* Satisfied if *constr1* and *constr2* are both true or both false.
+
+The conditional expression *constr1* ==> *constr2* can be thought of as saying that *constr1* implies *constr2*, or equivalently that if *constr1* then *constr2*. In the special case where *constr1* is of the form *binary-var* = 0 or *binary-var* = 1, these are "indicator" constraints that can be handled natively by some solvers. Otherwise, they are transformed to simpler constraints that use relational operators. The other cases are treated similarly.
+
+.. code-block:: ampl
+
+    subject to Multi_Min_Ship {i in ORIG, j in DEST}:
+       sum {p in PROD} Trans[i,j,p] > 0 ==>
+          minload <= sum {p in PROD} Trans[i,j,p] <= limit[i,j];
+
+.. code-block:: ampl
+
+    subject to Least_Use {j in SCHEDS}:
+       Use[j] = 1 ==> Work[j] >= least_assign else Work[j] = 0;
 
 
 Logical operators
 ***********************************
 
-AMPL also has a similar if-then form of indexing expression,
-which is used in the context of constraints as follows:
-
-- subject to name {if *logical-expr*}: *constraint-expr*;
-    Enforces the constraint specified by the *constraint-expr*
-    if and only if the *logical-expr* is true.
-
-Thus for example in section 8.4 of the
-`AMPL book <https://ampl.com/resources/the-ampl-book/>`_ we have:
-
-.. code-block:: ampl
-
-     subject to Time {if avail > 0}:
-         sum {p in PROD} (1/rate[p]) * Make[p] <= avail;
-
-It is arguably more natural, however, to make the ``if`` condition part of the
-constraint expression. Since the ``if-then`` and ``if-then-else`` constructs
-are already heavily used in AMPL (for expressions and for script statements),
-we have introduced several operators for describing implications in constraints.
-For example:
+- *constr1* or *constr2*
+    *Returns constr:* Satisfied when *constr1* is true or *constr2* is true.
+- *constr1* and *constr2*
+    *Returns constr:* Satisfied when *constr1* is true and *constr2* is true.
+- not *constr*
+    *Returns constr:* Satisfied when *constr* is false.
+    
+Expressions using these operators are transformed to use Gurobi's native AND and OR "general constraints" when possible. In other cases, they are transformed to simpler constraints that use relational operators.
 
 .. code-block:: ampl
 
-    subject to Time:
-        avail > 0 ==> sum {p in PROD} (1/rate[p]) * Make[p] <= avail;
-
-General forms of AMPL’s logical relations are as follows:
-
-- *logical-expr* ==> *constraint-expr1*
-    Satisfied if the *logical-expr* is true and *constraint-expr1* is satisfied,
-    or if the *logical-expr* is false.
-- *logical-expr* ==> *constraint-expr1* else *constraint-expr2*
-    Satisfied if the *logical-expr* is true and *constraint-expr1* is satisfied,
-    or if the *logical-expr* is false and *constraint-expr2* is satisfied.
-- *logical-expr* <==> *constraint-expr*
-    Satisfied if the *logical-expr* is true and *constraint-expr* is satisfied,
-    or if the *logical-expr* is false and *constraint-expr* is not satisfied.
-
-Additionally ``<==`` has the same meaning as ``==>`` except with the roles of
-*constraint-expr1* and *constraint-expr2* reversed.
-
-By allowing variables on both sides of the implication operators,
-these forms considerably expand the variety of conditional constraints
-that AMPL can conveniently express. For example:
+    subj to NoPersonIsolated
+             {l in TYPES['loc'], r in TYPES['rank'], j in 1..numberGrps}:
+       sum {i in LOCRANK[l,r]} Assign[i,j] = 0 or
+       sum {i in LOCRANK[l,r]} Assign[i,j] +
+          sum {a in ADJACENT[r]} sum {i in LOCRANK[l,a]} Assign[i,j] >= 2;
 
 .. code-block:: ampl
 
-    subject to Multi_Min_Ship {i in ORIG, j in DEST}:
-        sum {p in PROD} Trans[i,j,p] > 0 ==>
-            minload <= sum {p in PROD} Trans[i,j,p] <= limit[i,j];
+    subject to Least_Use {j in SCHEDS}:
+       Work[j] = 0 or least_assign <= Work[j] <= max {i in SHIFT_LIST[j]} required[i];
 
-Again, the *logical-expr* can be any *constraint-expr*.
-Conditional operators can be nested and combined with other operators.
+- exists {indexing} *constr*
+    *Returns constr:* Satisfied when at least one of the *constr* operands is true.
+- exists ( {indexing1} *constr1*, {indexing2} *constr2*, . . . )
+    *Returns constr:* Similar to the above, but with a list of operands, each optionally indexed.
+- forall {indexing} *constr*
+    *Returns constr:* Satisfied when all of the *constr* operands are true.
+- forall ( {indexing1} *constr1*, {indexing2} *constr2*, . . . )
+    *Returns constr:* Similar to the above, but with a list of operands, each optionally indexed.
 
-AMPL conditional operators are either linearized using big-*M* constraints, or passed
-to the solver natively as indicator constraints
-(if supported; e.g., Gurobi options *acc:ind_le*, *acc:ind_eq*).
-
-
-Logical expressions
-~~~~~~~~~~~~~~~~~~~
-
-Basic AMPL constraints consist of numerical-valued expressions
-connected by ``<=``, ``>=`` or ``=``. These constraint expressions
-are now allowed to be
-connected by AMPL’s unary and binary logical operators,
-
-- *constraint-expr1* or *constraint-expr2*
-    Satisfied iff at least one of the operands is satisfied.
-- *constraint-expr1* and *constraint-expr2*
-    Satisfied iff both of the operands are satisfied.
-- not *constraint-expr*
-    Satisfied iff the operand is not satisfied.
-
-and AMPL’s iterated forms of the binary logical operators:
-
-- exists {indexing} *constraint-expr*
-    Satisfied iff the operand is satisfied for at least one
-    member of the indexing set (the iterated form of ``or``).
-- forall {indexing} *constraint-expr*
-    Satisfied iff the operand is satisfied for all members of
-    the indexing set (the iterated form of ``and``).
-- forall ( {indexing} *constraint-expr1*, {indexing} *constraint-expr2*, ...)
-    Example of compound indexing. Each {indexing} may be any AMPL
-    indexing-expression, or may be omitted to specify a single
-    item in the list.
-
-.. Meaning of the below?
-  Constraint expressions can also be grouped by parentheses:
-  ( constraint-expr )
-  Satisfied iff the constraint-expr is satisfied.
-
-So an AMPL constraint can be any logical combination of equalities,
-inequalities and other boolean expressions:
+The `exists` and `forall` operators are the iterated forms of `or` and `and`, respectively.
 
 .. code-block:: ampl
 
-        subj to HostNever {j in BOATS}:
-            isH[j] = 1 ==> forall {t in TIMES} H[j,t] = j;
+    [examples to come]
 
-Using the ``not`` operator it is possible to specify a feasible region
-that isn’t closed, so that optimization problems using continuous
-variables may be meaningless. This is illustrated by a very simple problem:
-
-.. code-block:: ampl
-
-    var x;
-    minimize Obj: x;
-    subject to OpenCons: not (x <= 2);
-
-The objective has an infimum of 2, but no minimum that satisfies the
-constraint. The same problem arises if one uses a strict inequality ``<``
-or ``>``, specifically the expresion ``x > 2`` in this case.
-For MIP solvers, MP redefines strict inequalities using a tolerance
-(option *cvt:mip:eps*).
-Most CP solvers, operating only on discrete variables,
-freely allow expressions that have these forms.
-
-
-AMPL logical expressions are either linearized using boolean arithmetic, or passed
-to the solver natively
-(if supported; e.g., Gurobi options *acc:and*, *acc:or*).
 
 
 Complementarity constraints
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+***********************************
 
 AMPL accepts two kinds of complementarity constraints.
 The first kind, inequality vs inequality, enforces both inequalities
