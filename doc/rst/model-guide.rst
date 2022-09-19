@@ -13,7 +13,7 @@ AMPL's newly extended C++ solver interface library, MP, is publicly available in
 
 - `highs <https://github.com/ampl/mp/tree/master/solvers/highsdirect>`_, an interface to the open-source `HiGHS <https://highs.dev/>`_ solver
 
-Binaries for these solvers can be downloaded, in distribution bundles and individually, through the `AMPL Portal <https://portal.ampl.com>`_.
+Binaries for these solvers can be downloaded, in distribution bundles and individually, through the `AMPL Portal <https://portal.ampl.com>`_. More solvers will be added.
 
 
 Overview
@@ -71,7 +71,7 @@ Due to the generality of the operators recognized by the MP interface, it is pos
         not (x >= 5 and y >= 15)
         x = 0 ==> z = 0 else z = 1
 
-An optimum is not guaranteed to exist over a non-closed region. Thus where necessary, the MP interface constructs an approximate closed region by use of a small tolerance. For example, if x is minimized subject to x > 5, then any x value greater than 5 is not minimal, and any x value less than or equal to 5 is not feasible. Thus, to insure that a minimum is well defined, the constraint must be changed to x >= 5 + eps for some small constant eps. Each solver has its own default value of eps that can be adjusted through an option setting. 
+An optimum is not guaranteed to exist over a non-closed region. Thus where necessary, the MP interface constructs an approximate closed region by use of a small tolerance. For example, if x is minimized subject to x > 5, then any x value greater than 5 is not minimal, and any x value less than or equal to 5 is not feasible. Thus, to insure that a minimum is well defined, the constraint must be changed to x >= 5 + eps for some small constant eps. Each solver has its own default value of the eps constant, which can be adjusted through an option setting. 
 
 
 Conditional operators
@@ -152,11 +152,83 @@ Expressions using these operators are transformed to use Gurobi's native AND and
 - forall ( {indexing1} *constr1*, {indexing2} *constr2*, . . . )
     *Returns constr:* Similar to the above, but with a list of operands, each optionally indexed.
 
-The `exists` and `forall` operators are the iterated forms of `or` and `and`, respectively.
+The ``exists`` and ``forall`` operators are the iterated forms of ``or`` and ``and``, respectively.
 
 .. code-block:: ampl
 
-    [examples to come]
+    minimize Total_Cost:
+       sum {p in PRODUCTS, (i,j) in ARCS} var_cost[p,i,j] * Flow[p,i,j] +
+       sum {(i,j) in ARCS} if exists {p in PRODUCTS} Flow[p,i,j] > 0 then fix_cost[i,j];
+    
+.. code-block:: ampl
+
+    subject to Multi {i in ORIG, j in DEST}:
+       forall {p in PROD} Trans[i,j,p] = 0  or
+       minload <= sum {p in PROD} Trans[i,j,p] <= limit[i,j];
+
+.. code-block:: ampl
+
+    subj to HostNever {j in BOATS}:
+       isH[j] = 1 ==> forall {t in TIMES} H[j,t] = j;
+
+
+Piecewise-linear expressions
+***********************************
+
+- abs (*expr*)
+    *expr-valued:* Equals *expr* when ≥ 0, or *-expr* when < 0.
+- min {indexing} *expr*
+    *expr-valued:* Equals the smallest value among the *expr* operands.
+- min ( {indexing1} *expr1*, {indexing2} *expr2*, . . . )
+    *expr-valued:* Similar to the above, but with a list of operands, each optionally indexed.
+- max {indexing} *expr*
+    *expr-valued:* Equals the largest value among the *expr* operands.
+- max ( {indexing1} *expr1*, {indexing2} *expr2*, . . . )
+    *expr-valued:* Similar to the above, but with a list of operands, each optionally indexed.
+
+Expressions using these operators are transformed to use Gurobi's native ABS, MIN, and MAX "general constraints" when possible. In other cases, they are transformed to simpler constraints that use relational operators, and in particular are linearized where all of the operands are linear.
+
+.. code-block:: ampl
+    
+    maximize Total_Profit:
+       sum {p in PROD, t in 1..T} revenue[p,t]*Sell[p,t] -
+       sum {t in 1..T} time_penalty[t] * abs(Use[t] - avail_min[t]);
+
+.. code-block:: ampl
+
+    minimize Max_Cost:
+       max {i in PEOPLE} sum {j in PROJECTS} cost[i,j] * Assign[i,j];
+       
+.. code-block:: ampl
+
+    maximize WeightSum:
+       sum {t in TRAJ} max {n in NODE} weight[t,n] * Use[n];
+       
+- << *slope-list*; *breakpoint-list* >> var
+    *expr-valued:* Computes a piecewise-linear function of a single variable; see `Chapter 17. Piecewise-Linear Programs <https://ampl.com/BOOK/CHAPTERS/20-piecewise.pdf>`_ in the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_ for a complete description of the forms that AMPL recognizes.
+    
+This piecewise-linear expression is defined by lists of ``n`` *breakpoints* and ``n+1`` *slopes*. The *var* must be a reference to a single variable.
+
+When AMPL's option ``pl_linearize`` is at its default value of 1, AMPL linearizes these piecewise-linear expressions, and sends the linearized versions to the solver. The linearization is continuous where possible, in certain convex and concave cases (where the slopes are increasing and decreasing, respectively); but in general, the linearization includes both continuous and binary variables.
+
+When ``pl_linearize`` is set to 0, piecewise-linear expressions are represented to the solver in the form of expression trees. The MP-based interface transforms them to use Gurobi's native methods for piecewise-linear functions, and linearizes them for other solvers.
+
+.. code-block:: ampl
+
+    maximize Total_Profit:
+       sum {p in PROD, t in 1..T} (revenue[p,t]*Sell[p,t] -
+          prodcost[p]*Make[p,t] - <<0; -backcost[p],invcost[p]>> Inv[p,t]) -
+       sum {t in 1..T} <<avail_min[t]; 0,time_penalty[t]>> Use[t]
+       sum {p in PROD, t in 1..T} 
+          <<commit[p,t]; -100000,0>> (Sell[p,t],commit[p,t]);
+            
+.. code-block:: ampl
+
+    minimize Total_Cost:
+       sum {i in ORIG, j in DEST} 
+          <<{p in 1..npiece[i,j]-1} limit[i,j,p]; 
+            {p in 1..npiece[i,j]} rate[i,j,p]>> Trans[i,j];
+
 
 
 
@@ -219,51 +291,6 @@ However this requires some study to understand whether SOS1/2 is appropriate
 and how to apply it, and we don't recommend going to that trouble unless you
 are having serious problems getting the solver to return a solution.
 
-
-Min, max, abs
-~~~~~~~~~~~~~
-
-Non-smooth functions ``min`` and ``max`` can have either a fixed argument list,
-or be iterated:
-
-.. code-block:: ampl
-
-    abs(x)
-    min(x, y, max(z, 2))
-    max {i in ORIG} supply[i]
-
-Functions ``min``, ``max``, ``abs`` can be linearized with big-*M* constraints
-or passed to the solver natively
-(if supported; e.g., Gurobi options *acc:min*, *acc:max*, *acc:abs*).
-
-
-.. _piecewize-linear-expr:
-
-Piecewise-linear expressions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-A piecewise-linear expression is defined by a list of ``n`` *breakpoints*
-and ``n+1`` *slopes*, together with an argument variable:
-
-.. code-block:: ampl
-
-    <<limit1[i,j], limit2[i,j];
-      rate1[i,j], rate2[i,j], rate3[i,j]>> Trans[i,j]
-
-In this example, ``n=2`` and the argument is the variable ``Trans[i,j]``.
-An AMPL PL expression
-assumes that the corresponding function passes through origin (0, 0).
-See the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_
-for more information.
-
-Solvers natively supporting piecewise-linear expressions,
-for example Gurobi, perform best when receive them that way
-(vs linearization by AMPL, which is currently the default).
-To do so, switch off the corresponding AMPL option:
-
-.. code-block:: ampl
-
-        option pl_linearize 0;
 
 
 
