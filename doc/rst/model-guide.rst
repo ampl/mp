@@ -53,7 +53,7 @@ In the syntax summaries below, there are two main kinds of entities, representin
 - **constr** 
      represents a constraint of the model, which may evaluate to true or false depending the values of variables that it contains. It may be built from the familiar relational operators ``>=``, ``<=``, and ``=``, but also from other operators such as ``or`` and ``alldiff`` that create constraints.
 
-The return value of an operator or function is also either an *expr* or *constr*, as indicated. Thus it is possible to build up complex combinations of operators and functions of various kinds; for example,
+The return value of an operator or function is also one of the above, as indicated by *expr-valued* or *constr-valued* at the beginning of each syntax summary. Thus it is possible to build up complex combinations of operators and functions of various kinds; for example,
 
 .. code-block:: ampl
 
@@ -78,7 +78,7 @@ Conditional operators
 ***********************************
 
 - if *constr* then *expr1* [else *expr2*]
-    *Returns expr:* When *constr* is true, takes the value of *expr1*.  
+    *expr-valued:* When *constr* is true, takes the value of *expr1*.  
     When *constr* is false, takes the value of *expr2*, or 0 if the `else` phrase is omitted.
 
 In the special case where there are no variables in the *constr*, the value of this expression can be determined as either *expr1* or *expr2* (or 0) before the problem is sent to the solver. But in general, the value of expression depends upon how the solver assigns values to the variables in the *constr*, and so AMPL must send the entire expression to the solver interface for processing.
@@ -96,13 +96,13 @@ In the special case where there are no variables in the *constr*, the value of t
              = Sell[p,t] + Inv[p,t];
 
 - *constr1* ==> *constr2* [else *constr3*]
-    *Returns constr:* Satistifed when *constr1* is true and *constr2* is true, 
+    *constr-valued:* Satistifed when *constr1* is true and *constr2* is true, 
     or when *constr1* is false [and also *constr3* is true, if present].
 - *constr2* <== *constr1*
-    *Returns constr:* Satistifed when *constr1* is true and *constr2* is true, 
+    *constr-valued:* Satistifed when *constr1* is true and *constr2* is true, 
     or when *constr1* is false. 
 - *constr1* <==> *constr2*
-    *Returns constr:* Satisfied if *constr1* and *constr2* are both true or both false.
+    *constr-valued:* Satisfied if *constr1* and *constr2* are both true or both false.
 
 The conditional expression *constr1* ==> *constr2* can be thought of as saying that *constr1* implies *constr2*, or equivalently that if *constr1* then *constr2*. In the special case where *constr1* is of the form *binary-var* = 0 or *binary-var* = 1, these are "indicator" constraints that can be handled natively by some solvers. Otherwise, they are transformed to simpler constraints that use relational operators. The other cases are treated similarly.
 
@@ -122,11 +122,11 @@ Logical operators
 ***********************************
 
 - *constr1* or *constr2*
-    *Returns constr:* Satisfied when *constr1* is true or *constr2* is true.
+    *constr-valued:* Satisfied when *constr1* is true or *constr2* is true.
 - *constr1* and *constr2*
-    *Returns constr:* Satisfied when *constr1* is true and *constr2* is true.
+    *constr-valued:* Satisfied when *constr1* is true and *constr2* is true.
 - not *constr*
-    *Returns constr:* Satisfied when *constr* is false.
+    *constr-valued:* Satisfied when *constr* is false.
     
 Expressions using these operators are transformed to use Gurobi's native AND and OR "general constraints" when possible. In other cases, they are transformed to simpler constraints that use relational operators.
 
@@ -140,17 +140,29 @@ Expressions using these operators are transformed to use Gurobi's native AND and
 
 .. code-block:: ampl
 
+    subj to No_Conflict {i1 in JOBS, i2 in JOBS: ord(i1) < ord(i2)}:
+       Start[i2] >= Start[i1] + t_offset[i1,i2]  or
+       Start[i1] >= Start[i2] + t_offset[i2,i1];
+
+.. code-block:: ampl
+
     subject to Least_Use {j in SCHEDS}:
        Work[j] = 0 or least_assign <= Work[j] <= max {i in SHIFT_LIST[j]} required[i];
 
+.. code-block:: ampl
+
+    subj to EntRem {t in 1..numTanks}:
+       Entry[t] + minTime[t] <= Removal[t] and
+       Entry[t] + maxTime[t] >= Removal[t];
+
 - exists {indexing} *constr*
-    *Returns constr:* Satisfied when at least one of the *constr* operands is true.
+    *constr-valued:* Satisfied when at least one of the *constr* operands is true.
 - exists ( {indexing1} *constr1*, {indexing2} *constr2*, . . . )
-    *Returns constr:* Similar to the above, but with a list of operands, each optionally indexed.
+    *constr-valued:* Similar to the above, but with a list of operands, each optionally indexed.
 - forall {indexing} *constr*
-    *Returns constr:* Satisfied when all of the *constr* operands are true.
+    *constr-valued:* Satisfied when all of the *constr* operands are true.
 - forall ( {indexing1} *constr1*, {indexing2} *constr2*, . . . )
-    *Returns constr:* Similar to the above, but with a list of operands, each optionally indexed.
+    *constr-valued:* Similar to the above, but with a list of operands, each optionally indexed.
 
 The ``exists`` and ``forall`` operators are the iterated forms of ``or`` and ``and``, respectively.
 
@@ -230,6 +242,54 @@ When ``pl_linearize`` is set to 0, piecewise-linear expressions are represented 
             {p in 1..npiece[i,j]} rate[i,j,p]>> Trans[i,j];
 
 
+Counting operators
+***********************************
+
+- count {indexing} *constr*
+    *expr-valued:* The number of members of the indexing set such that the *constr* is satisfied.
+
+AMPL’s ``count`` operator examines an indexed collection of constraints, and returns the number of those constraints that are satisfied. The AMPL translator instantiates the specified constraint for each member of the indexing set, and communicates all of the instantiated constraints to the solver interface; then the solver interface transforms the counting operation to a form that the solver can accept.
+
+.. code-block:: ampl
+
+    subject to Min_Serve {i in ORIG}:
+        count {j in DEST} (Ship[i,j] >= minload) >= minserve;
+   
+- atleast k {indexing} *constr*
+    *constr-valued:* Satisfied when the *constr* is satisfied for at least ``k`` members of the indexing set.
+- atmost k {indexing} *constr*
+    *constr-valued:* Satisfied when the *constr* is satisfied for at most ``k`` members of the indexing set.
+- exactly k {indexing} *constr*
+    *constr-valued:* Satisfied when the *constr* is satisfied for exactly ``k`` members of the indexing set.
+
+``k`` must be a constant arithmetic expression that evaluates to a nonnegative integer. These operators provide easier-to-read alternatives for special cases of constraints that rely on ``count``. Compare for example the ``Min_Serve`` constraint below to the one given previously using ``count``.
+
+.. code-block:: ampl
+
+    subject to Min_Serve {i in ORIG}:
+        atleast minserve {j in DEST} (Ship[i,j] >= minload);
+
+.. code-block:: ampl
+
+    subj to CapacityOfMachine {k in MACHINES}:
+        atmost cap[k] {j in JOBS} (MachineForJob[j] = k);
+
+- numberof *expr0* in ({indexing} *expr*)
+    *expr-valued:* The number of members of the indexing set such that the **expr** is equal to **expr0**.
+
+This operator provides an easier-to-read alternative for a special case of count. Compare for example the ``CapacityOfMachine`` constraint below to the one given previously using ``atmost``.
+
+.. code-block:: ampl
+
+    subj to CapacityOfMachine {k in MACHINES}:
+        numberof k in ({j in JOBS} MachineForJob[j]) <= cap[k];
+
+.. code-block:: ampl
+
+    subj to MinInGrpDefn {j in 1..numberGrps}:  
+       MinInGrp <= numberof j in ({i in PEOPLE} Assign[i]);
+
+
 
 
 Complementarity constraints
@@ -294,50 +354,6 @@ are having serious problems getting the solver to return a solution.
 
 
 
-Counting operators
-~~~~~~~~~~~~~~~~~~
-
-AMPL’s ``count`` operator returns the number of times that
-a certain constraint is satisfied:
-
-- count {indexing} *constraint-expr*
-    The number of members of the indexing set such that the
-    *constraint-expr* is satisfied.
-
-The *constraint-expr* can be any valid AMPL constraint.
-The AMPL translator will instantiate it for each member of
-the indexing set, and will communicate all of the instantiated
-constraints to the solver interface.
-
-Additional iterated logical operators are provided to simplify
-the descriptions of constraints in some common special cases:
-
-- atmost k {indexing} *constraint-expr*
-    Satisfied iff the *constraint-expr* holds for at most ``k`` members of the indexing set.
-- atleast k {indexing} *constraint-expr*
-    Satisfied iff the *constraint-expr* holds for at least ``k`` members of the indexing set.
-- exactly k {indexing} *constraint-expr*
-    Satisfied iff the *constraint-expr* holds for exactly ``k`` members of the indexing set.
-
-``k`` can be any constant arithmetic expression that evaluates to a nonnegative integer value.
-
-Another particularly important special case occurs when counting the number of set members
-at which a given expression takes a particular value.
-The general form is:
-
-- numberof k in ({indexing} *object-expr*)
-    The number of members of the indexing set such that the *object-expr* is equal to ``k``.
-
-
-.. code-block:: ampl
-
-        ## numberof operator
-        subj to CapacityOfMachine {k in MACHINES}:
-            numberof k in ({j in JOBS} MachineForJob[j]) <= cap[k];
-
-        ## implied atmost
-        subj to VisitHosts {i in BOATS}:
-            isH[i] = 0 ==> atmost 0 {j in BOATS, t in TIMES} (H[j,t] = i);
 
 
 Pairwise operator
