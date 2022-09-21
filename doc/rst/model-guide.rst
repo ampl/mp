@@ -63,6 +63,22 @@ The return value of an operator or function is also one of the above, as indicat
 
 AMPL represents these combinations as expression trees, which are sent to MP-based solver interfaces to be processed as solvers require.
 
+Indexing over sets is a common feature of AMPL expressions. The examples below use two kinds of indexing expressions, which are represented in the syntax summaries as follows:
+
+- { indexing }
+    This is the regular sort of AMPL indexing expression, as used in defining numerous AMPL entities such as parameters, variables, constraints, and summations. It is described in the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_ beginning with `Section 5.5 Indexing expressions <https://ampl.com/BOOK/CHAPTERS/08-sets1.pdf#page=7>`_ and continuing with `Chapter 6. Compound Sets and Indexing <https://ampl.com/BOOK/CHAPTERS/09-sets2.pdf>`_. Followed by an *expr* or *constr*, an indexing expression specifies a list of expressions or constraints to which an operator applies; for example,
+    ::
+        max {n in NODE} weight[t,n] * Use[n]
+        forall {p in PROD} Trans[i,j,p] = 0
+ 
+- ( expr-list )
+    This is a parenthesized, comma-separated list of entries that represent numerical values. Each entry may have the form *expr* or *{indexing} expr*, or recursively *{indexing} ( expr-list )*. For example,
+    ::
+        max (cost["BRO"],cost["CAU"],cost["BRU")
+        max ({f in FOOD} cost[f], 10.0)
+        max ({n in NUTR} (lim_nutr[n], {f in FOOD} amt[n,f])) 
+
+
 Due to the generality of the operators recognized by the MP interface, it is possible to express constraints that do not define a closed feasible region. For example,
 
 .. code-block:: ampl
