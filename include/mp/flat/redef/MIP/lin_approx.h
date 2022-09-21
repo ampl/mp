@@ -43,24 +43,28 @@ public:
 
     PLApproximate(con, laPrm);
     if (!laPrm.fUsePeriod) {
-      GetMC().RedefineVariable(con.GetResultVar(),
+      GetMC().RedefineVariable(y,
                                PLConstraint({x}, laPrm.plPoints));
-      GetMC(). PropagateResultOfInitExpr(
+      GetMC().PropagateResultOfInitExpr(
             // propagate ctx into new constr
             con.GetResultVar(), con.GetContext());
     } else {
       auto rmd = GetMC().AddVar(
-            laPrm.period_remainder_range.lb,
-            laPrm.period_remainder_range.ub);
+            laPrm.periodRemainderRange.lb,
+            laPrm.periodRemainderRange.ub);
       auto factor = GetMC().AddVar(
-            laPrm.periodic_factor_range.lb,
-            laPrm.periodic_factor_range.ub,
+            laPrm.periodicFactorRange.lb,
+            laPrm.periodicFactorRange.ub,
             var::INTEGER);
-      GetMC().RedefineVariable(con.GetResultVar(),
-                               PLConstraint({x}, laPrm.plPoints));
-      GetMC(). PropagateResultOfInitExpr(
+      GetMC().RedefineVariable(y,
+                               PLConstraint({rmd}, laPrm.plPoints));
+      GetMC().PropagateResultOfInitExpr(
             // propagate ctx into new constr
             con.GetResultVar(), con.GetContext());
+      GetMC().AddConstraint( LinConEQ{  // x = period * factor + rmd
+                               { {laPrm.periodLength, 1.0, -1.0},
+                                 {factor, rmd, x} },
+                               {0.0} } );
     }
   }
 

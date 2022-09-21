@@ -17,6 +17,7 @@ struct FuncGraphDomain {
   void intersect(const FuncGraphDomain& grDom);
 };
 
+
 /// Range
 struct Range {
   /// Construct
@@ -25,21 +26,24 @@ struct Range {
   double lb, ub;
 };
 
+
 /// Input and output
 /// for piecewise-linear approximation
 struct PLApproxParams {
   /////////// INPUT DATA //////////////
   /// Graph domain for approximation
   FuncGraphDomain grDom;
-  /// Error upper bound (relative or absolute)
+  /// Error upper bound
+  /// (relative outside of +-1, absolute inside)
   double ubErr = 1e-5;
 
   /////////// OUTPUT: RESULT OF APPROXIMATION /////////////
-  FuncGraphDomain grDomOut;    // can be tighter
-  PLPoints plPoints; // the pl
+  FuncGraphDomain grDomOut;    // can be tighter than grDom
+  PLPoints plPoints; // the pl function
   bool fUsePeriod;  // whether the approximation is periodic
-  Range periodic_factor_range;
-  Range period_remainder_range;
+  double periodLength;        // the length of the period interval
+  Range periodicFactorRange; // range for the n of x = n*periodLength + rmd
+  Range periodRemainderRange; // range for the rmd
 };
 
 

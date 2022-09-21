@@ -56,6 +56,9 @@ class ModelTags(enum.Enum):
     check_pl_approx_expA = 50001         # nonlinear constraints.
     check_pl_approx_log = 50002          # The automatic acc:exp etc options allow
                                          # testing own pl approximation
+    check_pl_approx_sin = 50003
+    check_pl_approx_cos = 50004
+    check_pl_approx_tan = 50005
 
     check_pl2sos2 = 50500                # Solvers accepting PL constraints but wishing
                                          # to test MP's PL -> SOS2 conversion, by acc:pl=1

@@ -608,6 +608,10 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.check_pl_approx_expA,
                  ModelTags.check_pl_approx_log,
 
+                 ModelTags.check_pl_approx_sin,
+                 ModelTags.check_pl_approx_cos,
+                 ModelTags.check_pl_approx_tan,
+
                  ModelTags.check_pl2sos2,
 
                  ModelTags.check_sos2_from_pl,
