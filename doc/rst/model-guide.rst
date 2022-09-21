@@ -275,7 +275,7 @@ AMPL’s ``count`` operator examines an indexed collection of constraints, and r
         atmost cap[k] {j in JOBS} (MachineForJob[j] = k);
 
 - numberof *expr0* in ({indexing} *expr*)
-    *expr-valued:* The number of members of the indexing set such that the **expr** is equal to **expr0**.
+    *expr-valued:* The number of members of the indexing set such that the *expr* is equal to *expr0*.
 
 This operator provides an easier-to-read alternative for a special case of count. Compare for example the ``CapacityOfMachine`` constraint below to the one given previously using ``atmost``.
 
@@ -288,6 +288,49 @@ This operator provides an easier-to-read alternative for a special case of count
 
     subj to MinInGrpDefn {j in 1..numberGrps}:  
        MinInGrp <= numberof j in ({i in PEOPLE} Assign[i]);
+
+
+Comparison operators
+***********************************
+
+- expr1 > expr2
+    *constr-valued:* Satisfied when *expr1* is strictly greater than *expr2*.
+- expr1 < expr2
+    *constr-valued:* Satisfied when *expr1* is strictly less than *expr2*.
+- expr1 != expr2
+    *constr-valued:* Satisfied when *expr1* does not equal *expr2*.
+
+Where possible, the MP interface transforms these operations to ones involving ``>=`` and ``<=``, so that optimization solvers can handle them. For example, this can be done when *expr1* and *expr2* are integer-valued, or when an expression like ``if Flow[i,j] > 0 then fixed[i,j]`` expresses a fixed cost in an objective to be minimized. Where this is not possible, a small tolerance is introduced as disucssed in the section above on **Expressions supported**.
+
+.. code-block:: ampl
+
+    minimize TotalCost:
+       sum {p in PRODUCTS, (i,j) in ARCS} var_cost[p,i,j] * Flow[p,i,j] +
+       sum {(i,j) in ARCS}
+          if sum {p in PRODUCTS} Flow[p,i,j] > 0 then fix_cost[i,j];
+
+.. code-block:: ampl
+
+    subject to Different_Colors {(c1,c2) in Neighbors}:
+       Color[c1] != Color[c2];
+
+- alldiff {indexing} *expr*
+    *constr-valued:* Satisfied when *expr* takes a different value for every member of the indexing set.
+
+- alldiff ( {indexing} *var-expr1*, {indexing} *var-expr2*, ... )
+    *constr-valued:* Similar to the above, but with a list of operands, each optionally indexed.
+
+This operator provides a much more concise alternative to specifying ``!=`` between all pairs in a specified collection of expressions. Currently none of the MP-based solvers support this operator natively, so the interface transforms it to a representation in terms of simpler constraints that use relational operators.
+
+.. code-block:: ampl
+
+    subject to OnePersonPerPosition:
+       alldiff {i in 1..nPeople} Pos[i]; 
+
+.. code-block:: ampl
+
+    subject to Regions {I in 1..9 by 3, J in 1..9 by 3}:
+       alldiff {i in I..I+2, j in J..J+2} X[i,j];
 
 
 
@@ -353,31 +396,6 @@ are having serious problems getting the solver to return a solution.
 
 
 
-
-
-
-Pairwise operator
-~~~~~~~~~~~~~~~~~
-
-Various assignment and related combinatorial problems require that
-a collection of entities be pairwise different or disjoint. Operator ``alldiff``
-makes these conditions easier to state and helps to make the resulting problems
-easier to solve.
-
-In general, this operator can be applied to any collection of expressions
-involving variables:
-
-- alldiff {indexing} *var-expr*
-- alldiff ( {indexing} *var-expr1*, {indexing} *var-expr2*, ... )
-    Satisfied iff all of the specified variables take different values. Each
-    {indexing} may be any AMPL indexing-expression, or may be omitted to
-    specify a single item in the list.
-
-.. code-block:: ampl
-
-        ## implied alldiff
-        subj to VisitOnce {j in BOATS}:
-            isH[j] = 0 ==> alldiff {t in TIMES} H[j,t];
 
 
 
