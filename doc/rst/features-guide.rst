@@ -15,28 +15,30 @@ reference refer to the `Visitor driver
 <https://github.com/ampl/mp/tree/develop/solvers/visitor>`_ that shows how to
 declare that the solver driver supports a feature and how to implement it.
 
+.. highlight:: ampl
+
 
 General
 =======
 
-* Kappa
+* :ref:`kappa`
 * :ref:`feasibiliyRelaxation`
-* Multiple objectives
+* :ref:`multipleObjectives`
 * :ref:`multipleSolutions`
 * :ref:`returnBestBound`
 * :ref:`basisio`
-* Return rays
+* :ref:`unboundedRays`
 * IIS (return and/or force)
-* Sensitivity analysis
+* :ref:`sensitivityAnalysis`
 
 MIP only
 ========
 
 * :ref:`returnMIPgap`
 * :ref:`returnBestBound`
-* Lazy constraints / user cuts
-* Variable priorities // TODO Plural??
-* Fixed model (return basis for MIP)
+* :ref:`lazyConstraints`
+* :ref:`varPriorities`
+* :ref:`fixedModel`
 * Round
 
 .. _returnMIPgap:
@@ -193,7 +195,51 @@ a warmstart.
             let var x := // TODO set to actual solution
             solve;
 
+.. _varPriorities:
 
+Variable priorities
+-------------------
+
+Solution of MIP models via branch and bound can often be helped by providing
+preferences on which variables to branch on. Those can be specified in AMPL via the suffix 
+``priority``.
+
+This option controls whether to read those values and use them in the solution process.
+
+.. list-table::
+   :header-rows: 0
+
+   * - **Option**
+     - ``mip:priorities``
+   * - **Applicability**
+     - MIP models
+   * - **Input**
+     - Suffix:
+
+       * ``priority`` on variables 
+   * - **Output**
+     - None
+   * - **Values**
+     - Values:
+
+       * **0** - Ignore priorities
+       * **1** - Read priorities (default)
+   * - **Example**
+     - Following AMPL model
+
+       .. code-block:: ampl
+ 
+            TODO Model
+
+       end of code block
+
+       .. code-block:: ampl
+
+            let x.priority := 1;
+            let y.priority := 5;
+            solve;
+
+            # TODO SHOW OUTPUT
 
 
 .. _basisio:
@@ -248,6 +294,114 @@ This option controls whether to use or return a basis.
 
             # TODO SHOW OUTPUT
 
+.. _fixedModel:
+
+Fixed model (return basis for MIP)
+----------------------------------
+
+At the end of the solution process for a MIP model, a continuous relaxation of the model
+with all the integer variables fixed at their integer-optimum value. Some continuous variables
+can also be fixed to satisfy SOS or general constraints.
+The model can therefore be solved without these types of restrictions to calculate a basis,
+dual values or sensitivity information that wouldn't normally be available for MIP problems.
+
+This option controls if to generate and solve the fixed model after solving the integer problem.
+
+.. list-table::
+   :header-rows: 0
+
+   * - **Option**
+     - ``mip:basis``
+   * - **Applicability**
+     - MIP models
+   * - **Input**
+     - None
+
+   * - **Output**
+     - Suffixes:
+  
+       * ``dual`` on variables
+       * ``ssttus`` on variables
+       * See :ref:`sensitivityanalysis` if requested
+  
+   * - **Values**
+     - Values
+
+       * **0** - No (default)
+       * **1** - Yes
+   * - **Example**
+     - Following ampl model
+
+       .. code-block:: ampl
+ 
+            TODO Model
+
+       end of code block
+
+       .. code-block:: ampl
+
+            option <solver>_options "mip:basis=1";
+
+            # TODO SHOW OUTPUT
+
+.. _lazyConstraints:
+
+Lazy constraints and user cuts
+------------------------------
+
+The solution process of a MIP model can be helped by further specifying its structure.
+Specifically, constraints can be marked as ``lazy`` or as ``user cuts``.
+Such constraints are not included initially, then:
+
+``lazy cosntraints`` are pulled in when a feasible solution is found; if the solution violates
+them, it is cut off. They are integral part of the model, as they can cut off integer-feasible 
+solutions.
+
+``user cuts`` are pulled in also, but they can only cut off relaxation solutions; they are 
+consider redundant in terms of specifying integer feasibility.
+
+This option controls whether to recognize the suffx ``lazy`` on constraints, which should then be 
+positive to denote a lazy constraint and negative to mark a contraint as a user cut.
+
+
+.. list-table::
+   :header-rows: 0
+
+   * - **Option**
+     - ``mip:lazy``
+   * - **Applicability**
+     - MIP models
+   * - **Input**
+     - Suffix:
+
+       * ``lazy`` on constraints (>0 for lazy constraint, <0 for user cuts) 
+   * - **Output**
+     - None
+  
+   * - **Values**
+     - Sum of:
+
+       * **0** - No
+       * **1** - Accept >0 values to denote lazy constraints
+       * **2** - Accept <0 values to denote user cuts
+       * **3** - Accept both (default)
+   * - **Example**
+     - Following ampl model
+
+       .. code-block:: ampl
+ 
+            TODO Model
+
+       end of code block
+
+       .. code-block:: ampl
+
+            suffix priority IN;
+            let c1.priority := 1;  # lazy constraint
+            let c2.priority := -1; # user cut, must be redundant as it might never be pulled in
+            solve;
+
+            # TODO SHOW OUTPUT
 
 .. _feasibiliyrelaxation:
 
@@ -338,6 +492,7 @@ Penaly weights < 0 are treated as Infinity, allowing no violation.
           display C1.slack, C2.slack, C3.slack, C4.slack;
 
 
+
 .. _multiplesolutions:
 
 Multiple solutions
@@ -353,3 +508,231 @@ control respecitvely the base-name for the files where additional solution will 
 if to count additional solutions and return them in the ``nsol`` problem suffix.
 Specifying a stub name automatically enables the solutions count; found solutions are written to 
 files [``solutionstub1.sol'``,  ... ``solutionstub<nsol>.sol``].
+
+
+.. _sensitivityAnalysis:
+
+Sensitivity analysis
+--------------------
+
+It is often useful to know the ranges of variables and constraint bodies for which the optimal basis
+remains optimal. Solvers supporting this feature return such ranges in suffixes after solving to optimum.
+
+.. list-table::
+   :header-rows: 0
+
+   * - **Option**
+     - ``alg:sens``
+   * - **Applicability**
+     - LP and MIP models
+   * - **Input**
+     - None
+   * - **Output**
+     - Suffix:
+       * ``sensobjlo`` variables, smallest objective coefficient
+       * ``sensobjhi`` variables, greatest objective coefficient
+       * ``senslblo`` variables, smallest variable lower bound
+       * ``senslbhi`` variables, greatest variable lower bound
+       * ``sensublo`` variables, smallest variable upper bound
+       * ``sensubhi`` variables, greatest variable upper bound
+   * - **Values**
+     - Sum of:
+
+       * **0** - No
+       * **1** - Yes, minimizing the weighted sum of violations
+       * **2** - Yes, minimizing the weighted sum of squared violations
+       * **3** - Yes, minimizing the weighted count of violations
+       * **3-6** - Same objective as 1-3, but also optimize the original objective, subject to the violation being minimized
+   * - **Example**
+     - Following ampl model
+
+       .. code-block:: ampl
+ 
+          # TODO Infeasible model
+
+       Solve the model changing the penalties to get different solutions: 
+
+       .. code-block:: ampl
+
+          # No lower bound can be violated
+          options <solver>_options "lbpen=-1";
+          suffix rhspen IN;
+
+          let C1.rhspen := 1; # normal weight
+          let C2.rhspen := -1; # C2 can NOT be violated
+          let C3.rhspen := 10; # We'd rather not violate C3
+          let C4.rhspen := 0; # We don't care if we violate C4
+
+          solve;
+
+          display C1.slack, C2.slack, C3.slack, C4.slack;
+
+          let C2.rhspen := 1; # C2 can be violated
+          let C3.rhspen := 10; # We'd rather not violate C3
+          let C4.rhspen := 0; # We don't care if we violate C4
+
+          display C1.slack, C2.slack, C3.slack, C4.slack;
+
+.. _kappa:
+
+Kappa
+-----
+
+Kappa is the condition number for the current LP basis matrix. 
+It is a measure of the stability of the current solution :math:`Ax=b`
+measuring the rate at which the solution :math:`x` will change with respect to a 
+change in :math:`b`. 
+It is only available for basic solutions, therefore it is not available for barrier method
+if crossover is not applied.
+
+.. list-table::
+   :header-rows: 0
+
+   * - **Option**
+     - ``alg:kappa``
+   * - **Applicability**
+     - LP and MIP models with optimal basis
+   * - **Input**
+     - None
+   * - **Output**
+     - Additional text in ``solve_message`` and suffix:
+
+       * ``kappa`` on objective and problem
+   * - **Values**
+     - Sum of:
+
+       * **0** - No
+       * **1** - Report kappa in solve_message
+       * **2** - Return kappa in the solver-defined suffix ``kappa``
+   * - **Example**
+     - Following ampl model
+
+       .. code-block:: ampl
+ 
+          # TODO Model
+
+       Solve the model and report kappa:
+
+       .. code-block:: ampl
+
+          # No lower bound can be violated
+          options <solver>_options "alg:kappa=3";
+
+          solve;
+
+          display Initial.kappa;
+
+
+
+.. _unboundedRays:
+
+Unbounded rays
+--------------
+
+When a model is unbounded, a vector :math:`r` (unbounded ray)  can be found such that
+when added to any feasible solution :math:`x`, the resulting vector is a feasible solution
+with an improved objective value.
+When a model is infeasible, the dual solution is unbounded and the same as above can be applied
+to constraints.
+This option controls whether to return suffix ``unbdd`` if the objective is unbounded
+or suffix ``dunbdd`` if the constraints are infeasible.
+
+
+.. list-table::
+   :header-rows: 0
+
+   * - **Option**
+     - ``alg:rays``
+   * - **Applicability**
+     - Unbounded/unfeasible LP and MIP linear models
+   * - **Input**
+     - None
+   * - **Output**
+     - Suffixes:
+
+       * ``unbdd`` on variables if the problem is unbounded
+       * ``dunbdd`` on constraints if the problem is infeasible
+   * - **Values**
+     - Sum of:
+
+       * **0** - Do not calculate or return unbounded rays
+       * **1** - Return only ``unbdd``
+       * **2** - Return only ``dunbdd``
+       * **3** - Return both (default)
+   * - **Example**
+     - Following ampl model
+
+       .. code-block:: ampl
+ 
+          # TODO Unbounded
+
+       Solve the model and report kappa:
+
+       .. code-block:: ampl
+
+          # No lower bound can be violated
+          options <solver>_options "alg:rays=3"; # it is default already
+
+          solve;
+
+          display var.unbdd;
+
+.. _multipleObjectives:
+
+Multiple objectives
+-------------------
+
+Many real world problems have multiple objectives; often this scenario is tackled by blending all the objectives
+by linear combination when formulating the model, or by minimizing each unwanted objective deviations from a pre-specified
+goal.
+Many solvers can facilitate the formulation; the available functionalities are solver-specific; at MP level
+they accessible via the main option ``obj:multi``. Consult the solver documentation for the functionalities available
+on your solver.
+
+
+
+.. list-table::
+   :header-rows: 0
+
+   * - **Option**
+     - ``obj:multi``
+   * - **Applicability**
+     - LP and MIP models
+   * - **Input**
+     - None
+   * - **Output**
+     - All objectives are reported in ``solve_message``
+
+   * - **Values**
+     - Values:
+
+       * **0** - No (default)
+       * **1** - Yes
+   * - **Example**
+     - Following multi objective AMPL model:
+
+       .. literalinclude:: models/dietobj.mod
+
+       with data:
+
+       .. literalinclude:: models/dietobj.dat
+
+       Execute::
+
+          options <solver>_options "obj:multi=1"; 
+          solve;
+
+       Output:
+
+       .. code-block:: shell
+
+          x-Gurobi 9.5.1: obj:multi=1
+          x-Gurobi 9.5.1: optimal solution; objective 74.27382022
+          Individual objective values:
+            _sobj[1] = 74.27382022
+            _sobj[2] = 75.01966292
+            _sobj[3] = 79.59719101
+            _sobj[4] = 31.49438202
+
+
+   
