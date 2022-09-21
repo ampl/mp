@@ -112,7 +112,39 @@
     "values": {
       "if abs(y-log(x))<=1e-5 then 1 else 0": 1
     }
+  },
+  {
+    "name" : "sin_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -3.141592653589793,
+    "values": {
+      "if abs(y-sin(x))<=1e-5 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "sin_01 check_pl_approx_sin",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_sin"],
+    "options": { "ANYSOLVER_options": "acc:sin=1" },
+    "objective": -3.141592653589793,
+    "values": {
+      "if abs(y-sin(x))<=1e-5 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "sin_02",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -5.71238898038469,
+    "values": {
+      "if abs(y-sin(x))<=1e-5 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "sin_02 check_pl_approx_sin",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_sin"],
+    "options": { "ANYSOLVER_options": "acc:sin=1" },
+    "objective": -5.71238898038469,
+    "values": {
+      "if abs(y-sin(x))<=1e-5 then 1 else 0": 1
+    }
   }
-
-
 ]
