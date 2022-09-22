@@ -346,39 +346,31 @@ This operator provides a much more concise alternative to specifying ``!=`` betw
        alldiff {i in I..I+2, j in J..J+2} X[i,j];
 
 
-
-
-Complementarity constraints
+Complementarity operator
 ***********************************
 
-AMPL accepts two kinds of complementarity constraints.
-The first kind, inequality vs inequality, enforces both inequalities
-and makes sure at least one of them is tight:
+- *constr1* complements *constr2*
+    *constr-valued:* Satisfied when both *const1* and *constr2* are satisfied, and at least one of them holds with equality. Each of *constr1* and *constr2* must have the form *expr1 <= expr2* or *expr1 >= expr2* (and the trivial special case *expr1 = expr2* is also recognized).
+- **expr complements constr**
+- **constr complements expr**
+     *constr-valued:* Satisfied when *constr* is satisfied, and when also if *expr* is positive then *constr* holds with equality at its lower bound, or if *expr* is negative then *constr* holds with equality at its upper bound. The *constr*  must have the form *lb <= expr <= ub* or *ub >= expr >= lb* where *lb* and *ub* are lower and upper bound expressions not involving variables.
+    
+The ``complements`` operator provides a convenient, streamlined way of expressing a common kind of relationship between two single-inequality constraints, or between an expression and a double-inequality constraint. This relationship appears in the complementary slackness conditions necessary for optimality of certain optimization problems, and in equilibrium conditions for games and for various physical systems. See `Chapter 19. Complementarity Problems <https://ampl.com/BOOK/CHAPTERS/22-complement.pdf>`_ in the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_ for a detailed presentation.
+
+Certain nonlinear solvers, notably Knitro, handle complementarity constraints natively. For MP-based solvers, the interface converts uses of ``complements`` to equivalent constraints using logical operators.
 
 .. code-block:: ampl
 
-        subject to Pri_Compl {i in PROD}:
-            max(500.0, Price[i]) >= 0 complements
-                sum {j in ACT} io[i,j] * Level[j] >= demand[i];
-
-The second kind, range constraint vs expression,
-enforces one of the following 3 cases:
-
-1. range constraint at lower bound  and  expression >= 0;
-2. range constraint valid and expression == 0;
-3. range constraint at upper bound and expression <= 0, for example:
+    subject to Pri_Compl {i in PROD}:
+       Price[i] >= 0 complements
+          sum {j in ACT} io[i,j] * Level[j] >= demzero[i] - demrate[i] * Price[i];
 
 .. code-block:: ampl
 
-        subject to Lev_Compl {j in ACT}:
-            level_min[j] <= Level[j] <= level_max[j] complements
-                cost[j] - sum {i in PROD} Price[i] * io[i,j];
+    subject to Lev_Compl {j in ACT}:
+       level_min[j] <= Level[j] <= level_max[j] complements
+          cost[j] - sum {i in PROD} Price[i] * io[i,j];
 
-See the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_
-for more information.
-
-Quadratic expressions are allowed. For MIP solvers, complementarity
-conditions are represented by logical constraints.
 
 
 General combinatorial expressions
