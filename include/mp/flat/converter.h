@@ -284,7 +284,7 @@ public: // for ConstraintKeeper
             Constraint::GetTypeName() +
             "' is neither accepted by '" +
             ModelAPI::GetTypeName() +
-            "', not is conversion implemented");
+            "', nor is conversion implemented");
   }
 
   //////////////////////////// SOME SPECIFIC CONSTRAINT CONVERTERS

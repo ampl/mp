@@ -107,6 +107,10 @@ public:
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_LogA)
   /// Sin
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Sin)
+  /// Cos
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Cos)
+  /// Tan
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Tan)
 
 
   /// Strict comparison tolerance.

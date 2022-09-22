@@ -146,5 +146,43 @@
     "values": {
       "if abs(y-sin(x))<=1e-5 then 1 else 0": 1
     }
+  },
+  {
+    "name" : "cos_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -191.6104822,
+    "values": {
+      "if abs(y-cos(x))<=1e-5 then 1 else 0": 1,
+      "if round(x)==194 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "cos_01 check_pl_approx_cos",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_cos"],
+    "options": { "ANYSOLVER_options": "acc:cos=1" },
+    "objective": -191.6104822,
+    "values": {
+      "if abs(y-cos(x))<=1e-5 then 1 else 0": 1,
+      "if round(x)==194 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "tan_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -0.6388867014,
+    "values": {
+      "if abs(y-tan(x))<=1e-4 then 1 else 0": 1,
+      "x": -4.0950434673490523
+    }
+  },
+  {
+    "name" : "tan_01 check_pl_approx_tan",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_tan"],
+    "objective": -0.6388867014,
+    "options": { "ANYSOLVER_options": "acc:tan=1" },
+    "values": {
+      "if abs(y-tan(x))<=1e-4 then 1 else 0": 1,
+      "x": -4.0950434673490523
+    }
   }
 ]

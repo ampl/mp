@@ -109,6 +109,8 @@ protected:
 
   ////////////////// INTERNAL API /////////////////////
 
+  virtual double GetEps() const { return 1e-6; }
+
   /// Constraint parameters, such as the logarithm base
   const typename FuncCon::Parameters& GetConParams() const {
     return con_.GetParameters();
@@ -583,7 +585,7 @@ public:
     if (GetSubIntvIndex()<2) {
       return std::asin(y);
     }
-    return pi*1.5 - std::asin(y);
+    return pi - std::asin(y);
   }
   double eval_1st(double x) const override { return std::cos(x); }
   /// Distinguish subinterval 0..3 (coord plane quarter):
@@ -606,6 +608,98 @@ void PLApproximate<SinConstraint>(
     const SinConstraint& con, PLApproxParams& laPrm);
 
 
+/// PLApproximator<CosConstraint>
+template <>
+class PLApproximator<CosConstraint> :
+    public BasicPLApproximator<CosConstraint> {
+public:
+  PLApproximator(const CosConstraint& con, PLApproxParams& p) :
+    BasicPLApproximator<CosConstraint>(con, p) { }
+  FuncGraphDomain GetFuncGraphDomain() const override
+  { return { -1e100, 1e100, -1.0, 1.0 }; }
+  bool IsMonotone() const override { return false; }
+  bool IsPeriodic() const override { return true; }
+  Range GetDefaultPeriod() const override { return {-pi/2.0, pi*1.5}; }
+  BreakpointList GetDefaultBreakpoints() const override
+  { return {-pi/2, 0.0, pi/2, pi, pi*1.5}; }
+
+  double eval(double x) const override
+  { return std::cos(x); }
+  /// Distinguish subinterval 0..3 (coord plane quarter):
+  double inverse(double y) const override {
+    assert(std::fabs(y) <= 1.0);
+    if (GetSubIntvIndex()<1) {
+      return -std::acos(y);
+    }
+    if (GetSubIntvIndex()>2) {
+      return pi*2 - std::acos(y);
+    }
+    return std::acos(y);
+  }
+  double eval_1st(double x) const override { return -std::sin(x); }
+  /// Distinguish subinterval 0..3 (coord plane quarter):
+  double inverse_1st(double y) const override {
+    assert(std::fabs(y) <= 1.0);
+    if (GetSubIntvIndex()<2) {
+      return std::asin(-y);
+    }
+    return pi - std::asin(-y);
+  }
+  double eval_2nd(double x) const override { return -std::cos(x); }
+};
+
+/// Instantiate PLApproximate<CosConstraint>
+template
+void PLApproximate<CosConstraint>(
+    const CosConstraint& con, PLApproxParams& laPrm);
+
+
+/// PLApproximator<TanConstraint>
+template <>
+class PLApproximator<TanConstraint> :
+    public BasicPLApproximator<TanConstraint> {
+public:
+  PLApproximator(const TanConstraint& con, PLApproxParams& p) :
+    BasicPLApproximator<TanConstraint>(con, p) { }
+  FuncGraphDomain GetFuncGraphDomain() const override
+  { return { -1e100, 1e100, -1e100, 1e100 }; }
+  bool IsMonotone() const override { return false; }
+  bool IsPeriodic() const override { return true; }
+  Range GetDefaultPeriod() const override { return {-pi/2.0, pi/2.0}; }
+  BreakpointList GetDefaultBreakpoints() const override
+  { return {-pi/2+1.4e-3, 0.0, pi/2-1.4e-3}; }
+
+  double eval(double x) const override
+  { return std::tan(x); }
+  double inverse(double y) const override {
+    return std::atan(y);
+  }
+  double eval_1st(double x) const override {
+    return 1.0 / std::pow( std::cos(x), 2.0 );
+  }
+  /// Distinguish subinterval 0..3 (coord plane quarter):
+  double inverse_1st(double y) const override {
+    assert(std::fabs(y) >= 1.0);
+    if (0==GetSubIntvIndex()) {                            // x<0
+      return -std::acos( std::sqrt(1.0/y) );
+    }
+    return std::acos( std::sqrt(1.0/y) );
+  }
+  double eval_2nd(double x) const override {
+    return 2 * std::tan(x) / std::pow( std::cos(x), 2.0 );
+  }
+};
+
+/// Instantiate PLApproximate<TanConstraint>
+template
+void PLApproximate<TanConstraint>(
+    const TanConstraint& con, PLApproxParams& laPrm);
+
+
+
+
+///////////////////////////////////////////////////////////////////
+/////////////////////////// More technical code ///////////////////
 void FuncGraphDomain::intersect(const FuncGraphDomain &grDom) {
   lbx = std::max(lbx, grDom.lbx);
   ubx = std::min(ubx, grDom.ubx);

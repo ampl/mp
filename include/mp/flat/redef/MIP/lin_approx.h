@@ -95,6 +95,14 @@ using FuncConConverter_MIP_ExpA = FuncConConverter_MIP<MC, ExpAConstraint>;
 template <class MC>
 using FuncConConverter_MIP_Sin = FuncConConverter_MIP<MC, SinConstraint>;
 
+/// Typedef FuncConConverter_MIP_Cos
+template <class MC>
+using FuncConConverter_MIP_Cos = FuncConConverter_MIP<MC, CosConstraint>;
+
+/// Typedef FuncConConverter_MIP_Tan
+template <class MC>
+using FuncConConverter_MIP_Tan = FuncConConverter_MIP<MC, TanConstraint>;
+
 
 } // namespace mp
 
