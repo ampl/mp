@@ -78,6 +78,7 @@ Indexing over sets is a common feature of AMPL expressions. The examples below u
         max ({f in FOOD} cost[f], 10.0)
         max ({n in NUTR} (lim_nutr[n], {f in FOOD} amt[n,f])) 
 
+As seen in the case of ``max`` above, certain operators can be used with either the ``{indexing} expr`` or the ``(expr-list)`` form.
 
 Due to the generality of the operators recognized by the MP interface, it is possible to express constraints that do not define a closed feasible region. For example,
 
@@ -173,12 +174,8 @@ Expressions using these operators are transformed to use Gurobi's native AND and
 
 - exists {indexing} *constr*
     *constr-valued:* Satisfied when at least one of the *constr* operands is true.
-- exists ( {indexing1} *constr1*, {indexing2} *constr2*, . . . )
-    *constr-valued:* Similar to the above, but with a list of operands, each optionally indexed.
 - forall {indexing} *constr*
     *constr-valued:* Satisfied when all of the *constr* operands are true.
-- forall ( {indexing1} *constr1*, {indexing2} *constr2*, . . . )
-    *constr-valued:* Similar to the above, but with a list of operands, each optionally indexed.
 
 The ``exists`` and ``forall`` operators are the iterated forms of ``or`` and ``and``, respectively.
 
@@ -207,12 +204,12 @@ Piecewise-linear expressions
     *expr-valued:* Equals *expr* when ≥ 0, or *-expr* when < 0.
 - min {indexing} *expr*
     *expr-valued:* Equals the smallest value among the *expr* operands.
-- min ( {indexing1} *expr1*, {indexing2} *expr2*, . . . )
-    *expr-valued:* Similar to the above, but with a list of operands, each optionally indexed.
+- min ( expr-list )
+    *expr-valued:* Equals the smallest value among all of the operands in the *expr-list*.
 - max {indexing} *expr*
     *expr-valued:* Equals the largest value among the *expr* operands.
-- max ( {indexing1} *expr1*, {indexing2} *expr2*, . . . )
-    *expr-valued:* Similar to the above, but with a list of operands, each optionally indexed.
+- max ( expr-list )
+    *expr-valued:* Equals the largest value among all of the operands in the *expr-list*.
 
 Expressions using these operators are transformed to use Gurobi's native ABS, MIN, and MAX "general constraints" when possible. In other cases, they are transformed to simpler constraints that use relational operators, and in particular are linearized where all of the operands are linear.
 
@@ -290,10 +287,10 @@ AMPL’s ``count`` operator examines an indexed collection of constraints, and r
     subj to CapacityOfMachine {k in MACHINES}:
         atmost cap[k] {j in JOBS} (MachineForJob[j] = k);
 
-- numberof *expr0* in ({indexing} *expr*)
-    *expr-valued:* The number of members of the indexing set such that the *expr* is equal to *expr0*.
+- numberof *expr* in ( *expr-list* )
+    *expr-valued:* The number of items in the *expr-list* have the same value as *expr*.
 
-This operator provides an easier-to-read alternative for a special case of count. Compare for example the ``CapacityOfMachine`` constraint below to the one given previously using ``atmost``.
+This operator can provide an easier-to-read alternative for a special case of count. Compare for example the ``CapacityOfMachine`` constraint below to the one given previously using ``atmost``.
 
 .. code-block:: ampl
 
@@ -333,8 +330,8 @@ Where possible, the MP interface transforms these operations to ones involving `
 - alldiff {indexing} *expr*
     *constr-valued:* Satisfied when *expr* takes a different value for every member of the indexing set.
 
-- alldiff ( {indexing} *var-expr1*, {indexing} *var-expr2*, ... )
-    *constr-valued:* Similar to the above, but with a list of operands, each optionally indexed.
+- alldiff ( expr-list )
+    *constr-valued:* Satisfied when all of the items in the *expr-list* take different values.
 
 This operator provides a much more concise alternative to specifying ``!=`` between all pairs in a specified collection of expressions. Currently none of the MP-based solvers support this operator natively, so the interface transforms it to a representation in terms of simpler constraints that use relational operators.
 
