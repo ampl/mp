@@ -268,6 +268,13 @@ public: // for ConstraintKeeper
     return false;
   }
 
+  /// Check whether ModelAPI accepts and recommends the constraint
+  template <class Constraint>
+  bool ModelAPIAcceptsAndRecommends(const Constraint* pcon) {
+    return ConstraintAcceptanceLevel::Recommended ==
+        GetModelAPI().AcceptanceLevel(pcon);
+  }
+
   /// Generic adapter for old non-bridged Convert() methods
   ///
   /// New way is to use the \a i parameter for bridging

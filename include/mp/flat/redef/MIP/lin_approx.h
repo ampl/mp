@@ -14,17 +14,14 @@
 namespace mp {
 
 /// Pl-approximates FuncCon for MIP
-template <class ModelConverter, class FuncCon>
-class FuncConConverter_MIP :
-    public BasicFuncConstrCvt<
-      FuncConConverter_MIP<ModelConverter, FuncCon>,
-      ModelConverter> {
+template <class Impl, class ModelConverter, class FuncCon>
+class FuncConConverter_MIP_CRTP :
+    public BasicFuncConstrCvt<Impl, ModelConverter> {
 public:
   /// Base class
-  using Base = BasicFuncConstrCvt<
-    FuncConConverter_MIP<ModelConverter, FuncCon>, ModelConverter>;
+  using Base = BasicFuncConstrCvt<Impl, ModelConverter>;
   /// Constructor
-  FuncConConverter_MIP(ModelConverter& mc) : Base(mc) { }
+  FuncConConverter_MIP_CRTP(ModelConverter& mc) : Base(mc) { }
   /// Converted item type
   using ItemType = FuncCon;
 
@@ -74,6 +71,21 @@ protected:
   using Base::GetMC;
 };
 
+
+/// Final CRTP class
+template <class ModelConverter, class FuncCon>
+class FuncConConverter_MIP :
+    public FuncConConverter_MIP_CRTP<
+      FuncConConverter_MIP<ModelConverter, FuncCon>,
+    ModelConverter, FuncCon> {
+public:
+  /// Typedef Base
+  using Base = FuncConConverter_MIP_CRTP<
+        FuncConConverter_MIP<ModelConverter, FuncCon>,
+      ModelConverter, FuncCon>;
+  /// Constructor
+  FuncConConverter_MIP(ModelConverter& mc) : Base(mc) { }
+};
 
 /// Typedef FuncConConverter_MIP_Exp
 template <class MC>

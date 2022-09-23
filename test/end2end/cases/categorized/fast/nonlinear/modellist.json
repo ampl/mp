@@ -184,5 +184,32 @@
       "if abs(y-tan(x))<=1e-4 then 1 else 0": 1,
       "x": -4.0950434673490523
     }
+  },
+  {
+    "name" : "pow_01_pow4",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -1.8301448602249
+  },
+  {
+    "name" : "pow_02_pow4",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -1.84178519861971
+  },
+  {
+    "name" : "pow_03_pow5",
+    "tags" : ["continuous", "nonlinear"],
+    "options": { "gurobi_options": "nonconvex=2" },
+    "comment_options": "For quadratic solvers, pow(x, int>=0) is converted into quadratics",
+    "objective": -32.01
+  },
+  {
+    "name" : "pow_04_pow1.35",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  -1.58302654955303
+  },
+  {
+    "name" : "pow_05_pow_minus0.35",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  3.75328523837863
   }
 ]

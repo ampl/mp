@@ -22,6 +22,8 @@
 #include <cmath>
 #include <array>
 #include <vector>
+#include <set>
+#include <string>
 #include <algorithm>
 
 #include "mp/flat/constr_std.h"
@@ -68,6 +70,12 @@ public:
   /// Typically, this is enough to define an approximator ///
   ///////////////////////////////////////////////////////////
 protected:
+  /// Largest accepted argument domain.
+  /// If the argument domain is not contained, fail.
+  /// Use if the approximation is artificially restricted,
+  /// e.g., only positive bases with negative powers
+  virtual Range GetLargestAcceptedArgumentRange() const
+  { return {-1e100, 1e100}; }
   /// Ample, but realistic, function graph domain
   /// (values should not overflow when computing (pre-)image)
   virtual FuncGraphDomain GetFuncGraphDomain() const = 0;
@@ -115,15 +123,26 @@ protected:
   const typename FuncCon::Parameters& GetConParams() const {
     return con_.GetParameters();
   }
-  /// Function graph domain: clip to the user-provided domain
-  /// and its function values.
-  /// This assumes the function is monotone
+  /// Function graph domain:
+  /// 1. Check if x outside of the largest accepted range
+  /// 2. Clip to the user-provided domain, and
+  /// 3. to its function values.
+  /// The latter only if the function is monotone
   virtual void ClipFuncGraphDomain() {
+    auto rngAcc = GetLargestAcceptedArgumentRange();
+    auto& lbx = laPrm_.grDom.lbx;
+    auto& ubx = laPrm_.grDom.ubx;
+    MP_ASSERT_ALWAYS(lbx >= rngAcc.lb && rngAcc.ub >= ubx,
+                     fmt::format(
+                       "PLApproximator<{}>: argument range "
+                       "[{}, {}] outside of the accepted [{}, {}]",
+                       GetConTypeName(),
+                       lbx, ubx, rngAcc.lb, rngAcc.ub));
     laPrm_.grDom.intersect(GetFuncGraphDomain());
     if (IsMonotone())     // TODO in the reduced domain only
       ClipWithFunctionValues(laPrm_.grDom);
-    lbx_ = laPrm_.grDom.lbx;
-    ubx_ = laPrm_.grDom.ubx;
+    lbx_ = lbx;
+    ubx_ = ubx;
   }
   /// Check domain, throw if infeas, or return trivial PL
   /// @throw if infeasible
@@ -191,12 +210,9 @@ protected:
   int GetSubIntvIndex() const { return iSubIntv_; }
 
   /// Subinterval to approximate: lb
-  double lb_sub() const { return breakpoints_[iSubIntv_]; }
+  double lb_sub() const { return breakpoints_.at(iSubIntv_); }
   /// Subinterval to approximate: ub
-  double ub_sub() const {
-    assert(iSubIntv_+1 < (int)breakpoints_.size());
-    return breakpoints_[iSubIntv_+1];
-  }
+  double ub_sub() const { return breakpoints_.at(iSubIntv_+1); }
 
   /// Reference to the output PL, const
   const PLPoints& GetPL() const { return laPrm_.plPoints; }
@@ -261,8 +277,14 @@ template <class FuncCon>
 void BasicPLApproximator<FuncCon>::InitNonPeriodic() {
   // If using breakpoints, need to narrow / exclude subinterval
   // according to lbx() / ubx()
-  breakpoints_.push_back(lbx());
-  breakpoints_.push_back(ubx());
+  auto bp_default = GetDefaultBreakpoints();
+  std::set<float> bpl_set(bp_default.begin(), bp_default.end());
+  auto it = bpl_set.insert(lbx()).first;
+  bpl_set.erase(bpl_set.begin(), it);      // remove points before lbx()
+  it = bpl_set.insert(ubx()).first;
+  bpl_set.erase(++it, bpl_set.end());      // remove points after ubx()
+  breakpoints_.assign(bpl_set.begin(), bpl_set.end());
+  assert(breakpoints_.size() >= 2);
 }
 
 template <class FuncCon>
@@ -694,6 +716,91 @@ public:
 template
 void PLApproximate<TanConstraint>(
     const TanConstraint& con, PLApproxParams& laPrm);
+
+
+/// PLApproximator<PowConstraint>
+template <>
+class PLApproximator<PowConstraint> :
+    public BasicPLApproximator<PowConstraint> {
+public:
+  PLApproximator(const PowConstraint& con, PLApproxParams& p) :
+    BasicPLApproximator<PowConstraint>(con, p) {
+    InitPowDomain();
+  }
+  /// Constraint name. This should normally go via some
+  /// printing facilities
+  const char* GetConTypeName() const override {
+    static std::string nm {
+      "PowConstraint ^ " + std::to_string(GetConParams()[0])
+    };
+    return nm.c_str();
+  }
+  Range GetLargestAcceptedArgumentRange() const override
+  { return rngAccepted_; }
+  FuncGraphDomain GetFuncGraphDomain() const override
+  { return fgd_; }
+  /// Return false in monotone, otherwise fails in func value clipping
+  bool IsMonotone() const override { return false; }
+  BreakpointList GetDefaultBreakpoints() const override
+  { return bpl_; }
+
+  double eval(double x) const override
+  { return std::pow(x, GetConParams()[0]); }
+  double inverse(double y) const override {
+    auto x00 = std::pow(std::fabs(y), 1.0 / GetConParams()[0]);
+    if (lb_sub()<0.0)           // subinterval before 0
+      return -x00;
+    return x00;
+  }
+  double eval_1st(double x) const override {
+    return GetConParams()[0] * std::pow(x, GetConParams()[0]-1);
+  }
+  double inverse_1st(double y) const override {
+    auto x00 = std::pow(
+          std::fabs(y / GetConParams()[0]),
+        1.0 / (GetConParams()[0]-1) );
+    if (lb_sub()<0.0)           // subinterval before 0
+      return -x00;
+    return x00;
+  }
+  double eval_2nd(double x) const override {
+    return GetConParams()[0] *
+        (GetConParams()[0]-1.0) *
+        std::pow(x, GetConParams()[0]-2.0);
+  }
+
+
+protected:
+  /// Consider cases
+  void InitPowDomain() {
+    auto pwr = GetConParams()[0];       // the exponent
+    if (pwr<0.0)
+      rngAccepted_ = {0.0, 1e100};      // don' bother with x<0
+    if (pwr<2.0) {                      // need x>eps
+      fgd_ = {1e-3, 1e6, 1e-3, 1e6};
+      fMonotone = true;
+      bpl_ = {{1e-3, 1e6}};
+    } else if (std::floor(pwr)==pwr) {
+      /// leave default values
+    } else {
+      fgd_ = {0.0, 1e6, 0.0, 1e6};
+      fMonotone = true;
+      bpl_ = {{0.0, 1e6}};
+    }
+  }
+
+
+private:
+  Range rngAccepted_ {-1e100, 1e100};
+  FuncGraphDomain fgd_ {-1e6, 1e6, -1e6, 1e6};
+  bool fMonotone {false};
+  BreakpointList bpl_{{-1e6, 0.0, 1e6}};
+};
+
+/// Instantiate PLApproximate<PowConstraint>
+template
+void PLApproximate<PowConstraint>(
+    const PowConstraint& con, PLApproxParams& laPrm);
 
 
 
