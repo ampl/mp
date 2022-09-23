@@ -372,12 +372,75 @@ Certain nonlinear solvers, notably Knitro, handle complementarity constraints na
           cost[j] - sum {i in PROD} Price[i] * io[i,j];
 
 
+Nonlinear operators and functions
+**********************************
 
-General combinatorial expressions
-*********************************
+- *expr1* * *expr2*
+    *expr-valued:* Multiplication of *expr1* and *expr2*.
+- *expr1* / *expr2*
+    *expr-valued:* Division of *expr1* by *expr2*.
+- *expr1* ^ *expr2*
+    *expr-valued:* *expr1* raised to the *expr2* power, for the special case where *expr2* is a positive integer constant.
 
-SOS constraints and non-contiguous variable domains
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+For quadratic expressions of the form *linear \* linear* and *linear^2*, the operands are multiplied out so that coefficients of individual quadratic terms can be extracted. If the solver natively handles quadratic terms, then the quadratic coefficients are passed to the solver, which decides whether and how to handle them. Otherwise, quadratic terms are linearized where possible, such as where one of the operands is a binary variable.
+
+Other expressions involving these operators are converted, where possible, to simpler quadratic expressions and equality constraints through the use of auxiliary variables; then the resulting quadratic expressions and equality constraints are handled in ways previously described. For example:
+
+- ``(x-1)^3`` is converted to ``(x-1) * y`` with the added constraint ``y = (x-1)^2``.
+- ``x * max {j in 1..n} y[j]`` is converted to ``x * z`` with the added constraint ``z = max {j in 1..n} y[j]``.
+- ``x / sum {j in 1..n} y[j]`` is converted to ``x * z`` with the added constraint ``z * sum {j in 1..n} y[j] = 1``.
+
+.. code-block:: ampl
+
+    subj to Eq {i in J} :
+       x[i+neq] / (b[i+neq] * sum {j in J} x[j+neq] / b[j+neq]) =
+          c[i] * x[i] / (40 * b[i] * sum {j in J} x[j] / b[j]);
+          
+- log (*expr*)
+    *expr-valued:* The natural logarithm of *expr*.
+- exp (*expr*)
+    *expr-valued:* The base of the natural logarithms (e) rasied to the power *expr*.
+- sin (*expr*)
+    *expr-valued:* The sine of *expr*.
+- cos (*expr*)
+    *expr-valued:* The cosine of *expr*.
+- tan (*expr*)
+    *expr-valued:* The tangent of *expr*.
+- *expr1* ^ *expr2*
+    *expr-valued:* *expr1* raised to the *expr2* power, for the special cases where *expr1* is a positive constant or *expr2* is a constant other than a positive integer.
+
+For the current MP-based solvers, which are limited to linear and quadratic expressions, these univariate functions are handled by piecewise-linear approximation. Expressions using these functions are transformed to use Gurobi's native "function constraints" when possible, and then the approximation is constructed by Gurobi. In other cases, the appoximation is constructed by the MP interface, and is then processed as described previously for piecewise-linear expressions.
+
+*Mention support for piecewise-linearization options.*
+
+.. code-block:: ampl
+
+    minimize Chichinadze:
+       x[1]^2 - 12*x[1] + 11 + 10*cos(pi*x[1]/2) +
+          8*sin(pi*5*x[1]) - exp(-(x[2]-.5)^2/2)/sqrt(5);
+
+
+Set membership operator
+**********************************
+
+- *expr* in *set-expr*
+    *constr-valued:* Satisfied if *expr* is a member of the set given by the AMPL set expression *set-expr*.
+
+*Explanation to come.*
+
+
+
+Supplementary observations
+----------------------------------
+
+
+Suffix conversions
+**********************************
+
+MP converts suffixes between the original and transformed model
+('value presolve'), in particular *irreducible independent subsystem* (IIS)
+results and Gurobi `FuncPieces` and related attributes.
+
 
 SOS1 is mainly relevant for models that restrict some variables to take a
 value from an arbitrary list of values. A simple example:
@@ -400,58 +463,6 @@ and how to apply it, and we don't recommend going to that trouble unless you
 are having serious problems getting the solver to return a solution.
 
 
-
-
-
-
-Nonlinear expressions
-*********************
-
-
-QP and polynomials
-~~~~~~~~~~~~~~~~~~
-
-QP expressions are multiplied out. For example, the following expression:
-
-.. code-block:: ampl
-
-    -5 * (abs(x[1])-0.7)^2 + x[2]
-
-is converted as follows:
-
-.. code-block:: ampl
-
-    -5*t^2 + 7*t - 2.45 + x[2]
-
-with an auxiliary variable ``t = abs(x[1])``.
-
-Higher-order algebraic expressions are broken down to quadratics
-via auxiliary variables:
-
-.. code-block:: ampl
-
-    maximize Sum:
-        -5 * (x[1]-0.7)^2 + x[2]^7;
-
-
-Nonlinear functions
-~~~~~~~~~~~~~~~~~~~
-
-Gurobi 9 introduced non-linear functional constraints which are internally
-handled by piecewise-linear approximation. The following are the corresponding
-AMPL functions:
-
-``exp``, ``log``, ``sin``, ``cos``, ``tan``, ``pow``.
-
-The piecewise-linear approximation is controlled by :ref:`Gurobi-FuncPieces`.
-
-
-Suffix conversions
-------------------
-
-MP converts suffixes between the original and transformed model
-('value presolve'), in particular *irreducible independent subsystem* (IIS)
-results and Gurobi `FuncPieces` and related attributes.
 
 
 IIS reporting
@@ -488,8 +499,6 @@ all constraints are reported as IIS members:
     3  mem
     ;
 
-
-.. _Gurobi-FuncPieces:
 
 Gurobi `FuncPieces` and related parameters
 ******************************************
