@@ -409,9 +409,40 @@ Other expressions involving these operators are converted, where possible, to si
 - *expr1* ^ *expr2*
     *expr-valued:* *expr1* raised to the *expr2* power, for the special cases where *expr1* is a positive constant or *expr2* is a constant other than a positive integer.
 
-For the current MP-based solvers, which are limited to linear and quadratic expressions, these univariate functions are handled by piecewise-linear approximation. Expressions using these functions are transformed to use Gurobi's native "function constraints" when possible, and then the approximation is constructed by Gurobi. In other cases, the appoximation is constructed by the MP interface, and is then processed as described previously for piecewise-linear expressions.
+For linear-quadratic MP-based solvers (which include all those currently implemented), these univariate nonlinear functions are handled by piecewise-linear approximation. The appoximation is constructed by the MP interface, using internal settings for the number of pieces and other details, and is then processed as described previously for piecewise-linear expressions.
 
-*Mention support for piecewise-linearization options.*
+For Gurobi, univariate nonlinear functions are instead handled natively. After suitable transformations, the MP interface sends Gurobi the expressions that use these functions, after which the Gurobi solver constructs the piecewise-linear approximations as part of its preprocessing. The choice of approximation can be influenced by setting the following options in an AMPL ``gurobi_options`` string::
+
+  funcpieces
+      Sets the strategy for constructing a piecewise-linear approximation of a 
+      function:
+
+      0   - Automatic choice (default)
+      >=2 - Sets the number of pieces, of equal width
+      1   - Uses a fixed width for each piece, as specified by the
+            funcpiecelength option
+      -1  - Bounds the absolute error of the approximation, as specified
+            by the funcpieceerror option
+      -2  - Bounds the relative error of the approximation, as specified
+            by the funcpieceerror option
+
+  funcpiecelength
+      When funcpieces = 1, specifies the length of each piece of the
+      approximation.
+
+  funcpieceerror
+      When funcpieces = -1 or -2, specifies the maximum allowed
+      error (absolute for -1, relative for -2) in the approximation.
+      
+  funcpieceratio
+      Controls whether the piecewise-linear approximation is an underestimate
+      of the function, an overestimate, or somewhere in between. A value of 
+      0.0 will always underestimate, while a value of 1.0 will always
+      overestimate; a value in between will interpolate between the
+      underestimate and the overestimate. A special value of -1 chooses
+      points that are on the original function.
+
+These options can also be overridden for a particular objective or constraint, by setting suffixes of the same names. For example, after defining the objective shown below, setting ``suffix funcpieces IN; let Chichinadze.funcpieces := 12;`` specifies 12 pieces for approximating the sin, cos, and exp functions in that objective.
 
 .. code-block:: ampl
 
