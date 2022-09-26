@@ -454,10 +454,21 @@ These options can also be overridden for a particular objective or constraint, b
 Set membership operator
 **********************************
 
-- *expr* in *set-expr*
-    *constr-valued:* Satisfied if *expr* is a member of the set given by the AMPL set expression *set-expr*.
+- var *var-name* in *set-expr* ;
+    Defines a variable that must be a member of a specified AMPL set, as given by the expression *set-expr*. All members of the set must be numbers.
 
-*Explanation to come.*
+This is the simplest use of ``in`` to restrict the domain of a set; more generally, the *in set-expr* phrase may appear in any ``var`` definition that does not contain an *=* phrase.
+
+Before sending a problem to the solver interface, AMPL converts variable definitions of this kind to alternative definitions that do not use the ``in`` operator. This may involve the definition of auxiliary binary variables and additional constraints. In the usual case where *set-expr* is a finite set, AMPL also defines suffixes ``.sos`` and ``.sosref`` which can be used by the solver interface to recognize variables and constraints that have been created to implement an ``in`` operator, and to support solvers that handle arbitrary variable domains by means of "special ordered sets of type 1". It is also possible to specify sets that contain continuous intervals -- and hence are infinite -- by using the AMPL expression *interval[expr1,expr2]*.
+
+.. code-block:: ampl
+
+    var Buy {f in FOODS} in {0,10,30,45,55};
+
+.. code-block:: ampl
+
+    var Ship {(i,j) in ARCS}
+       in {0} union interval[min_ship,capacity[i,j]];
 
 
 Efficiency considerations
