@@ -235,5 +235,53 @@
     "values": {
       "if abs(y-atan(x))<=1e-4 then 1 else 0": 1
     }
+  },
+  {
+    "name" : "sinh_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": 6.88087328277653,
+    "values": {
+      "if abs(y-sinh(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "cosh_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  17.3489673254754,
+    "values": {
+      "if abs(y-cosh(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "tanh_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": 7.2556470284742,
+    "values": {
+      "if abs(y-tanh(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "asinh_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": 7.1191696450538,
+    "values": {
+      "if abs(y-asinh(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "acosh_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -12.9669563023371,
+    "values": {
+      "if abs(y-acosh(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "atanh_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  1.30327359,
+    "values": {
+      "if abs(y-atanh(x))<=1e-4 then 1 else 0": 1
+    }
   }
 ]

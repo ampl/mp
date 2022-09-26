@@ -808,6 +808,12 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(AsinConstraint, "acc:asin")
   STORE_CONSTRAINT_TYPE__WITH_MAP(AcosConstraint, "acc:acos")
   STORE_CONSTRAINT_TYPE__WITH_MAP(AtanConstraint, "acc:atan")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(SinhConstraint, "acc:sinh")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CoshConstraint, "acc:cosh")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(TanhConstraint, "acc:tanh")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AsinhConstraint, "acc:asinh")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AcoshConstraint, "acc:acosh")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AtanhConstraint, "acc:atanh")
 
   /// No maps for static constraints
   STORE_CONSTRAINT_TYPE__NO_MAP(

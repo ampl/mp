@@ -109,6 +109,30 @@ DEF_NUMERIC_FUNC_CONSTR( AcosConstraint, VarArray1,
 DEF_NUMERIC_FUNC_CONSTR( AtanConstraint, VarArray1,
                                    "r = atan(v)");
 
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( SinhConstraint, VarArray1,
+                                   "r = sinh(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( CoshConstraint, VarArray1,
+                                   "r = cosh(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( TanhConstraint, VarArray1,
+                                   "r = tanh(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( AsinhConstraint, VarArray1,
+                                   "r = asinh(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( AcoshConstraint, VarArray1,
+                                   "r = acosh(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( AtanhConstraint, VarArray1,
+                                   "r = atanh(v)");
+
 
 /// Not using: var1 != var2.
 /// Represented by Not { Eq0Constraint... }

@@ -117,6 +117,18 @@ public:
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Acos)
   /// ATan
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Atan)
+  /// Sinh
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Sinh)
+  /// Cosh
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Cosh)
+  /// Tanh
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Tanh)
+  /// ASinh
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Asinh)
+  /// ACosh
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Acosh)
+  /// ATanh
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Atanh)
 
 
   /// Strict comparison tolerance.

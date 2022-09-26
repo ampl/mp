@@ -647,6 +647,30 @@ public:
     return VisitFunctionalExpression<AtanConstraint>({ e.arg() });
   }
 
+  EExpr VisitSinh(UnaryExpr e) {
+    return VisitFunctionalExpression<SinhConstraint>({ e.arg() });
+  }
+
+  EExpr VisitCosh(UnaryExpr e) {
+    return VisitFunctionalExpression<CoshConstraint>({ e.arg() });
+  }
+
+  EExpr VisitTanh(UnaryExpr e) {
+    return VisitFunctionalExpression<TanhConstraint>({ e.arg() });
+  }
+
+  EExpr VisitAsinh(UnaryExpr e) {
+    return VisitFunctionalExpression<AsinhConstraint>({ e.arg() });
+  }
+
+  EExpr VisitAcosh(UnaryExpr e) {
+    return VisitFunctionalExpression<AcoshConstraint>({ e.arg() });
+  }
+
+  EExpr VisitAtanh(UnaryExpr e) {
+    return VisitFunctionalExpression<AtanhConstraint>({ e.arg() });
+  }
+
   void ConvertSOSConstraints() {
     if (sos()) {
       auto sosno = GetModel().
