@@ -460,174 +460,86 @@ Set membership operator
 *Explanation to come.*
 
 
+Efficiency considerations
+--------------------------
 
-Supplementary observations
-----------------------------------
-
-
-Suffix conversions
-**********************************
-
-MP converts suffixes between the original and transformed model
-('value presolve'), in particular *irreducible independent subsystem* (IIS)
-results and Gurobi `FuncPieces` and related attributes.
+The goal of these extensions is to let you write models however you think about them, relying on the MP interface to convert them to the forms required by solvers. Nevertheless, there will be situations where one choice of formulation will lead to better solver performance than another. Here we collect some examples that are relevant to the current MP implementation. Future versions may automate some of these reformulations.
 
 
-SOS1 is mainly relevant for models that restrict some variables to take a
-value from an arbitrary list of values. A simple example:
-
-.. code-block:: ampl
-
-    var Buy {f in FOODS} in {0,10,30,45,55};
-
-An appropriate SOS1 representation will be
-automatically generated from this declaration.
-
-SOS2 are one of the two ways to linearize
-:ref:`piecewise-linear expressions <piecewize-linear-expr>` by AMPL.
-
-It is possible to specify SOS1 or SOS2 variables and corresponding "reference rows"
-explicitly using AMPL suffixes .sos(no) and .(sos)ref,
-as described in the solver documentation.
-However this requires some study to understand whether SOS1/2 is appropriate
-and how to apply it, and we don't recommend going to that trouble unless you
-are having serious problems getting the solver to return a solution.
-
-
-
-
-IIS reporting
-*************
-
-As an example, for the following model:
-
-.. code-block:: ampl
-
-    var x;
-    var y;
-    var z;
-
-    subj to Con1:
-       x+y >= 1;
-
-    subj to Con2:
-       y + log(z + exp(x+3)) <= 1.83;
-
-    subj to Con3:
-       z + log(y + 3.8*exp(x+3)) >= -14.265;
-
-all constraints are reported as IIS members:
-
-.. code-block:: ampl
-
-    ampl: option gurobi_options 'iisfind=1';
-    ampl: solve;
-    ....
-    ampl: display _con.iis;
-    _con.iis [*] :=
-    1  mem
-    2  mem
-    3  mem
-    ;
-
-
-Gurobi `FuncPieces` and related parameters
-******************************************
-
-Gurobi functional constraint attributes `FuncPieces`, `FuncPieceLength`,
-`FuncPieceError`, and `FuncPieceRatio` determine the piecewise-linear
-approximation applied. The MP Gurobi driver defines the corresponding
-options relating to the whole model, but also suffixes for constraints,
-which are converted to Gurobi representation. Example: for the above
-IIS model, setting the `.funcpieces` suffix as follows:
-
-.. code-block:: ampl
-
-    suffix funcpieces IN;
-
-    let Con1.funcpieces := 12;
-    let Con2.funcpieces := 23;
-    let Con3.funcpieces := 38;
-
-results in the following Gurobi model (LP format, excerpt):
-
-.. code-block:: ampl
-
-    ...
-    General Constraints
-     GC0: ( FuncPieces=38 ) C4 = EXP ( C3 )
-     GC1: ( FuncPieces=23 ) C6 = LOG ( C5 )
-     GC2: ( FuncPieces=38 ) C8 = LOG ( C7 )
-    End
-
-
-
-Conversion graph export
------------------------
-
-The conversion graph can be exported using the `writegraph` option,
-currently in JSON Lines format.
-
-
-Efficient modeling
-------------------
-
-For general modeling advice, refer to sources such as
-Guidelines for Numerical Issues
-and modeling webinars on the `Gurobi website <http://www.gurobi.com>`_,
-Practical Considerations for Integer Programming in the
-`AMPL Book <https://ampl.com/resources/the-ampl-book/>`_, and
-the MOSEK Modeling Cookbook at `www.mosek.com <https://www.mosek.com/>`_.
-
-
-Reduce non-linearity
-********************
-
-In the following example:
+Simplification of logic
+************************
 
 .. code-block:: ampl
 
     var Flow {PRODUCTS,ARCS} >= 0;
 
     minimize TotalCost:
-        sum {(i,j) in ARCS}
-            if exists {p in PRODUCTS} Flow[p,i,j] > 0 then fix_cost[i,j];
+       sum {p in PRODUCTS, (i,j) in ARCS} var_cost[p,i,j] * Flow[p,i,j] +
+       sum {(i,j) in ARCS}
+          if exists {p in PRODUCTS} Flow[p,i,j] > 0 then fix_cost[i,j];
 
-it is possible to reduce the number of resulting indicator constraints
-via the following simplification:
+Each term ``Flow[p,i,j] > 0`` is converted separately, involving a separate binary variable and implication constraint. But for a given i and j, there exists a positive Flow[p,i,j] if and only if the sum of all Flow[p,i,j] is positive. Thus an alternative formulation is given by:  
 
 .. code-block:: ampl
 
     minimize TotalCost:
-        sum {(i,j) in ARCS}
-            if sum {p in PRODUCTS} Flow[p,i,j] > 0 then fix_cost[i,j];
+       sum {p in PRODUCTS, (i,j) in ARCS} var_cost[p,i,j] * Flow[p,i,j] +
+       sum {(i,j) in ARCS}
+          if sum {p in PRODUCTS} Flow[p,i,j] > 0 then fix_cost[i,j];
 
-Such a simplification might be performed automatically in a future version
-of the library.
+By taking advantage of the solver's ability to work with linear expressions, this form enables a substantially more concise conversion.
 
 
-Tight bounds
-************
-
-For logical expressions, it proves best to supply tight bounds on
-all participating variables.
-For any intermediate expressions which are known to have tighter bounds
-than those which can be deduced automatically, it is advisable
-to extract them into extra variables with the tight bounds.
-For example, given a disjunction
+Creation of common subexpressions
+**********************************
 
 .. code-block:: ampl
 
-        subj to: log(x+2)<=y^2  or  x-y>=z;
+    subject to Shipment_Limits {(i,j) in ARCS}:
+       sum {p in PRODUCTS} Flow[p,i,j] = 0 or
+       min_ship <= sum {p in PRODUCTS} Flow[p,i,j] <= capacity[i,j];
 
-and knowing that ``-15 <= x-y-z <= 30``, reformulate:
+    minimize TotalCost:
+       sum {p in PRODUCTS, (i,j) in ARCS} var_cost[p,i,j] * Flow[p,i,j] +
+       sum {(i,j) in ARCS}
+          if sum {p in PRODUCTS} Flow[p,i,j] > 0 then fix_cost[i,j];
+          
+The constraint implies that if ``sum {p in PRODUCTS} Flow[p,i,j]`` is positive, then it must be at least equal to min_ship. Thus ``> 0`` can be replaced by ``>= min_ship`` in the objective expression:
 
 .. code-block:: ampl
 
-        var t >=-15, <=30;
-        subj to: t == x-y-z;
-        subj to: log(x+2)<=y^2  or  t>=0;
+    minimize TotalCost:
+       sum {p in PRODUCTS, (i,j) in ARCS} var_cost[p,i,j] * Flow[p,i,j] +
+       sum {(i,j) in ARCS}
+          if sum {p in PRODUCTS} Flow[p,i,j] >= min_ship then fix_cost[i,j];
+          
+As a result of this change, ``sum {p in PRODUCTS} Flow[p,i,j] >= min_ship`` is a subexpression in both the constraint and the objective, simplifying the converson of the model.
 
-In many cases, integer variables are more meaningful and efficient
-in logical constraints
-than continuous variables, for example in disequalities.
+
+Bounds on subexpressions
+*************************
+
+.. code-block:: ampl
+
+    var x {1..2} <= 2, >= -2;
+    
+    minimize Goldstein-Price:
+       (1 + (x[1] + x[2] + 1)^2
+          * (19 - 14*x[1] + 3*x[1]^2 - 14*x[2] + 6*x[1]*x[2] + 3*x[2]^2))
+     * (30 + (2*x[1] - 3*x[2])^2
+          * (18 - 32*x[1] + 12*x[1]^2 + 48*x[2] - 36*x[1]*x[2] + 27*x[2]^2));
+          
+Solver performance can often be improved by tightening bounds on the variables. In this example, the bounds on the variables also imply bounds on the subexpressions ``(x[1] + x[2] + 1)^2`` and ``(2*x[1] - 3*x[2])^2``. By defining auxiliary variables ``t1`` and ``t2`` equal to these subexpressions, their bounds can be communicated to the solver:
+
+.. code-block:: ampl
+
+    var t1 >= 0, <= 25;   subj to t1def: t1 = (x[1] + x[2] + 1)^2;
+    var t2 >= 0, <= 100;  subj to t2def: t2 = (2*x[1] - 3*x[2])^2;
+
+    minimize Goldstein-Price:
+       (1 + t1
+          * (19 - 14*x[1] + 3*x[1]^2 - 14*x[2] + 6*x[1]*x[2] + 3*x[2]^2))
+     * (30 + t2
+          * (18 - 32*x[1] + 12*x[1]^2 + 48*x[2] - 36*x[1]*x[2] + 27*x[2]^2));
+          
+These bounds are observed to substantially improve Gurobi's performance in this case.
