@@ -231,7 +231,7 @@
   {
     "name" : "atan_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective":  7.24328738237669,
+    "objective":  7.2432309147143,
     "values": {
       "if abs(y-atan(x))<=1e-4 then 1 else 0": 1
     }

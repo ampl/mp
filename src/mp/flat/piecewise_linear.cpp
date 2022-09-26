@@ -869,9 +869,9 @@ public:
   PLApproximator(const AtanConstraint& con, PLApproxParams& p) :
     BasicPLApproximator<AtanConstraint>(con, p) { }
   FuncGraphDomain GetFuncGraphDomain() const override
-  { return { -1e3, 1e3, -pi/2, pi/2 }; }
+  { return { -1e5, 1e5, -pi/2, pi/2 }; }      // HiGHS cannot do +-1e6, Sept 2022
   BreakpointList GetDefaultBreakpoints() const override
-  { return {-1e3, 0.0, 1e3}; }
+  { return {-1e5, 0.0, 1e5}; }
   double eval(double x) const override { return std::atan(x); }
   double inverse(double y) const override { return std::tan(y); }
   double eval_1st(double x) const override { return 1.0 / (1+x*x); }

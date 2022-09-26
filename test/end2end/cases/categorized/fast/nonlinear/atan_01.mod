@@ -4,7 +4,7 @@
 
 param pi := 4*atan(1);  ## 3.14159265358979;
 
-var x >= -5, <= 1;
+var x >= -1e6, <= 1e6;
 var y;
 
 s.t. Sin01: y == atan(x);
