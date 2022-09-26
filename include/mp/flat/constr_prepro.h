@@ -352,6 +352,24 @@ public:
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
+      AsinConstraint& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(-MPD(Pi())/2, MPD(Pi()));
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      AcosConstraint& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(0.0, MPD(Pi()));
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      AtanConstraint& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(-MPD(Pi())/2, MPD(Pi())/2);
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
       PLConstraint& , PreprocessInfo& ) {
   }
 

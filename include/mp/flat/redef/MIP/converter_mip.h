@@ -111,6 +111,12 @@ public:
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Cos)
   /// Tan
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Tan)
+  /// ASin
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Asin)
+  /// ACos
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Acos)
+  /// ATan
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Atan)
 
 
   /// Strict comparison tolerance.

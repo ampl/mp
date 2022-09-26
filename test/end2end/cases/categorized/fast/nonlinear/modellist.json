@@ -211,5 +211,29 @@
     "name" : "pow_05_pow_minus0.35",
     "tags" : ["continuous", "nonlinear"],
     "objective":  3.75328523837863
+  },
+  {
+    "name" : "asin_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  6.86830935803409,
+    "values": {
+      "if abs(y-asin(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "acos_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  -2.40109419283669,
+    "values": {
+      "if abs(y-acos(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "atan_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  7.24328738237669,
+    "values": {
+      "if abs(y-atan(x))<=1e-4 then 1 else 0": 1
+    }
   }
 ]

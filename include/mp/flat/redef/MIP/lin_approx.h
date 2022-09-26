@@ -115,6 +115,18 @@ using FuncConConverter_MIP_Cos = FuncConConverter_MIP<MC, CosConstraint>;
 template <class MC>
 using FuncConConverter_MIP_Tan = FuncConConverter_MIP<MC, TanConstraint>;
 
+/// Typedef FuncConConverter_MIP_ASin
+template <class MC>
+using FuncConConverter_MIP_Asin = FuncConConverter_MIP<MC, AsinConstraint>;
+
+/// Typedef FuncConConverter_MIP_ACos
+template <class MC>
+using FuncConConverter_MIP_Acos = FuncConConverter_MIP<MC, AcosConstraint>;
+
+/// Typedef FuncConConverter_MIP_ATan
+template <class MC>
+using FuncConConverter_MIP_Atan = FuncConConverter_MIP<MC, AtanConstraint>;
+
 
 } // namespace mp
 

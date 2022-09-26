@@ -97,6 +97,18 @@ DEF_NUMERIC_FUNC_CONSTR( CosConstraint, VarArray1,
 DEF_NUMERIC_FUNC_CONSTR( TanConstraint, VarArray1,
                                    "r = tan(v)");
 
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( AsinConstraint, VarArray1,
+                                   "r = asin(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( AcosConstraint, VarArray1,
+                                   "r = acos(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( AtanConstraint, VarArray1,
+                                   "r = atan(v)");
+
 
 /// Not using: var1 != var2.
 /// Represented by Not { Eq0Constraint... }

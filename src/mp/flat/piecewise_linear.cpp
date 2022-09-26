@@ -347,6 +347,8 @@ double BasicPLApproximator<FuncCon>::ComputeInitialStepLength(
         std::fabs(laPrm_.ubErr * 8.0 / 3.0 / f2) );
   if (x0+dx0 > ub_sub())
     dx0 = ub_sub()-x0;
+  if (dx0<1e-10)
+    dx0 = (ub_sub()-x0) / 100.0;
   return dx0;
 }
 
@@ -801,6 +803,90 @@ private:
 template
 void PLApproximate<PowConstraint>(
     const PowConstraint& con, PLApproxParams& laPrm);
+
+
+/// PLApproximator<AsinConstraint>
+template <>
+class PLApproximator<AsinConstraint> :
+    public BasicPLApproximator<AsinConstraint> {
+public:
+  PLApproximator(const AsinConstraint& con, PLApproxParams& p) :
+    BasicPLApproximator<AsinConstraint>(con, p) { }
+  FuncGraphDomain GetFuncGraphDomain() const override
+  { return { -1.0, 1.0, -pi/2, pi/2 }; }
+  BreakpointList GetDefaultBreakpoints() const override
+  { return {-1.0, 0.0, 1.0}; }
+  double eval(double x) const override { return std::asin(x); }
+  double inverse(double y) const override { return std::sin(y); }
+  double eval_1st(double x) const override { return std::pow(1-x*x, -1/2.0); }
+  double inverse_1st(double y) const override {
+    if (lb_sub() >= 0.0)
+      return std::sqrt(1.0 - 1.0/y/y);
+    return -std::sqrt(1.0 - 1.0/y/y);
+  }
+  double eval_2nd(double x) const override { return x*std::pow(1-x*x, -3/2.0); }
+};
+
+/// Instantiate PLApproximate<AsinConstraint>
+template
+void PLApproximate<AsinConstraint>(
+    const AsinConstraint& con, PLApproxParams& laPrm);
+
+
+/// PLApproximator<AcosConstraint>
+template <>
+class PLApproximator<AcosConstraint> :
+    public BasicPLApproximator<AcosConstraint> {
+public:
+  PLApproximator(const AcosConstraint& con, PLApproxParams& p) :
+    BasicPLApproximator<AcosConstraint>(con, p) { }
+  FuncGraphDomain GetFuncGraphDomain() const override
+  { return { -1.0, 1.0, 0.0, pi }; }
+  BreakpointList GetDefaultBreakpoints() const override
+  { return {-1.0, 0.0, 1.0}; }
+  double eval(double x) const override { return std::acos(x); }
+  double inverse(double y) const override { return std::cos(y); }
+  double eval_1st(double x) const override { return -std::pow(1-x*x, -1/2.0); }
+  double inverse_1st(double y) const override {
+    if (lb_sub() >= 0.0)
+      return std::sqrt(1.0 - 1.0/y/y);
+    return -std::sqrt(1.0 - 1.0/y/y);
+  }
+  double eval_2nd(double x) const override { return -x*std::pow(1-x*x, -3/2.0); }
+};
+
+/// Instantiate PLApproximate<AcosConstraint>
+template
+void PLApproximate<AcosConstraint>(
+    const AcosConstraint& con, PLApproxParams& laPrm);
+
+
+/// PLApproximator<AtanConstraint>
+template <>
+class PLApproximator<AtanConstraint> :
+    public BasicPLApproximator<AtanConstraint> {
+public:
+  PLApproximator(const AtanConstraint& con, PLApproxParams& p) :
+    BasicPLApproximator<AtanConstraint>(con, p) { }
+  FuncGraphDomain GetFuncGraphDomain() const override
+  { return { -1e3, 1e3, -pi/2, pi/2 }; }
+  BreakpointList GetDefaultBreakpoints() const override
+  { return {-1e3, 0.0, 1e3}; }
+  double eval(double x) const override { return std::atan(x); }
+  double inverse(double y) const override { return std::tan(y); }
+  double eval_1st(double x) const override { return 1.0 / (1+x*x); }
+  double inverse_1st(double y) const override {
+    if (lb_sub() >= 0.0)
+      return std::sqrt(1.0/y - 1.0);
+    return -std::sqrt(1.0/y - 1.0);
+  }
+  double eval_2nd(double x) const override { return -2*x*std::pow(1+x*x, -2.0); }
+};
+
+/// Instantiate PLApproximate<AtanConstraint>
+template
+void PLApproximate<AtanConstraint>(
+    const AtanConstraint& con, PLApproxParams& laPrm);
 
 
 

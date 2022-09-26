@@ -805,6 +805,9 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(SinConstraint, "acc:sin")
   STORE_CONSTRAINT_TYPE__WITH_MAP(CosConstraint, "acc:cos")
   STORE_CONSTRAINT_TYPE__WITH_MAP(TanConstraint, "acc:tan")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AsinConstraint, "acc:asin")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AcosConstraint, "acc:acos")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AtanConstraint, "acc:atan")
 
   /// No maps for static constraints
   STORE_CONSTRAINT_TYPE__NO_MAP(

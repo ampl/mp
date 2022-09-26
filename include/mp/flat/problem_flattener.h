@@ -635,6 +635,18 @@ public:
     return VisitFunctionalExpression<TanConstraint>({ e.arg() });
   }
 
+  EExpr VisitAsin(UnaryExpr e) {
+    return VisitFunctionalExpression<AsinConstraint>({ e.arg() });
+  }
+
+  EExpr VisitAcos(UnaryExpr e) {
+    return VisitFunctionalExpression<AcosConstraint>({ e.arg() });
+  }
+
+  EExpr VisitAtan(UnaryExpr e) {
+    return VisitFunctionalExpression<AtanConstraint>({ e.arg() });
+  }
+
   void ConvertSOSConstraints() {
     if (sos()) {
       auto sosno = GetModel().
