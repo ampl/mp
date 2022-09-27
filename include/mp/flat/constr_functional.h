@@ -315,9 +315,14 @@ struct PLPoints {
   void AddPoint(double x, double y) {
     if (!empty())
       assert(x > x_.back());
-    if (empty() || x>x_.back()+1e-4) {   // skip near points for Gurobi
-      x_.push_back(x);
-      y_.push_back(y);
+    if (empty() || x>x_.back()+1e-4) {  // skip near points for Gurobi
+      if (size()>=2 &&                  // simple check: 3rd equal y
+         y_[size()-1]==y && y_[size()-2]==y) {
+        x_.back() = x;                  // update last x
+      } else {
+        x_.push_back(x);
+        y_.push_back(y);
+      }
     }
   }
   /// Get preslope
