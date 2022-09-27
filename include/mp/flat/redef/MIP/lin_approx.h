@@ -40,6 +40,8 @@ public:
 
     PLApproximate(con, laPrm);
     if (!laPrm.fUsePeriod) {
+      GetMC().NarrowVarBounds(x,
+                              laPrm.grDomOut.lbx, laPrm.grDomOut.ubx);
       GetMC().RedefineVariable(y,
                                PLConstraint({x}, laPrm.plPoints));
       GetMC().PropagateResultOfInitExpr(

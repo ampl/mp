@@ -77,7 +77,10 @@ protected:
   virtual Range GetLargestAcceptedArgumentRange() const
   { return {-1e100, 1e100}; }
   /// Ample, but realistic, function graph domain
-  /// (values should not overflow when computing (pre-)image)
+  /// (values should not overflow when computing (pre-)image).
+  /// Depends on the solver's integrality and feasibility
+  /// tolerances. For values involved in indicator-like
+  /// constraints, should be below 1e6, sometimes 1e5
   virtual FuncGraphDomain GetFuncGraphDomain() const = 0;
   /// Monotone? Then we can clip image range.
   /// This should be superseded by walking thru subintervals.
@@ -143,6 +146,7 @@ protected:
       ClipWithFunctionValues(laPrm_.grDom);
     lbx_ = lbx;
     ubx_ = ubx;
+    laPrm_.grDomOut = laPrm_.grDom;        // communicate new domain
   }
   /// Check domain, throw if infeas, or return trivial PL
   /// @throw if infeasible
@@ -903,7 +907,7 @@ public:
   PLApproximator(const SinhConstraint& con, PLApproxParams& p) :
     BasicPLApproximator<SinhConstraint>(con, p) { }
   FuncGraphDomain GetFuncGraphDomain() const override
-  { return { -14.5087, 14.5087, -1e100, 1e100 }; }
+  { return { -14, 14, -1e100, 1e100 }; }
   BreakpointList GetDefaultBreakpoints() const override
   { return {-1e100, 0.0, 1e100}; }
 
@@ -931,7 +935,7 @@ public:
   PLApproximator(const CoshConstraint& con, PLApproxParams& p) :
     BasicPLApproximator<CoshConstraint>(con, p) { }
   FuncGraphDomain GetFuncGraphDomain() const override
-  { return { -14.5087, 14.5087, 1.0, 1e100 }; }
+  { return { -14, 14, 1.0, 1e100 }; }
   BreakpointList GetDefaultBreakpoints() const override
   { return {-1e100, 0.0, 1e100}; }
 
@@ -960,7 +964,7 @@ public:
   PLApproximator(const TanhConstraint& con, PLApproxParams& p) :
     BasicPLApproximator<TanhConstraint>(con, p) { }
   FuncGraphDomain GetFuncGraphDomain() const override
-  { return { -1e5, 1e5, -1, 1 }; }
+  { return { -1e4, 1e4, -1, 1 }; }
   BreakpointList GetDefaultBreakpoints() const override
   { return {-1e100, 0.0, 1e100}; }
 

@@ -35,9 +35,9 @@ public:
     y = cc.GetResultVar();
     x = cc.GetArguments()[0];
     MP_ASSERT_ALWAYS(i1>=i0, "PL->SOS2: no breakpoints");
-    if (i1>i0)
-      ConsiderExtendingEndSegments();
-    ConsiderNarrowingDomain();
+    if (i1>i0)                         // Gurobi 9 does this.
+      ConsiderExtendingEndSegments();  // Bad when approximating
+    ConsiderShorteningPL();
     if (ConsiderDegenerateCases())
       return;
     if (ConsiderConvexity())
@@ -58,7 +58,7 @@ protected:
       ExtendSegTo(i1, i1-1, std::min(GetMC().ub(x), PLMaxVal()));
   }
   /// See if we need to remove/shorten side segments
-  void ConsiderNarrowingDomain() {
+  void ConsiderShorteningPL() {
     while (i0<i1 && GetMC().lb(x)>=points_.x_[i0+1])
       ++i0;
     while (i0<i1 && GetMC().ub(x)<=points_.x_[i1-1])
