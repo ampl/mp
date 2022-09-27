@@ -2,7 +2,7 @@
 ## pow_05_pow_minus0.35.mod
 #########################################
 
-var x >= 0.4, <= 20;
+var x >= 0.4, <= 1e2;   ## HiGHS does not like large bound
 var y;
 
 s.t. Pow01: y >= x^-.35;

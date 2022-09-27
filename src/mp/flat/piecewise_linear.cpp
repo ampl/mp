@@ -652,18 +652,21 @@ protected:
   /// Consider cases
   void InitPowDomain() {
     auto pwr = GetConParams()[0];       // the exponent
-    if (pwr<0.0)
+    auto ubx = std::min(1e5, std::pow(1e5, 1/pwr));
+    if (pwr<0.0) {
       rngAccepted_ = {0.0, 1e100};      // don' bother with x<0
+      ubx = std::min(1e5, std::pow(1e-5, 1/pwr));  // smaller for HiGHS
+    }
     if (pwr<2.0) {                      // need x>eps
-      fgd_ = {1e-3, 1e6, 1e-3, 1e6};
+      fgd_ = {1e-3, ubx, 1e-3, 1e5};
       fMonotone = true;
-      bpl_ = {{1e-3, 1e6}};
+      bpl_ = {{1e-3, 1e5}};
     } else if (std::floor(pwr)==pwr) {
-      /// leave default values
+      fgd_ = {-ubx, ubx, -1e5, 1e5};
     } else {
-      fgd_ = {0.0, 1e6, 0.0, 1e6};
+      fgd_ = {0.0, ubx, 0.0, 1e5};
       fMonotone = true;
-      bpl_ = {{0.0, 1e6}};
+      bpl_ = {{0.0, 1e5}};
     }
   }
 
