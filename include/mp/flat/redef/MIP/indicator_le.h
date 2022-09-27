@@ -36,13 +36,19 @@ protected:
                    double body_ub, LinConLE con) {
     /// TODO fail if lb>0 +report .iis if requested
     /// TODO skip if ub<0
-    if (body_ub >= GetMC().PracticallyInfty())
-      throw ConstraintConversionFailure( "IndicatorInfBound",
-          "The redefinition of a (possibly auxiliary) indicator constraint"
-          " 'bin_var==value ==> c'x<=d' failed"
-          " so it will be passed to the solver natively if supported."
-          " Provide tight bounds on variables entering logical expressions,"
-          " or, if available, set acc:indle=2 for native handling");
+    if (body_ub >= GetMC().PracticallyInfty()) {
+      if ((body_ub = GetMC().bigMDefault())<=0.0)
+        throw ConstraintConversionFailure( "IndicatorInfBound",
+          "The redefinition of an indicator constraint"
+          " \"bin_var==0/1 ==> c'x<=d\" into a big-M constraint failed"
+          " due to the absence of a finite upper bound on c'x."
+          " If the solver supports indicator constraints, it will be passed"
+          " to the solver, otherwise this is a fatal error."
+          " To remove this error/warning, the following options can be available:\n"
+          "  1. Provide tight bounds on variables entering logical expressions;\n"
+          "  2. Use option cvt:mip:bigM to set the default value of big-M (use with care);\n"
+          "  3. If available, set acc:indle=2 for native handling of the constraint.");
+    }
     if (0==val)                                // left condition is b==0
       con.GetBody().add_term(-body_ub+con.rhs(), b);
     else {
