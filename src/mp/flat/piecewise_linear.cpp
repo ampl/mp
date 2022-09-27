@@ -281,6 +281,7 @@ template <class FuncCon>
 void BasicPLApproximator<FuncCon>::InitNonPeriodic() {
   // If using breakpoints, need to narrow / exclude subinterval
   // according to lbx() / ubx()
+  laPrm_.fUsePeriod = false;
   auto bp_default = GetDefaultBreakpoints();
   std::set<float> bpl_set(bp_default.begin(), bp_default.end());
   auto it = bpl_set.insert(lbx()).first;
