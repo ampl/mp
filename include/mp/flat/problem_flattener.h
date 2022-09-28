@@ -163,10 +163,16 @@ protected:
 
   /// Convert an objective
   void Convert(typename ProblemType::MutObjective obj) {
+    auto obj_src =              // source value node for this obj
+        GetValuePresolver().GetSourceNodes().GetObjValues()().Add();
+    GetCopyLink().AddEntry(
+          {
+            obj_src,
+            GetValuePresolver().GetTargetNodes().GetObjValues()().Add() });
+    /// After the CopyLink, add One2ManyLink for converted expressions.
+    /// When postsolving, CopyLink is executed last and copies obj values.
     pre::AutoLinkScope<FlatConverterType> auto_link_scope{
-      GetFlatCvt(),
-      GetValuePresolver().GetSourceNodes().GetObjValues()().
-          Add()           // Just add next node
+      GetFlatCvt(), obj_src
     };
     auto le = ToLinTerms(obj.linear_expr());
     NumericExpr e = obj.nonlinear_expr();
@@ -633,6 +639,42 @@ public:
 
   EExpr VisitTan(UnaryExpr e) {
     return VisitFunctionalExpression<TanConstraint>({ e.arg() });
+  }
+
+  EExpr VisitAsin(UnaryExpr e) {
+    return VisitFunctionalExpression<AsinConstraint>({ e.arg() });
+  }
+
+  EExpr VisitAcos(UnaryExpr e) {
+    return VisitFunctionalExpression<AcosConstraint>({ e.arg() });
+  }
+
+  EExpr VisitAtan(UnaryExpr e) {
+    return VisitFunctionalExpression<AtanConstraint>({ e.arg() });
+  }
+
+  EExpr VisitSinh(UnaryExpr e) {
+    return VisitFunctionalExpression<SinhConstraint>({ e.arg() });
+  }
+
+  EExpr VisitCosh(UnaryExpr e) {
+    return VisitFunctionalExpression<CoshConstraint>({ e.arg() });
+  }
+
+  EExpr VisitTanh(UnaryExpr e) {
+    return VisitFunctionalExpression<TanhConstraint>({ e.arg() });
+  }
+
+  EExpr VisitAsinh(UnaryExpr e) {
+    return VisitFunctionalExpression<AsinhConstraint>({ e.arg() });
+  }
+
+  EExpr VisitAcosh(UnaryExpr e) {
+    return VisitFunctionalExpression<AcoshConstraint>({ e.arg() });
+  }
+
+  EExpr VisitAtanh(UnaryExpr e) {
+    return VisitFunctionalExpression<AtanhConstraint>({ e.arg() });
   }
 
   void ConvertSOSConstraints() {

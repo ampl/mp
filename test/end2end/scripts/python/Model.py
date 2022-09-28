@@ -8,7 +8,8 @@ class ModelTags(enum.Enum):
 
     ## Modeling features
     linear = 1
-    quadratic = 2
+    quadratic = 2             # obj and con
+    quadratic_obj = 2.5
     quadraticnonconvex = 3
     socp = 4
     nonlinear = 5
@@ -32,6 +33,7 @@ class ModelTags(enum.Enum):
 
     ## Driver features
     unbdd = 10001
+    qcpdual = 11001
     return_mipgap = 10002
     sens = 10003
     lazy_user_cuts = 10004

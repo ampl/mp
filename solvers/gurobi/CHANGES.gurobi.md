@@ -1,14 +1,17 @@
 Summary of recent updates to x-gurobi for AMPL
 ==============================================
 
-## unreleased
-- For range constraints x-gurobi reports nonbasic status low/upp,
+## 20220928
+- *Changes in MP*: piecewise-linear approximations of nonlinear functions,
+    default value of big-M
+
+- For *range constraints* x-gurobi reports nonbasic status low/upp,
     for one-sided constraints low/upp/equ, consistent with ASL drivers
 
-- Sensitivity analysis: use constraint suffixes .sens(lb/ub)(lo/hi),
+- *Sensitivity analysis*: use constraint suffixes .sens(lb/ub)(lo/hi),
     the old-style suffixes .sensrhs(lo/hi) meaningful only for one-sided constraints.
 
-- Suffixes .iis(lb/ub)force on constraints and variables
+- Suffixes *.iis(lb/ub)force* on constraints and variables
 
 
 ## 20220802 

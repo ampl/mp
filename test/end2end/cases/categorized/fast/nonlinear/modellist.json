@@ -146,5 +146,142 @@
     "values": {
       "if abs(y-sin(x))<=1e-5 then 1 else 0": 1
     }
+  },
+  {
+    "name" : "cos_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -191.6104822,
+    "values": {
+      "if abs(y-cos(x))<=1e-5 then 1 else 0": 1,
+      "if round(x)==194 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "cos_01 check_pl_approx_cos",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_cos"],
+    "options": { "ANYSOLVER_options": "acc:cos=1" },
+    "objective": -191.6104822,
+    "values": {
+      "if abs(y-cos(x))<=1e-5 then 1 else 0": 1,
+      "if round(x)==194 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "tan_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -0.6388867014,
+    "values": {
+      "if abs(y-tan(x))<=1e-4 then 1 else 0": 1,
+      "x": -4.0950434673490523
+    }
+  },
+  {
+    "name" : "tan_01 check_pl_approx_tan",
+    "tags" : ["continuous", "nonlinear", "check_pl_approx_tan"],
+    "objective": -0.6388867014,
+    "options": { "ANYSOLVER_options": "acc:tan=1" },
+    "values": {
+      "if abs(y-tan(x))<=1e-4 then 1 else 0": 1,
+      "x": -4.0950434673490523
+    }
+  },
+  {
+    "name" : "pow_01_pow4",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -1.8301448602249
+  },
+  {
+    "name" : "pow_02_pow4",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -1.84178519861971
+  },
+  {
+    "name" : "pow_03_pow5",
+    "tags" : ["continuous", "nonlinear"],
+    "options": { "gurobi_options": "nonconvex=2" },
+    "comment_options": "For quadratic solvers, pow(x, int>=0) is converted into quadratics",
+    "objective": -32.01
+  },
+  {
+    "name" : "pow_04_pow1.35",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  -1.58302654955303
+  },
+  {
+    "name" : "pow_05_pow_minus0.35",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  3.75328523837863
+  },
+  {
+    "name" : "asin_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  6.86830935803409,
+    "values": {
+      "if abs(y-asin(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "acos_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  -2.40109419283669,
+    "values": {
+      "if abs(y-acos(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "atan_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  7.2432309147143,
+    "values": {
+      "if abs(y-atan(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "sinh_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": 6.88087328277653,
+    "values": {
+      "if abs(y-sinh(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "cosh_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  17.3489673254754,
+    "values": {
+      "if abs(y-cosh(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "tanh_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": 7.2556470284742,
+    "values": {
+      "if abs(y-tanh(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "asinh_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": 7.1191696450538,
+    "values": {
+      "if abs(y-asinh(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "acosh_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective": -12.9669563023371,
+    "values": {
+      "if abs(y-acosh(x))<=1e-4 then 1 else 0": 1
+    }
+  },
+  {
+    "name" : "atanh_01",
+    "tags" : ["continuous", "nonlinear"],
+    "objective":  1.30327359,
+    "values": {
+      "if abs(y-atanh(x))<=1e-4 then 1 else 0": 1
+    }
   }
 ]

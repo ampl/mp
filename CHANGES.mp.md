@@ -1,16 +1,22 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
-## unreleased
-- *Bug fixes*
+## 20220928
+- *Piecewise-linear approximation of univariate nonlinear functions*
+    Approximation of exp, a^x, x^a, log, log10, trigonometric and hyperbolic
+    functions.
 
+- *Default value of big-M*
+    For linearization of logical constraints on variables without finite bounds,
+    option cvt:mip:bigM can provide a default big-M bound.
+    
 
 ## 20220725
 - *Solution file export* 
     On Windows now creates files with LF only to avoid issues when exporting
-    suffixes to AMPL
+    suffixes to AMPL.
 
-    Multiple solutions export file format amended
+    Multiple solutions export file format amended.
 
 
 ## 20220720

@@ -268,6 +268,13 @@ public: // for ConstraintKeeper
     return false;
   }
 
+  /// Check whether ModelAPI accepts and recommends the constraint
+  template <class Constraint>
+  bool ModelAPIAcceptsAndRecommends(const Constraint* pcon) {
+    return ConstraintAcceptanceLevel::Recommended ==
+        GetModelAPI().AcceptanceLevel(pcon);
+  }
+
   /// Generic adapter for old non-bridged Convert() methods
   ///
   /// New way is to use the \a i parameter for bridging
@@ -284,7 +291,7 @@ public: // for ConstraintKeeper
             Constraint::GetTypeName() +
             "' is neither accepted by '" +
             ModelAPI::GetTypeName() +
-            "', not is conversion implemented");
+            "', nor is conversion implemented");
   }
 
   //////////////////////////// SOME SPECIFIC CONSTRAINT CONVERTERS
@@ -798,6 +805,15 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(SinConstraint, "acc:sin")
   STORE_CONSTRAINT_TYPE__WITH_MAP(CosConstraint, "acc:cos")
   STORE_CONSTRAINT_TYPE__WITH_MAP(TanConstraint, "acc:tan")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AsinConstraint, "acc:asin")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AcosConstraint, "acc:acos")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AtanConstraint, "acc:atan")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(SinhConstraint, "acc:sinh")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(CoshConstraint, "acc:cosh")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(TanhConstraint, "acc:tanh")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AsinhConstraint, "acc:asinh")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AcoshConstraint, "acc:acosh")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(AtanhConstraint, "acc:atanh")
 
   /// No maps for static constraints
   STORE_CONSTRAINT_TYPE__NO_MAP(

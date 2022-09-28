@@ -1,7 +1,7 @@
 /** Test expression map as well as if-then */
 
-var x;
-var y;
+var x >=-100, <= 200;
+var y >=-300, <= 460;
 
 var b: binary;
 

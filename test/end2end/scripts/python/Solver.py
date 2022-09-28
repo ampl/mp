@@ -591,10 +591,14 @@ class GurobiDirectSolver(MPDirectSolver):
         stags = {
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.plinear,
-                 ModelTags.quadratic, ModelTags.quadraticnonconvex,
+                 ModelTags.quadratic,
+                 ModelTags.quadratic_obj,
+                 ModelTags.quadraticnonconvex,
                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
 
-                 ModelTags.unbdd, ModelTags.return_mipgap,
+                 ModelTags.unbdd,
+                 ModelTags.qcpdual,
+                 ModelTags.return_mipgap,
                  ModelTags.sos, ModelTags.presosenc, ModelTags.sens,
                  ModelTags.lazy_user_cuts, ModelTags.funcpieces,
 
@@ -677,7 +681,7 @@ class HighsSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic}
+                 ModelTags.quadratic_obj}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
@@ -691,7 +695,7 @@ class COPTSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic}
+                 ModelTags.quadratic, ModelTags.quadratic_obj}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 

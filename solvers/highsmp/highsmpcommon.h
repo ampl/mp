@@ -49,9 +49,6 @@ protected:
   int getIntAttr(const char* name) const;
   double getDblAttr(const char* name) const;
 
-  bool isMIP_ = false;
-  bool isMIP() const { return isMIP_; }
-  void isMIP(bool value) { isMIP_ = value; };
   int NumLinCons() const;
   int NumVars() const;
   int NumObjs() const;
@@ -71,7 +68,7 @@ protected:
     throw std::runtime_error( \
       fmt::format("  Call failed: '{}' with code {}", #call, e )); \
   if (e == kHighsStatusWarning) \
-    std::printf( fmt::format("  MOSEK Warning: Call: '{}', warning code {}", #call, e ).c_str()); \
+    std::printf( fmt::format("  WARNING for call: '{}', warning code {}\n", #call, e ).c_str()); \
 } while (0)
 
 } // namespace mp

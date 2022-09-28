@@ -37,7 +37,7 @@ protected:
   int size_d() const { return int(C_.at(1).size()-2); }
   /// Extend matrix up to given v (so that d<v)
   void ExtendTo(int v) {
-    while (size_d()<v-1)
+    while (size_d()<v)
       Extend_1Duplication();
   }
   /// One binary extension

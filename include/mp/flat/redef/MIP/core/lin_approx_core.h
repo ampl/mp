@@ -40,7 +40,7 @@ struct PLApproxParams {
   /////////// OUTPUT: RESULT OF APPROXIMATION /////////////
   FuncGraphDomain grDomOut;    // can be tighter than grDom
   PLPoints plPoints; // the pl function
-  bool fUsePeriod;  // whether the approximation is periodic
+  bool fUsePeriod{false};  // whether the approximation is periodic
   double periodLength;        // the length of the period interval
   Range periodicFactorRange; // range for the n of x = n*periodLength + rmd
   Range periodRemainderRange; // range for the rmd

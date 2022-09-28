@@ -1,11 +1,25 @@
 [
   {
+    "name" : "ellipse_min",
+    "objective" : -3.16227757,
+    "tags" : ["quadratic"]
+  },
+  {
+    "name" : "ellipse_max",
+    "objective" : 1.4928017587112605,
+    "tags" : ["quadratic"]
+  },
+  {
+    "name" : "ellipse_max_02",
+    "objective" : 0.5312499452945747,
+    "tags" : ["quadratic"]
+  },
+  {
     "name" : "ellipse_min qcpdual=1",
     "objective" : -3.16227757,
-    "tags" : ["quadratic"],
+    "tags" : ["quadratic", "qcpdual"],
     "options": {
-      "gurobi_options": "qcpdual=1",
-      "gurobidirect_options": "qcpdual=1"
+      "ANYSOLVER_options": "qcpdual=1"
     },
     "values": {
       "_con[1]": -1.5807796451888148
@@ -14,10 +28,9 @@
   {
     "name" : "ellipse_max qcpdual=1",
     "objective" : 1.4928017587112605,
-    "tags" : ["quadratic"],
+    "tags" : ["quadratic", "qcpdual"],
     "options": {
-      "gurobi_options": "qcpdual=1",
-      "gurobidirect_options": "qcpdual=1"
+      "ANYSOLVER_options": "qcpdual=1"
     },
     "values": {
       "_con[1]": 0.26111523051780217,
@@ -27,10 +40,9 @@
   {
     "name" : "ellipse_max_02 qcpdual=1",
     "objective" : 0.5312499452945747,
-    "tags" : ["quadratic"],
+    "tags" : ["quadratic", "qcpdual"],
     "options": {
-      "gurobi_options": "qcpdual=1",
-      "gurobidirect_options": "qcpdual=1"
+      "ANYSOLVER_options": "qcpdual=1"
     },
     "values": {
       "_con[3]": 1.000067023601818
@@ -63,7 +75,7 @@
   {
     "name" : "quadratic_obj",
     "objective" : -0.0007554896303344439,
-    "tags" : ["quadratic"],
+    "tags" : ["quadratic_obj"],
     "options": {
       "highs_options": "timelim=3",
       "comment_highs": "takes too long as of Sept 2022"

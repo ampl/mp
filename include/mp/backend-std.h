@@ -102,7 +102,7 @@ public:
   /// Placeholder for solution getter (postsolved, final solution)
   virtual Solution GetSolution() = 0;
   /// Placeholder for objective values getter (postsolved, final solution)
-  /// Needed only if we don't want the whole solution,
+  /// Used only if we don't want the solution values,
   /// otherwise GetSolution() provides this
   virtual ArrayRef<double> GetObjectiveValues() = 0;
 

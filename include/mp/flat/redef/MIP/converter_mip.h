@@ -107,6 +107,28 @@ public:
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_LogA)
   /// Sin
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Sin)
+  /// Cos
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Cos)
+  /// Tan
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Tan)
+  /// ASin
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Asin)
+  /// ACos
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Acos)
+  /// ATan
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Atan)
+  /// Sinh
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Sinh)
+  /// Cosh
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Cosh)
+  /// Tanh
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Tanh)
+  /// ASinh
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Asinh)
+  /// ACosh
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Acosh)
+  /// ATanh
+  INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Atanh)
 
 
   /// Strict comparison tolerance.
@@ -266,12 +288,14 @@ public:
     InitOwnOptions();
   }
 
-protected:
+public:
   double cmpEpsContinuous() const { return options_.cmpEps_; }
+  double bigMDefault() const { return options_.bigM_default_; }
 
 private:
   struct Options {
-    double cmpEps_ = 1e-4;
+    double cmpEps_ { 1e-4 };
+    double bigM_default_ { -1 };
   };
   Options options_;
 
@@ -280,6 +304,11 @@ private:
                        "Tolerance for strict comparison of continuous variables for MIP. "
                        "Ensure larger than the solver's feasibility tolerance.",
                        options_.cmpEps_, 0.0, 1e100);
+    this->GetEnv().AddOption("cvt:mip:bigM cvt:mip:bigm cvt:bigM cvt:bigm",
+                       "Default value of big-M for linearization of logical constraints. "
+                       "Not used by default. Use with care (prefer tight bounds). "
+                       "Should be smaller than (1.0 / [integrality tolerance])",
+                       options_.bigM_default_, -1.0, 1e100);
   }
 };
 
