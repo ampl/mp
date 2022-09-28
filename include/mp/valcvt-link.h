@@ -110,7 +110,11 @@ struct LinkRange {
 /// A specific link: each entry just copies a range of values.
 /// Useful to transfer values between NL and internal model,
 /// internal model and solver, and in conversions preserving
-/// all values
+/// all values.
+/// Feature: copies values without comparing with existing values,
+/// in contrast to other links using Set() method.
+/// This is useful for objectives which use both CopyLink
+/// and One2ManyLink's.
 class CopyLink : public BasicLink {
 public:
   /// Constructor

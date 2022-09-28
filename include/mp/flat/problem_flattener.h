@@ -163,16 +163,17 @@ protected:
 
   /// Convert an objective
   void Convert(typename ProblemType::MutObjective obj) {
+    auto obj_src =              // source value node for this obj
+        GetValuePresolver().GetSourceNodes().GetObjValues()().Add();
     GetCopyLink().AddEntry(
           {
-            GetValuePresolver().GetSourceNodes().GetObjValues()().Add(),
+            obj_src,
             GetValuePresolver().GetTargetNodes().GetObjValues()().Add() });
-    /// Need a special link. Obj2ManyLink?
-//    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
-//      GetFlatCvt(),
-//      GetValuePresolver().GetSourceNodes().GetObjValues()().
-//          Add()           // Just add next node
-//    };
+    /// After the CopyLink, add One2ManyLink for converted expressions.
+    /// When postsolving, CopyLink is executed last and copies obj values.
+    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
+      GetFlatCvt(), obj_src
+    };
     auto le = ToLinTerms(obj.linear_expr());
     NumericExpr e = obj.nonlinear_expr();
     EExpr eexpr;
