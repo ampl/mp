@@ -163,11 +163,16 @@ protected:
 
   /// Convert an objective
   void Convert(typename ProblemType::MutObjective obj) {
-    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
-      GetFlatCvt(),
-      GetValuePresolver().GetSourceNodes().GetObjValues()().
-          Add()           // Just add next node
-    };
+    GetCopyLink().AddEntry(
+          {
+            GetValuePresolver().GetSourceNodes().GetObjValues()().Add(),
+            GetValuePresolver().GetTargetNodes().GetObjValues()().Add() });
+    /// Need a special link. Obj2ManyLink?
+//    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
+//      GetFlatCvt(),
+//      GetValuePresolver().GetSourceNodes().GetObjValues()().
+//          Add()           // Just add next node
+//    };
     auto le = ToLinTerms(obj.linear_expr());
     NumericExpr e = obj.nonlinear_expr();
     EExpr eexpr;
