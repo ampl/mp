@@ -75,7 +75,7 @@
   {
     "name" : "quadratic_obj",
     "objective" : -0.0007554896303344439,
-    "tags" : ["quadratic"],
+    "tags" : ["quadratic_obj"],
     "options": {
       "highs_options": "timelim=3",
       "comment_highs": "takes too long as of Sept 2022"

@@ -8,7 +8,8 @@ class ModelTags(enum.Enum):
 
     ## Modeling features
     linear = 1
-    quadratic = 2
+    quadratic = 2             # obj and con
+    quadratic_obj = 2.5
     quadraticnonconvex = 3
     socp = 4
     nonlinear = 5
