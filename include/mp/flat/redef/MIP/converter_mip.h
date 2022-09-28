@@ -306,7 +306,8 @@ private:
                        options_.cmpEps_, 0.0, 1e100);
     this->GetEnv().AddOption("cvt:mip:bigM cvt:mip:bigm cvt:bigM cvt:bigm",
                        "Default value of big-M for linearization of logical constraints. "
-                       "Not used by default. Use with care (prefer tight bounds).",
+                       "Not used by default. Use with care (prefer tight bounds). "
+                       "Should be smaller than (1.0 / [integrality tolerance])",
                        options_.bigM_default_, -1.0, 1e100);
   }
 };
