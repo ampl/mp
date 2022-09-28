@@ -179,6 +179,7 @@ protected:
     }
   }
 
+
 private:
   CollectionOfEntries entries_;
 };

@@ -594,7 +594,9 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.quadratic, ModelTags.quadraticnonconvex,
                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
 
-                 ModelTags.unbdd, ModelTags.return_mipgap,
+                 ModelTags.unbdd,
+                 ModelTags.qcpdual,
+                 ModelTags.return_mipgap,
                  ModelTags.sos, ModelTags.presosenc, ModelTags.sens,
                  ModelTags.lazy_user_cuts, ModelTags.funcpieces,
 

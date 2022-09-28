@@ -2,7 +2,7 @@
 ## pow_01_pow4.mod
 #########################################
 
-var x >= -1e6, <= 1e7;
+var x >= -10, <= 11;     ## Reduce range for COPT quadratics
 var y;
 
 s.t. Pow01: y >= x^4;

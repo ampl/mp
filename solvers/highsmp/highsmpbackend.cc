@@ -63,10 +63,6 @@ std::string HighsBackend::GetSolverVersion() {
 }
 
 
-bool HighsBackend::IsMIP() const {
-  return isMIP(); // from backend
-}
-
 bool HighsBackend::IsQCP() const {
   return false; 
 }
@@ -79,7 +75,6 @@ Solution HighsBackend::GetSolution() {
 
 ArrayRef<double> HighsBackend::PrimalSolution() {
   int num_vars = NumVars();
-  int error;
   std::vector<double> x(num_vars);
   Highs_getSolution(lp(), x.data(), NULL, NULL, NULL);
   return x;
@@ -92,8 +87,7 @@ pre::ValueMapDbl HighsBackend::DualSolution() {
 ArrayRef<double> HighsBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  Highs_getSolution(lp(), NULL, NULL, pi.data(), NULL);
-  int error = 0;
+  int error = Highs_getSolution(lp(), NULL, NULL, pi.data(), NULL);
   if (error)
     pi.clear();
   return pi;

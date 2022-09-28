@@ -32,6 +32,7 @@ class ModelTags(enum.Enum):
 
     ## Driver features
     unbdd = 10001
+    qcpdual = 11001
     return_mipgap = 10002
     sens = 10003
     lazy_user_cuts = 10004

@@ -385,7 +385,11 @@ protected:
   int basis() const
   { return IMPL_HAS_STD_FEATURE(BASIS) ? GetMIPOptions().basis_ : 0; }
   bool need_basis_in() const { return 1 & basis(); }
-  bool need_basis_out() const { return 2 & basis(); }
+  bool need_basis_out() const {
+    return IsMIP() ?
+          (need_fixed_MIP()) :          // assume the solver did it
+          (2 & basis());
+  }
 
   int warmstart() const
   { return IMPL_HAS_STD_FEATURE(WARMSTART) ? GetMIPOptions().warmstart_ : 0; }
