@@ -269,9 +269,9 @@ When ``pl_linearize`` is set to 0, piecewise-linear expressions are represented 
 in the form of expression trees. The MP-based interface transforms them to use a solver's native
 methods for piecewise-linear functions (Gurobi, COPT), and linearizes them for other solvers (HiGHS).
 
-When a piecewise-linear function is linearized vs handled natively by the solver,
-numerical accuracy becomes more important.
-It is recommended that the argument and result variables are explicitly bounded between +/-1e+4.
+When a piecewise-linear function is linearized by the MP interface (rather than being handled natively by the solver),
+numerical accuracy becomes a concern. To promote numerical stability, it is recommended that the argument and result variables 
+be explicitly bounded within [-1e+4,+1e-4].
 
 
 .. code-block:: ampl
