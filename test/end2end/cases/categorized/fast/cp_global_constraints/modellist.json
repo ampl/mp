@@ -54,7 +54,7 @@
     "objective" : 235625
   },
   {
-    "name" : "x-multmip3 [count, if] cmpEps",
+    "name" : "x-multmip3 [count, if] cmpEps=0.01",
     "files": ["x-multmip3.mod", "multmip3.dat"],
     "tags" : ["logical"],
     "options": { "ANYSOLVER_options": "cvt:mip:eps=1e-2" },

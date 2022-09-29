@@ -1,8 +1,8 @@
 [
   {
-    "name" : "dietobj",
+    "name" : "dietobj default",
     "objective" : 74.273820,
-    "tags" : ["linear", "continuous", "multiobj"],
+    "tags" : ["linear", "continuous"],
     "files" : ["dietobj.mod", "dietobj.dat"]
   },
   {

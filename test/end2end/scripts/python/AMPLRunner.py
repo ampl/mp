@@ -304,8 +304,9 @@ class AMPLRunner(object):
     def _assertAndRecord(self, expval, val, msg):
         b1 = isinstance(expval, (int, float))
         b2 = isinstance(val, (int, float))
-        uneq = not math.isclose(expval, val, rel_tol=1e-5) if \
-            b1 and b2 else expval != val
+        uneq = not \
+            math.isclose(expval, val, rel_tol=1e-5, abs_tol=1e-5) \
+            if b1 and b2 else expval != val
         if uneq:
             self.stats["eval_fail_msg"] = msg + \
                 ": value " + str(val) + \

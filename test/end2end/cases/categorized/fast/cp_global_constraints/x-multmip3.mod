@@ -16,7 +16,16 @@ param vcost {ORIG,DEST,PROD} >= 0; # variable shipment cost on routes
 var Trans {ORIG,DEST,PROD} >= 0;   # units to be shipped
 
 param fcost {ORIG,DEST} >= 0;      # fixed cost for using a route
-var Ship {i in ORIG, j in DEST} = sum {p in PROD} Trans[i,j,p];
+
+## Numerically unstable
+## (bounds on Ship hard to deduce from later constraints):
+## var Ship {i in ORIG, j in DEST} = sum {p in PROD} Trans[i,j,p];
+
+## Define with bounds
+var Ship {i in ORIG, j in DEST} >= 0, <= limit[i,j];
+
+s.t. InitShip {i in ORIG, j in DEST}:
+   Ship[i,j] = sum {p in PROD} Trans[i,j,p];
 
 minimize Total_Cost:
    sum {i in ORIG, j in DEST, p in PROD} vcost[i,j,p] * Trans[i,j,p]
