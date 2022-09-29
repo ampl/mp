@@ -1,5 +1,3 @@
-.. _developerDocumentation:
-
 Developer documentation
 -----------------------
 

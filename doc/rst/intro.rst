@@ -29,7 +29,7 @@ An included `CMake build script`__ can be used to build the MP library,
 solver interfaces and function libraries on a wide range of platforms.
 You can download CMake for free from http://www.cmake.org/download/.
 
-__ https://github.com/ampl/mp/tree/master/CMakeLists.txt
+__ https://github.com/ampl/mp/tree/develop/CMakeLists.txt
 
 CMake workflow
 ``````````````
