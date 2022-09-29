@@ -325,6 +325,11 @@ public:
       ReportSuffix(sufAbsMipGapObj, dbl);
       ReportSuffix(sufAbsMipGapProb, dbl);
     }
+    if (!(GetMIPOptions().returnMipGap_ & 4)) {
+      double absMIPGap = MP_DISPATCH(MIPGapAbs());
+      if(absMIPGap > 0. && absMIPGap < MP_DISPATCH(Infinity()))
+        AddToSolverMessage(fmt::format("absmipgap={}, relmipgap={}", absMIPGap, MP_DISPATCH(MIPGap())));
+    }
   }
 
   virtual void ReportBestDualBound() {
