@@ -18,15 +18,15 @@ See the :ref:`modeling-guide`.
 
 There are several experimental implementations:
 
-- `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobi>`_
+- `x-gurobi <https://github.com/ampl/mp/tree/develop/solvers/gurobi>`_
   (available in the AMPL distribution bundle)
 
-- `x-cplex <https://github.com/ampl/mp/tree/master/solvers/cplexdirect>`_
+- `x-cplex <https://github.com/ampl/mp/tree/develop/solvers/cplexmp>`_
 
-- `copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_
+- `copt <https://github.com/ampl/mp/tree/develop/solvers/copt>`_
   (available in the AMPL distribution bundle)
 
-- `highs <https://github.com/ampl/mp/tree/master/solvers/highsdirect>`_
+- `highs <https://github.com/ampl/mp/tree/develop/solvers/highsmp>`_
   (see the `HiGHS website <https://highs.dev/>`_)
 
 
@@ -44,25 +44,25 @@ has the following C++ drivers of this kind, all of which support
 
 __ http://ampl.com/resources/logic-and-constraint-programming-extensions/
 
-- `Ilogcp <https://github.com/ampl/mp/tree/master/solvers/ilogcp>`_:
+- `Ilogcp <https://github.com/ampl/mp/tree/develop/solvers/ilogcp>`_:
   IBM ILOG CPLEX and CPLEX CP Optimizer
 
-- `Gecode <https://github.com/ampl/mp/tree/master/solvers/gecode>`_
+- `Gecode <https://github.com/ampl/mp/tree/develop/solvers/gecode>`_
 
-- `JaCoP <https://github.com/ampl/mp/tree/master/solvers/jacop>`_
+- `JaCoP <https://github.com/ampl/mp/tree/develop/solvers/jacop>`_
 
-- `LocalSolver <https://github.com/ampl/mp/tree/master/solvers/localsolver>`_
+- `LocalSolver <https://github.com/ampl/mp/tree/develop/solvers/localsolver>`_
 
 
 Specialized drivers
 -------------------
 
-- `SOCP solver <https://github.com/ampl/mp/tree/master/solvers/cplex>`_
+- `SOCP solver <https://github.com/ampl/mp/tree/develop/solvers/cplex>`_
   uses IBM ILOG CPLEX to solve problems convertable to SOCP form.
 
-- `SSD solver <https://github.com/ampl/mp/tree/master/solvers/ssdsolver>`_
+- `SSD solver <https://github.com/ampl/mp/tree/develop/solvers/ssdsolver>`_
   is a solver for problems with second-order stochastic dominance constraints.
 
-- `SMPSWriter <https://github.com/ampl/mp/tree/master/solvers/smpswriter>`_,
+- `SMPSWriter <https://github.com/ampl/mp/tree/develop/solvers/smpswriter>`_,
   a converter from deterministic equivalent of a two-stage stochastic
   programming (SP) problem written in AMPL to an SP problem in SMPS format.

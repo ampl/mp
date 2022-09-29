@@ -218,7 +218,7 @@ Basic :ref:`Model/solution I/O <NL-SOL-files>` and
 :ref:`model managers <model-manager>` rely on a `mp::ProblemBuilder` concept.
 
 * A custom builder can pass the NL model directly into the solver. A few examples are in
-  `nl-example.cc <https://github.com/ampl/mp/blob/master/src/nl-example.cc>`_, `mp::Problem`,
+  `nl-example.cc <https://github.com/ampl/mp/blob/develop/src/nl-example.cc>`_, `mp::Problem`,
   `SCIP 8.0 NL file reader <https://scipopt.org/>`_.
 
 * Alternatively, standard classes `mp::Problem` and `mp::ColProblem` provide intermediate
@@ -411,7 +411,7 @@ C++ ASL adapter
 ---------------
 
 An efficient type-safe `C++ adapter for the traditional ASL library
-<https://github.com/ampl/mp/tree/master/src/asl>`_ for
+<https://github.com/ampl/mp/tree/develop/src/asl>`_ for
 connecting solvers to AMPL and other systems. ASL has many additional functions,
 such as writing NL files and automatic differentiation.
 

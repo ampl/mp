@@ -7,11 +7,11 @@ for MP-based AMPL Solvers
 
 AMPL's newly extended C++ solver interface library, MP, is publicly available in the `ampl/mp <https://github.com/ampl/mp>`_ repository. Solver interfaces built with MP are able to handle a significantly expanded range of model expressions. Currently available MP-based solvers include:
 
-- `x-gurobi <https://github.com/ampl/mp/tree/master/solvers/gurobi>`_, an enhanced interface to the `Gurobi <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_ solver
+- `x-gurobi <https://github.com/ampl/mp/tree/develop/solvers/gurobi>`_, an enhanced interface to the `Gurobi <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_ solver
 
-- `copt <https://github.com/ampl/mp/tree/master/solvers/copt>`_, an interface to `Cardinal Optimizer <https://ampl.com/products/solvers/solvers-we-sell/copt/>`_
+- `copt <https://github.com/ampl/mp/tree/develop/solvers/copt>`_, an interface to `Cardinal Optimizer <https://ampl.com/products/solvers/solvers-we-sell/copt/>`_
 
-- `highs <https://github.com/ampl/mp/tree/master/solvers/highsdirect>`_, an interface to the open-source `HiGHS <https://highs.dev/>`_ solver
+- `highs <https://github.com/ampl/mp/tree/develop/solvers/highsmp>`_, an interface to the open-source `HiGHS solver <https://highs.dev/>`_ solver
 
 Binaries for these solvers can be downloaded, in distribution bundles and individually, through the `AMPL Portal <https://portal.ampl.com>`_. More solvers will be added.
 
@@ -68,13 +68,15 @@ Indexing over sets is a common feature of AMPL expressions. The examples below u
 - { indexing }
     This is the regular sort of AMPL indexing expression, as used in defining numerous AMPL entities such as parameters, variables, constraints, and summations. It is described in the `AMPL book <https://ampl.com/resources/the-ampl-book/>`_ beginning with `Section 5.5 Indexing expressions <https://ampl.com/BOOK/CHAPTERS/08-sets1.pdf#page=7>`_ and continuing with `Chapter 6. Compound Sets and Indexing <https://ampl.com/BOOK/CHAPTERS/09-sets2.pdf>`_. Followed by an *expr* or *constr*, an indexing expression specifies a list of expressions or constraints to which an operator applies; for example,
     ::
+
         max {n in NODE} weight[t,n] * Use[n]
         forall {p in PROD} Trans[i,j,p] = 0
  
 - ( expr-list )
     This is a parenthesized, comma-separated list of entries that represent numerical values. Each entry may have the form *expr* or *{indexing} expr*, or recursively *{indexing} ( expr-list )*. For example,
     ::
-        max (cost["BRO"],cost["CAU"],cost["BRU")
+
+        max (cost["BRO"],cost["CAU"],cost["BRU"])
         max ({f in FOOD} cost[f], 10.0)
         max ({n in NUTR} (lim_nutr[n], {f in FOOD} amt[n,f])) 
 

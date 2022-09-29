@@ -114,7 +114,8 @@ This option controls whether to use or return a basis.
        * **1** - Use incoming basis (if provided)
        * **2** - Return final basis
        * **3** - Both (1 + 2, default)
-  * - **Example**
+
+   * - **Example**
      - Use :ref:`this model <multiObjectiveDiet>`
 
        Execute::
@@ -149,7 +150,7 @@ This option controls whether to use or return a basis.
           Solved in 0 iterations and 0.00 seconds (0.00 work units)
           
 
-.. _feasibiliyrelaxation:
+.. _feasibilityrelaxation:
 
 Feasibility Relaxation
 ----------------------
@@ -458,7 +459,7 @@ if crossover is not applied.
        * **1** - Report kappa in solve_message
        * **2** - Return kappa in the solver-defined suffix ``kappa``
    * - **Example**
-   - Use :ref:`multiObjectiveDiet`
+     - Use :ref:`multiObjectiveDiet`
 
        Solve the model and report kappa:
 
