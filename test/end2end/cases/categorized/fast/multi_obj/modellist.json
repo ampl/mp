@@ -47,7 +47,7 @@
   },
   {
     "name" : "obj_suf_01 multiobj=0",
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "multiobj"],
     "options": { "ANYSOLVER_options": "multiobj=0" },
     "values": {
       "_sobj[1]": 1

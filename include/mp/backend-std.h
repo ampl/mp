@@ -723,7 +723,7 @@ protected:
       AddStoredOption("alg:kappa kappa basis_cond",
         "Whether to return the estimated condition number (kappa) of "
         "the optimal basis (default 0): sum of 1 = report kappa in the result message; "
-        "2 = return kappa in the solver-defined suffix kappa on the objective and "
+        "2 = return kappa in the solver-defined suffix .kappa on the objective and "
         "problem. The request is ignored when there is no optimal basis.",
         storedOptions_.exportKappa_);
 

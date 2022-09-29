@@ -110,10 +110,12 @@ protected:
     GetMM().ReportSuffix(suf, values);
   }
 
+  /// Report single value for all elements of the suffix
   template <class N>
   void ReportSingleSuffix(const SuffixDef<N>& suf,
                           N value) {
-    std::vector<N> values(1, value);
+    std::vector<N> values(
+          GetMM().GetSuffixSize(suf.kind()), value);
     GetMM().ReportSuffix(suf, values);
   }
 
