@@ -3,6 +3,7 @@ Models
 
 .. highlight:: ampl
 
+
 .. _multiObjectiveDiet:
 
 Multi objective diet model
@@ -17,6 +18,7 @@ Multi objective diet model
 
 .. literalinclude:: models/dietobj.dat
 
+
 .. _iisModel:
 
 Infeasible model
@@ -26,22 +28,24 @@ Infeasible model
 
 .. literalinclude:: models/iis.mod
 
+
+.. _infeasibleModel:
+
+Another infeasible model
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Model** :download:`(download here) <models/infeasible.mod>`.
+
+.. literalinclude:: models/infeasible.mod
+
+
 .. _nQueensModel:
 
 nQueens model
 ^^^^^^^^^^^^^
 
-**Model** : download`(download here) <models/nqueens.mod>`.
+**Model** : :download:`(download here) <models/nqueens.mod>`.
 
 .. literalinclude:: models/nqueens.mod
-
-.. _infeasibleModel:
-
-Infeasible model
-^^^^^^^^^^^^^^^^
-
-**Model** :download:`(download here) <models/infeasible.mod>`.
-
-.. literalinclude:: models/infeasible.mod
 
 
