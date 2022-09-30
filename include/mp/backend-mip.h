@@ -149,8 +149,10 @@ public:
   **/
   DEFINE_STD_FEATURE( RETURN_MIP_GAP )
   ALLOW_STD_FEATURE( RETURN_MIP_GAP, false )
-  virtual double MIPGap() { return MP_DISPATCH( Infinity() ); }
-  virtual double MIPGapAbs() { return MP_DISPATCH( Infinity() ); }
+  /// Should return AMPLInf() if not available
+  virtual double MIPGap() { return MP_DISPATCH( AMPLInf() ); }
+  /// Should return AMPLInf() if not available
+  virtual double MIPGapAbs() { return MP_DISPATCH( AMPLInf() ); }
   /**
   * Get MIP dual bound
   **/
@@ -328,7 +330,9 @@ public:
     if (!(GetMIPOptions().returnMipGap_ & 4)) {
       double absMIPGap = MP_DISPATCH(MIPGapAbs());
       if(absMIPGap > 0. && absMIPGap < MP_DISPATCH(Infinity()))
-        AddToSolverMessage(fmt::format("absmipgap={}, relmipgap={}", absMIPGap, MP_DISPATCH(MIPGap())));
+        BaseBackend::AddToSolverMessage(
+              fmt::format("absmipgap={}, relmipgap={}",
+                          absMIPGap, MP_DISPATCH(MIPGap())));
     }
   }
 

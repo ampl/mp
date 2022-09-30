@@ -99,7 +99,9 @@ public:
   * Get MIP Gap
   **/
   ALLOW_STD_FEATURE( RETURN_MIP_GAP, true )
+  /// Should return +inf if not available
   double MIPGap() override;
+  /// Should return +inf if not available
   double MIPGapAbs() override;
   /**
   * Get MIP dual bound
