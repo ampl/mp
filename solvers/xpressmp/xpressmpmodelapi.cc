@@ -33,7 +33,7 @@ void XpressmpModelAPI::AddVariables(const VarArrayDef& v) {
     if (v.ptype()[i] == var::Type::INTEGER)
       intIndices.push_back(i);
   get_other()->numIntVars(intIndices.size());
-  if (numIntVars() > 0)
+  if (get_other()->numIntVars() > 0)
   {
     std::vector<char> types(intIndices.size(), 'I');
     XPRESSMP_CCALL(XPRSchgcoltype(lp(), intIndices.size(),

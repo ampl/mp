@@ -21,6 +21,40 @@ declare that the solver driver supports a feature and how to implement it.
 General
 =======
 
+.. _outlev:
+
+Output level
+------------
+
+All solvers print some information during the solution process. For the sake of clarity,
+when using the solvers from AMPL the information is mostly ommitted, and only the ``solver message`` is
+displayed, which describes the outcome of the optimization process.
+The amount of information printed is controlled by the option ``outlev``.
+
+In case of repeated executions it is often desiderable to hide all solver output. The solver message 
+can be suppressed by setting the option ``solver_msg`` to 0. The solver banner is displayed anyway; 
+to suppress it a redirection is needed::
+
+  option solver_msg 0;
+  solve > NUL;
+
+
+.. list-table::
+   :header-rows: 0
+
+   * - **Option**
+     - ``outlev``
+   * - **Applicability**
+     - All models
+   * - **Input**
+     - None
+   * - **Output**
+     - None
+   * - **Values**
+     - Values:
+
+       * **0** - No (default)
+       * **1** - Yes, print detailed execution log
 
 .. _warm-start:
 
