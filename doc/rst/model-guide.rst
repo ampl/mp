@@ -2,6 +2,7 @@
 
 Modeling Guide 
 =========================
+
 for MP-based AMPL Solvers
 -------------------------
 
@@ -25,7 +26,7 @@ The expanded MP solver interface library offers new support for the following ca
 - Logical operators: ``or``, ``and``, ``not``; ``exists``, ``forall``
 - Piecewise linear functions: ``abs``; ``min``, ``max``; ``<<breakpoints; slopes>>``
 - Counting operators: ``count``; ``atmost``, ``atleast``, ``exactly``; ``numberof``
-- Comparison operators: ``>(=)``, ``<(=)``, ``!=``; ``alldiff``
+- Relational and comparison operators: ``>(=)``, ``<(=)``, ``(!)=``; ``alldiff``
 - Complementarity operator: ``complements``
 - Nonlinear operators and functions: ``*``, ``/``, ``^``; ``exp``, ``log``;
   ``sin``, ``cos``, ``tan``; ``sinh``, ``cosh``, ``tanh``
@@ -38,6 +39,8 @@ Details and examples are given in the *Expressions supported* section below. See
 
 The slides from our presentation on `Advances in Model-Based Optimization <https://ampl.com/MEETINGS/TALKS/2022_07_Bethlehem_Fourer.pdf>`_ provide overview of the MP interface library in the context of AMPL applications, including comments on implementation and efficiency issues. 
 
+
+.. _expressions_supported:
 
 Expressions supported
 ---------------------
@@ -52,7 +55,10 @@ In the syntax summaries below, there are two main kinds of entities, representin
      represents any expression that evaluates to a number. Unless otherwise indicated, it may contain variables. It may be built from familiar arithmetic operators, but also from other operators or functions that return numerical values.
 
 - **constr** 
-     represents a constraint of the model, which may evaluate to true or false depending on the values of variables that it contains. It may be built from the familiar relational operators ``>=``, ``<=``, and ``=``, but also from other operators such as ``or`` and ``alldiff`` that create constraints.
+     represents a constraint of the model, which may evaluate to true or false
+     depending on the values of variables that it contains. It may be built from the
+     familiar relational operators ``>(=)``, ``<(=)``, and ``=``, but also from other
+     operators such as ``or`` and ``alldiff`` that create constraints.
 
 The return value of an operator or function is also one of the above, as indicated by *expr-valued* or *constr-valued* at the beginning of each syntax summary. Thus it is possible to build up complex combinations of operators and functions of various kinds; for example,
 
@@ -269,9 +275,10 @@ When ``pl_linearize`` is set to 0, piecewise-linear expressions are represented 
 in the form of expression trees. The MP-based interface transforms them to use a solver's native
 methods for piecewise-linear functions (Gurobi, COPT), and linearizes them for other solvers (HiGHS).
 
-When a piecewise-linear function is linearized by the MP interface (rather than being handled natively by the solver),
-numerical accuracy becomes a concern. To promote numerical stability, it is recommended that the argument and result variables 
-be explicitly bounded within [-1e+4,+1e-4].
+When a piecewise-linear function is linearized (rather than being handled natively by the solver),
+numerical accuracy becomes a concern. To promote numerical stability, it is recommended that
+the argument and result variables be explicitly bounded within [-1e+4,+1e-4]. See more in the section
+on :ref:`numerical_accuracy`.
 
 
 .. code-block:: ampl
@@ -341,21 +348,23 @@ using ``atmost``.
        MinInGrp <= numberof j in ({i in PEOPLE} Assign[i]);
 
 
-Comparison operators
+Relational and comparison operators
 ***********************************
 
-- expr1 > expr2
-    *constr-valued:* Satisfied when *expr1* is strictly greater than *expr2*.
-- expr1 < expr2
-    *constr-valued:* Satisfied when *expr1* is strictly less than *expr2*.
-- expr1 != expr2
-    *constr-valued:* Satisfied when *expr1* does not equal *expr2*.
+- expr1 > expr2, expr1 >= expr2
+    *constr-valued:* Satisfied when *expr1* is strictly greater (or equal) than *expr2*.
+- expr1 < expr2, expr1 <= expr2
+    *constr-valued:* Satisfied when *expr1* is strictly less (or equal) than *expr2*.
+- expr1 == expr2, expr1 != expr2
+    *constr-valued:* Satisfied when *expr1* does (not) equal *expr2*.
 
-Where possible, the MP interface transforms these operations to ones involving ``>=`` and ``<=``,
+Where possible, the MP interface transforms strict operations to ones involving ``>=`` and ``<=``,
 so that optimization solvers can handle them. For example, this can be done when *expr1* and
 *expr2* are integer-valued, or when an expression like ``if Flow[i,j] > 0 then fixed[i,j]``
 expresses a fixed cost in an objective to be minimized. Where this is not possible, a small
-tolerance is introduced as disucssed in the section above on **Expressions supported**.
+tolerance is introduced, as discussed in :ref:`expressions_supported`. Relational operators
+require careful modeling in regard to :ref:`numerical_accuracy`.
+
 
 .. code-block:: ampl
 
@@ -479,9 +488,6 @@ most of these univariate nonlinear functions are handled by piecewise-linear app
 The appoximation is constructed by the MP interface, using internal settings for the
 number of pieces and other details, and is then processed as described in
 :ref:`piecewise_linear_modeling`.
-Especially for solvers not handling piecewise-linear constraints, it is recommended that
-the bound ranges of the argument and result variables are between +/- 1e+4. They have
-hard limits of up to 1e+6.
 
 For Gurobi, the following univariate nonlinear functions are instead handled natively:
 exp, log, ^, sin, cos, tan.
@@ -634,3 +640,35 @@ Solver performance can often be improved by tightening bounds on the variables. 
           * (18 - 32*x[1] + 12*x[1]^2 + 48*x[2] - 36*x[1]*x[2] + 27*x[2]^2));
           
 These bounds are observed to substantially improve Gurobi's performance in this case.
+
+
+
+.. _numerical_accuracy:
+
+Numerical accuracy
+------------------------
+
+Mathematical Programming solvers typically work with finite-precision numbers, which
+leads to concerns on numerical stability.
+
+Relational operators
+******************************
+
+The MP library simplifies relational operators into "indicator" constraints.
+Solvers natively supporting indicators, usually handle them in a numerically stable way.
+Otherwise, they have to be linearized by the so-called "big-M" constraints. The big-M
+constants require finite bounds on expressions. For numerical stability these bounds should
+not exceed the reciprocal of the integrality tolerance (option *inttol*). A default
+big-M value can be set with the option *cvt:mip:bigM*.
+
+Piecewise-linear functions
+*****************************
+
+Piecewise-linear expressions can be modeled in AMPL directly, or arise from
+approximations of other functions. Solvers which support PL expressions,
+usually handle them algorithmically in a numerically stable way. Otherwise,
+if PL expressions are linearized, it is recommended to have the argument
+and result variables bounded in [-1e+4, 1e+4] (for approximated nonlinear functions,
+hard bounds of up to [-1e+6, 1e+6] are imposed). The stability can be improved
+in some cases by decreasing integer tolerance, Gurobi's *intfocus* and
+*numfocus* options, switching off presolve in the solver, and other tuning measures.

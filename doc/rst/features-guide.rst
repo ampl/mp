@@ -5,7 +5,7 @@ Features Guide for MP-based AMPL Solvers
 
 .. highlight:: ampl
 
-The mp framework defines standard solver *features* that solvers might support; 
+The MP framework defines standard solver *features* that solvers might support;
 these are usually characterized by a set of options used to control the feature,
 sometimes suffixes to pass required data and results, and may change the behaviour
 of the solution process.
@@ -154,7 +154,7 @@ This option controls whether to use or return a basis.
 
        Execute::
 
-         option <solver>_options "alg:start=0 outlev=1"; # disable passing the solution
+         option gurobi_options "alg:start=0 outlev=1"; # disable passing the solution
 
          solve;
          display Buy.sstatus; # display basis status
@@ -248,7 +248,7 @@ Penaly weights < 0 are treated as Infinity, allowing no violation.
        Solve the model changing the penalties to get different solutions::
 
           options <solver>_options "alg:feasrelax=1";
-          option presolve 0;
+          option presolve 0;    # otherwise the model could be oversimplified
 
           solve; display x,y;
 
@@ -346,7 +346,7 @@ files [``solutionstub1.sol'``,  ... ``solutionstub<nsol>.sol``].
 
        Execute::
 
-         option <solver>_options "sol:stub=queentake";
+         option gurobi_options "sol:stub=queentake";
          solve;
          printf "I have found %d solutions\n", Initial.nsol;
 
@@ -440,6 +440,7 @@ This option controls whether to calculate these values and return them in the su
        Execute::
 
           options <solver>_options "alg:sens=1"; 
+          option presolve 0;  # disable model transformations in AMPL
           solve;
 
        Then the ranges for variables and constraints can be examined: :
@@ -555,7 +556,8 @@ or suffix ``dunbdd`` if the constraints are infeasible.
 
        Solve the (infeasible) model and report the ``dunbdd`` rays::
 
-          options <solver>_options "alg:rays=3"; # it is default already
+          options gurobi_options "alg:rays=3"; # it is default already
+          option presolve 0;  # else the model could be oversimplified
           solve;
           display c1.dunbdd, c2.dunbdd, c3.dunbdd;
 
@@ -624,12 +626,12 @@ on your solver.
 
 
    
-Irreducible Inconsistent Set (IIS)
-----------------------------------
+Irreducible Inconsistent Subset (IIS)
+------------------------------------------
 
 Given an infeasible model, it is useful to know where the infeasibility comes from, that is, which
 bounds and/or constraints are incompatible.
-An IIS is a subset of contraint and variables that is still infeasible and where if a member is removed
+An IIS is a subset of constraints and variables that is still infeasible and where if a member is removed
 the subsystem becaomes feasible. Note that an infeasible model can have more than one IIS.
 
 This options controls whether to perform the additional computational steps required to find an IIS.
@@ -657,7 +659,7 @@ This options controls whether to perform the additional computational steps requ
        Execute::
 
         option <solver>_options "iisfind=1";
-        option presolve 0; # else the model would be oversimplified
+        option presolve 0;  # else the model could be oversimplified
         solve;
         display c1.iis, c2.iis, c3.iis;
 
@@ -674,7 +676,7 @@ This options controls whether to perform the additional computational steps requ
   
           c1.iis = mem
           c2.iis = mem
-          c3.iis = non
+          c3.iis = mem
 
 
 MIP only
@@ -809,11 +811,11 @@ The solution process of a MIP model can be helped by further specifying its stru
 Specifically, constraints can be marked as ``lazy`` or as ``user cuts``.
 Such constraints are not included initially, then:
 
-``lazy cosntraints`` are pulled in when a feasible solution is found; if the solution violates
+``Lazy constraints`` are pulled in when a feasible solution is found; if the solution violates
 them, it is cut off. They are integral part of the model, as they can cut off integer-feasible 
 solutions.
 
-``user cuts`` are pulled in also, but they can only cut off relaxation solutions; they are 
+``User cuts`` are pulled in also, but they can only cut off relaxation solutions; they are
 consider redundant in terms of specifying integer feasibility.
 
 This option controls whether to recognize the suffx ``lazy`` on constraints, which should then be 
@@ -852,9 +854,11 @@ positive to denote a lazy constraint and negative to mark a contraint as a user 
 
        .. code-block:: ampl
 
-            suffix priority IN;
-            let c1.priority := 1;  # lazy constraint
-            let c2.priority := -1; # user cut, must be redundant as it might never be pulled in
+            option presolve 0;  # disable model transformations in AMPL
+
+            suffix lazy IN;
+            let c1.lazy := 1;  # lazy constraint
+            let c2.lazy := -1; # user cut, must be redundant as it might never be pulled in
             solve;
 
             # TODO SHOW OUTPUT
@@ -900,6 +904,8 @@ This option controls whether to read those values and use them in the solution p
        end of code block
 
        .. code-block:: ampl
+
+            option presolve 0;  # disable model transformations in AMPL
 
             let x.priority := 1;
             let y.priority := 5;
