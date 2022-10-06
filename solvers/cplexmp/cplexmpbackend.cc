@@ -7,7 +7,7 @@
 #include "cplexmpbackend.h"
 
 extern "C" {
-#include "cplexmp-ampls-c-api.h"    // Gurobi AMPLS C API
+#include "cplexmp-ampls-c-api.h"    // CPLEX AMPLS C API
 }
 #include "mp/ampls-cpp-api.h"
 
