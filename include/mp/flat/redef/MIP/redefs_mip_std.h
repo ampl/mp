@@ -22,6 +22,7 @@
 #include "mp/flat/redef/MIP/logical_or.h"
 #include "mp/flat/redef/MIP/logical_not.h"
 #include "mp/flat/redef/MIP/min_max.h"
+#include "mp/flat/redef/MIP/mul.h"
 #include "mp/flat/redef/MIP/numberof_const.h"
 #include "mp/flat/redef/MIP/numberof_var.h"
 #include "mp/flat/redef/MIP/piecewise_linear.h"

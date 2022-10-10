@@ -58,6 +58,10 @@ public:
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
 
+  /// Ask if the solver accepts non-convex quadratic constraints
+  /// (Gurobi needs option nonconvex=2 for solving)
+  static constexpr bool AcceptsNonconvexQC() { return true; }
+
   /// If using quadratics,
   /// QuadCon(LE/EQ/GE) should have 'Recommended'
   /// and have an implementation.

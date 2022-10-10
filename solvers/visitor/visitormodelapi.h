@@ -63,6 +63,9 @@ public:
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
 
+  /// Ask if the solver accepts non-convex quadratic constraints
+  static constexpr bool AcceptsNonconvexQC() { return false; }
+
   /// QuadConRange is optional.
   ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Quadratic)
   void AddConstraint(const QuadConRange& qc);

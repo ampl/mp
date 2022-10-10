@@ -350,7 +350,7 @@ add_prefix(MP_FLAT_REDEF_MIP_HEADERS include/mp/flat/redef/MIP/
   indicator_quad.h
   lin_approx.h core/lin_approx_core.h
   logical_and.h logical_or.h logical_not.h
-  min_max.h numberof_const.h numberof_var.h
+  min_max.h mul.h numberof_const.h numberof_var.h
   piecewise_linear.h
   power_const.h sos2.h)
 

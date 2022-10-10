@@ -80,5 +80,11 @@
       "highs_options": "timelim=3",
       "comment_highs": "takes too long as of Sept 2022"
     }
+  },
+  {
+    "name" : "prod_bin_var_01",
+    "objective" : 5,
+    "tags" : [],
+    "comment": "MP linearises products with a binary var"
   }
 ]
