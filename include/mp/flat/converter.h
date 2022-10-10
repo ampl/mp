@@ -638,6 +638,12 @@ private:
     int preprocessAnything_ = 1;
     int preprocessEqualityResultBounds_ = 1;
     int preprocessEqualityBvar_ = 1;
+
+    /// By default, quadratize pow(.., const_pos_int)
+    /// if the solver natively handles noncvx QC
+    int powIntPosViaQC_ = ModelAPI::AcceptsNonconvexQC();
+
+
     int relax_ = 0;
   };
   Options options_;
@@ -660,13 +666,6 @@ public:
   }
 
 
-protected:
-  const mp::OptionValueInfo values_relax_[2] = {
-    {     "0", "No (default)", 0 },
-    {     "1", "Yes: treat integer and binary variables as continuous.", 1}
-  };
-
-
 private:
   void InitOwnOptions() {
     /// Should be called after adding all constraint keepers
@@ -684,6 +683,15 @@ private:
     GetEnv().AddOption("cvt:pre:eqbinary",
         "0/1*: Preprocess reified equality comparison with a binary variable.",
         options_.preprocessEqualityBvar_, 0, 1);
+    GetEnv().AddOption("cvt:pow2qc",
+                       ModelAPI::AcceptsNonconvexQC() ?
+        "0/1*: Redefine pow(..., const_pos_int_exp) into quadratics. "
+        "Default 1 as the solver accepts nonconvex quadratic constraints."
+                       :
+        "0*/1: Redefine pow(..., const_pos_int_exp) into quadratics. "
+        "Default 0 as the solver does not accept nonconvex quadratic constraints. "
+        "Set to 1 if the problem is convex for convex QP solvers.",
+        options_.powIntPosViaQC_, 0, 1);
     GetEnv().AddOption("alg:relax relax",
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
@@ -704,6 +712,10 @@ public:
   /// Whether preprocess conditional equality of a binary variable
   bool IfPreproEqBinVar() const
   { return MPCD( CanPreprocess(options_.preprocessEqualityBvar_) ); }
+
+  /// Whether to quadratize pow(..., const_pos_int)
+  bool IfQuadratizePowConstPosIntExp() const
+  { return options_.powIntPosViaQC_; }
 
 
 public:

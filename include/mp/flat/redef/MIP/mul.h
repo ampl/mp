@@ -7,7 +7,12 @@
 
 namespace mp {
 
-/// Convert all quadratic terms in the body
+/// Convert all quadratic terms in the body of a QC.
+/// This is the most universal way,
+/// in case some converter adds QC.
+/// An alternative would be, when flattening, to replace
+/// every multiplication by a FunctionalQuadraticExpr or
+/// a special new constraint, and convert only these.
 template <class ModelConverter, int sens>
 class QCConverter_MIP :
     public BasicItemConverter<ModelConverter> {

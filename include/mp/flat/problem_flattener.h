@@ -572,7 +572,7 @@ public:
   ////////////////////////////////////////////////////
   EExpr VisitPowConstExp(BinaryExpr e) {
     auto c = Cast<NumericConstant>(e.rhs()).value();
-    if (2.0==c) {                            // Quadratic
+    if (2.0==c && GetFlatCvt().IfQuadratizePowConstPosIntExp()) {
       auto el = Convert2EExpr(e.lhs());
       return QuadratizeOrLinearize(el, el);
     }
@@ -582,15 +582,21 @@ public:
   }
 
   EExpr VisitPow2(UnaryExpr e) {
-    auto el = Convert2EExpr(e.arg());
-    return QuadratizeOrLinearize(el, el);
+    if (GetFlatCvt().IfQuadratizePowConstPosIntExp()) {
+      auto el = Convert2EExpr(e.arg());
+      return QuadratizeOrLinearize(el, el);
+    }
+    return AssignResult2Args( PowConstraint(
+      PowConstraint::Arguments{ Convert2Var(e.arg()) },
+      PowConstraint::Parameters{ 2.0 } ) );
   }
 
   EExpr VisitPow(BinaryExpr e) {
     auto el = Convert2EExpr(e.lhs());
     auto er = Convert2EExpr(e.rhs());
     if (er.is_constant()) {
-      if (2.0==er.constant_term())
+      if (2.0==er.constant_term() &&
+          GetFlatCvt().IfQuadratizePowConstPosIntExp())
         return QuadratizeOrLinearize(el, el);
       else
         return AssignResult2Args( PowConstraint(
@@ -731,18 +737,56 @@ public:
     }
   }
 
-  /// Depending on the target backend
-  /// Currently only quadratize higher-order products
-  /// Can change arguments. They could point to the same
+  /// Depending on the target backend,
+  /// can either convert to factor^2 (if el==er)
+  /// or leave as quadratics.
+  /// Currently only quadratize higher-order products.
+  /// Can change arguments (move out).
+  /// They could point to the same expr.
   /// PERFORMANCE WARNING: allows &el==&er, needed from Pow2
   EExpr QuadratizeOrLinearize(EExpr& el, EExpr& er) {
     if (!el.is_affine() && !er.is_constant())
       el = Convert2AffineExpr(std::move(el));      // will convert to a new var now
     if (!er.is_affine() && !el.is_constant())
       er = Convert2AffineExpr(std::move(er));
-    return MultiplyOut(el, er);
+    if (!GetFlatCvt().IfQuadratizePowConstPosIntExp() &&
+        !er.is_constant() && !el.is_constant() &&
+        er.GetLinTerms().size() == el.GetLinTerms().size()) {
+      const auto& ellt = el.GetLinTerms();
+      const auto& erlt = er.GetLinTerms();
+      if (1 == erlt.size() &&    // same variable in el and er
+          0.0 == er.constant_term() && 0.0 == el.constant_term() &&
+          ellt.var(0) == erlt.var(0)) {
+        return Convert2Pow2(ellt, erlt);
+      }
+      el.sort_terms();
+      er.sort_terms();
+      if  (el == er) {            // Convert expr*expr to expr^2
+        return Convert2Pow2(std::move(el));
+      }
+    }
+    return MultiplyOut(el, er);   // Quadratize
   }
 
+  /// (9*x) * x -> 9 x^2
+  EExpr Convert2Pow2(const LinTerms& ellt, const LinTerms& erlt) {
+    assert(1 == erlt.size() &&    // same variable in el and er
+           ellt.var(0) == erlt.var(0));
+    auto coef = ellt.coef(0) * erlt.coef(0);
+    auto pow2var = GetFlatCvt().AssignResultVar2Args(
+          PowConstraint{ {{ellt.var(0)}}, {2.0} });
+    return { coef, pow2var };
+  }
+
+  /// aff_expr * aff_expr -> aff_expr^2
+  EExpr Convert2Pow2(EExpr&& el) {
+    auto affexpr2var = Convert2Var( std::move(el) );
+    auto pow2var = GetFlatCvt().AssignResultVar2Args(
+          PowConstraint{ {{affexpr2var}}, {2.0} });
+    return EExpr::Variable{ pow2var };
+  }
+
+  /// Multiply out two EEXprs
   EExpr MultiplyOut(const EExpr& el, const EExpr& er) {
     assert((el.is_affine() && er.is_affine()) ||
            (el.is_constant() || er.is_constant()));

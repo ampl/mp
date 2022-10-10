@@ -40,8 +40,7 @@ public:
   void Convert(const ItemType& con, int i) {
     assert(!con.GetContext().IsNone());
     auto pwr = con.GetParameters()[0];
-    if (GetMC().ModelAPIAcceptsAndRecommends(
-          (const QuadConEQ*)nullptr) &&     // If solver accepts quadratics
+    if (GetMC().IfQuadratizePowConstPosIntExp() &&
         GetMC().is_integer_value(pwr) && pwr > 0.0)
       Convert2Quadratics(con, i);
     else

@@ -325,7 +325,6 @@ SolutionBasis GurobiBackend::GetBasis() {
     varstt = mv.GetVarValues()();
     constt = mv.GetConValues()();
     assert(varstt.size());
-    assert(constt.size());
   }
   return { std::move(varstt), std::move(constt) };
 }
