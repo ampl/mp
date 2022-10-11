@@ -835,11 +835,10 @@ void CoptBackend::AddMIPStart(ArrayRef<double> x0) {
 
 } // namespace mp
 
-
-// AMPLs
-
-AMPLS_MP_Solver* AMPLSOpenCopt(const char* slv_opt) {
-  return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::CoptBackend()}, slv_opt);
+  // AMPLs
+void* AMPLSOpenCopt(const char* slv_opt, CCallbacks cb = {}) {
+  return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::CoptBackend()}, 
+    slv_opt, cb);
 }
 
 void AMPLSCloseCopt(AMPLS_MP_Solver* slv) {

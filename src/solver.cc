@@ -1103,17 +1103,18 @@ typedef struct AMPLS_MP__internal_T {
 
 
 AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
-                          const char* slv_opt) {
+  const char* slv_opt, CCallbacks cb = {}) {
   AMPLS_MP_Solver* slv = new AMPLS_MP_Solver();
   AMPLS__internal__TryCatchWrapper( slv, [&]() {
     auto ii = new AMPLS_MP__internal();
     slv->internal_info_ = ii;
     ii->p_be_ = std::move(p_be);
     auto be = ii->p_be_.get();
-
+    be->GetCallbacks() = cb;
     be->set_output_handler(&ii->output_h_);
 
     char* argv[] = {(char*)"ampls-driver", nullptr};
+    
     be->Init(argv);
 
     be->set_wantsol(1);       // user can still modify by 'wantsol=...'
@@ -1152,17 +1153,18 @@ int AMPLSLoadNLModel(AMPLS_MP_Solver* slv,
       filename_no_ext_.resize(filename_no_ext_.size() - 3);
 
     auto be = AMPLSGetBackend(slv);
-    mp::internal::SetBasename(*be,
-                              &filename_no_ext_);
+
 
     be->ReadNL(nl_filename, filename_no_ext_);
     be->InputExtras();
   } );
 }
 
-int AMPLSReportResults(AMPLS_MP_Solver* slv) {
+int AMPLSReportResults(AMPLS_MP_Solver* slv, const char* solFileName = NULL) {
   return AMPLS__internal__TryCatchWrapper( slv, [=]() {
     auto be = AMPLSGetBackend(slv);
+    // If solFileName is NULL, we scrap any previous override
+    be->OverrideSolutionFile(solFileName == NULL ? "" : solFileName);
     be->ReportResults();
   } );
 }
