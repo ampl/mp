@@ -13,7 +13,7 @@ param minload > 0;             # minimum nonzero shipment
 param maxserve integer > 0;     # maximum destinations served
 
 param vcost {ORIG,DEST,PROD} >= 0; # variable shipment cost on routes
-var Trans {ORIG,DEST,PROD} >= 0;   # units to be shipped
+var Trans {i in ORIG,j in DEST,PROD} >= 0 <= limit[i,j];   # units to be shipped
 
 param fcost {ORIG,DEST} >= 0;      # fixed cost for using a route
 

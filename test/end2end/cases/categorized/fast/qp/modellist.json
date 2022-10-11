@@ -80,5 +80,26 @@
       "highs_options": "timelim=3",
       "comment_highs": "takes too long as of Sept 2022"
     }
+  },
+  {
+    "name" : "prod_bin_var_01",
+    "objective" : 5,
+    "tags" : [],
+    "comment": "MP linearises products"
+  },
+  {
+    "name" : "prod_bin_var_02_obj",
+    "objective" : 1,
+    "tags" : []
+  },
+  {
+    "name" : "prod_01_obj",
+    "tags" : [],
+    "options": {
+      "gurobi_options": "nonconvex=2"
+    },
+    "values": {
+      "if abs(Prod01+8.5)<0.01 then 1 else 0": 1
+    }
   }
 ]

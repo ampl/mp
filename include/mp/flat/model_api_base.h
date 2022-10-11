@@ -70,12 +70,14 @@ public:
         types_.size()==lbs_.size(); }
 };
 
+
 /// Level of acceptance of a constraint by a backend
 enum ConstraintAcceptanceLevel {
   NotAccepted=0,
   AcceptedButNotRecommended=1,
   Recommended=2
 };
+
 
 /// Constraint groups
 ///
@@ -93,6 +95,7 @@ enum ConstraintGroup {
   CG_SOS2,
   CG_Logical
 };
+
 
 /// ModelAPIs handling custom flat constraints should derive from
 class BasicFlatModelAPI {
@@ -141,6 +144,8 @@ public:
   static constexpr ConstraintAcceptanceLevel AcceptanceLevel(const BasicConstraint*) {
     return NotAccepted;
   }
+  /// Specifically, ask if the solver accepts non-convex quadratic constraints
+  static constexpr bool AcceptsNonconvexQC() { return false; }
 };
 
 

@@ -97,6 +97,11 @@ public:
 
   /// Smooth nonlinear
 
+  /// Multiplication
+  INSTALL_ITEM_CONVERTER(MulCvtLE_MIP)
+  INSTALL_ITEM_CONVERTER(MulCvtEQ_MIP)
+  INSTALL_ITEM_CONVERTER(MulCvtGE_MIP)
+
   /// Exp
   INSTALL_ITEM_CONVERTER(FuncConConverter_MIP_Exp)
   /// ExpA

@@ -1,8 +1,12 @@
-var x1 >= 0;
-var x2 >= 0;
+var x;
+var y;
+var z;
 
-maximize z: x1+x2;
+subj to c1:
+   x+y >= 1;
 
-c1: x1<=5;
-c2: x1>=6;
-c3: x2<=4;
+subj to c2:
+   y + log(z + exp(x+3)) <= 1.83;
+
+subj to c3:
+   z + log(y + 3.8*exp(x+3)) >= -14.265;

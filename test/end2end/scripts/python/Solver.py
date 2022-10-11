@@ -662,7 +662,7 @@ class XPRESSDirectSolver(MPDirectSolver):
                  ModelTags.warmstart, ModelTags.mipstart,
 
                  ModelTags.multisol, ModelTags.sstatus,
-                 ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax
+                 ModelTags.iis
                  
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)

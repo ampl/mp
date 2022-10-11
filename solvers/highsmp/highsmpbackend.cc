@@ -148,7 +148,6 @@ SolutionBasis HighsBackend::GetBasis() {
     varstt = mv.GetVarValues()();
     constt = mv.GetConValues()();
     assert(varstt.size());
-    assert(constt.size());
   }
   return { std::move(varstt), std::move(constt) };
 }
@@ -512,7 +511,7 @@ void HighsBackend::InitCustomOptions() {
     "0/1*/2: MIP solver report level",
     "mip_report_level", 0, 2);
 
-  AddSolverOption("mip:intfeastol intfeastol mip_feasibility_tolerance",
+  AddSolverOption("mip:intfeastol intfeastol inttol mip_feasibility_tolerance",
     "Feasibility tolerance for integer variables (default 1e-06).",
     "mip_feasibility_tolerance", 1e-10, Infinity());
 

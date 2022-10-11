@@ -22,6 +22,28 @@ public:
 
   /// Convert in both contexts (full reification)
   void Convert(const ItemType& dc, int ) {
+    if (GetMC().is_fixed(dc.GetArguments()[1]))
+      ConvertWithConstDivisor(dc);
+    else
+      ConvertWithNonConstDivisor(dc);
+  }
+
+
+protected:
+  /// Convert with constant divisor
+  void ConvertWithConstDivisor(const ItemType& dc) {
+    auto r = dc.GetResultVar();
+    const auto& args = dc.GetArguments();
+    /// r = arg0 / arg1,    arg0 = arg1 * r;
+    auto lt = LinTerms{
+      { GetMC().fixed_value(args[1]), -1.0 },
+      { r, args[0] }
+    };
+    GetMC().AddConstraint (LinConEQ( std::move(lt), { 0.0 } ) );
+  }
+
+  /// Convert with non-constant divisor
+  void ConvertWithNonConstDivisor(const ItemType& dc) {
     auto r = dc.GetResultVar();
     const auto& args = dc.GetArguments();
     /// r = arg0 / arg1,    arg0 = arg1 * r;

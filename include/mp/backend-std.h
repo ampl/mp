@@ -22,6 +22,7 @@
 #define STD_BACKEND_H_
 
 #include <cmath>
+#include <limits>
 #include <functional>
 
 #include "mp/clock.h"
@@ -487,11 +488,19 @@ protected:
 
 
   /////////////////////////////// SOME MATHS ////////////////////////////////
+
+  /// Use the solver' inf
   bool IsFinite(double n) const {
     return n>MP_DISPATCH( MinusInfinity() ) &&
         n<MP_DISPATCH( Infinity() );
   }
 
+  /// AMPL's inf
+  static constexpr double AMPLInf()
+  { return std::numeric_limits<double>::infinity(); }
+  /// AMPL's -inf
+  static constexpr double AMPLMinusInf()
+  { return -std::numeric_limits<double>::infinity(); }
 
 protected:
   /// Read int suffixes for several entities (var/con/obj).

@@ -53,9 +53,9 @@ public:
   //////////////////////// Metadata //////////////////////////
   ////////////////////////////////////////////////////////////
 
-  /// +inf
+  /// +inf for Gurobi
   static constexpr double Infinity() { return GRB_INFINITY; }
-  /// -inf
+  /// -inf for Gurobi
   static constexpr double MinusInfinity() { return -GRB_INFINITY; }
 
   /// Gurobi separates constraint classes

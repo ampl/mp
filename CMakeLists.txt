@@ -209,7 +209,7 @@ endmacro()
 include_directories(include)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-set(MP_DATE 20220928)
+set(MP_DATE 20221011)
 
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
@@ -346,11 +346,12 @@ add_prefix(MP_FLAT_REDEF_STD_HEADERS include/mp/flat/redef/std/
 add_prefix(MP_FLAT_REDEF_MIP_HEADERS include/mp/flat/redef/MIP/
   converter_mip.h redefs_mip_std.h abs.h alldiff.h
   cond_eq.h cond_ineq.h complement.h count.h
+  div.h
   ifthenelse.h indicator_eq.h indicator_le.h indicator_ge.h
   indicator_quad.h
   lin_approx.h core/lin_approx_core.h
   logical_and.h logical_or.h logical_not.h
-  min_max.h numberof_const.h numberof_var.h
+  min_max.h mul.h numberof_const.h numberof_var.h
   piecewise_linear.h
   power_const.h sos2.h)
 
