@@ -41,7 +41,7 @@ AMPLS_C_EXPORT int AMPLSLoadNLModel(AMPLS_MP_Solver* slv,
 /// The kind of results reported is influenced by solver option
 /// `wantsol`.
 /// @return 0 on success
-AMPLS_C_EXPORT int AMPLSReportResults(AMPLS_MP_Solver* slv);
+AMPLS_C_EXPORT int AMPLSReportResults(AMPLS_MP_Solver* slv, const char* solFileName);
 
 /// Add message
 AMPLS_C_EXPORT void AMPLSAddMessage(AMPLS_MP_Solver* slv, const char* msg);

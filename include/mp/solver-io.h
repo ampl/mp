@@ -77,6 +77,7 @@ class SolutionWriterImpl :
     private Writer, public SolutionHandler {
  private:
   std::string stub_;
+  std::string overrideStub_;
   Solver &solver_;
   ProblemBuilder &builder_;
 
@@ -91,11 +92,11 @@ class SolutionWriterImpl :
   const std::string &stub() const { return stub_; }
 
  public:
+  
   SolutionWriterImpl(fmt::StringRef stub, Solver &s, ProblemBuilder &b,
                  ArrayRef<int> options = mp::ArrayRef<int>(0, 0))
-    : stub_(stub.to_string()), solver_(s), builder_(b),
+    : stub_(stub.to_string()), overrideStub_(), solver_(s), builder_(b),
       options_(options), num_solutions_(0) {}
-
   // Returns the .sol writer.
   Writer &sol_writer() { return *this; }
 
@@ -105,6 +106,10 @@ class SolutionWriterImpl :
   // Writes the solution to a .sol file.
   void HandleSolution(int status, fmt::CStringRef message,
         const double *values, const double *dual_values, double);
+
+  virtual void OverrideSolutionFileName(const std::string& fileName) {
+    overrideStub_ = fileName;
+  };
 };
 
 /// Convenience typedef for APIs using SolverImpl<> or similar
@@ -155,7 +160,24 @@ void SolutionWriterImpl<Solver, PB, Writer>::HandleSolution(
         MakeArrayRef(dual_values,
                      dual_values ? builder_.num_algebraic_cons() : 0),
         solver_.objno());
-  this->Write(stub_ + ".sol", sol);
+  
+  std::string solFilePath;
+  if (!overrideStub_.empty()) { 
+    // Check if its absolute or relative
+    if ((overrideStub_.length() >= 2) &&// cannot be absolute otherwise 
+       ((overrideStub_[0] == '/') || // linux abs (/ ...)
+        (overrideStub_[1] == ':') ))  {// windows abs (x: ///)
+        solFilePath = overrideStub_; // if absolute
+    }
+    else { // if relative
+      size_t pos = stub_.find_last_of("\\/"); //.find parent dir
+      auto dir = (std::string::npos == pos) ? "" : stub_.substr(0, pos+1);
+      solFilePath = dir + overrideStub_;
+    }
+  }
+  else { solFilePath = stub_ + ".sol"; }
+  
+  this->Write(solFilePath, sol);
 }
 
 
@@ -236,7 +258,7 @@ void PrintSolution(const double *values, int num_values, const char *name_col,
                    const char *value_col, NameProvider &np);
 
 /// Solution handler for a solver application.
-/// Extends SolutionWriterImpl by conideration of
+/// Extends SolutionWriterImpl by consideration of
 /// the -AMPL switch and the \a wantsol option.
 template <class Solver,
           class ProblemBuilder,

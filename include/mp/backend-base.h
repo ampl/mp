@@ -76,10 +76,13 @@ public:
 
   /// Obtain callbacks
   Callbacks& GetCallbacks() { return callbacks_; }
-
-
+  void OverrideSolutionFile(const std::string& solFile) {
+    solutionfileoverride_ = solFile;
+  }
+  std::string GetOverridenSolutionFile() { return solutionfileoverride_; }
 private:
   Callbacks callbacks_;
+  std::string solutionfileoverride_;
 };
 
 } // namespace mp

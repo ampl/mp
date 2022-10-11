@@ -52,6 +52,7 @@ protected:
   /// Access to ModelManager's interface
   virtual void HandleSolution(int status, fmt::CStringRef msg,
       const double *x, const double *y, double obj) {
+    GetMM().SetSolutionFileName(GetOverridenSolutionFile());
     GetMM().HandleSolution(status, msg, x, y, obj);
   }
 

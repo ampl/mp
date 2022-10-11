@@ -208,7 +208,10 @@ protected:
   size_t GetSuffixSize(int kind) override {
     return GetModel().GetSuffixSize((suf::Kind)kind);
   }
-
+  void SetSolutionFileName(const std::string& fileName) override {
+    if (HaveSolH())
+      GetSolH().OverrideSolutionFileName(fileName);
+  }
   void HandleSolution(int status, fmt::CStringRef msg,
       const double *x, const double *y, double obj) override {
     if ( HaveSolH() )

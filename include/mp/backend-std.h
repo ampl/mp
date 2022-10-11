@@ -201,7 +201,9 @@ public:
   void InputExtras() override {
     InputStdExtras();
   }
-
+  void SetSolutionFileName(const std::string& filename) {
+    GetMM().SetSolutionFileName(filename);
+  }
   /// Report results
   void ReportResults() override {
     ReportSuffixes();
