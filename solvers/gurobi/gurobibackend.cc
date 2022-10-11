@@ -2456,11 +2456,11 @@ void GurobiBackend::GrbPlayObjNParams() {
 } // namespace mp
 
 
-AMPLS_MP_Solver* AMPLSOpenGurobi(const char* slv_opt) {
+AMPLS_MP_Solver* AMPLSOpenGurobi(const char* slv_opt, CCallbacks cb = {}) {
   AMPLS_MP_Solver* slv =
       AMPLS__internal__Open(
         std::unique_ptr<mp::BasicBackend>{new mp::GurobiBackend()},
-        slv_opt);
+        slv_opt, cb);
   return slv;
 }
 

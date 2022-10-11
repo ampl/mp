@@ -18,7 +18,8 @@
 /// (normally provided in the <solver>_options string).
 /// Can be NULL.
 /// @return pointer to struct AMPLS_MP_Solver to be populated.
-AMPLS_MP_Solver*  AMPLSOpenXpressmp(const char* slv_opt);
+AMPLS_MP_Solver* AMPLSOpenXpressmp(const char* slv_opt,
+  CCallbacks cb);
 
 /// Shut down solver instance
 void AMPLSCloseXpressmp(AMPLS_MP_Solver* slv);

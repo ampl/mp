@@ -6,20 +6,31 @@
 #define APIEXPORT  __attribute__((visibility("default")))
 #endif
 
+extern CCallbacks getCb();
+
 APIEXPORT CPXLPptr AMPLloadmodel(int argc, char** argv, void** slvout) {
   const char* nl_filename = argv[1];
   const char *slv_opt= argv[2];
-  AMPLS_MP_Solver* slv= AMPLSOpenCPLEX(slv_opt);
+  CCallbacks cb = getCb();
+  AMPLS_MP_Solver* slv= AMPLSOpenCPLEX(slv_opt, cb);
+  if (!slv)
+    return NULL;
   AMPLSLoadNLModel(slv, nl_filename);
-  CPXLPptr mdl = GetCPLEXmodel(slv);
-  *slvout = slv;
-  return mdl;
+  return slv;
 }
 
-APIEXPORT void AMPLwritesolution(AMPLS_MP_Solver* slv) {
-  AMPLSReportResults(slv);
+APIEXPORT void AMPLwritesolution(AMPLS_MP_Solver* slv, const char* solFileName) {
+  AMPLSReportResults(slv, solFileName);
 }
 
 APIEXPORT void AMPLclosesolver(AMPLS_MP_Solver* slv) {
   AMPLSCloseCPLEX(slv);
+}
+
+APIEXPORT CPXLPptr AMPLgetCPLEXModel(void* slv) {
+  return GetCPLEXmodel((AMPLS_MP_Solver*)slv);
+}
+
+APIEXPORT CPXENVptr AMPLgetCPLEXEnv(void* slv) {
+  return GetCPLEXenv((AMPLS_MP_Solver*)slv);
 }

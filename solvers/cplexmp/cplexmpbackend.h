@@ -31,7 +31,7 @@ public:
   static const char* GetBackendLongName() { return nullptr; }
 
   /// Chance for the Backend to init solver environment, etc
-  void InitOptionParsing() override { }
+  void InitOptionParsing() override;
   /// Chance to consider options immediately (open cloud, etc)
   void FinishOptionParsing() override;
 
@@ -61,7 +61,6 @@ public:
   ///////////////////////////////////////////////////////////////////////////////
 public:  // public for static polymorphism
   void InitCustomOptions() override;
-
 protected:
   void OpenSolver();
   void CloseSolver();

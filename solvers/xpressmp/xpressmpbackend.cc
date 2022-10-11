@@ -690,9 +690,9 @@ int XpressmpBackend::xp_mse_display(XPRSobject o, void* context, void* thread,
 
 // AMPLs
 AMPLS_MP_Solver* AMPLSOpenXpressmp(
-  const char* slv_opt) {
+  const char* slv_opt, CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::XpressmpBackend()},
-    slv_opt);
+    slv_opt, cb);
 }
 
 void AMPLSCloseXpressmp(AMPLS_MP_Solver* slv) {
