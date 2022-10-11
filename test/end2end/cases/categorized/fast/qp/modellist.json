@@ -86,5 +86,11 @@
     "objective" : 5,
     "tags" : [],
     "comment": "MP linearises products with a binary var"
+  },
+  {
+    "name" : "prod_bin_var_02_obj",
+    "objective" : 1,
+    "tags" : [],
+    "comment": "MP linearises products with a binary var"
   }
 ]

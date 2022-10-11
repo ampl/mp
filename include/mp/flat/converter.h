@@ -631,7 +631,13 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////
-  ///
+public:
+  /// Whether the ModelAPI accepts nonconvex QC
+  static bool ModelAPIAcceptsNonconvexQC() {
+    return ModelAPI::AcceptsNonconvexQC();
+  }
+
+
 private:
   struct Options {
     std::string file_graph_export_;
@@ -641,7 +647,7 @@ private:
 
     /// By default, quadratize pow(.., const_pos_int)
     /// if the solver natively handles noncvx QC
-    int powIntPosViaQC_ = ModelAPI::AcceptsNonconvexQC();
+    int powIntPosViaQC_ = ModelAPIAcceptsNonconvexQC();
 
 
     int relax_ = 0;
@@ -684,7 +690,7 @@ private:
         "0/1*: Preprocess reified equality comparison with a binary variable.",
         options_.preprocessEqualityBvar_, 0, 1);
     GetEnv().AddOption("cvt:pow2qc",
-                       ModelAPI::AcceptsNonconvexQC() ?
+                       ModelAPIAcceptsNonconvexQC() ?
         "0/1*: Redefine pow(..., const_pos_int_exp) into quadratics. "
         "Default 1 as the solver accepts nonconvex quadratic constraints."
                        :
