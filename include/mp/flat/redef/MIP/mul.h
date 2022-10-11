@@ -66,12 +66,12 @@ protected:
     bool is_x_bin = GetMC().is_binary_var(x);
     auto i_bin = is_x_bin ? x : y;       // index of the (chosen) binary var
     auto i_other = is_x_bin ? y : x;                  // the other var index
-    auto x_ifthen = GetMC().template
-        AssignResultVar2Args( IfThenConstraint {{      // no context as of now
-                                                      i_bin,
-                                                      i_other,
-                                                      GetMC().MakeFixedVar(0.0)
-                              }} );
+    auto x_ifthen = GetMC().AssignResultVar2Args(
+          IfThenConstraint {{      // no context as of now
+                                   i_bin,
+                                   i_other,
+                                   GetMC().MakeFixedVar(0.0)
+                            }} );
     lt.add_term(c, x_ifthen);
     return lt;
   }
@@ -79,20 +79,20 @@ protected:
   /// c*x*y -> 0.5*c((x+y)^2-x^2-y^2)
   LinTerms LinearizeGeneralProduct(double c, int x, int y) {
     LinTerms lt;
-    auto x_plus_y = GetMC().template AssignResultVar2Args(
+    auto x_plus_y = GetMC().AssignResultVar2Args(
           LinearFunctionalConstraint{{  // = x+y
                                         { {1.0, 1.0}, {x, y} }, 0.0 }} );
-    auto x_plus_y_pow2 = GetMC().template AssignResultVar2Args(
+    auto x_plus_y_pow2 = GetMC().AssignResultVar2Args(
           PowConstraint{  // no context as of now
-                           VarArray1{x_plus_y}, {2.0} } );
+                          VarArray1{x_plus_y}, {2.0} } );
     lt.add_term(0.5*c, x_plus_y_pow2);
-    auto x_pow2 = GetMC().template AssignResultVar2Args(
+    auto x_pow2 = GetMC().AssignResultVar2Args(
           PowConstraint{  // no context as of now
-                           VarArray1{x}, {2.0} } );
+                          VarArray1{x}, {2.0} } );
     lt.add_term(-0.5*c, x_pow2);
-    auto y_pow2 = GetMC().template AssignResultVar2Args(
+    auto y_pow2 = GetMC().AssignResultVar2Args(
           PowConstraint{  // no context as of now
-                           VarArray1{y}, {2.0} } );
+                          VarArray1{y}, {2.0} } );
     lt.add_term(-0.5*c, y_pow2);
     return lt;
   }
