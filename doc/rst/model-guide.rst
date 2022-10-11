@@ -445,7 +445,8 @@ For quadratic expressions of the form *linear \* linear* and *linear^2*, the ope
 are multiplied out so that coefficients of individual quadratic terms can be extracted.
 If the solver natively handles quadratic terms, then the quadratic coefficients are
 passed to the solver, which decides whether and how to handle them. Otherwise, quadratic
-terms are linearized where possible, such as where one of the operands is a binary variable.
+terms are linearized where possible, such as where one of the operands is a binary variable,
+or approximated.
 
 Other expressions involving these operators are converted, where possible, to simpler
 quadratic expressions and equality constraints through the use of auxiliary variables;
@@ -484,7 +485,8 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$
     otherwise passed to the solver natively or approximated by a piecewise-linear function.
 
 For linear-quadratic MP-based solvers (which include all those currently implemented),
-most of these univariate nonlinear functions are handled by piecewise-linear approximation.
+most of these nonlinear functions are handled by piecewise-linear approximation,
+except products with binary variables.
 The appoximation is constructed by the MP interface, using internal settings for the
 number of pieces and other details, and is then processed as described in
 :ref:`piecewise_linear_modeling`.

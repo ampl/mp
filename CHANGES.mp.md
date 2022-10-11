@@ -1,6 +1,10 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## 20221011
+- *Piecewise-linear approximation of quadratics*
+    Recognizing x^2 for stronger univariate approximation.
+
 ## 20220928
 - *Piecewise-linear approximation of univariate nonlinear functions*
     Approximation of exp, a^x, x^a, log, log10, trigonometric and hyperbolic

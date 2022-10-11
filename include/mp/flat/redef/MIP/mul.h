@@ -11,7 +11,7 @@ namespace mp {
 /// This is the most universal way,
 /// in case some converter adds QC.
 /// An alternative would be, when flattening, to replace
-/// every multiplication by a FunctionalQuadraticExpr or
+/// every multiplication by
 /// a special new constraint, and convert only these.
 template <class ModelConverter, int sens>
 class QCConverter_MIP :
@@ -52,7 +52,10 @@ protected:
   }
 
   LinTerms LinearizeQPTerm(double c, int x, int y) {
-    return LinearizeProductWithBinaryVar(c, x, y);
+    if (GetMC().is_binary_var(x) ||
+        GetMC().is_binary_var(y))
+      return LinearizeProductWithBinaryVar(c, x, y);
+    return LinearizeGeneralProduct(c, x, y);
   }
 
   LinTerms LinearizeProductWithBinaryVar(double c, int x, int y) {
@@ -70,6 +73,27 @@ protected:
                                                       GetMC().MakeFixedVar(0.0)
                               }} );
     lt.add_term(c, x_ifthen);
+    return lt;
+  }
+
+  /// c*x*y -> 0.5*c((x+y)^2-x^2-y^2)
+  LinTerms LinearizeGeneralProduct(double c, int x, int y) {
+    LinTerms lt;
+    auto x_plus_y = GetMC().template AssignResultVar2Args(
+          LinearFunctionalConstraint{{  // = x+y
+                                        { {1.0, 1.0}, {x, y} }, 0.0 }} );
+    auto x_plus_y_pow2 = GetMC().template AssignResultVar2Args(
+          PowConstraint{  // no context as of now
+                           VarArray1{x_plus_y}, {2.0} } );
+    lt.add_term(0.5*c, x_plus_y_pow2);
+    auto x_pow2 = GetMC().template AssignResultVar2Args(
+          PowConstraint{  // no context as of now
+                           VarArray1{x}, {2.0} } );
+    lt.add_term(-0.5*c, x_pow2);
+    auto y_pow2 = GetMC().template AssignResultVar2Args(
+          PowConstraint{  // no context as of now
+                           VarArray1{y}, {2.0} } );
+    lt.add_term(-0.5*c, y_pow2);
     return lt;
   }
 };

@@ -85,12 +85,21 @@
     "name" : "prod_bin_var_01",
     "objective" : 5,
     "tags" : [],
-    "comment": "MP linearises products with a binary var"
+    "comment": "MP linearises products"
   },
   {
     "name" : "prod_bin_var_02_obj",
     "objective" : 1,
+    "tags" : []
+  },
+  {
+    "name" : "prod_01_obj",
     "tags" : [],
-    "comment": "MP linearises products with a binary var"
+    "options": {
+      "gurobi_options": "nonconvex=2"
+    },
+    "values": {
+      "if abs(Prod01+8.5)<0.01 then 1 else 0": 1
+    }
   }
 ]
