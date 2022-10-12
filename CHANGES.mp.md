@@ -1,8 +1,12 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
-## 20221011
+## 20221012
 - *Piecewise-linear approximation of quadratics*
+    Automatic for linear solvers.
+    For convex QP solvers, set the following options:
+    cvt:quadobj=0 cvt:quadcon=0 to linearize nonconvex objective(s)
+    and/or constraints.
     Recognizing x^2 for stronger univariate approximation.
 
 ## 20220928

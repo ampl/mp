@@ -24,6 +24,12 @@ public:
   /// Converted item type
   using ItemType = QuadConRhs<sens>;
 
+  /// Check whether the constraint
+  /// needs to be converted despite being accepted by ModelAPI.
+  bool IfNeedsConversion(const ItemType& con, int ) {
+    return !GetMC().IfPassQuadCon();
+  }
+
   /// Conversion
   void Convert(const ItemType& qc, int ) {
     LinearizeQPTerms(qc);

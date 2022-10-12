@@ -1,8 +1,10 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
-## 20221011
+## 20221012
 - *Piecewise-linear approximation of quadratics*
+    HiGHS accepts quadratic objectives.
+    For nonconvex ones, set cvt:quadobj=0.
     Recognizing x^2 for stronger univariate approximation
 
 

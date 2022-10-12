@@ -231,10 +231,10 @@ public: // for ConstraintKeeper
     MP_DISPATCH(Convert(con, i));
   }
 
-  /// Query if the constraint typer
+  /// Query if the constraint type
   /// can be converted.
   /// This method should not be redefined;
-  /// specialize IfNeedsCvt_impl instead.
+  /// specialize IfHasCvt_impl instead.
   template <class Constraint>
   bool IfHasConversion(const Constraint* c) {
     return MPD( IfHasCvt_impl(c) );
@@ -262,7 +262,9 @@ public: // for ConstraintKeeper
 
   /// Generic query if a constraint needs to be converted,
   /// despite being accepted by the ModelAPI.
-  /// Specialize this method.
+  /// Specialize this method, or even
+  /// ConstraintConverter::IfNeedsConversion
+  /// (see class PowConstExponentConverter_MIP).
   template <class Constraint>
   bool IfNeedsCvt_impl(const Constraint& , int ) {
     return false;
@@ -270,9 +272,9 @@ public: // for ConstraintKeeper
 
   /// Check whether ModelAPI accepts and recommends the constraint
   template <class Constraint>
-  bool ModelAPIAcceptsAndRecommends(const Constraint* pcon) {
+  static bool ModelAPIAcceptsAndRecommends(const Constraint* pcon) {
     return ConstraintAcceptanceLevel::Recommended ==
-        GetModelAPI().AcceptanceLevel(pcon);
+        ModelAPI::AcceptanceLevel(pcon);
   }
 
   /// Generic adapter for old non-bridged Convert() methods
@@ -632,6 +634,17 @@ public:
   ///////////////////////////////////////////////////////////////////////
   /////////////////////// OPTIONS /////////////////////////
 public:
+  /// Whether the ModelAPI accepts quadratic objectives
+  static bool ModelAPIAcceptsQuadObj() {
+    return 0 < ModelAPI::AcceptsQuadObj();
+  }
+
+  /// Whether the ModelAPI accepts quadratic constraints
+  static bool ModelAPIAcceptsQC() {
+    return ModelAPIAcceptsAndRecommends(
+          (const QuadConLE*)nullptr);   // if accepts QuadConLE
+  }
+
   /// Whether the ModelAPI accepts nonconvex QC
   static bool ModelAPIAcceptsNonconvexQC() {
     return ModelAPI::AcceptsNonconvexQC();
@@ -645,9 +658,8 @@ private:
     int preprocessEqualityResultBounds_ = 1;
     int preprocessEqualityBvar_ = 1;
 
-    /// By default, quadratize pow(.., const_pos_int)
-    /// if the solver natively handles noncvx QC
-    int powIntPosViaQC_ = ModelAPIAcceptsNonconvexQC();
+    int passQuadObj_ = ModelAPIAcceptsQuadObj();
+    int passQuadCon_ = ModelAPIAcceptsQC();
 
 
     int relax_ = 0;
@@ -689,15 +701,22 @@ private:
     GetEnv().AddOption("cvt:pre:eqbinary",
         "0/1*: Preprocess reified equality comparison with a binary variable.",
         options_.preprocessEqualityBvar_, 0, 1);
-    GetEnv().AddOption("cvt:pow2qc",
-                       ModelAPIAcceptsNonconvexQC() ?
-        "0/1*: Redefine pow(..., const_pos_int_exp) into quadratics. "
-        "Default 1 as the solver accepts nonconvex quadratic constraints."
+    GetEnv().AddOption("cvt:quadobj passquadobj",
+                       ModelAPIAcceptsQuadObj() ?
+        "0/1*: Multiply out and pass quadratic objective terms to the solver, "
+        "vs. linear approximation."
                        :
-        "0*/1: Redefine pow(..., const_pos_int_exp) into quadratics. "
-        "Default 0 as the solver does not accept nonconvex quadratic constraints. "
-        "Set to 1 if the problem is convex for convex QP solvers.",
-        options_.powIntPosViaQC_, 0, 1);
+        "0*/1: Multiply out and pass quadratic objective terms to the solver, "
+                         "vs. linear approximation.",
+        options_.passQuadObj_, 0, 1);
+    GetEnv().AddOption("cvt:quadcon passquadcon",
+                       ModelAPIAcceptsQC() ?
+        "0/1*: Multiply out and pass quadratic constraint terms to the solver, "
+        "vs. linear approximation."
+                       :
+        "0*/1: Multiply out and pass quadratic constraint terms to the solver, "
+                         "vs. linear approximation.",
+        options_.passQuadCon_, 0, 1);
     GetEnv().AddOption("alg:relax relax",
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
@@ -719,9 +738,18 @@ public:
   bool IfPreproEqBinVar() const
   { return MPCD( CanPreprocess(options_.preprocessEqualityBvar_) ); }
 
-  /// Whether to quadratize pow(..., const_pos_int)
+  /// Whether we pass quad obj terms
+  bool IfPassQuadObj() const { return options_.passQuadObj_; }
+
+  /// Whether we pass quad con terms
+  bool IfPassQuadCon() const { return options_.passQuadCon_; }
+
+  /// Whether to quadratize pow(..., const_pos_int).
+  /// The fact that we use the passQuadCon_ flag
+  /// is much Gurobi-biased: v9.5 does no PL-linearize Pow
+  /// for negative arguments
   bool IfQuadratizePowConstPosIntExp() const
-  { return options_.powIntPosViaQC_; }
+  { return options_.passQuadCon_; }
 
 
 public:

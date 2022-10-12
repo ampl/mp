@@ -85,18 +85,28 @@
     "name" : "prod_bin_var_01",
     "objective" : 5,
     "tags" : [],
-    "comment": "MP linearises products"
-  },
+    "options": {
+      "copt_options": "cvt:quadcon=0",
+      "comment_copt": "non convex constraint, linearise"
+    }  },
   {
     "name" : "prod_bin_var_02_obj",
     "objective" : 1,
-    "tags" : []
+    "tags" : [],
+    "options": {
+      "highs_options": "cvt:quadobj=0",
+      "copt_options": "cvt:quadobj=0 cvt:quadcon=0",
+      "comment_highs_copt": "non convex objective, linearise"
+    }
   },
   {
     "name" : "prod_01_obj",
     "tags" : [],
     "options": {
-      "gurobi_options": "nonconvex=2"
+      "gurobi_options": "nonconvex=2",
+      "highs_options": "cvt:quadobj=0",
+      "copt_options": "cvt:quadobj=0 cvt:quadcon=0",
+      "comment_highs_copt": "non convex objective, linearise"
     },
     "values": {
       "if abs(Prod01+8.5)<0.01 then 1 else 0": 1

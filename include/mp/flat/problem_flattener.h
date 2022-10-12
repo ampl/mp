@@ -120,22 +120,26 @@ protected:
       MP_DISPATCH( Convert( GetModel().common_expr(i) ) );
 
     ////////////////////////// Objectives
+    ifFltCon_ = 0;
     if (int num_objs = GetModel().num_objs())
       for (int i = 0; i < num_objs; ++i)
         MP_DISPATCH( Convert( GetModel().obj(i) ) );
 
     ////////////////////////// Algebraic constraints
+    ifFltCon_ = 1;
     if (int n_cons = GetModel().num_algebraic_cons())
       for (int i = 0; i < n_cons; ++i)
         MP_DISPATCH( ConvertAlgCon( i ) );
 
     ////////////////////////// Logical constraints
+    ifFltCon_ = 1;
     if (int n_lcons = GetModel().num_logical_cons())
       for (int i = 0; i < n_lcons; ++i)
         MP_DISPATCH( ConvertLogicalCon( i ) );
 
     ////////////////////// SOS constraints //////////////////////////
     MP_DISPATCH( ConvertSOSConstraints() );
+    ifFltCon_ = -1;
   }
 
   /// Convert variables
@@ -572,7 +576,7 @@ public:
   ////////////////////////////////////////////////////
   EExpr VisitPowConstExp(BinaryExpr e) {
     auto c = Cast<NumericConstant>(e.rhs()).value();
-    if (2.0==c && GetFlatCvt().IfQuadratizePowConstPosIntExp()) {
+    if (2.0==c && IfQuadratizePow2()) {
       auto el = Convert2EExpr(e.lhs());
       return QuadratizeOrLinearize(el, el);
     }
@@ -582,7 +586,7 @@ public:
   }
 
   EExpr VisitPow2(UnaryExpr e) {
-    if (GetFlatCvt().IfQuadratizePowConstPosIntExp()) {
+    if (IfQuadratizePow2()) {
       auto el = Convert2EExpr(e.arg());
       return QuadratizeOrLinearize(el, el);
     }
@@ -596,7 +600,7 @@ public:
     auto er = Convert2EExpr(e.rhs());
     if (er.is_constant()) {
       if (2.0==er.constant_term() &&
-          GetFlatCvt().IfQuadratizePowConstPosIntExp()) {
+          IfQuadratizePow2()) {
         return QuadratizeOrLinearize(el, el);
       }
       return AssignResult2Args(
@@ -750,7 +754,7 @@ public:
       el = Convert2AffineExpr(std::move(el));      // will convert to a new var now
     if (!er.is_affine() && !el.is_constant())
       er = Convert2AffineExpr(std::move(er));
-    if (!GetFlatCvt().IfQuadratizePowConstPosIntExp() &&
+    if (!IfQuadratizePow2() &&
         !er.is_constant() && !el.is_constant() &&
         er.GetLinTerms().size() == el.GetLinTerms().size()) {
       const auto& ellt = el.GetLinTerms();
@@ -886,7 +890,13 @@ private:
 
   std::vector<int> common_exprs_;               // variables equal to the result
 
+  int ifFltCon_ = -1;   // -1: undefined, 0: walking an expr tree in an objective,
+                        // 1: in a constraint
+
 protected:
+  /// Whether flattening constraint vs objective
+  bool IfFlatteningConstraint() const
+  { assert(ifFltCon_>=0); return ifFltCon_; }
 
   //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
   int MakeFixedVar(double value)
@@ -903,9 +913,6 @@ private:
   struct Options {
     int sos_ = 1;
     int sos2_ = 1;
-
-    /// Multiply out QP terms
-    int mulqpterms_ = FlatConverterType::ModelAPIAcceptsNonconvexQC();
   };
   Options options_;
 
@@ -913,7 +920,16 @@ private:
 protected:
   int sos() const { return options_.sos_; }
   int sos2_ampl_pl() const { return options_.sos2_; }
-  int IfMultOutQPTerms() const { return options_.mulqpterms_; }
+
+  /// Distinguish between constraints and objectives.
+  /// What about common expressions?
+  int IfMultOutQPTerms() const {
+    return IfFlatteningConstraint() ?
+          GetFlatCvt().IfPassQuadCon() : GetFlatCvt().IfPassQuadObj();
+  }
+
+  /// Quadratize Pow2 exactly when we pass QP terms
+  bool IfQuadratizePow2() const { return IfMultOutQPTerms(); }
 
 
 public:
@@ -938,16 +954,6 @@ private:
         "piecewise-linear terms, using suffixes .sos and .sosref "
         "provided by AMPL.",
         options_.sos2_, 0, 1);
-    GetEnv().AddOption("cvt:mulqpterms mulqpterms",
-                       FlatConverterType::ModelAPIAcceptsNonconvexQC() ?
-        "0/1*: Whether to multiply out factors, which is usually best "
-        "for quadratic solvers. "
-                       :
-        "0*/1: Whether to multiply out factors. The default=off is usually best "
-        "for piecewise-linear approximation of quadratics. "
-        "For convex QP solvers, to PL-approximate (nonconvex) "
-        "quadratics, set acc:quadeq=1, otherwise might want mulqpterms=1.",
-        options_.mulqpterms_, 0, 1);
   }
 
 

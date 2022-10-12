@@ -1,8 +1,10 @@
 Summary of recent updates to x-gurobi for AMPL
 ==============================================
 
-## 20221011
+## 20221012
 - *Piecewise-linear approximation of quadratics*
+    For Gurobi, non-default.
+    To use, set the options cvt:quadobj=0 cvt:quadcon=0.
     Recognizing x^2 for stronger univariate approximation
 
 

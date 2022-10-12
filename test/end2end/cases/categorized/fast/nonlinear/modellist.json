@@ -198,8 +198,12 @@
   {
     "name" : "pow_03_pow5",
     "tags" : ["continuous", "nonlinear"],
-    "options": { "gurobi_options": "nonconvex=2" },
-    "comment_options": "For quadratic solvers, pow(x, int>=0) is converted into quadratics",
+    "options": {
+      "gurobi_options": "nonconvex=2",
+      "comment_gurobi": "For quadratic solvers, pow(x, int>=0) is converted into quadratics",
+      "copt_options": "cvt:quadobj=0 cvt:quadcon=0",
+      "comment_copt": "non convex constraints, linearise"
+    },
     "objective": -32.01
   },
   {

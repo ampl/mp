@@ -1,9 +1,10 @@
 Summary of recent updates to COPT for AMPL
 ==========================================
 
-## 20221011
+## 20221012
 - *Piecewise-linear approximation of quadratics*
-    Recognizing x^2 for stronger univariate approximation.
+    For non-convex quadratics, set the following options:
+    cvt:quadobj=0 and/or cvt:quadcon=0.
 
 
 ## 20220928

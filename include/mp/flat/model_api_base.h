@@ -115,14 +115,22 @@ public:
   void FinishProblemModificationPhase() {  }
 
   ////////////////// Some standard items /////////////////
+
+  /// Placeholder for SetLinearObjective()
   void SetLinearObjective(int , const LinearObjective& ) {
     MP_UNSUPPORTED("FlatModelAPI::SetLinearObjective()");
   }
 
+  /// Whether accepting quadratic objectives:
+  /// 0 - no, 1 - convex, 2 - nonconvex
+  static int AcceptsQuadObj() { return 0; }
+
+  /// Placeholder for SetQuadraticObjective()
   void SetQuadraticObjective(int , const QuadraticObjective& ) {
     MP_UNSUPPORTED("FlatModelAPI::SetQuadraticObjective()");
   }
 
+  /// Placeholder for AddConstraint<>()
   template <class Constraint>
   void AddConstraint(const Constraint& ) {
     MP_RAISE(
@@ -151,8 +159,8 @@ public:
 
 /// ... then for a certain constraint it can be specified
 #define ACCEPT_CONSTRAINT(ConstrType, level, con_grp) \
-  mp::ConstraintAcceptanceLevel \
-    AcceptanceLevel(const ConstrType*) const \
+  static mp::ConstraintAcceptanceLevel \
+    AcceptanceLevel(const ConstrType*) \
   { return (mp::ConstraintAcceptanceLevel)level; } \
   static constexpr int \
     GroupNumber(const ConstrType*) { return con_grp; }
