@@ -596,12 +596,13 @@ public:
     auto er = Convert2EExpr(e.rhs());
     if (er.is_constant()) {
       if (2.0==er.constant_term() &&
-          GetFlatCvt().IfQuadratizePowConstPosIntExp())
+          GetFlatCvt().IfQuadratizePowConstPosIntExp()) {
         return QuadratizeOrLinearize(el, el);
-      else
-        return AssignResult2Args( PowConstraint(
-          PowConstraint::Arguments{ Convert2Var(std::move(el)) },
-          PowConstraint::Parameters{ er.constant_term() } ) );
+      }
+      return AssignResult2Args(
+            PowConstraint(
+              PowConstraint::Arguments{ Convert2Var(std::move(el)) },
+              PowConstraint::Parameters{ er.constant_term() } ) );
     }
     else if (el.is_constant())
       return VisitPowConstBase(e);
@@ -946,7 +947,7 @@ private:
         "for piecewise-linear approximation of quadratics. "
         "For convex QP solvers, to PL-approximate (nonconvex) "
         "quadratics, set acc:quadeq=1, otherwise might want mulqpterms=1.",
-        options_.sos2_, 0, 1);
+        options_.mulqpterms_, 0, 1);
   }
 
 
