@@ -1,10 +1,8 @@
 .. _modeling-guide:
 
-Modeling Guide 
-=========================
-
-for MP-based AMPL Solvers
--------------------------
+=========================================
+Modeling Guide for MP-based AMPL Solvers
+=========================================
 
 AMPL's newly extended C++ solver interface library, MP, is publicly available in the `ampl/mp <https://github.com/ampl/mp>`_ repository. Solver interfaces built with MP are able to handle a significantly expanded range of model expressions. Currently available MP-based solvers include:
 
@@ -428,7 +426,7 @@ Certain nonlinear solvers, notably Knitro, handle complementarity constraints na
 Nonlinear operators and functions
 **********************************
 
-Quadratic and thereto reducible operators
+Quadratic and power operators
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 - *expr1* * *expr2*
@@ -447,6 +445,12 @@ If the solver natively handles quadratic terms, then the quadratic coefficients 
 passed to the solver, which decides whether and how to handle them. Otherwise, quadratic
 terms are linearized where possible, such as where one of the operands is a binary variable,
 or approximated.
+
+Piecewise linearization allows handling of nonconvex QP and nonlinear models
+by convex MIP solvers.
+For convex MIQP solvers,
+to apply linearization of quadratic expressions (it is the default for linear solvers only),
+use options *cvt:quadobj=0*, *cvt:quadcon=0*.
 
 Other expressions involving these operators are converted, where possible, to simpler
 quadratic expressions and equality constraints through the use of auxiliary variables;
