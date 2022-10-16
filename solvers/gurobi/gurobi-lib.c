@@ -21,10 +21,6 @@ APIEXPORT GRBmodel* AMPLgetGRBModel(void* slv) {
   return GetGRBmodel((AMPLS_MP_Solver*)slv);
 }
 
-APIEXPORT void AMPLwritesolution(void* slv, const char* solFileName) {
-  AMPLSReportResults(slv, solFileName);
-}
-
 APIEXPORT void AMPLclosesolver(void* slv) {
   AMPLSCloseGurobi(slv);
 }
