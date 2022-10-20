@@ -9,8 +9,7 @@ namespace mp {
 /// Defining the function in ...modelapi.cc
 /// for recompilation speed
 std::unique_ptr<BasicModelManager>
-CreateMosekModelMgr(MosekCommon& cc, Env& e,
-                     pre::BasicValuePresolver*& pPre) {
+CreateMosekModelMgr(MosekCommon& cc, Env& e, pre::BasicValuePresolver*& pPre) {
   return CreateModelMgrWithFlatConverter<
       MosekModelAPI, MIPFlatConverter >(cc, e, pPre);
 }

@@ -50,8 +50,7 @@ MosekBackend::~MosekBackend() {
   CloseSolver();
 }
 
-static void MSKAPI printstr(void* handle,
-  const char* str)
+static void MSKAPI printstr(void* handle, const char* str)
 {
   fmt::print("{}", str);
   fflush(stdout);
@@ -98,13 +97,15 @@ std::string MosekBackend::GetSolverVersion() {
   return fmt::format("{}.{}.{}", MSK_VERSION_MAJOR,
     MSK_VERSION_MINOR, MSK_VERSION_REVISION);
 }
+
 void MosekBackend::InitOptionParsing() {
   OpenSolver();
 }
 
 bool MosekBackend::IsMIP() const {
-  return getIntAttr(MSK_IINF_ANA_PRO_NUM_VAR_BIN)+
-    getIntAttr(MSK_IINF_ANA_PRO_NUM_VAR_INT);
+  int is_int_sol = 0;
+  MOSEK_CCALL(MSK_solutiondef(lp(), MSK_SOL_ITG, &is_int_sol));
+  return is_int_sol;
 }
 
 bool MosekBackend::IsQCP() const {
@@ -173,45 +174,32 @@ void MosekBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 MSKsoltypee MosekBackend::GetSolutionTypeToFetch() {
+  int b = 0;
+
+  // Handle MIP
+  MOSEK_CCALL(MSK_solutiondef(lp(), MSK_SOL_ITG, &b));
+  if (b) return MSK_SOL_ITG;
+
+  // Handle LP
   MSKproblemtypee type;
-  MSK_getprobtype(lp(), &type);
-  int optimizer;
-  GetSolverOption(MSK_IPAR_OPTIMIZER, optimizer);
-  MSKoptimizertypee optype = (MSKoptimizertypee)optimizer;
-
-  // TODO Implement proper logic here
-  if (IsMIP())
-    return MSK_SOL_ITG;
-
-  if (optype == MSK_OPTIMIZER_FREE) { // decide by problem type
-    switch (type) {
-      case MSK_PROBTYPE_LO:
-        return MSK_SOL_BAS;
-      default:
-        return MSK_SOL_ITR;
-    }
-  }
-  else { // if algorithm is specifically chosen
-    switch(optype)
-    {
-    case MSK_OPTIMIZER_CONIC:
-    case MSK_OPTIMIZER_INTPNT:
-      return MSK_SOL_ITR;
-    case MSK_OPTIMIZER_MIXED_INT:
-      return MSK_SOL_ITG;
-    default: // all simplex
-      return MSK_SOL_BAS;
-    }
+  MOSEK_CCALL(MSK_getprobtype(lp(), &type));
+  if (type == MSK_PROBTYPE_LO)
+  {
+    MOSEK_CCALL(MSK_solutiondef(lp(), MSK_SOL_BAS, &b));
+    if (b) return MSK_SOL_BAS;
   }
 
+  // All other case
+  return MSK_SOL_ITR;
 }
+
 void MosekBackend::Solve() {
   if (!storedOptions_.exportFile_.empty()) {
     ExportModel(storedOptions_.exportFile_);
   }
   MOSEK_CCALL(MSK_optimizetrm(lp(), &termCode_));
   solToFetch_ = GetSolutionTypeToFetch();
-  MSK_getsolsta(lp(), solToFetch_, &solSta_); 
+  MOSEK_CCALL(MSK_getsolsta(lp(), solToFetch_, &solSta_));
   WindupMOSEKSolve();
 }
 
@@ -228,18 +216,21 @@ void MosekBackend::ReportMOSEKResults() {
   if (need_multiple_solutions())
     ReportMOSEKPool();
 }
+
 std::vector<double> MosekBackend::getPoolSolution(int i)
 {
   std::vector<double> vars(NumVars());
   // TODO get solutions in the pool 
   return vars;
 }
+
 double MosekBackend::getPoolObjective(int i)
 {
   double obj;
   // TODO get objective value of solution i
   return obj;
 }
+
 void MosekBackend::ReportMOSEKPool() {
   if (!IsMIP())
     return;
@@ -284,8 +275,9 @@ std::pair<int, std::string> MosekBackend::ConvertMOSEKStatus() {
     case MSK_SOL_STA_PRIM_AND_DUAL_FEAS:
       return { sol::UNCERTAIN, "feasible solution" };
     case MSK_SOL_STA_PRIM_INFEAS_CER:
+      return { sol::INFEASIBLE, "primal infeasible solution" };
     case MSK_SOL_STA_DUAL_INFEAS_CER:
-      return { sol::INFEASIBLE, "infeasible solution" };
+      return { sol::INF_OR_UNB, "dual infeasible solution" };
     case MSK_SOL_STA_UNKNOWN:
     case MSK_SOL_STA_PRIM_ILLPOSED_CER:
     case MSK_SOL_STA_DUAL_ILLPOSED_CER:
@@ -350,12 +342,25 @@ void MosekBackend::InitCustomOptions() {
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
 
-  // Example of direct solver option (set directly by the framework)
+  AddStoredOption("mip:constructsol mipconstructsol",
+      "Sets MSK_IPAR_MIO_CONSTRUCT_SOL. If set to MSK_ON and all integer variables "
+      "have been given a value for which a feasible mixed integer solution exists, "
+      "then MOSEK generates an initial solution to the mixed integer problem by "
+      "fixing all integer values and solving the remaining problem."
+      "Default = OFF",
+      storedOptions_.MIPConstructSol_);
+
   AddSolverOption("tech:threads threads",
     "Controls the number of threads employed by the optimizer. "
     "Default 0 ==> number of threads used will be equal to the number "
     "of cores detected on the machine.",
     MSK_IPAR_NUM_THREADS, 0, INT_MAX);
+
+  AddSolverOption("mip:relgapconst miorelgapconst",
+    "This value is used to compute the relative gap for the solution "
+    "to an integer optimization problem."
+    "Default = 1.0e-10",
+    MSK_DPAR_MIO_REL_GAP_CONST, 0.0, DBL_MAX);
 
   AddSolverOption("tech:outlev outlev",
     "0*/1: Whether to write mosek log lines to stdout.",
@@ -363,23 +368,203 @@ void MosekBackend::InitCustomOptions() {
 }
 
 double MosekBackend::MIPGap() {
-  return getDblAttr(MSK_DINF_MIO_OBJ_ABS_GAP);
+  return getDblAttr(MSK_DINF_MIO_OBJ_REL_GAP);
 }
+
 double MosekBackend::BestDualBound() {
-  // TODO
-  return 0;
-  //return getDblAttr(MOSEK_DBLATTR_BESTBND);
+  return getDblAttr(MSK_DINF_MIO_OBJ_BOUND);
 }
 
 double MosekBackend::MIPGapAbs() {
-  return std::fabs(
-    ObjectiveValue() - BestDualBound());
+  return getDblAttr(MSK_DINF_MIO_OBJ_ABS_GAP);
 }
 
+SensRanges MosekBackend::GetSensRanges()
+{
+  SensRanges sensr;
+
+  // Set sensitivity range parameters for constraints
+  int lencon = NumLinCons();
+  std::vector<MSKint32t> cindex(lencon);
+  std::vector<MSKmarke> cmarklb(lencon);
+  std::vector<MSKmarke> cmarkub(lencon);
+  for (int i=0; i<lencon; i++)
+  {
+    cindex[i] = i;
+    cmarklb[i] = MSK_MARK_LO;
+    cmarkub[i] = MSK_MARK_UP;
+  }
+  std::vector<MSKrealt> cpricelblo(lencon);
+  std::vector<MSKrealt> cpricelbhi(lencon);
+  std::vector<MSKrealt> cpriceublo(lencon);
+  std::vector<MSKrealt> cpriceubhi(lencon);
+  std::vector<MSKrealt> crangelblo(lencon);
+  std::vector<MSKrealt> crangelbhi(lencon);
+  std::vector<MSKrealt> crangeublo(lencon);
+  std::vector<MSKrealt> crangeubhi(lencon);
+
+  // Set sensitivity range parameters for variables
+  int lenvar = NumVars();
+  std::vector<MSKint32t> vindex(lenvar);
+  std::vector<MSKmarke> vmarklb(lenvar);
+  std::vector<MSKmarke> vmarkub(lenvar);
+  for (int i=0; i<lenvar; i++)
+  {
+    vindex[i] = i;
+    vmarklb[i] = MSK_MARK_LO;
+    vmarkub[i] = MSK_MARK_UP;
+  }
+  std::vector<MSKrealt> vpricelblo(lenvar);
+  std::vector<MSKrealt> vpricelbhi(lenvar);
+  std::vector<MSKrealt> vpriceublo(lenvar);
+  std::vector<MSKrealt> vpriceubhi(lenvar);
+  std::vector<MSKrealt> vrangelblo(lenvar);
+  std::vector<MSKrealt> vrangelbhi(lenvar);
+  std::vector<MSKrealt> vrangeublo(lenvar);
+  std::vector<MSKrealt> vrangeubhi(lenvar);
+
+  std::vector<MSKrealt> opricelo(lenvar);
+  std::vector<MSKrealt> opricehi(lenvar);
+  std::vector<MSKrealt> orangelo(lenvar);
+  std::vector<MSKrealt> orangehi(lenvar);
+
+  // Compute sensitivity ranges for lower bounds
+  MOSEK_CCALL(
+    MSK_primalsensitivity(
+        lp(),
+        lencon,
+        cindex.data(),
+        cmarklb.data(),
+        lenvar,
+        vindex.data(),
+        vmarklb.data(),
+        cpricelblo.data(),
+        cpricelbhi.data(),
+        crangelblo.data(),
+        crangelbhi.data(),
+        vpricelblo.data(),
+        vpricelbhi.data(),
+        vrangelblo.data(),
+        vrangelbhi.data()
+    )
+  );
+
+  // Compute sensitivity ranges for upper bounds
+  MOSEK_CCALL(
+    MSK_primalsensitivity(
+        lp(),
+        lencon,
+        cindex.data(),
+        cmarkub.data(),
+        lenvar,
+        vindex.data(),
+        vmarkub.data(),
+        cpriceublo.data(),
+        cpriceubhi.data(),
+        crangeublo.data(),
+        crangeubhi.data(),
+        vpriceublo.data(),
+        vpriceubhi.data(),
+        vrangeublo.data(),
+        vrangeubhi.data()
+    )
+  );
+
+  // Compute sensitivity ranges for objective coeffs
+  MOSEK_CCALL(
+    MSK_dualsensitivity(
+        lp(),
+        lenvar,
+        vindex.data(),
+        opricelo.data(),
+        opricehi.data(),
+        orangelo.data(),
+        orangehi.data()
+    )
+  );
+
+  // Get bounds and add them to sensitivity ranges
+  std::vector<MSKboundkeye> vbk(lenvar);
+  std::vector<MSKrealt> vbl(lenvar), vbu(lenvar);
+  MOSEK_CCALL(MSK_getvarboundslice(lp(), (MSKint32t)0, (MSKint32t)lenvar, vbk.data(), vbl.data(), vbu.data()));
+  std::transform(vrangelblo.begin(), vrangelblo.end(), vbl.begin(), vrangelblo.begin(), std::plus<MSKrealt>());
+  std::transform(vrangelbhi.begin(), vrangelbhi.end(), vbl.begin(), vrangelbhi.begin(), std::plus<MSKrealt>());
+  std::transform(vrangeublo.begin(), vrangeublo.end(), vbu.begin(), vrangeublo.begin(), std::plus<MSKrealt>());
+  std::transform(vrangeubhi.begin(), vrangeubhi.end(), vbu.begin(), vrangeubhi.begin(), std::plus<MSKrealt>());
+  for (int i=0; i<lenvar; i++)
+  {
+    if (vbk[i] == MSK_BK_UP || vbk[i] == MSK_BK_FR)
+    {
+      vrangelblo[i] = -MSK_INFINITY;
+      vrangelbhi[i] = MSK_INFINITY;
+    }
+    if (vbk[i] == MSK_BK_LO || vbk[i] == MSK_BK_FR)
+    {
+      vrangeublo[i] = -MSK_INFINITY;
+      vrangeubhi[i] = MSK_INFINITY;
+    }
+  }
+
+  std::vector<MSKboundkeye> cbk(lencon);
+  std::vector<MSKrealt> cbl(lencon), cbu(lencon);
+  MOSEK_CCALL(MSK_getconboundslice(lp(), (MSKint32t)0, (MSKint32t)lencon, cbk.data(), cbl.data(), cbu.data()));
+  std::transform(crangelblo.begin(), crangelblo.end(), cbl.begin(), crangelblo.begin(), std::plus<MSKrealt>());
+  std::transform(crangelbhi.begin(), crangelbhi.end(), cbl.begin(), crangelbhi.begin(), std::plus<MSKrealt>());
+  std::transform(crangeublo.begin(), crangeublo.end(), cbu.begin(), crangeublo.begin(), std::plus<MSKrealt>());
+  std::transform(crangeubhi.begin(), crangeubhi.end(), cbu.begin(), crangeubhi.begin(), std::plus<MSKrealt>());
+  for (int i=0; i<lencon; i++)
+  {
+    if (cbk[i] == MSK_BK_UP || cbk[i] == MSK_BK_FR)
+    {
+      crangelblo[i] = -MSK_INFINITY;
+      crangelbhi[i] = MSK_INFINITY;
+    }
+    if (cbk[i] == MSK_BK_LO || cbk[i] == MSK_BK_FR)
+    {
+      crangeublo[i] = -MSK_INFINITY;
+      crangeubhi[i] = MSK_INFINITY;
+    }
+  }
+
+  std::vector<MSKrealt> c(lenvar);
+  MOSEK_CCALL(MSK_getc(lp(), c.data()));
+  std::transform(orangelo.begin(), orangelo.end(), c.begin(), orangelo.begin(), std::plus<MSKrealt>());
+  std::transform(orangehi.begin(), orangehi.end(), c.begin(), orangehi.begin(), std::plus<MSKrealt>());
+
+  // Return sensitivity ranges
+  auto mvlbhi = GetValuePresolver().PostsolveGenericDbl({ {vrangelbhi} });
+  auto mvlblo = GetValuePresolver().PostsolveGenericDbl({ {vrangelblo} });
+  auto mvubhi = GetValuePresolver().PostsolveGenericDbl({ {vrangeubhi} });
+  auto mvublo = GetValuePresolver().PostsolveGenericDbl({ {vrangeublo} });
+  auto mvobjhi = GetValuePresolver().PostsolveGenericDbl({ {orangehi} });
+  auto mvobjlo = GetValuePresolver().PostsolveGenericDbl({ {orangelo} });
+  auto mvconlbhi = GetValuePresolver().PostsolveGenericDbl({ {}, {{{CG_Linear, crangelbhi}}} });
+  auto mvconlblo = GetValuePresolver().PostsolveGenericDbl({ {}, {{{CG_Linear, crangelblo}}} });
+  auto mvconubhi = GetValuePresolver().PostsolveGenericDbl({ {}, {{{CG_Linear, crangeubhi}}} });
+  auto mvconublo = GetValuePresolver().PostsolveGenericDbl({ {}, {{{CG_Linear, crangeublo}}} });
+  std::vector<MSKrealt> rhs(lencon, 0.0);
+  auto mvrhshi = GetValuePresolver().PostsolveGenericDbl({ {}, {{{CG_Linear, rhs}}} });
+  auto mvrhslo = GetValuePresolver().PostsolveGenericDbl({ {}, {{{CG_Linear, rhs}}} });
+
+  sensr.varlbhi = mvlbhi.GetVarValues()();
+  sensr.varlblo = mvlblo.GetVarValues()();
+  sensr.varubhi = mvubhi.GetVarValues()();
+  sensr.varublo = mvublo.GetVarValues()();
+  sensr.varobjhi = mvobjhi.GetVarValues()();
+  sensr.varobjlo = mvobjlo.GetVarValues()();
+  sensr.conlbhi = mvconlbhi.GetConValues()();
+  sensr.conlblo = mvconlblo.GetConValues()();
+  sensr.conubhi = mvconubhi.GetConValues()();
+  sensr.conublo = mvconublo.GetConValues()();
+  sensr.conrhshi = mvrhshi.GetConValues()();
+  sensr.conrhslo = mvrhslo.GetConValues()();
+
+  return sensr;
+}
 
 ArrayRef<int> MosekBackend::VarStatii() {
   std::vector<int> vars(NumVars());
-  MOSEK_CCALL(MSK_getskx(lp(), MSK_SOL_BAS, (MSKstakeye *)vars.data()));
+  MOSEK_CCALL(MSK_getskx(lp(), solToFetch_, (MSKstakeye *)vars.data()));
 
   for (auto& s : vars)
   {
@@ -410,7 +595,7 @@ ArrayRef<int> MosekBackend::VarStatii() {
 
 ArrayRef<int> MosekBackend::ConStatii() {
   std::vector<int> cons(NumLinCons());
-  MOSEK_CCALL(MSK_getskc(lp(), MSK_SOL_BAS, (MSKstakeye *)cons.data()));
+  MOSEK_CCALL(MSK_getskc(lp(), solToFetch_, (MSKstakeye *)cons.data()));
 
   for (auto& s : cons)
   {
@@ -487,7 +672,7 @@ void MosekBackend::VarStatii(ArrayRef<int> vst) {
   }
 
   // Input the variable status keys
-  MOSEK_CCALL(MSK_putskx(lp(), MSK_SOL_BAS, (MSKstakeye *)skx.data()));
+  MOSEK_CCALL(MSK_putskx(lp(), solToFetch_, (MSKstakeye *)skx.data()));
 }
 
 void MosekBackend::ConStatii(ArrayRef<int> cst) {
@@ -542,7 +727,7 @@ void MosekBackend::ConStatii(ArrayRef<int> cst) {
   }
 
   // Input the variable status keys
-  MOSEK_CCALL(MSK_putskc(lp(), MSK_SOL_BAS, (MSKstakeye *)skc.data()));
+  MOSEK_CCALL(MSK_putskc(lp(), solToFetch_, (MSKstakeye *)skc.data()));
 }
 
 SolutionBasis MosekBackend::GetBasis() {
@@ -577,8 +762,52 @@ void MosekBackend::AddPrimalDualStart(Solution sol)
         { sol.primal, sol.dual } );
   auto x0 = mv.GetVarValues()();
   auto pi0 = mv.GetConValues()(CG_Linear);
-  MOSEK_CCALL(MSK_putxx(lp(), MSK_SOL_ITR, (MSKrealt *)x0.data()));
-  MOSEK_CCALL(MSK_puty(lp(), MSK_SOL_ITR, (MSKrealt *)pi0.data()));
+  MOSEK_CCALL(MSK_putxx(lp(), solToFetch_, (MSKrealt *)x0.data()));
+  MOSEK_CCALL(MSK_puty(lp(), solToFetch_, (MSKrealt *)pi0.data()));
+}
+
+void MosekBackend::AddMIPStart(ArrayRef<double> x0_unpres)
+{
+  auto mv = GetValuePresolver().PresolveSolution( { x0_unpres } );
+  auto x0 = mv.GetVarValues()();
+
+  if (Mosek_mip_construct_sol())
+  {
+    // Use integer part of given solution to construct initial solution by solving for continuous part.
+    MOSEK_CCALL(MSK_putintparam(lp(), MSK_IPAR_MIO_CONSTRUCT_SOL, MSK_ON));
+  }
+  MOSEK_CCALL(MSK_putxx(lp(), solToFetch_, (MSKrealt *)x0.data()));
+}
+
+ArrayRef<double> MosekBackend::Ray()
+{
+  // Problem is checked to be dual infeasible at this point, so the ray is the primal solution variable.
+  // (Primal can be unbounded or infeasible.)
+  std::vector<double> xx(NumVars());
+  MOSEK_CCALL(MSK_getxx(lp(), solToFetch_, (MSKrealt *)xx.data()));
+  // Argument is a ModelValues<ValueMap>, which can be constructed from a ValueMap for only the variables.
+  auto mv = GetValuePresolver().PostsolveSolution({xx});
+  // We get the ValueMap for variables, and by calling that, the value itself.
+  // (Similar to .MoveOut(0) for single key maps)
+  auto uray = mv.GetVarValues()();
+  return uray;
+}
+
+ArrayRef<double> MosekBackend::DRay()
+{
+  // Problem is checked to be (primal) infeasible at this point, so the ray is the dual solution variable.
+  // (Dual can be unbounded or infeasible.)
+  std::vector<double> y(NumLinCons());
+  MOSEK_CCALL(MSK_gety(lp(), solToFetch_, (MSKrealt *)y.data()));
+  // Argument is a ModelValues<ValueMap>, which is constructed now from two ValueMaps, an empty for variables, and
+  // a second one for constraints. The constraints ValueMap is given as a std::map for only linear constraints
+  auto mv = GetValuePresolver().PostsolveSolution({
+                                                    {},
+                                                    { { {CG_Linear, std::move(y)} } }
+                                                  });
+  // We get the ValueMap for constraints, and by calling MoveOut(), the value itself.
+  // (Similar to .MoveOut(0) for single key maps)
+  return mv.GetConValues().MoveOut();
 }
 
 } // namespace mp
