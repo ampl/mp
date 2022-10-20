@@ -54,6 +54,8 @@ public:
   /// Length of a suffix vector of given kind
   virtual size_t GetSuffixSize(int kind) = 0;
 
+  virtual void SetSolutionFileName(const std::string& fileName) = 0;
+
   /// Report final solution
   virtual void HandleSolution(int, fmt::CStringRef,
                               const double *, const double *,

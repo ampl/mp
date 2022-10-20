@@ -16,4 +16,5 @@ Testing
 .idea
 *.csv
 
+.vscode
 /src/expr-info.cc

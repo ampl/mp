@@ -1,3 +1,5 @@
+.. _components:
+
 Reusable components and solver driver API
 =========================================
 
@@ -19,7 +21,7 @@ Corresponding APIs are described below.
 NL file reader
 ~~~~~~~~~~~~~~
 
-MP provides a high-performance :doc:`.nl file reader <nl-reader>`
+MP provides a high-performance nl file reader
 which is up to `6x faster
 <http://zverovich.net/slides/2015-01-11-ics/socp-reformulation.html#/14>`_
 than the one provided by the traditional
@@ -216,7 +218,7 @@ Basic :ref:`Model/solution I/O <NL-SOL-files>` and
 :ref:`model managers <model-manager>` rely on a `mp::ProblemBuilder` concept.
 
 * A custom builder can pass the NL model directly into the solver. A few examples are in
-  `nl-example.cc <https://github.com/ampl/mp/blob/master/src/nl-example.cc>`_, `mp::Problem`,
+  `nl-example.cc <https://github.com/ampl/mp/blob/develop/src/nl-example.cc>`_, `mp::Problem`,
   `SCIP 8.0 NL file reader <https://scipopt.org/>`_.
 
 * Alternatively, standard classes `mp::Problem` and `mp::ColProblem` provide intermediate
@@ -397,19 +399,19 @@ To implement value pre- / postsolving, the following API is used:
 Conversion graph
 ~~~~~~~~~~~~~~~~
 
-The flattening and conversion graph can be exported by the `cvt:writegraph`
+The flattening and conversion graph can be exported by the ``cvt:writegraph``
 option (WIP).
 
 At the moment only arcs are exported. Terminal nodes (variables, constraints,
-objectives) can be seen in the NL model (ampl: `expand`) and the
-final flat model (x-gurobi: option `writeprob`).
+objectives) can be seen in the NL model (ampl: ``expand``) and the
+final flat model (x-gurobi: option ``writeprob``).
 
 
 C++ ASL adapter
 ---------------
 
 An efficient type-safe `C++ adapter for the traditional ASL library
-<https://github.com/ampl/mp/tree/master/src/asl>`_ for
+<https://github.com/ampl/mp/tree/develop/src/asl>`_ for
 connecting solvers to AMPL and other systems. ASL has many additional functions,
 such as writing NL files and automatic differentiation.
 

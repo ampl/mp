@@ -41,6 +41,8 @@ class SolutionHandler {
   // infeasible or unbounded.
   virtual void HandleSolution(int status, fmt::CStringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
+
+  virtual void OverrideSolutionFileName(const std::string& fileName) {};
 };
 
 /// "Silent" solution handler

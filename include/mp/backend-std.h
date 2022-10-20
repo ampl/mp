@@ -22,6 +22,7 @@
 #define STD_BACKEND_H_
 
 #include <cmath>
+#include <limits>
 #include <functional>
 
 #include "mp/clock.h"
@@ -102,7 +103,7 @@ public:
   /// Placeholder for solution getter (postsolved, final solution)
   virtual Solution GetSolution() = 0;
   /// Placeholder for objective values getter (postsolved, final solution)
-  /// Needed only if we don't want the whole solution,
+  /// Used only if we don't want the solution values,
   /// otherwise GetSolution() provides this
   virtual ArrayRef<double> GetObjectiveValues() = 0;
 
@@ -201,7 +202,9 @@ public:
   void InputExtras() override {
     InputStdExtras();
   }
-
+  void SetSolutionFileName(const std::string& filename) {
+    GetMM().SetSolutionFileName(filename);
+  }
   /// Report results
   void ReportResults() override {
     ReportSuffixes();
@@ -485,11 +488,19 @@ protected:
 
 
   /////////////////////////////// SOME MATHS ////////////////////////////////
+
+  /// Use the solver' inf
   bool IsFinite(double n) const {
     return n>MP_DISPATCH( MinusInfinity() ) &&
         n<MP_DISPATCH( Infinity() );
   }
 
+  /// AMPL's inf
+  static constexpr double AMPLInf()
+  { return std::numeric_limits<double>::infinity(); }
+  /// AMPL's -inf
+  static constexpr double AMPLMinusInf()
+  { return -std::numeric_limits<double>::infinity(); }
 
 protected:
   /// Read int suffixes for several entities (var/con/obj).
@@ -723,7 +734,7 @@ protected:
       AddStoredOption("alg:kappa kappa basis_cond",
         "Whether to return the estimated condition number (kappa) of "
         "the optimal basis (default 0): sum of 1 = report kappa in the result message; "
-        "2 = return kappa in the solver-defined suffix kappa on the objective and "
+        "2 = return kappa in the solver-defined suffix .kappa on the objective and "
         "problem. The request is ignored when there is no optimal basis.",
         storedOptions_.exportKappa_);
 

@@ -63,10 +63,6 @@ std::string HighsBackend::GetSolverVersion() {
 }
 
 
-bool HighsBackend::IsMIP() const {
-  return isMIP(); // from backend
-}
-
 bool HighsBackend::IsQCP() const {
   return false; 
 }
@@ -79,7 +75,6 @@ Solution HighsBackend::GetSolution() {
 
 ArrayRef<double> HighsBackend::PrimalSolution() {
   int num_vars = NumVars();
-  int error;
   std::vector<double> x(num_vars);
   Highs_getSolution(lp(), x.data(), NULL, NULL, NULL);
   return x;
@@ -92,8 +87,7 @@ pre::ValueMapDbl HighsBackend::DualSolution() {
 ArrayRef<double> HighsBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  Highs_getSolution(lp(), NULL, NULL, pi.data(), NULL);
-  int error = 0;
+  int error = Highs_getSolution(lp(), NULL, NULL, pi.data(), NULL);
   if (error)
     pi.clear();
   return pi;
@@ -154,7 +148,6 @@ SolutionBasis HighsBackend::GetBasis() {
     varstt = mv.GetVarValues()();
     constt = mv.GetConValues()();
     assert(varstt.size());
-    assert(constt.size());
   }
   return { std::move(varstt), std::move(constt) };
 }
@@ -518,7 +511,7 @@ void HighsBackend::InitCustomOptions() {
     "0/1*/2: MIP solver report level",
     "mip_report_level", 0, 2);
 
-  AddSolverOption("mip:intfeastol intfeastol mip_feasibility_tolerance",
+  AddSolverOption("mip:intfeastol intfeastol inttol mip_feasibility_tolerance",
     "Feasibility tolerance for integer variables (default 1e-06).",
     "mip_feasibility_tolerance", 1e-10, Infinity());
 
@@ -555,9 +548,9 @@ double HighsBackend::MIPGapAbs() {
 // AMPLs
 
 AMPLS_MP_Solver* AMPLSOpenHighs(
-  const char* slv_opt) {
+  const char* slv_opt, CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::HighsBackend()},
-    slv_opt);
+    slv_opt, cb);
 }
 
 void AMPLSCloseHighs(AMPLS_MP_Solver* slv) {

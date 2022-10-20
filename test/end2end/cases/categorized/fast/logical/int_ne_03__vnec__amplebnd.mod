@@ -1,20 +1,19 @@
 
 # -------------------------------------------------------------
-# x!=const for integer variable with ample bounds
-# so we use big-M or indicators
+# x!=const for integer variable
 # -------------------------------------------------------------
 
-var x integer >= -2e9, <= -1e9;
+var x integer >= -2e2, <= 1e2;
 var y integer;
 
 minimize XMinus5:
     y+3;
 
 subj to NE:
-    x!=(-1e9-2);
+    x!=(-12);
 
 subj to YUp:
-    y >= x-(-1e9-2);
+    y >= x-(-12);
 
 subj to YDown:
-    y >= (-1e9-2)-x;
+    y >= (-12)-x;

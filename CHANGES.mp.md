@@ -1,16 +1,30 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
-## unreleased
-- *Bug fixes*
+## 20221012
+- *Piecewise-linear approximation of quadratics*
+    Automatic for linear solvers.
+    For convex QP solvers, set the following options:
+    cvt:quadobj=0 cvt:quadcon=0 to linearize nonconvex objective(s)
+    and/or constraints.
+    Recognizing x^2 for stronger univariate approximation.
 
+## 20220928
+- *Piecewise-linear approximation of univariate nonlinear functions*
+    Approximation of exp, a^x, x^a, log, log10, trigonometric and hyperbolic
+    functions.
+
+- *Default value of big-M*
+    For linearization of logical constraints on variables without finite bounds,
+    option cvt:mip:bigM can provide a default big-M bound.
+    
 
 ## 20220725
 - *Solution file export* 
     On Windows now creates files with LF only to avoid issues when exporting
-    suffixes to AMPL
+    suffixes to AMPL.
 
-    Multiple solutions export file format amended
+    Multiple solutions export file format amended.
 
 
 ## 20220720

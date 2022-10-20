@@ -33,7 +33,6 @@ void HighsModelAPI::AddVariables(const VarArrayDef& v) {
   }
   HIGHS_CCALL(Highs_addCols(lp(), v.size(), costs.data(), lbs.data(), ubs.data(), 0, NULL, NULL, NULL));
   if (intIndices.size() > 0) {
-    isMIP(true);
     std::vector<int> types(intIndices.size(), 1); // TODO get the 1 from solver API?
     HIGHS_CCALL(Highs_changeColsIntegralityBySet(lp(), intIndices.size(),
       intIndices.data(), types.data()));

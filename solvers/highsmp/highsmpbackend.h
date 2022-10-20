@@ -55,18 +55,17 @@ public:
  /**
   * Get MIP Gap
   **/
-  ALLOW_STD_FEATURE(RETURN_MIP_GAP, false)
+  ALLOW_STD_FEATURE(RETURN_MIP_GAP, true)
   double MIPGap() override;
   double MIPGapAbs() override;
   /**
   * Get MIP dual bound
   **/
-  ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, false)
+  ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
   double BestDualBound() override;
 
 
   /////////////////////////// Model attributes /////////////////////////
-  bool IsMIP() const override;
   bool IsQCP() const override;
   
   //////////////////////////// SOLVING ///////////////////////////////

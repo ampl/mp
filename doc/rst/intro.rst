@@ -1,32 +1,10 @@
+.. _library-intro:
+
 MP library introduction
 =======================
 
-
-
-What is MP library?
--------------------
-
-MP Library is a set of solver drivers and tools recommended to create
-new AMPL solver drivers. It provides type-safe and flexible interfaces
-suitable for linear and mixed-integer, non-linear, and
-Constraint Programming solvers. MP replaces the previous
-`AMPL Solver Library`__ for solvers not requiring automatic differentiation.
-It is implemented in C++, parts of the API are exported in C.
-
-__ https://github.com/ampl/asl
-
-
-Why MP library?
----------------
-
-MP library aims to provide efficient, simple-to-use and highly
-configurable solver drivers and tools.
-For a typical MIP solver, a few days are enough to code a driver.
-
-
 Download and Installation
 -------------------------
-
 
 Downloading solver binaries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,7 +29,7 @@ An included `CMake build script`__ can be used to build the MP library,
 solver interfaces and function libraries on a wide range of platforms.
 You can download CMake for free from http://www.cmake.org/download/.
 
-__ https://github.com/ampl/mp/tree/master/CMakeLists.txt
+__ https://github.com/ampl/mp/tree/develop/CMakeLists.txt
 
 CMake workflow
 ``````````````
@@ -142,7 +120,7 @@ the standard location::
            -DORTOOLSMP_INCLUDE_DIRS=/usr/local/include
            -DORTOOLSMP_LIBS=/usr/local/lib/libortools.dylib
 
-Sometimes the target name ends with *mp* but *depname* does not::
+Sometimes the target name ends with MP but *depname* does not::
 
   cmake .. -DBUILD=xpressmp
            -DXPRESS_INCLUDE_DIRS=...

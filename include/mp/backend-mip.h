@@ -149,8 +149,10 @@ public:
   **/
   DEFINE_STD_FEATURE( RETURN_MIP_GAP )
   ALLOW_STD_FEATURE( RETURN_MIP_GAP, false )
-  virtual double MIPGap() { return MP_DISPATCH( Infinity() ); }
-  virtual double MIPGapAbs() { return MP_DISPATCH( Infinity() ); }
+  /// Should return AMPLInf() if not available
+  virtual double MIPGap() { return MP_DISPATCH( AMPLInf() ); }
+  /// Should return AMPLInf() if not available
+  virtual double MIPGapAbs() { return MP_DISPATCH( AMPLInf() ); }
   /**
   * Get MIP dual bound
   **/
@@ -325,6 +327,13 @@ public:
       ReportSuffix(sufAbsMipGapObj, dbl);
       ReportSuffix(sufAbsMipGapProb, dbl);
     }
+    if (!(GetMIPOptions().returnMipGap_ & 4)) {
+      double absMIPGap = MP_DISPATCH(MIPGapAbs());
+      if(absMIPGap > 0. && absMIPGap < MP_DISPATCH(Infinity()))
+        BaseBackend::AddToSolverMessage(
+              fmt::format("absmipgap={}, relmipgap={}",
+                          absMIPGap, MP_DISPATCH(MIPGap())));
+    }
   }
 
   virtual void ReportBestDualBound() {
@@ -385,7 +394,11 @@ protected:
   int basis() const
   { return IMPL_HAS_STD_FEATURE(BASIS) ? GetMIPOptions().basis_ : 0; }
   bool need_basis_in() const { return 1 & basis(); }
-  bool need_basis_out() const { return 2 & basis(); }
+  bool need_basis_out() const {
+    return IsMIP() ?
+          (need_fixed_MIP()) :          // assume the solver did it
+          (2 & basis());
+  }
 
   int warmstart() const
   { return IMPL_HAS_STD_FEATURE(WARMSTART) ? GetMIPOptions().warmstart_ : 0; }
@@ -478,7 +491,7 @@ protected:
 
   ////////////////////////////////////////////////////////////////
   virtual void InitMIPOptions() {
-      if (IMPL_HAS_STD_FEATURE( RETURN_MIP_GAP ))
+      if (IMPL_HAS_STD_FEATURE( LAZY_USER_CUTS ))
         AddStoredOption("mip:lazy lazy",
           "Whether to recognize suffix .lazy on constraints: "
           "sum of\n"

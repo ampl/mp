@@ -1,15 +1,5 @@
 [
-  {
-    "name" : "logA_1",
-    "objective" : 0.796515,
-    "tags" : ["log"]
-  },
-  {
-    "name" : "log_1",
-    "objective" : 1,
-    "tags" : ["log"]
-  },
-  {
+   {
     "name" : "max1",
     "objective" : 4,
     "tags" : ["logical"]

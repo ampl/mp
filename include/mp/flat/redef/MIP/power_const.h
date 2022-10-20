@@ -4,20 +4,22 @@
 #include <cmath>
 #include <cassert>
 
-#include "mp/flat/redef/redef_base.h"
-#include "mp/flat/constr_std.h"
+#include "mp/flat/redef/MIP/lin_approx.h"
 
 namespace mp {
 
 /// Converts PowConstraint (const exponent) for MIP
 template <class ModelConverter>
 class PowConstExponentConverter_MIP :
-    public BasicFuncConstrCvt<
-      PowConstExponentConverter_MIP<ModelConverter>, ModelConverter> {
+    public FuncConConverter_MIP_CRTP<      // Derive from PL Approximator
+      PowConstExponentConverter_MIP<ModelConverter>,
+      ModelConverter,
+      PowConstraint> {
 public:
   /// Base class
-  using Base = BasicFuncConstrCvt<
-    PowConstExponentConverter_MIP<ModelConverter>, ModelConverter>;
+  using Base = FuncConConverter_MIP_CRTP<
+    PowConstExponentConverter_MIP<ModelConverter>,
+    ModelConverter, PowConstraint>;
   /// Constructor
   PowConstExponentConverter_MIP(ModelConverter& mc) : Base(mc) { }
   /// Converted item type
@@ -25,20 +27,32 @@ public:
 
   /// Check whether the constraint
   /// needs to be converted despite being accepted by ModelAPI.
+  /// This covers cases not accepted by GenConstrPow in Gurobi 9:
+  /// negative exponent, negative lower bound for x while
+  /// integer exponent.
   bool IfNeedsConversion(const ItemType& con, int ) {
     auto pwr = con.GetParameters()[0];
-    return GetMC().lb(con.GetArguments()[0]) < 0.0 &&
-        GetMC().is_integer_value(pwr) && pwr>=0.0;
+    return GetMC().lb(con.GetArguments()[0]) < 0.0 ||
+        pwr < 0.0;
   }
 
   /// Convert in any context
-  void Convert(const ItemType& con, int ) {
+  void Convert(const ItemType& con, int i) {
     assert(!con.GetContext().IsNone());
     auto pwr = con.GetParameters()[0];
-    if (!GetMC().is_integer_value(pwr) || pwr < 0.0)
-      throw ConstraintConversionFailure( "PowConNegOrFracExp",
-          "Not converting PowConstraint with negative "
-          "or fractional exponent");
+    if (GetMC().IfQuadratizePowConstPosIntExp() &&
+        GetMC().is_integer_value(pwr) && pwr > 0.0)
+      Convert2Quadratics(con, i);
+    else
+      Convert2PL(con, i);
+  }
+
+
+protected:
+  /// Convert into quadratics
+  void Convert2Quadratics(const ItemType& con, int ) {
+    auto pwr = con.GetParameters()[0];
+    assert(GetMC().is_integer_value(pwr) && pwr > 0.0);
     auto arg = con.GetArguments()[0];
     auto arg1 = arg, arg2 = arg;         // new variables
     if (2.0<pwr) {
@@ -64,8 +78,11 @@ public:
           con.GetResultVar(), con.GetContext());
   }
 
+  /// PL approximate
+  void Convert2PL(const ItemType& con, int i) {
+    Base::Convert(con, i);
+  }
 
-protected:
   /// Reuse the stored ModelConverter
   using Base::GetMC;
 };

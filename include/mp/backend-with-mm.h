@@ -52,6 +52,7 @@ protected:
   /// Access to ModelManager's interface
   virtual void HandleSolution(int status, fmt::CStringRef msg,
       const double *x, const double *y, double obj) {
+    GetMM().SetSolutionFileName(GetOverridenSolutionFile());
     GetMM().HandleSolution(status, msg, x, y, obj);
   }
 
@@ -110,10 +111,12 @@ protected:
     GetMM().ReportSuffix(suf, values);
   }
 
+  /// Report single value for all elements of the suffix
   template <class N>
   void ReportSingleSuffix(const SuffixDef<N>& suf,
                           N value) {
-    std::vector<N> values(1, value);
+    std::vector<N> values(
+          GetMM().GetSuffixSize(suf.kind()), value);
     GetMM().ReportSuffix(suf, values);
   }
 

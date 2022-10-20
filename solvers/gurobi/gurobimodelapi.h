@@ -40,6 +40,9 @@ public:
 
   //////////////////////////// OBJECTIVES /////////////////////////////////////
   void SetLinearObjective( int iobj, const LinearObjective& lo );
+  /// Whether accepting quadratic objectives:
+  /// 0 - no, 1 - convex, 2 - nonconvex
+  static int AcceptsQuadObj() { return 2; }
   void SetQuadraticObjective( int iobj, const QuadraticObjective& qo );
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
@@ -57,6 +60,10 @@ public:
   void AddConstraint(const LinConEQ& lc);
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
+
+  /// Ask if the solver accepts non-convex quadratic constraints
+  /// (Gurobi needs option nonconvex=2 for solving)
+  static constexpr bool AcceptsNonconvexQC() { return true; }
 
   /// If using quadratics,
   /// QuadCon(LE/EQ/GE) should have 'Recommended'

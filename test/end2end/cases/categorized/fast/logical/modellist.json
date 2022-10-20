@@ -83,8 +83,11 @@
     "tags" : ["logical"]
   },
   {
-    "name" : "float_ne_01__vnec",
-    "objective" : 3.0000997781753544,
+    "name" : "float_ne_01__vnec cvt:mip:eps",
+    "options": {
+      "ANYSOLVER_options": "cvt:mip:eps=0.01"
+    },
+    "objective" : 0.01,
     "tags" : ["logical"]
   },
   {

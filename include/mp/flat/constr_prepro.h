@@ -72,12 +72,6 @@ public:
                           std::max(lb, ub) );
   }
 
-  /// Preprocess Tan
-  template <class PreprocessInfo>
-  void PreprocessConstraint(
-      TanConstraint& , PreprocessInfo& ) {
-  }
-
   /// Preprocess Min
   template <class PreprocessInfo>
   void PreprocessConstraint(
@@ -348,6 +342,64 @@ public:
   void PreprocessConstraint(
       CosConstraint& , PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(-1.0, 1.0);
+  }
+
+  /// Preprocess Tan
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      TanConstraint& , PreprocessInfo& ) {
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      AsinConstraint& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(-MPD(Pi())/2, MPD(Pi()));
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      AcosConstraint& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(0.0, MPD(Pi()));
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      AtanConstraint& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(-MPD(Pi())/2, MPD(Pi())/2);
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      SinhConstraint& , PreprocessInfo& ) {
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      CoshConstraint& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(1.0, MPD(Infty()));
+  }
+
+  /// Preprocess Tan
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      TanhConstraint& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(-1.0, 1.0);
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      AsinhConstraint& , PreprocessInfo& ) {
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      AcoshConstraint& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(0.0, MPD(Infty()));
+  }
+
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      AtanhConstraint& , PreprocessInfo& ) {
   }
 
   template <class PreprocessInfo>

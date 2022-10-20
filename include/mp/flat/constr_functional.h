@@ -97,6 +97,42 @@ DEF_NUMERIC_FUNC_CONSTR( CosConstraint, VarArray1,
 DEF_NUMERIC_FUNC_CONSTR( TanConstraint, VarArray1,
                                    "r = tan(v)");
 
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( AsinConstraint, VarArray1,
+                                   "r = asin(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( AcosConstraint, VarArray1,
+                                   "r = acos(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( AtanConstraint, VarArray1,
+                                   "r = atan(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( SinhConstraint, VarArray1,
+                                   "r = sinh(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( CoshConstraint, VarArray1,
+                                   "r = cosh(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( TanhConstraint, VarArray1,
+                                   "r = tanh(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( AsinhConstraint, VarArray1,
+                                   "r = asinh(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( AcoshConstraint, VarArray1,
+                                   "r = acosh(v)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_NUMERIC_FUNC_CONSTR( AtanhConstraint, VarArray1,
+                                   "r = atanh(v)");
+
 
 /// Not using: var1 != var2.
 /// Represented by Not { Eq0Constraint... }
@@ -279,9 +315,14 @@ struct PLPoints {
   void AddPoint(double x, double y) {
     if (!empty())
       assert(x > x_.back());
-    if (empty() || x>x_.back()+1e-4) {   // skip near points for Gurobi
-      x_.push_back(x);
-      y_.push_back(y);
+    if (empty() || x>x_.back()+1e-4) {  // skip near points for Gurobi
+      if (size()>=2 &&                  // simple check: 3rd equal y
+         y_[size()-1]==y && y_[size()-2]==y) {
+        x_.back() = x;                  // update last x
+      } else {
+        x_.push_back(x);
+        y_.push_back(y);
+      }
     }
   }
   /// Get preslope

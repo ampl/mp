@@ -248,6 +248,7 @@ std::pair<int, std::string> XpressmpBackend::ConvertXPRESSMPStatus() {
     case XPRS_MIP_OPTIMAL:
       return { sol::SOLVED, "optimal solution" };
     case XPRS_MIP_NO_SOL_FOUND:
+    case XPRS_MIP_INFEAS:
       return { sol::INFEASIBLE, "infeasible problem" };
     case XPRS_MIP_UNBOUNDED:
       return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
@@ -689,9 +690,9 @@ int XpressmpBackend::xp_mse_display(XPRSobject o, void* context, void* thread,
 
 // AMPLs
 AMPLS_MP_Solver* AMPLSOpenXpressmp(
-  const char* slv_opt) {
+  const char* slv_opt, CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::XpressmpBackend()},
-    slv_opt);
+    slv_opt, cb);
 }
 
 void AMPLSCloseXpressmp(AMPLS_MP_Solver* slv) {

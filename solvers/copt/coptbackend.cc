@@ -167,9 +167,11 @@ pre::ValueMapDbl CoptBackend::DualSolution() {
 ArrayRef<double> CoptBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  int error = COPT_GetLpSolution(lp(), NULL, NULL, pi.data(), NULL);
-  if (error)
-    pi.clear();
+  if (!IsMIP()) {
+    int error = COPT_GetLpSolution(lp(), NULL, NULL, pi.data(), NULL);
+    if (error)
+      pi.clear();
+  }
   return pi;
 }
 
@@ -744,7 +746,6 @@ SolutionBasis CoptBackend::GetBasis() {
     varstt = mv.GetVarValues()();
     constt = mv.GetConValues()();
     assert(varstt.size());
-    assert(constt.size());
   }
   return { std::move(varstt), std::move(constt) };
 }
@@ -834,11 +835,10 @@ void CoptBackend::AddMIPStart(ArrayRef<double> x0) {
 
 } // namespace mp
 
-
-// AMPLs
-
-AMPLS_MP_Solver* AMPLSOpenCopt(const char* slv_opt) {
-  return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::CoptBackend()}, slv_opt);
+  // AMPLs
+void* AMPLSOpenCopt(const char* slv_opt, CCallbacks cb = {}) {
+  return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::CoptBackend()}, 
+    slv_opt, cb);
 }
 
 void AMPLSCloseCopt(AMPLS_MP_Solver* slv) {

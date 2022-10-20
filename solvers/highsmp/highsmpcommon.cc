@@ -61,7 +61,7 @@ int HighsCommon::NumIndicatorCons() const {
 
 
 void checkOption(int retvalue, const char* key) {
-  if (retvalue != HIGHS_RETCODE_OK)
+  if (retvalue != kHighsStatusOk)
     throw std::runtime_error(fmt::format("while setting option '{}'", key));
   
 }

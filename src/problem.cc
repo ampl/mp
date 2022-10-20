@@ -42,7 +42,7 @@ void LinearExpr::SortTerms() {
 template <typename Alloc>
 int BasicProblem<Alloc>::GetSuffixSize(suf::Kind kind) {
   std::size_t size = 0;
-  switch (kind) {
+  switch (kind & suf::KIND_MASK) {
   default:
     MP_ASSERT(false, "invalid suffix kind");
     // Fall through.

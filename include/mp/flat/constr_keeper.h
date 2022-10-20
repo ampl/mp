@@ -260,9 +260,16 @@ public:
       ConstraintKeeper< Impl, ModelAPI, Constraint > >;
 
 
+  /// Value of Pi
+  static constexpr double Pi() { return 3.14159265358979; }
+
+  /// Infinity
   static constexpr double Infty() { return INFINITY; }
+  /// -Infinity
   static constexpr double MinusInfty() { return -INFINITY; }
+  /// Pract inf
   static constexpr double PracticallyInfty() { return 1e20; }
+  /// Pract -inf
   static constexpr double PracticallyMinusInfty() { return -1e20; }
 };
 

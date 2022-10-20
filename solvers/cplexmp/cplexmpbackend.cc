@@ -7,7 +7,7 @@
 #include "cplexmpbackend.h"
 
 extern "C" {
-#include "cplexmp-ampls-c-api.h"    // Gurobi AMPLS C API
+#include "cplexmp-ampls-c-api.h"    // CPLEX AMPLS C API
 }
 #include "mp/ampls-cpp-api.h"
 
@@ -38,8 +38,10 @@ std::unique_ptr<BasicModelManager>
 CreateCplexModelMgr(CplexCommon&, Env&, pre::BasicValuePresolver*&);
 
 
-CplexBackend::CplexBackend() {
+void CplexBackend::InitOptionParsing() {
   OpenSolver();
+}
+CplexBackend::CplexBackend() {
 
   pre::BasicValuePresolver* pPre;
   auto data = CreateCplexModelMgr(*this, *this, pPre);
@@ -77,6 +79,8 @@ void CplexBackend::OpenSolver() {
   if (status)
     throw std::runtime_error( fmt::format(
           "Failed to create problem, error code {}.", status ) );
+  /* Copy handlers to ModelAPI */
+  copy_common_info_to_other();
 }
 
 void CplexBackend::CloseSolver() {
@@ -137,6 +141,8 @@ pre::ValueMapDbl CplexBackend::DualSolution() {
 ArrayRef<double> CplexBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
+  if (IsMIP())
+    return pi; // when implementing fixed model, get rid of this clause
   int error = CPXgetpi (env(), lp(), pi.data(), 0, num_cons-1);
   if (error)
     pi.clear();
@@ -154,8 +160,10 @@ double CplexBackend::NodeCount() const {
 }
 
 double CplexBackend::SimplexIterations() const {
-  return std::max(
-        CPXgetmipitcnt (env(), lp()), CPXgetitcnt (env(), lp()));
+  if (IsMIP())
+    return CPXgetmipitcnt(env(), lp());
+  else
+    return CPXgetitcnt(env(), lp());
 }
 
 int CplexBackend::BarrierIterations() const {
@@ -251,14 +259,20 @@ std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
 
 
 void CplexBackend::FinishOptionParsing() {
+  SetSolverOption(CPX_PARAM_PARAMDISPLAY, 0);
+  
+  SetSolverOption(CPXPARAM_MIP_Display, 0);
   int v=1;
   if (!storedOptions_.logFile_.empty())
   {
+    SetSolverOption(CPX_PARAM_SIMDISPLAY, 1);
     SetSolverOption(CPXPARAM_MIP_Display, 1);
     CPLEX_CALL(CPXsetlogfilename(env(), storedOptions_.logFile_.data(), "w"));
   }
   else
+  {
     GetSolverOption(CPXPARAM_MIP_Display, v);
+  }
   set_verbose_mode(v > 0);
 }
 
@@ -280,7 +294,7 @@ void CplexBackend::InitCustomOptions() {
       "0-5: output logging verbosity. "
       "Default = 0 (no logging).",
       CPXPARAM_MIP_Display, 0, 5);
-  SetSolverOption(CPXPARAM_MIP_Display, 0);
+  
 
   AddStoredOption("tech:logfile logfile",
     "Log file name.", storedOptions_.logFile_);
@@ -310,10 +324,10 @@ void CplexBackend::InitCustomOptions() {
 } // namespace mp
 
 
-AMPLS_MP_Solver* AMPLSOpenCPLEX(const char* slv_opt) {
+AMPLS_MP_Solver* AMPLSOpenCPLEX(const char* slv_opt, CCallbacks cb = {}) {
   AMPLS_MP_Solver* slv = 
     AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::CplexBackend()},
-    slv_opt);
+      slv_opt, cb);
   return slv;
 }
 

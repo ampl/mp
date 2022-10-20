@@ -32,6 +32,9 @@ public:
   /// TODO Implement the following functions using the solver's API
   void AddVariables(const VarArrayDef& );
   void SetLinearObjective( int iobj, const LinearObjective& lo );
+  /// Whether accepting quadratic objectives:
+  /// 0 - no, 1 - convex, 2 - nonconvex
+  static int AcceptsQuadObj() { return 0; }
   void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
@@ -62,6 +65,9 @@ public:
   void AddConstraint(const LinConEQ& lc);
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
+
+  /// Ask if the solver accepts non-convex quadratic constraints
+  static constexpr bool AcceptsNonconvexQC() { return false; }
 
   /// QuadConRange is optional.
   ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Quadratic)

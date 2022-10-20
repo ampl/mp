@@ -8,7 +8,8 @@ class ModelTags(enum.Enum):
 
     ## Modeling features
     linear = 1
-    quadratic = 2
+    quadratic = 2             # obj and con
+    quadratic_obj = 2.5
     quadraticnonconvex = 3
     socp = 4
     nonlinear = 5
@@ -23,7 +24,7 @@ class ModelTags(enum.Enum):
     logical = 13
     polynomial = 14
 
-    trigonometric = 100
+    trigonometric = 100   # subcategories of nonlinear
     htrigonometric = 101
     log = 102
 
@@ -32,6 +33,7 @@ class ModelTags(enum.Enum):
 
     ## Driver features
     unbdd = 10001
+    qcpdual = 11001
     return_mipgap = 10002
     sens = 10003
     lazy_user_cuts = 10004
@@ -53,9 +55,12 @@ class ModelTags(enum.Enum):
     feasrelax = 40100
 
     check_pl_approx_exp = 50000          # Solvers natively accepting general
-    check_pl_approx_log = 50001          # nonlinear constraints.
-                                         # The automatic acc:exp etc options allow
+    check_pl_approx_expA = 50001         # nonlinear constraints.
+    check_pl_approx_log = 50002          # The automatic acc:exp etc options allow
                                          # testing own pl approximation
+    check_pl_approx_sin = 50003
+    check_pl_approx_cos = 50004
+    check_pl_approx_tan = 50005
 
     check_pl2sos2 = 50500                # Solvers accepting PL constraints but wishing
                                          # to test MP's PL -> SOS2 conversion, by acc:pl=1

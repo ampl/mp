@@ -22,7 +22,7 @@
   },
   {
     "name" : "compl_quad_01 compl with obj",
-    "tags" : ["quadratic", "continuous", "complementarity"],
+    "tags" : ["quadraticnonconvex", "continuous", "complementarity"],
     "options": {
       "gurobi_options": "nonconvex=2"
     },
@@ -34,7 +34,7 @@
   },
   {
     "name" : "compl_quad_02",
-    "tags" : ["quadratic", "continuous", "complementarity"],
+    "tags" : ["quadraticnonconvex", "continuous", "complementarity"],
     "options": {
       "gurobi_options": "nonconvex=2"
     },
@@ -45,7 +45,7 @@
   },
   {
     "name" : "compl_quad_02 presolve 0",
-    "tags" : ["quadratic", "continuous", "complementarity"],
+    "tags" : ["quadraticnonconvex", "continuous", "complementarity"],
     "options": {
       "presolve": 0,
       "gurobi_options": "nonconvex=2"

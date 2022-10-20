@@ -352,7 +352,13 @@ class MPDirectSolver(AMPLSolver):
             stags = stags | sDefault
             # Direct/FlatConverter drivers with integer vars:
             if ModelTags.integer in stags or ModelTags.binary in stags:
-                stags = stags | {ModelTags.complementarity, ModelTags.logical}
+                stags = stags | {
+                    ModelTags.complementarity,
+                    ModelTags.logical,
+                    ModelTags.plinear,
+                    ModelTags.nonlinear,
+                    ModelTags.log
+                }
             # Direct/FlatConverter drivers with non-convex quadratics:
             if ModelTags.quadraticnonconvex in stags:
                 stags = stags | {ModelTags.polynomial}
@@ -585,10 +591,14 @@ class GurobiDirectSolver(MPDirectSolver):
         stags = {
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.plinear,
-                 ModelTags.quadratic, ModelTags.quadraticnonconvex,
+                 ModelTags.quadratic,
+                 ModelTags.quadratic_obj,
+                 ModelTags.quadraticnonconvex,
                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
 
-                 ModelTags.unbdd, ModelTags.return_mipgap,
+                 ModelTags.unbdd,
+                 ModelTags.qcpdual,
+                 ModelTags.return_mipgap,
                  ModelTags.sos, ModelTags.presosenc, ModelTags.sens,
                  ModelTags.lazy_user_cuts, ModelTags.funcpieces,
 
@@ -599,7 +609,12 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
 
                  ModelTags.check_pl_approx_exp,
+                 ModelTags.check_pl_approx_expA,
                  ModelTags.check_pl_approx_log,
+
+                 ModelTags.check_pl_approx_sin,
+                 ModelTags.check_pl_approx_cos,
+                 ModelTags.check_pl_approx_tan,
 
                  ModelTags.check_pl2sos2,
 
@@ -646,7 +661,7 @@ class XPRESSDirectSolver(MPDirectSolver):
                  ModelTags.warmstart, ModelTags.mipstart,
 
                  ModelTags.multisol, ModelTags.sstatus,
-                 ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax
+                 ModelTags.iis
                  
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
@@ -665,7 +680,7 @@ class HighsSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic}
+                 ModelTags.quadratic_obj}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
@@ -679,7 +694,7 @@ class COPTSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic}
+                 ModelTags.quadratic, ModelTags.quadratic_obj}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 

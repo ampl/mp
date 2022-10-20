@@ -29,17 +29,18 @@ void XpressmpModelAPI::AddVariables(const VarArrayDef& v) {
     XPRESSMP_CCALL(XPRSaddnames(lp(), 2, (const char*)v.pnames(), 0, v.size()-1));
   // All variables are continuous by default, set the integer ones
   std::vector<int> intIndices;
+ 
+
   for (auto i = 0; i < v.size(); i++)
     if (v.ptype()[i] == var::Type::INTEGER)
       intIndices.push_back(i);
   get_other()->numIntVars(intIndices.size());
-  if (numIntVars() > 0)
+  if (get_other()->numIntVars() > 0)
   {
     std::vector<char> types(intIndices.size(), 'I');
     XPRESSMP_CCALL(XPRSchgcoltype(lp(), intIndices.size(),
       intIndices.data(), types.data()));
   }
-  
 }
 
 void XpressmpModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
@@ -91,10 +92,16 @@ void XpressmpModelAPI::AddConstraint(const LinConGE& lc) {
     rhs, NULL, start, lc.pvars(), lc.pcoefs()));
 }
 
+// Workaround as mp does not distinguish binary variables and
+// xpress does not consider "binary" an integer where lb=ub=0 or 1.
+// This creates a problem if that variable is used as binary in an indicator
+// constraint, so we manually override this here
 #define _addIndicator_mp AddConstraint(ic.get_constraint());\
 int rowindex[] = { NumLinCons() - 1 };\
 int colindex[] = { ic.get_binary_var() };\
-int complement[] = { ic.get_binary_value() };\
+int complement[] = { ic.get_binary_value() ? 1 : -1 };\
+char type[] ={'I'};\
+XPRESSMP_CCALL(XPRSchgcoltype(lp(), 1, colindex, type));\
 XPRESSMP_CCALL(XPRSsetindicators(lp(), 1, rowindex, colindex, complement));
 
 void XpressmpModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {

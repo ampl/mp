@@ -20,7 +20,7 @@
 /// (normally provided in the <solver>_options string).
 /// Can be NULL.
 /// @return 0 on success, otherwise see slv->warnings_and_or_errors_
-AMPLS_MP_Solver* AMPLSOpenGurobi(const char* slv_opt);
+AMPLS_MP_Solver* AMPLSOpenGurobi(const char* slv_opt, CCallbacks cb);
 
 /// Shut down solver instance
 void AMPLSCloseGurobi(AMPLS_MP_Solver* slv);

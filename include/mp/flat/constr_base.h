@@ -122,7 +122,9 @@ public:
   /// in order to distinguish from the next 2 constructors
   CustomFunctionalConstraint(Arguments args, Parameters prm) noexcept :
     args_(std::move(args)), params_(std::move(prm)) { }
-  /// Construct from resvar and arguments
+  /// Construct from resvar and arguments.
+  /// If Arguments = VarArray1, distinguish from the previous
+  /// constructor by putting first int in just one {}
   CustomFunctionalConstraint(int varr, Arguments args) noexcept :
      FunctionalConstraint(varr), args_(std::move(args)) { }
 

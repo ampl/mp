@@ -35,15 +35,11 @@ int XpressmpCommon::NumQPCons() const {
 }
 
 int XpressmpCommon::NumSOSCons() const {
-  // TODO Get number of SOS constraints using solver API
-  // return getIntAttr(XPRESSMP_INTATTR_SOSS);
-  return 0;
+  return getIntAttr(XPRS_SETS);
 }
 
 int XpressmpCommon::NumIndicatorCons() const {
-  // TODO Get number of indicator constraints using solver API
-  // return getIntAttr(XPRESSMP_INTATTR_INDICATORS);
-  return 0;
+  return getIntAttr(XPRS_INDICATORS);
 }
 
 void XpressmpCommon::GetSolverOption(int key, int &value) const {

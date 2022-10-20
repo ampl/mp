@@ -325,7 +325,6 @@ SolutionBasis GurobiBackend::GetBasis() {
     varstt = mv.GetVarValues()();
     constt = mv.GetConValues()();
     assert(varstt.size());
-    assert(constt.size());
   }
   return { std::move(varstt), std::move(constt) };
 }
@@ -600,18 +599,21 @@ pre::ValueMapInt GurobiBackend::ConsIIS() {
 double GurobiBackend::MIPGap() {
   bool f;
   double g = GrbGetDblAttr(GRB_DBL_ATTR_MIPGAP, &f);
-  return f ? g : Infinity();
+  return f ? g : AMPLInf();
 }
 
 double GurobiBackend::MIPGapAbs() {
-    return std::fabs(
-          ObjectiveValue() - BestDualBound() );
+  bool f;
+  auto obj = GrbGetDblAttr(GRB_DBL_ATTR_OBJVAL, &f);
+  if (f)
+    return std::fabs( obj - BestDualBound() );
+  return AMPLInf();
 }
 
 double GurobiBackend::BestDualBound() {
   bool f;
   double g = GrbGetDblAttr(GRB_DBL_ATTR_OBJBOUND, &f);
-  return f ? g : -ModelSense() * Infinity();
+  return f ? g : -ModelSense() * AMPLInf();
 }
 
 double GurobiBackend::Kappa() {
@@ -2454,11 +2456,11 @@ void GurobiBackend::GrbPlayObjNParams() {
 } // namespace mp
 
 
-AMPLS_MP_Solver* AMPLSOpenGurobi(const char* slv_opt) {
+AMPLS_MP_Solver* AMPLSOpenGurobi(const char* slv_opt, CCallbacks cb = {}) {
   AMPLS_MP_Solver* slv =
       AMPLS__internal__Open(
         std::unique_ptr<mp::BasicBackend>{new mp::GurobiBackend()},
-        slv_opt);
+        slv_opt, cb);
   return slv;
 }
 

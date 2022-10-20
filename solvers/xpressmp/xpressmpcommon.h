@@ -54,8 +54,6 @@ protected:
   int NumSOSCons() const;
   int NumIndicatorCons() const;
 
-
-
   std::string getErr()  const{
     char errmsg[512];
     XPRSgetlasterror(lp(), errmsg);

@@ -18,7 +18,7 @@
 /// (normally provided in the <solver>_options string).
 /// Can be NULL.
 /// @return pointer to populated AMPLS_MP_Solver struct, or NULL
-AMPLS_MP_Solver* AMPLSOpenCopt(const char* slv_opt);
+void* AMPLSOpenCopt(const char* slv_opt, CCallbacks cb);
 
 /// Shut down solver instance
 void AMPLSCloseCopt(AMPLS_MP_Solver* slv);

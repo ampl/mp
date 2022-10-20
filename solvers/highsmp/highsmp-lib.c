@@ -11,17 +11,21 @@
 
 APIEXPORT void* AMPLloadmodel(int argc, char** argv, void** slvout) {
   const char* nl_filename = argv[1];
-  const char *slv_opt= argv[2];
-  AMPLS_MP_Solver* slv = AMPLSOpenHighs(slv_opt);
-  int ret = -1;
-  ret = AMPLSLoadNLModel(slv, nl_filename);
-  void* mdl = GetHighsmodel(slv);
-  *slvout = slv;
-  return mdl;
+  const char *slv_opt= NULL;
+  CCallbacks cb = { NULL,NULL, NULL, NULL };
+  AMPLS_MP_Solver* slv = AMPLSOpenHighs(slv_opt, cb);
+  if (!slv)
+    return NULL;
+  AMPLSLoadNLModel(slv, nl_filename);
+  return slv;
 }
 
-APIEXPORT void AMPLwritesolution(AMPLS_MP_Solver* slv) {
-  AMPLSReportResults(slv);
+APIEXPORT void* AMPLgetHighsModel(void* slv) {
+  return GetHighsmodel(slv);
+}
+
+APIEXPORT void AMPLwritesolution(AMPLS_MP_Solver* slv, const char* solFileName) {
+  AMPLSReportResults(slv, solFileName);
 }
 
 APIEXPORT void AMPLclosesolver(AMPLS_MP_Solver* slv) {
