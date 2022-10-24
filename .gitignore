@@ -12,5 +12,9 @@ Testing
 *.pyc
 *.user
 *~
+
+.idea
+*.csv
+
 .vscode
 /src/expr-info.cc

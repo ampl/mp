@@ -21,12 +21,23 @@ public:
   MosekBackend();
   ~MosekBackend();
 
+  /*----------------------------------------------------*\
+  | Standard and optional methods to provide or retrieve |
+  | information to/from or manipulate the solver. Most   |
+  | of them override placeholders from base classes.     |
+  \*----------------------------------------------------*/
+
   /// Name displayed in messages
   static const char* GetSolverName() { return "MOSEK"; }
   std::string GetSolverVersion();
-  
+
+  /// AMPL solver name is used to parse solver options
+  /// for the [name]_options environment variable.
+  /// This is only done if the [executable_name]_options
+  /// variable is not provided.
   static const char* GetAMPLSolverName() { return "mosek"; }
   static const char* GetAMPLSolverLongName() { return "AMPL-MOSEK"; }
+
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
@@ -36,7 +47,6 @@ public:
   void FinishOptionParsing() override;
 
 
-
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
   ////////////////////////////////////////////////////////////
@@ -44,27 +54,40 @@ public:
   // that may or may not need additional functions. 
   USING_STD_FEATURES;
 
+  // LP basis info, status keys
   ALLOW_STD_FEATURE(BASIS, true)
-  // TODO If getting/setting a basis is supported, implement the 
-  // accessor and the setter below
   SolutionBasis GetBasis() override;
   void SetBasis(SolutionBasis) override;
 
- /**
-  * Get MIP Gap
-  **/
-  // TODO Implement to return MIP gap
+  // LP hotstart
+  // Set primal/dual initial guesses for continuous case
+  ALLOW_STD_FEATURE(WARMSTART, true)
+  void AddPrimalDualStart(Solution) override;
+
+  // MIP hotstart
+  ALLOW_STD_FEATURE( MIPSTART, true )
+  void AddMIPStart(ArrayRef<double> x0) override;
+
+  // Obtain inf/unbounded rays
+  ALLOW_STD_FEATURE(RAYS, true)
+  ArrayRef<double> Ray() override;
+  ArrayRef<double> DRay() override;
+
+  // MIP gap
   // (adds option mip:return_gap)
   ALLOW_STD_FEATURE(RETURN_MIP_GAP, true)
   double MIPGap() override;
   double MIPGapAbs() override;
-  /**
-  * Get MIP dual bound
-  **/
-  // TODO Implement to return the best dual bound value
+
+  // MIP dual bound
   // (adds option mip:bestbound)
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
   double BestDualBound() override;
+
+  // Sensitivity analysis
+  // Report sensitivity analysis suffixes (postsolved)
+  ALLOW_STD_FEATURE(SENSITIVITY_ANALYSIS, true)
+  SensRanges GetSensRanges() override;
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
@@ -82,7 +105,9 @@ public:
 
   Solution GetSolution() override;
   ArrayRef<double> GetObjectiveValues() override
-  { return std::vector<double>{ObjectiveValue()}; } 
+  {
+    return std::vector<double>{ObjectiveValue()};
+  }
 
 
   //////////////////// [[ Implementation details ]] //////////////////////
@@ -126,8 +151,8 @@ protected:
   void VarStatii(ArrayRef<int>);
   void ConStatii(ArrayRef<int>);
 
-  ArrayRef<int> VarsIIS();
-  pre::ValueMapInt ConsIIS();
+  //ArrayRef<int> VarsIIS();
+  //pre::ValueMapInt ConsIIS();
 
   // utility function used to decide which solution to fetch after optimization
   // sets member solToFetch_ as side effect
@@ -141,9 +166,15 @@ private:
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;
+
+    // Whether to set MSK_IPAR_MIO_CONSTRUCT_SOL
+    int MIPConstructSol_=0;
   };
   Options storedOptions_;
 
+protected:
+  /**** Option accessors ****/
+  int Mosek_mip_construct_sol() const { return storedOptions_.MIPConstructSol_; }
 
 };
 
