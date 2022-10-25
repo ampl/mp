@@ -5,7 +5,7 @@ Developer documentation
    :maxdepth: 2
    
    Library introduction <intro>
-   getting-started
+   howto
    API <components>
    testing
    details

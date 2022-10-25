@@ -10,11 +10,10 @@
 namespace mp {
 
 class OrtoolsBackend :
-    public MIPBackend<OrtoolsBackend>,
-    public BasicFlatBackend,
+    public FlatBackend< MIPBackend<OrtoolsBackend> >,
     public OrtoolsCommon
 {
-  using BaseBackend = MIPBackend<OrtoolsBackend>;
+  using BaseBackend = FlatBackend< MIPBackend<OrtoolsBackend> >;
 
 
   //////////////////// [[ The public interface ]] //////////////////////

@@ -80,7 +80,7 @@ void MosekBackend::OpenSolver() {
   /// Turn off verbosity by default
   MOSEK_CCALL(MSK_putintparam(task, MSK_IPAR_LOG, 0));
   // Register callback for console logging (controlled by the outlev param
-  // in all AMPL solver drivers
+  // in all AMPL solver drivers)
   MSK_linkfunctotaskstream(lp(), MSK_STREAM_LOG, NULL, printstr);
 
 }
@@ -379,10 +379,8 @@ double MosekBackend::MIPGapAbs() {
   return getDblAttr(MSK_DINF_MIO_OBJ_ABS_GAP);
 }
 
-SensRanges MosekBackend::GetSensRanges()
+SensRangesPresolved MosekBackend::GetSensRangesPresolved()
 {
-  SensRanges sensr;
-
   // Set sensitivity range parameters for constraints
   int lencon = NumLinCons();
   std::vector<MSKint32t> cindex(lencon);
@@ -531,33 +529,22 @@ SensRanges MosekBackend::GetSensRanges()
   std::transform(orangelo.begin(), orangelo.end(), c.begin(), orangelo.begin(), std::plus<MSKrealt>());
   std::transform(orangehi.begin(), orangehi.end(), c.begin(), orangehi.begin(), std::plus<MSKrealt>());
 
-  // Return sensitivity ranges
-  auto mvlbhi = GetValuePresolver().PostsolveGenericDbl({ {vrangelbhi} });
-  auto mvlblo = GetValuePresolver().PostsolveGenericDbl({ {vrangelblo} });
-  auto mvubhi = GetValuePresolver().PostsolveGenericDbl({ {vrangeubhi} });
-  auto mvublo = GetValuePresolver().PostsolveGenericDbl({ {vrangeublo} });
-  auto mvobjhi = GetValuePresolver().PostsolveGenericDbl({ {orangehi} });
-  auto mvobjlo = GetValuePresolver().PostsolveGenericDbl({ {orangelo} });
-  auto mvconlbhi = GetValuePresolver().PostsolveGenericDbl({ {}, {{{CG_Linear, crangelbhi}}} });
-  auto mvconlblo = GetValuePresolver().PostsolveGenericDbl({ {}, {{{CG_Linear, crangelblo}}} });
-  auto mvconubhi = GetValuePresolver().PostsolveGenericDbl({ {}, {{{CG_Linear, crangeubhi}}} });
-  auto mvconublo = GetValuePresolver().PostsolveGenericDbl({ {}, {{{CG_Linear, crangeublo}}} });
-  std::vector<MSKrealt> rhs(lencon, 0.0);
-  auto mvrhshi = GetValuePresolver().PostsolveGenericDbl({ {}, {{{CG_Linear, rhs}}} });
-  auto mvrhslo = GetValuePresolver().PostsolveGenericDbl({ {}, {{{CG_Linear, rhs}}} });
+  /// Return sensitivity ranges
+  SensRangesPresolved sensr;
 
-  sensr.varlbhi = mvlbhi.GetVarValues()();
-  sensr.varlblo = mvlblo.GetVarValues()();
-  sensr.varubhi = mvubhi.GetVarValues()();
-  sensr.varublo = mvublo.GetVarValues()();
-  sensr.varobjhi = mvobjhi.GetVarValues()();
-  sensr.varobjlo = mvobjlo.GetVarValues()();
-  sensr.conlbhi = mvconlbhi.GetConValues()();
-  sensr.conlblo = mvconlblo.GetConValues()();
-  sensr.conubhi = mvconubhi.GetConValues()();
-  sensr.conublo = mvconublo.GetConValues()();
-  sensr.conrhshi = mvrhshi.GetConValues()();
-  sensr.conrhslo = mvrhslo.GetConValues()();
+  sensr.varlbhi = { {vrangelbhi} };
+  sensr.varlblo = { {vrangelblo} };
+  sensr.varubhi = { {vrangeubhi} };
+  sensr.varublo = { {vrangeublo} };
+  sensr.varobjhi = { {orangehi} };
+  sensr.varobjlo = { {orangelo} };
+  sensr.conlbhi = { {}, {{{CG_Linear, crangelbhi}}} };
+  sensr.conlblo = { {}, {{{CG_Linear, crangelblo}}} };
+  sensr.conubhi = { {}, {{{CG_Linear, crangeubhi}}} };
+  sensr.conublo = { {}, {{{CG_Linear, crangeublo}}} };
+  std::vector<MSKrealt> rhs(lencon, 0.0);
+  sensr.conrhshi = { {}, {{{CG_Linear, rhs}}} };
+  sensr.conrhslo = { {}, {{{CG_Linear, rhs}}} };
 
   return sensr;
 }
@@ -815,9 +802,10 @@ ArrayRef<double> MosekBackend::DRay()
 
 // AMPLs
 
-AMPLS_MP_Solver* AMPLSOpenMosek(const char* slv_opt) {
-  return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::MosekBackend()},
-    slv_opt);
+AMPLS_MP_Solver* AMPLSOpenMosek(const char* slv_opt, CCallbacks cb = {}) {
+  return AMPLS__internal__Open(
+        std::unique_ptr<mp::BasicBackend>{new mp::MosekBackend()},
+        slv_opt, cb);
 }
 
 void AMPLSCloseMosek(AMPLS_MP_Solver* slv) {

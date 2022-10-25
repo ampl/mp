@@ -170,7 +170,7 @@ Contributing
 
 Use the ``develop`` branch for new code.
 
-As an example workflow, see :ref:`howto-create-new-driver`.
+As an example workflow, see :ref:`howto`.
 
 
 Troubleshooting

@@ -418,7 +418,7 @@ protected:
                   GetMIPOptions().solnSens_ : 0;
   }
 
-  /// Whether need duals/basis/sens from MIP
+  /// Whether need duals/basis/sens from MIP.
   /// Need at least duals when this option is on
   int need_fixed_MIP() const {
     return IMPL_HAS_STD_FEATURE( FIX_MODEL ) ?

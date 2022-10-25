@@ -13,13 +13,13 @@ Much of the biolerplate code is written already, so that the behaviour becomes
 automatically standardized across all solvers.
 
 This page presents the semantics of the most common solver features; for a development
-reference refer to the `Visitor driver
-<https://github.com/ampl/mp/tree/develop/solvers/visitor>`_ that shows how to
-declare that the solver driver supports a feature and how to implement it.
+reference see :ref:`howto`.
 
 
-General
-=======
+General features
+================
+
+General features can apply for most models.
 
 .. _outlev:
 
@@ -29,7 +29,9 @@ Output level
 All solvers print some information during the solution process. For the sake of clarity,
 when using the solvers from AMPL the information is mostly ommitted, and only the ``solver message`` is
 displayed, which describes the outcome of the optimization process.
-The amount of information printed is controlled by the option ``outlev``.
+The amount of information printed is controlled by the option ``outlev``::
+
+    option <solver>_options 'outlev=1';
 
 In case of repeated executions it is often desiderable to hide all solver output. The solver message 
 can be suppressed by setting the option ``solver_msg`` to 0. The solver banner is displayed anyway; 
@@ -113,6 +115,7 @@ a warmstart.
 
             Solution with warm start took 0.671875s
 
+
 .. _basisio:
 
 Input and output basis
@@ -134,13 +137,13 @@ This option controls whether to use or return a basis.
    * - **Applicability**
      - LP and MIP models
    * - **Input**
-     - Suffix:
+     - Suffixes:
 
-       * ``sstatus`` on variables 
+       * ``sstatus`` on variables and constraints
    * - **Output**
-     - Suffix:
+     - Suffixes:
 
-       * ``sstatus`` on variables 
+       * ``sstatus`` on variables and constraints
    * - **Values**
      - Sum of:
 
@@ -421,13 +424,18 @@ This option controls whether to calculate these values and return them in the su
    * - **Input**
      - None
    * - **Output**
-     - Suffix:
-       * ``sensobjlo`` variables, smallest objective coefficient
-       * ``sensobjhi`` variables, greatest objective coefficient
-       * ``senslblo`` variables, smallest variable lower bound
-       * ``senslbhi`` variables, greatest variable lower bound
-       * ``sensublo`` variables, smallest variable upper bound
-       * ``sensubhi`` variables, greatest variable upper bound
+     - Suffixes for variables only:
+
+       * ``sensobjlo`` smallest objective coefficient
+       * ``sensobjhi`` greatest objective coefficient
+
+       Suffixes for variables and constraints:
+
+       * ``senslblo`` smallest variable/constraint lower bound
+       * ``senslbhi`` greatest  lower bound
+       * ``sensublo`` smallest  upper bound
+       * ``sensubhi`` greatest  upper bound
+
    * - **Values**
      - Sum of:
 
@@ -443,7 +451,7 @@ This option controls whether to calculate these values and return them in the su
           option presolve 0;  # disable model transformations in AMPL
           solve;
 
-       Then the ranges for variables and constraints can be examined: :
+       Then the ranges for variables and constraints can be examined::
 
           display Buy, Buy.sstatus, Buy.sensublo, Buy.sensubhi;
 
@@ -496,7 +504,7 @@ if crossover is not applied.
    * - **Example**
      - Use :ref:`multiObjectiveDiet`
 
-       Solve the model and report kappa:
+       Solve the model and report kappa::
 
           options <solver>_options "alg:kappa=3"; 
           solve;
@@ -679,8 +687,8 @@ This options controls whether to perform the additional computational steps requ
           c3.iis = mem
 
 
-MIP only
-========
+MIP-only features
+=================
 
 
 .. _returnMIPgap:
@@ -943,7 +951,7 @@ This option controls if to generate and solve the fixed model after solving the 
      - Suffixes:
   
        * ``dual`` on variables
-       * ``ssttus`` on variables
+       * ``sstatus`` on variables
        * See :ref:`sensitivityanalysis` if requested
   
    * - **Values**

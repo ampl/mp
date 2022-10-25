@@ -10,11 +10,10 @@
 namespace mp {
 
 class VisitorBackend :
-    public MIPBackend<VisitorBackend>,
-    public BasicFlatBackend,
+    public FlatBackend< MIPBackend<VisitorBackend> >,
     public VisitorCommon
 {
-  using BaseBackend = MIPBackend<VisitorBackend>;
+  using BaseBackend = FlatBackend< MIPBackend<VisitorBackend> >;
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:

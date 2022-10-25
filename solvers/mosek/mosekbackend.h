@@ -10,11 +10,10 @@
 namespace mp {
 
 class MosekBackend :
-    public MIPBackend<MosekBackend>,
-    public BasicFlatBackend,
+    public FlatBackend< MIPBackend<MosekBackend> >,
     public MosekCommon
 {
-  using BaseBackend = MIPBackend<MosekBackend>;
+  using BaseBackend = FlatBackend< MIPBackend<MosekBackend> >;
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:
@@ -87,7 +86,7 @@ public:
   // Sensitivity analysis
   // Report sensitivity analysis suffixes (postsolved)
   ALLOW_STD_FEATURE(SENSITIVITY_ANALYSIS, true)
-  SensRanges GetSensRanges() override;
+  SensRangesPresolved GetSensRangesPresolved() override;
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;

@@ -27,7 +27,7 @@ Run end-to-end tests
 
       python3 test/end2end/run.py solver [another_solver [...]]
 
-  The ``solver``s and ``ampl`` executables are expected to be on the system path.
+  The ``solver`` and ``ampl`` executables are expected to be on the system path.
 
 * Detailed results are saved into a CSV report file, see ``--reportstub``.
 
@@ -90,7 +90,8 @@ following items, where non-compulsory items are italicized:
     .. code-block:: json
 
         "values": {
-          "if color['Belgium'] != color['France'] then 1 else 0": 1,
+          "if color['Belgium'] != color['France'] then 1": 1,
+          "if abs(x) < 1e-3 then 1": 1,
           "solve_result_num": 0
         }
 

@@ -27,7 +27,6 @@
 
 #include "mp/clock.h"
 #include "mp/backend-with-mm.h"
-#include "mp/backend-with-valcvt.h"
 
 /// Issue this if you redefine std feature switches
 #define USING_STD_FEATURES using BaseBackend::STD_FEATURE_QUERY_FN
@@ -76,8 +75,7 @@ struct Solution {
 /// and placeholders for solver API
 template <class Impl>
 class StdBackend :
-    public BackendWithModelManager,
-    public BackendWithValuePresolver
+    public BackendWithModelManager
 {
   ////////////////////////////////////////////////////////////////////////////
   ///////////////////// TO IMPLEMENT IN THE FINAL CLASS //////////////////////
@@ -501,34 +499,6 @@ protected:
   /// AMPL's -inf
   static constexpr double AMPLMinusInf()
   { return -std::numeric_limits<double>::infinity(); }
-
-protected:
-  /// Read int suffixes for several entities (var/con/obj).
-  /// @return suffix value map
-  /// (can be checked for non-empty with operator bool())
-  pre::ModelValuesInt ReadModelSuffixInt(const ModelSuffixDef<int>& msd)
-  { return ReadModelSuffix(msd); }
-
-  /// Read double suffixes for several entities (var/con/obj).
-  /// @return suffix value map
-  /// (can be checked for non-empty with operator bool())
-  pre::ModelValuesDbl ReadModelSuffixDbl(const ModelSuffixDef<double>& msd)
-  { return ReadModelSuffix(msd); }
-
-  /// Implementation of ReadModelSuffix<>
-  template <class T>
-  pre::MVOverEl<T> ReadModelSuffix(const ModelSuffixDef<T>& msd) {
-    assert(msd.kind() &
-           (suf::Kind::VAR_BIT | suf::Kind::CON_BIT | suf::Kind::OBJ_BIT));
-    return {
-      suf::Kind::VAR_BIT & msd.kind() ?
-            ReadSuffix<T>( {msd.name(), suf::Kind::VAR} ) : ArrayRef<T>{},
-          suf::Kind::CON_BIT & msd.kind() ?
-                ReadSuffix<T>( {msd.name(), suf::Kind::CON} ) : ArrayRef<T>{},
-          suf::Kind::OBJ_BIT & msd.kind() ?
-                ReadSuffix<T>( {msd.name(), suf::Kind::OBJ} ) : ArrayRef<T>{},
-    };
-  }
 
 
 public:

@@ -10,11 +10,10 @@
 namespace mp {
 
 class CoptBackend :
-    public MIPBackend<CoptBackend>,
-    public BasicFlatBackend,
+    public FlatBackend< MIPBackend<CoptBackend> >,
     public CoptCommon
 {
-  using BaseBackend = MIPBackend<CoptBackend>;
+  using BaseBackend = FlatBackend< MIPBackend<CoptBackend> >;
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:

@@ -25,11 +25,10 @@
 namespace mp {
 
 class XpressmpBackend :
-    public MIPBackend<XpressmpBackend>,
-    public BasicFlatBackend,
+    public FlatBackend< MIPBackend<XpressmpBackend> >,
     public XpressmpCommon
 {
-  using BaseBackend = MIPBackend<XpressmpBackend>;
+  using BaseBackend = FlatBackend< MIPBackend<XpressmpBackend> >;
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:

@@ -28,7 +28,7 @@ add_prefix(mp_docs ${DOC_BASEDIR}/rst/
     models.rst
     intro.rst components.rst drivers.rst
     developers.rst
-    getting-started.rst
+    howto.rst
     testing.rst
     details.rst
   )

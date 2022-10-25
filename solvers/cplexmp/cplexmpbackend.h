@@ -10,11 +10,10 @@
 namespace mp {
 
 class CplexBackend :
-    public MIPBackend<CplexBackend>,
-    public BasicFlatBackend,
+    public FlatBackend< MIPBackend<CplexBackend> >,
     public CplexCommon
 {
-  using BaseBackend = MIPBackend<CplexBackend>;
+  using BaseBackend = FlatBackend< MIPBackend<CplexBackend> >;
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:

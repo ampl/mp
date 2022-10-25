@@ -55,8 +55,8 @@
     "tags" : ["linear", "continuous", "sens"],
     "objective" : 1128.642,
     "values": {
-      "Diet['A'].senslblo": -1450,
-      "Diet['A'].senslbhi": 2300,
+      "if Diet['A'].senslblo<=-1e20 then 1": 1,
+      "Diet['A'].senslbhi": 10000,
       "Diet['A'].sensublo": 7850,
       "Diet['A'].sensubhi": 11600,
       "Diet['C'].sensublo": 9466.66666666666666,

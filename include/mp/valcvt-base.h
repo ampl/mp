@@ -206,8 +206,8 @@ public:
   ModelValues& operator=(ModelValues&& ) = default;
 
   /// Construct from values for vars, cons, objs
-  /// (last 2 can be omitted)
-  ModelValues(VMap v, VMap c = {}, VMap o = {}) :
+  /// (last 2 can be even legally omitted)
+  ModelValues(VMap v={}, VMap c = {}, VMap o = {}) :
     vars_(std::move(v)), cons_(std::move(c)), objs_(std::move(o)) { }
 
   /// Construct from ModelValues<AnotherVMap>

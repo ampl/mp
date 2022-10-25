@@ -10,11 +10,10 @@
 namespace mp {
 
 class GurobiBackend :
-    public MIPBackend<GurobiBackend>,
-    public BasicFlatBackend,
+    public FlatBackend< MIPBackend<GurobiBackend> >,
     public GurobiCommon
 {
-  using BaseBackend = MIPBackend<GurobiBackend>;
+  using BaseBackend = FlatBackend< MIPBackend<GurobiBackend> >;
 
 
 public:

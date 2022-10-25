@@ -10,11 +10,10 @@
 namespace mp {
 
 class HighsBackend :
-    public MIPBackend<HighsBackend>,
-    public BasicFlatBackend,
+    public FlatBackend< MIPBackend<HighsBackend> >,
     public HighsCommon
 {
-  using BaseBackend = MIPBackend<HighsBackend>;
+  using BaseBackend = FlatBackend< MIPBackend<HighsBackend> >;
 
   std::vector<int> conStatiii_;
   //////////////////// [[ The public interface ]] //////////////////////

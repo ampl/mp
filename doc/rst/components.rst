@@ -6,7 +6,8 @@ Reusable components and solver driver API
 
 This section highlights the major library components,
 ranging from basic building blocks necessary for any AMPL driver,
-to more advanced utilities.
+to more advanced utilities. The choice of API for a driver may depend
+on :ref:`driver-setups`.
 
 
 .. _NL-SOL-files:
@@ -16,7 +17,11 @@ NL and SOL files
 
 Any AMPL solver driver currenlty needs to input
 an NL file and report results in a SOL file.
-Corresponding APIs are described below.
+AMPL might add in-memory model communication for efficiency,
+which would be provided via the
+:ref:`recommended driver setup <driver-recommended-setup>`.
+However, a :ref:`minimal driver setup <driver-minimal-setup>` might address the
+corresponding APIs directly, as described below.
 
 NL file reader
 ~~~~~~~~~~~~~~
@@ -125,7 +130,7 @@ templates by minimal implementations of the `mp::BasicSolver` and
 Driver logic
 ------------
 
-Using the :ref:`mp::StdBackend and the derived classes <backend-classes>` is now the
+Using the :ref:`mp::StdBackend and the derived classes <backend-classes>` is the
 recommended approach to building a new solver interface.
 They provide a convenient API for common solver driver actions,
 options and suffixes.
@@ -133,8 +138,8 @@ The high-level application structure is suggested as follows:
 
 - :ref:`backend-app` --> :ref:`Custom Backend <backend-classes>` --> Solver.
 
-Creating such driver from a template is
-:ref:`described in the HowTo <howto-create-new-driver>`.
+Creating such a driver is
+:ref:`described in the HowTo <howto>`.
 
 
 .. _backend-app:
@@ -155,7 +160,7 @@ The Backend classes
 `mp::StdBackend` and `mp::MIPBackend` implement the `mp::BasicBackend` interface and
 standardize some common AMPL app behaviour, such as
 solver messages and status reporting,
-simplex basis statuses, and other suffix I/O.
+LP basis statuses, and other suffix I/O.
 Their solver-specific subclasses can be customized for a particular solver.
 They rely on the :ref:`model-manager` interface
 for model and solution I/O.
@@ -170,7 +175,7 @@ the derived Backend class can declare
     void SetBasis(SolutionBasis ) override;
 
 and define the `GetBasis`, `SetBasis` methods.
-See the classes' documentation
+See :ref:`implement-standard-features`
 for further details.
 
 
@@ -295,8 +300,8 @@ receive the logical OR constraint:
       void AddConstraint(const OrConstraint& );
 
 By default, if the driver does not mark a constraint as acceptable,
-`mp::FlatConverter` and its descendants attempt to simplify it. See the
-classes' documentation for further details.
+`mp::FlatConverter` and its descendants attempt to simplify it. See
+:ref:`configure-automatic-model-conversions` for further details.
 
 
 Problem sizes and preallocation

@@ -44,7 +44,7 @@ The documentation is divided in two sections:
 * :ref:`developerDocumentation` targeted to developers who want to develop a solver driver 
   
   * :ref:`library-intro` shows instructions for downloading, installing and building the library
-  * :ref:`getting-started` illustrates how to get familiar with the framework and how to quickly obtain the 
+  * :ref:`howto` illustrates how to get familiar with the framework and how to quickly obtain the
     boilerplate code necessary to develop a new solver driver
   * :ref:`components` shows the main components of the framework
   * :ref:`howto-test` illustrates how to execute tests during development
