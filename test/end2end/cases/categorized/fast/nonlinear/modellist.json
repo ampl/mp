@@ -197,7 +197,7 @@
   },
   {
     "name" : "pow_03_pow5",
-    "tags" : ["continuous", "nonlinear"],
+    "tags" : ["continuous", "nonlinear", "quadraticnonconvex"],
     "options": {
       "gurobi_options": "nonconvex=2",
       "comment_gurobi": "For quadratic solvers, pow(x, int>=0) is converted into quadratics",

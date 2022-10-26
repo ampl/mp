@@ -63,22 +63,37 @@ void MosekModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
     }
   }
   else {
-//    TODO If we support mutiple objectives, pass them to the solver
-    fmt::format("Setting {}-th linear objective: {} terms.\n", iobj, lo.num_terms());
+    MP_RAISE("Multiple objectives not supported");
   }
 }
 
+/// Add QP terms to objective
+void AddObjQuadraticPart(MSKtask_t lp,
+                         const QuadTerms& qt) {
+  auto coefs = qt.coefs();
+  auto vars1 = qt.vars1();
+  auto vars2 = qt.vars2();
+  for (auto i=coefs.size(); i--; ) {
+    if (vars1[i]==vars2[i])
+      coefs[i] *= 2;                 // MOSEK represents lower submatrix
+    else if (vars1[i] < vars2[i])
+      std::swap(vars1[i], vars2[i]);
+  }
+  MOSEK_CCALL( MSK_putqobj(lp,
+                           coefs.size(),
+                           vars1.data(),
+                           vars2.data(),
+                           coefs.data()) );
+}
 
 void MosekModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
   if (1 > iobj) {
-    fmt::format("Setting first quadratic objective\n");
     SetLinearObjective(iobj, qo);                         // add the linear part
     const auto& qt = qo.GetQPTerms();
-    fmt::format("Quadratic part is made of {} terms\n", qt.size());
-    // TODO
+    AddObjQuadraticPart(lp(), qt);
   }
   else {
-    throw std::runtime_error("Multiple quadratic objectives not supported");
+    MP_RAISE("Multiple objectives not supported");
   }
 }
 
@@ -149,52 +164,73 @@ void MosekModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
   // TODO
 }
 
+/// Add QP terms to constraint
+void AddConQuadraticPart(MSKtask_t lp,
+                         int i_con,
+                         const QuadTerms& qt) {
+  auto coefs = qt.coefs();
+  auto vars1 = qt.vars1();
+  auto vars2 = qt.vars2();
+  for (auto i=coefs.size(); i--; ) {
+    if (vars1[i]==vars2[i])
+      coefs[i] *= 2;                 // MOSEK represents lower submatrix
+    else if (vars1[i] < vars2[i])
+      std::swap(vars1[i], vars2[i]);
+  }
+  MOSEK_CCALL( MSK_putqconk(lp,
+                           i_con,
+                           coefs.size(),
+                           vars1.data(),
+                           vars2.data(),
+                           coefs.data()) );
+}
+
 void MosekModelAPI::AddConstraint(const QuadConRange& qc) {
-  fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
-  // TODO
-  /*
+  double lb = qc.lb();
+  double ub = qc.ub();
+  MSKboundkey_enum key;
+
+  if (lb == -std::numeric_limits<double>::infinity())
+  {
+    if (ub == std::numeric_limits<double>::infinity())
+      key = MSK_BK_FR;
+    else
+      key = MSK_BK_UP;
+  }
+  else
+  {
+    if (ub == std::numeric_limits<double>::infinity())
+      key = MSK_BK_LO;
+    else if (lb == ub)
+      key = MSK_BK_FX;
+    else
+      key = MSK_BK_RA;
+  }
+
   const auto& lt = qc.GetLinTerms();
-  const auto& qt = qc.GetQPTerms();
-  GRB_CALL( GRBaddqrangeconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                          (double*)qt.pcoefs(), qc.lb(), qc.ub(), NULL) );
-  */
+  AddLinearConstraint(lp(), lt.size(), key, lb, ub, lt.pvars(), lt.pcoefs(), qc.name());
+  AddConQuadraticPart(lp(), n_alg_cons_-1, qc.GetQPTerms());
 }
 
 void MosekModelAPI::AddConstraint( const QuadConLE& qc ) {
-  fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
-  // TODO
-  /*
   const auto& lt = qc.GetLinTerms();
-  const auto& qt = qc.GetQPTerms();
-  GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                          (double*)qt.pcoefs(), GRB_LESS_EQUAL, qc.rhs(), NULL) );
-                          */
+  AddLinearConstraint(lp(), lt.size(), MSK_BK_UP, qc.lb(), qc.ub(),
+                      lt.pvars(), lt.pcoefs(), qc.name());
+  AddConQuadraticPart(lp(), n_alg_cons_-1, qc.GetQPTerms());
 }
 
 void MosekModelAPI::AddConstraint( const QuadConEQ& qc ) {
-  fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
-  // TODO
-  /*
   const auto& lt = qc.GetLinTerms();
-  const auto& qt = qc.GetQPTerms();
-  GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                          (double*)qt.pcoefs(), GRB_EQUAL, qc.rhs(), NULL) );
-                          */
+  AddLinearConstraint(lp(), lt.size(), MSK_BK_FX, qc.lb(), qc.ub(),
+                      lt.pvars(), lt.pcoefs(), qc.name());
+  AddConQuadraticPart(lp(), n_alg_cons_-1, qc.GetQPTerms());
 }
 
 void MosekModelAPI::AddConstraint( const QuadConGE& qc ) {
-  fmt::print("Adding quadratic constraint {}\n", qc.GetTypeName());
-  // TODO
-  /*
   const auto& lt = qc.GetLinTerms();
-  const auto& qt = qc.GetQPTerms();
-  GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                          (double*)qt.pcoefs(), GRB_GREATER_EQUAL, qc.rhs(), NULL) );
-                          */
+  AddLinearConstraint(lp(), lt.size(), MSK_BK_LO, qc.lb(), qc.ub(),
+                      lt.pvars(), lt.pcoefs(), qc.name());
+  AddConQuadraticPart(lp(), n_alg_cons_-1, qc.GetQPTerms());
 }
 
 void MosekModelAPI::AddConstraint(const SOS1Constraint& sos) {

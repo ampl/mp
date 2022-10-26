@@ -708,7 +708,11 @@ class MosekSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.linear, ModelTags.integer,
-                 ModelTags.binary, ModelTags.warmstart, ModelTags.mipstart,
+                 ModelTags.binary,
+
+                 ModelTags.quadratic, ModelTags.quadratic_obj,
+
+                 ModelTags.warmstart, ModelTags.mipstart,
                  ModelTags.return_mipgap, ModelTags.sens, ModelTags.sstatus}
         # ModelTags.quadratic
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
