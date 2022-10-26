@@ -314,7 +314,13 @@ static const mp::OptionValueInfo alg_values_method[] = {
   { "3", "Free simplex", 3},
   { "4", "Interior-point method", 4},
   { "5", "Mixed-integer optimizer", 5},
-  { "6", "Primal simplex", 6},
+  { "6", "Primal simplex", 6}
+};
+
+static const mp::OptionValueInfo alg_values_mip_presolve_use[] = {
+  { "0", "Do not use presolve", 0},
+  { "1", "Use presolve", 1},
+  { "2", "Automatic (default)", 2}
 };
 
 void MosekBackend::InitCustomOptions() {
@@ -349,6 +355,11 @@ void MosekBackend::InitCustomOptions() {
       "fixing all integer values and solving the remaining problem."
       "Default = OFF",
       storedOptions_.MIPConstructSol_);
+
+  AddSolverOption("mip:presolve presolve",
+    "MIP presolve:\n"
+                  "\n.. value-table::\n",
+    MSK_IPAR_PRESOLVE_USE, alg_values_mip_presolve_use, 2);
 
   AddSolverOption("tech:threads threads",
     "Controls the number of threads employed by the optimizer. "
