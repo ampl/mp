@@ -361,6 +361,10 @@ void MosekBackend::InitCustomOptions() {
                   "\n.. value-table::\n",
     MSK_IPAR_PRESOLVE_USE, alg_values_mip_presolve_use, 2);
 
+  AddSolverOption("mip:inttol inttol",
+    "MIP integrality tolerance.",
+    MSK_DPAR_MIO_TOL_ABS_RELAX_INT, 1e-15, Infinity());
+
   AddSolverOption("tech:threads threads",
     "Controls the number of threads employed by the optimizer. "
     "Default 0 ==> number of threads used will be equal to the number "

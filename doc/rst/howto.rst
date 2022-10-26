@@ -43,7 +43,9 @@ Implementing standard features
 
 This section describes implementation of the
 :ref:`standard driver features <features-guide>`.
-This relies on the
+Some of them are not that common, such as FIX_MODEL,
+and don't have to be implemented.
+The workflow relies on the
 :ref:`Backend class hierarchy <backend-classes>`.
 
 
@@ -112,7 +114,8 @@ MIP-only features
 Fixed model (return basis for MIP)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To implement the :ref:`standard behavior of option mip:basis / fixmodel <fixedModel>`,
+To implement the
+:ref:`standard behavior of the (probably exotic) option mip:basis / fixmodel <fixedModel>`,
 do the following:
 
 1.  In your `Backend` class, declare:

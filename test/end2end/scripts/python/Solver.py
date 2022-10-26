@@ -605,7 +605,7 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
 
                  ModelTags.multiobj, ModelTags.obj_priority,
-                 ModelTags.multisol, ModelTags.sstatus,
+                 ModelTags.multisol, ModelTags.sstatus, ModelTags.fixmodel,
                  ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
 
                  ModelTags.check_pl_approx_exp,

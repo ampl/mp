@@ -50,6 +50,7 @@ class ModelTags(enum.Enum):
 
     multisol = 40011
     sstatus = 40012              # Basis I/O
+    fixmodel = 40012.3           # MIP basis
     iis = 40013
     iisforce = 40014
     feasrelax = 40100

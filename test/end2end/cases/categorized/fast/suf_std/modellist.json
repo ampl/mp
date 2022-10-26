@@ -31,11 +31,7 @@
       "Buy['BEEF'].sstatus": "low",
       "Buy['MCH'].sstatus":  "bas",
       "Buy['CHK'].sstatus":  "low",
-      "Diet['A'].sstatus": "bas",
-      "Diet['A']": 0.0,
-      "Diet['C']": 0.0,
-      "Diet['B1']": 0.0,
-      "Diet['B2']": 0.126
+      "if Diet['B2'] > 0.124 then 1": 1
     }
   },
   {
@@ -46,18 +42,14 @@
       "Buy['BEEF'].sstatus": "low",
       "Buy['MCH'].sstatus":  "bas",
       "Buy['CHK'].sstatus":  "low",
-      "Diet['A'].sstatus": "bas",
       "Diet['B2'].sstatus": "low",
-      "Diet['A']": 0.0,
-      "Diet['C']": 0.0,
-      "Diet['B1']": 0.0,
-      "Diet['B2']": 0.126
+      "if Diet['B2'] > 0.124 then 1": 1
     }
   },
   {
     "name" : "dietu_mip mip:basis=1",
     "objective" : 74.273820,
-    "tags" : ["linear", "continuous", "sstatus"],
+    "tags" : ["linear", "continuous", "fixmodel"],
     "options": { "ANYSOLVER_options": "mip:basis=1" },
     "values": {
       "Buy['BEEF'].sstatus": "low",
@@ -72,7 +64,7 @@
   {
     "name" : "dietu_mip mip:basis=0 (default for x-gurobi)",
     "objective" : 74.273820,
-    "tags" : ["linear", "continuous", "sstatus"],
+    "tags" : ["linear", "continuous", "fixmodel"],
     "values": {
       "Buy['BEEF'].sstatus": "bas",
       "Buy['MTL'].sstatus":  "upp",
@@ -83,7 +75,7 @@
   {
     "name" : "mipb_int mip:basis=1",
     "objective" : 1,
-    "tags" : ["linear", "continuous", "sstatus"],
+    "tags" : ["linear", "continuous", "fixmodel"],
     "options": { "ANYSOLVER_options": "mip:basis=1" },
     "values": {
       "x.sstatus": "low",

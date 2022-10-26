@@ -94,9 +94,9 @@ public:
   /// piecewise-linear expressions.
   /// Set ``option pl_linearize 0;`` in AMPL if the solver
   /// supports PL natively.
-  ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
+  ACCEPT_CONSTRAINT(SOS1Constraint, NotAccepted, CG_SOS)
   void AddConstraint(const SOS1Constraint& cc);
-  ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
+  ACCEPT_CONSTRAINT(SOS2Constraint, NotAccepted, CG_SOS)
   void AddConstraint(const SOS2Constraint& cc);
 
 
