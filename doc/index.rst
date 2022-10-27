@@ -25,8 +25,8 @@ configurable solver drivers and tools. Benefits of MP include:
   underlying solver might natively not support them
 * Consistency: many solver options are supported via :ref:`features-guide` at framework level, 
   requiring only the implementation of an API in the solver driver. This ensures
-  consistency in options naming and semantic across solvers
-* Speed of development: modern esign patterns and a declarative approach to features
+  consistency in options naming and semantics across solvers
+* Speed of development: modern design patterns and a declarative approach to features
   implementation greatly reduce development effort: for a typical MIP solver, a few days
   are enough to code a driver
 

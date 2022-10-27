@@ -18,7 +18,7 @@ struct HighsCommonInfo {
   void* lp() const { return lp_; }
   void set_lp(void* lp) { lp_ = lp; }
 private:
-  void*      lp_ = NULL;
+  void*      lp_ = nullptr;
 };
 
 

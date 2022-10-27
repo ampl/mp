@@ -126,9 +126,10 @@ A standalone .sol file writer could be implemented by parameterizing the
 templates by minimal implementations of the `mp::BasicSolver` and
 `mp::ProblemBuilder` interfaces.
 
+.. _recommended-driver-logic:
 
-Driver logic
-------------
+Recommended driver logic
+---------------------------
 
 Using the :ref:`mp::StdBackend and the derived classes <backend-classes>` is the
 recommended approach to building a new solver interface.
@@ -138,6 +139,17 @@ The high-level application structure is suggested as follows:
 
 - :ref:`backend-app` --> :ref:`Custom Backend <backend-classes>` --> Solver.
 
+In the :ref:`recommended driver setup <driver-recommended-setup>`,
+the interaction of the Backend with the solver API is
+separated in two channels:
+model manipulation is delegated to :ref:`model-manager`.
+ModelManager addresses solver API via a separate modeling API wrapper:
+
+- :ref:`Custom Backend <backend-classes>` -->
+  :ref:`model-manager` --> ... --> :ref:`flat-model-api` --> Solver.
+
+Thus, solver API is wrapped by two separate classes specializing in model manipulation
+vs. process logic. A reason for this design is maintainability and recompilation speed.
 Creating such a driver is
 :ref:`described in the HowTo <howto>`.
 
@@ -191,8 +203,8 @@ can be discontinued in future.
 
 
 
-Model/solution I/O and conversions
-----------------------------------
+Model/solution I/O and reformulations
+-------------------------------------
 
 The tools presented in  this section standardize
 model/solution I/O
@@ -229,7 +241,7 @@ Basic :ref:`Model/solution I/O <NL-SOL-files>` and
 * Alternatively, standard classes `mp::Problem` and `mp::ColProblem` provide intermediate
   storage for a problem instance. From `mp::Problem`,
   :ref:`conversion tools <problem-converters>`
-  can be customized to transform the instance for a particular solver.
+  can be customized to reformulate the instance for a particular solver.
 
 
 .. _problem-converters:
@@ -272,7 +284,7 @@ via the solver's modeling API wrapper:
 * :ref:`value-presolver` transforms solutions and suffixes between the
   original NL model and the flat model.
 
-* :ref:`conversion-graph` discusses exporting of the flattening / conversion graph.
+* :ref:`conversion-graph` discusses exporting of the flattening / reformulation graph.
 
 
 .. _flat-model-api:
@@ -288,7 +300,7 @@ Constraint acceptance
 ^^^^^^^^^^^^^^^^^^^^^
 
 A subclassed wrapper, such as `mp::GurobiModelAPI`,
-signals its accepted constraints and which model conversions are preferable.
+signals its accepted constraints and which model reformulations are preferable.
 For example, `GurobiModelAPI` declares the following in order to natively
 receive the logical OR constraint:
 
@@ -348,7 +360,7 @@ To use the ValuePresolver API, the following classes are needed:
 - `mp::pre::ValueMap` is a map of node values, where the key usually corresponds to
   an item subcategory. For example, Gurobi distinguishes attributes for the
   following constraint categories: linear, quadratic, SOS, general. Thus, the
-  conversion graph needs to have these four types of target nodes for constraint
+  reformulation graph needs to have these four types of target nodes for constraint
   values:
 
   .. code-block:: c++
@@ -401,10 +413,10 @@ To implement value pre- / postsolving, the following API is used:
 
 .. _conversion-graph:
 
-Conversion graph
-~~~~~~~~~~~~~~~~
+Reformulation graph
+~~~~~~~~~~~~~~~~~~~
 
-The flattening and conversion graph can be exported by the ``cvt:writegraph``
+The flattening and reformulation graph can be exported by the ``cvt:writegraph``
 option (WIP).
 
 At the moment only arcs are exported. Terminal nodes (variables, constraints,

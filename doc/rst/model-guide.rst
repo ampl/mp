@@ -593,7 +593,10 @@ Simplification of logic
        sum {(i,j) in ARCS}
           if exists {p in PRODUCTS} Flow[p,i,j] > 0 then fix_cost[i,j];
 
-Each term ``Flow[p,i,j] > 0`` is converted separately, involving a separate binary variable and implication constraint. But for a given i and j, there exists a positive Flow[p,i,j] if and only if the sum of all Flow[p,i,j] is positive. Thus an alternative formulation is given by:  
+Each term ``Flow[p,i,j] > 0`` is converted separately, involving
+a separate binary variable and implication constraint. But for a given
+i and j, there exists a positive Flow[p,i,j] if and only if the sum of
+all Flow[p,i,j] is positive. Thus an alternative formulation is given by:
 
 .. code-block:: ampl
 
@@ -602,7 +605,8 @@ Each term ``Flow[p,i,j] > 0`` is converted separately, involving a separate bina
        sum {(i,j) in ARCS}
           if sum {p in PRODUCTS} Flow[p,i,j] > 0 then fix_cost[i,j];
 
-By taking advantage of the solver's ability to work with linear expressions, this form enables a substantially more concise conversion.
+By taking advantage of the solver's ability to work with linear expressions,
+this form enables a substantially more concise reformulation.
 
 
 Creation of common subexpressions

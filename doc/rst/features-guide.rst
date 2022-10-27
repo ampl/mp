@@ -19,7 +19,6 @@ reference see :ref:`howto`.
 General features
 ================
 
-General features can apply for most models.
 
 .. _outlev:
 
