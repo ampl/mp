@@ -105,7 +105,6 @@ public:
   /// This can modify the model
   void InputExtras() override;
 
-  Solution GetSolution() override;
   ArrayRef<double> GetObjectiveValues() override
   { return std::vector<double>{ObjectiveValue()}; }
 
@@ -123,8 +122,8 @@ protected:
   double ObjectiveValue() const;
 
   /// Solution values. The vectors are emptied if not available
-  ArrayRef<double> PrimalSolution();
-  pre::ValueMapDbl DualSolution();
+  ArrayRef<double> PrimalSolution() override;
+  pre::ValueMapDbl DualSolution() override;
   ArrayRef<double> DualSolution_LP();
 
 

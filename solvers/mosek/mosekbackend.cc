@@ -114,13 +114,6 @@ bool MosekBackend::IsQCP() const {
   return false;
 }
 
-Solution MosekBackend::GetSolution() {
-  auto mv = GetValuePresolver().PostsolveSolution(
-        { PrimalSolution(), DualSolution() } );
-  return { mv.GetVarValues()(), mv.GetConValues()(),
-    GetObjectiveValues() };   
-}
-
 ArrayRef<double> MosekBackend::PrimalSolution() {
   int num_vars = NumVars();
   int error;

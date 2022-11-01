@@ -3,9 +3,15 @@
 HOWTO hook your solver to AMPL MP
 =================================
 
-This page describes possible driver setups, adding standard features
-and configuring model reformulations, and using existing driver code as
-a template. A reference of the API is :ref:`here <components>`.
+This page describes the following steps to create a new driver:
+
+.. contents::
+   :depth: 1
+   :local:
+   :backlinks: none
+
+
+A reference of the API is :ref:`here <components>`.
 
 
 .. _driver-setups:
@@ -122,10 +128,14 @@ Get a basic version up & running
 
 To implement a barebone driver, several methods need to be specialized.
 The description assumes a
-:ref:`cloned visitor driver template <howto-create-new-driver-from-template>`.
+:ref:`cloned visitor driver template <howto-create-new-driver-from-template>`,
+which uses the :ref:`recommended driver setup <driver-recommended-setup>`.
 
-Solver API wrappers
-~~~~~~~~~~~~~~~~~~~~~
+
+.. _backend-vs-modelapi:
+
+...Backend vs ...ModelAPI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As detailed in :ref:`recommended-driver-logic`, solver API is addressed by two wrapper objects,
 :ref:`Custom Backend <backend-classes>` and :ref:`flat-model-api`.
@@ -156,9 +166,11 @@ SolverCommonInfo. Example:
 Basic specialization of ModelAPI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To enable input of linear models (which still covers much of the general modeling
+The :ref:`ModelAPI wrapper <backend-vs-modelapi>` requires a minimal specialization
+to be able to accept MILP models. Note that linear models still cover much of the
+general modeling
 capabilities highlighted in the :ref:`Modeling Guide <modeling-guide>`
-via automatic transformations), <yourSolver>ModelAPI should declare and implement
+(via automatic transformations). <yourSolver>ModelAPI should declare and implement
 the following:
 
 .. code-block:: c++
@@ -187,6 +199,66 @@ the following:
    ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
    void AddConstraint(const LinConGE& lc);
 
+For more advanced modeling, see :ref:`configure-automatic-model-conversions`.
+
+
+Basic specialization of the Backend
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`Backend <backend-vs-modelapi>` requires a minimal specialization to
+enable some very common :ref:`AMPL driver logic <features-guide>`.
+<yourSolver>Backend should declare and
+implement the following:
+
+.. code-block:: c++
+
+   /// Prefix used for the <prefix>_options environment variable
+   static const char* GetAMPLSolverName() { return "highs"; }
+
+   /// Solver name displayed in messages
+   static const char* GetSolverName() { return "HiGHS"; }
+   /// AMPL driver name displayed in messages
+   static const char* GetAMPLSolverLongName() { return "AMPL-HiGHS"; }
+   /// Version displayed with -v
+   std::string GetSolverVersion();
+
+   /// Chance for the Backend to init solver environment, etc
+   void InitOptionParsing() override;
+   /// Chance to consider options immediately (open cloud, etc)
+   void FinishOptionParsing() override;
+
+   /// Note the interrupt notifier
+   void SetInterrupter(mp::Interrupter* inter) override;
+
+   /// Init custom driver options, such as outlev, writeprob
+   void InitCustomOptions() override;
+
+   /// Solve, no model modification any more (such as feasrelax).
+   /// Can report intermediate results via HandleFeasibleSolution() during this,
+   /// otherwise/finally via ReportResults()
+   void Solve() override;
+
+   /// Report final solution
+   void ReportHIGHSResults() override;
+
+   /// Values of all objectives
+   ArrayRef<double> GetObjectiveValues() override;
+   /// Primal solution values. Empty if not available
+   ArrayRef<double> PrimalSolution() override;
+   /// Dual solution. Empty if not available
+   pre::ValueMapDbl DualSolution() override;
+
+   /// Solution attributes
+   double NodeCount() const;
+   double SimplexIterations() const;
+   int BarrierIterations() const;
+
+   /// Convert solution/solver status to code+string
+   std::pair<int, std::string> ConvertHIGHSStatus();
+   /// Add custom messages
+   void AddHIGHSMessages();
+
+For other common and custom features, see :ref:`implement-standard-features`.
 
 
 .. _configure-automatic-model-conversions:

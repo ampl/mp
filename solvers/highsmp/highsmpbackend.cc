@@ -67,12 +67,6 @@ bool HighsBackend::IsQCP() const {
   return false; 
 }
 
-Solution HighsBackend::GetSolution() {
-  auto mv = GetValuePresolver().PostsolveSolution(
-        { PrimalSolution(), DualSolution(), GetObjectiveValues() } );
-  return { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() };
-}
-
 ArrayRef<double> HighsBackend::PrimalSolution() {
   int num_vars = NumVars();
   std::vector<double> x(num_vars);

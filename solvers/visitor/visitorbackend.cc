@@ -128,12 +128,6 @@ bool VisitorBackend::IsQCP() const {
 // return getIntAttr(VISITOR_INTATTR_QELEMS) > 0;
 }
 
-Solution VisitorBackend::GetSolution() {
-  auto mv = GetValuePresolver().PostsolveSolution(
-        { PrimalSolution(), DualSolution(), GetObjectiveValues() } );
-  return { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() };
-}
-
 ArrayRef<double> VisitorBackend::PrimalSolution() {
   int num_vars = NumVars();
   int error;

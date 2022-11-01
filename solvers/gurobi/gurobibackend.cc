@@ -226,15 +226,9 @@ bool GurobiBackend::IsQCP() const {
 }
 
 
-std::vector<double> GurobiBackend::PrimalSolution() {
+mp::ArrayRef<double> GurobiBackend::PrimalSolution() {
   return
     GrbGetDblAttrArray(GRB_DBL_ATTR_X, NumVars());
-}
-
-Solution GurobiBackend::GetSolution() {
-  auto mv = GetValuePresolver().PostsolveSolution(
-        { PrimalSolution(), DualSolution(), GetObjectiveValues() } );
-  return { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() };
 }
 
 pre::ValueMapDbl GurobiBackend::DualSolution() {

@@ -47,15 +47,40 @@ to suppress it a redirection is needed::
      - ``outlev``
    * - **Applicability**
      - All models
-   * - **Input**
-     - None
-   * - **Output**
-     - None
    * - **Values**
      - Values:
 
        * **0** - No (default)
        * **1** - Yes, print detailed execution log
+
+
+.. _writeprob:
+
+Model export
+------------
+
+Most solvers can export the model before solving. This is usually
+controlled by the option ``writeprob``::
+
+    option <solver>_options 'writeprob=/tmp/diet.lp';
+
+
+The format is solver-dependent and determined by the file extension
+('.lp' in the example).
+
+
+.. list-table::
+   :header-rows: 0
+
+   * - **Option**
+     - ``writeprob``
+   * - **Applicability**
+     - All models
+   * - **Values**
+     - Values:
+
+       * **filename** - Filename for the exported model
+
 
 .. _warm-start:
 

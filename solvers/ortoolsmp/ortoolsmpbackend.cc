@@ -85,12 +85,6 @@ bool OrtoolsBackend::IsQCP() const {
   return false;
 }
 
-Solution OrtoolsBackend::GetSolution() {
-  auto mv = GetValuePresolver().PostsolveSolution(
-        { PrimalSolution(), DualSolution(), GetObjectiveValues() } );
-  return { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() };
-}
-
 ArrayRef<double> OrtoolsBackend::PrimalSolution() {
   std::vector<double> x(NumVars());
   for (std::size_t i = 0; i < NumVars(); i++)

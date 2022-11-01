@@ -86,12 +86,6 @@ bool XpressmpBackend::IsQCP() const {
   return numQuadCons() > 0;
 }
 
-Solution XpressmpBackend::GetSolution() {
-  auto mv = GetValuePresolver().PostsolveSolution(
-    { PrimalSolution(), DualSolution(), GetObjectiveValues() });
-  return { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() };
-}
-
 ArrayRef<double> XpressmpBackend::PrimalSolution() {
   int num_vars = NumVars();
   int error;

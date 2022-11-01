@@ -27,6 +27,24 @@ class FlatBackend :
     public BaseBackend,
     public BackendWithValuePresolver {
 public:
+  /// Default GetSolution() for flat backends.
+  /// Invokes postsolver.
+  Solution GetSolution() {
+    auto mv = GetValuePresolver().PostsolveSolution(
+          { PrimalSolution(),
+            DualSolution(),
+            GetObjectiveValues() } );
+    return{ mv.GetVarValues()(),
+          mv.GetConValues()(),
+          mv.GetObjValues()() };
+  }
+
+  /// Redeclare GetObjectiveValues()
+  ArrayRef<double> GetObjectiveValues() override { return {}; }
+  /// Separate PrimalSolution() for flat backends
+  virtual ArrayRef<double> PrimalSolution() { return {}; }
+  /// Separate DualSolution() for flat backends
+  virtual pre::ValueMapDbl DualSolution() { return {}; }
 
   /// Obtain presolved sens info
   virtual SensRangesPresolved GetSensRangesPresolved()

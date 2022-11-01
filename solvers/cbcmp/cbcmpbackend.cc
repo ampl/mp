@@ -80,12 +80,6 @@ bool CbcmpBackend::IsQCP() const {
   return false;
 }
 
-Solution CbcmpBackend::GetSolution() {
-  auto mv = GetValuePresolver().PostsolveSolution(
-        { PrimalSolution(), DualSolution(), GetObjectiveValues() } );
-  return { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() };
-}
-
 ArrayRef<double> CbcmpBackend::PrimalSolution() {
   int num_vars = NumVars();
   int error;

@@ -172,9 +172,6 @@ public:
   /// otherwise in ReportResults()
   void Solve() override;
 
-  /// Obtain solution
-  Solution GetSolution() override;
-
 
   ///////////////////////////////////////////////////////////////////////////////
   //////////////////// Implementation's internals ///////////////////////////////
@@ -226,8 +223,8 @@ protected:
   double CurrentGrbPoolObjectiveValue() const;
 
   double ObjectiveValue() const;
-  std::vector<double> PrimalSolution();
-  pre::ValueMapDbl DualSolution();
+  mp::ArrayRef<double> PrimalSolution() override;
+  pre::ValueMapDbl DualSolution() override;
 
   std::vector<double> GurobiDualSolution_LP();
   std::vector<double> GurobiDualSolution_QCP();

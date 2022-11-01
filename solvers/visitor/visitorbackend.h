@@ -20,12 +20,17 @@ public:
   VisitorBackend();
   ~VisitorBackend();
 
-  /// Name displayed in messages
+  /// Prefix used for the <prefix>_options environment variable
+  static const char* GetAMPLSolverName() { return "visitor"; }
+
+  /// AMPL driver name displayed in messages
+  static const char* GetAMPLSolverLongName() { return "AMPL-VISITOR"; }
+  /// Solver name displayed in messages
   static const char* GetSolverName() { return "x-VISITOR"; }
+  /// Version displayed with -v
   std::string GetSolverVersion();
   
-  static const char* GetAMPLSolverName() { return "visitor"; }
-  static const char* GetAMPLSolverLongName() { return "AMPL-VISITOR"; }
+  /// Name for diagnostic messages
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
@@ -101,21 +106,22 @@ public:
   /// Note the interrupt notifier
   void SetInterrupter(mp::Interrupter* inter) override;
 
-  /// Solve, no model modification any more.
+public:  // public for static polymorphism
+  /// Init custom driver options, such as outlev, writeprob
+  void InitCustomOptions() override;
+
+  /// Solve, no model modification any more (such as feasrelax).
   /// Can report intermediate results via HandleFeasibleSolution() during this,
-  /// otherwise in ReportResults()
+  /// otherwise/finally via ReportResults()
   void Solve() override;
 
-  Solution GetSolution() override;
+  /// Default impl of GetObjValues()
   ArrayRef<double> GetObjectiveValues() override
   { return std::vector<double>{ObjectiveValue()}; } 
 
 
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
-public:  // public for static polymorphism
-  void InitCustomOptions() override;
-
 protected:
   void OpenSolver();
   void CloseSolver();
@@ -125,8 +131,8 @@ protected:
   double ObjectiveValue() const;
 
   /// Solution values. The vectors are emptied if not available
-  ArrayRef<double> PrimalSolution();
-  pre::ValueMapDbl DualSolution();
+  ArrayRef<double> PrimalSolution() override;
+  pre::ValueMapDbl DualSolution() override;
   ArrayRef<double> DualSolution_LP();
 
   void WindupVISITORSolve();

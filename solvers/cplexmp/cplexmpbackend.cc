@@ -118,13 +118,6 @@ bool CplexBackend::IsQCP() const {
 }
 
 
-Solution CplexBackend::GetSolution() {
-  auto mv = GetValuePresolver().PostsolveSolution(
-        { PrimalSolution(), DualSolution() } );
-  return { mv.GetVarValues()(), mv.GetConValues()(),
-    GetObjectiveValues() };   // TODO postsolve obj values
-}
-
 ArrayRef<double> CplexBackend::PrimalSolution() {
   int num_vars = NumVars();
   std::vector<double> x(num_vars);

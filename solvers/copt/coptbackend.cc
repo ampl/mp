@@ -139,12 +139,6 @@ void CoptBackend::DoCOPTFeasRelax() {
     NULL));
 }
 
-Solution CoptBackend::GetSolution() {
-  auto mv = GetValuePresolver().PostsolveSolution(
-        { PrimalSolution(), DualSolution(), GetObjectiveValues() } );
-  return { mv.GetVarValues()(), mv.GetConValues()(), mv.GetObjValues()() };
-}
-
 ArrayRef<double> CoptBackend::PrimalSolution() {
   int num_vars = NumVars();
   int error;
