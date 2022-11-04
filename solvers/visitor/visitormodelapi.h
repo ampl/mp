@@ -23,8 +23,11 @@ public:
   /// Class name
   static const char* GetTypeName() { return "VisitorModelAPI"; }
 
+  /// If any driver options added from here
+  void InitCustomOptions() { }
+
   /// Called before problem input.
-  /// Chanve to allocate storage
+  /// Model info can be used to preallocate memory.
   void InitProblemModificationPhase(const FlatModelInfo*);
   /// After
   void FinishProblemModificationPhase();

@@ -34,7 +34,9 @@ public:
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
-  /// Chance for the Backend to init solver environment, etc
+  /// Init custom driver options, such as outlev, writeprob
+  void InitCustomOptions() override;
+  /// Chance for the Backend to init solver environment, etc.
   void InitOptionParsing() override { }
   /// Chance to consider options immediately (open cloud, etc)
   void FinishOptionParsing() override;
@@ -107,9 +109,6 @@ public:
   void SetInterrupter(mp::Interrupter* inter) override;
 
 public:  // public for static polymorphism
-  /// Init custom driver options, such as outlev, writeprob
-  void InitCustomOptions() override;
-
   /// Solve, no model modification any more (such as feasrelax).
   /// Can report intermediate results via HandleFeasibleSolution() during this,
   /// otherwise/finally via ReportResults()

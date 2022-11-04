@@ -105,8 +105,16 @@ public:
   /// Placeholder for GetLongName()
   static const char* GetLongName() { return nullptr; }
 
-  /// Placeholder for InitOptions()
-  void InitOptions() { }
+  /// Placeholder for InitCustomOptions()
+  void InitCustomOptions() { }
+
+  /// Pass on a FlatModelInfo object
+  void PassFlatModelInfo(std::unique_ptr<FlatModelInfo>&& pfmi) {
+    pfmi_ = std::move(pfmi);
+  }
+
+  /// Retrieve FlatModelInfo*
+  const FlatModelInfo* GetFlatModelInfo() const { return pfmi_.get(); }
 
   /// Chance to prepare problem update,
   /// e.g., allocate storage
@@ -154,6 +162,10 @@ public:
   }
   /// Specifically, ask if the solver accepts non-convex quadratic constraints
   static constexpr bool AcceptsNonconvexQC() { return false; }
+
+
+private:
+  std::unique_ptr< FlatModelInfo > pfmi_ { nullptr };
 };
 
 

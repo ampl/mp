@@ -187,8 +187,9 @@ public:
   void PushModelTo(Backend& backend) const {
     auto fmi = CreateFlatModelInfo();
     FillConstraintCounters(backend, *fmi.get());
+    backend.PassFlatModelInfo(std::move(fmi));
     backend.InitProblemModificationPhase(
-          (const FlatModelInfo*)fmi.get());
+          backend.GetFlatModelInfo());
 
     PushVariablesTo(backend);
     PushObjectivesTo(backend);

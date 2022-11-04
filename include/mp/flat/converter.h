@@ -680,7 +680,7 @@ public:
   /// Init FlatConverter options
   void InitOptions() {
     InitOwnOptions();
-    GetModelAPI().InitOptions();
+    GetModelAPI().InitCustomOptions();
   }
 
 

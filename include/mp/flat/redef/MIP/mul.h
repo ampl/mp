@@ -26,7 +26,7 @@ public:
 
   /// Check whether the constraint
   /// needs to be converted despite being accepted by ModelAPI.
-  bool IfNeedsConversion(const ItemType& con, int ) {
+  bool IfNeedsConversion(const ItemType& , int ) {
     return !GetMC().IfPassQuadCon();
   }
 

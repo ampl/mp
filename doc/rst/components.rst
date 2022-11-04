@@ -316,8 +316,12 @@ By default, if the driver does not mark a constraint as acceptable,
 :ref:`configure-automatic-model-conversions` for further details.
 
 
-Problem sizes and preallocation
+Model query API
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To obtain a summary information on the flat model, for example the number
+of constraints of a particular type or group, use the helper object of type
+`mp::FlatModelInfo` obtainable by `mp::BasicFlatModelAPI::GetFlatModelInfo`.
 
 To preallocate memory for a class of constraints, the implementation can
 redefine method `mp::BasicFlatModelAPI::InitProblemModificationPhase`:

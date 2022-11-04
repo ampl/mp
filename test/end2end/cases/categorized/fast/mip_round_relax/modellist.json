@@ -19,11 +19,12 @@
   },
   {
     "name": "mip_round_01 mip:intfocus=1",
-    "tags": [ "linear"],
+    "tags": [ "linear", "integralityfocus"],
     "options": { "ANYSOLVER_options": "integralityfocus=1" },
     "values": {
       "x": 0.0,
-      "b": 0
+      "b": 0,
+      "solve_result_num": 0
     }
   },
   {

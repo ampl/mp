@@ -177,7 +177,8 @@ the following:
 
 .. code-block:: c++
 
-   /// Called before problem input
+   /// Called before problem input.
+   /// Model info can be used to preallocate memory.
    void InitProblemModificationPhase(const FlatModelInfo*);
    /// After
    void FinishProblemModificationPhase();
@@ -201,6 +202,10 @@ the following:
    ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
    void AddConstraint(const LinConGE& lc);
 
+
+Note that after `InitProblemModificationPhase()` has been called,
+you can access the `mp::FlatModelInfo` object with the inherited method
+`GetFlatModelInfo()`.
 For more advanced modeling, see :ref:`configure-automatic-model-conversions`.
 
 
@@ -224,6 +229,8 @@ implement the following:
    /// Version displayed with -v
    std::string GetSolverVersion();
 
+   /// Init custom driver options, such as outlev, writeprob
+   void InitCustomOptions() override;
    /// Chance for the Backend to init solver environment, etc
    void InitOptionParsing() override;
    /// Chance to consider options immediately (open cloud, etc)
@@ -231,9 +238,6 @@ implement the following:
 
    /// Note the interrupt notifier
    void SetInterrupter(mp::Interrupter* inter) override;
-
-   /// Init custom driver options, such as outlev, writeprob
-   void InitCustomOptions() override;
 
    /// Solve, no model modification any more (such as feasrelax).
    /// Can report intermediate results via HandleFeasibleSolution() during this,

@@ -121,7 +121,7 @@ public:
   void AddConstraint(const TanConstraint& cc);
 
   /// Init GurobiModelAPI driver options
-  void InitOptions();
+  void InitCustomOptions();
 
 
 protected:

@@ -243,6 +243,6 @@ void GurobiModelAPI::AddConstraint(const PLConstraint& plc) {
               plp.x_.size(), plp.x_.data(), plp.y_.data()) );
 }
 
-void GurobiModelAPI::InitOptions() { }
+void GurobiModelAPI::InitCustomOptions() { }
 
 } // namespace mp

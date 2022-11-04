@@ -40,6 +40,7 @@ class ModelTags(enum.Enum):
     sos = 10005
     presosenc=10006
     funcpieces = 10007
+    integralityfocus = 10008
 
     relax=20006
     warmstart=20007

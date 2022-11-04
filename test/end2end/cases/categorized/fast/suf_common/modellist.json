@@ -26,7 +26,10 @@
   {
     "name": "mipbound_01 bestbound=1 return_mipgap=3 objno=0",
     "tags": [ "linear", "return_mipgap"],
-    "options": { "ANYSOLVER_options": "bestbound=1 return_mipgap=3 objno=0" }
+    "options": { "ANYSOLVER_options": "bestbound=1 return_mipgap=3 objno=0" },
+    "values": {
+      "solve_result_num": 0
+    }
   },
   {
     "name" : "dietu_stt sensitivity=1",

@@ -9,7 +9,10 @@
     "name" : "party1 indicators via big-M",
     "files": ["party1.mod", "party1.dat"],
     "tags" : ["logical"],
-    "options": { "ANYSOLVER_options": "acc:ind_le=1 acc:ind_eq=1" },
+    "options": {
+      "gurobi_options": "acc:indle=1 acc:indeq=1 acc:indge=1",
+      "ANYSOLVER_options": "cvt:bigm=1e5"
+    },
     "solve_result_num" : 0
   },
   {

@@ -601,6 +601,7 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.return_mipgap,
                  ModelTags.sos, ModelTags.presosenc, ModelTags.sens,
                  ModelTags.lazy_user_cuts, ModelTags.funcpieces,
+                 ModelTags.integralityfocus,
 
                  ModelTags.relax, ModelTags.warmstart, ModelTags.mipstart,
 
