@@ -52,6 +52,7 @@ to suppress it a redirection is needed::
 
        * **0** - No (default)
        * **1** - Yes, print detailed execution log
+       * **2, 3, ...** - Solver-dependent values
 
 
 .. _writeprob:

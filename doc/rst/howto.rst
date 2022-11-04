@@ -163,6 +163,8 @@ SolverCommonInfo. Example:
    };
 
 
+.. _basic-spec-model-api:
+
 Basic specialization of ModelAPI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -268,7 +270,60 @@ Configure automatic model reformulations
 
 This section describes configuration of the
 :ref:`automatic model reformulations <modeling-guide>`
-provided by the AMPL MP library.
+provided by the AMPL MP library, as well as adding new reformulations.
+
+Configure automatic reformulations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The MP library can reformulate most of AMPL's
+:ref:`nonlinear and logical expressions <modeling-guide>`
+to basic MILP or MIQP constructs. If your solver does not natively handle
+an expression, you don't have to code anything. But assuming the indicator
+constraints are supported, the following code needs to be added:
+
+.. code-block:: c++
+
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_General)
+  void AddConstraint(const IndicatorConstraintLinLE& mc);
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_General)
+  void AddConstraint(const IndicatorConstraintLinEQ& mc);
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_General)
+  void AddConstraint(const IndicatorConstraintLinGE& mc);
+
+If you want a big-M linearization to be attempted first, replace `Recommended` by
+`AcceptedButNotRecommended`.
+To see the list of supported constraints, which largely correspond to
+:ref:`AMPL modeling expressions <modeling-guide>`, see `constr_std.h`,
+or run an existing driver with `-c`.
+For explanation of constraint groups, see :ref:`value-presolver`.
+
+Specifically for quadratic constraints
+(objectives were discussed in :ref:`basic-spec-model-api`),
+implement
+
+.. code-block:: c++
+
+   /// Ask if the solver accepts non-convex quadratic constraints
+   static constexpr bool AcceptsNonconvexQC() { return false; }
+
+   /// QuadConRange is optional.
+   ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Quadratic)
+   void AddConstraint(const QuadConRange& qc);
+
+   /// If using quadratics,
+   /// QuadCon(LE/EQ/GE) should have 'Recommended'
+   /// and have an implementation.
+   ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Quadratic)
+   void AddConstraint(const QuadConLE& qc);
+   ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Quadratic)
+   void AddConstraint(const QuadConEQ& qc);
+   ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Quadratic)
+   void AddConstraint(const QuadConGE& qc);
+
+
+Convex quadratic solvers can be used to solve nonconvex problems
+via piecewise-linear approximation of quadratics. To force the approximation,
+set options *cvt:quadobj=0 cvt:quadcon=0*.
 
 
 .. _implement-new-model-conversions:
@@ -279,7 +334,7 @@ Add new model reformulations
 This section describes how to add new model reformulations
 to the `mp::FlatConverter` and related / derived classes.
 
-
+TBC
 
 
 .. _implement-standard-features:
