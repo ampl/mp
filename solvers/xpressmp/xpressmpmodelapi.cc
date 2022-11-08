@@ -6,7 +6,7 @@
 
 namespace mp {
 
-/// Defining the function in ...modelapi.cc
+/// Defining the function in modelapi.cc
 /// for recompilation speed
 std::unique_ptr<BasicModelManager>
 CreateXpressmpModelMgr(XpressmpCommon& cc, Env& e,
@@ -158,6 +158,37 @@ void XpressmpModelAPI::AddConstraint(const SOS2Constraint& sos) {
     (double*)sos.get_weights().data()));
 }
 
+template <class Args, class Params, class NumOrLogic, class Id> void XpressmpModelAPI::addGenCon(
+  const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>& c, int xpressConType)
+{
+  int type[] = { xpressConType };
+  int resultant[] = { c.GetResultVar() };
+  int colstart[] = { 0 };
+  const auto args = c.GetArguments();
+  auto colindices = args.data();
+  XPRESSMP_CCALL(XPRSaddgencons(lp(), 1, (int)args.size(),
+    0, type, resultant, colstart, colindices, NULL, NULL));
+}
+
+void XpressmpModelAPI::AddConstraint(const AbsConstraint& c) {
+  addGenCon(c, XPRS_GENCONS_ABS);
+}
+
+void XpressmpModelAPI::AddConstraint(const MaxConstraint& c) {
+  addGenCon(c, XPRS_GENCONS_MAX);
+}
+
+void XpressmpModelAPI::AddConstraint(const MinConstraint& c) {
+  addGenCon(c, XPRS_GENCONS_MIN);
+}
+
+void XpressmpModelAPI::AddConstraint(const AndConstraint& c) {
+  addGenCon(c, XPRS_GENCONS_AND);
+}
+
+void XpressmpModelAPI::AddConstraint(const OrConstraint& c) {
+  addGenCon(c, XPRS_GENCONS_OR);
+}
 
 void XpressmpModelAPI::FinishProblemModificationPhase() {
 }

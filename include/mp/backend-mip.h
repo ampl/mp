@@ -418,7 +418,7 @@ protected:
                   GetMIPOptions().solnSens_ : 0;
   }
 
-  /// Whether need duals/basis/sens from MIP.
+  /// Whether need duals/basis/sens from MIP
   /// Need at least duals when this option is on
   int need_fixed_MIP() const {
     return IMPL_HAS_STD_FEATURE( FIX_MODEL ) ?
@@ -446,7 +446,7 @@ protected:
 
   const mp::OptionValueInfo values_01_noyes_1default_[2] = {
     {     "0", "No", 0 },
-    {     "1", "Yes (default.)", 1}
+    {     "1", "Yes (default)", 1}
   };
 
   const mp::OptionValueInfo values_autonoyes_[3] = {
@@ -473,7 +473,7 @@ protected:
     {     "0", "No", 0 },
     {     "1", "Use incoming basis (if provided)", 1},
     {     "2", "Return final basis", 2},
-    {     "3", "Both (1 + 2 = default.)", 3}
+    {     "3", "Both (1 + 2 = default)", 3}
   };
 
   const mp::OptionValueInfo values_warmstart_[3] = {
@@ -486,7 +486,7 @@ protected:
     {     "0", "Neither", 0 },
     {     "1", "Just .unbdd", 1},
     {     "2", "Just .dunbdd", 2},
-    {     "3", "Both (default).", 3}
+    {     "3", "Both (default)", 3}
   };
 
   ////////////////////////////////////////////////////////////////

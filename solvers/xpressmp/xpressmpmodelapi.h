@@ -94,6 +94,22 @@ public:
   ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS2Constraint& cc);
 
+
+
+  // GENERAL CONSTRAINTS
+  // Helper function for general constraints
+  template <class Args, class Params, class NumOrLogic, class Id> void addGenCon(
+    const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>& c, int xpressConType);
+  ACCEPT_CONSTRAINT(AbsConstraint, Recommended, CG_General)
+  void AddConstraint(const AbsConstraint& ac);
+  ACCEPT_CONSTRAINT(MaxConstraint, Recommended, CG_General)
+    void AddConstraint(const MaxConstraint& ac);
+  ACCEPT_CONSTRAINT(MinConstraint, Recommended, CG_General)
+    void AddConstraint(const MinConstraint& ac);
+  ACCEPT_CONSTRAINT(OrConstraint, Recommended, CG_General)
+    void AddConstraint(const OrConstraint& ac);
+  ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
+    void AddConstraint(const AndConstraint& ac);
 };
 
 } // namespace mp
