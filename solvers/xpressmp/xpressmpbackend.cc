@@ -333,21 +333,22 @@ void XpressmpBackend::ReportXPRESSMPResults() {
   };
 
   static const mp::OptionValueInfo presolveops_values_[] = {
-    { "1 = 2^0", "Remove singleton columns", 1},
-    { "2 = 2^1", "Remove singleton constraints (rows)", 2},
-    { "4 = 2^2", "Forcing row removal", 4},
-    { "8 = 2^3", "Dual reductions", 8},
-    { "16 = 2^4", "Redundant row removal", 16},
-    { "32 = 2^5", "Duplicate column removal", 32},
-    { "64 = 2^6", "Duplicate row removal", 64},
-    { "128 = 2^7", "Strong dual reductions", 4},
-    { "256 = 2^8", "Variable eliminations", 4},
-    { "512 = 2^9", "No IP reductions", 4},
-    { "1024 = 2^10", "No semi-continuous variable detection", 10},
-    { "2048 = 2^11", "No advanced IP reductions", 11},
+    { "1 = 2^0", "Remove singleton columns", XPRS_PRESOLVEOPS_SINGLETONCOLUMNREMOVAL},
+    { "2 = 2^1", "Remove singleton constraints (rows)", XPRS_PRESOLVEOPS_SINGLETONROWREMOVAL},
+    { "4 = 2^2", "Forcing row removal", XPRS_PRESOLVEOPS_FORCINGROWREMOVAL},
+    { "8 = 2^3", "Dual reductions", XPRS_PRESOLVEOPS_DUALREDUCTIONS},
+    { "16 = 2^4", "Redundant row removal", XPRS_PRESOLVEOPS_REDUNDANTROWREMOVAL},
+    { "32 = 2^5", "Duplicate column removal", XPRS_PRESOLVEOPS_DUPLICATECOLUMNREMOVAL},
+    { "64 = 2^6", "Duplicate row removal", XPRS_PRESOLVEOPS_DUPLICATEROWREMOVAL},
+    { "128 = 2^7", "Strong dual reductions", XPRS_PRESOLVEOPS_STRONGDUALREDUCTIONS},
+    { "256 = 2^8", "Variable eliminations", XPRS_PRESOLVEOPS_VARIABLEELIMINATIONS},
+    { "512 = 2^9", "No IP reductions", XPRS_PRESOLVEOPS_NOIPREDUCTIONS},
+    { "1024 = 2^10", "No semi-continuous variable detection", XPRS_PRESOLVEOPS_NOGLOBALDOMAINCHANGE},
+    { "2048 = 2^11", "No advanced IP reductions", XPRS_PRESOLVEOPS_NOADVANCEDIPREDUCTIONS},
     { "4096 = 2^12", "No eliminations on integers", 12},
-    { "16384 = 2^14", "Linearly dependant row removal", 14},
-    { "32768 = 2^15", "Linearly dependant row removal", 15},
+    { "16384 = 2^14", "Linearly dependant row removal", XPRS_PRESOLVEOPS_LINEARLYDEPENDANTROWREMOVAL},
+    { "32768 = 2^15", "No integer variable and SOS detection", XPRS_PRESOLVEOPS_NOINTEGERVARIABLEANDSOSDETECTION},
+    { "536870912 = 2^29", "No dual reduction on globals", XPRS_PRESOLVEOPS_NODUALREDONGLOBALS},
   };
 
   static const mp::OptionValueInfo pooldups_values_[] = {
@@ -585,8 +586,26 @@ void XpressmpBackend::ReportXPRESSMPResults() {
     {xstr(XPRS_FEASIBILITYPUMP_ALWAYS), "always run", 2},
     {xstr(XPRS_FEASIBILITYPUMP_LASTRESORT), "run if other heuristics have failed to find an integer solution", 4}
   };
+  static const mp::OptionValueInfo values_heurdivesoftrounding[] = {
+    {"-1", "automatic (default)", -1},
+    {"0", "do not use soft rounding", 0},
+    {"1", "cautious use", 1},
+    {"2", "aggressing use", 2}
+  };
 
+  static const mp::OptionValueInfo values_heurdivespeed[] = {
+    {"-2", "automatic bias toward quality", -2},
+    {"-1", "automatic bias toward speed (default)", -1},
+    {"0", "emphasize quality", 0},
+    {"1-3", "intermediate emphasis", 1},
+    {"4", "emphasize speed", 4}
+  };
 
+  static const mp::OptionValueInfo values_heurdivestrategy[] = {
+   {"-1", "automatic selection (default)", -1},
+   {"0", "disable", 0},
+   {"1-18", "available pre-set strategies for rounding infeasible global entities", 1},
+  };
 void XpressmpBackend::InitCustomOptions() {
 
   set_option_header(
@@ -598,6 +617,9 @@ void XpressmpBackend::InitCustomOptions() {
       "\n"
       "  ampl: option xpressmp_options 'mipgap=1e-6';\n");
 
+  // ****************************
+  // General
+  // ****************************
   AddStoredOption("tech:exportfile writeprob writemodel",
       "Specifies the name of a file where to export the model before "
       "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
@@ -608,7 +630,34 @@ void XpressmpBackend::InitCustomOptions() {
     "0*/1: Whether to write xpress log lines (chatter) to stdout and to file.",
     outlev_);
 
+  AddSolverOption("tech:cputime cputime",
+    "How time should be measured when timings are reported in the log and when checking against time limits :\n"
+    "\n.. value-table::\n",
+    XPRS_CPUTIME, values_cputime, 0);
+
+  AddSolverOption("tech:threads threads",
+    "The default number of threads used during optimization.;"
+    "default - 1 ==> automatic choice.",
+    XPRS_THREADS, -1, INT_MAX);
+  
+  AddSolverOption("lim:time timelim timelimit",
+    "Limit on solve time (in seconds; default: no limit).",
+    XPRS_MAXTIME, 0, INT_MAX); 
+
+  AddSolverOption("tech:globalfilemax globalfilemax",
+    "Maximum megabytes for temporary files storing the global search "
+    "tree: a new file is started if globalfilemax megabytes would be exceeded.",
+    XPRS_MAXGLOBALFILESIZE, 0, INT_MAX);
+
+  AddSolverOption("tech:globalfilemax globalfilemax",
+    "Seconds between additions to the logfile about, additions "
+		"to the \"global file\", a temporary file written during a "
+		"global search. Default = 60.",
+    XPRS_GLOBALFILELOGINTERVAL, 1, INT_MAX);
+
+  // ****************************
   // Solution pool params
+  // ****************************
   AddStoredOption("sol:pooldualred pooldualred",
     "Whether to suppress removal of dominated solutions(via "
       "\"dual reductions\") when poolstub is specified:\n"
@@ -647,15 +696,9 @@ void XpressmpBackend::InitCustomOptions() {
 
   
 
-  AddSolverOption("lim:time timelim timelimit",
-    "Limit on solve time (in seconds; default: no limit).",
-    XPRS_MAXTIME, 0, INT_MAX); 
-
-  AddSolverOption("tech:threads threads",
-    "The default number of threads used during optimization.;"
-      "default - 1 ==> automatic choice.",
-    XPRS_THREADS, -1, INT_MAX);
-
+  // ****************************
+  // Generic algorithm controls
+  // ****************************
   AddSolverOption("alg:method method lpmethod defaultalg",
     "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
     "\n.. value-table::\n", XPRS_DEFAULTALG, values_method, -1);
@@ -665,11 +708,9 @@ void XpressmpBackend::InitCustomOptions() {
      "such that they are always within bounds:\n"
     "\n.. value-table::\n", XPRS_CLAMPING, values_clamping,0);
 
-
   AddSolverOption("alg:feastol feastol",
     "Primal feasibility tolerance (default 1e-6).",
     XPRS_FEASTOL, 0.0, DBL_MAX);
-
 
   AddSolverOption("alg:feastolperturb feastolperturb",
     "How much a feasible primal basic solution is allowed to "
@@ -683,8 +724,9 @@ void XpressmpBackend::InitCustomOptions() {
     "Default = 0 (use the value of \"alg:feastol\")",
     XPRS_FEASTOLTARGET, 0.0, DBL_MAX);
 
-  // PRESOLVE 
-
+  // ****************************
+  // PRESOLVER
+  // ****************************
   AddSolverOption("pre:solve presolve",
     "Whether to use Xpress' presolve:\n"
     "\n.. value-table::\n",
@@ -703,13 +745,16 @@ void XpressmpBackend::InitCustomOptions() {
     "The Markowitz tolerance for the elimination phase of the presolve; default=0.001",
     XPRS_ELIMTOL, 0.0, DBL_MAX);
 
-
-
+  AddSolverOption("pre:genconsdualreductions genconsdualreductions",
+    "Whether dual reductions should be applied to reduce the number "
+    "of columns and rows added when transforming general constraints to MIP structs:\n"
+    "\n.. value-table::\n",
+    XPRS_GENCONSDUALREDUCTIONS, values_01_noyes_1default_, 1);
+  // ****************************
   // BARRIER ALGORITHM CONTROLS
-
+  // ****************************
   AddSolverOption("bar:alg baralg", "Which barrier algorithm to use ",
     XPRS_BARALG, values_baralg, -1);
-
 
   AddSolverOption("bar:cachesize cachesize",
     "Newton Barrier: L2 or L3 (see notes) cache size in kB (kilobytes) of the CPU (default -1). "
@@ -739,12 +784,10 @@ void XpressmpBackend::InitCustomOptions() {
     "Type of Cholesky factorization used for barrier, sum of:\n:",
     XPRS_CPUPLATFORM, values_cpuplatform, -1);
 
-
   AddSolverOption("bar:crash barcrash",
     "Choice of crash procedure for crossover, higher number "
     "means more aggressive procedure:",
     XPRS_BARCRASH, values_barcrash, 4);
-
 
   AddSolverOption("bar:crossover crossover",
     "How to transform a barrier solution to a basic one:\n"
@@ -776,12 +819,10 @@ void XpressmpBackend::InitCustomOptions() {
     "in the barrier algorithm's Cholesky factorization. Default=0 (automatic).",
     XPRS_DENSECOLLIMIT, 0, INT_MAX);
 
-
   AddSolverOption("bar:dualstop bardualstop",
     "Barrier method convergence tolerance on "
     "dual infeasibilities; default = 0 (automatic choice)",
     XPRS_BARDUALSTOP, 0.0, DBL_MAX);
-
 
   AddSolverOption("bar:gapstop bargapstop",
     "Barrier method convergence tolerance on the relative"
@@ -870,8 +911,9 @@ void XpressmpBackend::InitCustomOptions() {
     "number of threads used in the Newton Barrier algorithm;\n\
 		default = -1 (determined by \"threads\")", XPRS_BARTHREADS, -1, INT_MAX);
 
+  // ****************************
   // SIMPLEX RELATED
-
+  // ****************************
   AddSolverOption("lp:bigmmethod bigmmethod",
     "Simplex: This specifies whether to use the \"Big M\" method, or the standard phase I "
     "(achieving feasibility) and phase II (achieving optimality). "
@@ -892,7 +934,6 @@ void XpressmpBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     XPRS_CRASH, values_crash, 2);
 
-
   AddSolverOption("lp:dualgradient dualgradient",
     "dual simplex pricing strategy:\n"
     "\n.. value-table::\n",
@@ -903,7 +944,6 @@ void XpressmpBackend::InitCustomOptions() {
     "the converted problem:\n"
     "\n.. value-table::\n",
     XPRS_DUALIZE, values_lpdualize, -1);
-
 
   AddSolverOption("lp:dualstrategy dualstrategy",
     "Bit vector controlling the dual simplex strategy (default 1):\n"
@@ -937,8 +977,9 @@ void XpressmpBackend::InitCustomOptions() {
     "parallel simplex algorithm",
     XPRS_FORCEPARALLELDUAL, values_01_noyes_0default_, 0);
 
-
+  // ****************************
   // MIP
+  // ****************************
   AddSolverOption("mip:branchchoice branchchoice",
     "Control the choice of branching when solving a MIP problem:\n"
     "\n.. value-table::\n",
@@ -968,8 +1009,41 @@ void XpressmpBackend::InitCustomOptions() {
     "\n.. value-table::\n", XPRS_FEASIBILITYPUMP,
     values_feasibilitypump, -1);
 
+    AddSolverOption("mip:heurbeforelp heurbeforelp",
+    "Whether primal heuristics should be run before the initial LP relaxation has been solved:\n"
+    "\n.. value-table::\n",
+    XPRS_HEURBEFORELP, values_autonoyes_, -1);
 
+    AddSolverOption("lim:heurdiveiterlimit mip:heurdiveiterlimit heurdepth",
+      "Simplex iteration limit for reoptimizing during the diving heuristic; "
+      "default = -1 (automatic selection); a value of 0 implies no iteration limit",
+      XPRS_HEURDIVEITERLIMIT, -INT_MAX, INT_MAX);
+
+    AddSolverOption("mip:heurdiverandomize heurdiverandomize hdive_rand",
+      "The level of randomization to apply in the diving heuristic; values "
+      "range from 0.0=none to 1.0=full.",
+      XPRS_HEURDIVERANDOMIZE, 0.0, 1.0);
+
+    AddSolverOption("mip:heurdivesoftrounding heurdivesoftrounding hdive_rounding",
+      "Whether to use soft rounding in the MIP diving heuristic "
+      "(to push variables to their bounds via the objective rather "
+      "than fixing them):\n"
+      "\n.. value-table::\n",
+      XPRS_HEURDIVESOFTROUNDING, values_heurdivesoftrounding, -1);
+
+    AddSolverOption("mip:heurdivespeedup heurdivespeedup hdive_speed",
+      "Controls tradeoff between speed and solution quality in the diving heuristic:"
+      "\n.. value-table::\n",
+      XPRS_HEURDIVESPEEDUP, values_heurdivespeed, -1);
+
+    AddSolverOption("lim:heurdivestrategy mip:heurdivestrategy hdive_strategy",
+      "Chooses the strategy for the diving heuristic:\n"
+      "\n.. value-table::\n",
+      XPRS_HEURDIVESTRATEGY, values_heurdivestrategy, -1);
+
+  // ****************************
   // Cuts
+  // ****************************
   AddSolverOption("cut:cover covercuts",
     "The number of rounds of lifted cover inequalities at the top node."
     "Default=-1, automatic.",
@@ -1016,8 +1090,10 @@ void XpressmpBackend::InitCustomOptions() {
     "but more time per node:\n"
     "\n.. value-table::\n",
     XPRS_CUTSTRATEGY, values_cutstrategy, -1);
-  // Q(C)P
 
+  // ****************************
+  // Q(C)P
+  // ****************************
   AddSolverOption("qp:nonconvex nonconvex",
     "Determines if the convexity of the problem is checked before optimization:\n"
     "\n.. value-table::\n",
@@ -1028,13 +1104,7 @@ void XpressmpBackend::InitCustomOptions() {
     "smallest eigvenalue is < -eigevnaltol; default = 1e-6",
     XPRS_EIGENVALUETOL, 0.0, DBL_MAX);
 
-
-  // General
-
-  AddSolverOption("tech:cputime cputime",
-    "How time should be measured when timings are reported in the log and when checking against time limits :\n"
-    "\n.. value-table::\n",
-    XPRS_CPUTIME, values_cputime, 0);
+ 
 }
 
 

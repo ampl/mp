@@ -39,7 +39,7 @@ public:
   static const char* GetSolverName() { return "xpress-mp"; }
   std::string GetSolverVersion();
   
-  static const char* GetAMPLSolverName() { return "xpressmp"; }
+  static const char* GetAMPLSolverName() { return "xpress"; }
   static const char* GetAMPLSolverLongName() { return "AMPL-XPRESSMP"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
