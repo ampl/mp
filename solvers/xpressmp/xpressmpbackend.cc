@@ -39,7 +39,7 @@ std::unique_ptr<BasicModelManager>
 CreateXpressmpModelMgr(XpressmpCommon&, Env&, pre::BasicValuePresolver*&);
 
 
-XpressmpBackend::XpressmpBackend() : msp_(NULL) {
+XpressmpBackend::XpressmpBackend() : msp_(NULL), mse_(NULL) {
   pre::BasicValuePresolver* pPre;
   auto data = CreateXpressmpModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
@@ -135,7 +135,7 @@ int XpressmpBackend::BarrierIterations() const {
 
 void XpressmpBackend::ExportModel(const std::string &file) {
   const char* s;
-  char* wpflags = NULL;
+  char const* wpflags = NULL;
   if (s = strrchr(file.c_str(), '.')) {
     if (!strcmp(s, ".mps"))
       wpflags = "";
@@ -603,9 +603,71 @@ void XpressmpBackend::ReportXPRESSMPResults() {
 
   static const mp::OptionValueInfo values_heurdivestrategy[] = {
    {"-1", "automatic selection (default)", -1},
-   {"0", "disable", 0},
+   {"0", "disable heuristics", 0},
    {"1-18", "available pre-set strategies for rounding infeasible global entities", 1},
   };
+
+    static const mp::OptionValueInfo values_heuremphasis[] = {
+            {"-1", "default strategy (default)", -1},
+            {"0", "disable heuristics", 0},
+            {"1", "focus on reducing the gap early", 1},
+            {"2", "extremely aggressive heuristics", 2},
+    };
+
+    static const mp::OptionValueInfo values_heursearchfreq[] = {
+            {"-1", "automatic (default)", -1},
+            {"0", "disabled in the tree", 0},
+            {"n>0", "number of nodes between each run", 1}
+    };
+
+    static const mp::OptionValueInfo values_heursearchrootcutfreq[] = {
+            {"-1", "automatic (default)", -1},
+            {"0", "disabled during cutting", 0},
+            {"n>0", "number cutting rounds between each run", 1}
+    };
+
+    static const mp::OptionValueInfo values_heursearchrootcutselect[] = {
+            {"1", "local search with a large neighborhood. Potentially slow but is good for finding solutions that differs significantly from the incumbent", 1},
+            {"2", "local search with a small neighborhood centered around a node LP solution", 2},
+            {"4", "local search with a small neighborhood centered around an integer solution. This heuristic will often provide smaller, incremental improvements to an incumbent solution", 4},
+            {"8", "local search with a neighborhood set up through the combination of multiple integer solutions.", 8},
+            {"32", "local search without an objective function", 32},
+            {"64", "local search with an auxiliary objective function", 64}
+    };
+
+    static const mp::OptionValueInfo values_heurthreads[] = {
+            {"-1", "determined from \"threads\" keyword", -1},
+            {"0", "no separate threads (default)", 0},
+            {"n>0", "use n threads", 1}
+    };
+
+    static const mp::OptionValueInfo values_historycosts[] = {
+            {"-1", "automatic (default)", -1},
+            {"0", "no update", 0},
+            {"1","initialize using only regular branches from the root to the current node", 1},
+            {"2", "same as 1, but initialize with strong branching results as well", 2},
+            {"3", "initialize using any regular branching or strong branching information from all nodes solves before the current node", 3}
+    };
+
+    static const mp::OptionValueInfo values_keepbasis[] = {
+            {"0", "ignore previous basis", 0},
+            {"1", "use previous basis (default)", 1},
+            {"2", "use previous basis only if the number of basic variables == number of constraints", 2}
+    };
+
+    static const mp::OptionValueInfo values_keepnrows[] = {
+            {"-1", "delete N type rows from the matrix (default)", -1},
+            {"0", "delete elements from N type rows leaving empty N type rows in the matrix", 0},
+            {"1","keep N type rows", 1}
+    };
+
+    static const mp::OptionValueInfo values_localchoice[] = {
+            {"1", "never backtrack from the first child unless it is dropped "
+                  "(i.e., is infeasible or cut off) (default)", 1},
+            {"2", "always solve both child nodes before deciding which child to continue with", 2},
+            {"3", "automatically determined", 2},
+    };
+
 void XpressmpBackend::InitCustomOptions() {
 
   set_option_header(
@@ -641,20 +703,48 @@ void XpressmpBackend::InitCustomOptions() {
     XPRS_THREADS, -1, INT_MAX);
   
   AddSolverOption("lim:time timelim timelimit",
-    "Limit on solve time (in seconds; default: no limit).",
-    XPRS_MAXTIME, 0, INT_MAX); 
+    "Limit on solve time (in seconds; default: no limit). If n>0, stop MIP search only"
+    "after a solution has been found, if n<0, stop after -n seconds nevertheless",
+    XPRS_MAXTIME, -INT_MAX, INT_MAX);
 
-  AddSolverOption("tech:globalfilemax globalfilemax",
+    AddSolverOption("lim:lpiterlimit lpiterlimit",
+        "The maximum number of iterations that will be performed "
+        "by primal simplex or dual simplex before the optimization "
+        "process terminates. For MIP problems, this is the maximum "
+        "total number of iterations over all nodes.",
+        XPRS_LPITERLIMIT, 2147483645, INT_MAX);
+
+    AddSolverOption("lim:lprefineiterlimit lprefineiterlimit",
+                    "This specifies the simplex iteration limit the solution "
+                    "refiner can spend in attempting to increase the accuracy "
+                    "of an LP solution; default=-1 (automatic).",
+                    XPRS_LPREFINEITERLIMIT, -1, INT_MAX);
+
+    AddSolverOption("lim:maxcuttime maxcuttime",
+                    "The maximum amount of time allowed for generation of cutting planes and reoptimization;"
+                    "default=0 (no time limit)",
+                    XPRS_MAXCUTTIME, 0, INT_MAX);
+
+    AddSolverOption("tech:globalfilemax globalfilemax",
     "Maximum megabytes for temporary files storing the global search "
     "tree: a new file is started if globalfilemax megabytes would be exceeded.",
     XPRS_MAXGLOBALFILESIZE, 0, INT_MAX);
 
-  AddSolverOption("tech:globalfilemax globalfilemax",
+  AddSolverOption("tech:globalfileloginterval globalfileloginterval",
     "Seconds between additions to the logfile about, additions "
 		"to the \"global file\", a temporary file written during a "
 		"global search. Default = 60.",
     XPRS_GLOBALFILELOGINTERVAL, 1, INT_MAX);
 
+  AddSolverOption("tech:maxmemoryhard maxmemoryhard",
+                  "hard limit (integer number of MB) on memory allocated, "
+                  "causing early termination if exceeded; default = 0 (no limit)",
+                  XPRS_MAXMEMORYHARD, 0, INT_MAX);
+
+    AddSolverOption("tech:maxmemorysoft maxmemorysoft",
+                    "hard limit (integer number of MB) on memory allocated; "
+                    "default = 0 (no limit)",
+                    XPRS_MAXMEMORYSOFT, 0, INT_MAX);
   // ****************************
   // Solution pool params
   // ****************************
@@ -694,15 +784,26 @@ void XpressmpBackend::InitCustomOptions() {
     "solution pool is allowed to keep the n best solutions.",
     storedOptions_.nbest_);
 
-  
+    AddSolverOption("lim:maxmipsol maxmipsol",
+                    "Limit on the number of MIP solutions to be found (default no limit).",
+                    XPRS_MAXMIPSOL, 0, INT_MAX);
 
+    AddSolverOption("lim:nodes nodelim nodelimit maxnode",
+                    "Maximum MIP nodes to explore (default: 2147483647).",
+                    XPRS_MAXNODE, 2147483647, INT_MAX);
+
+    AddSolverOption("lim:maxstalltime maxstalltime",
+                    "Maximum time in seconds that the MIP Optimizer will continue to search "
+                    "for improving solution after finding a new incumbent, default=0 (no limit)",
+                    XPRS_MAXSTALLTIME, 0, INT_MAX);
   // ****************************
   // Generic algorithm controls
   // ****************************
   AddSolverOption("alg:method method lpmethod defaultalg",
     "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
     "\n.. value-table::\n", XPRS_DEFAULTALG, values_method, -1);
-  
+
+
   AddSolverOption("alg:clamping clamping",
     "Control adjustements of the returned solution values "
      "such that they are always within bounds:\n"
@@ -724,7 +825,30 @@ void XpressmpBackend::InitCustomOptions() {
     "Default = 0 (use the value of \"alg:feastol\")",
     XPRS_FEASTOLTARGET, 0.0, DBL_MAX);
 
-  // ****************************
+    AddSolverOption("alg:indlinbigm indlinbigm",
+                    "Largest \"big M\" value to use in converting indicator "
+                    "constraints to regular constraints, default = 1e5",
+                    XPRS_INDLINBIGM, 0.0, DBL_MAX);
+
+    AddSolverOption("alg:lpfolding lpfolding",
+                    "Simplex and barrier: whether to fold an LP problem before solving it:"
+                    "\n.. value-table::\n",
+                    XPRS_LPFOLDING, values_autonoyes_, -1);
+
+    AddSolverOption("alg:maxiis maxiis",
+                    "Maximum number of IIS to find; default=-1 (no limit)",
+                    XPRS_MAXIIS, -1, INT_MAX);
+
+    AddSolverOption("alg:zerotol matrixtol",
+                    "The zero tolerance on matrix elements. If the value of a matrix element is less "
+                    "than or equal to this in absolute value, it is treated as zero, default=1e-9.",
+                    XPRS_MATRIXTOL, 0.0, DBL_MAX);
+
+AddSolverOption("lp:pivtol pivtol markowitztol",
+                "Markowitz pivot tolerance (default = 0.01)",
+                XPRS_MARKOWITZTOL, 0.0, DBL_MAX);
+
+    // ****************************
   // PRESOLVER
   // ****************************
   AddSolverOption("pre:solve presolve",
@@ -736,6 +860,10 @@ void XpressmpBackend::InitCustomOptions() {
     "Reductions to use in XPRESS's presolve, sum of:\n"
     "\n.. value-table::\n(default 511 = bits 0-8 set)",
     XPRS_PRESOLVEOPS, presolveops_values_, 511);
+
+  AddSolverOption("pre:maxscalefactor maxscalefactor",
+  "Maximum log2 factor that can be applied during scaling, must be >=0 and <=64; default=64.",
+  XPRS_MAXSCALEFACTOR, 0, 64);
 
   AddSolverOption("pre:elimfillin elimfillin",
     "Maximum fillins allowed for a presolve elimination; default = 10",
@@ -750,6 +878,18 @@ void XpressmpBackend::InitCustomOptions() {
     "of columns and rows added when transforming general constraints to MIP structs:\n"
     "\n.. value-table::\n",
     XPRS_GENCONSDUALREDUCTIONS, values_01_noyes_1default_, 1);
+
+    AddSolverOption("pre:indlinbigm indprelinbigm",
+            "Largest \"big M\" value to use in converting indicator "
+            "constraints to regular constraints during XPRESS "
+            "presolve; default = 100.0",
+            XPRS_INDPRELINBIGM, 0.0, DBL_MAX);
+
+    AddSolverOption("pre:maximpliedbound maximpliedbound",
+                "When preprocessing MIP problems, only use computed bounds "
+                "at most maximpliedbound (default 1e8) in absolute value",
+                XPRS_MAXIMPLIEDBOUND, 0.0, DBL_MAX);
+
   // ****************************
   // BARRIER ALGORITHM CONTROLS
   // ****************************
@@ -760,6 +900,11 @@ void XpressmpBackend::InitCustomOptions() {
     "Newton Barrier: L2 or L3 (see notes) cache size in kB (kilobytes) of the CPU (default -1). "
     "On Intel (or compatible) platforms a value of -1 may be used to determine the cache size automatically.",
     XPRS_CACHESIZE, -1, INT_MAX);
+
+    AddSolverOption("bar:l1cache l1cache",
+                    "Newton barrier: L1 cache size in kB (kilo bytes) of the CPU. On Intel (or compatible) "
+                    "platforms a value of -1 may be used to determine the cache size automatically.",
+                    XPRS_L1CACHE, -1, INT_MAX);
 
   AddSolverOption("bar:corespercpu corespercpu",
     "Newton Barrier: number of cores to assume per cpu. Barrier cache = cachesize/corespercpu. "
@@ -977,7 +1122,33 @@ void XpressmpBackend::InitCustomOptions() {
     "parallel simplex algorithm",
     XPRS_FORCEPARALLELDUAL, values_01_noyes_0default_, 0);
 
-  // ****************************
+
+
+    AddSolverOption("lp:invertfreq invertfreq",
+                    "Maximum simplex iterations before refactoring the basis; "
+                    "default -1 (automatic)",
+                    XPRS_INVERTFREQ, -1, INT_MAX);
+
+    AddSolverOption("lp:invertmin invertmin",
+                    "Minimum simplex iterations before refactoring the basis; "
+                    "default = 3",
+                    XPRS_INVERTMIN, 3, INT_MAX);
+
+    AddSolverOption("lp:keepbasis keepbasis",
+                    "Basis choice for the next LP iteration:\n"
+                    "\n.. value-table::\n",
+                    XPRS_KEEPBASIS, values_keepbasis, 1);
+
+    AddSolverOption("lp:keepnrows keepnrows",
+                    "Status for nonbinding rows:\n"
+                    "\n.. value-table::\n",
+                    XPRS_KEEPNROWS, values_keepnrows, 1);
+
+    AddSolverOption("lp:log lplog",
+                    "Frequency of printing simplex iteration log; default = 100."
+                    "Values n < 0 display detailed outputs every -n iterations.",
+                    XPRS_LPLOG, -INT_MAX, INT_MAX);
+
   // MIP
   // ****************************
   AddSolverOption("mip:branchchoice branchchoice",
@@ -1014,34 +1185,101 @@ void XpressmpBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     XPRS_HEURBEFORELP, values_autonoyes_, -1);
 
-    AddSolverOption("lim:heurdiveiterlimit mip:heurdiveiterlimit heurdepth",
+    AddSolverOption("lim:heurdiveiterlimit heurdepth mip:heurdiveiterlimit",
       "Simplex iteration limit for reoptimizing during the diving heuristic; "
       "default = -1 (automatic selection); a value of 0 implies no iteration limit",
       XPRS_HEURDIVEITERLIMIT, -INT_MAX, INT_MAX);
 
-    AddSolverOption("mip:heurdiverandomize heurdiverandomize hdive_rand",
+    AddSolverOption("mip:heurdiverandomize hdive_rand heurdiverandomize",
       "The level of randomization to apply in the diving heuristic; values "
       "range from 0.0=none to 1.0=full.",
       XPRS_HEURDIVERANDOMIZE, 0.0, 1.0);
 
-    AddSolverOption("mip:heurdivesoftrounding heurdivesoftrounding hdive_rounding",
+    AddSolverOption("mip:heurdivesoftrounding hdive_rounding heurdivesoftrounding",
       "Whether to use soft rounding in the MIP diving heuristic "
       "(to push variables to their bounds via the objective rather "
       "than fixing them):\n"
       "\n.. value-table::\n",
       XPRS_HEURDIVESOFTROUNDING, values_heurdivesoftrounding, -1);
 
-    AddSolverOption("mip:heurdivespeedup heurdivespeedup hdive_speed",
+    AddSolverOption("mip:heurdivespeedup hdive_speed heurdivespeedup",
       "Controls tradeoff between speed and solution quality in the diving heuristic:"
       "\n.. value-table::\n",
       XPRS_HEURDIVESPEEDUP, values_heurdivespeed, -1);
 
-    AddSolverOption("lim:heurdivestrategy mip:heurdivestrategy hdive_strategy",
+    AddSolverOption("mip:heurdivestrategy hdive_strategy heurdivestrategy",
       "Chooses the strategy for the diving heuristic:\n"
       "\n.. value-table::\n",
       XPRS_HEURDIVESTRATEGY, values_heurdivestrategy, -1);
 
-  // ****************************
+    AddSolverOption("mip:heuremphasis heuremphasis",
+                    "Chooses the strategy for the diving heuristic:\n"
+                    "\n.. value-table::\n",
+                    XPRS_HEUREMPHASIS, values_heuremphasis, -1);
+
+    AddSolverOption("mip:heurforcespecialobj heurforcespecobj heurforcespecialobj" ,
+                    "Whether to use special objective heuristics on large problems and even if an incumbant exists:\n"
+                    "\n.. value-table::\n",XPRS_HEURFORCESPECIALOBJ, values_01_noyes_0default_, 0);
+
+    AddSolverOption("mip:heurfreq heurfreq",
+                    "During branch and bound, heuristics are applied at nodes whose depth "
+                    "from the root is zero modulo \"heurfreq\"; default -1 (automatic).",
+                    XPRS_HEURFREQ, -1, INT_MAX);
+
+    AddSolverOption("mip:heursearcheffort heursearcheffort",
+                    "Adjusts the overall level of the local search heuristics; default 1.0 (normal level).",
+                    XPRS_HEURSEARCHEFFORT, 1.0, DBL_MAX);
+
+    AddSolverOption("mip:heursearchfreq heurfreq heursearchfreq",
+                    "Specifies how often the local search heuristic should be run in the tree:\n"
+                    "\n.. value-table::\n",
+                    XPRS_HEURSEARCHFREQ, values_heursearchfreq,-1);
+
+    AddSolverOption("mip:heursearchrootcutfreq heurrootcutfreq heursearchrootcutfreq",
+                    "How often to run the local search heuristic while cutting at the root node:\n"
+                    "\n.. value-table::\n",
+                    XPRS_HEURSEARCHROOTCUTFREQ, values_heursearchrootcutfreq,-1);
+
+
+    AddSolverOption("mip:heursearchrootselect  heursearchrootselect",
+                    "A bit vector control for selecting which local search heuristics to apply on the root node of a global solve; "
+                    "default 117:\n"
+                    "\n.. value-table::\n",
+                    XPRS_HEURSEARCHROOTSELECT, values_heursearchrootcutselect,-1);
+
+    AddSolverOption("mip:heursearchtreeselect  heursearchtreeselect",
+                    "A bit vector control for selecting which local search heuristics to apply during the tree search of a global solve, "
+                    "default 17:\n"
+                    "\n.. value-table::\n",
+                    XPRS_HEURSEARCHTREESELECT, values_heursearchrootcutselect,-1);
+
+    AddSolverOption("mip:heurthreads heurtreads",
+                    "Number of threads to dedicate to running heuristics on the root node:\n",
+                    XPRS_HEURTHREADS, values_heurthreads, 0);
+
+    AddSolverOption("mip:historycosts historycosts",
+                    "How to update the pseudo cost for a global entity when a strong branch or a regular branch is applied:\n",
+                    XPRS_HISTORYCOSTS, values_historycosts, -1);
+
+    AddSolverOption("mip:localchoice localchoice",
+                    "when to backtrack between two child nodes during a \"dive\":\n"
+                    "\n.. value-table::\n",
+                    XPRS_LOCALCHOICE, values_localchoice, 1);
+
+AddSolverOption("mip:maxlocalbacktrack maxlocalbacktrack maxlocalbt",
+                "Max height above current node to look for a local backtrack "
+                "candidate node; default=-1(automatic)",
+                XPRS_MAXLOCALBACKTRACK, -1, INT_MAX);
+
+AddSolverOption("mip:maxtasks maxmiptasks",
+                "Maximum tasks to run in parallel during a MIP solve; default = -1 "
+                "(use mip:threads)."
+                "For mip:maxtasks > 0, branch-and-bound nodes are solved in a "
+		        "deterministic way, but the barrier algorithm (if used) may "
+                "cause a nondeterministic MIP solve unless bar:threads = 1.",
+                XPRS_MAXMIPTASKS, -1, INT_MAX);
+
+    // ****************************
   // Cuts
   // ****************************
   AddSolverOption("cut:cover covercuts",
@@ -1053,6 +1291,16 @@ void XpressmpBackend::InitCustomOptions() {
     "The number of rounds of Gomory or lift-and-project cuts at the top node."
     "Default=-1, automatic.",
     XPRS_GOMCUTS, -1, INT_MAX);
+
+    AddSolverOption("cut:lnpbest lnpbest",
+                    "Number of infeasible global entities to create lift-and-project cuts "
+                    "for during each round of Gomory cuts at the top node",
+                    XPRS_LNPBEST, 1, INT_MAX);
+
+    AddSolverOption("cut:lnpiterlimit lnpiterlimit",
+                    "Number of iterations to perform in improving each lift-and-project cut; "
+                    "default=-1 (automatic)",
+                    XPRS_LNPITERLIMIT, -1, INT_MAX);
 
   AddSolverOption("cut:treecover treecovercuts",
     "The number of rounds of lifted cover inequalities at MIP nodes "
