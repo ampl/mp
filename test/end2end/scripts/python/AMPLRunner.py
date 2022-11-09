@@ -10,12 +10,23 @@ import time
 from TimeMe import TimeMe
 
 class InnerOutputHandler(OutputHandler):
-    def __init__(self, storeOutput = False):
+    def isInvalidOption(msg):
+        for error in ["Unknown option", "invalid key"]:
+            if error in msg:
+                return True
+        return False
+    def __init__(self, appendError, storeOutput = False,):
       self._storeOutput = storeOutput
+      self._appendError = appendError
       if storeOutput:
         self._msgs = list()
         self._kinds = list()
     def output(self, kind, msg):
+        # Check if the message contains errors coming from the solver, 
+        # that are passed as normal messages from AMPL but could help
+        # with better error detection
+      if InnerOutputHandler.isInvalidOption(msg):
+          self._appendError(msg)
       if self._storeOutput:
         self._kinds.append(kind)
         self._msgs.append(msg)
@@ -60,7 +71,7 @@ class AMPLRunner(object):
             time.sleep(.5)   # so wait until the license is released
         self._ampl = AMPL()
         doLogs = self._logFile is not None
-        self._outputHandler = InnerOutputHandler(self._keepAMPLOutput)
+        self._outputHandler = InnerOutputHandler(self.appendError, self._keepAMPLOutput)
         self._ampl.setOutputHandler(self._outputHandler)
         self._ampl.setErrorHandler(InnerErrorHandler(self.appendError))
         self._ampl.setOption("solver_msg", 1 if doLogs else 0)
@@ -214,8 +225,10 @@ class AMPLRunner(object):
          self.stats["objective"] = None
          if self._lastError:
            self.stats["outmsg"] = self._lastError
+           self.stats["errormsg"] = self._lastError
          else:
            self.stats["outmsg"] = "Script ran out of time"
+           self.stats["errormsg"] = "Script ran out of time"
          self.stats["timelimit"] = True
          if logFile is not None:
              logs = self._outputHandler.getMessages(self)
@@ -258,6 +271,7 @@ class AMPLRunner(object):
       if self._lastError:
         self.stats["outmsg"] = str(self._lastError)
         self.stats["timelimit"] = self._ampl.getValue("solve_result")
+        self.stats["errormsg"] = self._lastError
       else:
         self.stats["outmsg"] = self._ampl.getValue("solve_message")
         self.stats["timelimit"] = self._ampl.getValue("solve_result")

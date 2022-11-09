@@ -59,7 +59,13 @@ class ModelRunner(object):
                         r.runAndEvaluate(m, logFile=ModelRunner.getLogFileName(m, ss))
                     else:
                         r.runAndEvaluate(m, logFile=None)
+                    
                     stats = r.getSolutionStats()
+                    EFM ="eval_fail_msg"
+                    EM ="errormsg"
+                    if EFM in stats:
+                        if EM in stats:
+                            stats[EFM]= stats[EM]
                     self._runs[i][-1] = stats
                     if exporter:
                         if not exporter.printStatus(m, stats):
