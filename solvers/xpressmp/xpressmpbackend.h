@@ -166,8 +166,8 @@ protected:
 
   ArrayRef<int> VarStatii();
   ArrayRef<int> ConStatii();
-  void VarStatii(ArrayRef<int>);
-  void ConStatii(ArrayRef<int>);
+  std::vector<int> VarStatii(ArrayRef<int>);
+  std::vector<int> ConStatii(ArrayRef<int>);
 
   ArrayRef<int> VarsIIS();
   pre::ValueMapInt ConsIIS();

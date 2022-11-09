@@ -1420,7 +1420,7 @@ ArrayRef<int> XpressmpBackend::ConStatii() {
   return cons;
 }
 
-void XpressmpBackend::VarStatii(ArrayRef<int> vst) {
+std::vector<int> XpressmpBackend::VarStatii(ArrayRef<int> vst) {
   std::vector<int> stt(vst.data(), vst.data() + vst.size());
   std::vector<double> lb, ub;
   for (auto j = stt.size(); j--; ) {
@@ -1449,8 +1449,8 @@ void XpressmpBackend::VarStatii(ArrayRef<int> vst) {
       {
         lb.resize(vst.size());
         ub.resize(vst.size());
-        XPRSgetlb(lp(), lb.data(), 0, vst.size());
-        XPRSgetub(lp(), ub.data(), 0, vst.size());
+        XPRESSMP_CCALL(XPRSgetlb(lp(), lb.data(), 0, vst.size()-1));
+        XPRESSMP_CCALL(XPRSgetub(lp(), ub.data(), 0, vst.size()-1));
       }
       if (lb[j] >= -1e-6)
         s = 0;
@@ -1463,10 +1463,10 @@ void XpressmpBackend::VarStatii(ArrayRef<int> vst) {
       MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
     }
   }
-  XPRESSMP_CCALL(XPRSloadbasis(lp(), NULL, stt.data()));
+  return stt;
 }
 
-void XpressmpBackend::ConStatii(ArrayRef<int> cst) {
+std::vector<int> XpressmpBackend::ConStatii(ArrayRef<int> cst) {
   std::vector<int> stt(cst.data(), cst.data() + cst.size());
   for (auto& s : stt) {
     switch ((BasicStatus)s) {
@@ -1485,7 +1485,7 @@ void XpressmpBackend::ConStatii(ArrayRef<int> cst) {
       MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
     }
   }
-  XPRESSMP_CCALL(XPRSloadbasis(lp(), stt.data(), NULL));
+  return stt;
 }
 
 SolutionBasis XpressmpBackend::GetBasis() {
@@ -1511,8 +1511,10 @@ void XpressmpBackend::SetBasis(SolutionBasis basis) {
   auto constt = mv.GetConValues()(CG_Linear);
   assert(varstt.size());
   assert(constt.size());
-  VarStatii(varstt);
-  ConStatii(constt);
+  auto convertedVarBasis = VarStatii(varstt);
+  auto convertedConBasis =ConStatii(constt);
+  XPRESSMP_CCALL(XPRSloadbasis(lp(), convertedConBasis.data(), convertedVarBasis.data()));
+
 }
 
 
