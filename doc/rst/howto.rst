@@ -32,7 +32,7 @@ Examples:
 
 .. _driver-recommended-setup:
 
-The recommended setup
+Recommended setup
 ~~~~~~~~~~~~~~~~~~~~~
 
 The recommended driver structure is to use the
@@ -302,7 +302,7 @@ or run an existing driver with `-c`.
 For explanation of constraint groups, see :ref:`value-presolver`.
 
 Specifically for quadratic constraints
-(objectives were discussed in :ref:`basic-spec-model-api`),
+(quadratic objectives were discussed in :ref:`basic-spec-model-api`),
 implement
 
 .. code-block:: c++
@@ -336,9 +336,38 @@ Add new model reformulations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This section describes how to add new model reformulations
-to the `mp::FlatConverter` and related / derived classes.
+in the :ref:`recommended driver setup <driver-recommended-setup>`.
 
-TBC
+An overview of the reformulation process is provided in
+:ref:`mm-and-reformulations`.
+
+
+Derive a custom FlatConverter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Unless you'd like to contribute to the default behaviour, you should
+derive a custom class from `mp::FlatConverter` or `mp::MIPFlatConverter`
+and use it in ``Create<YourSolver>ModelMgr`` (its default implementation
+is in `<yourSolver>modelapi.cc`).
+
+
+Add a converter for a constraint
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To add a new converter, derive a new class from
+`mp::BasicItemConverter` or `mp::BasicFuncConstrCvt` and follow the pattern
+of existing conversions, in particular the
+``INSTALL_ITEM_CONVERTER`` macro.
+
+
+Add a new constraint type
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To add a new constraint type, follow the definitions and installation pattern
+from the ``STORE_CONSTRAINT_TYPE__WITH_MAP`` and
+``STORE_CONSTRAINT_TYPE__NO_MAP`` in `mp::FlatConverter`.
+In particular, overload ``PreprocessConstraint`` and
+``PropagateResult`` for the new type in your custom class.
 
 
 .. _implement-standard-features:

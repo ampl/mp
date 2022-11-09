@@ -148,6 +148,8 @@ ModelManager addresses solver API via a separate modeling API wrapper:
 - :ref:`Custom Backend <backend-classes>` -->
   :ref:`model-manager` --> ... --> :ref:`flat-model-api` --> Solver.
 
+More details are given in :ref:`mm-and-reformulations`.
+
 Thus, solver API is wrapped by two separate classes specializing in model manipulation
 vs. process logic. A reason for this design is maintainability and recompilation speed.
 Creating such a driver is
@@ -203,6 +205,9 @@ can be discontinued in future.
 
 
 
+
+.. _mm-and-reformulations:
+
 Model/solution I/O and reformulations
 -------------------------------------
 
@@ -210,6 +215,63 @@ The tools presented in  this section standardize
 model/solution I/O
 (currently relying on :ref:`NL file input and SOL file output <NL-SOL-files>`)
 and conversion for a particular solver.
+
+Overview
+~~~~~~~~~~~~
+
+While the components can be theoretically used in isolation, for example just
+the :ref:`model-manager`, in the :ref:`driver-recommended-setup` the model
+handling is implemented according to the following scheme:
+
+:ref:`model-manager` -->
+  :ref:`Problem builder <problem-builders>` -->
+  :ref:`Problem converter / flattener <problem-converters>` -->
+  :ref:`Flat Converter <flat-converters>` -->
+  :ref:`flat-model-api` -->
+  Solver.
+
+To give an example, consider the following model:
+
+.. code-block:: ampl
+
+   var x >=0, <=7;
+   var y >=0, <=4, integer;
+
+   s.t. Con01: x + log(y) <= 5;
+   s.t. Con02: numberof 2 in (x, y) <= 1;
+
+The nonlinear expressions `log` and `numberof` are received from AMPL
+in `expression trees <https://en.wikipedia.org/wiki/Nl_(format)>`_ which are input from
+an NL file by a :ref:`problem builder <problem-builders>`. At the next step,
+:ref:`problem flattener <problem-converters>` replaces nonlinear expressions
+by auxiliary variables:
+
+.. code-block:: ampl
+
+   var t1 = "log(y)";
+   var t2 = "numberof 2 in (x, y)";
+
+   s.t. Con01': x + t1 <= 5;
+   s.t. Con02': t2 <= 1;
+
+Then,  the defining constraints of ``t1`` and ``t2`` are either passed to the solver
+which accepts them via the :ref:`model API <flat-model-api>`, or become reformulated
+into more simple entities by :ref:`Flat Converter <flat-converters>`. If the solver
+natively accepts a nonlinear constraint, it is possible to still apply automatic
+reformulation via a solver option, for example `acc:log` for logarithm. Run the driver
+with `-=` or `-c` for a list of natively accepted constraints and options.
+
+An in-depth treatment of some automatic reformulations is given in
+[CLModernArch]_ and [SOCTransform]_. Customization for a new solver
+driver is sketched in :ref:`configure-automatic-model-conversions`.
+
+.. [CLModernArch] J. J. Dekker. A Modern Architecture for Constraint Modelling Languages.
+   PhD thesis. Monash University, 2021.
+
+.. [SOCTransform] R. Fourer and J. Erickson. Detection and Transformation of Second-Order Cone
+   Programming Problems in a General-Purpose Algebraic Modeling Language.
+   Optimization Online, 2019.
+
 
 .. _model-manager:
 

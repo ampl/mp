@@ -274,7 +274,7 @@ protected:
       }
     }
     assert(map.size()==(size_t)nTaken);
-    std::vector<double> coefs(ub_dbl-lb_dbl+1, 1.0);
+    std::vector<double> coefs(ub-lb+1, 1.0);
     this->AddConstraint(LinConEQ({coefs, unaryEncVars}, 1.0));
     unaryEncVars.push_back(var);
     for (int v=lb; v!=ub+1; ++v) {
