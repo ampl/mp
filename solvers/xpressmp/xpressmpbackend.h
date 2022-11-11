@@ -176,6 +176,7 @@ protected:
     const char* ch, int msglvl, int msgnumber);
 
   const std::string& tunebase() { return storedOptions_.tunebase_; }
+  const std::string& tunename() { return storedOptions_.tunename_; }
 
 private:
   /// These options are stored in the class
@@ -187,6 +188,7 @@ private:
     int poollimit_ = 10;
     int nPoolMode_ = 0;
     std::string tunebase_;
+    std::string tunename_;
   };
   
   Options storedOptions_;

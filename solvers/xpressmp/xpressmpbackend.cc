@@ -156,6 +156,8 @@ void XpressmpBackend::SetInterrupter(mp::Interrupter *inter) {
 
 void XpressmpBackend::DoXPRESSTune() {
   SetSolverOption(XPRS_TUNEROUTPUTPATH, tunebase().data());
+  if (tunename().size())
+    SetSolverOption(XPRS_TUNERSESSIONNAME, tunename().data());
   XPRESSMP_CCALL(XPRStune(lp(), ""));
 }
 
@@ -964,6 +966,8 @@ void XpressmpBackend::ReportXPRESSMPResults() {
     {"7", "weighted combination of the 'up' and 'down' pseudo costs", 7},
     {"8", "product of 'up' and 'down' pseudo costs", 8}
   };
+
+  
 void XpressmpBackend::InitCustomOptions() {
 
   set_option_header(
@@ -987,7 +991,7 @@ void XpressmpBackend::InitCustomOptions() {
   AddStoredOption("tech:outlev outlev",
     "Whether to write xpress log lines (chatter) to stdout and to file:\n"
     "\n.. value-table::\n",
-    outlev_);
+    outlev_, values_outlev);
 
   AddSolverOption("tech:cputime cputime",
     "How time should be measured when timings are reported in the log and when checking against time limits :\n"
@@ -2156,6 +2160,12 @@ AddSolverOption("mip:varselection varselection",
     "underneath this path. For example, by default, the tuner result for a "
     "problem called prob will be located at tuneroutput/prob/",
     storedOptions_.tunebase_);
+
+
+  AddStoredOption("tech:tunename tunesessionname",
+    "Set problem name within the tuner \"tunebase\" is specified.",
+    storedOptions_.tunename_);
+
 
   AddSolverOption("tech:tuneoutput tuneroutput tuneoutput",
     "Output tuner results and logs to the file system when \"tunebase\" is specified:\n"
