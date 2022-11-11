@@ -71,11 +71,11 @@ public:
   SolutionBasis GetBasis() override;
   void SetBasis(SolutionBasis) override;
 
+  ALLOW_STD_FEATURE(WARMSTART, true)
+  void AddPrimalDualStart(Solution sol0) override;
   /**
   * MIP warm start
   **/
-  // TODO If MIP warm start is supported, implement the function below
-  // to set a non-presolved starting solution
   ALLOW_STD_FEATURE(MIPSTART, true)
   void AddMIPStart(ArrayRef<double> x0) override;
 
@@ -83,16 +83,12 @@ public:
  /**
   * Get MIP Gap
   **/
-  // TODO Implement to return MIP gap
-  // (adds option mip:return_gap)
   ALLOW_STD_FEATURE(RETURN_MIP_GAP, true)
   double MIPGap() override;
   double MIPGapAbs() override;
   /**
   * Get MIP dual bound
   **/
-  // TODO Implement to return the best dual bound value
-  // (adds option mip:bestbound)
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
   double BestDualBound() override;
 
@@ -152,6 +148,7 @@ protected:
   void ReportXPRESSMPResults();
 
   void ReportXPRESSMPPool();
+  void DoXPRESSTune();
 
   std::vector<double> getPoolSolution(int i);
   double getPoolObjective(int i);
@@ -178,6 +175,7 @@ protected:
   static int xp_mse_display(XPRSobject o, void* context, void* thread,
     const char* ch, int msglvl, int msgnumber);
 
+  const std::string& tunebase() { return storedOptions_.tunebase_; }
 
 private:
   /// These options are stored in the class
@@ -188,7 +186,9 @@ private:
     int pooldupcol_;
     int poollimit_ = 10;
     int nPoolMode_ = 0;
+    std::string tunebase_;
   };
+  
   Options storedOptions_;
   
   // For multisol

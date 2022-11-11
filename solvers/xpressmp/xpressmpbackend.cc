@@ -28,7 +28,7 @@ std::unique_ptr<mp::BasicBackend> CreateXpressmpBackend() {
 
 
 namespace mp {
-  int XpressmpBackend::outlev_ = 0;
+  int XpressmpBackend::outlev_ = 3;
 /// Create Xpressmp Model Manager
 /// @param gc: the Xpressmp common handle
 /// @param e: environment
@@ -154,11 +154,20 @@ void XpressmpBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptXpressmp, lp());
 }
 
+void XpressmpBackend::DoXPRESSTune() {
+  SetSolverOption(XPRS_TUNEROUTPUTPATH, tunebase().data());
+  XPRESSMP_CCALL(XPRStune(lp(), ""));
+}
+
 void XpressmpBackend::Solve() {
   int nsols = 10;
   if (!storedOptions_.exportFile_.empty()) {
     ExportModel(storedOptions_.exportFile_);
   }
+
+  if (tunebase().size())
+    DoXPRESSTune();
+
   if (IsMIP()) {
     if (need_multiple_solutions() || storedOptions_.nbest_ > 1) {
       if (storedOptions_.nbest_ == 0) {
@@ -310,8 +319,9 @@ void XpressmpBackend::ReportXPRESSMPResults() {
     }
   }
   void XpressmpBackend::FinishOptionParsing() {
-    set_verbose_mode(outlev_ > 0);
-    if (outlev_ > 0)
+    bool doLog = outlev_ > 0 && outlev_ < 5;
+    set_verbose_mode(doLog);
+    if (doLog)
       XPRSaddcbmessage(lp(), xpdisplay, NULL, 0);
 
     if (need_multiple_solutions())
@@ -668,6 +678,292 @@ void XpressmpBackend::ReportXPRESSMPResults() {
             {"3", "automatically determined", 2},
     };
 
+    static const mp::OptionValueInfo values_mipconcurrentnodes[] = {
+           {"-1", "automatic (default)", -1},
+           {"n > 0", "number of nodes to complete", 1}
+    };
+
+    static const mp::OptionValueInfo values_mipconcurrentsolves[] = {
+       {"-1", "enabled, the number of concurrent solves "
+				  "depends on mipthreads", -1},
+       {"0", "disabled (default)", 0},
+       {"1", "disabled (default)", 1},
+      {"n > 1", "number of concurrent solves = n", 2},
+    };
+
+    static const mp::OptionValueInfo values_mipdualreductions[] = {
+      {"0", "none", 0},
+      {"1", "all (default)", 1},
+      {"2", "restrict dual reductions to continuous variables", 2},
+    };
+
+  static const mp::OptionValueInfo values_mipkappafreq[] = {
+  {"0", "never (default)", 0},
+  {"1", "every node", 1},
+  {"n > 1", "once per node at level n of the branch-and-bound tree", 2} };
+
+  static const mp::OptionValueInfo values_qsimplexops[] = {
+    { "1", "traditional primal first phase (default)", 1},
+    { "2", "force Big M primal first phase", 2},
+    { "4", "force traditional dual first phase", 4},
+    { "8", "force BigM dual first phase", 8},
+    { "16", "always use artificial bounds in dual", 16},
+    { "32", "use original problem basis only when warmstarting the KKT", 32},
+    { "64", "skip the primal bound flips for ranged primals (might cause "
+    "more trouble than good if the bounds are very large)", 64},
+    { "128", "also do the single pivot crash", 128},
+    { "256", "do not apply aggressive perturbation in dual", 256}
+};
+
+  static const mp::OptionValueInfo values_mippresolve[] = {
+  { "1", "reduced-cost fixing at each node", 1},
+  { "2", "primal reductions will be performed at each node", 2},
+  { "8", "allow changing continuous-variable bounds", 8},
+  { "16", "allow dual reductions", 16},
+  { "32", "allow global tightening of the problem", 32},
+  { "64", "use objective function", 64},
+  { "128", "allow restarting", 128},
+  { "256", "allow use of symmetry", 256}
+  };
+
+  static const mp::OptionValueInfo values_miprampup[] = {
+   {"-1", "automatic choice (default)", -1},
+   {"0", "no: use as many tasks as possible", 0},
+   {"1", "yes, until finished with initial dives", 1}
+  };
+  static const mp::OptionValueInfo values_miprestart[] = {
+   {"-1", "automatic choice (default)", -1},
+   {"0", "disable in-tree restarts", 0},
+   {"1", "normal aggressiveness", 1},
+   {"2", "higher aggressiveness", 2},
+  };
+
+  static const mp::OptionValueInfo values_miqcpalg[]{
+    {"-1", "automatic (default)", -1},
+    {"0", "barrier", 0},
+    {"1", "outer approximations", 1}
+  };
+  static const mp::OptionValueInfo values_netstalllimit[]{
+  {"-1", "automatic (default)", -1},
+  {"0", "no limit", 0},
+  {"n > 0", "limit to n network simplex iterations", 1}
+  };
+
+  static const mp::OptionValueInfo values_nodeselection[]{
+    {"1", "local first: choose between descendant and sibling nodes if available; choose from all outstanding nodes otherwise", 1},
+    {"2", "best first: choose from all outstanding nodes", 2},
+    {"3", "local depth first: choose between descendant and sibling nodes if available; choose from the deepest nodes otherwise", 3},
+    {"4", "best first, then local first: best first is used for the first BREADTHFIRST nodes, after which local first is used", 4},
+    {"5", "pure depth first: choose from the deepest outstanding nodes", 5}
+  };
+  static const mp::OptionValueInfo values_numericalemphasis[]{
+        {"-1", "automatic (default)", -1},
+        {"0", "epmhasize speed", 0},
+        {"1", "mild emphasis on numerical stability", 1},
+        {"2", "medium emphasis on numerical stability", 2},
+        {"3", "strong emphasis on numerical stability", 3},
+  };
+
+  static const mp::OptionValueInfo values_outlev[]{
+  {"0","none", 0},
+  {"1", "all", 1},
+  {"2", "information", 2},
+  {"3", "warnings & errors only (default)", 3},
+  {"4", "errors", 4},
+  {"5","none", 5}
+  };
+  static const mp::OptionValueInfo values_precoefelim[]{
+  {"0","disabled", 0},
+  {"1", "remove as many coefficients as possible", 1},
+  {"2", "cautious eliminations", 2}
+};
+  static const mp::OptionValueInfo values_preconvertseparable[]{
+ {"-1","automatic (default)", -1},
+    {"0", "disable", 0},
+ {"1", "enable reformulation to diagonal quadratic constraints.", 1},
+ {"2", "1, plus reduction to second-order cones", 2},
+ {"3", "2, plus the objective function is converted to a constraint and treated as a quadratic constraint", 3}
+ };
+
+  static const mp::OptionValueInfo values_predomcol[]{
+{"-1","automatic (default)", -1},
+{"0", "disable", 0},
+{"1", "cautious", 1},
+{"2", "aggressive: all candidate will be checked", 2}
+  };
+
+  static const mp::OptionValueInfo values_predomrow[] = {
+ {"-1", "automatic choice (default)", -1},
+ {"0", "disabled", 0},
+ {"1", "cautious", 1},
+ {"2", "medium", 2},
+ {"3", "aggressive", 3}
+  };
+
+  static const mp::OptionValueInfo values_preduprow[]{
+    {"-1","automatic (default)", -1},
+    {"0", "disable", 0},
+    {"1", "eliminate only rows that are identical in all variables", 1},
+    {"2", "1 plus eliminate duplicate rows with simple penalty variable expressions", 2},
+    {"3", "2 plus eliminate duplicate rows with more complex penalty variable expressions", 3}
+  };
+  
+  static const mp::OptionValueInfo values_prepermute[]{
+    {"1", "permute rows", 1},
+    {"2", "permute columns", 2},
+    {"4", "permute global information (for MIP)", 4}
+  };
+
+  static const mp::OptionValueInfo values_pricingalg[]{
+   {"-1", "partial pricing", 1},
+   {"0", "automatic choice (default)", 0},
+   {"1", "devex pricing", 1},
+   {"2", "steepest edge", 2},
+    {"3", "steepest edge with initial weights", 3}
+  };
+
+  const mp::OptionValueInfo values_yesnoinverted_defaultyes[] = {
+  {     "0", "yes (default)", 0 },
+  {     "1", "no", 1}
+  };
+  const mp::OptionValueInfo values_yesnoinverted_defaultno[] = {
+  {     "0", "yes", 0 },
+  {     "1", "no (default)", 1}
+  };
+
+  const mp::OptionValueInfo values_pwlnonconvextransformation[] = {
+    {"-1", "automatic (default)", -1},
+    {     "0", "use a formulation based on SOS2-constraints", 0 },
+    {     "1", "use a formulation based on binary variables", 1}
+  };
+
+  const mp::OptionValueInfo values_qcrootalg[] = {
+  {"-1", "automatic (default)", -1},
+  {     "0", "use barrier", 0 },
+  {     "1", "use dual simplex on outer approximation", 1}
+  };
+
+  const mp::OptionValueInfo values_refineops[] = {
+ { "1", "refine optimal LP solutions", 1},
+    { "2", "refine MIP solutions", 2},
+    { "8", "refine each node of the search tree", 8},
+    { "16", "refine non-global solutions", 16},
+    { "32", "apply the iterative refiner to refine the solution", 32},
+    { "64", "use higher precision in the iterative refinement", 64},
+    { "128", "iterative refiner will use the primal simplex algorithm", 128},
+    { "256", "iterative refiner will use the dual simplex algorithm", 256},
+
+    { "512", "refine MIP solutions such that rounding them keeps the problem "
+    "feasible when reoptimized", 512},
+    { "1024", "ttempt to refine MIP solutions such that rounding them keeps the "
+    "problem feasible when reoptimized, but accept integers solutions even if "
+    "refinement fails", 1024},
+  };
+
+  const mp::OptionValueInfo values_sbbest[] = {
+{"-1", "automatic (default)", -1},
+{"0", "disable strong branching", 0 },
+{"n > 1", "perform strong branching on up to n entities at each node", 1}
+  };
+  const mp::OptionValueInfo values_sbestimate[] = {
+{"-1", "automatic (default)", -1},
+{"1-6", "different variants of local pseudo costs.", 1}
+  };
+
+  const mp::OptionValueInfo values_sbselect[] = {
+    {"-2", "automatic - low effort (default)", -2},
+    {"-1", "automatic - high effort", -1},
+    {"n > 0", "include max(n, sbbest) candidates", 1},
+  };
+  const mp::OptionValueInfo values_scaling[] = {
+    {"1", "row scaling", 1},
+    {"2", "column scaling", 2},
+    {"4", "row scaling again", 4},
+    {"8", "maximum", 8},
+    {"16", "Curtis-Red", 16},
+    {"32", "0->geometric mean, 1->maximum element", 32},
+    {"64", "no special handling for BigM rows", 64},
+    {"128", "scale objective function for the simplex method", 128},
+    {"256", "exclude the quadratic part of constraints when calculating scaling factors", 256},
+    {"512", "scale before presolve", 512},
+    {"1024", "do not scale constraints up", 1024},
+    {"2048", "do not scale variables down", 2048},
+    {"4096", "do not apply automatic global objective scaling", 4096},
+    {"8192", "RHS scaling", 8192},
+    {"16384", "disable aggressive quadratic scaling", 16384},
+    {"32768", "explicit linear slack scaling", 32768}
+  };
+
+  const mp::OptionValueInfo values_siftpresolveops[] = {
+    {"-1", "use the  \"presolveops\" setting specified for the original problem", -1},
+    {">=0", "use the value (see \"presolveops\" for its semantic)", 0}
+  };
+
+  const mp::OptionValueInfo values_siftswitch[] = {
+    {"-1", "dual simplex", -1},
+    {"0", "barrier", 0},
+    {">0", "use the barrier algorithm while the number of dual infeasibilities is larger than this value, otherwise use dual simplex", 1}
+  };
+
+  const mp::OptionValueInfo values_sleeponthreadwait[] = {
+   {"-1", "automatically determined", -1},
+   {"0", "no (busy-wait)", 0},
+   {">0", "yes (sleep, might add overhead)", 1}
+  };
+
+  const mp::OptionValueInfo values_symmetry[] = {
+    {"0", "no simmetry detection", 0},
+    {"1", "conservative effort", 1},
+    {"2", "intensive effort", 2}
+  };
+  const mp::OptionValueInfo values_symselect[] = {
+    {"0", "search the whole matrix (otherwise the 0, 1 and -1 coefficients only)", 0},
+    {"1", "search all entities(otherwise binaries only)", 1} };
+
+  const mp::OptionValueInfo values_tunerhistory[] = {
+    {"0", "Discard any previous result", 0},
+    {"1", "Append new results but do not reuse them", 1},
+    {"2", "Reuse and append new results", 2}
+  };
+
+  const mp::OptionValueInfo values_tunermethod[] = {
+      {"- 1", "automatic choice(default)", -1},
+      {"0", "default LP tuner", 0},
+      {"1", "default MIP tuner", 1},
+      {"2", "more elaborate MIP tuner", 2},
+      {"3", "root - focused MIP tuner", 3},
+      {"4", "tree - focused MIP tuner", 4},
+      {"5", "simple MIP tuner", 5},
+      {"6", "default SLP tuner", 6},
+      {"7", "default MISLP tuner", 7},
+      {"8", "MIP tuner using primal heuristics", 8}
+  };
+  const mp::OptionValueInfo values_tunertarget[] = {
+    {"- 1", "automatic choice(default)",-1},
+    {"0", "solution time, then integrality gap", 0},
+      {"1", "solution time, then best bound",1},
+       {"2", "solution time, then best integer solution",2},
+       {"3", "the \"primal dual integral\", whatever that is",3},
+       {"4", "just solution time (default for LPs)",4},
+       {"5", "just objective value" ,5},
+       {"6", "validation number (probably not relevant)",6},
+       {"7", "gap only" , 7},
+       {"8", "best bound only" , 8},
+       {"9", "best integer solution only" , 9},
+       {"10", "best primal integral - only for individual instances" , 10}
+  }; 
+  
+  const mp::OptionValueInfo values_varselection[] = {
+    {"- 1", "automatic choice(default)", -1},
+    {"1", "minimum of the 'up' and 'down' pseudo - costs", 1},
+    {"2", "'up' pseudo - cost + 'down' pseudo - cost", 2},
+    {"3", "maximum of the 'up' and 'down' pseudo - costs plus twice their minimum", 3},
+    {"4", "maximum of the 'up' and 'down' pseudo - costs", 4},
+    {"5", "the 'down' pseudo - cost", 5},
+    {"6", "the 'up' pseudo - cost", 6},
+    {"7", "weighted combination of the 'up' and 'down' pseudo costs", 7},
+    {"8", "product of 'up' and 'down' pseudo costs", 8}
+  };
 void XpressmpBackend::InitCustomOptions() {
 
   set_option_header(
@@ -689,7 +985,8 @@ void XpressmpBackend::InitCustomOptions() {
       storedOptions_.exportFile_);
 
   AddStoredOption("tech:outlev outlev",
-    "0*/1: Whether to write xpress log lines (chatter) to stdout and to file.",
+    "Whether to write xpress log lines (chatter) to stdout and to file:\n"
+    "\n.. value-table::\n",
     outlev_);
 
   AddSolverOption("tech:cputime cputime",
@@ -706,6 +1003,11 @@ void XpressmpBackend::InitCustomOptions() {
     "Limit on solve time (in seconds; default: no limit). If n>0, stop MIP search only"
     "after a solution has been found, if n<0, stop after -n seconds nevertheless",
     XPRS_MAXTIME, -INT_MAX, INT_MAX);
+
+  AddSolverOption("tech:sleeponthreadwait sleeponthreadwait",
+    "Whether threads should sleep while awaiting work:\n"
+    "\n.. value-table::\n",
+    XPRS_SLEEPONTHREADWAIT, values_sleeponthreadwait,  -1);
 
     AddSolverOption("lim:lpiterlimit lpiterlimit",
         "The maximum number of iterations that will be performed "
@@ -848,6 +1150,49 @@ AddSolverOption("lp:pivtol pivtol markowitztol",
                 "Markowitz pivot tolerance (default = 0.01)",
                 XPRS_MARKOWITZTOL, 0.0, DBL_MAX);
 
+AddSolverOption("alg:cutoff cutoff",
+  "If the optimal objective value is worse than cutoff, "
+  "report \"objective cutoff\" and do not return a solution. "
+  "Default: 1.0E+40 for minimizing, -1.0E+40 for maximizing.",
+  XPRS_MIPABSCUTOFF, MinusInfinity(), Infinity());
+
+AddSolverOption("alg:addcutoff addcutoff mipaddcutoff",
+  "Amount to add to the objective function of the best integer\n\
+		solution found to give the new MIP cutoff; default -1e-5.",
+  XPRS_MIPADDCUTOFF, -1e-10, DBL_MAX);
+
+AddSolverOption("alg:relcutoff relcutoff miprelcutoff",
+  "If the optimal objective value is (relatively) worse than relcutoff, "
+  "report \"objective cutoff\" and do not return a solution. "
+  "Default: 1.0E-4.",
+  XPRS_MIPRELCUTOFF, 1e-4, Infinity());
+
+AddSolverOption("alg:randomseed randomseed",
+  "Sets the initial seed to use for the pseudo-random number generator in the "
+  "Optimizer; default=1",
+  XPRS_RANDOMSEED, -INT_MAX,  INT_MAX);
+
+AddSolverOption("alg:refactor refactor",
+  "Whether the optimization should restart using the current representation of the "
+  "factorization in memory:\n"
+  "\n.. value-table::\n",
+  XPRS_REFACTOR, values_autonoyes_, -1);
+
+AddSolverOption("alg:refineops refineops",
+  "Bit vector: specifies wmhen the solution refiner should be executed to "
+  "reduce solution infeasibilities. "
+  "The refiner will attempt to satisfy the target tolerances for all original linear "
+  "constraints before presolve or scaling has been applied:\n"
+  "\n.. value-table::\n",
+  XPRS_REFINEOPS, values_refineops, 19);
+
+AddSolverOption("alg:resourcestrategy resourcestrategy",
+  "Wether to allow nondeterministic decisions to cope with "
+		"low memory (affected by maxmemory and maxmemoryhard):\n"
+  "\n.. value-table::\n",
+  XPRS_RESOURCESTRATEGY, values_01_noyes_0default_, 0);
+
+//endalg
     // ****************************
   // PRESOLVER
   // ****************************
@@ -890,6 +1235,172 @@ AddSolverOption("lp:pivtol pivtol markowitztol",
                 "at most maximpliedbound (default 1e8) in absolute value",
                 XPRS_MAXIMPLIEDBOUND, 0.0, DBL_MAX);
 
+
+    AddSolverOption("pre:objscalefactor objscalefactor",
+      "Power of 2 (default 0) by which the objective is scaled. "
+      "Nonzero objscalfactor values override automatic global "
+      "objective scaling",
+      XPRS_OBJSCALEFACTOR, 0, INT_MAX);
+
+    AddSolverOption("pre:basisred prebasisred",
+      "Determines if a lattice basis reduction algorithm should be "
+      "attempted as part of presolve:\n"
+      "\n.. value-table::\n",
+      XPRS_PREBASISRED, values_autonoyes_, -1);
+
+    AddSolverOption("pre:bndredcone prebndredcone",
+      "Determines if second order cone constraints should be used for "
+      "inferring bound reductions on variables when solving a MIP:\n"
+      "\n.. value-table::\n", 
+      XPRS_PREBNDREDCONE, values_autonoyes_, -1);
+
+    AddSolverOption("pre:bndredquad prebndredquad",
+      "Determines if convex quadratic contraints should be used for "
+      "inferring bound reductions on variables when solving a MIP",
+      XPRS_PREBNDREDQUAD, values_autonoyes_, -1);
+
+    AddSolverOption("pre:cliquestrategy precliquestrategy",
+      "Determines how much effort to spend on clique covers "
+      "in presolve; default=-1.",
+      XPRS_PRECLIQUESTRATEGY, -1, INT_MAX);
+
+    AddSolverOption("pre:coefelim precoefelim",
+      "Specifies whether the optimizer should attempt to "
+      "recombine constraints:\n"
+      "\n.. value-table::\n",
+      XPRS_PRECOEFELIM, values_precoefelim, 2);
+    
+    AddSolverOption("pre:components precomponents",
+      "Determines whether small independent components should "
+      "be detected and solved as individual subproblems during root "
+      "node processing:\n"
+      "\n.. value-table::\n",
+      XPRS_PRECOMPONENTS, values_autonoyes_, -1);
+
+    AddSolverOption("pre:componentseffort precomponentseffort",
+      "adjusts the overall effort for the independent component "
+      "presolver; default = 1.0.",
+      XPRS_PRECOMPONENTSEFFORT, 0.0, DBL_MAX);
+
+    AddSolverOption("pre:convertseparable preconvertseparable",
+      "Reformulate problem with non-diagonal quadratic objective "
+      "and/or constraints as diagonal quadratic or second-order conic "
+      "constraints:\n"
+      "\n.. value-table::\n",
+      XPRS_PRECONVERTSEPARABLE, values_preconvertseparable, -1);
+
+    AddSolverOption("pre:domcol predomcol",
+      "Whether presolve should remove variables when solving MIP problems:\n"
+      "\n.. value-table::\n",
+      XPRS_PREDOMCOL, values_predomcol, -1);
+
+    AddSolverOption("pre:domrow predomrow",
+      "Whether presolve should remove constraints when solving MIP problems:\n"
+      "\n.. value-table::\n",
+      XPRS_PREDOMROW, values_predomrow, -1);
+
+    AddSolverOption("pre:duprow preduprow",
+      "How presolve should deal with duplicate rows in MIP problems:\n"
+      "\n.. value-table::\n",
+      XPRS_PREDUPROW, values_preduprow, -1);
+
+    AddSolverOption("pre:elimquad preelimquad",
+      "Allows for elimination of quadratic variables via doubleton rows:\n"
+      "\n.. value-table::\n",
+      XPRS_PREELIMQUAD, values_autonoyes_, -1);
+
+    AddSolverOption("pre:folding prefolding",
+      "Determines if a folding procedure should be used to aggregate "
+      "continuous columns in an equitable partition:\n"
+      "\n.. value-table::\n",
+      XPRS_PREFOLDING, values_autonoyes_, -1);
+
+    AddSolverOption("pre:implications preimplications",
+      "Determines whether to use implication structures to remove redundant rows:\n"
+      "\n.. value-table::\n",
+      XPRS_PREIMPLICATIONS, values_autonoyes_, -1);
+
+    AddSolverOption("pre:lindep prelindep",
+      "Determines whether to check for and remove linearly dependent equality constraints when presolving a problem:\n"
+      "\n.. value-table::\n",
+      XPRS_PRELINDEP, values_autonoyes_, -1);
+
+    AddSolverOption("pre:objcutdetect preobjcutdetect",
+      "MIP: Determines whether to check for constraints that are "
+      "parallel or near parallel to a linear objective function, "
+      "and which can safely be removed:\n"
+      "\n.. value-table::\n",
+      XPRS_PREOBJCUTDETECT, values_01_noyes_1default_, 1);
+
+    AddSolverOption("pre:permute prepermute",
+      "Bit vector: specifies whether to randomly permute rows, columns "
+      "and global information when starting the presolve (default 0):\n"
+      "\n.. value-table::\n",
+      XPRS_PREPERMUTE, values_prepermute, 0);
+
+    AddSolverOption("pre:permuteseed prepermuteseed",
+      "Sets the seed for the pseudo-random number generator for permuting; "
+      "default=0",
+      XPRS_PREPERMUTESEED, -INT_MAX, INT_MAX);
+
+    AddSolverOption("pre:probing preprobing",
+      "Amount of probing to perform on binary variables during presolve. "
+      "This is done by fixing a binary to each of its values in turn and analyzing "
+      "the implications:\n"
+      "\n.. value-table::\n",
+      XPRS_PREPROBING, values_predomrow, -1);
+
+    AddSolverOption("pre:protectdual preprotectdual",
+      "Specifies whether the presolver should protect a given dual solution "
+      "by maintaining the same level of dual feasibility:"
+      "\n.. value-table::\n",
+      XPRS_PREPROTECTDUAL, values_01_noyes_0default_, 1);
+
+    AddSolverOption("pre:maxgrow presolvemaxgrow",
+      "Limit on how much the number of non-zero coefficients "
+      "is allowed to grow during presolve, specified as a ratio of the "
+      "number of non-zero coefficients in the original problem; default=0.1",
+      XPRS_PRESOLVEMAXGROW, 0.0, DBL_MAX);
+
+    AddSolverOption("pre:passes presolvepasses",
+      "Number of reduction rounds to be performed in presolve; "
+      "default=1.",
+      XPRS_PRESOLVEPASSES, 0, INT_MAX);
+
+    AddSolverOption("pre:pwldualreductions pwldualreductions",
+      "Whether dual reductions should be applied to reduce the number "
+      "of columns, rows and SOS-constraints added when transforming piecewise "
+      "linear objectives and constraints to MIP structs:\n"
+      "\n.. value-table::\n",
+      XPRS_PWLDUALREDUCTIONS, values_01_noyes_1default_, 1);
+
+    AddSolverOption("pre:pwlnonconvextransformation pwlnonconvextransformation",
+      "Reformulation method for piecewise linear constraints at the "
+      "beginning of the search:\n"
+      "\n.. value-table::\n",
+      XPRS_PWLNONCONVEXTRANSFORMATION, values_pwlnonconvextransformation, -1);
+
+    AddSolverOption("pre:rootpresolve rootpresolve",
+      "Whether to presolve after root cutting and heuristics:\n"
+      "\n.. value-table::\n",
+      XPRS_ROOTPRESOLVE, values_autonoyes_, -1);
+
+    AddSolverOption("pre:scaling scaling",
+      "Bit vector determining how to scale the constraint matrix before optimizing:\n"
+      "\n.. value-table::\n",
+      XPRS_SCALING, values_scaling, -1);
+
+    AddSolverOption("pre:trace trace",
+      "Display the infeasibility diagnosis during presolve:\n"
+      "\n.. value-table::\n",
+      XPRS_TRACE, values_01_noyes_0default_, 0);
+
+    AddSolverOption("pre:sosreftol sosreftol",
+      "Minimum relative gap between the ordering values of elements in a special "
+      "ordered set; default=1e-6.",
+      XPRS_SOSREFTOL, 1e-6, Infinity());
+
+    //endpre
   // ****************************
   // BARRIER ALGORITHM CONTROLS
   // ****************************
@@ -1055,7 +1566,7 @@ AddSolverOption("lp:pivtol pivtol markowitztol",
   AddSolverOption("bar:threads threads",
     "number of threads used in the Newton Barrier algorithm;\n\
 		default = -1 (determined by \"threads\")", XPRS_BARTHREADS, -1, INT_MAX);
-
+  //endbarrier
   // ****************************
   // SIMPLEX RELATED
   // ****************************
@@ -1149,6 +1660,70 @@ AddSolverOption("lp:pivtol pivtol markowitztol",
                     "Values n < 0 display detailed outputs every -n iterations.",
                     XPRS_LPLOG, -INT_MAX, INT_MAX);
 
+    AddSolverOption("lp:netstalllimit netstalllimit",
+      "Limit the number of degenerate pivots of the network "
+      "simplex algorithmm before switching to primal or dual:\n"
+      "\n.. value-table::\n",
+      XPRS_NETSTALLLIMIT, values_netstalllimit, -1);
+
+   
+    AddSolverOption("lp:optimalitytol optimalitytol",
+      "This is the zero tolerance for reduced costs. On each "
+      "iteration, the simplex method searches for a variable to enter "
+      "the basis which has a negative reduced cost. The candidates are "
+      "only those variables which have reduced costs less than the "
+      "negative value of optimalitytol; default=1e-6",
+      XPRS_OPTIMALITYTOL, 0.0, DBL_MAX);
+
+
+    AddSolverOption("lp:optimalitytoltarget optimalitytoltarget",
+      "Target optimality tolerance for the solution refiner; default=0 "
+      "(use the value specified by lp:optimalitytol)",
+      XPRS_OPTIMALITYTOLTARGET, 0.0, DBL_MAX);
+
+    AddSolverOption("lp:penalty penalty",
+      "Minimum absolute penalty variable coefficient; "
+	    "default = automatic choice",
+      XPRS_PENALTY, 0.0, DBL_MAX);
+
+    AddSolverOption("lp:pricingalg pricingalg",
+      "Primal simplex pricing method:\n"
+      "\n.. value-table::\n",
+      XPRS_PRICINGALG, values_pricingalg, 0);
+
+    AddSolverOption("lp:primalunshift primalunshift",
+      "Whether the primal alg. calls the dual to unshift:\n"
+      "\n.. value-table::\n",
+      XPRS_PRICINGALG, values_01_noyes_1default_, 0);
+
+    AddSolverOption("lp:relpivottol relpivottol",
+      "Relative pivot tolerance; default = 1e-6",
+      XPRS_RELPIVOTTOL, 0.0, Infinity());
+
+    AddSolverOption("lp:sifting sifting",
+      "When using dual simplex, whether to enable sifting, "
+		"which can speed up the solve when there are many more "
+		"variables than constraints:\n"
+      "\n.. value-table::\n",
+      XPRS_SIFTING, values_autonoyes_, -1);
+
+    AddSolverOption("lp:siftpasses siftpasses",
+      "Determines how quickly we allow to grow the worker problems "
+      "during the sifting algorithm; default 4.",
+      XPRS_SIFTPASSES, 1, INT_MAX);
+
+    AddSolverOption("lp:siftpresolveops siftpresolveops",
+      "Presolve operations for solving the subproblems during sifting:\n"
+      "\n.. value-table::\n",
+      XPRS_SIFTPRESOLVEOPS, values_siftpresolveops, -1);
+
+    AddSolverOption("lp:siftswitch siftswitch",
+      "Determines which algorithm to use for solving the subproblems during sifting:\n"
+      "\n.. value-table::\n",
+      XPRS_SIFTSWITCH, values_siftswitch, -1);
+
+
+    // endlp
   // MIP
   // ****************************
   AddSolverOption("mip:branchchoice branchchoice",
@@ -1279,6 +1854,182 @@ AddSolverOption("mip:maxtasks maxmiptasks",
                 "cause a nondeterministic MIP solve unless bar:threads = 1.",
                 XPRS_MAXMIPTASKS, -1, INT_MAX);
 
+AddSolverOption("mip:gap mipgap",
+  "Max. relative MIP optimality gap (default 1e-4).",
+  XPRS_MIPRELSTOP, 1e-4, DBL_MAX);
+
+AddSolverOption("mip:gapabs mipgapabs",
+  "Max. absolute MIP optimality gap (default 0).",
+  XPRS_MIPABSSTOP, 0.0, DBL_MAX);
+
+AddSolverOption("mip:components mipcomponents",
+  "Determines whether disconnected components in a MIP should\n\
+		be solved as separate MIPs:\n"
+  "\n.. value-table::\n",
+  XPRS_MIPCOMPONENTS, values_autonoyes_, -1);
+
+AddSolverOption("mip:concurrentnodes mipconcurrentnodes",
+  "Node limit to choose the winning solve when concurrent\n\
+		solves are enabled:\n"
+  "\n.. value-table::\n",
+  XPRS_MIPCONCURRENTNODES, values_mipconcurrentnodes, -1);
+
+AddSolverOption("mip:concurrentsolves mipconcurrentsolves",
+  "Select the number of concurrent solves to start for a MIP:\n"
+  "\n.. value-table::\n",
+  XPRS_MIPCONCURRENTSOLVES, values_mipconcurrentsolves, 0);
+
+AddSolverOption("mip:dualreductions mipdualreductions",
+  "Kinds of dual reductions allowed during branch and bound:\n"
+  "\n.. value-table::\n"
+  "\nIf poolnbest > 1 is specified, specifying "
+  "mipdualreductions = 2 might be prudent.",
+  XPRS_MIPDUALREDUCTIONS, values_mipdualreductions, 1);
+
+
+AddSolverOption("mip:kappafreq mipkappafreq",
+  "During branch-and-bound, how often to compute "
+  "basis condition numbers:\n"
+  "\n.. value-table::\n"
+  "\nWhen mipkappafreq > 0, a final summary shows the number of "
+  "sampled nodes that are:\n\
+			\"stable\": kappa < 10^7\n\
+			\"suspicious\": 10^7 <= kappa < 10^10\n\
+			\"unstable\": 10^10 <= kappa < 10^13\n\
+			\"ill-posed\": 10^13 <= kappa.\n"
+    "A \"Kappa attention level\" between 0 and 1 is also reported. "
+    "Condition numbers use the Frobenius norms of the basis "
+    "and its inverse.", 
+  XPRS_MIPKAPPAFREQ, values_mipkappafreq,0);
+
+AddSolverOption("mip:log miplog",
+  "Frequency of printing MIP iteration log; default = -100."
+  "Values n < 0 display detailed outputs every -n iterations.",
+  XPRS_LPLOG, -INT_MAX, INT_MAX);
+
+AddSolverOption("mip:presolve mippresolve",
+  "Type of integer processing to be performed. "
+  "If set to 0, no processing will be performed (default automatic):\n"
+  "\n.. value-table::\n",
+  XPRS_MIPPRESOLVE, values_mippresolve, 1);
+
+AddSolverOption("mip:rampup miprampup",
+  "Whether to limit the number of parallel tasks\n\
+		during the ramp-up phase of the parallel MIP algorithm:\n"
+  "\n.. value-table::\n",
+  XPRS_MIPRAMPUP, values_miprampup, -1);
+
+AddSolverOption("mip:miprefineiterlimit miprefiterlim miprefineiterlimit",
+  "Max. simplex iterations per reoptimization in MIP refiner "
+  "when refineops is 2 or 3; default -1 (automatic).",
+  XPRS_MIPREFINEITERLIMIT, -1, INT_MAX);
+
+AddSolverOption("mip:restart miprestart",
+  "Control strategy for in-tree restarts:\n"
+  "\n.. value-table::\n",
+  XPRS_MIPRESTART, values_miprestart, -1);
+
+AddSolverOption("mip:restartgapthreshold miprestartgapthreshold",
+  "Initial gap threshold to delay in-tree restart; "
+    "the restart is delayed if the relative gap is below the "
+    "threshold (default 0.02)",
+  XPRS_MIPRESTARTGAPTHRESHOLD, 0.0, DBL_MAX);
+
+AddSolverOption("mip:restartfactor miprestartfactor",
+  "Fine tune initial conditions to trigger an in-tree "
+  "restart; values > 1 increase the aggressiveness, < 1 "
+  "decrease it (default 1.0)",
+  XPRS_MIPRESTARTFACTOR, 0.0, DBL_MAX);
+
+AddSolverOption("mip:threads mipthreads",
+  "Determines the number of threads implemented to run the parallel "
+  "MIP code; default -1: alg:threads will determine the number of threads.",
+  XPRS_MIPTHREADS, -1, INT_MAX);
+
+AddSolverOption("mip:intfeastol intfeastol",
+  "Feasibility tolerance for integer variables (default 5e-06).",
+  XPRS_MIPTOL, 0.0, DBL_MAX);
+
+AddSolverOption("mip:toltarget miptoltarget",
+  "Value of miptol used for refining equalities on MIP "
+		"problems when refineops is 2 or 3; default = 0.",
+  XPRS_MIPTOLTARGET, 0.0, DBL_MAX);
+
+AddSolverOption("mip:nodeprobingeffort nodeprobingeffort",
+  "Multiplier on the default amount of work node probing "
+  "should do. Setting the control to zero disables node probing.",
+  XPRS_NODEPROBINGEFFORT, 0.0, DBL_MAX);
+
+AddSolverOption("mip:nodeselection nodeselection",
+  "Determines which nodes will be considered for solution "
+  "once the current node has been solved:\n"
+  "\n.. value-table::\n",
+  XPRS_NODESELECTION, values_nodeselection, 0);
+
+AddSolverOption("mip:pseudocost pseudocost",
+  "Default pseudo-cost assumed for forcing an integer variable\n\
+		to an integer value; default = 0.01",
+  XPRS_PSEUDOCOST, 0.0, DBL_MAX);
+
+
+
+AddSolverOption("mip:qcrootalg qcrootalg",
+  "when using miqcpalg = 1 to solve a mixed - integer problem that "
+  "has quadratic constraints or second - order cone constraints, "
+  "the algorithm for solving the root node:\n"
+  "\n.. value-table::\n",
+  XPRS_QCROOTALG, values_qcrootalg, -1);
+
+AddSolverOption("mip:relaxtreememorylimit relaxtreemem relaxtreememorylimit",
+  "Fraction of memory limit by which to relax \"treememlimit\" "
+    "when too much structural data appears; default 0.1. Set to 0 to never relax "
+  "the memory limit in this way.",
+  XPRS_RELAXTREEMEMORYLIMIT, 0.0, DBL_MAX);
+
+AddSolverOption("mip:sbbest sbbest",
+  "Number of infeasible global entities to initialize pseudo costs for on each node:\n"
+  "\n.. value-table::\n",
+  XPRS_SBBEST, values_sbbest, -1);
+
+AddSolverOption("mip:sbeffort sbeffort",
+  "Adjusts the overall amount of effort when using strong branching to select an "
+  "infeasible global entity to branch on; default = 1.",
+  XPRS_SBEFFORT, 0.0, DBL_MAX);
+
+AddSolverOption("mip:sbestimate sbestimate",
+  "How to compute pseudo costs from the local node "
+  "when selecting an infeasible entity to branch on:\n"
+  "\n.. value-table::\n",
+  XPRS_SBESTIMATE, values_sbestimate, -1);
+
+AddSolverOption("mip:sbiterlimit sbiterlimit",
+  "Number of dual iterations to perform the strong branching; "
+		"0=none, default = -1 (automatic choice)",
+  XPRS_SBITERLIMIT, -1, INT_MAX);
+
+AddSolverOption("mip:sbselect sbselect",
+  "size of candidate list for strong branching:\n"
+  "\n.. value-table::\n",
+  XPRS_SBSELECT, values_sbselect, -2);
+
+AddSolverOption("mip:symmetry symmetry",
+  "Amount of effort to detect symmetry in MIP problems:\n"
+  "\n.. value-table::\n",
+  XPRS_SYMMETRY, values_symmetry, 1);
+
+AddSolverOption("mip:symselect symselect",
+  "Adjusts the overall amount of effort for symmetry detection:\n"
+  "\n.. value-table::\n",
+  XPRS_SYMSELECT, values_symselect, -1);
+
+AddSolverOption("mip:varselection varselection",
+  "How to score the integer variables at a MIP node, for "
+    "branching on a variable with minimum score:\n"
+    "\n.. value-table::\n",
+  XPRS_VARSELECTION, values_varselection, -1);
+
+
+// endmip
     // ****************************
   // Cuts
   // ****************************
@@ -1291,6 +2042,13 @@ AddSolverOption("mip:maxtasks maxmiptasks",
     "The number of rounds of Gomory or lift-and-project cuts at the top node."
     "Default=-1, automatic.",
     XPRS_GOMCUTS, -1, INT_MAX);
+
+  AddSolverOption("cut:qccuts qccuts",
+    "when using miqcpalg=1 to solve a mixed-integer problem that "
+    "has quadratic constraints or second-order cone constraints, "
+    "the number of rounds of outer approximation cuts at the top "
+    "node; default = -1 (automatic choice).",
+    XPRS_QCCUTS, -1, INT_MAX);
 
     AddSolverOption("cut:lnpbest lnpbest",
                     "Number of infeasible global entities to create lift-and-project cuts "
@@ -1312,10 +2070,18 @@ AddSolverOption("mip:maxtasks maxmiptasks",
     "other than the top node. Default=-1 (automatic).",
     XPRS_TREEGOMCUTS, -1, INT_MAX);
 
+  AddSolverOption("cut:treeqccuts treeqccuts",
+    "when using miqcpalg=1 to solve a MIP that "
+    "has quadratic constraints or second-order cone constraints, "
+    "the number of rounds of outer approximation cuts during the "
+    "tree search; default = -1 (automatic choice).",
+    XPRS_TREEQCCUTS, -1, INT_MAX);
+
   AddSolverOption("cut:depth cutdepth",
     "Maximum MIP tree depth at which to generate cuts. Default "
     "-1 (automatic); a value of 0 will disable cuts generation.",
     XPRS_CUTDEPTH, -1, INT_MAX);
+
 
   AddSolverOption("cut:factor cutfactor",
     "Limit on number of cuts and cut coefficients added "
@@ -1332,6 +2098,11 @@ AddSolverOption("mip:maxtasks maxmiptasks",
     "Detailed control of cuts at MIP root node; sum of:\n"
     "\n.. value-table::\n",
     XPRS_CUTSELECT, values_cutselect, -1);
+
+  AddSolverOption("cut:treeselect treecutselect",
+    "Detailed control of cuts created during the tree search; sum of:\n"
+    "\n.. value-table::\n",
+    XPRS_TREECUTSELECT, values_cutselect, -1);
 
   AddSolverOption("cut:strategy cutstrategy",
     "How aggressively to generate MIP cuts; more ==> fewer nodes "
@@ -1352,7 +2123,76 @@ AddSolverOption("mip:maxtasks maxmiptasks",
     "smallest eigvenalue is < -eigevnaltol; default = 1e-6",
     XPRS_EIGENVALUETOL, 0.0, DBL_MAX);
 
- 
+  AddSolverOption("qp:simplexops qsimplexops",
+    "Bit vector, controls the behavior of the quadratic simplex solvers:\n"
+    "\n.. value-table::\n",
+    XPRS_QSIMPLEXOPS, values_qsimplexops, 1);
+
+  AddSolverOption("qp:miqcpalg miqcpalg",
+    "Which algorithm is to be used to solve mixed integer quadratic constrained and mixed integer second order cone problems:\n"
+    "\n.. value-table::\n",
+    XPRS_MIQCPALG, values_miqcpalg, 1);
+
+  AddSolverOption("qp:unshift quadunshift quadraticunshift",
+    "whether quadratic simplex should do an extra "
+	  "purification after finding a solution:\n"
+    "\n.. value-table::\n",
+    XPRS_QUADRATICUNSHIFT, values_autonoyes_, -1);
+
+  AddSolverOption("qp:repairindefiniteq repairindefq repairindefiniteq",
+    "whether to repair indefinite quadratic forms:\n"
+    "\n.. value-table::\n",
+    XPRS_REPAIRINDEFINITEQ, values_yesnoinverted_defaultno, -1);
+
+  //endqp
+
+
+
+  AddStoredOption("tech:tunebase tunerdir tunebase",
+    "Base name for results of running XPRESS's search for best "
+    "parameter settings. The search is run only when tunebase "
+    "is specified.  This control only defines the root path for the tuner "
+    "output. For each problem, the tuner result will be output to a subfolder "
+    "underneath this path. For example, by default, the tuner result for a "
+    "problem called prob will be located at tuneroutput/prob/",
+    storedOptions_.tunebase_);
+
+  AddSolverOption("tech:tuneoutput tuneroutput tuneoutput",
+    "Output tuner results and logs to the file system when \"tunebase\" is specified:\n"
+    "\n.. value-table::\n",
+    XPRS_TUNEROUTPUT, values_01_noyes_1default_, 2);
+
+  AddSolverOption("tech:tunerhistory tunerhistory",
+    "Reuse and append to previous tuner results of the same problem:\n"
+    "\n.. value-table::\n",
+    XPRS_TUNERHISTORY, values_tunerhistory, 2);
+
+  AddSolverOption("tech:tunetimelim tunermaxtime tunetimelim lim:tunetime",
+    "Time limit (in seconds) on tuning when \"tunebase\" "
+    "is specified; default 0 (no time limit).",
+    XPRS_TUNERMAXTIME, 0, INT_MAX);
+
+  AddSolverOption("tech:tunerthreads tunerthreads",
+    "Number of tuner threads to run in parallel; "    
+    "default=-1 (automatic)",
+    XPRS_TUNERTHREADS, -1, INT_MAX);
+
+  AddSolverOption("tech:tunermethod tunermethod",
+    "Method for tuning when \"tunebase\" is specified:\n"
+    "\n.. value-table::\n",
+    XPRS_TUNERMETHOD, values_tunermethod, -1);
+
+  AddSolverOption("tech:tunertarget tunertarget",
+    "What to measure to compare two problem solutions "
+		"when running the XPRESS tuner:\n"
+    "\n.. value-table::\n",
+    XPRS_TUNERTARGET, values_tunertarget, -1);
+
+  AddSolverOption("tech:tunerverbose tunerverbose",
+    "whether the tuner should prints detailed information for each run:\n"
+    "\n.. value-table::\n",
+    XPRS_TUNERVERBOSE, values_01_noyes_1default_, 1);
+
 }
 
 
@@ -1373,50 +2213,56 @@ double XpressmpBackend::MIPGapAbs() {
 ArrayRef<int> XpressmpBackend::VarStatii() {
 
   std::vector<int> vars(NumVars());
-  XPRESSMP_CCALL(XPRSgetbasis(lp(), NULL, vars.data()));
-  for (auto& s : vars) {
-    switch (s) {
-    case 1:
-      s = (int)BasicStatus::bas;
-      break;
-    case 0:
-      s = (int)BasicStatus::low;
-      break;
-    case 2:
-      s = (int)BasicStatus::upp;
-      break;
-    case 3:
-      s = (int)BasicStatus::sup;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown Xpressmp VBasis value: {}", s));
+  int status = XPRSgetbasis(lp(), NULL, vars.data());
+  if (status)
+    vars.clear();
+  else 
+    for (auto& s : vars) {
+      switch (s) {
+      case 1:
+        s = (int)BasicStatus::bas;
+        break;
+      case 0:
+        s = (int)BasicStatus::low;
+        break;
+      case 2:
+        s = (int)BasicStatus::upp;
+        break;
+      case 3:
+        s = (int)BasicStatus::sup;
+        break;
+      default:
+        MP_RAISE(fmt::format("Unknown Xpressmp VBasis value: {}", s));
+      }
     }
-  }
   return vars;
 }
 
 ArrayRef<int> XpressmpBackend::ConStatii() {
 
   std::vector<int> cons(NumLinCons());
-  XPRESSMP_CCALL(XPRSgetbasis(lp(), cons.data(), NULL));
-  for (auto& s : cons) {
-    switch (s) {
-    case 1:
-      s = (int)BasicStatus::bas;
-      break;
-    case 0:
-      s = (int)BasicStatus::low;
-      break;
-    case 2:
-      s = (int)BasicStatus::upp;
-      break;
-    case 3:
-      s = (int)BasicStatus::sup;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown Xpressmp VBasis value: {}", s));
+  int status = XPRSgetbasis(lp(), cons.data(), NULL);
+  if (status)
+    cons.clear();
+  else
+    for (auto& s : cons) {
+      switch (s) {
+      case 1:
+        s = (int)BasicStatus::bas;
+        break;
+      case 0:
+        s = (int)BasicStatus::low;
+        break;
+      case 2:
+        s = (int)BasicStatus::upp;
+        break;
+      case 3:
+        s = (int)BasicStatus::sup;
+        break;
+      default:
+        MP_RAISE(fmt::format("Unknown Xpressmp VBasis value: {}", s));
+      }
     }
-  }
   return cons;
 }
 
@@ -1582,9 +2428,25 @@ pre::ValueMapInt XpressmpBackend::ConsIIS() {
   return { {{ CG_Linear, iis_lincon }} }; // TODO other constraint types
 }
 
-void XpressmpBackend::AddMIPStart(ArrayRef<double> x0) {
+void XpressmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
+  auto mv = GetValuePresolver().PresolveSolution(
+    { sol0_unpres.primal, sol0_unpres.dual });
+  auto x0 = mv.GetVarValues()();
+  auto pi0 = mv.GetConValues()(CG_Linear);
+
+  int status;
+  XPRESSMP_CCALL(XPRSloadlpsol(lp(), x0.data(), NULL,
+    pi0.data(), NULL, &status));
+  if (status)
+    fmt::print("warmstart: solution is not loaded because the problem is in presolved status.\n");
+}
+
+void XpressmpBackend::AddMIPStart(ArrayRef<double> x0_unpres) {
+  auto mv = GetValuePresolver().PresolveSolution({ x0_unpres });
+  auto x0 = mv.GetVarValues()();
   int status;
   XPRSloadmipsol(lp(), x0.data(), &status);
+
 }
 
 void XpressmpBackend::xpdisplay(XPRSprob prob, void* data, const char* ch, int n, int msglvl)
@@ -1598,6 +2460,8 @@ void XpressmpBackend::xpdisplay(XPRSprob prob, void* data, const char* ch, int n
    * a negative value indicates the XPRESS is about to finish and
    * buffers should be flushed.
    */
+  if (outlev_ == 0)
+    return;
   if (msglvl < 0)
     fflush(NULL);
   else if (msglvl >= outlev_ && (msglvl != 4 || strncmp(ch, "?899 ", 5)))

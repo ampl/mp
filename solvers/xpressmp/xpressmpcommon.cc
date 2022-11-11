@@ -23,15 +23,11 @@ int XpressmpCommon::NumVars() const {
 }
 
 int XpressmpCommon::NumObjs() const {
-  // TODO Get number of objectives using solver API
-  //return XPRESSMPgetnumobjs (env_, lp_);
-  return 0;
+  return 1;
 }
 
 int XpressmpCommon::NumQPCons() const {
-  // TODO Get number of quadratic constraints using solver API
-  // return getIntAttr(XPRESSMP_INTATTR_QCONSTRS);
-  return 0;
+  return getIntAttr(XPRS_QCONSTRAINTS);
 }
 
 int XpressmpCommon::NumSOSCons() const {
@@ -59,7 +55,11 @@ void XpressmpCommon::SetSolverOption(int  key, double value) {
 }
 
 void XpressmpCommon::GetSolverOption(int  key, std::string &value) const {
-  throw std::runtime_error("Not implemented"); 
+  int l;
+  XPRESSMP_CCALL(XPRSgetstringcontrol(lp(), key, nullptr, 0, &l));
+  std::vector<char> s(l);
+  XPRESSMP_CCALL(XPRSgetstringcontrol(lp(), key, s.data(), l, &l));
+  value.assign(s.data());
 }
 
 void XpressmpCommon::SetSolverOption(int  key, const std::string& value) {
