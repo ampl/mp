@@ -741,8 +741,8 @@ int GurobiBackend::BarrierIterations() const {
   return GrbGetIntAttr(GRB_INT_ATTR_BARITERCOUNT, &f);
 }
 
-void GurobiBackend::ExportModel(const std::string &file) {
-  GRB_CALL( GRBwrite(model(), file.c_str()) );
+void GurobiBackend::ExportModel(GRBmodel* lp, const std::string &file) {
+  GRB_CALL( GRBwrite(lp, file.c_str()) );
 }
 
 void GurobiBackend::InputExtras() {
@@ -871,16 +871,23 @@ void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
 ///////////////////////////////////// SOLVE /////////////////////////////////////////
 void GurobiBackend::Solve() {
   PrepareGurobiSolve();
-
   GRB_CALL( GRBoptimize(model()) );
-
   WindupGurobiSolve();
 }
 
 void GurobiBackend::PrepareGurobiSolve() {
   /// After all attributes applied
-  if (!storedOptions_.exportFile_.empty())
-    ExportModel(storedOptions_.exportFile_);
+  if (!exportFile().empty())
+    ExportModel(model(), exportFile());
+  // Export presolved model
+  if (!exportPresolvedFile().empty())
+  {
+    GRBmodel* presolved = NULL;
+    GRB_CALL(GRBpresolvemodel(model(), &presolved));
+    ExportModel(presolved, exportPresolvedFile());
+    GRB_CALL(GRBfreemodel(presolved));
+  }
+
   if (tunebase().size())
     DoGurobiTune();
 }
@@ -2352,15 +2359,18 @@ void GurobiBackend::InitCustomOptions() {
       "Password for the worker pool (if needed).",
       GRB_STR_PAR_WORKERPASSWORD);
 
-
-
   AddStoredOption("tech:writeprob writeprob writemodel exportfile",
       "Specifies the name of a file where to export the model before "
       "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
-}
 
+  AddStoredOption("tech:writepresolvedprob writepresolvedprob writepresolvedmodel exportpresolvedfile",
+    "Specifies the name of a file where to export the presolved model before "
+    "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
+    "Default = \"\" (don't export the model).",
+    storedOptions_.exportPresolvedFile_);
+}
 
 void GurobiBackend::GrbSetObjIntParam(const SolverOption& opt, int val) {
   objnparam_int_.push_back( { {opt.wc_tail(), opt.wc_keybody_last()}, val } );
