@@ -342,10 +342,15 @@ An overview of the reformulation process is provided in
 :ref:`mm-and-reformulations`.
 
 
-Derive a custom FlatConverter
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Derive a custom FlatConverter (NOT recommeded)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Unless you'd like to contribute to the default behaviour, you should
+It is recommended not to derive a solver-specific FlatConverter class.
+Instead, add your conversions to a standard class and make it
+optional (see existing options, such as *cvt:quadcon*), making it available
+to other solvers.
+
+Only if it's very specific,
 derive a custom class from `mp::FlatConverter` or `mp::MIPFlatConverter`
 and use it in ``Create<YourSolver>ModelMgr`` (its default implementation
 is in `<yourSolver>modelapi.cc`).

@@ -262,8 +262,13 @@ reformulation via a solver option, for example `acc:log` for logarithm. Run the 
 with `-=` or `-c` for a list of natively accepted constraints and options.
 
 An in-depth treatment of some automatic reformulations is given in
-[CLModernArch]_ and [SOCTransform]_. Customization for a new solver
+[CLModernArch]_, [SOCTransform]_, [MOI]_, and [CP2MIP]_. Customization for a new solver
 driver is sketched in :ref:`configure-automatic-model-conversions`.
+
+.. [CP2MIP] G. Belov, P. J. Stuckey, G. Tack, M. Wallace. Improved Linearization
+   of Constraint Programming Models. In: Rueher, M. (eds) Principles and Practice of
+   Constraint Programming. CP 2016. LNCS, vol 9892.
+   Springer, Cham. *https://doi.org/10.1007/978-3-319-44953-1_4*.
 
 .. [CLModernArch] J. J. Dekker. A Modern Architecture for Constraint Modelling Languages.
    PhD thesis. Monash University, 2021.
@@ -271,6 +276,11 @@ driver is sketched in :ref:`configure-automatic-model-conversions`.
 .. [SOCTransform] R. Fourer and J. Erickson. Detection and Transformation of Second-Order Cone
    Programming Problems in a General-Purpose Algebraic Modeling Language.
    Optimization Online, 2019.
+
+.. [MOI] B. Legat, O. Dowson, J. D. Garcia, M. Lubin.
+   MathOptInterface: A Data Structure for Mathematical Optimization Problems.
+   INFORMS Journal on Computing 34 (2), 2021.
+   *https://doi.org/10.1287/ijoc.2021.1067*.
 
 
 .. _model-manager:
