@@ -3,7 +3,7 @@ Summary of recent updates to x-gurobi for AMPL
 
 ## 20221113
 - *Gurobi 10.0 support*
-    Options 'lim:memlimit', 'lim:softmemlimit', 'mip:obbt' and  'alg:networkalg'
+    Options 'lim:mem', 'lim:softmem', 'mip:obbt' and  'alg:networkalg'
     Added option tech:writepresolvedprob to export the presolved model
 
 ## 20221012

@@ -29,7 +29,7 @@ class FlatBackend :
 public:
   /// Default GetSolution() for flat backends.
   /// Invokes postsolver.
-  Solution GetSolution() {
+  Solution GetSolution() override {
     auto mv = GetValuePresolver().PostsolveSolution(
           { PrimalSolution(),
             DualSolution(),
