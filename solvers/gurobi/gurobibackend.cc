@@ -1606,12 +1606,13 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("lim:memlimit memlimit maxmemoryhard",
     "Hard limit (number of MB) on memory allocated, "
     "causing early termination if exceeded; default = 0 (no limit)",
-    GRB_DBL_PAR_MEMLIMIT, 0, INT_MAX);
+    GRB_DBL_PAR_MEMLIMIT, 0.0, Infinity());
+
 #ifdef GRB_DBL_PAR_SOFTMEMLIMIT
   AddSolverOption("lim:softmemlimit softmemlimit maxmemorysoft",
     "Soft limit (number of MB) on memory allocated; "
     "default = 0 (no limit)",
-    GRB_DBL_PAR_SOFTMEMLIMIT, 0, INT_MAX);
+    GRB_DBL_PAR_SOFTMEMLIMIT, 0.0, Infinity());
 #endif
 
   ////////////////////////// LP //////////////////////////
