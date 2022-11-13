@@ -1,12 +1,15 @@
 Summary of recent updates to x-gurobi for AMPL
 ==============================================
 
+## 20221113
+- *Gurobi 10.0 support*
+    options 'lim:memlimit', 'lim:softmemlimit', 'mip:obbt' and  'alg:networkalg'
+
 ## 20221012
 - *Piecewise-linear approximation of quadratics*
     For Gurobi, non-default.
     To use, set the options cvt:quadobj=0 cvt:quadcon=0.
     Recognizing x^2 for stronger univariate approximation
-
 
 ## 20220928
 - *Changes in MP*: piecewise-linear approximations of nonlinear functions,
@@ -19,7 +22,6 @@ Summary of recent updates to x-gurobi for AMPL
     the old-style suffixes .sensrhs(lo/hi) meaningful only for one-sided constraints.
 
 - Suffixes *.iis(lb/ub)force* on constraints and variables
-
 
 ## 20220802 
 - Added support for 'params' option from command line and environment variable

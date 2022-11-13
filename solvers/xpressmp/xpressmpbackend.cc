@@ -1042,13 +1042,13 @@ void XpressmpBackend::InitCustomOptions() {
 		"global search. Default = 60.",
     XPRS_GLOBALFILELOGINTERVAL, 1, INT_MAX);
 
-  AddSolverOption("tech:maxmemoryhard maxmemoryhard",
-                  "hard limit (integer number of MB) on memory allocated, "
+  AddSolverOption("lim:memlimit memlimit maxmemoryhard", 
+                  "Hard limit (integer number of MB) on memory allocated, "
                   "causing early termination if exceeded; default = 0 (no limit)",
                   XPRS_MAXMEMORYHARD, 0, INT_MAX);
 
-    AddSolverOption("tech:maxmemorysoft maxmemorysoft",
-                    "hard limit (integer number of MB) on memory allocated; "
+    AddSolverOption("lim:softmemlimit softmemlimit maxmemorysoft",
+                    "Soft limit (integer number of MB) on memory allocated; "
                     "default = 0 (no limit)",
                     XPRS_MAXMEMORYSOFT, 0, INT_MAX);
   // ****************************

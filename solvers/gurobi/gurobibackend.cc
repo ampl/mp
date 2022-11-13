@@ -1403,6 +1403,11 @@ void GurobiBackend::InitCustomOptions() {
     "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
     "\n.. value-table::\n", GRB_INT_PAR_METHOD, values_method, -1);
 
+#ifdef GRB_INT_PAR_NETWORKALG // Gurobi 10.0
+  AddSolverOption("alg:networkalg networkalg",
+    "Whether to use network simplex if an LP is a network problem:\n"
+    "\n.. value-table::\n", GRB_INT_PAR_NETWORKALG, values_autonoyes_, -1);
+#endif
 
   AddSolverOption("alg:feasrelaxbigm feasrelaxbigm",
                   "Value of \"big-M\" sometimes used with constraints when doing "
@@ -1598,6 +1603,16 @@ void GurobiBackend::InitCustomOptions() {
     "settings, fail to produce a feasible solution.",
       GRB_INT_PAR_ZEROOBJNODES, -1, GRB_MAXINT);
 
+  AddSolverOption("lim:memlimit memlimit maxmemoryhard",
+    "Hard limit (number of MB) on memory allocated, "
+    "causing early termination if exceeded; default = 0 (no limit)",
+    GRB_DBL_PAR_MEMLIMIT, 0, INT_MAX);
+#ifdef GRB_DBL_PAR_SOFTMEMLIMIT
+  AddSolverOption("lim:softmemlimit softmemlimit maxmemorysoft",
+    "Soft limit (number of MB) on memory allocated; "
+    "default = 0 (no limit)",
+    GRB_DBL_PAR_SOFTMEMLIMIT, 0, INT_MAX);
+#endif
 
   ////////////////////////// LP //////////////////////////
 
@@ -1665,7 +1680,6 @@ void GurobiBackend::InitCustomOptions() {
     "\n.. value-table::",
     GRB_INT_PAR_BRANCHDIR, values_branchdir, 0);
 
-
   AddSolverOption("mip:disconnected disconnected",
     "Whether to exploit independent MIP sub-models:"
     "\n"
@@ -1678,6 +1692,12 @@ void GurobiBackend::InitCustomOptions() {
           "then \"method\" else 1.",
           storedOptions_.nFixedMethod_);
 
+#ifdef GRB_INT_PAR_OBBT
+  AddSolverOption("mip:obbt obbt",
+    "Controls aggressiveness of Optimality - Based Bound Tightening:\n"
+    "\n.. value-table::\n",
+    GRB_INT_PAR_OBBT, values_prescale, -1);
+#endif
 
   AddSolverOption("mip:focus mipfocus",
     "MIP solution strategy:\n" "\n.. value-table::\n",
