@@ -1081,14 +1081,14 @@ std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
   namespace sol = mp::sol;
   int optimstatus;
   GRB_CALL( GRBgetintattr(model(), GRB_INT_ATTR_STATUS, &optimstatus) );
+  int solcount;
+  GRB_CALL( GRBgetintattr(model(), GRB_INT_ATTR_SOLCOUNT, &solcount) );
+  int has_sol = int(0<solcount);
   switch (optimstatus) {
   default:
-    // Fall through.
     if (interrupter()->Stop()) {
       return { sol::INTERRUPTED, "interrupted" };
     }
-    int solcount;
-    GRB_CALL( GRBgetintattr(model(), GRB_INT_ATTR_SOLCOUNT, &solcount) );
     if (solcount>0) {
       return { sol::UNCERTAIN, "feasible solution" };
     }
@@ -1102,21 +1102,45 @@ std::pair<int, std::string> GurobiBackend::ConvertGurobiStatus() const {
   case GRB_UNBOUNDED:
     return { sol::UNBOUNDED, "unbounded problem" };
   case GRB_NUMERIC:
-    return { sol::NUMERIC, "feasible or optimal but numeric issue" };
+    return { sol::NUMERIC, "terminated due to unrecoverable numerical issues" };
   case GRB_CUTOFF:
     return { sol::LIMIT, "objective cutoff" };
   case GRB_ITERATION_LIMIT:
-    return { sol::LIMIT+1, "iteration limit" };
+    if (has_sol)
+      return{ sol::LIMIT+1, "iteration limit, feasible solution" };
+    return { sol::LIMIT+11, "iteration limit, without a feasible soluton" };
   case GRB_NODE_LIMIT:
-    return { sol::LIMIT+2, "node limit" };
+    if (has_sol)
+      return { sol::LIMIT+2, "node limit, feasible solution" };
+    return { sol::LIMIT+12, "node limit, without a feasible soluton" };
   case GRB_TIME_LIMIT:
-    return { sol::LIMIT+3, "time limit" };
+    if (has_sol)
+      return { sol::LIMIT+3, "time limit, feasible solution" };
+    return { sol::LIMIT+13, "time limit, without a feasible solution" };
   case GRB_SOLUTION_LIMIT:
     return { sol::LIMIT+4, "solution limit" };
+  case GRB_INTERRUPTED:
+    if (has_sol)
+      return { sol::LIMIT+5, "interrupted, feasible solution" };
+    return { sol::LIMIT+15, "interrupted, without a feasible solution" };
+  case GRB_WORK_LIMIT:
+    if (has_sol)
+      return { sol::LIMIT+6, "work limit, feasible solution" };
+    return { sol::LIMIT+16, "work limit, without a feasible solution" };
+#ifdef GRB_MEM_LIMIT
+  case GRB_MEM_LIMIT:
+    if (has_sol)
+      return { sol::LIMIT+7, "soft memory limit, feasible solution" };
+    return { sol::LIMIT+17, "soft memory limit, without a feasible solution" };
+#endif  // GRB_MEM_LIMIT
   case GRB_SUBOPTIMAL:
     return { sol::UNCERTAIN, "suboptimal" };
   case GRB_USER_OBJ_LIMIT:
-    return { sol::UNCERTAIN+3, "bestobjstop or bestbndstop reached" };
+    if (has_sol)
+      return { sol::UNCERTAIN+3,
+            "bestobjstop or bestbndstop reached, feasible solution" };
+    return { sol::UNCERTAIN+4,
+          "bestobjstop or bestbndstop reached, without a feasible solution" };
   }
 }
 
