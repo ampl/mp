@@ -19,13 +19,15 @@
 /// (normally provided in the <solver>_options string).
 /// Can be NULL.
 /// @return pointer to struct AMPLS_MP_Solver to be populated.
-AMPLS_MP_Solver*  AMPLSOpenVisitor(const char* slv_opt);
+void*  AMPLSOpenVisitor(const char* slv_opt, CCallbacks cb);
 
 /// Shut down solver instance
 void AMPLSCloseVisitor(AMPLS_MP_Solver* slv);
 
 /// Extract the Visitor model handle
-Solver::SolverModel* GetVisitormodel(AMPLS_MP_Solver* slv);
+void* GetVisitormodel(AMPLS_MP_Solver* slv);
 
 
 #endif // VISITORAMPLSCAPI_H
+
+

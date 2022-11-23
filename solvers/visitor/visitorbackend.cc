@@ -571,7 +571,7 @@ void VisitorBackend::AddMIPStart(ArrayRef<double> x0) {
 
 
 // AMPLs
-AMPLS_MP_Solver* AMPLSOpenVisitor(
+void* AMPLSOpenVisitor(
   const char* slv_opt, CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::VisitorBackend()},
     slv_opt, cb);
@@ -581,7 +581,7 @@ void AMPLSCloseVisitor(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-Solver::SolverModel* GetVisitormodel(AMPLS_MP_Solver* slv) {
+void* GetVisitormodel(AMPLS_MP_Solver* slv) {
   return
     dynamic_cast<mp::VisitorBackend*>(AMPLSGetBackend(slv))->lp();
 }
