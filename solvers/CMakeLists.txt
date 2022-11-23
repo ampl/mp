@@ -131,7 +131,6 @@ function(add_ampl_solver name)
   # the executable.
   set(static_lib ampl${name}-static)
   add_library(${static_lib} STATIC ${sources})
-  message("Libraries: ${libraries}")
   target_include_directories(${static_lib}
     PUBLIC ${include_dirs} ${MP_BASE_DIR}/solvers)
   target_link_libraries(${static_lib} PUBLIC ${libraries})
@@ -255,7 +254,7 @@ add_ampl_backend(ortoolsmp DLL_RUNTIME SHARED_LIB MODULE ortoolsmp
 add_ampl_backend(cplexmp DLL_RUNTIME SHARED_LIB MODULE CPLEX
                       LIBRARIES cplex-library ${CMAKE_DL_LIBS})
 
-add_ampl_backend(xpressmp DLL_RUNTIME SHARED_LIB MODULE XPRESS
+add_ampl_backend(xpress DLL_RUNTIME SHARED_LIB MODULE XPRESS
                       LIBRARIES ${xpress_LIBS} ${CMAKE_DL_LIBS})
 
 add_ampl_solver(gurobi DLL_RUNTIME SHARED_LIB MODULE GUROBI

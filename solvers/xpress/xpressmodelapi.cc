@@ -1,4 +1,4 @@
-#include "xpressmpmodelapi.h"
+#include "xpressmodelapi.h"
 
 #include "mp/model-mgr-with-std-pb.h"
 #include "mp/flat/redef/MIP/converter_mip.h"

@@ -20,7 +20,7 @@
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
-#include "xpressmpcommon.h"
+#include "xpresscommon.h"
 
 namespace mp {
 

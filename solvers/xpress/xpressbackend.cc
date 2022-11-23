@@ -4,10 +4,10 @@
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
-#include "xpressmpbackend.h"
+#include "xpressbackend.h"
 
 extern "C" {
-  #include "xpressmp-ampls-c-api.h"    // Xpressmp AMPLS C API
+  #include "xpress-ampls-c-api.h"    // Xpressmp AMPLS C API
   #include "xprs_mse_defaulthandler.h"
 }
 #include "mp/ampls-cpp-api.h"
