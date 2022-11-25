@@ -503,8 +503,9 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$
 For linear-quadratic MP-based solvers (which include all those currently implemented),
 most of these nonlinear functions are handled by piecewise-linear approximation,
 except products with binary variables.
-The appoximation is constructed by the MP interface, using internal settings for the
-number of pieces and other details, and is then processed as described in
+The appoximation is constructed by the MP interface, using options
+*cvt:plapprox:reltol* and *cvt:plapprox:domain*,
+and is then processed as described in
 :ref:`piecewise_linear_modeling`.
 
 For Gurobi, the following univariate nonlinear functions are instead handled natively:
@@ -681,7 +682,7 @@ Solvers natively supporting indicators, usually handle them in a numerically sta
 Otherwise, they have to be linearized by the so-called "big-M" constraints. The big-M
 constants require finite bounds on expressions. For numerical stability these bounds should
 not exceed the reciprocal of the integrality tolerance (option *inttol*). A default
-big-M value can be set with the option *cvt:mip:bigM*.
+big-M value can be set with the option *cvt:bigM*.
 
 Piecewise-linear functions
 *****************************

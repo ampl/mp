@@ -1,6 +1,11 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## unreleased
+- *PLApproxRelTol, PLApproxDomain*
+   Parameters to control piecewise-linear approximation.
+   cvt:plapprox:reltol default value changed from 1e-5 to 0.01.
+
 ## 20221012
 - *Piecewise-linear approximation of quadratics*
     Automatic for linear solvers.

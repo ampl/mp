@@ -296,11 +296,15 @@ public:
 public:
   double cmpEpsContinuous() const { return options_.cmpEps_; }
   double bigMDefault() const { return options_.bigM_default_; }
+  double PLApproxRelTol() const { return options_.PLApproxRelTol_; }
+  double PLApproxDomain() const { return options_.PLApproxDomain_; }
 
 private:
   struct Options {
     double cmpEps_ { 1e-4 };
     double bigM_default_ { -1 };
+    double PLApproxRelTol_ { 1e-2 };
+    double PLApproxDomain_ { 1e6 };
   };
   Options options_;
 
@@ -309,11 +313,18 @@ private:
                        "Tolerance for strict comparison of continuous variables for MIP. "
                        "Ensure larger than the solver's feasibility tolerance.",
                        options_.cmpEps_, 0.0, 1e100);
-    this->GetEnv().AddOption("cvt:mip:bigM cvt:mip:bigm cvt:bigM cvt:bigm",
+    this->GetEnv().AddOption("cvt:bigM cvt:bigm cvt:mip:bigM cvt:mip:bigm",
                        "Default value of big-M for linearization of logical constraints. "
                        "Not used by default. Use with care (prefer tight bounds). "
                        "Should be smaller than (1.0 / [integrality tolerance])",
                        options_.bigM_default_, -1.0, 1e100);
+    this->GetEnv().AddOption("cvt:plapprox:reltol plapprox:reltol plapproxreltol",
+                       "Relative tolerance for piecewise-linear approximation. Default 0.01.",
+                       options_.PLApproxRelTol_, 0.0, 1e100);
+    this->GetEnv().AddOption("cvt:plapprox:domain plapprox:domain plapproxdomain",
+                       "For piecewise-linear approximated functions, both arguments and result "
+                       "are bounded to +-[pladomain]. Default 1e6.",
+                       options_.cmpEps_, 0.0, 1e100);
   }
 };
 

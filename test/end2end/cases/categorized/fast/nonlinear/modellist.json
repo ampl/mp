@@ -1,43 +1,58 @@
 [
   {
     "name" : "expA_1",
-    "objective" : 10,
-    "tags" : ["nonlinear"]
+    "tags" : ["nonlinear"],
+    "values": {
+      "if abs(_obj[1]-10)<=0.01 then 1 else 0": 1
+    }
   },
   {
     "name" : "expA_1 check_pl_approx_expA",
-    "objective" : 10,
     "tags" : ["nonlinear", "check_pl_approx_expA"],
-    "options": { "ANYSOLVER_options": "acc:expa=1" }
+    "options": { "ANYSOLVER_options": "acc:expa=1" },
+    "values": {
+      "if abs(_obj[1]-10)<=0.01 then 1 else 0": 1
+    }
   },
   {
     "name" : "expA_2",
-    "objective" : 1.6160298824941304,
-    "tags" : ["nonlinear"]
+    "tags" : ["nonlinear"],
+    "values": {
+      "if abs(_obj[1]-1.6160298824941304)<=0.01 then 1 else 0": 1
+    }
   },
   {
     "name" : "logA_1",
-    "objective" : 0.796515,
-    "tags" : ["log"]
+    "tags" : ["log"],
+    "values": {
+      "if abs(_obj[1]-0.796515)<=0.01 then 1 else 0": 1
+    }
   },
   {
     "name" : "log_1",
-    "objective" : 1,
-    "tags" : ["log"]
+    "tags" : ["log"],
+    "values": {
+      "if abs(_obj[1]-1)<=0.01 then 1 else 0": 1
+    }
   },
   {
-    "name" : "exp_01_check_obj",
+    "name" : "exp_01_check_obj reltol=1e-5",
     "objective" : 1.6931555,
     "tags" : ["continuous", "nonlinear"],
-    "options": { "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5" },
-    "comment": "Rel error bound 1e-5 for Gurobi, own plapprox for others"
+    "options": {
+      "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5",
+      "ANYSOLVER_options": "cvt:plapprox:reltol=1e-5"
+    },
+    "comment": "Rel error bound 1e-5 for Gurobi's approx, MP plapprox for others"
   },
   {
-    "name" : "exp_01_check_obj check_pl_approx_exp",
+    "name" : "exp_01_check_obj check_pl_approx_exp reltol=1e-5",
     "objective" : 1.6931555,
     "tags" : ["continuous", "nonlinear", "check_pl_approx_exp"],
-    "options": { "ANYSOLVER_options": "acc:exp=1" },
-    "comment": "Own plapprox for Gurobi"
+    "options": {
+      "ANYSOLVER_options": "acc:exp=1 cvt:plapprox:reltol=1e-5"
+    },
+    "comment": "MP plapprox for Gurobi"
   },
   {
     "name" : "exp_02_check_2con",
@@ -45,7 +60,7 @@
     "options": { "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5" },
     "comment": "Rel error bound 1e-5 for Gurobi, own plapprox for others",
     "values": {
-      "if abs(y-exp(x))<=1e-5 then 1 else 0": 1
+      "if abs(y-exp(x))<=1e-2 then 1 else 0": 1
     }
   },
   {
@@ -54,7 +69,7 @@
     "options": { "ANYSOLVER_options": "acc:exp=1" },
     "comment": "Own plapprox for Gurobi",
     "values": {
-      "if abs(y-exp(x))<=1e-5 then 1 else 0": 1
+      "if abs(y-exp(x))<=1e-2 then 1 else 0": 1
     }
   },
   {
@@ -64,7 +79,7 @@
     "options": { "ANYSOLVER_options": "acc:exp=1 acc:pl=1 acc:sos2=1" },
     "comment": "Own plapprox for Gurobi with PL encoding",
     "values": {
-      "if abs(y-exp(x))<=1e-5 then 1 else 0": 1
+      "if abs(y-exp(x))<=1e-2 then 1 else 0": 1
     }
   },
   {
@@ -73,7 +88,7 @@
     "options": { "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5" },
     "comment": "Rel error bound 1e-5 for Gurobi, own plapprox for others",
     "values": {
-      "if abs(Obj1+0.61371)<=1e-5 then 1 else 0": 1
+      "if abs(Obj1+0.61371)<=1e-2 then 1 else 0": 1
     }
   },
   {
@@ -82,7 +97,7 @@
     "options": { "ANYSOLVER_options": "acc:log=1" },
     "comment": "Own plapprox for Gurobi (log)",
     "values": {
-      "if abs(Obj1+0.61371)<=1e-5 then 1 else 0": 1
+      "if abs(Obj1+0.61371)<=1e-2 then 1 else 0": 1
     }
   },
   {
@@ -91,7 +106,7 @@
     "options": { "gurobi_options": "funcpieces=-2 funcpieceerror=1e-5" },
     "comment": "Rel error bound 1e-5 for Gurobi, own plapprox for others",
     "values": {
-      "if abs(y-log(x))<=1e-5 then 1 else 0": 1
+      "if abs(y-log(x))<=1e-2 then 1 else 0": 1
     }
   },
   {
@@ -100,7 +115,7 @@
     "options": { "ANYSOLVER_options": "acc:log=1" },
     "comment": "Own plapprox for log, e.g., for Gurobi",
     "values": {
-      "if abs(y-log(x))<=1e-5 then 1 else 0": 1
+      "if abs(y-log(x))<=1e-2 then 1 else 0": 1
     }
   },
   {
@@ -110,90 +125,94 @@
     "options": { "ANYSOLVER_options": "acc:log=1 acc:pl=1 acc:sos2=1" },
     "comment": "Own plapprox for log, followed by pl->sos2->MIP conversion",
     "values": {
-      "if abs(y-log(x))<=1e-5 then 1 else 0": 1
+      "if abs(y-log(x))<=1e-2 then 1 else 0": 1
     }
   },
   {
     "name" : "sin_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective": -3.141592653589793,
     "values": {
-      "if abs(y-sin(x))<=1e-5 then 1 else 0": 1
+      "if abs(y-sin(x))<=1e-2 then 1 else 0": 1,
+      "if abs(_obj[1]+3.141592653589793)<=0.01 then 1 else 0": 1
     }
   },
   {
     "name" : "sin_01 check_pl_approx_sin",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_sin"],
     "options": { "ANYSOLVER_options": "acc:sin=1" },
-    "objective": -3.141592653589793,
     "values": {
-      "if abs(y-sin(x))<=1e-5 then 1 else 0": 1
+      "if abs(y-sin(x))<=1e-2 then 1 else 0": 1,
+      "if abs(_obj[1]+3.141592653589793)<=0.01 then 1 else 0": 1
     }
   },
   {
     "name" : "sin_02",
     "tags" : ["continuous", "nonlinear"],
-    "objective": -5.71238898038469,
     "values": {
-      "if abs(y-sin(x))<=1e-5 then 1 else 0": 1
+      "if abs(y-sin(x))<=1e-2 then 1 else 0": 1,
+      "if abs(_obj[1]+5.71238898038469)<=0.01 then 1 else 0": 1
     }
   },
   {
     "name" : "sin_02 check_pl_approx_sin",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_sin"],
     "options": { "ANYSOLVER_options": "acc:sin=1" },
-    "objective": -5.71238898038469,
     "values": {
-      "if abs(y-sin(x))<=1e-5 then 1 else 0": 1
+      "if abs(y-sin(x))<=1e-2 then 1 else 0": 1,
+      "if abs(_obj[1]+5.71238898038469)<=0.01 then 1 else 0": 1
     }
   },
   {
     "name" : "cos_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective": -191.6104822,
     "values": {
-      "if abs(y-cos(x))<=1e-5 then 1 else 0": 1,
-      "if round(x)==194 then 1 else 0": 1
+      "if abs(y-cos(x))<=1e-2 then 1 else 0": 1,
+      "if round(x)==194 then 1 else 0": 1,
+      "if abs(_obj[1]+191.6104822)<=1 then 1 else 0": 1
     }
   },
   {
     "name" : "cos_01 check_pl_approx_cos",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_cos"],
     "options": { "ANYSOLVER_options": "acc:cos=1" },
-    "objective": -191.6104822,
     "values": {
-      "if abs(y-cos(x))<=1e-5 then 1 else 0": 1,
-      "if round(x)==194 then 1 else 0": 1
+      "if abs(y-cos(x))<=1e-2 then 1 else 0": 1,
+      "if round(x)==194 then 1 else 0": 1,
+      "if abs(_obj[1]+191.6104822)<=1 then 1 else 0": 1
     }
   },
   {
     "name" : "tan_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective": -0.6388867014,
     "values": {
-      "if abs(y-tan(x))<=1e-4 then 1 else 0": 1,
-      "x": -4.0950434673490523
+      "if abs(y-tan(x))<=1e-1 then 1 else 0": 1,
+      "if abs(x+4.0950434673490523)<=1e-1 then 1 else 0": 1,
+      "if abs(_obj[1]+0.6388867014)<=0.1 then 1 else 0": 1
     }
   },
   {
     "name" : "tan_01 check_pl_approx_tan",
     "tags" : ["continuous", "nonlinear", "check_pl_approx_tan"],
-    "objective": -0.6388867014,
     "options": { "ANYSOLVER_options": "acc:tan=1" },
     "values": {
-      "if abs(y-tan(x))<=1e-4 then 1 else 0": 1,
-      "x": -4.0950434673490523
+      "if abs(y-tan(x))<=1e-1 then 1 else 0": 1,
+      "if abs(x+4.0950434673490523)<=1e-1 then 1 else 0": 1,
+      "if abs(_obj[1]+0.6388867014)<=0.1 then 1 else 0": 1
     }
   },
   {
     "name" : "pow_01_pow4",
     "tags" : ["continuous", "nonlinear"],
-    "objective": -1.8301448602249
+    "values": {
+      "if abs(_obj[1]+1.8301448602249)<=0.1 then 1 else 0": 1
+    }
   },
   {
     "name" : "pow_02_pow4",
     "tags" : ["continuous", "nonlinear"],
-    "objective": -1.84178519861971
+    "values": {
+      "if abs(_obj[1]+1.84178519861971)<=0.01 then 1 else 0": 1
+    }
   },
   {
     "name" : "pow_03_pow5",
@@ -204,88 +223,94 @@
       "copt_options": "cvt:quadobj=0 cvt:quadcon=0",
       "comment_copt": "non convex constraints, linearise"
     },
-    "objective": -32.01
+    "values": {
+      "if abs(_obj[1]+32.01)<=0.01 then 1 else 0": 1
+    }
   },
   {
     "name" : "pow_04_pow1.35",
     "tags" : ["continuous", "nonlinear"],
-    "objective":  -1.58302654955303
+    "values": {
+      "if abs(_obj[1]+1.58302654955303)<=0.01 then 1 else 0": 1
+    }
   },
   {
     "name" : "pow_05_pow_minus0.35",
     "tags" : ["continuous", "nonlinear"],
-    "objective":  3.75328523837863
+    "values": {
+      "if abs(_obj[1]-3.75328523837863)<=0.01 then 1 else 0": 1
+    }
   },
   {
     "name" : "asin_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective":  6.86830935803409,
     "values": {
-      "if abs(y-asin(x))<=1e-4 then 1 else 0": 1
+      "if abs(y-asin(x))<=1e-2 then 1 else 0": 1,
+      "if abs(_obj[1]-6.86830935803409)<=0.01 then 1 else 0": 1
     }
   },
   {
     "name" : "acos_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective":  -2.40109419283669,
     "values": {
-      "if abs(y-acos(x))<=1e-4 then 1 else 0": 1
+      "if abs(y-acos(x))<=1e-2 then 1 else 0": 1,
+      "if abs(_obj[1]+2.40109419283669)<=0.1 then 1 else 0": 1
     }
   },
   {
     "name" : "atan_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective":  7.2432309147143,
     "values": {
-      "if abs(y-atan(x))<=1e-4 then 1 else 0": 1
+      "if abs(y-atan(x))<=1e-2 then 1 else 0": 1,
+      "if abs(_obj[1]-7.2432309147143)<=0.1 then 1 else 0": 1
     }
   },
   {
     "name" : "sinh_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective": 6.88087328277653,
     "values": {
-      "if abs(y-sinh(x))<=1e-4 then 1 else 0": 1
+      "if abs(y-sinh(x))<=1e-2 then 1 else 0": 1,
+      "if abs(_obj[1]-6.88087328277653)<=0.01 then 1 else 0": 1
     }
   },
   {
     "name" : "cosh_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective":  17.3489673254754,
     "values": {
-      "if abs(y-cosh(x))<=1e-4 then 1 else 0": 1
+      "if abs(y-cosh(x))<=1e-1 then 1 else 0": 1,
+      "if abs(_obj[1]-17.3489673254754)<=0.1 then 1 else 0": 1
     }
   },
   {
     "name" : "tanh_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective": 7.2556470284742,
     "values": {
-      "if abs(y-tanh(x))<=1e-4 then 1 else 0": 1
+      "if abs(y-tanh(x))<=1e-1 then 1 else 0": 1,
+      "if abs(_obj[1]-7.2556470284742)<=0.1 then 1 else 0": 1
     }
   },
   {
     "name" : "asinh_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective": 7.1191696450538,
     "values": {
-      "if abs(y-asinh(x))<=1e-4 then 1 else 0": 1
+      "if abs(y-asinh(x))<=1e-2 then 1 else 0": 1,
+      "if abs(_obj[1]-7.1191696450538)<=0.1 then 1 else 0": 1
     }
   },
   {
     "name" : "acosh_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective": -12.9669563023371,
     "values": {
-      "if abs(y-acosh(x))<=1e-4 then 1 else 0": 1
+      "if abs(y-acosh(x))<=1e-2 then 1 else 0": 1,
+      "if abs(_obj[1]+12.9669563023371)<=0.01 then 1 else 0": 1
     }
   },
   {
     "name" : "atanh_01",
     "tags" : ["continuous", "nonlinear"],
-    "objective":  1.30327359,
     "values": {
-      "if abs(y-atanh(x))<=1e-4 then 1 else 0": 1
+      "if abs(y-atanh(x))<=1e-2 then 1 else 0": 1,
+      "if abs(_obj[1]-1.30327359)<=0.01 then 1 else 0": 1
     }
   }
 ]

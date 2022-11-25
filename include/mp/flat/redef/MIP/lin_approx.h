@@ -13,6 +13,20 @@
 
 namespace mp {
 
+/// A function to add warning about PL approximation
+std::pair<const char*, const char*>
+GetWarningKeyAndText(const char* conName, double tol) {
+  static std::string key =
+      std::string("PLApprox");
+  static std::string txt =
+      std::string("An expression of type '") + conName +
+      "' has been piecewise-linearly approximated. "
+      "Set cvt:plapprox:reltol to control precision (currently " +
+      std::to_string(tol) + ").";
+  return { key.c_str(), txt.c_str() };
+}
+
+
 /// Pl-approximates FuncCon for MIP
 template <class Impl, class ModelConverter, class FuncCon>
 class FuncConConverter_MIP_CRTP :
@@ -32,11 +46,16 @@ public:
     auto x = con.GetArguments()[0];
     auto y = con.GetResultVar();
     PLApproxParams laPrm;
-    /// Narrow graph domain to +-1e6
-    laPrm.grDom.lbx = std::max(GetMC().lb(x), -1e6);
-    laPrm.grDom.ubx = std::min(GetMC().ub(x), 1e6);
-    laPrm.grDom.lby = std::max(GetMC().lb(y), -1e6);
-    laPrm.grDom.uby = std::min(GetMC().ub(y), 1e6);
+    laPrm.ubErr = GetMC().PLApproxRelTol();
+    auto dm = GetMC().PLApproxDomain();
+    /// Narrow graph domain to +-dm
+    laPrm.grDom.lbx = std::max(GetMC().lb(x), -dm);
+    laPrm.grDom.ubx = std::min(GetMC().ub(x), dm);
+    laPrm.grDom.lby = std::max(GetMC().lb(y), -dm);
+    laPrm.grDom.uby = std::min(GetMC().ub(y), dm);
+
+    auto warn = GetWarningKeyAndText(con.GetTypeName(), laPrm.ubErr);
+    GetMC().AddWarning( warn.first, warn.second );
 
     PLApproximate(con, laPrm);
     if (!laPrm.fUsePeriod) {
@@ -88,6 +107,7 @@ public:
   /// Constructor
   FuncConConverter_MIP(ModelConverter& mc) : Base(mc) { }
 };
+
 
 /// Typedef FuncConConverter_MIP_Exp
 template <class MC>

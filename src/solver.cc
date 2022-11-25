@@ -741,7 +741,7 @@ void BasicSolver::PrintWarnings() {
 std::string BasicSolver::ToString(
     const WarningsMap::value_type& wrn) {
   return fmt::format(
-        "WARNING.  {} cases of \"{}\". The first of them:\n  {}\n",
+        "WARNING.  {} case(s) of \"{}\". The first of them:\n  {}\n",
         wrn.second.first, wrn.first, wrn.second.second);
 }
 
