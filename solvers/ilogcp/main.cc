@@ -21,6 +21,8 @@
  */
 
 #include "ilogcp.h"
+#include "mp/ampls-c-api.h" // for CCallbacks
+
 
 extern "C" int main1(int, char **argv) {
   // Solver should be destroyed after any IloException is handled.
@@ -34,6 +36,28 @@ extern "C" int main1(int, char **argv) {
       fmt::print(stderr, "Error: {}\n", e.getMessage());
     }
   } catch (const std::exception &e) {
+    fmt::print(stderr, "Error: {}\n", e.what());
+  }
+  return 1;
+}
+
+
+
+extern "C" int main2(int, char** argv, CCallbacks cb = {}) {
+  // Solver should be destroyed after any IloException is handled.
+  try {
+    typedef mp::SolverApp<mp::IlogCPSolver> IlogCPApp;
+    std::unique_ptr<IlogCPApp> s;
+    try {
+      s.reset(new IlogCPApp());
+      s->GetCallbacks() = cb;
+      return s->Run(argv);
+    }
+    catch (const IloException& e) {
+      fmt::print(stderr, "Error: {}\n", e.getMessage());
+    }
+  }
+  catch (const std::exception& e) {
     fmt::print(stderr, "Error: {}\n", e.what());
   }
   return 1;

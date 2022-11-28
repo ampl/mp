@@ -4,6 +4,7 @@
 #include "mp/solver-app-base.h"
 #include "mp/solver-io.h"
 #include "mp/clock.h"
+#include "mp/ampls-c-api.h" // For CCallbacks
 
 namespace mp {
 
@@ -27,12 +28,12 @@ class SolverApp : private Reader {
 
   internal::SignalHandler sig_handler;
   internal::SolverAppOptionParser option_parser_;
-
+  
  protected:
   int GetResultCode() const { return result_code_; }
   Solver& GetSolver() { return solver_; }
   ProblemBuilder& GetProblemBuilder() { return *builder_; }
-
+  CCallbacks callbacks_ = {};
  private:
   struct AppOutputHandler : OutputHandler {
     bool has_output;
@@ -59,6 +60,10 @@ class SolverApp : private Reader {
 
   // Returns the .nl reader.
   Reader &reader() { return *this; }
+
+  // Return the callbacks (assignable)
+  CCallbacks& GetCallbacks() { return callbacks_; }
+
 
   // Runs the application.
   // It processes command-line arguments and, if the file name (stub) is
@@ -143,6 +148,12 @@ void SolverApp<Solver, Reader>::Solve() {
   internal::AppSolutionHandler<Solver> sol_handler(
         filename_no_ext, solver_, *builder_, options,
         output_handler_.has_output ? 0 : banner_size);
+  
+  if(GetCallbacks().check)
+    GetCallbacks().check(builder_->problem().num_vars(),
+      builder_->problem().num_algebraic_cons(),
+      builder_->problem().num_logical_cons());
+
   solver_.Solve(builder_->problem(), sol_handler);
 }
 

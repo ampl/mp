@@ -39,7 +39,6 @@
 #include <vector>
 
 #include "concert.h"
-#include "ilogcp_date.h"
 
 using std::strcmp;
 using std::vector;
