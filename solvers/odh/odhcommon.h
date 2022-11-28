@@ -1,9 +1,7 @@
-#ifndef GUROBIODHCOMMON_H
-#define GUROBIODHCOMMON_H
+#ifndef ODHCOMMON_H
+#define ODHCOMMON_H
 
 
-//#define ODH
-/// Common stuff for GurobiBackend and GurobiModelAPI
 extern "C" {
   #include "heuristic.h"
 }
@@ -13,23 +11,32 @@ extern "C" {
 
 namespace mp {
 
-  /// Information shared by both
-  /// `GurobiBackend` and `GurobiModelAPI`
-  struct GurobiODHCommonInfo {
+  struct ODHCommonInfo {
 
     HEURENVptr HEURptr() {
       assert(HEURptr_);
       return HEURptr_;
     }
-    void openODH(void* grbenv)
+    void OpenODH(void* env)
     {
       int status;
-      HEURptr_ = HEURopen(&status, grbenv);
+      HEURptr_ = HEURopen(&status, env);
       if (status)
-        throw std::runtime_error(fmt::format("Failed to open Heuristic environment:\n{}",
+        throw std::runtime_error(
+          fmt::format("Failed to open Heuristic environment:\n{}\n",
           HEURgetlastmsg(HEURptr())));
     }
-    const char* getStatusMsg(int status)
+    void CloseODH()
+    {
+      if (HEURptr_)
+      {
+        int status = HEURclose(&HEURptr_);
+        throw std::runtime_error(
+          fmt::format("Failed to close Heuristic environment:\n{}\n",
+          HEURgetlastmsg(HEURptr())));
+      }
+    }
+    const char* GetODHStatusMsg(int status)
     {
       char returnmsg[16][32] = {
       "HEUR_STAT_NOTCALLED",
@@ -61,4 +68,4 @@ namespace mp {
     fmt::format("ODH Call failed: '{}':\n{}", #call, HEURgetlastmsg( HEURptr() ) )); } while (0)
 }
 
-#endif // GUROBIODHCOMMON_H
+#endif // ODHCOMMON_H

@@ -3,19 +3,19 @@
 
 #include <string>
 #include "odh/odhcommon.h"
-#include "gurobi/gurobibackend.h"
+#include "cplexmp/cplexmpbackend.h"
 
 
 namespace mp {
 
-  class GurobiODHBackend : public GurobiBackend, ODHCommonInfo {
+  class CplexODHBackend : public CplexBackend, ODHCommonInfo {
   
     /// Chance for the Backend to init solver environment, etc
     void InitOptionParsing() override;
 
     void Solve() override;
 
-    ~GurobiODHBackend();
+    ~CplexODHBackend();
   
   };
 }

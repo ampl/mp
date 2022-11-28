@@ -256,12 +256,15 @@ add_ampl_backend(cplexmp DLL_RUNTIME SHARED_LIB MODULE CPLEX
 add_ampl_backend(xpress DLL_RUNTIME SHARED_LIB MODULE XPRESS
                       LIBRARIES ${xpress_LIBS} ${CMAKE_DL_LIBS})
 
+
+set(GRBSRC gurobibackend.cc gurobibackend.h
+            gurobicommon.cc gurobicommon.h
+            gurobimodelapi.cc gurobimodelapi.h
+            model-mgr-with-std-pb.cc
+            gurobi-ampls-c-api.h)
+
 add_ampl_solver(gurobi DLL_RUNTIME SHARED_LIB MODULE GUROBI
-  gurobi-ampls-c-api.h
-  gurobibackend.cc gurobibackend.h
-  gurobimodelapi.cc gurobimodelapi.h
-  gurobicommon.cc gurobicommon.h
-  model-mgr-with-std-pb.cc
+  ${GRBSRC}
   LIBRARIES ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS})
 if (TARGET x-gurobi)
   target_compile_definitions(x-gurobi PRIVATE main1=main)
@@ -317,15 +320,13 @@ if (TARGET ilogcp)
   endif ()
 endif ()
 
-set(GRBSRC gurobibackend.cc gurobibackend.h
-            gurobicommon.cc gurobicommon.h
-            gurobimodelapi.cc gurobimodelapi.h
-            model-mgr-with-std-pb.cc
-            gurobi-ampls-c-api.h)
+
+
+set(ODHSRC ../odh/odhcommon.h)
 add_prefix(DIRGRBSRC "../gurobi/" ${GRBSRC})
-set(ODHSRC gurobiodhbackend2.cc)
+set(GRBODHSRC gurobiodhbackend.h gurobiodhbackend.cc)
 add_ampl_solver(gurobiodh
-                ${DIRGRBSRC} ${ODHSRC}
+                ${DIRGRBSRC} ${ODHSRC} ${GRBODHSRC}
                 DLL_RUNTIME MODULE GUROBI
                 LIBRARIES ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS}
                 )
@@ -333,6 +334,27 @@ if (TARGET gurobiodh)
   target_compile_definitions(gurobiodh PRIVATE main1=main)
   if(WIN32)
     target_compile_options(amplgurobiodh-static PUBLIC /bigobj)
+  endif()
+endif()
+
+
+
+
+set(CPLEXSRC cplexmpbackend.cc cplexmpbackend.h
+            cplexmpcommon.cc cplexmpcommon.h
+            cplexmpmodelapi.cc cplexmpmodelapi.h
+            model-mgr-with-std-pb.cc)
+add_prefix(DIRCPLEXSRC "../cplexmp/" ${CPLEXSRC})
+set(CPLEXODHSRC cplexodhbackend.h cplexodhbackend.cc)
+add_ampl_solver(cplexodh
+                ${DIRGRBSRC} ${CPLEXODHSRC} ${ODHSRC}
+                DLL_RUNTIME MODULE CPLEX
+                LIBRARIES ${CPLEX_LIBRARY} ${CMAKE_DL_LIBS}
+                )
+if (TARGET cplexodh)
+  target_compile_definitions(cplexodh PRIVATE main1=main)
+  if(WIN32)
+    target_compile_options(amplcplexodh-static PUBLIC /bigobj)
   endif()
 endif()
 
