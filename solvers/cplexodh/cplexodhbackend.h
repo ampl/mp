@@ -10,13 +10,15 @@ namespace mp {
 
   class CplexODHBackend : public CplexBackend, ODHCommonInfo {
   
-    /// Chance for the Backend to init solver environment, etc
     void InitOptionParsing() override;
 
     void Solve() override;
 
     ~CplexODHBackend();
-  
+
+    void ReportResults() override; 
+
+    void ReportODHResults();
   };
 }
 #endif

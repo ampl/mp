@@ -10,13 +10,17 @@ namespace mp {
 
   class GurobiODHBackend : public GurobiBackend, ODHCommonInfo {
   
-    /// Chance for the Backend to init solver environment, etc
     void InitOptionParsing() override;
 
     void Solve() override;
 
     ~GurobiODHBackend();
-  
+
+
+    void ReportResults() override;
+
+    void ReportGurobiResults();
+
   };
 }
 #endif

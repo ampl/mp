@@ -14,11 +14,25 @@ namespace mp {
   void GurobiODHBackend::Solve() {
     PrepareGurobiSolve();
     int status = HEURopt(HEURptr(), model());
-    status = HEURgetstat(HEURptr());
-    fmt::format("At end of optimization the return code is {%d}:\n{}\n", status, GetODHStatusMsg(status));
     WindupGurobiSolve();
   }
+
+  void  GurobiODHBackend::ReportResults()  {
+    ReportGurobiResults();
+    FlatBackend< MIPBackend<GurobiBackend> >::ReportResults();
+  }
+
+  void  GurobiODHBackend::ReportGurobiResults() {
+    SetStatus(ConvertODHStatus());
+    AddGurobiMessage();
+    if (need_multiple_solutions())
+      ReportGurobiPool();
+    if (need_fixed_MIP())
+      ConsiderGurobiFixedModel();
+  }
+
   GurobiODHBackend::~GurobiODHBackend() {
     CloseODH();
   }
+
 }

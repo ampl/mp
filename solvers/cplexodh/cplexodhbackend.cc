@@ -13,11 +13,19 @@ namespace mp {
 
   void CplexODHBackend::Solve() {
     int status = HEURopt(HEURptr(), env());
-    status = HEURgetstat(HEURptr());
-    fmt::print("At end of optimization the return code is %{}: {}\n", 
-      status, GetODHStatusMsg(status));
     WindupCPLEXSolve();
   }
+
+  void CplexODHBackend::ReportResults() {
+    ReportODHResults();
+    FlatBackend< MIPBackend<CplexBackend> >::ReportResults();
+  }
+
+  void CplexODHBackend::ReportODHResults() {
+    SetStatus(ConvertODHStatus());
+    AddCPLEXMessages();
+  }
+
 
   CplexODHBackend::~CplexODHBackend() {
     CloseODH();

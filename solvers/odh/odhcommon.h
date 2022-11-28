@@ -8,7 +8,7 @@ extern "C" {
 #include <stdexcept>
 #include <cassert>
 #include "mp/format.h"
-
+#include "mp/common.h"
 namespace mp {
 
   struct ODHCommonInfo {
@@ -36,28 +36,49 @@ namespace mp {
           HEURgetlastmsg(HEURptr())));
       }
     }
-    const char* GetODHStatusMsg(int status)
-    {
-      char returnmsg[16][32] = {
-      "HEUR_STAT_NOTCALLED",
-      "HEUR_STAT_INF",
-      "HEUR_STAT_FAIL_INF",
-      "HEUR_STAT_ABORT_INF",
-      "HEUR_STAT_TLIM_INF",
-      "HEUR_STAT_DVSR_INF",
-      "HEUR_STAT_FEAS",
-      "HEUR_STAT_FAIL_FEAS",
-      "HEUR_STAT_ABORT_FEAS",
-      "HEUR_STAT_TLIM_FEAS",
-      "HEUR_STAT_DVSR_FEAS",
-      "HEUR_STAT_OPT",
-      "HEUR_STAT_FAIL_OPT",
-      "HEUR_STAT_ABORT_OPT",
-      "HEUR_STAT_TLIM_OPT",
-      "HEUR_STAT_DVSR_OPT"
-      };
-      return returnmsg[status];
+
+
+    std::pair<int, std::string> ConvertODHStatus() {
+      int status = HEURgetstat(HEURptr());
+      namespace sol = mp::sol;
+      switch (status) {
+      case 0:
+        return { sol::NOT_SET, "optimizer not called" };
+      case 1:
+        return { sol::INFEASIBLE, "infeasible problem" };
+      case 2:
+        return { sol::FAILURE, "failure without a feasible solution" };
+      case 3:
+        return { sol::INTERRUPTED, "interrupted without a feasible solution" };
+      case 4:
+        return { sol::LIMIT, "time limit reached without a feasible solution" };
+      case 5:
+        return { sol::LIMIT, "maximum divisor reached without a feasible solution" };
+      case 6:
+        return { sol::SOLVED, "feasible solution found" };
+      case 7:
+        return { sol::FAILURE, "failure with a feasible solution" };
+      case 8:
+        return { sol::INTERRUPTED, "interrupted with a feasible solution" };
+      case 9:
+        return { sol::LIMIT, "time limit reached with a feasible solution" };
+      case 10:
+        return { sol::LIMIT, "maximum divisor reached with a feasible solution" };
+      case 11:
+        return { sol::SOLVED, "optimal solution" };
+      case 12:
+        return { sol::FAILURE, "failure with an optimal solution" };
+      case 13:
+        return { sol::INTERRUPTED, "interrupted with an optimal solution" };
+      case 14:
+        return { sol::LIMIT, "time limit reached with an optimal solution" };
+      case 15:
+        return { sol::LIMIT, "maximum divisor reached with an optimal solution" };
+      default:
+        return { sol::UNKNOWN, "unexpected solution status" };
+      }
     }
+    
     HEURENVptr HEURptr_ = NULL;
   };
 
