@@ -85,8 +85,13 @@ void GurobiBackend::OpenGurobi() {
   const auto create_fn = GetCallbacks().init;
   if (create_fn)
     set_env((GRBenv*)create_fn());
-  else 
-    GRB_CALL(GRBemptyenv(&env_ref()));
+  else
+  {
+    int status =  GRBemptyenv(&env_ref());
+    if (status != 0)
+      throw std::runtime_error(fmt::format(
+        "Could not create gurobi environment, errorcode: {}\n", status));
+  }
   /* Set default parameters */
   GRBsetintparam(env(), GRB_INT_PAR_OUTPUTFLAG, 0);
 }
