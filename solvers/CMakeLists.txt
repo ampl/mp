@@ -44,9 +44,7 @@ function(add_ampl_solver name)
     "MODULE;EXENAME;VERSION"
     "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS"
     ${ARGN})
-
   get_property(MP_BASE_DIR GLOBAL PROPERTY MP_BASE_DIR)
-
   set(options)
   if (add_ampl_solver_EXTERNAL)
     set(options EXTERNAL)
@@ -85,9 +83,15 @@ function(add_ampl_solver name)
         endif ()
       else()
         add_library(${module}-library SHARED  IMPORTED)
+        foreach(l ${${module_upper}_LIBS})
         set_property(TARGET ${module}-library PROPERTY
-          IMPORTED_LOCATION ${${module_upper}_LIBS})
-        target_include_directories(${module}-library INTERFACE ${${module_upper}_INCLUDE_DIRS})
+          IMPORTED_LOCATION ${l})
+        if (MSVC)
+            set_property(TARGET ${module}-library PROPERTY
+              IMPORTED_IMPLIB ${l})
+        endif()
+       target_include_directories(${module}-library INTERFACE ${${module_upper}_INCLUDE_DIRS})
+       endforeach()
       endif()
     endif ()
   endif()
@@ -258,7 +262,6 @@ add_ampl_solver(gurobi DLL_RUNTIME SHARED_LIB MODULE GUROBI
   gurobimodelapi.cc gurobimodelapi.h
   gurobicommon.cc gurobicommon.h
   model-mgr-with-std-pb.cc
-  EXENAME x-gurobi
   LIBRARIES ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS})
 if (TARGET x-gurobi)
   target_compile_definitions(x-gurobi PRIVATE main1=main)
@@ -314,5 +317,23 @@ if (TARGET ilogcp)
   endif ()
 endif ()
 
-### Removing on 10 Nov 2021: sulum seems discontinued
-# add_ampl_solver(sulum)
+set(GRBSRC gurobibackend.cc gurobibackend.h
+            gurobicommon.cc gurobicommon.h
+            gurobimodelapi.cc gurobimodelapi.h
+            model-mgr-with-std-pb.cc
+            gurobi-ampls-c-api.h)
+add_prefix(DIRGRBSRC "../gurobi/" ${GRBSRC})
+set(ODHSRC gurobiodhbackend2.cc)
+add_ampl_solver(gurobiodh
+                ${DIRGRBSRC} ${ODHSRC}
+                DLL_RUNTIME MODULE GUROBI
+                LIBRARIES ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS}
+                )
+if (TARGET gurobiodh)
+  target_compile_definitions(gurobiodh PRIVATE main1=main)
+  if(WIN32)
+    target_compile_options(amplgurobiodh-static PUBLIC /bigobj)
+  endif()
+endif()
+
+  
