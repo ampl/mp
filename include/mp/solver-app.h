@@ -4,7 +4,7 @@
 #include "mp/solver-app-base.h"
 #include "mp/solver-io.h"
 #include "mp/clock.h"
-#include "mp/ampls-c-api.h" // For CCallbacks
+#include "mp/ampls-ccallbacks.h" // For CCallbacks
 
 namespace mp {
 
