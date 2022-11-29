@@ -388,7 +388,7 @@ bool SolverAppOptionParser::ShowSolverOptions(const char* param) {
   const int DESC_INDENT = 6;
   for (Solver::option_iterator
     i = solver_.option_begin(), end = solver_.option_end(); i != end; ++i) {
-    if (param)
+    if (param && strlen(param)>0)
       if (!contains(i->name(), param))
         continue;
     writer.clear();
