@@ -179,7 +179,7 @@ void MPToJaCoPConverter::ConvertExpr(
     std::vector<jint> coefs(num_terms);
     jobjectArray vars = CreateVarArray(num_terms);
     int index = 0;
-    for (LinearExpr::iterator
+    for (auto 
         i = linear.begin(), end = linear.end(); i != end; ++i, ++index) {
       coefs[index] = CastToInt(i->coef());
       env_.SetObjectArrayElement(vars, index, vars_[i->var_index()]);
@@ -394,7 +394,7 @@ void JaCoPSolver::HandleUnknownOption(const char *name) {
 }
 
 JaCoPSolver::JaCoPSolver()
-: SolverImpl<Problem>("jacop", "jacop " JACOP_VERSION, 20160205, MULTIPLE_SOL),
+: SolverImpl<Problem>("jacop", "jacop " JACOP_VERSION, 20221129, MULTIPLE_SOL),
   outlev_(0), output_frequency_(1), output_count_(0),
   var_select_("SmallestDomain"), val_select_("IndomainMin"),
   time_limit_(-1), node_limit_(-1), fail_limit_(-1),
