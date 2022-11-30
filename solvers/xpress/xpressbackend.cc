@@ -1441,7 +1441,7 @@ AddSolverOption("alg:resourcestrategy resourcestrategy",
     XPRS_CHOLESKYTOL, 1e-15, DBL_MAX);
 
   AddSolverOption("bar:cpuplatform cpuplatform",
-    "Type of Cholesky factorization used for barrier, sum of:\n:",
+    "Which instruction are allowed to the Newton barrier method:\n:",
     XPRS_CPUPLATFORM, values_cpuplatform, -1);
 
   AddSolverOption("bar:crash barcrash",
