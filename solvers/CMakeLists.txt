@@ -266,8 +266,8 @@ set(GRBSRC gurobibackend.cc gurobibackend.h
 add_ampl_solver(gurobi DLL_RUNTIME SHARED_LIB MODULE GUROBI
   ${GRBSRC}
   LIBRARIES ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS})
-if (TARGET x-gurobi)
-  target_compile_definitions(x-gurobi PRIVATE main1=main)
+if (TARGET gurobi)
+  target_compile_definitions(gurobi PRIVATE main1=main)
   if(WIN32)
     target_compile_options(amplgurobi-static PUBLIC /bigobj)
   endif()
