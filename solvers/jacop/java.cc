@@ -219,14 +219,33 @@ Env JVM::env(const char *const *options) {
     }
     if (!exists)
     {
-      RegKey jdk_key(HKEY_LOCAL_MACHINE,
-        "SOFTWARE\\JavaSoft\\JDK",
-        KEY_ENUMERATE_SUB_KEYS);
-      RegKey key(jdk_key.get(), jdk_key.GetSubKeyName(0), KEY_QUERY_VALUE);
-      std::string java_home_path = key.GetStrValue("JavaHome");
-      // Quick fix to reuse logic below, which seems to hint that on some
-      // installations, the jvm.dll path is wrong
-      runtime_lib_path = java_home_path + "\\bin\\d1\\d2";
+      try {
+        RegKey jdk_key(HKEY_LOCAL_MACHINE,
+          "SOFTWARE\\JavaSoft\\JDK",
+          KEY_ENUMERATE_SUB_KEYS);
+        RegKey key(jdk_key.get(), jdk_key.GetSubKeyName(0), KEY_QUERY_VALUE);
+        std::string java_home_path = key.GetStrValue("JavaHome");
+        // Quick fix to reuse logic below, which seems to hint that on some
+        // installations, the jvm.dll path is wrong
+        runtime_lib_path = java_home_path + "\\bin\\d1\\d2";
+        struct _stat s = {};
+        exists = _stat(runtime_lib_path.c_str(), &s) == 0;
+
+      }
+      catch (const JavaError&) {
+        // Ignore error.
+      }
+      catch (const fmt::WindowsError&) {
+        // Registry key not found
+      }
+    }
+    if (!exists)
+    {
+      
+      std::string jh;
+      const char* jhp = std::getenv("JAVA_HOME");
+      if(jhp)
+         runtime_lib_path = std::string(jhp) + "bin\\server\\jvm.dll";
     }
     std::string::size_type pos = runtime_lib_path.rfind('\\');
     if (pos != std::string::npos) {
@@ -237,7 +256,9 @@ Env JVM::env(const char *const *options) {
         if (pos != std::string::npos)
           runtime_lib_path.replace(pos + 1, std::string::npos, "server");
       }
-      std::string path = std::getenv("PATH");
+      
+      const char* p = std::getenv("PATH");
+      std::string path = p ? p : "";
       path += ";";
       path += runtime_lib_path;
       path += ";";
@@ -248,7 +269,7 @@ Env JVM::env(const char *const *options) {
        throw JavaError("Failed to load jvm.dll");
 #endif
     JavaVMInitArgs vm_args = JavaVMInitArgs();
-    vm_args.version = JNI_VERSION_1_6;
+    vm_args.version = JNI_VERSION_1_8;
     vm_args.ignoreUnrecognized = false;
     std::vector<JavaVMOption> jvm_options;
     if (options) {
@@ -257,6 +278,8 @@ Env JVM::env(const char *const *options) {
         jvm_options.push_back(jvm_opt);
       }
     }
+    vm_args.nOptions = 0;
+    vm_args.options = NULL;
     vm_args.nOptions = static_cast<jint>(jvm_options.size());
     vm_args.options = &jvm_options[0];
     instance_ = new JVM();
