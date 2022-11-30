@@ -4,13 +4,25 @@
 Modeling Guide for MP-based AMPL Solvers
 =========================================
 
+Ever wondered how to model logical and non-linear constraints? For example:
+
+- At most one of the variables *x*, *y* can be positive
+
+- All variables in a group should have different values
+
+- *y = sin(x)*.
+
+A series of small modeling tasks like these are handled in the
+:ref:`MP Modeling Series <mp-modeling-series>`,
+while below follows a comprehensive guide.
+
 AMPL's newly extended C++ solver interface library, MP, is publicly
 available in the `ampl/mp <https://github.com/ampl/mp>`_ repository.
 Solver interfaces built with MP are able to handle a significantly
 expanded range of model expressions.
 Currently available MP-based solvers include:
 
-- `x-gurobi <https://github.com/ampl/mp/tree/develop/solvers/gurobi>`_, an enhanced interface to the `Gurobi <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_ solver
+- `gurobi <https://github.com/ampl/mp/tree/develop/solvers/gurobi>`_, an enhanced interface to the `Gurobi <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_ solver
 
 - `copt <https://github.com/ampl/mp/tree/develop/solvers/copt>`_, an interface to `Cardinal Optimizer <https://ampl.com/products/solvers/solvers-we-sell/copt/>`_
 
@@ -19,8 +31,6 @@ Currently available MP-based solvers include:
 Binaries for these solvers can be downloaded, in distribution
 bundles and individually, through the `AMPL Portal <https://portal.ampl.com>`_.
 More solvers will be added.
-
-Implementation aspects for new drivers are described in :ref:`howto`.
 
 
 Overview
@@ -695,3 +705,73 @@ and result variables bounded in [-1e+4, 1e+4] (for approximated nonlinear functi
 hard bounds of up to [-1e+6, 1e+6] are imposed). The stability can be improved
 in some cases by decreasing integer tolerance, Gurobi's *intfocus* and
 *numfocus* options, switching off presolve in the solver, and other tuning measures.
+
+
+.. _mp-modeling-series:
+
+MP Modeling Series: small examples
+---------------------------------------
+
+This series presents short discussions about common logical and
+non-linear modeling tasks.
+
+MP Modeling Series #1: a disjunction
+****************************************
+
+Assume the following constraint:
+at most one of two variables *x*, *y* can be positive.
+For the new MP Library-based drivers (gurobi, highs, copt),
+as well as for Constraint Programming solvers (ilogcp, gecode, jacop),
+this goes via AMPL logical operators:
+
+.. code-block:: ampl
+
+     x <= 0 or y <= 0.
+
+
+Complete examples implementing this constraint in different ways:
+
+1) With MP or CP, using the *or* operator:
+
+   .. code-block:: ampl
+
+        var x >= -1000 <= 1000;
+        var y >= -1000 <= 1000;
+        maximize obj: x + y;
+        s.t. c1: x <= 0 or y <= 0;
+        option solver gurobi;
+        solve;
+        display x, y;
+        option solver highs;
+        solve;
+        display x, y;
+
+
+2) With MP, using implication:
+
+   .. code-block:: ampl
+
+        var x >= -1000 <= 1000;
+        var y >= -1000 <= 1000;
+        maximize obj: x + y;
+        s.t. c1: x > 0 ==> y <= 0;
+
+
+3) Without MP:
+
+   .. code-block:: ampl
+
+        var x >= -1000 <= 1000;
+        var y >= -1000 <= 1000;
+        var xx binary;
+        var yy binary;
+        maximize obj: x + y;
+        s.t. c1: x <= xx1000;
+        s.t. c2: y <= yy1000;
+        s.t. c3: xx+yy <= 1;
+        option solver gurobiasl;
+        solve;
+        display x, y;
+        option solver highs;
+        solve;
+        display x, y;

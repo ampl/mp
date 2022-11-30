@@ -1,10 +1,12 @@
-Summary of recent updates to x-gurobi for AMPL
+Summary of recent updates to gurobi for AMPL
 ==============================================
 
 ## 20221113
 - *Gurobi 10.0 support*
     Options 'lim:mem', 'lim:softmem', 'mip:obbt' and  'alg:networkalg'
     Added option tech:writepresolvedprob to export the presolved model
+- *Released the new MP-based Gurobi driver*
+    The new driver becomes the default (and is named just 'gurobi')
 
 ## 20221012
 - *Piecewise-linear approximation of quadratics*

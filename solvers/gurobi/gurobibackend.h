@@ -30,7 +30,7 @@ public:
   ////////////////////////////////////////////////////////////
 
   /// Name displayed in messages
-  static const char* GetSolverName() { return "x-Gurobi"; }
+  static const char* GetSolverName() { return "Gurobi"; }
   /// Version
   static std::string GetSolverVersion();
   /// Use 'gurobi_options'

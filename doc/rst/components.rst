@@ -497,7 +497,7 @@ option (WIP).
 
 At the moment only arcs are exported. Terminal nodes (variables, constraints,
 objectives) can be seen in the NL model (ampl: ``expand``) and the
-final flat model (x-gurobi: option ``writeprob``).
+final flat model (gurobi: option ``writeprob``).
 
 
 C++ ASL adapter

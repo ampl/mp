@@ -16,12 +16,12 @@ For example, ``max(a, b)`` is translated into a constraint meaning
 MIP or passed to the solver natively (Gurobi: `GRBaddgenconstrMax`).
 See the :ref:`modeling-guide`.
 
-There are several experimental implementations:
+There are several implementations:
 
-- `x-gurobi <https://github.com/ampl/mp/tree/develop/solvers/gurobi>`_
+- `gurobi <https://github.com/ampl/mp/tree/develop/solvers/gurobi>`_
   (available in the AMPL distribution bundle)
 
-- `x-cplex <https://github.com/ampl/mp/tree/develop/solvers/cplexmp>`_
+- `cplexmp <https://github.com/ampl/mp/tree/develop/solvers/cplexmp>`_
 
 - `copt <https://github.com/ampl/mp/tree/develop/solvers/copt>`_
   (available in the AMPL distribution bundle)
