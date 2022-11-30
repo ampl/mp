@@ -6,6 +6,6 @@ Developer documentation
    
    Library introduction <intro>
    howto
-   API <components>
+   API manual <components>
    testing
    details
