@@ -147,6 +147,7 @@ class MockProblemBuilder {
 
   MOCK_METHOD0(num_vars, int ());
   MOCK_METHOD0(num_algebraic_cons, int ());
+  MOCK_METHOD0(num_logical_cons, int ());
 
   MOCK_METHOD1(SetInfo, void (const mp::ProblemInfo &info));
   MOCK_METHOD0(EndBuild, void ());
@@ -339,6 +340,7 @@ class MockProblemBuilder {
                Expr (LogicalExpr condition, Expr then_expr, Expr else_expr));
 
   MOCK_METHOD0(problem, MockProblemBuilder &());
+
 };
 
 #endif  // MP_MOCK_PROBLEM_BUILDER_H_

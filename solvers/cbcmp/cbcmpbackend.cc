@@ -138,6 +138,8 @@ void CbcmpBackend::Solve() {
   if (!storedOptions_.exportFile_.empty()) {
     ExportModel(storedOptions_.exportFile_);
   }
+  if (storedOptions_.timeLimit_ != 0)
+    Cbc_setMaximumSeconds(lp(), storedOptions_.timeLimit_);
   CBCMP_CCALL(Cbc_solve(lp()));
   WindupCBCMPSolve();
 }
@@ -232,7 +234,7 @@ static const mp::OptionValueInfo lp_values_method[] = {
   { "1", "Dual simplex", 1},
   { "2", "Barrier", 2},
   { "3", "Crossover", 3},
-  { "4", "Concurrent (simplex and barrier simultaneously)", 4},
+  { "4", "Concurrent (simplex and barrier simultaneously)", 4}
 };
 
 
@@ -256,9 +258,337 @@ static const mp::OptionValueInfo lp_barorder_values_[] = {
   { "1", "Nested Dissection (ND)", 1}
 };
 
+static const mp::OptionValueInfo offon_values_[] = {
+{"off", "Turn off", 0},
+{"on", "Turn on", 0}
+};
+
+static const mp::OptionValueInfo biasLU_values_[] = {
+{"UU", "", 0},
+{"UX", "", 0},
+{"LX", "", 0},
+{"LL", "", 0}
+};
+
+static const mp::OptionValueInfo bscale_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"off1", "", 0},
+{"on1", "", 0},
+{"off2", "", 0},
+{"on2", "", 0}
+};
+
+static const mp::OptionValueInfo cholesky_values_[] = {
+{"native", "", 0},
+{"dense", "", 0},
+{"fudgeLong_dummy", "", 0},
+{"wssmp_dummy", "", 0},
+{"UniversityOfFlorida_dummy", "", 0},
+{"Taucs_dummy", "", 0},
+{"Mumps_dummy", "", 0},
+{"Pardiso_dummy", "", 0}
+};
+
+static const mp::OptionValueInfo OffOnBothBefore_values_[] = {
+{"off", "disabled", 0},
+{"on", "use every node in the tree", 0},
+{"both", "", 0},
+{"before", "", 0}
+};
+static const mp::OptionValueInfo OffOnBothBeforeOften_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"both", "", 0},
+{"before", "", 0},
+{"often", "", 0}
+};
+
+static const mp::OptionValueInfo VndVariableNeighborhoodSearch_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"both", "", 0},
+{"before", "", 0},
+{"intree", "", 0}
+};
+
+static const mp::OptionValueInfo combineSolutions_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"both", "", 0},
+{"before", "", 0},
+{"onquick", "", 0},
+{"bothquick", "", 0},
+{"beforequick", "", 0}
+};
+
+static const mp::OptionValueInfo constraintfromCutoff_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"variable", "", 0},
+{"forcevariable", "", 0},
+{"conflict", "", 0}
+};
+
+static const mp::OptionValueInfo costStrategy_values_[] = {
+{"off", "", 0},
+{"priorities", "", 0},
+{"columnOrder", "", 0},
+{"01first", "", 0},
+{"01last", "", 0},
+{"length", "", 0},
+{"singletons", "", 0},
+{"nonzero", "", 0},
+{"generalForce", "", 0}
+};
+
+static const mp::OptionValueInfo crossover_values_[] = {
+{"on", "", 0},
+{"off", "", 0},
+{"maybe", "", 0},
+{"presolve", "", 0}
+};
+
+static const mp::OptionValueInfo dualPivot_values_[] = {
+{"automatic", "", 0},
+{"dantzig", "", 0},
+{"partial", "", 0},
+{"steepest", "", 0},
+{"PEsteepest", "", 0},
+{"PEdantzig", "", 0}
+};
+
+static const mp::OptionValueInfo primalPivot_values_[] = {
+{"auto!matic", "", 0},
+{"exact", "", 0},
+{"dantzig", "", 0},
+{"partial", "", 0},
+{"steepest", "", 0},
+{"change", "", 0},
+{"sprint", "", 0},
+{"PEsteepest", "", 0},
+{"PEdantzig", "", 0}
+};
+
+
+static const mp::OptionValueInfo factorization_values_[] = {
+{"normal", "", 0},
+{"dense", "", 0},
+{"simple", "", 0},
+{"osl", "", 0}
+};
+
+static const mp::OptionValueInfo gammadelta_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"gamma", "", 0},
+{"delta", "", 0},
+{"onstrong", "", 0},
+{"gammastrong", "", 0},
+{"deltastrong", "", 0}
+};
+
+
+
+
+static const mp::OptionValueInfo cutsOnOff_values_[] = {
+{"off", "disabled", 0},
+{"on", "enabled", 0},
+{"root", "enabled only on root node", 0},
+{"ifmove", "enabled in the tree if it moves the objective value", 0},
+{"forceOn", "enabled at every node", 0}
+};
+
+
+static const mp::OptionValueInfo cutsToOnGlobal[] = {
+{"off", "disabled", 0},
+{"on", "enabled", 0},
+{"root", "enabled only on root node", 0},
+{"ifmove", "enabled in the tree if it moves the objective value", 0},
+{"forceOn", "enabled at every node", 0},
+{"onglobal", "", 0}
+};
+
+static const mp::OptionValueInfo reduce2AndSplitCuts_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"root", "", 0},
+{"longOn", "", 0},
+{"longRoot", "", 0}
+};
+
+
+
+static const mp::OptionValueInfo knapsackCuts_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"root", "", 0},
+{"ifmove", "", 0},
+{"forceOn", "", 0},
+{"onglobal", "", 0},
+{"forceandglobal", "", 0}
+};
+static const mp::OptionValueInfo gomoryCuts_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"root", "", 0},
+{"ifmove", "", 0},
+{"forceOn", "", 0},
+{"onglobal", "", 0},
+{"forceandglobal", "", 0},
+{"forceLongOn", "", 0},
+{"long", "", 0}
+};
+
+static const mp::OptionValueInfo GMICuts_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"root", "", 0},
+{"ifmove", "", 0},
+{"forceOn", "", 0},
+{"endonly", "", 0},
+{"long", "", 0},
+{"longroot", "", 0},
+{"longifmove", "", 0},
+{"forceLongOn", "", 0},
+{"longendonly", "", 0}
+};
+static const mp::OptionValueInfo twoMirCuts_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"root", "", 0},
+{"ifmove", "", 0},
+{"forceOn", "", 0},
+{"onglobal", "", 0},
+{"forceandglobal", "", 0},
+{"forceLongOn", "", 0}
+};
+
+static const mp::OptionValueInfo latwomirCuts_values_[] = {
+{"off", "", 0},
+{"endonlyroot", "", 0},
+{"endcleanroot", "", 0},
+{"endbothroot", "", 0},
+{"endonly", "", 0},
+{"endclean", "", 0},
+{"endboth", "", 0},
+{"onlyaswell", "", 0},
+{"cleanaswell", "", 0},
+{"bothaswell", "", 0},
+{"onlyinstead", "", 0},
+{"cleaninstead", "", 0},
+{"bothinstead", "", 0}
+};
+
+
+static const mp::OptionValueInfo lagomoryCuts_values_[] = {
+{"off", "", 0},
+{"endonlyroot", "", 0},
+{"endcleanroot", "", 0},
+{"root", "", 0},
+{"endonly", "", 0},
+{"endclean", "", 0},
+{"endboth", "", 0},
+{"onlyaswell", "", 0},
+{"cleanaswell", "", 0},
+{"bothaswell", "", 0},
+{"onlyinstead", "", 0},
+{"cleaninstead", "", 0},
+{"bothinstead", "", 0},
+{"onlyaswellroot", "", 0},
+{"cleanaswellroot", "", 0},
+{"bothaswellroot", "", 0}
+};
+
+
+static const mp::OptionValueInfo probingCuts_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"root", "", 0},
+{"ifmove", "", 0},
+{"forceOn", "", 0},
+{"onglobal", "", 0},
+{"forceonglobal", "", 0},
+{"forceOnBut", "", 0},
+{"forceOnStrong", "", 0},
+{"forceOnButStrong", "", 0},
+{"strongRoot", "", 0}
+};
+
+static const mp::OptionValueInfo nodeStrategy_values_[] = {
+{"hybrid", "", 0},
+{"fewest", "", 0},
+{"depth", "", 0},
+{"upfewest", "", 0},
+{"downfewest", "", 0},
+{"updepth", "", 0},
+{"downdepth", "", 0}
+};
+
+
+static const mp::OptionValueInfo presolve_values_[] = {
+{"on", "", 0},
+{"off", "", 0},
+{"more", "", 0},
+{"file", "", 0}
+};
+
+
+static const mp::OptionValueInfo preprocess_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"save", "", 0},
+{"equal", "", 0},
+{"sos", "", 0},
+{"trysos", "", 0},
+{"equalall", "", 0},
+{"strategy", "", 0},
+{"aggregate", "", 0},
+{"forcesos", "", 0},
+{"stopaftersaving", "", 0}
+};
+
+static const mp::OptionValueInfo proximitySearch_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"both", "", 0},
+{"before", "", 0},
+{"10", "", 0},
+{"100", "", 0},
+{"300", "", 0}
+};
+
+static const mp::OptionValueInfo Rens_values_[] = {
+{"off", "", 0},
+{"on", "", 0},
+{"both", "", 0},
+{"before", "", 0},
+{"200", "", 0},
+{"1000", "", 0},
+{"10000", "", 0},
+{"dj", "", 0},
+{"djbefore", "", 0},
+{"usesolution", "", 0}
+};
+
+
+
+static const mp::OptionValueInfo scaling_values_[] = {
+{"off", "", 0},
+{"equilibrium", "", 0},
+{"geometric", "", 0},
+{"automatic", "", 0},
+{"dynamic", "", 0},
+{"rowsonly", "", 0}
+};
+
+
 void CbcmpBackend::InitCustomOptions() {
 
-  
+  // Uncomment to print the whole list of CBC parameters - from cbc
+  // Useful when updating the list of params in the driver.
+  // GetCBCParamsList();
+
   set_option_header(
       "CBCMP Optimizer Options for AMPL\n"
       "--------------------------------------------\n"
@@ -281,16 +611,388 @@ void CbcmpBackend::InitCustomOptions() {
 
   _options.addOption("timelimit", Cbc_setMaximumSeconds);
 
-}
+  std::string name;
+  std::string desc;
+  mp::OptionValueInfo k;
+  for (auto p : lp()->cbcData->parameters_)
+  {
+    //   p.printString();
+    //fmt::print(p.name());
+
+    if (p.type() >= CLP_PARAM_DBL_PRIMALTOLERANCE &&
+      p.type() <= CBC_PARAM_DBL_DEXTRA5) {
+      if (p.type() == CBC_PARAM_DBL_DEXTRA5)
+        name = "double:dextra5 dextra5";
+      else
+        name = fmt::format("double:{} {}", p.name(), p.name());
+      desc = fmt::format("{} (default {}).", p.shortHelp(), p.doubleValue());
+      AddSolverOption(name.c_str(), desc.c_str(), p.name().c_str(),
+        p.lowerDoubleValue(), p.upperDoubleValue());
+    }
+    else if (p.type() >= CLP_PARAM_INT_SOLVERLOGLEVEL &&
+      p.type() <= CBC_PARAM_INT_MOREMOREMIPOPTIONS)
+    {
+      name = fmt::format("int:{} {}", p.name(), p.name());
+      desc = fmt::format("{} (default {}).", p.shortHelp(), p.intValue());
+      AddSolverOption(name.c_str(), desc.c_str(), p.name().c_str(),
+        p.lowerIntValue(), p.upperIntValue());
+    }
+    // String options are dealt with separately
+  }
+
+  AddStoredOption("lim:time timelim timelimit",
+    "Limit on solve time (in seconds; default: no limit).",
+    storedOptions_.timeLimit_);
+  AddSolverOption("pre:autoScale",
+    "Whether to scale objective, rhs and bounds of problem if they look odd:\n"
+    "\n.. value-table::\n",
+    "autoScale", offon_values_, "off");
+
+   AddSolverOption("pre:scaling scaling",
+    "Whether to scale problem\n"
+    "\n.. value-table::\n",
+    "scaling", scaling_values_, "NULL");
+
+  AddSolverOption("pre:biasLU",
+    "Whether factorization biased towards U:\n"
+    "\n.. value-table::\n",
+    "biasLU", biasLU_values_, "UX");
+
+
+  // ******************** HEURISTICS ********************
+  AddSolverOption("mip:combineSolutions combineSolutions",
+    "Whether to use combine solution heuristic\n"
+    "\n.. value-table::\n",
+    "combineSolutions", combineSolutions_values_, "NULL");
+
+  AddSolverOption("mip:combine2Solutions combine2Solutions",
+    "Whether to use crossover solution heuristic\n"
+    "\n.. value-table::\n",
+    "combine2Solutions", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:dins Dins",
+    "Whether to try Distance Induced Neighborhood Search\n"
+    "\n.. value-table::\n",
+    "Dins", OffOnBothBeforeOften_values_, "NULL");
+
+  AddSolverOption("mip:divingsome DivingSome",
+    "Whether to try Diving heuristics\n"
+    "\n.. value-table::\n",
+    "DivingSome", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:divingcoefficient DivingCoefficient",
+    "Whether to try Coefficient diving heuristic\n"
+    "\n.. value-table::\n",
+    "DivingCoefficient", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:divingfractional DivingFractional",
+    "Whether to try Fractional diving heuristic\n"
+    "\n.. value-table::\n",
+    "DivingFractional", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:divingguided DivingGuided",
+    "Whether to try Guided diving heuristic\n"
+    "\n.. value-table::\n",
+    "DivingGuided", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:divinglinesearch DivingLineSearch",
+    "Whether to try Linesearch diving heuristic\n"
+    "\n.. value-table::\n",
+    "DivingLineSearch", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:divingpseudocost DivingPseudoCost",
+    "Whether to try Pseudocost diving heuristic\n"
+    "\n.. value-table::\n",
+    "DivingPseudoCost", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:divingvectorlength DivingVectorLength",
+    "Whether to try Vectorlength diving heuristic\n"
+    "\n.. value-table::\n",
+    "DivingVectorLength", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:dwHeuristic dwHeuristic",
+    "Whether to try Dantzig Wolfe heuristic\n"
+    "\n.. value-table::\n",
+    "dwHeuristic", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:feasibilitypumpfeasibilityPump",
+    "Whether to try the Feasibility Pump heuristic\n"
+    "\n.. value-table::\n",
+    "feasibilityPump", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:greedyheuristic greedyHeuristic",
+    "Whether to use a greedy heuristic\n"
+    "\n.. value-table::\n",
+    "greedyHeuristic", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:naiveheuristics naiveHeuristics",
+    "Whether to try some stupid heuristic\n"
+    "\n.. value-table::\n",
+    "naiveHeuristics", OffOnBothBefore_values_, "NULL");
+
+
+  AddSolverOption("mip:pivotandcomplement pivotAndComplement",
+    "Whether to try Pivot and Complement heuristic\n"
+    "\n.. value-table::\n",
+    "pivotAndComplement", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:pivotandfix pivotAndFix",
+    "Whether to try Pivot and Fix heuristic\n"
+    "\n.. value-table::\n",
+    "pivotAndFix", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:randomizedrounding randomizedRounding",
+    "Whether to try randomized rounding heuristic\n"
+    "\n.. value-table::\n",
+    "randomizedRounding", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:rens Rens",
+    "Whether to try Relaxation Enforced Neighborhood Search\n"
+    "\n.. value-table::\n",
+    "Rens", Rens_values_, "NULL");
+
+
+  AddSolverOption("mip:rins Rins",
+    "Whether to try Relaxed Induced Neighborhood Search\n"
+    "\n.. value-table::\n",
+    "Rins", OffOnBothBeforeOften_values_, "NULL");
+
+  AddSolverOption("mip:roundingheuristic roundingHeuristic",
+    "Whether to use simple (but effective) Rounding heuristic\n"
+    "\n.. value-table::\n",
+    "roundingHeuristic", OffOnBothBefore_values_, "NULL");
+
+  AddSolverOption("mip:vndvariableneighborhoodsearch VndVariableNeighborhoodSearch",
+    "Whether to try Variable Neighborhood Search\n"
+    "\n.. value-table::\n",
+    "VndVariableNeighborhoodSearch", VndVariableNeighborhoodSearch_values_, "NULL");
+
+  AddSolverOption("mip:heuristics heuristicsOnOff",
+    "Switches most primal heuristics on or off\n"
+    "\n.. value-table::\n",
+    "heuristicsOnOff", offon_values_, "NULL");
+
+  // ******************** END HEURISTICS ********************
+
+
+  AddSolverOption("bar:bscale bscale",
+    "Whether to scale in barrier (and ordering speed)\n"
+    "\n.. value-table::\n",
+    "bscale", bscale_values_, "NULL");
+
+  AddSolverOption("bar:cholesky cholesky",
+    "Which cholesky algorithm\n"
+    "\n.. value-table::\n",
+    "cholesky", cholesky_values_, "NULL");
+
+
+
+  AddSolverOption("mip:constraintfromCutoff constraintfromCutoff",
+    "Whether to use cutoff as constraint\n"
+    "\n.. value-table::\n",
+    "constraintfromCutoff", constraintfromCutoff_values_, "NULL");
+
+  AddSolverOption("mip:costStrategy costStrategy",
+    "How to use costs for branching priorities\n"
+    "\n.. value-table::\n",
+    "costStrategy", costStrategy_values_, "NULL");
+
+  AddSolverOption(":cplexUse cplexUse",
+    "Whether to use Cplex!\n"
+    "\n.. value-table::\n",
+    "cplexUse", offon_values_, "NULL");
+
+  AddSolverOption("bar:crash crash",
+    "Whether to create basis for problem\n"
+    "\n.. value-table::\n",
+    "crash", offon_values_, "NULL");
+
+  AddSolverOption("bar:crossover crossover",
+    "Whether to get a basic solution with the simplex algorithm after the barrier algorithm finished\n"
+    "\n.. value-table::\n",
+    "crossover", crossover_values_, "NULL");
+
+  AddSolverOption("cut:cut cutsOnOff",
+    "Switches all cut generators on or off\n"
+    "\n.. value-table::\n",
+    "cutsOnOff", cutsOnOff_values_, "NULL");
+
+  AddSolverOption("cut:probingCuts probingCuts",
+    "Whether to use Probing cuts\n"
+    "\n.. value-table::\n",
+    "probingCuts", probingCuts_values_, "NULL");
+
+
+  AddSolverOption("lp:dualpivot dualPivot",
+    "Dual pivot choice algorithm\n"
+    "\n.. value-table::\n",
+    "dualPivot", dualPivot_values_, "NULL");
+  
+  AddSolverOption("lp:primalpivot primalPivot",
+    "Primal pivot choice algorithm\n"
+    "\n.. value-table::\n",
+    "primalPivot", primalPivot_values_, "NULL");
+
+
+  AddSolverOption("pre:factorization factorization",
+    "Which factorization to use\n"
+    "\n.. value-table::\n",
+    "factorization", factorization_values_, "NULL");
+
+  AddSolverOption("pre:sparsefactor sparseFactor",
+    "Whether factorization treated as sparse\n"
+    "\n.. value-table::\n",
+    "sparseFactor", offon_values_, "NULL");
+
+
+
+
+  // ******************** CUTS ********************
+  AddSolverOption("cut:cliqueCuts cliqueCuts",
+    "Whether to use Clique cuts\n"
+    "\n.. value-table::\n",
+    "cliqueCuts", cutsToOnGlobal, "NULL");
+
+  AddSolverOption("cut:flowcovercuts flowCoverCuts",
+    "Whether to use Flow Cover cuts\n"
+    "\n.. value-table::\n",
+    "flowCoverCuts", cutsToOnGlobal, "NULL");
+
+  AddSolverOption("cut:gmicuts GMICuts",
+    "Whether to use alternative Gomory cuts\n"
+    "\n.. value-table::\n",
+    "GMICuts", GMICuts_values_, "NULL");
+
+  AddSolverOption("cut:gomorycuts gomoryCuts",
+    "Whether to use Gomory cuts\n"
+    "\n.. value-table::\n",
+    "gomoryCuts", gomoryCuts_values_, "NULL");
+
+  AddSolverOption("cut:knapsackcuts knapsackCuts",
+    "Whether to use Knapsack cuts\n"
+    "\n.. value-table::\n",
+    "knapsackCuts", knapsackCuts_values_, "NULL");
+
+  AddSolverOption("cut:lagomorycuts lagomoryCuts",
+    "Whether to use Lagrangean Gomory cuts\n"
+    "\n.. value-table::\n",
+    "lagomoryCuts", lagomoryCuts_values_, "NULL");
+
+  AddSolverOption("cut:latwomircuts latwomirCuts",
+    "Whether to use Lagrangean TwoMir cuts\n"
+    "\n.. value-table::\n",
+    "latwomirCuts", latwomirCuts_values_, "NULL");
+
+  AddSolverOption("cut:liftandprojectcuts liftAndProjectCuts",
+    "Whether to use Lift and Project cuts\n"
+    "\n.. value-table::\n",
+    "liftAndProjectCuts", cutsOnOff_values_, "NULL");
+
+  AddSolverOption(":mixedIntegerRoundingCuts mixedIntegerRoundingCuts",
+    "Whether to use Mixed Integer Rounding cuts\n"
+    "\n.. value-table::\n",
+    "mixedIntegerRoundingCuts", cutsToOnGlobal, "NULL");
+
+  AddSolverOption("cut:reduceandsplitcuts reduceAndSplitCuts",
+    "Whether to use Reduce-and-Split cuts\n"
+    "\n.. value-table::\n",
+    "reduceAndSplitCuts", cutsOnOff_values_, "NULL");
+
+  AddSolverOption("cut:reduce2andsplitcts reduce2AndSplitCuts",
+    "Whether to use Reduce-and-Split cuts - style 2\n"
+    "\n.. value-table::\n",
+    "reduce2AndSplitCuts", reduce2AndSplitCuts_values_, "NULL");
+
+  AddSolverOption("cut:residualcapacitycuts residualCapacityCuts",
+    "Whether to use Residual Capacity cuts\n"
+    "\n.. value-table::\n",
+    "residualCapacityCuts", cutsOnOff_values_, "NULL");
+
+  AddSolverOption("cut:twomircuts twoMirCuts",
+    "Whether to use Two phase Mixed Integer Rounding cuts\n"
+    "\n.. value-table::\n",
+    "twoMirCuts", twoMirCuts_values_, "NULL");
+
+  AddSolverOption("cut:zeroHalfCuts zeroHalfCuts",
+    "Whether to use zero half cuts\n"
+    "\n.. value-table::\n",
+    "zeroHalfCuts", cutsToOnGlobal, "NULL");
+
+  AddSolverOption("bar:gammadelta gamma(Delta)",
+    "Whether to regularize barrier\n"
+    "\n.. value-table::\n",
+    "gamma(Delta)", gammadelta_values_, "NULL");
+
+
+
+
+
+
+  AddSolverOption("bar:kkt KKT",
+    "Whether to use KKT factorization in barrier\n"
+    "\n.. value-table::\n",
+    "KKT", offon_values_, "NULL");
+
+
+  AddSolverOption("mip:localtreesearch localTreeSearch",
+    "Whether to use local tree search when a solution is found\n"
+    "\n.. value-table::\n",
+    "localTreeSearch", offon_values_, "NULL");
+
+
+  AddSolverOption("tech:messages messages",
+    "Controls if Clpnnnn is printed\n"
+    "\n.. value-table::\n",
+    "messages", offon_values_, "NULL");
+
+
+
+  AddSolverOption("mip:nodestrategy nodeStrategy",
+    "What strategy to use to select the next node from the branch and cut tree\n"
+    "\n.. value-table::\n",
+    "nodeStrategy", nodeStrategy_values_, "NULL");
+
+
+  AddSolverOption("alg:perturbation perturbation",
+    "Whether to perturb the problem\n"
+    "\n.. value-table::\n",
+    "perturbation", offon_values_, "NULL");
+
+  AddSolverOption("lp:pfi PFI",
+    "Whether to use Product Form of Inverse in simplex\n"
+    "\n.. value-table::\n",
+    "PFI", offon_values_, "NULL");
+
+
+  AddSolverOption("pre:presolve presolve",
+    "Whether to presolve problem\n"
+    "\n.. value-table::\n",
+    "presolve", presolve_values_, "NULL");
+
+
+  AddSolverOption("pre:preprocess preprocess",
+    "Whether to use integer preprocessing\n"
+    "\n.. value-table::\n",
+    "preprocess", preprocess_values_, "NULL");
+  
+
+  AddSolverOption("mip:proximitysearch proximitySearch",
+    "Whether to do proximity search heuristic\n"
+    "\n.. value-table::\n",
+    "proximitySearch", proximitySearch_values_, "NULL");
+ }
 
 
 double CbcmpBackend::MIPGap() {
-  return 0;
-//  return getDblAttr(CBCMP_DBLATTR_BESTGAP);
+  if (!ObjectiveValue() == 0)
+    return MIPGapAbs() / std::fabs(ObjectiveValue());
+  return Infinity();
 }
 double CbcmpBackend::BestDualBound() {
-  return 0;
-  //return getDblAttr(CBCMP_DBLATTR_BESTBND);
+  if (!IsMIP())
+    return ObjectiveValue();
+  // Todo: Check for objective constant
+  return Cbc_getBestPossibleObjValue(lp());
 }
 
 double CbcmpBackend::MIPGapAbs() {
@@ -298,140 +1000,23 @@ double CbcmpBackend::MIPGapAbs() {
     ObjectiveValue() - BestDualBound());
 }
 
-
-ArrayRef<int> CbcmpBackend::VarStatii() {
-  
-  std::vector<int> vars(NumVars());
-  /*
-  CBCMP_GetBasis(lp(), vars.data(), NULL);
-  for (auto& s : vars) {
-    switch (s) {
-    case CBCMP_BASIS_BASIC:
-      s = (int)BasicStatus::bas;
-      break;
-    case CBCMP_BASIS_LOWER:
-      s = (int)BasicStatus::low;
-      break;
-    case CBCMP_BASIS_UPPER:
-      s = (int)BasicStatus::upp;
-      break;
-    case CBCMP_BASIS_SUPERBASIC:
-      s = (int)BasicStatus::sup;
-      break;
-    case CBCMP_BASIS_FIXED:
-      s = (int)BasicStatus::equ;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown Cbcmp VBasis value: {}", s));
-    }
-  }
-  */
-  return vars;
+void OsiToMP(std::vector<int>& b) {
+  int map[] =
+  {
+    (int)BasicStatus::sup,
+    (int)BasicStatus::bas,
+    (int)BasicStatus::low,
+    (int)BasicStatus::upp
+  };
+  for (auto& s : b) 
+    s = map[s];
 }
-
-ArrayRef<int> CbcmpBackend::ConStatii() {
-
-  std::vector<int> cons(NumLinCons());
-  /*
-  CBCMP_GetBasis(lp(), NULL, cons.data());
-  for (auto& s : cons) {
-    switch (s) {
-    case CBCMP_BASIS_BASIC:
-      s = (int)BasicStatus::bas;
-      break;
-    case CBCMP_BASIS_LOWER:
-      s = (int)BasicStatus::low;
-      break;
-    case CBCMP_BASIS_UPPER:
-      s = (int)BasicStatus::upp;
-      break;
-    case CBCMP_BASIS_SUPERBASIC:
-      s = (int)BasicStatus::sup;
-      break;
-    case CBCMP_BASIS_FIXED:
-      s = (int)BasicStatus::equ;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown Cbcmp VBasis value: {}", s));
-    }
-  }*/
-  return cons;
-}
-
-void CbcmpBackend::VarStatii(ArrayRef<int> vst) {
-  int index[1];
-  std::vector<int> stt(vst.data(), vst.data() + vst.size());
-  /*
-  for (auto j = stt.size(); j--; ) {
-    auto& s = stt[j];
-    switch ((BasicStatus)s) {
-    case BasicStatus::bas:
-      s = CBCMP_BASIS_BASIC;
-      break;
-    case BasicStatus::low:
-      s = CBCMP_BASIS_LOWER;
-      break;
-    case BasicStatus::equ:
-      s = CBCMP_BASIS_FIXED;
-      break;
-    case BasicStatus::upp:
-      s = CBCMP_BASIS_UPPER;
-      break;
-    case BasicStatus::sup:
-    case BasicStatus::btw:
-      s = CBCMP_BASIS_SUPERBASIC;
-      break;
-    case BasicStatus::none:
-      /// 'none' is assigned to new variables. Compute low/upp/sup:
-      /// Depending on where 0.0 is between bounds
-      double lb, ub;
-      index[0] = (int)j;
-      if(!CBCMP_GetColInfo(lp(), CBCMP_DBLINFO_LB, 1, index, &lb) && 
-        !CBCMP_GetColInfo(lp(), CBCMP_DBLINFO_UB, 1, index, &ub))
-      { 
-        if (lb >= -1e-6)
-          s = -1;
-        else if (ub <= 1e-6)
-          s = -2;
-        else
-          s = -3;  // or, leave at 0?
-      }
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
-    }
-  }
-  CBCMP_SetBasis(lp(), stt.data(), NULL);
-  */
-}
-
-void CbcmpBackend::ConStatii(ArrayRef<int> cst) {
-  /*
-  std::vector<int> stt(cst.data(), cst.data() + cst.size());
-  for (auto& s : stt) {
-    switch ((BasicStatus)s) {
-    case BasicStatus::bas:
-      s = CBCMP_BASIS_BASIC;
-      break;
-    case BasicStatus::none:   // for 'none', which is the status
-    case BasicStatus::upp:    // assigned to new rows, it seems good to guess
-    case BasicStatus::sup:    // a valid status.
-    case BasicStatus::low:    // 
-    case BasicStatus::equ:    // For active constraints, it is usually 'sup'.
-    case BasicStatus::btw:    // We could compute slack to decide though.
-      s = CBCMP_BASIS_SUPERBASIC;
-      break;
-    default:
-      MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
-    }
-  }
-  CBCMP_SetBasis(lp(), NULL, stt.data());
-  */
-}
-
 SolutionBasis CbcmpBackend::GetBasis() {
-  std::vector<int> varstt = VarStatii();
-  std::vector<int> constt = ConStatii();
+  std::vector<int> varstt(NumVars());
+  std::vector<int> constt(NumLinCons());
+  lp()->solver_->getBasisStatus(varstt.data(), constt.data());
+  OsiToMP(varstt);
+  OsiToMP(constt);
   if (varstt.size() && constt.size()) {
     auto mv = GetValuePresolver().PostsolveBasis(
       { std::move(varstt),
@@ -443,6 +1028,20 @@ SolutionBasis CbcmpBackend::GetBasis() {
   return { std::move(varstt), std::move(constt) };
 }
 
+void MPToOsi(std::vector<int>& b) {
+  int map[] =
+  {
+    0,  // none
+    1,  // bas
+    0,  // sup
+    2,  // low
+    3,  // upp
+    3, // equ
+    2  // btw
+  };
+  for (auto& s : b)
+    s = map[s];
+}
 void CbcmpBackend::SetBasis(SolutionBasis basis) {
   auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
@@ -450,45 +1049,11 @@ void CbcmpBackend::SetBasis(SolutionBasis basis) {
   auto constt = mv.GetConValues()(CG_Linear);
   assert(varstt.size());
   assert(constt.size());
-  VarStatii(varstt);
-  ConStatii(constt);
+  MPToOsi(varstt);
+  MPToOsi(constt);
+  lp()->solver_->setBasisStatus(varstt.data(), constt.data());
 }
 
-
-void CbcmpBackend::ComputeIIS() {
-  //CBCMP_CCALL(CBCMP_ComputeIIS(lp()));
-  SetStatus(ConvertCBCMPStatus());   // could be new information
-}
-
-IIS CbcmpBackend::GetIIS() {
-  auto variis = VarsIIS();
-  auto coniis = ConsIIS();
-  auto mv = GetValuePresolver().PostsolveIIS(
-    { variis, coniis });
-  return { mv.GetVarValues()(), mv.GetConValues()() };
-}
-
-ArrayRef<int> CbcmpBackend::VarsIIS() {
-  return ArrayRef<int>();
-//  return getIIS(lp(), NumVars(), CBCMP_GetColLowerIIS, CBCMP_GetColUpperIIS);
-}
-pre::ValueMapInt CbcmpBackend::ConsIIS() {
-  /*auto iis_lincon = getIIS(lp(), NumLinCons(), CBCMP_GetRowLowerIIS, CBCMP_GetRowUpperIIS);
-
-  std::vector<int> iis_soscon(NumSOSCons());
-  CBCMP_GetSOSIIS(lp(), NumSOSCons(), NULL, iis_soscon.data());
-  ConvertIIS2AMPL(iis_soscon);
-
-  std::vector<int> iis_indicon(NumIndicatorCons());
-  CBCMP_GetIndicatorIIS(lp(), NumIndicatorCons(), NULL, iis_indicon.data());
-  ConvertIIS2AMPL(iis_indicon);
-
-  return { {{ CG_Linear, iis_lincon },
-      { CG_SOS, iis_soscon },
-      { CG_Logical, iis_indicon }} };
-      */
-  return { {{ 0, std::vector<int>()}} };
-}
 
 void CbcmpBackend::AddMIPStart(ArrayRef<double> x0) {
   //CBCMP_CCALL(CBCMP_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
@@ -498,8 +1063,7 @@ void CbcmpBackend::AddMIPStart(ArrayRef<double> x0) {
 
 } // namespace mp
 
-
-// AMPLs
+  // AMPLs
 AMPLS_MP_Solver* AMPLSOpenCbcmp(
   const char* slv_opt, CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::CbcmpBackend()},

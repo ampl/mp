@@ -6,8 +6,6 @@
 
 namespace mp {
 
-/// Defining the function in ...modelapi.cc
-/// for recompilation speed
 std::unique_ptr<BasicModelManager>
 CreateCbcmpModelMgr(CbcmpCommon& cc, Env& e,
                      pre::BasicValuePresolver*& pPre) {
@@ -18,10 +16,6 @@ CreateCbcmpModelMgr(CbcmpCommon& cc, Env& e,
 
 void CbcmpModelAPI::InitProblemModificationPhase(
     const FlatModelInfo*) {
-  // Allocate storage if needed:
-  // auto n_linear_cons =
-  //   flat_model_info->GetNumberOfConstraintsOfGroup(CG_LINEAR);
-  // preallocate_linear_cons( n_linear_cons );
 }
 
 void CbcmpModelAPI::AddVariables(const VarArrayDef& v) {
@@ -42,23 +36,6 @@ void CbcmpModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   }
 }
 
-
-void CbcmpModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
-  if (1 > iobj) {
-    fmt::format("Setting first quadratic objective\n");
-    SetLinearObjective(iobj, qo);                         // add the linear part
-    const auto& qt = qo.GetQPTerms();
-    fmt::format("Quadratic part is made of {} terms\n", qt.size());
-
-    // Typical implementation
-    //CBCMP_CCALL(CBCMP_SetQuadObj(lp(), qt.size(),
-    //  (int*)qt.pvars1(), (int*)qt.pvars2(),
-    //  (double*)qt.pcoefs()));
-  }
-  else {
-    throw std::runtime_error("Multiple quadratic objectives not supported");
-  }
-}
 
 
 void CbcmpModelAPI::AddConstraint(const LinConLE& lc) {

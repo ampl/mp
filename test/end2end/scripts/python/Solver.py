@@ -667,6 +667,25 @@ class XPRESSDirectSolver(MPDirectSolver):
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
+
+
+class CbcMPSolver(MPDirectSolver):
+    def _setLPMethod(self, method : str):
+        m  = "simplex" if method == "SIMPLEX" else "ipm"
+        return f"alg:method {m}"
+
+    def _getAMPLOptionsName(self):
+        return "cbc"
+
+    def _setNThreads(self, threads):
+        return ""
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.quadratic_obj}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+
 class HighsSolver(MPDirectSolver):
     def _setLPMethod(self, method : str):
         m  = "simplex" if method == "SIMPLEX" else "ipm"

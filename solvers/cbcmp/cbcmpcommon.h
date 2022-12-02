@@ -64,7 +64,7 @@ public:
   void GetSolverOption(const char* key, double& value) const;
   void SetSolverOption(const char* key, double value);
   void GetSolverOption(const char* key, std::string& value) const;
-  void SetSolverOption(const char* key, const std::string& value);
+  void SetSolverOption(const char* key, std::string value);
 
   /// TODO Typically solvers define their own infinity; use them here
   static constexpr double Infinity() { return INFINITY;  }
@@ -77,9 +77,7 @@ protected:
   int NumLinCons() const;
   int NumVars() const;
   int NumObjs() const;
-  int NumQPCons() const;
   int NumSOSCons() const;
-  int NumIndicatorCons() const;
 
 protected:
   // TODO if desirable, provide function to create the solver's environment

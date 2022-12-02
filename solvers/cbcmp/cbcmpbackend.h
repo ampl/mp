@@ -9,12 +9,14 @@
 
 namespace mp {
 
+
+
+
 class CbcmpBackend :
     public FlatBackend< MIPBackend<CbcmpBackend> >,
     public CbcmpCommon
 {
   using BaseBackend = FlatBackend< MIPBackend<CbcmpBackend> >;
-
   //////////////////// [[ The public interface ]] //////////////////////
 public:
   CbcmpBackend();
@@ -52,7 +54,7 @@ public:
   /**
   * Get/Set AMPL var/con statii
   **/
-  ALLOW_STD_FEATURE(BASIS, false)
+  ALLOW_STD_FEATURE(BASIS, true)
   // TODO If getting/setting a basis is supported, implement the 
   // accessor and the setter below
   SolutionBasis GetBasis() override;
@@ -82,15 +84,6 @@ public:
   // (adds option mip:bestbound)
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, false)
   double BestDualBound() override;
-
-  /**
-  * Compute the IIS and obtain relevant values
-  **/
-  ALLOW_STD_FEATURE(IIS, false)
-  /// Compute IIS
-  void ComputeIIS() override;
-  /// Retrieve IIS elements
-  IIS GetIIS() override;
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
@@ -146,19 +139,11 @@ protected:
   std::pair<int, std::string> ConvertCBCMPStatus();
   void AddCBCMPMessages();
 
-  ArrayRef<int> VarStatii();
-  ArrayRef<int> ConStatii();
-  void VarStatii(ArrayRef<int>);
-  void ConStatii(ArrayRef<int>);
-
-  ArrayRef<int> VarsIIS();
-  pre::ValueMapInt ConsIIS();
-
-
 private:
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;
+    int timeLimit_ = 0;
   };
   Options storedOptions_;
 

@@ -17,25 +17,23 @@ class CbcmpModelAPI :
   using BaseModelAPI = BasicFlatModelAPI;
 
 public:
-  /// Construct
+  /// Constructor
   CbcmpModelAPI(Env& e) : EnvKeeper(e) { }
 
   /// Class name
   static const char* GetTypeName() { return "CbcmpModelAPI"; }
 
   /// Called before problem input.
-  /// Chanve to allocate storage
   void InitProblemModificationPhase(const FlatModelInfo*);
-  /// After
+  /// After problem input.
   void FinishProblemModificationPhase();
 
-  /// TODO Implement the following functions using the solver's API
   void AddVariables(const VarArrayDef& );
   void SetLinearObjective( int iobj, const LinearObjective& lo );
   /// Whether accepting quadratic objectives:
   /// 0 - no, 1 - convex, 2 - nonconvex
   static int AcceptsQuadObj() { return 0; }
-  void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);
+
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
@@ -64,19 +62,6 @@ public:
   void AddConstraint(const LinConEQ& lc);
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
-
-  /// Ask if the solver accepts non-convex quadratic constraints
-  static constexpr bool AcceptsNonconvexQC() { return false; }
-
-  /// QuadConRange is optional.
-  ACCEPT_CONSTRAINT(QuadConRange, NotAccepted, CG_Quadratic)
-
-  /// If using quadratics,
-  /// QuadCon(LE/EQ/GE) should have 'Recommended'
-  /// and have an implementation.
-  ACCEPT_CONSTRAINT(QuadConLE, NotAccepted, CG_Quadratic)
-  ACCEPT_CONSTRAINT(QuadConEQ, NotAccepted, CG_Quadratic)
-  ACCEPT_CONSTRAINT(QuadConGE, NotAccepted, CG_Quadratic)
 
   /// Linear indicator constraints can be used as
   /// auxiliary constraints for logical conditions.

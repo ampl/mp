@@ -40,6 +40,7 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.XpressSolver(path.join(binPath,"xpress")))
     solvers.addSolver(Solver.XPRESSDirectSolver(path.join(binPath,"xpressmp")))
     solvers.addSolver(Solver.MosekSolver(path.join(binPath,"mosek")))
+    solvers.addSolver(Solver.CbcMPSolver(path.join(binPath, "cbc")))
 
 
 # if __name__ == "__main__":
