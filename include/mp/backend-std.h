@@ -729,8 +729,13 @@ protected:  //////////// Option accessors ////////////////
     return 0;
   }
   std::string export_file_name() const {
-    std::string s;
-    return storedOptions_.export_file_.empty() ? storedOptions_.just_export_file_ : storedOptions_.export_file_;
+    std::string name = storedOptions_.export_file_.empty() ? storedOptions_.just_export_file_ : storedOptions_.export_file_;
+    int offset = 0;
+    if (((name.front() == '"') && (name.back() == '"')) ||
+      ((name.front() == '\'') && (name.back() == '\'')))
+      return name.substr(1, name.length() - 2);
+    else
+      return name;
   }
 
 protected:
