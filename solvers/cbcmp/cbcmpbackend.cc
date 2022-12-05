@@ -122,9 +122,18 @@ int CbcmpBackend::BarrierIterations() const {
   return Cbc_getIterationCount(lp());
 }
 
-void CbcmpBackend::ExportModel(const std::string &file) {
-  // TODO export proper by file extension
-  //CBCMP_CCALL(CBCMP_WriteLp(lp(), file.data()));
+inline bool ends_with(std::string const& value, std::string const& ending)
+{
+  if (ending.size() > value.size()) return false;
+  return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+void CbcmpBackend::DoWriteProblem(const std::string & name) {
+  if (ends_with(name, ".lp"))
+    Cbc_writeLp(lp(), name.c_str());
+  else if (ends_with(name, ".mps"))
+    Cbc_writeMps(lp(), name.c_str());
+  else
+    throw std::runtime_error("Can only export '.lp' or '.mps' files.");
 }
 
 
@@ -135,9 +144,6 @@ void CbcmpBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void CbcmpBackend::Solve() {
-  if (!storedOptions_.exportFile_.empty()) {
-    ExportModel(storedOptions_.exportFile_);
-  }
   if (storedOptions_.timeLimit_ != 0)
     Cbc_setMaximumSeconds(lp(), storedOptions_.timeLimit_);
   CBCMP_CCALL(Cbc_solve(lp()));
@@ -597,12 +603,6 @@ void CbcmpBackend::InitCustomOptions() {
       "AMPL option ``cbcmp_options``. For example::\n"
       "\n"
       "  ampl: option cbcmp_options 'mipgap=1e-6';\n");
-
-  AddStoredOption("tech:exportfile writeprob writemodel",
-      "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
-      "Default = \"\" (don't export the model).",
-      storedOptions_.exportFile_);
 
 
   AddSolverOption("tech:outlev outlev",

@@ -49,6 +49,9 @@ DEFAULT_STD_FEATURES_TO( false )
 #define STD_FEATURE_QUERY_FN AllowStdFeature__func
 #define STD_FEATURE_STRUCT_NM( name ) StdFeatureDesc__ ## name
 
+#define FEATURE_API_TO_IMPLEMENT( name, functionsignature )\
+  virtual functionsignature { throw std::runtime_error("Feature " #name ": Function " #functionsignature " not implemented"); }
+
 // Enable driver-by-driver versioning without breaking compatibility
 #ifndef DRIVER_DATE
   #define DRIVER_DATE MP_DATE
@@ -129,6 +132,8 @@ protected:
   /// Placeholder: set objective rel tol
   /// Presolve the values if needed
   virtual void ObjRelTol(ArrayRef<double>) { }
+
+
   /**
    * MULTISOL support
    * No API to overload,
@@ -152,16 +157,19 @@ protected:
   * - feasrelax() returns feasrelax mode
   * - feasrelax().<methods> give the API
   **/
-  DEFINE_STD_FEATURE( FEAS_RELAX )
-  ALLOW_STD_FEATURE( FEAS_RELAX, false )
+  DEFINE_STD_FEATURE(FEAS_RELAX)
+  ALLOW_STD_FEATURE(FEAS_RELAX, false)
   /**
   * MIP solution rounding
   * Nothing to do for the Impl, enabled by default
   **/
-  DEFINE_STD_FEATURE( WANT_ROUNDING )
-  ALLOW_STD_FEATURE( WANT_ROUNDING, true )
+  DEFINE_STD_FEATURE(WANT_ROUNDING)
+  ALLOW_STD_FEATURE(WANT_ROUNDING, true)
 
 
+  DEFINE_STD_FEATURE(WRITE_PROBLEM)
+  ALLOW_STD_FEATURE(WRITE_PROBLEM, false)
+  FEATURE_API_TO_IMPLEMENT(WRITE_PROBLEM, void DoWriteProblem(const std::string& name))
   ////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////// MODEL QUERY //////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
@@ -180,10 +188,17 @@ public:
     InputExtras();
 
     SetupTimerAndInterrupter();
-    Solve();
-    RecordSolveTime();
+    if (exportFileMode() > 0)
+      DoWriteProblem(export_file_name());
 
-    Report();
+    // exportFileMode == 2 -> do not solve, just export
+    if (exportFileMode() != 2) 
+    {
+      Solve();
+      RecordSolveTime();
+
+      Report();
+    }
   }
 
   /// Detailed steps for AMPLS C API
@@ -651,6 +666,10 @@ private:
 
     int round_=0;
     double round_reptol_=1e-9;
+
+    // For write prob
+    std::string export_file_;
+    std::string just_export_file_;
   } storedOptions_;
 
   /// Once Impl allows FEASRELAX,
@@ -697,6 +716,22 @@ protected:  //////////// Option accessors ////////////////
   /// MIP solution rounding reporting tolerance
   double round_reptol() const { return storedOptions_.round_reptol_; }
 
+  /// Return 2 if we only need to write the problem, 1 if solution 
+  /// and export are wanted, 0 if no export is needed or supported
+  int exportFileMode() const
+  {
+    if (IMPL_HAS_STD_FEATURE(WRITE_PROBLEM)) {
+      if (!storedOptions_.export_file_.empty())
+        return 1;
+      if (!storedOptions_.just_export_file_.empty())
+        return 2;
+    }
+    return 0;
+  }
+  std::string export_file_name() const {
+    std::string s;
+    return storedOptions_.export_file_.empty() ? storedOptions_.just_export_file_ : storedOptions_.export_file_;
+  }
 
 protected:
   virtual void InitStandardOptions() {
@@ -753,6 +788,20 @@ protected:
                       "Tolerance for reporting rounding of integer variables to "
                       "integer values; see \"mip:round\".  Default = 1e-9.",
                     storedOptions_.round_reptol_);
+    }
+
+    if (IMPL_HAS_STD_FEATURE(WRITE_PROBLEM)) {
+      AddStoredOption("tech:exportfile writeprob writemodel",
+        "Specifies the name of a file where to export the model before "
+        "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
+        "Default = \"\" (don't export the model).",
+        storedOptions_.export_file_);
+
+      AddStoredOption("tech:justexportfile justwriteprob justwritemodel",
+        "Specifies the name of a file where to export the model, do not solve it."
+        "This file name can have extension ``.lp()``, ``.mps``, etc. "
+        "Default = \"\" (don't export the model).",
+        storedOptions_.just_export_file_);
     }
 
   }

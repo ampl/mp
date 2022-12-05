@@ -45,6 +45,13 @@ public:
   USING_STD_FEATURES;
 
   /**
+  * EXPORT PROBLEM
+  **/
+  ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
+  void DoWriteProblem(const std::string& name) override;
+
+
+  /**
   * Get/Set AMPL var/con statii
   **/
   ALLOW_STD_FEATURE(BASIS, true)
@@ -88,8 +95,6 @@ public:  // public for static polymorphism
 
 protected:
 
-  void ExportModel(const std::string& file);
-
   double ObjectiveValue() const;
 
   /// Solution values. The vectors are emptied if not available
@@ -122,7 +127,6 @@ protected:
 private:
   /// These options are stored in the class
   struct Options {
-    std::string exportFile_;
   };
   Options storedOptions_;
 

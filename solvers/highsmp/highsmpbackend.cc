@@ -103,7 +103,7 @@ int HighsBackend::BarrierIterations() const {
   return getIntAttr("ipm_iteration_count");
 }
 
-void HighsBackend::ExportModel(const std::string &file) {
+void HighsBackend::DoWriteProblem(const std::string &file) {
   HIGHS_CCALL(Highs_writeModel(lp(), file.data()));
 }
 
@@ -113,9 +113,6 @@ void HighsBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void HighsBackend::Solve() {
-  if (!storedOptions_.exportFile_.empty()) {
-    ExportModel(storedOptions_.exportFile_);
-  }
   Highs_run(lp());
   WindupHIGHSSolve();
 }
@@ -364,13 +361,7 @@ void HighsBackend::InitCustomOptions() {
       "AMPL option ``highs_options``. For example::\n"
       "\n"
       "  ampl: option highs_options 'relgaptol=1e-6';\n");
-
-  AddStoredOption("tech:exportfile writeprob writemodel",
-      "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
-      "Default = \"\" (don't export the model).",
-      storedOptions_.exportFile_);
-  
+ 
   AddSolverOption("tech:outlev outlev",
     "0*/1: Whether to write HighS log lines (chatter) to stdout and to file.",
     "output_flag", 0, 1);

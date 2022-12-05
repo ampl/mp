@@ -133,22 +133,22 @@ int XpressmpBackend::BarrierIterations() const {
   return getIntAttr(XPRS_BARITER);
 }
 
-void XpressmpBackend::ExportModel(const std::string &file) {
-  const char* s;
+inline bool ends_with(std::string const& value, std::string const& ending)
+{
+  if (ending.size() > value.size()) return false;
+  return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+void XpressmpBackend::DoWriteProblem(const std::string& name) {
   char const* wpflags = NULL;
-  if (s = strrchr(file.c_str(), '.')) {
-    if (!strcmp(s, ".mps"))
-      wpflags = "";
-    else if (!strcmp(s, ".lp"))
-      wpflags = "l";
-  }
-  if (wpflags)
-    XPRESSMP_CCALL(XPRSwriteprob(lp(), file.c_str(), wpflags));
+  if (ends_with(name, ".lp"))
+    wpflags = "l";
+  else if (ends_with(name, ".mps"))
+    wpflags = "";
   else
     throw std::runtime_error(fmt::format("Expected \"writeprob=...\" to specify a filename ending in \".lp\"\n"
-      "or \".mps\"; got \"{}\".\n", file));
+      "or \".mps\"; got \"{}\".\n", name));
+  XPRESSMP_CCALL(XPRSwriteprob(lp(), name.c_str(), wpflags));
 }
-
 
 void XpressmpBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptXpressmp, lp());
@@ -163,10 +163,6 @@ void XpressmpBackend::DoXPRESSTune() {
 
 void XpressmpBackend::Solve() {
   int nsols = 10;
-  if (!storedOptions_.exportFile_.empty()) {
-    ExportModel(storedOptions_.exportFile_);
-  }
-
   if (tunebase().size())
     DoXPRESSTune();
 
@@ -982,12 +978,6 @@ void XpressmpBackend::InitCustomOptions() {
   // ****************************
   // General
   // ****************************
-  AddStoredOption("tech:exportfile writeprob writemodel",
-      "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
-      "Default = \"\" (don't export the model).",
-      storedOptions_.exportFile_);
-
   AddStoredOption("tech:outlev outlev",
     "Whether to write xpress log lines (chatter) to stdout and to file:\n"
     "\n.. value-table::\n",

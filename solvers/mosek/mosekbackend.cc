@@ -156,7 +156,7 @@ int MosekBackend::BarrierIterations() const {
   return getIntAttr(MSK_IINF_INTPNT_ITER);
 }
 
-void MosekBackend::ExportModel(const std::string &file) {
+void MosekBackend::DoWriteProblem(const std::string &file) {
   MOSEK_CCALL(MSK_writedata(lp(), file.data()));
 }
 
@@ -187,9 +187,6 @@ MSKsoltypee MosekBackend::GetSolutionTypeToFetch() {
 }
 
 void MosekBackend::Solve() {
-  if (!storedOptions_.exportFile_.empty()) {
-    ExportModel(storedOptions_.exportFile_);
-  }
   MOSEK_CCALL(MSK_optimizetrm(lp(), &termCode_));
   solToFetch_ = GetSolutionTypeToFetch();
   MOSEK_CCALL(MSK_getsolsta(lp(), solToFetch_, &solSta_));
@@ -333,13 +330,6 @@ void MosekBackend::InitCustomOptions() {
   AddSolverOption("lim:time timelim timelimit",
       "Limit on solve time (in seconds; default: no limit).",
       MSK_DPAR_OPTIMIZER_MAX_TIME, 0.0, DBL_MAX);
-
-  // Example of stored option, to be acted upon in the driver code
-  AddStoredOption("tech:exportfile writeprob writemodel",
-      "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``..task``, ``.mps``, etc. "
-      "Default = \"\" (don't export the model).",
-      storedOptions_.exportFile_);
 
   AddStoredOption("mip:constructsol mipconstructsol",
       "Sets MSK_IPAR_MIO_CONSTRUCT_SOL. If set to MSK_ON and all integer variables "

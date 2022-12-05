@@ -45,6 +45,8 @@ public:
   // that may or may not need additional functions. 
   USING_STD_FEATURES;
 
+  ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
+  void DoWriteProblem(const std::string& name) override;
   /**
  * MULTISOL support
  * No API, see ReportIntermediateSolution()
@@ -109,10 +111,9 @@ public:  // public for static polymorphism
   void InitCustomOptions() override;
 
 protected:
+
   void OpenSolver();
   void CloseSolver();
-
-  void ExportModel(const std::string& file);
 
   double ObjectiveValue() const;
 
@@ -142,7 +143,6 @@ protected:
 private:
   /// These options are stored in the class
   struct Options {
-    std::string exportFile_;
     int timeLimit_ = 0;
   };
   Options storedOptions_;

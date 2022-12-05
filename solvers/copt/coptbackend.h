@@ -41,6 +41,8 @@ public:
   ////////////////////////////////////////////////////////////
   USING_STD_FEATURES;
 
+  ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
+  void DoWriteProblem(const std::string& name) override;
   /**
  * MULTISOL support
  * No API, use ReportIntermediateSolution()
@@ -117,8 +119,6 @@ public:  // public for static polymorphism
   void CloseSolver();
 
 protected:
-  void ExportModel(const std::string& file);
-
   double ObjectiveValue() const;
 
   /// Solution values. The vectors are emptied if not available
@@ -159,7 +159,6 @@ protected:
 
 private:
   struct Options {
-    std::string exportFile_;
     std::string logFile_;
   };
   Options storedOptions_;

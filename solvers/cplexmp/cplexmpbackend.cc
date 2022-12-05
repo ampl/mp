@@ -163,7 +163,7 @@ int CplexBackend::BarrierIterations() const {
   return CPXgetbaritcnt (env(), lp());
 }
 
-void CplexBackend::ExportModel(const std::string &file) {
+void CplexBackend::DoWriteProblem(const std::string &file) {
   CPLEX_CALL( CPXwriteprob (env(), lp(), file.c_str(), NULL) );
 }
 
@@ -174,9 +174,6 @@ void CplexBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void CplexBackend::Solve() {
-  if (!storedOptions_.exportFile_.empty()) {
-    ExportModel(storedOptions_.exportFile_);
-  }
 
   CPLEX_CALL( CPXmipopt(env(), lp()) );
 
@@ -291,12 +288,6 @@ void CplexBackend::InitCustomOptions() {
 
   AddStoredOption("tech:logfile logfile",
     "Log file name.", storedOptions_.logFile_);
-
-  AddStoredOption("tech:exportfile writeprob writemodel",
-      "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
-      "Default = \"\" (don't export the model).",
-      storedOptions_.exportFile_);
 
   AddSolverOption("mip:gap mipgap",
       "Relative optimality gap |bestbound-bestinteger|/(1e-10+|bestinteger|).",

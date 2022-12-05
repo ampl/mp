@@ -43,7 +43,7 @@ void CbcmpCommon::GetCBCParamsList() const {
 }
 
 int CbcmpCommon::getIntAttr(int name)  const {
-  int value = 0
+  int value = 0;
   /* TODO Utility function to get the value of an integer attribute 
   * from the solver API 
   CBCMP_CCALL(CBCMP_GetIntAttr(lp_, name, &value)); */
@@ -70,7 +70,7 @@ int CbcmpCommon::NumObjs() const {
 }
 
 int CbcmpCommon::NumSOSCons() const {
-  lp()->solver_->getatt
+  //lp()->solver_->getatt
   // TODO Get number of SOS constraints using solver API
   // return getIntAttr(CBCMP_INTATTR_SOSS);
   return 0;

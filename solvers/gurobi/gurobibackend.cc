@@ -745,7 +745,9 @@ int GurobiBackend::BarrierIterations() const {
   bool f;
   return GrbGetIntAttr(GRB_INT_ATTR_BARITERCOUNT, &f);
 }
-
+void GurobiBackend::DoWriteProblem(const std::string& name) {
+  ExportModel(model(), name);
+}
 void GurobiBackend::ExportModel(GRBmodel* lp, const std::string &file) {
   GRB_CALL( GRBwrite(lp, file.c_str()) );
 }
@@ -881,9 +883,6 @@ void GurobiBackend::Solve() {
 }
 
 void GurobiBackend::PrepareGurobiSolve() {
-  /// After all attributes applied
-  if (!exportFile().empty())
-    ExportModel(model(), exportFile());
   // Export presolved model
   if (!exportPresolvedFile().empty())
   {
@@ -2387,12 +2386,6 @@ void GurobiBackend::InitCustomOptions() {
   AddSolverOption("tech:workerpassword pool_password",
       "Password for the worker pool (if needed).",
       GRB_STR_PAR_WORKERPASSWORD);
-
-  AddStoredOption("tech:writeprob writeprob writemodel exportfile",
-      "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
-      "Default = \"\" (don't export the model).",
-      storedOptions_.exportFile_);
 
   AddStoredOption("tech:writepresolvedprob writepresolvedprob writepresolvedmodel exportpresolvedfile",
     "Specifies the name of a file where to export the presolved model before "

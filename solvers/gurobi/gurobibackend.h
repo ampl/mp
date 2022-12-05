@@ -42,6 +42,14 @@ public:
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
   ////////////////////////////////////////////////////////////
   USING_STD_FEATURES;
+
+  /**
+  * EXPORT PROBLEM
+  **/
+  ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
+  void DoWriteProblem(const std::string& name) override;
+
+
   /**
    * MULTIOBJ
   **/
@@ -258,7 +266,7 @@ private:
   /// These options are stored in the class as variables
   /// for direct access
   struct Options {
-    std::string exportFile_, paramRead_, paramWrite_, advancedParams_, exportPresolvedFile_;
+    std::string paramRead_, paramWrite_, advancedParams_, exportPresolvedFile_;
 
     int nMIPStart_=1;
     int nPoolMode_=2;
@@ -303,7 +311,6 @@ protected:  //////////// Option accessors ////////////////
 
   const std::string& tunebase() const { return storedOptions_.tunebase_; }
 
-  const std::string& exportFile() const { return storedOptions_.exportFile_; }
   const std::string& exportPresolvedFile() const { return storedOptions_.exportPresolvedFile_; }
 
 

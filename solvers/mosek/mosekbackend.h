@@ -53,6 +53,10 @@ public:
   // that may or may not need additional functions. 
   USING_STD_FEATURES;
 
+  // Export problem
+  ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
+  void DoWriteProblem(const std::string& name) override;
+
   // LP basis info, status keys
   ALLOW_STD_FEATURE(BASIS, true)
   SolutionBasis GetBasis() override;
@@ -117,8 +121,6 @@ protected:
   void OpenSolver();
   void CloseSolver();
 
-  void ExportModel(const std::string& file);
-
   double ObjectiveValue() const;
 
   /// Solution values. The vectors are emptied if not available
@@ -163,8 +165,6 @@ private:
 
   /// These options are stored in the class
   struct Options {
-    std::string exportFile_;
-
     // Whether to set MSK_IPAR_MIO_CONSTRUCT_SOL
     int MIPConstructSol_=0;
   };

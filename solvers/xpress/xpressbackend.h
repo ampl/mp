@@ -101,6 +101,10 @@ public:
   /// Retrieve IIS elements
   IIS GetIIS() override;
 
+
+  ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
+  void DoWriteProblem(const std::string& name) override;
+  
   /////////////////////////// Model attributes /////////////////////////
   bool IsQCP() const override;
   
@@ -130,8 +134,6 @@ public:  // public for static polymorphism
 protected:
   void OpenSolver();
   void CloseSolver();
-
-  void ExportModel(const std::string& file);
 
   double ObjectiveValue() const;
 
@@ -181,7 +183,6 @@ protected:
 private:
   /// These options are stored in the class
   struct Options {
-    std::string exportFile_;
     int nbest_ = 0;
     int pooldualred_;
     int pooldupcol_;

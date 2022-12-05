@@ -35,6 +35,15 @@ public:
   void FinishOptionParsing() override;
 
 
+  ////////////////////////////////////////////////////////////
+  /////////////// OPTIONAL STANDARD FEATURES /////////////////
+  ////////////////////////////////////////////////////////////
+  USING_STD_FEATURES;
+
+  ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
+  void DoWriteProblem(const std::string& name) override;
+  
+
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
   bool IsQCP() const override;
@@ -63,7 +72,7 @@ protected:
   void OpenSolver();
   void CloseSolver();
 
-  void ExportModel(const std::string& file);
+  
 
   double ObjectiveValue() const;
 

@@ -188,10 +188,20 @@ int CoptBackend::BarrierIterations() const {
   return getIntAttr(COPT_INTATTR_BARRIERITER);
 }
 
-void CoptBackend::ExportModel(const std::string &file) {
-  // TODO export proper by file extension
-  COPT_CCALL(COPT_WriteLp(lp(), file.data()));
+inline bool ends_with(std::string const& value, std::string const& ending)
+{
+  if (ending.size() > value.size()) return false;
+  return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
+void CoptBackend::DoWriteProblem(const std::string& name) {
+  if (ends_with(name, ".lp"))
+    COPT_CCALL(COPT_WriteLp(lp(), name.c_str()));
+  else if (ends_with(name, ".mps"))
+    COPT_CCALL(COPT_WriteMps(lp(), name.c_str()));
+  else
+    throw std::runtime_error("Can only export '.lp' or '.mps' files.");
+}
+
 
 
 void CoptBackend::SetInterrupter(mp::Interrupter *inter) {
@@ -199,9 +209,6 @@ void CoptBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void CoptBackend::Solve() {
-  if (!storedOptions_.exportFile_.empty()) {
-    ExportModel(storedOptions_.exportFile_);
-  }
   COPT_CCALL(COPT_Solve(lp()));
   WindupCOPTSolve();
 }
@@ -370,12 +377,6 @@ void CoptBackend::InitCustomOptions() {
 
   AddStoredOption("tech:logfile logfile",
     "Log file name.", storedOptions_.logFile_);
-
-  AddStoredOption("tech:exportfile writeprob writemodel",
-      "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
-      "Default = \"\" (don't export the model).",
-      storedOptions_.exportFile_);
 
   AddSolverOption("lp:dualprice dualprice",
     "Specifies the dual simplex pricing algorithm:\n"
