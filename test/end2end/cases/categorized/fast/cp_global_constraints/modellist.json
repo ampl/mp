@@ -6,16 +6,22 @@
     "objective" : 6
   },
   {
-    "name" : "flowshp1 [or]",
-    "files": ["flowshp1.mod", "flowshp.dat"],
-    "tags" : ["logical"],
-    "objective" : 22
+    "name": "flowshp1 [or]",
+    "files": [ "flowshp1.mod", "flowshp.dat" ],
+    "tags": [ "logical" ],
+    "objective": 22,
+    "options": {
+      "cbc_options": "cvt:mip:bigM=100000"
+    }
   },
   {
-    "name" : "flowshp2 [or, ==>]",
-    "files": ["flowshp2.mod", "flowshp.dat"],
-    "tags" : ["logical"],
-    "objective" : 22
+    "name": "flowshp2 [or, ==>]",
+    "files": [ "flowshp2.mod", "flowshp.dat" ],
+    "tags": [ "logical" ],
+    "objective": 22,
+    "options": {
+      "cbc_options": "cvt:mip:bigM=100000"
+    }
   },
   {
     "name" : "balassign0 [linear]",
