@@ -62,18 +62,6 @@ public:
   void AddConstraint(const LinConEQ& lc);
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
-
-  /// Linear indicator constraints can be used as
-  /// auxiliary constraints for logical conditions.
-  /// If not handled, the compared expressions need
-  /// deducible finite bounds for a big-M redefinition.
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended, CG_General)
-  void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)
-  void AddConstraint(const IndicatorConstraintLinEQ& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, AcceptedButNotRecommended, CG_General)
-  void AddConstraint(const IndicatorConstraintLinGE& mc);
-
   /// SOS constraints can be used by AMPL for redefinition of
   /// piecewise-linear expressions.
   /// Set ``option pl_linearize 0;`` in AMPL if the solver
