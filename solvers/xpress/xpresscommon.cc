@@ -23,7 +23,7 @@ int XpressmpCommon::NumVars() const {
 }
 
 int XpressmpCommon::NumObjs() const {
-  return 1;
+  return getIntAttr(XPRS_OBJECTIVES);
 }
 
 int XpressmpCommon::NumQPCons() const {

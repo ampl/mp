@@ -59,6 +59,16 @@ public:
   USING_STD_FEATURES;
 
   /**
+ * MULTIOBJ
+**/
+  ALLOW_STD_FEATURE(MULTIOBJ, true)
+  ArrayRef<double> GetObjectiveValues() override;
+  void ObjPriorities(ArrayRef<int>) override;
+  void ObjWeights(ArrayRef<double>) override;
+  void ObjAbsTol(ArrayRef<double>) override;
+  void ObjRelTol(ArrayRef<double>) override;
+
+  /**
  * MULTISOL support
  * No API, see ReportIntermediateSolution()
 **/
@@ -78,7 +88,6 @@ public:
   **/
   ALLOW_STD_FEATURE(MIPSTART, true)
   void AddMIPStart(ArrayRef<double> x0) override;
-
 
  /**
   * Get MIP Gap
@@ -118,8 +127,6 @@ public:
   /// otherwise in ReportResults()
   void Solve() override;
 
-  ArrayRef<double> GetObjectiveValues() override
-  { return std::vector<double>{ObjectiveValue()}; } 
 
 
   //////////////////// [[ Implementation details ]] //////////////////////

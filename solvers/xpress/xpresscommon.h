@@ -46,7 +46,7 @@ public:
 protected:
   int getIntAttr(int attr) const;
   double getDblAttr(int attr) const;
-
+  
   int NumLinCons() const;
   int NumVars() const;
   int NumObjs() const;

@@ -15,7 +15,6 @@ class XpressmpModelAPI :
     public BasicFlatModelAPI
 {
   using BaseModelAPI = BasicFlatModelAPI;
-
 public:
   /// Construct
   XpressmpModelAPI(Env& e) : EnvKeeper(e) { }

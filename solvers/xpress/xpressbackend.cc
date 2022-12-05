@@ -294,7 +294,7 @@ void XpressmpBackend::ReportXPRESSMPResults() {
         XPRESSMP_CCALL(XPRS_mse_addcbmsghandler(mse_, xp_mse_display, NULL, 0));
     }
 
-    SetSolverOption(XPRS_HEURSTRATEGY, 0);
+    //SetSolverOption(XPRS_HEURSTRATEGY, 0);
     SetSolverOption(XPRS_MIPDUALREDUCTIONS, 2);
 
     if (storedOptions_.pooldualred_ != 2 || storedOptions_.pooldupcol_ != 2)
@@ -326,6 +326,43 @@ void XpressmpBackend::ReportXPRESSMPResults() {
       CreateSolutionPoolEnvironment();
   }
 
+  ArrayRef<double> XpressmpBackend::GetObjectiveValues()
+  {
+    int n = NumObjs();
+    if (n==0)
+      return { };
+    if (n==1)
+      return std::vector<double>{ObjectiveValue()};
+    std::vector<double> objs(n,
+      std::numeric_limits<double>::quiet_NaN());
+    for (int i = 0; i < n; i++)
+      XPRESSMP_CCALL(XPRScalcobjn(lp(), i, NULL, &objs[i]));
+    return objs;
+  }
+  
+  void XpressmpBackend::ObjPriorities(ArrayRef<int> priority) {
+    for (int i = 0; i < (int)priority.size(); ++i) 
+      XPRESSMP_CCALL(XPRSsetobjintcontrol(lp(), i, 
+        XPRS_OBJECTIVE_PRIORITY, priority[i]));
+  }
+
+  void XpressmpBackend::ObjWeights(ArrayRef<double> val) {
+    for (int i = 0; i < (int)val.size(); ++i) 
+      XPRESSMP_CCALL(XPRSsetobjdblcontrol(lp(), i, 
+        XPRS_OBJECTIVE_WEIGHT, val[i]));
+    }
+
+  void XpressmpBackend::ObjAbsTol(ArrayRef<double> val) {
+    for (int i = 0; i < (int)val.size(); ++i)
+      XPRESSMP_CCALL(XPRSsetobjdblcontrol(lp(), i,
+        XPRS_OBJECTIVE_ABSTOL, val[i]));
+  }
+
+  void XpressmpBackend::ObjRelTol(ArrayRef<double> val) {
+    for (int i = 0; i < (int)val.size(); ++i)
+      XPRESSMP_CCALL(XPRSsetobjdblcontrol(lp(), i,
+        XPRS_OBJECTIVE_RELTOL, val[i]));
+  }
 
   ////////////////////////////// OPTIONS /////////////////////////////////
 
@@ -994,9 +1031,13 @@ void XpressmpBackend::InitCustomOptions() {
     XPRS_THREADS, -1, INT_MAX);
   
   AddSolverOption("lim:time timelim timelimit",
-    "Limit on solve time (in seconds; default: no limit). If n>0, stop MIP search only"
-    "after a solution has been found, if n<0, stop after -n seconds nevertheless",
-    XPRS_MAXTIME, -INT_MAX, INT_MAX);
+    "Limit on solve time (in seconds; default: no limit). ",
+    XPRS_TIMELIMIT, 0.0, Infinity());
+
+  AddSolverOption("lim:soltime soltimelim soltimelimit",
+    "Limit on solve time (in seconds; default: no limit) to be applied only "
+    "after a solution has been found.",
+    XPRS_SOLTIMELIMIT, 0.0, Infinity());
 
   AddSolverOption("tech:sleeponthreadwait sleeponthreadwait",
     "Whether threads should sleep while awaiting work:\n"
@@ -1019,7 +1060,7 @@ void XpressmpBackend::InitCustomOptions() {
     AddSolverOption("lim:maxcuttime maxcuttime",
                     "The maximum amount of time allowed for generation of cutting planes and reoptimization;"
                     "default=0 (no time limit)",
-                    XPRS_MAXCUTTIME, 0, INT_MAX);
+                    XPRS_MAXCUTTIME, 0.0, Infinity());
 
     AddSolverOption("tech:globalfilemax globalfilemax",
     "Maximum megabytes for temporary files storing the global search "
@@ -1091,7 +1132,7 @@ void XpressmpBackend::InitCustomOptions() {
     AddSolverOption("lim:maxstalltime maxstalltime",
                     "Maximum time in seconds that the MIP Optimizer will continue to search "
                     "for improving solution after finding a new incumbent, default=0 (no limit)",
-                    XPRS_MAXSTALLTIME, 0, INT_MAX);
+                    XPRS_MAXSTALLTIME, 0.0, Infinity());
   // ****************************
   // Generic algorithm controls
   // ****************************
@@ -1203,6 +1244,11 @@ AddSolverOption("alg:resourcestrategy resourcestrategy",
   AddSolverOption("pre:maxscalefactor maxscalefactor",
   "Maximum log2 factor that can be applied during scaling, must be >=0 and <=64; default=64.",
   XPRS_MAXSCALEFACTOR, 0, 64);
+
+  AddSolverOption("pre:configuration preconfiguration",
+    "Whether to reformulate binary rows with very few coefficients:\n"
+    "\n.. value-table::\n",
+    XPRS_PRESOLVE, values_01_noyes_1default_, 1);
 
   AddSolverOption("pre:elimfillin elimfillin",
     "Maximum fillins allowed for a presolve elimination; default = 10",
@@ -1744,6 +1790,12 @@ AddSolverOption("alg:resourcestrategy resourcestrategy",
     XPRS_DETERMINISTIC, values_deterministic, 1);
 
   AddSolverOption("mip:feasibilitypump feasibilitypump",
+    "Decides whether to run the Feasibility Jump heuristic at the top "
+    "node during branch-and-bound:\n"
+    "\n.. value-table::\n", XPRS_FEASIBILITYJUMP,
+    values_01_noyes_1default_, 1);
+
+  AddSolverOption("mip:feasibilitypump feasibilitypump",
     "Decides whether to run the Feasibility Pump heuristic at the top "
     "node during branch-and-bound:\n"
     "\n.. value-table::\n", XPRS_FEASIBILITYPUMP,
@@ -2170,7 +2222,7 @@ AddSolverOption("mip:varselection varselection",
   AddSolverOption("tech:tunetimelim tunermaxtime tunetimelim lim:tunetime",
     "Time limit (in seconds) on tuning when \"tunebase\" "
     "is specified; default 0 (no time limit).",
-    XPRS_TUNERMAXTIME, 0, INT_MAX);
+    XPRS_TUNERMAXTIME, 0.0, Infinity());
 
   AddSolverOption("tech:tunerthreads tunerthreads",
     "Number of tuner threads to run in parallel; "    
