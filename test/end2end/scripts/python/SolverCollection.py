@@ -37,8 +37,8 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.COPTSolver(path.join(binPath,"copt")))
     solvers.addSolver(Solver.MindoptSolver(path.join(binPath,"mindoptampl")))
     solvers.addSolver(Solver.HighsSolver(path.join(binPath,"highsmp")))
-    solvers.addSolver(Solver.XpressSolver(path.join(binPath,"xpress")))
-    solvers.addSolver(Solver.XPRESSDirectSolver(path.join(binPath,"xpressmp")))
+    #solvers.addSolver(Solver.XpressSolver(path.join(binPath,"xpress")))
+    solvers.addSolver(Solver.XPRESSDirectSolver(path.join(binPath,"xpress")))
     solvers.addSolver(Solver.MosekSolver(path.join(binPath,"mosek")))
     solvers.addSolver(Solver.CbcMPSolver(path.join(binPath, "cbc")))
 

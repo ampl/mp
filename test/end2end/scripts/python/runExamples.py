@@ -19,40 +19,42 @@ class Tester:
         self.collectAndRunCases()
 
     def parseOptions(self):
-        self._parser.add_argument('solvers', metavar='solver', type=str, nargs='+',
-                            help='a solver to test')
+        self._parser.add_argument("solvers", metavar="solver", type=str, nargs="+",
+                            help="a solver to test")
 
-        self._parser.add_argument('--lpmethod', type=str, metavar='', default="",
-                            help='algorithm for lp: SIMPLEX or BARRIER')
+        self._parser.add_argument("--lpmethod", type=str, metavar="", default="",
+                            help="algorithm for lp: SIMPLEX or BARRIER")
 
-        self._parser.add_argument('--options', type=str, metavar='', default="",
-                            help='extra solver options')
-        self._parser.add_argument('--binPath', type=str, metavar='', default="",
-                            help='default path to look for solver executables')
-        self._parser.add_argument('--reportstub', type=str, metavar='', default="report",
-                            help='stub for CSV test report filename, e.g., /tmp/report, default: report')
-        self._parser.add_argument('--printsolvers', action="store_true",
-                            help='print available solvers and exit')
-        self._parser.add_argument('--timeout', type=int, metavar='T', default=1200,
-                        help='timeout per instance, seconds')
-        self._parser.add_argument('--nthreads', type=int, metavar='N', default=8,
-                        help='number of threads in a solver')
-        self._parser.add_argument('--dir', type=str, metavar='path', default="",
-                        help='path to the test case folder')
-        self._parser.add_argument('--nonrecursive', action="store_true",
-                        help='non-recursive case collection')
-        self._parser.add_argument('--allfiles', action="store_true",
-                        help='collect all .mod, .nl files; otherwise local modellist.json only. ' +
-                                  'If modellist.json is to be used for comparison data, each case name' +
-                             '\'s first word should match the file stem unless "files" are specified')
-        self._parser.add_argument('--preferNL', action="store_true",
-                        help='prefer NL models if both AMPL and NL are present')
-        self._parser.add_argument('--justNL', action="store_true",
-                        help='only run NL models. Useful when AMPL executable is not available')
-        self._parser.add_argument('-k', '--keepLogs', action="store_true",
-                        help='keep log files for each run, filenames: {model}.{solver}.log')
-        self._parser.add_argument('-v', '--verbose', action="store_true",
-                        help='print solver output')
+        self._parser.add_argument("--options", type=str, metavar="", default="",
+                            help="extra solver options")
+        self._parser.add_argument("--binPath", type=str, metavar="", default="",
+                            help="default path to look for solver executables")
+        self._parser.add_argument("--reportstub", type=str, metavar="", default="report",
+                            help="stub for CSV test report filename, e.g., /tmp/report, default: report")
+        self._parser.add_argument("--printsolvers", action="store_true",
+                            help="print available solvers and exit")
+        self._parser.add_argument("--timeout", type=int, metavar="T", default=1200,
+                        help="timeout per instance, seconds")
+        self._parser.add_argument("--nthreads", type=int, metavar="N", default=8,
+                        help="number of threads in a solver")
+        self._parser.add_argument("--dir", type=str, metavar="path", default="",
+                        help="path to the test case folder")
+        self._parser.add_argument("--nonrecursive", action="store_true",
+                        help="non-recursive case collection")
+        self._parser.add_argument("--allfiles", action="store_true",
+                        help="collect all .mod, .nl files; otherwise local modellist.json only. " +
+                                  "If modellist.json is to be used for comparison data, each case name" +
+                             "'s first word should match the file stem unless 'files' are specified")
+        self._parser.add_argument("--preferNL", action="store_true",
+                        help="prefer NL models if both AMPL and NL are present")
+        self._parser.add_argument("--exportLP", action="store_true",
+                                  help="Export solver-level LP file")
+        self._parser.add_argument("--justNL", action="store_true",
+                        help="only run NL models. Useful when AMPL executable is not available")
+        self._parser.add_argument("-k", "--keepLogs", action="store_true",
+                        help="keep log files for each run, filenames: {model}.{solver}.log")
+        self._parser.add_argument("-v", "--verbose", action="store_true",
+                        help="print solver output")
 
         self._args = self._parser.parse_args()
 
@@ -67,6 +69,10 @@ class Tester:
             slv.setNThreads(self._args.nthreads)
             if self._args.lpmethod:
                 slv.setLPMethod(self._args.lpmethod)
+            if self._args.exportLP:
+                slv.setExportLP(True)
+            else:
+                slv.setExportLP(False)
 
     def printSolvers(self):
         print("Available solvers:\n  * ", end='')

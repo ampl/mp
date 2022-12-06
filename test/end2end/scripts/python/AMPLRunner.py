@@ -61,11 +61,11 @@ class AMPLRunner(object):
         self._optionsExtra = optionsExtra
         self._logFile = None
 
-    def _initAMPL(self):
+    def _initAMPL(self, model):
         if self._amplInitialized:
           self._ampl.reset()
           self._ampl.eval("reset options;")
-          self._setSolverInAMPL()
+          self._setSolverInAMPL(model)
           return
         if self.isBenchmark: # Issues with non-server licenses
             time.sleep(.5)   # so wait until the license is released
@@ -76,7 +76,7 @@ class AMPLRunner(object):
         self._ampl.setErrorHandler(InnerErrorHandler(self.appendError))
         self._ampl.setOption("solver_msg", 1 if doLogs else 0)
         if self._solver:
-          self._setSolverInAMPL()
+          self._setSolverInAMPL(model)
         self._amplInitialized = True
    
     def _terminateAMPL(self):
@@ -144,10 +144,10 @@ class AMPLRunner(object):
             raise Exception("Solver '{}' not found.".
                 format(solver.getExecutable()))
 
-    def _setSolverInAMPL(self):
+    def _setSolverInAMPL(self, model):
         sp = self._solver.getExecutable()
         self._ampl.setOption("solver", sp)
-        (name, value) = self._solver.getAMPLOptions()
+        (name, value) = self._solver.getAMPLOptions(model)
         if self._logFile is not None:
             logOption = self._solver.setLogFile(self._logFile)
             if logOption:
@@ -177,7 +177,7 @@ class AMPLRunner(object):
 
     def doInit(self, model: Model):
         self.stats = { "solver": self._solver.getName() if  self._solver else "" }
-        self._initAMPL()
+        self._initAMPL(model)
         self._lastError = None
 
     def printInitMessage(self, model: Model):
@@ -281,7 +281,7 @@ class AMPLRunner(object):
     def setupOptions(self, model: Model):
         if not self._solver: # useful for writeNL
             return
-        (slvname, slvval) = self._solver.getAMPLOptions()         # slvname = 'gurobi_options' e.g.
+        (slvname, slvval) = self._solver.getAMPLOptions(model)         # slvname = 'gurobi_options' e.g.
         if model.hasOptions():
             optmap = model.getOptions()
             for name, val in optmap.items():

@@ -22,6 +22,11 @@ class Solver(object):
                 return str(path.with_suffix(".exe"))
         else:
             return name
+    
+    def getExportLPFileName(self, modelfilename):
+        fn = PurePath(modelfilename)
+        ext = fn.with_stem(f"{fn.stem}.{self.getName()}").with_suffix('.lp')
+        return ext.as_posix()
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None,
                  writeSolverName=False,
@@ -111,7 +116,8 @@ class Solver(object):
 
     def getNThreads(self):
         return self._nthreads
-
+    def setExportLP(self, value : bool):
+        self._exportLP = value
     def setTimeout(self, t):
         self._timeout = t
 
@@ -141,6 +147,9 @@ class AMPLSolver(Solver):
                          supportedTags=supportedTags,
                          unsupportedTags=unsupportedTags)
 
+    def _setExportLP(self, name: str):
+        raise Exception("Not implemented in base class")
+
     def _setLPMethod(self, method : str):
         raise Exception("Not implemented in base class")
 
@@ -159,6 +168,7 @@ class AMPLSolver(Solver):
     def _doParseSolution(self, st, stdout=None):
         raise Exception("Not implemented in base class")
 
+
     def _doRun(self,  model: Model, logFile : str):
         toption = ""
         if self._timeout:
@@ -174,6 +184,9 @@ class AMPLSolver(Solver):
             toption = "{} {} outlev=1".format(toption, self.setLogFile(logFile))
         if self._otherOptions:
             toption = "{} {}".format(toption, self._otherOptions)
+        if self._exportLP:
+            toption = "{} {}".format(toption, self._setExportLP(self.getExportLPFileName(model.getFilePath())))
+
         try:
             if toption:
                 return self._runProcess([self._exePath, model.getFilePath(), "-AMPL", toption],
@@ -230,7 +243,7 @@ class AMPLSolver(Solver):
               return out
 
 
-    def getAMPLOptions(self):
+    def getAMPLOptions(self, model):
         name = "{}_options".format(self._getAMPLOptionsName())
         value = ""
         if self._timeout:
@@ -244,6 +257,9 @@ class AMPLSolver(Solver):
         if self._otherOptions:
             value += " "
             value += self._otherOptions
+        if self._exportLP:
+            value += " "
+            value += self._setExportLP(self.getExportLPFileName(model.getFilePath()))
         if value:
             return (name, value)
 
@@ -328,6 +344,9 @@ class MPDirectSolver(AMPLSolver):
         # typically have to reimplement this
         m  = "0" if method == "SIMPLEX" else "2"
         return f"alg:method {m}"
+
+    def _setExportLP(self, name: str):
+        return f"writeprob={name}"
 
     def _setTimeLimit(self, seconds):
         return "timelim={}".format(seconds)
@@ -682,7 +701,7 @@ class CbcMPSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic_obj}
+                 ModelTags.quadratic_obj, ModelTags.sos}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
