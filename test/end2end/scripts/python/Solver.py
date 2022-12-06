@@ -25,7 +25,7 @@ class Solver(object):
     
     def getExportLPFileName(self, modelfilename):
         fn = PurePath(modelfilename)
-        ext = fn.with_stem(f"{fn.stem}.{self.getName()}").with_suffix('.lp')
+        ext = fn.with_stem(f"{fn.stem}_{self.getName()}").with_suffix('.lp')
         return ext.as_posix()
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None,

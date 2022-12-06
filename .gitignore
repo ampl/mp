@@ -20,3 +20,4 @@ Testing
 /src/expr-info.cc
 /test/end2end/.vs
 /test/end2end/env
+/test/end2end/cases/*.lp
