@@ -49,13 +49,13 @@ void CbcmpModelAPI::AddConstraint(const LinConGE& lc) {
 }
 
 void CbcmpModelAPI::AddConstraint(const SOS1Constraint& sos) {
-  int starts[] = { 0,  sos.get_vars().size() };
+  int starts[] = { 0,  (int)sos.get_vars().size() };
   Cbc_addSOS(lp(), 1, starts,
     (int*)sos.get_vars().data(), (double*)sos.get_weights().data(), 1);
 }
 
 void CbcmpModelAPI::AddConstraint(const SOS2Constraint& sos) {
-  int starts[] = { 0,  sos.get_vars().size() };
+  int starts[] = { 0,  (int)sos.get_vars().size() };
   Cbc_addSOS(lp(), 1, starts,
     (int*)sos.get_vars().data(), (double*)sos.get_weights().data(), 2);
 }

@@ -984,7 +984,7 @@ void CbcmpBackend::InitCustomOptions() {
 
 
 double CbcmpBackend::MIPGap() {
-  if (!ObjectiveValue() == 0)
+  if (!(ObjectiveValue() == 0))
     return MIPGapAbs() / std::fabs(ObjectiveValue());
   return Infinity();
 }

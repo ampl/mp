@@ -36,7 +36,7 @@ class CbcmpCommon :
     std::function<T(Cbc_Model*)> get_;
 
     public:
-    Parameter(T def) : value(def), isNonDefault_(false)
+    Parameter(T def) : value_(def), isNonDefault_(false)
     {}
     
   };
