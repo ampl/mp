@@ -110,6 +110,10 @@ public:
   /// Retrieve IIS elements
   IIS GetIIS() override;
 
+  /**
+  * FixModel - duals, basis, and sensitivity for MIP.
+  **/
+  ALLOW_STD_FEATURE(FIX_MODEL, true)
 
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
   void DoWriteProblem(const std::string& name) override;
@@ -159,6 +163,9 @@ protected:
   void ReportXPRESSMPPool();
   void DoXPRESSTune();
 
+  void ConsiderXpressFixedModel();
+  std::string DoXpressFixedModel();
+
   std::vector<double> getPoolSolution(int i);
   double getPoolObjective(int i);
 
@@ -188,6 +195,8 @@ protected:
   const std::string& tunename() { return storedOptions_.tunename_; }
 
 private:
+  XPRSprob model_fixed_ = nullptr;
+
   /// These options are stored in the class
   struct Options {
     int nbest_ = 0;

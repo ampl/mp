@@ -63,13 +63,24 @@ void XpressmpBackend::OpenSolver() {
   else
     XPRESSMP_CCALL(XPRSinit(NULL));
   XPRESSMP_CCALL(XPRScreateprob(lp_ref()));
+
+  model_fixed_ = lp();
+
   copy_common_info_to_other();
   if (status)
     throw std::runtime_error("Error while creating Xpress environment");
 }
 
 void XpressmpBackend::CloseSolver() {
-  if(lp())
+
+  /* Free the fixed model */
+  if (lp() != nullptr && lp() != model_fixed_) {
+    assert(model_fixed_);
+    XPRSdestroyprob(model_fixed_);
+  }
+  model_fixed_ = nullptr;
+
+  if(lp()!=nullptr)
     XPRESSMP_CCALL(XPRSdestroyprob(lp()));
 }
 
@@ -104,10 +115,10 @@ pre::ValueMapDbl XpressmpBackend::DualSolution() {
 }
 
 ArrayRef<double> XpressmpBackend::DualSolution_LP() {
-  int num_cons = NumLinCons();
-  std::vector<double> pi(num_cons);
-  if (!IsMIP()) {
-    int error = XPRSgetlpsol(lp(), NULL, NULL, pi.data(), NULL);
+  std::vector<double> pi(NumLinCons());
+  if (!IsMIP() || need_fixed_MIP())
+  {
+    int error = XPRSgetlpsol(model_fixed_, NULL, NULL, pi.data(), NULL);
     if (error)
       pi.clear();
   }
@@ -190,12 +201,72 @@ void XpressmpBackend::ReportResults() {
   BaseBackend::ReportResults();
 }
 
+
 void XpressmpBackend::ReportXPRESSMPResults() {
   SetStatus( ConvertXPRESSMPStatus() );
   AddXPRESSMPMessages();
   if (need_multiple_solutions())
     ReportXPRESSMPPool();
+  if (need_fixed_MIP())
+    ConsiderXpressFixedModel();
+  
+}
+
+void XpressmpBackend::ConsiderXpressFixedModel() {
+  if (!IsMIP())
+    return;
+
+  // Create fixed model
+  XPRSprob mdl;
+  if (XPRScreateprob(&mdl)) return;
+  if (XPRScopyprob(mdl, lp(), "FixedModel")) return;
+  if (XPRScopycontrols(mdl, lp())) return;
+  XPRSsetintcontrol(mdl, XPRS_PRESOLVE, 0);
+  if (XPRSfixmipentities(mdl, 1)) return;
+  model_fixed_ = mdl;
+
+  auto msg = DoXpressFixedModel();
+  if (!msg.empty()) {
+    AddToSolverMessage(msg +
+      " failed in DoXpressFixedModel().");
+    XPRSdestroyprob(model_fixed_);
+    model_fixed_ = lp();
   }
+}
+std::string XpressmpBackend::DoXpressFixedModel()
+{
+  if (XPRSlpoptimize(model_fixed_, ""))
+    return "optimize()";
+  int status;
+  if (XPRSgetintattrib(model_fixed_, XPRS_LPSTATUS, &status))
+    return "getStatus()";
+  static const char* statusName[] = {
+    "Infeasible",
+    "Cut off",
+    "Unfinished",
+    "Unbounded",
+    "Cutoff in dual",
+    "Unsolved",
+    "Nonconvex" };
+  if (status != XPRS_LP_OPTIMAL) {
+    if (status >= XPRS_LP_INFEAS && status <= XPRS_LP_NONCONVEX)
+      return fmt::format(
+        "Fixed model status: {}. XPRSlpoptimize",
+        statusName[status - XPRS_LP_INFEAS]);
+    else
+      return fmt::format(
+        "Surprise status {} after XPRSlpoptimize", status);
+  }
+  int f;
+  if (!XPRSgetintattrib(model_fixed_, XPRS_SIMPLEXITER, &f)) {
+    if (f)
+      AddToSolverMessage(fmt::format(
+        "Fixed MIP for mip:basis: {} simplex iteration{}",
+        f, "s"[f == 1.]));
+  }
+  return {};
+
+}
   std::vector<double> XpressmpBackend::getPoolSolution(int id)
   {
     std::vector<double> vars(NumVars());
@@ -2265,7 +2336,7 @@ double XpressmpBackend::MIPGapAbs() {
 ArrayRef<int> XpressmpBackend::VarStatii() {
 
   std::vector<int> vars(NumVars());
-  int status = XPRSgetbasis(lp(), NULL, vars.data());
+  int status = XPRSgetbasis(model_fixed_, NULL, vars.data());
   if (status)
     vars.clear();
   else 
@@ -2284,7 +2355,7 @@ ArrayRef<int> XpressmpBackend::VarStatii() {
         s = (int)BasicStatus::sup;
         break;
       default:
-        MP_RAISE(fmt::format("Unknown Xpressmp VBasis value: {}", s));
+        MP_RAISE(fmt::format("Unknown Xpress basis value: {}", s));
       }
     }
   return vars;
@@ -2293,7 +2364,7 @@ ArrayRef<int> XpressmpBackend::VarStatii() {
 ArrayRef<int> XpressmpBackend::ConStatii() {
 
   std::vector<int> cons(NumLinCons());
-  int status = XPRSgetbasis(lp(), cons.data(), NULL);
+  int status = XPRSgetbasis(model_fixed_, cons.data(), NULL);
   if (status)
     cons.clear();
   else
@@ -2312,7 +2383,7 @@ ArrayRef<int> XpressmpBackend::ConStatii() {
         s = (int)BasicStatus::sup;
         break;
       default:
-        MP_RAISE(fmt::format("Unknown Xpressmp VBasis value: {}", s));
+        MP_RAISE(fmt::format("Unknown Xpress basis value: {}", s));
       }
     }
   return cons;
