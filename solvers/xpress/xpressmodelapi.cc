@@ -52,7 +52,7 @@ void XpressmpModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo )
   } else {
     // All objectives must have the same sense, so we will have to automatically 
     // set a conflicting objective's weight to -1 
-    obj::Type mainObjSense = getIntAttr(XPRS_OBJSENSE) == -1.0 ? obj::Type::MAX : obj::Type::MIN;
+    obj::Type mainObjSense = getDblAttr(XPRS_OBJSENSE) == -1.0 ? obj::Type::MAX : obj::Type::MIN;
     double weight = lo.obj_sense() == mainObjSense ? 1.0 : -1.0; 
     XPRESSMP_CCALL(XPRSaddobj(lp(), lo.num_terms(), lo.vars().data(), lo.coefs().data(), 0, weight));
   }

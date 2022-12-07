@@ -1,5 +1,5 @@
 Summary of recent updates to CBCMP for AMPL
 =============================================
 
-### TBD
-- First release of cbc driver
+### 20221208
+- First release of MP-based cbc driver

@@ -1789,7 +1789,7 @@ AddSolverOption("alg:resourcestrategy resourcestrategy",
     "Whether a MIP search should be deterministic:\n", 
     XPRS_DETERMINISTIC, values_deterministic, 1);
 
-  AddSolverOption("mip:feasibilitypump feasibilitypump",
+  AddSolverOption("mip:feasibilityjump feasibilityjump",
     "Decides whether to run the Feasibility Jump heuristic at the top "
     "node during branch-and-bound:\n"
     "\n.. value-table::\n", XPRS_FEASIBILITYJUMP,
