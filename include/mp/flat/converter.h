@@ -231,6 +231,14 @@ public: // for ConstraintKeeper
     MP_DISPATCH(Convert(con, i));
   }
 
+  /// Query if a constraint type
+  /// is natively accepted by the solver.
+  /// The parameter is only needed for type.
+  template <class Con>
+  ConstraintAcceptanceLevel GetConstraintAcceptance(Con* ) const {
+    return GET_CONST_CONSTRAINT_KEEPER(Con).GetChosenAcceptanceLevel();
+  }
+
   /// Query if the constraint type
   /// can be converted.
   /// This method should not be redefined;
@@ -738,10 +746,10 @@ public:
   bool IfPreproEqBinVar() const
   { return MPCD( CanPreprocess(options_.preprocessEqualityBvar_) ); }
 
-  /// Whether we pass quad obj terms
+  /// Whether we pass quad obj terms to the solver without linearization
   bool IfPassQuadObj() const { return options_.passQuadObj_; }
 
-  /// Whether we pass quad con terms
+  /// Whether we pass quad con terms to the solver without linearization
   bool IfPassQuadCon() const { return options_.passQuadCon_; }
 
   /// Whether to quadratize pow(..., const_pos_int).
@@ -882,6 +890,10 @@ protected:
       ComplementarityLinear, "acc:compl acc:compllin")
   STORE_CONSTRAINT_TYPE__NO_MAP(
       ComplementarityQuadratic, "acc:complquad")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      QuadraticConeConstraint, "acc:quadcone")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      RotatedQuadraticConeConstraint, "acc:rotatedquadcone")
 
 
   ////////////////////// Default map accessors /////////////////////////

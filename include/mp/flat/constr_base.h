@@ -92,6 +92,8 @@ template <class Num, size_t N>
 using ParamArray0 = ParamArrayN<int, 0>;
 /// Fixed parameter array of 1 double
 using DblParamArray1 = ParamArrayN<double, 1>;
+/// Variable-length parameter array
+using DblParamArray = std::vector<double>;
 
 /// A functional constraint with given arguments
 /// and further info as parameters
@@ -260,6 +262,16 @@ public:
 /// A wrapper on a static constraint making it conditional
 #define DEF_CONDITIONAL_CONSTRAINT_WRAPPER(Name, StaticConName) \
   using Name = ConditionalConstraint< StaticConName >
+
+////////////////////////////////////////////////////////////////////////
+/// STATIC CONSTRAINTS
+/// Workaround: defining as functional  constraint (result unused)
+/// Could be solved by a mix-in parent
+#define DEF_STATIC_CONSTR(Name, Args, Descr) \
+    DEF_LOGICAL_FUNC_CONSTR(Name, Args, Descr)
+#define DEF_STATIC_CONSTR_WITH_PRM(Name, Args, Params, Descr) \
+    DEF_LOGICAL_FUNC_CONSTR_WITH_PRM(Name, Args, Params, Descr)
+
 
 } // namespace mp
 

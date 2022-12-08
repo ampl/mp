@@ -24,6 +24,8 @@ public:
     return false;
   }
 
+  /// Access const ModelConverter
+  const ModelConverter& GetMC() const { return mdl_cvt_; }
   /// Access ModelConverter
   ModelConverter& GetMC() { return mdl_cvt_; }
 
@@ -124,6 +126,13 @@ public:
   const char* key() const { return key_; }
   /// Detailed message, should help improve model
   const char* message() const { return msg_; }
+};
+
+
+/// Graceful constraint conversion failure - no warnings
+class ConstraintConversionGracefulFailure {
+public:
+  ConstraintConversionGracefulFailure() { }
 };
 
 

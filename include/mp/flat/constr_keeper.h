@@ -429,6 +429,8 @@ protected:
         if (!cons_[i].IsBridged()) {
           try {       // Try to convert all but allow failure
             ConvertConstraint(cons_[i], i);
+          } catch (const ConstraintConversionGracefulFailure& ) {
+            /// nothing
           } catch (const ConstraintConversionFailure& ccf) {
             GetConverter().AddWarning( ccf.key(), ccf.message() );
           }

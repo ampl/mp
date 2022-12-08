@@ -188,6 +188,14 @@ using ComplementarityLinear = ComplementarityConstraint<AffineExpr>;
 /// Typedef ComplementarityQuadRange
 using ComplementarityQuadratic = ComplementarityConstraint<QuadraticExpr>;
 
+/// Quadratic cone
+DEF_STATIC_CONSTR_WITH_PRM( QuadraticConeConstraint, VarArray, DblParamArray,
+                            "Quadratic cone x1 >= sqrt(x2^2 + ...)) with factors "
+                            "applied to the squared arguments, aka MOSEK 10 affine cones");
+/// Rotated quadratic cone
+DEF_STATIC_CONSTR_WITH_PRM( RotatedQuadraticConeConstraint, VarArray, DblParamArray,
+                            "Rotated quadratic cone x1*x2 >= sqrt(x3^2 + ...)) with factors "
+                            "applied to the squared arguments, aka MOSEK 10 affine cones");
 
 } // namespace mp
 
