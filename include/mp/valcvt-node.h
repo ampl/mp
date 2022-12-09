@@ -128,8 +128,12 @@ public:
   }
 
   /// Create entry (range) pointer: select n elements at certain pos
+  /// pos=-1 means last
   NodeRange Select(int pos, int n=1) {
     NodeRange nr;
+    if (pos<0)              // pos=-1 =>
+      pos = sz_+pos;        // pos = last
+    assert(pos>=0);
     nr.Assign(this, {pos, pos+n});
     if ((int)sz_<pos+n)
       sz_ = pos+n;

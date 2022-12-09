@@ -329,7 +329,9 @@ public:
   /// as for constraints
   pre::NodeRange AddObjective(QuadraticObjective&& qo) {
     GetModel().AddObjective( std::move(qo) );
-    return AutoLink( GetObjValueNode().Add() );
+    /// Temporarily removing AutoLinking for objectives
+    // return AutoLink( GetObjValueNode().Add() );
+    return GetObjValueNode().Select(-1);
   }
 
   /// ADD CUSTOM CONSTRAINT, does not propagate result

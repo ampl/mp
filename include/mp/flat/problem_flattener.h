@@ -175,9 +175,10 @@ protected:
             GetValuePresolver().GetTargetNodes().GetObjValues()().Add() });
     /// After the CopyLink, add One2ManyLink for converted expressions.
     /// When postsolving, CopyLink is executed last and copies obj values.
-    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
-      GetFlatCvt(), obj_src
-    };
+    /// !!!! Temporarily removing AutoLinking for objectives
+//    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
+//      GetFlatCvt(), obj_src
+//    };
     auto le = ToLinTerms(obj.linear_expr());
     NumericExpr e = obj.nonlinear_expr();
     EExpr eexpr;
