@@ -523,6 +523,11 @@ public:
                 e.condition(), e.then_expr(), e.else_expr() });
   }
 
+  EExpr VisitImplication(ImplicationExpr e) {
+    return VisitFunctionalExpression<ImplicationConstraint>({
+                e.condition(), e.then_expr(), e.else_expr() });
+  }
+
   EExpr VisitIff(BinaryLogicalExpr e) {
     return VisitRelationalExpression<0>({ e.lhs(), e.rhs() });
   }

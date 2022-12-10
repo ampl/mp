@@ -77,7 +77,7 @@ AMPL/MP allows building only parts of the project you are interested in,
 for example you can choose to build only a single solver interface.
 This is done with the help of modules which are optional components that
 can be built separately. Each solver interface and function library is
-a module. See the documentation in :ref:`solver_drivers` and
+a module. See the documentation in :ref:`solver-drivers` and
 :file:`solvers/CMakeLists.txt` for module definitions.
 
 By default all modules are disabled and only the main MP libraries are built.

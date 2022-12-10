@@ -80,6 +80,8 @@ public:
     solutionfileoverride_ = solFile;
   }
   std::string GetOverridenSolutionFile() { return solutionfileoverride_; }
+
+
 private:
   Callbacks callbacks_;
   std::string solutionfileoverride_;

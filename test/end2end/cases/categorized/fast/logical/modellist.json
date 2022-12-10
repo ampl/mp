@@ -68,6 +68,18 @@
     "tags" : ["logical"]
   },
   {
+    "name" : "impl_else_01",
+    "tags" : ["logical"],
+    "values": {
+      "if (forall {s in NS} (VAL_U_F2[s] = 1  ==>  U_F2[s] >= 0.0001  else  U_F2[s] = 0)) then 1": 1
+    }
+  },
+  {
+    "name" : "impl_else_02",
+    "objective" : -214,
+    "tags" : ["logical"]
+  },
+  {
     "name" : "int_ne_01",
     "objective" : 19,
     "tags" : ["logical"]

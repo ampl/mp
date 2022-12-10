@@ -64,6 +64,8 @@ public:
   INSTALL_ITEM_CONVERTER(CondQuadGTConverter_MIP)
   /// IfThenElse
   INSTALL_ITEM_CONVERTER(IfThenElseConverter_MIP)
+  /// Implication
+  INSTALL_ITEM_CONVERTER(ImplicationConverter_MIP)
   /// ImplLE
   INSTALL_ITEM_CONVERTER(IndicatorLinLEConverter_MIP)
   /// ImplEQ

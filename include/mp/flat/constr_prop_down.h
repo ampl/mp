@@ -119,7 +119,16 @@ public:
     auto& args = con.GetArguments();
     MPD( PropagateResultOfInitExpr(args[0], 0.0, 1.0, Context::CTX_MIX) );
     MPD( PropagateResultOfInitExpr(args[1], MPD( MinusInfty() ), MPD( Infty() ), +ctx) );
-    MPD( PropagateResultOfInitExpr(args[2], MPD( MinusInfty() ), MPD( Infty() ), -ctx) );
+    MPD( PropagateResultOfInitExpr(args[2], MPD( MinusInfty() ), MPD( Infty() ), +ctx) );
+  }
+
+  void PropagateResult(ImplicationConstraint& con, double lb, double ub, Context ctx) {
+    MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
+    con.AddContext(ctx);
+    auto& args = con.GetArguments();
+    MPD( PropagateResultOfInitExpr(args[0], 0.0, 1.0, Context::CTX_MIX) );
+    MPD( PropagateResultOfInitExpr(args[1], 0.0, 1.0, +ctx) );
+    MPD( PropagateResultOfInitExpr(args[2], 0.0, 1.0, +ctx) );
   }
 
   void PropagateResult(AllDiffConstraint& con, double lb, double ub, Context ctx) {

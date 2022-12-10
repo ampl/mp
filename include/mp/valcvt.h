@@ -2,7 +2,6 @@
 #define VALUE_PRESOLVE_H
 
 /**
-  @file valcvt.h.
   Implementation of value presolver
   */
 

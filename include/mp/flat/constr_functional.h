@@ -43,8 +43,12 @@ DEF_NUMERIC_FUNC_CONSTR( DivConstraint, VarArray2,
                                   "r = v1 / v2 and v2!=0");
 
 ////////////////////////////////////////////////////////////////////////
-DEF_LOGICAL_FUNC_CONSTR( IfThenConstraint, VarArrayN<3>,
-                                  "if (cond) then (expr1) else (expr2)");
+DEF_NUMERIC_FUNC_CONSTR( IfThenConstraint, VarArrayN<3>,
+                         "Expr-valued: if (cond) then (expr1) else (expr2)");
+
+////////////////////////////////////////////////////////////////////////
+DEF_LOGICAL_FUNC_CONSTR( ImplicationConstraint, VarArrayN<3>,
+                         "Logic-valued: if (cond) then (con1) else (con2)");
 
 ////////////////////////////////////////////////////////////////////////
 DEF_LOGICAL_FUNC_CONSTR( AllDiffConstraint, VarArray,

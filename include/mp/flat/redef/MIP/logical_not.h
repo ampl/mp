@@ -26,7 +26,7 @@ public:
     int var_res_lin = GetMC().AssignResultVar2Args(
           LinearFunctionalConstraint(
             {{{-1.0}, {nc.GetArguments()[0]}}, 1.0}));
-    GetMC().AddConstraint(LinConEQ{
+    GetMC().AddConstraint(LinConEQ{    // Could use RedefineVariable()
                             { {-1.0, 1.0},
                               {nc.GetResultVar(), var_res_lin} },
                             {0.0}});

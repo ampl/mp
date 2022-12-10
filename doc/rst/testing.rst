@@ -91,6 +91,7 @@ following items, where non-compulsory items are italicized:
 
         "values": {
           "if color['Belgium'] != color['France'] then 1": 1,
+          "if (forall {s in NS} (VAL_U_F2[s] = 1  ==>  U_F2[s] >= 0.0001  else  U_F2[s] = 0)) then 1": 1,
           "if abs(x) < 1e-3 then 1": 1,
           "solve_result_num": 0
         }

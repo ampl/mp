@@ -13,6 +13,7 @@
 #include "mp/flat/redef/MIP/count.h"
 #include "mp/flat/redef/MIP/div.h"
 #include "mp/flat/redef/MIP/ifthenelse.h"
+#include "mp/flat/redef/MIP/impl.h"
 #include "mp/flat/redef/MIP/indicator_le.h"
 #include "mp/flat/redef/MIP/indicator_ge.h"
 #include "mp/flat/redef/MIP/indicator_eq.h"

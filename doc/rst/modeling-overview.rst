@@ -8,11 +8,14 @@ Solver interfaces built with MP are able to handle a significantly
 expanded range of model expressions.
 Currently available MP-based solvers include:
 
-- `gurobi <https://github.com/ampl/mp/tree/develop/solvers/gurobi>`_, an enhanced interface to the `Gurobi <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_ solver
+- `gurobi <https://github.com/ampl/mp/tree/develop/solvers/gurobi>`_,
+  an enhanced interface to the `Gurobi solver <https://ampl.com/products/solvers/solvers-we-sell/gurobi/>`_
 
-- `copt <https://github.com/ampl/mp/tree/develop/solvers/copt>`_, an interface to `Cardinal Optimizer <https://ampl.com/products/solvers/solvers-we-sell/copt/>`_
+- `copt <https://github.com/ampl/mp/tree/develop/solvers/copt>`_,
+  an interface to `Cardinal Optimizer <https://ampl.com/products/solvers/solvers-we-sell/copt/>`_
 
-- `highs <https://github.com/ampl/mp/tree/develop/solvers/highsmp>`_, an interface to the open-source `HiGHS solver <https://highs.dev/>`_ solver
+- `highs <https://github.com/ampl/mp/tree/develop/solvers/highsmp>`_,
+  an interface to the open-source `HiGHS solver <https://highs.dev/>`_ solver
 
 Binaries for these solvers can be downloaded, in distribution
 bundles and individually, through the `AMPL Portal <https://portal.ampl.com>`_.

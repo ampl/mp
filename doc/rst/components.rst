@@ -248,18 +248,18 @@ by auxiliary variables:
 
 .. code-block:: ampl
 
-   var t1 = "log(y)";
-   var t2 = "numberof 2 in (x, y)";
+   var t1 = log(y);
+   var t2 = numberof 2 in (x, y);
 
-   s.t. Con01': x + t1 <= 5;
-   s.t. Con02': t2 <= 1;
+   s.t. Con01_: x + t1 <= 5;
+   s.t. Con02_: t2 <= 1;
 
 Then,  the defining constraints of ``t1`` and ``t2`` are either passed to the solver
 which accepts them via the :ref:`model API <flat-model-api>`, or become reformulated
 into more simple entities by :ref:`Flat Converter <flat-converters>`. If the solver
 natively accepts a nonlinear constraint, it is possible to still apply automatic
-reformulation via a solver option, for example `acc:log` for logarithm. Run the driver
-with `-=` or `-c` for a list of natively accepted constraints and options.
+reformulation via a solver option, for example *acc:log* for logarithm. Run the driver
+with *-=* or *-c* for a list of natively accepted constraints and options.
 
 An in-depth treatment of some automatic reformulations is given in
 [CLModernArch]_, [SOCTransform]_, [MOI]_, and [CP2MIP]_. Customization for a new solver

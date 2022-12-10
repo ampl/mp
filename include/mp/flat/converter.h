@@ -846,6 +846,7 @@ protected:
   STORE_CONSTRAINT_TYPE__WITH_MAP(NotConstraint, "acc:not")
   STORE_CONSTRAINT_TYPE__WITH_MAP(DivConstraint, "acc:div")
   STORE_CONSTRAINT_TYPE__WITH_MAP(IfThenConstraint, "acc:ifthen")
+  STORE_CONSTRAINT_TYPE__WITH_MAP(ImplicationConstraint, "acc:impl")
   STORE_CONSTRAINT_TYPE__WITH_MAP(AllDiffConstraint, "acc:alldiff")
   STORE_CONSTRAINT_TYPE__WITH_MAP(NumberofConstConstraint,
                                   "acc:numberofconst")

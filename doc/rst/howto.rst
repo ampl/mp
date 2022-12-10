@@ -76,12 +76,14 @@ the cmake variable `BUILD` appropriately::
   make
 
 For faster recompilation, install ``ccache`` and
-add the following CMake flags::
+add the following CMake flags
 
-  -DBUILD_TESTS=off -DBUILD_EXAMPLES=off -DBUILD_DOC=off
-  -DCMAKE_BUILD_TYPE=Debug                     ## Linux/Unix way to set debug mode
-  -DUSE_SANITIZERS=on                          ## Linux/Unix way to use code sanitizers
-                                               ## (slow, for checking only)
+.. code-block:: cmake
+
+   -DBUILD_TESTS=off -DBUILD_EXAMPLES=off -DBUILD_DOC=off
+   -DCMAKE_BUILD_TYPE=Debug                     ## Linux/Unix way to set debug mode
+   -DUSE_SANITIZERS=on                          ## Linux/Unix way to use code sanitizers
+                                                ## (slow, for checking only)
 
 Once built, executing::
 
@@ -297,8 +299,8 @@ constraints are supported, the following code needs to be added:
 If you want a big-M linearization to be attempted first, replace `Recommended` by
 `AcceptedButNotRecommended`.
 To see the list of supported constraints, which largely correspond to
-:ref:`AMPL modeling expressions <modeling-guide>`, see `constr_std.h`,
-or run an existing driver with `-c`.
+:ref:`AMPL modeling expressions <modeling-guide>`, see ``constr_std.h``,
+or run an existing driver with ``-c``.
 For explanation of constraint groups, see :ref:`value-presolver`.
 
 Specifically for quadratic constraints
@@ -353,7 +355,7 @@ to other solvers.
 Only if it's very specific,
 derive a custom class from `mp::FlatConverter` or `mp::MIPFlatConverter`
 and use it in ``Create<YourSolver>ModelMgr`` (its default implementation
-is in `<yourSolver>modelapi.cc`).
+is in ``<yourSolver>modelapi.cc``).
 
 
 Add a converter for a constraint
@@ -411,8 +413,8 @@ do the following:
 2. In method `OpenSolver()` set verbosity level to silent, before the options
    are processed.
 
-3. In `FinishOptionParsing()` call the inherited method `set_verbose_mode(v)`
-   with `v==true` iff *outlev>0*.
+3. In `FinishOptionParsing()` call the inherited method ``set_verbose_mode(v)``
+   with ``v==true`` iff *outlev>0*.
 
 
 Sensitivity analysis
@@ -428,7 +430,7 @@ do the following:
       ALLOW_STD_FEATURE(SENSITIVITY_ANALYSIS, true)
 
 2. For derivatives of `mp::FlatBackend` you can override `GetSensRangesPresolved()`
-   which automatically :ref:`postsolves <>` the sensitivity information:
+   which automatically :ref:`postsolves <value-presolver>` the sensitivity information:
 
    .. code-block:: c++
 

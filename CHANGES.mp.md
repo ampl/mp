@@ -1,7 +1,10 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
-## unreleased
+## 20221211
+- *==> else*
+   Implemented implication with 'else': *constr1* ==> *constr2* [else *constr3*]   
+
 - *PLApproxRelTol, PLApproxDomain*
    Parameters to control piecewise-linear approximation.
    cvt:plapprox:reltol default value changed from 1e-5 to 0.01.

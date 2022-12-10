@@ -304,6 +304,14 @@ public:
                             common_type( { args[1], args[2] } ) );
   }
 
+  /// Preprocess IfThen
+  template <class PreprocessInfo>
+  void PreprocessConstraint(
+      ImplicationConstraint& , PreprocessInfo& prepro) {
+    prepro.narrow_result_bounds(0.0, 1.0); // no prepro yet
+    prepro.set_result_type( var::INTEGER );
+  }
+
   ////////////////////// NONLINEAR FUNCTIONS //////////////////////
   template <class PreprocessInfo>
   void PreprocessConstraint(
