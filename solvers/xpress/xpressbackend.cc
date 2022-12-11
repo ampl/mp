@@ -1075,13 +1075,13 @@ std::string XpressmpBackend::DoXpressFixedModel()
 void XpressmpBackend::InitCustomOptions() {
 
   set_option_header(
-      "XPRESSMP Optimizer Options for AMPL\n"
+      "XPRESS Optimizer Options for AMPL\n"
       "--------------------------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to the "
-      "AMPL option ``xpressmp_options``. For example::\n"
+      "AMPL option ``xpress_options``. For example::\n"
       "\n"
-      "  ampl: option xpressmp_options 'mipgap=1e-6';\n");
+      "  ampl: option xpress_options 'mipgap=1e-6';\n");
 
   // ****************************
   // General
