@@ -1,6 +1,7 @@
 #include <vector>
 #include <climits>
 #include <cfloat>
+#include <algorithm>
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
@@ -270,9 +271,9 @@ void HighsBackend::VarConStatii(ArrayRef<int> vst, ArrayRef<int> cst) {
 
 void HighsBackend::AddHIGHSMessages() {
   auto ni = SimplexIterations();
-  if (ni > -1)
+  if (true)
     AddToSolverMessage(
-          fmt::format("{} simplex iterations\n", ni));
+          fmt::format("{} simplex iterations\n", std::max(0.0, ni)));
   auto nbi = BarrierIterations();
   if (nbi > -1)
     AddToSolverMessage(

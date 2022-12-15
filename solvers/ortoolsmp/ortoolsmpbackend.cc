@@ -185,9 +185,8 @@ void OrtoolsBackend::ReportORTOOLSPool() {
 
 
 void OrtoolsBackend::AddORTOOLSMessages() {
-  if (auto ni = SimplexIterations())
-    AddToSolverMessage(
-          fmt::format("{} simplex iterations\n", ni));
+  AddToSolverMessage(
+          fmt::format("{} simplex iterations\n", SimplexIterations()));
   if (auto nbi = BarrierIterations())
     AddToSolverMessage(
           fmt::format("{} barrier iterations\n", nbi));

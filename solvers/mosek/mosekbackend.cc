@@ -238,9 +238,8 @@ void MosekBackend::ReportMOSEKPool() {
 
 
 void MosekBackend::AddMOSEKMessages() {
-  if (auto ni = SimplexIterations())
-    AddToSolverMessage(
-          fmt::format("{} simplex iterations\n", ni));
+  AddToSolverMessage(
+          fmt::format("{} simplex iterations\n", SimplexIterations()));
   if (auto nbi = BarrierIterations())
     AddToSolverMessage(
           fmt::format("{} barrier iterations\n", nbi));
