@@ -132,7 +132,7 @@ void SolutionWriterImpl<Solver, PB, Writer>::HandleFeasibleSolution(
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values,
                      dual_values ? builder_.num_algebraic_cons() : 0),
-        solver_.objno());
+        solver_.objno_used());
   fmt::MemoryWriter filename;
   filename << solution_stub << num_solutions_ << ".sol";
   this->Write(filename.c_str(), sol);
@@ -159,7 +159,7 @@ void SolutionWriterImpl<Solver, PB, Writer>::HandleSolution(
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values,
                      dual_values ? builder_.num_algebraic_cons() : 0),
-        solver_.objno());
+        solver_.objno_used());
   
   std::string solFilePath;
   if (!overrideStub_.empty()) { 
@@ -204,8 +204,9 @@ public:
   int num_options() const { return num_options_; }
   const int *options() const { return options_; }
 
-  int objno() const override { return solver_.objno(); }
+  int objno() const override { return solver_.objno_specified(); }
   bool multiobj() const override { return solver_.multiobj(); }
+  void notify_obj_added() const override { solver_.notify_obj_added(); }
 
   void OnHeader(const NLHeader &h);
 };
@@ -224,8 +225,8 @@ using SolverNLHandler = SolverNLHandlerImpl<
 
 template <typename Solver, typename PB, typename NLPB>
 void SolverNLHandlerImpl<Solver, PB, NLPB>::OnHeader(const NLHeader &h) {
-  int objno = solver_.objno();
-  if (objno > h.num_objs && solver_.objno_specified())
+  int objno = solver_.objno_specified();
+  if (objno > h.num_objs && solver_.is_objno_specified())
     throw InvalidOptionValue("objno", objno,
                              fmt::format("expected value between 0 and {}", h.num_objs));
   num_options_ = h.num_ampl_options;

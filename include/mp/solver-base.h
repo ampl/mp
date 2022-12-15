@@ -202,12 +202,20 @@ public:
   /// Outputs test infos etc
   bool debug_mode() const { return debug_; }
 
+
+
   /// Returns the index of the objective to optimize starting from 1,
   /// 0 to not use objective.
-  /// Both multiobj and objno are used in NLReader to select
-  /// the objective(s), solvers should not use these options.
-  int objno() const { return std::abs(objno_); }
-  bool objno_specified() const { return objno_>=0; }
+  int objno_used() const {
+    return obj_added_ ? objno_specified() : 0;
+  }
+  /// Both multiobj() and objno_specified() are used in NLReader to select
+  /// the objective(s), solvers should not use these accessors.
+  int objno_specified() const { return std::abs(objno_); }
+  /// Whether user specified the option objno
+  bool is_objno_specified() const { return objno_>=0; }
+  /// Notify Solver if an objective is added
+  void notify_obj_added() { obj_added_ = true; }
 
   /// Returns true if multiobjective optimization is enabled.
   /// Both multiobj and objno are used in NLReader to select
@@ -428,6 +436,8 @@ private:
   /// Index of the objective to optimize starting from 1, 0 to ignore
   /// objective, or -1 to use the first objective if there is one.
   int objno_ {-1};
+  /// Flag whether an objective has been added
+  bool obj_added_ {false};
 
   enum {SHOW_VERSION = 1, AMPL_FLAG = 2};
   int bool_options_ {0};

@@ -2284,6 +2284,9 @@ class NLProblemBuilder {
   /// multiobj(). virtual, so that SolverNLHandler can override
   virtual bool multiobj() const { return true; }
 
+  /// notify_obj_added(). virtual, so that SolverNLHandler can override
+  virtual void notify_obj_added() const { }
+
   /// Actual N objectives
   int resulting_nobj(int nobj_header) const {
     return multiobj() ? nobj_header :
@@ -2295,7 +2298,9 @@ class NLProblemBuilder {
     return multiobj() || objno()-1==obj_index;
   }
 
-  /// Final obj index for a given original index
+  /// Final obj index for a given original index.
+  /// For multiobj, it's the same.
+  /// Otherwise it's 0 (1st objective).
   int resulting_obj_index(int index) const {
     if (multiobj())
       return index;
@@ -2305,6 +2310,7 @@ class NLProblemBuilder {
 
   void OnObj(int index, obj::Type type, NumericExpr expr) {
     SetObj(builder_.obj(index), type, expr);
+    notify_obj_added();
   }
 
   void OnAlgebraicCon(int index, NumericExpr expr) {
