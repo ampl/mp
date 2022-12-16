@@ -329,6 +329,11 @@ struct PLPoints {
       }
     }
   }
+  /// Clear out
+  void clear() {
+    x_.clear();
+    y_.clear();
+  }
   /// Get preslope
   double PreSlope() const {
     return (x_.size()<=1 || x_[0]>=x_[1]) ?

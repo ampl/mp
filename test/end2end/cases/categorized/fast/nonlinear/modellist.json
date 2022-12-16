@@ -274,6 +274,14 @@
     }
   },
   {
+    "name" : "sinh_01_integer",
+    "tags" : ["continuous", "nonlinear"],
+    "values": {
+      "if abs(y-sinh(x))<=1e-2 then 1 else 0": 1,
+      "if abs(_obj[1])<=0.01 then 1 else 0": 1
+    }
+  },
+  {
     "name" : "cosh_01",
     "tags" : ["continuous", "nonlinear"],
     "values": {

@@ -165,7 +165,8 @@ protected:
   virtual bool NextSubinterval();
   /// Approximate in the chosen subinterval
   virtual void ApproximateSubinterval();
-
+  /// See if we can use argument's integrality
+  virtual void ConsiderIntegrality();
 
   /// Provide initial step length to the right from
   /// the current point, trying have the error nearly ok
@@ -252,6 +253,7 @@ void BasicPLApproximator<FuncCon>::Run() {
      do {
        ApproximateSubinterval();
      } while (NextSubinterval());
+     ConsiderIntegrality();
    }
  }
 
@@ -323,6 +325,21 @@ void BasicPLApproximator<FuncCon>::ApproximateSubinterval() {
       x0 = ub_sub();
     GetPL().AddPoint(x0, f0 = eval(x0));
   } while (x0 < ub_sub());
+}
+
+template <class FuncCon>
+void BasicPLApproximator<FuncCon>::ConsiderIntegrality() {
+  /// Simple case when N breakpoints >= N integer points
+  if (laPrm_.is_x_int && !laPrm_.fUsePeriod) {
+    auto x0=std::ceil(laPrm_.grDomOut.lbx);
+    auto xN=std::floor(laPrm_.grDomOut.ubx);
+    auto N = int(xN - x0 + 1);
+    if (N <= laPrm_.plPoints.size()) {
+      laPrm_.plPoints.clear();
+      for (int k=0; k<N; ++k)       // use double + int
+        laPrm_.plPoints.AddPoint(x0+k, eval(x0+k));
+    }
+  }
 }
 
 template <class FuncCon>

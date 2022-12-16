@@ -53,6 +53,7 @@ public:
     laPrm.grDom.ubx = std::min(GetMC().ub(x), dm);
     laPrm.grDom.lby = std::max(GetMC().lb(y), -dm);
     laPrm.grDom.uby = std::min(GetMC().ub(y), dm);
+    laPrm.is_x_int = GetMC().is_var_integer(x);
 
     auto warn = GetWarningKeyAndText(con.GetTypeName(), laPrm.ubErr);
     GetMC().AddWarning( warn.first, warn.second );

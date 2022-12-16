@@ -33,6 +33,8 @@ struct PLApproxParams {
   /////////// INPUT DATA //////////////
   /// Graph domain for approximation
   FuncGraphDomain grDom;
+  /// Argument's integrality
+  bool is_x_int {false};
   /// Error upper bound
   /// (relative outside of +-1, absolute inside)
   double ubErr = 1e-5;
