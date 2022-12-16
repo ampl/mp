@@ -1,3 +1,5 @@
+.. _modeling-overview:
+
 Modeling overview
 -----------------
 
@@ -16,6 +18,12 @@ Currently available MP-based solvers include:
 
 - `highs <https://github.com/ampl/mp/tree/develop/solvers/highsmp>`_,
   an interface to the open-source `HiGHS solver <https://highs.dev/>`_ solver
+
+- `cbc <https://github.com/ampl/mp/tree/develop/solvers/cbcmp>`_,
+  an enhanced interface to the `CBC solver <https://ampl.com/products/solvers/open-source-solvers/>`_
+
+- `xpress <https://github.com/ampl/mp/tree/develop/solvers/xpress>`_,
+  an interface to `FICO Xpress <https://ampl.com/products/solvers/solvers-we-sell/xpress/>`_
 
 Binaries for these solvers can be downloaded, in distribution
 bundles and individually, through the `AMPL Portal <https://portal.ampl.com>`_.

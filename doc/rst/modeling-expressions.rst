@@ -25,7 +25,7 @@ The return value of an operator or function is also one of the above, as indicat
 
         x<=0 or (y!=2  ==>
                  x<=-5 else
-                       max((x+1)*(x+2)*(y+3), y)<=3 and exp((x+18)*y)<=12);
+                       max((x+1)*x*z, y, y-z)<=3 and exp(y)<=12);
 
 AMPL represents these combinations as expression trees, which are sent to MP-based solver interfaces to be processed as solvers require.
 

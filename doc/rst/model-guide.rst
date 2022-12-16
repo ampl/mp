@@ -11,10 +11,10 @@ Ever wondered how to model logical and non-linear constraints? For example:
 
 - All variables in a group should have different values
 
-- *y = sin(x)*.
+- Piecewise-linear approximation of *y = sin(x)*.
 
 A series of small modeling tasks like these are handled in the
-:ref:`MP Modeling Series <mp-modeling-series>`,
+`MP Modeling Series <https://discuss.ampl.com/c/modeling/42>`_,
 while below follows a comprehensive guide.
 
 
@@ -26,5 +26,4 @@ while below follows a comprehensive guide.
    modeling-expressions
    modeling-efficiency
    modeling-numerics
-   mp-modeling-series
 

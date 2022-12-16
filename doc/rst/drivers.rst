@@ -11,23 +11,17 @@ Solver drivers
 
 For solvers with traditional 'flat' (no expression trees) APIs,
 non-linear AMPL expressions need to be reformulated.
-For example, ``max(a, b)`` is translated into a constraint meaning
-``<new var> = max(a, b)``, which is in turn reformulated for
-MIP or passed to the solver natively (Gurobi: `GRBaddgenconstrMax`).
+For example, ``max(a, b)`` is translated into a constraint
+
+.. code-block:: ampl
+
+         new_var == max(a, b);
+
+which is in turn reformulated for
+MIP or passed to the solver natively (e.g., Gurobi: `GRBaddgenconstrMax`).
 See the :ref:`modeling-guide`.
 
-There are several implementations:
-
-- `gurobi <https://github.com/ampl/mp/tree/develop/solvers/gurobi>`_
-  (available in the AMPL distribution bundle)
-
-- `cplexmp <https://github.com/ampl/mp/tree/develop/solvers/cplexmp>`_
-
-- `copt <https://github.com/ampl/mp/tree/develop/solvers/copt>`_
-  (available in the AMPL distribution bundle)
-
-- `highs <https://github.com/ampl/mp/tree/develop/solvers/highsmp>`_
-  (see the `HiGHS website <https://highs.dev/>`_)
+There are several implementations, see :ref:`modeling-overview`.
 
 
 .. _expression-solvers:
