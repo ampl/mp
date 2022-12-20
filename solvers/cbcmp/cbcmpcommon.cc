@@ -77,7 +77,14 @@ int CbcmpCommon::NumSOSCons() const {
 }
 
 void CbcmpCommon::GetSolverOption(const char* key, int &value) const {
-  throw std::runtime_error("Not implemented"); // TODO
+    std::string argname = std::string("-") + key;
+    for (int i = 0; (i < ((int)lp()->cmdargs_.size()) - 1); ++i)
+      if (argname == lp()->cmdargs_[i])
+      {
+        value = atoi(lp()->cmdargs_[i + 1].c_str());
+        return;
+      }
+    value = -1;
 }
 
 void CbcmpCommon::SetSolverOption(const char* key, int value) {
@@ -86,7 +93,14 @@ void CbcmpCommon::SetSolverOption(const char* key, int value) {
 }
 
 void CbcmpCommon::GetSolverOption(const char* key, double &value) const {
-  throw std::runtime_error("Not implemented"); // TODO
+  std::string argname = std::string("-") + key;
+  for (int i = 0; (i < ((int)lp()->cmdargs_.size()) - 1); ++i)
+    if (argname == lp()->cmdargs_[i])
+    {
+      value = atof(lp()->cmdargs_[i + 1].c_str());
+      return;
+    }
+    value = -1.0;
 }
 
 void CbcmpCommon::SetSolverOption(const char* key, double value) {
@@ -95,7 +109,14 @@ void CbcmpCommon::SetSolverOption(const char* key, double value) {
 }
 
 void CbcmpCommon::GetSolverOption(const char* key, std::string &value) const {
-  throw std::runtime_error("Not implemented"); // TODO
+  std::string argname = std::string("-") + key;
+  for (int i = 0; (i < ((int)lp()->cmdargs_.size()) - 1); ++i)
+    if (argname == lp()->cmdargs_[i])
+    {
+      value = lp()->cmdargs_[i + 1];
+      return;
+    }
+  value = fmt::format("Could not find param {}", key);
 }
 
 void CbcmpCommon::SetSolverOption(const char* key, std::string value) {

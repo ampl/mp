@@ -23,11 +23,11 @@ public:
   ~CbcmpBackend();
 
   /// Name displayed in messages
-  static const char* GetSolverName() { return "x-CBCMP"; }
+  static const char* GetSolverName() { return "cbc"; }
   std::string GetSolverVersion();
   
-  static const char* GetAMPLSolverName() { return "cbcmp"; }
-  static const char* GetAMPLSolverLongName() { return "AMPL-CBCMP"; }
+  static const char* GetAMPLSolverName() { return "cbc"; }
+  static const char* GetAMPLSolverLongName() { return "AMPL-CBC"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
@@ -144,6 +144,7 @@ private:
   /// These options are stored in the class
   struct Options {
     int timeLimit_ = 0;
+    int outlev_ = 0;
   };
   Options storedOptions_;
 

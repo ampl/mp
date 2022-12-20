@@ -15,7 +15,7 @@ namespace {
 
 
 bool InterruptCbcmp(void* prob) {
-  //return CBCMP_Interrupt((cbcmp_prob*)prob);
+  // TODO Implement interrupter
   return true;
 }
 
@@ -139,11 +139,10 @@ void CbcmpBackend::DoWriteProblem(const std::string & name) {
 
 void CbcmpBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptCbcmp, lp());
-  // TODO Check interrupter
-  //CBCMP_CCALL( CPXsetterminate (env(), &terminate_flag) );
 }
 
 void CbcmpBackend::Solve() {
+  SetSolverOption("log", storedOptions_.outlev_);
   if (storedOptions_.timeLimit_ != 0)
     Cbc_setMaximumSeconds(lp(), storedOptions_.timeLimit_);
   CBCMP_CCALL(Cbc_solve(lp()));
@@ -604,9 +603,9 @@ void CbcmpBackend::InitCustomOptions() {
       "  ampl: option cbcmp_options 'mipgap=1e-6';\n");
 
 
-  AddSolverOption("tech:outlev outlev",
-    "0*/1: Whether to write log lines (chatter) to stdout and to file.",
-    "log", 0, 4);
+  AddStoredOption("tech:outlev outlev",
+    "0*-4: Whether to write log lines (chatter) to stdout and to file.",
+    storedOptions_.outlev_);
 
   _options.addOption("timelimit", Cbc_setMaximumSeconds);
 
@@ -615,9 +614,6 @@ void CbcmpBackend::InitCustomOptions() {
   mp::OptionValueInfo k;
   for (auto p : lp()->cbcData->parameters_)
   {
-    //   p.printString();
-    //fmt::print(p.name());
-
     if (p.type() >= CLP_PARAM_DBL_PRIMALTOLERANCE &&
       p.type() <= CBC_PARAM_DBL_DEXTRA5) {
       if (p.type() == CBC_PARAM_DBL_DEXTRA5)
