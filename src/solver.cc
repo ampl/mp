@@ -853,14 +853,15 @@ SolverOption *SolverOptionManager::FindOption(
     return *i;
   }
 
-  // find by inline synonyms and wildcards
+  // find by inline synonyms and wildcards. Case-insensitive
   std::string name_str {name};
   for (OptionSet::const_iterator i = options_.begin();
     i != options_.end(); ++i)
   {
-    if (std::find((*i)->inline_synonyms().begin(),
-                  (*i)->inline_synonyms().end(),
-                  name_str) !=
+    if (std::find_if((*i)->inline_synonyms().begin(),
+                    (*i)->inline_synonyms().end(),
+                    [&name_str](const std::string& syn) {
+                     return 0==strcasecmp(name_str.c_str(), syn.c_str()); } ) !=
         (*i)->inline_synonyms().end()) {
       return *i;
     }
