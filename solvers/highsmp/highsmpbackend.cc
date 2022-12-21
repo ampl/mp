@@ -16,7 +16,6 @@ namespace {
 
 
 bool InterruptHighs(void* prob) {
-  //return HIGHS_Interrupt((highs_prob*)prob);
   return true;
 }
 
@@ -325,6 +324,12 @@ static const mp::OptionValueInfo off_on_choose_values[] = {
   { "off", "Off", 1},
   { "on", "On", 2},
 };
+
+static const mp::OptionValueInfo run_crossover_values[] = {
+  { "choose", "Run if the results of IPM without crossover is imprecise", -1},
+  { "off", "Off", 1},
+  { "on", "On", 2},
+};
 static const mp::OptionValueInfo simplex_strategy_values_[] = {
   { "0", "Choose automatically (default)", 0},
   { "1", "Dual (serial)", 1},
@@ -447,6 +452,10 @@ void HighsBackend::InitCustomOptions() {
   AddSolverOption("alg:ipmopttol ipmopttol ipm_optimality_tolerance",
     "IMP optimality tolerance (default 1e-8).",
     "ipm_optimality_tolerance", 1e-12, Infinity());
+
+  AddSolverOption("bar:crossover run_crossover",
+    "Run crossover after IPM to get a basic solution",
+    "run_crossover", run_crossover_values, c);
 
   AddSolverOption("tech:threads threads",
     "How many threads to use when using the barrier algorithm "

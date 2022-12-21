@@ -1,6 +1,12 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
+## 20221221
+- *Updates for HiGHS 1.4.1*
+    - The *run_crossover* option has now values "on", "off" and "choose". The latter 
+      results in crossover being run if the result of IPM without crossover is imprecise
+    - Bug fixes
+
 ## 20221211
 - *Changes in MP: added the ==> else operator*
    Implemented implication with 'else': *constr1* ==> *constr2* [else *constr3*]   
