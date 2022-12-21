@@ -875,7 +875,7 @@ TEST(SolverTest, OptionEcho) {
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
-  EXPECT_EQ("wantsol=5\n", ReadFile("out"));
+  EXPECT_EQ("tech:wantsol=5\n", ReadFile("out"));
 }
 
 class TestException {};
@@ -1037,13 +1037,13 @@ TEST(SolverTest, TimingOption) {
 
 TEST(SolverTest, ObjNoOption) {
   TestSolver s("");
-  EXPECT_EQ(1, s.objno());
+  EXPECT_EQ(1, s.objno_specified());
   EXPECT_EQ(1, s.GetIntOption("objno"));
   s.SetIntOption("objno", 0);
-  EXPECT_EQ(0, s.objno());
+  EXPECT_EQ(0, s.objno_specified());
   EXPECT_EQ(0, s.GetIntOption("objno"));
   s.SetIntOption("objno", INT_MAX);
-  EXPECT_EQ(INT_MAX, s.objno());
+  EXPECT_EQ(INT_MAX, s.objno_specified());
   EXPECT_EQ(INT_MAX, s.GetIntOption("objno"));
   EXPECT_THROW(s.SetIntOption("objno", -1), InvalidOptionValue);
 }
