@@ -148,12 +148,12 @@ int RunBackendApp(char** argv,
     mp::BackendApp s(be_creator());
     s.GetBackend().GetCallbacks() = callbacks;
     return s.Run(argv);
-  } catch (const mp::Error &e) {
+  } catch (const mp::Error &e) {   // Why does MSVC 2019 or 2022 go to std::exception and not here?
     fmt::print(stderr, "Error: {}\n", e.what());
     return e.exit_code();                // can deliver exit code
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
-    return -1;
+    return EXIT_FAILURE;
   }
   return 0;
 }

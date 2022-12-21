@@ -878,7 +878,16 @@ void GurobiBackend::SetInterrupter(mp::Interrupter *inter) {
 ///////////////////////////////////// SOLVE /////////////////////////////////////////
 void GurobiBackend::Solve() {
   PrepareGurobiSolve();
-  GRB_CALL( GRBoptimize(model()) );
+  int status = GRBoptimize(model());
+  if (GRB_ERROR_Q_NOT_PSD == status) {
+    MP_RAISE("Objective Q not PSD (negative diagonal entry). "
+             "Set NonConvex=2 to solve model.");
+  }
+  if (GRB_ERROR_QCP_EQUALITY_CONSTRAINT == status) {
+    MP_RAISE("Quadratic equality constraints. "
+             "Set NonConvex=2 to solve model.");
+  }
+  GRB_CALL( status );        // to check other return values
   WindupGurobiSolve();
 }
 
