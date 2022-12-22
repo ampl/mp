@@ -1,6 +1,14 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## 20221222
+- *Fixed #195*: case-insensitive option synonyms.
+
+- *Fixed #194*
+   Report correct objno for feasibility problems in .sol file,
+   so that AMPL can print "Objective = find feasible solution".
+
+
 ## 20221211
 - *==> else*
    Implemented implication with 'else': *constr1* ==> *constr2* [else *constr3*]   

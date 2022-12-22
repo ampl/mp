@@ -1,7 +1,7 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
-## 20221221
+## 20221222
 - *Updates for HiGHS 1.4.1*
     - The *run_crossover* option has now values "on", "off" and "choose". The latter 
       results in crossover being run if the result of IPM without crossover is imprecise

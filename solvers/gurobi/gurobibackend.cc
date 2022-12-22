@@ -887,7 +887,11 @@ void GurobiBackend::Solve() {
     MP_RAISE("Quadratic equality constraints. "
              "Set NonConvex=2 to solve model.");
   }
-  GRB_CALL( status );        // to check other return values
+  if (status)
+    MP_RAISE(         // another error
+      fmt::format(
+        "Call failed: 'GRBoptimize(model())' with code {},\n"
+        "Gurobi message: {}", status, GRBgeterrormsg(env())) );
   WindupGurobiSolve();
 }
 

@@ -1,6 +1,12 @@
 Summary of recent updates to gurobi for AMPL
 ==============================================
 
+## 20221222
+- *Fixed #195": shorter error message for missing NonConvex=2 option
+
+- Bug fixes in MP
+
+
 ## 20221211
 - *Changes in MP: added the ==> else operator*
    Implemented implication with 'else': *constr1* ==> *constr2* [else *constr3*]   
