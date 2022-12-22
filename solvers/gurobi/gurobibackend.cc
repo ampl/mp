@@ -2395,7 +2395,7 @@ void GurobiBackend::InitCustomOptions() {
       "Password for the worker pool (if needed).",
       GRB_STR_PAR_WORKERPASSWORD);
 
-  AddStoredOption("tech:writepresolvedprob writepresolvedprob writepresolvedmodel exportpresolvedfile",
+  AddStoredOption("tech:writepresolved writepresolved writepresolvedmodel exportpresolvedfile",
     "Specifies the name of a file where to export the presolved model before "
     "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
     "Default = \"\" (don't export the model).",
