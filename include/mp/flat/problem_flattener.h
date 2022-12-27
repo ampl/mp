@@ -720,7 +720,8 @@ public:
     assert(sosno.size() == ref.size());
     std::map< int, std::multimap< double, int > > sos_map;
     for (auto i=ref.size(); i--; )
-      if (sosno[i]) {
+      if (sosno[i] &&
+          ref[i]) {        // AMPL 2022 can produce SOS groups with all weights 0
         auto& sos_group = sos_map[sosno[i]];
         if (sos_group.end() != sos_group.find(ref[i])) {
           GetFlatCvt().AddWarning( "SOS_repeated_weight",

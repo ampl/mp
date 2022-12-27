@@ -125,5 +125,13 @@
         "ANYSOLVER_options": "acc:pl=1 acc:sos2=1"
     },
     "files" : ["steelpl3.mod", "steelpl2.dat"]
+  },
+  {
+    "name" : "pl_sos2_eq_w pl_linearize=1",
+    "objective" :  -16.279,
+    "tags" : ["linear", "continuous", "plinear"],
+    "options": {
+        "pl_linearize": 1
+    }
   }
 ]
