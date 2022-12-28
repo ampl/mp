@@ -1,6 +1,10 @@
 Summary of recent updates to gurobi for AMPL
 ==============================================
 
+## 20221228
+- Changes in MP
+
+
 ## 20221222
 - *Fixed #195": shorter error message for missing NonConvex=2 option
 

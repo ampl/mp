@@ -1,6 +1,10 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## 20221228
+- *More to #163*: ignore SOS with zero weights.
+
+
 ## 20221222
 - *Fixed #195*: case-insensitive option synonyms.
 

@@ -1,6 +1,10 @@
 Summary of recent updates to Xpress for AMPL
 ============================================
 
+## 20221228
+- Changes in MP
+
+
 ## 20221222
 - Bug fixes in MP
 
