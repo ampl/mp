@@ -16,6 +16,18 @@ int CplexCommon::NumObjs() const {
 }
 
 
+int CplexCommon::NumQPCons() const {
+  return CPXgetnumqconstrs(env(), lp());
+}
+
+int CplexCommon::NumSOSCons() const {
+  return CPXgetnumsos(env(), lp());
+}
+
+int CplexCommon::ModelSense() const {
+  return CPXgetobjsen(env(), lp());
+}
+
 void CplexCommon::GetSolverOption(int key, int &value) const {
   CPLEX_CALL( CPXgetintparam(env(), key, &value) );
 }

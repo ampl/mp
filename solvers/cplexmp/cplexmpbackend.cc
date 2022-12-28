@@ -28,95 +28,245 @@ std::unique_ptr<mp::BasicBackend> CreateCplexBackend() {
 
 namespace mp {
 
-/// Create Cplex Model Manager
-/// @param gc: the Cplex Backend
-/// @param e: environment
-/// @param pre: presolver to be returned,
-/// need it to convert solution data
-/// @return GurobiModelMgr
-std::unique_ptr<BasicModelManager>
-CreateCplexModelMgr(CplexCommon&, Env&, pre::BasicValuePresolver*&);
+  /// Create Cplex Model Manager
+  /// @param gc: the Cplex Backend
+  /// @param e: environment
+  /// @param pre: presolver to be returned,
+  /// need it to convert solution data
+  /// @return GurobiModelMgr
+  std::unique_ptr<BasicModelManager>
+    CreateCplexModelMgr(CplexCommon&, Env&, pre::BasicValuePresolver*&);
 
 
-void CplexBackend::InitOptionParsing() {
-  OpenSolver();
-}
-CplexBackend::CplexBackend() {
+  void CplexBackend::InitOptionParsing() {
+    OpenSolver();
+  }
+  CplexBackend::CplexBackend() {
 
-  pre::BasicValuePresolver* pPre;
-  auto data = CreateCplexModelMgr(*this, *this, pPre);
-  SetMM( std::move( data ) );
-  SetValuePresolver(pPre);
+    pre::BasicValuePresolver* pPre;
+    auto data = CreateCplexModelMgr(*this, *this, pPre);
+    SetMM(std::move(data));
+    SetValuePresolver(pPre);
 
-  /// Copy env/lp to ModelAPI
-  copy_common_info_to_other();
-}
-
-CplexBackend::~CplexBackend() {
-  CloseSolver();
-}
-
-void CplexBackend::OpenSolver() {
-  int status;
-  // Typically try the registered function first;
-  // if not available call the solver's API function directly
-  const auto create_fn = GetCallbacks().init;
-  if (create_fn)
-    set_env((CPXENVptr)create_fn());
-  else
-  set_env( CPXopenCPLEX (&status) );
-  if ( env() == NULL ) {
-     char  errmsg[CPXMESSAGEBUFSIZE];
-     CPXgeterrorstring (env(), status, errmsg);
-     throw std::runtime_error(
-       fmt::format("Could not open CPLEX environment.\n{}", errmsg ) );
+    /// Copy env/lp to ModelAPI
+    copy_common_info_to_other();
   }
 
-  CPLEX_CALL( CPXsetintparam (env(), CPXPARAM_ScreenOutput, CPX_ON) );
-
-  /* Create an empty model */
-  set_lp( CPXcreateprob (env(), &status, "amplcplex") );
-  if (status)
-    throw std::runtime_error( fmt::format(
-          "Failed to create problem, error code {}.", status ) );
-  /* Copy handlers to ModelAPI */
-  copy_common_info_to_other();
-}
-
-void CplexBackend::CloseSolver() {
-  if ( lp() != NULL ) {
-     CPLEX_CALL( CPXfreeprob (env(), &lp_ref()) );
+  CplexBackend::~CplexBackend() {
+    CloseSolver();
   }
-  /* Free up the CPLEX env()ironment, if necessary */
-  if ( env() != NULL ) {
-     CPLEX_CALL( CPXcloseCPLEX (&env_ref()) );
+
+  void CplexBackend::OpenSolver() {
+    int status = 0;
+    // Typically try the registered function first;
+    // if not available call the solver's API function directly
+    const auto create_fn = GetCallbacks().init;
+    if (create_fn)
+      set_env((CPXENVptr)create_fn());
+    else
+      set_env(CPXopenCPLEX(&status));
+    if (env() == NULL) {
+      char  errmsg[CPXMESSAGEBUFSIZE];
+      CPXgeterrorstring(env(), status, errmsg);
+      throw std::runtime_error(
+        fmt::format("Could not open CPLEX environment.\n{}", errmsg));
+    }
+    /* Avoid most error messages on screen */
+    CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ScreenOutput, CPX_OFF));
+    /* Do not echo the params twice */
+    CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ParamDisplay, 0)); 
+    /* defaults */
+    CPXsetintparam(env(), CPX_PARAM_SIMDISPLAY, 0);
+    CPXsetintparam(env(), CPX_PARAM_MIPDISPLAY, 0);
+    CPXsetintparam(env(), CPX_PARAM_BARDISPLAY, 0);
+
+    /* Create an empty model */
+    set_lp(CPXcreateprob(env(), &status, "amplcplex"));
+    if (status)
+      throw std::runtime_error(fmt::format(
+        "Failed to create problem, error code {}.", status));
+    /* Copy handlers to ModelAPI */
+    copy_common_info_to_other();
   }
-}
+
+  void CplexBackend::CloseSolver() {
+    if (lp() != NULL) {
+      CPLEX_CALL(CPXfreeprob(env(), &lp_ref()));
+    }
+    /* Free up the CPLEX environment, if necessary */
+    if (env() != NULL) {
+      CPLEX_CALL(CPXcloseCPLEX(&env_ref()));
+    }
+  }
 
 
-const char* CplexBackend::GetBackendName()
-  { return "CplexBackend"; }
+  const char* CplexBackend::GetBackendName()
+  {
+    return "CplexBackend";
+  }
 
-std::string CplexBackend::GetSolverVersion() {
-  int version;
-  CPXversionnumber(env(), &version);
-  return fmt::format("{}", version);
-}
+  std::string CplexBackend::GetSolverVersion() {
+    return fmt::format("{}.{}.{}", CPX_VERSION_VERSION,
+      CPX_VERSION_RELEASE, CPX_VERSION_MODIFICATION);
+  }
 
 
-bool CplexBackend::IsMIP() const {
-  int probtype = CPXgetprobtype (env(), lp());
-  return
+  bool CplexBackend::IsMIP() const {
+    int probtype = CPXgetprobtype(env(), lp());
+    return
       CPXPROB_MILP == probtype ||
       CPXPROB_MIQP == probtype ||
       CPXPROB_MIQCP == probtype;
-}
+  }
 
-bool CplexBackend::IsQCP() const {
-  int probtype = CPXgetprobtype (env(), lp());
-  return probtype >= 5;
-}
+  bool CplexBackend::IsQCP() const {
+    int probtype = CPXgetprobtype(env(), lp());
+    return probtype >= 5;
+  }
+#define getAndReturnDblParam(function)\
+  double value;\
+  CPLEX_CALL(function(env(), lp(), &value));\
+  return value;
 
+#define getDblParam(function, var)\
+  double var;\
+  CPLEX_CALL(function(env(), lp(), &var));
+
+  double  CplexBackend::MIPGap() {
+    getAndReturnDblParam(CPXgetmiprelgap);
+  }
+
+  double  CplexBackend::MIPGapAbs() {
+    double obj;
+    int status = CPXgetobjval(env(), lp(), &obj);
+    if (status)
+      return AMPLInf(); // no solution found
+    return std::abs(obj - BestDualBound());
+  }
+  double  CplexBackend::BestDualBound() {
+    getDblParam(CPXgetbestobjval, bobj);
+    if (bobj == Infinity())
+      return AMPLInf();
+    if (bobj == -Infinity())
+      return -AMPLInf();
+    return bobj;
+  }
+
+  ArrayRef<int> CplexBackend::VarStatii() {
+    std::vector<int> vars(NumVars());
+    CPLEX_CALL(CPXgetbase(env(), lp(), vars.data(), nullptr));
+    for (auto& s : vars) {
+      switch (s) {
+      case CPX_BASIC:
+        s = (int)BasicStatus::bas;
+        break;
+      case CPX_AT_LOWER:
+        s = (int)BasicStatus::low;
+        break;
+      case CPX_AT_UPPER:
+        s = (int)BasicStatus::upp;
+        break;
+      case CPX_FREE_SUPER:
+        s = (int)BasicStatus::sup;
+        break;
+      default:
+        MP_RAISE(fmt::format("Unknown CPLEX cstat value: {}", s));
+      }
+    }
+    return vars;
+  }
+
+  ArrayRef<int> CplexBackend::ConStatii() {
+    std::vector<int> vars(NumLinCons());
+    for (auto& s : vars) {
+      switch (s) {
+      case CPX_BASIC:
+        s = (int)BasicStatus::bas;
+        break;
+      case CPX_AT_LOWER:
+        s = (int)BasicStatus::low;
+        break;
+      case CPX_AT_UPPER: // just for range constraints
+        s = (int)BasicStatus::upp;
+        break;
+      default:
+        MP_RAISE(fmt::format("Unknown CPLEX rstat value: {}", s));
+      }
+    }
+    return vars;
+  }
+
+  void CplexBackend::VarConStatii(ArrayRef<int> vstt, ArrayRef<int> cstt) {
+    std::vector<int> vst= std::vector<int>(vstt.data(), vstt.data() + vstt.size());
+    std::vector<int> cst = std::vector<int>(cstt.data(), cstt.data() + cstt.size());
+    for (auto j = vst.size(); j--; ) {
+      auto& s = vst[j];
+      switch ((BasicStatus)s) {
+      case BasicStatus::bas:
+        s = (int)CPX_BASIC;
+        break;
+      case BasicStatus::low:
+      case BasicStatus::equ:
+      case BasicStatus::none:
+        s = CPX_AT_LOWER;
+        break;
+      case BasicStatus::upp:
+        s = CPX_AT_UPPER;
+        break;
+      case BasicStatus::sup:
+      case BasicStatus::btw:
+        s = CPX_FREE_SUPER;
+        break;
+      default:
+        MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
+      }
+    }
+      for (auto j = cst.size(); j--; ) {
+        auto& s = cst[j];
+        switch ((BasicStatus)s) {
+        case BasicStatus::bas:
+          s = (int)CPX_BASIC;
+          break;
+        case BasicStatus::low:
+        case BasicStatus::equ:
+        case BasicStatus::none:
+        case BasicStatus::sup:
+        case BasicStatus::btw:
+          s = CPX_AT_LOWER;
+          break;
+        case BasicStatus::upp:
+          s = CPX_AT_UPPER;
+          break;
+        default:
+          MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
+        }
+    }
+      CPLEX_CALL(CPXcopybase(env(), lp(), vst.data(), cst.data()));
+  }
+
+
+  SolutionBasis CplexBackend::GetBasis() {
+    std::vector<int> varstt = VarStatii();
+    std::vector<int> constt = ConStatii();
+    if (varstt.size() && constt.size()) {
+      auto mv = GetValuePresolver().PostsolveBasis(
+        { std::move(varstt),
+          {{{ CG_Linear, std::move(constt) }}} });
+      varstt = mv.GetVarValues()();
+      constt = mv.GetConValues()();
+      assert(varstt.size());
+    }
+    return { std::move(varstt), std::move(constt) };
+  }
+  void CplexBackend::SetBasis(SolutionBasis basis) {
+    auto mv = GetValuePresolver().PresolveBasis(
+      { basis.varstt, basis.constt });
+    auto varstt = mv.GetVarValues()();
+    auto constt = mv.GetConValues()(CG_Linear);
+    assert(varstt.size());
+    assert(constt.size());
+    VarConStatii(varstt, constt);
+  }
 
 ArrayRef<double> CplexBackend::PrimalSolution() {
   int num_vars = NumVars();
@@ -143,8 +293,9 @@ ArrayRef<double> CplexBackend::DualSolution_LP() {
 }
 
 double CplexBackend::ObjectiveValue() const {
-  double objval = -1e308;
-  CPXgetobjval (env(), lp(), &objval );   // failsafe
+  double objval = -Infinity();
+  CPXgetobjval (env(), lp(), &objval );
+  
   return objval;
 }
 
@@ -174,8 +325,10 @@ void CplexBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void CplexBackend::Solve() {
-
-  CPLEX_CALL( CPXmipopt(env(), lp()) );
+  if(IsMIP())
+    CPLEX_CALL(CPXmipopt(env(), lp()));
+  else
+    CPLEX_CALL(CPXlpopt(env(), lp()));
 
   WindupCPLEXSolve();
 }
@@ -248,24 +401,61 @@ std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
 
 
 void CplexBackend::FinishOptionParsing() {
-  SetSolverOption(CPX_PARAM_PARAMDISPLAY, 0);
-  
-  SetSolverOption(CPXPARAM_MIP_Display, 0);
-  int v=1;
+  int lp, mip, bar;
+  GetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
+  GetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
+  GetSolverOption(CPX_PARAM_BARDISPLAY, bar);
+  assert(storedOptions_.outlev_ <= 2);
+  int olp[] = { 0, 1, 2 };
+  int omip[] = { 0, 3, 5 };
+  lp = lp ? lp : olp[storedOptions_.outlev_];
+  mip = mip ? mip : omip[storedOptions_.outlev_];
+  bar = bar ? bar : olp[storedOptions_.outlev_];
+  SetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
+  SetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
+  SetSolverOption(CPX_PARAM_BARDISPLAY, bar);
   if (!storedOptions_.logFile_.empty())
   {
-    SetSolverOption(CPX_PARAM_SIMDISPLAY, 1);
-    SetSolverOption(CPXPARAM_MIP_Display, 1);
+    if(lp < 1) SetSolverOption(CPX_PARAM_SIMDISPLAY, 1);
+    if(mip < 1) SetSolverOption(CPX_PARAM_MIPDISPLAY, 1);
     CPLEX_CALL(CPXsetlogfilename(env(), storedOptions_.logFile_.data(), "w"));
   }
-  else
-  {
-    GetSolverOption(CPXPARAM_MIP_Display, v);
-  }
-  set_verbose_mode(v > 0);
+  set_verbose_mode(storedOptions_.outlev_ > 0);
 }
 
-
+static const mp::OptionValueInfo lpmethod_values_[] = {
+  { "choose", "Automatic (default)", -1},
+  { "simplex", "Simplex", 1},
+  { "ipm", "Interior point method", 2},
+};
+static const mp::OptionValueInfo bardisplay_values_[] = {
+  { "0", "no information (default)", 0},
+  { "1", "balanced setup and iteration information", 1},
+  { "2", "diagnostic information", 2}
+};
+static const mp::OptionValueInfo display_values_[] = {
+  { "0", "never (default)", 0},
+  { "1", "each factorization", 1},
+  { "2", "each iteration", 2}
+};
+static const mp::OptionValueInfo mipdisplay_values_[] = {
+  { "0", "no node log displayed (default)", 0},
+  { "1", "each integer feasible solution", 1},
+  { "2", "every \"mipinterval\" nodes", 2},
+  { "3", "same as 2 plus cutting planes info and info about new incumbents found through MIP starts", 3},
+  { "4", "same as 3, plus LP root relaxation info (according to \"display\")"},
+  { "5", "same as 4, plus LP subproblems (according to \"display\")"}
+};
+static const mp::OptionValueInfo mipinterval_values_[] = {
+  { "0", "automatic (default)", 0},
+  { "n > 0", "every n nodes and every incumbent", 1},
+  { "n < 0", "new incumbents and less info the more negative n is", 2}
+};
+static const mp::OptionValueInfo outlev_values_[] = {
+  { "0", "no output (default)", 0},
+  { "1", "equivalent to \"bardisplay\"=1, \"display\"=1, \"mipdisplay\"=3", 1},
+  { "2", "equivalent to \"bardisplay\"=2, \"display\"=2, \"mipdisplay\"=5", 2}
+};
 ////////////////////////////// OPTIONS /////////////////////////////////
 
 void CplexBackend::InitCustomOptions() {
@@ -279,11 +469,33 @@ void CplexBackend::InitCustomOptions() {
       "\n"
       "  ampl: option cplex_options 'mipgap=1e-6';\n");
 
-  AddSolverOption("tech:outlev outlev",
-      "0-5: output logging verbosity. "
-      "Default = 0 (no logging).",
-      CPXPARAM_MIP_Display, 0, 5);
-  
+
+  AddStoredOption("tech:outlev outlev",
+    "Whether to write CPLEX log lines (chatter) to stdout,"
+    "for granular control see \"tech:lpdisplay\", \"tech:mipdisplay\", \"tech:bardisplay\"."
+    "Values:\n"
+    "\n.. value-table::\n",
+    storedOptions_.outlev_, outlev_values_);
+
+  AddSolverOption("tech:bardisplay bardisplay",
+    "Specifies how much the barrier algorithm chatters:\n"
+    "\n.. value-table::\n",
+    CPX_PARAM_BARDISPLAY, bardisplay_values_, 0);
+
+  AddSolverOption("tech:lpdisplay display lpdisplay",
+    "Frequency of displaying LP progress information:\n"
+    "\n.. value-table::\n",
+    CPX_PARAM_SIMDISPLAY, display_values_, 0);
+
+  AddSolverOption("tech:mipdisplay mipdisplay",
+    "Frequency of displaying branch-and-bound information:\n"
+    "\n.. value-table::\n",
+    CPX_PARAM_MIPDISPLAY, mipdisplay_values_, 0);
+
+    AddSolverOption("tech:mipinterval mipinterval",
+      "Frequency of node logging for \"tech::mipdisplay\" >=2:\n"
+      "\n.. value-table::\n",
+      CPX_PARAM_MIPINTERVAL, mipinterval_values_, 0);
 
   AddStoredOption("tech:logfile logfile",
     "Log file name.", storedOptions_.logFile_);

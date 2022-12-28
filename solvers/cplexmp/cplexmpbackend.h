@@ -21,17 +21,14 @@ public:
   ~CplexBackend();
 
   /// Name displayed in messages
-  static const char* GetSolverName() { return "x-CPLEX"; }
+  static const char* GetSolverName() { return "CPLEX"; }
   std::string GetSolverVersion();
-  /// Reuse cplex_options:
   static const char* GetAMPLSolverName() { return "cplex"; }
   static const char* GetAMPLSolverLongName() { return "AMPL-CPLEX"; }
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
-  /// Chance for the Backend to init solver environment, etc
   void InitOptionParsing() override;
-  /// Chance to consider options immediately (open cloud, etc)
   void FinishOptionParsing() override;
 
 
@@ -43,6 +40,27 @@ public:
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
   void DoWriteProblem(const std::string& name) override;
   
+  /**
+ * Get MIP Gap
+ **/
+  ALLOW_STD_FEATURE(RETURN_MIP_GAP, true)
+  double MIPGap() override;
+  double MIPGapAbs() override;
+  /**
+  * Get MIP dual bound
+  **/
+  ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
+  double BestDualBound() override;
+
+  /**
+* Get/Set AMPL var/con statii
+**/
+  ALLOW_STD_FEATURE(BASIS, true)
+  SolutionBasis GetBasis() override;
+  void SetBasis(SolutionBasis) override;
+  ArrayRef<int> ConStatii();
+  ArrayRef<int> VarStatii();
+  void VarConStatii(ArrayRef<int>, ArrayRef<int>);
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
@@ -68,6 +86,7 @@ public:
   ///////////////////////////////////////////////////////////////////////////////
 public:  // public for static polymorphism
   void InitCustomOptions() override;
+
 protected:
   void OpenSolver();
   void CloseSolver();
@@ -99,6 +118,8 @@ private:
   struct Options {
     std::string exportFile_;
     std::string logFile_;
+    int outlev_;
+
   };
   Options storedOptions_;
 

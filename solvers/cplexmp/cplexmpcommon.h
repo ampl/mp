@@ -44,11 +44,13 @@ public:
   static constexpr double Infinity() { return CPX_INFBOUND; }
   static constexpr double MinusInfinity() { return -CPX_INFBOUND; }
 
-
 protected:
   int NumLinCons() const;
   int NumVars() const;
   int NumObjs() const;
+  int NumQPCons() const;
+  int NumSOSCons() const;
+  int ModelSense() const;
 
 };
 

@@ -47,6 +47,24 @@ public:
   ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
   void AddConstraint(const LinConGE& lc);
 
+  /// If using quadratics,
+  /// QuadCon(LE/EQ/GE) should have 'Recommended'
+  /// and have an implementation, QuadConRange is optional.
+  ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Quadratic)
+    void AddConstraint(const QuadConLE& qc);
+  ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Quadratic)
+    void AddConstraint(const QuadConEQ& qc);
+  ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Quadratic)
+    void AddConstraint(const QuadConGE& qc);
+
+
+  /// SOS1/2
+  ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
+  void AddConstraint(const SOS1Constraint& cc);
+  ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
+  void AddConstraint(const SOS2Constraint& cc);
+
+
   /// Discrete generals constraints
 
   /// Enabling built-in indicator for infinite bounds,

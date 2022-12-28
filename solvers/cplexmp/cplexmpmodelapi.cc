@@ -91,31 +91,58 @@ void CplexModelAPI::AddConstraint(const LinConGE& lc) {
                           &sense, rmatbeg, lc.pvars(), lc.pcoefs(),
                           NULL, NULL) );
 }
+#define addqc(qc, sense)\
+const auto& lt = qc.GetLinTerms();\
+const auto& qt = qc.GetQPTerms();\
+CPLEX_CALL(CPXaddqconstr(env(), lp(), lt.size(), qt.size(), qc.rhs(),\
+  sense, (int*)lt.pvars(), (double*)lt.pcoefs(),\
+  (int*)qt.pvars1(), (int*)qt.pvars2(), (double*)qt.pcoefs(), qc.name()));
 
+void CplexModelAPI::AddConstraint(const QuadConLE& qc) {
+  addqc(qc, 'L');
+}
+
+void CplexModelAPI::AddConstraint(const QuadConEQ& qc) {
+  addqc(qc, 'L');
+  CPLEX_CALL(CPXaddqconstr(env(), lp(), lt.size(), qt.size(), qc.rhs(),
+    'G', (int*)lt.pvars(), (double*)lt.pcoefs(),
+    (int*)qt.pvars1(), (int*)qt.pvars2(), (double*)qt.pcoefs(), qc.name()));
+}
+
+void CplexModelAPI::AddConstraint(const QuadConGE& qc) {
+  addqc(qc, 'G');
+}
+
+#define addsos(cc, sostype)\
+  int beg = 0;\
+  char type = sostype;\
+  CPLEX_CALL(CPXaddsos(env(), lp(), 1, cc.size(), &type, &beg,\
+    (int*)cc.get_vars().data(), (double*)cc.get_weights().data(),\
+    NULL) );\
+
+void CplexModelAPI::AddConstraint(const SOS1Constraint& cc) {
+  addsos(cc, CPX_TYPE_SOS1);
+}
+
+void CplexModelAPI::AddConstraint(const SOS2Constraint& cc) {
+  addsos(cc, CPX_TYPE_SOS2);
+}
+#define addindic(ic, direction)\
+  CPLEX_CALL(CPXaddindconstr(env(), lp(),\
+    ic.get_binary_var(), !ic.get_binary_value(),\
+    (int)ic.get_constraint().size(),\
+    ic.get_constraint().rhs(), direction,\
+    ic.get_constraint().pvars(),\
+    ic.get_constraint().pcoefs(), NULL));
 
 void CplexModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
-  CPLEX_CALL( CPXaddindconstr (env(), lp(),
-                               ic.get_binary_var(), !ic.get_binary_value(),
-                               (int)ic.get_constraint().size(),
-                               ic.get_constraint().rhs(), 'L',
-                               ic.get_constraint().pvars(),
-                               ic.get_constraint().pcoefs(), NULL) );
+  addindic(ic, 'L');
 }
 void CplexModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
-  CPLEX_CALL( CPXaddindconstr (env(), lp(),
-                               ic.get_binary_var(), !ic.get_binary_value(),
-                               (int)ic.get_constraint().size(),
-                               ic.get_constraint().rhs(), 'E',
-                               ic.get_constraint().pvars(),
-                               ic.get_constraint().pcoefs(), NULL) );
+  addindic(ic, 'F');
 }
 void CplexModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
-  CPLEX_CALL( CPXaddindconstr (env(), lp(),
-                               ic.get_binary_var(), !ic.get_binary_value(),
-                               (int)ic.get_constraint().size(),
-                               ic.get_constraint().rhs(), 'G',
-                               ic.get_constraint().pvars(),
-                               ic.get_constraint().pcoefs(), NULL) );
+  addindic(ic, 'G');
 }
 
 void CplexModelAPI::AddConstraint(const PLConstraint& plc) {

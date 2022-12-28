@@ -420,7 +420,9 @@ class CPLEXSolver(AMPLSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic}
+                 ModelTags.quadratic, ModelTags.sos,
+                 ModelTags.return_mipgap,
+                 ModelTags.sstatus}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
     def _doParseSolution(self, st, stdout=None):
@@ -654,13 +656,15 @@ class CPLEXDirectSolver(MPDirectSolver):
                  otherOptions=None):
         stags = {
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.plinear,
+                 ModelTags.plinear, ModelTags.sos,
                  # ModelTags.quadratic, ModelTags.quadraticnonconvex,
                  ModelTags.nonlinear,
                  ModelTags.log,
                  # ModelTags.trigonometric
                  ModelTags.relax,
-                 ModelTags.multiobj
+                 ModelTags.multiobj,
+                 ModelTags.sstatus,
+                 ModelTags.return_mipgap
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
