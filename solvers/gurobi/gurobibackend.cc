@@ -21,6 +21,7 @@ bool InterruptGurobi(void *model) {
 
 std::unique_ptr<mp::BasicBackend> CreateGurobiBackend() {
   return std::unique_ptr<mp::BasicBackend>{new mp::GurobiBackend()};
+  return std::unique_ptr<mp::BasicBackend>{new mp::GurobiBackend()};
 }
 
 namespace mp {
@@ -93,7 +94,7 @@ void GurobiBackend::OpenGurobi() {
         "Could not create gurobi environment, errorcode: {}\n", status));
   }
   /* Set default parameters */
-  GRBsetintparam(env(), GRB_INT_PAR_OUTPUTFLAG, 0);
+  GRBsetintparam(env(), GRB_INT_PAR_LOGTOCONSOLE, 0);
 }
 
 void GurobiBackend::OpenGurobiModel() {
@@ -109,6 +110,10 @@ void GurobiBackend::OpenGurobiModel() {
 }
 
 void GurobiBackend::FinishOptionParsing() {
+  if (logfile().size()) {
+    SetSolverOption(GRB_STR_PAR_LOGFILE, logfile().c_str());
+    SetSolverOption(GRB_INT_PAR_OUTPUTFLAG, 1);
+  }
   bool cs = servers().size();
   bool cloud = cloudid().size() && cloudkey().size();
   if (cs || cloud)
@@ -156,7 +161,7 @@ void GurobiBackend::FinishOptionParsing() {
           GRBwriteparams(GRBgetenv(model()),
                          paramfile_write().c_str() ));
   /// Tell the base class our verbosity
-  set_verbose_mode(GrbGetIntParam(GRB_INT_PAR_OUTPUTFLAG));
+  set_verbose_mode(GrbGetIntParam(GRB_INT_PAR_LOGTOCONSOLE));
   /// Set advanced parameters
   if (storedOptions_.advancedParams_.size() > 0)
     this->SetSolverOption("Dummy", storedOptions_.advancedParams_);
@@ -2234,9 +2239,10 @@ void GurobiBackend::InitCustomOptions() {
       "Interval in seconds between log lines (default 5).",
     GRB_INT_PAR_DISPLAYINTERVAL, 1, GRB_MAXINT);
 
-  AddSolverOption("tech:logfile logfile",
-      "Log file name.",
-      GRB_STR_PAR_LOGFILE);
+  AddStoredOption("tech:logfile logfile",
+      "Log file name; note that the solver log will be written to the log "
+      "regardless of the value of tech:outlev.",
+      storedOptions_.logFile_);
 
   AddSolverOption("tech:nodefiledir nodefiledir",
       "Directory where MIP tree nodes are written after memory "
@@ -2248,11 +2254,9 @@ void GurobiBackend::InitCustomOptions() {
       "default = Infinity (no limit, i.e., no node files written).",
     GRB_DBL_PAR_NODEFILESTART, 0.0, DBL_MAX);
 
-
-
   AddSolverOption("tech:outlev outlev",
-      "0*/1: Whether to write gurobi log lines (chatter) to stdout and to file.",
-    GRB_INT_PAR_OUTPUTFLAG, 0, 1);
+      "0*/1: Whether to write gurobi log lines (chatter) to stdout.",
+    GRB_INT_PAR_LOGTOCONSOLE, 0, 1);
 
   AddStoredOption("tech:param param",
                   "General way to specify values of both documented and "

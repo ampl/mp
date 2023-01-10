@@ -1,9 +1,13 @@
 Summary of recent updates to gurobi for AMPL
 ==============================================
 
+## TBD
+- Changed behaviour of 'tech:logfile', which no longer implies 'tech:outlev=1'.
+  Specifying a logfile will enable gurobi's full log to file only; to obtain both 
+  console and log output, set also 'tech:outlev=1'.
+
 ## 20221228
 - Changes in MP
-
 
 ## 20221222
 - *Fixed #195": shorter error message for missing NonConvex=2 option

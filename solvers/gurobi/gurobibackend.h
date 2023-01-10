@@ -266,7 +266,7 @@ private:
   /// These options are stored in the class as variables
   /// for direct access
   struct Options {
-    std::string paramRead_, paramWrite_, advancedParams_, exportPresolvedFile_;
+    std::string paramRead_, paramWrite_, advancedParams_, exportPresolvedFile_, logFile_;
 
     int nMIPStart_=1;
     int nPoolMode_=2;
@@ -310,6 +310,8 @@ protected:  //////////// Option accessors ////////////////
   int server_timeout() const { return storedOptions_.server_timeout_; }
 
   const std::string& tunebase() const { return storedOptions_.tunebase_; }
+
+  const std::string& logfile() const { return storedOptions_.logFile_; }
 
   const std::string& exportPresolvedFile() const { return storedOptions_.exportPresolvedFile_; }
 
