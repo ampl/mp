@@ -59,11 +59,12 @@ public:
 
   void GetCBCParamsList() const;
   /// These methods access Cbcmp options. Used by AddSolverOption()
-  void GetSolverOption(const char* key, int& value) const;
+  int GetSolverOption(const char* key, int& value) const;
   void SetSolverOption(const char* key, int value);
-  void GetSolverOption(const char* key, double& value) const;
+  int GetSolverOption(const char* key, double& value) const;
   void SetSolverOption(const char* key, double value);
-  void GetSolverOption(const char* key, std::string& value) const;
+  int GetSolverOption(const char* key, std::string& value) const;
+  const char* GetSolverOption(const char* key) const; // for ampls
   void SetSolverOption(const char* key, std::string value);
 
   /// TODO Typically solvers define their own infinity; use them here
@@ -79,10 +80,6 @@ protected:
   int NumObjs() const;
   int NumSOSCons() const;
 
-protected:
-  // TODO if desirable, provide function to create the solver's environment
-  // with own license
-  // int (*createEnv) (solver_env**) = nullptr;
   
 };
 

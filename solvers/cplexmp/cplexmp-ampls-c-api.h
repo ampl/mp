@@ -19,15 +19,15 @@
 /// (normally provided in the <solver>_options string).
 /// Can be NULL.
 /// @return pointer to struct AMPLS_MP_Solver to be populated, NULL otherwise
-AMPLS_MP_Solver* AMPLSOpenCPLEX(const char* slv_opt, CCallbacks cb);
+AMPLS_MP_Solver* Open_cplexmp(const char* slv_opt, CCallbacks cb);
 
 /// Shut down solver instance
-void AMPLSCloseCPLEX(AMPLS_MP_Solver* slv);
+AMPLS_C_EXPORT void AMPLSClose_cplexmp(AMPLS_MP_Solver* slv);
 
 /// Extract the CPLEX model handle
-CPXLPptr GetCPLEXmodel(AMPLS_MP_Solver* slv);
+AMPLS_C_EXPORT CPXLPptr AMPLSGetModel_cplexmp(AMPLS_MP_Solver* slv);
 
 /// Extract the CPLEX environment handle
-CPXENVptr GetCPLEXenv(AMPLS_MP_Solver* slv);
+AMPLS_C_EXPORT CPXENVptr AMPLSGetEnv_cplexmp(AMPLS_MP_Solver* slv);
 
 #endif // CPLEXAMPLSCAPI_H

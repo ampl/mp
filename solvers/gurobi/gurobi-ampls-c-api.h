@@ -20,13 +20,14 @@
 /// (normally provided in the <solver>_options string).
 /// Can be NULL.
 /// @return 0 on success, otherwise see slv->warnings_and_or_errors_
-AMPLS_MP_Solver* AMPLSOpenGurobi(const char* slv_opt, CCallbacks cb);
+
+AMPLS_MP_Solver* Open_gurobi(const char* slv_opt, CCallbacks cb);
 
 /// Shut down solver instance
-void AMPLSCloseGurobi(AMPLS_MP_Solver* slv);
+AMPLS_C_EXPORT void AMPLSClose_gurobi(AMPLS_MP_Solver* slv);
 
 /// Extract the Gurobi model handle
-GRBmodel* GetGRBmodel(AMPLS_MP_Solver* slv);
+AMPLS_C_EXPORT GRBmodel* AMPLSGetModel_gurobi(AMPLS_MP_Solver* slv);
 
 
 #endif // GUROBIAMPLSCAPI_H

@@ -4,8 +4,6 @@
  * C API for MP/Cbcmp
  */
 
-//#include "cbcmp.h"
-
 #include "mp/ampls-c-api.h"
 
 /*
@@ -19,13 +17,12 @@
 /// (normally provided in the <solver>_options string).
 /// Can be NULL.
 /// @return pointer to struct AMPLS_MP_Solver to be populated.
-AMPLS_MP_Solver*  AMPLSOpenCbcmp(const char* slv_opt, CCallbacks cb);
+AMPLS_MP_Solver*  Open_cbcmp(const char* slv_opt);
 
 /// Shut down solver instance
-void AMPLSCloseCbcmp(AMPLS_MP_Solver* slv);
+AMPLS_C_EXPORT void AMPLSClose_cbcmp(AMPLS_MP_Solver* slv);
 
 /// Extract the Cbcmp model handle
-void* GetCbcmpmodel(AMPLS_MP_Solver* slv);
-
+AMPLS_C_EXPORT void* AMPLSGetModel_cbcmp(AMPLS_MP_Solver* slv);
 
 #endif // CBCMPAMPLSCAPI_H

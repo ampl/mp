@@ -519,23 +519,23 @@ void CplexBackend::InitCustomOptions() {
 } // namespace mp
 
 
-AMPLS_MP_Solver* AMPLSOpenCPLEX(const char* slv_opt, CCallbacks cb = {}) {
+AMPLS_MP_Solver* Open_cplexmp(const char* slv_opt, CCallbacks cb = {}) {
   AMPLS_MP_Solver* slv = 
     AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::CplexBackend()},
       slv_opt, cb);
   return slv;
 }
 
-void AMPLSCloseCPLEX(AMPLS_MP_Solver* slv) {
+void AMPLSClose_cplexmp(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-CPXLPptr GetCPLEXmodel(AMPLS_MP_Solver* slv) {
+CPXLPptr AMPLSGetModel_cplexmp(AMPLS_MP_Solver* slv) {
   return
     dynamic_cast<mp::CplexBackend*>(AMPLSGetBackend(slv))->lp();
 }
 
-CPXENVptr GetCPLEXenv(AMPLS_MP_Solver* slv) {
+CPXENVptr AMPLSGetEnv_cplexmp(AMPLS_MP_Solver* slv) {
   return
     dynamic_cast<mp::CplexBackend*>(AMPLSGetBackend(slv))->env();
 }

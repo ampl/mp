@@ -143,6 +143,8 @@ void CbcmpBackend::SetInterrupter(mp::Interrupter *inter) {
 
 void CbcmpBackend::Solve() {
   SetSolverOption("log", storedOptions_.outlev_);
+  if(storedOptions_.outlev_==0)
+    lp()->solver_->setHintParam(OsiDoReducePrint, true, OsiHintTry);
   if (storedOptions_.timeLimit_ != 0)
     Cbc_setMaximumSeconds(lp(), storedOptions_.timeLimit_);
   CBCMP_CCALL(Cbc_solve(lp()));
@@ -1059,17 +1061,18 @@ void CbcmpBackend::AddMIPStart(ArrayRef<double> x0) {
 } // namespace mp
 
   // AMPLs
-AMPLS_MP_Solver* AMPLSOpenCbcmp(
-  const char* slv_opt, CCallbacks cb = {}) {
+AMPLS_MP_Solver* Open_cbcmp(
+  const char* slv_opt) {
+  CCallbacks cb = {};
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::CbcmpBackend()},
     slv_opt, cb);
 }
 
-void AMPLSCloseCbcmp(AMPLS_MP_Solver* slv) {
+void AMPLSClose_cbcmp(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-void*  GetCbcmpmodel(AMPLS_MP_Solver* slv) {
+void* AMPLSGetModel_cbcmp(AMPLS_MP_Solver* slv) {
   return
     dynamic_cast<mp::CbcmpBackend*>(AMPLSGetBackend(slv))->lp();
 }

@@ -118,7 +118,7 @@ private:
   struct Options {
     std::string exportFile_;
     std::string logFile_;
-    int outlev_;
+    int outlev_ = 0;;
 
   };
   Options storedOptions_;

@@ -1,6 +1,8 @@
 #include "mp/format.h"
+
 #include "cbcmpcommon.h"
 
+#include "CbcSOS.hpp"
 
 namespace mp {
 
@@ -70,21 +72,27 @@ int CbcmpCommon::NumObjs() const {
 }
 
 int CbcmpCommon::NumSOSCons() const {
-  //lp()->solver_->getatt
-  // TODO Get number of SOS constraints using solver API
-  // return getIntAttr(CBCMP_INTATTR_SOSS);
-  return 0;
+  auto obj = lp()->solver_->objects();
+  auto numberObjects = lp()->solver_->numberObjects();
+  int nSOS = 0;
+  for (auto i= 0; i < numberObjects; i++) {
+    CbcSOS* objSOS = dynamic_cast<CbcSOS*>(obj[i]);
+    if (objSOS) nSOS++;
+  }
+  return nSOS;
 }
-
-void CbcmpCommon::GetSolverOption(const char* key, int &value) const {
-    std::string argname = std::string("-") + key;
-    for (int i = 0; (i < ((int)lp()->cmdargs_.size()) - 1); ++i)
-      if (argname == lp()->cmdargs_[i])
-      {
-        value = atoi(lp()->cmdargs_[i + 1].c_str());
-        return;
-      }
-    value = -1;
+int findIndexOf(const std::vector< std::string > cmdargs_, const char* key) {
+  std::string argname = std::string("-") + key;
+  for (int i = 0; (i < ((int)cmdargs_.size()) - 1); ++i)
+    if (argname == cmdargs_[i])
+      return i;
+  return -1;
+}
+int CbcmpCommon::GetSolverOption(const char* key, int &value) const {
+  int i = findIndexOf(lp()->cmdargs_, key);
+  if (i) return i;
+  value = atoi(lp()->cmdargs_[i + 1].c_str());
+  return 0;
 }
 
 void CbcmpCommon::SetSolverOption(const char* key, int value) {
@@ -92,15 +100,11 @@ void CbcmpCommon::SetSolverOption(const char* key, int value) {
   Cbc_setParameter(lp(), key, s.data());
 }
 
-void CbcmpCommon::GetSolverOption(const char* key, double &value) const {
-  std::string argname = std::string("-") + key;
-  for (int i = 0; (i < ((int)lp()->cmdargs_.size()) - 1); ++i)
-    if (argname == lp()->cmdargs_[i])
-    {
-      value = atof(lp()->cmdargs_[i + 1].c_str());
-      return;
-    }
-    value = -1.0;
+int CbcmpCommon::GetSolverOption(const char* key, double &value) const {
+  int i = findIndexOf(lp()->cmdargs_, key);
+  if (i) return i;
+  value = atof(lp()->cmdargs_[i + 1].c_str());
+  return 0;
 }
 
 void CbcmpCommon::SetSolverOption(const char* key, double value) {
@@ -108,15 +112,17 @@ void CbcmpCommon::SetSolverOption(const char* key, double value) {
   Cbc_setParameter(lp(), key, s.data());
 }
 
-void CbcmpCommon::GetSolverOption(const char* key, std::string &value) const {
-  std::string argname = std::string("-") + key;
-  for (int i = 0; (i < ((int)lp()->cmdargs_.size()) - 1); ++i)
-    if (argname == lp()->cmdargs_[i])
-    {
-      value = lp()->cmdargs_[i + 1];
-      return;
-    }
-  value = fmt::format("Could not find param {}", key);
+int CbcmpCommon::GetSolverOption(const char* key, std::string &value) const {
+  int i = findIndexOf(lp()->cmdargs_, key);
+  if (i) return i;
+  value = lp()->cmdargs_[i + 1];
+  return 0;
+}
+
+const char * CbcmpCommon::GetSolverOption(const char* key) const {
+  int i = findIndexOf(lp()->cmdargs_, key);
+  if (i) return NULL;
+  return lp()->cmdargs_[i + 1].c_str();
 }
 
 void CbcmpCommon::SetSolverOption(const char* key, std::string value) {

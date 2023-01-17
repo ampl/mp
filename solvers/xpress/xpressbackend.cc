@@ -2602,17 +2602,17 @@ int XpressmpBackend::xp_mse_display(XPRSobject o, void* context, void* thread,
 } // namespace mp
 
 // AMPLs
-AMPLS_MP_Solver* AMPLSOpenXpressmp(
+AMPLS_MP_Solver* Open_xpress(
   const char* slv_opt, CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::XpressmpBackend()},
     slv_opt, cb);
 }
 
-void AMPLSCloseXpressmp(AMPLS_MP_Solver* slv) {
+void AMPLSClose_xpress(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-XPRSprob GetXpressmpmodel(AMPLS_MP_Solver* slv) {
+XPRSprob AMPLSGetModel_xpress(AMPLS_MP_Solver* slv) {
   return
     dynamic_cast<mp::XpressmpBackend*>(AMPLSGetBackend(slv))->lp();
 }

@@ -2519,7 +2519,7 @@ void GurobiBackend::GrbPlayObjNParams() {
 } // namespace mp
 
 
-AMPLS_MP_Solver* AMPLSOpenGurobi(const char* slv_opt, CCallbacks cb = {}) {
+AMPLS_MP_Solver* Open_gurobi(const char* slv_opt, CCallbacks cb = {}) {
   AMPLS_MP_Solver* slv =
       AMPLS__internal__Open(
         std::unique_ptr<mp::BasicBackend>{new mp::GurobiBackend()},
@@ -2527,11 +2527,11 @@ AMPLS_MP_Solver* AMPLSOpenGurobi(const char* slv_opt, CCallbacks cb = {}) {
   return slv;
 }
 
-void AMPLSCloseGurobi(AMPLS_MP_Solver* slv) {
+void AMPLSClose_gurobi(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-GRBmodel* GetGRBmodel(AMPLS_MP_Solver* slv) {
+GRBmodel* AMPLSGetModel_gurobi(AMPLS_MP_Solver* slv) {
   return
     dynamic_cast<mp::GurobiBackend*>(AMPLSGetBackend(slv))->model();
 }

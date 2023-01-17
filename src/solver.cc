@@ -363,7 +363,7 @@ bool SolverAppOptionParser::ShowSolverOptionsASL() {
   {
     writer.clear();
     writer << '\n' << (*i)->name_ASL() << '\n';
-    internal::FormatRST(writer, (*i)->description(), DESC_INDENT, (*i)->values());
+    (*i)->format_description(writer, DESC_INDENT);
     solver_.Print("{}", fmt::StringRef(writer.data(), writer.size()));
   }
   return false;
@@ -404,7 +404,7 @@ bool SolverAppOptionParser::ShowSolverOptions(const char* param) {
       writer << ')';
     }
     writer << '\n';
-    internal::FormatRST(writer, i->description(), DESC_INDENT, i->values());
+    i->format_description(writer, DESC_INDENT);
     solver_.Print("{}", fmt::StringRef(writer.data(), writer.size()));
   }
   return false;
@@ -1086,7 +1086,17 @@ void SolverOptionManager::AddOptionSynonyms_OutOfLine(
 
 //// AMPLS C/C++ API
 
-
+/// Option that owns the formatted description
+struct AMPLSOption {
+  std::string name;
+  std::string description;
+  std::string type;
+  AMPLSOption(const char* name, const char* descr, const char* type) {
+    this->name = name;
+    this->description = descr;
+    this->type = type;
+  }
+};
 /// Internal AMPLS API Infos
 typedef struct AMPLS_MP__internal_T {
   /// The Backend
@@ -1100,6 +1110,9 @@ typedef struct AMPLS_MP__internal_T {
   /// The 0-terminated char*'s to the messages,
   /// filled by AMPLSGetMessages()
   std::vector<const char*> msg_pchar_;
+  /// Array of options
+  std::vector<AMPLSOption> options_;
+  std::vector<AMPLS_C_Option> options_c_;
 } AMPLS_MP__internal;
 
 
@@ -1200,4 +1213,106 @@ const char* const * AMPLSGetMessages(AMPLS_MP_Solver* slv) {
 
   pchar_vec.push_back(nullptr);                // final 0
   return pchar_vec.data();
+}
+
+int getParamType(const std::string& type) {
+  if (type.find("int") != std::string::npos)
+    return 0;
+  if (type.find("bool") != std::string::npos)
+    return 1;
+  if (type.find("double") != std::string::npos)
+    return 2;
+  if (type.find("string") != std::string::npos)
+    return 3;
+  return 4;
+}
+
+AMPLS_C_Option*  AMPLSGetOptions(AMPLS_MP_Solver* slv) {
+  auto be = AMPLSGetBackend(slv);
+  auto ii = ((AMPLS_MP__internal*)(slv->internal_info_));
+  if (ii->options_.size() == 0)
+  {
+    auto end = be->option_end();
+    for (auto it = be->option_begin(); it != end; ++it) {
+      AMPLSOption o(it->name(), it->format_description(4).c_str(), "int");
+      ii->options_.push_back(o);
+    }
+    for (const AMPLSOption& o : ii->options_) {
+      ii->options_c_.push_back({ o.name.c_str(), o.description.c_str(), getParamType(o.type)});
+    }
+  }
+  ii->options_c_.push_back({});
+  return ii->options_c_.data();
+}
+
+template <typename T> int AMPLSetOption(AMPLS_MP_Solver* slv,
+  const char* name, T v) {
+  auto be = AMPLSGetBackend(slv);
+  auto ii = ((AMPLS_MP__internal*)(slv->internal_info_));
+  try {
+    auto opt = be->GetOption(name);
+    opt->SetValue(v);
+    return 0;
+  }
+  catch (const mp::OptionError& ) {
+    return 1;
+  }
+  catch (const std::exception& ) {
+    return 2;
+  }
+}
+template <typename T> int AMPLSGetOption(AMPLS_MP_Solver* slv,
+  const char* name, T v) {
+  auto be = AMPLSGetBackend(slv);
+  auto ii = ((AMPLS_MP__internal*)(slv->internal_info_));
+  try {
+    auto opt = be->GetOption(name);
+    opt->GetValue(*v);
+    return 0;
+  }
+  catch (const mp::OptionError& ) {
+    return 1;
+  }
+  catch (const std::exception& ) {
+    return 2;
+  }
+}
+int AMPLSSetIntOption(AMPLS_MP_Solver* slv,
+  const char* name, int v) {
+  return AMPLSetOption(slv, name, v);
+}
+int AMPLSSetDblOption(AMPLS_MP_Solver* slv,
+  const char* name, double v) {
+  return AMPLSetOption(slv, name, v);
+}
+int AMPLSSetStrOption(AMPLS_MP_Solver* slv,
+  const char* name, const char* v) {
+  return AMPLSetOption(slv, name, v);
+}
+
+int AMPLSGetIntOption(AMPLS_MP_Solver* slv,
+  const char* name, int* v) {
+  return AMPLSGetOption(slv, name, v);
+}
+int AMPLSGetDblOption(AMPLS_MP_Solver* slv,
+  const char* name, double* v) {
+  return AMPLSGetOption(slv, name, v);
+}
+int AMPLSGetStrOption(AMPLS_MP_Solver* slv,
+  const char* name, const char* const* v) {
+  std::string s;
+  auto be = AMPLSGetBackend(slv);
+  auto ii = ((AMPLS_MP__internal*)(slv->internal_info_));
+  try {
+    auto opt = be->GetOption(name);
+    opt->GetValue(s);
+    return 0;
+  }
+  catch (const mp::OptionError&) {
+    return 1;
+  }
+  catch (const std::exception&) {
+    return 2;
+  }
+  //TODO
 }
