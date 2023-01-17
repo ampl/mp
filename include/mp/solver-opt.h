@@ -236,7 +236,9 @@ public:
       return wc_key_last__std_form();
     return name();
   }
-
+  virtual std::string type() {
+    return "not defined";
+  }
 
 private:
  std::string name_ {};
@@ -305,6 +307,12 @@ class TypedSolverOption : public SolverOption {
       throw InvalidOptionValue(name(), std::string(start, s - start));
     }
     SetValue(value);
+  }
+
+  virtual std::string type() {
+    if (is_flag())
+      return "bool";
+    return typeid(T).name();
   }
 };
 
