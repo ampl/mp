@@ -165,6 +165,16 @@ public:
   void set_description(const char* d) { description_=d; }
   void add_to_description(const char* d) { description_ += d; }
 
+  /// Append the formatted description to the writer
+  void format_description(fmt::MemoryWriter &writer, int indent = 0) const {
+    internal::FormatRST(writer, description(), indent, values());
+  }
+  /// Get the formatted option description
+  std::string format_description(int indent=0) const {
+    fmt::MemoryWriter writer;
+    format_description(writer, indent);
+    return writer.str();
+  }
   /// Returns the information about possible values.
   ValueArrayRef values() const { return values_; }
 
@@ -629,6 +639,7 @@ public:
 
 private:
   struct OptionNameLess {
+    /// Options in the set are ordered lexicographically by name()
     bool operator()(const SolverOption *lhs, const SolverOption *rhs) const;
   };
 
@@ -638,44 +649,62 @@ private:
 
 
 public:
-  /// Option iterator.
-  class option_iterator :
-    public std::iterator<std::forward_iterator_tag, SolverOption> {
-   private:
-    OptionSet::const_iterator it_;
+  /// Base option iterator, to specialized for const/non-const
+  template<class baseiterator> class option_iterator_base 
+  {  
+private:
+  using iterator_category = std::forward_iterator_tag;
+  using difference_type = std::ptrdiff_t;
+  using value_type = SolverOption; // crap
+  using pointer = value_type*;
+  using reference = value_type&;
+
+  baseiterator it_;
 
     friend class SolverOptionManager;
 
-    explicit option_iterator(OptionSet::const_iterator it) : it_(it) {}
+    explicit option_iterator_base(baseiterator it) : it_(it) {}
 
-   public:
-    option_iterator() {}
+  public:
+    option_iterator_base() {}
 
-    const SolverOption &operator*() const { return **it_; }
-    const SolverOption *operator->() const { return *it_; }
+    SolverOption& operator*() const { return **it_; }
+    SolverOption* operator->() const { return *it_; }
 
-    option_iterator &operator++() {
+    option_iterator_base& operator++() {
       ++it_;
       return *this;
     }
 
-    option_iterator operator++(int ) {
-      option_iterator it(*this);
+    option_iterator_base operator++(int) {
+      set_option_iterator it(*this);
       ++it_;
       return it;
     }
 
-    bool operator==(option_iterator other) const { return it_ == other.it_; }
-    bool operator!=(option_iterator other) const { return it_ != other.it_; }
+    bool operator==(option_iterator_base other) const { return it_ == other.it_; }
+    bool operator!=(option_iterator_base other) const { return it_ != other.it_; }
   };
-
+  /// Alias for writeable option iterator
+  using set_option_iterator = option_iterator_base<OptionSet::iterator>;
+  /// Alias for const option iterator
+  using option_iterator = option_iterator_base<OptionSet::const_iterator>;
+  /// Get the start const-iterator
   option_iterator option_begin() const {
     return option_iterator(options_.begin());
   }
+  /// Get the end const-iterator
   option_iterator option_end() const {
     return option_iterator(options_.end());
   }
-
+  /// Get the start writeable iterator
+  set_option_iterator set_option_begin() const {
+    return set_option_iterator(options_.begin());
+  }
+  /// Get the end writeable iterator
+  set_option_iterator set_option_end() const {
+    return set_option_iterator(options_.end());
+  }
   ~SolverOptionManager();
 };
 
