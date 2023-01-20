@@ -1064,8 +1064,8 @@ class TextReader : public ReaderBase {
   };
   CopyableLocale locale_;
 
-  // Reads an integer without a sign.
-  // Int: signed or unsigned integer type.
+  /// Reads an integer without a sign.
+  /// Int: signed or unsigned integer type.
   template <typename Int>
   bool ReadIntWithoutSign(Int& value) {
     char c = *ptr_;
@@ -1104,8 +1104,8 @@ class TextReader : public ReaderBase {
     return true;
   }
 
-  // Reads a nonnegative integer and checks that adding it to accumulator
-  // doesn't overflow.
+  /// Reads a nonnegative integer and checks that adding it to accumulator
+  /// doesn't overflow.
   int ReadUInt(int &accumulator) {
     int value = ReadUInt();
     if (accumulator > std::numeric_limits<int>::max() - value)
@@ -1187,22 +1187,22 @@ class TextReader : public ReaderBase {
 
   fmt::StringRef ReadString();
 
-  // Reads a function or suffix name.
+  /// Reads a function or suffix name.
   fmt::StringRef ReadName();
 
-  // Reads an .nl file header. The header is always in text format, so this
-  // function doesn't have a counterpart in BinaryReader.
+  /// Reads an .nl file header. The header is always in text format, so this
+  /// function doesn't have a counterpart in BinaryReader.
   void ReadHeader(NLHeader &header);
 };
 
-// Converter that doesn't change the input.
+/// Converter that doesn't change the input.
 class IdentityConverter {
  public:
   template <typename T>
   T Convert(T value) { return value; }
 };
 
-// Converter that changes the input endianness.
+/// Converter that changes the input endianness.
 class EndiannessConverter {
  private:
   void Convert(char *data, std::size_t size) {
@@ -1221,7 +1221,7 @@ class BinaryReaderBase : public ReaderBase {
  protected:
   explicit BinaryReaderBase(const ReaderBase &base) : ReaderBase(base) {}
 
-  // Reads length chars.
+  /// Reads length chars.
   const char *Read(int length) {
     if (end_ - ptr_ < length) {
       token_ = end_;
@@ -1241,7 +1241,7 @@ class BinaryReaderBase : public ReaderBase {
   }
 };
 
-// Binary reader.
+/// Binary reader.
 template <typename InputConverter = IdentityConverter>
 class BinaryReader : private InputConverter, public BinaryReaderBase {
  public:
@@ -1274,12 +1274,12 @@ class BinaryReader : private InputConverter, public BinaryReaderBase {
     return fmt::StringRef(length != 0 ? Read(length) : 0, length);
   }
 
-  // Reads a function or suffix name.
+  /// Reads a function or suffix name.
   fmt::StringRef ReadName() { return ReadString(); }
 };
 
-// An NLHandler that forwards notification of variable bounds to another
-// handler and ignores all other notifications.
+/// An NLHandler that forwards notification of variable bounds to another
+/// handler and ignores all other notifications.
 template <typename Handler>
 class VarBoundHandler : public NullNLHandler<typename Handler::Expr> {
  private:
@@ -1293,14 +1293,15 @@ class VarBoundHandler : public NullNLHandler<typename Handler::Expr> {
   }
 };
 
-// Linear expression handler that ignores input.
+/// Linear expression handler that ignores input.
 struct NullLinearExprHandler {
   void AddTerm(int, double) {}
 };
 
-// An NL reader.
-// Handler: a class implementing the NLHandler concept that receives
-//          notifications of NL constructs
+
+/// An NL reader.
+/// Handler: a class implementing the NLHandler concept that receives
+///          notifications of NL constructs
 template <typename Reader, typename Handler>
 class NLReader {
  private:
@@ -1318,8 +1319,8 @@ class NLReader {
   double ReadConstant(char code);
   double ReadConstant() { return ReadConstant(reader_.ReadChar()); }
 
-  // Reads a nonnegative integer and checks that it is less than ub.
-  // ub is unsigned so that it can hold value INT_MAX + 1u.
+  /// Reads a nonnegative integer and checks that it is less than ub.
+  /// ub is unsigned so that it can hold value INT_MAX + 1u.
   int ReadUInt(unsigned ub) {
     int value = reader_.ReadUInt();
     unsigned unsigned_value = value;
@@ -1328,7 +1329,7 @@ class NLReader {
     return value;
   }
 
-  // Reads a nonnegative integer and checks that it is in the range [lb, ub).
+  /// Reads a nonnegative integer and checks that it is in the range [lb, ub).
   int ReadUInt(unsigned lb, unsigned ub) {
     int value = reader_.ReadUInt();
     unsigned unsigned_value = value;
@@ -1337,8 +1338,8 @@ class NLReader {
     return value;
   }
 
-  // Minimum number of arguments for an iterated expression that has a
-  // binary counterpart. Examples: sum (+), forall (&&), exists (||).
+  /// Minimum number of arguments for an iterated expression that has a
+  /// binary counterpart. Examples: sum (+), forall (&&), exists (||).
   enum {MIN_ITER_ARGS = 3};
 
   int ReadNumArgs(int min_args = MIN_ITER_ARGS) {
@@ -1348,7 +1349,7 @@ class NLReader {
     return num_args;
   }
 
-  // Reads a variable or a common expression reference.
+  /// Reads a variable or a common expression reference.
   Reference DoReadReference() {
     int index = ReadUInt(num_vars_and_exprs_);
     reader_.ReadTillEndOfLine();
@@ -1357,7 +1358,7 @@ class NLReader {
           handler_.OnCommonExprRef(index - header_.num_vars);
   }
 
-  // Reads a variable or a common expression reference.
+  /// Reads a variable or a common expression reference.
   Reference ReadReference() {
     if (reader_.ReadChar() != 'v')
       reader_.ReportError("expected reference");
@@ -1392,9 +1393,9 @@ class NLReader {
     return handler_.EndCount(args);
   }
 
-  // Helper structs to provide a uniform interface to Read{Numeric,Logical}Expr
-  // since it is not possible to overload on expression type as NumericExpr
-  // and LogicalExpr can be the same type.
+  /// Helper structs to provide a uniform interface to Read{Numeric,Logical}Expr
+  /// since it is not possible to overload on expression type as NumericExpr
+  /// and LogicalExpr can be the same type.
   struct NumericExprReader {
     typedef NumericExpr Expr;
     Expr Read(NLReader &r) const { return r.ReadNumericExpr(); }
@@ -1408,11 +1409,11 @@ class NLReader {
     Expr Read(NLReader &r) const { return r.ReadSymbolicExpr(); }
   };
 
-  // A helper struct used to make sure that the arguments to a binary
-  // expression are read in the correct order and avoid errors of the form:
-  //   MakeBinary(opcode, ReadNumericExpr(), ReadNumericExpr())
-  // The above code is incorrect as the order of evaluation of arguments is
-  // unspecified.
+  /// A helper struct used to make sure that the arguments to a binary
+  /// expression are read in the correct order and avoid errors of the form:
+  ///   MakeBinary(opcode, ReadNumericExpr(), ReadNumericExpr())
+  /// The above code is incorrect as the order of evaluation of arguments is
+  /// unspecified.
   template <typename ExprReader = NumericExprReader>
   struct BinaryArgReader {
     typename ExprReader::Expr lhs;
@@ -1421,18 +1422,18 @@ class NLReader {
       : lhs(ExprReader().Read(r)), rhs(ExprReader().Read(r)) {}
   };
 
-  // Reads a numeric or string expression.
+  /// Reads a numeric or string expression.
   Expr ReadSymbolicExpr();
 
-  // Reads a numeric expression.
-  // ignore_zero: if true, zero constants are ignored
+  /// Reads a numeric expression.
+  /// ignore_zero: if true, zero constants are ignored
   NumericExpr ReadNumericExpr(bool ignore_zero = false) {
     return ReadNumericExpr(reader_.ReadChar(), ignore_zero);
   }
   NumericExpr ReadNumericExpr(char code, bool ignore_zero);
   NumericExpr ReadNumericExpr(int opcode);
 
-  // Reads a logical expression.
+  /// Reads a logical expression.
   LogicalExpr ReadLogicalExpr();
   LogicalExpr ReadLogicalExpr(int opcode);
 
@@ -1466,7 +1467,7 @@ class NLReader {
 
     int num_items() const { return this->reader_.header_.num_objs; }
 
-    // Returns true if objective expression should be skipped.
+    /// Returns true if objective expression should be skipped.
     bool SkipExpr(int obj_index) const {
       return !this->reader_.handler_.NeedObj(obj_index);
     }
@@ -1489,23 +1490,23 @@ class NLReader {
   struct ProblemHandler : ItemHandler<PROB> {
     explicit ProblemHandler(NLReader &r) : ItemHandler<PROB>(r) {}
 
-    // An NL input always contains one problem.
+    /// An NL input always contains one problem.
     int num_items() const { return 1; }
   };
 
-  // Reads the linear part of an objective or constraint expression.
+  /// Reads the linear part of an objective or constraint expression.
   template <typename LinearHandler>
   void ReadLinearExpr();
 
   template <typename LinearHandler>
   void ReadLinearExpr(int num_terms, LinearHandler linear_expr);
 
-  // Reads column sizes, numbers of nonzeros in the first num_var − 1
-  // columns of the Jacobian sparsity matrix.
+  /// Reads column sizes, numbers of nonzeros in the first num_var − 1
+  /// columns of the Jacobian sparsity matrix.
   template <bool CUMULATIVE>
   void ReadColumnSizes();
 
-  // Reads initial values for primal or dual variables.
+  /// Reads initial values for primal or dual variables.
   template <typename ValueHandler>
   void ReadInitialValues();
 
@@ -1535,13 +1536,13 @@ class NLReader {
     : reader_(reader), header_(header), handler_(handler), flags_(flags),
       num_vars_and_exprs_(0) {}
 
-  // Algebraic constraint handler.
+  /// Algebraic constraint handler.
   struct AlgebraicConHandler : ItemHandler<CON> {
     explicit AlgebraicConHandler(NLReader &r) : ItemHandler<CON>(r) {}
 
     int num_items() const { return this->reader_.header_.num_algebraic_cons; }
 
-    // Returns false because constraint expressions are always read.
+    /// Returns false because constraint expressions are always read.
     bool SkipExpr(int) const { return false; }
 
     typename Handler::LinearConHandler OnLinearExpr(int index, int num_terms) {
@@ -1556,11 +1557,11 @@ class NLReader {
     }
   };
 
-  // Reads variable or constraint bounds.
+  /// Reads variable or constraint bounds.
   template <typename BoundHandler>
   void ReadBounds();
 
-  // bound_reader: a reader after variable bounds section input
+  /// bound_reader: a reader after variable bounds section input
   void Read(Reader *bound_reader);
 
   void Read();
@@ -2086,7 +2087,7 @@ void NLReader<Reader, Handler>::Read() {
   handler_.EndInput();
 }
 
-// An .nl file reader.
+/// An .nl file reader.
 template <typename File = fmt::File>
 class NLFileReader {
  private:
@@ -2096,7 +2097,7 @@ class NLFileReader {
 
   void Open(fmt::CStringRef filename);
 
-  // Reads the file into an array.
+  /// Reads the file into an array.
   void Read(fmt::internal::MemoryBuffer<char, 1> &array);
 
  public:
@@ -2104,7 +2105,7 @@ class NLFileReader {
 
   const File &file() { return file_; }
 
-  // Opens and reads the file.
+  /// Opens and reads the file.
   template <typename Handler>
   void Read(fmt::CStringRef filename, Handler &handler, int flags) {
     Open(filename);
@@ -2149,18 +2150,18 @@ void ReadNames(fmt::CStringRef filename, fmt::StringRef data,
   }
 }
 
-// A name file reader.
+/// A name file reader.
 class NameReader {
  private:
   MemoryMappedFile<> mapped_file_;
 
  public:
-  // Reads names from the file *filename* sending the names to the *handler*
-  // object by calling ``handler.OnName(name)``. The name argument to
-  // ``OnName`` is a ``fmt::StringRef`` object and the string it refers to
-  // is not null-terminated.
-  // Each name in the input file should be on a separate line ended with a
-  // newline character ('\n').
+  /// Reads names from the file *filename* sending the names to the *handler*
+  /// object by calling ``handler.OnName(name)``. The name argument to
+  /// ``OnName`` is a ``fmt::StringRef`` object and the string it refers to
+  /// is not null-terminated.
+  /// Each name in the input file should be on a separate line ended with a
+  /// newline character ('\n').
   template <typename NameHandler>
   void Read(fmt::CStringRef filename, NameHandler &handler) {
     fmt::File file(filename, fmt::File::RDONLY);
@@ -2190,7 +2191,7 @@ class NLProblemBuilder {
     obj.set_nonlinear_expr(expr);
   }
 
-  // Sets bounds on a problem item (objective or constraint).
+  /// Sets bounds on a problem item (objective or constraint).
   template <typename Item>
   void SetBounds(const Item &item, double lb, double ub) {
     item.set_lb(lb);
@@ -2552,7 +2553,7 @@ struct NLAdapter<Handler, true> {
   typedef Type RefType;
 };
 
-// Checks if T has a member type Builder.
+/// Checks if T has a member type Builder.
 template <typename T>
 class HasBuilder {
  private:

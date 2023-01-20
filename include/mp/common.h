@@ -64,7 +64,7 @@ class ComplInfo {
   int flags_;
 
  public:
-  // Flags for the constructor.
+  /// Flags for the constructor.
   enum {
     /** Constraint upper bound is  infinity (finite variable lower bound). */
     INF_UB = 1,
