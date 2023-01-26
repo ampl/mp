@@ -400,8 +400,8 @@ class ProblemBuilder : public SuffixManager {
     return LogicalExpr();
   }
 
-  // Constructs a StringLiteral object.
-  // value: string value which may not be null-terminated.
+  /// Constructs a StringLiteral object.
+  /// value: string value which may not be null-terminated.
   Expr MakeStringLiteral(fmt::StringRef value) {
     internal::Unused(&value);
     MP_DISPATCH(ReportUnhandledConstruct("string literal"));
@@ -418,7 +418,7 @@ class ProblemBuilder : public SuffixManager {
 /// An optimization problem with a column-wise constraint matrix.
 class ColProblem : public Problem {
  private:
-  // Column-wise constraint matrix.
+  /// Column-wise constraint matrix.
   std::vector<int> col_starts_;
   std::vector<int> row_indices_;
   std::vector<double> coefs_;
@@ -439,12 +439,12 @@ class ColProblem : public Problem {
   const int *row_indices() const { return row_indices_.data(); }
   const double *values() const { return coefs_.data(); }
 
-  // Returns the built problem. This is used for compatibility with the problem
-  // builder API.
+  /// Returns the built problem. This is used for compatibility with the problem
+  /// builder API.
   ColProblem &problem() { return *this; }
 };
 
-// An NL handler that builds a problem with a column-wise constraint matrix.
+/// An NL handler that builds a problem with a column-wise constraint matrix.
 class ColProblemBuilder : public internal::NLProblemBuilder<ColProblem> {
  private:
   typedef internal::NLProblemBuilder<ColProblem> Base;

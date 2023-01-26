@@ -114,6 +114,11 @@ protected:
     ////////////////////////// Variables
     ConvertVars();
 
+    ////////////////////// SOS constraints //////////////////////////
+    /// SOS2 come before algebraic constraints, so we can omit
+    /// AMPL's linearization of SOS2 (in case we use them).
+    MP_DISPATCH( ConvertSOSConstraints() );
+
     ////////////////////////// Common exprs
     int num_common_exprs = GetModel().num_common_exprs();
     for (int i = 0; i < num_common_exprs; ++i)
@@ -137,8 +142,7 @@ protected:
       for (int i = 0; i < n_lcons; ++i)
         MP_DISPATCH( ConvertLogicalCon( i ) );
 
-    ////////////////////// SOS constraints //////////////////////////
-    MP_DISPATCH( ConvertSOSConstraints() );
+    /// Signal we are not flattening anything
     ifFltCon_ = -1;
   }
 

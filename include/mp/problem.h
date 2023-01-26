@@ -31,7 +31,7 @@
 #include "mp/expr.h"
 #include "mp/suffix.h"
 
-// Maximum index of a variable, objective or constraint.
+/// Maximum index of a variable, objective or constraint.
 #ifndef MP_MAX_PROBLEM_ITEMS
 # define MP_MAX_PROBLEM_ITEMS \
   static_cast<std::size_t>(std::numeric_limits<int>::max())
@@ -113,14 +113,8 @@ class LinearExpr {
   void SortTerms();
 };
 
-/// Optionally adding extra info to some items
-struct EmptyStruct { };
-struct DefaultExtraItemInfo {
-  using AlgConExtraInfo = EmptyStruct;
-  using ObjExtraInfo = EmptyStruct;
-};
-
-template < class A = std::allocator<char> >
+/// Placeholder for whatever params of BasicProblem<>
+template < class A = int >
 struct BasicProblemParams {
   using Alloc = A;
 };
@@ -138,7 +132,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   typedef internal::ExprTypes ExprTypes;
 
  private:
-  // A variable.
+  /// A variable.
   struct Var {
     double lb;
     double ub;
@@ -146,26 +140,30 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   };
   std::vector<Var> vars_;
 
-  // Packed variable type information.
-  // is_var_int_[i] specifies whether variable i is integer.
+  /// Packed variable type information.
+  /// is_var_int_[i] specifies whether variable i is integer.
   std::vector<bool> is_var_int_;
 
-  // Packed objective type information.
-  // is_obj_max_[i] specifies whether objective i is maximization.
+  /// Variable deleted flags.
+  /// Only markers
+  std::vector<bool> is_var_deleted_;
+
+  /// Packed objective type information.
+  /// is_obj_max_[i] specifies whether objective i is maximization.
   std::vector<bool> is_obj_max_;
 
-  // Linear parts of objective expessions.
+  /// Linear parts of objective expessions.
   std::vector<LinearExpr> linear_objs_;
 
-  // Nonlinear parts of objective expressions.
-  // The array can be empty if the problem is linear.
+  /// Nonlinear parts of objective expressions.
+  /// The array can be empty if the problem is linear.
   std::vector<NumericExpr> nonlinear_objs_;
 
-  // Algebraic constraint information.
+  /// Algebraic constraint information.
   struct AlgebraicConInfo {
-    // Linear part of an algebraic constraint expression.
-    // Nonlinear parts are stored in nonlinear_cons_ to avoid overhead
-    // for linear problems.
+    /// Linear part of an algebraic constraint expression.
+    /// Nonlinear parts are stored in nonlinear_cons_ to avoid overhead
+    /// for linear problems.
     LinearExpr linear_expr;
     double lb;
     double ub;
@@ -174,31 +172,35 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   };
   std::vector<AlgebraicConInfo> algebraic_cons_;
 
-  // Information about complementarity conditions.
-  // compl_vars_[i] > 0 means constraint i complements variable
-  // compl_vars_[i] - 1. The array can be empty if there are no
-  // complementarity conditions.
-  std::vector<unsigned> compl_vars_;
-
-  // Nonlinear parts of algebraic constraint expressions.
-  // The array can be empty if the problem is linear.
+  /// Nonlinear parts of algebraic constraint expressions.
+  /// The array can be empty if the problem is linear.
   std::vector<NumericExpr> nonlinear_cons_;
 
-  // Logical constraint expressions.
+  /// Algebraic constraint deletion marker.
+  std::vector<bool> is_alg_con_deleted_;
+
+  /// Information about complementarity conditions.
+  /// compl_vars_[i] > 0 means constraint i complements variable
+  /// compl_vars_[i] - 1. The array can be empty if there are no
+  /// complementarity conditions.
+  std::vector<unsigned> compl_vars_;
+
+  /// Logical constraint expressions.
   std::vector<LogicalExpr> logical_cons_;
 
-  // Linear parts of common expressions.
+  /// Linear parts of common expressions.
   std::vector<LinearExpr> linear_exprs_;
 
-  // Nonlinear parts of common expressions.
+  /// Nonlinear parts of common expressions.
   std::vector<NumericExpr> nonlinear_exprs_;
 
-  // Initial values for variables.
+  /// Initial values for variables.
   std::vector<double> initial_values_;
 
-  // Initial values for dual variables.
+  /// Initial values for dual variables.
   std::vector<double> initial_dual_values_;
 
+  /// Set nonlinear objective expression.
   void SetNonlinearObjExpr(int obj_index, NumericExpr expr) {
     internal::CheckIndex(obj_index, linear_objs_.size());
     if (nonlinear_objs_.size() <= static_cast<std::size_t>(obj_index))
@@ -206,6 +208,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     nonlinear_objs_[obj_index] = expr;
   }
 
+  /// Set nonlinear algebraic constraint expression.
   void SetNonlinearConExpr(int con_index, NumericExpr expr) {
     internal::CheckIndex(con_index, algebraic_cons_.size());
     if (nonlinear_cons_.size() <= static_cast<std::size_t>(con_index))
@@ -213,7 +216,24 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     nonlinear_cons_[con_index] = expr;
   }
 
-  // Sets the initial value for a variable.
+  /// Mark algebraic constraint as deleted.
+  void MarkAlgConDeleted(int con_index) {
+    internal::CheckIndex(con_index, algebraic_cons_.size());
+    if (is_alg_con_deleted_.size() <= static_cast<std::size_t>(con_index))
+      is_alg_con_deleted_.resize(num_algebraic_cons());
+    is_alg_con_deleted_[con_index] = true;
+  }
+
+  /// Mark variable as deleted.
+  void MarkVarDeleted(int var_index) {
+    if (is_var_deleted_.size() <= static_cast<unsigned>(var_index)) {
+      is_var_deleted_.reserve(vars_.capacity());
+      is_var_deleted_.resize(num_vars());
+    }
+    is_var_deleted_[var_index] = true;
+  }
+
+  /// Sets the initial value for a variable.
   void SetInitialValue(int var_index, double value) {
     if (initial_values_.size() <= static_cast<unsigned>(var_index)) {
       initial_values_.reserve(vars_.capacity());
@@ -222,7 +242,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     initial_values_[var_index] = value;
   }
 
-  // Sets the initial value for a dual variable.
+  /// Sets the initial value for a dual variable.
   void SetInitialDualValue(int con_index, double value) {
     MP_ASSERT(0 <= con_index && con_index < num_algebraic_cons(),
               "invalid index");
@@ -259,7 +279,7 @@ public:
     return is_var_int_;
   }
 
-  // An optimization variable.
+  /// An optimization variable.
   template <typename Item>
   class BasicVariable : private Item {
    private:
@@ -272,26 +292,31 @@ public:
     }
 
    public:
-    // Returns the index of the variable.
-    int index() const { return this->index_; }
+    using Item::index;
 
-    // Returns the lower bound on the variable.
+    /// Whether the variable is marked as deleted.
+    bool is_marked_deleted() const {
+        return index() < this->problem_->is_var_deleted_.size() ?
+              this->problem_->is_var_deleted_[index()] : false;
+    }
+
+    /// Returns the lower bound on the variable.
     double lb() const {
       return this->problem_->vars_[this->index_].lb;
     }
 
-    // Returns the upper bound on the variable.
+    /// Returns the upper bound on the variable.
     double ub() const {
       return this->problem_->vars_[this->index_].ub;
     }
 
-    // Returns the type of the variable.
+    /// Returns the type of the variable.
     var::Type type() const {
       return this->problem_->is_var_int_[this->index_] ?
           var::INTEGER : var::CONTINUOUS;
     }
 
-    // Returns the value of the variable.
+    /// Returns the value of the variable.
     double value() const {
       std::size_t index = this->index_;
       return index < this->problem_->initial_values_.size() ?
@@ -311,7 +336,7 @@ public:
     }
   };
 
-  // An objective.
+  /// An objective.
   template <typename Item>
   class BasicObjective : private Item {
    private:
@@ -325,20 +350,20 @@ public:
     }
 
    public:
-    // Returns the objective index
+    /// Returns the objective index
     using Item::index;
 
-    // Returns the type of the objective.
+    /// Returns the type of the objective.
     obj::Type type() const {
       return this->problem_->is_obj_max_[this->index_] ? obj::MAX : obj::MIN;
     }
 
-    // Returns the linear part of the objective expression.
+    /// Returns the linear part of the objective expression.
     const LinearExpr &linear_expr() const {
       return this->problem_->linear_objs_[this->index_];
     }
 
-    // Returns the nonlinear part of the objective expression.
+    /// Returns the nonlinear part of the objective expression.
     NumericExpr nonlinear_expr() const {
       std::size_t index = this->index_;
       return index < this->problem_->nonlinear_objs_.size() ?
@@ -358,8 +383,8 @@ public:
     }
   };
 
-  // An algebraic constraint.
-  // This is a constraint of the form lb <= expr <= ub.
+  /// An algebraic constraint.
+  /// This is a constraint of the form lb <= expr <= ub.
   template <typename Item>
   class BasicAlgebraicCon : private Item {
    private:
@@ -372,29 +397,38 @@ public:
     }
 
    public:
-    // Returns the lower bound on the constraint.
+    /// index(): constraint index
+    using Item::index;
+
+    /// Whether the alg con is marked as deleted.
+    bool is_marked_deleted() const {
+        return index() < this->problem_->is_alg_con_deleted_.size() ?
+              this->problem_->is_alg_con_deleted_[index()] : false;
+    }
+
+    /// Returns the lower bound on the constraint.
     double lb() const {
       return this->problem_->algebraic_cons_[this->index_].lb;
     }
 
-    // Returns the upper bound on the constraint.
+    /// Returns the upper bound on the constraint.
     double ub() const {
       return this->problem_->algebraic_cons_[this->index_].ub;
     }
 
-    // Returns the dual value.
+    /// Returns the dual value.
     double dual() const {
       std::size_t index = this->index_;
       return index < this->problem_->initial_dual_values_.size() ?
             this->problem_->initial_dual_values_[index] : 0;
     }
 
-    // Returns the linear part of a constraint expression.
+    /// Returns the linear part of a constraint expression.
     const LinearExpr &linear_expr() const {
       return this->problem_->algebraic_cons_[this->index_].linear_expr;
     }
 
-    // Returns the nonlinear part of a constraint expression.
+    /// Returns the nonlinear part of a constraint expression.
     NumericExpr nonlinear_expr() const {
       std::size_t index = this->index_;
       return index < this->problem_->nonlinear_cons_.size() ?
@@ -439,7 +473,7 @@ public:
     return static_cast<int>(logical_cons_.size());
   }
 
-  // Return true if the problem has nonlinear constraints.
+  /// Return true if the problem has nonlinear constraints.
   bool has_nonlinear_cons() const {
     return !nonlinear_cons_.empty();
   }
@@ -449,10 +483,10 @@ public:
     return static_cast<int>(linear_exprs_.size());
   }
 
-  // An optimization variable.
+  /// An optimization variable.
   typedef BasicVariable<ProblemItem> Variable;
 
-  // A mutable variable.
+  /// A mutable variable.
   class MutVariable : public BasicVariable<MutProblemItem> {
    private:
     friend class BasicProblem;
@@ -472,7 +506,7 @@ public:
       this->problem_->vars_[this->index_].ub = ub;
     }
 
-    // Sets the initial value.
+    /// Sets the initial value.
     void set_value(double value) const {
       this->problem_->SetInitialValue(this->index_, value);
     }
@@ -557,7 +591,7 @@ public:
    */
   VarRange vars() const { return VarRange(this); }
 
-  // Returns the variable at the specified index.
+  /// Returns the variable at the specified index.
   Variable var(int index) const {
     internal::CheckIndex(index, num_vars());
     return Variable(this, index);
@@ -567,7 +601,7 @@ public:
     return MutVariable(this, index);
   }
 
-  // Adds a variable.
+  /// Adds a variable.
   Variable AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
     std::size_t index = vars_.size();
     MP_ASSERT(index < MP_MAX_PROBLEM_ITEMS, "too many variables");
@@ -619,10 +653,10 @@ public:
 
   typedef LinearExprBuilder LinearObjBuilder;
 
-  // An objective.
+  /// An objective.
   typedef BasicObjective<ProblemItem> Objective;
 
-  // A mutable objective.
+  /// A mutable objective.
   class MutObjective : public BasicObjective<MutProblemItem> {
    private:
     friend class BasicProblem;
@@ -639,30 +673,30 @@ public:
       this->problem_->is_obj_max_[this->index_] = (type == obj::MAX);
     }
 
-    // Returns the linear part of the objective expression.
+    /// Returns the linear part of the objective expression.
     LinearExpr &linear_expr() const {
       return this->problem_->linear_objs_[this->index_];
     }
 
-    // Sets the linear part of the objective expression.
+    /// Sets the linear part of the objective expression.
     LinearObjBuilder set_linear_expr(int num_linear_terms) const {
       LinearExpr &expr = linear_expr();
       expr.Reserve(num_linear_terms);
       return LinearObjBuilder(&expr);
     }
 
-    // Sets the extra info of the objective expression.
+    /// Sets the extra info of the objective expression.
     template <class EI>
     void set_extra_info(EI ei) const {
       this->problem_->SetObjExtraInfo(this->index_, std::forward<EI>(ei));
     }
 
-    // Sets the nonlinear part of the objective expression.
+    /// Sets the nonlinear part of the objective expression.
     void set_nonlinear_expr(NumericExpr expr) const {
       this->problem_->SetNonlinearObjExpr(this->index_, expr);
     }
 
-    // Unsets the nonlinear part of the objective.
+    /// Unsets the nonlinear part of the objective.
     void unset_nonlinear_expr() {
       this->problem_->SetNonlinearObjExpr(this->index_, NumericExpr());
       assert(!this->nonlinear_expr());
@@ -685,20 +719,20 @@ public:
    */
   ObjRange objs() const { return ObjRange(this); }
 
-  // Returns the objective at the specified index.
+  /// Returns the objective at the specified index.
   Objective obj(int index) const {
     internal::CheckIndex(index, num_objs());
     return Objective(this, index);
   }
 
-  // Returns the mutable objective at the specified index.
+  /// Returns the mutable objective at the specified index.
   MutObjective obj(int index) {
     internal::CheckIndex(index, num_objs());
     return MutObjective(this, index);
   }
 
-  // Adds an objective.
-  // Returns a builder for the linear part of an objective expression.
+  /// Adds an objective.
+  /// Returns a builder for the linear part of an objective expression.
   LinearObjBuilder AddObj(obj::Type type, NumericExpr expr,
                           int num_linear_terms = 0);
 
@@ -713,10 +747,10 @@ public:
 
   typedef LinearExprBuilder LinearConBuilder;
 
-  // An algebraic constraint.
+  /// An algebraic constraint.
   typedef BasicAlgebraicCon<ProblemItem> AlgebraicCon;
 
-  // A mutable algebraic constraint.
+  /// A mutable algebraic constraint.
   class MutAlgebraicCon : public BasicAlgebraicCon<MutProblemItem> {
    private:
     friend class BasicProblem;
@@ -729,46 +763,40 @@ public:
       return AlgebraicCon(this->problem_, this->index_);
     }
 
-    // Sets the lower bound on the constraint.
+    /// Sets the lower bound on the constraint.
     void set_lb(double lb) const {
       this->problem_->algebraic_cons_[this->index_].lb = lb;
     }
 
-    // Sets the upper bound on the constraint.
+    /// Sets the upper bound on the constraint.
     void set_ub(double ub) const {
       this->problem_->algebraic_cons_[this->index_].ub = ub;
     }
 
-    // Sets the initial dual value.
+    /// Sets the initial dual value.
     void set_dual(double value) const {
       this->problem_->SetInitialDualValue(this->index_, value);
     }
 
-    // Returns the linear part of the constraint expression.
+    /// Returns the linear part of the constraint expression.
     LinearExpr &linear_expr() const {
       return this->problem_->algebraic_cons_[this->index_].linear_expr;
     }
 
-    // Sets the linear part of the objective expression.
+    /// Sets the linear part of the objective expression.
     LinearConBuilder set_linear_expr(int num_linear_terms) const {
       LinearExpr &expr = linear_expr();
       expr.Reserve(num_linear_terms);
       return LinearConBuilder(&expr);
     }
 
-    // Sets the extra info of the constraint.
-    template <class EI>
-    void set_extra_info(EI ei) const {
-      this->problem_->SetAlgConExtraInfo(this->index_, std::forward<EI>(ei));
-    }
-
-    // Sets the nonlinear part of the constraint expression.
+    /// Sets the nonlinear part of the constraint expression.
     void set_nonlinear_expr(NumericExpr expr) const {
       if (expr)
         this->problem_->SetNonlinearConExpr(this->index_, expr);
     }
 
-    // Unsets the nonlinear part of the constraint expression.
+    /// Unsets the nonlinear part of the constraint expression.
     void unset_nonlinear_expr() {
       this->problem_->SetNonlinearConExpr(this->index_, NumericExpr());
       assert(!this->nonlinear_expr());
@@ -792,20 +820,20 @@ public:
    */
   AlgebraicConRange algebraic_cons() const { return AlgebraicConRange(this); }
 
-  // Returns the algebraic constraint at the specified index.
+  /// Returns the algebraic constraint at the specified index.
   AlgebraicCon algebraic_con(int index) const {
     internal::CheckIndex(index, num_algebraic_cons());
     return AlgebraicCon(this, index);
   }
 
-  // Returns the mutable algebraic constraint at the specified index.
+  /// Returns the mutable algebraic constraint at the specified index.
   MutAlgebraicCon algebraic_con(int index) {
     internal::CheckIndex(index, num_algebraic_cons());
     return MutAlgebraicCon(this, index);
   }
 
-  // Adds an algebraic constraint.
-  // Returns a builder for the linear part of a constraint expression.
+  /// Adds an algebraic constraint.
+  /// Returns a builder for the linear part of a constraint expression.
   MutAlgebraicCon AddCon(double lb, double ub) {
     std::size_t num_cons = algebraic_cons_.size();
     MP_ASSERT(num_cons < MP_MAX_PROBLEM_ITEMS,
@@ -831,7 +859,7 @@ public:
     }
 
    public:
-    // Returns the constraint expression.
+    /// Returns the constraint expression.
     LogicalExpr expr() const {
       return this->problem_->logical_cons_[this->index_];
     }
@@ -896,7 +924,7 @@ public:
     return MutLogicalCon(this, index);
   }
 
-  // Adds a logical constraint.
+  /// Adds a logical constraint.
   void AddCon(LogicalExpr expr) {
     MP_ASSERT(logical_cons_.size() < MP_MAX_PROBLEM_ITEMS,
               "too many logical constraints");
@@ -907,7 +935,7 @@ public:
     logical_cons_.resize(num_cons);
   }
 
-  // A common expression.
+  /// A common expression.
   template <typename Item>
   class BasicCommonExpr : private Item {
    private:
@@ -1020,11 +1048,11 @@ public:
    public:
     explicit SuffixHandler(BasicMutSuffix<T> s) : suffix_(s) {}
 
-    // Safe bool type.
+    /// Safe bool type.
     typedef void (internal::SuffixBase::*SafeBool)() const;
     operator SafeBool() const { return suffix_; }
 
-    // Sets the suffix value.
+    /// Sets the suffix value.
     void SetValue(int index, T value) {
       suffix_.set_value(index, value);
     }
@@ -1041,16 +1069,16 @@ public:
 
   typedef SuffixHandler<int> IntSuffixHandler;
 
-  // Adds an integer suffix.
-  // name: Suffix name that may not be null-terminated.
+  /// Adds an integer suffix.
+  /// name: Suffix name that may not be null-terminated.
   IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int=0) {
     return AddSuffix<int>(name, kind);
   }
 
   typedef SuffixHandler<double> DblSuffixHandler;
 
-  // Adds an double suffix.
-  // name: Suffix name that may not be null-terminated.
+  /// Adds a double suffix.
+  /// name: Suffix name that may not be null-terminated.
   DblSuffixHandler AddDblSuffix(fmt::StringRef name, suf::Kind kind, int) {
     return AddSuffix<double>(name, kind);
   }
@@ -1119,7 +1147,7 @@ public:
   }
 
   ///////////////////////////////////////////////////////////////////////
-  // Sets problem information and reserves memory for problem elements.
+  /// Sets problem information and reserves memory for problem elements.
   void SetInfo(const ProblemInfo &info);
 
   /// Pushing the whole instance to a backend or converter.
@@ -1205,8 +1233,8 @@ protected:
 public:
   typedef BasicProblem Builder;
 
-  // Returns the built problem. This is used for compatibility with the problem
-  // builder API.
+  /// Returns the built problem. This is used for compatibility with the problem
+  /// builder API.
   BasicProblem &problem() { return *this; }
 };
 
