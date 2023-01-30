@@ -738,6 +738,7 @@ protected:  //////////// Option accessors ////////////////
       return name;
   }
 
+
 protected:
   virtual void InitStandardOptions() {
     if (IMPL_HAS_STD_FEATURE(KAPPA))

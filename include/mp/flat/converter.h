@@ -95,7 +95,7 @@ public:
   /// These are called to transform expressions, either by FlatCvt itself,
   /// or when flattening NL model
 
-  /// From am affine expression:
+  /// From an affine expression:
   /// Adds a result variable r and constraint r == expr
   int Convert2Var(AffineExpr&& ee) {
     if (ee.is_variable())
@@ -221,7 +221,7 @@ public: // for ConstraintKeeper
   /// Assume mixed context if not set.
   template <class Constraint>
   void RunConversion(const Constraint& con, int i) {
-    if (con.UsesContext())              // If context releant,
+    if (con.UsesContext())              // If context relevant,
       if (con.GetContext().IsNone())    // ensure we have context, mixed if none
         con.SetContext(Context::CTX_MIX);
     pre::AutoLinkScope<Impl> auto_link_scope{
@@ -389,10 +389,12 @@ protected:
 
 
 public:
+  /// Handle start of model input
   void StartModelInput() {
     MPD( OpenGraphExporter() );
   }
 
+  /// Handle end of model input
   void FinishModelInput() {
     MPD( ConvertModel() );
     if (relax())
@@ -404,6 +406,7 @@ public:
     if (GetEnv().verbose_mode())
       GetEnv().PrintWarnings();
   }
+
 
 protected:
   void ConvertModel() {
@@ -430,13 +433,12 @@ public:
   const pre::ValuePresolver& GetValuePresolver() const { return value_presolver_; }
   pre::ValuePresolver& GetValuePresolver() { return value_presolver_; }
 
+
 private:
   std::unordered_map<double, int> map_fixed_vars_;
 
-  std::vector<int> common_exprs_;               // variables equal to the result
 
 public:
-
   //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
   pre::NodeRange MakeFixedVar(double value) {
     auto it = map_fixed_vars_.find(value);
@@ -541,13 +543,6 @@ public:
   /// Typedef ConInfo
   using ConInfo = AbstractConstraintLocation;
 
-  /// Add variable. Type: var::CONTINUOUS by default
-  pre::NodeRange DoAddVar(double lb=MinusInfty(), double ub=Infty(),
-             var::Type type = var::CONTINUOUS) {
-    int v = GetModel().AddVar__basic(lb, ub, type);
-    return AutoLink( GetVarValueNode().Select( v ) );
-  }
-
   /// Add vector of variables. Type: var::CONTINUOUS by default
   /// @return vector of the Ids of the new vars
   std::vector<int> AddVars_returnIds(std::size_t nvars,
@@ -568,9 +563,17 @@ private:
 
 
 protected:
+  /// Add variable. Type: var::CONTINUOUS by default
+  pre::NodeRange DoAddVar(double lb=MinusInfty(), double ub=Infty(),
+             var::Type type = var::CONTINUOUS) {
+    int v = GetModel().AddVar__basic(lb, ub, type);
+    return AutoLink( GetVarValueNode().Select( v ) );
+  }
+
   /// Add init expr for \a var
   void AddInitExpression(int var, const ConInfo& vi) {
-    var_info_.resize(std::max(var_info_.size(), (size_t)var+1));
+    if (var_info_.size() <= (size_t)var)
+      var_info_.resize(((size_t)(var+1)*2));
     var_info_[var] = vi;
   }
 
@@ -631,6 +634,7 @@ public:
   /// Get autolink target node ranges
   const std::vector<pre::NodeRange>& GetAutoLinkTargets() const
   { return auto_link_targ_items_; }
+
 
 public:
   /// The internal flat model type
@@ -756,7 +760,7 @@ public:
 
   /// Whether to quadratize pow(..., const_pos_int).
   /// The fact that we use the passQuadCon_ flag
-  /// is much Gurobi-biased: v9.5 does no PL-linearize Pow
+  /// is much Gurobi-biased: v9.5 does not PL-linearize Pow
   /// for negative arguments
   bool IfQuadratizePowConstPosIntExp() const
   { return options_.passQuadCon_; }
@@ -797,7 +801,8 @@ private:
 
 protected:
   /////////////////////// CONSTRAINT KEEPERS /////////////////////////
-  /// Constraint keepers and converters should be initialized after \a presolver_
+  /// Constraint keepers and converters should be initialized after
+  ///  \a value_presolver_
 
   /// Define constraint keepers for all constraint types.
   /// No maps for static constraints.

@@ -97,7 +97,7 @@ public:
   }
 
 
-  //////////////////////////// CONVERTERS OF STANDRAD MP ITEMS //////////////////////////////
+  //////////////////////////// CONVERTERS OF STANDARD MP ITEMS //////////////////////////////
   ///
   ///////////////////////////////////////////////////////////////////////////////////////////
 public:
@@ -298,7 +298,7 @@ protected:
   }
 
 
-public:
+protected:
   //////////////////////////////////// VISITOR ADAPTERS /////////////////////////////////////////
 
   /// Convert an expression to an EExpr
@@ -404,7 +404,7 @@ public:
   ///////////////////////////////// EXPRESSION VISITORS ////////////////////////////////////
   ///
   //////////////////////////////////////////////////////////////////////////////////////////
-
+public:          // need to be public due to CRTP
   EExpr VisitNumericConstant(NumericConstant n) {
     return EExpr::Constant{ n.value() };
   }
@@ -415,8 +415,12 @@ public:
 
   EExpr VisitCommonExpr(Reference r) {
     const auto index = r.index();
-    if (index >= (int)common_exprs_.size())
-      common_exprs_.resize(index+1, -1);          // init by -1, "no variable"
+    if (index >= (int)common_exprs_.size()) {
+      assert(index < GetModel().num_common_exprs());
+      common_exprs_.resize(
+                  GetModel().num_common_exprs(),
+                  -1);          // init by -1, "no variable"
+    }
     if (common_exprs_[index]<0) {                 // not yet converted
       auto ce = MP_DISPATCH( GetModel() ).common_expr(index);
       EExpr eexpr( ToLinTerms(ce.linear_expr()) );
@@ -698,6 +702,8 @@ public:
     return VisitFunctionalExpression<AtanhConstraint>({ e.arg() });
   }
 
+
+protected:         // More utilities
   void ConvertSOSConstraints() {
     if (sos()) {
       auto sosno = GetModel().
@@ -890,23 +896,23 @@ protected:
     return GetFlatCvt().AddConstraint(std::move(con));
   }
 
+
   //////////////////////////// UTILITIES /////////////////////////////////
   ///
 protected:
   pre::ValuePresolver& GetValuePresolver()
   { return GetFlatCvt().GetValuePresolver(); }
 
-private:
-  std::unordered_map<double, int> map_fixed_vars_;
 
-  std::vector<int> common_exprs_;               // variables equal to the result
+private:
+  std::vector<int> common_exprs_;               // should be in FlatModel
 
   int ifFltCon_ = -1;   // -1: undefined, 0: walking an expr tree in an objective,
                         // 1: in a constraint
 
 protected:
-  /// Whether flattening constraint vs objective
-  bool IfFlatteningConstraint() const
+  /// Whether flattening a constraint vs an objective
+  bool IfFlatteningAConstraint() const
   { assert(ifFltCon_>=0); return ifFltCon_; }
 
   //////////////////////////// CREATE OR FIND A FIXED VARIABLE //////////////////////////////
@@ -935,7 +941,7 @@ protected:
   /// Distinguish between constraints and objectives.
   /// What about common expressions?
   int IfMultOutQPTerms() const {
-    return IfFlatteningConstraint() ?
+    return IfFlatteningAConstraint() ?
           GetFlatCvt().IfPassQuadCon() : GetFlatCvt().IfPassQuadObj();
   }
 
