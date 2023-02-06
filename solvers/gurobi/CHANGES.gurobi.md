@@ -1,10 +1,13 @@
 Summary of recent updates to gurobi for AMPL
 ==============================================
 
-## TBD
+## 20230206
+- Relinked with Gurobi version 10.0.1, which includes many bugfixes
+
 - Changed behaviour of 'tech:logfile', which no longer implies 'tech:outlev=1'.
   Specifying a logfile will enable gurobi's full log to file only; to obtain both 
   console and log output, set also 'tech:outlev=1'.
+
 
 ## 20221228
 - Changes in MP
