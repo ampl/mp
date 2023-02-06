@@ -117,9 +117,24 @@ public:
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     auto& args = con.GetArguments();
-    MPD( PropagateResultOfInitExpr(args[0], 0.0, 1.0, Context::CTX_MIX) );
+    MPD( PropagateIfThenResultIntoCondition(args, ctx) );
     MPD( PropagateResultOfInitExpr(args[1], MPD( MinusInfty() ), MPD( Infty() ), +ctx) );
     MPD( PropagateResultOfInitExpr(args[2], MPD( MinusInfty() ), MPD( Infty() ), +ctx) );
+  }
+
+  /// Context of the condition in IfThen.
+  /// @args: [condition, then, else] result variables
+  /// @ctx: context of the overall expression
+  template <class Array3>
+  void PropagateIfThenResultIntoCondition(Array3 args, Context ctx) {
+    Context ctx_cond = Context::CTX_MIX;
+    if (ctx.IsPositive() || ctx.IsNegative()) {
+      if (MPCD( lb(args[1]) ) >= MPCD( ub(args[2]) ))
+        ctx_cond = +ctx;
+      else if (MPCD( lb(args[2]) ) >= MPCD( ub(args[1]) ))
+        ctx_cond = -ctx;
+    }
+    MPD( PropagateResultOfInitExpr(args[0], 0.0, 1.0, ctx_cond) );
   }
 
   void PropagateResult(ImplicationConstraint& con, double lb, double ub, Context ctx) {

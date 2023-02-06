@@ -26,6 +26,12 @@ public:
   /// Has CTX_NEG?
   bool HasNegative() const { return CTX_NEG==value_ || CTX_MIX==value_; }
 
+  /// Is CTX_POS?
+  bool IsPositive() const { return CTX_POS==value_; }
+
+  /// Is CTX_NEG?
+  bool IsNegative() const { return CTX_NEG==value_; }
+
   /// Has CTX_MIX?
   bool IsMixed() const { return CTX_MIX==value_; }
 

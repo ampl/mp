@@ -2,11 +2,11 @@
  * impl6_if.mod.
  *
  * This example checks 2 things.
- * 1) that after appearing in CTX_POS,
+ * 1) that after appearing in CTX_POS in the disjunction,
  *    the context of x>=3.0 is updated to CTX_MIX
  *    (by the if-then in the objective).
  * 2) That the nonlinear discrete variable x' type
- *    is correctly recognized.
+ *    is correctly recognized from NL file.
  */
 
 var x integer, >=0.0, <=20.0;

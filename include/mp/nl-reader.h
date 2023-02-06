@@ -2240,7 +2240,9 @@ class NLProblemBuilder {
   /// Add variables
   void AddVariables(const NLHeader& h) {
     // Distinguish NL variable order
-    // See D.M.Gay, Hooking Your Solver to AMPL
+    // See D.M.Gay, Hooking Your Solver to AMPL; and Writing .NL Files,
+    // and, e.g.,
+    // github.com/jump-dev/MathOptInterface.jl/blob/master/src/FileFormats/NL/README.md
     int k=0;                             // current block position
     const int num_nl_vars = std::max(h.num_nl_vars_in_cons,
                                      h.num_nl_vars_in_objs);

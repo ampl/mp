@@ -62,7 +62,7 @@ class ProblemBuilder : public SuffixManager {
 
   void SetInfo(const ProblemInfo &) {}
 
-  // Adds a variable.
+  /// Adds a variable.
   void AddVar(double lb, double ub, var::Type type) {
     internal::Unused(lb, ub, type);
     MP_DISPATCH(ReportUnhandledConstruct("variable"));
@@ -76,8 +76,8 @@ class ProblemBuilder : public SuffixManager {
 
   typedef LinearExprBuilder LinearObjBuilder;
 
-  // Adds an objective.
-  // Returns a builder for the linear part of the objective expression.
+  /// Adds an objective.
+  /// Returns a builder for the linear part of the objective expression.
   LinearObjBuilder AddObj(
       obj::Type type, NumericExpr expr, int num_linear_terms) {
     internal::Unused(type, &expr, num_linear_terms);
@@ -87,8 +87,8 @@ class ProblemBuilder : public SuffixManager {
 
   typedef LinearExprBuilder LinearConBuilder;
 
-  // Adds an algebraic constraint.
-  // Returns a builder for the linear part of the constraint expression.
+  /// Adds an algebraic constraint.
+  /// Returns a builder for the linear part of the constraint expression.
   LinearConBuilder AddCon(double lb, double ub, NumericExpr expr,
                           int num_linear_terms) {
     internal::Unused(lb, ub, &expr, num_linear_terms);
@@ -96,7 +96,7 @@ class ProblemBuilder : public SuffixManager {
     return LinearConBuilder();
   }
 
-  // Adds a logical constraint.
+  /// Adds a logical constraint.
   void AddCon(LogicalExpr expr) {
     internal::Unused(&expr);
     MP_DISPATCH(ReportUnhandledConstruct("logical constraint"));
@@ -121,14 +121,14 @@ class ProblemBuilder : public SuffixManager {
     return CommonExpr();
   }
 
-  // Adds a common expression (defined variable).
+  /// Adds a common expression (defined variable).
   CommonExpr AddCommonExpr(NumericExpr expr) {
     internal::Unused(&expr);
     MP_DISPATCH(ReportUnhandledConstruct("common expression"));
     return CommonExpr();
   }
 
-  // Sets a complementarity relation.
+  /// Sets a complementarity relation.
   void SetComplementarity(int con_index, int var_index, ComplInfo info) {
     internal::Unused(con_index, var_index, &info);
     MP_DISPATCH(ReportUnhandledConstruct("complementarity constraint"));
@@ -158,19 +158,21 @@ class ProblemBuilder : public SuffixManager {
     return AlgebraicCon();
   }
 
+
+  /// class Function.
   class Function {
    private:
-    // Safe bool type.
+    /// Safe bool type.
     typedef void (Function::*SafeBool)() const;
 
    public:
-    // Returns a value convertible to bool that can be used in conditions but
-    // not in comparisons and evaluates to "true" if this function is not null
-    // and "false" otherwise.
-    // Example:
-    //   if (f) {
-    //     // Do something if f is not null.
-    //   }
+    /// Returns a value convertible to bool that can be used in conditions but
+    /// not in comparisons and evaluates to "true" if this function is not null
+    /// and "false" otherwise.
+    /// Example:
+    ///   if (f) {
+    ///     // Do something if f is not null.
+    ///   }
     operator SafeBool() const { return 0; }
   };
 
@@ -184,7 +186,7 @@ class ProblemBuilder : public SuffixManager {
     return function(index);
   }
 
-  // Adds a function.
+  /// Adds a function.
   Function AddFunction(fmt::StringRef name, int num_args, func::Type type) {
     internal::Unused(&name, num_args, type);
     return function(0);
@@ -198,7 +200,7 @@ class ProblemBuilder : public SuffixManager {
 
   typedef SuffixHandler<int> IntSuffixHandler;
 
-  // Adds a suffix.
+  /// Adds a suffix.
   IntSuffixHandler AddIntSuffix(fmt::StringRef name, int kind, int num_values) {
     internal::Unused(&name, kind, num_values);
     return IntSuffixHandler();
@@ -206,7 +208,7 @@ class ProblemBuilder : public SuffixManager {
 
   typedef SuffixHandler<double> DblSuffixHandler;
 
-  // Adds a suffix.
+  /// Adds a suffix.
   DblSuffixHandler AddDblSuffix(fmt::StringRef name, int kind, int num_values) {
     internal::Unused(&name, kind, num_values);
     return DblSuffixHandler();
