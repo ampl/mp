@@ -438,6 +438,7 @@ TEST(SolverTest, SolverOption) {
       formatted(false), parsed(false) {}
     void Write(fmt::Writer &) { formatted = true; }
     void Parse(const char *&, bool=false) { parsed = true; }
+    virtual Option_Type type() { return BOOL; }
   };
   {
     TestOption opt("abc", "def");
@@ -622,6 +623,7 @@ TEST(SolverTest, AddOption) {
       value = std::strtol(s, &end, 10);
       s = end;
     }
+    virtual Option_Type type() { return BOOL; }
   };
   TestSolver s;
   TestOption *opt = 0;
@@ -772,6 +774,7 @@ struct FormatOption : SolverOption {
     ++format_count;
   }
   void Parse(const char *&, bool) {}
+  virtual Option_Type type() { return BOOL; }
 };
 
 TEST(SolverTest, FormatOption) {
@@ -822,6 +825,7 @@ TEST(SolverTest, ErrorOnKeywordOptionValue) {
     : SolverOption("kwopt", "", mp::ValueArrayRef(), true), parsed(false) {}
     void Write(fmt::Writer &) {}
     void Parse(const char *&, bool=false) { parsed = true; }
+    virtual Option_Type type() { return BOOL; }
   };
   TestSolver s;
   TestErrorHandler handler;
@@ -843,6 +847,7 @@ TEST(SolverTest, ParseOptionsHandlesOptionErrorsInParse) {
         ++s;
       throw OptionError("test message");
     }
+    virtual Option_Type type() { return BOOL; }
   };
   TestSolver s;
   TestErrorHandler handler;
