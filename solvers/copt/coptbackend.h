@@ -85,6 +85,13 @@ public:
   IIS GetIIS() override;
 
   /**
+* Obtain inf/unbounded rays
+**/
+  ALLOW_STD_FEATURE(RAYS, true)
+  ArrayRef<double> Ray() override;
+  ArrayRef<double> DRay() override;
+
+  /**
   * FeasRelax
   **/
   ALLOW_STD_FEATURE(FEAS_RELAX, true)

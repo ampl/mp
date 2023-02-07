@@ -48,6 +48,8 @@ public:
 protected:
   int getIntAttr(const char* name) const;
   double getDblAttr(const char* name) const;
+  std::vector<double> getVarInfo(const char* name);
+  std::vector<double> getConInfo(const char* name);
 
   int NumLinCons() const;
   int NumVars() const;

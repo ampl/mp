@@ -82,7 +82,6 @@ bool CbcmpBackend::IsQCP() const {
 
 ArrayRef<double> CbcmpBackend::PrimalSolution() {
   int num_vars = NumVars();
-  int error;
   std::vector<double> x(num_vars);
   auto sol = Cbc_getColSolution(lp());
   for (int i = 0; i < num_vars; ++i)
@@ -179,9 +178,10 @@ double CbcmpBackend::getPoolObjective(int i)
 void CbcmpBackend::ReportCBCMPPool() {
   if (!IsMIP())
     return;
+  // TODO
+  /*
   int iPoolSolution = -1;
   int nsolutions;
-  /*
   while (++iPoolSolution < getIntAttr(CBCMP_INTATTR_POOLSOLS)) {
     ReportIntermediateSolution(
       { getPoolSolution(iPoolSolution),
@@ -613,7 +613,6 @@ void CbcmpBackend::InitCustomOptions() {
 
   std::string name;
   std::string desc;
-  mp::OptionValueInfo k;
   for (auto p : lp()->cbcData->parameters_)
   {
     if (p.type() >= CLP_PARAM_DBL_PRIMALTOLERANCE &&

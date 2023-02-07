@@ -18,13 +18,13 @@
 /// (normally provided in the <solver>_options string).
 /// Can be NULL.
 /// @return pointer to populated AMPLS_MP_Solver struct, or NULL
-void* AMPLSOpenCopt(const char* slv_opt, CCallbacks cb);
+AMPLS_MP_Solver* Open_copt(const char* slv_opt, CCallbacks cb);
 
 /// Shut down solver instance
-void AMPLSCloseCopt(AMPLS_MP_Solver* slv);
+AMPLS_C_EXPORT void AMPLSClose_copt(AMPLS_MP_Solver* slv);
 
 /// Extract the Copt model handle
-copt_prob* GetCoptmodel(AMPLS_MP_Solver* slv);
+AMPLS_C_EXPORT copt_prob* AMPLSGetModel_copt(AMPLS_MP_Solver* slv);
 
 
 #endif // COPTAMPLSCAPI_H
