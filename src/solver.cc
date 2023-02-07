@@ -610,6 +610,9 @@ void BasicSolver::InitMetaInfoAndOptions(
 
     void Write(fmt::Writer &w) { w << ((s.bool_options_ & SHOW_VERSION) != 0); }
     void Parse(const char *&, bool) { s.bool_options_ |= SHOW_VERSION; }
+    Option_Type type() {
+      return Option_Type::BOOL;
+    }
   };
   AddOption(OptionPtr(new VersionOption(*this)));
 
@@ -843,6 +846,9 @@ SolverOption *SolverOptionManager::FindOption(
     DummyOption(const char *name) : SolverOption(name, "") {}
     void Write(fmt::Writer &) {}
     void Parse(const char *&, bool) {}
+    Option_Type type() {
+      return Option_Type::BOOL;
+    }
   };
   DummyOption option(name);
   // find by name
@@ -1066,6 +1072,9 @@ public:
   virtual std::string echo() {
     return fmt::format("{} ({})", name(), real_->echo());
   }
+  Option_Type type() {
+    return real_->type();
+  }
 };
 
 void SolverOptionManager::AddOptionSynonyms_OutOfLine(
@@ -1090,8 +1099,8 @@ void SolverOptionManager::AddOptionSynonyms_OutOfLine(
 struct AMPLSOption {
   std::string name;
   std::string description;
-  std::string type;
-  AMPLSOption(const char* name, const char* descr, const char* type) {
+  mp::SolverOption::Option_Type type;
+  AMPLSOption(const char* name, const char* descr, mp::SolverOption::Option_Type type) {
     this->name = name;
     this->description = descr;
     this->type = type;
@@ -1215,17 +1224,6 @@ const char* const * AMPLSGetMessages(AMPLS_MP_Solver* slv) {
   return pchar_vec.data();
 }
 
-int getParamType(const std::string& type) {
-  if (type.find("int") != std::string::npos)
-    return 0;
-  if (type.find("bool") != std::string::npos)
-    return 1;
-  if (type.find("double") != std::string::npos)
-    return 2;
-  if (type.find("string") != std::string::npos)
-    return 3;
-  return 4;
-}
 
 AMPLS_C_Option*  AMPLSGetOptions(AMPLS_MP_Solver* slv) {
   auto be = AMPLSGetBackend(slv);
@@ -1234,11 +1232,11 @@ AMPLS_C_Option*  AMPLSGetOptions(AMPLS_MP_Solver* slv) {
   {
     auto end = be->option_end();
     for (auto it = be->option_begin(); it != end; ++it) {
-      AMPLSOption o(it->name(), it->format_description(4).c_str(), "int");
+      AMPLSOption o(it->name(), it->format_description(4).c_str(), it->type());
       ii->options_.push_back(o);
     }
     for (const AMPLSOption& o : ii->options_) {
-      ii->options_c_.push_back({ o.name.c_str(), o.description.c_str(), getParamType(o.type)});
+      ii->options_c_.push_back({ o.name.c_str(), o.description.c_str(), (int)o.type});
     }
   }
   ii->options_c_.push_back({});
