@@ -1,6 +1,11 @@
 Summary of recent updates to gurobi for AMPL
 ==============================================
 
+
+## 20230207
+- *Changes in the MP library*
+
+
 ## 20230206
 - Relinked with Gurobi version 10.0.1, which includes many bugfixes
 

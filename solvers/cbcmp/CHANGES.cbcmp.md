@@ -1,6 +1,11 @@
 Summary of recent updates to CBCMP for AMPL
 =============================================
 
+
+## 20230207
+- *Changes in the MP library*
+
+
 ## 20221228
 - Changes in MP
 

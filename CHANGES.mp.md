@@ -1,6 +1,11 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+
+## 29239297
+- *Handle boolean constants* in ProblemFlattener.
+
+
 ## 20221228
 - *More to #163*: ignore SOS with zero weights.
 

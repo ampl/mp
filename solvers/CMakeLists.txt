@@ -209,7 +209,7 @@ add_ampl_solver(gecode EXTERNAL LIBRARIES
 exclude_from_build(fzn-gecode gecodeflatzinc gecode-test)
 
 add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
-  concert.cc concert.h ilogcp.cc ilogcp.h ilogcp_date.h
+  concert.cc concert.h ilogcp.cc ilogcp.h
   LIBRARIES cplex-cp ilocplex ${CMAKE_DL_LIBS})
 if (TARGET ilogcp)
   target_compile_definitions(amplilogcp-static PRIVATE ILOGCP_NO_VERS)

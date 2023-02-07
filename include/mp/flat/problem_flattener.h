@@ -483,6 +483,10 @@ public:          // need to be public due to CRTP
     return VisitFunctionalExpression<AbsConstraint>({ e.arg() });
   }
 
+  EExpr VisitLogicalConstant(LogicalConstant c) {
+    return EExpr::Constant{ double(c.value()) };
+  }
+
   EExpr VisitEQ(RelationalExpr e) {
     return VisitRelationalExpression<0>({ e.lhs(), e.rhs() });
   }

@@ -277,6 +277,10 @@ bool InterruptCPLEX(void *aborter) {
 
 namespace mp {
 
+#ifndef YYYYMMDD
+  #define YYYYMMDD 20160218             // Update
+#endif
+
 IlogCPSolver::IlogCPSolver() :
    SolverImpl<Problem>("ilogcp", 0, YYYYMMDD, MULTIPLE_SOL | MULTIPLE_OBJ),
    cp_(env_), cplex_(env_), optimizer_(AUTO), optimizer(AUTO) {
