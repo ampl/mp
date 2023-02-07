@@ -142,11 +142,6 @@ void CbcmpBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void CbcmpBackend::Solve() {
-  SetSolverOption("log", storedOptions_.outlev_);
-  if(storedOptions_.outlev_==0)
-    lp()->solver_->setHintParam(OsiDoReducePrint, true, OsiHintTry);
-  if (storedOptions_.timeLimit_ != 0)
-    Cbc_setMaximumSeconds(lp(), storedOptions_.timeLimit_);
   CBCMP_CCALL(Cbc_solve(lp()));
   WindupCBCMPSolve();
 }
@@ -227,8 +222,13 @@ std::pair<int, std::string> CbcmpBackend::ConvertCBCMPStatus() {
 
 
 void CbcmpBackend::FinishOptionParsing() {
+  SetSolverOption("log", storedOptions_.outlev_);
+  if (storedOptions_.outlev_ == 0)
+    lp()->solver_->setHintParam(OsiDoReducePrint, true, OsiHintTry);
+  if (storedOptions_.timeLimit_ != 0)
+    Cbc_setMaximumSeconds(lp(), storedOptions_.timeLimit_);
   int v = Cbc_getLogLevel(lp());
-  set_verbose_mode(v>0);
+  set_verbose_mode(storedOptions_.outlev_ >0);
 }
 
 

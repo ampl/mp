@@ -4,6 +4,7 @@
 #include <set>
 #include <cstdint>
 #include <cassert>
+#include <typeinfo>
 
 #include "mp/error.h"
 #include "mp/format.h"
@@ -236,9 +237,14 @@ public:
       return wc_key_last__std_form();
     return name();
   }
-  virtual std::string type() {
-    return "not defined";
-  }
+
+  enum Option_Type {
+    BOOL,
+    INT,
+    DBL,
+    STRING
+  };
+  virtual Option_Type type() = 0;
 
 private:
  std::string name_ {};
@@ -309,11 +315,16 @@ class TypedSolverOption : public SolverOption {
     SetValue(value);
   }
 
-  virtual std::string type() {
-    if (is_flag())
-      return "bool";
-    return typeid(T).name();
+  virtual Option_Type type() {
+    if (std::is_integral<T>::value)
+      return Option_Type::INT;
+    if (std::is_arithmetic<T>::value)
+      return Option_Type::DBL;
+    if (typeid(T) == typeid(std::string))
+      return Option_Type::STRING;
+    throw std::runtime_error("Type not found!");
   }
+
 };
 
 
