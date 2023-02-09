@@ -1,6 +1,11 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
+## 20230209
+- *Updated* to HiGHS 1.4.2
+- Fix for error encountered when passing variables status if variables with unknown 
+  basis status are present.
+
 
 ## 20230207
 - *Changes in the MP library*
