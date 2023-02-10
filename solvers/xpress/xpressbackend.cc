@@ -5,6 +5,7 @@
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
 #include "xpressbackend.h"
+#include "xpressbackend.h"
 
 extern "C" {
   #include "xpress-ampls-c-api.h"    // Xpressmp AMPLS C API
@@ -50,9 +51,12 @@ XpressmpBackend::~XpressmpBackend() {
   CloseSolver();
 }
 
-void XpressmpBackend::InitOptionParsing() {
+void XpressmpBackend::Init(char** argv)  {
   OpenSolver();
+  BackendWithModelManager::Init(argv);
 }
+
+
 void XpressmpBackend::OpenSolver() {
   int status = 0;
   // Try the registered function first; if not available
@@ -88,9 +92,13 @@ const char* XpressmpBackend::GetBackendName()
   { return "XpressmpBackend"; }
 
 std::string XpressmpBackend::GetSolverVersion() {
-  char v[128];
-  XPRSgetversion(v);
-  return std::string(v);
+  char vbuf[16], rbuf[16];
+  int vlen;
+  vlen = 0;
+  if (XPRSgetstringattrib(lp(), XPRS_XPRESSVERSION, rbuf, (int)sizeof(rbuf), &vlen))
+    *rbuf = 0;
+  XPRSgetversion(vbuf);
+  return fmt::format("{} ({})", rbuf, vbuf);
 }
 
 bool XpressmpBackend::IsQCP() const {

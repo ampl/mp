@@ -36,7 +36,7 @@ public:
   ~XpressmpBackend();
 
   /// Name displayed in messages
-  static const char* GetSolverName() { return "xpress-mp"; }
+  static const char* GetSolverName() { return "XPRESS"; }
   std::string GetSolverVersion();
   
   static const char* GetAMPLSolverName() { return "xpress"; }
@@ -44,8 +44,6 @@ public:
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
-  /// Chance for the Backend to init solver environment, etc
-  void InitOptionParsing() override;
   /// Chance to consider options immediately (open cloud, etc)
   void FinishOptionParsing() override;
 
@@ -136,6 +134,11 @@ public:
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 public:  // public for static polymorphism
+
+  // Overriding the initialization to make sure a problem is created
+  // even for -v command line switch, as we need it to get the version number
+  void Init(char** argv) override;
+
   void InitCustomOptions() override;
   bool IsMIP() const override {
     return BaseBackend::IsMIP() || NumSOSCons()|| NumIndicatorCons();
