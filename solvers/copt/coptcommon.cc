@@ -14,6 +14,17 @@ double CoptCommon::getDblAttr(const char* name) const  {
   return value;
 }
 
+std::vector<double>  CoptCommon::getVarInfo(const char* name) {
+  std::vector<double> ret(NumVars());
+  COPT_CCALL(COPT_GetColInfo(lp(), name, NumVars(), NULL, ret.data()));
+  return ret;
+}
+std::vector<double>  CoptCommon::getConInfo(const char* name) {
+    std::vector<double> ret(NumLinCons());
+    COPT_CCALL(COPT_GetRowInfo(lp(), name, NumLinCons(), NULL, ret.data()));
+    return ret;
+}
+
 int CoptCommon::NumLinCons() const {
   return getIntAttr(COPT_INTATTR_ROWS);
 }

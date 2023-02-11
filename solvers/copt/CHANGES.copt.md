@@ -4,6 +4,8 @@ Summary of recent updates to COPT for AMPL
 
 ## 20230207
 - *Changes in the MP library*
+- Updated to Copt 6.0.4, which includes bugfixes
+- Added support for unbounded/Farkas rays calculation
 
 
 ## 20221228
@@ -21,6 +23,12 @@ Summary of recent updates to COPT for AMPL
 - *Changes in MP: PLApproxRelTol, PLApproxDomain*
    Parameters to control piecewise-linear approximation.
    cvt:plapprox:reltol default value changed from 1e-5 to 0.01.
+
+
+## 20230207
+- Updated to Copt 6.0.1, which includes:
+     many performance improvements 
+     native support for quadratic constraints
 
 
 ## 20221012

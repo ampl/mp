@@ -107,10 +107,11 @@ void CoptBackend::InputExtras() {
   InputCOPTExtras();
 }
 
-
 void CoptBackend::InputCOPTExtras() {
   if (feasrelax())
     DoCOPTFeasRelax();
+  if (need_ray_primal() || need_ray_dual())
+    SetSolverOption(COPT_INTPARAM_REQFARKASRAY, 1);
 }
 
 
@@ -329,6 +330,7 @@ static const mp::OptionValueInfo lp_values_method[] = {
   { "2", "Barrier", 2},
   { "3", "Crossover", 3},
   { "4", "Concurrent (simplex and barrier simultaneously)", 4},
+  { "5", "Choose between simplex and barrier automatically", 5}
 };
 
 
@@ -356,6 +358,12 @@ static const mp::OptionValueInfo values_iismethod[] = {
   {"-1", "Automatic choice (default)", -1},
   { "0", "Find smaller IIS", 0},
   { "1", "Find IIS quickly", 1},
+};
+
+static const mp::OptionValueInfo values_crossover[] = {
+  {"-1", "Choose automatically - only run crossover when LP solution is not primal-dual feasible", -1},
+  {"0", "No", 0},
+  {"1", "Yes", 1}
 };
 
 void CoptBackend::InitCustomOptions() {
@@ -399,7 +407,6 @@ void CoptBackend::InitCustomOptions() {
     lp_barorder_values_, -1);
 
   
-
   AddSolverOption("bar:iterlim BarIterLimit",
     "Limit on the number of barrier iterations (default 500).",
     COPT_INTPARAM_BARITERLIMIT, 0, INT_MAX);
@@ -474,9 +481,9 @@ void CoptBackend::InitCustomOptions() {
     values_autonoyes_, -1);
 
   AddSolverOption("pre:solve presolve",
-    "Whether to perform presolving before solving the problem:\n"
+    "Level of presolving to perform before solving the problem:\n"
     "\n.. value-table::\n", COPT_INTPARAM_PRESOLVE, 
-    values_autonoyes_, -1);
+    alg_values_level, -1);
 
   AddSolverOption("pre:scale scale",
     "Whether to scale the problem:\n"
@@ -547,7 +554,7 @@ void CoptBackend::InitCustomOptions() {
 
   AddSolverOption("bar:crossover crossover",
     "Execute crossover to transform a barrier solution to a basic one (default 1).",
-    "Crossover", 0, 1);
+    COPT_INTPARAM_CROSSOVER, values_crossover, 1);
 
   ReplaceOptionDescription("alg:feasrelax",
     "Whether to modify the problem into a feasibility "
@@ -821,6 +828,25 @@ pre::ValueMapInt CoptBackend::ConsIIS() {
 
 }
 
+
+ArrayRef<double> CoptBackend::Ray() {
+  auto uray_pres = getVarInfo(COPT_DBLINFO_PRIMALRAY);
+  auto mv = GetValuePresolver().PostsolveSolution({ uray_pres });
+  auto uray = mv.GetVarValues()();
+  return uray;
+}
+
+ArrayRef<double> CoptBackend::DRay() {
+  auto fd = getConInfo(COPT_DBLINFO_DUALFARKAS);
+  auto vm = GetValuePresolver().PostsolveSolution({
+                                               {},
+                                               {{{CG_Linear, std::move(fd)}}}
+    });
+  return vm.GetConValues().MoveOut();        // need the vector itself
+}
+
+
+
 void CoptBackend::AddMIPStart(ArrayRef<double> x0) {
   COPT_CCALL(COPT_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
 
@@ -830,15 +856,15 @@ void CoptBackend::AddMIPStart(ArrayRef<double> x0) {
 } // namespace mp
 
   // AMPLs
-void* AMPLSOpenCopt(const char* slv_opt, CCallbacks cb = {}) {
+AMPLS_MP_Solver* Open_copt(const char* slv_opt, CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::CoptBackend()}, 
     slv_opt, cb);
 }
 
-void AMPLSCloseCopt(AMPLS_MP_Solver* slv) {
+void AMPLSClose_copt(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-copt_prob* GetCoptmodel(AMPLS_MP_Solver* slv) {
+copt_prob* AMPLSGetModel_copt(AMPLS_MP_Solver* slv) {
   return dynamic_cast<mp::CoptBackend*>(AMPLSGetBackend(slv))->lp();
 }
