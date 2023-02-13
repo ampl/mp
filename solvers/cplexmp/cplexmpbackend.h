@@ -62,6 +62,14 @@ public:
   ArrayRef<int> VarStatii();
   void VarConStatii(ArrayRef<int>, ArrayRef<int>);
 
+
+  ALLOW_STD_FEATURE(IIS, true)
+  void ComputeIIS() override;
+  IIS GetIIS() override;
+  ArrayRef<int> VarsIIS();
+  pre::ValueMapInt ConsIIS();
+
+
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
   bool IsQCP() const override;
@@ -122,7 +130,9 @@ private:
 
   };
   Options storedOptions_;
-
+  // to store IIS
+  std::vector<int> iisColIndices, iisColValues,
+                    iisRowIndices, iisRowValues;
 
 };
 

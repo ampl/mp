@@ -400,6 +400,178 @@ std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
 }
 
 
+
+void CplexBackend::ComputeIIS() {
+  int status;
+  int cs;
+  int nr, nc, nr2, nc2;
+  static char* abort_reason[7] = {
+  "contradiction", "time limit", "iteration limit", "node limit",
+  "objective limit", "memory limit", "user request" };
+  
+  int nGroups = NumQPCons() + NumSOSCons() + NumIndicatorCons();
+  //if (nGroups > 0) // use ext routines if we have non linear constraints
+  if(true)
+  {
+    
+    // Check if we have bounds on variables, in which case, consider them as possible
+    // conflicts, otherwise don't.
+    std::vector<double> lbs(NumVars()), ubs(NumVars());
+    CPXgetlb(env(), lp(), lbs.data(), 0, NumVars() - 1);
+    CPXgetub(env(), lp(), ubs.data(), 0, NumVars() - 1);
+    for (int i = 0; i < NumVars(); i++) {
+      if (lbs[i] > MinusInfinity()) nGroups++;
+      if (ubs[i] < Infinity()) nGroups++;
+    }
+    // Add all linear constraints
+    nGroups += NumLinCons();
+
+    std::vector<double> grpPref(nGroups, 1);
+    std::vector<int> grpBeg(nGroups), grpInd(nGroups);
+    std::vector<char> grpType(nGroups);
+    for (int i = 0; i < nGroups; i++) grpBeg[i] = i; // each entity has its own group
+    int j = 0;
+    // First variables with bounds
+    for (int i = 0; i < NumVars(); i++)
+    {
+      if (lbs[i] > MinusInfinity()) {
+        grpInd[j] = i;
+        grpType[j++] = CPX_CON_LOWER_BOUND;
+      }
+      if (ubs[i] < Infinity()) {
+        grpInd[j] = i;
+        grpType[j++] = CPX_CON_UPPER_BOUND;
+      }
+    }
+    // Then all linear constraints
+    for (int i = 0; i < NumLinCons(); i++) {
+      grpInd[j] = i;
+      grpType[j++] = CPX_CON_LINEAR;
+    }
+    // Then all quadratic constraints
+    for (int i = 0; i < NumQPCons(); i++) {
+      grpInd[j] = i;
+      grpType[j++] = CPX_CON_QUADRATIC;
+    }
+    // Then all indicator constraints
+    for (int i = 0; i < NumIndicatorCons(); i++) {
+      grpInd[j] = i;
+      grpType[j++] = CPX_CON_INDICATOR;
+    }
+    // Then all SOS  constraints
+    for (int i = 0; i < NumSOSCons(); i++) {
+      grpInd[j] = i;
+      grpType[j++] = CPX_CON_SOS;
+    }
+    
+    // Calculate information on the above defined groups
+    CPXrefineconflictext(env(), lp(), nGroups, nGroups,
+      grpPref.data(), grpBeg.data(), grpInd.data(), grpType.data());
+    
+    // Get calculated information
+    std::vector<int> grpStat(nGroups);
+    CPXgetconflictext(env(), lp(), grpStat.data(), 0, nGroups - 1);
+    for (int i = j = 0; i < NumVars(); i++)
+    {
+      if (lbs[i] > MinusInfinity()) {
+        iisColIndices.push_back(i);
+        iisColValues.push_back(grpStat[j++]);
+      }
+      if (ubs[i] < Infinity()) {
+        iisColIndices.push_back(i);
+        iisColValues.push_back(grpStat[j++]);
+      }
+    }
+    for (int i = 0; i < NumLinCons(); i++) {
+      iisRowIndices.push_back(i);
+      iisRowValues.push_back(grpStat[j++]);
+    }
+    for (int i = 0; i < NumQPCons(); i++) {
+      iisRowIndices.push_back(i);
+      iisRowValues.push_back(grpStat[j++]);
+    }
+    for (int i = 0; i < NumIndicatorCons(); i++) {
+      iisRowIndices.push_back(i);
+      iisRowValues.push_back(grpStat[j++]);
+    }
+    for (int i = 0; i < NumSOSCons(); i++) {
+      iisRowIndices.push_back(i);
+      iisRowValues.push_back(grpStat[j++]);
+    }
+  }
+  else {
+    CPLEX_CALL(CPXrefineconflict(env(), lp(), &nr, &nc));
+    iisRowIndices.resize(nr);
+    iisRowValues.resize(nr);
+    iisColIndices.resize(nc);
+    iisColValues.resize(nc);
+    status = CPXgetconflict(env(), lp(), &cs,
+      iisRowIndices.data(), iisRowValues.data(), &nr2,
+      iisColIndices.data(), iisColValues.data(), &nc2);
+
+    if (cs == CPX_STAT_CONFLICT_FEASIBLE) {
+      fmt::print("No IIS after all: problem is feasible!");
+      return;
+    }
+    if (cs != CPX_STAT_CONFLICT_MINIMAL) {
+      if ((cs - CPX_STAT_CONFLICT_ABORT_CONTRADICTION) < 0
+        || cs > CPX_STAT_CONFLICT_ABORT_CONTRADICTION + 6)
+        fmt::print("Surprise conflict status = {} from CPXgetconflict\n", cs);
+      else
+        fmt::print("Search for conflicts aborted because of {}",
+          abort_reason[cs - CPX_STAT_CONFLICT_ABORT_CONTRADICTION]);
+      return;
+    }
+    if (nr2 > nr || nc2 > nc) {
+      fmt::print("Surprise confnumrows = {} (should be <= {}), "
+        "\nconfnumcols = {} (should be <= {}) from CPXgetconflict.",
+        nr2, nr, nc2, nc);
+      return;
+    }
+  }
+  
+}
+
+int IISCplexToAMPL(int i) {
+  static int stmap[7] = { 0, 5, 6, 7, 4, 1, 3 };
+  i++;
+  if ((i < 0) || (i > 6))
+    return 8;
+  return stmap[i];
+}
+IIS CplexBackend::GetIIS() {
+  auto variis = VarsIIS();
+  auto coniis = ConsIIS();
+  auto mv = GetValuePresolver().PostsolveIIS(
+    { variis, coniis });
+  return { mv.GetVarValues()(), mv.GetConValues()() };
+}
+ArrayRef<int> CplexBackend::VarsIIS() {
+
+  std::vector<int> iis(NumVars(), 0);
+  for (int i = 0; i < iisColIndices.size(); i++)
+    iis[iisColIndices[i]] = (int)IISCplexToAMPL(iisColValues[i]);
+  return iis;
+}
+pre::ValueMapInt CplexBackend::ConsIIS() {
+  std::vector<int> iis_lincon(NumLinCons(), 0), iis_qc(NumQPCons(), 0),
+    iis_indcon(NumIndicatorCons(), 0), iis_soscon(NumSOSCons(), 0);
+
+  for (int i = 0; i < iisRowIndices.size(); i++)
+    iis_lincon[iisRowIndices[i]] = (int)IISCplexToAMPL(iisRowValues[i]);
+  int j = NumLinCons();
+  for (int i = 0; i < NumQPCons(); i++)
+    iis_qc[i] = (int)IISCplexToAMPL(iisRowValues[j++]);
+  for (int i = 0; i < NumIndicatorCons(); i++)
+    iis_indcon[i] = (int)IISCplexToAMPL(iisRowValues[j++]);
+  for (int i = 0; i < NumSOSCons(); i++)
+    iis_soscon[i] = (int)IISCplexToAMPL(iisRowValues[j++]);
+  return { {{ CG_Linear, iis_lincon },
+        { CG_Quadratic, iis_qc },
+      { CG_SOS, iis_soscon },
+      { CG_General, iis_indcon }} };
+}
+
 void CplexBackend::FinishOptionParsing() {
   int lp, mip, bar;
   GetSolverOption(CPX_PARAM_SIMDISPLAY, lp);

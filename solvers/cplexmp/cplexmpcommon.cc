@@ -15,9 +15,12 @@ int CplexCommon::NumObjs() const {
   return CPXgetnumobjs (env(), lp());
 }
 
-
 int CplexCommon::NumQPCons() const {
   return CPXgetnumqconstrs(env(), lp());
+}
+
+int CplexCommon::NumIndicatorCons() const {
+  return CPXgetnumindconstrs(env(), lp());
 }
 
 int CplexCommon::NumSOSCons() const {

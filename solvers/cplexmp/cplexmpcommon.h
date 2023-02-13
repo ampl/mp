@@ -49,6 +49,7 @@ protected:
   int NumVars() const;
   int NumObjs() const;
   int NumQPCons() const;
+  int NumIndicatorCons() const;
   int NumSOSCons() const;
   int ModelSense() const;
 
