@@ -65,7 +65,7 @@ class NLStringRef {
   std::size_t size() const { return size_; }
 };
 
-// Flags for ReadNLFile and ReadNLString.
+/// Flags for ReadNLFile and ReadNLString.
 enum {
   /** Read variable bounds before anything else. */
   READ_BOUNDS_FIRST = 1

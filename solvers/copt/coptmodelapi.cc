@@ -1,20 +1,6 @@
 #include "coptmodelapi.h"
 
-#include "mp/model-mgr-with-std-pb.h"
-#include "mp/flat/redef/MIP/converter_mip.h"
-#include "mp/flat/model_api_connect.h"
-
 namespace mp {
-
-/// Defining the function in ...modelapi.cc
-/// for recompilation speed
-std::unique_ptr<BasicModelManager>
-CreateCoptModelMgr(CoptCommon& cc, Env& e,
-                     pre::BasicValuePresolver*& pPre) {
-  return CreateModelMgrWithFlatConverter<
-      CoptModelAPI, MIPFlatConverter >(cc, e, pPre);
-}
-
 
 void CoptModelAPI::InitProblemModificationPhase(const FlatModelInfo*) { }
 
@@ -53,7 +39,7 @@ void CoptModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo)
 
 void CoptModelAPI::AddConstraint(const LinConRange& lc) {
   COPT_CCALL(COPT_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(), 
-    0, lc.lb(), lc.ub(), NULL));
+		0, lc.lb(), lc.ub(), NULL));
 }
 
 void CoptModelAPI::AddConstraint(const LinConLE& lc) {

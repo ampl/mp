@@ -1,20 +1,7 @@
 #include "visitormodelapi.h"
 
-#include "mp/model-mgr-with-std-pb.h"
-#include "mp/flat/redef/MIP/converter_mip.h"
-#include "mp/flat/model_api_connect.h"
 
 namespace mp {
-
-/// Defining the function in ...modelapi.cc
-/// for recompilation speed
-std::unique_ptr<BasicModelManager>
-CreateVisitorModelMgr(VisitorCommon& cc, Env& e,
-                     pre::BasicValuePresolver*& pPre) {
-  return CreateModelMgrWithFlatConverter<
-      VisitorModelAPI, MIPFlatConverter >(cc, e, pPre);
-}
-
 
 void VisitorModelAPI::InitProblemModificationPhase(
     const FlatModelInfo*) {

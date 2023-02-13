@@ -222,6 +222,7 @@ function(add_ampl_backend name)
     set(SRC ${name}backend.cc ${name}backend.h
             ${name}common.cc ${name}common.h
             ${name}modelapi.cc ${name}modelapi.h
+            ${name}-modelapi-connect.cc
             model-mgr-with-std-pb.cc)
     add_ampl_solver(${name} ${SRC} ${ARGN})
     if (TARGET ${name})
@@ -261,6 +262,7 @@ set(GRBSRC gurobibackend.cc gurobibackend.h
             gurobicommon.cc gurobicommon.h
             gurobimodelapi.cc gurobimodelapi.h
             model-mgr-with-std-pb.cc
+            gurobi-modelapi-connect.cc
             gurobi-ampls-c-api.h)
 
 add_ampl_solver(gurobi DLL_RUNTIME SHARED_LIB MODULE GUROBI
@@ -343,6 +345,7 @@ endif()
 set(CPLEXSRC cplexmpbackend.cc cplexmpbackend.h
             cplexmpcommon.cc cplexmpcommon.h
             cplexmpmodelapi.cc cplexmpmodelapi.h
+            cplexmp-modelapi-connect.cc
             model-mgr-with-std-pb.cc)
 add_prefix(DIRCPLEXSRC "../cplexmp/" ${CPLEXSRC})
 set(CPLEXODHSRC cplexodhbackend.h cplexodhbackend.cc)

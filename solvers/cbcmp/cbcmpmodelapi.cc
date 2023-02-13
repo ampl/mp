@@ -1,18 +1,7 @@
 #include "cbcmpmodelapi.h"
 
-#include "mp/model-mgr-with-std-pb.h"
-#include "mp/flat/redef/MIP/converter_mip.h"
-#include "mp/flat/model_api_connect.h"
 
 namespace mp {
-
-std::unique_ptr<BasicModelManager>
-CreateCbcmpModelMgr(CbcmpCommon& cc, Env& e,
-                     pre::BasicValuePresolver*& pPre) {
-  return CreateModelMgrWithFlatConverter<
-      CbcmpModelAPI, MIPFlatConverter >(cc, e, pPre);
-}
-
 
 void CbcmpModelAPI::InitProblemModificationPhase(
     const FlatModelInfo*) {
