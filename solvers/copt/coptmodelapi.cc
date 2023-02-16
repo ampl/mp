@@ -38,8 +38,11 @@ void CoptModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo)
 }
 
 void CoptModelAPI::AddConstraint(const LinConRange& lc) {
-  COPT_CCALL(COPT_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(), 
-		0, lc.lb(), lc.ub(), NULL));
+	COPT_CCALL(COPT_AddRow(lp(), lc.size(),
+												 lc.pvars(), lc.pcoefs(), 0,
+												 lc.lb() < -COPT_INFINITY ? -COPT_INFINITY : lc.lb(),
+												 lc.ub() > COPT_INFINITY ? COPT_INFINITY : lc.ub(),
+												 NULL));
 }
 
 void CoptModelAPI::AddConstraint(const LinConLE& lc) {
