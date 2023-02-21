@@ -343,8 +343,42 @@ void CplexBackend::ReportResults() {
 void CplexBackend::ReportCPLEXResults() {
   SetStatus( ConvertCPLEXStatus() );
   AddCPLEXMessages();
+  if (need_multiple_solutions())
+    ReportCPLEXPool();
 }
+void CplexBackend::ReportCPLEXPool() {
+  if (!IsMIP())
+    return;
+  if(storedOptions_.populate_==1) CPLEX_CALL(CPXpopulate(env(), lp()));
 
+  int nsols = CPXgetsolnpoolnumsolns(env(), lp());
+
+  double inttol = GetCPLEXDblParam(CPX_PARAM_EPINT);
+  double feastol = GetCPLEXDblParam(CPX_PARAM_EPRHS);
+  if (inttol > feastol) SetCPLEXParam(CPX_PARAM_EPRHS, inttol);
+
+  int iPoolSolution = -1;
+  double currentObj;
+  int NumVarsm1 = NumVars();
+  std::vector<double> x(NumVars());
+  NumVarsm1--; // To use as limit when getting the solution
+  while (++iPoolSolution < nsols) {
+    
+    CPLEX_CALL(CPXgetsolnpoolobjval(env(), lp(), iPoolSolution, &currentObj));
+    CPLEX_CALL(CPXgetsolnpoolx(env(), lp(), iPoolSolution, x.data(), 0, NumVarsm1));
+
+    auto mv = GetValuePresolver().PostsolveSolution(  // only single-obj with pool
+      { { x },
+        {},                                       // no duals
+        std::vector<double>{ currentObj } });
+    ReportIntermediateSolution(
+      { mv.GetVarValues()(), mv.GetConValues()(),
+        mv.GetObjValues()() });
+
+    // Restore feasibility tolerance
+    if (inttol > feastol) SetCPLEXParam(CPX_PARAM_EPRHS, feastol);
+  }
+}
 void CplexBackend::AddCPLEXMessages() {
   AddToSolverMessage(
           fmt::format("{} simplex iterations\n", SimplexIterations()));
@@ -573,6 +607,7 @@ pre::ValueMapInt CplexBackend::ConsIIS() {
 }
 
 void CplexBackend::FinishOptionParsing() {
+  // Set output on screen
   int lp, mip, bar;
   GetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
   GetSolverOption(CPX_PARAM_MIPDISPLAY, mip);
@@ -588,11 +623,30 @@ void CplexBackend::FinishOptionParsing() {
   SetSolverOption(CPX_PARAM_BARDISPLAY, bar);
   if (!storedOptions_.logFile_.empty())
   {
-    if(lp < 1) SetSolverOption(CPX_PARAM_SIMDISPLAY, 1);
-    if(mip < 1) SetSolverOption(CPX_PARAM_MIPDISPLAY, 1);
+    if (lp < 1) SetSolverOption(CPX_PARAM_SIMDISPLAY, 1);
+    if (mip < 1) SetSolverOption(CPX_PARAM_MIPDISPLAY, 1);
     CPLEX_CALL(CPXsetlogfilename(env(), storedOptions_.logFile_.data(), "w"));
   }
   set_verbose_mode(storedOptions_.outlev_ > 0);
+
+  // Set behaviour for solultion pool related options
+  if (!need_multiple_solutions()) {
+    storedOptions_.populate_ = 0;
+    storedOptions_.poolIntensity_ = 0;
+  }
+  else {
+    int poolIntensity = 0, populate = 0;
+    switch (storedOptions_.nPoolMode_) {
+    case 0: poolIntensity = 0; populate = 0; break;
+    case 1: poolIntensity = 2; populate = 1; break;
+    case 2: poolIntensity = 4; populate = 1; break;
+    }
+    // Override the below only if not set
+    if (storedOptions_.populate_ < 0) storedOptions_.populate_ = populate;
+    if (storedOptions_.poolIntensity_ < 0) storedOptions_.poolIntensity_ = poolIntensity;
+  }
+  SetSolverOption(CPX_PARAM_SOLNPOOLINTENSITY, storedOptions_.poolIntensity_);
+
 }
 
 static const mp::OptionValueInfo lpmethod_values_[] = {
@@ -628,6 +682,29 @@ static const mp::OptionValueInfo outlev_values_[] = {
   { "1", "equivalent to \"bardisplay\"=1, \"display\"=1, \"mipdisplay\"=3", 1},
   { "2", "equivalent to \"bardisplay\"=2, \"display\"=2, \"mipdisplay\"=5", 2}
 };
+
+static const mp::OptionValueInfo values_pool_mode[] = {
+  { "0", "Just collect solutions during normal solve", 0},
+  { "1", "Make some effort at finding additional solutions => poolintensity=2, populate=1" , 1},
+  { "2", "Seek \"sol:poollimit\" best solutions (default) => poolintensity=2, populate=1", 2}
+};
+
+static const mp::OptionValueInfo values_populate[] = {
+  { "0", "no; just keep solutions found during the initial solve", 0},
+  { "1", "run \"populate\" after finding a MIP solution" , 1},
+};
+
+static const mp::OptionValueInfo values_poolintensity[] = {
+  { "0", "Treated as 1 if poolstub is specified without populate, or 2 if populate is specified (default)", 0},
+  { "3", "More additions to the solution pool" , 1},
+  { "4", "Tries to generate all MIP solutions and keep the best \"sol:poollimit\" ones.", 2}
+};
+
+static const mp::OptionValueInfo values_poolreplace[] = {
+  { "0", "FIFO (first-in, first-out); default", 0},
+  { "1", "Keep best solutions" , 1},
+  { "2", "Keep most diverse solutions", 2}
+};
 ////////////////////////////// OPTIONS /////////////////////////////////
 
 void CplexBackend::InitCustomOptions() {
@@ -640,6 +717,65 @@ void CplexBackend::InitCustomOptions() {
       "AMPL option ``cplex_options``. For example::\n"
       "\n"
       "  ampl: option cplex_options 'mipgap=1e-6';\n");
+  
+  // Solution pool controls
+  AddSolverOption("sol:poolgap ams_eps poolgap",
+    "Relative tolerance for reporting alternate MIP solutions "
+    "(default: 1e75).", CPX_PARAM_SOLNPOOLGAP, 0.0, DBL_MAX);
+  AddSolverOption("sol:poolgapabs ams_epsabs poolagap",
+    "Absolute tolerance for reporting alternate MIP solutions "
+    "(default: 1e75).",CPX_PARAM_SOLNPOOLAGAP, 0.0, DBL_MAX);
+
+  AddStoredOption("sol:poolpopulate populate",
+    "Whether to run CPLEX's \"populate\" algorithm in an "
+    "attempt to add more solutions to the MIP solution pool:\n"
+    "\n.. value-table::\n",
+    storedOptions_.populate_, values_populate);
+
+  AddStoredOption("sol:poolintensity poolintensity",
+    "How hard to try adding MIP solutions to the solution\n\
+		pool.  Useful only if poolstub is specified.\n"
+    "\n.. value-table::\n",
+    storedOptions_.poolIntensity_, values_poolintensity);
+
+  AddStoredOption("sol:poolmode ams_mode poolmode",
+    "Search mode for MIP solutions when sol:stub/sol:count are specified "
+    "to request finding several alternative solutions. Overriden by sol:populate and"
+    "sol:poolintensity. Values:\n"
+    "\n.. value-table::\n",
+    storedOptions_.nPoolMode_, values_pool_mode);
+  AddOptionSynonyms_Inline_Front("ams_stub", "sol:stub");
+
+  AddSolverOption("sol:poollimit ams_limit poolcapacity poollimit solnlimit",
+    "Limit on the number of alternate MIP solutions written. Default: 2100000000.",
+    CPX_PARAM_SOLNPOOLCAPACITY, 1, 2100000000);
+
+  AddSolverOption("sol:poolpopulatelim populatelim",
+    "Limit on number of solutions added to the solution pool by the populate algorithm. "
+    "Default: 20.",
+    CPX_PARAM_POPULATELIM, 1, 20);
+
+  AddSolverOption("sol:poolreplace poolreplace",
+    "Policy for replacing solutions in the solution pool if "
+    "more than poolcapacity solutions are generated:\n"
+    "\n.. value-table::\n",
+    CPX_PARAM_SOLNPOOLREPLACE, values_poolreplace, 0);
+
+  ReplaceOptionDescription("sol:stub",
+    "Stub for alternative MIP solutions, written to files with "
+    "names obtained by appending \"1.sol\", \"2.sol\", etc., to "
+    "<solutionstub>.  The number of such files written is affected "
+    "by the keywords poolgap, poolgapabs, poollimit, poolpopulatelim, "
+    "poolpopulate, poolintensity and poolmode. "
+    "The number of alternative MIP solution files written is "
+    "returned in suffix .nsol on the problem.");
+  ReplaceOptionDescription("sol:count",
+    "0*/1: Whether to count the number of solutions "
+    "and return it in the ``.nsol`` problem suffix. "
+    "The number and kind of solutions are controlled by the "
+    "sol:pool... parameters. Value 1 implied by sol:stub.");
+  // end solution pool controls
+
 
 
   AddStoredOption("tech:outlev outlev",
