@@ -81,7 +81,7 @@ pre::ValueMapDbl HighsBackend::DualSolution() {
 ArrayRef<double> HighsBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  int error = Highs_getSolution(lp(), NULL, NULL, pi.data(), NULL);
+  int error = Highs_getSolution(lp(), NULL, NULL, NULL, pi.data());
   if (error)
     pi.clear();
   return pi;

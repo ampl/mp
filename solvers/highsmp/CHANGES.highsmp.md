@@ -1,6 +1,9 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
+## 20230222
+- Fixed: now returning the correct dual values for the constraints
+
 ## 20230209
 - *Updated* to HiGHS 1.4.2
 - Fix for error encountered when passing variables status if variables with unknown 
