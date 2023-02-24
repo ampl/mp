@@ -20,6 +20,7 @@
 #include "mp/flat/constr_prop_down.h"
 #include "mp/valcvt.h"
 #include "mp/flat/redef/std/range_con.h"
+#include "mp/flat/redef/conic/cones.h"
 #include "mp/utils-file.h"
 
 namespace mp {
@@ -166,9 +167,10 @@ protected:
   //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
   void ConvertItems() {
     try {
+			MPD( Convert2Cones(); );                 // sweep before other conversions
       MP_DISPATCH( ConvertAllConstraints() );
       // MP_DISPATCH( PreprocessIntermediate() );     // preprocess after each level
-      MP_DISPATCH( ConvertMaps() );
+			MP_DISPATCH( ConvertMaps() );
       MP_DISPATCH( PreprocessFinal() );               // final prepro
     } catch (const ConstraintConversionFailure& cff) {
       MP_RAISE(cff.message());
@@ -182,6 +184,11 @@ protected:
       value_presolver_.SetExport(true);
     }
   }
+
+	/// Offload the conic logic to a functor
+	void Convert2Cones() {
+		conic_cvt_.Run();
+	}
 
   void ConvertAllConstraints() {
     GetModel().ConvertAllConstraints(*this);
@@ -664,6 +671,14 @@ public:
     return ModelAPI::AcceptsNonconvexQC();
   }
 
+	/// Whether the ModelAPI accepts quadragtic cones
+	int ModelAPIAcceptsQuadraticCones() {
+		return
+				std::max(
+					(int)GetConstraintAcceptance((QuadraticConeConstraint*)nullptr),
+					(int)GetConstraintAcceptance((RotatedQuadraticConeConstraint*)nullptr));
+	}
+
 
 private:
   struct Options {
@@ -673,8 +688,8 @@ private:
     int preprocessEqualityBvar_ = 1;
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
-    int passQuadCon_ = ModelAPIAcceptsQC();
-
+		int passQuadCon_ = ModelAPIAcceptsQC();
+		int passQuadCones_ = 0;
 
     int relax_ = 0;
   };
@@ -731,7 +746,14 @@ private:
         "0*/1: Multiply out and pass quadratic constraint terms to the solver, "
                          "vs. linear approximation.",
         options_.passQuadCon_, 0, 1);
-    GetEnv().AddOption("alg:relax relax",
+		if (ModelAPIAcceptsQuadraticCones())
+			GetEnv().AddOption("cvt:socp passsocp socp",
+												 ModelAPIAcceptsQuadraticCones()>1 ?
+													 "0/1*: Recognize quadratic cones." :
+													 "0*/1: Recognize quadratic cones.",
+					options_.passQuadCones_, 0, 1);
+		options_.passQuadCones_ = ModelAPIAcceptsQuadraticCones()>1;
+		GetEnv().AddOption("alg:relax relax",
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
   }
@@ -765,6 +787,9 @@ public:
   bool IfQuadratizePowConstPosIntExp() const
   { return options_.passQuadCon_; }
 
+	/// Whether we pass quad cones
+	bool IfPassQuadCones() const { return options_.passQuadCon_; }
+
 
 public:
   /// Typedef ModelAPIType. For tests
@@ -797,6 +822,8 @@ private:
   pre::One2ManyLink one2many_link_ { GetValuePresolver() }; // the 1-to-many links
   pre::NodeRange auto_link_src_item_;   // the source item for autolinking
   std::vector<pre::NodeRange> auto_link_targ_items_;
+
+	ConicConverter<Impl> conic_cvt_ { *static_cast<Impl*>(this) };
 
 
 protected:
@@ -904,6 +931,7 @@ protected:
       RotatedQuadraticConeConstraint, "acc:rotatedquadcone")
 
 
+	protected:
   ////////////////////// Default map accessors /////////////////////////
   /// Constraints without map should overload these by empty methods ///
 

@@ -34,7 +34,7 @@ protected:
   /// Linearize (b==val ==> c'x>=d) via big-M
   void ConvertImplicationGE(int b, int val,
                    double body_lb, LinConGE con) {
-    if (body_lb <= GetMC().PracticallyMinusInfty()) {
+		if (body_lb <= GetMC().PracticallyMinusInf()) {
       if ( (body_lb = -GetMC().bigMDefault())>=0.0 )
         throw ConstraintConversionFailure( "IndicatorInfBound",
           "The redefinition of an indicator constraint"

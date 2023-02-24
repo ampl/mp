@@ -50,8 +50,8 @@ public:
   template <class Body>
   void PropagateResult(AlgebraicConstraint<Body, AlgConRange>& con) {
     /// Distinguish bounds' finiteness for context
-    auto ctx = con.lb()<=MPD( PracticallyMinusInfty() ) ?
-          Context::CTX_NEG : con.ub()>=MPD( PracticallyInfty() ) ?
+		auto ctx = con.lb()<=MPD( PracticallyMinusInf() ) ?
+					Context::CTX_NEG : con.ub()>=MPD( PracticallyInf() ) ?
             Context::CTX_POS : Context::CTX_MIX;
     PropagateResult2Args(con.GetBody(), con.lb(), con.ub(), ctx);
   }

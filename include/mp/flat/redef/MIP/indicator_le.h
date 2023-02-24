@@ -36,7 +36,7 @@ protected:
                    double body_ub, LinConLE con) {
     /// TODO fail if lb>0 +report .iis if requested
     /// TODO skip if ub<0
-    if (body_ub >= GetMC().PracticallyInfty()) {
+		if (body_ub >= GetMC().PracticallyInf()) {
       if ((body_ub = GetMC().bigMDefault())<=0.0)
         throw ConstraintConversionFailure( "IndicatorInfBound",
           "The redefinition of an indicator constraint"
