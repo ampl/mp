@@ -13,9 +13,14 @@ endif ()
 set(MP_CMAKE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/support/cmake)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MP_CMAKE_MODULE_DIR})
 
+## Use CCache to optimize recompilation
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+  set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+  set(CMAKE_Fortran_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+else()
+  message(STATUS "   HINT: Install ccache for faster recompilation")
 endif()
 
 include(init)
