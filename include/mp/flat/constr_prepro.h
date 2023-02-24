@@ -271,10 +271,10 @@ public:
     auto& m = MPD( GetModel() );
     auto v1 = c.GetArguments()[0], v2 = c.GetArguments()[1];
     const auto l1=m.lb(v1), u1=m.ub(v1), l2=m.lb(v2), u2=m.ub(v2);
-    if (l1 > MPD( PracticallyMinusInfty() ) &&
-        u1 < MPD( PracticallyInfty() ) &&
-        l2 > MPD( PracticallyMinusInfty() ) &&
-        u2 < MPD( PracticallyInfty() ) &&
+		if (l1 > MPD( PracticallyMinusInf() ) &&
+				u1 < MPD( PracticallyInf() ) &&
+				l2 > MPD( PracticallyMinusInf() ) &&
+				u2 < MPD( PracticallyInf() ) &&
         l2 * u2 > 0.0) {
       auto l0 = std::numeric_limits<double>::max();
       auto u0 = std::numeric_limits<double>::min();

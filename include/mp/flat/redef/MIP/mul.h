@@ -27,49 +27,17 @@ public:
   /// Check whether the constraint
   /// needs to be converted despite being accepted by ModelAPI.
   bool IfNeedsConversion(const ItemType& , int ) {
-    return IfCvtAcceptsQPCones() ||
-        !GetMC().IfPassQuadCon();
+		return !GetMC().IfPassQuadCon();
   }
 
   /// Conversion
-  void Convert(const ItemType& qc, int i) {
-    if (IfCvtAcceptsQPCones() &&     // conex accepted
-        GetMC().IfPassQuadCon())     // passing quadratic to solver, incl. cones
-      TryConvertToCone(qc, i);
-    else
-      LinearizeQPTerms(qc);
+	void Convert(const ItemType& qc, int ) {
+		LinearizeQPTerms(qc);
   }
 
 
 protected:
   using Base::GetMC;
-
-  bool IfCvtAcceptsQPCones() {
-    return
-        GetMC().GetConstraintAcceptance((QuadraticConeConstraint*)nullptr) ||
-        GetMC().GetConstraintAcceptance((RotatedQuadraticConeConstraint*)nullptr);
-  }
-
-  void TryConvertToCone(const ItemType& qc, int ) {
-    if (!TryQuadCone(qc) && !TryRotatedQuadCone(qc))
-      throw ConstraintConversionGracefulFailure();
-  }
-
-  bool TryQuadCone(const ItemType& qc) {
-    if (GetMC().GetConstraintAcceptance(
-          (QuadraticConeConstraint*)nullptr)) {
-      return true;
-    }
-    return false;
-  }
-
-  bool TryRotatedQuadCone(const ItemType& qc) {
-    if (GetMC().GetConstraintAcceptance(
-          (RotatedQuadraticConeConstraint*)nullptr)) {
-      return true;
-    }
-    return false;
-  }
 
   void LinearizeQPTerms(const ItemType& qc) {
     const auto& body = qc.GetBody();

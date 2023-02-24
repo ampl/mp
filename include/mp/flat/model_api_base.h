@@ -152,14 +152,17 @@ public:
   using BaseBackend::AddConstraint; \
   using BaseBackend::AcceptanceLevel; \
   using BaseBackend::GroupNumber;
+
   /// Default constraint group
   static constexpr ConstraintGroup GroupNumber(const BasicConstraint*) {
     return CG_Default;
   }
+
   /// By default, we say constraint XYZ is not accepted but...
   static constexpr ConstraintAcceptanceLevel AcceptanceLevel(const BasicConstraint*) {
     return NotAccepted;
   }
+
   /// Specifically, ask if the solver accepts non-convex quadratic constraints
   static constexpr bool AcceptsNonconvexQC() { return false; }
 
