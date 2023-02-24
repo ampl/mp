@@ -1,7 +1,7 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
-## 20230222
+## 20230224
 - *Updated* to HiGHS 1.5.1; now returning number of LP iterations in a MIP solve
 
 ## 20230222
