@@ -14,9 +14,9 @@ extern "C" {
 namespace {
 
 
-bool InterruptScip(void* prob) {
-  //return SCIP_Interrupt((scip_prob*)prob);
-  return true;
+bool InterruptScip(void* scip) {
+  return SCIPinterruptSolve((SCIP*)scip);
+  //return true;
 }
 
 }  // namespace {}
@@ -55,77 +55,27 @@ ScipBackend::~ScipBackend() {
   CloseSolver();
 }
 
-void ScipBackend::OpenSolver() {
-  int status = 0;
-  // TODO Typically this function creates an instance of the solver environment
-  // and an empty model
-  void* env_p;
-  // Typically try the registered function first;
-  // if not available call the solver's API function directly
-  /*
-  const auto& create_fn = GetCallbacks().cb_initsolver_;
-  if (create_fn)
-    set_env((GRBenv*)create_fn());
-  else
-    status = createEnv(&env_p);
-    */
-  // set_env(env_p);
-
-  /* Todo catch errors
-  if ( env() == NULL ) {
-    // char  errmsg[CPXMESSAGEBUFSIZE];
-    // CPXgeterrorstring (env(), status, errmsg);
-     throw std::runtime_error(
-       fmt::format("Could not open SCIP environment.\n{}", status) );
-  }
-  */
-
-  /* TODO Create problem instance
-  scip_prob* prob;
-  status = SCIP_CreateProb(env_p, &prob);
- */
-  Solver::SolverModel* prob = Solver::CreateSolverModel();
-  set_lp(prob); // Assign it
-  if (status)
-    throw std::runtime_error( fmt::format(
-          "Failed to create problem, error code {}.", status ) );
-  /* TODO Typically check call */
-  /// Turn off verbosity by default
-  // SCIP_CCALL(SCIP_SetIntParam(prob, "Logging", 0));
-
-}
-
-void ScipBackend::CloseSolver() {
-  /* TODO Cleanup: close problem and environment
-  if ( lp() != NULL ) {
-    SCIP_CCALL(SCIP_DeleteProb(&lp_) );
-  }
-  if ( env() != NULL ) {
-    SCIP_CCALL(SCIP_DeleteEnv(&env_) );
-  }
-  */
-}
 
 const char* ScipBackend::GetBackendName()
-  { return "ScipBackend"; }
+  { return "SCIPBackend"; }
 
 std::string ScipBackend::GetSolverVersion() {
-  // TODO Return version from solver API
-  return "0.0.0";
-  //return fmt::format("{}.{}.{}", SCIP_VERSION_MAJOR, 
-  //  SCIP_VERSION_MINOR, SCIP_VERSION_TECHNICAL);
+  return fmt::format("{}.{}.{}", SCIPmajorVersion(), SCIPminorVersion(), 
+  SCIPtechVersion());
 }
 
 
 bool ScipBackend::IsMIP() const {
   // TODO
-  return getIntAttr(Solver::VARS_INT) > 0;
+  //return getIntAttr(Solver::VARS_INT) > 0;
   //return getIntAttr(SCIP_INTATTR_ISMIP);
+  return true;
 }
 
 bool ScipBackend::IsQCP() const {
-  return getIntAttr(Solver::CONS_QUAD) > 0;
+  //return getIntAttr(Solver::CONS_QUAD) > 0;
 // return getIntAttr(SCIP_INTATTR_QELEMS) > 0;
+  return false;
 }
 
 ArrayRef<double> ScipBackend::PrimalSolution() {
@@ -158,37 +108,29 @@ ArrayRef<double> ScipBackend::DualSolution_LP() {
 }
 
 double ScipBackend::ObjectiveValue() const {
- /* if (IsMIP())
-    return getDblAttr(SCIP_DBLATTR_BESTOBJ);
-  else
-    return getDblAttr(SCIP_DBLATTR_LPOBJVAL);
-    */
-  return 0;
+  return SCIPgetPrimalbound(getSCIP());
 }
 
 double ScipBackend::NodeCount() const {
-  return 0;
-//  return getIntAttr(SCIP_INTATTR_NODECNT);
+  return SCIPgetNNodes(getSCIP());
 }
 
 double ScipBackend::SimplexIterations() const {
-  return 0;
-//  return getIntAttr(SCIP_INTATTR_SIMPLEXITER);
+  return SCIPgetNPrimalLPIterations(getSCIP()) + SCIPgetNDualLPIterations(getSCIP());
 }
 
 int ScipBackend::BarrierIterations() const {
-  return 0;
-//  return getIntAttr(SCIP_INTATTR_BARRIERITER);
+  return SCIPgetNBarrierLPIterations(getSCIP());
 }
 
 void ScipBackend::ExportModel(const std::string &file) {
   // TODO export proper by file extension
-  //SCIP_CCALL(SCIP_WriteLp(lp(), file.data()));
+  SCIP_CCALL( SCIPwriteLP(getSCIP(), file.data()) );
 }
 
 
 void ScipBackend::SetInterrupter(mp::Interrupter *inter) {
-  inter->SetHandler(InterruptScip, lp());
+  inter->SetHandler(InterruptScip, getSCIP());
   // TODO Check interrupter
   //SCIP_CCALL( CPXsetterminate (env(), &terminate_flag) );
 }
@@ -197,7 +139,7 @@ void ScipBackend::Solve() {
   if (!storedOptions_.exportFile_.empty()) {
     ExportModel(storedOptions_.exportFile_);
   }
-  //SCIP_CCALL(SCIP_Solve(lp()));
+  SCIP_CCALL( SCIPsolve(getSCIP()) );
   WindupSCIPSolve();
 }
 
@@ -254,50 +196,48 @@ void ScipBackend::AddSCIPMessages() {
 
 std::pair<int, std::string> ScipBackend::ConvertSCIPStatus() {
   namespace sol = mp::sol;
-  if (IsMIP())
-  {
-    /*
-    int optstatus = getIntAttr(SCIP_INTATTR_MIPSTATUS);
-    switch (optstatus) {
-    case SCIP_MIPSTATUS_OPTIMAL:
+  SCIP_STATUS status = SCIPgetStatus(getSCIP());
+  switch (status) {
+    case SCIP_STATUS_UNKNOWN:
+      return { sol::UNKNOWN, "solving status not yet known" };
+    case SCIP_STATUS_USERINTERRUPT:
+      return { sol::INTERRUPTED, "unfinished" };
+    case SCIP_STATUS_NODELIMIT:
+      return { sol::LIMIT, "node limit reached" };
+    case SCIP_STATUS_TOTALNODELIMIT:
+      return { sol::LIMIT, "total node limit reached (incl. restarts)" };
+    case SCIP_STATUS_STALLNODELIMIT:
+      return { sol::LIMIT, "stalling node limit reached (no inprovement w.r.t. primal bound)" };
+    case SCIP_STATUS_TIMELIMIT:
+      return { sol::LIMIT, "time limit reached" };
+    case SCIP_STATUS_MEMLIMIT:
+      return { sol::LIMIT, "memory limit reached" };
+    case SCIP_STATUS_GAPLIMIT:
+      return { sol::LIMIT, "gap limit reached" };
+    case SCIP_STATUS_SOLLIMIT:
+      return { sol::LIMIT, "solution limit reached" };
+    case SCIP_STATUS_BESTSOLLIMIT:
+      return { sol::LIMIT, "solution improvement limit reached" };
+    case SCIP_STATUS_RESTARTLIMIT:
+      return { sol::LIMIT, "restart limit was reached" };
+    case SCIP_STATUS_OPTIMAL:
       return { sol::SOLVED, "optimal solution" };
-    case SCIP_MIPSTATUS_INFEASIBLE:
+    case SCIP_STATUS_INFEASIBLE:
       return { sol::INFEASIBLE, "infeasible problem" };
-    case SCIP_MIPSTATUS_INF_OR_UNB:
+    case SCIP_STATUS_UNBOUNDED:
+      return { sol::UNBOUNDED, "unbounded problem" };
+    case SCIP_STATUS_INFORUNBD:
       return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
-    case SCIP_MIPSTATUS_UNBOUNDED:
-      return { sol::UNBOUNDED, "unbounded problem" };
-    case SCIP_MIPSTATUS_TIMEOUT:
-    case SCIP_MIPSTATUS_NODELIMIT:
-    case SCIP_MIPSTATUS_INTERRUPTED:
-      return { sol::INTERRUPTED, "interrupted" };
+    case SCIP_STATUS_TERMINATE:
+      return { sol::FAILURE, "process received a SIGTERM signal" };
     }
-    */
-  }
-  else {
-    /*
-    int optstatus = getIntAttr(SCIP_INTATTR_LPSTATUS);
-    switch (optstatus) {
-    case SCIP_LPSTATUS_OPTIMAL:
-      return { sol::SOLVED, "optimal solution" };
-    case SCIP_LPSTATUS_INFEASIBLE:
-      return { sol::INFEASIBLE, "infeasible problem" };
-    case SCIP_LPSTATUS_UNBOUNDED:
-      return { sol::UNBOUNDED, "unbounded problem" };
-    case SCIP_LPSTATUS_TIMEOUT:
-      return { sol::INTERRUPTED, "interrupted" };
-    default:
-      return { sol::UNKNOWN, "unfinished" };
-    }
-    */
-  }
   return { sol::UNKNOWN, "not solved" };
 }
 
 
 void ScipBackend::FinishOptionParsing() {
   int v=-1;
- // GetSolverOption(SCIP_INTPARAM_LOGGING, v);
+  GetSolverOption("display/verblevel", v);
   set_verbose_mode(v>0);
 }
 
@@ -355,12 +295,10 @@ void ScipBackend::InitCustomOptions() {
 
 
 double ScipBackend::MIPGap() {
-  return 0;
-//  return getDblAttr(SCIP_DBLATTR_BESTGAP);
+  return SCIPgetGap(getSCIP());
 }
 double ScipBackend::BestDualBound() {
-  return 0;
-  //return getDblAttr(SCIP_DBLATTR_BESTBND);
+  return SCIPgetDualbound(getSCIP());
 }
 
 double ScipBackend::MIPGapAbs() {
@@ -582,5 +520,5 @@ void AMPLSCloseScip(AMPLS_MP_Solver* slv) {
 
 void* GetScipmodel(AMPLS_MP_Solver* slv) {
   return
-    dynamic_cast<mp::ScipBackend*>(AMPLSGetBackend(slv))->lp();
+    dynamic_cast<mp::ScipBackend*>(AMPLSGetBackend(slv))->getSCIP();
 }

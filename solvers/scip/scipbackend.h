@@ -26,7 +26,7 @@ public:
   /// AMPL driver name displayed in messages
   static const char* GetAMPLSolverLongName() { return "AMPL-SCIP"; }
   /// Solver name displayed in messages
-  static const char* GetSolverName() { return "x-SCIP"; }
+  static const char* GetSolverName() { return "SCIP"; }
   /// Version displayed with -v
   std::string GetSolverVersion();
   
@@ -122,9 +122,6 @@ public:  // public for static polymorphism
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 protected:
-  void OpenSolver();
-  void CloseSolver();
-
   void ExportModel(const std::string& file);
 
   double ObjectiveValue() const;

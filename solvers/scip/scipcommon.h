@@ -5,9 +5,20 @@
 
 #include "mp/backend-to-model-api.h"
 
-extern "C" {
+//extern "C" {
   #include "scip/scip.h"
-}
+  #include "scip/scipdefplugins.h"
+//}
+
+/// problem data stored in SCIP
+struct SCIP_ProbData
+{
+   SCIP_VAR**            vars;               /**< variables in the order given by AMPL */
+   int                   nvars;              /**< number of variables */
+
+   SCIP_CONS**           conss;              /**< constraints in the order given by AMPL */
+   int                   nconss;             /**< number of constraints */
+};
 
 /// Instead, faking a typical solver namespace and defs:
 namespace Solver {
@@ -53,20 +64,15 @@ namespace mp {
 /// Information shared by both
 /// `ScipBackend` and `ScipModelAPI`
 struct ScipCommonInfo {
-  // TODO provide accessors to the solver's in-memory model/environment
-  //scip_env* env() const { return env_; }
-  Solver::SolverModel* lp() const { return lp_; }
+  SCIP* getSCIP() const { return scip_; }
+  void setSCIP(SCIP* scip) { scip_ = scip; }
 
-  // TODO provide accessors to the solver's in-memory model/environment
-  //void set_env(scip_env* e) { env_ = e; }
-  void set_lp(Solver::SolverModel* lp) { lp_ = lp; }
-
+  SCIP_PROBDATA* getPROBDATA() { return probdata_; }
+  void setPROBDATA(SCIP_PROBDATA* probdata) { probdata_ = probdata; }
 
 private:
-  // TODO provide accessors to the solver's in-memory model/environment
-  //scip_env*      env_ = NULL;
-  Solver::SolverModel*      lp_ = NULL;
-
+  SCIP* scip_ = NULL;
+  SCIP_PROBDATA* probdata_;
 };
 
 
@@ -83,10 +89,13 @@ public:
   void SetSolverOption(const char* key, const std::string& value);
 
   /// TODO Typically solvers define their own infinity; use them here
-  static constexpr double Infinity() { return INFINITY;  }
-  static constexpr double MinusInfinity() { return -INFINITY; }
+  double Infinity() const;
+  double MinusInfinity();
 
 protected:
+  void OpenSolver();
+  void CloseSolver();
+
   int getIntAttr(int name) const;
   double getDblAttr(const char* name) const;
 
@@ -109,7 +118,7 @@ protected:
 // TODO This macro is useful to automatically throw an error if a function in the 
 // solver API does not return a valid errorcode. In this mock driver, we define it 
 // ourselves, normally this constant would be defined in the solver's API.
-#define SCIP_RETCODE_OK 0
+#define SCIP_RETCODE_OK 1
 #define SCIP_CCALL( call ) do { if (int e = (call) != SCIP_RETCODE_OK) \
   throw std::runtime_error( \
     fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
