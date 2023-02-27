@@ -63,7 +63,7 @@ public:
 
 	/// Run conversions
 	void Run() {
-		if (MC().IfPassQuadCones()) {
+		if (MC().IfPassSOCPCones()) {
 			Walk<QuadConRange>();
 			Walk<QuadConLE>();
 			Walk<QuadConGE>();
@@ -157,16 +157,18 @@ protected:
 	/// Add rotated cone
 	bool AddRotatedQC(const QuadTerms& qpterms, int iDiffVars) {
 		std::vector<int> x(qpterms.size()+1);
-		std::vector<double> c;
-		c.reserve(qpterms.size()-1);
+		std::vector<double> c(qpterms.size()+1);
 		size_t iPush=1;
-		for (auto i=(int)qpterms.size(); i--; ) {
+		for (int i=0; i<(int)qpterms.size(); ++i) {
 			if (i==iDiffVars) {
 				x[0] = qpterms.var1(i);
 				x[1] = qpterms.var2(i);
+				c[0] = std::fabs(qpterms.coef(i));
+				c[1] = 0.5;      // it's 2xy >= z^2 + ...
 			} else {
-				x.at(++iPush) = qpterms.var1(i);
-				c.push_back(std::fabs(qpterms.coef(i)));
+				++iPush;
+				x.at(iPush) = qpterms.var1(i);
+				c.at(iPush) = std::sqrt(std::fabs(qpterms.coef(i)));
 			}
 		}
 		MC().AddConstraint(RotatedQuadraticConeConstraint(x, c));
@@ -176,15 +178,16 @@ protected:
 	/// Add standard cone
 	bool AddStandardQC(const QuadTerms& qpterms, int iSame1) {
 		std::vector<int> x(qpterms.size());
-		std::vector<double> c;
-		c.reserve(qpterms.size()-1);
+		std::vector<double> c(qpterms.size());
 		size_t iPush=0;
-		for (auto i=(int)qpterms.size(); i--; ) {
+		for (int i=0; i<(int)qpterms.size(); ++i) {
 			if (i==iSame1) {
 				x[0] = qpterms.var1(i);
+				c[0] = std::sqrt(std::fabs(qpterms.coef(i)));
 			} else {
-				x.at(++iPush) = qpterms.var1(i);
-				c.push_back(std::fabs(qpterms.coef(i)));
+				++iPush;
+				x.at(iPush) = qpterms.var1(i);
+				c.at(iPush) = std::sqrt(std::fabs(qpterms.coef(i)));
 			}
 		}
 		MC().AddConstraint(QuadraticConeConstraint(x, c));
@@ -213,9 +216,8 @@ public:
 		if (lbf+ubf == 1) {
 			// Autolink is to pass back duals... Simplify?
 			// E.g., automatically in ForEachActive?
-			auto& ck = MC().GetConstraintKeeper((QuadConRange*)nullptr);
 			pre::AutoLinkScope<MCType> auto_link_scope{
-				MC(), ck.SelectValueNodeRange(i)
+				MC(), MC().template SelectValueNode<QuadConRange>(i)
 			};
 			return
 					Convert1QC<MCType>::DoRun(con.GetBody(),
@@ -246,9 +248,8 @@ public:
 	/// Run
 	bool operator()(const ConType& con, int i) {
 		static_assert (sens==1 || sens==-1, "sens 1 or -1 only");
-		auto& ck = MC().GetConstraintKeeper((ConType*)nullptr);
 		pre::AutoLinkScope<MCType> auto_link_scope{
-			MC(), ck.SelectValueNodeRange(i)
+			MC(), MC().template SelectValueNode<ConType>(i)
 		};
 		return
 				Convert1QC<MCType>::DoRun(con.GetBody(),

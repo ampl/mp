@@ -116,7 +116,6 @@ bool MosekBackend::IsQCP() const {
 
 ArrayRef<double> MosekBackend::PrimalSolution() {
   int num_vars = NumVars();
-  int error;
   std::vector<double> x(num_vars);
   // TODO get appropriate solution
   MSK_getxx(lp(), solToFetch_, x.data());
@@ -124,7 +123,9 @@ ArrayRef<double> MosekBackend::PrimalSolution() {
 }
 
 pre::ValueMapDbl MosekBackend::DualSolution() {
-  return {{ { CG_Linear, DualSolution_LP() } }};
+	return {{
+			{ CG_All, DualSolution_LP() }
+		}};
 }
 
 ArrayRef<double> MosekBackend::DualSolution_LP() {
@@ -135,6 +136,12 @@ ArrayRef<double> MosekBackend::DualSolution_LP() {
   if (error != MSK_RES_OK)
     pi.clear();
   return pi;
+}
+
+ArrayRef<double> MosekBackend::DualSolution_Cones() {
+	// TODO can we return anything sensible?
+	// Variable suffixes?
+	return {};
 }
 
 double MosekBackend::ObjectiveValue() const {
@@ -216,7 +223,7 @@ std::vector<double> MosekBackend::getPoolSolution(int i)
 
 double MosekBackend::getPoolObjective(int i)
 {
-  double obj;
+	double obj=0.0;
   // TODO get objective value of solution i
   return obj;
 }
@@ -535,13 +542,13 @@ SensRangesPresolved MosekBackend::GetSensRangesPresolved()
   sensr.varublo = { {vrangeublo} };
   sensr.varobjhi = { {orangehi} };
   sensr.varobjlo = { {orangelo} };
-  sensr.conlbhi = { {}, {{{CG_Linear, crangelbhi}}} };
-  sensr.conlblo = { {}, {{{CG_Linear, crangelblo}}} };
-  sensr.conubhi = { {}, {{{CG_Linear, crangeubhi}}} };
-  sensr.conublo = { {}, {{{CG_Linear, crangeublo}}} };
+	sensr.conlbhi = { {}, {{{CG_All, crangelbhi}}} };
+	sensr.conlblo = { {}, {{{CG_All, crangelblo}}} };
+	sensr.conubhi = { {}, {{{CG_All, crangeubhi}}} };
+	sensr.conublo = { {}, {{{CG_All, crangeublo}}} };
   std::vector<MSKrealt> rhs(lencon, 0.0);
-  sensr.conrhshi = { {}, {{{CG_Linear, rhs}}} };
-  sensr.conrhslo = { {}, {{{CG_Linear, rhs}}} };
+	sensr.conrhshi = { {}, {{{CG_All, rhs}}} };
+	sensr.conrhslo = { {}, {{{CG_All, rhs}}} };
 
   return sensr;
 }
@@ -660,16 +667,13 @@ void MosekBackend::VarStatii(ArrayRef<int> vst) {
 }
 
 void MosekBackend::ConStatii(ArrayRef<int> cst) {
-  std::vector<int> skc(cst.data(), cst.data() + cst.size());
-
-  // TODO: remove this if we are sure that it is the same.
   MSKint32t numcon;
   MOSEK_CCALL(MSK_getnumcon(lp(), &numcon));
-  assert(numcon == cst.size());
+	std::vector<int> skc(cst.data(), cst.data() + numcon);
 
   // The status key of a constraint is the status key of the logical (slack) variable assigned to it.
   // The slack is defined as: l <= a'x <= u rewritten as a'x - s = 0, l <= s <= u.
-  for (auto j = 0; j < skc.size(); j++)
+	for (size_t j = 0; j < skc.size(); j++)
   {
     skc[j] = MSK_SK_UNK;
     switch ((BasicStatus)skc[j])
@@ -720,7 +724,7 @@ SolutionBasis MosekBackend::GetBasis() {
   if (varstt.size() && constt.size()) {
     auto mv = GetValuePresolver().PostsolveBasis(
       { std::move(varstt),
-        {{{ CG_Linear, std::move(constt) }}} });
+				{{{ CG_All, std::move(constt) }}} });
     varstt = mv.GetVarValues()();
     constt = mv.GetConValues()();
     assert(varstt.size());
@@ -733,7 +737,7 @@ void MosekBackend::SetBasis(SolutionBasis basis) {
   auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
   auto varstt = mv.GetVarValues()();
-  auto constt = mv.GetConValues()(CG_Linear);
+	auto constt = mv.GetConValues()(CG_All);
   assert(varstt.size());
   assert(constt.size());
   VarStatii(varstt);
@@ -745,7 +749,7 @@ void MosekBackend::AddPrimalDualStart(Solution sol)
   auto mv = GetValuePresolver().PresolveSolution(
         { sol.primal, sol.dual } );
   auto x0 = mv.GetVarValues()();
-  auto pi0 = mv.GetConValues()(CG_Linear);
+	auto pi0 = mv.GetConValues()(CG_All);
   MOSEK_CCALL(MSK_putxx(lp(), solToFetch_, (MSKrealt *)x0.data()));
   MOSEK_CCALL(MSK_puty(lp(), solToFetch_, (MSKrealt *)pi0.data()));
 }
@@ -787,7 +791,7 @@ ArrayRef<double> MosekBackend::DRay()
   // a second one for constraints. The constraints ValueMap is given as a std::map for only linear constraints
   auto mv = GetValuePresolver().PostsolveSolution({
                                                     {},
-                                                    { { {CG_Linear, std::move(y)} } }
+																										{ { {CG_All, std::move(y)} } }
                                                   });
   // We get the ValueMap for constraints, and by calling MoveOut(), the value itself.
   // (Similar to .MoveOut(0) for single key maps)

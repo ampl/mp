@@ -52,42 +52,48 @@ public:
 
 
   /// The linear range constraint, if fully supported with basis info etc.
-  ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Linear)
+	ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_All)
   void AddConstraint(const LinConRange& lc);
 
   /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends
   /// and have an implementation,
   /// or a conversion rule is needed in a derived FlatConverter
-  ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
+	ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_All)
   void AddConstraint(const LinConLE& lc);
-  ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
+	ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_All)
   void AddConstraint(const LinConEQ& lc);
-  ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
+	ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_All)
   void AddConstraint(const LinConGE& lc);
 
   /// QuadConRange is optional.
-  ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Quadratic)
+	ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_All)
   void AddConstraint(const QuadConRange& qc);
 
   /// If using quadratics,
   /// QuadCon(LE/EQ/GE) should have 'Recommended'
   /// and have an implementation.
-  ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Quadratic)
+	ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_All)
   void AddConstraint(const QuadConLE& qc);
-  ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Quadratic)
+	ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_All)
   void AddConstraint(const QuadConEQ& qc);
-  ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Quadratic)
+	ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_All)
   void AddConstraint(const QuadConGE& qc);
+
+	/// Cones
+	ACCEPT_CONSTRAINT(QuadraticConeConstraint, Recommended, CG_All)
+	void AddConstraint(const QuadraticConeConstraint& qc);
+	ACCEPT_CONSTRAINT(RotatedQuadraticConeConstraint, Recommended, CG_All)
+	void AddConstraint(const RotatedQuadraticConeConstraint& qc);
 
   /// Linear indicator constraints can be used as
   /// auxiliary constraints for logical conditions.
   /// If not handled, the compared expressions need
   /// deducible finite bounds for a big-M redefinition.
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, NotAccepted, CG_General)
+	ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, NotAccepted, CG_All)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, NotAccepted, CG_General)
+	ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, NotAccepted, CG_All)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, NotAccepted, CG_General)
+	ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, NotAccepted, CG_All)
   void AddConstraint(const IndicatorConstraintLinGE& mc);
 
   /// SOS constraints can be used by AMPL for redefinition of
@@ -95,9 +101,9 @@ public:
   /// Set ``option pl_linearize 0;`` in AMPL if the solver
   /// supports PL natively.
   /// MOSEK 10 has no SOS
-  ACCEPT_CONSTRAINT(SOS1Constraint, NotAccepted, CG_SOS)
+	ACCEPT_CONSTRAINT(SOS1Constraint, NotAccepted, CG_All)
   void AddConstraint(const SOS1Constraint& cc);
-  ACCEPT_CONSTRAINT(SOS2Constraint, NotAccepted, CG_SOS)
+	ACCEPT_CONSTRAINT(SOS2Constraint, NotAccepted, CG_All)
   void AddConstraint(const SOS2Constraint& cc);
 
 
