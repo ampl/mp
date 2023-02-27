@@ -85,9 +85,12 @@ enum ConstraintAcceptanceLevel {
 /// Convenient when the solver accesses constraint attributes in groups
 /// For example, Gurobi 9.5 has linear, quadratic, SOS, and general
 enum ConstraintGroup {
-  CG_Default,
+	CG_Default,
+	CG_All,        // e.g., MOSEK 10 seems to have a single group
+	CG_Algebraic,
   CG_Linear,
   CG_Quadratic,
+	CG_Conic,
   CG_General,
   CG_Piecewiselinear,
   CG_SOS,
@@ -155,7 +158,7 @@ public:
 
   /// Default constraint group
   static constexpr ConstraintGroup GroupNumber(const BasicConstraint*) {
-    return CG_Default;
+		return CG_Default;
   }
 
   /// By default, we say constraint XYZ is not accepted but...

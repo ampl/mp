@@ -126,7 +126,8 @@ protected:
   /// Solution values. The vectors are emptied if not available
   ArrayRef<double> PrimalSolution() override;
   pre::ValueMapDbl DualSolution() override;
-  ArrayRef<double> DualSolution_LP();
+	ArrayRef<double> DualSolution_LP();
+	ArrayRef<double> DualSolution_Cones();
 
   void WindupMOSEKSolve();
 

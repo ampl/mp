@@ -2,6 +2,7 @@
 # -------------------------------------------------------------
 # FLOWSHOP
 # flowshop1.mod: using disjunctive constraints
+# Use at most cvt:bigM = 1e5
 # -------------------------------------------------------------
 
 set JOBS ordered;

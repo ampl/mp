@@ -396,6 +396,13 @@ protected:
 
 
 public:
+	/// Select value node \a i for constraint type \a Con.
+	template <class Constraint>
+	pre::NodeRange SelectValueNode(int i) {
+		auto& ck = GET_CONSTRAINT_KEEPER( Constraint );
+		return ck.SelectValueNodeRange(i);
+	}
+
   /// Handle start of model input
   void StartModelInput() {
     MPD( OpenGraphExporter() );
@@ -689,7 +696,7 @@ private:
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
 		int passQuadCon_ = ModelAPIAcceptsQC();
-		int passQuadCones_ = 0;
+		int passSOCPCones_ = 0;
 
     int relax_ = 0;
   };
@@ -751,8 +758,8 @@ private:
 												 ModelAPIAcceptsQuadraticCones()>1 ?
 													 "0/1*: Recognize quadratic cones." :
 													 "0*/1: Recognize quadratic cones.",
-					options_.passQuadCones_, 0, 1);
-		options_.passQuadCones_ = ModelAPIAcceptsQuadraticCones()>1;
+					options_.passSOCPCones_, 0, 1);
+		options_.passSOCPCones_ = ModelAPIAcceptsQuadraticCones()>1;
 		GetEnv().AddOption("alg:relax relax",
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
@@ -787,8 +794,8 @@ public:
   bool IfQuadratizePowConstPosIntExp() const
   { return options_.passQuadCon_; }
 
-	/// Whether we pass quad cones
-	bool IfPassQuadCones() const { return options_.passQuadCon_; }
+	/// Whether we pass SOCP cones
+	bool IfPassSOCPCones() const { return options_.passSOCPCones_; }
 
 
 public:

@@ -1,0 +1,12 @@
+[
+  {
+    "name" : "socp_01",
+    "objective" : 3.475285907,
+    "tags" : ["quadratic"]
+  },
+  {
+    "name" : "socp_02_rqc",
+    "objective" : 3.870560774,
+    "tags" : ["quadratic"]
+  }
+]

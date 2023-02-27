@@ -58,21 +58,13 @@ protected:
 protected:
 };
 
-static void handleError(MSKrescodee e, const char* fname) {
-  char symb[MSK_MAX_STR_LEN];
-  char str[MSK_MAX_STR_LEN];
-  MSK_getcodedesc(e, symb, str);
-  MSKrescodetypee et;
-  MSKrescodee e2 = MSK_getresponseclass(e, &et);
-  if (e2 != MSK_RES_OK) MP_RAISE(
-    fmt::format("Call failed: '{}'. Error {}({}): {}\n Error in getresponseclass: {}",
-      fname, symb, e, str, e2));
-  if ((int)e2 > (int)MSK_RESPONSE_TRM) MP_RAISE(
-    fmt::format("Call failed: '{}'. Type {}, {}({}): {}", fname, e2, symb, e, str));
-  fmt::print("\nWarning {}({}): {} while calling '{}'", symb, e, str, fname);
-}
+#define MOSEK_CCALL( call ) do { \
+	MSKrescodee e=call; \
+	if (e != MSK_RES_OK) handleError(e, #call); \
+} while (0)
 
-#define MOSEK_CCALL( call ) do { MSKrescodee e=call; if (e != MSK_RES_OK) handleError(e, #call); } while (0)
+/// Internal function
+void handleError(MSKrescodee e, const char* fname);
 
 } // namespace mp
 
