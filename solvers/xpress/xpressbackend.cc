@@ -2575,8 +2575,7 @@ void XpressmpBackend::AddMIPStart(ArrayRef<double> x0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution({ x0_unpres });
   auto x0 = mv.GetVarValues()();
   int status;
-  XPRSloadmipsol(lp(), x0.data(), &status);
-
+  XPRSaddmipsol(lp(), NumVars(), x0.data(), nullptr, nullptr);
 }
 
 void XpressmpBackend::xpdisplay(XPRSprob prob, void* data, const char* ch, int n, int msglvl)

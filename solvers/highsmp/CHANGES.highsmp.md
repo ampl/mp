@@ -1,11 +1,20 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
+
+## 20230227
+- Fixed a problem when retrieving basis status
+- Implemented retrieval of MIP gap so that if optimality is reached via presolving,
+  the returned gap is 0
+
+
 ## 20230224
 - *Updated* to HiGHS 1.5.1; now returning number of LP iterations in a MIP solve
 
+
 ## 20230222
 - Fixed: now returning the correct dual values for the constraints
+
 
 ## 20230209
 - *Updated* to HiGHS 1.4.2

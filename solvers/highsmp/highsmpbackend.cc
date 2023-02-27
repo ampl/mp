@@ -169,6 +169,7 @@ ArrayRef<int> HighsBackend::VarStatii() {
       s = (int)BasicStatus::upp;
       break;
     case kHighsBasisStatusNonbasic:
+    case kHighsBasisStatusZero:
       s = (int)BasicStatus::sup;
       break;
     default:
@@ -526,17 +527,25 @@ void HighsBackend::InitCustomOptions() {
 }
 
 double HighsBackend::MIPGap() {
+  // TODO Check if the following is always true
+  if (BarrierIterations() == 0)
+    return 0;
   return getDblAttr("mip_gap");
 }
 double HighsBackend::BestDualBound() {
+  // TODO Check if the following is always true
+  if (BarrierIterations() == 0)
+    return 0;
   return getDblAttr("mip_dual_bound");
 }
 
 double HighsBackend::MIPGapAbs() {
+  // TODO Check if the following is always true
+  if (BarrierIterations() == 0)
+    return 0;
   return std::fabs(
     ObjectiveValue() - BestDualBound());
 }
-
 } // namespace mp
 
 
