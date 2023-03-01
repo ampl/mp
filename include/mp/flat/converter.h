@@ -136,7 +136,7 @@ public:
   AssignResult2Args(FuncConstraint&& fc) {
     auto fcc = MakeFuncConstrConverter<Impl, FuncConstraint>(
           *this, std::forward<FuncConstraint>(fc));
-    return fcc.Convert();
+		return fcc.Convert();
   }
 
   /// Same, but always return a variable
@@ -149,19 +149,67 @@ public:
     return vc.get_var();
   }
 
-  /// Replace functional expression defining a given variable
+	/// Typedef ConInfo; constraint location
+	using ConInfo = AbstractConstraintLocation;
+
+	/// Replace functional expression defining a given variable.
   template <class FuncConstraint>
   void RedefineVariable(int res_var, FuncConstraint&& fc) {
     assert( MPD( HasInitExpression(res_var) ) );
+		auto ci_old = MPD( GetInitExpression(res_var) );
     fc.SetResultVar(res_var);
-    auto i = MPD( AddConstraint(std::move(fc) ) );
-    auto& ck = GET_CONSTRAINT_KEEPER( FuncConstraint );
+		// If this expression exists, use it.
+		// TODO make sure any new context is re-converted
+		// if necessary.
+		auto i = MPD( MapFind(fc) );
+		if (i<0)
+			i = MPD( AddConstraint(std::move(fc)) );
+		auto& ck = GET_CONSTRAINT_KEEPER( FuncConstraint );
     ConInfo ci{&ck, i};
     ReplaceInitExpression(res_var, ci);
+		MarkAsDeleted(ci_old);
   }
 
 
+	/// Variables' reference counting ///////////////////////////////////
+	/// Currently only for defined variables ////////////////////////////
+
+	/// Use "+1" a variable
+	void IncrementVarUsage(int v) {
+		++VarUsageRef(v);
+	}
+
+	/// Unuse result variable.
+	/// Throw if already not used.
+	void DecrementVarUsage(int v) {
+		assert(VarUsageRef(v)>0);
+		if (! (--VarUsageRef(v))) {
+			if (HasInitExpression(v))
+				MarkAsDeleted(GetInitExpression(v));
+		}
+	}
+
+	/// Fix unused defined vars.
+	/// Normally should delete them.
+	void FixUnusedDefinedVars() {
+		for (auto i=num_vars(); i--; ) {
+			if (HasInitExpression(i) &&
+					! VarUsageRef(i))
+				set_var_ub(i, lb(i));
+		}
+	}
+
+
 protected:
+	int& VarUsageRef(int i) {
+		assert(i>=0 && i<num_vars());
+		if (i>=refcnt_vars_.size())
+			refcnt_vars_.resize(
+						std::max((size_t)num_vars(),
+										 (size_t)(refcnt_vars_.size()*1.4)));
+		return refcnt_vars_[i];
+	}
+
   //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
   ///
   //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
@@ -369,10 +417,24 @@ public:
     return AddConstraint( std::move(con) );
   }
 
+	/// Retrieve constraint of specified type at location \a ci.
   template <class Constraint>
-  const Constraint& GetConstraint(int i) const {
-    return GET_CONST_CONSTRAINT_KEEPER(Constraint).GetConstraint(i);
+	const Constraint& GetConstraint(const ConInfo& ci) const {
+		assert(MPCD(template IsConInfoType<Constraint>(ci) ));
+		return GET_CONST_CONSTRAINT_KEEPER(Constraint).
+				GetConstraint(ci.GetIndex());
   }
+
+	/// Retrieve constraint of specified type at index \a i.
+	template <class Constraint>
+	const Constraint& GetConstraint(int i) const {
+		return GET_CONST_CONSTRAINT_KEEPER(Constraint).GetConstraint(i);
+	}
+
+	/// Delete constraint
+	void MarkAsDeleted(const ConInfo& ci) {
+		ci.GetCK()->MarkAsDeleted(ci.GetIndex());
+	}
 
 protected:
   USE_BASE_MAP_FINDERS( BaseConverter )
@@ -413,6 +475,7 @@ public:
     MPD( ConvertModel() );
     if (relax())
       GetModel().RelaxIntegrality();
+		FixUnusedDefinedVars();       // Until we have proper var deletion
     GetModel().PushModelTo(GetModelAPI());
     MPD( CloseGraphExporter() );
     if (value_presolver_.GetExport())
@@ -495,6 +558,8 @@ public:
 
 
 public:
+	/// Shortcut num_vars()
+	int num_vars() const { return MPCD(GetModel()).num_vars(); }
   /// Shortcut lb(var)
   double lb(int var) const { return this->GetModel().lb(var); }
   /// Shortcut ub(var)
@@ -554,9 +619,6 @@ public:
     return MP_DISPATCH( Convert2Var(std::move(ae)) );
   }
 
-  /// Typedef ConInfo
-  using ConInfo = AbstractConstraintLocation;
-
   /// Add vector of variables. Type: var::CONTINUOUS by default
   /// @return vector of the Ids of the new vars
   std::vector<int> AddVars_returnIds(std::size_t nvars,
@@ -605,10 +667,17 @@ public:
 
   /// Get the init expr
   const ConInfo& GetInitExpression(int var) const {
-    assert(HasInitExpression(var));
-    return var_info_[var];
+		return var_info_.at(var);
   }
 
+	/// Check if the constraint location points to the
+	/// constraint keeper used for this ConType.
+	template <class ConType>
+	bool IsConInfoType(const ConInfo& ci) const {
+		return &(BasicConstraintKeeper&)
+				(GET_CONST_CONSTRAINT_KEEPER(ConType))
+				== ci.GetCK();
+	}
 
   /////////////////////// AUTO LINKING ////////////////////////////
 
@@ -831,6 +900,8 @@ private:
   std::vector<pre::NodeRange> auto_link_targ_items_;
 
 	ConicConverter<Impl> conic_cvt_ { *static_cast<Impl*>(this) };
+
+	std::vector<int> refcnt_vars_;
 
 
 protected:

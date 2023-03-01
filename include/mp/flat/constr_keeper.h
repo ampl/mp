@@ -168,6 +168,9 @@ public:
   virtual void SetChosenAcceptanceLevel(
       ConstraintAcceptanceLevel acc) { acceptance_level_ = acc;}
 
+	/// Mark as deleted, use index only
+	virtual void MarkAsDeleted(int i) = 0;
+
 
 protected:
   int& GetAccLevRef() { return acceptance_level_; }
@@ -218,9 +221,11 @@ struct ConstraintLocationHelper {
   int index_ = 0;        // constraint index
 };
 
+
 /// Without constraint type
 using AbstractConstraintLocation =
   ConstraintLocationHelper<BasicConstraintKeeper>;
+
 
 /// Converters handling custom constraints should derive from
 class BasicFlatConverter {
@@ -470,7 +475,7 @@ protected:
 
 public:
 	/// Mark as deleted, use index only
-	void MarkAsDeleted(int i) {
+	void MarkAsDeleted(int i) override {
 		MarkAsDeleted(cons_.at(i), i);
 	}
 

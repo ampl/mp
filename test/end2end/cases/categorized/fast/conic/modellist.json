@@ -8,5 +8,15 @@
     "name" : "socp_02_rqc",
     "objective" : 3.870560774,
     "tags" : ["quadratic"]
+  },
+  {
+    "name" : "socp_03_sqrt",
+    "objective" : 3.475285907,
+    "tags" : ["socp"]
+  },
+  {
+    "name" : "socp_04_2cones",
+    "objective" : 7.760578792,
+    "tags" : ["socp"]
   }
 ]
