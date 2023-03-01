@@ -194,8 +194,10 @@ public:
 	void FixUnusedDefinedVars() {
 		for (auto i=num_vars(); i--; ) {
 			if (HasInitExpression(i) &&
-					! VarUsageRef(i))
-				set_var_ub(i, lb(i));
+					! VarUsageRef(i)) {
+				set_var_lb(i, 0.0);      // fix to 0
+				set_var_ub(i, 0.0);
+			}
 		}
 	}
 
