@@ -616,7 +616,7 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.quadratic_obj,
                  ModelTags.quadraticnonconvex,
 
-                 ModelTags.socp,      ## Gurobi recognizes sqrt()
+                 ## ModelTags.socp,      ## Gurobi recognizes sqrt() but pl approx is tricky
 
                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
 

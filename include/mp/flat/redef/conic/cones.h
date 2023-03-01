@@ -180,34 +180,20 @@ protected:
 			if (sens<0)
 				iX = 1-iX;
 			int iY = 1-iX;
-			// Check if iY = || vector-or-var ||
+			// Check if var(iY) := || vector-or-var ||
 			if (auto rhs_args = CheckNorm2(lint.var(iY))) {
-				std::vector<int> x(rhs_args.size()+1);
-				std::vector<double> c(rhs_args.size()+1);
-				x[0] = lint.var(iX);
-				c[0] = std::fabs(lint.coef(iX));
-				auto coefY_abs = std::fabs(lint.coef(iY));
-				for (size_t iPush=0; iPush<rhs_args.size(); ++iPush) {
-					x[iPush+1] = rhs_args.vars_[iPush];
-					c[iPush+1] = coefY_abs * rhs_args.coefs_[iPush];
-				}
-				// Un-use y together with any subexpression result vars.
-				rhs_args.res_vars_to_delete_.push_back(lint.var(iY));
-				for (auto r: rhs_args.res_vars_to_delete_)
-					MC().DecrementVarUsage(r);
-				MC().AddConstraint(
-							QuadraticConeConstraint(
-								std::move(x), std::move(c)));
+				if (auto lhs_args = CheckSqrtXnXmNonneg(lint.var(iX)))
+					return ContinueRotatedSOC(lint, iX, iY,
+																		lhs_args, rhs_args);
+				return ContinueStdSOC(lint, iX, iY, rhs_args);
 			}
 		}
 		return false;
 	}
 
 	/// Typedef for subexpression checkup result,
-	/// whether it represents the RHS of an SOCP cone.
-	/// If yes, populates members so that the RHS is
-	/// sqrt( sum { coef_[i]*vars_[i] } )
-	struct ConeRHSArgs {
+	/// whether it represents some part of an SOCP cone.
+	struct ConeArgs {
 		std::vector<double> coefs_;
 		std::vector<int> vars_;
 		/// Result vars of expressions to un-use.
@@ -222,13 +208,13 @@ protected:
 	/// representing ||.||.
 	/// @return pair of (coef, var) vectors
 	/// so that the cone is ... >= sqrt(sum{ (coef_i * var*i)^2 })
-	ConeRHSArgs	CheckNorm2(int res_var) {
+	ConeArgs CheckNorm2(int res_var) {
 		if (MC().HasInitExpression(res_var)) {
 			auto init_expr = MC().GetInitExpression(res_var);
 			if (MC().template IsConInfoType<PowConstraint>(init_expr))
-				return CheckNorm2_Pow(init_expr);
+				return CheckNorm2_Pow(init_expr, res_var);
 			if (MC().template IsConInfoType<AbsConstraint>(init_expr))
-				return CheckNorm2_Abs(init_expr);
+				return CheckNorm2_Abs(init_expr, res_var);
 		}
 		return {};
 	}
@@ -236,7 +222,7 @@ protected:
 	/// Check if the variable is defined by an expression
 	/// representing sqrt(c1 * x1^2 + ...).
 	template <class ConInfo>
-	ConeRHSArgs	CheckNorm2_Pow(const ConInfo& ci) {
+	ConeArgs CheckNorm2_Pow(const ConInfo& ci, int res_var) {
 		const auto& con_pow = MC().template
 				GetConstraint<PowConstraint>(ci);
 		const auto arg_pow = con_pow.GetArguments()[0];
@@ -258,12 +244,12 @@ protected:
 								qpterms.var1(i) != qpterms.var2(i))
 							return {};
 					}
-					ConeRHSArgs result;
+					ConeArgs result;
 					result.coefs_ = qpterms.coefs();
 					for (auto& c: result.coefs_)
 						c = std::sqrt(c);
 					result.vars_ = qpterms.vars1();
-					result.res_vars_to_delete_ = { arg_pow };
+					result.res_vars_to_delete_ = { res_var, arg_pow };
 					return result;
 				}
 			}
@@ -274,13 +260,105 @@ protected:
 	/// Check if the variable is defined by an expression
 	/// representing abs( c1*x1 ).
 	template <class ConInfo>
-	ConeRHSArgs	CheckNorm2_Abs(const ConInfo& ) {
-		ConeRHSArgs result;
-		// Probably better linearize Abs()
+	ConeArgs CheckNorm2_Abs(const ConInfo& ci, int res_var) {
+		ConeArgs result;
+		const auto& con_abs = MC().template
+				GetConstraint<AbsConstraint>(ci);
+		const auto arg_abs = con_abs.GetArguments()[0];
+		result.coefs_ = { 1.0 };
+		result.vars_ = { res_var, arg_abs };
 		return result;
 	}
 
-	/// Add rotated cone
+	/// Check if the variable is defined by sqrt(xN*xM) with
+	/// xN, xM >= 0.
+	ConeArgs CheckSqrtXnXmNonneg(int res_var) {
+		ConeArgs result;
+		if (auto pConPow = MC().template
+				GetInitExpressionOfType<PowConstraint>(res_var)) {
+			if (0.5 == pConPow->GetParameters()[0]) {     // sqrt(arg_pow)
+				const auto arg_pow = pConPow->GetArguments()[0];
+				if (auto pConQfc = MC().template
+						GetInitExpressionOfType<
+						QuadraticFunctionalConstraint>(arg_pow)) {
+					const auto& qe = pConQfc->GetArguments();
+					if (0.0 == std::fabs(qe.constant_term()) &&
+							qe.GetBody().GetLinTerms().empty() &&
+							1 == qe.GetBody().GetQPTerms().size()) {
+						const auto& qpterms = qe.GetBody().GetQPTerms();
+						if (qpterms.coef(0) >= 0.0 &&
+								qpterms.var1(0) != qpterms.var2(0) &&
+								MC().lb(qpterms.var1(0)) >= 0.0 &&
+								MC().lb(qpterms.var2(0)) >= 0.0) {
+							result.coefs_ = {qpterms.coef(0), 1.0};
+							result.vars_ = {qpterms.var1(0), qpterms.var2(0)};
+							result.res_vars_to_delete_ = {res_var, arg_pow};
+							return result;
+						}
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	/// Continue processing a linear constraint x>=y,
+	/// if y := ||.|| and x is sqrt(xN*xM).
+	/// Rotated Qcone.
+	/// @return true iff converted.
+	bool ContinueRotatedSOC(
+			const LinTerms& lint, int iX, int iY,
+			const ConeArgs& lhs_args, const ConeArgs& rhs_args) {
+		assert(2==lhs_args.size());
+		assert(rhs_args);
+		std::vector<double> c(lhs_args.size()+rhs_args.size());
+		std::vector<int> x(lhs_args.size()+rhs_args.size());
+		auto coefX_abs = std::fabs(lint.coef(iX));
+		c[0] = 0.5 * lhs_args.coefs_[0] * coefX_abs;
+		c[1] = lhs_args.coefs_[1] * coefX_abs;
+		x[0] = lhs_args.vars_[0];
+		x[1] = lhs_args.vars_[1];
+		auto coefY_abs = std::fabs(lint.coef(iY));
+		for (size_t iPush=0; iPush<rhs_args.size(); ++iPush) {
+			x[iPush+2] = rhs_args.vars_[iPush];
+			c[iPush+2] = coefY_abs * rhs_args.coefs_[iPush];
+		}
+		for (auto r: lhs_args.res_vars_to_delete_)
+			MC().DecrementVarUsage(r);
+		for (auto r: rhs_args.res_vars_to_delete_)
+			MC().DecrementVarUsage(r);
+		MC().AddConstraint(
+					RotatedQuadraticConeConstraint(
+						std::move(x), std::move(c)));
+		return true;
+	}
+
+	/// Continue processing a linear constraint x>=y,
+	/// if y := ||.|| and x is not sqrt(xN*xM).
+	/// Standard Qcone.
+	/// @return true iff converted.
+	bool ContinueStdSOC(
+			const LinTerms& lint, int iX, int iY,
+			const ConeArgs& rhs_args) {
+		std::vector<int> x(rhs_args.size()+1);
+		std::vector<double> c(rhs_args.size()+1);
+		x[0] = lint.var(iX);
+		c[0] = std::fabs(lint.coef(iX));
+		auto coefY_abs = std::fabs(lint.coef(iY));
+		for (size_t iPush=0; iPush<rhs_args.size(); ++iPush) {
+			x[iPush+1] = rhs_args.vars_[iPush];
+			c[iPush+1] = coefY_abs * rhs_args.coefs_[iPush];
+		}
+		for (auto r: rhs_args.res_vars_to_delete_)
+			MC().DecrementVarUsage(r);
+		MC().AddConstraint(
+					QuadraticConeConstraint(
+						std::move(x), std::move(c)));
+		return true;
+	}
+
+
+	/// Add rotated cone from pure-quadratic constraint
 	bool AddRotatedQC(const QuadTerms& qpterms, int iDiffVars) {
 		std::vector<int> x(qpterms.size()+1);
 		std::vector<double> c(qpterms.size()+1);
@@ -303,7 +381,7 @@ protected:
 		return true;
 	}
 
-	/// Add standard cone
+	/// Add standard cone from pure-quadratic constraint
 	bool AddStandardQC(const QuadTerms& qpterms, int iSame1) {
 		std::vector<int> x(qpterms.size());
 		std::vector<double> c(qpterms.size());

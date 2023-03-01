@@ -203,7 +203,7 @@ public:
 protected:
 	int& VarUsageRef(int i) {
 		assert(i>=0 && i<num_vars());
-		if (i>=refcnt_vars_.size())
+		if ((size_t)i>=refcnt_vars_.size())
 			refcnt_vars_.resize(
 						std::max((size_t)num_vars(),
 										 (size_t)(refcnt_vars_.size()*1.4)));
@@ -669,6 +669,22 @@ public:
   const ConInfo& GetInitExpression(int var) const {
 		return var_info_.at(var);
   }
+
+	/// Get the init expression pointer.
+	/// @return nullptr if no init expr or not this type
+	template <class ConType>
+	const ConType* GetInitExpressionOfType(int var) {
+		if (MPCD( HasInitExpression(var) )) {
+			auto ci0 = MPCD( GetInitExpression(var) );
+			if (IsConInfoType<ConType>(ci0)) {
+				const auto& con =
+						GetConstraint<ConType>(ci0);
+				assert(&con);
+				return &con;
+			}
+		}
+		return nullptr;
+	}
 
 	/// Check if the constraint location points to the
 	/// constraint keeper used for this ConType.

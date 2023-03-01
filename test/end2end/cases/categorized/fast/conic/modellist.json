@@ -18,5 +18,10 @@
     "name" : "socp_04_2cones",
     "objective" : 7.760578792,
     "tags" : ["socp"]
+  },
+  {
+    "name" : "socp_05_rqcSqrt_abs",
+    "objective" : 3.623966621,
+    "tags" : ["socp"]
   }
 ]
