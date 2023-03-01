@@ -80,16 +80,15 @@ bool ScipBackend::IsQCP() const {
 
 ArrayRef<double> ScipBackend::PrimalSolution() {
   int num_vars = NumVars();
-  int error;
+  int error = SCIPgetBestSol(getSCIP()) != NULL;
   std::vector<double> x(num_vars);
-  /*
-  if (IsMIP()) 
-    error = SCIP_GetSolution(lp(), x.data());
-  else
-    error = SCIP_GetLpSolution(lp(), x.data(), NULL, NULL, NULL);
+
+  for (int i = 0; i < getPROBDATA()->nvars; ++i)
+   x[i] = SCIPgetSolVal(getSCIP(), SCIPgetBestSol(getSCIP()), getPROBDATA()->vars[i]);
+
   if (error)
     x.clear();
-    */
+
   return x;
 }
 
@@ -100,6 +99,7 @@ pre::ValueMapDbl ScipBackend::DualSolution() {
 ArrayRef<double> ScipBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
+
  // int error = SCIP_GetLpSolution(lp(), NULL, NULL, pi.data(), NULL);
   int error = 0;
   if (error)
@@ -124,8 +124,7 @@ int ScipBackend::BarrierIterations() const {
 }
 
 void ScipBackend::ExportModel(const std::string &file) {
-  // TODO export proper by file extension
-  SCIP_CCALL( SCIPwriteLP(getSCIP(), file.data()) );
+  SCIP_CCALL( SCIPwriteOrigProblem(getSCIP(), file.data(), NULL, FALSE) );
 }
 
 
@@ -153,26 +152,26 @@ void ScipBackend::ReportResults() {
 void ScipBackend::ReportSCIPResults() {
   SetStatus( ConvertSCIPStatus() );
   AddSCIPMessages();
-  if (need_multiple_solutions())
-    ReportSCIPPool();
+  //if (need_multiple_solutions())
+  //  ReportSCIPPool();
 }
-std::vector<double> ScipBackend::getPoolSolution(int i)
-{
-  std::vector<double> vars(NumVars());
+//std::vector<double> ScipBackend::getPoolSolution(int i)
+//{
+//  std::vector<double> vars(NumVars());
  // SCIP_CCALL(SCIP_GetPoolSolution(lp(), i, NumVars(), NULL, vars.data()));
-  return vars;
-}
-double ScipBackend::getPoolObjective(int i)
-{
-  double obj;
+//  return vars;
+//}
+//double ScipBackend::getPoolObjective(int i)
+//{
+//  double obj;
  // SCIP_CCALL(SCIP_GetPoolObjVal(lp(), i, &obj));
-  return obj;
-}
-void ScipBackend::ReportSCIPPool() {
-  if (!IsMIP())
-    return;
-  int iPoolSolution = -1;
-  int nsolutions;
+//  return obj;
+//}
+//void ScipBackend::ReportSCIPPool() {
+//  if (!IsMIP())
+//    return;
+//  int iPoolSolution = -1;
+//  int nsolutions;
   /*
   while (++iPoolSolution < getIntAttr(SCIP_INTATTR_POOLSOLS)) {
     ReportIntermediateSolution(
@@ -180,7 +179,7 @@ void ScipBackend::ReportSCIPPool() {
         {}, { getPoolObjective(iPoolSolution) } });
   }
   */
-}
+//}
 
 
 void ScipBackend::AddSCIPMessages() {
@@ -287,10 +286,18 @@ void ScipBackend::InitCustomOptions() {
 
   AddStoredOption("tech:exportfile writeprob writemodel",
       "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
+      "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
 
+  AddSolverOption("lim:time timelim timelimit time_limit",
+      "Limit on solve time (in seconds; default: [1e+20]).",
+      "limits/time", 0.0, SCIP_REAL_MAX);
+  
+  AddSolverOption("tech:threads threads",
+    "How many threads to use when using the barrier algorithm "
+    "or solving MIP problems; default 0 ==> automatic choice.",
+    "lp/advanced/threads", 0, 128);
 }
 
 
@@ -463,18 +470,18 @@ void ScipBackend::SetBasis(SolutionBasis basis) {
 }
 
 
-void ScipBackend::ComputeIIS() {
+//void ScipBackend::ComputeIIS() {
   //SCIP_CCALL(SCIP_ComputeIIS(lp()));
-  SetStatus(ConvertSCIPStatus());   // could be new information
-}
+//  SetStatus(ConvertSCIPStatus());   // could be new information
+//}
 
-IIS ScipBackend::GetIIS() {
-  auto variis = VarsIIS();
-  auto coniis = ConsIIS();
-  auto mv = GetValuePresolver().PostsolveIIS(
-    { variis, coniis });
-  return { mv.GetVarValues()(), mv.GetConValues()() };
-}
+//IIS ScipBackend::GetIIS() {
+//  auto variis = VarsIIS();
+//  auto coniis = ConsIIS();
+//  auto mv = GetValuePresolver().PostsolveIIS(
+//    { variis, coniis });
+//  return { mv.GetVarValues()(), mv.GetConValues()() };
+//}
 
 ArrayRef<int> ScipBackend::VarsIIS() {
   return ArrayRef<int>();

@@ -54,7 +54,7 @@ public:
  * MULTISOL support
  * No API, see ReportIntermediateSolution()
 **/
-  ALLOW_STD_FEATURE(MULTISOL, true)
+  //ALLOW_STD_FEATURE(MULTISOL, true)
 
   /**
   * Get/Set AMPL var/con statii
@@ -77,27 +77,24 @@ public:
  /**
   * Get MIP Gap
   **/
-  // TODO Implement to return MIP gap
-  // (adds option mip:return_gap)
   ALLOW_STD_FEATURE(RETURN_MIP_GAP, true)
   double MIPGap() override;
   double MIPGapAbs() override;
   /**
   * Get MIP dual bound
   **/
-  // TODO Implement to return the best dual bound value
-  // (adds option mip:bestbound)
+
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
   double BestDualBound() override;
 
   /**
   * Compute the IIS and obtain relevant values
   **/
-  ALLOW_STD_FEATURE(IIS, true)
+  //ALLOW_STD_FEATURE(IIS, true)
   /// Compute IIS
-  void ComputeIIS() override;
+  //void ComputeIIS() override;
   /// Retrieve IIS elements
-  IIS GetIIS() override;
+  //IIS GetIIS() override;
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
@@ -138,8 +135,8 @@ protected:
 
   void ReportSCIPPool();
 
-  std::vector<double> getPoolSolution(int i);
-  double getPoolObjective(int i);
+  //std::vector<double> getPoolSolution(int i);
+  //double getPoolObjective(int i);
 
   /// Solution attributes
   double NodeCount() const;

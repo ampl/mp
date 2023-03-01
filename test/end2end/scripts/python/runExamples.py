@@ -124,7 +124,7 @@ class UserDefSolver(Solver.AMPLSolver):
         return "threads={}".format(threads)
 
     def _doParseSolution(self, st, stdout=None):
-        # This function should set the following values in the self.stats dictionaty:
+        # This function should set the following values in the self.stats dictionary:
         # self.stats["outmsg"] to the solver message
         # self.stats["timelimit"] to True or False indicating whether the time limit was reached before optimal
         # self.stats["solution"] to the objective value

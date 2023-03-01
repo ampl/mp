@@ -5,10 +5,10 @@
 
 #include "mp/backend-to-model-api.h"
 
-//extern "C" {
-  #include "scip/scip.h"
-  #include "scip/scipdefplugins.h"
-//}
+#include "scip/scip.h"
+#include "scip/scipdefplugins.h"
+
+#include "mp/format.h"
 
 /// problem data stored in SCIP
 struct SCIP_ProbData
@@ -19,46 +19,6 @@ struct SCIP_ProbData
    SCIP_CONS**           conss;              /**< constraints in the order given by AMPL */
    int                   nconss;             /**< number of constraints */
 };
-
-/// Instead, faking a typical solver namespace and defs:
-namespace Solver {
-  enum TYPE {
-    VARS = 0,
-    VARS_INT,
-    CONS_LIN,
-    CONS_QUAD,
-    CONS_INDIC,
-    CONS_SOS,
-
-    OBJ
-  };
-
-  class SolverModel {
-    int nEntities[7];
-  public:
-    int addEntity(int type) {
-      return ++nEntities[type];
-    }
-    int getN(int type) {
-      return nEntities[type];
-    }
-  };
-
-  SolverModel* CreateSolverModel();
-  int addContVar(SolverModel& s);
-  int addIntVar(SolverModel& s);
-  int addLinCon(SolverModel& s);
-  int addQuadCon(SolverModel& s);
-  int addIndicCon(SolverModel& s);
-  int addSOSCon(SolverModel& s);
-  int getSolverIntAttr(SolverModel* s, int attr);
-}
-
-
-/// The below would go into actual ...common.h:
-
-#include "mp/format.h"
-
 namespace mp {
 
 /// Information shared by both
@@ -95,9 +55,6 @@ public:
 protected:
   void OpenSolver();
   void CloseSolver();
-
-  int getIntAttr(int name) const;
-  double getDblAttr(const char* name) const;
 
   int NumLinCons() const;
   int NumVars() const;
