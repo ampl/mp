@@ -86,8 +86,8 @@ enum ConstraintAcceptanceLevel {
 /// For example, Gurobi 9.5 has linear, quadratic, SOS, and general
 enum ConstraintGroup {
 	CG_Default,
-	CG_All,        // e.g., MOSEK 10 seems to have a single group
-	CG_Algebraic,
+	CG_All,
+	CG_Algebraic,          // e.g., MOSEK 10 seems to have algebraic vs others
   CG_Linear,
   CG_Quadratic,
 	CG_Conic,

@@ -4,12 +4,12 @@
 namespace mp {
 
 void MosekModelAPI::InitProblemModificationPhase(const FlatModelInfo* info) {
-	/// Preallocate constraints.
-	/// MOSEK 10 seems to handle all constraints as 1 group.
-  /// CG_Linear, CG_Quadratic, etc. are the constraint group indexes
+	/// Preallocate algebraic constraints.
+	/// MOSEK 10 seems to handle all algebraic constraints as 1 group.
+	/// CG_Algebraic, etc. are the constraint group indexes
   /// provided in ACCEPT_CONSTRAINT macros.
   MOSEK_CCALL(MSK_appendcons(lp(),
-														 info->GetNumberOfConstraintsOfGroup(CG_All)));
+														 info->GetNumberOfConstraintsOfGroup(CG_Algebraic)));
 }
 
 void MosekModelAPI::AddVariables(const VarArrayDef& v) {

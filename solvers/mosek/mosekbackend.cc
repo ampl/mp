@@ -124,7 +124,7 @@ ArrayRef<double> MosekBackend::PrimalSolution() {
 
 pre::ValueMapDbl MosekBackend::DualSolution() {
 	return {{
-			{ CG_All, DualSolution_LP() }
+			{ CG_Algebraic, DualSolution_LP() }
 		}};
 }
 
@@ -542,13 +542,13 @@ SensRangesPresolved MosekBackend::GetSensRangesPresolved()
   sensr.varublo = { {vrangeublo} };
   sensr.varobjhi = { {orangehi} };
   sensr.varobjlo = { {orangelo} };
-	sensr.conlbhi = { {}, {{{CG_All, crangelbhi}}} };
-	sensr.conlblo = { {}, {{{CG_All, crangelblo}}} };
-	sensr.conubhi = { {}, {{{CG_All, crangeubhi}}} };
-	sensr.conublo = { {}, {{{CG_All, crangeublo}}} };
+	sensr.conlbhi = { {}, {{{CG_Algebraic, crangelbhi}}} };
+	sensr.conlblo = { {}, {{{CG_Algebraic, crangelblo}}} };
+	sensr.conubhi = { {}, {{{CG_Algebraic, crangeubhi}}} };
+	sensr.conublo = { {}, {{{CG_Algebraic, crangeublo}}} };
   std::vector<MSKrealt> rhs(lencon, 0.0);
-	sensr.conrhshi = { {}, {{{CG_All, rhs}}} };
-	sensr.conrhslo = { {}, {{{CG_All, rhs}}} };
+	sensr.conrhshi = { {}, {{{CG_Algebraic, rhs}}} };
+	sensr.conrhslo = { {}, {{{CG_Algebraic, rhs}}} };
 
   return sensr;
 }
@@ -724,7 +724,7 @@ SolutionBasis MosekBackend::GetBasis() {
   if (varstt.size() && constt.size()) {
     auto mv = GetValuePresolver().PostsolveBasis(
       { std::move(varstt),
-				{{{ CG_All, std::move(constt) }}} });
+				{{{ CG_Algebraic, std::move(constt) }}} });
     varstt = mv.GetVarValues()();
     constt = mv.GetConValues()();
     assert(varstt.size());
@@ -737,7 +737,7 @@ void MosekBackend::SetBasis(SolutionBasis basis) {
   auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
   auto varstt = mv.GetVarValues()();
-	auto constt = mv.GetConValues()(CG_All);
+	auto constt = mv.GetConValues()(CG_Algebraic);
   assert(varstt.size());
   assert(constt.size());
   VarStatii(varstt);
@@ -749,7 +749,7 @@ void MosekBackend::AddPrimalDualStart(Solution sol)
   auto mv = GetValuePresolver().PresolveSolution(
         { sol.primal, sol.dual } );
   auto x0 = mv.GetVarValues()();
-	auto pi0 = mv.GetConValues()(CG_All);
+	auto pi0 = mv.GetConValues()(CG_Algebraic);
   MOSEK_CCALL(MSK_putxx(lp(), solToFetch_, (MSKrealt *)x0.data()));
   MOSEK_CCALL(MSK_puty(lp(), solToFetch_, (MSKrealt *)pi0.data()));
 }
@@ -789,10 +789,11 @@ ArrayRef<double> MosekBackend::DRay()
   MOSEK_CCALL(MSK_gety(lp(), solToFetch_, (MSKrealt *)y.data()));
   // Argument is a ModelValues<ValueMap>, which is constructed now from two ValueMaps, an empty for variables, and
   // a second one for constraints. The constraints ValueMap is given as a std::map for only linear constraints
-  auto mv = GetValuePresolver().PostsolveSolution({
-                                                    {},
-																										{ { {CG_All, std::move(y)} } }
-                                                  });
+	auto mv = GetValuePresolver().
+			PostsolveSolution({
+													{},
+													{ { {CG_Algebraic, std::move(y)} } }
+												});
   // We get the ValueMap for constraints, and by calling MoveOut(), the value itself.
   // (Similar to .MoveOut(0) for single key maps)
   return mv.GetConValues().MoveOut();
