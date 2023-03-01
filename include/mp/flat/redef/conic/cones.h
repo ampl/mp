@@ -199,9 +199,13 @@ protected:
 		/// Result vars of expressions to un-use.
 		std::vector<int> res_vars_to_delete_;
 		/// operator bool
-		operator bool() const { return ! coefs_.empty(); }
+		operator bool() const
+		{ assert(check()); return !coefs_.empty(); }
 		/// size()
-		size_t size() const { return coefs_.size(); }
+		size_t size() const
+		{ assert(check()); return coefs_.size(); }
+		/// check()
+		bool check() const { return coefs_.size()==vars_.size(); }
 	};
 
 	/// Check if the variable is defined by an expression
@@ -266,7 +270,8 @@ protected:
 				GetConstraint<AbsConstraint>(ci);
 		const auto arg_abs = con_abs.GetArguments()[0];
 		result.coefs_ = { 1.0 };
-		result.vars_ = { res_var, arg_abs };
+		result.vars_ = { arg_abs };
+		result.res_vars_to_delete_ = { res_var };
 		return result;
 	}
 
