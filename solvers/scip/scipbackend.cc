@@ -124,8 +124,7 @@ int ScipBackend::BarrierIterations() const {
 }
 
 void ScipBackend::ExportModel(const std::string &file) {
-  // TODO export proper by file extension
-  SCIP_CCALL( SCIPwriteLP(getSCIP(), file.data()) );
+  SCIP_CCALL( SCIPwriteOrigProblem(getSCIP(), file.data(), NULL, FALSE) );
 }
 
 
@@ -189,9 +188,11 @@ void ScipBackend::AddSCIPMessages() {
   if (auto nbi = BarrierIterations())
     AddToSolverMessage(
           fmt::format("{} barrier iterations\n", nbi));
-  if (auto nnd = NodeCount())
+  if (!IsContinuous()) {
+    auto nnd = NodeCount();
     AddToSolverMessage(
           fmt::format("{} branching nodes\n", nnd));
+  }
 }
 
 std::pair<int, std::string> ScipBackend::ConvertSCIPStatus() {
@@ -287,23 +288,36 @@ void ScipBackend::InitCustomOptions() {
 
   AddStoredOption("tech:exportfile writeprob writemodel",
       "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
+      "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
       "Default = \"\" (don't export the model).",
       storedOptions_.exportFile_);
 
+  AddSolverOption("lim:time timelim timelimit time_limit",
+      "Limit on solve time (in seconds; default: 1e+20).",
+      "limits/time", 0.0, SCIP_REAL_MAX);
+
+  AddSolverOption("tech:threads threads",
+     "How many threads to use when using the barrier algorithm "
+     "or solving MIP problems; default 0 ==> automatic choice.",
+     "lp/advanced/threads", 0, 128);
+
+  AddStoredOption("tech:logfile logfile",
+    "Log file name; note that the solver log will be written to the log "
+    "regardless of the value of tech:outlev.",
+    storedOptions_.logFile_);
 }
 
 
 double ScipBackend::MIPGap() {
-  return SCIPgetGap(getSCIP());
+  return SCIPgetGap(getSCIP())<Infinity() ? SCIPgetGap(getSCIP()) : AMPLInf();
 }
 double ScipBackend::BestDualBound() {
   return SCIPgetDualbound(getSCIP());
 }
 
 double ScipBackend::MIPGapAbs() {
-  return std::fabs(
-    ObjectiveValue() - BestDualBound());
+  double gapabs = std::fabs(ObjectiveValue() - BestDualBound());
+  return gapabs<Infinity() ? gapabs : AMPLInf();
 }
 
 
@@ -462,41 +476,6 @@ void ScipBackend::SetBasis(SolutionBasis basis) {
   ConStatii(constt);
 }
 
-
-void ScipBackend::ComputeIIS() {
-  //SCIP_CCALL(SCIP_ComputeIIS(lp()));
-  SetStatus(ConvertSCIPStatus());   // could be new information
-}
-
-IIS ScipBackend::GetIIS() {
-  auto variis = VarsIIS();
-  auto coniis = ConsIIS();
-  auto mv = GetValuePresolver().PostsolveIIS(
-    { variis, coniis });
-  return { mv.GetVarValues()(), mv.GetConValues()() };
-}
-
-ArrayRef<int> ScipBackend::VarsIIS() {
-  return ArrayRef<int>();
-//  return getIIS(lp(), NumVars(), SCIP_GetColLowerIIS, SCIP_GetColUpperIIS);
-}
-pre::ValueMapInt ScipBackend::ConsIIS() {
-  /*auto iis_lincon = getIIS(lp(), NumLinCons(), SCIP_GetRowLowerIIS, SCIP_GetRowUpperIIS);
-
-  std::vector<int> iis_soscon(NumSOSCons());
-  SCIP_GetSOSIIS(lp(), NumSOSCons(), NULL, iis_soscon.data());
-  ConvertIIS2AMPL(iis_soscon);
-
-  std::vector<int> iis_indicon(NumIndicatorCons());
-  SCIP_GetIndicatorIIS(lp(), NumIndicatorCons(), NULL, iis_indicon.data());
-  ConvertIIS2AMPL(iis_indicon);
-
-  return { {{ CG_Linear, iis_lincon },
-      { CG_SOS, iis_soscon },
-      { CG_Logical, iis_indicon }} };
-      */
-  return { {{ 0, std::vector<int>()}} };
-}
 
 void ScipBackend::AddMIPStart(ArrayRef<double> x0) {
   //SCIP_CCALL(SCIP_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));

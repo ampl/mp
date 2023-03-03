@@ -26,33 +26,6 @@ SCIP_DECL_PROBDELORIG(probdataDelOrigNl)
    return SCIP_OKAY;
 }
 
-namespace Solver {
-
-  SolverModel* CreateSolverModel() {
-    return new SolverModel();
-  }
-  int addContVar(SolverModel& s) {
-    return s.addEntity(Solver::VARS_INT);
-  }
-  int addIntVar(SolverModel& s) {
-    return s.addEntity(Solver::VARS);
-  }
-  int addLinCon(SolverModel& s) {
-    return s.addEntity(Solver::CONS_LIN);
-  }
-  int addQuadCon(SolverModel& s) {
-    return s.addEntity(Solver::CONS_QUAD);
-  }
-  int addIndicCon(SolverModel& s) {
-    return s.addEntity(Solver::CONS_INDIC);
-  }
-  int addSOSCon(SolverModel& s) {
-    return s.addEntity(Solver::CONS_SOS);
-  }
-  int getSolverIntAttr(SolverModel* s, int attr) {
-    return s->getN(attr);
-  }
-}
 namespace mp {
 
 void ScipCommon::OpenSolver() {
@@ -81,45 +54,29 @@ void ScipCommon::OpenSolver() {
 void ScipCommon::CloseSolver() {
   SCIP* scip = getSCIP();
 
-  // release all variables
-  //for (int i = 0; i < getPROBDATA()->nvars; i++) {
-  //  SCIP_CCALL( SCIPreleaseVar(getSCIP(), &getPROBDATA()->vars[i]) );
-  //}
-
   // free SCIP
   SCIP_CCALL( SCIPfree(&scip) );
 }
 
-int ScipCommon::getIntAttr(int name)  const {
-  int value = 0;
-  /* TODO Utility function to get the value of an integer attribute 
-  * from the solver API 
-  SCIP_CCALL(SCIP_GetIntAttr(lp_, name, &value)); */
-  return value;//getSolverIntAttr(getSCIP(), name);
-}
-double ScipCommon::getDblAttr(const char* name) const  {
-  double value = 0;
-  /* TODO Utility function to get the value of an integer attribute
- * from the solver API
-  SCIP_CCALL(SCIP_GetDblAttr(lp_, name, &value)); */
-  return value;
-}
-
 int ScipCommon::NumLinCons() const {
-  // TODO Get number of linear constraints using solver API
-  // return getIntAttr(SCIP_INTATTR_ROWS);
-  return 0;
+  // Get number of linear constraints using solver API
+  int nlinconss = 0;
+  for (int i = 0; i < SCIPgetNOrigConss(getSCIP()); i++) {
+    SCIP_CONS* cons = SCIPgetOrigConss(getSCIP())[i];
+    if (strcmp(SCIPconshdlrGetName(SCIPconsGetHdlr(cons)), "linear") == 1)
+      nlinconss++;
+  }
+  return nlinconss;
 }
 
 int ScipCommon::NumVars() const {
-  // gets number of active problem variables
+  // Get number of active problem variables
   return SCIPgetNVars(getSCIP());
 }
 
 int ScipCommon::NumObjs() const {
-  // TODO Get number of objectives using solver API
-  //return SCIPgetnumobjs (env_, lp_);
-  return 0;
+  // Get number of objectives using solver API
+  return 1;
 }
 
 int ScipCommon::NumQPCons() const {
@@ -177,5 +134,13 @@ double ScipCommon::Infinity() const {
 
 double ScipCommon::MinusInfinity() { return -Infinity(); }
 
+bool ScipCommon::IsContinuous() {
+  // True iff scip has only continuous variables
+  for (int i = 0; i < getPROBDATA()->nvars; i++) {
+    if (SCIPvarGetType(getPROBDATA()->vars[i]) != SCIP_VARTYPE_CONTINUOUS)
+      return false;
+  }
+  return true;
+}
 
 } // namespace mp

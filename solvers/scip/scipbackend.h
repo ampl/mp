@@ -90,15 +90,6 @@ public:
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
   double BestDualBound() override;
 
-  /**
-  * Compute the IIS and obtain relevant values
-  **/
-  ALLOW_STD_FEATURE(IIS, true)
-  /// Compute IIS
-  void ComputeIIS() override;
-  /// Retrieve IIS elements
-  IIS GetIIS() override;
-
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
   bool IsQCP() const override;
@@ -154,14 +145,11 @@ protected:
   void VarStatii(ArrayRef<int>);
   void ConStatii(ArrayRef<int>);
 
-  ArrayRef<int> VarsIIS();
-  pre::ValueMapInt ConsIIS();
-
 
 private:
   /// These options are stored in the class
   struct Options {
-    std::string exportFile_;
+    std::string exportFile_, logFile_;
   };
   Options storedOptions_;
 
