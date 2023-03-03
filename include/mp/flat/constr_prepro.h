@@ -55,19 +55,24 @@ public:
     auto& m = MP_DISPATCH( GetModel() );
     auto lb = std::pow(m.lb(arg), pwr),
         ub = std::pow(m.ub(arg), pwr);
-    if (MPD( is_integer_value(pwr) ) && pwr>=0.0) {
-      // result integer if arg is and integer, >=0 exponent
-      prepro.set_result_type( m.var_type(arg) );
-      if (MPD( is_integer_value(pwr / 2.0) )) {  // exponent is even, >=0
-        bool lb_neg = m.lb(arg)<0.0;
-        bool ub_pos = m.ub(arg)>0.0;
-        if (lb_neg && ub_pos) {
-          ub = std::max(lb, ub); lb = 0.0;
-        } else if (lb_neg) {
-          std::swap(lb, ub);
-        }
-      }
-    }
+		if (MPD( is_integer_value(pwr) )) {
+			if (pwr>=0.0) {
+				// result integer if arg is and integer, >=0 exponent
+				prepro.set_result_type( m.var_type(arg) );
+				if (MPD( is_integer_value(pwr / 2.0) )) {  // exponent is even, >=0
+					bool lb_neg = m.lb(arg)<0.0;
+					bool ub_pos = m.ub(arg)>0.0;
+					if (lb_neg && ub_pos) {
+						ub = std::max(lb, ub); lb = 0.0;
+					} else if (lb_neg) {
+						std::swap(lb, ub);
+					}
+				}
+			}
+		} else {                      // fractional power
+			if (lb<0.0)
+				lb = 0.0;
+		}
     prepro.narrow_result_bounds( std::min(lb, ub),
                           std::max(lb, ub) );
   }
@@ -271,10 +276,10 @@ public:
     auto& m = MPD( GetModel() );
     auto v1 = c.GetArguments()[0], v2 = c.GetArguments()[1];
     const auto l1=m.lb(v1), u1=m.ub(v1), l2=m.lb(v2), u2=m.ub(v2);
-    if (l1 > MPD( PracticallyMinusInfty() ) &&
-        u1 < MPD( PracticallyInfty() ) &&
-        l2 > MPD( PracticallyMinusInfty() ) &&
-        u2 < MPD( PracticallyInfty() ) &&
+		if (l1 > MPD( PracticallyMinusInf() ) &&
+				u1 < MPD( PracticallyInf() ) &&
+				l2 > MPD( PracticallyMinusInf() ) &&
+				u2 < MPD( PracticallyInf() ) &&
         l2 * u2 > 0.0) {
       auto l0 = std::numeric_limits<double>::max();
       auto u0 = std::numeric_limits<double>::min();

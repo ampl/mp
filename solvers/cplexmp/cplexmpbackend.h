@@ -39,7 +39,11 @@ public:
 
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
   void DoWriteProblem(const std::string& name) override;
-  
+  /**
+ * MULTISOL support.
+ * No API, use ReportIntermediateSolution()
+**/
+  ALLOW_STD_FEATURE(MULTISOL, true)
   /**
  * Get MIP Gap
  **/
@@ -120,13 +124,18 @@ protected:
 
   std::pair<int, std::string> ConvertCPLEXStatus();
   void AddCPLEXMessages();
+  void ReportCPLEXPool();
 
 private:
+ 
   /// These options are stored in the class
   struct Options {
     std::string exportFile_;
     std::string logFile_;
     int outlev_ = 0;;
+    int nPoolMode_=2;
+    int populate_ = -1;
+    int poolIntensity_ = -1;
 
   };
   Options storedOptions_;

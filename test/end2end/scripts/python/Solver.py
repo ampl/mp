@@ -615,6 +615,9 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.quadratic,
                  ModelTags.quadratic_obj,
                  ModelTags.quadraticnonconvex,
+
+                 ## ModelTags.socp,      ## Gurobi recognizes sqrt() but pl approx is tricky
+
                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
 
                  ModelTags.unbdd,
@@ -771,6 +774,7 @@ class MosekSolver(MPDirectSolver):
                  ModelTags.binary,
 
                  ModelTags.quadratic, ModelTags.quadratic_obj,
+                 ModelTags.socp,
 
                  ModelTags.warmstart, ModelTags.mipstart,
                  ModelTags.return_mipgap, ModelTags.sens, ModelTags.sstatus}

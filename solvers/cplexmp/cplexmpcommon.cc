@@ -57,5 +57,20 @@ void CplexCommon::SetSolverOption(int key, const std::string& value) {
   CPLEX_CALL( CPXsetstrparam(env(), key, value.c_str()) );
 }
 
-
+double CplexCommon::GetCPLEXDblParam(int param) {
+  double value;
+  CPLEX_CALL(CPXgetdblparam(env(), param, &value));
+  return value;
+}
+int CplexCommon::GetCPLEXIntParam(int param) {
+  int value;
+  CPLEX_CALL(CPXgetintparam(env(), param, &value));
+  return value;
+}
+void CplexCommon::SetCPLEXParam(int param, int value) {
+  CPLEX_CALL(CPXsetintparam(env(), param, value));
+}
+void CplexCommon::SetCPLEXParam(int param, double value) {
+  CPLEX_CALL(CPXsetdblparam(env(), param, value));
+}
 } // namespace mp

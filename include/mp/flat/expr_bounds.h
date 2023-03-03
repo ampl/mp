@@ -91,9 +91,16 @@ public:
   std::pair<double, double> ProductBounds(Var x, Var y) const {
     const auto& m = MPCD(GetModel());
     auto lx=m.lb(x), ly=m.lb(y), ux=m.ub(x), uy=m.ub(y);
-    std::array<double, 4> pb{lx*ly, lx*uy, ux*ly, ux*uy};
-    return { *std::min_element(pb.begin(), pb.end()),
-          *std::max_element(pb.begin(), pb.end()) };
+		if (x!=y) {                        // different vars
+			std::array<double, 4> pb{lx*ly, lx*uy, ux*ly, ux*uy};
+			return { *std::min_element(pb.begin(), pb.end()),
+						*std::max_element(pb.begin(), pb.end()) };
+		}
+		return {
+			lx<=0.0 && ux>=0.0 ?   // lb_result: 0 included?
+						0.0 : std::min(lx*lx, ux*ux),
+			std::max(lx*lx, ux*ux)
+		};
   }
 
   /// Add / merge bounds and type

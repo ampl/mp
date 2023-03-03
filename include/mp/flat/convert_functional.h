@@ -33,7 +33,8 @@ protected:
       SetResultVar(GetConverter().
                    template GetConstraint<Constraint>(i).
                    GetResultVar());
-      if (GetConverter().DoingAutoLinking()) {  // Autolink known targets
+			GetConverter().IncrementVarUsage(GetResultVar());
+			if (GetConverter().DoingAutoLinking()) {  // Autolink known targets
         auto& varvn = GetConverter().GetVarValueNode();
         GetConverter().AutoLink( varvn.Select(GetResultVar()) );
         auto& ck = GetConverter().GetConstraintKeeper(
@@ -46,7 +47,9 @@ protected:
   }
   int GetResultVar() const { return prepro_.get_result_var(); }
 protected:
-  void SetResultVar(int r) { prepro_.set_result_var(r); }
+	void SetResultVar(int r) {
+		prepro_.set_result_var(r);
+	}
 public:
   BasicFCC(Converter& cvt, Constraint&& fc) noexcept :
     converter_(cvt), constr_(std::move(fc)) { }
@@ -93,7 +96,8 @@ public:
     auto r = GetConverter().AddVar(lb(), ub(), type());
     SetResultVar( r );
     GetConstraint().SetResultVar( r );
-  }
+		GetConverter().IncrementVarUsage(r);
+	}
   void AddConstraint() {
     GetConverter().AddConstraint( std::move(GetConstraint()) );
   }

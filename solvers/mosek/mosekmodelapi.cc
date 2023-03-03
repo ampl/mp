@@ -4,12 +4,12 @@
 namespace mp {
 
 void MosekModelAPI::InitProblemModificationPhase(const FlatModelInfo* info) {
-  /// Preallocate linear and quadratic constraints.
-  /// CG_Linear, CG_Quadratic, etc. are the constraint group indexes
+	/// Preallocate algebraic constraints.
+	/// MOSEK 10 seems to handle all algebraic constraints as 1 group.
+	/// CG_Algebraic, etc. are the constraint group indexes
   /// provided in ACCEPT_CONSTRAINT macros.
   MOSEK_CCALL(MSK_appendcons(lp(),
-                             info->GetNumberOfConstraintsOfGroup(CG_Linear) +
-                             info->GetNumberOfConstraintsOfGroup(CG_Quadratic)));
+														 info->GetNumberOfConstraintsOfGroup(CG_Algebraic)));
 }
 
 void MosekModelAPI::AddVariables(const VarArrayDef& v) {
@@ -220,6 +220,47 @@ void MosekModelAPI::AddConstraint( const QuadConGE& qc ) {
                       lt.pvars(), lt.pcoefs(), qc.name());
   AddConQuadraticPart(lp(), n_alg_cons_-1, qc.GetQPTerms());
 }
+
+void MosekModelAPI::AddConstraint(
+		const QuadraticConeConstraint& qc) {
+	MSKint64t numafe_prev=0;
+	MOSEK_CCALL( MSK_getnumafe(lp(), &numafe_prev) );
+	auto nnz = qc.GetArguments().size();
+	// Is it too slow to add cones 1 by 1?
+	MOSEK_CCALL( MSK_appendafes(lp(), nnz) );
+	std::vector<MSKint64t> afeidx(nnz);
+	for (auto idx=nnz; idx--; )        // Fill new AFE indexes
+		afeidx[idx] = numafe_prev+idx;
+	MOSEK_CCALL(
+				MSK_putafefentrylist(lp(), nnz,
+														 afeidx.data(),
+														 qc.GetArguments().data(),  // assumes it's int32
+														 qc.GetParameters().data()) );
+	MSKint64t domidx=-1;
+	MOSEK_CCALL( MSK_appendquadraticconedomain(lp(), nnz, &domidx) );
+	MOSEK_CCALL( MSK_appendaccseq(lp(), domidx, nnz, numafe_prev, NULL) );
+}
+
+void MosekModelAPI::AddConstraint(
+		const RotatedQuadraticConeConstraint& qc) {
+	MSKint64t numafe_prev=0;
+	MOSEK_CCALL( MSK_getnumafe(lp(), &numafe_prev) );
+	auto nnz = qc.GetArguments().size();
+	// Is it too slow to add cones 1 by 1?
+	MOSEK_CCALL( MSK_appendafes(lp(), nnz) );
+	std::vector<MSKint64t> afeidx(nnz);
+	for (auto idx=nnz; idx--; )        // Fill new AFE indexes
+		afeidx[idx] = numafe_prev+idx;
+	MOSEK_CCALL(
+				MSK_putafefentrylist(lp(), nnz,
+														 afeidx.data(),
+														 qc.GetArguments().data(),  // assumes it's int32
+														 qc.GetParameters().data()) );
+	MSKint64t domidx=-1;
+	MOSEK_CCALL( MSK_appendrquadraticconedomain(lp(), nnz, &domidx) );
+	MOSEK_CCALL( MSK_appendaccseq(lp(), domidx, nnz, numafe_prev, NULL) );
+}
+
 
 void MosekModelAPI::AddConstraint(const SOS1Constraint& sos) {
   fmt::print("Adding SOS1 constraint {}\n", sos.GetTypeName());
