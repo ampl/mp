@@ -120,17 +120,21 @@ void ScipModelAPI::AddConstraint(const LinConGE& lc) {
   SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, lc.size());
 }
 
-//void ScipModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
-//  fmt::print("Adding indicator constraint {}\n", ic.GetName());
- // ic.get_binary_value()
-  /*SCIP_CCALL(SCIP_AddIndicator(lp(),
-    ic.get_binary_var(), ic.get_binary_value(),
-    (int)ic.get_constraint().size(),
-    ic.get_constraint().pvars(),
-    ic.get_constraint().pcoefs(),
-    SCIP_LESS_EQUAL,
-    ic.get_constraint().rhs()));*/                 
-//}
+void ScipModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
+  SCIP_VAR** vars = NULL;
+  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, ic.get_constraint().size()) );
+  for (size_t i = 0; i < ic.get_constraint().size(); i++) {
+    vars[i] = getPROBDATA()->vars[ic.get_constraint().pvars()[i]];
+  }
+  SCIP_CONS* cons;
+  SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons, ic.GetName(),getPROBDATA()->vars[ic.get_binary_var()],
+    (int)ic.get_constraint().size(), vars, (double*)ic.get_constraint().pcoefs(), ic.get_constraint().rhs(),
+    ic.get_binary_value(), TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
+  SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
+  SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
+
+  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, ic.get_constraint().size());              
+}
 //void ScipModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
 //  fmt::print("Adding indicator constraint {}\n", ic.GetName());
   /*SCIP_CCALL(SCIP_AddIndicator(lp(),
