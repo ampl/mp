@@ -71,7 +71,7 @@ int ScipCommon::NumLinCons() const {
 
 int ScipCommon::NumVars() const {
   // Get number of active problem variables
-  return SCIPgetNVars(getSCIP());
+  return getPROBDATA()->nvars;
 }
 
 int ScipCommon::NumObjs() const {
