@@ -718,14 +718,15 @@ class SCIPSolver(MPDirectSolver):
 
      def _getAMPLOptionsName(self):
          return "scip"
-
-     #def _setNThreads(self, threads):
-     #    parallel="parallel=on" if threads!=1 else ""
-     #    return f"threads={threads} {parallel}"
+     
+     def _setNThreads(self, threads):
+         return ""
 
      def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
          stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary, 
-                  ModelTags.plinear}
+                  ModelTags.quadratic,
+                  ModelTags.quadraticnonconvex,
+                  ModelTags.sos}
          super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
