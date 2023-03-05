@@ -28,7 +28,7 @@ struct ScipCommonInfo {
   SCIP* getSCIP() const { return scip_; }
   void setSCIP(SCIP* scip) { scip_ = scip; }
 
-  SCIP_PROBDATA* getPROBDATA() { return probdata_; }
+  SCIP_PROBDATA* getPROBDATA() const { return probdata_; }
   void setPROBDATA(SCIP_PROBDATA* probdata) { probdata_ = probdata; }
 
 private:
