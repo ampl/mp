@@ -15,8 +15,8 @@ namespace {
 
 
 bool InterruptScip(void* scip) {
-  return SCIPinterruptSolve((SCIP*)scip);
-  //return true;
+  SCIPinterruptSolve(static_cast<SCIP*>(scip));
+  return true;
 }
 
 }  // namespace {}
@@ -79,9 +79,12 @@ bool ScipBackend::IsQCP() const {
 }
 
 ArrayRef<double> ScipBackend::PrimalSolution() {
+  SCIP* scip = getSCIP();
   int num_vars = NumVars();
   int error;
   std::vector<double> x(num_vars);
+  for (int i = 0; i < num_vars; i++)
+    x[i] = SCIPgetSolVal(scip, SCIPgetBestSol(scip), getPROBDATA()->vars[i]);
   /*
   if (IsMIP()) 
     error = SCIP_GetSolution(lp(), x.data());
@@ -295,11 +298,6 @@ void ScipBackend::InitCustomOptions() {
   AddSolverOption("lim:time timelim timelimit time_limit",
       "Limit on solve time (in seconds; default: 1e+20).",
       "limits/time", 0.0, SCIP_REAL_MAX);
-
-  AddSolverOption("tech:threads threads",
-     "How many threads to use when using the barrier algorithm "
-     "or solving MIP problems; default 0 ==> automatic choice.",
-     "lp/advanced/threads", 0, 128);
 
   AddStoredOption("tech:logfile logfile",
     "Log file name; note that the solver log will be written to the log "
