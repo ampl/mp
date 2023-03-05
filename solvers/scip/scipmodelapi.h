@@ -90,6 +90,10 @@ public:
   /// auxiliary constraints for logical conditions.
   /// If not handled, the compared expressions need
   /// deducible finite bounds for a big-M redefinition.
+  ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
+  void AddConstraint(const AndConstraint& cc);
+  ACCEPT_CONSTRAINT(OrConstraint, Recommended, CG_General)
+  void AddConstraint(const OrConstraint& dc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
   ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_General)

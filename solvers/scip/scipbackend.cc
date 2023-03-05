@@ -85,14 +85,6 @@ ArrayRef<double> ScipBackend::PrimalSolution() {
   std::vector<double> x(num_vars);
   for (int i = 0; i < num_vars; i++)
     x[i] = SCIPgetSolVal(scip, SCIPgetBestSol(scip), getPROBDATA()->vars[i]);
-  /*
-  if (IsMIP()) 
-    error = SCIP_GetSolution(lp(), x.data());
-  else
-    error = SCIP_GetLpSolution(lp(), x.data(), NULL, NULL, NULL);
-  if (error)
-    x.clear();
-    */
   return x;
 }
 
