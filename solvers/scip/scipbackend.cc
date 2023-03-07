@@ -242,59 +242,69 @@ void ScipBackend::FinishOptionParsing() {
 
 
 static const mp::OptionValueInfo lp_values_method[] = {
-  { "-1", "Automatic (default)", -1},
-  { "1", "Dual simplex", 1},
-  { "2", "Barrier", 2},
-  { "3", "Crossover", 3},
-  { "4", "Concurrent (simplex and barrier simultaneously)", 4},
+  { "s", "automatic simplex (default)", -1},
+  { "p", "primal simplex", 0},
+  { "d", "dual simplex", 1},
+  { "b", "barrier", 2},
+  { "c", "barrier with crossover", 3},
 };
 
-
-static const mp::OptionValueInfo alg_values_level[] = {
-  { "-1", "Automatic (default)", -1},
-  { "0", "Off", 0},
-  { "1", "Fast", 1},
-  { "2", "Normal", 2},
-  { "3", "Aggressive", 3}
+static const mp::OptionValueInfo values_pricing[] = {
+  { "l", "lpi default (default)", -1},
+  { "a", "auto", 0},
+  { "f", "full pricing", 1},
+  { "p", "partial", 2},
+  { "s", "steepest edge pricing", 3},
+  { "q", "quickstart steepest edge pricing", 4},
+  { "d", "devex pricing", 5}
 }; 
 
-static const mp::OptionValueInfo lp_dualprices_values_[] = {
-  { "-1", "Choose automatically (default)", -1},
-  { "0", "Use Devex pricing algorithm", 0},
-  { "1", "Using dual steepest-edge pricing algorithm", 1}
-};
-
-static const mp::OptionValueInfo lp_barorder_values_[] = {
-  { "-1", "Choose automatically (default)", -1},
-  { "0", "Approximate Minimum Degree (AMD)", 0},
-  { "1", "Nested Dissection (ND)", 1}
-};
 
 void ScipBackend::InitCustomOptions() {
 
   set_option_header(
-      "SCIP Optimizer Options for AMPL\n"
-      "--------------------------------------------\n"
-      "\n"
-      "To set these options, assign a string specifying their values to the "
-      "AMPL option ``scip_options``. For example::\n"
-      "\n"
-      "  ampl: option scip_options 'mipgap=1e-6';\n");
+    "SCIP Optimizer Options for AMPL\n"
+    "--------------------------------------------\n"
+    "\n"
+    "To set these options, assign a string specifying their values to the "
+    "AMPL option ``scip_options``. For example::\n"
+    "\n"
+    "  ampl: option scip_options 'mipgap=1e-6';\n");
+
+  AddSolverOption("tech:outlev outlev",
+    "0*/1/2/3/4/5: Whether to write SCIP log lines (chatter) to stdout and to file.",
+    "display/verblevel", 0, 5);
 
   AddStoredOption("tech:exportfile writeprob writemodel",
-      "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
-      "Default = \"\" (don't export the model).",
-      storedOptions_.exportFile_);
+    "Specifies the name of a file where to export the model before "
+    "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
+    "Default = \"\" (don't export the model).",
+    storedOptions_.exportFile_);
 
   AddSolverOption("lim:time timelim timelimit time_limit",
-      "Limit on solve time (in seconds; default: 1e+20).",
-      "limits/time", 0.0, SCIP_REAL_MAX);
+    "Limit on solve time (in seconds; default: 1e+20).",
+    "limits/time", 0.0, SCIP_REAL_MAX);
 
   AddStoredOption("tech:logfile logfile",
     "Log file name; note that the solver log will be written to the log "
     "regardless of the value of tech:outlev.",
     storedOptions_.logFile_);
+
+
+
+  AddSolverOption("alg:method method lpmethod",
+    "LP algorithm for solving initial LP relaxations:\n"
+    "\n.. value-table::\n", "lp/initalgorithm", lp_values_method, "s");
+
+  AddSolverOption("alg:remethod remethod relpmethod",
+    "LP algorithm for resolving LP relaxations if a starting basis exists:\n"
+    "\n.. value-table::\n", "lp/resolvealgorithm", lp_values_method, "s");
+
+  ////////////////////////// LP //////////////////////////
+  AddSolverOption("lp:pricing pricing",
+    "Pricing strategy:\n"
+    "\n.. value-table::",
+    "lp/pricing", values_pricing, "l");
 }
 
 
