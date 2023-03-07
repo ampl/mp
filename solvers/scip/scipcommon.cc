@@ -98,11 +98,20 @@ int ScipCommon::NumIndicatorCons() const {
 }
 
 void ScipCommon::GetSolverOption(const char* key, int &value) const {
-  SCIP_CCALL( SCIPgetIntParam(getSCIP(), key, &value) );
+  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_BOOL) {
+    SCIP_Bool buffer;
+    SCIP_CCALL( SCIPgetBoolParam(getSCIP(), key, &buffer) );
+    value = (int)buffer;
+  }
+  else
+    SCIP_CCALL( SCIPgetIntParam(getSCIP(), key, &value) );
 }
 
 void ScipCommon::SetSolverOption(const char* key, int value) {
-  SCIP_CCALL( SCIPsetIntParam(getSCIP(), key, value) );
+  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_BOOL)
+    SCIP_CCALL( SCIPsetBoolParam(getSCIP(), key, value) );
+  else
+    SCIP_CCALL( SCIPsetIntParam(getSCIP(), key, value) );
 }
 
 void ScipCommon::GetSolverOption(const char* key, double &value) const {
@@ -116,13 +125,19 @@ void ScipCommon::SetSolverOption(const char* key, double value) {
 void ScipCommon::GetSolverOption(const char* key, std::string &value) const {
   char* buffer;
   SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &buffer, SCIP_MAXSTRLEN) );
-  SCIP_CCALL( SCIPgetStringParam(getSCIP(), key, &buffer) );
+  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_CHAR)
+    SCIP_CCALL( SCIPgetCharParam(getSCIP(), key, buffer) );
+  else
+    SCIP_CCALL( SCIPgetStringParam(getSCIP(), key, &buffer) );
   value = buffer;
   SCIPfreeBlockMemoryArray(getSCIP(), &buffer, SCIP_MAXSTRLEN);
 }
 
 void ScipCommon::SetSolverOption(const char* key, const std::string& value) {
-  SCIP_CCALL( SCIPsetStringParam(getSCIP(), key, value.c_str()) );
+  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_CHAR)
+    SCIP_CCALL( SCIPsetCharParam(getSCIP(), key, value.c_str()[0]) );
+  else
+    SCIP_CCALL( SCIPsetStringParam(getSCIP(), key, value.c_str()) );
 }
 
 
