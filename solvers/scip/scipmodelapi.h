@@ -101,6 +101,12 @@ public:
   ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinGE& mc);
 
+  /// Cones
+  /*
+	ACCEPT_CONSTRAINT(QuadraticConeConstraint, Recommended, CG_Conic)
+	void AddConstraint(const QuadraticConeConstraint& qc);
+  */
+
   /// SOS constraints can be used by AMPL for redefinition of
   /// piecewise-linear expressions.
   /// Set ``option pl_linearize 0;`` in AMPL if the solver
@@ -110,6 +116,13 @@ public:
   ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS2Constraint& cc);
 
+  /// SCIP nonlinear generals
+  /*
+  ACCEPT_CONSTRAINT(SinConstraint, Recommended, CG_General)
+  void AddConstraint(const SinConstraint& cc);
+  ACCEPT_CONSTRAINT(CosConstraint, Recommended, CG_General) // y = cos(x)
+  void AddConstraint(const CosConstraint& cc);  // GRBaddgenconstrCos(x, y);
+  */
 };
 
 } // namespace mp

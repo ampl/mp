@@ -161,7 +161,7 @@ void ScipModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
   SCIP_CONS* cons;
   SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons, ic.GetName(), getPROBDATA()->vars[ic.get_binary_var()],
     (int)ic.get_constraint().size(), vars, (double*)ic.get_constraint().pcoefs(), ic.get_constraint().rhs(),
-    ic.get_binary_value(), TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
+    ic.get_binary_value(), TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
@@ -177,10 +177,10 @@ void ScipModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
   SCIP_CONS* cons2;
   SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons1, ic.GetName(),getPROBDATA()->vars[ic.get_binary_var()],
     (int)ic.get_constraint().size(), vars, (double*)ic.get_constraint().pcoefs(), ic.get_constraint().rhs(),
-    ic.get_binary_value(), TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
+    ic.get_binary_value(), TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
   SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons2, ic.GetName(),getPROBDATA()->vars[ic.get_binary_var()],
     (int)ic.get_constraint().size(), vars, (double*)ic.get_constraint().pcoefs(), ic.get_constraint().rhs(),
-    ic.get_binary_value(), FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
+    ic.get_binary_value(), FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons1) );
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons2) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons1) );
@@ -197,7 +197,7 @@ void ScipModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
   SCIP_CONS* cons;
   SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons, ic.GetName(),getPROBDATA()->vars[ic.get_binary_var()],
     (int)ic.get_constraint().size(), vars, (double*)ic.get_constraint().pcoefs(), ic.get_constraint().rhs(),
-    ic.get_binary_value(), FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
+    ic.get_binary_value(), FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
@@ -340,6 +340,23 @@ void ScipModelAPI::AddConstraint( const QuadConGE& qc ) {
   SCIPfreeBlockMemoryArrayNull(getSCIP(), &qvars2, qt.size());
 }
 
+/*
+void ScipModelAPI::AddConstraint( const QuadraticConeConstraint& qc ) {
+  const auto& arg = qc.GetArguments();
+  SCIP_VAR** vars = NULL;
+  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, arg.size()) );
+  for (size_t i = 0; i < arg.size(); i++) {
+    vars[i] = getPROBDATA()->vars[arg[i]];
+  }
+
+  SCIP_CONS* cons;
+  SCIP_CCALL( SCIPcreateConsBasicSOCNonlinear(getSCIP(), &cons, qc.GetName(), (int)arg.size(), vars, qc.GetParameters().data(), NULL, 0.0,) );
+  SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
+  SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
+
+  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, arg.size());
+}*/
+
 void ScipModelAPI::AddConstraint(const SOS1Constraint& sos) {
   SCIP_VAR** vars = NULL;
   double* weights = NULL;
@@ -377,6 +394,16 @@ void ScipModelAPI::AddConstraint(const SOS2Constraint& sos) {
   SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, sos.size());
   SCIPfreeBlockMemoryArrayNull(getSCIP(), &weights, sos.size());
 }
+/*
+void ScipModelAPI::AddConstraint(const SinConstraint &cc)  {
+  GRB_CALL( GRBaddgenconstrSin(model(), NULL,
+              cc.GetArguments()[0], cc.GetResultVar(), "") );
+}
+
+void ScipModelAPI::AddConstraint(const CosConstraint &cc)  {
+  GRB_CALL( GRBaddgenconstrCos(model(), NULL,
+              cc.GetArguments()[0], cc.GetResultVar(), "") );
+}*/
 
 
 void ScipModelAPI::FinishProblemModificationPhase() {
