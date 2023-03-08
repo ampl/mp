@@ -1,5 +1,5 @@
 Summary of recent updates to gurobi for AMPL
-==============================================
+============================================
 
 
 ## 20230207
@@ -89,18 +89,18 @@ Summary of recent updates to gurobi for AMPL
     constraints has been generalized for any algebraic ones.
 
 
-### 20220408
+## 20220408
 - *Linear complementarity in MP: 1st go*
 
 - *Other changes in MP*
 
 
-### 20220303
+## 20220303
 - *Fix strict comparison tolerance*
     Option *cvt:mip:eps*, default 1e-3.
 
 
-### 20220217
+## 20220217
 - *Assume new constraints are active (#152)*:
     Gurobi requires a complete basis for hotstart and we have to guess the
     statuses of new variables and constraints.
@@ -118,12 +118,12 @@ Summary of recent updates to gurobi for AMPL
     Setting acc:* = 2 as default (native handling).
 
 
-### 20220202
+## 20220202
 - *Basis status low/upp/sup for new variables*:
     when new variables are added, AMPL assigns .sstatus *none* while Gurobi 9.5 
     needs a complete basis so we automatically set Gurobi var status to *low*/*upp*/*sup*
     depending on where 0.0 is relative to the bounds.
 
 
-### 20220128
+## 20220128
 - First eXperimental release, linked with Gurobi 9.5.
