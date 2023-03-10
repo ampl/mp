@@ -2,6 +2,7 @@
 #define CONVERTERBASE_H
 
 #include "mp/env.h"
+#include "mp/ampls-ccallbacks.h"
 
 namespace mp {
 
@@ -30,6 +31,9 @@ public:
 
   /// Convert the model into the solver API
   virtual void ConvertModel() = 0;
+
+  /// Fill model traits
+  virtual void FillModelTraits(AMPLS_ModelTraits& ) = 0;
 };
 
 } // namespace mp

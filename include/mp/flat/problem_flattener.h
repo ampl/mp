@@ -102,11 +102,17 @@ public:
   ///////////////////////////////////////////////////////////////////////////////////////////
 public:
   /// Convert the whole model, e.g., after reading from NL
-  void ConvertModel() {
+  void ConvertModel() override {
     GetFlatCvt().StartModelInput();
     MP_DISPATCH( ConvertStandardItems() );
     GetFlatCvt().FinishModelInput();      // Chance to flush to the Backend
   }
+
+  /// Fill model traits
+  void FillModelTraits(AMPLS_ModelTraits& mt) override {
+    GetFlatCvt().FillModelTraits(mt);
+  }
+
 
 protected:
   /// Convert problem items

@@ -22,6 +22,7 @@
 #include "mp/flat/redef/std/range_con.h"
 #include "mp/flat/redef/conic/cones.h"
 #include "mp/utils-file.h"
+#include "mp/ampls-ccallbacks.h"
 
 namespace mp {
 
@@ -484,6 +485,44 @@ public:
       assert( value_presolver_.AllEntriesExported() );
     if (GetEnv().verbose_mode())
       GetEnv().PrintWarnings();
+  }
+
+  /// Fill model traits for license check.
+  /// To be called after ConvertModel().
+  /// KEEP THIS UP2DATE.
+  void FillModelTraits(AMPLS_ModelTraits& mt) {
+    const auto& fmi = GetModelAPI().GetFlatModelInfo();
+    mt.n_vars = num_vars();
+    mt.n_quad_con =
+        fmi->GetNumberOfConstraints(typeid(QuadConRange))
+        + fmi->GetNumberOfConstraints(typeid(QuadConGE))
+        + fmi->GetNumberOfConstraints(typeid(QuadConEQ))
+        + fmi->GetNumberOfConstraints(typeid(QuadConLE));
+    mt.n_conic_con =
+        fmi->GetNumberOfConstraints(typeid(QuadraticConeConstraint))
+        + fmi->GetNumberOfConstraints(typeid(RotatedQuadraticConeConstraint))
+        + fmi->GetNumberOfConstraints(typeid(ExponentialConeConstraint))
+        + fmi->GetNumberOfConstraints(typeid(PowerConeConstraint))
+        + fmi->GetNumberOfConstraints(typeid(GeometricConeConstraint));
+    mt.n_alg_con =
+        fmi->GetNumberOfConstraints(typeid(LinConRange))
+        + fmi->GetNumberOfConstraints(typeid(LinConGE))
+        + fmi->GetNumberOfConstraints(typeid(LinConEQ))
+        + fmi->GetNumberOfConstraints(typeid(LinConLE))
+        + mt.n_quad_con
+        + fmi->GetNumberOfConstraints(typeid(ComplementarityLinear))
+        + fmi->GetNumberOfConstraints(typeid(ComplementarityQuadratic));
+    mt.n_log_con =
+        fmi->GetNumberOfConstraints(typeid(AndConstraint))
+        + fmi->GetNumberOfConstraints(typeid(OrConstraint))
+        + fmi->GetNumberOfConstraints(typeid(MaxConstraint))
+        + fmi->GetNumberOfConstraints(typeid(MinConstraint))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintLinGE))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintLinEQ))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintLinLE))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintQuadGE))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintQuadEQ))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintQuadLE));
   }
 
 
