@@ -71,7 +71,16 @@ public:
 			Walk<LinConRange>();
 			Walk<LinConLE>();
 			Walk<LinConGE>();
-		}
+    } else
+      if (MC().IfPassQuadCon() &&
+          (MC().GetNumberOfAddable((PowConstraint*)0)>0 ||
+           MC().GetNumberOfAddable((AbsConstraint*)0)>0)) {
+      // Still collect QCones expressed by 2-norms.
+      // They are to be converted to quadratics.
+      Walk<LinConRange>();
+      Walk<LinConLE>();
+      Walk<LinConGE>();
+    }
 	}
 
 

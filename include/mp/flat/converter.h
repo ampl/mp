@@ -21,6 +21,7 @@
 #include "mp/valcvt.h"
 #include "mp/flat/redef/std/range_con.h"
 #include "mp/flat/redef/conic/cones.h"
+#include "mp/flat/redef/conic/qcones2qc.h"
 #include "mp/utils-file.h"
 #include "mp/ampls-ccallbacks.h"
 
@@ -295,6 +296,12 @@ public: // for ConstraintKeeper
   template <class Con>
   ConstraintAcceptanceLevel GetConstraintAcceptance(Con* ) const {
     return GET_CONST_CONSTRAINT_KEEPER(Con).GetChosenAcceptanceLevel();
+  }
+
+  /// Query the nuber of addable constraints of type.
+  template <class Con>
+  int GetNumberOfAddable(Con* ) const {
+    return GET_CONST_CONSTRAINT_KEEPER(Con).GetNumberOfAddable();
   }
 
   /// Query if the constraint type
@@ -1064,6 +1071,12 @@ protected:
       QuadraticConeConstraint, "acc:quadcone")
   STORE_CONSTRAINT_TYPE__NO_MAP(
       RotatedQuadraticConeConstraint, "acc:rotatedquadcone")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      PowerConeConstraint, "acc:powercone")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      ExponentialConeConstraint, "acc:expcone")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      GeometricConeConstraint, "acc:geomcone")
 
 
 	protected:
@@ -1121,6 +1134,11 @@ protected:
   INSTALL_ITEM_CONVERTER(RangeLinearConstraintConverter)
   /// Convert quadratic range constraints, if necessary
   INSTALL_ITEM_CONVERTER(RangeQuadraticConstraintConverter)
+
+  /// Convert quadratic cones, if necessary
+  INSTALL_ITEM_CONVERTER(QConeConverter)
+  /// Convert rotated quadratic cones, if necessary
+  INSTALL_ITEM_CONVERTER(RQConeConverter)
 
 
 public:
