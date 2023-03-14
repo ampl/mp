@@ -170,7 +170,7 @@ protected:
 
 	/// DoRun. Body: linear.
 	///
-	/// Currently considering rhs=0.
+  /// Currently considering rhs=0 or rhs>0.
 	/// Accept non-(+-1) coefficients.
 	///
 	/// @param body: linear constraint body.
@@ -194,9 +194,21 @@ protected:
 				if (auto lhs_args = CheckSqrtXnXmNonneg(lint.var(iX)))
 					return ContinueRotatedSOC(lint, iX, iY,
 																		lhs_args, rhs_args);
-				return ContinueStdSOC(lint, iX, iY, rhs_args);
+        return ContinueStdSOC(lint.coef(iX), lint.var(iX),
+                              lint.coef(iY), rhs_args);
 			}
-		}
+    } else if (1 == lint.size() &&           // const>=y.
+               0.0 >= rhs*sens &&            // either ... <= rhs
+                                             // or ... >= rhs(<0)
+               0.0 >= lint.coef(0)*sens) {   // In the other case,
+                                             // it's -k*sqrt(...) <= rhs(>0), k>0,
+                                             // which is always true TODO
+      if (auto rhs_args = CheckNorm2(lint.var(0))) {
+        return ContinueStdSOC(1.0,
+                              MC().MakeFixedVar(std::fabs(rhs)),
+                              lint.coef(0), rhs_args);
+      }
+    }
 		return false;
 	}
 
@@ -347,18 +359,18 @@ protected:
 		return true;
 	}
 
-	/// Continue processing a linear constraint x>=y,
+  /// Continue processing a linear constraint cX*x >= cY*y,
 	/// if y := ||.|| and x is not sqrt(xN*xM).
 	/// Standard Qcone.
 	/// @return true iff converted.
 	bool ContinueStdSOC(
-			const LinTerms& lint, int iX, int iY,
+      double cX, int vX, double cY,
 			const ConeArgs& rhs_args) {
 		std::vector<int> x(rhs_args.size()+1);
 		std::vector<double> c(rhs_args.size()+1);
-		x[0] = lint.var(iX);
-		c[0] = std::fabs(lint.coef(iX));
-		auto coefY_abs = std::fabs(lint.coef(iY));
+    x[0] = vX;
+    c[0] = std::fabs(cX);
+    auto coefY_abs = std::fabs(cY);
 		for (size_t iPush=0; iPush<rhs_args.size(); ++iPush) {
 			x[iPush+1] = rhs_args.vars_[iPush];
 			c[iPush+1] = coefY_abs * rhs_args.coefs_[iPush];

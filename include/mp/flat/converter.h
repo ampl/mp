@@ -182,6 +182,8 @@ public:
 	}
 
 	/// Unuse result variable.
+  /// Actually this is to 'unuse' the init expression
+  /// - might change naming.
 	/// Throw if already not used.
 	void DecrementVarUsage(int v) {
 		assert(VarUsageRef(v)>0);

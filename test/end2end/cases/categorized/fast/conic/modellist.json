@@ -23,5 +23,11 @@
     "name" : "socp_05_rqcSqrt_abs",
     "objective" : 3.623966621,
     "tags" : ["socp"]
+  },
+  {
+    "name" : "TotalVariation2D",
+    "objective" : 9.569949819774543,
+    "files": ["totalvariation2d.mod", "totalvar2d_4e_4.dat"],
+    "tags" : ["socp", "socp_hard_to_recognize"]
   }
 ]

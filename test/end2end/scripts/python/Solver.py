@@ -757,7 +757,7 @@ class MosekSolver(MPDirectSolver):
                  ModelTags.binary,
 
                  ModelTags.quadratic, ModelTags.quadratic_obj,
-                 ModelTags.socp,
+                 ModelTags.socp, ModelTags.socp_hard_to_recognize,
 
                  ModelTags.warmstart, ModelTags.mipstart,
                  ModelTags.return_mipgap, ModelTags.sens, ModelTags.sstatus}
