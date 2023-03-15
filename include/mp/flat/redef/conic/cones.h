@@ -108,6 +108,16 @@ public:
 
 
 protected:
+  /// Characteristics of QP terms
+  struct QPTermsTraits {
+    int nDiffVars=0;
+    int iDiffVars=-1;
+    int x1=-1, x2=-1;
+    double coef12=0.0;               // coefficient for x1*x2
+    int nSamePos=0, nSameNeg=0;
+    int iSamePos=-1, iSameNeg=-1;
+  };
+
 	/// DoRun. Body: quadratic.
 	///
 	/// Currently considering rhs=0.
@@ -123,50 +133,64 @@ protected:
 		assert((sens==1 || sens==-1) && "sens 1 or -1 only");
 		if (body.GetLinTerms().empty() &&
 				0.0 == std::fabs(rhs)) {       // rhs=0
-			const auto& qpterms = body.GetQPTerms();
-			int nDiffVars=0;
-			int iDiffVars=-1;
-			int x1=-1, x2=-1;
-			double coef12=0.0;               // coefficient for x1*x2
-			int nSamePos=0, nSameNeg=0;
-			int iSamePos=-1, iSameNeg=-1;
-			for (auto i=qpterms.size(); i--;) {
-				if (qpterms.var1(i) != qpterms.var2(i)) {
-					if (nDiffVars++)   // Rotated cone: 2*x1*x2 >= ||xk||^2
-						return false;
-					x1 = qpterms.var1(i);
-					x2 = qpterms.var2(i);
-					if (MC().lb(x1)<0.0 || MC().lb(x2)<0.0)
-						return false;              // Need nonnegative x1, x2
-					coef12 = qpterms.coef(i);
-					iDiffVars=i;
-				} else {
-					if (qpterms.coef(i)>0.0) {
-						++nSamePos;
-						iSamePos=i;
-					} else {
-						++nSameNeg;
-						iSameNeg=i;
-					}
-				}
-			}
-			if (nDiffVars) {                 // Rotated cone?
-				if ((sens>0 && coef12>0.0 && nSamePos==0 && nSameNeg)
-						||
-						(sens<0 && coef12<0.0 && nSameNeg==0 && nSamePos))
-					return AddRotatedQC(qpterms, iDiffVars);
-			} else {                         // Standard cone?
-				if (sens>0 && nSamePos==1 && nSameNeg &&
-						MC().lb(qpterms.var1(iSamePos))>=0.0)
-												// In the "hacked form" x1^2 >= ||xk||^2
-					return AddStandardQC(qpterms, iSamePos);
-				if (sens<0 && nSameNeg==1 && nSamePos &&
-						MC().lb(qpterms.var1(iSameNeg))>=0.0)
-					return AddStandardQC(qpterms, iSameNeg);
-			}
+      QPTermsTraits qptt;
+      if (Characterize(body.GetQPTerms(), qptt))
+        return ProceedQCWithTraits(body, sens, rhs, qptt);
 		}
 		return false;
 	}
+
+  /// Characterize QP terms
+  /// @return false iff not suitable
+  bool Characterize(const QuadTerms& qpterms, QPTermsTraits& qptt) {
+    for (auto i=qpterms.size(); i--;) {
+      if (qpterms.var1(i) != qpterms.var2(i)) {
+        if (qptt.nDiffVars++)   // Rotated cone: 2*x1*x2 >= ||xk||^2
+          return false;
+        qptt.x1 = qpterms.var1(i);
+        qptt.x2 = qpterms.var2(i);
+        if (MC().lb(qptt.x1)<0.0 || MC().lb(qptt.x2)<0.0)
+          return false;              // Need nonnegative x1, x2
+        qptt.coef12 = qpterms.coef(i);
+        qptt.iDiffVars=i;
+      } else {
+        if (qpterms.coef(i)>0.0) {
+          ++qptt.nSamePos;
+          qptt.iSamePos=i;
+        } else {
+          ++qptt.nSameNeg;
+          qptt.iSameNeg=i;
+        }
+      }
+    }
+    return true;
+  }
+
+  /// Proceed with a quadratic constraint provided traits
+  /// @return true iff cone added
+  bool ProceedQCWithTraits(const QuadAndLinTerms& body,
+                           int sens, double rhs,
+                           const QPTermsTraits& qptt) {
+    assert(body.GetLinTerms().empty());
+    const auto& qpterms = body.GetQPTerms();
+    if (qptt.nDiffVars) {                 // Rotated cone?
+      if ((sens>0 && qptt.coef12>0.0 &&
+           qptt.nSamePos==0 && qptt.nSameNeg)
+          ||
+          (sens<0 && qptt.coef12<0.0 &&
+           qptt.nSameNeg==0 && qptt.nSamePos))
+        return AddRotatedQC(qpterms, qptt.iDiffVars);
+    } else {                         // Standard cone?
+      if (sens>0 && qptt.nSamePos==1 && qptt.nSameNeg &&
+          MC().lb(qpterms.var1(qptt.iSamePos))>=0.0)
+                      // In the "hacked form" x1^2 >= ||xk||^2
+        return AddStandardQC(qpterms, qptt.iSamePos);
+      if (sens<0 && qptt.nSameNeg==1 && qptt.nSamePos &&
+          MC().lb(qpterms.var1(qptt.iSameNeg))>=0.0)
+        return AddStandardQC(qpterms, qptt.iSameNeg);
+    }
+    return false;
+  }
 
 	/// DoRun. Body: linear.
 	///
