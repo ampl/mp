@@ -34,9 +34,9 @@ public:
     for (auto& coef: c)
       coef *= coef;
     c[0] = -c[0];
-    GetMC().AddConstraint(QuadConLE{ {{},
-                                      {c, x, x}},
-                                     {0.0}});
+    GetMC().NarrowVarBounds(x[0], 0.0, GetMC().Infty());
+    auto qc {QuadConLE{ {{}, {c, x, x}}, {0.0} }};
+    GetMC().AddConstraint(std::move(qc));
   }
 
   /// Reuse the stored ModelConverter
@@ -76,9 +76,8 @@ public:
     c12[0] *= -2.0*c[0];
     for (auto i=c12.size(); --i; )
       c12[i] *= c12[i];
-    GetMC().AddConstraint(QuadConLE{ {{},
-                                      {c12, x1, x2}},
-                                     {0.0}});
+    auto qc = QuadConLE{ {{}, {c12, x1, x2}}, {0.0} };
+    GetMC().AddConstraint(std::move(qc));
   }
 
   /// Reuse the stored ModelConverter

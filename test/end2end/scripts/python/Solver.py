@@ -617,6 +617,7 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.quadraticnonconvex,
 
                  ModelTags.socp,      ## MP transforms cones to quadratics
+                 ModelTags.socp_hard_to_recognize,
 
                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
 

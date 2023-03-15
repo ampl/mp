@@ -960,7 +960,7 @@ protected:
 
 
 public:
-  void InitOptions() {
+  void InitOptions() override {
     InitOwnOptions( );
     GetFlatCvt().InitOptions( );
   }
@@ -986,9 +986,9 @@ private:
 
 public:
   /// The model as input from NL
-  const ProblemType& GetModel() const { return model_; }
+  const ProblemType& GetModel() const override { return model_; }
   /// The model as input from NL
-  ProblemType& GetModel() { return model_; }
+  ProblemType& GetModel() override { return model_; }
   /// The model as input from NL
   const ProblemType& GetInputModel() const { return GetModel(); }
   /// The model as input from NL
