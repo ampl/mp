@@ -131,8 +131,7 @@ protected:
 	bool DoRun(const QuadAndLinTerms& body,
 						 int sens, double rhs) {
 		assert((sens==1 || sens==-1) && "sens 1 or -1 only");
-		if (body.GetLinTerms().empty() &&
-				0.0 == std::fabs(rhs)) {       // rhs=0
+    if (body.GetLinTerms().empty()) {
       QPTermsTraits qptt;
       if (Characterize(body.GetQPTerms(), qptt))
         return ProceedQCWithTraits(body, sens, rhs, qptt);
@@ -173,21 +172,30 @@ protected:
                            const QPTermsTraits& qptt) {
     assert(body.GetLinTerms().empty());
     const auto& qpterms = body.GetQPTerms();
-    if (qptt.nDiffVars) {                 // Rotated cone?
-      if ((sens>0 && qptt.coef12>0.0 &&
-           qptt.nSamePos==0 && qptt.nSameNeg)
-          ||
-          (sens<0 && qptt.coef12<0.0 &&
-           qptt.nSameNeg==0 && qptt.nSamePos))
-        return AddRotatedQC(qpterms, qptt.iDiffVars);
-    } else {                         // Standard cone?
-      if (sens>0 && qptt.nSamePos==1 && qptt.nSameNeg &&
-          MC().lb(qpterms.var1(qptt.iSamePos))>=0.0)
-                      // In the "hacked form" x1^2 >= ||xk||^2
-        return AddStandardQC(qpterms, qptt.iSamePos);
-      if (sens<0 && qptt.nSameNeg==1 && qptt.nSamePos &&
-          MC().lb(qpterms.var1(qptt.iSameNeg))>=0.0)
-        return AddStandardQC(qpterms, qptt.iSameNeg);
+    if (qptt.nDiffVars) {                      // Rotated cone?
+      if (0.0 == std::fabs(rhs)) {             // rhs==0
+        if ((sens>0 && qptt.coef12>0.0 &&
+             qptt.nSamePos==0 && qptt.nSameNeg)
+            ||
+            (sens<0 && qptt.coef12<0.0 &&
+             qptt.nSameNeg==0 && qptt.nSamePos))
+          return AddRotatedQC(qpterms, qptt.iDiffVars);
+      }
+    } else if (0.0 >= rhs*sens) {              // Standard cone?
+      if (0.0 == std::fabs(rhs)) {
+        if (sens>0 && qptt.nSamePos==1 && qptt.nSameNeg &&
+            MC().lb(qpterms.var1(qptt.iSamePos))>=0.0)
+          // In the "hacked form" x1^2 >= ||xk||^2
+          return AddStandardQC(qpterms, qptt.iSamePos);
+        if (sens<0 && qptt.nSameNeg==1 && qptt.nSamePos &&
+            MC().lb(qpterms.var1(qptt.iSameNeg))>=0.0)
+          return AddStandardQC(qpterms, qptt.iSameNeg);
+      } else {                /// See if we can use the constant
+        if (sens>0 && qptt.nSamePos==0 && qptt.nSameNeg)
+          return AddStandardQC(qpterms, -1, rhs);
+        if (sens<0 && qptt.nSameNeg==0 && qptt.nSamePos)
+          return AddStandardQC(qpterms, -1, rhs);
+      }
     }
     return false;
   }
@@ -431,11 +439,18 @@ protected:
 		return true;
 	}
 
-	/// Add standard cone from pure-quadratic constraint
-	bool AddStandardQC(const QuadTerms& qpterms, int iSame1) {
-		std::vector<int> x(qpterms.size());
-		std::vector<double> c(qpterms.size());
-		size_t iPush=0;
+  /// Add standard cone from pure-quadratic constraint.
+  /// if iSame1<0, use new fixed variable.
+  bool AddStandardQC(const QuadTerms& qpterms,
+                     int iSame1, double rhs=0.0) {
+    const size_t fNewVar = (iSame1<0);
+    std::vector<int> x(qpterms.size() + fNewVar);
+    std::vector<double> c(qpterms.size() + fNewVar);
+    if (fNewVar) {
+      c[0] = 1.0;
+      x[0] = MC().MakeFixedVar(std::sqrt(std::fabs(rhs)));
+    }
+    size_t iPush=0;
 		for (int i=0; i<(int)qpterms.size(); ++i) {
 			if (i==iSame1) {
 				x[0] = qpterms.var1(i);

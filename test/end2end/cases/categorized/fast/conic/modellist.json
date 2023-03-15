@@ -29,5 +29,11 @@
     "objective" : 9.569949819774543,
     "files": ["totalvariation2d.mod", "totalvar2d_4e_4.dat"],
     "tags" : ["socp", "socp_hard_to_recognize"]
+  },
+  {
+    "name" : "TotalVariation2D_Quadr",
+    "objective" : 9.569949819774543,
+    "files": ["totalvariation2d_quad.mod", "totalvar2d_4e_4.dat"],
+    "tags" : ["socp", "socp_hard_to_recognize"]
   }
 ]
