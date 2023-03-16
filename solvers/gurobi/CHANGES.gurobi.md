@@ -2,8 +2,15 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
+## 20230316
+- Recognition of second-order conic constraints
+  from algebraic representations and conversion into
+  quadratic constraints; Gurobi appears to recognize
+  secnd-order cones from quadratics.
+
+
 ## 20230207
-- *Changes in the MP library*
+- *Changes in the MP library*.
 
 
 ## 20230206

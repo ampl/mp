@@ -257,40 +257,52 @@ void MosekBackend::AddMOSEKMessages() {
 
 std::pair<int, std::string> MosekBackend::ConvertMOSEKStatus() {
   namespace sol = mp::sol;
-  // TODO check the logic here
+  std::string term_info = ConvertMOSEKTermStatus();
+  switch (solSta_) {
+  case MSK_SOL_STA_OPTIMAL:
+  case MSK_SOL_STA_INTEGER_OPTIMAL:
+    return { sol::SOLVED, "optimal" + term_info };
+  case MSK_SOL_STA_PRIM_FEAS:
+    return { sol::UNCERTAIN, "feasible primal" + term_info };
+  case MSK_SOL_STA_DUAL_FEAS:
+    return { sol::UNCERTAIN, "feasible dual" + term_info };
+  case MSK_SOL_STA_PRIM_AND_DUAL_FEAS:
+    return { sol::UNCERTAIN, "feasible solution" + term_info };
+  case MSK_SOL_STA_PRIM_INFEAS_CER:
+    return { sol::INFEASIBLE, "primal infeasible solution" + term_info };
+  case MSK_SOL_STA_DUAL_INFEAS_CER:
+    return { sol::INF_OR_UNB, "dual infeasible solution" + term_info };
+  case MSK_SOL_STA_UNKNOWN:
+  case MSK_SOL_STA_PRIM_ILLPOSED_CER:
+  case MSK_SOL_STA_DUAL_ILLPOSED_CER:
+  default:
+    return { sol::UNKNOWN, "unknown" + term_info };
+  }
+}
+
+std::string MosekBackend::ConvertMOSEKTermStatus() {
   switch (termCode_) {
   case MSK_RES_OK:
-    switch (solSta_) {
-    case MSK_SOL_STA_OPTIMAL:
-    case MSK_SOL_STA_INTEGER_OPTIMAL:
-      return { sol::SOLVED, "optimal" };
-    case MSK_SOL_STA_PRIM_FEAS:
-      return { sol::UNCERTAIN, "feasible primal" };
-    case MSK_SOL_STA_DUAL_FEAS:
-      return { sol::UNCERTAIN, "feasible dual" };
-    case MSK_SOL_STA_PRIM_AND_DUAL_FEAS:
-      return { sol::UNCERTAIN, "feasible solution" };
-    case MSK_SOL_STA_PRIM_INFEAS_CER:
-      return { sol::INFEASIBLE, "primal infeasible solution" };
-    case MSK_SOL_STA_DUAL_INFEAS_CER:
-      return { sol::INF_OR_UNB, "dual infeasible solution" };
-    case MSK_SOL_STA_UNKNOWN:
-    case MSK_SOL_STA_PRIM_ILLPOSED_CER:
-    case MSK_SOL_STA_DUAL_ILLPOSED_CER:
-    default:
-      return { sol::UNKNOWN, "unknown" };
-    }
+    break;
   case MSK_RES_TRM_MAX_ITERATIONS:
-    return { sol::LIMIT, "max number of iterations reached" };
+    return { ", max number of iterations reached" };
   case MSK_RES_TRM_MAX_TIME:
-    return { sol::LIMIT, "maximum allowed time reached" };
+    return { ", maximum allowed time reached" };
+  case MSK_RES_TRM_OBJECTIVE_RANGE:
+    return { ", objective range" };
+  case MSK_RES_TRM_STALL:
+    return { ", stalling" };
+  case MSK_RES_TRM_NUMERICAL_PROBLEM:
+    return { ", numerical issues" };
   case MSK_RES_TRM_MIO_NUM_RELAXS:
   case MSK_RES_TRM_MIO_NUM_BRANCHES:
   case MSK_RES_TRM_NUM_MAX_NUM_INT_SOLUTIONS:
-    return { sol::LIMIT, "limit hit" };
+    return { ", limit hit" };
   default:
-    return { sol::UNKNOWN, "unfinished" };
+    return { "termination code "
+          + std::to_string(termCode_) };
   }
+  return {};
 }
 
 void MosekBackend::FinishOptionParsing() {

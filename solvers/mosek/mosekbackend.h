@@ -144,7 +144,10 @@ protected:
   double SimplexIterations() const;
   int BarrierIterations() const;
 
+  /// Solution + termination status
   std::pair<int, std::string> ConvertMOSEKStatus();
+  /// Text to add for termination status
+  std::string ConvertMOSEKTermStatus();
   void AddMOSEKMessages();
 
   ArrayRef<int> VarStatii();
