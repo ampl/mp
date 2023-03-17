@@ -573,6 +573,9 @@ ArrayRef<int> MosekBackend::VarStatii() {
   {
     switch (s)
     {
+      case MSK_SK_UNK:
+        s = (int)BasicStatus::none;
+        break;
       case MSK_SK_BAS:
         s = (int)BasicStatus::bas;
         break;
@@ -604,6 +607,9 @@ ArrayRef<int> MosekBackend::ConStatii() {
   {
     switch (s)
     {
+      case MSK_SK_UNK:
+        s = (int)BasicStatus::none;
+        break;
       case MSK_SK_BAS:
         s = (int)BasicStatus::bas;
         break;
