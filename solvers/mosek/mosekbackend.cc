@@ -758,6 +758,7 @@ void MosekBackend::SetBasis(SolutionBasis basis) {
 
 void MosekBackend::AddPrimalDualStart(Solution sol)
 {
+  solToFetch_ = GetSolutionTypeToFetch();
   auto mv = GetValuePresolver().PresolveSolution(
         { sol.primal, sol.dual } );
   auto x0 = mv.GetVarValues()();
@@ -768,6 +769,7 @@ void MosekBackend::AddPrimalDualStart(Solution sol)
 
 void MosekBackend::AddMIPStart(ArrayRef<double> x0_unpres)
 {
+  solToFetch_ = GetSolutionTypeToFetch();
   auto mv = GetValuePresolver().PresolveSolution( { x0_unpres } );
   auto x0 = mv.GetVarValues()();
 
