@@ -151,11 +151,11 @@ void SolverApp<Solver, Reader>::Solve() {
 
   if (GetCallbacks().check)
   {
-    AMPLS_ModelTraits m;
+    AMPLS_ModelTraits mt;
     mt.n_vars = num_vars();
     mt.n_alg_con = builder_->problem().num_algebraic_cons();
     mt.n_log_con = builder_->problem().num_logical_cons();
-    GetCallbacks().check(&m);
+    GetCallbacks().check(&mt);
   }
   solver_.Solve(builder_->problem(), sol_handler);
 }
