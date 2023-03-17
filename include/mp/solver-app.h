@@ -146,14 +146,17 @@ template <typename Solver, typename Reader>
 void SolverApp<Solver, Reader>::Solve() {
   ArrayRef<int> options(handler_->options(), handler_->num_options());
   internal::AppSolutionHandler<Solver> sol_handler(
-        filename_no_ext, solver_, *builder_, options,
-        output_handler_.has_output ? 0 : banner_size);
-  
-  if(GetCallbacks().check)
-    GetCallbacks().check(builder_->problem().num_vars(),
-      builder_->problem().num_algebraic_cons(),
-      builder_->problem().num_logical_cons());
+    filename_no_ext, solver_, *builder_, options,
+    output_handler_.has_output ? 0 : banner_size);
 
+  if (GetCallbacks().check)
+  {
+    AMPLS_ModelTraits m;
+    mt.n_vars = num_vars();
+    mt.n_alg_con = builder_->problem().num_algebraic_cons();
+    mt.n_log_con = builder_->problem().num_logical_cons();
+    GetCallbacks().check(&m);
+  }
   solver_.Solve(builder_->problem(), sol_handler);
 }
 

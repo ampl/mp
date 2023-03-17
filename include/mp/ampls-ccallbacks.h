@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-/// Model traints for license check
+/// Model traits for license check
 typedef struct AMPLS_ModelTraits_T {
 	long long
 	n_vars,
