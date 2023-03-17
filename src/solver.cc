@@ -1300,7 +1300,6 @@ int AMPLSGetStrOption(AMPLS_MP_Solver* slv,
   const char* name, const char* const* v) {
   std::string s;
   auto be = AMPLSGetBackend(slv);
-  auto ii = ((AMPLS_MP__internal*)(slv->internal_info_));
   try {
     auto opt = be->GetOption(name);
     opt->GetValue(s);
