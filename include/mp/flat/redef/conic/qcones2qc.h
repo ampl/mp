@@ -27,7 +27,9 @@ public:
         0!=GetMC().IfPassQuadCon();
   }
 
-  /// Convert to (c[0]*x[0])^2 >= sum(i)((c[i]*x[i])^2).
+  /// Convert to
+  /// (c[0]*x[0])^2 >= sum(i)((c[i]*x[i])^2)
+  /// with x[0]>=0.
   void Convert(const ItemType& ac, int ) {
     const auto& x = ac.GetArguments();
     auto c = ac.GetParameters();

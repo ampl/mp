@@ -97,8 +97,9 @@ protected:
 };
 
 
-/** Converter for a single quadratic inequality constraint.
- *  Generic, receives only body (assumes rhs=0) and sense.
+/** Converter for a single linear / quadratic
+ *  inequality constraint.
+ *  Generic, receives only body and sense.
  */
 template <class MCType>
 class Convert1QC : public MCKeeper<MCType> {
@@ -120,7 +121,6 @@ protected:
 
 	/// DoRun. Body: quadratic.
 	///
-	/// Currently considering rhs=0.
 	/// Accept non-(+-1) coefficients.
 	///
 	/// @param body: quadratic constraint body.
@@ -131,7 +131,7 @@ protected:
 	bool DoRun(const QuadAndLinTerms& body,
 						 int sens, double rhs) {
 		assert((sens==1 || sens==-1) && "sens 1 or -1 only");
-    if (body.GetLinTerms().empty()) {
+    if (body.GetLinTerms().size()<=1) {
       QPTermsTraits qptt;
       if (Characterize(body.GetQPTerms(), qptt))
         return ProceedQCWithTraits(body, sens, rhs, qptt);
@@ -165,21 +165,44 @@ protected:
     return true;
   }
 
-  /// Proceed with a quadratic constraint provided traits
-  /// @return true iff cone added
+  /// Proceed with a quadratic constraint provided traits.
+  ///
+  /// Cases of StdSOC:
+  /// 1. x^2 >= ||y||^2
+  /// 2. c^2 >= ||y||^2
+  /// 3. x^2 >= ||y||^2 + c^2
+  /// 4. 0   >= ||y||^2 + c^2  -- fail?
+  ///
+  /// Cases of RotSOC:
+  /// 1. 2xy >= ||z||^2 [ + c^2 ]
+  /// 2. 2 c1 y >= ||z||^2 [ + c2^2 ]
+  ///
+  /// @return true iff cone added.
   bool ProceedQCWithTraits(const QuadAndLinTerms& body,
                            int sens, double rhs,
                            const QPTermsTraits& qptt) {
-    assert(body.GetLinTerms().empty());
+    const auto& lint = body.GetLinTerms();
+    assert(lint.size() <= 1);
+    assert(qptt.nDiffVars <= 1);
     const auto& qpterms = body.GetQPTerms();
-    if (qptt.nDiffVars) {                      // Rotated cone?
-      if (0.0 == std::fabs(rhs)) {             // rhs==0
-        if ((sens>0 && qptt.coef12>0.0 &&
+    if (qptt.nDiffVars || lint.size()) {       // Rotated cone?
+      const auto fLT1 = lint.size()==1;        // Constant in the lhs?
+      const auto fND1 = qptt.nDiffVars==1;
+      if (fLT1 + fND1 == 1 &&
+          rhs * sens >= 0.0) {                 // ... >= ... + rhs
+        if (fLT1 &&                            // Check lin term
+            (MC().lb( lint.var(0) ) < 0.0 ||
+             lint.coef(0)*sens < 0.0))
+          return false;
+        if (fND1 && qptt.coef12*sens<0.0)
+          return false;
+        if ((sens>0 &&
              qptt.nSamePos==0 && qptt.nSameNeg)
             ||
-            (sens<0 && qptt.coef12<0.0 &&
+            (sens<0 &&
              qptt.nSameNeg==0 && qptt.nSamePos))
-          return AddRotatedQC(qpterms, qptt.iDiffVars);
+          return AddRotatedQC(qpterms, lint, rhs,
+                              qptt.iDiffVars);
       }
     } else if (0.0 >= rhs*sens) {              // Standard cone?
       if (0.0 == std::fabs(rhs)) {
@@ -200,9 +223,10 @@ protected:
     return false;
   }
 
-	/// DoRun. Body: linear.
+  /// DoRun. Body: linear, i.e., var1 (or const) >= var2
+  /// (then checking if var2 := ||.||).
 	///
-  /// Currently considering rhs=0 or rhs>0.
+  /// Considering const>=0.
 	/// Accept non-(+-1) coefficients.
 	///
 	/// @param body: linear constraint body.
@@ -236,8 +260,8 @@ protected:
                                              // it's -k*sqrt(...) <= rhs(>0), k>0,
                                              // which is always true TODO
       if (auto rhs_args = CheckNorm2(lint.var(0))) {
-        return ContinueStdSOC(1.0,
-                              MC().MakeFixedVar(std::fabs(rhs)),
+        return ContinueStdSOC(std::fabs(rhs),
+                              MC().MakeFixedVar( 1.0 ),
                               lint.coef(0), rhs_args);
       }
     }
@@ -417,22 +441,38 @@ protected:
 
 
 	/// Add rotated cone from pure-quadratic constraint
-	bool AddRotatedQC(const QuadTerms& qpterms, int iDiffVars) {
-		std::vector<int> x(qpterms.size()+1);
-		std::vector<double> c(qpterms.size()+1);
+  bool AddRotatedQC(const QuadTerms& qpterms,
+                    const LinTerms& lint,
+                    double rhs, int iDiffVars) {
+    assert(lint.size() + (iDiffVars>=0) == 1);
+    const auto rhsNon0 = (std::fabs(rhs)!=0.0);
+    std::vector<int> x(qpterms.size()+1+lint.size()+rhsNon0);
+    std::vector<double> c(qpterms.size()+1+lint.size()+rhsNon0);
 		size_t iPush=1;
+    if (lint.size()) {
+      x[0] = lint.var(0);
+      x[1] = MC().MakeFixedVar( 1.0 );
+      c[0] = std::fabs(lint.coef(0)) / 2.0;
+      c[1] = 1.0;      // it's 2xy >= z^2 + ...
+    }
 		for (int i=0; i<(int)qpterms.size(); ++i) {
 			if (i==iDiffVars) {
 				x[0] = qpterms.var1(i);
 				x[1] = qpterms.var2(i);
 				c[0] = std::fabs(qpterms.coef(i));
-				c[1] = 0.5;      // it's 2xy >= z^2 + ...
+        c[1] = 0.5;           // it's 2xy >= z^2 + ...
 			} else {
 				++iPush;
 				x.at(iPush) = qpterms.var1(i);
 				c.at(iPush) = std::sqrt(std::fabs(qpterms.coef(i)));
 			}
 		}
+    if (rhsNon0) {            // Add  ... >= ... + |rhs|
+      ++iPush;
+      x.at(iPush) = MC().MakeFixedVar( 1.0 );
+      c.at(iPush) = std::sqrt( std::fabs(rhs) );
+    }
+    assert(iPush == x.size()-1);
 		MC().AddConstraint(
 					RotatedQuadraticConeConstraint(
 						std::move(x), std::move(c)));
@@ -447,8 +487,8 @@ protected:
     std::vector<int> x(qpterms.size() + fNewVar);
     std::vector<double> c(qpterms.size() + fNewVar);
     if (fNewVar) {
-      c[0] = 1.0;
-      x[0] = MC().MakeFixedVar(std::sqrt(std::fabs(rhs)));
+      c[0] = std::sqrt(std::fabs(rhs));
+      x[0] = MC().MakeFixedVar( 1.0 );
     }
     size_t iPush=0;
 		for (int i=0; i<(int)qpterms.size(); ++i) {

@@ -35,5 +35,10 @@
     "objective" : 9.569949819774543,
     "files": ["totalvariation2d_quad.mod", "totalvar2d_4e_4.dat"],
     "tags" : ["socp", "socp_hard_to_recognize"]
+  },
+  {
+    "name" : "socp_06_rsoc_constants",
+    "objective" : 7.993662815,
+    "tags" : ["socp"]
   }
 ]
