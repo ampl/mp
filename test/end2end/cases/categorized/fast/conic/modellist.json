@@ -45,5 +45,10 @@
     "name" : "socp_07_soc_constants",
     "objective" : 8.234981108,
     "tags" : ["socp"]
+  },
+  {
+    "name" : "socp_08_sqrt_constants",
+    "objective" : 6.718062041,
+    "tags" : ["socp"]
   }
 ]

@@ -223,8 +223,16 @@ protected:
     return false;
   }
 
-  /// DoRun. Body: linear, i.e., var1 (or const) >= var2
-  /// (then checking if var2 := ||.||).
+  /// DoRun.
+  /// Body: linear, i.e., var1 (or const) >= var2 (or const).
+  /// In particular, the following cases.
+  ///
+  /// Standard SOC.
+  /// 1. x >= ||y [ | const ]||  (sqrt, abs)
+  /// 2. const >= ||y [ | const ]||.
+  ///
+  /// Rotated SOC.
+  /// 1. sqrt(k*x1*x2) >= ||z [ | const ]||.
 	///
   /// Considering const>=0.
 	/// Accept non-(+-1) coefficients.
@@ -273,6 +281,7 @@ protected:
 	struct ConeArgs {
 		std::vector<double> coefs_;
 		std::vector<int> vars_;
+    double const_term = 0.0;
 		/// Result vars of expressions to un-use.
 		std::vector<int> res_vars_to_delete_;
 		/// operator bool
@@ -301,7 +310,7 @@ protected:
 	}
 
 	/// Check if the variable is defined by an expression
-	/// representing sqrt(c1 * x1^2 + ...).
+  /// representing sqrt(c1 * x1^2 + ... [ + const ]).
 	template <class ConInfo>
 	ConeArgs CheckNorm2_Pow(const ConInfo& ci, int res_var) {
 		const auto& con_pow = MC().template
@@ -315,9 +324,9 @@ protected:
 				const auto& con_qdc = MC().template
 						GetConstraint<QuadraticFunctionalConstraint>(ie_pow);
 				const auto& args_qdc = con_qdc.GetArguments();
-				// We could allow a nonneg constant term by adding
+        // Allowing a nonneg constant term by adding
 				// an auxiliary variable^2
-				if (0.0 == std::fabs(args_qdc.constant_term()) &&
+        if (0.0 <= args_qdc.constant_term() &&
 						args_qdc.GetBody().GetLinTerms().empty()) {
 					const auto& qpterms = args_qdc.GetBody().GetQPTerms();
 					for (auto i=qpterms.size(); i--; ) {
@@ -330,6 +339,7 @@ protected:
 					for (auto& c: result.coefs_)
 						c = std::sqrt(c);
 					result.vars_ = qpterms.vars1();
+          result.const_term = args_qdc.constant_term();
 					result.res_vars_to_delete_ = { res_var, arg_pow };
 					return result;
 				}
@@ -393,8 +403,11 @@ protected:
 			const ConeArgs& lhs_args, const ConeArgs& rhs_args) {
 		assert(2==lhs_args.size());
 		assert(rhs_args);
-		std::vector<double> c(lhs_args.size()+rhs_args.size());
-		std::vector<int> x(lhs_args.size()+rhs_args.size());
+    const size_t constNZ =
+        (0.0 != std::fabs(rhs_args.const_term));
+    std::vector<double> c
+        (lhs_args.size()+rhs_args.size()+constNZ);
+    std::vector<int> x(c.size());
 		auto coefX_abs = std::fabs(lint.coef(iX));
 		c[0] = 0.5 * lhs_args.coefs_[0] * coefX_abs;
 		c[1] = lhs_args.coefs_[1] * coefX_abs;
@@ -405,7 +418,12 @@ protected:
 			x[iPush+2] = rhs_args.vars_[iPush];
 			c[iPush+2] = coefY_abs * rhs_args.coefs_[iPush];
 		}
-		for (auto r: lhs_args.res_vars_to_delete_)
+    if (constNZ) {
+      assert(0.0 < rhs_args.const_term);
+      x.back() = MC().MakeFixedVar(1.0);
+      c.back() = coefY_abs * std::sqrt(rhs_args.const_term);
+    }
+    for (auto r: lhs_args.res_vars_to_delete_)
 			MC().DecrementVarUsage(r);
 		for (auto r: rhs_args.res_vars_to_delete_)
 			MC().DecrementVarUsage(r);
@@ -422,8 +440,9 @@ protected:
 	bool ContinueStdSOC(
       double cX, int vX, double cY,
 			const ConeArgs& rhs_args) {
-		std::vector<int> x(rhs_args.size()+1);
-		std::vector<double> c(rhs_args.size()+1);
+    const size_t constNZ = (0.0 != std::fabs(rhs_args.const_term));
+    std::vector<int> x(rhs_args.size()+1+constNZ);
+    std::vector<double> c(rhs_args.size()+1+constNZ);
     x[0] = vX;
     c[0] = std::fabs(cX);
     auto coefY_abs = std::fabs(cY);
@@ -431,6 +450,11 @@ protected:
 			x[iPush+1] = rhs_args.vars_[iPush];
 			c[iPush+1] = coefY_abs * rhs_args.coefs_[iPush];
 		}
+    if (constNZ) {
+      assert(0.0 < rhs_args.const_term);
+      x.back() = MC().MakeFixedVar(1.0);
+      c.back() = coefY_abs * std::sqrt(rhs_args.const_term);
+    }
 		for (auto r: rhs_args.res_vars_to_delete_)
 			MC().DecrementVarUsage(r);
 		MC().AddConstraint(
