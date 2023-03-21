@@ -1,4 +1,4 @@
-# socp_04_2cones.mod
+# socp_06_rsoc_constants.mod
 
 var x {1..3} >=0, <=20;
 

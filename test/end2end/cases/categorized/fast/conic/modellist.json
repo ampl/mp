@@ -40,5 +40,10 @@
     "name" : "socp_06_rsoc_constants",
     "objective" : 7.993662815,
     "tags" : ["socp"]
+  },
+  {
+    "name" : "socp_07_soc_constants",
+    "objective" : 8.234981108,
+    "tags" : ["socp"]
   }
 ]

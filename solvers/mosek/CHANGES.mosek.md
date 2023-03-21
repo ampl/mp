@@ -2,7 +2,7 @@ Summary of recent updates to MOSEK for AMPL
 ===========================================
 
 
-## 20230316
+## 20230321
 - Recognition of second-order conic constraints
   from algebraic representations.
 

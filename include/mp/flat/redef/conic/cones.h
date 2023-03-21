@@ -167,7 +167,7 @@ protected:
 
   /// Proceed with a quadratic constraint provided traits.
   ///
-  /// Cases of StdSOC:
+  /// Cases of StdSOC -- in the "hacked form" x1^2 >= ||xk||^2:
   /// 1. x^2 >= ||y||^2
   /// 2. c^2 >= ||y||^2
   /// 3. x^2 >= ||y||^2 + c^2
@@ -204,21 +204,21 @@ protected:
           return AddRotatedQC(qpterms, lint, rhs,
                               qptt.iDiffVars);
       }
-    } else if (0.0 >= rhs*sens) {              // Standard cone?
-      if (0.0 == std::fabs(rhs)) {
-        if (sens>0 && qptt.nSamePos==1 && qptt.nSameNeg &&
-            MC().lb(qpterms.var1(qptt.iSamePos))>=0.0)
-          // In the "hacked form" x1^2 >= ||xk||^2
-          return AddStandardQC(qpterms, qptt.iSamePos);
-        if (sens<0 && qptt.nSameNeg==1 && qptt.nSamePos &&
-            MC().lb(qpterms.var1(qptt.iSameNeg))>=0.0)
-          return AddStandardQC(qpterms, qptt.iSameNeg);
-      } else {                /// See if we can use the constant
-        if (sens>0 && qptt.nSamePos==0 && qptt.nSameNeg)
-          return AddStandardQC(qpterms, -1, rhs);
-        if (sens<0 && qptt.nSameNeg==0 && qptt.nSamePos)
-          return AddStandardQC(qpterms, -1, rhs);
-      }
+    } else {                          // Standard cone?
+      if (0.0 <= rhs*sens &&          // It's x^2 >= ||y^2|| + |rhs|
+          sens>0 && qptt.nSamePos==1 &&
+          MC().lb(qpterms.var1(qptt.iSamePos))>=0.0)
+        return AddStandardQC(qpterms, qptt.iSamePos, 0.0, rhs);
+      if (0.0 <= rhs*sens &&
+          sens<0 && qptt.nSameNeg==1 &&
+          MC().lb(qpterms.var1(qptt.iSameNeg))>=0.0)
+        return AddStandardQC(qpterms, qptt.iSameNeg, 0.0, rhs);
+      if (0.0 >= rhs*sens &&          // |rhs| >= ||y^2||
+          sens>0 && qptt.nSamePos==0 && qptt.nSameNeg)
+        return AddStandardQC(qpterms, -1, rhs);
+      if (0.0 >= rhs*sens &&
+          sens<0 && qptt.nSameNeg==0 && qptt.nSamePos)
+        return AddStandardQC(qpterms, -1, rhs);
     }
     return false;
   }
@@ -480,13 +480,18 @@ protected:
 	}
 
   /// Add standard cone from pure-quadratic constraint.
-  /// if iSame1<0, use new fixed variable.
+  /// @param iSame1: if <0, use new fixed variable.
+  /// @param rhs: square of the new value if iSame1<0,
+  ///         i.e., the constraint is rhs >= ....
+  /// @param rhs2: ... >= ... + rhs2
   bool AddStandardQC(const QuadTerms& qpterms,
-                     int iSame1, double rhs=0.0) {
-    const size_t fNewVar = (iSame1<0);
+                     int iSame1,
+                     double rhs=0.0, double rhs2=0.0) {
+    const size_t fRhs2 = (0.0!=std::fabs(rhs2));
+    const size_t fNewVar = (iSame1<0) || fRhs2;
     std::vector<int> x(qpterms.size() + fNewVar);
     std::vector<double> c(qpterms.size() + fNewVar);
-    if (fNewVar) {
+    if (fNewVar && !fRhs2) {
       c[0] = std::sqrt(std::fabs(rhs));
       x[0] = MC().MakeFixedVar( 1.0 );
     }
@@ -501,7 +506,13 @@ protected:
 				c.at(iPush) = std::sqrt(std::fabs(qpterms.coef(i)));
 			}
 		}
-		MC().AddConstraint(
+    if (fNewVar && fRhs2) {
+      ++iPush;
+      c.at(iPush) = std::sqrt(std::fabs(rhs2));
+      x.at(iPush) = MC().MakeFixedVar( 1.0 );
+    }
+    assert(iPush == c.size()-1);
+    MC().AddConstraint(
 					QuadraticConeConstraint(
 						std::move(x), std::move(c)));
 		return true;
