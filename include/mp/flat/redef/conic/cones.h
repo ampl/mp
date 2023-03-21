@@ -233,6 +233,7 @@ protected:
   ///
   /// Rotated SOC.
   /// 1. sqrt(k*x1*x2) >= ||z [ | const ]||.
+  /// 2. sqrt(k * x2) >= ... (one var is const in lhs)
 	///
   /// Considering const>=0.
 	/// Accept non-(+-1) coefficients.
@@ -282,6 +283,7 @@ protected:
 		std::vector<double> coefs_;
 		std::vector<int> vars_;
     double const_term = 0.0;
+    double coef_extra = 0.0;
 		/// Result vars of expressions to un-use.
 		std::vector<int> res_vars_to_delete_;
 		/// operator bool
@@ -371,15 +373,14 @@ protected:
 			if (0.5 == pConPow->GetParameters()[0]) {     // sqrt(arg_pow)
 				const auto arg_pow = pConPow->GetArguments()[0];
 				if (auto pConQfc = MC().template
-						GetInitExpressionOfType<
+            GetInitExpressionOfType<           // arg_pow := QuadExpr
 						QuadraticFunctionalConstraint>(arg_pow)) {
 					const auto& qe = pConQfc->GetArguments();
 					if (0.0 == std::fabs(qe.constant_term()) &&
 							qe.GetBody().GetLinTerms().empty() &&
 							1 == qe.GetBody().GetQPTerms().size()) {
 						const auto& qpterms = qe.GetBody().GetQPTerms();
-						if (qpterms.coef(0) >= 0.0 &&
-								qpterms.var1(0) != qpterms.var2(0) &&
+            if (qpterms.coef(0) >= 0.0 &&  // don't check if diff vars
 								MC().lb(qpterms.var1(0)) >= 0.0 &&
 								MC().lb(qpterms.var2(0)) >= 0.0) {
 							result.coefs_ = {qpterms.coef(0), 1.0};
@@ -388,31 +389,44 @@ protected:
 							return result;
 						}
 					}
-				}
+        } else {        // It's just some variable
+          if (MC().lb(arg_pow) >= 0.0) {
+            result.coefs_ = {1.0};
+            result.vars_ = {arg_pow};
+            result.coef_extra = 1.0;   // for a new fixed var
+            result.res_vars_to_delete_ = {res_var};
+            return result;
+          }
+        }
 			}
 		}
 		return result;
 	}
 
 	/// Continue processing a linear constraint x>=y,
-	/// if y := ||.|| and x is sqrt(xN*xM).
+  /// if y := ||.|| and x is sqrt(xN*xM) or sqrt(k*x).
 	/// Rotated Qcone.
 	/// @return true iff converted.
 	bool ContinueRotatedSOC(
 			const LinTerms& lint, int iX, int iY,
 			const ConeArgs& lhs_args, const ConeArgs& rhs_args) {
-		assert(2==lhs_args.size());
-		assert(rhs_args);
+    assert(2>=lhs_args.size());
+    assert(1<=lhs_args.size());
+    assert(rhs_args);
     const size_t constNZ =
         (0.0 != std::fabs(rhs_args.const_term));
-    std::vector<double> c
-        (lhs_args.size()+rhs_args.size()+constNZ);
+    std::vector<double> c(2+rhs_args.size()+constNZ);
     std::vector<int> x(c.size());
 		auto coefX_abs = std::fabs(lint.coef(iX));
 		c[0] = 0.5 * lhs_args.coefs_[0] * coefX_abs;
-		c[1] = lhs_args.coefs_[1] * coefX_abs;
 		x[0] = lhs_args.vars_[0];
-		x[1] = lhs_args.vars_[1];
+    if (2==lhs_args.size()) {   // x is sqrt(xN*xM)
+      c[1] = lhs_args.coefs_[1] * coefX_abs;
+      x[1] = lhs_args.vars_[1];
+    } else {                    // x is sqrt(k*x)
+      c[1] = lhs_args.coef_extra * coefX_abs;
+      x[1] = MC().MakeFixedVar(1.0);
+    }
 		auto coefY_abs = std::fabs(lint.coef(iY));
 		for (size_t iPush=0; iPush<rhs_args.size(); ++iPush) {
 			x[iPush+2] = rhs_args.vars_[iPush];

@@ -16,5 +16,9 @@ s.t. StdCone2:
 s.t. RotatedCone1:
    5*sqrt(1.7*x[1]*x[2]) >= sqrt(x[3]^2 + 4.8);
 
+s.t. RotatedCone2:
+   1.45*sqrt(0.7*x[2]) >= sqrt(x[3]^2 + 4.8);
+
+
 s.t. LinCon:
    sum {i in 1..3} x[i] == 5;
