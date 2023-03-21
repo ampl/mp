@@ -68,6 +68,21 @@ void MosekBackend::OpenSolver() {
     env = (MSKenv_t)initialize();
     set_env(env);
   }
+  else {
+    MSKrescodee res = MSK_makeenv(&env, NULL);
+    set_env(env);
+    // Check license here
+    if (MSK_checkoutlicense(env, MSK_FEATURE_PTS))
+    {
+      const auto diag = GetCallbacks().diagnostics;
+      if (diag) {
+        // If a diagnostic function is provided, do not print more
+        // information
+        diag();
+        exit(res);
+      }
+    }
+  }
   status = MSK_maketask(env, 0, 0, &task);
   if (status)
     throw std::runtime_error(fmt::format(
@@ -79,6 +94,7 @@ void MosekBackend::OpenSolver() {
 
   /// Turn off verbosity by default
   MOSEK_CCALL(MSK_putintparam(task, MSK_IPAR_LOG, 0));
+  
   // Register callback for console logging (controlled by the outlev param
   // in all AMPL solver drivers)
   MSK_linkfunctotaskstream(lp(), MSK_STREAM_LOG, NULL, printstr);
