@@ -891,8 +891,10 @@ private:
 		if (ModelAPIAcceptsQuadraticCones())
 			GetEnv().AddOption("cvt:socp passsocp socp",
 												 ModelAPIAcceptsQuadraticCones()>1 ?
-													 "0/1*: Recognize quadratic cones." :
-													 "0*/1: Recognize quadratic cones.",
+                           "0/1*: Recognize quadratic cones vs passing them "
+                           "as pure quadratic constraints." :
+                           "0*/1: Recognize quadratic cones vs passing them "
+                           "as pure quadratic constraints.",
 					options_.passSOCPCones_, 0, 1);
 		options_.passSOCPCones_ = ModelAPIAcceptsQuadraticCones()>1;
 		GetEnv().AddOption("alg:relax relax",
