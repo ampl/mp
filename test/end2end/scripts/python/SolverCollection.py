@@ -35,11 +35,13 @@ def addStdSolvers(solvers: SolverCollection, binPath=""):
     solvers.addSolver(Solver.BaronSolver(path.join(binPath,"baron")))
     solvers.addSolver(Solver.COPTSolver(path.join(binPath,"copt")))
     solvers.addSolver(Solver.MindoptSolver(path.join(binPath,"mindoptampl")))
-    solvers.addSolver(Solver.HighsSolver(path.join(binPath,"highsmp")))
+    solvers.addSolver(Solver.HighsSolver(path.join(binPath,"highs")))
     solvers.addSolver(Solver.XpressSolver(path.join(binPath,"xpressasl")))
     solvers.addSolver(Solver.XPRESSDirectSolver(path.join(binPath,"xpress")))
     solvers.addSolver(Solver.MosekSolver(path.join(binPath,"mosek")))
     solvers.addSolver(Solver.CbcMPSolver(path.join(binPath, "cbc")))
+    solvers.addSolver(Solver.CPLEXODHSolver(path.join(binPath, "cplexodh")))
+    solvers.addSolver(Solver.GUROBIODHSolver(path.join(binPath, "gurobiodh")))
 
 
 # if __name__ == "__main__":
