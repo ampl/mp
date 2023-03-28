@@ -2,6 +2,13 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 
+## unreleased
+- Recognition of second-order conic constraints
+  from algebraic representations and conversion into
+  quadratic constraints; COPT appears to recognize
+  second-order cones from quadratics.
+
+
 ## 20230207
 - *Changes in the MP library*
 - Updated to Copt 6.0.4, which includes bugfixes
