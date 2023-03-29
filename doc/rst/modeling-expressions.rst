@@ -474,19 +474,22 @@ representations. Examples:
 
   .. code-block:: ampl
 
-    x[0] >= sqrt(x[1]^2 + … + x[n]^2);
-    -5*x[0]^2 <= -x[1]^2 - … - x[n]^2,     where x[0] >= 0;
-    0.04 >= abs(x[1]);
+      x[0] >= sqrt(x[1]^2 + … + x[n]^2);
+      -5*x[0]^2 <= -x[1]^2 - … - x[n]^2,     where x[0] >= 0;
+      0.04 >= abs(x[1]);
+
 
 - Rotated SOC  (where x[0], x[1] >= 0):
 
   .. code-block:: ampl
 
-    3*sqrt(5*x[0]*x[1]) >= 15*sqrt(10*x[2]^2 + … + 80*x[n]^2);
-    2*x[0]*x[1] >= x[2]^2 + … + x[n]^2;
+      3*sqrt(5*x[0]*x[1]) >= 15*sqrt(10*x[2]^2 + … + 80*x[n]^2);
+      2*x[0]*x[1] >= x[2]^2 + … + x[n]^2;
+
 
 *Note:* Option `cvt:socp=0` results in second-order conic
-constraints being passed to the solver as quadratics.
+constraints being passed to the solver as quadratics, even if
+the solver has native SOCP API.
 
 
 General nonlinear functions
