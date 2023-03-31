@@ -165,6 +165,7 @@ protected:
 private:
   MSKsoltypee solToFetch_;
   MSKrescodee termCode_;
+  MSKprostae proSta_;
   MSKsolstae solSta_;
 
   /// These options are stored in the class
