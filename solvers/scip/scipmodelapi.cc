@@ -69,7 +69,7 @@ void ScipModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo)
 
 void ScipModelAPI::AddConstraint(const LinConRange& lc) {
   SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, lc.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, lc.size()) );
   for (size_t i = 0; i < lc.size(); i++) {
     vars[i] = getPROBDATA()->vars[lc.pvars()[i]];
   }
@@ -78,11 +78,11 @@ void ScipModelAPI::AddConstraint(const LinConRange& lc) {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, lc.size());
+  SCIPfreeBufferArray(getSCIP(), &vars);
 }
 void ScipModelAPI::AddConstraint(const LinConLE& lc) {
   SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, lc.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, lc.size()) );
   for (size_t i = 0; i < lc.size(); i++) {
     vars[i] = getPROBDATA()->vars[lc.pvars()[i]];
   }
@@ -91,11 +91,11 @@ void ScipModelAPI::AddConstraint(const LinConLE& lc) {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, lc.size());
+  SCIPfreeBufferArray(getSCIP(), &vars);
 }
 void ScipModelAPI::AddConstraint(const LinConEQ& lc) {
   SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, lc.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, lc.size()) );
   for (size_t i = 0; i < lc.size(); i++) {
     vars[i] = getPROBDATA()->vars[lc.pvars()[i]];
   }
@@ -104,11 +104,11 @@ void ScipModelAPI::AddConstraint(const LinConEQ& lc) {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, lc.size());
+  SCIPfreeBufferArray(getSCIP(), &vars);
 }
 void ScipModelAPI::AddConstraint(const LinConGE& lc) {
   SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, lc.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, lc.size()) );
   for (size_t i = 0; i < lc.size(); i++) {
     vars[i] = getPROBDATA()->vars[lc.pvars()[i]];
   }
@@ -117,12 +117,12 @@ void ScipModelAPI::AddConstraint(const LinConGE& lc) {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, lc.size());
+  SCIPfreeBufferArray(getSCIP(), &vars);
 }
 
 void ScipModelAPI::AddConstraint(const AndConstraint &cc)  {
   SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, cc.GetArguments().size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, cc.GetArguments().size()) );
   for (size_t i = 0; i < cc.GetArguments().size(); i++) {
     vars[i] = getPROBDATA()->vars[cc.GetArguments()[i]];
   }
@@ -133,12 +133,12 @@ void ScipModelAPI::AddConstraint(const AndConstraint &cc)  {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, cc.GetArguments().size());
+  SCIPfreeBufferArray(getSCIP(), &vars);
 }
 
 void ScipModelAPI::AddConstraint(const OrConstraint &dc)  {
   SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, dc.GetArguments().size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, dc.GetArguments().size()) );
   for (size_t i = 0; i < dc.GetArguments().size(); i++) {
     vars[i] = getPROBDATA()->vars[dc.GetArguments()[i]];
   }
@@ -149,12 +149,12 @@ void ScipModelAPI::AddConstraint(const OrConstraint &dc)  {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, dc.GetArguments().size());
+  SCIPfreeBufferArray(getSCIP(), &vars);
 }
 
 void ScipModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
   SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, ic.get_constraint().size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, ic.get_constraint().size()) );
   for (size_t i = 0; i < ic.get_constraint().size(); i++) {
     vars[i] = getPROBDATA()->vars[ic.get_constraint().pvars()[i]];
   }
@@ -165,11 +165,11 @@ void ScipModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, ic.get_constraint().size());              
+  SCIPfreeBufferArray(getSCIP(), &vars);              
 }
 void ScipModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
   SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, ic.get_constraint().size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, ic.get_constraint().size()) );
   for (size_t i = 0; i < ic.get_constraint().size(); i++) {
     vars[i] = getPROBDATA()->vars[ic.get_constraint().pvars()[i]];
   }
@@ -186,11 +186,11 @@ void ScipModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons1) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons2) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, ic.get_constraint().size());   
+  SCIPfreeBufferArray(getSCIP(), &vars);   
 }
 void ScipModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
   SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, ic.get_constraint().size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, ic.get_constraint().size()) );
   for (size_t i = 0; i < ic.get_constraint().size(); i++) {
     vars[i] = getPROBDATA()->vars[ic.get_constraint().pvars()[i]];
   }
@@ -201,14 +201,14 @@ void ScipModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, ic.get_constraint().size());
+  SCIPfreeBufferArray(getSCIP(), &vars);
 }
 
 void ScipModelAPI::AddConstraint(const QuadConRange& qc) {
   // allocation of linterm vars
   const auto& lt = qc.GetLinTerms();
   SCIP_VAR** linvars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &linvars, lt.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &linvars, lt.size()) );
   for (size_t i = 0; i < lt.size(); i++) {
     linvars[i] = getPROBDATA()->vars[lt.pvars()[i]];
   }
@@ -216,14 +216,14 @@ void ScipModelAPI::AddConstraint(const QuadConRange& qc) {
   const auto& qt = qc.GetQPTerms();
   // allocation of qterm1 vars
   SCIP_VAR** qvars1 = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &qvars1, qt.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &qvars1, qt.size()) );
   for (size_t i = 0; i < qt.size(); i++) {
     qvars1[i] = getPROBDATA()->vars[qt.pvars1()[i]];
   }
 
   // allocation of qterm2 vars
   SCIP_VAR** qvars2 = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &qvars2, qt.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &qvars2, qt.size()) );
   for (size_t i = 0; i < qt.size(); i++) {
     qvars2[i] = getPROBDATA()->vars[qt.pvars2()[i]];
   }
@@ -233,16 +233,16 @@ void ScipModelAPI::AddConstraint(const QuadConRange& qc) {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &linvars, lt.size());
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &qvars1, qt.size());
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &qvars2, qt.size());
+  SCIPfreeBufferArray(getSCIP(), &linvars);
+  SCIPfreeBufferArray(getSCIP(), &qvars1);
+  SCIPfreeBufferArray(getSCIP(), &qvars2);
 }
 
 void ScipModelAPI::AddConstraint( const QuadConLE& qc ) {
   // allocation of linterm vars
   const auto& lt = qc.GetLinTerms();
   SCIP_VAR** linvars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &linvars, lt.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &linvars, lt.size()) );
   for (size_t i = 0; i < lt.size(); i++) {
     linvars[i] = getPROBDATA()->vars[lt.pvars()[i]];
   }
@@ -250,14 +250,14 @@ void ScipModelAPI::AddConstraint( const QuadConLE& qc ) {
   const auto& qt = qc.GetQPTerms();
   // allocation of qterm1 vars
   SCIP_VAR** qvars1 = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &qvars1, qt.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &qvars1, qt.size()) );
   for (size_t i = 0; i < qt.size(); i++) {
     qvars1[i] = getPROBDATA()->vars[qt.pvars1()[i]];
   }
 
   // allocation of qterm2 vars
   SCIP_VAR** qvars2 = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &qvars2, qt.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &qvars2, qt.size()) );
   for (size_t i = 0; i < qt.size(); i++) {
     qvars2[i] = getPROBDATA()->vars[qt.pvars2()[i]];
   }
@@ -267,16 +267,16 @@ void ScipModelAPI::AddConstraint( const QuadConLE& qc ) {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &linvars, lt.size());
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &qvars1, qt.size());
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &qvars2, qt.size());
+  SCIPfreeBufferArray(getSCIP(), &linvars);
+  SCIPfreeBufferArray(getSCIP(), &qvars1);
+  SCIPfreeBufferArray(getSCIP(), &qvars2);
 }
 
 void ScipModelAPI::AddConstraint( const QuadConEQ& qc ) {
   // allocation of linterm vars
   const auto& lt = qc.GetLinTerms();
   SCIP_VAR** linvars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &linvars, lt.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &linvars, lt.size()) );
   for (size_t i = 0; i < lt.size(); i++) {
     linvars[i] = getPROBDATA()->vars[lt.pvars()[i]];
   }
@@ -284,14 +284,14 @@ void ScipModelAPI::AddConstraint( const QuadConEQ& qc ) {
   const auto& qt = qc.GetQPTerms();
   // allocation of qterm1 vars
   SCIP_VAR** qvars1 = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &qvars1, qt.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &qvars1, qt.size()) );
   for (size_t i = 0; i < qt.size(); i++) {
     qvars1[i] = getPROBDATA()->vars[qt.pvars1()[i]];
   }
 
   // allocation of qterm2 vars
   SCIP_VAR** qvars2 = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &qvars2, qt.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &qvars2, qt.size()) );
   for (size_t i = 0; i < qt.size(); i++) {
     qvars2[i] = getPROBDATA()->vars[qt.pvars2()[i]];
   }
@@ -301,16 +301,16 @@ void ScipModelAPI::AddConstraint( const QuadConEQ& qc ) {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &linvars, lt.size());
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &qvars1, qt.size());
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &qvars2, qt.size());
+  SCIPfreeBufferArray(getSCIP(), &linvars);
+  SCIPfreeBufferArray(getSCIP(), &qvars1);
+  SCIPfreeBufferArray(getSCIP(), &qvars2);
 }
 
 void ScipModelAPI::AddConstraint( const QuadConGE& qc ) {
   // allocation of linterm vars
   const auto& lt = qc.GetLinTerms();
   SCIP_VAR** linvars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &linvars, lt.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &linvars, lt.size()) );
   for (size_t i = 0; i < lt.size(); i++) {
     linvars[i] = getPROBDATA()->vars[lt.pvars()[i]];
   }
@@ -318,14 +318,14 @@ void ScipModelAPI::AddConstraint( const QuadConGE& qc ) {
   const auto& qt = qc.GetQPTerms();
   // allocation of qterm1 vars
   SCIP_VAR** qvars1 = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &qvars1, qt.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &qvars1, qt.size()) );
   for (size_t i = 0; i < qt.size(); i++) {
     qvars1[i] = getPROBDATA()->vars[qt.pvars1()[i]];
   }
 
   // allocation of qterm2 vars
   SCIP_VAR** qvars2 = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &qvars2, qt.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &qvars2, qt.size()) );
   for (size_t i = 0; i < qt.size(); i++) {
     qvars2[i] = getPROBDATA()->vars[qt.pvars2()[i]];
   }
@@ -335,16 +335,16 @@ void ScipModelAPI::AddConstraint( const QuadConGE& qc ) {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &linvars, lt.size());
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &qvars1, qt.size());
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &qvars2, qt.size());
+  SCIPfreeBufferArray(getSCIP(), &linvars);
+  SCIPfreeBufferArray(getSCIP(), &qvars1);
+  SCIPfreeBufferArray(getSCIP(), &qvars2);
 }
 
 /*
 void ScipModelAPI::AddConstraint( const QuadraticConeConstraint& qc ) {
   const auto& arg = qc.GetArguments();
   SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, arg.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, arg.size()) );
   for (size_t i = 0; i < arg.size(); i++) {
     vars[i] = getPROBDATA()->vars[arg[i]];
   }
@@ -354,14 +354,14 @@ void ScipModelAPI::AddConstraint( const QuadraticConeConstraint& qc ) {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, arg.size());
+  SCIPfreeBufferArrayNull(getSCIP(), &vars, arg.size());
 }*/
 
 void ScipModelAPI::AddConstraint(const SOS1Constraint& sos) {
   SCIP_VAR** vars = NULL;
   double* weights = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, sos.size()) );
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &weights, sos.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, sos.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &weights, sos.size()) );
   for (int i = 0; i < sos.size(); i++) {
     vars[i] = getPROBDATA()->vars[sos.get_vars().data()[i]];
     weights[i] = sos.get_weights().data()[i];
@@ -372,15 +372,15 @@ void ScipModelAPI::AddConstraint(const SOS1Constraint& sos) {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, sos.size());
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &weights, sos.size());
+  SCIPfreeBufferArray(getSCIP(), &vars);
+  SCIPfreeBufferArray(getSCIP(), &weights);
 }
 
 void ScipModelAPI::AddConstraint(const SOS2Constraint& sos) {
   SCIP_VAR** vars = NULL;
   double* weights = NULL;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &vars, sos.size()) );
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &weights, sos.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, sos.size()) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &weights, sos.size()) );
   for (int i = 0; i < sos.size(); i++) {
     vars[i] = getPROBDATA()->vars[sos.get_vars().data()[i]];
     weights[i] = sos.get_weights().data()[i];
@@ -391,19 +391,9 @@ void ScipModelAPI::AddConstraint(const SOS2Constraint& sos) {
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &vars, sos.size());
-  SCIPfreeBlockMemoryArrayNull(getSCIP(), &weights, sos.size());
+  SCIPfreeBufferArray(getSCIP(), &vars);
+  SCIPfreeBufferArray(getSCIP(), &weights);
 }
-/*
-void ScipModelAPI::AddConstraint(const SinConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrSin(model(), NULL,
-              cc.GetArguments()[0], cc.GetResultVar(), "") );
-}
-
-void ScipModelAPI::AddConstraint(const CosConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrCos(model(), NULL,
-              cc.GetArguments()[0], cc.GetResultVar(), "") );
-}*/
 
 
 void ScipModelAPI::FinishProblemModificationPhase() {

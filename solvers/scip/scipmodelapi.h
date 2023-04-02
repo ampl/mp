@@ -94,11 +94,11 @@ public:
   void AddConstraint(const AndConstraint& cc);
   ACCEPT_CONSTRAINT(OrConstraint, Recommended, CG_General)
   void AddConstraint(const OrConstraint& dc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinGE& mc);
 
   /// Cones
@@ -117,12 +117,10 @@ public:
   void AddConstraint(const SOS2Constraint& cc);
 
   /// SCIP nonlinear generals
-  /*
-  ACCEPT_CONSTRAINT(SinConstraint, Recommended, CG_General)
-  void AddConstraint(const SinConstraint& cc);
-  ACCEPT_CONSTRAINT(CosConstraint, Recommended, CG_General) // y = cos(x)
-  void AddConstraint(const CosConstraint& cc);  // GRBaddgenconstrCos(x, y);
-  */
+  //ACCEPT_CONSTRAINT(SinConstraint, Recommended, CG_General)
+  //void AddConstraint(const SinConstraint& cc);
+  //ACCEPT_CONSTRAINT(CosConstraint, Recommended, CG_General) // y = cos(x)
+  //void AddConstraint(const CosConstraint& cc);  // GRBaddgenconstrCos(x, y);
 };
 
 } // namespace mp

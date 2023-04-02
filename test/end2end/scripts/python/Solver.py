@@ -726,7 +726,8 @@ class SCIPSolver(MPDirectSolver):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary, 
                  ModelTags.quadratic,
                  ModelTags.quadraticnonconvex,
-                 ModelTags.sos}
+                 ModelTags.sos,
+                 ModelTags.nonlinear}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 

@@ -13,13 +13,13 @@ SCIP_DECL_PROBDELORIG(probdataDelOrigNl)
    //{
    //   SCIP_CALL( SCIPreleaseCons(scip, &(*probdata)->conss[i]) );
    //}
-   //SCIPfreeBlockMemoryArrayNull(scip, &(*probdata)->conss, (*probdata)->nconss);
+   //SCIPfreeBufferArrayNull(scip, &(*probdata)->conss, (*probdata)->nconss);
 
    for( i = 0; i < (*probdata)->nvars; ++i )
    {
       SCIP_CCALL( SCIPreleaseVar(scip, &(*probdata)->vars[i]) );
    }
-   SCIPfreeBlockMemoryArrayNull(scip, &(*probdata)->vars, (*probdata)->nvars);
+   SCIPfreeBlockMemoryArray(scip, &(*probdata)->vars, (*probdata)->nvars);
 
    SCIPfreeMemory(scip, probdata);
 
@@ -124,13 +124,13 @@ void ScipCommon::SetSolverOption(const char* key, double value) {
 
 void ScipCommon::GetSolverOption(const char* key, std::string &value) const {
   char* buffer;
-  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &buffer, SCIP_MAXSTRLEN) );
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &buffer, SCIP_MAXSTRLEN) );
   if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_CHAR)
     SCIP_CCALL( SCIPgetCharParam(getSCIP(), key, buffer) );
   else
     SCIP_CCALL( SCIPgetStringParam(getSCIP(), key, &buffer) );
   value = buffer;
-  SCIPfreeBlockMemoryArray(getSCIP(), &buffer, SCIP_MAXSTRLEN);
+  SCIPfreeBufferArray(getSCIP(), &buffer);
 }
 
 void ScipCommon::SetSolverOption(const char* key, const std::string& value) {
