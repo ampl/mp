@@ -175,6 +175,15 @@ void VisitorModelAPI::AddConstraint( const QuadConGE& qc ) {
                           */
 }
 
+void VisitorModelAPI::AddConstraint( const QuadraticConeConstraint& qc ) {
+  fmt::print("Adding quadratic cone constraint {}\n", qc.GetName());
+}
+
+void VisitorModelAPI::AddConstraint(
+    const RotatedQuadraticConeConstraint& qc ) {
+  fmt::print("Adding rotated quadratic cone constraint {}\n", qc.GetName());
+}
+
 void VisitorModelAPI::AddConstraint(const SOS1Constraint& sos) {
   fmt::print("Adding SOS1 constraint {}\n", sos.GetName());
 /*  int type = VISITOR_SOS_TYPE1;

@@ -95,6 +95,7 @@ void GurobiBackend::OpenGurobi() {
   }
   /* Set default parameters */
   GRBsetintparam(env(), GRB_INT_PAR_LOGTOCONSOLE, 0);
+  GRBsetintparam(env(), GRB_INT_PAR_OUTPUTFLAG, 1);  // allow in general
 }
 
 void GurobiBackend::OpenGurobiModel() {
