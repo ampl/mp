@@ -12,7 +12,7 @@ namespace mp {
   }
 
   void CplexODHBackend::Solve() {
-    int status = HEURopt(HEURptr(), env());
+    int status = HEURopt(HEURptr(), lp());
     WindupCPLEXSolve();
   }
 
