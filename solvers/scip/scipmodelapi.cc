@@ -67,57 +67,29 @@ void ScipModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo)
   }
 }
 
-void ScipModelAPI::AddConstraint(const LinConRange& lc) {
+void ScipModelAPI::linearHelper(const int* pvars, const double* pcoefs, const size_t size, const char* name, const double lb, const double ub) {
   SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, lc.size()) );
-  for (size_t i = 0; i < lc.size(); i++) {
-    vars[i] = getPROBDATA()->vars[lc.pvars()[i]];
-  }
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, size) );
+  for (size_t i = 0; i < size; i++)
+    vars[i] = getPROBDATA()->vars[pvars[i]];
   SCIP_CONS* cons;
-  SCIP_CCALL( SCIPcreateConsBasicLinear(getSCIP(), &cons, lc.GetName(), (int)lc.size(), vars, (double*)lc.pcoefs(), lc.lb(), lc.ub()) );
+  SCIP_CCALL( SCIPcreateConsBasicLinear(getSCIP(), &cons, name, (int)size, vars, (double*)pcoefs, lb, ub) );
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
   SCIPfreeBufferArray(getSCIP(), &vars);
+}
+void ScipModelAPI::AddConstraint(const LinConRange& lc) {
+  linearHelper(lc.pvars(), lc.pcoefs(), lc.size(), lc.GetName(), lc.lb(), lc.ub());
 }
 void ScipModelAPI::AddConstraint(const LinConLE& lc) {
-  SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, lc.size()) );
-  for (size_t i = 0; i < lc.size(); i++) {
-    vars[i] = getPROBDATA()->vars[lc.pvars()[i]];
-  }
-  SCIP_CONS* cons;
-  SCIP_CCALL( SCIPcreateConsBasicLinear(getSCIP(), &cons, lc.GetName(), (int)lc.size(), vars, (double*)lc.pcoefs(), MinusInfinity(), lc.rhs()) );
-  SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
-  SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
-
-  SCIPfreeBufferArray(getSCIP(), &vars);
+  linearHelper(lc.pvars(), lc.pcoefs(), lc.size(), lc.GetName(), MinusInfinity(), lc.ub());
 }
 void ScipModelAPI::AddConstraint(const LinConEQ& lc) {
-  SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, lc.size()) );
-  for (size_t i = 0; i < lc.size(); i++) {
-    vars[i] = getPROBDATA()->vars[lc.pvars()[i]];
-  }
-  SCIP_CONS* cons;
-  SCIP_CCALL( SCIPcreateConsBasicLinear(getSCIP(), &cons, lc.GetName(), (int)lc.size(), vars, (double*)lc.pcoefs(), lc.rhs(), lc.rhs()) );
-  SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
-  SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
-
-  SCIPfreeBufferArray(getSCIP(), &vars);
+  linearHelper(lc.pvars(), lc.pcoefs(), lc.size(), lc.GetName(), lc.ub(), lc.ub());
 }
 void ScipModelAPI::AddConstraint(const LinConGE& lc) {
-  SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, lc.size()) );
-  for (size_t i = 0; i < lc.size(); i++) {
-    vars[i] = getPROBDATA()->vars[lc.pvars()[i]];
-  }
-  SCIP_CONS* cons;
-  SCIP_CCALL( SCIPcreateConsBasicLinear(getSCIP(), &cons, lc.GetName(), (int)lc.size(), vars, (double*)lc.pcoefs(), lc.lb(), Infinity()) );
-  SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
-  SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
-
-  SCIPfreeBufferArray(getSCIP(), &vars);
+  linearHelper(lc.pvars(), lc.pcoefs(), lc.size(), lc.GetName(), lc.lb(), Infinity());
 }
 
 void ScipModelAPI::AddConstraint(const AndConstraint &cc)  {

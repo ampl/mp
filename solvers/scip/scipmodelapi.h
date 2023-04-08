@@ -16,6 +16,9 @@ class ScipModelAPI :
 {
   using BaseModelAPI = BasicFlatModelAPI;
 
+private:
+  void linearHelper(const int* pvars, const double* pcoefs, const size_t size, const char* name, const double lb, const double ub);
+
 public:
   /// Construct
   ScipModelAPI(Env& e) : EnvKeeper(e) { }
