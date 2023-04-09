@@ -21,7 +21,7 @@ public:
   ~CoptBackend();
 
   /// Name displayed in messages
-  static const char* GetSolverName() { return "x-COPT"; }
+  static const char* GetSolverName() { return "COPT"; }
   std::string GetSolverVersion();
   
   static const char* GetAMPLSolverName() { return "copt"; }
