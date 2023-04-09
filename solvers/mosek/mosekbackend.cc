@@ -213,6 +213,7 @@ MSKsoltypee MosekBackend::GetSolutionTypeToFetch() {
 void MosekBackend::Solve() {
   MOSEK_CCALL(MSK_optimizetrm(lp(), &termCode_));
   solToFetch_ = GetSolutionTypeToFetch();
+  MOSEK_CCALL(MSK_getprosta(lp(), solToFetch_, &proSta_));
   MOSEK_CCALL(MSK_getsolsta(lp(), solToFetch_, &solSta_));
   WindupMOSEKSolve();
 }
@@ -286,14 +287,39 @@ std::pair<int, std::string> MosekBackend::ConvertMOSEKStatus() {
   case MSK_SOL_STA_PRIM_AND_DUAL_FEAS:
     return { sol::UNCERTAIN, "feasible solution" + term_info };
   case MSK_SOL_STA_PRIM_INFEAS_CER:
-    return { sol::INFEASIBLE, "primal infeasible solution" + term_info };
+    return { sol::INFEASIBLE, "primal infeasible" + term_info };
   case MSK_SOL_STA_DUAL_INFEAS_CER:
-    return { sol::INF_OR_UNB, "dual infeasible solution" + term_info };
+    return { sol::INF_OR_UNB, "dual infeasible" + term_info };
   case MSK_SOL_STA_UNKNOWN:
   case MSK_SOL_STA_PRIM_ILLPOSED_CER:
   case MSK_SOL_STA_DUAL_ILLPOSED_CER:
   default:
-    return { sol::UNKNOWN, "unknown" + term_info };
+    switch (proSta_) {
+    case MSK_PRO_STA_PRIM_AND_DUAL_FEAS:
+      return
+      { sol::UNCERTAIN, "primal and dual feasible" + term_info };
+    case MSK_PRO_STA_PRIM_FEAS:
+      return { sol::UNCERTAIN, "feasible primal" + term_info };
+    case MSK_PRO_STA_DUAL_FEAS:
+      return { sol::UNCERTAIN, "feasible dual" + term_info };
+    case MSK_PRO_STA_PRIM_INFEAS:
+      return { sol::INFEASIBLE, "primal infeasible" + term_info };
+    case MSK_PRO_STA_DUAL_INFEAS:
+      return { sol::INF_OR_UNB, "dual infeasible" + term_info };
+    case MSK_PRO_STA_PRIM_AND_DUAL_INFEAS:
+      return
+      { sol::INF_OR_UNB, "primal and dual infeasible" + term_info };
+    case MSK_PRO_STA_ILL_POSED:
+      return { sol::NUMERIC, "ill-posed problem" + term_info };
+    case MSK_PRO_STA_PRIM_INFEAS_OR_UNBOUNDED:
+      return { sol::INF_OR_UNB, "infeasible or unbounded" + term_info };
+    case MSK_PRO_STA_UNKNOWN:
+    default:
+      return { sol::UNKNOWN,
+            "unknown (" + std::to_string(solSta_)
+            + ", problem status: " + std::to_string(proSta_)
+            + ")" + term_info };
+    }
   }
 }
 
@@ -823,7 +849,8 @@ ArrayRef<double> MosekBackend::DRay()
   // Problem is checked to be (primal) infeasible at this point, so the ray is the dual solution variable.
   // (Dual can be unbounded or infeasible.)
   std::vector<double> y(NumLinCons());
-  MOSEK_CCALL(MSK_gety(lp(), solToFetch_, (MSKrealt *)y.data()));
+  if (!IsMIP())
+    MOSEK_CCALL(MSK_gety(lp(), solToFetch_, (MSKrealt *)y.data()));
   // Argument is a ModelValues<ValueMap>, which is constructed now from two ValueMaps, an empty for variables, and
   // a second one for constraints. The constraints ValueMap is given as a std::map for only linear constraints
 	auto mv = GetValuePresolver().
