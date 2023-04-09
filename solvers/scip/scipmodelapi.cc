@@ -124,20 +124,21 @@ void ScipModelAPI::AddConstraint(const OrConstraint &dc)  {
   SCIPfreeBufferArray(getSCIP(), &vars);
 }
 
-void ScipModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
+void ScipModelAPI::helpIndicatorLin(const int* pvars, const double* pcoefs, const size_t size, const char* name, const double rhs, const int binary_var, const int binary_value, SCIP_Bool lessthanineq) {
   SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, ic.get_constraint().size()) );
-  for (size_t i = 0; i < ic.get_constraint().size(); i++) {
-    vars[i] = getPROBDATA()->vars[ic.get_constraint().pvars()[i]];
-  }
+  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, size) );
+  for (size_t i = 0; i < size; i++)
+    vars[i] = getPROBDATA()->vars[pvars[i]];
   SCIP_CONS* cons;
-  SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons, ic.GetName(), getPROBDATA()->vars[ic.get_binary_var()],
-    (int)ic.get_constraint().size(), vars, (double*)ic.get_constraint().pcoefs(), ic.get_constraint().rhs(),
-    ic.get_binary_value(), TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
+  SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons, name, getPROBDATA()->vars[binary_var],
+    (int)size, vars, (double*)pcoefs, rhs, binary_value, lessthanineq, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
-  SCIPfreeBufferArray(getSCIP(), &vars);              
+  SCIPfreeBufferArray(getSCIP(), &vars);
+}
+void ScipModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
+  helpIndicatorLin(ic.get_constraint().pvars(), ic.get_constraint().pcoefs(), ic.get_constraint().size(), ic.GetName(), ic.get_constraint().rhs(), ic.get_binary_var(), ic.get_binary_value(), TRUE);
 }
 void ScipModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
   SCIP_VAR** vars = NULL;
@@ -161,19 +162,7 @@ void ScipModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
   SCIPfreeBufferArray(getSCIP(), &vars);   
 }
 void ScipModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
-  SCIP_VAR** vars = NULL;
-  SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, ic.get_constraint().size()) );
-  for (size_t i = 0; i < ic.get_constraint().size(); i++) {
-    vars[i] = getPROBDATA()->vars[ic.get_constraint().pvars()[i]];
-  }
-  SCIP_CONS* cons;
-  SCIP_CCALL( SCIPcreateConsIndicatorGeneric(getSCIP(), &cons, ic.GetName(),getPROBDATA()->vars[ic.get_binary_var()],
-    (int)ic.get_constraint().size(), vars, (double*)ic.get_constraint().pcoefs(), ic.get_constraint().rhs(),
-    ic.get_binary_value(), FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE) );
-  SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
-  SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
-
-  SCIPfreeBufferArray(getSCIP(), &vars);
+  helpIndicatorLin(ic.get_constraint().pvars(), ic.get_constraint().pcoefs(), ic.get_constraint().size(), ic.GetName(), ic.get_constraint().rhs(), ic.get_binary_var(), ic.get_binary_value(), FALSE);
 }
 
 void ScipModelAPI::AddConstraint(const QuadConRange& qc) {

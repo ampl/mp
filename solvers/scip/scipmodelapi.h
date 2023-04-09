@@ -18,6 +18,7 @@ class ScipModelAPI :
 
 private:
   void linearHelper(const int* pvars, const double* pcoefs, const size_t size, const char* name, const double lb, const double ub);
+  void helpIndicatorLin(const int* pvars, const double* pcoefs, const size_t size, const char* name, const double rhs, const int binary_var, const int binary_value, SCIP_Bool lessthanineq);
 
 public:
   /// Construct
