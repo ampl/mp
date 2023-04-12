@@ -5,69 +5,36 @@
 
 #include "mp/backend-to-model-api.h"
 
-extern "C" {
-// TODO Typically import here the solver's C API headers
-//  #include "gcg.h"
-}
-
-/// Instead, faking a typical solver namespace and defs:
-namespace Solver {
-  enum TYPE {
-    VARS = 0,
-    VARS_INT,
-    CONS_LIN,
-    CONS_QUAD,
-    CONS_INDIC,
-    CONS_SOS,
-
-    OBJ
-  };
-
-  class SolverModel {
-    int nEntities[7];
-  public:
-    int addEntity(int type) {
-      return ++nEntities[type];
-    }
-    int getN(int type) {
-      return nEntities[type];
-    }
-  };
-
-  SolverModel* CreateSolverModel();
-  int addContVar(SolverModel& s);
-  int addIntVar(SolverModel& s);
-  int addLinCon(SolverModel& s);
-  int addQuadCon(SolverModel& s);
-  int addIndicCon(SolverModel& s);
-  int addSOSCon(SolverModel& s);
-  int getSolverIntAttr(SolverModel* s, int attr);
-}
-
-
-/// The below would go into actual ...common.h:
+#include "scip/scip.h"
+#include "gcg/gcg.h"
 
 #include "mp/format.h"
+
+/// problem data stored in SCIP
+struct SCIP_ProbData
+{
+   SCIP_VAR**            vars;               /**< variables in the order given by AMPL */
+   int                   nvars;              /**< number of variables */
+
+   SCIP_CONS**           linconss;           /**< linear constraints in the order given by AMPL */
+   int                   i;                  /**< shows free slot of linear constraints */
+   int                   nlinconss;          /**< number of linear constraints */
+};
 
 namespace mp {
 
 /// Information shared by both
 /// `GcgBackend` and `GcgModelAPI`
 struct GcgCommonInfo {
-  // TODO provide accessors to the solver's in-memory model/environment
-  //gcg_env* env() const { return env_; }
-  Solver::SolverModel* lp() const { return lp_; }
+  SCIP* getSCIP() const { return scip_; }
+  void setSCIP(SCIP* scip) { scip_ = scip; }
 
-  // TODO provide accessors to the solver's in-memory model/environment
-  //void set_env(gcg_env* e) { env_ = e; }
-  void set_lp(Solver::SolverModel* lp) { lp_ = lp; }
-
+  SCIP_PROBDATA* getPROBDATA() const { return probdata_; }
+  void setPROBDATA(SCIP_PROBDATA* probdata) { probdata_ = probdata; }
 
 private:
-  // TODO provide accessors to the solver's in-memory model/environment
-  //gcg_env*      env_ = NULL;
-  Solver::SolverModel*      lp_ = NULL;
-
+  SCIP* scip_ = NULL;
+  SCIP_PROBDATA* probdata_;
 };
 
 
@@ -83,13 +50,13 @@ public:
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);
 
-  /// TODO Typically solvers define their own infinity; use them here
-  static constexpr double Infinity() { return INFINITY;  }
-  static constexpr double MinusInfinity() { return -INFINITY; }
+  /// GCG own infinity
+  double Infinity() const;
+  double MinusInfinity() const;
 
 protected:
-  int getIntAttr(int name) const;
-  double getDblAttr(const char* name) const;
+  void OpenSolver();
+  void CloseSolver();
 
   int NumLinCons() const;
   int NumVars() const;
@@ -97,20 +64,14 @@ protected:
   int NumQPCons() const;
   int NumSOSCons() const;
   int NumIndicatorCons() const;
-
-protected:
-  // TODO if desirable, provide function to create the solver's environment
-  // with own license
-  // int (*createEnv) (solver_env**) = nullptr;
-  
 };
 
 
 /// Convenience macro
-// TODO This macro is useful to automatically throw an error if a function in the 
+// This macro is useful to automatically throw an error if a function in the 
 // solver API does not return a valid errorcode. In this mock driver, we define it 
 // ourselves, normally this constant would be defined in the solver's API.
-#define GCG_RETCODE_OK 0
+#define GCG_RETCODE_OK 1
 #define GCG_CCALL( call ) do { if (int e = (call) != GCG_RETCODE_OK) \
   throw std::runtime_error( \
     fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)

@@ -124,8 +124,7 @@ bool GcgBackend::IsMIP() const {
 }
 
 bool GcgBackend::IsQCP() const {
-  return getIntAttr(Solver::CONS_QUAD) > 0;
-// return getIntAttr(GCG_INTATTR_QELEMS) > 0;
+  return false;
 }
 
 ArrayRef<double> GcgBackend::PrimalSolution() {

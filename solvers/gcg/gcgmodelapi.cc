@@ -3,207 +3,90 @@
 
 namespace mp {
 
-void GcgModelAPI::InitProblemModificationPhase(
-    const FlatModelInfo*) {
+void GcgModelAPI::InitProblemModificationPhase(const FlatModelInfo* flat_model_info) {
   // Allocate storage if needed:
-  // auto n_linear_cons =
-  //   flat_model_info->GetNumberOfConstraintsOfGroup(CG_LINEAR);
-  // preallocate_linear_cons( n_linear_cons );
+  int n_linear_cons = flat_model_info->GetNumberOfConstraintsOfGroup(CG_Linear);
+  getPROBDATA()->nlinconss = n_linear_cons;
+  getPROBDATA()->i = 0;
+  GCG_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &getPROBDATA()->linconss, getPROBDATA()->nlinconss) );
 }
 
 void GcgModelAPI::AddVariables(const VarArrayDef& v) {
-  // TODO Add variables using solver API; typically,
-  // first convert the variable
-  // type to the appropriate solver-defined type,
-  // then add them as a bunch
-  int nInteger = 0, nContinuous = 0;
-  for (auto i = v.size(); i--; )
-    if (var::Type::CONTINUOUS == v.ptype()[i])
-      nContinuous++;
-    else
-      nInteger++;
-  fmt::print("Adding {} continuous and {} integer variables.\n", nContinuous, nInteger);
+  assert( SCIPgetStage(getSCIP()) == SCIP_STAGE_PROBLEM );
 
-  /* Typical implementation
-  for (size_t i=v.size(); i--; )
-    vtypes[i] = var::Type::CONTINUOUS == v.ptype()[i] ?
-          GCG_CONTINUOUS : GCG_INTEGER;
-  GCG_CCALL(GCG_AddCols(lp(), (int)v.size(), NULL, NULL,
-    NULL, NULL, NULL, vtypes.data(), v.plb(), v.pub(), v.pnames())); */
+  getPROBDATA()->nvars = v.size();
+  GCG_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &getPROBDATA()->vars, getPROBDATA()->nvars) );
+
+  for (int i = 0; i < v.size(); i++) {
+    SCIP_VAR* var = NULL;
+    double lb = std::isinf(v.plb()[i]) ? MinusInfinity() : v.plb()[i];
+    double ub = std::isinf(v.pub()[i]) ? Infinity() : v.pub()[i];
+    double objcoef = 0.0;
+    SCIP_VARTYPE vartype;
+    if (v.ptype()[i] == var::Type::INTEGER && lb == 0.0 && ub == 1.0)
+      vartype = SCIP_VARTYPE_BINARY;
+    else if (v.ptype()[i] == var::Type::INTEGER)
+      vartype = SCIP_VARTYPE_INTEGER;
+    else
+      vartype = SCIP_VARTYPE_CONTINUOUS;
+    //const char* name = v.pnames()[i];
+    GCG_CCALL( SCIPcreateVarBasic(getSCIP(), &var, NULL, lb, ub, objcoef, vartype) );
+    GCG_CCALL( SCIPaddVar(getSCIP(), var) );
+    getPROBDATA()->vars[i] = var;
+  }
 }
 
 void GcgModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
   if (iobj<1) {
-    fmt::format("Setting first linear objective \"{}\": {} terms.\n",
-                lo.name(), lo.num_terms());
-    /*
-    GCG_CCALL(GCG_SetObjSense(lp(), 
-                    obj::Type::MAX==lo.obj_sense() ? GCG_MAXIMIZE : GCG_MINIMIZE) );
-    GCG_CCALL(GCG_SetColObj(lp(), lo.num_terms(),
-                           lo.vars().data(), lo.coefs().data()) ); */
-  } else {
-//    TODO If we support mutiple objectives, pass them to the solver
-    fmt::format("Setting {}-th linear objective: {} terms.\n", iobj, lo.num_terms());
+    GCG_CCALL( SCIPsetObjsense(getSCIP(), 
+                    obj::Type::MAX==lo.obj_sense() ? SCIP_OBJSENSE_MAXIMIZE : SCIP_OBJSENSE_MINIMIZE) );
+    SCIP_VAR** vars = getPROBDATA()->vars;
+    for (int i = 0; i < lo.num_terms(); i++) {
+      GCG_CCALL( SCIPchgVarObj(getSCIP(), vars[lo.vars()[i]], lo.coefs()[i]) );
+    }
+  } 
+  else {
+    throw std::runtime_error("Multiple linear objectives not supported");
   }
 }
 
 
 void GcgModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
   if (1 > iobj) {
-    fmt::format("Setting first quadratic objective\n");
-    SetLinearObjective(iobj, qo);                         // add the linear part
-    const auto& qt = qo.GetQPTerms();
-    fmt::format("Quadratic part is made of {} terms\n", qt.size());
-
-    // Typical implementation
-    //GCG_CCALL(GCG_SetQuadObj(lp(), qt.size(),
-    //  (int*)qt.pvars1(), (int*)qt.pvars2(),
-    //  (double*)qt.pcoefs()));
+    throw std::runtime_error("Quadratic objectives not supported");
   }
   else {
     throw std::runtime_error("Multiple quadratic objectives not supported");
   }
 }
 
+
+void GcgModelAPI::linearHelper(const int* pvars, const double* pcoefs, const size_t size, const char* name, const double lb, const double ub) {
+  SCIP_VAR** vars = NULL;
+  GCG_CCALL( SCIPallocBufferArray(getSCIP(), &vars, size) );
+  for (size_t i = 0; i < size; i++)
+    vars[i] = getPROBDATA()->vars[pvars[i]];
+
+  SCIP_CONS* cons;
+  GCG_CCALL( SCIPcreateConsBasicLinear(getSCIP(), &cons, name, (int)size, vars, (double*)pcoefs, lb, ub) );
+  GCG_CCALL( SCIPaddCons(getSCIP(), cons) );
+  getPROBDATA()->linconss[getPROBDATA()->i] = cons;
+  getPROBDATA()->i++;
+
+  SCIPfreeBufferArray(getSCIP(), &vars);
+}
 void GcgModelAPI::AddConstraint(const LinConRange& lc) {
-  fmt::print("Adding range linear constraint {}\n", lc.name());
-  fmt::print("{} <=", lc.lb());
-  for (size_t i = 0; i < lc.size(); i++)
-  {
-    fmt::print(" {}", lc.pcoefs()[i] >= 0 ? '+' : '-');
-    if (std::fabs(lc.pcoefs()[i]) != 1.0)
-      fmt::print("{}*", lc.pcoefs()[i]);
-    fmt::print("x{}", lc.pvars()[i]);
-  }
-  fmt::print(" <= {}\n", lc.ub());
-//  GCG_CCALL(GCG_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(), 
- //   NULL, lc.lb(), lc.ub(), lc.name()));
+  linearHelper(lc.pvars(), lc.pcoefs(), lc.size(), lc.GetName(), lc.lb(), lc.ub());
 }
 void GcgModelAPI::AddConstraint(const LinConLE& lc) {
-  fmt::print("Adding <= linear constraint {}\n", lc.GetName());
- // char sense = GCG_LESS_EQUAL;
- // GCG_CCALL(GCG_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
-  //  sense, lc.rhs(), 0, NULL));
+  linearHelper(lc.pvars(), lc.pcoefs(), lc.size(), lc.GetName(), MinusInfinity(), lc.ub());
 }
 void GcgModelAPI::AddConstraint(const LinConEQ& lc) {
-  fmt::print("Adding == linear constraint {}\n", lc.GetName());
-//  char sense = GCG_EQUAL;
-// GCG_CCALL(GCG_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
-//   sense, lc.rhs(), 0, NULL));
+  linearHelper(lc.pvars(), lc.pcoefs(), lc.size(), lc.GetName(), lc.ub(), lc.ub());
 }
 void GcgModelAPI::AddConstraint(const LinConGE& lc) {
-  fmt::print("Adding >= linear constraint {}\n", lc.GetName());
-  //char sense = GCG_GREATER_EQUAL;
-  //GCG_CCALL(GCG_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
-  //  sense, lc.rhs(), 0, NULL));
+linearHelper(lc.pvars(), lc.pcoefs(), lc.size(), lc.GetName(), lc.lb(), Infinity());
 }
-
-void GcgModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
-  fmt::print("Adding indicator constraint {}\n", ic.GetName());
-  /*GCG_CCALL(GCG_AddIndicator(lp(),
-    ic.get_binary_var(), ic.get_binary_value(),
-    (int)ic.get_constraint().size(),
-    ic.get_constraint().pvars(),
-    ic.get_constraint().pcoefs(),
-    GCG_LESS_EQUAL,
-    ic.get_constraint().rhs()));*/
-                               
-}
-void GcgModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
-  fmt::print("Adding indicator constraint {}\n", ic.GetName());
-  /*GCG_CCALL(GCG_AddIndicator(lp(),
-    ic.get_binary_var(), ic.get_binary_value(),
-    (int)ic.get_constraint().size(),
-    ic.get_constraint().pvars(),
-    ic.get_constraint().pcoefs(),
-    GCG_EQUAL,
-    ic.get_constraint().rhs()));*/
-}
-void GcgModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
-  fmt::print("Adding indicator constraint {}\n", ic.GetName());
-  /*GCG_CCALL(GCG_AddIndicator(lp(),
-    ic.get_binary_var(), ic.get_binary_value(),
-    (int)ic.get_constraint().size(),
-    ic.get_constraint().pvars(),
-    ic.get_constraint().pcoefs(),
-    GCG_GREATER_EQUAL,
-    ic.get_constraint().rhs()));*/
-
-}
-
-void GcgModelAPI::AddConstraint(const QuadConRange& qc) {
-  fmt::print("Adding quadratic constraint {}\n", qc.GetName());
-  /*
-  const auto& lt = qc.GetLinTerms();
-  const auto& qt = qc.GetQPTerms();
-  GRB_CALL( GRBaddqrangeconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                          (double*)qt.pcoefs(), qc.lb(), qc.ub(), NULL) );
-  */
-}
-
-void GcgModelAPI::AddConstraint( const QuadConLE& qc ) {
-  fmt::print("Adding quadratic constraint {}\n", qc.GetName());
-  /*
-  const auto& lt = qc.GetLinTerms();
-  const auto& qt = qc.GetQPTerms();
-  GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                          (double*)qt.pcoefs(), GRB_LESS_EQUAL, qc.rhs(), NULL) );
-                          */
-}
-
-void GcgModelAPI::AddConstraint( const QuadConEQ& qc ) {
-  fmt::print("Adding quadratic constraint {}\n", qc.GetName());
-  /*
-  const auto& lt = qc.GetLinTerms();
-  const auto& qt = qc.GetQPTerms();
-  GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                          (double*)qt.pcoefs(), GRB_EQUAL, qc.rhs(), NULL) );
-                          */
-}
-
-void GcgModelAPI::AddConstraint( const QuadConGE& qc ) {
-  fmt::print("Adding quadratic constraint {}\n", qc.GetName());
-  /*
-  const auto& lt = qc.GetLinTerms();
-  const auto& qt = qc.GetQPTerms();
-  GRB_CALL( GRBaddqconstr(model(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
-                          qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                          (double*)qt.pcoefs(), GRB_GREATER_EQUAL, qc.rhs(), NULL) );
-                          */
-}
-
-void GcgModelAPI::AddConstraint( const QuadraticConeConstraint& qc ) {
-  fmt::print("Adding quadratic cone constraint {}\n", qc.GetName());
-}
-
-void GcgModelAPI::AddConstraint(
-    const RotatedQuadraticConeConstraint& qc ) {
-  fmt::print("Adding rotated quadratic cone constraint {}\n", qc.GetName());
-}
-
-void GcgModelAPI::AddConstraint(const SOS1Constraint& sos) {
-  fmt::print("Adding SOS1 constraint {}\n", sos.GetName());
-/*  int type = GCG_SOS_TYPE1;
-  int beg = 0;
-  const int size = sos.size();
-  GCG_CCALL(GCG_AddSOSs(lp(), 1, &type, &beg,
-    &size, (int*)sos.get_vars().data(),
-    (double*)sos.get_weights().data())); */
-}
-
-void GcgModelAPI::AddConstraint(const SOS2Constraint& sos) {
-  fmt::print("Adding SOS1 constraint {}\n", sos.GetName());
-  /*int type = GCG_SOS_TYPE2;
-  int beg = 0;
-  const int size = sos.size();
-  GCG_CCALL(GCG_AddSOSs(lp(), 1, &type, &beg,
-    &size, (int*)sos.get_vars().data(),
-    (double*)sos.get_weights().data()));*/
-}
-
 
 void GcgModelAPI::FinishProblemModificationPhase() {
 }

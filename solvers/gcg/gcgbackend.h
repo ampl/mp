@@ -26,7 +26,7 @@ public:
   /// AMPL driver name displayed in messages
   static const char* GetAMPLSolverLongName() { return "AMPL-GCG"; }
   /// Solver name displayed in messages
-  static const char* GetSolverName() { return "x-GCG"; }
+  static const char* GetSolverName() { return "GCG"; }
   /// Version displayed with -v
   std::string GetSolverVersion();
   

@@ -16,6 +16,9 @@ class GcgModelAPI :
 {
   using BaseModelAPI = BasicFlatModelAPI;
 
+private:
+  void linearHelper(const int* pvars, const double* pcoefs, const size_t size, const char* name, const double lb, const double ub);
+
 public:
   /// Construct
   GcgModelAPI(Env& e) : EnvKeeper(e) { }
@@ -71,47 +74,6 @@ public:
 
   /// Ask if the solver accepts non-convex quadratic constraints
   static constexpr bool AcceptsNonconvexQC() { return false; }
-
-  /// QuadConRange is optional.
-  ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Quadratic)
-  void AddConstraint(const QuadConRange& qc);
-
-  /// If using quadratics,
-  /// QuadCon(LE/EQ/GE) should have 'Recommended'
-  /// and have an implementation.
-  ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Quadratic)
-  void AddConstraint(const QuadConLE& qc);
-  ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Quadratic)
-  void AddConstraint(const QuadConEQ& qc);
-  ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Quadratic)
-  void AddConstraint(const QuadConGE& qc);
-
-  /// Cones
-  ACCEPT_CONSTRAINT(QuadraticConeConstraint, Recommended, CG_Conic)
-  void AddConstraint(const QuadraticConeConstraint& qc);
-  ACCEPT_CONSTRAINT(RotatedQuadraticConeConstraint, Recommended, CG_Conic)
-  void AddConstraint(const RotatedQuadraticConeConstraint& qc);
-
-  /// Linear indicator constraints can be used as
-  /// auxiliary constraints for logical conditions.
-  /// If not handled, the compared expressions need
-  /// deducible finite bounds for a big-M redefinition.
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, AcceptedButNotRecommended, CG_General)
-  void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, AcceptedButNotRecommended, CG_General)
-  void AddConstraint(const IndicatorConstraintLinEQ& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, AcceptedButNotRecommended, CG_General)
-  void AddConstraint(const IndicatorConstraintLinGE& mc);
-
-  /// SOS constraints can be used by AMPL for redefinition of
-  /// piecewise-linear expressions.
-  /// Set ``option pl_linearize 0;`` in AMPL if the solver
-  /// supports PL natively.
-  ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
-  void AddConstraint(const SOS1Constraint& cc);
-  ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
-  void AddConstraint(const SOS2Constraint& cc);
-
 };
 
 } // namespace mp

@@ -1,109 +1,150 @@
 #include "mp/format.h"
 #include "gcgcommon.h"
 
-namespace Solver {
+static
+SCIP_DECL_PROBDELORIG(probdataDelOrigNl)
+{
+  int i;
 
-  SolverModel* CreateSolverModel() {
-    return new SolverModel();
+  assert((*probdata)->vars != NULL || (*probdata)->nvars == 0);
+  assert((*probdata)->linconss != NULL || (*probdata)->nlinconss == 0);
+
+  for( i = 0; i < (*probdata)->nlinconss; ++i )
+  {
+    SCIP_CALL( SCIPreleaseCons(scip, &(*probdata)->linconss[i]) );
   }
-  int addContVar(SolverModel& s) {
-    return s.addEntity(Solver::VARS_INT);
+  SCIPfreeBlockMemoryArray(scip, &(*probdata)->linconss, (*probdata)->nlinconss);
+
+  for( i = 0; i < (*probdata)->nvars; ++i )
+  {
+    SCIP_CCALL( SCIPreleaseVar(scip, &(*probdata)->vars[i]) );
   }
-  int addIntVar(SolverModel& s) {
-    return s.addEntity(Solver::VARS);
-  }
-  int addLinCon(SolverModel& s) {
-    return s.addEntity(Solver::CONS_LIN);
-  }
-  int addQuadCon(SolverModel& s) {
-    return s.addEntity(Solver::CONS_QUAD);
-  }
-  int addIndicCon(SolverModel& s) {
-    return s.addEntity(Solver::CONS_INDIC);
-  }
-  int addSOSCon(SolverModel& s) {
-    return s.addEntity(Solver::CONS_SOS);
-  }
-  int getSolverIntAttr(SolverModel* s, int attr) {
-    return s->getN(attr);
-  }
+  SCIPfreeBlockMemoryArray(scip, &(*probdata)->vars, (*probdata)->nvars);
+
+  SCIPfreeMemory(scip, probdata);
+
+  return SCIP_OKAY;
 }
 namespace mp {
 
-int GcgCommon::getIntAttr(int name)  const {
-  int value = 0;
-  /* TODO Utility function to get the value of an integer attribute 
-  * from the solver API 
-  GCG_CCALL(GCG_GetIntAttr(lp_, name, &value)); */
-  return getSolverIntAttr(lp(), name);
+void GcgCommon::OpenSolver() {
+  int status = 0;
+  SCIP* scip = NULL;
+  SCIP_PROBDATA* probdata = NULL;
+
+  // initialize SCIP
+  status = SCIPcreate(&scip);
+  setSCIP(scip); // Assign it
+
+  // include default GCG plugins
+  GCG_CCALL( SCIPincludeGcglugins(scip) );
+
+  // initialize empty SCIP problem
+  GCG_CCALL( SCIPallocClearMemory(scip, &probdata) );
+  GCG_CCALL( SCIPcreateProb(scip, "", probdataDelOrigNl, NULL, NULL, NULL, NULL, NULL, probdata) );
+  setPROBDATA(probdata);
+
+  if (status != 1)
+    throw std::runtime_error( fmt::format(
+          "Failed to create problem, error code {}.", status ) );
+  SetSolverOption("display/verblevel", 0);
 }
-double GcgCommon::getDblAttr(const char* name) const  {
-  double value = 0;
-  /* TODO Utility function to get the value of an integer attribute
- * from the solver API
-  GCG_CCALL(GCG_GetDblAttr(lp_, name, &value)); */
-  return value;
+
+void GcgCommon::CloseSolver() {
+  SCIP* scip = getSCIP();
+
+  // free SCIP
+  GCG_CCALL( SCIPfree(&scip) );
 }
 
 int GcgCommon::NumLinCons() const {
-  // TODO Get number of linear constraints using solver API
-  // return getIntAttr(GCG_INTATTR_ROWS);
-  return 0;
+  return getPROBDATA()->nlinconss;
 }
 
 int GcgCommon::NumVars() const {
-  // TODO Get number of linear constraints using solver API
-  //  return getIntAttr(GCG_INTATTR_COLS);
-  return 0;
+  return getPROBDATA()->nvars;
 }
 
 int GcgCommon::NumObjs() const {
-  // TODO Get number of objectives using solver API
-  //return GCGgetnumobjs (env_, lp_);
-  return 0;
+  return 1;
 }
 
 int GcgCommon::NumQPCons() const {
-  // TODO Get number of quadratic constraints using solver API
-  // return getIntAttr(GCG_INTATTR_QCONSTRS);
   return 0;
 }
 
 int GcgCommon::NumSOSCons() const {
-  // TODO Get number of SOS constraints using solver API
-  // return getIntAttr(GCG_INTATTR_SOSS);
   return 0;
 }
 
 int GcgCommon::NumIndicatorCons() const {
-  // TODO Get number of indicator constraints using solver API
-  // return getIntAttr(GCG_INTATTR_INDICATORS);
   return 0;
 }
 
+
 void GcgCommon::GetSolverOption(const char* key, int &value) const {
-  //GCG_CCALL( GCG_GetIntParam(lp_, key, &value) );
+  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_BOOL) {
+    SCIP_Bool buffer;
+    GCG_CCALL( SCIPgetBoolParam(getSCIP(), key, &buffer) );
+    value = (int)buffer;
+  }
+  else
+    GCG_CCALL( SCIPgetIntParam(getSCIP(), key, &value) );
 }
 
 void GcgCommon::SetSolverOption(const char* key, int value) {
-  //GCG_CCALL(GCG_SetIntParam(lp_, key, value));
+  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_BOOL)
+    GCG_CCALL( SCIPsetBoolParam(getSCIP(), key, value) );
+  else
+    GCG_CCALL( SCIPsetIntParam(getSCIP(), key, value) );
 }
 
 void GcgCommon::GetSolverOption(const char* key, double &value) const {
-  //GCG_CCALL(GCG_GetDblParam(lp_, key, &value) );
+  GCG_CCALL( SCIPgetRealParam(getSCIP(), key, &value) );
 }
 
 void GcgCommon::SetSolverOption(const char* key, double value) {
- // GCG_CCALL(GCG_SetDblParam(lp_, key, value) );
+  GCG_CCALL( SCIPsetRealParam(getSCIP(), key, value) );
 }
 
 void GcgCommon::GetSolverOption(const char* key, std::string &value) const {
-  throw std::runtime_error("Not implemented"); // TODO
+  char* buffer;
+  GCG_CCALL( SCIPallocBufferArray(getSCIP(), &buffer, SCIP_MAXSTRLEN) );
+  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_CHAR)
+    GCG_CCALL( SCIPgetCharParam(getSCIP(), key, buffer) );
+  else
+    GCG_CCALL( SCIPgetStringParam(getSCIP(), key, &buffer) );
+  value = buffer;
+  SCIPfreeBufferArray(getSCIP(), &buffer);
 }
 
 void GcgCommon::SetSolverOption(const char* key, const std::string& value) {
-  throw std::runtime_error("Not implemented"); // TODO
+  if (SCIPparamGetType(SCIPgetParam(getSCIP(), key))==SCIP_PARAMTYPE_CHAR)
+    GCG_CCALL( SCIPsetCharParam(getSCIP(), key, value.c_str()[0]) );
+  else
+    GCG_CCALL( SCIPsetStringParam(getSCIP(), key, value.c_str()) );
 }
 
+
+double GcgCommon::Infinity() const { 
+  double inf;
+  GetSolverOption("numerics/infinity", inf);
+  return inf;  
+}
+
+double GcgCommon::MinusInfinity() const { 
+  double inf;
+  GetSolverOption("numerics/infinity", inf);
+  return -inf;  
+}
+
+bool GcgCommon::IsContinuous() {
+  // True iff gcg has only continuous variables
+  for (int i = 0; i < getPROBDATA()->nvars; i++) {
+    if (SCIPvarGetType(getPROBDATA()->vars[i]) != SCIP_VARTYPE_CONTINUOUS)
+      return false;
+  }
+  return true;
+}
 
 } // namespace mp
