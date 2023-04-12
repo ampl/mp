@@ -2,12 +2,12 @@
 
 namespace mp {
 
-void ScipModelAPI::InitProblemModificationPhase(
-    const FlatModelInfo*) {
+void ScipModelAPI::InitProblemModificationPhase(const FlatModelInfo* flat_model_info) {
   // Allocate storage if needed:
-  // auto n_linear_cons =
-  //   flat_model_info->GetNumberOfConstraintsOfGroup(CG_LINEAR);
-  // preallocate_linear_cons( n_linear_cons );
+  int n_linear_cons = flat_model_info->GetNumberOfConstraintsOfGroup(CG_Linear);
+  getPROBDATA()->nlinconss = n_linear_cons;
+  getPROBDATA()->i = 0;
+  SCIP_CCALL( SCIPallocBlockMemoryArray(getSCIP(), &getPROBDATA()->linconss, getPROBDATA()->nlinconss) );
 }
 
 void ScipModelAPI::AddVariables(const VarArrayDef& v) {
@@ -73,10 +73,12 @@ void ScipModelAPI::linearHelper(const int* pvars, const double* pcoefs, const si
   SCIP_CCALL( SCIPallocBufferArray(getSCIP(), &vars, size) );
   for (size_t i = 0; i < size; i++)
     vars[i] = getPROBDATA()->vars[pvars[i]];
+
   SCIP_CONS* cons;
   SCIP_CCALL( SCIPcreateConsBasicLinear(getSCIP(), &cons, name, (int)size, vars, (double*)pcoefs, lb, ub) );
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
-  SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
+  getPROBDATA()->linconss[getPROBDATA()->i] = cons;
+  getPROBDATA()->i++;
 
   SCIPfreeBufferArray(getSCIP(), &vars);
 }

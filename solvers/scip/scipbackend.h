@@ -59,16 +59,21 @@ public:
   /**
   * Get/Set AMPL var/con statii
   **/
-  ALLOW_STD_FEATURE(BASIS, true)
+  ALLOW_STD_FEATURE(BASIS, false)
   // TODO If getting/setting a basis is supported, implement the 
   // accessor and the setter below
   SolutionBasis GetBasis() override;
   void SetBasis(SolutionBasis) override;
-
+  /**
+  * General warm start, e.g.,
+  * set primal/dual initial guesses for continuous case
+  **/
+  ALLOW_STD_FEATURE( WARMSTART, false )
+  void AddPrimalDualStart(Solution sol) override;
   /**
   * MIP warm start
   **/
-  // TODO If MIP warm start is supported, implement the function below
+  // If MIP warm start is supported, implement the function below
   // to set a non-presolved starting solution
   ALLOW_STD_FEATURE(MIPSTART, true)
   void AddMIPStart(ArrayRef<double> x0) override;
@@ -77,7 +82,7 @@ public:
  /**
   * Get MIP Gap
   **/
-  // TODO Implement to return MIP gap
+  // return MIP gap
   // (adds option mip:return_gap)
   ALLOW_STD_FEATURE(RETURN_MIP_GAP, true)
   double MIPGap() override;
@@ -85,7 +90,7 @@ public:
   /**
   * Get MIP dual bound
   **/
-  // TODO Implement to return the best dual bound value
+  // return the best dual bound value
   // (adds option mip:bestbound)
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
   double BestDualBound() override;

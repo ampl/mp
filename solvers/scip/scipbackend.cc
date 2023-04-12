@@ -81,7 +81,6 @@ bool ScipBackend::IsQCP() const {
 ArrayRef<double> ScipBackend::PrimalSolution() {
   SCIP* scip = getSCIP();
   int num_vars = NumVars();
-  int error;
   std::vector<double> x(num_vars);
   for (int i = 0; i < num_vars; i++)
     x[i] = SCIPgetSolVal(scip, SCIPgetBestSol(scip), getPROBDATA()->vars[i]);
@@ -95,10 +94,6 @@ pre::ValueMapDbl ScipBackend::DualSolution() {
 ArrayRef<double> ScipBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
- // int error = SCIP_GetLpSolution(lp(), NULL, NULL, pi.data(), NULL);
-  int error = 0;
-  if (error)
-    pi.clear();
   return pi;
 }
 
@@ -152,28 +147,31 @@ void ScipBackend::ReportSCIPResults() {
 }
 std::vector<double> ScipBackend::getPoolSolution(int i)
 {
-  std::vector<double> vars(NumVars());
- // SCIP_CCALL(SCIP_GetPoolSolution(lp(), i, NumVars(), NULL, vars.data()));
+  SCIP* scip = getSCIP();
+  int num_vars = NumVars();
+  std::vector<double> vars(num_vars);
+  for (int j = 0; j < num_vars; j++)
+    vars[j] = SCIPgetSolVal(scip, SCIPgetSols(scip)[i], getPROBDATA()->vars[j]);
   return vars;
 }
 double ScipBackend::getPoolObjective(int i)
 {
+  assert(i < SCIPgetNSols(getSCIP()));
   double obj;
- // SCIP_CCALL(SCIP_GetPoolObjVal(lp(), i, &obj));
+  obj = SCIPgetSolOrigObj(getSCIP(), SCIPgetSols(getSCIP())[i]);
   return obj;
 }
 void ScipBackend::ReportSCIPPool() {
   if (!IsMIP())
     return;
   int iPoolSolution = -1;
-  int nsolutions;
-  /*
-  while (++iPoolSolution < getIntAttr(SCIP_INTATTR_POOLSOLS)) {
+  int nsolutions = SCIPgetNSols(getSCIP());
+  
+  while (++iPoolSolution < nsolutions) {
     ReportIntermediateSolution(
       { getPoolSolution(iPoolSolution),
         {}, { getPoolObjective(iPoolSolution) } });
   }
-  */
 }
 
 
@@ -476,10 +474,29 @@ void ScipBackend::SetBasis(SolutionBasis basis) {
   ConStatii(constt);
 }
 
+void ScipBackend::AddPrimalDualStart(Solution sol)
+{
+  auto mv = GetValuePresolver().PresolveSolution(
+        { sol.primal, sol.dual } );
+  auto x0 = mv.GetVarValues()();
+	auto pi0 = mv.GetConValues()(CG_Linear);
+  SCIP_SOL* solution;
+  SCIP_Bool keep;
+  SCIP_CCALL( SCIPcreateSol(getSCIP(), &solution, NULL) );
+
+  SCIP_CCALL( SCIPsetSolVals(getSCIP(), solution, getPROBDATA()->nvars, getPROBDATA()->vars, x0.data()) );
+
+  SCIP_CCALL( SCIPaddSolFree(getSCIP(), &solution, &keep) );
+}
 
 void ScipBackend::AddMIPStart(ArrayRef<double> x0) {
-  //SCIP_CCALL(SCIP_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
+  SCIP_SOL* solution;
+  SCIP_Bool keep;
+  SCIP_CCALL( SCIPcreateSol(getSCIP(), &solution, NULL) );
 
+  SCIP_CCALL( SCIPsetSolVals(getSCIP(), solution, getPROBDATA()->nvars, getPROBDATA()->vars, (double*)x0.data()) );
+
+  SCIP_CCALL( SCIPaddSolFree(getSCIP(), &solution, &keep) );
 }
 
 

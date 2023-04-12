@@ -16,8 +16,9 @@ struct SCIP_ProbData
    SCIP_VAR**            vars;               /**< variables in the order given by AMPL */
    int                   nvars;              /**< number of variables */
 
-   SCIP_CONS**           conss;              /**< constraints in the order given by AMPL */
-   int                   nconss;             /**< number of constraints */
+   SCIP_CONS**           linconss;           /**< linear constraints in the order given by AMPL */
+   int                   i;                  /**< shows free slot of linear constraints */
+   int                   nlinconss;          /**< number of linear constraints */
 };
 
 namespace mp {
@@ -49,7 +50,7 @@ public:
   void GetSolverOption(const char* key, std::string& value) const;
   void SetSolverOption(const char* key, const std::string& value);
 
-  /// TODO Typically solvers define their own infinity; use them here
+  /// SCIP own infinity
   double Infinity() const;
   double MinusInfinity();
 

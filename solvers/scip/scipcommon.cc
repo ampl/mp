@@ -4,26 +4,26 @@
 static
 SCIP_DECL_PROBDELORIG(probdataDelOrigNl)
 {
-   int i;
+  int i;
 
-   assert((*probdata)->vars != NULL || (*probdata)->nvars == 0);
-   //assert((*probdata)->conss != NULL || (*probdata)->conss == 0);
+  assert((*probdata)->vars != NULL || (*probdata)->nvars == 0);
+  assert((*probdata)->linconss != NULL || (*probdata)->nlinconss == 0);
 
-   //for( i = 0; i < (*probdata)->nconss; ++i )
-   //{
-   //   SCIP_CALL( SCIPreleaseCons(scip, &(*probdata)->conss[i]) );
-   //}
-   //SCIPfreeBufferArrayNull(scip, &(*probdata)->conss, (*probdata)->nconss);
+  for( i = 0; i < (*probdata)->nlinconss; ++i )
+  {
+    SCIP_CALL( SCIPreleaseCons(scip, &(*probdata)->linconss[i]) );
+  }
+  SCIPfreeBlockMemoryArray(scip, &(*probdata)->linconss, (*probdata)->nlinconss);
 
-   for( i = 0; i < (*probdata)->nvars; ++i )
-   {
-      SCIP_CCALL( SCIPreleaseVar(scip, &(*probdata)->vars[i]) );
-   }
-   SCIPfreeBlockMemoryArray(scip, &(*probdata)->vars, (*probdata)->nvars);
+  for( i = 0; i < (*probdata)->nvars; ++i )
+  {
+    SCIP_CCALL( SCIPreleaseVar(scip, &(*probdata)->vars[i]) );
+  }
+  SCIPfreeBlockMemoryArray(scip, &(*probdata)->vars, (*probdata)->nvars);
 
-   SCIPfreeMemory(scip, probdata);
+  SCIPfreeMemory(scip, probdata);
 
-   return SCIP_OKAY;
+  return SCIP_OKAY;
 }
 
 namespace mp {
@@ -59,23 +59,14 @@ void ScipCommon::CloseSolver() {
 }
 
 int ScipCommon::NumLinCons() const {
-  // Get number of linear constraints using solver API
-  int nlinconss = 0;
-  for (int i = 0; i < SCIPgetNOrigConss(getSCIP()); i++) {
-    SCIP_CONS* cons = SCIPgetOrigConss(getSCIP())[i];
-    if (strcmp(SCIPconshdlrGetName(SCIPconsGetHdlr(cons)), "linear") == 1)
-      nlinconss++;
-  }
-  return nlinconss;
+  return getPROBDATA()->nlinconss;
 }
 
 int ScipCommon::NumVars() const {
-  // Get number of active problem variables
   return getPROBDATA()->nvars;
 }
 
 int ScipCommon::NumObjs() const {
-  // Get number of objectives using solver API
   return 1;
 }
 
