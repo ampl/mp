@@ -751,23 +751,6 @@ class HighsSolver(MPDirectSolver):
                  ModelTags.quadratic_obj}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
-class SCIPSolver(MPDirectSolver):
-    #def _setLPMethod(self, method : str):
-    #    m  = "simplex" if method == "SIMPLEX" else "ipm"
-    #    return f"alg:method {m}"
-
-    def _getAMPLOptionsName(self):
-        return "scip"
-
-    #def _setNThreads(self, threads):
-    #    parallel="parallel=on" if threads!=1 else ""
-    #    return f"threads={threads} {parallel}"
-
-    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary, 
-                 ModelTags.plinear}
-        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
-
 
 class COPTSolver(MPDirectSolver):
     def _setLPMethod(self, method : str):
