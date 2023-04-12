@@ -84,16 +84,11 @@ protected:
 
   void ReadNLModel(const std::string& nl_filename,
                    const std::string& filename_no_ext,
-                   void (*cb_checkmodel)(size_t, size_t, size_t))
+                   Checker_AMPLS_ModeltTraits cb_checkmodel)
   override {
     steady_clock::time_point start = steady_clock::now();
 
     ReadNLFile(nl_filename);
-
-    if (cb_checkmodel)
-      cb_checkmodel(GetPB().num_vars(),
-                    GetPB().num_algebraic_cons(),
-                    GetPB().num_logical_cons());
 
     double read_time = GetTimeAndReset(start);
     if (GetEnv().timing())
@@ -101,6 +96,12 @@ protected:
 
     MakeProperSolutionHandler(filename_no_ext);
     ConvertModelAndUpdateBackend();
+
+    if (cb_checkmodel) {
+      AMPLS_ModelTraits mtraits;
+      GetCvt().FillModelTraits(mtraits);
+      cb_checkmodel(&mtraits);
+    }
 
     double cvt_time = GetTimeAndReset(start);
     if (GetEnv().timing())

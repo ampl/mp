@@ -126,7 +126,8 @@ protected:
   /// Solution values. The vectors are emptied if not available
   ArrayRef<double> PrimalSolution() override;
   pre::ValueMapDbl DualSolution() override;
-  ArrayRef<double> DualSolution_LP();
+	ArrayRef<double> DualSolution_LP();
+	ArrayRef<double> DualSolution_Cones();
 
   void WindupMOSEKSolve();
 
@@ -143,7 +144,10 @@ protected:
   double SimplexIterations() const;
   int BarrierIterations() const;
 
+  /// Solution + termination status
   std::pair<int, std::string> ConvertMOSEKStatus();
+  /// Text to add for termination status
+  std::string ConvertMOSEKTermStatus();
   void AddMOSEKMessages();
 
   ArrayRef<int> VarStatii();
@@ -161,6 +165,7 @@ protected:
 private:
   MSKsoltypee solToFetch_;
   MSKrescodee termCode_;
+  MSKprostae proSta_;
   MSKsolstae solSta_;
 
   /// These options are stored in the class

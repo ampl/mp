@@ -13,9 +13,14 @@ endif ()
 set(MP_CMAKE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/support/cmake)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MP_CMAKE_MODULE_DIR})
 
+## Use CCache to optimize recompilation
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+  set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+  set(CMAKE_Fortran_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+else()
+  message(STATUS "   HINT: Install ccache for faster recompilation")
 endif()
 
 include(init)
@@ -209,7 +214,7 @@ endmacro()
 include_directories(include)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-set(MP_DATE 20221228)
+set(MP_DATE 20230330)
 
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
@@ -342,6 +347,9 @@ add_prefix(MP_FLAT_REDEF_HEADERS include/mp/flat/redef/
 
 add_prefix(MP_FLAT_REDEF_STD_HEADERS include/mp/flat/redef/std/
   range_con.h)
+
+add_prefix(MP_FLAT_REDEF_STD_HEADERS include/mp/flat/redef/conic/
+  cones.h qcones2qc.h)
 
 add_prefix(MP_FLAT_REDEF_MIP_HEADERS include/mp/flat/redef/MIP/
   converter_mip.h redefs_mip_std.h abs.h alldiff.h

@@ -20,7 +20,10 @@
 #include "mp/flat/constr_prop_down.h"
 #include "mp/valcvt.h"
 #include "mp/flat/redef/std/range_con.h"
+#include "mp/flat/redef/conic/cones.h"
+#include "mp/flat/redef/conic/qcones2qc.h"
 #include "mp/utils-file.h"
+#include "mp/ampls-ccallbacks.h"
 
 namespace mp {
 
@@ -135,7 +138,7 @@ public:
   AssignResult2Args(FuncConstraint&& fc) {
     auto fcc = MakeFuncConstrConverter<Impl, FuncConstraint>(
           *this, std::forward<FuncConstraint>(fc));
-    return fcc.Convert();
+		return fcc.Convert();
   }
 
   /// Same, but always return a variable
@@ -148,27 +151,80 @@ public:
     return vc.get_var();
   }
 
-  /// Replace functional expression defining a given variable
+	/// Typedef ConInfo; constraint location
+	using ConInfo = AbstractConstraintLocation;
+
+	/// Replace functional expression defining a given variable.
   template <class FuncConstraint>
   void RedefineVariable(int res_var, FuncConstraint&& fc) {
     assert( MPD( HasInitExpression(res_var) ) );
+		auto ci_old = MPD( GetInitExpression(res_var) );
     fc.SetResultVar(res_var);
-    auto i = MPD( AddConstraint(std::move(fc) ) );
-    auto& ck = GET_CONSTRAINT_KEEPER( FuncConstraint );
+		// If this expression exists, use it.
+		// TODO make sure any new context is re-converted
+		// if necessary.
+		auto i = MPD( MapFind(fc) );
+		if (i<0)
+			i = MPD( AddConstraint(std::move(fc)) );
+		auto& ck = GET_CONSTRAINT_KEEPER( FuncConstraint );
     ConInfo ci{&ck, i};
     ReplaceInitExpression(res_var, ci);
+		MarkAsDeleted(ci_old);
   }
 
 
+	/// Variables' reference counting ///////////////////////////////////
+	/// Currently only for defined variables ////////////////////////////
+
+	/// Use "+1" a variable
+	void IncrementVarUsage(int v) {
+		++VarUsageRef(v);
+	}
+
+	/// Unuse result variable.
+  /// Actually this is to 'unuse' the init expression
+  /// - might change naming.
+	/// Throw if already not used.
+	void DecrementVarUsage(int v) {
+		assert(VarUsageRef(v)>0);
+		if (! (--VarUsageRef(v))) {
+			if (HasInitExpression(v))
+				MarkAsDeleted(GetInitExpression(v));
+		}
+	}
+
+	/// Fix unused defined vars.
+	/// Normally should delete them.
+	void FixUnusedDefinedVars() {
+		for (auto i=num_vars(); i--; ) {
+			if (HasInitExpression(i) &&
+					! VarUsageRef(i)) {
+				set_var_lb(i, 0.0);      // fix to 0
+				set_var_ub(i, 0.0);
+			}
+		}
+	}
+
+
 protected:
+	int& VarUsageRef(int i) {
+		assert(i>=0 && i<num_vars());
+		if ((size_t)i>=refcnt_vars_.size())
+			refcnt_vars_.resize(
+						std::max((size_t)num_vars(),
+										 (size_t)(refcnt_vars_.size()*1.4)));
+		return refcnt_vars_[i];
+	}
+
   //////////////////////////// CUSTOM CONSTRAINTS CONVERSION ////////////////////////////
   ///
   //////////////////////////// THE CONVERSION LOOP: BREADTH-FIRST ///////////////////////
   void ConvertItems() {
     try {
+			MPD( Convert2Cones(); );                 // sweep before other conversions
       MP_DISPATCH( ConvertAllConstraints() );
       // MP_DISPATCH( PreprocessIntermediate() );     // preprocess after each level
-      MP_DISPATCH( ConvertMaps() );
+			MP_DISPATCH( ConvertMaps() );
       MP_DISPATCH( PreprocessFinal() );               // final prepro
     } catch (const ConstraintConversionFailure& cff) {
       MP_RAISE(cff.message());
@@ -182,6 +238,11 @@ protected:
       value_presolver_.SetExport(true);
     }
   }
+
+	/// Offload the conic logic to a functor
+	void Convert2Cones() {
+		conic_cvt_.Run();
+	}
 
   void ConvertAllConstraints() {
     GetModel().ConvertAllConstraints(*this);
@@ -237,6 +298,12 @@ public: // for ConstraintKeeper
   template <class Con>
   ConstraintAcceptanceLevel GetConstraintAcceptance(Con* ) const {
     return GET_CONST_CONSTRAINT_KEEPER(Con).GetChosenAcceptanceLevel();
+  }
+
+  /// Query the nuber of addable constraints of type.
+  template <class Con>
+  int GetNumberOfAddable(Con* ) const {
+    return GET_CONST_CONSTRAINT_KEEPER(Con).GetNumberOfAddable();
   }
 
   /// Query if the constraint type
@@ -362,10 +429,24 @@ public:
     return AddConstraint( std::move(con) );
   }
 
+	/// Retrieve constraint of specified type at location \a ci.
   template <class Constraint>
-  const Constraint& GetConstraint(int i) const {
-    return GET_CONST_CONSTRAINT_KEEPER(Constraint).GetConstraint(i);
+	const Constraint& GetConstraint(const ConInfo& ci) const {
+		assert(MPCD(template IsConInfoType<Constraint>(ci) ));
+		return GET_CONST_CONSTRAINT_KEEPER(Constraint).
+				GetConstraint(ci.GetIndex());
   }
+
+	/// Retrieve constraint of specified type at index \a i.
+	template <class Constraint>
+	const Constraint& GetConstraint(int i) const {
+		return GET_CONST_CONSTRAINT_KEEPER(Constraint).GetConstraint(i);
+	}
+
+	/// Delete constraint
+	void MarkAsDeleted(const ConInfo& ci) {
+		ci.GetCK()->MarkAsDeleted(ci.GetIndex());
+	}
 
 protected:
   USE_BASE_MAP_FINDERS( BaseConverter )
@@ -389,6 +470,13 @@ protected:
 
 
 public:
+	/// Select value node \a i for constraint type \a Con.
+	template <class Constraint>
+	pre::NodeRange SelectValueNode(int i) {
+		auto& ck = GET_CONSTRAINT_KEEPER( Constraint );
+		return ck.SelectValueNodeRange(i);
+	}
+
   /// Handle start of model input
   void StartModelInput() {
     MPD( OpenGraphExporter() );
@@ -399,12 +487,51 @@ public:
     MPD( ConvertModel() );
     if (relax())
       GetModel().RelaxIntegrality();
+		FixUnusedDefinedVars();       // Until we have proper var deletion
     GetModel().PushModelTo(GetModelAPI());
     MPD( CloseGraphExporter() );
     if (value_presolver_.GetExport())
       assert( value_presolver_.AllEntriesExported() );
     if (GetEnv().verbose_mode())
       GetEnv().PrintWarnings();
+  }
+
+  /// Fill model traits for license check.
+  /// To be called after ConvertModel().
+  /// KEEP THIS UP2DATE.
+  void FillModelTraits(AMPLS_ModelTraits& mt) {
+    const auto& fmi = GetModelAPI().GetFlatModelInfo();
+    mt.n_vars = num_vars();
+    mt.n_quad_con =
+        fmi->GetNumberOfConstraints(typeid(QuadConRange))
+        + fmi->GetNumberOfConstraints(typeid(QuadConGE))
+        + fmi->GetNumberOfConstraints(typeid(QuadConEQ))
+        + fmi->GetNumberOfConstraints(typeid(QuadConLE));
+    mt.n_conic_con =
+        fmi->GetNumberOfConstraints(typeid(QuadraticConeConstraint))
+        + fmi->GetNumberOfConstraints(typeid(RotatedQuadraticConeConstraint))
+        + fmi->GetNumberOfConstraints(typeid(ExponentialConeConstraint))
+        + fmi->GetNumberOfConstraints(typeid(PowerConeConstraint))
+        + fmi->GetNumberOfConstraints(typeid(GeometricConeConstraint));
+    mt.n_alg_con =
+        fmi->GetNumberOfConstraints(typeid(LinConRange))
+        + fmi->GetNumberOfConstraints(typeid(LinConGE))
+        + fmi->GetNumberOfConstraints(typeid(LinConEQ))
+        + fmi->GetNumberOfConstraints(typeid(LinConLE))
+        + mt.n_quad_con
+        + fmi->GetNumberOfConstraints(typeid(ComplementarityLinear))
+        + fmi->GetNumberOfConstraints(typeid(ComplementarityQuadratic));
+    mt.n_log_con =
+        fmi->GetNumberOfConstraints(typeid(AndConstraint))
+        + fmi->GetNumberOfConstraints(typeid(OrConstraint))
+        + fmi->GetNumberOfConstraints(typeid(MaxConstraint))
+        + fmi->GetNumberOfConstraints(typeid(MinConstraint))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintLinGE))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintLinEQ))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintLinLE))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintQuadGE))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintQuadEQ))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintQuadLE));
   }
 
 
@@ -481,6 +608,8 @@ public:
 
 
 public:
+	/// Shortcut num_vars()
+	int num_vars() const { return MPCD(GetModel()).num_vars(); }
   /// Shortcut lb(var)
   double lb(int var) const { return this->GetModel().lb(var); }
   /// Shortcut ub(var)
@@ -540,9 +669,6 @@ public:
     return MP_DISPATCH( Convert2Var(std::move(ae)) );
   }
 
-  /// Typedef ConInfo
-  using ConInfo = AbstractConstraintLocation;
-
   /// Add vector of variables. Type: var::CONTINUOUS by default
   /// @return vector of the Ids of the new vars
   std::vector<int> AddVars_returnIds(std::size_t nvars,
@@ -591,10 +717,33 @@ public:
 
   /// Get the init expr
   const ConInfo& GetInitExpression(int var) const {
-    assert(HasInitExpression(var));
-    return var_info_[var];
+		return var_info_.at(var);
   }
 
+	/// Get the init expression pointer.
+	/// @return nullptr if no init expr or not this type
+	template <class ConType>
+	const ConType* GetInitExpressionOfType(int var) {
+		if (MPCD( HasInitExpression(var) )) {
+			auto ci0 = MPCD( GetInitExpression(var) );
+			if (IsConInfoType<ConType>(ci0)) {
+				const auto& con =
+						GetConstraint<ConType>(ci0);
+				assert(&con);
+				return &con;
+			}
+		}
+		return nullptr;
+	}
+
+	/// Check if the constraint location points to the
+	/// constraint keeper used for this ConType.
+	template <class ConType>
+	bool IsConInfoType(const ConInfo& ci) const {
+		return &(BasicConstraintKeeper&)
+				(GET_CONST_CONSTRAINT_KEEPER(ConType))
+				== ci.GetCK();
+	}
 
   /////////////////////// AUTO LINKING ////////////////////////////
 
@@ -664,6 +813,14 @@ public:
     return ModelAPI::AcceptsNonconvexQC();
   }
 
+	/// Whether the ModelAPI accepts quadragtic cones
+	int ModelAPIAcceptsQuadraticCones() {
+		return
+				std::max(
+					(int)GetConstraintAcceptance((QuadraticConeConstraint*)nullptr),
+					(int)GetConstraintAcceptance((RotatedQuadraticConeConstraint*)nullptr));
+	}
+
 
 private:
   struct Options {
@@ -673,8 +830,8 @@ private:
     int preprocessEqualityBvar_ = 1;
 
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
-    int passQuadCon_ = ModelAPIAcceptsQC();
-
+		int passQuadCon_ = ModelAPIAcceptsQC();
+		int passSOCPCones_ = 0;
 
     int relax_ = 0;
   };
@@ -731,7 +888,16 @@ private:
         "0*/1: Multiply out and pass quadratic constraint terms to the solver, "
                          "vs. linear approximation.",
         options_.passQuadCon_, 0, 1);
-    GetEnv().AddOption("alg:relax relax",
+		if (ModelAPIAcceptsQuadraticCones())
+			GetEnv().AddOption("cvt:socp passsocp socp",
+												 ModelAPIAcceptsQuadraticCones()>1 ?
+                           "0/1*: Recognize quadratic cones vs passing them "
+                           "as pure quadratic constraints." :
+                           "0*/1: Recognize quadratic cones vs passing them "
+                           "as pure quadratic constraints.",
+					options_.passSOCPCones_, 0, 1);
+		options_.passSOCPCones_ = ModelAPIAcceptsQuadraticCones()>1;
+		GetEnv().AddOption("alg:relax relax",
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
   }
@@ -765,6 +931,9 @@ public:
   bool IfQuadratizePowConstPosIntExp() const
   { return options_.passQuadCon_; }
 
+	/// Whether we pass SOCP cones
+	bool IfPassSOCPCones() const { return options_.passSOCPCones_; }
+
 
 public:
   /// Typedef ModelAPIType. For tests
@@ -797,6 +966,10 @@ private:
   pre::One2ManyLink one2many_link_ { GetValuePresolver() }; // the 1-to-many links
   pre::NodeRange auto_link_src_item_;   // the source item for autolinking
   std::vector<pre::NodeRange> auto_link_targ_items_;
+
+	ConicConverter<Impl> conic_cvt_ { *static_cast<Impl*>(this) };
+
+	std::vector<int> refcnt_vars_;
 
 
 protected:
@@ -902,8 +1075,15 @@ protected:
       QuadraticConeConstraint, "acc:quadcone")
   STORE_CONSTRAINT_TYPE__NO_MAP(
       RotatedQuadraticConeConstraint, "acc:rotatedquadcone")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      PowerConeConstraint, "acc:powercone")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      ExponentialConeConstraint, "acc:expcone")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      GeometricConeConstraint, "acc:geomcone")
 
 
+	protected:
   ////////////////////// Default map accessors /////////////////////////
   /// Constraints without map should overload these by empty methods ///
 
@@ -958,6 +1138,11 @@ protected:
   INSTALL_ITEM_CONVERTER(RangeLinearConstraintConverter)
   /// Convert quadratic range constraints, if necessary
   INSTALL_ITEM_CONVERTER(RangeQuadraticConstraintConverter)
+
+  /// Convert quadratic cones, if necessary
+  INSTALL_ITEM_CONVERTER(QConeConverter)
+  /// Convert rotated quadratic cones, if necessary
+  INSTALL_ITEM_CONVERTER(RQConeConverter)
 
 
 public:

@@ -39,7 +39,7 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
 
-  /// TODO For each suppoted constraint type, add the ACCEPT_CONSTRAINT macro
+  /// TODO For each supported constraint type, add the ACCEPT_CONSTRAINT macro
   /// and the relative AddConstraint function.
   /// Below some typical constraint handlers of a MIP solver.
   /// Further constraint types which could be handled natively by some solvers:
@@ -52,42 +52,47 @@ public:
 
 
   /// The linear range constraint, if fully supported with basis info etc.
-  ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Linear)
+	ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Algebraic)
   void AddConstraint(const LinConRange& lc);
 
   /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends
   /// and have an implementation,
   /// or a conversion rule is needed in a derived FlatConverter
-  ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Linear)
+	ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Algebraic)
   void AddConstraint(const LinConLE& lc);
-  ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Linear)
+	ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Algebraic)
   void AddConstraint(const LinConEQ& lc);
-  ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Linear)
+	ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Algebraic)
   void AddConstraint(const LinConGE& lc);
 
   /// QuadConRange is optional.
-  ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Quadratic)
+	ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConRange& qc);
 
   /// If using quadratics,
   /// QuadCon(LE/EQ/GE) should have 'Recommended'
   /// and have an implementation.
-  ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Quadratic)
+	ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConLE& qc);
-  ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Quadratic)
+	ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConEQ& qc);
-  ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Quadratic)
+	ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConGE& qc);
+
+	/// Cones
+	ACCEPT_CONSTRAINT(QuadraticConeConstraint, Recommended, CG_Conic)
+	void AddConstraint(const QuadraticConeConstraint& qc);
+	ACCEPT_CONSTRAINT(RotatedQuadraticConeConstraint, Recommended, CG_Conic)
+	void AddConstraint(const RotatedQuadraticConeConstraint& qc);
 
   /// Linear indicator constraints can be used as
   /// auxiliary constraints for logical conditions.
-  /// If not handled, the compared expressions need
-  /// deducible finite bounds for a big-M redefinition.
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, NotAccepted, CG_General)
+  /// Mosek 10 adds DJC which we use for indicators.
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, NotAccepted, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
-  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, NotAccepted, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinGE& mc);
 
   /// SOS constraints can be used by AMPL for redefinition of
@@ -95,9 +100,9 @@ public:
   /// Set ``option pl_linearize 0;`` in AMPL if the solver
   /// supports PL natively.
   /// MOSEK 10 has no SOS
-  ACCEPT_CONSTRAINT(SOS1Constraint, NotAccepted, CG_SOS)
+	ACCEPT_CONSTRAINT(SOS1Constraint, NotAccepted, CG_General)
   void AddConstraint(const SOS1Constraint& cc);
-  ACCEPT_CONSTRAINT(SOS2Constraint, NotAccepted, CG_SOS)
+	ACCEPT_CONSTRAINT(SOS2Constraint, NotAccepted, CG_General)
   void AddConstraint(const SOS2Constraint& cc);
 
 

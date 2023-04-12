@@ -8,6 +8,8 @@
 
 #include <functional>
 
+#include "mp/ampls-ccallbacks.h"
+
 #include "mp/arrayref.h"
 #include "mp/solver-base.h"
 #include "mp/suffix.h"
@@ -32,7 +34,7 @@ public:
   /// Read NL model
   virtual void ReadNLModel(const std::string& nl_filename,
                            const std::string& filename_no_ext,
-                           void (*cb_checkmodel)(size_t, size_t, size_t)) = 0;
+                           Checker_AMPLS_ModeltTraits ) = 0;
 
   /// User-provided primal solution
   virtual ArrayRef<double> InitialValues() = 0;

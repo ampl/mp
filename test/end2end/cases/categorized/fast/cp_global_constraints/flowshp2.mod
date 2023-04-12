@@ -2,6 +2,7 @@
 # -------------------------------------------------------------
 # FLOWSHOP
 # flowshop2.mod: using ==> constraints (MLLP form)
+# Use at most cvt:bigM = 1e5
 # -------------------------------------------------------------
 
 set JOBS ordered;

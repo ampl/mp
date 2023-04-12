@@ -168,6 +168,9 @@ public:
   virtual void SetChosenAcceptanceLevel(
       ConstraintAcceptanceLevel acc) { acceptance_level_ = acc;}
 
+	/// Mark as deleted, use index only
+	virtual void MarkAsDeleted(int i) = 0;
+
 
 protected:
   int& GetAccLevRef() { return acceptance_level_; }
@@ -218,9 +221,11 @@ struct ConstraintLocationHelper {
   int index_ = 0;        // constraint index
 };
 
+
 /// Without constraint type
 using AbstractConstraintLocation =
   ConstraintLocationHelper<BasicConstraintKeeper>;
+
 
 /// Converters handling custom constraints should derive from
 class BasicFlatConverter {
@@ -268,9 +273,9 @@ public:
   /// -Infinity
   static constexpr double MinusInfty() { return -INFINITY; }
   /// Pract inf
-  static constexpr double PracticallyInfty() { return 1e20; }
+	static constexpr double PracticallyInf() { return 1e20; }
   /// Pract -inf
-  static constexpr double PracticallyMinusInfty() { return -1e20; }
+	static constexpr double PracticallyMinusInf() { return -1e20; }
 };
 
 
@@ -405,6 +410,7 @@ protected:
 
   /// Check constraint index
   bool check_index(int i) const { return i>=0 && i<(int)cons_.size(); }
+
   /// Container for a single constraint
   struct Container {
     Container(Constraint&& c) noexcept : con_(std::move(c)) { }
@@ -415,6 +421,8 @@ protected:
     Constraint con_;
     bool is_bridged_ = false;
   };
+
+	/// Convert all new constraints of this type
   bool ConvertAllFrom(int& i_last) {
     int i=i_last;
     const auto acceptanceLevel =
@@ -446,17 +454,44 @@ protected:
     i_last = i-1;
     return any_converted;
   }
-  /// Call Converter's RunConversion() and mark as "bridged"
+
+	/// Call Converter's RunConversion() and mark as "bridged".
   ///
-  /// @param cnt the constraint container
-  /// actually redundant as i is enough to find. But for speed
+	/// @param cnt the constraint container -
+	/// actually redundant, as \a i is enough to find it. But for speed.
   /// @param i constraint index, needed for bridging
   void ConvertConstraint(Container& cnt, int i) {
     assert(!cnt.IsBridged());
     GetConverter().RunConversion(cnt.con_, i);
-    cnt.MarkAsBridged();
-    ++n_bridged_;
+		MarkAsDeleted(cnt, i);
   }
+
+	/// Mark item as deleted
+	void MarkAsDeleted(Container& cnt, int ) {
+		cnt.MarkAsBridged();
+		++n_bridged_;
+	}
+
+
+public:
+	/// Mark as deleted, use index only
+	void MarkAsDeleted(int i) override {
+		MarkAsDeleted(cons_.at(i), i);
+	}
+
+	/// ForEachActive().
+	/// Deletes every constraint where fn() returned true.
+	template <class Fn>
+	void ForEachActive(Fn fn) {
+		for (int i=0; i<(int)cons_.size(); ++i)
+			if (!cons_[i].IsBridged())
+				if (fn(cons_[i].con_, i))
+					MarkAsDeleted(cons_[i], i);
+	}
+
+
+protected:
+	/// Add all non-converted items to ModelAPI
   void AddAllUnbridged(BasicFlatModelAPI& be) {
     int con_index=0;
     auto con_group = GetConstraintGroup(be);
@@ -514,10 +549,12 @@ private:
 /// constraint
 #define STORE_CONSTRAINT_TYPE__INTERNAL( \
     Constraint, optionNames) \
+private: \
   ConstraintKeeper<Impl, ModelAPI, Constraint> \
     CONSTRAINT_KEEPER_VAR(Constraint) \
       {*static_cast<Impl*>(this), \
        #Constraint, optionNames}; \
+public: \
   const ConstraintKeeper<Impl, ModelAPI, Constraint>& \
   GetConstraintKeeper(Constraint* ) const { \
     return CONSTRAINT_KEEPER_VAR(Constraint); \

@@ -81,7 +81,7 @@ pre::ValueMapDbl HighsBackend::DualSolution() {
 ArrayRef<double> HighsBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  int error = Highs_getSolution(lp(), NULL, NULL, pi.data(), NULL);
+  int error = Highs_getSolution(lp(), NULL, NULL, NULL, pi.data());
   if (error)
     pi.clear();
   return pi;
@@ -169,6 +169,7 @@ ArrayRef<int> HighsBackend::VarStatii() {
       s = (int)BasicStatus::upp;
       break;
     case kHighsBasisStatusNonbasic:
+    case kHighsBasisStatusZero:
       s = (int)BasicStatus::sup;
       break;
     default:
@@ -460,7 +461,7 @@ void HighsBackend::InitCustomOptions() {
   AddSolverOption("tech:threads threads",
     "How many threads to use when using the barrier algorithm "
     "or solving MIP problems; default 0 ==> automatic choice.",
-    "threads", 0, 128);
+		"threads", 0, INT32_MAX);
 
   AddSolverOption("mip:detsimmetry detsimmetry mip_detect_symmetry",
     "Whether symmetry should be detected (default 1)",
@@ -526,17 +527,25 @@ void HighsBackend::InitCustomOptions() {
 }
 
 double HighsBackend::MIPGap() {
+  // TODO Check if the following is always true
+  if (BarrierIterations() == 0)
+    return 0;
   return getDblAttr("mip_gap");
 }
 double HighsBackend::BestDualBound() {
+  // TODO Check if the following is always true
+  if (BarrierIterations() == 0)
+    return 0;
   return getDblAttr("mip_dual_bound");
 }
 
 double HighsBackend::MIPGapAbs() {
+  // TODO Check if the following is always true
+  if (BarrierIterations() == 0)
+    return 0;
   return std::fabs(
     ObjectiveValue() - BestDualBound());
 }
-
 } // namespace mp
 
 

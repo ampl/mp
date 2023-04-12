@@ -21,7 +21,7 @@ double MosekCommon::getDblAttr(MSKdinfitem_enum name) const  {
 }
 
 int MosekCommon::NumLinCons() const {
-  return getIntAttr(MSK_IINF_OPT_NUMCON);
+	return getIntAttr(MSK_IINF_OPT_NUMCON);
 }
 
 int MosekCommon::NumVars() const {
@@ -83,5 +83,20 @@ void MosekCommon::SetSolverOption(MSKsparame key, const std::string& value) {
   MOSEK_CCALL(MSK_putstrparam(lp(), key, value.data()));
 }
 
+void handleError(MSKrescodee e, const char* fname) {
+	char symb[MSK_MAX_STR_LEN];
+	char str[MSK_MAX_STR_LEN];
+	MSK_getcodedesc(e, symb, str);
+	MSKrescodetypee et;
+	MSKrescodee e2 = MSK_getresponseclass(e, &et);
+	if (e2 != MSK_RES_OK) MP_RAISE(
+		fmt::format(
+					"Call failed: '{}'. Error {}({}): {}\n Error in getresponseclass: {}",
+			fname, symb, e, str, e2));
+	if ((int)e2 > (int)MSK_RESPONSE_TRM) MP_RAISE(
+		fmt::format(
+					"Call failed: '{}'. Type {}, {}({}): {}", fname, e2, symb, e, str));
+	fmt::print("\nWarning {}({}): {}\n While calling '{}'\n", symb, e, str, fname);
+}
 
 } // namespace mp

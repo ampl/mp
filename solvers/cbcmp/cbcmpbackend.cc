@@ -96,10 +96,9 @@ pre::ValueMapDbl CbcmpBackend::DualSolution() {
 ArrayRef<double> CbcmpBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
- // int error = CBCMP_GetLpSolution(lp(), NULL, NULL, pi.data(), NULL);
-  int error = 0;
-  if (error)
-    pi.clear();
+  auto sol = Cbc_getRowActivity(lp());
+  for (int i = 0; i < num_cons; ++i)
+    pi[i] = sol[i];
   return pi;
 }
 

@@ -102,11 +102,17 @@ public:
   ///////////////////////////////////////////////////////////////////////////////////////////
 public:
   /// Convert the whole model, e.g., after reading from NL
-  void ConvertModel() {
+  void ConvertModel() override {
     GetFlatCvt().StartModelInput();
     MP_DISPATCH( ConvertStandardItems() );
     GetFlatCvt().FinishModelInput();      // Chance to flush to the Backend
   }
+
+  /// Fill model traits
+  void FillModelTraits(AMPLS_ModelTraits& mt) override {
+    GetFlatCvt().FillModelTraits(mt);
+  }
+
 
 protected:
   /// Convert problem items
@@ -954,7 +960,7 @@ protected:
 
 
 public:
-  void InitOptions() {
+  void InitOptions() override {
     InitOwnOptions( );
     GetFlatCvt().InitOptions( );
   }
@@ -980,9 +986,9 @@ private:
 
 public:
   /// The model as input from NL
-  const ProblemType& GetModel() const { return model_; }
+  const ProblemType& GetModel() const override { return model_; }
   /// The model as input from NL
-  ProblemType& GetModel() { return model_; }
+  ProblemType& GetModel() override { return model_; }
   /// The model as input from NL
   const ProblemType& GetInputModel() const { return GetModel(); }
   /// The model as input from NL

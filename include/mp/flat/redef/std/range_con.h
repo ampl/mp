@@ -1,9 +1,9 @@
-#ifndef RANGE_CON_H
-#define RANGE_CON_H
-
-/*
+/**
  * Convert range constraints
  */
+
+#ifndef RANGE_CON_H
+#define RANGE_CON_H
 
 #include "mp/flat/redef/redef_base.h"
 #include "mp/valcvt-link.h"

@@ -1,0 +1,54 @@
+[
+  {
+    "name" : "socp_01",
+    "objective" : 3.475285907,
+    "tags" : ["quadratic"]
+  },
+  {
+    "name" : "socp_02_rqc",
+    "objective" : 3.870560774,
+    "tags" : ["quadratic"]
+  },
+  {
+    "name" : "socp_03_sqrt",
+    "objective" : 3.475285907,
+    "tags" : ["socp"]
+  },
+  {
+    "name" : "socp_04_2cones",
+    "objective" : 7.760578792,
+    "tags" : ["socp"]
+  },
+  {
+    "name" : "socp_05_rqcSqrt_abs",
+    "objective" : 3.623966621,
+    "tags" : ["socp"]
+  },
+  {
+    "name" : "TotalVariation2D",
+    "objective" : 9.569949819774543,
+    "files": ["totalvariation2d.mod", "totalvar2d_4e_4.dat"],
+    "tags" : ["socp", "socp_hard_to_recognize"]
+  },
+  {
+    "name" : "TotalVariation2D_Quadr",
+    "objective" : 9.569949819774543,
+    "files": ["totalvariation2d_quad.mod", "totalvar2d_4e_4.dat"],
+    "tags" : ["socp", "socp_hard_to_recognize"]
+  },
+  {
+    "name" : "socp_06_rsoc_constants",
+    "objective" : 7.993662815,
+    "tags" : ["socp"]
+  },
+  {
+    "name" : "socp_07_soc_constants",
+    "objective" : 8.234981108,
+    "tags" : ["socp"]
+  },
+  {
+    "name" : "socp_08_sqrt_constants",
+    "objective" : 11.42915114,
+    "tags" : ["socp"]
+  }
+]

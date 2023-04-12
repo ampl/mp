@@ -384,11 +384,43 @@ Certain nonlinear solvers, notably Knitro, handle complementarity constraints na
           cost[j] - sum {i in PROD} Price[i] * io[i,j];
 
 
-Nonlinear operators and functions
+
+Set membership operator
 **********************************
 
+- var *var-name* in *set-expr* ;
+    Defines a variable that must be a member of a specified AMPL set,
+    as given by the expression *set-expr*. All members of the set must be numbers.
+
+This is the simplest use of ``in`` to restrict the domain of a set; more
+generally, the *in set-expr* phrase may appear in any ``var`` definition
+that does not contain an *=* phrase.
+
+Before sending a problem to the solver interface, AMPL converts variable
+definitions of this kind to alternative definitions that do not use the
+``in`` operator. This may involve the definition of auxiliary binary
+variables and additional constraints. In the usual case where *set-expr*
+is a finite set, AMPL also defines suffixes ``.sos`` and ``.sosref`` which
+can be used by the solver interface to recognize variables and constraints
+that have been created to implement an ``in`` operator, and to support
+solvers that handle arbitrary variable domains by means of
+"special ordered sets of type 1". It is also possible to specify sets
+that contain continuous intervals -- and hence are infinite -- by using
+the AMPL expression *interval[expr1,expr2]*.
+
+.. code-block:: ampl
+
+    var Buy {f in FOODS} in {0,10,30,45,55};
+
+.. code-block:: ampl
+
+    var Ship {(i,j) in ARCS}
+       in {0} union interval[min_ship,capacity[i,j]];
+
+
+
 Quadratic and power operators
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+**********************************
 
 - *expr1* * *expr2*
     *expr-valued:* Multiplication of *expr1* and *expr2*.
@@ -431,8 +463,37 @@ previously described. For example:
           c[i] * x[i] / (40 * b[i] * sum {j in J} x[j] / b[j]);
 
 
+Second-order cone programming (SOCP)
+**************************************
+
+Some solvers can handle SOCP constraints: Mosek, Gurobi, COPT.
+SOCP constraints are recognized by MP drivers from their algebraic
+representations. Examples:
+
+- Standard SOC:
+
+  .. code-block:: ampl
+
+      x[0] >= sqrt(x[1]^2 + … + x[n]^2);
+      -5*x[0]^2 <= -x[1]^2 - … - x[n]^2,     where x[0] >= 0;
+      0.04 >= abs(x[1]);
+
+
+- Rotated SOC  (where x[0], x[1] >= 0):
+
+  .. code-block:: ampl
+
+      3*sqrt(5*x[0]*x[1]) >= 15*sqrt(10*x[2]^2 + … + 80*x[n]^2);
+      2*x[0]*x[1] >= x[2]^2 + … + x[n]^2;
+
+
+*Note:* Option `cvt:socp=0` results in second-order conic
+constraints being passed to the solver as quadratics, even if
+the solver has native SOCP API.
+
+
 General nonlinear functions
-$$$$$$$$$$$$$$$$$$$$$$$$$$$
+**********************************
 
 - log (*expr*), log10 (*expr*)
     *expr-valued:* The natural and base-10 logarithms of *expr*.
@@ -503,24 +564,4 @@ specifies 12 pieces for approximating the sin, cos, and exp functions in that ob
     minimize Chichinadze:
        x[1]^2 - 12*x[1] + 11 + 10*cos(pi*x[1]/2) +
           8*sin(pi*5*x[1]) - exp(-(x[2]-.5)^2/2)/sqrt(5);
-
-
-Set membership operator
-**********************************
-
-- var *var-name* in *set-expr* ;
-    Defines a variable that must be a member of a specified AMPL set, as given by the expression *set-expr*. All members of the set must be numbers.
-
-This is the simplest use of ``in`` to restrict the domain of a set; more generally, the *in set-expr* phrase may appear in any ``var`` definition that does not contain an *=* phrase.
-
-Before sending a problem to the solver interface, AMPL converts variable definitions of this kind to alternative definitions that do not use the ``in`` operator. This may involve the definition of auxiliary binary variables and additional constraints. In the usual case where *set-expr* is a finite set, AMPL also defines suffixes ``.sos`` and ``.sosref`` which can be used by the solver interface to recognize variables and constraints that have been created to implement an ``in`` operator, and to support solvers that handle arbitrary variable domains by means of "special ordered sets of type 1". It is also possible to specify sets that contain continuous intervals -- and hence are infinite -- by using the AMPL expression *interval[expr1,expr2]*.
-
-.. code-block:: ampl
-
-    var Buy {f in FOODS} in {0,10,30,45,55};
-
-.. code-block:: ampl
-
-    var Ship {(i,j) in ARCS}
-       in {0} union interval[min_ship,capacity[i,j]];
 

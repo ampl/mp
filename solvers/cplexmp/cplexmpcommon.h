@@ -44,6 +44,11 @@ public:
   static constexpr double Infinity() { return CPX_INFBOUND; }
   static constexpr double MinusInfinity() { return -CPX_INFBOUND; }
 
+  double GetCPLEXDblParam(int param);
+  int GetCPLEXIntParam(int param);
+  void SetCPLEXParam(int param, int value);
+  void SetCPLEXParam(int param, double value);
+
 protected:
   int NumLinCons() const;
   int NumVars() const;

@@ -456,7 +456,18 @@ class BaronSolver(AMPLSolver):
         return "baron"
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        super().__init__(exeName, timeout, nthreads, otherOptions)
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.linear,
+                 ModelTags.plinear,
+                 ModelTags.quadratic,
+                 ModelTags.quadratic_obj,
+                 ModelTags.quadraticnonconvex,
+
+                 ModelTags.socp,      
+                 ModelTags.socp_hard_to_recognize,
+                 ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric}
+
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
     def _doParseSolution(self, st, stdout=None):
         if not st:
@@ -476,7 +487,17 @@ class BaronSolver(AMPLSolver):
 
 class OcteractSolver(AMPLSolver):
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
-        super().__init__(exeName, timeout, nthreads, otherOptions)
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.plinear,
+                 ModelTags.quadratic,
+                 ModelTags.quadratic_obj,
+                 ModelTags.quadraticnonconvex,
+
+                 ModelTags.socp,      
+                 ModelTags.socp_hard_to_recognize,
+                 ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric}
+
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
     def _setLPMethod(self, method : str):
         return "" 
@@ -615,6 +636,10 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.quadratic,
                  ModelTags.quadratic_obj,
                  ModelTags.quadraticnonconvex,
+
+                 ModelTags.socp,      ## MP transforms cones to quadratics
+                 ModelTags.socp_hard_to_recognize,
+
                  ModelTags.nonlinear, ModelTags.log, ModelTags.trigonometric,
 
                  ModelTags.unbdd,
@@ -754,13 +779,18 @@ class COPTSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic, ModelTags.quadratic_obj}
+                 ModelTags.quadratic, ModelTags.quadratic_obj,
+
+                 ModelTags.socp,      ## MP transforms cones to quadratics
+                 ModelTags.socp_hard_to_recognize
+
+                 }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
 class MosekSolver(MPDirectSolver):
     def _setLPMethod(self, method : str):
-        m  = "1" if method == "SIMPLEX" else "2"
+        m  = "1" if method == "SIMPLEX" else "4"
         return f"lp:method {m}"
 
     def _getAMPLOptionsName(self):
@@ -771,8 +801,49 @@ class MosekSolver(MPDirectSolver):
                  ModelTags.binary,
 
                  ModelTags.quadratic, ModelTags.quadratic_obj,
+                 ModelTags.socp, ModelTags.socp_hard_to_recognize,
 
                  ModelTags.warmstart, ModelTags.mipstart,
                  ModelTags.return_mipgap, ModelTags.sens, ModelTags.sstatus}
         # ModelTags.quadratic
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+class CPLEXODHSolver(MPDirectSolver):
+    def _getAMPLOptionsName(self):
+        return "cplexodh"
+
+    def __init__(self, exeName, timeout=None, nthreads=None,
+                 otherOptions=None):
+        stags = {
+                 ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.plinear, ModelTags.sos,
+                 # ModelTags.quadratic, ModelTags.quadraticnonconvex,
+                 ModelTags.nonlinear,
+                 ModelTags.log,
+                 # ModelTags.trigonometric
+                 ModelTags.relax,
+                 ModelTags.multiobj,
+                 ModelTags.sstatus,
+                 ModelTags.return_mipgap
+                 }
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+class GUROBIODHSolver(MPDirectSolver):
+    def _getAMPLOptionsName(self):
+        return "gurobiodh"
+
+    def __init__(self, exeName, timeout=None, nthreads=None,
+                 otherOptions=None):
+        stags = {
+                 ModelTags.continuous, ModelTags.integer, ModelTags.binary,
+                 ModelTags.plinear, ModelTags.sos,
+                 # ModelTags.quadratic, ModelTags.quadraticnonconvex,
+                 ModelTags.nonlinear,
+                 ModelTags.log,
+                 # ModelTags.trigonometric
+                 ModelTags.relax,
+                 ModelTags.multiobj,
+                 ModelTags.sstatus,
+                 ModelTags.return_mipgap
+                 }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)

@@ -12,7 +12,11 @@
   {
     "name" : "ellipse_max_02",
     "objective" : 0.5312499452945747,
-    "tags" : ["quadratic"]
+    "tags" : ["quadratic"],
+    "coment_options": "Not all constraints are cones, Mosek needs QP",
+    "options": {
+      "mosek_options": "cvt:socp=0"
+    }
   },
   {
     "name" : "ellipse_min qcpdual=1",

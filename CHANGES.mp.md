@@ -2,7 +2,13 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
-## 29239297
+## 20230321
+- *Recognize second-order cones*
+  Recognize SOCP constraints from algebra and pass them
+  natively, or transform to quadratics.
+
+
+## 20230207
 - *Handle boolean constants* in ProblemFlattener.
 
 
