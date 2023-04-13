@@ -15,7 +15,7 @@ namespace {
 
 
 bool InterruptGcg(void* prob) {
-  //return GCG_Interrupt((gcg_prob*)prob);
+  SCIPinterruptSolve(static_cast<SCIP*>(prob));
   return true;
 }
 
@@ -55,59 +55,9 @@ GcgBackend::~GcgBackend() {
   CloseSolver();
 }
 
-void GcgBackend::OpenSolver() {
-  int status = 0;
-  // TODO Typically this function creates an instance of the solver environment
-  // and an empty model
-  void* env_p;
-  // Typically try the registered function first;
-  // if not available call the solver's API function directly
-  /*
-  const auto& create_fn = GetCallbacks().cb_initsolver_;
-  if (create_fn)
-    set_env((GRBenv*)create_fn());
-  else
-    status = createEnv(&env_p);
-    */
-  // set_env(env_p);
-
-  /* Todo catch errors
-  if ( env() == NULL ) {
-    // char  errmsg[CPXMESSAGEBUFSIZE];
-    // CPXgeterrorstring (env(), status, errmsg);
-     throw std::runtime_error(
-       fmt::format("Could not open GCG environment.\n{}", status) );
-  }
-  */
-
-  /* TODO Create problem instance
-  gcg_prob* prob;
-  status = GCG_CreateProb(env_p, &prob);
- */
-  Solver::SolverModel* prob = Solver::CreateSolverModel();
-  set_lp(prob); // Assign it
-  if (status)
-    throw std::runtime_error( fmt::format(
-          "Failed to create problem, error code {}.", status ) );
-  /* TODO Typically check call */
-  /// Turn off verbosity by default
-  // GCG_CCALL(GCG_SetIntParam(prob, "Logging", 0));
-
-}
-
-void GcgBackend::CloseSolver() {
-  /* TODO Cleanup: close problem and environment
-  if ( lp() != NULL ) {
-    GCG_CCALL(GCG_DeleteProb(&lp_) );
-  }
-  if ( env() != NULL ) {
-    GCG_CCALL(GCG_DeleteEnv(&env_) );
-  }
-  */
-}
 
 const char* GcgBackend::GetBackendName()
-  { return "GcgBackend"; }
+  { return "GGCGBackend"; }
 
 std::string GcgBackend::GetSolverVersion() {
   // TODO Return version from solver API
@@ -119,8 +69,9 @@ std::string GcgBackend::GetSolverVersion() {
 
 bool GcgBackend::IsMIP() const {
   // TODO
-  return getIntAttr(Solver::VARS_INT) > 0;
+  //return getIntAttr(Solver::VARS_INT) > 0;
   //return getIntAttr(GCG_INTATTR_ISMIP);
+  return true;
 }
 
 bool GcgBackend::IsQCP() const {
@@ -128,17 +79,11 @@ bool GcgBackend::IsQCP() const {
 }
 
 ArrayRef<double> GcgBackend::PrimalSolution() {
+  SCIP* scip = getSCIP();
   int num_vars = NumVars();
-  int error;
   std::vector<double> x(num_vars);
-  /*
-  if (IsMIP()) 
-    error = GCG_GetSolution(lp(), x.data());
-  else
-    error = GCG_GetLpSolution(lp(), x.data(), NULL, NULL, NULL);
-  if (error)
-    x.clear();
-    */
+  for (int i = 0; i < num_vars; i++)
+    x[i] = SCIPgetSolVal(scip, SCIPgetBestSol(scip), getPROBDATA()->vars[i]);
   return x;
 }
 
@@ -157,27 +102,19 @@ ArrayRef<double> GcgBackend::DualSolution_LP() {
 }
 
 double GcgBackend::ObjectiveValue() const {
- /* if (IsMIP())
-    return getDblAttr(GCG_DBLATTR_BESTOBJ);
-  else
-    return getDblAttr(GCG_DBLATTR_LPOBJVAL);
-    */
-  return 0;
+  return SCIPgetPrimalbound(getSCIP());
 }
 
 double GcgBackend::NodeCount() const {
-  return 0;
-//  return getIntAttr(GCG_INTATTR_NODECNT);
+  return SCIPgetNNodes(getSCIP());
 }
 
 double GcgBackend::SimplexIterations() const {
-  return 0;
-//  return getIntAttr(GCG_INTATTR_SIMPLEXITER);
+  return SCIPgetNPrimalLPIterations(getSCIP()) + SCIPgetNDualLPIterations(getSCIP());
 }
 
 int GcgBackend::BarrierIterations() const {
-  return 0;
-//  return getIntAttr(GCG_INTATTR_BARRIERITER);
+  return SCIPgetNBarrierLPIterations(getSCIP());
 }
 
 void GcgBackend::ExportModel(const std::string &file) {
@@ -187,7 +124,7 @@ void GcgBackend::ExportModel(const std::string &file) {
 
 
 void GcgBackend::SetInterrupter(mp::Interrupter *inter) {
-  inter->SetHandler(InterruptGcg, lp());
+  inter->SetHandler(InterruptGcg, getSCIP());
   // TODO Check interrupter
   //GCG_CCALL( CPXsetterminate (env(), &terminate_flag) );
 }
@@ -253,50 +190,48 @@ void GcgBackend::AddGCGMessages() {
 
 std::pair<int, std::string> GcgBackend::ConvertGCGStatus() {
   namespace sol = mp::sol;
-  if (IsMIP())
-  {
-    /*
-    int optstatus = getIntAttr(GCG_INTATTR_MIPSTATUS);
-    switch (optstatus) {
-    case GCG_MIPSTATUS_OPTIMAL:
+  SCIP_STATUS status = SCIPgetStatus(getSCIP());
+  switch (status) {
+    case SCIP_STATUS_UNKNOWN:
+      return { sol::UNKNOWN, "solving status not yet known" };
+    case SCIP_STATUS_USERINTERRUPT:
+      return { sol::INTERRUPTED, "unfinished" };
+    case SCIP_STATUS_NODELIMIT:
+      return { sol::LIMIT, "node limit reached" };
+    case SCIP_STATUS_TOTALNODELIMIT:
+      return { sol::LIMIT, "total node limit reached (incl. restarts)" };
+    case SCIP_STATUS_STALLNODELIMIT:
+      return { sol::LIMIT, "stalling node limit reached (no inprovement w.r.t. primal bound)" };
+    case SCIP_STATUS_TIMELIMIT:
+      return { sol::LIMIT, "time limit reached" };
+    case SCIP_STATUS_MEMLIMIT:
+      return { sol::LIMIT, "memory limit reached" };
+    case SCIP_STATUS_GAPLIMIT:
+      return { sol::LIMIT, "gap limit reached" };
+    case SCIP_STATUS_SOLLIMIT:
+      return { sol::LIMIT, "solution limit reached" };
+    case SCIP_STATUS_BESTSOLLIMIT:
+      return { sol::LIMIT, "solution improvement limit reached" };
+    case SCIP_STATUS_RESTARTLIMIT:
+      return { sol::LIMIT, "restart limit was reached" };
+    case SCIP_STATUS_OPTIMAL:
       return { sol::SOLVED, "optimal solution" };
-    case GCG_MIPSTATUS_INFEASIBLE:
+    case SCIP_STATUS_INFEASIBLE:
       return { sol::INFEASIBLE, "infeasible problem" };
-    case GCG_MIPSTATUS_INF_OR_UNB:
+    case SCIP_STATUS_UNBOUNDED:
+      return { sol::UNBOUNDED, "unbounded problem" };
+    case SCIP_STATUS_INFORUNBD:
       return { sol::INF_OR_UNB, "infeasible or unbounded problem" };
-    case GCG_MIPSTATUS_UNBOUNDED:
-      return { sol::UNBOUNDED, "unbounded problem" };
-    case GCG_MIPSTATUS_TIMEOUT:
-    case GCG_MIPSTATUS_NODELIMIT:
-    case GCG_MIPSTATUS_INTERRUPTED:
-      return { sol::INTERRUPTED, "interrupted" };
+    case SCIP_STATUS_TERMINATE:
+      return { sol::FAILURE, "process received a SIGTERM signal" };
     }
-    */
-  }
-  else {
-    /*
-    int optstatus = getIntAttr(GCG_INTATTR_LPSTATUS);
-    switch (optstatus) {
-    case GCG_LPSTATUS_OPTIMAL:
-      return { sol::SOLVED, "optimal solution" };
-    case GCG_LPSTATUS_INFEASIBLE:
-      return { sol::INFEASIBLE, "infeasible problem" };
-    case GCG_LPSTATUS_UNBOUNDED:
-      return { sol::UNBOUNDED, "unbounded problem" };
-    case GCG_LPSTATUS_TIMEOUT:
-      return { sol::INTERRUPTED, "interrupted" };
-    default:
-      return { sol::UNKNOWN, "unfinished" };
-    }
-    */
-  }
   return { sol::UNKNOWN, "not solved" };
 }
 
 
 void GcgBackend::FinishOptionParsing() {
   int v=-1;
- // GetSolverOption(GCG_INTPARAM_LOGGING, v);
+  GetSolverOption("display/verblevel", v);
   set_verbose_mode(v>0);
 }
 
@@ -581,5 +516,5 @@ void AMPLSCloseGcg(AMPLS_MP_Solver* slv) {
 
 void* GetGcgmodel(AMPLS_MP_Solver* slv) {
   return
-    dynamic_cast<mp::GcgBackend*>(AMPLSGetBackend(slv))->lp();
+    dynamic_cast<mp::GcgBackend*>(AMPLSGetBackend(slv))->getSCIP();
 }

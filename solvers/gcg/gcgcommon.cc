@@ -1,6 +1,8 @@
 #include "mp/format.h"
 #include "gcgcommon.h"
 
+#include "gcg/gcgplugins.h"
+
 static
 SCIP_DECL_PROBDELORIG(probdataDelOrigNl)
 {
@@ -17,7 +19,7 @@ SCIP_DECL_PROBDELORIG(probdataDelOrigNl)
 
   for( i = 0; i < (*probdata)->nvars; ++i )
   {
-    SCIP_CCALL( SCIPreleaseVar(scip, &(*probdata)->vars[i]) );
+    GCG_CCALL( SCIPreleaseVar(scip, &(*probdata)->vars[i]) );
   }
   SCIPfreeBlockMemoryArray(scip, &(*probdata)->vars, (*probdata)->nvars);
 
@@ -37,7 +39,7 @@ void GcgCommon::OpenSolver() {
   setSCIP(scip); // Assign it
 
   // include default GCG plugins
-  GCG_CCALL( SCIPincludeGcglugins(scip) );
+  GCG_CCALL( SCIPincludeGcgPlugins(scip) );
 
   // initialize empty SCIP problem
   GCG_CCALL( SCIPallocClearMemory(scip, &probdata) );

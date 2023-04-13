@@ -54,6 +54,8 @@ public:
   double Infinity() const;
   double MinusInfinity() const;
 
+  bool IsContinuous();
+
 protected:
   void OpenSolver();
   void CloseSolver();

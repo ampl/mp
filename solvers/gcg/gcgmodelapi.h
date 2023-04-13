@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include "scip/cons_linear.h"
+
 #include "mp/env.h"
 #include "gcgcommon.h"
 #include "mp/flat/model_api_base.h"
