@@ -321,6 +321,62 @@ void ScipModelAPI::AddConstraint(const SOS2Constraint& sos) {
 }
 
 
+void ScipModelAPI::AddConstraint(const ExpConstraint &cc)  {
+  SCIP_VAR* x = getPROBDATA()->vars[cc.GetArguments()[0]];
+  SCIP_VAR* res = getPROBDATA()->vars[cc.GetResultVar()];
+
+  assert(x != NULL);
+  assert(res != NULL);
+
+  SCIP_EXPR* terms[2];
+  SCIP_EXPR* xexpr;
+  SCIP_EXPR* sumexpr;
+  SCIP_Real coefs[2] = {1.0, -1.0};
+
+  SCIP_CCALL( SCIPcreateExprVar(getSCIP(), &xexpr, x, NULL, NULL) );
+  SCIP_CCALL( SCIPcreateExprVar(getSCIP(), &terms[0], res, NULL, NULL) );
+  SCIP_CCALL( SCIPcreateExprExp(getSCIP(), &terms[1], xexpr, NULL, NULL) );
+  SCIP_CCALL( SCIPcreateExprSum(getSCIP(), &sumexpr, 2, terms, coefs, 0.0, NULL, NULL) );
+
+  SCIP_CONS* cons;
+  SCIP_CCALL( SCIPcreateConsBasicNonlinear(getSCIP(), &cons, cc.GetName(), sumexpr, 0.0, 0.0) );
+  SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
+  SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
+
+  SCIP_CCALL( SCIPreleaseExpr(getSCIP(), &sumexpr) );
+  SCIP_CCALL( SCIPreleaseExpr(getSCIP(), &terms[1]) );
+  SCIP_CCALL( SCIPreleaseExpr(getSCIP(), &terms[0]) );
+  SCIP_CCALL( SCIPreleaseExpr(getSCIP(), &xexpr) );
+}
+
+void ScipModelAPI::AddConstraint(const LogConstraint &cc)  {
+    SCIP_VAR* x = getPROBDATA()->vars[cc.GetArguments()[0]];
+  SCIP_VAR* res = getPROBDATA()->vars[cc.GetResultVar()];
+
+  assert(x != NULL);
+  assert(res != NULL);
+
+  SCIP_EXPR* terms[2];
+  SCIP_EXPR* xexpr;
+  SCIP_EXPR* sumexpr;
+  SCIP_Real coefs[2] = {1.0, -1.0};
+
+  SCIP_CCALL( SCIPcreateExprVar(getSCIP(), &xexpr, x, NULL, NULL) );
+  SCIP_CCALL( SCIPcreateExprVar(getSCIP(), &terms[0], res, NULL, NULL) );
+  SCIP_CCALL( SCIPcreateExprLog(getSCIP(), &terms[1], xexpr, NULL, NULL) );
+  SCIP_CCALL( SCIPcreateExprSum(getSCIP(), &sumexpr, 2, terms, coefs, 0.0, NULL, NULL) );
+
+  SCIP_CONS* cons;
+  SCIP_CCALL( SCIPcreateConsBasicNonlinear(getSCIP(), &cons, cc.GetName(), sumexpr, 0.0, 0.0) );
+  SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
+  SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
+
+  SCIP_CCALL( SCIPreleaseExpr(getSCIP(), &sumexpr) );
+  SCIP_CCALL( SCIPreleaseExpr(getSCIP(), &terms[1]) );
+  SCIP_CCALL( SCIPreleaseExpr(getSCIP(), &terms[0]) );
+  SCIP_CCALL( SCIPreleaseExpr(getSCIP(), &xexpr) );
+}
+
 void ScipModelAPI::AddConstraint(const SinConstraint &cc)  {
   SCIP_VAR* x = getPROBDATA()->vars[cc.GetArguments()[0]];
   SCIP_VAR* res = getPROBDATA()->vars[cc.GetResultVar()];

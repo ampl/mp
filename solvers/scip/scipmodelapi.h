@@ -123,6 +123,10 @@ public:
   void AddConstraint(const SOS2Constraint& cc);
 
   /// SCIP nonlinear generals
+  ACCEPT_CONSTRAINT(ExpConstraint, Recommended, CG_General)
+  void AddConstraint(const ExpConstraint& cc);
+  ACCEPT_CONSTRAINT(LogConstraint, Recommended, CG_General)
+  void AddConstraint(const LogConstraint& cc);
   ACCEPT_CONSTRAINT(SinConstraint, Recommended, CG_General)
   void AddConstraint(const SinConstraint& cc);
   ACCEPT_CONSTRAINT(CosConstraint, Recommended, CG_General) //pretty slow
