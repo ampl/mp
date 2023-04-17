@@ -95,6 +95,8 @@ public:
   /// auxiliary constraints for logical conditions.
   /// If not handled, the compared expressions need
   /// deducible finite bounds for a big-M redefinition.
+  ACCEPT_CONSTRAINT(AbsConstraint, Recommended, CG_General)
+  void AddConstraint(const AbsConstraint& absc);
   ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
   void AddConstraint(const AndConstraint& cc);
   ACCEPT_CONSTRAINT(OrConstraint, Recommended, CG_General)
@@ -109,8 +111,7 @@ public:
   /// Cones
   /*
 	ACCEPT_CONSTRAINT(QuadraticConeConstraint, Recommended, CG_Conic)
-	void AddConstraint(const QuadraticConeConstraint& qc);
-  */
+	void AddConstraint(const QuadraticConeConstraint& qc);*/
 
   /// SOS constraints can be used by AMPL for redefinition of
   /// piecewise-linear expressions.
@@ -122,10 +123,10 @@ public:
   void AddConstraint(const SOS2Constraint& cc);
 
   /// SCIP nonlinear generals
-  //ACCEPT_CONSTRAINT(SinConstraint, Recommended, CG_General)
-  //void AddConstraint(const SinConstraint& cc);
-  //ACCEPT_CONSTRAINT(CosConstraint, Recommended, CG_General) // y = cos(x)
-  //void AddConstraint(const CosConstraint& cc);  // GRBaddgenconstrCos(x, y);
+  ACCEPT_CONSTRAINT(SinConstraint, Recommended, CG_General)
+  void AddConstraint(const SinConstraint& cc);
+  ACCEPT_CONSTRAINT(CosConstraint, Recommended, CG_General) //pretty slow
+  void AddConstraint(const CosConstraint& cc);
 };
 
 } // namespace mp

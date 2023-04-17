@@ -728,6 +728,7 @@ class SCIPSolver(MPDirectSolver):
                  ModelTags.quadraticnonconvex,
                  ModelTags.sos,
                  ModelTags.nonlinear,
+                 ModelTags.trigonometric,
                  ModelTags.return_mipgap,
                  ModelTags.mipstart, ModelTags.multisol
                  }
