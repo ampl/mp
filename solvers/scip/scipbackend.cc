@@ -66,15 +66,16 @@ std::string ScipBackend::GetSolverVersion() {
 
 
 bool ScipBackend::IsMIP() const {
-  // TODO
-  //return getIntAttr(Solver::VARS_INT) > 0;
-  //return getIntAttr(SCIP_INTATTR_ISMIP);
-  return true;
+  return SCIPgetNOrigIntVars(getSCIP()) > 0 || SCIPgetNOrigBinVars(getSCIP()) > 0;
 }
 
 bool ScipBackend::IsQCP() const {
-  //return getIntAttr(Solver::CONS_QUAD) > 0;
-// return getIntAttr(SCIP_INTATTR_QELEMS) > 0;
+  for (int i = 0; i < SCIPgetNOrigConss(getSCIP()); i++) {
+    SCIP_Bool isquadratic;
+    SCIP_CCALL( SCIPcheckQuadraticNonlinear(getSCIP(), SCIPgetOrigConss(getSCIP())[i], &isquadratic) );
+    if (isquadratic == true)
+      return true;
+  }
   return false;
 }
 
@@ -120,8 +121,6 @@ void ScipBackend::ExportModel(const std::string &file) {
 
 void ScipBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptScip, getSCIP());
-  // TODO Check interrupter
-  //SCIP_CCALL( CPXsetterminate (env(), &terminate_flag) );
 }
 
 void ScipBackend::Solve() {

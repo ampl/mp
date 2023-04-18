@@ -37,7 +37,7 @@ public:
   /// After
   void FinishProblemModificationPhase();
 
-  /// TODO Implement the following functions using the solver's API
+  /// Implement the following functions using the solver's API
   void AddVariables(const VarArrayDef& );
   void SetLinearObjective( int iobj, const LinearObjective& lo );
   /// Whether accepting quadratic objectives:
@@ -48,7 +48,7 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
 
-  /// TODO For each suppoted constraint type, add the ACCEPT_CONSTRAINT macro
+  /// For each suppoted constraint type, add the ACCEPT_CONSTRAINT macro
   /// and the relative AddConstraint function.
   /// Below some typical constraint handlers of a MIP solver.
   /// Further constraint types which could be handled natively by some solvers:
@@ -127,9 +127,11 @@ public:
   void AddConstraint(const ExpConstraint& cc);
   ACCEPT_CONSTRAINT(LogConstraint, Recommended, CG_General)
   void AddConstraint(const LogConstraint& cc);
+  ACCEPT_CONSTRAINT(PowConstraint, Recommended, CG_General)
+  void AddConstraint(const PowConstraint& cc);
   ACCEPT_CONSTRAINT(SinConstraint, Recommended, CG_General)
   void AddConstraint(const SinConstraint& cc);
-  ACCEPT_CONSTRAINT(CosConstraint, Recommended, CG_General) //pretty slow
+  ACCEPT_CONSTRAINT(CosConstraint, AcceptedButNotRecommended, CG_General) //pretty slow
   void AddConstraint(const CosConstraint& cc);
 };
 
