@@ -31,6 +31,7 @@ public:
   using VarArray = std::vector<Var>;
   using VarBndVec = std::vector<double>;
   using VarTypeVec = std::vector<var::Type>;
+  using VarNameVec = std::vector<const char*>;
 
   ///////////////////////////// VARIABLES ////////////////////////////////
   /// Add variable, return its index
@@ -51,6 +52,13 @@ public:
     var_ub_.insert(var_ub_.end(), ubs.begin(), ubs.end());
     var_type_.insert(var_type_.end(), types.begin(), types.end());
     assert(check_vars());
+  }
+
+  void AddVar__name() {
+    var_names_storage_.push_back(fmt::format("mpv-{}", var_names_storage_.size()));
+  }
+  void AddVars__names(const std::vector<std::string>& names) {
+    var_names_storage_.insert(var_names_storage_.end(), names.begin(), names.end());
   }
 
   int num_vars() const
@@ -200,7 +208,13 @@ public:
 protected:
   template <class Backend>
   void PushVariablesTo(Backend& backend) const {
-    backend.AddVariables( { var_lb_, var_ub_, var_type_ } );
+    if (var_names_storage_.size() > 0) {
+      // Convert names to c-str if needed
+      for (const std::string& s : var_names_storage_)
+        var_names_.push_back(s.c_str());
+      backend.AddVariables({ var_lb_, var_ub_, var_type_, var_names_ });
+    } else
+      backend.AddVariables({ var_lb_, var_ub_, var_type_ });
   }
 
   template <class Backend>
@@ -226,7 +240,11 @@ private:
   VarBndVec var_lb_, var_ub_;
   /// Variables' types
   VarTypeVec var_type_;
-
+  /// <summary>
+  ///  Variables' names
+  /// </summary>
+  mutable VarNameVec var_names_;
+  std::vector<std::string> var_names_storage_;
   /// Objectives
   ObjList objs_;
 

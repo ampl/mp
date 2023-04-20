@@ -139,7 +139,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     Var(double lb, double ub) : lb(lb), ub(ub) { assert(lb<=ub); }
   };
   std::vector<Var> vars_;
-
+  std::vector<std::string> var_names_;
   /// Packed variable type information.
   /// is_var_int_[i] specifies whether variable i is integer.
   std::vector<bool> is_var_int_;
@@ -460,6 +460,10 @@ public:
   /** Returns the number of variables. */
   int num_vars() const { return static_cast<int>(vars_.size()); }
 
+
+  /** Returns the variable names (if present). */
+  std::vector<std::string>& var_names() { return var_names_; }
+    
   /** Returns the number of objectives. */
   int num_objs() const { return static_cast<int>(linear_objs_.size()); }
 
@@ -600,7 +604,7 @@ public:
     internal::CheckIndex(index, num_vars());
     return MutVariable(this, index);
   }
-
+  
   /// Adds a variable.
   Variable AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
     std::size_t index = vars_.size();
@@ -609,7 +613,9 @@ public:
     is_var_int_.push_back(type != var::CONTINUOUS);
     return Variable(this, static_cast<int>(index));
   }
-
+  void AddVarName(const std::string& name) {
+    var_names_.push_back(name);
+  }
   void AddVars(int num_vars, var::Type type) {
     MP_ASSERT(num_vars >= 0, "invalid size");
     std::size_t new_size = val(SafeInt<int>(vars_.size()) + num_vars);
