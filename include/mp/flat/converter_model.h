@@ -55,7 +55,8 @@ public:
   }
 
   void AddVar__name() {
-    var_names_storage_.push_back(fmt::format("mpv-{}", var_names_storage_.size()));
+    if(var_names_storage_.size()>0)
+      var_names_storage_.push_back(fmt::format("mpv-{}", var_names_storage_.size()));
   }
   void AddVars__names(const std::vector<std::string>& names) {
     var_names_storage_.insert(var_names_storage_.end(), names.begin(), names.end());
