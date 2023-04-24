@@ -127,7 +127,12 @@ void ScipBackend::Solve() {
   if (!storedOptions_.exportFile_.empty()) {
     ExportModel(storedOptions_.exportFile_);
   }
-  SCIP_CCALL( SCIPsolve(getSCIP()) );
+
+  if (storedOptions_.concurrent_)
+    SCIP_CCALL( SCIPsolveConcurrent(getSCIP()) );
+  else
+    SCIP_CCALL( SCIPsolve(getSCIP()) );
+  
   WindupSCIPSolve();
 }
 
@@ -287,8 +292,6 @@ void ScipBackend::InitCustomOptions() {
     "regardless of the value of tech:outlev.",
     storedOptions_.logFile_);
 
-
-
   AddSolverOption("alg:method method lpmethod",
     "LP algorithm for solving initial LP relaxations:\n"
     "\n.. value-table::\n", "lp/initalgorithm", lp_values_method, "s");
@@ -297,11 +300,238 @@ void ScipBackend::InitCustomOptions() {
     "LP algorithm for resolving LP relaxations if a starting basis exists:\n"
     "\n.. value-table::\n", "lp/resolvealgorithm", lp_values_method, "s");
 
+  AddStoredOption("alg:concurrent concurrent",
+    "0/1: whether to solve the problem using concurrent solvers"
+    "\n"
+    "  | 0 - No concurrent solvers are used to solve the problem (default)\n"
+    "  | 1 - Concurrent solvers are used to solve the problem.",
+    storedOptions_.concurrent_, 0, 1);
+
+  /////////////////////// BRANCHING ///////////////////////
+  AddSolverOption("branch:preferbinary preferbinary",
+    "0/1: whether branching on binary variables should be preferred"
+    "\n"
+    "  | 0 - Binary variables should not be preferred on branching (default)\n"
+    "  | 1 - Binary variables should be preferred on branching.",
+    "branching/preferbinary", 0, 1);
+
+  //////////////////////// CUTS //////////////////////////
+  AddSolverOption("cut:dircutoffdistweight dircutoffdistweight",
+    "Weight of directed cutoff distance in cut score calculation (default: 0.0)",
+    "cutselection/hybrid/dircutoffdistweight", 0.0, SCIP_REAL_MAX);
+
+  AddSolverOption("cut:efficacyweight efficacyweight",
+    "Weight of efficacy in cut score calculation (default: 1.0)",
+    "cutselection/hybrid/efficacyweight", 0.0, SCIP_REAL_MAX);
+
+  AddSolverOption("cut:intsupportweight intsupportweight",
+    "Weight of integral support in cut score calculation (default: 0.1)",
+    "cutselection/hybrid/intsupportweight", 0.0, SCIP_REAL_MAX);
+
+  AddSolverOption("cut:minortho minortho",
+    "Minimal orthogonality for a cut to enter the LP (default: 0.9)",
+    "cutselection/hybrid/minortho", 0.0, SCIP_REAL_MAX);
+
+  AddSolverOption("cut:minorthoroot minorthoroot",
+    "Minimal orthogonality for a cut to enter the LP in the root node (default: 0.1)",
+    "cutselection/hybrid/minorthoroot", 0.0, SCIP_REAL_MAX);
+
+  AddSolverOption("cut:objparalweight objparalweight",
+    "Weight of objective parallelism in cut score calculation (default: 0.1)",
+    "cutselection/hybrid/objparalweight", 0.0, SCIP_REAL_MAX);
+
+
+  AddSolverOption("cut:maxcuts maxcuts",
+    "Maximal number of cuts separated per separation round (0: disable local separation; default: 100)",
+    "separating/maxcuts", 0, INT_MAX);
+
+  AddSolverOption("cut:maxcutsroot maxcutsroot",
+    "Maximal number of separated cuts at the root node (0: disable root node separation; default: 5000)",
+    "separating/maxcutsroot", 0, INT_MAX);
+
+  AddSolverOption("cut:maxrounds",
+    "Maximal number of separation rounds per node (default: -1: unlimited)",
+    "separating/maxrounds", -1, INT_MAX);
+
+  AddSolverOption("cut:maxroundsroot",
+    "Maximal number of separation rounds in the root node (default: -1: unlimited)",
+    "separating/maxroundsroot", -1, INT_MAX);
+
+  AddSolverOption("cut:maxstallrounds",
+    "Maximal number of consecutive separation rounds without objective or integrality improvement in local nodes (-1: no additional restriction; default: 1)",
+    "separating/maxstallrounds", -1, INT_MAX);
+
+  AddSolverOption("cut:maxstallroundsroot",
+    "Maximal number of consecutive separation rounds without objective or integrality improvement in the root node (-1: no additional restriction; default: 10)",
+    "separating/maxstallroundsroot", -1, INT_MAX);
+
+  AddSolverOption("cut:minactivityquot",
+    "Minimum cut activity quotient to convert cuts into constraints during a restart (0.0: all cuts are converted; default: 0.8)",
+    "separating/minactivityquot", 0.0, 1.0);
+
+  AddSolverOption("cut:minefficacy",
+    "Minimal efficacy for a cut to enter the LP (default: 0.0001)",
+    "separating/minefficacy", 0.0, SCIP_REAL_MAX);
+
+  AddSolverOption("cut:minefficacyroot",
+    "Minimal efficacy for a cut to enter the LP in the root node (default: 0.0001)",
+    "separating/minefficacyroot", 0.0, SCIP_REAL_MAX);
+
+  AddSolverOption("cut:poolfreq",
+    "Separation frequency for the global cut pool (-1: disable global cut pool; 0: only separate pool at the root; default: 10)",
+    "separating/poolfreq", -1, SCIP_MAXTREEDEPTH);
+
+  //////////////////////// LIMITS ////////////////////////
+  AddSolverOption("lim:absgap absgap",
+    "Solving stops, if the absolute gap = |primalbound - dualbound| is below the given value (default: 0.0)",
+    "limits/absgap", 0.0, SCIP_REAL_MAX);
+
+  AddSolverOption("lim:autorestartnodes",
+    "If solve exceeds this number of nodes for the first time, an automatic restart is triggered (default: -1: no automatic restart)",
+    "limits/autorestartnodes", -1, INT_MAX);
+
+  AddSolverOption("lim:bestsol",
+    "Solving stops, if the given number of solution improvements were found (default: -1: no limit)",
+    "limits/bestsol", -1, INT_MAX);
+
+  AddSolverOption("lim:gap gap",
+    "Solving stops, if the relative gap = |primal - dual|/MIN(|dual|,|primal|) is below the given value, the gap is 'Infinity', if primal and dual bound have opposite signs (default: 0.0)",
+    "limits/gap", 0.0, SCIP_REAL_MAX);
+
+  AddSolverOption("lim:maxorigsol",
+    "Maximal number of solutions candidates to store in the solution storage of the original problem (default: 10)",
+    "limits/maxorigsol", 0, INT_MAX);
+
+  AddSolverOption("lim:maxsol",
+    "Maximal number of solutions to store in the solution storage (default: 100)",
+    "limits/maxsol", 1, INT_MAX);
+
+  AddSolverOption("lim:memory memory",
+    "#maximal memory usage in MB; reported memory usage is lower than real memory usage! (default: 8796093022207.0)",
+    "limits/memory", 0.0, (SCIP_Real)SCIP_MEM_NOLIMIT);
+
+  AddSolverOption("lim:nodes",
+    "Maximal number of nodes to process (default: -1: no limit)",
+    "limits/nodes", -1, (int)SCIP_LONGINT_MAX);
+
+  AddSolverOption("lim:restarts",
+    "Solving stops, if the given number of restarts was triggered (default: -1: no limit)",
+    "limits/restarts", -1, INT_MAX);
+
+  AddSolverOption("lim:softtime softtime",
+    "Soft time limit which should be applied after first solution was found (default: -1.0: disabled)",
+    "limits/softtime", -1.0, SCIP_REAL_MAX);
+
+  AddSolverOption("lim:solutions",
+    "Solving stops, if the given number of solutions were found (default: -1: no limit)",
+    "limits/solutions", -1, INT_MAX);
+
+  AddSolverOption("lim:stallnodes",
+    "Solving stops, if the given number of nodes was processed since the last improvement of the primal solution value (default: -1: no limit)",
+    "limits/stallnodes", -1, (int)SCIP_LONGINT_MAX);
+
+  AddSolverOption("lim:time time",
+    "Maximal time in seconds to run (default: 1e+20)",
+    "limits/time", 0.0, 1e+20);
+
+  AddSolverOption("lim:totalnodes",
+    "Maximal number of total nodes (incl. restarts) to process (default: -1: no limit)",
+    "limits/totalnodes", -1, (int)SCIP_LONGINT_MAX);
+
   ////////////////////////// LP //////////////////////////
   AddSolverOption("lp:pricing pricing",
     "Pricing strategy:\n"
     "\n.. value-table::",
     "lp/pricing", values_pricing, "l");
+
+  AddSolverOption("lp:presolving",
+    "0/1: whether presolving of LP solver should be used"
+    "\n"
+    "  | 0 - Presolving of LP solver should not be used\n"
+    "  | 1 - Presolving of LP solver should be used (default).",
+    "lp/advanced/presolving", 0, 1);
+
+  AddSolverOption("lp:threads",
+    "Number of threads used for solving the LP (default: 0: automatic)",
+    "lp/advanced/threads", 0, 64);
+
+  AddSolverOption("lp:alwaysgetduals alwaysgetfarkasduals alwaysgetduals",
+    "0/1: whether the Farkas duals should always be collected when an LP is found to be infeasible"
+    "\n"
+    "  | 0 - The Farkas duals should not always be collected when an LP is found to be infeasible (default)\n"
+    "  | 1 - The Farkas duals should always be collected when an LP is found to be infeasible.",
+    "lp/alwaysgetduals", 0, 1);
+
+  AddSolverOption("lp:solvedepth",
+    "Maximal depth for solving LP at the nodes (default: -1: no depth limit)",
+    "lp/solvedepth", -1, SCIP_MAXTREEDEPTH);
+
+  AddSolverOption("lp:solvefreq",
+    "Frequency for solving LP at the nodes (-1: never; 0: only root LP; default: 1)",
+    "lp/solvefreq", -1, SCIP_MAXTREEDEPTH);
+
+  /////////////////////// PRESOLVE ///////////////////////
+  AddSolverOption("pre:abortfac abortfac",
+    "Abort presolve, if at most this fraction of the problem was changed in last presolve round (default: 0.0008)",
+    "presolving/advanced/abortfac", 0.0, 1.0);
+
+  AddSolverOption("pre:clqtablefac clqtablefac",
+    "Limit on number of entries in clique table relative to number of problem nonzeros (default: 2.0)",
+    "presolving/advanced/clqtablefac", 0.0, SCIP_REAL_MAX);
+
+  AddSolverOption("pre:donotaggr donotaggr",
+    "0/1: whether aggregation of variables should be forbidden"
+    "\n"
+    "  | 0 - Aggregation of variables should not be forbidden (default)\n"
+    "  | 1 - Aggregation of variables should be forbidden.",
+    "presolving/advanced/donotaggr", 0, 1);
+
+  AddSolverOption("pre:donotmultaggr donotmultaggr",
+    "0/1: whether multi-aggregation of variables should be forbidden"
+    "\n"
+    "  | 0 - Multi-aggregation of variables should not be forbidden (default)\n"
+    "  | 1 - Multi-aggregation of variables should be forbidden.",
+    "presolving/advanced/donotmultaggr", 0, 1);
+
+  AddSolverOption("pre:immrestartfac immrestartfac",
+    "Fraction of integer variables that were fixed in the root node triggering an immediate restart with preprocessing (default: 0.1)",
+    "presolving/advanced/immrestartfac", 0.0, 1.0);
+
+  AddSolverOption("pre:restartfac restartfac",
+    "Fraction of integer variables that were fixed in the root node triggering a restart with preprocessing after root node evaluation (default: 0.025)",
+    "presolving/advanced/restartfac", 0.0, 1.0);
+
+  AddSolverOption("pre:restartminred restartminred",
+    "Minimal fraction of integer variables removed after restart to allow for an additional restart (default: 0.1)",
+    "presolving/advanced/restartminred", 0.0, 1.0);
+
+  AddSolverOption("pre:subrestartfac subrestartfac",
+    "Fraction of integer variables that were globally fixed during the solving process triggering a restart with preprocessing (default: 1.0)",
+    "presolving/advanced/subrestartfac", 0.0, 1.0);
+
+  AddSolverOption("pre:maxrestarts",
+    "Maximal number of restarts (default: -1: unlimited)",
+    "presolving/maxrestarts", -1, INT_MAX);
+
+  AddSolverOption("pre:maxrounds",
+    "Maximal number of presolving rounds (default: -1: unlimited; 0: off)",
+    "presolving/maxrounds", -1, INT_MAX);
+
+  ////////////////////// PROPAGATE ///////////////////////
+  AddSolverOption("pro:abortoncutoff",
+    "0/1: whether propagation should be aborted immediately (setting this to 0 could help conflict analysis to produce more conflict constraints)"
+    "\n"
+    "  | 0 - Propagation should not be aborted immediately\n"
+    "  | 1 - Propagation should be aborted immediately (default).",
+    "propagating/abortoncutoff", 0, 1);
+
+  AddSolverOption("pro:maxrounds",
+    "Maximal number of propagation rounds per node (-1: unlimited; 0: off; default: 100)",
+    "propagating/maxrounds", -1, INT_MAX);
+
+  AddSolverOption("pro:maxroundsroot",
+    "Maximal number of propagation rounds in the root node (-1: unlimited; 0: off; default: 1000)",
+    "propagating/maxroundsroot", -1, INT_MAX);
 }
 
 

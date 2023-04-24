@@ -54,7 +54,7 @@ public:
  * MULTISOL support
  * No API, see ReportIntermediateSolution()
 **/
-  ALLOW_STD_FEATURE(MULTISOL, true)
+  ALLOW_STD_FEATURE(MULTISOL, false)
 
   /**
   * Get/Set AMPL var/con statii
@@ -75,7 +75,7 @@ public:
   **/
   // If MIP warm start is supported, implement the function below
   // to set a non-presolved starting solution
-  ALLOW_STD_FEATURE(MIPSTART, true)
+  ALLOW_STD_FEATURE(MIPSTART, false)
   void AddMIPStart(ArrayRef<double> x0) override;
 
 
@@ -155,6 +155,7 @@ private:
   /// These options are stored in the class
   struct Options {
     std::string exportFile_, logFile_;
+    int concurrent_ = 0;
   };
   Options storedOptions_;
 

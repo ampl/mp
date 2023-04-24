@@ -337,7 +337,7 @@ void ScipModelAPI::AddConstraint(const ExpConstraint &cc)  {
 }
 
 void ScipModelAPI::AddConstraint(const LogConstraint &cc)  {
-    SCIP_VAR* x = getPROBDATA()->vars[cc.GetArguments()[0]];
+  SCIP_VAR* x = getPROBDATA()->vars[cc.GetArguments()[0]];
   SCIP_VAR* res = getPROBDATA()->vars[cc.GetResultVar()];
 
   assert(x != NULL);
