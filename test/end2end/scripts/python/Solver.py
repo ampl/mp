@@ -420,7 +420,7 @@ class CPLEXSolver(AMPLSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic, ModelTags.sos,
+                  ModelTags.linear, ModelTags.quadratic, ModelTags.sos,
                  ModelTags.return_mipgap,
                  ModelTags.sstatus}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)

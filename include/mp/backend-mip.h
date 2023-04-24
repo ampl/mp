@@ -252,7 +252,7 @@ public:
   }
 
   virtual void InputMIPStart() {
-    if (warmstart() &&
+    if (warmstart() && InitialValues().size() > 0 &&
         IMPL_HAS_STD_FEATURE( MIPSTART )) {
       AddMIPStart( this->InitialValues() );
       if (debug_mode()) {                    // Report received initials

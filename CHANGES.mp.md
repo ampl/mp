@@ -1,6 +1,12 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## 20230424
+- *Pass variable names* if read from a `col` file with the 
+  same name of the `nl` file being read.
+- *Fixed #203*: starting solution is now not passed to the 
+  solver if empty.
+  
 
 ## 20230321
 - *Recognize second-order cones*
