@@ -7,10 +7,21 @@ void CbcmpModelAPI::InitProblemModificationPhase(
     const FlatModelInfo*) {
 }
 
+std::string sanitizeName(std::string n) {
+  // Cbc does not like square brackets or spaces in variable names
+  std::replace(n.begin(), n.end(), '[', '(');
+  std::replace(n.begin(), n.end(), ']', ')');
+  std::replace(n.begin(), n.end(), ' ', '_');
+  return n;
+}
+
 void CbcmpModelAPI::AddVariables(const VarArrayDef& v) {
-  for (int i = 0; i < v.size(); i++) {
-    Cbc_addCol(lp(), "V", v.plb()[i], v.pub()[i],
-      0, var::Type::INTEGER == v.ptype()[i], 0, NULL, NULL);
+    for (int i = 0; i < v.size(); i++) {
+    Cbc_addCol(lp(), 
+      v.pnames() ? sanitizeName(v.pnames()[i]).c_str():fmt::format("x{}", i).c_str(),
+       v.plb()[i], v.pub()[i],
+      0, var::Type::INTEGER == v.ptype()[i], 
+      0, nullptr, nullptr);
   }
 }
 
