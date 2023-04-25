@@ -730,8 +730,7 @@ class SCIPSolver(MPDirectSolver):
                  ModelTags.nonlinear,
                  ModelTags.log,
                  ModelTags.trigonometric,
-                 ModelTags.return_mipgap,
-                 ModelTags.mipstart, ModelTags.multisol
+                 ModelTags.return_mipgap
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
