@@ -1,6 +1,10 @@
 Summary of recent updates to MOSEK for AMPL
 ===========================================
 
+## 20230424
+- *Changes in the MP library*: added variable names support
+  and removed spurious starting solution
+  
 
 ## 20230330
 - Removed the message on missing dual solution for MIP.
