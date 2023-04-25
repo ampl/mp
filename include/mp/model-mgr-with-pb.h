@@ -192,8 +192,14 @@ protected:
   ArrayRef<double> InitialValues() override {
     return GetModel().InitialValues();
   }
+  ArrayRef<int> InitialValuesSparsity() override {
+    return GetModel().InitialValuesSparsity();
+  }
   ArrayRef<double> InitialDualValues() override {
     return GetModel().InitialDualValues();
+  }
+  ArrayRef<int> InitialDualValuesSparsity() override {
+    return GetModel().InitialDualValuesSparsity();
   }
 
   ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) override {

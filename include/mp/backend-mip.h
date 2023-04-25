@@ -109,15 +109,26 @@ public:
   /**
   * General LP warm start, e.g.,
   * set primal/dual initial guesses for continuous case.
-  * Presolve the values if needed
+  * The specific Backend should
+  * presolve the values if needed.
   **/
   DEFINE_STD_FEATURE( WARMSTART )
   ALLOW_STD_FEATURE( WARMSTART, false )
   virtual void AddPrimalDualStart(Solution )
   { MP_UNSUPPORTED("MIPBackend::AddPrimalDualStart"); }
   /**
-  * Specifically, MIP warm start.
-  * Presolve the values if needed
+  * MIP warm start.
+  * Provides solution hint, as well as sparsity information.
+  * Presolve the values if needed.
+  **/
+  DEFINE_STD_FEATURE( MIPSTART_SPARSE )
+  ALLOW_STD_FEATURE( MIPSTART_SPARSE, false )
+  virtual void AddMIPStart(
+      ArrayRef<double> , ArrayRef<int> )
+  { MP_UNSUPPORTED("MIPBackend::AddMIPStart"); }
+  /**
+  * MIP warm start without sparsity. DEPRECATED.
+  * Presolve the values if needed.
   **/
   DEFINE_STD_FEATURE( MIPSTART )
   ALLOW_STD_FEATURE( MIPSTART, false )
@@ -252,13 +263,22 @@ public:
   }
 
   virtual void InputMIPStart() {
-    if (warmstart() && this->InitialValues().size() > 0 &&
-        IMPL_HAS_STD_FEATURE( MIPSTART )) {
-      AddMIPStart( this->InitialValues() );
-      if (debug_mode()) {                    // Report received initials
-        ReportSuffix(suf_testMIPini,         // Should we check that
-                     this->InitialValues());
-      }                                      // Impl uses them?
+    if (warmstart() && this->InitialValues().size() > 0) {
+      if (IMPL_HAS_STD_FEATURE( MIPSTART_SPARSE )) {
+        AddMIPStart(
+              this->InitialValues(),
+              this->InitialValuesSparsity() );
+        if (debug_mode()) {                    // Report received initials
+          ReportSuffix(suf_testMIPini,         // Should we check that
+                       this->InitialValues());
+        }                                      // Impl uses them?
+      } else if (IMPL_HAS_STD_FEATURE( MIPSTART )) {
+        AddMIPStart( this->InitialValues() );
+        if (debug_mode()) {                    // Report received initials
+          ReportSuffix(suf_testMIPini,         // Should we check that
+                       this->InitialValues());
+        }                                      // Impl uses them?
+      }
     }
   }
 

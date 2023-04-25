@@ -86,8 +86,9 @@ public:
   /**
   * Specifically, MIP warm start
   **/
-  ALLOW_STD_FEATURE( MIPSTART, true )
-  void AddMIPStart(ArrayRef<double> x0) override;
+  ALLOW_STD_FEATURE( MIPSTART_SPARSE, true )
+  void AddMIPStart(
+      ArrayRef<double> x0, ArrayRef<int> s0) override;
   /**
   * Obtain inf/unbounded rays
   **/
