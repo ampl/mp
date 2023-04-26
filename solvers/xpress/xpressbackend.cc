@@ -2572,11 +2572,22 @@ void XpressmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
 }
 
 void XpressmpBackend::AddMIPStart(
-		ArrayRef<double> x0_unpres, ArrayRef<int> sparsity) {
+		ArrayRef<double> x0_unpres, ArrayRef<int> s0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution({ x0_unpres });
+  auto ms = GetValuePresolver().PresolveGenericInt({ s0_unpres });
   auto x0 = mv.GetVarValues()();
-  int status;
-  XPRSaddmipsol(lp(), NumVars(), x0.data(), nullptr, nullptr);
+  auto s0 = ms.GetVarValues()();
+  std::vector<int> idx;                 // Create sparse vector
+  idx.reserve(x0.size());
+  std::vector<double> val;
+  val.reserve(x0.size());
+  for (int i = 0; i < (int)x0.size(); ++i) {
+    if (s0[i]) {
+      idx.push_back(i);
+      val.push_back(x0[i]);
+    }
+  }
+  XPRSaddmipsol(lp(), x0.size(), x0.data(), idx.data(), nullptr);
 }
 
 void XpressmpBackend::xpdisplay(XPRSprob prob, void* data, const char* ch, int n, int msglvl)

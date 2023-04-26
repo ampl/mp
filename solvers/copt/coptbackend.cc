@@ -204,7 +204,6 @@ void CoptBackend::DoWriteProblem(const std::string& name) {
 }
 
 
-
 void CoptBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptCopt, lp());
 }
@@ -846,11 +845,34 @@ ArrayRef<double> CoptBackend::DRay() {
 }
 
 
+void CoptBackend::AddPrimalDualStart(Solution sol0_unpres) {
+  if (IsMIP())
+    return;
+  auto mv = GetValuePresolver().PresolveSolution(
+    { sol0_unpres.primal, sol0_unpres.dual });
+  auto x0 = mv.GetVarValues()();
+  auto pi0 = mv.GetConValues()(CG_Linear);
+  COPT_CCALL(COPT_SetLpSolution(lp(), x0.data(), nullptr, pi0.data(), nullptr));
+
+}
 
 void CoptBackend::AddMIPStart(
-		ArrayRef<double> x0, ArrayRef<int> sparsity) {
-  COPT_CCALL(COPT_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
-
+		ArrayRef<double> x0_unpres, ArrayRef<int> sparsity_unpres) {
+  auto mv = GetValuePresolver().PresolveSolution({ x0_unpres });
+  auto ms = GetValuePresolver().PresolveGenericInt({ sparsity_unpres });
+  auto x0 = mv.GetVarValues()();
+  auto s0 = ms.GetVarValues()();
+  std::vector<int> idx;                 // Create sparse vector
+  idx.reserve(x0.size());
+  std::vector<double> val;
+  val.reserve(x0.size());
+  for (int i = 0; i < (int)x0.size(); ++i) {
+    if (s0[i]) {
+      idx.push_back(i);
+      val.push_back(x0[i]);
+    }
+  }
+  COPT_CCALL(COPT_AddMipStart(lp(), val.size(), idx.data(), const_cast<double*>(val.data())));
 }
 
 

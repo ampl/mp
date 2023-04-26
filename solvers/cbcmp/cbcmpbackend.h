@@ -62,12 +62,17 @@ public:
   SolutionBasis GetBasis() override;
   void SetBasis(SolutionBasis) override;
 
+
+  /**
+  * General warm start, e.g.,
+  * set primal/dual initial guesses for continuous case
+  **/
+  ALLOW_STD_FEATURE(WARMSTART, true)
+  void AddPrimalDualStart(Solution sol0) override;
   /**
   * MIP warm start
   **/
-  // TODO If MIP warm start is supported, implement the function below
-  // to set a non-presolved starting solution
-  ALLOW_STD_FEATURE(MIPSTART, false)
+  ALLOW_STD_FEATURE(MIPSTART, true)
 	void AddMIPStart(ArrayRef<double> x0,
 									 ArrayRef<int> sparsity) override;
 
@@ -75,8 +80,6 @@ public:
  /**
   * Get MIP Gap
   **/
-  // TODO Implement to return MIP gap
-  // (adds option mip:return_gap)
   ALLOW_STD_FEATURE(RETURN_MIP_GAP, false)
   double MIPGap() override;
   double MIPGapAbs() override;
