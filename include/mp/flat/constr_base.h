@@ -77,6 +77,8 @@ public:
 using VarArray1 = std::array<int, 1>;
 /// Fixed argument array of 2 elements
 using VarArray2 = std::array<int, 2>;
+/// Fixed argument array of 3 elements
+using VarArray3 = std::array<int, 3>;
 /// Fixed argument array of N elements
 template <int N>
 using VarArrayN = std::array<int, N>;
@@ -92,6 +94,10 @@ template <class Num, size_t N>
 using ParamArray0 = ParamArrayN<int, 0>;
 /// Fixed parameter array of 1 double
 using DblParamArray1 = ParamArrayN<double, 1>;
+/// Fixed parameter array of 2 double
+using DblParamArray2 = ParamArrayN<double, 2>;
+/// Fixed parameter array of 3 double
+using DblParamArray3 = ParamArrayN<double, 3>;
 /// Variable-length parameter array
 using DblParamArray = std::vector<double>;
 

@@ -2571,7 +2571,8 @@ void XpressmpBackend::AddPrimalDualStart(Solution sol0_unpres) {
     fmt::print("warmstart: solution is not loaded because the problem is in presolved status.\n");
 }
 
-void XpressmpBackend::AddMIPStart(ArrayRef<double> x0_unpres) {
+void XpressmpBackend::AddMIPStart(
+		ArrayRef<double> x0_unpres, ArrayRef<int> sparsity) {
   auto mv = GetValuePresolver().PresolveSolution({ x0_unpres });
   auto x0 = mv.GetVarValues()();
   int status;

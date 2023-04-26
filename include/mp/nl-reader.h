@@ -2134,14 +2134,18 @@ void ReadBinary(TextReader<> &reader, const NLHeader &header,
 template <typename NameHandler>
 void ReadNames(fmt::CStringRef filename, fmt::StringRef data,
                NameHandler &handler) {
+  bool in_win_newline = false;
   int line = 1;
   const char *start = data.data();
   const char *end = start + data.size();
   for (const char *ptr = start; ptr != end; ++ptr) {
+    if (*ptr == '\r') in_win_newline = true;
     if (*ptr == '\n') {
-      handler.OnName(fmt::StringRef(start, ptr - start));
+        handler.OnName(fmt::StringRef(start, ptr - start - in_win_newline));
+
       start = ptr + 1;
       ++line;
+      in_win_newline = false;
     }
   }
   if (start != end) {
@@ -2164,8 +2168,12 @@ class NameReader {
   /// newline character ('\n').
   template <typename NameHandler>
   void Read(fmt::CStringRef filename, NameHandler &handler) {
-    fmt::File file(filename, fmt::File::RDONLY);
-    mapped_file_.map(file, filename);
+    try {
+      fmt::File file(filename, fmt::File::RDONLY);
+      mapped_file_.map(file, filename);
+    }
+    catch (...) { return;  } // do nothing if name file doesn't exist
+    
     fmt::StringRef data(mapped_file_.start(), mapped_file_.size());
     ReadNames(filename, data, handler);
   }
@@ -2215,6 +2223,9 @@ class NLProblemBuilder {
   /// Get builder
   ProblemBuilder &builder() { return builder_; }
 
+  void OnName(fmt::StringRef name) {
+    builder_.AddVarName(name);
+  }
   /// OnHeader event
   void OnHeader(const NLHeader &h) {
     builder_.SetInfo(h);

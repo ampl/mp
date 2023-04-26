@@ -165,6 +165,10 @@ protected:
   virtual bool NextSubinterval();
   /// Approximate in the chosen subinterval
   virtual void ApproximateSubinterval();
+  /// ClipGraphFinal.
+  /// Is necessary beacuse initial domain clipping is
+  /// only done for monotone functions.
+  virtual void ClipGraphFinal();
   /// See if we can use argument's integrality
   virtual void ConsiderIntegrality();
 
@@ -253,6 +257,7 @@ void BasicPLApproximator<FuncCon>::Run() {
      do {
        ApproximateSubinterval();
      } while (NextSubinterval());
+     ClipGraphFinal();
      ConsiderIntegrality();
    }
  }
@@ -326,6 +331,9 @@ void BasicPLApproximator<FuncCon>::ApproximateSubinterval() {
     GetPL().AddPoint(x0, f0 = eval(x0));
   } while (x0 < ub_sub());
 }
+
+template <class FuncCon>
+void BasicPLApproximator<FuncCon>::ClipGraphFinal() { }
 
 template <class FuncCon>
 void BasicPLApproximator<FuncCon>::ConsiderIntegrality() {
@@ -932,6 +940,8 @@ public:
   BreakpointList GetDefaultBreakpoints() const override
   { return {-1e100, 0.0, 1e100}; }
 
+  bool IsMonotone() const override { return true; }
+
   double eval(double x) const override
   { return std::sinh(x); }
   double inverse(double y) const override
@@ -988,6 +998,8 @@ public:
   { return { -1e4, 1e4, -1, 1 }; }
   BreakpointList GetDefaultBreakpoints() const override
   { return {-1e100, 0.0, 1e100}; }
+
+  bool IsMonotone() const override { return true; }
 
   double eval(double x) const override
   { return std::tanh(x); }

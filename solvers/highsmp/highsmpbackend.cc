@@ -461,7 +461,7 @@ void HighsBackend::InitCustomOptions() {
   AddSolverOption("tech:threads threads",
     "How many threads to use when using the barrier algorithm "
     "or solving MIP problems; default 0 ==> automatic choice.",
-    "threads", 0, 128);
+		"threads", 0, INT32_MAX);
 
   AddSolverOption("mip:detsimmetry detsimmetry mip_detect_symmetry",
     "Whether symmetry should be detected (default 1)",

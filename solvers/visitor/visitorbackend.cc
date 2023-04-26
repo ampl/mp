@@ -560,9 +560,9 @@ pre::ValueMapInt VisitorBackend::ConsIIS() {
   return { {{ 0, std::vector<int>()}} };
 }
 
-void VisitorBackend::AddMIPStart(ArrayRef<double> x0) {
+void VisitorBackend::AddMIPStart(
+    ArrayRef<double> x0, ArrayRef<int> sparsity) {
   //VISITOR_CCALL(VISITOR_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
-
 }
 
 

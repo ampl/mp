@@ -10,7 +10,7 @@ void CoptModelAPI::AddVariables(const VarArrayDef& v) {
     vtypes[i] = var::Type::CONTINUOUS==v.ptype()[i] ?
           COPT_CONTINUOUS : COPT_INTEGER;
   COPT_CCALL(COPT_AddCols(lp(), (int)v.size(), NULL, NULL,
-    NULL, NULL, NULL, vtypes.data(), v.plb(), v.pub(),  NULL));
+    NULL, NULL, NULL, vtypes.data(), v.plb(), v.pub(),  v.pnames()));
 }
 
 void CoptModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {

@@ -326,7 +326,7 @@ private:
     this->GetEnv().AddOption("cvt:plapprox:domain plapprox:domain plapproxdomain",
                        "For piecewise-linear approximated functions, both arguments and result "
                        "are bounded to +-[pladomain]. Default 1e6.",
-                       options_.cmpEps_, 0.0, 1e100);
+                       options_.PLApproxDomain_, 0.0, 1e100);
   }
 };
 

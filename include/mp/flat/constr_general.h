@@ -196,6 +196,15 @@ DEF_STATIC_CONSTR_WITH_PRM( QuadraticConeConstraint, VarArray, DblParamArray,
 DEF_STATIC_CONSTR_WITH_PRM( RotatedQuadraticConeConstraint, VarArray, DblParamArray,
                             "Rotated quadratic cone x1*x2 >= sqrt(x3^2 + ...)) with factors "
 														"applied to the arguments, aka MOSEK 10 affine cones");
+/// Exponential cone
+DEF_STATIC_CONSTR_WITH_PRM( ExponentialConeConstraint, VarArray3, DblParamArray3,
+                            "Exponential cone with factors");
+/// Power cone
+DEF_STATIC_CONSTR_WITH_PRM( PowerConeConstraint, VarArray, DblParamArray,
+                            "Power cone with factors ");
+/// Geometric cone
+DEF_STATIC_CONSTR_WITH_PRM( GeometricConeConstraint, VarArray, DblParamArray,
+                            "Geometric with factors ");
 
 } // namespace mp
 

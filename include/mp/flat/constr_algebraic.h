@@ -127,6 +127,8 @@ public:
   }
   /// Set rhs
   void set_rhs(double v) { rhs_ = v; }
+  /// Add to RHS
+  void add_to_rhs(double v) { rhs_ += v; }
   /// negate
   void negate() { rhs_ = -rhs_; }
   /// operator==

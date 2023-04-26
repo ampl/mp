@@ -1,8 +1,20 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## 20230424
+- *Pass variable names* if read from a `col` file with the 
+  same name of the `nl` file being read.
+- *Fixed #203*: starting solution is now not passed to the 
+  solver if empty.
+  
 
-## 29239297
+## 20230321
+- *Recognize second-order cones*
+  Recognize SOCP constraints from algebra and pass them
+  natively, or transform to quadratics.
+
+
+## 20230207
 - *Handle boolean constants* in ProblemFlattener.
 
 

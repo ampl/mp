@@ -30,7 +30,7 @@ namespace mp {
     {
       if (HEURptr_)
       {
-        int status = HEURclose(&HEURptr_);
+        if(HEURclose(&HEURptr_))
         throw std::runtime_error(
           fmt::format("Failed to close Heuristic environment:\n{}\n",
           HEURgetlastmsg(HEURptr())));

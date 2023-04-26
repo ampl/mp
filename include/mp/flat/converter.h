@@ -21,7 +21,9 @@
 #include "mp/valcvt.h"
 #include "mp/flat/redef/std/range_con.h"
 #include "mp/flat/redef/conic/cones.h"
+#include "mp/flat/redef/conic/qcones2qc.h"
 #include "mp/utils-file.h"
+#include "mp/ampls-ccallbacks.h"
 
 namespace mp {
 
@@ -180,6 +182,8 @@ public:
 	}
 
 	/// Unuse result variable.
+  /// Actually this is to 'unuse' the init expression
+  /// - might change naming.
 	/// Throw if already not used.
 	void DecrementVarUsage(int v) {
 		assert(VarUsageRef(v)>0);
@@ -294,6 +298,12 @@ public: // for ConstraintKeeper
   template <class Con>
   ConstraintAcceptanceLevel GetConstraintAcceptance(Con* ) const {
     return GET_CONST_CONSTRAINT_KEEPER(Con).GetChosenAcceptanceLevel();
+  }
+
+  /// Query the nuber of addable constraints of type.
+  template <class Con>
+  int GetNumberOfAddable(Con* ) const {
+    return GET_CONST_CONSTRAINT_KEEPER(Con).GetNumberOfAddable();
   }
 
   /// Query if the constraint type
@@ -486,6 +496,44 @@ public:
       GetEnv().PrintWarnings();
   }
 
+  /// Fill model traits for license check.
+  /// To be called after ConvertModel().
+  /// KEEP THIS UP2DATE.
+  void FillModelTraits(AMPLS_ModelTraits& mt) {
+    const auto& fmi = GetModelAPI().GetFlatModelInfo();
+    mt.n_vars = num_vars();
+    mt.n_quad_con =
+        fmi->GetNumberOfConstraints(typeid(QuadConRange))
+        + fmi->GetNumberOfConstraints(typeid(QuadConGE))
+        + fmi->GetNumberOfConstraints(typeid(QuadConEQ))
+        + fmi->GetNumberOfConstraints(typeid(QuadConLE));
+    mt.n_conic_con =
+        fmi->GetNumberOfConstraints(typeid(QuadraticConeConstraint))
+        + fmi->GetNumberOfConstraints(typeid(RotatedQuadraticConeConstraint))
+        + fmi->GetNumberOfConstraints(typeid(ExponentialConeConstraint))
+        + fmi->GetNumberOfConstraints(typeid(PowerConeConstraint))
+        + fmi->GetNumberOfConstraints(typeid(GeometricConeConstraint));
+    mt.n_alg_con =
+        fmi->GetNumberOfConstraints(typeid(LinConRange))
+        + fmi->GetNumberOfConstraints(typeid(LinConGE))
+        + fmi->GetNumberOfConstraints(typeid(LinConEQ))
+        + fmi->GetNumberOfConstraints(typeid(LinConLE))
+        + mt.n_quad_con
+        + fmi->GetNumberOfConstraints(typeid(ComplementarityLinear))
+        + fmi->GetNumberOfConstraints(typeid(ComplementarityQuadratic));
+    mt.n_log_con =
+        fmi->GetNumberOfConstraints(typeid(AndConstraint))
+        + fmi->GetNumberOfConstraints(typeid(OrConstraint))
+        + fmi->GetNumberOfConstraints(typeid(MaxConstraint))
+        + fmi->GetNumberOfConstraints(typeid(MinConstraint))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintLinGE))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintLinEQ))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintLinLE))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintQuadGE))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintQuadEQ))
+        + fmi->GetNumberOfConstraints(typeid(IndicatorConstraintQuadLE));
+  }
+
 
 protected:
   void ConvertModel() {
@@ -545,6 +593,9 @@ public:
     return AutoLink( GetVarValueNode().Add( lbs.size() ) );
   }
 
+  void AddVarNames(const std::vector<std::string>& names) {
+    BaseFlatModel::AddVars__names(names);
+  }
   /// Reuse ValuePresolver's target nodes for all variables
   pre::ValueNode& GetVarValueNode()
   { return GetValuePresolver().GetTargetNodes().GetVarValues().MakeSingleKey(); }
@@ -645,6 +696,8 @@ protected:
   pre::NodeRange DoAddVar(double lb=MinusInfty(), double ub=Infty(),
              var::Type type = var::CONTINUOUS) {
     int v = GetModel().AddVar__basic(lb, ub, type);
+    GetModel().AddVar__name();
+
     return AutoLink( GetVarValueNode().Select( v ) );
   }
 
@@ -843,8 +896,10 @@ private:
 		if (ModelAPIAcceptsQuadraticCones())
 			GetEnv().AddOption("cvt:socp passsocp socp",
 												 ModelAPIAcceptsQuadraticCones()>1 ?
-													 "0/1*: Recognize quadratic cones." :
-													 "0*/1: Recognize quadratic cones.",
+                           "0/1*: Recognize quadratic cones vs passing them "
+                           "as pure quadratic constraints." :
+                           "0*/1: Recognize quadratic cones vs passing them "
+                           "as pure quadratic constraints.",
 					options_.passSOCPCones_, 0, 1);
 		options_.passSOCPCones_ = ModelAPIAcceptsQuadraticCones()>1;
 		GetEnv().AddOption("alg:relax relax",
@@ -1025,6 +1080,12 @@ protected:
       QuadraticConeConstraint, "acc:quadcone")
   STORE_CONSTRAINT_TYPE__NO_MAP(
       RotatedQuadraticConeConstraint, "acc:rotatedquadcone")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      PowerConeConstraint, "acc:powercone")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      ExponentialConeConstraint, "acc:expcone")
+  STORE_CONSTRAINT_TYPE__NO_MAP(
+      GeometricConeConstraint, "acc:geomcone")
 
 
 	protected:
@@ -1082,6 +1143,11 @@ protected:
   INSTALL_ITEM_CONVERTER(RangeLinearConstraintConverter)
   /// Convert quadratic range constraints, if necessary
   INSTALL_ITEM_CONVERTER(RangeQuadraticConstraintConverter)
+
+  /// Convert quadratic cones, if necessary
+  INSTALL_ITEM_CONVERTER(QConeConverter)
+  /// Convert rotated quadratic cones, if necessary
+  INSTALL_ITEM_CONVERTER(RQConeConverter)
 
 
 public:
