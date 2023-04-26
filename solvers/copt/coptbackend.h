@@ -21,7 +21,7 @@ public:
   ~CoptBackend();
 
   /// Name displayed in messages
-  static const char* GetSolverName() { return "x-COPT"; }
+  static const char* GetSolverName() { return "COPT"; }
   std::string GetSolverVersion();
   
   static const char* GetAMPLSolverName() { return "copt"; }
@@ -60,7 +60,8 @@ public:
 * MIP warm start
 **/
   ALLOW_STD_FEATURE(MIPSTART, true)
-  void AddMIPStart(ArrayRef<double> x0) override;
+	void AddMIPStart(ArrayRef<double> x0,
+									 ArrayRef<int> sparsity) override;
 
 
  /**

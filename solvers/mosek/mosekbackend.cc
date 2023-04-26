@@ -68,6 +68,21 @@ void MosekBackend::OpenSolver() {
     env = (MSKenv_t)initialize();
     set_env(env);
   }
+  else {
+    MSKrescodee res = MSK_makeenv(&env, NULL);
+    set_env(env);
+    // Check license here
+    if (MSK_checkoutlicense(env, MSK_FEATURE_PTS))
+    {
+      const auto diag = GetCallbacks().diagnostics;
+      if (diag) {
+        // If a diagnostic function is provided, do not print more
+        // information
+        diag();
+        exit(res);
+      }
+    }
+  }
   status = MSK_maketask(env, 0, 0, &task);
   if (status)
     throw std::runtime_error(fmt::format(
@@ -79,6 +94,7 @@ void MosekBackend::OpenSolver() {
 
   /// Turn off verbosity by default
   MOSEK_CCALL(MSK_putintparam(task, MSK_IPAR_LOG, 0));
+  
   // Register callback for console logging (controlled by the outlev param
   // in all AMPL solver drivers)
   MSK_linkfunctotaskstream(lp(), MSK_STREAM_LOG, NULL, printstr);
@@ -131,10 +147,11 @@ pre::ValueMapDbl MosekBackend::DualSolution() {
 ArrayRef<double> MosekBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  // TODO get appropriate solution
-  MSKrescodee error = MSK_gety(lp(), solToFetch_, pi.data());
-  if (error != MSK_RES_OK)
-    pi.clear();
+  if (!IsMIP()) {
+    MSKrescodee error = MSK_gety(lp(), solToFetch_, pi.data());
+    if (error != MSK_RES_OK)
+      pi.clear();
+  }
   return pi;
 }
 
@@ -196,6 +213,7 @@ MSKsoltypee MosekBackend::GetSolutionTypeToFetch() {
 void MosekBackend::Solve() {
   MOSEK_CCALL(MSK_optimizetrm(lp(), &termCode_));
   solToFetch_ = GetSolutionTypeToFetch();
+  MOSEK_CCALL(MSK_getprosta(lp(), solToFetch_, &proSta_));
   MOSEK_CCALL(MSK_getsolsta(lp(), solToFetch_, &solSta_));
   WindupMOSEKSolve();
 }
@@ -257,40 +275,77 @@ void MosekBackend::AddMOSEKMessages() {
 
 std::pair<int, std::string> MosekBackend::ConvertMOSEKStatus() {
   namespace sol = mp::sol;
-  // TODO check the logic here
+  std::string term_info = ConvertMOSEKTermStatus();
+  switch (solSta_) {
+  case MSK_SOL_STA_OPTIMAL:
+  case MSK_SOL_STA_INTEGER_OPTIMAL:
+    return { sol::SOLVED, "optimal" + term_info };
+  case MSK_SOL_STA_PRIM_FEAS:
+    return { sol::UNCERTAIN, "feasible primal" + term_info };
+  case MSK_SOL_STA_DUAL_FEAS:
+    return { sol::UNCERTAIN, "feasible dual" + term_info };
+  case MSK_SOL_STA_PRIM_AND_DUAL_FEAS:
+    return { sol::UNCERTAIN, "feasible solution" + term_info };
+  case MSK_SOL_STA_PRIM_INFEAS_CER:
+    return { sol::INFEASIBLE, "primal infeasible" + term_info };
+  case MSK_SOL_STA_DUAL_INFEAS_CER:
+    return { sol::INF_OR_UNB, "dual infeasible" + term_info };
+  case MSK_SOL_STA_UNKNOWN:
+  case MSK_SOL_STA_PRIM_ILLPOSED_CER:
+  case MSK_SOL_STA_DUAL_ILLPOSED_CER:
+  default:
+    switch (proSta_) {
+    case MSK_PRO_STA_PRIM_AND_DUAL_FEAS:
+      return
+      { sol::UNCERTAIN, "primal and dual feasible" + term_info };
+    case MSK_PRO_STA_PRIM_FEAS:
+      return { sol::UNCERTAIN, "feasible primal" + term_info };
+    case MSK_PRO_STA_DUAL_FEAS:
+      return { sol::UNCERTAIN, "feasible dual" + term_info };
+    case MSK_PRO_STA_PRIM_INFEAS:
+      return { sol::INFEASIBLE, "primal infeasible" + term_info };
+    case MSK_PRO_STA_DUAL_INFEAS:
+      return { sol::INF_OR_UNB, "dual infeasible" + term_info };
+    case MSK_PRO_STA_PRIM_AND_DUAL_INFEAS:
+      return
+      { sol::INF_OR_UNB, "primal and dual infeasible" + term_info };
+    case MSK_PRO_STA_ILL_POSED:
+      return { sol::NUMERIC, "ill-posed problem" + term_info };
+    case MSK_PRO_STA_PRIM_INFEAS_OR_UNBOUNDED:
+      return { sol::INF_OR_UNB, "infeasible or unbounded" + term_info };
+    case MSK_PRO_STA_UNKNOWN:
+    default:
+      return { sol::UNKNOWN,
+            "unknown (" + std::to_string(solSta_)
+            + ", problem status: " + std::to_string(proSta_)
+            + ")" + term_info };
+    }
+  }
+}
+
+std::string MosekBackend::ConvertMOSEKTermStatus() {
   switch (termCode_) {
   case MSK_RES_OK:
-    switch (solSta_) {
-    case MSK_SOL_STA_OPTIMAL:
-    case MSK_SOL_STA_INTEGER_OPTIMAL:
-      return { sol::SOLVED, "optimal" };
-    case MSK_SOL_STA_PRIM_FEAS:
-      return { sol::UNCERTAIN, "feasible primal" };
-    case MSK_SOL_STA_DUAL_FEAS:
-      return { sol::UNCERTAIN, "feasible dual" };
-    case MSK_SOL_STA_PRIM_AND_DUAL_FEAS:
-      return { sol::UNCERTAIN, "feasible solution" };
-    case MSK_SOL_STA_PRIM_INFEAS_CER:
-      return { sol::INFEASIBLE, "primal infeasible solution" };
-    case MSK_SOL_STA_DUAL_INFEAS_CER:
-      return { sol::INF_OR_UNB, "dual infeasible solution" };
-    case MSK_SOL_STA_UNKNOWN:
-    case MSK_SOL_STA_PRIM_ILLPOSED_CER:
-    case MSK_SOL_STA_DUAL_ILLPOSED_CER:
-    default:
-      return { sol::UNKNOWN, "unknown" };
-    }
+    break;
   case MSK_RES_TRM_MAX_ITERATIONS:
-    return { sol::LIMIT, "max number of iterations reached" };
+    return { ", max number of iterations reached" };
   case MSK_RES_TRM_MAX_TIME:
-    return { sol::LIMIT, "maximum allowed time reached" };
+    return { ", maximum allowed time reached" };
+  case MSK_RES_TRM_OBJECTIVE_RANGE:
+    return { ", objective range" };
+  case MSK_RES_TRM_STALL:
+    return { ", stalling" };
+  case MSK_RES_TRM_NUMERICAL_PROBLEM:
+    return { ", numerical issues" };
   case MSK_RES_TRM_MIO_NUM_RELAXS:
   case MSK_RES_TRM_MIO_NUM_BRANCHES:
   case MSK_RES_TRM_NUM_MAX_NUM_INT_SOLUTIONS:
-    return { sol::LIMIT, "limit hit" };
+    return { ", limit hit" };
   default:
-    return { sol::UNKNOWN, "unfinished" };
+    return { "termination code "
+          + std::to_string(termCode_) };
   }
+  return {};
 }
 
 void MosekBackend::FinishOptionParsing() {
@@ -561,6 +616,9 @@ ArrayRef<int> MosekBackend::VarStatii() {
   {
     switch (s)
     {
+      case MSK_SK_UNK:
+        s = (int)BasicStatus::none;
+        break;
       case MSK_SK_BAS:
         s = (int)BasicStatus::bas;
         break;
@@ -592,6 +650,9 @@ ArrayRef<int> MosekBackend::ConStatii() {
   {
     switch (s)
     {
+      case MSK_SK_UNK:
+        s = (int)BasicStatus::none;
+        break;
       case MSK_SK_BAS:
         s = (int)BasicStatus::bas;
         break;
@@ -746,6 +807,7 @@ void MosekBackend::SetBasis(SolutionBasis basis) {
 
 void MosekBackend::AddPrimalDualStart(Solution sol)
 {
+  solToFetch_ = GetSolutionTypeToFetch();
   auto mv = GetValuePresolver().PresolveSolution(
         { sol.primal, sol.dual } );
   auto x0 = mv.GetVarValues()();
@@ -754,8 +816,10 @@ void MosekBackend::AddPrimalDualStart(Solution sol)
   MOSEK_CCALL(MSK_puty(lp(), solToFetch_, (MSKrealt *)pi0.data()));
 }
 
-void MosekBackend::AddMIPStart(ArrayRef<double> x0_unpres)
+void MosekBackend::AddMIPStart(
+    ArrayRef<double> x0_unpres, ArrayRef<int> sparsity)
 {
+  solToFetch_ = GetSolutionTypeToFetch();
   auto mv = GetValuePresolver().PresolveSolution( { x0_unpres } );
   auto x0 = mv.GetVarValues()();
 
@@ -786,7 +850,8 @@ ArrayRef<double> MosekBackend::DRay()
   // Problem is checked to be (primal) infeasible at this point, so the ray is the dual solution variable.
   // (Dual can be unbounded or infeasible.)
   std::vector<double> y(NumLinCons());
-  MOSEK_CCALL(MSK_gety(lp(), solToFetch_, (MSKrealt *)y.data()));
+  if (!IsMIP())
+    MOSEK_CCALL(MSK_gety(lp(), solToFetch_, (MSKrealt *)y.data()));
   // Argument is a ModelValues<ValueMap>, which is constructed now from two ValueMaps, an empty for variables, and
   // a second one for constraints. The constraints ValueMap is given as a std::map for only linear constraints
 	auto mv = GetValuePresolver().

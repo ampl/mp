@@ -68,7 +68,8 @@ public:
   // TODO If MIP warm start is supported, implement the function below
   // to set a non-presolved starting solution
   ALLOW_STD_FEATURE(MIPSTART, false)
-  void AddMIPStart(ArrayRef<double> x0) override;
+	void AddMIPStart(ArrayRef<double> x0,
+									 ArrayRef<int> sparsity) override;
 
 
  /**

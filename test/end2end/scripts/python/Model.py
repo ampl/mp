@@ -12,6 +12,7 @@ class ModelTags(enum.Enum):
     quadratic_obj = 2.5
     quadraticnonconvex = 3
     socp = 4
+    socp_hard_to_recognize = 4.1  ## For solvers recognizing from quadratics
     nonlinear = 5
     complementarity = 6
     arc = 7

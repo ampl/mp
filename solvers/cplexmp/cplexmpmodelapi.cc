@@ -11,7 +11,7 @@ void CplexModelAPI::AddVariables(const VarArrayDef& v) {
     vtypes[i] = var::Type::CONTINUOUS==v.ptype()[i] ?
           CPX_CONTINUOUS : CPX_INTEGER;
   CPLEX_CALL( CPXnewcols (env(), lp(), (int)v.size(), NULL,
-                          v.plb(), v.pub(), vtypes.data(), NULL) );
+                          v.plb(), v.pub(), vtypes.data(), const_cast<char**>(v.pnames())));
 }
 
 void CplexModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {

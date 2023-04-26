@@ -1,0 +1,6 @@
+data;
+
+param n := 10;
+param m := 20;
+
+param sigmaVal := 0.004;

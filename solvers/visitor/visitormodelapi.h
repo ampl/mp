@@ -86,6 +86,12 @@ public:
   ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Quadratic)
   void AddConstraint(const QuadConGE& qc);
 
+  /// Cones
+  ACCEPT_CONSTRAINT(QuadraticConeConstraint, Recommended, CG_Conic)
+  void AddConstraint(const QuadraticConeConstraint& qc);
+  ACCEPT_CONSTRAINT(RotatedQuadraticConeConstraint, Recommended, CG_Conic)
+  void AddConstraint(const RotatedQuadraticConeConstraint& qc);
+
   /// Linear indicator constraints can be used as
   /// auxiliary constraints for logical conditions.
   /// If not handled, the compared expressions need

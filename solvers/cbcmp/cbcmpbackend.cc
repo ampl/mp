@@ -1050,7 +1050,8 @@ void CbcmpBackend::SetBasis(SolutionBasis basis) {
 }
 
 
-void CbcmpBackend::AddMIPStart(ArrayRef<double> x0) {
+void CbcmpBackend::AddMIPStart(ArrayRef<double> x0,
+															 ArrayRef<int> sparsity) {
   //CBCMP_CCALL(CBCMP_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
 
 }

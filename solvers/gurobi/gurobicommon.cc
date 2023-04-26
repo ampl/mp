@@ -173,8 +173,8 @@ void GurobiCommon::GrbSetDblAttrArray(
 }
 
 void GurobiCommon::GrbSetIntAttrList(const char *attr_id,
-                                      const std::vector<int> &idx,
-                                      const std::vector<int> &val) {
+                                     const std::vector<int> &idx,
+                                     const std::vector<int> &val) {
   assert(idx.size()==val.size());
   if (idx.size())
     GRB_CALL( GRBsetintattrlist(model(), attr_id,
@@ -182,8 +182,8 @@ void GurobiCommon::GrbSetIntAttrList(const char *attr_id,
 }
 
 void GurobiCommon::GrbSetDblAttrList(const char *attr_id,
-                                      const std::vector<int> &idx,
-                                      const std::vector<double> &val) {
+                                     const std::vector<int> &idx,
+                                     const std::vector<double> &val) {
   assert(idx.size()==val.size());
   if (idx.size())
     GRB_CALL( GRBsetdblattrlist(model(), attr_id,

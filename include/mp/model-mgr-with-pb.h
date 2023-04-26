@@ -84,23 +84,24 @@ protected:
 
   void ReadNLModel(const std::string& nl_filename,
                    const std::string& filename_no_ext,
-                   void (*cb_checkmodel)(size_t, size_t, size_t))
+                   Checker_AMPLS_ModeltTraits cb_checkmodel)
   override {
     steady_clock::time_point start = steady_clock::now();
 
     ReadNLFile(nl_filename);
-
-    if (cb_checkmodel)
-      cb_checkmodel(GetPB().num_vars(),
-                    GetPB().num_algebraic_cons(),
-                    GetPB().num_logical_cons());
-
+    ReadVarNames(filename_no_ext + ".col");
     double read_time = GetTimeAndReset(start);
     if (GetEnv().timing())
       GetEnv().Print("NL model read time = {:.6f}s\n", read_time);
 
     MakeProperSolutionHandler(filename_no_ext);
     ConvertModelAndUpdateBackend();
+
+    if (cb_checkmodel) {
+      AMPLS_ModelTraits mtraits;
+      GetCvt().FillModelTraits(mtraits);
+      cb_checkmodel(&mtraits);
+    }
 
     double cvt_time = GetTimeAndReset(start);
     if (GetEnv().timing())
@@ -112,6 +113,11 @@ protected:
           new SolverNLHandlerType(GetPB(), GetEnv()));
     internal::NLFileReader<> reader;
     reader.Read(nl_filename, *nl_read_result_.handler_, 0);
+  }
+
+  void ReadVarNames(const std::string& filename) {
+    internal::NameReader nr;
+    nr.Read(filename, *nl_read_result_.handler_);
   }
 
   /// Before reading the NL file, a generic solution handler
@@ -186,8 +192,14 @@ protected:
   ArrayRef<double> InitialValues() override {
     return GetModel().InitialValues();
   }
+  ArrayRef<int> InitialValuesSparsity() override {
+    return GetModel().InitialValuesSparsity();
+  }
   ArrayRef<double> InitialDualValues() override {
     return GetModel().InitialDualValues();
+  }
+  ArrayRef<int> InitialDualValuesSparsity() override {
+    return GetModel().InitialDualValuesSparsity();
   }
 
   ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) override {

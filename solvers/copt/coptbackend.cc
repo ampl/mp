@@ -847,7 +847,8 @@ ArrayRef<double> CoptBackend::DRay() {
 
 
 
-void CoptBackend::AddMIPStart(ArrayRef<double> x0) {
+void CoptBackend::AddMIPStart(
+		ArrayRef<double> x0, ArrayRef<int> sparsity) {
   COPT_CCALL(COPT_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
 
 }

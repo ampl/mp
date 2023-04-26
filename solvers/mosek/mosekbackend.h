@@ -69,7 +69,8 @@ public:
 
   // MIP hotstart
   ALLOW_STD_FEATURE( MIPSTART, true )
-  void AddMIPStart(ArrayRef<double> x0) override;
+  void AddMIPStart(ArrayRef<double> x0,
+                   ArrayRef<int> sparsity) override;
 
   // Obtain inf/unbounded rays
   ALLOW_STD_FEATURE(RAYS, true)
@@ -144,7 +145,10 @@ protected:
   double SimplexIterations() const;
   int BarrierIterations() const;
 
+  /// Solution + termination status
   std::pair<int, std::string> ConvertMOSEKStatus();
+  /// Text to add for termination status
+  std::string ConvertMOSEKTermStatus();
   void AddMOSEKMessages();
 
   ArrayRef<int> VarStatii();
@@ -162,6 +166,7 @@ protected:
 private:
   MSKsoltypee solToFetch_;
   MSKrescodee termCode_;
+  MSKprostae proSta_;
   MSKsolstae solSta_;
 
   /// These options are stored in the class

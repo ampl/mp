@@ -39,7 +39,7 @@ public:
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
 
-  /// TODO For each suppoted constraint type, add the ACCEPT_CONSTRAINT macro
+  /// TODO For each supported constraint type, add the ACCEPT_CONSTRAINT macro
   /// and the relative AddConstraint function.
   /// Below some typical constraint handlers of a MIP solver.
   /// Further constraint types which could be handled natively by some solvers:
@@ -87,13 +87,12 @@ public:
 
   /// Linear indicator constraints can be used as
   /// auxiliary constraints for logical conditions.
-  /// If not handled, the compared expressions need
-  /// deducible finite bounds for a big-M redefinition.
-	ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, NotAccepted, CG_General)
+  /// Mosek 10 adds DJC which we use for indicators.
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinLE, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinLE& mc);
-	ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, NotAccepted, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinEQ, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinEQ& mc);
-	ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, NotAccepted, CG_General)
+  ACCEPT_CONSTRAINT(IndicatorConstraintLinGE, Recommended, CG_General)
   void AddConstraint(const IndicatorConstraintLinGE& mc);
 
   /// SOS constraints can be used by AMPL for redefinition of

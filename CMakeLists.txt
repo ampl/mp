@@ -214,7 +214,7 @@ endmacro()
 include_directories(include)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-set(MP_DATE 20221228)
+set(MP_DATE 20230330)
 
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
@@ -349,7 +349,7 @@ add_prefix(MP_FLAT_REDEF_STD_HEADERS include/mp/flat/redef/std/
   range_con.h)
 
 add_prefix(MP_FLAT_REDEF_STD_HEADERS include/mp/flat/redef/conic/
-  cones.h)
+  cones.h qcones2qc.h)
 
 add_prefix(MP_FLAT_REDEF_MIP_HEADERS include/mp/flat/redef/MIP/
   converter_mip.h redefs_mip_std.h abs.h alldiff.h
