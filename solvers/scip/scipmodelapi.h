@@ -97,7 +97,7 @@ public:
   /// deducible finite bounds for a big-M redefinition.
   ACCEPT_CONSTRAINT(AbsConstraint, Recommended, CG_General)
   void AddConstraint(const AbsConstraint& absc);
-  ACCEPT_CONSTRAINT(AndConstraint, Recommended, CG_General)
+  ACCEPT_CONSTRAINT(AndConstraint, AcceptedButNotRecommended, CG_General)
   void AddConstraint(const AndConstraint& cc);
   ACCEPT_CONSTRAINT(OrConstraint, Recommended, CG_General)
   void AddConstraint(const OrConstraint& dc);
@@ -119,7 +119,7 @@ public:
   /// supports PL natively.
   ACCEPT_CONSTRAINT(SOS1Constraint, Recommended, CG_SOS)
   void AddConstraint(const SOS1Constraint& cc);
-  ACCEPT_CONSTRAINT(SOS2Constraint, Recommended, CG_SOS)
+  ACCEPT_CONSTRAINT(SOS2Constraint, AcceptedButNotRecommended, CG_SOS)
   void AddConstraint(const SOS2Constraint& cc);
 
   /// SCIP nonlinear generals

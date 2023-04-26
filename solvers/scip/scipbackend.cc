@@ -95,6 +95,8 @@ pre::ValueMapDbl ScipBackend::DualSolution() {
 ArrayRef<double> ScipBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
+  for (int i=0; i < num_cons; i++)
+    pi[i] = SCIPgetDualsolLinear(getSCIP(), getPROBDATA()->linconss[i]);
   return pi;
 }
 
@@ -241,8 +243,6 @@ void ScipBackend::FinishOptionParsing() {
 
 
 ////////////////////////////// OPTIONS /////////////////////////////////
-
-
 static const mp::OptionValueInfo lp_values_method[] = {
   { "s", "automatic simplex (default)", -1},
   { "p", "primal simplex", 0},
@@ -260,6 +260,37 @@ static const mp::OptionValueInfo values_pricing[] = {
   { "q", "quickstart steepest edge pricing", 4},
   { "d", "devex pricing", 5}
 }; 
+
+static const mp::OptionValueInfo estimation_method[] = {
+  { "c", "completion", 0},
+  { "e", "ensemble", 1},
+  { "g", "time series forecasts on either gap", 2},
+  { "l", "leaf frequency", 3},
+  { "o", "open nodes", 4},
+  { "w", "tree weight (default)", 5},
+  { "s", "ssg", 6},
+  { "t", "tree profile", 7},
+  { "b", "wbe ", 8}
+};
+
+static const mp::OptionValueInfo estimation_completion[] = {
+  { "a", "auto (default)", 0},
+  { "g", "gap", 1},
+  { "w", "tree weight", 2},
+  { "m", "monotone regression", 3},
+  { "r", "regression forest", 4},
+  { "s", "ssg", 5}
+};
+
+static const mp::OptionValueInfo childsel[] = {
+  { "d", "down", 0},
+  { "u", "up", 1},
+  { "p", "pseudo costs", 2},
+  { "i", "inference", 3},
+  { "l", "lp value", 4},
+  { "r", "root LP value difference", 5},
+  { "h", "hybrid inference/root LP value difference (default)", 6}
+};
 
 
 void ScipBackend::InitCustomOptions() {
@@ -282,10 +313,6 @@ void ScipBackend::InitCustomOptions() {
     "solving it. This file name can have extension ``.lp``, ``.mps``, etc. "
     "Default = \"\" (don't export the model).",
     storedOptions_.exportFile_);
-
-  AddSolverOption("lim:time timelim timelimit time_limit",
-    "Limit on solve time (in seconds; default: 1e+20).",
-    "limits/time", 0.0, SCIP_REAL_MAX);
 
   AddStoredOption("tech:logfile logfile",
     "Log file name; note that the solver log will be written to the log "
@@ -430,8 +457,8 @@ void ScipBackend::InitCustomOptions() {
     "Solving stops, if the given number of nodes was processed since the last improvement of the primal solution value (default: -1: no limit)",
     "limits/stallnodes", -1, (int)SCIP_LONGINT_MAX);
 
-  AddSolverOption("lim:time time",
-    "Maximal time in seconds to run (default: 1e+20)",
+  AddSolverOption("lim:time timelim timelimit time_limit",
+    "Limit on solve time (in seconds; default: 1e+20).",
     "limits/time", 0.0, 1e+20);
 
   AddSolverOption("lim:totalnodes",
@@ -470,7 +497,87 @@ void ScipBackend::InitCustomOptions() {
     "Frequency for solving LP at the nodes (-1: never; 0: only root LP; default: 1)",
     "lp/solvefreq", -1, SCIP_MAXTREEDEPTH);
 
-  /////////////////////// PRESOLVE ///////////////////////
+  ///////////////////////// MISC /////////////////////////
+  AddSolverOption("misc:allowstrongdualreds allowstrongdualreds",
+    "0/1: whether strong dual reductions should be allowed in propagation and presolving"
+    "\n"
+    "  | 0 - Strong dual reductions should not be allowed in propagation and presolving\n"
+    "  | 1 - Strong dual reductions should be allowed in propagation and presolving (default).",
+    "misc/allowstrongdualreds", 0, 1);
+
+  AddSolverOption("misc:allowweakdualreds allowweakdualreds",
+    "0/1: whether weak dual reductions should be allowed in propagation and presolving"
+    "\n"
+    "  | 0 - Weak dual reductions should not be allowed in propagation and presolving\n"
+    "  | 1 - Weak dual reductions should be allowed in propagation and presolving (default).",
+    "misc/allowweakdualreds", 0, 1);
+
+  AddSolverOption("misc:scaleobj scaleobj",
+    "0/1: whether the objective function should be scaled so that it is always integer"
+    "\n"
+    "  | 0 - The objective function should not be scaled so that it is always integer\n"
+    "  | 1 - The objective function should be scaled so that it is always integer (default).",
+    "misc/scaleobj", 0, 1);
+
+  ////////////////////////// NLP /////////////////////////
+  AddSolverOption("nlp:disable",
+    "0/1: whether the NLP relaxation should be always disabled (also for NLPs/MINLPs)"
+    "\n"
+    "  | 0 - NLP relaxation should not be always disabled (default)\n"
+    "  | 1 - NLP relaxation should be always disabled.",
+    "nlp/disable", 0, 1);
+
+  ////////////////////// NUMERICS ////////////////////////
+  AddSolverOption("num:checkfeastolfac checkfeastolfac",
+    "Feasibility tolerance factor; for checking the feasibility of the best solution (default: 1.0)",
+    "numerics/checkfeastolfac", 0.0, SCIP_REAL_MAX);
+
+  AddSolverOption("num:dualfeastol dualfeastol",
+    "Feasibility tolerance for reduced costs in LP solution (default: 1e-07)",
+    "numerics/dualfeastol", SCIP_MINEPSILON*1e+03, SCIP_MAXEPSILON);
+
+  AddSolverOption("num:epsilon epsilon",
+    "Absolute values smaller than this are considered zero (default: 1e-09)",
+    "numerics/epsilon", SCIP_MINEPSILON, SCIP_MAXEPSILON);
+
+  AddSolverOption("num:feastol feastol",
+    "Feasibility tolerance for constraints (default: 1e-06)",
+    "numerics/feastol", SCIP_MINEPSILON*1e+03, SCIP_MAXEPSILON);
+
+  AddSolverOption("num:infinity infinity",
+    "Values larger than this are considered infinity (default: 1e+20)",
+    "numerics/infinity", 1e+10, SCIP_INVALID/10.0);
+
+  AddSolverOption("num:lpfeastolfactor lpfeastolfactor",
+    "Factor w.r.t. primal feasibility tolerance that determines default (and maximal) primal feasibility tolerance of LP solver (default: 1.0)",
+    "numerics/lpfeastolfactor", 1e-6, 1.0);
+
+  AddSolverOption("num:sumepsilon sumepsilon",
+    "Absolute values of sums smaller than this are considered (default: 1e-06)",
+    "numerics/sumepsilon", SCIP_MINEPSILON*1e+03, SCIP_MAXEPSILON);
+
+  //////////////////// NODESELECTION /////////////////////
+  AddSolverOption("nod:childsel",
+    "Child selection rule:\n"
+    "\n.. value-table::\n", "nodeselection/childsel", childsel, "h");
+
+  ////////////////////// PARALLEL ////////////////////////
+  AddSolverOption("par:maxnthreads maxnthreads",
+    "Maximum number of threads used during parallel solve (default: 8)",
+    "parallel/maxnthreads", 0, 64);
+
+  AddSolverOption("par:minnthreads minnthreads",
+    "Minimum number of threads used during parallel solve (default: 1)",
+    "parallel/minnthreads", 0, 64);
+
+  AddSolverOption("par:mode mode",
+    "0/1: Parallel optimisation mode"
+    "\n"
+    "  | 0 - Opportunistic\n"
+    "  | 1 - Deterministic (default)",
+    "parallel/mode", 0, 1);
+
+  ////////////////////// PRESOLVE ////////////////////////
   AddSolverOption("pre:abortfac abortfac",
     "Abort presolve, if at most this fraction of the problem was changed in last presolve round (default: 0.0008)",
     "presolving/advanced/abortfac", 0.0, 1.0);
@@ -532,6 +639,42 @@ void ScipBackend::InitCustomOptions() {
   AddSolverOption("pro:maxroundsroot",
     "Maximal number of propagation rounds in the root node (-1: unlimited; 0: off; default: 1000)",
     "propagating/maxroundsroot", -1, INT_MAX);
+  
+  //////////////////// RANDOMIZATION /////////////////////
+  AddSolverOption("ran:permuteconss permuteconss",
+    "0/1: whether the order of constraints should be permuted (depends on permutationseed)? "
+    "\n"
+    "  | 0 - Order of constraints should not be permuted\n"
+    "  | 1 - Order of constraints should be permuted (default).",
+    "randomization/advanced/permuteconss", 0, 1);
+
+  AddSolverOption("ran:permutevars permutevars",
+    "0/1: whether the order of variables should be permuted (depends on permutationseed)? "
+    "\n"
+    "  | 0 - Order of variables should not be permuted (default)\n"
+    "  | 1 - Order of variables should be permuted.",
+    "randomization/advanced/permutevars", 0, 1);
+
+  AddSolverOption("ran:lpseed lpseed",
+    "Random seed for LP solver, e.g. for perturbations in the simplex (default: 0: LP default)",
+    "randomization/lpseed", 0, INT_MAX);
+
+  AddSolverOption("ran:permutationseed permutationseed",
+    "Seed value for permuting the problem after reading/transformation (default: 0: no permutation) ",
+    "randomization/permutationseed", 0, INT_MAX);
+
+  AddSolverOption("ran:randomseedshift randomseedshift",
+    "Global shift of all random seeds in the plugins and the LP random seed (default: 0) ",
+    "randomization/randomseedshift", 0, INT_MAX);
+
+  ///////////////////////// TREE /////////////////////////
+  AddSolverOption("est:method",
+    "Tree size estimation method:\n"
+    "\n.. value-table::\n", "estimation/method", estimation_method, "w");
+
+  AddSolverOption("est:completiontype",
+    "Approximation of search tree completion:\n"
+    "\n.. value-table::\n", "estimation/completiontype", estimation_completion, "a");
 }
 
 
