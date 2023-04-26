@@ -60,7 +60,8 @@ public:
 * MIP warm start
 **/
   ALLOW_STD_FEATURE(MIPSTART, true)
-  void AddMIPStart(ArrayRef<double> x0) override;
+	void AddMIPStart(ArrayRef<double> x0,
+									 ArrayRef<int> sparsity) override;
 
 
  /**

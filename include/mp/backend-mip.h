@@ -118,21 +118,15 @@ public:
   { MP_UNSUPPORTED("MIPBackend::AddPrimalDualStart"); }
   /**
   * MIP warm start.
-  * Provides solution hint, as well as sparsity information.
-  * Presolve the values if needed.
-  **/
-  DEFINE_STD_FEATURE( MIPSTART_SPARSE )
-  ALLOW_STD_FEATURE( MIPSTART_SPARSE, false )
-  virtual void AddMIPStart(
-      ArrayRef<double> , ArrayRef<int> )
-  { MP_UNSUPPORTED("MIPBackend::AddMIPStart"); }
-  /**
-  * MIP warm start without sparsity. DEPRECATED.
+  * Provides solution hints (dense vector),
+  * as well as sparsity pattern (dense 0-1 vector),
+  * allowing partial MIP warm start.
   * Presolve the values if needed.
   **/
   DEFINE_STD_FEATURE( MIPSTART )
   ALLOW_STD_FEATURE( MIPSTART, false )
-  virtual void AddMIPStart(ArrayRef<double> )
+  virtual void AddMIPStart(
+      ArrayRef<double> , ArrayRef<int> )
   { MP_UNSUPPORTED("MIPBackend::AddMIPStart"); }
   /**
   * Set branch and bound priority
@@ -264,16 +258,10 @@ public:
 
   virtual void InputMIPStart() {
     if (warmstart() && this->InitialValues().size() > 0) {
-      if (IMPL_HAS_STD_FEATURE( MIPSTART_SPARSE )) {
+      if (IMPL_HAS_STD_FEATURE( MIPSTART )) {
         AddMIPStart(
               this->InitialValues(),
               this->InitialValuesSparsity() );
-        if (debug_mode()) {                    // Report received initials
-          ReportSuffix(suf_testMIPini,         // Should we check that
-                       this->InitialValues());
-        }                                      // Impl uses them?
-      } else if (IMPL_HAS_STD_FEATURE( MIPSTART )) {
-        AddMIPStart( this->InitialValues() );
         if (debug_mode()) {                    // Report received initials
           ReportSuffix(suf_testMIPini,         // Should we check that
                        this->InitialValues());

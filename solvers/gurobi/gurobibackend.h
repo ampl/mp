@@ -86,7 +86,7 @@ public:
   /**
   * Specifically, MIP warm start
   **/
-  ALLOW_STD_FEATURE( MIPSTART_SPARSE, true )
+  ALLOW_STD_FEATURE( MIPSTART, true )
   void AddMIPStart(
       ArrayRef<double> x0, ArrayRef<int> s0) override;
   /**
