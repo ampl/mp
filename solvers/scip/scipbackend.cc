@@ -126,9 +126,17 @@ void ScipBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void ScipBackend::Solve() {
-  if (!storedOptions_.exportFile_.empty()) {
+  if (!storedOptions_.exportFile_.empty())
     ExportModel(storedOptions_.exportFile_);
-  }
+  if (!storedOptions_.paramRead_.empty())
+    SCIP_CCALL( SCIPreadParams(getSCIP(), storedOptions_.paramRead_.c_str()) );
+  if (storedOptions_.heuristics_ != SCIP_PARAMSETTING_DEFAULT)
+    SCIP_CCALL( SCIPsetHeuristics(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.heuristics_, FALSE) );
+  if (storedOptions_.cuts_ != SCIP_PARAMSETTING_DEFAULT)
+    SCIP_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.cuts_, FALSE) );
+  if (storedOptions_.presolvings_ != SCIP_PARAMSETTING_DEFAULT)
+    SCIP_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, FALSE) );
+  
 
   if (storedOptions_.concurrent_)
     SCIP_CCALL( SCIPsolveConcurrent(getSCIP()) );
@@ -319,6 +327,11 @@ void ScipBackend::InitCustomOptions() {
     "regardless of the value of tech:outlev.",
     storedOptions_.logFile_);
 
+  AddStoredOption("tech:param:read param:read paramfile",
+    "Filename of SCIP parameter file (as path)."
+    "The suffix on a parameter file should be .set.\n",
+    storedOptions_.paramRead_);
+
   AddSolverOption("alg:method method lpmethod",
     "LP algorithm for solving initial LP relaxations:\n"
     "\n.. value-table::\n", "lp/initalgorithm", lp_values_method, "s");
@@ -407,6 +420,25 @@ void ScipBackend::InitCustomOptions() {
   AddSolverOption("cut:poolfreq",
     "Separation frequency for the global cut pool (-1: disable global cut pool; 0: only separate pool at the root; default: 10)",
     "separating/poolfreq", -1, SCIP_MAXTREEDEPTH);
+
+  AddStoredOption("cut:settings",
+    "0/1/2/3: sets cuts settings"
+    "\n"
+    "  | 0 - Sets cuts default (default)\n"
+    "  | 1 - Sets cuts aggressive\n"
+    "  | 2 - Sets cuts fast\n"
+    "  | 3 - Sets cuts off.",
+    storedOptions_.cuts_, 0, 3);
+
+  ////////////////////// HEURISTICS //////////////////////
+  AddStoredOption("heu:settings",
+    "0/1/2/3: sets heuristics settings"
+    "\n"
+    "  | 0 - Sets heuristics default (default)\n"
+    "  | 1 - Sets heuristics aggressive\n"
+    "  | 2 - Sets heuristics fast\n"
+    "  | 3 - Sets heuristics off.",
+    storedOptions_.heuristics_, 0, 3);
 
   //////////////////////// LIMITS ////////////////////////
   AddSolverOption("lim:absgap absgap",
@@ -623,6 +655,15 @@ void ScipBackend::InitCustomOptions() {
   AddSolverOption("pre:maxrounds",
     "Maximal number of presolving rounds (default: -1: unlimited; 0: off)",
     "presolving/maxrounds", -1, INT_MAX);
+
+  AddStoredOption("pre:settings",
+    "0/1/2/3: sets presolvings settings"
+    "\n"
+    "  | 0 - Sets presolvings default (default)\n"
+    "  | 1 - Sets presolvings aggressive\n"
+    "  | 2 - Sets presolvings fast\n"
+    "  | 3 - Sets presolvings off.",
+    storedOptions_.heuristics_, 0, 3);
 
   ////////////////////// PROPAGATE ///////////////////////
   AddSolverOption("pro:abortoncutoff",

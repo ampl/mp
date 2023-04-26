@@ -10,7 +10,7 @@
     "tags" : ["linear", "integer", "script"],
     "files" : ["cut.run"],
     "options": {
-      "SCIP_options": "pre:maxrounds=0 pro:maxrounds=0 pro:maxroundsroot=0",
+      "scip_options": "pre:maxrounds=0 pro:maxrounds=0 pro:maxroundsroot=0",
       "comment": "Disable presolve and propagation for SCIP for duals."
     }
   },
@@ -20,7 +20,7 @@
     "tags" : ["linear", "integer", "script"],
     "files" : ["cut2.run"],
     "options": {
-      "SCIP_options": "pre:maxrounds=0 pro:maxrounds=0 pro:maxroundsroot=0",
+      "scip_options": "pre:maxrounds=0 pro:maxrounds=0 pro:maxroundsroot=0",
       "comment": "Disable presolve and propagation for SCIP for duals."
     }
   },
