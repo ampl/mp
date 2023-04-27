@@ -28,8 +28,10 @@ void ScipModelAPI::AddVariables(const VarArrayDef& v) {
       vartype = SCIP_VARTYPE_INTEGER;
     else
       vartype = SCIP_VARTYPE_CONTINUOUS;
-    //const char* name = v.pnames()[i];
-    SCIP_CCALL( SCIPcreateVarBasic(getSCIP(), &var, NULL, lb, ub, objcoef, vartype) );
+    const char* name = NULL;
+    if (v.pnames() != NULL)
+      const char* name = v.pnames()[i];
+    SCIP_CCALL( SCIPcreateVarBasic(getSCIP(), &var, name, lb, ub, objcoef, vartype) );
     SCIP_CCALL( SCIPaddVar(getSCIP(), var) );
     getPROBDATA()->vars[i] = var;
   }
