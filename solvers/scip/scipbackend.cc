@@ -902,7 +902,7 @@ void ScipBackend::AddPrimalDualStart(Solution sol)
   SCIP_CCALL( SCIPaddSolFree(getSCIP(), &solution, &keep) );
 }
 
-void ScipBackend::AddMIPStart(ArrayRef<double> x0) {
+void ScipBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
   SCIP_SOL* solution;
   SCIP_Bool keep;
   SCIP_CCALL( SCIPcreateSol(getSCIP(), &solution, NULL) );
