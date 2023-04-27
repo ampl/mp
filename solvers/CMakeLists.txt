@@ -103,7 +103,7 @@ function(add_ampl_solver name)
 
   if (TARGET ${module}-library)
     get_target_property(TRG_PROP_IMPRT_LOC ${module}-library IMPORTED_LOCATION)
-    if (NOT libraries OR TRG_PROP_IMPRT_LOC)
+    if (NOT libraries)#OR TRG_PROP_IMPRT_LOC)
       set(libraries ${module}-library)
     endif()
   endif ()
@@ -244,6 +244,9 @@ add_ampl_backend(copt DLL_RUNTIME SHARED_LIB MODULE COPT
 add_ampl_backend(cbcmp DLL_RUNTIME SHARED_LIB MODULE CBC 
   LIBRARIES ${CBC_LIBS} ${CMAKE_DL_LIBS})
 
+
+add_ampl_backend(scip DLL_RUNTIME SHARED_LIB MODULE SCIP 
+  LIBRARIES ${SCIP_LIBS} ${CMAKE_DL_LIBS})
 
 add_ampl_backend(highsmp DLL_RUNTIME SHARED_LIB MODULE HIGHS 
   LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})

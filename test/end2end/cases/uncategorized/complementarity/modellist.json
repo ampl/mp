@@ -14,10 +14,6 @@
     "tags" : ["linear", "continuous", "complementarity"],
     "files" : ["econ.mod", "econ.dat"]
   }, {
-    "name" : "econ2",
-    "tags" : ["linear", "continuous", "complementarity"],
-    "files" : ["econ2.mod", "econ2.dat"]
-  }, {
     "name" : "econnl",
     "tags" : ["nonlinear", "continuous", "complementarity"],
     "files" : ["econnl.mod", "econnl.dat"]

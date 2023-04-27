@@ -55,7 +55,7 @@
   {
     "name" : "ellipse_nonconvex testMIPstart",
     "objective" : 0.8,
-    "tags" : ["quadraticnonconvex"],
+    "tags" : ["quadraticnonconvex", "mipstart"],
     "options": {
       "gurobi_options": "nonconvex=2 debug=1"
     },
@@ -67,7 +67,7 @@
   {
     "name" : "ellipse_nonconvex_abs testMIPstart",
     "objective" : 3.6,
-    "tags" : ["quadraticnonconvex"],
+    "tags" : ["quadraticnonconvex", "mipstart"],
     "options": {
       "gurobi_options": "nonconvex=2 debug=1"
     },

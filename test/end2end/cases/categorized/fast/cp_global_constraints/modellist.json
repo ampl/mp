@@ -70,6 +70,7 @@
     "name" : "x-multmip1 [if, >]",
     "files": ["x-multmip1.mod", "multmip1.dat"],
     "tags" : ["logical"],
+    "options": { "solution_round": "6" },
     "objective" : 218125
   },
   {

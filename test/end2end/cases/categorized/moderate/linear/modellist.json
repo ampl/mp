@@ -8,13 +8,21 @@
     "name" : "cut",
     "objective" : 47,
     "tags" : ["linear", "integer", "script"],
-    "files" : ["cut.run"]
+    "files" : ["cut.run"],
+    "options": {
+      "scip_options": "pre:maxrounds=0 pro:maxrounds=0 pro:maxroundsroot=0",
+      "comment": "Disable presolve and propagation for SCIP for duals."
+    }
   },
   {
     "name" : "cut2",
     "objective" : 47,
     "tags" : ["linear", "integer", "script"],
-    "files" : ["cut2.run"]
+    "files" : ["cut2.run"],
+    "options": {
+      "scip_options": "pre:maxrounds=0 pro:maxrounds=0 pro:maxroundsroot=0",
+      "comment": "Disable presolve and propagation for SCIP for duals."
+    }
   },
   {
     "name" : "diet2 iis",
