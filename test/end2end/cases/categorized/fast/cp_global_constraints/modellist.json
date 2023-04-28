@@ -57,13 +57,19 @@
     "name" : "x-multmip3 [count, if]",
     "files": ["x-multmip3.mod", "multmip3.dat"],
     "tags" : ["logical"],
+    "options": { "solution_round": "6" },
+    "comment_options": "For solution_round, see #200",
     "objective" : 235625
   },
   {
     "name" : "x-multmip3 [count, if] cmpEps=0.01",
     "files": ["x-multmip3.mod", "multmip3.dat"],
     "tags" : ["logical"],
-    "options": { "ANYSOLVER_options": "cvt:mip:eps=1e-2" },
+    "options": {
+      "solution_round": "6",
+      "ANYSOLVER_options": "cvt:mip:eps=1e-2"
+    },
+    "comment_options": "For solution_round, see #200",
     "objective" : 235625
   },
   {
@@ -71,6 +77,7 @@
     "files": ["x-multmip1.mod", "multmip1.dat"],
     "tags" : ["logical"],
     "options": { "solution_round": "6" },
+    "comment_options": "For solution_round, see #200",
     "objective" : 218125
   },
   {
