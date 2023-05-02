@@ -4,10 +4,10 @@
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
-#include "scipbackend.h"
+#include "scipmpbackend.h"
 
 extern "C" {
-  #include "scip-ampls-c-api.h"    // Scip AMPLS C API
+  #include "scipmp-ampls-c-api.h"    // Scip AMPLS C API
 }
 #include "mp/ampls-cpp-api.h"
 

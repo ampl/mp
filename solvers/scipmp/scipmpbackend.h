@@ -5,7 +5,7 @@
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
-#include "scipcommon.h"
+#include "scipmpcommon.h"
 
 namespace mp {
 

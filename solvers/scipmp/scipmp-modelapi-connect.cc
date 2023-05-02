@@ -1,7 +1,7 @@
 #include "mp/flat/redef/MIP/converter_mip.h"
 #include "mp/flat/model_api_connect.h"
 
-#include "scipmodelapi.h"
+#include "scipmpmodelapi.h"
 
 
 namespace mp {

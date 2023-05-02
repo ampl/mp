@@ -1,4 +1,4 @@
-#include "scipmodelapi.h"
+#include "scipmpmodelapi.h"
 
 namespace mp {
 

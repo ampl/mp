@@ -1,4 +1,4 @@
-#include "scip/scip-ampls-c-api.h"
+#include "scipmp/scipmp-ampls-c-api.h"
 
 #ifdef _WIN32
 #define APIEXPORT __declspec(dllexport)

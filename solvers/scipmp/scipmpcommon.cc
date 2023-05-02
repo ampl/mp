@@ -1,5 +1,5 @@
 #include "mp/format.h"
-#include "scipcommon.h"
+#include "scipmpcommon.h"
 
 static
 SCIP_DECL_PROBDELORIG(probdataDelOrigNl)
