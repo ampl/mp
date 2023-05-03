@@ -113,6 +113,18 @@ does not have automatic dependency detection), you can use the following::
            -DCOPT_LIBS=d:/copt/libs/win64/copt.lib
            -DCOPT_INCLUDE_DIRS=d:/copt/include
 
+To build the solver *scipmp* statically (on Linux or MacOS), you need to make sure
+to add all its dependencies. The following cmake command builds *scipmp* assuming 
+that it is installed with the LP solver SoPlex, the arithmetic library GMP and 
+the library bliss for symmetry detection (*SCIP* and its dependencies are all 
+installed in the standard location)::
+
+  cmake .. -DBUILD=scipmp
+           -DSCIP_LIBS="/usr/local/lib/libscip.a;/usr/local/lib/libsoplex.a;/usr/local/lib/libgmp.a;/usr/local/lib/libbliss.a"
+           -DSCIP_INCLUDE_DIRS=/usr/local/include
+
+Note: Any other dependency can be used in the same way.
+
 Similarly, for *ortoolsmp* (on MacOS) assuming *ortools* is installed in
 the standard location::
 
