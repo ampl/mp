@@ -1,37 +1,42 @@
-#ifndef MP_CBCMP_BACKEND_H_
-#define MP_CBCMP_BACKEND_H_
+#ifndef MP_SCIP_BACKEND_H_
+#define MP_SCIP_BACKEND_H_
 
 #include <string>
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
-#include "cbcmpcommon.h"
+#include "scipcommon.h"
 
 namespace mp {
 
-
-
-
-class CbcmpBackend :
-    public FlatBackend< MIPBackend<CbcmpBackend> >,
-    public CbcmpCommon
+class ScipBackend :
+    public FlatBackend< MIPBackend<ScipBackend> >,
+    public ScipCommon
 {
-  using BaseBackend = FlatBackend< MIPBackend<CbcmpBackend> >;
+  using BaseBackend = FlatBackend< MIPBackend<ScipBackend> >;
+
   //////////////////// [[ The public interface ]] //////////////////////
 public:
-  CbcmpBackend();
-  ~CbcmpBackend();
+  ScipBackend();
+  ~ScipBackend();
 
-  /// Name displayed in messages
-  static const char* GetSolverName() { return "cbc"; }
+  /// Prefix used for the <prefix>_options environment variable
+  static const char* GetAMPLSolverName() { return "scip"; }
+
+  /// AMPL driver name displayed in messages
+  static const char* GetAMPLSolverLongName() { return "AMPL-SCIP"; }
+  /// Solver name displayed in messages
+  static const char* GetSolverName() { return "SCIP"; }
+  /// Version displayed with -v
   std::string GetSolverVersion();
   
-  static const char* GetAMPLSolverName() { return "cbc"; }
-  static const char* GetAMPLSolverLongName() { return "AMPL-CBC"; }
+  /// Name for diagnostic messages
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
-  /// Chance for the Backend to init solver environment, etc
+  /// Init custom driver options, such as outlev, writeprob
+  void InitCustomOptions() override;
+  /// Chance for the Backend to init solver environment, etc.
   void InitOptionParsing() override { }
   /// Chance to consider options immediately (open cloud, etc)
   void FinishOptionParsing() override;
@@ -45,8 +50,6 @@ public:
   // that may or may not need additional functions. 
   USING_STD_FEATURES;
 
-  ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
-  void DoWriteProblem(const std::string& name) override;
   /**
  * MULTISOL support
  * No API, see ReportIntermediateSolution()
@@ -56,39 +59,41 @@ public:
   /**
   * Get/Set AMPL var/con statii
   **/
-  ALLOW_STD_FEATURE(BASIS, true)
+  ALLOW_STD_FEATURE(BASIS, false)
   // TODO If getting/setting a basis is supported, implement the 
   // accessor and the setter below
   SolutionBasis GetBasis() override;
   void SetBasis(SolutionBasis) override;
-
-
   /**
   * General warm start, e.g.,
   * set primal/dual initial guesses for continuous case
   **/
-  ALLOW_STD_FEATURE(WARMSTART, true)
-  void AddPrimalDualStart(Solution sol0) override;
+  ALLOW_STD_FEATURE( WARMSTART, false )
+  void AddPrimalDualStart(Solution sol) override;
   /**
   * MIP warm start
   **/
-  ALLOW_STD_FEATURE(MIPSTART, true)
-	void AddMIPStart(ArrayRef<double> x0,
+  // If MIP warm start is supported, implement the function below
+  // to set a non-presolved starting solution
+  ALLOW_STD_FEATURE(MIPSTART, false)
+  void AddMIPStart(ArrayRef<double> x0,
 									 ArrayRef<int> sparsity) override;
 
 
  /**
   * Get MIP Gap
   **/
-  ALLOW_STD_FEATURE(RETURN_MIP_GAP, false)
+  // return MIP gap
+  // (adds option mip:return_gap)
+  ALLOW_STD_FEATURE(RETURN_MIP_GAP, true)
   double MIPGap() override;
   double MIPGapAbs() override;
   /**
   * Get MIP dual bound
   **/
-  // TODO Implement to return the best dual bound value
+  // return the best dual bound value
   // (adds option mip:bestbound)
-  ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, false)
+  ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
   double BestDualBound() override;
 
   /////////////////////////// Model attributes /////////////////////////
@@ -100,24 +105,21 @@ public:
   /// Note the interrupt notifier
   void SetInterrupter(mp::Interrupter* inter) override;
 
-  /// Solve, no model modification any more.
+public:  // public for static polymorphism
+  /// Solve, no model modification any more (such as feasrelax).
   /// Can report intermediate results via HandleFeasibleSolution() during this,
-  /// otherwise in ReportResults()
+  /// otherwise/finally via ReportResults()
   void Solve() override;
 
+  /// Default impl of GetObjValues()
   ArrayRef<double> GetObjectiveValues() override
   { return std::vector<double>{ObjectiveValue()}; } 
 
 
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
-public:  // public for static polymorphism
-  void InitCustomOptions() override;
-
 protected:
-
-  void OpenSolver();
-  void CloseSolver();
+  void ExportModel(const std::string& file);
 
   double ObjectiveValue() const;
 
@@ -126,12 +128,12 @@ protected:
   pre::ValueMapDbl DualSolution() override;
   ArrayRef<double> DualSolution_LP();
 
-  void WindupCBCMPSolve();
+  void WindupSCIPSolve();
 
   void ReportResults() override;
-  void ReportCBCMPResults();
+  void ReportSCIPResults();
 
-  void ReportCBCMPPool();
+  void ReportSCIPPool();
 
   std::vector<double> getPoolSolution(int i);
   double getPoolObjective(int i);
@@ -141,14 +143,20 @@ protected:
   double SimplexIterations() const;
   int BarrierIterations() const;
 
-  std::pair<int, std::string> ConvertCBCMPStatus();
-  void AddCBCMPMessages();
+  std::pair<int, std::string> ConvertSCIPStatus();
+  void AddSCIPMessages();
+
+  ArrayRef<int> VarStatii();
+  ArrayRef<int> ConStatii();
+  void VarStatii(ArrayRef<int>);
+  void ConStatii(ArrayRef<int>);
+
 
 private:
   /// These options are stored in the class
   struct Options {
-    int timeLimit_ = 0;
-    int outlev_ = 0;
+    std::string exportFile_, logFile_, paramRead_;
+    int concurrent_, heuristics_, cuts_, presolvings_ = 0;
   };
   Options storedOptions_;
 
@@ -157,4 +165,4 @@ private:
 
 }  // namespace mp
 
-#endif  // MP_CBCMP_BACKEND_H_
+#endif  // MP_SCIP_BACKEND_H_

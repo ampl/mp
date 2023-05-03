@@ -2,6 +2,10 @@ Summary of recent updates to gurobi for AMPL
 ============================================
 
 
+## 20230426
+- Fixed partial MIP start.
+
+
 ## 20230330
 - Fixed the outlev option.
 

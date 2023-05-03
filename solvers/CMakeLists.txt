@@ -90,7 +90,8 @@ function(add_ampl_solver name)
             set_property(TARGET ${module}-library PROPERTY
               IMPORTED_IMPLIB ${l})
         endif()
-       target_include_directories(${module}-library INTERFACE ${${module_upper}_INCLUDE_DIRS})
+       target_include_directories(${module}-library
+         INTERFACE ${${module_upper}_INCLUDE_DIRS})
        endforeach()
       endif()
     endif ()
@@ -103,7 +104,7 @@ function(add_ampl_solver name)
 
   if (TARGET ${module}-library)
     get_target_property(TRG_PROP_IMPRT_LOC ${module}-library IMPORTED_LOCATION)
-    if (NOT libraries)#OR TRG_PROP_IMPRT_LOC)
+    if (NOT libraries)#OR TRG_PROP_IMPRT_LOC) does not work when >1 solver libs
       set(libraries ${module}-library)
     endif()
   endif ()
