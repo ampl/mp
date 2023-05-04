@@ -11,7 +11,8 @@
     "tags": [ "logical" ],
     "objective": 22,
     "options": {
-      "cbc_options": "cvt:mip:bigM=100000"
+      "cbc_options": "cvt:mip:bigM=100000",
+      "gcg_options": "cvt:mip:bigM=100000"
     }
   },
   {

@@ -103,7 +103,7 @@ function(add_ampl_solver name)
 
   if (TARGET ${module}-library)
     get_target_property(TRG_PROP_IMPRT_LOC ${module}-library IMPORTED_LOCATION)
-    if (NOT libraries OR TRG_PROP_IMPRT_LOC)
+    if (NOT libraries) #OR TRG_PROP_IMPRT_LOC)
       set(libraries ${module}-library)
     endif()
   endif ()

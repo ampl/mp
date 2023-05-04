@@ -70,7 +70,7 @@ public:
   **/
   // TODO If MIP warm start is supported, implement the function below
   // to set a non-presolved starting solution
-  ALLOW_STD_FEATURE(MIPSTART, true)
+  ALLOW_STD_FEATURE(MIPSTART, false)
   void AddMIPStart(ArrayRef<double> x0) override;
 
 
@@ -93,7 +93,7 @@ public:
   /**
   * Compute the IIS and obtain relevant values
   **/
-  ALLOW_STD_FEATURE(IIS, true)
+  ALLOW_STD_FEATURE(IIS, false)
   /// Compute IIS
   void ComputeIIS() override;
   /// Retrieve IIS elements
@@ -122,9 +122,6 @@ public:  // public for static polymorphism
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 protected:
-  void OpenSolver();
-  void CloseSolver();
-
   void ExportModel(const std::string& file);
 
   double ObjectiveValue() const;
@@ -164,7 +161,8 @@ protected:
 private:
   /// These options are stored in the class
   struct Options {
-    std::string exportFile_;
+    std::string exportFile_, logFile_, paramRead_;
+    int heuristics_, cuts_, presolvings_ = 0;
   };
   Options storedOptions_;
 
