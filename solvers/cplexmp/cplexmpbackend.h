@@ -65,6 +65,17 @@ public:
   ArrayRef<int> ConStatii();
   ArrayRef<int> VarStatii();
   void VarConStatii(ArrayRef<int>, ArrayRef<int>);
+  /**
+  * General warm start, e.g.,
+  * set primal/dual initial guesses for continuous case
+  **/
+  //ALLOW_STD_FEATURE(WARMSTART, true)
+  //void AddPrimalDualStart(Solution sol0) override;
+  /**
+  * Specifically, MIP warm start
+  **/
+  ALLOW_STD_FEATURE(MIPSTART, true)
+  void AddMIPStart(ArrayRef<double> x0, ArrayRef<int> s0) override;
 
 
   ALLOW_STD_FEATURE(IIS, true)

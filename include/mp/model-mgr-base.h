@@ -38,8 +38,12 @@ public:
 
   /// User-provided primal solution
   virtual ArrayRef<double> InitialValues() = 0;
+  /// User-provided primal solution: sparsity
+  virtual ArrayRef<int> InitialValuesSparsity() = 0;
   /// User-provided dual solution
   virtual ArrayRef<double> InitialDualValues() = 0;
+  /// User-provided dual solution: sparsity
+  virtual ArrayRef<int> InitialDualValuesSparsity() = 0;
 
   /// Read integer suffix
   virtual ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) = 0;

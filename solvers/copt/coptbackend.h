@@ -57,10 +57,18 @@ public:
   void SetBasis(SolutionBasis) override;
 
   /**
-* MIP warm start
-**/
+  * General warm start, e.g.,
+  * set primal/dual initial guesses for continuous case
+  **/
+  ALLOW_STD_FEATURE(WARMSTART, true)
+  void AddPrimalDualStart(Solution sol0) override;
+
+  /**
+  * MIP warm start
+  **/
   ALLOW_STD_FEATURE(MIPSTART, true)
-  void AddMIPStart(ArrayRef<double> x0) override;
+	void AddMIPStart(ArrayRef<double> x0,
+									 ArrayRef<int> sparsity) override;
 
 
  /**

@@ -268,6 +268,39 @@ namespace mp {
     VarConStatii(varstt, constt);
   }
 
+  /*
+  void CplexBackend::AddPrimalDualStart(Solution sol0_unpres) {
+    if (IsMIP())
+      return;
+    auto mv = GetValuePresolver().PresolveSolution(
+      { sol0_unpres.primal, sol0_unpres.dual });
+    auto x0 = mv.GetVarValues()();
+    auto pi0 = mv.GetConValues()(CG_Linear);
+    
+    //COPT_CCALL(COPT_SetLpSolution(lp(), x0.data(), nullptr, pi0.data(), nullptr));
+
+  }*/
+
+  void CplexBackend::AddMIPStart(
+    ArrayRef<double> x0_unpres, ArrayRef<int> sparsity_unpres) {
+    auto mv = GetValuePresolver().PresolveSolution({ x0_unpres });
+    auto ms = GetValuePresolver().PresolveGenericInt({ sparsity_unpres });
+    auto x0 = mv.GetVarValues()();
+    auto s0 = ms.GetVarValues()();
+    std::vector<int> idx;                 // Create sparse vector
+    idx.reserve(x0.size());
+    std::vector<double> val;
+    val.reserve(x0.size());
+    for (int i = 0; i < (int)x0.size(); ++i) {
+      if (s0[i]) {
+        idx.push_back(i);
+        val.push_back(x0[i]);
+      }
+    }
+    int beg[2] = { 0, val.size() };
+    CPLEX_CALL(CPXaddmipstarts(env(), lp(), 1, val.size(), beg, idx.data(), val.data(), 0, nullptr));
+  }
+
 ArrayRef<double> CplexBackend::PrimalSolution() {
   int num_vars = NumVars();
   std::vector<double> x(num_vars);

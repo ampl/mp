@@ -469,24 +469,37 @@ void GurobiBackend::AddPrimalDualStart(Solution sol0_unpres) {
   GrbSetDblAttrArray(GRB_DBL_ATTR_DSTART, pi0);
 }
 
-void GurobiBackend::AddMIPStart(ArrayRef<double> x0_unpres) {
+void GurobiBackend::AddMIPStart(
+    ArrayRef<double> x0_unpres, ArrayRef<int> s0_unpres) {
   if (Gurobi_mipstart()) {
     auto mv = GetValuePresolver().PresolveSolution( { x0_unpres } );
+    auto ms = GetValuePresolver().PresolveGenericInt( { s0_unpres } );
     auto x0 = mv.GetVarValues()();
+    auto s0 = ms.GetVarValues()();
+    std::vector<int> idx;                 // Create sparse vector
+    idx.reserve(x0.size());
+    std::vector<double> val;
+    val.reserve(x0.size());
+    for (int i=0; i<(int)x0.size(); ++i) {
+      if (s0[i]) {
+        idx.push_back(i);
+        val.push_back(x0[i]);
+      }
+    }
     switch (Gurobi_mipstart()) {
     case 1:
-      GrbSetDblAttrArray(GRB_DBL_ATTR_START, x0);
+      GrbSetDblAttrList(GRB_DBL_ATTR_START, idx, val);
       break;
     case 3:
       if (auto hints0_unpres = ReadIntSuffix(sufHintPri)) {
         auto mv = GetValuePresolver().PresolveGenericInt( { hints0_unpres } );
         auto hints0 = mv.GetVarValues()();
+        GrbSetDblAttrList(GRB_DBL_ATTR_VARHINTVAL, idx, val);
         GrbSetIntAttrArray(GRB_INT_ATTR_VARHINTPRI, hints0);
-        GrbSetDblAttrArray(GRB_DBL_ATTR_VARHINTVAL, x0);
       }
       break;
     case 2:
-      GrbSetDblAttrArray(GRB_DBL_ATTR_VARHINTVAL, x0);
+      GrbSetDblAttrList(GRB_DBL_ATTR_VARHINTVAL, idx, val);
       break;
     default:
       assert(0);

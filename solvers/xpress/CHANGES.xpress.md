@@ -1,7 +1,11 @@
 Summary of recent updates to Xpress for AMPL
 ============================================
 
+## 20230424
+- *Changes in the MP library*: added variable names support
+  and removed spurious starting solution
 
+  
 ## 20230227
 - Eliminated warning message when a non feasible solution is added as a starting
   point for the MIP search

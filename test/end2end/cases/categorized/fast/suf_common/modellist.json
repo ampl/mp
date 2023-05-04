@@ -107,6 +107,7 @@
   {
     "name": "sos_01",
     "tags": [ "linear", "integer", "sos"],
+    "options": { "scip_options": "acc:sos2=2" },
     "objective": 32,
     "values": {
       "x[2]": 3,

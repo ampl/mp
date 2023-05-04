@@ -65,10 +65,18 @@ protected:
   virtual ArrayRef<double> InitialValues() {
     return GetMM().InitialValues();
   }
+  /// Variables' initial values: sparsity
+  virtual ArrayRef<int> InitialValuesSparsity() {
+    return GetMM().InitialValuesSparsity();
+  }
 
   /// Initial dual values
   virtual ArrayRef<double> InitialDualValues() {
     return GetMM().InitialDualValues();
+  }
+  /// Initial dual values
+  virtual ArrayRef<int> InitialDualValuesSparsity() {
+    return GetMM().InitialDualValuesSparsity();
   }
 
 

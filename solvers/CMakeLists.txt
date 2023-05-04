@@ -90,7 +90,8 @@ function(add_ampl_solver name)
             set_property(TARGET ${module}-library PROPERTY
               IMPORTED_IMPLIB ${l})
         endif()
-       target_include_directories(${module}-library INTERFACE ${${module_upper}_INCLUDE_DIRS})
+       target_include_directories(${module}-library
+         INTERFACE ${${module_upper}_INCLUDE_DIRS})
        endforeach()
       endif()
     endif ()
@@ -103,7 +104,7 @@ function(add_ampl_solver name)
 
   if (TARGET ${module}-library)
     get_target_property(TRG_PROP_IMPRT_LOC ${module}-library IMPORTED_LOCATION)
-    if (NOT libraries) #OR TRG_PROP_IMPRT_LOC)
+    if (NOT libraries)#OR TRG_PROP_IMPRT_LOC) does not work when >1 solver libs
       set(libraries ${module}-library)
     endif()
   endif ()
@@ -247,6 +248,9 @@ add_ampl_backend(cbcmp DLL_RUNTIME SHARED_LIB MODULE CBC
 
 add_ampl_backend(gcg DLL_RUNTIME SHARED_LIB MODULE GCG 
   LIBRARIES ${GCG_LIBS} ${CMAKE_DL_LIBS})
+
+add_ampl_backend(scipmp DLL_RUNTIME SHARED_LIB MODULE SCIP 
+  LIBRARIES ${SCIP_LIBS} ${CMAKE_DL_LIBS})
 
 add_ampl_backend(highsmp DLL_RUNTIME SHARED_LIB MODULE HIGHS 
   LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})

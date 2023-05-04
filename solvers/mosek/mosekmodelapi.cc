@@ -11,7 +11,20 @@ void MosekModelAPI::InitProblemModificationPhase(const FlatModelInfo* info) {
   MOSEK_CCALL(MSK_appendcons(lp(),
 														 info->GetNumberOfConstraintsOfGroup(CG_Algebraic)));
 }
+std::string& myreplace(std::string& s, const std::string& from, const std::string& to)
+{
+  for (size_t pos = 0; (pos = s.find(from, pos)) != std::string::npos; pos += to.size())
+    s.replace(pos, from.size(), to);
+  return s;
+}
 
+std::string sanitizeName(std::string n) {
+  // Mosek does not like square brackets or spaces in variable names
+  std::replace(n.begin(), n.end(), '[', '(');
+  std::replace(n.begin(), n.end(), ']', ')');
+  std::replace(n.begin(), n.end(), ' ', '_');
+  return n;
+}
 void MosekModelAPI::AddVariables(const VarArrayDef& v) {
   MOSEK_CCALL(MSK_appendvars(lp(), v.size()));
   for (size_t i = v.size(); i--; ) {
@@ -39,7 +52,7 @@ void MosekModelAPI::AddVariables(const VarArrayDef& v) {
    }
   if (v.pnames()) 
     for (size_t i = v.size(); i--; )
-      MOSEK_CCALL(MSK_putvarname(lp(), i, v.pnames()[i]));
+      MOSEK_CCALL(MSK_putvarname(lp(), i, sanitizeName(v.pnames()[i]).c_str()));
 }
 
 void MosekModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {

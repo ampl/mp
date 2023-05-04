@@ -593,6 +593,9 @@ public:
     return AutoLink( GetVarValueNode().Add( lbs.size() ) );
   }
 
+  void AddVarNames(const std::vector<std::string>& names) {
+    BaseFlatModel::AddVars__names(names);
+  }
   /// Reuse ValuePresolver's target nodes for all variables
   pre::ValueNode& GetVarValueNode()
   { return GetValuePresolver().GetTargetNodes().GetVarValues().MakeSingleKey(); }
@@ -693,6 +696,8 @@ protected:
   pre::NodeRange DoAddVar(double lb=MinusInfty(), double ub=Infty(),
              var::Type type = var::CONTINUOUS) {
     int v = GetModel().AddVar__basic(lb, ub, type);
+    GetModel().AddVar__name();
+
     return AutoLink( GetVarValueNode().Select( v ) );
   }
 

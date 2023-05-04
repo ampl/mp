@@ -89,7 +89,7 @@ protected:
     steady_clock::time_point start = steady_clock::now();
 
     ReadNLFile(nl_filename);
-
+    ReadVarNames(filename_no_ext + ".col");
     double read_time = GetTimeAndReset(start);
     if (GetEnv().timing())
       GetEnv().Print("NL model read time = {:.6f}s\n", read_time);
@@ -113,6 +113,11 @@ protected:
           new SolverNLHandlerType(GetPB(), GetEnv()));
     internal::NLFileReader<> reader;
     reader.Read(nl_filename, *nl_read_result_.handler_, 0);
+  }
+
+  void ReadVarNames(const std::string& filename) {
+    internal::NameReader nr;
+    nr.Read(filename, *nl_read_result_.handler_);
   }
 
   /// Before reading the NL file, a generic solution handler
@@ -187,8 +192,14 @@ protected:
   ArrayRef<double> InitialValues() override {
     return GetModel().InitialValues();
   }
+  ArrayRef<int> InitialValuesSparsity() override {
+    return GetModel().InitialValuesSparsity();
+  }
   ArrayRef<double> InitialDualValues() override {
     return GetModel().InitialDualValues();
+  }
+  ArrayRef<int> InitialDualValuesSparsity() override {
+    return GetModel().InitialDualValuesSparsity();
   }
 
   ArrayRef<int> ReadSuffix(const SuffixDef<int>& suf) override {

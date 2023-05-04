@@ -139,7 +139,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     Var(double lb, double ub) : lb(lb), ub(ub) { assert(lb<=ub); }
   };
   std::vector<Var> vars_;
-
+  std::vector<std::string> var_names_;
   /// Packed variable type information.
   /// is_var_int_[i] specifies whether variable i is integer.
   std::vector<bool> is_var_int_;
@@ -196,9 +196,13 @@ class BasicProblem : public ExprFactory, public SuffixManager {
 
   /// Initial values for variables.
   std::vector<double> initial_values_;
+  /// Initial values for variables: sparsity.
+  std::vector<int> iv_set_;
 
   /// Initial values for dual variables.
   std::vector<double> initial_dual_values_;
+  /// Initial values for dual variables: sparsity.
+  std::vector<int> idv_set_;
 
   /// Set nonlinear objective expression.
   void SetNonlinearObjExpr(int obj_index, NumericExpr expr) {
@@ -238,8 +242,11 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     if (initial_values_.size() <= static_cast<unsigned>(var_index)) {
       initial_values_.reserve(vars_.capacity());
       initial_values_.resize(num_vars());
+      iv_set_.reserve(vars_.capacity());
+      iv_set_.resize(num_vars());
     }
     initial_values_[var_index] = value;
+    iv_set_[var_index] = 1;
   }
 
   /// Sets the initial value for a dual variable.
@@ -249,8 +256,11 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     if (initial_dual_values_.size() <= static_cast<unsigned>(con_index)) {
       initial_dual_values_.reserve(algebraic_cons_.capacity());
       initial_dual_values_.resize(num_algebraic_cons());
+      idv_set_.reserve(algebraic_cons_.capacity());
+      idv_set_.resize(num_algebraic_cons());
     }
     initial_dual_values_[con_index] = value;
+    idv_set_[con_index] = 1;
   }
 
 public:
@@ -460,6 +470,10 @@ public:
   /** Returns the number of variables. */
   int num_vars() const { return static_cast<int>(vars_.size()); }
 
+
+  /** Returns the variable names (if present). */
+  std::vector<std::string>& var_names() { return var_names_; }
+    
   /** Returns the number of objectives. */
   int num_objs() const { return static_cast<int>(linear_objs_.size()); }
 
@@ -600,7 +614,7 @@ public:
     internal::CheckIndex(index, num_vars());
     return MutVariable(this, index);
   }
-
+  
   /// Adds a variable.
   Variable AddVar(double lb, double ub, var::Type type = var::CONTINUOUS) {
     std::size_t index = vars_.size();
@@ -609,7 +623,9 @@ public:
     is_var_int_.push_back(type != var::CONTINUOUS);
     return Variable(this, static_cast<int>(index));
   }
-
+  void AddVarName(const std::string& name) {
+    var_names_.push_back(name);
+  }
   void AddVars(int num_vars, var::Type type) {
     MP_ASSERT(num_vars >= 0, "invalid size");
     std::size_t new_size = val(SafeInt<int>(vars_.size()) + num_vars);
@@ -1033,9 +1049,13 @@ public:
 
   /// Variables' initial values
   ArrayRef<double> InitialValues() const { return initial_values_; }
+  /// Variables' initial values: sparsity pattern
+  ArrayRef<int> InitialValuesSparsity() const { return iv_set_; }
 
   /// Initial dual values
   ArrayRef<double> InitialDualValues() const { return initial_dual_values_; }
+  /// Dual initial values: sparsity pattern
+  ArrayRef<int> InitialDualValuesSparsity() const { return idv_set_; }
 
   /////////////////////////////////////////////////////////////////////////
   /// Suffixes

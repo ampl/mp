@@ -163,7 +163,9 @@ protected:
       ubs[i] = mpvar.ub();
       types[i] = mpvar.type();
     }
+
     auto vnr = GetFlatCvt().AddVars(lbs, ubs, types);
+    GetFlatCvt().AddVarNames(GetModel().var_names());
     GetCopyLink().AddEntry({
           GetValuePresolver().GetSourceNodes().GetVarValues().MakeSingleKey().
                              Add(lbs.size()),

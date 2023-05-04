@@ -7,17 +7,37 @@ void XpressmpModelAPI::InitProblemModificationPhase(
     const FlatModelInfo*) {
 }
 
+std::string& myreplace(std::string& s, const std::string& from, const std::string& to)
+{
+  for (size_t pos = 0; (pos = s.find(from, pos)) != std::string::npos; pos += to.size())
+    s.replace(pos, from.size(), to);
+  return s;
+}
+
+std::string sanitizeName(std::string n) {
+  // Xpress does not like square brackets or spaces in variable names
+  std::replace(n.begin(), n.end(), '[', '(');
+  std::replace(n.begin(), n.end(), ']', ')');
+  std::replace(n.begin(), n.end(), ' ', '_');
+  myreplace(n,"\'", "-");
+  myreplace(n, "\"", "--");
+  return n;
+}
 void XpressmpModelAPI::AddVariables(const VarArrayDef& v) {
   std::vector<double> objs(v.size(), 0);
   std::vector<int> iii(v.size(), 0);
   XPRESSMP_CCALL(XPRSaddcols(lp(), v.size(), 0, objs.data(), iii.data(), NULL,
     NULL, v.plb(), v.pub()));
-  if(v.pnames() != NULL)
-    XPRESSMP_CCALL(XPRSaddnames(lp(), 2, (const char*)v.pnames(), 0, v.size()-1));
+
+  if (v.pnames() != NULL)
+  {
+    fmt::MemoryWriter w;
+    for (int i = 0; i < v.size(); ++i)
+      w << sanitizeName(v.pnames()[i]) << '\0';
+    XPRESSMP_CCALL(XPRSaddnames(lp(), 2, w.c_str(), 0, v.size() - 1));
+  }
   // All variables are continuous by default, set the integer ones
   std::vector<int> intIndices;
- 
-
   for (auto i = 0; i < v.size(); i++)
     if (v.ptype()[i] == var::Type::INTEGER)
       intIndices.push_back(i);

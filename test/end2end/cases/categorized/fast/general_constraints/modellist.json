@@ -22,7 +22,9 @@
   {
     "name" : "poly_01",
     "tags" : ["polynomial"],
-    "options": { "ANYSOLVER_options": "nonconvex=2" },
+    "options": { 
+      "gurobi_options": "nonconvex=2" 
+    },
     "values": {
       "x": 0.1663127474012448
     }
@@ -30,7 +32,9 @@
   {
     "name" : "and_or_max_poly_01",
     "tags" : ["logical", "polynomial"],
-    "options": { "ANYSOLVER_options": "nonconvex=2" },
+    "options": { 
+      "gurobi_options": "nonconvex=2" 
+    },
     "objective" : -40
   }
 ]

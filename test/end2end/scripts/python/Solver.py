@@ -420,7 +420,7 @@ class CPLEXSolver(AMPLSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic, ModelTags.sos,
+                  ModelTags.linear, ModelTags.quadratic, ModelTags.sos,
                  ModelTags.return_mipgap,
                  ModelTags.sstatus}
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
@@ -731,6 +731,29 @@ class CbcMPSolver(MPDirectSolver):
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.quadratic_obj, ModelTags.sos}
+        super().__init__(exeName, timeout, nthreads, otherOptions, stags)
+
+class SCIPSolver(MPDirectSolver):
+     #def _setLPMethod(self, method : str):
+     #    m  = "simplex" if method == "SIMPLEX" else "ipm"
+     #    return f"alg:method {m}"
+
+    def _getAMPLOptionsName(self):
+        return "scip"
+     
+    def _setNThreads(self, threads):
+        return ""
+
+    def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
+        stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary, 
+                 ModelTags.quadratic,
+                 ModelTags.quadraticnonconvex,
+                 ModelTags.sos,
+                 ModelTags.nonlinear,
+                 ModelTags.log,
+                 ModelTags.trigonometric,
+                 ModelTags.return_mipgap
+                 }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 

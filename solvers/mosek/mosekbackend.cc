@@ -816,7 +816,8 @@ void MosekBackend::AddPrimalDualStart(Solution sol)
   MOSEK_CCALL(MSK_puty(lp(), solToFetch_, (MSKrealt *)pi0.data()));
 }
 
-void MosekBackend::AddMIPStart(ArrayRef<double> x0_unpres)
+void MosekBackend::AddMIPStart(
+    ArrayRef<double> x0_unpres, ArrayRef<int> sparsity)
 {
   solToFetch_ = GetSolutionTypeToFetch();
   auto mv = GetValuePresolver().PresolveSolution( { x0_unpres } );
