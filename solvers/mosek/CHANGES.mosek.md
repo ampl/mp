@@ -1,6 +1,12 @@
 Summary of recent updates to MOSEK for AMPL
 ===========================================
 
+## 20230505
+- *Updated Mosek library* to version 10.0.43. It includes a 
+  number of bug fixes, among which a numerical problem that 
+  could occur with disjunctive constraints
+
+
 ## 20230424
 - *Changes in the MP library*: added variable names support
   and removed spurious starting solution
