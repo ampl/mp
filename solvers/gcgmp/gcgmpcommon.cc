@@ -1,5 +1,5 @@
 #include "mp/format.h"
-#include "gcgcommon.h"
+#include "gcgmpcommon.h"
 
 #include "gcg/gcgplugins.h"
 

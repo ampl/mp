@@ -4,10 +4,10 @@
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
-#include "gcgbackend.h"
+#include "gcgmpbackend.h"
 
 extern "C" {
-  #include "gcg-ampls-c-api.h"    // Gcg AMPLS C API
+  #include "gcgmp-ampls-c-api.h"    // Gcg AMPLS C API
 }
 #include "mp/ampls-cpp-api.h"
 

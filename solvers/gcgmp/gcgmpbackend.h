@@ -5,7 +5,7 @@
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
-#include "gcgcommon.h"
+#include "gcgmpcommon.h"
 
 namespace mp {
 

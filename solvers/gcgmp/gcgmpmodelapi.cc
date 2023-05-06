@@ -1,4 +1,4 @@
-#include "gcgmodelapi.h"
+#include "gcgmpmodelapi.h"
 
 
 namespace mp {

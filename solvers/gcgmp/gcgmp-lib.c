@@ -1,4 +1,4 @@
-#include "gcg/gcg-ampls-c-api.h"
+#include "gcgmp/gcgmp-ampls-c-api.h"
 
 #ifdef _WIN32
 #define APIEXPORT __declspec(dllexport)
