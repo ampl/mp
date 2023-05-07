@@ -104,11 +104,17 @@
   },
   {
     "name" : "booleq_01",
+    "options": {
+      "gcg_options": "cvt:bigm=1e5"
+    },
     "objective" : 1,
     "tags" : ["logical"]
   },
   {
     "name" : "booleq_02",
+    "options": {
+      "gcg_options": "cvt:bigm=1e5"
+    },
     "objective" : 1,
     "tags" : ["logical"]
   }

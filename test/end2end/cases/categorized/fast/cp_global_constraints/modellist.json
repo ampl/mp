@@ -77,7 +77,10 @@
     "name" : "x-multmip1 [if, >]",
     "files": ["x-multmip1.mod", "multmip1.dat"],
     "tags" : ["logical"],
-    "options": { "solution_round": "6" },
+    "options": { 
+      "solution_round": "6",
+      "gcg_options": "cvt:mip:bigM=100000" 
+    },
     "comment_options": "For solution_round, see #200",
     "objective" : 218125
   },
