@@ -898,7 +898,7 @@ pre::ValueMapInt GcgBackend::ConsIIS() {
   return { {{ 0, std::vector<int>()}} };
 }
 
-void GcgBackend::AddMIPStart(ArrayRef<double> x0) {
+void GcgBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
   //GCG_CCALL(GCG_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
 
 }
