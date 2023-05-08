@@ -51,14 +51,12 @@ typedef struct AMPLS_MP_Solver_T {
   } AMPLS_C_Option;
   
   AMPLS_C_EXPORT AMPLS_C_Option* AMPLSGetOptions(AMPLS_MP_Solver* slv);
-  /// Returns 0 on success
+  /// Return 0 on success
   AMPLS_C_EXPORT int AMPLSSetIntOption(AMPLS_MP_Solver*, const char* name, int value);
-
   AMPLS_C_EXPORT int AMPLSGetIntOption(AMPLS_MP_Solver*, const char* name, int *value);
-
-  AMPLS_C_EXPORT int AMPLSSetDblOption(void* slv, const char* name, double value);
-  AMPLS_C_EXPORT int AMPLSGetDblOption(void* slv, const char* name, double* value);
-  AMPLS_C_EXPORT int AMPLSSetStrOption(void* slv, const char* name, const char* value);
-  AMPLS_C_EXPORT int AMPLSGetStrOption(void* slv, const char* name, const char* const* value);
+  AMPLS_C_EXPORT int AMPLSSetDblOption(AMPLS_MP_Solver* slv, const char* name, double value);
+  AMPLS_C_EXPORT int AMPLSGetDblOption(AMPLS_MP_Solver* slv, const char* name, double* value);
+  AMPLS_C_EXPORT int AMPLSSetStrOption(AMPLS_MP_Solver* slv, const char* name, const char* value);
+  AMPLS_C_EXPORT int AMPLSGetStrOption(AMPLS_MP_Solver* slv, const char* name, const char* const* value);
 
 #endif // AMPLS_C_INTERFACE_H
