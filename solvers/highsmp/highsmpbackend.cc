@@ -286,7 +286,6 @@ void HighsBackend::AddHIGHSMessages() {
 
 std::pair<int, std::string> HighsBackend::ConvertHIGHSStatus() {
   namespace sol = mp::sol;
- // TODO Complete
   int optstatus = Highs_getModelStatus(lp());
     switch (optstatus) {
     case kHighsModelStatusOptimal:
@@ -295,11 +294,23 @@ std::pair<int, std::string> HighsBackend::ConvertHIGHSStatus() {
       return { sol::INFEASIBLE, "infeasible problem" };
     case kHighsModelStatusUnbounded:
       return { sol::UNBOUNDED, "unbounded problem" };
+    case kHighsModelStatusUnboundedOrInfeasible:
+      return { sol::INF_OR_UNB, "unbounded or infeasible" };
+    case kHighsModelStatusModelError:
+    case kHighsModelStatusLoadError:
+      return { sol::FAILURE, "solver error" };
+    case kHighsModelStatusPresolveError:
+    case kHighsModelStatusSolveError:
+    case kHighsModelStatusPostsolveError:
+      return { sol::NUMERIC, "nuemric issue" };
     case kHighsModelStatusTimeLimit:
+      return { sol::LIMIT, "time limit" };
     case kHighsModelStatusIterationLimit:
-      return { sol::INTERRUPTED, "interrupted" };
+      return { sol::LIMIT, "iteration limit" };
+    case kHighsModelStatusSolutionLimit:
+      return { sol::LIMIT, "solution limit" };
     default:
-      return { sol::UNKNOWN, "unfinished" };
+      return { sol::UNKNOWN, "unknown" };
     }
   return { sol::UNKNOWN, "not solved" };
 }
