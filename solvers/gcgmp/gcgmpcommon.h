@@ -8,6 +8,8 @@
 #include "scip/scip.h"
 #include "gcg/gcg.h"
 
+#include "gcg/class_partialdecomp.h"
+
 #include "mp/format.h"
 
 /// problem data stored in SCIP
@@ -19,6 +21,8 @@ struct SCIP_ProbData
    SCIP_CONS**           linconss;           /**< linear constraints in the order given by AMPL */
    int                   i;                  /**< shows free slot of linear constraints */
    int                   nlinconss;          /**< number of linear constraints */
+
+   gcg::PARTIALDECOMP*   decomp;             /**< user partialdecomp */
 };
 
 namespace mp {

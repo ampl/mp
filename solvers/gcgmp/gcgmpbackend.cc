@@ -6,6 +6,10 @@
 #include "mp/flat/model_api_base.h"
 #include "gcgmpbackend.h"
 
+#include "gcg/class_partialdecomp.h"
+#include "gcg/class_detprobdata.h"
+#include "gcg/cons_decomp.hpp"
+
 extern "C" {
   #include "gcgmp-ampls-c-api.h"    // Gcg AMPLS C API
 }
@@ -137,6 +141,8 @@ void GcgBackend::Solve() {
   if (storedOptions_.presolvings_ != SCIP_PARAMSETTING_DEFAULT)
     GCG_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, FALSE) );
 
+  InputDecomposition();
+  
   GCG_CCALL(GCGsolve(getSCIP()));
 
   WindupGCGSolve();
@@ -188,9 +194,11 @@ void GcgBackend::AddGCGMessages() {
   if (auto nbi = BarrierIterations())
     AddToSolverMessage(
           fmt::format("{} barrier iterations\n", nbi));
-  if (auto nnd = NodeCount())
+  if (!IsContinuous()) {
+    auto nnd = NodeCount();
     AddToSolverMessage(
           fmt::format("{} branching nodes\n", nnd));
+  }
 }
 
 std::pair<int, std::string> GcgBackend::ConvertGCGStatus() {
@@ -260,27 +268,6 @@ static const mp::OptionValueInfo values_pricing[] = {
   { "d", "devex pricing", 5}
 }; 
 
-static const mp::OptionValueInfo estimation_method[] = {
-  { "c", "completion", 0},
-  { "e", "ensemble", 1},
-  { "g", "time series forecasts on either gap", 2},
-  { "l", "leaf frequency", 3},
-  { "o", "open nodes", 4},
-  { "w", "tree weight (default)", 5},
-  { "s", "ssg", 6},
-  { "t", "tree profile", 7},
-  { "b", "wbe ", 8}
-};
-
-static const mp::OptionValueInfo estimation_completion[] = {
-  { "a", "auto (default)", 0},
-  { "g", "gap", 1},
-  { "w", "tree weight", 2},
-  { "m", "monotone regression", 3},
-  { "r", "regression forest", 4},
-  { "s", "ssg", 5}
-};
-
 static const mp::OptionValueInfo childsel[] = {
   { "d", "down", 0},
   { "u", "up", 1},
@@ -289,6 +276,24 @@ static const mp::OptionValueInfo childsel[] = {
   { "l", "lp value", 4},
   { "r", "root LP value difference", 5},
   { "h", "hybrid inference/root LP value difference (default)", 6}
+};
+
+static const mp::OptionValueInfo scoretype[] = {
+  { "0", "max white", 0},
+  { "1", "border area", 1},
+  { "2", "classic", 2},
+  { "3", "max foreseeing white", 3},
+  { "4", "ppc-max-white (default)", 4},
+  { "5", "max foreseeing white with aggregation info", 5},
+  { "6", "ppc-max-white with aggregation info", 6},
+  { "7", "experimental benders score", 7},
+  { "8", "strong decomposition score", 8}
+};
+
+static const mp::OptionValueInfo mode[] = {
+  { "0", "Dantzig-Wolfe (default)", 0},
+  { "1", "Benders' decomposition", 1},
+  { "2", "No decomposition", 2}
 };
 
 void GcgBackend::InitCustomOptions() {
@@ -369,7 +374,7 @@ void GcgBackend::InitCustomOptions() {
     "separating/maxcuts", 0, INT_MAX);
 
   AddSolverOption("cut:maxcutsroot maxcutsroot",
-    "Maximal number of separated cuts at the root node (0: disable root node separation; default: 5000)",
+    "Maximal number of separated cuts at the root node (0: disable root node separation; default: 2000)",
     "separating/maxcutsroot", 0, INT_MAX);
 
   AddSolverOption("cut:maxrounds",
@@ -460,10 +465,6 @@ void GcgBackend::InitCustomOptions() {
     "Solving stops, if the given number of restarts was triggered (default: -1: no limit)",
     "limits/restarts", -1, INT_MAX);
 
-  AddSolverOption("lim:softtime softtime",
-    "Soft time limit which should be applied after first solution was found (default: -1.0: disabled)",
-    "limits/softtime", -1.0, SCIP_REAL_MAX);
-
   AddSolverOption("lim:solutions",
     "Solving stops, if the given number of solutions were found (default: -1: no limit)",
     "limits/solutions", -1, INT_MAX);
@@ -509,7 +510,7 @@ void GcgBackend::InitCustomOptions() {
     "lp/solvedepth", -1, SCIP_MAXTREEDEPTH);
 
   AddSolverOption("lp:solvefreq",
-    "Frequency for solving LP at the nodes (-1: never; 0: only root LP; default: 1)",
+    "Frequency for solving LP at the nodes (-1: never; 0: only root LP; default: 0)",
     "lp/solvefreq", -1, SCIP_MAXTREEDEPTH);
 
   ///////////////////////// MISC /////////////////////////
@@ -683,16 +684,179 @@ void GcgBackend::InitCustomOptions() {
     "Global shift of all random seeds in the plugins and the LP random seed (default: 0) ",
     "randomization/randomseedshift", 0, INT_MAX);
 
-  ///////////////////////// TREE /////////////////////////
-  AddSolverOption("est:method",
-    "Tree size estimation method:\n"
-    "\n.. value-table::\n", "estimation/method", estimation_method, "w");
 
-  AddSolverOption("est:completiontype",
-    "Approximation of search tree completion:\n"
-    "\n.. value-table::\n", "estimation/completiontype", estimation_completion, "a");
+  ////////////////////// DETECTION ///////////////////////
+  AddSolverOption("det:enabled",
+    "0/1: whether detection should be enabled? "
+    "\n"
+    "  | 0 - Detection not enabled\n"
+    "  | 1 - Detection enabled (default).",
+    "detection/enabled", 0, 1);
+
+  AddSolverOption("det:postprocess postprocess",
+    "0/1: whether postprocessing of complete decompositions should be enabled? "
+    "\n"
+    "  | 0 - Postprocessing of complete decompositions not enabled\n"
+    "  | 1 - Postprocessing of complete decompositions enabled (default).",
+    "detection/enabled", 0, 1);
+
+  AddSolverOption("det:maxrounds",
+    "Maximum number of detection loop rounds (default: 1) ",
+    "detection/maxrounds", 0, INT_MAX);
+
+  AddSolverOption("det:maxtime",
+    "Maximum detection time in seconds (default: 600) ",
+    "detection/maxrounds", 0, INT_MAX);
+
+  AddSolverOption("det:scoretype scoretype",
+    "Score calculation for comparing (partial) decompositions:\n"
+    "\n.. value-table::\n", "detection/score/scoretype", scoretype, 4);
+
+  AddSolverOption("det:origprob-classificationenabled origprob-classificationenabled",
+    "0/1: whether classification for the original problem should be enabled? "
+    "\n"
+    "  | 0 - Classification for the original problem not enabled\n"
+    "  | 1 - Classification for the original problem enabled (default).",
+    "detection/origprob/classificationenabled", 0, 1);
+
+  AddSolverOption("det:origprob-enabled origprob-enabled",
+    "0/1: whether detection for the original problem should be enabled? "
+    "\n"
+    "  | 0 - Detection for the original problem not enabled\n"
+    "  | 1 - Detection for the original problem enabled (default).",
+    "detection/origprob/enabled", 0, 1);
+
+  AddSolverOption("det:classification-enabled classification-enabled",
+    "0/1: whether classification should be enabled? "
+    "\n"
+    "  | 0 - Classification not enabled\n"
+    "  | 1 - Classification enabled (default).",
+    "detection/classification/enabled", 0, 1);
+
+  AddSolverOption("det:maxnclassesperpartition maxnclassesperpartition",
+    "Maximum number of classes per partition (default: 9)",
+    "detection/classification/maxnclassesperpartition", 0, INT_MAX);
+
+  AddSolverOption("det:maxnclassesperpartitionforlargeprobs maxnclassesperpartitionforlargeprobs",
+    "Maximum number of classes per partition for large problems (nconss + nvars >= 50000) (default: 5)",
+    "detection/classification/maxnclassesperpartitionforlargeprobs", 0, INT_MAX);
+  
+  AddSolverOption("det:benders-enabled benders-enabled",
+    "0/1: whether benders detection should be enabled? "
+    "\n"
+    "  | 0 - Benders detection not enabled (default)\n"
+    "  | 1 - Benders detection enabled.",
+    "detection/benders/enabled", 0, 1);
+
+  AddSolverOption("det:benders-onlybinmaster benders-onlybinmaster",
+    "0/1: whether only decomposition with only binary variables in the master are searched? "
+    "\n"
+    "  | 0 - Not only decomposition with only binary variables in the master are searched (default)\n"
+    "  | 1 - Only decomposition with only binary variables in the master are searched.",
+    "detection/benders/onlybinmaster", 0, 1);
+
+  AddSolverOption("det:benders-onlycontsubpr benders-onlycontsubpr",
+    "0/1: whether only decomposition with only continiuous variables in the subproblems are searched? "
+    "\n"
+    "  | 0 - Not only decomposition with only continiuous variables in the subproblems are searched (default)\n"
+    "  | 1 - Only decomposition with only continiuous variables in the subproblems are searched.",
+    "detection/benders/onlycontsubpr", 0, 1);
+
+  //////////////////// RELAXING-GCG //////////////////////
+  AddSolverOption("gcg:bliss-enabled bliss-enabled",
+    "0/1: whether bliss should be used to check for identical blocks? "
+    "\n"
+    "  | 0 - Bliss should not be used to check for identical blocks\n"
+    "  | 1 - Bliss should be used to check for identical blocks (default).",
+    "relaxing/gcg/bliss/enabled", 0, 1);
+
+  AddSolverOption("gcg:aggregation",
+    "0/1: whether identical blocks should be aggregated (only for discretization approach)? "
+    "\n"
+    "  | 0 - Identical blocks should not be aggregated (only for discretization approach)\n"
+    "  | 1 - Identical blocks should be aggregated (only for discretization approach) (default).",
+    "relaxing/gcg/aggregation", 0, 1);
+
+  AddSolverOption("gcg:discretization discretization",
+    "0/1: whether discretization (TRUE) or convexification (FALSE) approach should be used? "
+    "\n"
+    "  | 0 - convexification approach should be used\n"
+    "  | 1 - discretization approach should be used (default).",
+    "relaxing/gcg/discretization", 0, 1);
+
+  AddSolverOption("gcg:mipdiscretization mipdiscretization",
+    "0/1: whether discretization (TRUE) or convexification (FALSE) approach should be used in mixed-integer programs?"
+    "\n"
+    "  | 0 - convexification approach should be used in mixed-integer programs\n"
+    "  | 1 - discretization approach should be used in mixed-integer programs (default).",
+    "relaxing/gcg/discretization", 0, 1);
+
+  AddSolverOption("gcg:mode mode",
+    "The decomposition mode that GCG will use:\n"
+    "\n.. value-table::\n", "relaxing/gcg/mode", mode, 0);
 }
 
+void GcgBackend::InputDecomposition() {
+  bool is_presolved = SCIPgetStage(getSCIP()) >= SCIP_STAGE_PRESOLVED;
+  GCG_CCALL( SCIPallocClearMemory(scip, &getPROBDATA()->decomp) );
+  gcg::PARTIALDECOMP* decomp = new gcg::PARTIALDECOMP(getSCIP(), !is_presolved);
+  getPROBDATA()->decomp = decomp;
+
+  if (auto block0 = ReadModelSuffixInt({"block", suf::Kind::CON_BIT | suf::Kind::VAR_BIT})) {
+    auto block = GetValuePresolver().PresolveGenericInt( block0 );
+
+    ArrayRef<int> blockconss = block.GetConValues()(CG_Linear);
+    for (size_t i = 0; i < blockconss.size(); i++) {
+      getPROBDATA()->decomp->fixConsToBlock(getPROBDATA()->linconss[i], blockconss[i]);
+    }
+
+    ArrayRef<int> blockvars = block.GetVarValues()();
+    for (size_t i = 0; i < blockvars.size(); i++) {
+      int varindex = getPROBDATA()->decomp->getDetprobdata()->getIndexForVar(getPROBDATA()->vars[i]);
+      getPROBDATA()->decomp->fixVarToBlock(varindex, blockvars[i]);
+    }
+  }
+
+  if (auto master0 = ReadModelSuffixInt({"master", suf::Kind::CON_BIT | suf::Kind::VAR_BIT})) {
+    auto master = GetValuePresolver().PresolveGenericInt( master0 );
+
+    ArrayRef<int> masterconss = master.GetConValues()(CG_Linear);
+    for (size_t i = 0; i < masterconss.size(); i++) {
+      if (masterconss[i] == 1)
+        getPROBDATA()->decomp->fixConsToMaster(getPROBDATA()->linconss[i]);
+    }
+
+    ArrayRef<int> mastervars = master.GetVarValues()();
+    for (size_t i = 0; i < mastervars.size(); i++) {
+      if (mastervars[i] == 1) {
+        int varindex = getPROBDATA()->decomp->getDetprobdata()->getIndexForVar(getPROBDATA()->vars[i]);
+        getPROBDATA()->decomp->fixVarToMaster(varindex);
+      }
+    }
+  }
+
+  if (auto linking0 = ReadModelSuffixInt({"linking", suf::Kind::VAR_BIT})) {
+    auto linking = GetValuePresolver().PresolveGenericInt( linking0 );
+
+    ArrayRef<int> linkingvars = linking.GetConValues()(CG_Linear);
+    for (size_t i = 0; i < linkingvars.size(); i++) {
+      if (linkingvars[i] == 1) {
+        int varindex = getPROBDATA()->decomp->getDetprobdata()->getIndexForVar(getPROBDATA()->vars[i]);
+        getPROBDATA()->decomp->fixVarToLinking(varindex);
+      }
+    }
+  }
+
+  if (getPROBDATA()->decomp->getNOpenconss() != getPROBDATA()->decomp->getNConss() || getPROBDATA()->decomp->getNOpenvars() != getPROBDATA()->decomp->getNVars()) {
+    getPROBDATA()->decomp->prepare();
+    if (getPROBDATA()->decomp->isComplete())
+      getPROBDATA()->decomp->setUsergiven(gcg::USERGIVEN::COMPLETE);
+    else
+      getPROBDATA()->decomp->setUsergiven(gcg::USERGIVEN::PARTIAL);
+    GCGconshdlrDecompAddPreexisitingPartialDec(getSCIP(), getPROBDATA()->decomp);
+  }
+  GCGpresolve(getSCIP());
+}
 
 double GcgBackend::MIPGap() {
   return SCIPgetGap(getSCIP())<Infinity() ? SCIPgetGap(getSCIP()) : AMPLInf();

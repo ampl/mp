@@ -160,10 +160,14 @@ protected:
 
 
 private:
+  void InputDecomposition();
+  
   /// These options are stored in the class
   struct Options {
     std::string exportFile_, logFile_, paramRead_;
-    int heuristics_, cuts_, presolvings_ = 0;
+    int heuristics_ = 0;
+    int cuts_ = 0;
+    int presolvings_ = 0;
   };
   Options storedOptions_;
 
