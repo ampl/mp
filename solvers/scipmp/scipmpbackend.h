@@ -156,7 +156,10 @@ private:
   /// These options are stored in the class
   struct Options {
     std::string exportFile_, logFile_, paramRead_;
-    int concurrent_, heuristics_, cuts_, presolvings_ = 0;
+    int concurrent_ = 0;
+    int heuristics_ = 0;
+    int cuts_ = 0;
+    int presolvings_ = 0;
   };
   Options storedOptions_;
 

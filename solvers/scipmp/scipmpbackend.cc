@@ -131,11 +131,11 @@ void ScipBackend::Solve() {
   if (!storedOptions_.paramRead_.empty())
     SCIP_CCALL( SCIPreadParams(getSCIP(), storedOptions_.paramRead_.c_str()) );
   if (storedOptions_.heuristics_ != 0)
-    SCIP_CCALL( SCIPsetHeuristics(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.heuristics_, FALSE) );
+    SCIP_CCALL( SCIPsetHeuristics(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.heuristics_, TRUE) );
   if (storedOptions_.cuts_ != 0)
-    SCIP_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.cuts_, FALSE) );
+    SCIP_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.cuts_, TRUE) );
   if (storedOptions_.presolvings_ != 0)
-    SCIP_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, FALSE) );
+    SCIP_CCALL( SCIPsetPresolving(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, TRUE) );
   
 
   if (storedOptions_.concurrent_)
@@ -663,7 +663,7 @@ void ScipBackend::InitCustomOptions() {
     "  | 1 - Sets presolvings aggressive\n"
     "  | 2 - Sets presolvings fast\n"
     "  | 3 - Sets presolvings off.",
-    storedOptions_.heuristics_, 0, 3);
+    storedOptions_.presolvings_, 0, 3);
 
   ////////////////////// PROPAGATE ///////////////////////
   AddSolverOption("pro:abortoncutoff",
