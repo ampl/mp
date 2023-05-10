@@ -130,11 +130,11 @@ void ScipBackend::Solve() {
     ExportModel(storedOptions_.exportFile_);
   if (!storedOptions_.paramRead_.empty())
     SCIP_CCALL( SCIPreadParams(getSCIP(), storedOptions_.paramRead_.c_str()) );
-  if (storedOptions_.heuristics_ != SCIP_PARAMSETTING_DEFAULT)
+  if (storedOptions_.heuristics_ != 0)
     SCIP_CCALL( SCIPsetHeuristics(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.heuristics_, FALSE) );
-  if (storedOptions_.cuts_ != SCIP_PARAMSETTING_DEFAULT)
+  if (storedOptions_.cuts_ != 0)
     SCIP_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.cuts_, FALSE) );
-  if (storedOptions_.presolvings_ != SCIP_PARAMSETTING_DEFAULT)
+  if (storedOptions_.presolvings_ != 0)
     SCIP_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, FALSE) );
   
 
