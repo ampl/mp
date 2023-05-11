@@ -134,12 +134,12 @@ void GcgBackend::Solve() {
     ExportModel(storedOptions_.exportFile_);
   if (!storedOptions_.paramRead_.empty())
     GCG_CCALL( SCIPreadParams(getSCIP(), storedOptions_.paramRead_.c_str()) );
-  if (storedOptions_.heuristics_ != SCIP_PARAMSETTING_DEFAULT)
-    GCG_CCALL( SCIPsetHeuristics(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.heuristics_, FALSE) );
-  if (storedOptions_.cuts_ != SCIP_PARAMSETTING_DEFAULT)
-    GCG_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.cuts_, FALSE) );
-  if (storedOptions_.presolvings_ != SCIP_PARAMSETTING_DEFAULT)
-    GCG_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, FALSE) );
+  if (storedOptions_.heuristics_ != 0)
+    GCG_CCALL( SCIPsetHeuristics(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.heuristics_, TRUE) );
+  if (storedOptions_.cuts_ != 0)
+    GCG_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.cuts_, TRUE) );
+  if (storedOptions_.presolvings_ != 0)
+    GCG_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, TRUE) );
 
   InputDecomposition();
   
@@ -639,7 +639,7 @@ void GcgBackend::InitCustomOptions() {
     "  | 1 - Sets presolvings aggressive\n"
     "  | 2 - Sets presolvings fast\n"
     "  | 3 - Sets presolvings off.",
-    storedOptions_.heuristics_, 0, 3);
+    storedOptions_.presolvings_, 0, 3);
 
   ////////////////////// PROPAGATE ///////////////////////
   AddSolverOption("pro:abortoncutoff",
@@ -854,8 +854,8 @@ void GcgBackend::InputDecomposition() {
     else
       getPROBDATA()->decomp->setUsergiven(gcg::USERGIVEN::PARTIAL);
     GCGconshdlrDecompAddPreexisitingPartialDec(getSCIP(), getPROBDATA()->decomp);
+    GCGpresolve(getSCIP());
   }
-  GCGpresolve(getSCIP());
 }
 
 double GcgBackend::MIPGap() {

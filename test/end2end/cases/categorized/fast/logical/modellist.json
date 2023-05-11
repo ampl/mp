@@ -77,7 +77,10 @@
   {
     "name" : "impl_else_02",
     "objective" : -214,
-    "tags" : ["logical"]
+    "tags" : ["logical"],
+    "options": {
+      "gcg_options": "mode=2"
+    }
   },
   {
     "name" : "int_ne_01",

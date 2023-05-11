@@ -12,7 +12,7 @@
     "objective": 22,
     "options": {
       "cbc_options": "cvt:mip:bigM=100000",
-      "gcg_options": "cvt:mip:bigM=100000"
+      "gcg_options": "cvt:mip:bigM=100000 mode=2"
     }
   },
   {
@@ -21,7 +21,8 @@
     "tags": [ "logical" ],
     "objective": 22,
     "options": {
-      "cbc_options": "cvt:mip:bigM=100000"
+      "cbc_options": "cvt:mip:bigM=100000",
+      "gcg_options": "cvt:mip:bigM=100000 mode=2"
     }
   },
   {
@@ -58,7 +59,7 @@
     "name" : "x-multmip3 [count, if]",
     "files": ["x-multmip3.mod", "multmip3.dat"],
     "tags" : ["logical"],
-    "options": { "solution_round": "6" },
+    "options": { "solution_round": "6", "gcg_options": "mode=2" },
     "comment_options": "For solution_round, see #200",
     "objective" : 235625
   },
