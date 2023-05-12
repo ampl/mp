@@ -297,7 +297,7 @@ namespace mp {
         val.push_back(x0[i]);
       }
     }
-    int beg[2] = { 0, val.size() };
+    int beg[2] = { 0, static_cast<int>(val.size()) };
     CPLEX_CALL(CPXaddmipstarts(env(), lp(), 1, val.size(), beg, idx.data(), val.data(), 0, nullptr));
   }
 
