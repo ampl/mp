@@ -3,7 +3,7 @@
 /// Declare a backend factory
 std::unique_ptr<mp::BasicBackend> CreateGcgBackend();
 
-extern "C" int main1(int, char **argv) {
+extern "C" int main(int, char **argv) {
   return
       mp::RunBackendApp(argv, CreateGcgBackend);
 }
