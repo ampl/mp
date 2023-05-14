@@ -64,10 +64,8 @@ const char* GcgBackend::GetBackendName()
   { return "GGCGBackend"; }
 
 std::string GcgBackend::GetSolverVersion() {
-  // TODO Return version from solver API
-  return "0.0.0";
-  //return fmt::format("{}.{}.{}", GCG_VERSION_MAJOR, 
-  //  GCG_VERSION_MINOR, GCG_VERSION_TECHNICAL);
+  return fmt::format("{}.{}.{}", GCGmajorVersion(), 
+    GCGminorVersion(), GCGtechVersion());
 }
 
 
@@ -279,15 +277,15 @@ static const mp::OptionValueInfo childsel[] = {
 };
 
 static const mp::OptionValueInfo scoretype[] = {
-  { "0", "max white", 0},
-  { "1", "border area", 1},
-  { "2", "classic", 2},
-  { "3", "max foreseeing white", 3},
-  { "4", "ppc-max-white (default)", 4},
-  { "5", "max foreseeing white with aggregation info", 5},
-  { "6", "ppc-max-white with aggregation info", 6},
-  { "7", "experimental benders score", 7},
-  { "8", "strong decomposition score", 8}
+  { "maxwhi", "max white", 0},
+  { "border", "border area", 1},
+  { "classi", "classic", 2},
+  { "forswh", "max foreseeing white", 3},
+  { "spfwh", "ppc-max-white (default)", 4},
+  { "fawh", "max foreseeing white with aggregation info", 5},
+  { "spfawh", "ppc-max-white with aggregation info", 6},
+  { "bender", "experimental benders score", 7},
+  { "strong", "strong decomposition score", 8}
 };
 
 static const mp::OptionValueInfo mode[] = {
@@ -710,7 +708,7 @@ void GcgBackend::InitCustomOptions() {
 
   AddSolverOption("det:scoretype scoretype",
     "Score calculation for comparing (partial) decompositions:\n"
-    "\n.. value-table::\n", "detection/score/scoretype", scoretype, 4);
+    "\n.. value-table::\n", "detection/scores/selected", scoretype, 4);
 
   AddSolverOption("det:origprob-classificationenabled origprob-classificationenabled",
     "0/1: whether classification for the original problem should be enabled? "

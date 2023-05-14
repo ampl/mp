@@ -29,8 +29,10 @@ void GcgModelAPI::AddVariables(const VarArrayDef& v) {
       vartype = SCIP_VARTYPE_INTEGER;
     else
       vartype = SCIP_VARTYPE_CONTINUOUS;
-    //const char* name = v.pnames()[i];
-    GCG_CCALL( SCIPcreateVarBasic(getSCIP(), &var, NULL, lb, ub, objcoef, vartype) );
+    if (v.pnames() != NULL)
+      GCG_CCALL( SCIPcreateVarBasic(getSCIP(), &var, v.pnames()[i], lb, ub, objcoef, vartype) );
+    else
+      GCG_CCALL( SCIPcreateVarBasic(getSCIP(), &var, NULL, lb, ub, objcoef, vartype) );
     GCG_CCALL( SCIPaddVar(getSCIP(), var) );
     getPROBDATA()->vars[i] = var;
   }
