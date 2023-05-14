@@ -826,6 +826,12 @@ public:
 					(int)GetConstraintAcceptance((RotatedQuadraticConeConstraint*)nullptr));
 	}
 
+	/// Whether the ModelAPI accepts exp cones
+	int ModelAPIAcceptsExponentialCones() {
+		return
+				(int)GetConstraintAcceptance((ExponentialConeConstraint*)nullptr);
+	}
+
 
 private:
   struct Options {
@@ -837,6 +843,7 @@ private:
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
 		int passQuadCon_ = ModelAPIAcceptsQC();
 		int passSOCPCones_ = 0;
+		int passExpCones_ = 0;
 
     int relax_ = 0;
   };
@@ -893,6 +900,13 @@ private:
         "0*/1: Multiply out and pass quadratic constraint terms to the solver, "
                          "vs. linear approximation.",
         options_.passQuadCon_, 0, 1);
+		if (ModelAPIAcceptsExponentialCones())
+			GetEnv().AddOption("cvt:expcones expcones",
+												 ModelAPIAcceptsExponentialCones()>1 ?
+														 "0/1*: Recognize exponential cones." :
+														 "0*/1: Recognize exponential cones.",
+												 options_.passExpCones_, 0, 1);
+		options_.passExpCones_ = ModelAPIAcceptsExponentialCones()>1;
 		if (ModelAPIAcceptsQuadraticCones())
 			GetEnv().AddOption("cvt:socp passsocp socp",
 												 ModelAPIAcceptsQuadraticCones()>1 ?
@@ -938,6 +952,9 @@ public:
 
 	/// Whether we pass SOCP cones
 	bool IfPassSOCPCones() const { return options_.passSOCPCones_; }
+
+	/// Whether we pass exp cones
+	bool IfPassExpCones() const { return options_.passExpCones_; }
 
 
 public:

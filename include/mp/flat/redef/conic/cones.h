@@ -12,7 +12,6 @@
 #include <vector>
 #include <cassert>
 
-#include "mp/flat/constr_std.h"
 #include "mp/flat/constr_keeper.h"
 #include "mp/valcvt-link.h"
 
@@ -20,9 +19,22 @@
 namespace mp {
 
 /// Abstract converter for a single constraint.
-template <class MCType, class Con>
+///
+/// @param MCType: ModelConverter, e.g., FlatConverter.
+/// @param Con: the source constraint type.
+/// @param ConvertBase: another class
+/// providing conversion methods DoRun
+/// for quadratic and linear constraints.
+template <class MCType, class Con, template <class > class CvtBase>
 class Convert1 { };
 
+/// Declare a base converter into quadratic cones
+template <class MCType>
+class Convert1QC;
+
+/// Declare base converter into exp cones
+template <class MCType>
+class Convert1ExpC;
 
 /** A class to store a ref to ModelConverter.
  *
@@ -62,34 +74,58 @@ public:
 		MCKeeper<MCType>(mc) { }
 
 	/// Run conversions
-	void Run() {
-		if (MC().IfPassSOCPCones()) {
-			Walk<QuadConRange>();
-			Walk<QuadConLE>();
-			Walk<QuadConGE>();
-
-			Walk<LinConRange>();
-			Walk<LinConLE>();
-			Walk<LinConGE>();
-    } else
-      if (MC().IfPassQuadCon() &&
-          (MC().GetNumberOfAddable((PowConstraint*)0)>0 ||
-           MC().GetNumberOfAddable((AbsConstraint*)0)>0)) {
-      // Still collect QCones expressed by 2-norms.
-      // They are to be converted to quadratics.
-      Walk<LinConRange>();
-      Walk<LinConLE>();
-      Walk<LinConGE>();
-    }
+    void Run() {
+        // We _could_ walk everything just once
+        // and see which cones are there.
+        // Or, even walk expression trees from exponents, etc.
+        RunQCones();
+        RunExpCones();
 	}
 
 
 protected:
-	/// Walk a single constraint type
-	template <class Con>
+    void RunQCones() {
+        if (MC().IfPassSOCPCones()) {   // convert everything to QuadraticCones.
+            Walk<QuadConRange, Convert1QC>();
+            Walk<QuadConLE, Convert1QC>();
+            Walk<QuadConGE, Convert1QC>();
+
+            if (MC().GetNumberOfAddable((PowConstraint*)0)>0 ||
+                MC().GetNumberOfAddable((AbsConstraint*)0)>0) {
+                Walk<LinConRange, Convert1QC>();
+                Walk<LinConLE, Convert1QC>();
+                Walk<LinConGE, Convert1QC>();
+            }
+        } else
+            if (MC().IfPassQuadCon() &&
+                    (MC().GetNumberOfAddable((PowConstraint*)0)>0 ||
+                     MC().GetNumberOfAddable((AbsConstraint*)0)>0)) {
+                // Still collect QCones expressed by 2-norms.
+                // They are to be converted to quadratics.
+                Walk<LinConRange, Convert1QC>();
+                Walk<LinConLE, Convert1QC>();
+                Walk<LinConGE, Convert1QC>();
+            }
+    }
+
+    void RunExpCones() {
+            if (MC().IfPassExpCones() &&   // convert everything to ExpCones.
+                    MC().GetNumberOfAddable((ExpConstraint*)0)>0) {
+                Walk<QuadConRange, Convert1ExpC>();
+                Walk<QuadConLE, Convert1ExpC>();    // also ExpA ??
+                Walk<QuadConGE, Convert1ExpC>();
+
+                Walk<LinConRange, Convert1ExpC>();
+                Walk<LinConLE, Convert1ExpC>();
+                Walk<LinConGE, Convert1ExpC>();
+            }
+    }
+
+    /// Walk a single constraint type
+  template <class Con, template <class > class CvtBase>
 	void Walk() {
 		auto& ck = MC().GetConstraintKeeper((Con*)nullptr);
-		ck.ForEachActive(Convert1<MCType, Con> { MC() });
+      ck.ForEachActive(Convert1<MCType, Con, CvtBase> { MC() });
 	}
 
 	/// Retrieve the MC
@@ -98,7 +134,7 @@ protected:
 
 
 /** Converter for a single linear / quadratic
- *  inequality constraint.
+ *  inequality constraint into a Quadratic cone.
  *  Generic, receives only body and sense.
  */
 template <class MCType>
@@ -561,17 +597,203 @@ protected:
 };
 
 
+/** Converter for a single linear / quadratic
+ *  inequality constraint into an exponential cone.
+ *  Generic, receives only body and sense.
+ */
+template <class MCType>
+class Convert1ExpC : public MCKeeper<MCType> {
+public:
+    /// Constructor
+    Convert1ExpC(MCType& mc) : MCKeeper<MCType>(mc) { }
+
+
+protected:
+    /// Characterize target subexpression.
+    template <int N>
+    struct SubexprTraits {
+        /// Construct
+        SubexprTraits(
+            std::array<double, N> c={},
+            std::array<int, N> v={},
+            std::vector<int> v2d={})
+            : coefs_(c), vars_(v), vars2del_(v2d) { }
+        /// Valid?
+        operator bool() const { return valid_; }
+        /// Variables to use.
+        /// Coefs
+        std::array<double, N> coefs_;
+        /// -1 means 'use constant 1'.
+        std::array<int, N> vars_;
+        /// Vars to delete
+        std::vector<int> vars2del_;
+        /// Valid?
+        bool valid_ {false};
+    };
+
+    /// LHS of ax >= by * exp( cz / by )
+    using LhsTraits = SubexprTraits<1>;
+    /// RHS
+    using RhsTraits = SubexprTraits<2>;
+
+    /// DoRun. Body: quadratic.
+    ///
+    /// Accept non-(+-1) coefficients.
+    ///
+    /// @param body: quadratic constraint body.
+    /// @param sens: -1 for <=, 1 for >=.
+    /// @param rhs: constraint's rhs.
+    ///
+    /// @return true iff converted.
+    bool DoRun(const QuadAndLinTerms& body,
+                         int sens, double rhs) {
+        assert((sens==1 || sens==-1) && "sens 1 or -1 only");
+        if (1 == body.GetQPTerms().size()) {
+      const auto& lt = body.GetLinTerms();      // But we have c0*x + c1*y*zz <=> 0
+      const auto& qt = body.GetQPTerms();
+      LhsTraits lhst;
+      if (0.0 == std::fabs(rhs) &&              // rhs==0:
+          1 == lt.size())       // ax >= by exp(cz / by)   ?
+                lhst = ClassifyLhs(lt.coef(0)*sens, lt.var(0));
+      else if (0 == lt.size())  // const >= by exp(cz / by)   ?
+                lhst = ClassifyLhs(-rhs*sens, -1);
+
+      if (lhst) {
+                if (auto rhst = ClassifyRhsQuadr(
+                        -qt.coef(0)*sens, qt.var1(0), qt.var2(0)))
+          return AddExpCone(lhst, rhst);
+                else if (auto rhst = ClassifyRhsQuadr(
+                             -qt.coef(0)*sens, qt.var2(0), qt.var1(0)))
+          return AddExpCone(lhst, rhst);
+      }
+        }
+        return false;
+    }
+
+    /// DoRun.
+    /// Body: linear, i.e., var1 (or const) >= var2 (or const).
+    /// In particular, the following cases.
+    ///	///
+    /// Considering const>=0.
+    /// Accept non-(+-1) coefficients.
+    ///
+    /// @param body: linear constraint body.
+    /// @param sens: -1 for <=, 1 for >=.
+    /// @param rhs: constraint's rhs.
+    ///
+    /// @return true iff converted.
+    bool DoRun(const LinTerms& lt,
+                         int sens, double rhs) {
+        assert((sens==1 || sens==-1) && "sens 1 or -1 only");
+        if (0.0 == std::fabs(rhs) &&          // rhs==0: y==const
+            2 == lt.size()) {                 // ax >= b exp(cz / b)
+      if (auto rhst = ClassifyRhsLin(-lt.coef(0)*sens, lt.var(0))) {
+                // c2*x >= -c1*exp()
+                if (auto lhst = ClassifyLhs(lt.coef(1)*sens, lt.var(1))) {
+          return AddExpCone(lhst, rhst);
+                }
+      } else if (auto rhst = ClassifyRhsLin(-lt.coef(1)*sens, lt.var(1))) {
+                // c1*x >= -c2*exp()
+                if (auto lhst = ClassifyLhs(lt.coef(0)*sens, lt.var(0))) {
+          return AddExpCone(lhst, rhst);
+                }
+      }
+        } else if (1 == lt.size()) {          // const >= b exp(cz / b)
+      if (auto lhst = ClassifyLhs(-rhs*sens, -1)) {
+                if (auto rhst = ClassifyRhsLin(-lt.coef(0)*sens, lt.var(0))) {
+          return AddExpCone(lhst, rhst);
+                }
+      }
+        }
+        return false;
+    }
+
+
+protected:
+    LhsTraits ClassifyLhs(double a, int x) {
+        LhsTraits result {{a}, {x}};
+        if ((x<0 && a>=0.0) ||             // Lhs is const, >=0
+            (x>=0 && a>=0.0 && MC().lb(x)>=0.0) ||  // c*v >= 0
+            (x>=0 && a<=0.0 && MC().ub(x)>=0.0))
+            result.valid_ = true;
+        return result;
+    }
+
+    /// The RHS is just b * (v=exp(z))?
+    RhsTraits ClassifyRhsLin(double b, int v) {
+        assert(v>=0);
+        RhsTraits result {{b, b}, {-1} /*constant*/};
+        if (b>=0.0) {
+            if (auto pConExp = MC().template
+                               GetInitExpressionOfType<ExpConstraint>(v)) {
+                result.vars_[1] = pConExp->GetArguments()[0];  // the z
+                result.vars2del_ = {v};                        // delete v
+                result.valid_ = true;
+            }
+        }
+        return result;
+    }
+
+    /// The RHS is by * (v1 = exp( v2 = cz / by ))
+    /// or by * (v1 = exp( v2 = c / by ))?
+    /// In our case, c/by is stored as [constvar=c/b]/y
+    RhsTraits ClassifyRhsQuadr(double b, int y, int v1) {
+        assert(y>=0 && v1>=0);
+        RhsTraits result {{b, b}};
+        if ((b>=0.0 && MC().lb(y)>=0.0) ||             // by >= 0
+            (b<=0.0 && MC().ub(y)<=0.0)) {
+            if (auto pConExp = MC().template
+                               GetInitExpressionOfType<ExpConstraint>(v1)) {
+                int v2 = pConExp->GetArguments()[0];           // the z
+                if (auto pConDiv = MC().template
+                                   GetInitExpressionOfType<DivConstraint>(v2)) {
+          int z = pConDiv->GetArguments()[0];            // the z0
+          int y0 = pConDiv->GetArguments()[1];
+          if (y0==y) {                                   // v2 = z/y
+            result.vars_ = {y, z};
+            result.vars2del_ = {v1, v2};                 // delete v1, v2
+            result.valid_ = true;
+          } else if (auto pConLin = MC().template
+               GetInitExpressionOfType<LinearFunctionalConstraint>(y0)) {
+            const auto& ae = pConLin->GetAffineExpr();
+            if (0.0 == std::fabs(ae.constant_term() &&
+                                 1==ae.GetBody().size())) {
+                            const auto& body = ae.GetBody();  // can we ever get here?
+                            if (y == body.var(0)) {           // v2 = z / (c1*y)
+                                result.coefs_ = {b, b/body.coef(0)};
+                                result.vars_ = {y, z};
+                                result.vars2del_ = {v1, v2, y0};    // delete
+                                result.valid_ = true;
+                            }
+            }
+          }
+                }
+            }
+        }
+        return result;
+    }
+
+    bool AddExpCone(LhsTraits l, RhsTraits r) {
+        return true;
+    }
+
+    /// Retrieve the MC
+    using MCKeeper<MCType>::MC;
+};
+
+
 /** Converter for a single algebraic inequality constraint.
  *  Receives range constraints and proceeds
  *  if they are inequalities.
  */
-template <class MCType, class Body>
+template <class MCType, class Body,
+                 template <class > class CvtBase>
 class Convert1<MCType,
-		AlgebraicConstraint<Body, AlgConRange> > :
-		public Convert1QC<MCType> {
+        AlgebraicConstraint<Body, AlgConRange>, CvtBase > :
+        public CvtBase<MCType> {
 public:
 	/// Constructor
-	Convert1(MCType& mc) : Convert1QC<MCType>(mc) { }
+  Convert1(MCType& mc) : CvtBase<MCType>(mc) { }
 
 	/// Constraint type
 	using ConType = AlgebraicConstraint<Body, AlgConRange>;
@@ -587,7 +809,7 @@ public:
 				MC(), MC().template SelectValueNode<ConType>(i)
 			};
 			return
-					Convert1QC<MCType>::DoRun(con.GetBody(),
+                    CvtBase<MCType>::DoRun(con.GetBody(),
 																lbf ? 1 : -1,
 																lbf ? con.lb() : con.ub());
 		}
@@ -602,13 +824,14 @@ public:
 /** Converter for a single algebraic inequality constraint.
 *   Proper inequality constraints.
 */
-template <class MCType, class Body, int sens>
+template <class MCType, class Body, int sens,
+                 template <class > class CvtBase>
 class Convert1<MCType,
-		AlgebraicConstraint< Body, AlgConRhs<sens> > > :
-		public Convert1QC<MCType> {
+        AlgebraicConstraint< Body, AlgConRhs<sens> >, CvtBase > :
+        public CvtBase<MCType> {
 public:
 	/// Constructor
-	Convert1(MCType& mc) : Convert1QC<MCType>(mc) { }
+  Convert1(MCType& mc) : CvtBase<MCType>(mc) { }
 
 	/// The constraint type
 	using ConType =
@@ -621,7 +844,7 @@ public:
 			MC(), MC().template SelectValueNode<ConType>(i)
 		};
 		return
-				Convert1QC<MCType>::DoRun(con.GetBody(),
+                CvtBase<MCType>::DoRun(con.GetBody(),
 																	sens, con.rhs());
 	}
 

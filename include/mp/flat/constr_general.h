@@ -190,15 +190,16 @@ using ComplementarityQuadratic = ComplementarityConstraint<QuadraticExpr>;
 
 /// Quadratic cone
 DEF_STATIC_CONSTR_WITH_PRM( QuadraticConeConstraint, VarArray, DblParamArray,
-                            "Quadratic cone x1 >= sqrt(x2^2 + ...)) with factors "
-														"applied to the arguments, aka MOSEK 10 affine cones");
+														"Quadratic cone p1*x1 >= sqrt((p2*x2)^2 + ...)),"
+													 " with factors p1..pn");
 /// Rotated quadratic cone
 DEF_STATIC_CONSTR_WITH_PRM( RotatedQuadraticConeConstraint, VarArray, DblParamArray,
-                            "Rotated quadratic cone x1*x2 >= sqrt(x3^2 + ...)) with factors "
-														"applied to the arguments, aka MOSEK 10 affine cones");
+														"Rotated quadratic cone p1*x1*p2*x2 >= sqrt((p3*x3)^2 + ...)),"
+													 " x1, x2 >= 0, with factors p1..pn");
 /// Exponential cone
 DEF_STATIC_CONSTR_WITH_PRM( ExponentialConeConstraint, VarArray3, DblParamArray3,
-                            "Exponential cone with factors");
+														"Exponential cone p1*x1 >= p2*x2*exp(p3*x3 / (p2*x2)),"
+													 " x1, x2 >= 0, with factors p1..p3");
 /// Power cone
 DEF_STATIC_CONSTR_WITH_PRM( PowerConeConstraint, VarArray, DblParamArray,
                             "Power cone with factors ");
