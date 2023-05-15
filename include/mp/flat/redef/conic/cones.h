@@ -722,7 +722,7 @@ protected:
   /// The RHS is just b * (v=exp(z))?
   RhsTraits ClassifyRhsLin(double b, int v) {
     assert(v>=0);
-    RhsTraits result {{b, b}, {-1} /*constant*/};
+    RhsTraits result {{b, b}, {-1} /*y = constant 1*/};
     if (b>=0.0) {
       if (auto pConExp = MC().template
           GetInitExpressionOfType<ExpConstraint>(v)) {
@@ -774,6 +774,20 @@ protected:
   }
 
   bool AddExpCone(LhsTraits l, RhsTraits r) {
+    assert(l.vars2del_.empty());
+    for (auto v2d: r.vars2del_)       // unuse result vars
+      MC().DecrementVarUsage(v2d);
+    std::array<int, 3> args
+    {l.vars_[0], r.vars_[0], r.vars_[1]};
+    for (int i=0; i<3; ++i) {
+      if (args[i]<0) {                // marked as -1?
+        args[i] = MC().MakeFixedVar(1.0);
+      }
+    }
+    MC().AddConstraint(
+          ExponentialConeConstraint(
+            args,
+            {l.coefs_[0], r.coefs_[0], r.coefs_[1]}));
     return true;
   }
 

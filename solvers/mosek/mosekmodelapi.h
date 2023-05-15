@@ -52,38 +52,40 @@ public:
 
 
   /// The linear range constraint, if fully supported with basis info etc.
-	ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Algebraic)
+  ACCEPT_CONSTRAINT(LinConRange, Recommended, CG_Algebraic)
   void AddConstraint(const LinConRange& lc);
 
   /// LinCon(LE/EQ/GE) should have 'Recommended' for all backends
   /// and have an implementation,
   /// or a conversion rule is needed in a derived FlatConverter
-	ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Algebraic)
+  ACCEPT_CONSTRAINT(LinConLE, Recommended, CG_Algebraic)
   void AddConstraint(const LinConLE& lc);
-	ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Algebraic)
+  ACCEPT_CONSTRAINT(LinConEQ, Recommended, CG_Algebraic)
   void AddConstraint(const LinConEQ& lc);
-	ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Algebraic)
+  ACCEPT_CONSTRAINT(LinConGE, Recommended, CG_Algebraic)
   void AddConstraint(const LinConGE& lc);
 
   /// QuadConRange is optional.
-	ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Algebraic)
+  ACCEPT_CONSTRAINT(QuadConRange, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConRange& qc);
 
   /// If using quadratics,
   /// QuadCon(LE/EQ/GE) should have 'Recommended'
   /// and have an implementation.
-	ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Algebraic)
+  ACCEPT_CONSTRAINT(QuadConLE, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConLE& qc);
-	ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Algebraic)
+  ACCEPT_CONSTRAINT(QuadConEQ, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConEQ& qc);
-	ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Algebraic)
+  ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConGE& qc);
 
-	/// Cones
-	ACCEPT_CONSTRAINT(QuadraticConeConstraint, Recommended, CG_Conic)
-	void AddConstraint(const QuadraticConeConstraint& qc);
-	ACCEPT_CONSTRAINT(RotatedQuadraticConeConstraint, Recommended, CG_Conic)
-	void AddConstraint(const RotatedQuadraticConeConstraint& qc);
+  /// Cones
+  ACCEPT_CONSTRAINT(QuadraticConeConstraint, Recommended, CG_Conic)
+  void AddConstraint(const QuadraticConeConstraint& qc);
+  ACCEPT_CONSTRAINT(RotatedQuadraticConeConstraint, Recommended, CG_Conic)
+  void AddConstraint(const RotatedQuadraticConeConstraint& qc);
+  ACCEPT_CONSTRAINT(ExponentialConeConstraint, Recommended, CG_Conic)
+  void AddConstraint(const ExponentialConeConstraint& ec);
 
   /// Linear indicator constraints can be used as
   /// auxiliary constraints for logical conditions.
@@ -100,9 +102,9 @@ public:
   /// Set ``option pl_linearize 0;`` in AMPL if the solver
   /// supports PL natively.
   /// MOSEK 10 has no SOS
-	ACCEPT_CONSTRAINT(SOS1Constraint, NotAccepted, CG_General)
+  ACCEPT_CONSTRAINT(SOS1Constraint, NotAccepted, CG_General)
   void AddConstraint(const SOS1Constraint& cc);
-	ACCEPT_CONSTRAINT(SOS2Constraint, NotAccepted, CG_General)
+  ACCEPT_CONSTRAINT(SOS2Constraint, NotAccepted, CG_General)
   void AddConstraint(const SOS2Constraint& cc);
 
 
