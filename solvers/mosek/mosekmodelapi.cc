@@ -328,12 +328,13 @@ void AddIndicator(MSKtask_t lp,
   const MSKint64t domidxlist[] = {dom1, dom2};
   const MSKint64t afeidxlist[] = {numafe_prev, numafe_prev+1};
   const MSKint64t termsizelist[] = {1, 1};
+  const MSKrealt b_afe_offset[] = {0.0, 0.0};
 
   MOSEK_CCALL( MSK_putdjc(lp,
                  numdjcs_prev,           // DJC index
                  2, domidxlist,
                  2, afeidxlist,
-                 NULL,                   // Unused
+                          b_afe_offset,  // Unused but better provide this
                  2, termsizelist) );
 }
 
