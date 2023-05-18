@@ -1,0 +1,20 @@
+## #208
+
+# Define the decision variables
+var mulled_wine >= 0;
+var hot_tea >= 0;
+
+# Define the parameter(s)
+param fee = 2;
+
+# Define the objective function
+maximize profit: 2*mulled_wine + 1.5*hot_tea - fee;
+
+# Define the constraints
+subject to spice_constraint: 2*mulled_wine <= 12;
+subject to tea_bag_constraint: hot_tea <= 8;
+subject to sugar_constraint: 4*mulled_wine + 2*hot_tea <= 30;
+subject to wine_constraint: 2*mulled_wine <= 15;
+
+solve;
+solve;         ## Check we can receive basis statuses

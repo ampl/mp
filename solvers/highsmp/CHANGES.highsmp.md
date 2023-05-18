@@ -3,6 +3,8 @@ Summary of recent updates to HiGHS for AMPL
 
 ## TBD
 - Fixed solution status reporting to AMPL
+- Fixed basis input with obj offset or missing data
+
 
 ## 20230424
 - *Changes in the MP library*: added variable names support

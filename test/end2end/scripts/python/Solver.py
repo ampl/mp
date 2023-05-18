@@ -771,7 +771,10 @@ class HighsSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic_obj}
+                 ModelTags.quadratic_obj,
+
+                 ModelTags.sstatus
+                 }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 

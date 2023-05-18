@@ -236,10 +236,13 @@ void HighsBackend::VarConStatii(ArrayRef<int> vst, ArrayRef<int> cst) {
     /// Depending on where 0.0 is between bounds
     std::vector<double> lb(indicesOfMissing.size());
     std::vector<double> ub(indicesOfMissing.size());
+    std::vector<int> di(indicesOfMissing.size(),   // dummy pointers
+                        indicesOfMissing.size());
+    std::vector<double> dd(indicesOfMissing.size());
+    int numnz;
     Highs_getColsBySet(lp(), indicesOfMissing.size(), indicesOfMissing.data(),
-      NULL, NULL, lb.data(), ub.data(), NULL, NULL, NULL, NULL);
-    for (int i = 0; i < indicesOfMissing.size(); i++) {
-     
+      di.data(), dd.data(), lb.data(), ub.data(), &numnz, NULL, NULL, NULL);
+    for (size_t i = 0; i < indicesOfMissing.size(); i++) {
         if (lb[i] >= -1e-6)
           stt[indicesOfMissing[i]] = kHighsBasisStatusLower;
         else if (ub[i] <= 1e-6)

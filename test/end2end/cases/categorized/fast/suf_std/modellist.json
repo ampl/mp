@@ -11,6 +11,16 @@
     }
   },
   {
+    "name" : "wine_2solve",
+    "files" : ["wine_2solve.run"],
+    "objective" : 17,
+    "tags" : ["linear", "continuous", "sstatus"],
+    "values": {
+      "mulled_wine.sstatus": "bas",
+      "sugar_constraint.sstatus":  "upp"
+    }
+  },
+  {
     "name" : "dietu_stt test sstatus IN",
     "objective" : 74.273820,
     "tags" : ["linear", "continuous", "sstatus"],
@@ -31,7 +41,7 @@
       "Buy['BEEF'].sstatus": "low",
       "Buy['MCH'].sstatus":  "bas",
       "Buy['CHK'].sstatus":  "low",
-      "if Diet['B2'] > 0.124 then 1": 1
+      "sum {i in NUTR} Diet[i]*(if 'upp'==Diet[i].sstatus then n_max[i] else if 'low'==Diet[i].sstatus then n_min[i])": 88.2
     }
   },
   {
@@ -43,7 +53,7 @@
       "Buy['MCH'].sstatus":  "bas",
       "Buy['CHK'].sstatus":  "low",
       "Diet['B2'].sstatus": "low",
-      "if Diet['B2'] > 0.124 then 1": 1
+      "sum {i in NUTR} Diet[i]*(if 'upp'==Diet[i].sstatus then n_max[i] else if 'low'==Diet[i].sstatus then n_min[i])": 88.2
     }
   },
   {
