@@ -42,7 +42,7 @@ function(add_ampl_solver name)
   cmake_parse_arguments(add_ampl_solver
     "DLL_RUNTIME;EXTERNAL;SHARED_LIB;OLD_SHARED_LIB;OVERRIDELIBS"
     "MODULE;EXENAME;VERSION"
-    "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS"
+    "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS;ADDITIONAL_DEPS"
     ${ARGN})
   get_property(MP_BASE_DIR GLOBAL PROPERTY MP_BASE_DIR)
   set(options)
@@ -175,7 +175,9 @@ function(add_ampl_solver name)
   endif()
   add_executable(${exename} ${dir}main.cc)
   target_link_libraries(${exename} PRIVATE ${static_lib})
-
+  if(add_ampl_solver_ADDITIONAL_DEPS)
+    add_dependencies(${exename} ${add_ampl_solver_ADDITIONAL_DEPS})
+  endif()
   install(TARGETS ${exename} DESTINATION bin)
 
   add_to_folder(${name} ampl${name}-static ${shared_lib} ${name})
@@ -247,13 +249,16 @@ add_ampl_backend(cbcmp DLL_RUNTIME SHARED_LIB MODULE CBC
 
 
 add_ampl_backend(gcgmp DLL_RUNTIME SHARED_LIB MODULE GCG 
-  LIBRARIES ${GCG_LIBS} ${CMAKE_DL_LIBS})
+  LIBRARIES ${GCG_LIBS} ${CMAKE_DL_LIBS}
+  ADDITIONAL_DEPS gcg)
 
 add_ampl_backend(scipmp DLL_RUNTIME SHARED_LIB MODULE SCIP 
-  LIBRARIES ${SCIP_LIBS} ${CMAKE_DL_LIBS})
+  LIBRARIES ${SCIP_LIBS} ${CMAKE_DL_LIBS}
+  ADDITIONAL_DEPS scip)
 
 add_ampl_backend(highsmp DLL_RUNTIME SHARED_LIB MODULE HIGHS 
-  LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS})
+  LIBRARIES ${HIGHS_LIBS} ${CMAKE_DL_LIBS}
+  ADDITIONAL_DEPS highs)
 
 add_ampl_backend(ortoolsmp DLL_RUNTIME SHARED_LIB MODULE ortoolsmp 
   LIBRARIES ${ortoolsmp_LIBS} ${CMAKE_DL_LIBS})
