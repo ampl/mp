@@ -45,7 +45,7 @@
     }
   },
   {
-    "name" : "diet_statuses preset sstatuses",
+    "name" : "diet_statuses preset incomplete",
     "objective" : 88.2,
     "tags" : ["linear", "continuous", "sstatus"],
     "values": {
