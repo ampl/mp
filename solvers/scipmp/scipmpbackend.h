@@ -160,6 +160,7 @@ private:
     int heuristics_ = 0;
     int cuts_ = 0;
     int presolvings_ = 0;
+    int outlev_ = 0;
   };
   Options storedOptions_;
 
