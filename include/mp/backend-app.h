@@ -77,10 +77,24 @@ private:
 };
 
 int BackendApp::Run(char **argv) {
-  if (!Init(argv))
-    return result_code_;
-  GetBackend().RunFromNLFile(
-        nl_filename_, filename_no_ext_);
+  try {
+    if (!Init(argv))
+      return result_code_;
+    GetBackend().RunFromNLFile(
+          nl_filename_, filename_no_ext_);
+  } catch (const mp::Error& er) {
+    // For mp::Error, which can be thrown by Abort() or MP_RAISE,
+    // we try to print the result into .sol file,
+    // if the solution handler is available.
+    GetBackend().ReportError(
+          er.exit_code()>=0 ? er.exit_code() : 500,
+          er.what());
+  } catch (const std::exception& ex) {
+    // For std::exception, which can be thrown by anything,
+    // we try to print the result into .sol file,
+    // if the solution handler is available.
+    GetBackend().ReportError(500, ex.what());
+  }
   return 0;
 }
 

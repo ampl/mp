@@ -136,15 +136,12 @@ public:
 /// Convenience macro: call & fail on error with user message
 #define GRB_CALL_MSG( call, msg ) do { if (int e=call) MP_RAISE( \
     fmt::format( \
-      "Call failed: '{}' with code {},\n" \
-      "Gurobi message: {}, hint: {}", #call, e, \
+      "{}: {}", \
            GRBgeterrormsg(env()), msg ) \
   ); } while (0)
 /// Convenience macro: call & fail on error
 #define GRB_CALL( call ) do { if (int e=call) MP_RAISE( \
-    fmt::format( \
-      "Call failed: '{}' with code {}, Gurobi message: {}", #call, \
-        e, GRBgeterrormsg(env()) ) \
+    GRBgeterrormsg(env()) \
   ); } while (0)
 /// Convenience macro: call & warn on error
 #define GRB_CALL_WARN( call ) do { if (int e=call) AddWarning( \

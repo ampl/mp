@@ -388,8 +388,7 @@ protected:
 
   /// Abort
   virtual void Abort(int solve_code_now, std::string msg) {
-    HandleSolution(solve_code_now, msg, 0, 0, 0.0);
-    MP_RAISE_WITH_CODE(0, msg);  // exit code 0
+    MP_RAISE_WITH_CODE(solve_code_now, msg);
   }
 
   /// Final timing info
