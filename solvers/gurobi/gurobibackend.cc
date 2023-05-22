@@ -1675,7 +1675,7 @@ void GurobiBackend::InitCustomOptions() {
     GRB_DBL_PAR_MEMLIMIT, 0.0, Infinity());
 
 
-  AddSolverOption("lim:solution solutionlimit",
+  AddSolverOption("lim:sol sollimit solutionlimit",
     "Limit the number of feasible MIP solutions found, causing early "
     "termination if exceeded; default = 2e9",
     GRB_INT_PAR_SOLUTIONLIMIT, 0, 2000000000);
@@ -2181,7 +2181,8 @@ void GurobiBackend::InitCustomOptions() {
       GRB_INT_PAR_POOLSOLUTIONS, 1, 2000000000);
   AddStoredOption("sol:poolmode ams_mode poolmode",
       "Search mode for MIP solutions when sol:stub/sol:count are specified "
-                        "to request finding several alternative solutions:\n",
+                        "to request finding several alternative solutions:\n"
+                  "\n.. value-table::\n",
           storedOptions_.nPoolMode_, values_pool_mode);
   AddOptionSynonyms_Inline_Front("ams_stub", "sol:stub");
 
