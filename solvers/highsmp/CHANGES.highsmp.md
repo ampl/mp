@@ -3,6 +3,7 @@ Summary of recent updates to HiGHS for AMPL
 
 ## 20230522
 - Fixed solution status reporting to AMPL
+- Fixed basis input with obj offset or missing data
 - Added warm start for LP problems
 
 ## 20230424

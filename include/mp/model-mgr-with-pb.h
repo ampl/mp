@@ -123,7 +123,7 @@ protected:
   /// Before reading the NL file, a generic solution handler
   /// for error reporting
   void MakeUpTemporarySolHandler(const std::string& filename_no_ext) {
-    static int opt_static[] = {1, 1, 0};
+    static int opt_static[] = {2, 1, 0};
     ArrayRef<int> options(opt_static);             ///< 'Default' NL options
     SetSolHandler(new internal::AppSolutionHandlerImpl<SolverType, ProblemBuilder>(
                              filename_no_ext, GetEnv(), GetModel(),
@@ -228,8 +228,8 @@ protected:
       const double *x, const double *y, double obj) override {
     if ( HaveSolH() )
       GetSolH().HandleSolution(status, msg, x, y, obj);
-    else
-      MP_RAISE_WITH_CODE(0, msg);
+    else         // throw pure exception
+      throw std::runtime_error(msg.c_str());
   }
 
   void HandleFeasibleSolution(fmt::CStringRef msg,

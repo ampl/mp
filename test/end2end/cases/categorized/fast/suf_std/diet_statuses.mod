@@ -56,13 +56,13 @@ param amt (tr):
 let Buy["BEEF"].sstatus := 'low';
 let Buy["CHK"].sstatus := 'low';
 let Buy["FISH"].sstatus := 'low';
-let Buy["HAM"].sstatus := 'low';
+## let Buy["HAM"].sstatus := 'low';  ## inclomplete
 let Buy["MCH"].sstatus := 'bas';
-let Buy["MTL"].sstatus := 'low';
+## let Buy["MTL"].sstatus := 'low';  ## incomplete
 let Buy["SPG"].sstatus := 'low';
 let Buy["TUR"].sstatus := 'low';
 
 let Diet["A"].sstatus := 'bas';
-let Diet["B1"].sstatus := 'bas';
+## let Diet["B1"].sstatus := 'bas';  ## incomplete
 let Diet["B2"].sstatus := 'upp';
 let Diet["C"].sstatus := 'bas';

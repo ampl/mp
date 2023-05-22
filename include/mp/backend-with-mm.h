@@ -24,6 +24,10 @@ public:
     GetMM().InitOptions();
   }
 
+  void ReportError(int solve_result, fmt::CStringRef msg) override {
+    HandleSolution(solve_result, msg, 0, 0, 0.0);
+  }
+
 
 protected:
   /// Chance for the Backend to note base IO filename
