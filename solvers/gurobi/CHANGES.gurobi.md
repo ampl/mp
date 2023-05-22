@@ -1,7 +1,9 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
-## TBD
+
+## 20230522
 - Added option 'lim:solution' to set a limit on the number of solutions found
+
 
 ## 20230426
 - Fixed partial MIP start.
