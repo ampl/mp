@@ -1,8 +1,9 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
-## TBD
+## 20230522
 - Fixed solution status reporting to AMPL
+- Added warm start for LP problems
 
 ## 20230424
 - *Changes in the MP library*: added variable names support

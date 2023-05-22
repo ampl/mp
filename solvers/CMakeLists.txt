@@ -38,11 +38,15 @@ endfunction ()
 #
 # LIBRARIES gives a list of solver libraries. If omitted, add_ampl_solver
 # uses <module>_LIBRARIES.
+#
+# ADDITIONAL_DEPS is a list of targets that the solver depends on, this 
+# ensures that the binaries are built in the correct order, useful when
+# renaming a driver after it is built 
 function(add_ampl_solver name)
   cmake_parse_arguments(add_ampl_solver
     "DLL_RUNTIME;EXTERNAL;SHARED_LIB;OLD_SHARED_LIB;OVERRIDELIBS"
     "MODULE;EXENAME;VERSION"
-    "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS"
+    "ADDITIONAL_SOURCES;INCLUDE_DIRS;LIBRARIES;DEFINITIONS;ADDITIONAL_DEPS"
     ${ARGN})
   get_property(MP_BASE_DIR GLOBAL PROPERTY MP_BASE_DIR)
   set(options)
@@ -175,8 +179,13 @@ function(add_ampl_solver name)
   endif()
   add_executable(${exename} ${dir}main.cc)
   target_link_libraries(${exename} PRIVATE ${static_lib})
-
   install(TARGETS ${exename} DESTINATION bin)
+  if(add_ampl_solver_ADDITIONAL_DEPS)
+    add_dependencies(${exename} ${add_ampl_solver_ADDITIONAL_DEPS})
+    if(TARGET ${shared_lib})
+        add_dependencies(${shared_lib} ${add_ampl_solver_ADDITIONAL_DEPS})
+    endif()
+  endif()
 
   add_to_folder(${name} ampl${name}-static ${shared_lib} ${name})
 endfunction()

@@ -153,6 +153,16 @@ void HighsBackend::SetBasis(SolutionBasis basis) {
   VarConStatii(varstt, constt);
 }
 
+
+void HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
+  auto mv = GetValuePresolver().PresolveSolution(
+    { sol0_unpres.primal, sol0_unpres.dual });
+  auto x0 = mv.GetVarValues()();
+  auto pi0 = mv.GetConValues()(CG_Linear);
+  HIGHS_CCALL(Highs_setSolution(lp(), x0.data(), NULL, NULL, pi0.data()));
+}
+
+
 ArrayRef<int> HighsBackend::VarStatii() {
   std::vector<int> vars(NumVars());
   conStatiii_.resize(NumLinCons());

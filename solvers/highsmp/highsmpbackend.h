@@ -50,7 +50,12 @@ public:
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
   void DoWriteProblem(const std::string& name) override;
 
-
+  /**
+  * General warm start:
+  * set primal/dual initial guesses for continuous case
+  **/
+  ALLOW_STD_FEATURE(WARMSTART, true)
+    void AddPrimalDualStart(Solution sol0) override;
   /**
   * Get/Set AMPL var/con statii
   **/
