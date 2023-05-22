@@ -1674,6 +1674,12 @@ void GurobiBackend::InitCustomOptions() {
     "causing early termination if exceeded; default = 0 (no limit)",
     GRB_DBL_PAR_MEMLIMIT, 0.0, Infinity());
 
+
+  AddSolverOption("lim:solution solutionlimit",
+    "Limit the number of feasible MIP solutions found, causing early "
+    "termination if exceeded; default = 2e9",
+    GRB_INT_PAR_SOLUTIONLIMIT, 0, 2000000000);
+
 #ifdef GRB_DBL_PAR_SOFTMEMLIMIT
   AddSolverOption("lim:softmem softmemlimit maxmemorysoft",
     "Soft limit (number of MB) on memory allocated; "
