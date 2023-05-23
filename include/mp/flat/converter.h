@@ -488,12 +488,39 @@ public:
     if (relax())
       GetModel().RelaxIntegrality();
 		FixUnusedDefinedVars();       // Until we have proper var deletion
+    CheckLinearCons();
     GetModel().PushModelTo(GetModelAPI());
     MPD( CloseGraphExporter() );
     if (value_presolver_.GetExport())
       assert( value_presolver_.AllEntriesExported() );
     if (GetEnv().verbose_mode())
       GetEnv().PrintWarnings();
+  }
+
+  /// Check linear constraints.
+  /// Solvers complain about close-to-0 coefficients,
+  /// so fail on this in the debug build.
+  void CheckLinearCons() {
+#ifndef NDEBUG
+    CheckLinearConType< AlgConRange >();
+    CheckLinearConType< AlgConRhs<-1> >();
+    CheckLinearConType< AlgConRhs<0> >();
+    CheckLinearConType< AlgConRhs<1> >();
+#endif
+  }
+
+  template <class Rhs>
+  void CheckLinearConType() {
+    using LinConType = AlgebraicConstraint< LinTerms, Rhs >;
+    auto& ck = GetConstraintKeeper(
+          (LinConType*)nullptr );
+    ck.ForEachActive( [](const LinConType& lc, int ){
+      const auto& lt = lc.GetBody();
+      for (auto i=lt.size(); i--; ) {
+        assert(0.0 != std::fabs(lt.coef(i)));
+      }
+      return false;     // don't delete
+    } );
   }
 
   /// Fill model traits for license check.
