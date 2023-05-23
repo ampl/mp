@@ -24,6 +24,9 @@ void HighsModelAPI::AddVariables(const VarArrayDef& v) {
     HIGHS_CCALL(Highs_changeColsIntegralityBySet(lp(), intIndices.size(),
       intIndices.data(), types.data()));
   }
+  if (v.pnames())
+    for (int i = 0; i < v.size(); i++)
+      HIGHS_CCALL(Highs_passColName(lp(), i, v.pnames()[i]));
 }
 
 void HighsModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
