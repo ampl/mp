@@ -49,13 +49,15 @@ protected:
           "  2. Use option cvt:mip:bigM to set the default value of big-M (use with care);\n"
           "  3. If available, set acc:indle=2 for native handling of the constraint.");
     }
-    if (0==val)                                // left condition is b==0
-      con.GetBody().add_term(-body_ub+con.rhs(), b);
-    else {
-      con.GetBody().add_term(body_ub-con.rhs(), b);
-      con.set_rhs(body_ub);
+    if (body_ub != con.rhs()) {
+      if (0==val)                                // left condition is b==0
+        con.GetBody().add_term(-body_ub+con.rhs(), b);
+      else {
+        con.GetBody().add_term(body_ub-con.rhs(), b);
+        con.set_rhs(body_ub);
+      }
+      GetMC().AddConstraint(con);                // Big-M constraint
     }
-    GetMC().AddConstraint(con);                // Big-M constraint
   }
 
 };
