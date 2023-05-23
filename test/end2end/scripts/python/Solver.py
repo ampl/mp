@@ -688,6 +688,7 @@ class CPLEXDirectSolver(MPDirectSolver):
                  # ModelTags.trigonometric
                  ModelTags.relax,
                  ModelTags.multiobj,
+                 ModelTags.multisol,
                  ModelTags.sstatus,
                  ModelTags.return_mipgap
                  }

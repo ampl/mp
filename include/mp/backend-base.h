@@ -70,6 +70,8 @@ public:
   virtual void InitOptionParsing() { }
   /// Chance to consider options immediately (open cloud, etc)
   virtual void FinishOptionParsing() { }
+  /// Having everything set up, solve the problem
+  virtual void Solve() { }
 
   /// Callbacks typedef
   using Callbacks = CCallbacks;

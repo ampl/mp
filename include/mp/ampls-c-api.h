@@ -33,6 +33,11 @@ typedef struct AMPLS_MP_Solver_T {
 
   /// Load suffixes and other option-dependent info
   AMPLS_C_EXPORT void AMPLSReadExtras(AMPLS_MP_Solver* slv);
+
+  // Expose the driver's solve routine, as currently it might
+  // involve some other steps
+  AMPLS_C_EXPORT void AMPLSSolve(AMPLS_MP_Solver* slv);
+
   /// Report results.
   /// The kind of results reported is influenced by solver option 
   /// `wantsol`.

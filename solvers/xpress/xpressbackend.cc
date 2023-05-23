@@ -5,7 +5,6 @@
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
 #include "xpressbackend.h"
-#include "xpressbackend.h"
 
 extern "C" {
   #include "xpress-ampls-c-api.h"    // Xpressmp AMPLS C API
@@ -394,12 +393,20 @@ std::string XpressmpBackend::DoXpressFixedModel()
       SetSolverOption(XPRS_PRESOLVEOPS, i);
     }
   }
-  void XpressmpBackend::FinishOptionParsing() {
+
+  void XpressmpBackend::InputExtras() {
+    BaseBackend::InputExtras();
+    InputXPRESSExtras();
+  }
+  void XpressmpBackend::InputXPRESSExtras() {
     bool doLog = outlev_ > 0 && outlev_ < 5;
     set_verbose_mode(doLog);
-    if (doLog)
+    
+    if (doLog && !msgCallbackSet_)
+    {
+      msgCallbackSet_ = true;
       XPRSaddcbmessage(lp(), xpdisplay, NULL, 0);
-
+    }
     if (need_multiple_solutions())
       CreateSolutionPoolEnvironment();
   }

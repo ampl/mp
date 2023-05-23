@@ -1162,6 +1162,11 @@ void AMPLSReadExtras(AMPLS_MP_Solver* slv) {
   auto be = AMPLSGetBackend(slv);
   be->InputExtras();
 }
+
+void AMPLSSolve(AMPLS_MP_Solver* slv) {
+  auto be = AMPLSGetBackend(slv);
+  be->Solve();
+}
 mp::BasicBackend* AMPLSGetBackend(AMPLS_MP_Solver* slv) {
   assert(slv->internal_info_);
   return ((AMPLS_MP__internal*)(slv->internal_info_))->p_be_.get();
