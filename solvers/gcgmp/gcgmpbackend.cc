@@ -241,6 +241,8 @@ std::pair<int, std::string> GcgBackend::ConvertGCGStatus() {
 
 
 void GcgBackend::FinishOptionParsing() {
+  if (storedOptions_.outlev_ == 1)
+     SetSolverOption("display/verblevel", 4);
   int v=-1;
   GetSolverOption("display/verblevel", v);
   set_verbose_mode(v>0);
@@ -305,8 +307,12 @@ void GcgBackend::InitCustomOptions() {
       "\n"
       "  ampl: option gcg_options 'mipgap=1e-6';\n");
 
-  AddSolverOption("tech:outlev outlev",
-    "0*/1/2/3/4/5: Whether to write GCG log lines (chatter) to stdout and to file.",
+  AddStoredOption("tech:outlev outlev",
+    "0*/1: Whether to write GCG log lines (chatter) to stdout and to file.",
+    storedOptions_.outlev_);
+
+  AddSolverOption("tech:outlev-native outlev-native",
+    "0*/1/2/3/4/5: Whether to write GCG log lines (chatter) to stdout and to file (native output level of SCIP).",
     "display/verblevel", 0, 5);
 
   AddStoredOption("tech:exportfile writeprob writemodel",
