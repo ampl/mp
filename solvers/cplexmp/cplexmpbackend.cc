@@ -639,7 +639,12 @@ pre::ValueMapInt CplexBackend::ConsIIS() {
       { CG_General, iis_indcon }} };
 }
 
-void CplexBackend::FinishOptionParsing() {
+void CplexBackend::InputExtras() {
+  BaseBackend::InputExtras();
+  InputCPLEXExtras();
+}
+
+void CplexBackend::InputCPLEXExtras() {
   // Set output on screen
   int lp, mip, bar;
   GetSolverOption(CPX_PARAM_SIMDISPLAY, lp);
@@ -664,8 +669,8 @@ void CplexBackend::FinishOptionParsing() {
 
   // Set behaviour for solultion pool related options
   if (!need_multiple_solutions()) {
-    storedOptions_.populate_ = 0;
-    storedOptions_.poolIntensity_ = 0;
+    storedOptions_.populate_ = -1;
+    storedOptions_.poolIntensity_ = -1;
   }
   else {
     int poolIntensity = 0, populate = 0;
@@ -678,7 +683,8 @@ void CplexBackend::FinishOptionParsing() {
     if (storedOptions_.populate_ < 0) storedOptions_.populate_ = populate;
     if (storedOptions_.poolIntensity_ < 0) storedOptions_.poolIntensity_ = poolIntensity;
   }
-  SetSolverOption(CPX_PARAM_SOLNPOOLINTENSITY, storedOptions_.poolIntensity_);
+  SetSolverOption(CPX_PARAM_SOLNPOOLINTENSITY, storedOptions_.poolIntensity_ < 0 ? 0 : 
+    storedOptions_.poolIntensity_);
 
 }
 

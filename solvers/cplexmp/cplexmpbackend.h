@@ -29,8 +29,6 @@ public:
   static const char* GetBackendLongName() { return nullptr; }
 
   void InitOptionParsing() override;
-  void FinishOptionParsing() override;
-
 
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
@@ -93,9 +91,12 @@ public:
 
   //////////////////////////// SOLVING ///////////////////////////////
 
-  /// Note the interrupt notifier
+    /// This can actually modify the model -- e.g., suffixes
+  void InputExtras() override;
   void SetInterrupter(mp::Interrupter* inter) override;
 
+
+  void InputCPLEXExtras();
   /// Solve, no model modification any more.
   /// Can report intermediate results via HandleFeasibleSolution() during this,
   /// otherwise in ReportResults()
