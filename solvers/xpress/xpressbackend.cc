@@ -2560,7 +2560,7 @@ pre::ValueMapInt XpressmpBackend::ConsIIS() {
   XPRESSMP_CCALL(XPRSgetiisdata(lp(), 1, &nconsiis, &nvarsiis, cons.data(),
     0, contype.data(), 0, 0, 0, isolrows.data(), 0));
   std::vector<int> iis_lincon(NumLinCons(), 0);
-  for (int i = 0; i < nvarsiis; i++)
+  for (int i = 0; i < nconsiis; i++)
     iis_lincon[i] = (int)IIS_VarToAMPL(contype[i]);
   return { {{ CG_Linear, iis_lincon }} }; // TODO other constraint types
 }
