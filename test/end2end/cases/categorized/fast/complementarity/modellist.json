@@ -3,6 +3,9 @@
     "name" : "econ2 compl_range",
     "files" : ["econ2.mod", "econ2.dat"],
     "tags" : ["linear", "continuous", "complementarity"],
+    "options": {
+      "gcg_options": "cvt:bigm=1e5"
+    },
     "values": {
       "Price['AA1']": 0.0,
       "Price['AC1']": 0.0,

@@ -1,32 +1,32 @@
-#ifndef MP_SCIP_BACKEND_H_
-#define MP_SCIP_BACKEND_H_
+#ifndef MP_GCG_BACKEND_H_
+#define MP_GCG_BACKEND_H_
 
 #include <string>
 
 #include "mp/backend-mip.h"
 #include "mp/flat/backend_flat.h"
-#include "scipmpcommon.h"
+#include "gcgmpcommon.h"
 
 namespace mp {
 
-class ScipBackend :
-    public FlatBackend< MIPBackend<ScipBackend> >,
-    public ScipCommon
+class GcgBackend :
+    public FlatBackend< MIPBackend<GcgBackend> >,
+    public GcgCommon
 {
-  using BaseBackend = FlatBackend< MIPBackend<ScipBackend> >;
+  using BaseBackend = FlatBackend< MIPBackend<GcgBackend> >;
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:
-  ScipBackend();
-  ~ScipBackend();
+  GcgBackend();
+  ~GcgBackend();
 
   /// Prefix used for the <prefix>_options environment variable
-  static const char* GetAMPLSolverName() { return "scip"; }
+  static const char* GetAMPLSolverName() { return "gcg"; }
 
   /// AMPL driver name displayed in messages
-  static const char* GetAMPLSolverLongName() { return "AMPL-SCIP"; }
+  static const char* GetAMPLSolverLongName() { return "AMPL-GCG"; }
   /// Solver name displayed in messages
-  static const char* GetSolverName() { return "SCIP"; }
+  static const char* GetSolverName() { return "GCG"; }
   /// Version displayed with -v
   std::string GetSolverVersion();
   
@@ -54,26 +54,21 @@ public:
  * MULTISOL support
  * No API, see ReportIntermediateSolution()
 **/
-  ALLOW_STD_FEATURE(MULTISOL, false)
+  ALLOW_STD_FEATURE(MULTISOL, true)
 
   /**
   * Get/Set AMPL var/con statii
   **/
-  ALLOW_STD_FEATURE(BASIS, false)
+  ALLOW_STD_FEATURE(BASIS, true)
   // TODO If getting/setting a basis is supported, implement the 
   // accessor and the setter below
   SolutionBasis GetBasis() override;
   void SetBasis(SolutionBasis) override;
-  /**
-  * General warm start, e.g.,
-  * set primal/dual initial guesses for continuous case
-  **/
-  ALLOW_STD_FEATURE( WARMSTART, false )
-  void AddPrimalDualStart(Solution sol) override;
+
   /**
   * MIP warm start
   **/
-  // If MIP warm start is supported, implement the function below
+  // TODO If MIP warm start is supported, implement the function below
   // to set a non-presolved starting solution
   ALLOW_STD_FEATURE(MIPSTART, false)
   void AddMIPStart(ArrayRef<double> x0,
@@ -83,7 +78,7 @@ public:
  /**
   * Get MIP Gap
   **/
-  // return MIP gap
+  // TODO Implement to return MIP gap
   // (adds option mip:return_gap)
   ALLOW_STD_FEATURE(RETURN_MIP_GAP, true)
   double MIPGap() override;
@@ -91,10 +86,19 @@ public:
   /**
   * Get MIP dual bound
   **/
-  // return the best dual bound value
+  // TODO Implement to return the best dual bound value
   // (adds option mip:bestbound)
   ALLOW_STD_FEATURE(RETURN_BEST_DUAL_BOUND, true)
   double BestDualBound() override;
+
+  /**
+  * Compute the IIS and obtain relevant values
+  **/
+  ALLOW_STD_FEATURE(IIS, false)
+  /// Compute IIS
+  void ComputeIIS() override;
+  /// Retrieve IIS elements
+  IIS GetIIS() override;
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
@@ -128,12 +132,12 @@ protected:
   pre::ValueMapDbl DualSolution() override;
   ArrayRef<double> DualSolution_LP();
 
-  void WindupSCIPSolve();
+  void WindupGCGSolve();
 
   void ReportResults() override;
-  void ReportSCIPResults();
+  void ReportGCGResults();
 
-  void ReportSCIPPool();
+  void ReportGCGPool();
 
   std::vector<double> getPoolSolution(int i);
   double getPoolObjective(int i);
@@ -143,20 +147,24 @@ protected:
   double SimplexIterations() const;
   int BarrierIterations() const;
 
-  std::pair<int, std::string> ConvertSCIPStatus();
-  void AddSCIPMessages();
+  std::pair<int, std::string> ConvertGCGStatus();
+  void AddGCGMessages();
 
   ArrayRef<int> VarStatii();
   ArrayRef<int> ConStatii();
   void VarStatii(ArrayRef<int>);
   void ConStatii(ArrayRef<int>);
 
+  ArrayRef<int> VarsIIS();
+  pre::ValueMapInt ConsIIS();
+
 
 private:
+  void InputDecomposition();
+  
   /// These options are stored in the class
   struct Options {
     std::string exportFile_, logFile_, paramRead_;
-    int concurrent_ = 0;
     int heuristics_ = 0;
     int cuts_ = 0;
     int presolvings_ = 0;
@@ -169,4 +177,4 @@ private:
 
 }  // namespace mp
 
-#endif  // MP_SCIP_BACKEND_H_
+#endif  // MP_GCG_BACKEND_H_

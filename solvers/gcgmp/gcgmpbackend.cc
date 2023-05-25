@@ -4,46 +4,50 @@
 
 #include "mp/env.h"
 #include "mp/flat/model_api_base.h"
-#include "scipmpbackend.h"
+#include "gcgmpbackend.h"
+
+#include "gcg/class_partialdecomp.h"
+#include "gcg/class_detprobdata.h"
+#include "gcg/cons_decomp.hpp"
 
 extern "C" {
-  #include "scipmp-ampls-c-api.h"    // Scip AMPLS C API
+  #include "gcgmp-ampls-c-api.h"    // Gcg AMPLS C API
 }
 #include "mp/ampls-cpp-api.h"
 
 namespace {
 
 
-bool InterruptScip(void* scip) {
-  SCIPinterruptSolve(static_cast<SCIP*>(scip));
+bool InterruptGcg(void* prob) {
+  SCIPinterruptSolve(static_cast<SCIP*>(prob));
   return true;
 }
 
 }  // namespace {}
 
-std::unique_ptr<mp::BasicBackend> CreateScipBackend() {
-  return std::unique_ptr<mp::BasicBackend>{new mp::ScipBackend()};
+std::unique_ptr<mp::BasicBackend> CreateGcgBackend() {
+  return std::unique_ptr<mp::BasicBackend>{new mp::GcgBackend()};
 }
 
 
 namespace mp {
 
-/// Create Scip Model Manager
-/// @param gc: the Scip common handle
+/// Create Gcg Model Manager
+/// @param gc: the Gcg common handle
 /// @param e: environment
 /// @param pre: presolver to be returned,
 /// need it to convert solution data
-/// @return ScipModelMgr
+/// @return GcgModelMgr
 std::unique_ptr<BasicModelManager>
-CreateScipModelMgr(ScipCommon&, Env&, pre::BasicValuePresolver*&);
+CreateGcgModelMgr(GcgCommon&, Env&, pre::BasicValuePresolver*&);
 
 
-ScipBackend::ScipBackend() {
+GcgBackend::GcgBackend() {
   OpenSolver();
 
   /// Create a ModelManager
   pre::BasicValuePresolver* pPre;
-  auto data = CreateScipModelMgr(*this, *this, pPre);
+  auto data = CreateGcgModelMgr(*this, *this, pPre);
   SetMM( std::move( data ) );
   SetValuePresolver(pPre);
 
@@ -51,35 +55,29 @@ ScipBackend::ScipBackend() {
   copy_common_info_to_other();
 }
 
-ScipBackend::~ScipBackend() {
+GcgBackend::~GcgBackend() {
   CloseSolver();
 }
 
 
-const char* ScipBackend::GetBackendName()
-  { return "SCIPBackend"; }
+const char* GcgBackend::GetBackendName()
+  { return "GGCGBackend"; }
 
-std::string ScipBackend::GetSolverVersion() {
-  return fmt::format("{}.{}.{}", SCIPmajorVersion(), SCIPminorVersion(), 
-  SCIPtechVersion());
+std::string GcgBackend::GetSolverVersion() {
+  return fmt::format("{}.{}.{}", GCGmajorVersion(), 
+    GCGminorVersion(), GCGtechVersion());
 }
 
 
-bool ScipBackend::IsMIP() const {
+bool GcgBackend::IsMIP() const {
   return SCIPgetNOrigIntVars(getSCIP()) > 0 || SCIPgetNOrigBinVars(getSCIP()) > 0;
 }
 
-bool ScipBackend::IsQCP() const {
-  for (int i = 0; i < SCIPgetNOrigConss(getSCIP()); i++) {
-    SCIP_Bool isquadratic;
-    SCIP_CCALL( SCIPcheckQuadraticNonlinear(getSCIP(), SCIPgetOrigConss(getSCIP())[i], &isquadratic) );
-    if (isquadratic == true)
-      return true;
-  }
+bool GcgBackend::IsQCP() const {
   return false;
 }
 
-ArrayRef<double> ScipBackend::PrimalSolution() {
+ArrayRef<double> GcgBackend::PrimalSolution() {
   SCIP* scip = getSCIP();
   int num_vars = NumVars();
   std::vector<double> x(num_vars);
@@ -88,108 +86,107 @@ ArrayRef<double> ScipBackend::PrimalSolution() {
   return x;
 }
 
-pre::ValueMapDbl ScipBackend::DualSolution() {
+pre::ValueMapDbl GcgBackend::DualSolution() {
   return {{ { CG_Linear, DualSolution_LP() } }};
 }
 
-ArrayRef<double> ScipBackend::DualSolution_LP() {
+ArrayRef<double> GcgBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  for (int i=0; i < num_cons; i++)
-    pi[i] = SCIPgetDualsolLinear(getSCIP(), getPROBDATA()->linconss[i]);
+ // int error = GCG_GetLpSolution(lp(), NULL, NULL, pi.data(), NULL);
+  int error = 0;
+  if (error)
+    pi.clear();
   return pi;
 }
 
-double ScipBackend::ObjectiveValue() const {
+double GcgBackend::ObjectiveValue() const {
   return SCIPgetPrimalbound(getSCIP());
 }
 
-double ScipBackend::NodeCount() const {
+double GcgBackend::NodeCount() const {
   return SCIPgetNNodes(getSCIP());
 }
 
-double ScipBackend::SimplexIterations() const {
+double GcgBackend::SimplexIterations() const {
   return SCIPgetNPrimalLPIterations(getSCIP()) + SCIPgetNDualLPIterations(getSCIP());
 }
 
-int ScipBackend::BarrierIterations() const {
+int GcgBackend::BarrierIterations() const {
   return SCIPgetNBarrierLPIterations(getSCIP());
 }
 
-void ScipBackend::ExportModel(const std::string &file) {
-  SCIP_CCALL( SCIPwriteOrigProblem(getSCIP(), file.data(), NULL, FALSE) );
+void GcgBackend::ExportModel(const std::string &file) {
+  GCG_CCALL( SCIPwriteOrigProblem(getSCIP(), file.data(), NULL, FALSE) );
 }
 
 
-void ScipBackend::SetInterrupter(mp::Interrupter *inter) {
-  inter->SetHandler(InterruptScip, getSCIP());
+void GcgBackend::SetInterrupter(mp::Interrupter *inter) {
+  inter->SetHandler(InterruptGcg, getSCIP());
+  // TODO Check interrupter
+  //GCG_CCALL( CPXsetterminate (env(), &terminate_flag) );
 }
 
-void ScipBackend::Solve() {
+void GcgBackend::Solve() {
   if (!storedOptions_.exportFile_.empty())
     ExportModel(storedOptions_.exportFile_);
   if (!storedOptions_.paramRead_.empty())
-    SCIP_CCALL( SCIPreadParams(getSCIP(), storedOptions_.paramRead_.c_str()) );
+    GCG_CCALL( SCIPreadParams(getSCIP(), storedOptions_.paramRead_.c_str()) );
   if (storedOptions_.heuristics_ != 0)
-    SCIP_CCALL( SCIPsetHeuristics(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.heuristics_, TRUE) );
+    GCG_CCALL( SCIPsetHeuristics(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.heuristics_, TRUE) );
   if (storedOptions_.cuts_ != 0)
-    SCIP_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.cuts_, TRUE) );
+    GCG_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.cuts_, TRUE) );
   if (storedOptions_.presolvings_ != 0)
-    SCIP_CCALL( SCIPsetPresolving(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, TRUE) );
-  
+    GCG_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, TRUE) );
 
-  if (storedOptions_.concurrent_)
-    SCIP_CCALL( SCIPsolveConcurrent(getSCIP()) );
-  else
-    SCIP_CCALL( SCIPsolve(getSCIP()) );
+  InputDecomposition();
   
-  WindupSCIPSolve();
+  GCG_CCALL(GCGsolve(getSCIP()));
+
+  WindupGCGSolve();
 }
 
-void ScipBackend::WindupSCIPSolve() { }
+void GcgBackend::WindupGCGSolve() { }
 
-void ScipBackend::ReportResults() {
-  ReportSCIPResults();
+void GcgBackend::ReportResults() {
+  ReportGCGResults();
   BaseBackend::ReportResults();
 }
 
-void ScipBackend::ReportSCIPResults() {
-  SetStatus( ConvertSCIPStatus() );
-  AddSCIPMessages();
+void GcgBackend::ReportGCGResults() {
+  SetStatus( ConvertGCGStatus() );
+  AddGCGMessages();
   if (need_multiple_solutions())
-    ReportSCIPPool();
+    ReportGCGPool();
 }
-std::vector<double> ScipBackend::getPoolSolution(int i)
+std::vector<double> GcgBackend::getPoolSolution(int i)
 {
-  SCIP* scip = getSCIP();
-  int num_vars = NumVars();
-  std::vector<double> vars(num_vars);
-  for (int j = 0; j < num_vars; j++)
-    vars[j] = SCIPgetSolVal(scip, SCIPgetSols(scip)[i], getPROBDATA()->vars[j]);
+  std::vector<double> vars(NumVars());
+ // GCG_CCALL(GCG_GetPoolSolution(lp(), i, NumVars(), NULL, vars.data()));
   return vars;
 }
-double ScipBackend::getPoolObjective(int i)
+double GcgBackend::getPoolObjective(int i)
 {
-  assert(i < SCIPgetNSols(getSCIP()));
   double obj;
-  obj = SCIPgetSolOrigObj(getSCIP(), SCIPgetSols(getSCIP())[i]);
+ // GCG_CCALL(GCG_GetPoolObjVal(lp(), i, &obj));
   return obj;
 }
-void ScipBackend::ReportSCIPPool() {
+void GcgBackend::ReportGCGPool() {
   if (!IsMIP())
     return;
   int iPoolSolution = -1;
-  int nsolutions = SCIPgetNSols(getSCIP());
-  
-  while (++iPoolSolution < nsolutions) {
+  int nsolutions;
+  /*
+  while (++iPoolSolution < getIntAttr(GCG_INTATTR_POOLSOLS)) {
     ReportIntermediateSolution(
       { getPoolSolution(iPoolSolution),
         {}, { getPoolObjective(iPoolSolution) } });
   }
+  */
 }
 
 
-void ScipBackend::AddSCIPMessages() {
+void GcgBackend::AddGCGMessages() {
   AddToSolverMessage(
           fmt::format("{} simplex iterations\n", SimplexIterations()));
   if (auto nbi = BarrierIterations())
@@ -202,7 +199,7 @@ void ScipBackend::AddSCIPMessages() {
   }
 }
 
-std::pair<int, std::string> ScipBackend::ConvertSCIPStatus() {
+std::pair<int, std::string> GcgBackend::ConvertGCGStatus() {
   namespace sol = mp::sol;
   SCIP_STATUS status = SCIPgetStatus(getSCIP());
   switch (status) {
@@ -243,9 +240,9 @@ std::pair<int, std::string> ScipBackend::ConvertSCIPStatus() {
 }
 
 
-void ScipBackend::FinishOptionParsing() {
+void GcgBackend::FinishOptionParsing() {
   if (storedOptions_.outlev_ == 1)
-    SetSolverOption("display/verblevel", 4);
+     SetSolverOption("display/verblevel", 4);
   int v=-1;
   GetSolverOption("display/verblevel", v);
   set_verbose_mode(v>0);
@@ -271,27 +268,6 @@ static const mp::OptionValueInfo values_pricing[] = {
   { "d", "devex pricing", 5}
 }; 
 
-static const mp::OptionValueInfo estimation_method[] = {
-  { "c", "completion", 0},
-  { "e", "ensemble", 1},
-  { "g", "time series forecasts on either gap", 2},
-  { "l", "leaf frequency", 3},
-  { "o", "open nodes", 4},
-  { "w", "tree weight (default)", 5},
-  { "s", "ssg", 6},
-  { "t", "tree profile", 7},
-  { "b", "wbe ", 8}
-};
-
-static const mp::OptionValueInfo estimation_completion[] = {
-  { "a", "auto (default)", 0},
-  { "g", "gap", 1},
-  { "w", "tree weight", 2},
-  { "m", "monotone regression", 3},
-  { "r", "regression forest", 4},
-  { "s", "ssg", 5}
-};
-
 static const mp::OptionValueInfo childsel[] = {
   { "d", "down", 0},
   { "u", "up", 1},
@@ -302,24 +278,41 @@ static const mp::OptionValueInfo childsel[] = {
   { "h", "hybrid inference/root LP value difference (default)", 6}
 };
 
+static const mp::OptionValueInfo scoretype[] = {
+  { "maxwhi", "max white", 0},
+  { "border", "border area", 1},
+  { "classi", "classic", 2},
+  { "forswh", "max foreseeing white", 3},
+  { "spfwh", "ppc-max-white (default)", 4},
+  { "fawh", "max foreseeing white with aggregation info", 5},
+  { "spfawh", "ppc-max-white with aggregation info", 6},
+  { "bender", "experimental benders score", 7},
+  { "strong", "strong decomposition score", 8}
+};
 
-void ScipBackend::InitCustomOptions() {
+static const mp::OptionValueInfo mode[] = {
+  { "0", "Dantzig-Wolfe (default)", 0},
+  { "1", "Benders' decomposition", 1},
+  { "2", "No decomposition", 2}
+};
+
+void GcgBackend::InitCustomOptions() {
 
   set_option_header(
-    "SCIP Optimizer Options for AMPL\n"
-    "--------------------------------------------\n"
-    "\n"
-    "To set these options, assign a string specifying their values to the "
-    "AMPL option ``scip_options``. For example::\n"
-    "\n"
-    "  ampl: option scip_options 'mipgap=1e-6';\n");
+      "GCG Optimizer Options for AMPL\n"
+      "--------------------------------------------\n"
+      "\n"
+      "To set these options, assign a string specifying their values to the "
+      "AMPL option ``gcg_options``. For example::\n"
+      "\n"
+      "  ampl: option gcg_options 'mipgap=1e-6';\n");
 
   AddStoredOption("tech:outlev outlev",
-    "0*/1: Whether to write SCIP log lines (chatter) to stdout and to file.",
+    "0*/1: Whether to write GCG log lines (chatter) to stdout and to file.",
     storedOptions_.outlev_);
 
   AddSolverOption("tech:outlev-native outlev-native",
-    "0*/1/2/3/4/5: Whether to write SCIP log lines (chatter) to stdout and to file (native output level of SCIP).",
+    "0*/1/2/3/4/5: Whether to write GCG log lines (chatter) to stdout and to file (native output level of SCIP).",
     "display/verblevel", 0, 5);
 
   AddStoredOption("tech:exportfile writeprob writemodel",
@@ -334,7 +327,7 @@ void ScipBackend::InitCustomOptions() {
     storedOptions_.logFile_);
 
   AddStoredOption("tech:param:read param:read paramfile",
-    "Filename of SCIP parameter file (as path)."
+    "Filename of GCG parameter file (as path)."
     "The suffix on a parameter file should be .set.\n",
     storedOptions_.paramRead_);
 
@@ -345,13 +338,6 @@ void ScipBackend::InitCustomOptions() {
   AddSolverOption("alg:remethod remethod relpmethod",
     "LP algorithm for resolving LP relaxations if a starting basis exists:\n"
     "\n.. value-table::\n", "lp/resolvealgorithm", lp_values_method, "s");
-
-  AddStoredOption("alg:concurrent concurrent",
-    "0/1: whether to solve the problem using concurrent solvers"
-    "\n"
-    "  | 0 - No concurrent solvers are used to solve the problem (default)\n"
-    "  | 1 - Concurrent solvers are used to solve the problem.",
-    storedOptions_.concurrent_, 0, 1);
 
   /////////////////////// BRANCHING ///////////////////////
   AddSolverOption("branch:preferbinary preferbinary",
@@ -392,7 +378,7 @@ void ScipBackend::InitCustomOptions() {
     "separating/maxcuts", 0, INT_MAX);
 
   AddSolverOption("cut:maxcutsroot maxcutsroot",
-    "Maximal number of separated cuts at the root node (0: disable root node separation; default: 5000)",
+    "Maximal number of separated cuts at the root node (0: disable root node separation; default: 2000)",
     "separating/maxcutsroot", 0, INT_MAX);
 
   AddSolverOption("cut:maxrounds",
@@ -483,10 +469,6 @@ void ScipBackend::InitCustomOptions() {
     "Solving stops, if the given number of restarts was triggered (default: -1: no limit)",
     "limits/restarts", -1, INT_MAX);
 
-  AddSolverOption("lim:softtime softtime",
-    "Soft time limit which should be applied after first solution was found (default: -1.0: disabled)",
-    "limits/softtime", -1.0, SCIP_REAL_MAX);
-
   AddSolverOption("lim:solutions",
     "Solving stops, if the given number of solutions were found (default: -1: no limit)",
     "limits/solutions", -1, INT_MAX);
@@ -532,7 +514,7 @@ void ScipBackend::InitCustomOptions() {
     "lp/solvedepth", -1, SCIP_MAXTREEDEPTH);
 
   AddSolverOption("lp:solvefreq",
-    "Frequency for solving LP at the nodes (-1: never; 0: only root LP; default: 1)",
+    "Frequency for solving LP at the nodes (-1: never; 0: only root LP; default: 0)",
     "lp/solvefreq", -1, SCIP_MAXTREEDEPTH);
 
   ///////////////////////// MISC /////////////////////////
@@ -556,14 +538,6 @@ void ScipBackend::InitCustomOptions() {
     "  | 0 - The objective function should not be scaled so that it is always integer\n"
     "  | 1 - The objective function should be scaled so that it is always integer (default).",
     "misc/scaleobj", 0, 1);
-
-  ////////////////////////// NLP /////////////////////////
-  AddSolverOption("nlp:disable",
-    "0/1: whether the NLP relaxation should be always disabled (also for NLPs/MINLPs)"
-    "\n"
-    "  | 0 - NLP relaxation should not be always disabled (default)\n"
-    "  | 1 - NLP relaxation should be always disabled.",
-    "nlp/disable", 0, 1);
 
   ////////////////////// NUMERICS ////////////////////////
   AddSolverOption("num:checkfeastolfac checkfeastolfac",
@@ -714,90 +688,253 @@ void ScipBackend::InitCustomOptions() {
     "Global shift of all random seeds in the plugins and the LP random seed (default: 0) ",
     "randomization/randomseedshift", 0, INT_MAX);
 
-  ///////////////////////// TREE /////////////////////////
-  AddSolverOption("est:method",
-    "Tree size estimation method:\n"
-    "\n.. value-table::\n", "estimation/method", estimation_method, "w");
 
-  AddSolverOption("est:completiontype",
-    "Approximation of search tree completion:\n"
-    "\n.. value-table::\n", "estimation/completiontype", estimation_completion, "a");
+  ////////////////////// DETECTION ///////////////////////
+  AddSolverOption("det:enabled",
+    "0/1: whether detection should be enabled? "
+    "\n"
+    "  | 0 - Detection not enabled\n"
+    "  | 1 - Detection enabled (default).",
+    "detection/enabled", 0, 1);
+
+  AddSolverOption("det:postprocess postprocess",
+    "0/1: whether postprocessing of complete decompositions should be enabled? "
+    "\n"
+    "  | 0 - Postprocessing of complete decompositions not enabled\n"
+    "  | 1 - Postprocessing of complete decompositions enabled (default).",
+    "detection/enabled", 0, 1);
+
+  AddSolverOption("det:maxrounds",
+    "Maximum number of detection loop rounds (default: 1) ",
+    "detection/maxrounds", 0, INT_MAX);
+
+  AddSolverOption("det:maxtime",
+    "Maximum detection time in seconds (default: 600) ",
+    "detection/maxrounds", 0, INT_MAX);
+
+  AddSolverOption("det:scoretype scoretype",
+    "Score calculation for comparing (partial) decompositions:\n"
+    "\n.. value-table::\n", "detection/scores/selected", scoretype, 4);
+
+  AddSolverOption("det:origprob-classificationenabled origprob-classificationenabled",
+    "0/1: whether classification for the original problem should be enabled? "
+    "\n"
+    "  | 0 - Classification for the original problem not enabled\n"
+    "  | 1 - Classification for the original problem enabled (default).",
+    "detection/origprob/classificationenabled", 0, 1);
+
+  AddSolverOption("det:origprob-enabled origprob-enabled",
+    "0/1: whether detection for the original problem should be enabled? "
+    "\n"
+    "  | 0 - Detection for the original problem not enabled\n"
+    "  | 1 - Detection for the original problem enabled (default).",
+    "detection/origprob/enabled", 0, 1);
+
+  AddSolverOption("det:classification-enabled classification-enabled",
+    "0/1: whether classification should be enabled? "
+    "\n"
+    "  | 0 - Classification not enabled\n"
+    "  | 1 - Classification enabled (default).",
+    "detection/classification/enabled", 0, 1);
+
+  AddSolverOption("det:maxnclassesperpartition maxnclassesperpartition",
+    "Maximum number of classes per partition (default: 9)",
+    "detection/classification/maxnclassesperpartition", 0, INT_MAX);
+
+  AddSolverOption("det:maxnclassesperpartitionforlargeprobs maxnclassesperpartitionforlargeprobs",
+    "Maximum number of classes per partition for large problems (nconss + nvars >= 50000) (default: 5)",
+    "detection/classification/maxnclassesperpartitionforlargeprobs", 0, INT_MAX);
+  
+  AddSolverOption("det:benders-enabled benders-enabled",
+    "0/1: whether benders detection should be enabled? "
+    "\n"
+    "  | 0 - Benders detection not enabled (default)\n"
+    "  | 1 - Benders detection enabled.",
+    "detection/benders/enabled", 0, 1);
+
+  AddSolverOption("det:benders-onlybinmaster benders-onlybinmaster",
+    "0/1: whether only decomposition with only binary variables in the master are searched? "
+    "\n"
+    "  | 0 - Not only decomposition with only binary variables in the master are searched (default)\n"
+    "  | 1 - Only decomposition with only binary variables in the master are searched.",
+    "detection/benders/onlybinmaster", 0, 1);
+
+  AddSolverOption("det:benders-onlycontsubpr benders-onlycontsubpr",
+    "0/1: whether only decomposition with only continiuous variables in the subproblems are searched? "
+    "\n"
+    "  | 0 - Not only decomposition with only continiuous variables in the subproblems are searched (default)\n"
+    "  | 1 - Only decomposition with only continiuous variables in the subproblems are searched.",
+    "detection/benders/onlycontsubpr", 0, 1);
+
+  //////////////////// RELAXING-GCG //////////////////////
+  AddSolverOption("gcg:bliss-enabled bliss-enabled",
+    "0/1: whether bliss should be used to check for identical blocks? "
+    "\n"
+    "  | 0 - Bliss should not be used to check for identical blocks\n"
+    "  | 1 - Bliss should be used to check for identical blocks (default).",
+    "relaxing/gcg/bliss/enabled", 0, 1);
+
+  AddSolverOption("gcg:aggregation",
+    "0/1: whether identical blocks should be aggregated (only for discretization approach)? "
+    "\n"
+    "  | 0 - Identical blocks should not be aggregated (only for discretization approach)\n"
+    "  | 1 - Identical blocks should be aggregated (only for discretization approach) (default).",
+    "relaxing/gcg/aggregation", 0, 1);
+
+  AddSolverOption("gcg:discretization discretization",
+    "0/1: whether discretization (TRUE) or convexification (FALSE) approach should be used? "
+    "\n"
+    "  | 0 - convexification approach should be used\n"
+    "  | 1 - discretization approach should be used (default).",
+    "relaxing/gcg/discretization", 0, 1);
+
+  AddSolverOption("gcg:mipdiscretization mipdiscretization",
+    "0/1: whether discretization (TRUE) or convexification (FALSE) approach should be used in mixed-integer programs?"
+    "\n"
+    "  | 0 - convexification approach should be used in mixed-integer programs\n"
+    "  | 1 - discretization approach should be used in mixed-integer programs (default).",
+    "relaxing/gcg/discretization", 0, 1);
+
+  AddSolverOption("gcg:mode mode",
+    "The decomposition mode that GCG will use:\n"
+    "\n.. value-table::\n", "relaxing/gcg/mode", mode, 0);
 }
 
+void GcgBackend::InputDecomposition() {
+  bool is_presolved = SCIPgetStage(getSCIP()) >= SCIP_STAGE_PRESOLVED;
+  GCG_CCALL( SCIPallocClearMemory(scip, &getPROBDATA()->decomp) );
+  gcg::PARTIALDECOMP* decomp = new gcg::PARTIALDECOMP(getSCIP(), !is_presolved);
+  getPROBDATA()->decomp = decomp;
 
-double ScipBackend::MIPGap() {
+  if (auto block0 = ReadModelSuffixInt({"block", suf::Kind::CON_BIT | suf::Kind::VAR_BIT})) {
+    auto block = GetValuePresolver().PresolveGenericInt( block0 );
+
+    ArrayRef<int> blockconss = block.GetConValues()(CG_Linear);
+    for (size_t i = 0; i < blockconss.size(); i++) {
+      getPROBDATA()->decomp->fixConsToBlock(getPROBDATA()->linconss[i], blockconss[i]);
+    }
+
+    ArrayRef<int> blockvars = block.GetVarValues()();
+    for (size_t i = 0; i < blockvars.size(); i++) {
+      int varindex = getPROBDATA()->decomp->getDetprobdata()->getIndexForVar(getPROBDATA()->vars[i]);
+      getPROBDATA()->decomp->fixVarToBlock(varindex, blockvars[i]);
+    }
+  }
+
+  if (auto master0 = ReadModelSuffixInt({"master", suf::Kind::CON_BIT | suf::Kind::VAR_BIT})) {
+    auto master = GetValuePresolver().PresolveGenericInt( master0 );
+
+    ArrayRef<int> masterconss = master.GetConValues()(CG_Linear);
+    for (size_t i = 0; i < masterconss.size(); i++) {
+      if (masterconss[i] == 1)
+        getPROBDATA()->decomp->fixConsToMaster(getPROBDATA()->linconss[i]);
+    }
+
+    ArrayRef<int> mastervars = master.GetVarValues()();
+    for (size_t i = 0; i < mastervars.size(); i++) {
+      if (mastervars[i] == 1) {
+        int varindex = getPROBDATA()->decomp->getDetprobdata()->getIndexForVar(getPROBDATA()->vars[i]);
+        getPROBDATA()->decomp->fixVarToMaster(varindex);
+      }
+    }
+  }
+
+  if (auto linking0 = ReadModelSuffixInt({"linking", suf::Kind::VAR_BIT})) {
+    auto linking = GetValuePresolver().PresolveGenericInt( linking0 );
+
+    ArrayRef<int> linkingvars = linking.GetConValues()(CG_Linear);
+    for (size_t i = 0; i < linkingvars.size(); i++) {
+      if (linkingvars[i] == 1) {
+        int varindex = getPROBDATA()->decomp->getDetprobdata()->getIndexForVar(getPROBDATA()->vars[i]);
+        getPROBDATA()->decomp->fixVarToLinking(varindex);
+      }
+    }
+  }
+
+  if (getPROBDATA()->decomp->getNOpenconss() != getPROBDATA()->decomp->getNConss() || getPROBDATA()->decomp->getNOpenvars() != getPROBDATA()->decomp->getNVars()) {
+    getPROBDATA()->decomp->prepare();
+    if (getPROBDATA()->decomp->isComplete())
+      getPROBDATA()->decomp->setUsergiven(gcg::USERGIVEN::COMPLETE);
+    else
+      getPROBDATA()->decomp->setUsergiven(gcg::USERGIVEN::PARTIAL);
+    GCGconshdlrDecompAddPreexisitingPartialDec(getSCIP(), getPROBDATA()->decomp);
+    GCGpresolve(getSCIP());
+  }
+}
+
+double GcgBackend::MIPGap() {
   return SCIPgetGap(getSCIP())<Infinity() ? SCIPgetGap(getSCIP()) : AMPLInf();
 }
-double ScipBackend::BestDualBound() {
+double GcgBackend::BestDualBound() {
   return SCIPgetDualbound(getSCIP());
 }
 
-double ScipBackend::MIPGapAbs() {
+double GcgBackend::MIPGapAbs() {
   double gapabs = std::fabs(ObjectiveValue() - BestDualBound());
   return gapabs<Infinity() ? gapabs : AMPLInf();
 }
 
 
-ArrayRef<int> ScipBackend::VarStatii() {
+ArrayRef<int> GcgBackend::VarStatii() {
   
   std::vector<int> vars(NumVars());
   /*
-  SCIP_GetBasis(lp(), vars.data(), NULL);
+  GCG_GetBasis(lp(), vars.data(), NULL);
   for (auto& s : vars) {
     switch (s) {
-    case SCIP_BASIS_BASIC:
+    case GCG_BASIS_BASIC:
       s = (int)BasicStatus::bas;
       break;
-    case SCIP_BASIS_LOWER:
+    case GCG_BASIS_LOWER:
       s = (int)BasicStatus::low;
       break;
-    case SCIP_BASIS_UPPER:
+    case GCG_BASIS_UPPER:
       s = (int)BasicStatus::upp;
       break;
-    case SCIP_BASIS_SUPERBASIC:
+    case GCG_BASIS_SUPERBASIC:
       s = (int)BasicStatus::sup;
       break;
-    case SCIP_BASIS_FIXED:
+    case GCG_BASIS_FIXED:
       s = (int)BasicStatus::equ;
       break;
     default:
-      MP_RAISE(fmt::format("Unknown Scip VBasis value: {}", s));
+      MP_RAISE(fmt::format("Unknown Gcg VBasis value: {}", s));
     }
   }
   */
   return vars;
 }
 
-ArrayRef<int> ScipBackend::ConStatii() {
+ArrayRef<int> GcgBackend::ConStatii() {
 
   std::vector<int> cons(NumLinCons());
   /*
-  SCIP_GetBasis(lp(), NULL, cons.data());
+  GCG_GetBasis(lp(), NULL, cons.data());
   for (auto& s : cons) {
     switch (s) {
-    case SCIP_BASIS_BASIC:
+    case GCG_BASIS_BASIC:
       s = (int)BasicStatus::bas;
       break;
-    case SCIP_BASIS_LOWER:
+    case GCG_BASIS_LOWER:
       s = (int)BasicStatus::low;
       break;
-    case SCIP_BASIS_UPPER:
+    case GCG_BASIS_UPPER:
       s = (int)BasicStatus::upp;
       break;
-    case SCIP_BASIS_SUPERBASIC:
+    case GCG_BASIS_SUPERBASIC:
       s = (int)BasicStatus::sup;
       break;
-    case SCIP_BASIS_FIXED:
+    case GCG_BASIS_FIXED:
       s = (int)BasicStatus::equ;
       break;
     default:
-      MP_RAISE(fmt::format("Unknown Scip VBasis value: {}", s));
+      MP_RAISE(fmt::format("Unknown Gcg VBasis value: {}", s));
     }
   }*/
   return cons;
 }
 
-void ScipBackend::VarStatii(ArrayRef<int> vst) {
+void GcgBackend::VarStatii(ArrayRef<int> vst) {
   int index[1];
   std::vector<int> stt(vst.data(), vst.data() + vst.size());
   /*
@@ -805,28 +942,28 @@ void ScipBackend::VarStatii(ArrayRef<int> vst) {
     auto& s = stt[j];
     switch ((BasicStatus)s) {
     case BasicStatus::bas:
-      s = SCIP_BASIS_BASIC;
+      s = GCG_BASIS_BASIC;
       break;
     case BasicStatus::low:
-      s = SCIP_BASIS_LOWER;
+      s = GCG_BASIS_LOWER;
       break;
     case BasicStatus::equ:
-      s = SCIP_BASIS_FIXED;
+      s = GCG_BASIS_FIXED;
       break;
     case BasicStatus::upp:
-      s = SCIP_BASIS_UPPER;
+      s = GCG_BASIS_UPPER;
       break;
     case BasicStatus::sup:
     case BasicStatus::btw:
-      s = SCIP_BASIS_SUPERBASIC;
+      s = GCG_BASIS_SUPERBASIC;
       break;
     case BasicStatus::none:
       /// 'none' is assigned to new variables. Compute low/upp/sup:
       /// Depending on where 0.0 is between bounds
       double lb, ub;
       index[0] = (int)j;
-      if(!SCIP_GetColInfo(lp(), SCIP_DBLINFO_LB, 1, index, &lb) && 
-        !SCIP_GetColInfo(lp(), SCIP_DBLINFO_UB, 1, index, &ub))
+      if(!GCG_GetColInfo(lp(), GCG_DBLINFO_LB, 1, index, &lb) && 
+        !GCG_GetColInfo(lp(), GCG_DBLINFO_UB, 1, index, &ub))
       { 
         if (lb >= -1e-6)
           s = -1;
@@ -840,17 +977,17 @@ void ScipBackend::VarStatii(ArrayRef<int> vst) {
       MP_RAISE(fmt::format("Unknown AMPL var status value: {}", s));
     }
   }
-  SCIP_SetBasis(lp(), stt.data(), NULL);
+  GCG_SetBasis(lp(), stt.data(), NULL);
   */
 }
 
-void ScipBackend::ConStatii(ArrayRef<int> cst) {
+void GcgBackend::ConStatii(ArrayRef<int> cst) {
   /*
   std::vector<int> stt(cst.data(), cst.data() + cst.size());
   for (auto& s : stt) {
     switch ((BasicStatus)s) {
     case BasicStatus::bas:
-      s = SCIP_BASIS_BASIC;
+      s = GCG_BASIS_BASIC;
       break;
     case BasicStatus::none:   // for 'none', which is the status
     case BasicStatus::upp:    // assigned to new rows, it seems good to guess
@@ -858,17 +995,17 @@ void ScipBackend::ConStatii(ArrayRef<int> cst) {
     case BasicStatus::low:    // 
     case BasicStatus::equ:    // For active constraints, it is usually 'sup'.
     case BasicStatus::btw:    // We could compute slack to decide though.
-      s = SCIP_BASIS_SUPERBASIC;
+      s = GCG_BASIS_SUPERBASIC;
       break;
     default:
       MP_RAISE(fmt::format("Unknown AMPL con status value: {}", s));
     }
   }
-  SCIP_SetBasis(lp(), NULL, stt.data());
+  GCG_SetBasis(lp(), NULL, stt.data());
   */
 }
 
-SolutionBasis ScipBackend::GetBasis() {
+SolutionBasis GcgBackend::GetBasis() {
   std::vector<int> varstt = VarStatii();
   std::vector<int> constt = ConStatii();
   if (varstt.size() && constt.size()) {
@@ -882,7 +1019,7 @@ SolutionBasis ScipBackend::GetBasis() {
   return { std::move(varstt), std::move(constt) };
 }
 
-void ScipBackend::SetBasis(SolutionBasis basis) {
+void GcgBackend::SetBasis(SolutionBasis basis) {
   auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
   auto varstt = mv.GetVarValues()();
@@ -893,29 +1030,45 @@ void ScipBackend::SetBasis(SolutionBasis basis) {
   ConStatii(constt);
 }
 
-void ScipBackend::AddPrimalDualStart(Solution sol)
-{
-  auto mv = GetValuePresolver().PresolveSolution(
-        { sol.primal, sol.dual } );
-  auto x0 = mv.GetVarValues()();
-	auto pi0 = mv.GetConValues()(CG_Linear);
-  SCIP_SOL* solution;
-  SCIP_Bool keep;
-  SCIP_CCALL( SCIPcreateSol(getSCIP(), &solution, NULL) );
 
-  SCIP_CCALL( SCIPsetSolVals(getSCIP(), solution, getPROBDATA()->nvars, getPROBDATA()->vars, x0.data()) );
-
-  SCIP_CCALL( SCIPaddSolFree(getSCIP(), &solution, &keep) );
+void GcgBackend::ComputeIIS() {
+  //GCG_CCALL(GCG_ComputeIIS(lp()));
+  SetStatus(ConvertGCGStatus());   // could be new information
 }
 
-void ScipBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
-  SCIP_SOL* solution;
-  SCIP_Bool keep;
-  SCIP_CCALL( SCIPcreateSol(getSCIP(), &solution, NULL) );
+IIS GcgBackend::GetIIS() {
+  auto variis = VarsIIS();
+  auto coniis = ConsIIS();
+  auto mv = GetValuePresolver().PostsolveIIS(
+    { variis, coniis });
+  return { mv.GetVarValues()(), mv.GetConValues()() };
+}
 
-  SCIP_CCALL( SCIPsetSolVals(getSCIP(), solution, getPROBDATA()->nvars, getPROBDATA()->vars, (double*)x0.data()) );
+ArrayRef<int> GcgBackend::VarsIIS() {
+  return ArrayRef<int>();
+//  return getIIS(lp(), NumVars(), GCG_GetColLowerIIS, GCG_GetColUpperIIS);
+}
+pre::ValueMapInt GcgBackend::ConsIIS() {
+  /*auto iis_lincon = getIIS(lp(), NumLinCons(), GCG_GetRowLowerIIS, GCG_GetRowUpperIIS);
 
-  SCIP_CCALL( SCIPaddSolFree(getSCIP(), &solution, &keep) );
+  std::vector<int> iis_soscon(NumSOSCons());
+  GCG_GetSOSIIS(lp(), NumSOSCons(), NULL, iis_soscon.data());
+  ConvertIIS2AMPL(iis_soscon);
+
+  std::vector<int> iis_indicon(NumIndicatorCons());
+  GCG_GetIndicatorIIS(lp(), NumIndicatorCons(), NULL, iis_indicon.data());
+  ConvertIIS2AMPL(iis_indicon);
+
+  return { {{ CG_Linear, iis_lincon },
+      { CG_SOS, iis_soscon },
+      { CG_Logical, iis_indicon }} };
+      */
+  return { {{ 0, std::vector<int>()}} };
+}
+
+void GcgBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
+  //GCG_CCALL(GCG_AddMipStart(lp(), NumVars(), NULL, const_cast<double*>(x0.data())));
+
 }
 
 
@@ -923,17 +1076,17 @@ void ScipBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
 
 
 // AMPLs
-void* AMPLSOpenScip(
+void* AMPLSOpenGcg(
   const char* slv_opt, CCallbacks cb = {}) {
-  return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::ScipBackend()},
+  return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::GcgBackend()},
     slv_opt, cb);
 }
 
-void AMPLSCloseScip(AMPLS_MP_Solver* slv) {
+void AMPLSCloseGcg(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-void* GetScipmodel(AMPLS_MP_Solver* slv) {
+void* GetGcgmodel(AMPLS_MP_Solver* slv) {
   return
-    dynamic_cast<mp::ScipBackend*>(AMPLSGetBackend(slv))->getSCIP();
+    dynamic_cast<mp::GcgBackend*>(AMPLSGetBackend(slv))->getSCIP();
 }
