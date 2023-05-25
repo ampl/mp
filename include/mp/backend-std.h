@@ -229,7 +229,7 @@ protected:
   /// Solve, no model modification any more.
   /// Can report intermediate results via HandleFeasibleSolution() during this,
   /// otherwise in ReportResults()
-  virtual void Solve() = 0;
+  virtual void Solve() override = 0;
 
   /// Report
   virtual void Report() {
@@ -729,7 +729,6 @@ protected:  //////////// Option accessors ////////////////
   }
   std::string export_file_name() const {
     std::string name = storedOptions_.export_file_.empty() ? storedOptions_.just_export_file_ : storedOptions_.export_file_;
-    int offset = 0;
     if (((name.front() == '"') && (name.back() == '"')) ||
       ((name.front() == '\'') && (name.back() == '\'')))
       return name.substr(1, name.length() - 2);

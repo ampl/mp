@@ -192,7 +192,7 @@ private:
 /// A specific link: each entry just copies from 1 source value
 /// into a range of values.
 /// Useful to transfer values into expression subtree,
-/// in conversions, e.g., form 1 var / constraint / objective
+/// in conversions, e.g., from 1 var / constraint / objective
 /// into several new ones
 class One2ManyLink : public BasicLink {
 public:

@@ -34,7 +34,7 @@ namespace mp {
 /// @param ModelAPI: the solver's model API wrapper
 /// @param FlatModel: internal representation of a flat model
 template <class Impl, class ModelAPI,
-          class FlatModel = BasicFlatModel< > >
+          class FlatModel = FlatModel< > >
 class FlatConverter :
     public BasicFlatConverter,
     public FlatModel,
@@ -517,7 +517,8 @@ public:
     ck.ForEachActive( [](const LinConType& lc, int ){
       const auto& lt = lc.GetBody();
       for (auto i=lt.size(); i--; ) {
-        assert(0.0 != std::fabs(lt.coef(i)));
+        assert(0.0 != std::fabs(lt.coef(i)) &&
+            "Most solvers don't like near-zero coefficients");
       }
       return false;     // don't delete
     } );
@@ -1010,7 +1011,8 @@ private:
   };
   /// ValuePresolver: should be init before constraint keepers
   /// and links
-  pre::ValuePresolver value_presolver_{GetEnv(), graph_exporter_fn_};
+  pre::ValuePresolver value_presolver_
+  {GetModel(), GetEnv(), graph_exporter_fn_};
   pre::CopyLink copy_link_ { GetValuePresolver() }; // the copy links
   pre::One2ManyLink one2many_link_ { GetValuePresolver() }; // the 1-to-many links
   pre::NodeRange auto_link_src_item_;   // the source item for autolinking
@@ -1205,7 +1207,7 @@ public:
 
 /// A 'final' flat converter in a CRTP hierarchy
 template <template <typename, typename, typename> class FlatCvt,
-          class Backend, class Model = BasicFlatModel< > >
+          class Backend, class Model = FlatModel< > >
 class FlatCvtImpl :
     public FlatCvt<FlatCvtImpl<FlatCvt, Backend, Model>, Backend, Model> {
 public:

@@ -1,6 +1,9 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
+## TBD
+- MIP start
+
 ## 20230522
 - Fixed solution status reporting to AMPL
 - Fixed basis input with obj offset or missing data
