@@ -215,7 +215,7 @@ ArrayRef<int> HighsBackend::ConStatii() {
 void HighsBackend::VarConStatii(ArrayRef<int> vst, ArrayRef<int> cst) {
   std::vector<int> stt(vst.data(), vst.data() + vst.size());
   std::vector<int> indicesOfMissing;
-  for (auto j = 0; j<stt.size(); j++) {
+  for (size_t j = 0; j<stt.size(); j++) {
     auto& s = stt[j];
     switch ((BasicStatus)s) {
     case BasicStatus::bas:

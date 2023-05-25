@@ -9,7 +9,7 @@ namespace mp {
 
 /// MIPFlatConverter: converts flattened expressions for MIP
 template <class Impl, class ModelAPI,
-          class Model = BasicFlatModel< > >
+          class Model = FlatModel< > >
 class MIPFlatConverter
     : public FlatConverter<Impl, ModelAPI, Model>
 {

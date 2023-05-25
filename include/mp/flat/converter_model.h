@@ -9,6 +9,7 @@
 #include "mp/flat/obj_std.h"
 #include "mp/flat/constr_std.h"
 #include "mp/flat/constr_keeper.h"
+#include "mp/flat/converter_model_base.h"
 
 namespace mp {
 
@@ -22,14 +23,14 @@ struct DefaultFlatModelParams {
 /// Class BasicFlatModel stores vars, objs, custom constraints
 /// to be used internally in a FlatConverter
 template <class ModelParams = DefaultFlatModelParams>
-class BasicFlatModel : public ConstraintManager {
+class FlatModel
+    : public ConstraintManager, public BasicFlatModel {
 public:
   using Params = ModelParams;
   using Var = typename Params::Var;
   static constexpr Var VoidVar() { return Params::VoidVar(); }
 
   using VarArray = std::vector<Var>;
-  using VarBndVec = std::vector<double>;
   using VarTypeVec = std::vector<var::Type>;
   using VarNameVec = std::vector<const char*>;
 
@@ -186,6 +187,11 @@ public:
 
   template <class Num>
   static bool is_integer_value(Num n) { return std::floor(n)==std::ceil(n); }
+
+  /// Provide variable lower bounds
+  const VarBndVec& GetVarLBs() const { return var_lb_; }
+  /// Provide variable upper bounds
+  const VarBndVec& GetVarUBs() const { return var_ub_; }
 
 
   //////////////////////////////// EXPORT INSTANCE TO A BACKEND ///////////////////////////////

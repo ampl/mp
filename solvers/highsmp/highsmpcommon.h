@@ -66,9 +66,10 @@ protected:
   int e = (call); \
   if (e != kHighsStatusOk && e != kHighsStatusWarning) \
     throw std::runtime_error( \
-      fmt::format("  Call failed: '{}' with code {}", #call, e )); \
+      fmt::format("  Error {} for call {}", e, #call ).c_str()); \
   if (e == kHighsStatusWarning) \
-    std::printf( fmt::format("  WARNING for call: '{}', warning code {}\n", #call, e ).c_str()); \
+    std::printf("%s\n", \
+      fmt::format("  Warning code {} for call {}", e, #call ).c_str()); \
 } while (0)
 
 } // namespace mp
