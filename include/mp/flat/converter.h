@@ -34,7 +34,7 @@ namespace mp {
 /// @param ModelAPI: the solver's model API wrapper
 /// @param FlatModel: internal representation of a flat model
 template <class Impl, class ModelAPI,
-          class FlatModel = BasicFlatModel< > >
+          class FlatModel = FlatModel< > >
 class FlatConverter :
     public BasicFlatConverter,
     public FlatModel,
@@ -488,12 +488,40 @@ public:
     if (relax())
       GetModel().RelaxIntegrality();
 		FixUnusedDefinedVars();       // Until we have proper var deletion
+    CheckLinearCons();
     GetModel().PushModelTo(GetModelAPI());
     MPD( CloseGraphExporter() );
     if (value_presolver_.GetExport())
       assert( value_presolver_.AllEntriesExported() );
     if (GetEnv().verbose_mode())
       GetEnv().PrintWarnings();
+  }
+
+  /// Check linear constraints.
+  /// Solvers complain about close-to-0 coefficients,
+  /// so fail on this in the debug build.
+  void CheckLinearCons() {
+#ifndef NDEBUG
+    CheckLinearConType< AlgConRange >();
+    CheckLinearConType< AlgConRhs<-1> >();
+    CheckLinearConType< AlgConRhs<0> >();
+    CheckLinearConType< AlgConRhs<1> >();
+#endif
+  }
+
+  template <class Rhs>
+  void CheckLinearConType() {
+    using LinConType = AlgebraicConstraint< LinTerms, Rhs >;
+    auto& ck = GetConstraintKeeper(
+          (LinConType*)nullptr );
+    ck.ForEachActive( [](const LinConType& lc, int ){
+      const auto& lt = lc.GetBody();
+      for (auto i=lt.size(); i--; ) {
+        assert(0.0 != std::fabs(lt.coef(i)) &&
+            "Most solvers don't like near-zero coefficients");
+      }
+      return false;     // don't delete
+    } );
   }
 
   /// Fill model traits for license check.
@@ -826,6 +854,12 @@ public:
 					(int)GetConstraintAcceptance((RotatedQuadraticConeConstraint*)nullptr));
 	}
 
+	/// Whether the ModelAPI accepts exp cones
+	int ModelAPIAcceptsExponentialCones() {
+		return
+				(int)GetConstraintAcceptance((ExponentialConeConstraint*)nullptr);
+	}
+
 
 private:
   struct Options {
@@ -837,6 +871,7 @@ private:
     int passQuadObj_ = ModelAPIAcceptsQuadObj();
 		int passQuadCon_ = ModelAPIAcceptsQC();
 		int passSOCPCones_ = 0;
+		int passExpCones_ = 0;
 
     int relax_ = 0;
   };
@@ -893,6 +928,13 @@ private:
         "0*/1: Multiply out and pass quadratic constraint terms to the solver, "
                          "vs. linear approximation.",
         options_.passQuadCon_, 0, 1);
+		if (ModelAPIAcceptsExponentialCones())
+			GetEnv().AddOption("cvt:expcones expcones",
+												 ModelAPIAcceptsExponentialCones()>1 ?
+														 "0/1*: Recognize exponential cones." :
+														 "0*/1: Recognize exponential cones.",
+												 options_.passExpCones_, 0, 1);
+		options_.passExpCones_ = ModelAPIAcceptsExponentialCones()>1;
 		if (ModelAPIAcceptsQuadraticCones())
 			GetEnv().AddOption("cvt:socp passsocp socp",
 												 ModelAPIAcceptsQuadraticCones()>1 ?
@@ -939,6 +981,9 @@ public:
 	/// Whether we pass SOCP cones
 	bool IfPassSOCPCones() const { return options_.passSOCPCones_; }
 
+	/// Whether we pass exp cones
+	bool IfPassExpCones() const { return options_.passExpCones_; }
+
 
 public:
   /// Typedef ModelAPIType. For tests
@@ -966,7 +1011,8 @@ private:
   };
   /// ValuePresolver: should be init before constraint keepers
   /// and links
-  pre::ValuePresolver value_presolver_{GetEnv(), graph_exporter_fn_};
+  pre::ValuePresolver value_presolver_
+  {GetModel(), GetEnv(), graph_exporter_fn_};
   pre::CopyLink copy_link_ { GetValuePresolver() }; // the copy links
   pre::One2ManyLink one2many_link_ { GetValuePresolver() }; // the 1-to-many links
   pre::NodeRange auto_link_src_item_;   // the source item for autolinking
@@ -1161,7 +1207,7 @@ public:
 
 /// A 'final' flat converter in a CRTP hierarchy
 template <template <typename, typename, typename> class FlatCvt,
-          class Backend, class Model = BasicFlatModel< > >
+          class Backend, class Model = FlatModel< > >
 class FlatCvtImpl :
     public FlatCvt<FlatCvtImpl<FlatCvt, Backend, Model>, Backend, Model> {
 public:

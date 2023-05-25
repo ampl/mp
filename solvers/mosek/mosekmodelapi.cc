@@ -261,6 +261,26 @@ void MosekModelAPI::AddConstraint(
 	MOSEK_CCALL( MSK_appendaccseq(lp(), domidx, nnz, numafe_prev, NULL) );
 }
 
+void MosekModelAPI::AddConstraint(
+    const ExponentialConeConstraint& ec) {
+  MSKint64t numafe_prev=0;
+  MOSEK_CCALL( MSK_getnumafe(lp(), &numafe_prev) );
+  auto nnz = ec.GetArguments().size();
+  // Is it too slow to add cones 1 by 1?
+  MOSEK_CCALL( MSK_appendafes(lp(), nnz) );
+  std::vector<MSKint64t> afeidx(nnz);
+  for (auto idx=nnz; idx--; )        // Fill new AFE indexes
+    afeidx[idx] = numafe_prev+idx;
+  MOSEK_CCALL(
+        MSK_putafefentrylist(lp(), nnz,
+                             afeidx.data(),
+                             ec.GetArguments().data(),  // assumes it's int32
+                             ec.GetParameters().data()) );
+  MSKint64t domidx=-1;
+  MOSEK_CCALL( MSK_appendprimalexpconedomain(lp(), &domidx) );
+  MOSEK_CCALL( MSK_appendaccseq(lp(), domidx, nnz, numafe_prev, NULL) );
+}
+
 /// Add indicator as disjunction
 /// (binvar!=binval) \/ (lincon).
 /// 1st afe: binvar+binval-1=0
@@ -308,12 +328,13 @@ void AddIndicator(MSKtask_t lp,
   const MSKint64t domidxlist[] = {dom1, dom2};
   const MSKint64t afeidxlist[] = {numafe_prev, numafe_prev+1};
   const MSKint64t termsizelist[] = {1, 1};
+  const MSKrealt b_afe_offset[] = {0.0, 0.0};
 
   MOSEK_CCALL( MSK_putdjc(lp,
                  numdjcs_prev,           // DJC index
                  2, domidxlist,
                  2, afeidxlist,
-                 NULL,                   // Unused
+                          b_afe_offset,  // Unused but better provide this
                  2, termsizelist) );
 }
 

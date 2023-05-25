@@ -1,6 +1,13 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+
+## 20230515
+- *Recognize exponential conic constraints*.
+  Exponential cones are recognized and passed to the
+  solver, if supported.
+  
+
 ## 20230424
 - *Pass variable names* if read from a `col` file with the 
   same name of the `nl` file being read.

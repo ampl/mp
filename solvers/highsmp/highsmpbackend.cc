@@ -153,6 +153,16 @@ void HighsBackend::SetBasis(SolutionBasis basis) {
   VarConStatii(varstt, constt);
 }
 
+
+void HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
+  auto mv = GetValuePresolver().PresolveSolution(
+    { sol0_unpres.primal, sol0_unpres.dual });
+  auto x0 = mv.GetVarValues()();
+  auto pi0 = mv.GetConValues()(CG_Linear);
+  HIGHS_CCALL(Highs_setSolution(lp(), x0.data(), NULL, NULL, pi0.data()));
+}
+
+
 ArrayRef<int> HighsBackend::VarStatii() {
   std::vector<int> vars(NumVars());
   conStatiii_.resize(NumLinCons());
@@ -205,7 +215,7 @@ ArrayRef<int> HighsBackend::ConStatii() {
 void HighsBackend::VarConStatii(ArrayRef<int> vst, ArrayRef<int> cst) {
   std::vector<int> stt(vst.data(), vst.data() + vst.size());
   std::vector<int> indicesOfMissing;
-  for (auto j = 0; j<stt.size(); j++) {
+  for (size_t j = 0; j<stt.size(); j++) {
     auto& s = stt[j];
     switch ((BasicStatus)s) {
     case BasicStatus::bas:
@@ -236,10 +246,13 @@ void HighsBackend::VarConStatii(ArrayRef<int> vst, ArrayRef<int> cst) {
     /// Depending on where 0.0 is between bounds
     std::vector<double> lb(indicesOfMissing.size());
     std::vector<double> ub(indicesOfMissing.size());
+    std::vector<int> di(indicesOfMissing.size(),   // dummy pointers
+                        indicesOfMissing.size());
+    std::vector<double> dd(indicesOfMissing.size());
+    int numnz;
     Highs_getColsBySet(lp(), indicesOfMissing.size(), indicesOfMissing.data(),
-      NULL, NULL, lb.data(), ub.data(), NULL, NULL, NULL, NULL);
-    for (int i = 0; i < indicesOfMissing.size(); i++) {
-     
+      di.data(), dd.data(), lb.data(), ub.data(), &numnz, NULL, NULL, NULL);
+    for (size_t i = 0; i < indicesOfMissing.size(); i++) {
         if (lb[i] >= -1e-6)
           stt[indicesOfMissing[i]] = kHighsBasisStatusLower;
         else if (ub[i] <= 1e-6)

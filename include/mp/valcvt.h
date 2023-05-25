@@ -11,6 +11,7 @@
 
 #include "valcvt-node.h"
 #include "valcvt-link.h"
+#include "mp/flat/converter_model_base.h"
 
 
 namespace mp {
@@ -52,16 +53,16 @@ public:
 };
 
 
-/// Value presolver implementation.
+/// Value presolver intermediate implementation.
 /// A ValuePresolver converts solutions and suffixes
 /// between the original model and the presolved one.
-class ValuePresolver : public BasicValuePresolver {
+class ValuePresolverImpl : public BasicValuePresolver {
 public:
   /// Exporter functor type
   using ExporterFn = std::function< void (const char*) >;
 
   /// Constructor
-  ValuePresolver(Env& env, ExporterFn bts={}) :
+  ValuePresolverImpl(Env& env, ExporterFn bts={}) :
     BasicValuePresolver(env), bts_(bts) { }
 
   /// Source nodes of the conversion graph, const
@@ -237,6 +238,39 @@ private:
 
   /// Link entry items temporary storage for exporting
   BasicLink::EntryItems entry_items_;
+};
+
+
+/// Final ValuePresolver.
+/// It specializes PresolveSolution() to update fixed variables
+class ValuePresolver : public ValuePresolverImpl {
+public:
+  ValuePresolver(BasicFlatModel& m, Env& env, ExporterFn bts={})
+    : ValuePresolverImpl(env, bts), model_(m) { }
+
+  /// Override PresolveSolution().
+  /// Move warm start values into the bounds.
+  MVOverEl<double> PresolveSolution (
+      const MVOverEl<double>& mv) override {
+    auto result = ValuePresolverImpl::PresolveSolution(mv);
+    auto& x = result.GetVarValues()();
+    const auto& lbs = model_.GetVarLBs();
+    const auto& ubs = model_.GetVarUBs();
+    assert(x.size() == lbs.size());
+    assert(lbs.size() == ubs.size());
+    for (auto i=x.size(); i--; ) {
+      if (x[i]<lbs[i])
+        x[i]=lbs[i];
+      else
+        if (x[i]>ubs[i])
+          x[i]=ubs[i];
+    }
+    return result;
+  }
+
+
+private:
+  BasicFlatModel& model_;
 };
 
 

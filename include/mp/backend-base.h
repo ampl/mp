@@ -70,6 +70,8 @@ public:
   virtual void InitOptionParsing() { }
   /// Chance to consider options immediately (open cloud, etc)
   virtual void FinishOptionParsing() { }
+  /// Having everything set up, solve the problem
+  virtual void Solve() { }
 
   /// Callbacks typedef
   using Callbacks = CCallbacks;
@@ -81,6 +83,10 @@ public:
   }
   std::string GetOverridenSolutionFile() { return solutionfileoverride_; }
 
+  /// Can be overridden.
+  /// For example, if we know the output name,
+  /// this should write .sol file with the solve_result and msg.
+  virtual void ReportError(int solve_result, fmt::CStringRef msg) = 0;
 
 private:
   Callbacks callbacks_;

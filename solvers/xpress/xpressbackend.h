@@ -44,10 +44,8 @@ public:
   static const char* GetBackendName();
   static const char* GetBackendLongName() { return nullptr; }
 
-  /// Chance to consider options immediately (open cloud, etc)
-  void FinishOptionParsing() override;
-
-
+  void InputExtras() override;
+  void InputXPRESSExtras();
 
   ////////////////////////////////////////////////////////////
   /////////////// OPTIONAL STANDARD FEATURES /////////////////
@@ -212,6 +210,7 @@ private:
     std::string tunename_;
   };
   
+  bool msgCallbackSet_ = false;
   Options storedOptions_;
   
   // For multisol

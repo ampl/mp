@@ -677,7 +677,7 @@ ArrayRef<int> MosekBackend::ConStatii() {
 
 void MosekBackend::VarStatii(ArrayRef<int> vst) {
   // BasicStatus enum values: from 0 to 6: none, bas, sup, low, upp, equ, btw
-  std::vector<int> skx(vst.data(), vst.data() + vst.size());
+  std::vector<MSKstakeye> skx(vst.size());
 
   // TODO: remove this if we are sure that it is the same.
   MSKint32t numvar;
@@ -686,7 +686,7 @@ void MosekBackend::VarStatii(ArrayRef<int> vst) {
 
   for (auto j = 0; j < skx.size(); j++)
   {
-    switch ((BasicStatus)skx[j])
+    switch ((BasicStatus)vst[j])
     {
       case BasicStatus::bas:
         skx[j] = MSK_SK_BAS;
@@ -795,6 +795,7 @@ SolutionBasis MosekBackend::GetBasis() {
 }
 
 void MosekBackend::SetBasis(SolutionBasis basis) {
+  solToFetch_ = GetSolutionTypeToFetch();
   auto mv = GetValuePresolver().PresolveBasis(
     { basis.varstt, basis.constt });
   auto varstt = mv.GetVarValues()();

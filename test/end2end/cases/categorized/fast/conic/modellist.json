@@ -50,5 +50,30 @@
     "name" : "socp_08_sqrt_constants",
     "objective" : 11.42915114,
     "tags" : ["socp"]
+  },
+  {
+    "name" : "expcones_01__plain",
+    "objective" : 0.7821882953,
+    "tags" : ["expcones"]
+  },
+  {
+    "name" : "expcones_02",
+    "objective" : 0.6242239555,
+    "tags" : ["expcones"]
+  },
+  {
+    "name" : "expcones_03",
+    "objective" : 0.8691893611,
+    "tags" : ["expcones"]
+  },
+  {
+    "name" : "expcones_04__negvar",
+    "objective" : -0.8691893611,
+    "tags" : ["expcones"]
+  },
+  {
+    "name" : "expcones_05__const",
+    "objective" : -0.8988331541,
+    "tags" : ["expcones"]
   }
 ]

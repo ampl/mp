@@ -1158,6 +1158,15 @@ void AMPLS__internal__Close(AMPLS_MP_Solver* slv) {
   delete slv;
 }
 
+void AMPLSReadExtras(AMPLS_MP_Solver* slv) {
+  auto be = AMPLSGetBackend(slv);
+  be->InputExtras();
+}
+
+void AMPLSSolve(AMPLS_MP_Solver* slv) {
+  auto be = AMPLSGetBackend(slv);
+  be->Solve();
+}
 mp::BasicBackend* AMPLSGetBackend(AMPLS_MP_Solver* slv) {
   assert(slv->internal_info_);
   return ((AMPLS_MP__internal*)(slv->internal_info_))->p_be_.get();
@@ -1176,8 +1185,6 @@ int AMPLSLoadNLModel(AMPLS_MP_Solver* slv,
       filename_no_ext_.resize(filename_no_ext_.size() - 3);
 
     auto be = AMPLSGetBackend(slv);
-
-
     be->ReadNL(nl_filename, filename_no_ext_);
     be->InputExtras();
   } );

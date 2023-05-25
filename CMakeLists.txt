@@ -42,14 +42,14 @@ if (POLICY CMP0054)
   cmake_policy(SET CMP0054 NEW)
 endif ()
 
-option(USE_PROFILER "Use GCC Profiler" OFF)
+option(USE_PROFILER "Use Profiler" OFF)
 if(USE_PROFILER)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
   SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
 endif()
 
-option(USE_SANITIZERS "Use GCC Sanitizers" OFF)
+option(USE_SANITIZERS "Use Sanitizers" OFF)
 if(USE_SANITIZERS)
   set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
@@ -214,7 +214,7 @@ endmacro()
 include_directories(include)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-set(MP_DATE 20230426)
+set(MP_DATE 20230515)
 
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
@@ -336,7 +336,8 @@ add_prefix(MP_FLAT_HEADERS include/mp/flat/
   constr_algebraic.h constr_general.h
   constr_prepro.h constr_prop_down.h
   context.h
-  converter.h converter_model.h convert_functional.h
+  converter.h converter_model.h converter_model_base.h
+  convert_functional.h
   eexpr.h expr_algebraic.h expr_affine.h expr_quadratic.h
   expr_bounds.h
   model_api_base.h model_api_connect.h

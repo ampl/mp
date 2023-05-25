@@ -688,6 +688,7 @@ class CPLEXDirectSolver(MPDirectSolver):
                  # ModelTags.trigonometric
                  ModelTags.relax,
                  ModelTags.multiobj,
+                 ModelTags.multisol,
                  ModelTags.sstatus,
                  ModelTags.return_mipgap
                  }
@@ -788,7 +789,11 @@ class HighsSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic_obj}
+                 ModelTags.quadratic_obj,
+
+                 ModelTags.sstatus,
+                 ModelTags.warmstart, ModelTags.return_mipgap
+                 }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
@@ -825,6 +830,7 @@ class MosekSolver(MPDirectSolver):
 
                  ModelTags.quadratic, ModelTags.quadratic_obj,
                  ModelTags.socp, ModelTags.socp_hard_to_recognize,
+                 ModelTags.expcones,
 
                  ModelTags.warmstart, ModelTags.mipstart,
                  ModelTags.return_mipgap, ModelTags.sens, ModelTags.sstatus}

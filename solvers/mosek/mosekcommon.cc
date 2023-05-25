@@ -91,11 +91,11 @@ void handleError(MSKrescodee e, const char* fname) {
 	MSKrescodee e2 = MSK_getresponseclass(e, &et);
 	if (e2 != MSK_RES_OK) MP_RAISE(
 		fmt::format(
-					"Call failed: '{}'. Error {}({}): {}\n Error in getresponseclass: {}",
-			fname, symb, e, str, e2));
+          "Error {}({}): {}\n Error in getresponseclass: {}",
+      symb, e, str, e2));
 	if ((int)e2 > (int)MSK_RESPONSE_TRM) MP_RAISE(
 		fmt::format(
-					"Call failed: '{}'. Type {}, {}({}): {}", fname, e2, symb, e, str));
+          "Error type {}, {}({}): {}", e2, symb, e, str));
 	fmt::print("\nWarning {}({}): {}\n While calling '{}'\n", symb, e, str, fname);
 }
 
