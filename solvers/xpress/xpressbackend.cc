@@ -57,21 +57,27 @@ void XpressmpBackend::Init(char** argv)  {
 
 
 void XpressmpBackend::OpenSolver() {
-  int status = 0;
+  char message[512];
   // Try the registered function first; if not available
   // call the solver's API function directly
   const auto& create_fn = GetCallbacks().init;
   if (create_fn)
     create_fn();
-  else
-    XPRESSMP_CCALL(XPRSinit(NULL));
+  else {
+    int status  = XPRSinit(NULL);
+    if (status) {
+      const auto diag = GetCallbacks().diagnostics;
+      if (diag)
+        diag();
+      XPRSgetlicerrmsg(message, 512);
+      MP_RAISE(fmt::format("XPRSinit failed with message:\n{}", 
+        message));
+
+    }
+  }
   XPRESSMP_CCALL(XPRScreateprob(lp_ref()));
-
   model_fixed_ = lp();
-
   copy_common_info_to_other();
-  if (status)
-    throw std::runtime_error("Error while creating Xpress environment");
 }
 
 void XpressmpBackend::CloseSolver() {

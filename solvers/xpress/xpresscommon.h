@@ -56,10 +56,11 @@ protected:
 
   std::string getErr()  const{
     char errmsg[512];
-    XPRSgetlasterror(lp(), errmsg);
-    return std::string(errmsg);
+    if (!XPRSgetlasterror(lp(), errmsg))
+      return std::string(errmsg);
+    else
+      return std::string();
   }
-
 };
 
 

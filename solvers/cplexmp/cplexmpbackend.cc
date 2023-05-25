@@ -67,9 +67,9 @@ namespace mp {
       set_env(CPXopenCPLEX(&status));
     if (env() == NULL) {
       char  errmsg[CPXMESSAGEBUFSIZE];
-      CPXgeterrorstring(env(), status, errmsg);
+      auto msg = CPXgeterrorstring(env(), status, errmsg);
       throw std::runtime_error(
-        fmt::format("Could not open CPLEX environment.\n{}", errmsg));
+        fmt::format("Could not open CPLEX environment.\n{}", msg ? msg : ""));
     }
     /* Avoid most error messages on screen */
     CPLEX_CALL(CPXsetintparam(env(), CPXPARAM_ScreenOutput, CPX_OFF));

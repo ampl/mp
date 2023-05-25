@@ -48,7 +48,7 @@ typedef struct AMPLS_MP_Solver_T {
   AMPLS_C_EXPORT void AMPLSAddMessage(AMPLS_MP_Solver* slv, const char* msg);
 
   /// Retrieve messages, 0-terminated array
-  const char* const* AMPLSGetMessages(AMPLS_MP_Solver* slv);
+  AMPLS_C_EXPORT const char* const* AMPLSGetMessages(AMPLS_MP_Solver* slv);
 
 
   typedef struct AMPLSCOption_T {
