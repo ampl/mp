@@ -811,13 +811,16 @@ void GcgBackend::InputDecomposition() {
 
     ArrayRef<int> blockconss = block.GetConValues()(CG_Linear);
     for (size_t i = 0; i < blockconss.size(); i++) {
-      getPROBDATA()->decomp->fixConsToBlock(getPROBDATA()->linconss[i], blockconss[i]);
+      if (blockconss[i] != 0)
+        getPROBDATA()->decomp->fixConsToBlock(getPROBDATA()->linconss[i], blockconss[i]-1);
     }
 
     ArrayRef<int> blockvars = block.GetVarValues()();
     for (size_t i = 0; i < blockvars.size(); i++) {
-      int varindex = getPROBDATA()->decomp->getDetprobdata()->getIndexForVar(getPROBDATA()->vars[i]);
-      getPROBDATA()->decomp->fixVarToBlock(varindex, blockvars[i]);
+      if (blockvars[i] != 0) {
+        int varindex = getPROBDATA()->decomp->getDetprobdata()->getIndexForVar(getPROBDATA()->vars[i]);
+        getPROBDATA()->decomp->fixVarToBlock(varindex, blockvars[i]);
+      }
     }
   }
 

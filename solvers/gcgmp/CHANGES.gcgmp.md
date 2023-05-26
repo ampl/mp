@@ -1,5 +1,5 @@
 Summary of recent updates to GCG for AMPL
-=============================================
+=========================================
 
-## 20220420
+## Unreleased
 - First release of mock driver

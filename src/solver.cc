@@ -941,11 +941,7 @@ void BasicSolver::ParseOptionString(
       s = SkipNonSpaces(s);
       continue;
     }
-    try {
-      opt->Parse(s, flags & FROM_COMMAND_LINE);
-    } catch (const OptionError &e) {
-      ReportError("{}", e.what());
-    }
+    opt->Parse(s, flags & FROM_COMMAND_LINE);
     if ((flags & NO_OPTION_ECHO) == 0)
     {
       fmt::MemoryWriter w;

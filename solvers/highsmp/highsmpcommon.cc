@@ -62,7 +62,7 @@ int HighsCommon::NumIndicatorCons() const {
 
 void checkOption(int retvalue, const char* key) {
   if (retvalue != kHighsStatusOk)
-    throw std::runtime_error(fmt::format("while setting option '{}'", key));
+    throw std::runtime_error(fmt::format("Error while setting option '{}'", key));
   
 }
 void HighsCommon::GetSolverOption(const char* key, int& value) const {

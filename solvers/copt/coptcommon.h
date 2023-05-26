@@ -7,6 +7,7 @@ extern "C" {
   #include "copt.h"
 }
 
+#include "mp/error.h"
 #include "mp/backend-to-model-api.h"
 #include "mp/format.h"
 
@@ -67,7 +68,7 @@ private:
 
 /// Convenience macro
 #define COPT_CCALL( call ) do { if (int e = (call) != COPT_RETCODE_OK) \
-  throw std::runtime_error( \
+  MP_RAISE( \
     fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
 
 } // namespace mp

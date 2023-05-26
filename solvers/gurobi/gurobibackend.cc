@@ -1812,7 +1812,7 @@ void GurobiBackend::InitCustomOptions() {
                       "feasible solutions (default Infinity).",
     GRB_DBL_PAR_IMPROVESTARTNODES, 0.0, DBL_MAX);
 
-  AddSolverOption("mip:intfeastol intfeastol",
+  AddSolverOption("mip:inttol inttol intfeastol",
     "Feasibility tolerance for integer variables (default 1e-05).",
     GRB_DBL_PAR_INTFEASTOL, 0.0, DBL_MAX);
 

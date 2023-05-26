@@ -123,7 +123,6 @@ bool BackendApp::Init(char **argv) {
     nl_filename_ += ".nl";
   else
     filename_no_ext_.resize(filename_no_ext_.size() - 3);
-  internal::SetBasename(GetBackend(), &filename_no_ext_);
 
   // Parse solver options.
   unsigned flags =
