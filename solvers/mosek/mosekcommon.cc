@@ -93,9 +93,10 @@ void handleError(MSKrescodee e, const char* fname) {
 		fmt::format(
           "Error {}({}): {}\n Error in getresponseclass: {}",
       symb, e, str, e2));
-	if ((int)e2 > (int)MSK_RESPONSE_TRM) MP_RAISE(
-		fmt::format(
-          "Error type {}, {}({}): {}", e2, symb, e, str));
+  if ((int)et >= (int)MSK_RESPONSE_TRM)
+    MP_RAISE(
+          fmt::format(
+            "Error type {}, {}({}): {}", et, symb, e, str));
 	fmt::print("\nWarning {}({}): {}\n While calling '{}'\n", symb, e, str, fname);
 }
 

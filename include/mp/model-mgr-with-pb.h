@@ -128,9 +128,10 @@ protected:
     SetSolHandler(new internal::AppSolutionHandlerImpl<SolverType, ProblemBuilder>(
                              filename_no_ext, GetEnv(), GetModel(),
                              options,
-                             GetEnv().get_output_handler().has_output ?
-                                 0 :
-                                 GetEnv().get_output_handler().banner_size));
+//                             GetEnv().get_output_handler().has_output ?
+                                 0
+//                    : GetEnv().get_output_handler().banner_size
+                    ));
   }
 
   /// Once NL is read
