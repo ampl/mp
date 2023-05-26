@@ -30,11 +30,6 @@ public:
 
 
 protected:
-  /// Chance for the Backend to note base IO filename
-  virtual void SetBasename(const std::string& filename_base) override {
-    GetMM().SetBasename(filename_base);
-  }
-
   /// Deriving backends can use this
   virtual void InitMetaInfoAndOptions() { }
 

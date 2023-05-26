@@ -5,6 +5,8 @@
  * Support for .nl/.sol/console I/O requiring a (Basic)Solver
  */
 
+#include <functional>
+
 #include "mp/arrayref.h"
 
 #include "mp/solver-base.h"
@@ -160,7 +162,7 @@ void SolutionWriterImpl<Solver, PB, Writer>::HandleSolution(
         MakeArrayRef(dual_values,
                      dual_values ? builder_.num_algebraic_cons() : 0),
         solver_.objno_used());
-  
+
   std::string solFilePath;
   if (!overrideStub_.empty()) { 
     // Check if its absolute or relative
@@ -194,12 +196,17 @@ private:
   Solver &solver_;
   int num_options_;
   int options_[MAX_AMPL_OPTIONS];
+  std::function<void()> after_header_;
 
   typedef NLProblemBuilder Base;
 
 public:
-  SolverNLHandlerImpl(ProblemBuilder &pb, Solver &s)
-    : Base(pb), solver_(s), num_options_(0) {}
+  SolverNLHandlerImpl(ProblemBuilder &pb,
+                      Solver &s,
+                      std::function<void()> after_h = {})
+    : Base(pb), solver_(s), num_options_(0),
+      after_header_(after_h)
+  { }
 
   int num_options() const { return num_options_; }
   const int *options() const { return options_; }
@@ -225,12 +232,18 @@ using SolverNLHandler = SolverNLHandlerImpl<
 
 template <typename Solver, typename PB, typename NLPB>
 void SolverNLHandlerImpl<Solver, PB, NLPB>::OnHeader(const NLHeader &h) {
+  num_options_ = h.num_ampl_options;
+  std::copy(h.ampl_options, h.ampl_options + num_options_, options_);
+  if (after_header_) {
+    solver_.notify_start_opts();
+    after_header_();
+  }
+  solver_.notify_end_opts();
+  /// Clarify objectives
   int objno = solver_.objno_specified();
   if (objno > h.num_objs && solver_.is_objno_specified())
     throw InvalidOptionValue("objno", objno,
                              fmt::format("expected value between 0 and {}", h.num_objs));
-  num_options_ = h.num_ampl_options;
-  std::copy(h.ampl_options, h.ampl_options + num_options_, options_);
   Base::OnHeader(h);
 #ifndef MP_DATE
   CheckDemoVersion(h);

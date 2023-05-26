@@ -24,16 +24,19 @@ public:
     set_exe_path(*argv);
   }
 
+  /// Provide cmdline solver options list and flags
+  virtual void SetOptionData(char** argv, int f) {
+    argv_options_ = argv;
+    flag_options_ = f;
+  }
+
   /// Parse solver options such as "outlev=1" from env and argv.
   /// @param filename_no_ext: basname of the .nl file
   ///        (or whatever should be the basename of an output .sol file)
   /// @param argv: (remaining part of) vector of cmdline strings
   /// @param flags: 0 or \a Solver::NO_OPTION_ECHO
   virtual
-  bool ParseSolverOptions(const char* filename_no_ext,
-                    char **argv, unsigned flags = 0) {
-    /// Chance for the Backend to note base IO filename
-    SetBasename(filename_no_ext);
+  bool ParseSolverOptions(char **argv, unsigned flags = 0) {
     /// Chance e.g. for the Backend to init solver environment, etc
     InitOptionParsing();
     if (ParseOptions(argv, flags)) {
@@ -49,12 +52,19 @@ public:
   void RunFromNLFile(const std::string& nl_filename,
                      const std::string& filename_no_ext) = 0;
 
-  /// Detailed steps for AMPLS C API
+  //////////////////////////// AMPLS //////////////////////////////
+  /////////////// Detailed steps for AMPLS C API //////////////////
 
   /// Read NL.
-  /// This is used by the AMPLS C API
+  /// This is also used by the AMPLS C API.
+  /// @param opts: 0-terminated list of extra options,
+  /// to be read after the <solver>_options nev var.
+  /// All model-related options should be here
+  /// (obj:.../objno/multiobj, cvt:..., acc:...),
+  /// they are not effective after NL input.
   virtual void ReadNL(const std::string& nl_filename,
-                      const std::string& filename_no_ext) = 0;
+                      const std::string& filename_no_ext,
+                      char** opts = nullptr) = 0;
 
   /// Input warm start, suffixes, and all that can modify the model.
   /// This is used by the AMPLS C API
@@ -64,8 +74,6 @@ public:
   /// This is used by the AMPLS C API
   virtual void ReportResults() = 0;
 
-  /// Chance for the Backend to note base IO filename
-  virtual void SetBasename(const std::string& ) { }
   /// Chance for the Backend to init solver environment, etc
   virtual void InitOptionParsing() { }
   /// Chance to consider options immediately (open cloud, etc)
@@ -88,9 +96,21 @@ public:
   /// this should write .sol file with the solve_result and msg.
   virtual void ReportError(int solve_result, fmt::CStringRef msg) = 0;
 
+
+protected:
+  /// 0-terminated list of custom options
+  char** GetArgvOptions() const { return argv_options_; }
+
+  /// option parser flags
+  int GetOptionFlags() const { return flag_options_; }
+
+
 private:
   Callbacks callbacks_;
   std::string solutionfileoverride_;
+
+  char** argv_options_ {nullptr};   // 0-terminated list of options
+  int flag_options_ {NO_OPTION_ECHO};
 };
 
 } // namespace mp

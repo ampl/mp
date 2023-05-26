@@ -106,6 +106,7 @@ bool BackendApp::Init(char **argv) {
   const char *filename = p_option_parser_->Parse(argv);
   if (!filename) return false;
 
+  // Print 'Gurobi XX.X.X: ' or similar
   if (GetBackend().ampl_flag()) {
     fmt::MemoryWriter banner;
     banner.write("{}: ", GetBackend().long_name());
@@ -124,15 +125,11 @@ bool BackendApp::Init(char **argv) {
   else
     filename_no_ext_.resize(filename_no_ext_.size() - 3);
 
-  // Parse solver options.
+  // Prepare parsing of solver options.
   unsigned flags =
       p_option_parser_->echo_solver_options() ?
         0 : BasicSolver::NO_OPTION_ECHO;
-  if (!GetBackend().ParseSolverOptions(
-        filename_no_ext_.c_str(), argv, flags)) {
-    result_code_ = 1;
-    return false;
-  }
+  GetBackend().SetOptionData(argv, flags);
 
   return true;
 }

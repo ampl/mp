@@ -1,0 +1,13 @@
+[
+  {
+    "name" : "Check_Wrong_Options",
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "comment": "Check graceful exit on wrong options",
+    "options": { "ANYSOLVER_options": "objno=12" },
+    "values": {
+      "solve_result_num": 500,
+      "solve_exitcode":   0
+    }
+  }
+]

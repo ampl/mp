@@ -76,25 +76,25 @@ protected:
     InitOwnOptions();
   }
 
-  void SetBasename(const std::string& filename_no_ext) override {
-     /// So that Abort() + sol writing work
-     /// before we have parsed the NL file
-     MakeUpTemporarySolHandler(filename_no_ext);
-  }
-
   void ReadNLModel(const std::string& nl_filename,
                    const std::string& filename_no_ext,
-                   Checker_AMPLS_ModeltTraits cb_checkmodel)
+                   Checker_AMPLS_ModeltTraits cb_checkmodel,
+                   std::function<void()> after_header)
   override {
     steady_clock::time_point start = steady_clock::now();
 
-    ReadNLFile(nl_filename);
+    ReadNLFile(nl_filename,
+               [this, &filename_no_ext, after_header](){
+      MakeProperSolutionHandler(filename_no_ext);
+      if (after_header)
+        after_header();                   // parse options
+    });
     ReadVarNames(filename_no_ext + ".col");
+
     double read_time = GetTimeAndReset(start);
     if (GetEnv().timing())
       GetEnv().Print("NL model read time = {:.6f}s\n", read_time);
 
-    MakeProperSolutionHandler(filename_no_ext);
     ConvertModelAndUpdateBackend();
 
     if (cb_checkmodel) {
@@ -108,9 +108,11 @@ protected:
       GetEnv().Print("NL model conversion time = {:.6f}s\n", cvt_time);
   }
 
-  void ReadNLFile(const std::string& nl_filename) {
+  void ReadNLFile(
+      const std::string& nl_filename,
+      std::function<void()> after_header) {
     set_nl_read_result_handler(
-          new SolverNLHandlerType(GetPB(), GetEnv()));
+          new SolverNLHandlerType(GetPB(), GetEnv(), after_header));
     internal::NLFileReader<> reader;
     reader.Read(nl_filename, *nl_read_result_.handler_, 0);
   }
@@ -120,34 +122,18 @@ protected:
     nr.Read(filename, *nl_read_result_.handler_);
   }
 
-  /// Before reading the NL file, a generic solution handler
-  /// for error reporting
-  void MakeUpTemporarySolHandler(const std::string& filename_no_ext) {
-    static int opt_static[] = {2, 1, 0};
-    ArrayRef<int> options(opt_static);             ///< 'Default' NL options
-    SetSolHandler(new internal::AppSolutionHandlerImpl<SolverType, ProblemBuilder>(
-                             filename_no_ext, GetEnv(), GetModel(),
-                             options,
-//                             GetEnv().get_output_handler().has_output ?
-                                 0
-//                    : GetEnv().get_output_handler().banner_size
-                    ));
-  }
-
-  /// Once NL is read
+  /// Once NL header is read
   void MakeProperSolutionHandler(const std::string& filename_no_ext) {
     ArrayRef<int> options(get_nl_read_result_handler().options(),
                           get_nl_read_result_handler().num_options());
     SetSolHandler(
           new internal::AppSolutionHandlerImpl<SolverType, ProblemBuilder>(
           filename_no_ext, GetEnv(), GetPB(), options,
-          GetEnv().get_output_handler().has_output ?
-            0 :
-            GetEnv().get_output_handler().banner_size));
+            0 ));
   }
 
   /// Says we finished problem modification,
-  /// so we run model conversion and communicate the result into the backend
+  /// so we run model conversion and communicate the result into the ModelAPI.
   void ConvertModelAndUpdateBackend() {
     GetCvt().ConvertModel();
   }

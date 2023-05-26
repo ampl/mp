@@ -28,13 +28,11 @@ public:
   /// Setup Model Manager's solver options
   virtual void InitOptions() = 0;
 
-  /// IO file basename, ideal to know this before option parsing
-  virtual void SetBasename(const std::string& filename_no_ext) = 0;
-
   /// Read NL model
   virtual void ReadNLModel(const std::string& nl_filename,
                            const std::string& filename_no_ext,
-                           Checker_AMPLS_ModeltTraits ) = 0;
+                           Checker_AMPLS_ModeltTraits ,
+                           std::function<void()> after_header) = 0;
 
   /// User-provided primal solution
   virtual ArrayRef<double> InitialValues() = 0;

@@ -937,7 +937,9 @@ void BasicSolver::ParseOptionString(
       }
     }
     if (opt->is_flag() && equal_sign) {
-      ReportError("Option \"{}\" doesn't accept argument", &name[0]);
+      MP_RAISE(
+            fmt::format("Option \"{}\" doesn't accept an argument",
+                        &name[0]));
       s = SkipNonSpaces(s);
       continue;
     }
@@ -960,7 +962,8 @@ bool BasicSolver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) 
   bool had_exe_name_option_var = false;
   /// Look for a <solver>_options env var.
   /// First try the executable name.
-  if (const char *s = exe_path()) {
+  const char *s = exe_path();
+  if (std::strlen(s)) {
     path p(s);
     auto exe_basename = p.filename().string();
     auto pt = exe_basename.rfind('.');
@@ -980,8 +983,10 @@ bool BasicSolver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) 
     ParseOptionString(s, flags);
   }
   flags |= FROM_COMMAND_LINE;        // proceed to command-line options
-  while (const char *s = *argv++) {
-    ParseOptionString(s, flags);
+  if (argv) {
+    while (const char *s = *argv++) {
+      ParseOptionString(s, flags);
+    }
   }
   if ((bool_options_ & SHOW_VERSION) != 0)
     ShowVersion();

@@ -169,7 +169,8 @@ protected:
 
   DEFINE_STD_FEATURE(WRITE_PROBLEM)
   ALLOW_STD_FEATURE(WRITE_PROBLEM, false)
-  FEATURE_API_TO_IMPLEMENT(WRITE_PROBLEM, void DoWriteProblem(const std::string& name))
+  FEATURE_API_TO_IMPLEMENT(WRITE_PROBLEM,
+                           void DoWriteProblem(const std::string& name))
   ////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////// MODEL QUERY //////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
@@ -182,9 +183,10 @@ protected:
   ////////////////////////////////////////////////////////////////////////////
 public:
   /// Runs Solver given the NL file name.
+  /// This is called from BackendApp.
   void RunFromNLFile(const std::string& nl_filename,
                      const std::string& filename_no_ext) override {
-    ReadNL(nl_filename, filename_no_ext);
+    ReadNL(nl_filename, filename_no_ext, GetArgvOptions());
     InputExtras();
 
     SetupTimerAndInterrupter();
@@ -203,11 +205,19 @@ public:
 
   /// Detailed steps for AMPLS C API
 
-  /// Read NL
+  /// Read NL.
+  /// @param opts: extra options
+  /// (to be read after <solver>_options env var).
+  /// All model-related options should be here
+  /// (obj:.../objno/multiobj, cvt:..., acc:...).
   void ReadNL(const std::string& nl_filename,
-              const std::string& filename_no_ext) override {
+              const std::string& filename_no_ext,
+              char** opts) override {
     GetMM().ReadNLModel(nl_filename, filename_no_ext,
-                        GetCallbacks().check);
+                        GetCallbacks().check,
+                        [this, opts](){        // options parser lambda
+      this->ParseSolverOptions(opts, GetOptionFlags());
+    });
   }
 
   /// Input warm start, suffixes, and all that can modify the model.

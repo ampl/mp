@@ -207,8 +207,13 @@ public:
   /// Returns the index of the objective to optimize starting from 1,
   /// 0 to not use objective.
   int objno_used() const {
-    return obj_added_ ? objno_specified() : 0;
+    return
+        opts_read_ ?
+          ( obj_added_ ? objno_specified() : 0 ) :
+          objno_specified();           // we don't know any more
   }
+  /// objno_specified(): actually even if not specified,
+  /// it returns the objno to use (0 - feasibility, otherwise obj index).
   /// Both multiobj() and objno_specified() are used in NLReader to select
   /// the objective(s), solvers should not use these accessors.
   int objno_specified() const { return std::abs(objno_); }
@@ -216,6 +221,11 @@ public:
   bool is_objno_specified() const { return objno_>=0; }
   /// Notify Solver if an objective is added
   void notify_obj_added() { obj_added_ = true; }
+
+  /// Notify Solver we start reading options
+  void notify_start_opts() { opts_read_=false; }
+  /// Notify we are done
+  void notify_end_opts() { opts_read_=true; }
 
   /// Returns true if multiobjective optimization is enabled.
   /// Both multiobj and objno are used in NLReader to select
@@ -264,8 +274,7 @@ public:
 
   /// Handle error
   void HandleError(fmt::CStringRef message) override {
-    std::fputs(message.c_str(), stderr);
-    std::fputc('\n', stderr);
+    MP_RAISE(message.c_str());
   }
 
   /// The default implementation of Interrupter does nothing.
@@ -278,7 +287,7 @@ public:
     ReportError("Unknown option or invalid key \"{}\"", name);
   }
 
-  /// Reports an error printing the formatted error message to stderr.
+  /// Reports an error by throwing it.
   /// Usage: ReportError("File not found: {}") << filename;
   void ReportError(fmt::CStringRef format, const fmt::ArgList &args) {
     has_errors_ = true;
@@ -438,6 +447,8 @@ private:
   int objno_ {-1};
   /// Flag whether an objective has been added
   bool obj_added_ {false};
+  /// Flag whether options have been read
+  bool opts_read_ { false };
 
   enum {SHOW_VERSION = 1, AMPL_FLAG = 2};
   int bool_options_ {0};
