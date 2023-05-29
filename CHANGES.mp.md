@@ -2,6 +2,10 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## TBD
+- Cones: recognize xy >= 1 as rotated SOC.
+
+
 ## 20230515
 - *Recognize exponential conic constraints*.
   Exponential cones are recognized and passed to the

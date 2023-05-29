@@ -233,10 +233,10 @@ protected:
         if (fND1 && qptt.coef12*sens<0.0)
           return false;
         if ((sens>0 &&
-             qptt.nSamePos==0 && qptt.nSameNeg)
+             qptt.nSamePos==0)
             ||
             (sens<0 &&
-             qptt.nSameNeg==0 && qptt.nSamePos))
+             qptt.nSameNeg==0))
           return AddRotatedQC(qpterms, lint, rhs,
                               qptt.iDiffVars);
       }
@@ -518,7 +518,7 @@ protected:
   bool AddRotatedQC(const QuadTerms& qpterms,
                     const LinTerms& lint,
                     double rhs, int iDiffVars) {
-    assert(lint.size() + (iDiffVars>=0) == 1);
+    assert(lint.size() + (iDiffVars>=0) <= 1);
     const auto rhsNon0 = (std::fabs(rhs)!=0.0);
     std::vector<int> x(qpterms.size()+1+lint.size()+rhsNon0);
     std::vector<double> c(qpterms.size()+1+lint.size()+rhsNon0);

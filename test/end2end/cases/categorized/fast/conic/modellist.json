@@ -52,6 +52,14 @@
     "tags" : ["socp"]
   },
   {
+    "name" : "socp_09_rsoc_hyperb_eoq",
+    "tags" : ["socp"],
+    "values": {
+      "x": 3651.48
+    },
+    "comment": "Obj values are strangely different among solvers..."
+  },
+  {
     "name" : "expcones_01__plain",
     "objective" : 0.7821882953,
     "tags" : ["expcones"]
