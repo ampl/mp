@@ -1255,34 +1255,44 @@ AMPLS_C_Option*  AMPLSGetOptions(AMPLS_MP_Solver* slv) {
 template <typename T> int AMPLSetOption(AMPLS_MP_Solver* slv,
   const char* name, T v) {
   auto be = AMPLSGetBackend(slv);
-  auto ii = ((AMPLS_MP__internal*)(slv->internal_info_));
   try {
     auto opt = be->GetOption(name);
     opt->SetValue(v);
     return 0;
   }
-  catch (const mp::OptionError& ) {
+  catch (const mp::OptionError& o) {
+    ((AMPLS_MP__internal*)(slv->internal_info_))->msg_extra_.
+      push_back(o.what());
     return 1;
   }
-  catch (const std::exception& ) {
-    return 2;
+  catch (const std::runtime_error& e) {
+    ((AMPLS_MP__internal*)(slv->internal_info_))->msg_extra_.
+      push_back(e.what());
   }
+  catch (const std::exception& ) {
+  }
+  return 2;
 }
 template <typename T> int AMPLSGetOption(AMPLS_MP_Solver* slv,
   const char* name, T v) {
   auto be = AMPLSGetBackend(slv);
-  auto ii = ((AMPLS_MP__internal*)(slv->internal_info_));
   try {
     auto opt = be->GetOption(name);
     opt->GetValue(*v);
     return 0;
   }
-  catch (const mp::OptionError& ) {
+  catch (const mp::OptionError& o) {
+    ((AMPLS_MP__internal*)(slv->internal_info_))->msg_extra_.
+      push_back(o.what());
     return 1;
   }
-  catch (const std::exception& ) {
-    return 2;
+  catch (const std::runtime_error& e) {
+    ((AMPLS_MP__internal*)(slv->internal_info_))->msg_extra_.
+      push_back(e.what());
   }
+  catch (const std::exception&) {
+  }
+  return 2;
 }
 int AMPLSSetIntOption(AMPLS_MP_Solver* slv,
   const char* name, int v) {
@@ -1320,5 +1330,4 @@ int AMPLSGetStrOption(AMPLS_MP_Solver* slv,
   catch (const std::exception&) {
     return 2;
   }
-  //TODO
 }
