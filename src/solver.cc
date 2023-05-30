@@ -1175,7 +1175,8 @@ mp::BasicBackend* AMPLSGetBackend(AMPLS_MP_Solver* slv) {
 
 /// Load model incl. suffixes
 int AMPLSLoadNLModel(AMPLS_MP_Solver* slv,
-                     const char* nl_filename) {
+                     const char* nl_filename,
+                      char** options) {
   return AMPLS__internal__TryCatchWrapper( slv, [=]() {
     std::string nl_filename_ = nl_filename;
     auto filename_no_ext_ = nl_filename_;
@@ -1186,7 +1187,7 @@ int AMPLSLoadNLModel(AMPLS_MP_Solver* slv,
       filename_no_ext_.resize(filename_no_ext_.size() - 3);
 
     auto be = AMPLSGetBackend(slv);
-    be->ReadNL(nl_filename, filename_no_ext_);
+    be->ReadNL(nl_filename, filename_no_ext_, options);
     be->InputExtras();
   } );
 }

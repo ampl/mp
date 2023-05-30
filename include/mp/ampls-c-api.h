@@ -29,7 +29,7 @@ typedef struct AMPLS_MP_Solver_T {
   /// a solver-specific API using functions of ampls-cpp-api.h.
   /// @return 0 on success
   AMPLS_C_EXPORT int AMPLSLoadNLModel(AMPLS_MP_Solver* slv,
-    const char* nl_filename);
+    const char* nl_filename, char** options);
 
   /// Load suffixes and other option-dependent info
   AMPLS_C_EXPORT void AMPLSReadExtras(AMPLS_MP_Solver* slv);

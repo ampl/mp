@@ -14,16 +14,16 @@
 namespace mp {
 
 /// A function to add warning about PL approximation
-std::pair<const char*, const char*>
+std::pair<std::string, std::string>
 GetWarningKeyAndText(const char* conName, double tol) {
-  static std::string key =
+  std::string key =
       std::string("PLApprox");
-  static std::string txt =
+  std::string txt =
       std::string("An expression of type '") + conName +
       "' has been piecewise-linearly approximated. "
       "Set cvt:plapprox:reltol to control precision (currently " +
       std::to_string(tol) + ").";
-  return { key.c_str(), txt.c_str() };
+  return { key, txt };
 }
 
 
