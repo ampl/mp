@@ -16,7 +16,7 @@ APIEXPORT void* AMPLloadmodel(int argc, char** argv, void** slvout) {
   AMPLS_MP_Solver* slv = AMPLSOpenHighs(slv_opt, cb);
   if (!slv)
     return NULL;
-  AMPLSLoadNLModel(slv, nl_filename);
+  AMPLSLoadNLModel(slv, nl_filename, (char**)0);
   return slv;
 }
 

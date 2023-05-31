@@ -631,8 +631,6 @@ protected:
     bool valid_ {false};
   };
 
-  /// LHS of ax >= by * exp( cz / by )
-  using LhsTraits = SubexprTraits<1>;
   /// RHS
   using RhsTraits = SubexprTraits<2>;
 
@@ -651,30 +649,20 @@ protected:
     if (1 == body.GetQPTerms().size()) {
       const auto& lt = body.GetLinTerms();      // But we have c0*x + c1*y*zz <=> 0
       const auto& qt = body.GetQPTerms();
-      LhsTraits lhst;
-      if (0.0 == std::fabs(rhs) &&              // rhs==0:
-          1 == lt.size())       // ax >= by exp(cz / by)   ?
-        lhst = ClassifyLhs(lt.coef(0)*sens, lt.var(0));
-      else if (0 == lt.size())  // const >= by exp(cz / by)   ?
-        lhst = ClassifyLhs(-rhs*sens, -1);
 
-      if (lhst) {
-        if (auto rhst = ClassifyRhsQuadr(
-              -qt.coef(0)*sens, qt.var1(0), qt.var2(0)))
-          return AddExpCone(lhst, rhst);
-        else if (auto rhst = ClassifyRhsQuadr(
-                   -qt.coef(0)*sens, qt.var2(0), qt.var1(0)))
-          return AddExpCone(lhst, rhst);
-      }
+      if (auto rhst = ClassifyRhsQuadr(
+            -qt.coef(0)*sens, qt.var1(0), qt.var2(0)))
+        return AddExpCone(lt, -rhs, -1, sens, rhst);
+      else if (auto rhst = ClassifyRhsQuadr(
+                 -qt.coef(0)*sens, qt.var2(0), qt.var1(0)))
+        return AddExpCone(lt, -rhs, -1, sens, rhst);
     }
     return false;
   }
 
   /// DoRun.
-  /// Body: linear, i.e., var1 (or const) >= var2 (or const).
-  /// In particular, the following cases.
-  ///	///
-  /// Considering const>=0.
+  /// Body: linear, ax >= b exp(cz / b)
+  ///
   /// Accept non-(+-1) coefficients.
   ///
   /// @param body: linear constraint body.
@@ -685,24 +673,10 @@ protected:
   bool DoRun(const LinTerms& lt,
              int sens, double rhs) {
     assert((sens==1 || sens==-1) && "sens 1 or -1 only");
-    if (0.0 == std::fabs(rhs) &&          // rhs==0: y==const
-        2 == lt.size()) {                 // ax >= b exp(cz / b)
-      if (auto rhst = ClassifyRhsLin(-lt.coef(0)*sens, lt.var(0))) {
-        // c2*x >= -c1*exp()
-        if (auto lhst = ClassifyLhs(lt.coef(1)*sens, lt.var(1))) {
-          return AddExpCone(lhst, rhst);
-        }
-      } else if (auto rhst = ClassifyRhsLin(-lt.coef(1)*sens, lt.var(1))) {
-        // c1*x >= -c2*exp()
-        if (auto lhst = ClassifyLhs(lt.coef(0)*sens, lt.var(0))) {
-          return AddExpCone(lhst, rhst);
-        }
-      }
-    } else if (1 == lt.size()) {          // const >= b exp(cz / b)
-      if (auto lhst = ClassifyLhs(-rhs*sens, -1)) {
-        if (auto rhst = ClassifyRhsLin(-lt.coef(0)*sens, lt.var(0))) {
-          return AddExpCone(lhst, rhst);
-        }
+    for (size_t i=0; i<lt.size(); ++i) {
+      if (auto rhst = ClassifyRhsLin(-lt.coef(i)*sens, lt.var(i))) {
+        // ... >= -c[i]*exp(...)
+        return AddExpCone(lt, -rhs, i, sens, rhst);
       }
     }
     return false;
@@ -710,15 +684,6 @@ protected:
 
 
 protected:
-  LhsTraits ClassifyLhs(double a, int x) {
-    LhsTraits result {{a}, {x}};
-    if ((x<0 && a>=0.0) ||             // Lhs is const, >=0
-        (x>=0 && a>=0.0 && MC().lb(x)>=0.0) ||  // c*v >= 0
-        (x>=0 && a<=0.0 && MC().ub(x)>=0.0))
-      result.valid_ = true;
-    return result;
-  }
-
   /// The RHS is just b * (v=exp(z))?
   RhsTraits ClassifyRhsLin(double b, int v) {
     assert(v>=0);
@@ -758,7 +723,7 @@ protected:
             const auto& ae = pConLin->GetAffineExpr();
             if (0.0 == std::fabs(ae.constant_term() &&
                                  1==ae.GetBody().size())) {
-              const auto& body = ae.GetBody();  // can we ever get here?
+              const auto& body = ae.GetBody();  // tested by expcones_06.mod
               if (y == body.var(0)) {           // v2 = z / (c1*y)
                 result.coefs_ = {b, b/body.coef(0)};
                 result.vars_ = {y, z};
@@ -773,21 +738,46 @@ protected:
     return result;
   }
 
-  bool AddExpCone(LhsTraits l, RhsTraits r) {
-    assert(l.vars2del_.empty());
+  /// LHS: sens * (lt+cterm [no lt_i_skip element])
+  bool AddExpCone(const LinTerms& lt, double cterm,
+                  int lt_i_skip, int sens,
+                  RhsTraits r) {
     for (auto v2d: r.vars2del_)       // unuse result vars
       MC().DecrementVarUsage(v2d);
     std::array<int, 3> args
-    {l.vars_[0], r.vars_[0], r.vars_[1]};
+    {0, r.vars_[0], r.vars_[1]};
+    std::array<double, 3> coefs
+    {1.0*sens, r.coefs_[0], r.coefs_[1]};
+    auto n_lterms = lt.size() - (lt_i_skip>=0);
+    if (0==n_lterms) {                // LHS = const
+      args[0] = -1;                   // to be replaced by fixed var==1
+      coefs[0] = cterm * sens;
+    } else if (1==n_lterms && 0.0==std::fabs(cterm)) {
+      for (size_t i=0; i<lt.size(); ++i) {  // LHS = c * x
+        if ((int)i!=lt_i_skip) {
+          args[0] = lt.var(i);
+          coefs[0] = lt.coef(i) * sens;     // * sens
+        }
+      }
+    } else {                           // LHS = affine_expr
+      AffineExpr ae;                   // all 3 cases tested by
+      ae.constant_term(cterm);         // expcones_..mod
+      ae.reserve(n_lterms);
+      for (size_t i=0; i<lt.size(); ++i) {
+        if ((int)i!=lt_i_skip)
+          ae.add_term( lt.coef(i), lt.var(i) );
+      }
+      args[0] = MC().AssignResultVar2Args(
+            LinearFunctionalConstraint(std::move(ae)));
+      coefs[0] = sens;                    // * sens
+    }
     for (int i=0; i<3; ++i) {
       if (args[i]<0) {                // marked as -1?
         args[i] = MC().MakeFixedVar(1.0);
       }
     }
     MC().AddConstraint(
-          ExponentialConeConstraint(
-            args,
-            {l.coefs_[0], r.coefs_[0], r.coefs_[1]}));
+          ExponentialConeConstraint(args, coefs));
     return true;
   }
 

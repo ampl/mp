@@ -1,14 +1,21 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
-## TBD
-- MIP start
+## 20230531
+- *MIP start*.
+  HiGHS 1.5 supports complete MIP starts only.
+  For partial MIP start, user solve with fixed known
+  variables first (Modeling Tip #7).
+- Wrong solver options are gracefully reported via
+  solve_message.
+
 
 ## 20230522
 - Fixed solution status reporting to AMPL
 - Fixed basis input with obj offset or missing data
 - Added warm start for LP problems
 - Reading column names from *col* file is present
+
 
 ## 20230424
 - *Changes in the MP library*: added variable names support

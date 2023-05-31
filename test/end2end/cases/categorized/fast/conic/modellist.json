@@ -83,5 +83,10 @@
     "name" : "expcones_05__const",
     "objective" : -0.8988331541,
     "tags" : ["expcones"]
+  },
+  {
+    "name" : "expcones_06__kelly__affexp_lhs",
+    "objective" : 0.1116637435,
+    "tags" : ["expcones"]
   }
 ]

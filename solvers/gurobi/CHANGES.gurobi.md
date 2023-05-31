@@ -1,6 +1,11 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
+## 20230531
+- Wrong solver options are gracefully reported via
+  solve_message.
+
+
 ## 20230522
 - Added option 'lim:sol' to set a limit on the number of solutions found
 
