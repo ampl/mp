@@ -11,13 +11,13 @@ APIEXPORT void* AMPLloadmodel(int argc, char** argv, CCallbacks cb) {
   const char* nl_filename = argv[1];
   const char *slv_opt= argv[2];
   AMPLS_MP_Solver* slv;
-  slv = AMPLSOpenGcg(slv_opt, cb);
+  slv = Open_gcg(slv_opt, cb);
   if (!slv)
     return NULL;
-  AMPLSLoadNLModel(slv, nl_filename);
+  AMPLSLoadNLModel(slv, nl_filename, (char**)0);
   return slv;
 }
-APIEXPORT void* AMPLgetGcgmodel(void* slv) {
+APIEXPORT void* AMPLgetScipmodel(void* slv) {
   return GetGcgmodel(slv);
 }
 

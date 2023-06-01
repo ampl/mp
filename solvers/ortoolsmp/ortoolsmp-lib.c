@@ -11,7 +11,7 @@ APIEXPORT void* AMPLloadmodel(int argc, char** argv, void* slvout) {
   const char *slv_opt= argv[2];
   AMPLS_MP_Solver *slv = AMPLSOpenOrtools(slv_opt);
   int ret = -1;
-  ret = AMPLSLoadNLModel(slv, nl_filename);
+  ret = AMPLSLoadNLModel(slv, nl_filename, (char**)0);
   void* mdl = GetOrtoolsmodel(slv);
   slvout = &slv;
   return mdl;

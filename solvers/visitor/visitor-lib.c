@@ -14,7 +14,7 @@ APIEXPORT void* AMPLloadmodel(int argc, char** argv, CCallbacks cb) {
   slv = AMPLSOpenVisitor(slv_opt, cb);
   if (!slv)
     return NULL;
-  AMPLSLoadNLModel(slv, nl_filename);
+  AMPLSLoadNLModel(slv, nl_filename, (char**)0);
   return slv;
 }
 APIEXPORT void* AMPLgetVisitormodel(void* slv) {

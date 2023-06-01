@@ -12,7 +12,7 @@ APIEXPORT mosek_prob* AMPLloadmodel(int argc, char** argv, void* slvout) {
   AMPLS_MP_Solver slv;
   int ret = -1;
   ret = AMPLSOpenMosek(&slv, slv_opt);
-  ret = AMPLSLoadNLModel(&slv, nl_filename);
+  ret = AMPLSLoadNLModel(&slv, nl_filename, (char**)0);
   mosek_prob* mdl = GetMosekmodel(&slv);
   slvout = &slv;
   return mdl;

@@ -11,7 +11,7 @@ int RunGurobiAMPLS(const char* nl_filename, const char* slv_opt) {
   AMPLS_MP_Solver* pslv;
   int ret=-1;
   if (!(pslv = AMPLSOpenGurobi(slv_opt)))
-    if (!(ret = AMPLSLoadNLModel(pslv, nl_filename))) {
+    if (!(ret = AMPLSLoadNLModel(pslv, nl_filename, slv_opt))) {
       GRBmodel* mdl = GetGRBmodel(pslv);
       if (!(ret = GRBoptimize(mdl))) {  // Optimize: doing ourselves
         ret = AMPLSReportResults(pslv);
