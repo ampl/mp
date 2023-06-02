@@ -1123,6 +1123,7 @@ typedef struct AMPLS_MP__internal_T {
   /// Array of options
   std::vector<AMPLSOption> options_;
   std::vector<AMPLS_C_Option> options_c_;
+  std::string optionvalue_;
 } AMPLS_MP__internal;
 
 
@@ -1316,12 +1317,14 @@ int AMPLSGetDblOption(AMPLS_MP_Solver* slv,
   return AMPLSGetOption(slv, name, v);
 }
 int AMPLSGetStrOption(AMPLS_MP_Solver* slv,
-  const char* name, const char* const* v) {
+  const char* name,  const char** v) {
   std::string s;
   auto be = AMPLSGetBackend(slv);
   try {
     auto opt = be->GetOption(name);
-    opt->GetValue(s);
+    auto ii = ((AMPLS_MP__internal*)(slv->internal_info_));
+    opt->GetValue(ii->optionvalue_);
+    *v = ii->optionvalue_.data();
     return 0;
   }
   catch (const mp::OptionError&) {

@@ -90,14 +90,16 @@ namespace mp {
   }
 
   void CplexBackend::CloseSolver() {
-    if (lp() != NULL) {
+    if (lp() != nullptr) {
       CPLEX_CALL(CPXfreeprob(env(), &lp_ref()));
     }
     /* Free up the CPLEX environment, if necessary */
-    if (env() != NULL) {
+    if (env() != nullptr) {
       CPLEX_CALL(CPXcloseCPLEX(&env_ref()));
     }
   }
+
+
 
 
   const char* CplexBackend::GetBackendName()
@@ -258,6 +260,7 @@ namespace mp {
     }
     return { std::move(varstt), std::move(constt) };
   }
+
   void CplexBackend::SetBasis(SolutionBasis basis) {
     auto mv = GetValuePresolver().PresolveBasis(
       { basis.varstt, basis.constt });
@@ -268,18 +271,14 @@ namespace mp {
     VarConStatii(varstt, constt);
   }
 
-  /*
   void CplexBackend::AddPrimalDualStart(Solution sol0_unpres) {
-    if (IsMIP())
-      return;
     auto mv = GetValuePresolver().PresolveSolution(
       { sol0_unpres.primal, sol0_unpres.dual });
     auto x0 = mv.GetVarValues()();
     auto pi0 = mv.GetConValues()(CG_Linear);
-    
-    //COPT_CCALL(COPT_SetLpSolution(lp(), x0.data(), nullptr, pi0.data(), nullptr));
-
-  }*/
+    CPXcopystart(env(), lp(), nullptr, nullptr, x0.data(), nullptr,
+      nullptr, pi0.data());
+  }
 
   void CplexBackend::AddMIPStart(
     ArrayRef<double> x0_unpres, ArrayRef<int> sparsity_unpres) {
@@ -344,7 +343,8 @@ double CplexBackend::SimplexIterations() const {
 }
 
 int CplexBackend::BarrierIterations() const {
-  return CPXgetbaritcnt (env(), lp());
+  int it= CPXgetbaritcnt (env(), lp());
+  return it;
 }
 
 void CplexBackend::DoWriteProblem(const std::string &file) {
