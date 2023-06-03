@@ -405,14 +405,22 @@ std::string XpressmpBackend::DoXpressFixedModel()
     InputXPRESSExtras();
   }
   void XpressmpBackend::InputXPRESSExtras() {
+
+
     bool doLog = outlev_ > 0 && outlev_ < 5;
     set_verbose_mode(doLog);
-    
     if (doLog && !msgCallbackSet_)
     {
       msgCallbackSet_ = true;
       XPRSaddcbmessage(lp(), xpdisplay, NULL, 0);
     }
+
+    if (storedOptions_.logFile_.size())
+    {
+      XPRESSMP_CCALL(XPRSsetlogfile(lp(), storedOptions_.logFile_.c_str()));
+      XPRSsetintcontrol(lp(), XPRS_OUTPUTLOG, 1);        /* Chat mode */
+    }
+
     if (need_multiple_solutions())
       CreateSolutionPoolEnvironment();
   }
@@ -1163,6 +1171,9 @@ void XpressmpBackend::InitCustomOptions() {
 		"to the \"global file\", a temporary file written during a "
 		"global search. Default = 60.",
     XPRS_GLOBALFILELOGINTERVAL, 1, INT_MAX);
+
+  AddStoredOption("tech:logfile logfile",
+    "Log file name; default=no file", storedOptions_.logFile_);
 
   AddSolverOption("lim:mem memlimit maxmemoryhard",
                   "Hard limit (integer number of MB) on memory allocated, "

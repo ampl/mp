@@ -1,6 +1,11 @@
 Summary of recent updates to Xpress for AMPL
 ============================================
 
+
+## 20230603
+- Added option 'tech:logfile' to enable output to a log file
+
+
 ## 20230424
 - *Changes in the MP library*: added variable names support
   and removed spurious starting solution

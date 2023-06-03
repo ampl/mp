@@ -208,6 +208,7 @@ private:
     int nPoolMode_ = 0;
     std::string tunebase_;
     std::string tunename_;
+    std::string logFile_;
   };
   
   bool msgCallbackSet_ = false;
