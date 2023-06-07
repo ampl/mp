@@ -3,15 +3,22 @@
 
 #include <stddef.h>
 #include "mp/ampls-ccallbacks.h"
+
 /*
  * A generic C API for MP
  */
-
 #ifdef _WIN32
 #define AMPLS_C_EXPORT __declspec(dllexport)
 #else
 #define AMPLS_C_EXPORT __attribute__((visibility("default")))
 #endif
+
+
+// Macro to be used in each solver to automatically declare the API functions
+#define DECLARE_SOLVER_API_FUNCTIONS(name) \
+    AMPLS_MP_Solver* Open_##name(CCallbacks cb); \
+    AMPLS_C_EXPORT void AMPLSClose_##name(AMPLS_MP_Solver* slv); \
+    AMPLS_C_EXPORT void* AMPLSGetModel_##name(AMPLS_MP_Solver* slv);
 
 /// An AMPLS solver instance
 typedef struct AMPLS_MP_Solver_T {

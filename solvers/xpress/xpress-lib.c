@@ -3,5 +3,5 @@
 AMPLS_C_EXPORT AMPLS_MP_Solver* AMPLSOpen_xpress(int argc, char** argv)
 {
   CCallbacks cb = { NULL };
-  return Open_xpress(NULL, cb);
+  return Open_xpress(cb);
 }

@@ -870,16 +870,19 @@ ArrayRef<double> MosekBackend::DRay()
 
 // AMPLs
 
-AMPLS_MP_Solver* AMPLSOpenMosek(const char* slv_opt, CCallbacks cb = {}) {
+AMPLS_MP_Solver* Open_mosek(CCallbacks cb = {}) {
   return AMPLS__internal__Open(
         std::unique_ptr<mp::BasicBackend>{new mp::MosekBackend()},
-        slv_opt, cb);
+        cb);
 }
 
-void AMPLSCloseMosek(AMPLS_MP_Solver* slv) {
+
+void AMPLSClose_mosek(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-MSKtask_t GetMosekmodel(AMPLS_MP_Solver* slv) {
-  return dynamic_cast<mp::MosekBackend*>(AMPLSGetBackend(slv))->lp();
+void* AMPLSGetModel_mosek(AMPLS_MP_Solver* slv) {
+  return
+    dynamic_cast<mp::CbcmpBackend*>(AMPLSGetBackend(slv))->lp();
 }
+

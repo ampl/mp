@@ -1079,17 +1079,16 @@ void GcgBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
 
 
 // AMPLs
-void* AMPLSOpenGcg(
-  const char* slv_opt, CCallbacks cb = {}) {
+void* AMPLSOpen_gcg(CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::GcgBackend()},
-    slv_opt, cb);
+    cb);
 }
 
-void AMPLSCloseGcg(AMPLS_MP_Solver* slv) {
+void AMPLSClose_gcg(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-void* GetGcgmodel(AMPLS_MP_Solver* slv) {
+void* AMPLSGetModel_gcg(AMPLS_MP_Solver* slv) {
   return
     dynamic_cast<mp::GcgBackend*>(AMPLSGetBackend(slv))->getSCIP();
 }

@@ -879,15 +879,15 @@ void CoptBackend::AddMIPStart(
 } // namespace mp
 
   // AMPLs
-AMPLS_MP_Solver* Open_copt(const char* slv_opt, CCallbacks cb = {}) {
+AMPLS_MP_Solver* Open_copt(CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::CoptBackend()}, 
-    slv_opt, cb);
+    cb);
 }
 
 void AMPLSClose_copt(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-copt_prob* AMPLSGetModel_copt(AMPLS_MP_Solver* slv) {
+void* AMPLSGetModel_copt(AMPLS_MP_Solver* slv) {
   return dynamic_cast<mp::CoptBackend*>(AMPLSGetBackend(slv))->lp();
 }

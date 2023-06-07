@@ -25,7 +25,7 @@ extern "C" {
 /// @return slv on success, otherwise NULL and use AMPLSGetMessages()
 /// (well they can contain warnings in any case).
 AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
-  const char* slv_opt, CCallbacks cb);
+  CCallbacks cb);
 
 /// Shut down solver instance. Internal only.
 /// Deallocate the mp-related info and the structure itself.

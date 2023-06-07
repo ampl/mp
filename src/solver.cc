@@ -1128,7 +1128,7 @@ typedef struct AMPLS_MP__internal_T {
 
 
 AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
-  const char* slv_opt, CCallbacks cb = {}) {
+  CCallbacks cb = {}) {
   AMPLS_MP_Solver* slv = new AMPLS_MP_Solver();
   AMPLS__internal__TryCatchWrapper( slv, [&]() {
     auto ii = new AMPLS_MP__internal();
@@ -1137,18 +1137,9 @@ AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,
     auto be = ii->p_be_.get();
     be->GetCallbacks() = cb;
     be->set_output_handler(&ii->output_h_);
-
     char* argv[] = {(char*)"ampls-driver", nullptr};
-    
     be->Init(argv);
-
     be->set_wantsol(1);       // user can still modify by 'wantsol=...'
-
-    be->InitOptionParsing();
-    if (slv_opt)
-      be->ParseOptionString(slv_opt, 0);  // no echo
-    be->FinishOptionParsing();
-
     return 0;
   } );
   return slv;

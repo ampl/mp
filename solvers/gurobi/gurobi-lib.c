@@ -3,5 +3,5 @@
 AMPLS_C_EXPORT AMPLS_MP_Solver* AMPLSOpen_gurobi(int argc, char** argv)
 {
   CCallbacks cb = { NULL };
-  return Open_gurobi(NULL, cb);
+  return Open_gurobi(cb);
 }
