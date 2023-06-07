@@ -923,17 +923,17 @@ void ScipBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
 
 
 // AMPLs
-void* AMPLSOpenScip(
-  const char* slv_opt, CCallbacks cb = {}) {
+AMPLS_MP_Solver* Open_scip() {
+  CCallbacks cb = {};
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::ScipBackend()},
-    slv_opt, cb);
+    cb);
 }
 
-void AMPLSCloseScip(AMPLS_MP_Solver* slv) {
+void AMPLSClose_scip(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
-void* GetScipmodel(AMPLS_MP_Solver* slv) {
+void* AMPLSGetModel_scip(AMPLS_MP_Solver* slv) {
   return
     dynamic_cast<mp::ScipBackend*>(AMPLSGetBackend(slv))->getSCIP();
 }
