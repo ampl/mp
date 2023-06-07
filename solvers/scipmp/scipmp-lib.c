@@ -2,5 +2,6 @@
 
 AMPLS_C_EXPORT AMPLS_MP_Solver* AMPLSOpen_scip(int argc, char** argv)
 {
-  return Open_scip();
+  CCallbacks cb = { NULL };
+  return Open_scip(cb);
 }

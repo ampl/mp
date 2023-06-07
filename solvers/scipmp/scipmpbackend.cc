@@ -923,7 +923,7 @@ void ScipBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
 
 
 // AMPLs
-AMPLS_MP_Solver* Open_scip() {
+AMPLS_MP_Solver* Open_scip(CCallbacks cb = {}) {
   CCallbacks cb = {};
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::ScipBackend()},
     cb);
