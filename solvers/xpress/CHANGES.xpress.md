@@ -2,6 +2,12 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## 20230607
+- Amended detection and display of licensing errors
+- Licensing allows now usage of an XPRESS license from an AMPL-based
+  deployment
+
+
 ## 20230603
 - Added option 'tech:logfile' to enable output to a log file
 

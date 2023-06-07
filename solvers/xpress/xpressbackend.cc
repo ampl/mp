@@ -63,19 +63,19 @@ void XpressmpBackend::OpenSolver() {
   const auto& create_fn = GetCallbacks().init;
   if (create_fn)
     create_fn();
-  else {
+  else 
     int status  = XPRSinit(NULL);
-    if (status) {
-      const auto diag = GetCallbacks().diagnostics;
-      if (diag)
-        diag();
-      XPRSgetlicerrmsg(message, 512);
-      MP_RAISE(fmt::format("XPRSinit failed with message:\n{}", 
-        message));
+  int status = XPRScreateprob(lp_ref());
 
-    }
+  if (status) {
+    const auto diag = GetCallbacks().diagnostics;
+    if (diag)
+      diag();
+    XPRSgetlicerrmsg(message, 512);
+    MP_RAISE(fmt::format("XPRSinit failed with message:\n{}",
+      message));
+
   }
-  XPRESSMP_CCALL(XPRScreateprob(lp_ref()));
   model_fixed_ = lp();
   copy_common_info_to_other();
 }
