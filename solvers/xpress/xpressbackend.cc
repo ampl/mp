@@ -318,8 +318,9 @@ std::string XpressmpBackend::DoXpressFixedModel()
 
 
   void XpressmpBackend::AddXPRESSMPMessages() {
-    AddToSolverMessage(
-            fmt::format("{} simplex iterations\n", SimplexIterations()));
+    if(auto iter = SimplexIterations())
+      AddToSolverMessage(
+        fmt::format("{} simplex iterations\n",iter));
     if (auto nbi = BarrierIterations())
       AddToSolverMessage(
         fmt::format("{} barrier iterations\n", nbi));
@@ -2489,8 +2490,11 @@ std::vector<int> XpressmpBackend::ConStatii(ArrayRef<int> cst) {
 }
 
 SolutionBasis XpressmpBackend::GetBasis() {
-  std::vector<int> varstt = VarStatii();
-  std::vector<int> constt = ConStatii();
+  int old_outlev = outlev_;
+  outlev_ = 0;
+    std::vector<int> varstt = VarStatii();
+    std::vector<int> constt = ConStatii();
+  outlev_ = old_outlev;
   if (varstt.size() && constt.size()) {
     auto mv = GetValuePresolver().PostsolveBasis(
       { varstt,
@@ -2636,6 +2640,7 @@ void XpressmpBackend::xpdisplay(XPRSprob prob, void* data, const char* ch, int n
 int XpressmpBackend::xp_mse_display(XPRSobject o, void* context, void* thread,
   const char* ch, int msglvl, int msgnumber)
 {
+  if (outlev_ == 0) return 0;
   if (msglvl < 0)
     fflush(NULL);
   else if (msglvl >= outlev_ && (msglvl != 4))

@@ -70,10 +70,14 @@ void XpressmpModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective&
     fmt::format("Setting first quadratic objective\n");
     SetLinearObjective(iobj, qo);                         // add the linear part
     const auto& qt = qo.GetQPTerms();
+    std::vector<double> coeffs(qt.coefs());
+    for (std::size_t i = 0; i < qt.size(); i++)
+      if (qt.pvars1()[i] == qt.pvars2()[i]) coeffs[i] *= 2;
+
     fmt::format("Quadratic part is made of {} terms\n", qt.size());
     XPRESSMP_CCALL(XPRSchgmqobj(lp(), qt.size(),
       (int*)qt.pvars1(), (int*)qt.pvars2(),
-      (double*)qt.pcoefs()));
+      (double*)coeffs.data()));
   }
   else {
     throw std::runtime_error("Multiple quadratic objectives not supported");

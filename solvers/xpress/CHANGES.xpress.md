@@ -2,6 +2,11 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## TBD
+- Eliminated spurious warnings
+- Fixed passing of quadratic objective
+
+
 ## 20230607
 - Amended detection and display of licensing errors
 - Licensing allows now usage of an XPRESS license from an AMPL-based

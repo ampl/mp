@@ -189,6 +189,7 @@ protected:
 
   /* Xpress-MP callback in case the user wants some output from Optimizer */
   static int outlev_;
+  
   static void xpdisplay(XPRSprob prob, void* data, const char* ch, int n, int msglvl);
   static int xp_mse_display(XPRSobject o, void* context, void* thread,
     const char* ch, int msglvl, int msgnumber);
