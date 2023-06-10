@@ -876,13 +876,12 @@ AMPLS_MP_Solver* Open_mosek(CCallbacks cb = {}) {
         cb);
 }
 
-
 void AMPLSClose_mosek(AMPLS_MP_Solver* slv) {
   AMPLS__internal__Close(slv);
 }
 
 void* AMPLSGetModel_mosek(AMPLS_MP_Solver* slv) {
   return
-    dynamic_cast<mp::CbcmpBackend*>(AMPLSGetBackend(slv))->lp();
+    dynamic_cast<mp::MosekBackend*>(AMPLSGetBackend(slv))->lp();
 }
 
