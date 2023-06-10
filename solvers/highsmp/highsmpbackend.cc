@@ -578,7 +578,7 @@ double HighsBackend::MIPGapAbs() {
 AMPLS_MP_Solver* AMPLSOpenHighs(
   const char* slv_opt, CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::HighsBackend()},
-    slv_opt, cb);
+    cb);
 }
 
 void AMPLSCloseHighs(AMPLS_MP_Solver* slv) {
