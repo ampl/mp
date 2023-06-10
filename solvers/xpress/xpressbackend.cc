@@ -2615,7 +2615,7 @@ void XpressmpBackend::AddMIPStart(
       val.push_back(x0[i]);
     }
   }
-  XPRSaddmipsol(lp(), x0.size(), x0.data(), idx.data(), nullptr);
+  XPRESSMP_CCALL(XPRSaddmipsol(lp(), idx.size(), val.data(), idx.data(), nullptr));
 }
 
 void XpressmpBackend::xpdisplay(XPRSprob prob, void* data, const char* ch, int n, int msglvl)
