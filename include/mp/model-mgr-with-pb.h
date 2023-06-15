@@ -136,8 +136,39 @@ protected:
         GetModel().SetVarNames(
               npv.get_names(GetModel().num_vars()));
         GetModel().SetConNames(
-              npv.get_names(GetModel().num_cons()));
+              npc.get_names(GetModel().num_cons()) );
+        SetObjNames(npc);
       }
+    }
+  }
+
+  /// Obj names.
+  /// @param names_co: vector of row+obj names,
+  ///   read from .row or generated
+  /// @param num_read: number of actually read names.
+  ///
+  /// We have to consider that obj:no=n
+  /// selects objective n.
+  void SetObjNames(NameProvider& npco) {
+    if (GetModel().num_objs()) {
+      auto num_c = GetModel().num_cons();
+      auto o1 = GetEnv().objno_used()-1;
+      assert(o1>=0);
+      auto o2 = o1+1;
+      if (GetEnv().multiobj()) {
+        o1 = 0;
+        o2 = GetModel().num_objs();
+      }
+      std::vector<std::string> names_o;
+      for (auto io=num_c+o1; io<num_c+o2; ++io) {
+        if (npco.number_read()>(size_t)io)
+          names_o.push_back(npco.name(io));
+        else
+          names_o.push_back("_sobj["
+                            + std::to_string(io-num_c+1)
+                            + ']');
+      }
+      GetModel().SetObjNames( std::move( names_o ) );
     }
   }
 

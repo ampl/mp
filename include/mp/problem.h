@@ -666,15 +666,15 @@ public:
   /// Set name vectors
   void SetVarNames(std::vector<std::string> names) {
     assert((size_t)num_vars() == names.size());
-    var_names_ = names;
+    var_names_ = std::move( names );
   }
   void SetConNames(std::vector<std::string> names) {
     assert((size_t)num_cons() == names.size());
-    con_names_ = names;
+    con_names_ = std::move( names );
   }
   void SetObjNames(std::vector<std::string> names) {
     assert((size_t)num_objs() == names.size());
-    obj_names_ = names;
+    obj_names_ = std::move( names );
   }
 
   class LinearExprBuilder {
