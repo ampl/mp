@@ -132,6 +132,11 @@ class BasicProblem : public ExprFactory, public SuffixManager {
   typedef internal::ExprTypes ExprTypes;
 
  private:
+  /// Names
+  std::vector<std::string> var_names_;
+  std::vector<std::string> con_names_;
+  std::vector<std::string> obj_names_;
+
   /// A variable.
   struct Var {
     double lb;
@@ -139,7 +144,7 @@ class BasicProblem : public ExprFactory, public SuffixManager {
     Var(double lb, double ub) : lb(lb), ub(ub) { assert(lb<=ub); }
   };
   std::vector<Var> vars_;
-  std::vector<std::string> var_names_;
+
   /// Packed variable type information.
   /// is_var_int_[i] specifies whether variable i is integer.
   std::vector<bool> is_var_int_;
@@ -477,6 +482,11 @@ public:
   /** Returns the number of objectives. */
   int num_objs() const { return static_cast<int>(linear_objs_.size()); }
 
+  /** Returns total number of constraints from the NL file. */
+  int num_cons() const {
+    return num_algebraic_cons() + num_logical_cons();
+  }
+
   /** Returns the number of algebraic constraints. */
   int num_algebraic_cons() const {
     return static_cast<int>(algebraic_cons_.size());
@@ -623,9 +633,7 @@ public:
     is_var_int_.push_back(type != var::CONTINUOUS);
     return Variable(this, static_cast<int>(index));
   }
-  void AddVarName(const std::string& name) {
-    var_names_.push_back(name);
-  }
+
   void AddVars(int num_vars, var::Type type) {
     MP_ASSERT(num_vars >= 0, "invalid size");
     std::size_t new_size = val(SafeInt<int>(vars_.size()) + num_vars);
@@ -653,6 +661,20 @@ public:
     for (std::size_t  i=0; i<nvars; ++i)
       newVars[i] = AddVar(lb, ub, type).index();
     return newVars;
+  }
+
+  /// Set name vectors
+  void SetVarNames(std::vector<std::string> names) {
+    assert((size_t)num_vars() == names.size());
+    var_names_ = names;
+  }
+  void SetConNames(std::vector<std::string> names) {
+    assert((size_t)num_cons() == names.size());
+    con_names_ = names;
+  }
+  void SetObjNames(std::vector<std::string> names) {
+    assert((size_t)num_objs() == names.size());
+    obj_names_ = names;
   }
 
   class LinearExprBuilder {

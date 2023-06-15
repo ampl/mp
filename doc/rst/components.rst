@@ -106,7 +106,7 @@ it unless you need access to the full NL reader API, described below.
 * `mp::NLHeader` stores problem information
 
 * `mp::NameProvider` reads variable and constraint names
-  (see AMPL option ``auxfiles``),
+  (see AMPL options ``auxfiles``, ``(solver)_auxfiles``),
   or provides generic names otherwise
 
 * `mp::ReadError`, `mp::BinaryReadError`

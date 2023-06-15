@@ -2228,9 +2228,6 @@ class NLProblemBuilder {
   /// Get builder
   ProblemBuilder &builder() { return builder_; }
 
-  void OnName(fmt::StringRef name) {
-    builder_.AddVarName(name);
-  }
   /// OnHeader event
   void OnHeader(const NLHeader &h) {
     builder_.SetInfo(h);
@@ -2623,18 +2620,34 @@ inline void ReadNLFile(fmt::CStringRef filename, Handler &handler, int flags) {
 /// A variable or constraint name provider.
 /// Caters for possible missing names.
 class NameProvider {
- private:
+public:
+  /// Construct and read
+  NameProvider(fmt::CStringRef filename,
+               fmt::CStringRef gen_name,
+               std::size_t num_items);
+
+  /// Construct without reading (generic names can be provided)
+  NameProvider(fmt::CStringRef gen_name);
+
+  /// Read names
+  void ReadNames(fmt::CStringRef filename,
+                 std::size_t num_items);
+
+  /// Number of names read from file
+  size_t number_read() const;
+
+  /// Returns the name of the item at specified index.
+  fmt::StringRef name(std::size_t index);
+
+  /// Return vector of names, length n.
+  /// If number_read() < n, generic names are filled.
+  std::vector<std::string> get_names(size_t n);
+
+private:
   std::vector<const char *> names_;
   std::string gen_name_;
   internal::NameReader reader_;
   fmt::MemoryWriter writer_;
-
- public:
-  NameProvider(fmt::CStringRef filename, fmt::CStringRef gen_name,
-               std::size_t num_items);
-
-  // Returns the name of the item at specified index.
-  fmt::StringRef name(std::size_t index);
 };
 
 }  // namespace mp

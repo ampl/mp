@@ -89,7 +89,7 @@ protected:
       if (after_header)
         after_header();                   // parse options
     });
-    ReadVarNames(filename_no_ext + ".col");
+    ReadNames(filename_no_ext);
 
     double read_time = GetTimeAndReset(start);
     if (GetEnv().timing())
@@ -108,6 +108,7 @@ protected:
       GetEnv().Print("NL model conversion time = {:.6f}s\n", cvt_time);
   }
 
+  /// Read the NL file
   void ReadNLFile(
       const std::string& nl_filename,
       std::function<void()> after_header) {
@@ -117,9 +118,27 @@ protected:
     reader.Read(nl_filename, *nl_read_result_.handler_, 0);
   }
 
-  void ReadVarNames(const std::string& filename) {
-    internal::NameReader nr;
-    nr.Read(filename, *nl_read_result_.handler_);
+  /// Read var / con / obj names.
+  /// The .row file has cons + objs.
+  void ReadNames(const std::string& namebase) {
+    if (WantNames()) {
+      NameProvider npv("_svar");
+      NameProvider npc("_scon");
+      if (WantNames()<=2) {
+        npv.ReadNames(namebase + ".col",
+                      GetModel().num_vars());
+        npc.ReadNames(namebase + ".row",
+                      GetModel().num_cons()
+                      + GetModel().num_objs());
+      }
+      if (WantNames()>=2
+          || npv.number_read()+npc.number_read()) {
+        GetModel().SetVarNames(
+              npv.get_names(GetModel().num_vars()));
+        GetModel().SetConNames(
+              npv.get_names(GetModel().num_cons()));
+      }
+    }
   }
 
   /// Once NL header is read
@@ -229,8 +248,33 @@ protected:
   }
 
 
+protected:
+  /// Whether and what names
+  int WantNames() const { return options_.nNames_; }
+
+
 private:
+  const mp::OptionValueInfo values_want_names_[4] = {
+    { "0", "No names", 0},
+    { "1", "Only provide names if at least one of "
+           ".col / .row name files was written by AMPL "
+           "(AMPL options auxfiles, <solver>_auxfiles)", 1},
+    { "2", "Read names from AMPL, but provide generic "
+           "names otherwise", 2},
+    { "3", "Provide generic names.", 3}
+  };
+
+  struct Options {
+    int nNames_ = 1;
+  };
+  Options options_;
+
   void InitOwnOptions() {
+    GetEnv().AddStoredOption("cvt:names names modelnames",
+      "Whether to read or generate variable / constraint / "
+      "objective names:\n"
+      "\n.. value-table::\n",
+      options_.nNames_, values_want_names_);
   }
 
 

@@ -324,9 +324,18 @@ class NameHandler {
 
 }  // namespace internal
 
+
 mp::NameProvider::NameProvider(
     fmt::CStringRef filename, fmt::CStringRef gen_name, std::size_t num_items)
   : gen_name_(gen_name.c_str()) {
+  ReadNames(filename, num_items);
+}
+
+mp::NameProvider::NameProvider(fmt::CStringRef gen_name)
+  : gen_name_(gen_name.c_str()) { }
+
+void mp::NameProvider::ReadNames(
+    fmt::CStringRef filename, std::size_t num_items) {
   ::internal::NameHandler handler(names_);
   names_.reserve(num_items + 1);
   try {
@@ -341,13 +350,28 @@ mp::NameProvider::NameProvider(
 fmt::StringRef mp::NameProvider::name(std::size_t index) {
   if (index + 1 < names_.size()) {
     const char *name = names_[index];
-    return fmt::StringRef(name, names_[index + 1] - name - 1);
+    const auto* pos1past = names_[index + 1] - 1;
+    assert('\n' == *pos1past);
+    if ('\r' == *(pos1past-1))            // Windows
+      --pos1past;
+    return fmt::StringRef(name, pos1past - name);
   }
   writer_.clear();
   writer_ << gen_name_ << '[' << (index + 1) << ']';
   return fmt::StringRef(writer_.c_str(), writer_.size());
 }
 
+size_t mp::NameProvider::number_read() const {
+  return (names_.size() ? names_.size()-1 : 0);
+}
+
+std::vector<std::string> mp::NameProvider::get_names(size_t n) {
+  std::vector<std::string> result;
+  result.reserve(n);
+  for (size_t i=0; i<n; ++i)
+    result.push_back(name(i));
+  return result;
+}
 
 // Instantiate
 template class mp::internal::TextReader<>;
