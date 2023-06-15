@@ -463,33 +463,57 @@ previously described. For example:
           c[i] * x[i] / (40 * b[i] * sum {j in J} x[j] / b[j]);
 
 
-Second-order cone programming (SOCP)
+Conic optimization
 **************************************
 
-Some solvers can handle SOCP constraints: Mosek, Gurobi, COPT.
-SOCP constraints are recognized by MP drivers from their algebraic
-representations. Examples:
+Some solvers can handle conic constraints with tailored algorithms:
+Mosek, Gurobi, COPT. Note that general non-linear solvers accept them too,
+but might not provide any specialized methods.
+
+Second-order cone programming (SOCP)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+SOCP constraints (quadratic cones) are recognized by major commercial MIP solvers
+from their algebraic representations. For some representations and solvers,
+MP library provides additional conversion into solver-specific conic forms. Examples:
 
 - Standard SOC:
 
   .. code-block:: ampl
 
-      x[0] >= sqrt(x[1]^2 + … + x[n]^2);
-      -5*x[0]^2 <= -x[1]^2 - … - x[n]^2,     where x[0] >= 0;
-      0.04 >= abs(x[1]);
+     x[0] >= sqrt(x[1]^2 + ... + x[n]^2);
+     -5*x[0]^2 <= -x[1]^2 - ... - x[n]^2,     where x[0] >= 0;
+     0.04 >= abs(x[1]);
 
 
 - Rotated SOC  (where x[0], x[1] >= 0):
 
   .. code-block:: ampl
 
-      3*sqrt(5*x[0]*x[1]) >= 15*sqrt(10*x[2]^2 + … + 80*x[n]^2);
-      2*x[0]*x[1] >= x[2]^2 + … + x[n]^2;
+     3*sqrt(5*x[0]*x[1]) >= 15*sqrt(10*x[2]^2 + ... + 80*x[n]^2);
+     2*x[0]*x[1] >= x[2]^2 + ... + x[n]^2;
 
 
-*Note:* Option `cvt:socp=0` results in second-order conic
+*Note:* Mosek cannot mix SOCP and general quadratic constraints.
+Option `cvt:socp=0` results in second-order conic
 constraints being passed to the solver as quadratics, even if
 the solver has native SOCP API.
+
+Exponential cones
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Mosek handles exponential conic constraints. Example:
+
+.. code-block:: ampl
+
+   var q1;
+   var q2 >= 0;
+   var w >= 0;
+
+   # conic constraints
+   s.t. T1: 1 + b*w >= exp( q1 );
+   s.t. T2: -1 + w +10*q2   <= -5 * q2 * exp( q1 / (q2*5) );
+
 
 
 General nonlinear functions

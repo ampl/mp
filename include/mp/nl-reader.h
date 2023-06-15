@@ -2174,8 +2174,8 @@ class NameReader {
     try {
       fmt::File file(filename, fmt::File::RDONLY);
       mapped_file_.map(file, filename);
-    } catch (...) {    // ignore if not provided
-      return;
+    } catch (...) {
+      return;           // ignore if not provided
     }
     fmt::StringRef data(mapped_file_.start(), mapped_file_.size());
     ReadNames(filename, data, handler);
