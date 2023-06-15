@@ -105,13 +105,18 @@ it unless you need access to the full NL reader API, described below.
 
 * `mp::NLHeader` stores problem information
 
+* `mp::NameProvider` reads variable and constraint names
+  (see AMPL option ``auxfiles``),
+  or provides generic names otherwise
+
 * `mp::ReadError`, `mp::BinaryReadError`
 
 * `mp::arith::Kind`
 
 * `mp::READ_BOUNDS_FIRST` can be passed as a flag to `mp::ReadNLFile`
 
-* `mp::MAX_AMPL_OPTIONS` is the maximum number of options reserved for AMPL use in NL and SOL formats
+* `mp::MAX_AMPL_OPTIONS` is the maximum number of options reserved
+  for AMPL use in NL and SOL formats
 
 
 

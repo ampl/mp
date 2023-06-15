@@ -302,5 +302,53 @@ void mp::internal::NLFileReader<File>::Read(
   array[size_] = 0;
 }
 
+
+namespace internal {
+
+class NameHandler {
+ private:
+  std::vector<const char *> &names_;
+  fmt::StringRef name_;
+
+ public:
+  explicit NameHandler(std::vector<const char *> &names)
+    : names_(names), name_("") {}
+
+  void OnName(fmt::StringRef name) {
+    name_ = name;
+    names_.push_back(name.data());
+  }
+
+  fmt::StringRef name() const { return name_; }
+};
+
+}  // namespace internal
+
+mp::NameProvider::NameProvider(
+    fmt::CStringRef filename, fmt::CStringRef gen_name, std::size_t num_items)
+  : gen_name_(gen_name.c_str()) {
+  ::internal::NameHandler handler(names_);
+  names_.reserve(num_items + 1);
+  try {
+    reader_.Read(filename, handler);
+  } catch (const fmt::SystemError &) {
+    return; // System error, ignore the file and use generated names.
+  }
+  fmt::StringRef last_name = handler.name();
+  names_.push_back(last_name.data() + last_name.size() + 1);
+}
+
+fmt::StringRef mp::NameProvider::name(std::size_t index) {
+  if (index + 1 < names_.size()) {
+    const char *name = names_[index];
+    return fmt::StringRef(name, names_[index + 1] - name - 1);
+  }
+  writer_.clear();
+  writer_ << gen_name_ << '[' << (index + 1) << ']';
+  return fmt::StringRef(writer_.c_str(), writer_.size());
+}
+
+
+// Instantiate
 template class mp::internal::TextReader<>;
 template class mp::internal::NLFileReader<>;

@@ -2131,6 +2131,13 @@ void ReadBinary(TextReader<> &reader, const NLHeader &header,
         bin_reader, header, handler, flags).Read();
 }
 
+
+/// Reads names from the string *data* sending the names to the *handler*
+/// object by calling ``handler.OnName(name)``. The name argument to
+/// ``OnName`` is a ``fmt::StringRef`` object and the string it refers to
+/// is not null-terminated.
+/// Each name in the input string/file should be on a separate line
+/// ended with a newline character ('\n') or "\r\n" (on Windows).
 template <typename NameHandler>
 void ReadNames(fmt::CStringRef filename, fmt::StringRef data,
                NameHandler &handler) {
@@ -2141,8 +2148,7 @@ void ReadNames(fmt::CStringRef filename, fmt::StringRef data,
   for (const char *ptr = start; ptr != end; ++ptr) {
     if (*ptr == '\r') in_win_newline = true;
     if (*ptr == '\n') {
-        handler.OnName(fmt::StringRef(start, ptr - start - in_win_newline));
-
+      handler.OnName(fmt::StringRef(start, ptr - start - in_win_newline));
       start = ptr + 1;
       ++line;
       in_win_newline = false;
@@ -2154,32 +2160,31 @@ void ReadNames(fmt::CStringRef filename, fmt::StringRef data,
   }
 }
 
+
 /// A name file reader.
 class NameReader {
  private:
   MemoryMappedFile<> mapped_file_;
 
  public:
-  /// Reads names from the file *filename* sending the names to the *handler*
-  /// object by calling ``handler.OnName(name)``. The name argument to
-  /// ``OnName`` is a ``fmt::StringRef`` object and the string it refers to
-  /// is not null-terminated.
-  /// Each name in the input file should be on a separate line ended with a
-  /// newline character ('\n').
+  /// Reads names from file *filename*
+  /// by passing its contents to ReadNames().
   template <typename NameHandler>
   void Read(fmt::CStringRef filename, NameHandler &handler) {
     try {
       fmt::File file(filename, fmt::File::RDONLY);
       mapped_file_.map(file, filename);
+    } catch (...) {    // ignore if not provided
+      return;
     }
-    catch (...) { return;  } // do nothing if name file doesn't exist
-    
     fmt::StringRef data(mapped_file_.start(), mapped_file_.size());
     ReadNames(filename, data, handler);
   }
 };
 
-/// An NL handler that constructs an optimization problem using ProblemBuilder.
+
+/// An NL handler that constructs an optimization problem
+/// using ProblemBuilder.
 template <typename ProblemBuilder>
 class NLProblemBuilder {
  public:
@@ -2613,6 +2618,25 @@ template <typename Handler>
 inline void ReadNLFile(fmt::CStringRef filename, Handler &handler, int flags) {
   internal::NLFileReader<>().Read(filename, handler, flags);
 }
+
+
+/// A variable or constraint name provider.
+/// Caters for possible missing names.
+class NameProvider {
+ private:
+  std::vector<const char *> names_;
+  std::string gen_name_;
+  internal::NameReader reader_;
+  fmt::MemoryWriter writer_;
+
+ public:
+  NameProvider(fmt::CStringRef filename, fmt::CStringRef gen_name,
+               std::size_t num_items);
+
+  // Returns the name of the item at specified index.
+  fmt::StringRef name(std::size_t index);
+};
+
 }  // namespace mp
 
 #endif  // MP_NL_READER_H_

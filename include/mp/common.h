@@ -23,8 +23,9 @@
 #ifndef MP_COMMON_H_
 #define MP_COMMON_H_
 
-#include "mp/error.h"  // for MP_ASSERT
 #include <cstddef>     // for std::size_t
+
+#include "mp/error.h"  // for MP_ASSERT
 
 /** The mp namespace. */
 namespace mp {

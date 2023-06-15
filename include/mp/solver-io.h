@@ -251,22 +251,6 @@ void SolverNLHandlerImpl<Solver, PB, NLPB>::OnHeader(const NLHeader &h) {
 }
 
 
-/// A variable or constraint name provider.
-class NameProvider {
- private:
-  std::vector<const char *> names_;
-  std::string gen_name_;
-  NameReader reader_;
-  fmt::MemoryWriter writer_;
-
- public:
-  NameProvider(fmt::CStringRef filename, fmt::CStringRef gen_name,
-               std::size_t num_items);
-
-  // Returns the name of the item at specified index.
-  fmt::StringRef name(std::size_t index);
-};
-
 /// Prints a solution to stdout.
 void PrintSolution(const double *values, int num_values, const char *name_col,
                    const char *value_col, NameProvider &np);
@@ -327,12 +311,12 @@ void AppSolutionHandlerImpl<Solver, PB, Writer>::HandleSolution(
   using internal::PrintSolution;
   if ((wantsol & Solver::PRINT_SOLUTION) != 0) {
     int num_vars = this->builder().num_vars();
-    internal::NameProvider np(this->stub() + ".col", "_svar", num_vars);
+    NameProvider np(this->stub() + ".col", "_svar", num_vars);
     PrintSolution(values, num_vars, "variable", "value", np);
   }
   if ((wantsol & Solver::PRINT_DUAL_SOLUTION) != 0) {
     int num_cons = this->builder().num_algebraic_cons();
-    internal::NameProvider np(this->stub() + ".row", "_scon", num_cons);
+    NameProvider np(this->stub() + ".row", "_scon", num_cons);
     PrintSolution(dual_values, num_cons, "constraint", "dual value", np);
   }
 }

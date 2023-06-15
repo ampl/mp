@@ -233,22 +233,6 @@ void RSTFormatter::HandleDirective(const char *type) {
   end_block_ = true;
 }
 
-class NameHandler {
- private:
-  std::vector<const char *> &names_;
-  fmt::StringRef name_;
-
- public:
-  explicit NameHandler(std::vector<const char *> &names)
-    : names_(names), name_("") {}
-
-  void OnName(fmt::StringRef name) {
-    name_ = name;
-    names_.push_back(name.data());
-  }
-
-  fmt::StringRef name() const { return name_; }
-};
 }  // namespace
 
 namespace mp {
@@ -538,29 +522,6 @@ void SignalHandler::HandleSigInt(int sig) {
   std::signal(sig, HandleSigInt);
 }
 
-NameProvider::NameProvider(
-    fmt::CStringRef filename, fmt::CStringRef gen_name, std::size_t num_items)
-  : gen_name_(gen_name.c_str()) {
-  NameHandler handler(names_);
-  names_.reserve(num_items + 1);
-  try {
-    reader_.Read(filename, handler);
-  } catch (const fmt::SystemError &) {
-    return; // System error, ignore the file and use generated names.
-  }
-  fmt::StringRef last_name = handler.name();
-  names_.push_back(last_name.data() + last_name.size() + 1);
-}
-
-fmt::StringRef NameProvider::name(std::size_t index) {
-  if (index + 1 < names_.size()) {
-    const char *name = names_[index];
-    return fmt::StringRef(name, names_[index + 1] - name - 1);
-  }
-  writer_.clear();
-  writer_ << gen_name_ << "[" << (index + 1) << ']';
-  return fmt::StringRef(writer_.c_str(), writer_.size());
-}
 
 void PrintSolution(const double *values, int num_values, const char *name_col,
                    const char *value_col, NameProvider &np) {
@@ -1168,7 +1129,7 @@ mp::BasicBackend* AMPLSGetBackend(AMPLS_MP_Solver* slv) {
 /// Load model incl. suffixes
 int AMPLSLoadNLModel(AMPLS_MP_Solver* slv,
                      const char* nl_filename,
-                      char** options) {
+                     char** options) {
   return AMPLS__internal__TryCatchWrapper( slv, [=]() {
     std::string nl_filename_ = nl_filename;
     auto filename_no_ext_ = nl_filename_;
