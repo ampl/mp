@@ -399,6 +399,52 @@ protected:
                 -lhs.constant_term() } } );
   }
 
+  /// Disequality visitor.
+  /// @param ea: array of 2 expressions (comparison arguments lhs, rhs)
+  template <class ExprArray=std::initializer_list<Expr> >
+  EExpr VisitDisequality(ExprArray ea) {
+    std::array<EExpr, 2> ee;
+    Exprs2EExprs(ea, ee);
+    ee[0].subtract(std::move(ee[1]));
+    auto& lhs = ee[0];
+    lhs.sort_terms();                            // to catch duplicates
+    if (lhs.is_affine()) {                       // no QP terms
+      if (1==lhs.GetLinTerms().size()) {
+        auto v = lhs.GetLinTerms().var(0);
+        auto lb = GetFlatCvt().lb(v);
+        auto ub = GetFlatCvt().ub(v);
+        auto type = GetFlatCvt().var_type(v);
+        if (var::Type::INTEGER==type
+            && 1.0 == std::round(ub-lb)) {       // e.g., binary variable
+          auto b = -lhs.constant_term()
+              / lhs.GetLinTerms().coef(0);
+          bool f1 = false;       // Could put this into Prepro for NEConstr
+          if (lb == b) { b=ub; f1=true; }
+          else if (ub == b) { b=lb; f1=true; }
+          if (f1) {
+            return AssignResult2Args(  // conditional linear constraint
+                  ConditionalConstraint< LinConRhs<0> >
+                    { { { {1.0}, {v} },
+                        b } } );
+          }  // else: should skip this constraint?
+        }
+      }
+    }
+    // General case: represent as: Not(lhs == 0)
+    auto eq = (lhs.is_affine()) ?                // no QP terms
+        AssignResult2Args(  // add conditional linear constraint
+              ConditionalConstraint< LinConRhs<0> >
+              { { std::move(lhs.GetLinTerms()),
+                  -lhs.constant_term() } } ) :
+        AssignResult2Args(  // add conditional quadratic constraint
+              ConditionalConstraint< QuadConRhs<0> >
+              { { std::move(lhs.GetAlgConBody()),
+                  -lhs.constant_term() } } );
+    assert(eq.is_variable());
+    return AssignResult2Args(
+          NotConstraint({eq.get_representing_variable()}));
+  }
+
   /// Convert array of Expr's to array of EExpr's
   template <class ExprArray, size_t N>
   void Exprs2EExprs(const ExprArray& ea, std::array<EExpr, N>& result) {
@@ -500,8 +546,7 @@ public:          // need to be public due to CRTP
   }
 
   EExpr VisitNE(RelationalExpr e) {
-    auto EQ = this->GetModel().MakeRelational(expr::EQ, e.lhs(), e.rhs());
-    return VisitFunctionalExpression<NotConstraint>({ EQ });
+    return VisitDisequality({ e.lhs(), e.rhs() });
   }
 
   EExpr VisitLE(RelationalExpr e) {

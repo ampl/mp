@@ -143,9 +143,8 @@ protected:
   }
 
   /// Obj names.
-  /// @param names_co: vector of row+obj names,
+  /// @param npco: NameProvider of row+obj names,
   ///   read from .row or generated
-  /// @param num_read: number of actually read names.
   ///
   /// We have to consider that obj:no=n
   /// selects objective n.
