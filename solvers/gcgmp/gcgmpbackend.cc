@@ -1079,7 +1079,7 @@ void GcgBackend::AddMIPStart(ArrayRef<double> x0, ArrayRef<int> sparsity) {
 
 
 // AMPLs
-void* Open_gcg(CCallbacks cb = {}) {
+AMPLS_MP_Solver* Open_gcg(CCallbacks cb = {}) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::GcgBackend()},
     cb);
 }
