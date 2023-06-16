@@ -59,8 +59,8 @@ public:
         if (GetMC().fixed_value(res)) {  // fixed to 1
           GetMC().AddConstraint( con );
         } // else, skip
-      }
-      GetMC().AddConstraint(IndicatorConstraint< AlgCon<0> >(
+      } else
+        GetMC().AddConstraint(IndicatorConstraint< AlgCon<0> >(
                               res, 1, con));
     }
   }
@@ -75,7 +75,6 @@ public:
         GetMC().NarrowVarBounds(res, 1.0, 1.0);
     } else if ( !GetMC().is_fixed(res) ||   // not fixed, or
                 !GetMC().fixed_value(res) ) // fixed to 0
-
     {
       auto con = eq0c.GetArguments();
       auto newvars = GetMC().AddVars_returnIds(2, 0.0, 1.0, var::INTEGER);
