@@ -1,6 +1,13 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+
+## 20230616
+- Smaller reformulations for conditional comparisons.
+- Option *cvt:names* sets whether to read AMPL
+  variable names or to provide generic names.
+
+
 ## 20230531
 - Cones: recognize (affine_expr) >= y * exp(z/y)
   as exponential cone.

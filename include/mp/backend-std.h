@@ -69,6 +69,8 @@ struct Solution {
   std::vector<double> dual;
   /// objective values
   std::vector<double> objvals;
+  /// Sparsity, if solver wants it
+  ArrayRef<int> spars_primal;
 };
 
 /// StdBackend: the standard solver API wrapper

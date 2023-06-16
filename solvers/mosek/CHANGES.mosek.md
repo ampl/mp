@@ -1,6 +1,10 @@
 Summary of recent updates to MOSEK for AMPL
 ===========================================
 
+## 20230616
+- Changes in MP.
+
+
 ## 20230531
 - Cones: recognize (affine_expr) >= y * exp(z/y)
   as exponential cone.

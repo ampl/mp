@@ -1,6 +1,11 @@
 Summary of recent updates to CBCMP for AMPL
 ===========================================
 
+
+## 20230616
+- Changes in MP.
+
+
 ## 20230424
 - *Changes in the MP library*: added variable names support
   and removed spurious starting solution

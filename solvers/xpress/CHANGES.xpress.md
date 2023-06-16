@@ -2,7 +2,8 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
-## TBD
+## 20230616
+- Changes in MP.
 - Eliminated spurious warnings
 - Fixed passing of quadratic objective
 

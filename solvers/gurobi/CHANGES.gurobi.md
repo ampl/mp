@@ -1,6 +1,10 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
+## 20230616
+- Changes in MP.
+
+
 ## 20230531
 - Wrong solver options are gracefully reported via
   solve_message.

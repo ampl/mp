@@ -235,6 +235,7 @@ public:
     }
     Solution sol0;           // initial guesses
     sol0.primal = this->InitialValues();
+    sol0.spars_primal = this->InitialValuesSparsity();
     sol0.dual = this->InitialDualValues();
     bool haveInis = sol0.primal.size() && sol0.dual.size();
     if (haveInis && (

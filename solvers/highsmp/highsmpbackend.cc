@@ -113,7 +113,7 @@ void HighsBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void HighsBackend::Solve() {
-  Highs_run(lp());
+  HIGHS_CCALL( Highs_run(lp()) );
   WindupHIGHSSolve();
 }
 
@@ -154,11 +154,45 @@ void HighsBackend::SetBasis(SolutionBasis basis) {
 }
 
 
+/// We also use this for MIP.
+/// Attempting partial MIP start.
 void HighsBackend::AddPrimalDualStart(Solution sol0_unpres) {
   auto mv = GetValuePresolver().PresolveSolution(
     { sol0_unpres.primal, sol0_unpres.dual });
+  auto ms = GetValuePresolver().PresolveGenericInt(
+        { sol0_unpres.spars_primal } );
   auto x0 = mv.GetVarValues()();
+  auto s0 = ms.GetVarValues()();
   auto pi0 = mv.GetConValues()(CG_Linear);
+  /// If all variables provided or all missing are continuous,
+  /// set warmstart, otherwise fix, solve, unfix, set warmstart
+  if (s0.size() < (size_t)NumVars())
+    s0.resize(NumVars());
+  if (0==*std::min_element(s0.begin(), s0.end())) {
+    bool fAllMissingAreRealVars = true;
+    for (auto j=s0.size(); j--; ) {
+      int integr;
+      auto res = Highs_getColIntegrality(lp(), j, &integr);
+      if (kHighsStatusOk != res)
+        break;       // no information, it's an LP
+      if (kHighsVarTypeContinuous != integr) {
+        fAllMissingAreRealVars = false;
+        break;
+      }
+    }
+    if (!fAllMissingAreRealVars) {
+      std::vector<double> costs(NumVars());
+      std::vector<double> lb(NumVars());
+      std::vector<double> ub(NumVars());
+      int numnz, ncols;
+      Highs_getColsByRange(lp(), 0, NumVars()-1, &ncols,
+        costs.data(), lb.data(), ub.data(), &numnz, NULL, NULL, NULL);
+      Highs_changeColsBoundsByMask(lp(), s0.data(), x0.data(), x0.data());
+      Highs_run(lp());
+      x0 = PrimalSolution();         // get new solution
+      Highs_changeColsBoundsByMask(lp(), s0.data(), lb.data(), ub.data());
+    }
+  }
   HIGHS_CCALL(Highs_setSolution(lp(), x0.data(), NULL, NULL, pi0.data()));
 }
 
@@ -365,7 +399,7 @@ static const mp::OptionValueInfo simplex_strategy_values_[] = {
 static const mp::OptionValueInfo simplex_scale_strategy_values_[] = {
   { "0", "Off", 0},
   { "1", "Choose automatically (default)", 1},
-  { "2", "Equlibration", 2},
+  { "2", "Equilibration", 2},
   { "3", "Forced equilibration", 3},
   { "4", "Max value 0", 4},
   { "5", "Max value 1", 5}

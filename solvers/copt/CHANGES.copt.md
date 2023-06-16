@@ -1,6 +1,11 @@
 Summary of recent updates to COPT for AMPL
 ==========================================
 
+
+## 20230616
+- Changes in MP.
+
+
 ## 20230428
 - Updated to Copt 6.5.2, which includes performance improvements and
   fixes for issues with MIP problems
