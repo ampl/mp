@@ -1109,7 +1109,7 @@ TEST(SolverTest, NSolSuffix) {
 
 TEST(NameProviderTest, GenerateNames) {
   int num_items = 5;
-  mp::internal::NameProvider np("", "foo", num_items);
+  mp::NameProvider np("", "foo", num_items);
   for (int i = 0; i <= num_items + 1; ++i)
     EXPECT_EQ(fmt::format("foo[{}]", i + 1), np.name(i).to_string());
 }
@@ -1117,7 +1117,7 @@ TEST(NameProviderTest, GenerateNames) {
 TEST(NameProviderTest, ReadNames) {
   std::string filename = GetExecutableDir() + "test";
   WriteFile(filename, "abc\ndef\n");
-  mp::internal::NameProvider np(filename, "bar", 5);
+  mp::NameProvider np(filename, "bar", 5);
   EXPECT_EQ("abc", np.name(0).to_string());
   EXPECT_EQ("def", np.name(1).to_string());
   EXPECT_EQ("bar[3]", np.name(2).to_string());
@@ -1127,7 +1127,7 @@ TEST(NameProviderTest, ReadNames) {
 TEST(SolverTest, PrintSolution) {
   int num_values = 3;
   const double values[] = {1.0, 2.5, 3.0};
-  mp::internal::NameProvider np("", "foo", num_values);
+  mp::NameProvider np("", "foo", num_values);
   EXPECT_WRITE(
     stdout, mp::internal::PrintSolution(values, num_values, "bar", "baz", np),
     "\n"
