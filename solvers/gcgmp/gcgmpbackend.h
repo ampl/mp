@@ -29,6 +29,8 @@ public:
   static const char* GetSolverName() { return "GCG"; }
   /// Version displayed with -v
   std::string GetSolverVersion();
+  /// External libraries displayed with -v
+  std::string set_external_libs() override;
   
   /// Name for diagnostic messages
   static const char* GetBackendName();

@@ -64,6 +64,14 @@ std::string ScipBackend::GetSolverVersion() {
   SCIPtechVersion());
 }
 
+std::string ScipBackend::set_external_libs() {
+  std::string ext_libs = "";
+
+  for (int i = 0; i < SCIPgetNExternalCodes(getSCIP()); i++)
+    ext_libs = ext_libs + std::string(SCIPgetExternalCodeNames(getSCIP())[i]) + " " + std::string(SCIPgetExternalCodeDescriptions(getSCIP())[i]) + "\n";
+
+  return ext_libs;
+}
 
 bool ScipBackend::IsMIP() const {
   return SCIPgetNOrigIntVars(getSCIP()) > 0 || SCIPgetNOrigBinVars(getSCIP()) > 0;

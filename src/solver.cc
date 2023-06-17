@@ -717,6 +717,8 @@ bool BasicSolver::ShowVersion() {
   Print(", MP({})\n", MP_DATE);
   if (!license_info_.empty())
     Print("{}\n", license_info_);
+  if (!this->set_external_libs().empty())
+    Print("External libraries:\n{}", this->set_external_libs());
   return false;
 }
 #else

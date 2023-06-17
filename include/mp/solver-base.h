@@ -427,6 +427,8 @@ protected:
   { version_ += version.to_string(); }
   void set_license_info(fmt::StringRef license_info)
   { license_info_ = license_info.to_string(); }
+  virtual std::string set_external_libs()
+  { return ""; }
 
   /// Sets the flags for Problem::Read.
   void set_read_flags(unsigned flags) { read_flags_ = flags; }
