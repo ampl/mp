@@ -106,12 +106,15 @@ __ http://www-03.ibm.com/software/products/en/ibmilogcpleoptistud
 It is possible to override the automatic detection of dependencies by
 adding variables to cmake command line when configuring the project.
 The variables to be defined are of the form depname_LIBS
-and depname_INCLUDE_DIRS. For example, to build the solver *copt* (which
-does not have automatic dependency detection), you can use the following::
+and depname_INCLUDE_DIRS. For example, to build the solvers *copt* or
+*xpress* (which do not have automatic dependency detection),
+you can use the following::
 
-  cmake .. -DBUILD=copt
+  cmake .. -DBUILD=copt,xpress
            -DCOPT_LIBS=d:/copt/libs/win64/copt.lib
            -DCOPT_INCLUDE_DIRS=d:/copt/include
+           -DXPRESS_INCLUDE_DIRS=../xpress/41.01.01/include
+           -DXPRESS_LIBS="../xpress/41.01.01/lib/linux64/libxprs.so.41;../xpress/41.01.01/lib/linux64/libxprl.so.x9.0"
 
 To build the solver *scipmp* statically (on Linux or MacOS), you need to make sure
 to add all its dependencies. The following cmake command builds *scipmp* assuming 
@@ -132,11 +135,6 @@ the standard location::
            -DORTOOLSMP_INCLUDE_DIRS=/usr/local/include
            -DORTOOLSMP_LIBS=/usr/local/lib/libortools.dylib
 
-Sometimes the target name ends with MP but *depname* does not::
-
-  cmake .. -DBUILD=xpressmp
-           -DXPRESS_INCLUDE_DIRS=...
-           -DXPRESS_LIBS=...
 
 
 Using Eclipse CDT
