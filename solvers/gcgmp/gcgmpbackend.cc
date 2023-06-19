@@ -170,28 +170,31 @@ void GcgBackend::ReportGCGResults() {
 }
 std::vector<double> GcgBackend::getPoolSolution(int i)
 {
-  std::vector<double> vars(NumVars());
- // GCG_CCALL(GCG_GetPoolSolution(lp(), i, NumVars(), NULL, vars.data()));
+  SCIP* scip = getSCIP();
+  int num_vars = NumVars();
+  std::vector<double> vars(num_vars);
+  for (int j = 0; j < num_vars; j++)
+    vars[j] = SCIPgetSolVal(scip, SCIPgetSols(scip)[i], getPROBDATA()->vars[j]);
   return vars;
 }
 double GcgBackend::getPoolObjective(int i)
 {
+  assert(i < SCIPgetNSols(getSCIP()));
   double obj;
- // GCG_CCALL(GCG_GetPoolObjVal(lp(), i, &obj));
+  obj = SCIPgetSolOrigObj(getSCIP(), SCIPgetSols(getSCIP())[i]);
   return obj;
 }
 void GcgBackend::ReportGCGPool() {
   if (!IsMIP())
     return;
   int iPoolSolution = -1;
-  int nsolutions;
-  /*
-  while (++iPoolSolution < getIntAttr(GCG_INTATTR_POOLSOLS)) {
+  int nsolutions = SCIPgetNSols(getSCIP());
+  
+  while (++iPoolSolution < nsolutions) {
     ReportIntermediateSolution(
       { getPoolSolution(iPoolSolution),
         {}, { getPoolObjective(iPoolSolution) } });
   }
-  */
 }
 
 

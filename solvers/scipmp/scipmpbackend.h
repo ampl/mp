@@ -56,7 +56,7 @@ public:
  * MULTISOL support
  * No API, see ReportIntermediateSolution()
 **/
-  ALLOW_STD_FEATURE(MULTISOL, false)
+  ALLOW_STD_FEATURE(MULTISOL, true)
 
   /**
   * Get/Set AMPL var/con statii
