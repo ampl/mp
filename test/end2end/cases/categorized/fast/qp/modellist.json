@@ -86,6 +86,11 @@
     }
   },
   {
+    "name" : "quad_obj_repeated",
+    "objective" : 0,
+    "tags" : ["quadratic_obj"]
+  },
+  {
     "name" : "prod_bin_var_01",
     "objective" : 5,
     "tags" : ["quadratic"],

@@ -202,6 +202,11 @@ protected:
         le.add_term(1.0, MakeFixedVar(eexpr.constant_term()));
       }
     }
+    /// Sort/merge terms, otherwise we lose repeated terms
+    /// in Gurobi where we just set 'obj attributes'
+    /// to variables
+    le.sort_terms();
+    eexpr.GetQPTerms().sort_terms();
     /// Propagate context
     auto ctx = obj::MAX==obj.type() ? Context::CTX_POS : Context::CTX_NEG;
     GetFlatCvt().PropagateResult2LinTerms(le,
