@@ -2,6 +2,10 @@ Summary of recent updates to the AMPL MP Library
 ================================================
 
 
+## 20230621
+- Fix quadratic objective with repeated subexpressions.
+
+
 ## 20230616
 - Smaller reformulations for conditional comparisons.
 - Option *cvt:names* sets whether to read AMPL

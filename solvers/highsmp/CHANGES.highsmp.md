@@ -1,6 +1,11 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
+## 20230621
+- Fix quadratic objective with repeated subexpressions.
+- Fix Hessian API.
+
+
 ## 20230616
 - Imitate partial MIP start.
 - Changes in MP.
