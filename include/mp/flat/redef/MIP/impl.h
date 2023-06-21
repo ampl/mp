@@ -35,11 +35,16 @@ public:
     /// !args[0] ==> args[2]
     auto disj2 = GetMC().AssignResultVar2Args(
           OrConstraint{ {args[0], args[2]} });
-    /// Redefine constraint which can be the init expr
-    GetMC().RedefineVariable(cc.GetResultVar(),
-                             AndConstraint{ {disj1, disj2} });
-    GetMC().PropagateResultOfInitExpr(
-          cc.GetResultVar(), cc.GetContext());
+		if (GetMC().is_fixed(cc.GetResultVar())   // the impl is static
+				&& 1 == GetMC().fixed_value(cc.GetResultVar())) {
+			GetMC().FixAsTrue(disj1);   // XPRESS 9.0 needs this form
+			GetMC().FixAsTrue(disj2);
+		} else { // Redefine constraint which can be the init expr
+			GetMC().RedefineVariable(cc.GetResultVar(),
+															 AndConstraint{ {disj1, disj2} });
+			GetMC().PropagateResultOfInitExpr(
+						cc.GetResultVar(), cc.GetContext());
+		}
   }
 
 
