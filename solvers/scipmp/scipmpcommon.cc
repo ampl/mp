@@ -71,21 +71,39 @@ int ScipCommon::NumObjs() const {
 }
 
 int ScipCommon::NumQPCons() const {
-  // TODO Get number of quadratic constraints using solver API
-  // return getIntAttr(SCIP_INTATTR_QCONSTRS);
-  return 0;
+  int count = 0;
+
+  for (int i = 0; i < SCIPgetNOrigConss(getSCIP()); i++) {
+    SCIP_Bool isquadratic;
+    SCIP_CCALL( SCIPcheckQuadraticNonlinear(getSCIP(), SCIPgetOrigConss(getSCIP())[i], &isquadratic) );
+    if (isquadratic == true)
+      count++;
+  }
+
+  return count;
 }
 
 int ScipCommon::NumSOSCons() const {
-  // TODO Get number of SOS constraints using solver API
-  // return getIntAttr(SCIP_INTATTR_SOSS);
-  return 0;
+  int count = 0;
+  
+  for (int i = 0; i < SCIPgetNOrigConss(getSCIP()); i++) {
+    if (strcmp(SCIPconshdlrGetName(SCIPconsGetHdlr(SCIPgetOrigConss(getSCIP())[i])), "SOS1") == 0 ||
+      strcmp(SCIPconshdlrGetName(SCIPconsGetHdlr(SCIPgetOrigConss(getSCIP())[i])), "SOS2") == 0)
+      count++;
+  }
+
+  return count;
 }
 
 int ScipCommon::NumIndicatorCons() const {
-  // TODO Get number of indicator constraints using solver API
-  // return getIntAttr(SCIP_INTATTR_INDICATORS);
-  return 0;
+  int count = 0;
+  
+  for (int i = 0; i < SCIPgetNOrigConss(getSCIP()); i++) {
+    if (strcmp(SCIPconshdlrGetName(SCIPconsGetHdlr(SCIPgetOrigConss(getSCIP())[i])), "indicator") == 0)
+      count++;
+  }
+
+  return count;
 }
 
 void ScipCommon::GetSolverOption(const char* key, int &value) const {

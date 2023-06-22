@@ -66,17 +66,11 @@ protected:
   int NumQPCons() const;
   int NumSOSCons() const;
   int NumIndicatorCons() const;
-
-protected:
-  // TODO if desirable, provide function to create the solver's environment
-  // with own license
-  // int (*createEnv) (solver_env**) = nullptr;
-  
 };
 
 
 /// Convenience macro
-// TODO This macro is useful to automatically throw an error if a function in the 
+// This macro is useful to automatically throw an error if a function in the 
 // solver API does not return a valid errorcode. In this mock driver, we define it 
 // ourselves, normally this constant would be defined in the solver's API.
 #define SCIP_RETCODE_OK 1
