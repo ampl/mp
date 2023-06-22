@@ -53,8 +53,6 @@ void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
     index.reserve(NumVars());
     coeffs.reserve(NumVars());
     // Convert to Highs Hessian upper triangular format.
-    // As of Highs 1.5.3, we need a sparse element for every
-    // column, so we fill 0's where needed.
     size_t q=0;              // the index in qt
     for (size_t j=0; j<startCols.size(); ++j) {
       assert(q>=qt.size() || j<=(size_t)qt.var1(q)); // qt sorted
@@ -68,8 +66,9 @@ void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
         }
       } else {
         startCols[j] = index.size();
-        index.push_back(j);
-        coeffs.push_back(0.0);        // empty diagonal element
+        // Could do these but not needed:
+        //        index.push_back(j);
+        //        coeffs.push_back(0.0);  // empty diagonal element
       }
     }
     HIGHS_CCALL(Highs_passHessian(lp(), NumVars(), index.size(),
