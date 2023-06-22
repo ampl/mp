@@ -48,32 +48,28 @@ void HighsModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo
     SetLinearObjective(iobj, qo);
     const auto& qt = qo.GetQPTerms();
     std::vector<int> startCols(NumVars());
-    std::vector<int> index;
-    std::vector<double> coeffs;
-    index.reserve(NumVars());
-    coeffs.reserve(NumVars());
+    std::vector<double> coeffs(qt.size());
     // Convert to Highs Hessian upper triangular format.
     size_t q=0;              // the index in qt
     for (size_t j=0; j<startCols.size(); ++j) {
       assert(q>=qt.size() || j<=(size_t)qt.var1(q)); // qt sorted
       if (q<qt.size() && j==(size_t)qt.var1(q)) {
-        startCols[j] = index.size();
+        startCols[j] = q;
         for ( ; q<qt.size() && (size_t)qt.var1(q) == j; ++q) {
           assert(j <= (size_t)qt.var2(q));      // upper triangular
-          index.push_back(qt.var2(q));
-          coeffs.push_back(
-                (j == (size_t)qt.var2(q) ? 2.0 : 1.0) * qt.coef(q));
+          coeffs[q] =
+                (j == (size_t)qt.var2(q) ? 2.0 : 1.0) * qt.coef(q);
         }
       } else {
-        startCols[j] = index.size();
+        startCols[j] = q;
         // Could do these but not needed:
         //        index.push_back(j);
         //        coeffs.push_back(0.0);  // empty diagonal element
       }
     }
-    HIGHS_CCALL(Highs_passHessian(lp(), NumVars(), index.size(),
+    HIGHS_CCALL(Highs_passHessian(lp(), NumVars(), qt.size(),
                                   kHighsHessianFormatTriangular,
-      startCols.data(), index.data(), coeffs.data()));
+      startCols.data(), qt.pvars2(), coeffs.data()));
   }
   else {
     throw std::runtime_error("Multiple quadratic objectives not supported");
