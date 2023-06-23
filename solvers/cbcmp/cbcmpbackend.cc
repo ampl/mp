@@ -1084,8 +1084,7 @@ void CbcmpBackend::AddMIPStart(ArrayRef<double> x0_unpres,
 } // namespace mp
 
   // AMPLs
-AMPLS_MP_Solver* Open_cbcmp() {
-  CCallbacks cb = {};
+AMPLS_MP_Solver* Open_cbcmp(CCallbacks cb) {
   return AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend>{new mp::CbcmpBackend()},
     cb);
 }
