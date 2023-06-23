@@ -749,6 +749,7 @@ class SCIPSolver(MPDirectSolver):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary, 
                  ModelTags.quadratic,
                  ModelTags.quadraticnonconvex,
+                 ModelTags.socp, ModelTags.socp_hard_to_recognize,
                  ModelTags.sos,
                  ModelTags.nonlinear,
                  ModelTags.log,

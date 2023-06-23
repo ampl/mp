@@ -109,9 +109,8 @@ public:
   void AddConstraint(const IndicatorConstraintLinGE& mc);
 
   /// Cones
-  /*
-	ACCEPT_CONSTRAINT(QuadraticConeConstraint, Recommended, CG_Conic)
-	void AddConstraint(const QuadraticConeConstraint& qc);*/
+	ACCEPT_CONSTRAINT(QuadraticConeConstraint, AcceptedButNotRecommended, CG_Conic)
+	void AddConstraint(const QuadraticConeConstraint& qc);
 
   /// SOS constraints can be used by AMPL for redefinition of
   /// piecewise-linear expressions.

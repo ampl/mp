@@ -253,7 +253,6 @@ void ScipModelAPI::AddConstraint( const QuadConGE& qc ) {
   helpQuad(qc.GetName(), lt.pvars(), lt.pcoefs(), lt.size(), qt.pvars1(), qt.pvars2(), qt.pcoefs(), qt.size(), qc.lb(), Infinity());
 }
 
-/*
 void ScipModelAPI::AddConstraint( const QuadraticConeConstraint& qc ) {
   const auto& arg = qc.GetArguments();
   SCIP_VAR** vars = NULL;
@@ -262,14 +261,18 @@ void ScipModelAPI::AddConstraint( const QuadraticConeConstraint& qc ) {
     vars[i] = getPROBDATA()->vars[arg[i]];
   }
 
+  std::vector<double> param;
+  for (size_t i = 1; i < qc.GetParameters().size(); i++) {
+    param.push_back(std::sqrt(qc.GetParameters()[i]));
+  }
+
   SCIP_CONS* cons;
-  SCIP_CCALL( SCIPcreateConsBasicSOCNonlinear(getSCIP(), &cons, qc.GetName(), (int)arg.size(), vars, (SCIP_Real*)qc.GetParameters().data(), NULL, 0.0, getPROBDATA()->vars[qc.GetResultVar()], 1.0, 0.0) );
+  SCIP_CCALL( SCIPcreateConsBasicSOCNonlinear(getSCIP(), &cons, qc.GetName(), (int)arg.size()-1, vars+1, (SCIP_Real*)param.data(), NULL, 0.0, vars[0], qc.GetParameters().data()[0], 0.0) );
   SCIP_CCALL( SCIPaddCons(getSCIP(), cons) );
   SCIP_CCALL( SCIPreleaseCons(getSCIP(), &cons) );
 
   SCIPfreeBufferArray(getSCIP(), &vars);
-}*/
-
+}
 
 void ScipModelAPI::AddConstraint(const SOS1Constraint& sos) {
   SCIP_VAR** vars = NULL;

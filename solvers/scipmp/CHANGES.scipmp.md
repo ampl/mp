@@ -1,6 +1,10 @@
 Summary of recent updates to SCIP for AMPL
 ==========================================
 
+## 20230623
+- Added support for quadratic cone constraints but not recommended.
+
+
 ## 20230622
 - Added NumQPCons, NumSOSCons and NumIndicatorCons functions.
 
