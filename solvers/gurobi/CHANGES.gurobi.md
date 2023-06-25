@@ -1,6 +1,10 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
+## 20230625
+- Updated to Gurobi libraries 10.0.2, which include many bugfixes.
+
+
 ## 20230621
 - Fix quadratic objective with repeated subexpressions.
 
