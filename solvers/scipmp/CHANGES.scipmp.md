@@ -1,6 +1,10 @@
 Summary of recent updates to SCIP for AMPL
 ==========================================
 
+## 20230625
+- Fix dual solutions.
+
+
 ## 20230623
 - Added support for quadratic cone constraints but not recommended.
 

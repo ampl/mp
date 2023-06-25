@@ -103,8 +103,10 @@ pre::ValueMapDbl ScipBackend::DualSolution() {
 ArrayRef<double> ScipBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  //for (int i=0; i < num_cons; i++)
-  //  pi[i] = SCIPgetDualsolLinear(getSCIP(), getPROBDATA()->linconss[i]);
+  if (SCIPisDualSolAvailable(getSCIP(), TRUE)) {
+    for (int i=0; i < num_cons; i++)
+      SCIP_CCALL( SCIPgetDualSolVal(getSCIP(), getPROBDATA()->linconss[i], pi.data() + i, NULL) );
+  }
   return pi;
 }
 
