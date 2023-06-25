@@ -349,6 +349,7 @@ public:
   /// @return whether any converted
   bool ConvertAllNewWith(BasicFlatConverter& cvt) override {
     assert(&cvt == &GetConverter());         // Using the same Converter
+    MP_UNUSED(cvt);
     try {
       return ConvertAllFrom(i_cvt_last_);
     } catch (const std::exception& exc) {

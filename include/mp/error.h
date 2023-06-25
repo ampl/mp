@@ -51,6 +51,8 @@ namespace mp {
 /// Raise infeasibility
 #define MP_INFEAS(msg) MP_RAISE(std::string("Infeasibility: ") + msg)
 
+/// Silence unused parameter warnings
+#define MP_UNUSED(x) (void)(x)
 /// A general error.
 class Error : public fmt::internal::RuntimeError {
   int exit_code_ = EXIT_FAILURE;
