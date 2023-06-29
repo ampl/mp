@@ -351,7 +351,7 @@ fmt::StringRef mp::NameProvider::name(std::size_t index) {
   if (index + 1 < names_.size()) {
     const char *name = names_[index];
     const auto* pos1past = names_[index + 1] - 1;
-    assert('\n' == *pos1past);
+    assert( ('\n' == *pos1past) || ('\r' == *pos1past));
     if ('\r' == *(pos1past-1))            // Windows
       --pos1past;
     return fmt::StringRef(name, pos1past - name);

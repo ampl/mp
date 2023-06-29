@@ -6,12 +6,21 @@ namespace mp {
 void CplexModelAPI::InitProblemModificationPhase(const FlatModelInfo*) { }
 
 void CplexModelAPI::AddVariables(const VarArrayDef& v) {
+  int nint = 0;
   std::vector<char> vtypes(v.size());
-  for (size_t i=v.size(); i--; )
-    vtypes[i] = var::Type::CONTINUOUS==v.ptype()[i] ?
-          CPX_CONTINUOUS : CPX_INTEGER;
-  CPLEX_CALL( CPXnewcols (env(), lp(), (int)v.size(), NULL,
-                          v.plb(), v.pub(), vtypes.data(), const_cast<char**>(v.pnames())));
+  for (size_t i = v.size(); i--; )
+    if (var::Type::CONTINUOUS == v.ptype()[i])
+      vtypes[i] = CPX_CONTINUOUS;
+    else {
+      nint++;
+      vtypes[i] = CPX_INTEGER;
+    }
+  if (nint > 0)
+    CPLEX_CALL(CPXnewcols(env(), lp(), (int)v.size(), nullptr,
+      v.plb(), v.pub(), vtypes.data(), const_cast<char**>(v.pnames())));
+  else
+    CPLEX_CALL(CPXnewcols(env(), lp(), (int)v.size(), nullptr,
+      v.plb(), v.pub(), nullptr , const_cast<char**>(v.pnames())));
 }
 
 void CplexModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {

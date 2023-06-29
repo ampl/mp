@@ -139,6 +139,11 @@ namespace mp {
   }
 
   double  CplexBackend::MIPGapAbs() {
+    auto type = CPXgetprobtype(env(), lp());
+    if ((type == CPXPROB_LP) ||
+      (type == CPXPROB_QP) || (type == CPXPROB_QCP))
+      return 0;
+
     double obj;
     int status = CPXgetobjval(env(), lp(), &obj);
     if (status)
@@ -146,6 +151,10 @@ namespace mp {
     return std::abs(obj - BestDualBound());
   }
   double  CplexBackend::BestDualBound() {
+    auto type = CPXgetprobtype(env(), lp());
+    if ((type == CPXPROB_LP) ||
+      (type == CPXPROB_QP) || (type == CPXPROB_QCP))
+      return 0;
     getDblParam(CPXgetbestobjval, bobj);
     if (bobj == Infinity())
       return AMPLInf();
