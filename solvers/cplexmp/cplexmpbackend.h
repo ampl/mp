@@ -82,6 +82,14 @@ public:
   ArrayRef<int> VarsIIS();
   pre::ValueMapInt ConsIIS();
 
+  /**
+  * Obtain inf/unbounded rays
+  **/
+  ALLOW_STD_FEATURE(RAYS, true)
+  ArrayRef<double> Ray() override;
+  ArrayRef<double> DRay() override;
+
+
 
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;

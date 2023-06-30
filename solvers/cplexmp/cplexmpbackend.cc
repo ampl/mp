@@ -113,18 +113,7 @@ namespace mp {
   }
 
 
-  bool CplexBackend::IsMIP() const {
-    int probtype = CPXgetprobtype(env(), lp());
-    return
-      CPXPROB_MILP == probtype ||
-      CPXPROB_MIQP == probtype ||
-      CPXPROB_MIQCP == probtype;
-  }
 
-  bool CplexBackend::IsQCP() const {
-    int probtype = CPXgetprobtype(env(), lp());
-    return probtype >= 5;
-  }
 #define getAndReturnDblParam(function)\
   double value;\
   CPLEX_CALL(function(env(), lp(), &value));\
@@ -133,6 +122,18 @@ namespace mp {
 #define getDblParam(function, var)\
   double var;\
   CPLEX_CALL(function(env(), lp(), &var));
+
+
+  bool CplexBackend::IsMIP() const {
+    auto type = CPXgetprobtype(env(), lp());
+    return (!(type == CPXPROB_LP) || (type == CPXPROB_QP)
+      || (type == CPXPROB_QCP));
+  }
+  bool CplexBackend::IsQCP() const {
+    int probtype = CPXgetprobtype(env(), lp());
+    return probtype >= (int)CPXPROB_QP;
+  }
+
 
   double  CplexBackend::MIPGap() {
     getAndReturnDblParam(CPXgetmiprelgap);
@@ -165,7 +166,8 @@ namespace mp {
 
   ArrayRef<int> CplexBackend::VarStatii() {
     std::vector<int> vars(NumVars());
-    CPLEX_CALL(CPXgetbase(env(), lp(), vars.data(), nullptr));
+    int status = CPXgetbase(env(), lp(), vars.data(), nullptr);
+    if (status) return vars;
     for (auto& s : vars) {
       switch (s) {
       case CPX_BASIC:
@@ -188,8 +190,10 @@ namespace mp {
   }
 
   ArrayRef<int> CplexBackend::ConStatii() {
-    std::vector<int> vars(NumLinCons());
-    for (auto& s : vars) {
+    std::vector<int> cons(NumLinCons());
+    int status = CPXgetbase(env(), lp(),nullptr, cons.data());
+    if (status) return cons;
+    for (auto& s : cons) {
       switch (s) {
       case CPX_BASIC:
         s = (int)BasicStatus::bas;
@@ -204,7 +208,7 @@ namespace mp {
         MP_RAISE(fmt::format("Unknown CPLEX rstat value: {}", s));
       }
     }
-    return vars;
+    return cons;
   }
 
   void CplexBackend::VarConStatii(ArrayRef<int> vstt, ArrayRef<int> cstt) {
@@ -291,6 +295,7 @@ namespace mp {
 
   void CplexBackend::AddMIPStart(
     ArrayRef<double> x0_unpres, ArrayRef<int> sparsity_unpres) {
+    if (!IsMIP()) return;
     auto mv = GetValuePresolver().PresolveSolution({ x0_unpres });
     auto ms = GetValuePresolver().PresolveGenericInt({ sparsity_unpres });
     auto x0 = mv.GetVarValues()();
@@ -373,6 +378,30 @@ void CplexBackend::Solve() {
     CPLEX_CALL(CPXlpopt(env(), lp()));
 
   WindupCPLEXSolve();
+}
+
+
+
+
+
+ArrayRef<double> CplexBackend::Ray() {
+  std::vector<double> ray(NumVars());
+  double proof_p;
+  CPXgetray(env(), lp(), ray.data());
+  auto mv = GetValuePresolver().PostsolveSolution({ ray });
+  auto uray = mv.GetVarValues()();
+  return uray;
+}
+
+ArrayRef<double> CplexBackend::DRay() {
+  std::vector<double> dd(NumLinCons());
+  double proof_p;
+  CPXdualfarkas(env(), lp(), dd.data(), &proof_p);
+  auto vm = GetValuePresolver().PostsolveSolution({
+                                               {},
+                                               {{{CG_Linear, std::move(dd)}}}
+    });
+  return vm.GetConValues().MoveOut();        // need the vector itself
 }
 
 void CplexBackend::WindupCPLEXSolve() { }

@@ -3,6 +3,7 @@
 
 namespace mp {
 
+
 int CplexCommon::NumLinCons() const {
   return CPXgetnumrows (env(), lp());
 }
