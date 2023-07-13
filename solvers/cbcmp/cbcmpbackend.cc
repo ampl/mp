@@ -84,9 +84,7 @@ ArrayRef<double> CbcmpBackend::PrimalSolution() {
   int num_vars = NumVars();
   std::vector<double> x(num_vars);
   auto sol = Cbc_getColSolution(lp());
-  for (int i = 0; i < num_vars; ++i)
-    x[i] = sol[i];
-  return x;
+  return { sol, static_cast<size_t>(num_vars) };
 }
 
 pre::ValueMapDbl CbcmpBackend::DualSolution() {
@@ -96,10 +94,8 @@ pre::ValueMapDbl CbcmpBackend::DualSolution() {
 ArrayRef<double> CbcmpBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
-  auto sol = Cbc_getRowActivity(lp());
-  for (int i = 0; i < num_cons; ++i)
-    pi[i] = sol[i];
-  return pi;
+  auto sol = lp()->model_->solver()->getRowPrice();
+  return { sol, static_cast<size_t>(num_cons)};
 }
 
 double CbcmpBackend::ObjectiveValue() const {
@@ -610,6 +606,7 @@ void CbcmpBackend::InitCustomOptions() {
 
   _options.addOption("timelimit", Cbc_setMaximumSeconds);
 
+
   std::string name;
   std::string desc;
   for (auto p : lp()->cbcData->parameters_)
@@ -621,19 +618,21 @@ void CbcmpBackend::InitCustomOptions() {
       else
         name = fmt::format("double:{} {}", p.name(), p.name());
       desc = fmt::format("{} (default {}).", p.shortHelp(), p.doubleValue());
-      AddSolverOption(name.c_str(), desc.c_str(), p.name().c_str(),
-        p.lowerDoubleValue(), p.upperDoubleValue());
+      double_options.push_back({name, desc, p.name(), p.lowerDoubleValue(), p.upperDoubleValue()});
     }
     else if (p.type() >= CLP_PARAM_INT_SOLVERLOGLEVEL &&
       p.type() <= CBC_PARAM_INT_MOREMOREMIPOPTIONS)
     {
       name = fmt::format("int:{} {}", p.name(), p.name());
       desc = fmt::format("{} (default {}).", p.shortHelp(), p.intValue());
-      AddSolverOption(name.c_str(), desc.c_str(), p.name().c_str(),
-        p.lowerIntValue(), p.upperIntValue());
+      int_options.push_back({ name, desc, p.name(), p.lowerIntValue(), p.upperIntValue() });
     }
     // String options are dealt with separately
   }
+  for (auto& opt : int_options)
+    AddSolverOption(opt.name.data(), opt.desct.data(), opt.par.data(), opt.min, opt.max);
+  for (auto& opt : double_options)
+    AddSolverOption(opt.name.data(), opt.desct.data(), opt.par.data(), opt.min, opt.max);
 
   AddStoredOption("lim:time timelim timelimit",
     "Limit on solve time (in seconds; default: no limit).",

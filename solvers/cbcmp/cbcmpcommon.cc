@@ -102,7 +102,7 @@ void CbcmpCommon::SetSolverOption(const char* key, int value) {
 
 int CbcmpCommon::GetSolverOption(const char* key, double &value) const {
   int i = findIndexOf(lp()->cmdargs_, key);
-  if (i) return i;
+  if (i<0) return i;
   value = atof(lp()->cmdargs_[i + 1].c_str());
   return 0;
 }
@@ -114,14 +114,14 @@ void CbcmpCommon::SetSolverOption(const char* key, double value) {
 
 int CbcmpCommon::GetSolverOption(const char* key, std::string &value) const {
   int i = findIndexOf(lp()->cmdargs_, key);
-  if (i) return i;
+  if (i<0) return i;
   value = lp()->cmdargs_[i + 1];
   return 0;
 }
 
 const char * CbcmpCommon::GetSolverOption(const char* key) const {
   int i = findIndexOf(lp()->cmdargs_, key);
-  if (i) return NULL;
+  if (i<0) return NULL;
   return lp()->cmdargs_[i + 1].c_str();
 }
 

@@ -151,7 +151,16 @@ private:
     int outlev_ = 0;
   };
   Options storedOptions_;
+  template <class T> struct OwningOption {
+    std::string name;
+    std::string desct;
+    std::string par;
+    T min;
+    T max;
+  };
 
+  std::vector<OwningOption<int>> int_options;
+  std::vector<OwningOption<double>> double_options;
 
 };
 
