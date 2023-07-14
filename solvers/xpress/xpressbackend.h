@@ -157,6 +157,7 @@ protected:
 
   void CreateSolutionPoolEnvironment();
 
+  std::string XPRESSSolveFlags();
   void WindupXPRESSMPSolve();
 
   void ReportResults() override;
@@ -207,6 +208,10 @@ private:
     int pooldupcol_;
     int poollimit_ = 10;
     int nPoolMode_ = 0;
+    int fBarrier_ = 0;
+    int fPrimal_ = 0;
+    int fDual_ = 0;
+    int fNetwork_ = 0;
     std::string tunebase_;
     std::string tunename_;
     std::string logFile_;

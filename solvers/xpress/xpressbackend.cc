@@ -190,6 +190,7 @@ void XpressmpBackend::Solve() {
   if (tunebase().size())
     DoXPRESSTune();
 
+  auto flags = XPRESSSolveFlags();
   if (IsMIP()) {
     if (need_multiple_solutions() || storedOptions_.nbest_ > 1) {
       if (storedOptions_.nbest_ == 0) {
@@ -200,11 +201,29 @@ void XpressmpBackend::Solve() {
         &storedOptions_.nbest_));
     }
     else
-      XPRESSMP_CCALL(XPRSmipoptimize(lp(), NULL));
+      XPRESSMP_CCALL(XPRSmipoptimize(lp(), flags.c_str()));
   }
   else
-    XPRESSMP_CCALL(XPRSlpoptimize(lp(), NULL));
+    XPRESSMP_CCALL(XPRSlpoptimize(lp(), flags.c_str()));
   WindupXPRESSMPSolve();
+}
+
+std::string XpressmpBackend::XPRESSSolveFlags() {
+  if (storedOptions_.fBarrier_
+      && storedOptions_.fPrimal_
+      && storedOptions_.fDual_
+      && storedOptions_.fNetwork_)
+    AddWarning("LP method",
+               "Only one of barrier/primal/dual/network should be specified.");
+  if (storedOptions_.fBarrier_)
+    return "b";
+  if (storedOptions_.fPrimal_)
+    return "p";
+  if (storedOptions_.fDual_)
+    return "d";
+  if (storedOptions_.fNetwork_)
+    return "n";
+  return "";
 }
 
 void XpressmpBackend::WindupXPRESSMPSolve() { }
@@ -1240,9 +1259,27 @@ void XpressmpBackend::InitCustomOptions() {
   // Generic algorithm controls
   // ****************************
   AddSolverOption("alg:method method lpmethod defaultalg",
-    "Which algorithm to use for non-MIP problems or for the root node of MIP problems:\n"
+    "Which algorithm to use for non-MIP problems "
+    "or for node relaxations of MIP problems, "
+    "unless barrier/primal/dual/network specified:\n"
     "\n.. value-table::\n", XPRS_DEFAULTALG, values_method, -1);
 
+  AddStoredOption("alg:barrier barrier",
+                  "Solve (MIP node) LPs by barrier method.",
+                  storedOptions_.fBarrier_);
+
+  AddStoredOption("alg:primal primal",
+                  "Solve (MIP node) LPs by primal simplex method.",
+                  storedOptions_.fPrimal_);
+
+  AddStoredOption("alg:dual dual",
+                  "Solve (MIP node) LPs by dual simplex method.",
+                  storedOptions_.fDual_);
+
+  AddStoredOption("alg:network network",
+                  "Solve (substructure of) (MIP node) LPs "
+                  "by network simplex method.",
+                  storedOptions_.fNetwork_);
 
   AddSolverOption("alg:clamping clamping",
     "Control adjustements of the returned solution values "
