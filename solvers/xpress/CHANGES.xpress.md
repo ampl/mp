@@ -1,6 +1,11 @@
 Summary of recent updates to Xpress for AMPL
 ============================================
 
+
+## 20230714
+- Options barrier/primal/dual/network like in ASL.
+
+
 ## 20230621
 - Fix quadratic objective with repeated subexpressions.
 - Fix reformulation of ==> / else.

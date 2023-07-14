@@ -493,7 +493,7 @@ public:
     MPD( CloseGraphExporter() );
     if (value_presolver_.GetExport())
       assert( value_presolver_.AllEntriesExported() );
-    if (GetEnv().verbose_mode())
+//    if (GetEnv().verbose_mode())
       GetEnv().PrintWarnings();
   }
 

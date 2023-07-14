@@ -906,7 +906,23 @@ void BasicSolver::ParseOptionString(
       s = SkipNonSpaces(s);
       continue;
     }
-    opt->Parse(s, flags & FROM_COMMAND_LINE);
+    if (!equal_sign) {
+      if (opt->is_flag()) {
+        opt->Parse(s, flags & FROM_COMMAND_LINE);
+      } else // Emulate flag options for integer options
+      if (SolverOption::Option_Type::INT==opt->type()) {
+        auto s_ = s;
+        s = "1";
+        opt->Parse(s, flags & FROM_COMMAND_LINE);
+        s = s_;
+      } else {
+        MP_RAISE(
+              fmt::format("Option \"{}\" requires an argument",
+                          &name[0]));
+      }
+    } else {
+      opt->Parse(s, flags & FROM_COMMAND_LINE);
+    }
     if ((flags & NO_OPTION_ECHO) == 0)
     {
       fmt::MemoryWriter w;

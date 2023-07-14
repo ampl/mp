@@ -1,6 +1,10 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## 20230714
+- Print warnings in non-verbose mode too.
+- 'barrier' equivalent to 'barrier=1' for integer options.
+
 
 ## 20230621
 - Fix quadratic objective with repeated subexpressions.

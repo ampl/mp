@@ -246,7 +246,7 @@ protected:
   /// Report
   virtual void Report() {
     ReportResults();
-    if (verbose_mode())
+//    if (verbose_mode())
       PrintWarnings();
     if ( timing() )
       PrintTimingInfo();
