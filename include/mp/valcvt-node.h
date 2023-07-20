@@ -45,7 +45,7 @@ public:
   /// Get single index if it is
   operator int() const { return ir_; }
 
-  /// Check extendability
+  /// Check extendability by given range
   bool ExtendableBy(NodeRange nr) const
   { return pvn_==nr.pvn_ && ir_.end_==nr.ir_.beg_; }
 
@@ -112,6 +112,7 @@ public:
   bool Empty() const { return !Size(); }
 
   /// bool empty(). True when actual values are empty or 0.
+  /// Has STL syntax.
   bool empty() const {
     return EmptyOr0(vi_) && EmptyOr0(vd_);
   }
@@ -144,7 +145,7 @@ public:
 
   /// Assign from ArrayRef<int>. Always copy the values.
   /// Some (target) node assignments can be longer vectors:
-  /// e.g., Gurobi  adds variables for FeasRelax.
+  /// e.g., Gurobi adds variables for FeasRelax.
   ValueNode& operator=(std::vector<int> ai)
   {
     // assert(ai.size() <= size());

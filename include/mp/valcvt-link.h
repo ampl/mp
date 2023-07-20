@@ -83,7 +83,7 @@ private:
 
 
 /// Link range: range of conversion specifiers of certain type.
-/// The link is specified as well
+/// The link object is specified as well
 struct LinkRange {
   /// Try & extend the range.
   /// @return true iff extension worked,
@@ -114,7 +114,8 @@ struct LinkRange {
 /// Feature: copies values without comparing with existing values,
 /// in contrast to other links using Set() method.
 /// This is useful for objectives which use both CopyLink
-/// and One2ManyLink's.
+/// and One2ManyLink's, to retrieve objective values
+/// and not max them out on duals, etc.
 class CopyLink : public BasicLink {
 public:
   /// Constructor
@@ -314,10 +315,8 @@ public:
     BasicLink(pre) { }
 
   /// Add entry
-  /// Instead of a new entry, tries to extend the last one
-  /// if exists
   void AddEntry(LinkEntry be) {
-    entries_.push_back(be);             // Add new entry
+    entries_.push_back(be);             // Add physically
     RegisterLinkIndex(entries_.size()-1);
   }
 

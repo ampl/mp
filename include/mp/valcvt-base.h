@@ -76,7 +76,9 @@ public:
   template <class Array2>
   ValueMap(const std::map<int, Array2>& llm) {
     for (const auto& a2: llm) {
-      map_.insert({ a2.first, CreateArray<Array>(prm_) }).first->second =
+      map_.insert(
+            { a2.first, CreateArray<Array>(prm_) }
+            ).first->second =
           a2.second;
     }
   }
@@ -85,7 +87,9 @@ public:
   template <class Array2, class Param2>
   ValueMap(const ValueMap<Array2, Param2>& m) {
     for (const auto& a2: m.GetMap())
-      map_.insert({ a2.first, CreateArray<Array>(prm_) }).first->second =
+      map_.insert(
+            { a2.first, CreateArray<Array>(prm_) }
+            ).first->second =
           a2.second;
   }
 
@@ -116,14 +120,14 @@ public:
   Array& MakeSingleKey() { return operator()(); }
 
   /// Retrieve the single array, const.
-  /// WARNING:
-  /// When returning the single array from a temporary map,
-  /// use MoveOut()
-  const Array& operator()() const
+  const Array& operator()() const&
   { assert(IsSingleKey()); return map_.at(0); }
 
+  /// Move out the single array, rvalue.
+  Array operator()() &&  { return MoveOut(); }
+
   /// Retrieve the single array (creating if need)
-  Array& operator()() {
+  Array& operator()() & {
     if (map_.empty())
       SetValueNodeName(
             map_.insert({ 0,
@@ -136,12 +140,13 @@ public:
   }
 
   /// Retrieve the array with key \a i, const.
-  /// WARNING:
-  /// When returning array from a temporary map, use MoveOut(i)
-  const Array& operator()(int i) const { return map_.at(i); }
+  const Array& operator()(int i) const& { return map_.at(i); }
+
+  /// Move out the array with key \a i, rvalue.
+  Array operator()(int i) && { return MoveOut(i); }
 
   /// Retrieve the array with key \a i (creating if need)
-  Array& operator()(int i) {
+  Array& operator()(int i) & {
     if (map_.end() == map_.find(i)) {
       Array arr = CreateArray<Array, Param>(prm_);
       SetValueNodeName(
@@ -254,7 +259,8 @@ private:
 };
 
 
-/// ModelValues typedef template over the element type
+/// ModelValues typedef template over vectors
+/// of given element type
 template <class El>
 using MVOverEl = ModelValues< VMapOverElement<El> >;
 
