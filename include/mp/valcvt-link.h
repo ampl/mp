@@ -412,6 +412,17 @@ protected:
   void SetDbl(const LinkEntry& be, size_t pos, double i)
   { GetNode(pos).SetDbl(be[pos], i); }
 
+  /// Access string value at the node \a pos at the index
+  /// stored in \a be[pos]
+  ///
+  /// @param be: a LinkEntry
+  /// @param pos: node number from 0..NNodes-1
+  const VCString& GetStr(const LinkEntry& be, size_t pos) const
+  { return GetNode(pos).GetStr(be[pos]); }
+  /// SetStr
+  void SetStr(const LinkEntry& be, size_t pos, VCString v)
+  { GetNode(pos).SetStr(be[pos], std::move(v)); }
+
 private:
   NodeList ndl_;
 };

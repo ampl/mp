@@ -186,6 +186,8 @@ using VMapOverElement = ValueMap< std::vector<El> >;
 using ValueMapInt = VMapOverElement< int >;
 /// Specialize ValueMap storing double's
 using ValueMapDbl = VMapOverElement< double >;
+/// Specialize ValueMap storing strings
+using ValueMapStr = VMapOverElement< std::string >;
 
 
 /// Group of values or value nodes
@@ -269,11 +271,15 @@ using MVOverEl = ModelValues< VMapOverElement<El> >;
 using ModelValuesInt = MVOverEl< int >;
 /// Specialize ModelValues<> for concrete double data
 using ModelValuesDbl = MVOverEl< double >;
+/// Specialize ModelValues<> for concrete double data
+using ModelValuesStr = MVOverEl< std::string >;
 
 
 /// Declare ValueNode
 class ValueNode;
 
+/// Typedef VCString
+using VCString = std::string;
 
 /// Macro for a list of pre- / postsolve method definitions
 /// in a ValuePresolver or a link.
@@ -292,7 +298,8 @@ class ValueNode;
   PRESOLVE_KIND(Solution, double) \
   PRESOLVE_KIND(Basis, int) \
   PRESOLVE_KIND(IIS, int) \
-  PRESOLVE_KIND(LazyUserCutFlags, int)
+  PRESOLVE_KIND(LazyUserCutFlags, int) \
+  PRESOLVE_KIND(Names, VCString)
 // etc...
 
 

@@ -151,6 +151,14 @@ public:
     /// Should not need
   }
 
+  /// Presolve names
+  void PresolveNamesEntry(const typename Base::LinkEntry& be) {
+    SetStr(be, VAR_SLK, GetStr(be, CON_SRC) + "_slk_");
+    SetStr(be, CON_TARGET, GetStr(be, CON_SRC) + "_equ_");
+  }
+  /// Postsolve names: none
+  void PostsolveNamesEntry(const typename Base::LinkEntry& be) { }
+
 
 protected:
   /// Reverse low/upp basis statuses
@@ -169,6 +177,8 @@ protected:
   using Base::SetInt;
   using Base::GetDbl;
   using Base::SetDbl;
+  using Base::GetStr;
+  using Base::SetStr;
 
   using Base::GetNode;
 

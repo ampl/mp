@@ -77,7 +77,7 @@ private:
 
 
 /// Value node, a node of the conversion graph.
-/// Stores arrays of int's and double's
+/// Stores arrays of int's, double's, and VCString's
 /// corresponding to variables, or a constraint type, or objectives.
 /// The data is stored temporarily during a conversion run.
 class ValueNode {
@@ -94,6 +94,7 @@ public:
   ValueNode(ValueNode&& vn) : pre_(vn.pre_) {
     vi_ = std::move(vn.vi_);
     vd_ = std::move(vn.vd_);
+    vStr_ = std::move(vn.vStr_);
     sz_ = std::move(vn.sz_);
     name_ = std::move(vn.name_);
     RegisterMe();
@@ -103,6 +104,7 @@ public:
   ValueNode(const ValueNode& vn) : pre_(vn.pre_) {
     vi_ = (vn.vi_);
     vd_ = (vn.vd_);
+    vStr_ = (vn.vStr_);
     sz_ = (vn.sz_);
     name_ = (vn.name_);
     RegisterMe();
@@ -114,7 +116,9 @@ public:
   /// bool empty(). True when actual values are empty or 0.
   /// Has STL syntax.
   bool empty() const {
-    return EmptyOr0(vi_) && EmptyOr0(vd_);
+    return EmptyOr0(vi_)
+        && EmptyOr0(vd_)
+        && EmptyOr0(vStr_);
   }
 
   /// Declared size (what is being used by links)
@@ -163,11 +167,23 @@ public:
     return *this;
   }
 
+  /// Assign from vector. Always copy
+  ValueNode& operator=(std::vector<VCString> as)
+  {
+    // assert(ad.size() <= size());
+    vStr_ = std::move(as);
+    vStr_.resize(Size());       // cut off / complement values
+    return *this;
+  }
+
   /// Retrieve whole ArrayRef<int>
   operator ArrayRef<int> () const { return vi_; }
 
   /// Retrieve whole ArrayRef<double>
   operator ArrayRef<double> () const { return vd_; }
+
+  /// Retrieve whole ArrayRef<str>
+  operator ArrayRef<VCString> () const { return vStr_; }
 
   /// Retrieve vec<T>& - dummy version
   template <class T>
@@ -180,12 +196,15 @@ public:
   /// Retrieve whole vector<double>&
   operator const std::vector<double>& () const { return vd_; }
 
+  /// Retrieve whole vector<VCString&>&
+  operator const std::vector<VCString>& () const { return vStr_; }
+
 
   /////////////////////// Access individual values ///////////////////////
 
   /// Retrieve T, dummy version
   template <class T>
-  T GetVal(size_t ) const { return {}; }
+  const T& GetVal(size_t ) const { return {}; }
 
   /// Set T, dummy version
   template <class T>
@@ -194,6 +213,10 @@ public:
   /// Retrieve int[i]
   int GetInt(size_t i) const { assert(i<vi_.size()); return vi_[i]; }
 
+  /// Retrieve int[i]
+  const int& GetIntRef(size_t i) const
+  { assert(i<vi_.size()); return vi_[i]; }
+
   /// Set int[i].
   /// If existing value non-0, only allow larger value.
   void SetInt(size_t i, int v) { SetNum(vi_, i, v); }
@@ -201,9 +224,28 @@ public:
   /// Retrieve double[i]
   double GetDbl(size_t i) const { assert(i<vd_.size()); return vd_[i]; }
 
+  /// Retrieve double[i]
+  const double& GetDblRef(size_t i) const
+  { assert(i<vd_.size()); return vd_[i]; }
+
   /// Set double[i].
+  /// CONFLICT RESOLUTION:
   /// If existing value non-0, only allow larger value.
   void SetDbl(size_t i, double v) { SetNum(vd_, i, v); }
+
+  /// Retrieve string[i]
+  const VCString& GetStr(size_t i) const
+  { assert(i<vStr_.size()); return vStr_[i]; }
+
+  /// Set string[i].
+  /// CONFLICT RESOLUTION:
+  /// If existing value non-0, only allow larger value???
+  void SetStr(size_t i, VCString v) {
+    assert(i<Size());   // index into the originally declared suffix size
+    if (vStr_.size()<=i)  // can happen after CopySrcDest / CopyDestSrc
+      vStr_.resize(Size());
+    vStr_[i] = std::move(v);
+  }
 
   /// GetName
   const std::string& GetName() const { return name_; }
@@ -213,8 +255,9 @@ public:
 
   /// Clean up and realloc with current size, fill by 0's
   void CleanUpAndRealloc() {
-    vi_.clear(); vd_.clear();
+    vi_.clear(); vd_.clear(); vStr_.clear();
     vi_.resize(Size()); vd_.resize(Size());
+    vStr_.resize(Size());
   }
 
 protected:
@@ -254,11 +297,20 @@ protected:
             { return v; }));
   }
 
+  /// EmptyOr0 for a vector<str>
+  static bool EmptyOr0(const std::vector<VCString>& v) {
+    return (v.end()==std::find_if(v.begin(), v.end(),
+                                  [](typename
+                                    std::vector<VCString>::value_type v) -> bool
+            { return !v.empty(); }));
+  }
+
 private:
   // Move & copy constructors should copy all members!
   BasicValuePresolver& pre_;
   std::vector<int> vi_;
   std::vector<double> vd_;
+  std::vector<VCString> vStr_;
   size_t sz_=0;
   std::string name_ = "default_value_node";
 };
@@ -271,16 +323,27 @@ template <>
 std::vector<int>& ValueNode::GetValVec<int>() { return vi_; }
 
 template <>
-double ValueNode::GetVal<double>(size_t i) const { return GetDbl(i); }
+std::vector<VCString>& ValueNode::GetValVec<VCString>() { return vStr_; }
 
 template <>
-int ValueNode::GetVal<int>(size_t i) const { return GetInt(i); }
+const double& ValueNode::GetVal<double>(size_t i) const { return GetDblRef(i); }
+
+template <>
+const int& ValueNode::GetVal<int>(size_t i) const { return GetIntRef(i); }
+
+template <>
+const VCString& ValueNode::GetVal<VCString>(size_t i) const
+{ return GetStr(i); }
 
 template <>
 void ValueNode::SetVal<double>(size_t i, double v) { SetDbl(i, v); }
 
 template <>
 void ValueNode::SetVal<int>(size_t i, int v) { SetInt(i, v); }
+
+template <>
+void ValueNode::SetVal<VCString>(size_t i, VCString v)
+{ SetStr(i, std::move(v)); }
 
 
 /// Specialize SetValueNodeName() for ValueNode
