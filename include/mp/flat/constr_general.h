@@ -113,8 +113,18 @@ public:
 
   /// Constructor
   template <class VV=std::vector<int>, class WV=std::vector<double> >
-  SOS_1or2_Constraint(VV v, WV w, SOSExtraInfo ei={}) :
+  SOS_1or2_Constraint(VV v, WV w,
+                      SOSExtraInfo ei, std::string nm={}) :
     v_(v), w_(w), extra_info_(ei) {
+    SetName(std::move(nm));
+    sort();
+    assert(check());
+  }
+  /// Constructor
+  template <class VV=std::vector<int>, class WV=std::vector<double> >
+  SOS_1or2_Constraint(VV v, WV w, std::string nm={}) :
+    v_(v), w_(w) {
+    SetName(std::move(nm));
     sort();
     assert(check());
   }

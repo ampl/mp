@@ -171,6 +171,9 @@ public:
 	/// Mark as deleted, use index only
 	virtual void MarkAsDeleted(int i) = 0;
 
+  /// Copy names from ValueNodes
+  virtual void CopyNamesFromValueNodes() = 0;
+
 
 protected:
   int& GetAccLevRef() { return acceptance_level_; }
@@ -480,6 +483,14 @@ public:
 		MarkAsDeleted(cons_.at(i), i);
 	}
 
+  /// Copy names from ValueNodes
+  void CopyNamesFromValueNodes() override {
+    const auto& vn = GetValueNode().GetStrVec();
+    assert(vn.size()==cons_.size());
+    for (auto i=vn.size(); i--; )
+      cons_[i].con_.SetName(vn[i].MakeCurrentName());
+  }
+
 	/// ForEachActive().
 	/// Deletes every constraint where fn() returned true.
 	template <class Fn>
@@ -700,6 +711,12 @@ public:
             ck.second.GetConstraintGroup(mapi),
             ck.second.GetNumberOfAddable());
     }
+  }
+
+  /// Copy names from ValueNodes
+  void CopyNamesFromValueNodes() {
+    for (const auto& ck: con_keepers_)
+      ck.second.CopyNamesFromValueNodes();
   }
 
   /// Add all unbridged constraints to Backend

@@ -489,6 +489,7 @@ public:
       GetModel().RelaxIntegrality();
 		FixUnusedDefinedVars();       // Until we have proper var deletion
     CheckLinearCons();
+    PresolveNames();
     GetModel().PushModelTo(GetModelAPI());
     MPD( CloseGraphExporter() );
     if (value_presolver_.GetExport())
@@ -522,6 +523,29 @@ public:
       }
       return false;     // don't delete
     } );
+  }
+
+  /// Presolve item names
+  void PresolveNames() {
+    if (var_names_.size()) {
+      /// Check that constr / obj names are present too?
+      GetValuePresolver().CleanUpNameNodes();
+      auto vm = GetValuePresolver().
+          PresolveNames({
+                          {var_names_},
+                          {con_names_},
+                          {obj_names_}
+                        });
+      const auto& vcs = vm.GetVarValues()();    // vars
+      std::vector<std::string> vs(vcs.begin(), vcs.end());
+      BaseFlatModel::AddVarNames(vs);
+      const auto& ocs = vm.GetObjValues()();    // objs
+      auto& obj = BaseFlatModel::get_objectives();
+      assert(obj.size() == ocs.size());
+      for (auto i=obj.size(); i--;)
+        obj[i].set_name(ocs[i]);
+      ConstraintManager::CopyNamesFromValueNodes();  // cons
+    }
   }
 
   /// Fill model traits for license check.
@@ -621,8 +645,14 @@ public:
     return AutoLink( GetVarValueNode().Add( lbs.size() ) );
   }
 
-  void AddVarNames(const std::vector<std::string>& names) {
-    BaseFlatModel::AddVars__names(names);
+  void AddVarNames(std::vector<std::string> names) {
+    var_names_ = std::move(names);
+  }
+  void AddConNames(std::vector<std::string> names) {
+    con_names_ = std::move(names);
+  }
+  void AddObjNames(std::vector<std::string> names) {
+    obj_names_ = std::move(names);
   }
   /// Reuse ValuePresolver's target nodes for all variables
   pre::ValueNode& GetVarValueNode()
@@ -724,8 +754,6 @@ protected:
   pre::NodeRange DoAddVar(double lb=MinusInfty(), double ub=Infty(),
              var::Type type = var::CONTINUOUS) {
     int v = GetModel().AddVar__basic(lb, ub, type);
-    GetModel().AddVar__name();
-
     return AutoLink( GetVarValueNode().Select( v ) );
   }
 
@@ -1021,6 +1049,12 @@ private:
 	ConicConverter<Impl> conic_cvt_ { *static_cast<Impl*>(this) };
 
 	std::vector<int> refcnt_vars_;
+
+  /// AMPL item names
+  std::vector<std::string>
+  var_names_,
+  con_names_,   // no SOS here, they go directly into the SOS
+  obj_names_;
 
 
 protected:

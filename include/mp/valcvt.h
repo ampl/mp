@@ -157,12 +157,22 @@ protected:
     return src_;
   }
 
-  /// Clean up value nodes for new propagation
+
+public:
+  /// Clean up value nodes for new propagation.
+  /// Numeric arrays only.
   void CleanUpValueNodes() const {
     for (auto pvn: val_nodes_)
       pvn->CleanUpAndRealloc();
   }
+  /// Clean up name nodes for new propagation.
+  void CleanUpNameNodes() const {
+    for (auto pvn: val_nodes_)
+      pvn->CleanUpAndRealloc_Names();
+  }
 
+
+protected:
   /// Export unexported entries, if exporter provided
   void ExportRemainingEntries() {
     if (GetExport()) {

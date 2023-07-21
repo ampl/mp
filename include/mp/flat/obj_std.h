@@ -36,6 +36,8 @@ public:
   const std::vector<int>& vars() const { return vars_; }
   /// Name
   const char* name() const { return name_.c_str(); }
+  /// Set name
+  void set_name(std::string nm) { name_ = std::move(nm); }
 
   /// Testing API
   bool operator==(const LinearObjective& lc) const {

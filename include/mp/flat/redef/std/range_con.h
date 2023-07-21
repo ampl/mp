@@ -157,7 +157,7 @@ public:
     SetStr(be, CON_TARGET, GetStr(be, CON_SRC) + "_equ_");
   }
   /// Postsolve names: none
-  void PostsolveNamesEntry(const typename Base::LinkEntry& be) { }
+  void PostsolveNamesEntry(const typename Base::LinkEntry& ) { }
 
 
 protected:

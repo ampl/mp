@@ -87,7 +87,7 @@ protected:
     std::iota(weights.begin(), weights.end(), 1.0);
     GetMC().AddConstraint(      // indicate range of sum(lambda)
           SOS2Constraint(lambda, weights,
-                         { {1.0, 1.0} }) );
+                         SOSExtraInfo{ {1.0, 1.0} }) );
     std::fill(weights.begin(), weights.end(), 1.0);
     GetMC().AddConstraint(
           LinConEQ{ {weights, lambda}, {1.0} });

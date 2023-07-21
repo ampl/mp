@@ -64,8 +64,9 @@ public:
 
   /// Construct from a single SomeArray
   template <class SomeArray>
-  ValueMap(SomeArray r) :
-      map_{ {0, std::move(r) } } {
+  ValueMap(const SomeArray& r) {
+    Array a(r.begin(), r.end());
+    map_[0] = std::move(a);
     SetValueNodeName(map_.at(0), name_ + "()");
   }
 
@@ -271,15 +272,70 @@ using MVOverEl = ModelValues< VMapOverElement<El> >;
 using ModelValuesInt = MVOverEl< int >;
 /// Specialize ModelValues<> for concrete double data
 using ModelValuesDbl = MVOverEl< double >;
-/// Specialize ModelValues<> for concrete double data
+/// Specialize ModelValues<> for concrete string data
 using ModelValuesStr = MVOverEl< std::string >;
 
 
 /// Declare ValueNode
 class ValueNode;
 
-/// Typedef VCString
-using VCString = std::string;
+
+/// Typedef VCString.
+/// This class stores node names
+/// and counts references to a given name
+/// and allows numbering derived items
+/// 'Con01_1_', ...
+class VCString {
+public:
+  /// Construct default
+  VCString() = default;
+  /// Construct from string
+  VCString(std::string s) : s_(std::move(s)) { }
+  /// Copy from VCString.
+  /// Updates its counter,
+  /// but inits own counter to 0.
+  VCString(const VCString& vcs)
+    : s_(vcs.MakeCountedName()) { }
+  /// Assign VCString.
+  /// Only if empty (then copy.)
+  VCString& operator=(const VCString& vcs) {
+    if (empty()) {
+      s_ = vcs.MakeCountedName();
+      assert(!n_);
+    }
+    return *this;
+  }
+
+  /// Return current name, unmodified.
+  const std::string& MakeCurrentName() const
+  { return s_; }
+
+  /// Produce name s + '_<counter>_' if n_>0.
+  /// Post-increment counter.
+  std::string MakeCountedName() const {
+    return
+        n_++==0
+        ? s_
+        : s_ + '_' + std::to_string(n_) + '_';
+  }
+  /// Use MakeCountedName().
+  operator std::string() const
+  { return MakeCountedName(); }
+  /// Produce another VCString with
+  /// an added string or char.
+  /// Does not change own counter,
+  /// we assume the caller cares for name uniqueness.
+  template <class T>
+  VCString operator+(const T& arg) const
+  { return {s_ + arg}; }
+
+  /// empty?
+  bool empty() const { return s_.empty(); }
+
+private:
+  std::string s_;
+  mutable std::size_t n_ = 0;
+};
 
 /// Macro for a list of pre- / postsolve method definitions
 /// in a ValuePresolver or a link.

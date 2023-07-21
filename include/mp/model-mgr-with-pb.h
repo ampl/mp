@@ -289,9 +289,9 @@ private:
     { "1", "Only provide names if at least one of "
            ".col / .row name files was written by AMPL "
            "(AMPL options auxfiles, <solver>_auxfiles)", 1},
-    { "2", "Read names from AMPL, but provide generic "
-           "names otherwise", 2},
-    { "3", "Provide generic names.", 3}
+    { "2", "Read names from AMPL, but create generic "
+           "names if not provided", 2},
+    { "3", "Create generic names.", 3}
   };
 
   struct Options {

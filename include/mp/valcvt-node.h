@@ -199,6 +199,9 @@ public:
   /// Retrieve whole vector<VCString&>&
   operator const std::vector<VCString>& () const { return vStr_; }
 
+  /// Retrieve whole vector<VCString&>&
+  const std::vector<VCString>& GetStrVec() const { return vStr_; }
+
 
   /////////////////////// Access individual values ///////////////////////
 
@@ -253,10 +256,15 @@ public:
   /// SetName
   void SetName(std::string s) { name_ = std::move(s); }
 
-  /// Clean up and realloc with current size, fill by 0's
+  /// Clean up and realloc with current size, fill by 0's.
+  /// Numeric arrays only.
   void CleanUpAndRealloc() {
-    vi_.clear(); vd_.clear(); vStr_.clear();
+    vi_.clear(); vd_.clear();
     vi_.resize(Size()); vd_.resize(Size());
+  }
+  /// Clean up and realloc names.
+  void CleanUpAndRealloc_Names() {
+    vStr_.clear();
     vStr_.resize(Size());
   }
 

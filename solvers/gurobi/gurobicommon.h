@@ -134,13 +134,13 @@ public:
 
 
 /// Convenience macro: call & fail on error with user message
-#define GRB_CALL_MSG( call, msg ) do { if (int e=call) MP_RAISE( \
+#define GRB_CALL_MSG( call, msg ) do { if (call) MP_RAISE( \
     fmt::format( \
       "{}: {}", \
            GRBgeterrormsg(env()), msg ) \
   ); } while (0)
 /// Convenience macro: call & fail on error
-#define GRB_CALL( call ) do { if (int e=call) MP_RAISE( \
+#define GRB_CALL( call ) do { if (call) MP_RAISE( \
     GRBgeterrormsg(env()) \
   ); } while (0)
 /// Convenience macro: call & warn on error

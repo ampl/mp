@@ -117,6 +117,8 @@ public:
 protected:
   /// Convert problem items
   void ConvertStandardItems() {
+    CopyItemNames();
+
     ////////////////////////// Variables
     ConvertVars();
 
@@ -165,7 +167,6 @@ protected:
     }
 
     auto vnr = GetFlatCvt().AddVars(lbs, ubs, types);
-    GetFlatCvt().AddVarNames(GetModel().var_names());
     GetCopyLink().AddEntry({
           GetValuePresolver().GetSourceNodes().GetVarValues().MakeSingleKey().
                              Add(lbs.size()),
@@ -308,6 +309,12 @@ protected:
     const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
     GetFlatCvt().FixAsTrue(resvar);
     assert(GetFlatCvt().HasInitExpression(resvar));
+  }
+
+  void CopyItemNames() {
+    GetFlatCvt().AddVarNames(GetModel().var_names());
+    GetFlatCvt().AddConNames(GetModel().con_names());
+    GetFlatCvt().AddObjNames(GetModel().obj_names());
   }
 
 
@@ -812,12 +819,20 @@ protected:         // More utilities
         vars.push_back(wv.second);
       }
       if (group.first<0 || fAllSOS2)
-        AddConstraint(SOS2Constraint(vars, weights,
-                                     fAllSOS2 ?
-        SOSExtraInfo{{1.0, 1.0}} :   // for linearized PL
-        SOSExtraInfo{}));
+        AddConstraint(
+              SOS2Constraint(vars, weights,
+                             fAllSOS2 ?    // for linearized PL
+                               SOSExtraInfo{{1.0, 1.0}} :
+                               SOSExtraInfo{},
+                             (fAllSOS2 ? "SOS2_PL_" : "SOS2_")
+                             + std::to_string(group.first)
+                             + '_'));
       else
-        AddConstraint(SOS1Constraint(vars, weights));
+        AddConstraint(
+              SOS1Constraint(vars, weights,
+                             "SOS1_"
+                             + std::to_string(group.first)
+                             + '_'));
     }
   }
 
