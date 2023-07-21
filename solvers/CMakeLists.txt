@@ -108,7 +108,7 @@ function(add_ampl_solver name)
 
   if (TARGET ${module}-library)
     get_target_property(TRG_PROP_IMPRT_LOC ${module}-library IMPORTED_LOCATION)
-    if((NOT libraries) OR (libraries STREQUAL ${CMAKE_DL_LIBS}))
+    if((NOT libraries) OR ("${libraries}" STREQUAL "${CMAKE_DL_LIBS}" ))
       set(libraries ${module}-library)
     endif()
   endif ()
