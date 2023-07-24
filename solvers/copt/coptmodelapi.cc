@@ -42,23 +42,23 @@ void CoptModelAPI::AddConstraint(const LinConRange& lc) {
 												 lc.pvars(), lc.pcoefs(), 0,
 												 lc.lb() < -COPT_INFINITY ? -COPT_INFINITY : lc.lb(),
 												 lc.ub() > COPT_INFINITY ? COPT_INFINITY : lc.ub(),
-												 NULL));
+												 lc.name()));
 }
 
 void CoptModelAPI::AddConstraint(const LinConLE& lc) {
   char sense = COPT_LESS_EQUAL;
   COPT_CCALL(COPT_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
-    sense, lc.rhs(), 0, NULL));
+		sense, lc.rhs(), 0, lc.name()));
 }
 void CoptModelAPI::AddConstraint(const LinConEQ& lc) {
   char sense = COPT_EQUAL;
   COPT_CCALL(COPT_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
-    sense, lc.rhs(), 0, NULL));
+		sense, lc.rhs(), 0, lc.name()));
 }
 void CoptModelAPI::AddConstraint(const LinConGE& lc) {
   char sense = COPT_GREATER_EQUAL;
   COPT_CCALL(COPT_AddRow(lp(), lc.size(), lc.pvars(), lc.pcoefs(),
-    sense, lc.rhs(), 0, NULL));
+		sense, lc.rhs(), 0, lc.name()));
 }
 
 void CoptModelAPI::AddConstraint(const QuadConLE& qc) {
@@ -66,7 +66,7 @@ void CoptModelAPI::AddConstraint(const QuadConLE& qc) {
   const auto& qt = qc.GetQPTerms();
   COPT_CCALL(COPT_AddQConstr(lp(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
                              qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                             (double*)qt.pcoefs(), COPT_LESS_EQUAL, qc.rhs(), NULL));
+														 (double*)qt.pcoefs(), COPT_LESS_EQUAL, qc.rhs(), qc.name()));
 }
 
 void CoptModelAPI::AddConstraint(const QuadConEQ& qc) {
@@ -74,7 +74,7 @@ void CoptModelAPI::AddConstraint(const QuadConEQ& qc) {
   const auto& qt = qc.GetQPTerms();
   COPT_CCALL(COPT_AddQConstr(lp(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
                              qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                             (double*)qt.pcoefs(), COPT_EQUAL, qc.rhs(), NULL));
+														 (double*)qt.pcoefs(), COPT_EQUAL, qc.rhs(), qc.name()));
 }
 
 void CoptModelAPI::AddConstraint(const QuadConGE& qc) {
@@ -82,7 +82,7 @@ void CoptModelAPI::AddConstraint(const QuadConGE& qc) {
   const auto& qt = qc.GetQPTerms();
   COPT_CCALL(COPT_AddQConstr(lp(), lt.size(), (int*)lt.pvars(), (double*)lt.pcoefs(),
                              qt.size(), (int*)qt.pvars1(), (int*)qt.pvars2(),
-                             (double*)qt.pcoefs(), COPT_GREATER_EQUAL, qc.rhs(), NULL));
+														 (double*)qt.pcoefs(), COPT_GREATER_EQUAL, qc.rhs(), qc.name()));
 }
 
 

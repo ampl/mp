@@ -1,6 +1,12 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
+## 20230724
+- option [solver_]auxfiles rc; transfers names
+	of variables and constraints into the model;
+	(solver)_options 'cvt:names=0-3' controls names.
+
+
 ## 20230625
 - Updated to Gurobi libraries 10.0.2, which include many bugfixes.
 

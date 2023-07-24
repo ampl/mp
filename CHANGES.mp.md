@@ -1,6 +1,12 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## 20230724
+- option [solver_]auxfiles rc; transfers names
+	of variables and constraints into the model;
+	(solver)_options 'cvt:names=0-3' controls names.
+
+
 ## 20230714
 - Print warnings in non-verbose mode too.
 - 'barrier' equivalent to 'barrier=1' for integer options.

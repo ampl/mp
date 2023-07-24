@@ -2,6 +2,12 @@ Summary of recent updates to Xpress for AMPL
 ============================================
 
 
+## 20230724
+- option [solver_]auxfiles rc; transfers names
+	of variables and linear constraints into the model;
+	(solver)_options 'cvt:names=0-3' controls names.
+
+
 ## 20230714
 - Options barrier/primal/dual/network like in ASL.
 
