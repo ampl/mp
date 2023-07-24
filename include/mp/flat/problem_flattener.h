@@ -188,10 +188,12 @@ protected:
             GetValuePresolver().GetTargetNodes().GetObjValues()().Add() });
     /// After the CopyLink, add One2ManyLink for converted expressions.
     /// When postsolving, CopyLink is executed last and copies obj values.
-    /// !!!! Temporarily removing AutoLinking for objectives
-//    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
-//      GetFlatCvt(), obj_src
-//    };
+    /// This should resolve the issue of the "max-out"
+    /// value conflict resolution.
+    /// Tested by suf_common/funcpieces_01_01_obj.mod.
+    pre::AutoLinkScope<FlatConverterType> auto_link_scope{
+      GetFlatCvt(), obj_src
+    };
     auto le = ToLinTerms(obj.linear_expr());
     NumericExpr e = obj.nonlinear_expr();
     EExpr eexpr;

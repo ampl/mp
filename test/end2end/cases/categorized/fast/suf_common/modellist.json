@@ -163,7 +163,7 @@
     "options": { "ANYSOLVER_options": "debug=1" },
     "comment": "test suffix should be 58, but obj auto-link is currently off",
     "values": {
-      "Initial.test_funcpieces_presolved": 38
+      "Initial.test_funcpieces_presolved": 58
     }
   }
 ]
