@@ -113,7 +113,7 @@ void GurobiModelAPI::AddConstraint(const MaxConstraint &mc)  {
 
 void GurobiModelAPI::AddConstraint(const MinConstraint &mc)  {
   const auto& args = mc.GetArguments();
-  GRB_CALL( GRBaddgenconstrMin(model(), NULL,
+  GRB_CALL( GRBaddgenconstrMin(model(), mc.name(),
                                mc.GetResultVar(),
                                (int)args.size(), args.data(),
                                Infinity()) );
@@ -121,26 +121,26 @@ void GurobiModelAPI::AddConstraint(const MinConstraint &mc)  {
 
 void GurobiModelAPI::AddConstraint(const AbsConstraint &absc)  {
   const auto& args = absc.GetArguments();
-  GRB_CALL( GRBaddgenconstrAbs(model(), NULL,
+  GRB_CALL( GRBaddgenconstrAbs(model(), absc.name(),
                                absc.GetResultVar(), args[0]) );
 }
 
 void GurobiModelAPI::AddConstraint(const AndConstraint &cc)  {
   const auto& args = cc.GetArguments();
-  GRB_CALL( GRBaddgenconstrAnd(model(), NULL,
+  GRB_CALL( GRBaddgenconstrAnd(model(), cc.name(),
                                cc.GetResultVar(),
                                (int)args.size(), args.data()) );
 }
 
 void GurobiModelAPI::AddConstraint(const OrConstraint &dc)  {
   const auto& args = dc.GetArguments();
-  GRB_CALL( GRBaddgenconstrOr(model(), NULL,
+  GRB_CALL( GRBaddgenconstrOr(model(), dc.name(),
                                dc.GetResultVar(),
                                (int)args.size(), args.data()) );
 }
 
 void GurobiModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
-  GRB_CALL( GRBaddgenconstrIndicator(model(), NULL,
+  GRB_CALL( GRBaddgenconstrIndicator(model(), ic.name(),
                                ic.get_binary_var(), ic.get_binary_value(),
                                      (int)ic.get_constraint().size(),
                                ic.get_constraint().pvars(),
@@ -149,7 +149,7 @@ void GurobiModelAPI::AddConstraint(const IndicatorConstraintLinLE &ic)  {
                                      ic.get_constraint().rhs() ) );
 }
 void GurobiModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
-  GRB_CALL( GRBaddgenconstrIndicator(model(), NULL,
+  GRB_CALL( GRBaddgenconstrIndicator(model(), ic.name(),
                                      ic.get_binary_var(), ic.get_binary_value(),
                                            (int)ic.get_constraint().size(),
                                      ic.get_constraint().pvars(),
@@ -158,7 +158,7 @@ void GurobiModelAPI::AddConstraint(const IndicatorConstraintLinEQ &ic)  {
                                            ic.get_constraint().rhs() ) );
 }
 void GurobiModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
-  GRB_CALL( GRBaddgenconstrIndicator(model(), NULL,
+  GRB_CALL( GRBaddgenconstrIndicator(model(), ic.name(),
                                ic.get_binary_var(), ic.get_binary_value(),
                                      (int)ic.get_constraint().size(),
                                ic.get_constraint().pvars(),
@@ -185,48 +185,48 @@ void GurobiModelAPI::AddConstraint(const SOS2Constraint &sos)  {
 }
 
 void GurobiModelAPI::AddConstraint(const ExpConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrExp(model(), NULL,
+  GRB_CALL( GRBaddgenconstrExp(model(), cc.name(),
               cc.GetArguments()[0], cc.GetResultVar(), "") );
 }
 
 void GurobiModelAPI::AddConstraint(const ExpAConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrExpA(model(), NULL,
+  GRB_CALL( GRBaddgenconstrExpA(model(), cc.name(),
               cc.GetArguments()[0], cc.GetResultVar(), cc.GetParameters()[0], "") );
 }
 
 void GurobiModelAPI::AddConstraint(const LogConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrLog(model(), NULL,
+  GRB_CALL( GRBaddgenconstrLog(model(), cc.name(),
               cc.GetArguments()[0], cc.GetResultVar(), "") );
 }
 
 void GurobiModelAPI::AddConstraint(const LogAConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrLogA(model(), NULL,
+  GRB_CALL( GRBaddgenconstrLogA(model(), cc.name(),
               cc.GetArguments()[0], cc.GetResultVar(), cc.GetParameters()[0], "") );
 }
 
 void GurobiModelAPI::AddConstraint(const PowConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrPow(model(), NULL,
+  GRB_CALL( GRBaddgenconstrPow(model(), cc.name(),
               cc.GetArguments()[0], cc.GetResultVar(), cc.GetParameters()[0], "") );
 }
 
 void GurobiModelAPI::AddConstraint(const SinConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrSin(model(), NULL,
+  GRB_CALL( GRBaddgenconstrSin(model(), cc.name(),
               cc.GetArguments()[0], cc.GetResultVar(), "") );
 }
 
 void GurobiModelAPI::AddConstraint(const CosConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrCos(model(), NULL,
+  GRB_CALL( GRBaddgenconstrCos(model(), cc.name(),
               cc.GetArguments()[0], cc.GetResultVar(), "") );
 }
 
 void GurobiModelAPI::AddConstraint(const TanConstraint &cc)  {
-  GRB_CALL( GRBaddgenconstrTan(model(), NULL,
+  GRB_CALL( GRBaddgenconstrTan(model(), cc.name(),
               cc.GetArguments()[0], cc.GetResultVar(), "") );
 }
 
 void GurobiModelAPI::AddConstraint(const PLConstraint& plc) {
   PLPoints plp(plc.GetParameters());
-  GRB_CALL( GRBaddgenconstrPWL(model(), NULL,
+  GRB_CALL( GRBaddgenconstrPWL(model(), plc.name(),
               plc.GetArguments()[0], plc.GetResultVar(),
               plp.x_.size(), plp.x_.data(), plp.y_.data()) );
 }
