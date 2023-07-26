@@ -102,7 +102,7 @@ private:
 
 
 /// Algebraic constraint right-hand side (template parameter).
-/// Kind: -2/-1/0/1 for <= / == / >=
+/// Kind: -2/-1/0/1/2 for < / <= / == / >= / >
 template <int kind_>
 class AlgConRhs {
   static constexpr const char* kind_str_[] =

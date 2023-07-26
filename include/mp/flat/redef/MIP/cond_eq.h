@@ -42,7 +42,7 @@ public:
     if (1<args.size() ||               // >1 variable
         !GetMC().IfUseEqualityEncodingForVar(
           args.var(0))) {
-      Base::Convert(eq0c, i);
+      Base::Convert(eq0c, i); // Calls ConvertCtxPos / Neg
     } // else, using unary encoding whose flags are,
   }   // in the fixed case, fixed by PropagateResult()
 

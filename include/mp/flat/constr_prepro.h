@@ -210,13 +210,33 @@ public:
     return false;
   }
 
+  /// (Non)strict inequalities
   template <class PreprocessInfo, class Body, int kind>
   void PreprocessConstraint(
       ConditionalConstraint<
-        AlgebraicConstraint< Body, AlgConRhs<kind> > >& ,
+        AlgebraicConstraint< Body, AlgConRhs<kind> > >& cc,
       PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
+    // See if we need to round the constant term
+    assert(kind);
+    auto& algc = cc.GetArguments();
+    auto rhs = algc.rhs();
+    auto bnt_body = MPD(
+          ComputeBoundsAndType(algc.GetBody()) );
+    if (var::INTEGER == bnt_body.get_result_type()
+        && std::floor(rhs) != std::ceil(rhs)) {  // rhs not int
+      if (1==kind)  // algc is >=
+        algc.set_rhs( std::ceil(rhs) );
+      else if (-1==kind)
+        algc.set_rhs( std::floor(rhs) );
+      else if (2==kind)  // algc is >
+        algc.set_rhs( std::floor(rhs) ); // > floor(rhs)
+      else {
+        assert(-2==kind);
+        algc.set_rhs( std::ceil(rhs) );
+      }
+    }
   }
 
   template <class PreprocessInfo>

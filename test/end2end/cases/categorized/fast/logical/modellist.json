@@ -18,6 +18,11 @@
     "tags" : ["logical"]
   },
   {
+    "name" : "test_int_non_int",
+    "objective" : 0,
+    "tags" : ["logical"]
+  },
+  {
     "name" : "impl1",
     "objective" : 10,
     "tags" : ["logical"]
