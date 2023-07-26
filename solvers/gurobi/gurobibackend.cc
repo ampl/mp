@@ -765,9 +765,12 @@ int GurobiBackend::BarrierIterations() const {
   return GrbGetIntAttr(GRB_INT_ATTR_BARITERCOUNT, &f);
 }
 void GurobiBackend::DoWriteProblem(const std::string& name) {
-  ExportModel(model(), name);
+  ExportFile(model(), name);
 }
-void GurobiBackend::ExportModel(GRBmodel* lp, const std::string &file) {
+void GurobiBackend::DoWriteSolution(const std::string& name) {
+  ExportFile(model(), name);
+}
+void GurobiBackend::ExportFile(GRBmodel* lp, const std::string &file) {
   GRB_CALL( GRBwrite(lp, file.c_str()) );
 }
 
@@ -920,7 +923,7 @@ void GurobiBackend::PrepareGurobiSolve() {
   {
     GRBmodel* presolved = NULL;
     GRB_CALL(GRBpresolvemodel(model(), &presolved));
-    ExportModel(presolved, exportPresolvedFile());
+    ExportFile(presolved, exportPresolvedFile());
     GRB_CALL(GRBfreemodel(presolved));
   }
 

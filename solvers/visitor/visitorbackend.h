@@ -53,6 +53,19 @@ public:
   USING_STD_FEATURES;
 
   /**
+  * EXPORT PROBLEM
+  **/
+  ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
+  void DoWriteProblem(const std::string& name) override { }
+
+  /**
+  * EXPORT SOLUTION
+  **/
+  ALLOW_STD_FEATURE(WRITE_SOLUTION, true)
+  void DoWriteSolution(const std::string& name) override { }
+
+
+  /**
  * MULTISOL support
  * No API, see ReportIntermediateSolution()
 **/

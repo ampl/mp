@@ -49,6 +49,12 @@ public:
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
   void DoWriteProblem(const std::string& name) override;
 
+  /**
+  * EXPORT SOLUTION
+  **/
+  ALLOW_STD_FEATURE(WRITE_SOLUTION, true)
+  void DoWriteSolution(const std::string& name) override;
+
 
   /**
    * MULTIOBJ
@@ -208,7 +214,7 @@ protected:
       const char* attr, const std::vector<T> vals);
   void DoGurobiFeasRelax();
 
-  void ExportModel(GRBmodel* lp, const std::string& file);
+  void ExportFile(GRBmodel* lp, const std::string& file);
 
   void PrepareGurobiSolve();
   void SetPartitionValues();

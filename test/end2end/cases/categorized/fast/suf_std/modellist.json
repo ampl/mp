@@ -35,10 +35,20 @@
   {
     "name" : "diet writeprob='diet.lp' (quoted)",
     "objective" : 88.2,
-    "tags" : ["linear", "continuous"],
+    "tags" : ["linear", "continuous", "writelp"],
     "files" : ["diet.mod", "diet.dat"],
     "options": {
       "ANYSOLVER_options": "writeprob='diet.lp'"
+    },
+    "comment": "Testing quoted string options"
+  },
+  {
+    "name" : "diet writesol=diet.sol",
+    "objective" : 88.2,
+    "tags" : ["linear", "continuous", "writesol"],
+    "files" : ["diet.mod", "diet.dat"],
+    "options": {
+      "ANYSOLVER_options": "writesol=diet.sol"
     },
     "comment": "Testing quoted string options"
   },

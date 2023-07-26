@@ -50,7 +50,11 @@ DEFAULT_STD_FEATURES_TO( false )
 #define STD_FEATURE_STRUCT_NM( name ) StdFeatureDesc__ ## name
 
 #define FEATURE_API_TO_IMPLEMENT( name, functionsignature )\
-  virtual functionsignature { throw std::runtime_error("Feature " #name ": Function " #functionsignature " not implemented"); }
+  virtual functionsignature { \
+    throw std::runtime_error( \
+      "Feature " #name \
+        ": Function " #functionsignature " not implemented"); \
+  }
 
 // Enable driver-by-driver versioning without breaking compatibility
 #ifndef DRIVER_DATE
@@ -169,10 +173,24 @@ protected:
   ALLOW_STD_FEATURE(WANT_ROUNDING, true)
 
 
+      /**
+      * Model export.
+      * Redefine to true and implement the method.
+      **/
   DEFINE_STD_FEATURE(WRITE_PROBLEM)
   ALLOW_STD_FEATURE(WRITE_PROBLEM, false)
   FEATURE_API_TO_IMPLEMENT(WRITE_PROBLEM,
-                           void DoWriteProblem(const std::string& name))
+                           void DoWriteProblem(const std::string& ))
+
+      /**
+      * Solution export.
+      * Redefine to true and implement the method.
+      **/
+  DEFINE_STD_FEATURE(WRITE_SOLUTION)
+  ALLOW_STD_FEATURE(WRITE_SOLUTION, false)
+  FEATURE_API_TO_IMPLEMENT(WRITE_SOLUTION,
+                           void DoWriteSolution(const std::string& ))
+
   ////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////// MODEL QUERY //////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
@@ -357,6 +375,12 @@ protected:
 
   /// Report final solution
   virtual void ReportSolution() {
+    ReportSolution2AMPL();
+    ReportSolutionViaSolver();
+  }
+
+  /// to AMPL via SOL file
+  virtual void ReportSolution2AMPL() {
     double obj_value = std::numeric_limits<double>::quiet_NaN();
     auto sol = GetSolution();             // even if just dual
     fmt::MemoryWriter writer;
@@ -681,6 +705,8 @@ private:
     // For write prob
     std::string export_file_;
     std::string just_export_file_;
+    // For write sol
+    std::string export_sol_;
   } storedOptions_;
 
   /// Once Impl allows FEASRELAX,
@@ -807,19 +833,26 @@ protected:
     }
 
     if (IMPL_HAS_STD_FEATURE(WRITE_PROBLEM)) {
-      AddStoredOption("tech:exportfile writeprob writemodel",
+      AddStoredOption("tech:writemodel writeprob writemodel",
         "Specifies the name of a file where to export the model before "
-        "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
+        "solving it. This file name can have extension ``.lp[.7zip]``, ``.mps``, etc. "
         "Default = \"\" (don't export the model).",
         storedOptions_.export_file_);
 
-      AddStoredOption("tech:justexportfile justwriteprob justwritemodel",
-        "Specifies the name of a file where to export the model, do not solve it."
-        "This file name can have extension ``.lp()``, ``.mps``, etc. "
+      AddStoredOption("tech:writemodelonly justwriteprob justwritemodel",
+        "Specifies the name of a file where to export the model, do not solve it. "
+        "This file name can have extension ``.dlp``, ``.mps``, etc. "
         "Default = \"\" (don't export the model).",
         storedOptions_.just_export_file_);
     }
 
+    if (IMPL_HAS_STD_FEATURE(WRITE_SOLUTION))
+      AddStoredOption("tech:writesolution writesol writesolution",
+        "Specifies the name of a file where to export the solution "
+        "or other result file. This file name can have extension "
+        "``.sol[.tar.gz]``, ``.json``, ``.bas``, ``.ilp``, etc. "
+        "Default = \"\" (don't export results).",
+        storedOptions_.export_sol_);
   }
 
   virtual void InitCustomOptions() { }
@@ -904,6 +937,13 @@ protected:
 
 
 public:
+  /// Via solver's output
+  virtual void ReportSolutionViaSolver() {
+    if (IMPL_HAS_STD_FEATURE(WRITE_SOLUTION))
+      if (!storedOptions_.export_sol_.empty())
+        DoWriteSolution(storedOptions_.export_sol_);
+  }
+
   /// Virtual destructor
   virtual ~StdBackend() { }
 };

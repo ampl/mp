@@ -58,6 +58,9 @@ class ModelTags(enum.Enum):
     iisforce = 40014
     feasrelax = 40100
 
+    writelp = 45000              # writeprob=...lp
+    writesol = 45010             # writesol=...sol
+
     check_pl_approx_exp = 50000          # Solvers natively accepting general
     check_pl_approx_expA = 50001         # nonlinear constraints.
     check_pl_approx_log = 50002          # The automatic acc:exp etc options allow

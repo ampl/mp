@@ -1,6 +1,11 @@
 Summary of recent updates to SCIP for AMPL
 ==========================================
 
+## 20230726
+- Fixed inequalities of integer expressions with
+  non-integer constants, see test_int_non_int.mod.
+
+
 ## 20230625
 - Fix dual solutions.
 

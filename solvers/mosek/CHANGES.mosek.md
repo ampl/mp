@@ -1,6 +1,10 @@
 Summary of recent updates to MOSEK for AMPL
 ===========================================
 
+## 20230726
+- Fixed inequalities of integer expressions with
+  non-integer constants, see test_int_non_int.mod.
+
 
 ## 20230724
 - option [solver_]auxfiles rc; transfers names

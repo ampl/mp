@@ -655,6 +655,8 @@ class GurobiDirectSolver(MPDirectSolver):
                  ModelTags.multisol, ModelTags.sstatus, ModelTags.fixmodel,
                  ModelTags.iis, ModelTags.iisforce, ModelTags.feasrelax,
 
+                 ModelTags.writelp, ModelTags.writesol,
+
                  ModelTags.check_pl_approx_exp,
                  ModelTags.check_pl_approx_expA,
                  ModelTags.check_pl_approx_log,
@@ -690,7 +692,10 @@ class CPLEXDirectSolver(MPDirectSolver):
                  ModelTags.multiobj,
                  ModelTags.multisol,
                  ModelTags.sstatus,
-                 ModelTags.return_mipgap
+                 ModelTags.return_mipgap,
+
+                 ModelTags.writelp, # ModelTags.writesol,
+
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
@@ -711,8 +716,10 @@ class XPRESSDirectSolver(MPDirectSolver):
                  ModelTags.warmstart, ModelTags.mipstart,
 
                  ModelTags.multisol, ModelTags.sstatus,
-                 ModelTags.iis
+                 ModelTags.iis,
                  
+                 ModelTags.writelp, ModelTags.writesol,
+
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
@@ -731,7 +738,11 @@ class CbcMPSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.quadratic_obj, ModelTags.sos}
+                 ModelTags.quadratic_obj, ModelTags.sos,
+
+                 ModelTags.writelp, ModelTags.writesol,
+
+                 }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 class SCIPSolver(MPDirectSolver):
@@ -754,7 +765,10 @@ class SCIPSolver(MPDirectSolver):
                  ModelTags.nonlinear,
                  ModelTags.log,
                  ModelTags.trigonometric,
-                 ModelTags.return_mipgap
+                 ModelTags.return_mipgap,
+
+                 ModelTags.writelp, ModelTags.writesol,
+
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
@@ -772,7 +786,11 @@ class GCGSolver(MPDirectSolver):
 
     def __init__(self, exeName, timeout=None, nthreads=None, otherOptions=None):
         stags = {ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.return_mipgap}
+                 ModelTags.return_mipgap,
+
+                 ModelTags.writelp, ModelTags.writesol,
+
+                 }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
 
@@ -793,7 +811,10 @@ class HighsSolver(MPDirectSolver):
                  ModelTags.quadratic_obj,
 
                  ModelTags.sstatus,
-                 ModelTags.warmstart, ModelTags.return_mipgap
+                 ModelTags.warmstart, ModelTags.return_mipgap,
+
+                 ModelTags.writelp, ModelTags.writesol,
+
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
@@ -811,7 +832,9 @@ class COPTSolver(MPDirectSolver):
                  ModelTags.quadratic, ModelTags.quadratic_obj,
 
                  ModelTags.socp,      ## MP transforms cones to quadratics
-                 ModelTags.socp_hard_to_recognize
+                 ModelTags.socp_hard_to_recognize,
+
+                 ModelTags.writelp, ModelTags.writesol,
 
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
@@ -834,7 +857,11 @@ class MosekSolver(MPDirectSolver):
                  ModelTags.expcones,
 
                  ModelTags.warmstart, ModelTags.mipstart,
-                 ModelTags.return_mipgap, ModelTags.sens, ModelTags.sstatus}
+                 ModelTags.return_mipgap, ModelTags.sens, ModelTags.sstatus,
+
+                 ModelTags.writelp, ModelTags.writesol,
+
+                 }
         # ModelTags.quadratic
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
@@ -854,7 +881,10 @@ class CPLEXODHSolver(MPDirectSolver):
                  ModelTags.relax,
                  ModelTags.multiobj,
                  ModelTags.sstatus,
-                 ModelTags.return_mipgap
+                 ModelTags.return_mipgap,
+
+                 ModelTags.writelp, ModelTags.writesol,
+
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 
@@ -874,6 +904,9 @@ class GUROBIODHSolver(MPDirectSolver):
                  ModelTags.relax,
                  ModelTags.multiobj,
                  ModelTags.sstatus,
-                 ModelTags.return_mipgap
+                 ModelTags.return_mipgap,
+
+                 ModelTags.writelp, ModelTags.writesol,
+
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)

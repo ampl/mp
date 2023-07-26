@@ -1,6 +1,10 @@
 Summary of recent updates to CBCMP for AMPL
 ===========================================
 
+## 20230726
+- Fixed inequalities of integer expressions with
+  non-integer constants, see test_int_non_int.mod.
+
 
 ## 20230713
 - Fixed how certain options are passed to the underlying CBC library

@@ -1,8 +1,13 @@
 Summary of recent updates to COPT for AMPL
 ==========================================
 
+## 20230726
+- Fixed inequalities of integer expressions with
+  non-integer constants, see test_int_non_int.mod.
+
+
 ## 20230724
-- option [solver_]auxfiles rc; transfers names
+- Option [solver_]auxfiles rc; transfers names
 	of variables and linear constraints into the model;
 	(solver)_options 'cvt:names=0-3' controls names.
 
