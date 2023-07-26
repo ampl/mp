@@ -272,7 +272,7 @@ std::string OptionHelper<std::string>::Parse(const char *&s, bool splitString) {
   if (quoted(s))
   {
     s = SkipToMatchingQuote(s);
-    return std::string(start + 1, s - start - 1);
+    return std::string(start + 1, s - start - 2);
   }
   else
   {

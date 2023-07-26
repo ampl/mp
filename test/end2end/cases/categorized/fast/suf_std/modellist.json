@@ -33,6 +33,16 @@
     }
   },
   {
+    "name" : "diet writeprob='diet.lp' (quoted)",
+    "objective" : 88.2,
+    "tags" : ["linear", "continuous"],
+    "files" : ["diet.mod", "diet.dat"],
+    "options": {
+      "ANYSOLVER_options": "writeprob='diet.lp'"
+    },
+    "comment": "Testing quoted string options"
+  },
+  {
     "name" : "diet duals; var/con sstatus",
     "objective" : 88.2,
     "tags" : ["linear", "continuous", "sstatus"],

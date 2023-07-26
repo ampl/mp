@@ -286,9 +286,9 @@ protected:
 private:
   const mp::OptionValueInfo values_want_names_[4] = {
     { "0", "No names", 0},
-    { "1", "Only provide names if at least one of "
+    { "1", "(Default) Only provide names if at least one of "
            ".col / .row name files was written by AMPL "
-           "(AMPL options auxfiles, <solver>_auxfiles)", 1},
+           "(AMPL: `option [<solver>_]auxfiles rc;`) ", 1},
     { "2", "Read names from AMPL, but create generic "
            "names if not provided", 2},
     { "3", "Create generic names.", 3}
