@@ -1,6 +1,10 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
+## unreleased
+- Hint when 'writeprob' fails: use 'writesol'
+
+
 ## 20230726
 - Fixed inequalities of integer expressions with
   non-integer constants, see test_int_non_int.mod.

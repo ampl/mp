@@ -211,7 +211,7 @@ public:
 
     SetupTimerAndInterrupter();
     if (exportFileMode() > 0)
-      DoWriteProblem(export_file_name());
+      ExportModel(export_file_name());
 
     // exportFileMode == 2 -> do not solve, just export
     if (exportFileMode() != 2) 
@@ -766,7 +766,10 @@ protected:  //////////// Option accessors ////////////////
     return 0;
   }
   std::string export_file_name() const {
-    std::string name = storedOptions_.export_file_.empty() ? storedOptions_.just_export_file_ : storedOptions_.export_file_;
+    std::string name
+        = storedOptions_.export_file_.empty()
+        ? storedOptions_.just_export_file_
+        : storedOptions_.export_file_;
     if (((name.front() == '"') && (name.back() == '"')) ||
       ((name.front() == '\'') && (name.back() == '\'')))
       return name.substr(1, name.length() - 2);
@@ -942,6 +945,23 @@ public:
     if (IMPL_HAS_STD_FEATURE(WRITE_SOLUTION))
       if (!storedOptions_.export_sol_.empty())
         DoWriteSolution(storedOptions_.export_sol_);
+  }
+
+  /// Write model
+  virtual void ExportModel(const std::string& filename) {
+    try {
+      DoWriteProblem(filename);
+    } catch (const std::exception& exc) {
+      auto msg
+          = std::string("Model export failed:\n")
+          + exc.what();
+      if (IMPL_HAS_STD_FEATURE(WRITE_SOLUTION))
+        msg +=
+            "\n    Note: to export solutions and results\n"
+            "    in the solver's native formats,\n"
+            "    use option 'tech:writesolution'";
+      MP_RAISE(msg);
+    }
   }
 
   /// Virtual destructor
