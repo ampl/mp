@@ -128,7 +128,8 @@ void XpressmpModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
   _addIndicator_mp
 }
 
-void XpressmpModelAPI::AddLinTerms(XPRSprob lp, const LinTerms& lt, double rhsc,  const char typec) {
+void XpressmpModelAPI::AddLinTerms(
+    XPRSprob lp, const LinTerms& lt, double rhsc,  const char typec) {
   char type[] = { typec };
   double rhs[] = { rhsc };
   int start[] = { 0 };
@@ -142,7 +143,9 @@ AddLinTerms(lp(), lt, qc.rhs(), type); \
 const auto& qt = qc.GetQPTerms();\
   int row = NumLinCons() - 1;\
   for (int i = 0; i < qt.size(); i++)\
-    XPRESSMP_CCALL(XPRSchgqrowcoeff(lp(), row, qt.var1(i), qt.var2(i), qt.coef(i)));
+    XPRESSMP_CCALL(XPRSchgqrowcoeff(lp(), row, \
+      qt.var1(i), qt.var2(i), \
+      qt.var1(i)==qt.var2(i) ? qt.coef(i) : 0.5*qt.coef(i)));
 
 void XpressmpModelAPI::AddConstraint( const QuadConLE& qc ) {
   addqp('L')
