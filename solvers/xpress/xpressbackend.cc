@@ -91,6 +91,7 @@ void XpressmpBackend::CloseSolver() {
 
   if(lp()!=nullptr)
     XPRESSMP_CCALL(XPRSdestroyprob(lp()));
+  *lp_ref() = nullptr;
 }
 
 const char* XpressmpBackend::GetBackendName()

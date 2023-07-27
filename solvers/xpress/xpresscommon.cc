@@ -15,11 +15,11 @@ double XpressmpCommon::getDblAttr(int attr) const  {
 }
 
 int XpressmpCommon::NumLinCons() const {
-  return getIntAttr(XPRS_ROWS);
+  return getIntAttr(XPRS_ORIGINALROWS);
 }
 
 int XpressmpCommon::NumVars() const {
-  return getIntAttr(XPRS_COLS);
+  return getIntAttr(XPRS_ORIGINALCOLS);
 }
 
 int XpressmpCommon::NumObjs() const {
@@ -27,15 +27,15 @@ int XpressmpCommon::NumObjs() const {
 }
 
 int XpressmpCommon::NumQPCons() const {
-  return getIntAttr(XPRS_QCONSTRAINTS);
+  return getIntAttr(XPRS_ORIGINALQCONSTRAINTS);
 }
 
 int XpressmpCommon::NumSOSCons() const {
-  return getIntAttr(XPRS_SETS);
+  return getIntAttr(XPRS_ORIGINALSETS);
 }
 
 int XpressmpCommon::NumIndicatorCons() const {
-  return getIntAttr(XPRS_INDICATORS);
+  return getIntAttr(XPRS_ORIGINALINDICATORS);
 }
 
 void XpressmpCommon::GetSolverOption(int key, int &value) const {

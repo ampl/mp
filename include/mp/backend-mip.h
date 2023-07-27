@@ -284,7 +284,8 @@ public:
       ReportBasis();
     ReportRays();
     CalculateAndReportIIS();
-    CalculateAndReportMIPGap();
+    if (IsMIP())
+      CalculateAndReportMIPGap();
     ReportBestDualBound();
     if (sensitivity())
       ReportSensitivity();
