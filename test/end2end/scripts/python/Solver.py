@@ -709,7 +709,8 @@ class XPRESSDirectSolver(MPDirectSolver):
                  otherOptions=None):
         stags = {
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
-                 ModelTags.sos,  ModelTags.quadratic,
+                 ModelTags.sos,
+                 ModelTags.quadratic, ModelTags.quadratic_obj,
 
                  ModelTags.return_mipgap, ModelTags.multiobj,
 

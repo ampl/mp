@@ -93,7 +93,7 @@
   {
     "name" : "prod_bin_var_01",
     "objective" : 5,
-    "tags" : ["quadratic"],
+    "tags" : ["quadratic", "quadraticnonconvex"],
     "options": {
       "copt_options": "cvt:quadcon=0",
       "comment_copt": "non convex constraint, linearise. But Gurobi convexifies it?"
@@ -101,7 +101,7 @@
   {
     "name" : "prod_bin_var_02_obj",
     "objective" : 1,
-    "tags" : ["quadratic_obj"],
+    "tags" : ["quadraticnonconvex", "quadratic_obj"],
     "options": {
       "highs_options": "cvt:quadobj=0",
       "copt_options": "cvt:quadobj=0 cvt:quadcon=0",
@@ -110,7 +110,7 @@
   },
   {
     "name" : "prod_01_obj",
-    "tags" : ["quadraticnonconvex"],
+    "tags" : ["quadraticnonconvex", "quadratic_obj"],
     "options": {
       "gurobi_options": "nonconvex=2",
       "highs_options": "cvt:quadobj=0",

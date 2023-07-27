@@ -1,8 +1,13 @@
 Summary of recent updates to Xpress for AMPL
 ============================================
 
+## 20230727
+- Fixed a memory leak #217
+- Fixed quadratic constraints
+
+
 ## 20230726
-- Fixed inequalities of integer expressions with
+- MP: fixed inequalities of integer expressions with
   non-integer constants, see test_int_non_int.mod.
 
 
