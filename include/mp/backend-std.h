@@ -181,6 +181,13 @@ protected:
   ALLOW_STD_FEATURE(WRITE_PROBLEM, false)
   FEATURE_API_TO_IMPLEMENT(WRITE_PROBLEM,
                            void DoWriteProblem(const std::string& ))
+      /// Redefine this if you want some extensions
+      /// to be written after solving instead.
+      /// This is for compatibility wiht ASL drivers
+      /// where 'writeprob' was used for native-format model
+      /// and solution output #218.
+      virtual std::set<std::string> NativeResultExtensions() const
+  { return {".sol", ".ilp", ".mst", ".hnt", ".bas", ".json"}; }
 
       /**
       * Solution export.
@@ -949,21 +956,36 @@ public:
   /// Write model
   virtual void ExportModel(
         const std::vector<std::string>& filenames) {
+    auto resext = NativeResultExtensions();
     for (const auto& fln: filenames) {
-      try {
-        DoWriteProblem(fln);
-      } catch (const std::exception& exc) {
-        auto msg
-            = std::string("Model export to file '")
-            + fln
-            + "' failed:\n"
-            + exc.what();
-        if (IMPL_HAS_STD_FEATURE(WRITE_SOLUTION))
-          msg +=
-              "\n    Note: to export solutions and results\n"
-              "    in the solver's native formats,\n"
-              "    use option 'tech:writesolution'";
-        MP_RAISE(msg);
+      bool fPostpone = false;
+      if (IMPL_HAS_STD_FEATURE(WRITE_SOLUTION)) {
+        auto dot = fln.rfind('.');  // Postpone this file?
+        if (std::string::npos != dot) {
+          auto ext = fln.substr(dot, fln.size()-dot);
+          if (resext.end() != resext.find(ext)) {
+            fPostpone = true;
+          }
+        }
+      }
+      if (fPostpone) {   // ASL-style usage of 'writeprob' #218
+        storedOptions_.export_sol_files_.push_back(fln);
+      } else {
+        try {
+          DoWriteProblem(fln);
+        } catch (const std::exception& exc) {
+          auto msg
+              = std::string("Model export to file '")
+              + fln
+              + "' failed:\n"
+              + exc.what();
+          if (IMPL_HAS_STD_FEATURE(WRITE_SOLUTION))
+            msg +=
+                "\n    Note: to export solutions and results\n"
+                "    in the solver's native formats,\n"
+                "    use option 'tech:writesolution'";
+          MP_RAISE(msg);
+        }
       }
     }
   }

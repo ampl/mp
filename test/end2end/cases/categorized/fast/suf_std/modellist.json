@@ -49,8 +49,17 @@
     "files" : ["diet.mod", "diet.dat"],
     "options": {
       "ANYSOLVER_options": "writesol=diet.sol"
+    }
+  },
+  {
+    "name" : "diet writeprob=diet.sol",
+    "objective" : 88.2,
+    "tags" : ["linear", "continuous", "writelp", "writesol"],
+    "files" : ["diet.mod", "diet.dat"],
+    "options": {
+      "ANYSOLVER_options": "writeprob=diet.sol"
     },
-    "comment": "Testing quoted string options"
+    "comment": "Test that writing of .sol is delayed #218"
   },
   {
     "name" : "diet duals; var/con sstatus",
