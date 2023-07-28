@@ -1,8 +1,9 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
-## unreleased
-- Hint when 'writeprob' fails: use 'writesol'
+## 20230728
+- Option 'tech:writesolution' #218
+- Option 'writeprob' ('tech:writemodel') ASL-compatible
 
 
 ## 20230726

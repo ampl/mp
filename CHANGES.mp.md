@@ -1,6 +1,12 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## 20230728
+- Option 'tech:writesolution' #218
+- Option 'writeprob' ('tech:writemodel') ASL-compatible
+- Hint when 'writeprob' fails: use 'writesol'
+
+
 ## 20230726
 - Fixed inequalities of integer expressions with
   non-integer constants, see test_int_non_int.mod.

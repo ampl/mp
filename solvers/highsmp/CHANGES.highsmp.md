@@ -1,6 +1,10 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
+## 20230728
+- Option 'tech:writesolution'
+
+
 ## 20230726
 - Fixed inequalities of integer expressions with
   non-integer constants, see test_int_non_int.mod.

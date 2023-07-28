@@ -104,7 +104,11 @@ int HighsBackend::BarrierIterations() const {
 }
 
 void HighsBackend::DoWriteProblem(const std::string &file) {
-  HIGHS_CCALL(Highs_writeModel(lp(), file.data()));
+  HIGHS_CCALL(Highs_writeModel(lp(), file.c_str()));
+}
+
+void HighsBackend::DoWriteSolution(const std::string &file) {
+  HIGHS_CCALL(Highs_writeSolutionPretty(lp(), file.c_str()));
 }
 
 

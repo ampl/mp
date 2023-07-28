@@ -51,6 +51,12 @@ public:
   void DoWriteProblem(const std::string& name) override;
 
   /**
+  * EXPORT SOLUTION
+  **/
+  ALLOW_STD_FEATURE(WRITE_SOLUTION, true)
+  void DoWriteSolution(const std::string& name) override;
+
+  /**
   * General warm start:
   * set primal/dual initial guesses for continuous case
   **/
