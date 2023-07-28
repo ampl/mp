@@ -175,6 +175,12 @@ void XpressmpBackend::DoWriteProblem(const std::string& name) {
   XPRESSMP_CCALL(XPRSwriteprob(lp(), name.c_str(), wpflags));
 }
 
+void XpressmpBackend::DoWriteSolution(const std::string& name) {
+  char const* wpflags = "";
+  XPRESSMP_CCALL(XPRSwriteprtsol(lp(), name.c_str(), wpflags));
+}
+
+
 void XpressmpBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptXpressmp, lp());
 }

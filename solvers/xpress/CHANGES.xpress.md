@@ -1,6 +1,10 @@
 Summary of recent updates to Xpress for AMPL
 ============================================
 
+## 20230728
+- Option 'tech:writesolution'
+
+
 ## 20230727
 - Fixed a memory leak #217
 - Fixed quadratic constraints

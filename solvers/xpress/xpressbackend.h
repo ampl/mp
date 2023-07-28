@@ -114,7 +114,10 @@ public:
 
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
   void DoWriteProblem(const std::string& name) override;
-  
+
+  ALLOW_STD_FEATURE(WRITE_SOLUTION, true)
+  void DoWriteSolution(const std::string& name) override;
+
   /////////////////////////// Model attributes /////////////////////////
   bool IsQCP() const override;
   
