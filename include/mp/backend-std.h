@@ -211,7 +211,7 @@ public:
 
     SetupTimerAndInterrupter();
     if (exportFileMode() > 0)
-      ExportModel(export_file_name());
+      ExportModel(export_file_names());
 
     // exportFileMode == 2 -> do not solve, just export
     if (exportFileMode() != 2) 
@@ -702,12 +702,13 @@ private:
     int round_=0;
     double round_reptol_=1e-9;
 
-    // For write prob
-    std::string export_file_;
-    std::string just_export_file_;
-    // For write sol
-    std::string export_sol_;
+    /// For write prob
+    std::vector<std::string> export_files_;
+    std::vector<std::string> just_export_files_;
+    /// For write sol
+    std::vector<std::string> export_sol_files_;
   } storedOptions_;
+
 
   /// Once Impl allows FEASRELAX,
   /// it should check this via feasrelax()
@@ -758,23 +759,18 @@ protected:  //////////// Option accessors ////////////////
   int exportFileMode() const
   {
     if (IMPL_HAS_STD_FEATURE(WRITE_PROBLEM)) {
-      if (!storedOptions_.export_file_.empty())
+      if (!storedOptions_.export_files_.empty())
         return 1;
-      if (!storedOptions_.just_export_file_.empty())
+      if (!storedOptions_.just_export_files_.empty())
         return 2;
     }
     return 0;
   }
-  std::string export_file_name() const {
-    std::string name
-        = storedOptions_.export_file_.empty()
-        ? storedOptions_.just_export_file_
-        : storedOptions_.export_file_;
-    if (((name.front() == '"') && (name.back() == '"')) ||
-      ((name.front() == '\'') && (name.back() == '\'')))
-      return name.substr(1, name.length() - 2);
-    else
-      return name;
+  const std::vector<std::string>& export_file_names() const {
+    return
+        storedOptions_.export_files_.empty()
+        ? storedOptions_.just_export_files_
+        : storedOptions_.export_files_;
   }
 
 
@@ -836,26 +832,27 @@ protected:
     }
 
     if (IMPL_HAS_STD_FEATURE(WRITE_PROBLEM)) {
-      AddStoredOption("tech:writemodel writeprob writemodel",
-        "Specifies the name of a file where to export the model before "
-        "solving it. This file name can have extension ``.lp[.7zip]``, ``.mps``, etc. "
-        "Default = \"\" (don't export the model).",
-        storedOptions_.export_file_);
+      AddListOption("tech:writemodel writeprob writemodel tech:exportfile",
+        "Specifies files where to export the model before "
+        "solving (repeat the option for several files.) "
+        "File name extensions can be ``.lp[.7z]``, ``.mps``, etc.",
+        storedOptions_.export_files_);
 
-      AddStoredOption("tech:writemodelonly justwriteprob justwritemodel",
-        "Specifies the name of a file where to export the model, do not solve it. "
-        "This file name can have extension ``.dlp``, ``.mps``, etc. "
-        "Default = \"\" (don't export the model).",
-        storedOptions_.just_export_file_);
+      AddListOption("tech:writemodelonly justwriteprob justwritemodel",
+        "Specifies files where to export the model, no solving "
+                    "(option can be repeated.) "
+        "File extensions can be ``.dlp``, ``.mps``, etc.",
+        storedOptions_.just_export_files_);
     }
 
     if (IMPL_HAS_STD_FEATURE(WRITE_SOLUTION))
-      AddStoredOption("tech:writesolution writesol writesolution",
-        "Specifies the name of a file where to export the solution "
-        "or other result file. This file name can have extension "
-        "``.sol[.tar.gz]``, ``.json``, ``.bas``, ``.ilp``, etc. "
-        "Default = \"\" (don't export results).",
-        storedOptions_.export_sol_);
+      AddListOption("tech:writesolution writesol writesolution",
+        "Specifies the names of files where to export the solution "
+        "and/or other result files in solver's native formats. "
+        "Option can be repeated. "
+        "File name extensions can be "
+        "``.sol[.tar.gz]``, ``.json``, ``.bas``, ``.ilp``, etc.",
+        storedOptions_.export_sol_files_);
   }
 
   virtual void InitCustomOptions() { }
@@ -940,27 +937,34 @@ protected:
 
 
 public:
-  /// Via solver's output
+  /// Write solution result in solver native format
+  /// via solver's output.
   virtual void ReportSolutionViaSolver() {
     if (IMPL_HAS_STD_FEATURE(WRITE_SOLUTION))
-      if (!storedOptions_.export_sol_.empty())
-        DoWriteSolution(storedOptions_.export_sol_);
+      if (!storedOptions_.export_sol_files_.empty())
+        for (const auto& fln: storedOptions_.export_sol_files_)
+          DoWriteSolution(fln);
   }
 
   /// Write model
-  virtual void ExportModel(const std::string& filename) {
-    try {
-      DoWriteProblem(filename);
-    } catch (const std::exception& exc) {
-      auto msg
-          = std::string("Model export failed:\n")
-          + exc.what();
-      if (IMPL_HAS_STD_FEATURE(WRITE_SOLUTION))
-        msg +=
-            "\n    Note: to export solutions and results\n"
-            "    in the solver's native formats,\n"
-            "    use option 'tech:writesolution'";
-      MP_RAISE(msg);
+  virtual void ExportModel(
+        const std::vector<std::string>& filenames) {
+    for (const auto& fln: filenames) {
+      try {
+        DoWriteProblem(fln);
+      } catch (const std::exception& exc) {
+        auto msg
+            = std::string("Model export to file '")
+            + fln
+            + "' failed:\n"
+            + exc.what();
+        if (IMPL_HAS_STD_FEATURE(WRITE_SOLUTION))
+          msg +=
+              "\n    Note: to export solutions and results\n"
+              "    in the solver's native formats,\n"
+              "    use option 'tech:writesolution'";
+        MP_RAISE(msg);
+      }
     }
   }
 

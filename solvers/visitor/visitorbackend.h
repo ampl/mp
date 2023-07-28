@@ -141,8 +141,6 @@ protected:
   void OpenSolver();
   void CloseSolver();
 
-  void ExportModel(const std::string& file);
-
   double ObjectiveValue() const;
 
   /// Solution values. The vectors are emptied if not available
@@ -180,10 +178,17 @@ protected:
 private:
   /// These options are stored in the class
   struct Options {
-    std::string exportFile_;
+    std::string option_example_;
+    std::vector<double> list_option_;
   };
   Options storedOptions_;
 
+
+protected:
+  const std::string& get_example_option() const
+  { return storedOptions_.option_example_; }
+  const std::vector<double>& get_list_option() const
+  { return storedOptions_.list_option_; }
 
 };
 

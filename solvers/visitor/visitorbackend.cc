@@ -181,11 +181,6 @@ int VisitorBackend::BarrierIterations() const {
 //  return getIntAttr(VISITOR_INTATTR_BARRIERITER);
 }
 
-void VisitorBackend::ExportModel(const std::string &file) {
-  // TODO export proper by file extension
-  //VISITOR_CCALL(VISITOR_WriteLp(lp(), file.data()));
-}
-
 
 void VisitorBackend::SetInterrupter(mp::Interrupter *inter) {
   inter->SetHandler(InterruptVisitor, lp());
@@ -194,9 +189,6 @@ void VisitorBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void VisitorBackend::Solve() {
-  if (!storedOptions_.exportFile_.empty()) {
-    ExportModel(storedOptions_.exportFile_);
-  }
   //VISITOR_CCALL(VISITOR_Solve(lp()));
   WindupVISITORSolve();
 }
@@ -345,12 +337,16 @@ void VisitorBackend::InitCustomOptions() {
       "\n"
       "  ampl: option visitor_options 'mipgap=1e-6';\n");
 
-  AddStoredOption("tech:exportfile writeprob writemodel",
-      "Specifies the name of a file where to export the model before "
-      "solving it. This file name can have extension ``.lp()``, ``.mps``, etc. "
-      "Default = \"\" (don't export the model).",
-      storedOptions_.exportFile_);
+  AddStoredOption("tech:option_example opt_example example_opt",
+      "Example option. "
+      "Default = \"\" (don't work too hard).",
+      storedOptions_.option_example_);
 
+  AddListOption("tech:list_option opt_list multi_valued_option",
+      "Multi-valued option when repeated.",
+      storedOptions_.list_option_);
+
+  // Use AddSolverOption() for solver parameters
 }
 
 

@@ -471,6 +471,7 @@ public:
 
 
 public:
+  /// Stored option: references a variable
   template <class Value>
   class StoredOption : public mp::TypedSolverOption<Value> {
     Value& value_;
@@ -495,7 +496,9 @@ public:
   }
 
   /// Simple stored option referencing a variable; min, max values
-  /// (currently unused)
+  /// (they are unused but to deduce type;
+  /// we aree too lazy to maintain correct min/max
+  /// between solver versions.)
   template <class Value>
   void AddStoredOption(const char *name, const char *description,
                        Value& value, Value , Value ) {
@@ -511,12 +514,60 @@ public:
     AddStoredOption(name, description, value, lb, ub);
   }
 
+
+  /// List option: references a container of values.
+  /// Any container with value_type, back() and push_back().
+  template <class Container>
+  class ListOption
+      : public mp::TypedSolverOption
+      <typename Container::value_type> {
+    Container& value_;
+  public:
+    using value_type = typename Container::value_type;
+    ListOption(const char *name_list, const char *description,
+                 Container& v, ValueArrayRef values = ValueArrayRef())
+      : mp::TypedSolverOption<value_type>(
+          name_list, description, values), value_(v) {}
+
+    void GetValue(value_type &v) const override
+    { assert(value_.size()); v = value_.back(); }
+    void SetValue(
+        typename internal::OptionHelper<value_type>::Arg v) override
+    { value_.push_back(v); }
+  };
+
+  /// Add list option referencing a container
+  template <class Value>
+  void AddListOption(const char *name, const char *description,
+                       Value& value, ValueArrayRef values = ValueArrayRef()) {
+    AddOption(OptionPtr(
+                new ListOption<Value>(
+                  name, description, value, values)));
+  }
+
+  /// Add list option referencing a container; min, max values
+  /// (they are unused but to deduce type;
+  /// we aree too lazy to maintain correct min/max
+  /// between solver versions.)
+  template <class Value>
+  void AddListOption(const char *name, const char *description,
+                       Value& value,
+                     typename Value::value_type ,
+                     typename Value::value_type ) {
+    AddOption(OptionPtr(
+                new ListOption<Value>(
+                  name, description, value, ValueArrayRef())));
+  }
+
+
+  /// Replace option descr
   void ReplaceOptionDescription(const char* name, const char* desc) {
     auto pOption = FindOption(name);
     assert(pOption);
     pOption->set_description(desc);
   }
 
+  /// Add to option descr
   void AddToOptionDescription(const char* name, const char* desc_add) {
     auto pOption = FindOption(name);
     assert(pOption);
