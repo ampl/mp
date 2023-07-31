@@ -102,10 +102,10 @@ pre::ValueMapDbl GcgBackend::DualSolution() {
 ArrayRef<double> GcgBackend::DualSolution_LP() {
   int num_cons = NumLinCons();
   std::vector<double> pi(num_cons);
- // int error = GCG_GetLpSolution(lp(), NULL, NULL, pi.data(), NULL);
-  int error = 0;
-  if (error)
-    pi.clear();
+  if (SCIPisDualSolAvailable(getSCIP(), TRUE)) {
+    for (int i=0; i < num_cons; i++)
+      GCG_CCALL( SCIPgetDualSolVal(getSCIP(), getPROBDATA()->linconss[i], pi.data() + i, NULL) );
+  }
   return pi;
 }
 
@@ -137,6 +137,8 @@ void GcgBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void GcgBackend::Solve() {
+  InputDecomposition();
+
   if (!storedOptions_.exportFile_.empty())
     ExportModel(storedOptions_.exportFile_);
   if (!storedOptions_.paramRead_.empty())
@@ -147,8 +149,6 @@ void GcgBackend::Solve() {
     GCG_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.cuts_, TRUE) );
   if (storedOptions_.presolvings_ != 0)
     GCG_CCALL( SCIPsetSeparating(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.presolvings_, TRUE) );
-
-  InputDecomposition();
   
   GCG_CCALL(GCGsolve(getSCIP()));
 
