@@ -4,7 +4,7 @@ from pathlib import Path
 from shutil import which
 
 from Solver import Solver
-from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, Runnable, ampl
+from amplpy import AMPL, Kind, OutputHandler, ErrorHandler, ampl
 from Model import Model
 import time
 from TimeMe import TimeMe

@@ -70,7 +70,13 @@ public:
   /// Sorting and merging terms, some solvers require
   void sort_terms() { Body::sort_terms(); }
 
-  /// Negate
+  /// Is Normalized?
+  bool is_normalized() {
+    sort_terms();
+    return GetBody().is_normalized();
+  }
+
+  /// Negate all terms
   void negate() { Body::negate(); RhsOrRange::negate(); }
 
   /// Testing API

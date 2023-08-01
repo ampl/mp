@@ -110,6 +110,12 @@ public:
       add_term(term.first, term.second);
   }
 
+  /// Is normalized? Assume terms are sorted.
+  bool is_normalized() const {
+    assert(size());
+    return coef(0) > 0.0;
+  }
+
   /// Negate
   void negate() {
     for (auto& c: coefs_)

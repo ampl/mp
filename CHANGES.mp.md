@@ -1,10 +1,17 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## unreleased
+- Changed default tolerance for strict comparisons
+  to 0 (option cvt:cmp:eps, #102.)
+- Fixed a bug where equivalent conditional
+  comparisons were not unified.
+
+
 ## 20230728
-- Option 'tech:writesolution' #218
-- Option 'writeprob' ('tech:writemodel') ASL-compatible
-- Hint when 'writeprob' fails: use 'writesol'
+- Option 'tech:writesolution' #218.
+- Option 'writeprob' ('tech:writemodel') ASL-compatible.
+- Hint when 'writeprob' fails: use 'writesol'.
 
 
 ## 20230726

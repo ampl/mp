@@ -73,6 +73,12 @@ public:
     vars2_.reserve(num_terms);
   }
 
+  /// Is normalized? Assume sorted.
+  bool is_normalized() const {
+    assert(size());
+    return coef(0) > 0.0;
+  }
+
   /// Arithmetic
   void negate() {
     for (auto& cf: coefs_)
@@ -171,6 +177,15 @@ public:
 
   /// add_term(c, v1, v2)
   using QuadTerms::add_term;
+
+  /// Is normalized? Assume sorted.
+  bool is_normalized() const {
+    assert(QuadTerms::size());
+    return
+        LinTerms::size()
+        ? LinTerms::is_normalized()
+        : QuadTerms::is_normalized();
+  }
 
   /// Negate
   void negate() {

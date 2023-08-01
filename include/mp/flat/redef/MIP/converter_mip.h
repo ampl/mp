@@ -303,7 +303,7 @@ public:
 
 private:
   struct Options {
-    double cmpEps_ { 1e-4 };
+    double cmpEps_ { 0.0 };
     double bigM_default_ { -1 };
     double PLApproxRelTol_ { 1e-2 };
     double PLApproxDomain_ { 1e6 };
@@ -313,7 +313,9 @@ private:
   void InitOwnOptions() {
     this->GetEnv().AddOption("cvt:mip:eps cvt:cmp:eps",
                        "Tolerance for strict comparison of continuous variables for MIP. "
-                       "Ensure larger than the solver's feasibility tolerance.",
+                       "Also applies to negation of conditional comparisons: "
+                       "b==1 <==> x<=5 means that with b==0, x>=5+eps. "
+                             "Default: 0.",
                        options_.cmpEps_, 0.0, 1e100);
     this->GetEnv().AddOption("cvt:bigM cvt:bigm cvt:mip:bigM cvt:mip:bigm",
                        "Default value of big-M for linearization of logical constraints. "

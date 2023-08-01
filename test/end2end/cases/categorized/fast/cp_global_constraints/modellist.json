@@ -11,7 +11,7 @@
     "tags": [ "logical" ],
     "objective": 22,
     "options": {
-      "cbc_options": "cvt:mip:bigM=100000",
+      "ANYSOLVER_options": "cvt:mip:bigM=100000",
       "gcg_options": "cvt:mip:bigM=100000 mode=2"
     }
   },
@@ -21,7 +21,7 @@
     "tags": [ "logical" ],
     "objective": 22,
     "options": {
-      "cbc_options": "cvt:mip:bigM=100000",
+      "ANYSOLVER_options": "cvt:mip:bigM=100000",
       "gcg_options": "cvt:mip:bigM=100000 mode=2"
     }
   },
@@ -80,7 +80,7 @@
     "tags" : ["logical"],
     "options": { 
       "solution_round": "6",
-      "gcg_options": "cvt:mip:bigM=100000" 
+      "ANYSOLVER_options": "cvt:mip:bigM=100000"
     },
     "comment_options": "For solution_round, see #200",
     "objective" : 218125

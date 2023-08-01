@@ -35,7 +35,6 @@ public:
   /// For functional constraints, result variable index
   int GetResultVar() const { return -1; }
 
-
 private:
   std::string name_;
 };
@@ -210,7 +209,8 @@ public:
 
   /// Base class
   using Base = CustomFunctionalConstraint<
-    Con, ParamArray0, LogicalFunctionalConstraintTraits, CondConId<Con> >;
+    Con, ParamArray0,
+  LogicalFunctionalConstraintTraits, CondConId<Con> >;
 
   /// Default constructor
   ConditionalConstraint() = default;

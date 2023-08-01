@@ -15,7 +15,14 @@
   {
     "name" : "ifthen_var",
     "objective" : -5,
-    "tags" : ["logical"]
+    "tags" : ["logical"],
+    "options": {
+      "ANYSOLVER_options": "cvt:cmp:eps=1e-4"
+    },
+    "comment": [
+      "For AMPL to correctly compute obj value, ",
+      "need strict inequality for the opposite case"
+    ]
   },
   {
     "name" : "test_int_non_int",
@@ -113,7 +120,7 @@
   {
     "name" : "booleq_01",
     "options": {
-      "gcg_options": "cvt:bigm=1e5"
+      "ANYSOLVER_options": "cvt:bigm=1e5"
     },
     "objective" : 1,
     "tags" : ["logical"]
@@ -121,9 +128,17 @@
   {
     "name" : "booleq_02",
     "options": {
-      "gcg_options": "cvt:bigm=1e5"
+      "ANYSOLVER_options": "cvt:bigm=1e5"
     },
     "objective" : 1,
+    "tags" : ["logical"]
+  },
+  {
+    "name" : "x-multmip3_small",
+    "options": {
+      "ANYSOLVER_options": "cvt:bigm=1e5"
+    },
+    "objective" : 150,
     "tags" : ["logical"]
   }
 ]

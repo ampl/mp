@@ -1,4 +1,8 @@
-/** Test expression map as well as if-then */
+/**
+  * Test expression map as well as if-then.
+  * Requires cvt:cmp:eps > feastol
+  * for AMPL to correctly compute obj value, see #102.
+  */
 
 var x >=-100, <= 200;
 var y >=-300, <= 460;

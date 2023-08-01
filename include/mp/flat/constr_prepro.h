@@ -2,7 +2,13 @@
 #define CONSTR_PREPRO_H
 
 /**
- * Preprocess flat constraints before adding
+ * Preprocess flat constraints before adding.
+ *
+ * Possible tasks:
+ * 1. Simplify constraints
+ * 2. Replace a functional constraint by a different one,
+ *    via returning its result variable from another
+ *    (see conditional inequalities).
  */
 
 #include <cmath>
@@ -126,6 +132,8 @@ public:
       CondLinConEQ& c, PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
+    if (!IsNormalized(c))
+      c.GetConstraint().negate();   // for equality
     if (0!=MPD( IfPreproEqResBounds() ))
       if (FixEqualityResult(c, prepro))
         return;
@@ -133,6 +141,16 @@ public:
     if (0!=MPD( IfPreproEqBinVar() ))
       if (ReuseEqualityBinaryVar(c, prepro))
         return;
+  }
+
+  /// See if the argument of a conditional
+  /// algebraic constraint is normalized
+  template <class Body, int kind>
+  bool IsNormalized(
+      ConditionalConstraint<
+        AlgebraicConstraint< Body, AlgConRhs<kind> > >& cc) {
+    auto& arg = cc.GetConstraint();
+    return arg.is_normalized();
   }
 
   /// Preprocess CondQuadConEQ
@@ -218,9 +236,21 @@ public:
       PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
-    // See if we need to round the constant term
     assert(kind);
     auto& algc = cc.GetArguments();
+    if (!IsNormalized(cc)) {
+      auto arg1 = algc;
+      arg1.negate();    // Negate the terms and sense
+      prepro.set_result_var(
+            MPD( AssignResultVar2Args(
+                   ConditionalConstraint<
+                     AlgebraicConstraint< Body, AlgConRhs<
+                   -kind> > > { {
+                   std::move(arg1.GetBody()), arg1.rhs()
+                 } } ) ));
+      return;
+    }
+    // See if we need to round the constant term
     auto rhs = algc.rhs();
     auto bnt_body = MPD(
           ComputeBoundsAndType(algc.GetBody()) );
