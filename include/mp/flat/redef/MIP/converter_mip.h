@@ -311,8 +311,9 @@ private:
   Options options_;
 
   void InitOwnOptions() {
-    this->GetEnv().AddOption("cvt:mip:eps cvt:cmp:eps",
+    this->GetEnv().AddOption("cvt:mip:eps cvt:cmp:eps cmp:eps",
                        "Tolerance for strict comparison of continuous variables for MIP. "
+                             "Applies to <, >, and != operators. "
                        "Also applies to negation of conditional comparisons: "
                        "b==1 <==> x<=5 means that with b==0, x>=5+eps. "
                              "Default: 0.",
