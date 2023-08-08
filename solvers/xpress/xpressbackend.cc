@@ -728,6 +728,14 @@ std::string XpressmpBackend::DoXpressFixedModel()
     {"2", "yes, with opportunistic root LP solve", 1},
   };
 
+  static const mp::OptionValueInfo values_feasibilityjump[] = {
+  {"-1", "automatic", 0},
+  {"0", "off", 0},
+  {"1", "run on models with all integer variables", 1},
+  {"2", "run if all non-integer variables have bounds [0, 1]", 2},
+  {"3", "run if all non-integer variables have integer bounds", 3}
+  };
+
   static const mp::OptionValueInfo values_lpdualgradient[] = {
    {"-1", "automatic (default)", -1},
    {"0", "devex", 0},
@@ -1156,6 +1164,17 @@ void XpressmpBackend::InitCustomOptions() {
     "The default number of threads used during optimization.;"
     "default - 1 ==> automatic choice.",
     XPRS_THREADS, -1, INT_MAX);
+
+  AddSolverOption("tech:backgroundthreads backgroundmaxthreads backgroundthreads",
+    "Limits the number of threads that Xpress will use for jobs in the background;"
+    "default - 1 ==> automatic choice.",
+    XPRS_BACKGROUNDMAXTHREADS, -1, INT_MAX);
+
+  AddSolverOption("tech:backgroundselect backgroundselect",
+    "Select which tasks to run in background jobs;"
+    "default - 1 ==> automatic choice. Set to 0 to not to run any task in the background or "
+    "to 1 to run the feasibility jump heuristic in the background.",
+    XPRS_BACKGROUNDSELECT, -1, 1);
   
   AddSolverOption("lim:time timelim timelimit",
     "Limit on solve time (in seconds; default: no limit). ",
@@ -1941,7 +1960,7 @@ AddSolverOption("alg:resourcestrategy resourcestrategy",
     "Decides whether to run the Feasibility Jump heuristic at the top "
     "node during branch-and-bound:\n"
     "\n.. value-table::\n", XPRS_FEASIBILITYJUMP,
-    values_01_noyes_1default_, 1);
+    values_feasibilityjump, -1);
 
   AddSolverOption("mip:feasibilitypump feasibilitypump",
     "Decides whether to run the Feasibility Pump heuristic at the top "
@@ -1959,6 +1978,13 @@ AddSolverOption("alg:resourcestrategy resourcestrategy",
       "default = -1 (automatic selection); a value of 0 implies no iteration limit",
       XPRS_HEURDIVEITERLIMIT, -INT_MAX, INT_MAX);
 
+
+    AddSolverOption("mip:heurshiftprop heurshiftprop",
+      "Determines whether the Shift-and-propagate primal heuristic should be executed "
+      "immediately after presolve:\n"
+      "\n.. value-table::\n",
+      XPRS_HEURSHIFTPROP, values_autonoyes_, -1);
+      
     AddSolverOption("mip:heurdiverandomize hdive_rand heurdiverandomize",
       "The level of randomization to apply in the diving heuristic; values "
       "range from 0.0=none to 1.0=full.",
@@ -2034,7 +2060,7 @@ AddSolverOption("alg:resourcestrategy resourcestrategy",
                     "when to backtrack between two child nodes during a \"dive\":\n"
                     "\n.. value-table::\n",
                     XPRS_LOCALCHOICE, values_localchoice, 1);
-
+    
 AddSolverOption("mip:maxlocalbacktrack maxlocalbacktrack maxlocalbt",
                 "Max height above current node to look for a local backtrack "
                 "candidate node; default=-1(automatic)",
@@ -2253,6 +2279,11 @@ AddSolverOption("mip:varselection varselection",
                     "Number of iterations to perform in improving each lift-and-project cut; "
                     "default=-1 (automatic)",
                     XPRS_LNPITERLIMIT, -1, INT_MAX);
+    
+    AddSolverOption("cut:rltcuts rltcuts",
+      "Determines whether RLT cuts should be separated in the global solver:\n"
+      "\n.. value-table::\n",
+      XPRS_RLTCUTS, values_autonoyes_, -1);
 
   AddSolverOption("cut:treecover treecovercuts",
     "The number of rounds of lifted cover inequalities at MIP nodes "

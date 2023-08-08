@@ -1,6 +1,16 @@
 Summary of recent updates to Xpress for AMPL
 ============================================
 
+## 20230808
+- Updates for Xpress 9.2 (42.01.01), which include many performance
+  improvements in the MIP soilver. 
+- Non-convex quadratic problems are now solved to global optimality 
+  by default
+- Added options 'mip:heurshiftprop', 'tech:backgroundthreads' and
+ 'tech:backgroundselect'
+- The range of the control 'mip:feasibilityjump' was extended
+
+
 ## 20230728
 - Option 'tech:writesolution'
 

@@ -14,13 +14,17 @@ std::string& myreplace(std::string& s, const std::string& from, const std::strin
   return s;
 }
 
-std::string sanitizeName(std::string n) {
+
+
+std::string sanitizeName(std::string n, const std::string &lastName) {
   // Xpress does not like square brackets or spaces in variable names
   std::replace(n.begin(), n.end(), '[', '(');
   std::replace(n.begin(), n.end(), ']', ')');
   std::replace(n.begin(), n.end(), ' ', '_');
   myreplace(n,"\'", "-");
   myreplace(n, "\"", "--");
+  // Workaround for duplicated names:
+  if (n == lastName) n += "_a";
   return n;
 }
 void XpressmpModelAPI::AddVariables(const VarArrayDef& v) {
@@ -28,12 +32,17 @@ void XpressmpModelAPI::AddVariables(const VarArrayDef& v) {
   std::vector<int> iii(v.size(), 0);
   XPRESSMP_CCALL(XPRSaddcols(lp(), v.size(), 0, objs.data(), iii.data(), NULL,
     NULL, v.plb(), v.pub()));
-
+  std::string name,lastname;
+  
   if (v.pnames() != NULL)
   {
     fmt::MemoryWriter w;
     for (int i = 0; i < v.size(); ++i)
-      w << sanitizeName(v.pnames()[i]) << '\0';
+    {
+      name = sanitizeName(v.pnames()[i], lastname);
+      w << name << '\0';
+      lastname = name;
+    }   
     XPRESSMP_CCALL(XPRSaddnames(lp(), 2, w.c_str(), 0, v.size() - 1));
   }
   // All variables are continuous by default, set the integer ones
