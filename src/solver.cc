@@ -843,7 +843,6 @@ SolverOption *SolverOptionManager::FindOption(
 
 void BasicSolver::ParseOptionString(
     const char *s, unsigned flags) {
-  bool skip = false;
   for (;;) {
     if (!*(s = SkipSpaces(s)))
       return;
@@ -859,7 +858,8 @@ void BasicSolver::ParseOptionString(
       name[i] = name_start[i];
     name[name_size] = 0;
 
-    // Parse the option value.
+    // Check if we have an '=' sign,
+    // skip all spaces intil next token.
     bool equal_sign = false;
     s = SkipSpaces(s);
     if (*s == '=') {
@@ -867,69 +867,48 @@ void BasicSolver::ParseOptionString(
       equal_sign = true;
     }
 
+    // Parse option name.
     SolverOption *opt = FindOption(&name[0], true);
     if (!opt) {
-      if (!skip)
-        HandleUnknownOption(&name[0]);
-      if (equal_sign) {
-        s = SkipNonSpaces(s);
-      } else {
-        // Skip everything until the next known option if there is no "="
-        // because it is impossible to know whether the next token is an
-        // option name or a value.
-        // For example, if "a" in "a b c" is an unknown option, then "b"
-        // can be either a value of option "a" or another option.
-        skip = true;
-      }
-      continue;
+      HandleUnknownOption(&name[0]);
+      continue;       // in case it does not throw
     }
 
-    skip = false;
+    // If user asks the default/current value.
     if (*s == '?') {
       char next = s[1];
       if (!next || std::isspace(next)) {
         ++s;
         if ((flags & NO_OPTION_ECHO) == 0) {
-          fmt::MemoryWriter w;
-          w << opt->echo() << '=';
-          opt->Write(w);
-          w << '\n';
-          Print("{}", w.c_str());
+          Print("{}", opt->echo_with_value() + '\n');
         }
         continue;
       }
     }
-    if (opt->is_flag() && equal_sign) {
-      MP_RAISE(
-            fmt::format("Option \"{}\" doesn't accept an argument",
-                        &name[0]));
-      s = SkipNonSpaces(s);
-      continue;
-    }
-    if (!equal_sign) {
+
+    /// Parse value if needed.
+    if (equal_sign) {
+      // No '=' for flags.
       if (opt->is_flag()) {
-        opt->Parse(s, flags & FROM_COMMAND_LINE);
-      } else // Emulate flag options for integer options
-      if (SolverOption::Option_Type::INT==opt->type()) {
-        auto s_ = s;
-        s = "1";
-        opt->Parse(s, flags & FROM_COMMAND_LINE);
-        s = s_;
+        ReportError(
+              "Option \"{}\" doesn't accept an argument",
+              &name[0]);
+        s = SkipNonSpaces(s);    // In case we go on
+        continue;
       } else {
-        MP_RAISE(
-              fmt::format("Option \"{}\" requires an argument",
-                          &name[0]));
+        opt->Parse(s, flags & FROM_COMMAND_LINE);
       }
     } else {
-      opt->Parse(s, flags & FROM_COMMAND_LINE);
+      if (opt->is_flag()) {         // Might set some flag
+        opt->Parse(s, flags & FROM_COMMAND_LINE);
+      } else {                      // Even w/o '=' sign
+        opt->Parse(s, flags & FROM_COMMAND_LINE);
+      }
     }
-    if ((flags & NO_OPTION_ECHO) == 0)
-    {
-      fmt::MemoryWriter w;
-      w << opt->echo() << '=';
-      opt->Write(w);
-      w << '\n';
-      Print("{}", w.c_str());
+
+    // Echo name [= value].
+    if ((flags & NO_OPTION_ECHO) == 0) {
+      Print("{}", opt->echo_with_value() + '\n');
     }
   }
 }

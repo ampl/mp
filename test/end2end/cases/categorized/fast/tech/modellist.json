@@ -1,5 +1,14 @@
 [
   {
+    "name" : "Check_Standard_Options",
+    "files" : ["diet.mod", "diet.dat"],
+    "tags" : [ ],
+    "comment": "Check standard options: version, outlev",
+    "comment": "Check acceptance of '?' and space/= for assignment",
+    "options": { "ANYSOLVER_options": "version outlev ? outlev=? outlev 1 outlev=1 outlev 1" },
+    "objective": 88.2
+  },
+  {
     "name" : "Check_Wrong_Options",
     "tags" : ["linear", "continuous"],
     "files" : ["diet.mod", "diet.dat"],

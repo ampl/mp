@@ -225,25 +225,43 @@ public:
     SetValue(long_value);
   }
 
-  /// Formats the option value. Throws OptionError in case of error.
+  /// Echo option name(s) [= value].
+  virtual std::string echo_with_value() {
+    auto s = echo();
+    if (!is_flag()) {
+      fmt::MemoryWriter w;
+      w << " = ";
+      this->Write(w);
+      s += w.c_str();
+    }
+    return s;
+  }
+
+  /// Formats the option value.
+  /// Throws OptionError in case of error.
+  /// Not called for flags.
   virtual void Write(fmt::Writer &w) = 0;
 
   /// Parses a string and sets the option value. Throws InvalidOptionValue
   /// if the value is invalid or OptionError in case of another error.
   virtual void Parse(const char *&s, bool splitString=false) = 0;
 
+  /// Echo option name(s).
   virtual std::string echo() {
     if (is_wildcard())
       return wc_key_last__std_form();
     return name();
   }
 
+  /// Option type classifier, used in AMPLS.
   enum Option_Type {
     BOOL,
     INT,
     DBL,
     STRING
   };
+
+  /// Return type classifier.
   virtual Option_Type type() = 0;
 
 private:
