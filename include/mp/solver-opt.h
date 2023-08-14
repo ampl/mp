@@ -180,7 +180,7 @@ public:
   ValueArrayRef values() const { return values_; }
 
   /// Returns true if this option is a flag, i.e. it doesn't take a value.
-  bool is_flag() const { return is_flag_; }
+  virtual bool is_flag() const { return is_flag_; }
 
   /// Returns the option value.
   virtual void GetValue(fmt::LongLong &) const {
@@ -312,7 +312,7 @@ public:
                     ValueArrayRef values = ValueArrayRef())
     : SolverOption(name, description, values) {}
 
-  void Write(fmt::Writer &w) { w << GetValue<T>(); }
+  void Write(fmt::Writer &w) override { w << GetValue<T>(); }
 
   /// Parses the string for an option value, throws an exception if the value
   /// is invalid.
@@ -322,7 +322,7 @@ public:
   ///                     so it is now in the format of null terminated substrings.
   ///                     If parsed from the environment variable, the string is
   ///                     monolithic, space separated and quotes have to be considered.
-  void Parse(const char *&s, bool splitString=false) {
+  void Parse(const char *&s, bool splitString=false) override {
     const char *start = s;
     T value = internal::OptionHelper<T>::Parse(s, splitString);
     if (*s && !std::isspace(*s)) {
@@ -333,7 +333,7 @@ public:
     SetValue(value);
   }
 
-  virtual Option_Type type() {
+  virtual Option_Type type() override {
     if (std::is_integral<T>::value)
       return Option_Type::INT;
     if (std::is_arithmetic<T>::value)
@@ -489,7 +489,8 @@ public:
 
 
 public:
-  /// Stored option: references a variable
+  /// Stored option: references a variable.
+  /// StoredOption<bool> is specialized.
   template <class Value>
   class StoredOption : public mp::TypedSolverOption<Value> {
     Value& value_;
@@ -497,7 +498,8 @@ public:
     using value_type = Value;
     StoredOption(const char *name_list, const char *description,
                  Value& v, ValueArrayRef values = ValueArrayRef())
-      : mp::TypedSolverOption<Value>(name_list, description, values), value_(v) {}
+      : mp::TypedSolverOption<Value>(name_list, description, values),
+        value_(v) {}
 
     void GetValue(Value &v) const override { v = value_; }
     void SetValue(typename internal::OptionHelper<Value>::Arg v) override
@@ -795,8 +797,35 @@ public:
   set_option_iterator set_option_end() const {
     return set_option_iterator(options_.end());
   }
-  ~SolverOptionManager();
+  virtual ~SolverOptionManager();
 };
+
+
+/// Stored option <bool>.
+/// Can only be set to True.
+template <>
+class SolverOptionManager::StoredOption<bool>
+    : public mp::TypedSolverOption<int> {
+  bool& value_;
+public:
+  using value_type = bool;
+  StoredOption(const char *name_list, const char *description,
+               bool& v, ValueArrayRef values = ValueArrayRef())
+    : mp::TypedSolverOption<int>(name_list, description, values),
+      value_(v) {}
+
+  /// We are a flag
+  bool is_flag() const override { return true; }
+
+  /// Parse: only set to True
+  void Parse(const char *&, bool =false) override
+  { value_ = true; }
+
+  /// Dummy
+  void GetValue(int &v) const override { v = value_; }
+  void SetValue(int v) override { value_ = v; }
+};
+
 
 }  // namespace mp
 

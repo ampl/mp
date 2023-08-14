@@ -337,16 +337,22 @@ void VisitorBackend::InitCustomOptions() {
       "\n"
       "  ampl: option visitor_options 'mipgap=1e-6';\n");
 
+  // Use AddSolverOption() for proper solver parameters.
+  // Below are examples of options stored in variables for own use.
+
   AddStoredOption("tech:option_example opt_example example_opt",
       "Example option. "
       "Default = \"\" (don't work too hard).",
       storedOptions_.option_example_);
 
+  AddStoredOption("tech:flag1 flag1",
+      "Flag option. Use without value. Can only be set to True.",
+      storedOptions_.flag_option_);
+
   AddListOption("tech:list_option opt_list multi_valued_option",
       "Multi-valued option when repeated.",
       storedOptions_.list_option_);
 
-  // Use AddSolverOption() for solver parameters
 }
 
 

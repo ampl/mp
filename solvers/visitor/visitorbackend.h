@@ -179,6 +179,7 @@ private:
   /// These options are stored in the class
   struct Options {
     std::string option_example_;
+    bool flag_option_ = false;
     std::vector<double> list_option_;
   };
   Options storedOptions_;

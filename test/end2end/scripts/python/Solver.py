@@ -721,6 +721,8 @@ class XPRESSDirectSolver(MPDirectSolver):
                  
                  ModelTags.writelp, ModelTags.writesol,
 
+                 ModelTags.option_flag_barrier,
+
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)
 

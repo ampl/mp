@@ -219,7 +219,7 @@ std::string XpressmpBackend::XPRESSSolveFlags() {
   if (bool(storedOptions_.fBarrier_)
       + bool(storedOptions_.fPrimal_)
       + bool(storedOptions_.fDual_)
-      + bool(storedOptions_.fNetwork_)) {
+      + bool(storedOptions_.fNetwork_) >= 2) {
     AddWarning("Ambiguous LP method",
                "Only one of barrier/primal/dual/network should be specified.");
   }

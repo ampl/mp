@@ -75,6 +75,9 @@ class ModelTags(enum.Enum):
     check_sos2_from_pl = 51000           # Solvers accepting SOS2 constraints but wishing
                                          # to test SOS2 conversion, by acc:sos2=1
 
+    ## Specific options (e.g., XPRESS)
+    option_flag_barrier = 61000
+
     ## Solver-specific
     gurobi_cloud = 100000
     gurobi_server=100001

@@ -18,5 +18,12 @@
       "solve_result_num": 500,
       "solve_exitcode":   0
     }
+  },
+  {
+    "name" : "Check_Barrier_Flag",
+    "tags" : ["option_flag_barrier"],
+    "files" : ["diet.mod", "diet.dat"],
+    "options": { "ANYSOLVER_options": "outlev 1 barrier outlev 0" },
+    "objective": 88.2
   }
 ]
