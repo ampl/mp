@@ -249,7 +249,9 @@ protected:
   template <class T>
   void Distr(NodeRange nr1, NodeRange nr2) {
     assert(nr1.IsSingleIndex());
-    auto val = nr1.GetValueNode()->
+    // Need reference here for reference counting
+    // in PresolveNames():
+    const auto& val = nr1.GetValueNode()->
         GetVal<T>(nr1.GetSingleIndex());
     for (auto i=nr2.GetIndexRange().beg_;
          i!=nr2.GetIndexRange().end_; ++i)

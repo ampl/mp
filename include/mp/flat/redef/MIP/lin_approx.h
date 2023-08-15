@@ -27,7 +27,7 @@ GetWarningKeyAndText(const char* conName, double tol) {
 }
 
 
-/// Pl-approximates FuncCon for MIP
+/// Pl-approximates a FuncCon for MIP
 template <class Impl, class ModelConverter, class FuncCon>
 class FuncConConverter_MIP_CRTP :
     public BasicFuncConstrCvt<Impl, ModelConverter> {

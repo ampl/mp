@@ -1,18 +1,28 @@
 Summary of recent updates to Xpress for AMPL
 ============================================
 
+## 20230815
+- Fixed a bug causing repeated names for
+  auxiliary variables and constraints.
+- Option values can be assigned without '='.
+- Changed default tolerance for strict comparisons
+  to 0 (option cmp:eps, #102.)
+- Fixed a bug where equivalent conditional
+  comparisons were not unified.
+
+
 ## 20230808
 - Updates for Xpress 9.2 (42.01.01), which include many performance
-  improvements in the MIP soilver. 
+  improvements in the MIP solver. 
 - Non-convex quadratic problems are now solved to global optimality 
-  by default
+  by default.
 - Added options 'mip:heurshiftprop', 'tech:backgroundthreads' and
- 'tech:backgroundselect'
-- The range of the control 'mip:feasibilityjump' was extended
+ 'tech:backgroundselect'.
+- The range of the control 'mip:feasibilityjump' was extended.
 
 
 ## 20230728
-- Option 'tech:writesolution'
+- Option 'tech:writesolution'.
 
 
 ## 20230727
