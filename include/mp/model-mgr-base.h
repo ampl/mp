@@ -65,7 +65,8 @@ public:
                               const double *, const double *,
                               double) = 0;
   /// Report intermediate solution
-  virtual void HandleFeasibleSolution(fmt::CStringRef,
+  virtual void HandleFeasibleSolution(
+                              int solve_code, fmt::CStringRef,
                               const double *, const double *,
                               double) = 0;
 

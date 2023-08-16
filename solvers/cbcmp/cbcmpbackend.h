@@ -101,7 +101,7 @@ public:
   void SetInterrupter(mp::Interrupter* inter) override;
 
   /// Solve, no model modification any more.
-  /// Can report intermediate results via HandleFeasibleSolution() during this,
+  /// Can report intermediate results via ReportIntermediateSolution() during this,
   /// otherwise in ReportResults()
   void Solve() override;
 

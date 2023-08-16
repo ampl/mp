@@ -55,9 +55,10 @@ protected:
     GetMM().HandleSolution(status, msg, x, y, obj);
   }
 
-  virtual void HandleFeasibleSolution(fmt::CStringRef msg,
+  virtual void HandleFeasibleSolution(
+      int solve_code, fmt::CStringRef msg,
       const double *x, const double *y, double obj) {
-    GetMM().HandleFeasibleSolution(msg, x, y, obj);
+    GetMM().HandleFeasibleSolution(solve_code, msg, x, y, obj);
   }
 
   /// Variables' initial values

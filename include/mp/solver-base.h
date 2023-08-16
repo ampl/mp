@@ -4,6 +4,7 @@
 #include <map>
 
 #include "solver-opt.h"
+#include "common.h"
 
 namespace mp {
 
@@ -33,21 +34,34 @@ class SolutionHandler {
  public:
   virtual ~SolutionHandler() {}
 
-  // Receives a feasible solution.
-  virtual void HandleFeasibleSolution(fmt::CStringRef message,
+  /// Receives a feasible solution.
+  virtual void HandleFeasibleSolution(
+      int solve_code, fmt::CStringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
 
-  // Receives the final solution or a notification that the problem is
-  // infeasible or unbounded.
+  /// Receives a feasible solution, no solve code.
+  /// Deprecated.
+  virtual void HandleFeasibleSolution(fmt::CStringRef message,
+      const double *values, const double *dual_values, double obj_value) {
+    HandleFeasibleSolution(sol::UNCERTAIN,
+                           message, values, dual_values, obj_value);
+  }
+
+  /// Receives the final solution or a notification that the problem is
+  /// infeasible or unbounded.
   virtual void HandleSolution(int status, fmt::CStringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
 
+  /// Override solution output file stub.
   virtual void OverrideSolutionFileName(const std::string& ) {}
 };
 
 /// "Silent" solution handler
 class BasicSolutionHandler : public SolutionHandler {
  public:
+  virtual void HandleFeasibleSolution(int ,
+                                      fmt::CStringRef,
+      const double *, const double *, double) {}
   virtual void HandleFeasibleSolution(fmt::CStringRef,
       const double *, const double *, double) {}
   virtual void HandleSolution(int, fmt::CStringRef,

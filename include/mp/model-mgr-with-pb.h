@@ -268,9 +268,10 @@ protected:
       throw std::runtime_error(msg.c_str());
   }
 
-  void HandleFeasibleSolution(fmt::CStringRef msg,
+  void HandleFeasibleSolution(
+      int solve_code, fmt::CStringRef msg,
       const double *x, const double *y, double obj) override {
-    GetSolH().HandleFeasibleSolution(msg, x, y, obj);
+    GetSolH().HandleFeasibleSolution(solve_code, msg, x, y, obj);
   }
 
   const std::vector<bool>& IsVarInt() const override {

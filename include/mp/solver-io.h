@@ -102,7 +102,7 @@ class SolutionWriterImpl :
   // Returns the .sol writer.
   Writer &sol_writer() { return *this; }
 
-  void HandleFeasibleSolution(fmt::CStringRef message,
+  void HandleFeasibleSolution(int status, fmt::CStringRef message,
         const double *values, const double *dual_values, double);
 
   // Writes the solution to a .sol file.
@@ -122,15 +122,16 @@ using SolutionWriter = SolutionWriterImpl<
                            Writer>;
 
 template <typename Solver, typename PB, typename Writer>
-void SolutionWriterImpl<Solver, PB, Writer>::HandleFeasibleSolution(
-    fmt::CStringRef message, const double *values,
+void SolutionWriterImpl<Solver, PB, Writer>::
+HandleFeasibleSolution(
+    int status, fmt::CStringRef message, const double *values,
     const double *dual_values, double) {
   ++num_solutions_;
   const char *solution_stub = solver_.solution_stub();
   if (!*solution_stub)
     return;
   SolutionAdapter<PB> sol(
-        sol::UNCERTAIN, &builder_, message.c_str(), options_,
+        status, &builder_, message.c_str(), options_,
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values,
                      dual_values ? builder_.num_algebraic_cons() : 0),

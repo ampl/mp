@@ -264,7 +264,7 @@ public:
 
 protected:
   /// Solve, no model modification any more.
-  /// Can report intermediate results via HandleFeasibleSolution() during this,
+  /// Can report intermediate results via ReportIntermediateSolution() during this,
   /// otherwise in ReportResults()
   virtual void Solve() override = 0;
 
@@ -360,21 +360,29 @@ protected:
   virtual void ReportCustomSuffixes() { }
 
   /// Callback.
-  /// @param sol: unpresolved solution
+  /// @param sol: postsolved solution.
+  /// Normally report all alternative solutions,
+  /// including the final one,
+  /// before reporting the final solution
+  /// via standard way (ReportSolution).
   void ReportIntermediateSolution(Solution sol) {
     fmt::MemoryWriter writer;
-    writer.write("{}: {}", MP_DISPATCH( long_name() ),
-                 "Alternative solution");
+    writer.write("{}: {} {}", MP_DISPATCH( long_name() ),
+                 "Alternative solution", ++kIntermSol_);
     double obj_value = std::numeric_limits<double>::quiet_NaN();
     if (sol.objvals.size()) {
       obj_value = sol.objvals[0];
-      writer.write("; objective {}",
+      writer.write(", objective {}",
                    MP_DISPATCH( FormatObjValue(obj_value) ));
+      if (obj_value > objIntermSol_.first)
+        objIntermSol_.first = obj_value;
+      if (obj_value < objIntermSol_.second)
+        objIntermSol_.second = obj_value;
     }
     writer.write("\n");
     if (round() && MP_DISPATCH(IsMIP()))
       RoundSolution(sol.primal, writer);
-    HandleFeasibleSolution(writer.c_str(),
+    HandleFeasibleSolution(SolveCode(), writer.c_str(),
                    sol.primal.empty() ? 0 : sol.primal.data(),
                    sol.dual.empty() ? 0 : sol.dual.data(),
                    obj_value);
@@ -422,6 +430,23 @@ protected:
     writer.write("\n");
     if (solver_msg_extra_.size()) {
       writer.write(solver_msg_extra_);
+    }
+    /// Summary on alternative solutions
+    if (kIntermSol_) {
+      if (objIntermSol_.first > -1e50)
+        writer.write("{} alternative solution(s)\n"
+                     "  with objective values {}..{}\n"
+                     "  written to '{}1.sol' ... '{}{}.sol'.\n",
+                     kIntermSol_,
+                     objIntermSol_.first, objIntermSol_.second,
+                     solution_stub(), solution_stub(),
+                     kIntermSol_);
+      else
+        writer.write("{} alternative solution(s)\n"
+                     "  written to '{}1.sol' ... '{}{}.sol'.\n",
+                     kIntermSol_,
+                     solution_stub(), solution_stub(),
+                     kIntermSol_);
     }
     /// Even without a feasible solution, we can have duals/suffixes
     HandleSolution(SolveCode(), writer.c_str(),
@@ -569,6 +594,8 @@ public:
   ///////////////////////// STORING SOLUTON STATUS //////////////////////
 private:
   std::pair<int, std::string> status_ { sol::NOT_SET, "status not set" };
+  int kIntermSol_ = 0;   // last written intermed solution index
+  std::pair<double, double> objIntermSol_ { -1e100, 1e100 };
 
   ///////////////////////// STORING SOLVER MESSAGES //////////////////////
 private:

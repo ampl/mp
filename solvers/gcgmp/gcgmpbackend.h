@@ -113,7 +113,7 @@ public:
 
 public:  // public for static polymorphism
   /// Solve, no model modification any more (such as feasrelax).
-  /// Can report intermediate results via HandleFeasibleSolution() during this,
+  /// Can report intermediate results via ReportIntermediateSolution() during this,
   /// otherwise/finally via ReportResults()
   void Solve() override;
 

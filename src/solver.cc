@@ -880,7 +880,7 @@ void BasicSolver::ParseOptionString(
       if (!next || std::isspace(next)) {
         ++s;
         if ((flags & NO_OPTION_ECHO) == 0) {
-          Print("{}", opt->echo_with_value() + '\n');
+          Print("  {}", opt->echo_with_value() + '\n');
         }
         continue;
       }
@@ -908,7 +908,7 @@ void BasicSolver::ParseOptionString(
 
     // Echo name [= value].
     if ((flags & NO_OPTION_ECHO) == 0) {
-      Print("{}", opt->echo_with_value() + '\n');
+      Print("  {}", opt->echo_with_value() + '\n');
     }
   }
 }

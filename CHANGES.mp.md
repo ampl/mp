@@ -1,6 +1,11 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## unreleased
+- Alternative solutions: solve status equal to that
+  of the final solution.
+
+
 ## 20230815
 - Fixed a bug causing repeated names for
   auxiliary variables and constraints.
