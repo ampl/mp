@@ -303,7 +303,7 @@ public:
 
 private:
   struct Options {
-    double cmpEps_ { 0.0 };
+    double cmpEps_ { 1e-4 };
     double bigM_default_ { -1 };
     double PLApproxRelTol_ { 1e-2 };
     double PLApproxDomain_ { 1e6 };
@@ -316,7 +316,7 @@ private:
                              "Applies to <, >, and != operators. "
                        "Also applies to negation of conditional comparisons: "
                        "b==1 <==> x<=5 means that with b==0, x>=5+eps. "
-                             "Default: 0.",
+                             "Default: 1e-4.",
                        options_.cmpEps_, 0.0, 1e100);
     this->GetEnv().AddOption("cvt:bigM cvt:bigm cvt:mip:bigM cvt:mip:bigm",
                        "Default value of big-M for linearization of logical constraints. "
