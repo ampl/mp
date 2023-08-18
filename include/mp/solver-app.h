@@ -41,6 +41,7 @@ class SolverApp : private Reader {
     void HandleOutput(fmt::CStringRef output) {
       has_output = true;
       std::fputs(output.c_str(), stdout);
+      std::fflush(stdout);         // #220
     }
   };
   AppOutputHandler output_handler_;

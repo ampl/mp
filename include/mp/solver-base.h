@@ -26,6 +26,7 @@ class OutputHandler {
   virtual void HandleOutput(fmt::CStringRef output) {
     has_output = true;
     std::fputs(output.c_str(), stdout);
+    std::fflush(stdout);       // #220
   }
 };
 
@@ -284,6 +285,7 @@ public:
   /// Override methods from base service classes
   void HandleOutput(fmt::CStringRef output) override {
     std::fputs(output.c_str(), stdout);
+    std::fflush(stdout);         // #220
   }
 
   /// Handle error
