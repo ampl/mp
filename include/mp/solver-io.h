@@ -85,7 +85,7 @@ class SolutionWriterImpl :
 
   ArrayRef<int> options_;
 
-  // The number of feasible solutions found.
+  /// The number of feasible solutions found.
   int num_solutions_;
 
  protected:
@@ -99,13 +99,21 @@ class SolutionWriterImpl :
                  ArrayRef<int> options = mp::ArrayRef<int>(0, 0))
     : stub_(stub.to_string()), overrideStub_(), solver_(s), builder_(b),
       options_(options), num_solutions_(0) {}
-  // Returns the .sol writer.
+  /// Returns the .sol writer.
   Writer &sol_writer() { return *this; }
 
+  /// Writes an intermediate solution to a .sol file.
   void HandleFeasibleSolution(int status, fmt::CStringRef message,
         const double *values, const double *dual_values, double);
 
-  // Writes the solution to a .sol file.
+  /// Deprecated: no status
+  void HandleFeasibleSolution(fmt::CStringRef message,
+        const double *values, const double *dual_values, double obj) {
+    HandleFeasibleSolution(sol::UNCERTAIN, message,
+                           values, dual_values, obj);
+  }
+
+  /// Writes the solution to a .sol file.
   void HandleSolution(int status, fmt::CStringRef message,
         const double *values, const double *dual_values, double);
 
