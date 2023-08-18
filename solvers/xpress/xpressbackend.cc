@@ -1190,14 +1190,14 @@ void XpressmpBackend::InitCustomOptions() {
     "\n.. value-table::\n",
     XPRS_SLEEPONTHREADWAIT, values_sleeponthreadwait,  -1);
 
-    AddSolverOption("lim:lpiterlimit lpiterlimit",
+    AddSolverOption("lim:iter lpiterlimit iterlim",
         "The maximum number of iterations that will be performed "
         "by primal simplex or dual simplex before the optimization "
         "process terminates. For MIP problems, this is the maximum "
         "total number of iterations over all nodes.",
         XPRS_LPITERLIMIT, 2147483645, INT_MAX);
 
-    AddSolverOption("lim:lprefineiterlimit lprefineiterlimit",
+    AddSolverOption("lim:lprefineiter lprefineiterlimit",
                     "This specifies the simplex iteration limit the solution "
                     "refiner can spend in attempting to increase the accuracy "
                     "of an LP solution; default=-1 (automatic).",
@@ -1270,7 +1270,7 @@ void XpressmpBackend::InitCustomOptions() {
     "solution pool is allowed to keep the n best solutions.",
     storedOptions_.nbest_);
 
-    AddSolverOption("lim:maxmipsol maxmipsol",
+    AddSolverOption("lim:mipsol maxmipsol",
                     "Limit on the number of MIP solutions to be found (default no limit).",
                     XPRS_MAXMIPSOL, 0, INT_MAX);
 
@@ -1278,7 +1278,7 @@ void XpressmpBackend::InitCustomOptions() {
                     "Maximum MIP nodes to explore (default: 2147483647).",
                     XPRS_MAXNODE, 2147483647, INT_MAX);
 
-    AddSolverOption("lim:maxstalltime maxstalltime",
+    AddSolverOption("lim:stalltime maxstalltime",
                     "Maximum time in seconds that the MIP Optimizer will continue to search "
                     "for improving solution after finding a new incumbent, default=0 (no limit)",
                     XPRS_MAXSTALLTIME, 0.0, Infinity());
@@ -1665,7 +1665,7 @@ AddSolverOption("alg:resourcestrategy resourcestrategy",
     "Limit on threads used during crossover; default -1 (determined by "
     "bar:threads).", XPRS_CROSSOVERTHREADS, -1, INT_MAX);
 
-  AddSolverOption("lim:crossoveriterlim bar:crossoveriterlim crossoveriterlim crossoveritlim",
+  AddSolverOption("lim:crossoveriter bar:crossoveriterlim crossoveriterlim crossoveritlim",
     "Limit on crossover iterations after the barrier "
     "algorithm; default = 2147483645", XPRS_CROSSOVERITERLIMIT, 1, INT_MAX);
 
@@ -1702,7 +1702,7 @@ AddSolverOption("alg:resourcestrategy resourcestrategy",
     "algorithm for solving a QP: stop when the limit is hit "
     "default = 15", XPRS_BARINDEFLIMIT, 0, INT_MAX);
 
-  AddSolverOption("lim:bariterlim bar:iterlim bariterlim",
+  AddSolverOption("lim:bariter bar:iterlim bariterlim",
     "Limit on the number of barrier iterations (default 500).",
     XPRS_BARITERLIMIT, 1, INT_MAX);
 
