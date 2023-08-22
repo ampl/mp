@@ -621,7 +621,7 @@ protected:
     // a summary in the final solve message.
     // For now, do this via warnings?
     if (chk.HasAnyViols()) {
-      if (options_.solcheckfail_)
+      if (2 == options_.solcheckmode_)
         MP_RAISE_WITH_CODE(520,    // numeric error
                            chk.GetReport());
       else
@@ -1029,7 +1029,7 @@ private:
 
     int relax_ = 0;
 
-    bool solcheckfail_ = false;
+    int solcheckmode_ = 1;
     double solfeastol_ = 1e-6;
     double solinttol_ = 1e-5;
   };
@@ -1054,6 +1054,14 @@ public:
 
 
 private:
+  const mp::OptionValueInfo values_solchk_[3] = {
+    { "0", "No solution check (e.g., with feasrelax.)", 0},
+    { "1",
+      "Warn if tolerances or logical constraints "
+      "violated (default.)", 1},
+    { "2", "Fail on violations.", 2}
+  };
+
   void InitOwnOptions() {
     /// Should be called after adding all constraint keepers
     FlatModel::ConsiderAcceptanceOptions(*this, GetModelAPI(), GetEnv());
@@ -1105,10 +1113,9 @@ private:
 		GetEnv().AddOption("alg:relax relax",
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
-    GetEnv().AddOption("sol:chk:fail solcheckfail checkfail chk:fail",
-        "Fail if solution violates tolerances "
-        "(normally only warning).",
-        options_.solcheckfail_, false, true);
+    GetEnv().AddStoredOption("sol:chk:mode solcheck checkmode chk:mode",
+        "Solution checking mode:\n"  "\n.. value-table::\n",
+        options_.solcheckmode_, values_solchk_);
     GetEnv().AddOption("sol:chk:feastol sol:chk:eps sol:eps chk:eps",
         "Solution checking tolerance for objective values, variable "
         "and constraint bounds. Default 1e-6. "
@@ -1191,7 +1198,8 @@ private:
         ArrayRef<double> x,
         const pre::ValueMapDbl& y,
         ArrayRef<double> obj) -> bool {
-      return this->CheckSolution(x, y, obj);
+      return !this->options_.solcheckmode_   // not desired
+          || this->CheckSolution(x, y, obj);
     }
   };
   pre::CopyLink copy_link_ { GetValuePresolver() }; // the copy links
