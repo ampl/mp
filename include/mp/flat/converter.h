@@ -625,7 +625,9 @@ protected:
         MP_RAISE_WITH_CODE(520,    // numeric error
                            chk.GetReport());
       else
-        AddWarning("SolutionCheck", chk.GetReport());
+        AddWarning(
+              "SolutionCheck", chk.GetReport(),
+              true);  // replace for multiple solutions
     }
     return !chk.HasAnyViols();
   }
@@ -665,13 +667,17 @@ protected:
             "(sol:chk:feastol={}, sol:chk:inttol={}):\n",
             options_.solfeastol_, options_.solinttol_);
       Gen1Viol(chk.VarViolBnds().at(0), wrt,
-               "  - {} original variable(s) violate bounds, max by {}");
+               "  - {} original variable(s) violate bounds,\n"
+               "      max by {}");
       Gen1Viol(chk.VarViolBnds().at(1), wrt,
-               "  - {} auxiliary variable(s) violate bounds, max by {}");
+               "  - {} auxiliary variable(s) violate bounds,\n"
+               "      max by {}");
       Gen1Viol(chk.VarViolIntty().at(0), wrt,
-               "  - {} original variable(s) violate integrality, max by {}");
+               "  - {} original variable(s) violate integrality,\n"
+               "      max by {}");
       Gen1Viol(chk.VarViolIntty().at(1), wrt,
-               "  - {} auxiliary variable(s) violate integrality, max by {}");
+               "  - {} auxiliary variable(s) violate integrality,\n"
+               "      max by {}");
     }
     GenConViol(chk.ConViolAlg(), wrt, "Algebraic");
     GenConViol(chk.ConViolLog(), wrt, "Logical");
@@ -680,7 +686,7 @@ protected:
                 "(sol:chk:feastol={})\n",
                 options_.solfeastol_);
       Gen1Viol(chk.ObjViols(), wrt,
-               "  - {} objective value(s) violated, max by {}");
+               "  - {} objective value(s) violated,\n      max by {}");
     }
     chk.SetReport( wrt.str() );
   }
@@ -705,15 +711,15 @@ protected:
         Gen1Viol(cva.second.at(0), wrt,
                  "  - {} original constraint(s) of type '"
                  + std::string(cva.first)
-                 + "' violate bounds, max by {}");
+                 + "' violate bounds,\n      max by {}");
         Gen1Viol(cva.second.at(1), wrt,
                  "  - {} reformulated constraint(s) of type '"
                  + std::string(cva.first)
-                 + "' violate bounds, max by {}");
+                 + "' violate bounds,\n      max by {}");
         Gen1Viol(cva.second.at(2), wrt,
-                 "  - {} auxiliary constraint(s) of type '"
+                 "  - {} final constraint(s) of type '"
                  + std::string(cva.first)
-                 + "' violate bounds, max by {}");
+                 + "' violate bounds,\n      max by {}");
       }
     }
   }
@@ -1157,8 +1163,10 @@ public:
   /// AddWarning.
   /// @param key: warning category
   /// @param msg: detailed message
-  void AddWarning(std::string key, std::string msg) {
-    GetEnv().AddWarning(std::move(key), std::move(msg));
+  void AddWarning(
+      std::string key, std::string msg, bool replace=false) {
+    GetEnv().AddWarning(
+          std::move(key), std::move(msg), replace);
   }
 
 

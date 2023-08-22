@@ -272,7 +272,8 @@ protected:
   virtual void Report() {
     ReportResults();
 //    if (verbose_mode())
-      PrintWarnings();
+//    if (!ampl_flag())     // otherwise to solve_message
+//      PrintWarnings();
     if ( timing() )
       PrintTimingInfo();
   }
@@ -380,6 +381,9 @@ protected:
         objIntermSol_.second = obj_value;
     }
     writer.write("\n");
+    auto wrn = GetWarnings();
+    if (wrn.size())
+      writer.write("\n{}", wrn);
     if (round() && MP_DISPATCH(IsMIP()))
       RoundSolution(sol.primal, writer);
     HandleFeasibleSolution(SolveCode(), writer.c_str(),
@@ -448,6 +452,9 @@ protected:
                      solution_stub(), solution_stub(),
                      kIntermSol_);
     }
+    auto wrn = GetWarnings();
+    if (wrn.size())
+      writer.write("\n{}", wrn);
     /// Even without a feasible solution, we can have duals/suffixes
     HandleSolution(SolveCode(), writer.c_str(),
                    sol.primal.empty() ? 0 : sol.primal.data(),

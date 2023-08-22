@@ -688,24 +688,32 @@ SolverOptionManager::~SolverOptionManager() {
   std::for_each(options_.begin(), options_.end(), Deleter());
 }
 
-void BasicSolver::AddWarning(std::string key, std::string msg) {
-  auto& v = GetWarnings()[ std::move(key) ];
-  if (!v.first++)         // only remember the 1st detailed message
+void BasicSolver::AddWarning(
+    std::string key, std::string msg, bool replace) {
+  auto& v = GetWarningsMap()[ std::move(key) ];
+  if (!v.first++      // only remember the 1st detailed message
+      || replace)     // unless asked to replace
     v.second = std::move(msg);
 }
 
-void BasicSolver::PrintWarnings() {
-  if (GetWarnings().size()) {
-    Print("\n------------ WARNINGS ------------\n");
-    for (const auto& e: GetWarnings())
-      Print(ToString(e));
+std::string BasicSolver::GetWarnings() const {
+  if (GetWarningsMap().size()) {
+    std::string wrn = "------------ WARNINGS ------------\n";
+    for (const auto& e: GetWarningsMap())
+      wrn += ToString(e) + '\n';
+    return wrn;
   }
+  return "";
+}
+
+void BasicSolver::PrintWarnings() {
+  Print('\n' + GetWarnings());
 }
 
 std::string BasicSolver::ToString(
     const WarningsMap::value_type& wrn) {
   return fmt::format(
-        "WARNING.  {} case(s) of \"{}\". The first of them:\n  {}\n",
+        "WARNING.  {} case(s) of \"{}\". One of them:\n  {}",
         wrn.second.first, wrn.first, wrn.second.second);
 }
 
@@ -1168,8 +1176,8 @@ const char* const * AMPLSGetMessages(AMPLS_MP_Solver* slv) {
   pchar_vec.clear();
 
   /// Add Backend warnings
-  for (const auto& wrn: be->GetWarnings())
-    msg_wrn.push_back(mp::BasicSolver::ToString(wrn));
+  for (const auto& wrn: be->GetWarningsMap())
+    msg_wrn.push_back(mp::BasicSolver::ToString(wrn) + '\n');
 
   /// Add Backend warnings
   for (const auto& wrn: msg_wrn)

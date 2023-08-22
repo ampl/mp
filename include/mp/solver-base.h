@@ -327,7 +327,11 @@ public:
   /// Add a warning.
   /// @param key: warning category
   /// @param msg: detailed message
-  void AddWarning(std::string key, std::string msg);
+  void AddWarning(
+      std::string key, std::string msg, bool replace=false);
+
+  /// Get warnings as string
+  std::string GetWarnings() const;
 
   /// Print warnings
   void PrintWarnings();
@@ -397,7 +401,8 @@ public:
       std::pair<int, std::string> >;    // total number, description of the 1st
 
   /// Get warnings map
-  WarningsMap& GetWarnings() { return warnings_; }
+  const WarningsMap& GetWarningsMap() const { return warnings_; }
+  WarningsMap& GetWarningsMap() { return warnings_; }
 
   /// Stringify a WarningsMap entry
   static std::string ToString(const WarningsMap::value_type& wrn);
