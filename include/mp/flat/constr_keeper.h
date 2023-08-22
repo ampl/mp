@@ -26,6 +26,91 @@ static const mp::OptionValueInfo values_item_acceptance[] = {
   { "2", "Accepted natively and preferred", 2}
 };
 
+
+/// Violation summary for a class of vars/cons/objs
+struct ViolSummary {
+  /// Check if this violation should be counted
+  void CheckViol(double val, double eps) {
+    if (val > eps) {
+      ++N_;
+      if (epsMax_ < val)
+        epsMax_ = val;
+    }
+  }
+  /// Count violation
+  void CountViol(double val) {
+    ++N_;
+    if (epsMax_ < val)
+      epsMax_ = val;
+  }
+  int N_ {0};
+  double epsMax_ {0.0};
+};
+
+/// Array of violation summaries.
+/// For different kinds, e.g., original / aux vars.
+template <int Nkinds>
+using ViolSummArray = std::array<ViolSummary, Nkinds>;
+
+/// Solution check data
+struct SolCheck {
+  /// Construct
+  SolCheck(ArrayRef<double> x,
+           const pre::ValueMapDbl& duals,
+           ArrayRef<double> obj,
+           double feastol, double inttol)
+    : x_(x), y_(duals), obj_(obj),
+      feastol_(feastol), inttol_(inttol) { }
+  /// Any violations?
+  bool HasAnyViols() const { return hasAnyViol_; }
+  /// Summary
+  const std::string& GetReport() const { return report_; }
+
+  /// x
+  ArrayRef<double>& x() { return x_; }
+  /// x[i]
+  double x(int i) const { return x_[i]; }
+  /// Feasibility tolerance
+  double GetFeasTol() const { return feastol_; }
+
+  /// Var bnd violations
+  ViolSummArray<2>& VarViolBnds() { return viol_var_bnds_; }
+  /// Var int-ty violations
+  ViolSummArray<2>& VarViolIntty() { return viol_var_int_; }
+
+  /// Constraints: algebraic.
+  /// Map by constraint type.
+  /// Values: for original, intermediate,
+  /// and solver-side constraints.
+  std::map< std::string, ViolSummArray<3> >&
+  ConViolAlg() { return viol_cons_alg_; }
+  /// Constraints: logical.
+  std::map< std::string, ViolSummArray<3> >&
+  ConViolLog() { return viol_cons_log_; }
+
+private:
+  ArrayRef<double> x_;
+  const pre::ValueMapDbl& y_;
+  ArrayRef<double> obj_;
+  double feastol_;
+  double inttol_;
+
+  bool hasAnyViol_ = false;
+  std::string report_;
+
+  /// Variable bounds: orig, aux
+  ViolSummArray<2> viol_var_bnds_;
+  /// Variable integrality: orig, aux
+  ViolSummArray<2> viol_var_int_;
+  /// Constraints: algebraic.
+  std::map< std::string, ViolSummArray<3> > viol_cons_alg_;
+  /// Constraints: logical.
+  std::map< std::string, ViolSummArray<3> > viol_cons_log_;
+  /// Objectives
+  ViolSummary viol_obj_;
+};
+
+
 /// Interface for an array of constraints of certain type
 class BasicConstraintKeeper {
 public:
@@ -173,6 +258,9 @@ public:
 
   /// Copy names from ValueNodes
   virtual void CopyNamesFromValueNodes() = 0;
+
+  /// Compute violations
+  virtual void ComputeViolations(SolCheck& ) = 0;
 
 
 protected:
@@ -419,11 +507,16 @@ protected:
   struct Container {
     Container(Constraint&& c) noexcept : con_(std::move(c)) { }
 
+    bool IsDeleted() const { return IsBridged(); }
     bool IsBridged() const { return is_bridged_; }
     void MarkAsBridged() { is_bridged_=true; }
 
+    /// Depth in the redef tree
+    int GetDepth() const { return depth_; }
+
     Constraint con_;
     bool is_bridged_ = false;
+    int depth_ {0};
   };
 
 	/// Convert all new constraints of this type
@@ -492,7 +585,7 @@ public:
   }
 
 	/// ForEachActive().
-	/// Deletes every constraint where fn() returned true.
+  /// Deletes every constraint where fn() returns true.
 	template <class Fn>
 	void ForEachActive(Fn fn) {
 		for (int i=0; i<(int)cons_.size(); ++i)
@@ -500,6 +593,29 @@ public:
 				if (fn(cons_[i].con_, i))
 					MarkAsDeleted(cons_[i], i);
 	}
+
+  /// Compute violations for this constraint type.
+  /// We do it for redefined ones too.
+  void ComputeViolations(SolCheck& chk) {
+    if (cons_.size()) {
+      auto& conviolmap =
+          cons_.front().con_.IsLogical() ?
+            chk.ConViolAlg() :
+            chk.ConViolLog();
+      auto& conviolarray =
+          conviolmap[cons_.front().con_.GetTypeName()];
+      const auto& x = chk.x();
+      for (int i=(int)cons_.size(); i--; ) {
+        auto viol = cons_[i].con_.ComputeViolation(x);
+        if (viol > chk.GetFeasTol()) {
+          /// Solver-side?
+          /// TODO also original NL constraints (index 0)
+          int index = cons_[i].IsDeleted() ? 2 : 1;
+          conviolarray[index].CountViol(viol);
+        }
+      }
+    }
+  }
 
 
 protected:
@@ -724,6 +840,12 @@ public:
       BasicFlatModelAPI& be) const {
     for (const auto& ck: con_keepers_)
       ck.second.AddUnbridgedToBackend(be);
+  }
+
+  /// Compute violations
+  void ComputeViolations(SolCheck& chk) {
+    for (const auto& ck: con_keepers_)
+      ck.second.ComputeViolations(chk);
   }
 };
 

@@ -27,6 +27,9 @@ public:
     return name;
   }
 
+  /// Is logical?
+  static bool IsLogical() { return true; }
+
   /// Constructor
   IndicatorConstraint(int b, int bv, Con con) noexcept :
     b_(b), bv_(bv), con_(std::move(con)) { assert(check()); }
@@ -98,6 +101,9 @@ public:
   /// Constraint type name
   static const char* GetTypeName()
   { return 1==type ? name1_ : name2_; }
+
+  /// Is logical?
+  static bool IsLogical() { return true; }
 
   int get_sos_type() const { return type; }
   int size() const { return (int)v_.size(); }
@@ -174,6 +180,9 @@ public:
           Expr::GetTypeName() + ']' };
     return name;
   }
+
+  /// Is logical?
+  static bool IsLogical() { return true; }
 
   /// Constructor
   ComplementarityConstraint(ExprType expr, int var) :

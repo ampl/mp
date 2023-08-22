@@ -251,12 +251,22 @@ private:
 };
 
 
+/// How to call a solution checker
+using SolCheckerCall = bool(
+  ArrayRef<double> x,
+  const ValueMapDbl& y,
+  ArrayRef<double> obj);
+/// Function wrapper
+using SolCheckerType = std::function<SolCheckerCall>;
+
+
 /// Final ValuePresolver.
 /// It specializes PresolveSolution() to update fixed variables
 class ValuePresolver : public ValuePresolverImpl {
 public:
-  ValuePresolver(BasicFlatModel& m, Env& env, ExporterFn bts={})
-    : ValuePresolverImpl(env, bts), model_(m) { }
+  ValuePresolver(BasicFlatModel& m, Env& env,
+                 ExporterFn bts={}, SolCheckerType sc={})
+    : ValuePresolverImpl(env, bts), model_(m), solchk_(sc) { }
 
   /// Override PresolveSolution().
   /// Move warm start values into the bounds.
@@ -278,9 +288,27 @@ public:
     return result;
   }
 
+  /// Override PostsolveSolution().
+  /// Check solution if checker provided.
+  MVOverEl<double> PostsolveSolution (
+      const MVOverEl<double>& mv) override {
+    if (solchk_) {
+      const auto& mx = mv.GetVarValues();
+      const auto& mo = mv.GetObjValues();
+      if (mx.IsSingleKey()
+          && mx().size()          // solution available
+          && mo.IsSingleKey()) {
+        solchk_(mx(),
+                mv.GetConValues(), mo());
+      }
+    }
+    return ValuePresolverImpl::PostsolveSolution(mv);
+  }
+
 
 private:
   BasicFlatModel& model_;
+  SolCheckerType solchk_;
 };
 
 

@@ -45,7 +45,8 @@ public:
     return var_type_.size()-1;
   }
 
-  /// Add several variables
+  /// Add several variables.
+  /// This is only done once when we add original variables.
   void AddVars__basic(const VarBndVec& lbs, const VarBndVec& ubs,
                const VarTypeVec& types) {
     assert(check_vars());
@@ -53,6 +54,7 @@ public:
     var_ub_.insert(var_ub_.end(), ubs.begin(), ubs.end());
     var_type_.insert(var_type_.end(), types.begin(), types.end());
     assert(check_vars());
+    num_vars_orig_ = var_lb_.size();
   }
 
   void AddVarNames(const std::vector<std::string>& names) {
@@ -61,6 +63,9 @@ public:
 
   int num_vars() const
   { assert(check_vars()); return (int)var_lb_.size(); }
+
+  bool is_var_original(int i) const
+  { return i<num_vars_orig_; }
 
   double lb(Var v) const {
     assert(0<=v && v<num_vars());
@@ -243,11 +248,11 @@ private:
   VarBndVec var_lb_, var_ub_;
   /// Variables' types
   VarTypeVec var_type_;
-  /// <summary>
   ///  Variables' names
-  /// </summary>
   mutable VarNameVec var_names_;
   std::vector<std::string> var_names_storage_;
+  /// Number of original NL variables
+  int num_vars_orig_ {0};
   /// Objectives
   ObjList objs_;
 

@@ -9,6 +9,7 @@
 #include <typeinfo>
 
 #include "mp/flat/context.h"
+#include "mp/arrayref.h"
 
 namespace mp {
 
@@ -34,6 +35,8 @@ public:
   void AddContext(Context ) const { }
   /// For functional constraints, result variable index
   int GetResultVar() const { return -1; }
+  /// Compute violation
+  double ComputeViolation(const ArrayRef<double>& ) { return 0.0; }
 
 private:
   std::string name_;

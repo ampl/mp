@@ -601,6 +601,59 @@ protected:
   }
 
 
+
+  /// Check unpostsolved solution
+  bool CheckSolution(
+      ArrayRef<double> x,
+      const pre::ValueMapDbl& duals,
+      ArrayRef<double> obj) {
+    SolCheck chk(x, duals, obj,
+                 options_.solfeastol_, options_.solinttol_);
+    CheckVars(chk);
+    CheckCons(chk);
+    CheckObjs(chk);
+    GenerateViolationsReport(chk);
+    // What if this is an intermediate solution?
+    // Should be fine - warning by default,
+    // fail if requested explicitly.
+    // If warning, we should add the report
+    // to that solutions' solve message, and
+    // a summary in the final solve message.
+    // For now, do this via warnings?
+    if (chk.HasAnyViols()) {
+      if (options_.solcheckfail_)
+        MP_RAISE(chk.GetReport());
+      else
+        AddWarning("SolutionCheck", chk.GetReport());
+    }
+    return !chk.HasAnyViols();
+  }
+
+  void CheckVars(SolCheck& chk) {
+    for (auto i=num_vars(); i--; ) {
+      auto x = chk.x(i);
+      bool aux = !MPCD( is_var_original(i) );
+      chk.VarViolBnds().at(aux).CheckViol(
+                MPCD( lb(i) ) - x, options_.solfeastol_);
+      chk.VarViolBnds().at(aux).CheckViol(
+                x - MPCD( ub(i) ), options_.solfeastol_);
+      if (is_var_integer(i))
+        chk.VarViolIntty().at(aux).CheckViol(
+                  std::fabs(x - std::round(x)),
+                  options_.solinttol_);
+    }
+  }
+
+  /// Includes logical constraints.
+  void CheckCons(SolCheck& chk) {
+    GetModel().ComputeViolations(chk);
+  }
+
+  void CheckObjs(SolCheck& ) {
+  }
+
+  void GenerateViolationsReport(SolCheck& chk) { }
+
   //////////////////////////// UTILITIES /////////////////////////////////
   ///
 public:
@@ -669,8 +722,11 @@ public:
 
 
 public:
-	/// Shortcut num_vars()
-	int num_vars() const { return MPCD(GetModel()).num_vars(); }
+  /// Shortcut num_vars()
+  int num_vars() const { return MPCD(GetModel()).num_vars(); }
+  /// Shortcut is_var_original()
+  int is_var_original(int i) const
+  { return MPCD(GetModel()).is_var_original(i); }
   /// Shortcut lb(var)
   double lb(int var) const { return this->GetModel().lb(var); }
   /// Shortcut ub(var)
@@ -874,7 +930,7 @@ public:
     return ModelAPI::AcceptsNonconvexQC();
   }
 
-	/// Whether the ModelAPI accepts quadragtic cones
+  /// Whether the ModelAPI accepts quadratic cones
 	int ModelAPIAcceptsQuadraticCones() {
 		return
 				std::max(
@@ -902,6 +958,10 @@ private:
 		int passExpCones_ = 0;
 
     int relax_ = 0;
+
+    bool solcheckfail_ = false;
+    double solfeastol_ = 1e-6;
+    double solinttol_ = 1e-6;
   };
   Options options_;
 
@@ -975,6 +1035,19 @@ private:
 		GetEnv().AddOption("alg:relax relax",
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
+    GetEnv().AddOption("sol:chk:fail solcheckfail checkfail chk:fail",
+        "Fail if solution violates tolerances "
+        "(normally only warning).",
+        options_.solcheckfail_, false, true);
+    GetEnv().AddOption("sol:chk:feastol sol:chk:eps sol:eps chk:eps",
+        "Solution checking tolerance for objective values, variable "
+        "and constraint bounds. Default 1e-6. "
+                       "Violated logical constraints are always reported.",
+        options_.solfeastol_, 0.0, 1e100);
+    GetEnv().AddOption("sol:chk:inttol sol:chk:inteps sol:inteps chk:inteps",
+        "Solution checking tolerance for variables' integrality. "
+        "Default 1e-6. ",
+        options_.solinttol_, 0.0, 1e100);
   }
 
 
@@ -1040,7 +1113,15 @@ private:
   /// ValuePresolver: should be init before constraint keepers
   /// and links
   pre::ValuePresolver value_presolver_
-  {GetModel(), GetEnv(), graph_exporter_fn_};
+  {
+    GetModel(), GetEnv(), graph_exporter_fn_,
+        [this](
+        ArrayRef<double> x,
+        const pre::ValueMapDbl& y,
+        ArrayRef<double> obj) -> bool {
+      return this->CheckSolution(x, y, obj);
+    }
+  };
   pre::CopyLink copy_link_ { GetValuePresolver() }; // the copy links
   pre::One2ManyLink one2many_link_ { GetValuePresolver() }; // the 1-to-many links
   pre::NodeRange auto_link_src_item_;   // the source item for autolinking

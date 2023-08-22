@@ -31,6 +31,9 @@ public:
     return name;
   }
 
+  /// Is logical?
+  static bool IsLogical() { return false; }
+
   /// BodyType
   using BodyType = Body;
 
@@ -39,7 +42,7 @@ public:
 
   /// Constructor.
   /// By default (\a fSort = true), it sorts terms.
-  /// Pass \a fSort = false to skip if you complement the terms list
+  /// Pass \a fSort = false to skip if you populate the terms
   /// but do sorting later.
   /// @param le: linear / linear + higher-order terms
   /// @param rr: rhs or range
