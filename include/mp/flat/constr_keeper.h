@@ -30,21 +30,21 @@ static const mp::OptionValueInfo values_item_acceptance[] = {
 /// Violation summary for a class of vars/cons/objs
 struct ViolSummary {
   /// Check if this violation should be counted
-  void CheckViol(double val, double eps) {
-    if (val > eps) {
-      ++N_;
-      if (epsMax_ < val)
-        epsMax_ = val;
-    }
+  void CheckViol(
+      double val, double eps, const char* nm) {
+    if (val > eps)
+      CountViol(val, nm);
   }
   /// Count violation
-  void CountViol(double val) {
+  void CountViol(double val, const char* nm) {
     ++N_;
     if (epsMax_ < val)
       epsMax_ = val;
+    name_ = nm;
   }
   int N_ {0};
   double epsMax_ {0.0};
+  const char* name_ {nullptr};
 };
 
 /// Array of violation summaries.
@@ -62,7 +62,19 @@ struct SolCheck {
     : x_(x), y_(duals), obj_(obj),
       feastol_(feastol), inttol_(inttol) { }
   /// Any violations?
-  bool HasAnyViols() const { return hasAnyViol_; }
+  bool HasAnyViols() const
+  { return HasAnyConViols() || HasAnyObjViols(); }
+  /// Any constraint violations?
+  bool HasAnyConViols() const {
+    return viol_var_bnds_[0].N_ || viol_var_bnds_[1].N_
+        || viol_var_int_[0].N_ || viol_var_int_[1].N_
+        || viol_cons_alg_.size()
+        || viol_cons_log_.size();
+  }
+  /// Any objective value violations?
+  bool HasAnyObjViols() const
+  { return viol_obj_.N_; }
+
   /// Summary
   const std::string& GetReport() const { return report_; }
 
@@ -88,6 +100,13 @@ struct SolCheck {
   std::map< std::string, ViolSummArray<3> >&
   ConViolLog() { return viol_cons_log_; }
 
+  /// Obj viols
+  ViolSummary& ObjViols() { return viol_obj_; }
+
+  /// Set report
+  void SetReport(std::string rep)
+  { report_ = std::move(rep); }
+
 private:
   ArrayRef<double> x_;
   const pre::ValueMapDbl& y_;
@@ -95,7 +114,6 @@ private:
   double feastol_;
   double inttol_;
 
-  bool hasAnyViol_ = false;
   std::string report_;
 
   /// Variable bounds: orig, aux
@@ -595,23 +613,27 @@ public:
 	}
 
   /// Compute violations for this constraint type.
-  /// We do it for redefined ones too.
+  /// We do it for redefined (intermediate) ones too.
   void ComputeViolations(SolCheck& chk) {
     if (cons_.size()) {
       auto& conviolmap =
           cons_.front().con_.IsLogical() ?
-            chk.ConViolAlg() :
-            chk.ConViolLog();
-      auto& conviolarray =
-          conviolmap[cons_.front().con_.GetTypeName()];
+            chk.ConViolLog() :
+            chk.ConViolAlg();
       const auto& x = chk.x();
+      ViolSummArray<3>* conviolarray {nullptr};
       for (int i=(int)cons_.size(); i--; ) {
         auto viol = cons_[i].con_.ComputeViolation(x);
         if (viol > chk.GetFeasTol()) {
+          if (!conviolarray)
+            conviolarray =
+                &conviolmap[cons_.front().con_.GetTypeName()];
           /// Solver-side?
           /// TODO also original NL constraints (index 0)
-          int index = cons_[i].IsDeleted() ? 2 : 1;
-          conviolarray[index].CountViol(viol);
+          int index = cons_[i].IsDeleted() ? 1 : 2;
+          assert(index < (int)conviolarray->size());
+          (*conviolarray)[index].CountViol(
+                viol, cons_[i].con_.name());
         }
       }
     }

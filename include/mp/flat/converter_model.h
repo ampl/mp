@@ -61,6 +61,12 @@ public:
     var_names_storage_ = names;
   }
 
+  /// To be used only after names presolve
+  const char* var_name(int i) const {
+    return i<(int)var_names_storage_.size()
+        ? var_names_storage_[i].c_str() : nullptr;
+  }
+
   int num_vars() const
   { assert(check_vars()); return (int)var_lb_.size(); }
 

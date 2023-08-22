@@ -36,7 +36,8 @@ public:
   /// For functional constraints, result variable index
   int GetResultVar() const { return -1; }
   /// Compute violation
-  double ComputeViolation(const ArrayRef<double>& ) { return 0.0; }
+  double ComputeViolation(const ArrayRef<double>& ) const
+  { return 0.0; }
 
 private:
   std::string name_;

@@ -622,7 +622,8 @@ protected:
     // For now, do this via warnings?
     if (chk.HasAnyViols()) {
       if (options_.solcheckfail_)
-        MP_RAISE(chk.GetReport());
+        MP_RAISE_WITH_CODE(520,    // numeric error
+                           chk.GetReport());
       else
         AddWarning("SolutionCheck", chk.GetReport());
     }
@@ -634,13 +635,18 @@ protected:
       auto x = chk.x(i);
       bool aux = !MPCD( is_var_original(i) );
       chk.VarViolBnds().at(aux).CheckViol(
-                MPCD( lb(i) ) - x, options_.solfeastol_);
+            MPCD( lb(i) ) - x,
+            options_.solfeastol_,
+            GetModel().var_name(i));
       chk.VarViolBnds().at(aux).CheckViol(
-                x - MPCD( ub(i) ), options_.solfeastol_);
+            x - MPCD( ub(i) ),
+            options_.solfeastol_,
+            GetModel().var_name(i));
       if (is_var_integer(i))
         chk.VarViolIntty().at(aux).CheckViol(
-                  std::fabs(x - std::round(x)),
-                  options_.solinttol_);
+              std::fabs(x - std::round(x)),
+              options_.solinttol_,
+              GetModel().var_name(i));
     }
   }
 
@@ -649,10 +655,68 @@ protected:
     GetModel().ComputeViolations(chk);
   }
 
-  void CheckObjs(SolCheck& ) {
+  void CheckObjs(SolCheck& ) { }
+
+  void GenerateViolationsReport(SolCheck& chk) {
+    fmt::MemoryWriter wrt;
+    if (chk.HasAnyConViols()) {
+      wrt.write(
+            "Constraint violations "
+            "(sol:chk:feastol={}, sol:chk:inttol={}):\n",
+            options_.solfeastol_, options_.solinttol_);
+      Gen1Viol(chk.VarViolBnds().at(0), wrt,
+               "  - {} original variable(s) violate bounds, max by {}");
+      Gen1Viol(chk.VarViolBnds().at(1), wrt,
+               "  - {} auxiliary variable(s) violate bounds, max by {}");
+      Gen1Viol(chk.VarViolIntty().at(0), wrt,
+               "  - {} original variable(s) violate integrality, max by {}");
+      Gen1Viol(chk.VarViolIntty().at(1), wrt,
+               "  - {} auxiliary variable(s) violate integrality, max by {}");
+    }
+    GenConViol(chk.ConViolAlg(), wrt, "Algebraic");
+    GenConViol(chk.ConViolLog(), wrt, "Logical");
+    if (chk.HasAnyObjViols()) {
+      wrt.write("Objective value violations"
+                "(sol:chk:feastol={})\n",
+                options_.solfeastol_);
+      Gen1Viol(chk.ObjViols(), wrt,
+               "  - {} objective value(s) violated, max by {}");
+    }
+    chk.SetReport( wrt.str() );
   }
 
-  void GenerateViolationsReport(SolCheck& chk) { }
+  void Gen1Viol(
+      const ViolSummary& vs, fmt::MemoryWriter& wrt,
+      const std::string& format) {
+    if (vs.N_) {
+      wrt.write(format, vs.N_, vs.epsMax_);
+      if (vs.name_ && *vs.name_ != '\0')
+        wrt.write(" (item '{}')", vs.name_);
+      wrt.write("\n");
+    }
+  }
+
+  void GenConViol(
+      const std::map< std::string, ViolSummArray<3> >& cvmap,
+      fmt::MemoryWriter& wrt, const std::string& classnm) {
+    if (cvmap.size()) {
+      wrt.write(classnm + " constraint violations:\n");
+      for (const auto& cva: cvmap) {
+        Gen1Viol(cva.second.at(0), wrt,
+                 "  - {} original constraint(s) of type '"
+                 + std::string(cva.first)
+                 + "' violate bounds, max by {}");
+        Gen1Viol(cva.second.at(1), wrt,
+                 "  - {} reformulated constraint(s) of type '"
+                 + std::string(cva.first)
+                 + "' violate bounds, max by {}");
+        Gen1Viol(cva.second.at(2), wrt,
+                 "  - {} auxiliary constraint(s) of type '"
+                 + std::string(cva.first)
+                 + "' violate bounds, max by {}");
+      }
+    }
+  }
 
   //////////////////////////// UTILITIES /////////////////////////////////
   ///
@@ -961,7 +1025,7 @@ private:
 
     bool solcheckfail_ = false;
     double solfeastol_ = 1e-6;
-    double solinttol_ = 1e-6;
+    double solinttol_ = 1e-5;
   };
   Options options_;
 

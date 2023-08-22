@@ -296,10 +296,11 @@ public:
       const auto& mx = mv.GetVarValues();
       const auto& mo = mv.GetObjValues();
       if (mx.IsSingleKey()
-          && mx().size()          // solution available
-          && mo.IsSingleKey()) {
-        solchk_(mx(),
-                mv.GetConValues(), mo());
+          && mx().size()) {          // solution available
+        ArrayRef<double> objs;
+        if (mo.IsSingleKey())
+          objs = mo();
+        solchk_(mx(), mv.GetConValues(), objs);
       }
     }
     return ValuePresolverImpl::PostsolveSolution(mv);

@@ -38,13 +38,23 @@ public:
   /// Getters
   int get_binary_var() const { return b_; }
   int get_binary_value() const { return bv_; }
-  bool is_binary_value_1() const { return 1==get_binary_value(); }
+  bool is_binary_value_1() const
+  { return 1==get_binary_value(); }
   const Con& get_constraint() const { return con_; }
+
+  /// Compute violation
+  double ComputeViolation(const ArrayRef<double>& x) const {
+    assert(b_<(int)x.size());
+    auto xb = x[b_];
+    if (std::round(xb) == bv_)      // Implication needed
+      return con_.ComputeViolation(x);
+    return 0.0;
+  }
 
 
 private:
-  const int b_=-1;                            // the indicator variable
-  const int bv_=1;                            // the value, 0/1
+  const int b_=-1;                  // the indicator variable
+  const int bv_=1;                  // the value, 0/1
   const Con con_;
 };
 

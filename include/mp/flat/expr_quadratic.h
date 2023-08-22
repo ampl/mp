@@ -54,10 +54,10 @@ public:
   int var2(int i) const { return vars2_[i]; }
 
   /// Compute value given a dense vector of variable values
-  double ComputeValue(ArrayRef<double> x) const {
-    double s=0.0;
+  long double ComputeValue(const ArrayRef<double>& x) const {
+    long double s=0.0;
     for (size_t i=coefs().size(); i--; )
-      s += coefs()[i] * x[vars1()[i]] * x[vars2()[i]];
+      s += (long double)(coefs()[i]) * x[vars1()[i]] * x[vars2()[i]];
     return s;
   }
 
@@ -200,7 +200,7 @@ public:
   }
 
   /// Value at given variable vector
-  double ComputeValue(ArrayRef<double> x) const {
+  long double ComputeValue(const ArrayRef<double>& x) const {
     return LinTerms::ComputeValue(x) + QuadTerms::ComputeValue(x);
   }
 

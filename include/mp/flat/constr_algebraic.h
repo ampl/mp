@@ -70,6 +70,14 @@ public:
     return Body::ComputeValue(x) - RhsOrRange::lb();
   }
 
+  /// Compute violation
+  double
+  ComputeViolation(const ArrayRef<double>& x) const {
+    auto bd = Body::ComputeValue(x);
+    return std::max(
+          RhsOrRange::lb() - bd, bd - RhsOrRange::ub());
+  }
+
   /// Sorting and merging terms, some solvers require
   void sort_terms() { Body::sort_terms(); }
 
