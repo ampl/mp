@@ -223,7 +223,8 @@ DEF_STATIC_CONSTR_WITH_PRM( QuadraticConeConstraint, VarArray, DblParamArray,
                             " with factors p1..pn");
 /// Rotated quadratic cone
 DEF_STATIC_CONSTR_WITH_PRM( RotatedQuadraticConeConstraint, VarArray, DblParamArray,
-                            "Rotated quadratic cone p1*x1*p2*x2 >= sqrt((p3*x3)^2 + ...)),"
+                            "Rotated quadratic cone "
+                            "2 * p1*x1*p2*x2 >= (p3*x3)^2 + ...),"
                             " x1, x2 >= 0, with factors p1..pn");
 /// Exponential cone
 DEF_STATIC_CONSTR_WITH_PRM( ExponentialConeConstraint, VarArray3, DblParamArray3,

@@ -190,14 +190,6 @@ double ComputeViolation(
   return std::fabs(x[resvar] - ComputeValue(c, x));
 }
 
-template <class Args, class Params,
-          class NumOrLogic, class Id>
-template <class VarVec>
-double
-CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>
-::ComputeViolation(const VarVec& x) const
-{ return mp::ComputeViolation(*this, x); }
-
 
 /// A base class for numerical functional constraint.
 /// It provides default properties of such a constraint
@@ -286,6 +278,27 @@ public:
     return GetConstraint()==cc.GetConstraint();
   }
 
+  /// Compute violation of a conditional constraint.
+  /// If the subconstr is violated but should hold,
+  /// return the exact gap, despite this is a logical constraint.
+  /// If the subconstr holds but should not,
+  /// return the opposite gap. Similar to Indicator.
+  template <class VarVec>
+  double ComputeViolation(const VarVec& x) {
+    auto viol = GetConstraint().ComputeViolation(x);
+    bool ccon_valid = viol<=0.0;
+    bool has_arg = x[GetResultVar()] >= 0.5;
+    switch (this->GetContext().GetValue()) {
+    case Context::CTX_MIX:    // Viol is non-positive if holds
+      return has_arg == ccon_valid ? 0.0 : std::fabs(viol);
+    case Context::CTX_POS:
+      return has_arg <= ccon_valid ? 0.0 : viol;
+    case Context::CTX_NEG:
+      return has_arg >= ccon_valid ? 0.0 : -viol;
+    default:
+      return INFINITY;
+    }
+  }
 };
 
 ////////////////////////////////////////////////////////////////////////

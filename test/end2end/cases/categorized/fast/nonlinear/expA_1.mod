@@ -4,14 +4,14 @@
 # expA_1.mod
 # -------------------------------------------------------------
 
-param ubx integer := 10;
-param uby integer := 20;
+param ubx integer := 100;
+param uby integer := 200;
 
-var x  >= 0, <= ubx;
-var y  >= -41, <= uby;
+var x  >= -100, <= ubx;
+var y  >= -205, <= uby;
 
 maximize TotalSum:
-    x-y;
+    -x-y;
 
 subj to ExpA: 
     y >= 0.1 ^ x;

@@ -3,7 +3,7 @@
     "name" : "expA_1",
     "tags" : ["nonlinear"],
     "values": {
-      "if abs(_obj[1]-10)<=0.01 then 1 else 0": 1
+      "if abs(_obj[1]+0.7977905982)<=0.01 then 1 else 0": 1
     }
   },
   {
@@ -11,7 +11,7 @@
     "tags" : ["nonlinear", "check_pl_approx_expA"],
     "options": { "ANYSOLVER_options": "acc:expa=1" },
     "values": {
-      "if abs(_obj[1]-10)<=0.01 then 1 else 0": 1
+      "if abs(_obj[1]+0.7977905982)<=0.01 then 1 else 0": 1
     }
   },
   {

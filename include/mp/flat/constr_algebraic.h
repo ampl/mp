@@ -70,11 +70,12 @@ public:
     return Body::ComputeValue(x) - RhsOrRange::lb();
   }
 
-  /// Compute violation
+  /// Compute violation.
+  /// Negative if if holds with slack.
   double
   ComputeViolation(const ArrayRef<double>& x) const {
     auto bd = Body::ComputeValue(x);
-    return std::max(
+    return std::max(      // same for strict cmp?
           RhsOrRange::lb() - bd, bd - RhsOrRange::ub());
   }
 

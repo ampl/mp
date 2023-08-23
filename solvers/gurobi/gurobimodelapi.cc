@@ -225,7 +225,7 @@ void GurobiModelAPI::AddConstraint(const TanConstraint &cc)  {
 }
 
 void GurobiModelAPI::AddConstraint(const PLConstraint& plc) {
-  PLPoints plp(plc.GetParameters());
+  const auto& plp = plc.GetParameters().GetPLPoints();
   GRB_CALL( GRBaddgenconstrPWL(model(), plc.name(),
               plc.GetArguments()[0], plc.GetResultVar(),
               plp.x_.size(), plp.x_.data(), plp.y_.data()) );

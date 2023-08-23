@@ -359,11 +359,15 @@ public:
   /// Construct from PLPoints
   PLConParams(PLPoints plp) : plp_(std::move(plp)) { }
   /// Produce PLPoints, either stored or from PLSlopes
-  operator PLPoints() const { return plp_.empty() ? pls_ : plp_; }
+  const PLPoints& GetPLPoints() const {
+    if (plp_.empty())
+      plp_ = pls_;
+    return plp_;
+  }
 
 private:
   PLSlopes pls_;
-  PLPoints plp_;
+  mutable PLPoints plp_;
 };
 
 

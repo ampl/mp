@@ -29,7 +29,7 @@ public:
 
   /// Convert in any context
   void Convert(const ItemType& cc, int ) {
-    points_ = cc.GetParameters();      // extract PLPoints
+    points_ = cc.GetParameters().GetPLPoints();
     i0=0;                              // first breakpoint
     i1=points_.x_.size()-1;            // last breakpoint
     y = cc.GetResultVar();

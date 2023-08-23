@@ -235,28 +235,116 @@ double ComputeValue(const TanhConstraint& con, const VarVec& x) {
   return std::tanh(x[con.GetArguments()[0]]);
 }
 
+/// Compute result of the asinh constraint.
+template <class VarVec>
+double ComputeValue(const AsinhConstraint& con, const VarVec& x) {
+  return std::asinh(x[con.GetArguments()[0]]);
+}
+
+/// Compute result of the acosh constraint.
+template <class VarVec>
+double ComputeValue(const AcoshConstraint& con, const VarVec& x) {
+  return std::acosh(x[con.GetArguments()[0]]);
+}
+
+/// Compute result of the atanh constraint.
+template <class VarVec>
+double ComputeValue(const AtanhConstraint& con, const VarVec& x) {
+  return std::atanh(x[con.GetArguments()[0]]);
+}
+
 /// Compute result of a conditional constraint.
-/// Actually, for violation itself, we could do this:
-/// If the subconstr is violated but should hold,
-/// return the exact gap, despite this is a logical constraint.
-/// If the subconstr holds but should not, return 0.0.
+/// This is not used to compute violation.
 template <class Con, class VarVec>
 double ComputeValue(
     const ConditionalConstraint<Con>& con, const VarVec& x) {
   auto viol = con.GetConstraint().ComputeViolation(x);
   bool ccon_valid = viol<=0.0;
   bool has_arg = x[con.GetResultVar()] >= 0.5;
-  switch (con.GetContext()) {
+  switch (con.GetContext().GetValue()) {
   case Context::CTX_MIX:
     return has_arg == ccon_valid;
   case Context::CTX_POS:
-    return has_arg < ccon_valid;
+    return has_arg <= ccon_valid;
   case Context::CTX_NEG:
-    return has_arg > ccon_valid;
+    return has_arg >= ccon_valid;
   default:
     return INFINITY;
   }
 }
+
+/// Compute violation of the QuadraticCone constraint.
+template <class VarVec>
+double ComputeViolation(
+    const QuadraticConeConstraint& con, const VarVec& x) {
+  const auto& args = con.GetArguments();
+  const auto& params = con.GetParameters();
+  assert(args.size()==params.size());
+  double sum = 0.0;
+  for (auto i=args.size(); --i; )
+    sum += std::pow( params[i]*x[args[i]], 2.0 );
+  return std::sqrt(sum) - params[0]*x[args[0]];
+}
+
+/// Compute violation of the RotatedQuadraticCone constraint.
+template <class VarVec>
+double ComputeViolation(
+    const RotatedQuadraticConeConstraint& con, const VarVec& x) {
+  const auto& args = con.GetArguments();
+  const auto& params = con.GetParameters();
+  assert(args.size()==params.size());
+  double sum = 0.0;
+  for (auto i=args.size(); --i>1; )
+    sum += std::pow( params[i]*x[args[i]], 2.0 );
+  return sum
+      - 2.0 * params[0]*x[args[0]] * params[1]*x[args[1]];
+}
+
+/// Compute violation of the ExponentialCone constraint.
+template <class VarVec>        // ax >= by exp(cz / (by))
+double ComputeViolation(       // where ax, by >= 0
+    const ExponentialConeConstraint& con, const VarVec& x) {
+  const auto& args = con.GetArguments();
+  const auto& params = con.GetParameters();
+  auto ax = params[0]*x[args[0]];
+  auto by = params[1]*x[args[1]];
+  if (0.0==std::fabs(by))
+    return -ax;
+  auto cz = params[2]*x[args[2]];
+  return by * std::exp(cz / by) - ax;
+}
+
+/// Compute result of the PL constraint.
+template <class VarVec>
+double ComputeValue(const PLConstraint& con, const VarVec& x) {
+  const auto& plp = con.GetParameters().GetPLPoints();
+  assert(!plp.empty());
+  auto x0 = x[con.GetArguments()[0]];        // position
+  if (x0<plp.x_.front())
+    return plp.y_.front()
+        - plp.PreSlope()*(plp.x_.front() - x0);
+  if (x0>plp.x_.back())
+    return plp.y_.back()
+        + plp.PostSlope()*(x0 - plp.x_.back());
+  int i0=0;
+  for ( ; x0 > plp.x_[i0]; ++i0);
+  return plp.x_[i0]==x0
+      ? plp.y_[i0]
+        : plp.y_[i0]
+        + (plp.y_[i0+1]-plp.y_[i0])
+      * (x0-plp.x_[i0]) / (plp.x_[i0+1]-plp.x_[i0]);
+}
+
+/// Should be here,
+/// after ComputeViolation() is specialized
+/// for some constraints.
+template <class Args, class Params,
+          class NumOrLogic, class Id>
+template <class VarVec>
+double
+CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>
+::ComputeViolation(const VarVec& x) const
+{ return mp::ComputeViolation(*this, x); }
 
 
 }  // namespace mp

@@ -141,7 +141,7 @@ void CplexModelAPI::AddConstraint(const IndicatorConstraintLinGE &ic)  {
 }
 
 void CplexModelAPI::AddConstraint(const PLConstraint& plc) {
-  PLPoints plp(plc.GetParameters());
+  const auto& plp = plc.GetParameters().GetPLPoints();
   CPLEX_CALL( CPXaddpwl(env(), lp(),
               plc.GetResultVar(), plc.GetArguments()[0],
               plp.PreSlope(), plp.PostSlope(),
