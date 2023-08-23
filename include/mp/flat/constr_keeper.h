@@ -14,7 +14,7 @@
 #include "mp/flat/constr_hash.h"
 #include "mp/flat/redef/redef_base.h"
 #include "mp/valcvt-node.h"
-#include "mp/flat/constr_viol.h"
+#include "mp/flat/constr_eval.h"
 
 namespace mp {
 

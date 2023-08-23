@@ -57,7 +57,7 @@ DEF_LOGICAL_FUNC_CONSTR( AllDiffConstraint, VarArray,
 ////////////////////////////////////////////////////////////////////////
 DEF_NUMERIC_FUNC_CONSTR_WITH_PRM( NumberofConstConstraint,
                                   VarArray, DblParamArray1,
-                                  "numberof_const(k (=x0), {x1...xn})");
+                                  "numberof_const(k, {x0...xn})");
 
 ////////////////////////////////////////////////////////////////////////
 DEF_NUMERIC_FUNC_CONSTR( NumberofVarConstraint, VarArray,
