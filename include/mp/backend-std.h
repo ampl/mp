@@ -22,7 +22,6 @@
 #define STD_BACKEND_H_
 
 #include <cmath>
-#include <limits>
 #include <functional>
 
 #include "mp/clock.h"
@@ -584,10 +583,10 @@ protected:
 
   /// AMPL's inf
   static constexpr double AMPLInf()
-  { return std::numeric_limits<double>::infinity(); }
+  { return INFINITY; }
   /// AMPL's -inf
   static constexpr double AMPLMinusInf()
-  { return -std::numeric_limits<double>::infinity(); }
+  { return -INFINITY; }
 
 
 public:

@@ -48,7 +48,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
-#include <limits>
+#include <cmath>
 #include <string>
 
 namespace mp {
@@ -1823,7 +1823,7 @@ void NLReader<Reader, Handler>::ReadBounds() {
   double lb = 0, ub = 0;
   BoundHandler bh(*this);
   int num_bounds = bh.num_items();
-  double infinity = std::numeric_limits<double>::infinity();
+  double infinity = INFINITY;
   for (int i = 0; i < num_bounds; ++i) {
     switch (reader_.ReadChar() - '0') {
     case RANGE:

@@ -8,6 +8,9 @@
 #include <utility>
 #include <typeinfo>
 
+#include "mp/format.h"
+#include "mp/error.h"
+
 #include "mp/flat/context.h"
 #include "mp/arrayref.h"
 
@@ -104,6 +107,7 @@ using DblParamArray3 = ParamArrayN<double, 3>;
 /// Variable-length parameter array
 using DblParamArray = std::vector<double>;
 
+
 /// A functional constraint with given arguments
 /// and further info as parameters
 /// @param Args: arguments type
@@ -151,7 +155,48 @@ public:
   const Parameters& GetParameters() const { return params_; }
   /// Get Parameters&
   Parameters& GetParameters() { return params_; }
+
+  /// Compute violation
+  template <class VarVec>
+  double ComputeViolation(const VarVec& x) const;
 };
+
+
+/// Dummy template: compute result of functional constraint.
+/// Should be implemented for proper functional specializations,
+/// but has no sense for conic constraints, for example.
+template <class Args, class Params,
+          class NumOrLogic, class Id, class VarVec>
+double ComputeValue(
+    const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>& ,
+    const VarVec& ) {
+  MP_RAISE(fmt::format("ComputeValue({}) not implemented.",
+                       typeid(
+                         CustomFunctionalConstraint<Args,
+                         Params, NumOrLogic, Id>).name()));
+  return 0.0;
+}
+
+/// Compute violation of functional constraint.
+/// Can only be used for proper functional constraints,
+/// should be redefined for cones.
+template <class Args, class Params,
+          class NumOrLogic, class Id, class VarVec>
+double ComputeViolation(
+    const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>& c,
+    const VarVec& x) {
+  auto resvar = c.GetResultVar();
+  assert(resvar < (int)x.size());
+  return std::fabs(x[resvar] - ComputeValue(c, x));
+}
+
+template <class Args, class Params,
+          class NumOrLogic, class Id>
+template <class VarVec>
+double
+CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>
+::ComputeViolation(const VarVec& x) const
+{ return mp::ComputeViolation(*this, x); }
 
 
 /// A base class for numerical functional constraint.

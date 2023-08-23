@@ -394,7 +394,7 @@ EvalResult NLSolverTest::Solve(
   info.num_vars = info.num_nl_integer_vars_in_cons = 4;
   info.num_logical_cons = 1;
   pb.SetInfo(info);
-  double inf = std::numeric_limits<double>::infinity();
+  double inf = INFINITY;
   pb.AddVar(need_result ? -inf : 0, need_result ? inf : 0, var::INTEGER);
   pb.AddVar(var1, var1, var::INTEGER);
   pb.AddVar(var2, var2, var::INTEGER);
@@ -413,7 +413,7 @@ EvalResult NLSolverTest::Eval(
   info.num_con_nonzeros = 1;
   info.num_common_exprs_in_objs = 1;
   SetInfo(pb, info);
-  auto inf = std::numeric_limits<double>::infinity();
+  auto inf = INFINITY;
   pb.AddVar(-inf, inf, mp::var::INTEGER);
   pb.AddVar(var1, var1, mp::var::INTEGER);
   pb.AddVar(var2, var2, mp::var::INTEGER);
@@ -1495,7 +1495,7 @@ TEST_F(NLSolverTest, ZeroUB) {
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_objs = 1;
   pb.SetInfo(info);
-  pb.AddVar(-std::numeric_limits<double>::infinity(), 0, var::CONTINUOUS);
+  pb.AddVar(-INFINITY, 0, var::CONTINUOUS);
   pb.AddObj(obj::MAX, NumericExpr());
   pb.obj(0).set_linear_expr(1).AddTerm(0, 1);
   EXPECT_EQ(0, Solve(pb).obj_value());

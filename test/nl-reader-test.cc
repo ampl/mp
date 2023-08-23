@@ -25,6 +25,7 @@
 // Include the source file to test the implementation.
 #include "../src/nl-reader.cc"
 
+#include <cmath>
 #include <climits>
 #include <cstring>
 
@@ -488,7 +489,7 @@ class TestNLHandler {
 
   void WriteBounds(char type, int index, double lb, double ub) {
     WriteSep();
-    double infinity = std::numeric_limits<double>::infinity();
+    double infinity = INFINITY;
     if (lb != -infinity && lb != ub)
       log << lb << " <= ";
     log << type << index;
@@ -1922,7 +1923,7 @@ MATCHER_P2(MatchComplInfo, lb, ub, "") {
 }
 
 TEST_F(NLProblemBuilderTest, OnComplementarity) {
-  double inf = std::numeric_limits<double>::infinity();
+  double inf = INFINITY;
   EXPECT_CALL(builder, SetComplementarity(66, 77, MatchComplInfo(0, inf)));
   adapter.OnComplementarity(66, 77, mp::ComplInfo(1));
 }

@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "mosekmodelapi.h"
 
 
@@ -29,8 +31,8 @@ void MosekModelAPI::AddVariables(const VarArrayDef& v) {
   MOSEK_CCALL(MSK_appendvars(lp(), v.size()));
   for (size_t i = v.size(); i--; ) {
     MSKboundkeye k;
-    bool freelb = v.plb()[i] == -std::numeric_limits<double>::infinity();
-    bool freeub = v.pub()[i] == std::numeric_limits<double>::infinity();
+    bool freelb = v.plb()[i] == -INFINITY;
+    bool freeub = v.pub()[i] == INFINITY;
     if (freelb && freeub)
       k = MSK_BK_FR;
     else if (freelb == freeub)
@@ -119,16 +121,16 @@ void MosekModelAPI::AddConstraint(const LinConRange& lc)
   double ub = lc.ub();
   MSKboundkey_enum key;
 
-  if (lb == -std::numeric_limits<double>::infinity())
+  if (lb == -INFINITY)
   {
-    if (ub == std::numeric_limits<double>::infinity())
+    if (ub == INFINITY)
       key = MSK_BK_FR;
     else
       key = MSK_BK_UP;
   }
   else
   {
-    if (ub == std::numeric_limits<double>::infinity())
+    if (ub == INFINITY)
       key = MSK_BK_LO;
     else if (lb == ub)
       key = MSK_BK_FX;
@@ -178,16 +180,16 @@ void MosekModelAPI::AddConstraint(const QuadConRange& qc) {
   double ub = qc.ub();
   MSKboundkey_enum key;
 
-  if (lb == -std::numeric_limits<double>::infinity())
+  if (lb == -INFINITY)
   {
-    if (ub == std::numeric_limits<double>::infinity())
+    if (ub == INFINITY)
       key = MSK_BK_FR;
     else
       key = MSK_BK_UP;
   }
   else
   {
-    if (ub == std::numeric_limits<double>::infinity())
+    if (ub == INFINITY)
       key = MSK_BK_LO;
     else if (lb == ub)
       key = MSK_BK_FX;

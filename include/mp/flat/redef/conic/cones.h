@@ -8,7 +8,6 @@
 #define MP_FLAT_CVT_CONES_H
 
 #include <cmath>
-#include <limits>
 #include <vector>
 #include <cassert>
 

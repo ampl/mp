@@ -21,7 +21,6 @@
  */
 
 #include <functional>
-#include <limits>
 #include <sstream>
 #include <cmath>
 #include <cstring>
@@ -565,7 +564,7 @@ TEST(FunctionTest, DifferentiatorDetectsNaN) {
   Differentiator diff;
   EXPECT_EQ(0, std::bind2nd(ptr_fun(Hypot), 0)(0));
   EXPECT_NE(0, isnan(diff(std::bind2nd(ptr_fun(Hypot), 0), 0)));
-  EXPECT_EQ(-std::numeric_limits<double>::infinity(), std::log(0.0));
+  EXPECT_EQ(-INFINITY, std::log(0.0));
   EXPECT_NE(0, isnan(diff(GetDoubleFun(std::log), 0)));
 }
 

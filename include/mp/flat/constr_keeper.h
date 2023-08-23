@@ -9,10 +9,12 @@
 #include "mp/common.h"
 #include "mp/format.h"
 #include "mp/env.h"
+
 #include "mp/flat/model_api_base.h"
 #include "mp/flat/constr_hash.h"
 #include "mp/flat/redef/redef_base.h"
 #include "mp/valcvt-node.h"
+#include "mp/flat/constr_viol.h"
 
 namespace mp {
 

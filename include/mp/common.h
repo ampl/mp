@@ -23,6 +23,7 @@
 #ifndef MP_COMMON_H_
 #define MP_COMMON_H_
 
+#include <cmath>
 #include <cstddef>     // for std::size_t
 
 #include "mp/error.h"  // for MP_ASSERT
@@ -86,13 +87,13 @@ class ComplInfo {
   /** Constraint lower bound. */
   double con_lb() const {
     return (flags_ & INF_LB) != 0 ?
-          -std::numeric_limits<double>::infinity() : 0;
+          -INFINITY : 0;
   }
 
   /** Constraint upper bound. */
   double con_ub() const {
     return (flags_ & INF_UB) != 0 ?
-          std::numeric_limits<double>::infinity() : 0;
+          INFINITY : 0;
   }
 };
 

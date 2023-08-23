@@ -40,7 +40,7 @@ TEST(CommmonTest, ComplInfo) {
   EXPECT_NE(0, ComplInfo::INF_LB);
   EXPECT_NE(0, ComplInfo::INF_UB);
   EXPECT_NE(ComplInfo::INF_LB, ComplInfo::INF_UB);
-  double inf = std::numeric_limits<double>::infinity();
+  double inf = INFINITY;
   for (std::size_t i = 0, n = sizeof(flags) / sizeof(*flags); i < n; ++i) {
     int f = flags[i];
     ComplInfo info(f);
