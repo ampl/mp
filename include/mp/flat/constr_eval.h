@@ -327,12 +327,12 @@ double ComputeValue(const PLConstraint& con, const VarVec& x) {
     return plp.y_.back()
         + plp.PostSlope()*(x0 - plp.x_.back());
   int i0=0;
-  for ( ; x0 > plp.x_[i0]; ++i0);
+  for ( ; x0 > plp.x_[i0]; ++i0) ;
   return plp.x_[i0]==x0
       ? plp.y_[i0]
-        : plp.y_[i0]
-        + (plp.y_[i0+1]-plp.y_[i0])
-      * (x0-plp.x_[i0]) / (plp.x_[i0+1]-plp.x_[i0]);
+        : (plp.y_[i0-1]
+           + (plp.y_[i0]-plp.y_[i0-1])
+        * (x0-plp.x_[i0-1]) / (plp.x_[i0]-plp.x_[i0-1]));
 }
 
 /// Should be here,
