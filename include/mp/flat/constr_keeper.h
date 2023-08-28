@@ -214,6 +214,11 @@ public:
   virtual const char* GetAcceptanceOptionNames() const
   { return solver_opt_nm_; }
 
+  /// Constraint type short name.
+  /// Ideally should be in the constraint itself,
+  /// but currently we derive it from acceptance options.
+  virtual const char* GetShortTypeName() const;
+
   /// See what options are available for this constraint:
   /// whether it is accepted natively by ModelAPI and/or can be
   /// converted by the Converter.
@@ -294,8 +299,24 @@ private:
   pre::ValueNode value_node_;
   const char* const constr_name_;
   const char* const solver_opt_nm_;
+  mutable std::string type_name_short_;
   int acceptance_level_ {-1};
 };
+
+const char*
+BasicConstraintKeeper::GetShortTypeName() const {
+  if (type_name_short_.empty()) {
+    std::string acc_opt = GetAcceptanceOptionNames();
+    auto word_end = std::min(acc_opt.find(' '),
+                             acc_opt.size());
+    auto colon_pos = acc_opt.find(':');
+    if (colon_pos>word_end)
+      colon_pos = 0;
+    type_name_short_ = acc_opt.substr(
+          colon_pos, word_end-colon_pos);
+  }
+  return type_name_short_.c_str();
+}
 
 
 /// Full id of a constraint: CK + index
@@ -654,7 +675,7 @@ public:
           if (viol > chk.GetFeasTol()) {
             if (!conviolarray)
               conviolarray =
-                  &conviolmap[cons_.front().con_.GetTypeName()];
+                  &conviolmap[GetShortTypeName()];
             /// index==2 <==> solver-side constraint.
             /// TODO also original NL constraints (index 0)
             int index = cons_[i].IsBridged() ? 1 : 2;
