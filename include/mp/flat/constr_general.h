@@ -244,6 +244,17 @@ public:
   /// Get variable
   int GetVariable() const { return compl_var_; }
 
+  /// Compute violation
+  template <class VarInfo>
+  double ComputeViolation(const VarInfo& x) const {
+    auto ve = compl_expr_.ComputeValue(x);
+    if (x.is_at_lb(compl_var_))
+      return -ve;
+    else if (x.is_at_ub(compl_var_))
+      return ve;
+    return std::fabs(ve);
+  }
+
 
 private:
   ExprType compl_expr_;

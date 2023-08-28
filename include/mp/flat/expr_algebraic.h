@@ -9,6 +9,8 @@
 #include <string>
 #include <cmath>
 
+#include "mp/arrayref.h"
+
 namespace mp {
 
 /// A template algebraic expression:
@@ -72,6 +74,10 @@ public:
   void constant_term(double v) { constant_term_ = v; }
   /// Add to constant
   void add_to_constant(double a) { constant_term_ += a; }
+
+  /// Compute value given a dense vector of variable values
+  double ComputeValue(const ArrayRef<double>& x) const
+  { return Body::ComputeValue(x) + constant_term(); }
 
   /// Negate the ae
   void negate() {

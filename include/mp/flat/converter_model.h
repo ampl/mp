@@ -70,6 +70,7 @@ public:
   int num_vars() const
   { assert(check_vars()); return (int)var_lb_.size(); }
 
+  /// Not auxiliary?
   bool is_var_original(int i) const
   { return i<num_vars_orig_; }
 
@@ -88,6 +89,10 @@ public:
     return var_type_[v];
   }
 
+  const std::vector<double>& var_lb_vec() const
+  { return var_lb_; }
+  const std::vector<double>& var_ub_vec() const
+  { return var_ub_; }
   const std::vector<var::Type>& var_type_vec() const
   { return var_type_; }
 

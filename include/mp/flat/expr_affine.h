@@ -158,6 +158,6 @@ private:
 /// Typedef AffineExpr
 using AffineExpr = AlgebraicExpression<LinTerms>;
 
-} // namepsace mp
+} // namespace mp
 
 #endif // AFFINE_EXPR_H

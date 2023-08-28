@@ -61,9 +61,14 @@ public:
   /// Constructor
   VarInfo(double ft,
           std::vector<double> x,
-          ArrayRef<var::Type> type)
+          ArrayRef<var::Type> type,
+          ArrayRef<double> lb, ArrayRef<double> ub)
     : feastol_(ft), x_(std::move(x)), x_ref_(x_),
-      type_(type) { }
+      type_(type), lb_(lb), ub_(ub) {
+    assert(x_.size()>=type_.size());  // feasrelax can add more
+    assert(type_.size()==lb_.size());
+    assert(type_.size()==ub_.size());
+  }
   /// Access variable value
   double operator[]( int i ) const {
     assert(i>=0 && i<(int)x_.size());
@@ -89,6 +94,13 @@ public:
         (*this)[i]
         >= (is_var_int(i) ? 0.5 : feastol());
   }
+  /// Is at lb?
+  bool is_at_lb(int i) const
+  { return (*this)[i] - lb_[i] <= feastol(); }
+  /// Is at ub?
+  bool is_at_ub(int i) const
+  { return -((*this)[i] - ub_[i]) <= feastol(); }
+
   /// Feasibility tolerance
   double feastol() const { return feastol_; }
   /// x() as ArrayRef
@@ -100,6 +112,8 @@ private:
   const std::vector<double> x_;   // can be rounded, etc.
   const ArrayRef<double> x_ref_;
   const ArrayRef<var::Type> type_;
+  const ArrayRef<double> lb_;
+  const ArrayRef<double> ub_;
 };
 
 
@@ -110,8 +124,9 @@ struct SolCheck {
            const pre::ValueMapDbl& duals,
            ArrayRef<double> obj,
            ArrayRef<var::Type> vtype,
+           ArrayRef<double> lb,  ArrayRef<double> ub,
            double feastol, double inttol)
-    : x_(feastol, x, vtype), y_(duals), obj_(obj),
+    : x_(feastol, x, vtype, lb, ub), y_(duals), obj_(obj),
       feastol_(feastol), inttol_(inttol) { }
   /// Any violations?
   bool HasAnyViols() const
