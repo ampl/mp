@@ -273,8 +273,11 @@ public:
   virtual void SetChosenAcceptanceLevel(
       ConstraintAcceptanceLevel acc) { acceptance_level_ = acc;}
 
-	/// Mark as deleted, use index only
-	virtual void MarkAsDeleted(int i) = 0;
+  /// Mark as bridged. Use index only.
+  virtual void MarkAsBridged(int i) = 0;
+
+  /// Mark as unused. Use index only.
+  virtual void MarkAsUnused(int i) = 0;
 
   /// Copy names from ValueNodes
   virtual void CopyNamesFromValueNodes() = 0;
@@ -491,7 +494,7 @@ public:
 
   /// Report how many will be added to Backend
   int GetNumberOfAddable() const override {
-    return (int)cons_.size()-n_bridged_;
+    return (int)cons_.size()-n_bridged_or_unused_;
   }
 
   /// Group number of this constraint type in the Backend.
@@ -527,16 +530,24 @@ protected:
   struct Container {
     Container(Constraint&& c) noexcept : con_(std::move(c)) { }
 
-    bool IsDeleted() const { return IsBridged(); }
+    /// Bridged (reformulated or just unused.)
+    /// If only reformulated, can still be checked
+    /// for solution correctness.
     bool IsBridged() const { return is_bridged_; }
+    /// Mark as bridged
     void MarkAsBridged() { is_bridged_=true; }
 
-    /// Depth in the redef tree
-    int GetDepth() const { return depth_; }
+    /// Unused (should not be checked)
+    bool IsUnused() const { return is_unused_; }
+    /// Mark as unused
+    void MarkAsUnused() {
+      MarkAsBridged();
+      is_unused_=true;
+    }
 
     Constraint con_;
     bool is_bridged_ = false;
-    int depth_ {0};
+    bool is_unused_ = false;
   };
 
 	/// Convert all new constraints of this type
@@ -580,21 +591,34 @@ protected:
   void ConvertConstraint(Container& cnt, int i) {
     assert(!cnt.IsBridged());
     GetConverter().RunConversion(cnt.con_, i);
-		MarkAsDeleted(cnt, i);
+    MarkAsBridged(cnt, i);
   }
 
-	/// Mark item as deleted
-	void MarkAsDeleted(Container& cnt, int ) {
+  /// Mark item as reformulated
+  void MarkAsBridged(Container& cnt, int ) {
 		cnt.MarkAsBridged();
-		++n_bridged_;
+    ++n_bridged_or_unused_;
 	}
+
+  /// Mark item as unused
+  void MarkAsUnused(Container& cnt, int ) {
+    cnt.MarkAsUnused();
+    ++n_bridged_or_unused_;
+  }
 
 
 public:
-	/// Mark as deleted, use index only
-	void MarkAsDeleted(int i) override {
-		MarkAsDeleted(cons_.at(i), i);
+  /// Mark cons[\a i] as reformulated.
+  /// Use index only.
+  void MarkAsBridged(int i) override {
+    MarkAsBridged(cons_.at(i), i);
 	}
+
+  /// Mark cons[\a i] as unused.
+  /// Use index only.
+  void MarkAsUnused(int i) override {
+    MarkAsUnused(cons_.at(i), i);
+  }
 
   /// Copy names from ValueNodes
   void CopyNamesFromValueNodes() override {
@@ -611,12 +635,12 @@ public:
 		for (int i=0; i<(int)cons_.size(); ++i)
 			if (!cons_[i].IsBridged())
 				if (fn(cons_[i].con_, i))
-					MarkAsDeleted(cons_[i], i);
+          MarkAsBridged(cons_[i], i);
 	}
 
   /// Compute violations for this constraint type.
   /// We do it for redefined (intermediate) ones too.
-  void ComputeViolations(SolCheck& chk) {
+  void ComputeViolations(SolCheck& chk) override {
     if (cons_.size()) {
       auto& conviolmap =
           cons_.front().con_.IsLogical() ?
@@ -625,17 +649,19 @@ public:
       const auto& x = chk.x();
       ViolSummArray<3>* conviolarray {nullptr};
       for (int i=(int)cons_.size(); i--; ) {
-        auto viol = cons_[i].con_.ComputeViolation(x);
-        if (viol > chk.GetFeasTol()) {
-          if (!conviolarray)
-            conviolarray =
-                &conviolmap[cons_.front().con_.GetTypeName()];
-          /// Solver-side?
-          /// TODO also original NL constraints (index 0)
-          int index = cons_[i].IsDeleted() ? 1 : 2;
-          assert(index < (int)conviolarray->size());
-          (*conviolarray)[index].CountViol(
-                viol, cons_[i].con_.name());
+        if (!cons_[i].IsUnused()) {
+          auto viol = cons_[i].con_.ComputeViolation(x);
+          if (viol > chk.GetFeasTol()) {
+            if (!conviolarray)
+              conviolarray =
+                  &conviolmap[cons_.front().con_.GetTypeName()];
+            /// index==2 <==> solver-side constraint.
+            /// TODO also original NL constraints (index 0)
+            int index = cons_[i].IsBridged() ? 1 : 2;
+            assert(index < (int)conviolarray->size());
+            (*conviolarray)[index].CountViol(
+                  viol, cons_[i].con_.name());
+          }
         }
       }
     }
@@ -666,7 +692,7 @@ private:
   Converter& cvt_;
   std::deque<Container> cons_;
   int i_cvt_last_ = -1;               // Last converted constraint.
-  int n_bridged_ = 0;                 // Number of converted items,
+  int n_bridged_or_unused_ = 0;       // Number of converted items,
                                       // they won't go to Backend
   const std::string desc_ {
     std::string("ConstraintKeeper< ") +

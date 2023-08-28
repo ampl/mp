@@ -169,7 +169,7 @@ public:
 		auto& ck = GET_CONSTRAINT_KEEPER( FuncConstraint );
     ConInfo ci{&ck, i};
     ReplaceInitExpression(res_var, ci);
-		MarkAsDeleted(ci_old);
+    MarkAsBridged(ci_old);
   }
 
 
@@ -189,7 +189,7 @@ public:
 		assert(VarUsageRef(v)>0);
 		if (! (--VarUsageRef(v))) {
 			if (HasInitExpression(v))
-				MarkAsDeleted(GetInitExpression(v));
+        MarkAsUnused(GetInitExpression(v));
 		}
 	}
 
@@ -443,10 +443,16 @@ public:
 		return GET_CONST_CONSTRAINT_KEEPER(Constraint).GetConstraint(i);
 	}
 
-	/// Delete constraint
-	void MarkAsDeleted(const ConInfo& ci) {
-		ci.GetCK()->MarkAsDeleted(ci.GetIndex());
+  /// Mark constraint as reformulated
+  void MarkAsBridged(const ConInfo& ci) {
+		ci.GetCK()->MarkAsBridged(ci.GetIndex());
 	}
+
+  /// Mark constraint as unused
+  void MarkAsUnused(const ConInfo& ci) {
+    ci.GetCK()->MarkAsUnused(ci.GetIndex());
+  }
+
 
 protected:
   USE_BASE_MAP_FINDERS( BaseConverter )
