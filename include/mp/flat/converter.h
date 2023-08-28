@@ -617,7 +617,9 @@ protected:
                  GetModel().var_type_vec(),
                  GetModel().var_lb_vec(),
                  GetModel().var_ub_vec(),
-                 options_.solfeastol_, options_.solinttol_);
+                 options_.solfeastol_,
+                 options_.solinttol_,
+                 options_.reprefcons_);
     CheckVars(chk);
     CheckCons(chk);
     CheckObjs(chk);
@@ -726,7 +728,7 @@ protected:
                  + std::string(cva.first)
                  + "' violate bounds,\n      max by {}");
         Gen1Viol(cva.second.at(2), wrt,
-                 "  - {} final constraint(s) of type '"
+                 "  - {} solver constraint(s) of type '"
                  + std::string(cva.first)
                  + "' violate bounds,\n      max by {}");
       }
@@ -1041,6 +1043,7 @@ private:
     int solcheckmode_ = 1;
     double solfeastol_ = 1e-6;
     double solinttol_ = 1e-5;
+    bool reprefcons_ = false;
   };
   Options options_;
 
@@ -1127,13 +1130,15 @@ private:
         options_.solcheckmode_, values_solchk_);
     GetEnv().AddOption("sol:chk:feastol sol:chk:eps sol:eps chk:eps",
         "Solution checking tolerance for objective values, variable "
-        "and constraint bounds. Default 1e-6. "
-                       "Violated logical constraints are always reported.",
+        "and constraint bounds. Default 1e-6.",
         options_.solfeastol_, 0.0, 1e100);
     GetEnv().AddOption("sol:chk:inttol sol:chk:inteps sol:inteps chk:inteps",
         "Solution checking tolerance for variables' integrality. "
-        "Default 1e-6. ",
+        "Default 1e-5.",
         options_.solinttol_, 0.0, 1e100);
+    GetEnv().AddOption("sol:chk:refcons chk:refcons",
+        "Report violations of reformulated constraints.",
+        options_.reprefcons_, false, true);
   }
 
 

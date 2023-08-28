@@ -125,9 +125,11 @@ struct SolCheck {
            ArrayRef<double> obj,
            ArrayRef<var::Type> vtype,
            ArrayRef<double> lb,  ArrayRef<double> ub,
-           double feastol, double inttol)
+           double feastol, double inttol,
+           bool reportBridged)
     : x_(feastol, x, vtype, lb, ub), y_(duals), obj_(obj),
-      feastol_(feastol), inttol_(inttol) { }
+      feastol_(feastol), inttol_(inttol),
+      reportBridgedCons_(reportBridged) { }
   /// Any violations?
   bool HasAnyViols() const
   { return HasAnyConViols() || HasAnyObjViols(); }
@@ -153,6 +155,8 @@ struct SolCheck {
   double x(int i) const { return x_[i]; }
   /// Feasibility tolerance
   double GetFeasTol() const { return feastol_; }
+  /// Report reformulated constraints?
+  bool RepRefCons() const { return reportBridgedCons_; }
 
   /// Var bnd violations
   ViolSummArray<2>& VarViolBnds() { return viol_var_bnds_; }
@@ -182,6 +186,7 @@ private:
   ArrayRef<double> obj_;
   double feastol_;
   double inttol_;
+  bool reportBridgedCons_ = false;
 
   std::string report_;
 
@@ -737,7 +742,8 @@ public:
       const auto& x = chk.x_ext();
       ViolSummArray<3>* conviolarray {nullptr};
       for (int i=(int)cons_.size(); i--; ) {
-        if (!cons_[i].IsUnused()) {
+        if (!cons_[i].IsUnused()
+            && (chk.RepRefCons() || !cons_[i].IsBridged())) {
           auto viol = cons_[i].con_.ComputeViolation(x);
           if (viol > chk.GetFeasTol()) {
             if (!conviolarray)
