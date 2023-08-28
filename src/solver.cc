@@ -707,7 +707,9 @@ std::string BasicSolver::GetWarnings() const {
 }
 
 void BasicSolver::PrintWarnings() {
-  Print('\n' + GetWarnings());
+  auto warnings = GetWarnings();
+  if (warnings.size())
+    Print('\n' + warnings);
 }
 
 std::string BasicSolver::ToString(

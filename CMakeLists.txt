@@ -331,7 +331,7 @@ add_prefix(MP_HEADERS include/mp/
 
 add_prefix(MP_FLAT_HEADERS include/mp/flat/
   backend_flat.h
-  constr_base.h constr_keeper.h constr_hash.h
+  constr_base.h constr_eval.h constr_keeper.h constr_hash.h
   constr_std.h constr_static.h constr_functional.h
   constr_algebraic.h constr_general.h
   constr_prepro.h constr_prop_down.h

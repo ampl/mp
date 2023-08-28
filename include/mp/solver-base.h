@@ -284,6 +284,7 @@ public:
 
   /// Override methods from base service classes
   void HandleOutput(fmt::CStringRef output) override {
+    has_output = true;
     std::fputs(output.c_str(), stdout);
     std::fflush(stdout);         // #220
   }

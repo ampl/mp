@@ -178,7 +178,8 @@ protected:
     SetSolHandler(
           new internal::AppSolutionHandlerImpl<SolverType, ProblemBuilder>(
           filename_no_ext, GetEnv(), GetPB(), options,
-            0 ));
+            GetEnv().get_output_handler().has_output
+            ? 0 : GetEnv().get_output_handler().banner_size));
   }
 
   /// Says we finished problem modification,
