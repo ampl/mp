@@ -88,6 +88,9 @@ public:
     return var_type_[v];
   }
 
+  const std::vector<var::Type>& var_type_vec() const
+  { return var_type_; }
+
   template <class VarArray>
   double lb_array(const VarArray& va) const {
     double result = Inf();

@@ -144,8 +144,48 @@ public:
     sort();
     assert(check());
   }
+  /// Check data
   bool check() const { return type>=1 && type<=2 &&
                      v_.size()==w_.size(); }
+
+  /// Compute violation
+  template <class VarInfo>
+  double ComputeViolation(const VarInfo& x) const {
+    if (1==type)
+      return ComputeViolationSOS1(x);
+    return ComputeViolationSOS2(x);
+  }
+
+  /// Compute violation
+  template <class VarInfo>
+  double ComputeViolationSOS1(const VarInfo& x) const {
+    int nnz=0;
+    for (int i=(int)v_.size(); i--; ) {
+      if (x.is_nonzero(v_[i]))
+        ++nnz;
+    }
+    return std::max(0, nnz-1);
+  }
+
+  /// Compute violation
+  template <class VarInfo>
+  double ComputeViolationSOS2(const VarInfo& x) const {
+    int npos=0, pos1=-1, pos2=-1;
+    int posDist=1;     // should be 1
+    for (int i=(int)v_.size(); i--; ) {
+      if (x.is_positive(v_[i])) {
+        ++npos;
+        if (pos1<0)
+          pos1=i;
+        else if (pos2<0) {
+          pos2=i;
+          posDist = pos1-pos2;
+        }
+      }
+    }
+    return std::max(0, npos-2)
+        + std::abs(1 - posDist);
+  }
 
 
 protected:

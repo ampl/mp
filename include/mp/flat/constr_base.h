@@ -186,7 +186,6 @@ double ComputeViolation(
     const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>& c,
     const VarVec& x) {
   auto resvar = c.GetResultVar();
-  assert(resvar < (int)x.size());
   return std::fabs(x[resvar] - ComputeValue(c, x));
 }
 

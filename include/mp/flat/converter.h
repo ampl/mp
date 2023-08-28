@@ -613,7 +613,7 @@ protected:
       ArrayRef<double> x,
       const pre::ValueMapDbl& duals,
       ArrayRef<double> obj) {
-    SolCheck chk(x, duals, obj,
+    SolCheck chk(x, duals, obj, GetModel().var_type_vec(),
                  options_.solfeastol_, options_.solinttol_);
     CheckVars(chk);
     CheckCons(chk);

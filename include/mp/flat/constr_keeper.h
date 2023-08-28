@@ -54,14 +54,64 @@ struct ViolSummary {
 template <int Nkinds>
 using ViolSummArray = std::array<ViolSummary, Nkinds>;
 
+
+/// Variable information used by solution check
+class VarInfo {
+public:
+  /// Constructor
+  VarInfo(double ft,
+          std::vector<double> x,
+          ArrayRef<var::Type> type)
+    : feastol_(ft), x_(std::move(x)), x_ref_(x_),
+      type_(type) { }
+  /// Access variable value
+  double operator[]( int i ) const {
+    assert(i>=0 && i<(int)x_.size());
+    return x_[i];
+  }
+  /// Access whole vectorref
+  operator const ArrayRef<double>& () const
+  { return x_ref(); }
+  /// Access integrality condition
+  bool is_var_int(int i) const {
+    assert(i>=0 && i<(int)type_.size());
+    return var::INTEGER==type_[i];
+  }
+  /// Variable value nonzero?
+  bool is_nonzero(int i) const {
+    return
+        std::fabs( (*this)[i] )
+        >= (is_var_int(i) ? 0.5 : feastol());
+  }
+  /// Variable value positive?
+  bool is_positive(int i) const {
+    return
+        (*this)[i]
+        >= (is_var_int(i) ? 0.5 : feastol());
+  }
+  /// Feasibility tolerance
+  double feastol() const { return feastol_; }
+  /// x() as ArrayRef
+  const ArrayRef<double>& x_ref() const { return x_ref_; }
+
+private:
+  double feastol_;
+
+  const std::vector<double> x_;   // can be rounded, etc.
+  const ArrayRef<double> x_ref_;
+  const ArrayRef<var::Type> type_;
+};
+
+
 /// Solution check data
 struct SolCheck {
   /// Construct
   SolCheck(ArrayRef<double> x,
            const pre::ValueMapDbl& duals,
            ArrayRef<double> obj,
+           ArrayRef<var::Type> vtype,
            double feastol, double inttol)
-    : x_(x), y_(duals), obj_(obj),
+    : x_(feastol, x, vtype), y_(duals), obj_(obj),
       feastol_(feastol), inttol_(inttol) { }
   /// Any violations?
   bool HasAnyViols() const
@@ -80,8 +130,10 @@ struct SolCheck {
   /// Summary
   const std::string& GetReport() const { return report_; }
 
-  /// x
-  ArrayRef<double>& x() { return x_; }
+  /// VarInfo, can be used like x() for templates
+  const VarInfo& x_ext() const { return x_; }
+  /// x as array
+  const ArrayRef<double>& x() { return x_.x_ref(); }
   /// x[i]
   double x(int i) const { return x_[i]; }
   /// Feasibility tolerance
@@ -110,7 +162,7 @@ struct SolCheck {
   { report_ = std::move(rep); }
 
 private:
-  ArrayRef<double> x_;
+  VarInfo x_;
   const pre::ValueMapDbl& y_;
   ArrayRef<double> obj_;
   double feastol_;
@@ -667,7 +719,7 @@ public:
           cons_.front().con_.IsLogical() ?
             chk.ConViolLog() :
             chk.ConViolAlg();
-      const auto& x = chk.x();
+      const auto& x = chk.x_ext();
       ViolSummArray<3>* conviolarray {nullptr};
       for (int i=(int)cons_.size(); i--; ) {
         if (!cons_[i].IsUnused()) {
