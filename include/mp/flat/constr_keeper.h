@@ -9,6 +9,7 @@
 #include "mp/common.h"
 #include "mp/format.h"
 #include "mp/env.h"
+#include "mp/utils-math.h"
 
 #include "mp/flat/model_api_base.h"
 #include "mp/flat/constr_hash.h"
@@ -62,12 +63,14 @@ public:
   VarInfo(double ft,
           std::vector<double> x,
           ArrayRef<var::Type> type,
-          ArrayRef<double> lb, ArrayRef<double> ub)
+          ArrayRef<double> lb, ArrayRef<double> ub,
+          const char* sol_rnd, const char* sol_prec)
     : feastol_(ft), x_(std::move(x)), x_ref_(x_),
       type_(type), lb_(lb), ub_(ub) {
     assert(x_.size()>=type_.size());  // feasrelax can add more
     assert(type_.size()==lb_.size());
     assert(type_.size()==ub_.size());
+    apply_precision_options(sol_rnd, sol_prec);
   }
   /// Access variable value
   double operator[]( int i ) const {
@@ -103,17 +106,47 @@ public:
 
   /// Feasibility tolerance
   double feastol() const { return feastol_; }
+  /// sol_rnd as string
+  std::string solution_round() const
+  { return sol_rnd_ < 100 ? std::to_string(sol_rnd_) : ""; }
+  /// sol_rnd as string
+  std::string solution_precision() const
+  { return sol_prec_ < 100 ? std::to_string(sol_prec_) : ""; }
+
   /// x() as ArrayRef
   const ArrayRef<double>& x_ref() const { return x_ref_; }
+
+protected:
+  void apply_precision_options(
+      const char* sol_rnd, const char* sol_prec) {
+    try {                 // Apply sol_rnd
+      if (sol_rnd) {
+        sol_rnd_ = std::stoi(sol_rnd);
+        auto scale = std::pow(10, sol_rnd_);
+        auto scale_rec = 1.0/scale;
+        for (auto& x: x_)
+          x = std::round(x * scale) * scale_rec;
+      }
+    } catch (...) { sol_rnd_=100; }     // Could add a warning
+    try {                 // Apply sol_prec
+      if (sol_prec) {
+        sol_prec_ = std::stoi(sol_prec);
+        for (auto& x: x_)
+          x = round_to_digits(x, sol_prec_);
+      }
+    } catch (...) { sol_prec_=100; }     // Could add a warning
+  }
 
 private:
   double feastol_;
 
-  const std::vector<double> x_;   // can be rounded, etc.
+  std::vector<double> x_;   // can be rounded, etc.
   const ArrayRef<double> x_ref_;
   const ArrayRef<var::Type> type_;
   const ArrayRef<double> lb_;
   const ArrayRef<double> ub_;
+  int sol_rnd_=100;    // AMPL option solution_round, if used
+  int sol_prec_=100;   // AMPL option solution_precision, if used
 };
 
 
@@ -126,8 +159,10 @@ struct SolCheck {
            ArrayRef<var::Type> vtype,
            ArrayRef<double> lb,  ArrayRef<double> ub,
            double feastol, double inttol,
+           const char* sol_rnd, const char* sol_prec,
            bool reportBridged)
-    : x_(feastol, x, vtype, lb, ub), y_(duals), obj_(obj),
+    : x_(feastol, x, vtype, lb, ub, sol_rnd, sol_prec),
+      y_(duals), obj_(obj),
       feastol_(feastol), inttol_(inttol),
       reportBridgedCons_(reportBridged) { }
   /// Any violations?

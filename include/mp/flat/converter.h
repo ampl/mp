@@ -619,6 +619,10 @@ protected:
                  GetModel().var_ub_vec(),
                  options_.solfeastol_,
                  options_.solinttol_,
+                 options_.dont_use_sol_round_
+                   ? "" : std::getenv("solution_round"),
+                 options_.dont_use_sol_prec_
+                   ? "" : std::getenv("solution_precision"),
                  options_.reprefcons_);
     CheckVars(chk);
     CheckCons(chk);
@@ -674,9 +678,12 @@ protected:
     fmt::MemoryWriter wrt;
     if (chk.HasAnyConViols()) {
       wrt.write(
-            "Constraint violations "
-            "(sol:chk:feastol={}, sol:chk:inttol={}):\n",
-            options_.solfeastol_, options_.solinttol_);
+            "Constraint violations\n"
+            "    (sol:chk:feastol={}, sol:chk:inttol={},\n"
+            "     solution_round='{}', solution_precision='{}'):\n",
+            options_.solfeastol_, options_.solinttol_,
+            chk.x_ext().solution_round(),
+            chk.x_ext().solution_precision());
       Gen1Viol(chk.VarViolBnds().at(0), wrt,
                "  - {} original variable(s) violate bounds,\n"
                "      max by {}");
@@ -694,8 +701,11 @@ protected:
     GenConViol(chk.ConViolLog(), wrt, "Logical");
     if (chk.HasAnyObjViols()) {
       wrt.write("Objective value violations"
-                "(sol:chk:feastol={})\n",
-                options_.solfeastol_);
+                "    (sol:chk:feastol={},\n"
+                "     solution_round='{}', solution_precision='{}'):\n",
+                options_.solfeastol_,
+                chk.x_ext().solution_round(),
+                chk.x_ext().solution_precision());
       Gen1Viol(chk.ObjViols(), wrt,
                "  - {} objective value(s) violated,\n      max by {}");
     }
@@ -1044,6 +1054,8 @@ private:
     double solfeastol_ = 1e-6;
     double solinttol_ = 1e-5;
     bool reprefcons_ = false;
+    bool dont_use_sol_round_ = false;
+    bool dont_use_sol_prec_ = false;
   };
   Options options_;
 
@@ -1139,6 +1151,12 @@ private:
     GetEnv().AddOption("sol:chk:refcons chk:refcons",
         "Report violations of reformulated constraints.",
         options_.reprefcons_, false, true);
+    GetEnv().AddOption("sol:chk:noround chk:noround chk:no_solution_round",
+        "Don't use AMPL solution_round option when checking.",
+        options_.dont_use_sol_round_, false, true);
+    GetEnv().AddOption("sol:chk:noprec chk:noprec chk:no_solution_precision",
+        "Don't use AMPL solution_precision option when checking.",
+        options_.dont_use_sol_prec_, false, true);
   }
 
 
