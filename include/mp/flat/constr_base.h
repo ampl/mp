@@ -186,7 +186,17 @@ double ComputeViolation(
     const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>& c,
     const VarVec& x) {
   auto resvar = c.GetResultVar();
-  return std::fabs(x[resvar] - ComputeValue(c, x));
+  auto viol = x[resvar] - ComputeValue(c, x);
+  switch (c.GetContext().GetValue()) {
+  case Context::CTX_MIX:
+    return std::fabs(viol);
+  case Context::CTX_POS:
+    return viol;
+  case Context::CTX_NEG:
+    return -viol;
+  default:
+    return INFINITY;
+  }
 }
 
 
