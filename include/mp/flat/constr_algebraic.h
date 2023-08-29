@@ -71,9 +71,10 @@ public:
   }
 
   /// Compute violation.
-  /// Negative if if holds with slack.
+  /// Negative if holds with slack.
+  template <class VarInfo>
   double
-  ComputeViolation(const ArrayRef<double>& x) const {
+  ComputeViolation(const VarInfo& x) const {
     auto bd = Body::ComputeValue(x);
     return std::max(      // same for strict cmp?
           RhsOrRange::lb() - bd, bd - RhsOrRange::ub());

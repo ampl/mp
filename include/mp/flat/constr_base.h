@@ -39,7 +39,8 @@ public:
   /// For functional constraints, result variable index
   int GetResultVar() const { return -1; }
   /// Compute violation
-  double ComputeViolation(const ArrayRef<double>& ) const
+  template <class VarInfo>
+  double ComputeViolation(const VarInfo& ) const
   { return 0.0; }
 
 private:
@@ -165,15 +166,10 @@ public:
 /// Dummy template: compute result of functional constraint.
 /// Should be implemented for proper functional specializations,
 /// but has no sense for conic constraints, for example.
-template <class Args, class Params,
-          class NumOrLogic, class Id, class VarVec>
-double ComputeValue(
-    const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>& ,
-    const VarVec& ) {
+template <class Con, class VarVec>
+double ComputeValue(const Con& , const VarVec& ) {
   MP_RAISE(fmt::format("ComputeValue({}) not implemented.",
-                       typeid(
-                         CustomFunctionalConstraint<Args,
-                         Params, NumOrLogic, Id>).name()));
+                       typeid(Con).name()));
   return 0.0;
 }
 

@@ -55,31 +55,84 @@ struct ViolSummary {
 template <int Nkinds>
 using ViolSummArray = std::array<ViolSummary, Nkinds>;
 
+class VarInfoRecomp;
+
+/// Function prototype to recompute
+/// variable at index \a i.
+using VarsRecomputeFn
+    = std::function<
+        double(int i, const VarInfoRecomp& x) >;
+
+/// Var vector managing recomputation
+class VarVecRecomp {
+public:
+  /// Construct
+  VarVecRecomp(std::vector<double> x,
+               VarsRecomputeFn rec_fn)
+    : x_(std::move(x)), is_recomp_(x_.size()),
+      recomp_fn_(rec_fn) { assert(recomp_fn_); }
+  /// Set p_var_info_recomp_
+  void set_p_var_info(const VarInfoRecomp* p) const
+  { p_var_info_recomp_ = p; }
+  /// Number of vars
+  int size() const { return (int)x_.size(); }
+  /// Access variable value.
+  /// Recompute if not yet.
+  double operator[]( int i ) const {
+    assert(i>=0 && i<(int)x_.size());
+    assert(p_var_info_recomp_ != nullptr);
+    if (!is_recomp_[i]) {
+      x_[i] = recomp_fn_(i, *p_var_info_recomp_);
+      is_recomp_[i] = true;
+    }
+    return x_[i];
+  }
+  /// Expose begin()
+  std::vector<double>::iterator begin() { return x_.begin(); }
+  /// Expose end()
+  std::vector<double>::iterator end() { return x_.end(); }
+  /// Move out x
+  std::vector<double>& get_x() const { return x_; }
+
+private:
+  mutable std::vector<double> x_;
+  mutable std::vector<bool> is_recomp_;
+  VarsRecomputeFn recomp_fn_;
+  mutable const VarInfoRecomp* p_var_info_recomp_{nullptr};
+};
+
+
+/// Static var vector
+using VarVecStatic = std::vector<double>;
+
 
 /// Variable information used by solution check
-class VarInfo {
+template <class VarVec>
+class VarInfoImpl {
 public:
   /// Constructor
-  VarInfo(double ft,
-          std::vector<double> x,
+  VarInfoImpl(double ft,
+          VarVec x,
           ArrayRef<var::Type> type,
           ArrayRef<double> lb, ArrayRef<double> ub,
           const char* sol_rnd, const char* sol_prec)
-    : feastol_(ft), x_(std::move(x)), x_ref_(x_),
+    : feastol_(ft), x_(std::move(x)),
       type_(type), lb_(lb), ub_(ub) {
-    assert(x_.size()>=type_.size());  // feasrelax can add more
+    assert((int)x_.size()>=(int)type_.size());  // feasrelax can add more
     assert(type_.size()==lb_.size());
     assert(type_.size()==ub_.size());
-    apply_precision_options(sol_rnd, sol_prec);
+    apply_precision_options(sol_rnd, sol_prec); // after recomp?
   }
+  /// Number of vars
+  int size() const { return (int)x_.size(); }
   /// Access variable value
   double operator[]( int i ) const {
     assert(i>=0 && i<(int)x_.size());
     return x_[i];
   }
-  /// Access whole vectorref
-  operator const ArrayRef<double>& () const
-  { return x_ref(); }
+  /// Access VarVec
+  const VarVec& get_x() const { return x_; }
+
   /// Access integrality condition
   bool is_var_int(int i) const {
     assert(i>=0 && i<(int)type_.size());
@@ -113,9 +166,6 @@ public:
   std::string solution_precision() const
   { return sol_prec_ < 100 ? std::to_string(sol_prec_) : ""; }
 
-  /// x() as ArrayRef
-  const ArrayRef<double>& x_ref() const { return x_ref_; }
-
 protected:
   void apply_precision_options(
       const char* sol_rnd, const char* sol_prec) {
@@ -140,14 +190,27 @@ protected:
 private:
   double feastol_;
 
-  std::vector<double> x_;   // can be rounded, etc.
-  const ArrayRef<double> x_ref_;
+  VarVec x_;   // can be rounded, recomputed, etc.
   const ArrayRef<var::Type> type_;
   const ArrayRef<double> lb_;
   const ArrayRef<double> ub_;
   int sol_rnd_=100;    // AMPL option solution_round, if used
   int sol_prec_=100;   // AMPL option solution_precision, if used
 };
+
+
+/// VarInfoRecompTypedef
+using VarInfoRecompTypedef = VarInfoImpl<VarVecRecomp>;
+
+/// Define VarInfoRecomp
+class VarInfoRecomp : public VarInfoRecompTypedef {
+public:
+  /// Inherit ctor's
+  using VarInfoRecompTypedef::VarInfoRecompTypedef;
+};
+
+/// VarInfoStatic
+using VarInfoStatic = VarInfoImpl<VarVecStatic>;
 
 
 /// Solution check data
@@ -183,9 +246,7 @@ struct SolCheck {
   const std::string& GetReport() const { return report_; }
 
   /// VarInfo, can be used like x() for templates
-  const VarInfo& x_ext() const { return x_; }
-  /// x as array
-  const ArrayRef<double>& x() { return x_.x_ref(); }
+  const VarInfoStatic& x_ext() const { return x_; }
   /// x[i]
   double x(int i) const { return x_[i]; }
   /// Feasibility tolerance
@@ -216,7 +277,7 @@ struct SolCheck {
   { report_ = std::move(rep); }
 
 private:
-  VarInfo x_;
+  VarInfoStatic x_;
   const pre::ValueMapDbl& y_;
   ArrayRef<double> obj_;
   double feastol_;
@@ -391,8 +452,15 @@ public:
   /// Mark as unused. Use index only.
   virtual void MarkAsUnused(int i) = 0;
 
+  /// Is constraint \a i unused?
+  virtual bool IsUnused(int i) const = 0;
+
   /// Copy names from ValueNodes
   virtual void CopyNamesFromValueNodes() = 0;
+
+  /// Compute result for constraint \a i
+  /// (for functional constraints)
+  virtual double ComputeValue(int i, const VarInfoRecomp& ) = 0;
 
   /// Compute violations
   virtual void ComputeViolations(SolCheck& ) = 0;
@@ -524,7 +592,8 @@ public:
 /// Specialize ConstraintKeeper for a given constraint type
 /// to store an array of such constraints
 template <class Converter, class Backend, class Constraint>
-class ConstraintKeeper : public BasicConstraintKeeper {
+class ConstraintKeeper final
+    : public BasicConstraintKeeper {
 public:
   /// Constructor, adds this CK to the provided ConstraintManager
   /// Requires the CM to be already constructed
@@ -748,6 +817,11 @@ public:
     MarkAsUnused(cons_.at(i), i);
   }
 
+  /// Is constraint \a i unused?
+  bool IsUnused(int i) const override {
+    return cons_.at(i).IsUnused();
+  }
+
   /// Copy names from ValueNodes
   void CopyNamesFromValueNodes() override {
     const auto& vn = GetValueNode().GetStrVec();
@@ -765,6 +839,14 @@ public:
 				if (fn(cons_[i].con_, i))
           MarkAsBridged(cons_[i], i);
 	}
+
+  /// Compute result for constraint \a i
+  /// (for functional constraints).
+  double
+  ComputeValue(int i, const VarInfoRecomp& vir) override {
+    assert(cons_[i].con_.GetResultVar() >= 0);
+    return mp::ComputeValue(cons_[i].con_, vir);
+  }
 
   /// Compute violations for this constraint type.
   /// We do it for redefined (intermediate) ones too.

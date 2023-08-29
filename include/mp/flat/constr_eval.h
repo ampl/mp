@@ -254,24 +254,31 @@ double ComputeValue(const AtanhConstraint& con, const VarVec& x) {
   return std::atanh(x[con.GetArguments()[0]]);
 }
 
+/// Compute result of the LinearFuncCon constraint.
+template <class VarVec>
+double ComputeValue(
+    const LinearFunctionalConstraint& con, const VarVec& x) {
+  return con.GetAffineExpr().ComputeValue(x);
+}
+
+/// Compute result of the QuadrFuncCon constraint.
+template <class VarVec>
+double ComputeValue(
+    const QuadraticFunctionalConstraint& con, const VarVec& x) {
+  return con.GetQuadExpr().ComputeValue(x);
+}
+
+
+
 /// Compute result of a conditional constraint.
+/// Just return bool(viol(subcon) <= 0).
 /// This is not used to compute violation.
 template <class Con, class VarVec>
 double ComputeValue(
     const ConditionalConstraint<Con>& con, const VarVec& x) {
   auto viol = con.GetConstraint().ComputeViolation(x);
   bool ccon_valid = viol<=0.0;
-  bool has_arg = x[con.GetResultVar()] >= 0.5;
-  switch (con.GetContext().GetValue()) {
-  case Context::CTX_MIX:
-    return has_arg == ccon_valid;
-  case Context::CTX_POS:
-    return has_arg <= ccon_valid;
-  case Context::CTX_NEG:
-    return has_arg >= ccon_valid;
-  default:
-    return INFINITY;
-  }
+  return ccon_valid;
 }
 
 /// Compute violation of the QuadraticCone constraint.

@@ -43,7 +43,8 @@ public:
   const Con& get_constraint() const { return con_; }
 
   /// Compute violation
-  double ComputeViolation(const ArrayRef<double>& x) const {
+  template <class VarInfo>
+  double ComputeViolation(const VarInfo& x) const {
     assert(b_<(int)x.size());
     auto xb = x[b_];
     if (std::round(xb) == bv_)      // Implication needed

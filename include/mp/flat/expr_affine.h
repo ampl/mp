@@ -74,7 +74,8 @@ public:
   const LinTerms& GetLinTerms() const { return *this; }
 
   /// Compute value given a dense vector of variable values
-  long double ComputeValue(const ArrayRef<double>& x) const {
+  template <class VarInfo>
+  long double ComputeValue(const VarInfo& x) const {
     long double s=0.0;
     for (size_t i=coefs().size(); i--; )
       s += (long double)(coefs()[i]) * x[vars()[i]];

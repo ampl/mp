@@ -607,12 +607,54 @@ protected:
   }
 
 
-
   /// Check unpostsolved solution
+  /// in various ways
   bool CheckSolution(
       ArrayRef<double> x,
       const pre::ValueMapDbl& duals,
       ArrayRef<double> obj) {
+    DoCheckSol(x, duals, obj, "SolutionCheck_Aux");
+    auto x1 = RecomputeAuxVars(x);
+    DoCheckSol(x1, duals, obj, "SolutionCheck");
+    return true;
+  }
+
+  /// Functor to recompute auxiliary var \a i
+  VarsRecomputeFn recomp_fn
+  = [this](int i, const VarInfoRecomp& x) {
+    if (MPCD( HasInitExpression(i) )) {
+      const auto& iexpr = MPCD( GetInitExpression(i) );
+      assert(iexpr.GetCK()
+             ->GetResultVar(iexpr.GetIndex()) == i);
+      if (!iexpr.GetCK()->IsUnused(iexpr.GetIndex()))
+        return iexpr.GetCK()
+            ->ComputeValue(iexpr.GetIndex(), x);
+    }
+    return x.get_x().get_x()[i];  // no recomputation
+  };
+
+  /// Recompute auxiliary variables
+  ArrayRef<double> RecomputeAuxVars(ArrayRef<double> x) {
+    VarInfoRecomp vir {
+      options_.solfeastol_,
+      {x, recomp_fn},
+      GetModel().var_type_vec(),
+          GetModel().var_lb_vec(),
+          GetModel().var_ub_vec(),
+          nullptr, nullptr
+    };
+    vir.get_x().set_p_var_info(&vir);
+    for (auto i=vir.size(); i--; )
+      vir[i];         // touch the variable to be recomputed
+    return std::move(vir.get_x().get_x());
+  }
+
+  /// Check single unpostsolved solution
+  bool DoCheckSol(
+      ArrayRef<double> x,
+      const pre::ValueMapDbl& duals,
+      ArrayRef<double> obj,
+      const char* warning_header) {
     SolCheck chk(x, duals, obj,
                  GetModel().var_type_vec(),
                  GetModel().var_lb_vec(),
@@ -641,7 +683,7 @@ protected:
                            chk.GetReport());
       else
         AddWarning(
-              "SolutionCheck", chk.GetReport(),
+              warning_header, chk.GetReport(),
               true);  // replace for multiple solutions
     }
     return !chk.HasAnyViols();
