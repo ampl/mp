@@ -108,29 +108,30 @@ double ComputeValue(const AllDiffConstraint& con, const VarVec& x) {
 }
 
 /// Compute result of the NumberofConst constraint.
-/// Currently assumes integer variables
-/// (otherwise the result may be larger.)
-template <class VarVec>
-double ComputeValue(const NumberofConstConstraint& con, const VarVec& x) {
+template <class VarInfo>
+double ComputeValue(const NumberofConstConstraint& con, const VarInfo& x) {
   double result = 0.0;
-  auto k = std::round(con.GetParameters()[0]);
+  auto k = con.GetParameters()[0];
   for (auto v: con.GetArguments()) {
-    if (std::round(x[v]) == k)
+    if ((x.is_var_int(v)
+         && std::round(x[v]) == k)
+        || std::fabs(x[v] - k) <= x.feastol())
       ++result;
   }
   return result;
 }
 
 /// Compute result of the NumberofVar constraint.
-/// Currently assumes integer variables
-/// (otherwise the result may be larger.)
 template <class VarVec>
 double ComputeValue(const NumberofVarConstraint& con, const VarVec& x) {
   double result = 0.0;
   const auto& args = con.GetArguments();
-  auto k = std::round(x[args[0]]);
+  auto k = x[args[0]];
   for (auto i=args.size(); --i; ) {
-    if (std::round(x[args[i]]) == k)
+    auto v = args[i];
+    if ((x.is_var_int(v)
+         && std::round(x[v]) == k)
+        || std::fabs(x[v] - k) <= x.feastol())
       ++result;
   }
   return result;
