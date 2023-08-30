@@ -688,6 +688,13 @@ SolverOptionManager::~SolverOptionManager() {
   std::for_each(options_.begin(), options_.end(), Deleter());
 }
 
+const char*
+BasicSolver::GetSolCheckWarningKey(bool f_recomp) const {
+  return f_recomp
+      ? "Solution Check (Idealistic)"
+      : "Solution Check";
+}
+
 void BasicSolver::AddWarning(
     std::string key, std::string msg, bool replace) {
   auto& v = GetWarningsMap()[ std::move(key) ];

@@ -224,6 +224,7 @@ protected:
 			MPD( Convert2Cones(); );                 // sweep before other conversions
       MP_DISPATCH( ConvertAllConstraints() );
       // MP_DISPATCH( PreprocessIntermediate() );     // preprocess after each level
+      constr_depth_ = 1;  // Workaround. TODO have maps as special constraints
 			MP_DISPATCH( ConvertMaps() );
       MP_DISPATCH( PreprocessFinal() );               // final prepro
     } catch (const ConstraintConversionFailure& cff) {
@@ -281,7 +282,8 @@ public: // for ConstraintKeeper
   /// RunConversion() of a constraint:
   /// Assume mixed context if not set.
   template <class Constraint>
-  void RunConversion(const Constraint& con, int i) {
+  void RunConversion(const Constraint& con, int i, int depth) {
+    constr_depth_ = depth+1;
     if (con.UsesContext())              // If context relevant,
       if (con.GetContext().IsNone())    // ensure we have context, mixed if none
         con.SetContext(Context::CTX_MIX);
@@ -461,7 +463,7 @@ protected:
   pre::NodeRange AddConstraintAndTryNoteResultVariable(Constraint&& con) {
     const auto resvar = con.GetResultVar();
     auto& ck = GET_CONSTRAINT_KEEPER( Constraint );
-    auto i = ck.AddConstraint(std::move(con));
+    auto i = ck.AddConstraint(constr_depth_, std::move(con));
     ConInfo ci{&ck, i};
     if (resvar>=0)
       AddInitExpression(resvar, ci);
@@ -613,10 +615,34 @@ protected:
       ArrayRef<double> x,
       const pre::ValueMapDbl& duals,
       ArrayRef<double> obj) {
-    DoCheckSol(x, duals, obj, "SolutionCheck_Aux");
-    auto x1 = RecomputeAuxVars(x);
-    DoCheckSol(x1, duals, obj, "SolutionCheck");
-    return true;
+    bool result = true;
+    std::string err_msg;
+    try {            // protect
+      if (options_.solcheckmode_ & (1+2+4+8+16)) {
+        if (!DoCheckSol(x, duals, obj, false))
+          result = false;
+      }
+      if (options_.solcheckmode_ & (32+64+128+256+512)) {
+        auto x1 = RecomputeAuxVars(x);
+        if (!DoCheckSol(x1, duals, obj, true))
+          result = false;
+      }
+    } catch (const mp::Error& err) {
+      if (options_.solcheckfail_)
+        throw;
+      err_msg = err.what();
+    } catch (const std::exception& exc) {
+      err_msg = exc.what();
+    } catch (...) {
+      err_msg = "unknown error";
+    }
+    if (err_msg.size()) {
+      if (options_.solcheckfail_)
+        MP_RAISE("Solution check aborted: " + err_msg);
+      AddWarning("Solution check aborted", err_msg);
+      result = false;
+    }
+    return result;
   }
 
   /// Functor to recompute auxiliary var \a i
@@ -636,7 +662,7 @@ protected:
   /// Recompute auxiliary variables
   ArrayRef<double> RecomputeAuxVars(ArrayRef<double> x) {
     VarInfoRecomp vir {
-      options_.solfeastol_,
+      options_.solfeastol_, false,
       {x, recomp_fn},
       GetModel().var_type_vec(),
           GetModel().var_lb_vec(),
@@ -654,7 +680,7 @@ protected:
       ArrayRef<double> x,
       const pre::ValueMapDbl& duals,
       ArrayRef<double> obj,
-      const char* warning_header) {
+      bool if_recomp_vals) {
     SolCheck chk(x, duals, obj,
                  GetModel().var_type_vec(),
                  GetModel().var_lb_vec(),
@@ -665,10 +691,16 @@ protected:
                    ? "" : std::getenv("solution_round"),
                  options_.dont_use_sol_prec_
                    ? "" : std::getenv("solution_precision"),
-                 options_.reprefcons_);
-    CheckVars(chk);
-    CheckCons(chk);
-    CheckObjs(chk);
+                 if_recomp_vals,
+                 if_recomp_vals
+                 ? (options_.solcheckmode_ >> 5)
+                 : (options_.solcheckmode_));  // for raw values
+    if (chk.check_mode() & 1)
+      CheckVars(chk);
+    if (chk.check_mode() & (2+4+8))
+      CheckCons(chk);
+    if (chk.check_mode() & 16)
+      CheckObjs(chk);
     GenerateViolationsReport(chk);
     // What if this is an intermediate solution?
     // Should be fine - warning by default,
@@ -678,12 +710,13 @@ protected:
     // a summary in the final solve message.
     // For now, do this via warnings?
     if (chk.HasAnyViols()) {
-      if (2 == options_.solcheckmode_)
+      if (options_.solcheckfail_)
         MP_RAISE_WITH_CODE(520,    // numeric error
                            chk.GetReport());
       else
         AddWarning(
-              warning_header, chk.GetReport(),
+              GetEnv().GetSolCheckWarningKey(if_recomp_vals),
+              chk.GetReport(),
               true);  // replace for multiple solutions
     }
     return !chk.HasAnyViols();
@@ -693,19 +726,22 @@ protected:
     for (auto i=num_vars(); i--; ) {
       auto x = chk.x(i);
       bool aux = !MPCD( is_var_original(i) );
-      chk.VarViolBnds().at(aux).CheckViol(
-            MPCD( lb(i) ) - x,
-            options_.solfeastol_,
-            GetModel().var_name(i));
-      chk.VarViolBnds().at(aux).CheckViol(
-            x - MPCD( ub(i) ),
-            options_.solfeastol_,
-            GetModel().var_name(i));
-      if (is_var_integer(i))
-        chk.VarViolIntty().at(aux).CheckViol(
-              std::fabs(x - std::round(x)),
-              options_.solinttol_,
+      // no aux vars for idealistic mode
+      if (!aux || !chk.if_recomputed()) {
+        chk.VarViolBnds().at(aux).CheckViol(
+              MPCD( lb(i) ) - x,
+              options_.solfeastol_,
               GetModel().var_name(i));
+        chk.VarViolBnds().at(aux).CheckViol(
+              x - MPCD( ub(i) ),
+              options_.solfeastol_,
+              GetModel().var_name(i));
+        if (is_var_integer(i))
+          chk.VarViolIntty().at(aux).CheckViol(
+                std::fabs(x - std::round(x)),
+                options_.solinttol_,
+                GetModel().var_name(i));
+      }
     }
   }
 
@@ -776,11 +812,11 @@ protected:
                  + std::string(cva.first)
                  + "' violate bounds,\n      max by {}");
         Gen1Viol(cva.second.at(1), wrt,
-                 "  - {} reformulated constraint(s) of type '"
+                 "  - {} intermediate auxiliary constraint(s) of type '"
                  + std::string(cva.first)
                  + "' violate bounds,\n      max by {}");
         Gen1Viol(cva.second.at(2), wrt,
-                 "  - {} solver constraint(s) of type '"
+                 "  - {} final auxiliary constraint(s) of type '"
                  + std::string(cva.first)
                  + "' violate bounds,\n      max by {}");
       }
@@ -1092,10 +1128,10 @@ private:
 
     int relax_ = 0;
 
-    int solcheckmode_ = 1;
+    int solcheckmode_ = 1+2+16+512;
+    bool solcheckfail_ = false;
     double solfeastol_ = 1e-6;
     double solinttol_ = 1e-5;
-    bool reprefcons_ = false;
     bool dont_use_sol_round_ = false;
     bool dont_use_sol_prec_ = false;
   };
@@ -1120,14 +1156,6 @@ public:
 
 
 private:
-  const mp::OptionValueInfo values_solchk_[3] = {
-    { "0", "No solution check (e.g., with feasrelax.)", 0},
-    { "1",
-      "Warn if tolerances or logical constraints "
-      "violated (default.)", 1},
-    { "2", "Fail on violations.", 2}
-  };
-
   void InitOwnOptions() {
     /// Should be called after adding all constraint keepers
     FlatModel::ConsiderAcceptanceOptions(*this, GetModelAPI(), GetEnv());
@@ -1179,9 +1207,29 @@ private:
 		GetEnv().AddOption("alg:relax relax",
         "0*/1: Whether to relax integrality of variables.",
         options_.relax_, 0, 1);
-    GetEnv().AddStoredOption("sol:chk:mode solcheck checkmode chk:mode",
-        "Solution checking mode:\n"  "\n.. value-table::\n",
-        options_.solcheckmode_, values_solchk_);
+    GetEnv().AddStoredOption(
+          "sol:chk:mode solcheck checkmode chk:mode",
+        "Solution checking mode. "
+        "Sum of a subset of the following bits:\n"
+        "\n"
+        "| 1 - Check variable bounds and integrality.\n"
+        "| 2 - Check original model constraints, as well as "
+        "      any non-linear expression values "
+        "      reported by the solver.\n"
+        "| 4 - Check intermediate auxiliary constraints "
+        "      (i.e., those which were reformulated further).\n"
+        "| 8 - Check final auxiliary constraints sent to solver.\n"
+        "| 16 - Check objective values.\n"
+        "| 32, 64, 128, 256, 512 - similar, but "
+        "      non-linear expressions are recomputed "
+        "      (vs using their values reported by the solver.) "
+        "      This is an idealistic check, because "
+        "      it does not consider possible tolerances "
+        "      applied by the solver when computing "
+        "      expression values.\n"
+                             "\n"
+                             "Default: 1+2+16+512.",
+        options_.solcheckmode_, 0, 1024);
     GetEnv().AddOption("sol:chk:feastol sol:chk:eps sol:eps chk:eps",
         "Solution checking tolerance for objective values, variable "
         "and constraint bounds. Default 1e-6.",
@@ -1190,9 +1238,9 @@ private:
         "Solution checking tolerance for variables' integrality. "
         "Default 1e-5.",
         options_.solinttol_, 0.0, 1e100);
-    GetEnv().AddOption("sol:chk:refcons chk:refcons",
-        "Report violations of reformulated constraints.",
-        options_.reprefcons_, false, true);
+    GetEnv().AddOption("sol:chk:fail chk:fail checkfail",
+        "Fail on constraint violations.",
+        options_.solcheckfail_, false, true);
     GetEnv().AddOption("sol:chk:noround chk:noround chk:no_solution_round",
         "Don't use AMPL solution_round option when checking.",
         options_.dont_use_sol_round_, false, true);
@@ -1284,6 +1332,7 @@ private:
 	ConicConverter<Impl> conic_cvt_ { *static_cast<Impl*>(this) };
 
 	std::vector<int> refcnt_vars_;
+  int constr_depth_ = 0;    // tree depth of new constraints
 
   /// AMPL item names
   std::vector<std::string>

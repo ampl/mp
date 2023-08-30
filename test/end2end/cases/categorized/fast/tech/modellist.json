@@ -27,12 +27,12 @@
     "objective": 88.2
   },
   {
-    "name" : "Check sol:chk:mode",
+    "name" : "Check sol:chk:fail",
     "tags" : ["linear", "feasrelax"],
     "files" : ["infeas_int_01.mod"],
     "options": {
       "ANYSOLVER_options":
-        "sol:chk:mode=2 sol:chk:feastol=1e-7 sol:chk:inttol=1e-4 feasrelax=1"
+        "sol:chk:fail sol:chk:feastol=1e-7 sol:chk:inttol=1e-4 feasrelax=1"
     },
     "values": {
       "solve_result_num": 520

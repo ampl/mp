@@ -111,13 +111,13 @@ template <class VarVec>
 class VarInfoImpl {
 public:
   /// Constructor
-  VarInfoImpl(double ft,
+  VarInfoImpl(double ft, bool recomp_vals,
           VarVec x,
           ArrayRef<var::Type> type,
           ArrayRef<double> lb, ArrayRef<double> ub,
           const char* sol_rnd, const char* sol_prec)
-    : feastol_(ft), x_(std::move(x)),
-      type_(type), lb_(lb), ub_(ub) {
+    : feastol_(ft), recomp_vals_(recomp_vals),
+      x_(std::move(x)), type_(type), lb_(lb), ub_(ub) {
     assert((int)x_.size()>=(int)type_.size());  // feasrelax can add more
     assert(type_.size()==lb_.size());
     assert(type_.size()==ub_.size());
@@ -157,8 +157,16 @@ public:
   bool is_at_ub(int i) const
   { return -((*this)[i] - ub_[i]) <= feastol(); }
 
+  /// Bounds violation
+  double bounds_viol(int i) const {
+    assert(i>=0 && i<(int)type_.size());
+    return std::max(lb_[i] - x_[i], x_[i] - ub_[i]);
+  }
+
   /// Feasibility tolerance
   double feastol() const { return feastol_; }
+  /// Using recomputed auxiliary vars?
+  bool recomp_vals() const { return recomp_vals_; }
   /// sol_rnd as string
   std::string solution_round() const
   { return sol_rnd_ < 100 ? std::to_string(sol_rnd_) : ""; }
@@ -189,6 +197,7 @@ protected:
 
 private:
   double feastol_;
+  bool recomp_vals_;   // variables are recomputed
 
   VarVec x_;   // can be rounded, recomputed, etc.
   const ArrayRef<var::Type> type_;
@@ -215,7 +224,8 @@ using VarInfoStatic = VarInfoImpl<VarVecStatic>;
 
 /// Solution check data
 struct SolCheck {
-  /// Construct
+  /// Construct.
+  /// @param chkmode: can be subset of 1+2+4+8+16
   SolCheck(ArrayRef<double> x,
            const pre::ValueMapDbl& duals,
            ArrayRef<double> obj,
@@ -223,11 +233,13 @@ struct SolCheck {
            ArrayRef<double> lb,  ArrayRef<double> ub,
            double feastol, double inttol,
            const char* sol_rnd, const char* sol_prec,
-           bool reportBridged)
-    : x_(feastol, x, vtype, lb, ub, sol_rnd, sol_prec),
+           bool recomp_vals, int chk_mode)
+    : x_(feastol, recomp_vals,
+         x, vtype, lb, ub, sol_rnd, sol_prec),
       y_(duals), obj_(obj),
       feastol_(feastol), inttol_(inttol),
-      reportBridgedCons_(reportBridged) { }
+      fRecomputedVals_(recomp_vals),
+      check_mode_(chk_mode) { }
   /// Any violations?
   bool HasAnyViols() const
   { return HasAnyConViols() || HasAnyObjViols(); }
@@ -251,8 +263,11 @@ struct SolCheck {
   double x(int i) const { return x_[i]; }
   /// Feasibility tolerance
   double GetFeasTol() const { return feastol_; }
-  /// Report reformulated constraints?
-  bool RepRefCons() const { return reportBridgedCons_; }
+
+  /// Using recomputed aux vars?
+  bool if_recomputed() const { return fRecomputedVals_; }
+  /// Check mode
+  int check_mode() const { return check_mode_; }
 
   /// Var bnd violations
   ViolSummArray<2>& VarViolBnds() { return viol_var_bnds_; }
@@ -282,7 +297,8 @@ private:
   ArrayRef<double> obj_;
   double feastol_;
   double inttol_;
-  bool reportBridgedCons_ = false;
+  bool fRecomputedVals_;
+  int check_mode_;
 
   std::string report_;
 
@@ -617,9 +633,9 @@ public:
   /// Add a pre-constructed constraint (or just arguments)
   /// @return index of the new constraint
   template <class... Args>
-  int AddConstraint(Args&&... args)
+  int AddConstraint(int d, Args&&... args)
   {
-    cons_.emplace_back( std::move(args)... );
+    cons_.emplace_back( d, std::move(args)... );
     return cons_.size()-1;
   }
 
@@ -725,7 +741,11 @@ protected:
 
   /// Container for a single constraint
   struct Container {
-    Container(Constraint&& c) noexcept : con_(std::move(c)) { }
+    Container(int d, Constraint&& c) noexcept
+      : con_(std::move(c)), depth_(d) { }
+
+    /// Depth in redef tree
+    int GetDepth() const { return depth_; }
 
     /// Bridged (reformulated or just unused.)
     /// If only reformulated, can still be checked
@@ -743,6 +763,7 @@ protected:
     }
 
     Constraint con_;
+    int depth_ = 0;
     bool is_bridged_ = false;
     bool is_unused_ = false;
   };
@@ -787,7 +808,7 @@ protected:
   /// @param i constraint index, needed for bridging
   void ConvertConstraint(Container& cnt, int i) {
     assert(!cnt.IsBridged());
-    GetConverter().RunConversion(cnt.con_, i);
+    GetConverter().RunConversion(cnt.con_, i, cnt.GetDepth());
     MarkAsBridged(cnt, i);
   }
 
@@ -859,19 +880,29 @@ public:
       const auto& x = chk.x_ext();
       ViolSummArray<3>* conviolarray {nullptr};
       for (int i=(int)cons_.size(); i--; ) {
-        if (!cons_[i].IsUnused()
-            && (chk.RepRefCons() || !cons_[i].IsBridged())) {
-          auto viol = cons_[i].con_.ComputeViolation(x);
-          if (viol > chk.GetFeasTol()) {
-            if (!conviolarray)
-              conviolarray =
-                  &conviolmap[GetShortTypeName()];
-            /// index==2 <==> solver-side constraint.
-            /// TODO also original NL constraints (index 0)
-            int index = cons_[i].IsBridged() ? 1 : 2;
-            assert(index < (int)conviolarray->size());
-            (*conviolarray)[index].CountViol(
-                  viol, cons_[i].con_.name());
+        if (!cons_[i].IsUnused()) {
+          int c_class = 0;    // class of this constraint
+          if (!cons_[i].IsBridged())
+            c_class |= 8;     // solver-side constraint
+          if (!cons_[i].GetDepth())
+            c_class |= 2;     // top-level
+          if (!c_class)
+            c_class = 4;      // intermediate
+          if (c_class & chk.check_mode()) {
+            auto viol = cons_[i].con_.ComputeViolation(x);
+            if (viol > chk.GetFeasTol()) {
+              if (!conviolarray)
+                conviolarray =         // lazy map access
+                    &conviolmap[GetShortTypeName()];
+              /// index==0,1,2: original, interm, solver-side
+              /// If both orig and solver, report as orig
+              int index = (c_class & 2) ? 0
+                                        : (c_class & 8)
+                                          ? 2 : 1;
+              assert(index < (int)conviolarray->size());
+              (*conviolarray)[index].CountViol(
+                    viol, cons_[i].con_.name());
+            }
           }
         }
       }

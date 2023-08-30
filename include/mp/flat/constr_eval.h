@@ -3,7 +3,12 @@
 
 /**
   * Evaluations and violations
-  * of (mainly functional) constraints
+  * of (mainly functional) constraints.
+  *
+  * For most evaluators, it's enough to supply
+  * a simple vector x.
+  * For some, it needs to be an object with
+  * extra API.
   */
 
 #include <cmath>

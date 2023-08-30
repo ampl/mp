@@ -325,6 +325,10 @@ public:
   /// Variadic overload of Print()
   FMT_VARIADIC(void, Print, fmt::CStringRef)
 
+  /// Get solution check warnings key name.
+  /// @param f_recomp: whether with recomputed auxiliaries.
+  const char* GetSolCheckWarningKey(bool f_recomp) const;
+
   /// Add a warning.
   /// @param key: warning category
   /// @param msg: detailed message
