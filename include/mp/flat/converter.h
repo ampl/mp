@@ -618,13 +618,14 @@ protected:
     bool result = true;
     std::string err_msg;
     try {            // protect
+      std::vector<double> x_back; // to extract x used
       if (options_.solcheckmode_ & (1+2+4+8+16)) {
-        if (!DoCheckSol(x, duals, obj, false))
+        if (!DoCheckSol(x, duals, obj, {}, x_back, false))
           result = false;
       }
       if (options_.solcheckmode_ & (32+64+128+256+512)) {
         auto x1 = RecomputeAuxVars(x);
-        if (!DoCheckSol(x1, duals, obj, true))
+        if (!DoCheckSol(x1, duals, obj, x_back, x_back, true))
           result = false;
       }
     } catch (const mp::Error& err) {
@@ -664,6 +665,7 @@ protected:
     VarInfoRecomp vir {
       options_.solfeastol_, false,
       {x, recomp_fn},
+      {},              // now raw values
       GetModel().var_type_vec(),
           GetModel().var_lb_vec(),
           GetModel().var_ub_vec(),
@@ -680,8 +682,10 @@ protected:
       ArrayRef<double> x,
       const pre::ValueMapDbl& duals,
       ArrayRef<double> obj,
+      ArrayRef<double> x_raw,
+      std::vector<double>& x_back,
       bool if_recomp_vals) {
-    SolCheck chk(x, duals, obj,
+    SolCheck chk(x, duals, obj, x_raw,
                  GetModel().var_type_vec(),
                  GetModel().var_lb_vec(),
                  GetModel().var_ub_vec(),
@@ -719,6 +723,7 @@ protected:
               chk.GetReport(),
               true);  // replace for multiple solutions
     }
+    x_back = chk.x_ext().get_x();
     return !chk.HasAnyViols();
   }
 
@@ -750,7 +755,20 @@ protected:
     GetModel().ComputeViolations(chk);
   }
 
-  void CheckObjs(SolCheck& ) { }
+  void CheckObjs(SolCheck& chk) {
+    const auto& objs = GetModel().get_objectives();
+    // Solvers might have dummy obj.
+    // Unbounded problems might have no obj value.
+    for (auto i
+         =std::min(objs.size(), chk.obj_vals().size());
+         i--; ) {
+      chk.ObjViols().CheckViol(
+            std::fabs(chk.obj_vals()[i]
+                      - ComputeValue(objs[i], chk.x_ext())),
+            options_.solfeastol_,
+            objs[i].name());
+    }
+  }
 
   void GenerateViolationsReport(SolCheck& chk) {
     fmt::MemoryWriter wrt;
@@ -1128,7 +1146,7 @@ private:
 
     int relax_ = 0;
 
-    int solcheckmode_ = 1+2+16+512;
+    int solcheckmode_ = 1+2+16;
     bool solcheckfail_ = false;
     double solfeastol_ = 1e-6;
     double solinttol_ = 1e-5;
@@ -1223,12 +1241,12 @@ private:
         "| 32, 64, 128, 256, 512 - similar, but "
         "      non-linear expressions are recomputed "
         "      (vs using their values reported by the solver.) "
-        "      This is an idealistic check, because "
+        "      *Experimental.* This is an idealistic check, because "
         "      it does not consider possible tolerances "
         "      applied by the solver when computing "
         "      expression values.\n"
                              "\n"
-                             "Default: 1+2+16+512.",
+                             "Default: 1+2+16.",
         options_.solcheckmode_, 0, 1024);
     GetEnv().AddOption("sol:chk:feastol sol:chk:eps sol:eps chk:eps",
         "Solution checking tolerance for objective values, variable "

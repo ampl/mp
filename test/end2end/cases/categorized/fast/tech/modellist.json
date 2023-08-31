@@ -32,7 +32,7 @@
     "files" : ["infeas_int_01.mod"],
     "options": {
       "ANYSOLVER_options":
-        "sol:chk:fail sol:chk:feastol=1e-7 sol:chk:inttol=1e-4 feasrelax=1"
+        "sol:chk:fail sol:chk:mode=1023 sol:chk:feastol=1e-7 sol:chk:inttol=1e-4 feasrelax=1"
     },
     "values": {
       "solve_result_num": 520

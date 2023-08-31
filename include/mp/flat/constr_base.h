@@ -195,7 +195,9 @@ double ComputeViolation(
       return INFINITY;
     }
   }
-  return x.bounds_viol(resvar);  // recomputed vars: bounds viol
+  return                              // recomputed var minus solver's
+      std::fabs(x[resvar] - x.raw(resvar))
+      + x.bounds_viol(resvar);
 }
 
 

@@ -113,11 +113,13 @@ public:
   /// Constructor
   VarInfoImpl(double ft, bool recomp_vals,
           VarVec x,
+          ArrayRef<double> x_raw,
           ArrayRef<var::Type> type,
           ArrayRef<double> lb, ArrayRef<double> ub,
           const char* sol_rnd, const char* sol_prec)
     : feastol_(ft), recomp_vals_(recomp_vals),
-      x_(std::move(x)), type_(type), lb_(lb), ub_(ub) {
+      x_(std::move(x)), x_raw_(x_raw),
+      type_(type), lb_(lb), ub_(ub) {
     assert((int)x_.size()>=(int)type_.size());  // feasrelax can add more
     assert(type_.size()==lb_.size());
     assert(type_.size()==ub_.size());
@@ -132,6 +134,13 @@ public:
   }
   /// Access VarVec
   const VarVec& get_x() const { return x_; }
+  /// Access raw variables
+  double raw(int i) const {
+    assert(i < x_raw_.size()
+           && "Can only access raw solver values "
+              "in idealistic mode and they should be available");
+    return x_raw_[i];
+  }
 
   /// Access integrality condition
   bool is_var_int(int i) const {
@@ -167,6 +176,9 @@ public:
   double feastol() const { return feastol_; }
   /// Using recomputed auxiliary vars?
   bool recomp_vals() const { return recomp_vals_; }
+  /// Using idealistic checking of solution
+  /// (without tolerances)?
+  bool idealistic() const { return recomp_vals(); }
   /// sol_rnd as string
   std::string solution_round() const
   { return sol_rnd_ < 100 ? std::to_string(sol_rnd_) : ""; }
@@ -200,6 +212,7 @@ private:
   bool recomp_vals_;   // variables are recomputed
 
   VarVec x_;   // can be rounded, recomputed, etc.
+  ArrayRef<double> x_raw_;     // solver values
   const ArrayRef<var::Type> type_;
   const ArrayRef<double> lb_;
   const ArrayRef<double> ub_;
@@ -229,13 +242,14 @@ struct SolCheck {
   SolCheck(ArrayRef<double> x,
            const pre::ValueMapDbl& duals,
            ArrayRef<double> obj,
+           ArrayRef<double> x_raw,
            ArrayRef<var::Type> vtype,
            ArrayRef<double> lb,  ArrayRef<double> ub,
            double feastol, double inttol,
            const char* sol_rnd, const char* sol_prec,
            bool recomp_vals, int chk_mode)
     : x_(feastol, recomp_vals,
-         x, vtype, lb, ub, sol_rnd, sol_prec),
+         x, x_raw, vtype, lb, ub, sol_rnd, sol_prec),
       y_(duals), obj_(obj),
       feastol_(feastol), inttol_(inttol),
       fRecomputedVals_(recomp_vals),
@@ -261,6 +275,10 @@ struct SolCheck {
   const VarInfoStatic& x_ext() const { return x_; }
   /// x[i]
   double x(int i) const { return x_[i]; }
+  /// objective values
+  const ArrayRef<double>& obj_vals() const
+  { return obj_; }
+
   /// Feasibility tolerance
   double GetFeasTol() const { return feastol_; }
 

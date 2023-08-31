@@ -6,14 +6,14 @@
 
 #include "mp/common.h"
 #include "mp/flat/expr_quadratic.h"
+#include "mp/flat/constr_eval.h"
 
 namespace mp {
 
 /// Linear objective incl. sense and name
 class LinearObjective {
   obj::Type sense_;
-  std::vector<double> coefs_;
-  std::vector<int> vars_;
+  LinTerms lt_;
   std::string name_;
 public:
   /// Construct
@@ -22,18 +22,20 @@ public:
   LinearObjective(obj::Type s, CoefVec&& c, VarVec&& v,
                   std::string nm = {}) noexcept :
     sense_(s),
-    coefs_(std::forward<CoefVec>(c)), vars_(std::forward<VarVec>(v)),
+    lt_(std::forward<CoefVec>(c), std::forward<VarVec>(v)),
     name_(std::move(nm)){ }
   /// Get sense
   obj::Type obj_sense() const { return sense_; }
+  /// Get lin terms
+  const LinTerms& GetLinTerms() const { return lt_; }
   /// Get N terms
-  int num_terms() const { assert(check()); return (int)vars_.size(); }
+  int num_terms() const { assert(check()); return lt_.size(); }
   /// Validate
-  bool check() const { return coefs_.size()==vars_.size(); }
+  bool check() const { return lt_.check(); }
   /// Coefs vector
-  const std::vector<double>& coefs() const { return coefs_; }
+  const std::vector<double>& coefs() const { return lt_.coefs(); }
   /// Var vector
-  const std::vector<int>& vars() const { return vars_; }
+  const std::vector<int>& vars() const { return lt_.vars(); }
   /// Name
   const char* name() const { return name_.c_str(); }
   /// Set name
@@ -41,7 +43,7 @@ public:
 
   /// Testing API
   bool operator==(const LinearObjective& lc) const {
-    return sense_==lc.sense_ && coefs_==lc.coefs_ && vars_==lc.vars_;
+    return sense_==lc.sense_ && lt_==lc.lt_;
   }
 };
 
@@ -66,6 +68,15 @@ public:
     return LinearObjective::operator==(qc) && qt_==qc.qt_;
   }
 };
+
+/// Compute value of an objective.
+template <class VarVec>
+double ComputeValue(
+    const QuadraticObjective& obj, const VarVec& x) {
+  return
+      obj.GetLinTerms().ComputeValue(x)
+      + obj.GetQPTerms().ComputeValue(x);
+}
 
 } // namespace mp
 

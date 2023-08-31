@@ -71,13 +71,19 @@ public:
   }
 
   /// Compute violation.
-  /// Negative if holds with slack.
+  /// For checking solver values,
+  /// report violation amount
+  /// (negative if holds with slack.)
+  /// In idealistic mode, report 1/0
+  /// (what's the violation amount of 0 for >0?)
   template <class VarInfo>
   double
   ComputeViolation(const VarInfo& x) const {
     auto bd = Body::ComputeValue(x);
-    return std::max(      // same for strict cmp?
+    if (!x.idealistic())
+      return std::max(      // same for strict cmp?
           RhsOrRange::lb() - bd, bd - RhsOrRange::ub());
+    return !RhsOrRange::is_valid(bd);
   }
 
   /// Sorting and merging terms, some solvers require
@@ -115,6 +121,9 @@ public:
   /// operator==
   bool equals(const AlgConRange& r) const
   { return lb()==r.lb() && ub()==r.ub(); }
+  /// validity of the body value
+  bool is_valid(double bv) const
+  { return bv >= lb() && bv <= ub(); }
 private:
   double lb_, ub_;
 };
@@ -153,6 +162,17 @@ public:
   /// operator==
   bool equals(const AlgConRhs& r) const
   { return rhs()==r.rhs(); }
+  /// validity of the body value
+  bool is_valid(double bv) const {
+    switch (kind_) {
+    case -2: return bv <  rhs();
+    case -1: return bv <= rhs();
+    case  0: return bv == rhs();
+    case  1: return bv >= rhs();
+    case  2: return bv >  rhs();
+    default: MP_RAISE("wrong comparison kind");
+    }
+  }
 private:
   double rhs_;
 };

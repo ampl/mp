@@ -174,7 +174,7 @@ public:
   }
 
   ///////////////////////////// OBJECTIVES ////////////////////////////
-protected:
+public:
   using ObjList = std::vector<QuadraticObjective>;
   const ObjList& get_objectives() const { return objs_; }
   ObjList& get_objectives() { return objs_; }
