@@ -197,7 +197,7 @@ double ComputeViolation(
   }
   return                              // recomputed var minus solver's
       std::fabs(x[resvar] - x.raw(resvar))
-      + x.bounds_viol(resvar);
+      + std::max(0.0, x.bounds_viol(resvar));
 }
 
 

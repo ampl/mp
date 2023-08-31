@@ -1152,6 +1152,7 @@ private:
     double solinttol_ = 1e-5;
     bool dont_use_sol_round_ = false;
     bool dont_use_sol_prec_ = false;
+    int solchkoutlev_ = 0;
   };
   Options options_;
 
