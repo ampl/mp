@@ -74,15 +74,16 @@ public:
   /// For checking solver values,
   /// report violation amount
   /// (negative if holds with slack.)
-  /// In idealistic mode, report 1/0
+  /// In logical mode, report 1/0
   /// (what's the violation amount of 0 for >0?)
   template <class VarInfo>
   double
-  ComputeViolation(const VarInfo& x) const {
-    auto bd = Body::ComputeValue(x);
-    if (!x.idealistic())
+  ComputeViolation(const VarInfo& x, bool logical=false) const {
+    double bd = Body::ComputeValue(x);
+    if (!logical) {
       return std::max(      // same for strict cmp?
           RhsOrRange::lb() - bd, bd - RhsOrRange::ub());
+    }
     return !RhsOrRange::is_valid(bd);
   }
 
@@ -112,6 +113,8 @@ public:
   static constexpr const char* GetTypeName() { return "Range"; }
   /// Constructor
   AlgConRange(double l, double u) : lb_(l), ub_(u) { }
+  /// kind placeholder
+  int kind() const { return -100; }
   /// range lb()
   double lb() const { return lb_; }
   /// range ub()

@@ -136,7 +136,7 @@ public:
   const VarVec& get_x() const { return x_; }
   /// Access raw variables
   double raw(int i) const {
-    assert(i < x_raw_.size()
+    assert(i < (int)x_raw_.size()
            && "Can only access raw solver values "
               "in idealistic mode and they should be available");
     return x_raw_[i];
@@ -240,18 +240,18 @@ struct SolCheck {
   /// Construct.
   /// @param chkmode: can be subset of 1+2+4+8+16
   SolCheck(ArrayRef<double> x,
-           const pre::ValueMapDbl& duals,
+           const pre::ValueMapDbl& , //duals,
            ArrayRef<double> obj,
            ArrayRef<double> x_raw,
            ArrayRef<var::Type> vtype,
            ArrayRef<double> lb,  ArrayRef<double> ub,
-           double feastol, double inttol,
+           double feastol, double , //inttol,
            const char* sol_rnd, const char* sol_prec,
            bool recomp_vals, int chk_mode)
     : x_(feastol, recomp_vals,
          x, x_raw, vtype, lb, ub, sol_rnd, sol_prec),
-      y_(duals), obj_(obj),
-      feastol_(feastol), inttol_(inttol),
+      obj_(obj),
+      feastol_(feastol),
       fRecomputedVals_(recomp_vals),
       check_mode_(chk_mode) { }
   /// Any violations?
@@ -311,10 +311,8 @@ struct SolCheck {
 
 private:
   VarInfoStatic x_;
-  const pre::ValueMapDbl& y_;
   ArrayRef<double> obj_;
   double feastol_;
-  double inttol_;
   bool fRecomputedVals_;
   int check_mode_;
 

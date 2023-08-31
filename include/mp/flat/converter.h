@@ -651,11 +651,11 @@ protected:
   = [this](int i, const VarInfoRecomp& x) {
     if (MPCD( HasInitExpression(i) )) {
       const auto& iexpr = MPCD( GetInitExpression(i) );
-      assert(iexpr.GetCK()
-             ->GetResultVar(iexpr.GetIndex()) == i);
-      if (!iexpr.GetCK()->IsUnused(iexpr.GetIndex()))
-        return iexpr.GetCK()
-            ->ComputeValue(iexpr.GetIndex(), x);
+      auto pCK = iexpr.GetCK();
+      auto resvar = pCK->GetResultVar(iexpr.GetIndex());
+      assert(resvar == i);
+      if (!pCK->IsUnused(iexpr.GetIndex()))
+        return pCK->ComputeValue(iexpr.GetIndex(), x);
     }
     return x.get_x().get_x()[i];  // no recomputation
   };
@@ -663,7 +663,8 @@ protected:
   /// Recompute auxiliary variables
   ArrayRef<double> RecomputeAuxVars(ArrayRef<double> x) {
     VarInfoRecomp vir {
-      options_.solfeastol_, false,
+      options_.solfeastol_,
+          true,        // currently not relevant for recomputation
       {x, recomp_fn},
       {},              // now raw values
       GetModel().var_type_vec(),
@@ -1146,7 +1147,7 @@ private:
 
     int relax_ = 0;
 
-    int solcheckmode_ = 0;   //1+2+16? +512?;
+    int solcheckmode_ = 1+2+16+512;
     bool solcheckfail_ = false;
     double solfeastol_ = 1e-6;
     double solinttol_ = 1e-5;
@@ -1247,7 +1248,7 @@ private:
         "      applied by the solver when computing "
         "      expression values.\n"
                              "\n"
-                             "Default: 0.",
+                             "Default: 1+2+16+512.",
         options_.solcheckmode_, 0, 1024);
     GetEnv().AddOption("sol:chk:feastol sol:chk:eps sol:eps chk:eps",
         "Solution checking tolerance for objective values, variable "

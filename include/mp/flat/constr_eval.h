@@ -281,7 +281,7 @@ double ComputeValue(
 template <class Con, class VarVec>
 double ComputeValue(
     const ConditionalConstraint<Con>& con, const VarVec& x) {
-  auto viol = con.GetConstraint().ComputeViolation(x);
+  auto viol = con.GetConstraint().ComputeViolation(x, true);
   bool ccon_valid = viol<=0.0;
   return ccon_valid;
 }

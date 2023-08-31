@@ -281,7 +281,7 @@ public:
       prepro.narrow_result_bounds(0.0, 0.0);
       return;
     }
-    if (con.GetArguments().size() == n01.second) {
+    if ((int)con.GetArguments().size() == n01.second) {
       prepro.narrow_result_bounds(1.0, 1.0);
       return;
     }
@@ -307,7 +307,7 @@ public:
       prepro.narrow_result_bounds(1.0, 1.0);
       return;
     }
-    if (con.GetArguments().size() == n01.first) {
+    if ((int)con.GetArguments().size() == n01.first) {
       prepro.narrow_result_bounds(0.0, 0.0);
       return;
     }
