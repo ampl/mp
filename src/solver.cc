@@ -703,6 +703,20 @@ void BasicSolver::AddWarning(
     v.second = std::move(msg);
 }
 
+/// Get a warning type
+const std::pair<int, std::string>&
+BasicSolver::GetWarning(const std::string& key) {
+  static std::pair<int, std::string> dummy;
+  const auto& wm = GetWarningsMap();
+  if (wm.end() != wm.find(key))
+    return wm.at(key);
+  return dummy;
+}
+
+void BasicSolver::ClearWarning(const std::string& key) {
+  GetWarningsMap().erase(key);
+}
+
 std::string BasicSolver::GetWarnings() const {
   if (GetWarningsMap().size()) {
     std::string wrn = "------------ WARNINGS ------------\n";

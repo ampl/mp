@@ -383,6 +383,13 @@ protected:
     auto wrn = GetWarnings();
     if (wrn.size())
       writer.write("\n{}", wrn);
+    const auto& scw0 = GetWarning(GetSolCheckWarningKey(false));
+    const auto& scw1 = GetWarning(GetSolCheckWarningKey(true));
+    if (scw0.second.size() || scw1.second.size()) {
+      ++ stats_.n_altern_sol_checks_failed_;
+      ClearWarning(GetSolCheckWarningKey(false));
+      ClearWarning(GetSolCheckWarningKey(true));
+    }
     if (round() && MP_DISPATCH(IsMIP()))
       RoundSolution(sol.primal, writer);
     HandleFeasibleSolution(SolveCode(), writer.c_str(),
@@ -450,6 +457,10 @@ protected:
                      kIntermSol_,
                      solution_stub(), solution_stub(),
                      kIntermSol_);
+      if (stats_.n_altern_sol_checks_failed_)
+        writer.write(
+              "{} alternative solution checks failed.\n",
+              stats_.n_altern_sol_checks_failed_);
     }
     auto wrn = GetWarnings();
     if (wrn.size())
@@ -569,6 +580,7 @@ protected:
     steady_clock::time_point time = steady_clock::now();
     double setup_time = 0.0;
     double solution_time = 0.0;
+    int n_altern_sol_checks_failed_ = 0;
   };
   Stats stats_;
 
@@ -606,6 +618,7 @@ private:
   ///////////////////////// STORING SOLVER MESSAGES //////////////////////
 private:
   std::string solver_msg_extra_;
+
 protected:
   void AddToSolverMessage(const std::string& msg)
   { solver_msg_extra_ += msg; }

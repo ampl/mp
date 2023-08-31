@@ -335,6 +335,13 @@ public:
   void AddWarning(
       std::string key, std::string msg, bool replace=false);
 
+  /// Get a warning type
+  const std::pair<int, std::string>&
+  GetWarning(const std::string& key);
+
+  /// Clear a warning type
+  void ClearWarning(const std::string& key);
+
   /// Get warnings as string
   std::string GetWarnings() const;
 
@@ -399,8 +406,7 @@ public:
   void ParseOptionString(const char *s, unsigned flags);
 
   /// Map to count warnings by types.
-  /// Stores char* to names / descriptions for speed
-  /// Indexed by pointers to names, not values
+  /// Stores just 1 message for each type.
   using WarningsMap =
     std::map< std::string,    // warning category
       std::pair<int, std::string> >;    // total number, description of the 1st
