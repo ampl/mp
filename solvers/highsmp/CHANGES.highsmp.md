@@ -1,6 +1,11 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
+## 20230831
+- Solution checking, options sol:chk:* (experimental).
+- Preprocess And/Or constraints.
+
+
 ## 20230817
 - Fixed a bug causing repeated names for
   auxiliary variables and constraints.

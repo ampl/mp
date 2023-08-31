@@ -1,8 +1,8 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
-## unreleased
-- Check solutions, options sol:chk:*.
+## 20230831
+- Solution checking, options sol:chk:* (experimental).
 - Preprocess And/Or constraints.
 
 

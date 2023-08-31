@@ -1146,7 +1146,7 @@ private:
 
     int relax_ = 0;
 
-    int solcheckmode_ = 1+2+16;
+    int solcheckmode_ = 0;   //1+2+16? +512?;
     bool solcheckfail_ = false;
     double solfeastol_ = 1e-6;
     double solinttol_ = 1e-5;
@@ -1247,7 +1247,7 @@ private:
         "      applied by the solver when computing "
         "      expression values.\n"
                              "\n"
-                             "Default: 1+2+16.",
+                             "Default: 0.",
         options_.solcheckmode_, 0, 1024);
     GetEnv().AddOption("sol:chk:feastol sol:chk:eps sol:eps chk:eps",
         "Solution checking tolerance for objective values, variable "
