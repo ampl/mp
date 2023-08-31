@@ -147,7 +147,10 @@ public:
 
   /// Returns true also when fixed
   bool is_binary_var(int v) const {
-    return 0.0<=lb(v) && 1.0>=ub(v) && is_integer_var(v);
+    return
+        (0.0==lb(v) && 1.0==ub(v) && is_integer_var(v))
+        || (is_fixed(v)
+            && (0.0==fixed_value(v) || 1.0==fixed_value(v)));
   }
 
   template <class VarArray=std::initializer_list<int> >

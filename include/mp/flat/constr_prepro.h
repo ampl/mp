@@ -21,7 +21,8 @@ namespace mp {
 
 /// A mix-in base class
 /// providing preprocessors of flat constraints.
-/// Currently used before adding a constraint (if not simplified to nothing).
+/// Currently used before adding a constraint
+/// (if not simplified to nothing).
 template <class Impl>
 class ConstraintPreprocessors {
 public:
@@ -271,16 +272,68 @@ public:
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      AndConstraint& , PreprocessInfo& prepro) {
+      AndConstraint& con, PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
+    // Remove fixed variables for XPRESS (solvers/#61).
+    auto n01 = count_fixed_01(con.GetArguments());
+    if (n01.first) {               // AND = false
+      prepro.narrow_result_bounds(0.0, 0.0);
+      return;
+    }
+    if (con.GetArguments().size() == n01.second) {
+      prepro.narrow_result_bounds(1.0, 1.0);
+      return;
+    }
+    if (n01.second) {
+      std::vector<int> arg1;
+      arg1.reserve(con.GetArguments().size() - n01.second);
+      for (auto x: con.GetArguments()) {
+        if (MPCD( lb(x) ) <= 0.0)    // not fixed
+          arg1.push_back(x);
+      }
+      con.GetArguments() = arg1;
+    }
   }
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
-      OrConstraint& , PreprocessInfo& prepro) {
+      OrConstraint& con, PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
+    // Remove fixed variables for XPRESS (solvers/#61).
+    auto n01 = count_fixed_01(con.GetArguments());
+    if (n01.second) {               // OR = true
+      prepro.narrow_result_bounds(1.0, 1.0);
+      return;
+    }
+    if (con.GetArguments().size() == n01.first) {
+      prepro.narrow_result_bounds(0.0, 0.0);
+      return;
+    }
+    if (n01.first) {
+      std::vector<int> arg1;
+      arg1.reserve(con.GetArguments().size() - n01.first);
+      for (auto x: con.GetArguments()) {
+        if (MPCD( ub(x) ) >= 1.0)    // not fixed
+          arg1.push_back(x);
+      }
+      con.GetArguments() = arg1;
+    }
+  }
+
+  /// Count N fixed binary vars
+  template <class Vec>
+  std::pair<int, int> count_fixed_01(const Vec& vec) const {
+    std::pair<int, int> result {0, 0};
+    for (auto x: vec) {
+      assert(MPCD( is_binary_var(x) ));
+      if (MPCD( ub(x) ) <= 0.0)
+        ++ result.first;
+      if (MPCD( lb(x) ) >= 1.0)
+        ++ result.second;
+    }
+    return result;
   }
 
   template <class PreprocessInfo>

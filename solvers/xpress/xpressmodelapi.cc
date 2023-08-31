@@ -184,8 +184,10 @@ void XpressmpModelAPI::AddConstraint(const SOS2Constraint& sos) {
     (double*)sos.get_weights().data()));
 }
 
-template <class Args, class Params, class NumOrLogic, class Id> void XpressmpModelAPI::addGenCon(
-  const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>& c, int xpressConType)
+template <class Args, class Params, class NumOrLogic, class Id>
+void XpressmpModelAPI::addGenCon(
+    const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>& c,
+    int xpressConType)
 {
   int type[] = { xpressConType };
   int resultant[] = { c.GetResultVar() };
