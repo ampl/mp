@@ -652,8 +652,10 @@ protected:
     if (MPCD( HasInitExpression(i) )) {
       const auto& iexpr = MPCD( GetInitExpression(i) );
       auto pCK = iexpr.GetCK();
+#if __GNUC__ > 8            // manylinux2010 fails
       auto resvar = pCK->GetResultVar(iexpr.GetIndex());
       assert(resvar == i);
+#endif
       if (!pCK->IsUnused(iexpr.GetIndex()))
         return pCK->ComputeValue(iexpr.GetIndex(), x);
     }
