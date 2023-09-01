@@ -484,8 +484,6 @@ endforeach ()
 
 # Option BUILD_TESTS
 option(BUILD_TESTS "Build unit tests" ON)
-## Fail on gcc 8.3.1
-option(BUILD_FLAT_CONVERTER_TESTS "Build flat converter unit tests" OFF)
 include(CTest)
 enable_testing()
 if(BUILD_TESTS)

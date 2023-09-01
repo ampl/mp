@@ -123,12 +123,6 @@ add_mp_test(problem-builder-test problem-builder-test.cc)
 add_mp_test(rstparser-test rstparser-test.cc)
 add_mp_test(safeint-test safeint-test.cc)
 
-if (BUILD_FLAT_CONVERTER_TESTS)
-  message(STATUS "Building flat converter unit tests. "
-    "Set -DBUILD_FLAT_CONVERTER_TESTS=off to switch off.")
-  add_mp_test(converter-flat-test converter-flat-test.cpp)
-  add_mp_test(converter-mip-test  converter-mip-test.cpp)
-else()
-  message(STATUS "Not building flat converter unit tests. "
-    "Set -DBUILD_FLAT_CONVERTER_TESTS=on to switch on.")
-endif()
+add_mp_test(converter-flat-test converter-flat-test.cpp)
+add_mp_test(converter-mip-test  converter-mip-test.cpp)
+
