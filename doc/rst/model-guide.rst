@@ -26,4 +26,5 @@ while below follows a comprehensive guide.
    modeling-expressions
    modeling-efficiency
    modeling-numerics
+   solution-check
 

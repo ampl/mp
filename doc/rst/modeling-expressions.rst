@@ -495,7 +495,7 @@ MP library provides additional conversion into solver-specific conic forms. Exam
 
 
 *Note:* Mosek cannot mix SOCP and general quadratic constraints.
-Option `cvt:socp=0` results in second-order conic
+Option ``cvt:socp=0`` results in second-order conic
 constraints being passed to the solver as quadratics, even if
 the solver has native SOCP API.
 
