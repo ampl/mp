@@ -5,10 +5,10 @@
 
 #include "mp/backend-to-model-api.h"
 #define CBC_EXTERN_C
-  #include "CbcModel.hpp"
+  #include "coin/CbcModel.hpp"
   
-  #include "CbcSolver.hpp"
-#include "Cbc_C_Interface.h"
+  #include "coin/CbcSolver.hpp"
+#include "coin/Cbc_C_Interface.h"
 
 #include "mp/format.h"
 

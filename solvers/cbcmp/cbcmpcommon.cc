@@ -2,7 +2,7 @@
 
 #include "cbcmpcommon.h"
 
-#include "CbcSOS.hpp"
+#include "coin/CbcSOS.hpp"
 
 namespace mp {
 
