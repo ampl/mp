@@ -29,6 +29,7 @@ add_prefix(mp_docs ${DOC_BASEDIR}/rst/
     modeling-expressions.rst
     modeling-efficiency.rst
     modeling-numerics.rst
+    solution-check.rst
     features-guide.rst
     models.rst
     intro.rst components.rst drivers.rst
