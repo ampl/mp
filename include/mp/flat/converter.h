@@ -775,71 +775,65 @@ protected:
 
   void GenerateViolationsReport(SolCheck& chk) {
     fmt::MemoryWriter wrt;
-    if (chk.HasAnyConViols()) {
+    if (chk.HasAnyViols())
       wrt.write(
-            "Constraint violations\n"
-            "    (sol:chk:feastol={}, sol:chk:inttol={},\n"
-            "     solution_round='{}', solution_precision='{}'):\n",
+            "   [ sol:chk:feastol={}, sol:chk:inttol={},\n"
+            "     solution_round='{}', solution_precision='{}' ]\n",
             options_.solfeastol_, options_.solinttol_,
             chk.x_ext().solution_round(),
             chk.x_ext().solution_precision());
-      Gen1Viol(chk.VarViolBnds().at(0), wrt,
-               "  - {} original variable(s) violate bounds,\n"
-               "      max by {}");
-      Gen1Viol(chk.VarViolBnds().at(1), wrt,
-               "  - {} auxiliary variable(s) violate bounds,\n"
-               "      max by {}");
-      Gen1Viol(chk.VarViolIntty().at(0), wrt,
-               "  - {} original variable(s) violate integrality,\n"
-               "      max by {}");
-      Gen1Viol(chk.VarViolIntty().at(1), wrt,
-               "  - {} auxiliary variable(s) violate integrality,\n"
-               "      max by {}");
+    if (chk.HasAnyConViols()) {
+      Gen1Viol(chk.VarViolBnds().at(0), wrt, true,
+               "  - {} original variable(s) violate bounds");
+      Gen1Viol(chk.VarViolBnds().at(1), wrt, true,
+               "  - {} auxiliary variable(s) violate bounds");
+      Gen1Viol(chk.VarViolIntty().at(0), wrt, true,
+               "  - {} original variable(s) violate integrality");
+      Gen1Viol(chk.VarViolIntty().at(1), wrt, true,
+               "  - {} auxiliary variable(s) violate integrality");
     }
-    GenConViol(chk.ConViolAlg(), wrt, "Algebraic");
-    GenConViol(chk.ConViolLog(), wrt, "Logical");
+    GenConViol(chk.ConViolAlg(), wrt, 0);
+    GenConViol(chk.ConViolLog(), wrt, 1);
     if (chk.HasAnyObjViols()) {
-      wrt.write("Objective value violations"
-                "    (sol:chk:feastol={},\n"
-                "     solution_round='{}', solution_precision='{}'):\n",
-                options_.solfeastol_,
-                chk.x_ext().solution_round(),
-                chk.x_ext().solution_precision());
-      Gen1Viol(chk.ObjViols(), wrt,
-               "  - {} objective value(s) violated,\n      max by {}");
+      wrt.write("Objective value violations:\n");
+      Gen1Viol(chk.ObjViols(), wrt, true,
+               "  - {} objective value(s) violated");
     }
     chk.SetReport( wrt.str() );
   }
 
   void Gen1Viol(
       const ViolSummary& vs, fmt::MemoryWriter& wrt,
-      const std::string& format) {
+      bool f_max, const std::string& format) {
     if (vs.N_) {
-      wrt.write(format, vs.N_, vs.epsMax_);
-      if (vs.name_ && *vs.name_ != '\0')
+      wrt.write(format, vs.N_);
+      if (f_max)
+        wrt.write(",\n      up to {:.0E}", vs.epsMax_);
+      if (vs.name_ && *vs.name_ != '\0') {
+        if (!f_max)
+          wrt.write("\n     ");
         wrt.write(" (item '{}')", vs.name_);
+      }
       wrt.write("\n");
     }
   }
 
   void GenConViol(
       const std::map< std::string, ViolSummArray<3> >& cvmap,
-      fmt::MemoryWriter& wrt, const std::string& classnm) {
+      fmt::MemoryWriter& wrt, int alg_log) {
+    std::string classnm = alg_log ? "Logical" : "Algebraic";
     if (cvmap.size()) {
-      wrt.write(classnm + " constraint violations:\n");
+      wrt.write(classnm + " expression violations:\n");
       for (const auto& cva: cvmap) {
-        Gen1Viol(cva.second.at(0), wrt,
-                 "  - {} original constraint(s) of type '"
-                 + std::string(cva.first)
-                 + "' violate bounds,\n      max by {}");
-        Gen1Viol(cva.second.at(1), wrt,
-                 "  - {} intermediate auxiliary constraint(s) of type '"
-                 + std::string(cva.first)
-                 + "' violate bounds,\n      max by {}");
-        Gen1Viol(cva.second.at(2), wrt,
-                 "  - {} final auxiliary constraint(s) of type '"
-                 + std::string(cva.first)
-                 + "' violate bounds,\n      max by {}");
+        Gen1Viol(cva.second.at(0), wrt, !alg_log,
+                 "  - {} original expression(s) of type '"
+                 + std::string(cva.first) + "'");
+        Gen1Viol(cva.second.at(1), wrt, !alg_log,
+                 "  - {} intermediate auxiliary expression(s) of type '"
+                 + std::string(cva.first) + "'");
+        Gen1Viol(cva.second.at(2), wrt, !alg_log,
+                 "  - {} final auxiliary expression(s) of type '"
+                 + std::string(cva.first) + "'");
       }
     }
   }
