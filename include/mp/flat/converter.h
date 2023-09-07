@@ -712,7 +712,7 @@ protected:
       CheckCons(chk);
     if (chk.check_mode() & 16)
       CheckObjs(chk);
-    GenerateViolationsReport(chk);
+    GenerateViolationsReport(chk, if_recomp_vals);
     // Should messages for realistic and idealistic
     // modes be coordinated?
     // I.e., when no expressions.
@@ -781,12 +781,13 @@ protected:
     }
   }
 
-  void GenerateViolationsReport(SolCheck& chk) {
+  void GenerateViolationsReport(
+      SolCheck& chk, bool f_idealistic) {
     fmt::MemoryWriter wrt;
     if (chk.HasAnyViols())
       wrt.write(
             "   [ sol:chk:feastol={}, :feastolrel={}, :inttol={},\n"
-            "     solution_round='{}', solution_precision='{}' ]\n",
+            "       solution_round='{}', solution_precision='{}' ]\n",
             options_.solfeastol_, options_.solfeastolrel_,
             options_.solinttol_,
             chk.x_ext().solution_round(),
@@ -808,6 +809,9 @@ protected:
       Gen1Viol(chk.ObjViols(), wrt, true,
                "  - {} objective value(s) violated");
     }
+    if (f_idealistic && chk.HasAnyViols())
+      wrt.write(
+            "Idealistic check is an indicator only, see documentation.");
     chk.SetReport( wrt.str() );
   }
 
@@ -836,14 +840,16 @@ protected:
   std::string Gen1ViolMax(
       bool f_max, double viol, const char* nm, bool relVsAbs) {
     fmt::MemoryWriter wrt;
-    if (f_max)
-      wrt.write("up to {:.0E} ({}",
-                viol, relVsAbs ? "rel" : "abs");
-    if (nm && *nm != '\0') {
-      wrt.write(f_max ? ", " : "(");
-      wrt.write("item '{}'", nm);
-    } else if (f_max)
-      wrt.write(")");
+    if (viol>0.0) {
+      if (f_max)
+        wrt.write("up to {:.0E} ({}",
+                  viol, relVsAbs ? "rel" : "abs");
+      if (nm && *nm != '\0') {
+        wrt.write(f_max ? ", " : "(");
+        wrt.write("item '{}')", nm);
+      } else if (f_max)
+        wrt.write(")");
+    }
     return wrt.str();
   }
 
