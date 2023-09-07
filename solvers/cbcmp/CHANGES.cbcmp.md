@@ -1,6 +1,9 @@
 Summary of recent updates to CBCMP for AMPL
 ===========================================
 
+## 20230907
+- Updated to CBC library version 2.10.10
+
 ## 20230831
 - Solution checking, options sol:chk:* (experimental).
 - Preprocess And/Or constraints.
