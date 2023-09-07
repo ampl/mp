@@ -44,12 +44,12 @@ public:
 
   /// Compute violation
   template <class VarInfo>
-  double ComputeViolation(const VarInfo& x) const {
+  Violation ComputeViolation(const VarInfo& x) const {
     assert(b_<(int)x.size());
     auto xb = x[b_];
     if (std::round(xb) == bv_)      // Implication needed
       return con_.ComputeViolation(x);
-    return 0.0;
+    return {0.0, 0.0};
   }
 
 
@@ -151,7 +151,7 @@ public:
 
   /// Compute violation
   template <class VarInfo>
-  double ComputeViolation(const VarInfo& x) const {
+  Violation ComputeViolation(const VarInfo& x) const {
     if (1==type)
       return ComputeViolationSOS1(x);
     return ComputeViolationSOS2(x);
@@ -159,18 +159,18 @@ public:
 
   /// Compute violation
   template <class VarInfo>
-  double ComputeViolationSOS1(const VarInfo& x) const {
+  Violation ComputeViolationSOS1(const VarInfo& x) const {
     int nnz=0;
     for (int i=(int)v_.size(); i--; ) {
       if (x.is_nonzero(v_[i]))
         ++nnz;
     }
-    return std::max(0, nnz-1);
+    return {(double)std::max(0, nnz-1), 0.0};
   }
 
   /// Compute violation
   template <class VarInfo>
-  double ComputeViolationSOS2(const VarInfo& x) const {
+  Violation ComputeViolationSOS2(const VarInfo& x) const {
     int npos=0, pos1=-1, pos2=-1;
     int posDist=1;     // should be 1
     for (int i=(int)v_.size(); i--; ) {
@@ -184,8 +184,8 @@ public:
         }
       }
     }
-    return std::max(0, npos-2)
-        + std::abs(1 - posDist);
+    return {double(std::max(0, npos-2)
+        + std::abs(1 - posDist)), 0.0};
   }
 
 
@@ -247,13 +247,13 @@ public:
 
   /// Compute violation
   template <class VarInfo>
-  double ComputeViolation(const VarInfo& x) const {
+  Violation ComputeViolation(const VarInfo& x) const {
     auto ve = compl_expr_.ComputeValue(x);
     if (x.is_at_lb(compl_var_))
-      return -ve;
+      return {-ve, 0.0};
     else if (x.is_at_ub(compl_var_))
-      return ve;
-    return std::fabs(ve);
+      return {ve, 0.0};
+    return {std::fabs(ve), 0.0};
   }
 
 

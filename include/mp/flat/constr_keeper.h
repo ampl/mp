@@ -32,23 +32,35 @@ static const mp::OptionValueInfo values_item_acceptance[] = {
 
 /// Violation summary for a class of vars/cons/objs
 struct ViolSummary {
-  /// Check if this violation should be counted
+  /// Check if this violation should be counted.
   void CheckViol(
-      double val, double eps, const char* nm) {
-    if (val > eps)
-      CountViol(val, nm);
+      Violation viol,
+      double epsabs, double epsrel,
+      const char* nm) {
+    auto chk = viol.Check(epsabs, epsrel);
+    if (chk.first)
+      CountViol(viol, chk.second, nm);
   }
   /// Count violation
-  void CountViol(double val, const char* nm) {
+  void CountViol(
+      Violation viol, double violRel, const char* nm) {
     ++N_;
-    if (epsMax_ < val)
-      epsMax_ = val;
-    name_ = nm;
+    if (epsAbsMax_ < viol.viol_) {
+      epsAbsMax_ = viol.viol_;
+      nameAbs_ = nm;
+    }
+    if (epsRelMax_ < violRel) {
+      epsRelMax_ = violRel;
+      nameRel_ = nm;
+    }
   }
   int N_ {0};
-  double epsMax_ {0.0};
-  const char* name_ {nullptr};
+  double epsAbsMax_ {0.0};
+  const char* nameAbs_ {nullptr};
+  double epsRelMax_ {0.0};
+  const char* nameRel_ {nullptr};
 };
+
 
 /// Array of violation summaries.
 /// For different kinds, e.g., original / aux vars.
@@ -245,13 +257,13 @@ struct SolCheck {
            ArrayRef<double> x_raw,
            ArrayRef<var::Type> vtype,
            ArrayRef<double> lb,  ArrayRef<double> ub,
-           double feastol, double , //inttol,
+           double feastol, double feastolrel,
            const char* sol_rnd, const char* sol_prec,
            bool recomp_vals, int chk_mode)
     : x_(feastol, recomp_vals,
          x, x_raw, vtype, lb, ub, sol_rnd, sol_prec),
       obj_(obj),
-      feastol_(feastol),
+      feastol_(feastol), feastolrel_(feastolrel),
       fRecomputedVals_(recomp_vals),
       check_mode_(chk_mode) { }
   /// Any violations?
@@ -279,8 +291,10 @@ struct SolCheck {
   const ArrayRef<double>& obj_vals() const
   { return obj_; }
 
-  /// Feasibility tolerance
+  /// Absolute feasibility tolerance
   double GetFeasTol() const { return feastol_; }
+  /// Relative feasibility tolerance
+  double GetFeasTolRel() const { return feastolrel_; }
 
   /// Using recomputed aux vars?
   bool if_recomputed() const { return fRecomputedVals_; }
@@ -313,6 +327,7 @@ private:
   VarInfoStatic x_;
   ArrayRef<double> obj_;
   double feastol_;
+  double feastolrel_;
   bool fRecomputedVals_;
   int check_mode_;
 
@@ -906,7 +921,9 @@ public:
             c_class = 4;      // intermediate
           if (c_class & chk.check_mode()) {
             auto viol = cons_[i].con_.ComputeViolation(x);
-            if (viol > chk.GetFeasTol()) {
+            auto cr = viol.Check(
+                  chk.GetFeasTol(), chk.GetFeasTolRel());
+            if (cr.first) {
               if (!conviolarray)
                 conviolarray =         // lazy map access
                     &conviolmap[GetShortTypeName()];
@@ -917,7 +934,7 @@ public:
                                           ? 2 : 1;
               assert(index < (int)conviolarray->size());
               (*conviolarray)[index].CountViol(
-                    viol, cons_[i].con_.name());
+                    viol, cr.second, cons_[i].con_.name());
             }
           }
         }

@@ -75,16 +75,23 @@ public:
   /// report violation amount
   /// (negative if holds with slack.)
   /// In logical mode, report 1/0
-  /// (what's the violation amount of 0 for >0?)
+  /// (what's the violation amount
+  ///  for "x>0" when x==0?)
   template <class VarInfo>
-  double
+  Violation
   ComputeViolation(const VarInfo& x, bool logical=false) const {
     double bd = Body::ComputeValue(x);
     if (!logical) {
-      return std::max(      // same for strict cmp?
-          RhsOrRange::lb() - bd, bd - RhsOrRange::ub());
+      if (RhsOrRange::lb() > bd)
+        return {RhsOrRange::lb() - bd, RhsOrRange::lb()};
+      if (bd > RhsOrRange::ub())
+        return {bd - RhsOrRange::ub(), RhsOrRange::ub()};
+      return
+      {std::max( // negative. Same for strict cmp?
+                 RhsOrRange::lb() - bd, bd - RhsOrRange::ub()),
+            0.0};
     }
-    return !RhsOrRange::is_valid(bd);
+    return {double(!RhsOrRange::is_valid(bd)), 1.0};
   }
 
   /// Sorting and merging terms, some solvers require

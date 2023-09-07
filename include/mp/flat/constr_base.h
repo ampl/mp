@@ -16,6 +16,25 @@
 
 namespace mp {
 
+/// Constraint/obj violation
+struct Violation {
+  double viol_;    // abs violation: >0 if really violated
+  double valX_;    // value compared to
+  /// Compute whether violated + relative violation.
+  /// Both absolute and relative should be violated
+  /// (relative only if refvar!=0.)
+  std::pair<bool, double> Check(
+      double epsabs, double epsrel) const {
+    double violRel {0.0};
+    if (viol_ > epsabs
+        && (0.0==std::fabs(valX_)
+            || (violRel=std::fabs(viol_/valX_))>epsrel))
+      return {true, violRel};
+    return {false, 0.0};
+  }
+};
+
+
 /// Custom constraints to derive from, so that overloaded default settings work
 class BasicConstraint {
 public:
@@ -40,8 +59,8 @@ public:
   int GetResultVar() const { return -1; }
   /// Compute violation
   template <class VarInfo>
-  double ComputeViolation(const VarInfo& ) const
-  { return 0.0; }
+  Violation ComputeViolation(const VarInfo& ) const
+  { return {0.0, 0.0}; }
 
 private:
   std::string name_;
@@ -159,7 +178,7 @@ public:
 
   /// Compute violation
   template <class VarVec>
-  double ComputeViolation(const VarVec& x) const;
+  Violation ComputeViolation(const VarVec& x) const;
 };
 
 
@@ -178,7 +197,7 @@ double ComputeValue(const Con& , const VarVec& ) {
 /// should be redefined for cones.
 template <class Args, class Params,
           class NumOrLogic, class Id, class VarVec>
-double ComputeViolation(
+Violation ComputeViolation(
     const CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>& c,
     const VarVec& x) {
   auto resvar = c.GetResultVar();
@@ -186,18 +205,18 @@ double ComputeViolation(
     auto viol = x[resvar] - ComputeValue(c, x);
     switch (c.GetContext().GetValue()) {
     case Context::CTX_MIX:
-      return std::fabs(viol);
+      return {std::fabs(viol), x[resvar]};
     case Context::CTX_POS:
-      return viol;
+      return {viol, x[resvar]};
     case Context::CTX_NEG:
-      return -viol;
+      return {-viol, x[resvar]};
     default:
-      return INFINITY;
+      return {INFINITY, 0.0};
     }
   }
   return                              // recomputed var minus solver's
-      std::fabs(x[resvar] - x.raw(resvar))
-      + std::max(0.0, x.bounds_viol(resvar));
+  { std::fabs(x[resvar] - x.raw(resvar))
+        + std::max(0.0, x.bounds_viol(resvar)), x[resvar]};
 }
 
 
@@ -294,19 +313,25 @@ public:
   /// If the subconstr holds but should not,
   /// return the opposite gap. Similar to Indicator.
   template <class VarVec>
-  double ComputeViolation(const VarVec& x) {
+  Violation ComputeViolation(const VarVec& x) {
     auto viol = GetConstraint().ComputeViolation(x);
-    bool ccon_valid = viol<=0.0;
+    bool ccon_valid = viol.viol_<=0.0;
     bool has_arg = x[GetResultVar()] >= 0.5;
     switch (this->GetContext().GetValue()) {
     case Context::CTX_MIX:    // Viol is non-positive if holds
-      return has_arg == ccon_valid ? 0.0 : std::fabs(viol);
+      if (has_arg == ccon_valid)
+        return {0.0, 0.0};
+      return {std::fabs(viol.viol_), viol.valX_};
     case Context::CTX_POS:
-      return has_arg <= ccon_valid ? 0.0 : viol;
+      if (has_arg <= ccon_valid)
+        return {0.0, 0.0};
+      return {viol.viol_, viol.valX_};
     case Context::CTX_NEG:
-      return has_arg >= ccon_valid ? 0.0 : -viol;
+      if (has_arg >= ccon_valid)
+        return {0.0, 0.0};
+      return {-viol.viol_, viol.valX_};
     default:
-      return INFINITY;
+      return {INFINITY, 0.0};
     }
   }
 };

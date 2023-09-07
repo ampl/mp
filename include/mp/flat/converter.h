@@ -617,8 +617,8 @@ protected:
       ArrayRef<double> obj) {
     bool result = true;
     std::string err_msg;
-    try {            // protect
-      std::vector<double> x_back; // to extract x used
+    try {                            // protect
+      std::vector<double> x_back = x;
       if (options_.solcheckmode_ & (1+2+4+8+16)) {
         if (!DoCheckSol(x, duals, obj, {}, x_back, false))
           result = false;
@@ -680,7 +680,11 @@ protected:
     return std::move(vir.get_x().get_x());
   }
 
-  /// Check single unpostsolved solution
+  /// Check single unpostsolved solution.
+  /// @param x_back: solution vector from realistic mode.
+  /// It can be changed by AMPL solution_... options.
+  /// Its auxiliary vars are compared
+  /// with recomputed expression values.
   bool DoCheckSol(
       ArrayRef<double> x,
       const pre::ValueMapDbl& duals,
@@ -693,7 +697,7 @@ protected:
                  GetModel().var_lb_vec(),
                  GetModel().var_ub_vec(),
                  options_.solfeastol_,
-                 options_.solinttol_,
+                 options_.solfeastolrel_,
                  options_.dont_use_sol_round_
                    ? "" : std::getenv("solution_round"),
                  options_.dont_use_sol_prec_
@@ -709,6 +713,9 @@ protected:
     if (chk.check_mode() & 16)
       CheckObjs(chk);
     GenerateViolationsReport(chk);
+    // Should messages for realistic and idealistic
+    // modes be coordinated?
+    // I.e., when no expressions.
     // What if this is an intermediate solution?
     // Should be fine - warning by default,
     // fail if requested explicitly.
@@ -726,7 +733,7 @@ protected:
               chk.GetReport(),
               true);  // replace for multiple solutions
     }
-    x_back = chk.x_ext().get_x();
+    x_back = chk.x_ext().get_x();   // to reuse 'realistic' vector
     return !chk.HasAnyViols();
   }
 
@@ -737,17 +744,18 @@ protected:
       // no aux vars for idealistic mode
       if (!aux || !chk.if_recomputed()) {
         chk.VarViolBnds().at(aux).CheckViol(
-              MPCD( lb(i) ) - x,
-              options_.solfeastol_,
+              {MPCD( lb(i) ) - x, MPCD( lb(i) )},
+              options_.solfeastol_, options_.solfeastolrel_,
               GetModel().var_name(i));
         chk.VarViolBnds().at(aux).CheckViol(
-              x - MPCD( ub(i) ),
-              options_.solfeastol_,
+              {x - MPCD( ub(i) ), MPCD( ub(i) )},
+              options_.solfeastol_, options_.solfeastolrel_,
               GetModel().var_name(i));
         if (is_var_integer(i))
           chk.VarViolIntty().at(aux).CheckViol(
-                std::fabs(x - std::round(x)),
-                options_.solinttol_,
+                { std::fabs(x - std::round(x)),
+                  std::round(x) },
+                options_.solinttol_, INFINITY,
                 GetModel().var_name(i));
       }
     }
@@ -765,10 +773,10 @@ protected:
     for (auto i
          =std::min(objs.size(), chk.obj_vals().size());
          i--; ) {
+      auto val1 = ComputeValue(objs[i], chk.x_ext());
       chk.ObjViols().CheckViol(
-            std::fabs(chk.obj_vals()[i]
-                      - ComputeValue(objs[i], chk.x_ext())),
-            options_.solfeastol_,
+            {std::fabs(chk.obj_vals()[i] - val1), val1},
+            options_.solfeastol_, options_.solfeastolrel_,
             objs[i].name());
     }
   }
@@ -777,9 +785,10 @@ protected:
     fmt::MemoryWriter wrt;
     if (chk.HasAnyViols())
       wrt.write(
-            "   [ sol:chk:feastol={}, sol:chk:inttol={},\n"
+            "   [ sol:chk:feastol={}, :feastolrel={}, :inttol={},\n"
             "     solution_round='{}', solution_precision='{}' ]\n",
-            options_.solfeastol_, options_.solinttol_,
+            options_.solfeastol_, options_.solfeastolrel_,
+            options_.solinttol_,
             chk.x_ext().solution_round(),
             chk.x_ext().solution_precision());
     if (chk.HasAnyConViols()) {
@@ -802,20 +811,40 @@ protected:
     chk.SetReport( wrt.str() );
   }
 
+  /// Generate message about 1 violation.
+  /// @param f_max: whether we need to print
+  /// the maximal violations.
   void Gen1Viol(
       const ViolSummary& vs, fmt::MemoryWriter& wrt,
       bool f_max, const std::string& format) {
     if (vs.N_) {
       wrt.write(format, vs.N_);
-      if (f_max)
-        wrt.write(",\n      up to {:.0E}", vs.epsMax_);
-      if (vs.name_ && *vs.name_ != '\0') {
-        if (!f_max)
-          wrt.write("\n     ");
-        wrt.write(" (item '{}')", vs.name_);
-      }
+      auto vmaxabs = Gen1ViolMax(
+            f_max, vs.epsAbsMax_, vs.nameAbs_, false);
+      auto vmaxrel = Gen1ViolMax(
+            f_max, vs.epsRelMax_, vs.nameRel_, true);
+      if (vmaxabs.size() || vmaxrel.size())
+        wrt.write(",\n        {}", vmaxabs);
+      if (vmaxabs.size() && vmaxrel.size())
+        wrt.write(", ");
+      wrt.write("{}", vmaxrel);
       wrt.write("\n");
     }
+  }
+
+  /// Stringify 1 maximal violation
+  std::string Gen1ViolMax(
+      bool f_max, double viol, const char* nm, bool relVsAbs) {
+    fmt::MemoryWriter wrt;
+    if (f_max)
+      wrt.write("up to {:.0E} ({}",
+                viol, relVsAbs ? "rel" : "abs");
+    if (nm && *nm != '\0') {
+      wrt.write(f_max ? ", " : "(");
+      wrt.write("item '{}'", nm);
+    } else if (f_max)
+      wrt.write(")");
+    return wrt.str();
   }
 
   void GenConViol(
@@ -1146,6 +1175,7 @@ private:
     int solcheckmode_ = 1+2+16+512;
     bool solcheckfail_ = false;
     double solfeastol_ = 1e-6;
+    double solfeastolrel_ = 1e-6;
     double solinttol_ = 1e-5;
     bool dont_use_sol_round_ = false;
     bool dont_use_sol_prec_ = false;
@@ -1246,16 +1276,20 @@ private:
                              "\n"
                              "Default: 1+2+16+512.",
         options_.solcheckmode_, 0, 1024);
-    GetEnv().AddOption("sol:chk:feastol sol:chk:eps sol:eps chk:eps",
-        "Solution checking tolerance for objective values, variable "
+    GetEnv().AddOption("sol:chk:feastol sol:chk:eps chk:eps chk:tol",
+        "Absolute tolerance to check objective values, variable "
         "and constraint bounds. Default 1e-6.",
         options_.solfeastol_, 0.0, 1e100);
+    GetEnv().AddOption("sol:chk:feastolrel sol:chk:epsrel chk:epsrel chk:tolrel",
+        "Relative tolerance to check objective values, variable "
+        "and constraint bounds. Default 1e-6.",
+        options_.solfeastolrel_, 0.0, 1e100);
     GetEnv().AddOption("sol:chk:inttol sol:chk:inteps sol:inteps chk:inteps",
         "Solution checking tolerance for variables' integrality. "
         "Default 1e-5.",
         options_.solinttol_, 0.0, 1e100);
     GetEnv().AddOption("sol:chk:fail chk:fail checkfail",
-        "Fail on constraint violations.",
+        "Fail on solution checking violations.",
         options_.solcheckfail_, false, true);
     GetEnv().AddOption("sol:chk:noround chk:noround chk:no_solution_round",
         "Don't use AMPL solution_round option when checking.",

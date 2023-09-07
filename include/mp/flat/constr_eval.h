@@ -282,13 +282,13 @@ template <class Con, class VarVec>
 double ComputeValue(
     const ConditionalConstraint<Con>& con, const VarVec& x) {
   auto viol = con.GetConstraint().ComputeViolation(x, true);
-  bool ccon_valid = viol<=0.0;
+  bool ccon_valid = viol.viol_<=0.0;
   return ccon_valid;
 }
 
 /// Compute violation of the QuadraticCone constraint.
 template <class VarVec>
-double ComputeViolation(
+Violation ComputeViolation(
     const QuadraticConeConstraint& con, const VarVec& x) {
   const auto& args = con.GetArguments();
   const auto& params = con.GetParameters();
@@ -296,12 +296,13 @@ double ComputeViolation(
   double sum = 0.0;
   for (auto i=args.size(); --i; )
     sum += std::pow( params[i]*x[args[i]], 2.0 );
-  return std::sqrt(sum) - params[0]*x[args[0]];
+  return {std::sqrt(sum) - params[0]*x[args[0]],
+        sum};
 }
 
 /// Compute violation of the RotatedQuadraticCone constraint.
 template <class VarVec>
-double ComputeViolation(
+Violation ComputeViolation(
     const RotatedQuadraticConeConstraint& con, const VarVec& x) {
   const auto& args = con.GetArguments();
   const auto& params = con.GetParameters();
@@ -309,22 +310,24 @@ double ComputeViolation(
   double sum = 0.0;
   for (auto i=args.size(); --i>1; )
     sum += std::pow( params[i]*x[args[i]], 2.0 );
-  return sum
-      - 2.0 * params[0]*x[args[0]] * params[1]*x[args[1]];
+  return {sum
+        - 2.0 * params[0]*x[args[0]] * params[1]*x[args[1]],
+        sum};
 }
 
 /// Compute violation of the ExponentialCone constraint.
 template <class VarVec>        // ax >= by exp(cz / (by))
-double ComputeViolation(       // where ax, by >= 0
+Violation ComputeViolation(       // where ax, by >= 0
     const ExponentialConeConstraint& con, const VarVec& x) {
   const auto& args = con.GetArguments();
   const auto& params = con.GetParameters();
   auto ax = params[0]*x[args[0]];
   auto by = params[1]*x[args[1]];
   if (0.0==std::fabs(by))
-    return -ax;
+    return {-ax, 0.0};
   auto cz = params[2]*x[args[2]];
-  return by * std::exp(cz / by) - ax;
+  return {by * std::exp(cz / by) - ax,
+        by * std::exp(cz / by)};
 }
 
 /// Compute result of the PL constraint.
@@ -354,7 +357,7 @@ double ComputeValue(const PLConstraint& con, const VarVec& x) {
 template <class Args, class Params,
           class NumOrLogic, class Id>
 template <class VarVec>
-double
+Violation
 CustomFunctionalConstraint<Args, Params, NumOrLogic, Id>
 ::ComputeViolation(const VarVec& x) const
 { return mp::ComputeViolation(*this, x); }
