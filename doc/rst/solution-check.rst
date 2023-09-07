@@ -31,7 +31,15 @@ In this mode, variable values are taken as they were reported by the solver
 "Idealistic" solution check
 ******************************
 
-In this mode, expressions are recomputed. Consider the following example.
+In this mode, non-linear expressions are recomputed and compared to solver values.
+The recomputation is performed similar to how AMPL does it when asked to
+display objective value or constraint body / slack.
+Thus, "idealistic" violations mean objective and constraint expressions
+reported in AMPL may be different from the solver.
+While the major type of checking should be the "realistic" mode,
+the "idealistic" mode warns about (significant) differences when expressions are
+recomputed from scratch.
+Consider the following example.
 
 .. code-block:: ampl
 
@@ -68,7 +76,8 @@ Indeed, if we ask AMPL to recompute the objective value:
     Total = 0
 
 we see that AMPL does it "idealistically"
-(it does not know about solver tolerances.)
+(it does not know about solver tolerances,
+or whether the user provided variable values manually.)
 
 To see which expressions cause the violation,
 use driver option ``chk:mode``:
