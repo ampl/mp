@@ -14,7 +14,7 @@ can be downloaded from AMPL's `Open Source Solvers`__ page.
 To use a solver with AMPL, extract the binaries from a downloaded
 archive into the AMPL installation directory.
 
-__ http://ampl.com/products/solvers/open-source/
+__ https://ampl.com/products/solvers/open-source/
 
 Binaries for AMPL commercial solvers can be downloaded from
 `AMPL Portal`__.
@@ -27,7 +27,7 @@ Building from source
 
 An included `CMake build script`__ can be used to build the MP library,
 solver interfaces and function libraries on a wide range of platforms.
-You can download CMake for free from http://www.cmake.org/download/.
+You can download CMake for free from https://www.cmake.org/download/.
 
 __ https://github.com/ampl/mp/tree/develop/CMakeLists.txt
 
@@ -93,7 +93,7 @@ and built when necessary. For example, enabling the ``gecode`` module
 will download the source code of Gecode__ constraint programming solver,
 build the solver and its AMPL interface.
 
-__ http://www.gecode.org/
+__ https://www.gecode.org/
 
 Dependencies of some modules cannot be handled automatically due to
 licensing restrictions. If you enable such module, you should have its
@@ -101,7 +101,7 @@ dependencies installed on the systems or it will not be built.
 For example, if you enable the ``ilogcp`` module, you should have
 `IBM ILOG CPLEX Optimization Studio`__ installed.
 
-__ http://www-03.ibm.com/software/products/en/ibmilogcpleoptistud
+__ https://www-03.ibm.com/software/products/en/ibmilogcpleoptistud
 
 It is possible to override the automatic detection of dependencies by
 adding variables to cmake command line when configuring the project.
@@ -140,7 +140,7 @@ the standard location::
 Using Eclipse CDT
 `````````````````
 
-You can generate `Eclipse CDT <http://www.eclipse.org/cdt/>`_ project files
+You can generate `Eclipse CDT <https://www.eclipse.org/cdt/>`_ project files
 with CMake::
 
   cmake -G "Eclipse CDT 4 -  Unix Makefiles"

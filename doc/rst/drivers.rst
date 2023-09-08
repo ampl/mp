@@ -36,7 +36,7 @@ For example, AMPL expression
 has the following C++ drivers of this kind, all of which support
 `AMPL extensions for logic and constraint programming`__:
 
-__ http://ampl.com/resources/logic-and-constraint-programming-extensions/
+__ https://ampl.com/resources/logic-and-constraint-programming-extensions/
 
 - `Ilogcp <https://github.com/ampl/mp/tree/develop/solvers/ilogcp>`_:
   IBM ILOG CPLEX and CPLEX CP Optimizer

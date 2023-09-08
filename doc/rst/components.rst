@@ -28,7 +28,7 @@ NL file reader
 
 MP provides a high-performance nl file reader
 which is up to `6x faster
-<http://zverovich.net/slides/2015-01-11-ics/socp-reformulation.html#/14>`_
+<https://zverovich.net/slides/2015-01-11-ics/socp-reformulation.html#/14>`_
 than the one provided by the traditional
 `AMPL Solver Library (ASL)
 <https://ampl.com/resources/learn-more/hooking-your-solver-to-ampl/>`_.
@@ -37,8 +37,8 @@ This section describes the C++ API of an NL reader which is
 
 * Reusable: the reader can be used to process NL files in different ways
   and not limited to a single problem representation
-* High performance: fast `mmap <http://en.wikipedia.org/wiki/Mmap>`_-based reader
-  with `SAX <http://en.wikipedia.org/wiki/Simple_API_for_XML>`_-like API and no
+* High performance: fast `mmap <https://en.wikipedia.org/wiki/Mmap>`_-based reader
+  with `SAX <https://en.wikipedia.org/wiki/Simple_API_for_XML>`_-like API and no
   dynamic memory allocations in the common case
 * Easy to use: clean, modern code base and simple API
 * Complete: supports all NL constructs including extensions implemented in
@@ -57,19 +57,19 @@ the technical report `Writing .nl Files <https://ampl.github.io/nlwrite.pdf>`_.
 The NL format supports a wide range of problem types including but not limited
 to the following areas of optimization:
 
-* `Linear programming <http://en.wikipedia.org/wiki/Linear_programming>`_
-* `Quadratic programming <http://en.wikipedia.org/wiki/Quadratic_programming>`_
-* `Nonlinear programming <http://en.wikipedia.org/wiki/Nonlinear_programming>`_
-* `Mixed-integer programming <http://en.wikipedia.org/wiki/Linear_programming#Integer_unknowns>`_
+* `Linear programming <https://en.wikipedia.org/wiki/Linear_programming>`_
+* `Quadratic programming <https://en.wikipedia.org/wiki/Quadratic_programming>`_
+* `Nonlinear programming <https://en.wikipedia.org/wiki/Nonlinear_programming>`_
+* `Mixed-integer programming <https://en.wikipedia.org/wiki/Linear_programming#Integer_unknowns>`_
 * Mixed-integer quadratic programming with or without convex quadratic constraints
 * Mixed-integer nonlinear programming
-* `Second-order cone programming <http://en.wikipedia.org/wiki/Second-order_cone_programming>`_
-* `Global optimization <http://en.wikipedia.org/wiki/Global_optimization>`_
-* `Semidefinite programming <http://en.wikipedia.org/wiki/Semidefinite_programming>`_
+* `Second-order cone programming <https://en.wikipedia.org/wiki/Second-order_cone_programming>`_
+* `Global optimization <https://en.wikipedia.org/wiki/Global_optimization>`_
+* `Semidefinite programming <https://en.wikipedia.org/wiki/Semidefinite_programming>`_
   problems with bilinear matrix inequalities
-* `Complementarity problems <http://en.wikipedia.org/wiki/Complementarity_theory>`_
+* `Complementarity problems <https://en.wikipedia.org/wiki/Complementarity_theory>`_
   (MPECs) in discrete or continuous variables
-* `Constraint programming <http://en.wikipedia.org/wiki/Constraint_programming>`_
+* `Constraint programming <https://en.wikipedia.org/wiki/Constraint_programming>`_
 
 
 Easy-to-use functions
