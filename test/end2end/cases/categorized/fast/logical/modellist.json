@@ -14,15 +14,40 @@
   },
   {
     "name" : "ifthen_var",
-    "objective" : -5,
+    "objective" : -3,
     "tags" : ["logical"],
     "options": {
       "ANYSOLVER_options": "cvt:cmp:eps=1e-4"
     },
+    "valies": {
+      "2*x+3*y": 0
+    },
     "comment": [
       "For AMPL to correctly compute obj value, ",
-      "need strict inequality for the opposite case"
+      "need strict inequality",
+      "obeyed in the reformulation with a significant tolerance"
     ]
+  },
+  {
+    "name" : "ifthen_var",
+    "objective" : 2,
+    "tags" : ["logical"],
+    "options": {
+      "ANYSOLVER_options": "cvt:cmp:eps=0"
+    },
+    "valies": {
+      "2*x+3*y": 5
+    }
+  },
+  {
+    "name" : "ifthen_var",
+    "tags" : ["logical"],
+    "options": {
+      "ANYSOLVER_options": "cvt:cmp:eps=0 chk:fail"
+    },
+    "values": {
+      "solve_result_num": 520
+    }
   },
   {
     "name" : "test_int_non_int",

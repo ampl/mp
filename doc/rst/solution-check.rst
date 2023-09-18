@@ -8,6 +8,15 @@ Solutions obtained from the solver are automatically checked
 for correctness with given tolerances
 (see :ref:`solver-options` ``sol:chk:...``.)
 
+There are two checking modes: "realistic" and "idealistic".
+For linear and quadratic models they are equivalent.
+Differences can arise for models with other non-linear expressions.
+
+In "realistic" mode, any expressions computed by the solver
+and reported via an auxiliary variable, are trusted with
+a tolerance. In "idealistic" mode, all expression trees
+are recomputed.
+
 
 "Realistic" solution check
 ******************************
@@ -26,6 +35,10 @@ In this mode, variable values are taken as they were reported by the solver
     Algebraic expression violations:
       - 1 original expression(s) of type ':quadrange',
           up to 1E+00 (item 'socp[13]')
+
+In this example, realistic check reports a constraint violation
+of 1, which can mean a significant violation if the constraint's
+right-hand side is of moderate magnitude.
 
 
 "Idealistic" solution check
@@ -127,3 +140,17 @@ set ``option (solver_)auxfiles rc;`` as follows:
     Objective value violations:
       - 1 objective value(s) violated,
           up to 1E+01 (item 'Total')
+
+
+Remedies
+*********************
+
+For "realistic" solution violations, the reason is most probably
+:ref:`numerical_accuracy`.
+
+For "idealistic" warnings, to make sure AMPL can access the true
+objective value, see a
+`Colab example <https://colab.ampl.com/#solution-check-discontinuous-objective-function>`_
+detailing
+a more common case and a remedy consisting of an explicit
+variable for the objective value.

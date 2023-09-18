@@ -20,7 +20,8 @@ Solver options
 =================
 
 Solver options are key-value pairs controlling a solver's behavior.
-Many of them are standardized across AMPL solvers.
+Many of them are standardized across AMPL solvers
+(for solver's native options see :ref:`further <native-options>`.)
 
 
 List all available options

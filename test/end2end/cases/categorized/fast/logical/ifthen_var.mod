@@ -1,14 +1,15 @@
-/**
+ /**
   * Test expression map as well as if-then.
-  * Requires cvt:cmp:eps > feastol
-  * for AMPL to correctly compute obj value, see #102.
+  * Test solution check and cap:eps.
+  * Used in a Colab notebook on solution check.
   */
 
-var x >=-100, <= 200;
-var y >=-300, <= 460;
-
+var x >=0, <= 1;
+var y >=0, <= 1;
 var b: binary;
 
-subj to ConImpl: b ==> 2*x + 3*y <= 5;
+s.t. ConImpl:
+    b ==> 2*x + 3*y <= 5;
 
-minimize TotalIf: if 2*x+3*y<=5 then b else -b-5;
+minimize TotalIf:
+    if 2*x+3*y>5 then 2*x+3*y-3*b-25 else 2*x+3*y-3*b;

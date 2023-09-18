@@ -62,7 +62,8 @@ use of a small tolerance. For example, if x is minimized subject to x > 5, then 
 x value greater than 5 is not minimal, and any x value less than or equal to 5 is
 not feasible. Thus, to insure that a minimum is well defined, the constraint must
 be changed to x >= 5 + eps for some small constant eps. Each solver has its own
-default value of the eps constant, which can be adjusted through an option setting.
+default value of the eps constant, which can be adjusted through
+an :ref:`option setting <solver-options>`.
 
 
 Conditional operators
@@ -495,7 +496,7 @@ MP library provides additional conversion into solver-specific conic forms. Exam
 
 
 *Note:* Mosek cannot mix SOCP and general quadratic constraints.
-Option ``cvt:socp=0`` results in second-order conic
+:ref:`Option <solver-options>` ``cvt:socp=0`` results in second-order conic
 constraints being passed to the solver as quadratics, even if
 the solver has native SOCP API.
 

@@ -6,6 +6,9 @@ Numerical accuracy
 
 Mathematical Programming solvers typically work with finite-precision numbers, which
 leads to concerns on numerical stability.
+While general numerical stability is a well-established topic, below
+we highlight some common points for non-smooth models.
+
 
 Importance of tight bounds: "big-M" constraints
 **************************************************
@@ -30,7 +33,7 @@ with the big-M constant taken as the upper bound on :math:`x`.
 Thus, big-M constraints require finite bounds on participating variables.
 They should be as tight as possible, ideally between :math:`\pm10^4`.
 In any case, for numerical stability these bounds should
-not exceed the reciprocal of the integrality tolerance (option *inttol*). A default
+not exceed the reciprocal of the integrality tolerance (:ref:`option <solver-options>` *inttol*). A default
 big-M value can be set with the option *cvt:bigM* (use with caution).
 
 In some cases, a different formulation can help automatic detection
