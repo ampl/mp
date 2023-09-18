@@ -6,7 +6,7 @@ Solution check
 
 Solutions obtained from the solver are automatically checked
 for correctness with given tolerances
-(see driver options ``sol:chk:...``.)
+(see :ref:`solver-options` ``sol:chk:...``.)
 
 
 "Realistic" solution check

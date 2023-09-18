@@ -16,7 +16,7 @@
     "name" : "dietobj objno=4",
     "tags" : ["linear", "continuous"],
     "files" : ["dietobj.mod", "dietobj.dat"],
-    "options": { "ANYSOLVER_options": "objno=4" },
+    "options": { "mp_options": "objno=4" },
     "values": { "total_number": 3.092537313e+01 }
   },
   {

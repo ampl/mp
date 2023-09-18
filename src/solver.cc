@@ -953,9 +953,12 @@ bool BasicSolver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) 
   has_errors_ = false;
   bool_options_ &= ~SHOW_VERSION;
   option_flag_save_ = flags;
+  // 1. Try & parse 'mp_options'
+  if (const char *s = std::getenv("mp_options")) {
+    ParseOptionString(s, flags);
+  }
   bool had_exe_name_option_var = false;
-  /// Look for a <solver>_options env var.
-  /// First try the executable name.
+  // 2. Try the '<solver_exe>_options' env var.
   const char *s = exe_path();
   if (std::strlen(s)) {
     path p(s);
@@ -966,17 +969,20 @@ bool BasicSolver::ParseOptions(char **argv, unsigned flags, const ASLProblem *) 
       if (".exe"==ext || ".app"==ext)
         exe_basename = exe_basename.substr(0, pt);
     }
-    if (const char *s = std::getenv((exe_basename + "_options").c_str())) {
+    if (const char *s
+        = std::getenv((exe_basename + "_options").c_str())) {
       ParseOptionString(s, flags);
       had_exe_name_option_var = true;
     }
   }
-  // Otherwise try '<solver_name>_options'
+  // 3. If no exe-name-specific options,
+  // try '<solver_std_name>_options', such as 'gurobi_options'
   if (!had_exe_name_option_var)
   if (const char *s = std::getenv((name_ + "_options").c_str())) {
     ParseOptionString(s, flags);
   }
-  flags |= FROM_COMMAND_LINE;        // proceed to command-line options
+  // 4. Proceed to command-line options
+  flags |= FROM_COMMAND_LINE;
   if (argv) {
     while (const char *s = *argv++) {
       ParseOptionString(s, flags);

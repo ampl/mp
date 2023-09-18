@@ -385,6 +385,9 @@ Implement standard & custom features
 This section describes implementation of the
 :ref:`optional standard driver features <features-guide>`,
 as well as solver-specific features.
+Much of the biolerplate code is written already, so that the behaviour becomes
+automatically standardized across all solvers.
+
 Some standard features are very common, such as BASIS,
 others not, such as FIX_MODEL,
 and don't have to be implemented unless the solver directly supports them.

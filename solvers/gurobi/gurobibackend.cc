@@ -1487,7 +1487,7 @@ void GurobiBackend::InitCustomOptions() {
                   "Primal feasibility tolerance (default 1e-6).",
                   GRB_DBL_PAR_FEASIBILITYTOL, 0.0, DBL_MAX);
 
-  AddSolverOption("alg:numericfocus numericfocus",
+  AddSolverOption("alg:numericfocus numericfocus numfocus",
                   "How much to try detecting and managing numerical issues:\n"
                   "\n"
       "| 0 - Automatic choice (default)\n"
