@@ -5,7 +5,7 @@ Features Guide for MP-based AMPL Solvers
 
 .. highlight:: ampl
 
-The MP framework defines standard solver *features* that solvers might support;
+The MP framework defines standard *solver features* that solvers might support;
 these are usually characterized by a set of :ref:`solver-options` used to control the feature,
 sometimes suffixes to pass required data and results, and may change the behaviour
 of the solution process.
@@ -32,7 +32,7 @@ or with ``-=prefix`` to list all options starting with ``prefix``:
 
 .. code-block:: bash
 
-    $ highsmp -=acc
+    $ highs -=acc
     .....
     acc Options:
 
@@ -40,11 +40,12 @@ or with ``-=prefix`` to list all options starting with ``prefix``:
         Solver acceptance level for 'LinConRange', default 2
 
 
-Set options for a specific solver
+Solver-specific vs common MP options
 -------------------------------------------
 
-From AMPL, the solver-specific options string is the value
-of the AMPL option ``(solvername)_options``:
+From AMPL, options can be passed to an MP solver in two ways.
+Solver-specific options are passed
+via AMPL option ``(solvername)_options``:
 
 .. code-block:: ampl
 
@@ -54,20 +55,20 @@ of the AMPL option ``(solvername)_options``:
     Gurobi 10.0.2:   alg:iisfind = 1
     Gurobi 10.0.2: infeasible problem
 
-If your solver executable has a different name, say ``gurobi25``,
+If your solver executable has a different name, say ``gurobi25.exe``,
 and you provide ``gurobi25_options``, they will be used instead.
 
-
-Set options for all MP solvers
---------------------------------------
-
-The value of ``mp_options`` is parsed before ``(solvername)_options``.
-Thus, ``mp_options`` allows setting parameters for all MP solvers,
-with the possibility to override some of them for a specific solver:
+Common options (for all MP solvers) can be passed via AMPL option
+``mp_options``:
 
 .. code-block:: ampl
 
     ampl: option mp_options 'outlev=1';      ## Options for all MP solvers
+
+The value of ``mp_options`` is parsed before ``(solvername)_options``.
+Thus, ``mp_options`` allows setting parameters for all MP solvers,
+with the possibility to override some of them for a specific solver.
+
 
 
 Set options from command line
@@ -82,20 +83,35 @@ via the environment variable, or via arguments:
     gurobi.exe model.nl outlev=1 tech:writesol=model.sol                ## Method 2
 
 
+Query option values
+--------------------------
+
+To query the value of an option (default, or set via other methods),
+use '?' as argument:
+
+.. code-block:: ampl
+
+    ampl: option mosek_options 'threads=?';
+    ampl: solve;
+    MOSEK 10.0.43:   tech:threads = 0
+    MOSEK 10.0.43: optimal; objective 10
+
+
+
 .. _native-options:
 
 Native solver options
 -------------------------
 
 Some AMPL solvers allow passing native options to the underlying solver.
-For example, to control Gurobi ``NumFocus`` setting, there are two ways:
+For example, to control Gurobi ``NumericFocus`` setting, there are two ways:
 
 .. code-block:: ampl
 
-    ampl: option gurobi_options 'alg:numericfocus 3';  ## standard way
-    ampl: option gurobi_options 'tech:param "NumFocus 3"';   ## native
+    ampl: option gurobi_options 'alg:numericfocus 3';      ## standard way
+    ampl: option gurobi_options 'tech:param "NumericFocus 3"';   ## native
 
-Additionally, for some solvers native options can be read / written
+Additionally, for some solver native options can be read / written
 from / to files using ``tech:param:read`` and ``tech:param:write``.
 
 General features
