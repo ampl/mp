@@ -1,8 +1,17 @@
 Summary of recent updates to CBCMP for AMPL
 ===========================================
 
+## 20230919
+- *mp_options*.
+	Receive mp_options from AMPL (for all MP solvers).
+	They are parsed before (solvername)_options.
+- Solution checking: relative tolerance
+	sol:chk:feastolrel; options sol:chk:round, sol:chk:prec.
+
+
 ## 20230907
 - Updated to CBC library version 2.10.10
+
 
 ## 20230831
 - Solution checking, options sol:chk:* (experimental).

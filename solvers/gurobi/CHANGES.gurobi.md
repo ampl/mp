@@ -1,6 +1,14 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
+## 20230919
+- *mp_options*.
+	Receive mp_options from AMPL (for all MP solvers).
+	They are parsed before (solvername)_options.
+- Solution checking: relative tolerance
+	sol:chk:feastolrel; options sol:chk:round, sol:chk:prec.
+
+
 ## 20230831
 - Solution checking, options sol:chk:* (experimental).
 - Preprocess And/Or constraints.
@@ -86,7 +94,7 @@ Summary of recent updates to gurobi for AMPL
 - Changes in MP
 
 ## 20221222
-- *Fixed #195": shorter error message for missing NonConvex=2 option
+- *Fixed #195*: shorter error message for missing NonConvex=2 option
 
 - Bug fixes in MP
 

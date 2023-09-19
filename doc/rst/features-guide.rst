@@ -50,7 +50,7 @@ via AMPL option ``(solvername)_options``:
 .. code-block:: ampl
 
     ampl: option solver gurobi;
-    ampl: option gurobi_options 'iis=1';      ## Tell Gurobi to find IIS
+    ampl: option gurobi_options 'iis=1';         ## Tell Gurobi to find IIS
     ampl: solve;
     Gurobi 10.0.2:   alg:iisfind = 1
     Gurobi 10.0.2: infeasible problem
@@ -63,7 +63,7 @@ Common options (for all MP solvers) can be passed via AMPL option
 
 .. code-block:: ampl
 
-    ampl: option mp_options 'outlev=1';      ## Options for all MP solvers
+    ampl: option mp_options 'lim:time=300';      ## Options for all MP solvers
 
 The value of ``mp_options`` is parsed before ``(solvername)_options``.
 Thus, ``mp_options`` allows setting parameters for all MP solvers,

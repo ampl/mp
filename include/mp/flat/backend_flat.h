@@ -30,11 +30,15 @@ public:
   /// Default GetSolution() for flat backends.
   /// Invokes postsolver.
   Solution GetSolution() override {
+    auto x = PrimalSolution();
     auto mv = GetValuePresolver().PostsolveSolution(
-          { PrimalSolution(),
+          { x,
             DualSolution(),
             GetObjectiveValues() } );
-    return{ mv.GetVarValues()(),
+    auto x1 = std::move(mv.GetVarValues()());
+    if (x.empty())
+      x1.clear();      // don't send variable values
+    return{ x1,
           mv.GetConValues()(),
           mv.GetObjValues()() };
   }
