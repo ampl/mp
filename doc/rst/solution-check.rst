@@ -18,20 +18,61 @@ a tolerance. In "idealistic" mode, all expression trees
 are recomputed.
 
 
+Motivation
+**********************
+
+Consider the disjunction constraint
+
+.. code-block:: ampl
+
+    C: y<=6 or z>=10;
+
+With ``y=6.0000000001`` and ``z=9.9999999999``, and assuming the solver's
+feasibility tolerance is at a typical value (such as :math:`10^{-6}`),
+most Mathematical Programming solvers consider the disjunction satisfied.
+And, from a practical viewpoint, it is (given finite-precision
+computations).
+
+Our "realistic" checking mode does exactly this: it trusts the solver results
+up to a tolerance.
+
+In contrast, AMPL reports the constraint violated:
+
+.. code-block:: ampl
+
+    ampl: let y:=6.0000000001;
+    ampl: let z:=9.9999999999;
+    ampl: display C.val;
+    C.val = 0
+
+That is, when expressions ``y<=6`` and ``z>=10`` are re-evaluated
+and their results substituted into ``C``, ``C`` holds false.
+
+The role of the "idealistic" checking mode is to warn the user about the fact,
+that even if the solver has a correct solution up to its tolerances
+(which is examined by the "realistic" mode),
+it can be wrong for a tolerance-unaware checker.
+
+By default, "idealistic" check is performed for objective values only,
+see example below. To enable it for constraints, use
+:ref:`option <solver-options>` ``chk:mode``.
+
+
+
 "Realistic" solution check
 ******************************
 
 In this mode, variable values are taken as they were reported by the solver
-(with possible modifications using AMPL's options
-``solution_round`` and ``solution_precision``, see driver options
-``sol:chk:no...``.). This check is enough for most practical situations.
+(with possible modifications via options
+``sol:chk:round`` and ``sol:chk:prec``.)
+This check is enough for most practical situations.
 
 .. code-block:: ampl
 
     ------------ WARNINGS ------------
     WARNING:  "Solution Check"
-         [ sol:chk:feastol=1e-06, sol:chk:inttol=1e-05,
-         solution_round='', solution_precision='' ]
+         [ sol:chk:feastol=1e-06, :feastolrel=1e-06, :inttol=1e-05,
+           :round='', :prec='' ]
     Algebraic expression violations:
       - 1 original expression(s) of type ':quadrange',
           up to 1E+00 (item 'socp[13]')
@@ -70,11 +111,12 @@ Most solvers apply a constraint feasibility tolerance of the order :math:`10^{-6
 
     ------------ WARNINGS ------------
     WARNING:  "Solution Check (Idealistic)"
-         [ sol:chk:feastol=1e-06, sol:chk:inttol=1e-05,
-         solution_round='', solution_precision='' ]
+         [ sol:chk:feastol=1e-06, :feastolrel=1e-06, :inttol=1e-05,
+           :round='', :prec='' ]
     Objective value violations:
       - 1 objective value(s) violated,
-          up to 1E+01
+            up to 1E+01 (abs)
+    Idealistic check is an indicator only, see documentation.
 
     ampl: display x;
     x = 5
@@ -105,16 +147,17 @@ use driver option ``chk:mode``:
 
     ------------ WARNINGS ------------
     WARNING:  "Solution Check (Idealistic)"
-         [ sol:chk:feastol=1e-06, sol:chk:inttol=1e-05,
-         solution_round='', solution_precision='' ]
+         [ sol:chk:feastol=1e-06, :feastolrel=1e-06, :inttol=1e-05,
+           :round='', :prec='' ]
     Algebraic expression violations:
       - 1 original expression(s) of type ':ifthen',
-          up to 1E+01
+            up to 1E+01 (abs)
     Logical expression violations:
       - 1 original expression(s) of type ':and'
     Objective value violations:
       - 1 objective value(s) violated,
-          up to 1E+01
+            up to 1E+01 (abs)
+    Idealistic check is an indicator only, see documentation.
 
 *Hint*: to display AMPL model names,
 set ``option (solver_)auxfiles rc;`` as follows:
@@ -129,17 +172,18 @@ set ``option (solver_)auxfiles rc;`` as follows:
 
     ------------ WARNINGS ------------
     WARNING:  "Solution Check (Idealistic)"
-         [ sol:chk:feastol=1e-06, sol:chk:inttol=1e-05,
-         solution_round='', solution_precision='' ]
+         [ sol:chk:feastol=1e-06, :feastolrel=1e-06, :inttol=1e-05,
+           :round='', :prec='' ]
     Algebraic expression violations:
       - 1 original expression(s) of type ':ifthen',
-          up to 1E+01 (item 'Total_11_')
+            up to 1E+01 (abs, item 'Total_11_')
     Logical expression violations:
-      - 1 original expression(s) of type ':and'
-          (item 'Total_7_')
+      - 1 original expression(s) of type ':and',
+            (item 'Total_7_')
     Objective value violations:
       - 1 objective value(s) violated,
-          up to 1E+01 (item 'Total')
+            up to 1E+01 (abs, item 'Total')
+    Idealistic check is an indicator only, see documentation.
 
 
 Remedies

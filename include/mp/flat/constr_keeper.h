@@ -128,7 +128,7 @@ public:
           ArrayRef<double> x_raw,
           ArrayRef<var::Type> type,
           ArrayRef<double> lb, ArrayRef<double> ub,
-          const char* sol_rnd, const char* sol_prec)
+          int sol_rnd, int sol_prec)
     : feastol_(ft), recomp_vals_(recomp_vals),
       x_(std::move(x)), x_raw_(x_raw),
       type_(type), lb_(lb), ub_(ub) {
@@ -200,10 +200,10 @@ public:
 
 protected:
   void apply_precision_options(
-      const char* sol_rnd, const char* sol_prec) {
+      int sol_rnd, int sol_prec) {
     try {                 // Apply sol_rnd
-      if (sol_rnd) {
-        sol_rnd_ = std::stoi(sol_rnd);
+      if (sol_rnd<100) {
+        sol_rnd_ = (sol_rnd);
         auto scale = std::pow(10, sol_rnd_);
         auto scale_rec = 1.0/scale;
         for (auto& x: x_)
@@ -211,8 +211,8 @@ protected:
       }
     } catch (...) { sol_rnd_=100; }     // Could add a warning
     try {                 // Apply sol_prec
-      if (sol_prec) {
-        sol_prec_ = std::stoi(sol_prec);
+      if (sol_prec<100) {
+        sol_prec_ = (sol_prec);
         for (auto& x: x_)
           x = round_to_digits(x, sol_prec_);
       }
@@ -258,7 +258,7 @@ struct SolCheck {
            ArrayRef<var::Type> vtype,
            ArrayRef<double> lb,  ArrayRef<double> ub,
            double feastol, double feastolrel,
-           const char* sol_rnd, const char* sol_prec,
+           int sol_rnd, int sol_prec,
            bool recomp_vals, int chk_mode)
     : x_(feastol, recomp_vals,
          x, x_raw, vtype, lb, ub, sol_rnd, sol_prec),

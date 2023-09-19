@@ -672,7 +672,7 @@ protected:
       GetModel().var_type_vec(),
           GetModel().var_lb_vec(),
           GetModel().var_ub_vec(),
-          nullptr, nullptr
+          options_.sol_round_, options_.sol_prec_
     };
     vir.get_x().set_p_var_info(&vir);
     for (auto i=vir.size(); i--; )
@@ -698,10 +698,8 @@ protected:
                  GetModel().var_ub_vec(),
                  options_.solfeastol_,
                  options_.solfeastolrel_,
-                 options_.dont_use_sol_round_
-                   ? "" : std::getenv("solution_round"),
-                 options_.dont_use_sol_prec_
-                   ? "" : std::getenv("solution_precision"),
+                 options_.sol_round_,
+                 options_.sol_prec_,
                  if_recomp_vals,
                  if_recomp_vals
                  ? (options_.solcheckmode_ >> 5)
@@ -720,7 +718,7 @@ protected:
     // Should be fine - warning by default,
     // fail if requested explicitly.
     // If warning, we should add the report
-    // to that solutions' solve message, and
+    // to that solution's solve message, and
     // a summary in the final solve message.
     // For now, do this via warnings?
     if (chk.HasAnyViols()) {
@@ -787,7 +785,7 @@ protected:
     if (chk.HasAnyViols())
       wrt.write(
             "   [ sol:chk:feastol={}, :feastolrel={}, :inttol={},\n"
-            "       solution_round='{}', solution_precision='{}' ]\n",
+            "       :round='{}', :prec='{}' ]\n",
             options_.solfeastol_, options_.solfeastolrel_,
             options_.solinttol_,
             chk.x_ext().solution_round(),
@@ -1183,8 +1181,8 @@ private:
     double solfeastol_ = 1e-6;
     double solfeastolrel_ = 1e-6;
     double solinttol_ = 1e-5;
-    bool dont_use_sol_round_ = false;
-    bool dont_use_sol_prec_ = false;
+    int sol_round_ = 100;
+    int sol_prec_ = 100;
     int solchkoutlev_ = 0;
   };
   Options options_;
@@ -1282,27 +1280,30 @@ private:
                              "\n"
                              "Default: 1+2+16+512.",
         options_.solcheckmode_, 0, 1024);
-    GetEnv().AddOption("sol:chk:feastol sol:chk:eps chk:eps chk:tol",
+    GetEnv().AddOption("sol:chk:feastol sol:chk:eps chk:eps chk:feastol",
         "Absolute tolerance to check objective values, variable "
         "and constraint bounds. Default 1e-6.",
         options_.solfeastol_, 0.0, 1e100);
-    GetEnv().AddOption("sol:chk:feastolrel sol:chk:epsrel chk:epsrel chk:tolrel",
+    GetEnv().AddOption("sol:chk:feastolrel sol:chk:epsrel chk:epsrel chk:feastolrel",
         "Relative tolerance to check objective values, variable "
         "and constraint bounds. Default 1e-6.",
         options_.solfeastolrel_, 0.0, 1e100);
-    GetEnv().AddOption("sol:chk:inttol sol:chk:inteps sol:inteps chk:inteps",
+    GetEnv().AddOption("sol:chk:inttol sol:chk:inteps sol:inteps chk:inttol",
         "Solution checking tolerance for variables' integrality. "
         "Default 1e-5.",
         options_.solinttol_, 0.0, 1e100);
     GetEnv().AddOption("sol:chk:fail chk:fail checkfail",
         "Fail on solution checking violations.",
         options_.solcheckfail_, false, true);
-    GetEnv().AddOption("sol:chk:noround chk:noround chk:no_solution_round",
-        "Don't use AMPL solution_round option when checking.",
-        options_.dont_use_sol_round_, false, true);
-    GetEnv().AddOption("sol:chk:noprec chk:noprec chk:no_solution_precision",
-        "Don't use AMPL solution_precision option when checking.",
-        options_.dont_use_sol_prec_, false, true);
+    GetEnv().AddOption("sol:chk:round chk:round chk:rnd",
+        "AMPL solution_round option when checking: "
+                       "round to this number of decimals after comma "
+                       "(before comma if negative.)",
+                       options_.sol_round_, -1000, 1000);
+    GetEnv().AddOption("sol:chk:prec chk:prec chk:precision",
+        "AMPL solution_precision option when checking: "
+                       "number of significant digits.",
+                       options_.sol_prec_, -1000, 1000);
   }
 
 
