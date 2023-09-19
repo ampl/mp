@@ -1,6 +1,6 @@
  /**
   * Test expression map as well as if-then.
-  * Test solution check and cap:eps.
+  * Test solution check and cmp:eps.
   * Used in a Colab notebook on solution check.
   */
 

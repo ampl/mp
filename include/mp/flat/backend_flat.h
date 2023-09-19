@@ -31,16 +31,20 @@ public:
   /// Invokes postsolver.
   Solution GetSolution() override {
     auto x = PrimalSolution();
+    auto y = DualSolution();
     auto mv = GetValuePresolver().PostsolveSolution(
           { x,
-            DualSolution(),
+            y,
             GetObjectiveValues() } );
     auto x1 = std::move(mv.GetVarValues()());
     if (x.empty())
       x1.clear();      // don't send variable values
+    auto y1 = std::move(mv.GetConValues()());
+    if (y.Empty())
+        y1.clear();      // don't send variable values
     return{ x1,
-          mv.GetConValues()(),
-          mv.GetObjValues()() };
+            y1,
+            mv.GetObjValues()() };
   }
 
   /// Redeclare GetObjectiveValues()
