@@ -1,6 +1,10 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
+## 20230920
+- Updated to Gurobi libraries 10.0.3, which include many bugfixes.
+
+
 ## 20230919
 - *mp_options*.
 	Receive mp_options from AMPL (for all MP solvers).
