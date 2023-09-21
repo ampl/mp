@@ -1,6 +1,10 @@
 Summary of recent updates to SCIP for AMPL
 ==========================================
 
+## 20239021
+- Updated to SCIP 8.0.4 and SoPlex 6.0.4
+
+
 ## 20230919
 - *mp_options*.
 	Receive mp_options from AMPL (for all MP solvers).
