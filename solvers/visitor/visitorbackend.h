@@ -143,9 +143,14 @@ protected:
 
   double ObjectiveValue() const;
 
-  /// Solution values. The vectors are emptied if not available
-  ArrayRef<double> PrimalSolution() override;
-  pre::ValueMapDbl DualSolution() override;
+	/// PrimalSolution() for flat backends.
+	/// @return empty vector if no primal solution.
+	ArrayRef<double> PrimalSolution() override;
+	/// DualSolution() for flat backends.
+	/// @return empty map if no dual solution.
+	pre::ValueMapDbl DualSolution() override;
+	/// Dual solution for the LP part only.
+	/// @return empty vector if none.
   ArrayRef<double> DualSolution_LP();
 
   void WindupVISITORSolve();

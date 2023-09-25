@@ -131,11 +131,19 @@ bool MosekBackend::IsQCP() const {
 }
 
 ArrayRef<double> MosekBackend::PrimalSolution() {
-  int num_vars = NumVars();
-  std::vector<double> x(num_vars);
-  // TODO get appropriate solution
-  MSK_getxx(lp(), solToFetch_, x.data());
-  return x;
+	std::vector<double> x;
+	MSKsolstae solst;
+	MSK_getsolsta(lp(), solToFetch_, &solst);
+	if (MSK_SOL_STA_PRIM_INFEAS_CER!=solst
+			&& MSK_SOL_STA_UNKNOWN!=solst) {
+		int num_vars = NumVars();
+		x.resize(num_vars);
+		// TODO get appropriate solution?
+		auto status = MSK_getxx(lp(), solToFetch_, x.data());
+		if (MSK_RES_OK != status)
+			x.clear();
+	}
+	return x;
 }
 
 pre::ValueMapDbl MosekBackend::DualSolution() {

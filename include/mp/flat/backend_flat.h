@@ -49,9 +49,11 @@ public:
 
   /// Redeclare GetObjectiveValues()
   ArrayRef<double> GetObjectiveValues() override { return {}; }
-  /// Separate PrimalSolution() for flat backends
+	/// Separate PrimalSolution() for flat backends.
+	/// @return empty vector if no primal solution.
   virtual ArrayRef<double> PrimalSolution() { return {}; }
-  /// Separate DualSolution() for flat backends
+	/// Separate DualSolution() for flat backends.
+	/// @return empty map if no dual solution.
   virtual pre::ValueMapDbl DualSolution() { return {}; }
 
   /// Obtain presolved sens info
