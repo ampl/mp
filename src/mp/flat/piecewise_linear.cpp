@@ -679,20 +679,21 @@ protected:
   void InitPowDomain() {
     auto pwr = GetConParams()[0];       // the exponent
     auto ubx = std::min(1e5, std::pow(1e5, 1/pwr));
-    if (pwr<0.0) {
+    bool fPowInt = std::floor(pwr)==pwr;
+    if (pwr<0.0) {                      // a<0
       rngAccepted_ = {0.0, 1e100};      // don' bother with x<0
       ubx = std::min(1e5, std::pow(1e-5, 1/pwr));  // smaller for HiGHS
-    }
-    if (pwr<2.0) {                      // need x>eps
-      fgd_ = {1e-3, ubx, 1e-3, 1e5};
+      fgd_ = {1e-3, ubx, 0.0, 1e5};
       fMonotone = true;
       bpl_ = {{1e-3, 1e5}};
-    } else if (std::floor(pwr)==pwr) {
-      fgd_ = {-ubx, ubx, -1e5, 1e5};
-    } else {
+    }
+    else if (!fPowInt) {                // a fractional
+      rngAccepted_ = {0.0, 1e100};      // don' bother with x<0
       fgd_ = {0.0, ubx, 0.0, 1e5};
       fMonotone = true;
       bpl_ = {{0.0, 1e5}};
+    } else {
+      fgd_ = {-ubx, ubx, -1e5, 1e5};
     }
   }
 
