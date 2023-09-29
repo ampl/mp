@@ -59,9 +59,9 @@ User documentation
 .. toctree::
    :maxdepth: 2
    
-   Modeling guide <rst/model-guide>
-   Features guide <rst/features-guide>
-   Solver drivers <rst/drivers>
+   Modeling guide <model-guide>
+   Features guide <features-guide>
+   Solver drivers <drivers>
 
 .. _developerDocumentation:
 
@@ -71,7 +71,7 @@ Developer documentation
 .. toctree::
    :maxdepth: 2
    
-   Developer docs <rst/developers>
+   Developer docs <developers>
 
 
 Indices and tables

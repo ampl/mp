@@ -4,7 +4,7 @@ python:
   version: "3.8"
 
 sphinx:
-   configuration: doc/conf.py
+   configuration: doc/source/conf.py
 
 python:
    install:

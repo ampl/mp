@@ -19,11 +19,11 @@ message(STATUS
 
 add_prefix(doc_deps ../ ${MP_ALL_HEADERS})
 
-set(DOC_BASEDIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(DOC_BASEDIR ${CMAKE_CURRENT_SOURCE_DIR}/source/)
 set(DOC_OUTPUTDIR ${CMAKE_CURRENT_BINARY_DIR}/html/)
 set(SPHINX_INDEX_FILE ${DOC_OUTPUTDIR}/index.html)
 
-add_prefix(mp_docs ${DOC_BASEDIR}/rst/
+add_prefix(mp_docs ${DOC_BASEDIR}/
     model-guide.rst
     modeling-overview.rst
     modeling-expressions.rst
@@ -38,7 +38,7 @@ add_prefix(mp_docs ${DOC_BASEDIR}/rst/
     testing.rst
     details.rst
   )
-add_prefix(mp_docs_models ${DOC_BASEDIR}/rst/models/
+add_prefix(mp_docs_models ${DOC_BASEDIR}/models/
     dietobj.mod dietobj.dat
     iis.mod infeasible.mod
     nqueens.mod
