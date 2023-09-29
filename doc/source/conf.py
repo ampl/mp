@@ -108,6 +108,8 @@ html_theme_options = {
     "logo_text": "MP",
 }
 
+html_baseurl = "https://mp.ampl.com"
+
 html_static_path = ["_static"]
 # html_css_files = [
 #     'css/custom.css',
