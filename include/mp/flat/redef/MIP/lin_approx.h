@@ -20,10 +20,12 @@ GetWarningKeyAndText(const char* conName, double tol) {
       std::string("PLApprox");
   std::string txt =
       std::string("An expression of type '") + conName +
-      "' has been piecewise-linearly approximated. "
-      "Set cvt:plapprox:reltol to control precision (currently " +
-      std::to_string(tol) + ").";
-  return { key, txt };
+      "' has been\n"
+      "piecewise-linearly approximated. "
+      "Set cvt:plapprox:reltol\n"
+      "to control precision (currently "
+      + std::to_string(tol) + ").";
+  return { std::move(key), std::move(txt) };
 }
 
 
@@ -60,8 +62,24 @@ public:
 
     PLApproximate(con, laPrm);
     if (!laPrm.fUsePeriod) {
+      auto lbx = GetMC().lb(x);
+      auto ubx = GetMC().ub(x);
       GetMC().NarrowVarBounds(x,
                               laPrm.grDomOut.lbx, laPrm.grDomOut.ubx);
+      auto lbx1 = GetMC().lb(x);
+      auto ubx1 = GetMC().ub(x);
+      if (lbx1 > lbx || ubx1 < ubx) {
+        GetMC().AddWarning(
+              "PLApproxDomain",
+              std::string("Argument domain of a '")
+              + con.GetTypeName()
+              + "'\n"
+                "has been reduced to ["
+              + std::to_string(lbx1) + ", "
+              + std::to_string(ubx1)
+              + "] for numerical reasons.\n"
+              "Partially controlled by cvt:plapprox:domain.");
+      }
       GetMC().RedefineVariable(y,
                                PLConstraint({x}, laPrm.plPoints));
       GetMC().PropagateResultOfInitExpr(
