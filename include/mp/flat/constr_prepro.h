@@ -5,10 +5,23 @@
  * Preprocess flat constraints before adding.
  *
  * Possible tasks:
- * 1. Simplify constraints
+ * 1. Simplify constraints.
  * 2. Replace a functional constraint by a different one,
  *    via returning its result variable from another
- *    (see conditional inequalities).
+ *    (see, e.g., conditional inequalities, pow).
+ * 3. Narrow domain of the result variable,
+ *    so that reformulations can be tight
+ *    (variable bounds, integrality.)
+ *
+ * Possible design for future:
+ * A. Standardize fail procedure for infeasibility
+ *    (which should be optional,
+ *     by default we might leave it to solver?)
+ * B. Make prepro code reentrable for presolve.
+ * C. Consider existing result bounds.
+ *    Example:
+ *
+ *      max(x, y) <= 5;
  */
 
 #include <cmath>
@@ -60,28 +73,30 @@ public:
       return;
     }
     auto& m = MP_DISPATCH( GetModel() );
-    auto lb = std::pow(m.lb(arg), pwr),
-        ub = std::pow(m.ub(arg), pwr);
-		if (MPD( is_integer_value(pwr) )) {
-			if (pwr>=0.0) {
-				// result integer if arg is and integer, >=0 exponent
-				prepro.set_result_type( m.var_type(arg) );
-				if (MPD( is_integer_value(pwr / 2.0) )) {  // exponent is even, >=0
-					bool lb_neg = m.lb(arg)<0.0;
-					bool ub_pos = m.ub(arg)>0.0;
-					if (lb_neg && ub_pos) {
-						ub = std::max(lb, ub); lb = 0.0;
-					} else if (lb_neg) {
-						std::swap(lb, ub);
-					}
-				}
-			}
-		} else {                      // fractional power
-			if (lb<0.0)
-				lb = 0.0;
-		}
-    prepro.narrow_result_bounds( std::min(lb, ub),
-                          std::max(lb, ub) );
+    bool lbx_neg = m.lb(arg)<0.0;
+    bool ubx_pos = m.ub(arg)>0.0;
+    bool pow_int = MPD( is_integer_value(pwr) );
+    if ((!pow_int && lbx_neg)          // a is fractional, lbx<0
+        || (pwr<0 && lbx_neg)) {       // a<0, lbx<=0
+      // We _COULD_ PL approximate when pwr<0, pow_int, lbx<0.
+      // But we leave it here (don't even narrow result).
+      // Gurobi 10 does not handle a<0 && lbx<0.
+    } else {
+      auto lbr = std::pow(m.lb(arg), pwr),
+          ubr = std::pow(m.ub(arg), pwr);
+      if (pow_int && pwr>=0.0) {
+        // result integer if x integer, a>=0
+        prepro.set_result_type( m.var_type(arg) );
+      }
+      if (MPD( is_integer_value(pwr / 2.0) )) {  // a even
+        if (lbx_neg && ubx_pos) {
+          ubr = std::max(lbr, ubr);
+          lbr = 0.0;
+        }
+      }  // else, monotone
+      prepro.narrow_result_bounds( std::min(lbr, ubr),
+                                   std::max(lbr, ubr) );
+    }
   }
 
   /// Preprocess Min

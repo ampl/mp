@@ -77,8 +77,8 @@ public:
                 "has been reduced to ["
               + std::to_string(lbx1) + ", "
               + std::to_string(ubx1)
-              + "] for numerical reasons.\n"
-              "Partially controlled by cvt:plapprox:domain.");
+              + "] for numerical reasons\n"
+              "(partially controlled by cvt:plapprox:domain.)");
       }
       GetMC().RedefineVariable(y,
                                PLConstraint({x}, laPrm.plPoints));
