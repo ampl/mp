@@ -116,7 +116,7 @@ html_static_path = ["_static"]
 # ]
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-html_title = "ampl::mp {} documentation".format(version)
+html_title = "AMPL MP Documentation"
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 html_short_title = "ampl::mp"
@@ -153,7 +153,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-    ("index", "MP.tex", "MP Documentation", "AMPL Optimization, Inc.", "manual"),
+    ("index", "MP.tex", "AMPL MP Documentation", "AMPL Optimization Inc.", "manual"),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -181,7 +181,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [("index", "ampl", "AMPL MP Documentation", ["AMPL Optimization, Inc."], 1)]
+man_pages = [("index", "ampl", "AMPL MP Documentation", ["AMPL Optimization Inc."], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -197,9 +197,9 @@ texinfo_documents = [
         "index",
         "AMPL",
         "AMPL MP Documentation",
-        "AMPL Optimization, Inc.",
+        "AMPL Optimization Inc.",
         "AMPL",
-        "Documentation for the AMPL MP project.",
+        "Documentation for the AMPL MP framework.",
         "Miscellaneous",
     ),
 ]
