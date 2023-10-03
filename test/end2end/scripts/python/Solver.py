@@ -338,7 +338,7 @@ class GurobiSolver(AMPLSolver):
                 self._stats["objective"] = None
 
 
-# Mp Direct / FlatConverter drivers
+# MP Direct / FlatConverter drivers
 class MPDirectSolver(AMPLSolver):
     def _setLPMethod(self, method : str):
         # typically have to reimplement this
