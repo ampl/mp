@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import os
 import sys
 import subprocess
 import datetime
@@ -230,7 +230,7 @@ def generate_doxygen_xml(app):
     """Run the doxygen make commands if we're on the ReadTheDocs server"""
     # read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
     # We always build doxygen documentation
-    run_doxygen("./")
+    run_doxygen(os.path.dirname(__file__) or os.curdir)
 
 
 def setup(app):
