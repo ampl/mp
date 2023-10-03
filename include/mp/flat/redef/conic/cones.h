@@ -95,6 +95,18 @@ protected:
         Walk<LinConLE, Convert1QC>();
         Walk<LinConGE, Convert1QC>();
       }
+
+      if ( ! MC().ModelAPICanMixConicQCAndQC()) {  // cannot mix
+        if (MC().NumQC2SOCPAttempted() > MC().NumQC2SOCPSucceeded()
+            && MC().NumQC2SOCPSucceeded()) {
+          MC().AddWarning("Mix QC+SOCP",
+                          "Not all quadratic constraints could "
+                          "be recognized\nas quadratic cones; "
+                          "solver might not accept the model.\n"
+                          "Try option cvt:socp=0 to leave all "
+                          "as quadratic.");
+        }
+      }
     } else
       if (MC().IfPassQuadCon() &&
           (MC().GetNumberOfAddable((PowConstraint*)0)>0 ||
@@ -166,10 +178,14 @@ protected:
   bool DoRun(const QuadAndLinTerms& body,
              int sens, double rhs) {
     assert((sens==1 || sens==-1) && "sens 1 or -1 only");
+    MC().IncQC2SOCPAttempted();
     if (body.GetLinTerms().size()<=1) {
       QPTermsTraits qptt;
       if (Characterize(body.GetQPTerms(), qptt))
-        return ProceedQCWithTraits(body, sens, rhs, qptt);
+        if (ProceedQCWithTraits(body, sens, rhs, qptt)) {
+          MC().IncQC2SOCPSucceeded();
+          return true;
+        }
     }
     return false;
   }

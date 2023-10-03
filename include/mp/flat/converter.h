@@ -886,6 +886,13 @@ public:
     return ModelAPI::AcceptsNonconvexQC();
   }
 
+  /// Whether the solver can mix conic quadratic
+  /// (entered via dedicated API)
+  /// and direct quadratic constraints
+  static bool ModelAPICanMixConicQCAndQC() {
+    return ModelAPI::CanMixConicQCAndQC();
+  }
+
   /// Whether the ModelAPI accepts quadratic cones
 	int ModelAPIAcceptsQuadraticCones() {
 		return
@@ -893,6 +900,12 @@ public:
 					(int)GetConstraintAcceptance((QuadraticConeConstraint*)nullptr),
 					(int)GetConstraintAcceptance((RotatedQuadraticConeConstraint*)nullptr));
 	}
+
+  /// Number of QC -> SOCP conversions
+  void IncQC2SOCPAttempted() { ++nQC2SOCPAttempted_; }
+  void IncQC2SOCPSucceeded() { ++nQC2SOCPSucceeded_; }
+  int NumQC2SOCPAttempted() const { return nQC2SOCPAttempted_; }
+  int NumQC2SOCPSucceeded() const { return nQC2SOCPSucceeded_; }
 
 	/// Whether the ModelAPI accepts exp cones
 	int ModelAPIAcceptsExponentialCones() {
@@ -1136,6 +1149,9 @@ private:
   std::vector<pre::NodeRange> auto_link_targ_items_;
 
 	ConicConverter<Impl> conic_cvt_ { *static_cast<Impl*>(this) };
+  int nQC2SOCPAttempted_= 0;
+  int nQC2SOCPSucceeded_= 0;
+
 
 	std::vector<int> refcnt_vars_;
   int constr_depth_ = 0;    // tree depth of new constraints

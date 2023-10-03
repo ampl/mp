@@ -169,6 +169,10 @@ public:
   /// Specifically, ask if the solver accepts non-convex quadratic constraints
   static constexpr bool AcceptsNonconvexQC() { return false; }
 
+  /// Specifically, ask if the solver can mix conic quadratic
+  /// (entered via dedicated API) and direct quadratic constraints
+  static constexpr bool CanMixConicQCAndQC() { return false; }
+
 
 private:
   std::unique_ptr< FlatModelInfo > pfmi_ { nullptr };

@@ -25,7 +25,9 @@ public:
   }
 
   void ReportError(int solve_result, fmt::CStringRef msg) override {
-    HandleSolution(solve_result, msg, 0, 0, 0.0);
+    HandleSolution(solve_result,
+                   GetWarnings() + msg.c_str(),
+                   0, 0, 0.0);
   }
 
 

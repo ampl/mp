@@ -45,10 +45,10 @@ public:
   /// Further constraint types which could be handled natively by some solvers:
   /// - IndicatorConstraint(Lin/Quad)(LE/EQ/GE)
   /// - Multidirectional indicators Cond(Lin/Quad)Con(LT/LE/EQ/GE/GT), where
-  ///   the implication direction (</==/>) depends in the context
+  ///   the implication direction (</==/>) depends in the expression context
   /// - Complementarity
   /// - Logical, counting, piecewise-linear constraints.
-  /// See \a constraints_std.h and other drivers.
+  /// See \a constr_std.h and other drivers.
 
 
   /// The linear range constraint, if fully supported with basis info etc.
@@ -78,6 +78,13 @@ public:
   void AddConstraint(const QuadConEQ& qc);
   ACCEPT_CONSTRAINT(QuadConGE, Recommended, CG_Algebraic)
   void AddConstraint(const QuadConGE& qc);
+
+  /// Specifically, ask if the solver accepts non-convex quadratic constraints
+  static constexpr bool AcceptsNonconvexQC() { return false; }
+
+  /// Specifically, ask if the solver can mix conic quadratic
+  /// (entered via dedicated API) and direct quadratic constraints
+  static constexpr bool CanMixConicQCAndQC() { return false; }
 
   /// Cones
   ACCEPT_CONSTRAINT(QuadraticConeConstraint, Recommended, CG_Conic)
