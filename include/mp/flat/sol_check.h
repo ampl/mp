@@ -217,7 +217,8 @@ public:
     }
     if (f_idealistic && chk.HasAnyViols())
       wrt.write(
-            "Idealistic check is an indicator only, see documentation.");
+            "AMPL may evaluate constraints/objectives differently\n"
+            "than the solver, see mp.ampl.com/solution-check.html.");
     chk.SetReport( wrt.str() );
   }
 

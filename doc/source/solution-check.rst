@@ -58,6 +58,72 @@ see example below. To enable it for constraints, use
 :ref:`option <solver-options>` ``chk:mode``.
 
 
+Warning format
+******************
+
+To explain the solution check warning format, let's solve a relaxed version
+of the following model:
+
+.. code-block:: ampl
+
+    var x integer <= 0;
+    var y integer;
+    minimize TotalSum: x - 2*y;
+    subject to C1: -x + 21*y >= 2;
+    subject to C2: -3*x + 2*y <= 1;
+    subject to C3: 20*x + y <= 200;
+
+Running Gurobi with option ``feasrelax 1``, we trick MP
+(it does not know the effect of ``feasrelax``).
+
+.. code-block:: ampl
+
+    ampl: option solver gurobi;
+    ampl: option gurobi_options 'feasrelax 1';
+    ampl: option gurobi_auxfiles rc;      ## To pass model names
+    ampl: solve;
+    Gurobi 10.0.2:   alg:feasrelax = 1
+    Gurobi 10.0.2: optimal solution; feasrelax objective 160552
+    5 simplex iterations
+    1 branching nodes
+    absmipgap=2, relmipgap=1.2457e-05
+    ------------ WARNINGS ------------
+    WARNING:  "Solution Check"
+         [ sol:chk:feastol=1e-06, :feastolrel=1e-06, :inttol=1e-05,
+           :round='', :prec='' ]
+      - 2 original variable(s) violate bounds,
+            up to 1E+05 (abs, item 'y'), up to 1E+00 (rel, item 'y')
+    Algebraic expression violations:
+      - 1 original expression(s) of type ':linrange',
+            up to 2E+00 (abs, item 'C1'), up to 1E+00 (rel, item 'C1')
+    Objective value violations:
+      - 1 objective value(s) violated,
+            up to 2E+05 (abs, item 'TotalSum')
+
+    WARNING:  "Solution Check (Idealistic)"
+         [ sol:chk:feastol=1e-06, :feastolrel=1e-06, :inttol=1e-05,
+           :round='', :prec='' ]
+    Objective value violations:
+      - 1 objective value(s) violated,
+            up to 2E+05 (abs, item 'TotalSum')
+    AMPL may evaluate constraints/objectives differently
+    than the solver, see mp.ampl.com/solution-check.html.
+
+After the solver log we see 2 warnings. The first is ``Solution Check``.
+This reports the "realistic" violations. In square brackets we see
+numeric solver options relevant for checking.
+Then follows information on variable bound violations.
+It includes the number of violations (2), maximal absolute violation
+and variable name, as well as maximal relative violation.
+
+Paragraph ``Algebraic expression violations`` presents similar information,
+for each expression type (in the case ``:linrange``.) Paragraph
+``Objective value violations`` does that for objectives.
+
+The 2nd warning is ``Solution Check (Idealistic)``.
+As the idealistic check is performed by default for objectives only,
+this warning repeats the information about objective value violation.
+
 
 "Realistic" solution check
 ******************************
@@ -65,7 +131,8 @@ see example below. To enable it for constraints, use
 In this mode, variable values are taken as they were reported by the solver
 (with possible modifications via options
 ``sol:chk:round`` and ``sol:chk:prec``.)
-This check is enough for most practical situations.
+This check is enough for most practical situations, and its warnings mean
+that the solver's reported solution violates checking tolerances.
 
 .. code-block:: ampl
 
@@ -78,8 +145,9 @@ This check is enough for most practical situations.
           up to 1E+00 (item 'socp[13]')
 
 In this example, realistic check reports a constraint violation
-of 1, which can mean a significant violation if the constraint's
-right-hand side is of moderate magnitude.
+of 1.0, which can mean a significant violation if the constraint's
+right-hand side is of moderate magnitude (in this case zero,
+that's why the relative violation is missing).
 
 
 "Idealistic" solution check
@@ -90,7 +158,7 @@ The recomputation is performed similar to how AMPL does it when asked to
 display objective value or constraint body / slack.
 Thus, "idealistic" violations mean objective and constraint expressions
 reported in AMPL may be different from the solver.
-While the major type of checking should be the "realistic" mode,
+While the most serious type of violations are the "realistic" ones,
 the "idealistic" mode warns about (significant) differences when expressions are
 recomputed from scratch.
 Consider the following example.
@@ -116,7 +184,8 @@ Most solvers apply a constraint feasibility tolerance of the order :math:`10^{-6
     Objective value violations:
       - 1 objective value(s) violated,
             up to 1E+01 (abs)
-    Idealistic check is an indicator only, see documentation.
+    AMPL may evaluate constraints/objectives differently
+    than the solver, see mp.ampl.com/solution-check.html.
 
     ampl: display x;
     x = 5
@@ -132,7 +201,7 @@ Indeed, if we ask AMPL to recompute the objective value:
 
 we see that AMPL does it "idealistically"
 (it does not know about solver tolerances,
-or whether the user provided variable values manually.)
+or whether the user has provided variable values manually.)
 
 To see which expressions cause the violation,
 use driver option ``chk:mode``:
@@ -157,7 +226,8 @@ use driver option ``chk:mode``:
     Objective value violations:
       - 1 objective value(s) violated,
             up to 1E+01 (abs)
-    Idealistic check is an indicator only, see documentation.
+    AMPL may evaluate constraints/objectives differently
+    than the solver, see mp.ampl.com/solution-check.html.
 
 *Hint*: to display AMPL model names,
 set ``option (solver_)auxfiles rc;`` as follows:
@@ -183,7 +253,8 @@ set ``option (solver_)auxfiles rc;`` as follows:
     Objective value violations:
       - 1 objective value(s) violated,
             up to 1E+01 (abs, item 'Total')
-    Idealistic check is an indicator only, see documentation.
+    AMPL may evaluate constraints/objectives differently
+    than the solver, see mp.ampl.com/solution-check.html.
 
 
 Remedies
