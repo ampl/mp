@@ -83,6 +83,17 @@ via the environment variable, or via arguments:
     gurobi.exe model.nl outlev=1 tech:writesol=model.sol                ## Method 2
 
 
+Set options from file
+--------------------------
+
+It is possible to input a file with predefined solver options,
+using ``tech:optionfile``:
+
+.. code-block:: ampl
+
+    ampl: option cbc_options 'optionfile="options_experiment1.txt"';
+
+
 Query option values
 --------------------------
 
