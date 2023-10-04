@@ -49,12 +49,24 @@ if(USE_PROFILER)
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
 endif()
 
+# Sanitizers
 option(USE_SANITIZERS "Use Sanitizers" OFF)
 if(USE_SANITIZERS)
-  set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
-  set(CMAKE_EXE_LINKER_FLAGS
-    "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
+  if (WIN32)
+    message(STATUS "   MP: Using address sanitizers on Windows")
+    set(CMAKE_C_FLAGS
+      "${CMAKE_CXX_FLAGS} /fsanitize=address")
+    set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} /fsanitize=address")
+  else()
+    message(STATUS "   MP: Using sanitizers on *nix")
+    set(CMAKE_C_FLAGS
+      "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
+    set(CMAKE_EXE_LINKER_FLAGS
+      "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
+  endif()
 endif()
 
 get_directory_property(hasParent PARENT_DIRECTORY)
