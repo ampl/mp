@@ -371,7 +371,7 @@ class BasicSuffixSet : private Alloc {
 
  public:
   explicit BasicSuffixSet(Alloc alloc = Alloc()) : Alloc(alloc) {}
-  ~BasicSuffixSet();
+  virtual ~BasicSuffixSet();
 
   /// Adds a suffix throwing Error if another suffix with the same name is
   /// in the set.

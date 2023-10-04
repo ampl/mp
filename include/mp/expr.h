@@ -1093,8 +1093,8 @@ Function BasicExprFactory<Alloc>::CreateFunction(
   /// we need to allocate extra size chars only.
   typedef Function::Impl Impl;
   SafeInt<std::size_t> size = sizeof(Impl);
-  Impl *new_impl = reinterpret_cast<Impl*>(
-        this->allocate(val(size + name.size())));
+  // Replace by std::malloc due to #174
+  Impl* new_impl = (Impl*)std::malloc(val(size + name.size()));
   new_impl->type = type;
   new_impl->num_args = num_args;
   this->Copy(name, new_impl->name);
