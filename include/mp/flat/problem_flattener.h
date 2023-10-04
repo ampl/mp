@@ -1079,9 +1079,11 @@ template <template <typename, typename, typename> class ProblemFlt,
 class ProblemFltImpl :
     public ProblemFlt<
       ProblemFltImpl<ProblemFlt, Problem, FlatCvt>, Problem, FlatCvt> {
+  /// Typedef Base
   using Base = ProblemFlt<
     ProblemFltImpl<ProblemFlt, Problem, FlatCvt>, Problem, FlatCvt>;
 public:
+  /// Construct
   ProblemFltImpl(Env& e) : Base(e) { }
 };
 

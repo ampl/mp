@@ -686,8 +686,8 @@ class BasicExprFactory : private Alloc {
     exprs_.push_back(0);
     typedef typename ExprType::Impl Impl;
     /// The following cannot overflow.
-    /// Using malloc due to #174
-    Impl *impl = (Impl*)std::malloc(sizeof(Impl) + extra_bytes);
+    /// Using ::new due to #174
+    Impl *impl = (Impl*) new char* [sizeof(Impl) + extra_bytes];
     impl->kind_ = kind;
     exprs_.back() = impl;
     return impl;
@@ -1081,7 +1081,7 @@ template <typename T>
 void BasicExprFactory<Alloc>::Deallocate(const std::vector<T> &data) {
   for (typename std::vector<T>::const_iterator
        i = data.begin(), end = data.end(); i != end; ++i) {
-    std::free((void*)*i);
+    delete [] (char*)*i;
   }
 }
 
@@ -1093,8 +1093,8 @@ Function BasicExprFactory<Alloc>::CreateFunction(
   /// we need to allocate extra size chars only.
   typedef Function::Impl Impl;
   SafeInt<std::size_t> size = sizeof(Impl);
-  // Replace by std::malloc due to #174
-  Impl* new_impl = (Impl*)std::malloc(val(size + name.size()));
+  // Replace by ::new due to #174
+  Impl* new_impl = (Impl*) new char* [val(size + name.size())];
   new_impl->type = type;
   new_impl->num_args = num_args;
   this->Copy(name, new_impl->name);

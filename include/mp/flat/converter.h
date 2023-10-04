@@ -1351,7 +1351,10 @@ template <template <typename, typename, typename> class FlatCvt,
 class FlatCvtImpl :
     public FlatCvt<FlatCvtImpl<FlatCvt, Backend, Model>, Backend, Model> {
 public:
+  /// Base type
   using Base = FlatCvt<FlatCvtImpl<FlatCvt, Backend, Model>, Backend, Model>;
+
+  /// Construct
   FlatCvtImpl(Env& e) : Base(e) { }
 };
 

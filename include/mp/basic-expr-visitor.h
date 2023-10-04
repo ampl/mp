@@ -64,6 +64,8 @@ namespace mp {
 template <typename Impl, typename Result, typename ExprTypes>
 class BasicExprVisitor {
  public:
+  virtual ~BasicExprVisitor() { }
+
   MP_DEFINE_EXPR_TYPES(ExprTypes);
 
   Result Visit(Expr e);
