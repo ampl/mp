@@ -361,7 +361,7 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       NumberofConstConstraint& con, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, con.GetArguments().size());
+    prepro.narrow_result_bounds(0.0, (double)con.GetArguments().size());
     prepro.set_result_type( var::INTEGER );
   }
 
@@ -369,14 +369,14 @@ public:
   void PreprocessConstraint(
       NumberofVarConstraint& con, PreprocessInfo& prepro) {
     prepro.narrow_result_bounds(0.0,     // size()-1: 1st arg is the ref var
-                                con.GetArguments().size()-1);
+                                (double)con.GetArguments().size()-1);
     prepro.set_result_type( var::INTEGER );
   }
 
   template <class PreprocessInfo>
   void PreprocessConstraint(
       CountConstraint& con, PreprocessInfo& prepro) {
-    prepro.narrow_result_bounds(0.0, con.GetArguments().size());
+    prepro.narrow_result_bounds(0.0, (double)con.GetArguments().size());
     prepro.set_result_type( var::INTEGER );
   }
 

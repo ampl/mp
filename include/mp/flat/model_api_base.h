@@ -55,7 +55,7 @@ public:
               std::initializer_list<var::Type> tys,
               std::initializer_list<const char*> nms = {}) :
     lbs_((lbs)), ubs_((ubs)), types_((tys)), names_(nms) { }
-  int size() const { assert(check()); return lbs_.size(); }
+  int size() const { assert(check()); return (int)lbs_.size(); }
   const double* plb() const { return lbs_.data(); }
   const double* pub() const { return ubs_.data(); }
   const var::Type* ptype() const { return types_.data(); }

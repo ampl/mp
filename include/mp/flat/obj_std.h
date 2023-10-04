@@ -29,7 +29,7 @@ public:
   /// Get lin terms
   const LinTerms& GetLinTerms() const { return lt_; }
   /// Get N terms
-  int num_terms() const { assert(check()); return lt_.size(); }
+  int num_terms() const { assert(check()); return (int)lt_.size(); }
   /// Validate
   bool check() const { return lt_.check(); }
   /// Coefs vector

@@ -288,9 +288,9 @@ public:
   /// Get sample poont's Y
   double GetY0() const { return Y0_; }
   /// Get number of bp
-  int GetNBP() const { return GetBP().size(); }
+  int GetNBP() const { return (int)GetBP().size(); }
   /// Get number slopes
-  int GetNSlopes() const { return GetSlopes().size(); }
+  int GetNSlopes() const { return (int)GetSlopes().size(); }
   /// Validate
   bool check() const { return GetNBP()>0 && GetNSlopes()==GetNBP()+1; }
 

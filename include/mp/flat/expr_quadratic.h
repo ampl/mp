@@ -35,10 +35,10 @@ public:
   bool empty() const { return coefs_.empty(); }
 
   /// Size
-  size_t size() const { return coefs_.size(); }
+  int size() const { return (int)coefs_.size(); }
 
   /// Capacity
-  size_t capacity() const { return coefs_.capacity(); }
+  int capacity() const { return (int)coefs_.capacity(); }
 
   const double* pcoefs() const { return coefs_.data(); }
   const int* pvars1() const { return vars1_.data(); }
@@ -50,8 +50,8 @@ public:
 
   double coef(int i) const { return coefs_[i]; }
   void set_coef(int i, double c) { coefs_[i] = c; }
-  int var1(int i) const { return vars1_[i]; }
-  int var2(int i) const { return vars2_[i]; }
+  int var1(size_t i) const { return vars1_[i]; }
+  int var2(size_t i) const { return vars2_[i]; }
 
   /// Compute value given a dense vector of variable values
   template <class VarInfo>
