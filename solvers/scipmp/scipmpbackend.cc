@@ -90,9 +90,13 @@ bool ScipBackend::IsQCP() const {
 ArrayRef<double> ScipBackend::PrimalSolution() {
   SCIP* scip = getSCIP();
   int num_vars = NumVars();
+  auto sol = SCIPgetBestSol(scip);
+
+  if (sol == nullptr)
+    return std::vector<double>();
+
   std::vector<double> x(num_vars);
-  for (int i = 0; i < num_vars; i++)
-    x[i] = SCIPgetSolVal(scip, SCIPgetBestSol(scip), getPROBDATA()->vars[i]);
+  SCIPgetSolVals(scip, sol, num_vars, getPROBDATA()->vars, x.data());
   return x;
 }
 
@@ -639,14 +643,14 @@ void ScipBackend::InitCustomOptions() {
     "\n"
     "  | 0 - Aggregation of variables should not be forbidden (default)\n"
     "  | 1 - Aggregation of variables should be forbidden.",
-    "presolving/advanced/donotaggr", 0, 1);
+    "presolving/donotaggr", 0, 1);
 
   AddSolverOption("pre:donotmultaggr donotmultaggr",
     "0/1: whether multi-aggregation of variables should be forbidden"
     "\n"
     "  | 0 - Multi-aggregation of variables should not be forbidden (default)\n"
     "  | 1 - Multi-aggregation of variables should be forbidden.",
-    "presolving/advanced/donotmultaggr", 0, 1);
+    "presolving/donotmultaggr", 0, 1);
 
   AddSolverOption("pre:immrestartfac immrestartfac",
     "Fraction of integer variables that were fixed in the root node triggering an immediate restart with preprocessing (default: 0.1)",
