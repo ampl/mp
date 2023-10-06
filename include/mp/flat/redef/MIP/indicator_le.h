@@ -43,7 +43,7 @@ protected:
             "Set bounds on variables\n"
             "participating in logical expressions,\n"
             "or use option cvt:bigM (with caution).\n"
-            "See more: https://amplmp.readthedocs.io/en/latest/rst/modeling-numerics.html");
+            "See more: mp.ampl.com/modeling-numerics.html");
     }
     if (body_ub != con.rhs()) {
       if (0==val)                                // left condition is b==0

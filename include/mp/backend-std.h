@@ -390,7 +390,7 @@ protected:
       ClearWarning(GetSolCheckWarningKey(false));
       ClearWarning(GetSolCheckWarningKey(true));
     }
-    if (round() && MP_DISPATCH(IsMIP()))
+    if (round() && MPD(IsMIP()))
       RoundSolution(sol.primal, writer);
     HandleFeasibleSolution(SolveCode(), writer.c_str(),
                    sol.primal.empty() ? 0 : sol.primal.data(),
@@ -432,7 +432,7 @@ protected:
                          FormatObjValue(feasrelax().orig_obj_value_));
         }
       }
-      if (round() && IsMIP())
+      if (round() && MPD(IsMIP()))
         RoundSolution(sol.primal, writer);
     }
     if (exportKappa() && 1)

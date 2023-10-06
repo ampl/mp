@@ -89,5 +89,35 @@
     "values": {
       "C2.slack": -1
     }
+  },
+  {
+    "name": "infeas_lcon_04",
+    "tags": [ "logical", "iis" ],
+    "options": {
+      "ANYSOLVER_options": "iis=1"
+    },
+    "values": {
+      "C2_lcon.iis": "mem"
+    }
+  },
+  {
+    "name": "infeas_lcon_05 .funcpieces IN",
+    "tags": [ "logical", "nonlinear", "funcpieces" ],
+    "options": {
+      "ANYSOLVER_options": "debug=1"
+    },
+    "values": {
+      "Initial.test_funcpieces_presolved": 7
+    }
+  },
+  {
+    "name": "infeas_lcon_05 .iis OUT",
+    "tags": [ "logical", "nonlinear", "iis" ],
+    "options": {
+      "ANYSOLVER_options": "iis=1"
+    },
+    "values": {
+      "Flow4['ELLY', 2].iis": "mem"
+    }
   }
 ]

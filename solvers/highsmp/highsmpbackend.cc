@@ -234,7 +234,6 @@ ArrayRef<int> HighsBackend::VarStatii() {
 }
 
 ArrayRef<int> HighsBackend::ConStatii() {
-
   for (auto& s : conStatiii_) {
     switch (s) {
     case kHighsBasisStatusBasic:

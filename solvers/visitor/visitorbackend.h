@@ -17,7 +17,9 @@ class VisitorBackend :
 
   //////////////////// [[ The public interface ]] //////////////////////
 public:
+  /// Construct
   VisitorBackend();
+  /// Destruct
   ~VisitorBackend();
 
   /// Prefix used for the <prefix>_options environment variable
@@ -30,10 +32,11 @@ public:
   /// Version displayed with -v
   std::string GetSolverVersion();
   /// External libraries displayed with -v
-  std::string set_external_libs() { return ""; };
+  std::string set_external_libs() override { return ""; };
   
   /// Name for diagnostic messages
   static const char* GetBackendName();
+  /// "long name", rarely used
   static const char* GetBackendLongName() { return nullptr; }
 
   /// Init custom driver options, such as outlev, writeprob
@@ -66,31 +69,33 @@ public:
 
 
   /**
- * MULTISOL support
- * No API, see ReportIntermediateSolution()
-**/
+   * MULTISOL support
+   * No API, see ReportIntermediateSolution()
+   **/
   ALLOW_STD_FEATURE(MULTISOL, true)
 
   /**
-  * Get/Set AMPL var/con statii
-  **/
+   * Get/Set AMPL var/con statii
+   **/
   ALLOW_STD_FEATURE(BASIS, true)
-  // TODO If getting/setting a basis is supported, implement the 
-  // accessor and the setter below
+  /// TODO If getting/setting a basis is supported, implement the
+  /// accessor and the setter below.
+  /// Should return empty basis if not available
+  /// (e.g., not an LP.)
   SolutionBasis GetBasis() override;
   void SetBasis(SolutionBasis) override;
 
   /**
   * MIP warm start
   **/
-  // TODO If MIP warm start is supported, implement the function below
-  // to set a non-presolved starting solution
+  /// TODO If MIP warm start is supported, implement the function below
+  /// to set a non-presolved starting solution
   ALLOW_STD_FEATURE(MIPSTART, true)
   void AddMIPStart(ArrayRef<double> x0,
                    ArrayRef<int> sparsity) override;
 
 
- /**
+  /**
   * Get MIP Gap
   **/
   // TODO Implement to return MIP gap
@@ -98,6 +103,7 @@ public:
   ALLOW_STD_FEATURE(RETURN_MIP_GAP, true)
   double MIPGap() override;
   double MIPGapAbs() override;
+
   /**
   * Get MIP dual bound
   **/
@@ -116,6 +122,10 @@ public:
   IIS GetIIS() override;
 
   /////////////////////////// Model attributes /////////////////////////
+
+  /// Reimplement if the solver gives more information
+  /// than just the number of non-fixed integer variables
+  /// (e.g., the solver might consider if it has PL expressions.)
   bool IsMIP() const override;
   bool IsQCP() const override;
   
@@ -171,9 +181,15 @@ protected:
   std::pair<int, std::string> ConvertVISITORStatus();
   void AddVISITORMessages();
 
+  /// Return basis.
+  /// @return empty vector if not available.
   ArrayRef<int> VarStatii();
+  /// @return empty vector if not available.
   ArrayRef<int> ConStatii();
+
+  /// Set var basis statuses.
   void VarStatii(ArrayRef<int>);
+  /// Set con basis statuses.
   void ConStatii(ArrayRef<int>);
 
   ArrayRef<int> VarsIIS();
