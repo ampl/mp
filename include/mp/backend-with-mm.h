@@ -130,15 +130,16 @@ protected:
     GetMM().ReportSuffix(suf, values);
   }
 
-  /// Access underlying model instance: integrality flags
+  /// Access original (NL) model instance:
+  /// integrality flags. Used in solution rounding.
   const std::vector<bool>& IsVarInt() const {
     return GetMM().IsVarInt();
   }
 
-  /// Underlying instance info: has integer variables?
-  bool HasIntVars() const {
-    const auto& ivi=IsVarInt();
-    return ivi.end()!=std::find(ivi.begin(), ivi.end(), true);
+  /// Solver-facing instance info:
+  /// has unfixed integer variables?
+  bool HasUnfixedIntVars() const {
+    return GetMM().HasUnfixedIntVars();
   }
 
 

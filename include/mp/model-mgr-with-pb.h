@@ -279,6 +279,9 @@ protected:
     return GetModel().IsVarInt();
   }
 
+  bool HasUnfixedIntVars() const override
+  { return GetCvt().HasUnfixedIntVars(); }
+
 
 protected:
   /// Whether and what names

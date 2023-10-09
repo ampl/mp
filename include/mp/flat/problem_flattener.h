@@ -113,6 +113,11 @@ public:
     GetFlatCvt().FillModelTraits(mt);
   }
 
+  /// Solver-facing model info:
+  /// has unfixed int vars?
+  bool HasUnfixedIntVars() const override
+  { return GetFlatCvt().GetModelInfo()->NumUnfixedIntVars(); }
+
 
 protected:
   /// Convert problem items

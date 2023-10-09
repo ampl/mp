@@ -15,6 +15,11 @@ namespace mp {
 /// Implementation of flat model info
 class FlatModelInfoImpl : public FlatModelInfo {
 public:
+  /// Num unfixed int vars
+  int NumUnfixedIntVars() const override { return nUnfxIntVars_; }
+
+  /// Set N unfixed int vars
+  void SetNumUnfixedIntVars(int n) override { nUnfxIntVars_ = n; }
 
   /// For hashing of type_info
   using TypeInfoRef = std::reference_wrapper<const std::type_info>;
@@ -72,6 +77,8 @@ public:
 private:
   TypeInfoRefIntMap ti_map_;
   ConstrGroupIntMap cg_map_;
+
+  int nUnfxIntVars_ = 0;
 };
 
 

@@ -10,6 +10,7 @@
 #include "mp/flat/constr_std.h"
 #include "mp/flat/constr_keeper.h"
 #include "mp/flat/converter_model_base.h"
+#include "mp/flat/model_info.h"
 
 namespace mp {
 
@@ -204,7 +205,8 @@ public:
   { return -INFINITY; }
 
   template <class Num>
-  static bool is_integer_value(Num n) { return std::floor(n)==std::ceil(n); }
+  static bool is_integer_value(Num n)
+  { return std::floor(n)==std::ceil(n); }
 
   /// Provide variable lower bounds
   const VarBndVec& GetVarLBs() const { return var_lb_; }
@@ -212,25 +214,37 @@ public:
   const VarBndVec& GetVarUBs() const { return var_ub_; }
 
 
-  //////////////////////////////// EXPORT INSTANCE TO A BACKEND ///////////////////////////////
+  /////////////// EXPORT THE INSTANCE TO A ModelAPI //////////////
   ///
-  /// Pushing the whole instance to a backend or converter.
-  /// A responsible backend should handle all essential items
-  template <class Backend>
-  void PushModelTo(Backend& backend) const {
-    auto fmi = CreateFlatModelInfo();
-    FillConstraintCounters(backend, *fmi.get());
-    backend.PassFlatModelInfo(std::move(fmi));
+  /// Pushing the whole instance to the mapi.
+  template <class ModelAPI>
+  void PushModelTo(ModelAPI& mapi) const {
+    CreateFlatModelInfo(mapi);
+    mapi.PassFlatModelInfo(GetModelInfo());
 
-    backend.InitProblemModificationPhase(
-          backend.GetFlatModelInfo());
-    PushVariablesTo(backend);
-    PushObjectivesTo(backend);
-    PushCustomConstraintsTo(backend);
-    backend.FinishProblemModificationPhase();
+    mapi.InitProblemModificationPhase(GetModelInfo());
+    PushVariablesTo(mapi);
+    PushObjectivesTo(mapi);
+    PushCustomConstraintsTo(mapi);
+    mapi.FinishProblemModificationPhase();
   }
 
-protected:
+protected:  
+  void CreateFlatModelInfo(const BasicFlatModelAPI& mapi) const {
+    FillVarStats(GetModelInfoWrt());
+    FillConstraintCounters(mapi, *GetModelInfoWrt());
+  }
+
+  void FillVarStats(FlatModelInfo* pfmi) const {
+    int n=0;
+    for (auto i=var_lb_.size(); i--; ) {
+      if (var_lb_[i] < var_ub_[i]
+          && var::Type::CONTINUOUS != var_type(i))
+        ++n;
+    }
+    pfmi->SetNumUnfixedIntVars(n);
+  }
+
   template <class Backend>
   void PushVariablesTo(Backend& backend) const {
     if (var_names_storage_.size() > 0) {
@@ -260,6 +274,14 @@ protected:
     this->AddUnbridgedConstraintsToBackend(backend);
   }
 
+  FlatModelInfo* GetModelInfoWrt() const { return pfmi_.get(); }
+
+
+public:
+  /// Model info
+  const FlatModelInfo* GetModelInfo() const  { return pfmi_.get(); }
+
+
 private:
   /// Variables' bounds
   VarBndVec var_lb_, var_ub_;
@@ -273,6 +295,9 @@ private:
   /// Objectives
   ObjList objs_;
 
+  /// Flat model info
+  std::unique_ptr<FlatModelInfo>
+      pfmi_ {mp::CreateFlatModelInfo()};
 
 public:
   /// Check var arrays

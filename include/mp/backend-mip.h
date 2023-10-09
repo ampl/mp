@@ -64,9 +64,10 @@ template <class Impl,
 class MIPBackend : public BaseBackend
 {
 public:
-  /// IsMIP()
-  bool IsMIP() const override  // Basic, does not consider PL or SOS
-  { return BackendWithModelManager::HasIntVars(); }
+  /// IsMIP().
+  /// Basic version: does not consider PL or SOS or Q(C)P.
+  bool IsMIP() const override
+  { return BackendWithModelManager::HasUnfixedIntVars(); }
   /// IsQP()
   virtual bool IsQP() const { return false; }
   /// IsQCP()
@@ -75,6 +76,7 @@ public:
   /// Always add MIP start if supported:
   /// Gurobi 9.1.2 solves non-convex Q(C)P as MIP.
   /// But model attributes don't work before solve.
+  /// Distinguish LP / non-LP instead?
   virtual bool CanBeMIP() const { return true; }
 
   ////////////////////////////////////////////////////////////

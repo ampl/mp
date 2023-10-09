@@ -134,6 +134,7 @@ public:
   /// Note the interrupt notifier
   void SetInterrupter(mp::Interrupter* inter) override;
 
+
 public:  // public for static polymorphism
   /// Solve, no model modification any more (such as feasrelax).
   /// Can report intermediate results via ReportIntermediateSolution() during this,

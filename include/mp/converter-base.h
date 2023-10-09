@@ -34,6 +34,10 @@ public:
 
   /// Fill model traits
   virtual void FillModelTraits(AMPLS_ModelTraits& ) = 0;
+
+  /// Solver-facing model info:
+  /// Has unfixed int vars?
+  virtual bool HasUnfixedIntVars() const = 0;
 };
 
 } // namespace mp

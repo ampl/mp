@@ -73,6 +73,10 @@ public:
   /// Integrality flags of the variables in the original instance.
   /// Used for solution rounding
   virtual const std::vector<bool>& IsVarInt() const = 0;
+
+  /// Has unfixed int vars?
+  /// This is about the solver-facing instance.
+  virtual bool HasUnfixedIntVars() const = 0;
 };
 
 } // namespace mp

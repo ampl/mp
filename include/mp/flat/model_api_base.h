@@ -112,12 +112,12 @@ public:
   void InitCustomOptions() { }
 
   /// Pass on a FlatModelInfo object
-  void PassFlatModelInfo(std::unique_ptr<FlatModelInfo>&& pfmi) {
-    pfmi_ = std::move(pfmi);
+  void PassFlatModelInfo(const FlatModelInfo* pfmi) {
+    pfmi_ = pfmi;
   }
 
   /// Retrieve FlatModelInfo*
-  const FlatModelInfo* GetFlatModelInfo() const { return pfmi_.get(); }
+  const FlatModelInfo* GetFlatModelInfo() const { return pfmi_; }
 
   /// Chance to prepare problem update,
   /// e.g., allocate storage
@@ -175,7 +175,7 @@ public:
 
 
 private:
-  std::unique_ptr< FlatModelInfo > pfmi_ { nullptr };
+  const FlatModelInfo* pfmi_ { nullptr };
 };
 
 
