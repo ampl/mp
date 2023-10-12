@@ -1,6 +1,10 @@
 Summary of recent updates to GCG for AMPL
 =========================================
 
+## 20231012
+- Fixed bug in option tech:logfile (logfile).
+
+
 ## 20230919
 - *mp_options*.
 	Receive mp_options from AMPL (for all MP solvers).

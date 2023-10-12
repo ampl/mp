@@ -1,6 +1,10 @@
 Summary of recent updates to SCIP for AMPL
 ==========================================
 
+## 20231012
+- Fixed bug in option tech:logfile (logfile).
+
+
 ## 20239021
 - Updated to SCIP 8.0.4 and SoPlex 6.0.4
 
