@@ -144,7 +144,7 @@ void GcgBackend::Solve() {
   if (!storedOptions_.paramRead_.empty())
     GCG_CCALL( SCIPreadParams(getSCIP(), storedOptions_.paramRead_.c_str()) );
   if (!storedOptions_.logFile_.empty())
-    SCIPsetMessagehdlrLogfile(getSCIP(), storedOptions_.logFile_.c_str())
+    SCIPsetMessagehdlrLogfile(getSCIP(), storedOptions_.logFile_.c_str());
   if (storedOptions_.heuristics_ != 0)
     GCG_CCALL( SCIPsetHeuristics(getSCIP(), (SCIP_PARAMSETTING)storedOptions_.heuristics_, TRUE) );
   if (storedOptions_.cuts_ != 0)
