@@ -462,7 +462,7 @@ void ScipBackend::InitCustomOptions() {
     storedOptions_.heuristics_, 0, 3);
 
   //////////////////////// LIMITS ////////////////////////
-  AddSolverOption("lim:absgap absgap",
+  AddSolverOption("lim:absgap absgap mip:gapabs mipgapabs",
     "Solving stops, if the absolute gap = |primalbound - dualbound| is below the given value (default: 0.0)",
     "limits/absgap", 0.0, SCIP_REAL_MAX);
 
@@ -474,7 +474,7 @@ void ScipBackend::InitCustomOptions() {
     "Solving stops, if the given number of solution improvements were found (default: -1: no limit)",
     "limits/bestsol", -1, INT_MAX);
 
-  AddSolverOption("lim:gap gap",
+  AddSolverOption("lim:gap gap mip:gap mipgap",
     "Solving stops, if the relative gap = |primal - dual|/MIN(|dual|,|primal|) is below the given value, the gap is 'Infinity', if primal and dual bound have opposite signs (default: 0.0)",
     "limits/gap", 0.0, SCIP_REAL_MAX);
 

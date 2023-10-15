@@ -1,6 +1,11 @@
 Summary of recent updates to SCIP for AMPL
 ==========================================
 
+## 20231015
+- Added aliases mip:gap and mip:gapabs for consistency with
+  other solvers
+
+
 ## 20231012
 - Fixed bug in option tech:logfile (logfile).
 
