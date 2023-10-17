@@ -1,6 +1,10 @@
 Summary of recent updates to GCG for AMPL
 =========================================
 
+## 20231017
+- Fixed a bug in NL reader on Windows.
+
+
 ## 20231012
 - Fixed bug in option tech:logfile (logfile).
 

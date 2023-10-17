@@ -282,7 +282,7 @@ void mp::internal::BinaryReaderBase::ReportError(
 
 template <typename File>
 void mp::internal::NLFileReader<File>::Open(fmt::CStringRef filename) {
-  file_ = File(filename, fmt::File::RDONLY);
+  file_ = File(filename, fmt::File::RDONLY | fmt::File::BINARY);
   size_ = ConvertFileToMmapSize(file_.size(), filename);
   // Round size up to a multiple of page_size. The remainded of the last
   // partial page is zero-filled both on POSIX and Windows so the resulting

@@ -1,6 +1,12 @@
 Summary of recent updates to MOSEK for AMPL
 ===========================================
 
+## 20231017
+- Fixed a bug in NL reader on Windows.
+- Print a warning when not all quadratic constraints
+    have been converted to cones.
+
+
 ## 20230919
 - *mp_options*.
 	Receive mp_options from AMPL (for all MP solvers).

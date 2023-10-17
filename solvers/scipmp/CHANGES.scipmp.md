@@ -1,6 +1,10 @@
 Summary of recent updates to SCIP for AMPL
 ==========================================
 
+## 20231017
+- Fixed a bug in NL reader on Windows.
+
+
 ## 20231015
 - Added aliases mip:gap and mip:gapabs for consistency with
   other solvers

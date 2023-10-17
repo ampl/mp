@@ -1,6 +1,13 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
+## 20231017
+- Fixed a bug in NL reader on Windows.
+- Don't return basis for MIPs.
+    Caused trouble with older versions of AMPL
+    with logical constraints (workaround: alg:basis=0.)
+
+
 ## 20230919
 - *mp_options*.
 	Receive mp_options from AMPL (for all MP solvers).
