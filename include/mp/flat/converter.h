@@ -1140,7 +1140,7 @@ private:
         const pre::ValueMapDbl& y,
         ArrayRef<double> obj) -> bool {
       return !this->options_.solcheckmode_   // not desired
-          || this->CheckSolution(x, y, obj);
+                 || MPD( CheckSolution(x, y, obj) );
     }
   };
   pre::CopyLink copy_link_ { GetValuePresolver() }; // the copy links
