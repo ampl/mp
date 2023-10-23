@@ -7,6 +7,9 @@ new AMPL solver drivers. It provides type-safe and flexible interfaces
 suitable for linear and mixed-integer, non-linear, and
 Constraint Programming solvers. 
 
+Moreover, MP library provides
+a :ref:`lightweight NL writer <write-nl-read-sol>`.
+
 MP replaces the previous
 `AMPL Solver Library`__ for solvers not requiring automatic differentiation.
 It is implemented in C++, parts of the API are exported in C.
@@ -46,7 +49,8 @@ The documentation is divided in two sections:
   * :ref:`library-intro` shows instructions for downloading, installing and building the library
   * :ref:`howto` illustrates how to get familiar with the framework and how to quickly obtain the
     boilerplate code necessary to develop a new solver driver
-  * :ref:`components` shows the main components of the framework
+  * :ref:`components` shows the main components of the framework,
+    including NL reader and writer API
   * :ref:`howto-test` illustrates how to execute tests during development
   * :ref:`cppreference` contains the reference to all the classes in the framework 
 

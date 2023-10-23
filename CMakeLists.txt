@@ -454,15 +454,23 @@ check_cxx_source_compiles("
   int main() {}" MP_VARIADIC_TEMPLATES)
 
 # Option BUILD_EXAMPLES
-option(BUILD_EXAMPLES "Build nl-example" ON)
+option(BUILD_EXAMPLES "Build examples: nl reader, nl writer" ON)
 
+# Build NLReader example
 if (MP_VARIADIC_TEMPLATES AND BUILD_EXAMPLES)
   message(STATUS
-    "Building nl-example. Set -DBUILD_EXAMPLES=off to switch off.")
-  add_executable(nl-example src/nl-example.cc)
-  add_to_folder(${MP_FOLDER_PREFIX}util nl-example)
-  target_link_libraries(nl-example mp)
+    "Building nl-reader-example. Set -DBUILD_EXAMPLES=off to switch off.")
+  add_executable(nl-reader-example examples/nl-reader-example.cc)
+  add_to_folder(${MP_FOLDER_PREFIX}util nl-reader-example)
+  target_link_libraries(nl-reader-example mp)
 endif ()
+
+# Build NLWriter2 example
+if (BUILD_EXAMPLES)
+  message(STATUS
+    "Building NLWriter2 example. Set -DBUILD_EXAMPLES=off to switch off.")
+  add_subdirectory(nl-writer2)
+endif()
 
 option(BUILD_DOC "Build documentation" ON)
 if(BUILD_DOC)

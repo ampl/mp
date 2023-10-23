@@ -12,13 +12,12 @@ on :ref:`driver-setups`.
 
 .. _NL-SOL-files:
 
-NL and SOL files
-----------------
+Reading NL and writing SOL files
+-----------------------------------
 
 Any AMPL solver driver currenlty needs to input
 an NL file and report results in a SOL file.
-AMPL might add in-memory model communication for efficiency,
-which would be provided via the
+The details are taken care of in the
 :ref:`recommended driver setup <driver-recommended-setup>`.
 However, a :ref:`minimal driver setup <driver-minimal-setup>` might address the
 corresponding APIs directly, as described below.
@@ -130,6 +129,25 @@ A standalone .sol file writer could be implemented by parameterizing the
 `mp::internal::AppSolutionHandlerImpl` (or `mp::internal::SolutionWriterImpl`)
 templates by minimal implementations of the `mp::BasicSolver` and
 `mp::ProblemBuilder` interfaces.
+
+
+.. _write-nl-read-sol:
+
+Writing NL and reading SOL files
+------------------------------------
+
+For modeling systems and applications using AMPL solvers,
+MP provides a library to write NL and read SOL files.
+The library is zero-overhead: it does not store the model,
+nor does it require any intermediate objects to represent
+model information.
+
+The API is provided by classes `mp::NLSOL`, `mp::NLWriter2`,
+`mp::NLHandler2`, `mp::SOLReader2`, `mp::SOLHandler2`.
+See
+`example <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/nlsol_ex.cc>`_
+solving a small non-linear model.
+
 
 .. _recommended-driver-logic:
 
