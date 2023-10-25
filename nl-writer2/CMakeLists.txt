@@ -12,10 +12,23 @@ set(NLW2_LIB_FILES
         ${NLW2_DIR}/src/nl-writer2.cc
         ${NLW2_DIR}/src/nl-utils2.cc
         ${NLW2_DIR}/src/dtoa.c)
+set(NLW2_INC_FILES
+              ${NLW2_DIR}/include/mp/nlsol.h
+              ${NLW2_DIR}/include/mp/nl-header.h
+              ${NLW2_DIR}/include/mp/nl-feeder2.h
+              ${NLW2_DIR}/include/mp/nl-writer2.h
+              ${NLW2_DIR}/include/mp/nl-writer2.hpp
+              ${NLW2_DIR}/include/mp/nl-writer2-misc.h
+              ${NLW2_DIR}/include/mp/nl-utils2.h
+              ${NLW2_DIR}/include/mp/sol-reader2.h
+              ${NLW2_DIR}/include/mp/sol-reader2.hpp
+              ${NLW2_DIR}/include/mp/sol-handler2.h
+              )
 
 # Create library
 set(NLW2_LIB_NAME "nlw2")
-add_library(${NLW2_LIB_NAME} STATIC ${NLW2_LIB_FILES})
+add_library(${NLW2_LIB_NAME} STATIC
+  ${NLW2_LIB_FILES} ${NLW2_INC_FILES})
 target_include_directories(
     ${NLW2_LIB_NAME} PUBLIC ${NLW2_DIR}/include)
 
@@ -25,8 +38,17 @@ if (MSVC)               ## Set the same as for your parent project
 endif()
 
 # NLW2 example
-add_executable(nl-writer-example
-            ${NLW2_DIR}/examples/nlsol_ex.cc)
+set(NLSOL_EX_FILES
+  ${NLW2_DIR}/examples/nlsol_ex.cc
+  ${NLW2_DIR}/examples/nlsol_ex_mdl.h
+  ${NLW2_DIR}/examples/nlsol_ex_nl.h
+  ${NLW2_DIR}/examples/nlsol_ex_sol.h)
+add_executable(nl-writer-example ${NLSOL_EX_FILES})
 target_include_directories(nl-writer-example PUBLIC
             ${NLW2_DIR}/include)
 target_link_libraries(nl-writer-example ${NLW2_LIB_NAME})
+
+# Export source files
+set(NLW2_DOC_SRC
+  ${NLW2_LIB_FILES} ${NLW2_INC_FILES} ${NLSOL_EX_FILES}
+  PARENT_SCOPE)

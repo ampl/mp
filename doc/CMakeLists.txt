@@ -17,7 +17,10 @@ message(STATUS
   "Documentation building configured. "
   "Set BUILD_DOC=off otherwise.")
 
-add_prefix(doc_deps ../ ${MP_ALL_HEADERS})
+add_prefix(doc_deps ../
+  ${NLW2_DOC_SRC}
+  ${MP_ALL_HEADERS}
+  )
 
 set(DOC_BASEDIR ${CMAKE_CURRENT_SOURCE_DIR}/source/)
 set(DOC_OUTPUTDIR ${CMAKE_CURRENT_BINARY_DIR}/html/)

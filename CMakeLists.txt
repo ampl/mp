@@ -469,7 +469,33 @@ endif ()
 if (BUILD_EXAMPLES)
   message(STATUS
     "Building NLWriter2 example. Set -DBUILD_EXAMPLES=off to switch off.")
-  add_subdirectory(nl-writer2)
+  set(NLW2_DIR nl-writer2)
+  add_subdirectory(${NLW2_DIR})
+  ## Setting source files for docu. TODO keep up2date
+  set(NLW2_LIB_FILES
+          ${NLW2_DIR}/src/nl-writer2.cc
+          ${NLW2_DIR}/src/nl-utils2.cc
+          ${NLW2_DIR}/src/dtoa.c)
+  set(NLW2_INC_FILES
+                ${NLW2_DIR}/include/mp/nlsol.h
+                ${NLW2_DIR}/include/mp/nl-header.h
+                ${NLW2_DIR}/include/mp/nl-feeder2.h
+                ${NLW2_DIR}/include/mp/nl-writer2.h
+                ${NLW2_DIR}/include/mp/nl-writer2.hpp
+                ${NLW2_DIR}/include/mp/nl-writer2-misc.h
+                ${NLW2_DIR}/include/mp/nl-utils2.h
+                ${NLW2_DIR}/include/mp/sol-reader2.h
+                ${NLW2_DIR}/include/mp/sol-reader2.hpp
+                ${NLW2_DIR}/include/mp/sol-handler2.h
+                )
+  set(NLSOL_EX_FILES
+    ${NLW2_DIR}/examples/nlsol_ex.cc
+    ${NLW2_DIR}/examples/nlsol_ex_mdl.h
+    ${NLW2_DIR}/examples/nlsol_ex_nl.h
+    ${NLW2_DIR}/examples/nlsol_ex_sol.h)
+  # Export source files
+  set(NLW2_DOC_SRC
+    ${NLW2_LIB_FILES} ${NLW2_INC_FILES} ${NLSOL_EX_FILES})
 endif()
 
 option(BUILD_DOC "Build documentation" ON)

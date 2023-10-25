@@ -143,7 +143,7 @@ nor does it require any intermediate objects to represent
 model information.
 
 The API is provided by classes `mp::NLSOL`, `mp::NLWriter2`,
-`mp::NLHandler2`, `mp::SOLReader2`, `mp::SOLHandler2`.
+`mp::NLFeeder2`, `mp::SOLReader2`, `mp::SOLHandler2`.
 See
 `example <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/nlsol_ex.cc>`_
 solving a small non-linear model.
