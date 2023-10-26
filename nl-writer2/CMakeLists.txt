@@ -43,12 +43,19 @@ set(NLSOL_EX_FILES
   ${NLW2_DIR}/examples/nlsol_ex_mdl.h
   ${NLW2_DIR}/examples/nlsol_ex_nl.h
   ${NLW2_DIR}/examples/nlsol_ex_sol.h)
-add_executable(nl-writer-example ${NLSOL_EX_FILES})
-target_include_directories(nl-writer-example PUBLIC
-            ${NLW2_DIR}/include)
-target_link_libraries(nl-writer-example ${NLW2_LIB_NAME})
 
+option(BUILD_EXAMPLES_NLW2
+  "Build NLW2 examples (library not affected)" ON)
+if (BUILD_EXAMPLES_NLW2)         # Actually build the example
+  add_executable(nl-writer-example ${NLSOL_EX_FILES})
+  target_include_directories(nl-writer-example PUBLIC
+    ${NLW2_DIR}/include)
+  target_link_libraries(nl-writer-example ${NLW2_LIB_NAME})
+endif()
+
+# Export library include path
+set(NLW2_INCLUDE_PATH ${NLW2_DIR}/include PARENT_SCOPE)
 # Export source files
-set(NLW2_DOC_SRC
+set(NLW2_SRC
   ${NLW2_LIB_FILES} ${NLW2_INC_FILES} ${NLSOL_EX_FILES}
   PARENT_SCOPE)

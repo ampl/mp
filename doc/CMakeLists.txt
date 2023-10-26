@@ -18,9 +18,9 @@ message(STATUS
   "Set BUILD_DOC=off otherwise.")
 
 add_prefix(doc_deps ../
-  ${NLW2_DOC_SRC}
-  ${MP_ALL_HEADERS}
-  )
+  ${MP_ALL_HEADERS})
+
+set(doc_deps ${doc_deps} ${NLW2_SRC})
 
 set(DOC_BASEDIR ${CMAKE_CURRENT_SOURCE_DIR}/source/)
 set(DOC_OUTPUTDIR ${CMAKE_CURRENT_BINARY_DIR}/html/)

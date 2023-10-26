@@ -91,9 +91,6 @@ inline WriteNLReport WriteNLFile(
 /// Write an NL file:
 ///    WriteNLFile(filenamebase, feeder, utils);
 ///
-/// Write an NL string:
-///    WriteNLString(string, feeder, utils);
-///
 /// where feeder is an object that provides information on model
 /// components. See NLFeeder2 for an interface of a feeder class.
 ///
