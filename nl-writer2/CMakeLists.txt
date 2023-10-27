@@ -7,6 +7,10 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 
+option(NLW2_LIB_ORIG_HDR
+	"NLW2_LIB: use original NL header comments" OFF)
+
+
 set(NLW2_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(NLW2_LIB_FILES
         ${NLW2_DIR}/src/nl-writer2.cc
@@ -30,11 +34,12 @@ set(NLW2_LIB_NAME "nlw2")
 add_library(${NLW2_LIB_NAME} STATIC
   ${NLW2_LIB_FILES} ${NLW2_INC_FILES})
 target_include_directories(
-    ${NLW2_LIB_NAME} PUBLIC ${NLW2_DIR}/include)
-
-if (MSVC)               ## Set the same as for your parent project
-##  target_compile_options(
-##      ${NLW2_LIB_NAME} PRIVATE ${AMPL_MSVC_COMPILE_OPTIONS})
+	${NLW2_LIB_NAME} PUBLIC ${NLW2_DIR}/include)
+if (NLW2_LIB_ORIG_HDR)
+	message(STATUS
+		"   NLW2_LIB: Building with the original NL header comments")
+	target_compile_definitions(
+		${NLW2_LIB_NAME} PUBLIC NL_LIB2_ORIG_HDR)
 endif()
 
 # NLW2 example
@@ -59,3 +64,5 @@ set(NLW2_INCLUDE_PATH ${NLW2_DIR}/include PARENT_SCOPE)
 set(NLW2_SRC
   ${NLW2_LIB_FILES} ${NLW2_INC_FILES} ${NLSOL_EX_FILES}
   PARENT_SCOPE)
+# Export library target name
+set(NLW2_LIB_NAME ${NLW2_LIB_NAME} PARENT_SCOPE)
