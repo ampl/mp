@@ -40,7 +40,7 @@ public:
     assert(!eq0c.GetContext().IsNone());
     const auto& args = eq0c.GetArguments();
     if (1<args.size() ||               // >1 variable
-        !GetMC().IfUseEqualityEncodingForVar(
+        !GetMC().IfMightUseEqualityEncodingForVar(
           args.var(0))) {
       Base::Convert(eq0c, i); // Calls ConvertCtxPos / Neg
     } // else, using unary encoding whose flags are,

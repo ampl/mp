@@ -178,8 +178,10 @@ public:
     MP_DISPATCH( ConvertEqVarConstMaps() );
   }
 
-  /// Whether to use equality encoding for \a var
-  bool IfUseEqualityEncodingForVar(int var) const {
+  /// Whether might use equality encoding for \a var
+  bool IfMightUseEqualityEncodingForVar(int var) const {
+    if (n_map_cvt_cycles_)   // we've started map conversion
+      return false;
     if (!MPCD(is_var_integer(var)))
       return false;
     const auto lb_dbl = this->lb(var);
@@ -204,6 +206,7 @@ private:
   using VarsEqConstMap = std::unordered_map<int, SingleVarEqConstMap>;
 
   VarsEqConstMap map_vars_eq_const_;
+  int n_map_cvt_cycles_ = 0;      // number of cycles for map conversion
 
   P_ZZI_Encoding p_zzi_ { MakeZZIEncoding() };
 
@@ -240,12 +243,53 @@ protected:
     return { false, {} };
   }
 
+  /// Convert the var-to-const comparisons left until now
   void ConvertEqVarConstMaps() {
+    if (n_map_cvt_cycles_++)
+      MP_RAISE("Repeated map conversion cycle");
     for (const auto& m: map_vars_eq_const_) {
-      if (IfUseEqualityEncodingForVar(m.first))
+      if (!WentWithoutEqEncForVar(m.first, m.second))
         ConvertEqVarConstMap(m.first, m.second);
-    } // Otherwise, indicators / big-Ms should have been applied.
+    }
+    // 2. Initiate possible conversions into big-M's
+    MPD( ConvertAllConstraints() );
   }   // But why the map then?
+
+  /// Managed to reformulate cond equalities without unary encoding?
+  bool WentWithoutEqEncForVar(int var, const SingleVarEqConstMap& map) {
+    if (DontNeedEqEncForVar(var, map)) {
+      GoWithoutEqEnc(var, map);
+      return true;
+    }
+    return false;
+  }
+
+  bool DontNeedEqEncForVar(int , const SingleVarEqConstMap& map) {
+    int nNegCtx = 0;
+    const auto& ck = GET_CONSTRAINT_KEEPER(CondLinConEQ);
+    for (const auto& el: map) {
+      const auto& con = ck.GetConstraint(el.second);
+      if (con.GetContext().HasNegative())
+        ++nNegCtx;
+    }  // When up to 1 value in negative ctx, allow indicators.
+    // Example:
+    // x==5 ==> ...
+    return nNegCtx <= 1;
+  }
+
+  /// Manually convert all comparisons for this variable
+  void GoWithoutEqEnc(int , const SingleVarEqConstMap& map) {
+    const auto& ck = GET_CONSTRAINT_KEEPER(CondLinConEQ);
+    // 1. Convert the ConLinEq's into indicators.
+    // Make sure IfMightUseEqualityEncoding() returns false.
+    for (const auto& el: map) {
+      const auto& con = ck.GetConstraint(el.second);
+      MPD( RunConversion(
+             con, el.second, ck.GetConstraintDepth(el.second)) );
+    }
+    // 2. Initiate possible conversions into big-M's
+    //    - done later for all.
+  }
 
   void ConvertEqVarConstMap(int var, const SingleVarEqConstMap& map) {
     CreateUnaryEncoding(var, map);

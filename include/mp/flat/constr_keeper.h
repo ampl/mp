@@ -198,6 +198,7 @@ public:
   std::string solution_precision() const
   { return sol_prec_ < 100 ? std::to_string(sol_prec_) : ""; }
 
+
 protected:
   void apply_precision_options(
       int sol_rnd, int sol_prec) {
@@ -677,6 +678,10 @@ public:
   /// Get constraint \a i
   Constraint& GetConstraint(int i)
   { assert(check_index(i)); return cons_[i].con_; }
+
+  /// Get constraint depth in the reformulation tree
+  int GetConstraintDepth(int i) const
+  { assert(check_index(i)); return cons_[i].GetDepth(); }
 
   /// Propagate expression result of constraint \a i top-down
   void PropagateResult(BasicFlatConverter& cvt,

@@ -246,6 +246,7 @@ protected:
 		conic_cvt_.Run();
 	}
 
+  /// Can be called from ConvertMaps()
   void ConvertAllConstraints() {
     GetModel().ConvertAllConstraints(*this);
   }
