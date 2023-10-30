@@ -264,7 +264,10 @@ protected:
     return false;
   }
 
-  bool DontNeedEqEncForVar(int , const SingleVarEqConstMap& map) {
+  bool DontNeedEqEncForVar(int var, const SingleVarEqConstMap& map) {
+    if (3 * map.size()   // Use UEnc if we have >1/3 of the domain values
+        > MPCD(ub(var))-MPCD(lb(var)))
+      return false;
     int nNegCtx = 0;
     const auto& ck = GET_CONSTRAINT_KEEPER(CondLinConEQ);
     for (const auto& el: map) {
