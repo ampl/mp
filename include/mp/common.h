@@ -929,7 +929,7 @@ class ExprInfo {
   const char *str;
 };
 
-// Maximum NL opcode.
+/// Maximum NL opcode.
 enum { MAX_OPCODE = 82 };
 
 class OpCodeInfo {

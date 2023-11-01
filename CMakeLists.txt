@@ -299,6 +299,8 @@ add_mp_library(format OBJECT
 
 # gen-expr-info
 set(MP_EXPR_INFO_FILE ${MP_SOURCE_DIR}/src/expr-info.cc)
+set(MP_NL_OPCODES_FILE
+  ${MP_SOURCE_DIR}/nl-writer2/include/mp/nl-opcodes.h)
 add_executable(gen-expr-info EXCLUDE_FROM_ALL
   src/gen-expr-info.cc $<TARGET_OBJECTS:format>)
 if (MINGW)
@@ -314,12 +316,15 @@ endif ()
 if (CMAKE_CROSSCOMPILING)
   # Produce a warning because expr-info.cc can be out of date but cannot be
   # re-generated because we are cross compiling.
-  add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE}
+  add_custom_command(OUTPUT
+      ${MP_EXPR_INFO_FILE} ${MP_NL_OPCODES_FILE}
     COMMAND ${CMAKE_COMMAND} -E echo
-    "warning: cannot re-generate ${MP_EXPR_INFO_FILE}")
+    "warning: cannot re-generate '${MP_EXPR_INFO_FILE}' and '${MP_NL_OPCODES_FILE}'")
 else ()
-  add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE}
-    COMMAND ${WINE} $<TARGET_FILE:gen-expr-info> ${MP_EXPR_INFO_FILE}
+  add_custom_command(OUTPUT
+      ${MP_EXPR_INFO_FILE} ${MP_NL_OPCODES_FILE}
+    COMMAND ${WINE} $<TARGET_FILE:gen-expr-info>
+      ${MP_EXPR_INFO_FILE}  ${MP_NL_OPCODES_FILE}
     DEPENDS gen-expr-info)
 endif ()
 add_to_folder(${MP_FOLDER_PREFIX}util gen-expr-info)

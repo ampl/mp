@@ -8,6 +8,7 @@
 #include <cassert>
 
 #include "mp/nl-header.h"
+#include "mp/nl-opcodes.h"
 
 /**
  * @brief The ExampleModel struct.
@@ -289,14 +290,16 @@ struct ExampleModel {
   /// Write dvar expressions.
   template <class EWriter>
   void WriteDVarExpr(int i, EWriter& ew) const {
+    using namespace mp::nl;
     switch (i) {
     case 0:                  // nl(t3)
     {
-      auto ew01 = ew.OPut1(15, "abs");
-      {
-        auto ew0101 = ew01.OPut2(0, "+");
-        ew0101.NPut(-2);
-        ew0101.VPut(0, "y");
+      auto ew01 = ew.OPut1(ABS); // unary opcode
+      // The argument:
+      {                          // Can also split code / name:
+        auto ew0101 = ew01.OPut2(ADD.code, "+"); // binary opcode
+        ew0101.NPut(-2);         // 1st arg
+        ew0101.VPut(0, "y");     // 2nd arg
       }
     } break;
     case 1:                  // t2
@@ -304,15 +307,15 @@ struct ExampleModel {
       break;
     case 2:                  // t3
     {
-      auto ew01 = ew.OPut2(0, "+");
+      auto ew01 = ew.OPut2(ADD);
       ew01.VPut(2, "nl(t3)");
       ew01.NPut(6.38);
     } break;
     case 3:                  // t1
     {
-      auto ew01 = ew.OPut2(5, "^");   // binary opcode
-      ew01.VPut(0, "y");     // 1st arg
-      ew01.NPut(2);          // 2nd arg
+      auto ew01 = ew.OPut2(POW);
+      ew01.VPut(0, "y");
+      ew01.NPut(2);
     } break;
     default:
       assert(false);
@@ -323,44 +326,45 @@ struct ExampleModel {
   /// Write constraint non-linear expressions.
   template <class EWriter>
   void WriteConExpr(int i, EWriter& ew) const {
+    using namespace mp::nl;
     switch (i) {
     case 0:                  // C1_t2
     {
-      auto ew01 = ew.OPut2(2, "*");
+      auto ew01 = ew.OPut2(MUL);
       ew01.NPut(5);
       {
-        auto ew0101 = ew01.OPut2(5, "^");
+        auto ew0101 = ew01.OPut2(POW);
         ew0101.VPut(3, "t2");
         ew0101.NPut(2);
       }
     } break;
     case 1:                  // C2_t1t2t3
     {
-      auto ew01 = ew.OPut2(0, "+");
+      auto ew01 = ew.OPut2(ADD);
       {
-        auto ew0101 = ew01.OPut2(2, "*");
+        auto ew0101 = ew01.OPut2(MUL);
         ew0101.NPut(-38.2);
         {
-          auto ew010101 = ew0101.OPut2(5, "^");
+          auto ew010101 = ew0101.OPut2(POW);
           ew010101.VPut(0, "y");
           ew010101.NPut(2);
         }
       }
       {
-        auto ew0102 = ew01.OPut2(2, "*");
+        auto ew0102 = ew01.OPut2(MUL);
         {
-          auto ew010201 = ew0102.OPut2(2, "*");
+          auto ew010201 = ew0102.OPut2(MUL);
           ew010201.NPut(109);
           {
-            auto ew01020101 = ew010201.OPut1(41, "sin");
+            auto ew01020101 = ew010201.OPut1(SIN);
             ew01020101.VPut(3, "t2");
           }
         }
         {
-          auto ew010202 = ew0102.OPut2(0, "+");
+          auto ew010202 = ew0102.OPut2(ADD.code, ADD.name);
           ew010202.VPut(5, "t1");
           {
-            auto ew01020201 = ew010202.OPut2(5, "^");
+            auto ew01020201 = ew010202.OPut2(POW);
             ew01020201.VPut(4, "t3");
             ew01020201.NPut(1.5);
           }

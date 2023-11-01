@@ -301,6 +301,20 @@ protected:
     ExprArgWriter OPutN(
         int opcode, int nArgs, const char* descr="");
 
+    /// Shortcut: OPut1( struct Opcode )
+    template <class Opcode> ExprArgWriter OPut1(Opcode oc)
+    { return OPut1(oc.code, oc.name); }
+    /// Shortcut: OPut2( struct Opcode )
+    template <class Opcode> ExprArgWriter OPut2(Opcode oc)
+    { return OPut2(oc.code, oc.name); }
+    /// Shortcut: OPut3( struct Opcode )
+    template <class Opcode> ExprArgWriter OPut3(Opcode oc)
+    { return OPut3(oc.code, oc.name); }
+    /// Shortcut: OPutN( struct Opcode, int nArgs )
+    template <class Opcode> ExprArgWriter OPutN(
+        Opcode oc, int nArgs)
+    { return OPutN(oc.code, nArgs, oc.name); }
+
   protected:
     /// Add an argument explicitly.
     /// @return the expr writer for the argument.
@@ -354,6 +368,20 @@ protected:
     /// break points, slopes, argument variable.
     ExprArgWriter OPutN(
         int opcode, int nArgs, const char* descr="");
+
+    /// Shortcut: OPut1( struct Opcode )
+    template <class Opcode> ExprArgWriter OPut1(Opcode oc)
+    { return OPut1(oc.code, oc.name); }
+    /// Shortcut: OPut2( struct Opcode )
+    template <class Opcode> ExprArgWriter OPut2(Opcode oc)
+    { return OPut2(oc.code, oc.name); }
+    /// Shortcut: OPut3( struct Opcode )
+    template <class Opcode> ExprArgWriter OPut3(Opcode oc)
+    { return OPut3(oc.code, oc.name); }
+    /// Shortcut: OPutN( struct Opcode, int nArgs )
+    template <class Opcode> ExprArgWriter OPutN(
+        Opcode oc, int nArgs)
+    { return OPutN(oc.code, nArgs, oc.name); }
 
   private:
     NLWriter2& nlw_;
