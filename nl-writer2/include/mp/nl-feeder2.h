@@ -60,6 +60,7 @@ namespace mp {
 	\rst
   NLFeeder2: writes model details on request
 	via provided callback objects.
+  See the examples folder.
 
 	For the NL format, variables and constraints must have certain order.
 

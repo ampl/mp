@@ -57,6 +57,7 @@ namespace mp {
   \rst
   SOLHandler2: reads solution details on request
   via provided callback objects.
+  See the examples folder.
 
   `~mp::SOLHandler2` can be used as a base class for other handlers,
 	or just be an interface prototype.

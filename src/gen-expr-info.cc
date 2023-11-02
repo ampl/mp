@@ -53,8 +53,11 @@ struct ExprInfo {
   EXPR_(name, name, opcode, precedence, str)
 
 const ExprInfo info[] = {
+  /// Not an NL opcode - MP internal
   EXPR(NUMBER,      80, PRIMARY, "number"),
+  /// Not an NL opcode - MP internal
   EXPR(VARIABLE,    82, PRIMARY, "variable"),
+  /// Not an NL opcode - MP internal
   EXPR(COMMON_EXPR, -1, PRIMARY, "common expression"),
 
   /// Unary expressions.
@@ -102,6 +105,8 @@ const ExprInfo info[] = {
 
   EXPR(IF,     35, CONDITIONAL,  "if"),
   EXPR(PLTERM, 64, CALL,         "piecewise-linear term"),
+
+  /// Not an NL opcode - MP internal
   EXPR(CALL,   79, CALL,         "function call"),
 
   EXPR_(MIN, FIRST_VARARG, 11, CALL, "min"),
@@ -111,6 +116,7 @@ const ExprInfo info[] = {
   EXPR(NUMBEROF_SYM, 61, CALL,      "symbolic numberof"),
   EXPR(COUNT,        59, CALL,      "count"),
 
+  /// Not an NL opcode - MP internal
   EXPR(BOOL, 80, PRIMARY, "bool"),
 
   EXPR(NOT, 34, NOT, "!"),
@@ -148,7 +154,9 @@ const ExprInfo info[] = {
   EXPR_(ALLDIFF,     FIRST_PAIRWISE, 74, CALL, "alldiff"),
   EXPR_(NOT_ALLDIFF, FIRST_PAIRWISE, 75, CALL, "!alldiff"),
 
+  /// Not an NL opcode - MP internal
   EXPR(STRING, 81, PRIMARY,     "string"),
+
   EXPR(IFSYM,  65, CONDITIONAL, "symbolic if")
 };
 
@@ -282,7 +290,7 @@ void ExprInfoFileGenerator::GenNLOpcodesFile(const char *fln) {
   for (std::size_t i = 0; i < num_opcodes_; ++i) {
     if (const ExprInfo *ei = opcode_info_[i]) {
       assert((int)i==ei->opcode);
-      if (i<80)
+      if (i<79)
         f.print(
               "const Opcode {:14} = {{ {}, \"{}\" }};\n",
               ei->name, ei->opcode, ei->str);
