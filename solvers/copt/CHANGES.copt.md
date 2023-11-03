@@ -1,6 +1,12 @@
 Summary of recent updates to COPT for AMPL
 ==========================================
 
+## 20231103
+- Improved translation of logical constraints:
+  inlining of nested disjunctions and conjunctions;
+  fewer auxiliary binary variables.
+
+
 ## 20231017
 - Fixed a bug in NL reader on Windows.
 
