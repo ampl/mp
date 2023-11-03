@@ -105,12 +105,16 @@ public:
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     MPD( PropagateResult2Vars(con.GetArguments(), lb, 1.0, +ctx) );
+    if (lb>0.5)                                 // Remove, arguments are fixed
+      MPD( DecrementVarUsage(con.GetResultVar()) );
   }
 
   void PropagateResult(OrConstraint& con, double lb, double ub, Context ctx) {
     MPD( NarrowVarBounds(con.GetResultVar(), lb, ub) );
     con.AddContext(ctx);
     MPD( PropagateResult2Vars(con.GetArguments(), 0.0, ub, +ctx) );
+    if (ub<=0.5)                                 // Remove, arguments are fixed
+      MPD( DecrementVarUsage(con.GetResultVar()) );
   }
 
   void PropagateResult(IfThenConstraint& con, double lb, double ub, Context ctx) {
