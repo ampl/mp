@@ -309,6 +309,7 @@ public:
       }
       con.GetArguments() = arg1;
     }
+    IntegrateNested(con);            // flatten nested
   }
 
   template <class PreprocessInfo>
@@ -335,6 +336,7 @@ public:
       }
       con.GetArguments() = arg1;
     }
+    IntegrateNested(con);            // flatten nested
   }
 
   /// Count N fixed binary vars
@@ -349,6 +351,28 @@ public:
         ++ result.second;
     }
     return result;
+  }
+
+  /// Integrate nested constraints (And/Or)
+  template <class Con>
+  void IntegrateNested(Con& con) {
+    bool fChanges = false;
+    std::vector<int> args_new;
+    args_new.reserve(con.GetArguments().size());
+    for (auto v: con.GetArguments()) {
+      if (auto pNested = MPD( template
+          GetInitExpressionOfType<Con>(v) )) {
+        fChanges = true;
+        const auto& args2 = pNested->GetArguments();
+        args_new.insert(args_new.end(),
+                        args2.begin(), args2.end());
+        MPD( DecrementVarUsage(v) );
+      } else {
+        args_new.push_back(v);
+      }
+    }
+    if (fChanges)
+      con.GetArguments() = args_new;
   }
 
   template <class PreprocessInfo>
