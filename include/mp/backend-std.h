@@ -335,8 +335,14 @@ protected:
 
   /// Report suffixes
   virtual void ReportSuffixes() {
-    ReportStandardSuffixes();
-    ReportCustomSuffixes();
+    try {
+      ReportStandardSuffixes();
+      ReportCustomSuffixes();
+    } catch (const std::exception& exc) {
+      AddWarning("SUFFIX_OUT",   // Can add warning before SOL output
+                 std::string("Error reporting a suffix: ")
+                     + exc.what());
+    }
   }
 
   /// Report standard suffixes
@@ -996,7 +1002,13 @@ public:
     if (IMPL_HAS_STD_FEATURE(WRITE_SOLUTION))
       if (!storedOptions_.export_sol_files_.empty())
         for (const auto& fln: storedOptions_.export_sol_files_)
-          DoWriteSolution(fln);
+          try {
+            DoWriteSolution(fln);
+          } catch (const std::exception& exc) {
+            // Not AddWarning() any more
+            // because this is after solution report
+            Print("    --- Error saving '{}': {}\n", fln, exc.what());
+          }
   }
 
   /// Write model
