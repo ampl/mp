@@ -94,7 +94,7 @@ Running Gurobi with option ``feasrelax 1``, we trick MP
       - 2 original variable(s) violate bounds,
             up to 1E+05 (abs, item 'y'), up to 1E+00 (rel, item 'y')
     Algebraic expression violations:
-      - 1 original expression(s) of type ':linrange',
+      - 1 linear constraint(s),
             up to 2E+00 (abs, item 'C1'), up to 1E+00 (rel, item 'C1')
     Objective value violations:
       - 1 objective value(s) violated,
@@ -141,7 +141,7 @@ that the solver's reported solution violates checking tolerances.
          [ sol:chk:feastol=1e-06, :feastolrel=1e-06, :inttol=1e-05,
            :round='', :prec='' ]
     Algebraic expression violations:
-      - 1 original expression(s) of type ':quadrange',
+      - 1 quadratic constraint(s),
           up to 1E+00 (item 'socp[13]')
 
 In this example, realistic check reports a constraint violation
@@ -219,10 +219,10 @@ use driver option ``chk:mode``:
          [ sol:chk:feastol=1e-06, :feastolrel=1e-06, :inttol=1e-05,
            :round='', :prec='' ]
     Algebraic expression violations:
-      - 1 original expression(s) of type ':ifthen',
+      - 1 constraint(s) of type ':ifthen',
             up to 1E+01 (abs)
     Logical expression violations:
-      - 1 original expression(s) of type ':and'
+      - 1 constraint(s) of type ':and'
     Objective value violations:
       - 1 objective value(s) violated,
             up to 1E+01 (abs)
@@ -245,10 +245,10 @@ set ``option (solver_)auxfiles rc;`` as follows:
          [ sol:chk:feastol=1e-06, :feastolrel=1e-06, :inttol=1e-05,
            :round='', :prec='' ]
     Algebraic expression violations:
-      - 1 original expression(s) of type ':ifthen',
+      - 1 constraint(s) of type ':ifthen',
             up to 1E+01 (abs, item 'Total_11_')
     Logical expression violations:
-      - 1 original expression(s) of type ':and',
+      - 1 constraint(s) of type ':and',
             (item 'Total_7_')
     Objective value violations:
       - 1 objective value(s) violated,

@@ -200,11 +200,11 @@ public:
             chk.x_ext().solution_precision());
     if (chk.HasAnyConViols()) {
       Gen1Viol(chk.VarViolBnds().at(0), wrt, true,
-               "  - {} original variable(s) violate bounds");
+               "  - {} variable(s) violate bounds");
       Gen1Viol(chk.VarViolBnds().at(1), wrt, true,
                "  - {} auxiliary variable(s) violate bounds");
       Gen1Viol(chk.VarViolIntty().at(0), wrt, true,
-               "  - {} original variable(s) violate integrality");
+               "  - {} variable(s) violate integrality");
       Gen1Viol(chk.VarViolIntty().at(1), wrt, true,
                "  - {} auxiliary variable(s) violate integrality");
     }
@@ -268,13 +268,17 @@ public:
       wrt.write(classnm + " expression violations:\n");
       for (const auto& cva: cvmap) {
         Gen1Viol(cva.second.at(0), wrt, !alg_log,
-                 "  - {} original expression(s) of type '"
+                 0==cva.first.compare(0, 4, ":lin")
+                 ? "  - {} linear constraint(s)"
+                 : 0==cva.first.compare(0, 5, ":quad")
+                   ? "  - {} quadratic constraint(s)"
+                 : "  - {} constraint(s) of type '"
                  + std::string(cva.first) + "'");
         Gen1Viol(cva.second.at(1), wrt, !alg_log,
-                 "  - {} intermediate auxiliary expression(s) of type '"
+                 "  - {} intermediate auxiliary constraint(s) of type '"
                  + std::string(cva.first) + "'");
         Gen1Viol(cva.second.at(2), wrt, !alg_log,
-                 "  - {} final auxiliary expression(s) of type '"
+                 "  - {} final auxiliary constraint(s) of type '"
                  + std::string(cva.first) + "'");
       }
     }
