@@ -146,6 +146,8 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       CondLinConEQ& c, PreprocessInfo& prepro) {
+    if (CheckEmptySubCon(c, prepro))
+      return;
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
     if (!IsNormalized(c))
@@ -173,6 +175,8 @@ public:
   template <class PreprocessInfo>
   void PreprocessConstraint(
       CondQuadConEQ& c, PreprocessInfo& prepro) {
+    if (CheckEmptySubCon(c, prepro))
+      return;
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
     if (0!=MPD( IfPreproEqResBounds() ))
@@ -250,6 +254,8 @@ public:
       ConditionalConstraint<
         AlgebraicConstraint< Body, AlgConRhs<kind> > >& cc,
       PreprocessInfo& prepro) {
+    if (CheckEmptySubCon(cc, prepro))
+      return;
     prepro.narrow_result_bounds(0.0, 1.0);
     prepro.set_result_type( var::INTEGER );
     assert(kind);
@@ -283,6 +289,26 @@ public:
         algc.set_rhs( std::ceil(rhs) );
       }
     }
+  }
+
+  /// Dave experiments with logic presolve.
+  ///
+  /// @return true if constraint is empty
+  /// and we should return the fixed result.
+  template <class SubCon, class PreprocessInfo>
+  bool CheckEmptySubCon(
+      const ConditionalConstraint<SubCon>& cc,
+      PreprocessInfo& prepro) {
+    if (cc.GetConstraint().empty()) {
+      MPD(AddWarning("empty_cmp",
+                     "Empty comparison in a logical constraint\n  of type '"
+                     + std::string(cc.GetTypeName())
+                     + "'.\n  Contact authors of the NL model."));
+      auto res = ComputeValue(cc, std::vector<double>{});
+      prepro.narrow_result_bounds(res, res);
+      return true;
+    }
+    return false;
   }
 
   template <class PreprocessInfo>

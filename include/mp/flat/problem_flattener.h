@@ -314,8 +314,16 @@ protected:
     };                    // assume the constraint order in NL
     auto e = GetModel().logical_con(i);
     const auto resvar = MP_DISPATCH( Convert2Var(e.expr()) );
-    GetFlatCvt().FixAsTrue(resvar);
-    assert(GetFlatCvt().HasInitExpression(resvar));
+    if (GetFlatCvt().is_fixed(resvar)) {
+      if (0==GetFlatCvt().fixed_value(resvar)) {
+        MP_INFEAS("Logical constraint _slogcon["
+                  + std::to_string(i+1)
+                  + "] is false");
+      }
+    } else {
+      GetFlatCvt().FixAsTrue(resvar);
+      assert(GetFlatCvt().HasInitExpression(resvar));
+    }
   }
 
   void CopyItemNames() {

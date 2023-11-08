@@ -49,7 +49,8 @@ namespace mp {
 #define MP_RAISE_WITH_CODE(exit_code, msg) throw mp::Error(msg, exit_code)
 
 /// Raise infeasibility
-#define MP_INFEAS(msg) MP_RAISE(std::string("Infeasibility: ") + msg)
+#define MP_INFEAS(msg) \
+  MP_RAISE_WITH_CODE(200, std::string("Model infeasible: ") + msg)
 
 /// Silence unused parameter warnings
 #define MP_UNUSED(x) (void)(x)
