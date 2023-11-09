@@ -1,6 +1,9 @@
 Summary of recent updates to HiGHS for AMPL
 ===========================================
 
+## 20231109
+- *Updated* to HiGHS 1.6.0
+
 ## 20231103
 - Improved translation of logical constraints:
   inlining of nested disjunctions and conjunctions;
