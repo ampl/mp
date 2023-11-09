@@ -1,35 +1,40 @@
 /**
- * NL Writer C API implementation
+ * C API: extern "C" wrapper for the NLSOL class
  *
  */
 
-#include <cassert>
+#ifndef NLSOLC_H
+#define NLSOLC_H
 
 #include "api/c/nl-feeder2-c.h"
 #include "api/c/sol-handler2-c.h"
 #include "api/c/nl-writer2-misc-c.h"
-#include "api/c/nlsol-c.h"
 
 
-///////////////////////// NLUtils_C ///////////////////////////
+#ifdef __cplusplus  // Can be used from C++
+extern "C" {
+#endif
 
-NLUtils_C NLW2_MakeNLUtils_C_Default() {
-  NLUtils_C result;
+/// extern "C" wrapper of mp::NLSOL.
+///
+/// Manager for solving optimization models via NL files.
+/// It performs zero-overhead model/solution transmission.
+/// In particular, it does not store any intermediate
+/// model representation.
+///
+/// Usage: see the C API example and the below API.
+typedef struct NLSOL_C {
+  void* p_;
 
-  return result;
-}
+} NLSOL_C;
 
-
-//////////// NLSOL_C API //////////////
+//////////// Use the following NLSOL_C API to operate //////////////
 
 /// Construct
-NLSOL_C NLW2_MakeNLSOL_C(NLFeeder2_C* , SOLHandler2_C* , NLUtils_C* ) {
-  NLSOL_C result;
-  return result;
-}
+NLSOL_C NLW2_MakeNLSOL_C(NLFeeder2_C* , SOLHandler2_C* , NLUtils_C* );
 
 /// Destroy
-void NLW2_DestroyNLSOL_C(NLSOL_C* ) { assert(0); }
+void NLW2_DestroyNLSOL_C(NLSOL_C* );
 
 /// Set solver, such as "gurobi", "highs", "ipopt"
 void NLSOL_C_SetSolver(NLSOL_C* , const char* solver);
@@ -58,3 +63,9 @@ int NLSOL_C_InvokeSolver(NLSOL_C* , const char* filestub);
 /// normally (stub).sol.
 int NLSOL_C_ReadSolution(NLSOL_C* , const char* filename);
 
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
+#endif // NLSOLC_H

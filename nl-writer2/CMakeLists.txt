@@ -52,7 +52,10 @@ set(NLW2_C_API_LIB_FILES
         ${NLW2_DIR}/src/c_api.cc
         )
 set(NLW2_C_API_INC_FILES
-              ${NLW2_INCLUDE_PATH}/api/c/nl-feeder2.h
+  ${NLW2_INCLUDE_PATH}/api/c/nl-feeder2-c.h
+  ${NLW2_INCLUDE_PATH}/api/c/sol-handler2-c.h
+  ${NLW2_INCLUDE_PATH}/api/c/nl-writer2-misc-c.h
+  ${NLW2_INCLUDE_PATH}/api/c/nlsol-c.h
               )
 
 # C API library
@@ -77,6 +80,12 @@ set(NLSOL_CPP_EX_FILES
 set(NLW2_C_EXAMPLE_PATH ${NLW2_EXAMPLE_PATH}/c)
 set(NLSOL_C_EX_FILES
   ${NLW2_C_EXAMPLE_PATH}/nlsol_ex_c.c
+  ${NLW2_C_EXAMPLE_PATH}/nlsol_ex_c_model.h
+  ${NLW2_C_EXAMPLE_PATH}/nlsol_ex_c_model.c
+  ${NLW2_C_EXAMPLE_PATH}/nlsol_ex_c_nl.h
+  ${NLW2_C_EXAMPLE_PATH}/nlsol_ex_c_nl.c
+  ${NLW2_C_EXAMPLE_PATH}/nlsol_ex_c_sol.h
+  ${NLW2_C_EXAMPLE_PATH}/nlsol_ex_c_sol.c
   )
 
 option(BUILD_EXAMPLES_NLW2
@@ -91,7 +100,7 @@ if (BUILD_EXAMPLES_NLW2)         # Actually build the example
   add_executable(nl-writer-example-c ${NLSOL_C_EX_FILES})
   target_include_directories(nl-writer-example-c PUBLIC
     ${NLW2_INCLUDE_PATH})
-  target_link_libraries(nl-writer-example-c ${NLW2__C_API_LIB_NAME})
+  target_link_libraries(nl-writer-example-c ${NLW2_C_API_LIB_NAME})
 endif()
 
 

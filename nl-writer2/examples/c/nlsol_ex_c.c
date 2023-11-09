@@ -8,10 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "api/c/nl-feeder2.h"
-
 #include "nlsol_ex_c_model.h"
+#include "nlsol_ex_c_nl.h"
+#include "nlsol_ex_c_sol.h"
+#include "api/c/nl-writer2-misc-c.h"
+#include "api/c/nlsol-c.h"
 
+/// main()
 int main(int argc, const char* const* argv) {
   if (argc<2) {
     printf("%s\n",
@@ -31,6 +34,18 @@ int main(int argc, const char* const* argv) {
   int binary = (argc<=3) || strcmp("text", argv[3]);
   const char* stub = (argc>4) ? argv[4] : "stub";
 
+  CAPIExample example = MakeCAPIExample_Linear_01();
+  NLFeeder2_C feeder = MakeNLFeeder2_C();
+  SOLHandler2_C handler = MakeSOLHandler2_C();
+  NLUtils_C utils = NLW2_MakeNLUtils_C_Default();
+
+  NLSOL_C nlsol = NLW2_MakeNLSOL_C(&feeder, &handler, &utils);
+
+  // Destroy API-owned objects
+  NLW2_DestroyNLSOL_C(&nlsol);
+
+  // Destroy our example data
+  DestroyCAPIExample_Linear_01(&example);
 
   return 0;
 }
