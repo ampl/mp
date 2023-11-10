@@ -56,6 +56,10 @@ set(NLW2_C_API_INC_FILES
   ${NLW2_INCLUDE_PATH}/api/c/sol-handler2-c.h
   ${NLW2_INCLUDE_PATH}/api/c/nl-writer2-misc-c.h
   ${NLW2_INCLUDE_PATH}/api/c/nlsol-c.h
+
+  ${NLW2_INCLUDE_PATH}/api/c/nl-feeder2-c-impl.h
+  ${NLW2_INCLUDE_PATH}/api/c/sol-handler2-c-impl.h
+  ${NLW2_INCLUDE_PATH}/api/c/nl-writer2-misc-c-impl.h
               )
 
 # C API library

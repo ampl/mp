@@ -15,7 +15,7 @@ extern "C" {
 /// Wrap mp::NLUtils for C API.
 ///
 /// NL writer and SOL reader utilities.
-/// It provides default facilities for logging
+/// It provides facilities for logging
 /// and error handling.
 /// The default error handler exit()s.
 typedef struct NLUtils_C {
@@ -23,10 +23,6 @@ typedef struct NLUtils_C {
   /// Use this pointer if you need to store your data
   void* p_user_data_;
 
-  /// Used by the API
-  /// with NLW2_MakeNLUtils_C_Default() /
-  /// NLW2_DestroyNLUtils_C_Default().
-  void* p_api_data_;
 } NLUtils_C;
 
 /// Create a default NLUtils_C wrapper object.

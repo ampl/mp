@@ -11,35 +11,46 @@
 #include "api/c/nl-writer2-misc-c.h"
 #include "api/c/nlsol-c.h"
 
-#include "mp/nl-writer2-misc.h"
+#include "api/c/nl-feeder2-c-impl.h"
+#include "api/c/sol-handler2-c-impl.h"
+#include "api/c/nl-writer2-misc-c-impl.h"
 
 ///////////////////////// NLUtils_C ///////////////////////////
 
 NLUtils_C NLW2_MakeNLUtils_C_Default() {
   NLUtils_C result;
 
-  result.p_api_data_ = new mp::NLUtils;
-
   result.p_user_data_ = NULL;
+
+  // TODO set default log/openf/myexit...
 
   return result;
 }
 
-void NLW2_DestroyNLUtils_C_Default(NLUtils_C* pu) {
-  delete (mp::NLUtils*)pu->p_api_data_;
-}
+void NLW2_DestroyNLUtils_C_Default(NLUtils_C* ) { }
 
 
 //////////// NLSOL_C API //////////////
 
 /// Construct
-NLSOL_C NLW2_MakeNLSOL_C(NLFeeder2_C* , SOLHandler2_C* , NLUtils_C* ) {
+NLSOL_C NLW2_MakeNLSOL_C(
+    NLFeeder2_C* pnlf, SOLHandler2_C* psolh, NLUtils_C* putl) {
   NLSOL_C result;
+
+  result.p_nlf_ = new mp::NLFeeder2_C_Impl(pnlf);
+  result.p_solh_ = new mp::SOLHandler2_C_Impl(psolh);
+  result.p_utl_ = new mp::NLUtils_C_Impl(putl);
   return result;
 }
 
 /// Destroy
-void NLW2_DestroyNLSOL_C(NLSOL_C* ) { assert(0); }
+void NLW2_DestroyNLSOL_C(NLSOL_C* pnls) {
+  delete (mp::NLUtils_C_Impl*)pnls->p_utl_;
+  delete (mp::SOLHandler2_C_Impl*)pnls->p_solh_;
+  delete (mp::NLFeeder2_C_Impl*)pnls->p_nlf_;
+
+  assert(0);
+}
 
 /// Set solver, such as "gurobi", "highs", "ipopt"
 void NLW2_SetSolver_C(NLSOL_C* , const char* solver)
