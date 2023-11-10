@@ -15,14 +15,14 @@ namespace mp {
 /// Wrap NLUtils_C into a C++ class,
 /// in order to interface it for NLWriter2, NLReader2
 class NLUtils_C_Impl
-    : public NLUtils_C {
+    : public NLUtils {
 public:
   /// Construct
   NLUtils_C_Impl(NLUtils_C* pu)
-    : p_nlu_c_(pu) { }
+    : nlu_c_(*pu) { }
 
 private:
-  NLUtils_C* p_nlu_c_ {nullptr};
+  const NLUtils_C nlu_c_;
 };
 
 }  // namespace mp

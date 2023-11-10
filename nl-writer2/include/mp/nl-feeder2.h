@@ -148,9 +148,9 @@ public:
    *
    *  Implementation skeleton:
    *      if (obj_grad[i].size()) {
-   *        auto sv = svw.MakeVectorWriter(obj_grad[i].size());
+   *        auto svw = svwf.MakeVectorWriter(obj_grad[i].size());
    *        for (size_t j=0; j<obj_grad.size(); ++j)
-   *          sv.Write(obj_grad[j].var_index, obj_grad[j].coef);
+   *          svw.Write(obj_grad[j].var_index, obj_grad[j].coef);
    *      }
    */
   template <class ObjGradWriterFactory>

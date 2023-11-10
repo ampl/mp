@@ -306,7 +306,7 @@ void NLWriter2<Params>::WriteNLHeader() {
     nm.Printf(" %ld", Hdr().ampl_options[i]);
   if (Hdr().ampl_options[VBTOL_OPTION_INDEX] == USE_VBTOL_FLAG)
     nm.Printf(" %.g", Hdr().ampl_vbtol);
-  nm.Printf(gl_1a, Hdr().prob_name.c_str());
+  nm.Printf(gl_1a, Hdr().prob_name);
 
   /// Num variables, constraints, obj, ...
   nm.Printf(gl_2a,

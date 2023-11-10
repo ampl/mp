@@ -19,10 +19,11 @@ class SOLHandler2_C_Impl
 public:
   /// Construct
   SOLHandler2_C_Impl(SOLHandler2_C* psh2)
-    : p_solh2_c_(psh2) { }
+    : solh2_c_(*psh2) { }
 
 private:
-  SOLHandler2_C* p_solh2_c_ {nullptr};
+  /// Just store copy
+  const SOLHandler2_C solh2_c_;
 };
 
 }  // namespace mp

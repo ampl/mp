@@ -25,7 +25,7 @@ extern "C" {
 /// Usage: see the C API example and the below API.
 typedef struct NLSOL_C {
   /// Internal data
-  void *p_nlf_, *p_solh_, *p_utl_;
+  void *p_nlf_, *p_solh_, *p_utl_, *p_nlsol_;
 
 } NLSOL_C;
 

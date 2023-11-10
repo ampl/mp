@@ -23,6 +23,7 @@ set(NLW2_LIB_FILES
         ${NLW2_SRC_PATH}/dtoa.c)
 set(NLW2_INC_FILES
               ${NLW2_INCLUDE_PATH}/mp/nlsol.h
+              ${NLW2_INCLUDE_PATH}/mp/nl-header-c.h
               ${NLW2_INCLUDE_PATH}/mp/nl-header.h
               ${NLW2_INCLUDE_PATH}/mp/nl-feeder2.h
               ${NLW2_INCLUDE_PATH}/mp/nl-writer2.h

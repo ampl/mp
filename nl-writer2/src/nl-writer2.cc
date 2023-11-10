@@ -78,6 +78,16 @@ void gfmt(char*, size_t, double, int);
 ////////////////////////////////////////////////////////
 namespace mp {
 
+extern "C"
+NLHeader_C MakeNLHeader_C_Default() {
+  NLHeader nlh;
+  NLHeader_C nlh_c;
+  nlh_c.pi = *(ProblemInfo_C*)(&nlh);
+  nlh_c.nli = *(NLInfo_C*)(&nlh);
+  return nlh_c;
+}
+
+
 /// \brief For printing to .nl or auxiliary files.
 int TextFormatter::apr(File& f, const char *fmt, ...)
 {
