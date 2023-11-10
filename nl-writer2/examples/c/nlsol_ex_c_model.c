@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 
 #include "nlsol_ex_c_model.h"
 
@@ -69,4 +70,8 @@ void DestroyCAPIExample_Linear_01(CAPIExample* pEx) {
   pEx->var_name = NULL;
 
   // ...
+}
+
+void PrintSolution_C(CAPIExample* pex, const char* stub) {
+  assert(0);
 }

@@ -3,6 +3,7 @@
  *
  */
 
+#include <cstdlib>
 #include <cassert>
 
 #include "api/c/nl-feeder2-c.h"
@@ -10,13 +11,22 @@
 #include "api/c/nl-writer2-misc-c.h"
 #include "api/c/nlsol-c.h"
 
+#include "mp/nl-writer2-misc.h"
 
 ///////////////////////// NLUtils_C ///////////////////////////
 
 NLUtils_C NLW2_MakeNLUtils_C_Default() {
   NLUtils_C result;
 
+  result.p_api_data_ = new mp::NLUtils;
+
+  result.p_user_data_ = NULL;
+
   return result;
+}
+
+void NLW2_DestroyNLUtils_C_Default(NLUtils_C* pu) {
+  delete (mp::NLUtils*)pu->p_api_data_;
 }
 
 
@@ -32,29 +42,35 @@ NLSOL_C NLW2_MakeNLSOL_C(NLFeeder2_C* , SOLHandler2_C* , NLUtils_C* ) {
 void NLW2_DestroyNLSOL_C(NLSOL_C* ) { assert(0); }
 
 /// Set solver, such as "gurobi", "highs", "ipopt"
-void NLSOL_C_SetSolver(NLSOL_C* , const char* solver);
+void NLW2_SetSolver_C(NLSOL_C* , const char* solver)
+{ assert(0); }
 
 /// Set solver options, such as "outlev=1 lim:time=500"
-void NLSOL_C_SetSolverOptions(NLSOL_C* , const char* sopts);
+void NLW2_SetSolverOptions_C(NLSOL_C* , const char* sopts)
+{ assert(0); }
 
 /// Solve.
 /// @param filestub: filename stub to be used
 /// for input files (.nl, .col., .row, etc.),
 /// and output files (.sol).
 /// @return true if all ok.
-int NLSOL_C_Solve(NLSOL_C* , const char* filestub);
+int NLW2_Solve_C(NLSOL_C* , const char* filestub)
+{ assert(0); }
 
 /// Get error message.
-const char* NLSOL_C_GetErrorMessage(NLSOL_C* );
+const char* NLW2_GetErrorMessage_C(NLSOL_C* )
+{ assert(0); }
 
 /// Substep: write NL and any accompanying files.
-int NLSOL_C_WriteNLFile(NLSOL_C* , const char* filestub);
+int NLW2_WriteNLFile_C(NLSOL_C* , const char* filestub)
+{ assert(0); }
 
 /// Substep: invoke chosen solver for \a filestub.
-int NLSOL_C_InvokeSolver(NLSOL_C* , const char* filestub);
+int NLW2_InvokeSolver_C(NLSOL_C* , const char* filestub)
+{ assert(0); }
 
 /// Substep: read solution.
 /// @param filename: complete file name,
 /// normally (stub).sol.
-int NLSOL_C_ReadSolution(NLSOL_C* , const char* filename);
-
+int NLW2_ReadSolution_C(NLSOL_C* , const char* filename)
+{ assert(0); }

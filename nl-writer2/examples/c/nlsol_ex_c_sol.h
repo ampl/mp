@@ -7,7 +7,12 @@
 
 #include "api/c/sol-handler2-c.h"
 
+#include "nlsol_ex_c_model.h"
+
 /// Fill a SOLHandler2_C for the C API example
-SOLHandler2_C MakeSOLHandler2_C();
+SOLHandler2_C MakeSOLHandler2_C(CAPIExample* );
+
+/// Destroy custom SOLHandler2_C
+void DestroySOLHandler2_C(SOLHandler2_C* );
 
 #endif // NLSOL_EX_C_SOL_H

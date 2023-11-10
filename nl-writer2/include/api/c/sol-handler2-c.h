@@ -12,9 +12,14 @@
 extern "C" {
 #endif
 
-/// Wrap mp::SOLHandler2
+/// Wrap mp::SOLHandler2 for C API.
+///
+/// SOLHandler2_C: reads solution details on request
+/// via provided callback objects.
+/// See the examples folder.
 typedef struct SOLHandler2_C {
-  void* p_;
+  /// User data
+  void* p_user_data_;
 
 } SOLHandler2_C;
 

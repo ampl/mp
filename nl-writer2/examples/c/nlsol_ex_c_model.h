@@ -97,6 +97,9 @@ typedef struct CAPIExample {
   int n_obj_nz;
   const char* obj_name;
 
+  /// Some technical stuff
+  int binary_nl;
+
 } CAPIExample;
 
 /// Create linear example data
@@ -104,5 +107,8 @@ CAPIExample MakeCAPIExample_Linear_01();
 
 /// Destroy linear example data
 void DestroyCAPIExample_Linear_01(CAPIExample* );
+
+/// Print solution
+void PrintSolution_C(CAPIExample* pex, const char* stub);
 
 #endif // NLSOL_EX_C_MODEL_H

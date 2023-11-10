@@ -64,7 +64,8 @@ namespace mp {
 
 	For the NL format, variables and constraints must have certain order.
 
-	**Variable ordering:** first continuous, then integer.
+  **Variable ordering:**
+    first continuous, then integer.
 	Some solvers might require more elaborate ordering, see NLHeader.
 
 	**Constraint ordering:**

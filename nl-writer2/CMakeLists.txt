@@ -64,6 +64,7 @@ add_library(${NLW2_C_API_LIB_NAME} STATIC
   ${NLW2_C_API_LIB_FILES} ${NLW2_C_API_INC_FILES})
 target_include_directories(
   ${NLW2_C_API_LIB_NAME} PUBLIC ${NLW2_INCLUDE_PATH})
+target_link_libraries(${NLW2_C_API_LIB_NAME} ${NLW2_LIB_NAME})
 
 ######################################################
 # Examples
@@ -86,6 +87,8 @@ set(NLSOL_C_EX_FILES
   ${NLW2_C_EXAMPLE_PATH}/nlsol_ex_c_nl.c
   ${NLW2_C_EXAMPLE_PATH}/nlsol_ex_c_sol.h
   ${NLW2_C_EXAMPLE_PATH}/nlsol_ex_c_sol.c
+  ${NLW2_C_EXAMPLE_PATH}/nlsol_ex_c_nlutils.h
+  ${NLW2_C_EXAMPLE_PATH}/nlsol_ex_c_nlutils.c
   )
 
 option(BUILD_EXAMPLES_NLW2

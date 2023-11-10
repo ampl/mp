@@ -24,7 +24,8 @@ extern "C" {
 ///
 /// Usage: see the C API example and the below API.
 typedef struct NLSOL_C {
-  void* p_;
+  /// Internal data
+  void* p_api_data_;
 
 } NLSOL_C;
 
@@ -37,31 +38,31 @@ NLSOL_C NLW2_MakeNLSOL_C(NLFeeder2_C* , SOLHandler2_C* , NLUtils_C* );
 void NLW2_DestroyNLSOL_C(NLSOL_C* );
 
 /// Set solver, such as "gurobi", "highs", "ipopt"
-void NLSOL_C_SetSolver(NLSOL_C* , const char* solver);
+void NLW2_SetSolver_C(NLSOL_C* , const char* solver);
 
 /// Set solver options, such as "outlev=1 lim:time=500"
-void NLSOL_C_SetSolverOptions(NLSOL_C* , const char* sopts);
+void NLW2_SetSolverOptions_C(NLSOL_C* , const char* sopts);
 
 /// Solve.
 /// @param filestub: filename stub to be used
 /// for input files (.nl, .col., .row, etc.),
 /// and output files (.sol).
 /// @return true if all ok.
-int NLSOL_C_Solve(NLSOL_C* , const char* filestub);
+int NLW2_Solve_C(NLSOL_C* , const char* filestub);
 
 /// Get error message.
-const char* NLSOL_C_GetErrorMessage(NLSOL_C* );
+const char* NLW2_GetErrorMessage_C(NLSOL_C* );
 
 /// Substep: write NL and any accompanying files.
-int NLSOL_C_WriteNLFile(NLSOL_C* , const char* filestub);
+int NLW2_WriteNLFile_C(NLSOL_C* , const char* filestub);
 
 /// Substep: invoke chosen solver for \a filestub.
-int NLSOL_C_InvokeSolver(NLSOL_C* , const char* filestub);
+int NLW2_InvokeSolver_C(NLSOL_C* , const char* filestub);
 
 /// Substep: read solution.
 /// @param filename: complete file name,
 /// normally (stub).sol.
-int NLSOL_C_ReadSolution(NLSOL_C* , const char* filename);
+int NLW2_ReadSolution_C(NLSOL_C* , const char* filename);
 
 
 #ifdef __cplusplus

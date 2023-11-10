@@ -11,7 +11,7 @@
 #include "nlsol_ex_c_model.h"
 #include "nlsol_ex_c_nl.h"
 #include "nlsol_ex_c_sol.h"
-#include "api/c/nl-writer2-misc-c.h"
+#include "nlsol_ex_c_nlutils.h"
 #include "api/c/nlsol-c.h"
 
 /// main()
@@ -34,17 +34,31 @@ int main(int argc, const char* const* argv) {
   int binary = (argc<=3) || strcmp("text", argv[3]);
   const char* stub = (argc>4) ? argv[4] : "stub";
 
+  // Create custom interface
   CAPIExample example = MakeCAPIExample_Linear_01();
-  NLFeeder2_C feeder = MakeNLFeeder2_C();
-  SOLHandler2_C handler = MakeSOLHandler2_C();
-  NLUtils_C utils = NLW2_MakeNLUtils_C_Default();
+  NLFeeder2_C feeder = MakeNLFeeder2_C(&example, binary);
+  SOLHandler2_C solhnd = MakeSOLHandler2_C(&example);
+  NLUtils_C utils = MakeNLUtils_C();
 
-  NLSOL_C nlsol = NLW2_MakeNLSOL_C(&feeder, &handler, &utils);
+  // Create NLSOL_C
+  NLSOL_C nlsol = NLW2_MakeNLSOL_C(&feeder, &solhnd, &utils);
+
+  // Solve
+  NLW2_SetSolver_C(&nlsol, solver);
+  NLW2_SetSolverOptions_C(&nlsol, sopts);
+  if (0==NLW2_Solve_C(&nlsol, stub)) {
+    printf("%s\n", NLW2_GetErrorMessage_C(&nlsol));
+    exit(EXIT_FAILURE);
+  }
+  PrintSolution_C(&example, stub);
 
   // Destroy API-owned objects
   NLW2_DestroyNLSOL_C(&nlsol);
 
-  // Destroy our example data
+  // Destroy our custom interface and example data
+  DestroyNLUtils_C(&utils);
+  DestroySOLHandler2_C(&solhnd);
+  DestroyNLFeeder2_C(&feeder);
   DestroyCAPIExample_Linear_01(&example);
 
   return 0;
