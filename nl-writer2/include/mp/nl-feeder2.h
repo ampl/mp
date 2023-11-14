@@ -158,12 +158,16 @@ public:
 
 	/** Feed nonlinear expression of objective \a i.
    *
+   *  The default implementation below feeds constant 0
+   *  (linear models.)
+   *
    *  Implementation example:
    *      ew.EPut(obj_root_expr[i]);
    *
    *  Details of ObjExprWriter: see NLWriter2. */
 	template <class ObjExprWriter>
-  void FeedObjExpression(int i, ObjExprWriter& ) { }
+  void FeedObjExpression(int , ObjExprWriter& ew)
+  { ew.NPut(0.0); }
 
 
 	///////////////////// 3. DEFINED VARIABLES /////////////////////
@@ -334,10 +338,11 @@ public:
 	 *  Algebraic constraints (num_algebraic_cons)
 	 *  come before logical (num_logical_cons).
 	 *  For linear constraints, the expression should be
-	 *  constant 0.
+   *  constant 0, which is implemented as default.
 	 */
 	template <class ConExprWriter>
-  void FeedConExpression(int i, ConExprWriter& ) { }
+  void FeedConExpression(int , ConExprWriter& ew)
+  { ew.NPut(0.0); }
 
 
 	///////////////////// 7. EXPRESSIONS /////////////////////

@@ -21,6 +21,9 @@ namespace mp {
 class NLFeeder2_C_Impl
     : public NLFeeder2<NLFeeder2_C_Impl, void*> {
 public:
+  /// typedef base class
+  using Base = NLFeeder2<NLFeeder2_C_Impl, void*>;
+
   /// Construct
   NLFeeder2_C_Impl(NLFeeder2_C* pnlf2)
     : nlf2_c_(*pnlf2) { }
@@ -123,7 +126,9 @@ public:
    *
    *  Details of ObjExprWriter: see NLWriter2. */
   template <class ObjExprWriter>
-  void FeedObjExpression(int i, ObjExprWriter& ) { }
+  void FeedObjExpression(int i, ObjExprWriter& ew) {
+    Base::FeedObjExpression(i, ew);      // reuse default
+  }
 
 
   ///////////////////// 3. DEFINED VARIABLES /////////////////////

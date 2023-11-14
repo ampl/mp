@@ -146,7 +146,7 @@ struct NLInfo : NLInfo_C {
   /// Construct default
   NLInfo() {
     format = BINARY;
-    prob_name = "default_instance";
+    prob_name = "nl_instance";
     num_ampl_options = 3;
     ampl_vbtol = 0.0;
     arith_kind = NL_ARITH_IEEE_LITTLE_ENDIAN;
