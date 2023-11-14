@@ -17,6 +17,9 @@ extern "C" {
 /// SOLHandler2_C: reads solution details on request
 /// via provided callback objects.
 /// See the examples folder.
+///
+/// To fill some **default methods**,
+/// call NLW2_MakeSOLHandler2_C_Default() / NLW2_Destroy...().
 typedef struct SOLHandler2_C {
   /// User data
   void* p_user_data_;

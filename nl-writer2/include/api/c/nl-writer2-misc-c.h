@@ -17,6 +17,10 @@ extern "C" {
 /// NL writer and SOL reader utilities.
 /// It provides facilities for logging
 /// and error handling.
+///
+/// To fill **default methods**,
+/// call NLW2_MakeNLUtils_C_Default() / NLW2_Destroy...().
+///
 /// The default error handler exit()s.
 typedef struct NLUtils_C {
 

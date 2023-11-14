@@ -1,10 +1,12 @@
 #include <stdlib.h>
+#include <assert.h>
 
 #include "nlsol_ex_c_nl.h"
 
 NLHeader_C CAPI_ex_Header(void* pex_void) {
   CAPIExample* pex = (CAPIExample*)pex_void;
-  NLHeader_C hdr;
+  // Get default header
+  NLHeader_C hdr = MakeNLHeader_C_Default();
 
   hdr.pi.num_vars = pex->n_var;
   hdr.pi.num_algebraic_cons = pex->n_con;
@@ -122,23 +124,67 @@ NLHeader_C CAPI_ex_Header(void* pex_void) {
    */
   hdr.pi.num_common_exprs_in_single_objs = 0;
 
+
+  // Technical
+  hdr.nli.format
+      = pex->binary_nl ? NL_FORMAT_BINARY : NL_FORMAT_TEXT;
+
   hdr.nli.prob_name = "c_api_example_model";
 
   return hdr;
 }
 
+const char* ObjDescription(void* p_user_data, int i) {
+  CAPIExample* pex = (CAPIExample*)p_user_data;
+  return pex->obj_name;
+}
+
+int ObjType(void* p_user_data, int i) {
+  CAPIExample* pex = (CAPIExample*)p_user_data;
+  return pex->obj_sense;
+}
+
+int ObjGradientNNZ(void* p_user_data, int i) {
+  CAPIExample* pex = (CAPIExample*)p_user_data;
+  return pex->n_obj_nz;
+}
+
+void FeedObjGradient(
+    void* p_user_data, int i, void* p_api_data_) {
+  CAPIExample* pex = (CAPIExample*)p_user_data;
+  assert(0==i);
+  for (int j=0; j<pex->n_obj_nz; ++j)
+    NLW2_WriteSparseDblEntry(p_api_data_,
+                             pex->obj_linpart[j].index_,
+                             pex->obj_linpart[j].value_);
+}
+
+
 NLFeeder2_C MakeNLFeeder2_C(
     CAPIExample* pex, int binary) {
-  NLFeeder2_C result;
+  NLFeeder2_C result        // Fill with default values
+      = NLW2_MakeNLFeeder2_C_Default();
 
   result.p_user_data_ = pex;
   pex->binary_nl = binary;
 
+  // Header feeder
   result.Header = CAPI_ex_Header;
+
+  // Change some options
+  result.want_nl_comments_ = 1;
+
+  // Objective
+  result.ObjDescription = ObjDescription;
+  result.ObjType = ObjType;
+  result.ObjGradientNNZ = ObjGradientNNZ;
+  result.FeedObjGradient = FeedObjGradient;
 
   return result;
 }
 
 void DestroyNLFeeder2_C(NLFeeder2_C* pf) {
   pf->p_user_data_ = NULL;
+
+  NLW2_DestroyNLFeeder2_C_Default(pf);
 }

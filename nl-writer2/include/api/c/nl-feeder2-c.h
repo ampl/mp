@@ -14,13 +14,81 @@
 extern "C" {
 #endif
 
-typedef struct NLW2_ObjGradWriter NLW2_ObjGradWriter;
+/// Declare callbacks
+
+/// Write sparse vector entry
+void NLW2_WriteSparseDblEntry(
+    void* p_api_data_, int index, double value);
+
+/// \rst
+/// Algebraic constraint bounds (for a single constraint):
+/// either range (lb, ub),
+/// or complementarity info (k, cvar), when k>0.
+///
+/// For a complementarity constraint to hold, if cvar is at
+///	its lower bound, then body >= 0; if cvar is at its upper
+/// bound, then body <= 0;
+///	and if cvar is strictly between its bounds, then body = 0.
+/// The integer k in a complementarity constraint line indicates
+/// which bounds on cvar are finite: 1 and 3 imply a finite
+/// lower bound; 2 and 3 imply a finite upper bound; 0 (which
+///	should not occur) would imply no finite bounds, i.e.,
+/// body = 0 must always hold.
+///
+/// Example:
+///
+/// .. code-block:: ampl
+///
+///    ampl: var x; var y; var z;
+///	   ampl: s.t. Compl1: x+y >= 3 complements x-z <= 15;
+///	   ampl: s.t. Compl2: -2 <= 2*y+3*z <= 13 complements 6*z-2*x;
+///	   ampl: expand;
+///	   subject to Compl1:
+///					3 <= x + y
+///			 complements
+///					x - z <= 15;
+///
+///	   subject to Compl2:
+///					-2 <= 2*y + 3*z <= 13
+///			 complements
+///					-2*x + 6*z;
+///
+///	   ampl: solexpand;
+///	   Nonsquare complementarity system:
+///					4 complementarities including 2 equations
+///					5 variables
+///	   subject to Compl1.L:
+///					x + y + Compl1$cvar = 0;
+///
+///	   subject to Compl1.R:
+///					-15 + x - z <= 0
+///			 complements
+///					Compl1$cvar <= -3;
+///
+///	   subject to Compl2.L:
+///					2*y + 3*z - Compl2$cvar = 0;
+///
+///	   subject to Compl2.R:
+///					-2*x + 6*z
+///			 complements
+///					-2 <= Compl2$cvar <= 13;
+///
+/// \endrst
+typedef struct AlgConRange_C {
+  double L, U;
+  int k, cvar;    // k>0 means complementarity to cvar
+} AlgConRange_C;
+
 
 /** Wrap mp::NLFeeder2 for C API.
 
   NLFeeder2_C: writes model details on request
   via provided callback objects.
   See the examples folder.
+
+  To fill some **default values and methods**,
+  e.g., options and some methods like name feeders,
+  call NLW2_MakeNLFeeder2_C_Default() / NLW2_Destroy...().
 
   For the NL format, variables and constraints must have certain order.
 
@@ -50,6 +118,8 @@ typedef struct NLFeeder2_C {
    *  such as text/binary NL format. */
   NLHeader_C (*Header)(void* p_user_data);
 
+  /// Options. Safe to leave as by the default generator.
+
   /// NL comments?
   int want_nl_comments_;
 
@@ -61,7 +131,7 @@ typedef struct NLFeeder2_C {
   int output_precision_;
 
   /// Write bounds first?
-  /// The default is yes in AMPL, controlled by
+  /// The default is 1 (yes) in AMPL, controlled by
   /// (the value of option nl_permute) & 32
   /// (the bit is 0 for yes).
   /// Changing this option is deprecated, see
@@ -100,11 +170,12 @@ typedef struct NLFeeder2_C {
    *  nonzero elements (sparsity pattern).
    *
    *  Implementation skeleton:
-   *      for (size_t j=0; j<obj_grad.size(); ++j)
-   *        NLW2_Write(&svw, obj_grad[j].var_index, obj_grad[j].coef);
+   *      for (size_t j=0; j<obj_grad_size[i]; ++j)
+   *        NLW2_WriteSparseDblEntry(p_api_data_,
+   *            obj_grad_index[i][j], obj_grad_value[i][j]);
    */
   void (*FeedObjGradient)(
-      void* p_user_data, int i, NLW2_ObjGradWriter* );
+      void* p_user_data, int i, void* p_api_data_);
 
   /** Feed nonlinear expression of objective \a i.
    *
@@ -173,64 +244,6 @@ typedef struct NLFeeder2_C {
 
 
   ///////////////// 5. CONSTRAINT BOUNDS & COMPLEMENTARITY ///////
-  /// \rst
-  /// Algebraic constraint bounds (for a single constraint):
-  /// either range (lb, ub),
-  /// or complementarity info (k, cvar), when k>0.
-  ///
-  /// For a complementarity constraint to hold, if cvar is at
-  ///	its lower bound, then body >= 0; if cvar is at its upper
-  /// bound, then body <= 0;
-  ///	and if cvar is strictly between its bounds, then body = 0.
-  /// The integer k in a complementarity constraint line indicates
-  /// which bounds on cvar are finite: 1 and 3 imply a finite
-  /// lower bound; 2 and 3 imply a finite upper bound; 0 (which
-  ///	should not occur) would imply no finite bounds, i.e.,
-  /// body = 0 must always hold.
-  ///
-  /// Example:
-  ///
-  /// .. code-block:: ampl
-  ///
-  ///    ampl: var x; var y; var z;
-  ///	   ampl: s.t. Compl1: x+y >= 3 complements x-z <= 15;
-  ///	   ampl: s.t. Compl2: -2 <= 2*y+3*z <= 13 complements 6*z-2*x;
-  ///	   ampl: expand;
-  ///	   subject to Compl1:
-  ///					3 <= x + y
-  ///			 complements
-  ///					x - z <= 15;
-  ///
-  ///	   subject to Compl2:
-  ///					-2 <= 2*y + 3*z <= 13
-  ///			 complements
-  ///					-2*x + 6*z;
-  ///
-  ///	   ampl: solexpand;
-  ///	   Nonsquare complementarity system:
-  ///					4 complementarities including 2 equations
-  ///					5 variables
-  ///	   subject to Compl1.L:
-  ///					x + y + Compl1$cvar = 0;
-  ///
-  ///	   subject to Compl1.R:
-  ///					-15 + x - z <= 0
-  ///			 complements
-  ///					Compl1$cvar <= -3;
-  ///
-  ///	   subject to Compl2.L:
-  ///					2*y + 3*z - Compl2$cvar = 0;
-  ///
-  ///	   subject to Compl2.R:
-  ///					-2*x + 6*z
-  ///			 complements
-  ///					-2 <= Compl2$cvar <= 13;
-  ///
-  /// \endrst
-  struct AlgConRange_C {
-    double L, U;
-    int k, cvar;    // k>0 means complementarity to cvar
-  };
 
   /** Bounds/complementarity for all algebraic constraints
    *  (\a num_algebraic_cons).
@@ -463,6 +476,13 @@ typedef struct NLFeeder2_C {
 //  void FeedObjAdj(ObjOffsetWriter& ) { }
 
 } NLFeeder2_C;
+
+
+/// Return NLFeeder2_C with default options / methods
+NLFeeder2_C NLW2_MakeNLFeeder2_C_Default();
+
+/// Destroy NLFeeder2_C created by NLW2_MakeNLFeeder2_C_default()
+void NLW2_DestroyNLFeeder2_C_Default(NLFeeder2_C* );
 
 #ifdef __cplusplus
 }  // extern "C"

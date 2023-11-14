@@ -6,12 +6,16 @@
 #ifndef NLFEEDER2CIMPL_H
 #define NLFEEDER2CIMPL_H
 
-#include "api/c/nl-feeder2-c.h"
+#include <functional>
 
-#include "mp/nl-feeder2.h"
+#include "api/c/nl-feeder2-c.h"   // C wrapper
+
+#include "mp/nl-feeder2.h"        // C++ base
+
 
 namespace mp {
 
+/// Implementation:
 /// Wrap NLFeeder2_C into a C++ class,
 /// in order to interface it for NLWriter2
 class NLFeeder2_C_Impl
@@ -30,6 +34,7 @@ public:
    *  technical parameters,
    *  such as text/binary NL format. */
   NLHeader Header() {
+    assert(NLF().Header);
     auto h_c = NLF().Header(NLF().p_user_data_);
     NLHeader hdr;
     *(ProblemInfo_C*)(&hdr) = h_c.pi;
@@ -71,12 +76,18 @@ public:
    *    (\a i in 0..num_objs-1).
    *  With WantNLComments()==true, this is
    *  written to text-format NL as a comment. */
-  const char* ObjDescription(int i) { return ""; }
+  const char* ObjDescription(int i) {
+    assert(NLF().ObjDescription);
+    return NLF().ObjDescription(NLF().p_user_data_, i);
+  }
 
   /** Provide type of objective \a i.
    *  0 - minimization;
    *  1 - maximization. */
-  int ObjType(int i) { return {}; }
+  int ObjType(int i) {
+    assert(NLF().ObjType);
+    return NLF().ObjType(NLF().p_user_data_, i);
+  }
 
   /** Feed gradient for objective \a i.
    *  Should include entries for all potentially
@@ -84,13 +95,26 @@ public:
    *
    *  Implementation skeleton:
    *      if (obj_grad[i].size()) {
-   *        auto sv = svw.MakeVectorWriter(obj_grad[i].size());
+   *        auto sv = svwf.MakeVectorWriter(obj_grad[i].size());
    *        for (size_t j=0; j<obj_grad.size(); ++j)
    *          sv.Write(obj_grad[j].var_index, obj_grad[j].coef);
    *      }
    */
   template <class ObjGradWriterFactory>
-  void FeedObjGradient(int i, ObjGradWriterFactory& ) { }
+  void FeedObjGradient(int i, ObjGradWriterFactory& svwf) {
+    assert(NLF().ObjGradientNNZ);
+    int nnz = NLF().ObjGradientNNZ(NLF().p_user_data_, i);
+    if (nnz) {
+      auto sv = svwf.MakeVectorWriter(nnz);
+      assert(NLF().FeedObjGradient);
+      // We need the callback to be callable from C
+      std::function<void(int, double)> svw
+          = [&sv](int i, double v){
+        sv.Write(i, v);
+      };
+      NLF().FeedObjGradient(NLF().p_user_data_, i, &svw);
+    }
+  }
 
   /** Feed nonlinear expression of objective \a i.
    *

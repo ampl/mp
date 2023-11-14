@@ -22,6 +22,9 @@ extern "C" {
 /// In particular, it does not store any intermediate
 /// model representation.
 ///
+/// To create / destroy,
+/// use NLW2_MakeNLSOL_C / NLW2_Destroy...().
+///
 /// Usage: see the C API example and the below API.
 typedef struct NLSOL_C {
   /// Internal data
