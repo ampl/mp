@@ -30,7 +30,7 @@ CAPIExample MakeCAPIExample_Linear_01() {
       = { {0, 14536}, {1, 22} };
   static const SparseEntry* const rows[] = {row_01, row_02};
 
-  static int row_sizes[] = {2, 2};
+  static int row_nnz[] = {2, 2};
   static int col_sizes[] = {2};
 
   /// Objective
@@ -52,7 +52,7 @@ CAPIExample MakeCAPIExample_Linear_01() {
     .con_name = con_name,
 
     .con_linpart = rows,
-    .row_sizes = row_sizes,
+    .row_nnz = row_nnz,
     .col_sizes = col_sizes,
     .n_con_nz = 4,
 

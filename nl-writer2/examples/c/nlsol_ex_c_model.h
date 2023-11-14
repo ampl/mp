@@ -80,7 +80,7 @@ typedef struct CAPIExample {
 
 
   /// Sparse vector per constraint
-  const int* row_sizes;
+  const int* row_nnz;
   const SparseEntry* const* con_linpart;
 
   /// Sizes of all Jacobian columns except the last

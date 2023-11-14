@@ -110,7 +110,9 @@ public:
     if (nnz) {
       auto sv = svwf.MakeVectorWriter(nnz);
       assert(NLF().FeedObjGradient);
-      // We need the callback to be callable from C
+      // We need the callback to be callable from C.
+      // Due to the NLWriter2 having different types
+      // for text vs binary, static functions won't work.
       std::function<void(int, double)> svw
           = [&sv](int i, double v){
         sv.Write(i, v);
@@ -171,7 +173,9 @@ public:
    *      }
    */
   template <class DefVarWriterFactory>
-  void FeedDefinedVariables(int i, DefVarWriterFactory& ) { }
+  void FeedDefinedVariables(int i, DefVarWriterFactory& ) {
+    // None yet
+  }
 
 
   ///////////////////// 4. VARIABLE BOUNDS /////////////////////
@@ -185,7 +189,14 @@ public:
    *        vbw.WriteLbUb(lb[i], ub[i]);
    */
   template <class VarBoundsWriter>
-  void FeedVarBounds(VarBoundsWriter& ) { }
+  void FeedVarBounds(VarBoundsWriter& vbw) {
+    assert(NLF().FeedVarBounds);
+    std::function<void(double, double)> vbwc
+        = [&vbw](double i, double v){
+      vbw.WriteLbUb(i, v);
+    };
+    NLF().FeedVarBounds(NLF().p_user_data_, &vbwc);
+  }
 
 
   ///////////////// 5. CONSTRAINT BOUNDS & COMPLEMENTARITY ///////
@@ -271,7 +282,19 @@ public:
    *      }
    */
   template <class ConBoundsWriter>
-  void FeedConBounds(ConBoundsWriter& ) { }
+  void FeedConBounds(ConBoundsWriter& crw) {
+    assert(NLF().FeedConBounds);
+    std::function<void(NLW2_AlgConRange_C* )> crw_c
+        = [&crw](NLW2_AlgConRange_C* bnd_c){
+      AlgConRange bnd;
+      bnd.k = bnd_c->k;
+      bnd.cvar = bnd_c->cvar;
+      bnd.L = bnd_c->L;
+      bnd.U = bnd_c->U;
+      crw.WriteAlgConRange(bnd);
+    };
+    NLF().FeedVarBounds(NLF().p_user_data_, &crw_c);
+  }
 
 
   ///////////////////// 6. CONSTRAINTS /////////////////////
@@ -279,7 +302,10 @@ public:
    *    (\a i in 0..num_algebraic_cons+num_logical_cons-1).
    *  With WantNLComments()==true, this is
    *  written to text-format NL as a comment. */
-  const char* ConDescription(int ) { return ""; }
+  const char* ConDescription(int i) {
+    assert(NLF().ConDescription);
+    return NLF().ConDescription(NLF().p_user_data_, i);
+  }
 
   /** Feed the linear part of algebraic constraint \a i.
     * For smooth solvers, should contain entries for all
@@ -293,7 +319,19 @@ public:
     *      }
     */
   template <class ConLinearExprWriterFactory>
-  void FeedLinearConExpr(int i, ConLinearExprWriterFactory& ) { }
+  void FeedLinearConExpr(int i, ConLinearExprWriterFactory& clewf) {
+    assert(NLF().LinearConExprNNZ);
+    int nnz = NLF().LinearConExprNNZ(NLF().p_user_data_, i);
+    if (nnz) {
+      auto sv = clewf.MakeVectorWriter(nnz);
+      assert(NLF().FeedLinearConExpr);
+      std::function<void(int, double)> svw
+          = [&sv](int i, double v){
+        sv.Write(i, v);
+      };
+      NLF().FeedLinearConExpr(NLF().p_user_data_, i, &svw);
+    }
+  }
 
   /** Feed nonlinear expression of constraint \a i.
    *  Algebraic constraints (num_algebraic_cons)
@@ -302,95 +340,26 @@ public:
    *  constant 0.
    */
   template <class ConExprWriter>
-  void FeedConExpression(int i, ConExprWriter& ) { }
+  void FeedConExpression(int i, ConExprWriter& ew) {
+    Base::FeedConExpression(i, ew);
+  }
 
 
   ///////////////////// 7. EXPRESSIONS /////////////////////
-  /** Feed native expression.
-     *  This method is recursively called from NLWriter,
-     *  when Feeder uses ExprWriter::EPut().
-     *  Feeder should not call this method itself.
-     *
-     *  Details of ExprWriter: see NLWriter2.
-   */
   template <class ExprWriter>
-  void FeedExpr(Expr e, ExprWriter& ) { }
+  void FeedExpr(Expr , ExprWriter& ) { }
 
 
   ///////////////////// 8. PL-SOS CONSTRAINTS ////////////
-  /**
-   *  The below feature is for AMPL's internal
-   *  linearization of piecewise-linear functions.
-   *  For user-definable SOS constraints, use suffixes
-   *  .sosno/.ref.
-   *
-   *  The below is a feeder interface
-   *  for .sos/.sosref suffixes.
-   *  The feeder can provide 3 sparse vectors:
-   *  - .sos for variables:
-   *    Each nonzero value defines SOS group number.
-   *    Negative means SOS Type 2, positive - SOS Type 1.
-   *  - .sos for constraints:
-   *    Each nonzero value denotes a constraint used in a
-   *    linearization of an SOS. The constraint can be deleted
-   *    by the solver driver if using solver's SOS.
-   *  - .sosref for variables:
-   *    SOS weights. Variables participating in an SOS having
-   *    zero weights are involved in linearization and can be
-   *    deleted if the solver accepts SOS natively.
-   *
-   *  Implementation:
-   *      auto sosv = plsos.StartSOSVars(nvsos);
-   *      for (int i=0; i<nvsos; ++i)
-   *        sosv.Write(i, vsos[i]);
-   *      if (ncsos) {
-   *        auto sosc = plsos.StartSOSCons(ncsos);
-   *        for ....
-   *      }
-   *      auto sosrefv = plsos.StartSOSREFVars(ac->nsosref);
-   *      ....
-  */
   template <class PLSOSWriter>
   void FeedPLSOS(PLSOSWriter& ) { }
 
 
   ///////////////////// 9. FUNCTIONS /////////////////////
-  /** Function definition. */
-  struct FuncDef {
-    const char* Name() { return ""; }
-    int NumArgs() { return 0; }
-    /** Function type.
-     *  0 - numeric;
-     *  1 - symbolic. */
-    int Type() { return 0; }
-  };
-
-  /** Provide definition
-   *  of function \a i, i=0..num_funcs-1. */
-  FuncDef Function(int i) { return {}; }
+  FuncDef Function(int ) { return {}; }
 
 
   ///////////////////// 10. RANDOM VARIABLES /////////////////////
-  /// Random variables.
-  /// Undocumented feature. SNL2006.
-  /// Example:
-  /// var z >= 0;
-  ///	let z.stage := 1;
-  ///	var x{0..1, 0..1} random := Uniform(0,2);
-  ///	for {i in 0..1, j in 0..1} {let x[i,j].stage := 1;};
-  ///	display z.stage, x.stage;
-  ///	c: z * sum{i in 0..1, j in 0..1} x[i,j] <= 3 + Sample(Uniform(0,2));
-  ///
-  /// Feed random variables.
-  /// Indexes: num_vars+num_common_exprs
-  ///   .. num_vars+num_common_exprs+num_rand_vars-1.
-  ///
-  /// Implementation skeleton:
-  ///     for(j = num_vars+num_common_exprs;
-  ///         j < num_vars+num_common_exprs+num_rand_vars; j++) {
-  ///       auto ew = rvw.StartRandVar(j, rand_var_comment(j));
-  ///       ew.EPut(rand_var_root_expr(j));
-  ///     }
   template <class RandVarWriterFactory>
   void FeedRandomVariables(RandVarWriterFactory& ) { }
 

@@ -437,7 +437,7 @@ public:
 
 	///////////////////// 11. COLUMN SIZES /////////////////////
 
-	/** Jacobian column sizes.
+  /** Jacobian column sizes (including potential nonzeros).
 	 *  Should feed LP column sizes
 	 *  for all but the last variable.
    *

@@ -19,6 +19,10 @@ extern "C" {
 /// Write sparse vector entry
 void NLW2_WriteSparseDblEntry(
     void* p_api_data_, int index, double value);
+/// Write next variable's Lb, Ub
+void NLW2_WriteVarLbUb(void* p_api_data, int lb, int ub);
+/// Write next Jacobian column size
+void NLW2_WriteColSize(void* p_api_data, int sz);
 
 /// \rst
 /// Algebraic constraint bounds (for a single constraint):
@@ -74,10 +78,13 @@ void NLW2_WriteSparseDblEntry(
 ///					-2 <= Compl2$cvar <= 13;
 ///
 /// \endrst
-typedef struct AlgConRange_C {
+typedef struct NLW2_AlgConRange_C {
   double L, U;
   int k, cvar;    // k>0 means complementarity to cvar
-} AlgConRange_C;
+} NLW2_AlgConRange_C;
+
+/// Callback: write next constraint's range
+void NLW2_WriteAlgConRange(void* , NLW2_AlgConRange_C*);
 
 
 /** Wrap mp::NLFeeder2 for C API.
@@ -90,6 +97,8 @@ typedef struct AlgConRange_C {
   e.g., options and some methods like name feeders,
   call NLW2_MakeNLFeeder2_C_Default() / NLW2_Destroy...().
 
+  2023-11: CURRENT IMPLEMENTATION SUPPORTS LINEAR MODELS.
+
   For the NL format, variables and constraints must have certain order.
 
   **Variable ordering:**
@@ -101,7 +110,7 @@ typedef struct AlgConRange_C {
   Some solvers might require nonlinear constraints first.
  */
 typedef struct NLFeeder2_C {
-  /// User data
+  /// User data, provided as the 1st argument to the methods
   void* p_user_data_;
 
   ///////////////////////////////////////////////////////////////
@@ -171,18 +180,18 @@ typedef struct NLFeeder2_C {
    *
    *  Implementation skeleton:
    *      for (size_t j=0; j<obj_grad_size[i]; ++j)
-   *        NLW2_WriteSparseDblEntry(p_api_data_,
+   *        NLW2_WriteSparseDblEntry(p_api_data,
    *            obj_grad_index[i][j], obj_grad_value[i][j]);
    */
   void (*FeedObjGradient)(
-      void* p_user_data, int i, void* p_api_data_);
+      void* p_user_data, int i, void* p_api_data);
 
   /** Feed nonlinear expression of objective \a i.
    *
-   *  Implementation example:
-   *      ew.EPut(obj_root_expr[i]);
+   *  The default puts a constant 0.
    *
-   *  Details of ObjExprWriter: see NLWriter2. */
+   *  Implementation example:
+   *      ew.EPut(obj_root_expr[i]); */
 //  template <class ObjExprWriter>
 //  void FeedObjExpression(int i, ObjExprWriter& ) { }
 
@@ -238,9 +247,9 @@ typedef struct NLFeeder2_C {
    *
    *  Implementation skeleton:
    *      for (int i = 0; i < hdr.num_vars; i++)
-   *        vbw.WriteLbUb(lb[i], ub[i]);
+   *        NLW2_WriteVarLbUb(p_api_data, lb[i], ub[i]);
    */
-//  void FeedVarBounds(VarBoundsWriter& ) { }
+  void (*FeedVarBounds)(void* p_user_data, void* p_api_data);
 
 
   ///////////////// 5. CONSTRAINT BOUNDS & COMPLEMENTARITY ///////
@@ -250,7 +259,7 @@ typedef struct NLFeeder2_C {
    *
    *  Implementation skeleton:
    *      for (int j=0; j<hdr.num_algebraic_cons; j++) {
-   *        AlgConRange bnd;
+   *        NLW2_AlgConRange_C bnd;
    *        if (compl_var && compl_var[j]) {
    *          j = compl_var[j]-1;
    *          bnd.k = 0;
@@ -261,13 +270,14 @@ typedef struct NLFeeder2_C {
    *          assert(bnd.k);
    *          bnd.cvar = j;
    *        } else {
+   *          bnd.k = 0;
    *          bnd.L = clb[j];
    *          bnd.U = cub[j];
    *        }
-   *        cbw.WriteAlgConRange(bnd);
+   *        NLW2_WriteAlgConRange(p_api_data, &bnd);
    *      }
    */
-//  void FeedConBounds(ConBoundsWriter& ) { }
+  void (*FeedConBounds)(void* p_user_data, void* p_api_data);
 
 
   ///////////////////// 6. CONSTRAINTS /////////////////////
@@ -277,18 +287,23 @@ typedef struct NLFeeder2_C {
    *  written to text-format NL as a comment. */
   const char* (*ConDescription)(void *p_user_data, int );
 
+  /** Number of nonzeros in the linear part of constraint \a i.
+   *  Should include entries for all potentially
+   *  nonzero elements (sparsity pattern). */
+  int (*LinearConExprNNZ)(void* p_user_data, int i);
+
   /** Feed the linear part of algebraic constraint \a i.
     * For smooth solvers, should contain entries for all
     * potential nonzeros (Jacobian sparsity pattern).
     *
     *  Implementation skeleton:
-    *      if (con_grad[i].size()) {
-    *        auto sv = svw.MakeVectorWriter(con_grad[i].size());
-    *        for (size_t j=0; j<con_grad.size(); ++j)
-    *          sv.Write(con_grad[j].var_index, con_grad[j].coef);
-    *      }
+    *    for (size_t j=0; j<con_grad.size(); ++j)
+    *      NLW2_WriteSparseDblEntry(p_api_data,
+    *        con_grad[j].var_index, con_grad[j].coef);
+    *    }
     */
-//  void FeedLinearConExpr(int i, ConLinearExprWriterFactory& ) { }
+  void (*FeedLinearConExpr)(
+      void* p_user_data, int i, void* p_api_data);
 
   /** Feed nonlinear expression of constraint \a i.
    *  Algebraic constraints (num_algebraic_cons)
@@ -388,16 +403,16 @@ typedef struct NLFeeder2_C {
 
   ///////////////////// 11. COLUMN SIZES /////////////////////
 
-  /** Jacobian column sizes.
-   *  Should feed LP column sizes
+  /** Jacobian column sizes (with potential nonzeros).
+   *  Should feed column sizes
    *  for all but the last variable.
    *
    *  Implementation skeleton:
    *      if (WantColumnSizes())
    *        for (int i=0; i < num_vars+num_rand_vars-1; ++i)
-   *          csw.Write(col_size[i]);
+   *          NLW2_WriteColSize(col_size[i]);
    */
-//  void FeedColumnSizes(ColSizeWriter& ) { }
+  void (*FeedColumnSizes)(void* p_user_data, void* p_api_data);
 
 
   ///////////////////// 12. INITIAL GUESSES /////////////////////
