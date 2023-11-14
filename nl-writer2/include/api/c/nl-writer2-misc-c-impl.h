@@ -21,6 +21,31 @@ public:
   NLUtils_C_Impl(NLUtils_C* pu)
     : nlu_c_(*pu) { }
 
+  /// log message
+  void log_message(const char* format, ...) override {
+    assert(NLU().log_message);
+    va_list args;
+    va_start (args, format);
+    NLU().log_message (NLU().p_user_data_, format, args);
+    va_end (args);
+  }
+  /// log warning
+  void log_warning(const char* format, ...) override {
+    assert(NLU().log_warning);
+    va_list args;
+    va_start (args, format);
+    NLU().log_warning (NLU().p_user_data_, format, args);
+    va_end (args);
+  }
+  /// Override this to your error handler.
+  virtual void myexit(const std::string& msg) override {
+    assert(NLU().myexit);
+    NLU().myexit(NLU().p_user_data_, msg.c_str());
+  }
+
+protected:
+  const NLUtils_C& NLU() const { return nlu_c_; }
+
 private:
   const NLUtils_C nlu_c_;
 };

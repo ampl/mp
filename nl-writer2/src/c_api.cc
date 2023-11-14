@@ -452,12 +452,44 @@ void NLW2_DestroyNLFeeder2_C_Default(NLFeeder2_C* )
 { }
 
 ///////////////////////// NLUtils_C ///////////////////////////
+/// log message
+void NLW2_log_message_C_Default(
+    void* p_api_data, const char* format, ...) {
+  va_list args;
+  va_start (args, format);
+  std::vprintf (format, args);
+  va_end (args);
+}
+/// log warning
+void NLW2_log_warning_C_Default(
+    void* p_api_data, const char* format, ...) {
+  std::fprintf(stderr, "WARNING: ");
+  va_list args;
+  va_start (args, format);
+  std::vfprintf (stderr, format, args);
+  va_end (args);
+  std::fprintf(stderr, "\n");
+}
+/// Override this to your error handler.
+/// Not using exceptions by default.
+/// Only called with wrong output format string
+/// (internal error.)
+void NLW2_myexit_C_Default(
+    void* p_api_data, const char* msg) {
+  using namespace std;
+  fprintf(stderr, "%s\n", msg);
+  exit(1);
+}
+
+
 NLUtils_C NLW2_MakeNLUtils_C_Default() {
   NLUtils_C result;
 
   result.p_user_data_ = NULL;
 
-  // TODO set default log/openf/myexit...
+  result.log_message = NLW2_log_message_C_Default;
+  result.log_warning = NLW2_log_warning_C_Default;
+  result.myexit = NLW2_myexit_C_Default;
 
   return result;
 }

@@ -24,8 +24,21 @@ extern "C" {
 /// The default error handler exit()s.
 typedef struct NLUtils_C {
 
-  /// Use this pointer if you need to store your data
+  /// Use this pointer if you need to store your data.
+  /// It is provided as the 1st argument to the methods.
   void* p_user_data_;
+
+  /// log message
+  void (*log_message)(
+      void* p_user_data, const char* format, ...);
+  /// log warning
+  void (*log_warning)(
+      void* p_user_data, const char* format, ...);
+  /// Override this to your error handler.
+  /// Not using exceptions by default.
+  /// Only called on a wrong output format string
+  /// (internal error.)
+  void (*myexit)(void* p_user_data, const char* msg);
 
 } NLUtils_C;
 

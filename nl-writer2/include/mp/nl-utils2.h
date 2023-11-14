@@ -75,7 +75,7 @@ public:
 
   /// Override this to your error handler.
   /// Not using exceptions by default.
-  /// Only called with wrong output format string
+  /// Only called on a wrong output format string
   /// (internal error.)
   virtual void myexit(const std::string& msg) {
     // No help including <cstdio> after <stdio.h> on Mac
