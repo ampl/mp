@@ -201,27 +201,31 @@ endfunction ()
 
 
 
-set_cache(AMPL_LIBRARY_DIR bin STRING
-  "A directory to install AMPL function libraries relative to "
-  "${CMAKE_INSTALL_PREFIX}")
+## Set in the caller to skip building MP,
+## only format + examples + NLW2.
+if (NOT SKIP_BUILD_MP)
+	set_cache(AMPL_LIBRARY_DIR bin STRING
+		"A directory to install AMPL function libraries relative to "
+		"${CMAKE_INSTALL_PREFIX}")
 
-# Adds a shared AMPL library which by convention doesn't have any prefix
-# and has a suffix ".dll" on all platforms.
-macro(add_ampl_library name)
-  cmake_parse_arguments(add_ampl_library PRIVATE "" "" ${ARGN})
-  add_library(${name} SHARED ${add_ampl_library_UNPARSED_ARGUMENTS})
-  set_target_properties(${name} PROPERTIES PREFIX "")
-  set_target_properties(${name} PROPERTIES SUFFIX ".dll")
-  target_link_libraries(${name} asl)
-  if (NOT add_ampl_library_PRIVATE)
-    # Specify RUNTIME DESTINATION and LIBRARY DESTINATION, but not
-    # DESTINATION or ARCHIVE_DESTINATION because we don't want import
-    # libraries installed.
-    install(TARGETS ${name} RUNTIME
-      DESTINATION ${AMPL_LIBRARY_DIR} LIBRARY DESTINATION ${AMPL_LIBRARY_DIR})
-  endif ()
-  add_to_folder(${MP_FOLDER_PREFIX}ampl-libraries ${name})
-endmacro()
+	# Adds a shared AMPL library which by convention doesn't have any prefix
+	# and has a suffix ".dll" on all platforms.
+	macro(add_ampl_library name)
+		cmake_parse_arguments(add_ampl_library PRIVATE "" "" ${ARGN})
+		add_library(${name} SHARED ${add_ampl_library_UNPARSED_ARGUMENTS})
+		set_target_properties(${name} PROPERTIES PREFIX "")
+		set_target_properties(${name} PROPERTIES SUFFIX ".dll")
+		target_link_libraries(${name} asl)
+		if (NOT add_ampl_library_PRIVATE)
+			# Specify RUNTIME DESTINATION and LIBRARY DESTINATION, but not
+			# DESTINATION or ARCHIVE_DESTINATION because we don't want import
+			# libraries installed.
+			install(TARGETS ${name} RUNTIME
+				DESTINATION ${AMPL_LIBRARY_DIR} LIBRARY DESTINATION ${AMPL_LIBRARY_DIR})
+		endif ()
+		add_to_folder(${MP_FOLDER_PREFIX}ampl-libraries ${name})
+	endmacro()
+endif()  ## NOT SKIP_BUILD_MP
 
 include_directories(include)
 
@@ -295,7 +299,7 @@ function (target_link_libraries_dynrt target)
 endfunction ()
 
 add_mp_library(format OBJECT
-  include/mp/format.h include/mp/posix.h src/format.cc src/posix.cc)
+	include/mp/format.h include/mp/posix.h src/format.cc src/posix.cc)
 
 # gen-expr-info
 set(MP_EXPR_INFO_FILE ${MP_SOURCE_DIR}/src/expr-info.cc)
@@ -402,67 +406,80 @@ set(MP_FLAT_SOURCES )
 add_prefix(MP_FLAT_SOURCES src/mp/flat/
   encodings.cpp piecewise_linear.cpp)
 
-add_mp_library(mp ${MP_ALL_HEADERS}
-    ${MP_SOURCES} ${MP_FLAT_SOURCES} ${MP_EXPR_INFO_FILE}
-  COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"
-  INCLUDE_DIRECTORIES src include OBJECT_LIBRARIES format)
-set_target_properties(mp PROPERTIES
-  VERSION ${MP_VERSION} SOVERSION ${MP_VERSION_MAJOR})
 
-include(CheckCXXSourceCompiles)
+if (NOT SKIP_BUILD_MP)
+	add_mp_library(mp ${MP_ALL_HEADERS}
+		${MP_SOURCES} ${MP_FLAT_SOURCES} ${MP_EXPR_INFO_FILE}
+		COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"
+		INCLUDE_DIRECTORIES src include OBJECT_LIBRARIES format)
+	set_target_properties(mp PROPERTIES
+		VERSION ${MP_VERSION} SOVERSION ${MP_VERSION_MAJOR})
 
-set(CMAKE_REQUIRED_FLAGS ${MP_CXX11_FLAG})
+	include(CheckCXXSourceCompiles)
 
-check_cxx_source_compiles(
-  "#include <memory>
-  int main() { std::unique_ptr<int> p; }" HAVE_UNIQUE_PTR)
-if (HAVE_UNIQUE_PTR)
-  target_compile_definitions(mp PUBLIC MP_USE_UNIQUE_PTR)
-  if(TARGET mp-dynrt)
-    target_compile_definitions(mp-dynrt PUBLIC MP_USE_UNIQUE_PTR)
-  endif()
-endif ()
+	set(CMAKE_REQUIRED_FLAGS ${MP_CXX11_FLAG})
 
-check_cxx_source_compiles(
-  "#include <atomic>
-  int main() { std::atomic<int> n; }" HAVE_ATOMIC)
-if (HAVE_ATOMIC)
-  target_compile_definitions(mp PUBLIC MP_USE_ATOMIC)
-  if(TARGET mp-dynrt)
-    target_compile_definitions(mp-dynrt PUBLIC MP_USE_ATOMIC)
-  endif()
-endif ()
+	check_cxx_source_compiles(
+		"#include <memory>
+		int main() { std::unique_ptr<int> p; }" HAVE_UNIQUE_PTR)
+	if (HAVE_UNIQUE_PTR)
+		target_compile_definitions(mp PUBLIC MP_USE_UNIQUE_PTR)
+		if(TARGET mp-dynrt)
+			target_compile_definitions(mp-dynrt PUBLIC MP_USE_UNIQUE_PTR)
+		endif()
+	endif ()
 
-check_cxx_source_compiles(
-  "#include <functional>
-  int main() { std::hash<int> h; }" HAVE_HASH)
-if (HAVE_HASH)
-  target_compile_definitions(mp PUBLIC MP_USE_HASH)
-   if(TARGET mp-dynrt)
-    target_compile_definitions(mp-dynrt PUBLIC MP_USE_HASH)
-  endif()
-endif ()
+	check_cxx_source_compiles(
+		"#include <atomic>
+		int main() { std::atomic<int> n; }" HAVE_ATOMIC)
+	if (HAVE_ATOMIC)
+		target_compile_definitions(mp PUBLIC MP_USE_ATOMIC)
+		if(TARGET mp-dynrt)
+			target_compile_definitions(mp-dynrt PUBLIC MP_USE_ATOMIC)
+		endif()
+	endif ()
 
-set(CMAKE_REQUIRED_FLAGS )
+	check_cxx_source_compiles(
+		"#include <functional>
+		int main() { std::hash<int> h; }" HAVE_HASH)
+	if (HAVE_HASH)
+		target_compile_definitions(mp PUBLIC MP_USE_HASH)
+		if(TARGET mp-dynrt)
+			target_compile_definitions(mp-dynrt PUBLIC MP_USE_HASH)
+		endif()
+	endif ()
 
-# Link with librt for clock_gettime (Linux on i386).
-find_library(RT_LIBRARY rt)
-if (RT_LIBRARY)
-  target_link_libraries(mp ${RT_LIBRARY})
-endif ()
+	set(CMAKE_REQUIRED_FLAGS )
 
-# Check if variadic templates are working and not affected by GCC bug 39653:
-# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=39653
-check_cxx_source_compiles("
-  template <class T, class ...Types>
-  struct S { typedef typename S<Types...>::type type; };
-  int main() {}" MP_VARIADIC_TEMPLATES)
+	# Link with librt for clock_gettime (Linux on i386).
+	find_library(RT_LIBRARY rt)
+	if (RT_LIBRARY)
+		target_link_libraries(mp ${RT_LIBRARY})
+	endif ()
+
+	# Check if variadic templates are working and not affected by GCC bug 39653:
+	# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=39653
+	check_cxx_source_compiles("
+		template <class T, class ...Types>
+		struct S { typedef typename S<Types...>::type type; };
+		int main() {}" MP_VARIADIC_TEMPLATES)
+
+	add_subdirectory(src/asl)
+	add_subdirectory(src/amplsig)
+	add_subdirectory(src/cp)
+	add_subdirectory(solvers)
+
+	install(DIRECTORY include/mp DESTINATION include)
+	install(TARGETS mp DESTINATION lib RUNTIME DESTINATION bin)
+	install(FILES LICENSE.rst DESTINATION share/mp)
+
+endif()   ## NOT SKIP_BUILD_MP
 
 # Option BUILD_EXAMPLES
 option(BUILD_EXAMPLES "Build examples: nl reader, nl writer" ON)
 
 # Build NLReader example
-if (MP_VARIADIC_TEMPLATES AND BUILD_EXAMPLES)
+if (MP_VARIADIC_TEMPLATES AND BUILD_EXAMPLES AND NOT SKIP_BUILD_MP)
   message(STATUS
     "Building nl-reader-example. Set -DBUILD_EXAMPLES=off to switch off.")
   add_executable(nl-reader-example examples/nl-reader-example.cc)
@@ -501,48 +518,49 @@ if (BUILD_EXAMPLES)
   # Export source files
   set(NLW2_DOC_SRC
     ${NLW2_LIB_FILES} ${NLW2_INC_FILES} ${NLSOL_EX_FILES})
+	# Export library target names
+	set(NLW2_LIB_NAME ${NLW2_LIB_NAME} PARENT_SCOPE)
+	set(NLW2_C_API_LIB_NAME ${NLW2_C_API_LIB_NAME} PARENT_SCOPE)
 endif()
 
-option(BUILD_DOC "Build documentation" ON)
-if(BUILD_DOC)
-  add_subdirectory(doc)
-endif()
-add_subdirectory(src/asl)
-add_subdirectory(src/amplsig)
-add_subdirectory(src/cp)
-add_subdirectory(solvers)
 
-# Add a target that generates a file with solver and library versions.
-set(AMPL_VERSIONS_FILE versions.txt)
-add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE})
-add_to_folder(${MP_FOLDER_PREFIX}util versions)
-foreach (target gsl-info gecode jacop)
-  if (TARGET ${target})
-    add_custom_command(TARGET versions POST_BUILD
-        COMMAND $<TARGET_FILE:${target}> -v >> ${AMPL_VERSIONS_FILE})
-  endif ()
-endforeach ()
+## Again use SKIP_BUILD_MP
+## DOC needs to be after NLW2
+if (NOT SKIP_BUILD_MP)
+	option(BUILD_DOC "Build documentation" ON)
+	if(BUILD_DOC)
+		add_subdirectory(doc)
+	endif()
 
-# Check for invalid module names.
-get_property(modules GLOBAL PROPERTY MP_USED_MODULES)
-foreach (module ${MP_MODULES})
-  if (NOT module STREQUAL all)
-    list(FIND modules ${module} module_index)
-    if (module_index EQUAL -1)
-      message(SEND_ERROR "Unknown module ${module}")
-    endif ()
-  endif ()
-endforeach ()
+	# Add a target that generates a file with solver and library versions.
+	set(AMPL_VERSIONS_FILE versions.txt)
+	add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE})
+	add_to_folder(${MP_FOLDER_PREFIX}util versions)
+	foreach (target gsl-info gecode jacop)
+		if (TARGET ${target})
+			add_custom_command(TARGET versions POST_BUILD
+				COMMAND $<TARGET_FILE:${target}> -v >> ${AMPL_VERSIONS_FILE})
+		endif ()
+	endforeach ()
 
-# Option BUILD_TESTS
-option(BUILD_TESTS "Build unit tests" ON)
-include(CTest)
-enable_testing()
-if(BUILD_TESTS)
-  message(STATUS "Building unit tests. Set -DBUILD_TESTS=off to switch off.")
-  add_subdirectory(test)
-endif()
+	# Check for invalid module names.
+	get_property(modules GLOBAL PROPERTY MP_USED_MODULES)
+	foreach (module ${MP_MODULES})
+		if (NOT module STREQUAL all)
+			list(FIND modules ${module} module_index)
+			if (module_index EQUAL -1)
+				message(SEND_ERROR "Unknown module ${module}")
+			endif ()
+		endif ()
+	endforeach ()
 
-install(DIRECTORY include/mp DESTINATION include)
-install(TARGETS mp DESTINATION lib RUNTIME DESTINATION bin)
-install(FILES LICENSE.rst DESTINATION share/mp)
+	# Option BUILD_TESTS
+	option(BUILD_TESTS "Build unit tests" ON)
+	include(CTest)
+	enable_testing()
+	if(BUILD_TESTS)
+		message(STATUS "Building unit tests. Set -DBUILD_TESTS=off to switch off.")
+		add_subdirectory(test)
+	endif()
+
+endif()  ## NOT SKIP_BUILD_MP
