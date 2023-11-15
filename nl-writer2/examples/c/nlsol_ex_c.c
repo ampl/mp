@@ -24,7 +24,7 @@ int main(int argc, const char* const* argv) {
            "where <solver> is ipopt, gurobi, minos, ...;\n"
            "binary/text is the NL format (default: binary.)\n"
            "Examples:\n"
-           "  <this_exe> highs \"\" text /tmp/stub\n"
+           "  <this_exe> highs \"writeprob=/tmp/stub.lp\" text /tmp/stub\n"
            "  <this_exe> gurobi \"mip:return_gap=1\"");
     exit(0);
   }

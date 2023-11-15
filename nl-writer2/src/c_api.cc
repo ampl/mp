@@ -36,7 +36,7 @@ void NLW2_WriteSparseDblEntry(
 }
 
 /// Var bound writer
-void NLW2_WriteVarLbUb(void* vbw, int lb, int ub) {
+void NLW2_WriteVarLbUb(void* vbw, double lb, double ub) {
   auto& f = *(std::function<void(double, double)>*)(vbw);
   f(lb, ub);
 }
@@ -174,7 +174,7 @@ void NLW2_FeedLinearConExpr_C_Default(void* , int , void* ) { }
    *          csw.Write(col_size[i]);
    */
 void NLW2_FeedColumnSizes_C_Default(void* , void* )
-{ assert(0 && "this probably always needs implementation"); }
+{ assert(0 && "this needs implementation"); }
 
 
   ///////////////////// 12. INITIAL GUESSES /////////////////////
@@ -259,6 +259,8 @@ NLFeeder2_C NLW2_MakeNLFeeder2_C_Default() {
   std::memset(&result, 0, sizeof(result));       // all 0
 
   result.p_user_data_ = NULL;
+
+  result.Header = NULL;           // User should provide this
 
   // Default options
   result.want_nl_comments_ = 0;
@@ -495,6 +497,63 @@ NLUtils_C NLW2_MakeNLUtils_C_Default() {
 }
 
 void NLW2_DestroyNLUtils_C_Default(NLUtils_C* )
+{ }
+
+
+/////////////////// SOLHandler2_C /////////////////////
+
+/// Callbacks
+
+double NLW2_ReadSolVal(void* p_api_data) {
+  // In contrast to NLWriter2_C,
+  // here we know the type
+  return ((mp::VecReader<double>*)p_api_data)
+      ->ReadNext();
+}
+
+
+/// Default methods
+void NLW2_OnSolveMessage_C_Default(
+    void* p_user_data, const char* s, int nbs) {
+  if (nbs < (int)strlen(s)) {
+    printf("%s\n", s+nbs);
+    fflush(stdout);
+  }
+}
+int NLW2_OnAMPLOptions_C_Default(
+    void* p_user_data, AMPLOptions_C ) { return 0; }
+void NLW2_OnDualSolution_C_Default(
+    void* p_user_data, int nvals, void* p_api_data) { }
+void NLW2_OnPrimalSolution_C_Default(
+    void* p_user_data, int nvals, void* p_api_data) { }
+void NLW2_OnObjno_C_Default(void* p_user_data, int ) { }
+void NLW2_OnSolveCode_C_Default(void* p_user_data, int ) { }
+//  void OnIntSuffix(SuffixReader& ) { }
+//  void OnDblSuffix(SuffixReader& ) { }
+
+
+SOLHandler2_C NLW2_MakeSOLHandler2_C_Default() {
+  SOLHandler2_C result;
+
+  std::memset(&result, 0, sizeof(result));       // all 0
+
+  result.p_user_data_ = NULL;
+
+  result.Header = NULL;           // User should provide this
+
+  result.OnSolveMessage = NLW2_OnSolveMessage_C_Default;
+  result.OnAMPLOptions = NLW2_OnAMPLOptions_C_Default;
+  result.OnDualSolution = NLW2_OnDualSolution_C_Default;
+  result.OnPrimalSolution = NLW2_OnPrimalSolution_C_Default;
+  result.OnObjno = NLW2_OnObjno_C_Default;
+  result.OnSolveCode = NLW2_OnSolveCode_C_Default;
+  //  void OnIntSuffix(SuffixReader& ) { }
+  //  void OnDblSuffix(SuffixReader& ) { }
+
+  return result;
+}
+
+void NLW2_DestroySOLHandler2_C_Default(SOLHandler2_C* )
 { }
 
 

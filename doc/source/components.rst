@@ -142,11 +142,18 @@ The library is zero-overhead: it does not store the model,
 nor does it require any intermediate objects to represent
 model information.
 
-The API is provided by classes `mp::NLSOL`, `mp::NLWriter2`,
-`mp::NLFeeder2`, `mp::SOLReader2`, `mp::SOLHandler2`.
-See
-`example <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/nlsol_ex.cc>`_
-solving a small non-linear model.
+- **NL Writer C++ API** is provided by classes
+  `mp::NLSOL`, `mp::NLFeeder2`, `mp::SOLHandler2`.
+  See
+  `example <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/cpp/nlsol_ex.cc>`_
+  solving a small non-linear model.
+
+- **NL Writer C API** is provided by structs
+  `NLSOL_C`, `NLFeeder2_C`, `SOLHandler2_C`.
+  *Currently only linear models are supported.*
+  See
+  `example <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/c/nlsol_ex_c.c>`_
+  solving a small linear model.
 
 
 .. _recommended-driver-logic:

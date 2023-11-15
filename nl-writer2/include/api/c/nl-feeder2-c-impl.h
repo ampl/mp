@@ -200,64 +200,6 @@ public:
 
 
   ///////////////// 5. CONSTRAINT BOUNDS & COMPLEMENTARITY ///////
-  /// \rst
-  /// Algebraic constraint bounds (for a single constraint):
-  /// either range (lb, ub),
-  /// or complementarity info (k, cvar), when k>0.
-  ///
-  /// For a complementarity constraint to hold, if cvar is at
-  ///	its lower bound, then body >= 0; if cvar is at its upper
-  /// bound, then body <= 0;
-  ///	and if cvar is strictly between its bounds, then body = 0.
-  /// The integer k in a complementarity constraint line indicates
-  /// which bounds on cvar are finite: 1 and 3 imply a finite
-  /// lower bound; 2 and 3 imply a finite upper bound; 0 (which
-  ///	should not occur) would imply no finite bounds, i.e.,
-  /// body = 0 must always hold.
-  ///
-  /// Example:
-  ///
-  /// .. code-block:: ampl
-  ///
-  ///    ampl: var x; var y; var z;
-  ///	   ampl: s.t. Compl1: x+y >= 3 complements x-z <= 15;
-  ///	   ampl: s.t. Compl2: -2 <= 2*y+3*z <= 13 complements 6*z-2*x;
-  ///	   ampl: expand;
-  ///	   subject to Compl1:
-  ///					3 <= x + y
-  ///			 complements
-  ///					x - z <= 15;
-  ///
-  ///	   subject to Compl2:
-  ///					-2 <= 2*y + 3*z <= 13
-  ///			 complements
-  ///					-2*x + 6*z;
-  ///
-  ///	   ampl: solexpand;
-  ///	   Nonsquare complementarity system:
-  ///					4 complementarities including 2 equations
-  ///					5 variables
-  ///	   subject to Compl1.L:
-  ///					x + y + Compl1$cvar = 0;
-  ///
-  ///	   subject to Compl1.R:
-  ///					-15 + x - z <= 0
-  ///			 complements
-  ///					Compl1$cvar <= -3;
-  ///
-  ///	   subject to Compl2.L:
-  ///					2*y + 3*z - Compl2$cvar = 0;
-  ///
-  ///	   subject to Compl2.R:
-  ///					-2*x + 6*z
-  ///			 complements
-  ///					-2 <= Compl2$cvar <= 13;
-  ///
-  /// \endrst
-  struct AlgConRange {
-    double L{}, U{};
-    int k{0}, cvar{0};    // k>0 means complementarity to cvar
-  };
 
   /** Bounds/complementarity for all algebraic constraints
    *  (\a num_algebraic_cons).
@@ -293,7 +235,7 @@ public:
       bnd.U = bnd_c->U;
       crw.WriteAlgConRange(bnd);
     };
-    NLF().FeedVarBounds(NLF().p_user_data_, &crw_c);
+    NLF().FeedConBounds(NLF().p_user_data_, &crw_c);
   }
 
 
@@ -376,7 +318,13 @@ public:
    *          csw.Write(col_size[i]);
    */
   template <class ColSizeWriter>
-  void FeedColumnSizes(ColSizeWriter& ) { }
+  void FeedColumnSizes(ColSizeWriter& csw) {
+    assert(NLF().FeedColumnSizes);
+    std::function<void(int )> f = [&csw](int cs) {
+      csw.Write(cs);
+    };
+    NLF().FeedColumnSizes(NLF().p_user_data_, &f);
+  }
 
 
   ///////////////////// 12. INITIAL GUESSES /////////////////////

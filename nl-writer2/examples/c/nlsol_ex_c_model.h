@@ -100,6 +100,12 @@ typedef struct CAPIExample {
   /// Some technical stuff
   int binary_nl;
 
+  ///////////////////// SOLUTION //////////////////////
+  double* sol_dual_;
+  double* sol_primal_;
+  int objno_;
+  int solve_code_;
+
 } CAPIExample;
 
 /// Create linear example data

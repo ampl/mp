@@ -50,7 +50,7 @@ The documentation is divided in two sections:
   * :ref:`howto` illustrates how to get familiar with the framework and how to quickly obtain the
     boilerplate code necessary to develop a new solver driver
   * :ref:`components` shows the main components of the framework,
-    including NL reader and writer API
+    including NL reader and NL writer APIs
   * :ref:`howto-test` illustrates how to execute tests during development
   * :ref:`cppreference` contains the reference to all the classes in the framework 
 
@@ -73,7 +73,7 @@ Developer documentation
 -----------------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    
    Developer docs <developers>
 
