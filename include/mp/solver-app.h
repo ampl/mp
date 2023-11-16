@@ -145,7 +145,7 @@ void SolverApp<Solver, Reader>::ReadNL(int nl_reader_flags) {
 
 template <typename Solver, typename Reader>
 void SolverApp<Solver, Reader>::Solve() {
-  ArrayRef<int> options(handler_->options(), handler_->num_options());
+  ArrayRef<long> options(handler_->options(), handler_->num_options());
   internal::AppSolutionHandler<Solver> sol_handler(
     filename_no_ext, solver_, *builder_, options,
     output_handler_.has_output ? 0 : banner_size);

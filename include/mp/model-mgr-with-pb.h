@@ -173,7 +173,7 @@ protected:
 
   /// Once NL header is read
   void MakeProperSolutionHandler(const std::string& filename_no_ext) {
-    ArrayRef<int> options(get_nl_read_result_handler().options(),
+    ArrayRef<long> options(get_nl_read_result_handler().options(),
                           get_nl_read_result_handler().num_options());
     SetSolHandler(
           new internal::AppSolutionHandlerImpl<SolverType, ProblemBuilder>(

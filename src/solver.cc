@@ -480,12 +480,15 @@ mp::internal::SignalRepeater::SignalRepeater(const char *s) : in_(0), out_(0) {
 #endif
 
 SignalHandler::SignalHandler(BasicSolver &s)
-  : solver_(s), message_(fmt::format("\n<BREAK> ({})\n", s.name())),
+  : solver_(s),
+    message_(fmt::format("\n<BREAK> ({})\n",
+                         "solver")),  //s.name())),
     repeater_(std::getenv("SW_sigpipe")) {
   solver_.set_interrupter(this);
   signal_message_ptr_ = message_.c_str();
   signal_message_size_ = static_cast<unsigned>(message_.size());
   std::signal(SIGINT, HandleSigInt);
+  std::signal(SIGTERM, HandleSigInt);
   stop_ = 0;
 }
 
@@ -510,11 +513,11 @@ void SignalHandler::HandleSigInt(int sig) {
     if (result < 0) break;
     count += result;
   } while (count < signal_message_size_);
-  if (stop_) {
+  if (stop_>1) {    // AMPL seems to send 2x SIGINT
     // Use asynchronous-safe function _exit instead of exit!
     _exit(1);
   }
-  stop_ = 1;
+  ++stop_;
   if (InterruptHandler handler = handler_)
     handler(data_);
   // Restore the handler since it might have been reset before the handler
