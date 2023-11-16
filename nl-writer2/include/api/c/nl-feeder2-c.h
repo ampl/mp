@@ -20,7 +20,7 @@ extern "C" {
 void NLW2_WriteSparseDblEntry(
     void* p_api_data_, int index, double value);
 /// Write next variable's Lb, Ub
-void NLW2_WriteVarLbUb(void* p_api_data, int lb, int ub);
+void NLW2_WriteVarLbUb(void* p_api_data, double lb, double ub);
 /// Write next Jacobian column size
 void NLW2_WriteColSize(void* p_api_data, int sz);
 

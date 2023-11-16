@@ -99,7 +99,7 @@ struct SignalRepeater {
 };
 #endif
 
-// A SIGINT handler
+// A SIGINT/SIGTERM handler
 class SignalHandler : public Interrupter {
  private:
   BasicSolver &solver_;

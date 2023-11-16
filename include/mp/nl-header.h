@@ -130,18 +130,21 @@ struct NLInfo : NLInfo_C {
 
   /** Input/output format */
   using Format = NLFormat;
+
+  enum {
     /**
       Text format. The text format is fully portable meaning that an .nl file
       can be written on a machine of one architecture and then read on a
       machine of a different architecture.
      */
-  static const Format TEXT = NL_FORMAT_TEXT;
+    TEXT = NL_FORMAT_TEXT,
 
     /**
       Binary format. The binary format is not generally portable and should
       normally be used on a single machine.
      */
-  static const Format BINARY = NL_FORMAT_BINARY;
+    BINARY = NL_FORMAT_BINARY
+  };
 
   /// Construct default
   NLInfo() {

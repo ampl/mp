@@ -1293,7 +1293,7 @@ TEST(AppSolutionHandlerTest, WriteSolution) {
   TestSolver solver;
   StrictMockProblemBuilder problem_builder;
   mp::internal::AppSolutionHandler<TestSolver, MockSolWriter<>>
-      handler("test", solver, problem_builder, mp::ArrayRef<int>(0, 0), 0);
+      handler("test", solver, problem_builder, mp::ArrayRef<long>(0, 0), 0);
   const double values[] = {1.5, 2.5, 3.5};
   const double dual_values[] = {4.5, 5.5};
   solver.set_ampl_flag(true);
@@ -1313,7 +1313,7 @@ TEST(AppSolutionHandlerTest, PrintSolution) {
   TestSolver solver;
   StrictMockProblemBuilder problem_builder;
   mp::internal::AppSolutionHandler<TestSolver, MockSolWriter<>>
-      handler("test", solver, problem_builder, mp::ArrayRef<int>(0, 0), 0);
+      handler("test", solver, problem_builder, mp::ArrayRef<long>(0, 0), 0);
   const double values[] = {1.5, 2.5, 3.5};
   const double dual_values[] = {4.5, 5.5};
   EXPECT_CALL(problem_builder, num_vars()).WillRepeatedly(Return(3));

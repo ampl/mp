@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include <assert.h>
 
@@ -37,6 +38,10 @@ CAPIExample MakeCAPIExample_Linear_01() {
   static const SparseEntry obj_linpart[]
       = { {0, 13}, {1, 1.0} };
 
+  /// Solution
+  static double sol_dual[] = {NAN, NAN};
+  static double sol_primal[] = {NAN, NAN};
+
   CAPIExample result = {
     .n_var = 2,
     .n_var_int = 1,
@@ -59,7 +64,14 @@ CAPIExample MakeCAPIExample_Linear_01() {
     .obj_sense = 1,
     .obj_linpart = obj_linpart,
     .n_obj_nz = 2,
-    .obj_name = "TotalSum"
+    .obj_name = "TotalSum",
+
+    .binary_nl = 1,
+
+    .sol_dual_ = sol_dual,
+    .sol_primal_ = sol_primal,
+    .objno_ = -2,
+    .solve_code_ = -100
   };
   return result;
 }
@@ -73,5 +85,18 @@ void DestroyCAPIExample_Linear_01(CAPIExample* pEx) {
 }
 
 void PrintSolution_C(CAPIExample* pex, const char* stub) {
-  assert(0);
+  printf(
+        "\n     ********** SOLUTION (%s.sol) ***********\n",
+        stub);
+  printf("%s\n", "DUALS.");
+  for (int i=0; i<pex->n_con; ++i)
+    printf("   %10s = %.17g\n",
+           pex->con_name[i], pex->sol_dual_[i]);
+  printf("%s\n", "PRIMALS.");
+  for (int i=0; i<pex->n_con; ++i)
+    printf("      %7s = %.17g\n",
+           pex->var_name[i], pex->sol_primal_[i]);
+
+  printf("\nObjno used: %d, solve_result_num: %d\n",
+         pex->objno_, pex->solve_code_);
 }

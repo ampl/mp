@@ -110,132 +110,10 @@ class BinaryReadError : public Error {
   std::size_t offset() const { return offset_; }
 };
 
-enum {
-  /** Maximum number of options reserved for AMPL use in NL and SOL formats. */
-  MAX_AMPL_OPTIONS = 9
-};
-
-namespace arith {
-
-/** Floating-point arithmetic kind. */
-enum Kind {
-
-  /** Unknown floating-point arithmetic. */
-  UNKNOWN = 0,
-
-  /**
-    \rst
-    Standard `IEEE-754 floating point
-    <http://en.wikipedia.org/wiki/IEEE_floating_point>`_ - little endian.
-    \endrst
-   */
-  IEEE_LITTLE_ENDIAN = 1,
-
-  /** Standard IEEE-754 floating point - big endian. */
-  IEEE_BIG_ENDIAN = 2,
-
-  /**
-    \rst
-    `IBM floating point
-    <http://en.wikipedia.org/wiki/IBM_Floating_Point_Architecture>`_.
-    \endrst
-   */
-  IBM = 3,
-
-  /** VAX floating point (legacy). */
-  VAX = 4,
-
-  /** Cray floating point. */
-  CRAY = 5,
-
-  /** Last floating point. */
-  LAST = CRAY
-};
-
-// Returns floating-point arithmetic kind used on the current system.
-Kind GetKind();
-
-inline bool IsIEEE(arith::Kind k) {
-  return k == IEEE_LITTLE_ENDIAN || k == IEEE_BIG_ENDIAN;
-}
-}  // namespace arith
-
-/**
-  \rst
-  An NL `header <http://en.wikipedia.org/wiki/Header_(computing)>`_
-  which contains information about problem dimensions, such as the number of
-  variables and constraints, and the input format.
-
-  Base class: `mp::ProblemInfo`
-  \endrst
- */
-struct NLHeader : ProblemInfo {
-  /** Input/output format */
-  enum Format {
-    /**
-      Text format. The text format is fully portable meaning that an .nl file
-      can be written on a machine of one architecture and then read on a
-      machine of a different architecture.
-     */
-    TEXT = 0,
-
-    /**
-      Binary format. The binary format is not generally portable and should
-      normally be used on a single machine.
-     */
-    BINARY = 1
-  };
-
-  /** Input/output format. */
-  Format format;
-
-  /** The number of options reserved for AMPL use. */
-  int num_ampl_options;
-
-  /**
-    Values of options reserved for AMPL use. Leave the default values if not
-    using AMPL.
-   */
-  int ampl_options[MAX_AMPL_OPTIONS];
-
-  /**
-    Extra info for writing a solution reserved for AMPL use. Leave the default
-    value if not using AMPL.
-   */
-  double ampl_vbtol;
-
-  /**
-    \rst
-    Floating-point arithmetic kind used with binary format to check
-    if an .nl file is written using a compatible representation of
-    floating-point numbers. It is not used with the text format and normally
-    set to `mp::arith::UNKNOWN` there.
-    \endrst
-   */
-  arith::Kind arith_kind;
-
-  /** Flags. */
-  enum {
-    /** Flag that specifies whether to write output suffixes to a .sol file. */
-    WANT_OUTPUT_SUFFIXES = 1
-  };
-
-  /**
-    \rst
-    Flags. Can be either 0 or `mp::NLHeader::WANT_OUTPUT_SUFFIXES`.
-    \endrst
-   */
-  int flags;
-
-  NLHeader()
-    : ProblemInfo(), format(TEXT), num_ampl_options(0), ampl_vbtol(0),
-      arith_kind(arith::UNKNOWN), flags(0) {
-    std::fill(ampl_options, ampl_options + MAX_AMPL_OPTIONS, 0);
-  }
-};
 
 /** Writes NLHeader in the NL format. */
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
+
 
 /**
   \rst
@@ -2603,7 +2481,8 @@ void ReadNLString(NLStringRef str, Handler &handler,
       ReadBinary<internal::IdentityConverter>(reader, header, adapter, flags);
       break;
     }
-    if (!IsIEEE(arith_kind) || !IsIEEE(header.arith_kind))
+    if (!IsIEEE(arith_kind)
+        || !IsIEEE((arith::Kind)header.arith_kind))
       throw ReadError(name, 0, 0, "unsupported floating-point arithmetic");
     ReadBinary<internal::EndiannessConverter>(reader, header, adapter, flags);
     break;

@@ -301,10 +301,10 @@ typedef struct NLInfo_C {
     Floating-point arithmetic kind used with binary format to check
     if an .nl file is written using a compatible representation of
     floating-point numbers. It is not used with the text format and normally
-    set to `mp::arith::UNKNOWN` there.
+    set to `NL_ARITH_UNKNOWN` there.
     \endrst
    */
-  NLArithKind arith_kind;
+  int arith_kind;
 
   /**
     \rst

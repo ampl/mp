@@ -186,7 +186,11 @@ void mp::internal::TextReader<Locale>::ReadHeader(NLHeader &header) {
   if (header.num_ampl_options > MAX_AMPL_OPTIONS)
     ReportError("too many options");
   for (int i = 0; i < header.num_ampl_options; ++i) {
-    if (!ReadOptionalInt(header.ampl_options[i]))
+    double tmp;
+    if (!ReadOptionalDouble(tmp))
+      break;
+    header.ampl_options[i] = (long)tmp;
+    if (header.ampl_options[i] != tmp)
       break;
   }
   if (header.ampl_options[USE_VBTOL_OPTION] == READ_VBTOL)
@@ -235,7 +239,7 @@ void mp::internal::TextReader<Locale>::ReadHeader(NLHeader &header) {
   if (ReadOptionalUInt(arith_kind)) {
     if (arith_kind > arith::LAST)
       ReportError("unknown floating-point arithmetic kind");
-    header.arith_kind = static_cast<arith::Kind>(arith_kind);
+    header.arith_kind = arith_kind;
     ReadOptionalUInt(header.flags);
   }
   ReadTillEndOfLine();

@@ -23,14 +23,14 @@ class SolutionAdapter {
   int status_;
   ProblemBuilder *builder_;
   const char *message_;
-  mp::ArrayRef<int> options_;
+  mp::ArrayRef<long> options_;
   mp::ArrayRef<double> values_;
   mp::ArrayRef<double> dual_values_;
   int objno_;
 
  public:
   SolutionAdapter(int status, ProblemBuilder *pb, const char *message,
-                  mp::ArrayRef<int> options, mp::ArrayRef<double> values,
+                  mp::ArrayRef<long> options, mp::ArrayRef<double> values,
                   mp::ArrayRef<double> dual_values,
                   int on)
     : status_(status), builder_(pb), message_(message), options_(options),
@@ -41,7 +41,7 @@ class SolutionAdapter {
   const char *message() const { return message_; }
 
   int num_options() const { return static_cast<int>(options_.size()); }
-  int option(int index) const { return options_[index]; }
+  long option(int index) const { return options_[index]; }
 
   int num_values() const { return static_cast<int>(values_.size()); }
   double value(int index) const { return values_[index]; }
@@ -83,7 +83,7 @@ class SolutionWriterImpl :
   Solver &solver_;
   ProblemBuilder &builder_;
 
-  ArrayRef<int> options_;
+  ArrayRef<long> options_;
 
   /// The number of feasible solutions found.
   int num_solutions_;
@@ -96,7 +96,7 @@ class SolutionWriterImpl :
  public:
   
   SolutionWriterImpl(fmt::StringRef stub, Solver &s, ProblemBuilder &b,
-                 ArrayRef<int> options = mp::ArrayRef<int>(0, 0))
+                 ArrayRef<long> options = mp::ArrayRef<long>(0, 0))
     : stub_(stub.to_string()), overrideStub_(), solver_(s), builder_(b),
       options_(options), num_solutions_(0) {}
   /// Returns the .sol writer.
@@ -204,7 +204,7 @@ class SolverNLHandlerImpl : public NLProblemBuilder {
 private:
   Solver &solver_;
   int num_options_;
-  int options_[MAX_AMPL_OPTIONS];
+  long options_[MAX_AMPL_OPTIONS];
   std::function<void()> after_header_;
 
   typedef NLProblemBuilder Base;
@@ -218,7 +218,7 @@ public:
   { }
 
   int num_options() const { return num_options_; }
-  const int *options() const { return options_; }
+  const long *options() const { return options_; }
 
   int objno() const override { return solver_.objno_specified(); }
   bool multiobj() const override { return solver_.multiobj(); }
@@ -278,7 +278,7 @@ class AppSolutionHandlerImpl :
  public:
   AppSolutionHandlerImpl(fmt::StringRef stub, Solver &s,
                     ProblemBuilder &b,
-                    ArrayRef<int> options, unsigned banner_size)
+                    ArrayRef<long> options, unsigned banner_size)
   : SolutionWriterImpl<Solver, ProblemBuilder, Writer>
       (stub, s, b, options),  banner_size_(banner_size) {}
 

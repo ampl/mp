@@ -433,7 +433,7 @@ void NLWriter2<Params>::WritePLSOSConstraints() {
 
 template <typename Params>
 void NLWriter2<Params>::WriteVarBounds() {
-  apr(nm, "b\t# %d bounds (on variables)\n",
+	apr(nm, "b\t#%d bounds (on variables)\n",
       (int)Hdr().num_vars);
   VarBndWriter vbw(*this);
   Feeder().FeedVarBounds(vbw);
@@ -450,7 +450,7 @@ void NLWriter2<Params>::WriteInitialGuesses() {
 template <typename Params>
 void NLWriter2<Params>::WriteConBounds() {
   if (Hdr().num_algebraic_cons) {
-    apr(nm, "r\t# %d ranges (rhs's) and complementarity\n",
+		apr(nm, "r\t#%d ranges (rhs's)\n",  // and complementarity
         (int)Hdr().num_algebraic_cons);
     ConBndWriter cbw(*this);
     Feeder().FeedConBounds(cbw);
@@ -535,7 +535,11 @@ void NLWriter2<Params>::WriteColumnSizes() {
   switch(Feeder().WantColumnSizes()) {
   case 1:
     apr(nm,
-        "k%d\t#intermediate Jacobian column lengths (cumulative)\n",
+		#ifdef NL_LIB2_ORIG_HDR
+				"k%d\t#intermediate Jacobian column lengths\n",
+		#else
+				"k%d\t#intermediate Jacobian column lengths (cumulative)\n",
+		#endif
         Hdr().num_vars + Hdr().num_rand_vars - 1);
   {
     ColSizeWriter csw(*this, 1);
