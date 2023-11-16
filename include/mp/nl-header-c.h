@@ -283,7 +283,7 @@ typedef struct NLInfo_C {
     Values of options reserved for AMPL use.
     Leave the default values if not using AMPL.
    */
-  int ampl_options[MAX_AMPL_OPTIONS];
+  long ampl_options[MAX_AMPL_OPTIONS];
 
   /**
     Extra info for writing a solution reserved for AMPL use.

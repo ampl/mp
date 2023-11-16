@@ -204,7 +204,7 @@ class SolverNLHandlerImpl : public NLProblemBuilder {
 private:
   Solver &solver_;
   int num_options_;
-  int options_[MAX_AMPL_OPTIONS];
+  long options_[MAX_AMPL_OPTIONS];
   std::function<void()> after_header_;
 
   typedef NLProblemBuilder Base;
@@ -218,7 +218,7 @@ public:
   { }
 
   int num_options() const { return num_options_; }
-  const int *options() const { return options_; }
+  const long *options() const { return options_; }
 
   int objno() const override { return solver_.objno_specified(); }
   bool multiobj() const override { return solver_.multiobj(); }
