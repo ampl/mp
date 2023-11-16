@@ -364,6 +364,8 @@ std::string XpressmpBackend::DoXpressFixedModel()
       switch (status) {
       case XPRS_MIP_OPTIMAL:
         return { sol::SOLVED, "optimal solution" };
+      case XPRS_MIP_SOLUTION:
+        return { sol::SOLVED, "feasible solution" };
       case XPRS_MIP_NO_SOL_FOUND:
       case XPRS_MIP_INFEAS:
         return { sol::INFEASIBLE, "infeasible problem" };
