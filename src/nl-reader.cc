@@ -235,7 +235,7 @@ void mp::internal::TextReader<Locale>::ReadHeader(NLHeader &header) {
   if (ReadOptionalUInt(arith_kind)) {
     if (arith_kind > arith::LAST)
       ReportError("unknown floating-point arithmetic kind");
-    header.arith_kind = static_cast<arith::Kind>(arith_kind);
+    header.arith_kind = arith_kind;
     ReadOptionalUInt(header.flags);
   }
   ReadTillEndOfLine();

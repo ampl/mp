@@ -836,7 +836,7 @@ TEST(NLReaderTest, WriteBinaryHeader) {
   header.num_ampl_options = 3;
   for (int i = 0; i < header.num_ampl_options; ++i)
     header.ampl_options[i] = 11 * (i + 1);
-  header.arith_kind = mp::arith::CRAY;
+  header.arith_kind = (NLArithKind)mp::arith::CRAY;
   fmt::MemoryWriter w;
   w << header;
   EXPECT_EQ(

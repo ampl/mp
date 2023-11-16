@@ -283,7 +283,7 @@ typedef struct NLInfo_C {
     Values of options reserved for AMPL use.
     Leave the default values if not using AMPL.
    */
-  long ampl_options[MAX_AMPL_OPTIONS];
+  int ampl_options[MAX_AMPL_OPTIONS];
 
   /**
     Extra info for writing a solution reserved for AMPL use.
@@ -301,10 +301,10 @@ typedef struct NLInfo_C {
     Floating-point arithmetic kind used with binary format to check
     if an .nl file is written using a compatible representation of
     floating-point numbers. It is not used with the text format and normally
-    set to `mp::arith::UNKNOWN` there.
+    set to `NL_ARITH_UNKNOWN` there.
     \endrst
    */
-  NLArithKind arith_kind;
+  int arith_kind;
 
   /**
     \rst
