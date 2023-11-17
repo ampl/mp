@@ -1,9 +1,10 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
-## unreleased
+## 20231117
 - Added option lim:work (worklimit).
-- MP update: fixed graceful exit on Ctrl-C from AMPL in Linux.
+- MP update: fixed graceful exit on Ctrl-C from AMPL in Linux
+  and fixed issue with reading text-format NL files
 
 
 ## 20231103

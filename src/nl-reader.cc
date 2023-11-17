@@ -172,6 +172,7 @@ void mp::internal::TextReader<Locale>::ReadHeader(NLHeader &header) {
   // Read the format (text or binary).
   switch (ReadChar()) {
   case 'g':
+    header.format = NLHeader::TEXT;
     break;
   case 'b':
     header.format = NLHeader::BINARY;
