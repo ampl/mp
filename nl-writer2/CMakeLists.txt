@@ -102,11 +102,13 @@ if (BUILD_EXAMPLES_NLW2)         # Actually build the example
   target_include_directories(nl-writer-example-cpp PUBLIC
     ${NLW2_INCLUDE_PATH})
   target_link_libraries(nl-writer-example-cpp ${NLW2_LIB_NAME})
+  add_dependencies(nl-writer-example-cpp mp)
 
   add_executable(nl-writer-example-c ${NLSOL_C_EX_FILES})
   target_include_directories(nl-writer-example-c PUBLIC
     ${NLW2_INCLUDE_PATH})
   target_link_libraries(nl-writer-example-c ${NLW2_C_API_LIB_NAME})
+  add_dependencies(nl-writer-example-c mp)
 endif()
 
 
