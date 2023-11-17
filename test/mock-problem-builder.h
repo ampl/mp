@@ -149,7 +149,7 @@ class MockProblemBuilder {
   MOCK_METHOD0(num_algebraic_cons, int ());
   MOCK_METHOD0(num_logical_cons, int ());
 
-  MOCK_METHOD1(SetInfo, void (const mp::ProblemInfo &info));
+  MOCK_METHOD1(SetInfo, void (const mp::NLProblemInfo &info));
   MOCK_METHOD0(EndBuild, void ());
 
   MOCK_METHOD3(AddVar, void (double lb, double ub, mp::var::Type));

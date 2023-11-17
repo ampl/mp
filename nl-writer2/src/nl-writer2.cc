@@ -82,7 +82,7 @@ extern "C"
 NLHeader_C MakeNLHeader_C_Default() {
   NLHeader nlh;
   NLHeader_C nlh_c;
-  nlh_c.pi = *(ProblemInfo_C*)(&nlh);
+  nlh_c.pi = *(NLProblemInfo_C*)(&nlh);
   nlh_c.nli = *(NLInfo_C*)(&nlh);
   return nlh_c;
 }

@@ -18,7 +18,7 @@ class NLUtils_C_Impl
     : public NLUtils {
 public:
   /// Construct
-  NLUtils_C_Impl(NLUtils_C* pu)
+  NLUtils_C_Impl(NLW2_NLUtils_C* pu)
     : nlu_c_(*pu) { }
 
   /// log message
@@ -44,10 +44,10 @@ public:
   }
 
 protected:
-  const NLUtils_C& NLU() const { return nlu_c_; }
+  const NLW2_NLUtils_C& NLU() const { return nlu_c_; }
 
 private:
-  const NLUtils_C nlu_c_;
+  const NLW2_NLUtils_C nlu_c_;
 };
 
 }  // namespace mp

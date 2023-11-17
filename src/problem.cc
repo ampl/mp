@@ -93,7 +93,7 @@ void BasicProblem<Alloc>::SetComplementarity(
 }
 
 template <typename Alloc>
-void BasicProblem<Alloc>::SetInfo(const ProblemInfo &info) {
+void BasicProblem<Alloc>::SetInfo(const NLProblemInfo &info) {
   vars_.reserve(info.num_vars);
   is_var_int_.reserve(info.num_vars);
   is_obj_max_.reserve(info.num_objs);

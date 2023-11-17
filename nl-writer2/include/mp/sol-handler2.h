@@ -93,8 +93,11 @@ public:
    * AMPL internal options.
    */
   struct AMPLOptions {
-    std::vector<int> options_;
+    /// Option values
+    std::vector<long> options_;
+    /// Has vbtol?
     bool has_vbtol_;
+    /// Vbtol
     double vbtol_;
   };
 

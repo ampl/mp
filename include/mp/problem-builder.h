@@ -60,7 +60,7 @@ class ProblemBuilder : public SuffixManager {
     throw MakeUnsupportedError(name);
   }
 
-  void SetInfo(const ProblemInfo &) {}
+  void SetInfo(const NLProblemInfo &) {}
 
   /// Adds a variable.
   void AddVar(double lb, double ub, var::Type type) {

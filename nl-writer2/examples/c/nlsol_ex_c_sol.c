@@ -29,8 +29,8 @@ void OnSolveCode(void* p_user_data, int sc) {
   pex->solve_code_ = sc;
 }
 
-SOLHandler2_C MakeSOLHandler2_C(CAPIExample* pex) {
-  SOLHandler2_C result
+NLW2_SOLHandler2_C MakeSOLHandler2_C(CAPIExample* pex) {
+  NLW2_SOLHandler2_C result
       = NLW2_MakeSOLHandler2_C_Default();
 
   result.p_user_data_ = pex;
@@ -46,7 +46,7 @@ SOLHandler2_C MakeSOLHandler2_C(CAPIExample* pex) {
   return result;
 }
 
-void DestroySOLHandler2_C(SOLHandler2_C* p) {
+void DestroySOLHandler2_C(NLW2_SOLHandler2_C* p) {
   p->p_user_data_ = NULL;
   NLW2_DestroySOLHandler2_C_Default(p);
 }

@@ -1194,7 +1194,7 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
   /// Sets problem information and reserves memory for problem elements.
-  void SetInfo(const ProblemInfo &info);
+  void SetInfo(const NLProblemInfo &info);
 
   /// Pushing the whole instance to a backend or converter.
   /// A responsible backend should handle all essential items

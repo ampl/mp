@@ -45,7 +45,7 @@ TEST(ProblemBuilderTest, UseWithNLProblemBuilder) {
 // Check that handling problem info doesn't throw an exception.
 TEST(ProblemBuilderTest, SetInfo) {
   TestProblemBuilder builder;
-  builder.SetInfo(mp::ProblemInfo());
+  builder.SetInfo(mp::NLProblemInfo());
 }
 
 #define EXPECT_DISPATCH(call, construct) { \

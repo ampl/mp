@@ -22,6 +22,33 @@ The details are taken care of in the
 However, a :ref:`minimal driver setup <driver-minimal-setup>` might address the
 corresponding APIs directly, as described below.
 
+NL format
+~~~~~~~~~~~~~~~~~~~~
+
+`NL <https://en.wikipedia.org/wiki/Nl_(format)>`_ is a technical format
+for representing
+optimization problems in discrete or continuous variables. The format provides
+linear constraints, as well as non-linear expression trees. It is described in
+the technical report `Writing .nl Files <https://ampl.github.io/nlwrite.pdf>`_.
+
+The NL format supports a wide range of problem types including but not limited
+to the following areas of optimization:
+
+* `Linear programming <https://en.wikipedia.org/wiki/Linear_programming>`_
+* `Quadratic programming <https://en.wikipedia.org/wiki/Quadratic_programming>`_
+* `Nonlinear programming <https://en.wikipedia.org/wiki/Nonlinear_programming>`_
+* `Mixed-integer programming <https://en.wikipedia.org/wiki/Linear_programming#Integer_unknowns>`_
+* Mixed-integer quadratic programming with or without convex quadratic constraints
+* Mixed-integer nonlinear programming
+* `Second-order cone programming <https://en.wikipedia.org/wiki/Second-order_cone_programming>`_
+* `Global optimization <https://en.wikipedia.org/wiki/Global_optimization>`_
+* `Semidefinite programming <https://en.wikipedia.org/wiki/Semidefinite_programming>`_
+  problems with bilinear matrix inequalities
+* `Complementarity problems <https://en.wikipedia.org/wiki/Complementarity_theory>`_
+  (MPECs) in discrete or continuous variables
+* `Constraint programming <https://en.wikipedia.org/wiki/Constraint_programming>`_
+
+
 NL file reader
 ~~~~~~~~~~~~~~
 
@@ -43,32 +70,6 @@ This section describes the C++ API of an NL reader which is
 * Complete: supports all NL constructs including extensions implemented in
   AMPL Solver Library
 * Reliable: extensively and continuously tested on a variety of platforms
-
-
-NL format
-^^^^^^^^^
-
-`NL <https://en.wikipedia.org/wiki/Nl_(format)>`_ is a format for representing
-optimization problems in discrete or continuous variables. The format provides
-linear constraints, as well as non-linear expression trees. It is described in
-the technical report `Writing .nl Files <https://ampl.github.io/nlwrite.pdf>`_.
-
-The NL format supports a wide range of problem types including but not limited
-to the following areas of optimization:
-
-* `Linear programming <https://en.wikipedia.org/wiki/Linear_programming>`_
-* `Quadratic programming <https://en.wikipedia.org/wiki/Quadratic_programming>`_
-* `Nonlinear programming <https://en.wikipedia.org/wiki/Nonlinear_programming>`_
-* `Mixed-integer programming <https://en.wikipedia.org/wiki/Linear_programming#Integer_unknowns>`_
-* Mixed-integer quadratic programming with or without convex quadratic constraints
-* Mixed-integer nonlinear programming
-* `Second-order cone programming <https://en.wikipedia.org/wiki/Second-order_cone_programming>`_
-* `Global optimization <https://en.wikipedia.org/wiki/Global_optimization>`_
-* `Semidefinite programming <https://en.wikipedia.org/wiki/Semidefinite_programming>`_
-  problems with bilinear matrix inequalities
-* `Complementarity problems <https://en.wikipedia.org/wiki/Complementarity_theory>`_
-  (MPECs) in discrete or continuous variables
-* `Constraint programming <https://en.wikipedia.org/wiki/Constraint_programming>`_
 
 
 Easy-to-use functions
@@ -142,6 +143,26 @@ The library is zero-overhead: it does not store the model,
 nor does it require any intermediate objects to represent
 model information.
 
+NL Writer design
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The library was designed with efficiency in mind.
+It allows most efficient conversion of the user model
+internal representation to NL format by providing
+NL component writer callbacks
+(and solution reader callbacks to receive solutions.)
+
+In turn, the library is flexible to use because
+various components of the user model will be provided
+on the library's request from a user-specialized
+NLFeeder2 object (for solution input,
+solution components will be received by methods
+of a custom SOLHandler2 class.)
+
+
+NL Writer APIs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 - **NL Writer C++ API** is provided by classes
   `mp::NLSOL`, `mp::NLFeeder2`, `mp::SOLHandler2`.
   See
@@ -149,7 +170,7 @@ model information.
   solving a small non-linear model.
 
 - **NL Writer C API** is provided by structs
-  `NLSOL_C`, `NLFeeder2_C`, `SOLHandler2_C`.
+  `NLW2_NLSOL_C`, `NLW2_NLFeeder2_C`, `NLW2_SOLHandler2_C`.
   *Currently only linear models are supported.*
   See
   `example <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/c/nlsol_ex_c.c>`_

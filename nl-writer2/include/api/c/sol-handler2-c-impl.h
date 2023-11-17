@@ -22,7 +22,7 @@ class SOLHandler2_C_Impl
     : public SOLHandler2 {
 public:
   /// Construct
-  SOLHandler2_C_Impl(SOLHandler2_C* psh2)
+  SOLHandler2_C_Impl(NLW2_SOLHandler2_C* psh2)
     : solh2_c_(*psh2) { }
 
   /** The NLHeader used to write the NL file. */
@@ -30,7 +30,7 @@ public:
     assert(SH().Header);
     auto h_c = SH().Header(SH().p_user_data_);
     NLHeader hdr;
-    *(ProblemInfo_C*)(&hdr) = h_c.pi;
+    *(NLProblemInfo_C*)(&hdr) = h_c.pi;
     *(NLInfo_C*)(&hdr) = h_c.nli;
 
     return hdr;
@@ -65,8 +65,8 @@ public:
 
     AMPLOptions_C ao_c;
     ao_c.n_options_ = (int)ao.options_.size();
-    std::memcpy(ao_c.options_, ao.options_.data(),
-                ao.options_.size() * sizeof(ao.options_[0]));
+    std::copy(ao.options_.begin(), ao.options_.end(),
+              ao_c.options_);
     ao_c.has_vbtol_ = ao.has_vbtol_;
     ao_c.vbtol_ = ao.vbtol_;
 
@@ -170,11 +170,11 @@ public:
 //  void OnDblSuffix(SuffixReader& ) { }
 
 protected:
-  const SOLHandler2_C& SH() const { return solh2_c_; }
+  const NLW2_SOLHandler2_C& SH() const { return solh2_c_; }
 
 private:
   /// Just store copy
-  const SOLHandler2_C solh2_c_;
+  const NLW2_SOLHandler2_C solh2_c_;
 };
 
 }  // namespace mp

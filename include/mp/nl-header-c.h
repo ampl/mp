@@ -19,7 +19,7 @@ extern "C" {
  *  technical report "Writing .nl Files"
  *  (https://ampl.github.io/nlwrite.pdf.)
  */
-typedef struct ProblemInfo_C {
+typedef struct NLProblemInfo_C {
   /** Total number of variables. */
   int num_vars;
 
@@ -191,7 +191,7 @@ typedef struct ProblemInfo_C {
    */
   int num_common_exprs_in_single_objs;
 
-} ProblemInfo_C;
+} NLProblemInfo_C;
 
 
 enum {
@@ -323,7 +323,7 @@ typedef struct NLInfo_C {
   \endrst
  */
 typedef struct NLHeader_C {
-  ProblemInfo_C pi;
+  NLProblemInfo_C pi;
   NLInfo_C nli;
 } NLHeader_C;
 

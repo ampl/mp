@@ -22,7 +22,7 @@ extern "C" {
 /// call NLW2_MakeNLUtils_C_Default() / NLW2_Destroy...().
 ///
 /// The default error handler exit()s.
-typedef struct NLUtils_C {
+typedef struct NLW2_NLUtils_C {
 
   /// Use this pointer if you need to store your data.
   /// It is provided as the 1st argument to the methods.
@@ -40,15 +40,15 @@ typedef struct NLUtils_C {
   /// (internal error.)
   void (*myexit)(void* p_user_data, const char* msg);
 
-} NLUtils_C;
+} NLW2_NLUtils_C;
 
 /// Create a default NLUtils_C wrapper object.
 /// User application might change some methods
 /// and use the p_user_data_ pointer.
-NLUtils_C NLW2_MakeNLUtils_C_Default();
+NLW2_NLUtils_C NLW2_MakeNLUtils_C_Default();
 
 /// Destroy the NLUtils_C object created by the API
-void NLW2_DestroyNLUtils_C_Default(NLUtils_C*);
+void NLW2_DestroyNLUtils_C_Default(NLW2_NLUtils_C*);
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -89,7 +89,7 @@ void NLW2_WriteAlgConRange(void* , NLW2_AlgConRange_C*);
 
 /** Wrap mp::NLFeeder2 for C API.
 
-  NLFeeder2_C: writes model details on request
+  NLW2_NLFeeder2_C: writes model details on request
   via provided callback objects.
   See the examples folder.
 
@@ -109,7 +109,7 @@ void NLW2_WriteAlgConRange(void* , NLW2_AlgConRange_C*);
     first algebraic (including complementarity), then logical.
   Some solvers might require nonlinear constraints first.
  */
-typedef struct NLFeeder2_C {
+typedef struct NLW2_NLFeeder2_C {
   /// User data, provided as the 1st argument to the methods
   void* p_user_data_;
 
@@ -490,14 +490,14 @@ typedef struct NLFeeder2_C {
    */
 //  void FeedObjAdj(ObjOffsetWriter& ) { }
 
-} NLFeeder2_C;
+} NLW2_NLFeeder2_C;
 
 
 /// Return NLFeeder2_C with default options / methods
-NLFeeder2_C NLW2_MakeNLFeeder2_C_Default();
+NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default();
 
 /// Destroy NLFeeder2_C created by NLW2_MakeNLFeeder2_C_default()
-void NLW2_DestroyNLFeeder2_C_Default(NLFeeder2_C* );
+void NLW2_DestroyNLFeeder2_C_Default(NLW2_NLFeeder2_C* );
 
 #ifdef __cplusplus
 }  // extern "C"

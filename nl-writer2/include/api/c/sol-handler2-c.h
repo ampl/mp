@@ -20,22 +20,26 @@ double NLW2_ReadSolVal(void* p_api_data);
  * AMPL internal options.
  */
 typedef struct AMPLOptions_C {
+  /// Actual number of options
   int n_options_;
-  int options_[MAX_AMPL_OPTIONS];
+  /// Option values
+  long options_[MAX_AMPL_OPTIONS];
+  /// Whether vbtol specified
   int has_vbtol_;
+  /// vbtol value
   double vbtol_;
 } AMPLOptions_C;
 
 
 /// Wrap mp::SOLHandler2 for C API.
 ///
-/// SOLHandler2_C: reads solution details on request
+/// NLW2_SOLHandler2_C: reads solution details on request
 /// via provided callback objects.
 /// See the examples folder.
 ///
 /// To fill some **default methods**,
 /// call NLW2_MakeSOLHandler2_C_Default() / NLW2_Destroy...().
-typedef struct SOLHandler2_C {
+typedef struct NLW2_SOLHandler2_C {
   /// User data, provided to the methods as the 1st arg
   void* p_user_data_;
 
@@ -133,14 +137,14 @@ typedef struct SOLHandler2_C {
 //  template <class SuffixReader>
 //  void OnDblSuffix(SuffixReader& ) { }
 
-} SOLHandler2_C;
+} NLW2_SOLHandler2_C;
 
 /// Create an SOLHandler2_C with default methods
-SOLHandler2_C NLW2_MakeSOLHandler2_C_Default();
+NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default();
 
 /// Destroy an SOLHandler2_C
 /// created with NLW2_Make...Default()
-void NLW2_DestroySOLHandler2_C_Default(SOLHandler2_C* );
+void NLW2_DestroySOLHandler2_C_Default(NLW2_SOLHandler2_C* );
 
 #ifdef __cplusplus
 }  // extern "C"

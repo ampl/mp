@@ -25,7 +25,7 @@ public:
   using Base = NLFeeder2<NLFeeder2_C_Impl, void*>;
 
   /// Construct
-  NLFeeder2_C_Impl(NLFeeder2_C* pnlf2)
+  NLFeeder2_C_Impl(NLW2_NLFeeder2_C* pnlf2)
     : nlf2_c_(*pnlf2) { }
 
   ///////////////////// 1. NL HEADER AND OPTIONS /////////////////
@@ -40,7 +40,7 @@ public:
     assert(NLF().Header);
     auto h_c = NLF().Header(NLF().p_user_data_);
     NLHeader hdr;
-    *(ProblemInfo_C*)(&hdr) = h_c.pi;
+    *(NLProblemInfo_C*)(&hdr) = h_c.pi;
     *(NLInfo_C*)(&hdr) = h_c.nli;
 
     return hdr;
@@ -413,12 +413,12 @@ public:
 
 
 protected:
-  const NLFeeder2_C& NLF() const { return nlf2_c_; }
+  const NLW2_NLFeeder2_C& NLF() const { return nlf2_c_; }
 
 
 private:
   /// Just store copy
-  const NLFeeder2_C nlf2_c_;
+  const NLW2_NLFeeder2_C nlf2_c_;
 };
 
 }  // namespace mp

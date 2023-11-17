@@ -54,23 +54,23 @@ void NLW2_WriteColSize(void* csw, int sz) {
 
 
 /// Default implementations
-const char* NLW2_ObjDescription_C_Default(void* , int )
+static const char* NLW2_ObjDescription_C_Default(void* , int )
 { return ""; }
-int NLW2_ObjType_C_Default(void* , int ) { return 0; }
-int NLW2_ObjGradientNNZ_C_Default(void* , int ) { return 0; }
-void NLW2_FeedObjGradient_C_Default(void* , int , void* ) { }
+static int NLW2_ObjType_C_Default(void* , int ) { return 0; }
+static int NLW2_ObjGradientNNZ_C_Default(void* , int ) { return 0; }
+static void NLW2_FeedObjGradient_C_Default(void* , int , void* ) { }
 
 // ObjExpr
 
 // DefVars
 
-void NLW2_FeedVarBounds_C_Default(void* , void* ) { }
-void NLW2_FeedConBounds_C_Default(void* , void* ) { }
+static void NLW2_FeedVarBounds_C_Default(void* , void* ) { }
+static void NLW2_FeedConBounds_C_Default(void* , void* ) { }
 
-const char* NLW2_ConDescription_C_Default(void *, int )
+static const char* NLW2_ConDescription_C_Default(void *, int )
 { return ""; }
-int NLW2_LinearConExprNNZ_C_Default(void* , int ) { return 0; }
-void NLW2_FeedLinearConExpr_C_Default(void* , int , void* ) { }
+static int NLW2_LinearConExprNNZ_C_Default(void* , int ) { return 0; }
+static void NLW2_FeedLinearConExpr_C_Default(void* , int , void* ) { }
 
 //  void FeedConExpression(int i, ConExprWriter& ) { }
 
@@ -173,7 +173,7 @@ void NLW2_FeedLinearConExpr_C_Default(void* , int , void* ) { }
    *        for (int i=0; i < num_vars+num_rand_vars-1; ++i)
    *          csw.Write(col_size[i]);
    */
-void NLW2_FeedColumnSizes_C_Default(void* , void* )
+static void NLW2_FeedColumnSizes_C_Default(void* , void* )
 { assert(0 && "this needs implementation"); }
 
 
@@ -253,8 +253,8 @@ void NLW2_FeedColumnSizes_C_Default(void* , void* )
 //  void FeedObjAdj(ObjOffsetWriter& ) { }
 
 
-NLFeeder2_C NLW2_MakeNLFeeder2_C_Default() {
-  NLFeeder2_C result;
+NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default() {
+  NLW2_NLFeeder2_C result;
 
   std::memset(&result, 0, sizeof(result));       // all 0
 
@@ -450,12 +450,12 @@ NLFeeder2_C NLW2_MakeNLFeeder2_C_Default() {
   return result;
 }
 
-void NLW2_DestroyNLFeeder2_C_Default(NLFeeder2_C* )
+void NLW2_DestroyNLFeeder2_C_Default(NLW2_NLFeeder2_C* )
 { }
 
 ///////////////////////// NLUtils_C ///////////////////////////
 /// log message
-void NLW2_log_message_C_Default(
+static void NLW2_log_message_C_Default(
     void* p_api_data, const char* format, ...) {
   va_list args;
   va_start (args, format);
@@ -463,7 +463,7 @@ void NLW2_log_message_C_Default(
   va_end (args);
 }
 /// log warning
-void NLW2_log_warning_C_Default(
+static void NLW2_log_warning_C_Default(
     void* p_api_data, const char* format, ...) {
   std::fprintf(stderr, "WARNING: ");
   va_list args;
@@ -476,7 +476,7 @@ void NLW2_log_warning_C_Default(
 /// Not using exceptions by default.
 /// Only called with wrong output format string
 /// (internal error.)
-void NLW2_myexit_C_Default(
+static void NLW2_myexit_C_Default(
     void* p_api_data, const char* msg) {
   using namespace std;
   fprintf(stderr, "%s\n", msg);
@@ -484,8 +484,8 @@ void NLW2_myexit_C_Default(
 }
 
 
-NLUtils_C NLW2_MakeNLUtils_C_Default() {
-  NLUtils_C result;
+NLW2_NLUtils_C NLW2_MakeNLUtils_C_Default() {
+  NLW2_NLUtils_C result;
 
   result.p_user_data_ = NULL;
 
@@ -496,7 +496,7 @@ NLUtils_C NLW2_MakeNLUtils_C_Default() {
   return result;
 }
 
-void NLW2_DestroyNLUtils_C_Default(NLUtils_C* )
+void NLW2_DestroyNLUtils_C_Default(NLW2_NLUtils_C* )
 { }
 
 
@@ -513,27 +513,27 @@ double NLW2_ReadSolVal(void* p_api_data) {
 
 
 /// Default methods
-void NLW2_OnSolveMessage_C_Default(
+static void NLW2_OnSolveMessage_C_Default(
     void* p_user_data, const char* s, int nbs) {
   if (nbs < (int)strlen(s)) {
     printf("%s\n", s+nbs);
     fflush(stdout);
   }
 }
-int NLW2_OnAMPLOptions_C_Default(
+static int NLW2_OnAMPLOptions_C_Default(
     void* p_user_data, AMPLOptions_C ) { return 0; }
-void NLW2_OnDualSolution_C_Default(
+static void NLW2_OnDualSolution_C_Default(
     void* p_user_data, int nvals, void* p_api_data) { }
-void NLW2_OnPrimalSolution_C_Default(
+static void NLW2_OnPrimalSolution_C_Default(
     void* p_user_data, int nvals, void* p_api_data) { }
-void NLW2_OnObjno_C_Default(void* p_user_data, int ) { }
-void NLW2_OnSolveCode_C_Default(void* p_user_data, int ) { }
+static void NLW2_OnObjno_C_Default(void* p_user_data, int ) { }
+static void NLW2_OnSolveCode_C_Default(void* p_user_data, int ) { }
 //  void OnIntSuffix(SuffixReader& ) { }
 //  void OnDblSuffix(SuffixReader& ) { }
 
 
-SOLHandler2_C NLW2_MakeSOLHandler2_C_Default() {
-  SOLHandler2_C result;
+NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default() {
+  NLW2_SOLHandler2_C result;
 
   std::memset(&result, 0, sizeof(result));       // all 0
 
@@ -553,29 +553,33 @@ SOLHandler2_C NLW2_MakeSOLHandler2_C_Default() {
   return result;
 }
 
-void NLW2_DestroySOLHandler2_C_Default(SOLHandler2_C* )
+void NLW2_DestroySOLHandler2_C_Default(NLW2_SOLHandler2_C* )
 { }
 
 
 //////////// NLSOL_C API //////////////
 
+namespace mp {
+
 /// Typedef our specialization of NLSOL
-using NLSOL_Impl
+using NLSOL_C_Impl
   = mp::NLSOL<mp::NLFeeder2_C_Impl,
       mp::SOLHandler2_C_Impl>;
+
+}  // namespace mp
 
 /// Construct.
 ///
 /// Note that the argument objects are stored by value.
-NLSOL_C NLW2_MakeNLSOL_C(
-    NLFeeder2_C* pnlf, SOLHandler2_C* psolh, NLUtils_C* putl) {
-  NLSOL_C result;
+NLW2_NLSOL_C NLW2_MakeNLSOL_C(
+    NLW2_NLFeeder2_C* pnlf, NLW2_SOLHandler2_C* psolh, NLW2_NLUtils_C* putl) {
+  NLW2_NLSOL_C result;
 
   result.p_nlf_ = new mp::NLFeeder2_C_Impl(pnlf);
   result.p_solh_ = new mp::SOLHandler2_C_Impl(psolh);
   result.p_utl_ = new mp::NLUtils_C_Impl(putl);
   result.p_nlsol_
-      = new NLSOL_Impl(
+      = new mp::NLSOL_C_Impl(
         *(mp::NLFeeder2_C_Impl*)result.p_nlf_,
         *(mp::SOLHandler2_C_Impl*)result.p_solh_,
         *(mp::NLUtils_C_Impl*)result.p_utl_);
@@ -584,22 +588,22 @@ NLSOL_C NLW2_MakeNLSOL_C(
 }
 
 /// Destroy
-void NLW2_DestroyNLSOL_C(NLSOL_C* pnls) {
+void NLW2_DestroyNLSOL_C(NLW2_NLSOL_C* pnls) {
   delete (mp::NLUtils_C_Impl*)(pnls->p_utl_);
   delete (mp::SOLHandler2_C_Impl*)(pnls->p_solh_);
   delete (mp::NLFeeder2_C_Impl*)(pnls->p_nlf_);
-  delete (NLSOL_Impl*)(pnls->p_nlsol_);
+  delete (mp::NLSOL_C_Impl*)(pnls->p_nlsol_);
 }
 
 /// Set solver, such as "gurobi", "highs", "ipopt"
-void NLW2_SetSolver_C(NLSOL_C* pnls, const char* solver) {
-  ((NLSOL_Impl*)(pnls->p_nlsol_))
+void NLW2_SetSolver(NLW2_NLSOL_C* pnls, const char* solver) {
+  ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->SetSolver(solver);
 }
 
 /// Set solver options, such as "outlev=1 lim:time=500"
-void NLW2_SetSolverOptions_C(NLSOL_C* pnls, const char* sopts) {
-  ((NLSOL_Impl*)(pnls->p_nlsol_))
+void NLW2_SetSolverOptions(NLW2_NLSOL_C* pnls, const char* sopts) {
+  ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->SetSolverOptions(sopts);
 }
 
@@ -608,34 +612,34 @@ void NLW2_SetSolverOptions_C(NLSOL_C* pnls, const char* sopts) {
 /// for input files (.nl, .col., .row, etc.),
 /// and output files (.sol).
 /// @return true if all ok.
-int NLW2_Solve_C(NLSOL_C* pnls, const char* filestub) {
-  return ((NLSOL_Impl*)(pnls->p_nlsol_))
+int NLW2_Solve(NLW2_NLSOL_C* pnls, const char* filestub) {
+  return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->Solve(filestub);
 }
 
 /// Get error message.
-const char* NLW2_GetErrorMessage_C(NLSOL_C* pnls) {
-  return ((NLSOL_Impl*)(pnls->p_nlsol_))
+const char* NLW2_GetErrorMessage(NLW2_NLSOL_C* pnls) {
+  return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->GetErrorMessage();
 }
 
 /// Substep: write NL and any accompanying files.
-int NLW2_WriteNLFile_C(NLSOL_C* pnls, const char* filestub) {
-  return ((NLSOL_Impl*)(pnls->p_nlsol_))
+int NLW2_WriteNLFile(NLW2_NLSOL_C* pnls, const char* filestub) {
+  return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->WriteNLFile(filestub);
 }
 
 /// Substep: invoke chosen solver for \a filestub.
-int NLW2_InvokeSolver_C(NLSOL_C* pnls, const char* filestub) {
-  return ((NLSOL_Impl*)(pnls->p_nlsol_))
+int NLW2_InvokeSolver(NLW2_NLSOL_C* pnls, const char* filestub) {
+  return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->InvokeSolver(filestub);
 }
 
 /// Substep: read solution.
 /// @param filename: complete file name,
 /// normally (stub).sol.
-int NLW2_ReadSolution_C(NLSOL_C* pnls, const char* filename) {
-  return ((NLSOL_Impl*)(pnls->p_nlsol_))
+int NLW2_ReadSolution(NLW2_NLSOL_C* pnls, const char* filename) {
+  return ((mp::NLSOL_C_Impl*)(pnls->p_nlsol_))
       ->ReadSolution(filename);
 }
 

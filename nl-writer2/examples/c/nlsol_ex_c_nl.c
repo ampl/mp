@@ -365,9 +365,9 @@ void FeedColumnSizes(void* p_user_data, void* p_api_data) {
 //  void FeedObjAdj(ObjOffsetWriter& ) { }
 
 
-NLFeeder2_C MakeNLFeeder2_C(
+NLW2_NLFeeder2_C MakeNLFeeder2_C(
     CAPIExample* pex, int binary) {
-  NLFeeder2_C result        // Fill with default values
+  NLW2_NLFeeder2_C result        // Fill with default values
       = NLW2_MakeNLFeeder2_C_Default();
 
   result.p_user_data_ = pex;
@@ -568,7 +568,7 @@ NLFeeder2_C MakeNLFeeder2_C(
   return result;
 }
 
-void DestroyNLFeeder2_C(NLFeeder2_C* pf) {
+void DestroyNLFeeder2_C(NLW2_NLFeeder2_C* pf) {
   pf->p_user_data_ = NULL;
 
   NLW2_DestroyNLFeeder2_C_Default(pf);

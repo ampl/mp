@@ -26,46 +26,47 @@ extern "C" {
 /// use NLW2_MakeNLSOL_C / NLW2_Destroy...().
 ///
 /// Usage: see the C API example and the below API.
-typedef struct NLSOL_C {
+typedef struct NLW2_NLSOL_C {
   /// Internal data
   void *p_nlf_, *p_solh_, *p_utl_, *p_nlsol_;
 
-} NLSOL_C;
+} NLW2_NLSOL_C;
 
-//////////// Use the following NLSOL_C API to operate //////////////
+//////////// Use the following NLW2_NLSOL_C API to operate //////////////
 
 /// Construct
-NLSOL_C NLW2_MakeNLSOL_C(NLFeeder2_C* , SOLHandler2_C* , NLUtils_C* );
+NLW2_NLSOL_C NLW2_MakeNLSOL_C(
+    NLW2_NLFeeder2_C* , NLW2_SOLHandler2_C* , NLW2_NLUtils_C* );
 
 /// Destroy
-void NLW2_DestroyNLSOL_C(NLSOL_C* );
+void NLW2_DestroyNLSOL_C(NLW2_NLSOL_C* );
 
 /// Set solver, such as "gurobi", "highs", "ipopt"
-void NLW2_SetSolver_C(NLSOL_C* , const char* solver);
+void NLW2_SetSolver(NLW2_NLSOL_C* , const char* solver);
 
 /// Set solver options, such as "outlev=1 lim:time=500"
-void NLW2_SetSolverOptions_C(NLSOL_C* , const char* sopts);
+void NLW2_SetSolverOptions(NLW2_NLSOL_C* , const char* sopts);
 
 /// Solve.
 /// @param filestub: filename stub to be used
 /// for input files (.nl, .col., .row, etc.),
 /// and output files (.sol).
 /// @return true if all ok.
-int NLW2_Solve_C(NLSOL_C* , const char* filestub);
+int NLW2_Solve(NLW2_NLSOL_C* , const char* filestub);
 
 /// Get error message.
-const char* NLW2_GetErrorMessage_C(NLSOL_C* );
+const char* NLW2_GetErrorMessage(NLW2_NLSOL_C* );
 
 /// Substep: write NL and any accompanying files.
-int NLW2_WriteNLFile_C(NLSOL_C* , const char* filestub);
+int NLW2_WriteNLFile(NLW2_NLSOL_C* , const char* filestub);
 
 /// Substep: invoke chosen solver for \a filestub.
-int NLW2_InvokeSolver_C(NLSOL_C* , const char* filestub);
+int NLW2_InvokeSolver(NLW2_NLSOL_C* , const char* filestub);
 
 /// Substep: read solution.
 /// @param filename: complete file name,
 /// normally (stub).sol.
-int NLW2_ReadSolution_C(NLSOL_C* , const char* filename);
+int NLW2_ReadSolution(NLW2_NLSOL_C* , const char* filename);
 
 
 #ifdef __cplusplus

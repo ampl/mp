@@ -36,18 +36,18 @@ int main(int argc, const char* const* argv) {
 
   // Create custom interface
   CAPIExample example = MakeCAPIExample_Linear_01();
-  NLFeeder2_C feeder = MakeNLFeeder2_C(&example, binary);
-  SOLHandler2_C solhnd = MakeSOLHandler2_C(&example);
-  NLUtils_C utils = MakeNLUtils_C();
+  NLW2_NLFeeder2_C feeder = MakeNLFeeder2_C(&example, binary);
+  NLW2_SOLHandler2_C solhnd = MakeSOLHandler2_C(&example);
+  NLW2_NLUtils_C utils = MakeNLUtils_C();
 
   // Create NLSOL_C
-  NLSOL_C nlsol = NLW2_MakeNLSOL_C(&feeder, &solhnd, &utils);
+  NLW2_NLSOL_C nlsol = NLW2_MakeNLSOL_C(&feeder, &solhnd, &utils);
 
   // Solve
-  NLW2_SetSolver_C(&nlsol, solver);
-  NLW2_SetSolverOptions_C(&nlsol, sopts);
-  if (0==NLW2_Solve_C(&nlsol, stub)) {
-    printf("%s\n", NLW2_GetErrorMessage_C(&nlsol));
+  NLW2_SetSolver(&nlsol, solver);
+  NLW2_SetSolverOptions(&nlsol, sopts);
+  if (0==NLW2_Solve(&nlsol, stub)) {
+    printf("%s\n", NLW2_GetErrorMessage(&nlsol));
     exit(EXIT_FAILURE);
   }
   PrintSolution_C(&example, stub);

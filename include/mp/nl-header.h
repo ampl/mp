@@ -40,9 +40,9 @@ namespace mp {
  *  technical report "Writing .nl Files"
  *  (https://ampl.github.io/nlwrite.pdf.)
  */
-struct ProblemInfo : ProblemInfo_C {
+struct NLProblemInfo : NLProblemInfo_C {
   /// Construct default
-  ProblemInfo() {
+  NLProblemInfo() {
     std::memset(this, 0, sizeof(*this));
   }
 
@@ -169,7 +169,7 @@ struct NLInfo : NLInfo_C {
 	Base class: `mp::ProblemInfo`
 	\endrst
  */
-struct NLHeader : ProblemInfo, NLInfo {
+struct NLHeader : NLProblemInfo, NLInfo {
 };
 
 }  // namespace mp
