@@ -524,6 +524,11 @@ void CoptBackend::InitCustomOptions() {
       "limit on solve time (in seconds; default: no limit).",
       COPT_DBLPARAM_TIMELIMIT, 0.0, DBL_MAX);
 
+  AddSolverOption("lim:soltime soltimelim soltimelimit",
+    "Time limit if a primal feasible solution has been found "
+    "(in seconds; default: no limit).",
+    COPT_DBLPARAM_SOLTIMELIMIT, 0.0, DBL_MAX);
+
   AddSolverOption("lim:nodes nodelim nodelimit",
     "Maximum MIP nodes to explore (default: no limit).",
     COPT_INTPARAM_NODELIMIT, 0, INT_MAX);

@@ -2,6 +2,9 @@ Summary of recent updates to COPT for AMPL
 ==========================================
 
 ## 20231117
+- Updated to Copt 7.0.3, which includes many performance improvements
+- New keyword `lim:soltime` to specify a time limit after a solution
+  has been found
 - MP update: fixed graceful exit on Ctrl-C from AMPL in Linux
   and fixed issue with reading text-format NL files
 
