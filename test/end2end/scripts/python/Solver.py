@@ -684,17 +684,24 @@ class CPLEXDirectSolver(MPDirectSolver):
         stags = {
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.plinear, ModelTags.sos,
-                 # ModelTags.quadratic, ModelTags.quadraticnonconvex,
+                 ModelTags.quadratic, 
+
+                 
+                 #ModelTags.socp,      ## MP transforms cones to quadratics
+                 #ModelTags.socp_hard_to_recognize,
+
+                 
+
                  ModelTags.nonlinear,
                  ModelTags.log,
                  # ModelTags.trigonometric
                  ModelTags.relax,
-                 ModelTags.multiobj,
+                 ModelTags.multiobj, ModelTags.obj_priority,
                  ModelTags.multisol,
                  ModelTags.sstatus,
                  ModelTags.return_mipgap,
 
-                 ModelTags.writelp, # ModelTags.writesol,
+                 ModelTags.writelp, ModelTags.writesol
 
                  }
         super().__init__(exeName, timeout, nthreads, otherOptions, stags)

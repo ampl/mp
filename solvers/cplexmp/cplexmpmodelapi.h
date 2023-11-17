@@ -30,6 +30,10 @@ public:
 
   void AddVariables(const VarArrayDef& );
   void SetLinearObjective( int iobj, const LinearObjective& lo );
+  /// Whether accepting quadratic objectives:
+  /// 0 - no, 1 - convex, 2 - nonconvex
+  static int AcceptsQuadObj() { return 2; }
+  void SetQuadraticObjective(int iobj, const QuadraticObjective& qo);
 
   //////////////////////////// GENERAL CONSTRAINTS ////////////////////////////
   USE_BASE_CONSTRAINT_HANDLERS(BaseModelAPI)
@@ -79,6 +83,13 @@ public:
   ACCEPT_CONSTRAINT(PLConstraint, Recommended, CG_General)
   void AddConstraint(const PLConstraint& cc);
 
+  private:
+  obj::Type main_obj_sense_;
+
+  protected:
+  /// First objective's sense
+  void NoteCPLEXMainObjSense(obj::Type s);
+  obj::Type GetCPLEXMainObjSense() const;
 
 };
 

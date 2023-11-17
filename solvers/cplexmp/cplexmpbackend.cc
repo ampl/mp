@@ -364,6 +364,9 @@ int CplexBackend::BarrierIterations() const {
 void CplexBackend::DoWriteProblem(const std::string &file) {
   CPLEX_CALL( CPXwriteprob (env(), lp(), file.c_str(), NULL) );
 }
+void CplexBackend::DoWriteSolution(const std::string& file) {
+  CPLEX_CALL(CPXsolwrite(env(), lp(), file.c_str()));
+}
 
 
 void CplexBackend::SetInterrupter(mp::Interrupter *inter) {
@@ -372,17 +375,66 @@ void CplexBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void CplexBackend::Solve() {
-  if(IsMIP())
-    CPLEX_CALL(CPXmipopt(env(), lp()));
-  else
-    CPLEX_CALL(CPXlpopt(env(), lp()));
+  if (NumObjs() > 1)
+    CPLEX_CALL(CPXmultiobjopt(env(), lp(), NULL));
+  else {
+    if (IsMIP())
+      CPLEX_CALL(CPXmipopt(env(), lp()));
+    else
+      CPLEX_CALL(CPXlpopt(env(), lp()));
+  }
 
   WindupCPLEXSolve();
 }
 
+ArrayRef<double> CplexBackend::GetObjectiveValues() 
+{ 
+  if(NumObjs()==1)
+    return std::vector<double>{ObjectiveValue()}; 
+  else {
+    std::vector<double> vals(NumObjs());
+    for (int i = 0; i < NumObjs(); i++) {
+      CPXmultiobjgetobjval(env(), lp(), i, &vals[i]);
+    }
+    return vals;
+  }
+} 
 
+void CplexBackend::ObjPriorities(ArrayRef<int> priority) {
+  for (int i = 0; i < (int)priority.size(); ++i) {
+    CPXmultiobjchgattribs(env(), lp(), i,
+      CPX_NO_OFFSET_CHANGE, CPX_NO_WEIGHT_CHANGE,
+      priority[i], CPX_NO_ABSTOL_CHANGE, CPX_NO_RELTOL_CHANGE,
+      NULL);
+  }
+}
 
+void CplexBackend::ObjWeights(ArrayRef<double> val) {
+  for (int i = 0; i < (int)val.size(); ++i) {
+    CPXmultiobjchgattribs(env(), lp(), i,
+      CPX_NO_OFFSET_CHANGE, val[i],
+      CPX_NO_PRIORITY_CHANGE, CPX_NO_ABSTOL_CHANGE, CPX_NO_RELTOL_CHANGE,
+      NULL);
+  }
+}
 
+void CplexBackend::ObjAbsTol(ArrayRef<double> val) {
+  for (int i = 0; i < (int)val.size(); ++i) {
+    CPXmultiobjchgattribs(env(), lp(), i,
+      CPX_NO_OFFSET_CHANGE, CPX_NO_WEIGHT_CHANGE,
+      CPX_NO_PRIORITY_CHANGE, val[i], CPX_NO_RELTOL_CHANGE,
+      NULL);
+  }
+}
+
+void CplexBackend::ObjRelTol(ArrayRef<double> val) {
+  for (int i = 0; i < (int)val.size(); ++i) {
+    CPXmultiobjchgattribs(env(), lp(), i,
+      CPX_NO_OFFSET_CHANGE, CPX_NO_WEIGHT_CHANGE,
+      CPX_NO_PRIORITY_CHANGE, CPX_NO_ABSTOL_CHANGE, val[i],
+      NULL);
+  }
+}
 
 ArrayRef<double> CplexBackend::Ray() {
   std::vector<double> ray(NumVars());
@@ -721,6 +773,7 @@ void CplexBackend::InputCPLEXExtras() {
     if (storedOptions_.populate_ < 0) storedOptions_.populate_ = populate;
     if (storedOptions_.poolIntensity_ < 0) storedOptions_.poolIntensity_ = poolIntensity;
   }
+  CplexPlayObjNParams();
   SetSolverOption(CPX_PARAM_SOLNPOOLINTENSITY, storedOptions_.poolIntensity_ < 0 ? 0 : 
     storedOptions_.poolIntensity_);
 
@@ -795,6 +848,21 @@ void CplexBackend::InitCustomOptions() {
       "\n"
       "  ampl: option cplex_options 'mipgap=1e-6';\n");
   
+
+  // Multi objective controls
+  AddIntOption("obj:*:priority obj_*_priority", "Priority for objective with index *",
+    &CplexBackend::CplexGetObjIntParam, &CplexBackend::CplexSetObjIntParam);
+
+  AddDblOption("obj:*:weight obj_*_weight", "Weight for objective with index *",
+    &CplexBackend::CplexGetObjDblParam, &CplexBackend::CplexSetObjDblParam);
+
+  AddDblOption("obj:*:reltol obj_*_reltol", "Relative tolerance for objective with index *",
+    &CplexBackend::CplexGetObjDblParam, &CplexBackend::CplexSetObjDblParam);
+
+  AddDblOption("obj:*:abstol obj_*_abstol", "Absolute tolerance for objective with index *. "
+    "Can only be applied on a multi-objective problem with obj:multi=1",
+    &CplexBackend::CplexGetObjDblParam, &CplexBackend::CplexSetObjDblParam);
+
   // Solution pool controls
   AddSolverOption("sol:poolgap ams_eps poolgap",
     "Relative tolerance for reporting alternate MIP solutions "
@@ -899,6 +967,112 @@ void CplexBackend::InitCustomOptions() {
       CPXPARAM_TimeLimit, 0.0, DBL_MAX);
 
 }
+
+void CplexBackend::CplexSetObjIntParam(const SolverOption& opt, int val) {
+  objnparam_int_.push_back({ {opt.wc_tail(), opt.wc_keybody_last()}, val });
+}
+void CplexBackend::CplexSetObjDblParam(const SolverOption& opt, double val) {
+  objnparam_dbl_.push_back({ {opt.wc_tail(), opt.wc_keybody_last()}, val });
+}
+int CplexBackend::CplexGetObjIntParam(const SolverOption& opt) const {
+  auto it = std::find_if(objnparam_int_.rbegin(), objnparam_int_.rend(),
+    [&](const ObjNParam<int>& prm) {
+      return prm.first == std::make_pair(opt.wc_tail(), opt.wc_keybody_last());
+    });
+  if (objnparam_int_.rend() == it)
+    throw std::runtime_error("Failed to find recorded option " +
+      opt.wc_key_last__std_form());
+  return it->second;
+}
+double CplexBackend::CplexGetObjDblParam(const SolverOption& opt) const {
+  auto it = std::find_if(objnparam_dbl_.rbegin(), objnparam_dbl_.rend(),
+    [&](const ObjNParam<int>& prm) {
+      return prm.first == std::make_pair(opt.wc_tail(), opt.wc_keybody_last());
+    });
+  if (objnparam_dbl_.rend() == it)
+    throw std::runtime_error("Failed to find recorded option " +
+      opt.wc_key_last__std_form());
+  return it->second;
+}
+
+/// What to do on certain "obj:*:..." option
+static std::tuple<int, CplexBackend::CplexObjParams>
+CplexGetObjParamAction(const CplexBackend::ObjNParamKey& key) {
+  int n;
+  try {
+    n = std::stoi(key.second) - 1;  // subtract 1 for 0-based indexing
+  }
+  catch (...) {
+    throw std::runtime_error("Could not parse index '" + key.second +
+      "' of option 'obj:" + key.second + key.first + "'");
+  }
+  if (":priority" == key.first)
+    return { n, CplexBackend::OBJ_PRIORITY};
+  if (":weight" == key.first)
+    return { n, CplexBackend::OBJ_WEIGHT };
+  if (":abstol" == key.first)
+    return { n, CplexBackend::OBJ_ABSTOL };
+  if (":reltol" == key.first)
+    return { n, CplexBackend::OBJ_RELTOL};
+  throw std::runtime_error(
+    "Unknown wildcard option 'obj:" + key.second + key.first + "'");
+  return { -1,  CplexBackend::OBJ_NOTVALID };
+}
+
+/// env() is only for error reporting
+static void CplexDoSetObjParam(
+  const CplexBackend::ObjNParam<int>& prm,
+  CPXLPptr model, CPXENVptr env) {
+  auto action = CplexGetObjParamAction(prm.first);
+  auto iobj = std::get<0>(action);
+  auto prm_attr = std::get<1>(action);
+  if (prm_attr != CplexBackend::OBJ_PRIORITY)
+    return;
+
+  CPLEX_CALL(CPXmultiobjchgattribs(env, model, iobj,
+    CPX_NO_OFFSET_CHANGE, CPX_NO_WEIGHT_CHANGE, prm.second,
+    CPX_NO_ABSTOL_CHANGE, CPX_NO_RELTOL_CHANGE, NULL));
+}
+
+static void CplexDoSetObjParam(
+  const CplexBackend::ObjNParam<double>& prm,
+  CPXLPptr model, CPXENVptr env) {
+  auto action = CplexGetObjParamAction(prm.first);
+  auto iobj = std::get<0>(action);
+  auto prm_attr = std::get<1>(action);
+  double weight = CPX_NO_WEIGHT_CHANGE;
+  double abstol = CPX_NO_ABSTOL_CHANGE;
+  double reltol = CPX_NO_RELTOL_CHANGE;
+  
+  switch (prm_attr) {
+  case CplexBackend::OBJ_WEIGHT:
+    weight = prm.second;
+    break;
+  case CplexBackend::OBJ_ABSTOL:
+    abstol = prm.second;
+    break;
+  case CplexBackend::OBJ_RELTOL:
+    reltol = prm.second;
+    break;
+  }
+    CPLEX_CALL(CPXmultiobjchgattribs(env, model, iobj,
+      CPX_NO_OFFSET_CHANGE, weight,CPX_NO_PRIORITY_CHANGE,
+      abstol, reltol, NULL));
+}
+
+template <class T>
+static void DoPlayCplexObjNParams(
+  const std::vector< CplexBackend::ObjNParam<T> >& objnp,
+  CPXLPptr model, CPXENVptr env) {
+  for (const auto& p : objnp)
+    CplexDoSetObjParam(p, model, env);
+}
+
+void CplexBackend::CplexPlayObjNParams() {
+  DoPlayCplexObjNParams(objnparam_int_, lp(), env());
+  DoPlayCplexObjNParams(objnparam_dbl_, lp(), env());
+}
+
 
 
 } // namespace mp

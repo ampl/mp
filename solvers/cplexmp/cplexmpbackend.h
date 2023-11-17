@@ -37,11 +37,25 @@ public:
 
   ALLOW_STD_FEATURE(WRITE_PROBLEM, true)
   void DoWriteProblem(const std::string& name) override;
+
+  ALLOW_STD_FEATURE(WRITE_SOLUTION, true)
+  void DoWriteSolution(const std::string& name) override;
+
   /**
  * MULTISOL support.
  * No API, use ReportIntermediateSolution()
 **/
   ALLOW_STD_FEATURE(MULTISOL, true)
+    /**
+   * MULTIOBJ
+  **/
+  ALLOW_STD_FEATURE(MULTIOBJ, true)
+  ArrayRef<double> GetObjectiveValues() override;
+  void ObjPriorities(ArrayRef<int>) override;
+  void ObjWeights(ArrayRef<double>) override;
+  void ObjAbsTol(ArrayRef<double>) override;
+  void ObjRelTol(ArrayRef<double>) override;
+
   /**
  * Get MIP Gap
  **/
@@ -110,12 +124,34 @@ public:
   /// otherwise in ReportResults()
   void Solve() override;
 
-  ArrayRef<double> GetObjectiveValues() override
-  { return std::vector<double>{ObjectiveValue()}; } // TODO
-
-
   //////////////////// [[ Implementation details ]] //////////////////////
   ///////////////////////////////////////////////////////////////////////////////
+
+
+  /// For "obj:*:method" etc
+public:
+  using ObjNParamKey = std::pair< std::string, std::string >;
+  template <class T>
+  using ObjNParam = std::pair< ObjNParamKey, T >;
+  enum CplexObjParams {
+    OBJ_PRIORITY,
+    OBJ_WEIGHT,
+    OBJ_ABSTOL,
+    OBJ_RELTOL,
+    OBJ_NOTVALID
+  };
+  void CplexPlayObjNParams();
+private:
+  std::vector< ObjNParam<int> > objnparam_int_;
+  std::vector< ObjNParam<double> > objnparam_dbl_;
+
+  void CplexSetObjIntParam(const SolverOption& opt, int val);
+  void CplexSetObjDblParam(const SolverOption& opt, double val);
+  int CplexGetObjIntParam(const SolverOption& opt) const;
+  double CplexGetObjDblParam(const SolverOption& opt) const;
+
+ /// End "obj:*:method" etc
+
 public:  // public for static polymorphism
   void InitCustomOptions() override;
 
