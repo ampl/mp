@@ -1,6 +1,11 @@
 Summary of recent updates to gurobi for AMPL
 ============================================
 
+## unreleased
+- Added option lim:work (worklimit).
+- MP update: fixed graceful exit on Ctrl-C from AMPL in Linux.
+
+
 ## 20231103
 - Improved translation of logical constraints:
   inlining of nested disjunctions and conjunctions;

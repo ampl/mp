@@ -1,6 +1,10 @@
 Summary of recent updates to the AMPL MP Library
 ================================================
 
+## unreleased
+- Fixed graceful exit on Ctrl-C from AMPL in Linux.
+
+
 ## 20231103
 - Improved translation of logical constraints:
   inlining of nested disjunctions and conjunctions;

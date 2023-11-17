@@ -1660,6 +1660,12 @@ void GurobiBackend::InitCustomOptions() {
       "Limit on solve time (in seconds; default: no limit).",
       GRB_DBL_PAR_TIMELIMIT, 0.0, DBL_MAX);
 
+  AddSolverOption("lim:work worklim worklimit",
+                  "Limit on work units. "
+                  "Roughly corresponds to seconds per thread "
+                  "but deterministic. Default: no limit).",
+                  GRB_DBL_PAR_WORKLIMIT, 0.0, DBL_MAX);
+
   AddSolverOption("lim:zeroobjnodes zeroobjnodes",
     "Number of nodes to explore in the zero objective heuristic. "
     "Note that this heuristic is only applied at the end of the "
