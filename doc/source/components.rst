@@ -159,6 +159,8 @@ NLFeeder2 object (for solution input,
 solution components will be received by methods
 of a custom SOLHandler2 class.)
 
+.. image:: images/NLWriter.svg
+
 
 NL Writer APIs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
