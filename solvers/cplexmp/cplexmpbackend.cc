@@ -378,12 +378,14 @@ void CplexBackend::Solve() {
   if (NumObjs() > 1)
     CPLEX_CALL(CPXmultiobjopt(env(), lp(), NULL));
   else {
-    if (IsMIP())
+    auto type = CPXgetprobtype(env(), lp());
+    if ((type == CPXPROB_MIQCP) || (type == CPXPROB_MIQP) || (type == CPXPROB_MILP))
       CPLEX_CALL(CPXmipopt(env(), lp()));
+    else if ((type == CPXPROB_QP) || (type == CPXPROB_QCP))
+      CPLEX_CALL(CPXqpopt(env(), lp()));
     else
       CPLEX_CALL(CPXlpopt(env(), lp()));
   }
-
   WindupCPLEXSolve();
 }
 
@@ -807,6 +809,12 @@ static const mp::OptionValueInfo mipinterval_values_[] = {
   { "n > 0", "every n nodes and every incumbent", 1},
   { "n < 0", "new incumbents and less info the more negative n is", 2}
 };
+static const mp::OptionValueInfo optimalitytarget_values_[] = {
+    { "0", "automatic (default)", 0},
+    { "1", "assume convex and search for global optimum" , 1},
+    { "2", "search for first order optimality (not valid for QMIP)" , 2},
+    {"3", "solve non-convex to global optimality" ,3 }
+};
 static const mp::OptionValueInfo outlev_values_[] = {
   { "0", "no output (default)", 0},
   { "1", "equivalent to \"bardisplay\"=1, \"display\"=1, \"mipdisplay\"=3", 1},
@@ -966,6 +974,10 @@ void CplexBackend::InitCustomOptions() {
       "limit on solve time (in seconds; default: no limit).",
       CPXPARAM_TimeLimit, 0.0, DBL_MAX);
 
+  AddSolverOption("qp:target optimalitytarget",
+    "Type of solution to compute for a QP problem",
+    CPXPARAM_OptimalityTarget, optimalitytarget_values_, 0);
+
 }
 
 void CplexBackend::CplexSetObjIntParam(const SolverOption& opt, int val) {
@@ -1029,9 +1041,11 @@ static void CplexDoSetObjParam(
   if (prm_attr != CplexBackend::OBJ_PRIORITY)
     return;
 
-  CPLEX_CALL(CPXmultiobjchgattribs(env, model, iobj,
+  int status = CPXmultiobjchgattribs(env, model, iobj,
     CPX_NO_OFFSET_CHANGE, CPX_NO_WEIGHT_CHANGE, prm.second,
-    CPX_NO_ABSTOL_CHANGE, CPX_NO_RELTOL_CHANGE, NULL));
+    CPX_NO_ABSTOL_CHANGE, CPX_NO_RELTOL_CHANGE, NULL);
+  if (status)
+    throw CplexCommon::GetException("CPXmultiobjchgattribs", status, env);
 }
 
 static void CplexDoSetObjParam(
@@ -1055,9 +1069,11 @@ static void CplexDoSetObjParam(
     reltol = prm.second;
     break;
   }
-    CPLEX_CALL(CPXmultiobjchgattribs(env, model, iobj,
+    int status = CPXmultiobjchgattribs(env, model, iobj,
       CPX_NO_OFFSET_CHANGE, weight,CPX_NO_PRIORITY_CHANGE,
-      abstol, reltol, NULL));
+      abstol, reltol, NULL);
+    if (status)
+      throw CplexCommon::GetException("CPXmultiobjchgattribs", status, env);
 }
 
 template <class T>

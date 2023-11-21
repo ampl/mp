@@ -27,7 +27,9 @@
     "name" : "compl_quad_01 compl with obj",
     "tags" : ["quadraticnonconvex", "continuous", "complementarity"],
     "options": {
-      "gurobi_options": "nonconvex=2"
+      "gurobi_options": "nonconvex=2",
+      "cplex_options" : "qp:target=3"
+
     },
     "objective": 0.417424305,
     "values": {

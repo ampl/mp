@@ -27,7 +27,9 @@ int CplexCommon::NumIndicatorCons() const {
 int CplexCommon::NumSOSCons() const {
   return CPXgetnumsos(env(), lp());
 }
-
+bool CplexCommon::HasQObj() const {
+  return CPXgetnumquad(env(), lp()) > 0;
+}
 int CplexCommon::ModelSense() const {
   return CPXgetobjsen(env(), lp());
 }

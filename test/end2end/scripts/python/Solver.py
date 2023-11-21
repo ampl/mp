@@ -684,15 +684,17 @@ class CPLEXDirectSolver(MPDirectSolver):
         stags = {
                  ModelTags.continuous, ModelTags.integer, ModelTags.binary,
                  ModelTags.plinear, ModelTags.sos,
-                 ModelTags.quadratic, 
-
+                 ModelTags.nonlinear,
+                 ModelTags.quadratic_obj,                 
+                 ModelTags.quadratic, ModelTags.quadraticnonconvex,
+                 
                  
                  #ModelTags.socp,      ## MP transforms cones to quadratics
                  #ModelTags.socp_hard_to_recognize,
 
                  
 
-                 ModelTags.nonlinear,
+                 
                  ModelTags.log,
                  # ModelTags.trigonometric
                  ModelTags.relax,

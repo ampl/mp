@@ -95,6 +95,7 @@
     "objective" : 5,
     "tags" : ["quadratic", "quadraticnonconvex"],
     "options": {
+      "cplex_options": "qp:target=3",
       "copt_options": "cvt:quadcon=0",
       "comment_copt": "non convex constraint, linearise. But Gurobi convexifies it?"
     }  },
@@ -103,6 +104,7 @@
     "objective" : 1,
     "tags" : ["quadraticnonconvex", "quadratic_obj"],
     "options": {
+      "cplex_options": "qp:target=3",
       "highs_options": "cvt:quadobj=0",
       "copt_options": "cvt:quadobj=0 cvt:quadcon=0",
       "comment_highs_copt": "non convex objective, linearise"
@@ -113,6 +115,7 @@
     "tags" : ["quadraticnonconvex", "quadratic_obj"],
     "options": {
       "gurobi_options": "nonconvex=2",
+      "cplex_options": "qp:target=3",
       "highs_options": "cvt:quadobj=0",
       "copt_options": "cvt:quadobj=0 cvt:quadcon=0",
       "comment_highs_copt": "non convex objective, linearise"

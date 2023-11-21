@@ -13,7 +13,7 @@ void CplexModelAPI::AddVariables(const VarArrayDef& v) {
       vtypes[i] = CPX_CONTINUOUS;
     else {
       nint++;
-      vtypes[i] = CPX_INTEGER;
+      vtypes[i] = (v.plb()[i] == 0) && (v.pub()[i] == 1) ? CPX_BINARY : CPX_INTEGER;
     }
   if (nint > 0)
     CPLEX_CALL(CPXnewcols(env(), lp(), (int)v.size(), nullptr,
@@ -52,54 +52,41 @@ void CplexModelAPI::SetLinearObjective( int iobj, const LinearObjective& lo ) {
 
   }
 }
-int count_nonzeros_in_column(int colIndex, const int* colIndices, int nnz) {
-  int count = 0;
-
-  for (int i = 0; i < nnz; i++) {
-    if (colIndices[i] == colIndex) {
-      count++;
-    }
-  }
-
-  return count;
-}
 void CplexModelAPI::SetQuadraticObjective(int iobj, const QuadraticObjective& qo) {
   if (1 > iobj) {
-    SetLinearObjective(iobj, qo);                         // add the linear part
+    SetLinearObjective(iobj, qo);
+    
     const auto& qt = qo.GetQPTerms();
-    std::vector<int> qmatbeg(qt.size()+1), qmatcnt(qt.size()), qmatind(qt.size());
-    std::vector<double> qmatval(qt.size());
-      
-    std::vector<std::vector<int>> byvar1_var2(NumVars());
-    std::vector<std::vector<double>> values(NumVars());
-    for (int i = 0; i < NumVars(); i++)
-      values[i].resize(i + 1);
+    std::vector<int> qmatbeg(NumVars() + 1), qmatcnt(NumVars());
+    int nnondiagonal = 0;
+    std::vector<std::map<int, double>> acc(NumVars());
     for (int i = 0; i < qt.size(); i++) {
-      byvar1_var2[qt.var1(i)].push_back(qt.var2(i));
-      if (qt.var1(i) > qt.var2(i))
-        values[qt.var2(i)][qt.var1(i)] += qt.coef(i);
-      else
-        values[qt.var2(i)][qt.var1(i)] += qt.coef(i);
-
-    }
-    int current = 0;
-    for (int i = 0; i < NumVars(); i++) {
-      qmatbeg[i] = current;
-      qmatcnt[i] = byvar1_var2[i].size();
-      for (int k = 0; k < byvar1_var2[i].size(); k++) {
-        qmatind[current] = byvar1_var2[i][k];
-        qmatval[current] = (i < qmatind[current]) ? values[qmatind[current]][i] :
-          values[i][qmatind[current]];
-        current++;
+      if(qt.var1(i)==qt.var2(i))
+        acc[qt.var1(i)][qt.var2(i)] = qt.coef(i)*2;
+      else {
+        nnondiagonal++; // Need to add the corresponding entries
+        acc[qt.var1(i)][qt.var2(i)] = qt.coef(i) ;
+        acc[qt.var2(i)][qt.var1(i)] = qt.coef(i) ;
       }
     }
-    qmatbeg[NumVars()] = current; 
 
-    auto status = (CPXcopyquad(env(), lp(),
-      qmatbeg.data(), qmatcnt.data(), qmatind.data(), qmatval.data()));
-    char BUFFER[512];
-    CPXgeterrorstring(env(), status, BUFFER);
-    printf(BUFFER);
+    std::vector<int> qmatind(qt.size()+nnondiagonal);
+    std::vector<double> qmatval(qt.size() + nnondiagonal);
+    int currentbeg = 0;
+    for (int i = 0; i < NumVars(); i++)
+    {
+      qmatbeg[i] = currentbeg;
+      qmatcnt[i] = acc[i].size();
+      for (auto c : acc[i])
+      {
+        qmatind[currentbeg] = c.first;
+        qmatval[currentbeg] = c.second;
+        currentbeg++;
+      }
+    }
+    qmatbeg[NumVars()] = currentbeg;
+    CPLEX_CALL((CPXcopyquad(env(), lp(),
+      qmatbeg.data(), qmatcnt.data(), qmatind.data(), qmatval.data())));
   }
   else {
     throw std::runtime_error("Multiple quadratic objectives not supported");

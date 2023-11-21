@@ -4,7 +4,8 @@
     "objective" : 437.5,
     "tags" : ["quadraticnonconvex"],
     "options": {
-      "gurobi_options": "nonconvex=2"
+      "gurobi_options": "nonconvex=2",
+      "cplex_options": "qp:target=3"
     }
   }
 ]

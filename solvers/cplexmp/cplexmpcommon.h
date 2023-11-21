@@ -11,7 +11,7 @@ extern "C" {
 #include "mp/format.h"
 
 namespace mp {
-
+  
 /// Information shared by both
 /// `CplexBackend` and `CplexModelAPI`
 struct CplexCommonInfo {
@@ -48,7 +48,13 @@ public:
   int GetCPLEXIntParam(int param);
   void SetCPLEXParam(int param, int value);
   void SetCPLEXParam(int param, double value);
+  static std::runtime_error GetException(const char* func, int e, CPXENVptr env) {
+    char BUFFER[512];
+    CPXgeterrorstring(env, e, BUFFER);
+    return std::runtime_error(
+      fmt::format("  Call failed: '{}' with code {}:\n  ", func, e, BUFFER));
 
+  }
 protected:
   int NumLinCons() const;
   int NumVars() const;
@@ -57,14 +63,14 @@ protected:
   int NumIndicatorCons() const;
   int NumSOSCons() const;
   int ModelSense() const;
+  bool HasQObj() const;
 
 };
 
 
 /// Convenience macro
 #define CPLEX_CALL( call ) do { if (int e=call) \
-  throw std::runtime_error( \
-    fmt::format("  Call failed: '{}' with code {}", #call, e )); } while (0)
+        GetException(#call, e, env()); } while (0)
 
 } // namespace mp
 
