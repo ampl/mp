@@ -1,3 +1,6 @@
+Summary of recent updates to gurobi for AMPL
+============================================
+
 
 ## 20231117
 - MP update: fixed graceful exit on Ctrl-C from AMPL in Linux

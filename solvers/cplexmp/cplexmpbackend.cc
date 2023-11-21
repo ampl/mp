@@ -340,7 +340,7 @@ ArrayRef<double> CplexBackend::DualSolution_LP() {
 
 double CplexBackend::ObjectiveValue() const {
   double objval = -Infinity();
-  CPXgetobjval (env(), lp(), &objval );
+  CPLEX_CALL(CPXgetobjval(env(), lp(), &objval));
   
   return objval;
 }
@@ -375,17 +375,27 @@ void CplexBackend::SetInterrupter(mp::Interrupter *inter) {
 }
 
 void CplexBackend::Solve() {
-  if (NumObjs() > 1)
-    CPLEX_CALL(CPXmultiobjopt(env(), lp(), NULL));
-  else {
-    auto type = CPXgetprobtype(env(), lp());
-    if ((type == CPXPROB_MIQCP) || (type == CPXPROB_MIQP) || (type == CPXPROB_MILP))
-      CPLEX_CALL(CPXmipopt(env(), lp()));
-    else if ((type == CPXPROB_QP) || (type == CPXPROB_QCP))
-      CPLEX_CALL(CPXqpopt(env(), lp()));
-    else
-      CPLEX_CALL(CPXlpopt(env(), lp()));
+  
+    if (NumObjs() > 1)
+      CPLEX_CALL(CPXmultiobjopt(env(), lp(), NULL));
+    else {
+      auto type = CPXgetprobtype(env(), lp());
+      if ((type == CPXPROB_MIQCP) || (type == CPXPROB_MIQP) || (type == CPXPROB_MILP))
+        CPLEX_CALL(CPXmipopt(env(), lp()));
+      else if ((type == CPXPROB_QP) || (type == CPXPROB_QCP))
+        CPLEX_CALL(CPXqpopt(env(), lp()));
+      else
+        CPLEX_CALL(CPXlpopt(env(), lp()));
   }
+    if (feasrelax())
+    {
+      auto solstatus = CPXgetstat(env(), lp());
+      if((solstatus==CPX_STAT_INFEASIBLE)||(solstatus==CPXMIP_INFEASIBLE) ||
+        (solstatus==CPX_STAT_INForUNBD) || (solstatus== CPXMIP_INForUNBD) ||
+        (solstatus== CPXMIP_FAIL_INFEAS))
+          DoCplexFeasRelax();
+
+    }
   WindupCPLEXSolve();
 }
 
@@ -534,6 +544,13 @@ std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
   case CPXMIP_OPTIMAL:
   case CPX_STAT_MULTIOBJ_OPTIMAL:
     return { sol::SOLVED, "optimal solution" };
+  case CPXMIP_OPTIMAL_RELAXED_SUM:
+  case CPXMIP_OPTIMAL_RELAXED_QUAD:
+  case CPX_STAT_OPTIMAL_RELAXED_INF:
+  case CPX_STAT_OPTIMAL_RELAXED_QUAD:
+  case CPX_STAT_OPTIMAL_RELAXED_SUM:
+  case CPXMIP_OPTIMAL_RELAXED_INF:
+    return { sol::SOLVED, "optimal solution of relaxed problem" };
   case CPX_STAT_INFEASIBLE:
   case CPXMIP_INFEASIBLE:
   case CPX_STAT_MULTIOBJ_INFEASIBLE:
@@ -551,9 +568,6 @@ std::pair<int, std::string> CplexBackend::ConvertCPLEXStatus() {
   case CPX_STAT_FEASIBLE_RELAXED_SUM:
   case CPX_STAT_NUM_BEST:
   case CPX_STAT_OPTIMAL_INFEAS:
-  case CPX_STAT_OPTIMAL_RELAXED_INF:
-  case CPX_STAT_OPTIMAL_RELAXED_QUAD:
-  case CPX_STAT_OPTIMAL_RELAXED_SUM:
     return { sol::UNCERTAIN, "feasible or optimal but numeric issue" };
   }
 }
@@ -779,6 +793,49 @@ void CplexBackend::InputCPLEXExtras() {
   SetSolverOption(CPX_PARAM_SOLNPOOLINTENSITY, storedOptions_.poolIntensity_ < 0 ? 0 : 
     storedOptions_.poolIntensity_);
 
+
+}
+
+void CplexBackend::DoCplexFeasRelax() {
+  int reltype;
+  switch (feasrelax()) {
+  case 1:
+    reltype = CPX_FEASOPT_MIN_SUM;
+    break;
+  case 2:
+    reltype = CPX_FEASOPT_MIN_QUAD;
+    break;
+  case 3:
+    reltype = CPX_FEASOPT_MIN_INF;
+    break;
+  case 4:
+    reltype = CPX_FEASOPT_OPT_SUM;
+    break;
+  case 5:
+    reltype = CPX_FEASOPT_OPT_QUAD;
+    break;
+  case 6:
+    reltype = CPX_FEASOPT_OPT_INF;
+    break;
+  default:
+    throw std::runtime_error("Unexpected feasrelax value");
+  }
+
+  SetCPLEXParam(CPXPARAM_Feasopt_Mode, reltype);
+  auto mv = GetValuePresolver().PresolveSolution({
+                                              {},
+                                              feasrelax().rhspen()
+    });
+  const auto& rhspen = mv.GetConValues()(CG_Linear);
+  std::vector<double> lbpen = feasrelax().lbpen();
+  if (lbpen.size() && lbpen.size() < (size_t)NumVars())
+    lbpen.resize(NumVars());
+  std::vector<double> ubpen = feasrelax().ubpen();
+  if (ubpen.size() && ubpen.size() < (size_t)NumVars())
+    ubpen.resize(NumVars());
+  CPLEX_CALL(CPXfeasopt(env(), lp(), 
+    (double*)data_or_null(rhspen), (double*)data_or_null(rhspen),
+    (double*)data_or_null(lbpen), (double*)data_or_null(ubpen)));
 }
 
 static const mp::OptionValueInfo lpmethod_values_[] = {

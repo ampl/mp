@@ -103,8 +103,8 @@ public:
   ArrayRef<double> Ray() override;
   ArrayRef<double> DRay() override;
 
-
-
+  ALLOW_STD_FEATURE(FEAS_RELAX, true);
+  void DoCplexFeasRelax();
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
   bool IsQCP() const override;

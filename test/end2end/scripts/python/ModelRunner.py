@@ -23,6 +23,7 @@ class ModelRunner(object):
         self._models = modelList
         n = 0
         nFailed = 0
+        nSkipped = 0
         for m in modelList:
             n += 1
             if m.isNL():
@@ -38,6 +39,7 @@ class ModelRunner(object):
             print("{0: <80}".format(msg), end="", flush=True)
             t = TimeMe()
             failedSome = False
+            skippedSome = False
             with t:
                 for (i,r) in enumerate(cr):
                     r.isBenchmark = len(cr) > 1
@@ -54,6 +56,7 @@ class ModelRunner(object):
                             print("\n\t\tSkipped due to unsupported tags", flush=True)
                         else:
                             print("Skipped due to unsupported tags", flush=True)
+                            skippedSome = True
                         continue
                     if keepLogs:
                         r.runAndEvaluate(m, logFile=ModelRunner.getLogFileName(m, ss))
@@ -71,9 +74,10 @@ class ModelRunner(object):
                         if not exporter.printStatus(m, stats):
                             failedSome = True
             nFailed += failedSome
+            nSkipped += skippedSome
             if exporter:
                 self.export(exporter)
-            print("  (%.4fs, %d failed)" % (t.interval, nFailed))
+            print("  (%.4fs, %d failed, %d skipped)" % (t.interval, nFailed, nSkipped))
 
     def export(self, exporter):
         exporter.exportInstanceResults(self)
