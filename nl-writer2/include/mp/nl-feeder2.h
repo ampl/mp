@@ -58,28 +58,30 @@ namespace mp {
 
 /**
 	\rst
-  NLFeeder2: writes model details on request
-	via provided callback objects.
-  See the examples folder.
+    NLFeeder2: writes model details on request
+    via provided callback objects.
+    See the examples folder.
 
-	For the NL format, variables and constraints must have certain order.
+    For the NL format, variables and constraints must have certain order.
 
-  **Variable ordering:**
-    first continuous, then integer.
-	Some solvers might require more elaborate ordering, see NLHeader.
+    **Variable ordering:**
+      first continuous, then integer.
+      Some solvers might require more elaborate ordering, see NLHeader.
 
-	**Constraint ordering:**
-		first algebraic (including complementarity), then logical.
-	Some solvers might require nonlinear constraints first.
+    **Constraint ordering:**
+      first algebraic (including complementarity), then logical.
+    Some solvers might require nonlinear constraints first.
 
-	`~mp::NLFeeder2` can be used as a base class for other feeders,
-	or just be an interface example.
+    `~mp::NLFeeder2` can be used as a base class for other feeders
+    (see `ExampleNLFeeder2`),
+    or just be an interface prototype. Also subclassed
+    in the C API implementation class `~mp::NLFeeder2_C_Impl`.
 
-	@param: *Impl* is a type derived from `~mp::NLFeeder`.
+    @param: *Impl* is a type derived from `~mp::NLFeeder2`.
 
-	@param: *ExprType* is a type storing expressions from
-  methods such as `~mp::NLFeeder2::FeedExpr`. If not used,
-	it can be any default-constructible type.
+    @param: *ExprType* is a type storing expressions from
+    methods such as `~mp::NLFeeder2::FeedExpr`. If not used,
+    it can be any default-constructible type.
 	\endrst
  */
 template <typename Impl, typename ExprType>
