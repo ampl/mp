@@ -17,7 +17,7 @@ template <class Value>
 class VecReader;
 
 /// Wrap SOLHandler2_C into a C++ class,
-/// in order to interface it for NLReader2
+/// in order to interface it for mp::SOLReader2
 class SOLHandler2_C_Impl
     : public SOLHandler2 {
 public:
