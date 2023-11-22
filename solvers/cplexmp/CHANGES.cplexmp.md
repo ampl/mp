@@ -1,4 +1,4 @@
-Summary of recent updates to gurobi for AMPL
+Summary of recent updates to cplexmp for AMPL
 ============================================
 
 
