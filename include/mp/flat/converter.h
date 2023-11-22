@@ -930,6 +930,7 @@ private:
     int relax_ = 0;
 
     int solcheckmode_ = 1+2+16+512;
+    bool solcheckinfeas_ = false;
     bool solcheckfail_ = false;
     double solfeastol_ = 1e-6;
     double solfeastolrel_ = 1e-6;
@@ -951,6 +952,7 @@ public:             // public for CRTP
 
   /// Solution checking options
   int sol_check_mode() const { return options_.solcheckmode_; }
+  bool sol_check_infeas() const { return options_.solcheckinfeas_; }
   bool sol_check_fail() const { return options_.solcheckfail_; }
   double sol_feas_tol() const { return options_.solfeastol_; }
   double sol_feas_tol_rel() const { return options_.solfeastolrel_; }
@@ -1055,9 +1057,13 @@ private:
         "Solution checking tolerance for variables' integrality. "
         "Default 1e-5.",
         options_.solinttol_, 0.0, 1e100);
+    GetEnv().AddOption("sol:chk:infeas chk:infeas checkinfeas",
+                       "Check even infeasible solution condidates, "
+                       "whenever solver reports them.",
+                       options_.solcheckinfeas_, false, true);
     GetEnv().AddOption("sol:chk:fail chk:fail checkfail",
-        "Fail on solution checking violations.",
-        options_.solcheckfail_, false, true);
+                       "Fail on solution checking violations.",
+                       options_.solcheckfail_, false, true);
     GetEnv().AddOption("sol:chk:round chk:round chk:rnd",
         "AMPL solution_round option when checking: "
                        "round to this number of decimals after comma "
@@ -1139,9 +1145,10 @@ private:
         [this](
         ArrayRef<double> x,
         const pre::ValueMapDbl& y,
-        ArrayRef<double> obj) -> bool {
+        ArrayRef<double> obj,
+        void* p_extra) -> bool {
       return !this->options_.solcheckmode_   // not desired
-                 || MPD( CheckSolution(x, y, obj) );
+                 || MPD( CheckSolution(x, y, obj, p_extra) );
     }
   };
   pre::CopyLink copy_link_ { GetValuePresolver() }; // the copy links

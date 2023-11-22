@@ -253,9 +253,10 @@ private:
 
 /// How to call a solution checker
 using SolCheckerCall = bool(
-  ArrayRef<double> x,
-  const ValueMapDbl& y,
-  ArrayRef<double> obj);
+    ArrayRef<double> x,
+    const ValueMapDbl& y,
+    ArrayRef<double> obj,
+    void* p_extra);
 /// Function wrapper
 using SolCheckerType = std::function<SolCheckerCall>;
 
@@ -290,6 +291,7 @@ public:
 
   /// Override PostsolveSolution().
   /// Check solution if checker provided.
+  /// mv's ExtraData() is passed to the checker.
   MVOverEl<double> PostsolveSolution (
       const MVOverEl<double>& mv) override {
     if (solchk_) {
@@ -300,7 +302,7 @@ public:
         ArrayRef<double> objs;
         if (mo.IsSingleKey())
           objs = mo();
-        solchk_(mx(), mv.GetConValues(), objs);
+        solchk_(mx(), mv.GetConValues(), objs, mv.ExtraData());
       }
     }
     return ValuePresolverImpl::PostsolveSolution(mv);

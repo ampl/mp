@@ -32,10 +32,12 @@ public:
   Solution GetSolution() override {
     auto x = PrimalSolution();
     auto y = DualSolution();
+    auto fKnownInfeasOrUnb = BaseBackend::IsProblemInfeasible();
     auto mv = GetValuePresolver().PostsolveSolution(
           { x,
             y,
-            GetObjectiveValues() } );
+            GetObjectiveValues(),
+         (void*)fKnownInfeasOrUnb } );
     auto x1 = std::move(mv.GetVarValues()());
     if (x.empty())
       x1.clear();      // don't send variable values

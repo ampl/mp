@@ -18,12 +18,17 @@ public:
 
 
   /// Check unpostsolved solution
-  /// in various ways
+  /// in various ways.
+  /// @param p_extra: !=0 means known infeas solution
   bool CheckSolution(
-      ArrayRef<double> x,
-      const pre::ValueMapDbl& duals,
-      ArrayRef<double> obj) {
+        ArrayRef<double> x,
+        const pre::ValueMapDbl& duals,
+        ArrayRef<double> obj,
+        void* p_extra) {
     bool result = true;
+    bool fKnownInfeas = (bool)p_extra;
+    if (fKnownInfeas && !MPCD( sol_check_infeas() ))
+      return result;
     std::string err_msg;
     try {                            // protect
       std::vector<double> x_back = x;

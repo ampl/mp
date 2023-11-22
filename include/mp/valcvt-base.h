@@ -214,9 +214,11 @@ public:
   ModelValues& operator=(ModelValues&& ) = default;
 
   /// Construct from values for vars, cons, objs
-  /// (last 2 can be even legally omitted)
-  ModelValues(VMap v={}, VMap c = {}, VMap o = {}) :
-    vars_(std::move(v)), cons_(std::move(c)), objs_(std::move(o)) { }
+  /// (last 2 maps can be even legally omitted)
+  ModelValues(VMap v={}, VMap c = {}, VMap o = {},
+              void* p_extra=nullptr) :
+    vars_(std::move(v)), cons_(std::move(c)), objs_(std::move(o)),
+      p_extra_(p_extra) { }
 
   /// Construct from ModelValues<AnotherVMap>
   template <class VM2>
@@ -256,9 +258,13 @@ public:
   /// Retrieve objs map
   VMap& GetObjValues() { return objs_; }
 
+  /// Extra data
+  void* ExtraData() const { return p_extra_; }
+
 private:
   std::string name_;
   VMap vars_, cons_, objs_;
+  void* p_extra_ {nullptr};
 };
 
 
