@@ -1,5 +1,17 @@
-Summary of recent updates to cplexmp for AMPL
-============================================
+Summary of recent updates to CPLEX MP for AMPL
+==============================================
+
+
+## 20231122
+- Public beta; implemented most [features](https://mp.ampl.com/features-guide.html) in MP:
+  model export, warm start, input and output basis, feasibility relaxation,
+  multiple solutions, kappa, unbounded rays, IIS, return MIP gap, 
+  return dual bound
+- Native Model support:
+    - continuous and integer variables
+    - multiple objectives, quadratic objectives
+    - linear and quadratic constraints, indicator constraints and PL functions
+    - special ordered sets (type 1 and 2)
 
 
 ## 20231117
@@ -16,4 +28,4 @@ Summary of recent updates to cplexmp for AMPL
 - Fixed a bug where equivalent conditional
   comparisons were not unified.
 
-
+ 

@@ -105,6 +105,9 @@ public:
 
   ALLOW_STD_FEATURE(FEAS_RELAX, true);
   void DoCplexFeasRelax();
+
+  ALLOW_STD_FEATURE(FIX_MODEL, false); // TODO
+
   /////////////////////////// Model attributes /////////////////////////
   bool IsMIP() const override;
   bool IsQCP() const override;
