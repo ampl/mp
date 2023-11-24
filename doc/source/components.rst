@@ -168,14 +168,14 @@ NL Writer APIs
 - **NL Writer C++ API** is provided by classes
   `mp::NLSOL`, `mp::NLFeeder2`, `mp::SOLHandler2`.
   See
-  `example <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/cpp/nlsol_ex.cc>`_
+  `C++ API example <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/cpp/nlsol_ex.cc>`_
   solving a small non-linear model.
 
 - **NL Writer C API** is provided by structs
   `NLW2_NLSOL_C`, `NLW2_NLFeeder2_C`, `NLW2_SOLHandler2_C`.
   *Currently only linear models are supported.*
   See
-  `example <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/c/nlsol_ex_c.c>`_
+  `C API example <https://github.com/ampl/mp/blob/develop/nl-writer2/examples/c/nlsol_ex_c.c>`_
   solving a small linear model.
 
 
