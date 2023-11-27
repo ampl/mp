@@ -494,7 +494,7 @@ typedef struct NLW2_NLFeeder2_C {
 
 
 /// Return NLFeeder2_C with default options / methods
-NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default();
+NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default(void);
 
 /// Destroy NLFeeder2_C created by NLW2_MakeNLFeeder2_C_default()
 void NLW2_DestroyNLFeeder2_C_Default(NLW2_NLFeeder2_C* );

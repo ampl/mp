@@ -253,7 +253,7 @@ static void NLW2_FeedColumnSizes_C_Default(void* , void* )
 //  void FeedObjAdj(ObjOffsetWriter& ) { }
 
 
-NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default() {
+NLW2_NLFeeder2_C NLW2_MakeNLFeeder2_C_Default(void) {
   NLW2_NLFeeder2_C result;
 
   std::memset(&result, 0, sizeof(result));       // all 0
@@ -484,7 +484,7 @@ static void NLW2_myexit_C_Default(
 }
 
 
-NLW2_NLUtils_C NLW2_MakeNLUtils_C_Default() {
+NLW2_NLUtils_C NLW2_MakeNLUtils_C_Default(void) {
   NLW2_NLUtils_C result;
 
   result.p_user_data_ = NULL;
@@ -532,7 +532,7 @@ static void NLW2_OnSolveCode_C_Default(void* p_user_data, int ) { }
 //  void OnDblSuffix(SuffixReader& ) { }
 
 
-NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default() {
+NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default(void) {
   NLW2_SOLHandler2_C result;
 
   std::memset(&result, 0, sizeof(result));       // all 0

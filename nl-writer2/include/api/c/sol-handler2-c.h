@@ -140,7 +140,7 @@ typedef struct NLW2_SOLHandler2_C {
 } NLW2_SOLHandler2_C;
 
 /// Create an SOLHandler2_C with default methods
-NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default();
+NLW2_SOLHandler2_C NLW2_MakeSOLHandler2_C_Default(void);
 
 /// Destroy an SOLHandler2_C
 /// created with NLW2_Make...Default()

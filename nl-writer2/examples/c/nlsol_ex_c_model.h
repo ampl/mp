@@ -109,7 +109,7 @@ typedef struct CAPIExample {
 } CAPIExample;
 
 /// Create linear example data
-CAPIExample MakeCAPIExample_Linear_01();
+CAPIExample MakeCAPIExample_Linear_01(void);
 
 /// Destroy linear example data
 void DestroyCAPIExample_Linear_01(CAPIExample* );

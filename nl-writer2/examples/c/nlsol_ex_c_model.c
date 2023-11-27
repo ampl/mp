@@ -5,7 +5,7 @@
 
 #include "nlsol_ex_c_model.h"
 
-CAPIExample MakeCAPIExample_Linear_01() {
+CAPIExample MakeCAPIExample_Linear_01(void) {
   /// Variables.
   /// Put y first because continuous variables
   /// come before integer ones.
