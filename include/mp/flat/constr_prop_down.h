@@ -127,8 +127,8 @@ public:
   }
 
   /// Context of the condition in IfThen.
-  /// @args: [condition, then, else] result variables
-  /// @ctx: context of the overall expression
+  /// @param args: [condition, then, else] result variables
+  /// @param ctx: context of the overall expression
   template <class Array3>
   void PropagateIfThenResultIntoCondition(Array3 args, Context ctx) {
     Context ctx_cond = Context::CTX_MIX;

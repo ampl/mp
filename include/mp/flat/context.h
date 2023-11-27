@@ -5,10 +5,10 @@ namespace mp {
 
 /// Expression context
 ///
-/// <result> <-> <Expression>
-/// CTX_POS: expression is implied by the boolean result
-/// CTX_NEG: expression's negation is implied by the neg result
-/// CTX_MIX: expression is equivalent to the result variable
+/// Considering the relation (result) <-> (Expression):
+/// - CTX_POS: expression is implied by the boolean result
+/// - CTX_NEG: expression's negation is implied by the neg result
+/// - CTX_MIX: expression is equivalent to the result variable
 class Context {
 public:
   /// Possible values

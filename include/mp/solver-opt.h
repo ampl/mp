@@ -801,7 +801,7 @@ public:
 };
 
 
-/// Stored option <bool>.
+/// Stored option &lt;bool&gt;.
 /// Can only be set to True.
 template <>
 class SolverOptionManager::StoredOption<bool>

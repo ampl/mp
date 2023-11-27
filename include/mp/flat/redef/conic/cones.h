@@ -289,7 +289,6 @@ protected:
   /// Considering const>=0.
   /// Accept non-(+-1) coefficients.
   ///
-  /// @param body: linear constraint body.
   /// @param sens: -1 for <=, 1 for >=.
   /// @param rhs: constraint's rhs.
   ///
@@ -680,7 +679,6 @@ protected:
   ///
   /// Accept non-(+-1) coefficients.
   ///
-  /// @param body: linear constraint body.
   /// @param sens: -1 for <=, 1 for >=.
   /// @param rhs: constraint's rhs.
   ///

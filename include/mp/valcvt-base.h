@@ -45,9 +45,9 @@ Array CreateArray(Param ) { return Array{}; }
 /// When IsSingleKey(), the map only has a single array (at key 0),
 /// accessible via ().
 ///
-/// @param Array: the type of array stored (std::vector<int> / <double>),
+/// @param Array: the type of array stored (std::vector(int) / (double)),
 ///         or ValueNode.
-/// @param Param: type of parameter to call CreateArray<Array>(Param)
+/// @param Param: type of parameter to call CreateArray &lt; Array &gt; (Param)
 ///         when we need to create a mapped value.
 template <class Array, class Param=int>
 class ValueMap {

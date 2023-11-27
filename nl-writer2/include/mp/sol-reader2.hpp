@@ -519,9 +519,9 @@ SOLReadResult SOLReader2<SOLHandler2>::gsufread(FILE* f) {
     if (sufheadcheck(&SR))
       return ReportBadLine(buf);
     if (!fgets(buf, sizeof(buf)-1, f)
-        || buf[SR.h.namelen-1] != '\n'
-        && (buf[SR.h.namelen-1] != '\r'
-            || buf[SR.h.namelen] != '\n'))
+        || (buf[SR.h.namelen-1] != '\n'
+            && (buf[SR.h.namelen-1] != '\r'
+                || buf[SR.h.namelen] != '\n')))
       return ReportBadLine(buf);
     buf[SR.h.namelen-1] = 0;
     strcpy(SR.name, buf);

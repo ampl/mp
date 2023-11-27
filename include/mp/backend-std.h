@@ -160,7 +160,7 @@ protected:
   * No API to overload,
   * Impl should check:
   * - feasrelax() returns feasrelax mode
-  * - feasrelax().<methods> give the API
+  * - feasrelax().(methods) give the API
   **/
   DEFINE_STD_FEATURE(FEAS_RELAX)
   ALLOW_STD_FEATURE(FEAS_RELAX, false)
@@ -233,7 +233,7 @@ public:
 
   /// Read NL.
   /// @param opts: extra options
-  /// (to be read after <solver>_options env var).
+  /// (to be read after the [solver]_options env var).
   /// All model-related options should be here
   /// (obj:.../objno/multiobj, cvt:..., acc:...).
   void ReadNL(const std::string& nl_filename,

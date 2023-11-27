@@ -19,9 +19,6 @@ extern "C" {
 /// This function is not for the user.
 ///
 /// @param p_be: GurobiBackend etc.
-/// @param slv_opt: a string of solver options
-/// (normally provided in the <solver>_options variable).
-/// Can be \a nullptr.
 /// @return slv on success, otherwise NULL and use AMPLSGetMessages()
 /// (well they can contain warnings in any case).
 AMPLS_MP_Solver* AMPLS__internal__Open(std::unique_ptr<mp::BasicBackend> p_be,

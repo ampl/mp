@@ -251,7 +251,7 @@ using VarInfoStatic = VarInfoImpl<VarVecStatic>;
 /// Solution check data
 struct SolCheck {
   /// Construct.
-  /// @param chkmode: can be subset of 1+2+4+8+16
+  /// @param chk_mode: can be subset of 1+2+4+8+16
   SolCheck(ArrayRef<double> x,
            const pre::ValueMapDbl& , //duals,
            ArrayRef<double> obj,

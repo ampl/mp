@@ -686,7 +686,7 @@ class BasicExprFactory : private Alloc {
     exprs_.push_back(0);
     typedef typename ExprType::Impl Impl;
     /// The following cannot overflow.
-    /// Using ::new due to #174
+    /// Using `~new` due to #174
     Impl *impl = (Impl*) new char* [sizeof(Impl) + extra_bytes];
     impl->kind_ = kind;
     exprs_.back() = impl;

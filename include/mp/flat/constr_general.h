@@ -216,7 +216,7 @@ using SOS2Constraint = SOS_1or2_Constraint<2>;
 
 ////////////////////////////////////////////////////////////////////////
 /// Complementarity constraint.
-/// <Expr> complements a variable.
+/// \a Expr complements a variable.
 /// @param Expr: an affine or quadratic functional expression
 template <class Expr>
 class ComplementarityConstraint : public BasicConstraint {

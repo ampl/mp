@@ -213,7 +213,7 @@ protected:
     SingleSparseVecWrtFactory(NLWriter2& nlw, const char* fmt)
       : nlw_(nlw), fmt_(fmt) { }
     /// Construct. More general.
-    /// @param formatter: a lambda printing something
+    /// @param hdr_prn: a lambda printing something
     /// given N nonzeros.
     SingleSparseVecWrtFactory(NLWriter2& nlw,
                               std::function<void(int)> hdr_prn)

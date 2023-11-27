@@ -29,7 +29,7 @@ public:
   static constexpr int kind_input = AlgCon::kind();
 
   /// Convert in positive context:
-  /// resvar==1 --> <body> (cmp) <rhs>
+  /// resvar==1 --> (body) (cmp) (rhs)
   void ConvertCtxPos(const ItemType& cc, int ) {
     constexpr auto kind_output =               // output comparison is <= or >=
         ( kind_input>0 ) ? 1 : -1;             // even for < or >
@@ -44,7 +44,7 @@ public:
   }
 
   /// Convert in negative context:
-  /// resvar==0 --> (body) (!cmp) <rhs>
+  /// resvar==0 --> (body) (!cmp) (rhs)
   void ConvertCtxNeg(const ItemType& cc, int ) {
     constexpr auto kind_output =               // output comparison is <= or >=
         ( kind_input>0 ) ? -1 : 1;             // even for < or >
